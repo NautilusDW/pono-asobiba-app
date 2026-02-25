@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>もじなぞり - たのしくかこう！</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --primary: #FF6B9D;
+  --secondary: #C084FC;
+  --accent: #4ADE80;
+  --text: #5B4A3F;
+  --card-bg: #FFFFFF;
+  --shadow: 0 4px 20px rgba(91, 74, 63, 0.1);
+  --radius: 20px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* === Header === */
+.header { text-align: center; padding: 6px 0; flex-shrink: 0; }
+.header h1 {
+  font-size: 1.4rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header .sub { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
+
+/* === Category Tabs === */
+.tabs { display: flex; gap: 6px; justify-content: center; margin: 6px 0; flex-shrink: 0; flex-wrap: wrap; }
+.tab {
+  padding: 7px 14px; border: none; border-radius: 30px;
+  font-family: inherit; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: all 0.3s;
+  background: var(--card-bg); color: var(--text); box-shadow: var(--shadow);
+}
+.tab.active { color: #FFF; transform: scale(1.05); }
+.tab[data-c="hiragana"].active { background: var(--primary); }
+.tab[data-c="katakana"].active { background: var(--secondary); }
+.tab[data-c="alphabet"].active { background: #60A5FA; }
+.tab[data-c="numbers"].active  { background: var(--accent); color: var(--text); }
+
+/* === Char Selector === */
+.chars {
+  display: flex; gap: 4px; overflow-x: auto; padding: 4px 0; flex-shrink: 0;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.chars::-webkit-scrollbar { display: none; }
+.ch {
+  min-width: 40px; height: 40px; border: 2px solid transparent; border-radius: 12px;
+  background: var(--card-bg); font-family: inherit; font-size: 1.05rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+}
+.ch:hover { transform: scale(1.1); }
+.ch.active { border-color: var(--primary); background: linear-gradient(135deg,#FFF0F5,#FAF0FF); transform: scale(1.1); }
+
+/* === Writer Area === */
+.writer-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; min-height: 0; position: relative;
+}
+.writer-box {
+  position: relative;
+  width: min(85vw, 400px); height: min(85vw, 400px);
+  max-width: 400px; max-height: 400px;
+  background: var(--card-bg); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+/* Grid cross */
+.writer-box::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background:
+    linear-gradient(to right, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%),
+    linear-gradient(to bottom, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%);
+}
+.writer-box::after {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background:
+    linear-gradient(45deg, transparent calc(50% - .5px), #F5EDE5 calc(50% - .5px), #F5EDE5 calc(50% + .5px), transparent calc(50% + .5px)),
+    linear-gradient(-45deg, transparent calc(50% - .5px), #F5EDE5 calc(50% - .5px), #F5EDE5 calc(50% + .5px), transparent calc(50% + .5px));
+}
+
+/* SVG character layer */
+.char-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;
+}
+
+/* Drawing canvas */
+.draw-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3;
+  cursor: crosshair; touch-action: none;
+}
+
+/* Status badge */
+.badge {
+  position: absolute; top: 8px; right: 8px; z-index: 10;
+  background: rgba(255,255,255,0.92); border-radius: 20px;
+  padding: 4px 12px; font-size: 0.75rem; font-weight: 700;
+  color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  pointer-events: none;
+}
+
+/* Loading / error overlay */
+.overlay-msg {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--secondary); font-size: 1rem;
+  pointer-events: none;
+}
+.overlay-msg.hidden { display: none; }
+
+/* === Controls === */
+.ctrls { display: flex; gap: 8px; justify-content: center; padding: 8px 0; flex-shrink: 0; }
+.btn {
+  padding: 10px 18px; border: none; border-radius: 30px;
+  font-family: inherit; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+}
+.btn:active { transform: scale(0.95); }
+.btn-r { background: #FEE2E2; color: #EF4444; }
+.btn-h { background: #E0F2FE; color: #0EA5E9; }
+.btn-n { background: linear-gradient(135deg, var(--accent), #34D399); color: #FFF; }
+
+/* === Confetti === */
+.confetti-box { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden; }
+.conf {
+  position: absolute; border-radius: 2px;
+  animation: cfall 2.5s ease-out forwards;
+}
+@keyframes cfall {
+  0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity:1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(.3); opacity:0; }
+}
+
+/* === Completion === */
+.done-overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  z-index: 999; pointer-events: none; opacity: 0; transition: opacity .3s;
+}
+.done-overlay.show { opacity: 1; pointer-events: auto; }
+.done-msg {
+  font-size: 3rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: pop .6s cubic-bezier(.68,-.55,.27,1.55);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.1));
+}
+@keyframes pop { 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+/* === Responsive === */
+@media (max-height:600px) {
+  .header h1 { font-size:1.1rem; } .header .sub { display:none; }
+  .tabs { margin:3px 0; } .tab { padding:5px 10px; font-size:.78rem; }
+  .ch { min-width:36px; height:36px; font-size:.9rem; }
+  .ctrls { padding:5px 0; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <h1>もじなぞり</h1>
+    <div class="sub">ゆびでなぞってみよう！</div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-c="hiragana">ひらがな</button>
+    <button class="tab" data-c="katakana">カタカナ</button>
+    <button class="tab" data-c="alphabet">ABC</button>
+    <button class="tab" data-c="numbers">すうじ</button>
+  </div>
+
+  <div class="chars" id="chars"></div>
+
+  <div class="writer-area">
+    <div class="writer-box" id="box">
+      <div class="badge" id="badge"></div>
+      <svg class="char-svg" id="svg" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"></svg>
+      <canvas class="draw-canvas" id="canvas"></canvas>
+      <div class="overlay-msg hidden" id="msg">よみこみちゅう...</div>
+    </div>
+  </div>
+
+  <div class="ctrls">
+    <button class="btn btn-r" id="bClear">もういちど</button>
+    <button class="btn btn-h" id="bHint">おてほん</button>
+    <button class="btn btn-n" id="bNext">つぎ →</button>
+  </div>
+</div>
+
+<div class="confetti-box" id="confetti"></div>
+<div class="done-overlay" id="doneOv"><div class="done-msg">できた！🎉</div></div>
+
+<script>
+// ==========================================================
+//  AnimCJK-based Tracing App
+//  Design: median path = visual guide = hit-test path (SINGLE SOURCE)
+// ==========================================================
+
+// ===== Character Lists =====
+const CATS = {
+  hiragana: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'.split(''),
+  katakana: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split(''),
+  alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split(''),
+  numbers:  '0123456789'.split('')
+};
+
+// ===== State =====
+let cat = 'hiragana', idx = 0;
+let charData = null;       // parsed AnimCJK data for current char
+let quizStroke = 0;        // which stroke user is on (0-based)
+let isDrawing = false;
+let drawnPts = [];         // [{x,y}] in SVG coords (0-1024)
+let hintAnim = null;       // requestAnimationFrame id
+
+// ===== DOM =====
+const $tabs   = document.getElementById('tabs');
+const $chars  = document.getElementById('chars');
+const $box    = document.getElementById('box');
+const $svg    = document.getElementById('svg');
+const $canvas = document.getElementById('canvas');
+const $badge  = document.getElementById('badge');
+const $msg    = document.getElementById('msg');
+const $bClear = document.getElementById('bClear');
+const $bHint  = document.getElementById('bHint');
+const $bNext  = document.getElementById('bNext');
+const $conf   = document.getElementById('confetti');
+const $doneOv = document.getElementById('doneOv');
+
+// ==========================================================
+//  1. AnimCJK SVG Loader & Parser
+// ==========================================================
+
+// CDN URL for AnimCJK SVG files
+function svgUrl(char) {
+  const code = char.codePointAt(0);
+  // hiragana: U+3040-309F, katakana: U+30A0-30FF
+  if ((code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF)) {
+    return `https://cdn.jsdelivr.net/gh/parsimonhi/animCJK@master/svgsJaKana/${code}.svg`;
+  }
+  // kanji
+  if (code >= 0x4E00 && code <= 0x9FFF) {
+    return `https://cdn.jsdelivr.net/gh/parsimonhi/animCJK@master/svgsJa/${code}.svg`;
+  }
+  return null; // no AnimCJK data for alphabet/numbers
+}
+
+// Parse AnimCJK SVG text → structured stroke data
+// Returns { strokes: [{ shapes: [d,...], median: d, delay: n }] }
+function parseSVG(svgText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgText, 'image/svg+xml');
+
+  // 1. Collect stroke shapes: <path id="z...dN..." d="..."/>
+  const shapeEls = doc.querySelectorAll('path[id]');
+  const shapesById = {};
+  const shapesByStroke = {};
+  shapeEls.forEach(el => {
+    const id = el.getAttribute('id');
+    const d = el.getAttribute('d');
+    shapesById[id] = d;
+    // Parse stroke number: z12354d3a → strokeNum=3
+    const m = id.match(/d(\d+)/);
+    if (m) {
+      const num = parseInt(m[1]);
+      if (!shapesByStroke[num]) shapesByStroke[num] = [];
+      shapesByStroke[num].push(d);
+    }
+  });
+
+  // 2. Collect medians: <path clip-path="..." style="--d:Ns;" d="..."/>
+  const medianEls = doc.querySelectorAll('path[clip-path]');
+  const mediansByDelay = {};
+  medianEls.forEach(el => {
+    const d = el.getAttribute('d');
+    const style = el.getAttribute('style') || '';
+    const dm = style.match(/--d:\s*([\d.]+)s/);
+    const delay = dm ? parseFloat(dm[1]) : 0;
+
+    // Skip "trick" medians that start outside viewBox (negative coords)
+    const firstPt = d.match(/^M\s*([-\d.]+)\s*[,\s]\s*([-\d.]+)/);
+    if (firstPt && (parseFloat(firstPt[1]) < 0 || parseFloat(firstPt[2]) < 0)) return;
+
+    // Keep only the first (primary) median per delay
+    if (!mediansByDelay[delay]) mediansByDelay[delay] = d;
+  });
+
+  // 3. Build ordered strokes
+  const delays = Object.keys(mediansByDelay).map(Number).sort((a, b) => a - b);
+  const strokes = delays.map((delay, i) => ({
+    shapes: shapesByStroke[i + 1] || [],
+    median: mediansByDelay[delay],
+    delay
+  }));
+
+  return { strokes };
+}
+
+// Fetch and parse character data (with cache)
+const dataCache = {};
+async function loadChar(char) {
+  if (dataCache[char]) return dataCache[char];
+  const url = svgUrl(char);
+  if (!url) return null;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  const data = parseSVG(text);
+  dataCache[char] = data;
+  return data;
+}
+
+// ==========================================================
+//  2. SVG Renderer
+//  The SAME median path element is used for:
+//    - Visual guide line display
+//    - Hit-test via getPointAtLength()
+// ==========================================================
+
+function renderChar(data) {
+  $svg.innerHTML = '';
+  if (!data) return;
+
+  // --- Outline layer: all strokes as light fill ---
+  const gOutline = svgEl('g', { class: 'outline' });
+  data.strokes.forEach((s, i) => {
+    s.shapes.forEach(d => {
+      gOutline.appendChild(svgEl('path', {
+        d, fill: '#E8DDD5', stroke: 'none', 'data-stroke': i
+      }));
+    });
+  });
+  $svg.appendChild(gOutline);
+
+  // --- Completed layer: colored fills (hidden initially) ---
+  const gDone = svgEl('g', { class: 'done' });
+  data.strokes.forEach((s, i) => {
+    s.shapes.forEach(d => {
+      const p = svgEl('path', {
+        d, fill: '#5B4A3F', stroke: 'none',
+        'data-stroke': i, opacity: '0'
+      });
+      gDone.appendChild(p);
+    });
+  });
+  $svg.appendChild(gDone);
+
+  // --- Guide layer: median paths (the SINGLE SOURCE of truth) ---
+  const gGuide = svgEl('g', { class: 'guide' });
+  data.strokes.forEach((s, i) => {
+    // The median line - this IS the visual AND the hit-test path
+    const p = svgEl('path', {
+      d: s.median,
+      fill: 'none',
+      stroke: 'transparent',    // hidden until it's this stroke's turn
+      'stroke-width': '12',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      'stroke-dasharray': '28 18',
+      'data-stroke': i,
+      class: 'median-path'
+    });
+    gGuide.appendChild(p);
+
+    // "Follow me" dot (hidden until active)
+    const dot = svgEl('circle', {
+      cx: '0', cy: '0', r: '22',
+      fill: 'transparent',
+      'data-stroke': i,
+      class: 'guide-dot'
+    });
+    gGuide.appendChild(dot);
+  });
+  $svg.appendChild(gGuide);
+
+  // --- Active stroke highlight (outline glow) ---
+  const gActive = svgEl('g', { class: 'active-stroke' });
+  data.strokes.forEach((s, i) => {
+    s.shapes.forEach(d => {
+      gActive.appendChild(svgEl('path', {
+        d, fill: 'rgba(255,107,157,0.12)', stroke: 'none',
+        'data-stroke': i, opacity: '0'
+      }));
+    });
+  });
+  $svg.appendChild(gActive);
+}
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+// ==========================================================
+//  3. Quiz State Machine
+// ==========================================================
+
+function startQuiz() {
+  quizStroke = 0;
+  highlightStroke(0);
+  updateBadge();
+}
+
+function highlightStroke(n) {
+  if (!charData) return;
+  cancelHintAnim();
+
+  // Hide all guide elements
+  $svg.querySelectorAll('.median-path').forEach(el => {
+    el.setAttribute('stroke', 'transparent');
+  });
+  $svg.querySelectorAll('.guide-dot').forEach(el => {
+    el.setAttribute('fill', 'transparent');
+  });
+  $svg.querySelectorAll('.active-stroke path').forEach(el => {
+    el.setAttribute('opacity', '0');
+  });
+
+  if (n >= charData.strokes.length) return; // all done
+
+  // Show current stroke's median as guide line
+  const median = $svg.querySelector(`.median-path[data-stroke="${n}"]`);
+  if (median) {
+    median.setAttribute('stroke', '#FF6B9D');
+    median.setAttribute('opacity', '0.6');
+  }
+
+  // Show guide dot at start of median
+  const dot = $svg.querySelector(`.guide-dot[data-stroke="${n}"]`);
+  if (dot && median) {
+    const start = getMedianStart(median);
+    dot.setAttribute('cx', start.x);
+    dot.setAttribute('cy', start.y);
+    dot.setAttribute('fill', '#FF6B9D');
+    dot.setAttribute('opacity', '0.8');
+    // Pulse animation
+    animateGuideDot(dot, median);
+  }
+
+  // Highlight active stroke shapes
+  $svg.querySelectorAll(`.active-stroke path[data-stroke="${n}"]`).forEach(el => {
+    el.setAttribute('opacity', '1');
+  });
+}
+
+function getMedianStart(pathEl) {
+  const len = pathEl.getTotalLength();
+  const pt = pathEl.getPointAtLength(0);
+  return { x: pt.x, y: pt.y };
+}
+
+function animateGuideDot(dot, medianPath) {
+  cancelHintAnim();
+  const len = medianPath.getTotalLength();
+  const duration = Math.max(1500, len * 2);
+  let start = null;
+
+  function tick(ts) {
+    if (!start) start = ts;
+    const elapsed = ts - start;
+    const loopTime = duration + 800; // add pause at end
+    const t = (elapsed % loopTime) / duration;
+
+    if (t <= 1) {
+      const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      const pt = medianPath.getPointAtLength(len * ease);
+      dot.setAttribute('cx', pt.x);
+      dot.setAttribute('cy', pt.y);
+      dot.setAttribute('opacity', '0.8');
+    } else {
+      dot.setAttribute('opacity', '0.3');
+    }
+    hintAnim = requestAnimationFrame(tick);
+  }
+  hintAnim = requestAnimationFrame(tick);
+}
+
+function cancelHintAnim() {
+  if (hintAnim) { cancelAnimationFrame(hintAnim); hintAnim = null; }
+}
+
+function markStrokeDone(n) {
+  // Show completed fill
+  $svg.querySelectorAll(`.done path[data-stroke="${n}"]`).forEach(el => {
+    el.setAttribute('opacity', '1');
+  });
+  // Hide guide for this stroke
+  const median = $svg.querySelector(`.median-path[data-stroke="${n}"]`);
+  if (median) median.setAttribute('stroke', 'transparent');
+  const dot = $svg.querySelector(`.guide-dot[data-stroke="${n}"]`);
+  if (dot) dot.setAttribute('fill', 'transparent');
+  $svg.querySelectorAll(`.active-stroke path[data-stroke="${n}"]`).forEach(el => {
+    el.setAttribute('opacity', '0');
+  });
+}
+
+function updateBadge() {
+  if (!charData) { $badge.textContent = ''; return; }
+  const total = charData.strokes.length;
+  const done = Math.min(quizStroke, total);
+  $badge.textContent = `${done} / ${total} かく`;
+}
+
+// ==========================================================
+//  4. Hit-Test: drawn path vs. median path (SAME element)
+//  The median <path> element used for visual display is
+//  DIRECTLY used for getPointAtLength() hit-testing.
+// ==========================================================
+
+function checkStroke(drawnPts) {
+  if (!charData || quizStroke >= charData.strokes.length) return false;
+
+  // Get the EXACT median path element that's displayed as the guide
+  const medianEl = $svg.querySelector(`.median-path[data-stroke="${quizStroke}"]`);
+  if (!medianEl || drawnPts.length < 5) return false;
+
+  const totalLen = medianEl.getTotalLength();
+  if (totalLen < 1) return false;
+
+  // Sample the median path densely
+  const SAMPLES = 60;
+  const medianSamples = [];
+  for (let i = 0; i <= SAMPLES; i++) {
+    const pt = medianEl.getPointAtLength((i / SAMPLES) * totalLen);
+    medianSamples.push({ x: pt.x, y: pt.y, t: i / SAMPLES });
+  }
+
+  // Tolerance: ~12% of viewBox = 120 in 1024 coords (generous for kids)
+  const TOLERANCE = 120;
+
+  // For each drawn point, find closest median sample
+  let matchCount = 0;
+  let maxT = 0;           // how far along the median we reached
+  let minT = 1;           // earliest median point matched
+  let sumDist = 0;
+  let prevBestIdx = -1;   // for direction checking
+  let forwardCount = 0;
+
+  for (const dp of drawnPts) {
+    let bestDist = Infinity;
+    let bestIdx = 0;
+    for (let i = 0; i < medianSamples.length; i++) {
+      const dx = dp.x - medianSamples[i].x;
+      const dy = dp.y - medianSamples[i].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+
+    if (bestDist < TOLERANCE) {
+      matchCount++;
+      sumDist += bestDist;
+      const t = medianSamples[bestIdx].t;
+      if (t > maxT) maxT = t;
+      if (t < minT) minT = t;
+      if (bestIdx >= prevBestIdx) forwardCount++;
+      prevBestIdx = bestIdx;
+    }
+  }
+
+  const accuracy = matchCount / drawnPts.length;  // % of drawn points near median
+  const coverage = maxT - minT;                    // how much of the median was traversed
+  const direction = forwardCount / Math.max(1, matchCount); // % of points moving forward
+
+  // Accept if: enough accuracy, enough coverage, mostly forward direction
+  return accuracy > 0.45 && coverage > 0.40 && direction > 0.50;
+}
+
+// ==========================================================
+//  5. Drawing Canvas (maps to SVG coords for hit-test)
+// ==========================================================
+
+function setupCanvas() {
+  const rect = $box.getBoundingClientRect();
+  const size = Math.min(rect.width, rect.height);
+  const dpr = window.devicePixelRatio || 1;
+  $canvas.width = size * dpr;
+  $canvas.height = size * dpr;
+  $canvas.style.width = size + 'px';
+  $canvas.style.height = size + 'px';
+  const ctx = $canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#5B4A3F';
+  return { ctx, size };
+}
+
+function canvasToSVG(cx, cy) {
+  const rect = $canvas.getBoundingClientRect();
+  return {
+    x: (cx / rect.width) * 1024,
+    y: (cy / rect.height) * 1024
+  };
+}
+
+function getPos(e) {
+  const rect = $canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return { cx: x, cy: y, ...canvasToSVG(x, y) };
+}
+
+let ctx, canvasSize;
+
+function onStart(e) {
+  e.preventDefault();
+  if (!charData) return;
+  isDrawing = true;
+  drawnPts = [];
+  const p = getPos(e);
+  drawnPts.push({ x: p.x, y: p.y });
+  ctx.beginPath();
+  ctx.moveTo(p.cx, p.cy);
+}
+
+function onMove(e) {
+  if (!isDrawing) return;
+  e.preventDefault();
+  const p = getPos(e);
+  drawnPts.push({ x: p.x, y: p.y });
+  ctx.lineTo(p.cx, p.cy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(p.cx, p.cy);
+}
+
+function onEnd(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  if (!charData || quizStroke >= charData.strokes.length) return;
+
+  if (drawnPts.length < 5) {
+    clearCanvas();
+    return;
+  }
+
+  // Sub-sample drawn points to avoid excessive density
+  const sampled = subsample(drawnPts, 80);
+
+  if (checkStroke(sampled)) {
+    // Correct!
+    playCorrectSound();
+    markStrokeDone(quizStroke);
+    quizStroke++;
+    updateBadge();
+    clearCanvas();
+
+    if (quizStroke >= charData.strokes.length) {
+      // All strokes done!
+      setTimeout(showCompletion, 300);
+    } else {
+      highlightStroke(quizStroke);
+    }
+  } else {
+    // Incorrect - flash and clear
+    playMissSound();
+    ctx.strokeStyle = '#FFAAAA';
+    // Briefly show the miss, then clear
+    setTimeout(() => {
+      clearCanvas();
+      ctx.strokeStyle = '#5B4A3F';
+    }, 400);
+  }
+}
+
+function subsample(pts, maxN) {
+  if (pts.length <= maxN) return pts;
+  const step = pts.length / maxN;
+  const out = [];
+  for (let i = 0; i < maxN; i++) {
+    out.push(pts[Math.floor(i * step)]);
+  }
+  return out;
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, $canvas.width, $canvas.height);
+  ctx.strokeStyle = '#5B4A3F';
+}
+
+// Bind events
+$canvas.addEventListener('mousedown', onStart);
+$canvas.addEventListener('mousemove', onMove);
+$canvas.addEventListener('mouseup', onEnd);
+$canvas.addEventListener('mouseleave', onEnd);
+$canvas.addEventListener('touchstart', onStart, { passive: false });
+$canvas.addEventListener('touchmove', onMove, { passive: false });
+$canvas.addEventListener('touchend', onEnd);
+
+// ==========================================================
+//  6. Sound Effects (Web Audio API)
+// ==========================================================
+
+let ac = null;
+function audio() { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); return ac; }
+
+function playCorrectSound() {
+  const a = audio(), now = a.currentTime;
+  [660, 880].forEach((f, i) => {
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'triangle'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.15, now + i*0.1);
+    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.25);
+    o.connect(g); g.connect(a.destination);
+    o.start(now + i*0.1); o.stop(now + i*0.1 + 0.3);
+  });
+}
+
+function playMissSound() {
+  const a = audio(), o = a.createOscillator(), g = a.createGain();
+  o.type = 'sine'; o.frequency.value = 250;
+  g.gain.setValueAtTime(0.08, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.01, a.currentTime + 0.25);
+  o.connect(g); g.connect(a.destination);
+  o.start(); o.stop(a.currentTime + 0.3);
+}
+
+function playSuccessSound() {
+  const a = audio(), now = a.currentTime;
+  [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.25, now + i*0.12);
+    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.12 + 0.4);
+    o.connect(g); g.connect(a.destination);
+    o.start(now + i*0.12); o.stop(now + i*0.12 + 0.5);
+  });
+}
+
+// ==========================================================
+//  7. Confetti & Completion
+// ==========================================================
+
+function launchConfetti() {
+  const cols = ['#FF6B9D','#C084FC','#4ADE80','#FBBF24','#60A5FA','#F87171','#34D399'];
+  for (let i = 0; i < 60; i++) {
+    const d = document.createElement('div');
+    d.className = 'conf';
+    d.style.cssText = `left:${Math.random()*100}vw;top:-10px;width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;background:${cols[i%7]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${2+Math.random()*1.5}s;animation-delay:${Math.random()*.5}s`;
+    $conf.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
+}
+
+function showCompletion() {
+  playSuccessSound();
+  launchConfetti();
+  $doneOv.classList.add('show');
+  setTimeout(() => $doneOv.classList.remove('show'), 2500);
+}
+
+// ==========================================================
+//  8. Hint Animation (animate all strokes in order)
+// ==========================================================
+
+function playHint() {
+  if (!charData) return;
+  cancelHintAnim();
+
+  // Show all strokes completed temporarily
+  charData.strokes.forEach((s, i) => markStrokeDone(i));
+
+  // Animate median paths one by one
+  let strokeIdx = 0;
+  function animNext() {
+    if (strokeIdx >= charData.strokes.length) {
+      // After showing all, reset to current quiz state
+      setTimeout(() => resetToQuizState(), 800);
+      return;
+    }
+
+    const medianEl = $svg.querySelector(`.median-path[data-stroke="${strokeIdx}"]`);
+    if (!medianEl) { strokeIdx++; animNext(); return; }
+
+    medianEl.setAttribute('stroke', '#FF6B9D');
+    medianEl.setAttribute('opacity', '0.8');
+    medianEl.setAttribute('stroke-width', '16');
+
+    const len = medianEl.getTotalLength();
+    medianEl.setAttribute('stroke-dasharray', len);
+    medianEl.setAttribute('stroke-dashoffset', len);
+
+    const dur = Math.max(600, len * 1.5);
+    let start = null;
+    const si = strokeIdx;
+
+    function tick(ts) {
+      if (!start) start = ts;
+      const t = Math.min((ts - start) / dur, 1);
+      const ease = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+      medianEl.setAttribute('stroke-dashoffset', len * (1 - ease));
+
+      if (t < 1) {
+        hintAnim = requestAnimationFrame(tick);
+      } else {
+        // Reset this median's appearance
+        medianEl.setAttribute('stroke', 'transparent');
+        medianEl.setAttribute('stroke-dasharray', '28 18');
+        medianEl.setAttribute('stroke-width', '12');
+        strokeIdx++;
+        setTimeout(animNext, 200);
+      }
+    }
+    hintAnim = requestAnimationFrame(tick);
+  }
+
+  animNext();
+}
+
+function resetToQuizState() {
+  if (!charData) return;
+  // Re-render from scratch and restore quiz state
+  renderChar(charData);
+  for (let i = 0; i < quizStroke; i++) markStrokeDone(i);
+  if (quizStroke < charData.strokes.length) highlightStroke(quizStroke);
+  updateBadge();
+}
+
+// ==========================================================
+//  9. Fallback for alphabet / numbers (no AnimCJK data)
+// ==========================================================
+
+function showFallback(char) {
+  $svg.innerHTML = '';
+  charData = null;
+  $badge.textContent = '';
+
+  const rect = $box.getBoundingClientRect();
+  const size = Math.min(rect.width, rect.height);
+
+  // Draw guide character on canvas
+  clearCanvas();
+  ctx.save();
+  ctx.font = `900 ${size * 0.6}px 'Zen Maru Gothic', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#E8DDD5';
+  ctx.fillText(char, size / 2, size / 2);
+  ctx.restore();
+  ctx.strokeStyle = '#FF6B9D';
+  ctx.lineWidth = 5;
+
+  // Simple freehand mode: just draw, check total length
+  let totalLen = 0, lastPt = null, done = false;
+
+  const origStart = onStart;
+  const origMove = onMove;
+  const origEnd = onEnd;
+
+  function fbStart(e) {
+    e.preventDefault();
+    isDrawing = true;
+    const p = getPos(e);
+    lastPt = p;
+    ctx.beginPath();
+    ctx.moveTo(p.cx, p.cy);
+  }
+  function fbMove(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    const dx = p.cx - lastPt.cx, dy = p.cy - lastPt.cy;
+    totalLen += Math.sqrt(dx*dx + dy*dy);
+    ctx.lineTo(p.cx, p.cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.cx, p.cy);
+    lastPt = p;
+  }
+  function fbEnd() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    if (!done && totalLen > size * 0.8) {
+      done = true;
+      showCompletion();
+    }
+  }
+
+  // Replace event handlers temporarily
+  $canvas.removeEventListener('mousedown', onStart);
+  $canvas.removeEventListener('mousemove', onMove);
+  $canvas.removeEventListener('mouseup', onEnd);
+  $canvas.removeEventListener('mouseleave', onEnd);
+  $canvas.removeEventListener('touchstart', onStart);
+  $canvas.removeEventListener('touchmove', onMove);
+  $canvas.removeEventListener('touchend', onEnd);
+
+  $canvas.addEventListener('mousedown', fbStart);
+  $canvas.addEventListener('mousemove', fbMove);
+  $canvas.addEventListener('mouseup', fbEnd);
+  $canvas.addEventListener('mouseleave', fbEnd);
+  $canvas.addEventListener('touchstart', fbStart, { passive: false });
+  $canvas.addEventListener('touchmove', fbMove, { passive: false });
+  $canvas.addEventListener('touchend', fbEnd);
+
+  // Store cleanup
+  $canvas._fbCleanup = () => {
+    $canvas.removeEventListener('mousedown', fbStart);
+    $canvas.removeEventListener('mousemove', fbMove);
+    $canvas.removeEventListener('mouseup', fbEnd);
+    $canvas.removeEventListener('mouseleave', fbEnd);
+    $canvas.removeEventListener('touchstart', fbStart);
+    $canvas.removeEventListener('touchmove', fbMove);
+    $canvas.removeEventListener('touchend', fbEnd);
+
+    $canvas.addEventListener('mousedown', onStart);
+    $canvas.addEventListener('mousemove', onMove);
+    $canvas.addEventListener('mouseup', onEnd);
+    $canvas.addEventListener('mouseleave', onEnd);
+    $canvas.addEventListener('touchstart', onStart, { passive: false });
+    $canvas.addEventListener('touchmove', onMove, { passive: false });
+    $canvas.addEventListener('touchend', onEnd);
+  };
+}
+
+// ==========================================================
+//  10. UI Logic
+// ==========================================================
+
+function curChar() { return CATS[cat][idx]; }
+
+function isKana(ch) {
+  const c = ch.codePointAt(0);
+  return (c >= 0x3040 && c <= 0x309F) || (c >= 0x30A0 && c <= 0x30FF);
+}
+
+function updateChars() {
+  $chars.innerHTML = '';
+  CATS[cat].forEach((ch, i) => {
+    const b = document.createElement('button');
+    b.className = 'ch' + (i === idx ? ' active' : '');
+    b.textContent = ch;
+    b.onclick = () => selectChar(i);
+    $chars.appendChild(b);
+  });
+  setTimeout(() => {
+    const a = $chars.querySelector('.active');
+    if (a) a.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+  }, 50);
+}
+
+async function selectChar(i) {
+  idx = Math.max(0, Math.min(i, CATS[cat].length - 1));
+  updateChars();
+  cancelHintAnim();
+
+  // Cleanup fallback if active
+  if ($canvas._fbCleanup) { $canvas._fbCleanup(); $canvas._fbCleanup = null; }
+
+  const ch = curChar();
+  clearCanvas();
+  ctx.strokeStyle = '#5B4A3F';
+  ctx.lineWidth = 6;
+
+  if (isKana(ch)) {
+    $msg.textContent = 'よみこみちゅう...';
+    $msg.classList.remove('hidden');
+    try {
+      charData = await loadChar(ch);
+      $msg.classList.add('hidden');
+      renderChar(charData);
+      startQuiz();
+    } catch (err) {
+      console.warn('Load failed:', ch, err);
+      $msg.textContent = 'よみこめなかったよ';
+      charData = null;
+    }
+  } else {
+    $msg.classList.add('hidden');
+    showFallback(ch);
+  }
+}
+
+function switchCat(c) {
+  cat = c; idx = 0;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.c === c));
+  updateChars();
+  selectChar(0);
+}
+
+// Tab clicks
+$tabs.addEventListener('click', e => {
+  if (e.target.classList.contains('tab')) switchCat(e.target.dataset.c);
+});
+
+// Buttons
+$bClear.addEventListener('click', () => {
+  clearCanvas();
+  if ($canvas._fbCleanup) { $canvas._fbCleanup(); $canvas._fbCleanup = null; }
+  selectChar(idx);
+});
+
+$bHint.addEventListener('click', playHint);
+
+$bNext.addEventListener('click', () => {
+  selectChar((idx + 1) % CATS[cat].length);
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  const r = setupCanvas();
+  ctx = r.ctx; canvasSize = r.size;
+  selectChar(idx);
+});
+
+// ===== Public API (extension point) =====
+window.KidsTraceApp = {
+  getCurrentChar: curChar,
+  getState: () => ({ category: cat, charIndex: idx, quizStroke, charData })
+};
+
+// ===== Init =====
+function init() {
+  const r = setupCanvas();
+  ctx = r.ctx; canvasSize = r.size;
+  updateChars();
+  selectChar(0);
+}
+
+document.fonts ? document.fonts.ready.then(init) : window.addEventListener('load', init);
+
+</script>
+</body>
+</html>
