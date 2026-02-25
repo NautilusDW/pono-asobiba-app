@@ -9,7 +9,22 @@
       "Bash(pip install *)",
       "Bash(python scripts/orchestrator.py complete --task \"Phase1をトランスクリプト直接解析に切替\" --result success)",
       "Bash(python scripts/orchestrator.py complete --task \"消費税計算add_tax関数の追加とテスト\" --result success)",
-      "Bash(find d:/claude-rl-test/logs -type f ! -name '.gitkeep' -delete)"
+      "Bash(find d:/claude-rl-test/logs -type f ! -name '.gitkeep' -delete)",
+      "Bash(python -c \":*)",
+      "Bash(start \"\" \"d:/AppDevelopment/kids-writing-app/index.html\")",
+      "WebFetch(domain:hanziwriter.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git commit:*)",
+      "Bash(start \"\" \"index.html\")",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:coolbutuseless.github.io)",
+      "WebFetch(domain:paulbourke.net)",
+      "Bash(python3 -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\(''Keys:'', list\\(d.keys\\(\\)\\)\\); print\\(''Num strokes:'', len\\(d[''strokes'']\\)\\); print\\(''First stroke prefix:'', d[''strokes''][0][:100]\\); print\\(''First median:'', d[''medians''][0][:3]\\)\")",
+      "Bash(python3 -c \":*)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:chanind.github.io)",
+      "WebFetch(domain:parsimonhi.github.io)"
     ]
   },
   "hooks": {
