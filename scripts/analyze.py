@@ -208,6 +208,7 @@ def analyze_actions(actions: list[dict], task_result: str) -> dict:
         return {
             "positive_patterns": [],
             "negative_patterns": [],
+            "effective_actions": [],
             "tool_usage": {},
             "error_count": 0,
             "total_actions": 0,

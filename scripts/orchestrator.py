@@ -4,11 +4,11 @@ Self-Evolving Framework Orchestrator
 =====================================
 3つのフェーズを統合管理するメインエントリーポイント。
 
-フェーズ1 (Observation):  自動（post_tool_use hook 経由）
-フェーズ2 (Analysis):     タスク終了時に手動またはスクリプトで実行
-フェーズ3 (Evolution):    分析蓄積後に手動またはスケジュールで実行
+フェーズ1 (Observation):  complete 実行時にトランスクリプトから自動抽出
+フェーズ2 (Analysis):     タスク終了時に自動実行
+フェーズ3 (Evolution):    分析後に自動実行
 
-このスクリプトはフェーズ2 + 3 をまとめて実行するエントリーポイントを提供する。
+このスクリプトはフェーズ1 + 2 + 3 をまとめて実行するエントリーポイントを提供する。
 
 使い方:
   # タスク完了時（分析 + 進化を一括実行）
@@ -19,6 +19,9 @@ Self-Evolving Framework Orchestrator
 
   # ステータス確認
   python scripts/orchestrator.py status
+
+  # MEMORY.md 圧縮（トピック別分離 + 行数圧縮）
+  python scripts/orchestrator.py compress
 
   # ログのリセット
   python scripts/orchestrator.py reset
@@ -44,8 +47,17 @@ DIFFICULTY_STATE_FILE = LOG_DIR / "difficulty_state.json"
 MEMORY_FILE = PROJECT_ROOT / "MEMORY.md"
 CLAUDE_FILE = PROJECT_ROOT / "CLAUDE.md"
 
+# Auto-memory (Claude Code が自動で読み込む MEMORY.md)
+_AUTO_MEMORY_DIR = (
+    Path.home() / ".claude" / "projects"
+    / "d--AppDevelopment-storyboard-generator" / "memory"
+)
+AUTO_MEMORY_FILE = _AUTO_MEMORY_DIR / "MEMORY.md"
+MAX_MEMORY_LINES = 190  # 200行上限に余裕を持たせる
+
 # フェーズ2, 3 のモジュールをインポート
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from observe import find_latest_transcript, extract_tool_calls_from_transcript, save_actions_to_log
 from analyze import load_session_actions, analyze_actions, save_analysis_to_memory, clear_action_log
 from evolve import (
     load_analysis_history,
@@ -65,6 +77,18 @@ def cmd_complete(args):
     print(f"  Task: {args.task}")
     print(f"  Result: {args.result}")
     print("=" * 60)
+
+    # --- Phase 1: Observation (トランスクリプトからログ抽出) ---
+    print("\n--- Phase 1: Observation ---")
+    transcript = find_latest_transcript()
+    if transcript:
+        print(f"Transcript: {transcript.name}")
+        extracted = extract_tool_calls_from_transcript(transcript)
+        print(f"Extracted {len(extracted)} tool calls from transcript")
+        if extracted:
+            save_actions_to_log(extracted)
+    else:
+        print("No transcript found. Using existing action log if available.")
 
     # --- Phase 2: Analysis ---
     print("\n--- Phase 2: Feedback & Analysis ---")
@@ -174,6 +198,172 @@ def cmd_status(args):
     print()
 
 
+def cmd_compress(args):
+    """MEMORY.md をトピック別ファイルに分離し、200行以下に圧縮する。"""
+    import re
+    import shutil
+
+    memory_file = AUTO_MEMORY_FILE
+    memory_dir = _AUTO_MEMORY_DIR
+
+    if not memory_file.exists():
+        print(f"MEMORY.md not found: {memory_file}")
+        return
+
+    content = memory_file.read_text(encoding="utf-8")
+    lines = content.split("\n")
+    print(f"Current MEMORY.md: {len(lines)} lines")
+
+    if len(lines) <= MAX_MEMORY_LINES and not args.force:
+        print(f"Already under {MAX_MEMORY_LINES} lines. Use --force to compress anyway.")
+        return
+
+    # バックアップ
+    backup = memory_dir / "MEMORY.md.bak"
+    shutil.copy2(str(memory_file), str(backup))
+    print(f"Backup saved: {backup}")
+
+    # セクション単位でパース
+    sections: list[dict] = []  # {title, lines, line_count}
+    current_title = ""
+    current_lines: list[str] = []
+
+    for line in lines:
+        if line.startswith("## "):
+            if current_title or current_lines:
+                sections.append({
+                    "title": current_title,
+                    "lines": current_lines,
+                    "line_count": len(current_lines),
+                })
+            current_title = line
+            current_lines = []
+        else:
+            current_lines.append(line)
+
+    if current_title or current_lines:
+        sections.append({
+            "title": current_title,
+            "lines": current_lines,
+            "line_count": len(current_lines),
+        })
+
+    # トピック別分離マッピング
+    topic_map = {
+        "ai-image.md": [
+            "AI画像生成", "参照画像システム", "デザイン参照検索",
+            "スタイルREF", "構図REF",
+        ],
+        "video-gen.md": [
+            "AI動画生成", "Airtable", "マスターデータ選択方式",
+        ],
+        "features.md": [
+            "3D Shot Generator", "アノテーション", "ファイル管理",
+            "マイルストーン", "ビジュアライゼーション", "TTS",
+            "SUNO BGM", "Export System", "AI構成アシスト",
+            "LP素材", "その他実装済み",
+        ],
+        "architecture.md": [
+            "Architecture", "Key Files", "React Route",
+            "Legacy Python", "base64外部化", "ストレージ管理",
+            "Intelligence Data",
+        ],
+    }
+
+    def match_topic(title: str) -> str | None:
+        """セクションタイトルがどのトピックファイルに属するか判定"""
+        for filename, keywords in topic_map.items():
+            for kw in keywords:
+                if kw in title:
+                    return filename
+        return None
+
+    # 分離対象を振り分け
+    keep_sections: list[dict] = []  # MEMORY.md に残す
+    topic_sections: dict[str, list[dict]] = {}  # 分離先ファイル別
+
+    for sec in sections:
+        topic = match_topic(sec["title"])
+        if topic and sec["line_count"] > 3:
+            topic_sections.setdefault(topic, []).append(sec)
+        else:
+            keep_sections.append(sec)
+
+    # トピックファイルに書き出し
+    for filename, secs in topic_sections.items():
+        topic_path = memory_dir / filename
+        topic_content = f"# {filename.replace('.md', '').replace('-', ' ').title()} - 詳細メモ\n\n"
+        topic_content += f"_MEMORY.md から分離された詳細情報。最終更新: {datetime.now().strftime('%Y-%m-%d')}_\n\n"
+        for sec in secs:
+            topic_content += sec["title"] + "\n"
+            topic_content += "\n".join(sec["lines"]) + "\n"
+        topic_path.write_text(topic_content.rstrip() + "\n", encoding="utf-8")
+        total_lines = sum(s["line_count"] for s in secs)
+        print(f"  {filename}: {len(secs)} sections, {total_lines} lines moved")
+
+    # MEMORY.md を再構成（インデックス + 残りセクション）
+    header = "# Storyboard Generator - Project Memory\n\n"
+
+    # トピックファイルへのインデックス
+    if topic_sections:
+        header += "## Topic Files (詳細はこちら)\n"
+        for filename in sorted(topic_sections.keys()):
+            secs = topic_sections[filename]
+            titles = ", ".join(s["title"].replace("## ", "") for s in secs[:3])
+            if len(secs) > 3:
+                titles += f" 他{len(secs)-3}件"
+            header += f"- `memory/{filename}` — {titles}\n"
+        header += "\n"
+
+    # 残りセクションを書き出し（重複ヘッダーをスキップ）
+    body = ""
+    for sec in keep_sections:
+        title = sec["title"]
+        # トップレベルヘッダー # の重複を防ぐ
+        if title.startswith("# ") and not title.startswith("## "):
+            continue
+        if title:
+            body += title + "\n"
+        body += "\n".join(sec["lines"]) + "\n"
+
+    new_content = header + body
+
+    # ステップB: まだ長い場合は行数圧縮
+    new_lines = new_content.split("\n")
+    if len(new_lines) > MAX_MEMORY_LINES:
+        print(f"  Still {len(new_lines)} lines after topic separation. Compressing...")
+        compressed = []
+        in_code_block = False
+        skip_until_section = False
+
+        for line in new_lines:
+            if line.startswith("```"):
+                in_code_block = not in_code_block
+                if in_code_block:
+                    compressed.append("  (コード例省略)")
+                    skip_until_section = True
+                continue
+            if in_code_block:
+                continue
+            if skip_until_section and not line.startswith("## "):
+                continue
+            skip_until_section = False
+            compressed.append(line)
+
+        new_content = "\n".join(compressed)
+
+    # 末尾の空行を整理
+    new_content = re.sub(r"\n{3,}", "\n\n", new_content).rstrip() + "\n"
+
+    memory_file.write_text(new_content, encoding="utf-8")
+    final_lines = len(new_content.split("\n"))
+    print(f"\nMEMORY.md compressed: {len(lines)} -> {final_lines} lines")
+    if final_lines <= MAX_MEMORY_LINES:
+        print(f"Under {MAX_MEMORY_LINES} line limit.")
+    else:
+        print(f"WARNING: Still {final_lines} lines. Manual trimming may be needed.")
+
+
 def cmd_reset(args):
     """ログと状態をリセットする。"""
     print("Resetting Self-Evolving Framework state...")
@@ -265,6 +455,11 @@ Examples:
     # status
     p_status = subparsers.add_parser("status", help="Show current framework status")
     p_status.set_defaults(func=cmd_status)
+
+    # compress
+    p_compress = subparsers.add_parser("compress", help="Compress MEMORY.md (topic separation + line reduction)")
+    p_compress.add_argument("--force", action="store_true", help="Compress even if under limit")
+    p_compress.set_defaults(func=cmd_compress)
 
     # reset
     p_reset = subparsers.add_parser("reset", help="Reset all logs and state")

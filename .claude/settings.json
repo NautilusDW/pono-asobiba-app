@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(del:*)",
+      "Bash(/tmp/screenshot_test3.py:*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -6,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/observe.py"
+            "command": "python \"d:/AppDevelopment/storyboard generator/scripts/observe.py\" --hook"
           }
         ]
       }
