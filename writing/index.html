@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ポノのもじかき | ポノのあそびば</title>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --primary: #FF6B9D;
+  --secondary: #C084FC;
+  --accent: #4ADE80;
+  --text: #5B4A3F;
+  --card-bg: #FFFFFF;
+  --shadow: 0 4px 20px rgba(91, 74, 63, 0.1);
+  --radius: 20px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Zen Maru Gothic', 'Rounded Mplus 1c', 'Hiragino Maru Gothic Pro', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* ===== Header ===== */
+.header { text-align: center; padding: 8px 0; flex-shrink: 0; position: relative; }
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--primary); font-weight: 700; font-size: 0.85rem;
+  text-decoration: none; padding: 6px 2px;
+}
+.header h1 {
+  font-size: 1.4rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
+
+/* ===== Category Tabs ===== */
+.category-tabs {
+  display: flex; gap: 6px; justify-content: center;
+  margin: 8px 0; flex-shrink: 0; flex-wrap: wrap;
+}
+.category-tab {
+  padding: 8px 16px; border: none; border-radius: 30px;
+  font-family: inherit; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: all 0.3s;
+  background: var(--card-bg); color: var(--text); box-shadow: var(--shadow);
+}
+.category-tab.active { color: #FFF; transform: scale(1.05); }
+.category-tab[data-cat="hiragana"].active { background: var(--primary); }
+.category-tab[data-cat="katakana"].active { background: var(--secondary); }
+
+
+/* ===== Character Selector ===== */
+.char-selector {
+  display: flex; gap: 4px; overflow-x: auto; padding: 6px 0; flex-shrink: 0;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.char-selector::-webkit-scrollbar { display: none; }
+.char-btn {
+  min-width: 42px; height: 42px; border: 2px solid transparent; border-radius: 12px;
+  background: var(--card-bg); font-family: inherit; font-size: 1.1rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+}
+.char-btn:hover { transform: scale(1.1); }
+.char-btn.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
+  transform: scale(1.1);
+}
+
+/* ===== Tracing Area ===== */
+.trace-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; position: relative; min-height: 0;
+}
+.canvas-container {
+  position: relative;
+  width: min(90vw, 420px); height: min(90vw, 420px);
+  max-width: 420px; max-height: 420px;
+  background: var(--card-bg); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+/* Grid lines */
+.canvas-container::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background:
+    linear-gradient(to right, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%),
+    linear-gradient(to bottom, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%);
+}
+.canvas-container::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 0.5px), #F5EDE5 calc(50% - 0.5px), #F5EDE5 calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), #F5EDE5 calc(50% - 0.5px), #F5EDE5 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+/* Hanzi Writer target */
+#writerTarget {
+  position: absolute; inset: 0; z-index: 2;
+}
+#writerTarget svg { display: block; }
+
+
+/* ===== Controls ===== */
+.controls {
+  display: flex; gap: 8px; justify-content: center; padding: 10px 0; flex-shrink: 0;
+}
+.ctrl-btn {
+  padding: 10px 20px; border: none; border-radius: 30px;
+  font-family: inherit; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+}
+.ctrl-btn:active { transform: scale(0.95); }
+.btn-clear { background: #FEE2E2; color: #EF4444; }
+.btn-hint  { background: #E0F2FE; color: #0EA5E9; }
+.btn-next  { background: linear-gradient(135deg, var(--accent), #34D399); color: #FFF; }
+
+/* ===== Confetti ===== */
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden; }
+.confetti-piece {
+  position: absolute; width: 10px; height: 10px; border-radius: 2px;
+  animation: confetti-fall 2.5s ease-out forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+/* ===== Completion Overlay ===== */
+.completion-overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+.completion-overlay.show { opacity: 1; pointer-events: auto; }
+.completion-msg {
+  font-size: 3rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+@keyframes bounce-in {
+  0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); }
+}
+
+/* ===== Stroke order numbers ===== */
+.stroke-number-overlay {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+}
+.stroke-number {
+  position: absolute;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #FF6B9D;
+  color: #FFF;
+  font-size: 0.75rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  outline: 3px solid #FFF;
+  transform: translate(-50%, -50%);
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+
+/* ===== Star particles ===== */
+.star-particle {
+  position: absolute; pointer-events: none; z-index: 10; font-size: 1.2rem;
+  animation: star-float 1s ease-out forwards;
+}
+@keyframes star-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(0.3); opacity: 0; }
+}
+
+/* ===== Character Extension Point (future AI characters) ===== */
+.character-slot { position: fixed; bottom: 80px; right: 10px; width: 80px; height: 80px; z-index: 50; display: none; }
+
+/* ===== Responsive ===== */
+@media (max-height: 600px) {
+  .header h1 { font-size: 1.1rem; }
+  .header .subtitle { display: none; }
+  .category-tabs { margin: 4px 0; }
+  .category-tab { padding: 6px 12px; font-size: 0.8rem; }
+  .char-btn { min-width: 36px; height: 36px; font-size: 0.95rem; }
+  .controls { padding: 6px 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <a href="../index.html" class="back-link">← メニュー</a>
+    <h1>ポノのもじかき</h1>
+    <div class="subtitle">ゆびでなぞってみよう！</div>
+  </div>
+
+  <div class="category-tabs" id="categoryTabs">
+    <button class="category-tab active" data-cat="hiragana">ひらがな</button>
+    <button class="category-tab" data-cat="katakana">カタカナ</button>
+  </div>
+
+  <div class="char-selector" id="charSelector"></div>
+
+  <div class="trace-area">
+    <div class="canvas-container" id="canvasContainer">
+      <div id="writerTarget"></div>
+      <div class="stroke-number-overlay" id="strokeNumbers"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
+    <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
+    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confettiContainer"></div>
+<div class="completion-overlay" id="completionOverlay">
+  <div class="completion-msg">できた！🎉</div>
+</div>
+<div class="character-slot" id="characterSlot"></div>
+
+<script>
+// ===== Color Schemes =====
+const COLOR_SCHEMES = [
+  { stroke: '#FF6B9D', drawing: '#FF6B9D', highlight: '#FFB3D1', outline: '#FFE0EC' }, // pink
+  { stroke: '#60A5FA', drawing: '#60A5FA', highlight: '#93C5FD', outline: '#DBEAFE' }, // blue
+  { stroke: '#C084FC', drawing: '#C084FC', highlight: '#D8B4FE', outline: '#EDE9FE' }, // purple
+  { stroke: '#4ADE80', drawing: '#4ADE80', highlight: '#86EFAC', outline: '#DCFCE7' }, // green
+  { stroke: '#FBBF24', drawing: '#F59E0B', highlight: '#FCD34D', outline: '#FEF3C7' }, // yellow
+  { stroke: '#F87171', drawing: '#F87171', highlight: '#FCA5A5', outline: '#FEE2E2' }, // red
+  { stroke: '#34D399', drawing: '#34D399', highlight: '#6EE7B7', outline: '#D1FAE5' }, // teal
+];
+let colorIdx = 0;
+function nextColorScheme() {
+  const c = COLOR_SCHEMES[colorIdx % COLOR_SCHEMES.length];
+  colorIdx++;
+  return c;
+}
+
+// ===== Character data =====
+const CATEGORIES = {
+  hiragana: {
+    label: 'ひらがな',
+    chars: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'.split('')
+  },
+  katakana: {
+    label: 'カタカナ',
+    chars: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('')
+  }
+};
+
+// ===== State =====
+let currentCategory = 'hiragana';
+let currentCharIndex = 0;
+let writer = null;
+let currentScheme = COLOR_SCHEMES[0];
+let currentCharData = null; // store loaded char data for stroke numbers
+
+// ===== DOM =====
+const categoryTabs = document.getElementById('categoryTabs');
+const charSelector = document.getElementById('charSelector');
+const writerTarget = document.getElementById('writerTarget');
+const canvasContainer = document.getElementById('canvasContainer');
+const btnClear = document.getElementById('btnClear');
+const btnHint = document.getElementById('btnHint');
+const btnNext = document.getElementById('btnNext');
+const strokeNumbers = document.getElementById('strokeNumbers');
+const confettiContainer = document.getElementById('confettiContainer');
+const completionOverlay = document.getElementById('completionOverlay');
+
+
+// ===== Audio =====
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSuccessSound() {
+  const ac = getAudioCtx(), now = ac.currentTime;
+  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+    const osc = ac.createOscillator(), gain = ac.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, now + i * 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.4);
+  });
+}
+
+function playStrokeSound() {
+  const ac = getAudioCtx(), now = ac.currentTime;
+  const osc = ac.createOscillator(), gain = ac.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, now);
+  osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+  gain.gain.setValueAtTime(0.15, now);
+  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+  osc.connect(gain); gain.connect(ac.destination);
+  osc.start(now); osc.stop(now + 0.15);
+}
+
+// ===== Confetti =====
+function launchConfetti() {
+  const colors = ['#FF6B9D', '#60A5FA', '#C084FC', '#4ADE80', '#FBBF24', '#F87171', '#34D399'];
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    piece.style.animationDuration = (2 + Math.random()) + 's';
+    const size = 6 + Math.random() * 8;
+    piece.style.width = size + 'px';
+    piece.style.height = size + 'px';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    confettiContainer.appendChild(piece);
+  }
+  setTimeout(() => confettiContainer.innerHTML = '', 3000);
+}
+
+function showCompletion() {
+  playSuccessSound();
+  launchConfetti();
+  completionOverlay.classList.add('show');
+  setTimeout(() => completionOverlay.classList.remove('show'), 2000);
+}
+
+// ===== Star particles (Canvas mode) =====
+function spawnStar(x, y) {
+  const star = document.createElement('div');
+  star.className = 'star-particle';
+  star.textContent = ['⭐', '✨', '🌟'][Math.floor(Math.random() * 3)];
+  const rect = canvasContainer.getBoundingClientRect();
+  star.style.left = (rect.left + x) + 'px';
+  star.style.top = (rect.top + y) + 'px';
+  document.body.appendChild(star);
+  setTimeout(() => star.remove(), 1000);
+}
+
+// ===== Hanzi Writer Mode =====
+function createWriter(char) {
+  // Destroy previous
+  if (writer) {
+    writerTarget.innerHTML = '';
+    writer = null;
+  }
+
+  const rect = canvasContainer.getBoundingClientRect();
+  const size = Math.min(rect.width, rect.height);
+  currentScheme = nextColorScheme();
+
+  currentCharData = null;
+  strokeNumbers.innerHTML = '';
+
+  writer = HanziWriter.create(writerTarget, char, {
+    width: size,
+    height: size,
+    padding: 25,
+    strokeColor: currentScheme.stroke,
+    outlineColor: currentScheme.outline,
+    drawingColor: currentScheme.drawing,
+    highlightColor: currentScheme.highlight,
+    radicalColor: currentScheme.stroke,
+    drawingWidth: 16,
+    strokeAnimationSpeed: 0.5,
+    delayBetweenStrokes: 800,
+    showOutline: true,
+    showCharacter: false,
+    charDataLoader: function(char, onComplete) {
+      // Try kana-json first (for hiragana/katakana)
+      const url = 'https://cdn.jsdelivr.net/gh/ailectra/kana-json@v0.0.1/data/' + char + '.json';
+      fetch(url)
+        .then(r => {
+          if (!r.ok) throw new Error('Not found');
+          return r.json();
+        })
+        .then(data => {
+          currentCharData = data;
+          showStrokeNumbers(data, size);
+          onComplete(data);
+        })
+        .catch(() => {
+          // Fallback: try hanzi-writer-data
+          const url2 = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/' + char + '.json';
+          fetch(url2)
+            .then(r => {
+              if (!r.ok) throw new Error('Not found');
+              return r.json();
+            })
+            .then(data => {
+              currentCharData = data;
+              showStrokeNumbers(data, size);
+              onComplete(data);
+            })
+            .catch(() => {
+              console.warn('No data for character:', char);
+            });
+        });
+    }
+  });
+
+  // Start quiz mode
+  startQuiz();
+}
+
+// ===== Stroke Order Numbers =====
+function showStrokeNumbers(charData, targetSize) {
+  strokeNumbers.innerHTML = '';
+  if (!charData || !charData.medians) return;
+
+  // Wait for HanziWriter to render SVG, then use its internal transform
+  setTimeout(() => {
+    const svg = writerTarget.querySelector('svg');
+    if (!svg) return;
+    const containerRect = canvasContainer.getBoundingClientRect();
+
+    // Find HanziWriter's top-level group (has the coordinate transform)
+    const topGroup = svg.querySelector('g');
+    if (!topGroup) return;
+
+    charData.medians.forEach((median, i) => {
+      if (!median || median.length === 0) return;
+      const [mx, my] = median[0];
+
+      // Use SVG's coordinate transform API for pixel-perfect positioning
+      const pt = svg.createSVGPoint();
+      pt.x = mx;
+      pt.y = my;
+      const ctm = topGroup.getScreenCTM();
+      const screenPt = pt.matrixTransform(ctm);
+
+      // Convert screen coords to container-relative percentage
+      const relX = screenPt.x - containerRect.left;
+      const relY = screenPt.y - containerRect.top;
+      const pctX = (relX / containerRect.width) * 100;
+      const pctY = (relY / containerRect.height) * 100;
+
+      const num = document.createElement('div');
+      num.className = 'stroke-number';
+      num.textContent = i + 1;
+      num.style.left = pctX + '%';
+      num.style.top = pctY + '%';
+      num.style.background = currentScheme.stroke;
+      strokeNumbers.appendChild(num);
+    });
+  }, 200);
+}
+
+function startQuiz() {
+  if (!writer) return;
+  writer.quiz({
+    onCorrectStroke: function(data) {
+      playStrokeSound();
+    },
+    onComplete: function(data) {
+      showCompletion();
+    },
+    onMistake: function(data) {
+      // Small vibrate feedback if available
+    },
+    showHintAfterMisses: 3,
+    highlightOnComplete: true,
+    highlightCompleteColor: currentScheme.stroke
+  });
+}
+
+// ===== Character Navigation =====
+function getCurrentChar() {
+  const cat = CATEGORIES[currentCategory];
+  return cat.chars[currentCharIndex] || cat.chars[0];
+}
+
+function loadCharacter() {
+  const cat = CATEGORIES[currentCategory];
+  const char = getCurrentChar();
+
+  createWriter(char);
+
+  // Update char selector
+  document.querySelectorAll('.char-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === currentCharIndex);
+  });
+
+  // Scroll active button into view
+  const activeBtn = charSelector.querySelector('.char-btn.active');
+  if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+}
+
+function buildCharSelector() {
+  charSelector.innerHTML = '';
+  const cat = CATEGORIES[currentCategory];
+  cat.chars.forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'char-btn' + (i === currentCharIndex ? ' active' : '');
+    btn.textContent = ch;
+    btn.addEventListener('click', () => {
+      currentCharIndex = i;
+      loadCharacter();
+    });
+    charSelector.appendChild(btn);
+  });
+}
+
+// ===== Tab switching =====
+categoryTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.category-tab');
+  if (!btn) return;
+  const cat = btn.dataset.cat;
+  if (cat === currentCategory) return;
+  currentCategory = cat;
+  currentCharIndex = 0;
+  document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  buildCharSelector();
+  loadCharacter();
+});
+
+// ===== Button handlers =====
+btnClear.addEventListener('click', () => {
+  if (writer) {
+    writerTarget.innerHTML = '';
+    const char = getCurrentChar();
+    createWriter(char);
+  }
+});
+
+btnHint.addEventListener('click', () => {
+  if (writer) {
+    writer.cancelQuiz();
+    writer.animateCharacter({
+      onComplete: function() {
+        writer.hideCharacter();
+        startQuiz();
+      }
+    });
+  }
+});
+
+btnNext.addEventListener('click', () => {
+  const cat = CATEGORIES[currentCategory];
+  currentCharIndex = (currentCharIndex + 1) % cat.chars.length;
+  loadCharacter();
+});
+
+// ===== Init =====
+buildCharSelector();
+loadCharacter();
+
+// ===== Public API for future AI character integration =====
+window.KidsTraceApp = {
+  getCurrentChar,
+  loadCharacter,
+  setCategory: (cat) => {
+    if (!CATEGORIES[cat]) return;
+    currentCategory = cat;
+    currentCharIndex = 0;
+    document.querySelectorAll('.category-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.cat === cat);
+    });
+    buildCharSelector();
+    loadCharacter();
+  },
+  showCompletion
+};
+</script>
+</body>
+</html>
