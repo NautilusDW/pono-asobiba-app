@@ -24,7 +24,13 @@
       "Bash(python3 -c \":*)",
       "WebFetch(domain:gist.github.com)",
       "WebFetch(domain:chanind.github.io)",
-      "WebFetch(domain:parsimonhi.github.io)"
+      "WebFetch(domain:parsimonhi.github.io)",
+      "WebFetch(domain:flbulgarelli.github.io)",
+      "WebFetch(domain:unpkg.com)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''main:'', d.get\\(''main''\\)\\); print\\(''browser:'', d.get\\(''browser''\\)\\)\")",
+      "WebFetch(domain:esm.sh)",
+      "Bash(start http://localhost:8080/puzzle/index.html)"
     ]
   },
   "hooks": {

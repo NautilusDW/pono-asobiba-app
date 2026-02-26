@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ポノのパズル | ポノのあそびば</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <h1 class="title">ポノのパズル</h1>
+      <p class="subtitle">えを あわせて みよう!</p>
+      <p id="stage-label" class="stage-label">ステージ 1 / 4</p>
+    </header>
+
+    <main class="main">
+      <div class="puzzle-frame">
+        <div id="puzzle-container"></div>
+        <div id="loading" class="loading">
+          <span class="loading-emoji">🧩</span>
+          <p>よみこみちゅう...</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-shuffle" class="btn btn-shuffle">まぜる</button>
+        <button id="btn-hint" class="btn btn-hint">ヒント</button>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+        <span class="progress-text" id="progress-text">0 / 6</span>
+      </div>
+    </main>
+
+    <nav class="back-link">
+      <a href="../index.html">もじの れんしゅう に もどる</a>
+    </nav>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="success-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-emoji">🎉</div>
+      <h2 class="modal-title">できたね!</h2>
+      <p id="modal-stage-info" class="modal-stage-info">ステージ 1 クリア！</p>
+      <p class="modal-message">すごい! パズル かんせい!</p>
+      <div class="modal-video-wrapper">
+        <video
+          id="success-video"
+          src="../assets/videos/pono_complete.mp4"
+          playsinline
+          controls
+          preload="none"
+          poster="../assets/images/pono_complete_poster.jpg"
+        ></video>
+      </div>
+      <button id="btn-next-stage" class="btn btn-next">つぎへ →</button>
+      <button id="btn-play-again" class="btn btn-play-again">もういっかい</button>
+    </div>
+  </div>
+
+  <!-- Confetti container -->
+  <div id="confetti-container" class="confetti-container"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
