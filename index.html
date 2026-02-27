@@ -22,7 +22,12 @@
     html, body {
       min-height: 100dvh;
       font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-      background: var(--bg);
+      background-color: var(--bg);
+      background-image: url('assets/images/BG_03.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: local;
       color: var(--text);
       -webkit-user-select: none;
       user-select: none;
@@ -34,22 +39,19 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px 16px 28px;
-      gap: 20px;
+      padding: 0 16px 28px;
+      gap: 16px;
     }
 
     /* ===== Header ===== */
     .header {
-      width: 100%;
-      max-width: 400px;
+      width: 100vw;
       text-align: center;
     }
 
     .header-img {
       width: 100%;
       display: block;
-      border-radius: var(--radius);
-      box-shadow: 0 4px 20px var(--shadow);
     }
 
     .site-title {
@@ -58,7 +60,7 @@
       color: var(--primary);
       text-shadow: 3px 3px 0 var(--primary-light);
       letter-spacing: 0.05em;
-      margin-top: 12px;
+      margin-top: 10px;
     }
 
     .site-subtitle {
@@ -80,8 +82,8 @@
     .card {
       display: flex;
       align-items: center;
-      gap: 18px;
-      padding: 18px 22px;
+      gap: 14px;
+      padding: 12px 18px;
       border-radius: var(--radius);
       text-decoration: none;
       color: #fff;
@@ -106,11 +108,11 @@
     .card-puzzle  { background: linear-gradient(135deg, #F2915A, #F7C948); }
     .card-writing { background: linear-gradient(135deg, #C084FC, #60A5FA); }
 
-    .card-icon  { font-size: 2.8rem; flex-shrink: 0; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.12)); }
+    .card-icon  { font-size: 2.2rem; flex-shrink: 0; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.12)); }
     .card-body  { flex: 1; }
-    .card-title { font-size: 1.4rem; font-weight: 900; letter-spacing: 0.05em; text-shadow: 1px 1px 0 rgba(0,0,0,0.12); }
-    .card-desc  { font-size: 0.82rem; font-weight: 700; opacity: 0.88; margin-top: 2px; }
-    .card-arrow { font-size: 1.6rem; opacity: 0.65; flex-shrink: 0; }
+    .card-title { font-size: 1.2rem; font-weight: 900; letter-spacing: 0.05em; text-shadow: 1px 1px 0 rgba(0,0,0,0.12); }
+    .card-desc  { font-size: 0.78rem; font-weight: 700; opacity: 0.88; margin-top: 2px; }
+    .card-arrow { font-size: 1.4rem; opacity: 0.65; flex-shrink: 0; }
 
     /* ===== Music Toggle ===== */
     .music-row {
@@ -174,6 +176,36 @@
       transform: translateX(28px);
     }
 
+    /* ===== Video Section ===== */
+    .video-section {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .video-label {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .video-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 6px 24px var(--shadow);
+    }
+
+    .video-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
     /* ===== Footer ===== */
     .footer { font-size: 0.75rem; color: var(--text-light); font-weight: 700; }
   </style>
@@ -186,6 +218,19 @@
       <h1 class="site-title">ポノのあそびば</h1>
       <p class="site-subtitle">なにして あそぶ？</p>
     </header>
+
+    <section class="video-section">
+      <p class="video-label">🎵 ポノのうた みてね！</p>
+      <div class="video-wrap">
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/3h2JxQ364f0?rel=0&modestbranding=1"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy"
+          title="ポノのうた">
+        </iframe>
+      </div>
+    </section>
 
     <nav class="menu">
       <a href="puzzle/index.html" class="card card-puzzle">

@@ -385,8 +385,8 @@ function initPuzzle(img) {
   puzzleContainer.appendChild(puzzleCanvas);
   puzzleCtx = puzzleCanvas.getContext('2d');
 
-  const boardMaxW = canvasW * 0.42;
-  const boardMaxH = canvasH * 0.42;
+  const boardMaxW = canvasW * 0.60;
+  const boardMaxH = canvasH * 0.60;
   const targetAspect = stageCols / stageRows;
 
   boardW = Math.min(boardMaxW, boardMaxH * targetAspect);
@@ -479,7 +479,7 @@ const bgm    = document.getElementById('bgm');
 const btnBgm = document.getElementById('btn-bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
-bgm.volume = 0.5;
+bgm.volume = 0.2;
 
 function updateBgmBtn() {
   btnBgm.textContent = bgmEnabled ? '🔊' : '🔇';
@@ -509,12 +509,14 @@ btnBgm.addEventListener('click', () => {
 });
 
 // ページ読み込み時に即再生を試みる。ブロックされたら最初の操作で再試行
-bgm.play().then(() => {
-  bgmStarted = true;
-}).catch(() => {
-  document.addEventListener('pointerdown', tryStartBgm);
-  document.addEventListener('touchstart', tryStartBgm, { passive: true });
-});
+if (bgmEnabled) {
+  bgm.play().then(() => {
+    bgmStarted = true;
+  }).catch(() => {
+    document.addEventListener('pointerdown', tryStartBgm);
+    document.addEventListener('touchstart', tryStartBgm, { passive: true });
+  });
+}
 updateBgmBtn();
 
 // ===== Responsive Resize =====

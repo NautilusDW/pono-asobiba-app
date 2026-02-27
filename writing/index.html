@@ -25,7 +25,11 @@ html, body {
   width: 100%; height: 100%;
   overflow: hidden;
   font-family: 'Zen Maru Gothic', 'Rounded Mplus 1c', 'Hiragino Maru Gothic Pro', sans-serif;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: var(--text);
   touch-action: none;
   -webkit-user-select: none;
@@ -747,7 +751,7 @@ const bgm    = document.getElementById('bgm');
 const btnBgm = document.getElementById('btn-bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
-bgm.volume = 0.45;
+bgm.volume = 0.2;
 
 function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
 
@@ -763,10 +767,12 @@ btnBgm.addEventListener('click', () => {
   updateBgmBtn();
 });
 
-bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-  document.addEventListener('pointerdown', tryStartBgm);
-  document.addEventListener('touchstart', tryStartBgm, { passive: true });
-});
+if (bgmEnabled) {
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('pointerdown', tryStartBgm);
+    document.addEventListener('touchstart', tryStartBgm, { passive: true });
+  });
+}
 updateBgmBtn();
 </script>
 </body>
