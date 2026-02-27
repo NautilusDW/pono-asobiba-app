@@ -36,10 +36,21 @@ const btnNextStage    = document.getElementById('btn-next-stage');
 const btnPlayAgain    = document.getElementById('btn-play-again');
 const confettiContainer = document.getElementById('confetti-container');
 
+// ===== Audio Context (shared, iOS-safe) =====
+let sfxCtx = null;
+function getSfxCtx() {
+  if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (sfxCtx.state === 'suspended') sfxCtx.resume();
+  return sfxCtx;
+}
+// iOSは最初のタッチでAudioContextをunlockする必要がある
+document.addEventListener('touchstart', () => getSfxCtx(), { once: true, passive: true });
+document.addEventListener('pointerdown', () => getSfxCtx(), { once: true });
+
 // ===== Audio: Snap Sound =====
 function playSnapSound() {
   try {
-    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const actx = getSfxCtx();
     const osc = actx.createOscillator(), gain = actx.createGain();
     osc.connect(gain); gain.connect(actx.destination);
     osc.type = 'sine';
@@ -54,7 +65,7 @@ function playSnapSound() {
 // ===== Audio: Completion Fanfare =====
 function playFanfare() {
   try {
-    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const actx = getSfxCtx();
     [523, 659, 784, 1047].forEach((freq, i) => {
       const osc = actx.createOscillator(), gain = actx.createGain();
       osc.connect(gain); gain.connect(actx.destination);

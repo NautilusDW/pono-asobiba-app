@@ -443,8 +443,12 @@ const completionOverlay = document.getElementById('completionOverlay');
 let audioCtx = null;
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
+// iOSは最初のタッチでAudioContextをunlockする必要がある
+document.addEventListener('touchstart', () => getAudioCtx(), { once: true, passive: true });
+document.addEventListener('pointerdown', () => getAudioCtx(), { once: true });
 
 function playSuccessSound() {
   const ac = getAudioCtx(), now = ac.currentTime;
