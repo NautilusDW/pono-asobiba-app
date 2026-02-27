@@ -443,35 +443,43 @@ const completionOverlay = document.getElementById('completionOverlay');
 let audioCtx = null;
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
+function withAudio(fn) {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'running') { fn(ctx); return; }
+  ctx.resume().then(() => fn(ctx)).catch(() => {});
+}
 // iOSは最初のタッチでAudioContextをunlockする必要がある
-document.addEventListener('touchstart', () => getAudioCtx(), { once: true, passive: true });
-document.addEventListener('pointerdown', () => getAudioCtx(), { once: true });
+document.addEventListener('touchstart', () => getAudioCtx().resume(), { once: true, passive: true });
+document.addEventListener('pointerdown', () => getAudioCtx().resume(), { once: true });
 
 function playSuccessSound() {
-  const ac = getAudioCtx(), now = ac.currentTime;
-  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-    const osc = ac.createOscillator(), gain = ac.createGain();
-    osc.type = 'sine'; osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.3, now + i * 0.15);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
-    osc.connect(gain); gain.connect(ac.destination);
-    osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.4);
+  withAudio(ac => {
+    const now = ac.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const osc = ac.createOscillator(), gain = ac.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, now + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.4);
+    });
   });
 }
 
 function playStrokeSound() {
-  const ac = getAudioCtx(), now = ac.currentTime;
-  const osc = ac.createOscillator(), gain = ac.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(880, now);
-  osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-  gain.gain.setValueAtTime(0.15, now);
-  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-  osc.connect(gain); gain.connect(ac.destination);
-  osc.start(now); osc.stop(now + 0.15);
+  withAudio(ac => {
+    const now = ac.currentTime;
+    const osc = ac.createOscillator(), gain = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start(now); osc.stop(now + 0.15);
+  });
 }
 
 // ===== Confetti =====

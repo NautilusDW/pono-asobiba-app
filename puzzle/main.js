@@ -40,17 +40,21 @@ const confettiContainer = document.getElementById('confetti-container');
 let sfxCtx = null;
 function getSfxCtx() {
   if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (sfxCtx.state === 'suspended') sfxCtx.resume();
   return sfxCtx;
 }
+// resume()後にコールバックを実行（iOS対応の確実なunlock）
+function withAudio(fn) {
+  const ctx = getSfxCtx();
+  if (ctx.state === 'running') { fn(ctx); return; }
+  ctx.resume().then(() => fn(ctx)).catch(() => {});
+}
 // iOSは最初のタッチでAudioContextをunlockする必要がある
-document.addEventListener('touchstart', () => getSfxCtx(), { once: true, passive: true });
-document.addEventListener('pointerdown', () => getSfxCtx(), { once: true });
+document.addEventListener('touchstart', () => getSfxCtx().resume(), { once: true, passive: true });
+document.addEventListener('pointerdown', () => getSfxCtx().resume(), { once: true });
 
 // ===== Audio: Snap Sound =====
 function playSnapSound() {
-  try {
-    const actx = getSfxCtx();
+  withAudio(actx => {
     const osc = actx.createOscillator(), gain = actx.createGain();
     osc.connect(gain); gain.connect(actx.destination);
     osc.type = 'sine';
@@ -59,13 +63,12 @@ function playSnapSound() {
     gain.gain.setValueAtTime(0.3, actx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.2);
     osc.start(actx.currentTime); osc.stop(actx.currentTime + 0.2);
-  } catch (e) {}
+  });
 }
 
 // ===== Audio: Completion Fanfare =====
 function playFanfare() {
-  try {
-    const actx = getSfxCtx();
+  withAudio(actx => {
     [523, 659, 784, 1047].forEach((freq, i) => {
       const osc = actx.createOscillator(), gain = actx.createGain();
       osc.connect(gain); gain.connect(actx.destination);
@@ -75,7 +78,7 @@ function playFanfare() {
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
       osc.start(t); osc.stop(t + 0.4);
     });
-  } catch (e) {}
+  });
 }
 
 // ===== Confetti =====
