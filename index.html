@@ -34,55 +34,54 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 16px 32px;
-      gap: 28px;
+      padding: 20px 16px 28px;
+      gap: 20px;
     }
 
     /* ===== Header ===== */
-    .header { text-align: center; }
+    .header {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
 
-    .logo-wrap {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary-light), #D4EDDA);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3.2rem;
-      box-shadow: 0 6px 24px var(--shadow);
-      margin: 0 auto 14px;
+    .header-img {
+      width: 100%;
+      display: block;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px var(--shadow);
     }
 
     .site-title {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 900;
       color: var(--primary);
       text-shadow: 3px 3px 0 var(--primary-light);
       letter-spacing: 0.05em;
+      margin-top: 12px;
     }
 
     .site-subtitle {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-light);
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
     /* ===== Menu ===== */
     .menu {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       width: 100%;
-      max-width: 360px;
+      max-width: 400px;
     }
 
     .card {
       display: flex;
       align-items: center;
       gap: 18px;
-      padding: 20px 22px;
+      padding: 18px 22px;
       border-radius: var(--radius);
       text-decoration: none;
       color: #fff;
@@ -94,7 +93,6 @@
 
     .card:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--shadow); }
 
-    /* Shine overlay */
     .card::before {
       content: '';
       position: absolute;
@@ -114,6 +112,68 @@
     .card-desc  { font-size: 0.82rem; font-weight: 700; opacity: 0.88; margin-top: 2px; }
     .card-arrow { font-size: 1.6rem; opacity: 0.65; flex-shrink: 0; }
 
+    /* ===== Music Toggle ===== */
+    .music-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      justify-content: center;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .music-label {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: 0.05em;
+    }
+
+    .toggle {
+      position: relative;
+      width: 58px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #D0C8BE;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: var(--primary);
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(28px);
+    }
+
     /* ===== Footer ===== */
     .footer { font-size: 0.75rem; color: var(--text-light); font-weight: 700; }
   </style>
@@ -122,7 +182,7 @@
   <div class="page">
 
     <header class="header">
-      <div class="logo-wrap">🐻</div>
+      <img src="assets/images/A+用ヘッダー.png" alt="ポノのあそびば" class="header-img">
       <h1 class="site-title">ポノのあそびば</h1>
       <p class="site-subtitle">なにして あそぶ？</p>
     </header>
@@ -147,8 +207,26 @@
       </a>
     </nav>
 
+    <div class="music-row">
+      <span class="music-label">おんがく</span>
+      <label class="toggle">
+        <input type="checkbox" id="music-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
     <footer class="footer">くまのこ ポノ のあそびば</footer>
 
   </div>
+
+  <script>
+    const toggle = document.getElementById('music-toggle');
+    const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+    toggle.checked = enabled;
+
+    toggle.addEventListener('change', () => {
+      localStorage.setItem('pono_bgm_enabled', toggle.checked ? 'on' : 'off');
+    });
+  </script>
 </body>
 </html>

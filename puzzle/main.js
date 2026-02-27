@@ -211,27 +211,23 @@ function buildPieces() {
 
 // ===== Draw Board =====
 function drawBoard() {
-  puzzleCtx.fillStyle = '#EDE8DF';
-  puzzleCtx.fillRect(0, 0, canvasW, canvasH);
+  // キャンバスを透明にしてCSSの背景画像を見せる
+  puzzleCtx.clearRect(0, 0, canvasW, canvasH);
 
-  puzzleCtx.save();
-  puzzleCtx.globalAlpha = 0.22;
-  puzzleCtx.drawImage(sourceImg, boardX, boardY, boardW, boardH);
-  puzzleCtx.globalAlpha = 1;
-  puzzleCtx.restore();
+  // 土台エリアに半透明のクリームオーバーレイ
+  puzzleCtx.fillStyle = 'rgba(237, 232, 223, 0.72)';
+  puzzleCtx.fillRect(boardX, boardY, boardW, boardH);
 
-  puzzleCtx.strokeStyle = 'rgba(93,78,55,0.30)';
-  puzzleCtx.lineWidth = 2;
-  puzzleCtx.setLineDash([6, 4]);
-  puzzleCtx.strokeRect(boardX - 1, boardY - 1, boardW + 2, boardH + 2);
-  puzzleCtx.setLineDash([]);
-
+  // ピースのスロット輪郭
   for (const p of pieces) {
+    if (p.snapped) continue;
     puzzleCtx.save();
     puzzleCtx.beginPath();
     buildPiecePath(puzzleCtx, p.homeX, p.homeY, pieceW, pieceH, p.tabs);
-    puzzleCtx.strokeStyle = 'rgba(93,78,55,0.20)';
-    puzzleCtx.lineWidth = 1.5;
+    puzzleCtx.fillStyle = 'rgba(93,78,55,0.07)';
+    puzzleCtx.fill();
+    puzzleCtx.strokeStyle = 'rgba(93,78,55,0.35)';
+    puzzleCtx.lineWidth = 2;
     puzzleCtx.stroke();
     puzzleCtx.restore();
   }
@@ -275,6 +271,7 @@ function redraw() {
   drawBoard();
   const sorted = [...pieces].sort((a, b) => a.zOrder - b.zOrder);
   for (const p of sorted) drawPiece(p);
+
 }
 
 function hitTest(piece, px, py) {
@@ -285,20 +282,21 @@ function hitTest(piece, px, py) {
 // ===== Shuffle =====
 function shufflePieces() {
   snappedCount = 0;
-  const margin = Math.min(pieceW, pieceH) * 0.3;
+  const pad = 8;
   pieces.forEach((p, i) => {
     p.snapped = false;
-    let attempts = 0, px, py;
-    do {
-      px = margin + Math.random() * (canvasW - pieceW - margin * 2);
-      py = margin + Math.random() * (canvasH - pieceH - margin * 2);
-      attempts++;
-    } while (
-      attempts < 10 &&
-      px + pieceW > boardX - margin * 0.5 && px < boardX + boardW + margin * 0.5 &&
-      py + pieceH > boardY - margin * 0.5 && py < boardY + boardH + margin * 0.5
-    );
-    p.x = px; p.y = py;
+    let best = null;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const tx = pad + Math.random() * Math.max(0, canvasW - pieceW - pad * 2);
+      const ty = pad + Math.random() * Math.max(0, canvasH - pieceH - pad * 2);
+      const onBoard = (
+        tx + pieceW > boardX + pad && tx < boardX + boardW - pad &&
+        ty + pieceH > boardY + pad && ty < boardY + boardH - pad
+      );
+      if (!onBoard) { best = { x: tx, y: ty }; break; }
+      if (!best) best = { x: tx, y: ty };
+    }
+    p.x = best.x; p.y = best.y;
     p.zOrder = i;
     rebuildPath(p);
   });
@@ -387,8 +385,8 @@ function initPuzzle(img) {
   puzzleContainer.appendChild(puzzleCanvas);
   puzzleCtx = puzzleCanvas.getContext('2d');
 
-  const boardMaxW = canvasW * 0.70;
-  const boardMaxH = canvasH * 0.70;
+  const boardMaxW = canvasW * 0.42;
+  const boardMaxH = canvasH * 0.42;
   const targetAspect = stageCols / stageRows;
 
   boardW = Math.min(boardMaxW, boardMaxH * targetAspect);
@@ -403,7 +401,6 @@ function initPuzzle(img) {
   snappedCount = 0;
   updateProgress();
   buildPieces();
-  shufflePieces();
 
   puzzleCanvas.addEventListener('pointerdown',  onPointerDown,  { passive: false });
   puzzleCanvas.addEventListener('pointermove',  onPointerMove,  { passive: false });
@@ -411,6 +408,7 @@ function initPuzzle(img) {
   puzzleCanvas.addEventListener('pointercancel', onPointerUp,   { passive: false });
 
   loadingEl.classList.add('hidden');
+  shufflePieces();
 }
 
 // ===== Load Stage =====
@@ -476,5 +474,59 @@ btnPlayAgain.addEventListener('click', () => {
   shufflePieces();
 });
 
+// ===== BGM =====
+const bgm    = document.getElementById('bgm');
+const btnBgm = document.getElementById('btn-bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+
+bgm.volume = 0.5;
+
+function updateBgmBtn() {
+  btnBgm.textContent = bgmEnabled ? '🔊' : '🔇';
+}
+
+let bgmStarted = false;
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => {
+    bgmStarted = true;
+  }).catch(() => {
+    // 失敗してもリスナーは残るので次の操作で再試行
+  });
+}
+
+btnBgm.addEventListener('click', () => {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) {
+    bgmStarted = false;
+    tryStartBgm();
+  } else {
+    bgm.pause();
+  }
+  updateBgmBtn();
+});
+
+// ページ読み込み時に即再生を試みる。ブロックされたら最初の操作で再試行
+bgm.play().then(() => {
+  bgmStarted = true;
+}).catch(() => {
+  document.addEventListener('pointerdown', tryStartBgm);
+  document.addEventListener('touchstart', tryStartBgm, { passive: true });
+});
+updateBgmBtn();
+
+// ===== Responsive Resize =====
+let resizeTimer = null;
+const resizeObserver = new ResizeObserver(() => {
+  if (!sourceImg) return;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => initPuzzle(sourceImg), 250);
+});
+
 // ===== Start =====
-window.addEventListener('DOMContentLoaded', () => loadStage(0));
+window.addEventListener('DOMContentLoaded', () => {
+  resizeObserver.observe(puzzleContainer);
+  loadStage(0);
+});

@@ -48,12 +48,74 @@ html, body {
   color: var(--primary); font-weight: 700; font-size: 0.85rem;
   text-decoration: none; padding: 6px 2px;
 }
+.btn-bgm {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--primary-light);
+  border: 2px solid var(--primary);
+  font-size: 1rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
+  transition: transform 0.15s;
+}
+.btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 .header h1 {
   font-size: 1.4rem; font-weight: 900;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
+.streak-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #FCD34D, #F97316);
+  color: #fff;
+  font-size: 0.78rem; font-weight: 900;
+  padding: 2px 12px; border-radius: 20px;
+  margin-top: 3px;
+  animation: stampPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.streak-badge.hidden { display: none; }
+@keyframes stampPop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ===== Milestone Modal ===== */
+.milestone-modal {
+  position: fixed; inset: 0; z-index: 1100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(93, 78, 55, 0.45);
+  animation: fadeIn 0.25s ease;
+}
+.milestone-modal.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.milestone-card {
+  background: #fff;
+  border-radius: 28px;
+  padding: 32px 28px 28px;
+  text-align: center;
+  width: min(88vw, 340px);
+  box-shadow: 0 12px 48px rgba(93,78,55,0.25);
+  animation: milestoneIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+@keyframes milestoneIn {
+  from { transform: scale(0.5) translateY(40px); opacity: 0; }
+  to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+.milestone-scene { font-size: 4.5rem; line-height: 1.1; }
+.milestone-count {
+  font-size: 1rem; font-weight: 900;
+  background: linear-gradient(135deg, #FCD34D, #F97316);
+  color: #fff; padding: 2px 14px; border-radius: 20px;
+}
+.milestone-title {
+  font-size: 1.8rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.milestone-msg { font-size: 0.95rem; font-weight: 700; color: #A89585; }
 
 /* ===== Category Tabs ===== */
 .category-tabs {
@@ -81,12 +143,26 @@ html, body {
   min-width: 42px; height: 42px; border: 2px solid transparent; border-radius: 12px;
   background: var(--card-bg); font-family: inherit; font-size: 1.1rem; font-weight: 700;
   cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+  position: relative;
 }
 .char-btn:hover { transform: scale(1.1); }
 .char-btn.active {
   border-color: var(--primary);
   background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
   transform: scale(1.1);
+}
+.char-btn.done {
+  background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+  border-color: #34D399;
+}
+.char-btn.done::after {
+  content: '✓';
+  position: absolute;
+  top: 1px; right: 3px;
+  font-size: 0.52rem;
+  color: #059669;
+  line-height: 1;
+  font-weight: 900;
 }
 
 /* ===== Tracing Area ===== */
@@ -207,12 +283,15 @@ html, body {
 </style>
 </head>
 <body>
+<audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
 
 <div id="app">
   <div class="header">
     <a href="../index.html" class="back-link">← メニュー</a>
     <h1>ポノのもじかき</h1>
     <div class="subtitle">ゆびでなぞってみよう！</div>
+    <div id="streak-badge" class="streak-badge hidden"></div>
+    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
   <div class="category-tabs" id="categoryTabs">
@@ -241,6 +320,16 @@ html, body {
   <div class="completion-msg">できた！🎉</div>
 </div>
 <div class="character-slot" id="characterSlot"></div>
+
+<!-- Milestone Modal -->
+<div id="milestone-modal" class="milestone-modal hidden">
+  <div class="milestone-card">
+    <div class="milestone-scene" id="milestone-scene"></div>
+    <div class="milestone-count" id="milestone-count"></div>
+    <div class="milestone-title" id="milestone-title"></div>
+    <div class="milestone-msg" id="milestone-msg"></div>
+  </div>
+</div>
 
 <script>
 // ===== Color Schemes =====
@@ -278,6 +367,60 @@ let currentCharIndex = 0;
 let writer = null;
 let currentScheme = COLOR_SCHEMES[0];
 let currentCharData = null; // store loaded char data for stroke numbers
+
+// ===== Game state =====
+const STAMP_KEY = 'pono_stamps';
+let streak = 0;
+
+function loadStamps() {
+  try { return JSON.parse(localStorage.getItem(STAMP_KEY)) || { hiragana: {}, katakana: {} }; }
+  catch { return { hiragana: {}, katakana: {} }; }
+}
+function saveStamp(category, index) {
+  const stamps = loadStamps();
+  stamps[category][index] = true;
+  localStorage.setItem(STAMP_KEY, JSON.stringify(stamps));
+}
+function markCharDone(index) {
+  const btns = charSelector.querySelectorAll('.char-btn');
+  if (btns[index]) btns[index].classList.add('done');
+}
+function updateStreakBadge() {
+  const badge = document.getElementById('streak-badge');
+  if (streak >= 2) {
+    badge.textContent = `🔥 ${streak}れんぞく！`;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ===== Milestone rewards (every 5 streaks) =====
+const MILESTONES = [
+  { scene: '🐻\n🎉',         title: 'すごいね！',     msg: 'ポノも よろこんでるよ！' },
+  { scene: '🌈\n✨',         title: 'さいこう！',     msg: 'にじが でたよ！' },
+  { scene: '🏆\n🌟',         title: 'チャンピオン！', msg: 'トロフィー かがやく！' },
+  { scene: '🚀\n🌙',         title: 'うちゅうまで！', msg: 'もう とまらない！' },
+  { scene: '👑\n💫',         title: 'スーパー！',     msg: 'きみは おうさまだ！' },
+];
+
+function showMilestone(count) {
+  const data = MILESTONES[(count / 5 - 1) % MILESTONES.length];
+  const modal = document.getElementById('milestone-modal');
+  document.getElementById('milestone-scene').textContent = data.scene;
+  document.getElementById('milestone-count').textContent = `🔥 ${count}れんぞく！`;
+  document.getElementById('milestone-title').textContent = data.title;
+  document.getElementById('milestone-msg').textContent = data.msg;
+  modal.classList.remove('hidden');
+
+  // タップでも自動でも閉じる
+  const close = () => {
+    modal.classList.add('hidden');
+    modal.removeEventListener('click', close);
+  };
+  modal.addEventListener('click', close);
+  setTimeout(close, 3000);
+}
 
 // ===== DOM =====
 const categoryTabs = document.getElementById('categoryTabs');
@@ -347,6 +490,12 @@ function showCompletion() {
   launchConfetti();
   completionOverlay.classList.add('show');
   setTimeout(() => completionOverlay.classList.remove('show'), 2000);
+
+  saveStamp(currentCategory, currentCharIndex);
+  markCharDone(currentCharIndex);
+  streak++;
+  updateStreakBadge();
+  if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
 }
 
 // ===== Star particles (Canvas mode) =====
@@ -513,9 +662,13 @@ function loadCharacter() {
 function buildCharSelector() {
   charSelector.innerHTML = '';
   const cat = CATEGORIES[currentCategory];
+  const stamps = loadStamps();
   cat.chars.forEach((ch, i) => {
     const btn = document.createElement('button');
-    btn.className = 'char-btn' + (i === currentCharIndex ? ' active' : '');
+    let cls = 'char-btn';
+    if (i === currentCharIndex) cls += ' active';
+    if (stamps[currentCategory]?.[i]) cls += ' done';
+    btn.className = cls;
     btn.textContent = ch;
     btn.addEventListener('click', () => {
       currentCharIndex = i;
@@ -533,6 +686,8 @@ categoryTabs.addEventListener('click', (e) => {
   if (cat === currentCategory) return;
   currentCategory = cat;
   currentCharIndex = 0;
+  streak = 0;
+  updateStreakBadge();
   document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   buildCharSelector();
@@ -586,6 +741,33 @@ window.KidsTraceApp = {
   },
   showCompletion
 };
+
+// ===== BGM =====
+const bgm    = document.getElementById('bgm');
+const btnBgm = document.getElementById('btn-bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+let bgmStarted = false;
+bgm.volume = 0.45;
+
+function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+btnBgm.addEventListener('click', () => {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  updateBgmBtn();
+});
+
+bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+  document.addEventListener('pointerdown', tryStartBgm);
+  document.addEventListener('touchstart', tryStartBgm, { passive: true });
+});
+updateBgmBtn();
 </script>
 </body>
 </html>
