@@ -248,6 +248,8 @@ html, body {
     </div>
   </div>
 
+  <div id="hud-effects" style="text-align:center;font-size:1.15rem;min-height:1.4em;flex-shrink:0;line-height:1;letter-spacing:3px;"></div>
+
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
     <div class="hi-toast" id="hi-toast">🌟 しんきろく！</div>
@@ -383,6 +385,15 @@ let lives    = 3;
 let score    = 0;
 let stageIdx = 0;
 let blocks   = [];
+const MAX_LIVES = 3;
+
+// Power-up drops
+let drops = [];
+const DROP_SPEED = 2.2;
+const EFFECT_DUR = { wide: 8*60, pierce: 6*60, slow: 7*60 };
+let effects     = { wide: 0, pierce: 0, slow: 0 };
+let basePaddleW = 0;
+let baseSpeed   = 0;
 
 const paddle = { x: 0, y: 0, w: 0, h: 0, targetX: 0 };
 const ball   = { x: 0, y: 0, r: 0, vx: 0, vy: 0, onPaddle: true };
@@ -399,6 +410,7 @@ function resize() {
   CH = canvas.height = Math.floor(rect.height);
 
   paddle.w = Math.min(CW * 0.30, 110);
+  basePaddleW = paddle.w;
   paddle.h = Math.max(10, CH * 0.024);
   paddle.y = CH * 0.87;
   ball.r   = Math.max(7, CW * 0.024);
@@ -431,7 +443,10 @@ function buildBlocks() {
         x: gap + c * (bw + gap),
         y: startY + r * (bh + gap),
         w: bw, h: bh,
-        hp, maxHp: hp, row: r
+        hp, maxHp: hp, row: r,
+        dropType: Math.random() < 0.25
+          ? ['wide','pierce','slow','life'][Math.floor(Math.random()*4)]
+          : null
       });
     }
   }
@@ -550,6 +565,38 @@ function update(dt) {
   // Block collisions
   checkBlocks();
 
+  // Drop movement & paddle pickup
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const d = drops[i];
+    d.y += d.vy * dt;
+    if (d.y > CH + 20) { drops.splice(i, 1); continue; }
+    if (d.y + 10 >= paddle.y && d.y - 10 <= paddle.y + paddle.h
+        && d.x >= paddle.x && d.x <= paddle.x + paddle.w) {
+      applyEffect(d.type);
+      drops.splice(i, 1);
+    }
+  }
+
+  // Effect timers
+  let effectExpired = false;
+  if (effects.wide > 0) {
+    effects.wide -= dt;
+    if (effects.wide <= 0) { paddle.w = basePaddleW; paddle.x = Math.min(paddle.x, CW - paddle.w); effects.wide = 0; effectExpired = true; }
+  }
+  if (effects.pierce > 0) {
+    effects.pierce -= dt;
+    if (effects.pierce <= 0) { effects.pierce = 0; effectExpired = true; }
+  }
+  if (effects.slow > 0) {
+    effects.slow -= dt;
+    if (effects.slow <= 0) {
+      const spd = Math.hypot(ball.vx, ball.vy);
+      if (spd > 0) { const ratio = baseSpeed / spd; ball.vx *= ratio; ball.vy *= ratio; }
+      effects.slow = 0; effectExpired = true;
+    }
+  }
+  if (effectExpired) updateHUD();
+
   // Fell off bottom
   if (ball.y - ball.r > CH) {
     onMiss();
@@ -579,24 +626,67 @@ function checkBlocks() {
     checkNewRecord();
     playBlockHit();
 
-    // Determine reflection direction
-    const oL = (ball.x + ball.r) - b.x;
-    const oR = (b.x + b.w) - (ball.x - ball.r);
-    const oT = (ball.y + ball.r) - b.y;
-    const oB = (b.y + b.h) - (ball.y - ball.r);
-
-    if (Math.min(oL, oR) < Math.min(oT, oB)) {
-      ball.vx = -ball.vx;
-    } else {
-      ball.vy = -ball.vy;
+    // Spawn drop when block is destroyed
+    if (b.hp <= 0 && b.dropType) {
+      drops.push({ x: b.x + b.w/2, y: b.y + b.h/2, vy: DROP_SPEED, type: b.dropType });
     }
-    return; // one collision per frame
+
+    // Reflect unless pierce is active
+    if (!effects.pierce) {
+      const oL = (ball.x + ball.r) - b.x;
+      const oR = (b.x + b.w) - (ball.x - ball.r);
+      const oT = (ball.y + ball.r) - b.y;
+      const oB = (b.y + b.h) - (ball.y - ball.r);
+
+      if (Math.min(oL, oR) < Math.min(oT, oB)) {
+        ball.vx = -ball.vx;
+      } else {
+        ball.vy = -ball.vy;
+      }
+      return; // one collision per frame (non-pierce)
+    }
   }
+}
+
+// ===== Power-ups =====
+function playPickupSound() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    beep(ac, 880, t, 0.07, 'sine', 0.22);
+    beep(ac, 1100, t + 0.07, 0.07, 'sine', 0.22);
+  });
+}
+
+function applyEffect(type) {
+  playPickupSound();
+  if (type === 'wide') {
+    effects.wide = EFFECT_DUR.wide;
+    paddle.w = basePaddleW * 2;
+    paddle.x = Math.min(paddle.x, CW - paddle.w);
+  } else if (type === 'pierce') {
+    effects.pierce = EFFECT_DUR.pierce;
+  } else if (type === 'slow') {
+    if (effects.slow === 0) {
+      baseSpeed = Math.hypot(ball.vx, ball.vy);
+      ball.vx *= 0.5; ball.vy *= 0.5;
+    }
+    effects.slow = EFFECT_DUR.slow;
+  } else if (type === 'life') {
+    lives = Math.min(lives + 1, MAX_LIVES);
+    updateHUD();
+  }
+}
+
+function resetEffects() {
+  if (effects.wide > 0) { paddle.w = basePaddleW; }
+  effects = { wide: 0, pierce: 0, slow: 0 };
+  drops = [];
 }
 
 // ===== Miss =====
 function onMiss() {
   playMiss();
+  resetEffects();
   lives--;
   updateHUD();
   if (lives <= 0) {
@@ -612,6 +702,7 @@ function onMiss() {
 // ===== Stage clear =====
 function onStageClear() {
   playStageClear();
+  resetEffects();
   state = S.STAGE_CLEAR;
   launchConfetti();
   const isLast = stageIdx >= STAGES.length - 1;
@@ -622,10 +713,15 @@ function onStageClear() {
 // ===== HUD =====
 function updateHUD() {
   document.getElementById('hud-lives').textContent =
-    '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+    '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, MAX_LIVES - lives));
   document.getElementById('hud-stage').textContent = `ステージ ${STAGES[stageIdx].label}`;
   document.getElementById('score-now').textContent = `${score}てん`;
   document.getElementById('score-hi').textContent  = `ベスト: ${hiScore}てん`;
+  const active = [];
+  if (effects.wide   > 0) active.push('↔');
+  if (effects.pierce > 0) active.push('⚡');
+  if (effects.slow   > 0) active.push('🐌');
+  document.getElementById('hud-effects').textContent = active.join(' ');
 }
 
 // ===== Confetti =====
@@ -692,6 +788,7 @@ function startGame() {
   overlay.classList.add('hidden');
   lives = 3; score = 0; stageIdx = 0;
   recordShown = false;
+  resetEffects();
   hiScore = parseInt(localStorage.getItem(HI_KEY) || '0'); // reload in case updated
   buildBlocks();
   paddle.x = (CW - paddle.w) / 2;
@@ -704,6 +801,7 @@ function startGame() {
 function nextStage() {
   overlay.classList.add('hidden');
   stageIdx++;
+  resetEffects();
   buildBlocks();
   paddle.x = (CW - paddle.w) / 2;
   paddle.targetX = paddle.x;
@@ -745,6 +843,22 @@ function draw() {
     }
     ctx.globalAlpha = 1;
   }
+
+  // Drops (power-up items)
+  const dropColors = { wide:'#22D3EE', pierce:'#F97316', slow:'#8B5CF6', life:'#FB7185' };
+  const dropLabels = { wide:'↔', pierce:'⚡', slow:'🐌', life:'❤' };
+  drops.forEach(d => {
+    ctx.save();
+    ctx.fillStyle = dropColors[d.type];
+    ctx.beginPath();
+    ctx.roundRect(d.x - 15, d.y - 11, 30, 22, 11);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.max(11, Math.floor(CW * 0.028))}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(dropLabels[d.type], d.x, d.y);
+    ctx.restore();
+  });
 
   // Paddle
   const pg = ctx.createLinearGradient(paddle.x, 0, paddle.x + paddle.w, 0);
