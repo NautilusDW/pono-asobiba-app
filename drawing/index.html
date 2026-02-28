@@ -62,6 +62,16 @@ html, body {
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .header .subtitle { font-size: 0.78rem; color: #A89585; margin-top: 2px; }
+.btn-bgm {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #FFF0F5; border: 2px solid var(--primary);
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
+  transition: transform 0.15s;
+}
+.btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 
 /* ===== Canvas ===== */
 .canvas-wrap {
@@ -183,12 +193,14 @@ html, body {
 }
 </style>
 </head>
+<audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="auto"></audio>
 <body>
 <div id="app">
   <div class="header">
     <a href="../index.html" class="back-link">← メニュー</a>
     <h1>おえかき</h1>
     <div class="subtitle">じゆうにかいてみよう！</div>
+    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
   <div class="canvas-wrap" id="canvasWrap">
@@ -376,6 +388,34 @@ document.getElementById('btnSave').addEventListener('click', () => {
 
 // Initial white fill
 resizeCanvas();
+
+// ===== BGM =====
+const bgm    = document.getElementById('bgm');
+const btnBgm = document.getElementById('btn-bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+let bgmStarted = false;
+bgm.volume = 0.2;
+
+function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+btnBgm.addEventListener('click', () => {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  updateBgmBtn();
+});
+
+if (bgmEnabled) {
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('pointerdown', tryStartBgm, { once: true });
+  });
+}
+updateBgmBtn();
 </script>
 </body>
 </html>

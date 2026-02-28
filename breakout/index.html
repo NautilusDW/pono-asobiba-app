@@ -60,6 +60,16 @@ html, body {
   background: linear-gradient(135deg, #F97316, #EF4444);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
+.btn-bgm {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #FFF3EE; border: 2px solid #F97316;
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
+  transition: transform 0.15s;
+}
+.btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 
 /* ===== HUD ===== */
 .hud {
@@ -165,10 +175,12 @@ html, body {
 </head>
 <body>
 
+<audio id="bgm" loop src="../assets/audio/Bubble Hop Playground.mp3" preload="auto"></audio>
 <div id="app">
   <div class="header">
     <a href="../index.html" class="back-link">← メニュー</a>
     <h1>ブロックくずし</h1>
+    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
   <div class="hud">
@@ -707,6 +719,34 @@ resize();
 updateHUD();
 showOverlay('start');
 requestAnimationFrame(loop);
+
+// ===== BGM =====
+const bgm    = document.getElementById('bgm');
+const btnBgm = document.getElementById('btn-bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+let bgmStarted = false;
+bgm.volume = 0.2;
+
+function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+btnBgm.addEventListener('click', () => {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  updateBgmBtn();
+});
+
+if (bgmEnabled) {
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('pointerdown', tryStartBgm, { once: true });
+  });
+}
+updateBgmBtn();
 </script>
 </body>
 </html>
