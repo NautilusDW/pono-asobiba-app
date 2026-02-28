@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>おえかき | ポノのあそびば</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --primary: #FF6B9D;
+  --secondary: #C084FC;
+  --accent: #4ADE80;
+  --text: #5B4A3F;
+  --shadow: 0 4px 20px rgba(91, 74, 63, 0.1);
+  --radius: 20px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--text);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+  gap: 8px;
+}
+
+/* ===== Header ===== */
+.header {
+  text-align: center;
+  padding: 6px 0;
+  flex-shrink: 0;
+  position: relative;
+}
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--primary); font-weight: 700; font-size: 0.85rem;
+  text-decoration: none; padding: 6px 2px;
+}
+.header h1 {
+  font-size: 1.4rem; font-weight: 900;
+  background: linear-gradient(135deg, #FF6B9D, #FB923C);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header .subtitle { font-size: 0.78rem; color: #A89585; margin-top: 2px; }
+
+/* ===== Canvas ===== */
+.canvas-wrap {
+  flex: 1;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+  cursor: crosshair;
+}
+#drawCanvas {
+  display: block;
+  width: 100%; height: 100%;
+  touch-action: none;
+}
+
+/* ===== Color Palette ===== */
+.color-palette {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.color-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+  padding: 0;
+}
+.color-btn.active {
+  border-color: var(--text);
+  transform: scale(1.25);
+}
+.color-btn:active { transform: scale(0.9); }
+
+/* ===== Toolbar ===== */
+.toolbar {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Brush size buttons */
+.size-btn {
+  border: 2.5px solid #D0C8BE;
+  border-radius: 50%;
+  cursor: pointer;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+  box-shadow: var(--shadow);
+}
+.size-btn.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+}
+.size-dot {
+  border-radius: 50%;
+  background: var(--text);
+  transition: background 0.15s;
+  pointer-events: none;
+}
+.size-btn.active .size-dot { background: #fff; }
+
+/* Size-specific dimensions */
+.size-btn[data-size="4"]  { width: 32px; height: 32px; }
+.size-btn[data-size="14"] { width: 36px; height: 36px; }
+.size-btn[data-size="28"] { width: 40px; height: 40px; }
+.size-dot-s { width: 5px;  height: 5px; }
+.size-dot-m { width: 12px; height: 12px; }
+.size-dot-l { width: 20px; height: 20px; }
+
+/* Tool buttons */
+.tool-btn {
+  padding: 8px 12px;
+  border: none; border-radius: 20px;
+  font-family: inherit; font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tool-btn:active { transform: scale(0.93); }
+.btn-eraser        { background: #FEE2E2; color: #EF4444; }
+.btn-eraser.active { background: #EF4444; color: #fff; }
+.btn-undo          { background: #FEF3C7; color: #D97706; }
+.btn-clear         { background: #FEE2E2; color: #EF4444; }
+.btn-save          { background: linear-gradient(135deg, #4ADE80, #34D399); color: #fff; }
+
+/* ===== Save Toast ===== */
+.save-toast {
+  position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, #4ADE80, #34D399);
+  color: #fff; font-size: 1rem; font-weight: 900;
+  padding: 10px 28px; border-radius: 30px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  z-index: 1000; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+}
+.save-toast.show { opacity: 1; }
+
+/* ===== Responsive ===== */
+@media (max-height: 600px) {
+  .header h1 { font-size: 1.1rem; }
+  .header .subtitle { display: none; }
+  .color-btn { width: 28px; height: 28px; }
+  .tool-btn { padding: 6px 10px; font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <a href="../index.html" class="back-link">← メニュー</a>
+    <h1>おえかき</h1>
+    <div class="subtitle">じゆうにかいてみよう！</div>
+  </div>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="drawCanvas"></canvas>
+  </div>
+
+  <div class="color-palette" id="colorPalette"></div>
+
+  <div class="toolbar">
+    <button class="size-btn" data-size="4"><span class="size-dot size-dot-s"></span></button>
+    <button class="size-btn active" data-size="14"><span class="size-dot size-dot-m"></span></button>
+    <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
+    <button class="tool-btn btn-eraser" id="btnEraser">🧹 けす</button>
+    <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
+    <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶ</button>
+    <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
+  </div>
+</div>
+
+<div class="save-toast" id="saveToast">ほぞんしたよ！🎨</div>
+
+<script>
+// ===== Color palette =====
+const COLORS = [
+  '#EF4444', // red
+  '#F97316', // orange
+  '#EAB308', // yellow
+  '#22C55E', // green
+  '#3B82F6', // blue
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+  '#78716C', // brown
+  '#1C1917', // black
+  '#FFFFFF', // white
+];
+
+const palette = document.getElementById('colorPalette');
+COLORS.forEach((color, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'color-btn' + (i === 0 ? ' active' : '');
+  btn.style.background = color;
+  if (color === '#FFFFFF') btn.style.outline = '2px solid #D0C8BE';
+  btn.dataset.color = color;
+  btn.addEventListener('click', () => selectColor(color, btn));
+  palette.appendChild(btn);
+});
+
+// ===== Canvas setup =====
+const canvas = document.getElementById('drawCanvas');
+const wrap   = document.getElementById('canvasWrap');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = wrap.getBoundingClientRect();
+  const w = Math.floor(rect.width);
+  const h = Math.floor(rect.height);
+  if (w === 0 || h === 0) return;
+  let snapshot = null;
+  if (canvas.width > 0 && canvas.height > 0) {
+    snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  }
+  canvas.width  = w;
+  canvas.height = h;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, w, h);
+  if (snapshot) ctx.putImageData(snapshot, 0, 0);
+}
+
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ===== State =====
+let isDrawing    = false;
+let lastX = 0, lastY = 0;
+let currentColor = '#EF4444';
+let brushSize    = 14;
+let erasing      = false;
+let history      = [];
+const MAX_HISTORY = 30;
+
+function saveHistory() {
+  const snap = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  history.push(snap);
+  if (history.length > MAX_HISTORY) history.shift();
+}
+
+function selectColor(color, btnEl) {
+  currentColor = color;
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  if (erasing) {
+    erasing = false;
+    document.getElementById('btnEraser').classList.remove('active');
+  }
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const src  = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left) * (canvas.width  / rect.width),
+    y: (src.clientY - rect.top)  * (canvas.height / rect.height),
+  };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  saveHistory();
+  isDrawing = true;
+  const { x, y } = getPos(e);
+  lastX = x; lastY = y;
+  // Draw a dot on tap
+  ctx.beginPath();
+  ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+  ctx.fillStyle = erasing ? '#FFFFFF' : currentColor;
+  ctx.fill();
+}
+
+function moveDraw(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const { x, y } = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(x, y);
+  ctx.strokeStyle = erasing ? '#FFFFFF' : currentColor;
+  ctx.lineWidth   = brushSize;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  ctx.stroke();
+  lastX = x; lastY = y;
+}
+
+function endDraw(e) {
+  e.preventDefault();
+  isDrawing = false;
+}
+
+canvas.addEventListener('pointerdown',   startDraw);
+canvas.addEventListener('pointermove',   moveDraw);
+canvas.addEventListener('pointerup',     endDraw);
+canvas.addEventListener('pointercancel', endDraw);
+canvas.addEventListener('pointerleave',  endDraw);
+
+// ===== Brush size buttons =====
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    brushSize = parseInt(btn.dataset.size);
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ===== Eraser =====
+document.getElementById('btnEraser').addEventListener('click', () => {
+  erasing = !erasing;
+  document.getElementById('btnEraser').classList.toggle('active', erasing);
+});
+
+// ===== Undo =====
+document.getElementById('btnUndo').addEventListener('click', () => {
+  if (history.length === 0) return;
+  const snap = history.pop();
+  ctx.putImageData(snap, 0, 0);
+});
+
+// ===== Clear =====
+document.getElementById('btnClear').addEventListener('click', () => {
+  saveHistory();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
+
+// ===== Save =====
+document.getElementById('btnSave').addEventListener('click', () => {
+  try {
+    localStorage.setItem('pono_drawing', canvas.toDataURL('image/png'));
+    const toast = document.getElementById('saveToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  } catch (e) {
+    // localStorage quota exceeded
+  }
+});
+
+// Initial white fill
+resizeCanvas();
+</script>
+</body>
+</html>
