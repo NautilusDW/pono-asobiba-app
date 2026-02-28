@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ブロックくずし | ポノのあそびば</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --primary: #FF6B9D;
+  --secondary: #C084FC;
+  --text: #5B4A3F;
+  --shadow: 0 4px 20px rgba(91,74,63,0.1);
+  --radius: 20px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--text);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 8px;
+  gap: 6px;
+}
+
+/* ===== Header ===== */
+.header {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 4px 0;
+  position: relative;
+}
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--primary); font-weight: 700; font-size: 0.85rem;
+  text-decoration: none;
+}
+.header h1 {
+  font-size: 1.3rem; font-weight: 900;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ===== HUD ===== */
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+  font-weight: 900;
+  font-size: 0.88rem;
+}
+#hud-lives { font-size: 1.05rem; letter-spacing: 1px; }
+#hud-stage { color: var(--primary); }
+#hud-score { color: var(--text); }
+
+/* ===== Game area ===== */
+.game-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  touch-action: none;
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%; height: 100%;
+  touch-action: none;
+}
+
+/* ===== Confetti ===== */
+.confetti-container {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 10; overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  animation: cfall 2.5s ease-out forwards;
+}
+@keyframes cfall {
+  0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+/* ===== Overlay ===== */
+.overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,248,240,0.92);
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.25s ease;
+}
+.overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.ov-card {
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 24px 28px;
+}
+.ov-icon  { font-size: 3.5rem; line-height: 1; }
+.ov-title {
+  font-size: 1.8rem; font-weight: 900;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.ov-msg { font-size: 0.95rem; font-weight: 700; color: var(--text); white-space: pre-line; }
+.ov-btn {
+  margin-top: 6px;
+  padding: 12px 30px;
+  border: none; border-radius: 50px;
+  font-family: inherit; font-size: 1rem; font-weight: 900;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(249,115,22,0.4);
+  transition: transform 0.15s;
+}
+.ov-btn:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <a href="../index.html" class="back-link">← メニュー</a>
+    <h1>ブロックくずし</h1>
+  </div>
+
+  <div class="hud">
+    <div id="hud-lives">❤️❤️❤️</div>
+    <div id="hud-stage">ステージ 1</div>
+    <div id="hud-score">0てん</div>
+  </div>
+
+  <div class="game-wrap" id="gameWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="confetti-container" id="confetti"></div>
+    <div class="overlay" id="overlay">
+      <div class="ov-card">
+        <div class="ov-icon"  id="ov-icon">🧱</div>
+        <div class="ov-title" id="ov-title">ブロックくずし</div>
+        <div class="ov-msg"   id="ov-msg">タップして はじめよう！</div>
+        <button class="ov-btn" id="ov-btn">スタート ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== roundRect polyfill =====
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r !== 'number') r = Array.isArray(r) ? r[0] : 0;
+    r = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    this.closePath();
+  };
+}
+
+// ===== Stage data =====
+const STAGES = [
+  {
+    speed: 3.5, label: '1',
+    layout: [
+      [1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1],
+    ]
+  },
+  {
+    speed: 4.5, label: '2',
+    layout: [
+      [1,1,1,1,1,1,1],
+      [1,0,1,0,1,0,1],
+      [0,1,1,1,1,1,0],
+      [1,0,1,0,1,0,1],
+      [1,1,1,1,1,1,1],
+    ]
+  },
+  {
+    speed: 5, label: '3',
+    layout: [
+      [2,2,2,2,2,2,2],
+      [2,1,1,1,1,1,2],
+      [2,1,2,1,2,1,2],
+      [2,1,1,1,1,1,2],
+      [2,2,2,2,2,2,2],
+      [0,2,0,0,0,2,0],
+    ]
+  }
+];
+
+const ROW_COLORS = [
+  '#EF4444', '#F97316', '#EAB308',
+  '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899'
+];
+
+// ===== State machine =====
+const S = { IDLE:0, READY:1, PLAYING:2, STAGE_CLEAR:3, GAME_OVER:4, GAME_CLEAR:5 };
+let state = S.IDLE;
+
+// ===== Game variables =====
+let lives    = 3;
+let score    = 0;
+let stageIdx = 0;
+let blocks   = [];
+
+const paddle = { x: 0, y: 0, w: 0, h: 0, targetX: 0 };
+const ball   = { x: 0, y: 0, r: 0, vx: 0, vy: 0, onPaddle: true };
+
+// ===== Canvas =====
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('gameWrap');
+let CW = 0, CH = 0;
+
+function resize() {
+  const rect = wrap.getBoundingClientRect();
+  CW = canvas.width  = Math.floor(rect.width);
+  CH = canvas.height = Math.floor(rect.height);
+
+  paddle.w = Math.min(CW * 0.30, 110);
+  paddle.h = Math.max(10, CH * 0.024);
+  paddle.y = CH * 0.87;
+  ball.r   = Math.max(7, CW * 0.024);
+
+  if (state === S.IDLE || state === S.READY) {
+    paddle.x = (CW - paddle.w) / 2;
+    paddle.targetX = paddle.x;
+    resetBallToPaddle();
+  }
+  buildBlocks();
+}
+
+window.addEventListener('resize', resize);
+
+// ===== Blocks =====
+function buildBlocks() {
+  const layout = STAGES[stageIdx].layout;
+  const COLS   = 7;
+  const gap    = Math.max(4, CW * 0.012);
+  const bw     = (CW - gap * (COLS + 1)) / COLS;
+  const bh     = bw * 0.40;
+  const startY = CH * 0.06;
+
+  blocks = [];
+  for (let r = 0; r < layout.length; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const hp = layout[r][c];
+      if (!hp) continue;
+      blocks.push({
+        x: gap + c * (bw + gap),
+        y: startY + r * (bh + gap),
+        w: bw, h: bh,
+        hp, maxHp: hp, row: r
+      });
+    }
+  }
+}
+
+// ===== Input =====
+let pointerX = -1;
+
+wrap.addEventListener('pointermove', e => {
+  const rect = canvas.getBoundingClientRect();
+  pointerX = (e.clientX - rect.left) * (CW / rect.width);
+});
+
+wrap.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  pointerX = (e.clientX - rect.left) * (CW / rect.width);
+  if (state === S.READY) launchBall();
+});
+
+// ===== Audio =====
+let audioCtx = null;
+function getAC() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function withAudio(fn) {
+  const ac = getAC();
+  if (ac.state === 'running') fn(ac);
+  else ac.resume().then(() => fn(ac)).catch(() => {});
+}
+document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
+
+function beep(ac, freq, t, dur, type = 'sine', vol = 0.25) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+
+function playBlockHit()  { withAudio(ac => beep(ac, 500 + Math.random()*300, ac.currentTime, 0.07, 'square', 0.18)); }
+function playPaddleHit() { withAudio(ac => beep(ac, 350, ac.currentTime, 0.1, 'sine', 0.28)); }
+function playMiss()      {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [350, 280, 200].forEach((f, i) => beep(ac, f, t + i*0.1, 0.15, 'sine', 0.25));
+  });
+}
+function playStageClear() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => beep(ac, f, t + i*0.13, 0.3, 'sine', 0.28));
+  });
+}
+
+// ===== Ball =====
+function launchBall() {
+  const angle = -Math.PI / 2 + (Math.random() * 0.5 - 0.25);
+  const spd   = STAGES[stageIdx].speed;
+  ball.vx      = Math.cos(angle) * spd;
+  ball.vy      = Math.sin(angle) * spd;
+  ball.onPaddle = false;
+  state = S.PLAYING;
+}
+
+function resetBallToPaddle() {
+  ball.onPaddle = true;
+  ball.x = paddle.x + paddle.w / 2;
+  ball.y = paddle.y - ball.r - 2;
+}
+
+// ===== Update =====
+function update(dt) {
+  // Paddle follows pointer
+  if (pointerX >= 0) {
+    paddle.targetX = pointerX - paddle.w / 2;
+  }
+  paddle.targetX = Math.max(0, Math.min(CW - paddle.w, paddle.targetX));
+  paddle.x += (paddle.targetX - paddle.x) * Math.min(1, 0.35 * dt);
+
+  if (ball.onPaddle) {
+    ball.x = paddle.x + paddle.w / 2;
+    ball.y = paddle.y - ball.r - 2;
+    return;
+  }
+
+  // Move ball
+  ball.x += ball.vx * dt;
+  ball.y += ball.vy * dt;
+
+  // Wall - left/right
+  if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+  if (ball.x + ball.r > CW) { ball.x = CW - ball.r; ball.vx = -Math.abs(ball.vx); }
+  // Wall - top
+  if (ball.y - ball.r < 0) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); }
+
+  // Paddle collision
+  if (
+    ball.vy > 0 &&
+    ball.y + ball.r >= paddle.y &&
+    ball.y - ball.r <= paddle.y + paddle.h &&
+    ball.x > paddle.x - ball.r &&
+    ball.x < paddle.x + paddle.w + ball.r
+  ) {
+    const hitPos = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+    const angle  = hitPos * (Math.PI / 3);
+    const spd    = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+    ball.vx = Math.sin(angle) * spd;
+    ball.vy = -Math.cos(angle) * spd;
+    ball.y  = paddle.y - ball.r;
+    playPaddleHit();
+  }
+
+  // Block collisions
+  checkBlocks();
+
+  // Fell off bottom
+  if (ball.y - ball.r > CH) {
+    onMiss();
+    return;
+  }
+
+  // Stage clear check
+  if (blocks.every(b => b.hp <= 0)) {
+    onStageClear();
+  }
+}
+
+function checkBlocks() {
+  for (const b of blocks) {
+    if (b.hp <= 0) continue;
+
+    const nearX = Math.max(b.x, Math.min(ball.x, b.x + b.w));
+    const nearY = Math.max(b.y, Math.min(ball.y, b.y + b.h));
+    const dx = ball.x - nearX;
+    const dy = ball.y - nearY;
+
+    if (dx * dx + dy * dy > ball.r * ball.r) continue;
+
+    b.hp--;
+    score += b.maxHp * 10;
+    updateHUD();
+    playBlockHit();
+
+    // Determine reflection direction
+    const oL = (ball.x + ball.r) - b.x;
+    const oR = (b.x + b.w) - (ball.x - ball.r);
+    const oT = (ball.y + ball.r) - b.y;
+    const oB = (b.y + b.h) - (ball.y - ball.r);
+
+    if (Math.min(oL, oR) < Math.min(oT, oB)) {
+      ball.vx = -ball.vx;
+    } else {
+      ball.vy = -ball.vy;
+    }
+    return; // one collision per frame
+  }
+}
+
+// ===== Miss =====
+function onMiss() {
+  playMiss();
+  lives--;
+  updateHUD();
+  if (lives <= 0) {
+    state = S.GAME_OVER;
+    setTimeout(() => showOverlay('gameover'), 500);
+  } else {
+    resetBallToPaddle();
+    state = S.READY;
+  }
+}
+
+// ===== Stage clear =====
+function onStageClear() {
+  playStageClear();
+  state = S.STAGE_CLEAR;
+  launchConfetti();
+  const isLast = stageIdx >= STAGES.length - 1;
+  setTimeout(() => showOverlay(isLast ? 'gameclear' : 'stageclear'), 700);
+}
+
+// ===== HUD =====
+function updateHUD() {
+  document.getElementById('hud-lives').textContent =
+    '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+  document.getElementById('hud-stage').textContent = `ステージ ${STAGES[stageIdx].label}`;
+  document.getElementById('hud-score').textContent = `${score}てん`;
+}
+
+// ===== Confetti =====
+function launchConfetti() {
+  const c = document.getElementById('confetti');
+  const colors = ['#FF6B9D','#60A5FA','#C084FC','#4ADE80','#FBBF24','#F87171'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const sz = 6 + Math.random() * 8;
+    el.style.cssText = `
+      left:${Math.random()*100}%;
+      width:${sz}px; height:${sz}px;
+      background:${colors[Math.floor(Math.random() * colors.length)]};
+      border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-delay:${Math.random() * 0.4}s;
+      animation-duration:${2 + Math.random()}s;
+    `;
+    c.appendChild(el);
+  }
+  setTimeout(() => { c.innerHTML = ''; }, 3500);
+}
+
+// ===== Overlay =====
+const overlay = document.getElementById('overlay');
+
+function showOverlay(type) {
+  const icon  = document.getElementById('ov-icon');
+  const title = document.getElementById('ov-title');
+  const msg   = document.getElementById('ov-msg');
+  const btn   = document.getElementById('ov-btn');
+  overlay.classList.remove('hidden');
+
+  if (type === 'start') {
+    icon.textContent  = '🧱';
+    title.textContent = 'ブロックくずし';
+    msg.textContent   = 'タップして はじめよう！';
+    btn.textContent   = 'スタート ▶';
+    btn.onclick = startGame;
+  } else if (type === 'stageclear') {
+    icon.textContent  = '🎉';
+    title.textContent = `ステージ${STAGES[stageIdx].label} クリア！`;
+    msg.textContent   = 'つぎのステージへ！';
+    btn.textContent   = 'つぎへ ▶';
+    btn.onclick = nextStage;
+  } else if (type === 'gameclear') {
+    icon.textContent  = '🏆';
+    title.textContent = 'ぜんぶ クリア！';
+    msg.textContent   = `すごい！ さいこう！\n${score}てん`;
+    btn.textContent   = 'もう一回 ▶';
+    btn.onclick = startGame;
+  } else if (type === 'gameover') {
+    icon.textContent  = '😢';
+    title.textContent = 'もう一回！';
+    msg.textContent   = `${score}てん とれたよ！`;
+    btn.textContent   = 'もう一回 ▶';
+    btn.onclick = startGame;
+  }
+}
+
+// ===== Start / Next =====
+function startGame() {
+  overlay.classList.add('hidden');
+  lives = 3; score = 0; stageIdx = 0;
+  buildBlocks();
+  paddle.x = (CW - paddle.w) / 2;
+  paddle.targetX = paddle.x;
+  updateHUD();
+  state = S.IDLE;
+  setTimeout(() => { resetBallToPaddle(); state = S.READY; }, 150);
+}
+
+function nextStage() {
+  overlay.classList.add('hidden');
+  stageIdx++;
+  buildBlocks();
+  paddle.x = (CW - paddle.w) / 2;
+  paddle.targetX = paddle.x;
+  updateHUD();
+  state = S.IDLE;
+  setTimeout(() => { resetBallToPaddle(); state = S.READY; }, 150);
+}
+
+// ===== Draw =====
+function draw() {
+  ctx.clearRect(0, 0, CW, CH);
+
+  // Background
+  ctx.fillStyle = '#FFFBF5';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Blocks
+  for (const b of blocks) {
+    if (b.hp <= 0) continue;
+    const color = ROW_COLORS[b.row % ROW_COLORS.length];
+    ctx.globalAlpha = b.hp < b.maxHp ? 0.48 : 1;
+
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 5);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Shine
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(b.x + 3, b.y + 2, b.w - 6, b.h * 0.38);
+
+    // Star indicator on 2-hit blocks (at full hp)
+    if (b.maxHp > 1 && b.hp === b.maxHp) {
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.font = `900 ${Math.floor(b.h * 0.56)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', b.x + b.w / 2, b.y + b.h / 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Paddle
+  const pg = ctx.createLinearGradient(paddle.x, 0, paddle.x + paddle.w, 0);
+  pg.addColorStop(0, '#FF6B9D');
+  pg.addColorStop(1, '#C084FC');
+  ctx.beginPath();
+  ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, paddle.h / 2);
+  ctx.fillStyle = pg;
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.36)';
+  ctx.fillRect(paddle.x + 5, paddle.y + 2, paddle.w - 10, paddle.h * 0.48);
+
+  // Ball
+  const bg = ctx.createRadialGradient(
+    ball.x - ball.r * 0.28, ball.y - ball.r * 0.32, ball.r * 0.08,
+    ball.x, ball.y, ball.r
+  );
+  bg.addColorStop(0, '#FBBF24');
+  bg.addColorStop(1, '#F97316');
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+
+  // Ball highlight
+  ctx.beginPath();
+  ctx.arc(ball.x - ball.r * 0.28, ball.y - ball.r * 0.32, ball.r * 0.26, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.72)';
+  ctx.fill();
+
+  // READY state: pulsing ring + hint text
+  if (state === S.READY) {
+    const pulse = (Math.sin(Date.now() / 400) + 1) / 2;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r + 4 + pulse * 7, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,107,157,${0.6 - pulse * 0.4})`;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(93,74,63,0.52)';
+    ctx.font = `900 ${Math.max(13, Math.floor(CW * 0.042))}px 'Zen Maru Gothic', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('タップして とばそう！', CW / 2, CH * 0.68);
+  }
+}
+
+// ===== Game loop =====
+let lastTs = 0;
+function loop(ts) {
+  const dt = lastTs ? Math.min((ts - lastTs) / 16.67, 1.5) : 1;
+  lastTs = ts;
+  if (state === S.PLAYING || state === S.READY) update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ===== Init =====
+resize();
+updateHUD();
+showOverlay('start');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
