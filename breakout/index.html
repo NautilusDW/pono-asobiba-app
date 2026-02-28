@@ -73,7 +73,27 @@ html, body {
 }
 #hud-lives { font-size: 1.05rem; letter-spacing: 1px; }
 #hud-stage { color: var(--primary); }
-#hud-score { color: var(--text); }
+#hud-score { text-align: right; line-height: 1.2; color: var(--text); }
+.hud-hi    { display: block; font-size: 0.72em; color: var(--primary); opacity: 0.85; }
+
+/* ===== New record toast ===== */
+.hi-toast {
+  position: absolute;
+  top: 10px; left: 50%; transform: translateX(-50%) scale(1);
+  background: linear-gradient(135deg, #FCD34D, #F97316);
+  color: #fff; font-size: 0.92rem; font-weight: 900;
+  padding: 6px 20px; border-radius: 20px;
+  z-index: 30; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+}
+.hi-toast.show {
+  opacity: 1;
+  animation: hiPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes hiPop {
+  from { transform: translateX(-50%) scale(0.5); }
+  to   { transform: translateX(-50%) scale(1); }
+}
 
 /* ===== Game area ===== */
 .game-wrap {
@@ -154,11 +174,15 @@ html, body {
   <div class="hud">
     <div id="hud-lives">❤️❤️❤️</div>
     <div id="hud-stage">ステージ 1</div>
-    <div id="hud-score">0てん</div>
+    <div id="hud-score">
+      <span id="score-now">0てん</span>
+      <span class="hud-hi" id="score-hi">ベスト: 0てん</span>
+    </div>
   </div>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
+    <div class="hi-toast" id="hi-toast">🌟 しんきろく！</div>
     <div class="confetti-container" id="confetti"></div>
     <div class="overlay" id="overlay">
       <div class="ov-card">
@@ -232,6 +256,26 @@ const ROW_COLORS = [
 // ===== State machine =====
 const S = { IDLE:0, READY:1, PLAYING:2, STAGE_CLEAR:3, GAME_OVER:4, GAME_CLEAR:5 };
 let state = S.IDLE;
+
+// ===== High score =====
+const HI_KEY  = 'pono_breakout_hi';
+let hiScore   = parseInt(localStorage.getItem(HI_KEY) || '0');
+let recordShown = false; // flag: "新記録" toast shown this game
+
+function checkNewRecord() {
+  if (!recordShown && score > hiScore) {
+    recordShown = true;
+    const toast = document.getElementById('hi-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+}
+function saveHiScore() {
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem(HI_KEY, hiScore);
+  }
+}
 
 // ===== Game variables =====
 let lives    = 3;
@@ -431,6 +475,7 @@ function checkBlocks() {
     b.hp--;
     score += b.maxHp * 10;
     updateHUD();
+    checkNewRecord();
     playBlockHit();
 
     // Determine reflection direction
@@ -454,6 +499,7 @@ function onMiss() {
   lives--;
   updateHUD();
   if (lives <= 0) {
+    saveHiScore();
     state = S.GAME_OVER;
     setTimeout(() => showOverlay('gameover'), 500);
   } else {
@@ -468,6 +514,7 @@ function onStageClear() {
   state = S.STAGE_CLEAR;
   launchConfetti();
   const isLast = stageIdx >= STAGES.length - 1;
+  if (isLast) saveHiScore();
   setTimeout(() => showOverlay(isLast ? 'gameclear' : 'stageclear'), 700);
 }
 
@@ -476,7 +523,8 @@ function updateHUD() {
   document.getElementById('hud-lives').textContent =
     '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
   document.getElementById('hud-stage').textContent = `ステージ ${STAGES[stageIdx].label}`;
-  document.getElementById('hud-score').textContent = `${score}てん`;
+  document.getElementById('score-now').textContent = `${score}てん`;
+  document.getElementById('score-hi').textContent  = `ベスト: ${hiScore}てん`;
 }
 
 // ===== Confetti =====
@@ -525,13 +573,14 @@ function showOverlay(type) {
   } else if (type === 'gameclear') {
     icon.textContent  = '🏆';
     title.textContent = 'ぜんぶ クリア！';
-    msg.textContent   = `すごい！ さいこう！\n${score}てん`;
+    msg.textContent   = `すごい！ さいこう！\n${score}てん 🌟ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
     btn.onclick = startGame;
   } else if (type === 'gameover') {
-    icon.textContent  = '😢';
-    title.textContent = 'もう一回！';
-    msg.textContent   = `${score}てん とれたよ！`;
+    const isRecord = recordShown; // 今回新記録を出したか
+    icon.textContent  = isRecord ? '🌟' : '😢';
+    title.textContent = isRecord ? 'しんきろく！' : 'もう一回！';
+    msg.textContent   = `${score}てん とれたよ！\nベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
     btn.onclick = startGame;
   }
@@ -541,6 +590,8 @@ function showOverlay(type) {
 function startGame() {
   overlay.classList.add('hidden');
   lives = 3; score = 0; stageIdx = 0;
+  recordShown = false;
+  hiScore = parseInt(localStorage.getItem(HI_KEY) || '0'); // reload in case updated
   buildBlocks();
   paddle.x = (CW - paddle.w) / 2;
   paddle.targetX = paddle.x;
