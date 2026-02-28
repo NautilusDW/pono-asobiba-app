@@ -279,19 +279,18 @@ html, body {
 /* ===== Canvas wrapper for hedgehog peek effect ===== */
 .canvas-wrap { position: relative; }
 @keyframes hedgehog-peek {
-  /* fully hidden behind canvas */
-  0%, 18%   { transform: translateY(95px); }
-  /* pop up — slight overshoot */
-  28%       { transform: translateY(-12px); }
-  33%       { transform: translateY(0); }
-  /* wave twice (small bob) */
-  38%       { transform: translateY(-8px); }
-  43%       { transform: translateY(0); }
-  48%       { transform: translateY(-8px); }
-  /* settle and stay peeked */
-  53%, 68%  { transform: translateY(0); }
-  /* slide back down */
-  80%, 100% { transform: translateY(95px); }
+  /* hidden for ~7s out of 10s */
+  0%, 70%  { transform: translateY(95px); }
+  /* pop up with slight overshoot */
+  78%      { transform: translateY(-12px); }
+  82%      { transform: translateY(0); }
+  /* wave twice */
+  85%      { transform: translateY(-8px); }
+  88%      { transform: translateY(0); }
+  90%      { transform: translateY(-8px); }
+  /* settle ~2s then slide back */
+  93%      { transform: translateY(0); }
+  100%     { transform: translateY(95px); }
 }
 
 .hedgehog-deco {
@@ -301,7 +300,7 @@ html, body {
   width: 123px;  /* 82px × 1.5 */
   pointer-events: none;
   filter: drop-shadow(1px 2px 5px rgba(0,0,0,0.15));
-  animation: hedgehog-peek 6s ease-in-out infinite;
+  animation: hedgehog-peek 15s ease-in-out infinite;
   animation-delay: 2s;
 }
 
