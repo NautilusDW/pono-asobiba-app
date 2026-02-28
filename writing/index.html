@@ -276,6 +276,13 @@ html, body {
 /* ===== Character Extension Point (future AI characters) ===== */
 .character-slot { position: fixed; bottom: 80px; right: 10px; width: 80px; height: 80px; z-index: 50; display: none; }
 
+/* ===== Pono decoration (bottom-left) ===== */
+.pono-deco {
+  position: fixed; bottom: 0; left: 8px;
+  width: 90px; z-index: 50; pointer-events: none;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.15));
+}
+
 /* ===== Responsive ===== */
 @media (max-height: 600px) {
   .header h1 { font-size: 1.1rem; }
@@ -325,6 +332,7 @@ html, body {
   <div class="completion-msg">できた！🎉</div>
 </div>
 <div class="character-slot" id="characterSlot"></div>
+<img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.png" alt="ポノ">
 
 <!-- Milestone Modal -->
 <div id="milestone-modal" class="milestone-modal hidden">
