@@ -236,7 +236,7 @@ Events.on(render, 'beforeRender', () => {
   if (!lastTs) { lastTs = now; return; }
   const dt = Math.min((now - lastTs) / 1000, 0.05);
   lastTs = now;
-  swingPhase += 2.2 * dt;
+  swingPhase += 1.2 * dt;
   swingX = CW/2 + Math.sin(swingPhase) * (CW * 0.36);
 });
 
