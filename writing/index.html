@@ -280,25 +280,25 @@ html, body {
 .canvas-wrap { position: relative; }
 @keyframes hedgehog-peek {
   /* fully hidden behind canvas */
-  0%, 18%   { transform: translateY(120px); }
-  /* pop up — overshoot for springy feel */
-  28%       { transform: translateY(-90px); }
-  33%       { transform: translateY(-75px); }
-  /* wave twice (bob up/down) */
-  38%       { transform: translateY(-85px); }
-  43%       { transform: translateY(-75px); }
-  48%       { transform: translateY(-85px); }
+  0%, 18%   { transform: translateY(95px); }
+  /* pop up — slight overshoot */
+  28%       { transform: translateY(-12px); }
+  33%       { transform: translateY(0); }
+  /* wave twice (small bob) */
+  38%       { transform: translateY(-8px); }
+  43%       { transform: translateY(0); }
+  48%       { transform: translateY(-8px); }
   /* settle and stay peeked */
-  53%, 68%  { transform: translateY(-75px); }
+  53%, 68%  { transform: translateY(0); }
   /* slide back down */
-  80%, 100% { transform: translateY(120px); }
+  80%, 100% { transform: translateY(95px); }
 }
 
 .hedgehog-deco {
   position: absolute;
-  bottom: calc(100% - 50px);
+  bottom: calc(100% - 45px);  /* 45px inside canvas = bottom portion hidden */
   right: 10px;
-  width: 82px;
+  width: 123px;  /* 82px × 1.5 */
   pointer-events: none;
   filter: drop-shadow(1px 2px 5px rgba(0,0,0,0.15));
   animation: hedgehog-peek 6s ease-in-out infinite;
