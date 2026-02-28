@@ -256,6 +256,61 @@ html, body {
   .color-btn { width: 28px; height: 28px; }
   .tool-btn { padding: 6px 10px; font-size: 0.75rem; }
 }
+
+/* ===== 2列目ツールバー ===== */
+.toolbar-special {
+  display: flex; gap: 6px;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ===== 特殊ブラシボタン ===== */
+.btn-stamp          { background: #FDF4FF; color: #A855F7; }
+.btn-stamp.active   { background: linear-gradient(135deg, #A855F7, #C084FC); color: #fff; }
+.btn-rainbow        { background: #FFF7ED; color: #F97316; }
+.btn-rainbow.active { background: linear-gradient(135deg, #F97316, #FACC15, #4ADE80, #3B82F6, #A855F7); color: #fff; }
+.btn-sparkle        { background: #FEFCE8; color: #CA8A04; }
+.btn-sparkle.active { background: linear-gradient(135deg, #FFD700, #FF69B4); color: #fff; }
+
+/* ===== スタンプパネル ===== */
+.stamp-panel {
+  background: rgba(255,255,255,0.92);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 8px 10px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 120px; opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+}
+.stamp-panel.hidden {
+  max-height: 0; opacity: 0;
+  padding-top: 0; padding-bottom: 0;
+  overflow: hidden; pointer-events: none;
+}
+.stamp-grid {
+  display: flex; gap: 6px;
+  width: max-content; padding: 2px 0;
+}
+.stamp-item {
+  width: 50px; height: 50px; flex-shrink: 0;
+  border-radius: 12px; border: 2.5px solid transparent;
+  background: #FFF8E7; font-size: 1.6rem;
+  cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: border-color 0.15s, transform 0.15s;
+}
+.stamp-item.active { border-color: var(--primary); transform: scale(1.12); background: #FFF0F8; }
+.stamp-item:active { transform: scale(0.9); }
+.stamp-img-btn { padding: 4px; }
+.stamp-img-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+@media (max-height: 600px) {
+  .stamp-panel { max-height: 80px; }
+  .stamp-item  { width: 40px; height: 40px; font-size: 1.3rem; }
+}
 </style>
 </head>
 <audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="auto"></audio>
@@ -272,6 +327,29 @@ html, body {
     <canvas id="drawCanvas"></canvas>
   </div>
 
+  <div class="stamp-panel hidden" id="stampPanel">
+    <div class="stamp-grid" id="stampGrid">
+      <button class="stamp-item active" data-type="emoji" data-value="🌟">🌟</button>
+      <button class="stamp-item" data-type="emoji" data-value="❤️">❤️</button>
+      <button class="stamp-item" data-type="emoji" data-value="🌈">🌈</button>
+      <button class="stamp-item" data-type="emoji" data-value="🌸">🌸</button>
+      <button class="stamp-item" data-type="emoji" data-value="🎈">🎈</button>
+      <button class="stamp-item" data-type="emoji" data-value="⭐">⭐</button>
+      <button class="stamp-item" data-type="emoji" data-value="🦋">🦋</button>
+      <button class="stamp-item" data-type="emoji" data-value="🍀">🍀</button>
+      <button class="stamp-item" data-type="emoji" data-value="✨">✨</button>
+      <button class="stamp-item" data-type="emoji" data-value="🐾">🐾</button>
+      <button class="stamp-item" data-type="emoji" data-value="🌺">🌺</button>
+      <button class="stamp-item" data-type="emoji" data-value="🎀">🎀</button>
+      <button class="stamp-item stamp-img-btn" data-type="image" data-src="../assets/images/characters/pono_side_fullbody.webp">
+        <img src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
+      </button>
+      <button class="stamp-item stamp-img-btn" data-type="image" data-src="../assets/images/characters/headgehog_wavehand_front01.webp">
+        <img src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="はりねずみ">
+      </button>
+    </div>
+  </div>
+
   <div class="color-palette" id="colorPalette"></div>
 
   <div class="toolbar">
@@ -283,6 +361,12 @@ html, body {
     <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶ</button>
     <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
     <button class="tool-btn btn-gallery" id="btnGallery">🖼</button>
+  </div>
+
+  <div class="toolbar toolbar-special">
+    <button class="tool-btn btn-stamp"   id="btnStamp">🔖 スタンプ</button>
+    <button class="tool-btn btn-rainbow" id="btnRainbow">🌈 レインボー</button>
+    <button class="tool-btn btn-sparkle" id="btnSparkle">✨ きらきら</button>
   </div>
 </div>
 
@@ -359,20 +443,51 @@ let erasing      = false;
 let history      = [];
 const MAX_HISTORY = 30;
 
+// Stamp
+let stamping   = false;
+let stampType  = 'emoji';
+let stampValue = '🌟';
+let stampImage = null;
+const STAMP_SIZES = { 4: 60, 14: 100, 28: 150 };
+
+// Rainbow
+let rainbow = false;
+let hue     = 0;
+
+// Sparkle
+let sparkle = false;
+const SPARKLE_COLORS = ['#FFD700','#FF69B4','#00E5FF','#FFFFFF','#E0B0FF'];
+
 function saveHistory() {
   const snap = ctx.getImageData(0, 0, canvas.width, canvas.height);
   history.push(snap);
   if (history.length > MAX_HISTORY) history.shift();
 }
 
+function deactivateEraser()  { erasing=false;  document.getElementById('btnEraser').classList.remove('active'); }
+function deactivateStamp()   { stamping=false; document.getElementById('btnStamp').classList.remove('active'); document.getElementById('stampPanel').classList.add('hidden'); }
+function deactivateRainbow() { rainbow=false;  document.getElementById('btnRainbow').classList.remove('active'); }
+function deactivateSparkle() { sparkle=false;  document.getElementById('btnSparkle').classList.remove('active'); }
+
 function selectColor(color, btnEl) {
   currentColor = color;
   document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
   btnEl.classList.add('active');
-  if (erasing) {
-    erasing = false;
-    document.getElementById('btnEraser').classList.remove('active');
+  deactivateEraser();
+  deactivateStamp();
+}
+
+function drawStamp(x, y) {
+  const size = STAMP_SIZES[brushSize] ?? 100;
+  ctx.save();
+  if (stampType === 'emoji') {
+    ctx.font = `${size * 0.8}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(stampValue, x, y);
+  } else if (stampType === 'image' && stampImage?.complete) {
+    ctx.drawImage(stampImage, x - size/2, y - size/2, size, size);
   }
+  ctx.restore();
 }
 
 function getPos(e) {
@@ -386,14 +501,26 @@ function getPos(e) {
 
 function startDraw(e) {
   e.preventDefault();
+  const { x, y } = getPos(e);
+
+  // Stamp mode: place stamp and return (no drag drawing)
+  if (stamping) {
+    saveHistory();
+    drawStamp(x, y);
+    return;
+  }
+
   saveHistory();
   isDrawing = true;
-  const { x, y } = getPos(e);
   lastX = x; lastY = y;
   // Draw a dot on tap
+  let dotColor;
+  if (erasing) dotColor = '#FFFFFF';
+  else if (rainbow) { hue = (hue + 3) % 360; dotColor = `hsl(${hue},90%,55%)`; }
+  else dotColor = currentColor;
   ctx.beginPath();
   ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-  ctx.fillStyle = erasing ? '#FFFFFF' : currentColor;
+  ctx.fillStyle = dotColor;
   ctx.fill();
 }
 
@@ -401,14 +528,35 @@ function moveDraw(e) {
   e.preventDefault();
   if (!isDrawing) return;
   const { x, y } = getPos(e);
+
+  // Determine stroke color
+  let strokeColor;
+  if (erasing) strokeColor = '#FFFFFF';
+  else if (rainbow) { hue = (hue + 3) % 360; strokeColor = `hsl(${hue},90%,55%)`; }
+  else strokeColor = currentColor;
+
   ctx.beginPath();
   ctx.moveTo(lastX, lastY);
   ctx.lineTo(x, y);
-  ctx.strokeStyle = erasing ? '#FFFFFF' : currentColor;
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth   = brushSize;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
   ctx.stroke();
+
+  // Sparkle scatter
+  if (sparkle && !erasing) {
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.arc(x + (Math.random() - 0.5) * 36, y + (Math.random() - 0.5) * 36,
+              1.5 + Math.random() * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = rainbow
+        ? `hsl(${(hue + i * 30) % 360},90%,70%)`
+        : SPARKLE_COLORS[Math.floor(Math.random() * 5)];
+      ctx.fill();
+    }
+  }
+
   lastX = x; lastY = y;
 }
 
@@ -436,6 +584,47 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 document.getElementById('btnEraser').addEventListener('click', () => {
   erasing = !erasing;
   document.getElementById('btnEraser').classList.toggle('active', erasing);
+  if (erasing) { deactivateStamp(); deactivateRainbow(); deactivateSparkle(); }
+});
+
+// ===== Stamp =====
+document.getElementById('btnStamp').addEventListener('click', () => {
+  stamping = !stamping;
+  document.getElementById('btnStamp').classList.toggle('active', stamping);
+  if (stamping) {
+    deactivateEraser(); deactivateRainbow(); deactivateSparkle();
+    document.getElementById('stampPanel').classList.remove('hidden');
+  } else {
+    document.getElementById('stampPanel').classList.add('hidden');
+  }
+});
+
+document.getElementById('stampGrid').addEventListener('click', e => {
+  const item = e.target.closest('.stamp-item');
+  if (!item) return;
+  document.querySelectorAll('.stamp-item').forEach(b => b.classList.remove('active'));
+  item.classList.add('active');
+  stampType  = item.dataset.type;
+  stampValue = item.dataset.value || item.dataset.src;
+  if (stampType === 'image') {
+    const img = new Image(); img.src = item.dataset.src; stampImage = img;
+  } else {
+    stampImage = null;
+  }
+});
+
+// ===== Rainbow =====
+document.getElementById('btnRainbow').addEventListener('click', () => {
+  rainbow = !rainbow;
+  document.getElementById('btnRainbow').classList.toggle('active', rainbow);
+  if (rainbow) { deactivateEraser(); deactivateStamp(); }
+});
+
+// ===== Sparkle =====
+document.getElementById('btnSparkle').addEventListener('click', () => {
+  sparkle = !sparkle;
+  document.getElementById('btnSparkle').classList.toggle('active', sparkle);
+  if (sparkle) { deactivateEraser(); deactivateStamp(); }
 });
 
 // ===== Undo =====
