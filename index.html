@@ -116,6 +116,7 @@
     .card-coloring  { background: linear-gradient(135deg, #FBBF24, #FB923C); }
     .card-stacking  { background: linear-gradient(135deg, #22C55E, #16A34A); }
     .card-wordmatch { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
+    .card-message   { background: linear-gradient(135deg, #22D3EE, #3B82F6); }
 
     .card-icon  { font-size: 2.4rem; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.12)); }
     .card-body  { text-align: center; }
@@ -281,77 +282,7 @@
     }
 
     /* ===== Footer ===== */
-    .footer {
-      font-size: 0.75rem; color: var(--text-light); font-weight: 700;
-      display: flex; align-items: center; justify-content: space-between;
-      width: 100%; max-width: 400px; gap: 8px;
-    }
-
-    /* ===== Author Modal ===== */
-    .author-btn {
-      background: none; border: none; cursor: pointer;
-      color: var(--text-light); font-family: inherit;
-      font-size: 0.78rem; font-weight: 700;
-      padding: 4px 8px; border-radius: 20px;
-      transition: background 0.2s; flex-shrink: 0;
-    }
-    .author-btn:hover { background: var(--primary-light); }
-
-    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes cardIn  {
-      from { transform: scale(0.5) translateY(40px); opacity: 0; }
-      to   { transform: scale(1)   translateY(0);    opacity: 1; }
-    }
-    .author-modal {
-      display: none;
-      position: fixed; inset: 0; z-index: 1200;
-      align-items: center; justify-content: center;
-      background: rgba(93,78,55,0.5);
-      backdrop-filter: blur(4px);
-    }
-    .author-modal.open { display: flex; animation: fadeIn 0.2s ease; }
-
-    .author-card {
-      background: #fff; border-radius: 28px;
-      padding: 32px 28px 28px;
-      width: min(88vw, 360px);
-      box-shadow: 0 16px 60px rgba(93,78,55,0.25);
-      display: flex; flex-direction: column;
-      align-items: center; gap: 12px;
-      position: relative;
-      animation: cardIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .author-close {
-      position: absolute; top: 14px; right: 18px;
-      background: #FEE2E2; border: none; border-radius: 50%;
-      width: 32px; height: 32px; font-size: 0.95rem;
-      cursor: pointer; color: #EF4444; font-weight: 900;
-      display: flex; align-items: center; justify-content: center;
-      transition: transform 0.15s;
-    }
-    .author-close:active { transform: scale(0.9); }
-    .author-avatar img { width: 80px; }
-    .author-title {
-      font-size: 1.4rem; font-weight: 900;
-      background: linear-gradient(135deg, var(--primary), #F97316);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .author-msg {
-      font-size: 0.95rem; font-weight: 700;
-      color: var(--text); line-height: 1.7; text-align: center;
-    }
-    .author-play-btn {
-      display: flex; align-items: center; gap: 10px;
-      background: linear-gradient(135deg, var(--primary), #F97316);
-      color: #fff; border: none; border-radius: 30px;
-      padding: 10px 24px; font-family: inherit;
-      font-size: 1rem; font-weight: 700; cursor: pointer;
-      box-shadow: 0 4px 14px rgba(242,145,90,0.4);
-      transition: transform 0.15s; margin-top: 4px;
-    }
-    .author-play-btn:active { transform: scale(0.96); }
-    .author-play-btn.hidden { display: none; }
+    .footer { font-size: 0.75rem; color: var(--text-light); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -447,77 +378,21 @@
           <div class="card-desc">えとことばをあわせよう</div>
         </div>
       </a>
+
+      <a href="message/index.html" class="card card-message">
+        <span class="card-icon">📖</span>
+        <div class="card-body">
+          <div class="card-title">作者より</div>
+          <div class="card-desc">ネモ先生のひとりごと</div>
+        </div>
+      </a>
     </nav>
 
-    <footer class="footer">
-      <span>くまのこ ポノ のあそびば</span>
-      <button class="author-btn" id="authorBtn">✉ 作者より</button>
-    </footer>
+    <footer class="footer">くまのこ ポノ のあそびば</footer>
 
-  </div>
-
-  <!-- Author Modal -->
-  <div id="authorModal" class="author-modal" aria-hidden="true">
-    <div class="author-card">
-      <button class="author-close" id="authorClose" aria-label="閉じる">✕</button>
-      <div class="author-avatar">
-        <img src="assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
-      </div>
-      <h2 class="author-title">作者より</h2>
-      <p class="author-msg" id="authorMsg">
-        ここに作者のメッセージが入ります。<br>
-        好きなテキストに書き換えてください。
-      </p>
-      <button class="author-play-btn" id="authorPlayBtn">
-        <span id="authorPlayIcon">▶</span>
-        <span id="authorPlayLabel">声を聴く</span>
-      </button>
-      <audio id="authorAudio" src="assets/audio/author_message.mp3" preload="none"></audio>
-    </div>
   </div>
 
   <script>
-    // ===== Author Modal =====
-    (function() {
-      const modal    = document.getElementById('authorModal');
-      const openBtn  = document.getElementById('authorBtn');
-      const closeBtn = document.getElementById('authorClose');
-      const audio    = document.getElementById('authorAudio');
-      const playBtn  = document.getElementById('authorPlayBtn');
-      const playIcon = document.getElementById('authorPlayIcon');
-      const playLbl  = document.getElementById('authorPlayLabel');
-
-      audio.addEventListener('error', () => playBtn.classList.add('hidden'));
-
-      function openModal() {
-        modal.classList.add('open');
-        modal.setAttribute('aria-hidden', 'false');
-      }
-      function closeModal() {
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden', 'true');
-        audio.pause(); audio.currentTime = 0;
-        playIcon.textContent = '▶'; playLbl.textContent = '声を聴く';
-      }
-      openBtn.addEventListener('click', openModal);
-      closeBtn.addEventListener('click', closeModal);
-      modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
-      playBtn.addEventListener('click', () => {
-        if (audio.paused) {
-          audio.play().catch(() => {});
-          playIcon.textContent = '⏸'; playLbl.textContent = '一時停止';
-        } else {
-          audio.pause();
-          playIcon.textContent = '▶'; playLbl.textContent = '声を聴く';
-        }
-      });
-      audio.addEventListener('ended', () => {
-        playIcon.textContent = '▶'; playLbl.textContent = '声を聴く';
-      });
-    })();
-
-    // ===== Music Toggle =====
     const toggle = document.getElementById('music-toggle');
     const label  = document.getElementById('music-label');
     const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';

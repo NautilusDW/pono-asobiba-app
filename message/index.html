@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>作者より | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8F0;
+  --primary: #22D3EE;
+  --primary-dark: #3B82F6;
+  --accent: #F2915A;
+  --text: #5D4E37;
+  --text-light: #A89880;
+  --shadow: rgba(93, 78, 55, 0.1);
+  --radius: 20px;
+}
+
+html, body {
+  min-height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.webp');
+  background-size: cover;
+  background-position: center;
+  background-attachment: local;
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== Header ===== */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  position: relative;
+}
+.back-link {
+  color: var(--primary-dark); font-weight: 700; font-size: 0.9rem;
+  text-decoration: none; padding: 6px 4px;
+}
+.header-title {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 1.2rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+/* ===== Profile Card ===== */
+.profile-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+.profile-avatar {
+  width: 72px;
+  flex-shrink: 0;
+}
+.profile-avatar img { width: 100%; }
+.profile-name {
+  font-size: 1.1rem; font-weight: 900; color: var(--text);
+  margin-bottom: 4px;
+}
+.profile-name span {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--text-light); margin-left: 6px;
+}
+.profile-bio {
+  font-size: 0.82rem; font-weight: 700;
+  color: var(--text-light); line-height: 1.6;
+}
+
+/* ===== Section Label ===== */
+.section-label {
+  font-size: 0.82rem; font-weight: 900;
+  color: var(--text-light); letter-spacing: 0.08em;
+  padding-left: 4px;
+}
+
+/* ===== Entry Card ===== */
+.entry {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px 20px 18px;
+  box-shadow: 0 4px 20px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entry-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.entry-date {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--text-light);
+}
+.entry-badge {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  font-size: 0.7rem; font-weight: 900;
+  padding: 2px 10px; border-radius: 20px;
+}
+
+.entry-title {
+  font-size: 1.05rem; font-weight: 900;
+  color: var(--text); line-height: 1.4;
+}
+
+.entry-body {
+  font-size: 0.9rem; font-weight: 700;
+  color: var(--text); line-height: 1.85;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.entry-body p + p { margin-top: 0.8em; }
+
+.entry-audio {
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 30px;
+  outline: none;
+}
+
+/* ===== Footer ===== */
+.footer {
+  font-size: 0.72rem; color: var(--text-light);
+  font-weight: 700; text-align: center;
+  padding-top: 8px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <a href="../index.html" class="back-link">← メニュー</a>
+    <h1 class="header-title">📖 作者より</h1>
+  </header>
+
+  <div class="profile-card">
+    <div class="profile-avatar">
+      <img src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
+    </div>
+    <div>
+      <div class="profile-name">ネモ <span>作者</span></div>
+      <div class="profile-bio">
+        ポノの絵本とあそびばを作っています。<br>
+        海底2万マイルのネモ船長が好きで、この名前にしました🌊
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">✦ ネモ先生のひとりごと</div>
+
+  <!-- ===================================================
+       新しい記事はここに追加してください（↓をコピー）
+       =================================================== -->
+
+  <article class="entry">
+    <div class="entry-header">
+      <time class="entry-date">2026.03.01</time>
+      <span class="entry-badge">はじめまして</span>
+    </div>
+    <h2 class="entry-title">遊んでくれてありがとう！</h2>
+    <div class="entry-body">
+      <p>ポノのあそびばに来てくれてありがとうございます。</p>
+      <p>ポノの絵本を読んでくれた子も、このアプリで遊んでくれた子も、ネモはとっても嬉しいです。</p>
+      <p>これからも少しずつ、絵本のこと、ポノのことをここで話していけたら嬉しいな、と思っています。どうぞよろしくね！</p>
+    </div>
+    <!-- 音声がある場合はコメントを外して使ってください -->
+    <!-- <audio class="entry-audio" src="../assets/audio/msg_01.mp3" controls></audio> -->
+  </article>
+
+  <!-- ===================================================
+       ↑ 記事のコピー用テンプレート：
+
+  <article class="entry">
+    <div class="entry-header">
+      <time class="entry-date">YYYY.MM.DD</time>
+      <span class="entry-badge">バッジ名</span>
+    </div>
+    <h2 class="entry-title">タイトル</h2>
+    <div class="entry-body">
+      <p>本文1段落目</p>
+      <p>本文2段落目</p>
+    </div>
+  </article>
+
+       =================================================== -->
+
+  <footer class="footer">くまのこ ポノ のあそびば</footer>
+
+</div>
+</body>
+</html>
