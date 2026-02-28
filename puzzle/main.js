@@ -141,8 +141,6 @@ function showSuccessModal() {
 
 function hideSuccessModal() {
   successModal.classList.add('hidden');
-  const video = document.getElementById('success-video');
-  if (video) { video.pause(); video.currentTime = 0; }
 }
 
 // ===== Placeholder Image =====

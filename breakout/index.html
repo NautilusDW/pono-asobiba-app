@@ -171,9 +171,64 @@ html, body {
   transition: transform 0.15s;
 }
 .ov-btn:active { transform: scale(0.95); }
+
+/* ===== Password Overlay ===== */
+.pw-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(91,74,63,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.pw-overlay.hidden { display: none; }
+.pw-box {
+  background: #fff; border-radius: var(--radius);
+  padding: 32px 28px; text-align: center;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  display: flex; flex-direction: column; gap: 16px;
+  animation: pwPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes pwPop { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+.pw-icon  { font-size: 3rem; }
+.pw-title { font-size: 1.2rem; font-weight: 900; color: var(--text); }
+.pw-hint  { font-size: 0.78rem; color: #A89585; line-height: 1.6; }
+.pw-input {
+  width: 100%; padding: 12px 16px;
+  border: 2.5px solid #FCD34D; border-radius: 50px;
+  font-family: inherit; font-size: 1.1rem; font-weight: 700;
+  color: var(--text); background: #FFFBF0;
+  text-align: center; letter-spacing: 0.1em; outline: none;
+  transition: border-color 0.2s;
+}
+.pw-input:focus { border-color: #F97316; }
+.pw-input.error { border-color: #EF4444; animation: pwShake 0.3s; }
+@keyframes pwShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.pw-btn {
+  padding: 13px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 3px 12px rgba(249,115,22,0.4);
+}
+.pw-btn:active { transform: scale(0.95); }
+.pw-error { font-size: 0.82rem; font-weight: 700; color: #EF4444; display: none; }
+.pw-error.show { display: block; }
 </style>
 </head>
 <body>
+
+<!-- Password Overlay -->
+<div id="pwOverlay" class="pw-overlay">
+  <div class="pw-box">
+    <div class="pw-icon">🔑</div>
+    <p class="pw-title">パスワードを いれてね</p>
+    <p class="pw-hint">ほんのなかに パスワードが かいてあるよ！</p>
+    <input type="text" id="pwInput" class="pw-input" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false">
+    <p id="pwError" class="pw-error">ちがうよ！もういちど！</p>
+    <button class="pw-btn" id="pwBtn">はいる →</button>
+  </div>
+</div>
 
 <audio id="bgm" loop src="../assets/audio/Bubble Hop Playground.mp3" preload="auto"></audio>
 <div id="app">
@@ -208,6 +263,39 @@ html, body {
 </div>
 
 <script>
+// ===== Password =====
+// テスト中: CORRECT_PASSWORD = '' で何も入れなくても通過
+// 本番: CORRECT_PASSWORD = '実際のパスワード' に変更
+const CORRECT_PASSWORD = '';
+
+(function() {
+  const overlay = document.getElementById('pwOverlay');
+  const pwInput = document.getElementById('pwInput');
+  const pwBtn   = document.getElementById('pwBtn');
+  const pwError = document.getElementById('pwError');
+
+  if (sessionStorage.getItem('pono_unlocked') === '1') {
+    overlay.classList.add('hidden');
+    return;
+  }
+
+  function tryUnlock() {
+    const val = pwInput.value.trim();
+    if (CORRECT_PASSWORD === '' || val === CORRECT_PASSWORD) {
+      sessionStorage.setItem('pono_unlocked', '1');
+      overlay.classList.add('hidden');
+    } else {
+      pwInput.classList.add('error');
+      pwError.classList.add('show');
+      setTimeout(() => pwInput.classList.remove('error'), 400);
+      pwInput.select();
+    }
+  }
+
+  pwBtn.addEventListener('click', tryUnlock);
+  pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+})();
+
 // ===== roundRect polyfill =====
 if (!CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {

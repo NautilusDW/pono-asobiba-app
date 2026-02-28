@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ぬりえ | ポノのあそびば</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --primary: #FBBF24;
+  --secondary: #FB923C;
+  --text: #5B4A3F;
+  --shadow: 0 4px 20px rgba(91,74,63,0.1);
+  --radius: 20px;
+}
+
+html, body {
+  min-height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px 40px;
+  gap: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ===== Header ===== */
+.header {
+  text-align: center;
+  padding: 6px 0;
+  position: relative;
+  width: 100%;
+}
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--secondary); font-weight: 700; font-size: 0.85rem;
+  text-decoration: none; padding: 6px 2px;
+}
+.header h1 {
+  font-size: 1.5rem; font-weight: 900;
+  background: linear-gradient(135deg, #FBBF24, #FB923C);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 3px; }
+
+/* ===== Nurie Cards ===== */
+.nurie-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.nurie-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 3px solid #FDE68A;
+}
+
+.nurie-card img {
+  width: 100%;
+  display: block;
+  border-bottom: 2px solid #FDE68A;
+}
+
+.nurie-label {
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: var(--text);
+  padding: 10px 0 4px;
+}
+
+.nurie-actions {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px 16px;
+  justify-content: center;
+}
+
+.btn-dl, .btn-print {
+  flex: 1;
+  max-width: 160px;
+  padding: 11px 8px;
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: transform 0.15s;
+  box-shadow: 0 3px 10px rgba(91,74,63,0.12);
+  border: none;
+}
+.btn-dl:active, .btn-print:active { transform: scale(0.93); }
+
+.btn-dl {
+  background: linear-gradient(135deg, #34D399, #059669);
+  color: #fff;
+}
+.btn-print {
+  background: linear-gradient(135deg, #60A5FA, #3B82F6);
+  color: #fff;
+  font-family: inherit;
+}
+
+/* ===== Password Overlay ===== */
+.pw-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(91,74,63,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.pw-overlay.hidden { display: none; }
+
+.pw-box {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  text-align: center;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  display: flex; flex-direction: column; gap: 16px;
+  animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.pw-icon { font-size: 3rem; }
+.pw-title { font-size: 1.2rem; font-weight: 900; color: var(--text); }
+.pw-hint  { font-size: 0.78rem; color: #A89585; line-height: 1.6; }
+
+.pw-input {
+  width: 100%; padding: 12px 16px;
+  border: 2.5px solid #FDE68A;
+  border-radius: 50px;
+  font-family: inherit; font-size: 1.1rem; font-weight: 700;
+  color: var(--text); background: #FFFBF0;
+  text-align: center; letter-spacing: 0.1em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.pw-input:focus { border-color: var(--secondary); }
+.pw-input.error { border-color: #EF4444; animation: shake 0.3s; }
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+}
+
+.pw-btn {
+  padding: 13px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 3px 12px rgba(251,191,36,0.4);
+}
+.pw-btn:active { transform: scale(0.95); }
+
+.pw-error {
+  font-size: 0.82rem; font-weight: 700; color: #EF4444;
+  display: none;
+}
+.pw-error.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Password Overlay -->
+<div id="pwOverlay" class="pw-overlay">
+  <div class="pw-box">
+    <div class="pw-icon">🔑</div>
+    <p class="pw-title">パスワードを いれてね</p>
+    <p class="pw-hint">ほんのなかに パスワードが かいてあるよ！</p>
+    <input type="text" id="pwInput" class="pw-input" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false">
+    <p id="pwError" class="pw-error">ちがうよ！もういちど！</p>
+    <button class="pw-btn" id="pwBtn">はいる →</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <a href="../index.html" class="back-link">← メニュー</a>
+    <h1>ぬりえ</h1>
+    <div class="subtitle">いんさつしてぬってみよう！🖍️</div>
+  </div>
+
+  <div class="nurie-list">
+    <div class="nurie-card">
+      <img src="../assets/images/nurie01.png" alt="ぬりえ 1">
+      <p class="nurie-label">ぬりえ 1</p>
+      <div class="nurie-actions">
+        <a href="../assets/images/nurie01.png" download="ぬりえ1.png" class="btn-dl">⬇ ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie01.png')">🖨 いんさつ</button>
+      </div>
+    </div>
+
+    <div class="nurie-card">
+      <img src="../assets/images/nurie02.png" alt="ぬりえ 2">
+      <p class="nurie-label">ぬりえ 2</p>
+      <div class="nurie-actions">
+        <a href="../assets/images/nurie02.png" download="ぬりえ2.png" class="btn-dl">⬇ ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie02.png')">🖨 いんさつ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Password =====
+// テスト中: CORRECT_PASSWORD = '' で何も入れなくても通過
+// 本番: CORRECT_PASSWORD = '実際のパスワード' に変更
+const CORRECT_PASSWORD = '';
+
+const overlay = document.getElementById('pwOverlay');
+const pwInput = document.getElementById('pwInput');
+const pwBtn   = document.getElementById('pwBtn');
+const pwError = document.getElementById('pwError');
+
+// Already unlocked this session?
+if (sessionStorage.getItem('pono_unlocked') === '1') {
+  overlay.classList.add('hidden');
+}
+
+function tryUnlock() {
+  const val = pwInput.value.trim();
+  // テストモード: パスワード未設定なら何でも通過
+  if (CORRECT_PASSWORD === '' || val === CORRECT_PASSWORD) {
+    sessionStorage.setItem('pono_unlocked', '1');
+    overlay.classList.add('hidden');
+  } else {
+    pwInput.classList.add('error');
+    pwError.classList.add('show');
+    setTimeout(() => pwInput.classList.remove('error'), 400);
+    pwInput.select();
+  }
+}
+
+pwBtn.addEventListener('click', tryUnlock);
+pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+
+// ===== Print =====
+function printNurie(src) {
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.write(
+    '<!DOCTYPE html><html><head><style>' +
+    'body{margin:0;padding:0}img{width:100%;display:block}' +
+    '</style></head><body>' +
+    '<img src="' + src + '" onload="window.print()">' +
+    '</body></html>'
+  );
+  win.document.close();
+}
+</script>
+</body>
+</html>
