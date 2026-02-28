@@ -313,7 +313,8 @@ function checkResult() {
     updateScore();
     showFlash('success');
   } else {
-    // Miss — block fell off screen
+    // Miss — remove block from world so it can't create false landing surfaces
+    World.remove(engine.world, body);
     lives--;
     updateLives();
     showFlash('miss');
@@ -321,13 +322,20 @@ function checkResult() {
   }
 }
 
-// Early miss detection (block left the screen before timer)
+// Early miss detection + cleanup of any rogue blocks below canvas
 Events.on(engine, 'afterUpdate', () => {
-  if (!fallingBody) return;
-  if (fallingBody.position.y > CH + 80) {
+  // Falling block went off screen early
+  if (fallingBody && fallingBody.position.y > CH + 80) {
     clearTimeout(dropTimer);
     checkResult();
+    return;
   }
+  // Remove any stacked blocks that have slipped off the platform
+  engine.world.bodies.forEach(body => {
+    if (!body.isStatic && body.label === 'block' && body !== fallingBody && body.position.y > CH + 20) {
+      World.remove(engine.world, body);
+    }
+  });
 });
 
 // ===== Game Over =====
