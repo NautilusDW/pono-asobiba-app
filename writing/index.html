@@ -279,18 +279,17 @@ html, body {
 /* ===== Canvas wrapper for hedgehog peek effect ===== */
 .canvas-wrap { position: relative; }
 @keyframes hedgehog-peek {
-  /* hidden ~10.8s (60% of 18s) */
-  0%, 60%  { transform: translateY(95px); }
-  /* pop up with slight overshoot */
-  68%      { transform: translateY(-12px); }
-  72%      { transform: translateY(0); }
-  /* wave twice */
-  75%      { transform: translateY(-8px); }
-  78%      { transform: translateY(0); }
-  80%      { transform: translateY(-8px); }
-  /* stay peeked ~2.5s longer before going back */
-  83%, 88% { transform: translateY(0); }
-  /* slide back down */
+  /* hidden */
+  0%, 58%  { transform: translateY(95px); }
+  /* slow creep up — takes ~2.5s to fully appear */
+  73%      { transform: translateY(0); }
+  /* small wave */
+  77%      { transform: translateY(-6px); }
+  80%      { transform: translateY(0); }
+  82%      { transform: translateY(-6px); }
+  /* stay peeked */
+  85%, 90% { transform: translateY(0); }
+  /* slow descent */
   100%     { transform: translateY(95px); }
 }
 
@@ -302,7 +301,8 @@ html, body {
   pointer-events: none;
   filter: drop-shadow(1px 2px 5px rgba(0,0,0,0.15));
   animation: hedgehog-peek 18s ease-in-out infinite;
-  animation-delay: 2s;
+  animation-delay: 3s;
+  animation-fill-mode: backwards; /* stays hidden during delay, no flash on load */
 }
 
 /* ===== Pono decoration (aligned to canvas left edge, bottom of trace-area) ===== */
