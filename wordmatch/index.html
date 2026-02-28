@@ -337,10 +337,11 @@ const STAGES = [
 ];
 
 // ===== State =====
-let stageIdx    = 0;
-let matchedCount = 0;
-let dragCard    = null;
-let ghost       = null;
+let currentStageNum = 0; // 0-indexed; stages 0-7 = category mode, 8+ = mixed mode
+let shuffledOrder   = []; // shuffled [0..7] — filled at init
+let matchedCount    = 0;
+let dragCard        = null;
+let ghost           = null;
 
 // ===== Shuffle helper =====
 function shuffle(arr) {
@@ -352,14 +353,40 @@ function shuffle(arr) {
   return a;
 }
 
+// ===== Stage data helpers =====
+function getStageData(num) {
+  if (num < 8) return STAGES[shuffledOrder[num]];
+  return generateMixedStage(num);
+}
+
+function generateMixedStage(num) {
+  // num=8 → relative=1, num=12 → relative=5, num=16 → relative=9
+  const relative   = num - 7;
+  const crossCount = relative <= 4 ? 1 : relative <= 8 ? 2 : 4;
+  const mainCount  = 4 - crossCount;
+
+  const primaryCat = STAGES[Math.floor(Math.random() * STAGES.length)];
+  const mainPairs  = shuffle([...primaryCat.pairs]).slice(0, mainCount);
+  const crossPairs = shuffle(
+    STAGES.filter(s => s !== primaryCat).flatMap(s => s.pairs)
+  ).slice(0, crossCount);
+
+  const label = crossCount >= 4
+    ? 'まぜまぜ 🎲'
+    : crossCount === 2 ? primaryCat.name + ' ＋ まぜ'
+    : primaryCat.name;
+  return { name: label, pairs: shuffle([...mainPairs, ...crossPairs]) };
+}
+
 // ===== Load stage =====
-function loadStage(idx) {
-  stageIdx     = idx;
-  matchedCount = 0;
-  const stage  = STAGES[idx];
+function loadStage(num) {
+  currentStageNum = num;
+  matchedCount    = 0;
+  const stage     = getStageData(num);
 
   document.getElementById('stage-name').textContent = stage.name;
-  document.getElementById('stage-num').textContent  = `ステージ ${idx + 1} / ${STAGES.length}`;
+  document.getElementById('stage-num').textContent  =
+    num < 8 ? `ステージ ${num + 1} / 8` : `ステージ ${num + 1} 🎲`;
 
   // Build picture grid
   const grid = document.getElementById('pic-grid');
@@ -379,7 +406,7 @@ function loadStage(idx) {
   tray.innerHTML = '';
   shuffle(stage.pairs.map((p, i) => ({ word: p.word, idx: i }))).forEach(({ word, idx }) => {
     const card = document.createElement('div');
-    card.className  = 'word-card';
+    card.className   = 'word-card';
     card.dataset.idx = idx;
     card.textContent = word;
     card.style.touchAction = 'none';
@@ -409,7 +436,7 @@ function tryMatch(card, target) {
     target.classList.add('matched');
     card.remove();
     matchedCount++;
-    if (matchedCount === STAGES[stageIdx].pairs.length) {
+    if (matchedCount === 4) {
       setTimeout(showStageComplete, 500);
     }
   } else {
@@ -465,23 +492,28 @@ document.addEventListener('pointercancel', endDrag);
 // ===== Stage complete =====
 function showStageComplete() {
   launchConfetti();
-  const isLast = stageIdx >= STAGES.length - 1;
+  const num    = currentStageNum;
+  const isAll8 = num === 7; // ステージ8（インデックス7）をクリアした瞬間
 
-  document.getElementById('modal-emoji').textContent = isLast ? '🌟' : '🎉';
-  document.getElementById('modal-title').textContent = isLast
-    ? 'ぜんぶできた！'
-    : `ステージ ${stageIdx + 1} クリア！`;
-  document.getElementById('modal-msg').textContent = isLast
-    ? 'すごい！ぜんぶのことばを おぼえたね！'
-    : 'すごい！ぜんぶあったよ！';
+  if (isAll8) {
+    // 8カテゴリ全クリア → まぜまぜステージへの特別メッセージ
+    document.getElementById('modal-emoji').textContent = '🌟';
+    document.getElementById('modal-title').textContent = '8ステージ コンプリート！';
+    document.getElementById('modal-msg').textContent   = 'つぎから まぜまぜ ステージだよ！';
+    document.getElementById('modal-btn').textContent   = 'まぜまぜへ →';
+  } else {
+    document.getElementById('modal-emoji').textContent = '🎉';
+    document.getElementById('modal-title').textContent = `ステージ ${num + 1} クリア！`;
+    document.getElementById('modal-msg').textContent   = num >= 8
+      ? 'すごい！まぜまぜも できたね！'
+      : 'すごい！ぜんぶあったよ！';
+    document.getElementById('modal-btn').textContent   = 'つぎへ →';
+  }
 
-  const btn = document.getElementById('modal-btn');
-  btn.textContent = isLast ? 'もういちど 🔄' : 'つぎへ →';
-  btn.onclick = () => {
+  document.getElementById('modal-btn').onclick = () => {
     document.getElementById('success-modal').classList.add('hidden');
-    loadStage(isLast ? 0 : stageIdx + 1);
+    loadStage(num + 1);
   };
-
   document.getElementById('success-modal').classList.remove('hidden');
 }
 
@@ -504,6 +536,7 @@ function launchConfetti() {
 }
 
 // ===== Init =====
+shuffledOrder = shuffle([0, 1, 2, 3, 4, 5, 6, 7]);
 loadStage(0);
 </script>
 </body>
