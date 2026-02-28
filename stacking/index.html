@@ -290,49 +290,53 @@ function dropBlock() {
   const color = COLORS[colorIdx % COLORS.length];
   colorIdx++;
 
+  // Hit/miss determined at the moment of drop — no physics ambiguity
+  const platLeft  = CW/2 - PLAT_W/2;
+  const platRight = CW/2 + PLAT_W/2;
+  const isHit = swingX + BW/2 > platLeft && swingX - BW/2 < platRight;
+
   fallingBody = Bodies.rectangle(swingX, SWING_Y, BW, BH, {
     restitution: 0.12, friction: 0.9, frictionStatic: 1.2, label: 'block',
     render: { fillStyle: color, strokeStyle: 'rgba(0,0,0,0.08)', lineWidth: 1 }
   });
   Body.setVelocity(fallingBody, { x: 0, y: 4 });
   World.add(engine.world, fallingBody);
-  dropTimer = setTimeout(checkResult, 2400);
+
+  if (isHit) {
+    // Block will land on platform/stack — wait for it to settle then score
+    dropTimer = setTimeout(checkHit, 2200);
+  } else {
+    // Miss — show block falling briefly then remove it
+    dropTimer = setTimeout(doMiss, 800);
+  }
 }
 
-// ===== Check result after settling =====
-function checkResult() {
+// ===== Hit: block was on-target =====
+function checkHit() {
   if (!fallingBody) return;
   const body = fallingBody;
   fallingBody = null;
   lastTs = null;
-
-  if (body.position.y < PLAT_Y) {
-    // Success — block landed at or above the platform level
-    score++;
-    stackTopY = Math.min(stackTopY, body.position.y - BH);
-    updateScore();
-    showFlash('success');
-  } else {
-    // Miss — remove block from world so it can't create false landing surfaces
-    World.remove(engine.world, body);
-    lives--;
-    updateLives();
-    showFlash('miss');
-    if (lives <= 0) setTimeout(doGameOver, 350);
-  }
+  score++;
+  stackTopY = Math.min(stackTopY, body.position.y - BH);
+  updateScore();
+  showFlash('success');
 }
 
-// Early miss detection + cleanup of any rogue blocks below canvas
+// ===== Miss: block was off-target =====
+function doMiss() {
+  if (fallingBody) { World.remove(engine.world, fallingBody); fallingBody = null; }
+  lastTs = null;
+  lives--;
+  updateLives();
+  showFlash('miss');
+  if (lives <= 0) setTimeout(doGameOver, 350);
+}
+
+// Clean up any blocks that have fallen off the canvas
 Events.on(engine, 'afterUpdate', () => {
-  // Falling block went off screen early
-  if (fallingBody && fallingBody.position.y > CH + 80) {
-    clearTimeout(dropTimer);
-    checkResult();
-    return;
-  }
-  // Remove any stacked blocks that have slipped off the platform
   engine.world.bodies.forEach(body => {
-    if (!body.isStatic && body.label === 'block' && body !== fallingBody && body.position.y > CH + 20) {
+    if (!body.isStatic && body.label === 'block' && body.position.y > CH + BH) {
       World.remove(engine.world, body);
     }
   });
@@ -361,7 +365,7 @@ function startGame() {
   // Clear all dynamic bodies from previous game
   World.clear(engine.world);
   Engine.clear(engine);
-  World.add(engine.world, [ground, plat, wallL, wallR]);
+  World.add(engine.world, [plat, wallL, wallR]);
 
   // Reset state
   lives = 3; score = 0;
