@@ -306,8 +306,8 @@ function checkResult() {
   fallingBody = null;
   lastTs = null;
 
-  if (body.position.y < CH - 5) {
-    // Success — block is on screen
+  if (body.position.y < PLAT_Y) {
+    // Success — block landed at or above the platform level
     score++;
     stackTopY = Math.min(stackTopY, body.position.y - BH);
     updateScore();
