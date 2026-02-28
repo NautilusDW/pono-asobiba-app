@@ -213,6 +213,62 @@
       .music-row     { max-width: 580px; }
     }
 
+    /* ===== Book Banner ===== */
+    .book-banner {
+      width: 100%;
+      max-width: 400px;
+      text-decoration: none;
+      display: block;
+      background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+      border: 2px solid #F2915A;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: 0 6px 24px var(--shadow);
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .book-banner:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--shadow); }
+
+    .book-kids {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-shadow: 1px 1px 0 var(--primary-light);
+    }
+
+    .book-divider {
+      width: 40px;
+      height: 2px;
+      background: var(--primary-light);
+      margin: 8px auto;
+      border-radius: 2px;
+    }
+
+    .book-parents {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+
+    .book-cta {
+      display: inline-block;
+      margin-top: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 900;
+      padding: 6px 20px;
+      border-radius: 50px;
+      letter-spacing: 0.05em;
+    }
+
+    @media (min-width: 640px) {
+      .book-banner { max-width: 580px; }
+      .book-kids   { font-size: 1.3rem; }
+    }
+
     /* ===== Footer ===== */
     .footer { font-size: 0.75rem; color: var(--text-light); font-weight: 700; }
   </style>
@@ -258,6 +314,13 @@
         <span class="card-arrow">›</span>
       </a>
     </nav>
+
+    <a href="#" class="book-banner" target="_blank" rel="noopener" id="amazon-link">
+      <div class="book-kids">📖 ポノの おはなしを おうちで よもう！</div>
+      <div class="book-divider"></div>
+      <div class="book-parents">『ありがとう』がもっと好きになる、魔法の絵本はこちら</div>
+      <span class="book-cta">Amazonで見る →</span>
+    </a>
 
     <div class="music-row">
       <span class="music-label">おんがく</span>
