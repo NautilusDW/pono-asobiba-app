@@ -276,6 +276,18 @@ html, body {
 /* ===== Character Extension Point (future AI characters) ===== */
 .character-slot { position: fixed; bottom: 80px; right: 10px; width: 80px; height: 80px; z-index: 50; display: none; }
 
+/* ===== Canvas wrapper for hedgehog peek effect ===== */
+.canvas-wrap { position: relative; }
+.hedgehog-deco {
+  position: absolute;
+  /* bottom at 50px from canvas top → top half peeks above canvas, lower half hides behind canvas-container */
+  bottom: calc(100% - 50px);
+  right: 10px;
+  width: 82px;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 5px rgba(0,0,0,0.15));
+}
+
 /* ===== Pono decoration (aligned to canvas left edge, bottom of trace-area) ===== */
 .pono-deco {
   position: absolute;
@@ -320,9 +332,12 @@ html, body {
 
   <div class="trace-area">
     <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.png" alt="ポノ">
-    <div class="canvas-container" id="canvasContainer">
-      <div id="writerTarget"></div>
-      <div class="stroke-number-overlay" id="strokeNumbers"></div>
+    <div class="canvas-wrap">
+      <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.png" alt="ハリネズミ">
+      <div class="canvas-container" id="canvasContainer">
+        <div id="writerTarget"></div>
+        <div class="stroke-number-overlay" id="strokeNumbers"></div>
+      </div>
     </div>
   </div>
 
