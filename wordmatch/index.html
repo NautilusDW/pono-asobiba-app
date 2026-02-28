@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ことばあわせ | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8F0;
+  --primary: #F2915A;
+  --primary-light: #FDDCBF;
+  --text: #5D4E37;
+  --text-light: #A89880;
+  --shadow: rgba(93,78,55,0.12);
+  --radius: 20px;
+}
+
+html, body {
+  min-height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 32px;
+}
+
+/* ===== Header ===== */
+.header {
+  text-align: center;
+  position: relative;
+  width: 100%;
+}
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--primary); font-weight: 700; font-size: 0.85rem;
+  text-decoration: none;
+}
+.header h1 {
+  font-size: 1.4rem; font-weight: 900; color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+}
+.subtitle {
+  font-size: 0.78rem; color: var(--text-light); font-weight: 700;
+}
+
+/* ===== Stage info ===== */
+.stage-info {
+  text-align: center;
+}
+.stage-name {
+  font-size: 1.1rem; font-weight: 900; color: var(--text);
+}
+.stage-num {
+  font-size: 0.75rem; font-weight: 900; color: var(--text-light);
+  background: var(--primary-light);
+  border-radius: 20px;
+  padding: 2px 14px;
+  display: inline-block;
+  margin-top: 3px;
+}
+
+/* ===== Picture grid ===== */
+.pic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.pic-slot {
+  background: #fff;
+  border-radius: 16px;
+  border: 2.5px solid #FDE68A;
+  box-shadow: 0 3px 12px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px 10px;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+
+.pic-emoji {
+  font-size: 3.4rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.pic-label {
+  min-height: 38px;
+  width: 100%;
+  border-radius: 50px;
+  border: 2px dashed #C8C0B8;
+  background: #FFFBF0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+  pointer-events: auto;
+}
+
+.pic-label.hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  border-style: solid;
+}
+
+.pic-label.matched {
+  border-style: solid;
+  border-color: #34D399;
+  background: #D1FAE5;
+  color: #065F46;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0.5; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ===== Word tray ===== */
+.word-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+  max-width: 360px;
+  min-height: 56px;
+  padding: 4px 0;
+}
+
+.word-card {
+  padding: 10px 22px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #FBBF24, #F97316);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  cursor: grab;
+  box-shadow: 0 3px 10px rgba(249,115,22,0.28);
+  transition: transform 0.1s, opacity 0.15s;
+  touch-action: none;
+  letter-spacing: 0.05em;
+}
+
+.word-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.95);
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-8px); }
+  75%      { transform: translateX(8px); }
+}
+.word-card.shake { animation: shake 0.35s; }
+
+/* ===== Ghost (drag preview) ===== */
+.ghost {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.92;
+  padding: 10px 22px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #FBBF24, #F97316);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  box-shadow: 0 8px 24px rgba(249,115,22,0.45);
+}
+
+/* ===== Success Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(93,78,55,0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s;
+}
+.modal-overlay.hidden { display: none; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-content {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 8px 40px rgba(93,78,55,0.3);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.modal-emoji { font-size: 3.5rem; }
+.modal-title {
+  font-size: 1.8rem; font-weight: 900; color: var(--primary);
+}
+.modal-msg {
+  font-size: 1rem; font-weight: 700; color: var(--text-light);
+}
+.modal-btn {
+  margin-top: 4px;
+  padding: 13px 36px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #60A5FA, #818CF8);
+  color: #fff; font-family: inherit; font-size: 1.1rem; font-weight: 900;
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 4px 14px rgba(96,165,250,0.4);
+  width: 100%; max-width: 240px;
+}
+.modal-btn:active { transform: scale(0.95); }
+
+/* ===== Confetti ===== */
+#confetti-container {
+  position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  top: -20px;
+  animation: confFall 3s ease-in forwards;
+}
+@keyframes confFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="../index.html" class="back-link">← メニュー</a>
+  <h1>ことばあわせ</h1>
+  <p class="subtitle">えにあうことばを ドラッグしよう！</p>
+</header>
+
+<div class="stage-info">
+  <p class="stage-name" id="stage-name">どうぶつ 🐾</p>
+  <p class="stage-num" id="stage-num">ステージ 1 / 4</p>
+</div>
+
+<div class="pic-grid" id="pic-grid"></div>
+<div class="word-tray" id="word-tray"></div>
+
+<!-- Stage complete modal -->
+<div id="success-modal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <p class="modal-emoji" id="modal-emoji">🎉</p>
+    <p class="modal-title" id="modal-title">ステージ 1 クリア！</p>
+    <p class="modal-msg" id="modal-msg">すごい！ぜんぶあったよ！</p>
+    <button class="modal-btn" id="modal-btn">つぎへ →</button>
+  </div>
+</div>
+
+<div id="confetti-container"></div>
+
+<script>
+// ===== Stage data =====
+const STAGES = [
+  { name: 'どうぶつ 🐾', pairs: [
+    { emoji: '🐻', word: 'くま' },
+    { emoji: '🐰', word: 'うさぎ' },
+    { emoji: '🐘', word: 'ぞう' },
+    { emoji: '🐬', word: 'いるか' },
+  ]},
+  { name: 'くだもの 🍎', pairs: [
+    { emoji: '🍎', word: 'りんご' },
+    { emoji: '🍌', word: 'ばなな' },
+    { emoji: '🍓', word: 'いちご' },
+    { emoji: '🍊', word: 'みかん' },
+  ]},
+  { name: 'のりもの 🚗', pairs: [
+    { emoji: '🚗', word: 'くるま' },
+    { emoji: '✈️', word: 'ひこうき' },
+    { emoji: '🚢', word: 'ふね' },
+    { emoji: '🚂', word: 'でんしゃ' },
+  ]},
+  { name: 'しぜん 🌸', pairs: [
+    { emoji: '🌸', word: 'はな' },
+    { emoji: '🌈', word: 'にじ' },
+    { emoji: '⭐', word: 'ほし' },
+    { emoji: '🌙', word: 'つき' },
+  ]},
+];
+
+// ===== State =====
+let stageIdx    = 0;
+let matchedCount = 0;
+let dragCard    = null;
+let ghost       = null;
+
+// ===== Shuffle helper =====
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ===== Load stage =====
+function loadStage(idx) {
+  stageIdx     = idx;
+  matchedCount = 0;
+  const stage  = STAGES[idx];
+
+  document.getElementById('stage-name').textContent = stage.name;
+  document.getElementById('stage-num').textContent  = `ステージ ${idx + 1} / ${STAGES.length}`;
+
+  // Build picture grid
+  const grid = document.getElementById('pic-grid');
+  grid.innerHTML = '';
+  stage.pairs.forEach((pair, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'pic-slot';
+    slot.innerHTML = `
+      <div class="pic-emoji">${pair.emoji}</div>
+      <div class="pic-label" data-idx="${i}"></div>
+    `;
+    grid.appendChild(slot);
+  });
+
+  // Build word tray (shuffled)
+  const tray = document.getElementById('word-tray');
+  tray.innerHTML = '';
+  shuffle(stage.pairs.map((p, i) => ({ word: p.word, idx: i }))).forEach(({ word, idx }) => {
+    const card = document.createElement('div');
+    card.className  = 'word-card';
+    card.dataset.idx = idx;
+    card.textContent = word;
+    card.style.touchAction = 'none';
+    tray.appendChild(card);
+  });
+}
+
+// ===== Drag & Drop (pointer events) =====
+function moveGhost(x, y) {
+  if (!ghost) return;
+  ghost.style.left = x + 'px';
+  ghost.style.top  = y + 'px';
+}
+
+function findTarget(x, y) {
+  for (const label of document.querySelectorAll('.pic-label:not(.matched)')) {
+    const r = label.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return label;
+  }
+  return null;
+}
+
+function tryMatch(card, target) {
+  if (parseInt(card.dataset.idx) === parseInt(target.dataset.idx)) {
+    // Correct match!
+    target.textContent = card.textContent;
+    target.classList.add('matched');
+    card.remove();
+    matchedCount++;
+    if (matchedCount === STAGES[stageIdx].pairs.length) {
+      setTimeout(showStageComplete, 500);
+    }
+  } else {
+    // Wrong — shake and stay in tray
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 400);
+  }
+}
+
+document.addEventListener('pointerdown', e => {
+  const card = e.target.closest('.word-card');
+  if (!card) return;
+  e.preventDefault();
+
+  dragCard = card;
+  card.classList.add('dragging');
+
+  ghost = document.createElement('div');
+  ghost.className  = 'ghost';
+  ghost.textContent = card.textContent;
+  document.body.appendChild(ghost);
+  moveGhost(e.clientX, e.clientY);
+}, { passive: false });
+
+document.addEventListener('pointermove', e => {
+  if (!ghost) return;
+  e.preventDefault();
+  moveGhost(e.clientX, e.clientY);
+
+  // Highlight hovered target
+  document.querySelectorAll('.pic-label').forEach(l => l.classList.remove('hover'));
+  const target = findTarget(e.clientX, e.clientY);
+  if (target) target.classList.add('hover');
+}, { passive: false });
+
+function endDrag(e) {
+  if (!ghost) return;
+  ghost.remove();
+  ghost = null;
+  document.querySelectorAll('.pic-label').forEach(l => l.classList.remove('hover'));
+
+  if (dragCard) {
+    dragCard.classList.remove('dragging');
+    const target = findTarget(e.clientX, e.clientY);
+    if (target) tryMatch(dragCard, target);
+    dragCard = null;
+  }
+}
+
+document.addEventListener('pointerup',     endDrag, { passive: false });
+document.addEventListener('pointercancel', endDrag);
+
+// ===== Stage complete =====
+function showStageComplete() {
+  launchConfetti();
+  const isLast = stageIdx >= STAGES.length - 1;
+
+  document.getElementById('modal-emoji').textContent = isLast ? '🌟' : '🎉';
+  document.getElementById('modal-title').textContent = isLast
+    ? 'ぜんぶできた！'
+    : `ステージ ${stageIdx + 1} クリア！`;
+  document.getElementById('modal-msg').textContent = isLast
+    ? 'すごい！ぜんぶのことばを おぼえたね！'
+    : 'すごい！ぜんぶあったよ！';
+
+  const btn = document.getElementById('modal-btn');
+  btn.textContent = isLast ? 'もういちど 🔄' : 'つぎへ →';
+  btn.onclick = () => {
+    document.getElementById('success-modal').classList.add('hidden');
+    loadStage(isLast ? 0 : stageIdx + 1);
+  };
+
+  document.getElementById('success-modal').classList.remove('hidden');
+}
+
+// ===== Confetti =====
+function launchConfetti() {
+  const container = document.getElementById('confetti-container');
+  const colors    = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
+  for (let i = 0; i < 55; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'confetti-piece';
+      c.style.left             = Math.random() * 100 + 'vw';
+      c.style.background       = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDelay    = Math.random() * 0.4 + 's';
+      c.style.animationDuration = (2 + Math.random() * 1.2) + 's';
+      container.appendChild(c);
+      setTimeout(() => c.remove(), 3600);
+    }, i * 25);
+  }
+}
+
+// ===== Init =====
+loadStage(0);
+</script>
+</body>
+</html>

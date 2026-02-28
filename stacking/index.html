@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>つみき | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8F0;
+  --primary: #F2915A;
+  --primary-light: #FDDCBF;
+  --text: #5D4E37;
+  --text-light: #A89880;
+  --shadow: rgba(93,78,55,0.12);
+  --radius: 20px;
+}
+
+html, body {
+  min-height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 12px;
+}
+
+.header {
+  text-align: center;
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+}
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--primary); font-weight: 700; font-size: 0.85rem;
+  text-decoration: none;
+}
+.header h1 {
+  font-size: 1.4rem; font-weight: 900; color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+}
+.subtitle {
+  font-size: 0.78rem; color: var(--text-light); font-weight: 700;
+}
+
+.score-row {
+  display: flex; gap: 28px; justify-content: center; align-items: center;
+  flex-shrink: 0;
+}
+.score-box { text-align: center; }
+.score-label { font-size: 0.68rem; font-weight: 900; color: var(--text-light); letter-spacing: 0.03em; }
+.score-val { font-size: 1.7rem; font-weight: 900; color: var(--primary); line-height: 1; }
+
+#game-wrap {
+  position: relative;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px var(--shadow), inset 0 0 0 3px var(--primary-light);
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#game-wrap canvas {
+  display: block;
+  position: absolute;
+  top: 0; left: 0;
+}
+
+#flash {
+  position: absolute; inset: 0; z-index: 2;
+  pointer-events: none; border-radius: var(--radius);
+  opacity: 0; transition: opacity 0.25s;
+}
+#flash.success { background: rgba(52,211,153,0.42); opacity: 1; }
+#flash.miss    { background: rgba(239,68,68,0.42); opacity: 1; }
+
+.overlay {
+  position: absolute; inset: 0; z-index: 3;
+  background: rgba(93,78,55,0.65);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  backdrop-filter: blur(3px);
+}
+.overlay.hidden { display: none; }
+.overlay-emoji { font-size: 2.6rem; }
+.overlay-title {
+  font-size: 1.4rem; font-weight: 900; color: #fff;
+  text-align: center; line-height: 1.35;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+}
+.overlay-score { font-size: 1.4rem; font-weight: 900; color: #FCD34D; }
+.overlay-hi { font-size: 0.85rem; font-weight: 700; color: #FDDCBF; }
+.overlay-btn {
+  margin-top: 4px; padding: 11px 32px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #FBBF24, #F97316);
+  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 3px 12px rgba(249,115,22,0.4);
+}
+.overlay-btn:active { transform: scale(0.95); }
+
+.lives-row {
+  font-size: 1.6rem; letter-spacing: 3px; flex-shrink: 0;
+}
+.tap-hint {
+  font-size: 0.82rem; font-weight: 900; color: var(--text-light);
+  animation: blink 1.2s ease-in-out infinite; flex-shrink: 0;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="../index.html" class="back-link">← メニュー</a>
+  <h1>つみき</h1>
+  <p class="subtitle">ブロックを つみあげよう！</p>
+</header>
+
+<div class="score-row">
+  <div class="score-box">
+    <p class="score-label">スコア</p>
+    <p class="score-val" id="score-val">0</p>
+  </div>
+  <div class="score-box">
+    <p class="score-label">さいこう</p>
+    <p class="score-val" id="hi-val">0</p>
+  </div>
+</div>
+
+<div id="game-wrap">
+  <div id="flash"></div>
+  <div id="start-overlay" class="overlay">
+    <p class="overlay-emoji">🧱</p>
+    <p class="overlay-title">タップして<br>ブロックを おとそう！</p>
+    <button class="overlay-btn" id="start-btn">はじめる →</button>
+  </div>
+  <div id="gameover-overlay" class="overlay hidden">
+    <p class="overlay-emoji">😢</p>
+    <p class="overlay-title">ゲームおわり！</p>
+    <p class="overlay-score" id="final-score">スコア: 0</p>
+    <p class="overlay-hi" id="hi-msg"></p>
+    <button class="overlay-btn" id="retry-btn">もういっかい</button>
+  </div>
+</div>
+
+<div class="lives-row" id="lives-row">❤️❤️❤️</div>
+<p class="tap-hint">タップ または クリック でドロップ！</p>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+const { Engine, Render, World, Bodies, Body, Runner, Events } = Matter;
+
+// ===== Sizing =====
+const CW = Math.min(window.innerWidth - 32, 400);
+const CH = Math.max(Math.min(window.innerHeight - 210, 480), 260);
+const gameWrap = document.getElementById('game-wrap');
+gameWrap.style.width  = CW + 'px';
+gameWrap.style.height = CH + 'px';
+
+// ===== Engine & Render =====
+const engine = Engine.create({ gravity: { y: 1.8 } });
+const render = Render.create({
+  element: gameWrap,
+  engine,
+  options: { width: CW, height: CH, wireframes: false, background: 'rgba(255,248,240,0.92)' }
+});
+const runner = Runner.create();
+
+// ===== Constants =====
+const BW = Math.max(Math.floor(CW * 0.28), 65);
+const BH = 28;
+const SWING_Y = BH / 2 + 8;
+const PLAT_W  = Math.floor(CW * 0.52);
+const PLAT_H  = 22;
+const PLAT_Y  = CH - 50;
+const COLORS  = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
+
+// ===== Static physics bodies (reused across restarts) =====
+const ground = Bodies.rectangle(CW/2, CH + 40, CW * 3, 80, {
+  isStatic: true, label: 'ground',
+  render: { fillStyle: 'transparent' }
+});
+const plat = Bodies.rectangle(CW/2, PLAT_Y + PLAT_H/2, PLAT_W, PLAT_H, {
+  isStatic: true, label: 'platform',
+  render: { fillStyle: '#F2915A', strokeStyle: '#D97706', lineWidth: 2 }
+});
+const wallL = Bodies.rectangle(-25, CH/2, 50, CH * 3, {
+  isStatic: true, render: { fillStyle: 'transparent' }
+});
+const wallR = Bodies.rectangle(CW + 25, CH/2, 50, CH * 3, {
+  isStatic: true, render: { fillStyle: 'transparent' }
+});
+
+// ===== Game State =====
+let swingPhase = 0, swingX = CW/2, lastTs = null;
+let lives = 3, score = 0;
+let hiScore = parseInt(localStorage.getItem('pono_stacking_hi') || '0');
+let colorIdx = 0, fallingBody = null, gameActive = false;
+let dropTimer = null, stackTopY = PLAT_Y;
+
+// ===== UI refs =====
+const scoreEl   = document.getElementById('score-val');
+const hiEl      = document.getElementById('hi-val');
+const livesEl   = document.getElementById('lives-row');
+const flashEl   = document.getElementById('flash');
+const startOv   = document.getElementById('start-overlay');
+const gameOv    = document.getElementById('gameover-overlay');
+const finalScEl = document.getElementById('final-score');
+const hiMsgEl   = document.getElementById('hi-msg');
+hiEl.textContent = hiScore;
+
+// ===== Swing timing (beforeRender) =====
+Events.on(render, 'beforeRender', () => {
+  if (!gameActive || fallingBody) return;
+  const now = performance.now();
+  if (!lastTs) { lastTs = now; return; }
+  const dt = Math.min((now - lastTs) / 1000, 0.05);
+  lastTs = now;
+  swingPhase += 2.2 * dt;
+  swingX = CW/2 + Math.sin(swingPhase) * (CW * 0.36);
+});
+
+// ===== Draw swing block on canvas (afterRender) =====
+function drawRR(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+    ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+    ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+    ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+  }
+}
+
+Events.on(render, 'afterRender', () => {
+  if (!gameActive || fallingBody) return;
+  const ctx   = render.context;
+  const color = COLORS[colorIdx % COLORS.length];
+
+  // Dotted guide line (swing block → stack top)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(91,74,63,0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(swingX, SWING_Y + BH/2 + 3);
+  ctx.lineTo(swingX, Math.min(stackTopY, PLAT_Y) - 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Swinging block
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+  drawRR(ctx, swingX - BW/2, SWING_Y - BH/2, BW, BH, 7);
+  ctx.fill();
+  ctx.restore();
+});
+
+// ===== Drop =====
+function dropBlock() {
+  if (!gameActive || fallingBody) return;
+  lastTs = null;
+  const color = COLORS[colorIdx % COLORS.length];
+  colorIdx++;
+
+  fallingBody = Bodies.rectangle(swingX, SWING_Y, BW, BH, {
+    restitution: 0.12, friction: 0.9, frictionStatic: 1.2, label: 'block',
+    render: { fillStyle: color, strokeStyle: 'rgba(0,0,0,0.08)', lineWidth: 1 }
+  });
+  Body.setVelocity(fallingBody, { x: 0, y: 4 });
+  World.add(engine.world, fallingBody);
+  dropTimer = setTimeout(checkResult, 2400);
+}
+
+// ===== Check result after settling =====
+function checkResult() {
+  if (!fallingBody) return;
+  const body = fallingBody;
+  fallingBody = null;
+  lastTs = null;
+
+  if (body.position.y < CH - 5) {
+    // Success — block is on screen
+    score++;
+    stackTopY = Math.min(stackTopY, body.position.y - BH);
+    updateScore();
+    showFlash('success');
+  } else {
+    // Miss — block fell off screen
+    lives--;
+    updateLives();
+    showFlash('miss');
+    if (lives <= 0) setTimeout(doGameOver, 350);
+  }
+}
+
+// Early miss detection (block left the screen before timer)
+Events.on(engine, 'afterUpdate', () => {
+  if (!fallingBody) return;
+  if (fallingBody.position.y > CH + 80) {
+    clearTimeout(dropTimer);
+    checkResult();
+  }
+});
+
+// ===== Game Over =====
+function doGameOver() {
+  gameActive = false;
+  Render.stop(render);
+  Runner.stop(runner);
+
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('pono_stacking_hi', String(hiScore));
+    hiEl.textContent = hiScore;
+    hiMsgEl.textContent = '🎉 さいこうきろく こうしん！';
+  } else {
+    hiMsgEl.textContent = `さいこう: ${hiScore}`;
+  }
+  finalScEl.textContent = `スコア: ${score}`;
+  gameOv.classList.remove('hidden');
+}
+
+// ===== Start / Restart =====
+function startGame() {
+  // Clear all dynamic bodies from previous game
+  World.clear(engine.world);
+  Engine.clear(engine);
+  World.add(engine.world, [ground, plat, wallL, wallR]);
+
+  // Reset state
+  lives = 3; score = 0;
+  colorIdx   = Math.floor(Math.random() * COLORS.length);
+  swingPhase = Math.random() * Math.PI * 2;
+  swingX     = CW / 2;
+  fallingBody = null;
+  stackTopY  = PLAT_Y;
+  lastTs     = null;
+
+  updateScore();
+  updateLives();
+  startOv.classList.add('hidden');
+  gameOv.classList.add('hidden');
+
+  gameActive = true;
+  Render.run(render);
+  Runner.run(runner, engine);
+}
+
+// ===== UI Helpers =====
+function updateScore() {
+  scoreEl.textContent = score;
+  if (score > hiScore) { hiScore = score; hiEl.textContent = hiScore; }
+}
+
+function updateLives() {
+  livesEl.textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, 3 - lives));
+}
+
+let flashTimer = null;
+function showFlash(type) {
+  clearTimeout(flashTimer);
+  flashEl.className = '';
+  void flashEl.offsetWidth; // force reflow for re-trigger
+  flashEl.className = type;
+  flashTimer = setTimeout(() => { flashEl.className = ''; }, 300);
+}
+
+// ===== Input =====
+gameWrap.addEventListener('click', dropBlock);
+gameWrap.addEventListener('touchend', e => { e.preventDefault(); dropBlock(); }, { passive: false });
+document.getElementById('start-btn').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+document.getElementById('retry-btn').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+</script>
+</body>
+</html>
