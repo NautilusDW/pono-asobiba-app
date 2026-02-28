@@ -296,6 +296,14 @@
       <span class="book-cta">Amazonで見る →</span>
     </a>
 
+    <div class="music-row">
+      <label class="toggle">
+        <input type="checkbox" id="music-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="music-label" id="music-label">おとがでるよ</span>
+    </div>
+
     <section class="video-section">
       <p class="video-label">🎵 ポノのうた みてね！</p>
       <div class="video-wrap">
@@ -343,25 +351,20 @@
       </a>
     </nav>
 
-    <div class="music-row">
-      <span class="music-label">おんがく</span>
-      <label class="toggle">
-        <input type="checkbox" id="music-toggle">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-
     <footer class="footer">くまのこ ポノ のあそびば</footer>
 
   </div>
 
   <script>
     const toggle = document.getElementById('music-toggle');
+    const label  = document.getElementById('music-label');
     const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
     toggle.checked = enabled;
+    label.textContent = enabled ? 'おとがでるよ' : 'おとがでないよ';
 
     toggle.addEventListener('change', () => {
       localStorage.setItem('pono_bgm_enabled', toggle.checked ? 'on' : 'off');
+      label.textContent = toggle.checked ? 'おとがでるよ' : 'おとがでないよ';
     });
   </script>
 </body>

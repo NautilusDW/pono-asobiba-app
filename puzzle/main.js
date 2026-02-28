@@ -418,11 +418,14 @@ function initPuzzle(img) {
 
   const boardMaxW = canvasW * 0.60;
   const boardMaxH = canvasH * 0.60;
-  const targetAspect = stageCols / stageRows;
+  // Use the image's natural aspect ratio to avoid stretching
+  const imgAspect = (img.naturalWidth && img.naturalHeight)
+    ? img.naturalWidth / img.naturalHeight
+    : stageCols / stageRows;
 
-  boardW = Math.min(boardMaxW, boardMaxH * targetAspect);
-  boardH = boardW / targetAspect;
-  if (boardH > boardMaxH) { boardH = boardMaxH; boardW = boardH * targetAspect; }
+  boardW = Math.min(boardMaxW, boardMaxH * imgAspect);
+  boardH = boardW / imgAspect;
+  if (boardH > boardMaxH) { boardH = boardMaxH; boardW = boardH * imgAspect; }
 
   boardX = (canvasW - boardW) / 2;
   boardY = (canvasH - boardH) / 2;
