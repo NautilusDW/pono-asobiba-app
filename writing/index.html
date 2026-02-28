@@ -317,6 +317,43 @@ html, body {
   /* no explicit z-index → canvas-container (later in DOM) stacks on top automatically when narrow */
 }
 
+/* ===== Word Card ===== */
+@keyframes wordCardIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes wordCardOut {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(20px); }
+}
+.word-card {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border-radius: 24px;
+  padding: 12px 28px;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  pointer-events: none;
+  z-index: 1050;
+  white-space: nowrap;
+}
+.word-card.show {
+  display: flex;
+  animation: wordCardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.word-card.hide {
+  display: flex;
+  animation: wordCardOut 0.35s ease forwards;
+}
+.word-card-emoji { font-size: 2.4rem; line-height: 1; }
+.word-card-text  { font-size: 1.6rem; font-weight: 900; color: var(--text); }
+.word-card-first { color: var(--primary); }
+
 /* ===== Responsive ===== */
 @media (max-height: 600px) {
   .header h1 { font-size: 1.1rem; }
@@ -371,6 +408,12 @@ html, body {
 </div>
 <div class="character-slot" id="characterSlot"></div>
 
+<!-- Word Card -->
+<div id="word-card" class="word-card">
+  <div class="word-card-emoji" id="word-card-emoji"></div>
+  <div class="word-card-text" id="word-card-text"></div>
+</div>
+
 <!-- Milestone Modal -->
 <div id="milestone-modal" class="milestone-modal hidden">
   <div class="milestone-card">
@@ -409,6 +452,106 @@ const CATEGORIES = {
     label: 'カタカナ',
     chars: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('')
   }
+};
+
+// ===== Word association data (one word per character, same order as CATEGORIES.chars) =====
+const WORD_DATA = {
+  hiragana: [
+    { word: 'あり',        emoji: '🐜' }, // あ
+    { word: 'いちご',      emoji: '🍓' }, // い
+    { word: 'うさぎ',      emoji: '🐰' }, // う
+    { word: 'えんぴつ',    emoji: '✏️' }, // え
+    { word: 'おに',        emoji: '👹' }, // お
+    { word: 'かさ',        emoji: '☂️' }, // か
+    { word: 'きのこ',      emoji: '🍄' }, // き
+    { word: 'くも',        emoji: '☁️' }, // く
+    { word: 'けむし',      emoji: '🐛' }, // け
+    { word: 'こいぬ',      emoji: '🐶' }, // こ
+    { word: 'さかな',      emoji: '🐟' }, // さ
+    { word: 'しまうま',    emoji: '🦓' }, // し
+    { word: 'すいか',      emoji: '🍉' }, // す
+    { word: 'せみ',        emoji: '🦟' }, // せ
+    { word: 'そら',        emoji: '🌤️' }, // そ
+    { word: 'たこ',        emoji: '🐙' }, // た
+    { word: 'ちょうちょ',  emoji: '🦋' }, // ち
+    { word: 'つき',        emoji: '🌙' }, // つ
+    { word: 'てんとうむし', emoji: '🐞' }, // て
+    { word: 'とり',        emoji: '🐦' }, // と
+    { word: 'なし',        emoji: '🍐' }, // な
+    { word: 'にわとり',    emoji: '🐓' }, // に
+    { word: 'ぬいぐるみ',  emoji: '🧸' }, // ぬ
+    { word: 'ねこ',        emoji: '🐱' }, // ね
+    { word: 'のりもの',    emoji: '🚗' }, // の
+    { word: 'はな',        emoji: '🌸' }, // は
+    { word: 'ひよこ',      emoji: '🐤' }, // ひ
+    { word: 'ふうせん',    emoji: '🎈' }, // ふ
+    { word: 'へび',        emoji: '🐍' }, // へ
+    { word: 'ほし',        emoji: '⭐' }, // ほ
+    { word: 'まり',        emoji: '⚽' }, // ま
+    { word: 'みかん',      emoji: '🍊' }, // み
+    { word: 'むし',        emoji: '🐛' }, // む
+    { word: 'めがね',      emoji: '👓' }, // め
+    { word: 'もも',        emoji: '🍑' }, // も
+    { word: 'やぎ',        emoji: '🐐' }, // や
+    { word: 'ゆき',        emoji: '❄️' }, // ゆ
+    { word: 'よつば',      emoji: '🍀' }, // よ
+    { word: 'らいおん',    emoji: '🦁' }, // ら
+    { word: 'りんご',      emoji: '🍎' }, // り
+    { word: 'るすばん',    emoji: '🏠' }, // る
+    { word: 'れもん',      emoji: '🍋' }, // れ
+    { word: 'ろけっと',    emoji: '🚀' }, // ろ
+    { word: 'わに',        emoji: '🐊' }, // わ
+    { word: 'おにわ',      emoji: '🌳' }, // を
+    { word: 'ぱんだ',      emoji: '🐼' }, // ん
+  ],
+  katakana: [
+    { word: 'アイス',       emoji: '🍦' }, // ア
+    { word: 'イルカ',       emoji: '🐬' }, // イ
+    { word: 'ウサギ',       emoji: '🐰' }, // ウ
+    { word: 'エプロン',     emoji: '🍳' }, // エ
+    { word: 'オレンジ',     emoji: '🍊' }, // オ
+    { word: 'カメラ',       emoji: '📷' }, // カ
+    { word: 'キリン',       emoji: '🦒' }, // キ
+    { word: 'クッキー',     emoji: '🍪' }, // ク
+    { word: 'ケーキ',       emoji: '🎂' }, // ケ
+    { word: 'コアラ',       emoji: '🐨' }, // コ
+    { word: 'サメ',         emoji: '🦈' }, // サ
+    { word: 'シロクマ',     emoji: '🐻‍❄️' }, // シ
+    { word: 'スプーン',     emoji: '🥄' }, // ス
+    { word: 'セーター',     emoji: '🧥' }, // セ
+    { word: 'ソックス',     emoji: '🧦' }, // ソ
+    { word: 'タコ',         emoji: '🐙' }, // タ
+    { word: 'チーズ',       emoji: '🧀' }, // チ
+    { word: 'ツナ',         emoji: '🐟' }, // ツ
+    { word: 'テレビ',       emoji: '📺' }, // テ
+    { word: 'トマト',       emoji: '🍅' }, // ト
+    { word: 'ナス',         emoji: '🍆' }, // ナ
+    { word: 'ニンジン',     emoji: '🥕' }, // ニ
+    { word: 'ヌードル',     emoji: '🍜' }, // ヌ
+    { word: 'ネコ',         emoji: '🐱' }, // ネ
+    { word: 'ノート',       emoji: '📓' }, // ノ
+    { word: 'ハムスター',   emoji: '🐹' }, // ハ
+    { word: 'ヒツジ',       emoji: '🐑' }, // ヒ
+    { word: 'フルーツ',     emoji: '🍇' }, // フ
+    { word: 'ヘリコプター', emoji: '🚁' }, // ヘ
+    { word: 'ホタル',       emoji: '✨' }, // ホ
+    { word: 'マンゴー',     emoji: '🥭' }, // マ
+    { word: 'ミルク',       emoji: '🥛' }, // ミ
+    { word: 'ムーン',       emoji: '🌙' }, // ム
+    { word: 'メダル',       emoji: '🥇' }, // メ
+    { word: 'モグラ',       emoji: '🐾' }, // モ
+    { word: 'ヤシ',         emoji: '🌴' }, // ヤ
+    { word: 'ユニコーン',   emoji: '🦄' }, // ユ
+    { word: 'ヨーグルト',   emoji: '🍶' }, // ヨ
+    { word: 'ライオン',     emoji: '🦁' }, // ラ
+    { word: 'リス',         emoji: '🐿️' }, // リ
+    { word: 'ルビー',       emoji: '💎' }, // ル
+    { word: 'レモン',       emoji: '🍋' }, // レ
+    { word: 'ロボット',     emoji: '🤖' }, // ロ
+    { word: 'ワニ',         emoji: '🐊' }, // ワ
+    { word: 'ワニ',         emoji: '🐊' }, // ヲ
+    { word: 'パンダ',       emoji: '🐼' }, // ン
+  ]
 };
 
 // ===== State =====
@@ -547,6 +690,38 @@ function launchConfetti() {
   setTimeout(() => confettiContainer.innerHTML = '', 3000);
 }
 
+// ===== Word Card + TTS =====
+function speakWord(char, word) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(`${char}！${word}！`);
+  u.lang = 'ja-JP';
+  u.rate = 0.85;
+  u.pitch = 1.2;
+  speechSynthesis.speak(u);
+}
+
+let _wordCardTimer = null;
+function showWordCard() {
+  const char = CATEGORIES[currentCategory].chars[currentCharIndex];
+  const data = WORD_DATA[currentCategory][currentCharIndex];
+  if (!data) return;
+  const card = document.getElementById('word-card');
+  if (!card) return;
+  document.getElementById('word-card-emoji').textContent = data.emoji;
+  document.getElementById('word-card-text').innerHTML =
+    `<span class="word-card-first">${char}</span>${data.word.slice(char.length)}`;
+  clearTimeout(_wordCardTimer);
+  card.classList.remove('show', 'hide');
+  card.classList.add('show');
+  speakWord(char, data.word);
+  _wordCardTimer = setTimeout(() => {
+    card.classList.remove('show');
+    card.classList.add('hide');
+    setTimeout(() => card.classList.remove('hide'), 400);
+  }, 3500);
+}
+
 function showCompletion() {
   playSuccessSound();
   launchConfetti();
@@ -558,6 +733,7 @@ function showCompletion() {
   streak++;
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
+  setTimeout(showWordCard, 500);
 }
 
 // ===== Star particles (Canvas mode) =====
