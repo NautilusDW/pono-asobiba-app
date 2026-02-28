@@ -184,6 +184,70 @@ html, body {
 }
 .save-toast.show { opacity: 1; }
 
+/* ===== Gallery ===== */
+.btn-gallery { background: #EEF2FF; color: #6366F1; }
+
+.gallery-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.gallery-overlay.hidden { display: none; }
+
+.gallery-modal {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  width: 100%; max-width: 380px;
+  max-height: 82dvh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+.gallery-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.gallery-header h2 { font-size: 1.1rem; font-weight: 900; color: var(--text); }
+.gallery-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #FEE2E2; color: #EF4444;
+  border: none; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow);
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.gallery-thumb-wrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  background: #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  cursor: pointer;
+}
+.gallery-thumb-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.gallery-thumb-del {
+  position: absolute; top: 3px; right: 3px;
+  width: 22px; height: 22px;
+  background: rgba(239,68,68,0.85); color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 0.65rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.gallery-empty {
+  text-align: center; color: #A89585;
+  font-size: 0.9rem; padding: 24px 0;
+}
+
 /* ===== Responsive ===== */
 @media (max-height: 600px) {
   .header h1 { font-size: 1.1rem; }
@@ -217,10 +281,23 @@ html, body {
     <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
     <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶ</button>
     <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
+    <button class="tool-btn btn-gallery" id="btnGallery">🖼</button>
   </div>
 </div>
 
 <div class="save-toast" id="saveToast">ほぞんしたよ！🎨</div>
+
+<!-- Gallery Overlay -->
+<div id="galleryOverlay" class="gallery-overlay hidden">
+  <div class="gallery-modal">
+    <div class="gallery-header">
+      <h2>🖼 ほぞんしたえ</h2>
+      <button id="btnGalleryClose" class="gallery-close">✕</button>
+    </div>
+    <div id="galleryGrid" class="gallery-grid"></div>
+    <p id="galleryEmpty" class="gallery-empty hidden">まだほぞんしたえがないよ！</p>
+  </div>
+</div>
 
 <script>
 // ===== Color palette =====
@@ -374,16 +451,69 @@ document.getElementById('btnClear').addEventListener('click', () => {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
-// ===== Save =====
+// ===== Save & Gallery =====
+const DRAWINGS_KEY = 'pono_drawings';
+const MAX_DRAWINGS = 6;
+
+function loadDrawings() {
+  try { return JSON.parse(localStorage.getItem(DRAWINGS_KEY)) || []; }
+  catch { return []; }
+}
+function saveDrawingsList(arr) {
+  try { localStorage.setItem(DRAWINGS_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
 document.getElementById('btnSave').addEventListener('click', () => {
-  try {
-    localStorage.setItem('pono_drawing', canvas.toDataURL('image/png'));
-    const toast = document.getElementById('saveToast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2200);
-  } catch (e) {
-    // localStorage quota exceeded
-  }
+  const drawings = loadDrawings();
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+  drawings.unshift({ dataUrl, ts: Date.now() });
+  if (drawings.length > MAX_DRAWINGS) drawings.length = MAX_DRAWINGS;
+  saveDrawingsList(drawings);
+  // legacy key for puzzle compatibility
+  try { localStorage.setItem('pono_drawing', dataUrl); } catch(e) {}
+  const toast = document.getElementById('saveToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+});
+
+function renderGallery() {
+  const drawings = loadDrawings();
+  const grid  = document.getElementById('galleryGrid');
+  const empty = document.getElementById('galleryEmpty');
+  grid.innerHTML = '';
+  if (drawings.length === 0) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  drawings.forEach((d, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'gallery-thumb-wrap';
+    const img = document.createElement('img');
+    img.src = d.dataUrl;
+    const del = document.createElement('button');
+    del.className = 'gallery-thumb-del';
+    del.textContent = '✕';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      const updated = loadDrawings();
+      updated.splice(i, 1);
+      saveDrawingsList(updated);
+      renderGallery();
+    });
+    wrap.appendChild(img);
+    wrap.appendChild(del);
+    grid.appendChild(wrap);
+  });
+}
+
+document.getElementById('btnGallery').addEventListener('click', () => {
+  renderGallery();
+  document.getElementById('galleryOverlay').classList.remove('hidden');
+});
+document.getElementById('btnGalleryClose').addEventListener('click', () => {
+  document.getElementById('galleryOverlay').classList.add('hidden');
+});
+document.getElementById('galleryOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget)
+    document.getElementById('galleryOverlay').classList.add('hidden');
 });
 
 // Initial white fill

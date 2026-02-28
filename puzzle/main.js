@@ -1,10 +1,27 @@
 // ===== Stage Configuration =====
-const STAGES = [
+const BASE_STAGES = [
   { cols: 2, rows: 2, image: '../assets/images/puzzle_bear.jpg'   },
   { cols: 3, rows: 2, image: '../assets/images/puzzle_cover.jpg'  },
   { cols: 4, rows: 2, image: '../assets/images/puzzle_birds.jpg'  },
   { cols: 4, rows: 3, image: '../assets/images/puzzle_P01_01.jpg' },
 ];
+let STAGES = [...BASE_STAGES];
+
+function loadDrawingStages() {
+  try {
+    const drawings = JSON.parse(localStorage.getItem('pono_drawings')) || [];
+    // migrate legacy single-drawing key
+    if (drawings.length === 0) {
+      const old = localStorage.getItem('pono_drawing');
+      if (old) drawings.push({ dataUrl: old, ts: Date.now() });
+    }
+    return drawings.map((d, i) => ({
+      cols: 3, rows: 2,
+      imageDataUrl: d.dataUrl,
+      stageText: `🎨 おえかきパズル ${i + 1}`,
+    }));
+  } catch { return []; }
+}
 const SNAP_DIST = 55;
 
 // ===== Stage State =====
@@ -433,14 +450,19 @@ function loadStage(index) {
   stageRows        = stage.rows;
   stageTotalPieces = stageCols * stageRows;
 
-  stageLabel.textContent = `ステージ ${index + 1} / ${STAGES.length}`;
+  stageLabel.textContent = stage.stageText || `ステージ ${index + 1} / ${STAGES.length}`;
 
   loadingEl.classList.remove('hidden');
   dragPiece = null;
 
   const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = stage.image;
+  if (stage.imageDataUrl) {
+    // drawing saved as data URL — no crossOrigin needed
+    img.src = stage.imageDataUrl;
+  } else {
+    img.crossOrigin = 'anonymous';
+    img.src = stage.image;
+  }
   img.onload = () => initPuzzle(img);
   img.onerror = () => {
     const rect = puzzleContainer.getBoundingClientRect();
@@ -543,6 +565,9 @@ const resizeObserver = new ResizeObserver(() => {
 
 // ===== Start =====
 window.addEventListener('DOMContentLoaded', () => {
+  // Merge fixed stages with any saved drawings
+  const drawingStages = loadDrawingStages();
+  STAGES = [...BASE_STAGES, ...drawingStages];
   resizeObserver.observe(puzzleContainer);
   loadStage(0);
 });
