@@ -408,8 +408,14 @@ function showFlash(type) {
 // ===== Input =====
 gameWrap.addEventListener('click', dropBlock);
 gameWrap.addEventListener('touchend', e => { e.preventDefault(); dropBlock(); }, { passive: false });
-document.getElementById('start-btn').addEventListener('click', e => { e.stopPropagation(); startGame(); });
-document.getElementById('retry-btn').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+
+// iOS Safari: gameWrap の touchend が e.preventDefault() を呼ぶと click が合成されない。
+// ボタン側で先に touchend を止めて直接 startGame() を呼ぶことで確実に動く。
+['start-btn', 'retry-btn'].forEach(id => {
+  const btn = document.getElementById(id);
+  btn.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
+  btn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
+});
 </script>
 </body>
 </html>
