@@ -149,12 +149,7 @@ body {
 
 <div id="game-wrap">
   <div id="flash"></div>
-  <div id="start-overlay" class="overlay">
-    <p class="overlay-emoji">🧱</p>
-    <p class="overlay-title">タップして<br>ブロックを おとそう！</p>
-    <button class="overlay-btn" id="start-btn">はじめる →</button>
-  </div>
-  <div id="gameover-overlay" class="overlay hidden">
+<div id="gameover-overlay" class="overlay hidden">
     <p class="overlay-emoji">😢</p>
     <p class="overlay-title">ゲームおわり！</p>
     <p class="overlay-score" id="final-score">スコア: 0</p>
@@ -223,7 +218,6 @@ const scoreEl   = document.getElementById('score-val');
 const hiEl      = document.getElementById('hi-val');
 const livesEl   = document.getElementById('lives-row');
 const flashEl   = document.getElementById('flash');
-const startOv   = document.getElementById('start-overlay');
 const gameOv    = document.getElementById('gameover-overlay');
 const finalScEl = document.getElementById('final-score');
 const hiMsgEl   = document.getElementById('hi-msg');
@@ -378,7 +372,6 @@ function startGame() {
 
   updateScore();
   updateLives();
-  startOv.classList.add('hidden');
   gameOv.classList.add('hidden');
 
   gameActive = true;
@@ -414,12 +407,13 @@ gameWrap.addEventListener('touchend', e => {
   dropBlock();
 }, { passive: false });
 
-// ボタン: touchstart で確実に拾う（backdrop-filter 削除と合わせてiOSで動作する）
-['start-btn', 'retry-btn'].forEach(id => {
-  const btn = document.getElementById(id);
-  btn.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
-  btn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
-});
+// ゲームオーバー後の「もういっかい」ボタン
+const retryBtn = document.getElementById('retry-btn');
+retryBtn.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
+retryBtn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
+
+// ページ読み込み完了後すぐにゲーム開始
+startGame();
 </script>
 </body>
 </html>
