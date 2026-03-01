@@ -761,27 +761,25 @@ function showOverlay(type) {
     title.textContent = 'ブロックくずし';
     msg.textContent   = 'タップして はじめよう！';
     btn.textContent   = 'スタート ▶';
-    btn.onclick = startGame;
   } else if (type === 'stageclear') {
     icon.textContent  = '🎉';
     title.textContent = `ステージ${STAGES[stageIdx].label} クリア！`;
     msg.textContent   = 'つぎのステージへ！';
     btn.textContent   = 'つぎへ ▶';
-    btn.onclick = nextStage;
   } else if (type === 'gameclear') {
     icon.textContent  = '🏆';
     title.textContent = 'ぜんぶ クリア！';
     msg.textContent   = `すごい！ さいこう！\n${score}てん 🌟ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
-    btn.onclick = startGame;
   } else if (type === 'gameover') {
-    const isRecord = recordShown; // 今回新記録を出したか
+    const isRecord = recordShown;
     icon.textContent  = isRecord ? '🌟' : '😢';
     title.textContent = isRecord ? 'しんきろく！' : 'もう一回！';
     msg.textContent   = `${score}てん とれたよ！\nベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
-    btn.onclick = startGame;
   }
+  // Store action type for the pointerup handler
+  btn.dataset.ovType = type;
 }
 
 // ===== Start / Next =====
@@ -923,6 +921,38 @@ resize();
 updateHUD();
 showOverlay('start');
 requestAnimationFrame(loop);
+
+// ===== Overlay button: iOS-safe event handling =====
+// Use pointerdown+stopPropagation so parent never calls preventDefault,
+// then pointerup fires the action directly without relying on click synthesis.
+(function() {
+  const ovBtn = document.getElementById('ov-btn');
+  let _triggered = false;
+
+  ovBtn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    _triggered = false;
+  }, { passive: false });
+
+  ovBtn.addEventListener('pointerup', e => {
+    e.stopPropagation();
+    if (_triggered) return;
+    _triggered = true;
+    const t = ovBtn.dataset.ovType;
+    if (t === 'stageclear') nextStage();
+    else startGame();
+  });
+
+  // Fallback for mouse click on PC
+  ovBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (_triggered) return;
+    _triggered = true;
+    const t = ovBtn.dataset.ovType;
+    if (t === 'stageclear') nextStage();
+    else startGame();
+  });
+})();
 
 // ===== BGM =====
 const bgm    = document.getElementById('bgm');
