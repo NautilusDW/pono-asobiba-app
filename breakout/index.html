@@ -461,7 +461,8 @@ wrap.addEventListener('pointermove', e => {
 });
 
 wrap.addEventListener('pointerdown', e => {
-  e.preventDefault();
+  // iOS Safari: don't preventDefault on overlay taps or it blocks button clicks
+  if (!e.target.closest('.overlay')) e.preventDefault();
   const rect = canvas.getBoundingClientRect();
   pointerX = (e.clientX - rect.left) * (CW / rect.width);
   if (state === S.READY) launchBall();
