@@ -9,27 +9,7 @@
       "Bash(pip install *)",
       "Bash(python scripts/orchestrator.py complete --task \"Phase1をトランスクリプト直接解析に切替\" --result success)",
       "Bash(python scripts/orchestrator.py complete --task \"消費税計算add_tax関数の追加とテスト\" --result success)",
-      "Bash(find d:/claude-rl-test/logs -type f ! -name '.gitkeep' -delete)",
-      "Bash(git commit:*)",
-      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch \"\"完成絵.zip\"\"' -- ace3590..HEAD)",
-      "WebFetch(domain:www.youtube.com)",
-      "WebFetch(domain:www.youtube-nocookie.com)",
-      "Bash(netlify --version)",
-      "Bash(netlify status)",
-      "Bash(netlify sites:create --name pono-asobiba)",
-      "Bash(netlify api createSite --data '{\"\"name\"\":\"\"pono-asobiba\"\"}')",
-      "Bash(netlify api updateSite --data '{\"\"site_id\"\":\"\"e438e46e-94c2-4e59-b545-a483a7e53f83\"\",\"\"name\"\":\"\"pono-asobiba\"\"}')",
-      "Bash(netlify link --id e438e46e-94c2-4e59-b545-a483a7e53f83)",
-      "Bash(netlify deploy --dir . --prod)",
-      "Bash(netlify api updateSite --data '{\"\"site_id\"\":\"\"e438e46e-94c2-4e59-b545-a483a7e53f83\"\",\"\"body\"\":{\"\"name\"\":\"\"pono-asobiba\"\"}}')",
-      "Bash(node -e \":*)",
-      "WebFetch(domain:pono-asobiba.netlify.app)",
-      "Bash(xargs ls -lh)",
-      "Bash(magick --version)",
-      "Bash(convert --version)",
-      "Bash(python3 -c \"from PIL import Image; print\\(''PIL OK''\\)\")",
-      "Bash(python -c \":*)",
-      "Bash(netlify deploy --prod --dir .)"
+      "Bash(find d:/claude-rl-test/logs -type f ! -name '.gitkeep' -delete)"
     ]
   },
   "hooks": {

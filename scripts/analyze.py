@@ -284,6 +284,7 @@ def save_analysis_to_memory(task_name: str, task_result: str, analysis: dict, re
 """
 
     marker = "## Task Analysis History"
+    MAX_HISTORY_ENTRIES = 10  # 最新N件のみ保持（肥大化防止）
     try:
         if MEMORY_FILE.exists():
             content = MEMORY_FILE.read_text(encoding="utf-8")
@@ -294,7 +295,17 @@ def save_analysis_to_memory(task_name: str, task_result: str, analysis: dict, re
             content += f"\n{marker}\n"
 
         parts = content.split(marker, 1)
-        content = parts[0] + marker + "\n" + entry + (parts[1] if len(parts) > 1 else "")
+        # 新エントリーを先頭に追加
+        history_section = entry + (parts[1] if len(parts) > 1 else "")
+
+        # ローテーション: MAX_HISTORY_ENTRIES 件を超えたら古いものを削除
+        import re
+        entries = re.split(r'(?=\n### \d{4}-)', history_section)
+        if len(entries) > MAX_HISTORY_ENTRIES:
+            entries = entries[:MAX_HISTORY_ENTRIES]
+            history_section = "".join(entries) + "\n"
+
+        content = parts[0] + marker + "\n" + history_section
         MEMORY_FILE.write_text(content, encoding="utf-8")
     except Exception as e:
         print(f"[analyze] Warning: Failed to update MEMORY.md: {e}", file=sys.stderr)
