@@ -42,6 +42,7 @@ html, body {
   margin: 0 auto;
   padding: 8px;
   gap: 6px;
+  position: relative; /* overlay を #app 基準で絶対配置するために必要 */
 }
 
 /* ===== Header ===== */
@@ -254,13 +255,15 @@ html, body {
     <canvas id="gameCanvas"></canvas>
     <div class="hi-toast" id="hi-toast">🌟 しんきろく！</div>
     <div class="confetti-container" id="confetti"></div>
-    <div class="overlay" id="overlay">
-      <div class="ov-card">
-        <div class="ov-icon"  id="ov-icon">🧱</div>
-        <div class="ov-title" id="ov-title">ブロックくずし</div>
-        <div class="ov-msg"   id="ov-msg">タップして はじめよう！</div>
-        <button class="ov-btn" id="ov-btn">スタート ▶</button>
-      </div>
+  </div>
+
+  <!-- overlay は game-wrap の外: touch-action:none の影響を受けない -->
+  <div class="overlay" id="overlay">
+    <div class="ov-card">
+      <div class="ov-icon"  id="ov-icon">🧱</div>
+      <div class="ov-title" id="ov-title">ブロックくずし</div>
+      <div class="ov-msg"   id="ov-msg">タップして はじめよう！</div>
+      <button class="ov-btn" id="ov-btn">スタート ▶</button>
     </div>
   </div>
 </div>
@@ -461,8 +464,7 @@ wrap.addEventListener('pointermove', e => {
 });
 
 wrap.addEventListener('pointerdown', e => {
-  // iOS Safari: don't preventDefault on overlay taps or it blocks button clicks
-  if (!e.target.closest('.overlay')) e.preventDefault();
+  e.preventDefault();
   const rect = canvas.getBoundingClientRect();
   pointerX = (e.clientX - rect.left) * (CW / rect.width);
   if (state === S.READY) launchBall();
@@ -922,7 +924,8 @@ updateHUD();
 showOverlay('start');
 requestAnimationFrame(loop);
 
-// ===== Overlay button: iOS-safe event handling =====
+// ===== Overlay button =====
+// overlay は game-wrap の外にあるので touch-action:none の影響を受けない
 (function() {
   const ovBtn = document.getElementById('ov-btn');
 
@@ -932,22 +935,10 @@ requestAnimationFrame(loop);
     else startGame();
   }
 
-  // Prevent pointer events from reaching game-wrap
-  ovBtn.addEventListener('pointerdown', e => e.stopPropagation(), { passive: false });
-
-  // iOS Safari: touchstart is the most reliable event
-  // preventDefault() stops the browser from also synthesizing a click
-  ovBtn.addEventListener('touchstart', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    execAction();
-  }, { passive: false });
-
-  // PC/mouse fallback (won't fire on iOS if touchstart called preventDefault)
-  ovBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    execAction();
-  });
+  // touchstart: iOS Safari でも確実に動作
+  ovBtn.addEventListener('touchstart', e => { e.preventDefault(); execAction(); }, { passive: false });
+  // click: PC / マウス
+  ovBtn.addEventListener('click', execAction);
 })();
 
 // ===== BGM =====
