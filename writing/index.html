@@ -1003,8 +1003,8 @@ btnBgm.addEventListener('click', () => {
 
 if (bgmEnabled) {
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('pointerdown', tryStartBgm);
-    document.addEventListener('touchstart', tryStartBgm, { passive: true });
+    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+    document.addEventListener('pointerdown', tryStartBgm, { once: true });
   });
 }
 updateBgmBtn();

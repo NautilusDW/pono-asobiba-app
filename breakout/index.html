@@ -964,6 +964,7 @@ btnBgm.addEventListener('click', () => {
 
 if (bgmEnabled) {
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
   });
 }
