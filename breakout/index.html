@@ -923,34 +923,30 @@ showOverlay('start');
 requestAnimationFrame(loop);
 
 // ===== Overlay button: iOS-safe event handling =====
-// Use pointerdown+stopPropagation so parent never calls preventDefault,
-// then pointerup fires the action directly without relying on click synthesis.
 (function() {
   const ovBtn = document.getElementById('ov-btn');
-  let _triggered = false;
 
-  ovBtn.addEventListener('pointerdown', e => {
+  function execAction() {
+    const t = ovBtn.dataset.ovType;
+    if (t === 'stageclear') nextStage();
+    else startGame();
+  }
+
+  // Prevent pointer events from reaching game-wrap
+  ovBtn.addEventListener('pointerdown', e => e.stopPropagation(), { passive: false });
+
+  // iOS Safari: touchstart is the most reliable event
+  // preventDefault() stops the browser from also synthesizing a click
+  ovBtn.addEventListener('touchstart', e => {
     e.stopPropagation();
-    _triggered = false;
+    e.preventDefault();
+    execAction();
   }, { passive: false });
 
-  ovBtn.addEventListener('pointerup', e => {
-    e.stopPropagation();
-    if (_triggered) return;
-    _triggered = true;
-    const t = ovBtn.dataset.ovType;
-    if (t === 'stageclear') nextStage();
-    else startGame();
-  });
-
-  // Fallback for mouse click on PC
+  // PC/mouse fallback (won't fire on iOS if touchstart called preventDefault)
   ovBtn.addEventListener('click', e => {
     e.stopPropagation();
-    if (_triggered) return;
-    _triggered = true;
-    const t = ovBtn.dataset.ovType;
-    if (t === 'stageclear') nextStage();
-    else startGame();
+    execAction();
   });
 })();
 
