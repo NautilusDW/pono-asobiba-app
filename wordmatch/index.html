@@ -197,10 +197,10 @@ body {
 /* ===== Success Modal ===== */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 100;
-  background: rgba(93,78,55,0.55);
+  background: rgba(93,78,55,0.72);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
-  backdrop-filter: blur(4px);
+  /* backdrop-filter: iOS Safari で子要素タッチが届かない既知バグのため削除 */
   animation: fadeIn 0.3s;
 }
 .modal-overlay.hidden { display: none; }
@@ -432,6 +432,7 @@ function findTarget(x, y) {
 function tryMatch(card, target) {
   if (parseInt(card.dataset.idx) === parseInt(target.dataset.idx)) {
     // Correct match!
+    playCorrect();
     target.textContent = card.textContent;
     target.classList.add('matched');
     card.remove();
@@ -441,6 +442,7 @@ function tryMatch(card, target) {
     }
   } else {
     // Wrong — shake and stay in tray
+    playWrong();
     card.classList.add('shake');
     setTimeout(() => card.classList.remove('shake'), 400);
   }
@@ -491,6 +493,7 @@ document.addEventListener('pointercancel', endDrag);
 
 // ===== Stage complete =====
 function showStageComplete() {
+  playFanfare();
   launchConfetti();
   const num    = currentStageNum;
   const isAll8 = num === 7; // ステージ8（インデックス7）をクリアした瞬間
@@ -533,6 +536,64 @@ function launchConfetti() {
       setTimeout(() => c.remove(), 3600);
     }, i * 25);
   }
+}
+
+// ===== Audio =====
+let _ac = null;
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  return _ac;
+}
+function withAudio(fn) {
+  const ac = getAC();
+  if (ac.state === 'running') fn(ac);
+  else ac.resume().then(() => fn(ac)).catch(() => {});
+}
+// iOS Safari: 最初のタッチで AudioContext をアンロック
+document.addEventListener('touchstart', () => getAC().resume(), { once: true, passive: true });
+document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
+
+function playCorrect() {
+  withAudio(ac => {
+    [523.25, 783.99].forEach((freq, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type = 'sine'; o.frequency.value = freq;
+      const t = ac.currentTime + i * 0.13;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      o.start(t); o.stop(t + 0.28);
+    });
+  });
+}
+
+function playWrong() {
+  withAudio(ac => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(110, ac.currentTime + 0.22);
+    g.gain.setValueAtTime(0.15, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.22);
+    o.start(); o.stop(ac.currentTime + 0.22);
+  });
+}
+
+function playFanfare() {
+  withAudio(ac => {
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type = 'sine'; o.frequency.value = freq;
+      const t = ac.currentTime + i * 0.1;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.25, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      o.start(t); o.stop(t + 0.45);
+    });
+  });
 }
 
 // ===== Init =====
