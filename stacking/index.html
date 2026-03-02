@@ -325,6 +325,21 @@ function dropBlock() {
   }
 }
 
+// ===== Scroll: shift all dynamic bodies down when stack nears top =====
+const SCROLL_THRESHOLD = SWING_Y + 55;
+const SCROLL_AMOUNT    = Math.floor(CH * 0.38);
+
+function maybeScrollDown() {
+  if (stackTopY >= SCROLL_THRESHOLD) return;
+  engine.world.bodies.forEach(body => {
+    if (body.isStatic) return;
+    Body.setPosition(body, { x: body.position.x, y: body.position.y + SCROLL_AMOUNT });
+    Body.setVelocity(body, { x: 0, y: 0 });
+    Body.setAngularVelocity(body, 0);
+  });
+  stackTopY += SCROLL_AMOUNT;
+}
+
 // ===== Hit: block was on-target =====
 function checkHit() {
   if (!fallingBody) return;
@@ -334,6 +349,7 @@ function checkHit() {
   score++;
   stackTopY = Math.min(stackTopY, body.position.y - fallingShape.h);
   currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  maybeScrollDown();
   updateScore();
   showFlash('success');
 }
