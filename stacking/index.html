@@ -64,7 +64,17 @@ body {
 .score-row {
   display: flex; gap: 28px; justify-content: center; align-items: center;
   flex-shrink: 0;
+  position: relative; width: 100%;
 }
+.restart-btn {
+  position: absolute; right: 0;
+  padding: 6px 16px; border: none; border-radius: 50px;
+  background: var(--primary-light); color: var(--primary);
+  font-family: inherit; font-size: 0.8rem; font-weight: 900;
+  cursor: pointer; box-shadow: 0 2px 8px var(--shadow);
+  transition: transform 0.1s;
+}
+.restart-btn:active { transform: scale(0.92); }
 .score-box { text-align: center; }
 .score-label { font-size: 0.68rem; font-weight: 900; color: var(--text-light); letter-spacing: 0.03em; }
 .score-val { font-size: 1.7rem; font-weight: 900; color: var(--primary); line-height: 1; }
@@ -145,6 +155,7 @@ body {
     <p class="score-label">さいこう</p>
     <p class="score-val" id="hi-val">0</p>
   </div>
+  <button class="restart-btn" id="restart-btn2">↺ やり直し</button>
 </div>
 
 <div id="game-wrap">
@@ -184,6 +195,13 @@ const runner = Runner.create();
 // ===== Constants =====
 const BW = Math.max(Math.floor(CW * 0.28), 65);
 const BH = 28;
+
+// Block shape variations: wide bar / square / tall narrow
+const SHAPES = [
+  { w: BW,                    h: BH,                    r: 7 },
+  { w: Math.round(BH * 2.1), h: Math.round(BH * 2.1), r: 8 },
+  { w: Math.round(BW * 0.55), h: Math.round(BH * 1.9), r: 7 },
+];
 const SWING_Y = BH / 2 + 8;
 const PLAT_W  = Math.floor(CW * 0.42);
 const PLAT_H  = 22;
@@ -212,6 +230,7 @@ let lives = 3, score = 0;
 let hiScore = parseInt(localStorage.getItem('pono_stacking_hi') || '0');
 let colorIdx = 0, fallingBody = null, gameActive = false;
 let dropTimer = null, stackTopY = PLAT_Y;
+let currentShape = SHAPES[0], fallingShape = SHAPES[0];
 
 // ===== UI refs =====
 const scoreEl   = document.getElementById('score-val');
@@ -260,7 +279,7 @@ Events.on(render, 'afterRender', () => {
   ctx.lineWidth = 1.5;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
-  ctx.moveTo(swingX, SWING_Y + BH/2 + 3);
+  ctx.moveTo(swingX, SWING_Y + currentShape.h/2 + 3);
   ctx.lineTo(swingX, Math.min(stackTopY, PLAT_Y) - 2);
   ctx.stroke();
   ctx.setLineDash([]);
@@ -272,7 +291,7 @@ Events.on(render, 'afterRender', () => {
   ctx.shadowColor = 'rgba(0,0,0,0.18)';
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 3;
-  drawRR(ctx, swingX - BW/2, SWING_Y - BH/2, BW, BH, 7);
+  drawRR(ctx, swingX - currentShape.w/2, SWING_Y - currentShape.h/2, currentShape.w, currentShape.h, currentShape.r);
   ctx.fill();
   ctx.restore();
 });
@@ -287,9 +306,10 @@ function dropBlock() {
   // Hit/miss determined at the moment of drop — no physics ambiguity
   const platLeft  = CW/2 - PLAT_W/2;
   const platRight = CW/2 + PLAT_W/2;
-  const isHit = swingX + BW/2 > platLeft && swingX - BW/2 < platRight;
+  fallingShape = currentShape;
+  const isHit = swingX + fallingShape.w/2 > platLeft && swingX - fallingShape.w/2 < platRight;
 
-  fallingBody = Bodies.rectangle(swingX, SWING_Y, BW, BH, {
+  fallingBody = Bodies.rectangle(swingX, SWING_Y, fallingShape.w, fallingShape.h, {
     restitution: 0.02, friction: 1.4, frictionStatic: 2.5, frictionAir: 0.06, label: 'block',
     render: { fillStyle: color, strokeStyle: 'rgba(0,0,0,0.08)', lineWidth: 1 }
   });
@@ -312,7 +332,8 @@ function checkHit() {
   fallingBody = null;
   lastTs = null;
   score++;
-  stackTopY = Math.min(stackTopY, body.position.y - BH);
+  stackTopY = Math.min(stackTopY, body.position.y - fallingShape.h);
+  currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
   updateScore();
   showFlash('success');
 }
@@ -321,6 +342,7 @@ function checkHit() {
 function doMiss() {
   if (fallingBody) { World.remove(engine.world, fallingBody); fallingBody = null; }
   lastTs = null;
+  currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
   lives--;
   updateLives();
   showFlash('miss');
@@ -369,6 +391,7 @@ function startGame() {
   fallingBody = null;
   stackTopY  = PLAT_Y;
   lastTs     = null;
+  currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
 
   updateScore();
   updateLives();
@@ -411,6 +434,11 @@ gameWrap.addEventListener('touchend', e => {
 const retryBtn = document.getElementById('retry-btn');
 retryBtn.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
 retryBtn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
+
+// プレイ中の「やり直し」ボタン
+const restartBtn2 = document.getElementById('restart-btn2');
+restartBtn2.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
+restartBtn2.addEventListener('click', e => { e.stopPropagation(); startGame(); });
 
 // ページ読み込み完了後すぐにゲーム開始
 startGame();
