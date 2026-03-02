@@ -241,7 +241,8 @@ let scrolling      = false;
 let scrollStartY   = 0, scrollTargetY = 0, scrollStartTime = 0;
 const SCROLL_DUR   = 550;                    // ms
 const SCROLL_DIST  = Math.floor(CH * 0.40); // px per scroll
-const SCROLL_TRIG  = SWING_Y + 65;          // trigger when stack screen-top < this
+const SCROLL_TRIG      = SWING_Y + 65;           // scroll UP: stack screen-top too close to swing
+const SCROLL_DOWN_TRIG = Math.floor(CH * 0.60);  // scroll DOWN: stack screen-top too low
 
 // ===== UI refs =====
 const scoreEl   = document.getElementById('score-val');
@@ -275,7 +276,13 @@ Events.on(render, 'beforeRender', () => {
     return;
   }
 
-  if (!gameActive || fallingBody) return;
+  if (!gameActive) return;
+
+  // Continuously check if camera scroll is needed (handles collapse too)
+  checkScroll();
+  if (scrolling) return;
+
+  if (fallingBody) return;
   if (!lastTs) { lastTs = now; return; }
   const dt = Math.min((now - lastTs) / 1000, 0.05);
   lastTs = now;
@@ -356,16 +363,32 @@ function dropBlock() {
   }
 }
 
-// ===== Scroll: pan camera up when stack nears top =====
-function maybeScrollDown() {
-  if (scrolling) return;
-  const screenStackTop = stackTopY - cameraY; // world → screen
-  if (screenStackTop >= SCROLL_TRIG) return;
-  scrollStartY    = cameraY;
-  scrollTargetY   = cameraY - SCROLL_DIST; // move camera UP
-  scrollStartTime = performance.now();
-  scrolling       = true;
-  gameActive      = false; // pause during scroll
+// ===== Scroll: pan camera up or down based on stack position =====
+function checkScroll() {
+  if (scrolling || fallingBody || !gameActive) return;
+
+  // Find actual topmost block (world y) — keeps stackTopY in sync with physics
+  let minY = PLAT_Y;
+  engine.world.bodies.forEach(body => {
+    if (!body.isStatic && body.label === 'block') minY = Math.min(minY, body.position.y);
+  });
+  stackTopY = minY;
+
+  const screenTop = stackTopY - cameraY; // world → screen
+
+  if (screenTop < SCROLL_TRIG) {
+    // Stack too close to top → pan camera UP
+    scrollStartY    = cameraY;
+    scrollTargetY   = cameraY - SCROLL_DIST;
+    scrollStartTime = performance.now();
+    scrolling = true; gameActive = false;
+  } else if (screenTop > SCROLL_DOWN_TRIG && cameraY < 0) {
+    // Stack collapsed/lowered → pan camera DOWN to show stack
+    scrollStartY    = cameraY;
+    scrollTargetY   = Math.max(0, stackTopY - Math.floor(CH * 0.25));
+    scrollStartTime = performance.now();
+    scrolling = true; gameActive = false;
+  }
 }
 
 // ===== Hit: block was on-target =====
@@ -377,7 +400,6 @@ function checkHit() {
   score++;
   stackTopY = Math.min(stackTopY, body.position.y - fallingShape.h);
   currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-  maybeScrollDown();
   updateScore();
   showFlash('success');
 }
