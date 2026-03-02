@@ -173,7 +173,7 @@ gameWrap.style.width  = CW + 'px';
 gameWrap.style.height = CH + 'px';
 
 // ===== Engine & Render =====
-const engine = Engine.create({ gravity: { y: 1.8 } });
+const engine = Engine.create({ gravity: { y: 1.0 } });
 const render = Render.create({
   element: gameWrap,
   engine,
@@ -185,7 +185,7 @@ const runner = Runner.create();
 const BW = Math.max(Math.floor(CW * 0.28), 65);
 const BH = 28;
 const SWING_Y = BH / 2 + 8;
-const PLAT_W  = Math.floor(CW * 0.34);
+const PLAT_W  = Math.floor(CW * 0.42);
 const PLAT_H  = 22;
 const PLAT_Y  = CH - 50;
 const COLORS  = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
@@ -230,7 +230,7 @@ Events.on(render, 'beforeRender', () => {
   if (!lastTs) { lastTs = now; return; }
   const dt = Math.min((now - lastTs) / 1000, 0.05);
   lastTs = now;
-  swingPhase += 1.2 * dt;
+  swingPhase += 0.9 * dt;
   swingX = CW/2 + Math.sin(swingPhase) * (CW * 0.36);
 });
 
@@ -290,7 +290,7 @@ function dropBlock() {
   const isHit = swingX + BW/2 > platLeft && swingX - BW/2 < platRight;
 
   fallingBody = Bodies.rectangle(swingX, SWING_Y, BW, BH, {
-    restitution: 0.12, friction: 0.9, frictionStatic: 1.2, label: 'block',
+    restitution: 0.02, friction: 1.4, frictionStatic: 2.5, frictionAir: 0.06, label: 'block',
     render: { fillStyle: color, strokeStyle: 'rgba(0,0,0,0.08)', lineWidth: 1 }
   });
   Body.setVelocity(fallingBody, { x: 0, y: 4 });
@@ -298,7 +298,7 @@ function dropBlock() {
 
   if (isHit) {
     // Block will land on platform/stack — wait for it to settle then score
-    dropTimer = setTimeout(checkHit, 2200);
+    dropTimer = setTimeout(checkHit, 2600);
   } else {
     // Miss — show block falling briefly then remove it
     dropTimer = setTimeout(doMiss, 800);
