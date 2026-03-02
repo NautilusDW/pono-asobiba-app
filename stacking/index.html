@@ -188,19 +188,22 @@ const engine = Engine.create({ gravity: { y: 1.0 } });
 const render = Render.create({
   element: gameWrap,
   engine,
-  options: { width: CW, height: CH, wireframes: false, background: 'rgba(255,248,240,0.92)' }
+  options: { width: CW, height: CH, wireframes: false, background: 'rgba(255,248,240,0.92)',
+             hasBounds: true }
 });
+render.bounds.min = { x: 0, y: 0 };
+render.bounds.max = { x: CW, y: CH };
 const runner = Runner.create();
 
 // ===== Constants =====
 const BW = Math.max(Math.floor(CW * 0.28), 65);
 const BH = 28;
 
-// Block shape variations: wide bar / square / tall narrow
+// Block shape variations: wide bar / square / tall column
 const SHAPES = [
-  { w: BW,                    h: BH,                    r: 7 },
-  { w: Math.round(BH * 2.1), h: Math.round(BH * 2.1), r: 8 },
-  { w: Math.round(BW * 0.55), h: Math.round(BH * 1.9), r: 7 },
+  { w: BW,                    h: BH,                   r: 7 }, // wide bar ~112×28
+  { w: Math.round(BH * 2.0), h: Math.round(BH * 2.0), r: 8 }, // square ~56×56
+  { w: Math.round(BW * 0.30), h: Math.round(BH * 2.6), r: 6 }, // tall column ~34×73
 ];
 const SWING_Y = BH / 2 + 8;
 const PLAT_W  = Math.floor(CW * 0.42);
@@ -232,6 +235,14 @@ let colorIdx = 0, fallingBody = null, gameActive = false;
 let dropTimer = null, stackTopY = PLAT_Y;
 let currentShape = SHAPES[0], fallingShape = SHAPES[0];
 
+// ===== Camera state =====
+let cameraY        = 0;   // world y shown at screen top (negative = camera moved up)
+let scrolling      = false;
+let scrollStartY   = 0, scrollTargetY = 0, scrollStartTime = 0;
+const SCROLL_DUR   = 550;                    // ms
+const SCROLL_DIST  = Math.floor(CH * 0.40); // px per scroll
+const SCROLL_TRIG  = SWING_Y + 65;          // trigger when stack screen-top < this
+
 // ===== UI refs =====
 const scoreEl   = document.getElementById('score-val');
 const hiEl      = document.getElementById('hi-val');
@@ -242,10 +253,29 @@ const finalScEl = document.getElementById('final-score');
 const hiMsgEl   = document.getElementById('hi-msg');
 hiEl.textContent = hiScore;
 
-// ===== Swing timing (beforeRender) =====
+// ===== Swing timing + scroll animation (beforeRender) =====
 Events.on(render, 'beforeRender', () => {
-  if (!gameActive || fallingBody) return;
   const now = performance.now();
+
+  // Camera scroll animation
+  if (scrolling) {
+    const t = Math.min((now - scrollStartTime) / SCROLL_DUR, 1);
+    const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    cameraY = scrollStartY + (scrollTargetY - scrollStartY) * e;
+    render.bounds.min.y = cameraY;
+    render.bounds.max.y = cameraY + CH;
+    if (t >= 1) {
+      cameraY = scrollTargetY;
+      render.bounds.min.y = cameraY;
+      render.bounds.max.y = cameraY + CH;
+      scrolling  = false;
+      gameActive = true;
+      lastTs     = null;
+    }
+    return;
+  }
+
+  if (!gameActive || fallingBody) return;
   if (!lastTs) { lastTs = now; return; }
   const dt = Math.min((now - lastTs) / 1000, 0.05);
   lastTs = now;
@@ -280,7 +310,7 @@ Events.on(render, 'afterRender', () => {
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
   ctx.moveTo(swingX, SWING_Y + currentShape.h/2 + 3);
-  ctx.lineTo(swingX, Math.min(stackTopY, PLAT_Y) - 2);
+  ctx.lineTo(swingX, Math.min(stackTopY, PLAT_Y) - cameraY - 2);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
@@ -309,7 +339,8 @@ function dropBlock() {
   fallingShape = currentShape;
   const isHit = swingX + fallingShape.w/2 > platLeft && swingX - fallingShape.w/2 < platRight;
 
-  fallingBody = Bodies.rectangle(swingX, SWING_Y, fallingShape.w, fallingShape.h, {
+  const worldSwingY = SWING_Y + cameraY; // screen → world
+  fallingBody = Bodies.rectangle(swingX, worldSwingY, fallingShape.w, fallingShape.h, {
     restitution: 0.02, friction: 1.4, frictionStatic: 2.5, frictionAir: 0.06, label: 'block',
     render: { fillStyle: color, strokeStyle: 'rgba(0,0,0,0.08)', lineWidth: 1 }
   });
@@ -325,19 +356,16 @@ function dropBlock() {
   }
 }
 
-// ===== Scroll: shift all dynamic bodies down when stack nears top =====
-const SCROLL_THRESHOLD = SWING_Y + 55;
-const SCROLL_AMOUNT    = Math.floor(CH * 0.38);
-
+// ===== Scroll: pan camera up when stack nears top =====
 function maybeScrollDown() {
-  if (stackTopY >= SCROLL_THRESHOLD) return;
-  engine.world.bodies.forEach(body => {
-    if (body.isStatic) return;
-    Body.setPosition(body, { x: body.position.x, y: body.position.y + SCROLL_AMOUNT });
-    Body.setVelocity(body, { x: 0, y: 0 });
-    Body.setAngularVelocity(body, 0);
-  });
-  stackTopY += SCROLL_AMOUNT;
+  if (scrolling) return;
+  const screenStackTop = stackTopY - cameraY; // world → screen
+  if (screenStackTop >= SCROLL_TRIG) return;
+  scrollStartY    = cameraY;
+  scrollTargetY   = cameraY - SCROLL_DIST; // move camera UP
+  scrollStartTime = performance.now();
+  scrolling       = true;
+  gameActive      = false; // pause during scroll
 }
 
 // ===== Hit: block was on-target =====
@@ -365,10 +393,11 @@ function doMiss() {
   if (lives <= 0) setTimeout(doGameOver, 350);
 }
 
-// Clean up any blocks that have fallen off the canvas
+// Clean up blocks far below the viewport
 Events.on(engine, 'afterUpdate', () => {
+  const cleanY = cameraY + CH + BH * 4; // world y well below visible area
   engine.world.bodies.forEach(body => {
-    if (!body.isStatic && body.label === 'block' && body.position.y > CH + BH) {
+    if (!body.isStatic && body.label === 'block' && body.position.y > cleanY) {
       World.remove(engine.world, body);
     }
   });
@@ -408,6 +437,11 @@ function startGame() {
   stackTopY  = PLAT_Y;
   lastTs     = null;
   currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  // Reset camera
+  cameraY = 0;
+  render.bounds.min.y = 0;
+  render.bounds.max.y = CH;
+  scrolling = false;
 
   updateScore();
   updateLives();
