@@ -371,12 +371,13 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 }
 
 // ===== Stage data =====
+// layout: 0=empty, 1/2/3=block HP, -1=hedgehog position
 const STAGES = [
   {
     speed: 3.5, label: '1', name: 'よわい いわ',
-    clearMsg: 'なきごえが ちかくなってきた！',
+    clearMsg: 'たすかったよ！ありがとう！',
     layout: [
-      [1,1,1,1,1,1,1],
+      [1,1,1,-1,1,1,1],
       [1,1,1,1,1,1,1],
       [1,1,1,1,1,1,1],
       [1,1,1,1,1,1,1],
@@ -384,10 +385,10 @@ const STAGES = [
   },
   {
     speed: 4.5, label: '2', name: 'かたい いわ',
-    clearMsg: 'こえが かすかに きこえる！もうすこし！',
+    clearMsg: 'また たすけてくれたの？ありがとう！',
     layout: [
-      [1,1,1,1,1,1,1],
-      [1,0,1,0,1,0,1],
+      [1,1,1,-1,1,1,1],
+      [1,0,1,1,1,0,1],
       [0,1,1,1,1,1,0],
       [1,0,1,0,1,0,1],
       [1,1,1,1,1,1,1],
@@ -395,39 +396,37 @@ const STAGES = [
   },
   {
     speed: 5, label: '3', name: 'とても かたい いわ',
-    clearMsg: '「ポノー！」 へんじが きた！がんばれ！',
+    clearMsg: 'ポノは つよいね！ありがとう！',
     layout: [
-      [2,2,2,2,2,2,2],
+      [2,2,2,-1,2,2,2],
+      [2,1,1,2,1,1,2],
+      [1,1,2,1,2,1,1],
       [2,1,1,1,1,1,2],
-      [2,1,2,1,2,1,2],
-      [2,1,1,1,1,1,2],
-      [2,2,2,2,2,2,2],
       [0,2,0,0,0,2,0],
     ]
   },
   {
     speed: 5.5, label: '4', name: 'ぶあつい いわ',
-    clearMsg: 'すがたが 見えてきた！あと すこし！',
+    clearMsg: 'こんな かたいのも こわせるんだ！',
     layout: [
-      [2,2,2,2,2,2,2],
+      [2,2,2,-1,2,2,2],
+      [2,3,2,2,2,3,2],
+      [1,2,3,2,3,2,1],
+      [2,1,2,1,2,1,2],
       [1,2,1,2,1,2,1],
-      [2,3,2,3,2,3,2],
-      [1,2,1,2,1,2,1],
-      [2,2,2,2,2,2,2],
-      [0,1,0,1,0,1,0],
+      [0,1,0,0,0,1,0],
     ]
   },
   {
     speed: 6, label: '5', name: 'さいごの おおいわ',
-    clearMsg: '「ありがとう、ポノ！」',
+    clearMsg: 'やったー！ぜんぶ たすけたよ！',
     layout: [
-      [3,3,3,3,3,3,3],
-      [3,2,2,2,2,2,3],
-      [3,2,1,1,1,2,3],
-      [3,2,1,0,1,2,3],
-      [3,2,1,1,1,2,3],
-      [3,2,2,2,2,2,3],
-      [3,3,3,3,3,3,3],
+      [3,3,3,-1,3,3,3],
+      [3,2,2,3,2,2,3],
+      [3,2,1,2,1,2,3],
+      [2,1,2,1,2,1,2],
+      [2,2,1,1,1,2,2],
+      [0,2,0,0,0,2,0],
     ]
   }
 ];
@@ -508,6 +507,8 @@ function resize() {
 window.addEventListener('resize', resize);
 
 // ===== Blocks =====
+let hedgehogPos = null; // {x, y, w, h} — position of hedgehog in block grid
+
 function buildBlocks() {
   const layout = STAGES[stageIdx].layout;
   const COLS   = 7;
@@ -517,9 +518,18 @@ function buildBlocks() {
   const startY = CH * 0.06;
 
   blocks = [];
+  hedgehogPos = null;
   for (let r = 0; r < layout.length; r++) {
     for (let c = 0; c < COLS; c++) {
       const hp = layout[r][c];
+      if (hp === -1) {
+        hedgehogPos = {
+          x: gap + c * (bw + gap),
+          y: startY + r * (bh + gap),
+          w: bw, h: bh
+        };
+        continue;
+      }
       if (!hp) continue;
       blocks.push({
         x: gap + c * (bw + gap),
@@ -902,94 +912,6 @@ function nextStage() {
   setTimeout(() => { resetBallToPaddle(); state = S.READY; }, 150);
 }
 
-// ===== Hedgehog rescue scene =====
-function drawHedgehogScene() {
-  const cx = CW / 2;
-  const cy = CH * 0.06 + 10; // just at top of block area
-  const rockR = Math.max(14, CW * 0.042);
-  const ringR = rockR * 2.2; // distance from center to rock centers
-  const hedgeSize = Math.floor(rockR * 1.6);
-
-  // 5 rock positions in a circle around hedgehog
-  const totalRocks = STAGES.length; // 5
-  const rockAngles = [];
-  for (let i = 0; i < totalRocks; i++) {
-    rockAngles.push(-Math.PI / 2 + (i / totalRocks) * Math.PI * 2);
-  }
-
-  // How many rocks are broken (= stageIdx, because stage 0 means none broken yet)
-  const broken = stageIdx;
-
-  ctx.save();
-
-  // Hedgehog in center (slightly transparent if still trapped)
-  ctx.globalAlpha = broken >= totalRocks ? 1 : 0.5 + 0.1 * broken;
-  ctx.font = `${hedgeSize}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('🦔', cx, cy);
-  ctx.globalAlpha = 1;
-
-  // Draw rocks
-  for (let i = 0; i < totalRocks; i++) {
-    const angle = rockAngles[i];
-    const rx = cx + Math.cos(angle) * ringR;
-    const ry = cy + Math.sin(angle) * ringR;
-
-    if (i < broken) {
-      // Broken rock — small fragments
-      ctx.globalAlpha = 0.25;
-      ctx.fillStyle = '#A89880';
-      for (let f = 0; f < 3; f++) {
-        const fx = rx + (f - 1) * rockR * 0.4;
-        const fy = ry + (f % 2) * rockR * 0.3;
-        ctx.beginPath();
-        ctx.arc(fx, fy, rockR * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    } else {
-      // Solid rock
-      ctx.fillStyle = '#8B7355';
-      ctx.beginPath();
-      ctx.arc(rx, ry, rockR, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Rock texture — highlight
-      ctx.fillStyle = '#A89880';
-      ctx.beginPath();
-      ctx.arc(rx - rockR * 0.2, ry - rockR * 0.25, rockR * 0.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Rock shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      ctx.beginPath();
-      ctx.arc(rx + rockR * 0.15, ry + rockR * 0.2, rockR * 0.7, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Rock main again on top
-      ctx.fillStyle = '#9B8567';
-      ctx.beginPath();
-      ctx.arc(rx, ry, rockR * 0.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Crack lines on current stage rock (the one being broken)
-      if (i === broken) {
-        ctx.strokeStyle = '#6B5740';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(rx - rockR * 0.3, ry - rockR * 0.1);
-        ctx.lineTo(rx + rockR * 0.1, ry + rockR * 0.3);
-        ctx.moveTo(rx + rockR * 0.2, ry - rockR * 0.3);
-        ctx.lineTo(rx - rockR * 0.1, ry + rockR * 0.1);
-        ctx.stroke();
-      }
-    }
-  }
-
-  ctx.restore();
-}
-
 // ===== Draw =====
 function draw() {
   ctx.clearRect(0, 0, CW, CH);
@@ -998,8 +920,15 @@ function draw() {
   ctx.fillStyle = '#FFFBF5';
   ctx.fillRect(0, 0, CW, CH);
 
-  // Hedgehog rescue scene (behind blocks)
-  drawHedgehogScene();
+  // Hedgehog in block grid (drawn before blocks so blocks overlay)
+  if (hedgehogPos) {
+    const hp = hedgehogPos;
+    const fontSize = Math.floor(Math.min(hp.w, hp.h) * 0.9);
+    ctx.font = `${fontSize}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🦔', hp.x + hp.w / 2, hp.y + hp.h / 2);
+  }
 
   // Blocks
   for (const b of blocks) {
