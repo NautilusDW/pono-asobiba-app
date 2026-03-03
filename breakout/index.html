@@ -216,6 +216,23 @@ html, body {
 .pw-btn:active { transform: scale(0.95); }
 .pw-error { font-size: 0.82rem; font-weight: 700; color: #EF4444; display: none; }
 .pw-error.show { display: block; }
+
+/* ===== Item legend chips ===== */
+#hud-effects {
+  display: flex; justify-content: center; gap: 5px;
+  flex-shrink: 0; flex-wrap: wrap; padding: 1px 4px;
+}
+.item-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 900; letter-spacing: 0;
+  border: 1.5px solid rgba(91,74,63,0.2);
+  color: rgba(91,74,63,0.35);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.item-chip[data-type="wide"].active   { color:#fff; background:#22D3EE; border-color:#22D3EE; }
+.item-chip[data-type="pierce"].active { color:#fff; background:#F97316; border-color:#F97316; }
+.item-chip[data-type="slow"].active   { color:#fff; background:#8B5CF6; border-color:#8B5CF6; }
+.item-chip[data-type="life"].active   { color:#fff; background:#FB7185; border-color:#FB7185; }
 </style>
 </head>
 <body>
@@ -249,7 +266,12 @@ html, body {
     </div>
   </div>
 
-  <div id="hud-effects" style="text-align:center;font-size:1.15rem;min-height:1.4em;flex-shrink:0;line-height:1;letter-spacing:3px;"></div>
+  <div id="hud-effects">
+    <span class="item-chip" data-type="wide">↔ ひろがる</span>
+    <span class="item-chip" data-type="pierce">⚡ つきぬける</span>
+    <span class="item-chip" data-type="slow">🐌 ゆっくり</span>
+    <span class="item-chip" data-type="life">❤ 1アップ</span>
+  </div>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
@@ -720,11 +742,9 @@ function updateHUD() {
   document.getElementById('hud-stage').textContent = `ステージ ${STAGES[stageIdx].label}`;
   document.getElementById('score-now').textContent = `${score}てん`;
   document.getElementById('score-hi').textContent  = `ベスト: ${hiScore}てん`;
-  const active = [];
-  if (effects.wide   > 0) active.push('↔');
-  if (effects.pierce > 0) active.push('⚡');
-  if (effects.slow   > 0) active.push('🐌');
-  document.getElementById('hud-effects').textContent = active.join(' ');
+  document.querySelector('.item-chip[data-type="wide"]').classList.toggle('active',   effects.wide   > 0);
+  document.querySelector('.item-chip[data-type="pierce"]').classList.toggle('active', effects.pierce > 0);
+  document.querySelector('.item-chip[data-type="slow"]').classList.toggle('active',   effects.slow   > 0);
 }
 
 // ===== Confetti =====
@@ -867,13 +887,26 @@ function draw() {
   pg.addColorStop(1, '#C084FC');
   ctx.beginPath();
   ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, paddle.h / 2);
+  if (effects.wide > 0) {
+    const pulse = (Math.sin(Date.now() / 220) + 1) / 2;
+    ctx.shadowColor = '#22D3EE';
+    ctx.shadowBlur  = 8 + 12 * pulse;
+  }
   ctx.fillStyle = pg;
   ctx.fill();
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
 
   ctx.fillStyle = 'rgba(255,255,255,0.36)';
   ctx.fillRect(paddle.x + 5, paddle.y + 2, paddle.w - 10, paddle.h * 0.48);
 
   // Ball
+  if (effects.pierce > 0) {
+    const pulse = (Math.sin(Date.now() / 200) + 1) / 2;
+    ctx.shadowColor = '#F97316'; ctx.shadowBlur = 10 + 14 * pulse;
+  } else if (effects.slow > 0) {
+    const pulse = (Math.sin(Date.now() / 280) + 1) / 2;
+    ctx.shadowColor = '#8B5CF6'; ctx.shadowBlur = 10 + 14 * pulse;
+  }
   const bg = ctx.createRadialGradient(
     ball.x - ball.r * 0.28, ball.y - ball.r * 0.32, ball.r * 0.08,
     ball.x, ball.y, ball.r
@@ -884,6 +917,8 @@ function draw() {
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
   ctx.fillStyle = bg;
   ctx.fill();
+
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
 
   // Ball highlight
   ctx.beginPath();
