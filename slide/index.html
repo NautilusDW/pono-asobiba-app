@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>おかあさんに あいにいこう！| ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8F0;
+  --primary: #4CAF50;
+  --primary-dark: #388E3C;
+  --text: #5D4E37;
+  --text-light: #A89880;
+  --shadow: rgba(93,78,55,0.12);
+  --radius: 20px;
+}
+
+html, body {
+  height: 100dvh; overflow: hidden;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.webp');
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  color: var(--text);
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  display: flex; flex-direction: column;
+  height: 100dvh;
+  max-width: 540px; margin: 0 auto;
+  padding: 4px 10px 10px;
+}
+
+/* ===== Header ===== */
+.header { flex-shrink: 0; text-align: center; padding: 4px 0; position: relative; }
+.back-link {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  color: var(--primary); font-weight: 700; font-size: 0.85rem; text-decoration: none;
+}
+.header h1 {
+  font-size: 1.3rem; font-weight: 900;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.subtitle { font-size: 0.76rem; color: #A89080; font-weight: 700; text-align: center; margin-top: 1px; }
+.btn-bgm {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #FFF3EE; border: 2px solid var(--primary);
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px var(--shadow); transition: transform 0.15s;
+}
+.btn-bgm:active { transform: translateY(-50%) scale(0.9); }
+.btn-pause {
+  position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #FFF3EE; border: 2px solid var(--primary);
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px var(--shadow); z-index: 5; transition: transform 0.15s;
+}
+.btn-pause:active { transform: translateY(-50%) scale(0.9); }
+
+/* ===== HUD ===== */
+.hud {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 3px 8px; font-size: 0.85rem; font-weight: 700;
+  flex-shrink: 0;
+}
+#hud-stage { color: var(--primary); }
+#hud-moves { text-align: right; color: var(--text); }
+
+/* ===== Game area ===== */
+.game-wrap {
+  flex: 1; min-height: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+#gameCanvas { display: block; width: 100%; height: 100%; }
+
+/* ===== Confetti ===== */
+.confetti-container {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 10; overflow: hidden;
+}
+.confetti-piece { position: absolute; animation: cfall 2.5s ease-out forwards; }
+@keyframes cfall {
+  0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+}
+
+/* ===== Overlay ===== */
+.overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,248,240,0.92);
+  animation: fadeIn 0.25s ease;
+}
+.overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.ov-card {
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 24px 28px;
+}
+.ov-icon  { font-size: 3.5rem; line-height: 1; }
+.ov-title {
+  font-size: 1.6rem; font-weight: 900;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.ov-msg { font-size: 0.95rem; font-weight: 700; color: var(--text); white-space: pre-line; }
+.ov-btn {
+  margin-top: 6px; padding: 12px 30px;
+  border: none; border-radius: 50px;
+  font-family: inherit; font-size: 1rem; font-weight: 900;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(76,175,80,0.4);
+  transition: transform 0.15s;
+}
+.ov-btn:active { transform: scale(0.95); }
+.ov-back {
+  display: block; margin-top: 10px; font-size: 0.85rem;
+  color: var(--primary); text-decoration: none; text-align: center; font-weight: 700;
+}
+.ov-back.hidden { display: none; }
+
+/* ===== Password Overlay ===== */
+.pw-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(91,74,63,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(4px);
+}
+.pw-overlay.hidden { display: none; }
+.pw-box {
+  background: #fff; border-radius: var(--radius);
+  padding: 32px 28px; text-align: center;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  display: flex; flex-direction: column; gap: 16px;
+  animation: pwPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes pwPop { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+.pw-icon { font-size: 3rem; }
+.pw-title { font-size: 1.2rem; font-weight: 900; color: var(--text); }
+.pw-hint { font-size: 0.78rem; color: #A89585; line-height: 1.6; }
+.pw-input {
+  width: 100%; padding: 12px 16px;
+  border: 2.5px solid #FCD34D; border-radius: 50px;
+  font-family: inherit; font-size: 1.1rem; font-weight: 700;
+  color: var(--text); background: #FFFBF0;
+  text-align: center; letter-spacing: 0.1em; outline: none;
+  transition: border-color 0.2s;
+}
+.pw-input:focus { border-color: var(--primary); }
+.pw-input.error { border-color: #EF4444; animation: pwShake 0.3s; }
+@keyframes pwShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.pw-btn {
+  padding: 13px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 3px 12px rgba(76,175,80,0.4);
+}
+.pw-btn:active { transform: scale(0.95); }
+.pw-error { font-size: 0.82rem; font-weight: 700; color: #EF4444; display: none; }
+.pw-error.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Password Overlay -->
+<div id="pwOverlay" class="pw-overlay">
+  <div class="pw-box">
+    <div class="pw-icon">🔑</div>
+    <p class="pw-title">パスワードを いれてね</p>
+    <p class="pw-hint">ほんのなかに パスワードが かいてあるよ！</p>
+    <input type="text" id="pwInput" class="pw-input" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false">
+    <p id="pwError" class="pw-error">ちがうよ！もういちど！</p>
+    <button class="pw-btn" id="pwBtn">はいる →</button>
+  </div>
+</div>
+
+<audio id="bgm" loop src="../assets/audio/puzzle_bgm.mp3" preload="auto"></audio>
+
+<div id="app">
+  <div class="header">
+    <a href="../index.html" class="back-link">← メニュー</a>
+    <h1>おかあさんに あいにいこう！</h1>
+    <p class="subtitle">みちを つなげて コンちゃんを みちびこう</p>
+    <button id="btn-pause" class="btn-pause">⏸</button>
+    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
+  </div>
+
+  <div class="hud">
+    <div id="hud-stage">はじめてのみち</div>
+    <div id="hud-moves">てかず: 0</div>
+  </div>
+
+  <div class="game-wrap" id="gameWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="confetti-container" id="confetti"></div>
+  </div>
+
+  <!-- overlay は game-wrap の外 -->
+  <div class="overlay" id="overlay">
+    <div class="ov-card">
+      <div class="ov-icon" id="ov-icon">🦊</div>
+      <div class="ov-title" id="ov-title">おかあさんに あいにいこう！</div>
+      <div class="ov-msg" id="ov-msg">みちを つなげよう！</div>
+      <button class="ov-btn" id="ov-btn">スタート ▶</button>
+      <a class="ov-back" id="ov-back" href="../index.html">← メニューにもどる</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Password =====
+const CORRECT_PASSWORD = '';
+
+(function() {
+  const overlay = document.getElementById('pwOverlay');
+  const pwInput = document.getElementById('pwInput');
+  const pwBtn   = document.getElementById('pwBtn');
+  const pwError = document.getElementById('pwError');
+
+  if (sessionStorage.getItem('pono_unlocked') === '1') {
+    overlay.classList.add('hidden');
+    return;
+  }
+
+  function tryUnlock() {
+    const val = pwInput.value.trim();
+    if (CORRECT_PASSWORD === '' || val === CORRECT_PASSWORD) {
+      sessionStorage.setItem('pono_unlocked', '1');
+      overlay.classList.add('hidden');
+    } else {
+      pwInput.classList.add('error');
+      pwError.classList.add('show');
+      setTimeout(() => pwInput.classList.remove('error'), 400);
+      pwInput.select();
+    }
+  }
+
+  pwBtn.addEventListener('click', tryUnlock);
+  pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+})();
+
+// ===== roundRect polyfill =====
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    r = r.map(v => Math.min(v, w / 2, h / 2));
+    this.moveTo(x + r[0], y);
+    this.lineTo(x + w - r[1], y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+    this.lineTo(x + w, y + h - r[2]);
+    this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+    this.lineTo(x + r[3], y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+    this.lineTo(x, y + r[0]);
+    this.quadraticCurveTo(x, y, x + r[0], y);
+    this.closePath();
+  };
+}
+
+// ===== Tile types =====
+// edges: [top, right, bottom, left] — 1 = path exits this edge
+const TILE_TYPES = {
+  H:     { edges: [0,1,0,1] },
+  V:     { edges: [1,0,1,0] },
+  TR:    { edges: [1,1,0,0] },
+  RB:    { edges: [0,1,1,0] },
+  BL:    { edges: [0,0,1,1] },
+  LT:    { edges: [1,0,0,1] },
+  BLANK: { edges: [0,0,0,0] },
+};
+
+// ===== Level data =====
+// solved: row-major 3x3, null = empty space
+// start/goal: { row, side: 'left'|'right'|'top'|'bottom' }
+const LEVELS = [
+  {
+    name: 'はじめてのみち',
+    storyMsg: 'コンちゃんが もりで まいごに！\nみちを つなげて あげよう！',
+    clearMsg: 'やったー！みちが つながった！',
+    start: { row: 1, side: 'left' },
+    goal:  { row: 1, side: 'right' },
+    solved: ['BLANK','BLANK','BLANK', 'H','H','H', 'BLANK','BLANK',null],
+    shuffleMoves: 10,
+  },
+  {
+    name: 'まがりみち',
+    storyMsg: 'おかあさんの こえが きこえる！\nまがりみちを つなげよう！',
+    clearMsg: 'こえが ちかくなってきた！',
+    start: { row: 0, side: 'left' },
+    goal:  { row: 2, side: 'right' },
+    solved: ['H','RB','BLANK', null,'V','BLANK', 'BLANK','TR','H'],
+    shuffleMoves: 15,
+  },
+  {
+    name: 'ふくざつなみち',
+    storyMsg: 'もりが ふかくなってきた…\nくねくねみちを つなげよう！',
+    clearMsg: 'もりを ぬけたよ！すごい！',
+    start: { row: 0, side: 'left' },
+    goal:  { row: 2, side: 'right' },
+    // path: (0,0)H→(0,1)RB↓(1,1)V↓(2,1)TR→(2,2)H→goal
+    solved: ['H','RB',null, 'BLANK','V','BLANK', 'BLANK','TR','H'],
+    shuffleMoves: 18,
+  },
+  {
+    name: 'もりのおくへ',
+    storyMsg: 'あしあとを はっけん！\nちかくにいるかも！',
+    clearMsg: 'あしあとの さきに…！',
+    start: { row: 2, side: 'left' },
+    goal:  { row: 0, side: 'right' },
+    // path: (2,0)H→(2,1)LT↑(1,1)V↑(0,1)RB→(0,2)H→goal
+    solved: ['BLANK','RB','H', 'BLANK','V',null, 'H','LT','BLANK'],
+    shuffleMoves: 20,
+  },
+  {
+    name: 'さいごのみち',
+    storyMsg: '「コンちゃーん！」\nおかあさんの こえだ！',
+    clearMsg: '「おかあさーん！」',
+    start: { row: 2, side: 'left' },
+    goal:  { row: 0, side: 'right' },
+    // path: (2,0)LT↑(1,0)V↑(0,0)RB→(0,1)H→(0,2)H→goal
+    solved: ['RB','H','H', 'V',null,'BLANK', 'LT','BLANK','BLANK'],
+    // path: (2,0)TR→up→(1,0)V→up→(0,0)BL→right→(0,1)H→right  Goal!
+    // (2,2)RB is a distractor tile
+    shuffleMoves: 25,
+  },
+];
+
+// ===== State machine =====
+const S = { IDLE: 0, PLAYING: 1, STAGE_CLEAR: 2, GAME_CLEAR: 3, PAUSED: 4 };
+let state = S.IDLE;
+let prepauseState = S.IDLE;
+let stageIdx = 0;
+let moveCount = 0;
+let grid = [];
+let emptyIdx = -1;
+
+// ===== Animation =====
+let animating = false;
+const SLIDE_DUR = 150;
+let anim = { idx: -1, fromX: 0, fromY: 0, toX: 0, toY: 0, curX: 0, curY: 0, t0: 0 };
+
+// Win celebration animation
+let winAnim = { active: false, t0: 0, path: [], progress: 0 };
+
+// ===== Canvas =====
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('gameWrap');
+let CW = 0, CH = 0;
+let cellSize = 0, gridOX = 0, gridOY = 0;
+
+function resize() {
+  const rect = wrap.getBoundingClientRect();
+  CW = canvas.width  = Math.floor(rect.width);
+  CH = canvas.height = Math.floor(rect.height);
+  calcLayout();
+}
+
+function calcLayout() {
+  const pad = CW * 0.08;
+  const sideSpace = CW * 0.12; // space for fox characters on sides
+  const availW = CW - pad * 2 - sideSpace * 2;
+  const availH = CH - pad * 2;
+  cellSize = Math.floor(Math.min(availW / 3, availH / 3));
+  const gridW = cellSize * 3;
+  const gridH = cellSize * 3;
+  gridOX = Math.floor((CW - gridW) / 2);
+  gridOY = Math.floor((CH - gridH) / 2);
+}
+
+window.addEventListener('resize', resize);
+
+// ===== Audio =====
+let audioCtx = null;
+function withAudio(fn) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  fn(audioCtx);
+}
+function beep(ac, freq, start, dur, type, vol) {
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(vol || 0.2, start);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(start); o.stop(start + dur);
+}
+function playSlideSound() {
+  withAudio(ac => beep(ac, 350 + Math.random() * 80, ac.currentTime, 0.06, 'sine', 0.15));
+}
+function playClearSound() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => beep(ac, f, t + i * 0.12, 0.25, 'sine', 0.2));
+  });
+}
+function playGameClearSound() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [523,659,784,1047,784,1047,1319].forEach((f,i) => beep(ac, f, t + i*0.15, 0.3, 'sine', 0.22));
+  });
+}
+
+// ===== Grid helpers =====
+function getAdjacentIndices(idx) {
+  const row = Math.floor(idx / 3), col = idx % 3;
+  const result = [];
+  if (row > 0) result.push(idx - 3);
+  if (row < 2) result.push(idx + 3);
+  if (col > 0) result.push(idx - 1);
+  if (col < 2) result.push(idx + 1);
+  return result;
+}
+
+function shuffleGrid(level) {
+  grid = [...level.solved];
+  emptyIdx = grid.indexOf(null);
+  const n = level.shuffleMoves;
+  let lastMoved = -1;
+  for (let i = 0; i < n; i++) {
+    const neighbors = getAdjacentIndices(emptyIdx);
+    const candidates = neighbors.filter(idx => idx !== lastMoved);
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    lastMoved = emptyIdx;
+    grid[emptyIdx] = grid[pick];
+    grid[pick] = null;
+    emptyIdx = pick;
+  }
+  // Ensure not already solved
+  if (checkWin()) shuffleGrid(level);
+}
+
+// ===== Win detection (BFS) =====
+function oppositeEdge(e) { return (e + 2) % 4; }
+
+function getNeighborRC(row, col, edge) {
+  const dr = [-1, 0, 1, 0];
+  const dc = [0, 1, 0, -1];
+  return [row + dr[edge], col + dc[edge]];
+}
+
+function checkWin() {
+  const level = LEVELS[stageIdx];
+  const startRow = level.start.row;
+  let startCol, startEdge;
+  if (level.start.side === 'left')   { startCol = 0; startEdge = 3; }
+  if (level.start.side === 'right')  { startCol = 2; startEdge = 1; }
+  if (level.start.side === 'top')    { startCol = level.start.col || 0; startEdge = 0; }
+  if (level.start.side === 'bottom') { startCol = level.start.col || 0; startEdge = 2; }
+
+  const goalRow = level.goal.row;
+  let goalCol, goalExitEdge;
+  if (level.goal.side === 'left')   { goalCol = 0; goalExitEdge = 3; }
+  if (level.goal.side === 'right')  { goalCol = 2; goalExitEdge = 1; }
+  if (level.goal.side === 'top')    { goalCol = level.goal.col || 0; goalExitEdge = 0; }
+  if (level.goal.side === 'bottom') { goalCol = level.goal.col || 0; goalExitEdge = 2; }
+
+  const queue = [{ row: startRow, col: startCol, fromEdge: startEdge }];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const { row, col, fromEdge } = queue.shift();
+    const key = `${row},${col}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    if (row < 0 || row > 2 || col < 0 || col > 2) continue;
+
+    const idx = row * 3 + col;
+    const tileKey = grid[idx];
+    if (!tileKey || tileKey === 'BLANK') continue;
+
+    const edges = TILE_TYPES[tileKey].edges;
+    if (!edges[fromEdge]) continue;
+
+    for (let e = 0; e < 4; e++) {
+      if (e === fromEdge || !edges[e]) continue;
+      if (row === goalRow && col === goalCol && e === goalExitEdge) return true;
+      const [nr, nc] = getNeighborRC(row, col, e);
+      if (nr >= 0 && nr <= 2 && nc >= 0 && nc <= 2) {
+        queue.push({ row: nr, col: nc, fromEdge: oppositeEdge(e) });
+      }
+    }
+  }
+  return false;
+}
+
+// ===== Trace winning path (for celebration animation) =====
+function traceWinPath() {
+  const level = LEVELS[stageIdx];
+  const startRow = level.start.row;
+  let startCol, startEdge;
+  if (level.start.side === 'left')  { startCol = 0; startEdge = 3; }
+  if (level.start.side === 'right') { startCol = 2; startEdge = 1; }
+
+  const goalRow = level.goal.row;
+  let goalCol, goalExitEdge;
+  if (level.goal.side === 'left')  { goalCol = 0; goalExitEdge = 3; }
+  if (level.goal.side === 'right') { goalCol = 2; goalExitEdge = 1; }
+
+  const path = [];
+  let row = startRow, col = startCol, fromEdge = startEdge;
+  const visited = new Set();
+
+  for (let steps = 0; steps < 12; steps++) {
+    if (row < 0 || row > 2 || col < 0 || col > 2) break;
+    const key = `${row},${col}`;
+    if (visited.has(key)) break;
+    visited.add(key);
+
+    const idx = row * 3 + col;
+    const tileKey = grid[idx];
+    if (!tileKey || tileKey === 'BLANK') break;
+    const edges = TILE_TYPES[tileKey].edges;
+    if (!edges[fromEdge]) break;
+
+    path.push({ row, col });
+
+    let exited = false;
+    for (let e = 0; e < 4; e++) {
+      if (e === fromEdge || !edges[e]) continue;
+      if (row === goalRow && col === goalCol && e === goalExitEdge) {
+        exited = true; break;
+      }
+      const [nr, nc] = getNeighborRC(row, col, e);
+      row = nr; col = nc; fromEdge = oppositeEdge(e);
+      exited = true; break;
+    }
+    if (!exited) break;
+  }
+  return path;
+}
+
+// ===== Drawing =====
+const GRASS_COLOR = '#7EC850';
+const GRASS_DARK  = '#5DA83A';
+const DIRT_COLOR  = '#C8956B';
+const DIRT_BORDER = '#8B6B42';
+const DIRT_LIGHT  = '#DEB887';
+const EMPTY_COLOR = '#3D5A2E';
+
+function drawTile(x, y, size, tileKey, isAnimating) {
+  const r = size * 0.1;
+  const gap = 3;
+
+  // Tile background
+  ctx.beginPath();
+  ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+  ctx.fillStyle = tileKey === 'BLANK' ? GRASS_COLOR : '#8AD460';
+  ctx.fill();
+  ctx.strokeStyle = GRASS_DARK;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  if (tileKey === 'BLANK') {
+    // Draw small decorations on blank tiles
+    const seed = (x * 7 + y * 13) | 0;
+    const flowers = ['🌼', '🍀', '🌿', '🍄'];
+    ctx.font = `${Math.floor(size * 0.2)}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(flowers[((seed >> 3) & 3)], x + size / 2, y + size / 2);
+    return;
+  }
+
+  // Draw path
+  const edges = TILE_TYPES[tileKey].edges;
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  const pathW = size * 0.30;
+
+  // Draw border first, then fill
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.strokeStyle = pass === 0 ? DIRT_BORDER : DIRT_COLOR;
+    ctx.lineWidth = pass === 0 ? pathW + 4 : pathW;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const openEdges = [];
+    for (let e = 0; e < 4; e++) if (edges[e]) openEdges.push(e);
+
+    if (openEdges.length === 2) {
+      // Straight or turn
+      const [a, b] = openEdges;
+      const pa = edgePoint(x, y, size, a);
+      const pb = edgePoint(x, y, size, b);
+
+      if (Math.abs(a - b) === 2) {
+        // Straight line
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.stroke();
+      } else {
+        // Curve
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.quadraticCurveTo(cx, cy, pb.x, pb.y);
+        ctx.stroke();
+      }
+    } else {
+      // T-junction or cross — draw lines from center to each open edge
+      for (const e of openEdges) {
+        const p = edgePoint(x, y, size, e);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Light highlight on path center
+  ctx.fillStyle = DIRT_LIGHT;
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, pathW * 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function edgePoint(x, y, size, edge) {
+  const cx = x + size / 2, cy = y + size / 2;
+  const gap = 3;
+  if (edge === 0) return { x: cx, y: y + gap };      // top
+  if (edge === 1) return { x: x + size - gap, y: cy }; // right
+  if (edge === 2) return { x: cx, y: y + size - gap }; // bottom
+  if (edge === 3) return { x: x + gap, y: cy };        // left
+}
+
+function drawStartGoal() {
+  const level = LEVELS[stageIdx];
+  const fontSize = Math.floor(cellSize * 0.45);
+
+  // Start marker (Kon-chan)
+  const sr = level.start.row;
+  let sx, sy;
+  if (level.start.side === 'left') {
+    sx = gridOX - cellSize * 0.45;
+    sy = gridOY + sr * cellSize + cellSize / 2;
+  } else {
+    sx = gridOX + 3 * cellSize + cellSize * 0.45;
+    sy = gridOY + sr * cellSize + cellSize / 2;
+  }
+  ctx.font = `${fontSize}px serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🦊', sx, sy);
+  ctx.font = `900 ${Math.floor(cellSize * 0.13)}px 'Zen Maru Gothic', sans-serif`;
+  ctx.fillStyle = '#5D4E37';
+  ctx.fillText('コンちゃん', sx, sy + fontSize * 0.55);
+
+  // Goal marker (Mother fox)
+  const gr = level.goal.row;
+  let gx, gy;
+  if (level.goal.side === 'right') {
+    gx = gridOX + 3 * cellSize + cellSize * 0.45;
+    gy = gridOY + gr * cellSize + cellSize / 2;
+  } else {
+    gx = gridOX - cellSize * 0.45;
+    gy = gridOY + gr * cellSize + cellSize / 2;
+  }
+  ctx.font = `${fontSize}px serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🦊', gx, gy - fontSize * 0.1);
+  ctx.fillText('❤️', gx, gy - fontSize * 0.65);
+  ctx.font = `900 ${Math.floor(cellSize * 0.13)}px 'Zen Maru Gothic', sans-serif`;
+  ctx.fillStyle = '#5D4E37';
+  ctx.fillText('おかあさん', gx, gy + fontSize * 0.55);
+
+  // Draw entry/exit arrows on grid edge
+  ctx.strokeStyle = var_primary;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([4, 4]);
+  // Start arrow
+  if (level.start.side === 'left') {
+    const ay = gridOY + sr * cellSize + cellSize / 2;
+    ctx.beginPath();
+    ctx.moveTo(gridOX - 8, ay);
+    ctx.lineTo(gridOX + 6, ay);
+    ctx.stroke();
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(gridOX + 6, ay - 5);
+    ctx.lineTo(gridOX + 12, ay);
+    ctx.lineTo(gridOX + 6, ay + 5);
+    ctx.fillStyle = var_primary;
+    ctx.fill();
+  }
+  // Goal arrow
+  if (level.goal.side === 'right') {
+    const ay = gridOY + gr * cellSize + cellSize / 2;
+    const gx2 = gridOX + 3 * cellSize;
+    ctx.beginPath();
+    ctx.moveTo(gx2 - 6, ay);
+    ctx.lineTo(gx2 + 8, ay);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(gx2 + 8, ay - 5);
+    ctx.lineTo(gx2 + 14, ay);
+    ctx.lineTo(gx2 + 8, ay + 5);
+    ctx.fillStyle = var_primary;
+    ctx.fill();
+  }
+  ctx.setLineDash([]);
+}
+
+const var_primary = '#4CAF50';
+
+function draw(now) {
+  // Background
+  ctx.fillStyle = '#E8F5E9';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Grid background (wooden frame)
+  const frameP = 6;
+  ctx.fillStyle = '#6D4C2A';
+  ctx.beginPath();
+  ctx.roundRect(gridOX - frameP, gridOY - frameP,
+    cellSize * 3 + frameP * 2, cellSize * 3 + frameP * 2, 12);
+  ctx.fill();
+
+  ctx.fillStyle = '#8B6B42';
+  ctx.beginPath();
+  ctx.roundRect(gridOX - frameP + 2, gridOY - frameP + 2,
+    cellSize * 3 + frameP * 2 - 4, cellSize * 3 + frameP * 2 - 4, 10);
+  ctx.fill();
+
+  // Empty space
+  const eRow = Math.floor(emptyIdx / 3), eCol = emptyIdx % 3;
+  const ex = gridOX + eCol * cellSize, ey = gridOY + eRow * cellSize;
+  ctx.fillStyle = EMPTY_COLOR;
+  ctx.fillRect(ex + 2, ey + 2, cellSize - 4, cellSize - 4);
+
+  // Draw tiles
+  for (let i = 0; i < 9; i++) {
+    if (grid[i] === null) continue;
+    const row = Math.floor(i / 3), col = i % 3;
+    let x = gridOX + col * cellSize;
+    let y = gridOY + row * cellSize;
+
+    if (animating && i === anim.idx) {
+      x = anim.curX;
+      y = anim.curY;
+    }
+
+    drawTile(x, y, cellSize, grid[i]);
+  }
+
+  // Start & Goal markers
+  drawStartGoal();
+
+  // Win celebration fox walk
+  if (winAnim.active && winAnim.path.length > 0) {
+    const elapsed = now - winAnim.t0;
+    const dur = winAnim.path.length * 400;
+    const t = Math.min(elapsed / dur, 1);
+    const totalPts = winAnim.path.length;
+    const exactIdx = t * (totalPts - 1);
+    const idxA = Math.floor(exactIdx);
+    const idxB = Math.min(idxA + 1, totalPts - 1);
+    const frac = exactIdx - idxA;
+
+    const pA = winAnim.path[idxA];
+    const pB = winAnim.path[idxB];
+    const fx = gridOX + (pA.col + (pB.col - pA.col) * frac) * cellSize + cellSize / 2;
+    const fy = gridOY + (pA.row + (pB.row - pA.row) * frac) * cellSize + cellSize / 2;
+
+    ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🦊', fx, fy);
+
+    if (t >= 1) {
+      winAnim.active = false;
+      const isLast = stageIdx >= LEVELS.length - 1;
+      setTimeout(() => showOverlay(isLast ? 'gameclear' : 'stageclear'), 300);
+    }
+  }
+
+  // Pause overlay on canvas
+  if (state === S.PAUSED) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.font = `900 ${Math.floor(CW * 0.09)}px 'Zen Maru Gothic', sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('⏸ ポーズちゅう', CW / 2, CH / 2);
+  }
+}
+
+// ===== Update animation =====
+function updateAnim(now) {
+  if (!animating) return;
+  const t = Math.min((now - anim.t0) / SLIDE_DUR, 1);
+  const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  anim.curX = anim.fromX + (anim.toX - anim.fromX) * ease;
+  anim.curY = anim.fromY + (anim.toY - anim.fromY) * ease;
+
+  if (t >= 1) {
+    const oldEmpty = emptyIdx;
+    grid[oldEmpty] = grid[anim.idx];
+    grid[anim.idx] = null;
+    emptyIdx = anim.idx;
+    moveCount++;
+    updateHUD();
+    animating = false;
+
+    if (checkWin()) {
+      onStageClear();
+    }
+  }
+}
+
+// ===== Game loop =====
+function loop(ts) {
+  requestAnimationFrame(loop);
+  updateAnim(ts);
+  draw(ts);
+}
+
+// ===== Input =====
+function handleTap(px, py) {
+  if (state !== S.PLAYING || animating || winAnim.active) return;
+
+  const col = Math.floor((px - gridOX) / cellSize);
+  const row = Math.floor((py - gridOY) / cellSize);
+  if (col < 0 || col > 2 || row < 0 || row > 2) return;
+
+  const tappedIdx = row * 3 + col;
+  if (grid[tappedIdx] === null) return;
+
+  const eRow = Math.floor(emptyIdx / 3), eCol = emptyIdx % 3;
+  const dist = Math.abs(eRow - row) + Math.abs(eCol - col);
+  if (dist !== 1) return;
+
+  // Start slide animation
+  animating = true;
+  anim.idx = tappedIdx;
+  anim.fromX = gridOX + col * cellSize;
+  anim.fromY = gridOY + row * cellSize;
+  anim.toX   = gridOX + eCol * cellSize;
+  anim.toY   = gridOY + eRow * cellSize;
+  anim.curX  = anim.fromX;
+  anim.curY  = anim.fromY;
+  anim.t0    = performance.now();
+  playSlideSound();
+}
+
+wrap.addEventListener('pointerdown', e => {
+  if (state === S.PAUSED) return;
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (CW / rect.width);
+  const py = (e.clientY - rect.top) * (CH / rect.height);
+  handleTap(px, py);
+});
+
+// ===== Stage clear =====
+function onStageClear() {
+  state = S.STAGE_CLEAR;
+  playClearSound();
+  const path = traceWinPath();
+  winAnim.active = true;
+  winAnim.t0 = performance.now();
+  winAnim.path = path;
+}
+
+// ===== Confetti =====
+function launchConfetti() {
+  const c = document.getElementById('confetti');
+  c.innerHTML = '';
+  const colors = ['#4CAF50','#81C784','#FFC107','#FF9800','#E91E63','#9C27B0'];
+  for (let i = 0; i < 50; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const sz = 6 + Math.random() * 8;
+    el.style.cssText = `
+      left:${Math.random()*100}%;
+      width:${sz}px; height:${sz}px;
+      background:${colors[Math.floor(Math.random() * colors.length)]};
+      border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-delay:${Math.random() * 0.4}s;
+      animation-duration:${2 + Math.random()}s;
+    `;
+    c.appendChild(el);
+  }
+  setTimeout(() => { c.innerHTML = ''; }, 3500);
+}
+
+// ===== Overlay =====
+const overlay = document.getElementById('overlay');
+
+function showOverlay(type) {
+  const icon  = document.getElementById('ov-icon');
+  const title = document.getElementById('ov-title');
+  const msg   = document.getElementById('ov-msg');
+  const btn   = document.getElementById('ov-btn');
+  const back  = document.getElementById('ov-back');
+  overlay.classList.remove('hidden');
+  back.classList.remove('hidden');
+
+  if (type === 'start') {
+    icon.textContent  = '🦊';
+    title.textContent = 'おかあさんに あいにいこう！';
+    msg.textContent   = LEVELS[stageIdx].storyMsg;
+    btn.textContent   = 'たすけにいく ▶';
+  } else if (type === 'stageclear') {
+    launchConfetti();
+    icon.textContent  = '🦊';
+    title.textContent = `${LEVELS[stageIdx].name} クリア！`;
+    msg.textContent   = LEVELS[stageIdx].clearMsg + `\n${moveCount}てかず`;
+    btn.textContent   = 'つぎへ ▶';
+  } else if (type === 'gameclear') {
+    launchConfetti();
+    playGameClearSound();
+    icon.textContent  = '🦊❤️🦊';
+    title.textContent = 'おかあさんと さいかい！';
+    msg.textContent   = `「やっと あえたね、コンちゃん！」\n${moveCount}てかず でクリア！`;
+    btn.textContent   = 'もう一回 ▶';
+  }
+
+  btn.dataset.ovType = type;
+}
+
+function updateHUD() {
+  document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
+  document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
+}
+
+// ===== Start / Next =====
+function startGame() {
+  overlay.classList.add('hidden');
+  stageIdx = 0;
+  moveCount = 0;
+  shuffleGrid(LEVELS[stageIdx]);
+  updateHUD();
+  state = S.PLAYING;
+}
+
+function nextStage() {
+  overlay.classList.add('hidden');
+  stageIdx++;
+  moveCount = 0;
+  shuffleGrid(LEVELS[stageIdx]);
+  updateHUD();
+  state = S.PLAYING;
+  showOverlay('start');
+}
+
+// ===== Overlay button =====
+(function() {
+  const ovBtn = document.getElementById('ov-btn');
+  function execAction() {
+    const t = ovBtn.dataset.ovType;
+    if (t === 'stageclear') nextStage();
+    else startGame();
+  }
+  ovBtn.addEventListener('touchstart', e => { e.preventDefault(); execAction(); }, { passive: false });
+  ovBtn.addEventListener('click', execAction);
+})();
+
+// ===== Pause =====
+function togglePause() {
+  if (state === S.PAUSED) {
+    state = prepauseState;
+    document.getElementById('btn-pause').textContent = '⏸';
+    if (bgmEnabled) bgm.play().catch(() => {});
+  } else if (state === S.PLAYING) {
+    prepauseState = state;
+    state = S.PAUSED;
+    document.getElementById('btn-pause').textContent = '▶';
+    bgm.pause();
+  }
+}
+
+const btnPause = document.getElementById('btn-pause');
+btnPause.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); togglePause(); }, { passive: false });
+btnPause.addEventListener('click', e => { e.stopPropagation(); togglePause(); });
+
+// ===== BGM =====
+const bgm    = document.getElementById('bgm');
+const btnBgm = document.getElementById('btn-bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+let bgmStarted = false;
+bgm.volume = 0.2;
+
+function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+btnBgm.addEventListener('click', () => {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  updateBgmBtn();
+});
+
+if (bgmEnabled) {
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+    document.addEventListener('pointerdown', tryStartBgm, { once: true });
+  });
+}
+updateBgmBtn();
+
+// ===== Init =====
+resize();
+updateHUD();
+showOverlay('start');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
