@@ -397,6 +397,31 @@ const STAGES = [
       [2,2,2,2,2,2,2],
       [0,2,0,0,0,2,0],
     ]
+  },
+  {
+    speed: 5.5, label: '4', name: 'ぶあつい いわ',
+    clearMsg: 'すがたが 見えてきた！あと すこし！',
+    layout: [
+      [2,2,2,2,2,2,2],
+      [1,2,1,2,1,2,1],
+      [2,3,2,3,2,3,2],
+      [1,2,1,2,1,2,1],
+      [2,2,2,2,2,2,2],
+      [0,1,0,1,0,1,0],
+    ]
+  },
+  {
+    speed: 6, label: '5', name: 'さいごの おおいわ',
+    clearMsg: '「ありがとう、ポノ！」',
+    layout: [
+      [3,3,3,3,3,3,3],
+      [3,2,2,2,2,2,3],
+      [3,2,1,1,1,2,3],
+      [3,2,1,0,1,2,3],
+      [3,2,1,1,1,2,3],
+      [3,2,2,2,2,2,3],
+      [3,3,3,3,3,3,3],
+    ]
   }
 ];
 
@@ -879,24 +904,32 @@ function draw() {
   for (const b of blocks) {
     if (b.hp <= 0) continue;
     const color = ROW_COLORS[b.row % ROW_COLORS.length];
-    ctx.globalAlpha = b.hp < b.maxHp ? 0.48 : 1;
+    ctx.globalAlpha = b.hp < b.maxHp ? (0.3 + 0.7 * b.hp / b.maxHp) : 1;
 
     ctx.beginPath();
     ctx.roundRect(b.x, b.y, b.w, b.h, 5);
     ctx.fillStyle = color;
     ctx.fill();
 
+    // Border for HP3 blocks
+    if (b.maxHp >= 3) {
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
     // Shine
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
     ctx.fillRect(b.x + 3, b.y + 2, b.w - 6, b.h * 0.38);
 
-    // Star indicator on 2-hit blocks (at full hp)
+    // Star indicator on tough blocks (at full hp)
     if (b.maxHp > 1 && b.hp === b.maxHp) {
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.font = `900 ${Math.floor(b.h * 0.56)}px sans-serif`;
+      const stars = b.maxHp >= 3 ? '★★' : '★';
+      ctx.font = `900 ${Math.floor(b.h * (b.maxHp >= 3 ? 0.44 : 0.56))}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('★', b.x + b.w / 2, b.y + b.h / 2);
+      ctx.fillText(stars, b.x + b.w / 2, b.y + b.h / 2);
     }
     ctx.globalAlpha = 1;
   }
