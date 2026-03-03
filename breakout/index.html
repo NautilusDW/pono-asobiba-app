@@ -239,15 +239,15 @@ html, body {
 
 /* ===== Pause button ===== */
 .btn-pause {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,248,240,0.85); border: 2px solid var(--primary);
-  font-size: 1.1rem; cursor: pointer;
+  position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #FFF3EE; border: 2px solid var(--primary);
+  font-size: 1rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 2px 6px rgba(93,78,55,0.15);
   z-index: 5; transition: transform 0.15s;
 }
-.btn-pause:active { transform: translate(-50%, -50%) scale(0.9); }
+.btn-pause:active { transform: translateY(-50%) scale(0.9); }
 
 /* ===== Chip expiring blink ===== */
 @keyframes chipBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -274,6 +274,7 @@ html, body {
     <a href="../index.html" class="back-link">← メニュー</a>
     <h1>ハリネズミちゃんをたすけにいこう！</h1>
     <p class="subtitle">まほうのたまで いわをこわしにいこう！</p>
+    <button id="btn-pause" class="btn-pause">⏸</button>
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
@@ -294,7 +295,6 @@ html, body {
   </div>
 
   <div class="game-wrap" id="gameWrap">
-    <button id="btn-pause" class="btn-pause">⏸</button>
     <canvas id="gameCanvas"></canvas>
     <div class="hi-toast" id="hi-toast">🌟 しんきろく！</div>
     <div class="confetti-container" id="confetti"></div>
