@@ -390,8 +390,8 @@ function drawRR(ctx, x, y, w, h, r) {
 Events.on(render, 'afterRender', () => {
   const ctx = render.context;
 
-  // カラスを描画（スクリーン座標固定）
-  if (karasuActive) {
+  // カラスを描画（最終フリーズ中は非表示）
+  if (karasuActive && freezeSegment < FREEZE_GOAL) {
     ctx.save();
     ctx.font = '26px serif';
     ctx.textAlign = 'center';
@@ -405,6 +405,14 @@ Events.on(render, 'afterRender', () => {
     const t = Math.min((now2 - ponoAnim.startTime) / PONO_DUR, 1);
     const ease = 1 - Math.pow(1 - t, 2); // ease-out quad
     const curY = ponoAnim.fromY + (ponoAnim.toY - ponoAnim.fromY) * ease;
+    // 最終ステージ：コトリを目的地（ポノが向かう先）に表示
+    if (freezeSegment >= FREEZE_GOAL) {
+      ctx.save();
+      ctx.font = '26px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🐦', CW / 2, Math.max(18, ponoAnim.toY - 28));
+      ctx.restore();
+    }
     ctx.save();
     ctx.font = '28px serif';
     ctx.textAlign = 'center';
