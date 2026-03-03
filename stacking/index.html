@@ -168,6 +168,13 @@ body {
     <p class="overlay-hi" id="hi-msg"></p>
     <button class="overlay-btn" id="retry-btn">もういっかい！</button>
   </div>
+  <div id="gameclear-overlay" class="overlay hidden" style="background:rgba(34,125,34,0.82);">
+    <p class="overlay-emoji">🐦🌳</p>
+    <p class="overlay-title">コトリが<br>すに かえれた！</p>
+    <p class="overlay-score" id="clear-score">たかさ: 0</p>
+    <p class="overlay-hi" id="clear-hi"></p>
+    <button class="overlay-btn" id="clear-btn">もういっかい！</button>
+  </div>
 </div>
 
 <div class="lives-row" id="lives-row">❤️❤️❤️</div>
@@ -212,7 +219,8 @@ const PLAT_H  = 22;
 const PLAT_Y  = CH - 50;
 const COLORS  = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
 const HIT_BONUS = 8; // px added to each side of hit zone
-const FREEZE_INTERVAL = 5; // 5ブロック置くごとにフリーズ
+const FREEZE_INTERVAL = 8; // 8ブロック置くごとにフリーズ
+const FREEZE_GOAL     = 3; // 3回フリーズでクリア（コトリの巣に届く）
 const KARASU_SCREEN_Y = SWING_Y + 55; // カラスの固定スクリーンY
 const KARASU_W = 34;
 const PONO_DUR = 1400; // ポノアニメーション時間 ms
@@ -396,9 +404,14 @@ Events.on(render, 'afterRender', () => {
     ctx.restore();
     if (t >= 1) {
       ponoAnim.active = false;
-      gameActive = true;
-      Runner.run(runner, engine);
-      lastTs = null;
+      if (freezeSegment >= FREEZE_GOAL) {
+        // ゴール！コトリの巣に届いた！
+        setTimeout(doGameClear, 400);
+      } else {
+        gameActive = true;
+        Runner.run(runner, engine);
+        lastTs = null;
+      }
     }
     return;
   }
@@ -541,6 +554,23 @@ Events.on(engine, 'afterUpdate', () => {
   });
 });
 
+// ===== Game Clear =====
+function doGameClear() {
+  gameActive = false;
+  Render.stop(render);
+  Runner.stop(runner);
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('pono_stacking_hi', String(hiScore));
+    hiEl.textContent = hiScore;
+    document.getElementById('clear-hi').textContent = '🎉 あたらしいきろく！';
+  } else {
+    document.getElementById('clear-hi').textContent = `さいこうきろく: ${hiScore}`;
+  }
+  document.getElementById('clear-score').textContent = `たかさ: ${score}`;
+  document.getElementById('gameclear-overlay').classList.remove('hidden');
+}
+
 // ===== Game Over =====
 function doGameOver() {
   gameActive = false;
@@ -589,6 +619,7 @@ function startGame() {
   updateScore();
   updateLives();
   gameOv.classList.add('hidden');
+  document.getElementById('gameclear-overlay').classList.add('hidden');
 
   gameActive = true;
   Render.run(render);
@@ -627,6 +658,11 @@ gameWrap.addEventListener('touchend', e => {
 const retryBtn = document.getElementById('retry-btn');
 retryBtn.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
 retryBtn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
+
+// クリア後の「もういっかい」ボタン
+const clearBtn = document.getElementById('clear-btn');
+clearBtn.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
+clearBtn.addEventListener('click', e => { e.stopPropagation(); startGame(); });
 
 // プレイ中の「やり直し」ボタン
 const restartBtn2 = document.getElementById('restart-btn2');
