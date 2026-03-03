@@ -868,9 +868,9 @@ function showOverlay(type) {
     msg.textContent   = `ハリネズミちゃんが まだ むこうに…\n${score}てん ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
   }
-  // メニューに戻るリンク: gameclear / gameover 時のみ表示
+  // メニューに戻るリンク: 全overlay で表示
   const back = document.getElementById('ov-back');
-  back.classList.toggle('hidden', type !== 'gameclear' && type !== 'gameover');
+  back.classList.remove('hidden');
   // Store action type for the pointerup handler
   btn.dataset.ovType = type;
 }
