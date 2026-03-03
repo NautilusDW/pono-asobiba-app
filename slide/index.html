@@ -913,7 +913,7 @@ function showOverlay(type) {
   overlay.classList.remove('hidden');
   back.classList.remove('hidden');
 
-  if (type === 'start') {
+  if (type === 'start' || type === 'stagestart') {
     icon.textContent  = '🦊';
     title.textContent = 'おかあさんに あいにいこう！';
     msg.textContent   = LEVELS[stageIdx].storyMsg;
@@ -959,8 +959,7 @@ function nextStage() {
   shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
   updateHUD();
-  state = S.PLAYING;
-  showOverlay('start');
+  showOverlay('stagestart');
 }
 
 // ===== Overlay button =====
@@ -969,7 +968,10 @@ function nextStage() {
   function execAction() {
     const t = ovBtn.dataset.ovType;
     if (t === 'stageclear') nextStage();
-    else startGame();
+    else if (t === 'stagestart') {
+      overlay.classList.add('hidden');
+      state = S.PLAYING;
+    } else startGame();
   }
   ovBtn.addEventListener('touchstart', e => { e.preventDefault(); execAction(); }, { passive: false });
   ovBtn.addEventListener('click', execAction);

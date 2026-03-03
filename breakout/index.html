@@ -519,6 +519,15 @@ function buildBlocks() {
 
   blocks = [];
   hedgehogPos = null;
+
+  // First pass: find hedgehog position
+  let hedgeRow = -1, hedgeCol = -1;
+  for (let r = 0; r < layout.length; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (layout[r][c] === -1) { hedgeRow = r; hedgeCol = c; }
+    }
+  }
+
   for (let r = 0; r < layout.length; r++) {
     for (let c = 0; c < COLS; c++) {
       const hp = layout[r][c];
@@ -531,14 +540,20 @@ function buildBlocks() {
         continue;
       }
       if (!hp) continue;
+
+      // Adjacent to hedgehog → iron block
+      const isIron = hedgeRow >= 0 &&
+        Math.abs(r - hedgeRow) <= 1 && Math.abs(c - hedgeCol) <= 1;
+
       blocks.push({
         x: gap + c * (bw + gap),
         y: startY + r * (bh + gap),
         w: bw, h: bh,
         hp, maxHp: hp, row: r,
-        dropType: Math.random() < 0.25
+        iron: isIron,
+        dropType: isIron ? null : (Math.random() < 0.25
           ? ['wide','pierce','slow','wide','pierce','slow','life'][Math.floor(Math.random()*7)]
-          : null
+          : null)
       });
     }
   }
@@ -582,6 +597,14 @@ function beep(ac, freq, t, dur, type = 'sine', vol = 0.25) {
 }
 
 function playBlockHit()  { withAudio(ac => beep(ac, 500 + Math.random()*300, ac.currentTime, 0.07, 'square', 0.18)); }
+function playIronHit()   { withAudio(ac => beep(ac, 200 + Math.random()*50, ac.currentTime, 0.12, 'sawtooth', 0.15)); }
+function playIronWeaken() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [400, 300, 200, 150].forEach((f, i) => beep(ac, f, t + i*0.08, 0.15, 'sawtooth', 0.2));
+    beep(ac, 523, t + 0.5, 0.3, 'sine', 0.25);
+  });
+}
 function playPaddleHit() { withAudio(ac => beep(ac, 350, ac.currentTime, 0.1, 'sine', 0.28)); }
 function playMiss()      {
   withAudio(ac => {
@@ -718,6 +741,18 @@ function checkBlocks() {
 
     if (dx * dx + dy * dy > ball.r * ball.r) continue;
 
+    // Iron block: bounce but no damage
+    if (b.iron) {
+      playIronHit();
+      const oL = (ball.x + ball.r) - b.x;
+      const oR = (b.x + b.w) - (ball.x - ball.r);
+      const oT = (ball.y + ball.r) - b.y;
+      const oB = (b.y + b.h) - (ball.y - ball.r);
+      if (Math.min(oL, oR) < Math.min(oT, oB)) ball.vx = -ball.vx;
+      else ball.vy = -ball.vy;
+      return;
+    }
+
     b.hp--;
     score += b.maxHp * 10;
     updateHUD();
@@ -727,6 +762,21 @@ function checkBlocks() {
     // Spawn drop when block is destroyed
     if (b.hp <= 0 && b.dropType) {
       drops.push({ x: b.x + b.w/2, y: b.y + b.h/2, vy: DROP_SPEED, type: b.dropType });
+    }
+
+    // Check iron transition: all non-iron blocks destroyed → weaken iron
+    if (b.hp <= 0) {
+      const hasNonIron = blocks.some(bl => !bl.iron && bl.hp > 0);
+      if (!hasNonIron) {
+        blocks.forEach(bl => {
+          if (bl.iron && bl.hp > 0) {
+            bl.iron = false;
+            bl.hp = 1;
+            bl.maxHp = 1;
+          }
+        });
+        playIronWeaken();
+      }
     }
 
     // Reflect unless pierce is active
@@ -933,6 +983,32 @@ function draw() {
   // Blocks
   for (const b of blocks) {
     if (b.hp <= 0) continue;
+
+    if (b.iron) {
+      // Iron block: silver metallic look
+      ctx.beginPath();
+      ctx.roundRect(b.x, b.y, b.w, b.h, 5);
+      const grad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
+      grad.addColorStop(0, '#D0D0D0');
+      grad.addColorStop(0.4, '#A8A8A8');
+      grad.addColorStop(0.6, '#B8B8B8');
+      grad.addColorStop(1, '#808080');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(60,60,60,0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Metallic shine
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillRect(b.x + 3, b.y + 2, b.w - 6, b.h * 0.32);
+      // Lock icon
+      ctx.fillStyle = 'rgba(70,70,70,0.7)';
+      ctx.font = `900 ${Math.floor(b.h * 0.5)}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🔒', b.x + b.w / 2, b.y + b.h / 2);
+      continue;
+    }
+
     const color = ROW_COLORS[b.row % ROW_COLORS.length];
     ctx.globalAlpha = b.hp < b.maxHp ? (0.3 + 0.7 * b.hp / b.maxHp) : 1;
 
