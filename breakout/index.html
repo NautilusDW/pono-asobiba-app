@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ブロックくずし | ポノのあそびば</title>
+<title>ハリネズミちゃんをたすけにいこう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -233,6 +233,9 @@ html, body {
 .item-chip[data-type="pierce"].active { color:#fff; background:#F97316; border-color:#F97316; }
 .item-chip[data-type="slow"].active   { color:#fff; background:#8B5CF6; border-color:#8B5CF6; }
 .item-chip[data-type="life"].active   { color:#fff; background:#FB7185; border-color:#FB7185; }
+
+/* ===== Subtitle ===== */
+.subtitle { font-size: 0.76rem; color: #A89080; font-weight: 700; text-align: center; margin-top: 1px; }
 </style>
 </head>
 <body>
@@ -253,7 +256,8 @@ html, body {
 <div id="app">
   <div class="header">
     <a href="../index.html" class="back-link">← メニュー</a>
-    <h1>ブロックくずし</h1>
+    <h1>ハリネズミちゃんをたすけにいこう！</h1>
+    <p class="subtitle">まほうのたまで いわをこわしにいこう！</p>
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
@@ -345,7 +349,8 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 // ===== Stage data =====
 const STAGES = [
   {
-    speed: 3.5, label: '1',
+    speed: 3.5, label: '1', name: 'よわい いわ',
+    clearMsg: 'なきごえが ちかくなってきた！',
     layout: [
       [1,1,1,1,1,1,1],
       [1,1,1,1,1,1,1],
@@ -354,7 +359,8 @@ const STAGES = [
     ]
   },
   {
-    speed: 4.5, label: '2',
+    speed: 4.5, label: '2', name: 'かたい いわ',
+    clearMsg: 'こえが かすかに きこえる！もうすこし！',
     layout: [
       [1,1,1,1,1,1,1],
       [1,0,1,0,1,0,1],
@@ -364,7 +370,8 @@ const STAGES = [
     ]
   },
   {
-    speed: 5, label: '3',
+    speed: 5, label: '3', name: 'とても かたい いわ',
+    clearMsg: '「ポノー！」 へんじが きた！がんばれ！',
     layout: [
       [2,2,2,2,2,2,2],
       [2,1,1,1,1,1,2],
@@ -740,7 +747,7 @@ function updateHUD() {
   const displayMax = Math.max(lives, MAX_LIVES);
   document.getElementById('hud-lives').textContent =
     '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, displayMax - lives));
-  document.getElementById('hud-stage').textContent = `ステージ ${STAGES[stageIdx].label}`;
+  document.getElementById('hud-stage').textContent = STAGES[stageIdx].name;
   document.getElementById('score-now').textContent = `${score}てん`;
   document.getElementById('score-hi').textContent  = `ベスト: ${hiScore}てん`;
   document.querySelector('.item-chip[data-type="wide"]').classList.toggle('active',   effects.wide   > 0);
@@ -780,25 +787,25 @@ function showOverlay(type) {
   overlay.classList.remove('hidden');
 
   if (type === 'start') {
-    icon.textContent  = '🧱';
-    title.textContent = 'ブロックくずし';
-    msg.textContent   = 'タップして はじめよう！';
-    btn.textContent   = 'スタート ▶';
+    icon.textContent  = '🦔';
+    title.textContent = 'ハリネズミちゃんをたすけよう！';
+    msg.textContent   = 'ハリネズミちゃんが いわのむこうで まいご！\nまほうのたまで いわをぜんぶこわそう！';
+    btn.textContent   = 'たすけにいく ▶';
   } else if (type === 'stageclear') {
-    icon.textContent  = '🎉';
-    title.textContent = `ステージ${STAGES[stageIdx].label} クリア！`;
-    msg.textContent   = 'つぎのステージへ！';
+    icon.textContent  = '🦔';
+    title.textContent = `${STAGES[stageIdx].label}だんめの いわをこわした！`;
+    msg.textContent   = STAGES[stageIdx].clearMsg;
     btn.textContent   = 'つぎへ ▶';
   } else if (type === 'gameclear') {
-    icon.textContent  = '🏆';
-    title.textContent = 'ぜんぶ クリア！';
-    msg.textContent   = `すごい！ さいこう！\n${score}てん 🌟ベスト: ${hiScore}てん`;
+    icon.textContent  = '🦔';
+    title.textContent = 'ハリネズミちゃんと さいかい！';
+    msg.textContent   = `「ありがとう、ポノ！」\n${score}てん 🌟ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
   } else if (type === 'gameover') {
     const isRecord = recordShown;
-    icon.textContent  = isRecord ? '🌟' : '😢';
+    icon.textContent  = isRecord ? '🌟' : '🦔';
     title.textContent = isRecord ? 'しんきろく！' : 'もう一回！';
-    msg.textContent   = `${score}てん とれたよ！\nベスト: ${hiScore}てん`;
+    msg.textContent   = `ハリネズミちゃんが まだ むこうに…\n${score}てん ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
   }
   // Store action type for the pointerup handler
