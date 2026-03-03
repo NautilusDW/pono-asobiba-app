@@ -289,58 +289,63 @@ const TILE_TYPES = {
 };
 
 // ===== Level data =====
-// solved: row-major 3x3, null = empty space
-// start/goal: { row, side: 'left'|'right'|'top'|'bottom' }
+// solved: row-major cols×rows, null = empty space
+// start/goal: { col, side: 'top'|'bottom' } — 縦方向（上→下）
 const LEVELS = [
   {
     name: 'はじめてのみち',
+    cols: 3, rows: 3,
     storyMsg: 'コンちゃんが もりで まいごに！\nみちを つなげて あげよう！',
     clearMsg: 'やったー！みちが つながった！',
-    start: { row: 1, side: 'left' },
-    goal:  { row: 1, side: 'right' },
-    solved: ['BLANK','BLANK','BLANK', 'H','H','H', 'BLANK','BLANK',null],
+    start: { col: 1, side: 'top' },
+    goal:  { col: 1, side: 'bottom' },
+    // path: (0,1)V→(1,1)V→(2,1)V→goal
+    solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK'],
     shuffleMoves: 10,
   },
   {
     name: 'まがりみち',
+    cols: 3, rows: 3,
     storyMsg: 'おかあさんの こえが きこえる！\nまがりみちを つなげよう！',
     clearMsg: 'こえが ちかくなってきた！',
-    start: { row: 0, side: 'left' },
-    goal:  { row: 2, side: 'right' },
-    solved: ['H','RB','BLANK', null,'V','BLANK', 'BLANK','TR','H'],
+    start: { col: 0, side: 'top' },
+    goal:  { col: 2, side: 'bottom' },
+    // path: (0,0)TR→(0,1)BL→(1,1)V→(2,1)TR→(2,2)BL→goal
+    solved: ['TR','BL','BLANK', null,'V','BLANK', 'BLANK','TR','BL'],
     shuffleMoves: 15,
   },
   {
     name: 'ふくざつなみち',
+    cols: 3, rows: 4,
     storyMsg: 'もりが ふかくなってきた…\nくねくねみちを つなげよう！',
     clearMsg: 'もりを ぬけたよ！すごい！',
-    start: { row: 0, side: 'left' },
-    goal:  { row: 2, side: 'right' },
-    // path: (0,0)H→(0,1)RB↓(1,1)V↓(2,1)TR→(2,2)H→goal
-    solved: ['H','RB',null, 'BLANK','V','BLANK', 'BLANK','TR','H'],
+    start: { col: 1, side: 'top' },
+    goal:  { col: 1, side: 'bottom' },
+    // path: (0,1)V→(1,1)TR→(1,2)BL→(2,2)LT→(2,1)RB→(3,1)V→goal
+    solved: ['BLANK','V','BLANK', 'BLANK','TR','BL', null,'RB','LT', 'BLANK','V','BLANK'],
     shuffleMoves: 18,
   },
   {
     name: 'もりのおくへ',
+    cols: 4, rows: 4,
     storyMsg: 'あしあとを はっけん！\nちかくにいるかも！',
     clearMsg: 'あしあとの さきに…！',
-    start: { row: 2, side: 'left' },
-    goal:  { row: 0, side: 'right' },
-    // path: (2,0)H→(2,1)LT↑(1,1)V↑(0,1)RB→(0,2)H→goal
-    solved: ['BLANK','RB','H', 'BLANK','V',null, 'H','LT','BLANK'],
-    shuffleMoves: 20,
+    start: { col: 1, side: 'top' },
+    goal:  { col: 2, side: 'bottom' },
+    // path: (0,1)V→(1,1)TR→(1,2)H→(1,3)BL→(2,3)LT→(2,2)RB→(3,2)V→goal
+    solved: ['BLANK','V','BLANK','BLANK', 'BLANK','TR','H','BL', 'BLANK',null,'RB','LT', 'BLANK','BLANK','V','BLANK'],
+    shuffleMoves: 22,
   },
   {
     name: 'さいごのみち',
+    cols: 4, rows: 5,
     storyMsg: '「コンちゃーん！」\nおかあさんの こえだ！',
     clearMsg: '「おかあさーん！」',
-    start: { row: 2, side: 'left' },
-    goal:  { row: 0, side: 'right' },
-    // path: (2,0)LT↑(1,0)V↑(0,0)RB→(0,1)H→(0,2)H→goal
-    solved: ['RB','H','H', 'V',null,'BLANK', 'LT','BLANK','BLANK'],
-    // path: (2,0)TR→up→(1,0)V→up→(0,0)BL→right→(0,1)H→right  Goal!
-    // (2,2)RB is a distractor tile
-    shuffleMoves: 25,
+    start: { col: 1, side: 'top' },
+    goal:  { col: 2, side: 'bottom' },
+    // path: (0,1)TR→(0,2)H→(0,3)BL→(1,3)LT→(1,2)RB→(2,2)TR→(2,3)BL→(3,3)LT→(3,2)RB→(4,2)V→goal
+    solved: ['BLANK','TR','H','BL', 'BLANK','BLANK','RB','LT', 'BLANK',null,'TR','BL', 'BLANK','BLANK','RB','LT', 'BLANK','BLANK','V','BLANK'],
+    shuffleMoves: 28,
   },
 ];
 
@@ -352,6 +357,7 @@ let stageIdx = 0;
 let moveCount = 0;
 let grid = [];
 let emptyIdx = -1;
+let curCols = 3, curRows = 3;
 
 // ===== Animation =====
 let animating = false;
@@ -376,15 +382,15 @@ function resize() {
 }
 
 function calcLayout() {
-  const pad = CW * 0.08;
-  const sideSpace = CW * 0.12; // space for fox characters on sides
-  const availW = CW - pad * 2 - sideSpace * 2;
-  const availH = CH - pad * 2;
-  cellSize = Math.floor(Math.min(availW / 3, availH / 3));
-  const gridW = cellSize * 3;
-  const gridH = cellSize * 3;
+  const pad = CW * 0.05;
+  const charH = Math.max(46, CH * 0.07); // space for characters at top/bottom
+  const availW = CW - pad * 2;
+  const availH = CH - charH * 2 - pad * 2;
+  cellSize = Math.floor(Math.min(availW / curCols, availH / curRows));
+  const gridW = cellSize * curCols;
+  const gridH = cellSize * curRows;
   gridOX = Math.floor((CW - gridW) / 2);
-  gridOY = Math.floor((CH - gridH) / 2);
+  gridOY = Math.floor(charH + pad + (availH - gridH) / 2);
 }
 
 window.addEventListener('resize', resize);
@@ -424,16 +430,18 @@ function playGameClearSound() {
 
 // ===== Grid helpers =====
 function getAdjacentIndices(idx) {
-  const row = Math.floor(idx / 3), col = idx % 3;
+  const row = Math.floor(idx / curCols), col = idx % curCols;
   const result = [];
-  if (row > 0) result.push(idx - 3);
-  if (row < 2) result.push(idx + 3);
+  if (row > 0) result.push(idx - curCols);
+  if (row < curRows - 1) result.push(idx + curCols);
   if (col > 0) result.push(idx - 1);
-  if (col < 2) result.push(idx + 1);
+  if (col < curCols - 1) result.push(idx + 1);
   return result;
 }
 
 function shuffleGrid(level) {
+  curCols = level.cols;
+  curRows = level.rows;
   grid = [...level.solved];
   emptyIdx = grid.indexOf(null);
   const n = level.shuffleMoves;
@@ -462,19 +470,17 @@ function getNeighborRC(row, col, edge) {
 
 function checkWin() {
   const level = LEVELS[stageIdx];
-  const startRow = level.start.row;
-  let startCol, startEdge;
-  if (level.start.side === 'left')   { startCol = 0; startEdge = 3; }
-  if (level.start.side === 'right')  { startCol = 2; startEdge = 1; }
-  if (level.start.side === 'top')    { startCol = level.start.col || 0; startEdge = 0; }
-  if (level.start.side === 'bottom') { startCol = level.start.col || 0; startEdge = 2; }
+  let startRow, startCol, startEdge;
+  if (level.start.side === 'top')    { startRow = 0; startCol = level.start.col; startEdge = 0; }
+  if (level.start.side === 'bottom') { startRow = curRows - 1; startCol = level.start.col; startEdge = 2; }
+  if (level.start.side === 'left')   { startRow = level.start.row; startCol = 0; startEdge = 3; }
+  if (level.start.side === 'right')  { startRow = level.start.row; startCol = curCols - 1; startEdge = 1; }
 
-  const goalRow = level.goal.row;
-  let goalCol, goalExitEdge;
-  if (level.goal.side === 'left')   { goalCol = 0; goalExitEdge = 3; }
-  if (level.goal.side === 'right')  { goalCol = 2; goalExitEdge = 1; }
-  if (level.goal.side === 'top')    { goalCol = level.goal.col || 0; goalExitEdge = 0; }
-  if (level.goal.side === 'bottom') { goalCol = level.goal.col || 0; goalExitEdge = 2; }
+  let goalRow, goalCol, goalExitEdge;
+  if (level.goal.side === 'top')    { goalRow = 0; goalCol = level.goal.col; goalExitEdge = 0; }
+  if (level.goal.side === 'bottom') { goalRow = curRows - 1; goalCol = level.goal.col; goalExitEdge = 2; }
+  if (level.goal.side === 'left')   { goalRow = level.goal.row; goalCol = 0; goalExitEdge = 3; }
+  if (level.goal.side === 'right')  { goalRow = level.goal.row; goalCol = curCols - 1; goalExitEdge = 1; }
 
   const queue = [{ row: startRow, col: startCol, fromEdge: startEdge }];
   const visited = new Set();
@@ -484,9 +490,9 @@ function checkWin() {
     const key = `${row},${col}`;
     if (visited.has(key)) continue;
     visited.add(key);
-    if (row < 0 || row > 2 || col < 0 || col > 2) continue;
+    if (row < 0 || row >= curRows || col < 0 || col >= curCols) continue;
 
-    const idx = row * 3 + col;
+    const idx = row * curCols + col;
     const tileKey = grid[idx];
     if (!tileKey || tileKey === 'BLANK') continue;
 
@@ -497,7 +503,7 @@ function checkWin() {
       if (e === fromEdge || !edges[e]) continue;
       if (row === goalRow && col === goalCol && e === goalExitEdge) return true;
       const [nr, nc] = getNeighborRC(row, col, e);
-      if (nr >= 0 && nr <= 2 && nc >= 0 && nc <= 2) {
+      if (nr >= 0 && nr < curRows && nc >= 0 && nc < curCols) {
         queue.push({ row: nr, col: nc, fromEdge: oppositeEdge(e) });
       }
     }
@@ -508,27 +514,29 @@ function checkWin() {
 // ===== Trace winning path (for celebration animation) =====
 function traceWinPath() {
   const level = LEVELS[stageIdx];
-  const startRow = level.start.row;
-  let startCol, startEdge;
-  if (level.start.side === 'left')  { startCol = 0; startEdge = 3; }
-  if (level.start.side === 'right') { startCol = 2; startEdge = 1; }
+  let startRow, startCol, startEdge;
+  if (level.start.side === 'top')    { startRow = 0; startCol = level.start.col; startEdge = 0; }
+  if (level.start.side === 'bottom') { startRow = curRows - 1; startCol = level.start.col; startEdge = 2; }
+  if (level.start.side === 'left')   { startRow = level.start.row; startCol = 0; startEdge = 3; }
+  if (level.start.side === 'right')  { startRow = level.start.row; startCol = curCols - 1; startEdge = 1; }
 
-  const goalRow = level.goal.row;
-  let goalCol, goalExitEdge;
-  if (level.goal.side === 'left')  { goalCol = 0; goalExitEdge = 3; }
-  if (level.goal.side === 'right') { goalCol = 2; goalExitEdge = 1; }
+  let goalRow, goalCol, goalExitEdge;
+  if (level.goal.side === 'top')    { goalRow = 0; goalCol = level.goal.col; goalExitEdge = 0; }
+  if (level.goal.side === 'bottom') { goalRow = curRows - 1; goalCol = level.goal.col; goalExitEdge = 2; }
+  if (level.goal.side === 'left')   { goalRow = level.goal.row; goalCol = 0; goalExitEdge = 3; }
+  if (level.goal.side === 'right')  { goalRow = level.goal.row; goalCol = curCols - 1; goalExitEdge = 1; }
 
   const path = [];
   let row = startRow, col = startCol, fromEdge = startEdge;
   const visited = new Set();
 
-  for (let steps = 0; steps < 12; steps++) {
-    if (row < 0 || row > 2 || col < 0 || col > 2) break;
+  for (let steps = 0; steps < curCols * curRows + 4; steps++) {
+    if (row < 0 || row >= curRows || col < 0 || col >= curCols) break;
     const key = `${row},${col}`;
     if (visited.has(key)) break;
     visited.add(key);
 
-    const idx = row * 3 + col;
+    const idx = row * curCols + col;
     const tileKey = grid[idx];
     if (!tileKey || tileKey === 'BLANK') break;
     const edges = TILE_TYPES[tileKey].edges;
@@ -649,78 +657,65 @@ function edgePoint(x, y, size, edge) {
 
 function drawStartGoal() {
   const level = LEVELS[stageIdx];
-  const fontSize = Math.floor(cellSize * 0.45);
+  const fontSize = Math.floor(cellSize * 0.38);
 
-  // Start marker (Kon-chan)
-  const sr = level.start.row;
-  let sx, sy;
-  if (level.start.side === 'left') {
-    sx = gridOX - cellSize * 0.45;
-    sy = gridOY + sr * cellSize + cellSize / 2;
-  } else {
-    sx = gridOX + 3 * cellSize + cellSize * 0.45;
-    sy = gridOY + sr * cellSize + cellSize / 2;
-  }
+  // ===== Start marker (コンちゃん) at top =====
+  const sc = level.start.col;
+  const sx = gridOX + sc * cellSize + cellSize / 2;
+  const sy = gridOY - cellSize * 0.35;
+
   ctx.font = `${fontSize}px serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('🦊', sx, sy);
-  ctx.font = `900 ${Math.floor(cellSize * 0.13)}px 'Zen Maru Gothic', sans-serif`;
+  ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
   ctx.fillStyle = '#5D4E37';
-  ctx.fillText('コンちゃん', sx, sy + fontSize * 0.55);
+  ctx.fillText('コンちゃん', sx, sy + fontSize * 0.6);
 
-  // Goal marker (Mother fox)
-  const gr = level.goal.row;
-  let gx, gy;
-  if (level.goal.side === 'right') {
-    gx = gridOX + 3 * cellSize + cellSize * 0.45;
-    gy = gridOY + gr * cellSize + cellSize / 2;
-  } else {
-    gx = gridOX - cellSize * 0.45;
-    gy = gridOY + gr * cellSize + cellSize / 2;
-  }
-  ctx.font = `${fontSize}px serif`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('🦊', gx, gy - fontSize * 0.1);
-  ctx.fillText('❤️', gx, gy - fontSize * 0.65);
-  ctx.font = `900 ${Math.floor(cellSize * 0.13)}px 'Zen Maru Gothic', sans-serif`;
-  ctx.fillStyle = '#5D4E37';
-  ctx.fillText('おかあさん', gx, gy + fontSize * 0.55);
-
-  // Draw entry/exit arrows on grid edge
+  // Arrow pointing down into grid
   ctx.strokeStyle = var_primary;
   ctx.lineWidth = 3;
   ctx.setLineDash([4, 4]);
-  // Start arrow
-  if (level.start.side === 'left') {
-    const ay = gridOY + sr * cellSize + cellSize / 2;
-    ctx.beginPath();
-    ctx.moveTo(gridOX - 8, ay);
-    ctx.lineTo(gridOX + 6, ay);
-    ctx.stroke();
-    // Arrowhead
-    ctx.beginPath();
-    ctx.moveTo(gridOX + 6, ay - 5);
-    ctx.lineTo(gridOX + 12, ay);
-    ctx.lineTo(gridOX + 6, ay + 5);
-    ctx.fillStyle = var_primary;
-    ctx.fill();
-  }
-  // Goal arrow
-  if (level.goal.side === 'right') {
-    const ay = gridOY + gr * cellSize + cellSize / 2;
-    const gx2 = gridOX + 3 * cellSize;
-    ctx.beginPath();
-    ctx.moveTo(gx2 - 6, ay);
-    ctx.lineTo(gx2 + 8, ay);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(gx2 + 8, ay - 5);
-    ctx.lineTo(gx2 + 14, ay);
-    ctx.lineTo(gx2 + 8, ay + 5);
-    ctx.fillStyle = var_primary;
-    ctx.fill();
-  }
+  ctx.beginPath();
+  ctx.moveTo(sx, gridOY - 10);
+  ctx.lineTo(sx, gridOY + 4);
+  ctx.stroke();
   ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(sx - 5, gridOY);
+  ctx.lineTo(sx, gridOY + 8);
+  ctx.lineTo(sx + 5, gridOY);
+  ctx.fillStyle = var_primary;
+  ctx.fill();
+
+  // ===== Goal marker (おかあさん) at bottom =====
+  const gc = level.goal.col;
+  const gx = gridOX + gc * cellSize + cellSize / 2;
+  const bottomEdge = gridOY + curRows * cellSize;
+  const gy = bottomEdge + cellSize * 0.4;
+
+  ctx.font = `${fontSize}px serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🦊', gx, gy);
+  ctx.fillText('❤️', gx, gy - fontSize * 0.65);
+  ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
+  ctx.fillStyle = '#5D4E37';
+  ctx.fillText('おかあさん', gx, gy + fontSize * 0.6);
+
+  // Arrow at grid bottom edge
+  ctx.strokeStyle = var_primary;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(gx, bottomEdge - 4);
+  ctx.lineTo(gx, bottomEdge + 10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(gx - 5, bottomEdge + 6);
+  ctx.lineTo(gx, bottomEdge + 14);
+  ctx.lineTo(gx + 5, bottomEdge + 6);
+  ctx.fillStyle = var_primary;
+  ctx.fill();
 }
 
 const var_primary = '#4CAF50';
@@ -735,25 +730,26 @@ function draw(now) {
   ctx.fillStyle = '#6D4C2A';
   ctx.beginPath();
   ctx.roundRect(gridOX - frameP, gridOY - frameP,
-    cellSize * 3 + frameP * 2, cellSize * 3 + frameP * 2, 12);
+    cellSize * curCols + frameP * 2, cellSize * curRows + frameP * 2, 12);
   ctx.fill();
 
   ctx.fillStyle = '#8B6B42';
   ctx.beginPath();
   ctx.roundRect(gridOX - frameP + 2, gridOY - frameP + 2,
-    cellSize * 3 + frameP * 2 - 4, cellSize * 3 + frameP * 2 - 4, 10);
+    cellSize * curCols + frameP * 2 - 4, cellSize * curRows + frameP * 2 - 4, 10);
   ctx.fill();
 
   // Empty space
-  const eRow = Math.floor(emptyIdx / 3), eCol = emptyIdx % 3;
+  const eRow = Math.floor(emptyIdx / curCols), eCol = emptyIdx % curCols;
   const ex = gridOX + eCol * cellSize, ey = gridOY + eRow * cellSize;
   ctx.fillStyle = EMPTY_COLOR;
   ctx.fillRect(ex + 2, ey + 2, cellSize - 4, cellSize - 4);
 
   // Draw tiles
-  for (let i = 0; i < 9; i++) {
+  const total = curCols * curRows;
+  for (let i = 0; i < total; i++) {
     if (grid[i] === null) continue;
-    const row = Math.floor(i / 3), col = i % 3;
+    const row = Math.floor(i / curCols), col = i % curCols;
     let x = gridOX + col * cellSize;
     let y = gridOY + row * cellSize;
 
@@ -842,12 +838,12 @@ function handleTap(px, py) {
 
   const col = Math.floor((px - gridOX) / cellSize);
   const row = Math.floor((py - gridOY) / cellSize);
-  if (col < 0 || col > 2 || row < 0 || row > 2) return;
+  if (col < 0 || col >= curCols || row < 0 || row >= curRows) return;
 
-  const tappedIdx = row * 3 + col;
+  const tappedIdx = row * curCols + col;
   if (grid[tappedIdx] === null) return;
 
-  const eRow = Math.floor(emptyIdx / 3), eCol = emptyIdx % 3;
+  const eRow = Math.floor(emptyIdx / curCols), eCol = emptyIdx % curCols;
   const dist = Math.abs(eRow - row) + Math.abs(eCol - col);
   if (dist !== 1) return;
 
@@ -951,6 +947,7 @@ function startGame() {
   stageIdx = 0;
   moveCount = 0;
   shuffleGrid(LEVELS[stageIdx]);
+  calcLayout();
   updateHUD();
   state = S.PLAYING;
 }
@@ -960,6 +957,7 @@ function nextStage() {
   stageIdx++;
   moveCount = 0;
   shuffleGrid(LEVELS[stageIdx]);
+  calcLayout();
   updateHUD();
   state = S.PLAYING;
   showOverlay('start');
@@ -1025,6 +1023,8 @@ if (bgmEnabled) {
 updateBgmBtn();
 
 // ===== Init =====
+curCols = LEVELS[0].cols;
+curRows = LEVELS[0].rows;
 resize();
 updateHUD();
 showOverlay('start');
