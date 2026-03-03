@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>つみき | ポノのあそびば</title>
+<title>コトリをたすけよう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -142,13 +142,13 @@ body {
 
 <header class="header">
   <a href="../index.html" class="back-link">← メニュー</a>
-  <h1>つみき</h1>
-  <p class="subtitle">ブロックを つみあげよう！</p>
+  <h1>コトリをたすけよう！</h1>
+  <p class="subtitle">ブロックをつんで たすけにいこう！</p>
 </header>
 
 <div class="score-row">
   <div class="score-box">
-    <p class="score-label">スコア</p>
+    <p class="score-label">たかさ</p>
     <p class="score-val" id="score-val">0</p>
   </div>
   <div class="score-box">
@@ -160,17 +160,18 @@ body {
 
 <div id="game-wrap">
   <div id="flash"></div>
-<div id="gameover-overlay" class="overlay hidden">
-    <p class="overlay-emoji">😢</p>
-    <p class="overlay-title">ゲームおわり！</p>
-    <p class="overlay-score" id="final-score">スコア: 0</p>
+  <div id="bird-indicator" style="position:absolute;top:6px;right:8px;z-index:1;font-size:22px;pointer-events:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));">🐦</div>
+  <div id="gameover-overlay" class="overlay hidden">
+    <p class="overlay-emoji">🐦</p>
+    <p class="overlay-title">もうすこし<br>だったのに…</p>
+    <p class="overlay-score" id="final-score">たかさ: 0</p>
     <p class="overlay-hi" id="hi-msg"></p>
-    <button class="overlay-btn" id="retry-btn">もういっかい</button>
+    <button class="overlay-btn" id="retry-btn">もういっかい！</button>
   </div>
 </div>
 
 <div class="lives-row" id="lives-row">❤️❤️❤️</div>
-<p class="tap-hint">タップ または クリック でドロップ！</p>
+<p class="tap-hint">タップ または クリック でブロックをおとそう！</p>
 
 <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 <script>
@@ -210,6 +211,22 @@ const PLAT_W  = Math.floor(CW * 0.42);
 const PLAT_H  = 22;
 const PLAT_Y  = CH - 50;
 const COLORS  = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
+const HIT_BONUS = 8; // px added to each side of hit zone
+
+function getNextShape() {
+  if (score < 4) return SHAPES[0];                                     // 横長のみ
+  if (score < 8) return SHAPES[Math.floor(Math.random() * 2)];         // 横長 or 正方形
+  return SHAPES[Math.floor(Math.random() * SHAPES.length)];             // 全種
+}
+
+function stabilizeStack() {
+  engine.world.bodies.forEach(body => {
+    if (!body.isStatic && body.label === 'block') {
+      Body.setAngularVelocity(body, 0);
+      Body.setVelocity(body, { x: 0, y: Math.max(0, body.velocity.y) });
+    }
+  });
+}
 
 // ===== Static physics bodies (reused across restarts) =====
 const ground = Bodies.rectangle(CW/2, CH + 40, CW * 3, 80, {
@@ -272,6 +289,7 @@ Events.on(render, 'beforeRender', () => {
       scrolling  = false;
       gameActive = true;
       lastTs     = null;
+      Runner.run(runner, engine); // resume physics after scroll
     }
     return;
   }
@@ -286,7 +304,8 @@ Events.on(render, 'beforeRender', () => {
   if (!lastTs) { lastTs = now; return; }
   const dt = Math.min((now - lastTs) / 1000, 0.05);
   lastTs = now;
-  swingPhase += 0.9 * dt;
+  const swingSpeed = Math.min(0.45 + score * 0.04, 1.1);
+  swingPhase += swingSpeed * dt;
   swingX = CW/2 + Math.sin(swingPhase) * (CW * 0.36);
 });
 
@@ -344,7 +363,8 @@ function dropBlock() {
   const platLeft  = CW/2 - PLAT_W/2;
   const platRight = CW/2 + PLAT_W/2;
   fallingShape = currentShape;
-  const isHit = swingX + fallingShape.w/2 > platLeft && swingX - fallingShape.w/2 < platRight;
+  const isHit = swingX + fallingShape.w/2 > platLeft - HIT_BONUS
+             && swingX - fallingShape.w/2 < platRight + HIT_BONUS;
 
   const worldSwingY = SWING_Y + cameraY; // screen → world
   fallingBody = Bodies.rectangle(swingX, worldSwingY, fallingShape.w, fallingShape.h, {
@@ -382,12 +402,14 @@ function checkScroll() {
     scrollTargetY   = cameraY - SCROLL_DIST;
     scrollStartTime = performance.now();
     scrolling = true; gameActive = false;
+    Runner.stop(runner); // freeze physics during scroll
   } else if (screenTop > SCROLL_DOWN_TRIG && cameraY < 0) {
     // Stack collapsed/lowered → pan camera DOWN to show stack
     scrollStartY    = cameraY;
     scrollTargetY   = Math.max(0, stackTopY - Math.floor(CH * 0.25));
     scrollStartTime = performance.now();
     scrolling = true; gameActive = false;
+    Runner.stop(runner); // freeze physics during scroll
   }
 }
 
@@ -399,7 +421,8 @@ function checkHit() {
   lastTs = null;
   score++;
   stackTopY = Math.min(stackTopY, body.position.y - fallingShape.h);
-  currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  stabilizeStack();
+  currentShape = getNextShape();
   updateScore();
   showFlash('success');
 }
@@ -408,7 +431,7 @@ function checkHit() {
 function doMiss() {
   if (fallingBody) { World.remove(engine.world, fallingBody); fallingBody = null; }
   lastTs = null;
-  currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  currentShape = getNextShape();
   lives--;
   updateLives();
   showFlash('miss');
@@ -435,11 +458,11 @@ function doGameOver() {
     hiScore = score;
     localStorage.setItem('pono_stacking_hi', String(hiScore));
     hiEl.textContent = hiScore;
-    hiMsgEl.textContent = '🎉 さいこうきろく こうしん！';
+    hiMsgEl.textContent = '🎉 コトリのすに とどいた！';
   } else {
     hiMsgEl.textContent = `さいこう: ${hiScore}`;
   }
-  finalScEl.textContent = `スコア: ${score}`;
+  finalScEl.textContent = `たかさ: ${score}`;
   gameOv.classList.remove('hidden');
 }
 
@@ -458,7 +481,7 @@ function startGame() {
   fallingBody = null;
   stackTopY  = PLAT_Y;
   lastTs     = null;
-  currentShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  currentShape = getNextShape();
   // Reset camera
   cameraY = 0;
   render.bounds.min.y = 0;
