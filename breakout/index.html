@@ -415,7 +415,7 @@ const MAX_LIVES = 3;
 // Power-up drops
 let drops = [];
 const DROP_SPEED = 2.2;
-const EFFECT_DUR = { wide: 8*60, pierce: 6*60, slow: 7*60 };
+const EFFECT_DUR = { wide: 16*60, pierce: 12*60, slow: 14*60 };
 let effects     = { wide: 0, pierce: 0, slow: 0 };
 let basePaddleW = 0;
 let baseSpeed   = 0;
@@ -470,7 +470,7 @@ function buildBlocks() {
         w: bw, h: bh,
         hp, maxHp: hp, row: r,
         dropType: Math.random() < 0.25
-          ? ['wide','pierce','slow','life'][Math.floor(Math.random()*4)]
+          ? ['wide','pierce','slow','wide','pierce','slow','life'][Math.floor(Math.random()*7)]
           : null
       });
     }
@@ -697,7 +697,7 @@ function applyEffect(type) {
     }
     effects.slow = EFFECT_DUR.slow;
   } else if (type === 'life') {
-    lives = Math.min(lives + 1, MAX_LIVES);
+    lives++;
     updateHUD();
   }
 }
@@ -737,8 +737,9 @@ function onStageClear() {
 
 // ===== HUD =====
 function updateHUD() {
+  const displayMax = Math.max(lives, MAX_LIVES);
   document.getElementById('hud-lives').textContent =
-    '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, MAX_LIVES - lives));
+    '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(Math.max(0, displayMax - lives));
   document.getElementById('hud-stage').textContent = `ステージ ${STAGES[stageIdx].label}`;
   document.getElementById('score-now').textContent = `${score}てん`;
   document.getElementById('score-hi').textContent  = `ベスト: ${hiScore}てん`;
