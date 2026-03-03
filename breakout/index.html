@@ -173,6 +173,12 @@ html, body {
   transition: transform 0.15s;
 }
 .ov-btn:active { transform: scale(0.95); }
+.ov-back {
+  display: block; margin-top: 10px; font-size: 0.85rem;
+  color: rgba(255,255,255,0.8); text-decoration: none; text-align: center;
+}
+.ov-back:active { opacity: 0.6; }
+.ov-back.hidden { display: none; }
 
 /* ===== Password Overlay ===== */
 .pw-overlay {
@@ -307,6 +313,7 @@ html, body {
       <div class="ov-title" id="ov-title">ブロックくずし</div>
       <div class="ov-msg"   id="ov-msg">タップして はじめよう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
+      <a class="ov-back hidden" id="ov-back" href="../index.html">← メニューにもどる</a>
     </div>
   </div>
 </div>
@@ -861,6 +868,9 @@ function showOverlay(type) {
     msg.textContent   = `ハリネズミちゃんが まだ むこうに…\n${score}てん ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
   }
+  // メニューに戻るリンク: gameclear / gameover 時のみ表示
+  const back = document.getElementById('ov-back');
+  back.classList.toggle('hidden', type !== 'gameclear' && type !== 'gameover');
   // Store action type for the pointerup handler
   btn.dataset.ovType = type;
 }
@@ -1040,10 +1050,12 @@ function togglePause() {
     state = prepauseState;
     lastTs = 0; // dtリセット
     document.getElementById('btn-pause').textContent = '⏸';
+    if (bgmEnabled) bgm.play().catch(() => {});
   } else if (state === S.PLAYING || state === S.READY) {
     prepauseState = state;
     state = S.PAUSED;
     document.getElementById('btn-pause').textContent = '▶';
+    bgm.pause();
   }
 }
 
