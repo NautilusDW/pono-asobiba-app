@@ -207,16 +207,49 @@ const SHAPES = [
   { w: Math.round(BW * 0.50), h: Math.round(BH * 2.6), r: 6 }, // tall column ~56×73
 ];
 const SWING_Y = BH / 2 + 8;
-const PLAT_W  = Math.floor(CW * 0.42);
+const PLAT_W  = Math.floor(CW * 0.68);
 const PLAT_H  = 22;
 const PLAT_Y  = CH - 50;
 const COLORS  = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
 const HIT_BONUS = 8; // px added to each side of hit zone
+const FREEZE_INTERVAL = 5; // 5ブロック置くごとにフリーズ
+const KARASU_SCREEN_Y = SWING_Y + 55; // カラスの固定スクリーンY
+const KARASU_W = 34;
+const PONO_DUR = 1400; // ポノアニメーション時間 ms
 
 function getNextShape() {
   if (score < 4) return SHAPES[0];                                     // 横長のみ
   if (score < 8) return SHAPES[Math.floor(Math.random() * 2)];         // 横長 or 正方形
   return SHAPES[Math.floor(Math.random() * SHAPES.length)];             // 全種
+}
+
+function triggerFreeze() {
+  // 全ての生きているブロックを固定・グレーに
+  engine.world.bodies.forEach(body => {
+    if (!body.isStatic && body.label === 'block') {
+      Body.setStatic(body, true);
+      body.render.fillStyle = '#A89880';
+      body.render.strokeStyle = '#8C7B68';
+    }
+  });
+
+  freezeSegment++;
+  if (freezeSegment >= 1) karasuActive = true; // 1回目フリーズ後にカラス登場
+
+  // スクロール中だった場合はキャンセルし、カメラを直接最終位置に移動
+  scrolling = false;
+  const targetCamY = Math.min(0, stackTopY - Math.floor(CH * 0.40));
+  cameraY = targetCamY;
+  render.bounds.min.y = cameraY;
+  render.bounds.max.y = cameraY + CH;
+
+  // ポノ登場アニメーション（画面下→スタック頂上）
+  ponoAnim.fromY = CH + 20;
+  ponoAnim.toY   = Math.max(30, stackTopY - cameraY - 20);
+  ponoAnim.startTime = performance.now();
+  ponoAnim.active = true;
+  gameActive = false;
+  Runner.stop(runner);
 }
 
 function stabilizeStack() {
@@ -251,6 +284,9 @@ let hiScore = parseInt(localStorage.getItem('pono_stacking_hi') || '0');
 let colorIdx = 0, fallingBody = null, gameActive = false;
 let dropTimer = null, stackTopY = PLAT_Y;
 let currentShape = SHAPES[0], fallingShape = SHAPES[0];
+let freezeSegment = 0;
+let karasuActive = false, karasuX = CW / 4, karasuDir = 1;
+let ponoAnim = { active: false, fromY: 0, toY: 0, startTime: 0 };
 
 // ===== Camera state =====
 let cameraY        = 0;   // world y shown at screen top (negative = camera moved up)
@@ -275,6 +311,9 @@ hiEl.textContent = hiScore;
 Events.on(render, 'beforeRender', () => {
   const now = performance.now();
 
+  // ポノアニメーション中は何もしない（afterRenderで処理）
+  if (ponoAnim.active) return;
+
   // Camera scroll animation
   if (scrolling) {
     const t = Math.min((now - scrollStartTime) / SCROLL_DUR, 1);
@@ -289,7 +328,7 @@ Events.on(render, 'beforeRender', () => {
       scrolling  = false;
       gameActive = true;
       lastTs     = null;
-      Runner.run(runner, engine); // resume physics after scroll
+      if (!ponoAnim.active) Runner.run(runner, engine); // resume physics after scroll (Pono anim will do it if active)
     }
     return;
   }
@@ -307,6 +346,14 @@ Events.on(render, 'beforeRender', () => {
   const swingSpeed = Math.min(0.45 + score * 0.04, 1.1);
   swingPhase += swingSpeed * dt;
   swingX = CW/2 + Math.sin(swingPhase) * (CW * 0.36);
+
+  // カラスを左右に移動
+  if (karasuActive) {
+    const karasuSpeed = 70 + freezeSegment * 20;
+    karasuX += karasuDir * karasuSpeed * dt;
+    if (karasuX > CW - 20) { karasuX = CW - 20; karasuDir = -1; }
+    if (karasuX < 20)       { karasuX = 20;       karasuDir =  1; }
+  }
 });
 
 // ===== Draw swing block on canvas (afterRender) =====
@@ -325,8 +372,38 @@ function drawRR(ctx, x, y, w, h, r) {
 }
 
 Events.on(render, 'afterRender', () => {
+  const ctx = render.context;
+
+  // カラスを描画（スクリーン座標固定）
+  if (karasuActive) {
+    ctx.save();
+    ctx.font = '26px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🐦\u200D⬛', karasuX, KARASU_SCREEN_Y);
+    ctx.restore();
+  }
+
+  // ポノ登場アニメーション
+  if (ponoAnim.active) {
+    const now2 = performance.now();
+    const t = Math.min((now2 - ponoAnim.startTime) / PONO_DUR, 1);
+    const ease = 1 - Math.pow(1 - t, 2); // ease-out quad
+    const curY = ponoAnim.fromY + (ponoAnim.toY - ponoAnim.fromY) * ease;
+    ctx.save();
+    ctx.font = '28px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🐻', CW / 2, curY);
+    ctx.restore();
+    if (t >= 1) {
+      ponoAnim.active = false;
+      gameActive = true;
+      Runner.run(runner, engine);
+      lastTs = null;
+    }
+    return;
+  }
+
   if (!gameActive || fallingBody) return;
-  const ctx   = render.context;
   const color = COLORS[colorIdx % COLORS.length];
 
   // Dotted guide line (swing block → stack top)
@@ -355,6 +432,20 @@ Events.on(render, 'afterRender', () => {
 // ===== Drop =====
 function dropBlock() {
   if (!gameActive || fallingBody) return;
+
+  // カラスにぶつかった？
+  if (karasuActive) {
+    const bLeft  = swingX - currentShape.w / 2;
+    const bRight = swingX + currentShape.w / 2;
+    if (bRight > karasuX - KARASU_W / 2 && bLeft < karasuX + KARASU_W / 2) {
+      lives--;
+      updateLives();
+      showFlash('miss');
+      if (lives <= 0) setTimeout(doGameOver, 350);
+      return; // ブロックを落とさない
+    }
+  }
+
   lastTs = null;
   const color = COLORS[colorIdx % COLORS.length];
   colorIdx++;
@@ -387,10 +478,10 @@ function dropBlock() {
 function checkScroll() {
   if (scrolling || fallingBody || !gameActive) return;
 
-  // Find actual topmost block (world y) — keeps stackTopY in sync with physics
+  // Find actual topmost block (world y) — includes frozen (static) blocks too
   let minY = PLAT_Y;
   engine.world.bodies.forEach(body => {
-    if (!body.isStatic && body.label === 'block') minY = Math.min(minY, body.position.y);
+    if (body.label === 'block') minY = Math.min(minY, body.position.y);
   });
   stackTopY = minY;
 
@@ -425,17 +516,19 @@ function checkHit() {
   currentShape = getNextShape();
   updateScore();
   showFlash('success');
+
+  // フリーズ判定（5ブロックごと）
+  if (score > 0 && score % FREEZE_INTERVAL === 0) {
+    setTimeout(triggerFreeze, 400);
+  }
 }
 
-// ===== Miss: block was off-target =====
+// ===== Miss: block was off-target (no life penalty — only カラス costs lives) =====
 function doMiss() {
   if (fallingBody) { World.remove(engine.world, fallingBody); fallingBody = null; }
   lastTs = null;
   currentShape = getNextShape();
-  lives--;
-  updateLives();
   showFlash('miss');
-  if (lives <= 0) setTimeout(doGameOver, 350);
 }
 
 // Clean up blocks far below the viewport
@@ -482,6 +575,11 @@ function startGame() {
   stackTopY  = PLAT_Y;
   lastTs     = null;
   currentShape = getNextShape();
+  freezeSegment = 0;
+  karasuActive  = false;
+  karasuX = CW / 4;
+  karasuDir = 1;
+  ponoAnim.active = false;
   // Reset camera
   cameraY = 0;
   render.bounds.min.y = 0;
