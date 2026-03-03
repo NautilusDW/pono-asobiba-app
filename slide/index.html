@@ -285,12 +285,14 @@ const TILE_TYPES = {
   RB:    { edges: [0,1,1,0] },
   BL:    { edges: [0,0,1,1] },
   LT:    { edges: [1,0,0,1] },
+  CROSS: { edges: [1,1,1,1] },
   BLANK: { edges: [0,0,0,0] },
 };
 
 // ===== Level data =====
 // solved: row-major cols×rows, null = empty space
 // start/goal: { col, side: 'top'|'bottom' } — 縦方向（上→下）
+// CROSS(十字)タイルは4方向すべて接続 → 複数ルート可能で難易度が下がる
 const LEVELS = [
   {
     name: 'はじめてのみち',
@@ -299,42 +301,42 @@ const LEVELS = [
     clearMsg: 'やったー！みちが つながった！',
     start: { col: 1, side: 'top' },
     goal:  { col: 1, side: 'bottom' },
-    // path: (0,1)V→(1,1)V→(2,1)V→goal
+    // path: V→V→V (まっすぐ)
     solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK'],
-    shuffleMoves: 10,
+    shuffleMoves: 6,
   },
   {
-    name: 'まがりみち',
+    name: 'まがりかど',
     cols: 3, rows: 3,
-    storyMsg: 'おかあさんの こえが きこえる！\nまがりみちを つなげよう！',
+    storyMsg: 'おかあさんの こえが きこえる！\nじゅうじの みちを つなげよう！',
     clearMsg: 'こえが ちかくなってきた！',
     start: { col: 0, side: 'top' },
-    goal:  { col: 2, side: 'bottom' },
-    // path: (0,0)TR→(0,1)BL→(1,1)V→(2,1)TR→(2,2)BL→goal
-    solved: ['TR','BL','BLANK', null,'V','BLANK', 'BLANK','TR','BL'],
-    shuffleMoves: 15,
+    goal:  { col: 1, side: 'bottom' },
+    // path: V→CROSS→right→CROSS→bottom→V→goal (十字でゆるく曲がる)
+    solved: ['V','BLANK','BLANK', 'CROSS','CROSS',null, 'BLANK','V','BLANK'],
+    shuffleMoves: 8,
   },
   {
-    name: 'ふくざつなみち',
+    name: 'ながいみち',
     cols: 3, rows: 4,
-    storyMsg: 'もりが ふかくなってきた…\nくねくねみちを つなげよう！',
+    storyMsg: 'もりが ふかくなってきた…\nながい みちを つなげよう！',
     clearMsg: 'もりを ぬけたよ！すごい！',
     start: { col: 1, side: 'top' },
     goal:  { col: 1, side: 'bottom' },
-    // path: (0,1)V→(1,1)TR→(1,2)BL→(2,2)LT→(2,1)RB→(3,1)V→goal
-    solved: ['BLANK','V','BLANK', 'BLANK','TR','BL', null,'RB','LT', 'BLANK','V','BLANK'],
-    shuffleMoves: 18,
+    // path: V→CROSS→CROSS→V (十字が2つで複数ルートあり)
+    solved: ['BLANK','V','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','CROSS',null, 'BLANK','V','BLANK'],
+    shuffleMoves: 10,
   },
   {
-    name: 'もりのおくへ',
+    name: 'よこにまがる',
     cols: 4, rows: 4,
     storyMsg: 'あしあとを はっけん！\nちかくにいるかも！',
     clearMsg: 'あしあとの さきに…！',
     start: { col: 1, side: 'top' },
     goal:  { col: 2, side: 'bottom' },
-    // path: (0,1)V→(1,1)TR→(1,2)H→(1,3)BL→(2,3)LT→(2,2)RB→(3,2)V→goal
-    solved: ['BLANK','V','BLANK','BLANK', 'BLANK','TR','H','BL', 'BLANK',null,'RB','LT', 'BLANK','BLANK','V','BLANK'],
-    shuffleMoves: 22,
+    // path: V→CROSS→right→CROSS→V→V→goal (十字で方向転換)
+    solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
+    shuffleMoves: 14,
   },
   {
     name: 'さいごのみち',
@@ -343,9 +345,9 @@ const LEVELS = [
     clearMsg: '「おかあさーん！」',
     start: { col: 1, side: 'top' },
     goal:  { col: 2, side: 'bottom' },
-    // path: (0,1)TR→(0,2)H→(0,3)BL→(1,3)LT→(1,2)RB→(2,2)TR→(2,3)BL→(3,3)LT→(3,2)RB→(4,2)V→goal
-    solved: ['BLANK','TR','H','BL', 'BLANK','BLANK','RB','LT', 'BLANK',null,'TR','BL', 'BLANK','BLANK','RB','LT', 'BLANK','BLANK','V','BLANK'],
-    shuffleMoves: 28,
+    // path: CROSS→right→CROSS→V→CROSS→V→V→goal
+    solved: ['BLANK','CROSS','CROSS','BLANK', 'BLANK','BLANK','V','BLANK', 'BLANK',null,'CROSS','BLANK', 'BLANK','BLANK','V','BLANK', 'BLANK','BLANK','V','BLANK'],
+    shuffleMoves: 18,
   },
 ];
 
