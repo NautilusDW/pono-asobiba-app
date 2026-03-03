@@ -405,12 +405,22 @@ Events.on(render, 'afterRender', () => {
     const t = Math.min((now2 - ponoAnim.startTime) / PONO_DUR, 1);
     const ease = 1 - Math.pow(1 - t, 2); // ease-out quad
     const curY = ponoAnim.fromY + (ponoAnim.toY - ponoAnim.fromY) * ease;
-    // 最終ステージ：コトリを目的地（ポノが向かう先）に表示
+    // 最終ステージ：ゴールバー（止まり木）＋コトリを目的地に表示
     if (freezeSegment >= FREEZE_GOAL) {
+      const barY  = ponoAnim.toY;
+      const barW  = 80;
+      const barH  = 12;
+      const barR  = 6;
       ctx.save();
-      ctx.font = '26px serif';
+      ctx.fillStyle   = '#F2915A';
+      ctx.strokeStyle = '#D97706';
+      ctx.lineWidth   = 2;
+      drawRR(ctx, CW / 2 - barW / 2, barY - barH, barW, barH, barR);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = '24px serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🐦', CW / 2, Math.max(18, ponoAnim.toY - 28));
+      ctx.fillText('🐦', CW / 2, barY - barH - 4);
       ctx.restore();
     }
     ctx.save();
