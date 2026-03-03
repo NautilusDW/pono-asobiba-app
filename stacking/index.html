@@ -221,6 +221,7 @@ const COLORS  = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F
 const HIT_BONUS = 8; // px added to each side of hit zone
 const FREEZE_INTERVAL = 8; // 8ブロック置くごとにフリーズ
 const FREEZE_GOAL     = 3; // 3回フリーズでクリア（コトリの巣に届く）
+const GOAL_WORLD_Y    = PLAT_Y - 680; // 止まり木のワールドY座標（常時表示）
 const KARASU_SCREEN_Y = SWING_Y + 55; // カラスの固定スクリーンY
 const KARASU_W = 34;
 const PONO_DUR = 1400; // ポノアニメーション時間 ms
@@ -259,9 +260,11 @@ function triggerFreeze() {
   render.bounds.min.y = cameraY;
   render.bounds.max.y = cameraY + CH;
 
-  // ポノ登場アニメーション（画面下→スタック頂上）
+  // ポノ登場アニメーション（画面下→スタック頂上 or ゴールバー）
   ponoAnim.fromY = CH + 20;
-  ponoAnim.toY   = Math.max(30, stackTopY - cameraY - 20);
+  ponoAnim.toY   = freezeSegment >= FREEZE_GOAL
+    ? Math.max(30, GOAL_WORLD_Y - cameraY)   // 最終: ゴールバーへ
+    : Math.max(30, stackTopY - cameraY - 20); // 通常: スタック頂上へ
   ponoAnim.startTime = performance.now();
   ponoAnim.active = true;
   gameActive = false;
@@ -399,30 +402,31 @@ Events.on(render, 'afterRender', () => {
     ctx.restore();
   }
 
+  // 止まり木（ゴール）をワールド空間で常時描画
+  {
+    const gsy = GOAL_WORLD_Y - cameraY; // ワールド→スクリーン変換
+    if (gsy < CH + 20) { // 画面に入ってきたら描画（上にはみ出ても可）
+      const barW = 80, barH = 12, barR = 6;
+      ctx.save();
+      ctx.fillStyle   = '#F2915A';
+      ctx.strokeStyle = '#D97706';
+      ctx.lineWidth   = 2;
+      drawRR(ctx, CW / 2 - barW / 2, gsy - barH, barW, barH, barR);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = '24px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🐦', CW / 2, gsy - barH - 4);
+      ctx.restore();
+    }
+  }
+
   // ポノ登場アニメーション
   if (ponoAnim.active) {
     const now2 = performance.now();
     const t = Math.min((now2 - ponoAnim.startTime) / PONO_DUR, 1);
     const ease = 1 - Math.pow(1 - t, 2); // ease-out quad
     const curY = ponoAnim.fromY + (ponoAnim.toY - ponoAnim.fromY) * ease;
-    // 最終ステージ：ゴールバー（止まり木）＋コトリを目的地に表示
-    if (freezeSegment >= FREEZE_GOAL) {
-      const barY  = ponoAnim.toY;
-      const barW  = 80;
-      const barH  = 12;
-      const barR  = 6;
-      ctx.save();
-      ctx.fillStyle   = '#F2915A';
-      ctx.strokeStyle = '#D97706';
-      ctx.lineWidth   = 2;
-      drawRR(ctx, CW / 2 - barW / 2, barY - barH, barW, barH, barR);
-      ctx.fill();
-      ctx.stroke();
-      ctx.font = '24px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🐦', CW / 2, barY - barH - 4);
-      ctx.restore();
-    }
     ctx.save();
     ctx.font = '28px serif';
     ctx.textAlign = 'center';
