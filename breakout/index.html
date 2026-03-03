@@ -236,6 +236,22 @@ html, body {
 
 /* ===== Subtitle ===== */
 .subtitle { font-size: 0.76rem; color: #A89080; font-weight: 700; text-align: center; margin-top: 1px; }
+
+/* ===== Pause button ===== */
+.btn-pause {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,248,240,0.85); border: 2px solid var(--primary);
+  font-size: 1.1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
+  z-index: 5; transition: transform 0.15s;
+}
+.btn-pause:active { transform: translate(-50%, -50%) scale(0.9); }
+
+/* ===== Chip expiring blink ===== */
+@keyframes chipBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.item-chip.expiring { animation: chipBlink 0.4s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -278,6 +294,7 @@ html, body {
   </div>
 
   <div class="game-wrap" id="gameWrap">
+    <button id="btn-pause" class="btn-pause">⏸</button>
     <canvas id="gameCanvas"></canvas>
     <div class="hi-toast" id="hi-toast">🌟 しんきろく！</div>
     <div class="confetti-container" id="confetti"></div>
@@ -389,7 +406,8 @@ const ROW_COLORS = [
 ];
 
 // ===== State machine =====
-const S = { IDLE:0, READY:1, PLAYING:2, STAGE_CLEAR:3, GAME_OVER:4, GAME_CLEAR:5 };
+const S = { IDLE:0, READY:1, PLAYING:2, STAGE_CLEAR:3, GAME_OVER:4, GAME_CLEAR:5, PAUSED:6 };
+let prepauseState = S.IDLE; // ポーズ前の状態を保存
 let state = S.IDLE;
 
 // ===== High score =====
@@ -627,7 +645,13 @@ function update(dt) {
       effects.slow = 0; effectExpired = true;
     }
   }
-  if (effectExpired) updateHUD();
+  // 効果切れ or 残り2秒付近でHUD更新（点滅警告）
+  const EWARN = 2 * 60;
+  const needsHudUpdate = effectExpired
+    || (effects.wide > 0 && effects.wide <= EWARN)
+    || (effects.pierce > 0 && effects.pierce <= EWARN)
+    || (effects.slow > 0 && effects.slow <= EWARN);
+  if (needsHudUpdate) updateHUD();
 
   // Fell off bottom
   if (ball.y - ball.r > CH) {
@@ -750,9 +774,13 @@ function updateHUD() {
   document.getElementById('hud-stage').textContent = STAGES[stageIdx].name;
   document.getElementById('score-now').textContent = `${score}てん`;
   document.getElementById('score-hi').textContent  = `ベスト: ${hiScore}てん`;
-  document.querySelector('.item-chip[data-type="wide"]').classList.toggle('active',   effects.wide   > 0);
-  document.querySelector('.item-chip[data-type="pierce"]').classList.toggle('active', effects.pierce > 0);
-  document.querySelector('.item-chip[data-type="slow"]').classList.toggle('active',   effects.slow   > 0);
+  const EXPIRE_WARN = 2 * 60; // 2秒 ≈ 120フレーム
+  ['wide', 'pierce', 'slow'].forEach(type => {
+    const el = document.querySelector(`.item-chip[data-type="${type}"]`);
+    const v = effects[type];
+    el.classList.toggle('active',   v > 0);
+    el.classList.toggle('expiring', v > 0 && v <= EXPIRE_WARN);
+  });
 }
 
 // ===== Confetti =====
@@ -949,6 +977,18 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText('タップして とばそう！', CW / 2, CH * 0.68);
   }
+
+  // PAUSED state
+  if (state === S.PAUSED) {
+    ctx.fillStyle = 'rgba(255,248,240,0.7)';
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = 'rgba(93,74,63,0.6)';
+    ctx.font = `900 ${Math.max(18, Math.floor(CW * 0.06))}px 'Zen Maru Gothic', sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('⏸ ポーズちゅう', CW / 2, CH * 0.45);
+    ctx.font = `700 ${Math.max(12, Math.floor(CW * 0.035))}px 'Zen Maru Gothic', sans-serif`;
+    ctx.fillText('もういちど ⏸ をおしてね', CW / 2, CH * 0.55);
+  }
 }
 
 // ===== Game loop =====
@@ -960,6 +1000,24 @@ function loop(ts) {
   draw();
   requestAnimationFrame(loop);
 }
+
+// ===== Pause =====
+function togglePause() {
+  if (state === S.PAUSED) {
+    state = prepauseState;
+    lastTs = 0; // dtリセット
+    document.getElementById('btn-pause').textContent = '⏸';
+  } else if (state === S.PLAYING || state === S.READY) {
+    prepauseState = state;
+    state = S.PAUSED;
+    document.getElementById('btn-pause').textContent = '▶';
+  }
+}
+
+// ===== Pause button =====
+const btnPause = document.getElementById('btn-pause');
+btnPause.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); togglePause(); }, { passive: false });
+btnPause.addEventListener('click', e => { e.stopPropagation(); togglePause(); });
 
 // ===== Init =====
 resize();
