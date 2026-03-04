@@ -541,8 +541,8 @@ function buildBlocks() {
       }
       if (!hp) continue;
 
-      // Adjacent to hedgehog → iron block
-      const isIron = hedgeRow >= 0 &&
+      // Adjacent to hedgehog → iron block (stage 3+ only)
+      const isIron = stageIdx >= 2 && hedgeRow >= 0 &&
         Math.abs(r - hedgeRow) <= 1 && Math.abs(c - hedgeCol) <= 1;
 
       blocks.push({
@@ -911,6 +911,11 @@ function showOverlay(type) {
     title.textContent = 'ハリネズミちゃんをたすけよう！';
     msg.textContent   = 'ハリネズミちゃんが いわのむこうで まいご！\nまほうのたまで いわをぜんぶこわそう！';
     btn.textContent   = 'たすけにいく ▶';
+  } else if (type === 'stagestart') {
+    icon.textContent  = '🔒';
+    title.textContent = 'てつの いわ あらわる！';
+    msg.textContent   = 'ハリネズミちゃんの まわりに\nかたい てつの いわが あるよ！\n\nまず まわりの いわを ぜんぶこわすと\nてつの いわが よわくなるよ！';
+    btn.textContent   = 'いくぞ ▶';
   } else if (type === 'stageclear') {
     icon.textContent  = '🦔';
     title.textContent = `${STAGES[stageIdx].label}だんめの いわをこわした！`;
@@ -958,6 +963,15 @@ function nextStage() {
   paddle.x = (CW - paddle.w) / 2;
   paddle.targetX = paddle.x;
   updateHUD();
+
+  // Stage 3 (stageIdx=2): show iron block intro overlay
+  if (stageIdx === 2) {
+    state = S.IDLE;
+    resetBallToPaddle();
+    showOverlay('stagestart');
+    return;
+  }
+
   state = S.IDLE;
   setTimeout(() => { resetBallToPaddle(); state = S.READY; }, 150);
 }
@@ -1174,6 +1188,10 @@ requestAnimationFrame(loop);
   function execAction() {
     const t = ovBtn.dataset.ovType;
     if (t === 'stageclear') nextStage();
+    else if (t === 'stagestart') {
+      overlay.classList.add('hidden');
+      state = S.READY;
+    }
     else startGame();
   }
 
