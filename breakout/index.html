@@ -541,15 +541,21 @@ function buildBlocks() {
       }
       if (!hp) continue;
 
-      // Adjacent to hedgehog → iron block (stage 3+ only)
-      const isIron = stageIdx >= 2 && hedgeRow >= 0 &&
+      // Hedgehog-adjacent block logic
+      const isAdj = hedgeRow >= 0 &&
         Math.abs(r - hedgeRow) <= 1 && Math.abs(c - hedgeCol) <= 1;
+      const isIron = isAdj && stageIdx === 4; // iron only on final stage
+      // Stages 2-4: override HP for hedgehog-adjacent blocks
+      let blockHp = hp;
+      if (isAdj && !isIron && stageIdx >= 1 && stageIdx <= 3) {
+        blockHp = stageIdx === 1 ? 2 : 3;
+      }
 
       blocks.push({
         x: gap + c * (bw + gap),
         y: startY + r * (bh + gap),
         w: bw, h: bh,
-        hp, maxHp: hp, row: r,
+        hp: blockHp, maxHp: blockHp, row: r,
         iron: isIron,
         dropType: isIron ? null : (Math.random() < 0.25
           ? ['wide','pierce','slow','wide','pierce','slow','life'][Math.floor(Math.random()*7)]
@@ -964,8 +970,8 @@ function nextStage() {
   paddle.targetX = paddle.x;
   updateHUD();
 
-  // Stage 3 (stageIdx=2): show iron block intro overlay
-  if (stageIdx === 2) {
+  // Final stage (stageIdx=4): show iron block intro overlay
+  if (stageIdx === 4) {
     state = S.IDLE;
     resetBallToPaddle();
     showOverlay('stagestart');
