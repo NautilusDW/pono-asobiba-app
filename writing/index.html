@@ -293,16 +293,57 @@ html, body {
   100%     { transform: translateY(95px); }
 }
 
-.hedgehog-deco {
+.hedgehog-wrap {
   position: absolute;
-  bottom: calc(100% - 45px);  /* 45px inside canvas = bottom portion hidden */
+  bottom: calc(100% - 45px);
   right: 10px;
-  width: 123px;  /* 82px × 1.5 */
+  width: 123px;
   pointer-events: none;
-  filter: drop-shadow(1px 2px 5px rgba(0,0,0,0.15));
   animation: hedgehog-peek 18s ease-in-out infinite;
   animation-delay: 3s;
-  animation-fill-mode: backwards; /* stays hidden during delay, no flash on load */
+  animation-fill-mode: backwards;
+}
+
+.hedgehog-deco {
+  width: 100%;
+  display: block;
+  filter: drop-shadow(1px 2px 5px rgba(0,0,0,0.15));
+}
+
+/* ===== Hedgehog speech bubble ===== */
+.hedgehog-bubble {
+  position: absolute;
+  bottom: 100%;
+  right: -5px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 5px 12px;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--text);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  opacity: 0;
+  animation: bubble-pop 18s ease-in-out infinite;
+  animation-delay: 3s;
+  animation-fill-mode: backwards;
+}
+.hedgehog-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  right: 28px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 8px solid #fff;
+}
+@keyframes bubble-pop {
+  0%, 68%  { opacity: 0; transform: scale(0.5); }
+  73%      { opacity: 1; transform: scale(1.15); }
+  76%, 86% { opacity: 1; transform: scale(1); }
+  91%      { opacity: 0; transform: scale(0.5); }
+  100%     { opacity: 0; }
 }
 
 /* ===== Pono decoration (aligned to canvas left edge, bottom of trace-area) ===== */
@@ -387,7 +428,10 @@ html, body {
   <div class="trace-area">
     <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
     <div class="canvas-wrap">
-      <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="ハリネズミ">
+      <div class="hedgehog-wrap">
+        <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
+        <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="ハリネズミ">
+      </div>
       <div class="canvas-container" id="canvasContainer">
         <div id="writerTarget"></div>
         <div class="stroke-number-overlay" id="strokeNumbers"></div>
@@ -958,6 +1002,19 @@ btnNext.addEventListener('click', () => {
   currentCharIndex = (currentCharIndex + 1) % cat.chars.length;
   loadCharacter();
 });
+
+// ===== Hedgehog speech bubble =====
+const HEDGEHOG_MSGS = [
+  'がんばれー！', 'いいね！', 'じょうず！', 'もうすこし！',
+  'すごーい！', 'ファイト！', 'できるよ！', 'そのちょうし！',
+  'いいかんじ！', 'がんばってね！',
+];
+let _hedgeMsgIdx = 0;
+const _hedgeBubble = document.getElementById('hedgehogBubble');
+setInterval(() => {
+  _hedgeMsgIdx = (_hedgeMsgIdx + 1) % HEDGEHOG_MSGS.length;
+  _hedgeBubble.textContent = HEDGEHOG_MSGS[_hedgeMsgIdx];
+}, 18000);
 
 // ===== Init =====
 buildCharSelector();
