@@ -494,58 +494,46 @@ function toggleMask() {
 function onThresholdChange(val) {
   lineThreshold = parseInt(val);
   document.getElementById('threshold-val').textContent = val;
-  if (currentNurieSrc) buildLineMask(currentNurieSrc);
 }
 
 // ===== Line mask (はみ出し防止) =====
-let lineMask = null;
+let nurieImg = null;   // crossOrigin ロード済みの元画像
 let currentNurieSrc = '';
 let lineThreshold = 128;
 
-function buildLineMask(src) {
+function loadNurieImg(src) {
   currentNurieSrc = src;
-  const cw = canvas.width, ch = canvas.height;
   const loader = new Image();
   loader.crossOrigin = 'anonymous';
-  loader.onload = () => {
-    if (src !== currentNurieSrc) return;
-    const tmp = document.createElement('canvas');
-    tmp.width = cw; tmp.height = ch;
-    const tmpCtx = tmp.getContext('2d');
-    try {
-      tmpCtx.drawImage(loader, 0, 0, cw, ch);
-      const data = tmpCtx.getImageData(0, 0, cw, ch);
-      const px = data.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const brightness = (px[i] + px[i+1] + px[i+2]) / 3;
-        if (brightness < lineThreshold) {
-          px[i] = 255; px[i+1] = 255; px[i+2] = 255; px[i+3] = 255;
-        } else {
-          px[i+3] = 0;
-        }
-      }
-      tmpCtx.putImageData(data, 0, 0);
-      lineMask = tmp;
-    } catch(e) {
-      lineMask = null;
-    }
-  };
-  loader.onerror = () => { lineMask = null; };
+  loader.onload = () => { if (src === currentNurieSrc) nurieImg = loader; };
+  loader.onerror = () => { nurieImg = null; };
   loader.src = src;
 }
 
+// applyLineMask: 毎回現在のcanvas寸法でマスクを構築して適用（オフセット問題を排除）
 function applyLineMask() {
-  if (!lineMask || !isBucket) return;
+  if (!isBucket || !nurieImg) return;
   const cw = canvas.width, ch = canvas.height;
-  // Rebuild if dimensions changed since mask was built
-  if (lineMask.width !== cw || lineMask.height !== ch) {
-    if (currentNurieSrc) buildLineMask(currentNurieSrc);
-    return;
-  }
-  ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(lineMask, 0, 0, cw, ch);
-  ctx.restore();
+  const tmp = document.createElement('canvas');
+  tmp.width = cw; tmp.height = ch;
+  const tmpCtx = tmp.getContext('2d');
+  try {
+    tmpCtx.drawImage(nurieImg, 0, 0, cw, ch);
+    const data = tmpCtx.getImageData(0, 0, cw, ch);
+    const px = data.data;
+    for (let i = 0; i < px.length; i += 4) {
+      if ((px[i] + px[i+1] + px[i+2]) / 3 < lineThreshold) {
+        px[i] = 255; px[i+1] = 255; px[i+2] = 255; px[i+3] = 255;
+      } else {
+        px[i+3] = 0;
+      }
+    }
+    tmpCtx.putImageData(data, 0, 0);
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(tmp, 0, 0, cw, ch);
+    ctx.restore();
+  } catch(e) {}
 }
 
 // ===== Undo =====
@@ -614,6 +602,9 @@ function doDraw(e) {
 
   lastX = x;
   lastY = y;
+
+  // リアルタイムマスク適用（描画中も線をすぐ復元）
+  if (isBucket) applyLineMask();
 }
 
 function endDraw(e) {
@@ -661,8 +652,6 @@ function resizeCanvas(wrapper) {
 
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (currentNurieSrc) buildLineMask(currentNurieSrc);
 }
 
 // ===== Navigation =====
@@ -678,11 +667,9 @@ function startColoring(src, name) {
   colScreen.style.display = 'flex';
 
   currentNurieSrc = src;
+  loadNurieImg(src);
   const img = document.getElementById('nurie-overlay');
-  img.onload = () => {
-    resizeCanvas(document.getElementById('canvas-wrapper'));
-    // resizeCanvas already calls buildLineMask(currentNurieSrc)
-  };
+  img.onload = () => { resizeCanvas(document.getElementById('canvas-wrapper')); };
   if (img.getAttribute('src') === src) {
     resizeCanvas(document.getElementById('canvas-wrapper'));
   } else {
