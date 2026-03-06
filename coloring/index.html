@@ -697,6 +697,8 @@ const ctx = canvas.getContext('2d');
 
 let drawing = false;
 let lastX = 0, lastY = 0;
+// ストローク全体のダーティ矩形（endDrawでのクリーンアップ範囲）
+let strokeX0 = 0, strokeY0 = 0, strokeX1 = 0, strokeY1 = 0;
 
 function getPos(e, rect) {
   if (e.touches) {
@@ -719,13 +721,15 @@ function startDraw(e) {
   if (isBucket && !isEraser) createRegionMask(x, y);
   drawing = true;
   lastX = x; lastY = y;
+  strokeX0 = x - brushSize; strokeY0 = y - brushSize;
+  strokeX1 = x + brushSize; strokeY1 = y + brushSize;
   const dotColor = isEraser ? '#FFFFFF' : (isRainbow ? `hsl(${rainbowHue},90%,55%)` : currentColor);
   if (isRainbow) rainbowHue = (rainbowHue + 3) % 360;
   ctx.beginPath();
   ctx.arc(lastX, lastY, brushSize / 2, 0, Math.PI * 2);
   ctx.fillStyle = dotColor;
   ctx.fill();
-  if (isBucket && !isEraser) applyRegionMask(x - brushSize, y - brushSize, x + brushSize, y + brushSize);
+  if (isBucket && !isEraser) applyRegionMask(strokeX0, strokeY0, strokeX1, strokeY1);
 }
 
 function doDraw(e) {
@@ -755,6 +759,9 @@ function doDraw(e) {
     const x1 = Math.max(lastX, x) + brushSize;
     const y1 = Math.max(lastY, y) + brushSize;
     applyRegionMask(x0, y0, x1, y1);
+    // ストローク全体のダーティ矩形を拡張
+    strokeX0 = Math.min(strokeX0, x0); strokeY0 = Math.min(strokeY0, y0);
+    strokeX1 = Math.max(strokeX1, x1); strokeY1 = Math.max(strokeY1, y1);
   }
 
   lastX = x;
@@ -763,7 +770,8 @@ function doDraw(e) {
 
 function endDraw(e) {
   e.preventDefault();
-  if (drawing && isBucket && !isEraser) applyRegionMask(0, 0, canvas.width - 1, canvas.height - 1);
+  // 今回のストロークの範囲だけクリーンアップ（全画面はしない → 前に塗った領域を消さない）
+  if (drawing && isBucket && !isEraser) applyRegionMask(strokeX0, strokeY0, strokeX1, strokeY1);
   drawing = false;
 }
 
