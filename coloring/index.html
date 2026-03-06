@@ -277,9 +277,41 @@ html, body {
 .size-btn[data-size="4"]  { width: 32px; height: 32px; }
 .size-btn[data-size="14"] { width: 36px; height: 36px; }
 .size-btn[data-size="28"] { width: 40px; height: 40px; }
-.size-dot-s { width: 5px;  height: 5px; }
-.size-dot-m { width: 12px; height: 12px; }
-.size-dot-l { width: 20px; height: 20px; }
+.size-btn[data-size="50"] { width: 46px; height: 46px; }
+.size-btn[data-size="80"] { width: 52px; height: 52px; }
+.size-dot-s  { width: 5px;  height: 5px; }
+.size-dot-m  { width: 12px; height: 12px; }
+.size-dot-l  { width: 20px; height: 20px; }
+.size-dot-xl { width: 28px; height: 28px; }
+.size-dot-xxl{ width: 36px; height: 36px; }
+
+.rainbow-swatch {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2.5px solid #D0C8BE;
+  background: conic-gradient(red, orange, yellow, green, cyan, blue, violet, red);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 18px;
+  box-shadow: var(--shadow);
+  transition: all 0.15s;
+}
+.rainbow-swatch.selected {
+  border-color: #FF4444;
+  box-shadow: 0 0 0 3px rgba(255,68,68,0.4);
+  transform: scale(1.15);
+}
+
+/* ブラシカーソル */
+#brush-cursor {
+  position: fixed;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.55);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 9999;
+}
 
 .bucket-btn {
   padding: 6px 12px;
@@ -405,13 +437,18 @@ html, body {
     <canvas id="color-canvas"></canvas>
     <img id="nurie-overlay" alt="ぬりえ">
   </div>
+  <div id="brush-cursor"></div>
 
   <div class="toolbar">
-    <div class="palette" id="palette"></div>
+    <div class="palette" id="palette">
+      <button class="rainbow-swatch" id="rainbow-btn" onclick="toggleRainbow()">🌈</button>
+    </div>
     <div class="tool-row">
       <button class="size-btn active" data-size="4"><span class="size-dot size-dot-s"></span></button>
       <button class="size-btn" data-size="14"><span class="size-dot size-dot-m"></span></button>
       <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
+      <button class="size-btn" data-size="50"><span class="size-dot size-dot-xl"></span></button>
+      <button class="size-btn" data-size="80"><span class="size-dot size-dot-xxl"></span></button>
       <div class="tool-divider"></div>
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
       <div class="tool-divider"></div>
@@ -439,6 +476,8 @@ let currentColor = COLORS[0];
 let brushSize = 4;
 let isEraser = false;
 let isBucket = false;
+let isRainbow = false;
+let rainbowHue = 0;
 
 function buildPalette() {
   const palette = document.getElementById('palette');
@@ -455,9 +494,25 @@ function buildPalette() {
 function selectColor(col, sw) {
   currentColor = col;
   isEraser = false;
+  isRainbow = false;
   document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('rainbow-btn').classList.remove('selected');
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
   sw.classList.add('selected');
+}
+
+function toggleRainbow() {
+  isRainbow = !isRainbow;
+  isEraser = false;
+  document.getElementById('rainbow-btn').classList.toggle('selected', isRainbow);
+  document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('bucket-btn').classList.remove('selected');
+  if (!isRainbow) {
+    const idx = COLORS.indexOf(currentColor);
+    if (idx >= 0) document.querySelectorAll('.swatch')[idx].classList.add('selected');
+  } else {
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+  }
 }
 
 // Size buttons (set up after DOM ready)
@@ -474,8 +529,10 @@ function initSizeBtns() {
 function toggleEraser() {
   isEraser = !isEraser;
   isBucket = false;
+  isRainbow = false;
   document.getElementById('eraser-btn').classList.toggle('selected', isEraser);
   document.getElementById('bucket-btn').classList.remove('selected');
+  document.getElementById('rainbow-btn').classList.remove('selected');
   if (!isEraser) {
     const swatches = document.querySelectorAll('.swatch');
     const idx = COLORS.indexOf(currentColor);
@@ -529,11 +586,43 @@ function hexToRgb(hex) {
 
 
 // ===== マスク方式（はみ出し防止）=====
+// キャンバスピクセル座標 → ぬりえ画像ネイティブ座標 の変換係数を計算
+// getBoundingClientRect()で実際のDOM配置から求めるため、スケールズレが起きない
+function getNurieMapping() {
+  const nw = nurieNW, nh = nurieNH;
+  const canvasRect = canvas.getBoundingClientRect();
+  const overlayEl = document.getElementById('nurie-overlay');
+  const overlayRect = overlayEl.getBoundingClientRect();
+
+  // object-fit:contain で描画されるサイズとオフセットを計算
+  const imgRatio = nw / nh;
+  const elRatio = overlayRect.width / overlayRect.height;
+  let imgW, imgH, imgLeft, imgTop;
+  if (imgRatio > elRatio) {
+    imgW = overlayRect.width; imgH = overlayRect.width / imgRatio;
+    imgLeft = overlayRect.left; imgTop = overlayRect.top + (overlayRect.height - imgH) / 2;
+  } else {
+    imgH = overlayRect.height; imgW = overlayRect.height * imgRatio;
+    imgLeft = overlayRect.left + (overlayRect.width - imgW) / 2; imgTop = overlayRect.top;
+  }
+
+  // キャンバスピクセル(cx,cy) → スクリーン座標 → ネイティブ画像ピクセル
+  const cssPerPxX = canvasRect.width / canvas.width;
+  const cssPerPxY = canvasRect.height / canvas.height;
+  return {
+    ax: cssPerPxX * nw / imgW,
+    bx: (canvasRect.left - imgLeft) * nw / imgW,
+    ay: cssPerPxY * nh / imgH,
+    by: (canvasRect.top - imgTop) * nh / imgH,
+    nw, nh
+  };
+}
+
 // 描画中：ブラシ周辺だけ走査して高速に線を復元
 function applyLineMaskRegion(cx, cy, radius) {
   if (!nuriePixelData) return;
+  const { ax, bx, ay, by, nw, nh } = getNurieMapping();
   const w = canvas.width, h = canvas.height;
-  const nw = nurieNW, nh = nurieNH;
   const x0 = Math.max(0, Math.round(cx - radius));
   const y0 = Math.max(0, Math.round(cy - radius));
   const x1 = Math.min(w - 1, Math.round(cx + radius));
@@ -543,9 +632,11 @@ function applyLineMaskRegion(cx, cy, radius) {
   const px = imgData.data;
   let changed = false;
   for (let ry = 0; ry < rh; ry++) {
-    const ny = Math.round((y0 + ry) * nh / h);
+    const ny = Math.round(ay * (y0 + ry) + by);
+    if (ny < 0 || ny >= nh) continue;
     for (let rx = 0; rx < rw; rx++) {
-      const nx = Math.round((x0 + rx) * nw / w);
+      const nx = Math.round(ax * (x0 + rx) + bx);
+      if (nx < 0 || nx >= nw) continue;
       const ni = (ny * nw + nx) * 4;
       if ((nuriePixelData[ni] + nuriePixelData[ni+1] + nuriePixelData[ni+2]) / 3 < lineThreshold) {
         const pi = (ry * rw + rx) * 4;
@@ -562,15 +653,17 @@ function applyLineMaskRegion(cx, cy, radius) {
 // ストローク終了時：キャンバス全体を走査してクリーンアップ
 function applyLineMask() {
   if (!nuriePixelData) return;
+  const { ax, bx, ay, by, nw, nh } = getNurieMapping();
   const w = canvas.width, h = canvas.height;
-  const nw = nurieNW, nh = nurieNH;
   const imgData = ctx.getImageData(0, 0, w, h);
   const px = imgData.data;
   let changed = false;
   for (let cy = 0; cy < h; cy++) {
-    const ny = Math.round(cy * nh / h);
+    const ny = Math.round(ay * cy + by);
+    if (ny < 0 || ny >= nh) continue;
     for (let cx = 0; cx < w; cx++) {
-      const nx = Math.round(cx * nw / w);
+      const nx = Math.round(ax * cx + bx);
+      if (nx < 0 || nx >= nw) continue;
       const ni = (ny * nw + nx) * 4;
       if ((nuriePixelData[ni] + nuriePixelData[ni+1] + nuriePixelData[ni+2]) / 3 < lineThreshold) {
         const pi = (cy * w + cx) * 4;
@@ -624,9 +717,11 @@ function startDraw(e) {
   saveHistory();
   drawing = true;
   lastX = x; lastY = y;
+  const dotColor = isEraser ? '#FFFFFF' : (isRainbow ? `hsl(${rainbowHue},90%,55%)` : currentColor);
+  if (isRainbow) rainbowHue = (rainbowHue + 3) % 360;
   ctx.beginPath();
   ctx.arc(lastX, lastY, brushSize / 2, 0, Math.PI * 2);
-  ctx.fillStyle = isEraser ? '#FFFFFF' : currentColor;
+  ctx.fillStyle = dotColor;
   ctx.fill();
 }
 
@@ -640,10 +735,12 @@ function doDraw(e) {
   const x = pos.x * scaleX;
   const y = pos.y * scaleY;
 
+  const strokeColor = isEraser ? '#FFFFFF' : (isRainbow ? `hsl(${rainbowHue},90%,55%)` : currentColor);
+  if (isRainbow) rainbowHue = (rainbowHue + 3) % 360;
   ctx.beginPath();
   ctx.moveTo(lastX, lastY);
   ctx.lineTo(x, y);
-  ctx.strokeStyle = isEraser ? '#FFFFFF' : currentColor;
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = brushSize;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -653,6 +750,8 @@ function doDraw(e) {
   lastY = y;
 
   if (isBucket && !isEraser) applyLineMaskRegion(x, y, brushSize + 4);
+
+  // カーソル追従（touchmoveの場合は座標更新不要なので何もしない）
 }
 
 function endDraw(e) {
@@ -660,6 +759,28 @@ function endDraw(e) {
   if (drawing && isBucket && !isEraser) applyLineMask();
   drawing = false;
 }
+
+// ===== ブラシカーソル =====
+const brushCursor = document.getElementById('brush-cursor');
+
+function updateBrushCursor(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const cssBrush = brushSize * (rect.width / canvas.width);
+  brushCursor.style.width  = cssBrush + 'px';
+  brushCursor.style.height = cssBrush + 'px';
+  brushCursor.style.left   = clientX + 'px';
+  brushCursor.style.top    = clientY + 'px';
+}
+
+canvas.addEventListener('mouseenter', () => {
+  canvas.style.cursor = 'none';
+  brushCursor.style.display = 'block';
+});
+canvas.addEventListener('mouseleave', () => {
+  canvas.style.cursor = '';
+  brushCursor.style.display = 'none';
+});
+canvas.addEventListener('mousemove', (e) => { updateBrushCursor(e.clientX, e.clientY); });
 
 canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mousemove', doDraw);
