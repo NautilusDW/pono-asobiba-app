@@ -126,6 +126,41 @@
     .card-title { font-size: 0.88rem; font-weight: 900; letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(0,0,0,0.12); }
     .card-desc  { font-size: 0.6rem; font-weight: 700; opacity: 0.88; margin-top: 2px; line-height: 1.3; }
 
+    /* ===== Lock ===== */
+    .card.locked { filter: grayscale(0.6); opacity: 0.55; pointer-events: none; }
+    .card.locked::after {
+      content: '🔒';
+      position: absolute; top: 6px; right: 8px;
+      font-size: 1rem; filter: none;
+    }
+    .lock-banner {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
+      border: 2px dashed #F5C518;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 0.78rem; font-weight: 900; color: #7A5C00;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .lock-banner-title { font-size: 0.88rem; }
+    .lock-input-row { display: flex; gap: 8px; justify-content: center; }
+    .lock-input {
+      padding: 7px 12px; border: 2px solid #F5C518; border-radius: 50px;
+      font-family: inherit; font-size: 0.9rem; font-weight: 700;
+      width: 120px; text-align: center; outline: none;
+      letter-spacing: 0.15em;
+    }
+    .lock-btn {
+      padding: 7px 16px; border: none; border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00; font-family: inherit; font-size: 0.85rem; font-weight: 900;
+      cursor: pointer; box-shadow: 0 3px 0 #B87200;
+    }
+    .lock-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .lock-unlocked { font-size: 0.88rem; color: #2D7A2D; font-weight: 900; display: none; }
+    .lock-error { font-size: 0.75rem; color: #E53E3E; display: none; }
+
     /* ===== Music Toggle ===== */
     .music-row {
       display: flex;
@@ -331,6 +366,7 @@
     </section>
 
     <nav class="menu">
+      <!-- 無料コンテンツ -->
       <a href="puzzle/index.html" class="card card-puzzle">
         <span class="card-icon">🧩</span>
         <div class="card-body">
@@ -355,30 +391,6 @@
         </div>
       </a>
 
-      <a href="breakout/index.html" class="card card-breakout">
-        <span class="card-icon">🧱</span>
-        <div class="card-body">
-          <div class="card-title">ブロックくずし</div>
-          <div class="card-desc">くずしてみよう</div>
-        </div>
-      </a>
-
-      <a href="coloring/index.html" class="card card-coloring">
-        <span class="card-icon">🖍️</span>
-        <div class="card-body">
-          <div class="card-title">ぬりえ</div>
-          <div class="card-desc">いろをぬろう</div>
-        </div>
-      </a>
-
-      <a href="stacking/index.html" class="card card-stacking">
-        <span class="card-icon">🧱</span>
-        <div class="card-body">
-          <div class="card-title">つみき</div>
-          <div class="card-desc">たかくつもう</div>
-        </div>
-      </a>
-
       <a href="wordmatch/index.html" class="card card-wordmatch">
         <span class="card-icon">🔤</span>
         <div class="card-body">
@@ -387,11 +399,48 @@
         </div>
       </a>
 
-      <a href="slide/index.html" class="card card-slide">
+      <!-- 購入者限定バナー -->
+      <div class="lock-banner" id="lockBanner">
+        <div class="lock-banner-title">🔑 購入者限定コンテンツ</div>
+        <div style="font-size:0.72rem">ほんのなかのパスワードで もっとあそべるよ！</div>
+        <div class="lock-input-row" id="lockInputRow">
+          <input type="text" class="lock-input" id="lockInput" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="lock-btn" id="lockBtn">かいじょ！</button>
+        </div>
+        <div class="lock-error" id="lockError">ちがうよ！もういちど！</div>
+        <div class="lock-unlocked" id="lockUnlocked">✅ かいじょずみ！</div>
+      </div>
+
+      <!-- 購入者限定コンテンツ -->
+      <a href="breakout/index.html" class="card card-breakout locked" id="card-breakout">
+        <span class="card-icon">🧱</span>
+        <div class="card-body">
+          <div class="card-title">ブロックくずし</div>
+          <div class="card-desc">くずしてみよう</div>
+        </div>
+      </a>
+
+      <a href="stacking/index.html" class="card card-stacking locked" id="card-stacking">
+        <span class="card-icon">🏗️</span>
+        <div class="card-body">
+          <div class="card-title">つみき</div>
+          <div class="card-desc">たかくつもう</div>
+        </div>
+      </a>
+
+      <a href="slide/index.html" class="card card-slide locked" id="card-slide">
         <span class="card-icon">🦊</span>
         <div class="card-body">
           <div class="card-title">みちつなぎ</div>
           <div class="card-desc">おかあさんにあいにいこう</div>
+        </div>
+      </a>
+
+      <a href="coloring/index.html" class="card card-coloring locked" id="card-coloring">
+        <span class="card-icon">🖍️</span>
+        <div class="card-body">
+          <div class="card-title">ぬりえ</div>
+          <div class="card-desc">いろをぬろう</div>
         </div>
       </a>
 
@@ -419,6 +468,38 @@
       localStorage.setItem('pono_bgm_enabled', toggle.checked ? 'on' : 'off');
       label.textContent = toggle.checked ? 'おとがでるよ' : 'おとがでないよ';
     });
+
+    // ===== Premium Unlock =====
+    const PREMIUM_PASSWORD = '1234';
+    const lockedCards = ['card-breakout', 'card-stacking', 'card-slide', 'card-coloring'];
+
+    function applyUnlockState() {
+      const unlocked = localStorage.getItem('pono_premium') === '1';
+      lockedCards.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('locked', !unlocked);
+      });
+      document.getElementById('lockInputRow').style.display = unlocked ? 'none' : '';
+      document.getElementById('lockError').style.display = 'none';
+      document.getElementById('lockUnlocked').style.display = unlocked ? 'block' : 'none';
+    }
+
+    document.getElementById('lockBtn').addEventListener('click', () => {
+      const val = document.getElementById('lockInput').value.trim();
+      if (val === PREMIUM_PASSWORD) {
+        localStorage.setItem('pono_premium', '1');
+        applyUnlockState();
+      } else {
+        document.getElementById('lockError').style.display = 'block';
+        document.getElementById('lockInput').value = '';
+      }
+    });
+
+    document.getElementById('lockInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('lockBtn').click();
+    });
+
+    applyUnlockState();
   </script>
 </body>
 </html>
