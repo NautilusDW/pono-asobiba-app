@@ -525,7 +525,10 @@ function drawStamp(x, y) {
       img.onload = () => ctx.drawImage(img, x - size/2, y - size/2, size, size);
     }
   } else if (stampMode === 'image' && stampImage?.complete) {
-    ctx.drawImage(stampImage, x - size/2, y - size/2, size, size);
+    const ratio = stampImage.naturalWidth / stampImage.naturalHeight;
+    const w = ratio >= 1 ? size : size * ratio;
+    const h = ratio >= 1 ? size / ratio : size;
+    ctx.drawImage(stampImage, x - w/2, y - h/2, w, h);
   }
   ctx.restore();
 }
