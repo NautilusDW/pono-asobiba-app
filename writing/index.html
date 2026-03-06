@@ -738,12 +738,18 @@ function launchConfetti() {
 
 // ===== Word Card + TTS =====
 function speakWord(char, word) {
-  // Hiragana: use pre-recorded audio file if available (00-44)
   if (currentCategory === 'hiragana') {
     const idx = CATEGORIES.hiragana.chars.indexOf(char);
     if (idx >= 0 && idx <= 44) {
-      const filename = String(idx).padStart(2, '0') + '-aiueo.wav';
-      const audio = new Audio('../assets/voices/' + filename);
+      const audio = new Audio('../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav');
+      audio.play().catch(() => _speakFallback(char, word));
+      return;
+    }
+  }
+  if (currentCategory === 'katakana') {
+    const idx = CATEGORIES.katakana.chars.indexOf(char);
+    if (idx >= 0 && idx <= 43) {
+      const audio = new Audio('../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav');
       audio.play().catch(() => _speakFallback(char, word));
       return;
     }
