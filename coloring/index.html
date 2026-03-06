@@ -336,6 +336,17 @@ html, body {
   border-color: #EF4444;
   color: #EF4444;
 }
+
+.threshold-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 2px 0;
+}
+.threshold-label { font-size: 0.78rem; color: #8B6A55; font-weight: 700; white-space: nowrap; }
+.threshold-val { font-size: 0.78rem; color: #8B6A55; font-weight: 700; width: 28px; text-align: right; }
+#threshold-slider { flex: 1; max-width: 160px; accent-color: #8855FF; }
 </style>
 </head>
 <body>
@@ -408,6 +419,11 @@ html, body {
       <button class="undo-btn" onclick="undo()">↩ もどす</button>
       <button class="clear-btn" onclick="clearCanvas()">全消し</button>
     </div>
+    <div class="threshold-row" id="threshold-row" style="display:none;">
+      <span class="threshold-label">線の太さ</span>
+      <input type="range" id="threshold-slider" min="50" max="240" value="128" oninput="onThresholdChange(this.value)">
+      <span class="threshold-val" id="threshold-val">128</span>
+    </div>
   </div>
 </div>
 
@@ -472,11 +488,19 @@ function toggleMask() {
   isEraser = false;
   document.getElementById('bucket-btn').classList.toggle('selected', isBucket);
   document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('threshold-row').style.display = isBucket ? 'flex' : 'none';
+}
+
+function onThresholdChange(val) {
+  lineThreshold = parseInt(val);
+  document.getElementById('threshold-val').textContent = val;
+  if (currentNurieSrc) buildLineMask(currentNurieSrc);
 }
 
 // ===== Line mask (はみ出し防止) =====
 let lineMask = null;
 let currentNurieSrc = '';
+let lineThreshold = 128;
 
 function buildLineMask(src) {
   currentNurieSrc = src;
@@ -494,7 +518,7 @@ function buildLineMask(src) {
       const px = data.data;
       for (let i = 0; i < px.length; i += 4) {
         const brightness = (px[i] + px[i+1] + px[i+2]) / 3;
-        if (brightness < 128) {
+        if (brightness < lineThreshold) {
           px[i] = 255; px[i+1] = 255; px[i+2] = 255; px[i+3] = 255;
         } else {
           px[i+3] = 0;
