@@ -614,6 +614,20 @@ function getNurieMapping() {
 // タッチ開始点からフラッドフィルで閉じた領域を activeMask として確定
 let activeMask = null;
 
+// 8近傍のいずれかがライン → ライン境界とみなす（1px膨張ですき間を閉じる）
+function isNearLine(cx, cy, ax, bx, ay, by, nw, nh) {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = Math.round(ax * (cx + dx) + bx);
+      const ny = Math.round(ay * (cy + dy) + by);
+      if (nx < 0 || nx >= nw || ny < 0 || ny >= nh) continue;
+      const ni = (ny * nw + nx) * 4;
+      if ((nuriePixelData[ni] + nuriePixelData[ni+1] + nuriePixelData[ni+2]) / 3 < lineThreshold) return true;
+    }
+  }
+  return false;
+}
+
 function createRegionMask(startX, startY) {
   activeMask = null;
   if (!nuriePixelData) return;
@@ -622,12 +636,8 @@ function createRegionMask(startX, startY) {
   const sx = Math.round(startX), sy = Math.round(startY);
   if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
 
-  // 開始点がライン上なら領域なし
-  const snx = Math.round(ax * sx + bx), sny = Math.round(ay * sy + by);
-  if (snx >= 0 && snx < nw && sny >= 0 && sny < nh) {
-    const si = (sny * nw + snx) * 4;
-    if ((nuriePixelData[si] + nuriePixelData[si+1] + nuriePixelData[si+2]) / 3 < lineThreshold) return;
-  }
+  // 開始点がライン上（または隣接）なら領域なし
+  if (isNearLine(sx, sy, ax, bx, ay, by, nw, nh)) return;
 
   const mask = new Uint8Array(w * h);
   const visited = new Uint8Array(w * h);
@@ -637,12 +647,8 @@ function createRegionMask(startX, startY) {
   while (stack.length) {
     const idx = stack.pop();
     const x = idx % w, y = (idx / w) | 0;
-    const nx = Math.round(ax * x + bx), ny = Math.round(ay * y + by);
-    // ぬりえラインに当たったら停止
-    if (nx >= 0 && nx < nw && ny >= 0 && ny < nh) {
-      const ni = (ny * nw + nx) * 4;
-      if ((nuriePixelData[ni] + nuriePixelData[ni+1] + nuriePixelData[ni+2]) / 3 < lineThreshold) continue;
-    }
+    // 8近傍チェックでライン境界（すき間も閉じる）
+    if (isNearLine(x, y, ax, bx, ay, by, nw, nh)) continue;
     mask[idx] = 1;
     if (x > 0   && !visited[idx-1]) { visited[idx-1] = 1; stack.push(idx-1); }
     if (x < w-1 && !visited[idx+1]) { visited[idx+1] = 1; stack.push(idx+1); }
@@ -652,9 +658,11 @@ function createRegionMask(startX, startY) {
   activeMask = mask;
 }
 
-// マスク外を白に戻す（dirty rectのみ走査して高速化）
+// マスク外をストローク開始前の状態に戻す（白ではなく保存済みデータで復元）
+let strokeSavedData = null;
+
 function applyRegionMask(x0, y0, x1, y1) {
-  if (!activeMask) return;
+  if (!activeMask || !strokeSavedData) return;
   const w = canvas.width, h = canvas.height;
   const cx0 = Math.max(0, Math.round(x0)), cy0 = Math.max(0, Math.round(y0));
   const cx1 = Math.min(w-1, Math.round(x1)), cy1 = Math.min(h-1, Math.round(y1));
@@ -662,13 +670,15 @@ function applyRegionMask(x0, y0, x1, y1) {
   if (rw <= 0 || rh <= 0) return;
   const imgData = ctx.getImageData(cx0, cy0, rw, rh);
   const px = imgData.data;
+  const saved = strokeSavedData.data;
   let changed = false;
   for (let ry = 0; ry < rh; ry++) {
     for (let rx = 0; rx < rw; rx++) {
       if (!activeMask[(cy0 + ry) * w + (cx0 + rx)]) {
         const pi = (ry * rw + rx) * 4;
-        if (px[pi] !== 255 || px[pi+1] !== 255 || px[pi+2] !== 255) {
-          px[pi] = 255; px[pi+1] = 255; px[pi+2] = 255; px[pi+3] = 255;
+        const si = ((cy0 + ry) * w + (cx0 + rx)) * 4;
+        if (px[pi] !== saved[si] || px[pi+1] !== saved[si+1] || px[pi+2] !== saved[si+2]) {
+          px[pi] = saved[si]; px[pi+1] = saved[si+1]; px[pi+2] = saved[si+2]; px[pi+3] = saved[si+3];
           changed = true;
         }
       }
@@ -716,9 +726,14 @@ function startDraw(e) {
   const scaleY = canvas.height / rect.height;
   const x = pos.x * scaleX, y = pos.y * scaleY;
 
-  saveHistory();
-  // はみ出し防止ONなら開始点で領域を確定
-  if (isBucket && !isEraser) createRegionMask(x, y);
+  const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  history.push(snapshot);
+  if (history.length > MAX_HISTORY) history.shift();
+  // はみ出し防止ONなら開始点で領域を確定し、ストローク前状態を保存
+  if (isBucket && !isEraser) {
+    strokeSavedData = snapshot;
+    createRegionMask(x, y);
+  }
   drawing = true;
   lastX = x; lastY = y;
   strokeX0 = x - brushSize; strokeY0 = y - brushSize;
