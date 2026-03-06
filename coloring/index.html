@@ -458,8 +458,8 @@ html, body {
     </div>
     <div class="threshold-row" id="threshold-row" style="display:none;">
       <span class="threshold-label">線の太さ</span>
-      <input type="range" id="threshold-slider" min="50" max="240" value="160" oninput="onThresholdChange(this.value)">
-      <span class="threshold-val" id="threshold-val">160</span>
+      <input type="range" id="threshold-slider" min="50" max="240" value="180" oninput="onThresholdChange(this.value)">
+      <span class="threshold-val" id="threshold-val">180</span>
     </div>
   </div>
 </div>
@@ -558,7 +558,7 @@ function onThresholdChange(val) {
 let nuriePixelData = null;  // ぬりえ原寸ピクセルキャッシュ
 let nurieNW = 0, nurieNH = 0; // ぬりえ画像の自然サイズ
 let currentNurieSrc = '';
-let lineThreshold = 160;
+let lineThreshold = 180;
 
 function loadNurieImg(src) {
   currentNurieSrc = src;
@@ -614,20 +614,6 @@ function getNurieMapping() {
 // タッチ開始点からフラッドフィルで閉じた領域を activeMask として確定
 let activeMask = null;
 
-// 8近傍のいずれかがライン → ライン境界とみなす（1px膨張ですき間を閉じる）
-function isNearLine(cx, cy, ax, bx, ay, by, nw, nh) {
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const nx = Math.round(ax * (cx + dx) + bx);
-      const ny = Math.round(ay * (cy + dy) + by);
-      if (nx < 0 || nx >= nw || ny < 0 || ny >= nh) continue;
-      const ni = (ny * nw + nx) * 4;
-      if ((nuriePixelData[ni] + nuriePixelData[ni+1] + nuriePixelData[ni+2]) / 3 < lineThreshold) return true;
-    }
-  }
-  return false;
-}
-
 function createRegionMask(startX, startY) {
   activeMask = null;
   if (!nuriePixelData) return;
@@ -636,8 +622,12 @@ function createRegionMask(startX, startY) {
   const sx = Math.round(startX), sy = Math.round(startY);
   if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
 
-  // 開始点がライン上（または隣接）なら領域なし
-  if (isNearLine(sx, sy, ax, bx, ay, by, nw, nh)) return;
+  // 開始点がライン上なら領域なし
+  const snx = Math.round(ax * sx + bx), sny = Math.round(ay * sy + by);
+  if (snx >= 0 && snx < nw && sny >= 0 && sny < nh) {
+    const si = (sny * nw + snx) * 4;
+    if ((nuriePixelData[si] + nuriePixelData[si+1] + nuriePixelData[si+2]) / 3 < lineThreshold) return;
+  }
 
   const mask = new Uint8Array(w * h);
   const visited = new Uint8Array(w * h);
@@ -647,8 +637,11 @@ function createRegionMask(startX, startY) {
   while (stack.length) {
     const idx = stack.pop();
     const x = idx % w, y = (idx / w) | 0;
-    // 8近傍チェックでライン境界（すき間も閉じる）
-    if (isNearLine(x, y, ax, bx, ay, by, nw, nh)) continue;
+    const nx = Math.round(ax * x + bx), ny = Math.round(ay * y + by);
+    if (nx >= 0 && nx < nw && ny >= 0 && ny < nh) {
+      const ni = (ny * nw + nx) * 4;
+      if ((nuriePixelData[ni] + nuriePixelData[ni+1] + nuriePixelData[ni+2]) / 3 < lineThreshold) continue;
+    }
     mask[idx] = 1;
     if (x > 0   && !visited[idx-1]) { visited[idx-1] = 1; stack.push(idx-1); }
     if (x < w-1 && !visited[idx+1]) { visited[idx+1] = 1; stack.push(idx+1); }
