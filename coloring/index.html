@@ -30,9 +30,11 @@ html, body {
   color: var(--text);
   -webkit-user-select: none;
   user-select: none;
+  touch-action: none;
 }
 
-#app {
+/* ===== Selection Screen ===== */
+#selection-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -42,7 +44,6 @@ html, body {
   margin: 0 auto;
 }
 
-/* ===== Header ===== */
 .header {
   text-align: center;
   padding: 6px 0;
@@ -61,7 +62,6 @@ html, body {
 }
 .header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 3px; }
 
-/* ===== Nurie Cards ===== */
 .nurie-list {
   display: flex;
   flex-direction: column;
@@ -98,13 +98,13 @@ html, body {
   justify-content: center;
 }
 
-.btn-dl, .btn-print {
+.btn-color, .btn-dl, .btn-print {
   flex: 1;
-  max-width: 160px;
-  padding: 11px 8px;
+  max-width: 140px;
+  padding: 11px 6px;
   border-radius: 50px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 900;
   cursor: pointer;
   text-decoration: none;
@@ -117,8 +117,12 @@ html, body {
   box-shadow: 0 3px 10px rgba(91,74,63,0.12);
   border: none;
 }
-.btn-dl:active, .btn-print:active { transform: scale(0.93); }
+.btn-color:active, .btn-dl:active, .btn-print:active { transform: scale(0.93); }
 
+.btn-color {
+  background: linear-gradient(135deg, #FB923C, #EF4444);
+  color: #fff;
+}
 .btn-dl {
   background: linear-gradient(135deg, #34D399, #059669);
   color: #fff;
@@ -126,44 +130,473 @@ html, body {
 .btn-print {
   background: linear-gradient(135deg, #60A5FA, #3B82F6);
   color: #fff;
-  font-family: inherit;
 }
 
+/* ===== Coloring Screen ===== */
+#coloring-screen {
+  display: none;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.coloring-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255,248,231,0.95);
+  backdrop-filter: blur(4px);
+  border-bottom: 2px solid #FDE68A;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--secondary);
+  cursor: pointer;
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+
+.coloring-title {
+  font-size: 1rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #FBBF24, #FB923C);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-save, .btn-print-colored {
+  background: none;
+  border: 2px solid currentColor;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+.btn-save { color: #059669; }
+.btn-print-colored { color: #3B82F6; }
+
+/* Canvas area */
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #f0f0f0;
+  cursor: crosshair;
+}
+
+#color-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  background: #fff;
+}
+
+#nurie-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  display: block;
+}
+
+/* Toolbar */
+.toolbar {
+  background: rgba(255,248,231,0.97);
+  border-top: 2px solid #FDE68A;
+  padding: 8px 10px 10px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Color palette */
+.palette {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.swatch:active { transform: scale(0.88); }
+.swatch.selected {
+  border-color: #5B4A3F;
+  transform: scale(1.18);
+}
+
+/* Tool row */
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.brush-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #D4B896;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--text);
+  transition: transform 0.1s;
+}
+.brush-btn:active { transform: scale(0.88); }
+.brush-btn.selected {
+  border-color: #FBBF24;
+  background: #FFF3C4;
+}
+
+.tool-divider {
+  width: 2px;
+  height: 28px;
+  background: #E5D9C8;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.eraser-btn, .clear-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid;
+  transition: transform 0.1s;
+  background: #fff;
+}
+.eraser-btn:active, .clear-btn:active { transform: scale(0.92); }
+.eraser-btn {
+  border-color: #A89585;
+  color: #5B4A3F;
+}
+.eraser-btn.selected {
+  background: #F0E6D8;
+  border-color: #8B6A55;
+}
+.clear-btn {
+  border-color: #EF4444;
+  color: #EF4444;
+}
 </style>
 </head>
 <body>
 
-
-<div id="app">
+<!-- ===== Selection Screen ===== -->
+<div id="selection-screen">
   <div class="header">
     <a href="../index.html" class="back-link">← メニュー</a>
     <h1>ぬりえ</h1>
-    <div class="subtitle">いんさつしてぬってみよう！🖍️</div>
+    <div class="subtitle">いんさつ or アプリでぬってみよう！🖍️</div>
   </div>
 
   <div class="nurie-list">
     <div class="nurie-card">
-      <img src="../assets/images/nurie01.webp" alt="ぬりえ 1">
+      <img src="../assets/images/nurie001.webp" alt="ぬりえ 1">
       <p class="nurie-label">ぬりえ 1</p>
       <div class="nurie-actions">
-        <a href="../assets/images/nurie01.webp" download="ぬりえ1.png" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie01.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie001.webp', 'ぬりえ1')">🎨 アプリでぬる</button>
+        <a href="../assets/images/nurie001.webp" download="ぬりえ1.webp" class="btn-dl">⬇ ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie001.webp')">🖨 いんさつ</button>
       </div>
     </div>
 
     <div class="nurie-card">
-      <img src="../assets/images/nurie02.webp" alt="ぬりえ 2">
+      <img src="../assets/images/nurie002.webp" alt="ぬりえ 2">
       <p class="nurie-label">ぬりえ 2</p>
       <div class="nurie-actions">
-        <a href="../assets/images/nurie02.webp" download="ぬりえ2.png" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie02.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie002.webp', 'ぬりえ2')">🎨 アプリでぬる</button>
+        <a href="../assets/images/nurie002.webp" download="ぬりえ2.webp" class="btn-dl">⬇ ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie002.webp')">🖨 いんさつ</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- ===== Coloring Screen ===== -->
+<div id="coloring-screen">
+  <div class="coloring-header">
+    <button class="btn-back" onclick="backToSelection()">← もどる</button>
+    <div class="coloring-title" id="coloring-title">ぬりえ</div>
+    <button class="btn-save" onclick="saveColored()">⬇ ほぞん</button>
+    <button class="btn-print-colored" onclick="printColored()">🖨 いんさつ</button>
+  </div>
+
+  <div class="canvas-wrapper" id="canvas-wrapper">
+    <canvas id="color-canvas"></canvas>
+    <img id="nurie-overlay" alt="ぬりえ">
+  </div>
+
+  <div class="toolbar">
+    <div class="palette" id="palette"></div>
+    <div class="tool-row">
+      <button class="brush-btn selected" id="brush-s" onclick="setBrush(8, this)" title="ちいさいふで">S</button>
+      <button class="brush-btn" id="brush-m" onclick="setBrush(18, this)" title="ふつうのふで">M</button>
+      <button class="brush-btn" id="brush-l" onclick="setBrush(34, this)" title="おおきいふで">L</button>
+      <div class="tool-divider"></div>
+      <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
+      <button class="clear-btn" onclick="clearCanvas()">全消し</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ===== Print =====
+// ===== Color palette =====
+const COLORS = [
+  '#FF4444', '#FF8800', '#FFCC00', '#88DD00',
+  '#00CC66', '#00BBDD', '#3388FF', '#8855FF',
+  '#FF55AA', '#AA6633', '#FFFFFF', '#222222',
+];
+
+let currentColor = COLORS[0];
+let brushSize = 8;
+let isEraser = false;
+
+function buildPalette() {
+  const palette = document.getElementById('palette');
+  COLORS.forEach((col, i) => {
+    const sw = document.createElement('button');
+    sw.className = 'swatch' + (i === 0 ? ' selected' : '');
+    sw.style.background = col;
+    if (col === '#FFFFFF') sw.style.boxShadow = 'inset 0 0 0 1px #ccc';
+    sw.onclick = () => selectColor(col, sw);
+    palette.appendChild(sw);
+  });
+}
+
+function selectColor(col, sw) {
+  currentColor = col;
+  isEraser = false;
+  document.getElementById('eraser-btn').classList.remove('selected');
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+  sw.classList.add('selected');
+}
+
+function setBrush(size, btn) {
+  brushSize = size;
+  document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function toggleEraser() {
+  isEraser = !isEraser;
+  document.getElementById('eraser-btn').classList.toggle('selected', isEraser);
+  if (isEraser) {
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+  } else {
+    const swatches = document.querySelectorAll('.swatch');
+    const idx = COLORS.indexOf(currentColor);
+    if (idx >= 0) swatches[idx].classList.add('selected');
+  }
+}
+
+// ===== Canvas drawing =====
+const canvas = document.getElementById('color-canvas');
+const ctx = canvas.getContext('2d');
+
+let drawing = false;
+let lastX = 0, lastY = 0;
+
+function getPos(e, rect) {
+  if (e.touches) {
+    const t = e.touches[0];
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  const rect = canvas.getBoundingClientRect();
+  const pos = getPos(e, rect);
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  lastX = pos.x * scaleX;
+  lastY = pos.y * scaleY;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, brushSize / 2, 0, Math.PI * 2);
+  ctx.fillStyle = isEraser ? '#FFFFFF' : currentColor;
+  ctx.fill();
+}
+
+function doDraw(e) {
+  e.preventDefault();
+  if (!drawing) return;
+  const rect = canvas.getBoundingClientRect();
+  const pos = getPos(e, rect);
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = pos.x * scaleX;
+  const y = pos.y * scaleY;
+
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(x, y);
+  ctx.strokeStyle = isEraser ? '#FFFFFF' : currentColor;
+  ctx.lineWidth = brushSize;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  lastX = x;
+  lastY = y;
+}
+
+function endDraw(e) {
+  e.preventDefault();
+  drawing = false;
+}
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', doDraw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('mouseleave', endDraw);
+canvas.addEventListener('touchstart', startDraw, { passive: false });
+canvas.addEventListener('touchmove', doDraw, { passive: false });
+canvas.addEventListener('touchend', endDraw, { passive: false });
+
+function clearCanvas() {
+  if (!confirm('ぜんぶけしますか？')) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function resizeCanvas(wrapper) {
+  const w = wrapper.clientWidth;
+  const h = wrapper.clientHeight;
+
+  const img = document.getElementById('nurie-overlay');
+  const imgRatio = img.naturalWidth / img.naturalHeight;
+  const wrapRatio = w / h;
+
+  let cw, ch;
+  if (imgRatio > wrapRatio) {
+    cw = w; ch = w / imgRatio;
+  } else {
+    ch = h; cw = h * imgRatio;
+  }
+
+  canvas.width = Math.round(cw);
+  canvas.height = Math.round(ch);
+  canvas.style.left = Math.round((w - cw) / 2) + 'px';
+  canvas.style.top = Math.round((h - ch) / 2) + 'px';
+  canvas.style.width = cw + 'px';
+  canvas.style.height = ch + 'px';
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// ===== Navigation =====
+let currentNurieName = '';
+
+function startColoring(src, name) {
+  currentNurieName = name;
+  document.getElementById('coloring-title').textContent = name;
+
+  const selScreen = document.getElementById('selection-screen');
+  const colScreen = document.getElementById('coloring-screen');
+  selScreen.style.display = 'none';
+  colScreen.style.display = 'flex';
+
+  const img = document.getElementById('nurie-overlay');
+  img.onload = () => {
+    resizeCanvas(document.getElementById('canvas-wrapper'));
+  };
+  if (img.src.endsWith(src.replace('../', '')) || img.getAttribute('src') === src) {
+    resizeCanvas(document.getElementById('canvas-wrapper'));
+  } else {
+    img.src = src;
+  }
+}
+
+function backToSelection() {
+  document.getElementById('selection-screen').style.display = 'flex';
+  document.getElementById('coloring-screen').style.display = 'none';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// ===== Save =====
+function saveColored() {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  const octx = offscreen.getContext('2d');
+
+  octx.drawImage(canvas, 0, 0);
+
+  const overlay = document.getElementById('nurie-overlay');
+  octx.globalCompositeOperation = 'multiply';
+  octx.drawImage(overlay, 0, 0, offscreen.width, offscreen.height);
+  octx.globalCompositeOperation = 'source-over';
+
+  const link = document.createElement('a');
+  link.download = currentNurieName + '_いろぬり.png';
+  link.href = offscreen.toDataURL('image/png');
+  link.click();
+}
+
+// ===== Print colored =====
+function printColored() {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  const octx = offscreen.getContext('2d');
+
+  octx.drawImage(canvas, 0, 0);
+
+  const overlay = document.getElementById('nurie-overlay');
+  octx.globalCompositeOperation = 'multiply';
+  octx.drawImage(overlay, 0, 0, offscreen.width, offscreen.height);
+  octx.globalCompositeOperation = 'source-over';
+
+  const dataURL = offscreen.toDataURL('image/png');
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.write(
+    '<!DOCTYPE html><html><head><style>' +
+    'body{margin:0;padding:0}img{width:100%;display:block}' +
+    '@media print{body{margin:0}}' +
+    '</style></head><body>' +
+    '<img src="' + dataURL + '" onload="window.print()">' +
+    '</body></html>'
+  );
+  win.document.close();
+}
+
+// ===== Print original =====
 function printNurie(src) {
   const win = window.open('', '_blank');
   if (!win) return;
@@ -176,6 +609,15 @@ function printNurie(src) {
   );
   win.document.close();
 }
+
+// ===== Init =====
+buildPalette();
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('coloring-screen').style.display !== 'none') {
+    resizeCanvas(document.getElementById('canvas-wrapper'));
+  }
+});
 </script>
 </body>
 </html>
