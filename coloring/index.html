@@ -536,9 +536,15 @@ function buildLineMask(src) {
 
 function applyLineMask() {
   if (!lineMask || !isBucket) return;
+  const cw = canvas.width, ch = canvas.height;
+  // Rebuild if dimensions changed since mask was built
+  if (lineMask.width !== cw || lineMask.height !== ch) {
+    if (currentNurieSrc) buildLineMask(currentNurieSrc);
+    return;
+  }
   ctx.save();
   ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(lineMask, 0, 0);
+  ctx.drawImage(lineMask, 0, 0, cw, ch);
   ctx.restore();
 }
 
@@ -675,11 +681,10 @@ function startColoring(src, name) {
   const img = document.getElementById('nurie-overlay');
   img.onload = () => {
     resizeCanvas(document.getElementById('canvas-wrapper'));
-    buildLineMask(src);
+    // resizeCanvas already calls buildLineMask(currentNurieSrc)
   };
   if (img.getAttribute('src') === src) {
     resizeCanvas(document.getElementById('canvas-wrapper'));
-    buildLineMask(src);
   } else {
     img.src = src;
   }
