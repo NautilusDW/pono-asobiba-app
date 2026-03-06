@@ -253,25 +253,51 @@ html, body {
   justify-content: center;
 }
 
-.brush-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
+/* Brush size buttons */
+.size-btn {
+  border: 2.5px solid #D0C8BE;
   border-radius: 50%;
-  border: 2px solid #D4B896;
   background: #fff;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  font-size: 0.7rem;
-  font-weight: 900;
-  color: var(--text);
+  transition: all 0.15s;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+}
+.size-btn.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+}
+.size-dot {
+  border-radius: 50%;
+  background: var(--text);
+  pointer-events: none;
+}
+.size-btn.active .size-dot { background: #fff; }
+.size-btn[data-size="4"]  { width: 32px; height: 32px; }
+.size-btn[data-size="14"] { width: 36px; height: 36px; }
+.size-btn[data-size="28"] { width: 40px; height: 40px; }
+.size-dot-s { width: 5px;  height: 5px; }
+.size-dot-m { width: 12px; height: 12px; }
+.size-dot-l { width: 20px; height: 20px; }
+
+.bucket-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid #8855FF;
+  color: #8855FF;
+  background: #fff;
   transition: transform 0.1s;
 }
-.brush-btn:active { transform: scale(0.88); }
-.brush-btn.selected {
-  border-color: #FBBF24;
-  background: #FFF3C4;
+.bucket-btn:active { transform: scale(0.92); }
+.bucket-btn.selected {
+  background: #EDE9FF;
+  border-color: #6633CC;
+  color: #6633CC;
 }
 
 .tool-divider {
@@ -358,9 +384,11 @@ html, body {
   <div class="toolbar">
     <div class="palette" id="palette"></div>
     <div class="tool-row">
-      <button class="brush-btn selected" id="brush-s" onclick="setBrush(8, this)" title="ちいさいふで">S</button>
-      <button class="brush-btn" id="brush-m" onclick="setBrush(18, this)" title="ふつうのふで">M</button>
-      <button class="brush-btn" id="brush-l" onclick="setBrush(34, this)" title="おおきいふで">L</button>
+      <button class="size-btn active" data-size="4"><span class="size-dot size-dot-s"></span></button>
+      <button class="size-btn" data-size="14"><span class="size-dot size-dot-m"></span></button>
+      <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
+      <div class="tool-divider"></div>
+      <button class="bucket-btn" id="bucket-btn" onclick="toggleBucket()">🪣 はみ出し防止</button>
       <div class="tool-divider"></div>
       <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
       <button class="clear-btn" onclick="clearCanvas()">全消し</button>
@@ -377,8 +405,9 @@ const COLORS = [
 ];
 
 let currentColor = COLORS[0];
-let brushSize = 8;
+let brushSize = 4;
 let isEraser = false;
+let isBucket = false;
 
 function buildPalette() {
   const palette = document.getElementById('palette');
@@ -400,22 +429,103 @@ function selectColor(col, sw) {
   sw.classList.add('selected');
 }
 
-function setBrush(size, btn) {
-  brushSize = size;
-  document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
+// Size buttons (set up after DOM ready)
+function initSizeBtns() {
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      brushSize = parseInt(btn.dataset.size);
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
 }
 
 function toggleEraser() {
   isEraser = !isEraser;
+  isBucket = false;
   document.getElementById('eraser-btn').classList.toggle('selected', isEraser);
-  if (isEraser) {
-    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
-  } else {
+  document.getElementById('bucket-btn').classList.remove('selected');
+  if (!isEraser) {
     const swatches = document.querySelectorAll('.swatch');
     const idx = COLORS.indexOf(currentColor);
     if (idx >= 0) swatches[idx].classList.add('selected');
   }
+}
+
+function toggleBucket() {
+  isBucket = !isBucket;
+  isEraser = false;
+  document.getElementById('bucket-btn').classList.toggle('selected', isBucket);
+  document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('canvas-wrapper').style.cursor = isBucket ? 'cell' : 'crosshair';
+}
+
+// ===== Flood fill =====
+let nuriePixels = null; // ImageData of nurie for boundary detection
+
+function loadNuriePixels(img) {
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width;
+  tmp.height = canvas.height;
+  const tmpCtx = tmp.getContext('2d');
+  tmpCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  nuriePixels = tmpCtx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return [r, g, b];
+}
+
+function floodFill(startX, startY) {
+  if (!nuriePixels) return;
+  const w = canvas.width, h = canvas.height;
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const pixels = imgData.data;
+  const nurie = nuriePixels.data;
+  const [fr, fg, fb] = hexToRgb(currentColor);
+
+  const sx = Math.round(startX), sy = Math.round(startY);
+  if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
+
+  // Target color = current canvas color at start point
+  const si = (sy * w + sx) * 4;
+  const tr = pixels[si], tg = pixels[si+1], tb = pixels[si+2];
+
+  // Don't fill if already the same color
+  if (tr === fr && tg === fg && tb === fb) return;
+
+  const stack = [sy * w + sx];
+  const visited = new Uint8Array(w * h);
+  visited[sy * w + sx] = 1;
+
+  while (stack.length) {
+    const idx = stack.pop();
+    const x = idx % w, y = (idx / w) | 0;
+    const pi = idx * 4;
+
+    // Check nurie boundary: dark pixel = line = stop
+    const nr = nurie[pi], ng = nurie[pi+1], nb = nurie[pi+2];
+    if ((nr + ng + nb) / 3 < 100) continue;
+
+    // Check color match (fill connected same-color region)
+    const cr = pixels[pi], cg = pixels[pi+1], cb = pixels[pi+2];
+    if (Math.abs(cr-tr) > 30 || Math.abs(cg-tg) > 30 || Math.abs(cb-tb) > 30) continue;
+
+    pixels[pi] = fr; pixels[pi+1] = fg; pixels[pi+2] = fb; pixels[pi+3] = 255;
+
+    const neighbors = [];
+    if (x > 0)   neighbors.push(idx - 1);
+    if (x < w-1) neighbors.push(idx + 1);
+    if (y > 0)   neighbors.push(idx - w);
+    if (y < h-1) neighbors.push(idx + w);
+    for (const n of neighbors) {
+      if (!visited[n]) { visited[n] = 1; stack.push(n); }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
 }
 
 // ===== Canvas drawing =====
@@ -435,13 +545,20 @@ function getPos(e, rect) {
 
 function startDraw(e) {
   e.preventDefault();
-  drawing = true;
   const rect = canvas.getBoundingClientRect();
   const pos = getPos(e, rect);
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-  lastX = pos.x * scaleX;
-  lastY = pos.y * scaleY;
+  const x = pos.x * scaleX;
+  const y = pos.y * scaleY;
+
+  if (isBucket) {
+    floodFill(x, y);
+    return;
+  }
+
+  drawing = true;
+  lastX = x; lastY = y;
   ctx.beginPath();
   ctx.arc(lastX, lastY, brushSize / 2, 0, Math.PI * 2);
   ctx.fillStyle = isEraser ? '#FFFFFF' : currentColor;
@@ -515,6 +632,12 @@ function resizeCanvas(wrapper) {
 
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Load nurie pixels for flood fill boundary detection
+  const overlayImg = document.getElementById('nurie-overlay');
+  if (overlayImg.complete && overlayImg.naturalWidth > 0) {
+    loadNuriePixels(overlayImg);
+  }
 }
 
 // ===== Navigation =====
@@ -532,9 +655,11 @@ function startColoring(src, name) {
   const img = document.getElementById('nurie-overlay');
   img.onload = () => {
     resizeCanvas(document.getElementById('canvas-wrapper'));
+    loadNuriePixels(img);
   };
-  if (img.src.endsWith(src.replace('../', '')) || img.getAttribute('src') === src) {
+  if (img.getAttribute('src') === src) {
     resizeCanvas(document.getElementById('canvas-wrapper'));
+    loadNuriePixels(img);
   } else {
     img.src = src;
   }
@@ -612,6 +737,7 @@ function printNurie(src) {
 
 // ===== Init =====
 buildPalette();
+initSizeBtns();
 
 window.addEventListener('resize', () => {
   if (document.getElementById('coloring-screen').style.display !== 'none') {
