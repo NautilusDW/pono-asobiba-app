@@ -236,10 +236,11 @@ html, body {
 .completion-overlay.show { opacity: 1; pointer-events: auto; }
 .completion-msg {
   font-size: 3rem; font-weight: 900;
-  background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: var(--primary);
+  -webkit-text-stroke: 5px white;
+  paint-order: stroke fill;
   animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
 }
 @keyframes bounce-in {
   0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); }
@@ -394,6 +395,7 @@ html, body {
 .word-card-emoji { font-size: 2.4rem; line-height: 1; }
 .word-card-text  { font-size: 1.6rem; font-weight: 900; color: var(--text); }
 .word-card-first { color: var(--primary); }
+.word-card-note  { font-size: 1.1rem; font-weight: 700; color: var(--text-muted, #888); }
 
 /* ===== Responsive ===== */
 @media (max-height: 600px) {
@@ -531,7 +533,7 @@ const WORD_DATA = {
     { word: 'ふうせん',    emoji: '🎈' }, // ふ
     { word: 'へび',        emoji: '🐍' }, // へ
     { word: 'ほし',        emoji: '⭐' }, // ほ
-    { word: 'まり',        emoji: '⚽' }, // ま
+    { word: 'まつり',      emoji: '🏮' }, // ま
     { word: 'みかん',      emoji: '🍊' }, // み
     { word: 'むし',        emoji: '🐛' }, // む
     { word: 'めがね',      emoji: '👓' }, // め
@@ -545,7 +547,7 @@ const WORD_DATA = {
     { word: 'れもん',      emoji: '🍋' }, // れ
     { word: 'ろけっと',    emoji: '🚀' }, // ろ
     { word: 'わに',        emoji: '🐊' }, // わ
-    { word: 'おにわ',      emoji: '🌳' }, // を
+    { word: '', emoji: '💬', note: 'おはなしの なかで つかうよ！' }, // を
     { word: 'ぱんだ',      emoji: '🐼' }, // ん
   ],
   katakana: [
@@ -767,8 +769,13 @@ function showWordCard() {
   const card = document.getElementById('word-card');
   if (!card) return;
   document.getElementById('word-card-emoji').textContent = data.emoji;
-  document.getElementById('word-card-text').innerHTML =
-    `<span class="word-card-first">${char}</span>${data.word.slice(char.length)}`;
+  if (data.note) {
+    document.getElementById('word-card-text').innerHTML =
+      `<span class="word-card-note">${data.note}</span>`;
+  } else {
+    document.getElementById('word-card-text').innerHTML =
+      `<span class="word-card-first">${char}</span>${data.word.slice(char.length)}`;
+  }
   clearTimeout(_wordCardTimer);
   card.classList.remove('show', 'hide');
   card.classList.add('show');
