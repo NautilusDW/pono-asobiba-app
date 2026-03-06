@@ -30,6 +30,17 @@ html, body {
   color: var(--text);
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* 選択画面はスクロール可能に */
+#selection-screen {
+  touch-action: auto;
+  overflow-y: auto;
+  height: 100dvh;
+}
+
+/* 塗り絵画面はスクロール禁止（描画のため）*/
+#coloring-screen {
   touch-action: none;
 }
 
