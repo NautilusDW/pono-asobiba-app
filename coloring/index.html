@@ -149,6 +149,7 @@ html, body {
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
+  position: relative;
 }
 
 .coloring-header {
@@ -242,8 +243,8 @@ html, body {
 }
 
 .swatch {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 3px solid transparent;
   cursor: pointer;
@@ -261,8 +262,13 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
-  justify-content: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.tool-row::-webkit-scrollbar { display: none; }
 
 /* Brush size buttons */
 .size-btn {
@@ -285,11 +291,11 @@ html, body {
   pointer-events: none;
 }
 .size-btn.active .size-dot { background: #fff; }
-.size-btn[data-size="4"]  { width: 32px; height: 32px; }
-.size-btn[data-size="14"] { width: 36px; height: 36px; }
-.size-btn[data-size="28"] { width: 40px; height: 40px; }
-.size-btn[data-size="50"] { width: 46px; height: 46px; }
-.size-btn[data-size="80"] { width: 52px; height: 52px; }
+.size-btn[data-size="4"]  { width: 28px; height: 28px; }
+.size-btn[data-size="14"] { width: 32px; height: 32px; }
+.size-btn[data-size="28"] { width: 36px; height: 36px; }
+.size-btn[data-size="50"] { width: 42px; height: 42px; }
+.size-btn[data-size="80"] { width: 48px; height: 48px; }
 .size-dot-s  { width: 5px;  height: 5px; }
 .size-dot-m  { width: 12px; height: 12px; }
 .size-dot-l  { width: 20px; height: 20px; }
@@ -297,7 +303,7 @@ html, body {
 .size-dot-xxl{ width: 36px; height: 36px; }
 
 .rainbow-swatch {
-  width: 36px; height: 36px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   border: 2.5px solid #D0C8BE;
   background: conic-gradient(red, orange, yellow, green, cyan, blue, violet, red);
@@ -325,16 +331,18 @@ html, body {
 }
 
 .bucket-btn {
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 20px;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   border: 2px solid #8855FF;
   color: #8855FF;
   background: #fff;
   transition: transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .bucket-btn:active { transform: scale(0.92); }
 .bucket-btn.selected {
@@ -352,15 +360,17 @@ html, body {
 }
 
 .eraser-btn, .undo-btn, .clear-btn {
-  padding: 6px 14px;
+  padding: 5px 10px;
   border-radius: 20px;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   border: 2px solid;
   transition: transform 0.1s;
   background: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .eraser-btn:active, .undo-btn:active, .clear-btn:active { transform: scale(0.92); }
 .eraser-btn {
@@ -390,6 +400,111 @@ html, body {
 .threshold-label { font-size: 0.78rem; color: #8B6A55; font-weight: 700; white-space: nowrap; }
 .threshold-val { font-size: 0.78rem; color: #8B6A55; font-weight: 700; width: 28px; text-align: right; }
 #threshold-slider { flex: 1; max-width: 160px; accent-color: #8855FF; }
+
+/* Fullscreen button */
+.btn-fullscreen {
+  background: none;
+  border: 2px solid #A89585;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 8px;
+  color: #5B4A3F;
+  line-height: 1;
+}
+
+/* ===== Landscape layout ===== */
+@media (orientation: landscape) {
+  #coloring-screen {
+    flex-direction: row;
+  }
+
+  /* Header floats over canvas top-left */
+  .coloring-header {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 20;
+    border-bottom: none;
+    border-radius: 0 0 12px 0;
+    background: rgba(255,248,231,0.88);
+    padding: 5px 10px;
+    gap: 6px;
+    width: auto;
+  }
+  .coloring-title { display: none; }
+
+  /* Canvas takes left side */
+  .canvas-wrapper {
+    position: relative; /* already is, but ensure for absolute header */
+    flex: 1;
+    height: 100%;
+  }
+
+  /* Toolbar becomes right sidebar */
+  .toolbar {
+    flex-direction: column;
+    border-top: none;
+    border-left: 2px solid #FDE68A;
+    width: 80px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    padding: 8px 5px;
+    align-items: center;
+    gap: 5px;
+    scrollbar-width: none;
+  }
+  .toolbar::-webkit-scrollbar { display: none; }
+
+  /* Palette stacks vertically */
+  .palette {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 3px;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* Tool row stacks vertically */
+  .tool-row {
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: visible;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 3px;
+  }
+
+  /* Divider becomes horizontal line */
+  .tool-divider {
+    width: 60px;
+    height: 2px;
+  }
+
+  /* Action buttons fill sidebar width */
+  .bucket-btn, .eraser-btn, .undo-btn, .clear-btn {
+    width: 68px;
+    font-size: 0.68rem;
+    padding: 5px 3px;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  /* Threshold row stacks vertically */
+  .threshold-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+  }
+  .threshold-label { font-size: 0.65rem; }
+  .threshold-val { width: auto; }
+  #threshold-slider { max-width: 64px; }
+}
 </style>
 </head>
 <body>
@@ -442,6 +557,7 @@ html, body {
     <div class="coloring-title" id="coloring-title">ぬりえ</div>
     <button class="btn-save" onclick="saveColored()">⬇ ほぞん</button>
     <button class="btn-print-colored" onclick="printColored()">🖨 いんさつ</button>
+    <button class="btn-fullscreen" id="btn-fullscreen" onclick="toggleFullscreen()" title="全画面">⛶</button>
   </div>
 
   <div class="canvas-wrapper" id="canvas-wrapper">
@@ -950,6 +1066,19 @@ function printNurie(src) {
   );
   win.document.close();
 }
+
+// ===== Fullscreen =====
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('btn-fullscreen');
+  if (btn) btn.textContent = document.fullscreenElement ? '⊠' : '⛶';
+});
 
 // ===== Init =====
 buildPalette();
