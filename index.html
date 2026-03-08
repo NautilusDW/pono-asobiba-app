@@ -428,7 +428,33 @@
     @media (min-width: 640px) { .audio-section { max-width: 580px; } }
 
     /* ===== Footer ===== */
-    .footer { font-size: 0.75rem; color: var(--text-light); font-weight: 700; }
+    .footer {
+      width: 100%;
+      max-width: 540px;
+      border-top: 1px solid rgba(93,78,55,0.12);
+      padding-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .footer-copy {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .footer-note {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.7;
+    }
+    .footer-small {
+      font-size: 0.62rem;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -572,7 +598,18 @@
       </a>
     </nav>
 
-    <footer class="footer">くまのこ ポノ のあそびば</footer>
+    <footer class="footer">
+      <div class="footer-copy">© こだまのもり出版　All rights reserved.</div>
+      <div class="footer-note">
+        本サイトに掲載されているテキスト・イラスト・音楽・その他コンテンツの<br>
+        無断転載・複製・改変・二次利用を禁じます。
+      </div>
+      <div class="footer-small">
+        絵本『ありがとう』くまのこポノシリーズ／こだまのもり出版<br>
+        本サイトはNetlify上で運営されています。YouTubeの動画再生にはGoogleのサービスが使用されます。<br>
+        当サイトはお客様の個人情報を収集・保存していません。
+      </div>
+    </footer>
 
   </div>
 
