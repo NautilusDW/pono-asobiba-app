@@ -204,6 +204,15 @@ html, body {
   overflow: hidden;
   background: #f0f0f0;
   cursor: crosshair;
+  touch-action: none;
+}
+
+#canvas-transform {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 #color-canvas {
@@ -221,6 +230,33 @@ html, body {
   mix-blend-mode: multiply;
   pointer-events: none;
   display: block;
+}
+
+/* Pan mode cursor */
+.canvas-wrapper.pan-mode {
+  cursor: grab;
+}
+.canvas-wrapper.pan-mode.panning {
+  cursor: grabbing;
+}
+
+/* Zoom reset button (floating) */
+#zoom-reset-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 50;
+  background: rgba(255,248,231,0.92);
+  border: 2px solid #FDE68A;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  padding: 4px 10px;
+  cursor: pointer;
+  display: none;
+  box-shadow: var(--shadow);
 }
 
 /* Toolbar */
@@ -349,6 +385,27 @@ html, body {
   background: #EDE9FF;
   border-color: #6633CC;
   color: #6633CC;
+}
+
+.pan-btn {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid #A89585;
+  color: #5B4A3F;
+  background: #fff;
+  transition: transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pan-btn:active { transform: scale(0.92); }
+.pan-btn.selected {
+  background: #E8F4FD;
+  border-color: #3388FF;
+  color: #3388FF;
 }
 
 .tool-divider {
@@ -721,8 +778,11 @@ html, body {
   </div>
 
   <div class="canvas-wrapper" id="canvas-wrapper">
-    <canvas id="color-canvas"></canvas>
-    <img id="nurie-overlay" alt="ぬりえ">
+    <div id="canvas-transform">
+      <canvas id="color-canvas"></canvas>
+      <img id="nurie-overlay" alt="ぬりえ">
+    </div>
+    <button id="zoom-reset-btn" onclick="resetZoom()">1:1 もどす</button>
   </div>
   <div id="brush-cursor"></div>
 
@@ -738,6 +798,8 @@ html, body {
       <button class="size-btn" data-size="80"><span class="size-dot size-dot-xxl"></span></button>
       <div class="tool-divider"></div>
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
+      <div class="tool-divider"></div>
+      <button class="pan-btn" id="pan-btn" onclick="togglePanMode()">✋ 移動</button>
       <div class="tool-divider"></div>
       <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
       <button class="undo-btn" onclick="undo()">↩ もどす</button>
@@ -1064,11 +1126,14 @@ function doDraw(e) {
   lastY = y;
 }
 
-function endDraw(e) {
-  e.preventDefault();
-  // 今回のストロークの範囲だけクリーンアップ（全画面はしない → 前に塗った領域を消さない）
+function endDrawInternal() {
   if (drawing && isBucket && !isEraser) applyRegionMask(strokeX0, strokeY0, strokeX1, strokeY1);
   drawing = false;
+}
+
+function endDraw(e) {
+  e.preventDefault();
+  endDrawInternal();
 }
 
 // ===== ブラシカーソル =====
@@ -1097,9 +1162,127 @@ canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mousemove', doDraw);
 canvas.addEventListener('mouseup', endDraw);
 canvas.addEventListener('mouseleave', endDraw);
-canvas.addEventListener('touchstart', startDraw, { passive: false });
-canvas.addEventListener('touchmove', doDraw, { passive: false });
-canvas.addEventListener('touchend', endDraw, { passive: false });
+
+// ===== ズーム / パン =====
+let zoomScale = 1;
+let panX = 0, panY = 0;
+let isPanMode = false;
+
+function applyTransform() {
+  document.getElementById('canvas-transform').style.transform =
+    `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+  document.getElementById('zoom-reset-btn').style.display = zoomScale > 1.01 ? 'block' : 'none';
+}
+
+function clampPan() {
+  const wrapper = document.getElementById('canvas-wrapper');
+  const ww = wrapper.clientWidth, wh = wrapper.clientHeight;
+  panX = Math.min(0, Math.max(ww * (1 - zoomScale), panX));
+  panY = Math.min(0, Math.max(wh * (1 - zoomScale), panY));
+}
+
+function resetZoom() {
+  zoomScale = 1; panX = 0; panY = 0;
+  applyTransform();
+  document.getElementById('canvas-wrapper').classList.remove('pan-mode', 'panning');
+}
+
+function togglePanMode() {
+  isPanMode = !isPanMode;
+  document.getElementById('pan-btn').classList.toggle('selected', isPanMode);
+  document.getElementById('canvas-wrapper').classList.toggle('pan-mode', isPanMode);
+}
+
+// --- Touch handling ---
+let pinchPrevDist = 0, pinchPrevMidX = 0, pinchPrevMidY = 0;
+let panTouchStartX = 0, panTouchStartY = 0, panStartX = 0, panStartY = 0;
+let isGesturing = false;
+let lastTapTime = 0;
+
+const wrapper = document.getElementById('canvas-wrapper');
+
+wrapper.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    isGesturing = true;
+    endDrawInternal();
+    const t0 = e.touches[0], t1 = e.touches[1];
+    pinchPrevDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+    pinchPrevMidX = (t0.clientX + t1.clientX) / 2;
+    pinchPrevMidY = (t0.clientY + t1.clientY) / 2;
+  } else if (e.touches.length === 1) {
+    const now = Date.now();
+    if (now - lastTapTime < 280) { resetZoom(); lastTapTime = 0; return; }
+    lastTapTime = now;
+    isGesturing = false;
+    if (isPanMode) {
+      panStartX = panX; panStartY = panY;
+      panTouchStartX = e.touches[0].clientX;
+      panTouchStartY = e.touches[0].clientY;
+      wrapper.classList.add('panning');
+    } else {
+      startDraw(e);
+    }
+  }
+}, { passive: false });
+
+wrapper.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    isGesturing = true;
+    endDrawInternal();
+    const t0 = e.touches[0], t1 = e.touches[1];
+    const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+    const midX = (t0.clientX + t1.clientX) / 2;
+    const midY = (t0.clientY + t1.clientY) / 2;
+    const wRect = wrapper.getBoundingClientRect();
+    const localMidX = midX - wRect.left;
+    const localMidY = midY - wRect.top;
+    const newScale = Math.min(5, Math.max(1, zoomScale * (dist / pinchPrevDist)));
+    // ピンチ中心を固定しながらスケール変更
+    panX = localMidX - (localMidX - panX) * (newScale / zoomScale);
+    panY = localMidY - (localMidY - panY) * (newScale / zoomScale);
+    // 中点の移動分をパンに加算
+    panX += midX - pinchPrevMidX;
+    panY += midY - pinchPrevMidY;
+    zoomScale = newScale;
+    clampPan();
+    applyTransform();
+    pinchPrevDist = dist; pinchPrevMidX = midX; pinchPrevMidY = midY;
+  } else if (e.touches.length === 1 && !isGesturing) {
+    if (isPanMode) {
+      panX = panStartX + e.touches[0].clientX - panTouchStartX;
+      panY = panStartY + e.touches[0].clientY - panTouchStartY;
+      clampPan();
+      applyTransform();
+    } else {
+      doDraw(e);
+    }
+  }
+}, { passive: false });
+
+wrapper.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  if (e.touches.length < 2) isGesturing = false;
+  if (e.touches.length === 0) {
+    wrapper.classList.remove('panning');
+    if (!isPanMode) endDrawInternal();
+  }
+}, { passive: false });
+
+// マウスホイールでズーム (PC)
+wrapper.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const wRect = wrapper.getBoundingClientRect();
+  const lx = e.clientX - wRect.left, ly = e.clientY - wRect.top;
+  const delta = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const newScale = Math.min(5, Math.max(1, zoomScale * delta));
+  panX = lx - (lx - panX) * (newScale / zoomScale);
+  panY = ly - (ly - panY) * (newScale / zoomScale);
+  zoomScale = newScale;
+  clampPan();
+  applyTransform();
+}, { passive: false });
 
 function clearCanvas() {
   if (!confirm('ぜんぶけしますか？')) return;
@@ -1132,6 +1315,7 @@ function resizeCanvas(wrapper) {
 
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  resetZoom();
 }
 
 // ===== セーブ / ロード =====
@@ -1244,6 +1428,7 @@ function startColoring(src, name) {
 
 function backToSelection() {
   activeMask = null;
+  resetZoom();
   document.getElementById('selection-screen').style.display = 'flex';
   document.getElementById('coloring-screen').style.display = 'none';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
