@@ -363,6 +363,70 @@
       .book-kids   { font-size: 1.3rem; }
     }
 
+    /* ===== Audio Player ===== */
+    .audio-section {
+      width: 100%;
+      max-width: 400px;
+    }
+    .audio-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #FFF8EE, #FFE8C8);
+      border: 2px solid #E8A04A;
+      border-radius: 50px;
+      padding: 10px 18px 10px 10px;
+      box-shadow: 0 4px 16px var(--shadow);
+    }
+    .audio-play-btn {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      border: none;
+      font-size: 1.3rem;
+      color: #5C3A00;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .audio-play-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .audio-info { flex: 1; min-width: 0; }
+    .audio-title {
+      font-size: 0.85rem; font-weight: 900;
+      color: var(--text);
+      margin-bottom: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .audio-progress-wrap { display: flex; align-items: center; gap: 8px; }
+    .audio-progress-bg {
+      flex: 1; height: 7px;
+      background: rgba(93,78,55,0.12);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .audio-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #F2915A, #F7C948);
+      border-radius: 4px;
+    }
+    .audio-time {
+      font-size: 0.63rem; font-weight: 700;
+      color: var(--text-light);
+      white-space: nowrap;
+    }
+    @media (min-width: 640px) { .audio-section { max-width: 580px; } }
+
     /* ===== Footer ===== */
     .footer { font-size: 0.75rem; color: var(--text-light); font-weight: 700; }
   </style>
@@ -401,6 +465,23 @@
           title="ポノのうた">
         </iframe>
       </div>
+    </section>
+
+    <section class="audio-section">
+      <p class="audio-label">🎵 ポノのうた「こころにぽっぽっぽ」きいてね！</p>
+      <div class="audio-player">
+        <button class="audio-play-btn" id="audioPlayBtn" onclick="toggleAudio()" aria-label="再生">▶</button>
+        <div class="audio-info">
+          <div class="audio-title">こころにぽっぽっぽ</div>
+          <div class="audio-progress-wrap">
+            <div class="audio-progress-bg" id="audioProgressBg">
+              <div class="audio-progress-bar" id="audioProgressBar"></div>
+            </div>
+            <span class="audio-time" id="audioTime">0:00 / 0:00</span>
+          </div>
+        </div>
+      </div>
+      <audio id="audioEl" src="assets/audio/こころにぽっぽっぽ.mp3" preload="metadata"></audio>
     </section>
 
     <nav class="menu">
@@ -538,6 +619,51 @@
     });
 
     applyUnlockState();
+
+    // ===== Audio Player =====
+    const audioEl = document.getElementById('audioEl');
+    const audioPlayBtn = document.getElementById('audioPlayBtn');
+    const audioProgressBar = document.getElementById('audioProgressBar');
+    const audioTime = document.getElementById('audioTime');
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || isNaN(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return m + ':' + s;
+    }
+
+    function toggleAudio() {
+      if (audioEl.paused) {
+        audioEl.play();
+        audioPlayBtn.textContent = '⏸';
+      } else {
+        audioEl.pause();
+        audioPlayBtn.textContent = '▶';
+      }
+    }
+
+    audioEl.addEventListener('timeupdate', () => {
+      const pct = audioEl.duration ? (audioEl.currentTime / audioEl.duration * 100) : 0;
+      audioProgressBar.style.width = pct + '%';
+      audioTime.textContent = formatTime(audioEl.currentTime) + ' / ' + formatTime(audioEl.duration);
+    });
+
+    audioEl.addEventListener('loadedmetadata', () => {
+      audioTime.textContent = '0:00 / ' + formatTime(audioEl.duration);
+    });
+
+    audioEl.addEventListener('ended', () => {
+      audioPlayBtn.textContent = '▶';
+      audioProgressBar.style.width = '0%';
+      audioEl.currentTime = 0;
+    });
+
+    document.getElementById('audioProgressBg').addEventListener('click', (e) => {
+      if (!audioEl.duration) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
+    });
   </script>
 </body>
 </html>
