@@ -15,14 +15,21 @@
     html, body {
       width: 100%; height: 100dvh;
       overflow: hidden;
-      background: url('BG_A.png') center/cover no-repeat #0a1a3a;
+      background: #0a1a3a;
       font-family: 'Zen Maru Gothic', sans-serif;
+    }
+    #bg-img {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 0;
     }
     #pixi-canvas {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: url('BG_A.png') center/cover no-repeat #0a1a3a;
+      z-index: 1;
     }
     /* UI overlay */
     #ui {
@@ -190,6 +197,7 @@
     <div class="rot-icon">📱</div>
     <p>スマホを よこむきに<br>してね！</p>
   </div>
+  <img id="bg-img" src="BG_A.png" alt="">
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <div id="ui">
@@ -270,7 +278,7 @@
     const app = new PIXI.Application({
       view: canvas,
       resizeTo: window,
-      backgroundColor: 0x0a1a3a, backgroundAlpha: 0,
+      backgroundColor: 0x00000000, backgroundAlpha: 0,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
