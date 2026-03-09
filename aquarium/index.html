@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>うみのせかい｜ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,6 +19,7 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
+      background: #0a1a3a; /* fallback before PixiJS renders */
     }
     /* UI overlay */
     #ui {
@@ -171,7 +172,7 @@
         layerBg.addChild(ray);
       }
     }
-    makeBackground();
+    // makeBackground() is called inside ticker.addOnce to ensure PixiJS is fully ready
 
     // ─── Sand & Seaweed ────────────────────────────────────
     const sandGfx = new PIXI.Graphics();
@@ -596,6 +597,7 @@
 
     // ─── Init ──────────────────────────────────────────────
     app.ticker.addOnce(() => {
+      makeBackground(); // Draw background after PixiJS is fully sized
       drawSand();
       makeSeaweeds();
       initAllCreatures();
