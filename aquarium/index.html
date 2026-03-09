@@ -347,20 +347,8 @@
     }
 
     function drawSand() {
-      sandGfx.clear();
-      const sandY = H() * 0.88;
-      // Sand ellipse center at H()*0.96, radius H()*0.1 → top at H()*0.86
-      sandTopY = H() * 0.96 - H() * 0.1;
-      sandGfx.beginFill(0xd4a84b, 0.85);
-      sandGfx.drawEllipse(W() / 2, H() * 0.96, W() * 0.7, H() * 0.1);
-      sandGfx.endFill();
-      // sand ripples
-      sandGfx.lineStyle(1.5, 0xc49a30, 0.4);
-      for (let i = 0; i < 4; i++) {
-        const ry = sandY + 6 + i * 9;
-        sandGfx.moveTo(W() * 0.2, ry);
-        sandGfx.bezierCurveTo(W() * 0.35, ry - 4, W() * 0.65, ry + 4, W() * 0.8, ry);
-      }
+      sandGfx.clear(); // sand removed — just update sandTopY reference
+      sandTopY = H() * 0.86;
     }
 
     // ─── Ocean rocks (extracted from sprite sheet) ─────────
@@ -455,16 +443,16 @@
     }
 
     function placeRocks(textures) {
-      // Clear existing
       bgRockSprites.forEach(s => layerBgRocks.removeChild(s));
       fgRockSprites.forEach(s => layerRockFg.removeChild(s));
       bgRockSprites.length = 0; fgRockSprites.length = 0;
       if (!textures || !textures.length) return;
 
       const sw = W(), sh = H();
-      const baseScale = sh * 0.00065; // scale relative to screen height
+      // Normalize: target ~sh*0.09 for a "natural" rock at scale 1
+      const baseScale = sh * 0.00028;
+      const depthRange = sh * 0.09; // bg rocks can sit this far above sand line
 
-      // Sort by area: larger → background, smaller → foreground
       const sorted = [...textures].sort((a,b) => (b.width*b.height)-(a.width*a.height));
       const bgCount = Math.ceil(sorted.length * 0.5);
 
@@ -474,21 +462,33 @@
         const arr   = isFg ? fgRockSprites : bgRockSprites;
 
         const spr = new PIXI.Sprite(tex);
-        spr.anchor.set(0.5, 1.0); // bottom-center anchor
-        const scaleMult = isFg ? (0.9 + Math.random()*0.4) : (0.55 + Math.random()*0.35);
-        const sc = baseScale * scaleMult * (300 / Math.max(tex.width, tex.height));
+        spr.anchor.set(0.5, 1.0);
+
+        // Random size — wide range for variety
+        const scaleRand = 0.25 + Math.random() * 0.85;
+        const sc = baseScale * scaleRand * (300 / Math.max(tex.width, tex.height));
         spr.scale.set(sc);
 
-        // Scatter horizontally; cluster at edges + center for natural look
-        const zones = [0.08, 0.22, 0.38, 0.55, 0.68, 0.80, 0.92];
-        const zone = zones[i % zones.length] + (Math.random()-0.5)*0.07;
-        spr.x = sw * zone;
-        spr.y = sandTopY + spr.height * 0.12; // slightly embedded in sand
+        // X: fully random
+        spr.x = sw * (0.04 + Math.random() * 0.92);
 
-        spr.alpha = isFg ? 1.0 : 0.75;
+        // Y: fg rocks sit at sand level; bg rocks scattered higher for depth
+        if (isFg) {
+          spr.y = sandTopY + sh * 0.01 * Math.random(); // at/just below sand
+        } else {
+          const depthT = Math.random();                  // 0 = near, 1 = far back
+          spr.y = sandTopY - depthT * depthRange;
+          spr.scale.set(sc * (1 - depthT * 0.35));      // perspective shrink
+        }
+
+        spr.alpha = isFg ? 1.0 : (0.55 + Math.random() * 0.35);
         layer.addChild(spr);
         arr.push(spr);
       });
+
+      // Depth-sort bg rocks so farther ones render behind closer ones
+      bgRockSprites.sort((a, b) => a.y - b.y);
+      bgRockSprites.forEach((s, i) => layerBgRocks.addChildAt(s, i));
     }
 
     async function initRocks() {
@@ -497,15 +497,7 @@
     }
 
     function repositionRocks() {
-      if (!rockTextures) return;
-      const sw = W();
-      const allRocks = [...bgRockSprites, ...fgRockSprites];
-      const zones = [0.08, 0.22, 0.38, 0.55, 0.68, 0.80, 0.92];
-      allRocks.forEach((spr, i) => {
-        const zone = zones[i % zones.length] + (Math.random()-0.5)*0.07;
-        spr.x = sw * zone;
-        spr.y = sandTopY + spr.height * 0.12;
-      });
+      if (rockTextures) placeRocks(rockTextures);
     }
 
     // ─── Bubbles ───────────────────────────────────────────
