@@ -344,23 +344,11 @@
     const sandGfx = new PIXI.Graphics();
     layerFg.addChild(sandGfx);
 
-    // Seaweed: array of {x, gfx, phase, height}
+    // Seaweed removed (looks like pins without sand)
     const seaweeds = [];
     function makeSeaweeds() {
       seaweeds.forEach(s => layerFg.removeChild(s.gfx));
       seaweeds.length = 0;
-      const count = 4 + Math.floor(W() / 200);
-      for (let i = 0; i < count; i++) {
-        const g = new PIXI.Graphics();
-        layerFg.addChild(g);
-        seaweeds.push({
-          gfx: g,
-          x: W() * (0.05 + (i / count) * 0.9) + (Math.random() - 0.5) * 40,
-          phase: Math.random() * Math.PI * 2,
-          h: 60 + Math.random() * 80,
-          col: [0x22c55e, 0x16a34a, 0x4ade80][Math.floor(Math.random() * 3)],
-        });
-      }
     }
 
     function drawSand() {
@@ -468,45 +456,44 @@
       const sw = W(), sh = H();
       const depthRange = sh * 0.10;
 
-      // Helper: create one sprite instance with random variation
-      function makeRock(tex, targetH) {
+      // Helper: one sprite with flip/tilt variation, placed at zone position
+      function makeRock(tex, targetH, zoneX) {
         const spr = new PIXI.Sprite(tex);
         spr.anchor.set(0.5, 1.0);
-        const sc = targetH / tex.height;
-        spr.scale.set(sc);
-        if (Math.random() < 0.5) spr.scale.x *= -1;       // horizontal flip
-        spr.rotation = (Math.random() - 0.5) * 0.22;       // slight tilt
-        spr.x = sw * (0.03 + Math.random() * 0.94);
+        spr.scale.set(targetH / tex.height);
+        if (Math.random() < 0.5) spr.scale.x *= -1;
+        spr.rotation = (Math.random() - 0.5) * 0.15;
+        spr.x = sw * (zoneX + (Math.random() - 0.5) * 0.07);
+        spr.x = Math.max(spr.width * 0.4, Math.min(sw - spr.width * 0.4, spr.x));
         return spr;
       }
 
-      // ── Foreground rocks: large enough to hide characters
-      const fgCount = Math.max(8, textures.length * 2);
+      // ── Foreground rocks: 6 rocks spread across screen, medium size
+      const fgZones = [0.08, 0.22, 0.38, 0.54, 0.70, 0.88];
       const fgTemp = [];
-      for (let i = 0; i < fgCount; i++) {
+      fgZones.forEach((zone, i) => {
         const tex = textures[i % textures.length];
-        const targetH = sh * (0.20 + Math.random() * 0.28); // 20–48% of screen height
-        const spr = makeRock(tex, targetH);
-        spr.y = sandTopY + sh * 0.015 * Math.random();
+        const targetH = sh * (0.09 + Math.random() * 0.10); // 9–19% of screen height
+        const spr = makeRock(tex, targetH, zone);
+        spr.y = sandTopY + sh * 0.01 * Math.random();
         spr.alpha = 0.92 + Math.random() * 0.08;
         fgTemp.push(spr);
-      }
-      // Sort fg by Y so closer (lower) rocks render on top of further ones
+      });
       fgTemp.sort((a, b) => a.y - b.y);
       fgTemp.forEach(s => { layerRockFg.addChild(s); fgRockSprites.push(s); });
 
-      // ── Background rocks: smaller, depth-scattered
-      const bgCount = Math.max(10, textures.length * 2);
+      // ── Background rocks: 8 rocks, smaller, depth-scattered
+      const bgZones = [0.05, 0.17, 0.30, 0.44, 0.57, 0.70, 0.82, 0.94];
       const bgTemp = [];
-      for (let i = 0; i < bgCount; i++) {
+      bgZones.forEach((zone, i) => {
         const tex = textures[i % textures.length];
         const depthT = Math.random();
-        const targetH = sh * (0.04 + Math.random() * 0.09) * (1 - depthT * 0.4);
-        const spr = makeRock(tex, targetH);
+        const targetH = sh * (0.04 + Math.random() * 0.05) * (1 - depthT * 0.35);
+        const spr = makeRock(tex, targetH, zone);
         spr.y = sandTopY - depthT * depthRange;
-        spr.alpha = 0.45 + Math.random() * 0.4;
+        spr.alpha = 0.5 + Math.random() * 0.35;
         bgTemp.push(spr);
-      }
+      });
       bgTemp.sort((a, b) => a.y - b.y);
       bgTemp.forEach(s => { layerBgRocks.addChild(s); bgRockSprites.push(s); });
     }
