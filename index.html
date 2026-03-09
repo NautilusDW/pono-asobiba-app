@@ -78,7 +78,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 0 16px 40px;
+      padding: 0 16px;
       gap: 16px;
     }
 
@@ -199,6 +199,29 @@
     .lock-unlocked { font-size: 0.88rem; color: #2D7A2D; font-weight: 900; display: none; }
     .lock-error { font-size: 0.75rem; color: #E53E3E; display: none; }
 
+    /* ===== Wave Divider ===== */
+    .wave-divider {
+      align-self: stretch;
+      margin-left: -16px;
+      margin-right: -16px;
+      line-height: 0;
+      margin-bottom: -2px;
+    }
+    .wave-divider svg { width: 100%; display: block; height: 50px; }
+
+    /* ===== Play Section ===== */
+    .play-section {
+      align-self: stretch;
+      margin-left: -16px;
+      margin-right: -16px;
+      padding: 24px 16px 40px;
+      background: #E8F5E9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
     /* ===== Site Heading ===== */
     .site-heading {
       font-size: 2rem;
@@ -208,6 +231,8 @@
       letter-spacing: 0.08em;
       text-align: center;
     }
+    .site-heading::before { content: '🌿 '; }
+    .site-heading::after  { content: ' 🌿'; }
 
     /* ===== Music Toggle ===== */
     .music-row {
@@ -422,6 +447,14 @@
       </div>
     </section>
 
+    <div class="wave-divider">
+      <svg viewBox="0 0 1200 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,30 C300,60 900,0 1200,30 L1200,60 L0,60 Z" fill="#E8F5E9"/>
+      </svg>
+    </div>
+
+    <section class="play-section">
+
     <h1 class="site-heading">ポノのあそびば</h1>
 
     <div class="music-row">
@@ -532,6 +565,8 @@
         当サイトはお客様の個人情報を収集・保存していません。
       </div>
     </footer>
+
+    </section><!-- /play-section -->
 
   </div>
 
