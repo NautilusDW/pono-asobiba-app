@@ -473,7 +473,25 @@
                 }
               }
               cctx.putImageData(cd, 0, 0);
-              results.push(PIXI.Texture.from(cc));
+
+              // Shell detection: warm salmon/peach + fan aspect ratio → size cap
+              // Shells (e.g. scallop) have light warm orange, wider-than-tall shape
+              let rSum=0, gSum=0, bSum=0, px=0;
+              for (let ci=0; ci<cd.data.length; ci+=4) {
+                if (cd.data[ci+3]>100) { rSum+=cd.data[ci]; gSum+=cd.data[ci+1]; bSum+=cd.data[ci+2]; px++; }
+              }
+              const tex = PIXI.Texture.from(cc);
+              if (px > 0) {
+                const ar = cc.width / cc.height;
+                const r=rSum/px, g=gSum/px, b=bSum/px;
+                // Salmon/peach: bright warm, not too deep/dark
+                const isSalmon = r>185 && g>115 && b>80 && r-b>60 && r>g+20;
+                const isFanShaped = ar > 0.95 && ar < 2.2;
+                tex._sizeModifier = (isSalmon && isFanShaped) ? 0.55 : 1.0;
+              } else {
+                tex._sizeModifier = 1.0;
+              }
+              results.push(tex);
             }
           }
           resolve(results);
@@ -496,7 +514,8 @@
       function makeRock(tex, targetH, zoneX) {
         const spr = new PIXI.Sprite(tex);
         spr.anchor.set(0.5, 1.0);
-        spr.scale.set(targetH / tex.height);
+        const sm = tex._sizeModifier || 1.0;  // shell → 0.55, others → 1.0
+        spr.scale.set(targetH * sm / tex.height);
         if (Math.random() < 0.5) spr.scale.x *= -1;
         spr.rotation = (Math.random() - 0.5) * 0.15;
         spr.x = sw * (zoneX + (Math.random() - 0.5) * 0.07);
