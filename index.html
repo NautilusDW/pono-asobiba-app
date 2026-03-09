@@ -301,6 +301,53 @@
       .card-desc     { font-size: 0.7rem; }
     }
 
+    /* ===== Book Banner ===== */
+    .book-banner {
+      width: 100%;
+      max-width: 540px;
+      text-decoration: none;
+      display: block;
+      background: linear-gradient(160deg, #FFF8EE, #FFE8C8);
+      border: 2px solid #E8A04A;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: 0 6px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.8);
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .book-banner:active { transform: translateY(2px); box-shadow: 0 2px 8px var(--shadow); }
+    .book-kids {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-shadow: 1px 1px 0 var(--primary-light);
+    }
+    .book-divider {
+      width: 40px; height: 2px;
+      background: var(--primary-light);
+      margin: 8px auto; border-radius: 2px;
+    }
+    .book-parents {
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--text-light); line-height: 1.5;
+    }
+    .book-cta {
+      display: inline-block;
+      margin-top: 12px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-size: 0.95rem; font-weight: 900;
+      padding: 8px 28px; border-radius: 50px;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 0 #B87200, 0 6px 12px rgba(200,120,0,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .book-banner:active .book-cta {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #B87200, 0 2px 6px rgba(200,120,0,0.2);
+    }
+
     /* ===== Audio Player ===== */
     .audio-section {
       width: 100%;
@@ -398,14 +445,15 @@
 <body>
   <div class="page">
 
-    <header class="header">
-      <img src="assets/images/A+用ヘッダー.jpg" alt="ポノのあそびば" class="header-img">
-      <h1 class="site-title">ポノのあそびば</h1>
-      <p class="site-subtitle">なにして あそぶ？</p>
-    </header>
-
     <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る" style="display:block;width:100%;max-width:540px;">
-      <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" style="width:100%;display:block;border-radius:16px;box-shadow:0 6px 24px rgba(93,78,55,0.18);">
+      <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" style="width:100%;display:block;border-radius:0 0 var(--radius) var(--radius);box-shadow:0 6px 24px rgba(93,78,55,0.18);">
+    </a>
+
+    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-banner" target="_blank" rel="noopener">
+      <div class="book-kids">📖 ポノの おはなしを おうちで よもう！</div>
+      <div class="book-divider"></div>
+      <div class="book-parents">『ありがとう』がもっと好きになる、魔法の絵本はこちら</div>
+      <span class="book-cta">Amazonで見る →</span>
     </a>
 
     <div class="music-row">
