@@ -301,6 +301,18 @@
       .card-desc     { font-size: 0.7rem; }
     }
 
+    /* ===== Hero Video (full bleed) ===== */
+    .video-hero {
+      align-self: stretch;
+      margin-left: -16px;
+      margin-right: -16px;
+      margin-top: -16px;
+    }
+    .video-hero .video-wrap {
+      border-radius: 0;
+      box-shadow: none;
+    }
+
     /* ===== Book Banner ===== */
     .book-banner {
       width: 100%;
@@ -445,8 +457,8 @@
 <body>
   <div class="page">
 
-    <section class="video-section" style="max-width:540px;margin-bottom:0;">
-      <div class="video-wrap" style="border-radius:0 0 0 0;">
+    <section class="video-hero">
+      <div class="video-wrap" style="border-radius:0;">
         <iframe
           src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
