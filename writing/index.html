@@ -1097,6 +1097,11 @@ if (bgmEnabled) {
   });
 }
 updateBgmBtn();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgm.pause(); }
+  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+});
 </script>
 </body>
 </html>

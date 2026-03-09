@@ -948,6 +948,11 @@ if (bgmEnabled) {
 }
 updateBgmBtn();
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgm.pause(); }
+  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+});
+
 // ===== Init =====
 curCols = LEVELS[0].cols;
 curRows = LEVELS[0].rows;

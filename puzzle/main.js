@@ -605,6 +605,11 @@ if (bgmEnabled) {
 }
 updateBgmBtn();
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgm.pause(); }
+  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+});
+
 // ===== Responsive Resize =====
 let resizeTimer = null;
 const resizeObserver = new ResizeObserver(() => {

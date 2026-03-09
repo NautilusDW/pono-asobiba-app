@@ -244,6 +244,7 @@ html, body {
   font-size: 0.65rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
+.gallery-empty.hidden { display: none; }
 .gallery-empty {
   text-align: center; color: #A89585;
   font-size: 0.9rem; padding: 24px 0;
@@ -357,7 +358,7 @@ html, body {
 <div id="galleryOverlay" class="gallery-overlay hidden">
   <div class="gallery-modal">
     <div class="gallery-header">
-      <h2>🖼 ほぞんしたえ</h2>
+      <h2>🎨 ほぞんしたえ</h2>
       <button id="btnGalleryClose" class="gallery-close">✕</button>
     </div>
     <div id="galleryGrid" class="gallery-grid"></div>
@@ -782,6 +783,11 @@ if (bgmEnabled) {
   });
 }
 updateBgmBtn();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgm.pause(); }
+  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+});
 </script>
 </body>
 </html>
