@@ -479,10 +479,11 @@
   <div class="page">
 
     <section class="video-hero">
-      <div class="video-wrap" style="border-radius:0;">
-        <div id="yt-player"></div>
-      </div>
-      <button class="video-mute-btn" id="ytMuteBtn" aria-label="音声オンオフ">🔇</button>
+      <video id="heroVideo" autoplay muted loop playsinline
+        style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">
+        <source src="assets/videos/hero.mp4" type="video/mp4">
+      </video>
+      <button class="video-mute-btn" id="heroMuteBtn" aria-label="音声オンオフ">🔇</button>
     </section>
 
     <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る" style="display:block;width:100%;max-width:540px;">
@@ -624,50 +625,14 @@
   </div>
 
   <script>
-    // ===== YouTube IFrame API (autoplay muted + mute toggle) =====
-    let ytPlayer = null;
-    let ytMuted = true;
+    // ===== Hero Video mute toggle =====
+    const heroVideo = document.getElementById('heroVideo');
+    const heroMuteBtn = document.getElementById('heroMuteBtn');
 
-    window.onYouTubeIframeAPIReady = function() {
-      ytPlayer = new YT.Player('yt-player', {
-        videoId: 'p3pgMOmzMiw',
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          playsinline: 1,
-          rel: 0,
-          loop: 1,
-          playlist: 'p3pgMOmzMiw',
-        },
-        events: {
-          onReady: (e) => {
-            e.target.playVideo();
-            updateMuteBtn();
-          }
-        }
-      });
-    };
-
-    function updateMuteBtn() {
-      document.getElementById('ytMuteBtn').textContent = ytMuted ? '🔇' : '🔊';
-    }
-
-    document.getElementById('ytMuteBtn').addEventListener('click', () => {
-      if (!ytPlayer) return;
-      if (ytMuted) {
-        ytPlayer.unMute();
-        ytPlayer.setVolume(80);
-        ytMuted = false;
-      } else {
-        ytPlayer.mute();
-        ytMuted = true;
-      }
-      updateMuteBtn();
+    heroMuteBtn.addEventListener('click', () => {
+      heroVideo.muted = !heroVideo.muted;
+      heroMuteBtn.textContent = heroVideo.muted ? '🔇' : '🔊';
     });
-
-    const ytScript = document.createElement('script');
-    ytScript.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(ytScript);
 
     // ===== Music Toggle =====
     const toggle = document.getElementById('music-toggle');
