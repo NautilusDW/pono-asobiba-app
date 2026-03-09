@@ -301,38 +301,17 @@
       .card-desc     { font-size: 0.7rem; }
     }
 
-    /* ===== Hero Video (full bleed) ===== */
-    .video-hero {
-      align-self: stretch;
-      margin-left: -16px;
-      margin-right: -16px;
-      margin-top: -16px;
-      position: relative;
+    /* ===== Hero Amazon Image ===== */
+    .hero-amazon {
+      width: 100%;
+      max-width: 540px;
+      display: block;
     }
-    .video-hero .video-wrap {
-      border-radius: 0;
-      box-shadow: none;
+    .hero-amazon img {
+      width: 100%;
+      display: block;
+      border-radius: 0 0 var(--radius) var(--radius);
     }
-    .video-mute-btn {
-      position: absolute;
-      bottom: 12px;
-      right: 12px;
-      z-index: 10;
-      background: rgba(0,0,0,0.55);
-      border: none;
-      border-radius: 50%;
-      width: 42px;
-      height: 42px;
-      font-size: 1.2rem;
-      color: #fff;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-      transition: background 0.2s;
-    }
-    .video-mute-btn:active { background: rgba(0,0,0,0.8); }
 
     /* ===== Book Banner ===== */
     .book-banner {
@@ -478,24 +457,21 @@
 <body>
   <div class="page">
 
-    <section class="video-hero">
-      <video id="heroVideo" autoplay muted loop playsinline
-        style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">
-        <source src="assets/videos/hero.mp4" type="video/mp4">
-      </video>
-      <button class="video-mute-btn" id="heroMuteBtn" aria-label="音声オンオフ">🔇</button>
+    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="hero-amazon" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る">
+      <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中">
+    </a>
+
+    <section class="video-section">
+      <p class="video-label">🎵 ポノのうた みてね！</p>
+      <div class="video-wrap">
+        <iframe
+          src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          title="ポノのうた">
+        </iframe>
+      </div>
     </section>
-
-    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る" style="display:block;width:100%;max-width:540px;">
-      <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" style="width:100%;display:block;box-shadow:0 6px 24px rgba(93,78,55,0.18);">
-    </a>
-
-    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-banner" target="_blank" rel="noopener">
-      <div class="book-kids">📖 ポノの おはなしを おうちで よもう！</div>
-      <div class="book-divider"></div>
-      <div class="book-parents">『ありがとう』がもっと好きになる、魔法の絵本はこちら</div>
-      <span class="book-cta">Amazonで見る →</span>
-    </a>
 
     <div class="music-row">
       <label class="toggle">
@@ -625,15 +601,6 @@
   </div>
 
   <script>
-    // ===== Hero Video mute toggle =====
-    const heroVideo = document.getElementById('heroVideo');
-    const heroMuteBtn = document.getElementById('heroMuteBtn');
-
-    heroMuteBtn.addEventListener('click', () => {
-      heroVideo.muted = !heroVideo.muted;
-      heroMuteBtn.textContent = heroVideo.muted ? '🔇' : '🔊';
-    });
-
     // ===== Music Toggle =====
     const toggle = document.getElementById('music-toggle');
     const label  = document.getElementById('music-label');
