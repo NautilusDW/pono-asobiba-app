@@ -167,6 +167,13 @@
       font-size: 1.1rem; font-weight: 900;
       text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
+    #portrait-overlay .pwa-tip {
+      font-size: 0.72rem; font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 8px 16px;
+      max-width: 260px; line-height: 1.5;
+    }
     @media (pointer: coarse) and (orientation: portrait) {
       #portrait-overlay { display: flex; }
     }
@@ -192,6 +199,9 @@
   <div id="portrait-overlay">
     <div class="rot-icon">📱</div>
     <p>スマホを よこむきに<br>してね！</p>
+    <div class="pwa-tip" id="pwa-tip" style="display:none">
+      iPhoneの場合、Safari の 共有 → 「ホーム画面に追加」すると<br>アドレスバーなしで遊べます
+    </div>
   </div>
   <img id="bg-img" src="../assets/images/ocean/BG_A.png" alt="">
   <canvas id="pixi-canvas"></canvas>
@@ -240,17 +250,38 @@
     window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
 
-    // ─── Fullscreen: タッチ主体デバイスのみ、横向き時に要求 ──────
+    // ─── Fullscreen: スマホのみ ─────────────────────────────────
+    // iOS Safari は document の requestFullscreen が使えないため
+    // スクロールトリックでアドレスバーを隠す。
+    // 根本解決は「ホーム画面に追加」→ iPhoneならpwa-tipを表示
+    const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent);
+    if (isIOS && !navigator.standalone) {
+      // ホーム画面から起動していない → ヒントを表示
+      document.getElementById('pwa-tip').style.display = 'block';
+    }
+
     function tryFullscreen() {
       if (!window.matchMedia('(pointer: coarse)').matches) return;
       const el = document.documentElement;
+      // 標準 API
       if (el.requestFullscreen && !document.fullscreenElement) {
         el.requestFullscreen().catch(() => {});
+        return;
+      }
+      // iOS webkit プレフィックス（効果は限定的）
+      if (el.webkitRequestFullscreen && !document.webkitFullscreenElement) {
+        try { el.webkitRequestFullscreen(); } catch(e) {}
+        return;
+      }
+      // フォールバック: スクロールトリックでアドレスバーを押し上げる
+      if (window.innerWidth > window.innerHeight) {
+        const origH = document.body.style.height;
+        document.body.style.height = (window.screen.height + 1) + 'px';
+        window.scrollTo(0, 1);
+        setTimeout(() => { document.body.style.height = origH; }, 200);
       }
     }
-    // 最初のタップ時
     document.addEventListener('pointerdown', tryFullscreen, { once: true });
-    // 横向きに回転した瞬間にも再リクエスト
     window.addEventListener('resize', () => {
       if (window.innerWidth > window.innerHeight) tryFullscreen();
     });
