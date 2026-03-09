@@ -176,6 +176,18 @@ body {
 }
 .word-card.shake { animation: shake 0.35s; }
 
+.word-card.hover {
+  background: linear-gradient(135deg, #FDE68A, #FBBF24);
+  box-shadow: 0 0 0 2px var(--primary), 0 3px 10px rgba(249,115,22,0.28);
+}
+
+.pic-slot.pic-selected .pic-label {
+  border-color: var(--primary);
+  border-style: solid;
+  background: var(--primary-light);
+  transform: scale(1.04);
+}
+
 
 /* ===== Success Modal ===== */
 .modal-overlay {
@@ -268,7 +280,26 @@ body {
 
 <script>
 // ===== Stage data =====
+// ステージ0-3: ひらがなのみ / ステージ4-7: カタカナ語を含む
 const STAGES = [
+  { name: 'しぜん 🌸', pairs: [
+    { emoji: '🌸', word: 'はな' },
+    { emoji: '🌈', word: 'にじ' },
+    { emoji: '⭐', word: 'ほし' },
+    { emoji: '🌙', word: 'つき' },
+  ]},
+  { name: 'いろ 🌈', pairs: [
+    { emoji: '🔴', word: 'あか' },
+    { emoji: '🔵', word: 'あお' },
+    { emoji: '🟡', word: 'きいろ' },
+    { emoji: '🟢', word: 'みどり' },
+  ]},
+  { name: 'のりもの 🚗', pairs: [
+    { emoji: '🚗', word: 'くるま' },
+    { emoji: '✈️', word: 'ひこうき' },
+    { emoji: '🚢', word: 'ふね' },
+    { emoji: '🚂', word: 'でんしゃ' },
+  ]},
   { name: 'どうぶつ 🐾', pairs: [
     { emoji: '🐻', word: 'くま' },
     { emoji: '🐰', word: 'うさぎ' },
@@ -277,45 +308,27 @@ const STAGES = [
   ]},
   { name: 'くだもの 🍎', pairs: [
     { emoji: '🍎', word: 'りんご' },
-    { emoji: '🍌', word: 'ばなな' },
+    { emoji: '🍌', word: 'バナナ' },
     { emoji: '🍓', word: 'いちご' },
     { emoji: '🍊', word: 'みかん' },
   ]},
-  { name: 'のりもの 🚗', pairs: [
-    { emoji: '🚗', word: 'くるま' },
-    { emoji: '✈️', word: 'ひこうき' },
-    { emoji: '🚢', word: 'ふね' },
-    { emoji: '🚂', word: 'でんしゃ' },
-  ]},
-  { name: 'しぜん 🌸', pairs: [
-    { emoji: '🌸', word: 'はな' },
-    { emoji: '🌈', word: 'にじ' },
-    { emoji: '⭐', word: 'ほし' },
-    { emoji: '🌙', word: 'つき' },
-  ]},
   { name: 'やさい 🥕', pairs: [
     { emoji: '🥕', word: 'にんじん' },
-    { emoji: '🍅', word: 'とまと' },
+    { emoji: '🍅', word: 'トマト' },
     { emoji: '🥒', word: 'きゅうり' },
     { emoji: '🍄', word: 'きのこ' },
   ]},
+  { name: 'どうぶつ2 🦁', pairs: [
+    { emoji: '🦒', word: 'キリン' },
+    { emoji: '🐒', word: 'さる' },
+    { emoji: '🦁', word: 'ライオン' },
+    { emoji: '🐼', word: 'パンダ' },
+  ]},
   { name: 'たべもの 🍚', pairs: [
     { emoji: '🍚', word: 'ごはん' },
-    { emoji: '🍜', word: 'らーめん' },
-    { emoji: '🍞', word: 'ぱん' },
-    { emoji: '🍰', word: 'けーき' },
-  ]},
-  { name: 'どうぶつ2 🦁', pairs: [
-    { emoji: '🦒', word: 'きりん' },
-    { emoji: '🐒', word: 'さる' },
-    { emoji: '🦁', word: 'らいおん' },
-    { emoji: '🐼', word: 'ぱんだ' },
-  ]},
-  { name: 'いろ 🌈', pairs: [
-    { emoji: '🔴', word: 'あか' },
-    { emoji: '🔵', word: 'あお' },
-    { emoji: '🟡', word: 'きいろ' },
-    { emoji: '🟢', word: 'みどり' },
+    { emoji: '🍜', word: 'ラーメン' },
+    { emoji: '🍞', word: 'パン' },
+    { emoji: '🍰', word: 'ケーキ' },
   ]},
 ];
 
@@ -324,6 +337,7 @@ let currentStageNum = 0; // 0-indexed; stages 0-7 = category mode, 8+ = mixed mo
 let shuffledOrder   = []; // shuffled [0..7] — filled at init
 let matchedCount    = 0;
 let selectedCard    = null;
+let selectedPicIdx  = null;
 
 // ===== Shuffle helper =====
 function shuffle(arr) {
@@ -365,6 +379,7 @@ function loadStage(num) {
   currentStageNum = num;
   matchedCount    = 0;
   selectedCard    = null;
+  selectedPicIdx  = null;
   const stage     = getStageData(num);
 
   document.getElementById('stage-name').textContent = stage.name;
@@ -397,31 +412,45 @@ function loadStage(num) {
 }
 
 // ===== Tap to select & place =====
+function clearSelection() {
+  if (selectedCard) {
+    selectedCard.classList.remove('selected');
+    selectedCard = null;
+  }
+  if (selectedPicIdx !== null) {
+    document.querySelectorAll('.pic-slot').forEach(s => s.classList.remove('pic-selected'));
+    selectedPicIdx = null;
+  }
+  document.querySelectorAll('.pic-label').forEach(l => l.classList.remove('hover'));
+  document.querySelectorAll('.word-card').forEach(c => c.classList.remove('hover'));
+}
+
 function setSelectedCard(card) {
-  if (selectedCard) selectedCard.classList.remove('selected');
-  selectedCard = card;
+  clearSelection();
   if (card) {
+    selectedCard = card;
     card.classList.add('selected');
-    // Highlight all unmatched slots as potential targets
     document.querySelectorAll('.pic-label:not(.matched)').forEach(l => l.classList.add('hover'));
-  } else {
-    document.querySelectorAll('.pic-label').forEach(l => l.classList.remove('hover'));
   }
 }
 
-function tryMatch(card, target) {
-  if (parseInt(card.dataset.idx) === parseInt(target.dataset.idx)) {
-    // Correct match!
+function setSelectedPic(slot, idx) {
+  clearSelection();
+  selectedPicIdx = idx;
+  slot.classList.add('pic-selected');
+  document.querySelectorAll('.word-card').forEach(c => c.classList.add('hover'));
+}
+
+function tryMatch(card, label) {
+  clearSelection();
+  if (parseInt(card.dataset.idx) === parseInt(label.dataset.idx)) {
     playCorrect();
-    target.textContent = card.textContent;
-    target.classList.add('matched');
+    label.textContent = card.textContent;
+    label.classList.add('matched');
     card.remove();
     matchedCount++;
-    if (matchedCount === 4) {
-      setTimeout(showStageComplete, 500);
-    }
+    if (matchedCount === 4) setTimeout(showStageComplete, 500);
   } else {
-    // Wrong — shake and stay in tray
     playWrong();
     card.classList.add('shake');
     setTimeout(() => card.classList.remove('shake'), 400);
@@ -429,24 +458,42 @@ function tryMatch(card, target) {
 }
 
 document.addEventListener('click', e => {
-  // Tap a word card → select or deselect
-  const card = e.target.closest('.word-card');
-  if (card) {
-    setSelectedCard(selectedCard === card ? null : card);
-    return;
-  }
-
-  // Tap a pic-label → place selected word
+  const card  = e.target.closest('.word-card');
   const label = e.target.closest('.pic-label:not(.matched)');
-  if (label && selectedCard) {
-    const card = selectedCard;
-    setSelectedCard(null);
-    tryMatch(card, label);
+  const slot  = e.target.closest('.pic-slot');
+
+  if (card) {
+    if (selectedPicIdx !== null) {
+      // 絵を先に選んでいた → マッチ試行
+      const targetLabel = document.querySelector(`.pic-label[data-idx="${selectedPicIdx}"]:not(.matched)`);
+      if (targetLabel) tryMatch(card, targetLabel);
+      else clearSelection();
+    } else {
+      setSelectedCard(selectedCard === card ? null : card);
+    }
     return;
   }
 
-  // Tap elsewhere → deselect
-  setSelectedCard(null);
+  if (label) {
+    if (selectedCard) {
+      // 文字を先に選んでいた → マッチ試行（従来通り）
+      const c = selectedCard;
+      tryMatch(c, label);
+    } else {
+      // 絵を先にタップ → 絵スロットを選択
+      const picSlot = label.closest('.pic-slot');
+      const idx = parseInt(label.dataset.idx);
+      if (selectedPicIdx === idx) {
+        clearSelection();
+      } else {
+        setSelectedPic(picSlot, idx);
+      }
+    }
+    return;
+  }
+
+  // 他の場所をタップ → 選択解除
+  clearSelection();
 });
 
 // ===== Stage complete =====
@@ -555,7 +602,8 @@ function playFanfare() {
 }
 
 // ===== Init =====
-shuffledOrder = shuffle([0, 1, 2, 3, 4, 5, 6, 7]);
+// ひらがなグループ(0-3)とカタカナグループ(4-7)の中でそれぞれシャッフル
+shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
 loadStage(0);
 </script>
 </body>
