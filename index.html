@@ -307,11 +307,32 @@
       margin-left: -16px;
       margin-right: -16px;
       margin-top: -16px;
+      position: relative;
     }
     .video-hero .video-wrap {
       border-radius: 0;
       box-shadow: none;
     }
+    .video-mute-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 10;
+      background: rgba(0,0,0,0.55);
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      font-size: 1.2rem;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s;
+    }
+    .video-mute-btn:active { background: rgba(0,0,0,0.8); }
 
     /* ===== Book Banner ===== */
     .book-banner {
@@ -459,13 +480,9 @@
 
     <section class="video-hero">
       <div class="video-wrap" style="border-radius:0;">
-        <iframe
-          src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          title="ポノのうた">
-        </iframe>
+        <div id="yt-player"></div>
       </div>
+      <button class="video-mute-btn" id="ytMuteBtn" aria-label="音声オンオフ">🔇</button>
     </section>
 
     <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る" style="display:block;width:100%;max-width:540px;">
@@ -607,6 +624,52 @@
   </div>
 
   <script>
+    // ===== YouTube IFrame API (autoplay muted + mute toggle) =====
+    let ytPlayer = null;
+    let ytMuted = true;
+
+    window.onYouTubeIframeAPIReady = function() {
+      ytPlayer = new YT.Player('yt-player', {
+        videoId: 'p3pgMOmzMiw',
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          playsinline: 1,
+          rel: 0,
+          loop: 1,
+          playlist: 'p3pgMOmzMiw',
+        },
+        events: {
+          onReady: (e) => {
+            e.target.playVideo();
+            updateMuteBtn();
+          }
+        }
+      });
+    };
+
+    function updateMuteBtn() {
+      document.getElementById('ytMuteBtn').textContent = ytMuted ? '🔇' : '🔊';
+    }
+
+    document.getElementById('ytMuteBtn').addEventListener('click', () => {
+      if (!ytPlayer) return;
+      if (ytMuted) {
+        ytPlayer.unMute();
+        ytPlayer.setVolume(80);
+        ytMuted = false;
+      } else {
+        ytPlayer.mute();
+        ytMuted = true;
+      }
+      updateMuteBtn();
+    });
+
+    const ytScript = document.createElement('script');
+    ytScript.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(ytScript);
+
+    // ===== Music Toggle =====
     const toggle = document.getElementById('music-toggle');
     const label  = document.getElementById('music-label');
     const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
