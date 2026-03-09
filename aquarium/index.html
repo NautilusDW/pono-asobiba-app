@@ -15,7 +15,7 @@
     html, body {
       width: 100%; height: 100dvh;
       overflow: hidden;
-      background: #0a1a3a;
+      background: url('BG_A.png') center/cover no-repeat #0a1a3a;
       font-family: 'Zen Maru Gothic', sans-serif;
     }
     #pixi-canvas {
@@ -140,6 +140,32 @@
         pointer-events: auto;
       }
     }
+    /* Portrait rotation prompt */
+    #portrait-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0a1a3a;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #fff; font-family: inherit; text-align: center;
+      gap: 16px;
+    }
+    #portrait-overlay .rot-icon {
+      font-size: 4rem;
+      animation: rotpulse 1.5s ease-in-out infinite;
+    }
+    @keyframes rotpulse {
+      0%,100% { transform: rotate(0deg); }
+      40%      { transform: rotate(90deg); }
+      60%      { transform: rotate(90deg); }
+    }
+    #portrait-overlay p {
+      font-size: 1.1rem; font-weight: 900;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    @media (orientation: portrait) {
+      #portrait-overlay { display: flex; }
+    }
     /* Title label */
     #title-label {
       position: fixed;
@@ -159,6 +185,10 @@
   </style>
 </head>
 <body>
+  <div id="portrait-overlay">
+    <div class="rot-icon">📱</div>
+    <p>スマホを よこむきに<br>してね！</p>
+  </div>
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <div id="ui">
@@ -239,7 +269,7 @@
     const app = new PIXI.Application({
       view: canvas,
       resizeTo: window,
-      backgroundColor: 0x0a1a3a,
+      backgroundColor: 0x0a1a3a, backgroundAlpha: 0,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
@@ -257,22 +287,14 @@
     const steerGfx = new PIXI.Graphics();
     layerTop.addChild(steerGfx);
 
-    // ─── Background gradient ───────────────────────────────
+    // ─── Background image ──────────────────────────────────
     function makeBackground() {
       layerBg.removeChildren();
-      const g = new PIXI.Graphics();
-      // Draw gradient via multiple horizontal strips
-      const steps = 40;
-      for (let i = 0; i < steps; i++) {
-        const t = i / steps;
-        const r = Math.round(10 + (26 - 10) * t);
-        const gv = Math.round(26 + (74 - 26) * t);
-        const b = Math.round(58 + (110 - 58) * t);
-        g.beginFill((r << 16) | (gv << 8) | b);
-        g.drawRect(0, (H() / steps) * i, W(), H() / steps + 1);
-        g.endFill();
-      }
-      layerBg.addChild(g);
+      // BG_A.png covers full canvas (transparent canvas shows CSS background behind)
+      const bgTex = PIXI.Texture.from('BG_A.png');
+      const bgSpr = new PIXI.Sprite(bgTex);
+      bgSpr.width = W(); bgSpr.height = H();
+      layerBg.addChild(bgSpr);
 
       // Light rays
       for (let i = 0; i < 5; i++) {
@@ -565,15 +587,13 @@
       obj.y = pattern === 'crawl' ? sandTopY - halfH : startY;
 
       const speed = 0.055 + Math.random() * 0.035;
-      // swim/crawl: right-to-left by default (vx negative)
-      const initVx = (pattern === 'swim' || pattern === 'crawl') ? -speed : (Math.random() < 0.5 ? 1 : -1) * speed;
       const c = {
         obj,
         pattern,
         t: Math.random() * Math.PI * 2,
         baseX: startX,
         baseY: pattern === 'crawl' ? sandTopY - halfH : startY,
-        vx: initVx,
+        vx: (Math.random() < 0.5 ? 1 : -1) * speed,
         vy: (Math.random() - 0.5) * speed * 0.15,
         speed,
         panicTimer: 0,
@@ -581,7 +601,6 @@
         panicVy: 0,
         baseSize,
         halfH,
-        facingRight: true,
         tex,
         wasInPanic: false,
       };
@@ -689,11 +708,6 @@
             c.obj.skew.x = wave * 0.28;
             c.obj.rotation = wave * 0.09;
 
-            // Flip to face direction of travel
-            const absScale = Math.abs(c.obj.scale.x);
-            if (c.vx < 0 && c.facingRight)  { c.facingRight = false; c.obj.scale.x = -absScale; }
-            if (c.vx > 0 && !c.facingRight) { c.facingRight = true;  c.obj.scale.x =  absScale; }
-
             const margin = c.baseSize * 0.6;
             if (c.obj.x > sw + margin) { c.obj.x = -margin; c.baseY = 50 + Math.random() * (sh - 100); }
             if (c.obj.x < -margin)     { c.obj.x = sw + margin; c.baseY = 50 + Math.random() * (sh - 100); }
@@ -724,9 +738,6 @@
             const crawlY = sandTopY - c.halfH + Math.sin(c.t * 2.2) * 3;
             c.obj.y += (crawlY - c.obj.y) * Math.min(0.12 * delta, 1);
             c.obj.rotation = Math.sin(c.t * 2.2) * 0.05;
-            const absS2 = Math.abs(c.obj.scale.x);
-            if (c.vx < 0 && c.facingRight)  { c.facingRight = false; c.obj.scale.x = -absS2; }
-            if (c.vx > 0 && !c.facingRight) { c.facingRight = true;  c.obj.scale.x =  absS2; }
             if (c.obj.x < 30)      { c.vx =  Math.abs(c.vx); c.obj.x = 30; }
             if (c.obj.x > sw - 30) { c.vx = -Math.abs(c.vx); c.obj.x = sw - 30; }
             break;
