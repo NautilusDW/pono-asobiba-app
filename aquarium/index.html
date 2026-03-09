@@ -288,11 +288,13 @@
     const H = () => app.screen.height;
 
     // ─── Containers (layered) ──────────────────────────────
-    const layerBg      = new PIXI.Container(); // gradient + light rays
+    const layerBg      = new PIXI.Container(); // background image + light rays
+    const layerBgRocks = new PIXI.Container(); // rocks behind creatures
     const layerMid     = new PIXI.Container(); // creatures
+    const layerRockFg  = new PIXI.Container(); // rocks in front of creatures (hide behind)
     const layerFg      = new PIXI.Container(); // seaweed, sand, bubbles
     const layerTop     = new PIXI.Container(); // steer arrow UI
-    app.stage.addChild(layerBg, layerMid, layerFg, layerTop);
+    app.stage.addChild(layerBg, layerBgRocks, layerMid, layerRockFg, layerFg, layerTop);
     const steerGfx = new PIXI.Graphics();
     layerTop.addChild(steerGfx);
 
@@ -359,6 +361,151 @@
         sandGfx.moveTo(W() * 0.2, ry);
         sandGfx.bezierCurveTo(W() * 0.35, ry - 4, W() * 0.65, ry + 4, W() * 0.8, ry);
       }
+    }
+
+    // ─── Ocean rocks (extracted from sprite sheet) ─────────
+    let rockTextures = null; // cached after first load
+    const bgRockSprites  = []; // behind creatures
+    const fgRockSprites  = []; // in front of creatures
+
+    // Auto-extract non-white sprites from a sprite sheet (white/transparent bg)
+    function extractSpritesFromSheet(url) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const iw = img.width, ih = img.height;
+          const offscreen = document.createElement('canvas');
+          offscreen.width = iw; offscreen.height = ih;
+          const ctx = offscreen.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const { data } = ctx.getImageData(0, 0, iw, ih);
+
+          const isBg = i => data[i*4+3] < 20
+            || (data[i*4] > 210 && data[i*4+1] > 210 && data[i*4+2] > 210);
+
+          const visited = new Uint8Array(iw * ih);
+          const results = [];
+
+          for (let y = 0; y < ih; y++) {
+            for (let x = 0; x < iw; x++) {
+              const idx = y * iw + x;
+              if (visited[idx] || isBg(idx)) continue;
+
+              // BFS to find connected component
+              const queue = [idx]; visited[idx] = 1;
+              let minX = x, maxX = x, minY = y, maxY = y, head = 0;
+              while (head < queue.length) {
+                const cur = queue[head++];
+                const cx = cur % iw, cy = (cur / iw) | 0;
+                if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+                if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+                for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                  const nx = cx+dx, ny = cy+dy;
+                  if (nx<0||nx>=iw||ny<0||ny>=ih) continue;
+                  const ni = ny*iw+nx;
+                  if (!visited[ni] && !isBg(ni)) { visited[ni]=1; queue.push(ni); }
+                }
+              }
+              const w = maxX-minX+1, h = maxY-minY+1;
+              if (w < 18 || h < 18) continue; // skip tiny noise
+
+              // Crop element with edge flood-fill to remove white bg
+              const pad = 3;
+              const cc = document.createElement('canvas');
+              cc.width = w+pad*2; cc.height = h+pad*2;
+              const cctx = cc.getContext('2d');
+              cctx.drawImage(offscreen, minX-pad, minY-pad, w+pad*2, h+pad*2,
+                                        0, 0, w+pad*2, h+pad*2);
+              // Edge flood-fill: erase near-white pixels from all 4 edges
+              const cd = cctx.getImageData(0, 0, cc.width, cc.height);
+              const cw = cc.width, ch = cc.height;
+              const cdData = cd.data;
+              const eraseQueue = [];
+              const eraseVisited = new Uint8Array(cw * ch);
+              const nearWhite = i4 => cdData[i4]>200 && cdData[i4+1]>200 && cdData[i4+2]>200 && cdData[i4+3]>20;
+              const edgePixels = [];
+              for (let ex = 0; ex < cw; ex++) { edgePixels.push(ex, 0); edgePixels.push(ex, ch-1); }
+              for (let ey = 0; ey < ch; ey++) { edgePixels.push(0, ey); edgePixels.push(cw-1, ey); }
+              for (let ei = 0; ei < edgePixels.length; ei += 2) {
+                const ex = edgePixels[ei], ey = edgePixels[ei+1];
+                const eidx = ey*cw+ex;
+                if (!eraseVisited[eidx] && nearWhite(eidx*4)) { eraseVisited[eidx]=1; eraseQueue.push(eidx); }
+              }
+              let eq = 0;
+              while (eq < eraseQueue.length) {
+                const cur = eraseQueue[eq++];
+                cdData[cur*4+3] = 0;
+                const cx2 = cur%cw, cy2 = (cur/cw)|0;
+                for (const [dx2,dy2] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                  const nx2=cx2+dx2, ny2=cy2+dy2;
+                  if (nx2<0||nx2>=cw||ny2<0||ny2>=ch) continue;
+                  const ni2=ny2*cw+nx2;
+                  if (!eraseVisited[ni2] && nearWhite(ni2*4)) { eraseVisited[ni2]=1; eraseQueue.push(ni2); }
+                }
+              }
+              cctx.putImageData(cd, 0, 0);
+              results.push(PIXI.Texture.from(cc));
+            }
+          }
+          resolve(results);
+        };
+        img.onerror = () => resolve([]);
+        img.src = url;
+      });
+    }
+
+    function placeRocks(textures) {
+      // Clear existing
+      bgRockSprites.forEach(s => layerBgRocks.removeChild(s));
+      fgRockSprites.forEach(s => layerRockFg.removeChild(s));
+      bgRockSprites.length = 0; fgRockSprites.length = 0;
+      if (!textures || !textures.length) return;
+
+      const sw = W(), sh = H();
+      const baseScale = sh * 0.00065; // scale relative to screen height
+
+      // Sort by area: larger → background, smaller → foreground
+      const sorted = [...textures].sort((a,b) => (b.width*b.height)-(a.width*a.height));
+      const bgCount = Math.ceil(sorted.length * 0.5);
+
+      sorted.forEach((tex, i) => {
+        const isFg = i >= bgCount;
+        const layer = isFg ? layerRockFg : layerBgRocks;
+        const arr   = isFg ? fgRockSprites : bgRockSprites;
+
+        const spr = new PIXI.Sprite(tex);
+        spr.anchor.set(0.5, 1.0); // bottom-center anchor
+        const scaleMult = isFg ? (0.9 + Math.random()*0.4) : (0.55 + Math.random()*0.35);
+        const sc = baseScale * scaleMult * (300 / Math.max(tex.width, tex.height));
+        spr.scale.set(sc);
+
+        // Scatter horizontally; cluster at edges + center for natural look
+        const zones = [0.08, 0.22, 0.38, 0.55, 0.68, 0.80, 0.92];
+        const zone = zones[i % zones.length] + (Math.random()-0.5)*0.07;
+        spr.x = sw * zone;
+        spr.y = sandTopY + spr.height * 0.12; // slightly embedded in sand
+
+        spr.alpha = isFg ? 1.0 : 0.75;
+        layer.addChild(spr);
+        arr.push(spr);
+      });
+    }
+
+    async function initRocks() {
+      if (!rockTextures) rockTextures = await extractSpritesFromSheet('../assets/images/ocean/OceanRocks.png');
+      placeRocks(rockTextures);
+    }
+
+    function repositionRocks() {
+      if (!rockTextures) return;
+      const sw = W();
+      const allRocks = [...bgRockSprites, ...fgRockSprites];
+      const zones = [0.08, 0.22, 0.38, 0.55, 0.68, 0.80, 0.92];
+      allRocks.forEach((spr, i) => {
+        const zone = zones[i % zones.length] + (Math.random()-0.5)*0.07;
+        spr.x = sw * zone;
+        spr.y = sandTopY + spr.height * 0.12;
+      });
     }
 
     // ─── Bubbles ───────────────────────────────────────────
@@ -919,6 +1066,7 @@
         makeBackground();
         drawSand(); // updates sandTopY
         makeSeaweeds();
+        repositionRocks();
         const safeH = H() * 0.80;
         creatures.forEach(c => {
           if (c.pattern === 'crawl') {
@@ -941,6 +1089,7 @@
       makeBackground();
       drawSand();
       makeSeaweeds();
+      initRocks();
       showSelectionScreen();
     });
 
