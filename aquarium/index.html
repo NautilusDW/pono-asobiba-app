@@ -473,38 +473,82 @@
         return spr;
       }
 
-      // ── Foreground rocks: 6 rocks spread across screen, medium size
-      const fgZones = [0.08, 0.22, 0.38, 0.54, 0.70, 0.88];
+      // Shuffle helper
+      const shuffle = arr => { for (let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; };
+
+      // ── Foreground rocks: 2-3 clusters + 1-2 isolated
       const fgTemp = [];
-      fgZones.forEach((zone, i) => {
-        const tex = textures[i % textures.length];
-        const targetH = sh * (0.13 + Math.random() * 0.14); // 13–27% of screen height
-        const spr = makeRock(tex, targetH, zone);
-        spr.y = sandTopY + sh * 0.01 * Math.random();
-        spr.alpha = 0.92 + Math.random() * 0.08;
-        fgTemp.push(spr);
+      const numClusters = 2 + Math.floor(Math.random() * 2); // 2 or 3 clusters
+      // Pick cluster centers at irregular positions (shuffled candidates)
+      const candidates = [0.10, 0.22, 0.38, 0.52, 0.65, 0.80];
+      shuffle(candidates);
+      const clusterCenters = candidates.slice(0, numClusters).sort((a,b)=>a-b);
+
+      clusterCenters.forEach(cx => {
+        const count = 2 + Math.floor(Math.random() * 2); // 2-3 per cluster
+        // Pick a random starting index so clusters use textures from different parts
+        const offset = Math.floor(Math.random() * textures.length);
+        for (let j = 0; j < count; j++) {
+          const tex = textures[(offset + j) % textures.length];
+          const targetH = sh * (0.15 + Math.random() * 0.15); // 15-30%
+          const spread = (j - (count-1)/2) * 0.07 + (Math.random()-0.5)*0.04;
+          const spr = makeRock(tex, targetH, cx + spread);
+          spr.y = sandTopY + sh * 0.012 * Math.random();
+          spr.alpha = 0.92 + Math.random() * 0.08;
+          fgTemp.push(spr);
+        }
       });
+      // 1-2 isolated rocks in gaps
+      for (let k = 0; k < 1 + Math.floor(Math.random()*2); k++) {
+        const tex = textures[Math.floor(Math.random() * textures.length)];
+        const targetH = sh * (0.11 + Math.random() * 0.10); // smaller isolated
+        const isolatedX = 0.05 + Math.random() * 0.90;
+        const spr = makeRock(tex, targetH, isolatedX);
+        spr.y = sandTopY + sh * 0.008 * Math.random();
+        spr.alpha = 0.88 + Math.random() * 0.12;
+        fgTemp.push(spr);
+      }
       fgTemp.sort((a, b) => a.y - b.y);
       fgTemp.forEach(s => { layerRockFg.addChild(s); fgRockSprites.push(s); });
 
-      // ── Background rocks: 8 rocks, smaller, depth-scattered
-      const bgZones = [0.05, 0.17, 0.30, 0.44, 0.57, 0.70, 0.82, 0.94];
+      // ── Background rocks: 2 clusters + scattered fill
       const bgTemp = [];
-      bgZones.forEach((zone, i) => {
-        const tex = textures[i % textures.length];
-        const depthT = Math.random();
-        const targetH = sh * (0.05 + Math.random() * 0.07) * (1 - depthT * 0.35);
-        const spr = makeRock(tex, targetH, zone);
-        spr.y = sandTopY - depthT * depthRange;
-        spr.alpha = 0.5 + Math.random() * 0.35;
-        bgTemp.push(spr);
+      const bgClusterCenters = shuffle([0.15, 0.35, 0.55, 0.72, 0.88]).slice(0, 2);
+      bgClusterCenters.forEach(cx => {
+        const count = 2 + Math.floor(Math.random() * 2);
+        for (let j = 0; j < count; j++) {
+          const tex = textures[Math.floor(Math.random() * textures.length)];
+          const depthT = 0.3 + Math.random() * 0.7;
+          const targetH = sh * (0.06 + Math.random() * 0.07) * (1 - depthT * 0.35);
+          const spread = (j - (count-1)/2) * 0.06 + (Math.random()-0.5)*0.03;
+          const spr = makeRock(tex, targetH, cx + spread);
+          spr.y = sandTopY - depthT * depthRange;
+          spr.alpha = 0.45 + Math.random() * 0.4;
+          bgTemp.push(spr);
+        }
       });
+      // scattered fill
+      for (let k = 0; k < 4; k++) {
+        const tex = textures[Math.floor(Math.random() * textures.length)];
+        const depthT = Math.random();
+        const targetH = sh * (0.04 + Math.random() * 0.05) * (1 - depthT * 0.35);
+        const spr = makeRock(tex, targetH, 0.05 + Math.random() * 0.90);
+        spr.y = sandTopY - depthT * depthRange;
+        spr.alpha = 0.4 + Math.random() * 0.35;
+        bgTemp.push(spr);
+      }
       bgTemp.sort((a, b) => a.y - b.y);
       bgTemp.forEach(s => { layerBgRocks.addChild(s); bgRockSprites.push(s); });
     }
 
     async function initRocks() {
-      if (!rockTextures) rockTextures = await extractSpritesFromSheet('../assets/images/ocean/OceanRocks.png');
+      if (!rockTextures) {
+        const [t1, t2] = await Promise.all([
+          extractSpritesFromSheet('../assets/images/ocean/OceanRocks.png'),
+          extractSpritesFromSheet('../assets/images/ocean/OceanRocks2.png'),
+        ]);
+        rockTextures = [...t1, ...t2];
+      }
       placeRocks(rockTextures);
     }
 
