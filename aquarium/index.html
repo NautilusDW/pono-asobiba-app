@@ -246,11 +246,16 @@
     const W = () => app.screen.width;
     const H = () => app.screen.height;
 
+    const SWIM_COLS = 10; // columns for SimplePlane body-wave distortion
+
     // ─── Containers (layered) ──────────────────────────────
     const layerBg      = new PIXI.Container(); // gradient + light rays
     const layerMid     = new PIXI.Container(); // creatures
     const layerFg      = new PIXI.Container(); // seaweed, sand, bubbles
-    app.stage.addChild(layerBg, layerMid, layerFg);
+    const layerTop     = new PIXI.Container(); // steer arrow UI
+    app.stage.addChild(layerBg, layerMid, layerFg, layerTop);
+    const steerGfx = new PIXI.Graphics();
+    layerTop.addChild(steerGfx);
 
     // ─── Background gradient ───────────────────────────────
     function makeBackground() {
@@ -602,12 +607,30 @@
 
     // canvas: HTMLCanvasElement (dimensions always available synchronously)
     function createCreatureWithPattern(canvas, pattern) {
-      // PIXI.Texture.from(canvas) reads width/height immediately — no async issue
       const tex = PIXI.Texture.from(canvas);
       const baseSize = 130 + Math.random() * 60;
+      const s = baseSize / Math.max(canvas.width, canvas.height, 1);
+      const halfH = (canvas.height * s) * 0.5;
 
-      const obj = new PIXI.Sprite(tex);
-      obj.anchor.set(0.5);
+      // swim: SimplePlane inside a Container for body-wave distortion
+      // other: plain Sprite
+      let obj, swimPlane = null, planeLocalW = 0, planeLocalH = 0;
+      if (pattern === 'swim') {
+        const plane = new PIXI.SimplePlane(tex, SWIM_COLS, 1);
+        planeLocalW = canvas.width;
+        planeLocalH = canvas.height;
+        const cont = new PIXI.Container();
+        plane.x = -planeLocalW / 2;
+        plane.y = -planeLocalH / 2;
+        cont.addChild(plane);
+        cont.scale.set(s);
+        obj = cont;
+        swimPlane = plane;
+      } else {
+        obj = new PIXI.Sprite(tex);
+        obj.anchor.set(0.5);
+        obj.scale.set(s);
+      }
 
       const safeBottom = H() * 0.78;
       const margin = baseSize * 0.6;
@@ -615,21 +638,9 @@
       const startY = margin + Math.random() * Math.max(safeBottom - margin * 2, 1);
 
       obj.x = startX;
-      obj.y = startY;
+      obj.y = pattern === 'crawl' ? sandTopY - halfH : startY;
 
-      // Scale: canvas dimensions are available immediately
-      const s = baseSize / Math.max(canvas.width, canvas.height, 1);
-      obj.scale.set(s);
-      // halfH: rendered half-height (used by crawl for ground-snapping)
-      const halfH = (canvas.height * s) * 0.5;
-
-      // For crawl: start on the sand surface
-      if (pattern === 'crawl') {
-        obj.y = sandTopY - halfH;
-      }
-
-      // Speed stored as fraction of W() per second — consistent across screen sizes
-      const speed = 0.055 + Math.random() * 0.035; // 5.5–9% of screen width/s
+      const speed = 0.055 + Math.random() * 0.035;
       const c = {
         obj,
         pattern,
@@ -640,12 +651,16 @@
         vy: (Math.random() - 0.5) * speed * 0.15,
         speed,
         panicTimer: 0,
-        panicVx: 0,  // fraction of W per second
-        panicVy: 0,  // fraction of H per second
+        panicVx: 0,
+        panicVy: 0,
         baseSize,
         halfH,
         facingRight: true,
         tex,
+        swimPlane,
+        planeLocalW,
+        planeLocalH,
+        wasInPanic: false,
       };
 
       layerMid.addChild(obj);
@@ -716,36 +731,59 @@
 
         // ── Panic: burst then rapid water-resistance deceleration ──
         if (c.panicTimer > 0) {
+          c.wasInPanic = true;
           c.panicTimer -= delta;
-          // Faster drag: velocity ~80% gone in 0.5s → fish-escaping feel
           const drag = Math.pow(0.86, delta);
           c.panicVx *= drag;
           c.panicVy *= drag;
           c.obj.x += c.panicVx * sw * DT;
           c.obj.y += c.panicVy * sh * DT;
-          // Soft wall bounce
           if (c.obj.x < 30)      { c.panicVx =  Math.abs(c.panicVx) * 0.6; c.obj.x = 30; }
           if (c.obj.x > sw - 30) { c.panicVx = -Math.abs(c.panicVx) * 0.6; c.obj.x = sw - 30; }
           if (c.obj.y < 30)      { c.panicVy =  Math.abs(c.panicVy) * 0.6; c.obj.y = 30; }
           if (c.obj.y > sh - 10) { c.panicVy = -Math.abs(c.panicVy) * 0.6; c.obj.y = sh - 10; }
           return;
         }
+        // ── Panic recovery: update baseY to current pos so no warp ──
+        if (c.wasInPanic) {
+          c.wasInPanic = false;
+          const waveAmp = sh * 0.06;
+          if (c.pattern === 'swim')  c.baseY = Math.max(50, Math.min(c.obj.y - Math.sin(c.t * 0.55) * waveAmp, sh * 0.72));
+          if (c.pattern === 'float') c.baseY = Math.max(50, Math.min(c.obj.y - Math.sin(c.t * 0.6) * sh * 0.04, sh * 0.72));
+          if (c.pattern === 'wander') { c.baseX = c.obj.x; c.baseY = c.obj.y; }
+        }
 
         switch (c.pattern) {
           case 'swim': {
-            // Steady horizontal swim with gentle sine-wave vertical drift
-            // vx is fraction of W per second → consistent visual speed on any screen
             c.obj.x += c.vx * sw * DT;
-            const waveAmp = sh * 0.06; // 6% of safe height
-            c.obj.y = c.baseY + Math.sin(c.t * 0.55) * waveAmp;
-            c.obj.rotation = Math.sin(c.t * 0.55) * 0.14;
+            const waveAmp = sh * 0.06;
+            // Lerp toward target Y — no sudden jump
+            const targetY = c.baseY + Math.sin(c.t * 0.55) * waveAmp;
+            c.obj.y += (targetY - c.obj.y) * Math.min(0.04 * delta, 1);
+            c.obj.rotation = Math.sin(c.t * 0.55) * 0.12;
 
-            // Flip to face direction
+            // Body-wave distortion via SimplePlane vertex manipulation
+            if (c.swimPlane) {
+              const buf = c.swimPlane.geometry.buffers[0];
+              const d = buf.data;
+              const lh = c.planeLocalH;
+              for (let i = 0; i <= SWIM_COLS; i++) {
+                // Reverse column index when facing left so tail always wags more
+                const col = c.facingRight ? i : (SWIM_COLS - i);
+                const tail = Math.pow(col / SWIM_COLS, 0.8);
+                const wy = Math.sin(c.t * 4 + col * 0.55) * lh * 0.22 * tail;
+                // Each column: top vertex y = i*4+1, bottom vertex y = i*4+3
+                d[i * 4 + 1] = wy;
+                d[i * 4 + 3] = lh + wy;
+              }
+              buf.update();
+            }
+
+            // Flip to face direction of travel
             const absScale = Math.abs(c.obj.scale.x);
             if (c.vx < 0 && c.facingRight)  { c.facingRight = false; c.obj.scale.x = -absScale; }
             if (c.vx > 0 && !c.facingRight) { c.facingRight = true;  c.obj.scale.x =  absScale; }
 
-            // Screen wrap (off-screen → reappear opposite side)
             const margin = c.baseSize * 0.6;
             if (c.obj.x > sw + margin) { c.obj.x = -margin; c.baseY = 50 + Math.random() * (sh - 100); }
             if (c.obj.x < -margin)     { c.obj.x = sw + margin; c.baseY = 50 + Math.random() * (sh - 100); }
@@ -822,29 +860,7 @@
       });
     });
 
-    // ─── Tap/click → panic nearby creatures ────────────────
-    app.stage.interactive = true;
-    app.stage.hitArea = new PIXI.Rectangle(0, 0, 9999, 9999);
-    app.stage.on('pointerdown', (e) => {
-      tryStartBgm();
-      const px = e.global.x, py = e.global.y;
-      const tapRadius = Math.min(W(), H()) * 0.30;
-      creatures.forEach(c => {
-        const dx = c.obj.x - px;
-        const dy = c.obj.y - py;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < tapRadius) {
-          const angle = Math.atan2(dy, dx);
-          // High initial burst (70–90% of W per second) → rapid drag brings it to rest
-          const spd = 0.70 + Math.random() * 0.20;
-          c.panicTimer = 70 + Math.random() * 20;
-          c.panicVx = Math.cos(angle) * spd;
-          c.panicVy = Math.sin(angle) * spd * 0.6;
-        }
-      });
-    });
-
-    // ─── Landscape UI toggle ────────────────────────────────
+    // ─── Landscape UI toggle ───────────────────────────────
     const uiEl = document.getElementById('ui');
     let uiHideTimer = null;
     function showUiTemporarily() {
@@ -852,11 +868,91 @@
       clearTimeout(uiHideTimer);
       uiHideTimer = setTimeout(() => uiEl.classList.remove('ui-visible'), 3000);
     }
-    // Bottom-of-screen tap in landscape → show UI for 3 s
-    window.addEventListener('pointerdown', (e) => {
-      if (window.innerWidth > window.innerHeight && e.clientY > window.innerHeight * 0.65) {
-        showUiTemporarily();
+
+    // ─── Pointer: tap = panic, hold 400ms = steer direction ─
+    let holdTimerId = null, holdCreature = null, steeringMode = false;
+    const tapRadius = () => Math.min(W(), H()) * 0.35;
+
+    function findNearest(px, py) {
+      let best = null, bestDist = Infinity;
+      const r = tapRadius();
+      creatures.forEach(c => {
+        const dx = c.obj.x - px, dy = c.obj.y - py;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < r && d < bestDist) { best = c; bestDist = d; }
+      });
+      return best;
+    }
+
+    app.stage.interactive = true;
+    app.stage.hitArea = new PIXI.Rectangle(0, 0, 9999, 9999);
+
+    app.stage.on('pointerdown', (e) => {
+      tryStartBgm();
+      const px = e.global.x, py = e.global.y;
+      // Landscape bottom tap → show UI
+      if (window.innerWidth > window.innerHeight && py > H() * 0.65) showUiTemporarily();
+      holdCreature = findNearest(px, py);
+      steeringMode = false;
+      clearTimeout(holdTimerId);
+      if (holdCreature) {
+        holdTimerId = setTimeout(() => { steeringMode = true; }, 400);
       }
+    });
+
+    app.stage.on('pointermove', (e) => {
+      if (!steeringMode || !holdCreature) return;
+      const px = e.global.x, py = e.global.y;
+      const cx = holdCreature.obj.x, cy = holdCreature.obj.y;
+      const dx = px - cx, dy = py - cy;
+      const angle = Math.atan2(dy, dx);
+      const arrowLen = Math.min(Math.sqrt(dx*dx + dy*dy), W() * 0.22);
+      const ex = cx + Math.cos(angle) * arrowLen;
+      const ey = cy + Math.sin(angle) * arrowLen;
+      steerGfx.clear();
+      steerGfx.lineStyle(2.5, 0x38bdf8, 0.7);
+      steerGfx.drawCircle(cx, cy, holdCreature.baseSize * 0.55);
+      steerGfx.lineStyle(3.5, 0x38bdf8, 0.9);
+      steerGfx.moveTo(cx, cy);
+      steerGfx.lineTo(ex, ey);
+      const hs = 16;
+      steerGfx.moveTo(ex, ey);
+      steerGfx.lineTo(ex - Math.cos(angle - 0.42) * hs, ey - Math.sin(angle - 0.42) * hs);
+      steerGfx.moveTo(ex, ey);
+      steerGfx.lineTo(ex - Math.cos(angle + 0.42) * hs, ey - Math.sin(angle + 0.42) * hs);
+    });
+
+    app.stage.on('pointerup', (e) => {
+      clearTimeout(holdTimerId);
+      steerGfx.clear();
+      const px = e.global.x, py = e.global.y;
+      if (steeringMode && holdCreature) {
+        // Apply steering direction
+        const dx = px - holdCreature.obj.x, dy = py - holdCreature.obj.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 25) {
+          holdCreature.vx = (dx / dist) * holdCreature.speed;
+          holdCreature.vy = (dy / dist) * holdCreature.speed * 0.4;
+          holdCreature.baseY = holdCreature.obj.y;
+          holdCreature.baseX = holdCreature.obj.x;
+          holdCreature.panicTimer = 0; // cancel any panic
+        }
+      } else {
+        // Quick tap → panic all within radius
+        const r = tapRadius();
+        creatures.forEach(c => {
+          const dx = c.obj.x - px, dy = c.obj.y - py;
+          if (Math.sqrt(dx*dx + dy*dy) < r) {
+            const angle = Math.atan2(dy, dx);
+            const spd = 0.70 + Math.random() * 0.20;
+            c.panicTimer = 70 + Math.random() * 20;
+            c.panicVx = Math.cos(angle) * spd;
+            c.panicVy = Math.sin(angle) * spd * 0.6;
+          }
+        });
+      }
+      steeringMode = false;
+      holdCreature = null;
     });
 
     // ─── Resize handling ───────────────────────────────────
