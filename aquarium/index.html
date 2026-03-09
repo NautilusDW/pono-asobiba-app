@@ -248,8 +248,6 @@
     const W = () => app.screen.width;
     const H = () => app.screen.height;
 
-    const SWIM_COLS = 10; // columns for SimplePlane body-wave distortion
-
     // ─── Containers (layered) ──────────────────────────────
     const layerBg      = new PIXI.Container(); // gradient + light rays
     const layerMid     = new PIXI.Container(); // creatures
@@ -524,67 +522,6 @@
       canvases.forEach((cv, i) => createCreatureWithPattern(cv, chosen[i].pattern));
     });
 
-    function createCreature(dataUrl, idx, total) {
-      const tex = PIXI.Texture.from(dataUrl);
-      const pattern = PATTERNS[idx % PATTERNS.length];
-
-      // Base size: ~80-120px, keeping aspect ratio
-      const baseSize = 90 + Math.random() * 40;
-
-      let obj;
-
-      if (pattern === 'swim') {
-        // SimplePlane for body warp
-        const plane = new PIXI.SimplePlane(tex, 8, 1);
-        plane.width  = baseSize;
-        plane.height = baseSize * 0.65;
-        plane.anchor && (plane.anchor.set(0.5));
-        obj = plane;
-      } else {
-        obj = new PIXI.Sprite(tex);
-        obj.anchor.set(0.5);
-        const scale = baseSize / Math.max(tex.width || 256, tex.height || 256);
-        obj.scale.set(scale);
-      }
-
-      // Safe zone: avoid bottom sand area
-      const safeBottom = H() * 0.80;
-      const margin = baseSize * 0.6;
-      const startX = margin + Math.random() * (W() - margin * 2);
-      const startY = margin + Math.random() * (safeBottom - margin * 2);
-
-      obj.x = startX;
-      obj.y = startY;
-
-      const speed = 0.4 + Math.random() * 0.6;
-      const state = {
-        obj,
-        pattern,
-        t: Math.random() * Math.PI * 2,
-        baseX: startX,
-        baseY: startY,
-        vx: (Math.random() < 0.5 ? 1 : -1) * speed,
-        vy: (Math.random() - 0.5) * speed * 0.3,
-        speed,
-        panicTimer: 0,
-        panicVx: 0,
-        panicVy: 0,
-        baseSize,
-        // For swim: store original vertex X positions
-        origVertX: null,
-        facingRight: true,
-      };
-
-      // Init swim vertex origins
-      if (pattern === 'swim') {
-        // Wait until geometry is ready
-        state._initSwim = true;
-      }
-
-      layerMid.addChild(obj);
-      creatures.push(state);
-    }
-
     async function initAllCreatures() {
       // Clear existing
       creatures.forEach(c => layerMid.removeChild(c.obj));
@@ -614,25 +551,10 @@
       const s = baseSize / Math.max(canvas.width, canvas.height, 1);
       const halfH = (canvas.height * s) * 0.5;
 
-      // swim: SimplePlane inside a Container for body-wave distortion
-      // other: plain Sprite
-      let obj, swimPlane = null, planeLocalW = 0, planeLocalH = 0;
-      if (pattern === 'swim') {
-        const plane = new PIXI.SimplePlane(tex, SWIM_COLS, 1);
-        planeLocalW = canvas.width;
-        planeLocalH = canvas.height;
-        const cont = new PIXI.Container();
-        plane.x = -planeLocalW / 2;
-        plane.y = -planeLocalH / 2;
-        cont.addChild(plane);
-        cont.scale.set(s);
-        obj = cont;
-        swimPlane = plane;
-      } else {
-        obj = new PIXI.Sprite(tex);
-        obj.anchor.set(0.5);
-        obj.scale.set(s);
-      }
+      // All patterns use Sprite. swim uses skew oscillation for body-wave effect.
+      const obj = new PIXI.Sprite(tex);
+      obj.anchor.set(0.5);
+      obj.scale.set(s);
 
       const safeBottom = H() * 0.78;
       const margin = baseSize * 0.6;
@@ -659,9 +581,6 @@
         halfH,
         facingRight: true,
         tex,
-        swimPlane,
-        planeLocalW,
-        planeLocalH,
         wasInPanic: false,
       };
 
@@ -759,28 +678,14 @@
           case 'swim': {
             c.obj.x += c.vx * sw * DT;
             const waveAmp = sh * 0.06;
-            // Lerp toward target Y — no sudden jump
+            // Lerp toward target Y — no sudden jump after panic
             const targetY = c.baseY + Math.sin(c.t * 0.55) * waveAmp;
             c.obj.y += (targetY - c.obj.y) * Math.min(0.04 * delta, 1);
-            c.obj.rotation = Math.sin(c.t * 0.55) * 0.12;
 
-            // Body-wave distortion via SimplePlane vertex manipulation
-            // PlaneGeometry (row-major): vertex(row r, col c) flat idx = r*(SWIM_COLS+1)+c
-            // Top (r=0) col i → y at d[i*2+1]
-            // Bottom (r=1) col i → y at d[(SWIM_COLS+1+i)*2+1]
-            if (c.swimPlane) {
-              const buf = c.swimPlane.geometry.buffers[0];
-              const d = buf.data;
-              const lh = c.planeLocalH;
-              for (let i = 0; i <= SWIM_COLS; i++) {
-                const col = c.facingRight ? i : (SWIM_COLS - i);
-                const tail = Math.pow(col / SWIM_COLS, 0.8);
-                const wy = Math.sin(c.t * 4 + col * 0.55) * lh * 0.22 * tail;
-                d[i * 2 + 1] = wy;                          // top row y
-                d[(SWIM_COLS + 1 + i) * 2 + 1] = lh + wy;  // bottom row y
-              }
-              buf.update();
-            }
+            // Body-wave: skew + rotation oscillation (reliable, no mesh needed)
+            const wave = Math.sin(c.t * 3.8);
+            c.obj.skew.x = wave * 0.28;
+            c.obj.rotation = wave * 0.09;
 
             // Flip to face direction of travel
             const absScale = Math.abs(c.obj.scale.x);
