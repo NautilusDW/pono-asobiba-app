@@ -233,7 +233,8 @@
     // Default emoji textures if no drawings
     const DEFAULT_EMOJIS = ['🐠', '🐙', '🦀', '🐟', '🦑', '🐡'];
 
-    function emojiToDataUrl(emoji, size) {
+    // Returns an HTMLCanvasElement (not a data URL) so PixiJS can read dimensions immediately
+    function emojiToCanvas(emoji, size) {
       const cv = document.createElement('canvas');
       cv.width = size; cv.height = size;
       const ctx = cv.getContext('2d');
@@ -241,7 +242,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(emoji, size / 2, size / 2);
-      return cv.toDataURL();
+      return cv;
     }
 
     // Load drawings from localStorage
@@ -296,9 +297,15 @@
           }
 
           ctx.putImageData(id, 0, 0);
-          resolve(cv.toDataURL('image/png'));
+          resolve(cv); // resolve with canvas element (dimensions immediately available)
         };
-        img.onerror = () => resolve(dataUrl);
+        img.onerror = () => {
+          // Fallback: return original as canvas
+          const cv2 = document.createElement('canvas');
+          cv2.width = img.width || 256; cv2.height = img.height || 256;
+          cv2.getContext('2d').drawImage(img, 0, 0);
+          resolve(cv2);
+        };
         img.src = dataUrl;
       });
     }
@@ -374,27 +381,27 @@
 
       const rawUrls = getDrawingDataUrls();
       if (rawUrls && rawUrls.length > 0) {
-        // Strip white background from JPEG drawings
-        const dataUrls = await Promise.all(rawUrls.map(u => removeWhiteBg(u)));
+        // Process drawings: remove white/black background → resolve as canvas
+        const canvases = await Promise.all(rawUrls.map(u => removeWhiteBg(u)));
         const shuffled = [...PATTERNS].sort(() => Math.random() - 0.5);
-        dataUrls.forEach((url, i) => {
+        canvases.forEach((cv, i) => {
           const patIdx = i % PATTERNS.length;
-          createCreatureWithPattern(url, shuffled[patIdx] || PATTERNS[patIdx]);
+          createCreatureWithPattern(cv, shuffled[patIdx] || PATTERNS[patIdx]);
         });
       } else {
-        // Use default emojis (no white bg removal needed)
+        // Default emoji canvases — dimensions known immediately
         DEFAULT_EMOJIS.forEach((emoji, i) => {
-          const url = emojiToDataUrl(emoji, 128);
-          createCreatureWithPattern(url, PATTERNS[i % PATTERNS.length]);
+          createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
       }
     }
 
-    function createCreatureWithPattern(dataUrl, pattern) {
-      const tex = PIXI.Texture.from(dataUrl);
+    // canvas: HTMLCanvasElement (dimensions always available synchronously)
+    function createCreatureWithPattern(canvas, pattern) {
+      // PIXI.Texture.from(canvas) reads width/height immediately — no async issue
+      const tex = PIXI.Texture.from(canvas);
       const baseSize = 130 + Math.random() * 60;
 
-      // Always use Sprite (no SimplePlane — avoids black-rectangle artifacts)
       const obj = new PIXI.Sprite(tex);
       obj.anchor.set(0.5);
 
@@ -406,13 +413,9 @@
       obj.x = startX;
       obj.y = startY;
 
-      // Set scale
-      const setScale = () => {
-        const s = baseSize / Math.max(tex.width, tex.height, 1);
-        obj.scale.set(s);
-      };
-      if (tex.width > 0) setScale();
-      else tex.once('update', setScale);
+      // Scale: canvas dimensions are available immediately
+      const s = baseSize / Math.max(canvas.width, canvas.height, 1);
+      obj.scale.set(s);
 
       // Speed stored as fraction of W() per second — consistent across screen sizes
       const speed = 0.055 + Math.random() * 0.035; // 5.5–9% of screen width/s
