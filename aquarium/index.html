@@ -125,6 +125,18 @@
       padding: 6px 14px; font-family: inherit;
       font-size: 0.85rem; font-weight: 700; cursor: pointer;
     }
+    /* Landscape: hide UI overlay, show on bottom tap */
+    @media (orientation: landscape) {
+      #ui {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      #ui.ui-visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
     /* Title label */
     #title-label {
       position: fixed;
@@ -254,6 +266,7 @@
     makeBackground();
 
     // ─── Sand & Seaweed ────────────────────────────────────
+    let sandTopY = 0; // top of sand ellipse — shared with crawl pattern
     const sandGfx = new PIXI.Graphics();
     layerFg.addChild(sandGfx);
 
@@ -279,6 +292,8 @@
     function drawSand() {
       sandGfx.clear();
       const sandY = H() * 0.88;
+      // Sand ellipse center at H()*0.96, radius H()*0.1 → top at H()*0.86
+      sandTopY = H() * 0.96 - H() * 0.1;
       sandGfx.beginFill(0xd4a84b, 0.85);
       sandGfx.drawEllipse(W() / 2, H() * 0.96, W() * 0.7, H() * 0.1);
       sandGfx.endFill();
@@ -575,6 +590,13 @@
       // Scale: canvas dimensions are available immediately
       const s = baseSize / Math.max(canvas.width, canvas.height, 1);
       obj.scale.set(s);
+      // halfH: rendered half-height (used by crawl for ground-snapping)
+      const halfH = (canvas.height * s) * 0.5;
+
+      // For crawl: start on the sand surface
+      if (pattern === 'crawl') {
+        obj.y = sandTopY - halfH;
+      }
 
       // Speed stored as fraction of W() per second — consistent across screen sizes
       const speed = 0.055 + Math.random() * 0.035; // 5.5–9% of screen width/s
@@ -583,7 +605,7 @@
         pattern,
         t: Math.random() * Math.PI * 2,
         baseX: startX,
-        baseY: startY,
+        baseY: pattern === 'crawl' ? sandTopY - halfH : startY,
         vx: (Math.random() < 0.5 ? 1 : -1) * speed,
         vy: (Math.random() - 0.5) * speed * 0.15,
         speed,
@@ -591,6 +613,7 @@
         panicVx: 0,  // fraction of W per second
         panicVy: 0,  // fraction of H per second
         baseSize,
+        halfH,
         facingRight: true,
         tex,
       };
@@ -717,10 +740,11 @@
           }
 
           case 'crawl': {
-            // Bottom-dweller: moves horizontally near the sand, facing direction
+            // Bottom-dweller: walks on the sand surface
             c.obj.x += c.vx * sw * DT;
-            const crawlY = H() * 0.72 + Math.sin(c.t * 2.2) * sh * 0.008;
-            c.obj.y += (crawlY - c.obj.y) * Math.min(0.08 * delta, 1);
+            // Target Y: top of sand minus half the creature height, with tiny bob
+            const crawlY = sandTopY - c.halfH + Math.sin(c.t * 2.2) * 3;
+            c.obj.y += (crawlY - c.obj.y) * Math.min(0.12 * delta, 1);
             c.obj.rotation = Math.sin(c.t * 2.2) * 0.05;
             const absS2 = Math.abs(c.obj.scale.x);
             if (c.vx < 0 && c.facingRight)  { c.facingRight = false; c.obj.scale.x = -absS2; }
@@ -790,14 +814,34 @@
       });
     });
 
+    // ─── Landscape UI toggle ────────────────────────────────
+    const uiEl = document.getElementById('ui');
+    let uiHideTimer = null;
+    function showUiTemporarily() {
+      uiEl.classList.add('ui-visible');
+      clearTimeout(uiHideTimer);
+      uiHideTimer = setTimeout(() => uiEl.classList.remove('ui-visible'), 3000);
+    }
+    // Bottom-of-screen tap in landscape → show UI for 3 s
+    window.addEventListener('pointerdown', (e) => {
+      if (window.innerWidth > window.innerHeight && e.clientY > window.innerHeight * 0.65) {
+        showUiTemporarily();
+      }
+    });
+
     // ─── Resize handling ───────────────────────────────────
     window.addEventListener('resize', () => {
       makeBackground();
-      drawSand();
+      drawSand(); // updates sandTopY
       makeSeaweeds();
-      // Update safe zone for sway/float creatures
+      // Reposition creatures after resize
       creatures.forEach(c => {
-        if (c.obj.y > H() * 0.80) {
+        if (c.pattern === 'crawl') {
+          // Snap to new sand surface immediately
+          const newY = sandTopY - c.halfH;
+          c.obj.y = newY;
+          c.baseY = newY;
+        } else if (c.obj.y > H() * 0.80) {
           c.obj.y = H() * 0.70;
           c.baseY = c.obj.y;
         }
