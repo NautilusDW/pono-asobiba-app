@@ -240,15 +240,20 @@
     window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
 
-    // ─── Fullscreen: タッチ主体デバイス（スマホ・タブレット）のみ ──
-    document.addEventListener('pointerdown', () => {
+    // ─── Fullscreen: タッチ主体デバイスのみ、横向き時に要求 ──────
+    function tryFullscreen() {
+      if (!window.matchMedia('(pointer: coarse)').matches) return;
       const el = document.documentElement;
-      // (pointer: coarse) = タッチ主体デバイス。PCマウスは fine なので除外
-      const isTouch = window.matchMedia('(pointer: coarse)').matches;
-      if (isTouch && el.requestFullscreen && !document.fullscreenElement) {
+      if (el.requestFullscreen && !document.fullscreenElement) {
         el.requestFullscreen().catch(() => {});
       }
-    }, { once: true });
+    }
+    // 最初のタップ時
+    document.addEventListener('pointerdown', tryFullscreen, { once: true });
+    // 横向きに回転した瞬間にも再リクエスト
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > window.innerHeight) tryFullscreen();
+    });
 
     // ─── Pattern persistence ────────────────────────────────
     const PATTERN_STORE_KEY = 'pono_umi_patterns';
@@ -473,7 +478,7 @@
       const fgTemp = [];
       fgZones.forEach((zone, i) => {
         const tex = textures[i % textures.length];
-        const targetH = sh * (0.09 + Math.random() * 0.10); // 9–19% of screen height
+        const targetH = sh * (0.13 + Math.random() * 0.14); // 13–27% of screen height
         const spr = makeRock(tex, targetH, zone);
         spr.y = sandTopY + sh * 0.01 * Math.random();
         spr.alpha = 0.92 + Math.random() * 0.08;
@@ -488,7 +493,7 @@
       bgZones.forEach((zone, i) => {
         const tex = textures[i % textures.length];
         const depthT = Math.random();
-        const targetH = sh * (0.04 + Math.random() * 0.05) * (1 - depthT * 0.35);
+        const targetH = sh * (0.05 + Math.random() * 0.07) * (1 - depthT * 0.35);
         const spr = makeRock(tex, targetH, zone);
         spr.y = sandTopY - depthT * depthRange;
         spr.alpha = 0.5 + Math.random() * 0.35;
