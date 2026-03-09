@@ -255,6 +255,33 @@
       return null;
     }
 
+    // ─── Remove white background from JPEG drawings ────────
+    function removeWhiteBg(dataUrl) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const cv = document.createElement('canvas');
+          cv.width  = img.width;
+          cv.height = img.height;
+          const ctx = cv.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const id = ctx.getImageData(0, 0, cv.width, cv.height);
+          const d  = id.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], g = d[i+1], b = d[i+2];
+            // Make near-white and near-black (JPEG artifact) → transparent
+            if (r > 220 && g > 220 && b > 220) {
+              d[i+3] = 0;
+            }
+          }
+          ctx.putImageData(id, 0, 0);
+          resolve(cv.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
     // Movement patterns
     const PATTERNS = ['swim', 'float', 'wander', 'sway'];
 
@@ -319,22 +346,22 @@
       creatures.push(state);
     }
 
-    function initAllCreatures() {
+    async function initAllCreatures() {
       // Clear existing
       creatures.forEach(c => layerMid.removeChild(c.obj));
       creatures.length = 0;
 
-      const dataUrls = getDrawingDataUrls();
-      if (dataUrls && dataUrls.length > 0) {
-        // Shuffle patterns
+      const rawUrls = getDrawingDataUrls();
+      if (rawUrls && rawUrls.length > 0) {
+        // Strip white background from JPEG drawings
+        const dataUrls = await Promise.all(rawUrls.map(u => removeWhiteBg(u)));
         const shuffled = [...PATTERNS].sort(() => Math.random() - 0.5);
         dataUrls.forEach((url, i) => {
-          // Assign patterns in order (cycling)
           const patIdx = i % PATTERNS.length;
           createCreatureWithPattern(url, shuffled[patIdx] || PATTERNS[patIdx]);
         });
       } else {
-        // Use default emojis
+        // Use default emojis (no white bg removal needed)
         DEFAULT_EMOJIS.forEach((emoji, i) => {
           const url = emojiToDataUrl(emoji, 128);
           createCreatureWithPattern(url, PATTERNS[i % PATTERNS.length]);
