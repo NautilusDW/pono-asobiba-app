@@ -703,7 +703,7 @@ document.getElementById('btnClear').addEventListener('click', () => {
 
 // ===== Save & Gallery =====
 const DRAWINGS_KEY = 'pono_drawings';
-const MAX_DRAWINGS = 6;
+const MAX_DRAWINGS = 15;
 
 function loadDrawings() {
   try { return JSON.parse(localStorage.getItem(DRAWINGS_KEY)) || []; }
