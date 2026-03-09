@@ -565,13 +565,15 @@
       obj.y = pattern === 'crawl' ? sandTopY - halfH : startY;
 
       const speed = 0.055 + Math.random() * 0.035;
+      // swim/crawl: right-to-left by default (vx negative)
+      const initVx = (pattern === 'swim' || pattern === 'crawl') ? -speed : (Math.random() < 0.5 ? 1 : -1) * speed;
       const c = {
         obj,
         pattern,
         t: Math.random() * Math.PI * 2,
         baseX: startX,
         baseY: pattern === 'crawl' ? sandTopY - halfH : startY,
-        vx: (Math.random() < 0.5 ? 1 : -1) * speed,
+        vx: initVx,
         vy: (Math.random() - 0.5) * speed * 0.15,
         speed,
         panicTimer: 0,
@@ -768,28 +770,6 @@
       });
     });
 
-    // ─── Tap/click → panic nearby creatures ────────────────
-    app.stage.interactive = true;
-    app.stage.hitArea = new PIXI.Rectangle(0, 0, 9999, 9999);
-    app.stage.on('pointerdown', (e) => {
-      tryStartBgm();
-      const px = e.global.x, py = e.global.y;
-      const tapRadius = Math.min(W(), H()) * 0.30;
-      creatures.forEach(c => {
-        const dx = c.obj.x - px;
-        const dy = c.obj.y - py;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < tapRadius) {
-          const angle = Math.atan2(dy, dx);
-          // High initial burst (70–90% of W per second) → rapid drag brings it to rest
-          const spd = 0.70 + Math.random() * 0.20;
-          c.panicTimer = 70 + Math.random() * 20;
-          c.panicVx = Math.cos(angle) * spd;
-          c.panicVy = Math.sin(angle) * spd * 0.6;
-        }
-      });
-    });
-
     // ─── Landscape UI toggle ────────────────────────────────
     const uiEl = document.getElementById('ui');
     let uiHideTimer = null;
@@ -798,12 +778,122 @@
       clearTimeout(uiHideTimer);
       uiHideTimer = setTimeout(() => uiEl.classList.remove('ui-visible'), 3000);
     }
-    // Bottom-of-screen tap in landscape → show UI for 3 s
+
+    // ─── Pointer: tap=panic, hold 400ms=steer ──────────────
+    let holdTimerId = null, holdCreature = null, steeringMode = false;
+    let lastPointerPx = 0, lastPointerPy = 0;
+
+    const TAP_R = () => Math.min(W(), H()) * 0.35;
+
+    function pixiCoords(clientX, clientY) {
+      const r = canvas.getBoundingClientRect();
+      return {
+        px: (clientX - r.left) * (W() / r.width),
+        py: (clientY - r.top)  * (H() / r.height),
+      };
+    }
+
+    function findNearest(px, py) {
+      let best = null, bestDist = Infinity;
+      const r = TAP_R();
+      creatures.forEach(c => {
+        const dx = c.obj.x - px, dy = c.obj.y - py;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < r && d < bestDist) { best = c; bestDist = d; }
+      });
+      return best;
+    }
+
+    function drawArrow(cx, cy, tx, ty, baseSize) {
+      steerGfx.clear();
+      // Circle around creature
+      steerGfx.lineStyle(2.5, 0x38bdf8, 0.75);
+      steerGfx.drawCircle(cx, cy, baseSize * 0.55);
+      const dx = tx - cx, dy = ty - cy;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 8) return;
+      const angle = Math.atan2(dy, dx);
+      const len = Math.min(dist, W() * 0.22);
+      const ex = cx + Math.cos(angle) * len;
+      const ey = cy + Math.sin(angle) * len;
+      steerGfx.lineStyle(3.5, 0x38bdf8, 0.95);
+      steerGfx.moveTo(cx, cy);
+      steerGfx.lineTo(ex, ey);
+      const hs = 18;
+      steerGfx.moveTo(ex, ey);
+      steerGfx.lineTo(ex - Math.cos(angle - 0.42)*hs, ey - Math.sin(angle - 0.42)*hs);
+      steerGfx.moveTo(ex, ey);
+      steerGfx.lineTo(ex - Math.cos(angle + 0.42)*hs, ey - Math.sin(angle + 0.42)*hs);
+    }
+
+    // Use window events so touch/pointer is tracked even after moving off canvas
     window.addEventListener('pointerdown', (e) => {
-      if (window.innerWidth > window.innerHeight && e.clientY > window.innerHeight * 0.65) {
-        showUiTemporarily();
+      tryStartBgm();
+      const { px, py } = pixiCoords(e.clientX, e.clientY);
+      lastPointerPx = px; lastPointerPy = py;
+
+      // Landscape bottom → show UI
+      if (window.innerWidth > window.innerHeight && py > H() * 0.65) showUiTemporarily();
+
+      holdCreature = findNearest(px, py);
+      steeringMode = false;
+      clearTimeout(holdTimerId);
+      steerGfx.clear();
+
+      if (holdCreature) {
+        holdTimerId = setTimeout(() => {
+          steeringMode = true;
+          // Show circle immediately so user knows steer mode activated
+          drawArrow(holdCreature.obj.x, holdCreature.obj.y,
+                    lastPointerPx, lastPointerPy, holdCreature.baseSize);
+        }, 400);
       }
     });
+
+    window.addEventListener('pointermove', (e) => {
+      const { px, py } = pixiCoords(e.clientX, e.clientY);
+      lastPointerPx = px; lastPointerPy = py;
+      if (!steeringMode || !holdCreature) return;
+      drawArrow(holdCreature.obj.x, holdCreature.obj.y, px, py, holdCreature.baseSize);
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      clearTimeout(holdTimerId);
+      steerGfx.clear();
+      const { px, py } = pixiCoords(e.clientX, e.clientY);
+
+      if (steeringMode && holdCreature) {
+        // Steer: redirect creature toward pointer
+        const dx = px - holdCreature.obj.x, dy = py - holdCreature.obj.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 20) {
+          holdCreature.vx = (dx / dist) * holdCreature.speed;
+          holdCreature.vy = (dy / dist) * holdCreature.speed * 0.4;
+          holdCreature.baseY = holdCreature.obj.y;
+          holdCreature.baseX = holdCreature.obj.x;
+          holdCreature.panicTimer = 0;
+        }
+      } else {
+        // Quick tap → panic all nearby
+        const r = TAP_R();
+        creatures.forEach(c => {
+          const dx = c.obj.x - px, dy = c.obj.y - py;
+          if (Math.sqrt(dx*dx + dy*dy) < r) {
+            const angle = Math.atan2(dy, dx);
+            const spd = 0.70 + Math.random() * 0.20;
+            c.panicTimer = 70 + Math.random() * 20;
+            c.panicVx = Math.cos(angle) * spd;
+            c.panicVy = Math.sin(angle) * spd * 0.6;
+          }
+        });
+      }
+      steeringMode = false;
+      holdCreature = null;
+    });
+
+    // Make stage interactive for PixiJS internal event routing
+    app.stage.interactive = true;
+    app.stage.hitArea = new PIXI.Rectangle(0, 0, 9999, 9999);
 
     // ─── Resize handling ───────────────────────────────────
     // Use rAF to wait for PixiJS to finish its own resize before we query W()/H()
