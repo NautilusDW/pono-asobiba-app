@@ -609,6 +609,8 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled) { bgm.play().catch(() => {}); }
 });
+window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
 // ===== Responsive Resize =====
 let resizeTimer = null;

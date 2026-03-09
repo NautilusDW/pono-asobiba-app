@@ -342,7 +342,7 @@ html, body {
     <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
     <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶ</button>
     <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
-    <button class="tool-btn btn-gallery" id="btnGallery">🖼</button>
+    <button class="tool-btn btn-gallery" id="btnGallery">📂 みる</button>
   </div>
 
   <div class="toolbar toolbar-special">
@@ -788,6 +788,8 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled) { bgm.play().catch(() => {}); }
 });
+window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 </script>
 </body>
 </html>
