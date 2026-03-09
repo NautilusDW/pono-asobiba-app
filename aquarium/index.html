@@ -205,10 +205,12 @@
     window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
 
-    // ─── Fullscreen (hides browser chrome on Android) ──────
+    // ─── Fullscreen: タッチ主体デバイス（スマホ・タブレット）のみ ──
     document.addEventListener('pointerdown', () => {
       const el = document.documentElement;
-      if (el.requestFullscreen && !document.fullscreenElement) {
+      // (pointer: coarse) = タッチ主体デバイス。PCマウスは fine なので除外
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      if (isTouch && el.requestFullscreen && !document.fullscreenElement) {
         el.requestFullscreen().catch(() => {});
       }
     }, { once: true });
@@ -763,18 +765,19 @@
             c.obj.rotation = Math.sin(c.t * 0.55) * 0.12;
 
             // Body-wave distortion via SimplePlane vertex manipulation
+            // PlaneGeometry (row-major): vertex(row r, col c) flat idx = r*(SWIM_COLS+1)+c
+            // Top (r=0) col i → y at d[i*2+1]
+            // Bottom (r=1) col i → y at d[(SWIM_COLS+1+i)*2+1]
             if (c.swimPlane) {
               const buf = c.swimPlane.geometry.buffers[0];
               const d = buf.data;
               const lh = c.planeLocalH;
               for (let i = 0; i <= SWIM_COLS; i++) {
-                // Reverse column index when facing left so tail always wags more
                 const col = c.facingRight ? i : (SWIM_COLS - i);
                 const tail = Math.pow(col / SWIM_COLS, 0.8);
                 const wy = Math.sin(c.t * 4 + col * 0.55) * lh * 0.22 * tail;
-                // Each column: top vertex y = i*4+1, bottom vertex y = i*4+3
-                d[i * 4 + 1] = wy;
-                d[i * 4 + 3] = lh + wy;
+                d[i * 2 + 1] = wy;                          // top row y
+                d[(SWIM_COLS + 1 + i) * 2 + 1] = lh + wy;  // bottom row y
               }
               buf.update();
             }
@@ -860,7 +863,29 @@
       });
     });
 
-    // ─── Landscape UI toggle ───────────────────────────────
+    // ─── Tap/click → panic nearby creatures ────────────────
+    app.stage.interactive = true;
+    app.stage.hitArea = new PIXI.Rectangle(0, 0, 9999, 9999);
+    app.stage.on('pointerdown', (e) => {
+      tryStartBgm();
+      const px = e.global.x, py = e.global.y;
+      const tapRadius = Math.min(W(), H()) * 0.30;
+      creatures.forEach(c => {
+        const dx = c.obj.x - px;
+        const dy = c.obj.y - py;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < tapRadius) {
+          const angle = Math.atan2(dy, dx);
+          // High initial burst (70–90% of W per second) → rapid drag brings it to rest
+          const spd = 0.70 + Math.random() * 0.20;
+          c.panicTimer = 70 + Math.random() * 20;
+          c.panicVx = Math.cos(angle) * spd;
+          c.panicVy = Math.sin(angle) * spd * 0.6;
+        }
+      });
+    });
+
+    // ─── Landscape UI toggle ────────────────────────────────
     const uiEl = document.getElementById('ui');
     let uiHideTimer = null;
     function showUiTemporarily() {
@@ -868,91 +893,11 @@
       clearTimeout(uiHideTimer);
       uiHideTimer = setTimeout(() => uiEl.classList.remove('ui-visible'), 3000);
     }
-
-    // ─── Pointer: tap = panic, hold 400ms = steer direction ─
-    let holdTimerId = null, holdCreature = null, steeringMode = false;
-    const tapRadius = () => Math.min(W(), H()) * 0.35;
-
-    function findNearest(px, py) {
-      let best = null, bestDist = Infinity;
-      const r = tapRadius();
-      creatures.forEach(c => {
-        const dx = c.obj.x - px, dy = c.obj.y - py;
-        const d = Math.sqrt(dx*dx + dy*dy);
-        if (d < r && d < bestDist) { best = c; bestDist = d; }
-      });
-      return best;
-    }
-
-    app.stage.interactive = true;
-    app.stage.hitArea = new PIXI.Rectangle(0, 0, 9999, 9999);
-
-    app.stage.on('pointerdown', (e) => {
-      tryStartBgm();
-      const px = e.global.x, py = e.global.y;
-      // Landscape bottom tap → show UI
-      if (window.innerWidth > window.innerHeight && py > H() * 0.65) showUiTemporarily();
-      holdCreature = findNearest(px, py);
-      steeringMode = false;
-      clearTimeout(holdTimerId);
-      if (holdCreature) {
-        holdTimerId = setTimeout(() => { steeringMode = true; }, 400);
+    // Bottom-of-screen tap in landscape → show UI for 3 s
+    window.addEventListener('pointerdown', (e) => {
+      if (window.innerWidth > window.innerHeight && e.clientY > window.innerHeight * 0.65) {
+        showUiTemporarily();
       }
-    });
-
-    app.stage.on('pointermove', (e) => {
-      if (!steeringMode || !holdCreature) return;
-      const px = e.global.x, py = e.global.y;
-      const cx = holdCreature.obj.x, cy = holdCreature.obj.y;
-      const dx = px - cx, dy = py - cy;
-      const angle = Math.atan2(dy, dx);
-      const arrowLen = Math.min(Math.sqrt(dx*dx + dy*dy), W() * 0.22);
-      const ex = cx + Math.cos(angle) * arrowLen;
-      const ey = cy + Math.sin(angle) * arrowLen;
-      steerGfx.clear();
-      steerGfx.lineStyle(2.5, 0x38bdf8, 0.7);
-      steerGfx.drawCircle(cx, cy, holdCreature.baseSize * 0.55);
-      steerGfx.lineStyle(3.5, 0x38bdf8, 0.9);
-      steerGfx.moveTo(cx, cy);
-      steerGfx.lineTo(ex, ey);
-      const hs = 16;
-      steerGfx.moveTo(ex, ey);
-      steerGfx.lineTo(ex - Math.cos(angle - 0.42) * hs, ey - Math.sin(angle - 0.42) * hs);
-      steerGfx.moveTo(ex, ey);
-      steerGfx.lineTo(ex - Math.cos(angle + 0.42) * hs, ey - Math.sin(angle + 0.42) * hs);
-    });
-
-    app.stage.on('pointerup', (e) => {
-      clearTimeout(holdTimerId);
-      steerGfx.clear();
-      const px = e.global.x, py = e.global.y;
-      if (steeringMode && holdCreature) {
-        // Apply steering direction
-        const dx = px - holdCreature.obj.x, dy = py - holdCreature.obj.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > 25) {
-          holdCreature.vx = (dx / dist) * holdCreature.speed;
-          holdCreature.vy = (dy / dist) * holdCreature.speed * 0.4;
-          holdCreature.baseY = holdCreature.obj.y;
-          holdCreature.baseX = holdCreature.obj.x;
-          holdCreature.panicTimer = 0; // cancel any panic
-        }
-      } else {
-        // Quick tap → panic all within radius
-        const r = tapRadius();
-        creatures.forEach(c => {
-          const dx = c.obj.x - px, dy = c.obj.y - py;
-          if (Math.sqrt(dx*dx + dy*dy) < r) {
-            const angle = Math.atan2(dy, dx);
-            const spd = 0.70 + Math.random() * 0.20;
-            c.panicTimer = 70 + Math.random() * 20;
-            c.panicVx = Math.cos(angle) * spd;
-            c.panicVy = Math.sin(angle) * spd * 0.6;
-          }
-        });
-      }
-      steeringMode = false;
-      holdCreature = null;
     });
 
     // ─── Resize handling ───────────────────────────────────
