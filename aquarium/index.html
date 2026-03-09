@@ -22,6 +22,7 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
+      background: url('BG_A.png') center/cover no-repeat #0a1a3a;
     }
     /* UI overlay */
     #ui {
@@ -163,7 +164,7 @@
       font-size: 1.1rem; font-weight: 900;
       text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
-    @media (orientation: portrait) {
+    @media (pointer: coarse) and (orientation: portrait) {
       #portrait-overlay { display: flex; }
     }
     /* Title label */
@@ -287,14 +288,9 @@
     const steerGfx = new PIXI.Graphics();
     layerTop.addChild(steerGfx);
 
-    // ─── Background image ──────────────────────────────────
+    // ─── Background: CSS handles BG_A.png; PixiJS adds light rays only ──
     function makeBackground() {
       layerBg.removeChildren();
-      // BG_A.png covers full canvas (transparent canvas shows CSS background behind)
-      const bgTex = PIXI.Texture.from('BG_A.png');
-      const bgSpr = new PIXI.Sprite(bgTex);
-      bgSpr.width = W(); bgSpr.height = H();
-      layerBg.addChild(bgSpr);
 
       // Light rays
       for (let i = 0; i < 5; i++) {
