@@ -2,7 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>うみのせかい｜ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,7 +13,7 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      width: 100%; height: 100%;
+      width: 100%; height: 100dvh;
       overflow: hidden;
       background: #0a1a3a;
       font-family: 'Zen Maru Gothic', sans-serif;
@@ -201,6 +204,27 @@
     window.addEventListener('blur',  () => bgm.pause());
     window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
+
+    // ─── Fullscreen (hides browser chrome on Android) ──────
+    document.addEventListener('pointerdown', () => {
+      const el = document.documentElement;
+      if (el.requestFullscreen && !document.fullscreenElement) {
+        el.requestFullscreen().catch(() => {});
+      }
+    }, { once: true });
+
+    // ─── Pattern persistence ────────────────────────────────
+    const PATTERN_STORE_KEY = 'pono_umi_patterns';
+    function loadSavedPatterns() {
+      try { return JSON.parse(localStorage.getItem(PATTERN_STORE_KEY) || '{}'); } catch(e) { return {}; }
+    }
+    function savePatterns() {
+      const map = {};
+      selectionData.forEach(item => {
+        map[item.dataUrl.slice(0, 120)] = item.pattern;
+      });
+      localStorage.setItem(PATTERN_STORE_KEY, JSON.stringify(map));
+    }
 
     // ─── Back button ───────────────────────────────────────
     document.getElementById('btnBack').addEventListener('click', () => {
@@ -430,11 +454,15 @@
         return;
       }
 
-      selectionData = raw.map((d, i) => ({
-        dataUrl: d.dataUrl || d,
-        pattern: PATTERNS[i % PATTERNS.length],
-        selected: true,
-      }));
+      const savedPats = loadSavedPatterns();
+      selectionData = raw.map((d, i) => {
+        const dataUrl = d.dataUrl || d;
+        return {
+          dataUrl,
+          pattern: savedPats[dataUrl.slice(0, 120)] || PATTERNS[i % PATTERNS.length],
+          selected: true,
+        };
+      });
 
       const grid = document.getElementById('selGrid');
       grid.innerHTML = '';
@@ -454,6 +482,7 @@
           const idx = PATTERNS.indexOf(item.pattern);
           item.pattern = PATTERNS[(idx + 1) % PATTERNS.length];
           patBtn.textContent = PATTERN_LABELS[item.pattern];
+          savePatterns(); // persist immediately
         });
 
         card.addEventListener('click', () => {
@@ -475,6 +504,7 @@
 
     document.getElementById('btnStart').addEventListener('click', async () => {
       document.getElementById('selection-screen').classList.add('hidden');
+      savePatterns();
       tryStartBgm();
       const chosen = selectionData.filter(d => d.selected);
       if (chosen.length === 0) {
@@ -830,21 +860,28 @@
     });
 
     // ─── Resize handling ───────────────────────────────────
+    // Use rAF to wait for PixiJS to finish its own resize before we query W()/H()
+    let resizeRaf = null;
     window.addEventListener('resize', () => {
-      makeBackground();
-      drawSand(); // updates sandTopY
-      makeSeaweeds();
-      // Reposition creatures after resize
-      creatures.forEach(c => {
-        if (c.pattern === 'crawl') {
-          // Snap to new sand surface immediately
-          const newY = sandTopY - c.halfH;
-          c.obj.y = newY;
-          c.baseY = newY;
-        } else if (c.obj.y > H() * 0.80) {
-          c.obj.y = H() * 0.70;
-          c.baseY = c.obj.y;
-        }
+      cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        makeBackground();
+        drawSand(); // updates sandTopY
+        makeSeaweeds();
+        const safeH = H() * 0.80;
+        creatures.forEach(c => {
+          if (c.pattern === 'crawl') {
+            const newY = sandTopY - c.halfH;
+            c.obj.y = newY;
+            c.baseY = newY;
+          } else {
+            // Clamp all creatures inside new safe area
+            if (c.obj.x < 30) { c.obj.x = 30; c.baseX = 30; }
+            if (c.obj.x > W() - 30) { c.obj.x = W() - 30; c.baseX = W() - 30; }
+            if (c.obj.y < 30) { c.obj.y = 30; c.baseY = 30; }
+            if (c.obj.y > safeH) { c.obj.y = safeH * 0.85; c.baseY = c.obj.y; }
+          }
+        });
       });
     });
 
