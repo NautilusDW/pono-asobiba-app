@@ -371,22 +371,11 @@
 
     function createCreatureWithPattern(dataUrl, pattern) {
       const tex = PIXI.Texture.from(dataUrl);
-      const baseSize = 80 + Math.random() * 50;
+      const baseSize = 130 + Math.random() * 60;
 
-      let obj;
-      if (pattern === 'swim') {
-        const plane = new PIXI.SimplePlane(tex, 8, 1);
-        const pw = baseSize;
-        const ph = baseSize * 0.65;
-        // Set via geometry scale
-        obj = plane;
-        obj._pw = pw;
-        obj._ph = ph;
-      } else {
-        obj = new PIXI.Sprite(tex);
-        obj.anchor.set(0.5);
-        // scale will be set after tex loads
-      }
+      // Always use Sprite (no SimplePlane — avoids black-rectangle artifacts)
+      const obj = new PIXI.Sprite(tex);
+      obj.anchor.set(0.5);
 
       const safeBottom = H() * 0.78;
       const margin = baseSize * 0.6;
@@ -395,6 +384,14 @@
 
       obj.x = startX;
       obj.y = startY;
+
+      // Set scale
+      const setScale = () => {
+        const s = baseSize / Math.max(tex.width, tex.height, 1);
+        obj.scale.set(s);
+      };
+      if (tex.width > 0) setScale();
+      else tex.once('update', setScale);
 
       const speed = 0.35 + Math.random() * 0.55;
       const c = {
@@ -410,23 +407,9 @@
         panicVx: 0,
         panicVy: 0,
         baseSize,
-        origVertX: null,
         facingRight: true,
         tex,
       };
-
-      // Set initial scale for sprites
-      if (pattern !== 'swim') {
-        if (tex.width > 0) {
-          const s = baseSize / Math.max(tex.width, tex.height);
-          obj.scale.set(s);
-        } else {
-          tex.once('update', () => {
-            const s = baseSize / Math.max(tex.width, tex.height, 1);
-            obj.scale.set(s);
-          });
-        }
-      }
 
       layerMid.addChild(obj);
       creatures.push(c);
@@ -507,52 +490,24 @@
 
         switch (c.pattern) {
           case 'swim': {
-            // Move horizontally with sine wave vertical drift
+            // Move horizontally, sine wave vertical drift, slight tilt
             c.obj.x += c.vx * delta;
             c.obj.y = c.baseY + Math.sin(c.t * 0.7) * 30;
+            c.obj.rotation = Math.sin(c.t * 0.7) * 0.18; // tilt with wave
 
-            // Flip on direction change
+            // Flip sprite to face direction of travel
+            const absScale = Math.abs(c.obj.scale.x);
             if (c.vx < 0 && c.facingRight) {
               c.facingRight = false;
-              c.obj.scale.x = -Math.abs(c.obj.scale.x || 1);
+              c.obj.scale.x = -absScale;
             } else if (c.vx > 0 && !c.facingRight) {
               c.facingRight = true;
-              c.obj.scale.x = Math.abs(c.obj.scale.x || 1);
+              c.obj.scale.x = absScale;
             }
 
             // Wrap around screen
-            if (c.obj.x > W() + 60) { c.obj.x = -60; c.baseY = 40 + Math.random() * sh2 * 0.8; }
-            if (c.obj.x < -60) { c.obj.x = W() + 60; c.baseY = 40 + Math.random() * sh2 * 0.8; }
-
-            // Body warp for SimplePlane
-            if (c.obj instanceof PIXI.SimplePlane) {
-              const buf = c.obj.geometry.getBuffer('aVertexPosition');
-              if (buf && !c.origVertX) {
-                // Init original X positions
-                c.origVertX = [];
-                const data = buf.data;
-                for (let i = 0; i <= 8; i++) {
-                  c.origVertX.push(data[i * 2]);
-                }
-                // Set height to reasonable size
-                const pw = c.obj._pw || 90;
-                const ph = c.obj._ph || 60;
-                // Scale the plane manually if needed
-                c.obj.width  = pw;
-                c.obj.height = ph;
-                // Re-init origVertX with new geometry
-                c.origVertX = null;
-                return;
-              }
-              if (buf && c.origVertX) {
-                const data = buf.data;
-                const amp = 8;
-                for (let i = 0; i <= 8; i++) {
-                  data[i * 2] = c.origVertX[i] + Math.sin(c.t * 2.5 + i * 0.5) * amp * (i / 8);
-                }
-                buf.update();
-              }
-            }
+            if (c.obj.x > W() + 80) { c.obj.x = -80; c.baseY = 40 + Math.random() * sh2 * 0.8; }
+            if (c.obj.x < -80)       { c.obj.x = W() + 80; c.baseY = 40 + Math.random() * sh2 * 0.8; }
             break;
           }
 
@@ -578,7 +533,7 @@
           }
 
           case 'wander': {
-            // Random direction changes, gentle rotation
+            // Random direction changes, gentle wobble (no continuous spin)
             if (Math.random() < 0.008) {
               const angle = Math.random() * Math.PI * 2;
               c.vx = Math.cos(angle) * c.speed * 0.8;
@@ -586,7 +541,7 @@
             }
             c.obj.x += c.vx * delta;
             c.obj.y += c.vy * delta;
-            c.obj.rotation += 0.008 * delta;
+            c.obj.rotation = Math.sin(c.t * 1.0) * 0.15; // gentle wobble, not spin
 
             // Bounce off walls
             if (c.obj.x < 30 || c.obj.x > W() - 30) { c.vx *= -1; c.obj.x = Math.max(30, Math.min(W()-30, c.obj.x)); }
