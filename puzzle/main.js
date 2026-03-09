@@ -4,6 +4,7 @@ const BASE_STAGES = [
   { cols: 3, rows: 2, image: '../assets/images/puzzle_cover.jpg'  },
   { cols: 4, rows: 2, image: '../assets/images/puzzle_birds.jpg'  },
   { cols: 4, rows: 3, image: '../assets/images/puzzle_P01_01.jpg' },
+  { cols: 4, rows: 3, image: '../assets/images/puzzle_05.jpg', advanced: true },
 ];
 let STAGES = [...BASE_STAGES];
 
@@ -27,6 +28,7 @@ const SNAP_DIST = 55;
 // ===== Stage State =====
 let currentStageIndex = 0;
 let stageCols = 2, stageRows = 2, stageTotalPieces = 4;
+let stageAdvanced = false;
 
 // ===== Puzzle State =====
 let pieces = [];
@@ -175,45 +177,91 @@ function createPlaceholderImage(width, height) {
 }
 
 // ===== Jigsaw Edge Drawing =====
-function buildPiecePath(target, px, py, pw, ph, tabs) {
-  const isPath2D = typeof Path2D !== 'undefined' && target instanceof Path2D;
+// Flip an edge for traversal in the opposite direction (bottom/left edges)
+function flipEdge(e) {
+  if (typeof e === 'number') return -e;
+  return { dir: -e.dir, pos: 1 - e.pos, hw: e.hw };
+}
 
-  function traceEdgeTo(x1, y1, x2, y2, dir) {
-    if (dir === 0) { target.lineTo(x2, y2); return; }
+function buildPiecePath(target, px, py, pw, ph, tabs) {
+  function traceEdgeTo(x1, y1, x2, y2, edge) {
+    if (edge === 0) { target.lineTo(x2, y2); return; }
+
     const dx = x2 - x1, dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
     const ux = dx / len, uy = dy / len;
     const nx = -uy, ny = ux;
-    const d = len * 0.32 * dir;
-    const t30x = x1 + ux * len * 0.30, t30y = y1 + uy * len * 0.30;
-    const t70x = x1 + ux * len * 0.70, t70y = y1 + uy * len * 0.70;
-    target.lineTo(t30x, t30y);
-    target.bezierCurveTo(t30x + nx * d, t30y + ny * d, t70x + nx * d, t70y + ny * d, t70x, t70y);
+
+    if (typeof edge === 'number') {
+      // Simple single-Bézier centered tab (stages 1-4)
+      const d = len * 0.32 * edge;
+      const t30x = x1 + ux * len * 0.30, t30y = y1 + uy * len * 0.30;
+      const t70x = x1 + ux * len * 0.70, t70y = y1 + uy * len * 0.70;
+      target.lineTo(t30x, t30y);
+      target.bezierCurveTo(t30x + nx * d, t30y + ny * d, t70x + nx * d, t70y + ny * d, t70x, t70y);
+      target.lineTo(x2, y2);
+      return;
+    }
+
+    // Advanced irregular knob: two-Bézier mushroom shape (stage 5+)
+    const { dir, pos, hw } = edge;
+    const tabH  = len * 0.30 * dir;   // knob height (signed)
+    const tabHW = hw * len;            // half-width of tab mouth
+    const neckH = tabH * 0.55;        // neck control height
+
+    const psx = x1 + ux * (pos - hw) * len;  // mouth start
+    const psy = y1 + uy * (pos - hw) * len;
+    const pex = x1 + ux * (pos + hw) * len;  // mouth end
+    const pey = y1 + uy * (pos + hw) * len;
+    const topX = x1 + ux * pos * len + nx * tabH;  // knob top center
+    const topY = y1 + uy * pos * len + ny * tabH;
+
+    target.lineTo(psx, psy);
+    target.bezierCurveTo(
+      psx + nx * neckH,          psy + ny * neckH,
+      topX - ux * tabHW * 0.8,  topY - uy * tabHW * 0.8,
+      topX, topY
+    );
+    target.bezierCurveTo(
+      topX + ux * tabHW * 0.8,  topY + uy * tabHW * 0.8,
+      pex + nx * neckH,          pey + ny * neckH,
+      pex, pey
+    );
     target.lineTo(x2, y2);
   }
 
   target.moveTo(px, py);
   traceEdgeTo(px,      py,      px + pw, py,      tabs.top);
   traceEdgeTo(px + pw, py,      px + pw, py + ph, tabs.right);
-  traceEdgeTo(px + pw, py + ph, px,      py + ph, -tabs.bottom);
-  traceEdgeTo(px,      py + ph, px,      py,      -tabs.left);
+  traceEdgeTo(px + pw, py + ph, px,      py + ph, flipEdge(tabs.bottom));
+  traceEdgeTo(px,      py + ph, px,      py,      flipEdge(tabs.left));
   target.closePath();
 }
 
 // ===== Build pieces data =====
 function buildPieces() {
+  function makeEdge() {
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    if (!stageAdvanced) return dir;
+    return {
+      dir,
+      pos: 0.32 + Math.random() * 0.36,  // 0.32 – 0.68
+      hw:  0.14 + Math.random() * 0.07,  // 0.14 – 0.21
+    };
+  }
+
   const hEdge = [];
   for (let col = 0; col < stageCols - 1; col++) {
     hEdge[col] = [];
     for (let row = 0; row < stageRows; row++) {
-      hEdge[col][row] = Math.random() < 0.5 ? 1 : -1;
+      hEdge[col][row] = makeEdge();
     }
   }
   const vEdge = [];
   for (let col = 0; col < stageCols; col++) {
     vEdge[col] = [];
     for (let row = 0; row < stageRows - 1; row++) {
-      vEdge[col][row] = Math.random() < 0.5 ? 1 : -1;
+      vEdge[col][row] = makeEdge();
     }
   }
 
@@ -450,6 +498,7 @@ function loadStage(index) {
   stageCols        = stage.cols;
   stageRows        = stage.rows;
   stageTotalPieces = stageCols * stageRows;
+  stageAdvanced    = !!stage.advanced;
 
   stageLabel.textContent = stage.stageText || `ステージ ${index + 1} / ${STAGES.length}`;
 
