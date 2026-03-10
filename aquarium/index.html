@@ -1008,7 +1008,7 @@
       ripples.forEach(rp => {
         const cx = rp.cx, cy = rp.cy;          // already in PixiJS px
         const r  = rp.radius * H();
-        const a  = Math.min(rp.strength / 0.035, 1);
+        const a  = Math.min(rp.strength / 0.10, 1);
         rippleGfx.lineStyle(6, 0x88eeff, a * 0.12); rippleGfx.drawCircle(cx, cy, r);
         rippleGfx.lineStyle(2, 0xccffff, a * 0.35); rippleGfx.drawCircle(cx, cy, r);
         rippleGfx.lineStyle(1, 0xffffff, a * 0.55); rippleGfx.drawCircle(cx, cy, r);
@@ -1286,7 +1286,7 @@
         // Quick tap → 3本同時・初期半径をずらして1つの波紋イベントに見せる
         [0.005, 0.04, 0.075].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
-            ripples.push({ cx: px, cy: py, radius: r0, strength: 0.035 });
+            ripples.push({ cx: px, cy: py, radius: r0, strength: 0.10 });
         });
         const r = TAP_R();
         creatures.forEach(c => {
