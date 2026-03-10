@@ -348,6 +348,36 @@
     const layerFg      = new PIXI.Container(); // seaweed, sand, bubbles
     const layerTop     = new PIXI.Container(); // steer arrow UI
     app.stage.addChild(layerBg, layerBgRocks, layerMid, layerRockFg, layerFg, layerTop);
+
+    // ─── Ripple distortion filter ──────────────────────────
+    const MAX_RIPPLES = 3;
+    const ripples = []; // {cx, cy, radius, strength}  (normalized coords 0-1)
+    const rippleFilter = new PIXI.Filter(
+      undefined,
+      `precision mediump float;
+       varying vec2 vTextureCoord;
+       uniform sampler2D uSampler;
+       uniform vec2  uCenters[3];
+       uniform float uRadii[3];
+       uniform float uStrengths[3];
+       uniform float uAspect;
+       void main(void) {
+         vec2 uv = vTextureCoord;
+         for (int i = 0; i < 3; i++) {
+           vec2  d    = vec2((uv.x - uCenters[i].x) * uAspect, uv.y - uCenters[i].y);
+           float dist = length(d);
+           float ring = dist - uRadii[i];
+           float w    = exp(-ring * ring * 180.0) * uStrengths[i];
+           if (dist > 0.001 && uStrengths[i] > 0.0005)
+             uv += (d / dist) * (1.0 / uAspect) * w;
+         }
+         uv = clamp(uv, 0.001, 0.999);
+         gl_FragColor = texture2D(uSampler, uv);
+       }`,
+      { uCenters: new Float32Array(6), uRadii: new Float32Array(3),
+        uStrengths: new Float32Array(3), uAspect: 1.0 }
+    );
+    app.stage.filters = [rippleFilter];
     const steerGfx = new PIXI.Graphics();
     layerTop.addChild(steerGfx);
 
@@ -715,12 +745,14 @@
     }
 
     // ─── Pattern definitions ────────────────────────────────
-    const PATTERNS = ['swim', 'float', 'crawl', 'sway'];
+    const PATTERNS = ['swim', 'float', 'crawl', 'sway', 'jellyfish', 'drift'];
     const PATTERN_LABELS = {
-      swim:  '🏊 およぐ',
-      float: '🪼 ただよう',
-      crawl: '🦀 あるく',
-      sway:  '🌿 ゆれる',
+      swim:     '🏊 およぐ',
+      float:    '🪼 ただよう',
+      crawl:    '🦀 あるく',
+      sway:     '🌿 ゆれる',
+      jellyfish:'🪼 ぷかぷか',
+      drift:    '🌊 ながれる',
     };
 
     // ─── Selection screen ───────────────────────────────────
@@ -860,10 +892,15 @@
         panicTimer: 0,
         panicVx: 0,
         panicVy: 0,
+        panicStyle: ['flee', 'dart_back', 'run_fwd', 'zoom'][Math.floor(Math.random() * 4)],
+        _zoomPanic: false,
         baseSize,
         halfH,
         tex,
         wasInPanic: false,
+        pulseTimer: 30 + Math.random() * 40,
+        pulseDir:   Math.random() * Math.PI * 2,
+        driftNudgeTimer: 60 + Math.random() * 90,
       };
 
       layerMid.addChild(obj);
@@ -925,6 +962,23 @@
         bubbleGfx.endFill();
       }
 
+      // ── Ripple update ──────────────────────────────────────
+      const secDT = delta / 60;
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.radius   += 0.45 * secDT;
+        rp.strength -= 3.2 * rp.strength * secDT;
+        if (rp.strength < 0.0005 || rp.radius > 1.6) { ripples.splice(i, 1); continue; }
+      }
+      for (let i = 0; i < MAX_RIPPLES; i++) {
+        const rp = ripples[i];
+        rippleFilter.uniforms.uCenters[i * 2]     = rp ? rp.cx : 0;
+        rippleFilter.uniforms.uCenters[i * 2 + 1] = rp ? rp.cy : 0;
+        rippleFilter.uniforms.uRadii[i]            = rp ? rp.radius : 0;
+        rippleFilter.uniforms.uStrengths[i]        = rp ? rp.strength : 0;
+      }
+      rippleFilter.uniforms.uAspect = W() / H();
+
       // Creatures — water physics (screen-relative velocity)
       const sw = W(), sh = H() * 0.80;
       const DT = delta / 60; // seconds per frame (frame-rate independent)
@@ -936,7 +990,7 @@
         if (c.panicTimer > 0) {
           c.wasInPanic = true;
           c.panicTimer -= delta;
-          const drag = Math.pow(0.86, delta);
+          const drag = Math.pow(c._zoomPanic ? 0.93 : 0.86, delta);
           c.panicVx *= drag;
           c.panicVy *= drag;
           c.obj.x += c.panicVx * sw * DT;
@@ -950,10 +1004,13 @@
         // ── Panic recovery: update baseY to current pos so no warp ──
         if (c.wasInPanic) {
           c.wasInPanic = false;
+          c._zoomPanic = false;
           const waveAmp = sh * 0.06;
-          if (c.pattern === 'swim')  c.baseY = Math.max(50, Math.min(c.obj.y - Math.sin(c.t * 0.55) * waveAmp, sh * 0.72));
-          if (c.pattern === 'float') c.baseY = Math.max(50, Math.min(c.obj.y - Math.sin(c.t * 0.6) * sh * 0.04, sh * 0.72));
-          if (c.pattern === 'wander') { c.baseX = c.obj.x; c.baseY = c.obj.y; }
+          if (c.pattern === 'swim')      c.baseY = Math.max(50, Math.min(c.obj.y - Math.sin(c.t * 0.55) * waveAmp, sh * 0.72));
+          if (c.pattern === 'float')     c.baseY = Math.max(50, Math.min(c.obj.y - Math.sin(c.t * 0.6) * sh * 0.04, sh * 0.72));
+          if (c.pattern === 'wander')    { c.baseX = c.obj.x; c.baseY = c.obj.y; }
+          if (c.pattern === 'jellyfish') c.baseY = Math.max(50, Math.min(c.obj.y, sh * 0.72));
+          if (c.pattern === 'drift')     { c.baseX = c.obj.x; c.baseY = c.obj.y; }
         }
 
         switch (c.pattern) {
@@ -1037,6 +1094,50 @@
             c.obj.x = c.baseX;
             c.obj.y = c.baseY; // sandTopY — never moves
             c.obj.rotation = Math.sin(c.t * 1.1 + c.baseX * 0.008) * 0.28;
+            break;
+          }
+
+          case 'jellyfish': {
+            // Burst → coast → burst cycle (クラゲ泳ぎ)
+            c.pulseTimer -= delta;
+            if (c.pulseTimer <= 0) {
+              c.pulseDir   = Math.random() * Math.PI * 2;
+              c.vx = Math.cos(c.pulseDir) * c.speed * 1.4;
+              c.vy = Math.sin(c.pulseDir) * c.speed * 0.6 * 1.4;
+              c.pulseTimer = 50 + Math.random() * 40;
+            }
+            c.vx *= Math.pow(0.955, delta);
+            c.vy *= Math.pow(0.955, delta);
+            c.obj.x += c.vx * sw * DT;
+            const jTargetY = c.baseY + Math.sin(c.t * 0.8) * sh * 0.03 + c.vy * sh * DT;
+            c.obj.y += (jTargetY - c.obj.y) * Math.min(0.06 * delta, 1);
+            const jBaseS = c.obj._baseScale || (c.obj._baseScale = c.obj.scale.x);
+            c.obj.scale.set(jBaseS * (1 + Math.sin(c.t * 1.4) * 0.07));
+            if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx) * 0.7; c.obj.x = 40; }
+            if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx) * 0.7; c.obj.x = sw - 40; }
+            if (c.obj.y < 40)      { c.vy =  Math.abs(c.vy) * 0.7; c.obj.y = 40; }
+            if (c.obj.y > sh - 20) { c.vy = -Math.abs(c.vy) * 0.7; c.obj.y = sh - 20; }
+            break;
+          }
+
+          case 'drift': {
+            // Ultra-slow languid drift with rare direction nudges
+            c.driftNudgeTimer -= delta;
+            if (c.driftNudgeTimer <= 0) {
+              const a = Math.random() * Math.PI * 2;
+              c.vx = Math.cos(a) * c.speed * 0.18;
+              c.vy = Math.sin(a) * c.speed * 0.09;
+              c.driftNudgeTimer = 90 + Math.random() * 120;
+            }
+            c.vx *= Math.pow(0.990, delta);
+            c.vy *= Math.pow(0.990, delta);
+            c.obj.x += c.vx * sw * DT;
+            c.obj.y += c.vy * sh * DT;
+            c.obj.rotation += 0.0003 * delta;
+            if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx); c.obj.x = 40; }
+            if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx); c.obj.x = sw - 40; }
+            if (c.obj.y < 40)      { c.vy =  Math.abs(c.vy); c.obj.y = 40; }
+            if (c.obj.y > sh - 20) { c.vy = -Math.abs(c.vy); c.obj.y = sh - 20; }
             break;
           }
         }
@@ -1147,16 +1248,46 @@
           holdCreature.panicTimer = 0;
         }
       } else {
-        // Quick tap → panic all nearby
+        // Quick tap → ripple distortion + per-style panic
+        if (ripples.length < MAX_RIPPLES) {
+          ripples.push({ cx: px / W(), cy: py / H(), radius: 0.02, strength: 0.12 });
+        }
         const r = TAP_R();
         creatures.forEach(c => {
           const dx = c.obj.x - px, dy = c.obj.y - py;
-          if (Math.sqrt(dx*dx + dy*dy) < r) {
-            const angle = Math.atan2(dy, dx);
-            const spd = 0.70 + Math.random() * 0.20;
-            c.panicTimer = 70 + Math.random() * 20;
-            c.panicVx = Math.cos(angle) * spd;
-            c.panicVy = Math.sin(angle) * spd * 0.6;
+          if (Math.sqrt(dx*dx + dy*dy) >= r) return;
+          switch (c.panicStyle) {
+            case 'flee': default: {
+              const angle = Math.atan2(dy, dx);
+              c.panicVx = Math.cos(angle) * (0.70 + Math.random() * 0.20);
+              c.panicVy = Math.sin(angle) * (0.70 + Math.random() * 0.20) * 0.6;
+              c.panicTimer = 70 + Math.random() * 20;
+              break;
+            }
+            case 'dart_back': {
+              // Shrimp-style: dart backward
+              c.panicVx = -Math.sign(c.vx || 1) * 0.85;
+              c.panicVy = (Math.random() - 0.5) * 0.25;
+              c.panicTimer = 55 + Math.random() * 15;
+              break;
+            }
+            case 'run_fwd': {
+              // Run forward fast
+              const fwd = Math.sign(c.vx) || 1;
+              c.panicVx = fwd * 0.85;
+              c.panicVy = (Math.random() - 0.5) * 0.2;
+              c.panicTimer = 65 + Math.random() * 20;
+              break;
+            }
+            case 'zoom': {
+              // Fish zoom-away: fast burst in fleeing direction, low drag
+              const a = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.6;
+              c.panicVx = Math.cos(a) * 1.2;
+              c.panicVy = Math.sin(a) * 0.6;
+              c.panicTimer = 80 + Math.random() * 25;
+              c._zoomPanic = true;
+              break;
+            }
           }
         });
       }
