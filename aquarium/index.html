@@ -349,20 +349,20 @@
     app.stage.addChild(layerBg, layerBgRocks, layerMid, layerRockFg, layerFg, layerTop);
 
     // ─── Ripple distortion filter ──────────────────────────
-    const MAX_RIPPLES = 3;
+    const MAX_RIPPLES = 9; // 1タップ3本 × 最大3タップ同時
     const ripples = []; // {cx, cy, radius, strength}  (normalized coords 0-1)
     const rippleFilter = new PIXI.Filter(
       undefined,
       `precision mediump float;
        varying vec2 vTextureCoord;
        uniform sampler2D uSampler;
-       uniform vec2  uCenters[3];
-       uniform float uRadii[3];
-       uniform float uStrengths[3];
+       uniform vec2  uCenters[9];
+       uniform float uRadii[9];
+       uniform float uStrengths[9];
        uniform float uAspect;
        void main(void) {
          vec2 uv = vTextureCoord;
-         for (int i = 0; i < 3; i++) {
+         for (int i = 0; i < 9; i++) {
            vec2  d    = vec2((uv.x - uCenters[i].x) * uAspect, uv.y - uCenters[i].y);
            float dist = length(d);
            float ring = dist - uRadii[i];
@@ -373,8 +373,8 @@
          uv = clamp(uv, 0.001, 0.999);
          gl_FragColor = texture2D(uSampler, uv);
        }`,
-      { uCenters: new Float32Array(6), uRadii: new Float32Array(3),
-        uStrengths: new Float32Array(3), uAspect: 1.0 }
+      { uCenters: new Float32Array(18), uRadii: new Float32Array(9),
+        uStrengths: new Float32Array(9), uAspect: 1.0 }
     );
     app.stage.filters = [rippleFilter];
     const steerGfx = new PIXI.Graphics();
@@ -983,7 +983,7 @@
         rp.strength -= 3.2 * rp.strength * secDT;
         if (rp.strength < 0.0005 || rp.radius > 1.6) { ripples.splice(i, 1); continue; }
       }
-      for (let i = 0; i < MAX_RIPPLES; i++) {
+      for (let i = 0; i < 9; i++) {
         const rp = ripples[i];
         rippleFilter.uniforms.uCenters[i * 2]     = rp ? rp.cx : 0;
         rippleFilter.uniforms.uCenters[i * 2 + 1] = rp ? rp.cy : 0;
@@ -1261,10 +1261,12 @@
           holdCreature.panicTimer = 0;
         }
       } else {
-        // Quick tap → ripple distortion + per-style panic
-        if (ripples.length < MAX_RIPPLES) {
-          ripples.push({ cx: px / W(), cy: py / H(), radius: 0.02, strength: 0.12 });
-        }
+        // Quick tap → 3本同心波紋 + per-style panic
+        const rcx = px / W(), rcy = py / H();
+        [0.02, 0.07, 0.13].forEach(r0 => {
+          if (ripples.length < MAX_RIPPLES)
+            ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.10 });
+        });
         const r = TAP_R();
         creatures.forEach(c => {
           const dx = c.obj.x - px, dy = c.obj.y - py;
