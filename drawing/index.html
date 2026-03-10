@@ -496,6 +496,8 @@ function saveHistory() {
 }
 
 // ===== Flood fill (バケツ塗り) =====
+// ・暗色ピクセル（ライン）は越えない・復元する
+// ・アンチエイリアス隙間を1px拡張で埋める
 function floodFill(startX, startY, fillColor) {
   startX = Math.round(startX); startY = Math.round(startY);
   const w = canvas.width, h = canvas.height;
@@ -503,27 +505,32 @@ function floodFill(startX, startY, fillColor) {
 
   const imageData = ctx.getImageData(0, 0, w, h);
   const data = imageData.data;
-  const si = (startY * w + startX) * 4;
-  const tr = data[si], tg = data[si+1], tb = data[si+2];
+  const orig = new Uint8ClampedArray(data); // オリジナルを保存
 
   // fillColor → RGBA
   const tmp = document.createElement('canvas'); tmp.width = tmp.height = 1;
   const tc = tmp.getContext('2d'); tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
   const fc = tc.getImageData(0,0,1,1).data;
   const [fr, fg, fb] = [fc[0], fc[1], fc[2]];
-  if (tr === fr && tg === fg && tb === fb) return; // same color
 
-  const tol = 30;
-  const similar = (i) => Math.abs(data[i]-tr) + Math.abs(data[i+1]-tg) + Math.abs(data[i+2]-tb) <= tol * 3;
+  const si = (startY * w + startX) * 4;
+  const tr = orig[si], tg = orig[si+1], tb = orig[si+2];
+  if (tr === fr && tg === fg && tb === fb) return;
 
-  const visited = new Uint8Array(w * h);
+  const DARK = 150; // 暗色ピクセル閾値（RGB平均）
+  const TOL  = 40 * 3;
+  const isDark    = (i4) => (orig[i4] + orig[i4+1] + orig[i4+2]) / 3 < DARK;
+  const similar   = (i4) => Math.abs(orig[i4]-tr) + Math.abs(orig[i4+1]-tg) + Math.abs(orig[i4+2]-tb) <= TOL;
+
+  // DFS塗り潰し（暗色ラインは越えない）
+  const filled = new Uint8Array(w * h);
   const stack = [startY * w + startX];
   while (stack.length > 0) {
     const p = stack.pop();
-    if (visited[p]) continue;
+    if (filled[p]) continue;
     const i4 = p * 4;
-    if (!similar(i4)) continue;
-    visited[p] = 1;
+    if (isDark(i4) || !similar(i4)) continue;
+    filled[p] = 1;
     data[i4] = fr; data[i4+1] = fg; data[i4+2] = fb; data[i4+3] = 255;
     const x = p % w, y = (p / w) | 0;
     if (x > 0)     stack.push(p - 1);
@@ -531,6 +538,33 @@ function floodFill(startX, startY, fillColor) {
     if (y > 0)     stack.push(p - w);
     if (y < h - 1) stack.push(p + w);
   }
+
+  // アンチエイリアス隙間を1px拡張で埋める
+  for (let p = 0; p < w * h; p++) {
+    if (!filled[p]) continue;
+    const x = p % w, y = (p / w) | 0;
+    const ns = [];
+    if (x > 0)     ns.push(p - 1);
+    if (x < w - 1) ns.push(p + 1);
+    if (y > 0)     ns.push(p - w);
+    if (y < h - 1) ns.push(p + w);
+    for (const n of ns) {
+      if (filled[n]) continue;
+      const ni = n * 4;
+      const br = (orig[ni] + orig[ni+1] + orig[ni+2]) / 3;
+      if (br >= DARK && br < 245) { // 半透明エッジ（隙間）= 埋める
+        data[ni] = fr; data[ni+1] = fg; data[ni+2] = fb; data[ni+3] = 255;
+      }
+    }
+  }
+
+  // 暗色ライン（オリジナル）を完全に復元
+  for (let i = 0; i < data.length; i += 4) {
+    if ((orig[i] + orig[i+1] + orig[i+2]) / 3 < DARK) {
+      data[i] = orig[i]; data[i+1] = orig[i+1]; data[i+2] = orig[i+2]; data[i+3] = orig[i+3];
+    }
+  }
+
   ctx.putImageData(imageData, 0, 0);
 }
 
@@ -791,11 +825,11 @@ document.getElementById('btnSparkle').addEventListener('click', () => {
   if (sparkle) { deactivateEraser(); deactivateStamp(); deactivateBucket(); }
 });
 
-// ===== Bucket =====
+// ===== Bucket =====（一度押したら押しっぱなし、他ツールで解除）
 document.getElementById('btnBucket').addEventListener('click', () => {
-  bucketMode = !bucketMode;
-  document.getElementById('btnBucket').classList.toggle('active', bucketMode);
-  if (bucketMode) { deactivateEraser(); deactivateStamp(); deactivateRainbow(); deactivateSparkle(); }
+  bucketMode = true;
+  document.getElementById('btnBucket').classList.add('active');
+  deactivateEraser(); deactivateStamp(); deactivateRainbow(); deactivateSparkle();
 });
 
 // ===== はみ出し防止 =====
