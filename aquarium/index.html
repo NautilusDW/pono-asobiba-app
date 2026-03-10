@@ -390,7 +390,7 @@
     app.stage.filterArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
     const steerGfx   = new PIXI.Graphics();
     const rippleGfx  = new PIXI.Graphics();
-    layerTop.addChild(steerGfx, rippleGfx);
+    layerTop.addChild(steerGfx, rippleGfx, hiderGfx);
 
     // ─── Background: BG_A.png as PixiJS sprite so ripple filter covers it ──
     let _bgSprite = null;
@@ -446,6 +446,8 @@
     let rockTextures = null; // cached after first load
     const bgRockSprites  = []; // behind creatures
     const fgRockSprites  = []; // in front of creatures
+    const hiders         = []; // {c, rock} — creatures hiding behind fg rocks
+    const hiderGfx       = new PIXI.Graphics(); // peek eyes overlay
 
     // Load individual rock PNG files (pre-split with split_sprites.py)
     function loadRockTextures() {
@@ -485,6 +487,7 @@
         spr.rotation = (Math.random() - 0.5) * 0.15;
         spr.x = sw * (zoneX + (Math.random() - 0.5) * 0.07);
         spr.x = Math.max(spr.width * 0.4, Math.min(sw - spr.width * 0.4, spr.x));
+        spr._origX = spr.x; // for shake animation
         return spr;
       }
 
@@ -572,7 +575,61 @@
     }
 
     function repositionRocks() {
+      hiders.forEach(h => { h.c.hiderState = null; h.c.hideRock = null; h.c.obj.visible = true; });
+      hiders.length = 0;
       if (rockTextures) placeRocks(rockTextures);
+      if (creatures.length > 0) assignHiders(2);
+    }
+
+    function assignHiders(n) {
+      if (fgRockSprites.length === 0 || creatures.length === 0) return;
+      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState);
+      if (eligible.length === 0) return;
+      const shuffledC = [...eligible].sort(() => Math.random() - 0.5);
+      const shuffledR = [...fgRockSprites].sort(() => Math.random() - 0.5);
+      const count = Math.min(n, shuffledC.length, shuffledR.length);
+      for (let i = 0; i < count; i++) {
+        const c = shuffledC[i], rock = shuffledR[i];
+        c.hiderState = 'hidden';
+        c.hideRock = rock;
+        c.obj.visible = false;
+        hiders.push({ c, rock });
+      }
+    }
+
+    function shakeRock(rock) {
+      if (rock._shakeStart !== undefined) return;
+      rock._shakeStart = totalT;
+      rock._shakeDuration = 0.55;
+    }
+
+    function emergeFromRock(rock) {
+      const hider = hiders.find(h => h.rock === rock && h.c.hiderState === 'hidden');
+      if (!hider) return;
+      const c = hider.c;
+      c.hiderState = 'fleeing';
+      c.obj.visible = true;
+      c.obj.x = rock.x + (Math.random() - 0.5) * rock.width * 0.3;
+      c.obj.y = rock.y - rock.height * 0.7;
+      const angle = -Math.PI * 0.65 + (Math.random() - 0.5) * Math.PI * 0.9;
+      c.panicVx = Math.cos(angle) * 1.1;
+      c.panicVy = Math.sin(angle) * 0.7;
+      c.panicTimer = 90 + Math.random() * 40;
+      c._zoomPanic = true;
+      c.wasInPanic = false;
+    }
+
+    function startSeeking(c) {
+      c.hiderState = 'seeking';
+      const occupied = new Set(hiders.filter(h => h.c !== c && h.c.hiderState === 'hidden').map(h => h.rock));
+      const available = fgRockSprites.filter(r => !occupied.has(r));
+      const rock = available.length > 0
+        ? available[Math.floor(Math.random() * available.length)]
+        : (fgRockSprites.length > 0 ? fgRockSprites[Math.floor(Math.random() * fgRockSprites.length)] : null);
+      if (!rock) { c.hiderState = null; return; }
+      c.hideRock = rock;
+      const hider = hiders.find(h => h.c === c);
+      if (hider) hider.rock = rock;
     }
 
     // ─── Bubbles ───────────────────────────────────────────
@@ -698,6 +755,7 @@
         DEFAULT_EMOJIS.forEach((emoji, i) => {
           createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
+        assignHiders(2);
         return;
       }
 
@@ -763,10 +821,12 @@
         DEFAULT_EMOJIS.forEach((emoji, i) => {
           createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
+        assignHiders(2);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
       canvases.forEach((cv, i) => createCreatureWithPattern(cv, chosen[i].pattern));
+      assignHiders(2);
     });
 
     async function initAllCreatures() {
@@ -789,6 +849,7 @@
           createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
       }
+      assignHiders(2);
     }
 
     // canvas: HTMLCanvasElement (dimensions always available synchronously)
@@ -836,6 +897,8 @@
         pulseTimer: 30 + Math.random() * 40,
         pulseDir:   Math.random() * Math.PI * 2,
         driftNudgeTimer: 60 + Math.random() * 90,
+        hiderState: null,  // null | 'hidden' | 'fleeing' | 'seeking'
+        hideRock:   null,
       };
 
       layerMid.addChild(obj);
@@ -926,12 +989,39 @@
         rippleGfx.lineStyle(1, 0xffffff, a * 0.55); rippleGfx.drawCircle(cx, cy, r);
       });
 
+      // ── Rock shake ─────────────────────────────────────────
+      fgRockSprites.forEach(r => {
+        if (r._shakeStart === undefined) return;
+        const elapsed = totalT - r._shakeStart;
+        if (elapsed > r._shakeDuration) { r.x = r._origX; r._shakeStart = undefined; return; }
+        const decay = 1 - elapsed / r._shakeDuration;
+        r.x = r._origX + Math.sin(elapsed * 32) * 5 * decay;
+      });
+
+      // ── Hider peek eyes (上からちょっとだけ顔を出す目) ──────
+      hiderGfx.clear();
+      hiders.forEach(h => {
+        if (h.c.hiderState !== 'hidden' || !h.rock) return;
+        const rock = h.rock;
+        const ex = rock.x;
+        const ey = rock.y - rock.height + 2 + Math.sin(totalT * 2.2) * 2;
+        hiderGfx.beginFill(0xffffff, 0.92);
+        hiderGfx.drawCircle(ex - 5, ey, 3.5);
+        hiderGfx.drawCircle(ex + 5, ey, 3.5);
+        hiderGfx.endFill();
+        hiderGfx.beginFill(0x111122, 1.0);
+        hiderGfx.drawCircle(ex - 4.5, ey, 1.8);
+        hiderGfx.drawCircle(ex + 5.5, ey, 1.8);
+        hiderGfx.endFill();
+      });
+
       // Creatures — water physics (screen-relative velocity)
       const sw = W(), sh = H() * 0.80;
       const DT = delta / 60; // seconds per frame (frame-rate independent)
 
       creatures.forEach(c => {
         c.t += DT;
+        if (c.hiderState === 'hidden') return; // 岩の裏に隠れ中 → 動かさない
 
         // ── Panic: burst then rapid water-resistance deceleration ──
         if (c.panicTimer > 0) {
@@ -958,6 +1048,34 @@
           if (c.pattern === 'wander')    { c.baseX = c.obj.x; c.baseY = c.obj.y; }
           if (c.pattern === 'jellyfish') c.baseY = Math.max(50, Math.min(c.obj.y, sh * 0.72));
           if (c.pattern === 'drift')     { c.baseX = c.obj.x; c.baseY = c.obj.y; }
+          // fleeing → seeking（パニック終了後に次の岩を探す）
+          if (c.hiderState === 'fleeing') { startSeeking(c); return; }
+        }
+
+        // ── Seeking: 次の岩に向かって泳ぐ ──────────────────────
+        if (c.hiderState === 'seeking') {
+          const rock = c.hideRock;
+          if (rock) {
+            const tx = rock.x, ty = rock.y - rock.height * 0.6;
+            const dx = tx - c.obj.x, dy = ty - c.obj.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 55) {
+              c.hiderState = 'hidden';
+              c.obj.visible = false;
+            } else {
+              c.vx += (dx / dist) * 0.005 * delta;
+              c.vy += (dy / dist) * 0.003 * delta;
+              const spd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
+              const maxSpd = c.speed * 3.5;
+              if (spd > maxSpd) { c.vx *= maxSpd / spd; c.vy *= maxSpd / spd; }
+              c.obj.x += c.vx * sw * DT;
+              c.obj.y += c.vy * sh * DT;
+              const s = Math.abs(c.obj.scale.x);
+              if (c.vx > 0.001) c.obj.scale.x = s;
+              else if (c.vx < -0.001) c.obj.scale.x = -s;
+            }
+          }
+          return;
         }
 
         switch (c.pattern) {
@@ -1195,6 +1313,18 @@
           holdCreature.panicTimer = 0;
         }
       } else {
+        // ── 岩タップ: シェイク → 生き物が飛び出す ─────────────
+        // anchor(0.5, 1.0) なので rock.x=底中央, rock.y=底
+        const hitRock = fgRockSprites.find(r => {
+          const dx = px - r.x;
+          const dy = py - r.y;
+          return Math.abs(dx) < r.width * 0.7 && dy > -r.height * 1.15 && dy < r.height * 0.1;
+        });
+        if (hitRock) {
+          shakeRock(hitRock);
+          setTimeout(() => emergeFromRock(hitRock), 550);
+        }
+
         // Quick tap → 3本同時・初期半径をずらして1つの波紋イベントに見せる
         [0.005, 0.04, 0.075].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
