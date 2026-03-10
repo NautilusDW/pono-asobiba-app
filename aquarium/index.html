@@ -582,14 +582,15 @@
 
     async function initRocks() {
       if (!rockTextures) {
-        [rockTextures, octopusTex, jellyfishTex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex()]);
+        [rockTextures, octopusTex, jellyfishTex, turtleTex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex()]);
       }
       placeRocks(rockTextures);
     }
 
     // ─── Animated sprite creatures (Octopus / JellyFish) ──
     let octopusTex  = null; // {surprised, frames:[tex002,tex003]}
-    let jellyfishTex = null; // {surprised, frames:[tex002,tex003]}
+    let jellyfishTex = null;
+    let turtleTex    = null;
 
     function loadSpriteTex(paths) {
       return Promise.all(paths.map(p => new Promise(resolve => {
@@ -609,6 +610,11 @@
       '../assets/images/ocean/JellyFish/JellyFish_001.png',
       '../assets/images/ocean/JellyFish/JellyFish_002.png',
       '../assets/images/ocean/JellyFish/JellyFish_003.png',
+    ]);
+    const loadTurtleTex = () => loadSpriteTex([
+      '../assets/images/ocean/Turtle/Turtle_001.png',
+      '../assets/images/ocean/Turtle/Turtle_002.png',
+      '../assets/images/ocean/Turtle/Turtle_003.png',
     ]);
 
     function addOctopusCreatures(n) {
@@ -713,6 +719,62 @@
           baseSize,
           halfH: baseSize * 0.5,
           tex: jellyfishTex.frames[0],
+          wasInPanic: false,
+          pulseTimer: 30 + Math.random() * 40,
+          pulseDir: Math.random() * Math.PI * 2,
+          driftNudgeTimer: 60 + Math.random() * 90,
+          hiderState: null,
+          hideRock: null,
+        };
+        layerMid.addChild(obj);
+        creatures.push(c);
+      }
+    }
+
+    function addTurtleCreatures(n) {
+      if (!turtleTex || !turtleTex.surprised || turtleTex.frames.length === 0) return;
+      const existing = creatures.filter(c => c.turtlesprite);
+      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      creatures.splice(0, creatures.length, ...creatures.filter(c => !c.turtlesprite));
+
+      const count = Math.min(n, 3);
+      const safeBottom = H() * 0.72;
+      for (let i = 0; i < count; i++) {
+        const baseSize = 90 + Math.random() * 35;
+        // Turtle images are ~600px wide
+        const s = baseSize / 600;
+        const startX = 80 + Math.random() * Math.max(W() - 160, 1);
+        const startY = 80 + Math.random() * Math.max(safeBottom - 160, 1);
+
+        const obj = new PIXI.Sprite(turtleTex.frames[0]);
+        obj.anchor.set(0.5);
+        obj.scale.set(s);
+        obj.x = startX;
+        obj.y = startY;
+
+        const speed = 0.030 + Math.random() * 0.015;
+        const c = {
+          obj,
+          pattern: 'swim',   // steady directional swimming
+          turtlesprite: true,
+          octTexSurprised: turtleTex.surprised,
+          octTexNormal: turtleTex.frames,
+          animFrame: 0,
+          animTimer: Math.random() * 26,
+          t: Math.random() * Math.PI * 2,
+          baseX: startX,
+          baseY: startY,
+          vx: (Math.random() < 0.5 ? 1 : -1) * speed,
+          vy: (Math.random() - 0.5) * speed * 0.1,
+          speed,
+          panicTimer: 0,
+          panicVx: 0,
+          panicVy: 0,
+          panicStyle: ['flee', 'dart_back'][Math.floor(Math.random() * 2)],
+          _zoomPanic: false,
+          baseSize,
+          halfH: baseSize * 0.5,
+          tex: turtleTex.frames[0],
           wasInPanic: false,
           pulseTimer: 30 + Math.random() * 40,
           pulseDir: Math.random() * Math.PI * 2,
@@ -975,6 +1037,7 @@
         assignHiders(2);
         addOctopusCreatures(3);
         addJellyfishCreatures(3);
+        addTurtleCreatures(2);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
@@ -1178,7 +1241,7 @@
         c.t += DT;
 
         // ── Sprite texture animation: Octopus & JellyFish ──────────
-        if (c.octopus || c.jellysprite) {
+        if (c.octopus || c.jellysprite || c.turtlesprite) {
           c.animTimer += delta;
           if (c.panicTimer > 0) {
             // Surprised face while panicking
@@ -1196,8 +1259,8 @@
               if (prevFrame !== c.animFrame) c.obj._baseScale = null; // texture changed
             }
           }
-          // Face movement direction (flip horizontally) — octopus only, jellyfish float vertically
-          if (c.octopus) {
+          // Face movement direction (flip horizontally) — octopus & turtle, not jellyfish
+          if (c.octopus || c.turtlesprite) {
             const spd = Math.abs(c.vx) > 0.001 ? c.vx : (c.panicVx || 0);
             if (spd !== 0) {
               const sc = Math.abs(c.obj.scale.x);
