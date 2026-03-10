@@ -133,14 +133,18 @@ const ROOM_ITEMS = [
 
 // ── ポイント獲得方法のリスト（説明画面用） ─────────────────
 const POINT_GUIDE = [
-  { emoji: '✏️', name: 'もじかき',     how: '1もじ れんしゅうしたら',  pt: 2  },
-  { emoji: '🧩', name: 'パズル',       how: 'かんせいしたら',          pt: 5  },
-  { emoji: '🎨', name: 'ぬりえ',       how: 'かんせいしたら',          pt: 5  },
-  { emoji: '🔤', name: 'ことばあわせ', how: 'ぜんぶ あわせたら',       pt: 5  },
-  { emoji: '🖼️', name: 'おえかき',    how: 'えを ほぞんしたら',       pt: 3  },
-  { emoji: '🐠', name: 'うみのせかい', how: '5ふん あそんだら',        pt: 3  },
-  { emoji: '🦔', name: 'ブロック崩し', how: '1ステージ クリアしたら',  pt: 5, premium: true },
-  { emoji: '🐦', name: 'つみき',      how: '10こ つんだら',            pt: 5, premium: true },
-  { emoji: '🦊', name: 'みちつなぎ',  how: '1ステージ クリアしたら',  pt: 5, premium: true },
-  { emoji: '🌟', name: 'まいにちボーナス', how: 'まいにちあそんだら', pt: 3  },
+  { emoji: '✏️', name: 'もじかき',         how: '1もじ れんしゅうしたら',          pt: 2  },
+  { emoji: '🎌', name: 'もじかき（ボーナス）', how: 'ひらがな or カタカナ ぜんぶ！', pt: 20, bonus: true },
+  { emoji: '🧩', name: 'パズル',           how: 'かんせいしたら',                  pt: 5  },
+  { emoji: '🎨', name: 'ぬりえ',           how: 'ほぞんしたら',                    pt: 5  },
+  { emoji: '🔤', name: 'ことばあわせ',     how: 'ぜんぶ あわせたら',               pt: 5  },
+  { emoji: '🖼️', name: 'おえかき',        how: 'えを ほぞんしたら',               pt: 3  },
+  { emoji: '🐠', name: 'うみのせかい',     how: '5ふん あそんだら',                pt: 3  },
+  { emoji: '🦔', name: 'ブロック崩し',     how: '1ステージ クリアしたら',          pt: 5, premium: true },
+  { emoji: '🏆', name: 'ブロック崩し（ボーナス）', how: 'ハイスコア こうしんしたら', pt: 10, premium: true, bonus: true },
+  { emoji: '🐦', name: 'つみき',          how: '10こ つんだら',                    pt: 5, premium: true },
+  { emoji: '🏆', name: 'つみき（ボーナス）', how: 'ハイスコア こうしんしたら',     pt: 10, premium: true, bonus: true },
+  { emoji: '🦊', name: 'みちつなぎ',      how: '1ステージ クリアしたら',           pt: 5, premium: true },
+  { emoji: '🌟', name: 'まいにちボーナス', how: 'まいにちあそんだら',              pt: 3  },
+  { emoji: '📅', name: '1にちの さいだい', how: '（どのゲームでも うえかぎ）',     pt: 25, note: true },
 ];

@@ -588,11 +588,13 @@
     });
 
     // ===== Points display =====
-    (function() {
+    function refreshMenuPts() {
       const pts = parseInt(localStorage.getItem('pono_points') || '0');
       const el = document.getElementById('menu-pts');
       if (el) el.textContent = pts;
-    })();
+    }
+    refreshMenuPts();
+    window.addEventListener('pageshow', refreshMenuPts);
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';

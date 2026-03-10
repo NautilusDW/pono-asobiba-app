@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ぬりえ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<script src="../common/points.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -1028,21 +1029,6 @@ function applyRegionMask(x0, y0, x1, y1) {
     }
   }
   if (changed) ctx.putImageData(imgData, cx0, cy0);
-}
-
-// ===== ポイント付与 =====
-function awardPoints(amount) {
-  const today = new Date().toDateString();
-  const dailyKey = 'pono_points_daily_' + today;
-  const todayTotal = parseInt(localStorage.getItem(dailyKey) || '0');
-  const actual = Math.min(amount, 25 - todayTotal);
-  if (actual <= 0) return 0;
-  const cur = parseInt(localStorage.getItem('pono_points') || '0');
-  const life = parseInt(localStorage.getItem('pono_points_lifetime') || '0');
-  localStorage.setItem('pono_points', cur + actual);
-  localStorage.setItem('pono_points_lifetime', life + actual);
-  localStorage.setItem(dailyKey, todayTotal + actual);
-  return actual;
 }
 
 // ===== Undo =====

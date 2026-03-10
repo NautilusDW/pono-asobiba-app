@@ -311,6 +311,11 @@
     .guide-how  { font-size: 12px; color: #666; }
     .guide-pt   { font-weight: bold; font-size: 15px; color: #e07800; flex-shrink: 0; }
     .guide-premium { font-size: 10px; color: #888; }
+    .guide-tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: bold; vertical-align: middle; }
+    .tag-premium { background: #ffe082; color: #8a6000; }
+    .tag-bonus   { background: #e8f5e9; color: #2e7d32; }
+    .guide-row-note { background: #fff8e1; border-radius: 8px; padding: 6px 4px; }
+    .guide-pt-note  { color: #999; font-size: 13px; }
 
     /* Premium banner inside info sheet */
     .premium-banner {
@@ -348,6 +353,30 @@
     .theme-btn span { font-size: 15px; font-weight: bold; }
     #btn-boy  { background: linear-gradient(135deg, #42a5f5, #1565c0); color: white; }
     #btn-girl { background: linear-gradient(135deg, #f06292, #c2185b); color: white; }
+
+    /* ─── Debug panel ─── */
+    #debug-panel {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: rgba(20,20,20,0.92); color: #0f0; border-radius: 16px;
+      padding: 14px 18px; z-index: 9999; min-width: 260px;
+      font-family: monospace; font-size: 13px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    #debug-panel.hidden { display: none; }
+    #debug-panel h3 { color: #ff0; margin-bottom: 10px; font-size: 13px; }
+    .dbg-row { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+    .dbg-btn {
+      padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: bold; font-size: 13px;
+    }
+    .dbg-btn.plus { background: #00cc44; color: #000; }
+    .dbg-btn.minus { background: #cc4400; color: #fff; }
+    .dbg-btn.reset { background: #444; color: #fff; }
+    #dbg-input {
+      width: 80px; padding: 5px 8px; border-radius: 6px; border: 1px solid #555;
+      background: #222; color: #fff; font-size: 13px;
+    }
+    .dbg-label { color: #aaa; font-size: 11px; margin-top: 4px; }
 
     /* ─── Points toast ─── */
     #pts-toast {
@@ -402,6 +431,24 @@
 
 <!-- ── Room scroll ────────────────────────────────── -->
 <div id="room-scroll"></div>
+
+<!-- ── Debug panel ───────────────────────────────── -->
+<div id="debug-panel" class="hidden">
+  <h3>🛠 デバッグ: ポイント操作</h3>
+  <div class="dbg-row">
+    <button class="dbg-btn plus" onclick="dbgAdd(10)">+10</button>
+    <button class="dbg-btn plus" onclick="dbgAdd(50)">+50</button>
+    <button class="dbg-btn plus" onclick="dbgAdd(100)">+100</button>
+    <button class="dbg-btn minus" onclick="dbgAdd(-10)">-10</button>
+    <button class="dbg-btn minus" onclick="dbgAdd(-100)">-100</button>
+  </div>
+  <div class="dbg-row">
+    <input id="dbg-input" type="number" placeholder="直接入力">
+    <button class="dbg-btn plus" onclick="dbgSet()">セット</button>
+    <button class="dbg-btn reset" onclick="dbgReset()">リセット</button>
+  </div>
+  <div class="dbg-label" id="dbg-info"></div>
+</div>
 
 <!-- ── Action bar ────────────────────────────────── -->
 <div id="action-bar">
@@ -901,14 +948,18 @@ function renderGuide() {
   list.innerHTML = '';
   POINT_GUIDE.forEach(g => {
     const row = document.createElement('div');
-    row.className = 'guide-row';
+    row.className = 'guide-row' + (g.note ? ' guide-row-note' : '');
+    const tags = [
+      g.premium ? '<span class="guide-tag tag-premium">★プレミアム</span>' : '',
+      g.bonus   ? '<span class="guide-tag tag-bonus">ボーナス</span>'      : '',
+    ].join('');
     row.innerHTML = `
       <div class="guide-icon">${g.emoji}</div>
       <div class="guide-body">
-        <div class="guide-game">${g.name}${g.premium ? ' <span class="guide-premium">★プレミアム</span>' : ''}</div>
+        <div class="guide-game">${g.name} ${tags}</div>
         <div class="guide-how">${g.how}</div>
       </div>
-      <div class="guide-pt">+${g.pt}pt</div>`;
+      <div class="guide-pt${g.note ? ' guide-pt-note' : ''}">${g.note ? '上限' : '+'} ${g.pt}pt</div>`;
     list.appendChild(row);
   });
 }
@@ -986,6 +1037,61 @@ function init() {
 }
 
 init();
+
+// ─── pageshow: ゲームから戻ったときにポイントを再読み込み ─────────
+window.addEventListener('pageshow', function() {
+  loadState();
+  updatePtsDisplay();
+  renderShopGrid(currentShopCat);
+});
+
+// ─── デバッグパネル（pts-disp を5回タップで開く）────────────────
+(function() {
+  var taps = 0, tapTimer;
+  document.getElementById('pts-disp').addEventListener('click', function() {
+    taps++;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(function() { taps = 0; }, 600);
+    if (taps >= 5) {
+      taps = 0;
+      var panel = document.getElementById('debug-panel');
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) _dbgUpdate();
+    }
+  });
+})();
+
+function _dbgUpdate() {
+  var today = new Date().toDateString();
+  var dailyUsed = parseInt(localStorage.getItem('pono_points_daily_' + today) || '0', 10);
+  document.getElementById('dbg-info').textContent =
+    '現在: ' + state.points + 'pt ／ 本日使用: ' + dailyUsed + '/25pt';
+}
+function dbgAdd(n) {
+  state.points = Math.max(0, state.points + n);
+  saveState();
+  updatePtsDisplay();
+  _dbgUpdate();
+  renderShopGrid(currentShopCat);
+}
+function dbgSet() {
+  var v = parseInt(document.getElementById('dbg-input').value, 10);
+  if (isNaN(v)) return;
+  state.points = Math.max(0, v);
+  saveState();
+  updatePtsDisplay();
+  _dbgUpdate();
+  renderShopGrid(currentShopCat);
+}
+function dbgReset() {
+  state.points = 0;
+  var today = new Date().toDateString();
+  localStorage.removeItem('pono_points_daily_' + today);
+  saveState();
+  updatePtsDisplay();
+  _dbgUpdate();
+  renderShopGrid(currentShopCat);
+}
 </script>
 </body>
 </html>
