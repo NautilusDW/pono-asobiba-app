@@ -247,6 +247,21 @@
       font-size: 18px; display: flex; align-items: center; justify-content: center;
     }
 
+    /* Mode toggle (かう / てもち) */
+    .mode-toggle {
+      display: flex; gap: 6px; padding: 8px 14px 4px;
+    }
+    .mode-btn {
+      flex: 1; height: 38px; border-radius: 20px; border: 2px solid transparent;
+      font-size: 14px; font-weight: bold; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: all 0.18s;
+    }
+    .mode-btn.buy  { background: #f0e4d8; color: #888; }
+    .mode-btn.bag  { background: #f0e4d8; color: #888; }
+    .mode-btn.buy.on  { background: var(--orange); color: white; border-color: var(--orange-dark); }
+    .mode-btn.bag.on  { background: #43a047;       color: white; border-color: #2e7d32; }
+
     /* Category tabs */
     .cat-tabs {
       display: flex; gap: 8px; padding: 8px 12px;
@@ -260,6 +275,19 @@
       font-size: 14px; font-weight: bold; color: #666; cursor: pointer;
     }
     .cat-tab.on { background: var(--orange); color: white; border-color: var(--orange-dark); }
+
+    /* Empty inventory state */
+    .inv-empty {
+      padding: 32px 16px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .inv-empty-icon { font-size: 52px; }
+    .inv-empty-msg  { font-size: 14px; color: #888; line-height: 1.6; }
+    .inv-empty-btn  {
+      padding: 10px 26px; background: var(--orange); color: white;
+      border: none; border-radius: 22px; font-size: 15px; font-weight: bold;
+      cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
 
     /* Item grid */
     .item-grid {
@@ -434,7 +462,11 @@
 
 <!-- ── Debug panel ───────────────────────────────── -->
 <div id="debug-panel" class="hidden">
-  <h3>🛠 デバッグ: ポイント操作</h3>
+  <h3 style="display:flex;justify-content:space-between;align-items:center;">
+    <span>🛠 デバッグ: ポイント操作</span>
+    <button onclick="document.getElementById('debug-panel').classList.add('hidden')"
+      style="background:#555;color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:1;padding:0;">✕</button>
+  </h3>
   <div class="dbg-row">
     <button class="dbg-btn plus" onclick="dbgAdd(10)">+10</button>
     <button class="dbg-btn plus" onclick="dbgAdd(50)">+50</button>
@@ -474,8 +506,12 @@
   <div class="sheet" id="shop-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-hd">
-      <span class="sheet-title">🛍️ おみせ</span>
+      <span class="sheet-title" id="shop-title">🛍️ おみせ</span>
       <button class="sheet-close" id="shop-close">✕</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn buy on" id="mode-buy" onclick="setShopMode('buy')">🛍️ かう</button>
+      <button class="mode-btn bag"    id="mode-bag" onclick="setShopMode('bag')">🎒 てもち</button>
     </div>
     <div class="cat-tabs" id="shop-tabs">
       <button class="cat-tab on" data-cat="wall">🎨 かべがみ</button>
@@ -769,19 +805,18 @@ function buildRoomArea(areaData) {
   floor.appendChild(furnSlot);
   floor.appendChild(decoSlot);
 
-  // Wall clickable for wallpaper (whole wall area)
+  // Wall clickable → てもち（持っている壁紙を貼る）
   wall.style.cursor = 'pointer';
   wall.addEventListener('click', e => {
     if (locked) return;
-    // avoid clicking slots
     if (e.target.closest('.item-slot')) return;
-    openShop('wall');
+    openInventory('wall');
   });
   floor.addEventListener('click', e => {
     if (locked) return;
     const slot = e.target.closest('.item-slot');
-    if (slot) { openShop(slot.dataset.slotCat); return; }
-    openShop('floor');
+    if (slot) { openInventory(slot.dataset.slotCat); return; }
+    openInventory('floor');
   });
 
   div.appendChild(wall);
@@ -854,19 +889,41 @@ function refreshArea(areaId) {
 // ─── Shop ─────────────────────────────────────────────
 let currentShopCat = 'wall';
 let currentAreaId  = 'living';
+let shopMode       = 'buy'; // 'buy' | 'bag'
 
-function openShop(cat) {
-  currentShopCat = cat;
-  // Determine which area is visible
+function _syncArea() {
   const scroll = document.getElementById('room-scroll');
   const idx = Math.round(scroll.scrollLeft / window.innerWidth);
   currentAreaId = ROOM_AREAS[idx]?.id || 'living';
+}
 
-  // Activate tab
+function setShopMode(mode) {
+  shopMode = mode;
+  document.getElementById('mode-buy').classList.toggle('on', mode === 'buy');
+  document.getElementById('mode-bag').classList.toggle('on', mode === 'bag');
+  document.getElementById('shop-title').textContent = mode === 'buy' ? '🛍️ おみせ' : '🎒 てもち';
+  renderShopGrid(currentShopCat);
+}
+
+// 🛍️ボタン → 買う画面
+function openShop(cat) {
+  currentShopCat = cat || currentShopCat;
+  _syncArea();
+  document.querySelectorAll('.cat-tab').forEach(t => {
+    t.classList.toggle('on', t.dataset.cat === currentShopCat);
+  });
+  setShopMode('buy');
+  document.getElementById('shop-ov').classList.remove('hidden');
+}
+
+// スロットタップ → てもち画面（持っているものを置く）
+function openInventory(cat) {
+  currentShopCat = cat;
+  _syncArea();
   document.querySelectorAll('.cat-tab').forEach(t => {
     t.classList.toggle('on', t.dataset.cat === cat);
   });
-  renderShopGrid(cat);
+  setShopMode('bag');
   document.getElementById('shop-ov').classList.remove('hidden');
 }
 
@@ -875,43 +932,100 @@ function renderShopGrid(cat) {
   grid.innerHTML = '';
   const cfg = state.config[currentAreaId] || {};
 
-  ROOM_ITEMS.filter(item => item.cat === cat).forEach(item => {
-    const owned   = isOwned(item.id);
-    const placed  = cfg[cat] === item.id;
+  if (shopMode === 'buy') {
+    // 買うモード: 未購入アイテムのみ表示（所持済みはグレーアウト）
+    const items = ROOM_ITEMS.filter(item => item.cat === cat);
+    const unowned = items.filter(item => !isOwned(item.id));
+    const owned   = items.filter(item =>  isOwned(item.id));
 
-    const card = document.createElement('div');
-    card.className = 'item-card' + (placed ? ' placed' : owned ? ' owned' : '');
+    if (unowned.length === 0 && owned.length > 0) {
+      // 全部買い済み
+      const msg = document.createElement('div');
+      msg.className = 'inv-empty';
+      msg.innerHTML = `<div class="inv-empty-icon">🎉</div>
+        <div class="inv-empty-msg">このカテゴリは ぜんぶ もってるよ！<br>てもちからかざってみよう！</div>
+        <button class="inv-empty-btn" onclick="setShopMode('bag')">🎒 てもちをみる</button>`;
+      grid.appendChild(msg);
+      return;
+    }
 
-    const prev = makeItemPreview(item);
-    const name = Object.assign(document.createElement('div'), {className: 'item-card-name', textContent: item.name});
-    const price = Object.assign(document.createElement('div'), {className: 'item-card-price',
-      textContent: owned ? '' : `⭐ ${item.price}`});
+    unowned.forEach(item => {
+      const card = _makeShopCard(item, 'buy', cfg);
+      grid.appendChild(card);
+    });
 
-    const badge = document.createElement('div');
-    badge.className = 'item-badge ' + (placed ? 'badge-placed' : owned ? 'badge-owned' : 'badge-lock');
-    badge.textContent = placed ? 'かざりちゅう' : owned ? 'もってる' : state.points >= item.price ? 'かえる！' : `あと ${item.price - state.points}⭐`;
+    // 所持済みは小さく表示（区切り後）
+    if (owned.length > 0) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'grid-column:1/-1;font-size:11px;color:#aaa;padding:6px 4px 0;border-top:1px dashed #eee;';
+      sep.textContent = '── もってるもの ──';
+      grid.appendChild(sep);
+      owned.forEach(item => {
+        const card = _makeShopCard(item, 'owned', cfg);
+        grid.appendChild(card);
+      });
+    }
 
-    card.appendChild(prev);
-    card.appendChild(name);
-    if (!owned) card.appendChild(price);
-    card.appendChild(badge);
+  } else {
+    // てもちモード: 所持済みアイテムのみ表示
+    const owned = ROOM_ITEMS.filter(item => item.cat === cat && isOwned(item.id));
 
-    card.addEventListener('click', () => handleItemTap(item));
-    grid.appendChild(card);
-  });
+    if (owned.length === 0) {
+      const msg = document.createElement('div');
+      msg.className = 'inv-empty';
+      msg.innerHTML = `<div class="inv-empty-icon">🛍️</div>
+        <div class="inv-empty-msg">まだ なにも もってないよ。<br>おみせで かってみよう！</div>
+        <button class="inv-empty-btn" onclick="setShopMode('buy')">🛍️ おみせへいく</button>`;
+      grid.appendChild(msg);
+      return;
+    }
+
+    owned.forEach(item => {
+      const card = _makeShopCard(item, 'place', cfg);
+      grid.appendChild(card);
+    });
+  }
 }
 
-function handleItemTap(item) {
-  const cfg   = state.config[currentAreaId] || {};
-  const owned = isOwned(item.id);
+function _makeShopCard(item, mode, cfg) {
+  const placed = cfg[item.cat] === item.id;
+  let cardClass = 'item-card';
+  if (mode === 'owned')  cardClass += ' locked';
+  if (mode === 'place' && placed) cardClass += ' placed';
+  if (mode === 'place' && !placed) cardClass += ' owned';
 
-  if (owned) {
-    // Place immediately
-    placeItem(item);
-    return;
+  const card = document.createElement('div');
+  card.className = cardClass;
+
+  const prev = makeItemPreview(item);
+  const name = Object.assign(document.createElement('div'), {className: 'item-card-name', textContent: item.name});
+
+  const badge = document.createElement('div');
+  if (mode === 'buy') {
+    badge.className = 'item-badge ' + (state.points >= item.price ? 'badge-lock' : 'badge-lock');
+    badge.style.background = state.points >= item.price ? '#fff3e0' : '#f5f5f5';
+    badge.style.color = state.points >= item.price ? '#f57c00' : '#999';
+    badge.textContent = state.points >= item.price ? `⭐ ${item.price}pt かえる！` : `あと ${item.price - state.points}⭐`;
+  } else if (mode === 'owned') {
+    badge.className = 'item-badge badge-owned';
+    badge.textContent = 'もってる ✓';
+  } else { // place
+    badge.className = 'item-badge ' + (placed ? 'badge-placed' : 'badge-owned');
+    badge.textContent = placed ? 'かざりちゅう' : 'おく！';
   }
 
-  // Show buy confirm
+  card.appendChild(prev);
+  card.appendChild(name);
+  card.appendChild(badge);
+
+  if (mode === 'buy')   card.addEventListener('click', () => showBuyConfirm(item));
+  if (mode === 'place') card.addEventListener('click', () => placeItem(item));
+  // owned (grayed): no action
+
+  return card;
+}
+
+function showBuyConfirm(item) {
   document.getElementById('cf-emoji').textContent = item.emoji;
   document.getElementById('cf-name').textContent  = item.name;
   document.getElementById('cf-price').textContent = `⭐ ${item.price}pt`;
@@ -929,8 +1043,11 @@ function buyItem(item) {
   saveState();
   updatePtsDisplay();
   document.getElementById('confirm-ov').classList.add('hidden');
-  showToast(`🎉 ${item.name} をかった！`);
-  placeItem(item);
+  // 買ったらてもちに入る（自動配置しない）
+  showToast(`🎒 ${item.name} を てもちに いれたよ！`);
+  // てもちモードに切り替えてその場で見せる
+  setShopMode('bag');
+  renderShopGrid(item.cat);
 }
 
 function placeItem(item) {
@@ -939,6 +1056,7 @@ function placeItem(item) {
   saveState();
   refreshArea(currentAreaId);
   renderShopGrid(item.cat);
+  document.getElementById('shop-ov').classList.add('hidden');
   showToast(`✨ ${item.name} をかざったよ！`);
 }
 
