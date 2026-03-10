@@ -351,7 +351,6 @@
     // ─── Ripple distortion filter ──────────────────────────
     const MAX_RIPPLES = 9; // 1タップ3本 × 最大3タップ同時
     const ripples = []; // {cx, cy, radius, strength}  (normalized coords 0-1)
-    const ripplePending = []; // {cx, cy, delayLeft} — 時間差スポーン用
     const rippleFilter = new PIXI.Filter(
       undefined,
       `precision mediump float;
@@ -976,17 +975,6 @@
         bubbleGfx.endFill();
       }
 
-      // ── Ripple pending: 時間差スポーン ─────────────────────
-      for (let i = ripplePending.length - 1; i >= 0; i--) {
-        const p = ripplePending[i];
-        p.delayLeft -= delta;
-        if (p.delayLeft <= 0) {
-          if (ripples.length < MAX_RIPPLES)
-            ripples.push({ cx: p.cx, cy: p.cy, radius: 0.02, strength: 0.13 });
-          ripplePending.splice(i, 1);
-        }
-      }
-
       // ── Ripple update ──────────────────────────────────────
       const secDT = delta / 60;
       for (let i = ripples.length - 1; i >= 0; i--) {
@@ -1273,10 +1261,11 @@
           holdCreature.panicTimer = 0;
         }
       } else {
-        // Quick tap → 3本を時間差で出す（ホワンホワンホワン）
+        // Quick tap → 3本同時・初期半径をずらして1つの波紋イベントに見せる
         const rcx = px / W(), rcy = py / H();
-        [0, 18, 36].forEach(delay => {
-          ripplePending.push({ cx: rcx, cy: rcy, delayLeft: delay });
+        [0.01, 0.08, 0.15].forEach(r0 => {
+          if (ripples.length < MAX_RIPPLES)
+            ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.13 });
         });
         const r = TAP_R();
         creatures.forEach(c => {
