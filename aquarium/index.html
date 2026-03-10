@@ -985,7 +985,7 @@
       for (let i = ripples.length - 1; i >= 0; i--) {
         const rp = ripples[i];
         rp.radius   += 0.22 * secDT;
-        rp.strength -= 3.2 * rp.strength * secDT;
+        rp.strength -= 1.6 * rp.strength * secDT;
         if (rp.strength < 0.0005 || rp.radius > 0.8) { ripples.splice(i, 1); continue; }
       }
       for (let i = 0; i < 9; i++) {
@@ -1002,7 +1002,7 @@
       ripples.forEach(rp => {
         const cx = rp.cx * W(), cy = rp.cy * H();
         const r  = rp.radius * H();
-        const a  = Math.min(rp.strength / 0.06, 1);
+        const a  = Math.min(rp.strength / 0.035, 1);
         rippleGfx.lineStyle(6, 0x88eeff, a * 0.12); rippleGfx.drawCircle(cx, cy, r);
         rippleGfx.lineStyle(2, 0xccffff, a * 0.35); rippleGfx.drawCircle(cx, cy, r);
         rippleGfx.lineStyle(1, 0xffffff, a * 0.55); rippleGfx.drawCircle(cx, cy, r);
@@ -1281,7 +1281,7 @@
         const rcx = px / W(), rcy = py / H();
         [0.005, 0.04, 0.075].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
-            ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.06 });
+            ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.035 });
         });
         const r = TAP_R();
         creatures.forEach(c => {
