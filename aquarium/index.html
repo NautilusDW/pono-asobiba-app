@@ -366,6 +366,9 @@
        void main(void) {
          vec2 uv = vTextureCoord;
          vec2 posPx = vTextureCoord * uScreenSize;
+         // エッジに近いほど歪みを弱める（端めくれ防止）
+         float edgeFade = min(min(uv.x, 1.0-uv.x), min(uv.y, 1.0-uv.y));
+         edgeFade = smoothstep(0.0, 0.06, edgeFade);
          for (int i = 0; i < 9; i++) {
            if (uStrengths[i] <= 0.0005) continue;
            vec2  d      = posPx - uCentersPx[i];
@@ -374,10 +377,9 @@
            float ring   = distN - uRadii[i];
            float w      = exp(-ring * ring * 500.0) * uStrengths[i];
            if (distPx > 0.5)
-             uv += (d / distPx) / uScreenSize * w * uScreenSize.y;
+             uv += (d / distPx) / uScreenSize * w * uScreenSize.y * edgeFade;
          }
-         uv = clamp(uv, 0.001, 0.999);
-         gl_FragColor = texture2D(uSampler, uv);
+         gl_FragColor = texture2D(uSampler, clamp(uv, 0.0, 1.0));
        }`,
       { uCentersPx: new Float32Array(18), uRadii: new Float32Array(9),
         uStrengths: new Float32Array(9), uScreenSize: new Float32Array(2) }
@@ -458,7 +460,7 @@
           const { data } = ctx.getImageData(0, 0, iw, ih);
 
           const isBg = i => data[i*4+3] < 20
-            || (data[i*4] > 210 && data[i*4+1] > 210 && data[i*4+2] > 210);
+            || (data[i*4] > 240 && data[i*4+1] > 240 && data[i*4+2] > 240);
 
           const visited = new Uint8Array(iw * ih);
           const results = [];
@@ -499,7 +501,7 @@
               const cdData = cd.data;
               const eraseQueue = [];
               const eraseVisited = new Uint8Array(cw * ch);
-              const nearWhite = i4 => cdData[i4]>230 && cdData[i4+1]>230 && cdData[i4+2]>230 && cdData[i4+3]>20;
+              const nearWhite = i4 => cdData[i4]>245 && cdData[i4+1]>245 && cdData[i4+2]>245 && cdData[i4+3]>20;
               const edgePixels = [];
               for (let ex = 0; ex < cw; ex++) { edgePixels.push(ex, 0); edgePixels.push(ex, ch-1); }
               for (let ey = 0; ey < ch; ey++) { edgePixels.push(0, ey); edgePixels.push(cw-1, ey); }
