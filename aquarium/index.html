@@ -621,7 +621,7 @@
       const count = Math.min(n, 3);
       const safeBottom = H() * 0.75;
       for (let i = 0; i < count; i++) {
-        const baseSize = 130 + Math.random() * 40;
+        const baseSize = 70 + Math.random() * 30;
         // Estimate canvas size from texture — octopus images are ~750px wide
         const s = baseSize / 750;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -678,7 +678,7 @@
       const count = Math.min(n, 3);
       const safeBottom = H() * 0.70;
       for (let i = 0; i < count; i++) {
-        const baseSize = 110 + Math.random() * 40;
+        const baseSize = 65 + Math.random() * 30;
         // JellyFish images are ~500px wide
         const s = baseSize / 500;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -693,7 +693,7 @@
         const speed = 0.025 + Math.random() * 0.015;
         const c = {
           obj,
-          pattern: 'float',  // gentle drift
+          pattern: 'jellyfish',  // pulsing burst-and-drift motion
           jellysprite: true,
           octTexSurprised: jellyfishTex.surprised,
           octTexNormal: jellyfishTex.frames,
@@ -1182,13 +1182,18 @@
           c.animTimer += delta;
           if (c.panicTimer > 0) {
             // Surprised face while panicking
-            c.obj.texture = c.octTexSurprised;
+            if (c.obj.texture !== c.octTexSurprised) {
+              c.obj.texture = c.octTexSurprised;
+              c.obj._baseScale = null; // reset cache — texture size changes
+            }
           } else {
             // Alternate walk frames every 22 ticks (~0.37s at 60fps)
             if (c.animTimer >= 22) {
               c.animTimer = 0;
+              const prevFrame = c.animFrame;
               c.animFrame = 1 - c.animFrame;
               c.obj.texture = c.octTexNormal[c.animFrame];
+              if (prevFrame !== c.animFrame) c.obj._baseScale = null; // texture changed
             }
           }
           // Face movement direction (flip horizontally) — octopus only, jellyfish float vertically
@@ -1285,9 +1290,11 @@
             c.obj.x += c.vx * sw * DT;
             const bobAmp = sh * 0.04;
             c.obj.y = c.baseY + Math.sin(c.t * 0.6) * bobAmp;
-            // Scale breathing
-            const baseS = c.obj._baseScale || (c.obj._baseScale = c.obj.scale.x);
-            c.obj.scale.set(baseS * (1 + Math.sin(c.t * 0.9) * 0.04));
+            // Scale breathing — preserve X sign (direction flip)
+            const baseS = c.obj._baseScale || (c.obj._baseScale = Math.abs(c.obj.scale.x));
+            const pulse = baseS * (1 + Math.sin(c.t * 0.9) * 0.04);
+            c.obj.scale.y = pulse;
+            c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * pulse;
             // Soft edge bounce
             if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx); }
             if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx); }
@@ -1356,8 +1363,10 @@
             c.obj.x += c.vx * sw * DT;
             const jTargetY = c.baseY + Math.sin(c.t * 0.8) * sh * 0.03 + c.vy * sh * DT;
             c.obj.y += (jTargetY - c.obj.y) * Math.min(0.06 * delta, 1);
-            const jBaseS = c.obj._baseScale || (c.obj._baseScale = c.obj.scale.x);
-            c.obj.scale.set(jBaseS * (1 + Math.sin(c.t * 1.4) * 0.07));
+            const jBaseS = c.obj._baseScale || (c.obj._baseScale = Math.abs(c.obj.scale.x));
+            const jPulse = jBaseS * (1 + Math.sin(c.t * 1.4) * 0.07);
+            c.obj.scale.y = jPulse;
+            c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * jPulse;
             if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx) * 0.7; c.obj.x = 40; }
             if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx) * 0.7; c.obj.x = sw - 40; }
             if (c.obj.y < 40)      { c.vy =  Math.abs(c.vy) * 0.7; c.obj.y = 40; }
