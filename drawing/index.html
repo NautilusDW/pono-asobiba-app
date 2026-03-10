@@ -323,6 +323,30 @@ html, body {
   .stamp-panel { max-height: 80px; }
   .stamp-item  { width: 40px; height: 40px; font-size: 1.3rem; }
 }
+
+/* ===== バケツ・はみ出し防止 ===== */
+.btn-bucket          { background: #EFF6FF; color: #2563EB; }
+.btn-bucket.active   { background: linear-gradient(135deg, #3B82F6, #2563EB); color: #fff; }
+.btn-nohami          { background: #F0FDF4; color: #16A34A; }
+.btn-nohami.active   { background: linear-gradient(135deg, #4ADE80, #16A34A); color: #fff; }
+
+/* ===== 入口ヒント ===== */
+.entry-hint {
+  position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,107,157,0.93);
+  color: #fff; font-size: 0.8rem; font-weight: 700;
+  padding: 7px 18px; border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  z-index: 500; white-space: nowrap;
+  animation: hintFadeInOut 5.5s ease forwards;
+  pointer-events: none;
+}
+@keyframes hintFadeInOut {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  72%  { opacity: 1; }
+  100% { opacity: 0; }
+}
 </style>
 </head>
 <audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="auto"></audio>
@@ -360,10 +384,13 @@ html, body {
     <button class="tool-btn btn-stamp"   id="btnStamp">🔖 スタンプ</button>
     <button class="tool-btn btn-rainbow" id="btnRainbow">🌈 レインボー</button>
     <button class="tool-btn btn-sparkle" id="btnSparkle">✨ きらきら</button>
+    <button class="tool-btn btn-bucket"  id="btnBucket">🪣 ぬりつぶす</button>
+    <button class="tool-btn btn-nohami" id="btnNoHami">🔒 はみ出し防止</button>
   </div>
 </div>
 
 <div class="save-toast" id="saveToast">ほぞんしたよ！🎨</div>
+<div class="entry-hint" id="entryHint">🎮 かいた絵をほぞんすると、いろんなせかいで使えるよ！</div>
 
 <!-- Gallery Overlay -->
 <div id="galleryOverlay" class="gallery-overlay hidden">
@@ -455,16 +482,87 @@ let hue     = 0;
 let sparkle = false;
 const SPARKLE_COLORS = ['#FFD700','#FF69B4','#00E5FF','#FFFFFF','#E0B0FF'];
 
+// Bucket
+let bucketMode = false;
+
+// はみ出し防止
+let noHami = false;
+let hamiMask = null; // はみ出し防止ONにしたときの暗色ピクセルマスク
+
 function saveHistory() {
   const snap = ctx.getImageData(0, 0, canvas.width, canvas.height);
   history.push(snap);
   if (history.length > MAX_HISTORY) history.shift();
 }
 
-function deactivateEraser()  { erasing=false;  document.getElementById('btnEraser').classList.remove('active'); }
-function deactivateStamp()   { stamping=false; document.getElementById('btnStamp').classList.remove('active'); document.getElementById('stampPanel').classList.add('hidden'); }
-function deactivateRainbow() { rainbow=false;  document.getElementById('btnRainbow').classList.remove('active'); }
-function deactivateSparkle() { sparkle=false;  document.getElementById('btnSparkle').classList.remove('active'); }
+// ===== Flood fill (バケツ塗り) =====
+function floodFill(startX, startY, fillColor) {
+  startX = Math.round(startX); startY = Math.round(startY);
+  const w = canvas.width, h = canvas.height;
+  if (startX < 0 || startX >= w || startY < 0 || startY >= h) return;
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const si = (startY * w + startX) * 4;
+  const tr = data[si], tg = data[si+1], tb = data[si+2];
+
+  // fillColor → RGBA
+  const tmp = document.createElement('canvas'); tmp.width = tmp.height = 1;
+  const tc = tmp.getContext('2d'); tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
+  const fc = tc.getImageData(0,0,1,1).data;
+  const [fr, fg, fb] = [fc[0], fc[1], fc[2]];
+  if (tr === fr && tg === fg && tb === fb) return; // same color
+
+  const tol = 30;
+  const similar = (i) => Math.abs(data[i]-tr) + Math.abs(data[i+1]-tg) + Math.abs(data[i+2]-tb) <= tol * 3;
+
+  const visited = new Uint8Array(w * h);
+  const stack = [startY * w + startX];
+  while (stack.length > 0) {
+    const p = stack.pop();
+    if (visited[p]) continue;
+    const i4 = p * 4;
+    if (!similar(i4)) continue;
+    visited[p] = 1;
+    data[i4] = fr; data[i4+1] = fg; data[i4+2] = fb; data[i4+3] = 255;
+    const x = p % w, y = (p / w) | 0;
+    if (x > 0)     stack.push(p - 1);
+    if (x < w - 1) stack.push(p + 1);
+    if (y > 0)     stack.push(p - w);
+    if (y < h - 1) stack.push(p + w);
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// ===== はみ出し防止: ストローク後に暗色境界ピクセルを復元 =====
+function applyHamiMask(x1, y1, x2, y2) {
+  if (!noHami || !hamiMask) return;
+  const bs = brushSize + 4;
+  const minX = Math.max(0, Math.floor(Math.min(x1, x2) - bs));
+  const minY = Math.max(0, Math.floor(Math.min(y1, y2) - bs));
+  const maxX = Math.min(canvas.width,  Math.ceil(Math.max(x1, x2) + bs));
+  const maxY = Math.min(canvas.height, Math.ceil(Math.max(y1, y2) + bs));
+  if (maxX <= minX || maxY <= minY) return;
+  const rw = maxX - minX, rh = maxY - minY;
+  const id = ctx.getImageData(minX, minY, rw, rh);
+  const d = id.data, fw = canvas.width, mask = hamiMask.data;
+  for (let ry = 0; ry < rh; ry++) {
+    for (let rx = 0; rx < rw; rx++) {
+      const mi = ((minY + ry) * fw + (minX + rx)) * 4;
+      if ((mask[mi] + mask[mi+1] + mask[mi+2]) / 3 < 80) {
+        const di = (ry * rw + rx) * 4;
+        d[di]=mask[mi]; d[di+1]=mask[mi+1]; d[di+2]=mask[mi+2]; d[di+3]=mask[mi+3];
+      }
+    }
+  }
+  ctx.putImageData(id, minX, minY);
+}
+
+function deactivateEraser()  { erasing=false;    document.getElementById('btnEraser').classList.remove('active'); }
+function deactivateStamp()   { stamping=false;   document.getElementById('btnStamp').classList.remove('active'); document.getElementById('stampPanel').classList.add('hidden'); }
+function deactivateRainbow() { rainbow=false;    document.getElementById('btnRainbow').classList.remove('active'); }
+function deactivateSparkle() { sparkle=false;    document.getElementById('btnSparkle').classList.remove('active'); }
+function deactivateBucket()  { bucketMode=false; document.getElementById('btnBucket').classList.remove('active'); }
 
 function selectColor(color, btnEl) {
   currentColor = color;
@@ -472,6 +570,7 @@ function selectColor(color, btnEl) {
   btnEl.classList.add('active');
   deactivateEraser();
   deactivateStamp();
+  deactivateBucket();
 }
 
 // ===== OpenMoji Stamp Definitions =====
@@ -562,10 +661,13 @@ function startDraw(e) {
   e.preventDefault();
   const { x, y } = getPos(e);
 
-  // Stamp mode: place stamp and return (no drag drawing)
-  if (stamping) {
+  // Stamp mode
+  if (stamping) { saveHistory(); drawStamp(x, y); return; }
+
+  // Bucket mode
+  if (bucketMode) {
     saveHistory();
-    drawStamp(x, y);
+    floodFill(x, y, erasing ? '#FFFFFF' : currentColor);
     return;
   }
 
@@ -581,6 +683,7 @@ function startDraw(e) {
   ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
   ctx.fillStyle = dotColor;
   ctx.fill();
+  applyHamiMask(x - brushSize, y - brushSize, x + brushSize, y + brushSize);
 }
 
 function moveDraw(e) {
@@ -616,6 +719,7 @@ function moveDraw(e) {
     }
   }
 
+  applyHamiMask(lastX, lastY, x, y);
   lastX = x; lastY = y;
 }
 
@@ -643,7 +747,7 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 document.getElementById('btnEraser').addEventListener('click', () => {
   erasing = !erasing;
   document.getElementById('btnEraser').classList.toggle('active', erasing);
-  if (erasing) { deactivateStamp(); deactivateRainbow(); deactivateSparkle(); }
+  if (erasing) { deactivateStamp(); deactivateRainbow(); deactivateSparkle(); deactivateBucket(); }
 });
 
 // ===== Stamp =====
@@ -677,14 +781,33 @@ document.getElementById('stampGrid').addEventListener('click', e => {
 document.getElementById('btnRainbow').addEventListener('click', () => {
   rainbow = !rainbow;
   document.getElementById('btnRainbow').classList.toggle('active', rainbow);
-  if (rainbow) { deactivateEraser(); deactivateStamp(); }
+  if (rainbow) { deactivateEraser(); deactivateStamp(); deactivateBucket(); }
 });
 
 // ===== Sparkle =====
 document.getElementById('btnSparkle').addEventListener('click', () => {
   sparkle = !sparkle;
   document.getElementById('btnSparkle').classList.toggle('active', sparkle);
-  if (sparkle) { deactivateEraser(); deactivateStamp(); }
+  if (sparkle) { deactivateEraser(); deactivateStamp(); deactivateBucket(); }
+});
+
+// ===== Bucket =====
+document.getElementById('btnBucket').addEventListener('click', () => {
+  bucketMode = !bucketMode;
+  document.getElementById('btnBucket').classList.toggle('active', bucketMode);
+  if (bucketMode) { deactivateEraser(); deactivateStamp(); deactivateRainbow(); deactivateSparkle(); }
+});
+
+// ===== はみ出し防止 =====
+document.getElementById('btnNoHami').addEventListener('click', () => {
+  noHami = !noHami;
+  document.getElementById('btnNoHami').classList.toggle('active', noHami);
+  if (noHami) {
+    // 現時点のダーク系ピクセルを「境界」として記録
+    hamiMask = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  } else {
+    hamiMask = null;
+  }
 });
 
 // ===== Undo =====
