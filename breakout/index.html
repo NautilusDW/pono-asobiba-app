@@ -360,6 +360,21 @@ const S = { IDLE:0, READY:1, PLAYING:2, STAGE_CLEAR:3, GAME_OVER:4, GAME_CLEAR:5
 let prepauseState = S.IDLE; // ポーズ前の状態を保存
 let state = S.IDLE;
 
+// ===== ポイント付与 =====
+function awardPoints(amount) {
+  const today = new Date().toDateString();
+  const dailyKey = 'pono_points_daily_' + today;
+  const todayTotal = parseInt(localStorage.getItem(dailyKey) || '0');
+  const actual = Math.min(amount, 25 - todayTotal);
+  if (actual <= 0) return 0;
+  const cur = parseInt(localStorage.getItem('pono_points') || '0');
+  const life = parseInt(localStorage.getItem('pono_points_lifetime') || '0');
+  localStorage.setItem('pono_points', cur + actual);
+  localStorage.setItem('pono_points_lifetime', life + actual);
+  localStorage.setItem(dailyKey, todayTotal + actual);
+  return actual;
+}
+
 // ===== High score =====
 const HI_KEY  = 'pono_breakout_hi';
 let hiScore   = parseInt(localStorage.getItem(HI_KEY) || '0');
@@ -779,7 +794,10 @@ function onStageClear() {
   state = S.STAGE_CLEAR;
   launchConfetti();
   const isLast = stageIdx >= STAGES.length - 1;
+  const wasNewRecord = score > hiScore;
   if (isLast) saveHiScore();
+  awardPoints(5);
+  if (wasNewRecord) awardPoints(10);
   setTimeout(() => showOverlay(isLast ? 'gameclear' : 'stageclear'), 700);
 }
 

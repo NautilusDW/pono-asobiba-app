@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ポノのおへや</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #ff9a3c;
+      --orange-dark: #e07800;
+      --radius: 18px;
+    }
+
+    body {
+      font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', 'Rounded Mplus 1c', sans-serif;
+      background: #6ec6ea;
+      height: 100svh; overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ─── Header ─── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 54px;
+      background: linear-gradient(135deg, #ff9a3c, #ffbe5c);
+      display: flex; align-items: center; padding: 0 10px; gap: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    #header a.back {
+      text-decoration: none; color: white; font-size: 22px;
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    #header h1 { flex: 1; text-align: center; font-size: 18px; color: white; font-weight: bold; }
+    #pts-disp {
+      background: rgba(255,255,255,0.28); border-radius: 20px;
+      padding: 4px 11px; color: white; font-weight: bold; font-size: 15px;
+      flex-shrink: 0; display: flex; align-items: center; gap: 3px;
+    }
+
+    /* ─── Area indicator dots ─── */
+    #area-dots {
+      position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 6px; z-index: 90;
+    }
+    .adot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.4); transition: background 0.2s;
+    }
+    .adot.on { background: white; }
+
+    /* ─── Room scroll wrapper ─── */
+    #room-scroll {
+      position: fixed; top: 54px; bottom: 68px; left: 0; right: 0;
+      overflow-x: auto; overflow-y: hidden;
+      display: flex; align-items: stretch;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    #room-scroll::-webkit-scrollbar { display: none; }
+
+    /* ─── Room area ─── */
+    .room-area {
+      flex-shrink: 0; width: 100vw; position: relative;
+      scroll-snap-align: start; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    /* Wall section */
+    .room-wall {
+      flex: 0 0 62%; position: relative; overflow: hidden;
+      transition: background 0.4s;
+      background: linear-gradient(180deg, #87ceeb 0%, #c8e6ff 100%);
+    }
+    .room-wall img.room-bg-img {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    }
+    /* Fixed decorative window */
+    .room-window {
+      position: absolute; top: 14%; right: 9%;
+      width: 68px; height: 58px;
+      border: 5px solid rgba(255,255,255,0.85);
+      border-radius: 6px 6px 4px 4px;
+      background: linear-gradient(180deg, #b8e4ff 0%, #87ceeb 100%);
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    .room-window::before { /* vertical divider */
+      content: ''; position: absolute;
+      top: 0; bottom: 0; left: 50%; width: 3px;
+      background: rgba(255,255,255,0.8); transform: translateX(-50%);
+    }
+    .room-window::after { /* horizontal divider */
+      content: ''; position: absolute;
+      left: 0; right: 0; top: 50%; height: 3px;
+      background: rgba(255,255,255,0.8); transform: translateY(-50%);
+    }
+
+    /* Baseboard */
+    .room-baseboard {
+      height: 10px;
+      background: rgba(0,0,0,0.12);
+      flex-shrink: 0;
+    }
+
+    /* Floor section */
+    .room-floor {
+      flex: 1; position: relative; overflow: hidden;
+      transition: background 0.4s;
+      background: linear-gradient(180deg, #b8860b 0%, #d4a866 100%);
+    }
+    .room-floor img.room-bg-img {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    }
+
+    /* ─── Item slots ─── */
+    .item-slot {
+      position: absolute; cursor: pointer;
+      display: flex; align-items: flex-end; justify-content: center;
+      transition: transform 0.08s;
+    }
+    .item-slot:active { transform: scale(0.94); }
+
+    /* Furniture slot: center floor */
+    .slot-furn {
+      bottom: 0; left: 30%; transform: translateX(-50%);
+      width: 130px; height: 105px;
+    }
+    /* Deco slot: right side floor */
+    .slot-deco {
+      bottom: 0; right: 6%;
+      width: 78px; height: 88px;
+    }
+    /* Wall-item slot: left area of wall */
+    .slot-wallitem {
+      top: 10%; left: 8%;
+      width: 76px; height: 76px;
+    }
+
+    /* Empty slot placeholder */
+    .slot-empty {
+      width: 100%; height: 100%;
+      border: 3px dashed rgba(255,255,255,0.55);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.1);
+    }
+
+    .slot-emoji {
+      line-height: 1;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.22));
+    }
+    .slot-img {
+      max-width: 100%; max-height: 100%; object-fit: contain;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.22));
+    }
+    /* Shadow under floor items */
+    .slot-shadow {
+      position: absolute; bottom: -4px; left: 50%;
+      transform: translateX(-50%);
+      width: 80%; height: 10px;
+      background: rgba(0,0,0,0.12);
+      border-radius: 50%;
+      filter: blur(3px);
+    }
+
+    /* ─── Locked area overlay ─── */
+    .lock-cover {
+      position: absolute; inset: 0; z-index: 10;
+      background: rgba(40,40,60,0.55);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      color: white; text-align: center;
+    }
+    .lock-icon { font-size: 56px; }
+    .lock-name { font-size: 22px; font-weight: bold; }
+    .lock-cost { font-size: 17px; opacity: 0.9; }
+    .lock-btn {
+      background: #ffd700; color: #333; border: none; border-radius: 24px;
+      padding: 10px 28px; font-size: 17px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+    .lock-btn:active { transform: scale(0.96); }
+
+    /* ─── Bottom action bar ─── */
+    #action-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 68px;
+      background: linear-gradient(135deg, #ff9a3c, #ffbe5c);
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 0 16px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+    }
+    .action-btn {
+      flex: 1; max-width: 220px; height: 48px; border-radius: 24px;
+      border: none; cursor: pointer; font-size: 17px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      transition: transform 0.1s;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    #btn-shop { background: white; color: #e07800; }
+    #btn-info { background: rgba(255,255,255,0.28); color: white; font-size: 22px;
+      max-width: 48px; height: 48px; border-radius: 50%; flex: none; }
+
+    /* ─── Modal overlay ─── */
+    .modal-ov {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: flex-end;
+    }
+    .modal-ov.hidden { display: none; }
+
+    /* Bottom sheet */
+    .sheet {
+      width: 100%; background: #fff9f2;
+      border-radius: 22px 22px 0 0;
+      max-height: 88svh; display: flex; flex-direction: column;
+      animation: slideUp 0.28s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+      width: 40px; height: 4px; background: #ccc; border-radius: 2px;
+      margin: 10px auto 6px;
+    }
+
+    .sheet-hd {
+      padding: 4px 16px 10px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 2px solid #ffe5cc;
+    }
+    .sheet-title { font-size: 19px; font-weight: bold; color: #333; flex: 1; }
+    .sheet-close {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: #eee; border: none; cursor: pointer;
+      font-size: 18px; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Category tabs */
+    .cat-tabs {
+      display: flex; gap: 8px; padding: 8px 12px;
+      overflow-x: auto; border-bottom: 2px solid #ffe5cc;
+      scrollbar-width: none;
+    }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
+      border: 2px solid transparent; background: #f0e4d8;
+      font-size: 14px; font-weight: bold; color: #666; cursor: pointer;
+    }
+    .cat-tab.on { background: var(--orange); color: white; border-color: var(--orange-dark); }
+
+    /* Item grid */
+    .item-grid {
+      flex: 1; overflow-y: auto; padding: 12px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      scrollbar-width: thin;
+    }
+
+    .item-card {
+      border-radius: 14px; padding: 10px 6px 8px;
+      background: white; border: 3px solid #f0e0d0;
+      text-align: center; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .item-card:active { transform: scale(0.95); }
+    .item-card.owned  { border-color: #4caf50; }
+    .item-card.placed { border-color: #ff9800; background: #fff8e1; }
+    .item-card.locked { opacity: 0.45; cursor: default; }
+
+    .item-prev {
+      width: 64px; height: 64px; border-radius: 10px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px;
+    }
+    .item-prev.wall-prev  { width: 64px; height: 44px; border-radius: 6px; }
+    .item-prev.floor-prev { width: 64px; height: 24px; border-radius: 6px; }
+    .item-prev img { width: 100%; height: 100%; object-fit: contain; }
+
+    .item-card-name { font-size: 11px; font-weight: bold; color: #444; line-height: 1.3; }
+    .item-card-price { font-size: 12px; font-weight: bold; color: #e07800; }
+    .item-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold;
+    }
+    .badge-owned  { background: #e8f5e9; color: #388e3c; }
+    .badge-placed { background: #fff3e0; color: #f57c00; }
+    .badge-lock   { background: #f5f5f5; color: #999; }
+
+    /* ─── Info / how-to sheet ─── */
+    .guide-list { padding: 12px 16px; overflow-y: auto; flex: 1; }
+    .guide-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #ffe5cc;
+    }
+    .guide-icon { font-size: 28px; width: 36px; flex-shrink: 0; }
+    .guide-body { flex: 1; }
+    .guide-game { font-weight: bold; font-size: 14px; color: #333; }
+    .guide-how  { font-size: 12px; color: #666; }
+    .guide-pt   { font-weight: bold; font-size: 15px; color: #e07800; flex-shrink: 0; }
+    .guide-premium { font-size: 10px; color: #888; }
+
+    /* Premium banner inside info sheet */
+    .premium-banner {
+      margin: 12px 16px;
+      background: linear-gradient(135deg, #ffe082, #ffca28);
+      border-radius: 14px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    }
+    .premium-banner-icon { font-size: 36px; }
+    .premium-banner-body { flex: 1; }
+    .premium-banner-ttl  { font-weight: bold; font-size: 15px; color: #5d3a00; }
+    .premium-banner-sub  { font-size: 12px; color: #7a5000; margin-top: 2px; }
+    .premium-banner-arr  { font-size: 22px; color: #8a6000; }
+
+    /* ─── Theme select overlay ─── */
+    #theme-ov {
+      position: fixed; inset: 0; z-index: 500;
+      background: linear-gradient(160deg, #6ec6ea 0%, #b8e4f7 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 28px;
+    }
+    #theme-ov.hidden { display: none; }
+    #theme-ov h2 { font-size: 26px; color: #333; text-align: center; line-height: 1.4; }
+    #theme-ov p  { font-size: 14px; color: #555; text-align: center; }
+    .theme-row { display: flex; gap: 24px; }
+    .theme-btn {
+      width: 140px; height: 140px; border-radius: 22px; border: none;
+      font-size: 56px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; box-shadow: 0 5px 14px rgba(0,0,0,0.2);
+      transition: transform 0.12s;
+    }
+    .theme-btn:active { transform: scale(0.94); }
+    .theme-btn span { font-size: 15px; font-weight: bold; }
+    #btn-boy  { background: linear-gradient(135deg, #42a5f5, #1565c0); color: white; }
+    #btn-girl { background: linear-gradient(135deg, #f06292, #c2185b); color: white; }
+
+    /* ─── Points toast ─── */
+    #pts-toast {
+      position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+      background: #ffd700; color: #4a3000; font-weight: bold; font-size: 20px;
+      padding: 8px 22px; border-radius: 22px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 400;
+    }
+    #pts-toast.show { opacity: 1; }
+
+    /* ─── Confirm dialog ─── */
+    #confirm-ov {
+      position: fixed; inset: 0; z-index: 350;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #confirm-ov.hidden { display: none; }
+    .confirm-box {
+      background: white; border-radius: 22px;
+      padding: 24px 20px; max-width: 300px; width: 90%;
+      text-align: center; display: flex; flex-direction: column; gap: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .confirm-emoji { font-size: 52px; }
+    .confirm-name  { font-size: 18px; font-weight: bold; color: #333; }
+    .confirm-price { font-size: 16px; color: #e07800; }
+    .confirm-bal   { font-size: 13px; color: #888; }
+    .confirm-btns  { display: flex; gap: 10px; }
+    .confirm-btns button {
+      flex: 1; height: 46px; border-radius: 23px; border: none;
+      font-size: 16px; font-weight: bold; cursor: pointer;
+    }
+    #btn-cancel { background: #eee; color: #555; }
+    #btn-buy    { background: var(--orange); color: white; }
+    #btn-buy:disabled { opacity: 0.4; cursor: default; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────── -->
+<div id="header">
+  <a href="../index.html" class="back">◀</a>
+  <h1>🏠 ポノのおへや</h1>
+  <div id="pts-disp">⭐ <span id="pts-num">0</span></div>
+</div>
+
+<!-- ── Area indicator dots ─────────────────────────── -->
+<div id="area-dots"></div>
+
+<!-- ── Room scroll ────────────────────────────────── -->
+<div id="room-scroll"></div>
+
+<!-- ── Action bar ────────────────────────────────── -->
+<div id="action-bar">
+  <button class="action-btn" id="btn-shop">🛍️ おみせ</button>
+  <button class="action-btn" id="btn-info">❓</button>
+</div>
+
+<!-- ── Points toast ───────────────────────────────── -->
+<div id="pts-toast"></div>
+
+<!-- ── Theme select ───────────────────────────────── -->
+<div id="theme-ov">
+  <h2>どんな おへやに<br>したい？</h2>
+  <div class="theme-row">
+    <button class="theme-btn" id="btn-boy">🚀<span>おとこの子</span></button>
+    <button class="theme-btn" id="btn-girl">🌸<span>おんなの子</span></button>
+  </div>
+  <p>あとから かえることも できるよ！</p>
+</div>
+
+<!-- ── Shop modal ─────────────────────────────────── -->
+<div class="modal-ov hidden" id="shop-ov">
+  <div class="sheet" id="shop-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hd">
+      <span class="sheet-title">🛍️ おみせ</span>
+      <button class="sheet-close" id="shop-close">✕</button>
+    </div>
+    <div class="cat-tabs" id="shop-tabs">
+      <button class="cat-tab on" data-cat="wall">🎨 かべがみ</button>
+      <button class="cat-tab" data-cat="floor">🪵 ゆか</button>
+      <button class="cat-tab" data-cat="furn">🛋️ かぐ</button>
+      <button class="cat-tab" data-cat="deco">🪴 かざり</button>
+    </div>
+    <div class="item-grid" id="shop-grid"></div>
+  </div>
+</div>
+
+<!-- ── Info / how-to modal ───────────────────────── -->
+<div class="modal-ov hidden" id="info-ov">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hd">
+      <span class="sheet-title">⭐ ポイントの もらいかた</span>
+      <button class="sheet-close" id="info-close">✕</button>
+    </div>
+    <div id="premium-banner" class="premium-banner">
+      <span class="premium-banner-icon">📖</span>
+      <div class="premium-banner-body">
+        <div class="premium-banner-ttl">もっとポイントを ためるには？</div>
+        <div class="premium-banner-sub">プレミアムゲームで もっとおトクに！</div>
+      </div>
+      <span class="premium-banner-arr">›</span>
+    </div>
+    <div class="guide-list" id="guide-list"></div>
+  </div>
+</div>
+
+<!-- ── Confirm dialog ────────────────────────────── -->
+<div class="modal-ov hidden" id="confirm-ov">
+  <div class="confirm-box">
+    <div class="confirm-emoji" id="cf-emoji"></div>
+    <div class="confirm-name"  id="cf-name"></div>
+    <div class="confirm-price" id="cf-price"></div>
+    <div class="confirm-bal"   id="cf-bal"></div>
+    <div class="confirm-btns">
+      <button id="btn-cancel">やめる</button>
+      <button id="btn-buy">かう！</button>
+    </div>
+  </div>
+</div>
+
+<script src="items.js"></script>
+<script>
+// ─── Constants ────────────────────────────────────────
+const LS = {
+  POINTS:    'pono_points',
+  LIFETIME:  'pono_points_lifetime',
+  INVENTORY: 'pono_inventory',
+  CONFIG:    'pono_room_config',
+  UNLOCKED:  'pono_room_unlocked',
+  DAILY:     'pono_points_daily_',
+  THEME:     'pono_room_theme',
+  DAILY_BON: 'pono_daily_bonus',
+};
+
+// ─── State ────────────────────────────────────────────
+let state = {
+  points:    0,
+  inventory: [],      // array of item ids owned
+  config:    {},      // { areaId: { wall, floor, furn, deco } }
+  unlocked:  ['living'],
+  theme:     null,    // 'boy' | 'girl'
+};
+
+// ─── Load / Save ──────────────────────────────────────
+function loadState() {
+  state.points    = parseInt(localStorage.getItem(LS.POINTS)    || '0');
+  state.inventory = JSON.parse(localStorage.getItem(LS.INVENTORY) || '[]');
+  state.config    = JSON.parse(localStorage.getItem(LS.CONFIG)    || '{}');
+  state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
+  state.theme     = localStorage.getItem(LS.THEME) || null;
+}
+function saveState() {
+  localStorage.setItem(LS.POINTS,    state.points);
+  localStorage.setItem(LS.INVENTORY, JSON.stringify(state.inventory));
+  localStorage.setItem(LS.CONFIG,    JSON.stringify(state.config));
+  localStorage.setItem(LS.UNLOCKED,  JSON.stringify(state.unlocked));
+  if (state.theme) localStorage.setItem(LS.THEME, state.theme);
+}
+
+// ─── Daily bonus ─────────────────────────────────────
+function checkDailyBonus() {
+  const today = new Date().toDateString();
+  const last  = localStorage.getItem(LS.DAILY_BON);
+  if (last === today) return;
+  localStorage.setItem(LS.DAILY_BON, today);
+  const earned = awardPoints(
+    localStorage.getItem('pono_premium') === '1' ? 5 : 3
+  );
+  if (earned > 0) showToast(`⭐ まいにちボーナス +${earned}pt！`);
+}
+
+// ─── Award points ─────────────────────────────────────
+function awardPoints(amount) {
+  const today    = new Date().toDateString();
+  const dKey     = LS.DAILY + today;
+  const todayTot = parseInt(localStorage.getItem(dKey) || '0');
+  const actual   = Math.min(amount, Math.max(0, 25 - todayTot));
+  if (actual <= 0) return 0;
+  state.points += actual;
+  const life = parseInt(localStorage.getItem(LS.LIFETIME) || '0');
+  localStorage.setItem(LS.LIFETIME, life + actual);
+  localStorage.setItem(dKey, todayTot + actual);
+  saveState();
+  updatePtsDisplay();
+  return actual;
+}
+
+// ─── UI helpers ───────────────────────────────────────
+function updatePtsDisplay() {
+  document.getElementById('pts-num').textContent = state.points;
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('pts-toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ─── Item lookup ──────────────────────────────────────
+function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
+
+function isOwned(id)  { return state.inventory.includes(id); }
+function isPlaced(id) {
+  return Object.values(state.config).some(cfg => Object.values(cfg).includes(id));
+}
+
+// ─── Build item preview element ───────────────────────
+function makeItemPreview(item) {
+  const div = document.createElement('div');
+  div.className = 'item-prev ' + (item.cat === 'wall' ? 'wall-prev' : item.cat === 'floor' ? 'floor-prev' : '');
+
+  // Try image first
+  if (item.img) {
+    const img = document.createElement('img');
+    img.src = item.img;
+    img.onerror = () => { img.remove(); div.appendChild(makeEmojiSpan(item)); };
+    div.appendChild(img);
+  } else {
+    div.appendChild(makeEmojiSpan(item));
+  }
+
+  // Wall/floor: apply color as background
+  if (item.cat === 'wall' && item.wallGrad) {
+    div.style.background = item.wallGrad;
+    if (!item.img) {
+      div.style.display = 'flex'; div.style.alignItems = 'center';
+      div.style.justifyContent = 'center'; div.style.fontSize = '22px';
+    }
+  }
+  if (item.cat === 'floor' && item.floorGrad) {
+    div.style.background = item.floorGrad;
+    if (!item.img) {
+      div.style.display = 'flex'; div.style.alignItems = 'center';
+      div.style.justifyContent = 'center'; div.style.fontSize = '18px';
+    }
+  }
+  return div;
+}
+
+function makeEmojiSpan(item) {
+  const s = document.createElement('span');
+  s.textContent = item.emoji || '❓';
+  return s;
+}
+
+// ─── Render room slot (emoji or image) ───────────────
+function renderSlotContent(slot, itemId) {
+  slot.innerHTML = '';
+  if (!itemId) {
+    const empty = document.createElement('div');
+    empty.className = 'slot-empty';
+    empty.textContent = '+';
+    slot.appendChild(empty);
+    return;
+  }
+  const item = getItem(itemId);
+  if (!item) return;
+
+  if (item.img) {
+    const img = document.createElement('img');
+    img.className = 'slot-img';
+    img.src = item.img;
+    img.onerror = () => { img.remove(); appendEmoji(slot, item); };
+    slot.appendChild(img);
+  } else {
+    appendEmoji(slot, item);
+  }
+
+  // Floor item shadow
+  if (item.cat === 'furn' || item.cat === 'deco') {
+    const sh = document.createElement('div');
+    sh.className = 'slot-shadow';
+    slot.appendChild(sh);
+  }
+}
+
+function appendEmoji(slot, item) {
+  const s = document.createElement('span');
+  s.className = 'slot-emoji';
+  s.textContent = item.emoji || '?';
+  s.style.fontSize = item.emojiSize || '52px';
+  slot.appendChild(s);
+}
+
+// ─── Apply room background (wall/floor) ──────────────
+function applyBackground(areaEl, areaId) {
+  const cfg   = state.config[areaId] || {};
+  const wallEl  = areaEl.querySelector('.room-wall');
+  const floorEl = areaEl.querySelector('.room-floor');
+
+  // Wallpaper
+  const wallItem = cfg.wall ? getItem(cfg.wall) : null;
+  if (wallItem && wallItem.wallGrad) {
+    wallEl.style.background = wallItem.wallGrad;
+  } else {
+    wallEl.style.background = '';
+  }
+  // Try bg image
+  const wallImg = wallEl.querySelector('img.room-bg-img');
+  if (wallItem && wallItem.img) {
+    if (wallImg) wallImg.src = wallItem.img;
+    else {
+      const i = document.createElement('img');
+      i.className = 'room-bg-img'; i.src = wallItem.img;
+      i.onerror = () => i.remove();
+      wallEl.prepend(i);
+    }
+  } else if (wallImg) { wallImg.remove(); }
+
+  // Flooring
+  const floorItem = cfg.floor ? getItem(cfg.floor) : null;
+  if (floorItem && floorItem.floorGrad) {
+    floorEl.style.background = floorItem.floorGrad;
+  } else {
+    floorEl.style.background = '';
+  }
+  const floorImg = floorEl.querySelector('img.room-bg-img');
+  if (floorItem && floorItem.img) {
+    if (floorImg) floorImg.src = floorItem.img;
+    else {
+      const i = document.createElement('img');
+      i.className = 'room-bg-img'; i.src = floorItem.img;
+      i.onerror = () => i.remove();
+      floorEl.prepend(i);
+    }
+  } else if (floorImg) { floorImg.remove(); }
+}
+
+// ─── Build room area DOM ──────────────────────────────
+function buildRoomArea(areaData) {
+  const div = document.createElement('div');
+  div.className = 'room-area';
+  div.id = 'area-' + areaData.id;
+  div.dataset.area = areaData.id;
+
+  const cfg = state.config[areaData.id] || {};
+  const locked = !state.unlocked.includes(areaData.id);
+
+  // Wall
+  const wall = document.createElement('div');
+  wall.className = 'room-wall';
+  wall.appendChild(Object.assign(document.createElement('div'), {className: 'room-window'}));
+
+  // Furn slot (in wall for bookshelf etc. — actually put on floor)
+  // Wall-item slot (future phases)
+
+  // Floor item slots (inside wall for now, positioned absolute in floor)
+  const furnSlot = document.createElement('div');
+  furnSlot.className = 'item-slot slot-furn'; furnSlot.dataset.slotCat = 'furn';
+  renderSlotContent(furnSlot, cfg.furn);
+
+  const decoSlot = document.createElement('div');
+  decoSlot.className = 'item-slot slot-deco'; decoSlot.dataset.slotCat = 'deco';
+  renderSlotContent(decoSlot, cfg.deco);
+
+  // Baseboard
+  const base = document.createElement('div');
+  base.className = 'room-baseboard';
+
+  // Floor
+  const floor = document.createElement('div');
+  floor.className = 'room-floor';
+  floor.appendChild(furnSlot);
+  floor.appendChild(decoSlot);
+
+  // Wall clickable for wallpaper (whole wall area)
+  wall.style.cursor = 'pointer';
+  wall.addEventListener('click', e => {
+    if (locked) return;
+    // avoid clicking slots
+    if (e.target.closest('.item-slot')) return;
+    openShop('wall');
+  });
+  floor.addEventListener('click', e => {
+    if (locked) return;
+    const slot = e.target.closest('.item-slot');
+    if (slot) { openShop(slot.dataset.slotCat); return; }
+    openShop('floor');
+  });
+
+  div.appendChild(wall);
+  div.appendChild(base);
+  div.appendChild(floor);
+
+  // Lock overlay
+  if (locked) {
+    const cover = document.createElement('div');
+    cover.className = 'lock-cover';
+    cover.innerHTML = `
+      <div class="lock-icon">${areaData.emoji}</div>
+      <div class="lock-name">${areaData.name}</div>
+      <div class="lock-cost">⭐ ${areaData.cost}pt で かいほう</div>
+      <button class="lock-btn" data-area="${areaData.id}" data-cost="${areaData.cost}">
+        かいほうする！
+      </button>`;
+    cover.querySelector('.lock-btn').addEventListener('click', () => unlockArea(areaData));
+    div.appendChild(cover);
+  }
+
+  applyBackground(div, areaData.id);
+  return div;
+}
+
+// ─── Unlock area ──────────────────────────────────────
+function unlockArea(areaData) {
+  if (state.points < areaData.cost) {
+    showToast(`⭐ あと ${areaData.cost - state.points}pt ひつよう！`);
+    return;
+  }
+  state.points -= areaData.cost;
+  state.unlocked.push(areaData.id);
+  saveState();
+  updatePtsDisplay();
+  renderRooms();
+  showToast(`🎉 ${areaData.name} かいほう！`);
+}
+
+// ─── Render all rooms ─────────────────────────────────
+function renderRooms() {
+  const scroll = document.getElementById('room-scroll');
+  scroll.innerHTML = '';
+  const dots = document.getElementById('area-dots');
+  dots.innerHTML = '';
+
+  ROOM_AREAS.forEach((area, i) => {
+    scroll.appendChild(buildRoomArea(area));
+    const dot = document.createElement('div');
+    dot.className = 'adot' + (i === 0 ? ' on' : '');
+    dots.appendChild(dot);
+  });
+
+  // Update dots on scroll
+  scroll.addEventListener('scroll', () => {
+    const idx = Math.round(scroll.scrollLeft / window.innerWidth);
+    document.querySelectorAll('.adot').forEach((d, i) => d.classList.toggle('on', i === idx));
+  });
+}
+
+// ─── Re-render one area ───────────────────────────────
+function refreshArea(areaId) {
+  const existing = document.getElementById('area-' + areaId);
+  if (!existing) return;
+  const area = ROOM_AREAS.find(a => a.id === areaId);
+  const newEl = buildRoomArea(area);
+  existing.replaceWith(newEl);
+}
+
+// ─── Shop ─────────────────────────────────────────────
+let currentShopCat = 'wall';
+let currentAreaId  = 'living';
+
+function openShop(cat) {
+  currentShopCat = cat;
+  // Determine which area is visible
+  const scroll = document.getElementById('room-scroll');
+  const idx = Math.round(scroll.scrollLeft / window.innerWidth);
+  currentAreaId = ROOM_AREAS[idx]?.id || 'living';
+
+  // Activate tab
+  document.querySelectorAll('.cat-tab').forEach(t => {
+    t.classList.toggle('on', t.dataset.cat === cat);
+  });
+  renderShopGrid(cat);
+  document.getElementById('shop-ov').classList.remove('hidden');
+}
+
+function renderShopGrid(cat) {
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = '';
+  const cfg = state.config[currentAreaId] || {};
+
+  ROOM_ITEMS.filter(item => item.cat === cat).forEach(item => {
+    const owned   = isOwned(item.id);
+    const placed  = cfg[cat] === item.id;
+
+    const card = document.createElement('div');
+    card.className = 'item-card' + (placed ? ' placed' : owned ? ' owned' : '');
+
+    const prev = makeItemPreview(item);
+    const name = Object.assign(document.createElement('div'), {className: 'item-card-name', textContent: item.name});
+    const price = Object.assign(document.createElement('div'), {className: 'item-card-price',
+      textContent: owned ? '' : `⭐ ${item.price}`});
+
+    const badge = document.createElement('div');
+    badge.className = 'item-badge ' + (placed ? 'badge-placed' : owned ? 'badge-owned' : 'badge-lock');
+    badge.textContent = placed ? 'かざりちゅう' : owned ? 'もってる' : state.points >= item.price ? 'かえる！' : `あと ${item.price - state.points}⭐`;
+
+    card.appendChild(prev);
+    card.appendChild(name);
+    if (!owned) card.appendChild(price);
+    card.appendChild(badge);
+
+    card.addEventListener('click', () => handleItemTap(item));
+    grid.appendChild(card);
+  });
+}
+
+function handleItemTap(item) {
+  const cfg   = state.config[currentAreaId] || {};
+  const owned = isOwned(item.id);
+
+  if (owned) {
+    // Place immediately
+    placeItem(item);
+    return;
+  }
+
+  // Show buy confirm
+  document.getElementById('cf-emoji').textContent = item.emoji;
+  document.getElementById('cf-name').textContent  = item.name;
+  document.getElementById('cf-price').textContent = `⭐ ${item.price}pt`;
+  document.getElementById('cf-bal').textContent   = `いまのポイント: ${state.points}pt`;
+  const buyBtn = document.getElementById('btn-buy');
+  buyBtn.disabled = state.points < item.price;
+  buyBtn.onclick = () => { buyItem(item); };
+  document.getElementById('confirm-ov').classList.remove('hidden');
+}
+
+function buyItem(item) {
+  if (state.points < item.price) return;
+  state.points -= item.price;
+  state.inventory.push(item.id);
+  saveState();
+  updatePtsDisplay();
+  document.getElementById('confirm-ov').classList.add('hidden');
+  showToast(`🎉 ${item.name} をかった！`);
+  placeItem(item);
+}
+
+function placeItem(item) {
+  if (!state.config[currentAreaId]) state.config[currentAreaId] = {};
+  state.config[currentAreaId][item.cat] = item.id;
+  saveState();
+  refreshArea(currentAreaId);
+  renderShopGrid(item.cat);
+  showToast(`✨ ${item.name} をかざったよ！`);
+}
+
+// ─── Info / how-to sheet ─────────────────────────────
+function renderGuide() {
+  const list = document.getElementById('guide-list');
+  list.innerHTML = '';
+  POINT_GUIDE.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'guide-row';
+    row.innerHTML = `
+      <div class="guide-icon">${g.emoji}</div>
+      <div class="guide-body">
+        <div class="guide-game">${g.name}${g.premium ? ' <span class="guide-premium">★プレミアム</span>' : ''}</div>
+        <div class="guide-how">${g.how}</div>
+      </div>
+      <div class="guide-pt">+${g.pt}pt</div>`;
+    list.appendChild(row);
+  });
+}
+
+// ─── Theme selection ──────────────────────────────────
+function selectTheme(t) {
+  state.theme = t;
+  localStorage.setItem(LS.THEME, t);
+  document.getElementById('theme-ov').classList.add('hidden');
+
+  // Give welcome bonus
+  const earned = awardPoints(10);
+  if (earned > 0) setTimeout(() => showToast(`🎁 はじめのプレゼント +${earned}pt！`), 600);
+}
+
+// ─── Init ─────────────────────────────────────────────
+function init() {
+  loadState();
+  updatePtsDisplay();
+
+  // Theme selection
+  if (!state.theme) {
+    document.getElementById('theme-ov').classList.remove('hidden');
+    document.getElementById('btn-boy').addEventListener('click', () => selectTheme('boy'));
+    document.getElementById('btn-girl').addEventListener('click', () => selectTheme('girl'));
+  } else {
+    document.getElementById('theme-ov').classList.add('hidden');
+  }
+
+  renderRooms();
+  renderGuide();
+  checkDailyBonus();
+
+  // Shop tab clicks
+  document.getElementById('shop-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.cat-tab');
+    if (!tab) return;
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('on'));
+    tab.classList.add('on');
+    currentShopCat = tab.dataset.cat;
+    renderShopGrid(tab.dataset.cat);
+  });
+
+  // Shop open/close
+  document.getElementById('btn-shop').addEventListener('click', () => openShop(currentShopCat));
+  document.getElementById('shop-close').addEventListener('click', () =>
+    document.getElementById('shop-ov').classList.add('hidden'));
+  document.getElementById('shop-ov').addEventListener('click', e => {
+    if (e.target === document.getElementById('shop-ov'))
+      document.getElementById('shop-ov').classList.add('hidden');
+  });
+
+  // Info open/close
+  document.getElementById('btn-info').addEventListener('click', () =>
+    document.getElementById('info-ov').classList.remove('hidden'));
+  document.getElementById('info-close').addEventListener('click', () =>
+    document.getElementById('info-ov').classList.add('hidden'));
+  document.getElementById('info-ov').addEventListener('click', e => {
+    if (e.target === document.getElementById('info-ov'))
+      document.getElementById('info-ov').classList.add('hidden');
+  });
+
+  // Premium banner → menu
+  document.getElementById('premium-banner').addEventListener('click', () => {
+    window.location.href = '../index.html';
+  });
+
+  // Confirm dialog
+  document.getElementById('btn-cancel').addEventListener('click', () =>
+    document.getElementById('confirm-ov').classList.add('hidden'));
+  document.getElementById('confirm-ov').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirm-ov'))
+      document.getElementById('confirm-ov').classList.add('hidden');
+  });
+}
+
+init();
+</script>
+</body>
+</html>

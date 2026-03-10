@@ -317,6 +317,26 @@
       else location.href = '../index.html';
     });
 
+    // ─── ポイント付与 ──────────────────────────────────────
+    function awardPoints(amount) {
+      const today = new Date().toDateString();
+      const dailyKey = 'pono_points_daily_' + today;
+      const todayTotal = parseInt(localStorage.getItem(dailyKey) || '0');
+      const actual = Math.min(amount, 25 - todayTotal);
+      if (actual <= 0) return 0;
+      const cur = parseInt(localStorage.getItem('pono_points') || '0');
+      const life = parseInt(localStorage.getItem('pono_points_lifetime') || '0');
+      localStorage.setItem('pono_points', cur + actual);
+      localStorage.setItem('pono_points_lifetime', life + actual);
+      localStorage.setItem(dailyKey, todayTotal + actual);
+      return actual;
+    }
+    // 5分プレイで3pt（セッション1回）
+    let _aquaSessionAwarded = false;
+    setTimeout(() => {
+      if (!_aquaSessionAwarded) { _aquaSessionAwarded = true; awardPoints(3); }
+    }, 5 * 60 * 1000);
+
     // ─── PixiJS setup ──────────────────────────────────────
     const canvas  = document.getElementById('pixi-canvas');
     const isMobile = () => window.matchMedia('(pointer: coarse)').matches;

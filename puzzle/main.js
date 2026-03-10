@@ -1,3 +1,18 @@
+// ===== ポイント付与 =====
+function awardPoints(amount) {
+  const today = new Date().toDateString();
+  const dailyKey = 'pono_points_daily_' + today;
+  const todayTotal = parseInt(localStorage.getItem(dailyKey) || '0');
+  const actual = Math.min(amount, 25 - todayTotal);
+  if (actual <= 0) return 0;
+  const cur = parseInt(localStorage.getItem('pono_points') || '0');
+  const life = parseInt(localStorage.getItem('pono_points_lifetime') || '0');
+  localStorage.setItem('pono_points', cur + actual);
+  localStorage.setItem('pono_points_lifetime', life + actual);
+  localStorage.setItem(dailyKey, todayTotal + actual);
+  return actual;
+}
+
 // ===== Stage Configuration =====
 const BASE_STAGES = [
   { cols: 2, rows: 2, image: '../assets/images/puzzle_bear.jpg'   },
@@ -128,6 +143,7 @@ function updateProgress() {
 function showSuccessModal() {
   playFanfare();
   spawnConfetti();
+  awardPoints(5);
 
   const isLast = currentStageIndex >= STAGES.length - 1;
   if (isLast) {

@@ -607,6 +607,21 @@ let writer = null;
 let currentScheme = COLOR_SCHEMES[0];
 let currentCharData = null; // store loaded char data for stroke numbers
 
+// ===== ポイント付与 =====
+function awardPoints(amount) {
+  const today = new Date().toDateString();
+  const dailyKey = 'pono_points_daily_' + today;
+  const todayTotal = parseInt(localStorage.getItem(dailyKey) || '0');
+  const actual = Math.min(amount, 25 - todayTotal);
+  if (actual <= 0) return 0;
+  const cur = parseInt(localStorage.getItem('pono_points') || '0');
+  const life = parseInt(localStorage.getItem('pono_points_lifetime') || '0');
+  localStorage.setItem('pono_points', cur + actual);
+  localStorage.setItem('pono_points_lifetime', life + actual);
+  localStorage.setItem(dailyKey, todayTotal + actual);
+  return actual;
+}
+
 // ===== Game state =====
 const STAMP_KEY = 'pono_stamps';
 let streak = 0;
@@ -810,6 +825,18 @@ function showCompletion() {
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
   setTimeout(showWordCard, 500);
+
+  // ポイント付与
+  awardPoints(2);
+  // カテゴリ全文字クリアボーナス
+  const stamps = loadStamps();
+  const total = CATEGORIES[currentCategory].chars.length;
+  const done = Object.keys(stamps[currentCategory]).length;
+  const bonusKey = 'pono_bonus_' + currentCategory;
+  if (done >= total && !localStorage.getItem(bonusKey)) {
+    localStorage.setItem(bonusKey, '1');
+    awardPoints(20);
+  }
 }
 
 // ===== Star particles (Canvas mode) =====
