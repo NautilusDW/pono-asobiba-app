@@ -765,7 +765,7 @@
         obj.x = startX;
         obj.y = startY;
 
-        const speed = 0.014 + Math.random() * 0.008;
+        const speed = 0.008 + Math.random() * 0.005;
         const c = {
           obj,
           pattern: 'float',  // gentle drift — swim was too frantic
@@ -1466,7 +1466,7 @@
                 c._pulsePeriod = 200 + Math.random() * 80;
                 c.pulseTimer = c._pulsePeriod;
                 const dir = c.vx >= 0 ? 1 : -1;
-                c.vx = dir * c.speed * 5.5;
+                c.vx = dir * c.speed * 4.5;
                 c.vy = (Math.random() - 0.5) * c.speed * 0.6;
                 c._inContract = true;
                 c._contractTimer = c._pulsePeriod * 0.13;
