@@ -19,11 +19,6 @@
       font-family: 'Zen Maru Gothic', sans-serif;
       touch-action: manipulation; /* ダブルタップズーム無効化 */
     }
-    #bg-img {
-      position: fixed;
-      object-fit: cover;
-      z-index: 0;
-    }
     #pixi-canvas {
       position: fixed;
       z-index: 1;
@@ -210,7 +205,6 @@
       iPhoneの場合、Safari の 共有 → 「ホーム画面に追加」すると<br>アドレスバーなしで遊べます
     </div>
   </div>
-  <img id="bg-img" src="../assets/images/ocean/BG_A.png" alt="">
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <div id="ui">
@@ -314,12 +308,11 @@
 
     // ─── PixiJS setup ──────────────────────────────────────
     const canvas  = document.getElementById('pixi-canvas');
-    const bgImg   = document.getElementById('bg-img');
     const isMobile = () => window.matchMedia('(pointer: coarse)').matches;
 
     const app = new PIXI.Application({
       view: canvas,
-      backgroundColor: 0x00000000, backgroundAlpha: 0,
+      backgroundColor: 0x0a1a3a, backgroundAlpha: 1,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
@@ -343,7 +336,6 @@
       app.renderer.resize(cw, ch);
       const style = { width: cw + 'px', height: ch + 'px', top: ct + 'px', left: '0px' };
       Object.assign(canvas.style, style);
-      Object.assign(bgImg.style, style);
     }
     resizePixiApp();
 
@@ -388,9 +380,18 @@
     const steerGfx = new PIXI.Graphics();
     layerTop.addChild(steerGfx);
 
-    // ─── Background: CSS handles BG_A.png; PixiJS adds light rays only ──
+    // ─── Background: BG_A.png as PixiJS sprite so ripple filter covers it ──
+    let _bgSprite = null;
     function makeBackground() {
       layerBg.removeChildren();
+
+      // Background image sprite (must be first — below light rays)
+      if (!_bgSprite) {
+        _bgSprite = new PIXI.Sprite(PIXI.Texture.from('../assets/images/ocean/BG_A.png'));
+      }
+      _bgSprite.width  = W();
+      _bgSprite.height = H();
+      layerBg.addChild(_bgSprite);
 
       // Light rays
       for (let i = 0; i < 5; i++) {
