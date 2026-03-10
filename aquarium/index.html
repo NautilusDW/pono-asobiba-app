@@ -17,6 +17,7 @@
       overflow: hidden;
       background: #0a1a3a;
       font-family: 'Zen Maru Gothic', sans-serif;
+      touch-action: manipulation; /* ダブルタップズーム無効化 */
     }
     #bg-img {
       position: fixed;
@@ -110,9 +111,13 @@
       color: #fff; font-family: inherit;
       font-size: 0.72rem; font-weight: 700;
       cursor: pointer;
+      touch-action: manipulation;
       transition: background 0.15s;
     }
     .sel-pat-btn:active { background: rgba(56,189,248,0.5); }
+    .sel-card {
+      touch-action: manipulation;
+    }
     .sel-start-btn {
       margin-top: 18px;
       padding: 12px 36px;
@@ -122,6 +127,7 @@
       border: none; border-radius: 50px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
       cursor: pointer; flex-shrink: 0;
+      touch-action: manipulation;
       transition: transform 0.1s;
     }
     .sel-start-btn:active { transform: scale(0.94); }
@@ -131,6 +137,7 @@
       color: #fff; border: none; border-radius: 50px;
       padding: 6px 14px; font-family: inherit;
       font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      touch-action: manipulation;
     }
     /* Landscape: hide UI overlay, show on bottom tap */
     @media (orientation: landscape) {
@@ -818,6 +825,11 @@
       if (history.length > 1) history.back();
       else location.href = '../index.html';
     });
+
+    // ピンチズーム無効（選択画面）
+    document.getElementById('selection-screen').addEventListener('touchmove', (e) => {
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
 
     document.getElementById('btnStart').addEventListener('click', async () => {
       document.getElementById('selection-screen').classList.add('hidden');
