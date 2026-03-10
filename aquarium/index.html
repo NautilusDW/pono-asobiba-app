@@ -1489,8 +1489,8 @@
           if (c.subBubbleTimer <= 0 && !c.hiderState && c.obj.visible) {
             c.subBubbleTimer = 12 + Math.random() * 10;
             const rearDir = c.vx >= 0 ? -1 : 1;
-            const bx = c.obj.x + rearDir * c.baseSize * 0.52;
-            const by = c.obj.y + (Math.random() - 0.5) * c.baseSize * 0.15;
+            const bx = c.obj.x + rearDir * c.baseSize * 0.64; // 先端の外側に出す
+            const by = c.obj.y + c.baseSize * 0.12 + (Math.random() - 0.5) * c.baseSize * 0.05; // 少し下・散らばり小
             if (bubbles.length < 40) bubbles.push({
               x: bx, y: by,
               r: 4 + Math.random() * 6,              // 2-3倍の大きさ
