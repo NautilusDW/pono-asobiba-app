@@ -16,7 +16,7 @@ import sys
 import os
 from PIL import Image
 
-def split_sprites(input_path, output_dir=None, min_size=20, padding=4, alpha_threshold=10):
+def split_sprites(input_path, output_dir=None, base_name=None, min_size=20, padding=4, alpha_threshold=10):
     img = Image.open(input_path).convert('RGBA')
     pixels = img.load()
     w, h = img.size
@@ -60,17 +60,22 @@ def split_sprites(input_path, output_dir=None, min_size=20, padding=4, alpha_thr
             if (max_x - min_x + 1) < min_size or (max_y - min_y + 1) < min_size:
                 continue
 
-            # パディングを加えてクロップ
+            # このコンポーネントのピクセルだけを残し、他は透明にする
+            # （バウンディングボックス内に別オブジェクトが混入しない）
+            component_set = set(component)
             left   = max(0, min_x - padding)
             top    = max(0, min_y - padding)
             right  = min(w, max_x + padding + 1)
             bottom = min(h, max_y + padding + 1)
-            cropped = img.crop((left, top, right, bottom))
-            sprites.append(cropped)
+            cw, ch = right - left, bottom - top
+            masked = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
+            for (px, py) in component:
+                masked.putpixel((px - left, py - top), pixels[px, py])
+            sprites.append(masked)
 
     # 大きい順に並べて保存
     sprites.sort(key=lambda s: s.size[0] * s.size[1], reverse=True)
-    base = os.path.splitext(os.path.basename(input_path))[0]
+    base = base_name or os.path.splitext(os.path.basename(input_path))[0]
 
     for i, sprite in enumerate(sprites):
         out_path = os.path.join(output_dir, f'{base}_{i+1:03d}.png')
@@ -87,4 +92,5 @@ if __name__ == '__main__':
 
     input_file = sys.argv[1]
     output_folder = sys.argv[2] if len(sys.argv) > 2 else 'output'
-    split_sprites(input_file, output_folder)
+    custom_name   = sys.argv[3] if len(sys.argv) > 3 else None
+    split_sprites(input_file, output_folder, base_name=custom_name)

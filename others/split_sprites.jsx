@@ -38,7 +38,7 @@
 
   var pngOpts       = new PNGSaveOptions();
   pngOpts.interlaced = false;
-  doc.saveToFile(tmpPng, pngOpts, true, Extension.LOWERCASE);
+  doc.saveAs(tmpPng, pngOpts, true, Extension.LOWERCASE);
 
   // 非表示を元に戻す
   for (var i = 0; i < allLayers.length; i++) {
@@ -50,17 +50,25 @@
   if (!outFolder) { tmpPng.remove(); return; }
 
   // ── Python 呼び出し（Windows: VBScript 経由、Mac: shell script 経由）
-  var pyPath  = pyScript.fsName;
-  var inPath  = tmpPng.fsName;
-  var outPath = outFolder.fsName;
+  var pyPath   = pyScript.fsName;
+  var inPath   = tmpPng.fsName;
+  var outPath  = outFolder.fsName;
+  // レイヤー名をベース名として使用（ファイル名に使えない文字は_に置換）
+  var baseName = doc.activeLayer.name.replace(/[\\\/:\*\?"<>\|]/g, '_');
 
   if ($.os.indexOf('Windows') !== -1) {
     // Windows: VBScript で Python をサイレント実行
+    // Chr(34) でクォートを安全に埋め込む
+    var q = '" & Chr(34) & "';
     var vbs = new File(Folder.temp + '/run_split.vbs');
     vbs.open('w');
     vbs.writeln('Set sh = CreateObject("WScript.Shell")');
-    vbs.writeln('sh.Run "python """ & "' + pyPath  + '" & """ """ & "' + inPath  + '" & """ """ & "' + outPath + '" & """", 0, True');
-    vbs.writeln('MsgBox "分割完了！ " & "' + outPath + '"');
+    vbs.writeln('cmd = "python " & Chr(34) & "' + pyPath + '" & Chr(34) & " " & Chr(34) & "' + inPath + '" & Chr(34) & " " & Chr(34) & "' + outPath + '" & Chr(34) & " " & Chr(34) & "' + baseName + '" & Chr(34)');
+    vbs.writeln('sh.Run cmd, 0, True');
+    // Python完了後に一時ファイルを削除してからダイアログ
+    vbs.writeln('Set fso = CreateObject("Scripting.FileSystemObject")');
+    vbs.writeln('If fso.FileExists("' + inPath + '") Then fso.DeleteFile "' + inPath + '"');
+    vbs.writeln('MsgBox "分割完了！" & Chr(10) & "' + outPath + '"');
     vbs.close();
     vbs.execute();
   } else {
@@ -75,6 +83,6 @@
     app.system('chmod +x "' + sh.fsName + '" && "' + sh.fsName + '"');
   }
 
-  tmpPng.remove();
+  // tmpPng はVBScript/shell側でPython完了後に削除する
 
 })();

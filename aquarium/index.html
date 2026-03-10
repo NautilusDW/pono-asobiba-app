@@ -447,108 +447,23 @@
     const bgRockSprites  = []; // behind creatures
     const fgRockSprites  = []; // in front of creatures
 
-    // Auto-extract non-white sprites from a sprite sheet (white/transparent bg)
-    function extractSpritesFromSheet(url) {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-          const iw = img.width, ih = img.height;
-          const offscreen = document.createElement('canvas');
-          offscreen.width = iw; offscreen.height = ih;
-          const ctx = offscreen.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          const { data } = ctx.getImageData(0, 0, iw, ih);
+    // Load individual rock PNG files (pre-split with split_sprites.py)
+    function loadRockTextures() {
+      const paths = [];
+      for (let i = 1; i <= 23; i++)
+        paths.push(`../assets/images/ocean/OceanRocks1_${String(i).padStart(3,'0')}.png`);
+      for (let i = 1; i <= 17; i++)
+        paths.push(`../assets/images/ocean/OceanRocks2_${String(i).padStart(3,'0')}.png`);
+      [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,18].forEach(i =>
+        paths.push(`../assets/images/ocean/OceanRocks3_${String(i).padStart(3,'0')}.png`));
 
-          const isBg = i => data[i*4+3] < 20
-            || (data[i*4] > 240 && data[i*4+1] > 240 && data[i*4+2] > 240);
-
-          const visited = new Uint8Array(iw * ih);
-          const results = [];
-
-          for (let y = 0; y < ih; y++) {
-            for (let x = 0; x < iw; x++) {
-              const idx = y * iw + x;
-              if (visited[idx] || isBg(idx)) continue;
-
-              // BFS to find connected component
-              const queue = [idx]; visited[idx] = 1;
-              let minX = x, maxX = x, minY = y, maxY = y, head = 0;
-              while (head < queue.length) {
-                const cur = queue[head++];
-                const cx = cur % iw, cy = (cur / iw) | 0;
-                if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
-                if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
-                for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]]) {
-                  const nx = cx+dx, ny = cy+dy;
-                  if (nx<0||nx>=iw||ny<0||ny>=ih) continue;
-                  const ni = ny*iw+nx;
-                  if (!visited[ni] && !isBg(ni)) { visited[ni]=1; queue.push(ni); }
-                }
-              }
-              const w = maxX-minX+1, h = maxY-minY+1;
-              if (w < 18 || h < 18) continue; // skip tiny noise
-
-              // Crop element with edge flood-fill to remove white bg
-              const pad = 3;
-              const cc = document.createElement('canvas');
-              cc.width = w+pad*2; cc.height = h+pad*2;
-              const cctx = cc.getContext('2d');
-              cctx.drawImage(offscreen, minX-pad, minY-pad, w+pad*2, h+pad*2,
-                                        0, 0, w+pad*2, h+pad*2);
-              // Edge flood-fill: erase near-white pixels from all 4 edges
-              const cd = cctx.getImageData(0, 0, cc.width, cc.height);
-              const cw = cc.width, ch = cc.height;
-              const cdData = cd.data;
-              const eraseQueue = [];
-              const eraseVisited = new Uint8Array(cw * ch);
-              const nearWhite = i4 => cdData[i4]>245 && cdData[i4+1]>245 && cdData[i4+2]>245 && cdData[i4+3]>20;
-              const edgePixels = [];
-              for (let ex = 0; ex < cw; ex++) { edgePixels.push(ex, 0); edgePixels.push(ex, ch-1); }
-              for (let ey = 0; ey < ch; ey++) { edgePixels.push(0, ey); edgePixels.push(cw-1, ey); }
-              for (let ei = 0; ei < edgePixels.length; ei += 2) {
-                const ex = edgePixels[ei], ey = edgePixels[ei+1];
-                const eidx = ey*cw+ex;
-                if (!eraseVisited[eidx] && nearWhite(eidx*4)) { eraseVisited[eidx]=1; eraseQueue.push(eidx); }
-              }
-              let eq = 0;
-              while (eq < eraseQueue.length) {
-                const cur = eraseQueue[eq++];
-                cdData[cur*4+3] = 0;
-                const cx2 = cur%cw, cy2 = (cur/cw)|0;
-                for (const [dx2,dy2] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-                  const nx2=cx2+dx2, ny2=cy2+dy2;
-                  if (nx2<0||nx2>=cw||ny2<0||ny2>=ch) continue;
-                  const ni2=ny2*cw+nx2;
-                  if (!eraseVisited[ni2] && nearWhite(ni2*4)) { eraseVisited[ni2]=1; eraseQueue.push(ni2); }
-                }
-              }
-              cctx.putImageData(cd, 0, 0);
-
-              // Shell detection: warm salmon/peach + fan aspect ratio → size cap
-              // Shells (e.g. scallop) have light warm orange, wider-than-tall shape
-              let rSum=0, gSum=0, bSum=0, px=0;
-              for (let ci=0; ci<cd.data.length; ci+=4) {
-                if (cd.data[ci+3]>100) { rSum+=cd.data[ci]; gSum+=cd.data[ci+1]; bSum+=cd.data[ci+2]; px++; }
-              }
-              const tex = PIXI.Texture.from(cc);
-              if (px > 0) {
-                const ar = cc.width / cc.height;
-                const r=rSum/px, g=gSum/px, b=bSum/px;
-                // Salmon/peach: bright warm, not too deep/dark
-                const isSalmon = r>185 && g>115 && b>80 && r-b>60 && r>g+20;
-                const isFanShaped = ar > 0.95 && ar < 2.2;
-                tex._sizeModifier = (isSalmon && isFanShaped) ? 0.55 : 1.0;
-              } else {
-                tex._sizeModifier = 1.0;
-              }
-              results.push(tex);
-            }
-          }
-          resolve(results);
-        };
-        img.onerror = () => resolve([]);
-        img.src = url;
-      });
+      return Promise.all(paths.map(p => new Promise(resolve => {
+        const tex = PIXI.Texture.from(p);
+        tex._sizeModifier = 1.0;
+        if (tex.baseTexture.valid) { resolve(tex); return; }
+        tex.baseTexture.on('loaded', () => resolve(tex));
+        tex.baseTexture.on('error', () => resolve(null));
+      }))).then(textures => textures.filter(Boolean));
     }
 
     function placeRocks(textures) {
@@ -651,12 +566,7 @@
 
     async function initRocks() {
       if (!rockTextures) {
-        const [t1, t2, t3] = await Promise.all([
-          extractSpritesFromSheet('../assets/images/ocean/OceanRocks.png'),
-          extractSpritesFromSheet('../assets/images/ocean/OceanRocks2.png'),
-          extractSpritesFromSheet('../assets/images/ocean/OceanRocks3.png'),
-        ]);
-        rockTextures = [...t1, ...t2, ...t3];
+        rockTextures = await loadRockTextures();
       }
       placeRocks(rockTextures);
     }
