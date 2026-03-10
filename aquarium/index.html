@@ -1568,10 +1568,12 @@
             const targetY = c.baseY + Math.sin(c.t * 0.55) * waveAmp;
             c.obj.y += (targetY - c.obj.y) * Math.min(0.04 * delta, 1);
 
-            // Body-wave: skew + rotation oscillation (reliable, no mesh needed)
-            const wave = Math.sin(c.t * 3.8);
-            c.obj.skew.x = wave * 0.28;
-            c.obj.rotation = wave * 0.09;
+            // Body-wave: skew + rotation oscillation — 潜水艦は形が変わらないのでスキップ
+            if (!c.submarinesprite) {
+              const wave = Math.sin(c.t * 3.8);
+              c.obj.skew.x = wave * 0.28;
+              c.obj.rotation = wave * 0.09;
+            }
 
             const margin = c.baseSize * 0.6;
             if (c.obj.x > sw + margin) { c.obj.x = -margin; c.baseY = 50 + Math.random() * (sh - 100); }
