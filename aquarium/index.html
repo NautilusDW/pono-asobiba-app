@@ -366,7 +366,7 @@
            vec2  d    = vec2((uv.x - uCenters[i].x) * uAspect, uv.y - uCenters[i].y);
            float dist = length(d);
            float ring = dist - uRadii[i];
-           float w    = exp(-ring * ring * 500.0) * uStrengths[i];
+           float w    = exp(-ring * ring * 1200.0) * uStrengths[i];
            if (dist > 0.001 && uStrengths[i] > 0.0005)
              uv += (d / dist) * (1.0 / uAspect) * w;
          }
@@ -1263,7 +1263,7 @@
       } else {
         // Quick tap → 3本同時・初期半径をずらして1つの波紋イベントに見せる
         const rcx = px / W(), rcy = py / H();
-        [0.01, 0.08, 0.15].forEach(r0 => {
+        [0.01, 0.035, 0.06].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
             ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.13 });
         });
