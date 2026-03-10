@@ -1187,7 +1187,7 @@
         addJellyfishCreatures(3);
         addTurtleCreatures(2);
         addFishS01Creatures(4);
-        addSubmarineCreatures(2);
+        addSubmarineCreatures(1);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
@@ -1197,7 +1197,7 @@
       addJellyfishCreatures(3);
       addTurtleCreatures(2);
       addFishS01Creatures(4);
-      addSubmarineCreatures(2);
+      addSubmarineCreatures(1);
     });
 
     async function initAllCreatures() {
@@ -1327,12 +1327,14 @@
       bubbleGfx.clear();
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i];
+        if (b.vxDrag) b.vx *= Math.pow(b.vxDrag, delta); // 横速度を減衰
+        if (b.vyAcc)  b.vy += b.vyAcc * delta;            // 上昇加速
         b.y -= b.vy * delta;
         b.x += b.vx * delta;
         b.x += Math.sin(totalT * 1.5 + i) * 0.3;
         if (b.y < -10) { bubbles.splice(i, 1); continue; }
-        bubbleGfx.lineStyle(1, 0xaaddff, b.alpha);
-        bubbleGfx.beginFill(0xffffff, b.alpha * 0.15);
+        bubbleGfx.lineStyle(1.5, 0xaaddff, b.alpha);
+        bubbleGfx.beginFill(0xffffff, b.alpha * 0.18);
         bubbleGfx.drawCircle(b.x, b.y, b.r);
         bubbleGfx.endFill();
       }
@@ -1482,19 +1484,21 @@
           // --- 方向フリップ ---
           const subSpd = Math.abs(c.vx) > 0.001 ? c.vx : (c.panicVx || 0);
           if (subSpd !== 0) { const sc = Math.abs(c.obj.scale.x); c.obj.scale.x = subSpd > 0 ? sc : -sc; }
-          // --- 後部から泡を発生 ---
+          // --- 後部から泡を発生（横に噴射→上昇） ---
           c.subBubbleTimer -= delta;
           if (c.subBubbleTimer <= 0 && !c.hiderState && c.obj.visible) {
-            c.subBubbleTimer = 10 + Math.random() * 8;
+            c.subBubbleTimer = 12 + Math.random() * 10;
             const rearDir = c.vx >= 0 ? -1 : 1;
             const bx = c.obj.x + rearDir * c.baseSize * 0.52;
-            const by = c.obj.y + (Math.random() - 0.5) * c.baseSize * 0.18;
-            if (bubbles.length < 35) bubbles.push({
+            const by = c.obj.y + (Math.random() - 0.5) * c.baseSize * 0.15;
+            if (bubbles.length < 40) bubbles.push({
               x: bx, y: by,
-              r: 1.5 + Math.random() * 2.5,
-              vy: 0.5 + Math.random() * 0.9,
-              vx: rearDir * (0.15 + Math.random() * 0.25) + (Math.random() - 0.5) * 0.2,
-              alpha: 0.25 + Math.random() * 0.3,
+              r: 4 + Math.random() * 6,              // 2-3倍の大きさ
+              vy: 0.08 + Math.random() * 0.12,       // 最初はほぼ横方向
+              vx: rearDir * (1.5 + Math.random() * 0.8), // 横に強く噴射
+              vxDrag: 0.91,                           // 横速度を素早く減衰
+              vyAcc:  0.025,                          // 徐々に上昇加速
+              alpha: 0.45 + Math.random() * 0.3,
             });
           }
         }
