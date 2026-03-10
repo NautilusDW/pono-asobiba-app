@@ -390,7 +390,7 @@
     app.stage.filterArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
     const steerGfx   = new PIXI.Graphics();
     const rippleGfx  = new PIXI.Graphics();
-    layerTop.addChild(steerGfx, rippleGfx, hiderGfx);
+    layerTop.addChild(steerGfx, rippleGfx);
 
     // ─── Background: BG_A.png as PixiJS sprite so ripple filter covers it ──
     let _bgSprite = null;
@@ -448,6 +448,7 @@
     const fgRockSprites  = []; // in front of creatures
     const hiders         = []; // {c, rock} — creatures hiding behind fg rocks
     const hiderGfx       = new PIXI.Graphics(); // peek eyes overlay
+    layerTop.addChild(hiderGfx);
 
     // Load individual rock PNG files (pre-split with split_sprites.py)
     function loadRockTextures() {
