@@ -817,7 +817,7 @@
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
         const startY = 60 + Math.random() * Math.max(safeBottom - 120, 1);
 
-        const obj = new PIXI.Sprite(fishS01Tex.surprised); // 001=まっすぐ
+        const obj = new PIXI.Sprite(fishS01Tex.frames[0]); // 002=泳ぎ
         obj.anchor.set(0.5);
         obj.scale.set(s);
         obj.x = startX;
@@ -829,7 +829,7 @@
           pattern: 'swim',
           fishS01sprite: true, bgSprite: true,
           octTexSurprised: fishS01Tex.surprised,
-          octTexNormal: [fishS01Tex.surprised], // 001のみ（まっすぐの絵）
+          octTexNormal: [fishS01Tex.frames[0]], // 002のみ（泳ぎの絵）
           animFrame: 0,
           animTimer: Math.random() * 20,
           t: Math.random() * Math.PI * 2,
