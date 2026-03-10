@@ -378,10 +378,12 @@
         uStrengths: new Float32Array(9), uAspect: 1.0 }
     );
     app.stage.filters = [rippleFilter];
+    rippleFilter.padding = 0; // paddingデフォルト4pxがUVオフセットを生む
     // filterArea をスクリーンに固定しないとUVがずれる
     app.stage.filterArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
-    const steerGfx = new PIXI.Graphics();
-    layerTop.addChild(steerGfx);
+    const steerGfx   = new PIXI.Graphics();
+    const rippleGfx  = new PIXI.Graphics();
+    layerTop.addChild(steerGfx, rippleGfx);
 
     // ─── Background: BG_A.png as PixiJS sprite so ripple filter covers it ──
     let _bgSprite = null;
@@ -995,6 +997,17 @@
       }
       rippleFilter.uniforms.uAspect = W() / H();
 
+      // ── Ripple glow rings (visible on top) ─────────────────
+      rippleGfx.clear();
+      ripples.forEach(rp => {
+        const cx = rp.cx * W(), cy = rp.cy * H();
+        const r  = rp.radius * H();
+        const a  = Math.min(rp.strength / 0.06, 1);
+        rippleGfx.lineStyle(6, 0x88eeff, a * 0.12); rippleGfx.drawCircle(cx, cy, r);
+        rippleGfx.lineStyle(2, 0xccffff, a * 0.35); rippleGfx.drawCircle(cx, cy, r);
+        rippleGfx.lineStyle(1, 0xffffff, a * 0.55); rippleGfx.drawCircle(cx, cy, r);
+      });
+
       // Creatures — water physics (screen-relative velocity)
       const sw = W(), sh = H() * 0.80;
       const DT = delta / 60; // seconds per frame (frame-rate independent)
@@ -1268,7 +1281,7 @@
         const rcx = px / W(), rcy = py / H();
         [0.01, 0.08, 0.15].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
-            ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.13 });
+            ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.06 });
         });
         const r = TAP_R();
         creatures.forEach(c => {
