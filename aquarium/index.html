@@ -582,9 +582,147 @@
 
     async function initRocks() {
       if (!rockTextures) {
-        rockTextures = await loadRockTextures();
+        [rockTextures, octopusTex, jellyfishTex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex()]);
       }
       placeRocks(rockTextures);
+    }
+
+    // ─── Animated sprite creatures (Octopus / JellyFish) ──
+    let octopusTex  = null; // {surprised, frames:[tex002,tex003]}
+    let jellyfishTex = null; // {surprised, frames:[tex002,tex003]}
+
+    function loadSpriteTex(paths) {
+      return Promise.all(paths.map(p => new Promise(resolve => {
+        const tex = PIXI.Texture.from(p);
+        if (tex.baseTexture.valid) { resolve(tex); return; }
+        tex.baseTexture.on('loaded', () => resolve(tex));
+        tex.baseTexture.on('error',  () => resolve(null));
+      }))).then(([t1, t2, t3]) => ({ surprised: t1, frames: [t2, t3].filter(Boolean) }));
+    }
+
+    const loadOctopusTex   = () => loadSpriteTex([
+      '../assets/images/ocean/octpus/octpus_001.png',
+      '../assets/images/ocean/octpus/octpus_002.png',
+      '../assets/images/ocean/octpus/octpus_003.png',
+    ]);
+    const loadJellyfishTex = () => loadSpriteTex([
+      '../assets/images/ocean/JellyFish/JellyFish_001.png',
+      '../assets/images/ocean/JellyFish/JellyFish_002.png',
+      '../assets/images/ocean/JellyFish/JellyFish_003.png',
+    ]);
+
+    function addOctopusCreatures(n) {
+      if (!octopusTex || !octopusTex.surprised || octopusTex.frames.length === 0) return;
+      // Remove any existing octopuses first (avoid duplicates on restart)
+      const existing = creatures.filter(c => c.octopus);
+      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      creatures.splice(0, creatures.length, ...creatures.filter(c => !c.octopus));
+
+      const count = Math.min(n, 3);
+      const safeBottom = H() * 0.75;
+      for (let i = 0; i < count; i++) {
+        const baseSize = 130 + Math.random() * 40;
+        // Estimate canvas size from texture — octopus images are ~750px wide
+        const s = baseSize / 750;
+        const startX = 80 + Math.random() * Math.max(W() - 160, 1);
+        const startY = 80 + Math.random() * Math.max(safeBottom - 160, 1);
+
+        const obj = new PIXI.Sprite(octopusTex.frames[0]);
+        obj.anchor.set(0.5);
+        obj.scale.set(s);
+        obj.x = startX;
+        obj.y = startY;
+
+        const speed = 0.038 + Math.random() * 0.022;
+        const c = {
+          obj,
+          pattern: 'float',  // gentle float movement
+          octopus: true,
+          octTexSurprised: octopusTex.surprised,
+          octTexNormal: octopusTex.frames,
+          animFrame: 0,
+          animTimer: Math.random() * 20, // stagger so they don't all sync
+          t: Math.random() * Math.PI * 2,
+          baseX: startX,
+          baseY: startY,
+          vx: (Math.random() < 0.5 ? 1 : -1) * speed,
+          vy: (Math.random() - 0.5) * speed * 0.15,
+          speed,
+          panicTimer: 0,
+          panicVx: 0,
+          panicVy: 0,
+          panicStyle: ['flee', 'dart_back', 'run_fwd', 'zoom'][Math.floor(Math.random() * 4)],
+          _zoomPanic: false,
+          baseSize,
+          halfH: baseSize * 0.5,
+          tex: octopusTex.frames[0],
+          wasInPanic: false,
+          pulseTimer: 30 + Math.random() * 40,
+          pulseDir: Math.random() * Math.PI * 2,
+          driftNudgeTimer: 60 + Math.random() * 90,
+          hiderState: null,
+          hideRock: null,
+        };
+        layerMid.addChild(obj);
+        creatures.push(c);
+      }
+    }
+
+    function addJellyfishCreatures(n) {
+      if (!jellyfishTex || !jellyfishTex.surprised || jellyfishTex.frames.length === 0) return;
+      // Remove any existing image-based jellyfish first
+      const existing = creatures.filter(c => c.jellysprite);
+      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      creatures.splice(0, creatures.length, ...creatures.filter(c => !c.jellysprite));
+
+      const count = Math.min(n, 3);
+      const safeBottom = H() * 0.70;
+      for (let i = 0; i < count; i++) {
+        const baseSize = 110 + Math.random() * 40;
+        // JellyFish images are ~500px wide
+        const s = baseSize / 500;
+        const startX = 80 + Math.random() * Math.max(W() - 160, 1);
+        const startY = 60 + Math.random() * Math.max(safeBottom - 120, 1);
+
+        const obj = new PIXI.Sprite(jellyfishTex.frames[0]);
+        obj.anchor.set(0.5);
+        obj.scale.set(s);
+        obj.x = startX;
+        obj.y = startY;
+
+        const speed = 0.025 + Math.random() * 0.015;
+        const c = {
+          obj,
+          pattern: 'float',  // gentle drift
+          jellysprite: true,
+          octTexSurprised: jellyfishTex.surprised,
+          octTexNormal: jellyfishTex.frames,
+          animFrame: 0,
+          animTimer: Math.random() * 28, // stagger
+          t: Math.random() * Math.PI * 2,
+          baseX: startX,
+          baseY: startY,
+          vx: (Math.random() < 0.5 ? 1 : -1) * speed,
+          vy: (Math.random() - 0.5) * speed * 0.12,
+          speed,
+          panicTimer: 0,
+          panicVx: 0,
+          panicVy: 0,
+          panicStyle: ['flee', 'dart_back'][Math.floor(Math.random() * 2)],
+          _zoomPanic: false,
+          baseSize,
+          halfH: baseSize * 0.5,
+          tex: jellyfishTex.frames[0],
+          wasInPanic: false,
+          pulseTimer: 30 + Math.random() * 40,
+          pulseDir: Math.random() * Math.PI * 2,
+          driftNudgeTimer: 60 + Math.random() * 90,
+          hiderState: null,
+          hideRock: null,
+        };
+        layerMid.addChild(obj);
+        creatures.push(c);
+      }
     }
 
     function repositionRocks() {
@@ -835,11 +973,15 @@
           createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
         assignHiders(2);
+        addOctopusCreatures(3);
+        addJellyfishCreatures(3);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
       canvases.forEach((cv, i) => createCreatureWithPattern(cv, chosen[i].pattern));
       assignHiders(2);
+      addOctopusCreatures(3);
+      addJellyfishCreatures(3);
     });
 
     async function initAllCreatures() {
@@ -1034,6 +1176,31 @@
 
       creatures.forEach(c => {
         c.t += DT;
+
+        // ── Sprite texture animation: Octopus & JellyFish ──────────
+        if (c.octopus || c.jellysprite) {
+          c.animTimer += delta;
+          if (c.panicTimer > 0) {
+            // Surprised face while panicking
+            c.obj.texture = c.octTexSurprised;
+          } else {
+            // Alternate walk frames every 22 ticks (~0.37s at 60fps)
+            if (c.animTimer >= 22) {
+              c.animTimer = 0;
+              c.animFrame = 1 - c.animFrame;
+              c.obj.texture = c.octTexNormal[c.animFrame];
+            }
+          }
+          // Face movement direction (flip horizontally) — octopus only, jellyfish float vertically
+          if (c.octopus) {
+            const spd = Math.abs(c.vx) > 0.001 ? c.vx : (c.panicVx || 0);
+            if (spd !== 0) {
+              const sc = Math.abs(c.obj.scale.x);
+              c.obj.scale.x = spd > 0 ? sc : -sc;
+            }
+          }
+        }
+
         if (c.hiderState === 'hidden') return; // 岩の裏に隠れ中 → 動かさない
 
         // ── Panic: burst then rapid water-resistance deceleration ──
