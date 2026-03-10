@@ -1010,7 +1010,7 @@
     function addSharkCreatures(n) {
       if (!sharkTex || !sharkTex.surprised) return;
       const existing = creatures.filter(c => c.sharksprite);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      existing.forEach(c => { layerBgLife.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.sharksprite));
 
       const count = Math.min(n, 2);
@@ -1027,6 +1027,7 @@
         obj.scale.set(s);
         obj.x = startX;
         obj.y = startY;
+        obj.alpha = 0.55; // 遠くにいる感（半透明）
 
         const speed = 0.018 + Math.random() * 0.010; // ゆっくり目
         const c = {
@@ -1064,7 +1065,7 @@
           hiderState: null,
           hideRock: null,
         };
-        layerMid.addChild(obj);
+        layerBgLife.addChild(obj);
         creatures.push(c);
       }
     }
@@ -1892,7 +1893,7 @@
             c.vy *= Math.pow(0.990, delta);
             c.obj.x += c.vx * sw * DT;
             c.obj.y += c.vy * sh * DT;
-            c.obj.rotation += 0.0003 * delta;
+            if (!c.sunfishsprite) c.obj.rotation += 0.0003 * delta;
             if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx); c.obj.x = 40; }
             if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx); c.obj.x = sw - 40; }
             if (c.obj.y < 40)      { c.vy =  Math.abs(c.vy); c.obj.y = 40; }
