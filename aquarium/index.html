@@ -713,7 +713,10 @@
           animFrame: 0,
           animTimer: 0,
           tiltBias: (Math.random() - 0.5) * 0.4, // individual lean personality
-          heading: (Math.random() < 0.5 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.4,
+          // 55%=上向き、45%=水平(左右均等)
+          heading: Math.random() < 0.55
+            ? -Math.PI / 2 + (Math.random() - 0.5) * 0.7   // 上向き±0.35rad
+            : (Math.random() < 0.5 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.4,
           _inContract: false, _contractTimer: 0, _pulsePeriod: 90 + Math.random() * 40,
           t: Math.random() * Math.PI * 2,
           baseX: startX,
@@ -770,7 +773,9 @@
           octTexSurprised: turtleTex.surprised,
           octTexNormal: [turtleTex.surprised, ...turtleTex.frames], // 001→002→003
           animFrame: 0,
-          animTimer: Math.random() * 26,
+          animTimer: 0,
+          _inContract: false, _contractTimer: 0,
+          _pulsePeriod: 220 + Math.random() * 80,
           t: Math.random() * Math.PI * 2,
           baseX: startX,
           baseY: startY,
@@ -786,7 +791,7 @@
           halfH: baseSize * 0.5,
           tex: turtleTex.frames[0],
           wasInPanic: false,
-          pulseTimer: 30 + Math.random() * 40,
+          pulseTimer: 20 + Math.random() * 30,  // first flap soon
           pulseDir: Math.random() * Math.PI * 2,
           driftNudgeTimer: 60 + Math.random() * 90,
           hiderState: null,
@@ -812,7 +817,7 @@
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
         const startY = 60 + Math.random() * Math.max(safeBottom - 120, 1);
 
-        const obj = new PIXI.Sprite(fishS01Tex.frames[0]);
+        const obj = new PIXI.Sprite(fishS01Tex.surprised); // 001=まっすぐ
         obj.anchor.set(0.5);
         obj.scale.set(s);
         obj.x = startX;
@@ -824,7 +829,7 @@
           pattern: 'swim',
           fishS01sprite: true, bgSprite: true,
           octTexSurprised: fishS01Tex.surprised,
-          octTexNormal: [fishS01Tex.surprised, ...fishS01Tex.frames], // 001→002→003
+          octTexNormal: [fishS01Tex.surprised], // 001のみ（まっすぐの絵）
           animFrame: 0,
           animTimer: Math.random() * 20,
           t: Math.random() * Math.PI * 2,
@@ -1333,10 +1338,23 @@
               c.obj.texture = c.octTexNormal[c.animFrame] || c.octTexNormal[0];
               c.obj._baseScale = null;
             }
+          } else if (c.turtlesprite) {
+            // Turtle: pulse-synced 3-frame (glide=0, early-flap=1, peak-flap=2)
+            let wantFrame;
+            if (c._inContract) {
+              const ratio = c._contractTimer / (c._pulsePeriod * 0.13);
+              wantFrame = ratio > 0.5 ? 1 : 2;
+            } else {
+              wantFrame = 0;
+            }
+            if (c.animFrame !== wantFrame) {
+              c.animFrame = wantFrame;
+              c.obj.texture = c.octTexNormal[c.animFrame] || c.octTexNormal[0];
+              c.obj._baseScale = null;
+            }
           } else {
-            // Octopus(2-frame) / turtle / fish(3-frame): timer-based cycle
-            const interval = c.turtlesprite ? 38 : 22;
-            if (c.animTimer >= interval) {
+            // Octopus(2-frame) / fish(3-frame): timer-based cycle
+            if (c.animTimer >= 22) {
               c.animTimer = 0;
               const prevFrame = c.animFrame;
               c.animFrame = (c.animFrame + 1) % c.octTexNormal.length;
@@ -1431,21 +1449,45 @@
           }
 
           case 'float': {
-            // Jellyfish-like: slow drift, gentle bob, scale pulse
-            // Very slow horizontal drift with smooth water resistance
-            c.vx += (Math.random() - 0.5) * 0.0008 * delta; // tiny random nudge
-            c.vx *= Math.pow(0.985, delta); // water drag keeps drift slow
-            c.obj.x += c.vx * sw * DT;
-            const bobAmp = sh * 0.04;
-            c.obj.y = c.baseY + Math.sin(c.t * 0.6) * bobAmp;
-            // Scale breathing — preserve X sign (direction flip)
-            const baseS = c.obj._baseScale || (c.obj._baseScale = Math.abs(c.obj.scale.x));
-            const pulse = baseS * (1 + Math.sin(c.t * 0.9) * 0.04);
-            c.obj.scale.y = pulse;
-            c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * pulse;
-            // Soft edge bounce
-            if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx); }
-            if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx); }
+            if (c.turtlesprite) {
+              // Turtle: flap flippers → long glide → flap again
+              c.pulseTimer -= delta;
+              if (c._inContract) {
+                c._contractTimer -= delta;
+                if (c._contractTimer <= 0) c._inContract = false;
+              }
+              if (c.pulseTimer <= 0) {
+                c._pulsePeriod = 200 + Math.random() * 80;
+                c.pulseTimer = c._pulsePeriod;
+                const dir = c.vx >= 0 ? 1 : -1;
+                c.vx = dir * c.speed * 5.5;
+                c.vy = (Math.random() - 0.5) * c.speed * 0.6;
+                c._inContract = true;
+                c._contractTimer = c._pulsePeriod * 0.13;
+              }
+              // Glide with very gentle drag
+              c.vx *= Math.pow(c._inContract ? 0.993 : 0.997, delta);
+              c.vy *= Math.pow(0.990, delta);
+              c.obj.x += c.vx * sw * DT;
+              c.obj.y += c.vy * sh * DT + Math.sin(c.t * 0.5) * 0.3;
+              if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx); c.obj.x = 40; }
+              if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx); c.obj.x = sw - 40; }
+              if (c.obj.y < 40)      { c.vy =  Math.abs(c.vy); c.obj.y = 40; }
+              if (c.obj.y > sh - 20) { c.vy = -Math.abs(c.vy); c.obj.y = sh - 20; }
+            } else {
+              // Default float: slow drift + gentle bob
+              c.vx += (Math.random() - 0.5) * 0.0008 * delta;
+              c.vx *= Math.pow(0.985, delta);
+              c.obj.x += c.vx * sw * DT;
+              const bobAmp = sh * 0.04;
+              c.obj.y = c.baseY + Math.sin(c.t * 0.6) * bobAmp;
+              const baseS = c.obj._baseScale || (c.obj._baseScale = Math.abs(c.obj.scale.x));
+              const pulse = baseS * (1 + Math.sin(c.t * 0.9) * 0.04);
+              c.obj.scale.y = pulse;
+              c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * pulse;
+              if (c.obj.x < 40)      { c.vx =  Math.abs(c.vx); }
+              if (c.obj.x > sw - 40) { c.vx = -Math.abs(c.vx); }
+            }
             break;
           }
 
