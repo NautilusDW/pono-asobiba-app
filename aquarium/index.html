@@ -1189,6 +1189,12 @@
         pulseTimer: 30 + Math.random() * 40,
         pulseDir:   Math.random() * Math.PI * 2,
         driftNudgeTimer: 60 + Math.random() * 90,
+        // jellyfish pattern properties (needed if pattern='jellyfish')
+        heading:     Math.random() * Math.PI * 2,
+        tiltBias:    0,
+        _inContract: false,
+        _contractTimer: 0,
+        _pulsePeriod: 90 + Math.random() * 40,
         hiderState: null,  // null | 'hidden' | 'fleeing' | 'seeking'
         hideRock:   null,
       };
