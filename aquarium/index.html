@@ -494,7 +494,7 @@
               const cdData = cd.data;
               const eraseQueue = [];
               const eraseVisited = new Uint8Array(cw * ch);
-              const nearWhite = i4 => cdData[i4]>200 && cdData[i4+1]>200 && cdData[i4+2]>200 && cdData[i4+3]>20;
+              const nearWhite = i4 => cdData[i4]>230 && cdData[i4+1]>230 && cdData[i4+2]>230 && cdData[i4+3]>20;
               const edgePixels = [];
               for (let ex = 0; ex < cw; ex++) { edgePixels.push(ex, 0); edgePixels.push(ex, ch-1); }
               for (let ey = 0; ey < ch; ey++) { edgePixels.push(0, ey); edgePixels.push(cw-1, ey); }
@@ -984,9 +984,9 @@
       const secDT = delta / 60;
       for (let i = ripples.length - 1; i >= 0; i--) {
         const rp = ripples[i];
-        rp.radius   += 0.45 * secDT;
+        rp.radius   += 0.22 * secDT;
         rp.strength -= 3.2 * rp.strength * secDT;
-        if (rp.strength < 0.0005 || rp.radius > 1.6) { ripples.splice(i, 1); continue; }
+        if (rp.strength < 0.0005 || rp.radius > 0.8) { ripples.splice(i, 1); continue; }
       }
       for (let i = 0; i < 9; i++) {
         const rp = ripples[i];
@@ -1279,7 +1279,7 @@
       } else {
         // Quick tap → 3本同時・初期半径をずらして1つの波紋イベントに見せる
         const rcx = px / W(), rcy = py / H();
-        [0.01, 0.08, 0.15].forEach(r0 => {
+        [0.005, 0.04, 0.075].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
             ripples.push({ cx: rcx, cy: rcy, radius: r0, strength: 0.06 });
         });
