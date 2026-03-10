@@ -582,16 +582,17 @@
 
     async function initRocks() {
       if (!rockTextures) {
-        [rockTextures, octopusTex, jellyfishTex, turtleTex, fishS01Tex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex(), loadFishS01Tex()]);
+        [rockTextures, octopusTex, jellyfishTex, turtleTex, fishS01Tex, submarineTex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex(), loadFishS01Tex(), loadSubmarineTex()]);
       }
       placeRocks(rockTextures);
     }
 
     // ─── Animated sprite creatures (Octopus / JellyFish) ──
-    let octopusTex  = null;
+    let octopusTex   = null;
     let jellyfishTex = null;
     let turtleTex    = null;
     let fishS01Tex   = null;
+    let submarineTex = null;
 
     function loadSpriteTex(paths) {
       return Promise.all(paths.map(p => new Promise(resolve => {
@@ -621,6 +622,11 @@
       '../assets/images/ocean/Fish_S01/Fish_S01_001.png',
       '../assets/images/ocean/Fish_S01/Fish_S01_002.png',
       '../assets/images/ocean/Fish_S01/Fish_S01_003.png',
+    ]);
+    const loadSubmarineTex = () => loadSpriteTex([
+      '../assets/images/ocean/Submarine/Submarine_001.png',
+      '../assets/images/ocean/Submarine/Submarine_002.png',
+      '../assets/images/ocean/Submarine/Submarine_003.png',
     ]);
 
     function addOctopusCreatures(n) {
@@ -850,6 +856,77 @@
           pulseTimer: 30 + Math.random() * 40,
           pulseDir: Math.random() * Math.PI * 2,
           driftNudgeTimer: 60 + Math.random() * 90,
+          hiderState: null,
+          hideRock: null,
+        };
+        layerMid.addChild(obj);
+        creatures.push(c);
+      }
+    }
+
+    function addSubmarineCreatures(n) {
+      if (!submarineTex || !submarineTex.surprised || submarineTex.frames.length < 2) return;
+      const existing = creatures.filter(c => c.submarinesprite);
+      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      creatures.splice(0, creatures.length, ...creatures.filter(c => !c.submarinesprite));
+
+      const count = Math.min(n, 2);
+      const safeBottom = H() * 0.70;
+      for (let i = 0; i < count; i++) {
+        const baseSize = 130 + Math.random() * 40;
+        // Submarine images ~700px wide
+        const s = baseSize / 700;
+        const startX = 80 + Math.random() * Math.max(W() - 160, 1);
+        const startY = 80 + Math.random() * Math.max(safeBottom - 160, 1);
+
+        const subTex003 = submarineTex.frames[1]; // 003 = ベース
+        const subTex001 = submarineTex.surprised;  // 001 = 別演出A
+        const subTex002 = submarineTex.frames[0];  // 002 = 別演出B
+
+        const obj = new PIXI.Sprite(subTex003);
+        obj.anchor.set(0.5);
+        obj.scale.set(s);
+        obj.x = startX;
+        obj.y = startY;
+
+        const speed = 0.022 + Math.random() * 0.012;
+        const r = Math.random();
+        const c = {
+          obj,
+          pattern: 'swim',
+          submarinesprite: true, bgSprite: true,
+          subTex001, subTex002, subTex003,
+          // 001 フラッシュ（15秒間隔、タイマーをずらす）
+          subTimer1: 500 + Math.random() * 600,
+          subFlash1: 0,
+          // 002 フラッシュ（15秒間隔、別タイミング）
+          subTimer2: 200 + Math.random() * 600,
+          subFlash2: 0,
+          subBubbleTimer: 0,
+          animFrame: 0,
+          animTimer: 0,
+          t: Math.random() * Math.PI * 2,
+          baseX: startX,
+          baseY: startY,
+          vx: (Math.random() < 0.5 ? 1 : -1) * speed,
+          vy: (Math.random() - 0.5) * speed * 0.1,
+          speed,
+          panicTimer: 0,
+          panicVx: 0,
+          panicVy: 0,
+          panicStyle: 'flee',
+          _zoomPanic: false,
+          baseSize,
+          halfH: baseSize * 0.5,
+          wasInPanic: false,
+          pulseTimer: 30 + Math.random() * 40,
+          pulseDir: Math.random() * Math.PI * 2,
+          driftNudgeTimer: 60 + Math.random() * 90,
+          heading: Math.random() * Math.PI * 2,
+          tiltBias: 0,
+          _inContract: false,
+          _contractTimer: 0,
+          _pulsePeriod: 90 + Math.random() * 40,
           hiderState: null,
           hideRock: null,
         };
@@ -1110,6 +1187,7 @@
         addJellyfishCreatures(3);
         addTurtleCreatures(2);
         addFishS01Creatures(4);
+        addSubmarineCreatures(2);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
@@ -1119,6 +1197,7 @@
       addJellyfishCreatures(3);
       addTurtleCreatures(2);
       addFishS01Creatures(4);
+      addSubmarineCreatures(2);
     });
 
     async function initAllCreatures() {
@@ -1375,6 +1454,48 @@
               const sc = Math.abs(c.obj.scale.x);
               c.obj.scale.x = spd > 0 ? sc : -sc;
             }
+          }
+        }
+
+        // ── 潜水艦: 001/002 を別タイマーで短時間フラッシュ + 後ろから泡 ──
+        if (c.submarinesprite) {
+          // --- 001 フラッシュ (Timer1) ---
+          c.subTimer1 -= delta;
+          if (c.subFlash1 > 0) {
+            c.subFlash1 -= delta;
+            if (c.subFlash1 <= 0) { c.obj.texture = c.subTex003; c.obj._baseScale = null; }
+          } else if (c.subTimer1 <= 0) {
+            c.obj.texture = c.subTex001; c.obj._baseScale = null;
+            c.subFlash1 = 70 + Math.random() * 50;   // ~1.2-2s
+            c.subTimer1 = 800 + Math.random() * 400;  // ~13-20s
+          }
+          // --- 002 フラッシュ (Timer2) ---
+          c.subTimer2 -= delta;
+          if (c.subFlash2 > 0) {
+            c.subFlash2 -= delta;
+            if (c.subFlash2 <= 0) { c.obj.texture = c.subTex003; c.obj._baseScale = null; }
+          } else if (c.subTimer2 <= 0) {
+            c.obj.texture = c.subTex002; c.obj._baseScale = null;
+            c.subFlash2 = 70 + Math.random() * 50;   // ~1.2-2s
+            c.subTimer2 = 800 + Math.random() * 400;  // ~13-20s
+          }
+          // --- 方向フリップ ---
+          const subSpd = Math.abs(c.vx) > 0.001 ? c.vx : (c.panicVx || 0);
+          if (subSpd !== 0) { const sc = Math.abs(c.obj.scale.x); c.obj.scale.x = subSpd > 0 ? sc : -sc; }
+          // --- 後部から泡を発生 ---
+          c.subBubbleTimer -= delta;
+          if (c.subBubbleTimer <= 0 && !c.hiderState && c.obj.visible) {
+            c.subBubbleTimer = 10 + Math.random() * 8;
+            const rearDir = c.vx >= 0 ? -1 : 1;
+            const bx = c.obj.x + rearDir * c.baseSize * 0.52;
+            const by = c.obj.y + (Math.random() - 0.5) * c.baseSize * 0.18;
+            if (bubbles.length < 35) bubbles.push({
+              x: bx, y: by,
+              r: 1.5 + Math.random() * 2.5,
+              vy: 0.5 + Math.random() * 0.9,
+              vx: rearDir * (0.15 + Math.random() * 0.25) + (Math.random() - 0.5) * 0.2,
+              alpha: 0.25 + Math.random() * 0.3,
+            });
           }
         }
 
