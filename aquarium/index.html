@@ -374,7 +374,7 @@
            float ring   = distN - uRadii[i];
            float w      = exp(-ring * ring * 500.0) * uStrengths[i];
            if (distPx > 0.5)
-             uv += (d / distPx) / uScreenSize * w;
+             uv += (d / distPx) / uScreenSize * w * uScreenSize.y;
          }
          uv = clamp(uv, 0.001, 0.999);
          gl_FragColor = texture2D(uSampler, uv);
