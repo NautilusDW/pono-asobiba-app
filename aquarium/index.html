@@ -320,6 +320,8 @@
     // ─── PixiJS setup ──────────────────────────────────────
     const canvas  = document.getElementById('pixi-canvas');
     const isMobile = () => window.matchMedia('(pointer: coarse)').matches;
+    // スマホ時はスプライト生き物を小さく（PC基準サイズの半分）
+    const mobSf = () => isMobile() ? 0.5 : 1.0;
 
     const app = new PIXI.Application({
       view: canvas,
@@ -642,9 +644,9 @@
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.octopus));
 
       const count = Math.min(n, 3);
-      const safeBottom = H() * 0.78;
+      const safeBottom = H() * (isMobile() ? 0.55 : 0.78);
       for (let i = 0; i < count; i++) {
-        const baseSize = 70 + Math.random() * 30;
+        const baseSize = (70 + Math.random() * 30) * mobSf();
         // Estimate canvas size from texture — octopus images are ~750px wide
         const s = baseSize / 750;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -700,9 +702,9 @@
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.jellysprite));
 
       const count = Math.min(n, 3);
-      const safeBottom = H() * 0.70;
+      const safeBottom = H() * (isMobile() ? 0.55 : 0.70);
       for (let i = 0; i < count; i++) {
-        const baseSize = 32 + Math.random() * 15;
+        const baseSize = (32 + Math.random() * 15) * mobSf();
         // JellyFish images are ~500px wide
         const s = baseSize / 500;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -762,9 +764,9 @@
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.turtlesprite));
 
       const count = Math.min(n, 3);
-      const safeBottom = H() * 0.72;
+      const safeBottom = H() * (isMobile() ? 0.55 : 0.72);
       for (let i = 0; i < count; i++) {
-        const baseSize = 90 + Math.random() * 35;
+        const baseSize = (90 + Math.random() * 35) * mobSf();
         // Turtle images are ~600px wide
         const s = baseSize / 600;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -820,9 +822,9 @@
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.fishS01sprite));
 
       const count = Math.min(n, 5);
-      const safeBottom = H() * 0.75;
+      const safeBottom = H() * (isMobile() ? 0.55 : 0.75);
       for (let i = 0; i < count; i++) {
-        const baseSize = 65 + Math.random() * 30;
+        const baseSize = (65 + Math.random() * 30) * mobSf();
         // Fish_S01 images are ~600px wide
         const s = baseSize / 600;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -876,9 +878,9 @@
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.sunfishsprite));
 
       const count = Math.min(n, 2);
-      const safeBottom = H() * 0.72;
+      const safeBottom = H() * (isMobile() ? 0.55 : 0.72);
       for (let i = 0; i < count; i++) {
-        const baseSize = 150 + Math.random() * 50;
+        const baseSize = (150 + Math.random() * 50) * mobSf();
         // Sunfish images ~600px wide
         const s = baseSize / 600;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -936,9 +938,9 @@
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.submarinesprite));
 
       const count = Math.min(n, 2);
-      const safeBottom = H() * 0.70;
+      const safeBottom = H() * (isMobile() ? 0.50 : 0.70);
       for (let i = 0; i < count; i++) {
-        const baseSize = 130 + Math.random() * 40;
+        const baseSize = (130 + Math.random() * 40) * mobSf();
         // Submarine images ~700px wide
         const s = baseSize / 700;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -1292,7 +1294,7 @@
     // canvas: HTMLCanvasElement (dimensions always available synchronously)
     function createCreatureWithPattern(canvas, pattern) {
       const tex = PIXI.Texture.from(canvas);
-      const baseSize = 130 + Math.random() * 60;
+      const baseSize = (130 + Math.random() * 60) * mobSf();
       const s = baseSize / Math.max(canvas.width, canvas.height, 1);
       const halfH = (canvas.height * s) * 0.5;
 
@@ -1658,8 +1660,14 @@
             }
 
             const margin = c.baseSize * 0.6;
-            if (c.obj.x > sw + margin) { c.obj.x = -margin; c.baseY = 50 + Math.random() * (sh - 100); }
-            if (c.obj.x < -margin)     { c.obj.x = sw + margin; c.baseY = 50 + Math.random() * (sh - 100); }
+            const maxBaseY = sandTopY - c.halfH - sh * 0.06;
+            if (c.obj.x > sw + margin) { c.obj.x = -margin; c.baseY = 50 + Math.random() * Math.max(Math.min(sh - 100, maxBaseY) - 50, 1); }
+            if (c.obj.x < -margin)     { c.obj.x = sw + margin; c.baseY = 50 + Math.random() * Math.max(Math.min(sh - 100, maxBaseY) - 50, 1); }
+            // 潜水艦は地面に潜らない
+            if (c.submarinesprite && c.obj.y > sandTopY - c.halfH) {
+              c.obj.y = sandTopY - c.halfH;
+              c.baseY = Math.min(c.baseY, sandTopY - c.halfH - sh * 0.07);
+            }
             break;
           }
 
