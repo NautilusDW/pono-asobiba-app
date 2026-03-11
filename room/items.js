@@ -24,6 +24,13 @@ const ROOM_AREAS = [
 ];
 
 const ROOM_ITEMS = [
+  // ══ デバッグ用グリッド背景（開発専用・price:0） ══════
+  {
+    id: 'wall_debug_grid', cat: 'wall', name: 'デバッググリッド', price: 0, theme: 'all',
+    scope: 'room',
+    roomImg: '../assets/images/Rooms/Room_Base_grid.png',
+    wallGrad: 'linear-gradient(180deg, #3a6a8a 0%, #2c5f72 100%)',
+  },
   // ══ かべがみ (wallpaper) ══════════════════════════════
   {
     id: 'wall_sky', cat: 'wall', name: 'そらいろ', price: 15, theme: 'all',

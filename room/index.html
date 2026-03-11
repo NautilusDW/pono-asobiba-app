@@ -625,6 +625,8 @@ function loadState() {
   state.config    = JSON.parse(localStorage.getItem(LS.CONFIG)    || '{}');
   state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
   state.theme     = localStorage.getItem(LS.THEME) || null;
+  // デバッグ用グリッドは常に所持
+  if (!state.inventory.includes('wall_debug_grid')) state.inventory.push('wall_debug_grid');
 }
 function saveState() {
   localStorage.setItem(LS.POINTS,    state.points);
