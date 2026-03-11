@@ -684,13 +684,13 @@ function showToast(msg) {
 // 行0=手前(大)、行3=奥(小)。各行のY位置・左右端X・スケール・z-index
 const PERSPECTIVE = {
   rows: 4,
-  cols: 6,
+  cols: 8,
   // 各行の水平線 Y (room上端=0, 下端=1)
   rowY:      [0.97, 0.87, 0.76, 0.65],
   // 各行の床の左端 X (room左端=0, 右端=1)
-  rowLeftX:  [0.03, 0.08, 0.13, 0.18],
+  rowLeftX:  [0.00, 0.06, 0.12, 0.18],
   // 各行の床の右端 X
-  rowRightX: [0.97, 0.92, 0.87, 0.82],
+  rowRightX: [1.00, 0.94, 0.88, 0.82],
   // 各行のアイテムスケール (手前=1.0)
   rowScale:  [1.00, 0.76, 0.58, 0.44],
   // 各行のz-index (手前ほど高い)
@@ -1291,7 +1291,7 @@ function placeItem(item) {
     if (!cfg.placed.find(p => p.id === item.id)) {
       const usedCols = cfg.placed.map(p => p.col);
       // 空いてる列を左から探す（中央付近優先）
-      const candidates = [2, 3, 1, 4, 0, 5];
+      const candidates = [3, 4, 2, 5, 1, 6, 0, 7];
       const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % PERSPECTIVE.cols;
       cfg.placed.push({ id: item.id, row: 0, col }); // デフォルトは手前(row:0)
     }
