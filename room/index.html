@@ -168,6 +168,7 @@
       position: absolute; inset: 0; width: 100%; height: 100%;
       pointer-events: none; z-index: 5;
       opacity: 0; transition: opacity 0.15s;
+      overflow: visible;
     }
     .persp-grid.active { opacity: 1; }
 
@@ -736,9 +737,8 @@ function buildPerspGrid() {
   const NS  = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', 'persp-grid');
-  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('viewBox', '-5 0 110 100');
   svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('overflow', 'visible'); // viewBox外もroom-areaのoverflow:hiddenで制御
   const P = PERSPECTIVE;
   const mkLine = (x1, y1, x2, y2, color, w) => {
     const l = document.createElementNS(NS, 'line');
