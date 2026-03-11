@@ -738,6 +738,7 @@ function buildPerspGrid() {
   svg.setAttribute('class', 'persp-grid');
   svg.setAttribute('viewBox', '0 0 100 100');
   svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('overflow', 'visible'); // viewBox外もroom-areaのoverflow:hiddenで制御
   const P = PERSPECTIVE;
   const mkLine = (x1, y1, x2, y2, color, w) => {
     const l = document.createElementNS(NS, 'line');
