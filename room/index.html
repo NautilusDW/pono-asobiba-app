@@ -688,9 +688,9 @@ const PERSPECTIVE = {
   // 各行の水平線 Y (room上端=0, 下端=1)
   rowY:      [0.97, 0.87, 0.76, 0.65],
   // 各行の床の左端 X (room左端=0, 右端=1)
-  rowLeftX:  [0.00, 0.06, 0.12, 0.18],
+  rowLeftX:  [-0.03, 0.05, 0.11, 0.17],
   // 各行の床の右端 X
-  rowRightX: [1.00, 0.94, 0.88, 0.82],
+  rowRightX: [ 1.03, 0.95, 0.89, 0.83],
   // 各行のアイテムスケール (手前=1.0)
   rowScale:  [1.00, 0.76, 0.58, 0.44],
   // 各行のz-index (手前ほど高い)
@@ -817,34 +817,25 @@ function _makeGridItem(p, areaId, locked) {
 function _addDragHandlers(el, areaId) {
   let startX = 0, startY = 0, dragging = false, gridSvg = null;
 
-  el.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    dragging = false;
-  }, { passive: true });
-
-  el.addEventListener('touchmove', e => {
-    const t = e.touches[0];
-    if (!dragging && (Math.abs(t.clientX - startX) > 6 || Math.abs(t.clientY - startY) > 6)) {
+  function onMove(clientX, clientY) {
+    if (!dragging && (Math.abs(clientX - startX) > 6 || Math.abs(clientY - startY) > 6)) {
       dragging = true;
     }
     if (!dragging) return;
-    e.preventDefault();
     const area = el.closest('.room-area');
     if (!area) return;
-    const { row, col } = getRowColFromPoint(area, t.clientX, t.clientY);
+    const { row, col } = getRowColFromPoint(area, clientX, clientY);
     el.dataset.row = row;
     el.dataset.col = col;
     el.classList.add('dragging');
     _applyGridPos(el, row, col);
-    // パースグリッドを表示
     if (!gridSvg) {
       gridSvg = area.querySelector('.persp-grid');
       if (gridSvg) gridSvg.classList.add('active');
     }
-  }, { passive: false });
+  }
 
-  el.addEventListener('touchend', () => {
+  function onEnd() {
     el.classList.remove('dragging');
     if (gridSvg) { gridSvg.classList.remove('active'); gridSvg = null; }
     if (!dragging) return;
@@ -857,6 +848,38 @@ function _addDragHandlers(el, areaId) {
     if (p) { p.row = row; p.col = col; }
     saveState();
     dragging = false;
+  }
+
+  // ── タッチ ──────────────────────────────────────────
+  el.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dragging = false;
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    e.preventDefault();
+    onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+
+  el.addEventListener('touchend', onEnd);
+
+  // ── マウス（PC）──────────────────────────────────────
+  el.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    startX = e.clientX;
+    startY = e.clientY;
+    dragging = false;
+
+    function onMouseMove(e) { onMove(e.clientX, e.clientY); }
+    function onMouseUp()    {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup',   onMouseUp);
+      onEnd();
+    }
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup',   onMouseUp);
   });
 }
 
