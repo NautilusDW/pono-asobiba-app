@@ -882,8 +882,15 @@ function _applyBgElement(el, item, gradKey) {
 
   if (item.roomImg) {
     // ── パース済みPNGモード（最優先）────────────────────────
-    // 壁・床エリアいっぱいに引き伸ばして表示。マスクで形状をクリップ済み。
-    el.style.background = 'url(' + item.roomImg + ') 0 0 / 100% 100% no-repeat';
+    // 画像はルーム全体(16:9)サイズで作成されているため、
+    // 各divの高さ比率に応じて background-size をスケーリングし
+    // 対応エリアだけを等倍で表示する。
+    //   壁div (height 57%): size 100% 175.44% (=100/57), position top
+    //   床div (height 43%): size 100% 232.56% (=100/43), position bottom
+    const isWall = (gradKey === 'wallGrad');
+    const bSize  = isWall ? '100% 175.44%' : '100% 232.56%';
+    const bPos   = isWall ? '0 0'          : '0 100%';
+    el.style.background = 'url(' + item.roomImg + ') ' + bPos + ' / ' + bSize + ' no-repeat';
   } else if (item.tileImage) {
     // ── シームレスタイリングモード（レガシー）───────────────
     el.style.background = 'url(' + item.tileImage + ') 0 0 / ' + (item.tileSize || '200px') + ' repeat';

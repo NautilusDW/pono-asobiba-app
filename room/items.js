@@ -50,6 +50,26 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/walls/wall_plain_yellow.png',
     wallGrad: 'linear-gradient(180deg, #fff176 0%, #fffde7 100%)',
   },
+  {
+    id: 'wall_cosmos', cat: 'wall', name: 'うちゅう', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/walls/wall_cosmos.png',
+    wallGrad: 'linear-gradient(180deg, #f5e6c8 0%, #ede0b8 100%)',
+  },
+  {
+    id: 'wall_night_stars', cat: 'wall', name: 'よるぞら', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/walls/wall_night_stars.png',
+    wallGrad: 'linear-gradient(180deg, #1a3a6e 0%, #243580 100%)',
+  },
+  {
+    id: 'wall_balloons', cat: 'wall', name: 'バルーン', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/walls/wall_balloons_pastel.png',
+    wallGrad: 'linear-gradient(180deg, #fdf3e7 0%, #fae8d4 100%)',
+  },
+  {
+    id: 'wall_hearts', cat: 'wall', name: 'ハート', price: 20, theme: 'girl',
+    roomImg: '../assets/images/Rooms/walls/wall_hearts_pastel.jpeg',
+    wallGrad: 'linear-gradient(180deg, #fdf0e0 0%, #fae8d0 100%)',
+  },
 
   // ══ ゆか (flooring) ═════════════════════════════════
   {
@@ -76,6 +96,16 @@ const ROOM_ITEMS = [
     id: 'floor_check', cat: 'floor', name: 'チェック', price: 15, theme: 'all',
     roomImg: '../assets/images/Rooms/floors/floor_check_bw.png',
     floorGrad: 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 28px 28px',
+  },
+  {
+    id: 'floor_carpet_beige', cat: 'floor', name: 'ベージュ カーペット', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/floors/floor_carpet_beige.png',
+    floorGrad: 'linear-gradient(180deg, #d4bc9a 0%, #c9b08a 100%)',
+  },
+  {
+    id: 'floor_wood_herringbone', cat: 'floor', name: 'ヘリンボーン', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/floors/floor_wood_herringbone.jpeg',
+    floorGrad: 'linear-gradient(180deg, #c49a6c 0%, #b8895a 100%)',
   },
 
   // ══ かぐ (furniture) ══════════════════════════════════
