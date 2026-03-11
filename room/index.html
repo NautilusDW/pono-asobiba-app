@@ -21,44 +21,79 @@
       user-select: none;
     }
 
-    /* ─── Header ─── */
-    #header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      height: 54px;
-      background: linear-gradient(135deg, #ff9a3c, #ffbe5c);
-      display: flex; align-items: center; padding: 0 10px; gap: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    /* ─── Portrait notice ─── */
+    #portrait-notice {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #1a3a4a;
+      flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+      color: white; text-align: center; padding: 40px;
     }
-    #header a.back {
-      text-decoration: none; color: white; font-size: 22px;
-      width: 38px; height: 38px; border-radius: 50%;
-      background: rgba(255,255,255,0.25);
+    #portrait-notice .rotate-icon { font-size: 64px; animation: rotateHint 2s ease-in-out infinite; }
+    @keyframes rotateHint {
+      0%, 100% { transform: rotate(0deg); }
+      50%       { transform: rotate(90deg); }
+    }
+    #portrait-notice p { font-size: 18px; line-height: 1.6; }
+
+    /* ─── Room scene (full viewport, centers room-wrap) ─── */
+    #room-scene {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #2c5f72;
+    }
+
+    /* ─── Room wrap (fills full viewport in landscape) ─── */
+    #room-wrap {
+      width: 100%;
+      height: 100%;
+      position: relative; overflow: hidden;
+    }
+
+    /* ─── Floating UI overlay (inside room-wrap) ─── */
+    #room-ui {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; padding: 8px 10px; gap: 8px;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(0,0,0,0.22) 0%, transparent 100%);
+    }
+    #room-ui > * { pointer-events: auto; }
+    #ui-back {
+      text-decoration: none; color: white; font-size: 18px;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(0,0,0,0.3);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    #header h1 { flex: 1; text-align: center; font-size: 18px; color: white; font-weight: bold; }
-    #pts-disp {
-      background: rgba(255,255,255,0.28); border-radius: 20px;
-      padding: 4px 11px; color: white; font-weight: bold; font-size: 15px;
-      flex-shrink: 0; display: flex; align-items: center; gap: 3px;
-    }
-
-    /* ─── Area indicator dots ─── */
-    #area-dots {
-      position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 6px; z-index: 90;
-    }
+    #area-dots { flex: 1; display: flex; justify-content: center; gap: 6px; }
     .adot {
-      width: 8px; height: 8px; border-radius: 50%;
+      width: 7px; height: 7px; border-radius: 50%;
       background: rgba(255,255,255,0.4); transition: background 0.2s;
     }
     .adot.on { background: white; }
+    #ui-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    #pts-disp {
+      background: rgba(0,0,0,0.3); border-radius: 16px;
+      padding: 4px 10px; color: white; font-weight: bold; font-size: 14px;
+      display: flex; align-items: center; gap: 3px;
+    }
+    #ui-btn-shop {
+      background: rgba(255,154,60,0.9); color: white; border: none;
+      border-radius: 16px; padding: 5px 14px;
+      font-size: 14px; font-weight: bold; cursor: pointer;
+    }
+    #ui-btn-info {
+      background: rgba(0,0,0,0.3); color: white; border: none;
+      border-radius: 50%; width: 30px; height: 30px;
+      font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
 
-    /* ─── Room scroll wrapper ─── */
+    /* ─── Room scroll wrapper (fills room-wrap) ─── */
     #room-scroll {
-      position: fixed; top: 54px; bottom: 68px; left: 0; right: 0;
+      width: 100%; height: 100%;
       overflow-x: auto; overflow-y: hidden;
-      display: flex; align-items: stretch;
+      display: flex;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
@@ -66,74 +101,42 @@
     #room-scroll::-webkit-scrollbar { display: none; }
 
     /* ─── Room area ─── */
+    /* ─── Room area: Room_Base.png を背景として使用 ─── */
     .room-area {
-      flex-shrink: 0; width: 100vw; position: relative;
+      flex-shrink: 0; width: 100%; height: 100%; position: relative;
       scroll-snap-align: start; overflow: hidden;
-      display: flex; flex-direction: column;
+      background: url('../assets/images/Rooms/Room_Base.png') center/cover no-repeat;
     }
 
-    /* Wall section */
+    /* ─── Portrait: hide room, show notice ─── */
+    @media screen and (orientation: portrait) {
+      #room-scene      { display: none; }
+      #portrait-notice { display: flex; }
+    }
+    @media screen and (orientation: landscape) {
+      #room-scene      { display: flex; }
+      #portrait-notice { display: none; }
+    }
+
+    /*
+      .room-wall / .room-floor はテクスチャ上書き用の透明オーバーレイ。
+      テクスチャ未適用時は background が空 → Room_Base.png が透けて見える。
+      Room_Base.png の比率: 壁エリア上から57%, 床エリア下から43%
+    */
     .room-wall {
-      flex: 0 0 62%; position: relative; overflow: hidden;
-      transition: background 0.4s;
-      background: linear-gradient(180deg, #87ceeb 0%, #c8e6ff 100%);
+      position: absolute; top: 0; left: 0; right: 0; height: 57%;
+      overflow: hidden; cursor: pointer; transition: background 0.4s;
     }
     .room-wall img.room-bg-img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     }
-    /* Fixed decorative window */
-    .room-window {
-      position: absolute; top: 14%; right: 9%;
-      width: 68px; height: 58px;
-      border: 5px solid rgba(255,255,255,0.85);
-      border-radius: 6px 6px 4px 4px;
-      background: linear-gradient(180deg, #b8e4ff 0%, #87ceeb 100%);
-      box-shadow: inset 0 0 12px rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.15);
-      overflow: hidden;
-    }
-    .room-window::before { /* vertical divider */
-      content: ''; position: absolute;
-      top: 0; bottom: 0; left: 50%; width: 3px;
-      background: rgba(255,255,255,0.8); transform: translateX(-50%);
-    }
-    .room-window::after { /* horizontal divider */
-      content: ''; position: absolute;
-      left: 0; right: 0; top: 50%; height: 3px;
-      background: rgba(255,255,255,0.8); transform: translateY(-50%);
-    }
-
-    /* Baseboard */
-    .room-baseboard {
-      height: 10px;
-      background: rgba(0,0,0,0.12);
-      flex-shrink: 0;
-    }
-
-    /* Floor section */
     .room-floor {
-      flex: 1; position: relative; overflow: hidden;
-      transition: background 0.4s;
-      background: linear-gradient(180deg, #b8860b 0%, #d4a866 100%);
+      position: absolute; bottom: 0; left: 0; right: 0; height: 43%;
+      overflow: hidden; cursor: pointer; transition: background 0.4s;
     }
     .room-floor img.room-bg-img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     }
-
-    /* ─── Side walls ─── */
-    .room-sidewall {
-      position: absolute; top: 0; bottom: 0; width: 42px;
-      z-index: 3; overflow: hidden; cursor: pointer;
-      transition: background 0.4s;
-    }
-    /* clip-path で台形にして奥行き感（上下端が内側に傾く） */
-    .room-sidewall-left  { left: 0;  clip-path: polygon(0 0, 100% 10%, 100% 90%, 0 100%); }
-    .room-sidewall-right { right: 0; clip-path: polygon(0 10%, 100% 0, 100% 100%, 0 90%); }
-    /* 奥行きグラジェントオーバーレイ */
-    .room-sidewall::after {
-      content: ''; position: absolute; inset: 0; pointer-events: none;
-    }
-    .room-sidewall-left::after  { background: linear-gradient(90deg,  rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.04) 100%); }
-    .room-sidewall-right::after { background: linear-gradient(-90deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.04) 100%); }
 
     /* ─── Item slots ─── */
     .item-slot {
@@ -154,6 +157,7 @@
       touch-action: none;
       transition: left 0.12s, transform 0.08s;
       z-index: 2;
+      filter: drop-shadow(0 5px 8px rgba(0,0,0,0.28));
     }
     .item-placed.dragging {
       cursor: grabbing;
@@ -206,39 +210,40 @@
     }
     .lock-btn:active { transform: scale(0.96); }
 
-    /* ─── Bottom action bar ─── */
-    #action-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 68px;
-      background: linear-gradient(135deg, #ff9a3c, #ffbe5c);
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      padding: 0 16px;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
-    }
-    .action-btn {
-      flex: 1; max-width: 220px; height: 48px; border-radius: 24px;
-      border: none; cursor: pointer; font-size: 17px; font-weight: bold;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-      transition: transform 0.1s;
-    }
-    .action-btn:active { transform: scale(0.96); }
-    #btn-shop { background: white; color: #e07800; }
-    #btn-info { background: rgba(255,255,255,0.28); color: white; font-size: 22px;
-      max-width: 48px; height: 48px; border-radius: 50%; flex: none; }
+    /* (action-bar removed — shop/info moved to #room-ui overlay) */
 
     /* ─── Modal overlay ─── */
     .modal-ov {
       position: fixed; inset: 0; z-index: 200;
       background: rgba(0,0,0,0.45);
-      display: flex; align-items: flex-end;
+      display: flex; align-items: center; justify-content: center;
     }
     .modal-ov.hidden { display: none; }
+    /* Shop: right-side panel */
+    .modal-ov.shop-panel {
+      align-items: stretch; justify-content: flex-end;
+    }
 
-    /* Bottom sheet */
+    /* Right slide panel (shop) */
     .sheet {
-      width: 100%; background: #fff9f2;
+      background: #fff9f2;
+      display: flex; flex-direction: column;
+    }
+    /* Shop panel: right side */
+    .shop-panel .sheet {
+      width: min(340px, 80vw); height: 100%;
+      border-radius: 18px 0 0 18px;
+      animation: slideInRight 0.28s ease;
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); }
+      to   { transform: translateX(0); }
+    }
+    /* Info/confirm: centered (keep bottom sheet feel) */
+    .modal-ov:not(.shop-panel) .sheet {
+      width: 100%; max-height: 88svh;
       border-radius: 22px 22px 0 0;
-      max-height: 88svh; display: flex; flex-direction: column;
+      align-self: flex-end;
       animation: slideUp 0.28s ease;
     }
     @keyframes slideUp {
@@ -463,18 +468,29 @@
 </head>
 <body>
 
-<!-- ── Header ─────────────────────────────────────── -->
-<div id="header">
-  <a href="../index.html" class="back">◀</a>
-  <h1>🏠 ポノのおへや</h1>
-  <div id="pts-disp">⭐ <span id="pts-num">0</span></div>
+<!-- ── Portrait notice ────────────────────────────── -->
+<div id="portrait-notice">
+  <div class="rotate-icon">&#x1F4F1;</div>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
 </div>
 
-<!-- ── Area indicator dots ─────────────────────────── -->
-<div id="area-dots"></div>
-
-<!-- ── Room scroll ────────────────────────────────── -->
-<div id="room-scroll"></div>
+<!-- ── Room scene ─────────────────────────────────── -->
+<div id="room-scene">
+  <div id="room-wrap">
+    <!-- Floating UI overlay -->
+    <div id="room-ui">
+      <a href="../index.html" id="ui-back">&#x25C4;</a>
+      <div id="area-dots"></div>
+      <div id="ui-right">
+        <div id="pts-disp">&#x2B50; <span id="pts-num">0</span></div>
+        <button id="ui-btn-shop">おみせ</button>
+        <button id="ui-btn-info">?</button>
+      </div>
+    </div>
+    <!-- Room scroll -->
+    <div id="room-scroll"></div>
+  </div>
+</div>
 
 <!-- ── Debug panel ───────────────────────────────── -->
 <div id="debug-panel" class="hidden">
@@ -498,12 +514,6 @@
   <div class="dbg-label" id="dbg-info"></div>
 </div>
 
-<!-- ── Action bar ────────────────────────────────── -->
-<div id="action-bar">
-  <button class="action-btn" id="btn-shop">🛍️ おみせ</button>
-  <button class="action-btn" id="btn-info">❓</button>
-</div>
-
 <!-- ── Points toast ───────────────────────────────── -->
 <div id="pts-toast"></div>
 
@@ -518,7 +528,7 @@
 </div>
 
 <!-- ── Shop modal ─────────────────────────────────── -->
-<div class="modal-ov hidden" id="shop-ov">
+<div class="modal-ov hidden shop-panel" id="shop-ov">
   <div class="sheet" id="shop-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-hd">
@@ -837,13 +847,6 @@ function applyBackground(areaEl, areaId) {
   const floorItem = cfg.floor ? getItem(cfg.floor) : null;
   _applyBgElement(wallEl,  wallItem,  'wallGrad');
   _applyBgElement(floorEl, floorItem, 'floorGrad');
-
-  // 側面壁にも壁と同じ背景を適用（tileImageは使わずgradientのみ）
-  const sideWallItem = wallItem ? { wallGrad: wallItem.wallGrad || wallItem.floorGrad } : null;
-  const sideLEl = areaEl.querySelector('.room-sidewall-left');
-  const sideREl = areaEl.querySelector('.room-sidewall-right');
-  if (sideLEl) _applyBgElement(sideLEl, sideWallItem, 'wallGrad');
-  if (sideREl) _applyBgElement(sideREl, sideWallItem, 'wallGrad');
 }
 
 function _applyBgElement(el, item, gradKey) {
@@ -889,28 +892,19 @@ function buildRoomArea(areaData) {
   const cfg = state.config[areaData.id] || {};
   const locked = !state.unlocked.includes(areaData.id);
 
-  // Wall
+  // Wall overlay（テクスチャ上書き用・クリックでてもち）
   const wall = document.createElement('div');
   wall.className = 'room-wall';
-  wall.appendChild(Object.assign(document.createElement('div'), {className: 'room-window'}));
+  wall.addEventListener('click', e => {
+    if (locked) return;
+    openInventory('wall');
+  });
 
-  // Baseboard
-  const base = document.createElement('div');
-  base.className = 'room-baseboard';
-
-  // Floor（グリッド配置アイテムをレンダリング）
+  // Floor overlay（家具配置 + テクスチャ上書き用）
   const floor = document.createElement('div');
   floor.className = 'room-floor';
   getPlacedItems(cfg).forEach(p => {
     floor.appendChild(_makeGridItem(p, areaData.id, locked));
-  });
-
-  // Wall clickable → てもち
-  wall.style.cursor = 'pointer';
-  wall.addEventListener('click', e => {
-    if (locked) return;
-    if (e.target.closest('.item-placed')) return;
-    openInventory('wall');
   });
   floor.addEventListener('click', e => {
     if (locked) return;
@@ -918,20 +912,8 @@ function buildRoomArea(areaData) {
     openInventory('floor');
   });
 
-  // Side walls（壁と同じ背景、奥行きオーバーレイはCSSで）
-  const sideL = document.createElement('div');
-  sideL.className = 'room-sidewall room-sidewall-left';
-  sideL.addEventListener('click', () => { if (!locked) openInventory('wall'); });
-
-  const sideR = document.createElement('div');
-  sideR.className = 'room-sidewall room-sidewall-right';
-  sideR.addEventListener('click', () => { if (!locked) openInventory('wall'); });
-
   div.appendChild(wall);
-  div.appendChild(base);
   div.appendChild(floor);
-  div.appendChild(sideL);
-  div.appendChild(sideR);
 
   // Lock overlay
   if (locked) {
@@ -1221,6 +1203,13 @@ function selectTheme(t) {
   if (earned > 0) setTimeout(() => showToast(`🎁 はじめのプレゼント +${earned}pt！`), 600);
 }
 
+// ─── Landscape lock ───────────────────────────────────
+(function() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape-primary').catch(() => {});
+  }
+})();
+
 // ─── Init ─────────────────────────────────────────────
 function init() {
   loadState();
@@ -1249,8 +1238,8 @@ function init() {
     renderShopGrid(tab.dataset.cat);
   });
 
-  // Shop open/close
-  document.getElementById('btn-shop').addEventListener('click', () => openShop(currentShopCat));
+  // Shop open/close (overlay button)
+  document.getElementById('ui-btn-shop').addEventListener('click', () => openShop(currentShopCat));
   document.getElementById('shop-close').addEventListener('click', () =>
     document.getElementById('shop-ov').classList.add('hidden'));
   document.getElementById('shop-ov').addEventListener('click', e => {
@@ -1258,8 +1247,8 @@ function init() {
       document.getElementById('shop-ov').classList.add('hidden');
   });
 
-  // Info open/close
-  document.getElementById('btn-info').addEventListener('click', () =>
+  // Info open/close (overlay button)
+  document.getElementById('ui-btn-info').addEventListener('click', () =>
     document.getElementById('info-ov').classList.remove('hidden'));
   document.getElementById('info-close').addEventListener('click', () =>
     document.getElementById('info-ov').classList.add('hidden'));
