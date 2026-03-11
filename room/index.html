@@ -173,7 +173,7 @@
       position: absolute;
       transform-origin: bottom center;
       display: flex; align-items: flex-end; justify-content: center;
-      width: 100px; height: 96px;
+      width: 130px; height: 124px;
       cursor: grab;
       touch-action: none;
       transition: left 0.1s, bottom 0.1s, transform 0.1s;
@@ -682,12 +682,12 @@ function showToast(msg) {
 const PERSPECTIVE = {
   rows: 4,
   cols: 8,
-  // 各行の水平線 Y (room上端=0, 下端=1)
-  rowY:      [0.96, 0.88, 0.81, 0.74],  // 新ルーム: 床=下30% (y=0.70〜1.0)
-  // 各行の床の左端 X — Room_Base_grid.pngより計測（背面x=13%, 前面x=0%）
-  rowLeftX:  [0.02, 0.05, 0.08, 0.11],
-  // 各行の床の右端 X
-  rowRightX: [0.98, 0.95, 0.92, 0.89],
+  // Gemini計測値 (1920×1080) を正規化: 行0=手前(下), 行3=奥(上)
+  // 行0: y=1080→1.000, 行1: y=1038→0.961, 行2: y=1003→0.928, 行3: y=972→0.900
+  // 奥の壁境界: y=945→0.875, leftX=0.125, rightX=0.875
+  rowY:      [1.000, 0.961, 0.928, 0.900],
+  rowLeftX:  [0.000, 0.039, 0.071, 0.100],
+  rowRightX: [1.000, 0.961, 0.929, 0.900],
   // 各行のアイテムスケール (手前=1.0)
   rowScale:  [1.00, 0.76, 0.58, 0.44],
   // 各行のz-index (手前ほど高い)
@@ -950,7 +950,7 @@ function appendEmoji(slot, item) {
   const s = document.createElement('span');
   s.className = 'slot-emoji';
   s.textContent = item.emoji || '?';
-  s.style.fontSize = item.emojiSize || '52px';
+  s.style.fontSize = item.emojiSize || '68px';
   slot.appendChild(s);
 }
 
