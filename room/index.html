@@ -121,7 +121,8 @@
     /*
       .room-wall / .room-floor はテクスチャ上書き用の透明オーバーレイ。
       テクスチャ未適用時は background が空 → Room_Base.png が透けて見える。
-      Room_Base.png の比率: 壁エリア上から57%, 床エリア下から43%
+      .room-floor は Room_Base_Floor.png をマスクとして使用し、
+      床テクスチャが両側の壁エリアに染み出さないよう制御する。
     */
     .room-wall {
       position: absolute; top: 0; left: 0; right: 0; height: 57%;
@@ -131,8 +132,14 @@
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     }
     .room-floor {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 43%;
+      position: absolute; inset: 0;
       overflow: hidden; cursor: pointer; transition: background 0.4s;
+      -webkit-mask-image: url('../assets/images/Rooms/Room_Base_Floor.png');
+      mask-image: url('../assets/images/Rooms/Room_Base_Floor.png');
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
     }
     .room-floor img.room-bg-img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
