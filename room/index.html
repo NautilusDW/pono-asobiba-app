@@ -751,7 +751,7 @@ function _applyBgElement(el, item, gradKey) {
   if (item.tileImage) {
     // ── シームレスタイリングモード ──────────────────────────
     // background ショートハンドで一括指定して CSS クラスの gradient を確実に上書き
-    el.style.background = 'url(' + item.tileImage + ') repeat / ' + (item.tileSize || '200px');
+    el.style.background = 'url(' + item.tileImage + ') 0 0 / ' + (item.tileSize || '200px') + ' repeat';
   } else {
     // ── グラジェント + img オーバーレイモード（従来） ───────
     el.style.backgroundImage  = '';
