@@ -1,14 +1,20 @@
 // ─── ポノのおへや: アイテム定義 ───────────────────────────
 // cat: 'wall'=壁紙, 'floor'=床, 'furn'=家具, 'deco'=かざり
-// img: 実際のPNG画像パス（未用意の場合は emoji で代替表示）
-// wallGrad/floorGrad: wallとfloor背景のCSS値（グラジェントフォールバック）
 // theme: 'boy'|'girl'|'all'
 //
-// ── シームレステクスチャ対応フィールド ──
-// tileImage: シームレスPNGのパス（例: '../assets/textures/wood_seamless.png'）
-// tileSize:  background-size 値（例: '128px', '256px 128px'）省略時は '200px'
-// ※ tileImage が指定されていると wallGrad/floorGrad より優先してタイリング表示される
-// ※ tools/make_seamless.py で既存画像をシームレス化 → assets/textures/ に配置
+// ── 壁・床テクスチャ用フィールド（優先順位順） ──
+// roomImg:   パース済みPNGのパス（assets/images/Rooms/floors/ or walls/ に配置）
+//            → 背景全体を 100% × 100% で引き伸ばして表示。最優先。
+// tileImage: シームレスPNGのパス（レガシー。roomImg がない場合に使用）
+// tileSize:  background-size 値（例: '128px'）省略時は '200px'
+// wallGrad/floorGrad: CSSグラジェント（画像が両方ない場合のフォールバック）
+// img: ショップサムネイル用PNG（省略時は emoji を表示）
+//
+// ── roomImg の命名規則 ──
+// 床: assets/images/Rooms/floors/floor_[素材]_[バリアント].png
+//     例: floor_wood_natural.png / floor_carpet_pink.png / floor_tile_blue.png
+// 壁: assets/images/Rooms/walls/wall_[素材]_[バリアント].png
+//     例: wall_plain_sky.png / wall_brick_red.png / wall_wallpaper_floral.png
 
 const ROOM_AREAS = [
   { id: 'living',  name: 'リビング',   emoji: '🏠', cost: 0   },
@@ -21,67 +27,55 @@ const ROOM_ITEMS = [
   // ══ かべがみ (wallpaper) ══════════════════════════════
   {
     id: 'wall_sky', cat: 'wall', name: 'そらいろ', price: 15, theme: 'all',
-    emoji: '☁️',
+    roomImg: '../assets/images/Rooms/walls/wall_plain_sky.png',
     wallGrad: 'linear-gradient(180deg, #87ceeb 0%, #c8e6ff 100%)',
-    img: '../assets/images/room/bg/wall_sky.png',
   },
   {
     id: 'wall_stars', cat: 'wall', name: 'ほしぞら', price: 15, theme: 'boy',
-    emoji: '⭐',
+    roomImg: '../assets/images/Rooms/walls/wall_plain_stars.png',
     wallGrad: 'linear-gradient(180deg, #0d1b3e 0%, #1a3080 100%)',
-    img: '../assets/images/room/bg/wall_stars.png',
   },
   {
     id: 'wall_pink', cat: 'wall', name: 'ピンクの かべ', price: 15, theme: 'girl',
-    emoji: '🌸',
+    roomImg: '../assets/images/Rooms/walls/wall_plain_pink.png',
     wallGrad: 'linear-gradient(180deg, #f8c8df 0%, #fce4ec 100%)',
-    img: '../assets/images/room/bg/wall_pink.png',
   },
   {
     id: 'wall_forest', cat: 'wall', name: 'もりの かべ', price: 15, theme: 'all',
-    emoji: '🌿',
+    roomImg: '../assets/images/Rooms/walls/wall_plain_forest.png',
     wallGrad: 'linear-gradient(180deg, #a5d6a7 0%, #c8e6c9 100%)',
-    img: '../assets/images/room/bg/wall_forest.png',
   },
   {
     id: 'wall_yellow', cat: 'wall', name: 'おひさまいろ', price: 15, theme: 'all',
-    emoji: '☀️',
+    roomImg: '../assets/images/Rooms/walls/wall_plain_yellow.png',
     wallGrad: 'linear-gradient(180deg, #fff176 0%, #fffde7 100%)',
-    img: '../assets/images/room/bg/wall_yellow.png',
   },
 
   // ══ ゆか (flooring) ═════════════════════════════════
   {
     id: 'floor_wood', cat: 'floor', name: 'もくめの ゆか', price: 15, theme: 'all',
-    emoji: '🪵',
+    roomImg: '../assets/images/Rooms/floors/floor_wood_natural.png',
     floorGrad: 'linear-gradient(180deg, #b8860b 0%, #d4a866 100%)',
-    img: '../assets/images/room/bg/floor_wood.png',
-    tileImage: '../assets/textures/TIle01.png',
-    tileSize: '256px',
   },
   {
     id: 'floor_tile', cat: 'floor', name: 'あおい タイル', price: 15, theme: 'boy',
-    emoji: '🔷',
+    roomImg: '../assets/images/Rooms/floors/floor_tile_blue.png',
     floorGrad: 'repeating-linear-gradient(90deg, #b3d9ff 0px, #b3d9ff 28px, #90c4f0 28px, #90c4f0 30px)',
-    img: '../assets/images/room/bg/floor_tile.png',
   },
   {
     id: 'floor_pink', cat: 'floor', name: 'ふわふわ カーペット', price: 15, theme: 'girl',
-    emoji: '🎀',
+    roomImg: '../assets/images/Rooms/floors/floor_carpet_pink.png',
     floorGrad: 'linear-gradient(180deg, #f48fb1 0%, #fce4ec 100%)',
-    img: '../assets/images/room/bg/floor_pink.png',
   },
   {
     id: 'floor_grass', cat: 'floor', name: 'しばふ', price: 15, theme: 'all',
-    emoji: '🌿',
+    roomImg: '../assets/images/Rooms/floors/floor_grass_green.png',
     floorGrad: 'linear-gradient(180deg, #66bb6a 0%, #a5d6a7 100%)',
-    img: '../assets/images/room/bg/floor_grass.png',
   },
   {
     id: 'floor_check', cat: 'floor', name: 'チェック', price: 15, theme: 'all',
-    emoji: '🔲',
+    roomImg: '../assets/images/Rooms/floors/floor_check_bw.png',
     floorGrad: 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 28px 28px',
-    img: '../assets/images/room/bg/floor_check.png',
   },
 
   // ══ かぐ (furniture) ══════════════════════════════════

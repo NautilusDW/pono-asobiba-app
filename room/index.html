@@ -782,29 +782,28 @@ function makeItemPreview(item) {
   const div = document.createElement('div');
   div.className = 'item-prev ' + (item.cat === 'wall' ? 'wall-prev' : item.cat === 'floor' ? 'floor-prev' : '');
 
-  // Try image first
-  if (item.img) {
-    const img = document.createElement('img');
-    img.src = item.img;
-    img.onerror = () => { img.remove(); div.appendChild(makeEmojiSpan(item)); };
-    div.appendChild(img);
-  } else {
-    div.appendChild(makeEmojiSpan(item));
-  }
+  const gradKey = item.cat === 'wall' ? 'wallGrad' : item.cat === 'floor' ? 'floorGrad' : null;
 
-  // Wall/floor: apply color as background
-  if (item.cat === 'wall' && item.wallGrad) {
-    div.style.background = item.wallGrad;
-    if (!item.img) {
-      div.style.display = 'flex'; div.style.alignItems = 'center';
-      div.style.justifyContent = 'center'; div.style.fontSize = '22px';
+  if (item.cat === 'wall' || item.cat === 'floor') {
+    // 壁・床: グラデーションを背景にし、roomImg があれば上書き
+    if (gradKey && item[gradKey]) div.style.background = item[gradKey];
+    if (item.roomImg) {
+      const img = document.createElement('img');
+      img.src = item.roomImg;
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+      img.onerror = () => img.remove();
+      div.style.position = 'relative'; div.style.overflow = 'hidden';
+      div.appendChild(img);
     }
-  }
-  if (item.cat === 'floor' && item.floorGrad) {
-    div.style.background = item.floorGrad;
-    if (!item.img) {
-      div.style.display = 'flex'; div.style.alignItems = 'center';
-      div.style.justifyContent = 'center'; div.style.fontSize = '18px';
+  } else {
+    // 家具・デコ: img → emoji フォールバック
+    if (item.img) {
+      const img = document.createElement('img');
+      img.src = item.img;
+      img.onerror = () => { img.remove(); div.appendChild(makeEmojiSpan(item)); };
+      div.appendChild(img);
+    } else {
+      div.appendChild(makeEmojiSpan(item));
     }
   }
   return div;
@@ -856,7 +855,7 @@ function appendEmoji(slot, item) {
 }
 
 // ─── Apply room background (wall/floor) ──────────────
-// tileImage フィールドがあればシームレスタイリング表示を優先する
+// roomImg（パース済みPNG）> tileImage（シームレスタイル）> グラジェント の優先順で適用
 function applyBackground(areaEl, areaId) {
   const cfg     = state.config[areaId] || {};
   const wallEl  = areaEl.querySelector('.room-wall');
@@ -881,12 +880,15 @@ function _applyBgElement(el, item, gradKey) {
     return;
   }
 
-  if (item.tileImage) {
-    // ── シームレスタイリングモード ──────────────────────────
-    // background ショートハンドで一括指定して CSS クラスの gradient を確実に上書き
+  if (item.roomImg) {
+    // ── パース済みPNGモード（最優先）────────────────────────
+    // 壁・床エリアいっぱいに引き伸ばして表示。マスクで形状をクリップ済み。
+    el.style.background = 'url(' + item.roomImg + ') 0 0 / 100% 100% no-repeat';
+  } else if (item.tileImage) {
+    // ── シームレスタイリングモード（レガシー）───────────────
     el.style.background = 'url(' + item.tileImage + ') 0 0 / ' + (item.tileSize || '200px') + ' repeat';
   } else {
-    // ── グラジェント + img オーバーレイモード（従来） ───────
+    // ── グラジェント + img オーバーレイモード（フォールバック）
     el.style.backgroundImage  = '';
     el.style.backgroundRepeat = '';
     el.style.backgroundSize   = '';
