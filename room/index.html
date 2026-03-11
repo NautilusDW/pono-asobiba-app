@@ -102,7 +102,7 @@
     .room-area {
       flex-shrink: 0; width: 100%; height: 100%; position: relative;
       scroll-snap-align: start; overflow: hidden;
-      background: url('../assets/images/Rooms/temp/hf_20260311_154504_28abab8d-c20e-44e6-b4f8-e1d0bf9c1df6.png') center / 100% 100% no-repeat;
+      background: url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat;
     }
 
     /* ─── Portrait: hide room, show notice ─── */
@@ -494,21 +494,21 @@
     </filter>
     <!-- 壁マスク（左奥壁＋右奥壁） -->
     <mask id="iso-wall-mask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-      <image href="../assets/images/Rooms/temp/mask/wall_mask.png"
+      <image href="../assets/images/Rooms/masks/wall_mask.png"
              x="0" y="0" width="1" height="1"
              preserveAspectRatio="none"
              filter="url(#iso-mask-invert)"/>
     </mask>
     <!-- 巾木マスク -->
     <mask id="iso-baseboard-mask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-      <image href="../assets/images/Rooms/temp/mask/baseboard_mask.png"
+      <image href="../assets/images/Rooms/masks/baseboard_mask.png"
              x="0" y="0" width="1" height="1"
              preserveAspectRatio="none"
              filter="url(#iso-mask-invert)"/>
     </mask>
     <!-- 床マスク（ひし形） -->
     <mask id="iso-floor-mask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-      <image href="../assets/images/Rooms/temp/mask/floor_mask.png"
+      <image href="../assets/images/Rooms/masks/floor_mask.png"
              x="0" y="0" width="1" height="1"
              preserveAspectRatio="none"
              filter="url(#iso-mask-invert)"/>
@@ -962,7 +962,7 @@ function appendEmoji(slot, item) {
 // ─── Apply room background (wall/floor) ──────────────
 // scope:'room' アイテムはフル背景画像として .room-area に直接適用。
 // それ以外は壁/床オーバーレイに適用する。
-const ROOM_BASE_BG = "url('../assets/images/Rooms/temp/hf_20260311_154504_28abab8d-c20e-44e6-b4f8-e1d0bf9c1df6.png') center / 100% 100% no-repeat";
+const ROOM_BASE_BG = "url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat";
 
 function applyBackground(areaEl, areaId) {
   const cfg          = state.config[areaId] || {};
