@@ -43,10 +43,10 @@
       background: #2c5f72;
     }
 
-    /* ─── Room wrap (fills full viewport in landscape) ─── */
+    /* ─── Room wrap: 16:9 固定（Room_Base.png と同比率） ─── */
     #room-wrap {
-      width: 100%;
-      height: 100%;
+      width: min(100svw, calc(100svh * 16 / 9));
+      height: min(100svh, calc(100svw * 9 / 16));
       position: relative; overflow: hidden;
     }
 
@@ -121,23 +121,35 @@
     /*
       .room-wall / .room-floor はテクスチャ上書き用の透明オーバーレイ。
       テクスチャ未適用時は background が空 → Room_Base.png が透けて見える。
-      .room-floor は Room_Base_Floor.png をマスクとして使用し、
-      床テクスチャが両側の壁エリアに染み出さないよう制御する。
+      マスクPNGはルーム全体(2048x1152)サイズで作成済み。
+      各divの高さに合わせて mask-size をスケーリングし、対応エリアのみ表示する。
+        壁 (top 0, height 57%) → mask-size: 100% 175.44%  (= 100/57×100%), position top
+        床 (bottom 0, height 43%) → mask-size: 100% 232.56% (= 100/43×100%), position bottom
     */
     .room-wall {
       position: absolute; top: 0; left: 0; right: 0; height: 57%;
       overflow: hidden; cursor: pointer; transition: background 0.4s;
+      -webkit-mask-image: url('../assets/images/Rooms/Room_Base_Wall.png');
+      mask-image: url('../assets/images/Rooms/Room_Base_Wall.png');
+      -webkit-mask-size: 100% 175.44%;
+      mask-size: 100% 175.44%;
+      -webkit-mask-position: 0 0;
+      mask-position: 0 0;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
     }
     .room-wall img.room-bg-img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     }
     .room-floor {
-      position: absolute; inset: 0;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 43%;
       overflow: hidden; cursor: pointer; transition: background 0.4s;
       -webkit-mask-image: url('../assets/images/Rooms/Room_Base_Floor.png');
       mask-image: url('../assets/images/Rooms/Room_Base_Floor.png');
-      -webkit-mask-size: 100% 100%;
-      mask-size: 100% 100%;
+      -webkit-mask-size: 100% 232.56%;
+      mask-size: 100% 232.56%;
+      -webkit-mask-position: 0 100%;
+      mask-position: 0 100%;
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
     }
