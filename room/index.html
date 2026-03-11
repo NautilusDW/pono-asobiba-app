@@ -125,17 +125,15 @@
       z-index: 3; overflow: hidden; cursor: pointer;
       transition: background 0.4s;
     }
-    .room-sidewall-left  { left: 0; }
-    .room-sidewall-right { right: 0; }
-    /* 奥行き感を出すグラデーションオーバーレイ */
+    /* clip-path で台形にして奥行き感（上下端が内側に傾く） */
+    .room-sidewall-left  { left: 0;  clip-path: polygon(0 0, 100% 10%, 100% 90%, 0 100%); }
+    .room-sidewall-right { right: 0; clip-path: polygon(0 10%, 100% 0, 100% 100%, 0 90%); }
+    /* 奥行きグラジェントオーバーレイ */
     .room-sidewall::after {
       content: ''; position: absolute; inset: 0; pointer-events: none;
     }
-    .room-sidewall-left::after  { background: linear-gradient(90deg,  rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.05) 100%); }
-    .room-sidewall-right::after { background: linear-gradient(-90deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.05) 100%); }
-    /* 壁面との境界線 */
-    .room-sidewall-left  { border-right: 2px solid rgba(0,0,0,0.15); }
-    .room-sidewall-right { border-left:  2px solid rgba(0,0,0,0.15); }
+    .room-sidewall-left::after  { background: linear-gradient(90deg,  rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.04) 100%); }
+    .room-sidewall-right::after { background: linear-gradient(-90deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.04) 100%); }
 
     /* ─── Item slots ─── */
     .item-slot {
@@ -145,30 +143,30 @@
     }
     .item-slot:active { transform: scale(0.94); }
 
-    /* Furniture slot: center floor */
-    .slot-furn {
-      bottom: 0; left: 30%; transform: translateX(-50%);
-      width: 130px; height: 105px;
+    /* ─── グリッド配置アイテム ─── */
+    .item-placed {
+      position: absolute;
+      bottom: 0;
+      transform: translateX(-50%);
+      display: flex; align-items: flex-end; justify-content: center;
+      width: 100px; height: 96px;
+      cursor: grab;
+      touch-action: none;
+      transition: left 0.12s, transform 0.08s;
+      z-index: 2;
     }
-    /* Deco slot: right side floor (側面壁ぶん内側に) */
-    .slot-deco {
-      bottom: 0; right: 14%;
-      width: 78px; height: 88px;
+    .item-placed.dragging {
+      cursor: grabbing;
+      opacity: 0.85;
+      transition: none;
+      z-index: 10;
     }
-    /* Wall-item slot: left area of wall */
-    .slot-wallitem {
-      top: 10%; left: 8%;
-      width: 76px; height: 76px;
-    }
-
-    /* Empty slot placeholder */
-    .slot-empty {
-      width: 100%; height: 100%;
-      border: 3px dashed rgba(255,255,255,0.55);
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; color: rgba(255,255,255,0.6);
-      background: rgba(255,255,255,0.1);
+    /* ドラッグ中グリッドガイド */
+    .grid-hint {
+      position: absolute; bottom: 0; height: 100%;
+      pointer-events: none; z-index: 1;
+      border-left: 2px dashed rgba(255,255,255,0.25);
+      transition: left 0.06s;
     }
 
     .slot-emoji {
@@ -656,15 +654,101 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
+// ─── Grid constants ──────────────────────────────────
+const GRID_COLS = 8;  // 部屋の横グリッド列数
+
 // ─── Item lookup ──────────────────────────────────────
 function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
 
 function isOwned(id)  { return state.inventory.includes(id); }
 function isPlaced(id) {
-  return Object.values(state.config).some(cfg => Object.values(cfg).includes(id));
+  return Object.values(state.config).some(cfg => {
+    if (cfg.wall === id || cfg.floor === id) return true;
+    if (cfg.placed) return cfg.placed.some(p => p.id === id);
+    // 旧形式 (furn/deco) の後方互換
+    if (cfg.furn === id || cfg.deco === id) return true;
+    return false;
+  });
+}
+
+// 旧 furn/deco → placed 配列に変換（後方互換）
+function getPlacedItems(cfg) {
+  if (cfg.placed) return cfg.placed;
+  const placed = [];
+  if (cfg.furn) placed.push({ id: cfg.furn, col: 2 });
+  if (cfg.deco) placed.push({ id: cfg.deco, col: 5 });
+  return placed;
 }
 
 // ─── Build item preview element ───────────────────────
+// ─── グリッドアイテム生成 & ドラッグ ─────────────────────
+function _colToLeft(col) {
+  return ((col + 0.5) / GRID_COLS * 100).toFixed(2) + '%';
+}
+
+function _makeGridItem(p, areaId, locked) {
+  const item = getItem(p.id);
+  if (!item) return document.createDocumentFragment();
+  const el = document.createElement('div');
+  el.className = 'item-placed';
+  el.dataset.itemId = p.id;
+  el.dataset.col = p.col;
+  el.style.left = _colToLeft(p.col);
+  renderSlotContent(el, p.id);
+  if (!locked) _addDragHandlers(el, areaId);
+  return el;
+}
+
+function _addDragHandlers(el, areaId) {
+  let startX = 0, dragging = false, hintEl = null;
+
+  function getCol(touch) {
+    const floor = el.closest('.room-floor');
+    if (!floor) return parseInt(el.dataset.col);
+    const rect = floor.getBoundingClientRect();
+    const relX = touch.clientX - rect.left;
+    return Math.max(0, Math.min(GRID_COLS - 1, Math.floor(relX / rect.width * GRID_COLS)));
+  }
+
+  el.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    dragging = false;
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    if (dx > 6) dragging = true;
+    if (!dragging) return;
+    e.preventDefault();
+    const col = getCol(e.touches[0]);
+    el.classList.add('dragging');
+    el.style.left = _colToLeft(col);
+    el.dataset.col = col;
+    // グリッドヒントライン
+    if (!hintEl) {
+      hintEl = document.createElement('div');
+      hintEl.className = 'grid-hint';
+      el.closest('.room-floor').appendChild(hintEl);
+    }
+    hintEl.style.left = _colToLeft(col);
+  }, { passive: false });
+
+  el.addEventListener('touchend', () => {
+    if (!dragging) return;
+    el.classList.remove('dragging');
+    if (hintEl) { hintEl.remove(); hintEl = null; }
+    const col = parseInt(el.dataset.col);
+    const cfg = state.config[areaId];
+    if (!cfg) return;
+    // placed 配列がまだなければ移行
+    if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
+    const p = cfg.placed.find(p => p.id === el.dataset.itemId);
+    if (p) p.col = col;
+    saveState();
+    dragging = false;
+  });
+}
+
 function makeItemPreview(item) {
   const div = document.createElement('div');
   div.className = 'item-prev ' + (item.cat === 'wall' ? 'wall-prev' : item.cat === 'floor' ? 'floor-prev' : '');
@@ -810,39 +894,27 @@ function buildRoomArea(areaData) {
   wall.className = 'room-wall';
   wall.appendChild(Object.assign(document.createElement('div'), {className: 'room-window'}));
 
-  // Furn slot (in wall for bookshelf etc. — actually put on floor)
-  // Wall-item slot (future phases)
-
-  // Floor item slots (inside wall for now, positioned absolute in floor)
-  const furnSlot = document.createElement('div');
-  furnSlot.className = 'item-slot slot-furn'; furnSlot.dataset.slotCat = 'furn';
-  renderSlotContent(furnSlot, cfg.furn);
-
-  const decoSlot = document.createElement('div');
-  decoSlot.className = 'item-slot slot-deco'; decoSlot.dataset.slotCat = 'deco';
-  renderSlotContent(decoSlot, cfg.deco);
-
   // Baseboard
   const base = document.createElement('div');
   base.className = 'room-baseboard';
 
-  // Floor
+  // Floor（グリッド配置アイテムをレンダリング）
   const floor = document.createElement('div');
   floor.className = 'room-floor';
-  floor.appendChild(furnSlot);
-  floor.appendChild(decoSlot);
+  getPlacedItems(cfg).forEach(p => {
+    floor.appendChild(_makeGridItem(p, areaData.id, locked));
+  });
 
-  // Wall clickable → てもち（持っている壁紙を貼る）
+  // Wall clickable → てもち
   wall.style.cursor = 'pointer';
   wall.addEventListener('click', e => {
     if (locked) return;
-    if (e.target.closest('.item-slot')) return;
+    if (e.target.closest('.item-placed')) return;
     openInventory('wall');
   });
   floor.addEventListener('click', e => {
     if (locked) return;
-    const slot = e.target.closest('.item-slot');
-    if (slot) { openInventory(slot.dataset.slotCat); return; }
+    if (e.target.closest('.item-placed')) return;
     openInventory('floor');
   });
 
@@ -1090,7 +1162,25 @@ function buyItem(item) {
 
 function placeItem(item) {
   if (!state.config[currentAreaId]) state.config[currentAreaId] = {};
-  state.config[currentAreaId][item.cat] = item.id;
+  const cfg = state.config[currentAreaId];
+
+  if (item.cat === 'wall' || item.cat === 'floor') {
+    // 壁・床は直接上書き（従来通り）
+    cfg[item.cat] = item.id;
+  } else {
+    // 家具・かざりは placed 配列で管理
+    if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
+    // 同じアイテムがすでにあれば位置を維持、なければ空きグリッドに追加
+    if (!cfg.placed.find(p => p.id === item.id)) {
+      const usedCols = cfg.placed.map(p => p.col);
+      // 空いてる列を左から探す（中央付近優先）
+      const candidates = [3, 4, 2, 5, 1, 6, 0, 7];
+      const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % GRID_COLS;
+      cfg.placed.push({ id: item.id, col });
+    }
+    // 旧キーを削除
+    delete cfg.furn; delete cfg.deco;
+  }
   saveState();
   refreshArea(currentAreaId);
   renderShopGrid(item.cat);
