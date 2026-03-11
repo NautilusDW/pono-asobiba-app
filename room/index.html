@@ -165,14 +165,6 @@
     }
     .item-slot:active { transform: scale(0.94); }
 
-    /* ─── パース透視グリッド SVG ─── */
-    .persp-grid {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 5;
-      opacity: 1; transition: opacity 0.15s;
-    }
-    .persp-grid.active { opacity: 1; }
-
     /* ─── グリッド配置アイテム（room-area に直接配置） ─── */
     .item-placed {
       position: absolute;
@@ -778,43 +770,6 @@ function getRowColFromPoint(areaEl, clientX, clientY) {
   return { row: bestRow, col: bestCol };
 }
 
-// パースグリッド SVG を生成 (ドラッグ中に表示)
-function buildPerspGrid() {
-  const NS  = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', 'persp-grid');
-  svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('preserveAspectRatio', 'none');
-  const P = PERSPECTIVE;
-  const mkLine = (x1, y1, x2, y2, color, w) => {
-    const l = document.createElementNS(NS, 'line');
-    l.setAttribute('x1', x1); l.setAttribute('y1', y1);
-    l.setAttribute('x2', x2); l.setAttribute('y2', y2);
-    l.setAttribute('stroke', color);
-    l.setAttribute('stroke-width', w);
-    svg.appendChild(l);
-  };
-  // 水平行ライン (4本: row0手前〜row3奥)
-  for (let r = 0; r < P.rows; r++) {
-    mkLine(P.rowLeftX[r]*100, P.rowY[r]*100,
-           P.rowRightX[r]*100, P.rowY[r]*100,
-           'rgba(255,100,0,0.9)', 1.0);
-  }
-  // 手前端ライン (frontEdge: 画面外まで延長)
-  mkLine(P.frontEdgeLeftX*100, P.frontEdgeY*100,
-         P.frontEdgeRightX*100, P.frontEdgeY*100,
-         'rgba(255,100,0,0.9)', 1.0);
-  // 列の収束ライン (frontEdge手前端 → row3奥)
-  const lastR = P.rows - 1;
-  for (let c = 0; c <= P.cols; c++) {
-    const t  = c / P.cols;
-    const xF = (P.frontEdgeLeftX  + t * (P.frontEdgeRightX  - P.frontEdgeLeftX))  * 100;
-    const xB = (P.rowLeftX[lastR] + t * (P.rowRightX[lastR] - P.rowLeftX[lastR])) * 100;
-    mkLine(xF, P.frontEdgeY*100, xB, P.rowY[lastR]*100, 'rgba(255,100,0,0.7)', 0.7);
-  }
-  return svg;
-}
-
 // ─── Item lookup ──────────────────────────────────────
 function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
 
@@ -878,15 +833,11 @@ function _addDragHandlers(el, areaId) {
     el.dataset.col = col;
     el.classList.add('dragging');
     _applyGridPos(el, row, col);
-    if (!gridSvg) {
-      gridSvg = area.querySelector('.persp-grid');
-      if (gridSvg) gridSvg.classList.add('active');
-    }
   }
 
   function onEnd() {
     el.classList.remove('dragging');
-    if (gridSvg) { gridSvg.classList.remove('active'); gridSvg = null; }
+    gridSvg = null;
     if (!dragging) return;
     const row = parseInt(el.dataset.row);
     const col = parseInt(el.dataset.col);
@@ -1114,10 +1065,7 @@ function buildRoomArea(areaData) {
   div.appendChild(baseboard);
   div.appendChild(floor);
 
-  // パースグリッド SVG（ドラッグ中に表示）
-  div.appendChild(buildPerspGrid());
-
-  // 家具・デコアイテム（room-area に直接配置でパース透視を実現）
+  // 家具・デコアイテム
   if (!locked) {
     getPlacedItems(cfg).forEach(p => {
       div.appendChild(_makeGridItem(p, areaData.id, false));
@@ -1511,45 +1459,6 @@ function init() {
 }
 
 init();
-
-// ─── グリッドPNG書き出し (Shift+E) ────────────────────────────────
-async function exportGridPNG() {
-  const W = 2048, H = 1152;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // 背景画像を描画
-  const bgImg = new Image();
-  bgImg.src = '../assets/images/Rooms/Room_Base_grid.png';
-  await new Promise(r => { bgImg.onload = r; bgImg.onerror = r; });
-  ctx.drawImage(bgImg, 0, 0, W, H);
-
-  // SVGグリッドをcanvasに描画
-  const svgEl = document.querySelector('.room-area .persp-grid');
-  if (svgEl) {
-    const svgStr = new XMLSerializer().serializeToString(svgEl);
-    const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const svgImg = new Image();
-    svgImg.src = svgUrl;
-    await new Promise(r => { svgImg.onload = r; svgImg.onerror = r; });
-    ctx.drawImage(svgImg, 0, 0, W, H);
-    URL.revokeObjectURL(svgUrl);
-  }
-
-  canvas.toBlob(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'room_grid_reference.png';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, 'image/png');
-}
-document.addEventListener('keydown', e => {
-  if (e.shiftKey && e.key === 'E') exportGridPNG();
-});
 
 // ─── pageshow: ゲームから戻ったときにポイントを再読み込み ─────────
 window.addEventListener('pageshow', function() {
