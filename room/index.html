@@ -725,47 +725,47 @@ function appendEmoji(slot, item) {
 }
 
 // ─── Apply room background (wall/floor) ──────────────
+// tileImage フィールドがあればシームレスタイリング表示を優先する
 function applyBackground(areaEl, areaId) {
-  const cfg   = state.config[areaId] || {};
+  const cfg     = state.config[areaId] || {};
   const wallEl  = areaEl.querySelector('.room-wall');
   const floorEl = areaEl.querySelector('.room-floor');
 
-  // Wallpaper
-  const wallItem = cfg.wall ? getItem(cfg.wall) : null;
-  if (wallItem && wallItem.wallGrad) {
-    wallEl.style.background = wallItem.wallGrad;
-  } else {
-    wallEl.style.background = '';
-  }
-  // Try bg image
-  const wallImg = wallEl.querySelector('img.room-bg-img');
-  if (wallItem && wallItem.img) {
-    if (wallImg) wallImg.src = wallItem.img;
-    else {
-      const i = document.createElement('img');
-      i.className = 'room-bg-img'; i.src = wallItem.img;
-      i.onerror = () => i.remove();
-      wallEl.prepend(i);
-    }
-  } else if (wallImg) { wallImg.remove(); }
+  _applyBgElement(wallEl,  cfg.wall  ? getItem(cfg.wall)  : null, 'wallGrad');
+  _applyBgElement(floorEl, cfg.floor ? getItem(cfg.floor) : null, 'floorGrad');
+}
 
-  // Flooring
-  const floorItem = cfg.floor ? getItem(cfg.floor) : null;
-  if (floorItem && floorItem.floorGrad) {
-    floorEl.style.background = floorItem.floorGrad;
-  } else {
-    floorEl.style.background = '';
+function _applyBgElement(el, item, gradKey) {
+  // 既存の img.room-bg-img を削除
+  const oldImg = el.querySelector('img.room-bg-img');
+  if (oldImg) oldImg.remove();
+
+  if (!item) {
+    el.style.background = '';
+    el.style.backgroundImage = '';
+    el.style.backgroundRepeat = '';
+    el.style.backgroundSize = '';
+    return;
   }
-  const floorImg = floorEl.querySelector('img.room-bg-img');
-  if (floorItem && floorItem.img) {
-    if (floorImg) floorImg.src = floorItem.img;
-    else {
+
+  if (item.tileImage) {
+    // ── シームレスタイリングモード ──────────────────────────
+    // background ショートハンドで一括指定して CSS クラスの gradient を確実に上書き
+    el.style.background = 'url(' + item.tileImage + ') repeat / ' + (item.tileSize || '200px');
+  } else {
+    // ── グラジェント + img オーバーレイモード（従来） ───────
+    el.style.backgroundImage  = '';
+    el.style.backgroundRepeat = '';
+    el.style.backgroundSize   = '';
+    el.style.background = item[gradKey] || '';
+
+    if (item.img) {
       const i = document.createElement('img');
-      i.className = 'room-bg-img'; i.src = floorItem.img;
+      i.className = 'room-bg-img'; i.src = item.img;
       i.onerror = () => i.remove();
-      floorEl.prepend(i);
+      el.prepend(i);
     }
-  } else if (floorImg) { floorImg.remove(); }
+  }
 }
 
 // ─── Build room area DOM ──────────────────────────────

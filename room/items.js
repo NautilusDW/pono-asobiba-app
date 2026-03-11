@@ -1,8 +1,14 @@
 // ─── ポノのおへや: アイテム定義 ───────────────────────────
 // cat: 'wall'=壁紙, 'floor'=床, 'furn'=家具, 'deco'=かざり
 // img: 実際のPNG画像パス（未用意の場合は emoji で代替表示）
-// wallGrad/floorGrad: wallとfloor背景のCSS値
+// wallGrad/floorGrad: wallとfloor背景のCSS値（グラジェントフォールバック）
 // theme: 'boy'|'girl'|'all'
+//
+// ── シームレステクスチャ対応フィールド ──
+// tileImage: シームレスPNGのパス（例: '../assets/textures/wood_seamless.png'）
+// tileSize:  background-size 値（例: '128px', '256px 128px'）省略時は '200px'
+// ※ tileImage が指定されていると wallGrad/floorGrad より優先してタイリング表示される
+// ※ tools/make_seamless.py で既存画像をシームレス化 → assets/textures/ に配置
 
 const ROOM_AREAS = [
   { id: 'living',  name: 'リビング',   emoji: '🏠', cost: 0   },
@@ -50,6 +56,8 @@ const ROOM_ITEMS = [
     emoji: '🪵',
     floorGrad: 'linear-gradient(180deg, #b8860b 0%, #d4a866 100%)',
     img: '../assets/images/room/bg/floor_wood.png',
+    tileImage: '../assets/textures/TIle01.png',
+    tileSize: '256px',
   },
   {
     id: 'floor_tile', cat: 'floor', name: 'あおい タイル', price: 15, theme: 'boy',
