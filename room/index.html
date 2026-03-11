@@ -164,7 +164,7 @@
     .persp-grid {
       position: absolute; inset: 0; width: 100%; height: 100%;
       pointer-events: none; z-index: 5;
-      opacity: 0; transition: opacity 0.15s;
+      opacity: 1; transition: opacity 0.15s;
     }
     .persp-grid.active { opacity: 1; }
 
@@ -748,7 +748,7 @@ function buildPerspGrid() {
   for (let r = 0; r < P.rows; r++) {
     mkLine(P.rowLeftX[r]*100, P.rowY[r]*100,
            P.rowRightX[r]*100, P.rowY[r]*100,
-           'rgba(255,255,255,0.45)', 0.4);
+           'rgba(255,100,0,0.9)', 1.0);
   }
   // 列の収束ライン
   const lastR = P.rows - 1;
@@ -756,7 +756,7 @@ function buildPerspGrid() {
     const t  = c / P.cols;
     const xF = (P.rowLeftX[0]    + t * (P.rowRightX[0]    - P.rowLeftX[0]))    * 100;
     const xB = (P.rowLeftX[lastR]+ t * (P.rowRightX[lastR] - P.rowLeftX[lastR]))* 100;
-    mkLine(xF, P.rowY[0]*100, xB, P.rowY[lastR]*100, 'rgba(255,255,255,0.3)', 0.3);
+    mkLine(xF, P.rowY[0]*100, xB, P.rowY[lastR]*100, 'rgba(255,100,0,0.7)', 0.7);
   }
   return svg;
 }
