@@ -163,31 +163,29 @@
     }
     .item-slot:active { transform: scale(0.94); }
 
-    /* ─── グリッド配置アイテム ─── */
+    /* ─── パース透視グリッド SVG ─── */
+    .persp-grid {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 5;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .persp-grid.active { opacity: 1; }
+
+    /* ─── グリッド配置アイテム（room-area に直接配置） ─── */
     .item-placed {
       position: absolute;
-      bottom: 0;
-      transform: translateX(-50%);
+      transform-origin: bottom center;
       display: flex; align-items: flex-end; justify-content: center;
       width: 100px; height: 96px;
       cursor: grab;
       touch-action: none;
-      transition: left 0.12s, transform 0.08s;
-      z-index: 2;
+      transition: left 0.1s, bottom 0.1s, transform 0.1s;
       filter: drop-shadow(0 5px 8px rgba(0,0,0,0.28));
     }
     .item-placed.dragging {
       cursor: grabbing;
       opacity: 0.85;
       transition: none;
-      z-index: 10;
-    }
-    /* ドラッグ中グリッドガイド */
-    .grid-hint {
-      position: absolute; bottom: 0; height: 100%;
-      pointer-events: none; z-index: 1;
-      border-left: 2px dashed rgba(255,255,255,0.25);
-      transition: left 0.06s;
     }
 
     .slot-emoji {
@@ -682,7 +680,91 @@ function showToast(msg) {
 }
 
 // ─── Grid constants ──────────────────────────────────
-const GRID_COLS = 8;  // 部屋の横グリッド列数
+// ─── パース透視グリッド定数 ────────────────────────────
+// 行0=手前(大)、行3=奥(小)。各行のY位置・左右端X・スケール・z-index
+const PERSPECTIVE = {
+  rows: 4,
+  cols: 6,
+  // 各行の水平線 Y (room上端=0, 下端=1)
+  rowY:      [0.97, 0.87, 0.76, 0.65],
+  // 各行の床の左端 X (room左端=0, 右端=1)
+  rowLeftX:  [0.03, 0.08, 0.13, 0.18],
+  // 各行の床の右端 X
+  rowRightX: [0.97, 0.92, 0.87, 0.82],
+  // 各行のアイテムスケール (手前=1.0)
+  rowScale:  [1.00, 0.76, 0.58, 0.44],
+  // 各行のz-index (手前ほど高い)
+  rowZ:      [40,   30,   20,   10],
+};
+
+// グリッドセルの中心座標・スケール・z-indexを返す
+function getGridCell(row, col) {
+  const r  = Math.max(0, Math.min(PERSPECTIVE.rows - 1, row));
+  const c  = Math.max(0, Math.min(PERSPECTIVE.cols - 1, col));
+  const lx = PERSPECTIVE.rowLeftX[r];
+  const rx = PERSPECTIVE.rowRightX[r];
+  const t  = (c + 0.5) / PERSPECTIVE.cols;
+  return {
+    leftPct:   ((lx + t * (rx - lx)) * 100).toFixed(2),  // % from room left
+    bottomPct: ((1 - PERSPECTIVE.rowY[r]) * 100).toFixed(2), // % from room bottom
+    scale:     PERSPECTIVE.rowScale[r],
+    z:         PERSPECTIVE.rowZ[r],
+  };
+}
+
+// タッチ/マウス座標から最近傍の (row, col) を返す
+function getRowColFromPoint(areaEl, clientX, clientY) {
+  const rect = areaEl.getBoundingClientRect();
+  const xFrac = (clientX - rect.left)  / rect.width;
+  const yFrac = (clientY - rect.top)   / rect.height;
+  // 最近傍の行を Y 距離で選ぶ
+  let bestRow = 0, bestDist = Infinity;
+  for (let r = 0; r < PERSPECTIVE.rows; r++) {
+    const d = Math.abs(yFrac - PERSPECTIVE.rowY[r]);
+    if (d < bestDist) { bestDist = d; bestRow = r; }
+  }
+  // その行内で列を決定 (台形補間)
+  const lx = PERSPECTIVE.rowLeftX[bestRow];
+  const rx = PERSPECTIVE.rowRightX[bestRow];
+  const tNorm = Math.max(0, Math.min(1, (xFrac - lx) / (rx - lx)));
+  const bestCol = Math.min(PERSPECTIVE.cols - 1, Math.floor(tNorm * PERSPECTIVE.cols));
+  return { row: bestRow, col: bestCol };
+}
+
+// パースグリッド SVG を生成 (ドラッグ中に表示)
+function buildPerspGrid() {
+  const NS  = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'persp-grid');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  const P = PERSPECTIVE;
+  const mkLine = (x1, y1, x2, y2, color, w) => {
+    const l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+    l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+    l.setAttribute('stroke', color);
+    l.setAttribute('stroke-width', w);
+    svg.appendChild(l);
+  };
+  // 水平行ライン
+  for (let r = 0; r < P.rows; r++) {
+    mkLine(P.rowLeftX[r]*100, P.rowY[r]*100,
+           P.rowRightX[r]*100, P.rowY[r]*100,
+           'rgba(255,255,255,0.45)', 0.3);
+  }
+  // 手前の底辺ライン
+  mkLine(P.rowLeftX[0]*100, 99, P.rowRightX[0]*100, 99, 'rgba(255,255,255,0.3)', 0.2);
+  // 列の収束ライン
+  const lastR = P.rows - 1;
+  for (let c = 0; c <= P.cols; c++) {
+    const t  = c / P.cols;
+    const xF = (P.rowLeftX[0]    + t * (P.rowRightX[0]    - P.rowLeftX[0]))    * 100;
+    const xB = (P.rowLeftX[lastR]+ t * (P.rowRightX[lastR] - P.rowLeftX[lastR]))* 100;
+    mkLine(xF, P.rowY[0]*100, xB, P.rowY[lastR]*100, 'rgba(255,255,255,0.28)', 0.2);
+  }
+  return svg;
+}
 
 // ─── Item lookup ──────────────────────────────────────
 function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
@@ -707,70 +789,72 @@ function getPlacedItems(cfg) {
   return placed;
 }
 
-// ─── Build item preview element ───────────────────────
 // ─── グリッドアイテム生成 & ドラッグ ─────────────────────
-function _colToLeft(col) {
-  return ((col + 0.5) / GRID_COLS * 100).toFixed(2) + '%';
+function _applyGridPos(el, row, col) {
+  const cell = getGridCell(row, col);
+  el.style.left      = cell.leftPct   + '%';
+  el.style.bottom    = cell.bottomPct + '%';
+  el.style.transform = 'translateX(-50%) scale(' + cell.scale + ')';
+  el.style.zIndex    = cell.z;
 }
 
 function _makeGridItem(p, areaId, locked) {
   const item = getItem(p.id);
   if (!item) return document.createDocumentFragment();
+  const row = p.row ?? 0;
+  const col = p.col ?? 0;
   const el = document.createElement('div');
   el.className = 'item-placed';
   el.dataset.itemId = p.id;
-  el.dataset.col = p.col;
-  el.style.left = _colToLeft(p.col);
+  el.dataset.row = row;
+  el.dataset.col = col;
+  _applyGridPos(el, row, col);
   renderSlotContent(el, p.id);
   if (!locked) _addDragHandlers(el, areaId);
   return el;
 }
 
 function _addDragHandlers(el, areaId) {
-  let startX = 0, dragging = false, hintEl = null;
-
-  function getCol(touch) {
-    const floor = el.closest('.room-floor');
-    if (!floor) return parseInt(el.dataset.col);
-    const rect = floor.getBoundingClientRect();
-    const relX = touch.clientX - rect.left;
-    return Math.max(0, Math.min(GRID_COLS - 1, Math.floor(relX / rect.width * GRID_COLS)));
-  }
+  let startX = 0, startY = 0, dragging = false, gridSvg = null;
 
   el.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
     dragging = false;
   }, { passive: true });
 
   el.addEventListener('touchmove', e => {
-    const dx = Math.abs(e.touches[0].clientX - startX);
-    if (dx > 6) dragging = true;
+    const t = e.touches[0];
+    if (!dragging && (Math.abs(t.clientX - startX) > 6 || Math.abs(t.clientY - startY) > 6)) {
+      dragging = true;
+    }
     if (!dragging) return;
     e.preventDefault();
-    const col = getCol(e.touches[0]);
-    el.classList.add('dragging');
-    el.style.left = _colToLeft(col);
+    const area = el.closest('.room-area');
+    if (!area) return;
+    const { row, col } = getRowColFromPoint(area, t.clientX, t.clientY);
+    el.dataset.row = row;
     el.dataset.col = col;
-    // グリッドヒントライン
-    if (!hintEl) {
-      hintEl = document.createElement('div');
-      hintEl.className = 'grid-hint';
-      el.closest('.room-floor').appendChild(hintEl);
+    el.classList.add('dragging');
+    _applyGridPos(el, row, col);
+    // パースグリッドを表示
+    if (!gridSvg) {
+      gridSvg = area.querySelector('.persp-grid');
+      if (gridSvg) gridSvg.classList.add('active');
     }
-    hintEl.style.left = _colToLeft(col);
   }, { passive: false });
 
   el.addEventListener('touchend', () => {
-    if (!dragging) return;
     el.classList.remove('dragging');
-    if (hintEl) { hintEl.remove(); hintEl = null; }
+    if (gridSvg) { gridSvg.classList.remove('active'); gridSvg = null; }
+    if (!dragging) return;
+    const row = parseInt(el.dataset.row);
     const col = parseInt(el.dataset.col);
     const cfg = state.config[areaId];
     if (!cfg) return;
-    // placed 配列がまだなければ移行
     if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
-    const p = cfg.placed.find(p => p.id === el.dataset.itemId);
-    if (p) p.col = col;
+    const p = cfg.placed.find(q => q.id === el.dataset.itemId);
+    if (p) { p.row = row; p.col = col; }
     saveState();
     dragging = false;
   });
@@ -945,20 +1029,26 @@ function buildRoomArea(areaData) {
     openInventory('wall');
   });
 
-  // Floor overlay（家具配置 + テクスチャ上書き用）
+  // Floor overlay（テクスチャ上書き用）
   const floor = document.createElement('div');
   floor.className = 'room-floor';
-  getPlacedItems(cfg).forEach(p => {
-    floor.appendChild(_makeGridItem(p, areaData.id, locked));
-  });
   floor.addEventListener('click', e => {
     if (locked) return;
-    if (e.target.closest('.item-placed')) return;
     openInventory('floor');
   });
 
   div.appendChild(wall);
   div.appendChild(floor);
+
+  // パースグリッド SVG（ドラッグ中に表示）
+  div.appendChild(buildPerspGrid());
+
+  // 家具・デコアイテム（room-area に直接配置でパース透視を実現）
+  if (!locked) {
+    getPlacedItems(cfg).forEach(p => {
+      div.appendChild(_makeGridItem(p, areaData.id, false));
+    });
+  }
 
   // Lock overlay
   if (locked) {
@@ -1201,9 +1291,9 @@ function placeItem(item) {
     if (!cfg.placed.find(p => p.id === item.id)) {
       const usedCols = cfg.placed.map(p => p.col);
       // 空いてる列を左から探す（中央付近優先）
-      const candidates = [3, 4, 2, 5, 1, 6, 0, 7];
-      const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % GRID_COLS;
-      cfg.placed.push({ id: item.id, col });
+      const candidates = [2, 3, 1, 4, 0, 5];
+      const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % PERSPECTIVE.cols;
+      cfg.placed.push({ id: item.id, row: 0, col }); // デフォルトは手前(row:0)
     }
     // 旧キーを削除
     delete cfg.furn; delete cfg.deco;
@@ -1255,12 +1345,22 @@ function selectTheme(t) {
   }
 })();
 
-// ─── 16:9 固定サイズ（URLバー出し入れで再計算しない）───
+// ─── 16:9 固定サイズ ────────────────────────────────────
+// モバイル: screen.width/height（URL バー無視）
+// PC: window.innerWidth/Height（ウィンドウリサイズに追従）
+const _isMobile = window.matchMedia('(pointer: coarse)').matches;
+let   _lastInnerW = 0;
+
 function lockRoomSize() {
-  // screen.width/height は物理画面サイズ。ブラウザUIに左右されない。
-  const sw = screen.width, sh = screen.height;
-  const W  = Math.max(sw, sh); // landscape の幅
-  const H  = Math.min(sw, sh); // landscape の高さ
+  let W, H;
+  if (_isMobile) {
+    W = Math.max(screen.width, screen.height);
+    H = Math.min(screen.width, screen.height);
+  } else {
+    W = window.innerWidth;
+    H = window.innerHeight;
+  }
+  _lastInnerW = window.innerWidth;
   const ratio = 16 / 9;
   let w, h;
   if (W / H >= ratio) { h = H; w = Math.round(H * ratio); }
@@ -1270,6 +1370,10 @@ function lockRoomSize() {
 }
 lockRoomSize();
 window.addEventListener('orientationchange', () => setTimeout(lockRoomSize, 300));
+// PC: ウィンドウリサイズに追従。モバイルは幅が変わった時だけ（URL バーの出し入れは無視）
+window.addEventListener('resize', () => {
+  if (!_isMobile || window.innerWidth !== _lastInnerW) lockRoomSize();
+});
 
 // ─── Init ─────────────────────────────────────────────
 function init() {
