@@ -74,6 +74,12 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/walls/wall_hearts_pastel.jpeg',
     wallGrad: 'linear-gradient(180deg, #fdf0e0 0%, #fae8d0 100%)',
   },
+  {
+    id: 'wall_space_rockets', cat: 'wall', name: 'うちゅうロケット', price: 20, theme: 'boy',
+    scope: 'room',
+    roomImg: '../assets/images/Rooms/walls/wall_space_rockets.jpeg',
+    wallGrad: 'linear-gradient(180deg, #0d1b3e 0%, #1a3080 100%)',
+  },
 
   // ══ ゆか (flooring) ═════════════════════════════════
   {

@@ -118,14 +118,11 @@
 
     /*
       .room-wall / .room-floor はテクスチャ上書き用の透明オーバーレイ。
-      テクスチャ未適用時は background が空 → Room_Base.png が透けて見える。
-      マスクPNGはルーム全体(2048x1152)サイズで作成済み。
-      各divの高さに合わせて mask-size をスケーリングし、対応エリアのみ表示する。
-        壁 (top 0, height 57%) → mask-size: 100% 175.44%  (= 100/57×100%), position top
-        床 (bottom 0, height 43%) → mask-size: 100% 232.56% (= 100/43×100%), position bottom
+      新ルーム設計: 壁70% / 床30%
+      マスクPNGは新ルーム用に要更新（現在は未設定）
     */
     .room-wall {
-      position: absolute; top: 0; left: 0; right: 0; height: 57%;
+      position: absolute; top: 0; left: 0; right: 0; height: 70%;
       overflow: hidden; cursor: pointer; transition: background 0.4s;
       -webkit-mask-image: url('../assets/images/Rooms/Room_Base_Wall.png');
       mask-image: url('../assets/images/Rooms/Room_Base_Wall.png');
@@ -140,7 +137,7 @@
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     }
     .room-floor {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 43%;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 30%;
       overflow: hidden; cursor: pointer; transition: background 0.4s;
       -webkit-mask-image: url('../assets/images/Rooms/Room_Base_Floor.png');
       mask-image: url('../assets/images/Rooms/Room_Base_Floor.png');
@@ -686,11 +683,11 @@ const PERSPECTIVE = {
   rows: 4,
   cols: 8,
   // 各行の水平線 Y (room上端=0, 下端=1)
-  rowY:      [0.97, 0.87, 0.76, 0.65],
-  // 各行の床の左端 X (room左端=0, 右端=1) — 手前=端まで、奥=パース収束に合わせて約9%
-  rowLeftX:  [0.00, 0.03, 0.06, 0.09],
+  rowY:      [0.96, 0.88, 0.81, 0.74],  // 新ルーム: 床=下30% (y=0.70〜1.0)
+  // 各行の床の左端 X — Room_Base_grid.pngより計測（背面x=13%, 前面x=0%）
+  rowLeftX:  [0.02, 0.05, 0.08, 0.11],
   // 各行の床の右端 X
-  rowRightX: [1.00, 0.97, 0.94, 0.91],
+  rowRightX: [0.98, 0.95, 0.92, 0.89],
   // 各行のアイテムスケール (手前=1.0)
   rowScale:  [1.00, 0.76, 0.58, 0.44],
   // 各行のz-index (手前ほど高い)
