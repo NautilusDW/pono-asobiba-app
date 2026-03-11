@@ -687,17 +687,17 @@ const PERSPECTIVE = {
   // AE JSX gridMatrix実測値 (2048×1152): toComp()で3D→2Dスクリーン座標変換済み
   // gridMatrix[3]→row0(手前), [2]→row1, [1]→row2, [0]→row3(奥)
   // gridMatrix[4]→frontEdge (列ライン手前端、画面外)
-  rowY:      [0.796, 0.687, 0.609, 0.551],
+  rowY:      [0.796, 0.687, 0.609, 0.562],
   rowLeftX:  [0.023, 0.102, 0.159, 0.201],
   rowRightX: [0.977, 0.898, 0.841, 0.799],
   // 各行のアイテムスケール (消失点y≈0.14基準)
   rowScale:  [1.00,  0.83,  0.71,  0.63],
   // 各行のz-index (手前ほど高い)
   rowZ:      [40,    30,    20,    10],
-  // 列ライン手前端 (gridMatrix[4]: 画面外まで延長)
+  // 列ライン手前端 (gridMatrix[4]実測: -195/2048, 2243/2048 — 画面外)
   frontEdgeY:      0.957,
-  frontEdgeLeftX:  0.000,
-  frontEdgeRightX: 1.000,
+  frontEdgeLeftX:  -0.095,
+  frontEdgeRightX:  1.095,
 };
 
 // グリッドセルの中心座標・スケール・z-indexを返す
