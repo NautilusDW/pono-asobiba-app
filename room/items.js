@@ -52,21 +52,25 @@ const ROOM_ITEMS = [
   },
   {
     id: 'wall_cosmos', cat: 'wall', name: 'うちゅう', price: 20, theme: 'all',
+    scope: 'room',
     roomImg: '../assets/images/Rooms/walls/wall_cosmos.png',
     wallGrad: 'linear-gradient(180deg, #f5e6c8 0%, #ede0b8 100%)',
   },
   {
     id: 'wall_night_stars', cat: 'wall', name: 'よるぞら', price: 20, theme: 'boy',
+    scope: 'room',
     roomImg: '../assets/images/Rooms/walls/wall_night_stars.png',
     wallGrad: 'linear-gradient(180deg, #1a3a6e 0%, #243580 100%)',
   },
   {
     id: 'wall_balloons', cat: 'wall', name: 'バルーン', price: 20, theme: 'all',
+    scope: 'room',
     roomImg: '../assets/images/Rooms/walls/wall_balloons_pastel.png',
     wallGrad: 'linear-gradient(180deg, #fdf3e7 0%, #fae8d4 100%)',
   },
   {
     id: 'wall_hearts', cat: 'wall', name: 'ハート', price: 20, theme: 'girl',
+    scope: 'room',
     roomImg: '../assets/images/Rooms/walls/wall_hearts_pastel.jpeg',
     wallGrad: 'linear-gradient(180deg, #fdf0e0 0%, #fae8d0 100%)',
   },

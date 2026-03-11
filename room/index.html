@@ -43,10 +43,8 @@
       background: #2c5f72;
     }
 
-    /* ─── Room wrap: 16:9 固定（Room_Base.png と同比率） ─── */
+    /* ─── Room wrap: JS で 16:9 固定（URLバーの出し入れで再計算しない） ─── */
     #room-wrap {
-      width: min(100svw, calc(100svh * 16 / 9));
-      height: min(100svh, calc(100svw * 9 / 16));
       position: relative; overflow: hidden;
     }
 
@@ -855,7 +853,10 @@ function appendEmoji(slot, item) {
 }
 
 // ─── Apply room background (wall/floor) ──────────────
-// roomImg（パース済みPNG）> tileImage（シームレスタイル）> グラジェント の優先順で適用
+// scope:'room' アイテムはフル背景画像として .room-area に直接適用。
+// それ以外は壁/床オーバーレイに適用する。
+const ROOM_BASE_BG = "url('../assets/images/Rooms/Room_Base.png') 0 0 / 100% 100% no-repeat";
+
 function applyBackground(areaEl, areaId) {
   const cfg     = state.config[areaId] || {};
   const wallEl  = areaEl.querySelector('.room-wall');
@@ -863,8 +864,24 @@ function applyBackground(areaEl, areaId) {
 
   const wallItem  = cfg.wall  ? getItem(cfg.wall)  : null;
   const floorItem = cfg.floor ? getItem(cfg.floor) : null;
-  _applyBgElement(wallEl,  wallItem,  'wallGrad');
+
+  // scope:'room' の壁アイテム → .room-area 背景に直接置いてオーバーレイはクリア
+  if (wallItem && wallItem.scope === 'room' && wallItem.roomImg) {
+    areaEl.style.background = 'url(' + wallItem.roomImg + ') 0 0 / 100% 100% no-repeat';
+    _clearBgElement(wallEl);
+  } else {
+    areaEl.style.background = ROOM_BASE_BG;
+    _applyBgElement(wallEl, wallItem, 'wallGrad');
+  }
+
   _applyBgElement(floorEl, floorItem, 'floorGrad');
+}
+
+function _clearBgElement(el) {
+  const oldImg = el.querySelector('img.room-bg-img');
+  if (oldImg) oldImg.remove();
+  el.style.background = '';
+  el.style.backgroundImage = '';
 }
 
 function _applyBgElement(el, item, gradKey) {
@@ -1237,6 +1254,22 @@ function selectTheme(t) {
     screen.orientation.lock('landscape-primary').catch(() => {});
   }
 })();
+
+// ─── 16:9 固定サイズ（URLバー出し入れで再計算しない）───
+function lockRoomSize() {
+  // screen.width/height は物理画面サイズ。ブラウザUIに左右されない。
+  const sw = screen.width, sh = screen.height;
+  const W  = Math.max(sw, sh); // landscape の幅
+  const H  = Math.min(sw, sh); // landscape の高さ
+  const ratio = 16 / 9;
+  let w, h;
+  if (W / H >= ratio) { h = H; w = Math.round(H * ratio); }
+  else                 { w = W; h = Math.round(W / ratio); }
+  const wrap = document.getElementById('room-wrap');
+  if (wrap) { wrap.style.width = w + 'px'; wrap.style.height = h + 'px'; }
+}
+lockRoomSize();
+window.addEventListener('orientationchange', () => setTimeout(lockRoomSize, 300));
 
 // ─── Init ─────────────────────────────────────────────
 function init() {
