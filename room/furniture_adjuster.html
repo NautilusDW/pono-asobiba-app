@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>家具ピボット＆配置範囲 調整ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:100vh;overflow:hidden}
+
+/* ─── Left: Room view ─── */
+#room-panel{flex:1;display:flex;align-items:center;justify-content:center;position:relative;padding:10px}
+#room-container{position:relative;aspect-ratio:16/9;max-width:100%;max-height:100%}
+#room-bg{width:100%;height:100%;display:block}
+#grid-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+#item-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.placed-item{position:absolute;pointer-events:auto;cursor:grab;image-rendering:auto}
+.placed-item:active{cursor:grabbing}
+.placed-item.selected{outline:2px solid #ff0;outline-offset:2px}
+
+/* ─── Right: Controls ─── */
+#controls{width:360px;overflow-y:auto;background:#16213e;padding:16px;display:flex;flex-direction:column;gap:12px}
+#controls h2{font-size:16px;color:#ffd700;border-bottom:1px solid #333;padding-bottom:6px}
+#item-list{max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px}
+.item-btn{width:56px;height:56px;border:2px solid #444;border-radius:8px;cursor:pointer;background:#222;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:2px}
+.item-btn img{max-width:100%;max-height:100%;object-fit:contain}
+.item-btn.active{border-color:#ffd700}
+.item-btn:hover{border-color:#888}
+
+label{display:flex;align-items:center;gap:8px;font-size:13px}
+label span{min-width:70px}
+input[type=range]{flex:1}
+input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:2px 4px;text-align:center}
+.row{display:flex;gap:8px;align-items:center}
+.section{background:#1a2744;padding:10px;border-radius:8px}
+.section h3{font-size:13px;color:#aaa;margin-bottom:6px}
+
+#export-btn{background:#ffd700;color:#1a1a2e;border:none;padding:10px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px}
+#export-btn:hover{background:#ffed4a}
+#export-area{width:100%;height:120px;background:#111;color:#0f0;border:1px solid #444;border-radius:4px;font-family:monospace;font-size:11px;resize:vertical}
+#info{font-size:12px;color:#888;line-height:1.4}
+</style>
+</head>
+<body>
+
+<div id="room-panel">
+  <div id="room-container">
+    <img id="room-bg" src="../assets/images/Rooms/base.jpg" alt="room">
+    <canvas id="grid-canvas"></canvas>
+    <div id="item-layer"></div>
+  </div>
+</div>
+
+<div id="controls">
+  <h2>家具ピボット＆配置範囲 調整ツール</h2>
+
+  <div id="info">
+    アイテムを選択 → ドラッグで配置 → ピボット・範囲を調整<br>
+    赤セル＝配置不可、緑セル＝配置可能
+  </div>
+
+  <div id="item-list"></div>
+
+  <div class="section" id="selected-info" style="display:none">
+    <h3 id="sel-name">---</h3>
+
+    <label><span>cellSize</span>
+      <input type="range" id="sl-cellSize" min="0.3" max="3.0" step="0.1">
+      <input type="number" id="num-cellSize" step="0.1">
+    </label>
+
+    <label><span>pivotX (%)</span>
+      <input type="range" id="sl-pivotX" min="-50" max="50" step="0.5">
+      <input type="number" id="num-pivotX" step="0.5">
+    </label>
+
+    <label><span>pivotY (%)</span>
+      <input type="range" id="sl-pivotY" min="-5" max="10" step="0.1">
+      <input type="number" id="num-pivotY" step="0.1">
+    </label>
+
+    <h3 style="margin-top:8px">配置範囲 (row / col)</h3>
+    <div class="row">
+      <label><span>minRow</span><input type="number" id="num-minRow" min="0" max="7" step="1"></label>
+      <label><span>maxRow</span><input type="number" id="num-maxRow" min="0" max="7" step="1"></label>
+    </div>
+    <div class="row">
+      <label><span>minCol</span><input type="number" id="num-minCol" min="0" max="7" step="1"></label>
+      <label><span>maxCol</span><input type="number" id="num-maxCol" min="0" max="7" step="1"></label>
+    </div>
+    <div style="font-size:11px;color:#888;margin-top:4px">
+      row↗右奥方向, col↖左奥方向
+    </div>
+  </div>
+
+  <button id="export-btn">全アイテムの値をエクスポート</button>
+  <textarea id="export-area" readonly></textarea>
+</div>
+
+<script>
+// ─── ISO_GRID (from room/index.html) ───
+const ISO_GRID = {
+  cells: 8,
+  back:  { x: 0.501, y: 0.383 },
+  right: { x: 0.764, y: 0.645 },
+  left:  { x: 0.236, y: 0.645 },
+  front: { x: 0.500, y: 0.917 },
+};
+
+function isoGridPt(u, v) {
+  const n = ISO_GRID.cells;
+  const s = u / n, t = v / n;
+  const B = ISO_GRID.back, R = ISO_GRID.right, L = ISO_GRID.left, F = ISO_GRID.front;
+  return {
+    x: (1-s)*(1-t)*B.x + s*(1-t)*R.x + (1-s)*t*L.x + s*t*F.x,
+    y: (1-s)*(1-t)*B.y + s*(1-t)*R.y + (1-s)*t*L.y + s*t*F.y,
+  };
+}
+
+function getGridCell(u, v) {
+  const p = isoGridPt(u + 0.5, v + 0.5);
+  return { leftPct: p.x * 100, bottomPct: (1 - p.y) * 100 };
+}
+
+const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100;
+
+// ─── Items (inline from items.js, furniture/deco only) ───
+const ITEMS = [
+  { id:'furn_rocket', name:'ロケット', roomImg:'../assets/images/Rooms/furnitures_final/rocket.png', cellSize:0.6, pivotX:0, pivotY:1.7 },
+  { id:'furn_drum', name:'たいこ', roomImg:'../assets/images/Rooms/furnitures_final/drum.png', cellSize:0.7, pivotX:-2.8, pivotY:1.8 },
+  { id:'furn_ringtower', name:'わなげ', roomImg:'../assets/images/Rooms/furnitures_final/ringtower.png', cellSize:0.6, pivotX:0, pivotY:1.7 },
+  { id:'furn_robot', name:'ロボット', roomImg:'../assets/images/Rooms/furnitures_final/robot.png', cellSize:0.7, pivotX:4.7, pivotY:1.3 },
+  { id:'furn_car', name:'くるま', roomImg:'../assets/images/Rooms/furnitures_final/car.png', cellSize:1.0, pivotX:-13.0, pivotY:1.9 },
+  { id:'furn_desk', name:'あおいつくえ', roomImg:'../assets/images/Rooms/furnitures_final/desk.png', cellSize:1.8, pivotX:15.7, pivotY:1.1 },
+  { id:'furn_chest_1', name:'しろいチェスト', roomImg:'../assets/images/Rooms/furnitures_final/chest_1.png', cellSize:1.6, pivotX:-20.0, pivotY:0.9 },
+  { id:'furn_chest_2', name:'しろいチェスト2', roomImg:'../assets/images/Rooms/furnitures_final/chest_2.png', cellSize:1.5, pivotX:15.8, pivotY:1.0 },
+  { id:'furn_lamp_1', name:'しろいランプ', roomImg:'../assets/images/Rooms/furnitures_final/lamp_1.png', cellSize:0.7, pivotX:0, pivotY:0.6 },
+  { id:'furn_lamp_2', name:'しろいランプ2', roomImg:'../assets/images/Rooms/furnitures_final/lamp_2.png', cellSize:0.6, pivotX:0, pivotY:0.8 },
+  { id:'furn_bear_1', name:'くまぬいぐるみ', roomImg:'../assets/images/Rooms/furnitures_final/bear_1.png', cellSize:0.7, pivotX:3.3, pivotY:1.3 },
+  { id:'furn_bear_2', name:'くまぬいぐるみ2', roomImg:'../assets/images/Rooms/furnitures_final/bear_2.png', cellSize:0.7, pivotX:1.2, pivotY:1.7 },
+  { id:'furn_bed_wood', name:'きのベッド', roomImg:'../assets/images/Rooms/furnitures/furniture_01_001.png', cellSize:2.2, pivotX:14.3, pivotY:0.6 },
+  { id:'furn_bed_blue', name:'あおいベッド', roomImg:'../assets/images/Rooms/furnitures/furniture_04_001.png', cellSize:2.2, pivotX:-15.6, pivotY:0.7 },
+  { id:'furn_bookshelf_w', name:'しろいほんだな', roomImg:'../assets/images/Rooms/furnitures/furniture_01_003.png', cellSize:1.2, pivotX:17.5, pivotY:0.7 },
+  { id:'furn_bookshelf_b', name:'おおきなほんだな', roomImg:'../assets/images/Rooms/furnitures/furniture_02_003.png', cellSize:1.4, pivotX:-17.0, pivotY:0.5 },
+  { id:'furn_toyshelf', name:'おもちゃだな', roomImg:'../assets/images/Rooms/furnitures/furniture_02_006.png', cellSize:1.8, pivotX:-24.7, pivotY:0.8 },
+  { id:'furn_desk_wood', name:'きのつくえ', roomImg:'../assets/images/Rooms/furnitures/furniture_01_002.png', cellSize:1.8, pivotX:10.1, pivotY:0.7 },
+  { id:'furn_table_sq', name:'しかくテーブル', roomImg:'../assets/images/Rooms/furnitures/furniture_03_006.png', cellSize:1.5, pivotX:0, pivotY:1.1 },
+  { id:'furn_table_round', name:'まるテーブル', roomImg:'../assets/images/Rooms/furnitures/furniture_02_010.png', cellSize:1.2, pivotX:0, pivotY:1.2 },
+  { id:'furn_table_red', name:'あかいテーブル', roomImg:'../assets/images/Rooms/furnitures/furniture_04_011.png', cellSize:1.3, pivotX:0, pivotY:1.2 },
+  { id:'furn_chest_wood', name:'きのチェスト', roomImg:'../assets/images/Rooms/furnitures/furniture_01_005.png', cellSize:1.2, pivotX:15.4, pivotY:1.0 },
+  { id:'furn_chair', name:'きのいす', roomImg:'../assets/images/Rooms/furnitures/furniture_03_016.png', cellSize:0.8, pivotX:1.6, pivotY:1.3 },
+  { id:'furn_cabinet', name:'キャビネット', roomImg:'../assets/images/Rooms/furnitures/furniture_04_002.png', cellSize:1.3, pivotX:-20.4, pivotY:0.6 },
+  { id:'deco_dinosaur', name:'きょうりゅう', roomImg:'../assets/images/Rooms/furnitures/furniture_01_009.png', cellSize:0.8, pivotX:-8.1, pivotY:1.4 },
+  { id:'deco_train', name:'きしゃ', roomImg:'../assets/images/Rooms/furnitures/furniture_01_010.png', cellSize:1.0, pivotX:-36.7, pivotY:2.0 },
+  { id:'deco_airplane', name:'ひこうき', roomImg:'../assets/images/Rooms/furnitures/furniture_01_015.png', cellSize:0.8, pivotX:-18.2, pivotY:2.1 },
+  { id:'deco_truck', name:'トラック', roomImg:'../assets/images/Rooms/furnitures/furniture_03_014.png', cellSize:0.9, pivotX:-15.8, pivotY:1.5 },
+  { id:'deco_cloud_lamp', name:'くもランプ', roomImg:'../assets/images/Rooms/furnitures/furniture_01_006.png', cellSize:0.7, pivotX:0, pivotY:0.8 },
+  { id:'deco_desk_lamp', name:'でんきスタンド', roomImg:'../assets/images/Rooms/furnitures/furniture_04_015.png', cellSize:0.7, pivotX:10.9, pivotY:1.3 },
+  { id:'deco_toybox_wood', name:'おもちゃばこ', roomImg:'../assets/images/Rooms/furnitures/furniture_01_007.png', cellSize:1.0, pivotX:0, pivotY:1.4 },
+  { id:'deco_toybox_blue', name:'あおいおもちゃばこ', roomImg:'../assets/images/Rooms/furnitures/furniture_04_003.png', cellSize:1.3, pivotX:-13.0, pivotY:0.9 },
+  { id:'deco_photo_shelf', name:'フォトフレーム', roomImg:'../assets/images/Rooms/furnitures/furniture_03_008.png', cellSize:1.2, pivotX:30.9, pivotY:1.3 },
+  { id:'deco_wall_shelf', name:'かべだな', roomImg:'../assets/images/Rooms/furnitures/furniture_01_008.png', cellSize:1.0, pivotX:21.8, pivotY:1.4 },
+  { id:'deco_stool', name:'まるいす', roomImg:'../assets/images/Rooms/furnitures/furniture_01_014.png', cellSize:0.7, pivotX:0, pivotY:1.7 },
+  { id:'deco_blocks', name:'つみき', roomImg:'../assets/images/Rooms/furnitures/furniture_01_020.png', cellSize:0.7, pivotX:-16.9, pivotY:2.3 },
+  { id:'deco_block_castle', name:'おおきなつみき', roomImg:'../assets/images/Rooms/furnitures/furniture_03_009.png', cellSize:1.0, pivotX:3.3, pivotY:1.2 },
+  { id:'deco_beach_ball', name:'ビーチボール', roomImg:'../assets/images/Rooms/furnitures/furniture_02_026.png', cellSize:0.6, pivotX:0, pivotY:2.3 },
+  { id:'deco_rug_pastel', name:'パステルラグ', roomImg:'../assets/images/Rooms/furnitures/furniture_01_004.png', cellSize:2.0, pivotX:0, pivotY:1.4 },
+  { id:'deco_rug_star', name:'ほしのラグ', roomImg:'../assets/images/Rooms/furnitures/furniture_02_005.png', cellSize:2.0, pivotX:0, pivotY:1.1 },
+  { id:'deco_rug_purple', name:'むらさきラグ', roomImg:'../assets/images/Rooms/furnitures/furniture_03_007.png', cellSize:2.0, pivotX:0, pivotY:1.5 },
+  { id:'deco_rug_yellow', name:'きいろラグ', roomImg:'../assets/images/Rooms/furnitures/furniture_04_008.png', cellSize:2.0, pivotX:0, pivotY:1.4 },
+];
+
+// Per-item adjustments (editable state)
+const adjustments = {};
+ITEMS.forEach(item => {
+  const cs = item.cellSize || 1;
+  const autoMargin = Math.max(0, Math.ceil(cs) - 1);
+  adjustments[item.id] = {
+    cellSize: item.cellSize,
+    pivotX: item.pivotX,
+    pivotY: item.pivotY,
+    minRow: autoMargin,
+    maxRow: 7 - autoMargin,
+    minCol: autoMargin,
+    maxCol: 7 - autoMargin,
+    row: 3, col: 3, // current placement
+  };
+});
+
+let selectedId = null;
+
+// ─── UI setup ───
+const container = document.getElementById('room-container');
+const canvas = document.getElementById('grid-canvas');
+const ctx = canvas.getContext('2d');
+const itemLayer = document.getElementById('item-layer');
+
+// Build item list
+const listEl = document.getElementById('item-list');
+ITEMS.forEach(item => {
+  const btn = document.createElement('div');
+  btn.className = 'item-btn';
+  btn.dataset.id = item.id;
+  btn.title = item.name;
+  const img = document.createElement('img');
+  img.src = item.roomImg;
+  btn.appendChild(img);
+  btn.onclick = () => selectItem(item.id);
+  listEl.appendChild(btn);
+});
+
+// ─── Select item ───
+function selectItem(id) {
+  selectedId = id;
+  document.querySelectorAll('.item-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  document.getElementById('selected-info').style.display = '';
+
+  const item = ITEMS.find(x => x.id === id);
+  const adj = adjustments[id];
+  document.getElementById('sel-name').textContent = item.name + ' (' + id + ')';
+
+  syncSlider('cellSize', adj.cellSize);
+  syncSlider('pivotX', adj.pivotX);
+  syncSlider('pivotY', adj.pivotY);
+  document.getElementById('num-minRow').value = adj.minRow;
+  document.getElementById('num-maxRow').value = adj.maxRow;
+  document.getElementById('num-minCol').value = adj.minCol;
+  document.getElementById('num-maxCol').value = adj.maxCol;
+
+  placeItem(id);
+  drawGrid();
+}
+
+function syncSlider(name, val) {
+  document.getElementById('sl-' + name).value = val;
+  document.getElementById('num-' + name).value = val;
+}
+
+// ─── Slider/number bindings ───
+['cellSize', 'pivotX', 'pivotY'].forEach(name => {
+  const sl = document.getElementById('sl-' + name);
+  const num = document.getElementById('num-' + name);
+  function update(val) {
+    if (!selectedId) return;
+    adjustments[selectedId][name] = parseFloat(val);
+    // Recalculate auto margin when cellSize changes
+    if (name === 'cellSize') {
+      const cs = parseFloat(val);
+      const autoMargin = Math.max(0, Math.ceil(cs) - 1);
+      const adj = adjustments[selectedId];
+      // Only update if still at auto values
+      adj.minRow = Math.max(adj.minRow, autoMargin);
+      adj.maxRow = Math.min(adj.maxRow, 7 - autoMargin);
+      adj.minCol = Math.max(adj.minCol, autoMargin);
+      adj.maxCol = Math.min(adj.maxCol, 7 - autoMargin);
+      document.getElementById('num-minRow').value = adj.minRow;
+      document.getElementById('num-maxRow').value = adj.maxRow;
+      document.getElementById('num-minCol').value = adj.minCol;
+      document.getElementById('num-maxCol').value = adj.maxCol;
+    }
+    placeItem(selectedId);
+    drawGrid();
+  }
+  sl.oninput = () => { num.value = sl.value; update(sl.value); };
+  num.oninput = () => { sl.value = num.value; update(num.value); };
+});
+
+['minRow', 'maxRow', 'minCol', 'maxCol'].forEach(name => {
+  document.getElementById('num-' + name).oninput = (e) => {
+    if (!selectedId) return;
+    adjustments[selectedId][name] = parseInt(e.target.value) || 0;
+    // Re-clamp current position
+    const adj = adjustments[selectedId];
+    adj.row = Math.max(adj.minRow, Math.min(adj.maxRow, adj.row));
+    adj.col = Math.max(adj.minCol, Math.min(adj.maxCol, adj.col));
+    placeItem(selectedId);
+    drawGrid();
+  };
+});
+
+// ─── Place item on grid ───
+function placeItem(id) {
+  itemLayer.innerHTML = '';
+  if (!id) return;
+  const item = ITEMS.find(x => x.id === id);
+  const adj = adjustments[id];
+  const cell = getGridCell(adj.row, adj.col);
+  const widthPct = adj.cellSize * GRID_CELL_PCT;
+
+  const el = document.createElement('img');
+  el.className = 'placed-item selected';
+  el.src = item.roomImg;
+  el.style.left = cell.leftPct + '%';
+  el.style.bottom = cell.bottomPct + '%';
+  el.style.width = widthPct.toFixed(2) + '%';
+  el.style.height = 'auto';
+  el.style.transform = `translate(calc(-50% - ${adj.pivotX}%), ${adj.pivotY}%)`;
+  el.style.transformOrigin = 'bottom center';
+  el.style.zIndex = 100;
+  itemLayer.appendChild(el);
+
+  // Drag
+  let dragging = false;
+  el.onpointerdown = (e) => { dragging = true; el.setPointerCapture(e.pointerId); e.preventDefault(); };
+  el.onpointermove = (e) => {
+    if (!dragging) return;
+    const rect = container.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    // Find nearest grid cell
+    let bestR = 0, bestC = 0, bestD = Infinity;
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = isoGridPt(r + 0.5, c + 0.5);
+        const dx = px - p.x, dy = py - p.y;
+        const d = dx*dx + dy*dy;
+        if (d < bestD) { bestD = d; bestR = r; bestC = c; }
+      }
+    }
+    // Clamp
+    adj.row = Math.max(adj.minRow, Math.min(adj.maxRow, bestR));
+    adj.col = Math.max(adj.minCol, Math.min(adj.maxCol, bestC));
+    placeItem(id);
+    drawGrid();
+  };
+  el.onpointerup = () => { dragging = false; };
+}
+
+// ─── Draw grid ───
+function drawGrid() {
+  const w = container.offsetWidth;
+  const h = container.offsetHeight;
+  canvas.width = w * devicePixelRatio;
+  canvas.height = h * devicePixelRatio;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const n = ISO_GRID.cells;
+  const adj = selectedId ? adjustments[selectedId] : null;
+
+  // Draw cell fills (red=forbidden, green=allowed)
+  if (adj) {
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const allowed = r >= adj.minRow && r <= adj.maxRow && c >= adj.minCol && c <= adj.maxCol;
+        const p0 = isoGridPt(r, c);
+        const p1 = isoGridPt(r+1, c);
+        const p2 = isoGridPt(r+1, c+1);
+        const p3 = isoGridPt(r, c+1);
+        ctx.beginPath();
+        ctx.moveTo(p0.x*w, p0.y*h);
+        ctx.lineTo(p1.x*w, p1.y*h);
+        ctx.lineTo(p2.x*w, p2.y*h);
+        ctx.lineTo(p3.x*w, p3.y*h);
+        ctx.closePath();
+        ctx.fillStyle = allowed ? 'rgba(0,200,0,0.15)' : 'rgba(200,0,0,0.25)';
+        ctx.fill();
+      }
+    }
+  }
+
+  // Draw grid lines
+  ctx.strokeStyle = 'rgba(0,255,0,0.4)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= n; i++) {
+    const a = isoGridPt(i, 0), b = isoGridPt(i, n);
+    ctx.beginPath(); ctx.moveTo(a.x*w, a.y*h); ctx.lineTo(b.x*w, b.y*h); ctx.stroke();
+    const c = isoGridPt(0, i), d = isoGridPt(n, i);
+    ctx.beginPath(); ctx.moveTo(c.x*w, c.y*h); ctx.lineTo(d.x*w, d.y*h); ctx.stroke();
+  }
+
+  // Draw cell labels
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'center';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const p = isoGridPt(r + 0.5, c + 0.5);
+      ctx.fillText(`${r},${c}`, p.x*w, p.y*h + 4);
+    }
+  }
+
+  // Current position marker
+  if (adj) {
+    const cp = isoGridPt(adj.row + 0.5, adj.col + 0.5);
+    ctx.beginPath();
+    ctx.arc(cp.x*w, cp.y*h, 6, 0, Math.PI*2);
+    ctx.fillStyle = '#f00';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+// ─── Export ───
+document.getElementById('export-btn').onclick = () => {
+  const lines = [];
+  ITEMS.forEach(item => {
+    const adj = adjustments[item.id];
+    const cs = adj.cellSize;
+    const autoMargin = Math.max(0, Math.ceil(cs) - 1);
+    const hasCustomBounds =
+      adj.minRow !== autoMargin || adj.maxRow !== (7 - autoMargin) ||
+      adj.minCol !== autoMargin || adj.maxCol !== (7 - autoMargin);
+
+    let line = `  // ${item.name}\n  { id:'${item.id}', cellSize:${adj.cellSize}, pivotX:${adj.pivotX}, pivotY:${adj.pivotY}`;
+    if (hasCustomBounds) {
+      line += `, minRow:${adj.minRow}, maxRow:${adj.maxRow}, minCol:${adj.minCol}, maxCol:${adj.maxCol}`;
+    }
+    line += ' },';
+    lines.push(line);
+  });
+  document.getElementById('export-area').value = lines.join('\n');
+};
+
+// ─── Init ───
+window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId); drawGrid(); } else drawGrid(); });
+drawGrid();
+// Auto-select first item
+if (ITEMS.length > 0) selectItem(ITEMS[0].id);
+</script>
+</body>
+</html>
