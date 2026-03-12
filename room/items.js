@@ -16,11 +16,6 @@ const ROOM_ITEMS = [
 
   // ══ かべがみ ══════════════════════════════════════════
   {
-    id: 'wall_kumo_pastel', cat: 'wall', name: 'パステルくも', price: 10, theme: 'all',
-    emoji: '☁️',
-    roomImg: '../assets/images/Rooms/walls/kumo_pastel.png',
-  },
-  {
     id: 'wall_kumo_niko', cat: 'wall', name: 'にこにこくも', price: 10, theme: 'all',
     emoji: '😊',
     roomImg: '../assets/images/Rooms/walls/kumo_niko.png',
@@ -77,11 +72,6 @@ const ROOM_ITEMS = [
   },
 
   // ══ ゆか ═════════════════════════════════════════════
-  {
-    id: 'floor_wood_pastel', cat: 'floor', name: 'ナチュラルもくめ', price: 10, theme: 'all',
-    emoji: '🪵',
-    roomImg: '../assets/images/Rooms/floors/kumo_pastel.png',
-  },
   {
     id: 'floor_wood_warm', cat: 'floor', name: 'あたたかもくめ', price: 10, theme: 'all',
     emoji: '🪵',
