@@ -754,26 +754,12 @@ function getPlacedItems(cfg) {
 }
 
 // ─── グリッドアイテム生成 & ドラッグ ─────────────────────
-// 画像サイズからグリッド配置制限を算出（壁はみ出し防止）
-// refW/refH = 1グリッドセルに収まる基準サイズ
-function getGridBounds(item) {
-  const n = ISO_GRID.cells;
-  if (!item || !item.roomImg) return { minRow: 0, maxRow: n-1, minCol: 0, maxCol: n-1 };
-  // 画像のPNGサイズを使えないので、ピボットの大きさで推定
-  // pivotXが大きい = 画像が横に広い → 壁際制限を強くする
-  const absPx = Math.abs(item.pivotX || 0);
-  const margin = absPx > 15 ? 2 : absPx > 8 ? 1 : 1;
-  return {
-    minRow: margin, maxRow: n - 1 - margin,
-    minCol: margin, maxCol: n - 1 - margin,
-  };
-}
-
+// グリッド範囲内にクランプ（0〜n-1）
 function clampToGrid(item, row, col) {
-  const bounds = getGridBounds(item);
+  const n = ISO_GRID.cells;
   return {
-    row: Math.max(bounds.minRow, Math.min(bounds.maxRow, row)),
-    col: Math.max(bounds.minCol, Math.min(bounds.maxCol, col)),
+    row: Math.max(0, Math.min(n - 1, row)),
+    col: Math.max(0, Math.min(n - 1, col)),
   };
 }
 
