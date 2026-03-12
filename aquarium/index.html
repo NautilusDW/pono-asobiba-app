@@ -504,7 +504,8 @@
         const spr = new PIXI.Sprite(tex);
         spr.anchor.set(0.5, 1.0);
         const sm = tex._sizeModifier || 1.0;  // shell → 0.55, others → 1.0
-        spr.scale.set(targetH * sm / tex.height);
+        const maxScale = 1.3; // 元画像の130%以上に拡大しない（ガビガビ防止）
+        spr.scale.set(Math.min(targetH * sm / tex.height, maxScale));
         if (Math.random() < 0.5) spr.scale.x *= -1;
         spr.rotation = (Math.random() - 0.5) * 0.15;
         spr.x = sw * (zoneX + (Math.random() - 0.5) * 0.07);
