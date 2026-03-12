@@ -591,7 +591,9 @@
 
     async function initRocks() {
       if (!rockTextures) {
+        console.log('[initRocks] loading all textures...');
         [rockTextures, octopusTex, jellyfishTex, turtleTex, fishS01Tex, submarineTex, sunfishTex, sharkTex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex(), loadFishS01Tex(), loadSubmarineTex(), loadSunfishTex(), loadSharkTex()]);
+        console.log('[initRocks] done. octopus:', !!octopusTex?.surprised, 'jellyfish:', !!jellyfishTex?.surprised, 'turtle:', !!turtleTex?.surprised, 'fish:', !!fishS01Tex?.surprised, 'sub:', !!submarineTex?.surprised, 'sunfish:', !!sunfishTex?.surprised, 'shark:', !!sharkTex?.surprised);
       }
       placeRocks(rockTextures);
     }
@@ -610,8 +612,11 @@
         const tex = PIXI.Texture.from(p);
         if (tex.baseTexture.valid) { resolve(tex); return; }
         tex.baseTexture.on('loaded', () => resolve(tex));
-        tex.baseTexture.on('error',  () => resolve(null));
-      }))).then((textures) => ({ surprised: textures[0], frames: textures.slice(1).filter(Boolean) }));
+        tex.baseTexture.on('error',  () => { console.error('[loadSpriteTex] FAILED:', p); resolve(null); });
+      }))).then((textures) => {
+        console.log('[loadSpriteTex] result:', paths[0], '→ surprised:', !!textures[0], 'frames:', textures.slice(1).filter(Boolean).length);
+        return { surprised: textures[0], frames: textures.slice(1).filter(Boolean) };
+      });
     }
 
     const loadOctopusTex   = () => loadSpriteTex([
