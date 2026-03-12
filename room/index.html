@@ -133,13 +133,13 @@
     }
     .room-wall {
       cursor: pointer;
-      z-index: 1;
+      z-index: 15;  /* アイテムの奥側を隠す（depth 0-1のz=10,13より上） */
       -webkit-mask-image: url('../assets/images/Rooms/masks/wall.png');
       mask-image: url('../assets/images/Rooms/masks/wall.png');
     }
     .room-floor {
       cursor: pointer;
-      z-index: 2;
+      z-index: 2;  /* アイテムより奥（背景層） */
       -webkit-mask-image: url('../assets/images/Rooms/masks/floor.png');
       mask-image: url('../assets/images/Rooms/masks/floor.png');
     }
