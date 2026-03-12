@@ -589,11 +589,13 @@
       bgTemp.forEach(s => { layerBgRocks.addChild(s); bgRockSprites.push(s); });
     }
 
+    let _rocksReady = null; // Promise that resolves when all textures loaded
     async function initRocks() {
+      if (!_rocksReady) {
+        _rocksReady = Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex(), loadFishS01Tex(), loadSubmarineTex(), loadSunfishTex(), loadSharkTex()]);
+      }
       if (!rockTextures) {
-        console.log('[initRocks] loading all textures...');
-        [rockTextures, octopusTex, jellyfishTex, turtleTex, fishS01Tex, submarineTex, sunfishTex, sharkTex] = await Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex(), loadFishS01Tex(), loadSubmarineTex(), loadSunfishTex(), loadSharkTex()]);
-        console.log('[initRocks] done. octopus:', !!octopusTex?.surprised, 'jellyfish:', !!jellyfishTex?.surprised, 'turtle:', !!turtleTex?.surprised, 'fish:', !!fishS01Tex?.surprised, 'sub:', !!submarineTex?.surprised, 'sunfish:', !!sunfishTex?.surprised, 'shark:', !!sharkTex?.surprised);
+        [rockTextures, octopusTex, jellyfishTex, turtleTex, fishS01Tex, submarineTex, sunfishTex, sharkTex] = await _rocksReady;
       }
       placeRocks(rockTextures);
     }
@@ -612,11 +614,8 @@
         const tex = PIXI.Texture.from(p);
         if (tex.baseTexture.valid) { resolve(tex); return; }
         tex.baseTexture.on('loaded', () => resolve(tex));
-        tex.baseTexture.on('error',  () => { console.error('[loadSpriteTex] FAILED:', p); resolve(null); });
-      }))).then((textures) => {
-        console.log('[loadSpriteTex] result:', paths[0], '→ surprised:', !!textures[0], 'frames:', textures.slice(1).filter(Boolean).length);
-        return { surprised: textures[0], frames: textures.slice(1).filter(Boolean) };
-      });
+        tex.baseTexture.on('error',  () => resolve(null));
+      }))).then((textures) => ({ surprised: textures[0], frames: textures.slice(1).filter(Boolean) }));
     }
 
     const loadOctopusTex   = () => loadSpriteTex([
@@ -654,9 +653,7 @@
     ]);
 
     function addOctopusCreatures(n) {
-      console.log('[addOctopus] called, tex:', !!octopusTex, 'surprised:', !!octopusTex?.surprised, 'frames:', octopusTex?.frames?.length);
       if (!octopusTex || !octopusTex.surprised || octopusTex.frames.length === 0) return;
-      console.log('[addOctopus] creating', n, 'octopuses');
       // Remove any existing octopuses first (avoid duplicates on restart)
       const existing = creatures.filter(c => c.octopus);
       existing.forEach(c => { layerMid.removeChild(c.obj); });
@@ -1326,13 +1323,13 @@
       document.getElementById('selection-screen').classList.add('hidden');
       savePatterns();
       tryStartBgm();
+      // Ensure all sprite textures are loaded before creating creatures
+      if (_rocksReady) await _rocksReady;
       const chosen = selectionData.filter(d => d.selected);
-      console.log('[btnStart] chosen:', chosen.length, 'creatures before:', creatures.length);
       if (chosen.length === 0) {
         DEFAULT_EMOJIS.forEach((emoji, i) => {
           createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
-        console.log('[btnStart] after emojis, creatures:', creatures.length);
         assignHiders(2);
         addOctopusCreatures(3);
         addJellyfishCreatures(3);
@@ -1341,7 +1338,6 @@
         addSubmarineCreatures(1);
         addSunfishCreatures(1);
         addSharkCreatures(1);
-        console.log('[btnStart] after all adds, creatures:', creatures.length);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
