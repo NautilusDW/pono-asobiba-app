@@ -1257,12 +1257,18 @@
       try { raw = JSON.parse(localStorage.getItem('pono_drawings') || '[]'); } catch(e) {}
 
       if (raw.length === 0) {
-        // No drawings → go straight with emoji defaults
+        // No drawings → go straight with ocean sprite creatures
         document.getElementById('selection-screen').classList.add('hidden');
-        DEFAULT_EMOJIS.forEach((emoji, i) => {
-          createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
+        if (_rocksReady) _rocksReady.then(() => {
+          addOctopusCreatures(3);
+          addJellyfishCreatures(3);
+          addTurtleCreatures(2);
+          addFishS01Creatures(4);
+          addSubmarineCreatures(1);
+          addSunfishCreatures(1);
+          addSharkCreatures(1);
+          assignHiders(2);
         });
-        assignHiders(2);
         return;
       }
 
@@ -1363,12 +1369,16 @@
           const patIdx = i % PATTERNS.length;
           createCreatureWithPattern(cv, shuffled[patIdx] || PATTERNS[patIdx]);
         });
-      } else {
-        // Default emoji canvases — dimensions known immediately
-        DEFAULT_EMOJIS.forEach((emoji, i) => {
-          createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
-        });
       }
+      // Add ocean sprite creatures
+      if (_rocksReady) await _rocksReady;
+      addOctopusCreatures(3);
+      addJellyfishCreatures(3);
+      addTurtleCreatures(2);
+      addFishS01Creatures(4);
+      addSubmarineCreatures(1);
+      addSunfishCreatures(1);
+      addSharkCreatures(1);
       assignHiders(2);
     }
 
