@@ -160,30 +160,31 @@ const ROOM_ITEMS = [
 
   // ══ かぐ（アイソメ画像版） ═══════════════════════════
   // gridRow=u(右奥方向 0-7), gridCol=v(左奥方向 0-7)
+  // 壁際を避けて1-6の範囲に配置
   {
     id: 'furn_rocket', cat: 'furn', name: 'ロケット', price: 20, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/rocket.png',
-    gridRow: 1, gridCol: 6,
+    gridRow: 1, gridCol: 5,
   },
   {
     id: 'furn_drum', cat: 'furn', name: 'たいこ', price: 20, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/drum.png',
-    gridRow: 3, gridCol: 5,
+    gridRow: 3, gridCol: 4,
   },
   {
     id: 'furn_ringtower', cat: 'furn', name: 'わなげ', price: 20, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/ringtower.png',
-    gridRow: 5, gridCol: 6,
+    gridRow: 5, gridCol: 5,
   },
   {
     id: 'furn_robot', cat: 'furn', name: 'ロボット', price: 20, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/robot.png',
-    gridRow: 6, gridCol: 1,
+    gridRow: 5, gridCol: 1,
   },
   {
     id: 'furn_car', cat: 'furn', name: 'あかいくるま', price: 20, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/car.png',
-    gridRow: 4, gridCol: 3,
+    gridRow: 3, gridCol: 2,
   },
   {
     id: 'furn_desk', cat: 'furn', name: 'あおいつくえ', price: 25, theme: 'all',
@@ -198,27 +199,27 @@ const ROOM_ITEMS = [
   {
     id: 'furn_chest_2', cat: 'furn', name: 'しろいチェスト2', price: 20, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/chest_2.png',
-    gridRow: 5, gridCol: 2,
+    gridRow: 4, gridCol: 1,
   },
   {
     id: 'furn_lamp_1', cat: 'furn', name: 'しろいランプ', price: 15, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/lamp_1.png',
-    gridRow: 0, gridCol: 4,
+    gridRow: 1, gridCol: 4,
   },
   {
     id: 'furn_lamp_2', cat: 'furn', name: 'しろいランプ2', price: 15, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/lamp_2.png',
-    gridRow: 7, gridCol: 3,
+    gridRow: 6, gridCol: 3,
   },
   {
     id: 'furn_bear_1', cat: 'furn', name: 'くまぬいぐるみ', price: 15, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/bear_1.png',
-    gridRow: 3, gridCol: 1,
+    gridRow: 2, gridCol: 1,
   },
   {
     id: 'furn_bear_2', cat: 'furn', name: 'くまぬいぐるみ2', price: 15, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/bear_2.png',
-    gridRow: 6, gridCol: 4,
+    gridRow: 5, gridCol: 3,
   },
 
   // ══ かざり ════════════════════════════════════════════
