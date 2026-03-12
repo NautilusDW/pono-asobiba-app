@@ -1032,6 +1032,52 @@ function buildRoomArea(areaData) {
     div.appendChild(cover);
   }
 
+  // ── デバッグ: アイソメグリッド表示 ──
+  const debugCanvas = document.createElement('canvas');
+  debugCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;';
+  div.appendChild(debugCanvas);
+  requestAnimationFrame(() => {
+    const rect = div.getBoundingClientRect();
+    const W = rect.width, H = rect.height;
+    debugCanvas.width = W * devicePixelRatio;
+    debugCanvas.height = H * devicePixelRatio;
+    const ctx = debugCanvas.getContext('2d');
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    const g = ISO_GRID, n = g.cells;
+    const bx = g.back.x * W, by = g.back.y * H;
+    const ux = g.uX * W, uy = g.uY * H;
+    const vx = g.vX * W, vy = g.vY * H;
+    ctx.strokeStyle = 'rgba(0,255,0,0.5)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i <= n; i++) {
+      ctx.beginPath();
+      ctx.moveTo(bx + i * ux, by + i * uy);
+      ctx.lineTo(bx + i * ux + n * vx, by + i * uy + n * vy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx + i * vx, by + i * vy);
+      ctx.lineTo(bx + i * vx + n * ux, by + i * vy + n * uy);
+      ctx.stroke();
+    }
+    // 4 corners
+    ctx.fillStyle = 'red';
+    [[bx, by], [bx + n*ux, by + n*uy], [bx + n*vx, by + n*vy],
+     [bx + n*ux + n*vx, by + n*uy + n*vy]].forEach(([x,y]) => {
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+    });
+    // Cell labels
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    for (let u = 0; u < n; u++) {
+      for (let v = 0; v < n; v++) {
+        const cx = bx + (u+0.5)*ux + (v+0.5)*vx;
+        const cy = by + (u+0.5)*uy + (v+0.5)*vy;
+        ctx.fillText(u+','+v, cx, cy+3);
+      }
+    }
+  });
+
   applyBackground(div, areaData.id);
   return div;
 }
