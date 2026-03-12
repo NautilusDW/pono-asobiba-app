@@ -161,11 +161,10 @@
       position: absolute;
       transform-origin: bottom center;
       display: flex; align-items: flex-end; justify-content: center;
-      width: 130px; height: 124px;
+      /* width はJS側でcellSize×グリッドセル幅(%)で動的設定 */
       cursor: grab;
       touch-action: none;
       transition: left 0.1s, bottom 0.1s, transform 0.1s;
-      filter: drop-shadow(0 5px 8px rgba(0,0,0,0.28));
     }
     .item-placed.dragging {
       cursor: grabbing;
@@ -175,11 +174,9 @@
 
     .slot-emoji {
       line-height: 1;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.22));
     }
     .slot-img {
-      max-width: 100%; max-height: 100%; object-fit: contain;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.22));
+      width: 100%; height: auto; object-fit: contain;
     }
     /* Shadow under floor items */
     .slot-shadow {
@@ -763,14 +760,19 @@ function clampToGrid(item, row, col) {
   };
 }
 
+// 1グリッドセルの幅（コンテナ幅に対する%）
+const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100;
+
 function _applyGridPos(el, row, col) {
   const cell = getGridCell(row, col);
   const itemId = el.dataset.itemId;
   const item = itemId ? getItem(itemId) : null;
   const px = item && item.pivotX ? item.pivotX : 0;
   const py = item && item.pivotY ? item.pivotY : 0;
+  const cs = item && item.cellSize ? item.cellSize : 1.0;
   el.style.left      = cell.leftPct   + '%';
   el.style.bottom    = cell.bottomPct + '%';
+  el.style.width     = (cs * GRID_CELL_PCT).toFixed(2) + '%';
   // ピボット補正: 足元中心をグリッドセルに合わせる
   el.style.transform = `translate(calc(-50% - ${px}%), ${py}%)`;
   el.style.zIndex    = cell.z;
