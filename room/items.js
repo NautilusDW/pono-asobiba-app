@@ -128,36 +128,6 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/floors/mori_doubutsu.png',
   },
 
-  // ══ かぐ ═════════════════════════════════════════════
-  {
-    id: 'furn_sofa_pink', cat: 'furn', name: 'ピンクソファ', price: 30, theme: 'girl',
-    emoji: '🛋️', emojiSize: '72px',
-  },
-  {
-    id: 'furn_sofa_blue', cat: 'furn', name: 'あおいソファ', price: 30, theme: 'boy',
-    emoji: '🛋️', emojiSize: '72px',
-  },
-  {
-    id: 'furn_bed', cat: 'furn', name: 'ベッド', price: 40, theme: 'all',
-    emoji: '🛏️', emojiSize: '72px',
-  },
-  {
-    id: 'furn_table', cat: 'furn', name: 'まるテーブル', price: 25, theme: 'all',
-    emoji: '🪑', emojiSize: '66px',
-  },
-  {
-    id: 'furn_bookshelf', cat: 'furn', name: 'ほんだな', price: 25, theme: 'all',
-    emoji: '📚', emojiSize: '66px',
-  },
-  {
-    id: 'furn_tv', cat: 'furn', name: 'テレビ', price: 40, theme: 'all',
-    emoji: '📺', emojiSize: '72px',
-  },
-  {
-    id: 'furn_piano', cat: 'furn', name: 'ピアノ', price: 50, theme: 'all',
-    emoji: '🎹', emojiSize: '66px',
-  },
-
   // ══ かぐ（アイソメ画像版） ═══════════════════════════
   // gridRow=u(右奥方向 0-7), gridCol=v(左奥方向 0-7)
   // 壁際を避けて1-6の範囲に配置
@@ -224,38 +194,163 @@ const ROOM_ITEMS = [
     gridRow: 5, gridCol: 3, pivotX: 1.2, pivotY: 1.7,
   },
 
-  // ══ かざり ════════════════════════════════════════════
+  // ══ かぐ（追加分） ═════════════════════════════════════
   {
-    id: 'deco_cactus', cat: 'deco', name: 'サボテン', price: 10, theme: 'all',
-    emoji: '🌵', emojiSize: '52px',
+    id: 'furn_bed_wood', cat: 'furn', name: 'きのベッド', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_001.png',
+    gridRow: 2, gridCol: 3, pivotX: 14.3, pivotY: 0.6,
   },
   {
-    id: 'deco_flower', cat: 'deco', name: 'おはな', price: 10, theme: 'girl',
-    emoji: '🌸', emojiSize: '52px',
+    id: 'furn_bed_blue', cat: 'furn', name: 'あおいベッド', price: 30, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_04_001.png',
+    gridRow: 4, gridCol: 2, pivotX: -15.6, pivotY: 0.7,
   },
   {
-    id: 'deco_bear', cat: 'deco', name: 'くまのぬいぐるみ', price: 10, theme: 'all',
-    emoji: '🧸', emojiSize: '52px',
+    id: 'furn_bookshelf_w', cat: 'furn', name: 'しろいほんだな', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_003.png',
+    gridRow: 1, gridCol: 2, pivotX: 17.5, pivotY: 0.7,
   },
   {
-    id: 'deco_rocket', cat: 'deco', name: 'ロケット', price: 15, theme: 'boy',
-    emoji: '🚀', emojiSize: '52px',
+    id: 'furn_bookshelf_b', cat: 'furn', name: 'おおきなほんだな', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_02_003.png',
+    gridRow: 3, gridCol: 1, pivotX: -17.0, pivotY: 0.5,
   },
   {
-    id: 'deco_unicorn', cat: 'deco', name: 'ユニコーン', price: 15, theme: 'girl',
-    emoji: '🦄', emojiSize: '52px',
+    id: 'furn_toyshelf', cat: 'furn', name: 'おもちゃだな', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_02_006.png',
+    gridRow: 2, gridCol: 5, pivotX: -24.7, pivotY: 0.8,
   },
   {
-    id: 'deco_rainbow', cat: 'deco', name: 'にじ', price: 10, theme: 'all',
-    emoji: '🌈', emojiSize: '52px',
+    id: 'furn_desk_wood', cat: 'furn', name: 'きのつくえ', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_002.png',
+    gridRow: 3, gridCol: 3, pivotX: 10.1, pivotY: 0.7,
   },
   {
-    id: 'deco_globe', cat: 'deco', name: 'ちきゅうぎ', price: 15, theme: 'boy',
-    emoji: '🌍', emojiSize: '52px',
+    id: 'furn_table_sq', cat: 'furn', name: 'しかくテーブル', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_03_006.png',
+    gridRow: 4, gridCol: 4, pivotX: 0, pivotY: 1.1,
   },
   {
-    id: 'deco_cat', cat: 'deco', name: 'ねこ', price: 15, theme: 'all',
-    emoji: '🐱', emojiSize: '52px',
+    id: 'furn_table_round', cat: 'furn', name: 'まるテーブル', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_02_010.png',
+    gridRow: 5, gridCol: 4, pivotX: 0, pivotY: 1.2,
+  },
+  {
+    id: 'furn_table_red', cat: 'furn', name: 'あかいテーブル', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_04_011.png',
+    gridRow: 3, gridCol: 5, pivotX: 0, pivotY: 1.2,
+  },
+  {
+    id: 'furn_chest_wood', cat: 'furn', name: 'きのチェスト', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_005.png',
+    gridRow: 4, gridCol: 2, pivotX: 15.4, pivotY: 1.0,
+  },
+  {
+    id: 'furn_chair', cat: 'furn', name: 'きのいす', price: 10, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_03_016.png',
+    gridRow: 5, gridCol: 2, pivotX: 1.6, pivotY: 1.3,
+  },
+  {
+    id: 'furn_cabinet', cat: 'furn', name: 'キャビネット', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_04_002.png',
+    gridRow: 1, gridCol: 5, pivotX: -20.4, pivotY: 0.6,
+  },
+
+  // ══ かざり ═════════════════════════════════════════════
+  {
+    id: 'deco_dinosaur', cat: 'deco', name: 'きょうりゅう', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_009.png',
+    gridRow: 4, gridCol: 3, pivotX: -8.1, pivotY: 1.4,
+  },
+  {
+    id: 'deco_train', cat: 'deco', name: 'きしゃ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_010.png',
+    gridRow: 5, gridCol: 5, pivotX: -36.7, pivotY: 2.0,
+  },
+  {
+    id: 'deco_airplane', cat: 'deco', name: 'ひこうき', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_015.png',
+    gridRow: 6, gridCol: 4, pivotX: -18.2, pivotY: 2.1,
+  },
+  {
+    id: 'deco_truck', cat: 'deco', name: 'トラック', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_03_014.png',
+    gridRow: 3, gridCol: 6, pivotX: -15.8, pivotY: 1.5,
+  },
+  {
+    id: 'deco_cloud_lamp', cat: 'deco', name: 'くもランプ', price: 20, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_006.png',
+    gridRow: 2, gridCol: 4, pivotX: 0, pivotY: 0.8,
+  },
+  {
+    id: 'deco_desk_lamp', cat: 'deco', name: 'でんきスタンド', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_04_015.png',
+    gridRow: 6, gridCol: 2, pivotX: 10.9, pivotY: 1.3,
+  },
+  {
+    id: 'deco_toybox_wood', cat: 'deco', name: 'おもちゃばこ', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_007.png',
+    gridRow: 5, gridCol: 6, pivotX: 0, pivotY: 1.4,
+  },
+  {
+    id: 'deco_toybox_blue', cat: 'deco', name: 'あおいおもちゃばこ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_04_003.png',
+    gridRow: 3, gridCol: 1, pivotX: -13.0, pivotY: 0.9,
+  },
+  {
+    id: 'deco_photo_shelf', cat: 'deco', name: 'フォトフレーム', price: 10, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_03_008.png',
+    gridRow: 6, gridCol: 5, pivotX: 30.9, pivotY: 1.3,
+  },
+  {
+    id: 'deco_wall_shelf', cat: 'deco', name: 'かべだな', price: 10, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_008.png',
+    gridRow: 4, gridCol: 6, pivotX: 21.8, pivotY: 1.4,
+  },
+  {
+    id: 'deco_stool', cat: 'deco', name: 'まるいす', price: 10, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_014.png',
+    gridRow: 6, gridCol: 3, pivotX: 0, pivotY: 1.7,
+  },
+  {
+    id: 'deco_blocks', cat: 'deco', name: 'つみき', price: 10, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_020.png',
+    gridRow: 5, gridCol: 4, pivotX: -16.9, pivotY: 2.3,
+  },
+  {
+    id: 'deco_block_castle', cat: 'deco', name: 'おおきなつみき', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_03_009.png',
+    gridRow: 4, gridCol: 5, pivotX: 3.3, pivotY: 1.2,
+  },
+  {
+    id: 'deco_beach_ball', cat: 'deco', name: 'ビーチボール', price: 10, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_02_026.png',
+    gridRow: 6, gridCol: 6, pivotX: 0, pivotY: 2.3,
+  },
+  {
+    id: 'deco_rug_pastel', cat: 'deco', name: 'パステルラグ', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_004.png',
+    gridRow: 4, gridCol: 4, pivotX: 0, pivotY: 1.4,
+  },
+  {
+    id: 'deco_rug_star', cat: 'deco', name: 'ほしのラグ', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_02_005.png',
+    gridRow: 3, gridCol: 3, pivotX: 0, pivotY: 1.1,
+  },
+  {
+    id: 'deco_rug_purple', cat: 'deco', name: 'むらさきラグ', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_03_007.png',
+    gridRow: 5, gridCol: 3, pivotX: 0, pivotY: 1.5,
+  },
+  {
+    id: 'deco_rug_yellow', cat: 'deco', name: 'きいろラグ', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_04_008.png',
+    gridRow: 3, gridCol: 4, pivotX: 0, pivotY: 1.4,
+  },
+  {
+    id: 'deco_books', cat: 'deco', name: 'つみあげほん', price: 10, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures/furniture_01_013.png',
+    gridRow: 6, gridCol: 1, pivotX: 0, pivotY: 1.8,
   },
 ];
 

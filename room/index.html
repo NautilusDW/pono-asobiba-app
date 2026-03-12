@@ -754,6 +754,29 @@ function getPlacedItems(cfg) {
 }
 
 // ─── グリッドアイテム生成 & ドラッグ ─────────────────────
+// 画像サイズからグリッド配置制限を算出（壁はみ出し防止）
+// refW/refH = 1グリッドセルに収まる基準サイズ
+function getGridBounds(item) {
+  const n = ISO_GRID.cells;
+  if (!item || !item.roomImg) return { minRow: 0, maxRow: n-1, minCol: 0, maxCol: n-1 };
+  // 画像のPNGサイズを使えないので、ピボットの大きさで推定
+  // pivotXが大きい = 画像が横に広い → 壁際制限を強くする
+  const absPx = Math.abs(item.pivotX || 0);
+  const margin = absPx > 15 ? 2 : absPx > 8 ? 1 : 1;
+  return {
+    minRow: margin, maxRow: n - 1 - margin,
+    minCol: margin, maxCol: n - 1 - margin,
+  };
+}
+
+function clampToGrid(item, row, col) {
+  const bounds = getGridBounds(item);
+  return {
+    row: Math.max(bounds.minRow, Math.min(bounds.maxRow, row)),
+    col: Math.max(bounds.minCol, Math.min(bounds.maxCol, col)),
+  };
+}
+
 function _applyGridPos(el, row, col) {
   const cell = getGridCell(row, col);
   const itemId = el.dataset.itemId;
@@ -793,7 +816,9 @@ function _addDragHandlers(el, areaId) {
     if (!dragging) return;
     const area = el.closest('.room-area');
     if (!area) return;
-    const { row, col } = getRowColFromPoint(area, clientX, clientY);
+    const raw = getRowColFromPoint(area, clientX, clientY);
+    const item = getItem(el.dataset.itemId);
+    const { row, col } = clampToGrid(item, raw.row, raw.col);
     el.dataset.row = row;
     el.dataset.col = col;
     el.classList.add('dragging');
@@ -867,10 +892,13 @@ function makeItemPreview(item) {
       div.appendChild(img);
     }
   } else {
-    // 家具・デコ: img → emoji フォールバック
-    if (item.img) {
+    // 家具・デコ: roomImg → img → emoji フォールバック
+    const imgSrc = item.roomImg || item.img;
+    if (imgSrc) {
+      div.style.position = 'relative'; div.style.overflow = 'hidden';
       const img = document.createElement('img');
-      img.src = item.img;
+      img.src = imgSrc;
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
       img.onerror = () => { img.remove(); div.appendChild(makeEmojiSpan(item)); };
       div.appendChild(img);
     } else {
@@ -1228,8 +1256,14 @@ function renderShopGrid(cat) {
   }
 }
 
+function _isItemPlaced(item, cfg) {
+  if (item.cat === 'wall' || item.cat === 'floor') return cfg[item.cat] === item.id;
+  const placedList = cfg.placed || getPlacedItems(cfg);
+  return placedList.some(p => p.id === item.id);
+}
+
 function _makeShopCard(item, mode, cfg) {
-  const placed = cfg[item.cat] === item.id;
+  const placed = _isItemPlaced(item, cfg);
   let cardClass = 'item-card';
   if (mode === 'owned')  cardClass += ' locked';
   if (mode === 'place' && placed) cardClass += ' placed';
@@ -1252,7 +1286,7 @@ function _makeShopCard(item, mode, cfg) {
     badge.textContent = 'もってる ✓';
   } else { // place
     badge.className = 'item-badge ' + (placed ? 'badge-placed' : 'badge-owned');
-    badge.textContent = placed ? 'かざりちゅう' : 'おく！';
+    badge.textContent = placed ? 'しまう 📦' : 'おく！';
   }
 
   card.appendChild(prev);
@@ -1260,14 +1294,24 @@ function _makeShopCard(item, mode, cfg) {
   card.appendChild(badge);
 
   if (mode === 'buy')   card.addEventListener('click', () => showBuyConfirm(item));
-  if (mode === 'place') card.addEventListener('click', () => placeItem(item));
-  // owned (grayed): no action
+  if (mode === 'place' && !placed) card.addEventListener('click', () => placeItem(item));
+  if (mode === 'place' && placed)  card.addEventListener('click', () => unplaceItem(item));
 
   return card;
 }
 
 function showBuyConfirm(item) {
-  document.getElementById('cf-emoji').textContent = item.emoji;
+  const cfEmoji = document.getElementById('cf-emoji');
+  cfEmoji.textContent = '';
+  if (item.roomImg) {
+    const img = document.createElement('img');
+    img.src = item.roomImg;
+    img.style.cssText = 'width:64px;height:64px;object-fit:contain;';
+    cfEmoji.textContent = '';
+    cfEmoji.appendChild(img);
+  } else {
+    cfEmoji.textContent = item.emoji || '❓';
+  }
   document.getElementById('cf-name').textContent  = item.name;
   document.getElementById('cf-price').textContent = `⭐ ${item.price}pt`;
   document.getElementById('cf-bal').textContent   = `いまのポイント: ${state.points}pt`;
@@ -1322,6 +1366,21 @@ function placeItem(item) {
   renderShopGrid(item.cat);
   document.getElementById('shop-ov').classList.add('hidden');
   showToast(`✨ ${item.name} をかざったよ！`);
+}
+
+function unplaceItem(item) {
+  const cfg = state.config[currentAreaId];
+  if (!cfg) return;
+  if (item.cat === 'wall' || item.cat === 'floor') {
+    if (cfg[item.cat] === item.id) delete cfg[item.cat];
+  } else {
+    if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
+    cfg.placed = cfg.placed.filter(p => p.id !== item.id);
+  }
+  saveState();
+  refreshArea(currentAreaId);
+  renderShopGrid(item.cat);
+  showToast(`📦 ${item.name} をしまったよ！`);
 }
 
 // ─── Info / how-to sheet ─────────────────────────────
