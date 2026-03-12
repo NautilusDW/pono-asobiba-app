@@ -279,51 +279,65 @@ function syncSlider(name, val) {
 });
 
 // ─── Place item on grid ───
-function placeItem(id) {
-  itemLayer.innerHTML = '';
-  if (!id) return;
-  const item = ITEMS.find(x => x.id === id);
+let _placedEl = null;
+
+function updateItemPos(id) {
+  if (!_placedEl || !id) return;
   const adj = adjustments[id];
   const cell = getGridCell(adj.row, adj.col);
   const widthPct = adj.cellSize * GRID_CELL_PCT;
+  _placedEl.style.left = cell.leftPct + '%';
+  _placedEl.style.bottom = cell.bottomPct + '%';
+  _placedEl.style.width = widthPct.toFixed(2) + '%';
+  _placedEl.style.transform = `translate(calc(-50% - ${adj.pivotX}%), ${adj.pivotY}%)`;
+}
 
-  const el = document.createElement('img');
-  el.className = 'placed-item selected';
-  el.src = item.roomImg;
-  el.style.left = cell.leftPct + '%';
-  el.style.bottom = cell.bottomPct + '%';
-  el.style.width = widthPct.toFixed(2) + '%';
-  el.style.height = 'auto';
-  el.style.transform = `translate(calc(-50% - ${adj.pivotX}%), ${adj.pivotY}%)`;
-  el.style.transformOrigin = 'bottom center';
-  el.style.zIndex = 100;
-  itemLayer.appendChild(el);
+function placeItem(id) {
+  const item = ITEMS.find(x => x.id === id);
+  const currentSrc = _placedEl ? _placedEl.src : '';
+  const needsNew = !_placedEl || !item || !currentSrc.endsWith(item.roomImg.replace('../', '/'));
 
-  // Drag
-  let dragging = false;
-  el.onpointerdown = (e) => { dragging = true; el.setPointerCapture(e.pointerId); e.preventDefault(); };
-  el.onpointermove = (e) => {
-    if (!dragging) return;
-    const rect = container.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width;
-    const py = (e.clientY - rect.top) / rect.height;
-    // Find nearest grid cell
-    let bestR = 0, bestC = 0, bestD = Infinity;
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const p = isoGridPt(r + 0.5, c + 0.5);
-        const dx = px - p.x, dy = py - p.y;
-        const d = dx*dx + dy*dy;
-        if (d < bestD) { bestD = d; bestR = r; bestC = c; }
+  if (needsNew) {
+    itemLayer.innerHTML = '';
+    if (!id || !item) { _placedEl = null; return; }
+
+    const el = document.createElement('img');
+    el.className = 'placed-item selected';
+    el.src = item.roomImg;
+    el.style.height = 'auto';
+    el.style.transformOrigin = 'bottom center';
+    el.style.zIndex = 100;
+    el.draggable = false;
+    itemLayer.appendChild(el);
+    _placedEl = el;
+
+    // Drag via pointer events on the container (not the image)
+    let dragging = false;
+    el.onpointerdown = (e) => { dragging = true; el.setPointerCapture(e.pointerId); e.preventDefault(); };
+    el.onpointermove = (e) => {
+      if (!dragging) return;
+      const rect = container.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
+      let bestR = 0, bestC = 0, bestD = Infinity;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = isoGridPt(r + 0.5, c + 0.5);
+          const dx = px - p.x, dy = py - p.y;
+          const d = dx*dx + dy*dy;
+          if (d < bestD) { bestD = d; bestR = r; bestC = c; }
+        }
       }
-    }
-    // Clamp
-    adj.row = Math.max(adj.minRow, Math.min(adj.maxRow, bestR));
-    adj.col = Math.max(adj.minCol, Math.min(adj.maxCol, bestC));
-    placeItem(id);
-    drawGrid();
-  };
-  el.onpointerup = () => { dragging = false; };
+      const adj = adjustments[selectedId];
+      adj.row = Math.max(adj.minRow, Math.min(adj.maxRow, bestR));
+      adj.col = Math.max(adj.minCol, Math.min(adj.maxCol, bestC));
+      updateItemPos(selectedId);
+      drawGrid();
+    };
+    el.onpointerup = () => { dragging = false; };
+  }
+
+  updateItemPos(id);
 }
 
 // ─── Draw grid ───
