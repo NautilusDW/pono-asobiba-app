@@ -158,6 +158,68 @@ const ROOM_ITEMS = [
     emoji: '🎹', emojiSize: '66px',
   },
 
+  // ══ かぐ（アイソメ画像版） ═══════════════════════════
+  {
+    id: 'furn_rocket', cat: 'furn', name: 'ロケット', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/rocket.png',
+    gridCol: 1, gridRow: 8, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_drum', cat: 'furn', name: 'たいこ', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/drum.png',
+    gridCol: 3, gridRow: 7, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_ringtower', cat: 'furn', name: 'わなげ', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/ringtower.png',
+    gridCol: 5, gridRow: 9, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_robot', cat: 'furn', name: 'ロボット', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/robot.png',
+    gridCol: 7, gridRow: 8, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_car', cat: 'furn', name: '赤い車', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/car.png',
+    gridCol: 2, gridRow: 5, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_desk', cat: 'furn', name: '青い机と椅子', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/desk.png',
+    gridCol: 5, gridRow: 4, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_chest_1', cat: 'furn', name: '白いチェスト1', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/chest_1.png',
+    gridCol: 1, gridRow: 6, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_chest_2', cat: 'furn', name: '白いチェスト2', price: 20, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/chest_2.png',
+    gridCol: 6, gridRow: 6, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_lamp_1', cat: 'furn', name: '白いランプ1', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/lamp_1.png',
+    gridCol: 0, gridRow: 3, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_lamp_2', cat: 'furn', name: '白いランプ2', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/lamp_2.png',
+    gridCol: 7, gridRow: 2, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_bear_1', cat: 'furn', name: 'くまぬいぐるみ1', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/bear_1.png',
+    gridCol: 0, gridRow: 0, gridW: 1, gridH: 1,
+  },
+  {
+    id: 'furn_bear_2', cat: 'furn', name: 'くまぬいぐるみ2', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/bear_2.png',
+    gridCol: 7, gridRow: 1, gridW: 1, gridH: 1,
+  },
+
   // ══ かざり ════════════════════════════════════════════
   {
     id: 'deco_cactus', cat: 'deco', name: 'サボテン', price: 10, theme: 'all',

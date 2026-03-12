@@ -1263,11 +1263,16 @@ function placeItem(item) {
     if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
     // 同じアイテムがすでにあれば位置を維持、なければ空きグリッドに追加
     if (!cfg.placed.find(p => p.id === item.id)) {
-      const usedCols = cfg.placed.map(p => p.col);
-      // 空いてる列を左から探す（中央付近優先）
-      const candidates = [3, 4, 2, 5, 1, 6, 0, 7];
-      const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % PERSPECTIVE.cols;
-      cfg.placed.push({ id: item.id, row: 0, col }); // デフォルトは手前(row:0)
+      // グリッド座標が定義されているアイテムはそれを使用
+      if (item.gridCol !== undefined && item.gridRow !== undefined) {
+        cfg.placed.push({ id: item.id, row: item.gridRow, col: item.gridCol });
+      } else {
+        // グリッド座標がない場合は自動配置（従来通り）
+        const usedCols = cfg.placed.map(p => p.col);
+        const candidates = [3, 4, 2, 5, 1, 6, 0, 7];
+        const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % PERSPECTIVE.cols;
+        cfg.placed.push({ id: item.id, row: 0, col }); // デフォルトは手前(row:0)
+      }
     }
     // 旧キーを削除
     delete cfg.furn; delete cfg.deco;
