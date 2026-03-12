@@ -116,15 +116,11 @@
     }
 
     /*
-      アイソメトリック3レイヤー構成:
-        .room-wall      … 壁2面（テクスチャ差し替え用）
-        .room-baseboard … 巾木（アクセント用、pointer-events:none）
-        .room-floor     … 床（テクスチャ差し替え用）
-      各レイヤーは room-area 全体(100%×100%)を覆い、
-      CSS mask-image で反転済みPNG(_inv.png: 白=表示)を直接参照。
+      アイソメトリック2レイヤー構成:
+        .room-wall  … 壁+巾木（テクスチャ差し替え用）
+        .room-floor … 床（テクスチャ差し替え用、壁より上位）
     */
     .room-wall,
-    .room-baseboard,
     .room-floor {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       overflow: hidden; transition: background 0.4s;
@@ -134,26 +130,20 @@
       mask-position: 0 0;
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
-      /* mask-mode: alpha (default) — masks use RGBA with alpha channel */
     }
     .room-wall {
       cursor: pointer;
+      z-index: 1;
       -webkit-mask-image: url('../assets/images/Rooms/masks/wall.png');
       mask-image: url('../assets/images/Rooms/masks/wall.png');
     }
-    .room-baseboard {
-      pointer-events: none;
-      -webkit-mask-image: url('../assets/images/Rooms/masks/baseboard.png');
-      mask-image: url('../assets/images/Rooms/masks/baseboard.png');
-      background: linear-gradient(160deg, #c8994a 0%, #a67b3d 100%);
-    }
     .room-floor {
       cursor: pointer;
+      z-index: 2;
       -webkit-mask-image: url('../assets/images/Rooms/masks/floor.png');
       mask-image: url('../assets/images/Rooms/masks/floor.png');
     }
     .room-wall img.room-bg-img,
-    .room-baseboard img.room-bg-img,
     .room-floor img.room-bg-img {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     }
@@ -936,7 +926,7 @@ const ROOM_BASE_BG = "url('../assets/images/Rooms/base.jpg') center / 100% 100% 
 function applyBackground(areaEl, areaId) {
   const cfg          = state.config[areaId] || {};
   const wallEl       = areaEl.querySelector('.room-wall');
-  const baseboardEl  = areaEl.querySelector('.room-baseboard');
+
   const floorEl      = areaEl.querySelector('.room-floor');
 
   const wallItem  = cfg.wall  ? getItem(cfg.wall)  : null;
@@ -952,7 +942,6 @@ function applyBackground(areaEl, areaId) {
   }
 
   _applyBgElement(floorEl, floorItem, 'floorGrad');
-  // 巾木はCSSで背景設定済み — JSでは触らない
 }
 
 function _clearBgElement(el) {
@@ -977,7 +966,7 @@ function _applyBgElement(el, item, gradKey) {
 
   if (item.roomImg) {
     // ── アイソメPNGモード ──────────────────────────────────
-    // 各レイヤー(wall/floor/baseboard)は room-area 全体(100%×100%)を覆い、
+    // 各レイヤー(wall/floor)は room-area 全体(100%×100%)を覆い、
     // SVGマスクでエリアを切り抜くため background-size は常に 100% 100%。
     el.style.background = 'url(' + item.roomImg + ') 0 0 / 100% 100% no-repeat';
   } else if (item.tileImage) {
@@ -1017,11 +1006,7 @@ function buildRoomArea(areaData) {
     openInventory('wall');
   });
 
-  // Baseboard overlay（巾木・装飾用、クリック不可）
-  const baseboard = document.createElement('div');
-  baseboard.className = 'room-baseboard';
-
-  // Floor overlay（テクスチャ上書き用）
+  // Floor overlay（テクスチャ上書き用、壁より上位）
   const floor = document.createElement('div');
   floor.className = 'room-floor';
   floor.addEventListener('click', e => {
@@ -1030,7 +1015,6 @@ function buildRoomArea(areaData) {
   });
 
   div.appendChild(wall);
-  div.appendChild(baseboard);
   div.appendChild(floor);
 
   // 家具・デコアイテム
