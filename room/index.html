@@ -676,30 +676,38 @@ function showToast(msg) {
 // ─── アイソメトリックグリッド定数 ──────────────────────
 // ひし形の床を u(右奥)×v(左奥) のグリッドで分割
 // (u=0,v=0)=奥の角、u増=右方向、v増=左方向、(u+v)大=手前
+// ★ グリッド調整ツールで設定した4頂点をここに貼る
 const ISO_GRID = {
   cells: 8,
-  // ひし形の4頂点 (normalized 0-1)
-  back:  { x: 0.500, y: 0.425 },  // 奥の角
-  left:  { x: 0.235, y: 0.592 },  // 左の角
-  right: { x: 0.764, y: 0.592 },  // 右の角
-  front: { x: 0.500, y: 0.766 },  // 手前の角
-  // 1セルあたりの基底ベクトル (normalized)
-  uX:  0.033000, uY: 0.020875,  // back→right方向
-  vX: -0.033125, vY: 0.020875,  // back→left方向
+  back:  { x: 0.500, y: 0.300 },
+  right: { x: 0.920, y: 0.560 },
+  left:  { x: 0.080, y: 0.560 },
+  front: { x: 0.500, y: 0.880 },
 };
+
+// バイリニア補間: 4頂点すべてを使ってセル座標→画面座標
+// point(s,t) = (1-s)(1-t)*B + s*(1-t)*R + (1-s)*t*L + s*t*F
+// s = u/n (back→right), t = v/n (back→left)
+function isoGridPt(u, v) {
+  const n = ISO_GRID.cells;
+  const s = u / n, t = v / n;
+  const B = ISO_GRID.back, R = ISO_GRID.right, L = ISO_GRID.left, F = ISO_GRID.front;
+  return {
+    x: (1-s)*(1-t)*B.x + s*(1-t)*R.x + (1-s)*t*L.x + s*t*F.x,
+    y: (1-s)*(1-t)*B.y + s*(1-t)*R.y + (1-s)*t*L.y + s*t*F.y,
+  };
+}
 
 // アイソメセル(u,v)の中心座標・z-indexを返す
 function getGridCell(u, v) {
   const n = ISO_GRID.cells;
   const uc = Math.max(0, Math.min(n - 1, u));
   const vc = Math.max(0, Math.min(n - 1, v));
-  const cx = ISO_GRID.back.x + (uc + 0.5) * ISO_GRID.uX + (vc + 0.5) * ISO_GRID.vX;
-  const cy = ISO_GRID.back.y + (uc + 0.5) * ISO_GRID.uY + (vc + 0.5) * ISO_GRID.vY;
-  // z-index: 手前(画面下)ほど高い = u+v が大きいほど手前
+  const p = isoGridPt(uc + 0.5, vc + 0.5);
   const depth = uc + vc;
   return {
-    leftPct:   (cx * 100).toFixed(2),
-    bottomPct: ((1 - cy) * 100).toFixed(2),
+    leftPct:   (p.x * 100).toFixed(2),
+    bottomPct: ((1 - p.y) * 100).toFixed(2),
     z:         10 + depth * 3,
   };
 }
@@ -707,18 +715,19 @@ function getGridCell(u, v) {
 // タッチ/マウス座標から最近傍の (row, col) = (u, v) を返す
 function getRowColFromPoint(areaEl, clientX, clientY) {
   const rect = areaEl.getBoundingClientRect();
-  const px = (clientX - rect.left) / rect.width  - ISO_GRID.back.x;
-  const py = (clientY - rect.top)  / rect.height - ISO_GRID.back.y;
-  // 逆行列で (px, py) → (u, v) を解く
-  // | uX  vX | |u|   |px|
-  // | uY  vY | |v| = |py|
-  const det = ISO_GRID.uX * ISO_GRID.vY - ISO_GRID.vX * ISO_GRID.uY;
-  const uRaw = ( ISO_GRID.vY * px - ISO_GRID.vX * py) / det;
-  const vRaw = (-ISO_GRID.uY * px + ISO_GRID.uX * py) / det;
+  const px = (clientX - rect.left) / rect.width;
+  const py = (clientY - rect.top)  / rect.height;
   const n = ISO_GRID.cells;
-  const u = Math.max(0, Math.min(n - 1, Math.floor(uRaw)));
-  const v = Math.max(0, Math.min(n - 1, Math.floor(vRaw)));
-  return { row: u, col: v };
+  let bestU = 0, bestV = 0, bestDist = Infinity;
+  for (let u = 0; u < n; u++) {
+    for (let v = 0; v < n; v++) {
+      const p = isoGridPt(u + 0.5, v + 0.5);
+      const dx = px - p.x, dy = py - p.y;
+      const d = dx*dx + dy*dy;
+      if (d < bestDist) { bestDist = d; bestU = u; bestV = v; }
+    }
+  }
+  return { row: bestU, col: bestV };
 }
 
 // ─── Item lookup ──────────────────────────────────────
@@ -1043,38 +1052,25 @@ function buildRoomArea(areaData) {
     debugCanvas.height = H * devicePixelRatio;
     const ctx = debugCanvas.getContext('2d');
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    const g = ISO_GRID, n = g.cells;
-    const bx = g.back.x * W, by = g.back.y * H;
-    const ux = g.uX * W, uy = g.uY * H;
-    const vx = g.vX * W, vy = g.vY * H;
+    const n = ISO_GRID.cells;
+    function gp(u,v) { const p = isoGridPt(u,v); return [p.x*W, p.y*H]; }
     ctx.strokeStyle = 'rgba(0,255,0,0.5)';
     ctx.lineWidth = 1.5;
     for (let i = 0; i <= n; i++) {
-      ctx.beginPath();
-      ctx.moveTo(bx + i * ux, by + i * uy);
-      ctx.lineTo(bx + i * ux + n * vx, by + i * uy + n * vy);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(bx + i * vx, by + i * vy);
-      ctx.lineTo(bx + i * vx + n * ux, by + i * vy + n * uy);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(...gp(i,0));
+      for (let j=1;j<=n;j++) ctx.lineTo(...gp(i,j)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(...gp(0,i));
+      for (let j=1;j<=n;j++) ctx.lineTo(...gp(j,i)); ctx.stroke();
     }
-    // 4 corners
     ctx.fillStyle = 'red';
-    [[bx, by], [bx + n*ux, by + n*uy], [bx + n*vx, by + n*vy],
-     [bx + n*ux + n*vx, by + n*uy + n*vy]].forEach(([x,y]) => {
-      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+    [gp(0,0),gp(n,0),gp(0,n),gp(n,n)].forEach(([x,y]) => {
+      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
     });
-    // Cell labels
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    for (let u = 0; u < n; u++) {
-      for (let v = 0; v < n; v++) {
-        const cx = bx + (u+0.5)*ux + (v+0.5)*vx;
-        const cy = by + (u+0.5)*uy + (v+0.5)*vy;
-        ctx.fillText(u+','+v, cx, cy+3);
-      }
+    ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    for (let u=0;u<n;u++) for (let v=0;v<n;v++) {
+      const [cx,cy] = gp(u+0.5,v+0.5);
+      ctx.fillText(u+','+v, cx, cy+3);
     }
   });
 
