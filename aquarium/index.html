@@ -1327,9 +1327,6 @@
       if (_rocksReady) await _rocksReady;
       const chosen = selectionData.filter(d => d.selected);
       if (chosen.length === 0) {
-        DEFAULT_EMOJIS.forEach((emoji, i) => {
-          createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
-        });
         assignHiders(2);
         addOctopusCreatures(3);
         addJellyfishCreatures(3);
