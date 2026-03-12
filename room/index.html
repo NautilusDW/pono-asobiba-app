@@ -756,9 +756,14 @@ function getPlacedItems(cfg) {
 // ─── グリッドアイテム生成 & ドラッグ ─────────────────────
 function _applyGridPos(el, row, col) {
   const cell = getGridCell(row, col);
+  const itemId = el.dataset.itemId;
+  const item = itemId ? getItem(itemId) : null;
+  const px = item && item.pivotX ? item.pivotX : 0;
+  const py = item && item.pivotY ? item.pivotY : 0;
   el.style.left      = cell.leftPct   + '%';
   el.style.bottom    = cell.bottomPct + '%';
-  el.style.transform = 'translateX(-50%)';  // アイソメ: スケール固定
+  // ピボット補正: 足元中心をグリッドセルに合わせる
+  el.style.transform = `translate(calc(-50% - ${px}%), ${py}%)`;
   el.style.zIndex    = cell.z;
 }
 
