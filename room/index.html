@@ -625,8 +625,8 @@ function loadState() {
   state.config    = JSON.parse(localStorage.getItem(LS.CONFIG)    || '{}');
   state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
   state.theme     = localStorage.getItem(LS.THEME) || null;
-  // デバッグ用グリッドは常に所持
-  if (!state.inventory.includes('wall_debug_grid')) state.inventory.push('wall_debug_grid');
+  // 旧アイテムIDの掃除（存在しないものを除去）
+  state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
 }
 function saveState() {
   localStorage.setItem(LS.POINTS,    state.points);
@@ -854,7 +854,8 @@ function makeItemPreview(item) {
   const gradKey = item.cat === 'wall' ? 'wallGrad' : item.cat === 'floor' ? 'floorGrad' : null;
 
   if (item.cat === 'wall' || item.cat === 'floor') {
-    // 壁・床: グラデーションを背景にし、roomImg があれば上書き
+    // 壁・床: roomImg があれば画像プレビュー、なければグラデーション
+    div.style.background = '#f0ebe4'; // 透過PNGの背景
     if (gradKey && item[gradKey]) div.style.background = item[gradKey];
     if (item.roomImg) {
       const img = document.createElement('img');

@@ -2,9 +2,8 @@
 // cat: 'wall'=壁紙, 'floor'=床, 'furn'=家具, 'deco'=かざり
 // theme: 'boy'|'girl'|'all'
 //
-// アイソメ構成: wallGrad/floorGrad で .room-wall/.room-floor を塗る
-// → SVGマスクが壁/床エリアだけ切り抜くので座標調整不要
-// roomImg: アイソメ対応PNGが用意できたら追加予定
+// roomImg: マスク済みアルファ付きPNG（壁/床エリアのみ表示）
+// → CSS mask-image と組み合わせて .room-wall/.room-floor に適用
 
 const ROOM_AREAS = [
   { id: 'living',  name: 'リビング',   emoji: '🏠', cost: 0   },
@@ -17,74 +16,126 @@ const ROOM_ITEMS = [
 
   // ══ かべがみ ══════════════════════════════════════════
   {
-    id: 'wall_sky', cat: 'wall', name: 'そらいろ', price: 10, theme: 'all',
-    wallGrad: 'linear-gradient(160deg, #aee4f7 0%, #d6f0fb 100%)',
+    id: 'wall_kumo_pastel', cat: 'wall', name: 'パステルくも', price: 10, theme: 'all',
+    emoji: '☁️',
+    roomImg: '../assets/images/Rooms/walls/kumo_pastel.png',
   },
   {
-    id: 'wall_pink', cat: 'wall', name: 'ピンク', price: 10, theme: 'girl',
-    wallGrad: 'linear-gradient(160deg, #f9c8de 0%, #fde8f2 100%)',
+    id: 'wall_kumo_niko', cat: 'wall', name: 'にこにこくも', price: 10, theme: 'all',
+    emoji: '😊',
+    roomImg: '../assets/images/Rooms/walls/kumo_niko.png',
   },
   {
-    id: 'wall_mint', cat: 'wall', name: 'ミント', price: 10, theme: 'all',
-    wallGrad: 'linear-gradient(160deg, #b2ead6 0%, #d8f5ea 100%)',
+    id: 'wall_mizutama', cat: 'wall', name: 'みずたま', price: 10, theme: 'all',
+    emoji: '🔵',
+    roomImg: '../assets/images/Rooms/walls/mizutama.png',
   },
   {
-    id: 'wall_yellow', cat: 'wall', name: 'おひさま', price: 10, theme: 'all',
-    wallGrad: 'linear-gradient(160deg, #ffe98a 0%, #fff7c2 100%)',
+    id: 'wall_hoshi', cat: 'wall', name: 'おほしさま', price: 15, theme: 'boy',
+    emoji: '⭐',
+    roomImg: '../assets/images/Rooms/walls/hoshi.png',
   },
   {
-    id: 'wall_lavender', cat: 'wall', name: 'ラベンダー', price: 10, theme: 'girl',
-    wallGrad: 'linear-gradient(160deg, #d4b8f0 0%, #ece2fa 100%)',
+    id: 'wall_mori', cat: 'wall', name: 'もりのどうぶつ', price: 20, theme: 'all',
+    emoji: '🐻',
+    roomImg: '../assets/images/Rooms/walls/mori_doubutsu.png',
   },
   {
-    id: 'wall_stars', cat: 'wall', name: 'ほしぞら', price: 20, theme: 'boy',
-    wallGrad: 'linear-gradient(160deg, #0d2350 0%, #1a3a7a 100%)',
+    id: 'wall_stripe', cat: 'wall', name: 'ストライプ', price: 10, theme: 'all',
+    emoji: '🌈',
+    roomImg: '../assets/images/Rooms/walls/stripe.png',
   },
   {
-    id: 'wall_clouds', cat: 'wall', name: 'くももよう', price: 20, theme: 'all',
-    wallGrad: 'linear-gradient(160deg, #c8e8fa 0%, #eef7fd 100%)',
+    id: 'wall_heart', cat: 'wall', name: 'ハート', price: 15, theme: 'girl',
+    emoji: '💖',
+    roomImg: '../assets/images/Rooms/walls/heart.png',
   },
   {
-    id: 'wall_rainbow', cat: 'wall', name: 'にじいろ', price: 25, theme: 'all',
-    wallGrad: 'linear-gradient(160deg, #ffb3ba 0%, #ffdfba 33%, #ffffba 66%, #baffc9 100%)',
+    id: 'wall_aozora', cat: 'wall', name: 'あおぞら', price: 15, theme: 'all',
+    emoji: '🌤️',
+    roomImg: '../assets/images/Rooms/walls/aozora.png',
   },
   {
-    id: 'wall_ocean', cat: 'wall', name: 'うみ', price: 20, theme: 'boy',
-    wallGrad: 'linear-gradient(160deg, #0077b6 0%, #00b4d8 60%, #90e0ef 100%)',
+    id: 'wall_kyouryu', cat: 'wall', name: 'きょうりゅう', price: 20, theme: 'boy',
+    emoji: '🦕',
+    roomImg: '../assets/images/Rooms/walls/kyouryu.png',
   },
   {
-    id: 'wall_forest', cat: 'wall', name: 'もり', price: 20, theme: 'all',
-    wallGrad: 'linear-gradient(160deg, #2d6a4f 0%, #52b788 60%, #95d5b2 100%)',
+    id: 'wall_kikyuu', cat: 'wall', name: 'ききゅう', price: 20, theme: 'all',
+    emoji: '🎈',
+    roomImg: '../assets/images/Rooms/walls/kikyuu.png',
+  },
+  {
+    id: 'wall_uchuu', cat: 'wall', name: 'うちゅう', price: 25, theme: 'boy',
+    emoji: '🚀',
+    roomImg: '../assets/images/Rooms/walls/uchuu.png',
+  },
+  {
+    id: 'wall_navy', cat: 'wall', name: 'ネイビー', price: 10, theme: 'boy',
+    emoji: '🔷',
+    roomImg: '../assets/images/Rooms/walls/navy_tile.png',
   },
 
   // ══ ゆか ═════════════════════════════════════════════
   {
-    id: 'floor_wood', cat: 'floor', name: 'もくめ', price: 10, theme: 'all',
-    floorGrad: 'repeating-linear-gradient(90deg, #c8994a 0px, #c8994a 38px, #b8853a 38px, #b8853a 40px)',
+    id: 'floor_wood_pastel', cat: 'floor', name: 'ナチュラルもくめ', price: 10, theme: 'all',
+    emoji: '🪵',
+    roomImg: '../assets/images/Rooms/floors/kumo_pastel.png',
   },
   {
-    id: 'floor_carpet_pink', cat: 'floor', name: 'ピンクカーペット', price: 10, theme: 'girl',
-    floorGrad: 'linear-gradient(135deg, #f9c8de 25%, #fde8f2 25%, #fde8f2 50%, #f9c8de 50%, #f9c8de 75%, #fde8f2 75%)',
+    id: 'floor_wood_warm', cat: 'floor', name: 'あたたかもくめ', price: 10, theme: 'all',
+    emoji: '🪵',
+    roomImg: '../assets/images/Rooms/floors/kumo_niko.png',
   },
   {
-    id: 'floor_grass', cat: 'floor', name: 'しばふ', price: 10, theme: 'all',
-    floorGrad: 'repeating-linear-gradient(120deg, #52b788 0px, #52b788 18px, #40916c 18px, #40916c 20px)',
+    id: 'floor_wood_light', cat: 'floor', name: 'あかるいもくめ', price: 10, theme: 'all',
+    emoji: '🪵',
+    roomImg: '../assets/images/Rooms/floors/mizutama.png',
   },
   {
-    id: 'floor_tile_blue', cat: 'floor', name: 'あおいタイル', price: 10, theme: 'boy',
-    floorGrad: 'repeating-conic-gradient(#90caf9 0% 25%, #bbdefb 0% 50%) 0 0 / 28px 28px',
+    id: 'floor_white_wood', cat: 'floor', name: 'しろもくめ', price: 15, theme: 'all',
+    emoji: '🤍',
+    roomImg: '../assets/images/Rooms/floors/hoshi.png',
   },
   {
-    id: 'floor_check', cat: 'floor', name: 'チェック', price: 10, theme: 'all',
-    floorGrad: 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 28px 28px',
+    id: 'floor_herringbone', cat: 'floor', name: 'ヘリンボーン', price: 15, theme: 'all',
+    emoji: '🔶',
+    roomImg: '../assets/images/Rooms/floors/stripe.png',
   },
   {
-    id: 'floor_marble', cat: 'floor', name: 'マーブル', price: 20, theme: 'all',
-    floorGrad: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 40%, #f5f5f5 60%, #bdbdbd 100%)',
+    id: 'floor_pink', cat: 'floor', name: 'ピンク', price: 10, theme: 'girl',
+    emoji: '💗',
+    roomImg: '../assets/images/Rooms/floors/heart.png',
   },
   {
-    id: 'floor_star', cat: 'floor', name: 'ほしがら', price: 20, theme: 'all',
-    floorGrad: 'repeating-conic-gradient(#ffe082 0% 25%, #fff9c4 0% 50%) 0 0 / 24px 24px',
+    id: 'floor_sand', cat: 'floor', name: 'すなはま', price: 15, theme: 'all',
+    emoji: '🏖️',
+    roomImg: '../assets/images/Rooms/floors/aozora.png',
+  },
+  {
+    id: 'floor_wood_oak', cat: 'floor', name: 'オークもくめ', price: 10, theme: 'all',
+    emoji: '🪵',
+    roomImg: '../assets/images/Rooms/floors/kyouryu.png',
+  },
+  {
+    id: 'floor_pink_plain', cat: 'floor', name: 'さくらいろ', price: 10, theme: 'girl',
+    emoji: '🌸',
+    roomImg: '../assets/images/Rooms/floors/kikyuu.png',
+  },
+  {
+    id: 'floor_navy', cat: 'floor', name: 'こんいろ', price: 15, theme: 'boy',
+    emoji: '🌌',
+    roomImg: '../assets/images/Rooms/floors/uchuu.png',
+  },
+  {
+    id: 'floor_white_tile', cat: 'floor', name: 'しろタイル', price: 15, theme: 'all',
+    emoji: '🔲',
+    roomImg: '../assets/images/Rooms/floors/navy_tile.png',
+  },
+  {
+    id: 'floor_wood_forest', cat: 'floor', name: 'もりのもくめ', price: 10, theme: 'all',
+    emoji: '🌿',
+    roomImg: '../assets/images/Rooms/floors/mori_doubutsu.png',
   },
 
   // ══ かぐ ═════════════════════════════════════════════
