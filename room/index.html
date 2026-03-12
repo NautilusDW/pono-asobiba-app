@@ -892,10 +892,10 @@ function renderSlotContent(slot, itemId) {
   const item = getItem(itemId);
   if (!item) return;
 
-  if (item.img) {
+  if (item.img || item.roomImg) {
     const img = document.createElement('img');
     img.className = 'slot-img';
-    img.src = item.img;
+    img.src = item.img || item.roomImg;
     img.onerror = () => { img.remove(); appendEmoji(slot, item); };
     slot.appendChild(img);
   } else {
