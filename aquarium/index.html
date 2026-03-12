@@ -611,7 +611,7 @@
         if (tex.baseTexture.valid) { resolve(tex); return; }
         tex.baseTexture.on('loaded', () => resolve(tex));
         tex.baseTexture.on('error',  () => resolve(null));
-      }))).then(([t1, t2, t3]) => ({ surprised: t1, frames: [t2, t3].filter(Boolean) }));
+      }))).then((textures) => ({ surprised: textures[0], frames: textures.slice(1).filter(Boolean) }));
     }
 
     const loadOctopusTex   = () => loadSpriteTex([
