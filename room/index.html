@@ -627,6 +627,10 @@ function loadState() {
   state.theme     = localStorage.getItem(LS.THEME) || null;
   // 旧アイテムIDの掃除（存在しないものを除去）
   state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
+  // 全アイテムを所持済みにする（テスト用）
+  ROOM_ITEMS.forEach(item => {
+    if (!state.inventory.includes(item.id)) state.inventory.push(item.id);
+  });
 }
 function saveState() {
   localStorage.setItem(LS.POINTS,    state.points);
