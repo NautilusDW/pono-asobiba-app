@@ -102,7 +102,7 @@
     .room-area {
       flex-shrink: 0; width: 100%; height: 100%; position: relative;
       scroll-snap-align: start; overflow: hidden;
-      background: url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat;
+      background: url('../assets/images/Rooms/base.jpg') center / 100% 100% no-repeat;
     }
 
     /* ─── Portrait: hide room, show notice ─── */
@@ -134,24 +134,23 @@
       mask-position: 0 0;
       -webkit-mask-repeat: no-repeat;
       mask-repeat: no-repeat;
-      -webkit-mask-mode: luminance;
-      mask-mode: luminance;
+      /* mask-mode: alpha (default) — masks use RGBA with alpha channel */
     }
     .room-wall {
       cursor: pointer;
-      -webkit-mask-image: url('../assets/images/Rooms/masks/wall_mask_inv.png');
-      mask-image: url('../assets/images/Rooms/masks/wall_mask_inv.png');
+      -webkit-mask-image: url('../assets/images/Rooms/masks/wall.png');
+      mask-image: url('../assets/images/Rooms/masks/wall.png');
     }
     .room-baseboard {
       pointer-events: none;
-      -webkit-mask-image: url('../assets/images/Rooms/masks/baseboard_mask_inv.png');
-      mask-image: url('../assets/images/Rooms/masks/baseboard_mask_inv.png');
+      -webkit-mask-image: url('../assets/images/Rooms/masks/baseboard.png');
+      mask-image: url('../assets/images/Rooms/masks/baseboard.png');
       background: linear-gradient(160deg, #c8994a 0%, #a67b3d 100%);
     }
     .room-floor {
       cursor: pointer;
-      -webkit-mask-image: url('../assets/images/Rooms/masks/floor_mask_inv.png');
-      mask-image: url('../assets/images/Rooms/masks/floor_mask_inv.png');
+      -webkit-mask-image: url('../assets/images/Rooms/masks/floor.png');
+      mask-image: url('../assets/images/Rooms/masks/floor.png');
     }
     .room-wall img.room-bg-img,
     .room-baseboard img.room-bg-img,
@@ -479,7 +478,7 @@
 </head>
 <body>
 
-<!-- マスクは CSS mask-image で直接 PNG 参照（反転済み _inv.png を使用） -->
+<!-- マスクは CSS mask-image で RGBA PNG 参照（アルファチャンネルで切り抜き） -->
 
 <!-- ── Portrait notice ────────────────────────────── -->
 <div id="portrait-notice">
@@ -927,7 +926,7 @@ function appendEmoji(slot, item) {
 // ─── Apply room background (wall/floor) ──────────────
 // scope:'room' アイテムはフル背景画像として .room-area に直接適用。
 // それ以外は壁/床オーバーレイに適用する。
-const ROOM_BASE_BG = "url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat";
+const ROOM_BASE_BG = "url('../assets/images/Rooms/base.jpg') center / 100% 100% no-repeat";
 
 function applyBackground(areaEl, areaId) {
   const cfg          = state.config[areaId] || {};
@@ -948,8 +947,7 @@ function applyBackground(areaEl, areaId) {
   }
 
   _applyBgElement(floorEl, floorItem, 'floorGrad');
-  // 巾木は現状テクスチャ差し替えなし（将来拡張用）
-  if (baseboardEl) _clearBgElement(baseboardEl);
+  // 巾木はCSSで背景設定済み — JSでは触らない
 }
 
 function _clearBgElement(el) {
