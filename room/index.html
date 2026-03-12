@@ -121,8 +121,7 @@
         .room-baseboard … 巾木（アクセント用、pointer-events:none）
         .room-floor     … 床（テクスチャ差し替え用）
       各レイヤーは room-area 全体(100%×100%)を覆い、
-      SVG インラインマスク(#iso-*-mask)で対象エリアのみ切り抜く。
-      マスク元画像は黒=対象エリア なので feColorMatrix で反転し白=表示に変換。
+      CSS mask-image で反転済みPNG(_inv.png: 白=表示)を直接参照。
     */
     .room-wall,
     .room-baseboard,
@@ -138,18 +137,19 @@
     }
     .room-wall {
       cursor: pointer;
-      -webkit-mask-image: url(#iso-wall-mask);
-      mask-image: url(#iso-wall-mask);
+      -webkit-mask-image: url('../assets/images/Rooms/masks/wall_mask_inv.png');
+      mask-image: url('../assets/images/Rooms/masks/wall_mask_inv.png');
     }
     .room-baseboard {
       pointer-events: none;
-      -webkit-mask-image: url(#iso-baseboard-mask);
-      mask-image: url(#iso-baseboard-mask);
+      -webkit-mask-image: url('../assets/images/Rooms/masks/baseboard_mask_inv.png');
+      mask-image: url('../assets/images/Rooms/masks/baseboard_mask_inv.png');
+      background: linear-gradient(160deg, #c8994a 0%, #a67b3d 100%);
     }
     .room-floor {
       cursor: pointer;
-      -webkit-mask-image: url(#iso-floor-mask);
-      mask-image: url(#iso-floor-mask);
+      -webkit-mask-image: url('../assets/images/Rooms/masks/floor_mask_inv.png');
+      mask-image: url('../assets/images/Rooms/masks/floor_mask_inv.png');
     }
     .room-wall img.room-bg-img,
     .room-baseboard img.room-bg-img,
@@ -477,44 +477,7 @@
 </head>
 <body>
 
-<!-- ── アイソメトリック SVG インラインマスク定義 ────────────
-     黒=対象エリアの PNG を feColorMatrix で反転（黒→白＝表示）して
-     SVG <mask> に渡す。CSS mask-image: url(#id) で各レイヤーに適用。
-─────────────────────────────────────────────────── -->
-<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
-  <defs>
-    <!-- 黒→白 反転フィルター（黒=対象エリアのマスクPNG用） -->
-    <filter id="iso-mask-invert" color-interpolation-filters="sRGB"
-            x="0" y="0" width="1" height="1">
-      <feColorMatrix type="matrix"
-        values="-1 0 0 0 1
-                 0 -1 0 0 1
-                 0  0 -1 0 1
-                 0  0  0 1 0"/>
-    </filter>
-    <!-- 壁マスク（左奥壁＋右奥壁） -->
-    <mask id="iso-wall-mask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-      <image href="../assets/images/Rooms/masks/wall_mask.png"
-             x="0" y="0" width="1" height="1"
-             preserveAspectRatio="none"
-             filter="url(#iso-mask-invert)"/>
-    </mask>
-    <!-- 巾木マスク -->
-    <mask id="iso-baseboard-mask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-      <image href="../assets/images/Rooms/masks/baseboard_mask.png"
-             x="0" y="0" width="1" height="1"
-             preserveAspectRatio="none"
-             filter="url(#iso-mask-invert)"/>
-    </mask>
-    <!-- 床マスク（ひし形） -->
-    <mask id="iso-floor-mask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-      <image href="../assets/images/Rooms/masks/floor_mask.png"
-             x="0" y="0" width="1" height="1"
-             preserveAspectRatio="none"
-             filter="url(#iso-mask-invert)"/>
-    </mask>
-  </defs>
-</svg>
+<!-- マスクは CSS mask-image で直接 PNG 参照（反転済み _inv.png を使用） -->
 
 <!-- ── Portrait notice ────────────────────────────── -->
 <div id="portrait-notice">
