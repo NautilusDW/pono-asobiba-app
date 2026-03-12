@@ -2133,12 +2133,12 @@
     });
 
     // ─── Init ──────────────────────────────────────────────
-    app.ticker.addOnce(() => {
+    app.ticker.addOnce(async () => {
       resizePixiApp();
       makeBackground();
       drawSand();
       makeSeaweeds();
-      initRocks();
+      await initRocks();
       showSelectionScreen();
     });
 
