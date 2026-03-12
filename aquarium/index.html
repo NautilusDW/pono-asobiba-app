@@ -654,7 +654,9 @@
     ]);
 
     function addOctopusCreatures(n) {
+      console.log('[addOctopus] called, tex:', !!octopusTex, 'surprised:', !!octopusTex?.surprised, 'frames:', octopusTex?.frames?.length);
       if (!octopusTex || !octopusTex.surprised || octopusTex.frames.length === 0) return;
+      console.log('[addOctopus] creating', n, 'octopuses');
       // Remove any existing octopuses first (avoid duplicates on restart)
       const existing = creatures.filter(c => c.octopus);
       existing.forEach(c => { layerMid.removeChild(c.obj); });
@@ -1325,10 +1327,12 @@
       savePatterns();
       tryStartBgm();
       const chosen = selectionData.filter(d => d.selected);
+      console.log('[btnStart] chosen:', chosen.length, 'creatures before:', creatures.length);
       if (chosen.length === 0) {
         DEFAULT_EMOJIS.forEach((emoji, i) => {
           createCreatureWithPattern(emojiToCanvas(emoji, 128), PATTERNS[i % PATTERNS.length]);
         });
+        console.log('[btnStart] after emojis, creatures:', creatures.length);
         assignHiders(2);
         addOctopusCreatures(3);
         addJellyfishCreatures(3);
@@ -1337,6 +1341,7 @@
         addSubmarineCreatures(1);
         addSunfishCreatures(1);
         addSharkCreatures(1);
+        console.log('[btnStart] after all adds, creatures:', creatures.length);
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
