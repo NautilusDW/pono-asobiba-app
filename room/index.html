@@ -673,59 +673,52 @@ function showToast(msg) {
 }
 
 // ─── Grid constants ──────────────────────────────────
-// ─── パース透視グリッド定数 ────────────────────────────
-// 行0=手前(大)、行3=奥(小)。各行のY位置・左右端X・スケール・z-index
-const PERSPECTIVE = {
-  rows: 4,
-  cols: 8,
-  // AE JSX gridMatrix実測値 (2048×1152): toComp()で3D→2Dスクリーン座標変換済み
-  // gridMatrix[3]→row0(手前), [2]→row1, [1]→row2, [0]→row3(奥)
-  // gridMatrix[4]→frontEdge (列ライン手前端、画面外)
-  rowY:      [0.796, 0.687, 0.609, 0.562],
-  rowLeftX:  [0.023, 0.102, 0.159, 0.201],
-  rowRightX: [0.977, 0.898, 0.841, 0.799],
-  // 各行のアイテムスケール (消失点y≈0.14基準)
-  rowScale:  [1.00,  0.83,  0.71,  0.63],
-  // 各行のz-index (手前ほど高い)
-  rowZ:      [40,    30,    20,    10],
-  // 列ライン手前端 (gridMatrix[4]実測: -195/2048, 2243/2048 — 画面外)
-  frontEdgeY:      0.957,
-  frontEdgeLeftX:  -0.095,
-  frontEdgeRightX:  1.095,
+// ─── アイソメトリックグリッド定数 ──────────────────────
+// ひし形の床を u(右奥)×v(左奥) のグリッドで分割
+// (u=0,v=0)=奥の角、u増=右方向、v増=左方向、(u+v)大=手前
+const ISO_GRID = {
+  cells: 8,
+  // ひし形の4頂点 (normalized 0-1)
+  back:  { x: 0.500, y: 0.425 },  // 奥の角
+  left:  { x: 0.235, y: 0.592 },  // 左の角
+  right: { x: 0.764, y: 0.592 },  // 右の角
+  front: { x: 0.500, y: 0.766 },  // 手前の角
+  // 1セルあたりの基底ベクトル (normalized)
+  uX:  0.033000, uY: 0.020875,  // back→right方向
+  vX: -0.033125, vY: 0.020875,  // back→left方向
 };
 
-// グリッドセルの中心座標・スケール・z-indexを返す
-function getGridCell(row, col) {
-  const r  = Math.max(0, Math.min(PERSPECTIVE.rows - 1, row));
-  const c  = Math.max(0, Math.min(PERSPECTIVE.cols - 1, col));
-  const lx = PERSPECTIVE.rowLeftX[r];
-  const rx = PERSPECTIVE.rowRightX[r];
-  const t  = (c + 0.5) / PERSPECTIVE.cols;
+// アイソメセル(u,v)の中心座標・z-indexを返す
+function getGridCell(u, v) {
+  const n = ISO_GRID.cells;
+  const uc = Math.max(0, Math.min(n - 1, u));
+  const vc = Math.max(0, Math.min(n - 1, v));
+  const cx = ISO_GRID.back.x + (uc + 0.5) * ISO_GRID.uX + (vc + 0.5) * ISO_GRID.vX;
+  const cy = ISO_GRID.back.y + (uc + 0.5) * ISO_GRID.uY + (vc + 0.5) * ISO_GRID.vY;
+  // z-index: 手前(画面下)ほど高い = u+v が大きいほど手前
+  const depth = uc + vc;
   return {
-    leftPct:   ((lx + t * (rx - lx)) * 100).toFixed(2),  // % from room left
-    bottomPct: ((1 - PERSPECTIVE.rowY[r]) * 100).toFixed(2), // % from room bottom
-    scale:     PERSPECTIVE.rowScale[r],
-    z:         PERSPECTIVE.rowZ[r],
+    leftPct:   (cx * 100).toFixed(2),
+    bottomPct: ((1 - cy) * 100).toFixed(2),
+    z:         10 + depth * 3,
   };
 }
 
-// タッチ/マウス座標から最近傍の (row, col) を返す
+// タッチ/マウス座標から最近傍の (row, col) = (u, v) を返す
 function getRowColFromPoint(areaEl, clientX, clientY) {
   const rect = areaEl.getBoundingClientRect();
-  const xFrac = (clientX - rect.left)  / rect.width;
-  const yFrac = (clientY - rect.top)   / rect.height;
-  // 最近傍の行を Y 距離で選ぶ
-  let bestRow = 0, bestDist = Infinity;
-  for (let r = 0; r < PERSPECTIVE.rows; r++) {
-    const d = Math.abs(yFrac - PERSPECTIVE.rowY[r]);
-    if (d < bestDist) { bestDist = d; bestRow = r; }
-  }
-  // その行内で列を決定 (台形補間)
-  const lx = PERSPECTIVE.rowLeftX[bestRow];
-  const rx = PERSPECTIVE.rowRightX[bestRow];
-  const tNorm = Math.max(0, Math.min(1, (xFrac - lx) / (rx - lx)));
-  const bestCol = Math.min(PERSPECTIVE.cols - 1, Math.floor(tNorm * PERSPECTIVE.cols));
-  return { row: bestRow, col: bestCol };
+  const px = (clientX - rect.left) / rect.width  - ISO_GRID.back.x;
+  const py = (clientY - rect.top)  / rect.height - ISO_GRID.back.y;
+  // 逆行列で (px, py) → (u, v) を解く
+  // | uX  vX | |u|   |px|
+  // | uY  vY | |v| = |py|
+  const det = ISO_GRID.uX * ISO_GRID.vY - ISO_GRID.vX * ISO_GRID.uY;
+  const uRaw = ( ISO_GRID.vY * px - ISO_GRID.vX * py) / det;
+  const vRaw = (-ISO_GRID.uY * px + ISO_GRID.uX * py) / det;
+  const n = ISO_GRID.cells;
+  const u = Math.max(0, Math.min(n - 1, Math.floor(uRaw)));
+  const v = Math.max(0, Math.min(n - 1, Math.floor(vRaw)));
+  return { row: u, col: v };
 }
 
 // ─── Item lookup ──────────────────────────────────────
@@ -756,7 +749,7 @@ function _applyGridPos(el, row, col) {
   const cell = getGridCell(row, col);
   el.style.left      = cell.leftPct   + '%';
   el.style.bottom    = cell.bottomPct + '%';
-  el.style.transform = 'translateX(-50%) scale(' + cell.scale + ')';
+  el.style.transform = 'translateX(-50%)';  // アイソメ: スケール固定
   el.style.zIndex    = cell.z;
 }
 
