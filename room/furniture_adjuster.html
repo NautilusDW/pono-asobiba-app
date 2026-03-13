@@ -65,6 +65,46 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     赤セル＝配置不可、緑セル＝配置可能
   </div>
 
+  <details id="grid-adjuster" style="background:#1a2744;padding:8px;border-radius:8px">
+    <summary style="cursor:pointer;font-size:13px;color:#ffd700">🔧 グリッド頂点調整</summary>
+    <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+      <label><span>back X</span>
+        <input type="range" id="sl-grid-backX" min="0.3" max="0.7" step="0.001">
+        <input type="number" id="num-grid-backX" step="0.001" style="width:70px">
+      </label>
+      <label><span>back Y</span>
+        <input type="range" id="sl-grid-backY" min="0.1" max="0.6" step="0.001">
+        <input type="number" id="num-grid-backY" step="0.001" style="width:70px">
+      </label>
+      <label><span>right X</span>
+        <input type="range" id="sl-grid-rightX" min="0.5" max="0.95" step="0.001">
+        <input type="number" id="num-grid-rightX" step="0.001" style="width:70px">
+      </label>
+      <label><span>right Y</span>
+        <input type="range" id="sl-grid-rightY" min="0.4" max="0.8" step="0.001">
+        <input type="number" id="num-grid-rightY" step="0.001" style="width:70px">
+      </label>
+      <label><span>left X</span>
+        <input type="range" id="sl-grid-leftX" min="0.05" max="0.5" step="0.001">
+        <input type="number" id="num-grid-leftX" step="0.001" style="width:70px">
+      </label>
+      <label><span>left Y</span>
+        <input type="range" id="sl-grid-leftY" min="0.4" max="0.8" step="0.001">
+        <input type="number" id="num-grid-leftY" step="0.001" style="width:70px">
+      </label>
+      <label><span>front X</span>
+        <input type="range" id="sl-grid-frontX" min="0.3" max="0.7" step="0.001">
+        <input type="number" id="num-grid-frontX" step="0.001" style="width:70px">
+      </label>
+      <label><span>front Y</span>
+        <input type="range" id="sl-grid-frontY" min="0.7" max="1.0" step="0.001">
+        <input type="number" id="num-grid-frontY" step="0.001" style="width:70px">
+      </label>
+      <button id="grid-export-btn" style="margin-top:4px;background:#ff9800;color:#1a1a2e;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">グリッド値をコピー</button>
+      <div id="grid-export-result" style="font-size:11px;color:#4CAF50;min-height:16px"></div>
+    </div>
+  </details>
+
   <div id="item-list"></div>
 
   <div class="section" id="selected-info" style="display:none">
@@ -140,7 +180,8 @@ function getGridCell(u, v) {
 }
 
 // 高さベースでサイズ制御（16:9アスペクト比補正付き＝既存cellSize値と互換）
-const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
+// GRID_CELL_PCT is dynamically recalculated when grid vertices change
+var GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
 
 // ─── Items (inline from items.js, furniture/deco only) ───
 const ITEMS = [
@@ -556,6 +597,70 @@ placeItem = function(id) { _origPlaceItem(id); saveToStorage(); };
     if (document.getElementById('room-panel').contains(e.target)) e.preventDefault();
   };
 })();
+
+// ─── Grid vertex adjustment ───
+const GRID_SAVE_KEY = 'furniture_adjuster_grid';
+const gridPoints = [
+  { pt: 'back',  axis: 'X', key: 'x' },
+  { pt: 'back',  axis: 'Y', key: 'y' },
+  { pt: 'right', axis: 'X', key: 'x' },
+  { pt: 'right', axis: 'Y', key: 'y' },
+  { pt: 'left',  axis: 'X', key: 'x' },
+  { pt: 'left',  axis: 'Y', key: 'y' },
+  { pt: 'front', axis: 'X', key: 'x' },
+  { pt: 'front', axis: 'Y', key: 'y' },
+];
+
+function recalcGridCellPct() {
+  GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
+}
+
+// Load saved grid from localStorage
+try {
+  const saved = JSON.parse(localStorage.getItem(GRID_SAVE_KEY));
+  if (saved) {
+    ['back','right','left','front'].forEach(pt => {
+      if (saved[pt]) { ISO_GRID[pt].x = saved[pt].x; ISO_GRID[pt].y = saved[pt].y; }
+    });
+    recalcGridCellPct();
+  }
+} catch(e) {}
+
+function syncGridSliders() {
+  gridPoints.forEach(({pt, axis, key}) => {
+    const id = 'grid-' + pt + axis;
+    document.getElementById('sl-' + id).value = ISO_GRID[pt][key];
+    document.getElementById('num-' + id).value = ISO_GRID[pt][key];
+  });
+}
+
+gridPoints.forEach(({pt, axis, key}) => {
+  const id = 'grid-' + pt + axis;
+  const sl = document.getElementById('sl-' + id);
+  const num = document.getElementById('num-' + id);
+  function update(val) {
+    ISO_GRID[pt][key] = parseFloat(val);
+    recalcGridCellPct();
+    if (selectedId) placeItem(selectedId);
+    drawGrid();
+    localStorage.setItem(GRID_SAVE_KEY, JSON.stringify({
+      back: ISO_GRID.back, right: ISO_GRID.right, left: ISO_GRID.left, front: ISO_GRID.front
+    }));
+  }
+  sl.oninput = () => { num.value = sl.value; update(sl.value); };
+  num.oninput = () => { sl.value = num.value; update(num.value); };
+});
+
+document.getElementById('grid-export-btn').onclick = () => {
+  const txt = `const ISO_GRID = {\n  cells: ${ISO_GRID.cells},\n  back:  { x: ${ISO_GRID.back.x}, y: ${ISO_GRID.back.y} },\n  right: { x: ${ISO_GRID.right.x}, y: ${ISO_GRID.right.y} },\n  left:  { x: ${ISO_GRID.left.x}, y: ${ISO_GRID.left.y} },\n  front: { x: ${ISO_GRID.front.x}, y: ${ISO_GRID.front.y} },\n};`;
+  navigator.clipboard.writeText(txt).then(() => {
+    const el = document.getElementById('grid-export-result');
+    el.textContent = 'コピーしました！';
+    setTimeout(() => el.textContent = '', 3000);
+  });
+};
+
+syncGridSliders();
 
 // ─── Init ───
 window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId); drawGrid(); } else drawGrid(); });
