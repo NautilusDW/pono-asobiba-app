@@ -161,7 +161,7 @@
       position: absolute;
       transform-origin: bottom center;
       display: flex; align-items: flex-end; justify-content: center;
-      /* width はJS側でcellSize×グリッドセル幅(%)で動的設定 */
+      /* height はJS側でcellSize×グリッドセル高さ(%)で動的設定 */
       cursor: grab;
       touch-action: none;
       transition: left 0.1s, bottom 0.1s, transform 0.1s;
@@ -176,8 +176,30 @@
       line-height: 1;
     }
     .slot-img {
-      width: 100%; height: auto; object-fit: contain;
+      height: 100%; width: auto; object-fit: contain;
     }
+    /* Rotate button on placed items — 足元に固定表示 */
+    .btn-rotate {
+      position: absolute; bottom: 0; left: 50%;
+      transform: translate(-50%, 50%);
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.95); border: 2px solid #7ab;
+      border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; line-height: 1;
+      z-index: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .item-placed:hover .btn-rotate,
+    .item-placed.show-rotate .btn-rotate {
+      opacity: 1; pointer-events: auto;
+    }
+    @media (pointer: coarse) {
+      .btn-rotate { opacity: 0.85; pointer-events: auto; }
+    }
+    .btn-rotate:active { transform: translate(-50%, 50%) scale(0.85); }
+
     /* Shadow under floor items */
     .slot-shadow {
       position: absolute; bottom: -4px; left: 50%;
@@ -282,15 +304,13 @@
 
     /* Category tabs */
     .cat-tabs {
-      display: flex; gap: 8px; padding: 8px 12px;
-      overflow-x: auto; border-bottom: 2px solid #ffe5cc;
-      scrollbar-width: none;
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px;
+      border-bottom: 2px solid #ffe5cc;
     }
-    .cat-tabs::-webkit-scrollbar { display: none; }
     .cat-tab {
-      flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
+      padding: 5px 12px; border-radius: 20px;
       border: 2px solid transparent; background: #f0e4d8;
-      font-size: 14px; font-weight: bold; color: #666; cursor: pointer;
+      font-size: 13px; font-weight: bold; color: #666; cursor: pointer;
     }
     .cat-tab.on { background: var(--orange); color: white; border-color: var(--orange-dark); }
 
@@ -750,47 +770,122 @@ function getPlacedItems(cfg) {
   return placed;
 }
 
+// ─── 衝突判定（マルチセル対応） ─────────────────────────
+// アイテムが占有するセル一覧を返す（cellSizeベース）
+function getFootprint(row, col, item, angle) {
+  const props = getAngleProps(item, angle || 'A');
+  const span = Math.ceil(props.cellSize);
+  const cells = [];
+  for (let dr = 0; dr < span; dr++) {
+    for (let dc = 0; dc < span; dc++) {
+      cells.push({ row: row - dr, col: col - dc });
+    }
+  }
+  return cells;
+}
+
+// 指定セルに他のアイテムの占有範囲が重なるか
+function isOverlapping(areaId, row, col, item, angle, excludeId) {
+  const cfg = state.config[areaId] || {};
+  const placed = cfg.placed || getPlacedItems(cfg);
+  const myFoot = getFootprint(row, col, item, angle);
+  for (const p of placed) {
+    if (p.id === excludeId) continue;
+    const other = getItem(p.id);
+    if (!other) continue;
+    const otherFoot = getFootprint(p.row, p.col, other, p.angle || 'A');
+    for (const mc of myFoot) {
+      for (const oc of otherFoot) {
+        if (mc.row === oc.row && mc.col === oc.col) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// 空いている最寄りのセルを探す
+function findNearestEmpty(areaId, row, col, excludeId, item, angle) {
+  if (!isOverlapping(areaId, row, col, item, angle, excludeId)) return { row, col };
+  for (let d = 1; d <= 7; d++) {
+    for (let dr = -d; dr <= d; dr++) {
+      for (let dc = -d; dc <= d; dc++) {
+        if (Math.abs(dr) !== d && Math.abs(dc) !== d) continue;
+        const cr = row + dr, cc = col + dc;
+        const clamped = clampToGrid(item, cr, cc, angle);
+        if (clamped.row === cr && clamped.col === cc &&
+            !isOverlapping(areaId, cr, cc, item, angle, excludeId)) {
+          return clamped;
+        }
+      }
+    }
+  }
+  return { row, col };
+}
+
 // ─── グリッドアイテム生成 & ドラッグ ─────────────────────
+// A/B角度に応じたプロパティを取得
+function getAngleProps(item, angle) {
+  if (!item) return { cellSize: 1, pivotX: 0, pivotY: 0 };
+  if (angle === 'B' && item.angleB) {
+    return {
+      cellSize: item.angleB.cellSize ?? item.cellSize ?? 1,
+      pivotX:   item.angleB.pivotX   ?? item.pivotX ?? 0,
+      pivotY:   item.angleB.pivotY   ?? item.pivotY ?? 0,
+      minRow:   item.angleB.minRow   ?? item.minRow,
+      maxRow:   item.angleB.maxRow   ?? item.maxRow,
+      minCol:   item.angleB.minCol   ?? item.minCol,
+      maxCol:   item.angleB.maxCol   ?? item.maxCol,
+    };
+  }
+  return {
+    cellSize: item.cellSize ?? 1,
+    pivotX:   item.pivotX ?? 0,
+    pivotY:   item.pivotY ?? 0,
+    minRow:   item.minRow,
+    maxRow:   item.maxRow,
+    minCol:   item.minCol,
+    maxCol:   item.maxCol,
+  };
+}
+
 // グリッド範囲内にクランプ（アイテムサイズに応じたマージン付き）
-function clampToGrid(item, row, col) {
+function clampToGrid(item, row, col, angle) {
   const n = ISO_GRID.cells;
-  // cellSize に応じた自動マージン（大きいアイテムほど壁から離す）
-  const cs = item && item.cellSize ? item.cellSize : 1.0;
+  const props = getAngleProps(item, angle || 'A');
+  const cs = props.cellSize;
   const autoMargin = Math.max(0, Math.ceil(cs) - 1);
-  // アイテム固有の制限があればそちらを優先
-  const minR = item && item.minRow != null ? item.minRow : autoMargin;
-  const maxR = item && item.maxRow != null ? item.maxRow : n - 1 - autoMargin;
-  const minC = item && item.minCol != null ? item.minCol : autoMargin;
-  const maxC = item && item.maxCol != null ? item.maxCol : n - 1 - autoMargin;
+  const minR = props.minRow != null ? props.minRow : autoMargin;
+  const maxR = props.maxRow != null ? props.maxRow : n - 1 - autoMargin;
+  const minC = props.minCol != null ? props.minCol : autoMargin;
+  const maxC = props.maxCol != null ? props.maxCol : n - 1 - autoMargin;
   return {
     row: Math.max(minR, Math.min(maxR, row)),
     col: Math.max(minC, Math.min(maxC, col)),
   };
 }
 
-// 1グリッドセルの幅（コンテナ幅に対する%）
-const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100;
+// 高さベースでサイズ制御（16:9アスペクト比補正付き＝既存cellSize値と互換）
+const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
 
 function _applyGridPos(el, row, col) {
   const cell = getGridCell(row, col);
   const itemId = el.dataset.itemId;
   const item = itemId ? getItem(itemId) : null;
-  const px = item && item.pivotX ? item.pivotX : 0;
-  const py = item && item.pivotY ? item.pivotY : 0;
-  const cs = item && item.cellSize ? item.cellSize : 1.0;
+  const angle = el.dataset.angle || 'A';
+  const props = getAngleProps(item, angle);
   el.style.left      = cell.leftPct   + '%';
   el.style.bottom    = cell.bottomPct + '%';
-  el.style.width     = (cs * GRID_CELL_PCT).toFixed(2) + '%';
-  // ピボット補正: 足元中心をグリッドセルに合わせる
-  el.style.transform = `translate(calc(-50% - ${px}%), ${py}%)`;
+  el.style.height    = (props.cellSize * GRID_CELL_PCT).toFixed(2) + '%';
+  el.style.width     = 'auto';
+  el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${props.pivotY}%)`;
   el.style.zIndex    = cell.z;
 }
 
 function _makeGridItem(p, areaId, locked) {
   const item = getItem(p.id);
   if (!item) return document.createDocumentFragment();
-  // ロード時もクランプで安全な位置に補正
-  const clamped = clampToGrid(item, p.row ?? 0, p.col ?? 0);
+  const angle = p.angle || 'A';
+  const clamped = clampToGrid(item, p.row ?? 0, p.col ?? 0, angle);
   const row = clamped.row;
   const col = clamped.col;
   const el = document.createElement('div');
@@ -798,10 +893,67 @@ function _makeGridItem(p, areaId, locked) {
   el.dataset.itemId = p.id;
   el.dataset.row = row;
   el.dataset.col = col;
+  el.dataset.angle = angle;
   _applyGridPos(el, row, col);
-  renderSlotContent(el, p.id);
+  renderSlotContent(el, p.id, angle);
+
+  // 回転ボタン（roomImgBがあるアイテムのみ）
+  if (!locked && item.roomImgB) {
+    const rotBtn = document.createElement('div');
+    rotBtn.className = 'btn-rotate';
+    rotBtn.textContent = '\u{1F504}';
+    rotBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      _rotateItem(el, areaId);
+    });
+    rotBtn.addEventListener('touchend', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      _rotateItem(el, areaId);
+    });
+    el.appendChild(rotBtn);
+  }
+
   if (!locked) _addDragHandlers(el, areaId);
   return el;
+}
+
+function _rotateItem(el, areaId) {
+  const item = getItem(el.dataset.itemId);
+  if (!item || !item.roomImgB) return;
+  const newAngle = el.dataset.angle === 'B' ? 'A' : 'B';
+  el.dataset.angle = newAngle;
+  const row = parseInt(el.dataset.row);
+  const col = parseInt(el.dataset.col);
+  const clamped = clampToGrid(item, row, col, newAngle);
+  el.dataset.row = clamped.row;
+  el.dataset.col = clamped.col;
+  _applyGridPos(el, clamped.row, clamped.col);
+  renderSlotContent(el, item.id, newAngle);
+  // 回転ボタンを再追加（renderSlotContentでinnerHTMLクリアされるため）
+  if (item.roomImgB) {
+    const rotBtn = document.createElement('div');
+    rotBtn.className = 'btn-rotate';
+    rotBtn.textContent = '\u{1F504}';
+    rotBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      _rotateItem(el, areaId);
+    });
+    rotBtn.addEventListener('touchend', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      _rotateItem(el, areaId);
+    });
+    el.appendChild(rotBtn);
+  }
+  // stateに保存
+  const cfg = state.config[areaId];
+  if (cfg) {
+    if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
+    const p = cfg.placed.find(q => q.id === el.dataset.itemId);
+    if (p) { p.angle = newAngle; p.row = clamped.row; p.col = clamped.col; }
+  }
+  saveState();
 }
 
 function _addDragHandlers(el, areaId) {
@@ -816,7 +968,7 @@ function _addDragHandlers(el, areaId) {
     if (!area) return;
     const raw = getRowColFromPoint(area, clientX, clientY);
     const item = getItem(el.dataset.itemId);
-    const { row, col } = clampToGrid(item, raw.row, raw.col);
+    const { row, col } = clampToGrid(item, raw.row, raw.col, el.dataset.angle);
     el.dataset.row = row;
     el.dataset.col = col;
     el.classList.add('dragging');
@@ -826,9 +978,17 @@ function _addDragHandlers(el, areaId) {
   function onEnd() {
     el.classList.remove('dragging');
     gridSvg = null;
-    if (!dragging) return;
-    const row = parseInt(el.dataset.row);
-    const col = parseInt(el.dataset.col);
+    if (!dragging) return; // タップは回転ボタンで処理
+    let row = parseInt(el.dataset.row);
+    let col = parseInt(el.dataset.col);
+    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ
+    const item = getItem(el.dataset.itemId);
+    if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
+      const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
+      row = empty.row; col = empty.col;
+      el.dataset.row = row; el.dataset.col = col;
+      _applyGridPos(el, row, col);
+    }
     const cfg = state.config[areaId];
     if (!cfg) return;
     if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
@@ -913,7 +1073,7 @@ function makeEmojiSpan(item) {
 }
 
 // ─── Render room slot (emoji or image) ───────────────
-function renderSlotContent(slot, itemId) {
+function renderSlotContent(slot, itemId, angle) {
   slot.innerHTML = '';
   if (!itemId) {
     const empty = document.createElement('div');
@@ -925,10 +1085,11 @@ function renderSlotContent(slot, itemId) {
   const item = getItem(itemId);
   if (!item) return;
 
-  if (item.img || item.roomImg) {
+  const imgSrc = (angle === 'B' && item.roomImgB) ? item.roomImgB : (item.img || item.roomImg);
+  if (imgSrc) {
     const img = document.createElement('img');
     img.className = 'slot-img';
-    img.src = item.img || item.roomImg;
+    img.src = imgSrc;
     img.onerror = () => { img.remove(); appendEmoji(slot, item); };
     slot.appendChild(img);
   } else {
@@ -1050,11 +1211,27 @@ function buildRoomArea(areaData) {
   div.appendChild(wall);
   div.appendChild(floor);
 
-  // 家具・デコアイテム
+  // 家具・デコアイテム（ロード時にマルチセル衝突解消）
   if (!locked) {
-    getPlacedItems(cfg).forEach(p => {
+    const placedList = getPlacedItems(cfg);
+    const usedCells = new Set();
+    let needSave = false;
+    placedList.forEach(p => {
+      const item = getItem(p.id);
+      if (!item) return;
+      const angle = p.angle || 'A';
+      const foot = getFootprint(p.row ?? 0, p.col ?? 0, item, angle);
+      const overlaps = foot.some(c => usedCells.has(c.row + ',' + c.col));
+      if (overlaps) {
+        const empty = findNearestEmpty(areaData.id, p.row ?? 0, p.col ?? 0, p.id, item, angle);
+        p.row = empty.row; p.col = empty.col;
+        needSave = true;
+      }
+      // このアイテムの占有セルを登録
+      getFootprint(p.row, p.col, item, angle).forEach(c => usedCells.add(c.row + ',' + c.col));
       div.appendChild(_makeGridItem(p, areaData.id, false));
     });
+    if (needSave) { cfg.placed = placedList; saveState(); }
   }
 
   // Lock overlay
@@ -1194,6 +1371,25 @@ function openInventory(cat) {
   document.getElementById('shop-ov').classList.remove('hidden');
 }
 
+function _makeResetCard(cat, cfg, grid) {
+  if ((cat !== 'wall' && cat !== 'floor') || !cfg[cat]) return;
+  const label = cat === 'wall' ? 'かべ' : 'ゆか';
+  const card = document.createElement('div');
+  card.className = 'item-card owned';
+  card.innerHTML = `
+    <div class="item-card-prev" style="display:flex;align-items:center;justify-content:center;font-size:28px;">🔄</div>
+    <div class="item-card-name">デフォルトの${label}</div>
+    <div class="item-badge badge-owned">もどす</div>`;
+  card.addEventListener('click', () => {
+    delete cfg[cat];
+    saveState();
+    refreshArea(currentAreaId);
+    renderShopGrid(cat);
+    showToast(`🔄 デフォルトの${label}にもどしたよ！`);
+  });
+  grid.appendChild(card);
+}
+
 function renderShopGrid(cat) {
   const grid = document.getElementById('shop-grid');
   grid.innerHTML = '';
@@ -1204,6 +1400,9 @@ function renderShopGrid(cat) {
     const items = ROOM_ITEMS.filter(item => item.cat === cat);
     const unowned = items.filter(item => !isOwned(item.id));
     const owned   = items.filter(item =>  isOwned(item.id));
+
+    // 壁・床: デフォルトに戻すカード
+    _makeResetCard(cat, cfg, grid);
 
     if (unowned.length === 0 && owned.length > 0) {
       // 全部買い済み
@@ -1246,6 +1445,9 @@ function renderShopGrid(cat) {
       grid.appendChild(msg);
       return;
     }
+
+    // 壁・床: デフォルトに戻すカード
+    _makeResetCard(cat, cfg, grid);
 
     owned.forEach(item => {
       const card = _makeShopCard(item, 'place', cfg);
@@ -1343,18 +1545,13 @@ function placeItem(item) {
   } else {
     // 家具・かざりは placed 配列で管理
     if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
-    // 同じアイテムがすでにあれば位置を維持、なければ空きグリッドに追加
+    // 同じアイテムがすでにあれば位置を維持、なければ空きセルに追加
     if (!cfg.placed.find(p => p.id === item.id)) {
-      // グリッド座標が定義されているアイテムはそれを使用
-      if (item.gridCol !== undefined && item.gridRow !== undefined) {
-        cfg.placed.push({ id: item.id, row: item.gridRow, col: item.gridCol });
-      } else {
-        // グリッド座標がない場合は自動配置（従来通り）
-        const usedCols = cfg.placed.map(p => p.col);
-        const candidates = [3, 4, 2, 5, 1, 6, 0, 7];
-        const col = candidates.find(c => !usedCols.includes(c)) ?? usedCols.length % PERSPECTIVE.cols;
-        cfg.placed.push({ id: item.id, row: 0, col }); // デフォルトは手前(row:0)
-      }
+      let row = item.gridRow ?? 3;
+      let col = item.gridCol ?? 3;
+      // 衝突している場合は空きセルを探す
+      const pos = findNearestEmpty(currentAreaId, row, col, item.id, item, 'A');
+      cfg.placed.push({ id: item.id, row: pos.row, col: pos.col, angle: 'A' });
     }
     // 旧キーを削除
     delete cfg.furn; delete cfg.deco;
