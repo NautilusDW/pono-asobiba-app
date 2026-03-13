@@ -453,6 +453,20 @@ function drawGrid() {
   const n = ISO_GRID.cells;
   const adj = selectedId ? adjustments[adjKey(selectedId)] : null;
 
+  // Fill floor area with opaque color to hide background grid
+  const fBL = isoGridPt(0, n);  // left corner
+  const fBR = isoGridPt(n, 0);  // right corner
+  const fB  = isoGridPt(0, 0);  // back corner
+  const fF  = isoGridPt(n, n);  // front corner
+  ctx.beginPath();
+  ctx.moveTo(fB.x*w, fB.y*h);
+  ctx.lineTo(fBR.x*w, fBR.y*h);
+  ctx.lineTo(fF.x*w, fF.y*h);
+  ctx.lineTo(fBL.x*w, fBL.y*h);
+  ctx.closePath();
+  ctx.fillStyle = '#2a3a5e';
+  ctx.fill();
+
   // Draw cell fills (red=forbidden, green=allowed)
   if (adj) {
     for (let r = 0; r < n; r++) {
@@ -468,14 +482,14 @@ function drawGrid() {
         ctx.lineTo(p2.x*w, p2.y*h);
         ctx.lineTo(p3.x*w, p3.y*h);
         ctx.closePath();
-        ctx.fillStyle = allowed ? 'rgba(0,200,0,0.15)' : 'rgba(200,0,0,0.25)';
+        ctx.fillStyle = allowed ? 'rgba(0,200,0,0.25)' : 'rgba(200,0,0,0.35)';
         ctx.fill();
       }
     }
   }
 
   // Draw grid lines
-  ctx.strokeStyle = 'rgba(0,255,0,0.4)';
+  ctx.strokeStyle = 'rgba(0,255,0,0.7)';
   ctx.lineWidth = 1;
   for (let i = 0; i <= n; i++) {
     const a = isoGridPt(i, 0), b = isoGridPt(i, n);
