@@ -100,6 +100,10 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <input type="range" id="sl-grid-frontY" min="0.7" max="1.0" step="0.001">
         <input type="number" id="num-grid-frontY" step="0.001" style="width:70px">
       </label>
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <button id="grid-undo-btn" style="flex:1;background:#666;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:12px" disabled>↩ もどす</button>
+        <button id="grid-reset-btn" style="flex:1;background:#f44336;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:12px">初期値に戻す</button>
+      </div>
       <button id="grid-export-btn" style="margin-top:4px;background:#ff9800;color:#1a1a2e;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">グリッド値をコピー</button>
       <div id="grid-export-result" style="font-size:11px;color:#4CAF50;min-height:16px"></div>
     </div>
@@ -613,7 +617,19 @@ placeItem = function(id) { _origPlaceItem(id); saveToStorage(); };
 })();
 
 // ─── Grid vertex adjustment ───
+const GRID_DEFAULT = {
+  back:  { x: 0.5, y: 0.407 },
+  right: { x: 0.762, y: 0.675 },
+  left:  { x: 0.239, y: 0.674 },
+  front: { x: 0.5, y: 0.944 },
+};
 const GRID_SAVE_KEY = 'furniture_adjuster_grid';
+const gridHistory = []; // undo stack
+function pushGridHistory() {
+  gridHistory.push({ back:{...ISO_GRID.back}, right:{...ISO_GRID.right}, left:{...ISO_GRID.left}, front:{...ISO_GRID.front} });
+  if (gridHistory.length > 50) gridHistory.shift();
+  document.getElementById('grid-undo-btn').disabled = false;
+}
 const gridPoints = [
   { pt: 'back',  axis: 'X', key: 'x' },
   { pt: 'back',  axis: 'Y', key: 'y' },
@@ -652,7 +668,9 @@ gridPoints.forEach(({pt, axis, key}) => {
   const id = 'grid-' + pt + axis;
   const sl = document.getElementById('sl-' + id);
   const num = document.getElementById('num-' + id);
+  let _pushed = false;
   function update(val) {
+    if (!_pushed) { pushGridHistory(); _pushed = true; }
     ISO_GRID[pt][key] = parseFloat(val);
     recalcGridCellPct();
     if (selectedId) placeItem(selectedId);
@@ -662,8 +680,34 @@ gridPoints.forEach(({pt, axis, key}) => {
     }));
   }
   sl.oninput = () => { num.value = sl.value; update(sl.value); };
-  num.oninput = () => { sl.value = num.value; update(num.value); };
+  sl.onpointerdown = () => { _pushed = false; };
+  num.oninput = () => { _pushed = false; num.value; pushGridHistory(); _pushed = true; sl.value = num.value; update(num.value); };
 });
+
+function applyGridState(state) {
+  ['back','right','left','front'].forEach(pt => {
+    ISO_GRID[pt].x = state[pt].x;
+    ISO_GRID[pt].y = state[pt].y;
+  });
+  recalcGridCellPct();
+  syncGridSliders();
+  if (selectedId) placeItem(selectedId);
+  drawGrid();
+  localStorage.setItem(GRID_SAVE_KEY, JSON.stringify({
+    back: ISO_GRID.back, right: ISO_GRID.right, left: ISO_GRID.left, front: ISO_GRID.front
+  }));
+}
+
+document.getElementById('grid-undo-btn').onclick = () => {
+  if (gridHistory.length === 0) return;
+  applyGridState(gridHistory.pop());
+  document.getElementById('grid-undo-btn').disabled = gridHistory.length === 0;
+};
+
+document.getElementById('grid-reset-btn').onclick = () => {
+  pushGridHistory();
+  applyGridState(GRID_DEFAULT);
+};
 
 document.getElementById('grid-export-btn').onclick = () => {
   const txt = `const ISO_GRID = {\n  cells: ${ISO_GRID.cells},\n  back:  { x: ${ISO_GRID.back.x}, y: ${ISO_GRID.back.y} },\n  right: { x: ${ISO_GRID.right.x}, y: ${ISO_GRID.right.y} },\n  left:  { x: ${ISO_GRID.left.x}, y: ${ISO_GRID.left.y} },\n  front: { x: ${ISO_GRID.front.x}, y: ${ISO_GRID.front.y} },\n};`;
