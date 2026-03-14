@@ -923,7 +923,10 @@ function _applyGridPos(el, row, col) {
   el.style.height    = (props.cellSize * GRID_CELL_PCT).toFixed(2) + '%';
   el.style.width     = 'auto';
   el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${props.pivotY}%)`;
-  el.style.zIndex    = cell.z;
+  // ラグ→床の直上(z=3)、デコ→最前面、それ以外→通常
+  el.style.zIndex    = PASSTHROUGH_IDS.has(itemId) ? 3
+                     : (item && item.cat === 'deco') ? 100 + cell.z
+                     : cell.z;
 }
 
 function _makeGridItem(p, areaId, locked) {
