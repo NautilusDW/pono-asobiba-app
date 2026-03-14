@@ -796,24 +796,6 @@ const SURFACE_IDS = new Set([
 // 乗せられるアイテム（cat==='deco'のもの）
 function isStackableItem(item) { return item && item.cat === 'deco'; }
 
-// 指定家具の上にすでにデコが乗っているか
-function hasSurfaceOccupant(areaId, surfacePlaced, excludeId) {
-  const cfg = state.config[areaId] || {};
-  const placed = cfg.placed || getPlacedItems(cfg);
-  const surfaceItem = getItem(surfacePlaced.id);
-  if (!surfaceItem) return false;
-  const surfaceFoot = getFootprint(surfacePlaced.row, surfacePlaced.col, surfaceItem, surfacePlaced.angle || 'A');
-  const sfSet = new Set(surfaceFoot.map(c => c.row + ',' + c.col));
-  for (const p of placed) {
-    if (p.id === excludeId || p.id === surfacePlaced.id) continue;
-    const pi = getItem(p.id);
-    if (!pi || !isStackableItem(pi)) continue;
-    const pFoot = getFootprint(p.row, p.col, pi, p.angle || 'A');
-    if (pFoot.some(c => sfSet.has(c.row + ',' + c.col))) return true;
-  }
-  return false;
-}
-
 // 指定セルに他のアイテムの占有範囲が重なるか
 function isOverlapping(areaId, row, col, item, angle, excludeId) {
   const cfg = state.config[areaId] || {};
@@ -837,14 +819,8 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
       if (collides) break;
     }
     if (!collides) continue;
-    // デコを家具の上に乗せる判定
-    if (iAmStackable && SURFACE_IDS.has(other.id)) {
-      const occupied = hasSurfaceOccupant(areaId, p, excludeId);
-      console.log('[STACK]', item.id, '→', other.id, 'occupied?', occupied, 'excludeId:', excludeId);
-      if (!occupied) continue; // 空いてる→許可
-    } else {
-      console.log('[OVERLAP]', item.id, 'vs', other.id, 'stackable?', iAmStackable, 'surface?', SURFACE_IDS.has(other.id));
-    }
+    // デコを家具の上に乗せる判定（複数デコ許可）
+    if (iAmStackable && SURFACE_IDS.has(other.id)) continue;
     // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
     if (isStackableItem(other) && SURFACE_IDS.has(item.id)) continue;
     return true;
@@ -953,7 +929,6 @@ function _applyGridPos(el, row, col) {
     const areaEl = el.closest('.room-area');
     const areaId = areaEl ? areaEl.dataset.areaId : null;
     extraY = _getSurfaceOffset(areaId, row, col, itemId);
-    if (extraY !== 0) console.log('[SURFACE-Y]', itemId, 'row:', row, 'col:', col, 'extraY:', extraY);
   }
   const totalPivotY = props.pivotY + extraY;
   el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${totalPivotY}%)`;
@@ -1065,11 +1040,8 @@ function _addDragHandlers(el, areaId) {
     let col = parseInt(el.dataset.col);
     // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ
     const item = getItem(el.dataset.itemId);
-    const overlap = isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId);
-    console.log('[DRAG-END]', el.dataset.itemId, 'row:', row, 'col:', col, 'overlap?', overlap);
-    if (overlap) {
+    if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
       const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
-      console.log('[DRAG-END] moved to', empty.row, empty.col);
       row = empty.row; col = empty.col;
       el.dataset.row = row; el.dataset.col = col;
       _applyGridPos(el, row, col);
