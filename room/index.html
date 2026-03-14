@@ -819,6 +819,8 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
       if (collides) break;
     }
     if (!collides) continue;
+    // デコ同士は衝突しない（家具の上に複数乗せられる）
+    if (iAmStackable && isStackableItem(other)) continue;
     // デコを家具の上に乗せる判定（複数デコ許可）
     if (iAmStackable && SURFACE_IDS.has(other.id)) continue;
     // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
