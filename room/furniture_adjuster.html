@@ -146,6 +146,18 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     <div style="font-size:11px;color:#888;margin-top:4px">
       row↗右奥方向, col↖左奥方向
     </div>
+
+    <div id="surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
+      <h3 style="color:#ff9800">🧸 デコ乗せ位置 (surfaceY)</h3>
+      <div style="font-size:11px;color:#888;margin-bottom:4px">デコを上に乗せた時のY方向オフセット（負=上へ）</div>
+      <label><span>surfaceY</span>
+        <input type="range" id="sl-surfaceY" min="-100" max="0" step="0.5">
+        <input type="number" id="num-surfaceY" step="0.5">
+      </label>
+      <div id="surface-preview-toggle" style="margin-top:4px">
+        <button id="btn-surface-preview" style="padding:4px 12px;border:1px solid #ff9800;border-radius:4px;background:#333;color:#ff9800;cursor:pointer;font-size:12px">🧸 プレビューON</button>
+      </div>
+    </div>
   </div>
 
   <div class="row" style="gap:6px">
@@ -212,6 +224,13 @@ const ITEMS = [
   { id:'deco_stroller', name:'ベビーカー', roomImg:'../assets/images/Rooms/furnitures_final/stroller.png', cellSize:0.8, pivotX:0, pivotY:0 },
 ];
 
+// サーフェス家具（デコを上に乗せられる）
+const SURFACE_IDS = new Set([
+  'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
+  'furn_toyshelf2', 'furn_desk2', 'furn_bed_pink', 'furn_desk_pink',
+  'furn_chest_pink',
+]);
+
 // Per-item adjustments (editable state) — separate for A and B angles
 const adjustments = {};
 function adjKey(id, angle) { return id + '_' + (angle || currentAngle); }
@@ -229,6 +248,7 @@ ITEMS.forEach(item => {
     minCol: autoMargin,
     maxCol: 7 - autoMargin,
     row: 3, col: 3,
+    surfaceY: item.surfaceY || 0,
   };
   adjustments[adjKey(item.id, 'A')] = Object.assign({}, base);
   if (item.roomImgB) {
@@ -313,6 +333,16 @@ function selectItem(id) {
   document.getElementById('num-minCol').value = adj.minCol;
   document.getElementById('num-maxCol').value = adj.maxCol;
 
+  // surfaceYセクション表示/非表示
+  const surfSec = document.getElementById('surface-section');
+  if (SURFACE_IDS.has(id)) {
+    surfSec.style.display = '';
+    syncSlider('surfaceY', adj.surfaceY || 0);
+  } else {
+    surfSec.style.display = 'none';
+  }
+  removeSurfacePreview();
+
   placeItem(id);
   drawGrid();
 }
@@ -342,6 +372,14 @@ function reloadSliders(id) {
   document.getElementById('num-maxRow').value = adj.maxRow;
   document.getElementById('num-minCol').value = adj.minCol;
   document.getElementById('num-maxCol').value = adj.maxCol;
+  // surfaceY
+  const surfSec2 = document.getElementById('surface-section');
+  if (SURFACE_IDS.has(id)) {
+    surfSec2.style.display = '';
+    syncSlider('surfaceY', adj.surfaceY || 0);
+  } else {
+    surfSec2.style.display = 'none';
+  }
   placeItem(id);
   drawGrid();
 }
@@ -379,6 +417,68 @@ function syncSlider(name, val) {
   };
 });
 
+// ─── surfaceY slider binding ───
+{
+  const sl = document.getElementById('sl-surfaceY');
+  const num = document.getElementById('num-surfaceY');
+  function updateSurfaceY(val) {
+    if (!selectedId) return;
+    adjustments[adjKey(selectedId)].surfaceY = parseFloat(val);
+    updateSurfacePreview();
+  }
+  sl.oninput = () => { num.value = sl.value; updateSurfaceY(sl.value); };
+  num.oninput = () => { sl.value = num.value; updateSurfaceY(num.value); };
+}
+
+// ─── Surface preview (deco on top of furniture) ───
+let _surfacePreviewEl = null;
+let _surfacePreviewOn = false;
+
+function removeSurfacePreview() {
+  if (_surfacePreviewEl) { _surfacePreviewEl.remove(); _surfacePreviewEl = null; }
+  _surfacePreviewOn = false;
+  const btn = document.getElementById('btn-surface-preview');
+  btn.textContent = '🧸 プレビューON';
+  btn.style.background = '#333';
+}
+
+function updateSurfacePreview() {
+  if (!_surfacePreviewOn || !_surfacePreviewEl || !selectedId) return;
+  const adj = adjustments[adjKey(selectedId)];
+  const cell = getGridCell(adj.row, adj.col);
+  const decoSize = 0.7 * GRID_CELL_PCT; // small deco size
+  const surfY = adj.surfaceY || 0;
+  _surfacePreviewEl.style.left = cell.leftPct + '%';
+  _surfacePreviewEl.style.bottom = cell.bottomPct + '%';
+  _surfacePreviewEl.style.height = decoSize.toFixed(2) + '%';
+  _surfacePreviewEl.style.transform = `translate(-50%, ${surfY}%)`;
+  _surfacePreviewEl.style.zIndex = 200;
+}
+
+document.getElementById('btn-surface-preview').onclick = () => {
+  if (_surfacePreviewOn) {
+    removeSurfacePreview();
+    return;
+  }
+  _surfacePreviewOn = true;
+  const btn = document.getElementById('btn-surface-preview');
+  btn.textContent = '🧸 プレビューOFF';
+  btn.style.background = '#ff9800';
+  // くまぬいぐるみをプレビュー用に使用
+  const previewImg = '../assets/images/Rooms/furnitures_final/bear_A.png';
+  const el = document.createElement('img');
+  el.src = previewImg;
+  el.style.position = 'absolute';
+  el.style.width = 'auto';
+  el.style.pointerEvents = 'none';
+  el.style.opacity = '0.8';
+  el.style.filter = 'drop-shadow(0 0 4px #ff9800)';
+  el.style.transformOrigin = 'bottom center';
+  document.getElementById('item-layer').appendChild(el);
+  _surfacePreviewEl = el;
+  updateSurfacePreview();
+};
+
 // ─── Place item on grid ───
 let _placedEl = null;
 
@@ -392,6 +492,7 @@ function updateItemPos(id) {
   _placedEl.style.height = heightPct.toFixed(2) + '%';
   _placedEl.style.width = 'auto';
   _placedEl.style.transform = `translate(calc(-50% - ${adj.pivotX}%), ${adj.pivotY}%)`;
+  if (_surfacePreviewOn) updateSurfacePreview();
 }
 
 function placeItem(id) {
@@ -542,6 +643,9 @@ document.getElementById('export-btn').onclick = () => {
       let line = `  // ${item.name} [${label}]\n  { id:'${item.id}', angle:'${label}', cellSize:${adj.cellSize}, pivotX:${adj.pivotX}, pivotY:${adj.pivotY}`;
       if (hasCustomBounds) {
         line += `, minRow:${adj.minRow}, maxRow:${adj.maxRow}, minCol:${adj.minCol}, maxCol:${adj.maxCol}`;
+      }
+      if (SURFACE_IDS.has(item.id) && adj.surfaceY) {
+        line += `, surfaceY:${adj.surfaceY}`;
       }
       line += ' },';
       return line;

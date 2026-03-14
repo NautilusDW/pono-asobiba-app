@@ -912,6 +912,27 @@ function clampToGrid(item, row, col, angle) {
 // 高さベースでサイズ制御（16:9アスペクト比補正付き＝既存cellSize値と互換）
 const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
 
+// デコが乗っているサーフェス家具を検索し、surfaceYを返す
+function _getSurfaceOffset(areaId, row, col, itemId) {
+  const area = document.querySelector('.room-area');
+  if (!area) return 0;
+  const aId = areaId || area.dataset.areaId;
+  const cfg = state.config[aId];
+  if (!cfg) return 0;
+  const placed = cfg.placed || getPlacedItems(cfg);
+  for (const p of placed) {
+    if (p.id === itemId) continue;
+    const furn = getItem(p.id);
+    if (!furn || !SURFACE_IDS.has(furn.id)) continue;
+    const foot = getFootprint(p.row, p.col, furn, p.angle || 'A');
+    if (foot.some(c => c.row === row && c.col === col)) {
+      const furnAngle = p.angle || 'A';
+      return furnAngle === 'B' ? (furn.surfaceYB ?? furn.surfaceY ?? 0) : (furn.surfaceY ?? 0);
+    }
+  }
+  return 0;
+}
+
 function _applyGridPos(el, row, col) {
   const cell = getGridCell(row, col);
   const itemId = el.dataset.itemId;
@@ -922,7 +943,15 @@ function _applyGridPos(el, row, col) {
   el.style.bottom    = cell.bottomPct + '%';
   el.style.height    = (props.cellSize * GRID_CELL_PCT).toFixed(2) + '%';
   el.style.width     = 'auto';
-  el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${props.pivotY}%)`;
+  // デコが家具の上に乗っている場合、surfaceYを加算して持ち上げる
+  let extraY = 0;
+  if (item && isStackableItem(item)) {
+    const areaEl = el.closest('.room-area');
+    const areaId = areaEl ? areaEl.dataset.areaId : null;
+    extraY = _getSurfaceOffset(areaId, row, col, itemId);
+  }
+  const totalPivotY = props.pivotY + extraY;
+  el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${totalPivotY}%)`;
   // ラグ→壁より上・家具より下(z=18)、デコ→最前面、それ以外→通常
   el.style.zIndex    = PASSTHROUGH_IDS.has(itemId) ? 18
                      : (item && item.cat === 'deco') ? 100 + cell.z

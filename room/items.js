@@ -146,6 +146,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_B_01.png',
     gridRow: 2, gridCol: 3, cellSize: 2, pivotX: -8, pivotY: 24.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 7,
     angleB: { cellSize: 2, pivotX: 11, pivotY: 24.2, minRow: 1, maxRow: 7, minCol: 1, maxCol: 6 },
+    surfaceY: -30, surfaceYB: -30,
   },
   {
     id: 'furn_desk', cat: 'furn', name: 'あおいつくえ', price: 25, theme: 'all',
@@ -153,6 +154,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/desk_B_01.png',
     gridRow: 2, gridCol: 2, cellSize: 2, pivotX: 0, pivotY: 1.2, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
     angleB: { cellSize: 2, pivotX: -9.5, pivotY: 5, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7 },
+    surfaceY: -40, surfaceYB: -40,
   },
   {
     id: 'furn_bookshelf_w', cat: 'furn', name: 'しろいほんだな', price: 20, theme: 'all',
@@ -167,6 +169,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/Shelf01_B.png',
     gridRow: 2, gridCol: 5, cellSize: 1.3, pivotX: -24.7, pivotY: -70, minRow: 0, maxRow: 6, minCol: 1, maxCol: 7,
     angleB: { cellSize: 1.3, pivotX: -24.7, pivotY: -70, minRow: 0, maxRow: 6, minCol: 0, maxCol: 6 },
+    surfaceY: -50, surfaceYB: -50,
   },
   {
     id: 'furn_bookshelf2', cat: 'furn', name: 'きのほんだな', price: 20, theme: 'all',
@@ -181,6 +184,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/Shelf02_A.png',
     gridRow: 4, gridCol: 1, cellSize: 2.1, pivotX: -2.5, pivotY: 20.5, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
     angleB: { cellSize: 2.1, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6 },
+    surfaceY: -35, surfaceYB: -35,
   },
   {
     id: 'furn_toyshelf2', cat: 'furn', name: 'おもちゃだな2', price: 25, theme: 'all',
@@ -188,6 +192,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/ToyShelf01_A.png',
     gridRow: 5, gridCol: 1, cellSize: 2.1, pivotX: -26, pivotY: 23.3, minRow: 0, maxRow: 6, minCol: 0, maxCol: 7,
     angleB: { cellSize: 1.3, pivotX: 0, pivotY: 0 },
+    surfaceY: -45, surfaceYB: -45,
   },
   {
     id: 'furn_desk2', cat: 'furn', name: 'きのつくえ', price: 25, theme: 'all',
@@ -195,6 +200,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/desk02_B.png',
     gridRow: 3, gridCol: 4, cellSize: 1.8, pivotX: -12.5, pivotY: 5.5, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
     angleB: { cellSize: 1.6, pivotX: 7, pivotY: 5.5, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7 },
+    surfaceY: -40, surfaceYB: -40,
   },
 
   {
@@ -203,6 +209,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_pink_B.png',
     gridRow: 3, gridCol: 5, cellSize: 2, pivotX: 12.5, pivotY: 27.4, minRow: 1, maxRow: 7, minCol: 1, maxCol: 6,
     angleB: { cellSize: 2, pivotX: -11, pivotY: 26, minRow: 1, maxRow: 6, minCol: 1, maxCol: 7 },
+    surfaceY: -30, surfaceYB: -30,
   },
   {
     id: 'furn_desk_pink', cat: 'furn', name: 'ピンクつくえ', price: 25, theme: 'girl',
@@ -210,6 +217,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/desk_pink_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.8, pivotX: -13.5, pivotY: 11, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
     angleB: { cellSize: 1.8, pivotX: 4, pivotY: 5.5, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7 },
+    surfaceY: -40, surfaceYB: -40,
   },
   {
     id: 'furn_bookshelf_pink', cat: 'furn', name: 'ピンクほんだな', price: 20, theme: 'girl',
@@ -224,6 +232,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/chest_pink_B.png',
     gridRow: 6, gridCol: 3, cellSize: 2, pivotX: 15, pivotY: 12.3, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7,
     angleB: { cellSize: 2, pivotX: -16.5, pivotY: 12.3, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7 },
+    surfaceY: -35, surfaceYB: -35,
   },
 
   // ══ かざり ═════════════════════════════════════════════
