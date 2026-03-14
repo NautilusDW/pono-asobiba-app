@@ -896,19 +896,15 @@ const GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 10
 
 // デコが乗っているサーフェス家具を検索し、surfaceYを返す
 function _getSurfaceOffset(areaId, row, col, itemId) {
-  const area = document.querySelector('.room-area');
-  if (!area) { console.log('[OFFSET] no .room-area'); return 0; }
-  const aId = areaId || area.dataset.areaId;
-  const cfg = state.config[aId];
-  if (!cfg) { console.log('[OFFSET] no cfg for', aId); return 0; }
+  if (!areaId) return 0;
+  const cfg = state.config[areaId];
+  if (!cfg) return 0;
   const placed = cfg.placed || getPlacedItems(cfg);
-  console.log('[OFFSET] checking', itemId, 'at', row, col, 'surfaces:', placed.filter(p => SURFACE_IDS.has(p.id)).map(p => p.id+'@'+p.row+','+p.col));
   for (const p of placed) {
     if (p.id === itemId) continue;
     const furn = getItem(p.id);
     if (!furn || !SURFACE_IDS.has(furn.id)) continue;
     const foot = getFootprint(p.row, p.col, furn, p.angle || 'A');
-    console.log('[OFFSET]', furn.id, 'foot:', foot.map(c=>c.row+','+c.col), 'match?', foot.some(c => c.row === row && c.col === col));
     if (foot.some(c => c.row === row && c.col === col)) {
       const furnAngle = p.angle || 'A';
       return furnAngle === 'B' ? (furn.surfaceYB ?? furn.surfaceY ?? 0) : (furn.surfaceY ?? 0);
@@ -917,7 +913,7 @@ function _getSurfaceOffset(areaId, row, col, itemId) {
   return 0;
 }
 
-function _applyGridPos(el, row, col) {
+function _applyGridPos(el, row, col, areaId) {
   const cell = getGridCell(row, col);
   const itemId = el.dataset.itemId;
   const item = itemId ? getItem(itemId) : null;
@@ -930,10 +926,7 @@ function _applyGridPos(el, row, col) {
   // デコが家具の上に乗っている場合、surfaceYを加算して持ち上げる
   let extraY = 0;
   if (item && isStackableItem(item)) {
-    const areaEl = el.closest('.room-area');
-    const areaId = areaEl ? areaEl.dataset.areaId : null;
     extraY = _getSurfaceOffset(areaId, row, col, itemId);
-    console.log('[APPLY]', itemId, 'row:', row, 'col:', col, 'areaId:', areaId, 'extraY:', extraY, 'pivotY:', props.pivotY);
   }
   const totalPivotY = props.pivotY + extraY;
   el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${totalPivotY}%)`;
@@ -956,7 +949,7 @@ function _makeGridItem(p, areaId, locked) {
   el.dataset.row = row;
   el.dataset.col = col;
   el.dataset.angle = angle;
-  _applyGridPos(el, row, col);
+  _applyGridPos(el, row, col, areaId);
   renderSlotContent(el, p.id, angle);
 
   // 回転ボタン（roomImgBがあるアイテムのみ）
@@ -990,7 +983,7 @@ function _rotateItem(el, areaId) {
   const clamped = clampToGrid(item, row, col, newAngle);
   el.dataset.row = clamped.row;
   el.dataset.col = clamped.col;
-  _applyGridPos(el, clamped.row, clamped.col);
+  _applyGridPos(el, clamped.row, clamped.col, areaId);
   renderSlotContent(el, item.id, newAngle);
   // 回転ボタンを再追加（renderSlotContentでinnerHTMLクリアされるため）
   if (item.roomImgB) {
@@ -1034,7 +1027,7 @@ function _addDragHandlers(el, areaId) {
     el.dataset.row = row;
     el.dataset.col = col;
     el.classList.add('dragging');
-    _applyGridPos(el, row, col);
+    _applyGridPos(el, row, col, areaId);
   }
 
   function onEnd() {
@@ -1049,7 +1042,7 @@ function _addDragHandlers(el, areaId) {
       const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
       row = empty.row; col = empty.col;
       el.dataset.row = row; el.dataset.col = col;
-      _applyGridPos(el, row, col);
+      _applyGridPos(el, row, col, areaId);
     }
     const cfg = state.config[areaId];
     if (!cfg) return;
