@@ -160,11 +160,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     </div>
   </div>
 
-  <div class="row" style="gap:6px">
-    <button id="save-btn" style="flex:1;background:#4CAF50;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:13px">💾 途中保存</button>
-    <button id="reset-btn" style="flex:1;background:#f44336;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:13px">🗑 リセット</button>
-  </div>
-  <div id="save-status" style="font-size:11px;color:#4CAF50;text-align:center;min-height:16px"></div>
+  <button id="reset-item-btn" style="width:100%;background:#f44336;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;display:none">🗑 このアイテムをリセット</button>
+  <div style="font-size:11px;color:#666;text-align:center;margin-top:2px">※ 変更は自動保存されます</div>
 
   <button id="export-btn">全アイテムの値をエクスポート</button>
   <textarea id="export-area" readonly></textarea>
@@ -317,6 +314,7 @@ function selectItem(id) {
   currentAngle = 'A';
   document.querySelectorAll('.item-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
   document.getElementById('selected-info').style.display = '';
+  document.getElementById('reset-item-btn').style.display = '';
 
   const item = ITEMS.find(x => x.id === id);
   const adj = adjustments[adjKey(id)];
@@ -681,17 +679,22 @@ document.getElementById('export-btn').onclick = () => {
   document.getElementById('export-area').value = lines.join('\n');
 };
 
-// ─── Save / Reset buttons ───
-document.getElementById('save-btn').onclick = () => {
+// ─── Per-item reset button ───
+document.getElementById('reset-item-btn').onclick = () => {
+  if (!selectedId) return;
+  const item = ITEMS.find(x => x.id === selectedId);
+  if (!item) return;
+  if (!confirm(`「${item.name}」の${currentAngle}角度の調整値を初期値に戻しますか？`)) return;
+  const cs = item.cellSize || 1;
+  const autoMargin = Math.max(0, Math.ceil(cs) - 1);
+  adjustments[adjKey(selectedId)] = {
+    cellSize: item.cellSize, pivotX: item.pivotX, pivotY: item.pivotY,
+    minRow: autoMargin, maxRow: 7 - autoMargin,
+    minCol: autoMargin, maxCol: 7 - autoMargin,
+    row: 3, col: 3, surfaceY: 0,
+  };
+  reloadSliders(selectedId);
   saveToStorage();
-  const st = document.getElementById('save-status');
-  st.textContent = '保存しました (' + new Date().toLocaleTimeString() + ')';
-  setTimeout(() => st.textContent = '', 3000);
-};
-document.getElementById('reset-btn').onclick = () => {
-  if (!confirm('すべての調整値を初期値に戻しますか？')) return;
-  localStorage.removeItem(SAVE_KEY);
-  location.reload();
 };
 
 // Auto-save on every change
