@@ -180,7 +180,7 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/furnitures_final/Shelf02_B.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/Shelf02_A.png',
     gridRow: 4, gridCol: 1, cellSize: 2.2, pivotX: -2.5, pivotY: 20.5, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
-    angleB: { cellSize: 2.1, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6 },
+    angleB: { cellSize: 2.2, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6 },
   },
   {
     id: 'furn_toyshelf2', cat: 'furn', name: 'おもちゃだな2', price: 25, theme: 'all',
