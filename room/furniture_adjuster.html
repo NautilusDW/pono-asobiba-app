@@ -382,6 +382,7 @@ function reloadSliders(id) {
   }
   placeItem(id);
   drawGrid();
+  if (_surfacePreviewOn) updateSurfacePreview();
 }
 
 function syncSlider(name, val) {
@@ -446,8 +447,15 @@ function updateSurfacePreview() {
   if (!_surfacePreviewOn || !_surfacePreviewEl || !selectedId) return;
   const adj = adjustments[adjKey(selectedId)];
   const cell = getGridCell(adj.row, adj.col);
-  const decoSize = 0.7 * GRID_CELL_PCT; // small deco size
+  const decoSize = 0.7 * GRID_CELL_PCT;
   const surfY = adj.surfaceY || 0;
+  // A/Bに応じてくま画像を切り替え
+  const bearImg = currentAngle === 'B'
+    ? '../assets/images/Rooms/furnitures_final/bear_B.png'
+    : '../assets/images/Rooms/furnitures_final/bear_A.png';
+  if (!_surfacePreviewEl.src.endsWith(bearImg.replace('../', '/'))) {
+    _surfacePreviewEl.src = bearImg;
+  }
   _surfacePreviewEl.style.left = cell.leftPct + '%';
   _surfacePreviewEl.style.bottom = cell.bottomPct + '%';
   _surfacePreviewEl.style.height = decoSize.toFixed(2) + '%';
@@ -464,10 +472,11 @@ document.getElementById('btn-surface-preview').onclick = () => {
   const btn = document.getElementById('btn-surface-preview');
   btn.textContent = '🧸 プレビューOFF';
   btn.style.background = '#ff9800';
-  // くまぬいぐるみをプレビュー用に使用
-  const previewImg = '../assets/images/Rooms/furnitures_final/bear_A.png';
+  const bearImg = currentAngle === 'B'
+    ? '../assets/images/Rooms/furnitures_final/bear_B.png'
+    : '../assets/images/Rooms/furnitures_final/bear_A.png';
   const el = document.createElement('img');
-  el.src = previewImg;
+  el.src = bearImg;
   el.style.position = 'absolute';
   el.style.width = 'auto';
   el.style.pointerEvents = 'none';
