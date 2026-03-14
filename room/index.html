@@ -839,7 +839,11 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
     if (!collides) continue;
     // デコを家具の上に乗せる判定
     if (iAmStackable && SURFACE_IDS.has(other.id)) {
-      if (!hasSurfaceOccupant(areaId, p, excludeId)) continue; // 空いてる→許可
+      const occupied = hasSurfaceOccupant(areaId, p, excludeId);
+      console.log('[STACK]', item.id, '→', other.id, 'occupied?', occupied, 'excludeId:', excludeId);
+      if (!occupied) continue; // 空いてる→許可
+    } else {
+      console.log('[OVERLAP]', item.id, 'vs', other.id, 'stackable?', iAmStackable, 'surface?', SURFACE_IDS.has(other.id));
     }
     // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
     if (isStackableItem(other) && SURFACE_IDS.has(item.id)) continue;
