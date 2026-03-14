@@ -160,7 +160,10 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     </div>
   </div>
 
-  <button id="reset-item-btn" style="width:100%;background:#f44336;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;display:none">🗑 このアイテムをリセット</button>
+  <div class="row" style="gap:6px">
+    <button id="undo-btn" style="flex:1;background:#666;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;display:none" disabled>↩ もどす</button>
+    <button id="reset-item-btn" style="flex:1;background:#f44336;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;display:none">🗑 リセット</button>
+  </div>
   <div style="font-size:11px;color:#666;text-align:center;margin-top:2px">※ 変更は自動保存されます</div>
 
   <button id="export-btn">全アイテムの値をエクスポート</button>
@@ -315,6 +318,7 @@ function selectItem(id) {
   document.querySelectorAll('.item-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
   document.getElementById('selected-info').style.display = '';
   document.getElementById('reset-item-btn').style.display = '';
+  document.getElementById('undo-btn').style.display = '';
 
   const item = ITEMS.find(x => x.id === id);
   const adj = adjustments[adjKey(id)];
@@ -394,26 +398,55 @@ function syncSlider(name, val) {
   document.getElementById('num-' + name).value = val;
 }
 
+// ─── Undo stack ───
+const undoStack = []; // { key, snapshot }
+const UNDO_MAX = 30;
+function pushUndo() {
+  if (!selectedId) return;
+  const key = adjKey(selectedId);
+  undoStack.push({ key, snapshot: Object.assign({}, adjustments[key]) });
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  document.getElementById('undo-btn').disabled = false;
+}
+document.getElementById('undo-btn').onclick = () => {
+  if (undoStack.length === 0) return;
+  const { key, snapshot } = undoStack.pop();
+  adjustments[key] = snapshot;
+  // IDと角度を復元してスライダー更新
+  const parts = key.split('_');
+  const angle = parts.pop();
+  const id = parts.join('_');
+  selectedId = id;
+  currentAngle = angle;
+  updateAngleButtons();
+  reloadSliders(id);
+  saveToStorage();
+  document.getElementById('undo-btn').disabled = undoStack.length === 0;
+};
+
 // ─── Slider/number bindings ───
 ['cellSize', 'pivotX', 'pivotY'].forEach(name => {
   const sl = document.getElementById('sl-' + name);
   const num = document.getElementById('num-' + name);
-  function update(val) {
+  let pushed = false;
+  function update(val, fromPointerDown) {
     if (!selectedId) return;
+    if (!pushed) { pushUndo(); pushed = true; }
     adjustments[adjKey(selectedId)][name] = parseFloat(val);
-    // cellSize変更時は配置範囲をリセットしない（手動設定を優先）
     placeItem(selectedId);
     drawGrid();
   }
+  sl.onpointerdown = () => { pushed = false; };
   sl.oninput = () => { num.value = sl.value; update(sl.value); };
-  num.oninput = () => { sl.value = num.value; update(num.value); };
+  num.onfocus = () => { pushUndo(); };
+  num.oninput = () => { sl.value = num.value; if (!selectedId) return; adjustments[adjKey(selectedId)][name] = parseFloat(num.value); placeItem(selectedId); drawGrid(); };
 });
 
 ['minRow', 'maxRow', 'minCol', 'maxCol'].forEach(name => {
   document.getElementById('num-' + name).oninput = (e) => {
     if (!selectedId) return;
+    pushUndo();
     adjustments[adjKey(selectedId)][name] = parseInt(e.target.value) || 0;
-    // Re-clamp current position
     const adj = adjustments[adjKey(selectedId)];
     adj.row = Math.max(adj.minRow, Math.min(adj.maxRow, adj.row));
     adj.col = Math.max(adj.minCol, Math.min(adj.maxCol, adj.col));
@@ -426,13 +459,18 @@ function syncSlider(name, val) {
 {
   const sl = document.getElementById('sl-surfaceY');
   const num = document.getElementById('num-surfaceY');
+  let pushed = false;
   function updateSurfaceY(val) {
     if (!selectedId) return;
+    if (!pushed) { pushUndo(); pushed = true; }
     adjustments[adjKey(selectedId)].surfaceY = parseFloat(val);
     updateSurfacePreview();
+    saveToStorage();
   }
+  sl.onpointerdown = () => { pushed = false; };
   sl.oninput = () => { num.value = sl.value; updateSurfaceY(sl.value); };
-  num.oninput = () => { sl.value = num.value; updateSurfaceY(num.value); };
+  num.onfocus = () => { pushUndo(); };
+  num.oninput = () => { sl.value = num.value; if (!selectedId) return; adjustments[adjKey(selectedId)].surfaceY = parseFloat(num.value); updateSurfacePreview(); saveToStorage(); };
 }
 
 // ─── Surface preview (deco on top of furniture) ───
