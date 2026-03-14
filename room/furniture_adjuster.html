@@ -275,6 +275,12 @@ function loadFromStorage() {
         if (adjustments[key + '_B']) Object.assign(adjustments[key + '_B'], data[key]);
       }
     });
+    // surfaceYが未設定のエントリにデフォルト値を補完
+    Object.keys(adjustments).forEach(key => {
+      if (adjustments[key].surfaceY == null) {
+        adjustments[key].surfaceY = 0;
+      }
+    });
     return true;
   } catch(e) { return false; }
 }
