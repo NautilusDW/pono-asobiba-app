@@ -182,9 +182,9 @@ const ROOM_ITEMS = [
     id: 'furn_shelf2', cat: 'furn', name: 'おおきなたな', price: 20, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/Shelf02_B.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/Shelf02_A.png',
-    gridRow: 4, gridCol: 1, cellSize: 2.1, pivotX: -2.5, pivotY: 20.5, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
-    angleB: { cellSize: 2.1, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6 },
-    surfaceY: -35, surfaceYB: -35,
+    gridRow: 4, gridCol: 1, cellSize: 1.9, pivotX: 16.5, pivotY: 13.7, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 1.9, pivotX: 16.5, pivotY: 28.8, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6 },
+    surfaceY: -128.5, surfaceYB: -131.5,
   },
   {
     id: 'furn_toyshelf2', cat: 'furn', name: 'おもちゃだな2', price: 25, theme: 'all',
@@ -230,9 +230,9 @@ const ROOM_ITEMS = [
     id: 'furn_chest_pink', cat: 'furn', name: 'ピンクチェスト', price: 20, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/chest_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/chest_pink_B.png',
-    gridRow: 6, gridCol: 3, cellSize: 2, pivotX: 15, pivotY: 12.3, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 6, gridCol: 3, cellSize: 2, pivotX: 15, pivotY: 12.3, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6,
     angleB: { cellSize: 2, pivotX: -16.5, pivotY: 12.3, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7 },
-    surfaceY: -35, surfaceYB: -35,
+    surfaceY: -149, surfaceYB: -145,
   },
 
   // ══ かざり ═════════════════════════════════════════════
@@ -247,8 +247,8 @@ const ROOM_ITEMS = [
     id: 'deco_bear_ribbon', cat: 'deco', name: 'リボンくま', price: 15, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/bear_ribbon_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bear_ribbon_B.png',
-    gridRow: 5, gridCol: 4, cellSize: 0.7, pivotX: 0, pivotY: 0,
-    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 0 },
+    gridRow: 5, gridCol: 4, cellSize: 0.7, pivotX: 0, pivotY: 23.3,
+    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 23.3 },
   },
   {
     id: 'deco_bunny', cat: 'deco', name: 'うさぎぬいぐるみ', price: 15, theme: 'girl',
