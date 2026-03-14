@@ -358,8 +358,8 @@ function updateAngleButtons() {
   b.style.borderColor = currentAngle === 'B' ? '#ffd700' : '#555';
 }
 
-document.getElementById('btn-angle-a').onclick = () => { currentAngle = 'A'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); };
-document.getElementById('btn-angle-b').onclick = () => { currentAngle = 'B'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); };
+document.getElementById('btn-angle-a').onclick = () => { currentAngle = 'A'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); if (_surfacePreviewOn) updateSurfacePreview(); };
+document.getElementById('btn-angle-b').onclick = () => { currentAngle = 'B'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); if (_surfacePreviewOn) updateSurfacePreview(); };
 
 function reloadSliders(id) {
   const adj = adjustments[adjKey(id)];
