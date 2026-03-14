@@ -784,21 +784,66 @@ function getFootprint(row, col, item, angle) {
   return cells;
 }
 
+// ─── スタッキング定義 ─────────────────────────────────
+// 衝突を無視するアイテム（上に物を置ける）
+const PASSTHROUGH_IDS = new Set(['deco_rug_pink']);
+// デコを上に乗せられる家具（3段棚は除外）
+const SURFACE_IDS = new Set([
+  'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
+  'furn_toyshelf2', 'furn_desk2', 'furn_bed_pink', 'furn_desk_pink',
+  'furn_chest_pink',
+]);
+// 乗せられるアイテム（cat==='deco'のもの）
+function isStackableItem(item) { return item && item.cat === 'deco'; }
+
+// 指定家具の上にすでにデコが乗っているか
+function hasSurfaceOccupant(areaId, surfacePlaced, excludeId) {
+  const cfg = state.config[areaId] || {};
+  const placed = cfg.placed || getPlacedItems(cfg);
+  const surfaceItem = getItem(surfacePlaced.id);
+  if (!surfaceItem) return false;
+  const surfaceFoot = getFootprint(surfacePlaced.row, surfacePlaced.col, surfaceItem, surfacePlaced.angle || 'A');
+  const sfSet = new Set(surfaceFoot.map(c => c.row + ',' + c.col));
+  for (const p of placed) {
+    if (p.id === excludeId || p.id === surfacePlaced.id) continue;
+    const pi = getItem(p.id);
+    if (!pi || !isStackableItem(pi)) continue;
+    const pFoot = getFootprint(p.row, p.col, pi, p.angle || 'A');
+    if (pFoot.some(c => sfSet.has(c.row + ',' + c.col))) return true;
+  }
+  return false;
+}
+
 // 指定セルに他のアイテムの占有範囲が重なるか
 function isOverlapping(areaId, row, col, item, angle, excludeId) {
   const cfg = state.config[areaId] || {};
   const placed = cfg.placed || getPlacedItems(cfg);
   const myFoot = getFootprint(row, col, item, angle);
+  const iAmStackable = isStackableItem(item);
   for (const p of placed) {
     if (p.id === excludeId) continue;
     const other = getItem(p.id);
     if (!other) continue;
+    // ラグは衝突しない
+    if (PASSTHROUGH_IDS.has(other.id)) continue;
+    // 自分がラグなら他と衝突しない
+    if (PASSTHROUGH_IDS.has(item.id)) continue;
     const otherFoot = getFootprint(p.row, p.col, other, p.angle || 'A');
+    let collides = false;
     for (const mc of myFoot) {
       for (const oc of otherFoot) {
-        if (mc.row === oc.row && mc.col === oc.col) return true;
+        if (mc.row === oc.row && mc.col === oc.col) { collides = true; break; }
       }
+      if (collides) break;
     }
+    if (!collides) continue;
+    // デコを家具の上に乗せる判定
+    if (iAmStackable && SURFACE_IDS.has(other.id)) {
+      if (!hasSurfaceOccupant(areaId, p, excludeId)) continue; // 空いてる→許可
+    }
+    // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
+    if (isStackableItem(other) && SURFACE_IDS.has(item.id)) continue;
+    return true;
   }
   return false;
 }
@@ -1214,21 +1259,27 @@ function buildRoomArea(areaData) {
   // 家具・デコアイテム（ロード時にマルチセル衝突解消）
   if (!locked) {
     const placedList = getPlacedItems(cfg);
-    const usedCells = new Set();
     let needSave = false;
+    // isOverlapping で全ルール（ラグ透過・スタッキング）を統一適用
+    // 家具を先、デコを後に並べ替えて正しく衝突判定
+    const sorted = [...placedList].sort((a, b) => {
+      const ai = getItem(a.id), bi = getItem(b.id);
+      const aDeco = ai && ai.cat === 'deco' ? 1 : 0;
+      const bDeco = bi && bi.cat === 'deco' ? 1 : 0;
+      return aDeco - bDeco;
+    });
+    // 元配列の順序を更新
+    placedList.length = 0;
+    sorted.forEach(p => placedList.push(p));
     placedList.forEach(p => {
       const item = getItem(p.id);
       if (!item) return;
       const angle = p.angle || 'A';
-      const foot = getFootprint(p.row ?? 0, p.col ?? 0, item, angle);
-      const overlaps = foot.some(c => usedCells.has(c.row + ',' + c.col));
-      if (overlaps) {
+      if (isOverlapping(areaData.id, p.row ?? 0, p.col ?? 0, item, angle, p.id)) {
         const empty = findNearestEmpty(areaData.id, p.row ?? 0, p.col ?? 0, p.id, item, angle);
         p.row = empty.row; p.col = empty.col;
         needSave = true;
       }
-      // このアイテムの占有セルを登録
-      getFootprint(p.row, p.col, item, angle).forEach(c => usedCells.add(c.row + ',' + c.col));
       div.appendChild(_makeGridItem(p, areaData.id, false));
     });
     if (needSave) { cfg.placed = placedList; saveState(); }
