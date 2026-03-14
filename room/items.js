@@ -184,8 +184,8 @@ const ROOM_ITEMS = [
   },
   {
     id: 'furn_toyshelf2', cat: 'furn', name: 'おもちゃだな2', price: 25, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures_final/ToyShelf01_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/ToyShelf01_B.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/ToyShelf01_B.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/ToyShelf01_A.png',
     gridRow: 5, gridCol: 1, cellSize: 1.3, pivotX: 0, pivotY: 0,
     angleB: { cellSize: 1.3, pivotX: 0, pivotY: 0 },
   },
