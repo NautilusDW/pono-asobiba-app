@@ -903,19 +903,20 @@
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
         const startY = 80 + Math.random() * Math.max(safeBottom - 160, 1);
 
-        const obj = new PIXI.Sprite(sunfishTex.surprised); // 001
+        const normalTex = sunfishTex.frames[0] || sunfishTex.surprised; // 002=にっこり
+        const obj = new PIXI.Sprite(normalTex);
         obj.anchor.set(0.5);
         obj.scale.set(s);
         obj.x = startX;
         obj.y = startY;
 
-        const speed = 0.006 + Math.random() * 0.005; // とても遅い
+        const speed = 0.014 + Math.random() * 0.008; // ゆっくり泳ぐ
         const c = {
           obj,
-          pattern: 'drift',  // 超低速漂流
+          pattern: 'drift',  // 低速漂流
           sunfishsprite: true, bgSprite: true,
-          octTexSurprised: sunfishTex.surprised,
-          octTexNormal: [sunfishTex.surprised, ...(sunfishTex.frames)], // 001→002
+          octTexSurprised: sunfishTex.surprised,             // 001=驚き顔（タップ時のみ）
+          octTexNormal: [normalTex],                          // 002=普通顔（常時）
           animFrame: 0,
           animTimer: Math.random() * 40,
           t: Math.random() * Math.PI * 2,
@@ -1039,7 +1040,8 @@
         obj.scale.set(s);
         obj.x = startX;
         obj.y = startY;
-        obj.alpha = 0.55; // 遠くにいる感（半透明）
+        obj.alpha = 1.0;
+        obj.tint = 0x7799bb; // 遠くにいる感（青みがかった色調）
 
         const speed = 0.018 + Math.random() * 0.010; // ゆっくり目
         const c = {
@@ -1091,7 +1093,7 @@
 
     function assignHiders(n) {
       if (fgRockSprites.length === 0 || creatures.length === 0) return;
-      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState);
+      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState && !c.submarinesprite);
       if (eligible.length === 0) return;
       const shuffledC = [...eligible].sort(() => Math.random() - 0.5);
       const shuffledR = [...fgRockSprites].sort(() => Math.random() - 0.5);
@@ -1128,16 +1130,28 @@
     }
 
     function startSeeking(c) {
-      c.hiderState = 'seeking';
-      const occupied = new Set(hiders.filter(h => h.c !== c && h.c.hiderState === 'hidden').map(h => h.rock));
+      // 飛び出した生物は自由に泳がせ、代わりに別の生物を隠れさせる
+      c.hiderState = null;
+      c.hideRock = null;
+      const idx = hiders.findIndex(h => h.c === c);
+      if (idx !== -1) hiders.splice(idx, 1);
+
+      // 現在隠れ中の生物以外から候補を選ぶ（飛び出した生物cも除外）
+      const hiddenSet = new Set(hiders.map(h => h.c));
+      const eligible = creatures.filter(cr =>
+        cr !== c && !hiddenSet.has(cr) && cr.pattern !== 'sway' && !cr.hiderState && !cr.submarinesprite
+      );
+      if (eligible.length === 0) return;
+      const newC = eligible[Math.floor(Math.random() * eligible.length)];
+      const occupied = new Set(hiders.filter(h => h.c.hiderState === 'hidden').map(h => h.rock));
       const available = fgRockSprites.filter(r => !occupied.has(r));
       const rock = available.length > 0
         ? available[Math.floor(Math.random() * available.length)]
-        : (fgRockSprites.length > 0 ? fgRockSprites[Math.floor(Math.random() * fgRockSprites.length)] : null);
-      if (!rock) { c.hiderState = null; return; }
-      c.hideRock = rock;
-      const hider = hiders.find(h => h.c === c);
-      if (hider) hider.rock = rock;
+        : null;
+      if (!rock) return;
+      newC.hiderState = 'seeking';
+      newC.hideRock = rock;
+      hiders.push({ c: newC, rock });
     }
 
     // ─── Bubbles ───────────────────────────────────────────
@@ -1902,16 +1916,16 @@
           }
 
           case 'drift': {
-            // Ultra-slow languid drift with rare direction nudges
+            // ゆっくり漂流（マンボウ用）
             c.driftNudgeTimer -= delta;
             if (c.driftNudgeTimer <= 0) {
               const a = Math.random() * Math.PI * 2;
-              c.vx = Math.cos(a) * c.speed * 0.18;
-              c.vy = Math.sin(a) * c.speed * 0.09;
-              c.driftNudgeTimer = 90 + Math.random() * 120;
+              c.vx = Math.cos(a) * c.speed * 0.45;
+              c.vy = Math.sin(a) * c.speed * 0.25;
+              c.driftNudgeTimer = 60 + Math.random() * 90;
             }
-            c.vx *= Math.pow(0.990, delta);
-            c.vy *= Math.pow(0.990, delta);
+            c.vx *= Math.pow(0.994, delta);
+            c.vy *= Math.pow(0.994, delta);
             c.obj.x += c.vx * sw * DT;
             c.obj.y += c.vy * sh * DT;
             if (!c.sunfishsprite) c.obj.rotation += 0.0003 * delta;
