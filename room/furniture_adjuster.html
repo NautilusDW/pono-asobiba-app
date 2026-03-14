@@ -511,6 +511,10 @@ function placeItem(id) {
   const needsNew = !_placedEl || !item || !currentSrc.endsWith(imgSrc.replace('../', '/'));
 
   if (needsNew) {
+    // プレビューを一時退避してからクリア
+    if (_surfacePreviewEl && _surfacePreviewEl.parentNode === itemLayer) {
+      itemLayer.removeChild(_surfacePreviewEl);
+    }
     itemLayer.innerHTML = '';
     if (!id || !item) { _placedEl = null; return; }
 
@@ -551,6 +555,11 @@ function placeItem(id) {
   }
 
   updateItemPos(id);
+  // プレビューが有効なら再追加
+  if (_surfacePreviewOn && _surfacePreviewEl) {
+    itemLayer.appendChild(_surfacePreviewEl);
+    updateSurfacePreview();
+  }
 }
 
 // ─── Draw grid ───
