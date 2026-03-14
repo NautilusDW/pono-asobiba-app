@@ -897,7 +897,7 @@
       const count = Math.min(n, 2);
       const safeBottom = H() * (isMobile() ? 0.55 : 0.72);
       for (let i = 0; i < count; i++) {
-        const baseSize = (150 + Math.random() * 50) * mobSf();
+        const baseSize = (110 + Math.random() * 30) * mobSf();
         // Sunfish images ~600px wide
         const s = baseSize / 600;
         const startX = 80 + Math.random() * Math.max(W() - 160, 1);
@@ -910,7 +910,7 @@
         obj.x = startX;
         obj.y = startY;
 
-        const speed = 0.014 + Math.random() * 0.008; // ゆっくり泳ぐ
+        const speed = 0.025 + Math.random() * 0.010; // のんびり泳ぐ
         const c = {
           obj,
           pattern: 'drift',  // 低速漂流
@@ -1041,7 +1041,7 @@
         obj.x = startX;
         obj.y = startY;
         obj.alpha = 1.0;
-        obj.tint = 0x7799bb; // 遠くにいる感（青みがかった色調）
+        obj.tint = 0x99ccdd; // 遠くにいる感（背景に馴染む明るい水色）
 
         const speed = 0.018 + Math.random() * 0.010; // ゆっくり目
         const c = {
@@ -1916,16 +1916,16 @@
           }
 
           case 'drift': {
-            // ゆっくり漂流（マンボウ用）
-            c.driftNudgeTimer -= delta;
-            if (c.driftNudgeTimer <= 0) {
-              const a = Math.random() * Math.PI * 2;
-              c.vx = Math.cos(a) * c.speed * 0.45;
-              c.vy = Math.sin(a) * c.speed * 0.25;
-              c.driftNudgeTimer = 60 + Math.random() * 90;
+            // マンボウ: 基本直進、方向転換はほぼなし
+            c.vx *= Math.pow(0.9997, delta);
+            c.vy *= Math.pow(0.9997, delta);
+            // 速度が落ちすぎたら同じ方向を維持して加速
+            const spd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
+            if (spd < c.speed * 0.3) {
+              const dir = Math.atan2(c.vy, c.vx);
+              c.vx = Math.cos(dir) * c.speed * 0.7;
+              c.vy = Math.sin(dir) * c.speed * 0.15;
             }
-            c.vx *= Math.pow(0.994, delta);
-            c.vy *= Math.pow(0.994, delta);
             c.obj.x += c.vx * sw * DT;
             c.obj.y += c.vy * sh * DT;
             if (!c.sunfishsprite) c.obj.rotation += 0.0003 * delta;
