@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>びっくりボウリング | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap"></noscript>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   width: 100%; height: 100dvh; overflow: hidden;
@@ -51,8 +52,14 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const bannerEl = document.getElementById('banner');
-let W, H;
-function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+let W, H, logW, logH;
+function resize() {
+  logW = window.innerWidth;
+  logH = window.innerHeight;
+  // Don't use devicePixelRatio for canvas size — keep it 1:1 for performance
+  W = canvas.width = logW;
+  H = canvas.height = logH;
+}
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
@@ -75,17 +82,16 @@ function makeWav(freq, dur, vol, decay) {
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
 
-const POOL_SIZE = 8;
+const POOL_SIZE = 6;
 const audioPool = [];
 let poolIdx = 0;
 for (let i = 0; i < POOL_SIZE; i++) audioPool.push(new Audio());
 
 const bonkSounds = [];
-for (let i = 0; i < 5; i++) bonkSounds.push(makeWav(300 + i * 100, 0.12, 0.5, 25));
-const pocketSounds = [makeWav(500, 0.18, 0.5, 15), makeWav(700, 0.18, 0.5, 15), makeWav(900, 0.18, 0.5, 15)];
-const strikeSounds = [];
-for (let i = 0; i < 5; i++) strikeSounds.push(makeWav(400 + i * 150, 0.3, 0.5, 10));
-const launchSound = makeWav(400, 0.2, 0.5, 12);
+for (let i = 0; i < 3; i++) bonkSounds.push(makeWav(300 + i * 150, 0.1, 0.5, 30));
+const pocketSounds = [makeWav(500, 0.15, 0.5, 18), makeWav(700, 0.15, 0.5, 18)];
+const strikeSound = makeWav(500, 0.25, 0.5, 10);
+const launchSound = makeWav(400, 0.15, 0.5, 15);
 
 const silentWav = makeWav(440, 0.01, 0, 50);
 let audioUnlocked = false;
@@ -108,15 +114,15 @@ function playSound(url) {
   a.play().catch(() => {});
 }
 function playBonk() { playSound(bonkSounds[Math.floor(Math.random() * bonkSounds.length)]); }
-function playPocket() { pocketSounds.forEach((url, i) => setTimeout(() => playSound(url), i * 60)); }
-function playStrike() { strikeSounds.forEach((url, i) => setTimeout(() => playSound(url), i * 80)); }
+function playPocket() { playSound(pocketSounds[Math.floor(Math.random() * pocketSounds.length)]); }
+function playStrike() { playSound(strikeSound); }
 function playLaunch() { playSound(launchSound); }
 
-// ── Physics (reduce iterations for mobile performance) ──
+// ── Physics ──
 const engine = Engine.create({
   gravity: { x: 0, y: 0 },
-  positionIterations: 4,   // default 6
-  velocityIterations: 3,   // default 4
+  positionIterations: 3,
+  velocityIterations: 2,
 });
 const world = engine.world;
 
@@ -129,20 +135,17 @@ const MAX_PINS = 15;
 const PIN_COUNT = 13;
 const pinImages = [];
 let pinsLoaded = 0;
-let allPinsLoaded = false;
 
 for (let i = 0; i < PIN_COUNT; i++) {
   const img = new Image();
-  img.onload = () => { pinsLoaded++; if (pinsLoaded >= PIN_COUNT) allPinsLoaded = true; };
+  img.onload = () => { pinsLoaded++; };
   img.src = `pins/pin_${i}.png`;
   pinImages.push(img);
 }
 
-// Confetti colors (from pin images' dominant colors)
 const CONFETTI_COLORS = [
   { r: 255, g: 143, b: 160 }, { r: 255, g: 179, b: 128 }, { r: 255, g: 224, b: 128 },
   { r: 160, g: 232, b: 160 }, { r: 128, g: 200, b: 255 }, { r: 192, g: 160, b: 255 },
-  { r: 255, g: 176, b: 208 }, { r: 160, g: 224, b: 224 },
 ];
 
 let pins = [], ball = null, walls = [], pockets = [];
@@ -173,18 +176,14 @@ function createWalls() {
 function createPins() {
   pins.forEach(p => World.remove(world, p));
   pins = [];
-  // Calculate grid to fit exactly MAX_PINS on any screen
   const areaW = W - 80, areaH = H * 0.4;
-  // Try different col counts, pick the one that fits MAX_PINS best
   let bestCols = 3, bestRows = 5;
   for (let c = 3; c <= 6; c++) {
     const r = Math.ceil(MAX_PINS / c);
     const spX = areaW / c, spY = areaH / r;
-    const sp = Math.min(spX, spY);
-    if (sp >= PIN_R * 2.1) { bestCols = c; bestRows = r; break; }
+    if (Math.min(spX, spY) >= PIN_R * 2.1) { bestCols = c; bestRows = r; break; }
   }
-  const cols = bestCols;
-  const rows = bestRows;
+  const cols = bestCols, rows = bestRows;
   const spacing = Math.min(areaW / cols, areaH / rows, PIN_R * 2.6);
   const startX = (W - (cols - 1) * spacing) / 2;
   const startY = H * 0.06 + 30;
@@ -261,7 +260,7 @@ Events.on(engine, 'collisionStart', event => {
     const spd = Math.sqrt(dvx * dvx + dvy * dvy);
     if (spd > 1.5 && soundThrottle <= 0) {
       playBonk();
-      soundThrottle = 2;
+      soundThrottle = 4; // longer throttle = fewer sounds = less audio overhead
     }
     const ba = pair.bodyA, bb = pair.bodyB;
     if (ba.isPin && !ba.knocked) {
@@ -325,6 +324,7 @@ function resetRound() {
 
 // ── Draw ──
 const pinDrawSize = PIN_R * 2;
+const halfPin = pinDrawSize / 2;
 
 function drawTable() {
   ctx.fillStyle = '#1e6b40';
@@ -383,48 +383,53 @@ function drawSlingshot() {
   ctx.restore();
 }
 
+// Pin drawing: NO save/translate/rotate/restore — marbles are round so rotation is invisible
 function drawPin(pin) {
   if (pin.pocketed) return;
-  const { x, y } = pin.position;
   const img = pinImages[pin.imgIdx];
   if (img && img.complete) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(pin.angle);
-    ctx.drawImage(img, -pinDrawSize / 2, -pinDrawSize / 2, pinDrawSize, pinDrawSize);
-    ctx.restore();
+    ctx.drawImage(img, pin.position.x - halfPin, pin.position.y - halfPin, pinDrawSize, pinDrawSize);
   } else {
     ctx.beginPath();
-    ctx.arc(x, y, PIN_R, 0, Math.PI * 2);
+    ctx.arc(pin.position.x, pin.position.y, PIN_R, 0, Math.PI * 2);
     ctx.fillStyle = '#FFB380';
     ctx.fill();
   }
 }
 
+// Pre-render ball to offscreen canvas (avoid gradient/ellipse every frame)
+const ballCanvas = document.createElement('canvas');
+const ballSize = BALL_R * 2 + 8;
+ballCanvas.width = ballCanvas.height = ballSize;
+const bctx = ballCanvas.getContext('2d');
+const bcx = ballSize / 2, bcy = ballSize / 2;
+// Shadow
+bctx.globalAlpha = 0.25;
+bctx.beginPath();
+bctx.ellipse(bcx + 3, bcy + 3, BALL_R, BALL_R * 0.9, 0, 0, Math.PI * 2);
+bctx.fillStyle = '#000';
+bctx.fill();
+bctx.globalAlpha = 1;
+// Ball body
+bctx.beginPath();
+bctx.arc(bcx, bcy, BALL_R, 0, Math.PI * 2);
+bctx.fillStyle = '#EE3333';
+bctx.fill();
+bctx.strokeStyle = '#991111';
+bctx.lineWidth = 2;
+bctx.stroke();
+// Shine
+bctx.globalAlpha = 0.45;
+bctx.beginPath();
+bctx.ellipse(bcx - BALL_R * 0.3, bcy - BALL_R * 0.25, BALL_R * 0.3, BALL_R * 0.15, -0.5, 0, Math.PI * 2);
+bctx.fillStyle = '#fff';
+bctx.fill();
+
+const halfBall = ballSize / 2;
+
 function drawBall() {
   if (!ball) return;
-  const { x, y } = ball.position;
-  ctx.save();
-  ctx.globalAlpha = 0.25;
-  ctx.beginPath();
-  ctx.ellipse(x + 3, y + 3, BALL_R, BALL_R * 0.9, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#000';
-  ctx.fill();
-  ctx.restore();
-  ctx.beginPath();
-  ctx.arc(x, y, BALL_R, 0, Math.PI * 2);
-  ctx.fillStyle = '#EE3333';
-  ctx.fill();
-  ctx.strokeStyle = '#991111';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.save();
-  ctx.globalAlpha = 0.45;
-  ctx.beginPath();
-  ctx.ellipse(x - BALL_R * 0.3, y - BALL_R * 0.25, BALL_R * 0.3, BALL_R * 0.15, -0.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  ctx.restore();
+  ctx.drawImage(ballCanvas, ball.position.x - halfBall, ball.position.y - halfBall);
   if (!ballLaunched && !dragging) {
     ctx.save();
     ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.004) * 0.2;
@@ -436,17 +441,17 @@ function drawBall() {
   }
 }
 
-// ── Confetti ──
+// ── Confetti (reduced save/restore: batch by color) ──
 const confettiList = [];
 function spawnConfetti(cx, cy, n) {
-  for (let i = 0; i < n; i++) {
+  const count = Math.min(n, 60); // cap confetti on mobile
+  for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
     const c = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
     confettiList.push({
       x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 3,
       cr: c.r, cg: c.g, cb: c.b,
-      size: 5 + Math.random() * 7, rot: Math.random() * 6.28,
-      rotSpd: (Math.random() - 0.5) * 0.2, life: 1,
+      size: 5 + Math.random() * 7, life: 1,
     });
   }
 }
@@ -455,20 +460,18 @@ function updateConfetti() {
   for (let i = len - 1; i >= 0; i--) {
     const c = confettiList[i];
     c.x += c.vx; c.y += c.vy; c.vy += 0.08;
-    c.rot += c.rotSpd; c.life -= 0.008;
+    c.life -= 0.012; // faster decay = shorter confetti = less rendering
     if (c.life <= 0) {
       confettiList[i] = confettiList[--len];
       confettiList.length = len;
       continue;
     }
-    ctx.save();
+    // Simple rect without save/restore/rotate
     ctx.globalAlpha = c.life;
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.rot);
     ctx.fillStyle = `rgb(${c.cr},${c.cg},${c.cb})`;
-    ctx.fillRect(-c.size / 2, -c.size / 4, c.size, c.size / 2);
-    ctx.restore();
+    ctx.fillRect(c.x - c.size / 2, c.y - c.size / 4, c.size, c.size / 2);
   }
+  if (len > 0) ctx.globalAlpha = 1;
 }
 
 // ── Settle ──
@@ -476,27 +479,30 @@ function checkSettle() {
   if (!ballLaunched || roundResetting) return;
   launchElapsed++;
   if (launchElapsed > 100) {
-    const all = [ball];
-    for (let i = 0; i < pins.length; i++) if (!pins[i].pocketed) all.push(pins[i]);
-    for (let i = 0; i < all.length; i++) {
-      const b = all[i];
-      if (!b) continue;
+    for (let i = 0; i < pins.length; i++) {
+      const b = pins[i];
+      if (b.pocketed) continue;
       const spd = Math.sqrt(b.velocity.x * b.velocity.x + b.velocity.y * b.velocity.y);
       if (spd < 2 && spd > 0.01) Body.setVelocity(b, { x: b.velocity.x * 0.8, y: b.velocity.y * 0.8 });
+    }
+    if (ball) {
+      const spd = Math.sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+      if (spd < 2 && spd > 0.01) Body.setVelocity(ball, { x: ball.velocity.x * 0.8, y: ball.velocity.y * 0.8 });
     }
   }
   let maxSpd = 0;
   if (ball) {
-    const s = Math.sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
+    const s = ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y;
     if (s > maxSpd) maxSpd = s;
   }
   for (let i = 0; i < pins.length; i++) {
     if (pins[i].pocketed) continue;
     const b = pins[i];
-    const s = Math.sqrt(b.velocity.x * b.velocity.x + b.velocity.y * b.velocity.y);
+    const s = b.velocity.x * b.velocity.x + b.velocity.y * b.velocity.y;
     if (s > maxSpd) maxSpd = s;
   }
-  if (maxSpd < 0.4) {
+  // Compare squared speed (avoid sqrt)
+  if (maxSpd < 0.16) { // 0.4^2
     settleTimer++;
     if (settleTimer > 25) {
       if (knockedCount >= totalPins * 0.9) {
@@ -514,12 +520,18 @@ function checkSettle() {
   } else { settleTimer = 0; }
 }
 
-// ── Main ──
-function loop() {
-  Engine.update(engine, 1000 / 60);
+// ── Main (adaptive timestep) ──
+let lastTime = 0;
+function loop(time) {
+  // Adaptive physics: use actual delta, capped at 33ms (30fps minimum)
+  const dt = Math.min((time - lastTime) || 16.67, 33.33);
+  lastTime = time;
+
+  Engine.update(engine, dt);
   if (soundThrottle > 0) soundThrottle--;
   checkPockets();
   checkSettle();
+
   ctx.clearRect(0, 0, W, H);
   drawTable();
   for (let i = 0; i < pins.length; i++) drawPin(pins[i]);
