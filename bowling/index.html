@@ -56,68 +56,55 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (lazy init on first gesture) ──
+// ── Audio (same pattern as breakout) ──
 let audioCtx = null;
-function getAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+function getAC() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
+function withAudio(fn) {
+  const ac = getAC();
+  if (ac.state === 'running') fn(ac);
+  else ac.resume().then(() => fn(ac)).catch(() => {});
+}
+document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
 
+function beep(ac, freq, t, dur, type, vol) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t); o.stop(t + dur + 0.02);
+}
 function playBonk(intensity) {
-  const ctx = getAudio();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'triangle';
-  osc.frequency.value = 200 + Math.random() * 400 + intensity * 400;
-  gain.gain.setValueAtTime(Math.min(0.5, intensity * 0.35), ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(); osc.stop(ctx.currentTime + 0.12);
+  withAudio(ac => beep(ac, 200 + Math.random() * 400 + intensity * 400, ac.currentTime, 0.12, 'triangle', Math.min(0.5, intensity * 0.35)));
 }
 function playPocket() {
-  const ctx = getAudio();
-  [0, 60, 120].forEach((d, i) => {
-    setTimeout(() => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 500 + i * 200;
-      gain.gain.setValueAtTime(0.45, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime + 0.18);
-    }, d);
+  withAudio(ac => {
+    [0, 60, 120].forEach((d, i) => {
+      setTimeout(() => beep(ac, 500 + i * 200, ac.currentTime, 0.18, 'sine', 0.45), d);
+    });
   });
 }
 function playStrike() {
-  const ctx = getAudio();
-  [0, 80, 160, 240, 320].forEach((d, i) => {
-    setTimeout(() => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-      osc.frequency.value = 400 + i * 150;
-      gain.gain.setValueAtTime(0.45, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime + 0.3);
-    }, d);
+  withAudio(ac => {
+    [0, 80, 160, 240, 320].forEach((d, i) => {
+      setTimeout(() => beep(ac, 400 + i * 150, ac.currentTime, 0.3, i % 2 === 0 ? 'sine' : 'triangle', 0.45), d);
+    });
   });
 }
 function playLaunch() {
-  const ctx = getAudio();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(150, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
-  gain.gain.setValueAtTime(0.45, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(); osc.stop(ctx.currentTime + 0.2);
+  withAudio(ac => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(150, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(600, ac.currentTime + 0.15);
+    g.gain.setValueAtTime(0.45, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.22);
+  });
 }
 
 // ── Physics ──
@@ -214,7 +201,7 @@ function createBall() {
 // ── Slingshot input ──
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
-  getAudio();
+  getAC();
   if (ballLaunched || roundResetting) return;
   const dx = e.clientX - ball.position.x, dy = e.clientY - ball.position.y;
   if (dx * dx + dy * dy < (BALL_R * 4) ** 2) {
