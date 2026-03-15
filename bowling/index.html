@@ -66,7 +66,9 @@ canvas { display: block; width: 100%; height: 100%; }
   <label>壁反発 (WALL) <input type="range" min="0" max="100" value="90" id="sl-wall"><span class="val" id="v-wall">0.9</span></label>
   <label>ピン質量 <input type="range" min="1" max="300" value="15" id="sl-pin"><span class="val" id="v-pin">0.15</span></label>
   <label>ボール質量 <input type="range" min="100" max="3000" value="800" id="sl-ball"><span class="val" id="v-ball">8</span></label>
-  <p style="margin-top:8px;color:#aaa;font-size:11px">値を変更するとリアルタイムで反映されます。次のラウンドから質量が適用されます。</p>
+  <label>Canvas解像度 <input type="range" min="25" max="100" value="100" id="sl-res"><span class="val" id="v-res">100%</span></label>
+  <label><input type="checkbox" id="cb-mute"> 🔇 音をミュート（FPS比較用）</label>
+  <p style="margin-top:8px;color:#aaa;font-size:11px">FPSは左上に表示。ミュートON/OFFでFPS差を確認してください。</p>
 </div>
 
 <script>
@@ -119,6 +121,7 @@ function unlockAudio() {
 document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 function playSound(url) {
+  if (muteSound) return;
   const a = audioPool[poolIdx];
   poolIdx = (poolIdx + 1) % POOL_SIZE;
   a.src = url;
@@ -566,6 +569,19 @@ function checkSettle() {
 }
 
 // ── Main ──
+// ── FPS counter ──
+let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
+function updateFps() {
+  fpsFrames++;
+  const now = performance.now();
+  if (now - fpsLast >= 500) {
+    fpsDisplay = (fpsFrames / ((now - fpsLast) / 1000)).toFixed(0);
+    fpsFrames = 0; fpsLast = now;
+  }
+}
+
+let muteSound = false;
+
 function loop() {
   if (ballLaunched) {
     physicsStep();
@@ -577,6 +593,14 @@ function loop() {
   drawBodies();
   drawSlingshot();
   updateConfetti();
+
+  // FPS display
+  updateFps();
+  ctx.fillStyle = '#0f0';
+  ctx.font = '14px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(fpsDisplay + ' fps' + (muteSound ? ' [MUTE]' : ''), 60, 24);
+
   requestAnimationFrame(loop);
 }
 
@@ -602,6 +626,14 @@ bindSlider('sl-ball', 'v-ball', v => (v / 100).toFixed(1), v => {
   BALL_MASS = +v;
   if (ballIdx >= 0) bodies[ballIdx].mass = BALL_MASS;
 });
+bindSlider('sl-res', 'v-res', v => v + '%', v => {
+  const scale = parseInt(v) / 100;
+  W = canvas.width = Math.round(window.innerWidth * scale);
+  H = canvas.height = Math.round(window.innerHeight * scale);
+  canvas.style.width = '100%'; canvas.style.height = '100%';
+  setupWalls(); renderTable(); resetRound();
+});
+document.getElementById('cb-mute').addEventListener('change', e => { muteSound = e.target.checked; });
 </script>
 </body>
 </html>
