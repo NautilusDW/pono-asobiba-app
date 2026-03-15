@@ -43,23 +43,22 @@ window.addEventListener('resize', resize);
 // ── Audio (iOS unlock) ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
-let audioUnlocked = false;
 function ensureAudio() {
   if (!audioCtx) audioCtx = new AudioCtx();
-  if (!audioUnlocked) {
-    audioCtx.resume().then(() => { audioUnlocked = true; });
-    // Play silent buffer to unlock on iOS
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function unlockAudio() {
+  ensureAudio();
+  try {
     const buf = audioCtx.createBuffer(1, 1, 22050);
     const src = audioCtx.createBufferSource();
     src.buffer = buf;
     src.connect(audioCtx.destination);
     src.start(0);
-    audioUnlocked = true;
-  }
+  } catch(e) {}
 }
-// Unlock on very first touch
-['touchstart','mousedown'].forEach(evt =>
-  document.addEventListener(evt, ensureAudio, { once: true })
+['touchstart','touchend','mousedown','click'].forEach(evt =>
+  document.addEventListener(evt, unlockAudio, { once: true, capture: true })
 );
 function playPop(pitch) {
   ensureAudio();

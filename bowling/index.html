@@ -58,19 +58,21 @@ window.addEventListener('resize', () => { resize(); resetRound(); });
 
 // ── Audio (iOS unlock) ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx, audioUnlocked = false;
+let audioCtx;
 function ensureAudio() {
   if (!audioCtx) audioCtx = new AudioCtx();
-  if (!audioUnlocked) {
-    audioCtx.resume().then(() => { audioUnlocked = true; });
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function unlockAudio() {
+  ensureAudio();
+  try {
     const buf = audioCtx.createBuffer(1, 1, 22050);
     const src = audioCtx.createBufferSource();
     src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
-    audioUnlocked = true;
-  }
+  } catch(e) {}
 }
-['touchstart','mousedown'].forEach(evt =>
-  document.addEventListener(evt, ensureAudio, { once: true })
+['touchstart','touchend','mousedown','click'].forEach(evt =>
+  document.addEventListener(evt, unlockAudio, { once: true, capture: true })
 );
 
 function playBonk(intensity) {
