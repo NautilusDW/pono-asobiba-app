@@ -40,13 +40,27 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// ── Audio ──
+// ── Audio (iOS unlock) ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
+let audioUnlocked = false;
 function ensureAudio() {
   if (!audioCtx) audioCtx = new AudioCtx();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (!audioUnlocked) {
+    audioCtx.resume().then(() => { audioUnlocked = true; });
+    // Play silent buffer to unlock on iOS
+    const buf = audioCtx.createBuffer(1, 1, 22050);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    src.start(0);
+    audioUnlocked = true;
+  }
 }
+// Unlock on very first touch
+['touchstart','mousedown'].forEach(evt =>
+  document.addEventListener(evt, ensureAudio, { once: true })
+);
 function playPop(pitch) {
   ensureAudio();
   const osc = audioCtx.createOscillator();
@@ -298,7 +312,7 @@ function popBubble(b, chainDepth) {
 
 // ── Spawn ──
 function spawnBubble() {
-  if (bubbles.length < 35) {
+  if (bubbles.length < 55) {
     bubbles.push(new Bubble());
   }
 }
@@ -381,7 +395,7 @@ function loop(time) {
 
   // Spawn
   spawnTimer += dt;
-  if (spawnTimer > 400) { spawnBubble(); spawnTimer = 0; }
+  if (spawnTimer > 250) { spawnBubble(); spawnTimer = 0; }
   goldenTimer += dt;
   if (goldenTimer > GOLDEN_INTERVAL) { spawnGolden(); goldenTimer = 0; }
 
@@ -412,7 +426,7 @@ function loop(time) {
 }
 
 // Initial bubbles
-for (let i = 0; i < 15; i++) {
+for (let i = 0; i < 30; i++) {
   const b = new Bubble();
   b.y = Math.random() * H;
   b.opacity = 1;
