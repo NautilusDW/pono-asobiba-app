@@ -112,14 +112,18 @@ function playPocket() { pocketSounds.forEach((url, i) => setTimeout(() => playSo
 function playStrike() { strikeSounds.forEach((url, i) => setTimeout(() => playSound(url), i * 80)); }
 function playLaunch() { playSound(launchSound); }
 
-// ── Physics ──
-const engine = Engine.create({ gravity: { x: 0, y: 0 } });
+// ── Physics (reduce iterations for mobile performance) ──
+const engine = Engine.create({
+  gravity: { x: 0, y: 0 },
+  positionIterations: 4,   // default 6
+  velocityIterations: 3,   // default 4
+});
 const world = engine.world;
 
-const POCKET_R = 35;
-const PIN_R = 26;
-const BALL_R = 30;
-const MAX_PINS = 30;
+const POCKET_R = 40;
+const PIN_R = 34;
+const BALL_R = 32;
+const MAX_PINS = 20;
 
 // ── Load pin images ──
 const PIN_COUNT = 13;
@@ -161,7 +165,7 @@ function createWalls() {
     Bodies.rectangle(-t / 2, H / 2, t, H - g * 2, { isStatic: true }),
     Bodies.rectangle(W + t / 2, H / 2, t, H - g * 2, { isStatic: true }),
   ];
-  walls.forEach(w => { w.restitution = 0.9; });
+  walls.forEach(w => { w.restitution = 0.7; });
   World.add(world, walls);
   pockets = getPocketPositions();
 }
@@ -169,10 +173,10 @@ function createWalls() {
 function createPins() {
   pins.forEach(p => World.remove(world, p));
   pins = [];
-  const spacing = PIN_R * 2.3;
-  const cols = Math.min(6, Math.floor((W - 80) / spacing));
+  const spacing = PIN_R * 2.4;
+  const cols = Math.min(5, Math.floor((W - 80) / spacing));
   const maxRows = Math.floor(MAX_PINS / cols);
-  const rows = Math.min(maxRows, Math.floor((H * 0.4) / spacing));
+  const rows = Math.min(maxRows, Math.floor((H * 0.45) / spacing));
   const startX = (W - (cols - 1) * spacing) / 2;
   const startY = H * 0.08 + 40;
   totalPins = cols * rows;
@@ -183,7 +187,7 @@ function createPins() {
       const x = startX + c * spacing + (Math.random() - 0.5) * 3;
       const y = startY + r * spacing + (Math.random() - 0.5) * 3;
       const pin = Bodies.circle(x, y, PIN_R, {
-        restitution: 0.6, friction: 0.05, frictionAir: 0.04, density: 0.0003,
+        restitution: 0.5, friction: 0.08, frictionAir: 0.06, density: 0.0003,
       });
       pin.isPin = true; pin.knocked = false;
       pin.initX = x; pin.initY = y;
@@ -198,7 +202,7 @@ function createPins() {
 function createBall() {
   if (ball) World.remove(world, ball);
   ball = Bodies.circle(W / 2, H * 0.78, BALL_R, {
-    restitution: 0.5, friction: 0.01, frictionAir: 0.008, density: 0.05,
+    restitution: 0.5, friction: 0.02, frictionAir: 0.012, density: 0.05,
   });
   ball.isBall = true;
   ballLaunched = false;
@@ -472,7 +476,7 @@ function updateConfetti() {
 function checkSettle() {
   if (!ballLaunched || roundResetting) return;
   launchElapsed++;
-  if (launchElapsed > 150) {
+  if (launchElapsed > 100) {
     const all = [ball];
     for (let i = 0; i < pins.length; i++) if (!pins[i].pocketed) all.push(pins[i]);
     for (let i = 0; i < all.length; i++) {
