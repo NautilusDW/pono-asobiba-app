@@ -85,16 +85,12 @@ resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
 // ── Audio (Web Audio API) ──
-// ページロード時にAudioContextを作成（suspended状態）→ 初回タッチでresume
-const AC = window.AudioContext || window.webkitAudioContext;
-let audioCtx = new AC();
-let unlocked = false;
-let bonkBuf, pocketBuf, strikeBuf, launchBuf;
+let audioCtx = null;
+let bonkBuf = null, pocketBuf = null, strikeBuf = null, launchBuf = null;
 
-// AudioBuffer生成（プログラム的にサイン波を書き込む）
-function makeBuf(freq, dur, vol, decay) {
-  const sr = audioCtx.sampleRate, n = sr * dur | 0;
-  const ab = audioCtx.createBuffer(1, n, sr);
+function makeBuf(ctx, freq, dur, vol, decay) {
+  const sr = ctx.sampleRate, n = sr * dur | 0;
+  const ab = ctx.createBuffer(1, n, sr);
   const d = ab.getChannelData(0);
   for (let i = 0; i < n; i++) {
     const t = i / sr;
@@ -103,41 +99,43 @@ function makeBuf(freq, dur, vol, decay) {
   return ab;
 }
 
-// バッファはページロード時に即生成（AudioContextがsuspendedでも作れる）
-bonkBuf = makeBuf(400, 0.08, 0.5, 35);
-pocketBuf = makeBuf(600, 0.12, 0.5, 20);
-strikeBuf = makeBuf(500, 0.25, 0.5, 10);
-launchBuf = makeBuf(400, 0.12, 0.5, 18);
-
-// 初回ユーザー操作でiOSオーディオロック解除
-function unlockAudio() {
-  if (unlocked) return;
-  // 必ず同期的にresumeを呼ぶ（イベントハンドラ第一階層）
-  audioCtx.resume().then(() => { unlocked = true; });
-  // 無音バッファを再生してiOSのオーディオロックを強制解除
-  const buf = audioCtx.createBuffer(1, 1, 22050);
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  src.connect(audioCtx.destination);
-  src.start(0);
-  // iOS: resume()のthen前でも、同期的にunlock扱いにする
-  unlocked = true;
+// ユーザージェスチャ内で呼ぶ。何度呼んでもOK。
+function ensureAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!audioCtx) {
+    audioCtx = new AC();
+    bonkBuf = makeBuf(audioCtx, 400, 0.08, 0.5, 35);
+    pocketBuf = makeBuf(audioCtx, 600, 0.12, 0.5, 20);
+    strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
+    launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  // 無音バッファ再生でiOSロック解除（毎回やっても害なし）
+  try {
+    const b = audioCtx.createBuffer(1, 1, 22050);
+    const s = audioCtx.createBufferSource();
+    s.buffer = b;
+    s.connect(audioCtx.destination);
+    s.start(0);
+  } catch(e) {}
 }
 
-document.addEventListener('pointerdown', unlockAudio);
-document.addEventListener('touchstart', unlockAudio);
+// 全タッチイベントでensureAudioを呼ぶ
+document.addEventListener('pointerdown', ensureAudio);
+document.addEventListener('touchstart', ensureAudio);
 
-// タブ復帰時の再resume
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && audioCtx.state !== 'running') {
+  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') {
     audioCtx.resume();
   }
 });
 
-// 再生関数（音量・再生レート指定可能）
+// 再生関数 — unlocked判定をやめてcontextのstate確認のみ
 function playBuf(buf, volume, rate) {
-  if (muteSound || !unlocked || !buf) return;
-  if (audioCtx.state !== 'running') audioCtx.resume();
+  if (muteSound || !audioCtx || !buf) return;
+  if (audioCtx.state !== 'running') return; // まだrunningじゃなければ諦める（FPS優先）
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
   src.playbackRate.value = rate || 1;
@@ -152,7 +150,6 @@ function playBuf(buf, volume, rate) {
   src.start(0);
 }
 function playBonk(intensity) {
-  // intensity: 0〜1 で衝突の強さ。音量・ピッチが変わる
   const vol = 0.15 + intensity * 0.85;
   const rate = 0.7 + intensity * 0.6 + (Math.random() - 0.5) * 0.2;
   playBuf(bonkBuf, vol, rate);
@@ -379,6 +376,7 @@ function checkPockets() {
 // ── Slingshot input ──
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
+  ensureAudio(); // ドラッグ開始時に確実にAudioContextをアンロック
   if (ballLaunched || roundResetting || ballIdx < 0) return;
   const b = bodies[ballIdx];
   const dx = e.clientX - b.x, dy = e.clientY - b.y;
@@ -394,6 +392,7 @@ canvas.addEventListener('pointermove', e => {
 });
 canvas.addEventListener('pointerup', e => {
   if (!dragging) return;
+  ensureAudio(); // 発射時にも再度アンロック試行
   dragging = false;
   const dx = dragStart.x - dragCur.x;
   const dy = dragStart.y - dragCur.y;
