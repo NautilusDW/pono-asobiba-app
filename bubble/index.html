@@ -40,18 +40,13 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// ── Audio (same pattern as breakout) ──
+// ── Audio ──
 let audioCtx = null;
 function getAC() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx.resume();
   return audioCtx;
 }
-function withAudio(fn) {
-  const ac = getAC();
-  if (ac.state === 'running') fn(ac);
-  else ac.resume().then(() => fn(ac)).catch(() => {});
-}
-document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
 
 function beep(ac, freq, t, dur, type, vol) {
   const o = ac.createOscillator(), g = ac.createGain();
@@ -62,17 +57,16 @@ function beep(ac, freq, t, dur, type, vol) {
   o.start(t); o.stop(t + dur + 0.02);
 }
 function playPop(pitch) {
-  withAudio(ac => beep(ac, 600 + pitch * 400, ac.currentTime, 0.15, 'sine', 0.5));
+  const ac = getAC(); beep(ac, 600 + pitch * 400, ac.currentTime, 0.15, 'sine', 0.5);
 }
 function playChainPop() {
-  withAudio(ac => beep(ac, 900 + Math.random() * 600, ac.currentTime, 0.1, 'triangle', 0.35));
+  const ac = getAC(); beep(ac, 900 + Math.random() * 600, ac.currentTime, 0.1, 'triangle', 0.35);
 }
 function playGoldenBoom() {
-  withAudio(ac => {
-    for (let i = 0; i < 5; i++) {
-      beep(ac, 300 + i * 200, ac.currentTime + i * 0.06, 0.4, i % 2 === 0 ? 'sine' : 'triangle', 0.4);
-    }
-  });
+  const ac = getAC();
+  for (let i = 0; i < 5; i++) {
+    beep(ac, 300 + i * 200, ac.currentTime + i * 0.06, 0.4, i % 2 === 0 ? 'sine' : 'triangle', 0.4);
+  }
 }
 
 // ── Bubble colors ──

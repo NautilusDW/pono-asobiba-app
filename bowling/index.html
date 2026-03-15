@@ -56,18 +56,13 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (same pattern as breakout) ──
+// ── Audio ──
 let audioCtx = null;
 function getAC() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx.resume();
   return audioCtx;
 }
-function withAudio(fn) {
-  const ac = getAC();
-  if (ac.state === 'running') fn(ac);
-  else ac.resume().then(() => fn(ac)).catch(() => {});
-}
-document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
 
 function beep(ac, freq, t, dur, type, vol) {
   const o = ac.createOscillator(), g = ac.createGain();
@@ -78,33 +73,30 @@ function beep(ac, freq, t, dur, type, vol) {
   o.start(t); o.stop(t + dur + 0.02);
 }
 function playBonk(intensity) {
-  withAudio(ac => beep(ac, 200 + Math.random() * 400 + intensity * 400, ac.currentTime, 0.12, 'triangle', Math.min(0.5, intensity * 0.35)));
+  const ac = getAC(); beep(ac, 200 + Math.random() * 400 + intensity * 400, ac.currentTime, 0.12, 'triangle', Math.min(0.5, intensity * 0.35));
 }
 function playPocket() {
-  withAudio(ac => {
-    [0, 60, 120].forEach((d, i) => {
-      setTimeout(() => beep(ac, 500 + i * 200, ac.currentTime, 0.18, 'sine', 0.45), d);
-    });
+  const ac = getAC();
+  [0, 60, 120].forEach((d, i) => {
+    setTimeout(() => beep(ac, 500 + i * 200, ac.currentTime, 0.18, 'sine', 0.45), d);
   });
 }
 function playStrike() {
-  withAudio(ac => {
-    [0, 80, 160, 240, 320].forEach((d, i) => {
-      setTimeout(() => beep(ac, 400 + i * 150, ac.currentTime, 0.3, i % 2 === 0 ? 'sine' : 'triangle', 0.45), d);
-    });
+  const ac = getAC();
+  [0, 80, 160, 240, 320].forEach((d, i) => {
+    setTimeout(() => beep(ac, 400 + i * 150, ac.currentTime, 0.3, i % 2 === 0 ? 'sine' : 'triangle', 0.45), d);
   });
 }
 function playLaunch() {
-  withAudio(ac => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(150, ac.currentTime);
-    o.frequency.exponentialRampToValueAtTime(600, ac.currentTime + 0.15);
-    g.gain.setValueAtTime(0.45, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
-    o.connect(g); g.connect(ac.destination);
-    o.start(); o.stop(ac.currentTime + 0.22);
-  });
+  const ac = getAC();
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(150, ac.currentTime);
+  o.frequency.exponentialRampToValueAtTime(600, ac.currentTime + 0.15);
+  g.gain.setValueAtTime(0.45, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
+  o.connect(g); g.connect(ac.destination);
+  o.start(); o.stop(ac.currentTime + 0.22);
 }
 
 // ── Physics ──
