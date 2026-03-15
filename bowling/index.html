@@ -192,22 +192,41 @@ let soundThrottle = 0;
 function createPins() {
   bodies.length = 0;
   ballIdx = -1;
-  const areaW = W - 80, areaH = H * 0.4;
-  let bestCols = 3, bestRows = 5;
-  for (let c = 3; c <= 6; c++) {
-    const r = Math.ceil(MAX_PINS / c);
-    if (Math.min(areaW / c, areaH / r) >= PIN_R * 2.1) { bestCols = c; bestRows = r; break; }
+  // Build diamond rows: 1,2,3,...,maxW,...,3,2,1
+  const rows = [];
+  let remaining = MAX_PINS;
+  // Expand: 1,2,3,... until we run out or hit screen limit
+  const maxRowW = Math.floor((W - 80) / (PIN_R * 2.2));
+  for (let w = 1; remaining > 0; w++) {
+    const rw = Math.min(w, maxRowW, remaining);
+    rows.push(rw);
+    remaining -= rw;
+    if (w >= maxRowW) break; // start shrinking
   }
-  const spacing = Math.min(areaW / bestCols, areaH / bestRows, PIN_R * 2.6);
-  const startX = (W - (bestCols - 1) * spacing) / 2;
-  const startY = H * 0.06 + 30;
+  // Shrink: ...,3,2,1
+  for (let w = rows[rows.length - 1] - 1; remaining > 0 && w >= 1; w--) {
+    const rw = Math.min(w, remaining);
+    rows.push(rw);
+    remaining -= rw;
+  }
+  // If still remaining, add extra rows
+  while (remaining > 0) {
+    const rw = Math.min(remaining, maxRowW);
+    rows.push(rw);
+    remaining -= rw;
+  }
+  const spacing = Math.min((W - 80) / (Math.max(...rows)), PIN_R * 2.6);
+  const totalH = rows.length * spacing;
+  const startY = Math.max(H * 0.06 + 30, (H * 0.45 - totalH) / 2 + 30);
   totalPins = MAX_PINS;
   knockedCount = 0;
   pocketCount = 0;
   let placed = 0;
-  for (let r = 0; r < bestRows && placed < MAX_PINS; r++) {
-    for (let c = 0; c < bestCols && placed < MAX_PINS; c++) {
-      const x = startX + c * spacing + (Math.random() - 0.5) * 3;
+  for (let r = 0; r < rows.length && placed < MAX_PINS; r++) {
+    const cols = rows[r];
+    const rowStartX = (W - (cols - 1) * spacing) / 2;
+    for (let c = 0; c < cols && placed < MAX_PINS; c++) {
+      const x = rowStartX + c * spacing + (Math.random() - 0.5) * 3;
       const y = startY + r * spacing + (Math.random() - 0.5) * 3;
       const idx = addCircle(x, y, PIN_R, PIN_MASS);
       bodies[idx].imgIdx = Math.floor(Math.random() * PIN_COUNT);
