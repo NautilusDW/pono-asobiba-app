@@ -228,25 +228,22 @@ function resolveCollision(a, b) {
   if (dist2 >= minDist * minDist || dist2 < 0.001) return false;
   const dist = Math.sqrt(dist2);
   const nx = dx / dist, ny = dy / dist;
-  // Separate overlapping
+  // Separate overlapping (mass-weighted)
   const overlap = minDist - dist;
   const totalMass = a.mass + b.mass;
-  const aShare = b.mass / totalMass;
-  const bShare = a.mass / totalMass;
-  a.x -= nx * overlap * aShare;
-  a.y -= ny * overlap * aShare;
-  b.x += nx * overlap * bShare;
-  b.y += ny * overlap * bShare;
-  // Relative velocity along normal
-  const dvx = a.vx - b.vx;
-  const dvy = a.vy - b.vy;
-  const dvn = dvx * nx + dvy * ny;
+  a.x -= nx * overlap * (b.mass / totalMass);
+  a.y -= ny * overlap * (b.mass / totalMass);
+  b.x += nx * overlap * (a.mass / totalMass);
+  b.y += ny * overlap * (a.mass / totalMass);
+  // Impulse (correct formula: j = -(1+e)*dvn / (1/mA + 1/mB))
+  const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
   if (dvn > 0) return true; // already separating
-  const j = -(1 + RESTITUTION) * dvn / totalMass;
-  a.vx += j * b.mass * nx;
-  a.vy += j * b.mass * ny;
-  b.vx -= j * a.mass * nx;
-  b.vy -= j * a.mass * ny;
+  const invMassSum = 1 / a.mass + 1 / b.mass;
+  const j = -(1 + RESTITUTION) * dvn / invMassSum;
+  a.vx += (j / a.mass) * nx;
+  a.vy += (j / a.mass) * ny;
+  b.vx -= (j / b.mass) * nx;
+  b.vy -= (j / b.mass) * ny;
   return true;
 }
 
