@@ -29,30 +29,14 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
   will-change: transform;
 }
-#banner {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-  z-index: 200; font-size: 48px; font-weight: 900; color: #FFD700;
-  text-shadow: 3px 3px 6px rgba(0,0,0,0.5); pointer-events: none;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s;
-  opacity: 0; will-change: transform, opacity;
+#combo {
+  position: fixed; top: 50px; right: 16px; z-index: 100;
+  font-size: 20px; font-weight: 900; color: #FF6B6B;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  opacity: 0; transition: opacity 0.3s;
+  will-change: transform;
 }
-#banner.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-#tuner {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
-  background: rgba(0,0,0,0.85); color: #fff; padding: 10px 14px 14px;
-  font-family: monospace; font-size: 13px; max-height: 45vh; overflow-y: auto;
-  display: none; will-change: transform;
-}
-#tuner.show { display: block; }
-#tuner-toggle {
-  position: fixed; bottom: 12px; right: 12px; z-index: 301;
-  background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
-  width: 44px; height: 44px; font-size: 20px; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15); will-change: transform;
-}
-#tuner label { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
-#tuner input[type=range] { flex: 1; max-width: 180px; }
-#tuner .val { min-width: 55px; text-align: right; font-weight: bold; color: #FFD700; }
+#combo.show { opacity: 1; }
 #start-screen {
   position: fixed; inset: 0; z-index: 9999;
   background: linear-gradient(135deg, #1a5c3a 0%, #2d8f5e 100%);
@@ -68,36 +52,24 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 <div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div></div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <div id="score">0</div>
-<div id="banner"></div>
+<div id="combo"></div>
 <canvas id="c"></canvas>
-<button id="tuner-toggle" onclick="document.getElementById('tuner').classList.toggle('show')">🎛</button>
-<div id="tuner">
-  <b>Physics Tuner</b>
-  <label>反発 (RESTITUTION) <input type="range" min="0" max="100" value="85" id="sl-rest"><span class="val" id="v-rest">0.85</span></label>
-  <label>空気摩擦 (AIR) <input type="range" min="980" max="1000" value="998" id="sl-air"><span class="val" id="v-air">0.998</span></label>
-  <label>壁反発 (WALL) <input type="range" min="0" max="100" value="90" id="sl-wall"><span class="val" id="v-wall">0.9</span></label>
-  <label>ピン質量 <input type="range" min="1" max="300" value="100" id="sl-pin"><span class="val" id="v-pin">1.00</span></label>
-  <label>ボール質量 <input type="range" min="100" max="3000" value="500" id="sl-ball"><span class="val" id="v-ball">5.0</span></label>
-  <label>Canvas解像度 <input type="range" min="25" max="100" value="100" id="sl-res"><span class="val" id="v-res">100%</span></label>
-  <label><input type="checkbox" id="cb-mute"> 🔇 音をミュート（FPS比較用）</label>
-  <p style="margin-top:8px;color:#aaa;font-size:11px">FPSは左上に表示。ミュートON/OFFでFPS差を確認してください。</p>
-</div>
 
 <script>
 'use strict';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
-const bannerEl = document.getElementById('banner');
+const comboEl = document.getElementById('combo');
 let W, H;
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
 resize();
-window.addEventListener('resize', () => { resize(); resetRound(); });
+window.addEventListener('resize', resize);
 
 // ── Audio (Web Audio API) ──
 let audioCtx = null;
 let audioReady = false;
-let bonkBuf = null, pocketBuf = null, strikeBuf = null, launchBuf = null;
+let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null;
 
 function makeBuf(ctx, freq, dur, vol, decay) {
   const sr = ctx.sampleRate, n = sr * dur | 0;
@@ -110,39 +82,44 @@ function makeBuf(ctx, freq, dur, vol, decay) {
   return ab;
 }
 
-// スタート画面タップで初期化（ゲーム開始前に確実にrunningにする）
+function makeSweepBuf(ctx, freqStart, freqEnd, dur, vol) {
+  const sr = ctx.sampleRate, n = sr * dur | 0;
+  const ab = ctx.createBuffer(1, n, sr);
+  const d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const f = freqStart + (freqEnd - freqStart) * (t / dur);
+    d[i] = Math.sin(2 * Math.PI * f * t) * Math.exp(-t * 8) * vol;
+  }
+  return ab;
+}
+
 function initAudio() {
   return new Promise(resolve => {
     const AC = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AC();
     audioCtx.resume().then(() => {
-      // 無音バッファ再生でiOSオーディオロック完全解除
       const b = audioCtx.createBuffer(1, 1, 22050);
       const s = audioCtx.createBufferSource();
-      s.buffer = b;
-      s.connect(audioCtx.destination);
-      s.start(0);
-      // バッファ生成
-      bonkBuf = makeBuf(audioCtx, 400, 0.08, 0.5, 35);
-      pocketBuf = makeBuf(audioCtx, 600, 0.12, 0.5, 20);
-      strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
-      launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
+      s.buffer = b; s.connect(audioCtx.destination); s.start(0);
+      bonkBuf = makeBuf(audioCtx, 400, 0.06, 0.4, 40);
+      popBuf = makeBuf(audioCtx, 800, 0.05, 0.3, 50);
+      launchBuf = makeBuf(audioCtx, 300, 0.1, 0.3, 20);
+      comboBuf = makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
       audioReady = true;
       resolve();
     });
-    // フォールバック: 1秒待ってもrunningにならなくてもゲームは始める
     setTimeout(() => {
-      bonkBuf = bonkBuf || makeBuf(audioCtx, 400, 0.08, 0.5, 35);
-      pocketBuf = pocketBuf || makeBuf(audioCtx, 600, 0.12, 0.5, 20);
-      strikeBuf = strikeBuf || makeBuf(audioCtx, 500, 0.25, 0.5, 10);
-      launchBuf = launchBuf || makeBuf(audioCtx, 400, 0.12, 0.5, 18);
+      bonkBuf = bonkBuf || makeBuf(audioCtx, 400, 0.06, 0.4, 40);
+      popBuf = popBuf || makeBuf(audioCtx, 800, 0.05, 0.3, 50);
+      launchBuf = launchBuf || makeBuf(audioCtx, 300, 0.1, 0.3, 20);
+      comboBuf = comboBuf || makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
       audioReady = true;
       resolve();
     }, 1000);
   });
 }
 
-// スタート画面
 document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
   e.preventDefault();
   this.removeEventListener('pointerdown', handler);
@@ -151,213 +128,253 @@ document.getElementById('start-screen').addEventListener('pointerdown', async fu
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') {
-    audioCtx.resume();
-  }
+  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
 
-// 再生関数
 function playBuf(buf, volume, rate) {
-  if (muteSound || !audioReady || !buf) return;
+  if (!audioReady || !buf) return;
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
   src.playbackRate.value = rate || 1;
   if (volume !== undefined && volume < 1) {
     const gain = audioCtx.createGain();
     gain.gain.value = volume;
-    src.connect(gain);
-    gain.connect(audioCtx.destination);
+    src.connect(gain); gain.connect(audioCtx.destination);
   } else {
     src.connect(audioCtx.destination);
   }
   src.start(0);
 }
-function playBonk(intensity) {
-  const vol = 0.15 + intensity * 0.85;
-  const rate = 0.7 + intensity * 0.6 + (Math.random() - 0.5) * 0.2;
-  playBuf(bonkBuf, vol, rate);
-}
-function playPocket() { playBuf(pocketBuf); }
-function playStrike() { playBuf(strikeBuf); }
-function playLaunch() { playBuf(launchBuf); }
 
-// ── Tunable Constants ──
-const POCKET_R = 40;
-const PIN_R = 34;
-const BALL_R = 32;
-const MAX_PINS = 30;
-let RESTITUTION = 0.85;
-let FRICTION_AIR = 0.998;
-let WALL_RESTITUTION = 0.9;
-let PIN_MASS = 1.0;
-let BALL_MASS = 5;
+// ── Constants ──
+const PIN_R = 28;
+const BALL_R = 26;
+const RESTITUTION = 0.8;
+const FRICTION_AIR = 0.997;
+const WALL_RESTITUTION = 0.85;
+const PIN_MASS = 0.8;
+const BALL_MASS = 3;
+const GRAVITY = 0.15;  // ピンが上からゆっくり落ちる
+const MAX_BODIES = 80;  // パフォーマンス上限
+const PIN_SPAWN_INTERVAL = 400; // ms間隔で新しいピンが湧く
+const BALL_LIFETIME = 6000; // ボールは6秒で消える
 
-// ── Load pin images → pre-render to offscreen canvases ──
+// ── Pin images ──
 const PIN_COUNT = 13;
 const pinDrawSize = PIN_R * 2;
 const halfPin = pinDrawSize / 2;
 const pinCanvases = [];
 for (let i = 0; i < PIN_COUNT; i++) {
   const img = new Image();
-  img.src = `pins/pin_${i}.png`;
+  img.src = 'pins/pin_' + i + '.png';
   const oc = document.createElement('canvas');
   oc.width = oc.height = pinDrawSize;
   pinCanvases.push(oc);
   img.onload = () => { oc.getContext('2d').drawImage(img, 0, 0, pinDrawSize, pinDrawSize); };
 }
 
-const CONFETTI_COLORS = [
-  'rgb(255,143,160)','rgb(255,179,128)','rgb(255,224,128)','rgb(160,232,160)','rgb(128,200,255)','rgb(192,160,255)',
-];
+// ── Ball pre-render ──
+const ballColors = ['#EE3333','#3388EE','#33BB55','#FF8800','#CC44CC','#FFDD00','#00CCCC','#FF5599'];
+const ballCanvases = [];
+for (let i = 0; i < ballColors.length; i++) {
+  const oc = document.createElement('canvas');
+  const sz = BALL_R * 2 + 8;
+  oc.width = oc.height = sz;
+  const bc = oc.getContext('2d');
+  const cx = sz / 2, cy = sz / 2;
+  bc.globalAlpha = 0.25;
+  bc.beginPath(); bc.ellipse(cx + 2, cy + 2, BALL_R, BALL_R * 0.9, 0, 0, Math.PI * 2);
+  bc.fillStyle = '#000'; bc.fill();
+  bc.globalAlpha = 1;
+  bc.beginPath(); bc.arc(cx, cy, BALL_R, 0, Math.PI * 2);
+  bc.fillStyle = ballColors[i]; bc.fill();
+  bc.strokeStyle = 'rgba(0,0,0,0.3)'; bc.lineWidth = 2; bc.stroke();
+  bc.globalAlpha = 0.4;
+  bc.beginPath(); bc.ellipse(cx - BALL_R * 0.3, cy - BALL_R * 0.25, BALL_R * 0.3, BALL_R * 0.15, -0.5, 0, Math.PI * 2);
+  bc.fillStyle = '#fff'; bc.fill();
+  ballCanvases.push(oc);
+}
+const halfBall = (BALL_R * 2 + 8) / 2;
 
-// ── Simple circle physics ──
-// Each body: { x, y, vx, vy, r, mass, imgIdx, knocked, initX, initY, pocketed, isStatic }
+// ── Bodies ──
+// type: 'pin' | 'ball'
 const bodies = [];
-let ballIdx = -1;
 
-function addCircle(x, y, r, mass, isStatic) {
-  const idx = bodies.length;
-  bodies.push({ x, y, vx: 0, vy: 0, r, mass, isStatic: !!isStatic, imgIdx: 0, knocked: false, initX: x, initY: y, pocketed: false });
-  return idx;
+function addBody(x, y, r, mass, type) {
+  const b = {
+    x, y, vx: 0, vy: 0, r, mass, type,
+    imgIdx: 0, colorIdx: 0,
+    born: performance.now(),
+    dead: false
+  };
+  bodies.push(b);
+  return b;
 }
 
-// Wall boundaries (just numbers, not physics objects)
-let wallLeft, wallRight, wallTop, wallBottom;
-let pockets = [];
-
-function setupWalls() {
-  const g = POCKET_R * 1.5; // gap for pockets
-  wallLeft = 4;
-  wallRight = W - 4;
-  wallTop = 4;
-  wallBottom = H - 4;
-  pockets = [
-    { x: 10, y: 10 },
-    { x: W - 10, y: 10 },
-    { x: 10, y: H - 10 },
-    { x: W - 10, y: H - 10 },
-  ];
+function spawnPin() {
+  if (bodies.length >= MAX_BODIES) return;
+  const margin = PIN_R + 20;
+  const x = margin + Math.random() * (W - margin * 2);
+  const b = addBody(x, -PIN_R * 2, PIN_R, PIN_MASS, 'pin');
+  b.vy = 0.5 + Math.random() * 1.0; // ゆっくり落下
+  b.vx = (Math.random() - 0.5) * 0.5;
+  b.imgIdx = Math.floor(Math.random() * PIN_COUNT);
 }
 
-let ballLaunched = false, score = 0, round = 0;
-let knockedCount = 0, totalPins = 0, pocketCount = 0;
-let settleTimer = 0, launchElapsed = 0, roundResetting = false;
-let dragging = false, dragStart = null, dragCur = null;
-let soundThrottle = 0;
-let maxCollisionIntensity = 0; // 0〜1: そのフレームで最大の衝突強度
+function spawnBall(x, y) {
+  if (bodies.length >= MAX_BODIES) return;
+  const b = addBody(x, y, BALL_R, BALL_MASS, 'ball');
+  // 上方向にランダムな角度で発射
+  const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+  const speed = 12 + Math.random() * 6;
+  b.vx = Math.cos(angle) * speed;
+  b.vy = Math.sin(angle) * speed;
+  b.colorIdx = Math.floor(Math.random() * ballColors.length);
+  playBuf(launchBuf, 0.3, 0.8 + Math.random() * 0.4);
+}
 
-function createPins() {
-  bodies.length = 0;
-  ballIdx = -1;
-  // Grid: 6x5 = 30
-  const rows = [6, 6, 6, 6, 6];
-  const spacing = PIN_R * 2 + 6;
-  const totalH = rows.length * spacing;
-  const startY = H * 0.15;
-  totalPins = MAX_PINS;
-  knockedCount = 0;
-  pocketCount = 0;
-  let placed = 0;
-  for (let r = 0; r < rows.length && placed < MAX_PINS; r++) {
-    const cols = rows[r];
-    const rowStartX = (W - (cols - 1) * spacing) / 2;
-    for (let c = 0; c < cols && placed < MAX_PINS; c++) {
-      const x = rowStartX + c * spacing + (Math.random() - 0.5) * 3;
-      const y = startY + r * spacing + (Math.random() - 0.5) * 3;
-      const idx = addCircle(x, y, PIN_R, PIN_MASS);
-      bodies[idx].imgIdx = Math.floor(Math.random() * PIN_COUNT);
-      placed++;
-    }
+// ── Particles ──
+const PARTICLE_COLORS = [
+  '#FF6B6B','#FFE66D','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8',
+  '#F7DC6F','#BB8FCE','#85C1E9','#F1948A'
+];
+const particles = [];
+const MAX_PARTICLES = 200;
+
+function spawnParticles(x, y, count, baseColor) {
+  const n = Math.min(count, MAX_PARTICLES - particles.length);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 2 + Math.random() * 6;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp - 2,
+      color: baseColor || PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+      size: 3 + Math.random() * 6,
+      life: 1,
+      decay: 0.015 + Math.random() * 0.01
+    });
   }
 }
 
-function createBall() {
-  ballIdx = addCircle(W / 2, H * 0.78, BALL_R, BALL_MASS);
-  ballLaunched = false;
+// ── Score popups ──
+const popups = [];
+function spawnPopup(x, y, text, color) {
+  popups.push({ x, y, text, color: color || '#FFD700', life: 1, vy: -2 });
 }
 
-// ── Circle-circle collision ──
+// ── Collision ──
 function resolveCollision(a, b) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
+  const dx = b.x - a.x, dy = b.y - a.y;
   const dist2 = dx * dx + dy * dy;
   const minDist = a.r + b.r;
-  if (dist2 >= minDist * minDist || dist2 < 0.001) return false;
+  if (dist2 >= minDist * minDist || dist2 < 0.001) return 0;
   const dist = Math.sqrt(dist2);
   const nx = dx / dist, ny = dy / dist;
-  // Separate overlapping (mass-weighted)
   const overlap = minDist - dist;
   const totalMass = a.mass + b.mass;
   a.x -= nx * overlap * (b.mass / totalMass);
   a.y -= ny * overlap * (b.mass / totalMass);
   b.x += nx * overlap * (a.mass / totalMass);
   b.y += ny * overlap * (a.mass / totalMass);
-  // Impulse (correct formula: j = -(1+e)*dvn / (1/mA + 1/mB))
   const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-  if (dvn > 0) return true; // already separating
+  if (dvn > 0) return 0;
   const invMassSum = 1 / a.mass + 1 / b.mass;
   const j = -(1 + RESTITUTION) * dvn / invMassSum;
   a.vx += (j / a.mass) * nx;
   a.vy += (j / a.mass) * ny;
   b.vx -= (j / b.mass) * nx;
   b.vy -= (j / b.mass) * ny;
-  return true;
+  return Math.abs(dvn); // 衝突の強さを返す
 }
 
 // ── Wall bounce ──
 function wallBounce(b) {
-  // Check if near a pocket corner — skip wall bounce there
-  for (let i = 0; i < pockets.length; i++) {
-    const pk = pockets[i];
-    const dx = b.x - pk.x, dy = b.y - pk.y;
-    if (dx * dx + dy * dy < (POCKET_R + b.r) * (POCKET_R + b.r)) return;
+  if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
+  if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
+  if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
+  // 下端: ピンは消す、ボールは跳ね返す
+  if (b.y + b.r > H) {
+    if (b.type === 'pin') {
+      b.dead = true;
+    } else {
+      b.y = H - b.r;
+      b.vy = -Math.abs(b.vy) * WALL_RESTITUTION;
+    }
   }
-  if (b.x - b.r < wallLeft) { b.x = wallLeft + b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.x + b.r > wallRight) { b.x = wallRight - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.y - b.r < wallTop) { b.y = wallTop + b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
-  if (b.y + b.r > wallBottom) { b.y = wallBottom - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
+}
+
+// ── Game state ──
+let score = 0;
+let combo = 0;
+let comboTimer = 0;
+const COMBO_WINDOW = 60; // フレーム数（約1秒）
+let lastPinSpawn = 0;
+let shakeX = 0, shakeY = 0, shakeLife = 0;
+let soundThrottle = 0;
+let maxHitStrength = 0;
+
+// ── Screen shake ──
+function triggerShake(intensity) {
+  shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 6));
 }
 
 // ── Physics step ──
 function physicsStep() {
   const n = bodies.length;
-  // Move
   for (let i = 0; i < n; i++) {
     const b = bodies[i];
-    if (b.pocketed) continue;
+    if (b.dead) continue;
+    // ピンには重力
+    if (b.type === 'pin') b.vy += GRAVITY;
     b.x += b.vx;
     b.y += b.vy;
     b.vx *= FRICTION_AIR;
     b.vy *= FRICTION_AIR;
-    // Stop tiny velocities
     if (b.vx * b.vx + b.vy * b.vy < 0.0001) { b.vx = 0; b.vy = 0; }
     wallBounce(b);
   }
-  // Collide (all pairs)
+  // Collisions
   for (let i = 0; i < n; i++) {
-    if (bodies[i].pocketed) continue;
+    if (bodies[i].dead) continue;
     for (let j = i + 1; j < n; j++) {
-      if (bodies[j].pocketed) continue;
-      // 衝突前の相対速度を記録（衝突後だと解決済みで毎回トリガーされる）
-      const preVx = bodies[i].vx - bodies[j].vx;
-      const preVy = bodies[i].vy - bodies[j].vy;
-      const preSpd2 = preVx * preVx + preVy * preVy;
-      if (resolveCollision(bodies[i], bodies[j])) {
-        // 衝突の強さを0〜1に正規化（速度4以上で音、20で最大）
-        if (preSpd2 > 16) {
-          const intensity = Math.min(1, (Math.sqrt(preSpd2) - 4) / 16);
-          if (intensity > maxCollisionIntensity) maxCollisionIntensity = intensity;
-        }
-        // Check knocked (no temp array — avoid GC)
-        for (let k = 0; k < 2; k++) {
-          const idx = k === 0 ? i : j;
-          const b = bodies[idx];
-          if (idx !== ballIdx && !b.knocked) {
-            const dx = b.x - b.initX, dy = b.y - b.initY;
-            if (dx * dx + dy * dy > PIN_R * PIN_R) {
-              b.knocked = true;
-              knockedCount++; score++;
+      if (bodies[j].dead) continue;
+      const a = bodies[i], b = bodies[j];
+      // ピン同士の衝突は軽く処理、ボール-ピンは重要
+      const preVx = a.vx - b.vx, preVy = a.vy - b.vy;
+      const preSpd = Math.sqrt(preVx * preVx + preVy * preVy);
+      const strength = resolveCollision(a, b);
+      if (strength > 0) {
+        // ボール→ピン衝突でスコア
+        if ((a.type === 'ball' && b.type === 'pin') || (a.type === 'pin' && b.type === 'ball')) {
+          const pin = a.type === 'pin' ? a : b;
+          if (preSpd > 3) {
+            // 強い衝突: ピンを破壊
+            pin.dead = true;
+            const pts = 10 + combo * 5;
+            score += pts;
+            combo++;
+            comboTimer = COMBO_WINDOW;
+            spawnParticles(pin.x, pin.y, 8 + combo * 2);
+            spawnPopup(pin.x, pin.y - 20, '+' + pts);
+            if (combo >= 3) {
+              comboEl.textContent = combo + ' コンボ！';
+              comboEl.classList.add('show');
+              playBuf(comboBuf, Math.min(1, 0.3 + combo * 0.1), 1 + combo * 0.05);
             }
+            if (strength > maxHitStrength) maxHitStrength = strength;
+            triggerShake(strength / 10);
+          }
+        }
+        // 衝突音
+        if (preSpd > 3 && strength > maxHitStrength * 0.3) {
+          if (soundThrottle <= 0) {
+            const intensity = Math.min(1, strength / 15);
+            const vol = 0.15 + intensity * 0.6;
+            const rate = 0.7 + intensity * 0.5 + (Math.random() - 0.5) * 0.2;
+            playBuf(bonkBuf, vol, rate);
+            soundThrottle = 3;
           }
         }
       }
@@ -365,346 +382,188 @@ function physicsStep() {
   }
 }
 
-// ── Pocket check ──
-function checkPockets() {
-  for (let i = 0; i < bodies.length; i++) {
-    if (i === ballIdx || bodies[i].pocketed) continue;
-    const b = bodies[i];
-    for (let j = 0; j < pockets.length; j++) {
-      const pk = pockets[j];
-      const dx = b.x - pk.x, dy = b.y - pk.y;
-      if (dx * dx + dy * dy < POCKET_R * POCKET_R) {
-        b.pocketed = true;
-        if (!b.knocked) { b.knocked = true; knockedCount++; }
-        score += 3; pocketCount++;
-        scoreEl.textContent = score;
-        playPocket();
-        break;
-      }
-    }
-  }
-  // Ball in pocket = reposition
-  if (ballIdx >= 0) {
-    const b = bodies[ballIdx];
-    for (let j = 0; j < pockets.length; j++) {
-      const pk = pockets[j];
-      const dx = b.x - pk.x, dy = b.y - pk.y;
-      if (dx * dx + dy * dy < POCKET_R * POCKET_R) {
-        b.x = W / 2; b.y = H * 0.78; b.vx = 0; b.vy = 0;
-      }
-    }
-  }
-}
-
-// ── Slingshot input ──
+// ── Input ──
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
-  if (ballLaunched || roundResetting || ballIdx < 0) return;
-  const b = bodies[ballIdx];
-  const dx = e.clientX - b.x, dy = e.clientY - b.y;
-  if (dx * dx + dy * dy < (BALL_R * 4) ** 2) {
-    dragging = true;
-    dragStart = { x: b.x, y: b.y };
-    dragCur = { x: e.clientX, y: e.clientY };
-  }
+  spawnBall(e.clientX, e.clientY);
 });
 canvas.addEventListener('pointermove', e => {
-  if (!dragging) return;
-  dragCur = { x: e.clientX, y: e.clientY };
+  // ドラッグ中もボールを連射（間引き付き）
+  if (e.pressure > 0 || e.buttons > 0) {
+    if (Math.random() < 0.3) spawnBall(e.clientX, e.clientY);
+  }
 });
-canvas.addEventListener('pointerup', e => {
-  if (!dragging) return;
-  dragging = false;
-  const dx = dragStart.x - dragCur.x;
-  const dy = dragStart.y - dragCur.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist < 15) return;
-  const power = Math.min(dist / 8, 25);
-  const b = bodies[ballIdx];
-  b.vx = (dx / dist) * power;
-  b.vy = (dy / dist) * power;
-  ballLaunched = true;
-  settleTimer = 0;
-  launchElapsed = 0;
-  playLaunch();
-});
-
-function showBanner(text, dur) {
-  bannerEl.textContent = text;
-  bannerEl.classList.add('show');
-  setTimeout(() => bannerEl.classList.remove('show'), dur || 1500);
-}
-
-function resetRound() {
-  roundResetting = true;
-  setupWalls(); renderTable();
-  setTimeout(() => {
-    round++;
-    createPins();
-    createBall();
-    roundResetting = false;
-  }, 500);
-}
 
 // ── Draw ──
-let tableCanvas = null;
-function renderTable() {
-  tableCanvas = document.createElement('canvas');
-  tableCanvas.width = W; tableCanvas.height = H;
-  const tc = tableCanvas.getContext('2d');
-  tc.fillStyle = '#1e6b40';
-  tc.fillRect(0, 0, W, H);
-  tc.strokeStyle = '#8B4513';
-  tc.lineWidth = 8;
-  tc.strokeRect(4, 4, W - 8, H - 8);
-  tc.strokeStyle = '#5a9a3a';
-  tc.lineWidth = 3;
-  tc.strokeRect(12, 12, W - 24, H - 24);
-  for (let i = 0; i < pockets.length; i++) {
-    const pk = pockets[i];
-    tc.beginPath();
-    tc.arc(pk.x, pk.y, POCKET_R, 0, Math.PI * 2);
-    tc.fillStyle = '#0a2a15';
-    tc.fill();
-    tc.strokeStyle = '#8B4513';
-    tc.lineWidth = 3;
-    tc.stroke();
-  }
+function drawBg() {
+  ctx.fillStyle = '#1e6b40';
+  ctx.fillRect(0, 0, W, H);
+  // 枠線
+  ctx.strokeStyle = '#8B4513';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, W - 6, H - 6);
+  ctx.strokeStyle = '#5a9a3a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(10, 10, W - 20, H - 20);
 }
-
-function drawSlingshot() {
-  if (!dragging || !dragStart || !dragCur || ballIdx < 0) return;
-  const b = bodies[ballIdx];
-  // Dashed line (manual dash — avoid setLineDash/save/restore)
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(b.x, b.y);
-  ctx.lineTo(dragCur.x, dragCur.y);
-  ctx.stroke();
-  const dx = dragStart.x - dragCur.x;
-  const dy = dragStart.y - dragCur.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist > 10) {
-    const len = Math.min(dist * 0.8, 200);
-    const nx = dx / dist, ny = dy / dist;
-    ctx.strokeStyle = 'rgba(255,80,80,0.7)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    const ax = b.x + nx * len, ay = b.y + ny * len;
-    ctx.lineTo(ax, ay);
-    ctx.stroke();
-    const angle = Math.atan2(dy, dx);
-    ctx.fillStyle = 'rgba(255,80,80,0.7)';
-    ctx.beginPath();
-    ctx.moveTo(ax, ay);
-    ctx.lineTo(ax - 12 * Math.cos(angle - 0.4), ay - 12 * Math.sin(angle - 0.4));
-    ctx.lineTo(ax - 12 * Math.cos(angle + 0.4), ay - 12 * Math.sin(angle + 0.4));
-    ctx.fill();
-  }
-}
-
-// Pre-render ball
-const ballCanvas = document.createElement('canvas');
-const ballSize = BALL_R * 2 + 8;
-ballCanvas.width = ballCanvas.height = ballSize;
-const bctx = ballCanvas.getContext('2d');
-const bcx = ballSize / 2, bcy = ballSize / 2;
-bctx.globalAlpha = 0.25;
-bctx.beginPath();
-bctx.ellipse(bcx + 3, bcy + 3, BALL_R, BALL_R * 0.9, 0, 0, Math.PI * 2);
-bctx.fillStyle = '#000';
-bctx.fill();
-bctx.globalAlpha = 1;
-bctx.beginPath();
-bctx.arc(bcx, bcy, BALL_R, 0, Math.PI * 2);
-bctx.fillStyle = '#EE3333';
-bctx.fill();
-bctx.strokeStyle = '#991111';
-bctx.lineWidth = 2;
-bctx.stroke();
-bctx.globalAlpha = 0.45;
-bctx.beginPath();
-bctx.ellipse(bcx - BALL_R * 0.3, bcy - BALL_R * 0.25, BALL_R * 0.3, BALL_R * 0.15, -0.5, 0, Math.PI * 2);
-bctx.fillStyle = '#fff';
-bctx.fill();
-const halfBall = ballSize / 2;
 
 function drawBodies() {
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
-    if (b.pocketed) continue;
-    if (i === ballIdx) {
-      ctx.drawImage(ballCanvas, b.x - halfBall, b.y - halfBall);
+    if (b.dead) continue;
+    if (b.type === 'ball') {
+      ctx.drawImage(ballCanvases[b.colorIdx], b.x - halfBall, b.y - halfBall);
     } else {
       ctx.drawImage(pinCanvases[b.imgIdx], b.x - halfPin, b.y - halfPin);
     }
   }
-  // Hint text
-  if (!ballLaunched && !dragging && ballIdx >= 0) {
-    ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.004) * 0.2;
-    ctx.fillStyle = '#fff';
-    ctx.font = '15px "Zen Maru Gothic"';
-    ctx.textAlign = 'center';
-    ctx.fillText('ひっぱってはなす！', W / 2, H * 0.88);
-    ctx.globalAlpha = 1;
-  }
 }
 
-// ── Confetti ──
-const confettiList = [];
-function spawnConfetti(cx, cy, n) {
-  const count = Math.min(n, 50);
-  for (let i = 0; i < count; i++) {
-    const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
-    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-    confettiList.push({
-      x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 3,
-      color: color,
-      size: 5 + Math.random() * 7, life: 1,
-    });
-  }
-}
-function updateConfetti() {
-  let len = confettiList.length;
+function drawParticles() {
+  let len = particles.length;
   for (let i = len - 1; i >= 0; i--) {
-    const c = confettiList[i];
-    c.x += c.vx; c.y += c.vy; c.vy += 0.08;
-    c.life -= 0.015;
-    if (c.life <= 0) { confettiList[i] = confettiList[--len]; confettiList.length = len; continue; }
-    ctx.globalAlpha = c.life;
-    ctx.fillStyle = c.color;
-    ctx.fillRect(c.x - c.size / 2, c.y - c.size / 4, c.size, c.size / 2);
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1;
+    p.life -= p.decay;
+    if (p.life <= 0) { particles[i] = particles[--len]; particles.length = len; continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
   }
   if (len > 0) ctx.globalAlpha = 1;
 }
 
-// ── Settle ──
-function checkSettle() {
-  if (!ballLaunched || roundResetting) return;
-  launchElapsed++;
-  // Brake slow bodies after ~1.7s
-  if (launchElapsed > 100) {
-    for (let i = 0; i < bodies.length; i++) {
-      const b = bodies[i];
-      if (b.pocketed) continue;
-      const spd2 = b.vx * b.vx + b.vy * b.vy;
-      if (spd2 < 4 && spd2 > 0.0001) { b.vx *= 0.8; b.vy *= 0.8; }
-    }
+function drawPopups() {
+  let len = popups.length;
+  for (let i = len - 1; i >= 0; i--) {
+    const p = popups[i];
+    p.y += p.vy;
+    p.life -= 0.02;
+    if (p.life <= 0) { popups[i] = popups[--len]; popups.length = len; continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.font = 'bold 24px "Zen Maru Gothic"';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
   }
-  let maxSpd2 = 0;
-  for (let i = 0; i < bodies.length; i++) {
-    if (bodies[i].pocketed) continue;
-    const s = bodies[i].vx * bodies[i].vx + bodies[i].vy * bodies[i].vy;
-    if (s > maxSpd2) maxSpd2 = s;
-  }
-  if (maxSpd2 < 0.16) {
-    settleTimer++;
-    if (settleTimer > 20) {
-      if (knockedCount >= totalPins * 0.9) {
-        showBanner('🎉 パーフェクト！', 2000);
-        playStrike();
-        spawnConfetti(W / 2, H / 2, 100);
-      } else if (pocketCount >= 3) {
-        showBanner('🏆 ナイス！', 1500);
-      } else if (knockedCount >= totalPins * 0.5) {
-        showBanner('すごい！', 1200);
-      }
-      setTimeout(resetRound, 1000);
-      ballLaunched = false;
-    }
-  } else { settleTimer = 0; }
+  if (len > 0) ctx.globalAlpha = 1;
 }
 
-// ── Main ──
-// Fixed timestep physics (16.67ms per step, accumulator pattern)
-const PHYSICS_DT = 1000 / 60; // 16.67ms
+// ── Main loop ──
+const PHYSICS_DT = 1000 / 60;
 let accumulator = 0;
-
-// FPS counter + frame spike detection
+let prevFrameTime = performance.now();
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
-let prevFrameTime = performance.now(), maxFrameMs = 0, maxFrameDisplay = '--';
-let muteSound = false;
 
 function loop(now) {
-  // Frame timing
   let elapsed = now - prevFrameTime;
   prevFrameTime = now;
-  if (elapsed > 100) elapsed = 100; // cap to avoid spiral of death
-  if (elapsed > maxFrameMs) maxFrameMs = elapsed;
+  if (elapsed > 100) elapsed = 100;
+
+  // FPS
   fpsFrames++;
   if (now - fpsLast >= 500) {
     fpsDisplay = (fpsFrames / ((now - fpsLast) / 1000)).toFixed(0);
-    maxFrameDisplay = maxFrameMs.toFixed(0);
-    fpsFrames = 0; fpsLast = now; maxFrameMs = 0;
+    fpsFrames = 0; fpsLast = now;
   }
 
-  if (ballLaunched) {
-    const prevScore = score;
-    maxCollisionIntensity = 0;
-    // Fixed timestep: run physics in consistent 16.67ms steps
-    accumulator += elapsed;
-    while (accumulator >= PHYSICS_DT) {
-      physicsStep();
-      accumulator -= PHYSICS_DT;
+  // ピン自動生成
+  if (now - lastPinSpawn > PIN_SPAWN_INTERVAL) {
+    // 画面上のピン数が少なければ湧かせる
+    let pinCount = 0;
+    for (let i = 0; i < bodies.length; i++) {
+      if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
     }
-    // 音は1フレームにつき最大1回 — 強さで音量・ピッチ・次回までの間隔が変わる
-    if (maxCollisionIntensity > 0 && soundThrottle <= 0) {
-      playBonk(maxCollisionIntensity);
-      // 強い衝突→長めの間隔、弱い衝突→短い間隔（自然な響き）
-      soundThrottle = 3 + (maxCollisionIntensity * 8) | 0;
+    if (pinCount < 25) {
+      spawnPin();
+      // たまに2個同時
+      if (Math.random() < 0.3) spawnPin();
     }
-    if (soundThrottle > 0) soundThrottle--;
-    checkPockets();
-    checkSettle();
-    if (score !== prevScore) scoreEl.textContent = score;
+    lastPinSpawn = now;
   }
 
-  ctx.drawImage(tableCanvas, 0, 0);
+  // Physics
+  maxHitStrength = 0;
+  accumulator += elapsed;
+  while (accumulator >= PHYSICS_DT) {
+    physicsStep();
+    accumulator -= PHYSICS_DT;
+  }
+  if (soundThrottle > 0) soundThrottle--;
+
+  // コンボタイマー
+  if (comboTimer > 0) {
+    comboTimer--;
+    if (comboTimer <= 0) {
+      combo = 0;
+      comboEl.classList.remove('show');
+    }
+  }
+
+  // Dead body cleanup + ball lifetime
+  for (let i = bodies.length - 1; i >= 0; i--) {
+    const b = bodies[i];
+    if (b.dead || (b.type === 'ball' && now - b.born > BALL_LIFETIME)) {
+      if (b.type === 'ball' && !b.dead) {
+        // ボール消滅時の小パーティクル
+        spawnParticles(b.x, b.y, 4, ballColors[b.colorIdx]);
+      }
+      bodies[i] = bodies[bodies.length - 1];
+      bodies.pop();
+    }
+  }
+
+  // Screen shake
+  if (shakeLife > 0) {
+    shakeX = (Math.random() - 0.5) * shakeLife * 2;
+    shakeY = (Math.random() - 0.5) * shakeLife * 2;
+    shakeLife -= 0.5;
+  } else {
+    shakeX = 0; shakeY = 0;
+  }
+
+  // Draw
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+  drawBg();
   drawBodies();
-  drawSlingshot();
-  updateConfetti();
+  drawParticles();
+  drawPopups();
+  ctx.restore();
 
-  // FPS + worst frame display
+  // Score
+  scoreEl.textContent = score;
+
+  // FPS
   ctx.fillStyle = '#0f0';
-  ctx.font = '14px monospace';
+  ctx.font = '12px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(fpsDisplay + 'fps max:' + maxFrameDisplay + 'ms' + (muteSound ? ' [MUTE]' : ''), 60, 24);
+  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 22);
+
+  // ヒント（最初だけ）
+  if (score === 0 && bodies.length < 5) {
+    ctx.globalAlpha = 0.4 + Math.sin(now * 0.004) * 0.2;
+    ctx.fillStyle = '#fff';
+    ctx.font = '18px "Zen Maru Gothic"';
+    ctx.textAlign = 'center';
+    ctx.fillText('タップしてボールを出そう！', W / 2, H * 0.85);
+    ctx.globalAlpha = 1;
+  }
 
   requestAnimationFrame(loop);
 }
 
-setupWalls(); renderTable();
-createPins();
-createBall();
-requestAnimationFrame(loop);
-
-// ── Physics Tuner ──
-function bindSlider(id, valId, parse, apply) {
-  const sl = document.getElementById(id);
-  const vEl = document.getElementById(valId);
-  sl.addEventListener('input', () => { const v = parse(sl.value); vEl.textContent = v; apply(v); });
+// 初期ピンを散布
+for (let i = 0; i < 12; i++) {
+  const margin = PIN_R + 20;
+  const x = margin + Math.random() * (W - margin * 2);
+  const y = H * 0.1 + Math.random() * (H * 0.5);
+  const b = addBody(x, y, PIN_R, PIN_MASS, 'pin');
+  b.vy = 0.3 + Math.random() * 0.5;
+  b.imgIdx = Math.floor(Math.random() * PIN_COUNT);
 }
-bindSlider('sl-rest', 'v-rest', v => (v / 100).toFixed(2), v => { RESTITUTION = +v; });
-bindSlider('sl-air', 'v-air', v => (v / 1000).toFixed(3), v => { FRICTION_AIR = +v; });
-bindSlider('sl-wall', 'v-wall', v => (v / 100).toFixed(2), v => { WALL_RESTITUTION = +v; });
-bindSlider('sl-pin', 'v-pin', v => (v / 100).toFixed(2), v => {
-  PIN_MASS = +v;
-  for (let i = 0; i < bodies.length; i++) if (i !== ballIdx) bodies[i].mass = PIN_MASS;
-});
-bindSlider('sl-ball', 'v-ball', v => (v / 100).toFixed(1), v => {
-  BALL_MASS = +v;
-  if (ballIdx >= 0) bodies[ballIdx].mass = BALL_MASS;
-});
-bindSlider('sl-res', 'v-res', v => v + '%', v => {
-  const scale = parseInt(v) / 100;
-  W = canvas.width = Math.round(window.innerWidth * scale);
-  H = canvas.height = Math.round(window.innerHeight * scale);
-  canvas.style.width = '100%'; canvas.style.height = '100%';
-  setupWalls(); renderTable(); resetRound();
-});
-document.getElementById('cb-mute').addEventListener('change', e => { muteSound = e.target.checked; });
+
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
