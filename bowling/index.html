@@ -73,11 +73,11 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 <button id="tuner-toggle" onclick="document.getElementById('tuner').classList.toggle('show')">🎛</button>
 <div id="tuner">
   <b>Physics Tuner</b>
-  <label>反発 (RESTITUTION) <input type="range" min="0" max="100" value="95" id="sl-rest"><span class="val" id="v-rest">0.95</span></label>
-  <label>空気摩擦 (AIR) <input type="range" min="980" max="1000" value="995" id="sl-air"><span class="val" id="v-air">0.995</span></label>
+  <label>反発 (RESTITUTION) <input type="range" min="0" max="100" value="85" id="sl-rest"><span class="val" id="v-rest">0.85</span></label>
+  <label>空気摩擦 (AIR) <input type="range" min="980" max="1000" value="998" id="sl-air"><span class="val" id="v-air">0.998</span></label>
   <label>壁反発 (WALL) <input type="range" min="0" max="100" value="90" id="sl-wall"><span class="val" id="v-wall">0.9</span></label>
-  <label>ピン質量 <input type="range" min="1" max="300" value="15" id="sl-pin"><span class="val" id="v-pin">0.15</span></label>
-  <label>ボール質量 <input type="range" min="100" max="3000" value="800" id="sl-ball"><span class="val" id="v-ball">8</span></label>
+  <label>ピン質量 <input type="range" min="1" max="300" value="100" id="sl-pin"><span class="val" id="v-pin">1.00</span></label>
+  <label>ボール質量 <input type="range" min="100" max="3000" value="500" id="sl-ball"><span class="val" id="v-ball">5.0</span></label>
   <label>Canvas解像度 <input type="range" min="25" max="100" value="100" id="sl-res"><span class="val" id="v-res">100%</span></label>
   <label><input type="checkbox" id="cb-mute"> 🔇 音をミュート（FPS比較用）</label>
   <p style="margin-top:8px;color:#aaa;font-size:11px">FPSは左上に表示。ミュートON/OFFでFPS差を確認してください。</p>
@@ -186,11 +186,11 @@ const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
 const MAX_PINS = 30;
-let RESTITUTION = 0.95;
-let FRICTION_AIR = 0.995;
+let RESTITUTION = 0.85;
+let FRICTION_AIR = 0.998;
 let WALL_RESTITUTION = 0.9;
-let PIN_MASS = 0.15;
-let BALL_MASS = 8;
+let PIN_MASS = 1.0;
+let BALL_MASS = 5;
 
 // ── Load pin images → pre-render to offscreen canvases ──
 const PIN_COUNT = 13;
