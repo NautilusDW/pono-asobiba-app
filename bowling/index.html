@@ -109,9 +109,9 @@ const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
 const MAX_PINS = 15;
-const RESTITUTION = 0.9;
-const FRICTION_AIR = 0.99; // multiply velocity each step (1 = no friction)
-const WALL_RESTITUTION = 0.85;
+const RESTITUTION = 0.95;
+const FRICTION_AIR = 0.995; // multiply velocity each step (1 = no friction)
+const WALL_RESTITUTION = 0.9;
 
 // ── Load pin images ──
 const PIN_COUNT = 13;
@@ -181,7 +181,7 @@ function createPins() {
     for (let c = 0; c < bestCols && placed < MAX_PINS; c++) {
       const x = startX + c * spacing + (Math.random() - 0.5) * 3;
       const y = startY + r * spacing + (Math.random() - 0.5) * 3;
-      const idx = addCircle(x, y, PIN_R, 0.3);
+      const idx = addCircle(x, y, PIN_R, 0.15);
       bodies[idx].imgIdx = Math.floor(Math.random() * PIN_COUNT);
       placed++;
     }
@@ -189,7 +189,7 @@ function createPins() {
 }
 
 function createBall() {
-  ballIdx = addCircle(W / 2, H * 0.78, BALL_R, 5);
+  ballIdx = addCircle(W / 2, H * 0.78, BALL_R, 8);
   ballLaunched = false;
 }
 
