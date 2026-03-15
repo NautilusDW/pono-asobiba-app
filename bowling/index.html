@@ -195,7 +195,8 @@ function createPins() {
   // Diamond layout: 1,2,3,4,3,2,1 = 16
   const rows = [1, 2, 3, 4, 3, 2, 1];
   const maxCols = 4;
-  const spacing = Math.min((W - 80) / maxCols, PIN_R * 2.15);
+  // ピン直径(68)より少し大きい程度にギュッと詰める
+  const spacing = PIN_R * 2 + 4; // 72px固定
   const startY = PIN_R + 20;
   totalPins = MAX_PINS;
   knockedCount = 0;
