@@ -128,28 +128,12 @@ function unlockAudio() {
   strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
   launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
 
-  // AudioContextがrunningになるまで待ってからunlocked=trueにする
-  if (audioCtx.state === 'running') {
-    unlocked = true;
-  } else {
-    audioCtx.onstatechange = () => {
-      if (audioCtx.state === 'running') {
-        unlocked = true;
-        audioCtx.onstatechange = null;
-      }
-    };
-    // フォールバック: 300ms後にまだ切り替わっていなければ強制的にunlock
-    setTimeout(() => { unlocked = true; }, 300);
-  }
-
-  // リスナーを外す
-  document.removeEventListener('pointerdown', unlockAudio);
-  document.removeEventListener('touchstart', unlockAudio);
+  unlocked = true;
 }
 
-// ユーザーアクションにフック
-document.addEventListener('pointerdown', unlockAudio, { once: true });
-document.addEventListener('touchstart', unlockAudio, { once: true });
+// ユーザーアクションにフック（unlocked後は即returnするので毎回呼んでもOK）
+document.addEventListener('pointerdown', unlockAudio);
+document.addEventListener('touchstart', unlockAudio);
 
 // タブ復帰時の再resume
 document.addEventListener('visibilitychange', () => {
@@ -330,11 +314,13 @@ function physicsStep() {
     if (bodies[i].pocketed) continue;
     for (let j = i + 1; j < n; j++) {
       if (bodies[j].pocketed) continue;
+      // 衝突前の相対速度を記録（衝突後だと解決済みで毎回トリガーされる）
+      const preVx = bodies[i].vx - bodies[j].vx;
+      const preVy = bodies[i].vy - bodies[j].vy;
+      const preSpd2 = preVx * preVx + preVy * preVy;
       if (resolveCollision(bodies[i], bodies[j])) {
-        // Collision happened — flag for sound (played once per frame, not per physics step)
-        const dvx = bodies[i].vx - bodies[j].vx;
-        const dvy = bodies[i].vy - bodies[j].vy;
-        if (dvx * dvx + dvy * dvy > 4) collisionHappened = true;
+        // 衝突前の相対速度が十分大きい場合のみ音を鳴らす
+        if (preSpd2 > 16) collisionHappened = true;
         // Check knocked (no temp array — avoid GC)
         for (let k = 0; k < 2; k++) {
           const idx = k === 0 ? i : j;
@@ -639,7 +625,7 @@ function loop(now) {
     // 音は1フレームにつき最大1回（物理ステップ内ではフラグのみ）
     if (collisionHappened && soundThrottle <= 0) {
       playBonk();
-      soundThrottle = 30;
+      soundThrottle = 5;
     }
     soundThrottle--;
     checkPockets();
