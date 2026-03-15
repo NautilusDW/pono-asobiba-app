@@ -195,9 +195,8 @@ function createPins() {
   // Diamond layout: 1,2,3,4,3,2,1 = 16
   const rows = [1, 2, 3, 4, 3, 2, 1];
   const maxCols = 4;
-  const spacing = Math.min((W - 80) / maxCols, PIN_R * 2.6);
-  const totalH = rows.length * spacing;
-  const startY = Math.max(H * 0.06 + 30, (H * 0.45 - totalH) / 2 + 30);
+  const spacing = Math.min((W - 80) / maxCols, PIN_R * 2.15);
+  const startY = PIN_R + 20;
   totalPins = MAX_PINS;
   knockedCount = 0;
   pocketCount = 0;
