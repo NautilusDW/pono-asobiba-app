@@ -123,7 +123,7 @@ const world = engine.world;
 const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
-const MAX_PINS = 20;
+const MAX_PINS = 15;
 
 // ── Load pin images ──
 const PIN_COUNT = 13;
@@ -173,17 +173,27 @@ function createWalls() {
 function createPins() {
   pins.forEach(p => World.remove(world, p));
   pins = [];
-  const spacing = PIN_R * 2.4;
-  const cols = Math.min(5, Math.floor((W - 80) / spacing));
-  const maxRows = Math.floor(MAX_PINS / cols);
-  const rows = Math.min(maxRows, Math.floor((H * 0.45) / spacing));
+  // Calculate grid to fit exactly MAX_PINS on any screen
+  const areaW = W - 80, areaH = H * 0.4;
+  // Try different col counts, pick the one that fits MAX_PINS best
+  let bestCols = 3, bestRows = 5;
+  for (let c = 3; c <= 6; c++) {
+    const r = Math.ceil(MAX_PINS / c);
+    const spX = areaW / c, spY = areaH / r;
+    const sp = Math.min(spX, spY);
+    if (sp >= PIN_R * 2.1) { bestCols = c; bestRows = r; break; }
+  }
+  const cols = bestCols;
+  const rows = bestRows;
+  const spacing = Math.min(areaW / cols, areaH / rows, PIN_R * 2.6);
   const startX = (W - (cols - 1) * spacing) / 2;
-  const startY = H * 0.08 + 40;
-  totalPins = cols * rows;
+  const startY = H * 0.06 + 30;
+  totalPins = MAX_PINS;
   knockedCount = 0;
   pocketCount = 0;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
+  let placed = 0;
+  for (let r = 0; r < rows && placed < MAX_PINS; r++) {
+    for (let c = 0; c < cols && placed < MAX_PINS; c++) {
       const x = startX + c * spacing + (Math.random() - 0.5) * 3;
       const y = startY + r * spacing + (Math.random() - 0.5) * 3;
       const pin = Bodies.circle(x, y, PIN_R, {
@@ -194,6 +204,7 @@ function createPins() {
       pin.imgIdx = Math.floor(Math.random() * PIN_COUNT);
       pin.flashTimer = 0; pin.pocketed = false;
       pins.push(pin);
+      placed++;
     }
   }
   World.add(world, pins);
