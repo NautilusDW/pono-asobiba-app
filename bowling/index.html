@@ -82,73 +82,60 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (HTML Audio — src固定, currentTime巻き戻し方式) ──
-function makeWav(freq, dur, vol, decay) {
-  const sr = 22050, n = sr * dur | 0;
-  const buf = new ArrayBuffer(44 + n * 2);
-  const v = new DataView(buf);
-  function s(o, str) { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); }
-  s(0,'RIFF'); v.setUint32(4, 36 + n * 2, true); s(8,'WAVE');
-  s(12,'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true); v.setUint32(24, sr, true);
-  v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  s(36,'data'); v.setUint32(40, n * 2, true);
+// ── Audio (WebAudio API — 初回タッチで遅延初期化) ──
+let actx = null;
+let audioReady = false;
+let bonkBufs = [], pocketBufs = [], strikeBuf = null, launchBuf = null;
+
+function makeBuf(freq, dur, vol, decay) {
+  const sr = actx.sampleRate, n = sr * dur | 0;
+  const ab = actx.createBuffer(1, n, sr);
+  const d = ab.getChannelData(0);
   for (let i = 0; i < n; i++) {
     const t = i / sr;
-    const val = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
-    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, val * 32767 | 0)), true);
+    d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
   }
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  return ab;
 }
 
-// 各効果音ごとに専用Audio要素を作成（srcは一度だけ設定、再設定しない）
-function makeSound(freq, dur, vol, decay, copies) {
-  const url = makeWav(freq, dur, vol, decay);
-  const pool = [];
-  for (let i = 0; i < copies; i++) {
-    const a = new Audio();
-    a.src = url;
-    a.load();
-    pool.push(a);
-  }
-  pool._idx = 0;
-  return pool;
+function initAudio() {
+  if (actx) return;
+  // ユーザージェスチャー内でAudioContextを作成（iOS Safari必須）
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  // サイレントバッファ再生でウォームアップ
+  const sb = actx.createBuffer(1, 1, actx.sampleRate);
+  const sn = actx.createBufferSource();
+  sn.buffer = sb;
+  sn.connect(actx.destination);
+  sn.start(0);
+  // バッファ生成
+  bonkBufs = [makeBuf(300, 0.1, 0.5, 30), makeBuf(450, 0.1, 0.5, 30), makeBuf(600, 0.1, 0.5, 30)];
+  pocketBufs = [makeBuf(500, 0.15, 0.5, 18), makeBuf(700, 0.15, 0.5, 18)];
+  strikeBuf = makeBuf(500, 0.25, 0.5, 10);
+  launchBuf = makeBuf(400, 0.15, 0.5, 15);
+  audioReady = true;
+  unlockEvts.forEach(ev => document.removeEventListener(ev, initAudio, true));
 }
+const unlockEvts = ['touchstart', 'touchend', 'mousedown', 'click', 'keydown'];
+unlockEvts.forEach(ev => document.addEventListener(ev, initAudio, true));
 
-// bonk: 3種×2本 = 6本、pocket: 2種×1本、strike/launch: 各1本
-const bonkPools = [makeSound(300, 0.1, 0.5, 30, 2), makeSound(450, 0.1, 0.5, 30, 2), makeSound(600, 0.1, 0.5, 30, 2)];
-const pocketPools = [makeSound(500, 0.15, 0.5, 18, 1), makeSound(700, 0.15, 0.5, 18, 1)];
-const strikePool = makeSound(500, 0.25, 0.5, 10, 1);
-const launchPool = makeSound(400, 0.15, 0.5, 15, 1);
+// タブ復帰時の再resume
+document.addEventListener('visibilitychange', () => {
+  if (actx && document.visibilityState === 'visible' && actx.state !== 'running') actx.resume();
+});
 
-// unlock: 初回ジェスチャーで全Audio要素をplay→pause（iOS Safari unlock）
-let audioUnlocked = false;
-function unlockAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  const allPools = [...bonkPools, ...pocketPools, strikePool, launchPool];
-  for (const pool of allPools) {
-    for (const a of pool) {
-      a.volume = 0;
-      a.play().then(() => { a.pause(); a.currentTime = 0; a.volume = 1; }).catch(() => {});
-    }
-  }
-  unlockEvts.forEach(ev => document.removeEventListener(ev, unlockAudio, true));
+function playBuf(buf) {
+  if (muteSound || !audioReady || !buf) return;
+  if (actx.state !== 'running') { actx.resume(); return; }
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  src.connect(actx.destination);
+  src.start(0);
 }
-const unlockEvts = ['touchstart', 'touchend', 'mousedown', 'click'];
-unlockEvts.forEach(ev => document.addEventListener(ev, unlockAudio, true));
-
-function playPool(pool) {
-  if (muteSound) return;
-  const a = pool[pool._idx];
-  pool._idx = (pool._idx + 1) % pool.length;
-  a.currentTime = 0;
-  a.play().catch(() => {});
-}
-function playBonk() { playPool(bonkPools[Math.floor(Math.random() * bonkPools.length)]); }
-function playPocket() { playPool(pocketPools[Math.floor(Math.random() * pocketPools.length)]); }
-function playStrike() { playPool(strikePool); }
-function playLaunch() { playPool(launchPool); }
+function playBonk() { playBuf(bonkBufs[Math.floor(Math.random() * bonkBufs.length)]); }
+function playPocket() { playBuf(pocketBufs[Math.floor(Math.random() * pocketBufs.length)]); }
+function playStrike() { playBuf(strikeBuf); }
+function playLaunch() { playBuf(launchBuf); }
 
 // ── Tunable Constants ──
 const POCKET_R = 40;
