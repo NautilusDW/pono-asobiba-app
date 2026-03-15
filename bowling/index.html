@@ -134,7 +134,7 @@ function playLaunch() { playSound(launchSound); }
 const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
-const MAX_PINS = 15;
+const MAX_PINS = 16;
 let RESTITUTION = 0.95;
 let FRICTION_AIR = 0.995;
 let WALL_RESTITUTION = 0.9;
@@ -192,30 +192,10 @@ let soundThrottle = 0;
 function createPins() {
   bodies.length = 0;
   ballIdx = -1;
-  // Build diamond rows: 1,2,3,...,maxW,...,3,2,1
-  const rows = [];
-  let remaining = MAX_PINS;
-  // Expand: 1,2,3,... until we run out or hit screen limit
-  const maxRowW = Math.floor((W - 80) / (PIN_R * 2.2));
-  for (let w = 1; remaining > 0; w++) {
-    const rw = Math.min(w, maxRowW, remaining);
-    rows.push(rw);
-    remaining -= rw;
-    if (w >= maxRowW) break; // start shrinking
-  }
-  // Shrink: ...,3,2,1
-  for (let w = rows[rows.length - 1] - 1; remaining > 0 && w >= 1; w--) {
-    const rw = Math.min(w, remaining);
-    rows.push(rw);
-    remaining -= rw;
-  }
-  // If still remaining, add extra rows
-  while (remaining > 0) {
-    const rw = Math.min(remaining, maxRowW);
-    rows.push(rw);
-    remaining -= rw;
-  }
-  const spacing = Math.min((W - 80) / (Math.max(...rows)), PIN_R * 2.6);
+  // Diamond layout: 1,2,3,4,3,2,1 = 16
+  const rows = [1, 2, 3, 4, 3, 2, 1];
+  const maxCols = 4;
+  const spacing = Math.min((W - 80) / maxCols, PIN_R * 2.6);
   const totalH = rows.length * spacing;
   const startY = Math.max(H * 0.06 + 30, (H * 0.45 - totalH) / 2 + 30);
   totalPins = MAX_PINS;
