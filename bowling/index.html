@@ -134,14 +134,16 @@ function createWalls() {
 }
 
 // ── Pin layout ──
-const PIN_R = 12;
+const PIN_R = 14;
+const MAX_PINS = 50;
 function createPins() {
   pins.forEach(p => World.remove(world, p));
   pins = [];
 
-  const spacing = PIN_R * 2.6;
-  const cols = Math.floor((W - 60) / spacing);
-  const rows = Math.floor((H * 0.55) / spacing);
+  const spacing = PIN_R * 2.8;
+  const cols = Math.min(8, Math.floor((W - 60) / spacing));
+  const maxRows = Math.floor(MAX_PINS / cols);
+  const rows = Math.min(maxRows, Math.floor((H * 0.45) / spacing));
   const startX = (W - (cols - 1) * spacing) / 2;
   const startY = 60;
 
@@ -153,10 +155,10 @@ function createPins() {
       const x = startX + c * spacing + (Math.random() - 0.5) * 2;
       const y = startY + r * spacing + (Math.random() - 0.5) * 2;
       const pin = Bodies.circle(x, y, PIN_R, {
-        restitution: 0.5,
-        friction: 0.1,
-        frictionAir: 0.02,
-        density: 0.0008,
+        restitution: 0.4,
+        friction: 0.15,
+        frictionAir: 0.05,
+        density: 0.0006,
       });
       pin.isPin = true;
       pin.knocked = false;
@@ -177,9 +179,9 @@ const BALL_R = 20;
 function createBall() {
   if (ball) World.remove(world, ball);
   const b = Bodies.circle(W / 2, H - 80, BALL_R, {
-    restitution: 0.6,
-    friction: 0.01,
-    frictionAir: 0.001,
+    restitution: 0.5,
+    friction: 0.02,
+    frictionAir: 0.003,
     density: 0.02,
   });
   b.isBall = true;
@@ -497,7 +499,7 @@ function checkSettle() {
 
   if (maxSpeed < 0.3) {
     settleTimer++;
-    if (settleTimer > 90) { // ~1.5 seconds of calm
+    if (settleTimer > 60) { // ~1 second of calm
       // Check for perfect
       if (knockedCount >= totalPins * 0.95) {
         showBanner('🎉 パーフェクト！', 2000);
