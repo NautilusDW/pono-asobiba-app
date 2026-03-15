@@ -134,7 +134,7 @@ function playLaunch() { playSound(launchSound); }
 const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
-const MAX_PINS = 16;
+const MAX_PINS = 10;
 let RESTITUTION = 0.95;
 let FRICTION_AIR = 0.995;
 let WALL_RESTITUTION = 0.9;
@@ -192,12 +192,11 @@ let soundThrottle = 0;
 function createPins() {
   bodies.length = 0;
   ballIdx = -1;
-  // Diamond layout: 1,2,3,4,3,2,1 = 16
-  const rows = [1, 2, 3, 4, 3, 2, 1];
-  const maxCols = 4;
-  // ピン直径(68)より少し大きい程度にギュッと詰める
-  const spacing = PIN_R * 2 + 4; // 72px固定
-  const startY = PIN_R + 20;
+  // Bowling triangle: 1,2,3,4 = 10
+  const rows = [1, 2, 3, 4];
+  const spacing = PIN_R * 2 + 6;
+  const totalH = rows.length * spacing;
+  const startY = H * 0.15;
   totalPins = MAX_PINS;
   knockedCount = 0;
   pocketCount = 0;
