@@ -135,7 +135,7 @@ document.addEventListener('visibilitychange', () => {
 // 再生関数 — unlocked判定をやめてcontextのstate確認のみ
 function playBuf(buf, volume, rate) {
   if (muteSound || !audioCtx || !buf) return;
-  if (audioCtx.state !== 'running') return; // まだrunningじゃなければ諦める（FPS優先）
+  // suspended中でもstart()するとキューに入り、running後に再生される
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
   src.playbackRate.value = rate || 1;
