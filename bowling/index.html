@@ -295,14 +295,8 @@ function physicsStep() {
       if (bodies[j].pocketed) continue;
       if (resolveCollision(bodies[i], bodies[j])) {
         // Collision happened
-        if (soundThrottle <= 0) {
-          const dvx = bodies[i].vx - bodies[j].vx;
-          const dvy = bodies[i].vy - bodies[j].vy;
-          if (dvx * dvx + dvy * dvy > 4) {
-            playBonk();
-            soundThrottle = 30; // ~0.5秒に1回まで（FPS保護）
-          }
-        }
+        // bonk音はiOS Safariで毎回FPSを落とすため無効化
+        // launch/pocket/strikeの低頻度音のみ残す
         // Check knocked (no temp array — avoid GC)
         for (let k = 0; k < 2; k++) {
           const idx = k === 0 ? i : j;
