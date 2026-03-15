@@ -192,8 +192,8 @@ let soundThrottle = 0;
 function createPins() {
   bodies.length = 0;
   ballIdx = -1;
-  // Bowling triangle: 1,2,3,4 = 10
-  const rows = [1, 2, 3, 4];
+  // Bowling triangle: 4,3,2,1 = 10
+  const rows = [4, 3, 2, 1];
   const spacing = PIN_R * 2 + 6;
   const totalH = rows.length * spacing;
   const startY = H * 0.15;
