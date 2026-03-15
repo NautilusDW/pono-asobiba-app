@@ -128,9 +128,21 @@ function unlockAudio() {
   strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
   launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
 
-  unlocked = true;
+  // AudioContextがrunningになるまで待ってからunlocked=trueにする
+  if (audioCtx.state === 'running') {
+    unlocked = true;
+  } else {
+    audioCtx.onstatechange = () => {
+      if (audioCtx.state === 'running') {
+        unlocked = true;
+        audioCtx.onstatechange = null;
+      }
+    };
+    // フォールバック: 300ms後にまだ切り替わっていなければ強制的にunlock
+    setTimeout(() => { unlocked = true; }, 300);
+  }
 
-  // アンロック完了後にリスナーを外す
+  // リスナーを外す
   document.removeEventListener('pointerdown', unlockAudio);
   document.removeEventListener('touchstart', unlockAudio);
 }
@@ -627,7 +639,7 @@ function loop(now) {
     // 音は1フレームにつき最大1回（物理ステップ内ではフラグのみ）
     if (collisionHappened && soundThrottle <= 0) {
       playBonk();
-      soundThrottle = 8;
+      soundThrottle = 30;
     }
     soundThrottle--;
     checkPockets();
