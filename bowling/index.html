@@ -84,15 +84,17 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (Web Audio API — 他AI推奨パターン準拠) ──
-let audioCtx;
+// ── Audio (Web Audio API) ──
+// ページロード時にAudioContextを作成（suspended状態）→ 初回タッチでresume
+const AC = window.AudioContext || window.webkitAudioContext;
+let audioCtx = new AC();
 let unlocked = false;
 let bonkBuf, pocketBuf, strikeBuf, launchBuf;
 
 // AudioBuffer生成（プログラム的にサイン波を書き込む）
-function makeBuf(ctx, freq, dur, vol, decay) {
-  const sr = ctx.sampleRate, n = sr * dur | 0;
-  const ab = ctx.createBuffer(1, n, sr);
+function makeBuf(freq, dur, vol, decay) {
+  const sr = audioCtx.sampleRate, n = sr * dur | 0;
+  const ab = audioCtx.createBuffer(1, n, sr);
   const d = ab.getChannelData(0);
   for (let i = 0; i < n; i++) {
     const t = i / sr;
@@ -101,58 +103,60 @@ function makeBuf(ctx, freq, dur, vol, decay) {
   return ab;
 }
 
-// 初回ユーザー操作で同期的にAudioContextを初期化・アンロック
+// バッファはページロード時に即生成（AudioContextがsuspendedでも作れる）
+bonkBuf = makeBuf(400, 0.08, 0.5, 35);
+pocketBuf = makeBuf(600, 0.12, 0.5, 20);
+strikeBuf = makeBuf(500, 0.25, 0.5, 10);
+launchBuf = makeBuf(400, 0.12, 0.5, 18);
+
+// 初回ユーザー操作でiOSオーディオロック解除
 function unlockAudio() {
   if (unlocked) return;
-
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!audioCtx) {
-    audioCtx = new AC();
-  }
-
   // 必ず同期的にresumeを呼ぶ（イベントハンドラ第一階層）
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-
+  audioCtx.resume().then(() => { unlocked = true; });
   // 無音バッファを再生してiOSのオーディオロックを強制解除
-  const buffer = audioCtx.createBuffer(1, 1, 22050);
-  const source = audioCtx.createBufferSource();
-  source.buffer = buffer;
-  source.connect(audioCtx.destination);
-  source.start(0);
-
-  // 効果音バッファを生成
-  bonkBuf = makeBuf(audioCtx, 400, 0.08, 0.5, 35);
-  pocketBuf = makeBuf(audioCtx, 600, 0.12, 0.5, 20);
-  strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
-  launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
-
+  const buf = audioCtx.createBuffer(1, 1, 22050);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(audioCtx.destination);
+  src.start(0);
+  // iOS: resume()のthen前でも、同期的にunlock扱いにする
   unlocked = true;
 }
 
-// ユーザーアクションにフック（unlocked後は即returnするので毎回呼んでもOK）
 document.addEventListener('pointerdown', unlockAudio);
 document.addEventListener('touchstart', unlockAudio);
 
 // タブ復帰時の再resume
 document.addEventListener('visibilitychange', () => {
-  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') {
+  if (document.visibilityState === 'visible' && audioCtx.state !== 'running') {
     audioCtx.resume();
   }
 });
 
-// 再生関数（毎回新しいBufferSourceNodeを使い捨て）
-function playBuf(buf) {
+// 再生関数（音量・再生レート指定可能）
+function playBuf(buf, volume, rate) {
   if (muteSound || !unlocked || !buf) return;
-  // stateがrunningでなくてもresume後に再生を試みる（早期リターンしない）
   if (audioCtx.state !== 'running') audioCtx.resume();
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
-  src.connect(audioCtx.destination);
+  src.playbackRate.value = rate || 1;
+  if (volume !== undefined && volume < 1) {
+    const gain = audioCtx.createGain();
+    gain.gain.value = volume;
+    src.connect(gain);
+    gain.connect(audioCtx.destination);
+  } else {
+    src.connect(audioCtx.destination);
+  }
   src.start(0);
 }
-function playBonk() { playBuf(bonkBuf); }
+function playBonk(intensity) {
+  // intensity: 0〜1 で衝突の強さ。音量・ピッチが変わる
+  const vol = 0.15 + intensity * 0.85;
+  const rate = 0.7 + intensity * 0.6 + (Math.random() - 0.5) * 0.2;
+  playBuf(bonkBuf, vol, rate);
+}
 function playPocket() { playBuf(pocketBuf); }
 function playStrike() { playBuf(strikeBuf); }
 function playLaunch() { playBuf(launchBuf); }
@@ -220,7 +224,7 @@ let knockedCount = 0, totalPins = 0, pocketCount = 0;
 let settleTimer = 0, launchElapsed = 0, roundResetting = false;
 let dragging = false, dragStart = null, dragCur = null;
 let soundThrottle = 0;
-let collisionHappened = false;
+let maxCollisionIntensity = 0; // 0〜1: そのフレームで最大の衝突強度
 
 function createPins() {
   bodies.length = 0;
@@ -319,8 +323,11 @@ function physicsStep() {
       const preVy = bodies[i].vy - bodies[j].vy;
       const preSpd2 = preVx * preVx + preVy * preVy;
       if (resolveCollision(bodies[i], bodies[j])) {
-        // 衝突前の相対速度が十分大きい場合のみ音を鳴らす
-        if (preSpd2 > 16) collisionHappened = true;
+        // 衝突の強さを0〜1に正規化（速度4以上で音、20で最大）
+        if (preSpd2 > 16) {
+          const intensity = Math.min(1, (Math.sqrt(preSpd2) - 4) / 16);
+          if (intensity > maxCollisionIntensity) maxCollisionIntensity = intensity;
+        }
         // Check knocked (no temp array — avoid GC)
         for (let k = 0; k < 2; k++) {
           const idx = k === 0 ? i : j;
@@ -615,19 +622,20 @@ function loop(now) {
 
   if (ballLaunched) {
     const prevScore = score;
-    collisionHappened = false;
+    maxCollisionIntensity = 0;
     // Fixed timestep: run physics in consistent 16.67ms steps
     accumulator += elapsed;
     while (accumulator >= PHYSICS_DT) {
       physicsStep();
       accumulator -= PHYSICS_DT;
     }
-    // 音は1フレームにつき最大1回（物理ステップ内ではフラグのみ）
-    if (collisionHappened && soundThrottle <= 0) {
-      playBonk();
-      soundThrottle = 5;
+    // 音は1フレームにつき最大1回 — 強さで音量・ピッチ・次回までの間隔が変わる
+    if (maxCollisionIntensity > 0 && soundThrottle <= 0) {
+      playBonk(maxCollisionIntensity);
+      // 強い衝突→長めの間隔、弱い衝突→短い間隔（自然な響き）
+      soundThrottle = 3 + (maxCollisionIntensity * 8) | 0;
     }
-    soundThrottle--;
+    if (soundThrottle > 0) soundThrottle--;
     checkPockets();
     checkSettle();
     if (score !== prevScore) scoreEl.textContent = score;
