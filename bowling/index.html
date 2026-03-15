@@ -56,60 +56,67 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (iOS unlock) ──
+// ── Audio (iOS/mobile unlock) ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-function ensureAudio() {
-  if (!audioCtx) audioCtx = new AudioCtx();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-function unlockAudio() {
-  ensureAudio();
+const audioCtx = new AudioCtx();
+let audioReady = false;
+function resumeAudio() {
+  if (audioCtx.state === 'running') { audioReady = true; return; }
+  audioCtx.resume().then(() => { audioReady = true; });
   try {
     const buf = audioCtx.createBuffer(1, 1, 22050);
     const src = audioCtx.createBufferSource();
     src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
   } catch(e) {}
 }
-['touchstart','touchend','mousedown','click'].forEach(evt =>
-  document.addEventListener(evt, unlockAudio, { once: true, capture: true })
-);
+function onInteraction() {
+  resumeAudio();
+  if (audioReady) {
+    ['touchstart','touchend','mousedown','click','pointerdown'].forEach(e =>
+      document.removeEventListener(e, onInteraction, true));
+  }
+}
+['touchstart','touchend','mousedown','click','pointerdown'].forEach(e =>
+  document.addEventListener(e, onInteraction, true));
 
 function playBonk(intensity) {
-  ensureAudio();
+  resumeAudio();
+  if (audioCtx.state !== 'running') return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = 'triangle';
   osc.frequency.value = 200 + Math.random() * 400 + intensity * 400;
-  gain.gain.setValueAtTime(Math.min(0.25, intensity * 0.15), audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+  gain.gain.setValueAtTime(Math.min(0.5, intensity * 0.35), audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
   osc.connect(gain).connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.12);
 }
 function playPocket() {
-  ensureAudio();
+  resumeAudio();
+  if (audioCtx.state !== 'running') return;
   [0, 60, 120].forEach((d, i) => {
     setTimeout(() => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
       osc.frequency.value = 500 + i * 200;
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.45, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
       osc.connect(gain).connect(audioCtx.destination);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.18);
     }, d);
   });
 }
 function playStrike() {
-  ensureAudio();
+  resumeAudio();
+  if (audioCtx.state !== 'running') return;
   [0, 80, 160, 240, 320].forEach((d, i) => {
     setTimeout(() => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = i % 2 === 0 ? 'sine' : 'triangle';
       osc.frequency.value = 400 + i * 150;
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.45, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(); osc.stop(audioCtx.currentTime + 0.3);
@@ -117,13 +124,14 @@ function playStrike() {
   });
 }
 function playLaunch() {
-  ensureAudio();
+  resumeAudio();
+  if (audioCtx.state !== 'running') return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(150, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.45, audioCtx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
   osc.connect(gain).connect(audioCtx.destination);
   osc.start(); osc.stop(audioCtx.currentTime + 0.2);
