@@ -82,8 +82,10 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (WebAudio API — no src reassignment) ──
+// ── Audio (WebAudio API — robust mobile unlock) ──
 const actx = new (window.AudioContext || window.webkitAudioContext)();
+let audioUnlocked = false;
+
 function makeBuf(freq, dur, vol, decay) {
   const sr = actx.sampleRate, n = sr * dur | 0;
   const ab = actx.createBuffer(1, n, sr);
@@ -98,15 +100,45 @@ const bonkBufs = [makeBuf(300, 0.1, 0.5, 30), makeBuf(450, 0.1, 0.5, 30), makeBu
 const pocketBufs = [makeBuf(500, 0.15, 0.5, 18), makeBuf(700, 0.15, 0.5, 18)];
 const strikeBuf = makeBuf(500, 0.25, 0.5, 10);
 const launchBuf = makeBuf(400, 0.15, 0.5, 15);
-function unlockAudio() { if (actx.state === 'suspended') actx.resume(); }
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('pointerdown', unlockAudio, { once: true });
+
+// Howler.js/Phaser式の完全unlock: resume + サイレントバッファ再生（iOS Safariウォームアップ）
+function unlockAudio() {
+  if (audioUnlocked) return;
+  if (actx.state === 'suspended' || actx.state === 'interrupted') {
+    actx.resume();
+  }
+  // iOS Safari必須: サイレントバッファ再生でAudioContextを本当にunlock
+  try {
+    const sb = actx.createBuffer(1, 1, 22050);
+    const sn = actx.createBufferSource();
+    sn.buffer = sb;
+    sn.connect(actx.destination);
+    sn.start(0);
+    sn.onended = () => { audioUnlocked = true; };
+  } catch(e) {}
+  if (actx.state === 'running') {
+    audioUnlocked = true;
+    unlockEvents.forEach(ev => document.removeEventListener(ev, unlockAudio, true));
+  }
+}
+const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'click', 'keydown'];
+unlockEvents.forEach(ev => document.addEventListener(ev, unlockAudio, true));
+
+// iOS Safari: タブ切替・画面OFF復帰時の再unlock
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && actx.state !== 'running') actx.resume();
+});
+actx.onstatechange = () => {
+  if (actx.state === 'interrupted') actx.resume();
+};
+
 function playBuf(buf) {
   if (muteSound) return;
+  if (actx.state !== 'running') { actx.resume(); return; }
   const src = actx.createBufferSource();
   src.buffer = buf;
   src.connect(actx.destination);
-  src.start();
+  src.start(0);
 }
 function playBonk() { playBuf(bonkBufs[Math.floor(Math.random() * bonkBufs.length)]); }
 function playPocket() { playBuf(pocketBufs[Math.floor(Math.random() * pocketBufs.length)]); }
