@@ -40,7 +40,7 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// ── Audio (WAV generation - no oscillators) ──
+// ── Audio (WAV generation + audio pool) ──
 function makeWav(freq, dur, vol, decay) {
   const sr = 22050, n = sr * dur | 0;
   const buf = new ArrayBuffer(44 + n * 2);
@@ -58,20 +58,29 @@ function makeWav(freq, dur, vol, decay) {
   }
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
-// Pre-generate a pool of pop sounds at different pitches
+
+// Audio pool: reuse Audio elements instead of creating new ones each time
+const POOL_SIZE = 10;
+const audioPool = [];
+let poolIdx = 0;
+for (let i = 0; i < POOL_SIZE; i++) {
+  audioPool.push(new Audio());
+}
+
 const popSounds = [];
 for (let i = 0; i < 6; i++) popSounds.push(makeWav(600 + i * 80, 0.15, 0.6, 25));
 const chainSound = makeWav(1100, 0.1, 0.4, 30);
 const boomSounds = [];
 for (let i = 0; i < 5; i++) boomSounds.push(makeWav(300 + i * 200, 0.4, 0.5, 8));
 
-// Unlock audio on first touch (iOS requires user gesture before any Audio.play)
+// Unlock audio on first touch
 const silentWav = makeWav(440, 0.01, 0, 50);
 let audioUnlocked = false;
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  const a = new Audio(silentWav);
+  const a = audioPool[0];
+  a.src = silentWav;
   a.volume = 0;
   a.play().catch(() => {});
 }
@@ -79,11 +88,13 @@ document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 
 function playSound(url) {
-  const a = new Audio(url);
+  const a = audioPool[poolIdx];
+  poolIdx = (poolIdx + 1) % POOL_SIZE;
+  a.src = url;
   a.volume = 1.0;
   a.play().catch(() => {});
 }
-function playPop(pitch) {
+function playPop() {
   playSound(popSounds[Math.floor(Math.random() * popSounds.length)]);
 }
 function playChainPop() {
@@ -95,247 +106,259 @@ function playGoldenBoom() {
 
 // ── Bubble colors ──
 const COLORS = [
-  { r: 255, g: 130, b: 170 }, // pink
-  { r: 130, g: 200, b: 255 }, // blue
-  { r: 170, g: 255, b: 170 }, // green
-  { r: 255, g: 220, b: 130 }, // yellow
-  { r: 200, g: 160, b: 255 }, // purple
-  { r: 255, g: 180, b: 130 }, // orange
+  { r: 255, g: 130, b: 170 },
+  { r: 130, g: 200, b: 255 },
+  { r: 170, g: 255, b: 170 },
+  { r: 255, g: 220, b: 130 },
+  { r: 200, g: 160, b: 255 },
+  { r: 255, g: 180, b: 130 },
 ];
 
-// ── Bubbles ──
-const bubbles = [];
-const particles = [];
-const confetti = [];
+// ── Pre-render bubble sprites (avoid createRadialGradient every frame) ──
+const SPRITE_SIZES = [40, 60, 80, 100]; // discrete sizes for snapping
+function makeBubbleSprite(size, color, golden) {
+  const pad = golden ? Math.ceil(size * 0.35) : 2;
+  const full = size * 2 + pad * 2;
+  const oc = document.createElement('canvas');
+  oc.width = oc.height = full;
+  const c = oc.getContext('2d');
+  const cx = full / 2, cy = full / 2, r = size;
+
+  // Golden glow (rendered into the same sprite)
+  if (golden) {
+    c.globalAlpha = 0.3;
+    c.beginPath();
+    c.arc(cx, cy, r * 1.3, 0, Math.PI * 2);
+    c.fillStyle = 'rgba(255,215,60,0.3)';
+    c.fill();
+    c.globalAlpha = 1;
+  }
+
+  // Main bubble gradient
+  c.globalAlpha = 0.75;
+  const grad = c.createRadialGradient(cx - r * 0.25, cy - r * 0.25, r * 0.1, cx, cy, r);
+  if (golden) {
+    grad.addColorStop(0, 'rgba(255,255,200,0.9)');
+    grad.addColorStop(0.5, 'rgba(255,215,60,0.6)');
+    grad.addColorStop(1, 'rgba(255,180,0,0.2)');
+  } else {
+    grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+    grad.addColorStop(0.4, `rgba(${color.r},${color.g},${color.b},0.45)`);
+    grad.addColorStop(1, `rgba(${color.r},${color.g},${color.b},0.1)`);
+  }
+  c.beginPath();
+  c.arc(cx, cy, r, 0, Math.PI * 2);
+  c.fillStyle = grad;
+  c.fill();
+
+  // Shine highlight
+  c.globalAlpha = 0.5;
+  c.beginPath();
+  c.ellipse(cx - r * 0.3, cy - r * 0.3, r * 0.25, r * 0.15, -0.5, 0, Math.PI * 2);
+  c.fillStyle = '#fff';
+  c.fill();
+
+  // Outline
+  c.globalAlpha = 0.3;
+  c.beginPath();
+  c.arc(cx, cy, r, 0, Math.PI * 2);
+  c.strokeStyle = golden ? 'rgba(255,180,0,0.5)' : `rgba(${color.r},${color.g},${color.b},0.4)`;
+  c.lineWidth = 1.5;
+  c.stroke();
+
+  return { canvas: oc, pad };
+}
+
+// Build sprite cache: [sizeIdx][colorIdx]
+const bubbleSpriteCache = {};
+function getBubbleSprite(r, colorIdx, golden) {
+  // Snap to nearest discrete size
+  let bestSize = SPRITE_SIZES[0];
+  for (let i = 1; i < SPRITE_SIZES.length; i++) {
+    if (Math.abs(SPRITE_SIZES[i] - r) < Math.abs(bestSize - r)) bestSize = SPRITE_SIZES[i];
+  }
+  const key = golden ? `g_${bestSize}` : `${bestSize}_${colorIdx}`;
+  if (!bubbleSpriteCache[key]) {
+    bubbleSpriteCache[key] = makeBubbleSprite(bestSize, golden ? { r: 255, g: 215, b: 60 } : COLORS[colorIdx], golden);
+  }
+  return { sprite: bubbleSpriteCache[key], snapSize: bestSize };
+}
+
+// ── Bubbles (flat arrays for performance) ──
+const MAX_BUBBLES = 40;
+const bx = new Float32Array(MAX_BUBBLES + 20); // extra room for tap-spawned
+const by = new Float32Array(MAX_BUBBLES + 20);
+const br = new Float32Array(MAX_BUBBLES + 20);
+const bvx = new Float32Array(MAX_BUBBLES + 20);
+const bvy = new Float32Array(MAX_BUBBLES + 20);
+const bwobblePhase = new Float32Array(MAX_BUBBLES + 20);
+const bwobbleSpeed = new Float32Array(MAX_BUBBLES + 20);
+const bwobbleAmp = new Float32Array(MAX_BUBBLES + 20);
+const bopacity = new Float32Array(MAX_BUBBLES + 20);
+const bcolorIdx = new Uint8Array(MAX_BUBBLES + 20);
+const bgolden = new Uint8Array(MAX_BUBBLES + 20);
+const balive = new Uint8Array(MAX_BUBBLES + 20);
+const bfadeIn = new Uint8Array(MAX_BUBBLES + 20);
+let bcount = 0;
+
+function addBubble(x, y, radius, golden, opacity) {
+  if (bcount >= bx.length) return;
+  const i = bcount++;
+  const sz = Math.min(W, H) / 600;
+  br[i] = radius || (35 + Math.random() * 45) * sz;
+  bx[i] = x ?? (Math.random() * W);
+  by[i] = y ?? (H + br[i] + Math.random() * 100);
+  bgolden[i] = golden ? 1 : 0;
+  bcolorIdx[i] = Math.floor(Math.random() * COLORS.length);
+  bvx[i] = (Math.random() - 0.5) * 0.5;
+  bvy[i] = -(0.5 + Math.random() * 1.0) * (golden ? 0.6 : 1);
+  bwobblePhase[i] = Math.random() * Math.PI * 2;
+  bwobbleSpeed[i] = 0.02 + Math.random() * 0.02;
+  bwobbleAmp[i] = 0.5 + Math.random() * 0.5;
+  bopacity[i] = opacity ?? 0;
+  balive[i] = 1;
+  bfadeIn[i] = (opacity != null && opacity >= 0.8) ? 0 : 1;
+}
+
+// ── Particles (flat arrays) ──
+const MAX_PARTICLES = 200;
+const px = new Float32Array(MAX_PARTICLES);
+const py = new Float32Array(MAX_PARTICLES);
+const pvx = new Float32Array(MAX_PARTICLES);
+const pvy = new Float32Array(MAX_PARTICLES);
+const psize = new Float32Array(MAX_PARTICLES);
+const plife = new Float32Array(MAX_PARTICLES);
+const pdecay = new Float32Array(MAX_PARTICLES);
+const pcr = new Uint8Array(MAX_PARTICLES);
+const pcg = new Uint8Array(MAX_PARTICLES);
+const pcb = new Uint8Array(MAX_PARTICLES);
+let pcount = 0;
+
+function addParticle(x, y, color, size) {
+  if (pcount >= MAX_PARTICLES) return;
+  const i = pcount++;
+  px[i] = x; py[i] = y;
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 2 + Math.random() * 5;
+  pvx[i] = Math.cos(angle) * speed;
+  pvy[i] = Math.sin(angle) * speed;
+  psize[i] = size || 3 + Math.random() * 4;
+  plife[i] = 1;
+  pdecay[i] = 0.02 + Math.random() * 0.02;
+  pcr[i] = color.r; pcg[i] = color.g; pcb[i] = color.b;
+}
+
+// ── Confetti (flat arrays) ──
+const MAX_CONFETTI = 200;
+const cfx = new Float32Array(MAX_CONFETTI);
+const cfy = new Float32Array(MAX_CONFETTI);
+const cfvx = new Float32Array(MAX_CONFETTI);
+const cfvy = new Float32Array(MAX_CONFETTI);
+const cfrot = new Float32Array(MAX_CONFETTI);
+const cfrotSpd = new Float32Array(MAX_CONFETTI);
+const cflife = new Float32Array(MAX_CONFETTI);
+const cfsize = new Float32Array(MAX_CONFETTI);
+const cfcr = new Uint8Array(MAX_CONFETTI);
+const cfcg = new Uint8Array(MAX_CONFETTI);
+const cfcb = new Uint8Array(MAX_CONFETTI);
+let cfcount = 0;
+
+function addConfetti(x, y) {
+  if (cfcount >= MAX_CONFETTI) return;
+  const i = cfcount++;
+  cfx[i] = x; cfy[i] = y;
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  cfcr[i] = color.r; cfcg[i] = color.g; cfcb[i] = color.b;
+  cfsize[i] = 4 + Math.random() * 6;
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 3 + Math.random() * 6;
+  cfvx[i] = Math.cos(angle) * speed;
+  cfvy[i] = Math.sin(angle) * speed - 4;
+  cfrot[i] = Math.random() * Math.PI * 2;
+  cfrotSpd[i] = (Math.random() - 0.5) * 0.3;
+  cflife[i] = 1;
+}
+
 let goldenTimer = 0;
-const GOLDEN_INTERVAL = 12000; // ms
-
-class Bubble {
-  constructor(x, y, r, golden) {
-    this.r = r || (35 + Math.random() * 45) * (Math.min(W, H) / 600);
-    this.x = x ?? (Math.random() * W);
-    this.y = y ?? (H + this.r + Math.random() * 100);
-    this.golden = golden || false;
-    this.color = this.golden ? { r: 255, g: 215, b: 60 } : COLORS[Math.floor(Math.random() * COLORS.length)];
-    this.vx = (Math.random() - 0.5) * 0.5;
-    this.vy = -(0.5 + Math.random() * 1.0) * (this.golden ? 0.6 : 1);
-    this.wobblePhase = Math.random() * Math.PI * 2;
-    this.wobbleSpeed = 0.02 + Math.random() * 0.02;
-    this.wobbleAmp = 0.5 + Math.random() * 0.5;
-    this.alive = true;
-    this.opacity = 0;
-    this.fadeIn = true;
-    this.shimmer = Math.random() * Math.PI * 2;
-  }
-
-  update(dt) {
-    if (this.fadeIn) {
-      this.opacity = Math.min(1, this.opacity + dt * 0.008);
-      if (this.opacity >= 1) this.fadeIn = false;
-    }
-    this.wobblePhase += this.wobbleSpeed * dt;
-    this.shimmer += 0.02 * dt;
-    this.x += (this.vx + Math.sin(this.wobblePhase) * this.wobbleAmp) * dt * 0.15;
-    this.y += this.vy * dt * 0.15;
-    // wrap horizontally
-    if (this.x < -this.r) this.x = W + this.r;
-    if (this.x > W + this.r) this.x = -this.r;
-    // remove if off top
-    if (this.y < -this.r * 2) this.alive = false;
-  }
-
-  draw(ctx) {
-    const { x, y, r, color, golden, opacity, shimmer } = this;
-    ctx.save();
-    ctx.globalAlpha = opacity * 0.75;
-
-    // Main bubble
-    const grad = ctx.createRadialGradient(x - r * 0.25, y - r * 0.25, r * 0.1, x, y, r);
-    if (golden) {
-      grad.addColorStop(0, `rgba(255,255,200,0.9)`);
-      grad.addColorStop(0.5, `rgba(255,215,60,0.6)`);
-      grad.addColorStop(1, `rgba(255,180,0,0.2)`);
-    } else {
-      grad.addColorStop(0, `rgba(255,255,255,0.9)`);
-      grad.addColorStop(0.4, `rgba(${color.r},${color.g},${color.b},0.45)`);
-      grad.addColorStop(1, `rgba(${color.r},${color.g},${color.b},0.1)`);
-    }
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Shine highlight
-    ctx.globalAlpha = opacity * (0.5 + Math.sin(shimmer) * 0.15);
-    ctx.beginPath();
-    ctx.ellipse(x - r * 0.3, y - r * 0.3, r * 0.25, r * 0.15, -0.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-
-    // Golden glow
-    if (golden) {
-      ctx.globalAlpha = 0.25 + Math.sin(shimmer * 2) * 0.15;
-      ctx.beginPath();
-      ctx.arc(x, y, r * 1.3, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,215,60,0.3)';
-      ctx.fill();
-    }
-
-    // Outline
-    ctx.globalAlpha = opacity * 0.3;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = golden ? 'rgba(255,180,0,0.5)' : `rgba(${color.r},${color.g},${color.b},0.4)`;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  contains(px, py) {
-    const dx = px - this.x, dy = py - this.y;
-    return dx * dx + dy * dy < this.r * this.r * 1.3; // slightly generous
-  }
-}
-
-// ── Pop particles ──
-class Particle {
-  constructor(x, y, color, size) {
-    this.x = x; this.y = y;
-    this.color = color;
-    this.size = size || 3 + Math.random() * 4;
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 5;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed;
-    this.life = 1;
-    this.decay = 0.02 + Math.random() * 0.02;
-  }
-  update(dt) {
-    this.x += this.vx * dt * 0.25;
-    this.y += this.vy * dt * 0.25;
-    this.vy += 0.03 * dt * 0.25;
-    this.life -= this.decay * dt * 0.1;
-  }
-  draw(ctx) {
-    ctx.globalAlpha = Math.max(0, this.life);
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
-    ctx.fillStyle = `rgb(${this.color.r},${this.color.g},${this.color.b})`;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-}
-
-// ── Confetti ──
-class Confetti {
-  constructor(x, y) {
-    this.x = x; this.y = y;
-    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-    this.size = 4 + Math.random() * 6;
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 3 + Math.random() * 6;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed - 4;
-    this.rotation = Math.random() * Math.PI * 2;
-    this.rotSpeed = (Math.random() - 0.5) * 0.3;
-    this.life = 1;
-  }
-  update(dt) {
-    this.x += this.vx * dt * 0.2;
-    this.y += this.vy * dt * 0.2;
-    this.vy += 0.06 * dt * 0.2;
-    this.vx *= 0.995;
-    this.rotation += this.rotSpeed * dt * 0.1;
-    this.life -= 0.006 * dt * 0.1;
-  }
-  draw(ctx) {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, this.life);
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.rotation);
-    ctx.fillStyle = `rgb(${this.color.r},${this.color.g},${this.color.b})`;
-    ctx.fillRect(-this.size / 2, -this.size / 4, this.size, this.size / 2);
-    ctx.restore();
-  }
-}
+const GOLDEN_INTERVAL = 12000;
 
 // ── Pop logic ──
-function popBubble(b, chainDepth) {
-  if (!b.alive) return;
-  b.alive = false;
+function popBubble(idx, chainDepth) {
+  if (!balive[idx]) return;
+  balive[idx] = 0;
+  const x0 = bx[idx], y0 = by[idx];
+  const isGolden = bgolden[idx];
+  const color = isGolden ? { r: 255, g: 215, b: 60 } : COLORS[bcolorIdx[idx]];
 
-  // Spawn particles
-  const count = b.golden ? 20 : 8;
+  const count = isGolden ? 15 : 6;
   for (let i = 0; i < count; i++) {
-    particles.push(new Particle(b.x, b.y, b.color, b.golden ? 5 + Math.random() * 5 : undefined));
+    addParticle(x0, y0, color, isGolden ? 5 + Math.random() * 5 : undefined);
   }
 
-  if (b.golden) {
+  if (isGolden) {
     playGoldenBoom();
-    // Pop ALL bubbles as chain
-    const others = bubbles.filter(o => o.alive && !o.golden);
-    others.forEach((o, i) => {
+    // Chain pop all non-golden bubbles
+    let delay = 0;
+    for (let i = 0; i < bcount; i++) {
+      if (!balive[i] || bgolden[i]) continue;
+      const ii = i;
       setTimeout(() => {
-        if (o.alive) {
-          o.alive = false;
-          for (let j = 0; j < 6; j++) particles.push(new Particle(o.x, o.y, o.color));
-          playChainPop();
-        }
-      }, i * 15 + Math.random() * 30);
-    });
-    // Confetti explosion
-    for (let i = 0; i < 80; i++) {
-      confetti.push(new Confetti(b.x, b.y));
+        if (!balive[ii]) return;
+        balive[ii] = 0;
+        const c = COLORS[bcolorIdx[ii]];
+        for (let j = 0; j < 4; j++) addParticle(bx[ii], by[ii], c);
+        playChainPop();
+      }, delay);
+      delay += 15 + Math.random() * 30 | 0;
     }
+    // Confetti
+    for (let i = 0; i < 60; i++) addConfetti(x0, y0);
   } else {
-    playPop(Math.random());
-    // Chain reaction: pop nearby bubbles
+    playPop();
+    // Chain reaction: pop nearby
     if (chainDepth < 3) {
-      const chainRange = b.r * 2.8;
-      bubbles.forEach(o => {
-        if (o === b || !o.alive || o.golden) return;
-        const dx = o.x - b.x, dy = o.y - b.y;
-        if (dx * dx + dy * dy < chainRange * chainRange) {
-          const delay = 60 + Math.random() * 80;
-          setTimeout(() => popBubble(o, chainDepth + 1), delay);
+      const chainR = br[idx] * 2.8;
+      const chainR2 = chainR * chainR;
+      for (let i = 0; i < bcount; i++) {
+        if (i === idx || !balive[i] || bgolden[i]) continue;
+        const dx = bx[i] - x0, dy = by[i] - y0;
+        if (dx * dx + dy * dy < chainR2) {
+          const ii = i;
+          setTimeout(() => popBubble(ii, chainDepth + 1), 60 + Math.random() * 80 | 0);
         }
-      });
+      }
     }
   }
 }
 
 // ── Spawn ──
 function spawnBubble() {
-  if (bubbles.length < 55) {
-    bubbles.push(new Bubble());
-  }
+  if (bcount < MAX_BUBBLES) addBubble();
 }
-
 function spawnGolden() {
-  const r = (60 + Math.random() * 30) * (Math.min(W, H) / 600);
-  const b = new Bubble(Math.random() * (W - r * 2) + r, H + r, r, true);
-  b.vy = -(0.2 + Math.random() * 0.2);
-  bubbles.push(b);
+  const sz = Math.min(W, H) / 600;
+  const r = (60 + Math.random() * 30) * sz;
+  addBubble(Math.random() * (W - r * 2) + r, H + r, r, true);
+  // Set the vy for golden
+  bvy[bcount - 1] = -(0.2 + Math.random() * 0.2);
 }
 
 // ── Input ──
 function handlePop(x, y) {
-  // Check from front (top rendered) to back
-  for (let i = bubbles.length - 1; i >= 0; i--) {
-    const b = bubbles[i];
-    if (b.alive && b.contains(x, y)) {
-      popBubble(b, 0);
+  for (let i = bcount - 1; i >= 0; i--) {
+    if (!balive[i]) continue;
+    const dx = x - bx[i], dy = y - by[i];
+    if (dx * dx + dy * dy < br[i] * br[i] * 1.3) {
+      popBubble(i, 0);
       return;
     }
   }
-  // Tap empty space: spawn a small burst of mini bubbles
+  // Tap empty space: spawn mini bubbles
+  const sz = Math.min(W, H) / 600;
   for (let i = 0; i < 3; i++) {
-    const r = (20 + Math.random() * 25) * (Math.min(W, H) / 600);
-    const nb = new Bubble(x + (Math.random() - 0.5) * 40, y + (Math.random() - 0.5) * 40, r);
-    nb.vy = -(0.6 + Math.random() * 0.8);
-    nb.opacity = 0.8;
-    bubbles.push(nb);
+    const r = (20 + Math.random() * 25) * sz;
+    addBubble(x + (Math.random() - 0.5) * 40, y + (Math.random() - 0.5) * 40, r, false, 0.8);
+    bvy[bcount - 1] = -(0.6 + Math.random() * 0.8);
   }
 }
 
@@ -349,9 +372,9 @@ canvas.addEventListener('pointermove', e => {
   }
 });
 
-// ── Background ──
+// ── Background bubbles ──
 const bgBubbles = [];
-for (let i = 0; i < 15; i++) {
+for (let i = 0; i < 10; i++) {
   bgBubbles.push({
     x: Math.random() * 2000,
     y: Math.random() * 2000,
@@ -361,25 +384,24 @@ for (let i = 0; i < 15; i++) {
   });
 }
 function drawBackground(dt) {
-  // Gradient is in CSS, draw decorative bg bubbles
-  ctx.save();
-  bgBubbles.forEach(b => {
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < bgBubbles.length; i++) {
+    const b = bgBubbles[i];
     b.phase += 0.005 * dt;
     b.y -= b.speed * dt * 0.05;
     if (b.y < -b.r) { b.y = H + b.r; b.x = Math.random() * W; }
-    ctx.globalAlpha = 0.07;
     ctx.beginPath();
     ctx.arc(b.x + Math.sin(b.phase) * 20, b.y, b.r, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
     ctx.fill();
-  });
-  ctx.restore();
+  }
+  ctx.globalAlpha = 1;
 }
 
 // ── Main loop ──
 let lastTime = 0;
 let spawnTimer = 0;
-goldenTimer = GOLDEN_INTERVAL * 0.7; // first golden comes sooner
+goldenTimer = GOLDEN_INTERVAL * 0.7;
 
 function loop(time) {
   const dt = Math.min(time - lastTime, 50) || 16;
@@ -390,43 +412,104 @@ function loop(time) {
 
   // Spawn
   spawnTimer += dt;
-  if (spawnTimer > 250) { spawnBubble(); spawnTimer = 0; }
+  if (spawnTimer > 300) { spawnBubble(); spawnTimer = 0; }
   goldenTimer += dt;
   if (goldenTimer > GOLDEN_INTERVAL) { spawnGolden(); goldenTimer = 0; }
 
-  // Update & draw bubbles
-  for (let i = bubbles.length - 1; i >= 0; i--) {
-    bubbles[i].update(dt);
-    if (!bubbles[i].alive || bubbles[i].y < -bubbles[i].r * 2) {
-      bubbles.splice(i, 1);
+  // Update bubbles
+  for (let i = bcount - 1; i >= 0; i--) {
+    if (!balive[i] || by[i] < -br[i] * 2) {
+      // Swap-remove
+      bcount--;
+      if (i < bcount) {
+        bx[i] = bx[bcount]; by[i] = by[bcount]; br[i] = br[bcount];
+        bvx[i] = bvx[bcount]; bvy[i] = bvy[bcount];
+        bwobblePhase[i] = bwobblePhase[bcount]; bwobbleSpeed[i] = bwobbleSpeed[bcount];
+        bwobbleAmp[i] = bwobbleAmp[bcount]; bopacity[i] = bopacity[bcount];
+        bcolorIdx[i] = bcolorIdx[bcount]; bgolden[i] = bgolden[bcount];
+        balive[i] = balive[bcount]; bfadeIn[i] = bfadeIn[bcount];
+      }
+      continue;
     }
+    if (bfadeIn[i]) {
+      bopacity[i] = Math.min(1, bopacity[i] + dt * 0.008);
+      if (bopacity[i] >= 1) bfadeIn[i] = 0;
+    }
+    bwobblePhase[i] += bwobbleSpeed[i] * dt;
+    bx[i] += (bvx[i] + Math.sin(bwobblePhase[i]) * bwobbleAmp[i]) * dt * 0.15;
+    by[i] += bvy[i] * dt * 0.15;
+    if (bx[i] < -br[i]) bx[i] = W + br[i];
+    if (bx[i] > W + br[i]) bx[i] = -br[i];
   }
-  bubbles.forEach(b => b.draw(ctx));
 
-  // Particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    particles[i].update(dt);
-    if (particles[i].life <= 0) { particles.splice(i, 1); continue; }
-    particles[i].draw(ctx);
+  // Draw bubbles using sprites
+  for (let i = 0; i < bcount; i++) {
+    if (!balive[i]) continue;
+    const { sprite, snapSize } = getBubbleSprite(br[i], bcolorIdx[i], bgolden[i]);
+    const scale = br[i] / snapSize;
+    const drawSize = (snapSize * 2 + sprite.pad * 2) * scale;
+    ctx.globalAlpha = bopacity[i];
+    ctx.drawImage(sprite.canvas, bx[i] - drawSize / 2, by[i] - drawSize / 2, drawSize, drawSize);
   }
+  ctx.globalAlpha = 1;
 
-  // Confetti
-  for (let i = confetti.length - 1; i >= 0; i--) {
-    confetti[i].update(dt);
-    if (confetti[i].life <= 0) { confetti.splice(i, 1); continue; }
-    confetti[i].draw(ctx);
+  // Update & draw particles
+  for (let i = pcount - 1; i >= 0; i--) {
+    px[i] += pvx[i] * dt * 0.25;
+    py[i] += pvy[i] * dt * 0.25;
+    pvy[i] += 0.03 * dt * 0.25;
+    plife[i] -= pdecay[i] * dt * 0.1;
+    if (plife[i] <= 0) {
+      pcount--;
+      if (i < pcount) {
+        px[i] = px[pcount]; py[i] = py[pcount]; pvx[i] = pvx[pcount]; pvy[i] = pvy[pcount];
+        psize[i] = psize[pcount]; plife[i] = plife[pcount]; pdecay[i] = pdecay[pcount];
+        pcr[i] = pcr[pcount]; pcg[i] = pcg[pcount]; pcb[i] = pcb[pcount];
+      }
+      continue;
+    }
+    ctx.globalAlpha = plife[i];
+    ctx.beginPath();
+    ctx.arc(px[i], py[i], psize[i] * plife[i], 0, Math.PI * 2);
+    ctx.fillStyle = `rgb(${pcr[i]},${pcg[i]},${pcb[i]})`;
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Update & draw confetti
+  for (let i = cfcount - 1; i >= 0; i--) {
+    cfx[i] += cfvx[i] * dt * 0.2;
+    cfy[i] += cfvy[i] * dt * 0.2;
+    cfvy[i] += 0.06 * dt * 0.2;
+    cfvx[i] *= 0.995;
+    cfrot[i] += cfrotSpd[i] * dt * 0.1;
+    cflife[i] -= 0.006 * dt * 0.1;
+    if (cflife[i] <= 0) {
+      cfcount--;
+      if (i < cfcount) {
+        cfx[i] = cfx[cfcount]; cfy[i] = cfy[cfcount]; cfvx[i] = cfvx[cfcount]; cfvy[i] = cfvy[cfcount];
+        cfrot[i] = cfrot[cfcount]; cfrotSpd[i] = cfrotSpd[cfcount]; cflife[i] = cflife[cfcount];
+        cfsize[i] = cfsize[cfcount]; cfcr[i] = cfcr[cfcount]; cfcg[i] = cfcg[cfcount]; cfcb[i] = cfcb[cfcount];
+      }
+      continue;
+    }
+    ctx.save();
+    ctx.globalAlpha = cflife[i];
+    ctx.translate(cfx[i], cfy[i]);
+    ctx.rotate(cfrot[i]);
+    ctx.fillStyle = `rgb(${cfcr[i]},${cfcg[i]},${cfcb[i]})`;
+    ctx.fillRect(-cfsize[i] / 2, -cfsize[i] / 4, cfsize[i], cfsize[i] / 2);
+    ctx.restore();
   }
 
   requestAnimationFrame(loop);
 }
 
 // Initial bubbles
-for (let i = 0; i < 30; i++) {
-  const b = new Bubble();
-  b.y = Math.random() * H;
-  b.opacity = 1;
-  b.fadeIn = false;
-  bubbles.push(b);
+for (let i = 0; i < 25; i++) {
+  addBubble(Math.random() * W, Math.random() * H);
+  bopacity[i] = 1;
+  bfadeIn[i] = 0;
 }
 
 requestAnimationFrame(loop);

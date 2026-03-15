@@ -56,7 +56,7 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (WAV generation - no oscillators) ──
+// ── Audio (WAV generation + audio pool) ──
 function makeWav(freq, dur, vol, decay) {
   const sr = 22050, n = sr * dur | 0;
   const buf = new ArrayBuffer(44 + n * 2);
@@ -74,6 +74,15 @@ function makeWav(freq, dur, vol, decay) {
   }
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
+
+// Audio pool: reuse Audio elements instead of creating new ones each time
+const POOL_SIZE = 8;
+const audioPool = [];
+let poolIdx = 0;
+for (let i = 0; i < POOL_SIZE; i++) {
+  audioPool.push(new Audio());
+}
+
 const bonkSounds = [];
 for (let i = 0; i < 5; i++) bonkSounds.push(makeWav(300 + i * 100, 0.12, 0.5, 25));
 const pocketSounds = [makeWav(500, 0.18, 0.5, 15), makeWav(700, 0.18, 0.5, 15), makeWav(900, 0.18, 0.5, 15)];
@@ -81,13 +90,14 @@ const strikeSounds = [];
 for (let i = 0; i < 5; i++) strikeSounds.push(makeWav(400 + i * 150, 0.3, 0.5, 10));
 const launchSound = makeWav(400, 0.2, 0.5, 12);
 
-// Unlock audio on first touch (iOS requires user gesture before any Audio.play)
+// Unlock audio on first touch
 const silentWav = makeWav(440, 0.01, 0, 50);
 let audioUnlocked = false;
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  const a = new Audio(silentWav);
+  const a = audioPool[0];
+  a.src = silentWav;
   a.volume = 0;
   a.play().catch(() => {});
 }
@@ -95,11 +105,13 @@ document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 
 function playSound(url) {
-  const a = new Audio(url);
+  const a = audioPool[poolIdx];
+  poolIdx = (poolIdx + 1) % POOL_SIZE;
+  a.src = url;
   a.volume = 1.0;
   a.play().catch(() => {});
 }
-function playBonk(intensity) {
+function playBonk() {
   playSound(bonkSounds[Math.floor(Math.random() * bonkSounds.length)]);
 }
 function playPocket() {
@@ -117,11 +129,70 @@ const engine = Engine.create({ gravity: { x: 0, y: 0 } });
 const world = engine.world;
 
 const PIN_FACES = ['🐧','🐥','🐻','🐱','🐰','🐸','🦊','🐼'];
-const PIN_COLORS = ['#FF8FA0','#FFB380','#FFE080','#A0E8A0','#80C8FF','#C0A0FF','#FFB0D0','#A0E0E0'];
+const PIN_COLORS_HEX = ['#FF8FA0','#FFB380','#FFE080','#A0E8A0','#80C8FF','#C0A0FF','#FFB0D0','#A0E0E0'];
+// Pre-compute RGB values for pin colors
+const PIN_COLORS_RGB = PIN_COLORS_HEX.map(hex => ({
+  r: parseInt(hex.slice(1, 3), 16),
+  g: parseInt(hex.slice(3, 5), 16),
+  b: parseInt(hex.slice(5, 7), 16),
+}));
+
 const POCKET_R = 35;
 const PIN_R = 26;
 const BALL_R = 30;
 const MAX_PINS = 30;
+
+// ── Pre-render pin faces to offscreen canvases (emoji rendering is very slow) ──
+const pinSpriteSize = PIN_R * 2 + 4;
+const pinSprites = []; // [colorIdx][faceIdx] = canvas
+for (let ci = 0; ci < PIN_COLORS_HEX.length; ci++) {
+  pinSprites[ci] = [];
+  for (let fi = 0; fi < PIN_FACES.length; fi++) {
+    const oc = document.createElement('canvas');
+    oc.width = oc.height = pinSpriteSize;
+    const octx = oc.getContext('2d');
+    const cx = pinSpriteSize / 2, cy = pinSpriteSize / 2;
+    const c = PIN_COLORS_RGB[ci];
+    // Fill circle
+    octx.beginPath();
+    octx.arc(cx, cy, PIN_R, 0, Math.PI * 2);
+    octx.fillStyle = PIN_COLORS_HEX[ci];
+    octx.fill();
+    octx.strokeStyle = `rgb(${Math.max(0,c.r-40)},${Math.max(0,c.g-40)},${Math.max(0,c.b-40)})`;
+    octx.lineWidth = 2;
+    octx.stroke();
+    // Emoji
+    octx.font = `${PIN_R * 1.3}px sans-serif`;
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.fillText(PIN_FACES[fi], cx, cy + 2);
+    pinSprites[ci][fi] = oc;
+  }
+}
+// Also create knocked versions (darker)
+const pinSpritesKnocked = [];
+for (let ci = 0; ci < PIN_COLORS_HEX.length; ci++) {
+  pinSpritesKnocked[ci] = [];
+  for (let fi = 0; fi < PIN_FACES.length; fi++) {
+    const oc = document.createElement('canvas');
+    oc.width = oc.height = pinSpriteSize;
+    const octx = oc.getContext('2d');
+    const cx = pinSpriteSize / 2, cy = pinSpriteSize / 2;
+    const c = PIN_COLORS_RGB[ci];
+    octx.beginPath();
+    octx.arc(cx, cy, PIN_R, 0, Math.PI * 2);
+    octx.fillStyle = `rgb(${Math.max(0,c.r-20)},${Math.max(0,c.g-20)},${Math.max(0,c.b-20)})`;
+    octx.fill();
+    octx.strokeStyle = `rgb(${Math.max(0,c.r-60)},${Math.max(0,c.g-60)},${Math.max(0,c.b-60)})`;
+    octx.lineWidth = 2;
+    octx.stroke();
+    octx.font = `${PIN_R * 1.3}px sans-serif`;
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.fillText(PIN_FACES[fi], cx, cy + 2);
+    pinSpritesKnocked[ci][fi] = oc;
+  }
+}
 
 let pins = [], ball = null, walls = [], pockets = [];
 let ballLaunched = false, score = 0, round = 0;
@@ -143,15 +214,11 @@ function getPocketPositions() {
 // ── Walls (with gaps for pockets) ──
 function createWalls() {
   walls.forEach(w => World.remove(world, w));
-  const t = 40, g = POCKET_R * 2; // gap for pockets
+  const t = 40, g = POCKET_R * 2;
   walls = [
-    // Top wall (gap at corners)
     Bodies.rectangle(W / 2, -t / 2, W - g * 2, t, { isStatic: true }),
-    // Bottom wall (gap at corners)
     Bodies.rectangle(W / 2, H + t / 2, W - g * 2, t, { isStatic: true }),
-    // Left wall (gap at corners)
     Bodies.rectangle(-t / 2, H / 2, t, H - g * 2, { isStatic: true }),
-    // Right wall (gap at corners)
     Bodies.rectangle(W + t / 2, H / 2, t, H - g * 2, { isStatic: true }),
   ];
   walls.forEach(w => { w.restitution = 0.9; });
@@ -184,7 +251,7 @@ function createPins() {
       });
       pin.isPin = true; pin.knocked = false;
       pin.initX = x; pin.initY = y;
-      pin.colorIdx = Math.floor(Math.random() * PIN_COLORS.length);
+      pin.colorIdx = Math.floor(Math.random() * PIN_COLORS_HEX.length);
       pin.faceIdx = Math.floor(Math.random() * PIN_FACES.length);
       pin.flashTimer = 0; pin.pocketed = false;
       pins.push(pin);
@@ -238,32 +305,42 @@ canvas.addEventListener('pointerup', e => {
 // ── Collision sounds ──
 let soundThrottle = 0;
 Events.on(engine, 'collisionStart', event => {
-  event.pairs.forEach(pair => {
-    const spd = Math.sqrt(
-      (pair.bodyA.velocity.x - pair.bodyB.velocity.x) ** 2 +
-      (pair.bodyA.velocity.y - pair.bodyB.velocity.y) ** 2
-    );
+  const pairs = event.pairs;
+  for (let p = 0; p < pairs.length; p++) {
+    const pair = pairs[p];
+    const dvx = pair.bodyA.velocity.x - pair.bodyB.velocity.x;
+    const dvy = pair.bodyA.velocity.y - pair.bodyB.velocity.y;
+    const spd = Math.sqrt(dvx * dvx + dvy * dvy);
     if (spd > 1.5 && soundThrottle <= 0) {
-      playBonk(Math.min(spd / 8, 1));
+      playBonk();
       soundThrottle = 2;
     }
-    [pair.bodyA, pair.bodyB].forEach(b => {
-      if (b.isPin && !b.knocked) {
-        const dx = b.position.x - b.initX, dy = b.position.y - b.initY;
-        if (dx * dx + dy * dy > PIN_R * PIN_R) {
-          b.knocked = true; b.flashTimer = 12;
-          knockedCount++; score++; scoreEl.textContent = score;
-        }
+    // Check both bodies for pin knock
+    const ba = pair.bodyA, bb = pair.bodyB;
+    if (ba.isPin && !ba.knocked) {
+      const dx = ba.position.x - ba.initX, dy = ba.position.y - ba.initY;
+      if (dx * dx + dy * dy > PIN_R * PIN_R) {
+        ba.knocked = true; ba.flashTimer = 12;
+        knockedCount++; score++; scoreEl.textContent = score;
       }
-    });
-  });
+    }
+    if (bb.isPin && !bb.knocked) {
+      const dx = bb.position.x - bb.initX, dy = bb.position.y - bb.initY;
+      if (dx * dx + dy * dy > PIN_R * PIN_R) {
+        bb.knocked = true; bb.flashTimer = 12;
+        knockedCount++; score++; scoreEl.textContent = score;
+      }
+    }
+  }
 });
 
 // ── Pocket check ──
 function checkPockets() {
-  pins.forEach(p => {
-    if (p.pocketed) return;
-    for (const pk of pockets) {
+  for (let i = 0; i < pins.length; i++) {
+    const p = pins[i];
+    if (p.pocketed) continue;
+    for (let j = 0; j < pockets.length; j++) {
+      const pk = pockets[j];
       const dx = p.position.x - pk.x, dy = p.position.y - pk.y;
       if (dx * dx + dy * dy < POCKET_R * POCKET_R) {
         p.pocketed = true;
@@ -272,13 +349,14 @@ function checkPockets() {
         scoreEl.textContent = score;
         World.remove(world, p);
         playPocket();
-        return;
+        break;
       }
     }
-  });
-  // Ball in pocket = just reposition
+  }
+  // Ball in pocket = reposition
   if (ball) {
-    for (const pk of pockets) {
+    for (let j = 0; j < pockets.length; j++) {
+      const pk = pockets[j];
       const dx = ball.position.x - pk.x, dy = ball.position.y - pk.y;
       if (dx * dx + dy * dy < POCKET_R * POCKET_R) {
         Body.setPosition(ball, { x: W / 2, y: H * 0.78 });
@@ -308,21 +386,18 @@ function resetRound() {
 
 // ── Draw ──
 function drawTable() {
-  // Felt background
   ctx.fillStyle = '#1e6b40';
   ctx.fillRect(0, 0, W, H);
-  // Border
   ctx.strokeStyle = '#8B4513';
   ctx.lineWidth = 8;
   ctx.strokeRect(4, 4, W - 8, H - 8);
-  // Inner rail
   ctx.strokeStyle = '#5a9a3a';
   ctx.lineWidth = 3;
   ctx.strokeRect(12, 12, W - 24, H - 24);
 
   // Pockets
-  pockets.forEach(pk => {
-    ctx.save();
+  for (let i = 0; i < pockets.length; i++) {
+    const pk = pockets[i];
     ctx.beginPath();
     ctx.arc(pk.x, pk.y, POCKET_R, 0, Math.PI * 2);
     ctx.fillStyle = '#0a2a15';
@@ -330,13 +405,11 @@ function drawTable() {
     ctx.strokeStyle = '#8B4513';
     ctx.lineWidth = 3;
     ctx.stroke();
-    ctx.restore();
-  });
+  }
 }
 
 function drawSlingshot() {
   if (!dragging || !dragStart || !dragCur) return;
-  // Draw pull line
   ctx.save();
   ctx.setLineDash([8, 6]);
   ctx.strokeStyle = 'rgba(255,255,255,0.6)';
@@ -345,22 +418,21 @@ function drawSlingshot() {
   ctx.moveTo(ball.position.x, ball.position.y);
   ctx.lineTo(dragCur.x, dragCur.y);
   ctx.stroke();
-  // Draw predicted direction
   const dx = dragStart.x - dragCur.x;
   const dy = dragStart.y - dragCur.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist > 10) {
     const len = Math.min(dist * 0.8, 200);
+    const nx = dx / dist, ny = dy / dist;
     ctx.setLineDash([]);
     ctx.strokeStyle = 'rgba(255,80,80,0.7)';
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(ball.position.x, ball.position.y);
-    ctx.lineTo(ball.position.x + dx / dist * len, ball.position.y + dy / dist * len);
+    const ax = ball.position.x + nx * len;
+    const ay = ball.position.y + ny * len;
+    ctx.lineTo(ax, ay);
     ctx.stroke();
-    // Arrow head
-    const ax = ball.position.x + dx / dist * len;
-    const ay = ball.position.y + dy / dist * len;
     const angle = Math.atan2(dy, dx);
     ctx.fillStyle = 'rgba(255,80,80,0.7)';
     ctx.beginPath();
@@ -385,21 +457,12 @@ function drawPin(pin) {
     ctx.restore();
     pin.flashTimer--;
   }
+  // Use pre-rendered sprite instead of drawing emoji every frame
+  const sprite = pin.knocked ? pinSpritesKnocked[pin.colorIdx][pin.faceIdx] : pinSprites[pin.colorIdx][pin.faceIdx];
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(pin.angle);
-  const color = PIN_COLORS[pin.colorIdx];
-  ctx.beginPath();
-  ctx.arc(0, 0, PIN_R, 0, Math.PI * 2);
-  ctx.fillStyle = pin.knocked ? shadeColor(color, -20) : color;
-  ctx.fill();
-  ctx.strokeStyle = shadeColor(color, -40);
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.font = `${PIN_R * 1.3}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(PIN_FACES[pin.faceIdx], 0, 2);
+  ctx.drawImage(sprite, -pinSpriteSize / 2, -pinSpriteSize / 2);
   ctx.restore();
 }
 
@@ -414,21 +477,17 @@ function drawBall() {
   ctx.fillStyle = '#000';
   ctx.fill();
   ctx.restore();
-  // Ball
-  const grad = ctx.createRadialGradient(x - BALL_R * 0.3, y - BALL_R * 0.3, BALL_R * 0.1, x, y, BALL_R);
-  grad.addColorStop(0, '#FF6B6B');
-  grad.addColorStop(0.5, '#EE3333');
-  grad.addColorStop(1, '#BB1111');
+  // Ball - solid color instead of gradient every frame
   ctx.beginPath();
   ctx.arc(x, y, BALL_R, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
+  ctx.fillStyle = '#EE3333';
   ctx.fill();
   ctx.strokeStyle = '#991111';
   ctx.lineWidth = 2;
   ctx.stroke();
   // Shine
   ctx.save();
-  ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = 0.45;
   ctx.beginPath();
   ctx.ellipse(x - BALL_R * 0.3, y - BALL_R * 0.25, BALL_R * 0.3, BALL_R * 0.15, -0.5, 0, Math.PI * 2);
   ctx.fillStyle = '#fff';
@@ -447,37 +506,38 @@ function drawBall() {
   }
 }
 
-function shadeColor(hex, amt) {
-  let r = parseInt(hex.slice(1, 3), 16) + amt;
-  let g = parseInt(hex.slice(3, 5), 16) + amt;
-  let b = parseInt(hex.slice(5, 7), 16) + amt;
-  return `rgb(${Math.max(0, Math.min(255, r))},${Math.max(0, Math.min(255, g))},${Math.max(0, Math.min(255, b))})`;
-}
-
-// ── Confetti ──
+// ── Confetti (use simple array, swap-remove) ──
 const confettiList = [];
 function spawnConfetti(cx, cy, n) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+    const ci = Math.floor(Math.random() * PIN_COLORS_RGB.length);
+    const c = PIN_COLORS_RGB[ci];
     confettiList.push({
       x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 3,
-      color: PIN_COLORS[Math.floor(Math.random() * PIN_COLORS.length)],
+      cr: c.r, cg: c.g, cb: c.b,
       size: 5 + Math.random() * 7, rot: Math.random() * 6.28,
       rotSpd: (Math.random() - 0.5) * 0.2, life: 1,
     });
   }
 }
 function updateConfetti() {
-  for (let i = confettiList.length - 1; i >= 0; i--) {
+  let len = confettiList.length;
+  for (let i = len - 1; i >= 0; i--) {
     const c = confettiList[i];
     c.x += c.vx; c.y += c.vy; c.vy += 0.08;
     c.rot += c.rotSpd; c.life -= 0.008;
-    if (c.life <= 0) { confettiList.splice(i, 1); continue; }
+    if (c.life <= 0) {
+      // swap-remove
+      confettiList[i] = confettiList[--len];
+      confettiList.length = len;
+      continue;
+    }
     ctx.save();
     ctx.globalAlpha = c.life;
     ctx.translate(c.x, c.y);
     ctx.rotate(c.rot);
-    ctx.fillStyle = c.color;
+    ctx.fillStyle = `rgb(${c.cr},${c.cg},${c.cb})`;
     ctx.fillRect(-c.size / 2, -c.size / 4, c.size, c.size / 2);
     ctx.restore();
   }
@@ -487,24 +547,30 @@ function updateConfetti() {
 function checkSettle() {
   if (!ballLaunched || roundResetting) return;
   launchElapsed++;
-  // Force brake after 2.5s
   if (launchElapsed > 150) {
-    [ball, ...pins].forEach(b => {
-      if (!b || b.pocketed) return;
-      const spd = Math.sqrt(b.velocity.x ** 2 + b.velocity.y ** 2);
+    const all = [ball];
+    for (let i = 0; i < pins.length; i++) if (!pins[i].pocketed) all.push(pins[i]);
+    for (let i = 0; i < all.length; i++) {
+      const b = all[i];
+      if (!b) continue;
+      const spd = Math.sqrt(b.velocity.x * b.velocity.x + b.velocity.y * b.velocity.y);
       if (spd < 2 && spd > 0.01) Body.setVelocity(b, { x: b.velocity.x * 0.8, y: b.velocity.y * 0.8 });
-    });
+    }
   }
   let maxSpd = 0;
-  [ball, ...pins.filter(p => !p.pocketed)].forEach(b => {
-    if (!b) return;
-    const s = Math.sqrt(b.velocity.x ** 2 + b.velocity.y ** 2);
+  if (ball) {
+    const s = Math.sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
     if (s > maxSpd) maxSpd = s;
-  });
+  }
+  for (let i = 0; i < pins.length; i++) {
+    if (pins[i].pocketed) continue;
+    const b = pins[i];
+    const s = Math.sqrt(b.velocity.x * b.velocity.x + b.velocity.y * b.velocity.y);
+    if (s > maxSpd) maxSpd = s;
+  }
   if (maxSpd < 0.4) {
     settleTimer++;
     if (settleTimer > 25) {
-      const activePins = pins.filter(p => !p.pocketed);
       if (knockedCount >= totalPins * 0.9) {
         showBanner('🎉 パーフェクト！', 2000);
         playStrike();
@@ -529,7 +595,7 @@ function loop() {
 
   ctx.clearRect(0, 0, W, H);
   drawTable();
-  pins.forEach(drawPin);
+  for (let i = 0; i < pins.length; i++) drawPin(pins[i]);
   drawBall();
   drawSlingshot();
   updateConfetti();
