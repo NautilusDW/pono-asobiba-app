@@ -185,7 +185,7 @@ function playLaunch() { playBuf(launchBuf); }
 const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
-const MAX_PINS = 20;
+const MAX_PINS = 30;
 let RESTITUTION = 0.95;
 let FRICTION_AIR = 0.995;
 let WALL_RESTITUTION = 0.9;
@@ -249,8 +249,8 @@ let maxCollisionIntensity = 0; // 0〜1: そのフレームで最大の衝突強
 function createPins() {
   bodies.length = 0;
   ballIdx = -1;
-  // Inverted triangle: 6,5,4,3,2 = 20
-  const rows = [6, 5, 4, 3, 2];
+  // Grid: 6x5 = 30
+  const rows = [6, 6, 6, 6, 6];
   const spacing = PIN_R * 2 + 6;
   const totalH = rows.length * spacing;
   const startY = H * 0.15;
