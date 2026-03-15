@@ -202,7 +202,7 @@ function createPins() {
       pin.isPin = true; pin.knocked = false;
       pin.initX = x; pin.initY = y;
       pin.imgIdx = Math.floor(Math.random() * PIN_COUNT);
-      pin.flashTimer = 0; pin.pocketed = false;
+      pin.pocketed = false;
       pins.push(pin);
       placed++;
     }
@@ -267,14 +267,14 @@ Events.on(engine, 'collisionStart', event => {
     if (ba.isPin && !ba.knocked) {
       const dx = ba.position.x - ba.initX, dy = ba.position.y - ba.initY;
       if (dx * dx + dy * dy > PIN_R * PIN_R) {
-        ba.knocked = true; ba.flashTimer = 12;
+        ba.knocked = true;
         knockedCount++; score++; scoreEl.textContent = score;
       }
     }
     if (bb.isPin && !bb.knocked) {
       const dx = bb.position.x - bb.initX, dy = bb.position.y - bb.initY;
       if (dx * dx + dy * dy > PIN_R * PIN_R) {
-        bb.knocked = true; bb.flashTimer = 12;
+        bb.knocked = true;
         knockedCount++; score++; scoreEl.textContent = score;
       }
     }
@@ -386,26 +386,14 @@ function drawSlingshot() {
 function drawPin(pin) {
   if (pin.pocketed) return;
   const { x, y } = pin.position;
-  if (pin.flashTimer > 0) {
-    ctx.save();
-    ctx.globalAlpha = pin.flashTimer / 12 * 0.5;
-    ctx.beginPath();
-    ctx.arc(x, y, PIN_R * 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFD700';
-    ctx.fill();
-    ctx.restore();
-    pin.flashTimer--;
-  }
   const img = pinImages[pin.imgIdx];
   if (img && img.complete) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(pin.angle);
-    if (pin.knocked) ctx.globalAlpha = 0.7;
     ctx.drawImage(img, -pinDrawSize / 2, -pinDrawSize / 2, pinDrawSize, pinDrawSize);
     ctx.restore();
   } else {
-    // Fallback: simple colored circle while images load
     ctx.beginPath();
     ctx.arc(x, y, PIN_R, 0, Math.PI * 2);
     ctx.fillStyle = '#FFB380';
