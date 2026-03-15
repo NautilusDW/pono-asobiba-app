@@ -35,6 +35,22 @@ canvas { display: block; width: 100%; height: 100%; }
   opacity: 0;
 }
 #banner.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+#tuner {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+  background: rgba(0,0,0,0.85); color: #fff; padding: 10px 14px 14px;
+  font-family: monospace; font-size: 13px; max-height: 45vh; overflow-y: auto;
+  display: none;
+}
+#tuner.show { display: block; }
+#tuner-toggle {
+  position: fixed; bottom: 12px; right: 12px; z-index: 301;
+  background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
+  width: 44px; height: 44px; font-size: 20px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+#tuner label { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+#tuner input[type=range] { flex: 1; max-width: 180px; }
+#tuner .val { min-width: 55px; text-align: right; font-weight: bold; color: #FFD700; }
 </style>
 </head>
 <body>
@@ -42,6 +58,16 @@ canvas { display: block; width: 100%; height: 100%; }
 <div id="score">0</div>
 <div id="banner"></div>
 <canvas id="c"></canvas>
+<button id="tuner-toggle" onclick="document.getElementById('tuner').classList.toggle('show')">🎛</button>
+<div id="tuner">
+  <b>Physics Tuner</b>
+  <label>反発 (RESTITUTION) <input type="range" min="0" max="100" value="95" id="sl-rest"><span class="val" id="v-rest">0.95</span></label>
+  <label>空気摩擦 (AIR) <input type="range" min="980" max="1000" value="995" id="sl-air"><span class="val" id="v-air">0.995</span></label>
+  <label>壁反発 (WALL) <input type="range" min="0" max="100" value="90" id="sl-wall"><span class="val" id="v-wall">0.9</span></label>
+  <label>ピン質量 <input type="range" min="1" max="300" value="15" id="sl-pin"><span class="val" id="v-pin">0.15</span></label>
+  <label>ボール質量 <input type="range" min="100" max="3000" value="800" id="sl-ball"><span class="val" id="v-ball">8</span></label>
+  <p style="margin-top:8px;color:#aaa;font-size:11px">値を変更するとリアルタイムで反映されます。次のラウンドから質量が適用されます。</p>
+</div>
 
 <script>
 'use strict';
@@ -104,14 +130,16 @@ function playPocket() { playSound(pocketSounds[Math.floor(Math.random() * pocket
 function playStrike() { playSound(strikeSound); }
 function playLaunch() { playSound(launchSound); }
 
-// ── Constants ──
+// ── Tunable Constants ──
 const POCKET_R = 40;
 const PIN_R = 34;
 const BALL_R = 32;
 const MAX_PINS = 15;
-const RESTITUTION = 0.95;
-const FRICTION_AIR = 0.995; // multiply velocity each step (1 = no friction)
-const WALL_RESTITUTION = 0.9;
+let RESTITUTION = 0.95;
+let FRICTION_AIR = 0.995;
+let WALL_RESTITUTION = 0.9;
+let PIN_MASS = 0.15;
+let BALL_MASS = 8;
 
 // ── Load pin images ──
 const PIN_COUNT = 13;
@@ -181,7 +209,7 @@ function createPins() {
     for (let c = 0; c < bestCols && placed < MAX_PINS; c++) {
       const x = startX + c * spacing + (Math.random() - 0.5) * 3;
       const y = startY + r * spacing + (Math.random() - 0.5) * 3;
-      const idx = addCircle(x, y, PIN_R, 0.15);
+      const idx = addCircle(x, y, PIN_R, PIN_MASS);
       bodies[idx].imgIdx = Math.floor(Math.random() * PIN_COUNT);
       placed++;
     }
@@ -189,7 +217,7 @@ function createPins() {
 }
 
 function createBall() {
-  ballIdx = addCircle(W / 2, H * 0.78, BALL_R, 8);
+  ballIdx = addCircle(W / 2, H * 0.78, BALL_R, BALL_MASS);
   ballLaunched = false;
 }
 
@@ -565,6 +593,24 @@ setupWalls();
 createPins();
 createBall();
 requestAnimationFrame(loop);
+
+// ── Physics Tuner ──
+function bindSlider(id, valId, parse, apply) {
+  const sl = document.getElementById(id);
+  const vEl = document.getElementById(valId);
+  sl.addEventListener('input', () => { const v = parse(sl.value); vEl.textContent = v; apply(v); });
+}
+bindSlider('sl-rest', 'v-rest', v => (v / 100).toFixed(2), v => { RESTITUTION = +v; });
+bindSlider('sl-air', 'v-air', v => (v / 1000).toFixed(3), v => { FRICTION_AIR = +v; });
+bindSlider('sl-wall', 'v-wall', v => (v / 100).toFixed(2), v => { WALL_RESTITUTION = +v; });
+bindSlider('sl-pin', 'v-pin', v => (v / 100).toFixed(2), v => {
+  PIN_MASS = +v;
+  for (let i = 0; i < bodies.length; i++) if (i !== ballIdx) bodies[i].mass = PIN_MASS;
+});
+bindSlider('sl-ball', 'v-ball', v => (v / 100).toFixed(1), v => {
+  BALL_MASS = +v;
+  if (ballIdx >= 0) bodies[ballIdx].mass = BALL_MASS;
+});
 </script>
 </body>
 </html>
