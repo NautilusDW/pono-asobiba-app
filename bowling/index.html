@@ -573,16 +573,21 @@ function checkSettle() {
 }
 
 // ── Main ──
-// ── FPS counter + frame spike detection ──
+// Fixed timestep physics (16.67ms per step, accumulator pattern)
+const PHYSICS_DT = 1000 / 60; // 16.67ms
+let accumulator = 0;
+
+// FPS counter + frame spike detection
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
 let prevFrameTime = performance.now(), maxFrameMs = 0, maxFrameDisplay = '--';
 let muteSound = false;
 
 function loop(now) {
-  // Frame spike detection
-  const dt = now - prevFrameTime;
+  // Frame timing
+  let elapsed = now - prevFrameTime;
   prevFrameTime = now;
-  if (dt > maxFrameMs) maxFrameMs = dt;
+  if (elapsed > 100) elapsed = 100; // cap to avoid spiral of death
+  if (elapsed > maxFrameMs) maxFrameMs = elapsed;
   fpsFrames++;
   if (now - fpsLast >= 500) {
     fpsDisplay = (fpsFrames / ((now - fpsLast) / 1000)).toFixed(0);
@@ -592,7 +597,12 @@ function loop(now) {
 
   if (ballLaunched) {
     const prevScore = score;
-    physicsStep();
+    // Fixed timestep: run physics in consistent 16.67ms steps
+    accumulator += elapsed;
+    while (accumulator >= PHYSICS_DT) {
+      physicsStep();
+      accumulator -= PHYSICS_DT;
+    }
     checkPockets();
     checkSettle();
     if (score !== prevScore) scoreEl.textContent = score;
