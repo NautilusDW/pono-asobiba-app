@@ -84,57 +84,81 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (HTML Audio — シンプル版) ──
-function makeWav(freq, dur, vol, decay) {
-  const sr = 22050, n = sr * dur | 0;
-  const buf = new ArrayBuffer(44 + n * 2);
-  const v = new DataView(buf);
-  function s(o, str) { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); }
-  s(0,'RIFF'); v.setUint32(4, 36 + n * 2, true); s(8,'WAVE');
-  s(12,'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true); v.setUint32(24, sr, true);
-  v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  s(36,'data'); v.setUint32(40, n * 2, true);
+// ── Audio (Web Audio API — 他AI推奨パターン準拠) ──
+let audioCtx;
+let unlocked = false;
+let bonkBuf, pocketBuf, strikeBuf, launchBuf;
+
+// AudioBuffer生成（プログラム的にサイン波を書き込む）
+function makeBuf(ctx, freq, dur, vol, decay) {
+  const sr = ctx.sampleRate, n = sr * dur | 0;
+  const ab = ctx.createBuffer(1, n, sr);
+  const d = ab.getChannelData(0);
   for (let i = 0; i < n; i++) {
     const t = i / sr;
-    const val = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
-    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, val * 32767 | 0)), true);
+    d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
   }
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  return ab;
 }
-const POOL_SIZE = 4;
-const audioPool = [];
-let poolIdx = 0;
-for (let i = 0; i < POOL_SIZE; i++) audioPool.push(new Audio());
-const bonkUrl = makeWav(400, 0.08, 0.5, 35); // bonkは1種類に統一して再生回数を減らす
-const pocketUrl = makeWav(600, 0.12, 0.5, 20);
-const strikeUrl = makeWav(500, 0.25, 0.5, 10);
-const launchUrl = makeWav(400, 0.12, 0.5, 18);
-const silentWav = makeWav(440, 0.01, 0, 50);
-let audioUnlocked = false;
+
+// 初回ユーザー操作で同期的にAudioContextを初期化・アンロック
 function unlockAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  audioPool[0].src = silentWav;
-  audioPool[0].volume = 0;
-  audioPool[0].play().catch(() => {});
+  if (unlocked) return;
+
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!audioCtx) {
+    audioCtx = new AC();
+  }
+
+  // 必ず同期的にresumeを呼ぶ（イベントハンドラ第一階層）
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  // 無音バッファを再生してiOSのオーディオロックを強制解除
+  const buffer = audioCtx.createBuffer(1, 1, 22050);
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(audioCtx.destination);
+  source.start(0);
+
+  // 効果音バッファを生成
+  bonkBuf = makeBuf(audioCtx, 400, 0.08, 0.5, 35);
+  pocketBuf = makeBuf(audioCtx, 600, 0.12, 0.5, 20);
+  strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
+  launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
+
+  unlocked = true;
+
+  // アンロック完了後にリスナーを外す
+  document.removeEventListener('pointerdown', unlockAudio);
+  document.removeEventListener('touchstart', unlockAudio);
 }
-document.addEventListener('touchstart', unlockAudio, { once: true });
+
+// ユーザーアクションにフック
 document.addEventListener('pointerdown', unlockAudio, { once: true });
-function playSound(url) {
-  if (muteSound) return;
-  setTimeout(() => {
-    const a = audioPool[poolIdx];
-    poolIdx = (poolIdx + 1) % POOL_SIZE;
-    a.src = url;
-    a.volume = 1.0;
-    a.play().catch(() => {});
-  }, 0);
+document.addEventListener('touchstart', unlockAudio, { once: true });
+
+// タブ復帰時の再resume
+document.addEventListener('visibilitychange', () => {
+  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') {
+    audioCtx.resume();
+  }
+});
+
+// 再生関数（毎回新しいBufferSourceNodeを使い捨て）
+function playBuf(buf) {
+  if (muteSound || !unlocked || !buf) return;
+  if (audioCtx.state !== 'running') { audioCtx.resume(); return; }
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(audioCtx.destination);
+  src.start(0);
 }
-function playBonk() { playSound(bonkUrl); }
-function playPocket() { playSound(pocketUrl); }
-function playStrike() { playSound(strikeUrl); }
-function playLaunch() { playSound(launchUrl); }
+function playBonk() { playBuf(bonkBuf); }
+function playPocket() { playBuf(pocketBuf); }
+function playStrike() { playBuf(strikeBuf); }
+function playLaunch() { playBuf(launchBuf); }
 
 // ── Tunable Constants ──
 const POCKET_R = 40;
@@ -295,8 +319,14 @@ function physicsStep() {
       if (bodies[j].pocketed) continue;
       if (resolveCollision(bodies[i], bodies[j])) {
         // Collision happened
-        // bonk音はiOS Safariで毎回FPSを落とすため無効化
-        // launch/pocket/strikeの低頻度音のみ残す
+        if (soundThrottle <= 0) {
+          const dvx = bodies[i].vx - bodies[j].vx;
+          const dvy = bodies[i].vy - bodies[j].vy;
+          if (dvx * dvx + dvy * dvy > 4) {
+            playBonk();
+            soundThrottle = 8;
+          }
+        }
         // Check knocked (no temp array — avoid GC)
         for (let k = 0; k < 2; k++) {
           const idx = k === 0 ? i : j;
