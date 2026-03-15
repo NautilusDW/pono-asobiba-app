@@ -44,9 +44,13 @@ window.addEventListener('resize', resize);
 let audioCtx = null;
 function getAC() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  audioCtx.resume();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
+// Pre-unlock on first touch (passive = browser trusts this as real user gesture)
+['touchstart','pointerdown'].forEach(evt =>
+  document.addEventListener(evt, () => getAC().resume(), { once: true, passive: true })
+);
 
 function beep(ac, freq, t, dur, type, vol) {
   const o = ac.createOscillator(), g = ac.createGain();
