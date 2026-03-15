@@ -53,9 +53,19 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 #tuner label { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
 #tuner input[type=range] { flex: 1; max-width: 180px; }
 #tuner .val { min-width: 55px; text-align: right; font-weight: bold; color: #FFD700; }
+#start-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #1a5c3a 0%, #2d8f5e 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+#start-screen .title { font-size: 42px; font-weight: 900; color: #FFD700; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
+#start-screen .tap { font-size: 22px; color: #fff; margin-top: 30px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
 </head>
 <body>
+<div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div></div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <div id="score">0</div>
 <div id="banner"></div>
@@ -86,6 +96,7 @@ window.addEventListener('resize', () => { resize(); resetRound(); });
 
 // ── Audio (Web Audio API) ──
 let audioCtx = null;
+let audioReady = false;
 let bonkBuf = null, pocketBuf = null, strikeBuf = null, launchBuf = null;
 
 function makeBuf(ctx, freq, dur, vol, decay) {
@@ -99,32 +110,45 @@ function makeBuf(ctx, freq, dur, vol, decay) {
   return ab;
 }
 
-// ユーザージェスチャ内で呼ぶ。何度呼んでもOK。
-function ensureAudio() {
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!audioCtx) {
+// スタート画面タップで初期化（ゲーム開始前に確実にrunningにする）
+function initAudio() {
+  return new Promise(resolve => {
+    const AC = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AC();
-    bonkBuf = makeBuf(audioCtx, 400, 0.08, 0.5, 35);
-    pocketBuf = makeBuf(audioCtx, 600, 0.12, 0.5, 20);
-    strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
-    launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  // 無音バッファ再生でiOSロック解除（毎回やっても害なし）
-  try {
-    const b = audioCtx.createBuffer(1, 1, 22050);
-    const s = audioCtx.createBufferSource();
-    s.buffer = b;
-    s.connect(audioCtx.destination);
-    s.start(0);
-  } catch(e) {}
+    audioCtx.resume().then(() => {
+      // 無音バッファ再生でiOSオーディオロック完全解除
+      const b = audioCtx.createBuffer(1, 1, 22050);
+      const s = audioCtx.createBufferSource();
+      s.buffer = b;
+      s.connect(audioCtx.destination);
+      s.start(0);
+      // バッファ生成
+      bonkBuf = makeBuf(audioCtx, 400, 0.08, 0.5, 35);
+      pocketBuf = makeBuf(audioCtx, 600, 0.12, 0.5, 20);
+      strikeBuf = makeBuf(audioCtx, 500, 0.25, 0.5, 10);
+      launchBuf = makeBuf(audioCtx, 400, 0.12, 0.5, 18);
+      audioReady = true;
+      resolve();
+    });
+    // フォールバック: 1秒待ってもrunningにならなくてもゲームは始める
+    setTimeout(() => {
+      bonkBuf = bonkBuf || makeBuf(audioCtx, 400, 0.08, 0.5, 35);
+      pocketBuf = pocketBuf || makeBuf(audioCtx, 600, 0.12, 0.5, 20);
+      strikeBuf = strikeBuf || makeBuf(audioCtx, 500, 0.25, 0.5, 10);
+      launchBuf = launchBuf || makeBuf(audioCtx, 400, 0.12, 0.5, 18);
+      audioReady = true;
+      resolve();
+    }, 1000);
+  });
 }
 
-// 全タッチイベントでensureAudioを呼ぶ
-document.addEventListener('pointerdown', ensureAudio);
-document.addEventListener('touchstart', ensureAudio);
+// スタート画面
+document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
+  e.preventDefault();
+  this.removeEventListener('pointerdown', handler);
+  await initAudio();
+  this.style.display = 'none';
+});
 
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') {
@@ -132,10 +156,9 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// 再生関数 — unlocked判定をやめてcontextのstate確認のみ
+// 再生関数
 function playBuf(buf, volume, rate) {
-  if (muteSound || !audioCtx || !buf) return;
-  // suspended中でもstart()するとキューに入り、running後に再生される
+  if (muteSound || !audioReady || !buf) return;
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
   src.playbackRate.value = rate || 1;
@@ -376,7 +399,6 @@ function checkPockets() {
 // ── Slingshot input ──
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
-  ensureAudio(); // ドラッグ開始時に確実にAudioContextをアンロック
   if (ballLaunched || roundResetting || ballIdx < 0) return;
   const b = bodies[ballIdx];
   const dx = e.clientX - b.x, dy = e.clientY - b.y;
@@ -392,7 +414,6 @@ canvas.addEventListener('pointermove', e => {
 });
 canvas.addEventListener('pointerup', e => {
   if (!dragging) return;
-  ensureAudio(); // 発射時にも再度アンロック試行
   dragging = false;
   const dx = dragStart.x - dragCur.x;
   const dy = dragStart.y - dragCur.y;
