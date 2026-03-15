@@ -65,6 +65,19 @@ const chainSound = makeWav(1100, 0.1, 0.4, 30);
 const boomSounds = [];
 for (let i = 0; i < 5; i++) boomSounds.push(makeWav(300 + i * 200, 0.4, 0.5, 8));
 
+// Unlock audio on first touch (iOS requires user gesture before any Audio.play)
+const silentWav = makeWav(440, 0.01, 0, 50);
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const a = new Audio(silentWav);
+  a.volume = 0;
+  a.play().catch(() => {});
+}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+
 function playSound(url) {
   const a = new Audio(url);
   a.volume = 1.0;
