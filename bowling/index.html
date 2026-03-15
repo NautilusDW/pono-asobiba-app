@@ -135,7 +135,7 @@ function createWalls() {
 
 // ── Pin layout ──
 const PIN_R = 14;
-const MAX_PINS = 50;
+const MAX_PINS = 40;
 function createPins() {
   pins.forEach(p => World.remove(world, p));
   pins = [];
@@ -155,10 +155,10 @@ function createPins() {
       const x = startX + c * spacing + (Math.random() - 0.5) * 2;
       const y = startY + r * spacing + (Math.random() - 0.5) * 2;
       const pin = Bodies.circle(x, y, PIN_R, {
-        restitution: 0.4,
-        friction: 0.15,
-        frictionAir: 0.05,
-        density: 0.0006,
+        restitution: 0.35,
+        friction: 0.1,
+        frictionAir: 0.08,
+        density: 0.0004,
       });
       pin.isPin = true;
       pin.knocked = false;
@@ -179,10 +179,10 @@ const BALL_R = 20;
 function createBall() {
   if (ball) World.remove(world, ball);
   const b = Bodies.circle(W / 2, H - 80, BALL_R, {
-    restitution: 0.5,
+    restitution: 0.3,
     friction: 0.02,
-    frictionAir: 0.003,
-    density: 0.02,
+    frictionAir: 0.015,
+    density: 0.03,
   });
   b.isBall = true;
   ball = b;
@@ -249,6 +249,7 @@ canvas.addEventListener('pointerup', e => {
   Body.setVelocity(ball, { x: vx, y: vy });
   ballLaunched = true;
   settleTimer = 0;
+  launchElapsed = 0;
   touchHistory = [];
 });
 
@@ -485,8 +486,21 @@ function updateConfetti() {
 }
 
 // ── Main loop ──
+let launchElapsed = 0;
 function checkSettle() {
   if (!ballLaunched || roundResetting) return;
+  launchElapsed++;
+
+  // Force-brake slow bodies after 3 seconds
+  if (launchElapsed > 180) {
+    [ball, ...pins].forEach(b => {
+      if (!b) return;
+      const spd = Math.sqrt(b.velocity.x ** 2 + b.velocity.y ** 2);
+      if (spd < 1.5 && spd > 0.01) {
+        Body.setVelocity(b, { x: b.velocity.x * 0.85, y: b.velocity.y * 0.85 });
+      }
+    });
+  }
 
   // Check if all bodies are nearly still
   let maxSpeed = 0;
@@ -497,9 +511,9 @@ function checkSettle() {
     if (spd > maxSpeed) maxSpeed = spd;
   });
 
-  if (maxSpeed < 0.3) {
+  if (maxSpeed < 0.5) {
     settleTimer++;
-    if (settleTimer > 60) { // ~1 second of calm
+    if (settleTimer > 30) { // ~0.5 second of calm
       // Check for perfect
       if (knockedCount >= totalPins * 0.95) {
         showBanner('🎉 パーフェクト！', 2000);

@@ -100,9 +100,9 @@ const GOLDEN_INTERVAL = 12000; // ms
 
 class Bubble {
   constructor(x, y, r, golden) {
-    this.x = x || Math.random() * W;
-    this.y = y || H + r + Math.random() * 100;
     this.r = r || (20 + Math.random() * 30) * (Math.min(W, H) / 600);
+    this.x = x ?? (Math.random() * W);
+    this.y = y ?? (H + this.r + Math.random() * 100);
     this.golden = golden || false;
     this.color = this.golden ? { r: 255, g: 215, b: 60 } : COLORS[Math.floor(Math.random() * COLORS.length)];
     this.vx = (Math.random() - 0.5) * 0.5;
