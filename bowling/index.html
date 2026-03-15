@@ -121,11 +121,15 @@ document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 function playSound(url) {
   if (muteSound) return;
-  const a = audioPool[poolIdx];
+  // setTimeout(0)で次のイベントループに遅延し、描画フレームをブロックしない
+  const idx = poolIdx;
   poolIdx = (poolIdx + 1) % POOL_SIZE;
-  a.src = url;
-  a.volume = 1.0;
-  a.play().catch(() => {});
+  setTimeout(() => {
+    const a = audioPool[idx];
+    a.src = url;
+    a.volume = 1.0;
+    a.play().catch(() => {});
+  }, 0);
 }
 function playBonk() { playSound(bonkSounds[Math.floor(Math.random() * bonkSounds.length)]); }
 function playPocket() { playSound(pocketSounds[Math.floor(Math.random() * pocketSounds.length)]); }
