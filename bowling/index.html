@@ -149,7 +149,8 @@ document.addEventListener('visibilitychange', () => {
 // 再生関数（毎回新しいBufferSourceNodeを使い捨て）
 function playBuf(buf) {
   if (muteSound || !unlocked || !buf) return;
-  if (audioCtx.state !== 'running') { audioCtx.resume(); return; }
+  // stateがrunningでなくてもresume後に再生を試みる（早期リターンしない）
+  if (audioCtx.state !== 'running') audioCtx.resume();
   const src = audioCtx.createBufferSource();
   src.buffer = buf;
   src.connect(audioCtx.destination);
@@ -223,6 +224,7 @@ let knockedCount = 0, totalPins = 0, pocketCount = 0;
 let settleTimer = 0, launchElapsed = 0, roundResetting = false;
 let dragging = false, dragStart = null, dragCur = null;
 let soundThrottle = 0;
+let collisionHappened = false;
 
 function createPins() {
   bodies.length = 0;
@@ -312,21 +314,15 @@ function physicsStep() {
     wallBounce(b);
   }
   // Collide (all pairs)
-  soundThrottle--;
   for (let i = 0; i < n; i++) {
     if (bodies[i].pocketed) continue;
     for (let j = i + 1; j < n; j++) {
       if (bodies[j].pocketed) continue;
       if (resolveCollision(bodies[i], bodies[j])) {
-        // Collision happened
-        if (soundThrottle <= 0) {
-          const dvx = bodies[i].vx - bodies[j].vx;
-          const dvy = bodies[i].vy - bodies[j].vy;
-          if (dvx * dvx + dvy * dvy > 4) {
-            playBonk();
-            soundThrottle = 8;
-          }
-        }
+        // Collision happened — flag for sound (played once per frame, not per physics step)
+        const dvx = bodies[i].vx - bodies[j].vx;
+        const dvy = bodies[i].vy - bodies[j].vy;
+        if (dvx * dvx + dvy * dvy > 4) collisionHappened = true;
         // Check knocked (no temp array — avoid GC)
         for (let k = 0; k < 2; k++) {
           const idx = k === 0 ? i : j;
@@ -621,12 +617,19 @@ function loop(now) {
 
   if (ballLaunched) {
     const prevScore = score;
+    collisionHappened = false;
     // Fixed timestep: run physics in consistent 16.67ms steps
     accumulator += elapsed;
     while (accumulator >= PHYSICS_DT) {
       physicsStep();
       accumulator -= PHYSICS_DT;
     }
+    // 音は1フレームにつき最大1回（物理ステップ内ではフラグのみ）
+    if (collisionHappened && soundThrottle <= 0) {
+      playBonk();
+      soundThrottle = 8;
+    }
+    soundThrottle--;
     checkPockets();
     checkSettle();
     if (score !== prevScore) scoreEl.textContent = score;
