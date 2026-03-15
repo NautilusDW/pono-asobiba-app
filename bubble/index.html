@@ -43,7 +43,10 @@ window.addEventListener('resize', resize);
 // ── Audio ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
-function ensureAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
 function playPop(pitch) {
   ensureAudio();
   const osc = audioCtx.createOscillator();
@@ -100,7 +103,7 @@ const GOLDEN_INTERVAL = 12000; // ms
 
 class Bubble {
   constructor(x, y, r, golden) {
-    this.r = r || (20 + Math.random() * 30) * (Math.min(W, H) / 600);
+    this.r = r || (35 + Math.random() * 45) * (Math.min(W, H) / 600);
     this.x = x ?? (Math.random() * W);
     this.y = y ?? (H + this.r + Math.random() * 100);
     this.golden = golden || false;
@@ -295,13 +298,13 @@ function popBubble(b, chainDepth) {
 
 // ── Spawn ──
 function spawnBubble() {
-  if (bubbles.length < 60) {
+  if (bubbles.length < 35) {
     bubbles.push(new Bubble());
   }
 }
 
 function spawnGolden() {
-  const r = (40 + Math.random() * 20) * (Math.min(W, H) / 600);
+  const r = (60 + Math.random() * 30) * (Math.min(W, H) / 600);
   const b = new Bubble(Math.random() * (W - r * 2) + r, H + r, r, true);
   b.vy = -(0.2 + Math.random() * 0.2);
   bubbles.push(b);
@@ -319,7 +322,7 @@ function handlePop(x, y) {
   }
   // Tap empty space: spawn a small burst of mini bubbles
   for (let i = 0; i < 3; i++) {
-    const r = (10 + Math.random() * 15) * (Math.min(W, H) / 600);
+    const r = (20 + Math.random() * 25) * (Math.min(W, H) / 600);
     const nb = new Bubble(x + (Math.random() - 0.5) * 40, y + (Math.random() - 0.5) * 40, r);
     nb.vy = -(0.6 + Math.random() * 0.8);
     nb.opacity = 0.8;
@@ -409,7 +412,7 @@ function loop(time) {
 }
 
 // Initial bubbles
-for (let i = 0; i < 25; i++) {
+for (let i = 0; i < 15; i++) {
   const b = new Bubble();
   b.y = Math.random() * H;
   b.opacity = 1;

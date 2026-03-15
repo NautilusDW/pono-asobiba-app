@@ -63,7 +63,10 @@ window.addEventListener('resize', () => { resize(); resetRound(); });
 // ── Audio ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
-function ensureAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
 
 function playBonk(intensity) {
   ensureAudio();
@@ -134,14 +137,14 @@ function createWalls() {
 }
 
 // ── Pin layout ──
-const PIN_R = 14;
-const MAX_PINS = 40;
+const PIN_R = 28;
+const MAX_PINS = 35;
 function createPins() {
   pins.forEach(p => World.remove(world, p));
   pins = [];
 
-  const spacing = PIN_R * 2.8;
-  const cols = Math.min(8, Math.floor((W - 60) / spacing));
+  const spacing = PIN_R * 2.15;
+  const cols = Math.min(6, Math.floor((W - 40) / spacing));
   const maxRows = Math.floor(MAX_PINS / cols);
   const rows = Math.min(maxRows, Math.floor((H * 0.45) / spacing));
   const startX = (W - (cols - 1) * spacing) / 2;
@@ -175,7 +178,7 @@ function createPins() {
 }
 
 // ── Ball ──
-const BALL_R = 20;
+const BALL_R = 32;
 function createBall() {
   if (ball) World.remove(world, ball);
   const b = Bodies.circle(W / 2, H - 80, BALL_R, {
