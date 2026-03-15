@@ -82,8 +82,9 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 resize();
 window.addEventListener('resize', () => { resize(); resetRound(); });
 
-// ── Audio (HTML Audio — バブルゲームと同じ方式) ──
-function makeWav(freq, dur, vol, decay) {
+// ── Audio (ハイブリッド: HTML Audioでunlock → WebAudio APIで再生) ──
+// WAVデータをArrayBufferとして生成（Blob URLではなく生データ）
+function makeWavBuf(freq, dur, vol, decay) {
   const sr = 22050, n = sr * dur | 0;
   const buf = new ArrayBuffer(44 + n * 2);
   const v = new DataView(buf);
@@ -98,43 +99,133 @@ function makeWav(freq, dur, vol, decay) {
     const val = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
     v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, val * 32767 | 0)), true);
   }
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  return buf;
 }
+
+// WAVデータを事前生成（ArrayBuffer）
+const wavData = {
+  bonk: [makeWavBuf(300,0.1,0.5,30), makeWavBuf(450,0.1,0.5,30), makeWavBuf(600,0.1,0.5,30)],
+  pocket: [makeWavBuf(500,0.15,0.5,18), makeWavBuf(700,0.15,0.5,18)],
+  strike: makeWavBuf(500,0.25,0.5,10),
+  launch: makeWavBuf(400,0.15,0.5,15),
+};
+
+let actx = null;
+let audioBufs = { bonk: [], pocket: [], strike: null, launch: null };
+let audioMode = 'none'; // 'webaudio' or 'html' or 'none'
+
+// HTML Audio フォールバック用
 const POOL_SIZE = 4;
-const audioPool = [];
-let poolIdx = 0;
-for (let i = 0; i < POOL_SIZE; i++) audioPool.push(new Audio());
-const bonkSounds = [makeWav(300, 0.1, 0.5, 30), makeWav(450, 0.1, 0.5, 30), makeWav(600, 0.1, 0.5, 30)];
-const pocketSounds = [makeWav(500, 0.15, 0.5, 18), makeWav(700, 0.15, 0.5, 18)];
-const strikeSound = makeWav(500, 0.25, 0.5, 10);
-const launchSound = makeWav(400, 0.15, 0.5, 15);
-const silentWav = makeWav(440, 0.01, 0, 50);
-let audioUnlocked = false;
+const htmlPool = [];
+let htmlIdx = 0;
+for (let i = 0; i < POOL_SIZE; i++) htmlPool.push(new Audio());
+const htmlUrls = {};
+
+function initHtmlFallback() {
+  function toBlobUrl(ab) {
+    return URL.createObjectURL(new Blob([ab], { type: 'audio/wav' }));
+  }
+  htmlUrls.bonk = wavData.bonk.map(toBlobUrl);
+  htmlUrls.pocket = wavData.pocket.map(toBlobUrl);
+  htmlUrls.strike = toBlobUrl(wavData.strike);
+  htmlUrls.launch = toBlobUrl(wavData.launch);
+}
+
 function unlockAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  audioPool[0].src = silentWav;
-  audioPool[0].volume = 0;
-  audioPool[0].play().catch(() => {});
+  if (audioMode !== 'none') return;
+
+  // Step 1: HTML Audioでサイレント再生（iOSの音声セッションunlock）
+  const silentBuf = makeWavBuf(440, 0.01, 0, 50);
+  const silentUrl = URL.createObjectURL(new Blob([silentBuf], { type: 'audio/wav' }));
+  const unlockEl = new Audio();
+  unlockEl.src = silentUrl;
+  unlockEl.volume = 0;
+  unlockEl.play().catch(() => {});
+
+  // Step 2: WebAudio APIを試行
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+
+    // サイレントバッファでウォームアップ
+    const sb = actx.createBuffer(1, 1, actx.sampleRate);
+    const sn = actx.createBufferSource();
+    sn.buffer = sb;
+    sn.connect(actx.destination);
+    sn.start(0);
+
+    // WAVデータをdecodeAudioDataで読み込み（ブラウザのデコーダを使用）
+    let decoded = 0;
+    const total = wavData.bonk.length + wavData.pocket.length + 2;
+    function checkReady() {
+      decoded++;
+      if (decoded >= total) audioMode = 'webaudio';
+    }
+    wavData.bonk.forEach((ab, i) => {
+      actx.decodeAudioData(ab.slice(0)).then(b => { audioBufs.bonk[i] = b; checkReady(); }).catch(() => { audioMode = 'html'; });
+    });
+    wavData.pocket.forEach((ab, i) => {
+      actx.decodeAudioData(ab.slice(0)).then(b => { audioBufs.pocket[i] = b; checkReady(); }).catch(() => { audioMode = 'html'; });
+    });
+    actx.decodeAudioData(wavData.strike.slice(0)).then(b => { audioBufs.strike = b; checkReady(); }).catch(() => { audioMode = 'html'; });
+    actx.decodeAudioData(wavData.launch.slice(0)).then(b => { audioBufs.launch = b; checkReady(); }).catch(() => { audioMode = 'html'; });
+
+    // 1秒後にWebAudioが使えなければHTMLフォールバック
+    setTimeout(() => {
+      if (audioMode === 'none') { audioMode = 'html'; initHtmlFallback(); }
+    }, 1000);
+  } catch(e) {
+    audioMode = 'html';
+    initHtmlFallback();
+  }
+
+  unlockEvts.forEach(ev => document.removeEventListener(ev, unlockAudio, true));
 }
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('pointerdown', unlockAudio, { once: true });
-function playSound(url) {
+const unlockEvts = ['touchstart', 'touchend', 'mousedown', 'click', 'keydown'];
+unlockEvts.forEach(ev => document.addEventListener(ev, unlockAudio, true));
+
+// タブ復帰
+document.addEventListener('visibilitychange', () => {
+  if (actx && document.visibilityState === 'visible' && actx.state !== 'running') actx.resume();
+});
+
+function playWebAudio(buf) {
+  if (!buf || !actx || actx.state !== 'running') return;
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  src.connect(actx.destination);
+  src.start(0);
+}
+function playHtml(url) {
+  const a = htmlPool[htmlIdx];
+  htmlIdx = (htmlIdx + 1) % POOL_SIZE;
+  a.src = url;
+  a.volume = 1.0;
+  a.play().catch(() => {});
+}
+
+function playBonk() {
   if (muteSound) return;
-  // setTimeout(0)で次のイベントループに遅延し、描画フレームをブロックしない
-  const idx = poolIdx;
-  poolIdx = (poolIdx + 1) % POOL_SIZE;
-  setTimeout(() => {
-    const a = audioPool[idx];
-    a.src = url;
-    a.volume = 1.0;
-    a.play().catch(() => {});
-  }, 0);
+  const i = Math.floor(Math.random() * 3);
+  if (audioMode === 'webaudio') playWebAudio(audioBufs.bonk[i]);
+  else if (audioMode === 'html') setTimeout(() => playHtml(htmlUrls.bonk[i]), 0);
 }
-function playBonk() { playSound(bonkSounds[Math.floor(Math.random() * bonkSounds.length)]); }
-function playPocket() { playSound(pocketSounds[Math.floor(Math.random() * pocketSounds.length)]); }
-function playStrike() { playSound(strikeSound); }
-function playLaunch() { playSound(launchSound); }
+function playPocket() {
+  if (muteSound) return;
+  const i = Math.floor(Math.random() * 2);
+  if (audioMode === 'webaudio') playWebAudio(audioBufs.pocket[i]);
+  else if (audioMode === 'html') setTimeout(() => playHtml(htmlUrls.pocket[i]), 0);
+}
+function playStrike() {
+  if (muteSound) return;
+  if (audioMode === 'webaudio') playWebAudio(audioBufs.strike);
+  else if (audioMode === 'html') setTimeout(() => playHtml(htmlUrls.strike), 0);
+}
+function playLaunch() {
+  if (muteSound) return;
+  if (audioMode === 'webaudio') playWebAudio(audioBufs.launch);
+  else if (audioMode === 'html') setTimeout(() => playHtml(htmlUrls.launch), 0);
+}
 
 // ── Tunable Constants ──
 const POCKET_R = 40;
@@ -602,7 +693,8 @@ function loop() {
   ctx.fillStyle = '#0f0';
   ctx.font = '14px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(fpsDisplay + ' fps' + (muteSound ? ' [MUTE]' : ''), 60, 24);
+  const modeStr = muteSound ? ' [MUTE]' : ' [' + audioMode + ']';
+  ctx.fillText(fpsDisplay + ' fps' + modeStr, 60, 24);
 
   requestAnimationFrame(loop);
 }
