@@ -11,7 +11,7 @@
 html, body {
   width: 100%; height: 100dvh; overflow: hidden;
   font-family: 'Zen Maru Gothic', sans-serif;
-  background: linear-gradient(180deg, #e0f4ff 0%, #a8e6ff 40%, #7dd6f5 100%);
+  background: #000;
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
 canvas { display: block; width: 100%; height: 100%; }
@@ -460,7 +460,8 @@ for (let layer = 0; layer < CLOUD_LAYERS; layer++) {
   }
 }
 
-function drawClouds(dt) {
+function drawClouds(dt, cloudMul) {
+  const mul = cloudMul ?? 1;
   for (let i = 0; i < clouds.length; i++) {
     const c = clouds[i];
     c.y += CLOUD_SPEED[c.layer] * dt * 0.06;
@@ -469,17 +470,191 @@ function drawClouds(dt) {
       c.y = -c.h - Math.random() * 200;
       c.x = Math.random() * (W + 400) - 200;
     }
-    ctx.globalAlpha = CLOUD_ALPHA[c.layer];
+    ctx.globalAlpha = CLOUD_ALPHA[c.layer] * mul;
     const sp = c.sprite;
     ctx.drawImage(sp.canvas, c.x - c.w / 2 - sp.pad, c.y - c.h / 2 - sp.pad);
   }
   ctx.globalAlpha = 1;
 }
 
-// ── Background (old bubbles replaced by clouds) ──
-function drawBackground(dt) {
-  // Draw clouds back-to-front (sorted by layer at init, stable order)
-  drawClouds(dt);
+// ── Day/Night cycle ──
+// Phases: 0=morning(dawn), 1=day, 2=sunset, 3=night
+const SKY_PHASES = [
+  { // 0: Morning (dawn)
+    top:    [255, 180, 140],  // warm pink-orange
+    mid:    [200, 220, 255],  // light lavender
+    bot:    [140, 210, 255],  // soft blue
+    cloud:  1.0,
+  },
+  { // 1: Day
+    top:    [160, 215, 255],  // bright sky blue
+    mid:    [168, 230, 255],  // lighter blue
+    bot:    [125, 214, 245],  // aqua
+    cloud:  1.0,
+  },
+  { // 2: Sunset
+    top:    [80, 60, 130],    // deep purple
+    mid:    [200, 100, 80],   // warm red-orange
+    bot:    [255, 170, 80],   // golden orange
+    cloud:  0.7,
+  },
+  { // 3: Night
+    top:    [10, 10, 40],     // near-black blue
+    mid:    [20, 25, 70],     // dark navy
+    bot:    [30, 40, 90],     // deep blue
+    cloud:  0.25,
+  },
+];
+const PHASE_DURATION = 15000; // 15s per phase → 60s full cycle
+const TRANSITION_DURATION = 3000; // 3s blend between phases
+let dayTime = 0; // ms into cycle
+
+function lerpColor(a, b, t) {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+}
+
+// Pre-generate stars (fixed positions, random twinkle phase)
+const STAR_COUNT = 80;
+const stars = [];
+for (let i = 0; i < STAR_COUNT; i++) {
+  stars.push({
+    x: Math.random(),
+    y: Math.random() * 0.7, // upper 70% of screen
+    size: 0.5 + Math.random() * 2,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.001 + Math.random() * 0.002,
+    bright: 0.4 + Math.random() * 0.6,
+  });
+}
+
+function getSkyColors(time) {
+  const cycle = time % (PHASE_DURATION * 4);
+  const phaseIdx = Math.floor(cycle / PHASE_DURATION);
+  const phaseProgress = (cycle % PHASE_DURATION) / PHASE_DURATION;
+
+  const cur = SKY_PHASES[phaseIdx];
+  const next = SKY_PHASES[(phaseIdx + 1) % 4];
+
+  // Smooth transition in last portion of each phase
+  const transStart = 1 - (TRANSITION_DURATION / PHASE_DURATION);
+  let t = 0;
+  if (phaseProgress > transStart) {
+    t = (phaseProgress - transStart) / (1 - transStart);
+    t = t * t * (3 - 2 * t); // smoothstep
+  }
+
+  return {
+    top: lerpColor(cur.top, next.top, t),
+    mid: lerpColor(cur.mid, next.mid, t),
+    bot: lerpColor(cur.bot, next.bot, t),
+    cloudAlpha: cur.cloud + (next.cloud - cur.cloud) * t,
+    nightAmount: getNightAmount(cycle),
+  };
+}
+
+function getNightAmount(cycle) {
+  // Returns 0-1 how "night" it is (for stars)
+  const phaseIdx = Math.floor(cycle / PHASE_DURATION);
+  const progress = (cycle % PHASE_DURATION) / PHASE_DURATION;
+  const transStart = 1 - (TRANSITION_DURATION / PHASE_DURATION);
+
+  if (phaseIdx === 3) { // night phase
+    if (progress > transStart) {
+      // Transitioning to morning
+      const t = (progress - transStart) / (1 - transStart);
+      return 1 - t * t;
+    }
+    return 1;
+  }
+  if (phaseIdx === 2 && progress > transStart) {
+    // Sunset transitioning to night
+    const t = (progress - transStart) / (1 - transStart);
+    return t * t;
+  }
+  return 0;
+}
+
+function drawSky(dt) {
+  dayTime += dt;
+  const sky = getSkyColors(dayTime);
+
+  // Draw sky gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  const rc = (c) => `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
+  grad.addColorStop(0, rc(sky.top));
+  grad.addColorStop(0.45, rc(sky.mid));
+  grad.addColorStop(1, rc(sky.bot));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw stars (visible during night)
+  if (sky.nightAmount > 0.05) {
+    for (const s of stars) {
+      const twinkle = 0.5 + 0.5 * Math.sin(dayTime * s.speed + s.phase);
+      const alpha = sky.nightAmount * s.bright * twinkle;
+      if (alpha < 0.02) continue;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Clouds with time-of-day alpha modulation
+  drawClouds(dt, sky.cloudAlpha);
+}
+
+// ── Intro text overlay ──
+let introTime = 0;
+const INTRO_DURATION = 3000;  // 3s visible
+const INTRO_FADE = 800;       // 0.8s fade out
+
+function drawIntro(dt) {
+  introTime += dt;
+  if (introTime > INTRO_DURATION + INTRO_FADE) return;
+
+  let alpha = 1;
+  if (introTime > INTRO_DURATION) {
+    alpha = 1 - (introTime - INTRO_DURATION) / INTRO_FADE;
+  }
+
+  // Semi-transparent overlay
+  ctx.globalAlpha = alpha * 0.3;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // Text
+  ctx.globalAlpha = alpha;
+  const fontSize = Math.min(W * 0.07, 36);
+  ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Soft shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+
+  // Main text
+  ctx.fillStyle = '#fff';
+  ctx.fillText('シャボン玉をタップしてあそぼう！', W / 2, H * 0.45);
+
+  // Sub text (smaller)
+  const subSize = fontSize * 0.5;
+  ctx.font = `700 ${subSize}px 'Zen Maru Gothic', sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText('🫧  タップするとシャボン玉がわれるよ  🫧', W / 2, H * 0.55);
+
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.globalAlpha = 1;
 }
 
 // ── Main loop ──
@@ -491,8 +666,7 @@ function loop(time) {
   const dt = Math.min(time - lastTime, 50) || 16;
   lastTime = time;
 
-  ctx.clearRect(0, 0, W, H);
-  drawBackground(dt);
+  drawSky(dt);
 
   // Spawn
   spawnTimer += dt;
@@ -585,6 +759,9 @@ function loop(time) {
     ctx.fillRect(-cfsize[i] / 2, -cfsize[i] / 4, cfsize[i], cfsize[i] / 2);
     ctx.restore();
   }
+
+  // Intro overlay
+  drawIntro(dt);
 
   requestAnimationFrame(loop);
 }
