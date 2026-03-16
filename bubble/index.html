@@ -487,19 +487,19 @@ const SKY_PHASES = [
     bot:    [125, 214, 245],
     cloud:  1.0,
   },
-  { // 2: Sunset warm — top still blue-ish, bottom goes orange
-    top:    [140, 170, 220],
-    mid:    [220, 160, 100],
-    bot:    [255, 170, 80],
+  { // 2: Sunset warm — sky warms up, bottom glows orange
+    top:    [180, 150, 160],
+    mid:    [230, 160, 100],
+    bot:    [255, 175, 85],
     cloud:  0.85,
   },
-  { // 3: Sunset dark — top goes deep purple, bottom warm orange-red
-    top:    [50, 40, 100],
-    mid:    [160, 70, 60],
-    bot:    [200, 100, 50],
-    cloud:  0.5,
+  { // 3: Sunset deep — everything darkens warmly (NO purple/navy)
+    top:    [90, 55, 55],
+    mid:    [130, 60, 40],
+    bot:    [110, 50, 35],
+    cloud:  0.45,
   },
-  { // 4: Night — dark blue
+  { // 4: Night — dark blue (purple only appears here)
     top:    [10, 10, 40],
     mid:    [20, 25, 70],
     bot:    [30, 40, 90],
@@ -507,8 +507,8 @@ const SKY_PHASES = [
   },
 ];
 const NUM_PHASES = SKY_PHASES.length;
-const PHASE_DURATION = 12000; // 12s per phase → 60s full cycle
-const TRANSITION_DURATION = 3000; // 3s blend between phases
+const PHASE_DURATION = 20000; // 20s per phase → 100s full cycle
+const TRANSITION_DURATION = 4000; // 4s blend between phases
 let dayTime = PHASE_DURATION; // start at "day" phase
 
 function lerpColor(a, b, t) {
@@ -623,8 +623,8 @@ function drawSky(dt) {
 
 // ── Intro text overlay ──
 let introTime = 0;
-const INTRO_DURATION = 5000;  // 5s visible
-const INTRO_FADE = 1000;      // 1s fade out
+const INTRO_DURATION = 4000;  // 4s visible
+const INTRO_FADE = 800;       // 0.8s fade out
 
 function drawIntro(dt) {
   introTime += dt;
