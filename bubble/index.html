@@ -392,30 +392,67 @@ canvas.addEventListener('pointermove', e => {
   }
 });
 
-// ── Background bubbles ──
-const bgBubbles = [];
-for (let i = 0; i < 10; i++) {
-  bgBubbles.push({
-    x: Math.random() * 2000,
-    y: Math.random() * 2000,
-    r: 60 + Math.random() * 120,
-    speed: 0.1 + Math.random() * 0.15,
-    phase: Math.random() * Math.PI * 2,
-  });
+// ── Parallax clouds (camera moving upward — clouds drift down) ──
+const clouds = [];
+const CLOUD_LAYERS = 3; // back(0) → mid(1) → front(2)
+const CLOUD_SPEED = [0.15, 0.35, 0.7]; // parallax speed per layer
+const CLOUD_ALPHA = [0.06, 0.10, 0.15]; // opacity per layer
+const CLOUD_SCALE = [0.6, 1.0, 1.6]; // size per layer (depth)
+const CLOUD_COUNT = [4, 3, 2]; // fewer in front for depth
+for (let layer = 0; layer < CLOUD_LAYERS; layer++) {
+  for (let i = 0; i < CLOUD_COUNT[layer]; i++) {
+    clouds.push({
+      x: Math.random() * 2000 - 500,
+      y: Math.random() * 2000 - 500,
+      layer,
+      w: (120 + Math.random() * 180) * CLOUD_SCALE[layer],
+      h: (40 + Math.random() * 50) * CLOUD_SCALE[layer],
+      // Each cloud = 3-5 overlapping ellipses for fluffy shape
+      blobs: Array.from({ length: 3 + Math.floor(Math.random() * 3) }, () => ({
+        ox: (Math.random() - 0.5) * 0.7, // offset ratio from center
+        oy: (Math.random() - 0.5) * 0.3,
+        rx: 0.3 + Math.random() * 0.4,    // radius ratio
+        ry: 0.2 + Math.random() * 0.25,
+      })),
+    });
+  }
 }
-function drawBackground(dt) {
-  ctx.globalAlpha = 0.07;
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < bgBubbles.length; i++) {
-    const b = bgBubbles[i];
-    b.phase += 0.005 * dt;
-    b.y -= b.speed * dt * 0.05;
-    if (b.y < -b.r) { b.y = H + b.r; b.x = Math.random() * W; }
-    ctx.beginPath();
-    ctx.arc(b.x + Math.sin(b.phase) * 20, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
+
+function drawClouds(dt) {
+  for (let i = 0; i < clouds.length; i++) {
+    const c = clouds[i];
+    const speed = CLOUD_SPEED[c.layer];
+    // Clouds move DOWN (camera going up)
+    c.y += speed * dt * 0.06;
+    // Slight horizontal drift
+    c.x += Math.sin(c.y * 0.002 + i) * 0.02 * dt;
+    // Wrap: when cloud goes below screen, respawn above
+    if (c.y - c.h > H + 100) {
+      c.y = -c.h - Math.random() * 200;
+      c.x = Math.random() * (W + 400) - 200;
+    }
+    // Draw cloud as overlapping white ellipses
+    ctx.globalAlpha = CLOUD_ALPHA[c.layer];
+    ctx.fillStyle = '#fff';
+    for (const blob of c.blobs) {
+      ctx.beginPath();
+      ctx.ellipse(
+        c.x + blob.ox * c.w,
+        c.y + blob.oy * c.h,
+        blob.rx * c.w,
+        blob.ry * c.h,
+        0, 0, Math.PI * 2
+      );
+      ctx.fill();
+    }
   }
   ctx.globalAlpha = 1;
+}
+
+// ── Background (old bubbles replaced by clouds) ──
+function drawBackground(dt) {
+  // Draw clouds back-to-front (sorted by layer at init, stable order)
+  drawClouds(dt);
 }
 
 // ── Main loop ──
