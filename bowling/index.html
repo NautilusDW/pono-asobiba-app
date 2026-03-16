@@ -231,6 +231,14 @@ let roundMerges = 0;
 let ballTier = 0;           // current ball's tier
 let shotNumber = 0;
 
+// New game features
+let patternName = '';        // current formation name for display
+let patternNameTimer = 0;    // frames to show pattern name
+let bestScore = parseInt(localStorage.getItem('bowling_best') || '0');
+let ballTrail = [];          // [{x,y,alpha}] ball position trail
+const MAX_TRAIL = 40;
+let roundBestMerges = 0;     // best merges in a single round
+
 function triggerShake(intensity) { shakeLife = Math.max(shakeLife, Math.min(intensity * 6, 6)); }
 
 // ── Pick random ball tier ──
@@ -279,7 +287,7 @@ function startArrangePhase() {
   for (const p of pins) { const t = TIERS[p.tier]; p.r = t.r; p.mass = t.mass; }
 
   // Helper: average radius of pins in a slice, with gap
-  const GAP = 6; // extra px between pins beyond their radii
+  const GAP = 10; // extra px between pins beyond their radii
   function avgR(from, to) {
     let s = 0; for (let i = from; i < to; i++) s += pins[i].r;
     return s / Math.max(1, to - from);
@@ -315,8 +323,20 @@ function startArrangePhase() {
   }
 
   // Pick a random formation pattern
-  const patterns = ['rows', 'triangle', 'diamond', 'circle', 'grid', 'v-shape', 'spiral', 'cross'];
-  const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+  const patternDefs = [
+    { id: 'rows', label: 'せいれつ！' },
+    { id: 'triangle', label: 'さんかく！' },
+    { id: 'diamond', label: 'ダイヤ！' },
+    { id: 'circle', label: 'まる！' },
+    { id: 'grid', label: 'ならべ！' },
+    { id: 'v-shape', label: 'ブイ！' },
+    { id: 'spiral', label: 'うずまき！' },
+    { id: 'cross', label: 'じゅうもんじ！' },
+  ];
+  const pick = patternDefs[Math.floor(Math.random() * patternDefs.length)];
+  const pattern = pick.id;
+  patternName = pick.label;
+  patternNameTimer = 70; // show for ~1.2s
   const cxP = W / 2, areaTop = H * 0.08, areaBot = H * 0.58;
   const areaCY = (areaTop + areaBot) / 2;
   const positions = [];
@@ -743,6 +763,7 @@ canvas.addEventListener('pointerup', e => {
   roundMerges = 0;
   combo = 0; mergePitch = 1.0;
   shotNumber++;
+  ballTrail = []; // reset trail
 });
 canvas.addEventListener('pointercancel', () => { aiming = false; });
 
@@ -876,24 +897,74 @@ function drawBallPreview(now) {
   ctx.globalAlpha = 1;
 }
 
+function drawBallTrail() {
+  if (ballTrail.length < 2) return;
+  for (let i = 1; i < ballTrail.length; i++) {
+    const a = ballTrail[i-1], b = ballTrail[i];
+    if (a.alpha < 0.05) continue;
+    ctx.globalAlpha = b.alpha * 0.5;
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2 + b.alpha * 2;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawPatternName() {
+  if (patternNameTimer <= 0) return;
+  patternNameTimer--;
+  const t = patternNameTimer / 70;
+  const scale = t > 0.8 ? 1 + (1 - (t - 0.8) / 0.2) * 0.5 : 1; // bounce in
+  const alpha = t < 0.2 ? t / 0.2 : 1; // fade out
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.round(40 * scale) + 'px "Zen Maru Gothic"';
+  ctx.textAlign = 'center';
+  ctx.fillText(patternName, W/2, H * 0.35);
+  ctx.globalAlpha = 1;
+}
+
+function drawBestScore() {
+  if (bestScore <= 0) return;
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = '#FFD700';
+  ctx.font = '12px "Zen Maru Gothic"'; ctx.textAlign = 'right';
+  ctx.fillText('BEST: ' + bestScore, W - 16, 50);
+  ctx.globalAlpha = 1;
+}
+
 function drawResultOverlay() {
   const alpha = Math.min(1, phaseTimer / 30);
   ctx.globalAlpha = alpha * 0.6;
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, H*0.35, W, H*0.15);
+  ctx.fillRect(0, H*0.3, W, H*0.22);
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = '#FFD700';
-  ctx.font = 'bold 28px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+  ctx.textAlign = 'center';
+
   if (roundMerges > 0) {
-    ctx.fillText(roundMerges + '回合体！', W/2, H*0.42);
+    // Main merge count
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 32px "Zen Maru Gothic"';
+    ctx.fillText(roundMerges + '回合体！', W/2, H*0.38);
+    // Rating
+    const rating = roundMerges >= 6 ? 'すごい！！' : roundMerges >= 4 ? 'いいね！' : roundMerges >= 2 ? 'まあまあ' : 'おしい';
+    const rColor = roundMerges >= 6 ? '#FF6B6B' : roundMerges >= 4 ? '#4CAF50' : '#aaa';
+    ctx.fillStyle = rColor;
+    ctx.font = 'bold 22px "Zen Maru Gothic"';
+    ctx.fillText(rating, W/2, H*0.43);
   } else {
     ctx.fillStyle = '#aaa';
-    ctx.fillText('合体なし...', W/2, H*0.42);
+    ctx.font = 'bold 28px "Zen Maru Gothic"';
+    ctx.fillText('合体なし...', W/2, H*0.38);
+    ctx.font = '18px "Zen Maru Gothic"';
+    ctx.fillText('つぎはがんばろう！', W/2, H*0.43);
   }
-  ctx.globalAlpha = alpha * 0.7;
+  // Shot counter + pin count
+  ctx.globalAlpha = alpha * 0.6;
   ctx.fillStyle = '#fff';
-  ctx.font = '18px "Zen Maru Gothic"';
-  ctx.fillText('Shot ' + shotNumber, W/2, H*0.47);
+  ctx.font = '16px "Zen Maru Gothic"';
+  const pinCount = bodies.filter(b => b.type === 'pin' && !b.dead).length;
+  ctx.fillText('Shot ' + shotNumber + '　　ピン ' + pinCount + '体', W/2, H*0.48);
   ctx.globalAlpha = 1;
 }
 
@@ -957,6 +1028,17 @@ function loop(now) {
     detectMerges(); processMerges();
     if (combo > prevCombo && combo >= 3) { chainDisplay = combo; chainDisplayTimer = 60; }
 
+    // Ball trail
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      if (b.type === 'ball' && !b.dead) {
+        ballTrail.push({ x: b.x, y: b.y, alpha: 1 });
+        if (ballTrail.length > MAX_TRAIL) ballTrail.shift();
+      }
+    }
+    // Fade trail
+    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.96;
+
     // Check settled
     if (isSettled()) {
       settledFrames++;
@@ -974,6 +1056,9 @@ function loop(now) {
   if (gamePhase === 'result') {
     phaseTimer--;
     if (phaseTimer <= 0) {
+      // Update best score
+      if (score > bestScore) { bestScore = score; localStorage.setItem('bowling_best', String(bestScore)); }
+      if (roundMerges > roundBestMerges) roundBestMerges = roundMerges;
       startArrangePhase();
     }
   }
@@ -991,7 +1076,7 @@ function loop(now) {
 
   // ── Draw ──
   ctx.save(); ctx.translate(shakeX, shakeY);
-  drawBg(); drawBodies(); drawEffects(); drawChainCounter();
+  drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter(); drawPatternName(); drawBestScore();
   ctx.restore();
   scoreEl.textContent = score;
 
