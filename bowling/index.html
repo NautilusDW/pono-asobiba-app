@@ -68,11 +68,10 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
-let W, H, FLOOR_Y;
+let W, H;
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
-  FLOOR_Y = H - 10; // floor position
 }
 resize();
 window.addEventListener('resize', resize);
@@ -187,16 +186,14 @@ const MAX_TIER = TIERS.length - 1;
 // ── Constants ──
 const BALL_R = 22;
 const BALL_MASS = 8;
-const BALL_GRAVITY = 0.25;
-const BALL_LIFETIME = 3000;
-const GRAVITY = 0.5;
-const FRICTION_AIR = 0.988;
-const RESTITUTION = 0.5;
-const FLOOR_RESTITUTION = 0.3;
-const WALL_RESTITUTION = 0.5;
+const BALL_LIFETIME = 4000;
+const GRAVITY = 0.18;
+const FRICTION_AIR = 0.996;
+const RESTITUTION = 0.7;
+const WALL_RESTITUTION = 0.8;
 const MAX_BODIES = 60;
-const MAX_PINS = 30;
-const PIN_SPAWN_INTERVAL = 800;
+const MAX_PINS = 25;
+const PIN_SPAWN_INTERVAL = 500;
 const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 5;
 
@@ -205,11 +202,6 @@ const MERGE_SHOCKWAVE_BASE_R = 80;
 const MERGE_SHOCKWAVE_R_PER_TIER = 30;
 const MERGE_SHOCKWAVE_BASE_F = 4;
 const MERGE_SHOCKWAVE_F_PER_TIER = 3;
-
-// Merge attraction
-const MERGE_ATTRACT_RANGE = 1.5;
-const MERGE_ATTRACT_FORCE = 0.3;
-const MERGE_ATTRACT_MAX_VEL = 3;
 
 // ── Pin images (tier-specific sizes) ──
 const tierCanvases = [];
@@ -282,29 +274,15 @@ function spawnPin(forceTier) {
   b.vx = (Math.random() - 0.5) * 1.0;
 }
 
-// Place a pin already settled at a position
-function placePin(x, y, tier) {
-  const t = TIERS[tier];
-  const b = addBody(x, y, t.r, t.mass, 'pin');
-  b.tier = tier;
-  return b;
-}
-
-function spawnBall(tapX) {
+function spawnBall(tapX, tapY) {
   if (activeBall) return; // 1 ball at a time
   if (bodies.length >= MAX_BODIES) return;
-  const launchX = tapX;
-  const launchY = H - 50;
-  const b = addBody(launchX, launchY, BALL_R, BALL_MASS, 'ball');
-  // Aim toward tap X, upward arc
-  const targetX = tapX;
-  const targetY = H * 0.3; // aim at upper area
-  const dx = targetX - launchX;
-  const dy = targetY - launchY;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const speed = 16;
-  b.vx = (dx / dist) * speed * 0.3 + (Math.random() - 0.5) * 2;
-  b.vy = -speed; // strong upward
+  const b = addBody(tapX, tapY, BALL_R, BALL_MASS, 'ball');
+  // Launch upward with slight random angle
+  const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+  const speed = 14 + Math.random() * 6;
+  b.vx = Math.cos(angle) * speed;
+  b.vy = Math.sin(angle) * speed;
   b.colorIdx = Math.floor(Math.random() * ballColors.length);
   activeBall = b;
   shotCount++;
@@ -376,24 +354,17 @@ function resolveCollision(a, b) {
 
 // ── Wall bounce ──
 function wallBounce(b) {
-  // Left/right walls: everything bounces
   if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
-  // Top wall: ball dies, pin bounces
-  if (b.y - b.r < 0) {
-    if (b.type === 'ball') {
+  if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
+  // Bottom: pins die, balls bounce
+  if (b.y + b.r > H) {
+    if (b.type === 'pin') {
       b.dead = true;
     } else {
-      b.y = b.r;
-      b.vy = Math.abs(b.vy) * WALL_RESTITUTION;
+      b.y = H - b.r;
+      b.vy = -Math.abs(b.vy) * WALL_RESTITUTION;
     }
-  }
-  // Floor: everything bounces (pins settle, balls bounce)
-  if (b.y + b.r > FLOOR_Y) {
-    b.y = FLOOR_Y - b.r;
-    b.vy = -Math.abs(b.vy) * FLOOR_RESTITUTION;
-    // Ground friction
-    b.vx *= 0.92;
   }
 }
 
@@ -409,7 +380,6 @@ let mergePitch = 1.0;
 let hitstopFrames = 0;
 let bgFlash = 0;
 let shotCount = 0;
-let calmFrames = 0; // frames since all pins settled
 
 // ── Screen shake ──
 function triggerShake(intensity) {
@@ -433,33 +403,7 @@ function mergeShockwave(cx, cy, tier) {
   }
 }
 
-// ── Merge attraction: gently pull close same-tier pins together ──
-function applyMergeAttraction() {
-  const n = bodies.length;
-  for (let i = 0; i < n; i++) {
-    const a = bodies[i];
-    if (a.dead || a.type !== 'pin') continue;
-    const aSpd = a.vx * a.vx + a.vy * a.vy;
-    if (aSpd > MERGE_ATTRACT_MAX_VEL * MERGE_ATTRACT_MAX_VEL) continue;
-    for (let j = i + 1; j < n; j++) {
-      const b = bodies[j];
-      if (b.dead || b.type !== 'pin') continue;
-      if (a.tier !== b.tier) continue;
-      const bSpd = b.vx * b.vx + b.vy * b.vy;
-      if (bSpd > MERGE_ATTRACT_MAX_VEL * MERGE_ATTRACT_MAX_VEL) continue;
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const attractRange = (a.r + b.r) * MERGE_ATTRACT_RANGE;
-      if (dist < attractRange && dist > a.r + b.r) {
-        const nx = dx / dist, ny = dy / dist;
-        a.vx += nx * MERGE_ATTRACT_FORCE;
-        a.vy += ny * MERGE_ATTRACT_FORCE;
-        b.vx -= nx * MERGE_ATTRACT_FORCE;
-        b.vy -= ny * MERGE_ATTRACT_FORCE;
-      }
-    }
-  }
-}
+// (Merge attraction removed — merges only happen from ball impacts)
 
 // ── Explosion (tier 4 + tier 4) ──
 function triggerExplosion(cx, cy) {
@@ -482,7 +426,9 @@ function triggerExplosion(cx, cy) {
       for (let k = 0; k < 3; k++) {
         const angle = Math.random() * Math.PI * 2;
         const spd = 4 + Math.random() * 4;
-        const nb = placePin(cx + Math.cos(angle) * 30, cy + Math.sin(angle) * 30, 0);
+        const t0 = TIERS[0];
+        const nb = addBody(cx + Math.cos(angle) * 30, cy + Math.sin(angle) * 30, t0.r, t0.mass, 'pin');
+        nb.tier = 0;
         nb.vx = Math.cos(angle) * spd;
         nb.vy = Math.sin(angle) * spd - 3;
       }
@@ -588,12 +534,8 @@ function physicsStep() {
   for (let i = 0; i < n; i++) {
     const b = bodies[i];
     if (b.dead) continue;
-    // Gravity for all (different strength for ball vs pin)
-    if (b.type === 'pin') {
-      b.vy += GRAVITY;
-    } else {
-      b.vy += BALL_GRAVITY;
-    }
+    // Gravity for pins only (balls fly freely)
+    if (b.type === 'pin') b.vy += GRAVITY;
     b.x += b.vx;
     b.y += b.vy;
     b.vx *= FRICTION_AIR;
@@ -661,9 +603,8 @@ function physicsStep() {
 // ── Input: tap to shoot 1 ball ──
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
-  spawnBall(e.clientX);
+  spawnBall(e.clientX, e.clientY);
 });
-// No pointermove handler — no drag spam
 
 // ── Draw ──
 function drawBg() {
@@ -676,17 +617,12 @@ function drawBg() {
     ctx.fillStyle = '#1e6b40';
   }
   ctx.fillRect(0, 0, W, H);
-  // Floor line
   ctx.strokeStyle = '#8B4513';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(0, FLOOR_Y);
-  ctx.lineTo(W, FLOOR_Y);
-  ctx.stroke();
-  // Border
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, W - 6, H - 6);
   ctx.strokeStyle = '#5a9a3a';
   ctx.lineWidth = 2;
-  ctx.strokeRect(4, 4, W - 8, FLOOR_Y - 4);
+  ctx.strokeRect(10, 10, W - 20, H - 20);
 }
 
 function drawBodies() {
@@ -723,26 +659,15 @@ function drawBodies() {
   }
 }
 
-// Draw launcher indicator at bottom
-function drawLauncher(now) {
+// Draw ready indicator
+function drawReadyIndicator(now) {
   if (!activeBall || activeBall.dead) {
-    // Ready to fire: pulsing circle at bottom center
-    const pulse = 0.7 + Math.sin(now * 0.005) * 0.3;
+    const pulse = 0.3 + Math.sin(now * 0.005) * 0.2;
     ctx.globalAlpha = pulse;
-    ctx.beginPath();
-    ctx.arc(W / 2, H - 25, 15, 0, Math.PI * 2);
     ctx.fillStyle = '#FFD700';
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    // Text
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px "Zen Maru Gothic"';
+    ctx.font = 'bold 16px "Zen Maru Gothic"';
     ctx.textAlign = 'center';
-    ctx.globalAlpha = 0.6;
-    ctx.fillText('タップで発射！', W / 2, H - 5);
+    ctx.fillText('● READY', W / 2, H - 15);
     ctx.globalAlpha = 1;
   }
 }
@@ -840,35 +765,16 @@ function loop(now) {
     activeBall = null;
   }
 
-  // Check if scene is calm (for auto-refill)
-  let allCalm = true;
-  let pinCount = 0;
-  for (let i = 0; i < bodies.length; i++) {
-    const b = bodies[i];
-    if (b.dead) continue;
-    if (b.type === 'pin') {
-      pinCount++;
-      if (b.vx * b.vx + b.vy * b.vy > 0.25) allCalm = false;
+  // Pin auto-spawn
+  if (now - lastPinSpawn > PIN_SPAWN_INTERVAL) {
+    let pinCount = 0;
+    for (let i = 0; i < bodies.length; i++) {
+      if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
     }
-  }
-  if (allCalm && !activeBall) {
-    calmFrames++;
-  } else {
-    calmFrames = 0;
-  }
-
-  // Auto-refill when calm and pin count is low
-  if (calmFrames > 60 && pinCount < 20) {
-    const toSpawn = Math.min(6, 20 - pinCount);
-    for (let i = 0; i < toSpawn; i++) spawnPin();
-    calmFrames = 0;
-    lastPinSpawn = now;
-  }
-
-  // Regular pin spawn (slower, supplements auto-refill)
-  if (now - lastPinSpawn > PIN_SPAWN_INTERVAL && pinCount < MAX_PINS) {
-    spawnPin();
-    if (Math.random() < 0.4) spawnPin();
+    if (pinCount < MAX_PINS) {
+      spawnPin();
+      if (Math.random() < 0.3) spawnPin();
+    }
     lastPinSpawn = now;
   }
 
@@ -884,9 +790,6 @@ function loop(now) {
     }
   }
   if (soundThrottle > 0) soundThrottle--;
-
-  // Merge attraction (gentle pull for close same-tier)
-  applyMergeAttraction();
 
   // Merge detection & processing
   const prevCombo = combo;
@@ -935,7 +838,7 @@ function loop(now) {
   ctx.translate(shakeX, shakeY);
   drawBg();
   drawBodies();
-  drawLauncher(now);
+  drawReadyIndicator(now);
   drawRings();
   drawParticles();
   drawPopups();
@@ -962,24 +865,24 @@ function loop(now) {
     ctx.fillStyle = '#fff';
     ctx.font = '18px "Zen Maru Gothic"';
     ctx.textAlign = 'center';
-    ctx.fillText('タップしてボールを発射！', W / 2, H * 0.85);
+    ctx.fillText('タップでボールを発射！', W / 2, H * 0.85);
     ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(loop);
 }
 
-// ── Initial pins: 20 scattered in bottom 60% ──
-for (let i = 0; i < 20; i++) {
+// ── Initial pins scattered across screen ──
+for (let i = 0; i < 15; i++) {
   const rng = Math.random();
   const tier = rng < 0.80 ? 0 : rng < 0.95 ? 1 : 2;
   const t = TIERS[tier];
   const margin = t.r + 20;
   const x = margin + Math.random() * (W - margin * 2);
-  const y = H * 0.4 + Math.random() * (H * 0.5);
+  const y = H * 0.05 + Math.random() * (H * 0.5);
   const b = addBody(x, y, t.r, t.mass, 'pin');
   b.tier = tier;
-  b.vy = 0.5 + Math.random() * 1;
+  b.vy = 0.3 + Math.random() * 0.8;
 }
 
 requestAnimationFrame(loop);
