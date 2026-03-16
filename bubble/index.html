@@ -252,6 +252,8 @@ function startBGM() {
   bgmAudio.play().catch(() => {});
 }
 
+// Cycle: Track1 → Track2 → OFF → Track1 → ...
+let bgmPlaying = false;
 function switchBGMTrack() {
   // Stop current
   if (bgmAudio) {
@@ -267,11 +269,27 @@ function switchBGMTrack() {
     try { bgmGain.disconnect(); } catch(e) {}
     bgmGain = null;
   }
-  bgmCurrentTrack = (bgmCurrentTrack + 1) % BGM_TRACKS.length;
+
+  if (bgmPlaying) {
+    // Was playing — go to next track or turn off
+    const nextTrack = (bgmCurrentTrack + 1) % BGM_TRACKS.length;
+    if (nextTrack === 0) {
+      // Cycled through all tracks → OFF
+      bgmPlaying = false;
+      bgmAudio = null;
+      document.getElementById('bgm-btn').textContent = '🔇';
+      return;
+    }
+    bgmCurrentTrack = nextTrack;
+  } else {
+    // Was off → start from track 0
+    bgmCurrentTrack = 0;
+    bgmPlaying = true;
+  }
+
   bgmAudio = new Audio(BGM_TRACKS[bgmCurrentTrack]);
   bgmAudio.loop = true;
   bgmAudio.crossOrigin = 'anonymous';
-  // Re-route through WebAudio
   if (audioCtx) {
     bgmSource = audioCtx.createMediaElementSource(bgmAudio);
     bgmGain = audioCtx.createGain();
@@ -281,6 +299,7 @@ function switchBGMTrack() {
   }
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   bgmAudio.play().catch(() => {});
+  document.getElementById('bgm-btn').textContent = '🎵';
 }
 
 // Start BGM on first user interaction
