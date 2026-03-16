@@ -56,44 +56,57 @@ function makeBuf(freq, dur, vol, decay) {
 
 let popBufs = [], chainBuf = null, boomBufs = [];
 
+function generateBufs() {
+  popBufs = [];
+  for (let i = 0; i < 6; i++) popBufs.push(makeBuf(600 + i * 80, 0.15, 0.6, 25));
+  chainBuf = makeBuf(1100, 0.1, 0.4, 30);
+  boomBufs = [];
+  for (let i = 0; i < 5; i++) boomBufs.push(makeBuf(300 + i * 200, 0.4, 0.5, 8));
+  audioReady = true;
+}
+
 function initAudio() {
-  const AC = window.AudioContext || window.webkitAudioContext;
-  audioCtx = new AC();
-  return audioCtx.resume().then(() => {
-    // Silent buffer to unlock
-    const sb = audioCtx.createBuffer(1, 1, 22050);
-    const s = audioCtx.createBufferSource();
-    s.buffer = sb; s.connect(audioCtx.destination); s.start(0);
-    // Generate sound buffers
-    popBufs = [];
-    for (let i = 0; i < 6; i++) popBufs.push(makeBuf(600 + i * 80, 0.15, 0.6, 25));
-    chainBuf = makeBuf(1100, 0.1, 0.4, 30);
-    boomBufs = [];
-    for (let i = 0; i < 5; i++) boomBufs.push(makeBuf(300 + i * 200, 0.4, 0.5, 8));
-    audioReady = true;
+  return new Promise(resolve => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AC();
+    audioCtx.resume().then(() => {
+      // Silent buffer to unlock
+      const sb = audioCtx.createBuffer(1, 1, 22050);
+      const s = audioCtx.createBufferSource();
+      s.buffer = sb; s.connect(audioCtx.destination); s.start(0);
+      generateBufs();
+      resolve();
+    });
+    // Fallback: if resume() doesn't resolve quickly, generate buffers anyway
+    setTimeout(() => {
+      if (!audioReady) { generateBufs(); resolve(); }
+    }, 500);
   });
 }
 
 function playBuf(buf, volume, rate) {
   if (!audioReady || !buf) return;
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  src.playbackRate.value = rate || 1;
-  if (volume !== undefined && volume < 1) {
-    const g = audioCtx.createGain(); g.gain.value = volume;
-    src.connect(g); g.connect(audioCtx.destination);
-  } else {
-    src.connect(audioCtx.destination);
-  }
-  src.start(0);
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate || 1;
+    if (volume !== undefined && volume < 1) {
+      const g = audioCtx.createGain(); g.gain.value = volume;
+      src.connect(g); g.connect(audioCtx.destination);
+    } else {
+      src.connect(audioCtx.destination);
+    }
+    src.start(0);
+  } catch (e) { /* ignore audio errors */ }
 }
 
 // Unlock audio on first interaction
 let audioUnlocked = false;
-function unlockAudio() {
+async function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  initAudio();
+  await initAudio();
 }
 document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });
