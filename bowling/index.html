@@ -149,12 +149,15 @@ const MAX_TIER = TIERS.length - 1;
 const BALL_R = 20;
 const BALL_MASS = 6;
 const BALL_LIFETIME = 5000;
-const FRICTION = 0.995;       // less friction = pins slide further
+const FRICTION = 0.996;       // less friction = pins slide further
 const RESTITUTION = 0.95;     // very bouncy collisions
 const WALL_RESTITUTION = 0.95;// bouncy walls
-const MAX_BODIES = 45;
+const MAX_BODIES = 50;
 const TARGET_PINS = 20;       // formation-based, refill as formation
 const REFILL_INTERVAL = 3000; // ms between checking if we need more pins
+const TRICKLE_INTERVAL = 500; // ms between trickle refill of single tier0 pins
+const MAGNET_RANGE = 2.5;     // same-tier attraction range (multiplier of sum of radii)
+const MAGNET_FORCE = 0.15;    // attraction strength
 const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 4;
 
@@ -238,23 +241,21 @@ const FORMATIONS = [
 
 function spawnFormation() {
   const form = FORMATIONS[Math.floor(Math.random() * FORMATIONS.length)];
-  const spacing = 48; // px between pin centers
+  const spacing = 42; // tighter spacing for more density
   const cx = W / 2;
   // Formation centered in upper 45% of screen
   const baseY = H * 0.15;
+  const t0 = TIERS[0]; // All pins start as tier 0
   for (let i = 0; i < form.positions.length; i++) {
     if (bodies.length >= MAX_BODIES) break;
     const p = form.positions[i];
-    const rng = Math.random();
-    const tier = rng < 0.75 ? 0 : rng < 0.93 ? 1 : 2;
-    const t = TIERS[tier];
     const x = cx + p.x * spacing;
     const y = baseY + p.y * spacing;
     // Clamp to screen
-    const bx = Math.max(t.r + 12, Math.min(W - t.r - 12, x));
-    const by = Math.max(t.r + 12, Math.min(H - t.r - 12, y));
-    const b = addBody(bx, by, t.r, t.mass, 'pin');
-    b.tier = tier;
+    const bx = Math.max(t0.r + 12, Math.min(W - t0.r - 12, x));
+    const by = Math.max(t0.r + 12, Math.min(H - t0.r - 12, y));
+    const b = addBody(bx, by, t0.r, t0.mass, 'pin');
+    b.tier = 0;
   }
 }
 
@@ -322,23 +323,32 @@ let score = 0, combo = 0, comboTimer = 0;
 let shakeX = 0, shakeY = 0, shakeLife = 0;
 let soundThrottle = 0, maxHitStrength = 0;
 let mergePitch = 1.0, hitstopFrames = 0, bgFlash = 0;
-let lastRefill = 0;
+let lastRefill = 0, lastTrickle = 0;
 
 function triggerShake(intensity) { shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 10)); }
 
 // ── Merge shockwave ──
-function mergeShockwave(cx, cy, tier) {
-  const radius = 80 + tier * 30;
-  const force = 4 + tier * 3;
+function mergeShockwave(cx, cy, newTier) {
+  const radius = 80 + newTier * 30;
+  const force = 4 + newTier * 3;
+  const attractRadius = 150;
+  const attractForce = 2;
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (b.dead || b.type !== 'pin') continue;
     const dx = b.x - cx, dy = b.y - cy;
     const dist = Math.sqrt(dx*dx + dy*dy);
+    // Push away (shockwave)
     if (dist < radius && dist > 1) {
       const falloff = 1 - dist / radius;
       b.vx += (dx/dist) * force * falloff;
       b.vy += (dy/dist) * force * falloff;
+    }
+    // Pull same-tier pins toward merge point (chain catalyst)
+    if (b.tier === newTier && dist < attractRadius && dist > 1) {
+      const pull = attractForce * (1 - dist / attractRadius);
+      b.vx -= (dx/dist) * pull;
+      b.vy -= (dy/dist) * pull;
     }
   }
 }
@@ -453,10 +463,24 @@ function physicsStep() {
       if (a.type === 'pin' && b.type === 'pin' && a.tier === b.tier) continue;
       const preVx = a.vx-b.vx, preVy = a.vy-b.vy;
       const preSpd = Math.sqrt(preVx*preVx + preVy*preVy);
+      // Save ball velocity before collision for penetration
+      const isBallPin = (a.type==='ball' && b.type==='pin') || (a.type==='pin' && b.type==='ball');
+      let ball = null, pin = null, ballVxPre = 0, ballVyPre = 0;
+      if (isBallPin) {
+        ball = a.type === 'ball' ? a : b;
+        pin = a.type === 'pin' ? a : b;
+        ballVxPre = ball.vx; ballVyPre = ball.vy;
+      }
       const strength = resolveCollision(a, b);
       if (strength > 0) {
-        if ((a.type==='ball' && b.type==='pin') || (a.type==='pin' && b.type==='ball')) {
-          const pin = a.type === 'pin' ? a : b;
+        // Ball penetration: if impact is strong, ball keeps 70% velocity
+        if (isBallPin) {
+          const impactForce = preSpd * BALL_MASS / pin.mass;
+          if (impactForce > 6) {
+            ball.vx = ballVxPre * 0.7;
+            ball.vy = ballVyPre * 0.7;
+            spawnParticles(pin.x, pin.y, 4);
+          }
           if (preSpd > 2) {
             triggerShake(strength / 12);
             if (strength > 4) spawnParticles(pin.x, pin.y, 3);
@@ -470,6 +494,31 @@ function physicsStep() {
           }
         }
         if (strength > maxHitStrength) maxHitStrength = strength;
+      }
+    }
+  }
+  // ── Same-tier magnetic attraction ──
+  for (let i = 0; i < n; i++) {
+    const a = bodies[i];
+    if (a.dead || a.type !== 'pin') continue;
+    for (let j = i + 1; j < n; j++) {
+      const b = bodies[j];
+      if (b.dead || b.type !== 'pin') continue;
+      if (a.tier !== b.tier) continue;
+      // At least one must be moving
+      const aSpd2 = a.vx*a.vx + a.vy*a.vy;
+      const bSpd2 = b.vx*b.vx + b.vy*b.vy;
+      if (aSpd2 < 0.09 && bSpd2 < 0.09) continue; // both nearly still
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist2 = dx*dx + dy*dy;
+      const magnetDist = MAGNET_RANGE * (a.r + b.r);
+      if (dist2 < magnetDist*magnetDist && dist2 > 1) {
+        const dist = Math.sqrt(dist2);
+        const f = MAGNET_FORCE * (1 - dist / magnetDist);
+        a.vx += (dx/dist) * f;
+        a.vy += (dy/dist) * f;
+        b.vx -= (dx/dist) * f;
+        b.vy -= (dy/dist) * f;
       }
     }
   }
@@ -609,7 +658,7 @@ function loop(now) {
     }
   }
 
-  // Refill pins with a new formation when too few remain
+  // Refill: new formation when very few remain
   if (now - lastRefill > REFILL_INTERVAL) {
     let pinCount = 0;
     for (let i = 0; i < bodies.length; i++) { if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++; }
@@ -617,6 +666,20 @@ function loop(now) {
       spawnFormation();
     }
     lastRefill = now;
+  }
+  // Trickle refill: drip tier0 pins from top when count is low
+  if (now - lastTrickle > TRICKLE_INTERVAL) {
+    let pinCount = 0;
+    for (let i = 0; i < bodies.length; i++) { if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++; }
+    if (pinCount < 15 && bodies.length < MAX_BODIES) {
+      const t0 = TIERS[0];
+      const x = t0.r + 20 + Math.random() * (W - t0.r*2 - 40);
+      const b = addBody(x, t0.r + 12, t0.r, t0.mass, 'pin');
+      b.tier = 0;
+      b.vy = 1 + Math.random() * 1.5; // gentle downward drift
+      b.vx = (Math.random() - 0.5) * 2;
+    }
+    lastTrickle = now;
   }
 
   // Physics
