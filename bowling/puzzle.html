@@ -212,13 +212,24 @@ function nearestEmptyCell(sx, sy) {
 }
 
 function nearestEmptyNeighbor(row, col, sx, sy) {
-  const neighbors = getNeighbors(row, col);
+  // Find the nearest empty cell to the ball's pixel position
+  // that is adjacent to at least one occupied cell (so it "sticks" to the grid)
   let best = null, bestDist = Infinity;
-  for (const n of neighbors) {
-    if (gridPins[n.row][n.col]) continue;
-    const p = gridToScreen(n.row, n.col);
-    const d = (p.x - sx) * (p.x - sx) + (p.y - sy) * (p.y - sy);
-    if (d < bestDist) { bestDist = d; best = n; }
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (gridPins[r][c]) continue; // must be empty
+      // Must be adjacent to at least one occupied cell (or be in row 0)
+      let touchesGrid = r === 0;
+      if (!touchesGrid) {
+        for (const nb of getNeighbors(r, c)) {
+          if (gridPins[nb.row][nb.col]) { touchesGrid = true; break; }
+        }
+      }
+      if (!touchesGrid) continue;
+      const p = gridToScreen(r, c);
+      const d = (p.x - sx) * (p.x - sx) + (p.y - sy) * (p.y - sy);
+      if (d < bestDist) { bestDist = d; best = { row: r, col: c }; }
+    }
   }
   return best || nearestEmptyCell(sx, sy);
 }
@@ -234,14 +245,77 @@ function getNeighbors(row, col) {
 }
 
 function initGrid() {
+  // Step 1: Fill with nulls
   for (let r = 0; r < GRID_ROWS; r++) {
     gridPins[r] = [];
+    for (let c = 0; c < GRID_COLS; c++) gridPins[r][c] = null;
+  }
+  // Step 2: Seed clusters — place a few "seed" pins, then grow clusters around them
+  // This ensures same-tier pins are adjacent (makes merging actually possible!)
+  const FILL_ROWS = 5;
+  const seeds = [];
+  // Place 8-12 seed points with random tiers
+  const seedCount = 8 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < seedCount; i++) {
+    const sr = Math.floor(Math.random() * FILL_ROWS);
+    const sc = Math.floor(Math.random() * GRID_COLS);
+    const tier = Math.random() < 0.55 ? 0 : Math.random() < 0.65 ? 1 : 2;
+    if (!gridPins[sr][sc]) {
+      gridPins[sr][sc] = { tier, bomb: false };
+      seeds.push({ row: sr, col: sc, tier });
+    }
+  }
+  // Step 3: Grow each seed — spread its tier to 2-5 neighboring cells
+  for (const seed of seeds) {
+    const growCount = 2 + Math.floor(Math.random() * 4);
+    let frontier = [{ row: seed.row, col: seed.col }];
+    let grown = 0;
+    while (frontier.length > 0 && grown < growCount) {
+      // Pick a random frontier cell
+      const fi = Math.floor(Math.random() * frontier.length);
+      const cell = frontier[fi];
+      const neighbors = getNeighbors(cell.row, cell.col);
+      // Shuffle neighbors
+      for (let i = neighbors.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
+      }
+      let placed = false;
+      for (const nb of neighbors) {
+        if (nb.row >= FILL_ROWS) continue;
+        if (!gridPins[nb.row][nb.col]) {
+          gridPins[nb.row][nb.col] = { tier: seed.tier, bomb: false };
+          frontier.push(nb);
+          grown++;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        frontier.splice(fi, 1); // dead end, remove from frontier
+      }
+    }
+  }
+  // Step 4: Fill remaining empty cells in rows 0-4 with random tiers
+  for (let r = 0; r < FILL_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
-      if (r < 5) {
-        const rnd = Math.random();
-        gridPins[r][c] = { tier: rnd < 0.55 ? 0 : rnd < 0.85 ? 1 : 2, bomb: false };
-      } else {
-        gridPins[r][c] = null;
+      if (!gridPins[r][c]) {
+        // Prefer tier that matches most adjacent pins (creates more clusters)
+        const tierCounts = [0, 0, 0];
+        for (const nb of getNeighbors(r, c)) {
+          if (gridPins[nb.row] && gridPins[nb.row][nb.col]) {
+            tierCounts[gridPins[nb.row][nb.col].tier]++;
+          }
+        }
+        // Pick the tier with most neighbors, with some randomness
+        let bestTier = Math.random() < 0.55 ? 0 : Math.random() < 0.65 ? 1 : 2;
+        let maxCount = 0;
+        for (let t = 0; t < 3; t++) {
+          if (tierCounts[t] > maxCount) { maxCount = tierCounts[t]; bestTier = t; }
+        }
+        // 30% chance to override with random (prevents boring uniformity)
+        if (Math.random() < 0.3) bestTier = Math.random() < 0.55 ? 0 : Math.random() < 0.65 ? 1 : 2;
+        gridPins[r][c] = { tier: bestTier, bomb: false };
       }
     }
   }
@@ -308,11 +382,23 @@ function refillGrid() {
   for (let r = GRID_ROWS - 1; r > 0; r--) {
     gridPins[r] = gridPins[r - 1];
   }
-  // New top row
+  // New top row — cluster-aware: prefer tier that matches neighbor below
   gridPins[0] = [];
   for (let c = 0; c < GRID_COLS; c++) {
-    const rnd = Math.random();
-    gridPins[0][c] = { tier: rnd < 0.6 ? 0 : rnd < 0.9 ? 1 : 2, bomb: false };
+    let tier = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
+    // Check neighbors in row 1 and adjacent in row 0
+    const tierCounts = [0, 0, 0];
+    for (const nb of getNeighbors(0, c)) {
+      if (gridPins[nb.row] && gridPins[nb.row][nb.col] && !gridPins[nb.row][nb.col].bomb) {
+        tierCounts[gridPins[nb.row][nb.col].tier]++;
+      }
+    }
+    // Also check already-placed row 0 neighbors
+    if (c > 0 && gridPins[0][c - 1]) tierCounts[gridPins[0][c - 1].tier]++;
+    let maxC = 0;
+    for (let t = 0; t < 3; t++) { if (tierCounts[t] > maxC) { maxC = tierCounts[t]; tier = t; } }
+    if (Math.random() < 0.35) tier = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
+    gridPins[0][c] = { tier, bomb: false };
   }
   // 30% chance to place a bomb in the new row
   if (Math.random() < 0.3) {
@@ -517,79 +603,203 @@ function pickBallTier() {
   return 4;
 }
 
-function ballHitGrid() {
-  if (!ball) return false;
-  for (let r = 0; r < GRID_ROWS; r++) {
-    for (let c = 0; c < GRID_COLS; c++) {
-      const pin = gridPins[r][c];
-      if (!pin) continue;
-      const pos = gridToScreen(r, c);
-      const pinR = GRID_PIN_R; // uniform grid collision size
-      const dx = ball.x - pos.x, dy = ball.y - pos.y;
-      const dist2 = dx * dx + dy * dy;
-      const minDist = ball.r + pinR;
-      if (dist2 < minDist * minDist) {
-        // Direct hit on a bomb → knock it loose immediately
-        if (pin.bomb) {
-          gridPins[r][c] = null;
-          addFallen(pos.x, pos.y, pin.tier, ball.vx * 0.3, ball.vy * 0.3, true);
-          spawnParticles(pos.x, pos.y, 8);
-          spawnPopup(pos.x, pos.y - 20, '爆弾落下！', '#FF4444');
-          playBuf(bonkBuf, 0.4, 0.5);
-          // Check orphans
-          const orphans = findOrphans();
-          for (const o of orphans) { addFallen(o.x, o.y, o.tier, (Math.random()-0.5)*1, 0, o.bomb); spawnParticles(o.x, o.y, 4); }
-          if (orphans.length > 0) { spawnPopup(W/2, H*0.3, orphans.length+'体落下！', '#4ECDC4'); score += orphans.length * 15; }
-          ball = null;
-          return true;
-        }
-        if (ball.tier === pin.tier) {
-          // Same tier → merge! Pin evolves and falls
-          const nt = pin.tier < MAX_TIER ? pin.tier + 1 : pin.tier;
-          gridPins[r][c] = null;
-          if (pin.tier < MAX_TIER) {
-            addFallen(pos.x, pos.y, nt, (Math.random() - 0.5) * 2, 1);
-            fallen[fallen.length - 1].flashTimer = 8;
-            spawnPopup(pos.x, pos.y - 20, TIERS[nt].name + '!', '#FFD700');
-          } else {
-            // Bear + Bear = explosion
-            spawnPopup(pos.x, pos.y - 20, '大爆発！', '#FF4444');
-            playBuf(explodeBuf, 0.4, 0.5);
-          }
-          spawnParticles(pos.x, pos.y, 15 + pin.tier * 5);
-          spawnRing(pos.x, pos.y, 50 + pin.tier * 20, '#fff');
-          playBuf(mergeBuf, 0.5 + pin.tier * 0.15, 1.0);
-          score += Math.round((pin.tier + 1) * 20 * (1 + combo * 0.5));
-          combo++; comboTimer = COMBO_WINDOW;
-          triggerShake(0.5 + pin.tier * 0.3);
-
-          // Check for orphans
-          const orphans = findOrphans();
-          for (const o of orphans) {
-            addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0, o.bomb);
-            spawnParticles(o.x, o.y, 5);
-          }
-          if (orphans.length > 0) {
-            spawnPopup(W / 2, H * 0.3, orphans.length + '体落下！', '#4ECDC4');
-            score += orphans.length * 15;
-          }
-        } else {
-          // Different tier → ball sticks to grid
-          const cell = nearestEmptyNeighbor(r, c, ball.x, ball.y);
-          if (cell) {
-            gridPins[cell.row][cell.col] = { tier: ball.tier, bomb: false };
-            const sPos = gridToScreen(cell.row, cell.col);
-            spawnParticles(sPos.x, sPos.y, 5);
-            playBuf(bonkBuf, 0.3, 0.8);
-          }
-        }
-        ball = null;
-        return true;
+// ── Grid merge check: BFS from a cell, merge all connected same-tier ──
+function gridMergeCheck(startRow, startCol, tier) {
+  const cluster = [];
+  const visited = Array.from({ length: GRID_ROWS }, () => new Uint8Array(GRID_COLS));
+  const bfsQueue = [{ row: startRow, col: startCol }];
+  visited[startRow][startCol] = 1;
+  let qi = 0;
+  while (qi < bfsQueue.length) {
+    const cur = bfsQueue[qi++];
+    cluster.push(cur);
+    for (const nb of getNeighbors(cur.row, cur.col)) {
+      if (visited[nb.row][nb.col]) continue;
+      const nbPin = gridPins[nb.row][nb.col];
+      if (nbPin && !nbPin.bomb && nbPin.tier === tier) {
+        visited[nb.row][nb.col] = 1;
+        bfsQueue.push(nb);
       }
     }
   }
 
-  // Hit ceiling → stick to nearest empty cell in top rows
+  // Need at least 2 connected same-tier pins to merge (the placed ball + 1 neighbor)
+  if (cluster.length < 2) return;
+
+  // Calculate center
+  let cx = 0, cy = 0;
+  for (const cell of cluster) {
+    const p = gridToScreen(cell.row, cell.col);
+    cx += p.x; cy += p.y;
+  }
+  cx /= cluster.length; cy /= cluster.length;
+
+  // Remove all cluster pins from grid
+  for (const cell of cluster) {
+    gridPins[cell.row][cell.col] = null;
+    const p = gridToScreen(cell.row, cell.col);
+    spawnParticles(p.x, p.y, 5 + tier * 2);
+  }
+
+  const count = cluster.length;
+  const multiBonus = count >= 3 ? count : 1;
+
+  if (tier < MAX_TIER) {
+    const tierJump = count >= 5 ? Math.min(3, MAX_TIER - tier) : count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
+    const nt = tier + tierJump;
+    addFallen(cx, cy, nt, (Math.random() - 0.5) * 2, 1);
+    fallen[fallen.length - 1].flashTimer = 8;
+    spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
+    if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+  } else {
+    spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
+    playBuf(explodeBuf, 0.4, 0.5);
+  }
+  spawnParticles(cx, cy, 15 + tier * 5 + count * 3);
+  spawnRing(cx, cy, 50 + tier * 20, '#fff');
+  if (count >= 3) spawnRing(cx, cy, 70 + tier * 25, '#FFD700');
+  playBuf(mergeBuf, 0.5 + tier * 0.15, 1.0);
+  score += Math.round((tier + 1) * 20 * (1 + combo * 0.5) * multiBonus);
+  combo++; comboTimer = COMBO_WINDOW;
+  triggerShake(0.5 + tier * 0.3 + (count >= 3 ? 0.3 : 0));
+
+  // Check for orphans
+  const orphans = findOrphans();
+  for (const o of orphans) {
+    addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0, o.bomb);
+    spawnParticles(o.x, o.y, 5);
+  }
+  if (orphans.length > 0) {
+    spawnPopup(W / 2, H * 0.3, orphans.length + '体落下！', '#4ECDC4');
+    score += orphans.length * 15;
+  }
+}
+
+function ballHitGrid() {
+  if (!ball) return false;
+
+  // Find the CLOSEST hit pin
+  let hitR = -1, hitC = -1, hitDist2 = Infinity;
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (!gridPins[r][c]) continue;
+      const pos = gridToScreen(r, c);
+      const pinR = GRID_PIN_R + 4;
+      const dx = ball.x - pos.x, dy = ball.y - pos.y;
+      const dist2 = dx * dx + dy * dy;
+      const minDist = ball.r + pinR;
+      if (dist2 < minDist * minDist && dist2 < hitDist2) {
+        hitR = r; hitC = c; hitDist2 = dist2;
+      }
+    }
+  }
+
+  if (hitR >= 0) {
+    const pin = gridPins[hitR][hitC];
+    const pos = gridToScreen(hitR, hitC);
+
+    // Direct hit on a bomb → knock it loose immediately
+    if (pin.bomb) {
+      gridPins[hitR][hitC] = null;
+      addFallen(pos.x, pos.y, pin.tier, ball.vx * 0.3, ball.vy * 0.3, true);
+      spawnParticles(pos.x, pos.y, 8);
+      spawnPopup(pos.x, pos.y - 20, '爆弾落下！', '#FF4444');
+      playBuf(bonkBuf, 0.4, 0.5);
+      const orphans = findOrphans();
+      for (const o of orphans) { addFallen(o.x, o.y, o.tier, (Math.random()-0.5)*1, 0, o.bomb); spawnParticles(o.x, o.y, 4); }
+      if (orphans.length > 0) { spawnPopup(W/2, H*0.3, orphans.length+'体落下！', '#4ECDC4'); score += orphans.length * 15; }
+      ball = null;
+      return true;
+    }
+
+    if (ball.tier === pin.tier) {
+      // ★ SAME TIER → Direct merge! No placement needed.
+      // BFS from the hit pin to find all connected same-tier pins
+      const cluster = [];
+      const visited = Array.from({ length: GRID_ROWS }, () => new Uint8Array(GRID_COLS));
+      const bfsQueue = [{ row: hitR, col: hitC }];
+      visited[hitR][hitC] = 1;
+      let qi = 0;
+      while (qi < bfsQueue.length) {
+        const cur = bfsQueue[qi++];
+        cluster.push(cur);
+        for (const nb of getNeighbors(cur.row, cur.col)) {
+          if (visited[nb.row][nb.col]) continue;
+          const nbPin = gridPins[nb.row][nb.col];
+          if (nbPin && !nbPin.bomb && nbPin.tier === pin.tier) {
+            visited[nb.row][nb.col] = 1;
+            bfsQueue.push(nb);
+          }
+        }
+      }
+
+      // cluster = all connected same-tier grid pins; +1 for the ball
+      const count = cluster.length + 1;
+
+      // Calculate center
+      let cx = 0, cy = 0;
+      for (const cell of cluster) {
+        const p = gridToScreen(cell.row, cell.col);
+        cx += p.x; cy += p.y;
+      }
+      cx /= cluster.length; cy /= cluster.length;
+
+      // Remove all cluster pins from grid
+      for (const cell of cluster) {
+        gridPins[cell.row][cell.col] = null;
+        const p = gridToScreen(cell.row, cell.col);
+        spawnParticles(p.x, p.y, 5 + pin.tier * 2);
+      }
+
+      const multiBonus = count >= 3 ? count : 1;
+
+      if (pin.tier < MAX_TIER) {
+        const tierJump = count >= 5 ? Math.min(3, MAX_TIER - pin.tier) : count >= 3 ? Math.min(2, MAX_TIER - pin.tier) : 1;
+        const nt = pin.tier + tierJump;
+        addFallen(cx, cy, nt, (Math.random() - 0.5) * 2, 1);
+        fallen[fallen.length - 1].flashTimer = 8;
+        spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
+        if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+      } else {
+        spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
+        playBuf(explodeBuf, 0.4, 0.5);
+      }
+      spawnParticles(cx, cy, 15 + pin.tier * 5 + count * 3);
+      spawnRing(cx, cy, 50 + pin.tier * 20, '#fff');
+      if (count >= 3) spawnRing(cx, cy, 70 + pin.tier * 25, '#FFD700');
+      playBuf(mergeBuf, 0.5 + pin.tier * 0.15, 1.0);
+      score += Math.round((pin.tier + 1) * 20 * (1 + combo * 0.5) * multiBonus);
+      combo++; comboTimer = COMBO_WINDOW;
+      triggerShake(0.5 + pin.tier * 0.3 + (count >= 3 ? 0.3 : 0));
+
+      // Check for orphans after removing cluster
+      const orphans = findOrphans();
+      for (const o of orphans) {
+        addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0, o.bomb);
+        spawnParticles(o.x, o.y, 5);
+      }
+      if (orphans.length > 0) {
+        spawnPopup(W / 2, H * 0.3, orphans.length + '体落下！', '#4ECDC4');
+        score += orphans.length * 15;
+      }
+
+    } else {
+      // ★ DIFFERENT TIER → Stick ball to grid, then check for same-tier neighbors
+      const placeCell = nearestEmptyNeighbor(hitR, hitC, ball.x, ball.y);
+      if (placeCell) {
+        gridPins[placeCell.row][placeCell.col] = { tier: ball.tier, bomb: false };
+        const sPos = gridToScreen(placeCell.row, placeCell.col);
+        spawnParticles(sPos.x, sPos.y, 5);
+        playBuf(bonkBuf, 0.3, 0.8);
+        // Check if placement creates a same-tier cluster
+        gridMergeCheck(placeCell.row, placeCell.col, ball.tier);
+      }
+    }
+    ball = null;
+    return true;
+  }
+
+  // Hit ceiling → stick to nearest empty cell, then check merge
   if (ball && ball.y - ball.r <= GRID_TOP) {
     const cell = nearestEmptyCell(ball.x, ball.y);
     if (cell) {
@@ -597,6 +807,7 @@ function ballHitGrid() {
       const sPos = gridToScreen(cell.row, cell.col);
       spawnParticles(sPos.x, sPos.y, 5);
       playBuf(bonkBuf, 0.2, 0.6);
+      gridMergeCheck(cell.row, cell.col, ball.tier);
     }
     ball = null;
     return true;
@@ -612,39 +823,41 @@ let settleTimer = 0;
 let shotNumber = 0;
 let soundThrottle = 0;
 
-// ── Input ──
-let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
+// ── Input (Puzzle Bobble style: horizontal angle control) ──
+let aiming = false, aimStartX = 0;
+let aimAngle = Math.PI / 2; // straight up (radians from right horizontal)
+const AIM_MIN = 0.15;  // ~8.6° from horizontal (nearly flat left)
+const AIM_MAX = Math.PI - 0.15; // ~171° (nearly flat right)
+const AIM_SENSITIVITY = 0.006; // radians per pixel of horizontal drag
 
 canvas.addEventListener('pointerdown', e => {
   if (gamePhase !== 'aim') return;
   e.preventDefault();
   aiming = true;
-  aimStartX = aimCurX = e.clientX;
-  aimStartY = aimCurY = e.clientY;
+  aimStartX = e.clientX;
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', e => {
   if (!aiming) return;
   e.preventDefault();
-  aimCurX = e.clientX; aimCurY = e.clientY;
+  const deltaX = e.clientX - aimStartX;
+  // Drag right = aim right (smaller angle), drag left = aim left (larger angle)
+  // Invert: dragging finger right moves aim right
+  aimAngle = Math.PI / 2 - deltaX * AIM_SENSITIVITY;
+  aimAngle = Math.max(AIM_MIN, Math.min(AIM_MAX, aimAngle));
 });
 canvas.addEventListener('pointerup', e => {
   if (!aiming) return;
   e.preventDefault();
   aiming = false;
-  const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist < MIN_DRAG) return;
-  // Must aim upward
-  const ny = dy / dist;
-  if (ny >= 0) return; // only shoot upward
-  const nx = dx / dist;
+  const nx = Math.cos(aimAngle), ny = -Math.sin(aimAngle);
   ball = { x: W / 2, y: H * 0.88, vx: nx * BALL_SPEED, vy: ny * BALL_SPEED, tier: ballTier, r: GRID_PIN_R };
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
   gamePhase = 'flight';
   shotNumber++;
+  aimAngle = Math.PI / 2; // reset to straight up for next shot
 });
-canvas.addEventListener('pointercancel', () => { aiming = false; });
+canvas.addEventListener('pointercancel', () => { aiming = false; aimAngle = Math.PI / 2; });
 
 // ── Draw ──
 function drawBg() {
@@ -815,15 +1028,39 @@ function drawBallPreview(now) {
   const half = GRID_PIN_R;
   const drawS = half * 2;
 
-  if (aiming) {
-    const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > MIN_DRAG && dy / dist < 0) {
-      const nx = dx / dist, ny = dy / dist;
-      drawAimLine(bx, by, nx, ny);
-    }
-  }
+  // Always show aim line (angle-based)
+  const nx = Math.cos(aimAngle), ny = -Math.sin(aimAngle);
+  drawAimLine(bx, by, nx, ny);
 
+  // Draw horizontal slider track (shows this is left-right control)
+  const trackY = by + half + 30;
+  const trackW = W * 0.6;
+  const trackL = bx - trackW / 2, trackR = bx + trackW / 2;
+  ctx.globalAlpha = 0.2;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(trackL, trackY); ctx.lineTo(trackR, trackY); ctx.stroke();
+  // Track endpoints (arrows)
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(trackL, trackY); ctx.lineTo(trackL + 8, trackY - 5); ctx.lineTo(trackL + 8, trackY + 5); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(trackR, trackY); ctx.lineTo(trackR - 8, trackY - 5); ctx.lineTo(trackR - 8, trackY + 5); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Slider knob position (maps angle to track position)
+  const angleNorm = (aimAngle - AIM_MIN) / (AIM_MAX - AIM_MIN); // 0=right, 1=left
+  const knobX = trackR - angleNorm * trackW;
+  ctx.globalAlpha = aiming ? 0.8 : 0.4;
+  ctx.beginPath(); ctx.arc(knobX, trackY, 8, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFD700'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Draw aim direction indicator (short solid line from ball)
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3; ctx.globalAlpha = 0.8;
+  ctx.beginPath(); ctx.moveTo(bx, by);
+  ctx.lineTo(bx + nx * 40, by + ny * 40);
+  ctx.stroke(); ctx.globalAlpha = 1;
+
+  // Ball preview
   const pulse = 0.7 + Math.sin(now * 0.004) * 0.2;
   ctx.globalAlpha = aiming ? 0.9 : pulse;
   ctx.drawImage(tierCanvases[ballTier], bx - half, by - half, drawS, drawS);
@@ -833,7 +1070,7 @@ function drawBallPreview(now) {
 
   ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.7;
   ctx.font = 'bold 14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-  ctx.fillText(TIERS[ballTier].name, bx, by + half + 22);
+  ctx.fillText(TIERS[ballTier].name, bx, by + half + 16);
   ctx.globalAlpha = 1;
 }
 
