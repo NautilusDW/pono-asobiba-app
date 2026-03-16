@@ -238,13 +238,30 @@ function initGrid() {
     gridPins[r] = [];
     for (let c = 0; c < GRID_COLS; c++) {
       if (r < 5) {
-        // Mix of tier0 and tier1, occasional tier2
         const rnd = Math.random();
-        gridPins[r][c] = { tier: rnd < 0.55 ? 0 : rnd < 0.85 ? 1 : 2 };
+        gridPins[r][c] = { tier: rnd < 0.55 ? 0 : rnd < 0.85 ? 1 : 2, bomb: false };
       } else {
         gridPins[r][c] = null;
       }
     }
+  }
+  // Place 2-3 bombs randomly in the grid
+  placeBombs(2 + Math.floor(Math.random() * 2));
+}
+
+function placeBombs(count) {
+  const candidates = [];
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (gridPins[r][c] && !gridPins[r][c].bomb) candidates.push({ r, c });
+    }
+  }
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  for (let i = 0; i < Math.min(count, candidates.length); i++) {
+    gridPins[candidates[i].r][candidates[i].c].bomb = true;
   }
 }
 
@@ -276,7 +293,7 @@ function findOrphans() {
     for (let c = 0; c < GRID_COLS; c++) {
       if (gridPins[r][c] && !connected[r][c]) {
         const pos = gridToScreen(r, c);
-        orphans.push({ x: pos.x, y: pos.y, tier: gridPins[r][c].tier });
+        orphans.push({ x: pos.x, y: pos.y, tier: gridPins[r][c].tier, bomb: gridPins[r][c].bomb });
         gridPins[r][c] = null;
       }
     }
@@ -295,16 +312,21 @@ function refillGrid() {
   gridPins[0] = [];
   for (let c = 0; c < GRID_COLS; c++) {
     const rnd = Math.random();
-    gridPins[0][c] = { tier: rnd < 0.6 ? 0 : rnd < 0.9 ? 1 : 2 };
+    gridPins[0][c] = { tier: rnd < 0.6 ? 0 : rnd < 0.9 ? 1 : 2, bomb: false };
+  }
+  // 30% chance to place a bomb in the new row
+  if (Math.random() < 0.3) {
+    const bc = Math.floor(Math.random() * GRID_COLS);
+    gridPins[0][bc].bomb = true;
   }
 }
 
 // ── Fallen bodies (gravity-driven pile at bottom) ──
 const fallen = [];
 
-function addFallen(x, y, tier, vx, vy) {
+function addFallen(x, y, tier, vx, vy, bomb) {
   const t = TIERS[tier];
-  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0 });
+  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0 }); // 3 seconds at 60fps
 }
 
 function fallenPhysics() {
@@ -347,6 +369,78 @@ function resolveCollision(a, b) {
   a.vx += (j / a.mass) * nx; a.vy += (j / a.mass) * ny;
   b.vx -= (j / b.mass) * nx; b.vy -= (j / b.mass) * ny;
   return Math.abs(dvn);
+}
+
+// ── Bomb tick & explosion ──
+const BOMB_RADIUS = 100; // explosion radius
+function tickBombs() {
+  let exploded = false;
+  for (let i = 0; i < fallen.length; i++) {
+    const b = fallen[i];
+    if (b.dead || !b.bomb) continue;
+    b.fuseTimer--;
+    if (b.fuseTimer <= 0) {
+      // BOOM!
+      b.dead = true;
+      const cx = b.x, cy = b.y;
+      // Destroy nearby fallen bodies
+      let destroyed = 0;
+      for (let j = 0; j < fallen.length; j++) {
+        if (fallen[j].dead || j === i) continue;
+        const dx = fallen[j].x - cx, dy = fallen[j].y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < BOMB_RADIUS) {
+          fallen[j].dead = true;
+          destroyed++;
+          spawnParticles(fallen[j].x, fallen[j].y, 5);
+        } else if (dist < BOMB_RADIUS * 1.5) {
+          // Push away bodies just outside blast radius
+          const push = (1 - dist / (BOMB_RADIUS * 1.5)) * 8;
+          fallen[j].vx += (dx / dist) * push;
+          fallen[j].vy += (dy / dist) * push - 2;
+        }
+      }
+      // Also destroy grid pins near the explosion (if bomb lands near grid)
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (!gridPins[r][c]) continue;
+          const pos = gridToScreen(r, c);
+          const dx = pos.x - cx, dy = pos.y - cy;
+          if (dx * dx + dy * dy < BOMB_RADIUS * BOMB_RADIUS) {
+            const pin = gridPins[r][c];
+            gridPins[r][c] = null;
+            destroyed++;
+            spawnParticles(pos.x, pos.y, 5);
+          }
+        }
+      }
+      // Effects
+      spawnParticles(cx, cy, 30);
+      spawnRing(cx, cy, BOMB_RADIUS, '#FF4444');
+      spawnRing(cx, cy, BOMB_RADIUS * 0.6, '#FFD700');
+      spawnRing(cx, cy, BOMB_RADIUS * 0.3, '#fff');
+      spawnPopup(cx, cy - 30, 'BOMB! +' + (destroyed * 50), '#FF4444');
+      playBuf(explodeBuf, 0.5, 0.6);
+      triggerShake(2);
+      score += destroyed * 50;
+      // Check orphans after grid destruction
+      const orphans = findOrphans();
+      for (const o of orphans) {
+        addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 2, 0, o.bomb);
+        spawnParticles(o.x, o.y, 4);
+      }
+      if (orphans.length > 0) {
+        spawnPopup(W / 2, H * 0.3, orphans.length + '体落下！', '#4ECDC4');
+        score += orphans.length * 15;
+      }
+      exploded = true;
+    }
+  }
+  // Cleanup dead
+  if (exploded) {
+    for (let i = fallen.length - 1; i >= 0; i--) { if (fallen[i].dead) { fallen[i] = fallen[fallen.length - 1]; fallen.pop(); } }
+  }
+  return exploded;
 }
 
 // ── Fallen merge detection (cluster BFS) ──
@@ -435,6 +529,20 @@ function ballHitGrid() {
       const dist2 = dx * dx + dy * dy;
       const minDist = ball.r + pinR;
       if (dist2 < minDist * minDist) {
+        // Direct hit on a bomb → knock it loose immediately
+        if (pin.bomb) {
+          gridPins[r][c] = null;
+          addFallen(pos.x, pos.y, pin.tier, ball.vx * 0.3, ball.vy * 0.3, true);
+          spawnParticles(pos.x, pos.y, 8);
+          spawnPopup(pos.x, pos.y - 20, '爆弾落下！', '#FF4444');
+          playBuf(bonkBuf, 0.4, 0.5);
+          // Check orphans
+          const orphans = findOrphans();
+          for (const o of orphans) { addFallen(o.x, o.y, o.tier, (Math.random()-0.5)*1, 0, o.bomb); spawnParticles(o.x, o.y, 4); }
+          if (orphans.length > 0) { spawnPopup(W/2, H*0.3, orphans.length+'体落下！', '#4ECDC4'); score += orphans.length * 15; }
+          ball = null;
+          return true;
+        }
         if (ball.tier === pin.tier) {
           // Same tier → merge! Pin evolves and falls
           const nt = pin.tier < MAX_TIER ? pin.tier + 1 : pin.tier;
@@ -458,7 +566,7 @@ function ballHitGrid() {
           // Check for orphans
           const orphans = findOrphans();
           for (const o of orphans) {
-            addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0);
+            addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0, o.bomb);
             spawnParticles(o.x, o.y, 5);
           }
           if (orphans.length > 0) {
@@ -567,8 +675,20 @@ function drawGridPins() {
       ctx.beginPath(); ctx.ellipse(pos.x + 1, pos.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
       ctx.fillStyle = '#000'; ctx.fill();
       ctx.globalAlpha = 1;
-      // Image
-      ctx.drawImage(tierCanvases[pin.tier], pos.x - half, pos.y - half);
+      if (pin.bomb) {
+        // Bomb: dark red circle with bomb emoji
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, half + 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#8B0000'; ctx.fill();
+        ctx.strokeStyle = '#FF4444'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.font = 'bold ' + Math.round(half * 1.2) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('💣', pos.x, pos.y + 1);
+        ctx.textBaseline = 'alphabetic';
+      } else {
+        // Normal pin image
+        ctx.drawImage(tierCanvases[pin.tier], pos.x - half, pos.y - half);
+      }
     }
   }
 }
@@ -587,7 +707,28 @@ function drawFallen() {
     ctx.beginPath(); ctx.ellipse(b.x + 1, b.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
     ctx.fillStyle = '#000'; ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
+    if (b.bomb) {
+      // Bomb body: pulsing red circle with countdown
+      const pulse = 0.7 + Math.sin(b.fuseTimer * 0.15) * 0.3;
+      const urgency = 1 - b.fuseTimer / 180;
+      ctx.beginPath(); ctx.arc(b.x, b.y, half + 3, 0, Math.PI * 2);
+      ctx.fillStyle = urgency > 0.7 ? '#FF0000' : '#8B0000';
+      ctx.globalAlpha = pulse; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#FF4444'; ctx.lineWidth = 2; ctx.stroke();
+      // Bomb emoji
+      ctx.font = 'bold ' + Math.round(half * 1.2) + 'px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('💣', b.x, b.y + 1);
+      // Countdown number
+      const secs = Math.ceil(b.fuseTimer / 60);
+      ctx.font = 'bold 14px "Zen Maru Gothic"';
+      ctx.fillStyle = urgency > 0.7 ? '#FF0' : '#fff';
+      ctx.fillText(secs, b.x, b.y - half - 6);
+      ctx.textBaseline = 'alphabetic';
+    } else {
+      ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
+    }
   }
 }
 
@@ -710,9 +851,12 @@ function loop(now) {
   if (gamePhase === 'settling') {
     // Run gravity physics on fallen bodies
     fallenPhysics();
+    // Tick bombs
+    const bombed = tickBombs();
+    if (bombed) settleTimer = SETTLE_WAIT + 30; // extra time after explosion
     // Check for merges
     const merged = detectFallenMerges();
-    if (merged) settleTimer = SETTLE_WAIT; // reset settle timer on merge
+    if (merged) settleTimer = SETTLE_WAIT;
 
     if (fallenSettled() || settleTimer <= 0) {
       settleTimer--;
@@ -731,6 +875,7 @@ function loop(now) {
   // Fallen physics always runs (gravity doesn't stop)
   if (gamePhase !== 'settling') {
     fallenPhysics();
+    tickBombs();
     detectFallenMerges();
   }
 
