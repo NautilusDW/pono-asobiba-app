@@ -524,7 +524,7 @@ function ballHitGrid() {
       const pin = gridPins[r][c];
       if (!pin) continue;
       const pos = gridToScreen(r, c);
-      const pinR = TIERS[pin.tier].r;
+      const pinR = GRID_PIN_R; // uniform grid collision size
       const dx = ball.x - pos.x, dy = ball.y - pos.y;
       const dist2 = dx * dx + dy * dy;
       const minDist = ball.r + pinR;
@@ -577,7 +577,7 @@ function ballHitGrid() {
           // Different tier → ball sticks to grid
           const cell = nearestEmptyNeighbor(r, c, ball.x, ball.y);
           if (cell) {
-            gridPins[cell.row][cell.col] = { tier: ball.tier };
+            gridPins[cell.row][cell.col] = { tier: ball.tier, bomb: false };
             const sPos = gridToScreen(cell.row, cell.col);
             spawnParticles(sPos.x, sPos.y, 5);
             playBuf(bonkBuf, 0.3, 0.8);
@@ -593,7 +593,7 @@ function ballHitGrid() {
   if (ball && ball.y - ball.r <= GRID_TOP) {
     const cell = nearestEmptyCell(ball.x, ball.y);
     if (cell) {
-      gridPins[cell.row][cell.col] = { tier: ball.tier };
+      gridPins[cell.row][cell.col] = { tier: ball.tier, bomb: false };
       const sPos = gridToScreen(cell.row, cell.col);
       spawnParticles(sPos.x, sPos.y, 5);
       playBuf(bonkBuf, 0.2, 0.6);
@@ -639,8 +639,7 @@ canvas.addEventListener('pointerup', e => {
   const ny = dy / dist;
   if (ny >= 0) return; // only shoot upward
   const nx = dx / dist;
-  const t = TIERS[ballTier];
-  ball = { x: W / 2, y: H * 0.88, vx: nx * BALL_SPEED, vy: ny * BALL_SPEED, tier: ballTier, r: t.r };
+  ball = { x: W / 2, y: H * 0.88, vx: nx * BALL_SPEED, vy: ny * BALL_SPEED, tier: ballTier, r: GRID_PIN_R };
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
   gamePhase = 'flight';
   shotNumber++;
@@ -663,13 +662,13 @@ function drawBg() {
 }
 
 function drawGridPins() {
+  const half = GRID_PIN_R; // uniform display size on grid
+  const drawS = half * 2;
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
       const pin = gridPins[r][c];
       if (!pin) continue;
       const pos = gridToScreen(r, c);
-      const t = TIERS[pin.tier];
-      const half = t.r;
       // Shadow
       ctx.globalAlpha = 0.12;
       ctx.beginPath(); ctx.ellipse(pos.x + 1, pos.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
@@ -686,8 +685,8 @@ function drawGridPins() {
         ctx.fillText('💣', pos.x, pos.y + 1);
         ctx.textBaseline = 'alphabetic';
       } else {
-        // Normal pin image
-        ctx.drawImage(tierCanvases[pin.tier], pos.x - half, pos.y - half);
+        // Draw tier image scaled to uniform grid size
+        ctx.drawImage(tierCanvases[pin.tier], pos.x - half, pos.y - half, drawS, drawS);
       }
     }
   }
@@ -734,42 +733,100 @@ function drawFallen() {
 
 function drawBall() {
   if (!ball) return;
-  const t = TIERS[ball.tier];
-  const half = t.r;
+  const half = GRID_PIN_R;
+  const drawS = half * 2;
   ctx.globalAlpha = 0.12;
   ctx.beginPath(); ctx.ellipse(ball.x + 1, ball.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
   ctx.fillStyle = '#000'; ctx.fill();
   ctx.globalAlpha = 1;
-  ctx.drawImage(tierCanvases[ball.tier], ball.x - half, ball.y - half);
+  ctx.drawImage(tierCanvases[ball.tier], ball.x - half, ball.y - half, drawS, drawS);
   ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2; ctx.globalAlpha = 0.7;
   ctx.beginPath(); ctx.arc(ball.x, ball.y, half + 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawAimLine(bx, by, nx, ny) {
+  // Ray trace with wall reflections
+  const r = GRID_PIN_R;
+  let rx = bx, ry = by, dx = nx, dy = ny;
+  const maxDist = H; // total ray length
+  let traveled = 0;
+  const segments = []; // [{x0,y0,x1,y1}]
+
+  while (traveled < maxDist && ry > GRID_TOP - 10) {
+    // Find how far until hitting left/right wall
+    let stepDist = maxDist - traveled;
+    let hitWall = false;
+
+    if (dx < 0) {
+      const d = (rx - r) / (-dx);
+      if (d < stepDist && d > 0) { stepDist = d; hitWall = true; }
+    } else if (dx > 0) {
+      const d = (W - r - rx) / dx;
+      if (d < stepDist && d > 0) { stepDist = d; hitWall = true; }
+    }
+
+    // Also stop at ceiling
+    if (dy < 0) {
+      const d = (ry - GRID_TOP) / (-dy);
+      if (d < stepDist && d > 0) { stepDist = d; hitWall = false; }
+    }
+
+    const ex = rx + dx * stepDist, ey = ry + dy * stepDist;
+    segments.push({ x0: rx, y0: ry, x1: ex, y1: ey });
+    traveled += stepDist;
+    rx = ex; ry = ey;
+
+    if (hitWall) {
+      dx = -dx; // reflect horizontally
+    } else {
+      break; // hit ceiling or ran out of distance
+    }
+  }
+
+  // Draw segments as dotted line fading out
+  for (let s = 0; s < segments.length; s++) {
+    const seg = segments[s];
+    const segLen = Math.sqrt((seg.x1 - seg.x0) ** 2 + (seg.y1 - seg.y0) ** 2);
+    const dots = Math.ceil(segLen / 15);
+    for (let d = 0; d < dots; d++) {
+      const t = d / dots;
+      const px = seg.x0 + (seg.x1 - seg.x0) * t;
+      const py = seg.y0 + (seg.y1 - seg.y0) * t;
+      const alpha = 0.5 * (1 - (traveled > 0 ? ((s * 100 + d * 15) / maxDist) : 0));
+      if (alpha < 0.05) break;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+    // Draw reflection marker
+    if (s < segments.length - 1) {
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath(); ctx.arc(seg.x1, seg.y1, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  }
   ctx.globalAlpha = 1;
 }
 
 function drawBallPreview(now) {
   if (gamePhase !== 'aim') return;
   const bx = W / 2, by = H * 0.88;
-  const t = TIERS[ballTier];
-  const half = t.r;
+  const half = GRID_PIN_R;
+  const drawS = half * 2;
 
   if (aiming) {
     const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist > MIN_DRAG && dy / dist < 0) {
       const nx = dx / dist, ny = dy / dist;
-      ctx.globalAlpha = 0.35;
-      for (let d = 0; d < 10; d++) {
-        const dd = 25 + d * 22;
-        ctx.beginPath(); ctx.arc(bx + nx * dd, by + ny * dd, 2 + (1 - d / 10) * 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff'; ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+      drawAimLine(bx, by, nx, ny);
     }
   }
 
   const pulse = 0.7 + Math.sin(now * 0.004) * 0.2;
   ctx.globalAlpha = aiming ? 0.9 : pulse;
-  ctx.drawImage(tierCanvases[ballTier], bx - half, by - half);
+  ctx.drawImage(tierCanvases[ballTier], bx - half, by - half, drawS, drawS);
   ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(bx, by, half + 3, 0, Math.PI * 2); ctx.stroke();
   ctx.globalAlpha = 1;
