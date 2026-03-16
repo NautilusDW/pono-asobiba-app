@@ -59,7 +59,6 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 
 <script>
 'use strict';
-// Prevent iOS Safari scroll/bounce
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
@@ -69,50 +68,27 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
 let W, H;
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
 resize();
 window.addEventListener('resize', resize);
 
-// ── Audio (Web Audio API) ──
-let audioCtx = null;
-let audioReady = false;
+// ── Audio ──
+let audioCtx = null, audioReady = false;
 let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null, mergeBuf = null, explodeBuf = null;
 
 function makeBuf(ctx, freq, dur, vol, decay) {
-  const sr = ctx.sampleRate, n = sr * dur | 0;
-  const ab = ctx.createBuffer(1, n, sr);
-  const d = ab.getChannelData(0);
-  for (let i = 0; i < n; i++) {
-    const t = i / sr;
-    d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
-  }
+  const sr = ctx.sampleRate, n = sr * dur | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol; }
   return ab;
 }
-
-function makeSweepBuf(ctx, freqStart, freqEnd, dur, vol) {
-  const sr = ctx.sampleRate, n = sr * dur | 0;
-  const ab = ctx.createBuffer(1, n, sr);
-  const d = ab.getChannelData(0);
-  for (let i = 0; i < n; i++) {
-    const t = i / sr;
-    const f = freqStart + (freqEnd - freqStart) * (t / dur);
-    d[i] = Math.sin(2 * Math.PI * f * t) * Math.exp(-t * 8) * vol;
-  }
+function makeSweepBuf(ctx, f0, f1, dur, vol) {
+  const sr = ctx.sampleRate, n = sr * dur | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = Math.sin(2 * Math.PI * (f0 + (f1 - f0) * t / dur) * t) * Math.exp(-t * 8) * vol; }
   return ab;
 }
-
 function makeExplosionBuf(ctx) {
-  const sr = ctx.sampleRate, dur = 0.4, n = sr * dur | 0;
-  const ab = ctx.createBuffer(1, n, sr);
-  const d = ab.getChannelData(0);
-  for (let i = 0; i < n; i++) {
-    const t = i / sr;
-    d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.5 +
-           Math.sin(2 * Math.PI * 80 * t) * Math.exp(-t * 10) * 0.4;
-  }
+  const sr = ctx.sampleRate, n = sr * 0.4 | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.5 + Math.sin(2 * Math.PI * 80 * t) * Math.exp(-t * 10) * 0.4; }
   return ab;
 }
 
@@ -121,8 +97,7 @@ function initAudio() {
     const AC = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AC();
     audioCtx.resume().then(() => {
-      const b = audioCtx.createBuffer(1, 1, 22050);
-      const s = audioCtx.createBufferSource();
+      const b = audioCtx.createBuffer(1, 1, 22050), s = audioCtx.createBufferSource();
       s.buffer = b; s.connect(audioCtx.destination); s.start(0);
       bonkBuf = makeBuf(audioCtx, 400, 0.06, 0.4, 40);
       popBuf = makeBuf(audioCtx, 800, 0.05, 0.3, 50);
@@ -130,8 +105,7 @@ function initAudio() {
       comboBuf = makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
       mergeBuf = makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
       explodeBuf = makeExplosionBuf(audioCtx);
-      audioReady = true;
-      resolve();
+      audioReady = true; resolve();
     });
     setTimeout(() => {
       bonkBuf = bonkBuf || makeBuf(audioCtx, 400, 0.06, 0.4, 40);
@@ -140,78 +114,56 @@ function initAudio() {
       comboBuf = comboBuf || makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
       mergeBuf = mergeBuf || makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
       explodeBuf = explodeBuf || makeExplosionBuf(audioCtx);
-      audioReady = true;
-      resolve();
+      audioReady = true; resolve();
     }, 1000);
   });
 }
 
 document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
-  e.preventDefault();
-  this.removeEventListener('pointerdown', handler);
-  await initAudio();
-  this.style.display = 'none';
+  e.preventDefault(); this.removeEventListener('pointerdown', handler);
+  await initAudio(); this.style.display = 'none';
 });
-
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
 
 function playBuf(buf, volume, rate) {
   if (!audioReady || !buf) return;
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  src.playbackRate.value = rate || 1;
-  if (volume !== undefined && volume < 1) {
-    const gain = audioCtx.createGain();
-    gain.gain.value = volume;
-    src.connect(gain); gain.connect(audioCtx.destination);
-  } else {
-    src.connect(audioCtx.destination);
-  }
+  const src = audioCtx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate || 1;
+  if (volume !== undefined && volume < 1) { const g = audioCtx.createGain(); g.gain.value = volume; src.connect(g); g.connect(audioCtx.destination); }
+  else src.connect(audioCtx.destination);
   src.start(0);
 }
 
 // ── Tier System ──
-// うさぎ → アライグマ → アヒル → ハリネズミ → クマ
 const TIERS = [
-  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },
-  { img: 5,  r: 24, mass: 1.0, name: 'アライグマ' },
-  { img: 4,  r: 32, mass: 2.0, name: 'アヒル' },
-  { img: 6,  r: 42, mass: 4.0, name: 'ハリネズミ' },
-  { img: 10, r: 54, mass: 8.0, name: 'クマ' },
+  { img: 0,  r: 18, mass: 1.0, name: 'うさぎ' },
+  { img: 5,  r: 24, mass: 2.0, name: 'アライグマ' },
+  { img: 4,  r: 32, mass: 3.5, name: 'アヒル' },
+  { img: 6,  r: 42, mass: 6.0, name: 'ハリネズミ' },
+  { img: 10, r: 54, mass: 10.0, name: 'クマ' },
 ];
 const MAX_TIER = TIERS.length - 1;
 
-// ── Constants ──
-const BALL_R = 22;
-const BALL_MASS = 8;
-const BALL_LIFETIME = 4000;
-const GRAVITY = 0.18;
-const FRICTION_AIR = 0.996;
-const RESTITUTION = 0.7;
-const WALL_RESTITUTION = 0.8;
-const MAX_BODIES = 60;
-const MAX_PINS = 25;
-const PIN_SPAWN_INTERVAL = 500;
+// ── Constants ── BILLIARD STYLE: no gravity, all walls bounce
+const BALL_R = 20;
+const BALL_MASS = 5;
+const BALL_LIFETIME = 5000;
+const FRICTION = 0.993;       // everything slows down gradually
+const RESTITUTION = 0.85;     // bouncy collisions
+const WALL_RESTITUTION = 0.9; // bouncy walls
+const MAX_BODIES = 50;
+const TARGET_PINS = 20;       // try to maintain this many pins
+const REFILL_INTERVAL = 2000; // ms between checking if we need more pins
 const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 5;
 
-// Merge shockwave
-const MERGE_SHOCKWAVE_BASE_R = 80;
-const MERGE_SHOCKWAVE_R_PER_TIER = 30;
-const MERGE_SHOCKWAVE_BASE_F = 4;
-const MERGE_SHOCKWAVE_F_PER_TIER = 3;
-
-// ── Pin images (tier-specific sizes) ──
+// ── Pin images ──
 const tierCanvases = [];
 for (let t = 0; t < TIERS.length; t++) {
-  const tier = TIERS[t];
-  const drawSize = tier.r * 2;
-  const img = new Image();
-  img.src = 'pins/pin_' + tier.img + '.png';
-  const oc = document.createElement('canvas');
-  oc.width = oc.height = drawSize;
+  const tier = TIERS[t]; const drawSize = tier.r * 2;
+  const img = new Image(); img.src = 'pins/pin_' + tier.img + '.png';
+  const oc = document.createElement('canvas'); oc.width = oc.height = drawSize;
   tierCanvases.push(oc);
   img.onload = () => { oc.getContext('2d').drawImage(img, 0, 0, drawSize, drawSize); };
 }
@@ -220,232 +172,163 @@ for (let t = 0; t < TIERS.length; t++) {
 const ballColors = ['#EE3333','#3388EE','#33BB55','#FF8800','#CC44CC','#FFDD00','#00CCCC','#FF5599'];
 const ballCanvases = [];
 for (let i = 0; i < ballColors.length; i++) {
-  const oc = document.createElement('canvas');
-  const sz = BALL_R * 2 + 8;
-  oc.width = oc.height = sz;
-  const bc = oc.getContext('2d');
-  const cx = sz / 2, cy = sz / 2;
-  bc.globalAlpha = 0.25;
-  bc.beginPath(); bc.ellipse(cx + 2, cy + 2, BALL_R, BALL_R * 0.9, 0, 0, Math.PI * 2);
-  bc.fillStyle = '#000'; bc.fill();
-  bc.globalAlpha = 1;
-  bc.beginPath(); bc.arc(cx, cy, BALL_R, 0, Math.PI * 2);
-  bc.fillStyle = ballColors[i]; bc.fill();
+  const oc = document.createElement('canvas'); const sz = BALL_R * 2 + 8;
+  oc.width = oc.height = sz; const bc = oc.getContext('2d'); const cx = sz/2, cy = sz/2;
+  bc.globalAlpha = 0.25; bc.beginPath(); bc.ellipse(cx+2, cy+2, BALL_R, BALL_R*0.9, 0, 0, Math.PI*2); bc.fillStyle = '#000'; bc.fill();
+  bc.globalAlpha = 1; bc.beginPath(); bc.arc(cx, cy, BALL_R, 0, Math.PI*2); bc.fillStyle = ballColors[i]; bc.fill();
   bc.strokeStyle = 'rgba(0,0,0,0.3)'; bc.lineWidth = 2; bc.stroke();
-  bc.globalAlpha = 0.4;
-  bc.beginPath(); bc.ellipse(cx - BALL_R * 0.3, cy - BALL_R * 0.25, BALL_R * 0.3, BALL_R * 0.15, -0.5, 0, Math.PI * 2);
-  bc.fillStyle = '#fff'; bc.fill();
+  bc.globalAlpha = 0.4; bc.beginPath(); bc.ellipse(cx-BALL_R*0.3, cy-BALL_R*0.25, BALL_R*0.3, BALL_R*0.15, -0.5, 0, Math.PI*2); bc.fillStyle = '#fff'; bc.fill();
   ballCanvases.push(oc);
 }
 const halfBall = (BALL_R * 2 + 8) / 2;
 
 // ── Bodies ──
 const bodies = [];
-let activeBall = null; // only 1 ball at a time
 
 function addBody(x, y, r, mass, type) {
-  const b = {
-    x, y, vx: 0, vy: 0, r, mass, type,
-    tier: 0,
-    colorIdx: 0,
-    born: performance.now(),
-    dead: false,
-    merging: false,
-    flashTimer: 0
-  };
-  bodies.push(b);
-  return b;
+  const b = { x, y, vx: 0, vy: 0, r, mass, type, tier: 0, colorIdx: 0, born: performance.now(), dead: false, merging: false, flashTimer: 0 };
+  bodies.push(b); return b;
 }
 
-function spawnPin(forceTier) {
-  let pinCount = 0;
-  for (let i = 0; i < bodies.length; i++) {
-    if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
-  }
-  if (pinCount >= MAX_PINS || bodies.length >= MAX_BODIES) return;
+// Place a pin at a random open spot (no overlap)
+function spawnPinAtRandom(forceTier) {
+  if (bodies.length >= MAX_BODIES) return;
   const rng = Math.random();
-  const tier = forceTier !== undefined ? forceTier : (rng < 0.80 ? 0 : rng < 0.95 ? 1 : 2);
+  const tier = forceTier !== undefined ? forceTier : (rng < 0.75 ? 0 : rng < 0.93 ? 1 : 2);
   const t = TIERS[tier];
-  const margin = t.r + 20;
-  const x = margin + Math.random() * (W - margin * 2);
-  const b = addBody(x, -t.r * 2, t.r, t.mass, 'pin');
-  b.tier = tier;
-  b.vy = 1 + Math.random() * 1.5;
-  b.vx = (Math.random() - 0.5) * 1.0;
+  const margin = t.r + 15;
+  // Try to find non-overlapping position
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const x = margin + Math.random() * (W - margin * 2);
+    const y = margin + Math.random() * (H - margin * 2);
+    let overlap = false;
+    for (let i = 0; i < bodies.length; i++) {
+      const ob = bodies[i];
+      if (ob.dead) continue;
+      const dx = ob.x - x, dy = ob.y - y;
+      const minD = ob.r + t.r + 5;
+      if (dx * dx + dy * dy < minD * minD) { overlap = true; break; }
+    }
+    if (!overlap) {
+      const b = addBody(x, y, t.r, t.mass, 'pin');
+      b.tier = tier;
+      return;
+    }
+  }
 }
 
 function spawnBall(tapX, tapY) {
-  if (activeBall) return; // 1 ball at a time
   if (bodies.length >= MAX_BODIES) return;
   const b = addBody(tapX, tapY, BALL_R, BALL_MASS, 'ball');
-  // Launch upward with slight random angle
-  const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
-  const speed = 14 + Math.random() * 6;
+  // Random direction
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 12 + Math.random() * 4;
   b.vx = Math.cos(angle) * speed;
   b.vy = Math.sin(angle) * speed;
   b.colorIdx = Math.floor(Math.random() * ballColors.length);
-  activeBall = b;
-  shotCount++;
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
 }
 
-// ── Particles ──
-const PARTICLE_COLORS = [
-  '#FF6B6B','#FFE66D','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8',
-  '#F7DC6F','#BB8FCE','#85C1E9','#F1948A'
-];
-const particles = [];
-const MAX_PARTICLES = 300;
-
+// ── Effects ──
+const PARTICLE_COLORS = ['#FF6B6B','#FFE66D','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9','#F1948A'];
+const particles = [], MAX_PARTICLES = 300;
 function spawnParticles(x, y, count, baseColor) {
   const n = Math.min(count, MAX_PARTICLES - particles.length);
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const sp = 2 + Math.random() * 6;
-    particles.push({
-      x, y,
-      vx: Math.cos(a) * sp,
-      vy: Math.sin(a) * sp - 2,
-      color: baseColor || PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
-      size: 3 + Math.random() * 6,
-      life: 1,
-      decay: 0.015 + Math.random() * 0.01
-    });
+    const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 6;
+    particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, color: baseColor || PARTICLE_COLORS[Math.floor(Math.random()*PARTICLE_COLORS.length)], size: 3+Math.random()*6, life: 1, decay: 0.015+Math.random()*0.01 });
   }
 }
-
-// ── Score popups ──
 const popups = [];
-function spawnPopup(x, y, text, color) {
-  popups.push({ x, y, text, color: color || '#FFD700', life: 1, vy: -2 });
-}
-
-// ── Impact rings ──
+function spawnPopup(x, y, text, color) { popups.push({ x, y, text, color: color || '#FFD700', life: 1, vy: -1.5 }); }
 const rings = [];
-function spawnRing(x, y, maxRadius, color) {
-  rings.push({ x, y, radius: 5, maxRadius: maxRadius || 60, alpha: 0.7, color: color || '#fff' });
-}
+function spawnRing(x, y, maxRadius, color) { rings.push({ x, y, radius: 5, maxRadius: maxRadius || 60, alpha: 0.7, color: color || '#fff' }); }
 
 // ── Collision ──
 function resolveCollision(a, b) {
   const dx = b.x - a.x, dy = b.y - a.y;
-  const dist2 = dx * dx + dy * dy;
-  const minDist = a.r + b.r;
-  if (dist2 >= minDist * minDist || dist2 < 0.001) return 0;
-  const dist = Math.sqrt(dist2);
-  const nx = dx / dist, ny = dy / dist;
-  const overlap = minDist - dist;
-  const totalMass = a.mass + b.mass;
-  a.x -= nx * overlap * (b.mass / totalMass);
-  a.y -= ny * overlap * (b.mass / totalMass);
-  b.x += nx * overlap * (a.mass / totalMass);
-  b.y += ny * overlap * (a.mass / totalMass);
-  const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+  const dist2 = dx*dx + dy*dy, minDist = a.r + b.r;
+  if (dist2 >= minDist*minDist || dist2 < 0.001) return 0;
+  const dist = Math.sqrt(dist2), nx = dx/dist, ny = dy/dist;
+  const overlap = minDist - dist, totalMass = a.mass + b.mass;
+  a.x -= nx * overlap * (b.mass/totalMass);
+  a.y -= ny * overlap * (b.mass/totalMass);
+  b.x += nx * overlap * (a.mass/totalMass);
+  b.y += ny * overlap * (a.mass/totalMass);
+  const dvn = (a.vx-b.vx)*nx + (a.vy-b.vy)*ny;
   if (dvn > 0) return 0;
-  const rest = (a.type === 'ball' || b.type === 'ball') ? 0.7 : RESTITUTION;
-  const invMassSum = 1 / a.mass + 1 / b.mass;
-  const j = -(1 + rest) * dvn / invMassSum;
-  a.vx += (j / a.mass) * nx;
-  a.vy += (j / a.mass) * ny;
-  b.vx -= (j / b.mass) * nx;
-  b.vy -= (j / b.mass) * ny;
+  const j = -(1 + RESTITUTION) * dvn / (1/a.mass + 1/b.mass);
+  a.vx += (j/a.mass)*nx; a.vy += (j/a.mass)*ny;
+  b.vx -= (j/b.mass)*nx; b.vy -= (j/b.mass)*ny;
   return Math.abs(dvn);
 }
 
-// ── Wall bounce ──
+// All 4 walls bounce (billiard table)
 function wallBounce(b) {
   if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
-  // Bottom: pins die, balls bounce
-  if (b.y + b.r > H) {
-    if (b.type === 'pin') {
-      b.dead = true;
-    } else {
-      b.y = H - b.r;
-      b.vy = -Math.abs(b.vy) * WALL_RESTITUTION;
-    }
-  }
+  if (b.y + b.r > H) { b.y = H - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
 }
 
 // ── Game state ──
-let score = 0;
-let combo = 0;
-let comboTimer = 0;
-let lastPinSpawn = 0;
+let score = 0, combo = 0, comboTimer = 0;
 let shakeX = 0, shakeY = 0, shakeLife = 0;
-let soundThrottle = 0;
-let maxHitStrength = 0;
-let mergePitch = 1.0;
-let hitstopFrames = 0;
-let bgFlash = 0;
-let shotCount = 0;
+let soundThrottle = 0, maxHitStrength = 0;
+let mergePitch = 1.0, hitstopFrames = 0, bgFlash = 0;
+let lastRefill = 0;
 
-// ── Screen shake ──
-function triggerShake(intensity) {
-  shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 10));
-}
+function triggerShake(intensity) { shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 10)); }
 
-// ── Merge shockwave: push nearby pins away ──
+// ── Merge shockwave ──
 function mergeShockwave(cx, cy, tier) {
-  const radius = MERGE_SHOCKWAVE_BASE_R + tier * MERGE_SHOCKWAVE_R_PER_TIER;
-  const force = MERGE_SHOCKWAVE_BASE_F + tier * MERGE_SHOCKWAVE_F_PER_TIER;
+  const radius = 80 + tier * 30;
+  const force = 4 + tier * 3;
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (b.dead || b.type !== 'pin') continue;
     const dx = b.x - cx, dy = b.y - cy;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dist = Math.sqrt(dx*dx + dy*dy);
     if (dist < radius && dist > 1) {
       const falloff = 1 - dist / radius;
-      b.vx += (dx / dist) * force * falloff;
-      b.vy += (dy / dist) * force * falloff;
+      b.vx += (dx/dist) * force * falloff;
+      b.vy += (dy/dist) * force * falloff;
     }
   }
 }
 
-// (Merge attraction removed — merges only happen from ball impacts)
-
-// ── Explosion (tier 4 + tier 4) ──
+// ── Explosion (bear + bear) ──
 function triggerExplosion(cx, cy) {
   spawnParticles(cx, cy, 50);
-  // Massive shockwave
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (b.dead) continue;
     const dx = b.x - cx, dy = b.y - cy;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dist = Math.sqrt(dx*dx + dy*dy);
     if (dist < 250 && dist > 1) {
-      const force = (1 - dist / 250) * 25;
-      b.vx += (dx / dist) * force;
-      b.vy += (dy / dist) * force;
+      b.vx += (dx/dist) * (1 - dist/250) * 25;
+      b.vy += (dy/dist) * (1 - dist/250) * 25;
     }
-    // Inner zone: shatter pins into tier 0
-    if (dist < 80 && b.type === 'pin' && b !== activeBall) {
+    // Inner zone: shatter into tier 0
+    if (dist < 80 && b.type === 'pin') {
       b.dead = true;
-      // Spawn 3 tier-0 pins scattered
       for (let k = 0; k < 3; k++) {
-        const angle = Math.random() * Math.PI * 2;
-        const spd = 4 + Math.random() * 4;
+        const a = Math.random() * Math.PI * 2, sp = 4 + Math.random() * 4;
         const t0 = TIERS[0];
-        const nb = addBody(cx + Math.cos(angle) * 30, cy + Math.sin(angle) * 30, t0.r, t0.mass, 'pin');
-        nb.tier = 0;
-        nb.vx = Math.cos(angle) * spd;
-        nb.vy = Math.sin(angle) * spd - 3;
+        const nb = addBody(cx + Math.cos(a)*30, cy + Math.sin(a)*30, t0.r, t0.mass, 'pin');
+        nb.tier = 0; nb.vx = Math.cos(a)*sp; nb.vy = Math.sin(a)*sp;
       }
     }
   }
-  triggerShake(5);
-  bgFlash = 0.5;
+  triggerShake(5); bgFlash = 0.5;
   score += 500;
   spawnPopup(cx, cy - 30, '+500', '#FF4444');
-  spawnRing(cx, cy, 200, '#FF6B6B');
-  spawnRing(cx, cy, 150, '#FFD700');
-  spawnRing(cx, cy, 100, '#fff');
+  spawnRing(cx, cy, 200, '#FF6B6B'); spawnRing(cx, cy, 150, '#FFD700'); spawnRing(cx, cy, 100, '#fff');
   playBuf(explodeBuf, 1.0, 0.7);
   hitstopFrames = 8;
 }
 
-// ── Merge detection ──
+// ── Merge detection & processing ──
 const pendingMerges = [];
 
 function detectMerges() {
@@ -458,18 +341,14 @@ function detectMerges() {
       const b = bodies[j];
       if (b.dead || b.type !== 'pin' || b.merging) continue;
       if (a.tier !== b.tier) continue;
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const dist2 = dx * dx + dy * dy;
-      const minDist = a.r + b.r;
-      if (dist2 < minDist * minDist) {
-        a.merging = true;
-        b.merging = true;
-        pendingMerges.push({
-          a, b,
-          tier: a.tier,
-          x: (a.x + b.x) / 2,
-          y: (a.y + b.y) / 2
-        });
+      // Only merge if at least one is moving (prevents idle merges)
+      const aSpd = a.vx*a.vx + a.vy*a.vy;
+      const bSpd = b.vx*b.vx + b.vy*b.vy;
+      if (aSpd < 0.5 && bSpd < 0.5) continue;
+      const dx = b.x-a.x, dy = b.y-a.y;
+      if (dx*dx + dy*dy < (a.r+b.r)*(a.r+b.r)) {
+        a.merging = b.merging = true;
+        pendingMerges.push({ a, b, tier: a.tier, x: (a.x+b.x)/2, y: (a.y+b.y)/2 });
         if (pendingMerges.length >= MAX_MERGES_PER_FRAME) return;
       }
     }
@@ -479,48 +358,28 @@ function detectMerges() {
 function processMerges() {
   for (let i = 0; i < pendingMerges.length; i++) {
     const m = pendingMerges[i];
-    m.a.dead = true;
-    m.b.dead = true;
-
+    m.a.dead = m.b.dead = true;
     if (m.tier < MAX_TIER) {
-      const nextTier = m.tier + 1;
-      const t = TIERS[nextTier];
+      const nt = m.tier + 1, t = TIERS[nt];
       const nb = addBody(m.x, m.y, t.r, t.mass, 'pin');
-      nb.tier = nextTier;
-      nb.flashTimer = 6;
-      nb.vx = (m.a.vx + m.b.vx) * 0.3;
-      nb.vy = (m.a.vy + m.b.vy) * 0.3;
-      // Merge shockwave: push nearby pins!
-      mergeShockwave(m.x, m.y, nextTier);
+      nb.tier = nt; nb.flashTimer = 6;
+      nb.vx = (m.a.vx + m.b.vx) * 0.4;
+      nb.vy = (m.a.vy + m.b.vy) * 0.4;
+      mergeShockwave(m.x, m.y, nt);
     } else {
       triggerExplosion(m.x, m.y);
     }
-
-    // Effects
     spawnParticles(m.x, m.y, 8 + m.tier * 5);
     spawnRing(m.x, m.y, 40 + m.tier * 20, '#fff');
-
-    if (m.tier < MAX_TIER) {
-      spawnPopup(m.x, m.y - 20, TIERS[m.tier + 1].name);
-    } else {
-      spawnPopup(m.x, m.y - 20, '大爆発！', '#FF4444');
-    }
-
-    // Sound with rising pitch
+    spawnPopup(m.x, m.y - 20, m.tier < MAX_TIER ? TIERS[m.tier+1].name : '大爆発！', m.tier < MAX_TIER ? '#FFD700' : '#FF4444');
     mergePitch = Math.min(mergePitch * 1.12, 2.5);
     playBuf(mergeBuf, 0.4 + m.tier * 0.15, mergePitch);
-
-    // Score
-    const pts = (m.tier + 1) * 10 * (1 + combo * 0.5);
-    score += Math.round(pts);
-    combo++;
-    comboTimer = COMBO_WINDOW;
-
+    score += Math.round((m.tier + 1) * 10 * (1 + combo * 0.5));
+    combo++; comboTimer = COMBO_WINDOW;
     triggerShake(0.5 + m.tier * 0.7);
     if (m.tier >= 2) hitstopFrames = Math.max(hitstopFrames, 2 + m.tier);
     bgFlash = Math.max(bgFlash, 0.1 + m.tier * 0.08);
   }
-
   if (pendingMerges.length > 0 && combo >= 3) {
     comboEl.textContent = combo + ' 連鎖！';
     comboEl.classList.add('show');
@@ -528,69 +387,39 @@ function processMerges() {
   }
 }
 
-// ── Physics step ──
+// ── Physics step (NO GRAVITY — billiard style) ──
 function physicsStep() {
   const n = bodies.length;
   for (let i = 0; i < n; i++) {
     const b = bodies[i];
     if (b.dead) continue;
-    // Gravity for pins only (balls fly freely)
-    if (b.type === 'pin') b.vy += GRAVITY;
-    b.x += b.vx;
-    b.y += b.vy;
-    b.vx *= FRICTION_AIR;
-    b.vy *= FRICTION_AIR;
-    if (b.vx * b.vx + b.vy * b.vy < 0.0001) { b.vx = 0; b.vy = 0; }
+    b.x += b.vx; b.y += b.vy;
+    b.vx *= FRICTION; b.vy *= FRICTION;
+    if (b.vx*b.vx + b.vy*b.vy < 0.001) { b.vx = 0; b.vy = 0; }
     wallBounce(b);
   }
-  // Collisions
   for (let i = 0; i < n; i++) {
     if (bodies[i].dead) continue;
     for (let j = i + 1; j < n; j++) {
       if (bodies[j].dead) continue;
       const a = bodies[i], b = bodies[j];
-
-      // Same-tier pin-pin: skip physics (merge handles overlap)
+      // Same-tier pin-pin: skip resolve (merge handles it)
       if (a.type === 'pin' && b.type === 'pin' && a.tier === b.tier) continue;
-
-      const preVx = a.vx - b.vx, preVy = a.vy - b.vy;
-      const preSpd = Math.sqrt(preVx * preVx + preVy * preVy);
+      const preVx = a.vx-b.vx, preVy = a.vy-b.vy;
+      const preSpd = Math.sqrt(preVx*preVx + preVy*preVy);
       const strength = resolveCollision(a, b);
       if (strength > 0) {
-        // Ball-pin: piercing mechanic
-        if ((a.type === 'ball' && b.type === 'pin') || (a.type === 'pin' && b.type === 'ball')) {
-          const ball = a.type === 'ball' ? a : b;
+        if ((a.type==='ball' && b.type==='pin') || (a.type==='pin' && b.type==='ball')) {
           const pin = a.type === 'pin' ? a : b;
-          const impactForce = preSpd * BALL_MASS / pin.mass;
-          if (impactForce > 8) {
-            // Strong hit: ball pierces through, scatter nearby pins
-            ball.vx *= 0.7;
-            ball.vy *= 0.7;
-            // Mini shockwave around impact
-            for (let k = 0; k < bodies.length; k++) {
-              const other = bodies[k];
-              if (other.dead || other === ball || other === pin) continue;
-              if (other.type !== 'pin') continue;
-              const dx = other.x - pin.x, dy = other.y - pin.y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist < 60 && dist > 1) {
-                const pushF = 3 * (1 - dist / 60);
-                other.vx += (dx / dist) * pushF;
-                other.vy += (dy / dist) * pushF;
-              }
-            }
-            spawnParticles(pin.x, pin.y, 5);
-            triggerShake(strength / 10);
-          } else if (preSpd > 3) {
-            triggerShake(strength / 15);
-            if (strength > 5) spawnParticles(pin.x, pin.y, 3);
+          if (preSpd > 2) {
+            triggerShake(strength / 12);
+            if (strength > 4) spawnParticles(pin.x, pin.y, 3);
           }
         }
-        // Collision sound
-        if (preSpd > 3 && strength > maxHitStrength * 0.3) {
+        if (preSpd > 2) {
           if (soundThrottle <= 0) {
-            const intensity = Math.min(1, strength / 15);
-            playBuf(bonkBuf, 0.15 + intensity * 0.6, 0.7 + intensity * 0.5 + (Math.random() - 0.5) * 0.2);
+            const intensity = Math.min(1, strength / 12);
+            playBuf(bonkBuf, 0.15 + intensity*0.6, 0.7 + intensity*0.5 + (Math.random()-0.5)*0.2);
             soundThrottle = 3;
           }
         }
@@ -600,29 +429,24 @@ function physicsStep() {
   }
 }
 
-// ── Input: tap to shoot 1 ball ──
-canvas.addEventListener('pointerdown', e => {
-  e.preventDefault();
-  spawnBall(e.clientX, e.clientY);
+// ── Input: tap to shoot ball from that spot ──
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); spawnBall(e.clientX, e.clientY); });
+canvas.addEventListener('pointermove', e => {
+  if (e.pressure > 0 || e.buttons > 0) {
+    if (Math.random() < 0.15) spawnBall(e.clientX, e.clientY);
+  }
 });
 
 // ── Draw ──
 function drawBg() {
   if (bgFlash > 0.01) {
-    const r = Math.round(30 + (255 - 30) * bgFlash);
-    const g = Math.round(107 + (255 - 107) * bgFlash);
-    const bv = Math.round(64 + (255 - 64) * bgFlash);
-    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + bv + ')';
-  } else {
-    ctx.fillStyle = '#1e6b40';
-  }
+    const r = Math.round(30 + 225*bgFlash), g = Math.round(107 + 148*bgFlash), bv = Math.round(64 + 191*bgFlash);
+    ctx.fillStyle = 'rgb('+r+','+g+','+bv+')';
+  } else ctx.fillStyle = '#1e6b40';
   ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = '#8B4513';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(3, 3, W - 6, H - 6);
-  ctx.strokeStyle = '#5a9a3a';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(10, 10, W - 20, H - 20);
+  // Billiard table border
+  ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, W-8, H-8);
+  ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 3; ctx.strokeRect(10, 10, W-20, H-20);
 }
 
 function drawBodies() {
@@ -632,258 +456,143 @@ function drawBodies() {
     if (b.type === 'ball') {
       ctx.drawImage(ballCanvases[b.colorIdx], b.x - halfBall, b.y - halfBall);
     } else {
-      const tier = TIERS[b.tier];
-      const drawSize = tier.r * 2;
-      const half = drawSize / 2;
-
+      const tier = TIERS[b.tier], drawSize = tier.r*2, half = drawSize/2;
       if (b.flashTimer > 0) {
         ctx.globalAlpha = b.flashTimer / 6;
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r + 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        b.flashTimer--;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r+4, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+        ctx.globalAlpha = 1; b.flashTimer--;
       }
-
-      // Shadow
-      ctx.globalAlpha = 0.15 + b.tier * 0.03;
-      ctx.beginPath();
-      ctx.ellipse(b.x + 2, b.y + 3 + b.tier, b.r * 0.9, b.r * 0.5, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#000';
-      ctx.fill();
+      ctx.globalAlpha = 0.15 + b.tier*0.03;
+      ctx.beginPath(); ctx.ellipse(b.x+2, b.y+3, b.r*0.9, b.r*0.5, 0, 0, Math.PI*2); ctx.fillStyle = '#000'; ctx.fill();
       ctx.globalAlpha = 1;
-
       ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
     }
   }
 }
 
-// Draw ready indicator
-function drawReadyIndicator(now) {
-  if (!activeBall || activeBall.dead) {
-    const pulse = 0.3 + Math.sin(now * 0.005) * 0.2;
-    ctx.globalAlpha = pulse;
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 16px "Zen Maru Gothic"';
-    ctx.textAlign = 'center';
-    ctx.fillText('● READY', W / 2, H - 15);
-    ctx.globalAlpha = 1;
-  }
-}
-
 function drawRings() {
   let len = rings.length;
-  for (let i = len - 1; i >= 0; i--) {
-    const r = rings[i];
-    r.radius += 3;
-    r.alpha *= 0.92;
-    if (r.alpha < 0.02 || r.radius > r.maxRadius) {
-      rings[i] = rings[--len]; rings.length = len; continue;
-    }
-    ctx.globalAlpha = r.alpha;
-    ctx.beginPath();
-    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = r.color;
-    ctx.lineWidth = 3;
-    ctx.stroke();
+  for (let i = len-1; i >= 0; i--) {
+    const r = rings[i]; r.radius += 3; r.alpha *= 0.92;
+    if (r.alpha < 0.02 || r.radius > r.maxRadius) { rings[i] = rings[--len]; rings.length = len; continue; }
+    ctx.globalAlpha = r.alpha; ctx.beginPath(); ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2);
+    ctx.strokeStyle = r.color; ctx.lineWidth = 3; ctx.stroke();
   }
   if (len > 0) ctx.globalAlpha = 1;
 }
 
 function drawParticles() {
   let len = particles.length;
-  for (let i = len - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += 0.1;
-    p.life -= p.decay;
+  for (let i = len-1; i >= 0; i--) {
+    const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life -= p.decay;
     if (p.life <= 0) { particles[i] = particles[--len]; particles.length = len; continue; }
-    ctx.globalAlpha = p.life;
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+    ctx.fillRect(p.x-p.size/2, p.y-p.size/2, p.size, p.size);
   }
   if (len > 0) ctx.globalAlpha = 1;
 }
 
 function drawPopups() {
   let len = popups.length;
-  for (let i = len - 1; i >= 0; i--) {
-    const p = popups[i];
-    p.y += p.vy;
-    p.life -= 0.02;
+  for (let i = len-1; i >= 0; i--) {
+    const p = popups[i]; p.y += p.vy; p.life -= 0.02;
     if (p.life <= 0) { popups[i] = popups[--len]; popups.length = len; continue; }
-    ctx.globalAlpha = p.life;
-    ctx.fillStyle = p.color;
-    ctx.font = 'bold 24px "Zen Maru Gothic"';
-    ctx.textAlign = 'center';
+    ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+    ctx.font = 'bold 24px "Zen Maru Gothic"'; ctx.textAlign = 'center';
     ctx.fillText(p.text, p.x, p.y);
   }
   if (len > 0) ctx.globalAlpha = 1;
 }
 
-// ── Chain counter display ──
-let chainDisplay = 0;
-let chainDisplayTimer = 0;
+let chainDisplay = 0, chainDisplayTimer = 0;
 function drawChainCounter() {
   if (chainDisplayTimer > 0) {
     chainDisplayTimer--;
     const scale = 1 + (chainDisplay - 2) * 0.15;
-    const alpha = Math.min(1, chainDisplayTimer / 30);
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = Math.min(1, chainDisplayTimer / 30);
     ctx.fillStyle = '#FF6B6B';
-    ctx.font = 'bold ' + Math.round(36 * scale) + 'px "Zen Maru Gothic"';
-    ctx.textAlign = 'center';
-    ctx.fillText(chainDisplay + '連鎖！', W / 2, H * 0.3);
+    ctx.font = 'bold ' + Math.round(36*scale) + 'px "Zen Maru Gothic"';
+    ctx.textAlign = 'center'; ctx.fillText(chainDisplay + '連鎖！', W/2, H*0.3);
     ctx.globalAlpha = 1;
   }
 }
 
 // ── Main loop ──
 const PHYSICS_DT = 1000 / 60;
-let accumulator = 0;
-let prevFrameTime = performance.now();
+let accumulator = 0, prevFrameTime = performance.now();
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
 
 function loop(now) {
-  let elapsed = now - prevFrameTime;
-  prevFrameTime = now;
+  let elapsed = now - prevFrameTime; prevFrameTime = now;
   if (elapsed > 100) elapsed = 100;
-
-  // FPS
   fpsFrames++;
-  if (now - fpsLast >= 500) {
-    fpsDisplay = (fpsFrames / ((now - fpsLast) / 1000)).toFixed(0);
-    fpsFrames = 0; fpsLast = now;
-  }
+  if (now - fpsLast >= 500) { fpsDisplay = (fpsFrames / ((now-fpsLast)/1000)).toFixed(0); fpsFrames = 0; fpsLast = now; }
 
-  // Track active ball
-  if (activeBall && (activeBall.dead || now - activeBall.born > BALL_LIFETIME)) {
-    if (!activeBall.dead) {
-      spawnParticles(activeBall.x, activeBall.y, 4, ballColors[activeBall.colorIdx]);
-      activeBall.dead = true;
-    }
-    activeBall = null;
-  }
-
-  // Pin auto-spawn
-  if (now - lastPinSpawn > PIN_SPAWN_INTERVAL) {
-    let pinCount = 0;
-    for (let i = 0; i < bodies.length; i++) {
-      if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
-    }
-    if (pinCount < MAX_PINS) {
-      spawnPin();
-      if (Math.random() < 0.3) spawnPin();
-    }
-    lastPinSpawn = now;
-  }
-
-  // Physics (with hitstop)
-  maxHitStrength = 0;
-  if (hitstopFrames > 0) {
-    hitstopFrames--;
-  } else {
-    accumulator += elapsed;
-    while (accumulator >= PHYSICS_DT) {
-      physicsStep();
-      accumulator -= PHYSICS_DT;
-    }
-  }
-  if (soundThrottle > 0) soundThrottle--;
-
-  // Merge detection & processing
-  const prevCombo = combo;
-  detectMerges();
-  processMerges();
-
-  // Update chain display
-  if (combo > prevCombo && combo >= 3) {
-    chainDisplay = combo;
-    chainDisplayTimer = 60;
-  }
-
-  // Combo timer
-  if (comboTimer > 0) {
-    comboTimer--;
-    if (comboTimer <= 0) {
-      combo = 0;
-      mergePitch = 1.0;
-      comboEl.classList.remove('show');
-    }
-  }
-
-  // Background flash decay
-  if (bgFlash > 0) bgFlash *= 0.9;
-
-  // Dead body cleanup
+  // Ball lifetime cleanup
   for (let i = bodies.length - 1; i >= 0; i--) {
     const b = bodies[i];
-    if (b.dead) {
-      bodies[i] = bodies[bodies.length - 1];
-      bodies.pop();
+    if (b.type === 'ball' && !b.dead && now - b.born > BALL_LIFETIME) {
+      spawnParticles(b.x, b.y, 4, ballColors[b.colorIdx]);
+      b.dead = true;
     }
   }
 
-  // Screen shake
-  if (shakeLife > 0) {
-    shakeX = (Math.random() - 0.5) * shakeLife * 2;
-    shakeY = (Math.random() - 0.5) * shakeLife * 2;
-    shakeLife -= 0.5;
-  } else {
-    shakeX = 0; shakeY = 0;
+  // Refill pins if needed
+  if (now - lastRefill > REFILL_INTERVAL) {
+    let pinCount = 0;
+    for (let i = 0; i < bodies.length; i++) { if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++; }
+    if (pinCount < TARGET_PINS) {
+      const toAdd = Math.min(3, TARGET_PINS - pinCount);
+      for (let i = 0; i < toAdd; i++) spawnPinAtRandom();
+    }
+    lastRefill = now;
   }
 
-  // Draw
-  ctx.save();
-  ctx.translate(shakeX, shakeY);
-  drawBg();
-  drawBodies();
-  drawReadyIndicator(now);
-  drawRings();
-  drawParticles();
-  drawPopups();
-  drawChainCounter();
-  ctx.restore();
+  // Physics
+  maxHitStrength = 0;
+  if (hitstopFrames > 0) { hitstopFrames--; }
+  else { accumulator += elapsed; while (accumulator >= PHYSICS_DT) { physicsStep(); accumulator -= PHYSICS_DT; } }
+  if (soundThrottle > 0) soundThrottle--;
 
-  // Score
+  // Merges
+  const prevCombo = combo;
+  detectMerges(); processMerges();
+  if (combo > prevCombo && combo >= 3) { chainDisplay = combo; chainDisplayTimer = 60; }
+
+  // Combo timer
+  if (comboTimer > 0) { comboTimer--; if (comboTimer <= 0) { combo = 0; mergePitch = 1.0; comboEl.classList.remove('show'); } }
+  if (bgFlash > 0) bgFlash *= 0.9;
+
+  // Cleanup dead
+  for (let i = bodies.length - 1; i >= 0; i--) { if (bodies[i].dead) { bodies[i] = bodies[bodies.length-1]; bodies.pop(); } }
+
+  // Screen shake
+  if (shakeLife > 0) { shakeX = (Math.random()-0.5)*shakeLife*2; shakeY = (Math.random()-0.5)*shakeLife*2; shakeLife -= 0.5; }
+  else { shakeX = 0; shakeY = 0; }
+
+  // Draw
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBg(); drawBodies(); drawRings(); drawParticles(); drawPopups(); drawChainCounter();
+  ctx.restore();
   scoreEl.textContent = score;
 
-  // Shot counter
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '14px "Zen Maru Gothic"';
-  ctx.textAlign = 'left';
-  ctx.fillText('Shot ' + shotCount, 60, 22);
-
-  // FPS debug
-  ctx.fillStyle = '#0f0';
-  ctx.font = '12px monospace';
-  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 38);
+  // FPS
+  ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 22);
 
   // Hint
-  if (score === 0 && shotCount === 0) {
-    ctx.globalAlpha = 0.4 + Math.sin(now * 0.004) * 0.2;
-    ctx.fillStyle = '#fff';
-    ctx.font = '18px "Zen Maru Gothic"';
-    ctx.textAlign = 'center';
-    ctx.fillText('タップでボールを発射！', W / 2, H * 0.85);
+  if (score === 0 && bodies.length <= TARGET_PINS + 1) {
+    ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
+    ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+    ctx.fillText('タップしてボールを発射！', W/2, H*0.85);
     ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(loop);
 }
 
-// ── Initial pins scattered across screen ──
-for (let i = 0; i < 15; i++) {
-  const rng = Math.random();
-  const tier = rng < 0.80 ? 0 : rng < 0.95 ? 1 : 2;
-  const t = TIERS[tier];
-  const margin = t.r + 20;
-  const x = margin + Math.random() * (W - margin * 2);
-  const y = H * 0.05 + Math.random() * (H * 0.5);
-  const b = addBody(x, y, t.r, t.mass, 'pin');
-  b.tier = tier;
-  b.vy = 0.3 + Math.random() * 0.8;
-}
+// ── Place initial pins ──
+for (let i = 0; i < TARGET_PINS; i++) spawnPinAtRandom();
 
 requestAnimationFrame(loop);
 </script>
