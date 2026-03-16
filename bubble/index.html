@@ -106,17 +106,13 @@ function setupMasterChain() {
   rhythmStartTime = audioCtx.currentTime;
 }
 
-// Quantize to nearest 8th note (half beat) — snaps pops to rhythm grid
+// Quantize to nearest beat if within window (no throttling — every pop plays)
 const EIGHTH_NOTE = RHYTHM_BEAT_INTERVAL / 2;
-let lastQuantizedSlot = -1; // prevent double-firing on same slot during drag
 
 function quantizeTime(now) {
   const elapsed = now - rhythmStartTime;
-  const slotIdx = Math.round(elapsed / EIGHTH_NOTE);
-  const nearest = rhythmStartTime + slotIdx * EIGHTH_NOTE;
-  // During drag: skip if same slot already fired
-  if (slotIdx === lastQuantizedSlot) return -1; // signal: skip this pop sound
-  lastQuantizedSlot = slotIdx;
+  const beatIdx = Math.round(elapsed / RHYTHM_BEAT_INTERVAL);
+  const nearest = rhythmStartTime + beatIdx * RHYTHM_BEAT_INTERVAL;
   return (Math.abs(nearest - now) * 1000 <= RHYTHM_QUANTIZE_MS) ? Math.max(now, nearest) : now;
 }
 
@@ -128,7 +124,7 @@ function choosePentaFreq(bubbleY) {
 }
 
 // ── Background Drum Loop (synthesized kick + hi-hat, subtle) ──
-const DRUM_VOL = 0.10;
+const DRUM_VOL = 0.35;
 const DRUM_SLOTS = 8; // 8th notes per bar
 const DRUM_SLOT_DUR = EIGHTH_NOTE; // one 8th note
 let drumSchedulerId = null;
@@ -271,7 +267,6 @@ function playRhythmPop(bubbleX, bubbleY) {
 
   const now = audioCtx.currentTime;
   const scheduledTime = quantizeTime(now);
-  if (scheduledTime < 0) return; // same beat slot — skip (prevents machine-gun during drag)
 
   const freq = choosePentaFreq(bubbleY);
   const panValue = Math.max(-0.6, Math.min(0.6, (bubbleX / W) * 2 - 1));
