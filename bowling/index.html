@@ -59,7 +59,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 
 <script>
 'use strict';
-// Prevent iOS Safari scroll/bounce on rapid tapping
+// Prevent iOS Safari scroll/bounce
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
@@ -68,8 +68,12 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
-let W, H;
-function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+let W, H, FLOOR_Y;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  FLOOR_Y = H - 10; // floor position
+}
 resize();
 window.addEventListener('resize', resize);
 
@@ -172,26 +176,40 @@ function playBuf(buf, volume, rate) {
 // ── Tier System ──
 // うさぎ → アライグマ → アヒル → ハリネズミ → クマ
 const TIERS = [
-  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },      // pin_0: rabbit
-  { img: 5,  r: 24, mass: 1.0, name: 'アライグマ' },   // pin_5: raccoon
-  { img: 4,  r: 32, mass: 2.0, name: 'アヒル' },       // pin_4: duck
-  { img: 6,  r: 42, mass: 4.0, name: 'ハリネズミ' },   // pin_6: hedgehog
-  { img: 10, r: 54, mass: 8.0, name: 'クマ' },         // pin_10: bear
+  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },
+  { img: 5,  r: 24, mass: 1.0, name: 'アライグマ' },
+  { img: 4,  r: 32, mass: 2.0, name: 'アヒル' },
+  { img: 6,  r: 42, mass: 4.0, name: 'ハリネズミ' },
+  { img: 10, r: 54, mass: 8.0, name: 'クマ' },
 ];
 const MAX_TIER = TIERS.length - 1;
 
 // ── Constants ──
-const BALL_R = 26;
-const RESTITUTION = 0.8;
-const FRICTION_AIR = 0.997;
-const WALL_RESTITUTION = 0.85;
-const BALL_MASS = 5;
-const GRAVITY = 0.15;
-const MAX_BODIES = 80;
-const PIN_SPAWN_INTERVAL = 500;
-const BALL_LIFETIME = 6000;
-const COMBO_WINDOW = 60;
+const BALL_R = 22;
+const BALL_MASS = 8;
+const BALL_GRAVITY = 0.25;
+const BALL_LIFETIME = 3000;
+const GRAVITY = 0.5;
+const FRICTION_AIR = 0.988;
+const RESTITUTION = 0.5;
+const FLOOR_RESTITUTION = 0.3;
+const WALL_RESTITUTION = 0.5;
+const MAX_BODIES = 60;
+const MAX_PINS = 30;
+const PIN_SPAWN_INTERVAL = 800;
+const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 5;
+
+// Merge shockwave
+const MERGE_SHOCKWAVE_BASE_R = 80;
+const MERGE_SHOCKWAVE_R_PER_TIER = 30;
+const MERGE_SHOCKWAVE_BASE_F = 4;
+const MERGE_SHOCKWAVE_F_PER_TIER = 3;
+
+// Merge attraction
+const MERGE_ATTRACT_RANGE = 1.5;
+const MERGE_ATTRACT_FORCE = 0.3;
+const MERGE_ATTRACT_MAX_VEL = 3;
 
 // ── Pin images (tier-specific sizes) ──
 const tierCanvases = [];
@@ -231,6 +249,7 @@ const halfBall = (BALL_R * 2 + 8) / 2;
 
 // ── Bodies ──
 const bodies = [];
+let activeBall = null; // only 1 ball at a time
 
 function addBody(x, y, r, mass, type) {
   const b = {
@@ -240,33 +259,56 @@ function addBody(x, y, r, mass, type) {
     born: performance.now(),
     dead: false,
     merging: false,
-    flashTimer: 0  // white flash on merge
+    flashTimer: 0
   };
   bodies.push(b);
   return b;
 }
 
 function spawnPin(forceTier) {
-  if (bodies.length >= MAX_BODIES) return;
-  const tier = forceTier !== undefined ? forceTier : (Math.random() < 0.7 ? 0 : 1);
+  let pinCount = 0;
+  for (let i = 0; i < bodies.length; i++) {
+    if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
+  }
+  if (pinCount >= MAX_PINS || bodies.length >= MAX_BODIES) return;
+  const rng = Math.random();
+  const tier = forceTier !== undefined ? forceTier : (rng < 0.80 ? 0 : rng < 0.95 ? 1 : 2);
   const t = TIERS[tier];
   const margin = t.r + 20;
   const x = margin + Math.random() * (W - margin * 2);
   const b = addBody(x, -t.r * 2, t.r, t.mass, 'pin');
   b.tier = tier;
-  b.vy = 0.5 + Math.random() * 1.0;
-  b.vx = (Math.random() - 0.5) * 0.5;
+  b.vy = 1 + Math.random() * 1.5;
+  b.vx = (Math.random() - 0.5) * 1.0;
 }
 
-function spawnBall(x, y) {
+// Place a pin already settled at a position
+function placePin(x, y, tier) {
+  const t = TIERS[tier];
+  const b = addBody(x, y, t.r, t.mass, 'pin');
+  b.tier = tier;
+  return b;
+}
+
+function spawnBall(tapX) {
+  if (activeBall) return; // 1 ball at a time
   if (bodies.length >= MAX_BODIES) return;
-  const b = addBody(x, y, BALL_R, BALL_MASS, 'ball');
-  const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
-  const speed = 12 + Math.random() * 6;
-  b.vx = Math.cos(angle) * speed;
-  b.vy = Math.sin(angle) * speed;
+  const launchX = tapX;
+  const launchY = H - 50;
+  const b = addBody(launchX, launchY, BALL_R, BALL_MASS, 'ball');
+  // Aim toward tap X, upward arc
+  const targetX = tapX;
+  const targetY = H * 0.3; // aim at upper area
+  const dx = targetX - launchX;
+  const dy = targetY - launchY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const speed = 16;
+  b.vx = (dx / dist) * speed * 0.3 + (Math.random() - 0.5) * 2;
+  b.vy = -speed; // strong upward
   b.colorIdx = Math.floor(Math.random() * ballColors.length);
-  playBuf(launchBuf, 0.3, 0.8 + Math.random() * 0.4);
+  activeBall = b;
+  shotCount++;
+  playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
 }
 
 // ── Particles ──
@@ -300,7 +342,7 @@ function spawnPopup(x, y, text, color) {
   popups.push({ x, y, text, color: color || '#FFD700', life: 1, vy: -2 });
 }
 
-// ── Impact rings (merge/explosion visual) ──
+// ── Impact rings ──
 const rings = [];
 function spawnRing(x, y, maxRadius, color) {
   rings.push({ x, y, radius: 5, maxRadius: maxRadius || 60, alpha: 0.7, color: color || '#fff' });
@@ -322,8 +364,9 @@ function resolveCollision(a, b) {
   b.y += ny * overlap * (a.mass / totalMass);
   const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
   if (dvn > 0) return 0;
+  const rest = (a.type === 'ball' || b.type === 'ball') ? 0.7 : RESTITUTION;
   const invMassSum = 1 / a.mass + 1 / b.mass;
-  const j = -(1 + RESTITUTION) * dvn / invMassSum;
+  const j = -(1 + rest) * dvn / invMassSum;
   a.vx += (j / a.mass) * nx;
   a.vy += (j / a.mass) * ny;
   b.vx -= (j / b.mass) * nx;
@@ -333,16 +376,24 @@ function resolveCollision(a, b) {
 
 // ── Wall bounce ──
 function wallBounce(b) {
+  // Left/right walls: everything bounces
   if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
-  if (b.y + b.r > H) {
-    if (b.type === 'pin') {
+  // Top wall: ball dies, pin bounces
+  if (b.y - b.r < 0) {
+    if (b.type === 'ball') {
       b.dead = true;
     } else {
-      b.y = H - b.r;
-      b.vy = -Math.abs(b.vy) * WALL_RESTITUTION;
+      b.y = b.r;
+      b.vy = Math.abs(b.vy) * WALL_RESTITUTION;
     }
+  }
+  // Floor: everything bounces (pins settle, balls bounce)
+  if (b.y + b.r > FLOOR_Y) {
+    b.y = FLOOR_Y - b.r;
+    b.vy = -Math.abs(b.vy) * FLOOR_RESTITUTION;
+    // Ground friction
+    b.vx *= 0.92;
   }
 }
 
@@ -357,38 +408,98 @@ let maxHitStrength = 0;
 let mergePitch = 1.0;
 let hitstopFrames = 0;
 let bgFlash = 0;
+let shotCount = 0;
+let calmFrames = 0; // frames since all pins settled
 
 // ── Screen shake ──
 function triggerShake(intensity) {
-  shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 8));
+  shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 10));
+}
+
+// ── Merge shockwave: push nearby pins away ──
+function mergeShockwave(cx, cy, tier) {
+  const radius = MERGE_SHOCKWAVE_BASE_R + tier * MERGE_SHOCKWAVE_R_PER_TIER;
+  const force = MERGE_SHOCKWAVE_BASE_F + tier * MERGE_SHOCKWAVE_F_PER_TIER;
+  for (let i = 0; i < bodies.length; i++) {
+    const b = bodies[i];
+    if (b.dead || b.type !== 'pin') continue;
+    const dx = b.x - cx, dy = b.y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < radius && dist > 1) {
+      const falloff = 1 - dist / radius;
+      b.vx += (dx / dist) * force * falloff;
+      b.vy += (dy / dist) * force * falloff;
+    }
+  }
+}
+
+// ── Merge attraction: gently pull close same-tier pins together ──
+function applyMergeAttraction() {
+  const n = bodies.length;
+  for (let i = 0; i < n; i++) {
+    const a = bodies[i];
+    if (a.dead || a.type !== 'pin') continue;
+    const aSpd = a.vx * a.vx + a.vy * a.vy;
+    if (aSpd > MERGE_ATTRACT_MAX_VEL * MERGE_ATTRACT_MAX_VEL) continue;
+    for (let j = i + 1; j < n; j++) {
+      const b = bodies[j];
+      if (b.dead || b.type !== 'pin') continue;
+      if (a.tier !== b.tier) continue;
+      const bSpd = b.vx * b.vx + b.vy * b.vy;
+      if (bSpd > MERGE_ATTRACT_MAX_VEL * MERGE_ATTRACT_MAX_VEL) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const attractRange = (a.r + b.r) * MERGE_ATTRACT_RANGE;
+      if (dist < attractRange && dist > a.r + b.r) {
+        const nx = dx / dist, ny = dy / dist;
+        a.vx += nx * MERGE_ATTRACT_FORCE;
+        a.vy += ny * MERGE_ATTRACT_FORCE;
+        b.vx -= nx * MERGE_ATTRACT_FORCE;
+        b.vy -= ny * MERGE_ATTRACT_FORCE;
+      }
+    }
+  }
 }
 
 // ── Explosion (tier 4 + tier 4) ──
 function triggerExplosion(cx, cy) {
-  spawnParticles(cx, cy, 40);
-  // Shockwave: push all bodies away
+  spawnParticles(cx, cy, 50);
+  // Massive shockwave
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (b.dead) continue;
     const dx = b.x - cx, dy = b.y - cy;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 150 && dist > 1) {
-      const force = (1 - dist / 150) * 15;
+    if (dist < 250 && dist > 1) {
+      const force = (1 - dist / 250) * 25;
       b.vx += (dx / dist) * force;
       b.vy += (dy / dist) * force;
     }
+    // Inner zone: shatter pins into tier 0
+    if (dist < 80 && b.type === 'pin' && b !== activeBall) {
+      b.dead = true;
+      // Spawn 3 tier-0 pins scattered
+      for (let k = 0; k < 3; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 4 + Math.random() * 4;
+        const nb = placePin(cx + Math.cos(angle) * 30, cy + Math.sin(angle) * 30, 0);
+        nb.vx = Math.cos(angle) * spd;
+        nb.vy = Math.sin(angle) * spd - 3;
+      }
+    }
   }
-  triggerShake(4);
-  bgFlash = 0.4;
+  triggerShake(5);
+  bgFlash = 0.5;
   score += 500;
   spawnPopup(cx, cy - 30, '+500', '#FF4444');
-  spawnRing(cx, cy, 150, '#FF6B6B');
-  spawnRing(cx, cy, 100, '#FFD700');
-  playBuf(explodeBuf, 1.0, 0.8);
-  hitstopFrames = 5;
+  spawnRing(cx, cy, 200, '#FF6B6B');
+  spawnRing(cx, cy, 150, '#FFD700');
+  spawnRing(cx, cy, 100, '#fff');
+  playBuf(explodeBuf, 1.0, 0.7);
+  hitstopFrames = 8;
 }
 
-// ── Merge detection (called after physics) ──
+// ── Merge detection ──
 const pendingMerges = [];
 
 function detectMerges() {
@@ -401,7 +512,6 @@ function detectMerges() {
       const b = bodies[j];
       if (b.dead || b.type !== 'pin' || b.merging) continue;
       if (a.tier !== b.tier) continue;
-      // Check overlap
       const dx = b.x - a.x, dy = b.y - a.y;
       const dist2 = dx * dx + dy * dy;
       const minDist = a.r + b.r;
@@ -427,26 +537,23 @@ function processMerges() {
     m.b.dead = true;
 
     if (m.tier < MAX_TIER) {
-      // Evolve to next tier
       const nextTier = m.tier + 1;
       const t = TIERS[nextTier];
       const nb = addBody(m.x, m.y, t.r, t.mass, 'pin');
       nb.tier = nextTier;
-      nb.flashTimer = 6; // white flash frames
-      // Inherit some velocity from parents
+      nb.flashTimer = 6;
       nb.vx = (m.a.vx + m.b.vx) * 0.3;
       nb.vy = (m.a.vy + m.b.vy) * 0.3;
+      // Merge shockwave: push nearby pins!
+      mergeShockwave(m.x, m.y, nextTier);
     } else {
-      // Tier 4 + Tier 4 = EXPLOSION
       triggerExplosion(m.x, m.y);
     }
 
     // Effects
-    const particleCount = 6 + m.tier * 5;
-    spawnParticles(m.x, m.y, particleCount);
-    spawnRing(m.x, m.y, 40 + m.tier * 15, '#fff');
+    spawnParticles(m.x, m.y, 8 + m.tier * 5);
+    spawnRing(m.x, m.y, 40 + m.tier * 20, '#fff');
 
-    // Popup: show next animal name or explosion
     if (m.tier < MAX_TIER) {
       spawnPopup(m.x, m.y - 20, TIERS[m.tier + 1].name);
     } else {
@@ -463,18 +570,13 @@ function processMerges() {
     combo++;
     comboTimer = COMBO_WINDOW;
 
-    // Shake proportional to tier
-    triggerShake(0.5 + m.tier * 0.5);
-
-    // Hitstop for tier 3+
-    if (m.tier >= 3) hitstopFrames = Math.max(hitstopFrames, 3);
-
-    // Background flash
-    bgFlash = Math.max(bgFlash, 0.1 + m.tier * 0.05);
+    triggerShake(0.5 + m.tier * 0.7);
+    if (m.tier >= 2) hitstopFrames = Math.max(hitstopFrames, 2 + m.tier);
+    bgFlash = Math.max(bgFlash, 0.1 + m.tier * 0.08);
   }
 
   if (pendingMerges.length > 0 && combo >= 3) {
-    comboEl.textContent = combo + ' コンボ！';
+    comboEl.textContent = combo + ' 連鎖！';
     comboEl.classList.add('show');
     playBuf(comboBuf, Math.min(1, 0.3 + combo * 0.1), 1 + combo * 0.05);
   }
@@ -486,7 +588,12 @@ function physicsStep() {
   for (let i = 0; i < n; i++) {
     const b = bodies[i];
     if (b.dead) continue;
-    if (b.type === 'pin') b.vy += GRAVITY;
+    // Gravity for all (different strength for ball vs pin)
+    if (b.type === 'pin') {
+      b.vy += GRAVITY;
+    } else {
+      b.vy += BALL_GRAVITY;
+    }
     b.x += b.vx;
     b.y += b.vy;
     b.vx *= FRICTION_AIR;
@@ -501,32 +608,47 @@ function physicsStep() {
       if (bodies[j].dead) continue;
       const a = bodies[i], b = bodies[j];
 
-      // Skip pin-pin collision resolution for same tier (merge handles it)
-      // But still resolve different-tier pin-pin and ball-pin
+      // Same-tier pin-pin: skip physics (merge handles overlap)
       if (a.type === 'pin' && b.type === 'pin' && a.tier === b.tier) continue;
 
       const preVx = a.vx - b.vx, preVy = a.vy - b.vy;
       const preSpd = Math.sqrt(preVx * preVx + preVy * preVy);
       const strength = resolveCollision(a, b);
       if (strength > 0) {
-        // Ball-pin collision: knockback only (no destroy)
+        // Ball-pin: piercing mechanic
         if ((a.type === 'ball' && b.type === 'pin') || (a.type === 'pin' && b.type === 'ball')) {
-          if (preSpd > 3) {
-            triggerShake(strength / 15);
-            // Small particle burst on strong hit
-            const pin = a.type === 'pin' ? a : b;
-            if (strength > 5) {
-              spawnParticles(pin.x, pin.y, 3);
+          const ball = a.type === 'ball' ? a : b;
+          const pin = a.type === 'pin' ? a : b;
+          const impactForce = preSpd * BALL_MASS / pin.mass;
+          if (impactForce > 8) {
+            // Strong hit: ball pierces through, scatter nearby pins
+            ball.vx *= 0.7;
+            ball.vy *= 0.7;
+            // Mini shockwave around impact
+            for (let k = 0; k < bodies.length; k++) {
+              const other = bodies[k];
+              if (other.dead || other === ball || other === pin) continue;
+              if (other.type !== 'pin') continue;
+              const dx = other.x - pin.x, dy = other.y - pin.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < 60 && dist > 1) {
+                const pushF = 3 * (1 - dist / 60);
+                other.vx += (dx / dist) * pushF;
+                other.vy += (dy / dist) * pushF;
+              }
             }
+            spawnParticles(pin.x, pin.y, 5);
+            triggerShake(strength / 10);
+          } else if (preSpd > 3) {
+            triggerShake(strength / 15);
+            if (strength > 5) spawnParticles(pin.x, pin.y, 3);
           }
         }
         // Collision sound
         if (preSpd > 3 && strength > maxHitStrength * 0.3) {
           if (soundThrottle <= 0) {
             const intensity = Math.min(1, strength / 15);
-            const vol = 0.15 + intensity * 0.6;
-            const rate = 0.7 + intensity * 0.5 + (Math.random() - 0.5) * 0.2;
-            playBuf(bonkBuf, vol, rate);
+            playBuf(bonkBuf, 0.15 + intensity * 0.6, 0.7 + intensity * 0.5 + (Math.random() - 0.5) * 0.2);
             soundThrottle = 3;
           }
         }
@@ -536,35 +658,35 @@ function physicsStep() {
   }
 }
 
-// ── Input ──
+// ── Input: tap to shoot 1 ball ──
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
-  spawnBall(e.clientX, e.clientY);
+  spawnBall(e.clientX);
 });
-canvas.addEventListener('pointermove', e => {
-  if (e.pressure > 0 || e.buttons > 0) {
-    if (Math.random() < 0.3) spawnBall(e.clientX, e.clientY);
-  }
-});
+// No pointermove handler — no drag spam
 
 // ── Draw ──
 function drawBg() {
-  // Background with flash
   if (bgFlash > 0.01) {
     const r = Math.round(30 + (255 - 30) * bgFlash);
     const g = Math.round(107 + (255 - 107) * bgFlash);
-    const b = Math.round(64 + (255 - 64) * bgFlash);
-    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+    const bv = Math.round(64 + (255 - 64) * bgFlash);
+    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + bv + ')';
   } else {
     ctx.fillStyle = '#1e6b40';
   }
   ctx.fillRect(0, 0, W, H);
+  // Floor line
   ctx.strokeStyle = '#8B4513';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(3, 3, W - 6, H - 6);
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, FLOOR_Y);
+  ctx.lineTo(W, FLOOR_Y);
+  ctx.stroke();
+  // Border
   ctx.strokeStyle = '#5a9a3a';
   ctx.lineWidth = 2;
-  ctx.strokeRect(10, 10, W - 20, H - 20);
+  ctx.strokeRect(4, 4, W - 8, FLOOR_Y - 4);
 }
 
 function drawBodies() {
@@ -578,7 +700,6 @@ function drawBodies() {
       const drawSize = tier.r * 2;
       const half = drawSize / 2;
 
-      // White flash on merge birth
       if (b.flashTimer > 0) {
         ctx.globalAlpha = b.flashTimer / 6;
         ctx.beginPath();
@@ -589,7 +710,7 @@ function drawBodies() {
         b.flashTimer--;
       }
 
-      // Shadow (bigger for higher tiers)
+      // Shadow
       ctx.globalAlpha = 0.15 + b.tier * 0.03;
       ctx.beginPath();
       ctx.ellipse(b.x + 2, b.y + 3 + b.tier, b.r * 0.9, b.r * 0.5, 0, 0, Math.PI * 2);
@@ -599,6 +720,30 @@ function drawBodies() {
 
       ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
     }
+  }
+}
+
+// Draw launcher indicator at bottom
+function drawLauncher(now) {
+  if (!activeBall || activeBall.dead) {
+    // Ready to fire: pulsing circle at bottom center
+    const pulse = 0.7 + Math.sin(now * 0.005) * 0.3;
+    ctx.globalAlpha = pulse;
+    ctx.beginPath();
+    ctx.arc(W / 2, H - 25, 15, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFD700';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Text
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px "Zen Maru Gothic"';
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.6;
+    ctx.fillText('タップで発射！', W / 2, H - 5);
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -651,6 +796,23 @@ function drawPopups() {
   if (len > 0) ctx.globalAlpha = 1;
 }
 
+// ── Chain counter display ──
+let chainDisplay = 0;
+let chainDisplayTimer = 0;
+function drawChainCounter() {
+  if (chainDisplayTimer > 0) {
+    chainDisplayTimer--;
+    const scale = 1 + (chainDisplay - 2) * 0.15;
+    const alpha = Math.min(1, chainDisplayTimer / 30);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#FF6B6B';
+    ctx.font = 'bold ' + Math.round(36 * scale) + 'px "Zen Maru Gothic"';
+    ctx.textAlign = 'center';
+    ctx.fillText(chainDisplay + '連鎖！', W / 2, H * 0.3);
+    ctx.globalAlpha = 1;
+  }
+}
+
 // ── Main loop ──
 const PHYSICS_DT = 1000 / 60;
 let accumulator = 0;
@@ -669,16 +831,44 @@ function loop(now) {
     fpsFrames = 0; fpsLast = now;
   }
 
-  // Pin auto-spawn (tier 0 and 1 only)
-  if (now - lastPinSpawn > PIN_SPAWN_INTERVAL) {
-    let pinCount = 0;
-    for (let i = 0; i < bodies.length; i++) {
-      if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
+  // Track active ball
+  if (activeBall && (activeBall.dead || now - activeBall.born > BALL_LIFETIME)) {
+    if (!activeBall.dead) {
+      spawnParticles(activeBall.x, activeBall.y, 4, ballColors[activeBall.colorIdx]);
+      activeBall.dead = true;
     }
-    if (pinCount < 15) {
-      spawnPin(); // 70% tier 0, 30% tier 1
-      if (Math.random() < 0.3) spawnPin();
+    activeBall = null;
+  }
+
+  // Check if scene is calm (for auto-refill)
+  let allCalm = true;
+  let pinCount = 0;
+  for (let i = 0; i < bodies.length; i++) {
+    const b = bodies[i];
+    if (b.dead) continue;
+    if (b.type === 'pin') {
+      pinCount++;
+      if (b.vx * b.vx + b.vy * b.vy > 0.25) allCalm = false;
     }
+  }
+  if (allCalm && !activeBall) {
+    calmFrames++;
+  } else {
+    calmFrames = 0;
+  }
+
+  // Auto-refill when calm and pin count is low
+  if (calmFrames > 60 && pinCount < 20) {
+    const toSpawn = Math.min(6, 20 - pinCount);
+    for (let i = 0; i < toSpawn; i++) spawnPin();
+    calmFrames = 0;
+    lastPinSpawn = now;
+  }
+
+  // Regular pin spawn (slower, supplements auto-refill)
+  if (now - lastPinSpawn > PIN_SPAWN_INTERVAL && pinCount < MAX_PINS) {
+    spawnPin();
+    if (Math.random() < 0.4) spawnPin();
     lastPinSpawn = now;
   }
 
@@ -695,16 +885,26 @@ function loop(now) {
   }
   if (soundThrottle > 0) soundThrottle--;
 
-  // Merge detection & processing (outside physics step)
+  // Merge attraction (gentle pull for close same-tier)
+  applyMergeAttraction();
+
+  // Merge detection & processing
+  const prevCombo = combo;
   detectMerges();
   processMerges();
+
+  // Update chain display
+  if (combo > prevCombo && combo >= 3) {
+    chainDisplay = combo;
+    chainDisplayTimer = 60;
+  }
 
   // Combo timer
   if (comboTimer > 0) {
     comboTimer--;
     if (comboTimer <= 0) {
       combo = 0;
-      mergePitch = 1.0; // Reset pitch chain
+      mergePitch = 1.0;
       comboEl.classList.remove('show');
     }
   }
@@ -712,13 +912,10 @@ function loop(now) {
   // Background flash decay
   if (bgFlash > 0) bgFlash *= 0.9;
 
-  // Dead body cleanup + ball lifetime
+  // Dead body cleanup
   for (let i = bodies.length - 1; i >= 0; i--) {
     const b = bodies[i];
-    if (b.dead || (b.type === 'ball' && now - b.born > BALL_LIFETIME)) {
-      if (b.type === 'ball' && !b.dead) {
-        spawnParticles(b.x, b.y, 4, ballColors[b.colorIdx]);
-      }
+    if (b.dead) {
       bodies[i] = bodies[bodies.length - 1];
       bodies.pop();
     }
@@ -738,43 +935,51 @@ function loop(now) {
   ctx.translate(shakeX, shakeY);
   drawBg();
   drawBodies();
+  drawLauncher(now);
   drawRings();
   drawParticles();
   drawPopups();
+  drawChainCounter();
   ctx.restore();
 
   // Score
   scoreEl.textContent = score;
 
+  // Shot counter
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '14px "Zen Maru Gothic"';
+  ctx.textAlign = 'left';
+  ctx.fillText('Shot ' + shotCount, 60, 22);
+
   // FPS debug
   ctx.fillStyle = '#0f0';
   ctx.font = '12px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 22);
+  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 38);
 
   // Hint
-  if (score === 0 && bodies.length < 5) {
+  if (score === 0 && shotCount === 0) {
     ctx.globalAlpha = 0.4 + Math.sin(now * 0.004) * 0.2;
     ctx.fillStyle = '#fff';
     ctx.font = '18px "Zen Maru Gothic"';
     ctx.textAlign = 'center';
-    ctx.fillText('タップしてボールを出そう！', W / 2, H * 0.85);
+    ctx.fillText('タップしてボールを発射！', W / 2, H * 0.85);
     ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(loop);
 }
 
-// Initial pins (tier 0 and 1 scattered)
-for (let i = 0; i < 12; i++) {
-  const tier = Math.random() < 0.7 ? 0 : 1;
+// ── Initial pins: 20 scattered in bottom 60% ──
+for (let i = 0; i < 20; i++) {
+  const rng = Math.random();
+  const tier = rng < 0.80 ? 0 : rng < 0.95 ? 1 : 2;
   const t = TIERS[tier];
   const margin = t.r + 20;
   const x = margin + Math.random() * (W - margin * 2);
-  const y = H * 0.1 + Math.random() * (H * 0.5);
+  const y = H * 0.4 + Math.random() * (H * 0.5);
   const b = addBody(x, y, t.r, t.mass, 'pin');
   b.tier = tier;
-  b.vy = 0.3 + Math.random() * 0.5;
+  b.vy = 0.5 + Math.random() * 1;
 }
 
 requestAnimationFrame(loop);
