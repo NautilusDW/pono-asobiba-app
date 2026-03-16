@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>パズルボウリング | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap"></noscript>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100vh; height: 100dvh; overflow: hidden;
+  position: fixed; inset: 0;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #1a2a4a;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  overscroll-behavior: none; -webkit-overflow-scrolling: auto;
+}
+canvas { display: block; width: 100%; height: 100%; will-change: transform; }
+#back-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 100;
+  background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
+  width: 44px; height: 44px; font-size: 22px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
+}
+#score {
+  position: fixed; top: 12px; right: 16px; z-index: 100;
+  font-size: 28px; font-weight: 900; color: #FFD700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+#combo {
+  position: fixed; top: 50px; right: 16px; z-index: 100;
+  font-size: 20px; font-weight: 900; color: #FF6B6B;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  opacity: 0; transition: opacity 0.3s;
+}
+#combo.show { opacity: 1; }
+#start-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #1a2a4a 0%, #2a4a6a 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+#start-screen .title { font-size: 38px; font-weight: 900; color: #4ECDC4; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
+#start-screen .tap { font-size: 22px; color: #fff; margin-top: 30px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
+</style>
+</head>
+<body>
+<div id="start-screen"><div class="title">パズルボウリング</div><div class="tap">タップしてスタート</div></div>
+<button id="back-btn" onclick="location.href='./'">🏠</button>
+<div id="score">0</div>
+<div id="combo"></div>
+<canvas id="c"></canvas>
+
+<script>
+'use strict';
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
+window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const comboEl = document.getElementById('combo');
+let W, H;
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; computeGrid(); }
+
+// ── Audio (shared) ──
+let audioCtx = null, audioReady = false;
+let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null, mergeBuf = null, explodeBuf = null;
+function makeBuf(ctx, freq, dur, vol, decay) {
+  const sr = ctx.sampleRate, n = sr * dur | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol; }
+  return ab;
+}
+function makeSweepBuf(ctx, f0, f1, dur, vol) {
+  const sr = ctx.sampleRate, n = sr * dur | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = Math.sin(2 * Math.PI * (f0 + (f1 - f0) * t / dur) * t) * Math.exp(-t * 8) * vol; }
+  return ab;
+}
+function makeExplosionBuf(ctx) {
+  const sr = ctx.sampleRate, n = sr * 0.2 | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 12) * 0.35 + Math.sin(2 * Math.PI * 100 * t) * Math.exp(-t * 15) * 0.25; }
+  return ab;
+}
+function initAudio() {
+  return new Promise(resolve => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AC();
+    audioCtx.resume().then(() => {
+      const b = audioCtx.createBuffer(1, 1, 22050), s = audioCtx.createBufferSource();
+      s.buffer = b; s.connect(audioCtx.destination); s.start(0);
+      bonkBuf = makeBuf(audioCtx, 400, 0.06, 0.4, 40);
+      popBuf = makeBuf(audioCtx, 800, 0.05, 0.3, 50);
+      launchBuf = makeBuf(audioCtx, 300, 0.1, 0.3, 20);
+      comboBuf = makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
+      mergeBuf = makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
+      explodeBuf = makeExplosionBuf(audioCtx);
+      audioReady = true; resolve();
+    });
+    setTimeout(() => {
+      bonkBuf = bonkBuf || makeBuf(audioCtx, 400, 0.06, 0.4, 40);
+      popBuf = popBuf || makeBuf(audioCtx, 800, 0.05, 0.3, 50);
+      launchBuf = launchBuf || makeBuf(audioCtx, 300, 0.1, 0.3, 20);
+      comboBuf = comboBuf || makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
+      mergeBuf = mergeBuf || makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
+      explodeBuf = explodeBuf || makeExplosionBuf(audioCtx);
+      audioReady = true; resolve();
+    }, 1000);
+  });
+}
+document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
+  e.preventDefault(); this.removeEventListener('pointerdown', handler);
+  await initAudio(); this.style.display = 'none';
+});
+document.addEventListener('visibilitychange', () => {
+  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
+});
+function playBuf(buf, volume, rate) {
+  if (!audioReady || !buf) return;
+  const src = audioCtx.createBufferSource(); src.buffer = buf; src.playbackRate.value = rate || 1;
+  if (volume !== undefined && volume < 1) { const g = audioCtx.createGain(); g.gain.value = volume; src.connect(g); g.connect(audioCtx.destination); }
+  else src.connect(audioCtx.destination);
+  src.start(0);
+}
+
+// ── Tier System (shared) ──
+const TIERS = [
+  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },
+  { img: 5,  r: 24, mass: 0.8, name: 'アライグマ' },
+  { img: 4,  r: 32, mass: 1.2, name: 'アヒル' },
+  { img: 6,  r: 42, mass: 2.0, name: 'ハリネズミ' },
+  { img: 10, r: 54, mass: 3.5, name: 'クマ' },
+];
+const MAX_TIER = TIERS.length - 1;
+
+// ── Constants ──
+const GRAVITY = 0.12;
+const RESTITUTION = 0.6;
+const FLOOR_DAMP = 0.3;
+const MAX_FALLEN = 40;
+const BALL_SPEED = 14;
+const MIN_DRAG = 10;
+const SETTLE_WAIT = 40;
+const COMBO_WINDOW = 90;
+const GRID_PIN_R = 18; // all grid pins rendered at tier0 size for uniform grid
+
+// ── Pin images (shared) ──
+const tierCanvases = [];
+for (let t = 0; t < TIERS.length; t++) {
+  const tier = TIERS[t]; const drawSize = tier.r * 2;
+  const img = new Image(); img.src = 'pins/pin_' + tier.img + '.png';
+  const oc = document.createElement('canvas'); oc.width = oc.height = drawSize;
+  tierCanvases.push(oc);
+  img.onload = () => { oc.getContext('2d').drawImage(img, 0, 0, drawSize, drawSize); };
+}
+
+// ── Effects (shared) ──
+const PARTICLE_COLORS = ['#FF6B6B','#FFE66D','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9','#F1948A'];
+const particles = [], MAX_PARTICLES = 150;
+function spawnParticles(x, y, count) {
+  const n = Math.min(count, MAX_PARTICLES - particles.length);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 6;
+    particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, color: PARTICLE_COLORS[Math.floor(Math.random()*PARTICLE_COLORS.length)], size: 3+Math.random()*6, life: 1, decay: 0.015+Math.random()*0.01 });
+  }
+}
+const popups = [];
+function spawnPopup(x, y, text, color) { popups.push({ x, y, text, color: color || '#FFD700', life: 1, vy: -1.5 }); }
+const rings = [];
+function spawnRing(x, y, maxRadius, color) { rings.push({ x, y, radius: 5, maxRadius: maxRadius || 60, alpha: 0.7, color: color || '#fff' }); }
+
+let shakeX = 0, shakeY = 0, shakeLife = 0;
+function triggerShake(intensity) { shakeLife = Math.max(shakeLife, Math.min(intensity * 6, 6)); }
+
+// ── Hex Grid ──
+const GRID_ROWS = 8;
+let GRID_COLS = 9;
+let CELL_W = 40, ROW_H = 35, GRID_LEFT = 0, GRID_TOP = 50;
+
+function computeGrid() {
+  CELL_W = Math.floor(W / (GRID_COLS + 0.5));
+  ROW_H = Math.floor(CELL_W * 0.866);
+  GRID_LEFT = Math.floor((W - GRID_COLS * CELL_W) / 2);
+  GRID_TOP = 45;
+}
+computeGrid();
+resize();
+
+// gridPins[row][col] = { tier } | null
+const gridPins = [];
+
+function gridToScreen(row, col) {
+  const x = GRID_LEFT + col * CELL_W + CELL_W / 2 + (row % 2 ? CELL_W / 2 : 0);
+  const y = GRID_TOP + row * ROW_H + CELL_W / 2;
+  return { x, y };
+}
+
+function nearestEmptyCell(sx, sy) {
+  let best = null, bestDist = Infinity;
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (gridPins[r][c]) continue;
+      const p = gridToScreen(r, c);
+      const d = (p.x - sx) * (p.x - sx) + (p.y - sy) * (p.y - sy);
+      if (d < bestDist) { bestDist = d; best = { row: r, col: c }; }
+    }
+  }
+  return best;
+}
+
+function nearestEmptyNeighbor(row, col, sx, sy) {
+  const neighbors = getNeighbors(row, col);
+  let best = null, bestDist = Infinity;
+  for (const n of neighbors) {
+    if (gridPins[n.row][n.col]) continue;
+    const p = gridToScreen(n.row, n.col);
+    const d = (p.x - sx) * (p.x - sx) + (p.y - sy) * (p.y - sy);
+    if (d < bestDist) { bestDist = d; best = n; }
+  }
+  return best || nearestEmptyCell(sx, sy);
+}
+
+function getNeighbors(row, col) {
+  const even = row % 2 === 0;
+  const offsets = even
+    ? [[-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]]
+    : [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]];
+  return offsets
+    .map(([dr, dc]) => ({ row: row + dr, col: col + dc }))
+    .filter(({ row: r, col: c }) => r >= 0 && r < GRID_ROWS && c >= 0 && c < GRID_COLS);
+}
+
+function initGrid() {
+  for (let r = 0; r < GRID_ROWS; r++) {
+    gridPins[r] = [];
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (r < 5) {
+        // Mix of tier0 and tier1, occasional tier2
+        const rnd = Math.random();
+        gridPins[r][c] = { tier: rnd < 0.55 ? 0 : rnd < 0.85 ? 1 : 2 };
+      } else {
+        gridPins[r][c] = null;
+      }
+    }
+  }
+}
+
+function countGridPins() {
+  let count = 0;
+  for (let r = 0; r < GRID_ROWS; r++) for (let c = 0; c < GRID_COLS; c++) if (gridPins[r][c]) count++;
+  return count;
+}
+
+// ── Orphan detection (BFS from row 0) ──
+function findOrphans() {
+  const connected = Array.from({ length: GRID_ROWS }, () => new Uint8Array(GRID_COLS));
+  const queue = [];
+  for (let c = 0; c < GRID_COLS; c++) {
+    if (gridPins[0][c]) { connected[0][c] = 1; queue.push({ row: 0, col: c }); }
+  }
+  let qi = 0;
+  while (qi < queue.length) {
+    const { row, col } = queue[qi++];
+    for (const n of getNeighbors(row, col)) {
+      if (!connected[n.row][n.col] && gridPins[n.row][n.col]) {
+        connected[n.row][n.col] = 1;
+        queue.push(n);
+      }
+    }
+  }
+  const orphans = [];
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (gridPins[r][c] && !connected[r][c]) {
+        const pos = gridToScreen(r, c);
+        orphans.push({ x: pos.x, y: pos.y, tier: gridPins[r][c].tier });
+        gridPins[r][c] = null;
+      }
+    }
+  }
+  return orphans;
+}
+
+// ── Grid refill (add new row at top when too few pins) ──
+function refillGrid() {
+  if (countGridPins() > 10) return;
+  // Push all rows down by 1
+  for (let r = GRID_ROWS - 1; r > 0; r--) {
+    gridPins[r] = gridPins[r - 1];
+  }
+  // New top row
+  gridPins[0] = [];
+  for (let c = 0; c < GRID_COLS; c++) {
+    const rnd = Math.random();
+    gridPins[0][c] = { tier: rnd < 0.6 ? 0 : rnd < 0.9 ? 1 : 2 };
+  }
+}
+
+// ── Fallen bodies (gravity-driven pile at bottom) ──
+const fallen = [];
+
+function addFallen(x, y, tier, vx, vy) {
+  const t = TIERS[tier];
+  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0 });
+}
+
+function fallenPhysics() {
+  const floorY = H - 10;
+  for (let i = 0; i < fallen.length; i++) {
+    const b = fallen[i];
+    if (b.dead) continue;
+    b.vy += GRAVITY;
+    b.x += b.vx; b.y += b.vy;
+    b.vx *= 0.995; b.vy *= 0.995;
+    // Floor
+    if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy *= -FLOOR_DAMP; if (Math.abs(b.vy) < 0.5) b.vy = 0; b.vx *= 0.9; }
+    // Walls
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.5; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.5; }
+  }
+  // Body-body collisions
+  for (let i = 0; i < fallen.length; i++) {
+    if (fallen[i].dead) continue;
+    for (let j = i + 1; j < fallen.length; j++) {
+      if (fallen[j].dead) continue;
+      resolveCollision(fallen[i], fallen[j]);
+    }
+  }
+}
+
+function resolveCollision(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist2 = dx * dx + dy * dy, minDist = a.r + b.r;
+  if (dist2 >= minDist * minDist || dist2 < 0.001) return 0;
+  const dist = Math.sqrt(dist2), nx = dx / dist, ny = dy / dist;
+  const overlap = minDist - dist, totalMass = a.mass + b.mass;
+  a.x -= nx * overlap * (b.mass / totalMass);
+  a.y -= ny * overlap * (b.mass / totalMass);
+  b.x += nx * overlap * (a.mass / totalMass);
+  b.y += ny * overlap * (a.mass / totalMass);
+  const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+  if (dvn > 0) return 0;
+  const j = -(1 + RESTITUTION) * dvn / (1 / a.mass + 1 / b.mass);
+  a.vx += (j / a.mass) * nx; a.vy += (j / a.mass) * ny;
+  b.vx -= (j / b.mass) * nx; b.vy -= (j / b.mass) * ny;
+  return Math.abs(dvn);
+}
+
+// ── Fallen merge detection (cluster BFS) ──
+function detectFallenMerges() {
+  const n = fallen.length;
+  const visited = new Uint8Array(n);
+  let mergedAny = false;
+  for (let i = 0; i < n; i++) {
+    const a = fallen[i];
+    if (a.dead || a.merging || visited[i]) continue;
+    // BFS cluster
+    const cluster = [i]; visited[i] = 1;
+    let hasMoving = false, qi = 0;
+    while (qi < cluster.length) {
+      const ci = cluster[qi++];
+      const ca = fallen[ci];
+      if (ca.vx * ca.vx + ca.vy * ca.vy >= 0.3) hasMoving = true;
+      for (let j = 0; j < n; j++) {
+        if (visited[j]) continue;
+        const cb = fallen[j];
+        if (cb.dead || cb.merging || cb.tier !== ca.tier) continue;
+        const dx = cb.x - ca.x, dy = cb.y - ca.y;
+        if (dx * dx + dy * dy < (ca.r + cb.r) * (ca.r + cb.r)) {
+          visited[j] = 1; cluster.push(j);
+        }
+      }
+    }
+    if (cluster.length >= 2 && hasMoving) {
+      const members = cluster.map(idx => fallen[idx]);
+      let cx = 0, cy = 0;
+      for (const m of members) { cx += m.x; cy += m.y; m.dead = true; }
+      cx /= members.length; cy /= members.length;
+      const tier = members[0].tier;
+      const count = members.length;
+      const multiBonus = count >= 3 ? count : 1;
+
+      if (tier < MAX_TIER) {
+        const tierJump = count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
+        const nt = tier + tierJump;
+        addFallen(cx, cy, nt, 0, -2);
+        fallen[fallen.length - 1].flashTimer = 8;
+        spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
+        if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+      } else {
+        spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
+        playBuf(explodeBuf, 0.4, 0.5);
+      }
+      spawnParticles(cx, cy, 10 + tier * 4 + count * 2);
+      spawnRing(cx, cy, 40 + tier * 20, '#fff');
+      if (count >= 3) spawnRing(cx, cy, 60 + tier * 25, '#FFD700');
+      playBuf(mergeBuf, 0.4 + tier * 0.15, 1 + combo * 0.05);
+      const baseScore = (tier + 1) * 10 * (1 + combo * 0.5);
+      score += Math.round(baseScore * multiBonus);
+      combo++; comboTimer = COMBO_WINDOW;
+      triggerShake(0.3 + tier * 0.3);
+      mergedAny = true;
+    }
+  }
+  // Cleanup dead
+  for (let i = fallen.length - 1; i >= 0; i--) { if (fallen[i].dead) { fallen[i] = fallen[fallen.length - 1]; fallen.pop(); } }
+  return mergedAny;
+}
+
+// ── Ball ──
+let ball = null; // { x, y, vx, vy, tier, r }
+let ballTier = 0;
+
+function pickBallTier() {
+  const r = Math.random();
+  if (r < 0.50) return 0;
+  if (r < 0.75) return 1;
+  if (r < 0.90) return 2;
+  if (r < 0.98) return 3;
+  return 4;
+}
+
+function ballHitGrid() {
+  if (!ball) return false;
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const pin = gridPins[r][c];
+      if (!pin) continue;
+      const pos = gridToScreen(r, c);
+      const pinR = TIERS[pin.tier].r;
+      const dx = ball.x - pos.x, dy = ball.y - pos.y;
+      const dist2 = dx * dx + dy * dy;
+      const minDist = ball.r + pinR;
+      if (dist2 < minDist * minDist) {
+        if (ball.tier === pin.tier) {
+          // Same tier → merge! Pin evolves and falls
+          const nt = pin.tier < MAX_TIER ? pin.tier + 1 : pin.tier;
+          gridPins[r][c] = null;
+          if (pin.tier < MAX_TIER) {
+            addFallen(pos.x, pos.y, nt, (Math.random() - 0.5) * 2, 1);
+            fallen[fallen.length - 1].flashTimer = 8;
+            spawnPopup(pos.x, pos.y - 20, TIERS[nt].name + '!', '#FFD700');
+          } else {
+            // Bear + Bear = explosion
+            spawnPopup(pos.x, pos.y - 20, '大爆発！', '#FF4444');
+            playBuf(explodeBuf, 0.4, 0.5);
+          }
+          spawnParticles(pos.x, pos.y, 15 + pin.tier * 5);
+          spawnRing(pos.x, pos.y, 50 + pin.tier * 20, '#fff');
+          playBuf(mergeBuf, 0.5 + pin.tier * 0.15, 1.0);
+          score += Math.round((pin.tier + 1) * 20 * (1 + combo * 0.5));
+          combo++; comboTimer = COMBO_WINDOW;
+          triggerShake(0.5 + pin.tier * 0.3);
+
+          // Check for orphans
+          const orphans = findOrphans();
+          for (const o of orphans) {
+            addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0);
+            spawnParticles(o.x, o.y, 5);
+          }
+          if (orphans.length > 0) {
+            spawnPopup(W / 2, H * 0.3, orphans.length + '体落下！', '#4ECDC4');
+            score += orphans.length * 15;
+          }
+        } else {
+          // Different tier → ball sticks to grid
+          const cell = nearestEmptyNeighbor(r, c, ball.x, ball.y);
+          if (cell) {
+            gridPins[cell.row][cell.col] = { tier: ball.tier };
+            const sPos = gridToScreen(cell.row, cell.col);
+            spawnParticles(sPos.x, sPos.y, 5);
+            playBuf(bonkBuf, 0.3, 0.8);
+          }
+        }
+        ball = null;
+        return true;
+      }
+    }
+  }
+
+  // Hit ceiling → stick to nearest empty cell in top rows
+  if (ball && ball.y - ball.r <= GRID_TOP) {
+    const cell = nearestEmptyCell(ball.x, ball.y);
+    if (cell) {
+      gridPins[cell.row][cell.col] = { tier: ball.tier };
+      const sPos = gridToScreen(cell.row, cell.col);
+      spawnParticles(sPos.x, sPos.y, 5);
+      playBuf(bonkBuf, 0.2, 0.6);
+    }
+    ball = null;
+    return true;
+  }
+
+  return false;
+}
+
+// ── Game State ──
+let score = 0, combo = 0, comboTimer = 0;
+let gamePhase = 'aim'; // 'aim' | 'flight' | 'settling'
+let settleTimer = 0;
+let shotNumber = 0;
+let soundThrottle = 0;
+
+// ── Input ──
+let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
+
+canvas.addEventListener('pointerdown', e => {
+  if (gamePhase !== 'aim') return;
+  e.preventDefault();
+  aiming = true;
+  aimStartX = aimCurX = e.clientX;
+  aimStartY = aimCurY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!aiming) return;
+  e.preventDefault();
+  aimCurX = e.clientX; aimCurY = e.clientY;
+});
+canvas.addEventListener('pointerup', e => {
+  if (!aiming) return;
+  e.preventDefault();
+  aiming = false;
+  const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < MIN_DRAG) return;
+  // Must aim upward
+  const ny = dy / dist;
+  if (ny >= 0) return; // only shoot upward
+  const nx = dx / dist;
+  const t = TIERS[ballTier];
+  ball = { x: W / 2, y: H * 0.88, vx: nx * BALL_SPEED, vy: ny * BALL_SPEED, tier: ballTier, r: t.r };
+  playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
+  gamePhase = 'flight';
+  shotNumber++;
+});
+canvas.addEventListener('pointercancel', () => { aiming = false; });
+
+// ── Draw ──
+function drawBg() {
+  ctx.fillStyle = '#1a2a4a';
+  ctx.fillRect(0, 0, W, H);
+  // Grid area background
+  const gridBottom = GRID_TOP + GRID_ROWS * ROW_H + CELL_W;
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fillRect(0, 0, W, gridBottom);
+  // Separator line
+  ctx.globalAlpha = 0.2; ctx.strokeStyle = '#4ECDC4'; ctx.lineWidth = 1;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(0, gridBottom); ctx.lineTo(W, gridBottom); ctx.stroke();
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+}
+
+function drawGridPins() {
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const pin = gridPins[r][c];
+      if (!pin) continue;
+      const pos = gridToScreen(r, c);
+      const t = TIERS[pin.tier];
+      const half = t.r;
+      // Shadow
+      ctx.globalAlpha = 0.12;
+      ctx.beginPath(); ctx.ellipse(pos.x + 1, pos.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#000'; ctx.fill();
+      ctx.globalAlpha = 1;
+      // Image
+      ctx.drawImage(tierCanvases[pin.tier], pos.x - half, pos.y - half);
+    }
+  }
+}
+
+function drawFallen() {
+  for (const b of fallen) {
+    if (b.dead) continue;
+    const t = TIERS[b.tier];
+    const half = t.r;
+    if (b.flashTimer > 0) {
+      ctx.globalAlpha = b.flashTimer / 8;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 6, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.globalAlpha = 1; b.flashTimer--;
+    }
+    ctx.globalAlpha = 0.12;
+    ctx.beginPath(); ctx.ellipse(b.x + 1, b.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
+  }
+}
+
+function drawBall() {
+  if (!ball) return;
+  const t = TIERS[ball.tier];
+  const half = t.r;
+  ctx.globalAlpha = 0.12;
+  ctx.beginPath(); ctx.ellipse(ball.x + 1, ball.y + 2, half * 0.9, half * 0.5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#000'; ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.drawImage(tierCanvases[ball.tier], ball.x - half, ball.y - half);
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2; ctx.globalAlpha = 0.7;
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, half + 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawBallPreview(now) {
+  if (gamePhase !== 'aim') return;
+  const bx = W / 2, by = H * 0.88;
+  const t = TIERS[ballTier];
+  const half = t.r;
+
+  if (aiming) {
+    const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > MIN_DRAG && dy / dist < 0) {
+      const nx = dx / dist, ny = dy / dist;
+      ctx.globalAlpha = 0.35;
+      for (let d = 0; d < 10; d++) {
+        const dd = 25 + d * 22;
+        ctx.beginPath(); ctx.arc(bx + nx * dd, by + ny * dd, 2 + (1 - d / 10) * 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  const pulse = 0.7 + Math.sin(now * 0.004) * 0.2;
+  ctx.globalAlpha = aiming ? 0.9 : pulse;
+  ctx.drawImage(tierCanvases[ballTier], bx - half, by - half);
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(bx, by, half + 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.7;
+  ctx.font = 'bold 14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+  ctx.fillText(TIERS[ballTier].name, bx, by + half + 22);
+  ctx.globalAlpha = 1;
+}
+
+function drawEffects() {
+  let len = rings.length;
+  for (let i = len - 1; i >= 0; i--) {
+    const r = rings[i]; r.radius += 3; r.alpha *= 0.92;
+    if (r.alpha < 0.02 || r.radius > r.maxRadius) { rings[i] = rings[--len]; rings.length = len; continue; }
+    ctx.globalAlpha = r.alpha; ctx.beginPath(); ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = r.color; ctx.lineWidth = 3; ctx.stroke();
+  }
+  len = particles.length;
+  for (let i = len - 1; i >= 0; i--) {
+    const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life -= p.decay;
+    if (p.life <= 0) { particles[i] = particles[--len]; particles.length = len; continue; }
+    ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+  }
+  len = popups.length;
+  for (let i = len - 1; i >= 0; i--) {
+    const p = popups[i]; p.y += p.vy; p.life -= 0.02;
+    if (p.life <= 0) { popups[i] = popups[--len]; popups.length = len; continue; }
+    ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+    ctx.font = 'bold 22px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ── Settled check for fallen bodies ──
+function fallenSettled() {
+  for (const b of fallen) {
+    if (b.dead) continue;
+    if (b.vx * b.vx + b.vy * b.vy > 0.1) return false;
+  }
+  return true;
+}
+
+// ── Main Loop ──
+let prevFrameTime = performance.now();
+let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
+
+initGrid();
+ballTier = pickBallTier();
+
+function loop(now) {
+  let elapsed = now - prevFrameTime; prevFrameTime = now;
+  if (elapsed > 100) elapsed = 100;
+  fpsFrames++;
+  if (now - fpsLast >= 500) { fpsDisplay = (fpsFrames / ((now - fpsLast) / 1000)).toFixed(0); fpsFrames = 0; fpsLast = now; }
+
+  // ── Phase logic ──
+  if (gamePhase === 'flight' && ball) {
+    // Move ball
+    ball.x += ball.vx; ball.y += ball.vy;
+    // Wall bounce (left/right only)
+    if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+    if (ball.x + ball.r > W) { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+    // Check grid collision
+    if (ballHitGrid()) {
+      gamePhase = 'settling';
+      settleTimer = SETTLE_WAIT;
+    }
+    // Safety: ball went off screen
+    if (ball && (ball.y < -50 || ball.y > H + 50)) {
+      ball = null;
+      gamePhase = 'settling';
+      settleTimer = SETTLE_WAIT;
+    }
+  }
+
+  if (gamePhase === 'settling') {
+    // Run gravity physics on fallen bodies
+    fallenPhysics();
+    // Check for merges
+    const merged = detectFallenMerges();
+    if (merged) settleTimer = SETTLE_WAIT; // reset settle timer on merge
+
+    if (fallenSettled() || settleTimer <= 0) {
+      settleTimer--;
+      if (settleTimer <= 0) {
+        // Next shot
+        refillGrid();
+        ballTier = pickBallTier();
+        gamePhase = 'aim';
+        combo = 0;
+      }
+    } else {
+      settleTimer--;
+    }
+  }
+
+  // Fallen physics always runs (gravity doesn't stop)
+  if (gamePhase !== 'settling') {
+    fallenPhysics();
+    detectFallenMerges();
+  }
+
+  // Combo timer
+  if (comboTimer > 0) { comboTimer--; if (comboTimer <= 0) { combo = 0; comboEl.classList.remove('show'); } }
+  if (combo >= 3) { comboEl.textContent = combo + ' 連鎖！'; comboEl.classList.add('show'); }
+
+  // Cleanup excess fallen
+  while (fallen.length > MAX_FALLEN) {
+    fallen.sort((a, b) => a.tier - b.tier);
+    fallen[0].dead = true;
+    fallen.shift();
+  }
+
+  // Screen shake
+  if (shakeLife > 0) { shakeX = (Math.random() - 0.5) * shakeLife * 2; shakeY = (Math.random() - 0.5) * shakeLife * 2; shakeLife -= 0.5; }
+  else { shakeX = 0; shakeY = 0; }
+
+  // ── Draw ──
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  drawBg();
+  drawGridPins();
+  drawFallen();
+  drawBall();
+  drawEffects();
+  ctx.restore();
+
+  drawBallPreview(now);
+  scoreEl.textContent = score;
+
+  // FPS debug
+  ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(fpsDisplay + 'fps  grid:' + countGridPins() + '  fallen:' + fallen.length + '  ' + gamePhase, 60, 22);
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -44,11 +44,12 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 }
 #start-screen .title { font-size: 42px; font-weight: 900; color: #FFD700; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
 #start-screen .tap { font-size: 22px; color: #fff; margin-top: 30px; animation: pulse 1.5s infinite; }
+#start-screen .mode-link { font-size: 18px; color: #4ECDC4; margin-top: 24px; text-decoration: underline; cursor: pointer; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
 </head>
 <body>
-<div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div></div>
+<div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div><div class="mode-link" onclick="event.stopPropagation();location.href='puzzle.html'">パズルモードで遊ぶ</div></div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <div id="score">0</div>
 <div id="combo"></div>
