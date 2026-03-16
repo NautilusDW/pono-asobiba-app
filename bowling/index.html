@@ -23,20 +23,17 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
   background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
   width: 44px; height: 44px; font-size: 22px; cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
-  will-change: transform;
 }
 #score {
   position: fixed; top: 12px; right: 16px; z-index: 100;
   font-size: 28px; font-weight: 900; color: #FFD700;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-  will-change: transform;
 }
 #combo {
   position: fixed; top: 50px; right: 16px; z-index: 100;
   font-size: 20px; font-weight: 900; color: #FF6B6B;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
   opacity: 0; transition: opacity 0.3s;
-  will-change: transform;
 }
 #combo.show { opacity: 1; }
 #start-screen {
@@ -87,8 +84,8 @@ function makeSweepBuf(ctx, f0, f1, dur, vol) {
   return ab;
 }
 function makeExplosionBuf(ctx) {
-  const sr = ctx.sampleRate, n = sr * 0.4 | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
-  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.5 + Math.sin(2 * Math.PI * 80 * t) * Math.exp(-t * 10) * 0.4; }
+  const sr = ctx.sampleRate, n = sr * 0.2 | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 12) * 0.35 + Math.sin(2 * Math.PI * 100 * t) * Math.exp(-t * 15) * 0.25; }
   return ab;
 }
 
@@ -145,21 +142,22 @@ const TIERS = [
 ];
 const MAX_TIER = TIERS.length - 1;
 
-// ── Constants ── BILLIARD STYLE: no gravity, all walls bounce
-const BALL_R = 20;
-const BALL_MASS = 6;
-const BALL_LIFETIME = 5000;
-const FRICTION = 0.996;       // less friction = pins slide further
-const RESTITUTION = 0.95;     // very bouncy collisions
-const WALL_RESTITUTION = 0.95;// bouncy walls
+// ── Constants ──
+const RESTITUTION = 0.95;
+const WALL_RESTITUTION = 0.95;
 const MAX_BODIES = 50;
-const TARGET_PINS = 20;       // formation-based, refill as formation
-const REFILL_INTERVAL = 3000; // ms between checking if we need more pins
-const TRICKLE_INTERVAL = 500; // ms between trickle refill of single tier0 pins
-const MAGNET_RANGE = 2.5;     // same-tier attraction range (multiplier of sum of radii)
-const MAGNET_FORCE = 0.15;    // attraction strength
+const MIN_PINS = 12;         // refill tier0 to this minimum
 const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 4;
+const MAGNET_RANGE = 2.5;
+const MAGNET_FORCE = 0.15;
+const BALL_SPAWN_Y = 0.88;   // ratio
+const MIN_DRAG = 20;
+const MAX_SPEED = 22;
+const MIN_SPEED = 8;
+const BALL_LIFETIME = 6000;
+const ARRANGE_TIME = 50;     // frames for arrange animation
+const RESULT_TIME = 90;      // frames for result display
 
 // ── Pin images ──
 const tierCanvases = [];
@@ -171,109 +169,12 @@ for (let t = 0; t < TIERS.length; t++) {
   img.onload = () => { oc.getContext('2d').drawImage(img, 0, 0, drawSize, drawSize); };
 }
 
-// ── Ball pre-render ──
-const ballColors = ['#EE3333','#3388EE','#33BB55','#FF8800','#CC44CC','#FFDD00','#00CCCC','#FF5599'];
-const ballCanvases = [];
-for (let i = 0; i < ballColors.length; i++) {
-  const oc = document.createElement('canvas'); const sz = BALL_R * 2 + 8;
-  oc.width = oc.height = sz; const bc = oc.getContext('2d'); const cx = sz/2, cy = sz/2;
-  bc.globalAlpha = 0.25; bc.beginPath(); bc.ellipse(cx+2, cy+2, BALL_R, BALL_R*0.9, 0, 0, Math.PI*2); bc.fillStyle = '#000'; bc.fill();
-  bc.globalAlpha = 1; bc.beginPath(); bc.arc(cx, cy, BALL_R, 0, Math.PI*2); bc.fillStyle = ballColors[i]; bc.fill();
-  bc.strokeStyle = 'rgba(0,0,0,0.3)'; bc.lineWidth = 2; bc.stroke();
-  bc.globalAlpha = 0.4; bc.beginPath(); bc.ellipse(cx-BALL_R*0.3, cy-BALL_R*0.25, BALL_R*0.3, BALL_R*0.15, -0.5, 0, Math.PI*2); bc.fillStyle = '#fff'; bc.fill();
-  ballCanvases.push(oc);
-}
-const halfBall = (BALL_R * 2 + 8) / 2;
-
 // ── Bodies ──
 const bodies = [];
 
 function addBody(x, y, r, mass, type) {
-  const b = { x, y, vx: 0, vy: 0, r, mass, type, tier: 0, colorIdx: 0, born: performance.now(), dead: false, merging: false, flashTimer: 0 };
+  const b = { x, y, vx: 0, vy: 0, r, mass, type, tier: 0, born: performance.now(), dead: false, merging: false, flashTimer: 0, targetX: 0, targetY: 0 };
   bodies.push(b); return b;
-}
-
-// ── Formation patterns (positions relative to center, in units of pin spacing) ──
-const FORMATIONS = [
-  // Triangle (bowling style): rows 1,2,3,4,5,6 = 21 pins
-  { name: 'triangle', positions: (function() {
-    const pos = [];
-    for (let row = 0; row < 6; row++) {
-      for (let col = 0; col <= row; col++) {
-        pos.push({ x: (col - row/2), y: row });
-      }
-    }
-    return pos;
-  })() },
-  // Diamond: 1,2,3,4,5,4,3,2,1 = 25 pins → trim to 21
-  { name: 'diamond', positions: (function() {
-    const pos = [], rows = [1,2,3,4,5,4,3];
-    let ry = 0;
-    for (let r = 0; r < rows.length; r++) {
-      const n = rows[r];
-      for (let c = 0; c < n; c++) {
-        pos.push({ x: (c - (n-1)/2), y: ry });
-      }
-      ry++;
-    }
-    return pos;
-  })() },
-  // Inverted triangle: rows 6,5,4,3,2,1 = 21 pins
-  { name: 'inverted', positions: (function() {
-    const pos = [];
-    for (let row = 0; row < 6; row++) {
-      const n = 6 - row;
-      for (let col = 0; col < n; col++) {
-        pos.push({ x: (col - (n-1)/2), y: row });
-      }
-    }
-    return pos;
-  })() },
-  // Grid 5x4 = 20 pins
-  { name: 'grid', positions: (function() {
-    const pos = [];
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) {
-      pos.push({ x: c - 2, y: r });
-    }
-    return pos;
-  })() },
-];
-
-function spawnFormation() {
-  const form = FORMATIONS[Math.floor(Math.random() * FORMATIONS.length)];
-  const spacing = 42; // tighter spacing for more density
-  const cx = W / 2;
-  // Formation centered in upper 45% of screen
-  const baseY = H * 0.15;
-  const t0 = TIERS[0]; // All pins start as tier 0
-  for (let i = 0; i < form.positions.length; i++) {
-    if (bodies.length >= MAX_BODIES) break;
-    const p = form.positions[i];
-    const x = cx + p.x * spacing;
-    const y = baseY + p.y * spacing;
-    // Clamp to screen
-    const bx = Math.max(t0.r + 12, Math.min(W - t0.r - 12, x));
-    const by = Math.max(t0.r + 12, Math.min(H - t0.r - 12, y));
-    const b = addBody(bx, by, t0.r, t0.mass, 'pin');
-    b.tier = 0;
-  }
-}
-
-// ── Aiming / pull-back ball launch ──
-let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
-const BALL_SPAWN_Y_RATIO = 0.88; // ball spawns near bottom
-const MIN_DRAG = 20;  // minimum drag distance to shoot
-const MAX_SPEED = 22;
-const MIN_SPEED = 8;
-
-function spawnBall(fromX, fromY, dirX, dirY, power) {
-  if (bodies.length >= MAX_BODIES) return;
-  const b = addBody(fromX, fromY, BALL_R, BALL_MASS, 'ball');
-  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, power / 200);
-  b.vx = dirX * speed;
-  b.vy = dirY * speed;
-  b.colorIdx = Math.floor(Math.random() * ballColors.length);
-  playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
 }
 
 // ── Effects ──
@@ -310,7 +211,6 @@ function resolveCollision(a, b) {
   return Math.abs(dvn);
 }
 
-// All 4 walls bounce (billiard table)
 function wallBounce(b) {
   if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
@@ -323,9 +223,93 @@ let score = 0, combo = 0, comboTimer = 0;
 let shakeX = 0, shakeY = 0, shakeLife = 0;
 let soundThrottle = 0, maxHitStrength = 0;
 let mergePitch = 1.0, hitstopFrames = 0, bgFlash = 0;
-let lastRefill = 0, lastTrickle = 0;
+
+// Phase management
+let gamePhase = 'arrange'; // 'arrange' | 'aim' | 'action' | 'result'
+let phaseTimer = 0;
+let roundMerges = 0;
+let ballTier = 0;           // current ball's tier
+let shotNumber = 0;
 
 function triggerShake(intensity) { shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 10)); }
+
+// ── Pick random ball tier ──
+function pickBallTier() {
+  const r = Math.random();
+  if (r < 0.50) return 0;
+  if (r < 0.75) return 1;
+  if (r < 0.90) return 2;
+  if (r < 0.98) return 3;
+  return 4;
+}
+
+// ── Arrange: sort pins by tier and lay out neatly ──
+function startArrangePhase() {
+  gamePhase = 'arrange';
+  phaseTimer = ARRANGE_TIME;
+
+  // Clean up dead and balls
+  for (let i = bodies.length - 1; i >= 0; i--) {
+    if (bodies[i].dead || bodies[i].type === 'ball') { bodies[i] = bodies[bodies.length-1]; bodies.pop(); }
+  }
+
+  // Convert any remaining balls to pins (ball that stopped = becomes a pin)
+  for (let i = 0; i < bodies.length; i++) {
+    if (bodies[i].type === 'ball') {
+      bodies[i].type = 'pin';
+      bodies[i].vx = 0; bodies[i].vy = 0;
+    }
+  }
+
+  // Stop all movement
+  for (let i = 0; i < bodies.length; i++) { bodies[i].vx = 0; bodies[i].vy = 0; bodies[i].merging = false; }
+
+  // Refill tier0 to minimum
+  while (bodies.length < MIN_PINS && bodies.length < MAX_BODIES) {
+    const t0 = TIERS[0];
+    const b = addBody(W/2, H * 0.3, t0.r, t0.mass, 'pin');
+    b.tier = 0;
+  }
+
+  // Sort pins by tier (high tier first, they go on top rows)
+  const pins = bodies.filter(b => b.type === 'pin' && !b.dead);
+  pins.sort((a, b) => b.tier - a.tier);
+
+  // Group by tier
+  const groups = {};
+  for (const p of pins) {
+    if (!groups[p.tier]) groups[p.tier] = [];
+    groups[p.tier].push(p);
+  }
+
+  // Layout: each tier gets a row, centered, high tiers at top
+  const sortedTiers = Object.keys(groups).map(Number).sort((a, b) => b - a);
+  const totalRows = sortedTiers.length;
+  const startY = H * 0.1;
+  const maxY = H * 0.6;
+  const rowSpacing = Math.min(70, (maxY - startY) / Math.max(1, totalRows));
+
+  let rowIdx = 0;
+  for (const tier of sortedTiers) {
+    const grp = groups[tier];
+    const t = TIERS[tier];
+    const rowY = startY + rowIdx * rowSpacing + t.r;
+    const spacing = Math.min(t.r * 2.5, (W - 40) / Math.max(1, grp.length));
+    const totalWidth = (grp.length - 1) * spacing;
+    const startX = (W - totalWidth) / 2;
+    for (let i = 0; i < grp.length; i++) {
+      grp[i].targetX = startX + i * spacing;
+      grp[i].targetY = rowY;
+      // Update radius/mass to match tier (in case it was created with wrong values)
+      grp[i].r = t.r;
+      grp[i].mass = t.mass;
+    }
+    rowIdx++;
+  }
+
+  // Pick next ball tier
+  ballTier = pickBallTier();
+}
 
 // ── Merge shockwave ──
 function mergeShockwave(cx, cy, newTier) {
@@ -338,13 +322,11 @@ function mergeShockwave(cx, cy, newTier) {
     if (b.dead || b.type !== 'pin') continue;
     const dx = b.x - cx, dy = b.y - cy;
     const dist = Math.sqrt(dx*dx + dy*dy);
-    // Push away (shockwave)
     if (dist < radius && dist > 1) {
       const falloff = 1 - dist / radius;
       b.vx += (dx/dist) * force * falloff;
       b.vy += (dy/dist) * force * falloff;
     }
-    // Pull same-tier pins toward merge point (chain catalyst)
     if (b.tier === newTier && dist < attractRadius && dist > 1) {
       const pull = attractForce * (1 - dist / attractRadius);
       b.vx -= (dx/dist) * pull;
@@ -355,38 +337,64 @@ function mergeShockwave(cx, cy, newTier) {
 
 // ── Explosion (bear + bear) ──
 function triggerExplosion(cx, cy) {
-  spawnParticles(cx, cy, 50);
+  spawnParticles(cx, cy, 25);
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (b.dead) continue;
     const dx = b.x - cx, dy = b.y - cy;
     const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist < 250 && dist > 1) {
-      b.vx += (dx/dist) * (1 - dist/250) * 25;
-      b.vy += (dy/dist) * (1 - dist/250) * 25;
+    if (dist < 200 && dist > 1) {
+      b.vx += (dx/dist) * (1 - dist/200) * 12;
+      b.vy += (dy/dist) * (1 - dist/200) * 12;
     }
-    // Inner zone: shatter into tier 0 (limit spawns to prevent overflow)
-    if (dist < 80 && b.type === 'pin' && bodies.length < MAX_BODIES - 2) {
+    if (dist < 60 && b.type === 'pin' && bodies.length < MAX_BODIES - 2) {
       b.dead = true;
       for (let k = 0; k < 2; k++) {
-        const a = Math.random() * Math.PI * 2, sp = 4 + Math.random() * 4;
+        const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 3;
         const t0 = TIERS[0];
-        const nb = addBody(cx + Math.cos(a)*30, cy + Math.sin(a)*30, t0.r, t0.mass, 'pin');
+        const nb = addBody(cx + Math.cos(a)*25, cy + Math.sin(a)*25, t0.r, t0.mass, 'pin');
         nb.tier = 0; nb.vx = Math.cos(a)*sp; nb.vy = Math.sin(a)*sp;
       }
     }
   }
-  triggerShake(5); bgFlash = 0.5;
+  triggerShake(2); bgFlash = 0.15;
   score += 500;
   spawnPopup(cx, cy - 30, '+500', '#FF4444');
-  spawnRing(cx, cy, 200, '#FF6B6B'); spawnRing(cx, cy, 150, '#FFD700'); spawnRing(cx, cy, 100, '#fff');
-  playBuf(explodeBuf, 1.0, 0.7);
-  hitstopFrames = 8;
+  spawnRing(cx, cy, 150, '#FF6B6B'); spawnRing(cx, cy, 100, '#FFD700');
+  playBuf(explodeBuf, 0.5, 0.4);
+  hitstopFrames = 3;
 }
 
-// ── Merge detection & processing ──
-const pendingMerges = [];
+// ── Ball-pin merge (ball same tier as pin) ──
+function ballPinMerge(ball, pin) {
+  ball.dead = true;
+  const cx = (ball.x + pin.x) / 2, cy = (ball.y + pin.y) / 2;
+  if (pin.tier < MAX_TIER) {
+    const nt = pin.tier + 1, t = TIERS[nt];
+    pin.tier = nt; pin.r = t.r; pin.mass = t.mass;
+    pin.flashTimer = 8;
+    pin.vx = (ball.vx + pin.vx) * 0.3;
+    pin.vy = (ball.vy + pin.vy) * 0.3;
+    mergeShockwave(cx, cy, nt);
+    spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
+  } else {
+    pin.dead = true;
+    triggerExplosion(cx, cy);
+  }
+  spawnParticles(cx, cy, 12 + pin.tier * 5);
+  spawnRing(cx, cy, 50 + pin.tier * 20, '#fff');
+  mergePitch = Math.min(mergePitch * 1.12, 2.5);
+  playBuf(mergeBuf, 0.5 + pin.tier * 0.15, mergePitch);
+  score += Math.round((pin.tier + 1) * 20 * (1 + combo * 0.5));
+  combo++; comboTimer = COMBO_WINDOW;
+  roundMerges++;
+  triggerShake(1 + pin.tier * 0.7);
+  if (pin.tier >= 2) hitstopFrames = Math.max(hitstopFrames, 2 + pin.tier);
+  bgFlash = Math.max(bgFlash, 0.15 + pin.tier * 0.1);
+}
 
+// ── Merge detection (pin-pin same tier) ──
+const pendingMerges = [];
 function detectMerges() {
   pendingMerges.length = 0;
   const n = bodies.length;
@@ -397,7 +405,6 @@ function detectMerges() {
       const b = bodies[j];
       if (b.dead || b.type !== 'pin' || b.merging) continue;
       if (a.tier !== b.tier) continue;
-      // Only merge if at least one is moving (prevents idle merges)
       const aSpd = a.vx*a.vx + a.vy*a.vy;
       const bSpd = b.vx*b.vx + b.vy*b.vy;
       if (aSpd < 0.5 && bSpd < 0.5) continue;
@@ -432,6 +439,7 @@ function processMerges() {
     playBuf(mergeBuf, 0.4 + m.tier * 0.15, mergePitch);
     score += Math.round((m.tier + 1) * 10 * (1 + combo * 0.5));
     combo++; comboTimer = COMBO_WINDOW;
+    roundMerges++;
     triggerShake(0.5 + m.tier * 0.7);
     if (m.tier >= 2) hitstopFrames = Math.max(hitstopFrames, 2 + m.tier);
     bgFlash = Math.max(bgFlash, 0.1 + m.tier * 0.08);
@@ -443,7 +451,7 @@ function processMerges() {
   }
 }
 
-// ── Physics step (NO GRAVITY — billiard style) ──
+// ── Physics step ──
 function physicsStep() {
   const n = bodies.length;
   for (let i = 0; i < n; i++) {
@@ -463,43 +471,57 @@ function physicsStep() {
       const a = bodies[i], b = bodies[j];
       // Same-tier pin-pin: skip resolve (merge handles it)
       if (a.type === 'pin' && b.type === 'pin' && a.tier === b.tier) continue;
-      const preVx = a.vx-b.vx, preVy = a.vy-b.vy;
-      const preSpd = Math.sqrt(preVx*preVx + preVy*preVy);
-      // Save ball velocity before collision for penetration
+      // Ball-pin same tier: merge instead of collide
       const isBallPin = (a.type==='ball' && b.type==='pin') || (a.type==='pin' && b.type==='ball');
-      let ball = null, pin = null, ballVxPre = 0, ballVyPre = 0;
       if (isBallPin) {
-        ball = a.type === 'ball' ? a : b;
-        pin = a.type === 'pin' ? a : b;
-        ballVxPre = ball.vx; ballVyPre = ball.vy;
+        const ball = a.type === 'ball' ? a : b;
+        const pin = a.type === 'pin' ? a : b;
+        const dx = b.x-a.x, dy = b.y-a.y;
+        const dist2 = dx*dx+dy*dy, minD = ball.r+pin.r;
+        if (dist2 < minD*minD && dist2 > 0.001) {
+          if (ball.tier === pin.tier) {
+            // Same tier: MERGE!
+            ballPinMerge(ball, pin);
+            continue;
+          }
+          // Different tier: normal collision with penetration
+          const preVx = a.vx-b.vx, preVy = a.vy-b.vy;
+          const preSpd = Math.sqrt(preVx*preVx + preVy*preVy);
+          const ballVxPre = ball.vx, ballVyPre = ball.vy;
+          const strength = resolveCollision(a, b);
+          if (strength > 0) {
+            const impactForce = preSpd * ball.mass / pin.mass;
+            if (impactForce > 6) {
+              ball.vx = ballVxPre * 0.7;
+              ball.vy = ballVyPre * 0.7;
+              spawnParticles(pin.x, pin.y, 4);
+            }
+            if (preSpd > 2) {
+              triggerShake(strength / 12);
+              if (strength > 4) spawnParticles(pin.x, pin.y, 3);
+            }
+            if (preSpd > 2 && soundThrottle <= 0) {
+              const intensity = Math.min(1, strength / 12);
+              playBuf(bonkBuf, 0.15 + intensity*0.6, 0.7 + intensity*0.5 + (Math.random()-0.5)*0.2);
+              soundThrottle = 3;
+            }
+            if (strength > maxHitStrength) maxHitStrength = strength;
+          }
+          continue;
+        }
       }
-      const strength = resolveCollision(a, b);
-      if (strength > 0) {
-        // Ball penetration: if impact is strong, ball keeps 70% velocity
-        if (isBallPin) {
-          const impactForce = preSpd * BALL_MASS / pin.mass;
-          if (impactForce > 6) {
-            ball.vx = ballVxPre * 0.7;
-            ball.vy = ballVyPre * 0.7;
-            spawnParticles(pin.x, pin.y, 4);
-          }
-          if (preSpd > 2) {
-            triggerShake(strength / 12);
-            if (strength > 4) spawnParticles(pin.x, pin.y, 3);
-          }
-        }
-        if (preSpd > 2) {
-          if (soundThrottle <= 0) {
-            const intensity = Math.min(1, strength / 12);
-            playBuf(bonkBuf, 0.15 + intensity*0.6, 0.7 + intensity*0.5 + (Math.random()-0.5)*0.2);
-            soundThrottle = 3;
-          }
-        }
-        if (strength > maxHitStrength) maxHitStrength = strength;
+      // All other collisions (pin-pin different tier)
+      const preVx2 = a.vx-b.vx, preVy2 = a.vy-b.vy;
+      const preSpd2 = Math.sqrt(preVx2*preVx2 + preVy2*preVy2);
+      const str = resolveCollision(a, b);
+      if (str > 0 && preSpd2 > 2 && soundThrottle <= 0) {
+        const intensity = Math.min(1, str / 12);
+        playBuf(bonkBuf, 0.15 + intensity*0.6, 0.7 + intensity*0.5 + (Math.random()-0.5)*0.2);
+        soundThrottle = 3;
       }
     }
   }
-  // ── Same-tier magnetic attraction ──
+  // Same-tier magnetic attraction
   for (let i = 0; i < n; i++) {
     const a = bodies[i];
     if (a.dead || a.type !== 'pin') continue;
@@ -507,27 +529,40 @@ function physicsStep() {
       const b = bodies[j];
       if (b.dead || b.type !== 'pin') continue;
       if (a.tier !== b.tier) continue;
-      // At least one must be moving
       const aSpd2 = a.vx*a.vx + a.vy*a.vy;
       const bSpd2 = b.vx*b.vx + b.vy*b.vy;
-      if (aSpd2 < 0.5 && bSpd2 < 0.5) continue; // both nearly still (higher threshold prevents endless drift)
+      if (aSpd2 < 0.5 && bSpd2 < 0.5) continue;
       const dx = b.x - a.x, dy = b.y - a.y;
       const dist2 = dx*dx + dy*dy;
       const magnetDist = MAGNET_RANGE * (a.r + b.r);
       if (dist2 < magnetDist*magnetDist && dist2 > 1) {
         const dist = Math.sqrt(dist2);
-        const f = MAGNET_FORCE * (1 - dist / magnetDist);
-        a.vx += (dx/dist) * f;
-        a.vy += (dy/dist) * f;
-        b.vx -= (dx/dist) * f;
-        b.vy -= (dy/dist) * f;
+        const mf = MAGNET_FORCE * (1 - dist / magnetDist);
+        a.vx += (dx/dist) * mf;
+        a.vy += (dy/dist) * mf;
+        b.vx -= (dx/dist) * mf;
+        b.vy -= (dy/dist) * mf;
       }
     }
   }
 }
 
-// ── Input: pull-back aiming (like billiards/Angry Birds) ──
+// ── Settled detection ──
+function isSettled() {
+  for (let i = 0; i < bodies.length; i++) {
+    const b = bodies[i];
+    if (b.dead) continue;
+    if (b.type === 'ball') return false; // ball still exists
+    if (b.vx*b.vx + b.vy*b.vy > 0.01) return false;
+  }
+  return true;
+}
+
+// ── Input ──
+let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
+
 canvas.addEventListener('pointerdown', e => {
+  if (gamePhase !== 'aim') return;
   e.preventDefault();
   aiming = true;
   aimStartX = aimCurX = e.clientX;
@@ -544,14 +579,23 @@ canvas.addEventListener('pointerup', e => {
   if (!aiming) return;
   e.preventDefault();
   aiming = false;
-  const dx = aimStartX - aimCurX; // reversed: pull back = shoot forward
+  const dx = aimStartX - aimCurX;
   const dy = aimStartY - aimCurY;
   const dist = Math.sqrt(dx*dx + dy*dy);
-  if (dist < MIN_DRAG) return; // too short, ignore
+  if (dist < MIN_DRAG) return;
   const nx = dx / dist, ny = dy / dist;
-  const ballX = W / 2;
-  const ballY = H * BALL_SPAWN_Y_RATIO;
-  spawnBall(ballX, ballY, nx, ny, dist);
+  const t = TIERS[ballTier];
+  const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
+  const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball'); // ball is heavier than same-tier pin
+  b.tier = ballTier;
+  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, dist / 200);
+  b.vx = nx * speed;
+  b.vy = ny * speed;
+  playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
+  gamePhase = 'action';
+  roundMerges = 0;
+  combo = 0; mergePitch = 1.0;
+  shotNumber++;
 });
 canvas.addEventListener('pointercancel', () => { aiming = false; });
 
@@ -562,38 +606,42 @@ function drawBg() {
     ctx.fillStyle = 'rgb('+r+','+g+','+bv+')';
   } else ctx.fillStyle = '#1e6b40';
   ctx.fillRect(0, 0, W, H);
-  // Billiard table border
   ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, W-8, H-8);
   ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 3; ctx.strokeRect(10, 10, W-20, H-20);
-  // Launch line (like billiard head string)
   ctx.globalAlpha = 0.2; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
   ctx.setLineDash([8, 6]);
   ctx.beginPath(); ctx.moveTo(12, H * 0.75); ctx.lineTo(W - 12, H * 0.75); ctx.stroke();
   ctx.setLineDash([]); ctx.globalAlpha = 1;
 }
 
-function drawBodies() {
-  for (let i = 0; i < bodies.length; i++) {
-    const b = bodies[i];
-    if (b.dead) continue;
-    if (b.type === 'ball') {
-      ctx.drawImage(ballCanvases[b.colorIdx], b.x - halfBall, b.y - halfBall);
-    } else {
-      const tier = TIERS[b.tier], drawSize = tier.r*2, half = drawSize/2;
-      if (b.flashTimer > 0) {
-        ctx.globalAlpha = b.flashTimer / 6;
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r+4, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
-        ctx.globalAlpha = 1; b.flashTimer--;
-      }
-      ctx.globalAlpha = 0.15 + b.tier*0.03;
-      ctx.beginPath(); ctx.ellipse(b.x+2, b.y+3, b.r*0.9, b.r*0.5, 0, 0, Math.PI*2); ctx.fillStyle = '#000'; ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
-    }
+function drawBody(b) {
+  if (b.dead) return;
+  const tier = TIERS[b.tier], drawSize = tier.r*2, half = drawSize/2;
+  if (b.flashTimer > 0) {
+    ctx.globalAlpha = b.flashTimer / 8;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r+6, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.globalAlpha = 1; b.flashTimer--;
+  }
+  // Shadow
+  ctx.globalAlpha = 0.15 + b.tier*0.03;
+  ctx.beginPath(); ctx.ellipse(b.x+2, b.y+3, b.r*0.9, b.r*0.5, 0, 0, Math.PI*2); ctx.fillStyle = '#000'; ctx.fill();
+  ctx.globalAlpha = 1;
+  // Image
+  ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
+  // Ball indicator: ring around ball
+  if (b.type === 'ball') {
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3; ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 }
 
-function drawRings() {
+function drawBodies() {
+  for (let i = 0; i < bodies.length; i++) drawBody(bodies[i]);
+}
+
+function drawEffects() {
+  // Rings
   let len = rings.length;
   for (let i = len-1; i >= 0; i--) {
     const r = rings[i]; r.radius += 3; r.alpha *= 0.92;
@@ -601,22 +649,16 @@ function drawRings() {
     ctx.globalAlpha = r.alpha; ctx.beginPath(); ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2);
     ctx.strokeStyle = r.color; ctx.lineWidth = 3; ctx.stroke();
   }
-  if (len > 0) ctx.globalAlpha = 1;
-}
-
-function drawParticles() {
-  let len = particles.length;
+  // Particles
+  len = particles.length;
   for (let i = len-1; i >= 0; i--) {
     const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life -= p.decay;
     if (p.life <= 0) { particles[i] = particles[--len]; particles.length = len; continue; }
     ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
     ctx.fillRect(p.x-p.size/2, p.y-p.size/2, p.size, p.size);
   }
-  if (len > 0) ctx.globalAlpha = 1;
-}
-
-function drawPopups() {
-  let len = popups.length;
+  // Popups
+  len = popups.length;
   for (let i = len-1; i >= 0; i--) {
     const p = popups[i]; p.y += p.vy; p.life -= 0.02;
     if (p.life <= 0) { popups[i] = popups[--len]; popups.length = len; continue; }
@@ -624,7 +666,7 @@ function drawPopups() {
     ctx.font = 'bold 24px "Zen Maru Gothic"'; ctx.textAlign = 'center';
     ctx.fillText(p.text, p.x, p.y);
   }
-  if (len > 0) ctx.globalAlpha = 1;
+  ctx.globalAlpha = 1;
 }
 
 let chainDisplay = 0, chainDisplayTimer = 0;
@@ -635,15 +677,84 @@ function drawChainCounter() {
     ctx.globalAlpha = Math.min(1, chainDisplayTimer / 30);
     ctx.fillStyle = '#FF6B6B';
     ctx.font = 'bold ' + Math.round(36*scale) + 'px "Zen Maru Gothic"';
-    ctx.textAlign = 'center'; ctx.fillText(chainDisplay + '連鎖！', W/2, H*0.3);
+    ctx.textAlign = 'center'; ctx.fillText(chainDisplay + '連鎖！', W/2, H*0.35);
     ctx.globalAlpha = 1;
   }
+}
+
+function drawBallPreview(now) {
+  const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
+  const t = TIERS[ballTier];
+  const half = t.r;
+
+  if (aiming) {
+    const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > MIN_DRAG) {
+      const nx = dx / dist, ny = dy / dist;
+      const power = Math.min(1, dist / 200);
+      ctx.globalAlpha = 0.4;
+      for (let d = 0; d < 8; d++) {
+        const dd = 30 + d * 25;
+        ctx.beginPath();
+        ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
+        ctx.fillStyle = '#fff'; ctx.fill();
+      }
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#333'; ctx.fillRect(ballX - 30, ballY + half + 10, 60, 8);
+      const barColor = power < 0.5 ? '#4CAF50' : power < 0.8 ? '#FF9800' : '#F44336';
+      ctx.fillStyle = barColor; ctx.fillRect(ballX - 30, ballY + half + 10, 60 * power, 8);
+      ctx.globalAlpha = 1;
+    }
+    // Ball at rest
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else {
+    // Pulsing ball
+    const pulse = 0.6 + Math.sin(now*0.004)*0.2;
+    ctx.globalAlpha = pulse;
+    ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // Ball tier label
+  ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.8;
+  ctx.font = 'bold 14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+  ctx.fillText(TIERS[ballTier].name, ballX, ballY + half + 28);
+  ctx.globalAlpha = 1;
+}
+
+function drawResultOverlay() {
+  const alpha = Math.min(1, phaseTimer / 30);
+  ctx.globalAlpha = alpha * 0.6;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, H*0.35, W, H*0.15);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 28px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+  if (roundMerges > 0) {
+    ctx.fillText(roundMerges + '回合体！', W/2, H*0.42);
+  } else {
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('合体なし...', W/2, H*0.42);
+  }
+  ctx.globalAlpha = alpha * 0.7;
+  ctx.fillStyle = '#fff';
+  ctx.font = '18px "Zen Maru Gothic"';
+  ctx.fillText('Shot ' + shotNumber, W/2, H*0.47);
+  ctx.globalAlpha = 1;
 }
 
 // ── Main loop ──
 const PHYSICS_DT = 1000 / 60;
 let accumulator = 0, prevFrameTime = performance.now();
 let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
+let settledFrames = 0;
 
 function loop(now) {
   let elapsed = now - prevFrameTime; prevFrameTime = now;
@@ -651,53 +762,78 @@ function loop(now) {
   fpsFrames++;
   if (now - fpsLast >= 500) { fpsDisplay = (fpsFrames / ((now-fpsLast)/1000)).toFixed(0); fpsFrames = 0; fpsLast = now; }
 
-  // Ball lifetime cleanup
-  for (let i = bodies.length - 1; i >= 0; i--) {
-    const b = bodies[i];
-    if (b.type === 'ball' && !b.dead && now - b.born > BALL_LIFETIME) {
-      spawnParticles(b.x, b.y, 4, ballColors[b.colorIdx]);
-      b.dead = true;
+  // ── Phase logic ──
+  if (gamePhase === 'arrange') {
+    // Animate pins toward target positions
+    let allArrived = true;
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      if (b.dead || b.type !== 'pin') continue;
+      const dx = b.targetX - b.x, dy = b.targetY - b.y;
+      if (dx*dx + dy*dy > 1) {
+        b.x += dx * 0.1;
+        b.y += dy * 0.1;
+        allArrived = false;
+      } else {
+        b.x = b.targetX; b.y = b.targetY;
+      }
+    }
+    phaseTimer--;
+    if (phaseTimer <= 0 || allArrived) {
+      // Snap all to target
+      for (let i = 0; i < bodies.length; i++) {
+        const b = bodies[i];
+        if (b.type === 'pin' && !b.dead) { b.x = b.targetX; b.y = b.targetY; }
+      }
+      gamePhase = 'aim';
     }
   }
 
-  // Refill: new formation when very few remain
-  if (now - lastRefill > REFILL_INTERVAL) {
-    let pinCount = 0;
-    for (let i = 0; i < bodies.length; i++) { if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++; }
-    if (pinCount < 5) {
-      spawnFormation();
+  if (gamePhase === 'action') {
+    // Ball lifetime
+    for (let i = bodies.length - 1; i >= 0; i--) {
+      const b = bodies[i];
+      if (b.type === 'ball' && !b.dead && now - b.born > BALL_LIFETIME) {
+        // Ball stops → becomes a pin of its tier
+        b.type = 'pin'; b.vx = 0; b.vy = 0;
+      }
     }
-    lastRefill = now;
-  }
-  // Trickle refill: drip tier0 pins from top when count is low
-  if (now - lastTrickle > TRICKLE_INTERVAL) {
-    let pinCount = 0;
-    for (let i = 0; i < bodies.length; i++) { if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++; }
-    if (pinCount < 15 && bodies.length < MAX_BODIES) {
-      const t0 = TIERS[0];
-      const x = t0.r + 20 + Math.random() * (W - t0.r*2 - 40);
-      const b = addBody(x, t0.r + 12, t0.r, t0.mass, 'pin');
-      b.tier = 0;
-      b.vy = 1 + Math.random() * 1.5; // gentle downward drift
-      b.vx = (Math.random() - 0.5) * 2;
+
+    // Physics
+    maxHitStrength = 0;
+    if (hitstopFrames > 0) { hitstopFrames--; }
+    else { accumulator += elapsed; while (accumulator >= PHYSICS_DT) { physicsStep(); accumulator -= PHYSICS_DT; } }
+    if (soundThrottle > 0) soundThrottle--;
+
+    // Merges
+    const prevCombo = combo;
+    detectMerges(); processMerges();
+    if (combo > prevCombo && combo >= 3) { chainDisplay = combo; chainDisplayTimer = 60; }
+
+    // Check settled
+    if (isSettled()) {
+      settledFrames++;
+      if (settledFrames > 30) { // wait 0.5s of calm
+        gamePhase = 'result';
+        phaseTimer = RESULT_TIME;
+        settledFrames = 0;
+        comboEl.classList.remove('show');
+      }
+    } else {
+      settledFrames = 0;
     }
-    lastTrickle = now;
   }
 
-  // Physics
-  maxHitStrength = 0;
-  if (hitstopFrames > 0) { hitstopFrames--; }
-  else { accumulator += elapsed; while (accumulator >= PHYSICS_DT) { physicsStep(); accumulator -= PHYSICS_DT; } }
-  if (soundThrottle > 0) soundThrottle--;
-
-  // Merges
-  const prevCombo = combo;
-  detectMerges(); processMerges();
-  if (combo > prevCombo && combo >= 3) { chainDisplay = combo; chainDisplayTimer = 60; }
+  if (gamePhase === 'result') {
+    phaseTimer--;
+    if (phaseTimer <= 0) {
+      startArrangePhase();
+    }
+  }
 
   // Combo timer
   if (comboTimer > 0) { comboTimer--; if (comboTimer <= 0) { combo = 0; mergePitch = 1.0; comboEl.classList.remove('show'); } }
-  if (bgFlash > 0) bgFlash *= 0.9;
+  if (bgFlash > 0) bgFlash *= 0.85;
 
   // Cleanup dead
   for (let i = bodies.length - 1; i >= 0; i--) { if (bodies[i].dead) { bodies[i] = bodies[bodies.length-1]; bodies.pop(); } }
@@ -706,64 +842,50 @@ function loop(now) {
   if (shakeLife > 0) { shakeX = (Math.random()-0.5)*shakeLife*2; shakeY = (Math.random()-0.5)*shakeLife*2; shakeLife -= 0.5; }
   else { shakeX = 0; shakeY = 0; }
 
-  // Draw
+  // ── Draw ──
   ctx.save(); ctx.translate(shakeX, shakeY);
-  drawBg(); drawBodies(); drawRings(); drawParticles(); drawPopups(); drawChainCounter();
+  drawBg(); drawBodies(); drawEffects(); drawChainCounter();
   ctx.restore();
   scoreEl.textContent = score;
 
   // FPS
   ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
-  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 22);
+  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length + '  ' + gamePhase, 60, 22);
 
-  // Aiming indicator
-  const ballRestX = W / 2, ballRestY = H * BALL_SPAWN_Y_RATIO;
-  if (aiming) {
-    const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > MIN_DRAG) {
-      const nx = dx / dist, ny = dy / dist;
-      const power = Math.min(1, dist / 200);
-      // Draw trajectory dots
-      ctx.globalAlpha = 0.5;
-      for (let d = 0; d < 8; d++) {
-        const dd = 30 + d * 25;
-        ctx.beginPath();
-        ctx.arc(ballRestX + nx * dd, ballRestY + ny * dd, 3 + (1-d/8)*3, 0, Math.PI*2);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-      }
-      // Power bar
-      ctx.globalAlpha = 0.7;
-      ctx.fillStyle = '#333'; ctx.fillRect(ballRestX - 30, ballRestY + 20, 60, 8);
-      const barColor = power < 0.5 ? '#4CAF50' : power < 0.8 ? '#FF9800' : '#F44336';
-      ctx.fillStyle = barColor; ctx.fillRect(ballRestX - 30, ballRestY + 20, 60 * power, 8);
+  // Phase-specific UI
+  if (gamePhase === 'aim') {
+    drawBallPreview(now);
+    // Hint
+    if (shotNumber === 0) {
+      ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
+      ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+      ctx.fillText('引っ張ってボールを発射！', W/2, H*0.95);
       ctx.globalAlpha = 1;
     }
-    // Draw ball at rest position
-    ctx.globalAlpha = 0.8;
-    ctx.drawImage(ballCanvases[0], ballRestX - halfBall, ballRestY - halfBall);
-    ctx.globalAlpha = 1;
-  } else {
-    // Show waiting ball
-    ctx.globalAlpha = 0.4 + Math.sin(now*0.003)*0.15;
-    ctx.drawImage(ballCanvases[0], ballRestX - halfBall, ballRestY - halfBall);
-    ctx.globalAlpha = 1;
   }
 
-  // Hint
-  if (score === 0) {
-    ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
-    ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-    ctx.fillText('引っ張ってボールを発射！', W/2, H*0.95);
+  if (gamePhase === 'result') {
+    drawResultOverlay();
+  }
+
+  // Shot counter
+  if (shotNumber > 0) {
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.5;
+    ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'left';
+    ctx.fillText('Shot ' + shotNumber, 60, 40);
     ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(loop);
 }
 
-// ── Place initial formation ──
-spawnFormation();
+// ── Initial setup: place tier0 pins and start arrange ──
+for (let i = 0; i < 15; i++) {
+  const t0 = TIERS[0];
+  const b = addBody(W/2 + (Math.random()-0.5)*100, H*0.3 + (Math.random()-0.5)*100, t0.r, t0.mass, 'pin');
+  b.tier = 0;
+}
+startArrangePhase();
 
 requestAnimationFrame(loop);
 </script>
