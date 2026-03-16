@@ -152,7 +152,7 @@ const MAX_MERGES_PER_FRAME = 4;
 const MAGNET_RANGE = 2.5;
 const MAGNET_FORCE = 0.15;
 const BALL_SPAWN_Y = 0.88;   // ratio
-const MIN_DRAG = 20;
+const MIN_DRAG = 10;
 const MAX_SPEED = 22;
 const MIN_SPEED = 8;
 const BALL_LIFETIME = 6000;
@@ -441,58 +441,93 @@ function ballPinMerge(ball, pin) {
   bgFlash = Math.min(bgFlash + 0.03, 0.15);
 }
 
-// ── Merge detection (pin-pin same tier) ──
-const pendingMerges = [];
+// ── Merge detection (cluster-based: 2+ same-tier touching = merge all) ──
+const pendingClusters = [];
 function detectMerges() {
-  pendingMerges.length = 0;
+  pendingClusters.length = 0;
   const n = bodies.length;
+  // Build adjacency for same-tier touching pins (at least one moving)
+  const visited = new Uint8Array(n);
   for (let i = 0; i < n; i++) {
     const a = bodies[i];
-    if (a.dead || a.type !== 'pin' || a.merging) continue;
-    for (let j = i + 1; j < n; j++) {
-      const b = bodies[j];
-      if (b.dead || b.type !== 'pin' || b.merging) continue;
-      if (a.tier !== b.tier) continue;
-      const aSpd = a.vx*a.vx + a.vy*a.vy;
-      const bSpd = b.vx*b.vx + b.vy*b.vy;
-      if (aSpd < 0.5 && bSpd < 0.5) continue;
-      const dx = b.x-a.x, dy = b.y-a.y;
-      if (dx*dx + dy*dy < (a.r+b.r)*(a.r+b.r)) {
-        a.merging = b.merging = true;
-        pendingMerges.push({ a, b, tier: a.tier, x: (a.x+b.x)/2, y: (a.y+b.y)/2 });
-        if (pendingMerges.length >= MAX_MERGES_PER_FRAME) return;
+    if (a.dead || a.type !== 'pin' || a.merging || visited[i]) continue;
+    // BFS to find cluster of same-tier touching pins
+    const cluster = [i];
+    visited[i] = 1;
+    let hasMoving = false;
+    let qi = 0;
+    while (qi < cluster.length) {
+      const ci = cluster[qi++];
+      const ca = bodies[ci];
+      if (ca.vx*ca.vx + ca.vy*ca.vy >= 0.5) hasMoving = true;
+      for (let j = 0; j < n; j++) {
+        if (visited[j]) continue;
+        const cb = bodies[j];
+        if (cb.dead || cb.type !== 'pin' || cb.merging) continue;
+        if (cb.tier !== ca.tier) continue;
+        const dx = cb.x - ca.x, dy = cb.y - ca.y;
+        if (dx*dx + dy*dy < (ca.r + cb.r) * (ca.r + cb.r)) {
+          visited[j] = 1;
+          cluster.push(j);
+        }
       }
+    }
+    if (cluster.length >= 2 && hasMoving) {
+      const members = cluster.map(idx => bodies[idx]);
+      let cx = 0, cy = 0, svx = 0, svy = 0;
+      for (const m of members) { cx += m.x; cy += m.y; svx += m.vx; svy += m.vy; }
+      cx /= members.length; cy /= members.length;
+      pendingClusters.push({ members, tier: members[0].tier, x: cx, y: cy, vx: svx / members.length, vy: svy / members.length, count: members.length });
+      for (const m of members) m.merging = true;
+      if (pendingClusters.length >= MAX_MERGES_PER_FRAME) return;
     }
   }
 }
 
 function processMerges() {
-  for (let i = 0; i < pendingMerges.length; i++) {
-    const m = pendingMerges[i];
-    m.a.dead = m.b.dead = true;
-    if (m.tier < MAX_TIER) {
-      const nt = m.tier + 1, t = TIERS[nt];
-      const nb = addBody(m.x, m.y, t.r, t.mass, 'pin');
-      nb.tier = nt; nb.flashTimer = 6;
-      nb.vx = (m.a.vx + m.b.vx) * 0.4;
-      nb.vy = (m.a.vy + m.b.vy) * 0.4;
-      mergeShockwave(m.x, m.y, nt);
+  for (let i = 0; i < pendingClusters.length; i++) {
+    const c = pendingClusters[i];
+    const count = c.count;
+    const multiBonus = count >= 3 ? count : 1; // 3+ simultaneous = multiplier
+
+    // Kill all members
+    for (const m of c.members) m.dead = true;
+
+    if (c.tier < MAX_TIER) {
+      // How many tiers to advance? 2→+1, 3→+2, 4+→+2 (capped at MAX_TIER)
+      const tierJump = count >= 3 ? Math.min(2, MAX_TIER - c.tier) : 1;
+      const nt = c.tier + tierJump;
+      const t = TIERS[nt];
+      const nb = addBody(c.x, c.y, t.r, t.mass, 'pin');
+      nb.tier = nt; nb.flashTimer = 8;
+      nb.vx = c.vx * 0.4; nb.vy = c.vy * 0.4;
+      mergeShockwave(c.x, c.y, nt);
+      if (count >= 3) {
+        spawnPopup(c.x, c.y - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+        spawnPopup(c.x, c.y - 20, TIERS[nt].name + '!', '#FFD700');
+      } else {
+        spawnPopup(c.x, c.y - 20, TIERS[nt].name + '!', '#FFD700');
+      }
     } else {
-      triggerExplosion(m.x, m.y);
+      triggerExplosion(c.x, c.y);
+      if (count >= 3) {
+        spawnPopup(c.x, c.y - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+      }
     }
-    spawnParticles(m.x, m.y, 8 + m.tier * 5);
-    spawnRing(m.x, m.y, 40 + m.tier * 20, '#fff');
-    spawnPopup(m.x, m.y - 20, m.tier < MAX_TIER ? TIERS[m.tier+1].name : '大爆発！', m.tier < MAX_TIER ? '#FFD700' : '#FF4444');
+    spawnParticles(c.x, c.y, 8 + c.tier * 5 + count * 3);
+    spawnRing(c.x, c.y, 40 + c.tier * 20, '#fff');
+    if (count >= 3) spawnRing(c.x, c.y, 60 + c.tier * 25, '#FFD700');
     mergePitch = Math.min(mergePitch * 1.12, 2.5);
-    playBuf(mergeBuf, 0.4 + m.tier * 0.15, mergePitch);
-    score += Math.round((m.tier + 1) * 10 * (1 + combo * 0.5));
+    playBuf(mergeBuf, 0.4 + c.tier * 0.15, mergePitch);
+    const baseScore = (c.tier + 1) * 10 * (1 + combo * 0.5);
+    score += Math.round(baseScore * multiBonus);
     combo++; comboTimer = COMBO_WINDOW;
-    roundMerges++;
-    triggerShake(0.3 + m.tier * 0.3);
-    if (m.tier >= 3) hitstopFrames = Math.min(hitstopFrames + 1, 3);
-    bgFlash = Math.min(bgFlash + 0.02, 0.15);
+    roundMerges += count >= 3 ? count : 1;
+    triggerShake(0.3 + c.tier * 0.3 + (count >= 3 ? 0.5 : 0));
+    if (c.tier >= 3) hitstopFrames = Math.min(hitstopFrames + 1, 3);
+    bgFlash = Math.min(bgFlash + 0.02 + (count >= 3 ? 0.03 : 0), 0.15);
   }
-  if (pendingMerges.length > 0 && combo >= 3) {
+  if (pendingClusters.length > 0 && combo >= 3) {
     comboEl.textContent = combo + ' 連鎖！';
     comboEl.classList.add('show');
     playBuf(comboBuf, Math.min(1, 0.3 + combo * 0.1), 1 + combo * 0.05);
@@ -636,7 +671,7 @@ canvas.addEventListener('pointerup', e => {
   const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
   const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball'); // ball is heavier than same-tier pin
   b.tier = ballTier;
-  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, dist / 200);
+  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, dist / 100);
   b.vx = nx * speed;
   b.vy = ny * speed;
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
@@ -741,7 +776,7 @@ function drawBallPreview(now) {
     const dist = Math.sqrt(dx*dx + dy*dy);
     if (dist > MIN_DRAG) {
       const nx = dx / dist, ny = dy / dist;
-      const power = Math.min(1, dist / 200);
+      const power = Math.min(1, dist / 100);
       ctx.globalAlpha = 0.4;
       for (let d = 0; d < 8; d++) {
         const dd = 30 + d * 25;
