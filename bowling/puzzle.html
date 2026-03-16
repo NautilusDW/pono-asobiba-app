@@ -552,7 +552,7 @@ function detectFallenMerges() {
         }
       }
     }
-    if (cluster.length >= 2 && hasMoving) {
+    if (cluster.length >= 3 && hasMoving) {
       const members = cluster.map(idx => fallen[idx]);
       let cx = 0, cy = 0;
       for (const m of members) { cx += m.x; cy += m.y; m.dead = true; }
@@ -621,8 +621,8 @@ function gridMergeCheck(startRow, startCol, tier) {
     }
   }
 
-  // Need at least 2 connected same-tier pins to merge (the placed ball + 1 neighbor)
-  if (cluster.length < 2) return;
+  // Need at least 3 connected same-tier pins to merge
+  if (cluster.length < 3) return;
 
   // Calculate center
   let cx = 0, cy = 0;

@@ -123,114 +123,65 @@ function choosePentaFreq(bubbleY) {
   return PENTA_CANDIDATES[noteIdx];
 }
 
-// ── Drum sounds for tap (no loop — triggered on single tap) ──
-const DRUM_VOL = 0.9;
-let drumNoiseBuffer = null;
-let drumGain = null;
+// ── Water droplet sound for tap (Y position = pitch: top=high, bottom=deep) ──
+const DROP_VOL = 0.7;
+let dropGain = null;
 
-function createDrumNoiseBuffer() {
-  if (!audioCtx || drumNoiseBuffer) return;
-  const sr = audioCtx.sampleRate;
-  const len = sr * 0.15;
-  drumNoiseBuffer = audioCtx.createBuffer(1, len, sr);
-  const d = drumNoiseBuffer.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-}
-
-function ensureDrumReady() {
+function ensureDropReady() {
   if (!audioCtx) return;
   setupMasterChain();
-  if (!drumGain) {
-    drumGain = audioCtx.createGain();
-    drumGain.gain.value = DRUM_VOL;
-    drumGain.connect(masterGain);
+  if (!dropGain) {
+    dropGain = audioCtx.createGain();
+    dropGain.gain.value = DROP_VOL;
+    dropGain.connect(masterGain);
   }
-  createDrumNoiseBuffer();
 }
 
-function playKick(time) {
-  if (!audioCtx || !drumGain) return;
+// Water droplet: sine pitch sweep (high→low) + harmonic ripple
+function playWaterDrop(time, freq) {
+  if (!audioCtx || !dropGain) return;
   try {
+    // Main drop: sine with pitch sweep down
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, time);
-    osc.frequency.exponentialRampToValueAtTime(55, time + 0.07);
+    osc.frequency.setValueAtTime(freq * 2.5, time);
+    osc.frequency.exponentialRampToValueAtTime(freq, time + 0.06);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.8, time + 0.3);
     gain.gain.setValueAtTime(0.8, time);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.4, time + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4);
     osc.connect(gain);
-    gain.connect(drumGain);
+    gain.connect(dropGain);
     osc.start(time);
-    osc.stop(time + 0.2);
+    osc.stop(time + 0.45);
+
+    // Ripple: second oscillator slightly detuned, delayed
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 1.5, time + 0.04);
+    osc2.frequency.exponentialRampToValueAtTime(freq * 0.6, time + 0.25);
+    gain2.gain.setValueAtTime(0.0001, time);
+    gain2.gain.linearRampToValueAtTime(0.3, time + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
+    osc2.connect(gain2);
+    gain2.connect(dropGain);
+    osc2.start(time);
+    osc2.stop(time + 0.4);
   } catch (e) {}
 }
 
-function playSnare(time) {
-  if (!audioCtx || !drumGain || !drumNoiseBuffer) return;
-  try {
-    // Noise burst (body)
-    const src = audioCtx.createBufferSource();
-    src.buffer = drumNoiseBuffer;
-    const bpf = audioCtx.createBiquadFilter();
-    bpf.type = 'bandpass';
-    bpf.frequency.setValueAtTime(3000, time);
-    bpf.Q.setValueAtTime(0.8, time);
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.4, time);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
-    src.connect(bpf);
-    bpf.connect(gain);
-    gain.connect(drumGain);
-    src.start(time);
-    src.stop(time + 0.15);
-    // Tonal snap (punch)
-    const osc = audioCtx.createOscillator();
-    const oGain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(200, time);
-    osc.frequency.exponentialRampToValueAtTime(120, time + 0.03);
-    oGain.gain.setValueAtTime(0.5, time);
-    oGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
-    osc.connect(oGain);
-    oGain.connect(drumGain);
-    osc.start(time);
-    osc.stop(time + 0.1);
-  } catch (e) {}
-}
-
-function playHiHat(time) {
-  if (!audioCtx || !drumGain || !drumNoiseBuffer) return;
-  try {
-    const src = audioCtx.createBufferSource();
-    src.buffer = drumNoiseBuffer;
-    const hpf = audioCtx.createBiquadFilter();
-    hpf.type = 'highpass';
-    hpf.frequency.setValueAtTime(7000, time);
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.3, time);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-    src.connect(hpf);
-    hpf.connect(gain);
-    gain.connect(drumGain);
-    src.start(time);
-    src.stop(time + 0.07);
-  } catch (e) {}
-}
-
-// Play drum sound based on Y position: top=hi-hat, middle=snare, bottom=kick
-function playDrumByY(bubbleY) {
+// Play water drop based on Y position: top=high bright drop, bottom=deep resonant drop
+function playDropByY(bubbleY) {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  ensureDrumReady();
+  ensureDropReady();
   const now = audioCtx.currentTime;
-  const t = bubbleY / H; // 0=top, 1=bottom
-  if (t < 0.33) {
-    playHiHat(now);
-  } else if (t < 0.66) {
-    playSnare(now);
-  } else {
-    playKick(now);
-  }
+  // Map Y: top(0)=high freq(800Hz), bottom(H)=low freq(200Hz)
+  const t = Math.max(0, Math.min(1, bubbleY / H)); // 0=top, 1=bottom
+  const freq = 800 - t * 600; // 800Hz → 200Hz
+  playWaterDrop(now, freq);
 }
 
 // Play a real-time marimba note via oscillator + LPF
@@ -838,7 +789,7 @@ function popBubble(idx, chainDepth) {
       if (isDragging) {
         playMusicalPop(bcolorIdx[idx], x0, y0); // melody during drag
       } else {
-        playDrumByY(y0); // drum only on single tap
+        playDropByY(y0); // water drop on single tap
       }
     } else {
       playChainPop();
