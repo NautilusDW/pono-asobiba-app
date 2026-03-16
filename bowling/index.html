@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>びっくりボウリング | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -10,10 +10,12 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
-  width: 100%; height: 100vh; overflow: hidden;
+  width: 100%; height: 100vh; height: 100dvh; overflow: hidden;
+  position: fixed; inset: 0;
   font-family: 'Zen Maru Gothic', sans-serif;
   background: #1a5c3a;
   touch-action: none; user-select: none; -webkit-user-select: none;
+  overscroll-behavior: none; -webkit-overflow-scrolling: auto;
 }
 canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 #back-btn {
@@ -57,6 +59,11 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 
 <script>
 'use strict';
+// Prevent iOS Safari scroll/bounce on rapid tapping
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
+window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
@@ -69,7 +76,7 @@ window.addEventListener('resize', resize);
 // ── Audio (Web Audio API) ──
 let audioCtx = null;
 let audioReady = false;
-let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null;
+let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null, mergeBuf = null, explodeBuf = null;
 
 function makeBuf(ctx, freq, dur, vol, decay) {
   const sr = ctx.sampleRate, n = sr * dur | 0;
@@ -94,6 +101,18 @@ function makeSweepBuf(ctx, freqStart, freqEnd, dur, vol) {
   return ab;
 }
 
+function makeExplosionBuf(ctx) {
+  const sr = ctx.sampleRate, dur = 0.4, n = sr * dur | 0;
+  const ab = ctx.createBuffer(1, n, sr);
+  const d = ab.getChannelData(0);
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.5 +
+           Math.sin(2 * Math.PI * 80 * t) * Math.exp(-t * 10) * 0.4;
+  }
+  return ab;
+}
+
 function initAudio() {
   return new Promise(resolve => {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -106,6 +125,8 @@ function initAudio() {
       popBuf = makeBuf(audioCtx, 800, 0.05, 0.3, 50);
       launchBuf = makeBuf(audioCtx, 300, 0.1, 0.3, 20);
       comboBuf = makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
+      mergeBuf = makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
+      explodeBuf = makeExplosionBuf(audioCtx);
       audioReady = true;
       resolve();
     });
@@ -114,6 +135,8 @@ function initAudio() {
       popBuf = popBuf || makeBuf(audioCtx, 800, 0.05, 0.3, 50);
       launchBuf = launchBuf || makeBuf(audioCtx, 300, 0.1, 0.3, 20);
       comboBuf = comboBuf || makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
+      mergeBuf = mergeBuf || makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
+      explodeBuf = explodeBuf || makeExplosionBuf(audioCtx);
       audioReady = true;
       resolve();
     }, 1000);
@@ -146,31 +169,41 @@ function playBuf(buf, volume, rate) {
   src.start(0);
 }
 
+// ── Tier System ──
+// うさぎ → アライグマ → アヒル → ハリネズミ → クマ
+const TIERS = [
+  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },      // pin_0: rabbit
+  { img: 5,  r: 24, mass: 1.0, name: 'アライグマ' },   // pin_5: raccoon
+  { img: 4,  r: 32, mass: 2.0, name: 'アヒル' },       // pin_4: duck
+  { img: 6,  r: 42, mass: 4.0, name: 'ハリネズミ' },   // pin_6: hedgehog
+  { img: 10, r: 54, mass: 8.0, name: 'クマ' },         // pin_10: bear
+];
+const MAX_TIER = TIERS.length - 1;
+
 // ── Constants ──
-const PIN_R = 28;
 const BALL_R = 26;
 const RESTITUTION = 0.8;
 const FRICTION_AIR = 0.997;
 const WALL_RESTITUTION = 0.85;
-const PIN_MASS = 0.8;
-const BALL_MASS = 3;
-const GRAVITY = 0.15;  // ピンが上からゆっくり落ちる
-const MAX_BODIES = 80;  // パフォーマンス上限
-const PIN_SPAWN_INTERVAL = 400; // ms間隔で新しいピンが湧く
-const BALL_LIFETIME = 6000; // ボールは6秒で消える
+const BALL_MASS = 5;
+const GRAVITY = 0.15;
+const MAX_BODIES = 80;
+const PIN_SPAWN_INTERVAL = 500;
+const BALL_LIFETIME = 6000;
+const COMBO_WINDOW = 60;
+const MAX_MERGES_PER_FRAME = 5;
 
-// ── Pin images ──
-const PIN_COUNT = 13;
-const pinDrawSize = PIN_R * 2;
-const halfPin = pinDrawSize / 2;
-const pinCanvases = [];
-for (let i = 0; i < PIN_COUNT; i++) {
+// ── Pin images (tier-specific sizes) ──
+const tierCanvases = [];
+for (let t = 0; t < TIERS.length; t++) {
+  const tier = TIERS[t];
+  const drawSize = tier.r * 2;
   const img = new Image();
-  img.src = 'pins/pin_' + i + '.png';
+  img.src = 'pins/pin_' + tier.img + '.png';
   const oc = document.createElement('canvas');
-  oc.width = oc.height = pinDrawSize;
-  pinCanvases.push(oc);
-  img.onload = () => { oc.getContext('2d').drawImage(img, 0, 0, pinDrawSize, pinDrawSize); };
+  oc.width = oc.height = drawSize;
+  tierCanvases.push(oc);
+  img.onload = () => { oc.getContext('2d').drawImage(img, 0, 0, drawSize, drawSize); };
 }
 
 // ── Ball pre-render ──
@@ -197,34 +230,37 @@ for (let i = 0; i < ballColors.length; i++) {
 const halfBall = (BALL_R * 2 + 8) / 2;
 
 // ── Bodies ──
-// type: 'pin' | 'ball'
 const bodies = [];
 
 function addBody(x, y, r, mass, type) {
   const b = {
     x, y, vx: 0, vy: 0, r, mass, type,
-    imgIdx: 0, colorIdx: 0,
+    tier: 0,
+    colorIdx: 0,
     born: performance.now(),
-    dead: false
+    dead: false,
+    merging: false,
+    flashTimer: 0  // white flash on merge
   };
   bodies.push(b);
   return b;
 }
 
-function spawnPin() {
+function spawnPin(forceTier) {
   if (bodies.length >= MAX_BODIES) return;
-  const margin = PIN_R + 20;
+  const tier = forceTier !== undefined ? forceTier : (Math.random() < 0.7 ? 0 : 1);
+  const t = TIERS[tier];
+  const margin = t.r + 20;
   const x = margin + Math.random() * (W - margin * 2);
-  const b = addBody(x, -PIN_R * 2, PIN_R, PIN_MASS, 'pin');
-  b.vy = 0.5 + Math.random() * 1.0; // ゆっくり落下
+  const b = addBody(x, -t.r * 2, t.r, t.mass, 'pin');
+  b.tier = tier;
+  b.vy = 0.5 + Math.random() * 1.0;
   b.vx = (Math.random() - 0.5) * 0.5;
-  b.imgIdx = Math.floor(Math.random() * PIN_COUNT);
 }
 
 function spawnBall(x, y) {
   if (bodies.length >= MAX_BODIES) return;
   const b = addBody(x, y, BALL_R, BALL_MASS, 'ball');
-  // 上方向にランダムな角度で発射
   const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
   const speed = 12 + Math.random() * 6;
   b.vx = Math.cos(angle) * speed;
@@ -239,7 +275,7 @@ const PARTICLE_COLORS = [
   '#F7DC6F','#BB8FCE','#85C1E9','#F1948A'
 ];
 const particles = [];
-const MAX_PARTICLES = 200;
+const MAX_PARTICLES = 300;
 
 function spawnParticles(x, y, count, baseColor) {
   const n = Math.min(count, MAX_PARTICLES - particles.length);
@@ -264,6 +300,12 @@ function spawnPopup(x, y, text, color) {
   popups.push({ x, y, text, color: color || '#FFD700', life: 1, vy: -2 });
 }
 
+// ── Impact rings (merge/explosion visual) ──
+const rings = [];
+function spawnRing(x, y, maxRadius, color) {
+  rings.push({ x, y, radius: 5, maxRadius: maxRadius || 60, alpha: 0.7, color: color || '#fff' });
+}
+
 // ── Collision ──
 function resolveCollision(a, b) {
   const dx = b.x - a.x, dy = b.y - a.y;
@@ -286,7 +328,7 @@ function resolveCollision(a, b) {
   a.vy += (j / a.mass) * ny;
   b.vx -= (j / b.mass) * nx;
   b.vy -= (j / b.mass) * ny;
-  return Math.abs(dvn); // 衝突の強さを返す
+  return Math.abs(dvn);
 }
 
 // ── Wall bounce ──
@@ -294,7 +336,6 @@ function wallBounce(b) {
   if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
-  // 下端: ピンは消す、ボールは跳ね返す
   if (b.y + b.r > H) {
     if (b.type === 'pin') {
       b.dead = true;
@@ -309,15 +350,134 @@ function wallBounce(b) {
 let score = 0;
 let combo = 0;
 let comboTimer = 0;
-const COMBO_WINDOW = 60; // フレーム数（約1秒）
 let lastPinSpawn = 0;
 let shakeX = 0, shakeY = 0, shakeLife = 0;
 let soundThrottle = 0;
 let maxHitStrength = 0;
+let mergePitch = 1.0;
+let hitstopFrames = 0;
+let bgFlash = 0;
 
 // ── Screen shake ──
 function triggerShake(intensity) {
-  shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 6));
+  shakeLife = Math.max(shakeLife, Math.min(intensity * 8, 8));
+}
+
+// ── Explosion (tier 4 + tier 4) ──
+function triggerExplosion(cx, cy) {
+  spawnParticles(cx, cy, 40);
+  // Shockwave: push all bodies away
+  for (let i = 0; i < bodies.length; i++) {
+    const b = bodies[i];
+    if (b.dead) continue;
+    const dx = b.x - cx, dy = b.y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 150 && dist > 1) {
+      const force = (1 - dist / 150) * 15;
+      b.vx += (dx / dist) * force;
+      b.vy += (dy / dist) * force;
+    }
+  }
+  triggerShake(4);
+  bgFlash = 0.4;
+  score += 500;
+  spawnPopup(cx, cy - 30, '+500', '#FF4444');
+  spawnRing(cx, cy, 150, '#FF6B6B');
+  spawnRing(cx, cy, 100, '#FFD700');
+  playBuf(explodeBuf, 1.0, 0.8);
+  hitstopFrames = 5;
+}
+
+// ── Merge detection (called after physics) ──
+const pendingMerges = [];
+
+function detectMerges() {
+  pendingMerges.length = 0;
+  const n = bodies.length;
+  for (let i = 0; i < n; i++) {
+    const a = bodies[i];
+    if (a.dead || a.type !== 'pin' || a.merging) continue;
+    for (let j = i + 1; j < n; j++) {
+      const b = bodies[j];
+      if (b.dead || b.type !== 'pin' || b.merging) continue;
+      if (a.tier !== b.tier) continue;
+      // Check overlap
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist2 = dx * dx + dy * dy;
+      const minDist = a.r + b.r;
+      if (dist2 < minDist * minDist) {
+        a.merging = true;
+        b.merging = true;
+        pendingMerges.push({
+          a, b,
+          tier: a.tier,
+          x: (a.x + b.x) / 2,
+          y: (a.y + b.y) / 2
+        });
+        if (pendingMerges.length >= MAX_MERGES_PER_FRAME) return;
+      }
+    }
+  }
+}
+
+function processMerges() {
+  for (let i = 0; i < pendingMerges.length; i++) {
+    const m = pendingMerges[i];
+    m.a.dead = true;
+    m.b.dead = true;
+
+    if (m.tier < MAX_TIER) {
+      // Evolve to next tier
+      const nextTier = m.tier + 1;
+      const t = TIERS[nextTier];
+      const nb = addBody(m.x, m.y, t.r, t.mass, 'pin');
+      nb.tier = nextTier;
+      nb.flashTimer = 6; // white flash frames
+      // Inherit some velocity from parents
+      nb.vx = (m.a.vx + m.b.vx) * 0.3;
+      nb.vy = (m.a.vy + m.b.vy) * 0.3;
+    } else {
+      // Tier 4 + Tier 4 = EXPLOSION
+      triggerExplosion(m.x, m.y);
+    }
+
+    // Effects
+    const particleCount = 6 + m.tier * 5;
+    spawnParticles(m.x, m.y, particleCount);
+    spawnRing(m.x, m.y, 40 + m.tier * 15, '#fff');
+
+    // Popup: show next animal name or explosion
+    if (m.tier < MAX_TIER) {
+      spawnPopup(m.x, m.y - 20, TIERS[m.tier + 1].name);
+    } else {
+      spawnPopup(m.x, m.y - 20, '大爆発！', '#FF4444');
+    }
+
+    // Sound with rising pitch
+    mergePitch = Math.min(mergePitch * 1.12, 2.5);
+    playBuf(mergeBuf, 0.4 + m.tier * 0.15, mergePitch);
+
+    // Score
+    const pts = (m.tier + 1) * 10 * (1 + combo * 0.5);
+    score += Math.round(pts);
+    combo++;
+    comboTimer = COMBO_WINDOW;
+
+    // Shake proportional to tier
+    triggerShake(0.5 + m.tier * 0.5);
+
+    // Hitstop for tier 3+
+    if (m.tier >= 3) hitstopFrames = Math.max(hitstopFrames, 3);
+
+    // Background flash
+    bgFlash = Math.max(bgFlash, 0.1 + m.tier * 0.05);
+  }
+
+  if (pendingMerges.length > 0 && combo >= 3) {
+    comboEl.textContent = combo + ' コンボ！';
+    comboEl.classList.add('show');
+    playBuf(comboBuf, Math.min(1, 0.3 + combo * 0.1), 1 + combo * 0.05);
+  }
 }
 
 // ── Physics step ──
@@ -326,7 +486,6 @@ function physicsStep() {
   for (let i = 0; i < n; i++) {
     const b = bodies[i];
     if (b.dead) continue;
-    // ピンには重力
     if (b.type === 'pin') b.vy += GRAVITY;
     b.x += b.vx;
     b.y += b.vy;
@@ -341,33 +500,27 @@ function physicsStep() {
     for (let j = i + 1; j < n; j++) {
       if (bodies[j].dead) continue;
       const a = bodies[i], b = bodies[j];
-      // ピン同士の衝突は軽く処理、ボール-ピンは重要
+
+      // Skip pin-pin collision resolution for same tier (merge handles it)
+      // But still resolve different-tier pin-pin and ball-pin
+      if (a.type === 'pin' && b.type === 'pin' && a.tier === b.tier) continue;
+
       const preVx = a.vx - b.vx, preVy = a.vy - b.vy;
       const preSpd = Math.sqrt(preVx * preVx + preVy * preVy);
       const strength = resolveCollision(a, b);
       if (strength > 0) {
-        // ボール→ピン衝突でスコア
+        // Ball-pin collision: knockback only (no destroy)
         if ((a.type === 'ball' && b.type === 'pin') || (a.type === 'pin' && b.type === 'ball')) {
-          const pin = a.type === 'pin' ? a : b;
           if (preSpd > 3) {
-            // 強い衝突: ピンを破壊
-            pin.dead = true;
-            const pts = 10 + combo * 5;
-            score += pts;
-            combo++;
-            comboTimer = COMBO_WINDOW;
-            spawnParticles(pin.x, pin.y, 8 + combo * 2);
-            spawnPopup(pin.x, pin.y - 20, '+' + pts);
-            if (combo >= 3) {
-              comboEl.textContent = combo + ' コンボ！';
-              comboEl.classList.add('show');
-              playBuf(comboBuf, Math.min(1, 0.3 + combo * 0.1), 1 + combo * 0.05);
+            triggerShake(strength / 15);
+            // Small particle burst on strong hit
+            const pin = a.type === 'pin' ? a : b;
+            if (strength > 5) {
+              spawnParticles(pin.x, pin.y, 3);
             }
-            if (strength > maxHitStrength) maxHitStrength = strength;
-            triggerShake(strength / 10);
           }
         }
-        // 衝突音
+        // Collision sound
         if (preSpd > 3 && strength > maxHitStrength * 0.3) {
           if (soundThrottle <= 0) {
             const intensity = Math.min(1, strength / 15);
@@ -377,6 +530,7 @@ function physicsStep() {
             soundThrottle = 3;
           }
         }
+        if (strength > maxHitStrength) maxHitStrength = strength;
       }
     }
   }
@@ -388,7 +542,6 @@ canvas.addEventListener('pointerdown', e => {
   spawnBall(e.clientX, e.clientY);
 });
 canvas.addEventListener('pointermove', e => {
-  // ドラッグ中もボールを連射（間引き付き）
   if (e.pressure > 0 || e.buttons > 0) {
     if (Math.random() < 0.3) spawnBall(e.clientX, e.clientY);
   }
@@ -396,9 +549,16 @@ canvas.addEventListener('pointermove', e => {
 
 // ── Draw ──
 function drawBg() {
-  ctx.fillStyle = '#1e6b40';
+  // Background with flash
+  if (bgFlash > 0.01) {
+    const r = Math.round(30 + (255 - 30) * bgFlash);
+    const g = Math.round(107 + (255 - 107) * bgFlash);
+    const b = Math.round(64 + (255 - 64) * bgFlash);
+    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+  } else {
+    ctx.fillStyle = '#1e6b40';
+  }
   ctx.fillRect(0, 0, W, H);
-  // 枠線
   ctx.strokeStyle = '#8B4513';
   ctx.lineWidth = 6;
   ctx.strokeRect(3, 3, W - 6, H - 6);
@@ -414,9 +574,51 @@ function drawBodies() {
     if (b.type === 'ball') {
       ctx.drawImage(ballCanvases[b.colorIdx], b.x - halfBall, b.y - halfBall);
     } else {
-      ctx.drawImage(pinCanvases[b.imgIdx], b.x - halfPin, b.y - halfPin);
+      const tier = TIERS[b.tier];
+      const drawSize = tier.r * 2;
+      const half = drawSize / 2;
+
+      // White flash on merge birth
+      if (b.flashTimer > 0) {
+        ctx.globalAlpha = b.flashTimer / 6;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r + 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        b.flashTimer--;
+      }
+
+      // Shadow (bigger for higher tiers)
+      ctx.globalAlpha = 0.15 + b.tier * 0.03;
+      ctx.beginPath();
+      ctx.ellipse(b.x + 2, b.y + 3 + b.tier, b.r * 0.9, b.r * 0.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#000';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.drawImage(tierCanvases[b.tier], b.x - half, b.y - half);
     }
   }
+}
+
+function drawRings() {
+  let len = rings.length;
+  for (let i = len - 1; i >= 0; i--) {
+    const r = rings[i];
+    r.radius += 3;
+    r.alpha *= 0.92;
+    if (r.alpha < 0.02 || r.radius > r.maxRadius) {
+      rings[i] = rings[--len]; rings.length = len; continue;
+    }
+    ctx.globalAlpha = r.alpha;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  if (len > 0) ctx.globalAlpha = 1;
 }
 
 function drawParticles() {
@@ -467,45 +669,54 @@ function loop(now) {
     fpsFrames = 0; fpsLast = now;
   }
 
-  // ピン自動生成
+  // Pin auto-spawn (tier 0 and 1 only)
   if (now - lastPinSpawn > PIN_SPAWN_INTERVAL) {
-    // 画面上のピン数が少なければ湧かせる
     let pinCount = 0;
     for (let i = 0; i < bodies.length; i++) {
       if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++;
     }
-    if (pinCount < 25) {
-      spawnPin();
-      // たまに2個同時
+    if (pinCount < 15) {
+      spawnPin(); // 70% tier 0, 30% tier 1
       if (Math.random() < 0.3) spawnPin();
     }
     lastPinSpawn = now;
   }
 
-  // Physics
+  // Physics (with hitstop)
   maxHitStrength = 0;
-  accumulator += elapsed;
-  while (accumulator >= PHYSICS_DT) {
-    physicsStep();
-    accumulator -= PHYSICS_DT;
+  if (hitstopFrames > 0) {
+    hitstopFrames--;
+  } else {
+    accumulator += elapsed;
+    while (accumulator >= PHYSICS_DT) {
+      physicsStep();
+      accumulator -= PHYSICS_DT;
+    }
   }
   if (soundThrottle > 0) soundThrottle--;
 
-  // コンボタイマー
+  // Merge detection & processing (outside physics step)
+  detectMerges();
+  processMerges();
+
+  // Combo timer
   if (comboTimer > 0) {
     comboTimer--;
     if (comboTimer <= 0) {
       combo = 0;
+      mergePitch = 1.0; // Reset pitch chain
       comboEl.classList.remove('show');
     }
   }
+
+  // Background flash decay
+  if (bgFlash > 0) bgFlash *= 0.9;
 
   // Dead body cleanup + ball lifetime
   for (let i = bodies.length - 1; i >= 0; i--) {
     const b = bodies[i];
     if (b.dead || (b.type === 'ball' && now - b.born > BALL_LIFETIME)) {
       if (b.type === 'ball' && !b.dead) {
-        // ボール消滅時の小パーティクル
         spawnParticles(b.x, b.y, 4, ballColors[b.colorIdx]);
       }
       bodies[i] = bodies[bodies.length - 1];
@@ -527,6 +738,7 @@ function loop(now) {
   ctx.translate(shakeX, shakeY);
   drawBg();
   drawBodies();
+  drawRings();
   drawParticles();
   drawPopups();
   ctx.restore();
@@ -534,13 +746,13 @@ function loop(now) {
   // Score
   scoreEl.textContent = score;
 
-  // FPS
+  // FPS debug
   ctx.fillStyle = '#0f0';
   ctx.font = '12px monospace';
   ctx.textAlign = 'left';
   ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 22);
 
-  // ヒント（最初だけ）
+  // Hint
   if (score === 0 && bodies.length < 5) {
     ctx.globalAlpha = 0.4 + Math.sin(now * 0.004) * 0.2;
     ctx.fillStyle = '#fff';
@@ -553,14 +765,16 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-// 初期ピンを散布
+// Initial pins (tier 0 and 1 scattered)
 for (let i = 0; i < 12; i++) {
-  const margin = PIN_R + 20;
+  const tier = Math.random() < 0.7 ? 0 : 1;
+  const t = TIERS[tier];
+  const margin = t.r + 20;
   const x = margin + Math.random() * (W - margin * 2);
   const y = H * 0.1 + Math.random() * (H * 0.5);
-  const b = addBody(x, y, PIN_R, PIN_MASS, 'pin');
+  const b = addBody(x, y, t.r, t.mass, 'pin');
+  b.tier = tier;
   b.vy = 0.3 + Math.random() * 0.5;
-  b.imgIdx = Math.floor(Math.random() * PIN_COUNT);
 }
 
 requestAnimationFrame(loop);
