@@ -181,7 +181,8 @@ let GRID_COLS = 9;
 let CELL_W = 40, ROW_H = 35, GRID_LEFT = 0, GRID_TOP = 50;
 
 function computeGrid() {
-  CELL_W = Math.floor(W / (GRID_COLS + 0.5));
+  // Fixed cell size — gameplay consistent regardless of screen width
+  CELL_W = 40;
   ROW_H = Math.floor(CELL_W * 0.866);
   GRID_LEFT = Math.floor((W - GRID_COLS * CELL_W) / 2);
   GRID_TOP = 45;
@@ -250,32 +251,31 @@ function initGrid() {
     gridPins[r] = [];
     for (let c = 0; c < GRID_COLS; c++) gridPins[r][c] = null;
   }
-  // Step 2: Seed clusters — place a few "seed" pins, then grow clusters around them
-  // This ensures same-tier pins are adjacent (makes merging actually possible!)
+  // Step 2: Seed small clusters — fewer seeds, each grows only 1-2 neighbors
+  // Makes it harder: same-tier groups are small and scattered
   const FILL_ROWS = 5;
   const seeds = [];
-  // Place 8-12 seed points with random tiers
-  const seedCount = 8 + Math.floor(Math.random() * 5);
+  // Place 6-8 seed points with random tiers (fewer than before)
+  const seedCount = 6 + Math.floor(Math.random() * 3);
   for (let i = 0; i < seedCount; i++) {
     const sr = Math.floor(Math.random() * FILL_ROWS);
     const sc = Math.floor(Math.random() * GRID_COLS);
-    const tier = Math.random() < 0.55 ? 0 : Math.random() < 0.65 ? 1 : 2;
+    // More even tier distribution — harder to find matching clusters
+    const tier = Math.floor(Math.random() * 3);
     if (!gridPins[sr][sc]) {
       gridPins[sr][sc] = { tier, bomb: false };
       seeds.push({ row: sr, col: sc, tier });
     }
   }
-  // Step 3: Grow each seed — spread its tier to 2-5 neighboring cells
+  // Step 3: Grow each seed — only 1-2 neighbors (small clusters = harder)
   for (const seed of seeds) {
-    const growCount = 2 + Math.floor(Math.random() * 4);
+    const growCount = 1 + Math.floor(Math.random() * 2); // 1-2 only
     let frontier = [{ row: seed.row, col: seed.col }];
     let grown = 0;
     while (frontier.length > 0 && grown < growCount) {
-      // Pick a random frontier cell
       const fi = Math.floor(Math.random() * frontier.length);
       const cell = frontier[fi];
       const neighbors = getNeighbors(cell.row, cell.col);
-      // Shuffle neighbors
       for (let i = neighbors.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
@@ -292,35 +292,34 @@ function initGrid() {
         }
       }
       if (!placed) {
-        frontier.splice(fi, 1); // dead end, remove from frontier
+        frontier.splice(fi, 1);
       }
     }
   }
-  // Step 4: Fill remaining empty cells in rows 0-4 with random tiers
+  // Step 4: Fill remaining empty cells — mostly RANDOM tiers (breaks up clusters)
   for (let r = 0; r < FILL_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
       if (!gridPins[r][c]) {
-        // Prefer tier that matches most adjacent pins (creates more clusters)
-        const tierCounts = [0, 0, 0];
-        for (const nb of getNeighbors(r, c)) {
-          if (gridPins[nb.row] && gridPins[nb.row][nb.col]) {
-            tierCounts[gridPins[nb.row][nb.col].tier]++;
+        // 70% random, 30% neighbor-matching (hard but not impossible)
+        let bestTier = Math.floor(Math.random() * 3);
+        if (Math.random() < 0.3) {
+          const tierCounts = [0, 0, 0];
+          for (const nb of getNeighbors(r, c)) {
+            if (gridPins[nb.row] && gridPins[nb.row][nb.col]) {
+              tierCounts[gridPins[nb.row][nb.col].tier]++;
+            }
+          }
+          let maxCount = 0;
+          for (let t = 0; t < 3; t++) {
+            if (tierCounts[t] > maxCount) { maxCount = tierCounts[t]; bestTier = t; }
           }
         }
-        // Pick the tier with most neighbors, with some randomness
-        let bestTier = Math.random() < 0.55 ? 0 : Math.random() < 0.65 ? 1 : 2;
-        let maxCount = 0;
-        for (let t = 0; t < 3; t++) {
-          if (tierCounts[t] > maxCount) { maxCount = tierCounts[t]; bestTier = t; }
-        }
-        // 30% chance to override with random (prevents boring uniformity)
-        if (Math.random() < 0.3) bestTier = Math.random() < 0.55 ? 0 : Math.random() < 0.65 ? 1 : 2;
         gridPins[r][c] = { tier: bestTier, bomb: false };
       }
     }
   }
-  // Place 2-3 bombs randomly in the grid
-  placeBombs(2 + Math.floor(Math.random() * 2));
+  // Place 0-1 bombs (reduced from 2-3)
+  placeBombs(Math.random() < 0.5 ? 1 : 0);
 }
 
 function placeBombs(count) {
@@ -382,26 +381,25 @@ function refillGrid() {
   for (let r = GRID_ROWS - 1; r > 0; r--) {
     gridPins[r] = gridPins[r - 1];
   }
-  // New top row — cluster-aware: prefer tier that matches neighbor below
+  // New top row — mostly random tiers (harder to chain)
   gridPins[0] = [];
   for (let c = 0; c < GRID_COLS; c++) {
-    let tier = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
-    // Check neighbors in row 1 and adjacent in row 0
-    const tierCounts = [0, 0, 0];
-    for (const nb of getNeighbors(0, c)) {
-      if (gridPins[nb.row] && gridPins[nb.row][nb.col] && !gridPins[nb.row][nb.col].bomb) {
-        tierCounts[gridPins[nb.row][nb.col].tier]++;
+    let tier = Math.floor(Math.random() * 3); // even distribution
+    // Only 20% chance to match a neighbor (was 65%)
+    if (Math.random() < 0.2) {
+      const tierCounts = [0, 0, 0];
+      for (const nb of getNeighbors(0, c)) {
+        if (gridPins[nb.row] && gridPins[nb.row][nb.col] && !gridPins[nb.row][nb.col].bomb) {
+          tierCounts[gridPins[nb.row][nb.col].tier]++;
+        }
       }
+      let maxC = 0;
+      for (let t = 0; t < 3; t++) { if (tierCounts[t] > maxC) { maxC = tierCounts[t]; tier = t; } }
     }
-    // Also check already-placed row 0 neighbors
-    if (c > 0 && gridPins[0][c - 1]) tierCounts[gridPins[0][c - 1].tier]++;
-    let maxC = 0;
-    for (let t = 0; t < 3; t++) { if (tierCounts[t] > maxC) { maxC = tierCounts[t]; tier = t; } }
-    if (Math.random() < 0.35) tier = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
     gridPins[0][c] = { tier, bomb: false };
   }
-  // 30% chance to place a bomb in the new row
-  if (Math.random() < 0.3) {
+  // 10% chance to place a bomb in the new row (reduced)
+  if (Math.random() < 0.1) {
     const bc = Math.floor(Math.random() * GRID_COLS);
     gridPins[0][bc].bomb = true;
   }
