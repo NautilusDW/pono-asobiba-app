@@ -218,42 +218,74 @@ function playRhythmPop(bubbleX, bubbleR) {
   rhythmRecentTaps = rhythmRecentTaps.filter(t => performance.now() - t < 1200);
 }
 
-// ── BGM (external mp3, loop, low volume) ──
+// ── BGM (WebAudio GainNode for reliable volume control — Audio.volume is ignored on iOS) ──
 const BGM_TRACKS = [
   '../assets/audio/bubble/Tap Tickle Loop.mp3',
   '../assets/audio/bubble/Soft Steps, Small Feet.mp3',
 ];
-let bgmCurrentTrack = 0; // which track is loaded
-let bgmAudio = null;
-const BGM_VOLUME = 0.005; // extremely quiet
+let bgmCurrentTrack = 0;
+let bgmSource = null; // MediaElementAudioSourceNode
+let bgmGain = null;   // GainNode for volume
+let bgmAudio = null;  // underlying Audio element
+const BGM_VOLUME = 0.06; // controlled via GainNode — works on all platforms
 
 function initBGM() {
   if (bgmAudio) return;
   bgmAudio = new Audio(BGM_TRACKS[bgmCurrentTrack]);
   bgmAudio.loop = true;
-  bgmAudio.volume = BGM_VOLUME;
+  bgmAudio.crossOrigin = 'anonymous';
   bgmAudio.preload = 'auto';
+  // Route through WebAudio GainNode for reliable volume
+  if (audioCtx) {
+    setupMasterChain();
+    bgmSource = audioCtx.createMediaElementSource(bgmAudio);
+    bgmGain = audioCtx.createGain();
+    bgmGain.gain.value = BGM_VOLUME;
+    bgmSource.connect(bgmGain);
+    bgmGain.connect(audioCtx.destination); // bypass compressor — separate path
+  }
 }
 
 function startBGM() {
   if (!bgmAudio) initBGM();
-  bgmAudio.play().catch(() => {}); // may need user gesture
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  bgmAudio.play().catch(() => {});
 }
 
 function switchBGMTrack() {
+  // Stop current
   if (bgmAudio) {
     bgmAudio.pause();
     bgmAudio.currentTime = 0;
   }
+  // Disconnect old source
+  if (bgmSource) {
+    try { bgmSource.disconnect(); } catch(e) {}
+    bgmSource = null;
+  }
+  if (bgmGain) {
+    try { bgmGain.disconnect(); } catch(e) {}
+    bgmGain = null;
+  }
   bgmCurrentTrack = (bgmCurrentTrack + 1) % BGM_TRACKS.length;
   bgmAudio = new Audio(BGM_TRACKS[bgmCurrentTrack]);
   bgmAudio.loop = true;
-  bgmAudio.volume = BGM_VOLUME;
+  bgmAudio.crossOrigin = 'anonymous';
+  // Re-route through WebAudio
+  if (audioCtx) {
+    bgmSource = audioCtx.createMediaElementSource(bgmAudio);
+    bgmGain = audioCtx.createGain();
+    bgmGain.gain.value = BGM_VOLUME;
+    bgmSource.connect(bgmGain);
+    bgmGain.connect(audioCtx.destination);
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   bgmAudio.play().catch(() => {});
 }
 
 // Start BGM on first user interaction
 function startBGMOnGesture() {
+  ensureAudio();
   initBGM();
   startBGM();
 }
