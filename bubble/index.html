@@ -123,31 +123,28 @@ function choosePentaFreq(bubbleY) {
   return PENTA_CANDIDATES[noteIdx];
 }
 
-// ── Background Drum Loop (synthesized kick + hi-hat, subtle) ──
+// ── Drum sounds for tap (no loop — triggered on single tap) ──
 const DRUM_VOL = 0.35;
-const DRUM_SLOTS = 8; // 8th notes per bar
-const DRUM_SLOT_DUR = EIGHTH_NOTE; // one 8th note
-let drumSchedulerId = null;
-let drumNextSlot = 0;
-let drumNextTime = 0;
 let drumNoiseBuffer = null;
 let drumGain = null;
 
 function createDrumNoiseBuffer() {
   if (!audioCtx || drumNoiseBuffer) return;
   const sr = audioCtx.sampleRate;
-  const len = sr * 0.1;
+  const len = sr * 0.15;
   drumNoiseBuffer = audioCtx.createBuffer(1, len, sr);
   const d = drumNoiseBuffer.getChannelData(0);
   for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
 }
 
-function setupDrumChain() {
-  if (!audioCtx || drumGain) return;
+function ensureDrumReady() {
+  if (!audioCtx) return;
   setupMasterChain();
-  drumGain = audioCtx.createGain();
-  drumGain.gain.value = DRUM_VOL;
-  drumGain.connect(masterGain);
+  if (!drumGain) {
+    drumGain = audioCtx.createGain();
+    drumGain.gain.value = DRUM_VOL;
+    drumGain.connect(masterGain);
+  }
   createDrumNoiseBuffer();
 }
 
@@ -168,6 +165,39 @@ function playKick(time) {
   } catch (e) {}
 }
 
+function playSnare(time) {
+  if (!audioCtx || !drumGain || !drumNoiseBuffer) return;
+  try {
+    // Noise burst (body)
+    const src = audioCtx.createBufferSource();
+    src.buffer = drumNoiseBuffer;
+    const bpf = audioCtx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(3000, time);
+    bpf.Q.setValueAtTime(0.8, time);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.4, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
+    src.connect(bpf);
+    bpf.connect(gain);
+    gain.connect(drumGain);
+    src.start(time);
+    src.stop(time + 0.15);
+    // Tonal snap (punch)
+    const osc = audioCtx.createOscillator();
+    const oGain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(200, time);
+    osc.frequency.exponentialRampToValueAtTime(120, time + 0.03);
+    oGain.gain.setValueAtTime(0.5, time);
+    oGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
+    osc.connect(oGain);
+    oGain.connect(drumGain);
+    osc.start(time);
+    osc.stop(time + 0.1);
+  } catch (e) {}
+}
+
 function playHiHat(time) {
   if (!audioCtx || !drumGain || !drumNoiseBuffer) return;
   try {
@@ -177,7 +207,7 @@ function playHiHat(time) {
     hpf.type = 'highpass';
     hpf.frequency.setValueAtTime(7000, time);
     const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.25, time);
+    gain.gain.setValueAtTime(0.3, time);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
     src.connect(hpf);
     hpf.connect(gain);
@@ -187,31 +217,20 @@ function playHiHat(time) {
   } catch (e) {}
 }
 
-function scheduleDrumSlot(slotInBar, time) {
-  playHiHat(time);
-  if (slotInBar === 0 || slotInBar === 4) playKick(time);
-}
-
-function startDrumLoop() {
-  if (drumSchedulerId) return;
-  setupDrumChain();
+// Play drum sound based on Y position: top=hi-hat, middle=snare, bottom=kick
+function playDrumByY(bubbleY) {
   if (!audioCtx) return;
-  drumNextTime = audioCtx.currentTime + 0.1;
-  drumNextSlot = 0;
-  drumSchedulerId = setInterval(() => {
-    if (!audioCtx || audioCtx.state !== 'running') return;
-    const lookAhead = audioCtx.currentTime + 0.25;
-    while (drumNextTime < lookAhead) {
-      scheduleDrumSlot(drumNextSlot % DRUM_SLOTS, drumNextTime);
-      drumNextSlot = (drumNextSlot + 1) % DRUM_SLOTS;
-      drumNextTime += DRUM_SLOT_DUR;
-    }
-  }, 100);
-}
-
-function stopDrumLoop() {
-  if (drumSchedulerId) { clearInterval(drumSchedulerId); drumSchedulerId = null; }
-  drumGain = null;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  ensureDrumReady();
+  const now = audioCtx.currentTime;
+  const t = bubbleY / H; // 0=top, 1=bottom
+  if (t < 0.33) {
+    playHiHat(now);
+  } else if (t < 0.66) {
+    playSnare(now);
+  } else {
+    playKick(now);
+  }
 }
 
 // Play a real-time marimba note via oscillator + LPF
@@ -257,13 +276,11 @@ function playMarimbaNote(freq, time, velocity, panValue) {
   } catch (e) { /* ignore */ }
 }
 
-// Play musical bubble pop: quantized to 8th note grid, panning by X, pitch by Y
+// Play melodic bubble pop: panning by X, pitch by Y (used during drag)
 function playRhythmPop(bubbleX, bubbleY) {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   setupMasterChain();
-  // Start drum loop on first pop
-  if (!drumSchedulerId) startDrumLoop();
 
   const now = audioCtx.currentTime;
   const scheduledTime = quantizeTime(now);
@@ -816,9 +833,14 @@ function popBubble(idx, chainDepth) {
     // Confetti
     for (let i = 0; i < 60; i++) addConfetti(x0, y0);
   } else {
-    // Normal bubble: play pentatonic note based on color
+    // Normal bubble: tap=drum, drag=melody
     if (chainDepth === 0) {
-      playMusicalPop(bcolorIdx[idx], x0, y0);
+      if (isDragging) {
+        playMusicalPop(bcolorIdx[idx], x0, y0); // melody during drag
+      } else {
+        playDrumByY(y0); // drum on single tap
+        spawnNoteParticle(bcolorIdx[idx] % PENTA_CANDIDATES.length);
+      }
     } else {
       playChainPop();
     }
@@ -885,15 +907,19 @@ function handlePop(x, y) {
   }
 }
 
+let isDragging = false;
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
+  isDragging = false;
   handlePop(e.clientX, e.clientY);
 });
 canvas.addEventListener('pointermove', e => {
   if (e.buttons > 0 || e.pressure > 0) {
+    isDragging = true;
     handlePop(e.clientX, e.clientY);
   }
 });
+canvas.addEventListener('pointerup', () => { isDragging = false; });
 
 // ── Parallax clouds (camera moving upward — clouds drift down) ──
 // Pre-render soft cloud sprites on offscreen canvas for better quality
