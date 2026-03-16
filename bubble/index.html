@@ -114,31 +114,12 @@ function quantizeTime(now) {
   return (Math.abs(nearest - now) * 1000 <= RHYTHM_QUANTIZE_MS) ? Math.max(now, nearest) : now;
 }
 
-// Choose a pentatonic frequency, avoiding recent repeats
-// bubbleR: radius for size-based pitch shift (stays within scale)
-function choosePentaFreq(bubbleR) {
-  // Size determines octave range: big = low octave, small = high octave
-  const sz = Math.min(W, H) / 600;
-  const normalR = 50 * sz;
-  let pool;
-  if (bubbleR > normalR * 1.5) {
-    // Big bubble: use lower octave only (C4 range)
-    pool = PENTA_CANDIDATES.slice(0, 5);
-  } else if (bubbleR < normalR * 0.7) {
-    // Small bubble: use higher octave only (C5 range)
-    pool = PENTA_CANDIDATES.slice(5);
-  } else {
-    pool = PENTA_CANDIDATES;
-  }
-  let freq = pool[Math.floor(Math.random() * pool.length)];
-  // Avoid repeating last 2 notes
-  let safety = 0;
-  while (rhythmLastFreqs.includes(freq) && safety < 4) {
-    freq = pool[Math.floor(Math.random() * pool.length)];
-    safety++;
-  }
-  rhythmLastFreqs.push(freq);
-  if (rhythmLastFreqs.length > 2) rhythmLastFreqs.shift();
+// Choose a pentatonic frequency based on Y position (bottom=low, top=high)
+function choosePentaFreq(bubbleY) {
+  // Map Y position to note index: bottom of screen (Y=H) → lowest, top (Y=0) → highest
+  const t = 1 - Math.max(0, Math.min(1, bubbleY / H)); // 0=bottom, 1=top
+  const noteIdx = Math.min(PENTA_CANDIDATES.length - 1, Math.floor(t * PENTA_CANDIDATES.length));
+  let freq = PENTA_CANDIDATES[noteIdx];
   return freq;
 }
 
@@ -195,14 +176,14 @@ function playMarimbaNote(freq, time, velocity, panValue) {
 }
 
 // Play musical bubble pop: real-time marimba with quantization, panning, layering
-function playRhythmPop(bubbleX, bubbleR) {
+function playRhythmPop(bubbleX, bubbleY) {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   setupMasterChain();
 
   const now = audioCtx.currentTime;
   const scheduledTime = quantizeTime(now);
-  const freq = choosePentaFreq(bubbleR);
+  const freq = choosePentaFreq(bubbleY);
   const panValue = Math.max(-0.6, Math.min(0.6, (bubbleX / W) * 2 - 1));
   const velocity = 0.55;
   const layers = getLayerCount();
@@ -396,24 +377,24 @@ let comboCount = 0;
 let comboTimer = 0;
 const COMBO_WINDOW = 2000; // 2s to keep combo alive
 
-function playMusicalPop(colorIdx, bubbleX, bubbleR) {
+function playMusicalPop(colorIdx, bubbleX, bubbleY) {
   const noteIdx = colorIdx % PENTA_CANDIDATES.length;
   // Track same-color combo
   if (colorIdx === lastPopColorIdx && comboTimer > 0) {
     comboCount++;
     if (comboCount >= 4) {
       // 5+ same color: rainbow burst!
-      playRhythmPop(bubbleX, bubbleR);
+      playRhythmPop(bubbleX, bubbleY);
       triggerRainbowBurst();
       comboCount = 0;
     } else {
       // 2+ same color: rhythm pop (layering will add richness)
-      playRhythmPop(bubbleX, bubbleR);
+      playRhythmPop(bubbleX, bubbleY);
     }
   } else {
     // Different color or combo expired: single note
     comboCount = 0;
-    playRhythmPop(bubbleX, bubbleR);
+    playRhythmPop(bubbleX, bubbleY);
   }
   lastPopColorIdx = colorIdx;
   comboTimer = COMBO_WINDOW;
@@ -761,7 +742,7 @@ function popBubble(idx, chainDepth) {
   } else {
     // Normal bubble: play pentatonic note based on color
     if (chainDepth === 0) {
-      playMusicalPop(bcolorIdx[idx], x0, br[idx]);
+      playMusicalPop(bcolorIdx[idx], x0, y0);
     } else {
       playChainPop();
     }
