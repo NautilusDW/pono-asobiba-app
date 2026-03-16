@@ -480,10 +480,10 @@ function drawClouds(dt, cloudMul) {
 // ── Day/Night cycle ──
 // Phases: 0=morning(dawn), 1=day, 2=sunset, 3=night
 const SKY_PHASES = [
-  { // 0: Morning (dawn)
-    top:    [255, 180, 140],  // warm pink-orange
-    mid:    [200, 220, 255],  // light lavender
-    bot:    [140, 210, 255],  // soft blue
+  { // 0: Morning (dawn) — cool pink/lavender, NOT orange
+    top:    [180, 160, 220],  // soft lavender
+    mid:    [200, 200, 245],  // pale periwinkle
+    bot:    [170, 220, 255],  // light sky blue
     cloud:  1.0,
   },
   { // 1: Day
@@ -507,7 +507,7 @@ const SKY_PHASES = [
 ];
 const PHASE_DURATION = 15000; // 15s per phase → 60s full cycle
 const TRANSITION_DURATION = 3000; // 3s blend between phases
-let dayTime = 0; // ms into cycle
+let dayTime = PHASE_DURATION; // start at "day" phase (skip dawn on first load)
 
 function lerpColor(a, b, t) {
   return [
@@ -612,8 +612,8 @@ function drawSky(dt) {
 
 // ── Intro text overlay ──
 let introTime = 0;
-const INTRO_DURATION = 3000;  // 3s visible
-const INTRO_FADE = 800;       // 0.8s fade out
+const INTRO_DURATION = 5000;  // 5s visible
+const INTRO_FADE = 1000;      // 1s fade out
 
 function drawIntro(dt) {
   introTime += dt;
