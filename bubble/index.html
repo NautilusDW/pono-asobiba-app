@@ -40,68 +40,75 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// ── Audio (WAV generation + audio pool) ──
-function makeWav(freq, dur, vol, decay) {
-  const sr = 22050, n = sr * dur | 0;
-  const buf = new ArrayBuffer(44 + n * 2);
-  const v = new DataView(buf);
-  function s(o, str) { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); }
-  s(0,'RIFF'); v.setUint32(4, 36 + n * 2, true); s(8,'WAVE');
-  s(12,'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true); v.setUint32(24, sr, true);
-  v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  s(36,'data'); v.setUint32(40, n * 2, true);
+// ── Audio (WebAudio API — no frame drops) ──
+let audioCtx = null, audioReady = false;
+
+function makeBuf(freq, dur, vol, decay) {
+  if (!audioCtx) return null;
+  const sr = audioCtx.sampleRate, n = sr * dur | 0;
+  const ab = audioCtx.createBuffer(1, n, sr), d = ab.getChannelData(0);
   for (let i = 0; i < n; i++) {
     const t = i / sr;
-    const val = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
-    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, val * 32767 | 0)), true);
+    d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * (decay || 20)) * vol;
   }
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  return ab;
 }
 
-// Audio pool: reuse Audio elements instead of creating new ones each time
-const POOL_SIZE = 10;
-const audioPool = [];
-let poolIdx = 0;
-for (let i = 0; i < POOL_SIZE; i++) {
-  audioPool.push(new Audio());
+let popBufs = [], chainBuf = null, boomBufs = [];
+
+function initAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AC();
+  return audioCtx.resume().then(() => {
+    // Silent buffer to unlock
+    const sb = audioCtx.createBuffer(1, 1, 22050);
+    const s = audioCtx.createBufferSource();
+    s.buffer = sb; s.connect(audioCtx.destination); s.start(0);
+    // Generate sound buffers
+    popBufs = [];
+    for (let i = 0; i < 6; i++) popBufs.push(makeBuf(600 + i * 80, 0.15, 0.6, 25));
+    chainBuf = makeBuf(1100, 0.1, 0.4, 30);
+    boomBufs = [];
+    for (let i = 0; i < 5; i++) boomBufs.push(makeBuf(300 + i * 200, 0.4, 0.5, 8));
+    audioReady = true;
+  });
 }
 
-const popSounds = [];
-for (let i = 0; i < 6; i++) popSounds.push(makeWav(600 + i * 80, 0.15, 0.6, 25));
-const chainSound = makeWav(1100, 0.1, 0.4, 30);
-const boomSounds = [];
-for (let i = 0; i < 5; i++) boomSounds.push(makeWav(300 + i * 200, 0.4, 0.5, 8));
+function playBuf(buf, volume, rate) {
+  if (!audioReady || !buf) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate || 1;
+  if (volume !== undefined && volume < 1) {
+    const g = audioCtx.createGain(); g.gain.value = volume;
+    src.connect(g); g.connect(audioCtx.destination);
+  } else {
+    src.connect(audioCtx.destination);
+  }
+  src.start(0);
+}
 
-// Unlock audio on first touch
-const silentWav = makeWav(440, 0.01, 0, 50);
+// Unlock audio on first interaction
 let audioUnlocked = false;
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  const a = audioPool[0];
-  a.src = silentWav;
-  a.volume = 0;
-  a.play().catch(() => {});
+  initAudio();
 }
 document.addEventListener('touchstart', unlockAudio, { once: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });
+document.addEventListener('visibilitychange', () => {
+  if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
+});
 
-function playSound(url) {
-  const a = audioPool[poolIdx];
-  poolIdx = (poolIdx + 1) % POOL_SIZE;
-  a.src = url;
-  a.volume = 1.0;
-  a.play().catch(() => {});
-}
 function playPop() {
-  playSound(popSounds[Math.floor(Math.random() * popSounds.length)]);
+  playBuf(popBufs[Math.floor(Math.random() * popBufs.length)], 0.6);
 }
 function playChainPop() {
-  playSound(chainSound);
+  playBuf(chainBuf, 0.4);
 }
 function playGoldenBoom() {
-  boomSounds.forEach((url, i) => setTimeout(() => playSound(url), i * 60));
+  boomBufs.forEach((buf, i) => setTimeout(() => playBuf(buf, 0.5), i * 60));
 }
 
 // ── Bubble colors ──
