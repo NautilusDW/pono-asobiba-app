@@ -106,30 +106,116 @@ function setupMasterChain() {
   rhythmStartTime = audioCtx.currentTime;
 }
 
-// Quantize to nearest beat if within window
+// Quantize to nearest 8th note (half beat) — snaps pops to rhythm grid
+const EIGHTH_NOTE = RHYTHM_BEAT_INTERVAL / 2;
+let lastQuantizedSlot = -1; // prevent double-firing on same slot during drag
+
 function quantizeTime(now) {
   const elapsed = now - rhythmStartTime;
-  const beatIdx = Math.round(elapsed / RHYTHM_BEAT_INTERVAL);
-  const nearest = rhythmStartTime + beatIdx * RHYTHM_BEAT_INTERVAL;
+  const slotIdx = Math.round(elapsed / EIGHTH_NOTE);
+  const nearest = rhythmStartTime + slotIdx * EIGHTH_NOTE;
+  // During drag: skip if same slot already fired
+  if (slotIdx === lastQuantizedSlot) return -1; // signal: skip this pop sound
+  lastQuantizedSlot = slotIdx;
   return (Math.abs(nearest - now) * 1000 <= RHYTHM_QUANTIZE_MS) ? Math.max(now, nearest) : now;
 }
 
 // Choose a pentatonic frequency based on Y position (bottom=low, top=high)
 function choosePentaFreq(bubbleY) {
-  // Map Y position to note index: bottom of screen (Y=H) → lowest, top (Y=0) → highest
   const t = 1 - Math.max(0, Math.min(1, bubbleY / H)); // 0=bottom, 1=top
   const noteIdx = Math.min(PENTA_CANDIDATES.length - 1, Math.floor(t * PENTA_CANDIDATES.length));
-  let freq = PENTA_CANDIDATES[noteIdx];
-  return freq;
+  return PENTA_CANDIDATES[noteIdx];
 }
 
-// How many layers to play (1=single, 2=duo) based on rapid taps
-// Max 2 layers to keep it clean — always uses pentatonic intervals
-function getLayerCount() {
-  const now = performance.now();
-  const recent = rhythmRecentTaps.filter(t => now - t <= RHYTHM_CHORD_THRESHOLD_MS).length;
-  if (recent >= 2) return 2;
-  return 1;
+// ── Background Drum Loop (synthesized kick + hi-hat, subtle) ──
+const DRUM_VOL = 0.10;
+const DRUM_SLOTS = 8; // 8th notes per bar
+const DRUM_SLOT_DUR = EIGHTH_NOTE; // one 8th note
+let drumSchedulerId = null;
+let drumNextSlot = 0;
+let drumNextTime = 0;
+let drumNoiseBuffer = null;
+let drumGain = null;
+
+function createDrumNoiseBuffer() {
+  if (!audioCtx || drumNoiseBuffer) return;
+  const sr = audioCtx.sampleRate;
+  const len = sr * 0.1;
+  drumNoiseBuffer = audioCtx.createBuffer(1, len, sr);
+  const d = drumNoiseBuffer.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+}
+
+function setupDrumChain() {
+  if (!audioCtx || drumGain) return;
+  setupMasterChain();
+  drumGain = audioCtx.createGain();
+  drumGain.gain.value = DRUM_VOL;
+  drumGain.connect(masterGain);
+  createDrumNoiseBuffer();
+}
+
+function playKick(time) {
+  if (!audioCtx || !drumGain) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.exponentialRampToValueAtTime(55, time + 0.07);
+    gain.gain.setValueAtTime(0.8, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
+    osc.connect(gain);
+    gain.connect(drumGain);
+    osc.start(time);
+    osc.stop(time + 0.2);
+  } catch (e) {}
+}
+
+function playHiHat(time) {
+  if (!audioCtx || !drumGain || !drumNoiseBuffer) return;
+  try {
+    const src = audioCtx.createBufferSource();
+    src.buffer = drumNoiseBuffer;
+    const hpf = audioCtx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.setValueAtTime(7000, time);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.25, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    src.connect(hpf);
+    hpf.connect(gain);
+    gain.connect(drumGain);
+    src.start(time);
+    src.stop(time + 0.07);
+  } catch (e) {}
+}
+
+function scheduleDrumSlot(slotInBar, time) {
+  playHiHat(time);
+  if (slotInBar === 0 || slotInBar === 4) playKick(time);
+}
+
+function startDrumLoop() {
+  if (drumSchedulerId) return;
+  setupDrumChain();
+  if (!audioCtx) return;
+  drumNextTime = audioCtx.currentTime + 0.1;
+  drumNextSlot = 0;
+  drumSchedulerId = setInterval(() => {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    const lookAhead = audioCtx.currentTime + 0.25;
+    while (drumNextTime < lookAhead) {
+      scheduleDrumSlot(drumNextSlot % DRUM_SLOTS, drumNextTime);
+      drumNextSlot = (drumNextSlot + 1) % DRUM_SLOTS;
+      drumNextTime += DRUM_SLOT_DUR;
+    }
+  }, 100);
+}
+
+function stopDrumLoop() {
+  if (drumSchedulerId) { clearInterval(drumSchedulerId); drumSchedulerId = null; }
+  drumGain = null;
 }
 
 // Play a real-time marimba note via oscillator + LPF
@@ -175,28 +261,23 @@ function playMarimbaNote(freq, time, velocity, panValue) {
   } catch (e) { /* ignore */ }
 }
 
-// Play musical bubble pop: real-time marimba with quantization, panning, layering
+// Play musical bubble pop: quantized to 8th note grid, panning by X, pitch by Y
 function playRhythmPop(bubbleX, bubbleY) {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
   setupMasterChain();
+  // Start drum loop on first pop
+  if (!drumSchedulerId) startDrumLoop();
 
   const now = audioCtx.currentTime;
   const scheduledTime = quantizeTime(now);
+  if (scheduledTime < 0) return; // same beat slot — skip (prevents machine-gun during drag)
+
   const freq = choosePentaFreq(bubbleY);
   const panValue = Math.max(-0.6, Math.min(0.6, (bubbleX / W) * 2 - 1));
   const velocity = 0.55;
-  const layers = getLayerCount();
 
-  // Play layers: root + octave above (always consonant)
   playMarimbaNote(freq, scheduledTime, velocity, panValue);
-  if (layers >= 2) {
-    // Second layer: same note one octave up (always harmonious)
-    playMarimbaNote(freq * 2, scheduledTime + 0.012, velocity * 0.45, panValue);
-  }
-
-  rhythmRecentTaps.push(performance.now());
-  rhythmRecentTaps = rhythmRecentTaps.filter(t => performance.now() - t < 1200);
 }
 
 // ── BGM (WebAudio GainNode for reliable volume control — Audio.volume is ignored on iOS) ──
