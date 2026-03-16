@@ -134,7 +134,7 @@ const COLORS = [
 ];
 
 // ── Pre-render bubble sprites (avoid createRadialGradient every frame) ──
-const SPRITE_SIZES = [40, 60, 80, 100]; // discrete sizes for snapping
+const SPRITE_SIZES = [40, 60, 80, 100, 150, 200]; // discrete sizes for snapping
 function makeBubbleSprite(size, color, golden) {
   const pad = golden ? Math.ceil(size * 0.35) : 2;
   const full = size * 2 + pad * 2;
@@ -224,13 +224,19 @@ function addBubble(x, y, radius, golden, opacity) {
   if (bcount >= bx.length) return;
   const i = bcount++;
   const sz = Math.min(W, H) / 600;
-  br[i] = radius || (35 + Math.random() * 45) * sz;
+  // Occasionally spawn big bubbles (10% chance: 2-3x normal size)
+  const bigChance = Math.random();
+  const baseR = bigChance < 0.05 ? (120 + Math.random() * 80)
+              : bigChance < 0.12 ? (80 + Math.random() * 50)
+              : (35 + Math.random() * 45);
+  br[i] = radius || baseR * sz;
   bx[i] = x ?? (Math.random() * W);
   by[i] = y ?? (H + br[i] + Math.random() * 100);
   bgolden[i] = golden ? 1 : 0;
   bcolorIdx[i] = Math.floor(Math.random() * COLORS.length);
   bvx[i] = (Math.random() - 0.5) * 0.5;
-  bvy[i] = -(0.5 + Math.random() * 1.0) * (golden ? 0.6 : 1);
+  const sizeSlowdown = br[i] > 80 * sz ? 0.5 : 1; // big bubbles float slower
+  bvy[i] = -(0.5 + Math.random() * 1.0) * (golden ? 0.6 : sizeSlowdown);
   bwobblePhase[i] = Math.random() * Math.PI * 2;
   bwobbleSpeed[i] = 0.02 + Math.random() * 0.02;
   bwobbleAmp[i] = 0.5 + Math.random() * 0.5;
