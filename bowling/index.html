@@ -152,11 +152,11 @@ const BALL_LIFETIME = 5000;
 const FRICTION = 0.993;       // everything slows down gradually
 const RESTITUTION = 0.85;     // bouncy collisions
 const WALL_RESTITUTION = 0.9; // bouncy walls
-const MAX_BODIES = 50;
-const TARGET_PINS = 20;       // try to maintain this many pins
-const REFILL_INTERVAL = 2000; // ms between checking if we need more pins
+const MAX_BODIES = 35;        // lowered to prevent crash
+const TARGET_PINS = 15;       // formation-based, refill as formation
+const REFILL_INTERVAL = 3000; // ms between checking if we need more pins
 const COMBO_WINDOW = 90;
-const MAX_MERGES_PER_FRAME = 5;
+const MAX_MERGES_PER_FRAME = 4;
 
 // ── Pin images ──
 const tierCanvases = [];
@@ -190,48 +190,94 @@ function addBody(x, y, r, mass, type) {
   bodies.push(b); return b;
 }
 
-// Place a pin at a random open spot (no overlap)
-function spawnPinAtRandom(forceTier) {
-  if (bodies.length >= MAX_BODIES) return;
-  const rng = Math.random();
-  const tier = forceTier !== undefined ? forceTier : (rng < 0.75 ? 0 : rng < 0.93 ? 1 : 2);
-  const t = TIERS[tier];
-  const margin = t.r + 15;
-  // Try to find non-overlapping position
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const x = margin + Math.random() * (W - margin * 2);
-    const y = margin + Math.random() * (H - margin * 2);
-    let overlap = false;
-    for (let i = 0; i < bodies.length; i++) {
-      const ob = bodies[i];
-      if (ob.dead) continue;
-      const dx = ob.x - x, dy = ob.y - y;
-      const minD = ob.r + t.r + 5;
-      if (dx * dx + dy * dy < minD * minD) { overlap = true; break; }
+// ── Formation patterns (positions relative to center, in units of pin spacing) ──
+const FORMATIONS = [
+  // Triangle (bowling style): rows 1,2,3,4,5 = 15 pins
+  { name: 'triangle', positions: (function() {
+    const pos = [];
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col <= row; col++) {
+        pos.push({ x: (col - row/2), y: row });
+      }
     }
-    if (!overlap) {
-      const b = addBody(x, y, t.r, t.mass, 'pin');
-      b.tier = tier;
-      return;
+    return pos;
+  })() },
+  // Diamond: 1,2,3,4,3,2,1 = 16 pins (trim to 15)
+  { name: 'diamond', positions: (function() {
+    const pos = [], rows = [1,2,3,4,3,2];
+    let ry = 0;
+    for (let r = 0; r < rows.length; r++) {
+      const n = rows[r];
+      for (let c = 0; c < n; c++) {
+        pos.push({ x: (c - (n-1)/2), y: ry });
+      }
+      ry++;
     }
+    return pos;
+  })() },
+  // Inverted triangle: rows 5,4,3,2,1 = 15 pins
+  { name: 'inverted', positions: (function() {
+    const pos = [];
+    for (let row = 0; row < 5; row++) {
+      const n = 5 - row;
+      for (let col = 0; col < n; col++) {
+        pos.push({ x: (col - (n-1)/2), y: row });
+      }
+    }
+    return pos;
+  })() },
+  // Grid 4x4 = 16, trim to 15
+  { name: 'grid', positions: (function() {
+    const pos = [];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      if (pos.length < 15) pos.push({ x: c - 1.5, y: r });
+    }
+    return pos;
+  })() },
+];
+
+function spawnFormation() {
+  const form = FORMATIONS[Math.floor(Math.random() * FORMATIONS.length)];
+  const spacing = 48; // px between pin centers
+  const cx = W / 2;
+  // Formation centered in upper 45% of screen
+  const baseY = H * 0.15;
+  for (let i = 0; i < form.positions.length; i++) {
+    if (bodies.length >= MAX_BODIES) break;
+    const p = form.positions[i];
+    const rng = Math.random();
+    const tier = rng < 0.75 ? 0 : rng < 0.93 ? 1 : 2;
+    const t = TIERS[tier];
+    const x = cx + p.x * spacing;
+    const y = baseY + p.y * spacing;
+    // Clamp to screen
+    const bx = Math.max(t.r + 12, Math.min(W - t.r - 12, x));
+    const by = Math.max(t.r + 12, Math.min(H - t.r - 12, y));
+    const b = addBody(bx, by, t.r, t.mass, 'pin');
+    b.tier = tier;
   }
 }
 
-function spawnBall(tapX, tapY) {
+// ── Aiming / pull-back ball launch ──
+let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
+const BALL_SPAWN_Y_RATIO = 0.88; // ball spawns near bottom
+const MIN_DRAG = 20;  // minimum drag distance to shoot
+const MAX_SPEED = 18;
+const MIN_SPEED = 6;
+
+function spawnBall(fromX, fromY, dirX, dirY, power) {
   if (bodies.length >= MAX_BODIES) return;
-  const b = addBody(tapX, tapY, BALL_R, BALL_MASS, 'ball');
-  // Random direction
-  const angle = Math.random() * Math.PI * 2;
-  const speed = 12 + Math.random() * 4;
-  b.vx = Math.cos(angle) * speed;
-  b.vy = Math.sin(angle) * speed;
+  const b = addBody(fromX, fromY, BALL_R, BALL_MASS, 'ball');
+  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, power / 200);
+  b.vx = dirX * speed;
+  b.vy = dirY * speed;
   b.colorIdx = Math.floor(Math.random() * ballColors.length);
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
 }
 
 // ── Effects ──
 const PARTICLE_COLORS = ['#FF6B6B','#FFE66D','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9','#F1948A'];
-const particles = [], MAX_PARTICLES = 300;
+const particles = [], MAX_PARTICLES = 150;
 function spawnParticles(x, y, count, baseColor) {
   const n = Math.min(count, MAX_PARTICLES - particles.length);
   for (let i = 0; i < n; i++) {
@@ -309,10 +355,10 @@ function triggerExplosion(cx, cy) {
       b.vx += (dx/dist) * (1 - dist/250) * 25;
       b.vy += (dy/dist) * (1 - dist/250) * 25;
     }
-    // Inner zone: shatter into tier 0
-    if (dist < 80 && b.type === 'pin') {
+    // Inner zone: shatter into tier 0 (limit spawns to prevent overflow)
+    if (dist < 80 && b.type === 'pin' && bodies.length < MAX_BODIES - 2) {
       b.dead = true;
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 2; k++) {
         const a = Math.random() * Math.PI * 2, sp = 4 + Math.random() * 4;
         const t0 = TIERS[0];
         const nb = addBody(cx + Math.cos(a)*30, cy + Math.sin(a)*30, t0.r, t0.mass, 'pin');
@@ -429,13 +475,34 @@ function physicsStep() {
   }
 }
 
-// ── Input: tap to shoot ball from that spot ──
-canvas.addEventListener('pointerdown', e => { e.preventDefault(); spawnBall(e.clientX, e.clientY); });
-canvas.addEventListener('pointermove', e => {
-  if (e.pressure > 0 || e.buttons > 0) {
-    if (Math.random() < 0.15) spawnBall(e.clientX, e.clientY);
-  }
+// ── Input: pull-back aiming (like billiards/Angry Birds) ──
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  aiming = true;
+  aimStartX = aimCurX = e.clientX;
+  aimStartY = aimCurY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
 });
+canvas.addEventListener('pointermove', e => {
+  if (!aiming) return;
+  e.preventDefault();
+  aimCurX = e.clientX;
+  aimCurY = e.clientY;
+});
+canvas.addEventListener('pointerup', e => {
+  if (!aiming) return;
+  e.preventDefault();
+  aiming = false;
+  const dx = aimStartX - aimCurX; // reversed: pull back = shoot forward
+  const dy = aimStartY - aimCurY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < MIN_DRAG) return; // too short, ignore
+  const nx = dx / dist, ny = dy / dist;
+  const ballX = W / 2;
+  const ballY = H * BALL_SPAWN_Y_RATIO;
+  spawnBall(ballX, ballY, nx, ny, dist);
+});
+canvas.addEventListener('pointercancel', () => { aiming = false; });
 
 // ── Draw ──
 function drawBg() {
@@ -447,6 +514,11 @@ function drawBg() {
   // Billiard table border
   ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, W-8, H-8);
   ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 3; ctx.strokeRect(10, 10, W-20, H-20);
+  // Launch line (like billiard head string)
+  ctx.globalAlpha = 0.2; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath(); ctx.moveTo(12, H * 0.75); ctx.lineTo(W - 12, H * 0.75); ctx.stroke();
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
 }
 
 function drawBodies() {
@@ -537,13 +609,12 @@ function loop(now) {
     }
   }
 
-  // Refill pins if needed
+  // Refill pins with a new formation when too few remain
   if (now - lastRefill > REFILL_INTERVAL) {
     let pinCount = 0;
     for (let i = 0; i < bodies.length; i++) { if (!bodies[i].dead && bodies[i].type === 'pin') pinCount++; }
-    if (pinCount < TARGET_PINS) {
-      const toAdd = Math.min(3, TARGET_PINS - pinCount);
-      for (let i = 0; i < toAdd; i++) spawnPinAtRandom();
+    if (pinCount < 5) {
+      spawnFormation();
     }
     lastRefill = now;
   }
@@ -580,19 +651,54 @@ function loop(now) {
   ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
   ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length, 60, 22);
 
+  // Aiming indicator
+  const ballRestX = W / 2, ballRestY = H * BALL_SPAWN_Y_RATIO;
+  if (aiming) {
+    const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > MIN_DRAG) {
+      const nx = dx / dist, ny = dy / dist;
+      const power = Math.min(1, dist / 200);
+      // Draw trajectory dots
+      ctx.globalAlpha = 0.5;
+      for (let d = 0; d < 8; d++) {
+        const dd = 30 + d * 25;
+        ctx.beginPath();
+        ctx.arc(ballRestX + nx * dd, ballRestY + ny * dd, 3 + (1-d/8)*3, 0, Math.PI*2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+      }
+      // Power bar
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#333'; ctx.fillRect(ballRestX - 30, ballRestY + 20, 60, 8);
+      const barColor = power < 0.5 ? '#4CAF50' : power < 0.8 ? '#FF9800' : '#F44336';
+      ctx.fillStyle = barColor; ctx.fillRect(ballRestX - 30, ballRestY + 20, 60 * power, 8);
+      ctx.globalAlpha = 1;
+    }
+    // Draw ball at rest position
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(ballCanvases[0], ballRestX - halfBall, ballRestY - halfBall);
+    ctx.globalAlpha = 1;
+  } else {
+    // Show waiting ball
+    ctx.globalAlpha = 0.4 + Math.sin(now*0.003)*0.15;
+    ctx.drawImage(ballCanvases[0], ballRestX - halfBall, ballRestY - halfBall);
+    ctx.globalAlpha = 1;
+  }
+
   // Hint
-  if (score === 0 && bodies.length <= TARGET_PINS + 1) {
+  if (score === 0) {
     ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
     ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-    ctx.fillText('タップしてボールを発射！', W/2, H*0.85);
+    ctx.fillText('引っ張ってボールを発射！', W/2, H*0.95);
     ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(loop);
 }
 
-// ── Place initial pins ──
-for (let i = 0; i < TARGET_PINS; i++) spawnPinAtRandom();
+// ── Place initial formation ──
+spawnFormation();
 
 requestAnimationFrame(loop);
 </script>
