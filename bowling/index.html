@@ -450,8 +450,10 @@ function physicsStep() {
     const b = bodies[i];
     if (b.dead) continue;
     b.x += b.vx; b.y += b.vy;
-    b.vx *= FRICTION; b.vy *= FRICTION;
-    if (b.vx*b.vx + b.vy*b.vy < 0.001) { b.vx = 0; b.vy = 0; }
+    const spd2 = b.vx*b.vx + b.vy*b.vy;
+    const f = spd2 > 9 ? 0.996 : spd2 > 1 ? 0.98 : 0.92;
+    b.vx *= f; b.vy *= f;
+    if (spd2 < 0.04) { b.vx = 0; b.vy = 0; }
     wallBounce(b);
   }
   for (let i = 0; i < n; i++) {
@@ -508,7 +510,7 @@ function physicsStep() {
       // At least one must be moving
       const aSpd2 = a.vx*a.vx + a.vy*a.vy;
       const bSpd2 = b.vx*b.vx + b.vy*b.vy;
-      if (aSpd2 < 0.09 && bSpd2 < 0.09) continue; // both nearly still
+      if (aSpd2 < 0.5 && bSpd2 < 0.5) continue; // both nearly still (higher threshold prevents endless drift)
       const dx = b.x - a.x, dy = b.y - a.y;
       const dist2 = dx*dx + dy*dy;
       const magnetDist = MAGNET_RANGE * (a.r + b.r);
