@@ -232,8 +232,6 @@ let ballTier = 0;           // current ball's tier
 let shotNumber = 0;
 
 // New game features
-let patternName = '';        // current formation name for display
-let patternNameTimer = 0;    // frames to show pattern name
 let bestScore = parseInt(localStorage.getItem('bowling_best') || '0');
 let ballTrail = [];          // [{x,y,alpha}] ball position trail
 const MAX_TRAIL = 40;
@@ -286,200 +284,83 @@ function startArrangePhase() {
   // Ensure tier data is correct
   for (const p of pins) { const t = TIERS[p.tier]; p.r = t.r; p.mass = t.mass; }
 
-  // Helper: average radius of pins in a slice, with gap
   const GAP = 10; // extra px between pins beyond their radii
-  function avgR(from, to) {
-    let s = 0; for (let i = from; i < to; i++) s += pins[i].r;
-    return s / Math.max(1, to - from);
-  }
-
-  // Helper: compute row X positions accounting for each pin's actual radius
-  function rowPositions(rowPins, centerX) {
-    if (rowPins.length === 0) return [];
-    if (rowPins.length === 1) return [{ x: centerX }];
-    // total width needed = sum of all diameters + gaps between
-    let totalW = 0;
-    for (let i = 0; i < rowPins.length; i++) {
-      totalW += rowPins[i].r * 2;
-      if (i > 0) totalW += GAP;
-    }
-    // But we want center-to-center positions, so subtract first and last radius
-    const posW = totalW - rowPins[0].r - rowPins[rowPins.length - 1].r;
-    let curX = centerX - posW / 2;
-    const result = [];
-    for (let i = 0; i < rowPins.length; i++) {
-      result.push({ x: curX });
-      if (i < rowPins.length - 1) {
-        curX += rowPins[i].r + GAP + rowPins[i + 1].r;
-      }
-    }
-    return result;
-  }
-
-  // Helper: max radius in a pin slice
-  function maxR(from, to) {
-    let m = 0; for (let i = from; i < to; i++) m = Math.max(m, pins[i].r);
-    return m;
-  }
 
   // Pick a random formation pattern
-  const patternDefs = [
-    { id: 'rows', label: 'せいれつ！' },
-    { id: 'triangle', label: 'さんかく！' },
-    { id: 'diamond', label: 'ダイヤ！' },
-    { id: 'circle', label: 'まる！' },
-    { id: 'grid', label: 'ならべ！' },
-    { id: 'v-shape', label: 'ブイ！' },
-    { id: 'spiral', label: 'うずまき！' },
-    { id: 'cross', label: 'じゅうもんじ！' },
-  ];
-  const pick = patternDefs[Math.floor(Math.random() * patternDefs.length)];
-  const pattern = pick.id;
-  patternName = pick.label;
-  patternNameTimer = 70; // show for ~1.2s
+  const patterns = ['triangle', 'diamond', 'circle', 'grid', 'v-shape', 'spiral', 'cross', 'rows'];
+  const pattern = patterns[Math.floor(Math.random() * patterns.length)];
   const cxP = W / 2, areaTop = H * 0.08, areaBot = H * 0.58;
   const areaCY = (areaTop + areaBot) / 2;
-  const positions = [];
+  const n = pins.length;
+
+  // Step 1: Generate rough shape positions (unit spacing ~50px, will be fixed by relaxation)
+  const pos = [];
+  const S = 50; // base spacing unit
 
   if (pattern === 'triangle') {
-    // Bowling triangle pointing down — rows of 1,2,3,...
     let placed = 0, row = 0;
-    let curY = areaTop + 30;
-    while (placed < pins.length) {
-      const count = Math.min(row + 1, pins.length - placed);
-      const rowSlice = pins.slice(placed, placed + count);
-      const rMax = maxR(placed, placed + count);
-      const xPos = rowPositions(rowSlice, cxP);
-      for (let i = 0; i < count; i++) {
-        positions.push({ x: xPos[i].x, y: curY });
-      }
-      placed += count;
-      curY += rMax * 2 + GAP + (row < pins.length ? maxR(placed, Math.min(placed + row + 2, pins.length)) : 0);
-      row++;
-    }
+    while (placed < n) { for (let c = 0; c <= row && placed < n; c++) { pos.push({ x: cxP + (c - row/2) * S, y: areaTop + 40 + row * S }); placed++; } row++; }
   } else if (pattern === 'diamond') {
-    // Diamond shape — widest in middle
-    const n = pins.length;
     const half = Math.ceil(Math.sqrt(n));
-    let placed = 0, curY = areaTop + 25;
-    for (let row = 0; placed < n; row++) {
-      const fromMid = Math.abs(row - half + 1);
-      const count = Math.min(Math.max(1, half - fromMid), n - placed);
-      const rowSlice = pins.slice(placed, placed + count);
-      const rMax = maxR(placed, placed + count);
-      const xPos = rowPositions(rowSlice, cxP);
-      for (let i = 0; i < count; i++) {
-        positions.push({ x: xPos[i].x, y: curY });
-      }
-      placed += count;
-      const nextR = placed < n ? maxR(placed, Math.min(placed + Math.max(1, half - Math.abs(row + 1 - half + 1)), n)) : 0;
-      curY += rMax + GAP + nextR;
-    }
-  } else if (pattern === 'circle') {
-    // Concentric circles — ring radius based on pin sizes
-    const n = pins.length;
-    positions.push({ x: cxP, y: areaCY });
-    let placed = 1, ring = 1;
-    while (placed < n) {
-      const count = Math.min(n - placed, Math.max(4, Math.floor(ring * 5)));
-      const rAvg = avgR(placed, Math.min(placed + count, n));
-      const ringR = ring === 1 ? pins[0].r + rAvg + GAP : (ring * (rAvg * 2 + GAP));
-      for (let i = 0; i < count && placed < n; i++) {
-        const a = (i / count) * Math.PI * 2 - Math.PI / 2;
-        positions.push({ x: cxP + Math.cos(a) * ringR, y: areaCY + Math.sin(a) * ringR });
-        placed++;
-      }
-      ring++;
-    }
-  } else if (pattern === 'grid') {
-    // Regular grid — spacing adapts to pin sizes per row
-    const cols = Math.ceil(Math.sqrt(pins.length * 1.3));
-    let placed = 0, curY = areaTop + 30;
-    while (placed < pins.length) {
-      const rowCount = Math.min(cols, pins.length - placed);
-      const rowSlice = pins.slice(placed, placed + rowCount);
-      const rMax = maxR(placed, placed + rowCount);
-      const xPos = rowPositions(rowSlice, cxP);
-      for (let i = 0; i < rowCount; i++) {
-        positions.push({ x: xPos[i].x, y: curY });
-      }
-      placed += rowCount;
-      const nextR = placed < pins.length ? maxR(placed, Math.min(placed + cols, pins.length)) : 0;
-      curY += rMax + GAP + nextR;
-    }
-  } else if (pattern === 'v-shape') {
-    // V shape — two arms going down, spacing by pin size
-    const n = pins.length;
-    const half = Math.ceil(n / 2);
-    let leftY = areaTop + 30, rightY = areaTop + 30;
-    let prevLeftR = 0, prevRightR = 0;
-    for (let i = 0; i < n; i++) {
-      const p = pins[i];
-      if (i < half) {
-        if (i > 0) leftY += prevLeftR + GAP + p.r;
-        positions.push({ x: cxP - (20 + i * (p.r + GAP)), y: leftY });
-        prevLeftR = p.r;
-      } else {
-        const idx = i - half;
-        if (idx > 0) rightY += prevRightR + GAP + p.r;
-        positions.push({ x: cxP + (20 + idx * (p.r + GAP)), y: rightY });
-        prevRightR = p.r;
-      }
-    }
-  } else if (pattern === 'spiral') {
-    // Spiral — gap grows with pin radius
-    let a = 0, dist = 0;
-    for (let i = 0; i < pins.length; i++) {
-      const r = pins[i].r;
-      if (i === 0) {
-        positions.push({ x: cxP, y: areaCY });
-      } else {
-        dist += pins[i-1].r + GAP + r;
-        a += Math.atan2(r * 2 + GAP, dist) * 3;
-        positions.push({ x: cxP + Math.cos(a) * dist, y: areaCY + Math.sin(a) * dist });
-      }
-    }
-  } else if (pattern === 'cross') {
-    // Plus/cross shape — spacing by radius
-    const n = pins.length;
-    const armLen = Math.ceil((n - 1) / 4);
     let placed = 0;
-    positions.push({ x: cxP, y: areaCY }); placed++;
-    const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
-    for (let arm = 0; arm < 4 && placed < n; arm++) {
-      let dist = pins[0].r; // center pin radius
-      for (let i = 0; i < armLen && placed < n; i++) {
-        const p = pins[placed];
-        dist += p.r + GAP;
-        positions.push({ x: cxP + dirs[arm][0] * dist, y: areaCY + dirs[arm][1] * dist });
-        dist += p.r;
-        placed++;
-      }
-    }
+    for (let row = 0; placed < n; row++) { const w = Math.max(1, half - Math.abs(row - half + 1)); for (let c = 0; c < w && placed < n; c++) { pos.push({ x: cxP + (c - (w-1)/2) * S, y: areaTop + 40 + row * S * 0.85 }); placed++; } }
+  } else if (pattern === 'circle') {
+    pos.push({ x: cxP, y: areaCY });
+    let placed = 1, ring = 1;
+    while (placed < n) { const cnt = Math.min(n - placed, Math.max(5, ring * 6)); const r = ring * S * 1.2; for (let i = 0; i < cnt && placed < n; i++) { const a = (i/cnt)*Math.PI*2 - Math.PI/2; pos.push({ x: cxP + Math.cos(a)*r, y: areaCY + Math.sin(a)*r }); placed++; } ring++; }
+  } else if (pattern === 'grid') {
+    const cols = Math.ceil(Math.sqrt(n * 1.3));
+    let placed = 0;
+    for (let r = 0; placed < n; r++) { const rc = Math.min(cols, n - placed); for (let c = 0; c < rc; c++) { pos.push({ x: cxP + (c - (rc-1)/2) * S, y: areaTop + 40 + r * S }); placed++; } }
+  } else if (pattern === 'v-shape') {
+    const half = Math.ceil(n / 2);
+    for (let i = 0; i < n; i++) { const side = i < half ? -1 : 1; const idx = i < half ? i : i - half; pos.push({ x: cxP + side * (30 + idx * S * 0.7), y: areaTop + 40 + idx * S * 0.7 }); }
+  } else if (pattern === 'spiral') {
+    for (let i = 0; i < n; i++) { const a = i * 0.9; const r = 10 + i * S * 0.45; pos.push({ x: cxP + Math.cos(a)*r, y: areaCY + Math.sin(a)*r }); }
+  } else if (pattern === 'cross') {
+    pos.push({ x: cxP, y: areaCY });
+    const dirs = [[0,-1],[0,1],[-1,0],[1,0]]; let placed = 1;
+    for (let arm = 0; arm < 4 && placed < n; arm++) { for (let i = 1; placed < n && i <= Math.ceil((n-1)/4); i++) { pos.push({ x: cxP + dirs[arm][0]*i*S, y: areaCY + dirs[arm][1]*i*S }); placed++; } }
   } else {
-    // 'rows' — tier-grouped rows
+    // rows — tier grouped
     const groups = {};
     for (const p of pins) { if (!groups[p.tier]) groups[p.tier] = []; groups[p.tier].push(p); }
     const sortedTiers = Object.keys(groups).map(Number).sort((a, b) => b - a);
-    let curY = areaTop;
-    for (const tier of sortedTiers) {
-      const grp = groups[tier];
-      const t = TIERS[tier];
-      curY += t.r;
-      const xPos = rowPositions(grp, cxP);
-      for (let i = 0; i < grp.length; i++) {
-        positions.push({ x: xPos[i].x, y: curY });
-      }
-      curY += t.r + GAP;
-    }
+    let curY = areaTop + 40, placed = 0;
+    for (const tier of sortedTiers) { const grp = groups[tier]; for (let i = 0; i < grp.length; i++) { pos.push({ x: cxP + (i - (grp.length-1)/2) * S, y: curY }); placed++; } curY += S; }
   }
 
-  // Clamp positions within play area (using each pin's radius as margin)
-  for (let i = 0; i < pins.length; i++) {
-    const pos = positions[i] || { x: cxP, y: areaCY };
-    const r = pins[i].r;
-    pins[i].targetX = Math.max(r + 4, Math.min(W - r - 4, pos.x));
-    pins[i].targetY = Math.max(r + 4, Math.min(areaBot, pos.y));
+  // Step 2: Relaxation — push apart any overlapping pairs (iterative)
+  // This guarantees no overlaps regardless of pin sizes
+  for (let iter = 0; iter < 20; iter++) {
+    let anyOverlap = false;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const dx = pos[j].x - pos[i].x, dy = pos[j].y - pos[i].y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 0.1;
+        const minDist = pins[i].r + pins[j].r + GAP;
+        if (dist < minDist) {
+          anyOverlap = true;
+          const push = (minDist - dist) / 2 + 1;
+          const nx = dx / dist, ny = dy / dist;
+          pos[i].x -= nx * push; pos[i].y -= ny * push;
+          pos[j].x += nx * push; pos[j].y += ny * push;
+        }
+      }
+    }
+    // Clamp within bounds after each iteration
+    for (let i = 0; i < n; i++) {
+      const r = pins[i].r;
+      pos[i].x = Math.max(r + 8, Math.min(W - r - 8, pos[i].x));
+      pos[i].y = Math.max(r + 8, Math.min(areaBot, pos[i].y));
+    }
+    if (!anyOverlap) break;
+  }
+
+  // Assign target positions
+  for (let i = 0; i < n; i++) {
+    pins[i].targetX = pos[i].x;
+    pins[i].targetY = pos[i].y;
   }
 
   // Pick next ball tier
@@ -910,20 +791,6 @@ function drawBallTrail() {
   ctx.globalAlpha = 1;
 }
 
-function drawPatternName() {
-  if (patternNameTimer <= 0) return;
-  patternNameTimer--;
-  const t = patternNameTimer / 70;
-  const scale = t > 0.8 ? 1 + (1 - (t - 0.8) / 0.2) * 0.5 : 1; // bounce in
-  const alpha = t < 0.2 ? t / 0.2 : 1; // fade out
-  ctx.globalAlpha = alpha * 0.9;
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold ' + Math.round(40 * scale) + 'px "Zen Maru Gothic"';
-  ctx.textAlign = 'center';
-  ctx.fillText(patternName, W/2, H * 0.35);
-  ctx.globalAlpha = 1;
-}
-
 function drawBestScore() {
   if (bestScore <= 0) return;
   ctx.globalAlpha = 0.5;
@@ -1076,7 +943,7 @@ function loop(now) {
 
   // ── Draw ──
   ctx.save(); ctx.translate(shakeX, shakeY);
-  drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter(); drawPatternName(); drawBestScore();
+  drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter(); drawBestScore();
   ctx.restore();
   scoreEl.textContent = score;
 
