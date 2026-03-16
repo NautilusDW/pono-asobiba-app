@@ -838,8 +838,7 @@ function popBubble(idx, chainDepth) {
       if (isDragging) {
         playMusicalPop(bcolorIdx[idx], x0, y0); // melody during drag
       } else {
-        playDrumByY(y0); // drum on single tap
-        spawnNoteParticle(bcolorIdx[idx] % PENTA_CANDIDATES.length);
+        playDrumByY(y0); // drum only on single tap
       }
     } else {
       playChainPop();
@@ -908,14 +907,23 @@ function handlePop(x, y) {
 }
 
 let isDragging = false;
+let pointerStartX = 0, pointerStartY = 0;
+const DRAG_THRESHOLD = 12; // px — must move this far before drag mode activates
+
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
   isDragging = false;
+  pointerStartX = e.clientX;
+  pointerStartY = e.clientY;
   handlePop(e.clientX, e.clientY);
 });
 canvas.addEventListener('pointermove', e => {
   if (e.buttons > 0 || e.pressure > 0) {
-    isDragging = true;
+    if (!isDragging) {
+      const dx = e.clientX - pointerStartX, dy = e.clientY - pointerStartY;
+      if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return; // not dragging yet
+      isDragging = true;
+    }
     handlePop(e.clientX, e.clientY);
   }
 });
