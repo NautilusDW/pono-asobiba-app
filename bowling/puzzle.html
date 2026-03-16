@@ -403,6 +403,15 @@ function refillGrid() {
     const bc = Math.floor(Math.random() * GRID_COLS);
     gridPins[0][bc].bomb = true;
   }
+  // After shifting rows, hex parity changes — check for disconnected pins
+  const orphans = findOrphans();
+  for (const o of orphans) {
+    addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0, o.bomb);
+    spawnParticles(o.x, o.y, 4);
+  }
+  if (orphans.length > 0) {
+    score += orphans.length * 15;
+  }
 }
 
 // ── Fallen bodies (gravity-driven pile at bottom) ──
@@ -537,11 +546,10 @@ function detectFallenMerges() {
     if (a.dead || a.merging || visited[i]) continue;
     // BFS cluster
     const cluster = [i]; visited[i] = 1;
-    let hasMoving = false, qi = 0;
+    let qi = 0;
     while (qi < cluster.length) {
       const ci = cluster[qi++];
       const ca = fallen[ci];
-      if (ca.vx * ca.vx + ca.vy * ca.vy >= 0.3) hasMoving = true;
       for (let j = 0; j < n; j++) {
         if (visited[j]) continue;
         const cb = fallen[j];
@@ -552,7 +560,7 @@ function detectFallenMerges() {
         }
       }
     }
-    if (cluster.length >= 3 && hasMoving) {
+    if (cluster.length >= 3) {
       const members = cluster.map(idx => fallen[idx]);
       let cx = 0, cy = 0;
       for (const m of members) { cx += m.x; cy += m.y; m.dead = true; }
@@ -710,88 +718,16 @@ function ballHitGrid() {
       return true;
     }
 
-    if (ball.tier === pin.tier) {
-      // ★ SAME TIER → Direct merge! No placement needed.
-      // BFS from the hit pin to find all connected same-tier pins
-      const cluster = [];
-      const visited = Array.from({ length: GRID_ROWS }, () => new Uint8Array(GRID_COLS));
-      const bfsQueue = [{ row: hitR, col: hitC }];
-      visited[hitR][hitC] = 1;
-      let qi = 0;
-      while (qi < bfsQueue.length) {
-        const cur = bfsQueue[qi++];
-        cluster.push(cur);
-        for (const nb of getNeighbors(cur.row, cur.col)) {
-          if (visited[nb.row][nb.col]) continue;
-          const nbPin = gridPins[nb.row][nb.col];
-          if (nbPin && !nbPin.bomb && nbPin.tier === pin.tier) {
-            visited[nb.row][nb.col] = 1;
-            bfsQueue.push(nb);
-          }
-        }
-      }
-
-      // cluster = all connected same-tier grid pins; +1 for the ball
-      const count = cluster.length + 1;
-
-      // Calculate center
-      let cx = 0, cy = 0;
-      for (const cell of cluster) {
-        const p = gridToScreen(cell.row, cell.col);
-        cx += p.x; cy += p.y;
-      }
-      cx /= cluster.length; cy /= cluster.length;
-
-      // Remove all cluster pins from grid
-      for (const cell of cluster) {
-        gridPins[cell.row][cell.col] = null;
-        const p = gridToScreen(cell.row, cell.col);
-        spawnParticles(p.x, p.y, 5 + pin.tier * 2);
-      }
-
-      const multiBonus = count >= 3 ? count : 1;
-
-      if (pin.tier < MAX_TIER) {
-        const tierJump = count >= 5 ? Math.min(3, MAX_TIER - pin.tier) : count >= 3 ? Math.min(2, MAX_TIER - pin.tier) : 1;
-        const nt = pin.tier + tierJump;
-        addFallen(cx, cy, nt, (Math.random() - 0.5) * 2, 1);
-        fallen[fallen.length - 1].flashTimer = 8;
-        spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
-        if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
-      } else {
-        spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
-        playBuf(explodeBuf, 0.4, 0.5);
-      }
-      spawnParticles(cx, cy, 15 + pin.tier * 5 + count * 3);
-      spawnRing(cx, cy, 50 + pin.tier * 20, '#fff');
-      if (count >= 3) spawnRing(cx, cy, 70 + pin.tier * 25, '#FFD700');
-      playBuf(mergeBuf, 0.5 + pin.tier * 0.15, 1.0);
-      score += Math.round((pin.tier + 1) * 20 * (1 + combo * 0.5) * multiBonus);
-      combo++; comboTimer = COMBO_WINDOW;
-      triggerShake(0.5 + pin.tier * 0.3 + (count >= 3 ? 0.3 : 0));
-
-      // Check for orphans after removing cluster
-      const orphans = findOrphans();
-      for (const o of orphans) {
-        addFallen(o.x, o.y, o.tier, (Math.random() - 0.5) * 1, 0, o.bomb);
-        spawnParticles(o.x, o.y, 5);
-      }
-      if (orphans.length > 0) {
-        spawnPopup(W / 2, H * 0.3, orphans.length + '体落下！', '#4ECDC4');
-        score += orphans.length * 15;
-      }
-
-    } else {
-      // ★ DIFFERENT TIER → Stick ball to grid, then check for same-tier neighbors
-      const placeCell = nearestEmptyNeighbor(hitR, hitC, ball.x, ball.y);
-      if (placeCell) {
-        gridPins[placeCell.row][placeCell.col] = { tier: ball.tier, bomb: false };
-        const sPos = gridToScreen(placeCell.row, placeCell.col);
-        spawnParticles(sPos.x, sPos.y, 5);
-        playBuf(bonkBuf, 0.3, 0.8);
-        // Check if placement creates a same-tier cluster
-        gridMergeCheck(placeCell.row, placeCell.col, ball.tier);
-      }
+    // ★ Always place ball on grid, then check for merge (handles both same & different tier)
+    // This ensures the ball bridges separate same-tier groups on both sides
+    const placeCell = nearestEmptyNeighbor(hitR, hitC, ball.x, ball.y);
+    if (placeCell) {
+      gridPins[placeCell.row][placeCell.col] = { tier: ball.tier, bomb: false };
+      const sPos = gridToScreen(placeCell.row, placeCell.col);
+      spawnParticles(sPos.x, sPos.y, 5);
+      playBuf(bonkBuf, 0.3, 0.8);
+      // Check if placement creates a same-tier cluster (needs 3+ to merge)
+      gridMergeCheck(placeCell.row, placeCell.col, ball.tier);
     }
     ball = null;
     return true;
@@ -1122,13 +1058,20 @@ function loop(now) {
 
   // ── Phase logic ──
   if (gamePhase === 'flight' && ball) {
-    // Move ball
-    ball.x += ball.vx; ball.y += ball.vy;
-    // Wall bounce (left/right only)
-    if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
-    if (ball.x + ball.r > W) { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
-    // Check grid collision
-    if (ballHitGrid()) {
+    // Sub-step movement to prevent tunneling through pins at steep angles
+    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+    const steps = Math.max(1, Math.ceil(speed / (GRID_PIN_R * 0.8)));
+    const svx = ball.vx / steps, svy = ball.vy / steps;
+    let hit = false;
+    for (let s = 0; s < steps; s++) {
+      ball.x += svx; ball.y += svy;
+      // Wall bounce (left/right only)
+      if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+      if (ball.x + ball.r > W) { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+      // Check grid collision
+      if (ballHitGrid()) { hit = true; break; }
+    }
+    if (hit) {
       gamePhase = 'settling';
       settleTimer = SETTLE_WAIT;
     }
