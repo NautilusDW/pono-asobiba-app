@@ -41,6 +41,9 @@ resize();
 window.addEventListener('resize', resize);
 
 // ── Audio (WebAudio API — no frame drops) ──
+// Strategy: create AudioContext + buffers immediately on load.
+// Context will be 'suspended' until first user gesture, but buffers are ready.
+// On first tap: resume() + play → sound on very first tap.
 let audioCtx = null, audioReady = false;
 
 function makeBuf(freq, dur, vol, decay) {
@@ -65,28 +68,17 @@ function generateBufs() {
   audioReady = true;
 }
 
-function initAudio() {
-  return new Promise(resolve => {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AC();
-    audioCtx.resume().then(() => {
-      // Silent buffer to unlock
-      const sb = audioCtx.createBuffer(1, 1, 22050);
-      const s = audioCtx.createBufferSource();
-      s.buffer = sb; s.connect(audioCtx.destination); s.start(0);
-      generateBufs();
-      resolve();
-    });
-    // Fallback: if resume() doesn't resolve quickly, generate buffers anyway
-    setTimeout(() => {
-      if (!audioReady) { generateBufs(); resolve(); }
-    }, 500);
-  });
-}
+// Create AudioContext + buffers immediately (suspended state is OK)
+try {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AC();
+  generateBufs(); // buffers are ready even while context is suspended
+} catch (e) { /* will init on first interaction as fallback */ }
 
 function playBuf(buf, volume, rate) {
   if (!audioReady || !buf) return;
   try {
+    // Resume on every play call — no-op if already running, unlocks on first gesture
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const src = audioCtx.createBufferSource();
     src.buffer = buf;
@@ -101,15 +93,18 @@ function playBuf(buf, volume, rate) {
   } catch (e) { /* ignore audio errors */ }
 }
 
-// Unlock audio on first interaction
-let audioUnlocked = false;
-async function unlockAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  await initAudio();
+// Fallback: if AudioContext wasn't created at load time, init on first interaction
+function ensureAudio() {
+  if (audioCtx) { audioCtx.resume(); return; }
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AC();
+    audioCtx.resume();
+    generateBufs();
+  } catch (e) {}
 }
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('pointerdown', unlockAudio, { once: true });
+document.addEventListener('pointerdown', ensureAudio, { once: true });
+document.addEventListener('touchstart', ensureAudio, { once: true });
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
@@ -478,36 +473,43 @@ function drawClouds(dt, cloudMul) {
 }
 
 // ── Day/Night cycle ──
-// Phases: 0=morning(dawn), 1=day, 2=sunset, 3=night
+// 5 phases: morning → day → sunset-warm → sunset-dark → night
 const SKY_PHASES = [
-  { // 0: Morning (dawn) — cool pink/lavender, NOT orange
-    top:    [180, 160, 220],  // soft lavender
-    mid:    [200, 200, 245],  // pale periwinkle
-    bot:    [170, 220, 255],  // light sky blue
+  { // 0: Morning (dawn) — cool lavender
+    top:    [180, 160, 220],
+    mid:    [200, 200, 245],
+    bot:    [170, 220, 255],
     cloud:  1.0,
   },
-  { // 1: Day
-    top:    [160, 215, 255],  // bright sky blue
-    mid:    [168, 230, 255],  // lighter blue
-    bot:    [125, 214, 245],  // aqua
+  { // 1: Day — bright blue sky
+    top:    [160, 215, 255],
+    mid:    [168, 230, 255],
+    bot:    [125, 214, 245],
     cloud:  1.0,
   },
-  { // 2: Sunset
-    top:    [80, 60, 130],    // deep purple
-    mid:    [200, 100, 80],   // warm red-orange
-    bot:    [255, 170, 80],   // golden orange
-    cloud:  0.7,
+  { // 2: Sunset warm — top still blue-ish, bottom goes orange
+    top:    [140, 170, 220],
+    mid:    [220, 160, 100],
+    bot:    [255, 170, 80],
+    cloud:  0.85,
   },
-  { // 3: Night
-    top:    [10, 10, 40],     // near-black blue
-    mid:    [20, 25, 70],     // dark navy
-    bot:    [30, 40, 90],     // deep blue
+  { // 3: Sunset dark — top goes deep purple, bottom warm orange-red
+    top:    [50, 40, 100],
+    mid:    [160, 70, 60],
+    bot:    [200, 100, 50],
+    cloud:  0.5,
+  },
+  { // 4: Night — dark blue
+    top:    [10, 10, 40],
+    mid:    [20, 25, 70],
+    bot:    [30, 40, 90],
     cloud:  0.25,
   },
 ];
-const PHASE_DURATION = 15000; // 15s per phase → 60s full cycle
+const NUM_PHASES = SKY_PHASES.length;
+const PHASE_DURATION = 12000; // 12s per phase → 60s full cycle
 const TRANSITION_DURATION = 3000; // 3s blend between phases
-let dayTime = PHASE_DURATION; // start at "day" phase (skip dawn on first load)
+let dayTime = PHASE_DURATION; // start at "day" phase
 
 function lerpColor(a, b, t) {
   return [
@@ -535,12 +537,12 @@ for (let i = 0; i < STAR_COUNT; i++) {
 }
 
 function getSkyColors(time) {
-  const cycle = time % (PHASE_DURATION * 4);
+  const cycle = time % (PHASE_DURATION * NUM_PHASES);
   const phaseIdx = Math.floor(cycle / PHASE_DURATION);
   const phaseProgress = (cycle % PHASE_DURATION) / PHASE_DURATION;
 
   const cur = SKY_PHASES[phaseIdx];
-  const next = SKY_PHASES[(phaseIdx + 1) % 4];
+  const next = SKY_PHASES[(phaseIdx + 1) % NUM_PHASES];
 
   // Smooth transition in last portion of each phase
   const transStart = 1 - (TRANSITION_DURATION / PHASE_DURATION);
@@ -561,11 +563,12 @@ function getSkyColors(time) {
 
 function getNightAmount(cycle) {
   // Returns 0-1 how "night" it is (for stars)
+  // Night is phase 4, sunset-dark is phase 3
   const phaseIdx = Math.floor(cycle / PHASE_DURATION);
   const progress = (cycle % PHASE_DURATION) / PHASE_DURATION;
   const transStart = 1 - (TRANSITION_DURATION / PHASE_DURATION);
 
-  if (phaseIdx === 3) { // night phase
+  if (phaseIdx === 4) { // night phase
     if (progress > transStart) {
       // Transitioning to morning
       const t = (progress - transStart) / (1 - transStart);
@@ -573,8 +576,8 @@ function getNightAmount(cycle) {
     }
     return 1;
   }
-  if (phaseIdx === 2 && progress > transStart) {
-    // Sunset transitioning to night
+  if (phaseIdx === 3 && progress > transStart) {
+    // Sunset-dark transitioning to night
     const t = (progress - transStart) / (1 - transStart);
     return t * t;
   }
@@ -594,12 +597,14 @@ function drawSky(dt) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Draw stars (visible during night, scroll down like clouds)
+  // Update star positions always (so they scroll continuously)
+  for (const s of stars) {
+    s.y += STAR_SPEED[s.layer] * dt * 0.06 / H;
+    if (s.y > 1.05) { s.y = -0.05; s.x = Math.random(); }
+  }
+  // Draw stars only during night
   if (sky.nightAmount > 0.05) {
     for (const s of stars) {
-      // Scroll down (parallax)
-      s.y += STAR_SPEED[s.layer] * dt * 0.06 / H;
-      if (s.y > 1.05) { s.y = -0.05; s.x = Math.random(); }
       const twinkle = 0.5 + 0.5 * Math.sin(dayTime * s.speed + s.phase);
       const alpha = sky.nightAmount * s.bright * twinkle;
       if (alpha < 0.02) continue;
