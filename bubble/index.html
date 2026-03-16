@@ -33,9 +33,13 @@ canvas { display: block; width: 100%; height: 100%; }
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let W, H;
+// Offscreen buffer for refraction lens effect
+const bgCanvas = document.createElement('canvas');
+const bgCtx = bgCanvas.getContext('2d');
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  bgCanvas.width = W; bgCanvas.height = H;
 }
 resize();
 window.addEventListener('resize', resize);
@@ -723,14 +727,40 @@ function loop(time) {
     if (bx[i] > W + br[i]) bx[i] = -br[i];
   }
 
-  // Draw bubbles using sprites
+  // Snapshot background (sky+clouds) for refraction lens effect
+  bgCtx.drawImage(canvas, 0, 0);
+
+  // Draw bubbles: refraction lens + sprite overlay
+  const LENS_ZOOM = 1.08; // magnification inside bubble
+  const LENS_SHIFT = 0.04; // slight upward shift (light bends up)
   for (let i = 0; i < bcount; i++) {
     if (!balive[i]) continue;
-    const { sprite, snapSize } = getBubbleSprite(br[i], bcolorIdx[i], bgolden[i]);
-    const scale = br[i] / snapSize;
+    const r = br[i], x0 = bx[i], y0 = by[i];
+    const opacity = bopacity[i];
+
+    // ── Refraction lens: clip to bubble circle, draw magnified background ──
+    if (opacity > 0.3 && r > 15) {
+      ctx.save();
+      ctx.globalAlpha = opacity * 0.35;
+      ctx.beginPath();
+      ctx.arc(x0, y0, r * 0.92, 0, Math.PI * 2);
+      ctx.clip();
+      // Draw background magnified from bubble center
+      const srcR = r / LENS_ZOOM;
+      const shiftY = r * LENS_SHIFT;
+      ctx.drawImage(bgCanvas,
+        x0 - srcR, y0 - srcR - shiftY, srcR * 2, srcR * 2, // source (smaller area)
+        x0 - r, y0 - r, r * 2, r * 2                       // dest (full bubble area = magnified)
+      );
+      ctx.restore();
+    }
+
+    // ── Normal bubble sprite ──
+    const { sprite, snapSize } = getBubbleSprite(r, bcolorIdx[i], bgolden[i]);
+    const scale = r / snapSize;
     const drawSize = (snapSize * 2 + sprite.pad * 2) * scale;
-    ctx.globalAlpha = bopacity[i];
-    ctx.drawImage(sprite.canvas, bx[i] - drawSize / 2, by[i] - drawSize / 2, drawSize, drawSize);
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(sprite.canvas, x0 - drawSize / 2, y0 - drawSize / 2, drawSize, drawSize);
   }
   ctx.globalAlpha = 1;
 
