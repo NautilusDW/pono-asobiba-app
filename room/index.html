@@ -80,6 +80,11 @@
       border-radius: 16px; padding: 5px 14px;
       font-size: 14px; font-weight: bold; cursor: pointer;
     }
+    #ui-btn-ach, #ui-btn-sticker {
+      background: rgba(0,0,0,0.35); color: white; border: none;
+      border-radius: 50%; width: 30px; height: 30px;
+      font-size: 16px; cursor: pointer;
+    }
     #ui-btn-info {
       background: rgba(0,0,0,0.3); color: white; border: none;
       border-radius: 50%; width: 30px; height: 30px;
@@ -482,6 +487,8 @@
     #btn-buy    { background: var(--orange); color: white; }
     #btn-buy:disabled { opacity: 0.4; cursor: default; }
   </style>
+<script src="../common/achievements.js"></script>
+<script src="../common/stickers.js"></script>
 </head>
 <body>
 
@@ -503,6 +510,8 @@
       <div id="ui-right">
         <div id="pts-disp">&#x2B50; <span id="pts-num">0</span></div>
         <button id="ui-btn-shop">おみせ</button>
+        <button id="ui-btn-ach" title="できたこと">🏆</button>
+        <button id="ui-btn-sticker" title="シールちょう">📖</button>
         <button id="ui-btn-info">?</button>
       </div>
     </div>
@@ -1735,6 +1744,14 @@ function init() {
     tab.classList.add('on');
     currentShopCat = tab.dataset.cat;
     renderShopGrid(tab.dataset.cat);
+  });
+
+  // Achievement board & Sticker book
+  document.getElementById('ui-btn-ach').addEventListener('click', () => {
+    if (window.showAchievementBoard) window.showAchievementBoard();
+  });
+  document.getElementById('ui-btn-sticker').addEventListener('click', () => {
+    if (window.showStickerBook) window.showStickerBook();
   });
 
   // Shop open/close (overlay button)

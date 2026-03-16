@@ -6,6 +6,7 @@
 <title>ことばあわせ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -502,6 +503,7 @@ function showStageComplete() {
   playFanfare();
   launchConfetti();
   awardPoints(5);
+  if (window.incrementStat) window.incrementStat('wordmatch_correct', 4); // 1ステージ=4問正解
   const num    = currentStageNum;
   const isAll8 = num === 7; // ステージ8（インデックス7）をクリアした瞬間
 

@@ -423,6 +423,8 @@
       line-height: 1.6;
     }
   </style>
+  <script src="common/achievements.js"></script>
+  <script src="common/stickers.js"></script>
 </head>
 <body>
   <div class="page">
@@ -455,7 +457,9 @@
 
 
     <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'">
-      ⭐ <span id="menu-pts">0</span>pt たまってるよ！　→ ポノのおへや
+      ⭐ <span id="menu-pts">0</span>pt たまってるよ！
+      <span id="ach-badge" style="margin-left:8px;font-size:0.8em;"></span>
+      　→ ポノのおへや
     </div>
 
     <nav class="menu">
@@ -633,6 +637,7 @@
       const val = document.getElementById('lockInput').value.trim();
       if (val === PREMIUM_PASSWORD) {
         localStorage.setItem('pono_premium', '1');
+        if (window.grantPremiumBonus) window.grantPremiumBonus();
         applyUnlockState();
       } else {
         document.getElementById('lockError').style.display = 'block';
@@ -645,6 +650,30 @@
     });
 
     applyUnlockState();
+
+    // ===== Achievement Badge =====
+    if (window.getAchievements && window.getUnlockedAchievements) {
+      var total = window.getAchievements().length;
+      var done = Object.keys(window.getUnlockedAchievements()).length;
+      var badge = document.getElementById('ach-badge');
+      if (badge && done > 0) {
+        badge.textContent = '🏆 ' + done + '/' + total;
+      }
+    }
+
+    // ===== Login Bonus Trigger =====
+    if (window.checkDailyLogin) {
+      var loginResult = window.checkDailyLogin();
+      if (loginResult && window.showLoginBonusPopup) {
+        // Delay popup slightly so page renders first
+        setTimeout(function() { window.showLoginBonusPopup(loginResult); }, 800);
+      }
+    }
+
+    // ===== Premium bonus for already-unlocked users =====
+    if (localStorage.getItem('pono_premium') === '1' && window.grantPremiumBonus) {
+      window.grantPremiumBonus();
+    }
 
   </script>
 </body>

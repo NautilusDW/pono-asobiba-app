@@ -9,6 +9,7 @@
   <title>うみのせかい｜ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <script src="../common/points.js"></script>
+  <script src="../common/achievements.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
@@ -221,6 +222,7 @@
   <div id="ui">
     <button id="btnBack">← もどる</button>
     <button id="btnBgCreatures">🐟 いきもの</button>
+    <span id="seaCount" style="background:rgba(0,0,0,0.45);color:#ffd700;font-size:12px;font-weight:bold;padding:3px 10px;border-radius:14px;font-family:'Zen Maru Gothic',sans-serif;"></span>
     <button id="btnBgm">🔊</button>
   </div>
 
@@ -323,6 +325,15 @@
     setTimeout(function() {
       if (!_aquaSessionAwarded) { _aquaSessionAwarded = true; awardPoints(3); }
     }, 5 * 60 * 1000);
+
+    // Show unlocked sea creatures count
+    if (window.getUnlockedSea) {
+      var seaList = window.getUnlockedSea();
+      var seaEl = document.getElementById('seaCount');
+      if (seaEl && seaList.length > 0) {
+        seaEl.textContent = '🐠 ' + seaList.length + 'しゅるい';
+      }
+    }
 
     // ─── PixiJS setup ──────────────────────────────────────
     const canvas  = document.getElementById('pixi-canvas');

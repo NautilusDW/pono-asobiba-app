@@ -6,6 +6,7 @@
 <title>コトリをたすけよう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -566,6 +567,7 @@ function checkHit() {
   updateScore();
   showFlash('success');
   if (score % 10 === 0) awardPoints(5);
+  if (window.setStatMax) window.setStatMax('stacking_height', score);
 
   // フリーズ判定（5ブロックごと）
   if (score > 0 && score % FREEZE_INTERVAL === 0) {

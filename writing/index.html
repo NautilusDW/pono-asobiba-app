@@ -6,6 +6,7 @@
 <title>ポノのもじかき | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -814,6 +815,12 @@ function showCompletion() {
 
   // ポイント付与
   awardPoints(2);
+  // 実績トラッキング
+  if (window.incrementStat) {
+    window.incrementStat('writing_chars', 1);
+    if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
+    if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
+  }
   // カテゴリ全文字クリアボーナス
   const stamps = loadStamps();
   const total = CATEGORIES[currentCategory].chars.length;

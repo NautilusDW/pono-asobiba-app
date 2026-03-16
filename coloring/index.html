@@ -6,6 +6,7 @@
 <title>ぬりえ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -1456,6 +1457,7 @@ function saveColored() {
   link.href = offscreen.toDataURL('image/png');
   link.click();
   awardPoints(5);
+  if (window.incrementStat) window.incrementStat('coloring_complete', 1);
 }
 
 // ===== Print colored =====

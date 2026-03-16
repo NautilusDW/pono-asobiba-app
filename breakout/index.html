@@ -6,6 +6,7 @@
 <title>ハリネズミちゃんをたすけにいこう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -784,6 +785,7 @@ function onStageClear() {
   if (isLast) saveHiScore();
   awardPoints(5);
   if (wasNewRecord) awardPoints(10);
+  if (window.setStatMax) window.setStatMax('breakout_stages', stageIdx + 1);
   setTimeout(() => showOverlay(isLast ? 'gameclear' : 'stageclear'), 700);
 }
 

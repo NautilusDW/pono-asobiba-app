@@ -348,6 +348,7 @@ html, body {
   100% { opacity: 0; }
 }
 </style>
+<script src="../common/achievements.js"></script>
 </head>
 <audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="auto"></audio>
 <body>
@@ -883,6 +884,7 @@ document.getElementById('btnSave').addEventListener('click', () => {
   drawings.unshift({ dataUrl, ts: Date.now() });
   if (drawings.length > MAX_DRAWINGS) drawings.length = MAX_DRAWINGS;
   saveDrawingsList(drawings);
+  if (window.incrementStat) window.incrementStat('drawing_saves', 1);
   // legacy key for puzzle compatibility
   try { localStorage.setItem('pono_drawing', dataUrl); } catch(e) {}
   const toast = document.getElementById('saveToast');

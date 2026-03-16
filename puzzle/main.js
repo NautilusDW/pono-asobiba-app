@@ -129,6 +129,7 @@ function showSuccessModal() {
   playFanfare();
   spawnConfetti();
   awardPoints(5);
+  if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
 
   const isLast = currentStageIndex >= STAGES.length - 1;
   if (isLast) {

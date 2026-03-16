@@ -47,6 +47,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 #start-screen .mode-link { font-size: 18px; color: #4ECDC4; margin-top: 24px; text-decoration: underline; cursor: pointer; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
+<script src="../common/achievements.js"></script>
 </head>
 <body>
 <div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div><div class="mode-link" onclick="event.stopPropagation();location.href='puzzle.html'">パズルモードで遊ぶ</div></div>
@@ -501,6 +502,12 @@ function processMerges() {
       const t = TIERS[nt];
       const nb = addBody(c.x, c.y, t.r, t.mass, 'pin');
       nb.tier = nt; nb.flashTimer = 8;
+      // 実績トラッキング: tier到達
+      if (window.incrementStat) {
+        if (nt >= 2) window.setStatMax('bowling_tier2', 1);
+        if (nt >= 3) window.setStatMax('bowling_tier3', 1);
+        if (nt >= 4) window.setStatMax('bowling_tier4', 1);
+      }
       nb.vx = c.vx * 0.4; nb.vy = c.vy * 0.4;
       mergeShockwave(c.x, c.y, nt);
       if (count >= 3) {
@@ -679,6 +686,7 @@ canvas.addEventListener('pointerup', e => {
   gamePhase = 'action';
   roundMerges = 0;
   combo = 0; mergePitch = 1.0;
+  if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
   shotNumber++;
   ballTrail = []; // reset trail
 });
