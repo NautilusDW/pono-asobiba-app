@@ -137,23 +137,23 @@ function playBuf(buf, volume, rate) {
 
 // ── Tier System ──
 const TIERS = [
-  { img: 0,  r: 18, mass: 1.0, name: 'うさぎ' },
-  { img: 5,  r: 24, mass: 2.0, name: 'アライグマ' },
-  { img: 4,  r: 32, mass: 3.5, name: 'アヒル' },
-  { img: 6,  r: 42, mass: 6.0, name: 'ハリネズミ' },
-  { img: 10, r: 54, mass: 10.0, name: 'クマ' },
+  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },
+  { img: 5,  r: 24, mass: 0.8, name: 'アライグマ' },
+  { img: 4,  r: 32, mass: 1.2, name: 'アヒル' },
+  { img: 6,  r: 42, mass: 2.0, name: 'ハリネズミ' },
+  { img: 10, r: 54, mass: 3.5, name: 'クマ' },
 ];
 const MAX_TIER = TIERS.length - 1;
 
 // ── Constants ── BILLIARD STYLE: no gravity, all walls bounce
 const BALL_R = 20;
-const BALL_MASS = 5;
+const BALL_MASS = 6;
 const BALL_LIFETIME = 5000;
-const FRICTION = 0.993;       // everything slows down gradually
-const RESTITUTION = 0.85;     // bouncy collisions
-const WALL_RESTITUTION = 0.9; // bouncy walls
-const MAX_BODIES = 35;        // lowered to prevent crash
-const TARGET_PINS = 15;       // formation-based, refill as formation
+const FRICTION = 0.995;       // less friction = pins slide further
+const RESTITUTION = 0.95;     // very bouncy collisions
+const WALL_RESTITUTION = 0.95;// bouncy walls
+const MAX_BODIES = 45;
+const TARGET_PINS = 20;       // formation-based, refill as formation
 const REFILL_INTERVAL = 3000; // ms between checking if we need more pins
 const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 4;
@@ -192,19 +192,19 @@ function addBody(x, y, r, mass, type) {
 
 // ── Formation patterns (positions relative to center, in units of pin spacing) ──
 const FORMATIONS = [
-  // Triangle (bowling style): rows 1,2,3,4,5 = 15 pins
+  // Triangle (bowling style): rows 1,2,3,4,5,6 = 21 pins
   { name: 'triangle', positions: (function() {
     const pos = [];
-    for (let row = 0; row < 5; row++) {
+    for (let row = 0; row < 6; row++) {
       for (let col = 0; col <= row; col++) {
         pos.push({ x: (col - row/2), y: row });
       }
     }
     return pos;
   })() },
-  // Diamond: 1,2,3,4,3,2,1 = 16 pins (trim to 15)
+  // Diamond: 1,2,3,4,5,4,3,2,1 = 25 pins → trim to 21
   { name: 'diamond', positions: (function() {
-    const pos = [], rows = [1,2,3,4,3,2];
+    const pos = [], rows = [1,2,3,4,5,4,3];
     let ry = 0;
     for (let r = 0; r < rows.length; r++) {
       const n = rows[r];
@@ -215,22 +215,22 @@ const FORMATIONS = [
     }
     return pos;
   })() },
-  // Inverted triangle: rows 5,4,3,2,1 = 15 pins
+  // Inverted triangle: rows 6,5,4,3,2,1 = 21 pins
   { name: 'inverted', positions: (function() {
     const pos = [];
-    for (let row = 0; row < 5; row++) {
-      const n = 5 - row;
+    for (let row = 0; row < 6; row++) {
+      const n = 6 - row;
       for (let col = 0; col < n; col++) {
         pos.push({ x: (col - (n-1)/2), y: row });
       }
     }
     return pos;
   })() },
-  // Grid 4x4 = 16, trim to 15
+  // Grid 5x4 = 20 pins
   { name: 'grid', positions: (function() {
     const pos = [];
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-      if (pos.length < 15) pos.push({ x: c - 1.5, y: r });
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) {
+      pos.push({ x: c - 2, y: r });
     }
     return pos;
   })() },
@@ -262,8 +262,8 @@ function spawnFormation() {
 let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
 const BALL_SPAWN_Y_RATIO = 0.88; // ball spawns near bottom
 const MIN_DRAG = 20;  // minimum drag distance to shoot
-const MAX_SPEED = 18;
-const MIN_SPEED = 6;
+const MAX_SPEED = 22;
+const MIN_SPEED = 8;
 
 function spawnBall(fromX, fromY, dirX, dirY, power) {
   if (bodies.length >= MAX_BODIES) return;
