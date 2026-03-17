@@ -20,13 +20,36 @@ canvas { display: block; width: 100%; height: 100%; }
   background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
   width: 44px; height: 44px; font-size: 22px; cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
+  display: none;
 }
 #back-btn { top: 12px; left: 12px; }
 #bgm-btn { top: 12px; right: 12px; }
+#start-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(180deg, rgba(135,206,250,0.85) 0%, rgba(176,226,255,0.7) 50%, rgba(255,255,255,0.5) 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+#start-screen .title {
+  font-size: 42px; font-weight: 900; color: #fff;
+  text-shadow: 0 3px 12px rgba(100,180,255,0.6), 0 1px 3px rgba(0,0,0,0.2);
+  letter-spacing: 0.05em;
+}
+#start-screen .bubble-icon { font-size: 64px; margin-bottom: 16px; }
+#start-screen .tap {
+  font-size: 22px; color: rgba(255,255,255,0.9); margin-top: 30px;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
 <script src="../common/achievements.js"></script>
 </head>
 <body>
+<div id="start-screen">
+  <div class="bubble-icon">🫧</div>
+  <div class="title">しゃぼんだまパーティー</div>
+  <div class="tap">タップしてスタート</div>
+</div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <button id="bgm-btn" onclick="switchBGMTrack()">🎵</button>
 <canvas id="c"></canvas>
@@ -328,14 +351,7 @@ function switchBGMTrack() {
   document.getElementById('bgm-btn').textContent = '🎵';
 }
 
-// Start BGM on first user interaction
-function startBGMOnGesture() {
-  ensureAudio();
-  initBGM();
-  startBGM();
-}
-document.addEventListener('pointerdown', startBGMOnGesture, { once: true });
-document.addEventListener('touchstart', startBGMOnGesture, { once: true });
+// BGM will be started from start screen handler (not auto-gesture)
 
 // Creature reveal: play ascending arpeggio via oscillators
 function playCreatureArpeggio() {
@@ -886,12 +902,14 @@ const DRAG_THRESHOLD = 12; // px — must move this far before drag mode activat
 
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
+  if (!gameStarted) return;
   isDragging = false;
   pointerStartX = e.clientX;
   pointerStartY = e.clientY;
   handlePop(e.clientX, e.clientY);
 });
 canvas.addEventListener('pointermove', e => {
+  if (!gameStarted) return;
   if (e.buttons > 0 || e.pressure > 0) {
     if (!isDragging) {
       const dx = e.clientX - pointerStartX, dy = e.clientY - pointerStartY;
@@ -1137,64 +1155,35 @@ function drawSky(dt) {
   drawClouds(dt, sky.cloudAlpha);
 }
 
-// ── Intro text overlay ──
-let introTime = 0;
-const INTRO_DURATION = 4000;  // 4s visible
-const INTRO_FADE = 800;       // 0.8s fade out
+// ── Start screen handler ──
+let gameStarted = false;
 
-function drawIntro(dt) {
-  introTime += dt;
-  if (introTime > INTRO_DURATION + INTRO_FADE) return;
+document.getElementById('start-screen').addEventListener('pointerdown', function handler(e) {
+  e.preventDefault();
+  this.removeEventListener('pointerdown', handler);
 
-  let alpha = 1;
-  if (introTime > INTRO_DURATION) {
-    alpha = 1 - (introTime - INTRO_DURATION) / INTRO_FADE;
+  // Init audio + BGM on first user gesture
+  ensureAudio();
+  initBGM();
+  startBGM();
+  bgmPlaying = true;
+
+  // Hide start screen
+  this.style.display = 'none';
+
+  // Show UI buttons
+  document.getElementById('back-btn').style.display = 'flex';
+  document.getElementById('bgm-btn').style.display = 'flex';
+
+  // Spawn initial bubbles
+  for (let i = 0; i < 40; i++) {
+    addBubble(Math.random() * W, Math.random() * H);
+    bopacity[i] = 1;
+    bfadeIn[i] = 0;
   }
 
-  // Semi-transparent overlay
-  ctx.globalAlpha = alpha * 0.3;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, W, H);
-
-  // Text — fit to screen width with padding
-  ctx.globalAlpha = alpha;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Measure and fit main text
-  const mainText = 'シャボン玉をタップしてあそぼう！';
-  let fontSize = Math.min(W * 0.08, 40);
-  ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', sans-serif`;
-  // Shrink if text overflows (with 20px padding each side)
-  while (ctx.measureText(mainText).width > W - 40 && fontSize > 14) {
-    fontSize -= 2;
-    ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', sans-serif`;
-  }
-
-  // Soft shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.3)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 3;
-
-  ctx.fillStyle = '#fff';
-  ctx.fillText(mainText, W / 2, H * 0.45);
-
-  // Sub text
-  const subText = 'タップするとシャボン玉がわれるよ';
-  let subSize = fontSize * 0.55;
-  ctx.font = `700 ${subSize}px 'Zen Maru Gothic', sans-serif`;
-  while (ctx.measureText(subText).width > W - 40 && subSize > 10) {
-    subSize -= 2;
-    ctx.font = `700 ${subSize}px 'Zen Maru Gothic', sans-serif`;
-  }
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText(subText, W / 2, H * 0.55);
-
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.globalAlpha = 1;
-}
+  gameStarted = true;
+});
 
 // ── Main loop ──
 let lastTime = 0;
@@ -1206,6 +1195,8 @@ function loop(time) {
   lastTime = time;
 
   drawSky(dt);
+
+  if (!gameStarted) { requestAnimationFrame(loop); return; }
 
   // Spawn — faster base rate + emergency refill when low
   spawnTimer += dt;
@@ -1453,19 +1444,10 @@ function loop(time) {
     nextCreatureTime = CREATURE_MIN_INTERVAL + Math.random() * (CREATURE_MAX_INTERVAL - CREATURE_MIN_INTERVAL);
   }
 
-  // Intro overlay
-  drawIntro(dt);
-
   requestAnimationFrame(loop);
 }
 
-// Initial bubbles (more to start with)
-for (let i = 0; i < 40; i++) {
-  addBubble(Math.random() * W, Math.random() * H);
-  bopacity[i] = 1;
-  bfadeIn[i] = 0;
-}
-
+// Start sky-only loop immediately (game content waits for start screen tap)
 requestAnimationFrame(loop);
 </script>
 </body>
