@@ -24,18 +24,8 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
   width: 44px; height: 44px; font-size: 22px; cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
 }
-#score {
-  position: fixed; top: 12px; right: 16px; z-index: 100;
-  font-size: 28px; font-weight: 900; color: #FFD700;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-}
-#combo {
-  position: fixed; top: 50px; right: 16px; z-index: 100;
-  font-size: 20px; font-weight: 900; color: #FF6B6B;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-  opacity: 0; transition: opacity 0.3s;
-}
-#combo.show { opacity: 1; }
+#score { display: none; }
+#combo { display: none; }
 #start-screen {
   position: fixed; inset: 0; z-index: 9999;
   background: linear-gradient(135deg, #1a5c3a 0%, #2d8f5e 100%);
@@ -162,6 +152,7 @@ const MIN_SPEED = 8;
 const BALL_LIFETIME = 6000;
 const ARRANGE_TIME = 50;     // frames for arrange animation
 const RESULT_TIME = 90;      // frames for result display
+const HUD_HEIGHT = 80;       // top HUD area height in px
 
 // ── Pin images ──
 const tierCanvases = [];
@@ -218,7 +209,7 @@ function resolveCollision(a, b) {
 function wallBounce(b) {
   if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
   if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
+  if (b.y - b.r < HUD_HEIGHT) { b.y = HUD_HEIGHT + b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
   if (b.y + b.r > H) { b.y = H - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
 }
 
@@ -290,12 +281,12 @@ function startBonusStage() {
   bodies.length = 0;
   // Spawn initial rows
   spawnBonusRow();
-  spawnBonusRow(H * 0.15);
+  spawnBonusRow(HUD_HEIGHT + TIERS[0].r * 2 + 50);
 }
 
 function spawnBonusRow(yOverride) {
   const t0 = TIERS[0];
-  const rowY = yOverride || H * 0.08;
+  const rowY = yOverride || HUD_HEIGHT + t0.r + 8;
   const count = Math.floor((W - 60) / (t0.r * 2 + 12));
   const totalW = count * (t0.r * 2 + 12) - 12;
   const startX = (W - totalW) / 2 + t0.r;
@@ -384,7 +375,7 @@ function startArrangePhase() {
   // Pick a random formation pattern
   const patterns = ['triangle', 'diamond', 'circle', 'grid', 'v-shape', 'spiral', 'cross', 'rows'];
   const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-  const cxP = W / 2, areaTop = H * 0.08, areaBot = H * 0.58;
+  const cxP = W / 2, areaTop = HUD_HEIGHT + 10, areaBot = H * 0.58;
   const areaCY = (areaTop + areaBot) / 2;
   const n = pins.length;
 
@@ -801,17 +792,47 @@ canvas.addEventListener('pointercancel', () => { aiming = false; });
 
 // ── Draw ──
 function drawBg() {
+  // HUD area (dark strip at top)
+  ctx.fillStyle = '#0d3320';
+  ctx.fillRect(0, 0, W, HUD_HEIGHT);
+
+  // Game field below HUD
   if (bgFlash > 0.01) {
     const r = Math.round(30 + 225*bgFlash), g = Math.round(107 + 148*bgFlash), bv = Math.round(64 + 191*bgFlash);
     ctx.fillStyle = 'rgb('+r+','+g+','+bv+')';
   } else ctx.fillStyle = '#1e6b40';
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, W-8, H-8);
-  ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 3; ctx.strokeRect(10, 10, W-20, H-20);
+  ctx.fillRect(0, HUD_HEIGHT, W, H - HUD_HEIGHT);
+
+  // Field border
+  ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 6; ctx.strokeRect(2, HUD_HEIGHT, W-4, H - HUD_HEIGHT - 2);
+  ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 2; ctx.strokeRect(6, HUD_HEIGHT + 4, W-12, H - HUD_HEIGHT - 10);
+
+  // Dashed line
   ctx.globalAlpha = 0.2; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
   ctx.setLineDash([8, 6]);
   ctx.beginPath(); ctx.moveTo(12, H * 0.75); ctx.lineTo(W - 12, H * 0.75); ctx.stroke();
   ctx.setLineDash([]); ctx.globalAlpha = 1;
+}
+
+function drawHUD() {
+  // Score
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 28px "Zen Maru Gothic"'; ctx.textAlign = 'right';
+  ctx.fillText(score, W - 16, 35);
+
+  // Best score & chain
+  ctx.globalAlpha = 0.5; ctx.font = '12px "Zen Maru Gothic"';
+  if (bestScore > 0) ctx.fillText('BEST: ' + bestScore, W - 16, 55);
+  if (bestChain > 0) ctx.fillText('最高連鎖: ' + bestChain, W - 16, 70);
+  ctx.globalAlpha = 1;
+
+  // Shot counter
+  if (shotNumber > 0) {
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.6;
+    ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'left';
+    ctx.fillText('Shot ' + shotNumber, 56, 35);
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawBody(b) {
@@ -877,7 +898,7 @@ function drawChainCounter() {
     ctx.globalAlpha = Math.min(1, chainDisplayTimer / 30);
     ctx.fillStyle = '#FF6B6B';
     ctx.font = 'bold ' + Math.round(36*scale) + 'px "Zen Maru Gothic"';
-    ctx.textAlign = 'center'; ctx.fillText(chainDisplay + '連鎖！', W/2, H*0.35);
+    ctx.textAlign = 'center'; ctx.fillText(chainDisplay + '連鎖！', W/2, HUD_HEIGHT + (H - HUD_HEIGHT) * 0.25);
     ctx.globalAlpha = 1;
   }
 }
@@ -943,17 +964,11 @@ function drawBallTrail() {
 }
 
 function drawBestScore() {
-  if (bestScore <= 0 && bestChain <= 0) return;
-  ctx.globalAlpha = 0.5;
-  ctx.fillStyle = '#FFD700';
-  ctx.font = '12px "Zen Maru Gothic"'; ctx.textAlign = 'right';
-  if (bestScore > 0) ctx.fillText('BEST: ' + bestScore, W - 16, 50);
-  if (bestChain > 0) { ctx.fillText('最高連鎖: ' + bestChain, W - 16, 66); }
+  // Now handled by drawHUD — kept as no-op for compatibility
   ctx.globalAlpha = 1;
 }
 
 function drawBonusIntro(now) {
-  // Flashing rainbow background
   const hue = (now * 0.2) % 360;
   ctx.fillStyle = `hsl(${hue}, 60%, 25%)`;
   ctx.fillRect(0, 0, W, H);
@@ -962,28 +977,26 @@ function drawBonusIntro(now) {
   ctx.globalAlpha = alpha;
   ctx.textAlign = 'center';
 
-  // Title
+  const fieldCY = HUD_HEIGHT + (H - HUD_HEIGHT) * 0.4;
+
   const scale = 1 + Math.sin(now * 0.008) * 0.1;
   ctx.save();
-  ctx.translate(W / 2, H * 0.35);
+  ctx.translate(W / 2, fieldCY);
   ctx.scale(scale, scale);
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 48px "Zen Maru Gothic"';
   ctx.fillText('ボーナス！', 0, 0);
   ctx.restore();
 
-  // Subtitle
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 22px "Zen Maru Gothic"';
-  ctx.fillText('10びょうで たくさん たおそう！', W / 2, H * 0.48);
+  ctx.fillText('10びょうで たくさん たおそう！', W / 2, fieldCY + 55);
 
-  // Stars decoration
   ctx.font = '36px "Zen Maru Gothic"';
-  const starCount = 6;
-  for (let i = 0; i < starCount; i++) {
-    const angle = (now * 0.001 + i * Math.PI * 2 / starCount);
+  for (let i = 0; i < 6; i++) {
+    const angle = (now * 0.001 + i * Math.PI * 2 / 6);
     const sx = W / 2 + Math.cos(angle) * 120;
-    const sy = H * 0.4 + Math.sin(angle) * 80;
+    const sy = fieldCY + Math.sin(angle) * 80;
     ctx.globalAlpha = alpha * (0.5 + Math.sin(now * 0.005 + i) * 0.3);
     ctx.fillText('⭐', sx - 18, sy + 12);
   }
@@ -994,71 +1007,83 @@ function drawBonusHUD(now) {
   const elapsed = now - bonusStartTime;
   const remaining = Math.max(0, BONUS_DURATION - elapsed) / 1000;
 
-  // Timer bar at top
+  // HUD background
+  ctx.fillStyle = '#1a0a2e';
+  ctx.fillRect(0, 0, W, HUD_HEIGHT);
+
+  // Bonus label
+  ctx.fillStyle = '#FFD700'; ctx.font = 'bold 18px "Zen Maru Gothic"'; ctx.textAlign = 'left';
+  ctx.fillText('★ BONUS ★', 56, 25);
+
+  // Timer text
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 22px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+  ctx.fillText(remaining.toFixed(1) + 's', W / 2, 25);
+
+  // Bonus score
+  ctx.fillStyle = '#4ECDC4'; ctx.font = 'bold 18px "Zen Maru Gothic"'; ctx.textAlign = 'right';
+  ctx.fillText('+' + bonusTotalScore, W - 16, 25);
+
+  // Timer bar
   const ratio = remaining / (BONUS_DURATION / 1000);
-  const barW = W - 40;
-  const barH = 14;
-  const barX = 20, barY = 70;
+  const barW = W - 24;
+  const barH = 12;
+  const barX = 12, barY = 38;
   ctx.fillStyle = '#333'; ctx.fillRect(barX, barY, barW, barH);
   const barColor = ratio > 0.3 ? '#4ECDC4' : ratio > 0.1 ? '#FF9800' : '#F44336';
   ctx.fillStyle = barColor; ctx.fillRect(barX, barY, barW * ratio, barH);
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
 
-  // Timer text
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 20px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-  ctx.fillText(remaining.toFixed(1) + 's', W / 2, barY - 5);
+  // Chain display in HUD
+  if (bonusMaxChain >= 2) {
+    ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold 16px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+    ctx.fillText('最高 ' + bonusMaxChain + '連鎖', W / 2, 68);
+  }
 
-  // Bonus label
-  ctx.fillStyle = '#FFD700'; ctx.font = 'bold 16px "Zen Maru Gothic"'; ctx.textAlign = 'left';
-  ctx.fillText('★ BONUS ★', 60, 25);
+  // HUD bottom border
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, HUD_HEIGHT); ctx.lineTo(W, HUD_HEIGHT); ctx.stroke();
 
-  // Bonus score
-  ctx.fillStyle = '#4ECDC4'; ctx.textAlign = 'right';
-  ctx.fillText('ボーナス: +' + bonusTotalScore, W - 16, 25);
-
-  // Current chain in bonus
+  // Current chain in field (big text, only momentary)
   if (combo >= 2) {
     const chainScale = 1 + combo * 0.05;
     ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold ' + Math.round(24 * chainScale) + 'px "Zen Maru Gothic"'; ctx.textAlign = 'center';
     ctx.globalAlpha = 0.9;
-    ctx.fillText(combo + '連鎖！', W / 2, H * 0.35);
+    ctx.fillText(combo + '連鎖！', W / 2, HUD_HEIGHT + (H - HUD_HEIGHT) * 0.3);
     ctx.globalAlpha = 1;
   }
 
-  // Pulsing border to show bonus mode
+  // Pulsing border around field
   const borderAlpha = 0.3 + Math.sin(now * 0.006) * 0.2;
   ctx.globalAlpha = borderAlpha;
   ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 6;
-  ctx.strokeRect(3, 3, W - 6, H - 6);
+  ctx.strokeRect(3, HUD_HEIGHT, W - 6, H - HUD_HEIGHT - 3);
   ctx.globalAlpha = 1;
 }
 
 function drawBonusResult() {
   const alpha = Math.min(1, phaseTimer / 30);
+  const fTop = HUD_HEIGHT + (H - HUD_HEIGHT) * 0.15;
   ctx.globalAlpha = alpha * 0.7;
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, H * 0.2, W, H * 0.45);
+  ctx.fillRect(0, fTop, W, (H - HUD_HEIGHT) * 0.55);
   ctx.globalAlpha = alpha;
   ctx.textAlign = 'center';
 
-  // Title
+  let y = fTop + 45;
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 36px "Zen Maru Gothic"';
-  ctx.fillText('ボーナス終了！', W / 2, H * 0.32);
+  ctx.fillText('ボーナス終了！', W / 2, y); y += 40;
 
-  // Merges
   ctx.fillStyle = '#4ECDC4';
   ctx.font = 'bold 24px "Zen Maru Gothic"';
-  ctx.fillText(bonusMerges + '回 合体！', W / 2, H * 0.40);
+  ctx.fillText(bonusMerges + '回 合体！', W / 2, y); y += 35;
 
-  // Best chain in bonus
   if (bonusMaxChain >= 2) {
     ctx.fillStyle = '#FF6B6B';
     ctx.font = 'bold 22px "Zen Maru Gothic"';
-    ctx.fillText('最高 ' + bonusMaxChain + '連鎖！', W / 2, H * 0.47);
+    ctx.fillText('最高 ' + bonusMaxChain + '連鎖！', W / 2, y); y += 35;
   }
 
-  // Chain bonus
   let chainBonus = 0;
   if (bonusMaxChain >= 8) chainBonus = 2000;
   else if (bonusMaxChain >= 6) chainBonus = 1000;
@@ -1067,64 +1092,57 @@ function drawBonusResult() {
   if (chainBonus > 0) {
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 20px "Zen Maru Gothic"';
-    ctx.fillText('連鎖ボーナス +' + chainBonus, W / 2, H * 0.54);
+    ctx.fillText('連鎖ボーナス +' + chainBonus, W / 2, y); y += 35;
   }
 
-  // Total
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 28px "Zen Maru Gothic"';
-  ctx.fillText('合計 +' + bonusTotalScore + '点！', W / 2, H * 0.62);
+  ctx.fillText('合計 +' + bonusTotalScore + '点！', W / 2, y);
 
   ctx.globalAlpha = 1;
 }
 
 function drawResultOverlay() {
   const alpha = Math.min(1, phaseTimer / 30);
+  const fieldMid = HUD_HEIGHT + (H - HUD_HEIGHT) * 0.35;
   ctx.globalAlpha = alpha * 0.6;
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, H*0.3, W, H*0.22);
+  ctx.fillRect(0, fieldMid - 40, W, 120);
   ctx.globalAlpha = alpha;
   ctx.textAlign = 'center';
 
   if (roundMerges > 0) {
-    // Main merge count
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 32px "Zen Maru Gothic"';
-    ctx.fillText(roundMerges + '回合体！', W/2, H*0.38);
-    // Rating
+    ctx.fillText(roundMerges + '回合体！', W/2, fieldMid);
     const rating = roundMerges >= 6 ? 'すごい！！' : roundMerges >= 4 ? 'いいね！' : roundMerges >= 2 ? 'まあまあ' : 'おしい';
     const rColor = roundMerges >= 6 ? '#FF6B6B' : roundMerges >= 4 ? '#4CAF50' : '#aaa';
     ctx.fillStyle = rColor;
     ctx.font = 'bold 22px "Zen Maru Gothic"';
-    ctx.fillText(rating, W/2, H*0.43);
+    ctx.fillText(rating, W/2, fieldMid + 30);
   } else {
     ctx.fillStyle = '#aaa';
     ctx.font = 'bold 28px "Zen Maru Gothic"';
-    ctx.fillText('合体なし...', W/2, H*0.38);
+    ctx.fillText('合体なし...', W/2, fieldMid);
     ctx.font = '18px "Zen Maru Gothic"';
-    ctx.fillText('つぎはがんばろう！', W/2, H*0.43);
+    ctx.fillText('つぎはがんばろう！', W/2, fieldMid + 30);
   }
-  // Shot counter + pin count
+  const pinCount = bodies.filter(b => b.type === 'pin' && !b.dead).length;
   ctx.globalAlpha = alpha * 0.6;
   ctx.fillStyle = '#fff';
   ctx.font = '16px "Zen Maru Gothic"';
-  const pinCount = bodies.filter(b => b.type === 'pin' && !b.dead).length;
-  ctx.fillText('Shot ' + shotNumber + '　　ピン ' + pinCount + '体', W/2, H*0.48);
+  ctx.fillText('Shot ' + shotNumber + '　　ピン ' + pinCount + '体', W/2, fieldMid + 60);
   ctx.globalAlpha = 1;
 }
 
 // ── Main loop ──
 const PHYSICS_DT = 1000 / 60;
 let accumulator = 0, prevFrameTime = performance.now();
-let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
 let settledFrames = 0;
 
 function loop(now) {
   let elapsed = now - prevFrameTime; prevFrameTime = now;
   if (elapsed > 100) elapsed = 100;
-  fpsFrames++;
-  if (now - fpsLast >= 500) { fpsDisplay = (fpsFrames / ((now-fpsLast)/1000)).toFixed(0); fpsFrames = 0; fpsLast = now; }
-
   // ── Phase logic ──
   if (gamePhase === 'arrange') {
     // Animate pins toward target positions
@@ -1312,33 +1330,40 @@ function loop(now) {
     ctx.restore();
   } else if (gamePhase === 'bonus') {
     ctx.save(); ctx.translate(shakeX, shakeY);
-    // Bonus has a slightly different bg color
-    const hue = ((now * 0.05) % 30) + 140; // slowly shifting green-teal
+    // Bonus field bg (below HUD)
+    const hue = ((now * 0.05) % 30) + 140;
     ctx.fillStyle = `hsl(${hue}, 45%, 22%)`;
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, W-8, H-8);
+    ctx.fillRect(0, HUD_HEIGHT, W, H - HUD_HEIGHT);
     drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter();
     ctx.restore();
     drawBonusHUD(now);
-    // Ball preview (always tier0, always show)
     drawBallPreview(now);
-    scoreEl.textContent = score;
   } else if (gamePhase === 'bonus_result') {
     ctx.save(); ctx.translate(shakeX, shakeY);
     drawBg(); drawBodies(); drawEffects();
     ctx.restore();
     drawBonusResult();
-    scoreEl.textContent = score;
+    drawHUD();
   } else {
     ctx.save(); ctx.translate(shakeX, shakeY);
-    drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter(); drawBestScore();
+    drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter();
     ctx.restore();
-    scoreEl.textContent = score;
+    drawHUD();
+
+    // Bonus countdown in HUD area
+    if (shotNumber > 0) {
+      const shotsUntilBonus = BONUS_INTERVAL - (shotNumber % BONUS_INTERVAL);
+      if (shotsUntilBonus <= 3 && shotsUntilBonus > 0) {
+        ctx.fillStyle = '#FFD700'; ctx.globalAlpha = 0.6 + Math.sin(now * 0.005) * 0.3;
+        ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+        ctx.fillText('ボーナスまで あと ' + shotsUntilBonus + '!', W / 2, 70);
+        ctx.globalAlpha = 1;
+      }
+    }
 
     // Phase-specific UI
     if (gamePhase === 'aim') {
       drawBallPreview(now);
-      // Hint
       if (shotNumber === 0) {
         ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
         ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
@@ -1350,24 +1375,6 @@ function loop(now) {
     if (gamePhase === 'result') {
       drawResultOverlay();
     }
-  }
-
-  // FPS
-  ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
-  ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length + '  ' + gamePhase, 60, 22);
-
-  // Shot counter (show bonus countdown)
-  if (shotNumber > 0 && gamePhase !== 'bonus' && gamePhase !== 'bonus_intro' && gamePhase !== 'bonus_result') {
-    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.5;
-    ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'left';
-    ctx.fillText('Shot ' + shotNumber, 60, 40);
-    // Show next bonus indicator
-    const shotsUntilBonus = BONUS_INTERVAL - (shotNumber % BONUS_INTERVAL);
-    if (shotsUntilBonus <= 3 && shotsUntilBonus > 0) {
-      ctx.fillStyle = '#FFD700'; ctx.globalAlpha = 0.6 + Math.sin(now * 0.005) * 0.3;
-      ctx.fillText('ボーナスまで あと ' + shotsUntilBonus + '!', 60, 58);
-    }
-    ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(loop);
