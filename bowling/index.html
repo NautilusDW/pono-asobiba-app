@@ -73,7 +73,7 @@ window.addEventListener('resize', resize);
 
 // ── Audio ──
 let audioCtx = null, audioReady = false;
-let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null, mergeBuf = null, explodeBuf = null;
+let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null, mergeBuf = null, explodeBuf = null, bonusFanfareBuf = null;
 
 function makeBuf(ctx, freq, dur, vol, decay) {
   const sr = ctx.sampleRate, n = sr * dur | 0, ab = ctx.createBuffer(1, n, sr), d = ab.getChannelData(0);
@@ -104,6 +104,7 @@ function initAudio() {
       comboBuf = makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
       mergeBuf = makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
       explodeBuf = makeExplosionBuf(audioCtx);
+      bonusFanfareBuf = makeSweepBuf(audioCtx, 300, 900, 0.3, 0.5);
       audioReady = true; resolve();
     });
     setTimeout(() => {
@@ -113,6 +114,7 @@ function initAudio() {
       comboBuf = comboBuf || makeSweepBuf(audioCtx, 400, 1200, 0.15, 0.4);
       mergeBuf = mergeBuf || makeSweepBuf(audioCtx, 500, 1500, 0.12, 0.5);
       explodeBuf = explodeBuf || makeExplosionBuf(audioCtx);
+      bonusFanfareBuf = bonusFanfareBuf || makeSweepBuf(audioCtx, 300, 900, 0.3, 0.5);
       audioReady = true; resolve();
     }, 1000);
   });
@@ -227,7 +229,7 @@ let soundThrottle = 0, maxHitStrength = 0;
 let mergePitch = 1.0, hitstopFrames = 0, bgFlash = 0;
 
 // Phase management
-let gamePhase = 'arrange'; // 'arrange' | 'aim' | 'action' | 'result'
+let gamePhase = 'arrange'; // 'arrange' | 'aim' | 'action' | 'result' | 'bonus_intro' | 'bonus' | 'bonus_result'
 let phaseTimer = 0;
 let roundMerges = 0;
 let ballTier = 0;           // current ball's tier
@@ -235,11 +237,102 @@ let shotNumber = 0;
 
 // New game features
 let bestScore = parseInt(localStorage.getItem('bowling_best') || '0');
+let bestChain = parseInt(localStorage.getItem('bowling_best_chain') || '0');
 let ballTrail = [];          // [{x,y,alpha}] ball position trail
 const MAX_TRAIL = 40;
 let roundBestMerges = 0;     // best merges in a single round
 
+// Bonus stage
+const BONUS_INTERVAL = 10;       // every N shots
+const BONUS_DURATION = 10000;    // 10 seconds
+const BONUS_ROW_INTERVAL = 1000; // new row every 1s
+let bonusActive = false;
+let bonusStartTime = 0;
+let bonusLastRowTime = 0;
+let bonusTotalScore = 0;
+let bonusMerges = 0;
+let bonusMaxChain = 0;          // best chain within this bonus
+let bonusIntroTimer = 0;
+
 function triggerShake(intensity) { shakeLife = Math.max(shakeLife, Math.min(intensity * 6, 6)); }
+
+// ── Bonus stage ──
+function shouldTriggerBonus() {
+  return shotNumber > 0 && shotNumber % BONUS_INTERVAL === 0;
+}
+
+function startBonusIntro() {
+  gamePhase = 'bonus_intro';
+  bonusIntroTimer = 120; // 2 seconds intro
+  // Clear all bodies for bonus
+  bodies.length = 0;
+  ballTrail = [];
+  playBuf(bonusFanfareBuf, 0.6, 1.0);
+  // Spawn fireworks
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      spawnParticles(W * (0.2 + Math.random() * 0.6), H * (0.2 + Math.random() * 0.4), 15);
+      spawnRing(W * (0.2 + Math.random() * 0.6), H * (0.2 + Math.random() * 0.4), 80, '#FFD700');
+    }, i * 200);
+  }
+}
+
+function startBonusStage() {
+  gamePhase = 'bonus';
+  bonusActive = true;
+  bonusStartTime = performance.now();
+  bonusLastRowTime = bonusStartTime;
+  bonusTotalScore = 0;
+  bonusMerges = 0;
+  bonusMaxChain = 0;
+  combo = 0; comboTimer = 0; mergePitch = 1.0;
+  ballTier = 0; // always rabbit in bonus
+  bodies.length = 0;
+  // Spawn initial rows
+  spawnBonusRow();
+  spawnBonusRow(H * 0.15);
+}
+
+function spawnBonusRow(yOverride) {
+  const t0 = TIERS[0];
+  const rowY = yOverride || H * 0.08;
+  const count = Math.floor((W - 60) / (t0.r * 2 + 12));
+  const totalW = count * (t0.r * 2 + 12) - 12;
+  const startX = (W - totalW) / 2 + t0.r;
+  for (let i = 0; i < count; i++) {
+    const b = addBody(startX + i * (t0.r * 2 + 12), rowY, t0.r, t0.mass, 'pin');
+    b.tier = 0;
+    b.flashTimer = 4;
+  }
+  // Visual feedback for new row
+  spawnRing(W / 2, rowY, W * 0.4, '#4ECDC4');
+}
+
+function endBonusStage() {
+  bonusActive = false;
+  gamePhase = 'bonus_result';
+  phaseTimer = 180; // 3 seconds to show results
+
+  // Calculate chain bonus (added on top of points already earned during bonus)
+  let chainBonus = 0;
+  if (bonusMaxChain >= 8) chainBonus = 2000;
+  else if (bonusMaxChain >= 6) chainBonus = 1000;
+  else if (bonusMaxChain >= 4) chainBonus = 500;
+  else if (bonusMaxChain >= 2) chainBonus = 200;
+
+  bonusTotalScore += chainBonus;
+  score += chainBonus; // only add the chain bonus (merge scores already added during play)
+
+  // Fireworks for good bonus
+  if (bonusTotalScore > 500) {
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        spawnParticles(W * (0.15 + Math.random() * 0.7), H * (0.15 + Math.random() * 0.5), 20);
+      }, i * 150);
+    }
+  }
+  playBuf(bonusFanfareBuf, 0.5, 1.2);
+}
 
 // ── Pick random ball tier ──
 function pickBallTier() {
@@ -653,7 +746,7 @@ function isSettled() {
 let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
 
 canvas.addEventListener('pointerdown', e => {
-  if (gamePhase !== 'aim') return;
+  if (gamePhase !== 'aim' && gamePhase !== 'bonus') return;
   e.preventDefault();
   aiming = true;
   aimStartX = aimCurX = e.clientX;
@@ -675,6 +768,20 @@ canvas.addEventListener('pointerup', e => {
   const dist = Math.sqrt(dx*dx + dy*dy);
   if (dist < MIN_DRAG) return;
   const nx = dx / dist, ny = dy / dist;
+
+  if (gamePhase === 'bonus') {
+    // Bonus: always tier0, rapid fire allowed
+    const t = TIERS[0];
+    const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
+    const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball');
+    b.tier = 0;
+    const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, dist / 100);
+    b.vx = nx * speed;
+    b.vy = ny * speed;
+    playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
+    return;
+  }
+
   const t = TIERS[ballTier];
   const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
   const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball'); // ball is heavier than same-tier pin
@@ -836,11 +943,138 @@ function drawBallTrail() {
 }
 
 function drawBestScore() {
-  if (bestScore <= 0) return;
+  if (bestScore <= 0 && bestChain <= 0) return;
   ctx.globalAlpha = 0.5;
   ctx.fillStyle = '#FFD700';
   ctx.font = '12px "Zen Maru Gothic"'; ctx.textAlign = 'right';
-  ctx.fillText('BEST: ' + bestScore, W - 16, 50);
+  if (bestScore > 0) ctx.fillText('BEST: ' + bestScore, W - 16, 50);
+  if (bestChain > 0) { ctx.fillText('最高連鎖: ' + bestChain, W - 16, 66); }
+  ctx.globalAlpha = 1;
+}
+
+function drawBonusIntro(now) {
+  // Flashing rainbow background
+  const hue = (now * 0.2) % 360;
+  ctx.fillStyle = `hsl(${hue}, 60%, 25%)`;
+  ctx.fillRect(0, 0, W, H);
+
+  const alpha = Math.min(1, (120 - bonusIntroTimer) / 30);
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center';
+
+  // Title
+  const scale = 1 + Math.sin(now * 0.008) * 0.1;
+  ctx.save();
+  ctx.translate(W / 2, H * 0.35);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 48px "Zen Maru Gothic"';
+  ctx.fillText('ボーナス！', 0, 0);
+  ctx.restore();
+
+  // Subtitle
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px "Zen Maru Gothic"';
+  ctx.fillText('10びょうで たくさん たおそう！', W / 2, H * 0.48);
+
+  // Stars decoration
+  ctx.font = '36px "Zen Maru Gothic"';
+  const starCount = 6;
+  for (let i = 0; i < starCount; i++) {
+    const angle = (now * 0.001 + i * Math.PI * 2 / starCount);
+    const sx = W / 2 + Math.cos(angle) * 120;
+    const sy = H * 0.4 + Math.sin(angle) * 80;
+    ctx.globalAlpha = alpha * (0.5 + Math.sin(now * 0.005 + i) * 0.3);
+    ctx.fillText('⭐', sx - 18, sy + 12);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBonusHUD(now) {
+  const elapsed = now - bonusStartTime;
+  const remaining = Math.max(0, BONUS_DURATION - elapsed) / 1000;
+
+  // Timer bar at top
+  const ratio = remaining / (BONUS_DURATION / 1000);
+  const barW = W - 40;
+  const barH = 14;
+  const barX = 20, barY = 70;
+  ctx.fillStyle = '#333'; ctx.fillRect(barX, barY, barW, barH);
+  const barColor = ratio > 0.3 ? '#4ECDC4' : ratio > 0.1 ? '#FF9800' : '#F44336';
+  ctx.fillStyle = barColor; ctx.fillRect(barX, barY, barW * ratio, barH);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
+
+  // Timer text
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 20px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+  ctx.fillText(remaining.toFixed(1) + 's', W / 2, barY - 5);
+
+  // Bonus label
+  ctx.fillStyle = '#FFD700'; ctx.font = 'bold 16px "Zen Maru Gothic"'; ctx.textAlign = 'left';
+  ctx.fillText('★ BONUS ★', 60, 25);
+
+  // Bonus score
+  ctx.fillStyle = '#4ECDC4'; ctx.textAlign = 'right';
+  ctx.fillText('ボーナス: +' + bonusTotalScore, W - 16, 25);
+
+  // Current chain in bonus
+  if (combo >= 2) {
+    const chainScale = 1 + combo * 0.05;
+    ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold ' + Math.round(24 * chainScale) + 'px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.9;
+    ctx.fillText(combo + '連鎖！', W / 2, H * 0.35);
+    ctx.globalAlpha = 1;
+  }
+
+  // Pulsing border to show bonus mode
+  const borderAlpha = 0.3 + Math.sin(now * 0.006) * 0.2;
+  ctx.globalAlpha = borderAlpha;
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, W - 6, H - 6);
+  ctx.globalAlpha = 1;
+}
+
+function drawBonusResult() {
+  const alpha = Math.min(1, phaseTimer / 30);
+  ctx.globalAlpha = alpha * 0.7;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, H * 0.2, W, H * 0.45);
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center';
+
+  // Title
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 36px "Zen Maru Gothic"';
+  ctx.fillText('ボーナス終了！', W / 2, H * 0.32);
+
+  // Merges
+  ctx.fillStyle = '#4ECDC4';
+  ctx.font = 'bold 24px "Zen Maru Gothic"';
+  ctx.fillText(bonusMerges + '回 合体！', W / 2, H * 0.40);
+
+  // Best chain in bonus
+  if (bonusMaxChain >= 2) {
+    ctx.fillStyle = '#FF6B6B';
+    ctx.font = 'bold 22px "Zen Maru Gothic"';
+    ctx.fillText('最高 ' + bonusMaxChain + '連鎖！', W / 2, H * 0.47);
+  }
+
+  // Chain bonus
+  let chainBonus = 0;
+  if (bonusMaxChain >= 8) chainBonus = 2000;
+  else if (bonusMaxChain >= 6) chainBonus = 1000;
+  else if (bonusMaxChain >= 4) chainBonus = 500;
+  else if (bonusMaxChain >= 2) chainBonus = 200;
+  if (chainBonus > 0) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 20px "Zen Maru Gothic"';
+    ctx.fillText('連鎖ボーナス +' + chainBonus, W / 2, H * 0.54);
+  }
+
+  // Total
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px "Zen Maru Gothic"';
+  ctx.fillText('合計 +' + bonusTotalScore + '点！', W / 2, H * 0.62);
+
   ctx.globalAlpha = 1;
 }
 
@@ -967,15 +1201,100 @@ function loop(now) {
   if (gamePhase === 'result') {
     phaseTimer--;
     if (phaseTimer <= 0) {
-      // Update best score
+      // Update best score & chain record
       if (score > bestScore) { bestScore = score; localStorage.setItem('bowling_best', String(bestScore)); }
       if (roundMerges > roundBestMerges) roundBestMerges = roundMerges;
+      // Record best chain from normal play
+      if (chainDisplay > bestChain) { bestChain = chainDisplay; localStorage.setItem('bowling_best_chain', String(bestChain)); }
+      // Check bonus trigger
+      if (shouldTriggerBonus()) {
+        startBonusIntro();
+      } else {
+        startArrangePhase();
+      }
+    }
+  }
+
+  // Bonus intro
+  if (gamePhase === 'bonus_intro') {
+    bonusIntroTimer--;
+    if (bonusIntroTimer <= 0) {
+      startBonusStage();
+    }
+  }
+
+  // Bonus stage
+  if (gamePhase === 'bonus') {
+    const bonusElapsed = now - bonusStartTime;
+
+    // Spawn new rows periodically
+    if (now - bonusLastRowTime >= BONUS_ROW_INTERVAL) {
+      spawnBonusRow();
+      bonusLastRowTime = now;
+    }
+
+    // Physics (always running in bonus)
+    maxHitStrength = 0;
+    if (hitstopFrames > 0) { hitstopFrames--; }
+    else { accumulator += elapsed; while (accumulator >= PHYSICS_DT) { physicsStep(); accumulator -= PHYSICS_DT; } }
+    if (soundThrottle > 0) soundThrottle--;
+
+    // Merges
+    const prevCombo = combo;
+    const prevScore = score;
+    detectMerges(); processMerges();
+    // Track bonus-specific stats
+    const scoreGained = score - prevScore;
+    if (scoreGained > 0) bonusTotalScore += scoreGained;
+    if (combo > prevCombo) {
+      bonusMerges++;
+      if (combo > bonusMaxChain) bonusMaxChain = combo;
+    }
+    if (combo > prevCombo && combo >= 3) { chainDisplay = combo; chainDisplayTimer = 60; }
+
+    // Ball trail
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      if (b.type === 'ball' && !b.dead) {
+        ballTrail.push({ x: b.x, y: b.y, alpha: 1 });
+        if (ballTrail.length > MAX_TRAIL) ballTrail.shift();
+      }
+    }
+    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.96;
+
+    // Remove old balls (shorter lifetime in bonus)
+    for (let i = bodies.length - 1; i >= 0; i--) {
+      const b = bodies[i];
+      if (b.type === 'ball' && !b.dead && now - b.born > 3000) {
+        b.dead = true;
+      }
+    }
+
+    // Time's up
+    if (bonusElapsed >= BONUS_DURATION) {
+      endBonusStage();
+    }
+  }
+
+  // Bonus result
+  if (gamePhase === 'bonus_result') {
+    phaseTimer--;
+    if (phaseTimer <= 0) {
+      // Back to normal play
+      bodies.length = 0;
+      for (let i = 0; i < 15; i++) {
+        const t0 = TIERS[0];
+        const b = addBody(W/2 + (Math.random()-0.5)*100, H*0.3 + (Math.random()-0.5)*100, t0.r, t0.mass, 'pin');
+        b.tier = 0;
+      }
       startArrangePhase();
     }
   }
 
-  // Combo timer
-  if (comboTimer > 0) { comboTimer--; if (comboTimer <= 0) { combo = 0; mergePitch = 1.0; comboEl.classList.remove('show'); } }
+  // Combo timer (not in bonus_intro)
+  if (gamePhase !== 'bonus_intro') {
+    if (comboTimer > 0) { comboTimer--; if (comboTimer <= 0) { combo = 0; mergePitch = 1.0; comboEl.classList.remove('show'); } }
+  }
   if (bgFlash > 0) bgFlash *= 0.85;
 
   // Cleanup dead
@@ -986,36 +1305,68 @@ function loop(now) {
   else { shakeX = 0; shakeY = 0; }
 
   // ── Draw ──
-  ctx.save(); ctx.translate(shakeX, shakeY);
-  drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter(); drawBestScore();
-  ctx.restore();
-  scoreEl.textContent = score;
+  if (gamePhase === 'bonus_intro') {
+    ctx.save(); ctx.translate(shakeX, shakeY);
+    drawBonusIntro(now);
+    drawEffects();
+    ctx.restore();
+  } else if (gamePhase === 'bonus') {
+    ctx.save(); ctx.translate(shakeX, shakeY);
+    // Bonus has a slightly different bg color
+    const hue = ((now * 0.05) % 30) + 140; // slowly shifting green-teal
+    ctx.fillStyle = `hsl(${hue}, 45%, 22%)`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, W-8, H-8);
+    drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter();
+    ctx.restore();
+    drawBonusHUD(now);
+    // Ball preview (always tier0, always show)
+    drawBallPreview(now);
+    scoreEl.textContent = score;
+  } else if (gamePhase === 'bonus_result') {
+    ctx.save(); ctx.translate(shakeX, shakeY);
+    drawBg(); drawBodies(); drawEffects();
+    ctx.restore();
+    drawBonusResult();
+    scoreEl.textContent = score;
+  } else {
+    ctx.save(); ctx.translate(shakeX, shakeY);
+    drawBg(); drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter(); drawBestScore();
+    ctx.restore();
+    scoreEl.textContent = score;
+
+    // Phase-specific UI
+    if (gamePhase === 'aim') {
+      drawBallPreview(now);
+      // Hint
+      if (shotNumber === 0) {
+        ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
+        ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+        ctx.fillText('引っ張ってボールを発射！', W/2, H*0.95);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    if (gamePhase === 'result') {
+      drawResultOverlay();
+    }
+  }
 
   // FPS
   ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
   ctx.fillText(fpsDisplay + 'fps  bodies:' + bodies.length + '  ' + gamePhase, 60, 22);
 
-  // Phase-specific UI
-  if (gamePhase === 'aim') {
-    drawBallPreview(now);
-    // Hint
-    if (shotNumber === 0) {
-      ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
-      ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-      ctx.fillText('引っ張ってボールを発射！', W/2, H*0.95);
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  if (gamePhase === 'result') {
-    drawResultOverlay();
-  }
-
-  // Shot counter
-  if (shotNumber > 0) {
+  // Shot counter (show bonus countdown)
+  if (shotNumber > 0 && gamePhase !== 'bonus' && gamePhase !== 'bonus_intro' && gamePhase !== 'bonus_result') {
     ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.5;
     ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'left';
     ctx.fillText('Shot ' + shotNumber, 60, 40);
+    // Show next bonus indicator
+    const shotsUntilBonus = BONUS_INTERVAL - (shotNumber % BONUS_INTERVAL);
+    if (shotsUntilBonus <= 3 && shotsUntilBonus > 0) {
+      ctx.fillStyle = '#FFD700'; ctx.globalAlpha = 0.6 + Math.sin(now * 0.005) * 0.3;
+      ctx.fillText('ボーナスまで あと ' + shotsUntilBonus + '!', 60, 58);
+    }
     ctx.globalAlpha = 1;
   }
 
