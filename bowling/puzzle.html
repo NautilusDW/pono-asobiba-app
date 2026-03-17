@@ -1104,24 +1104,9 @@ function loop(now) {
     }
   }
 
-  // Fallen physics: only run gravity to settle new drops, no merge detection outside settling
+  // Fallen physics outside settling: gravity + collision (no merge detection)
   if (gamePhase !== 'settling') {
-    // Only gravity for bodies — no merge detection
-    const floorY = H - 10;
-    for (let i = 0; i < fallen.length; i++) {
-      const b = fallen[i];
-      if (b.dead) continue;
-      b.vy += GRAVITY;
-      b.x += b.vx; b.y += b.vy;
-      b.vx *= 0.92;
-      if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy *= -FLOOR_DAMP; b.vx *= 0.5; }
-      if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.4; }
-      if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.4; }
-      if (b.y + b.r >= floorY - 2 && Math.abs(b.vy) < 0.5) {
-        b.vx *= 0.9;
-        if (Math.abs(b.vx) < 0.1) b.vx = 0;
-      }
-    }
+    fallenPhysics();
     tickBombs();
   }
 
