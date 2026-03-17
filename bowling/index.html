@@ -228,6 +228,12 @@ let ballTier = 0;           // current ball's tier
 let shotNumber = 0;
 
 // New game features
+// One-time reset (v2 scoring rebalance)
+if (!localStorage.getItem('bowling_reset_v2')) {
+  localStorage.removeItem('bowling_best');
+  localStorage.removeItem('bowling_best_chain');
+  localStorage.setItem('bowling_reset_v2', '1');
+}
 let bestScore = parseInt(localStorage.getItem('bowling_best') || '0');
 let bestChain = parseInt(localStorage.getItem('bowling_best_chain') || '0');
 let ballTrail = [];          // [{x,y,alpha}] ball position trail
