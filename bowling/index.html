@@ -238,7 +238,7 @@ let bestScore = parseInt(localStorage.getItem('bowling_best') || '0');
 let bestChain = parseInt(localStorage.getItem('bowling_best_chain') || '0');
 let ballTrail = [];          // [{x,y,alpha}] ball position trail
 const MAX_TRAIL = 40;
-let roundBestMerges = 0;     // best merges in a single round
+let roundBestMerges = parseInt(localStorage.getItem('bowling_best_merges') || '0');
 
 // Bonus stage
 const BONUS_INTERVAL = 10;       // every N shots
@@ -836,12 +836,11 @@ function drawHUD() {
   ctx.font = 'bold 28px "Zen Maru Gothic"'; ctx.textAlign = 'right';
   ctx.fillText(score, W - 16, 35);
 
-  // Merge count + chain
-  ctx.globalAlpha = 0.7; ctx.font = '14px "Zen Maru Gothic"';
-  ctx.fillText('合体: ' + roundMerges, W - 16, 55);
+  // Best records
   ctx.globalAlpha = 0.5; ctx.font = '12px "Zen Maru Gothic"';
-  if (bestScore > 0) ctx.fillText('BEST: ' + bestScore, W - 16, 72);
-  if (bestChain > 0) ctx.fillText('最高連鎖: ' + bestChain, W - 16, 87);
+  if (bestScore > 0) ctx.fillText('BEST: ' + bestScore, W - 16, 55);
+  if (bestChain > 0) ctx.fillText('最高連鎖: ' + bestChain, W - 16, 70);
+  if (roundBestMerges > 0) ctx.fillText('最高合体: ' + roundBestMerges, W - 16, 85);
   ctx.globalAlpha = 1;
 
   // Shot counter
@@ -1225,7 +1224,7 @@ function loop(now) {
     if (phaseTimer <= 0) {
       // Update best score & chain record
       if (score > bestScore) { bestScore = score; localStorage.setItem('bowling_best', String(bestScore)); }
-      if (roundMerges > roundBestMerges) roundBestMerges = roundMerges;
+      if (roundMerges > roundBestMerges) { roundBestMerges = roundMerges; localStorage.setItem('bowling_best_merges', String(roundBestMerges)); }
       // Record best chain from normal play
       if (chainDisplay > bestChain) { bestChain = chainDisplay; localStorage.setItem('bowling_best_chain', String(bestChain)); }
       // Check bonus trigger
