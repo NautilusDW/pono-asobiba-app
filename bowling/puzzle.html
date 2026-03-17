@@ -137,13 +137,13 @@ const TIERS = [
 const MAX_TIER = TIERS.length - 1;
 
 // ── Constants ──
-const GRAVITY = 0.15;
-const RESTITUTION = 0.3;
-const FLOOR_DAMP = 0.35;
+const GRAVITY = 0.18;
+const RESTITUTION = 0.15;
+const FLOOR_DAMP = 0.2;
 const MAX_FALLEN = 40;
 const BALL_SPEED = 14;
 const MIN_DRAG = 10;
-const SETTLE_WAIT = 40;
+const SETTLE_WAIT = 60;
 const COMBO_WINDOW = 90;
 const GRID_PIN_R = 18; // all grid pins rendered at tier0 size for uniform grid
 
@@ -430,23 +430,26 @@ function fallenPhysics() {
     b.vy += GRAVITY;
     b.x += b.vx; b.y += b.vy;
     // Air friction
-    b.vx *= 0.99;
+    b.vx *= 0.97;
+    b.vy *= 0.995;
     // Floor bounce with damping
     if (b.y + b.r > floorY) {
       b.y = floorY - b.r;
       b.vy *= -FLOOR_DAMP;
-      b.vx *= 0.85; // friction on floor contact
-      // Kill tiny bounces
-      if (Math.abs(b.vy) < 0.8) { b.vy = 0; }
+      b.vx *= 0.7;
+      if (Math.abs(b.vy) < 1.0) { b.vy = 0; }
     }
     // Walls
-    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.4; }
-    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.4; }
-    // Ground friction when resting on floor
-    if (b.y + b.r >= floorY - 2 && Math.abs(b.vy) < 0.5) {
-      b.vx *= 0.9;
-      if (Math.abs(b.vx) < 0.1) b.vx = 0;
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.3; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.3; }
+    // Ground friction — resting on floor
+    if (b.y + b.r >= floorY - 2 && Math.abs(b.vy) < 1.0) {
+      b.vx *= 0.8;
+      if (Math.abs(b.vx) < 0.15) b.vx = 0;
     }
+    // Kill micro-movements
+    if (Math.abs(b.vx) < 0.05) b.vx = 0;
+    if (Math.abs(b.vy) < 0.05) b.vy = 0;
   }
   // Body-body collisions — always resolve overlap to prevent stacking
   for (let i = 0; i < fallen.length; i++) {
@@ -473,6 +476,10 @@ function resolveCollision(a, b) {
   const j = -(1 + RESTITUTION) * dvn / (1 / a.mass + 1 / b.mass);
   a.vx += (j / a.mass) * nx; a.vy += (j / a.mass) * ny;
   b.vx -= (j / b.mass) * nx; b.vy -= (j / b.mass) * ny;
+  // Dampen post-collision velocity to help settling
+  const damp = 0.85;
+  a.vx *= damp; a.vy *= damp;
+  b.vx *= damp; b.vy *= damp;
   return Math.abs(dvn);
 }
 
@@ -567,7 +574,8 @@ function detectFallenMerges() {
         const cb = fallen[j];
         if (cb.dead || cb.merging || cb.tier !== ca.tier) continue;
         const dx = cb.x - ca.x, dy = cb.y - ca.y;
-        if (dx * dx + dy * dy < (ca.r + cb.r) * (ca.r + cb.r)) {
+        const mergeDist = (ca.r + cb.r) * 1.15; // slightly generous for post-collision detection
+        if (dx * dx + dy * dy < mergeDist * mergeDist) {
           visited[j] = 1; cluster.push(j);
         }
       }
