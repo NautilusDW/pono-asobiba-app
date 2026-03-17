@@ -780,7 +780,7 @@ function drawPopAnims(dt) {
 }
 
 // ── Finger trail (sparkle trail on drag) ──
-const MAX_TRAIL = 40;
+const MAX_TRAIL = 80;
 const trailX = new Float32Array(MAX_TRAIL);
 const trailY = new Float32Array(MAX_TRAIL);
 const trailLife = new Float32Array(MAX_TRAIL);
@@ -808,7 +808,7 @@ function addTrailPoint(x, y) {
 
 function drawTrail(dt) {
   for (let i = trailCount - 1; i >= 0; i--) {
-    trailLife[i] -= dt * 0.003;
+    trailLife[i] -= dt * 0.0015; // slower decay = longer trail
     if (trailLife[i] <= 0) {
       trailCount--;
       if (i < trailCount) {
@@ -1198,37 +1198,142 @@ for (let i = 0; i < STAR_COUNT; i++) {
 }
 
 // ── Constellation mode (night) ──
+// Each constellation has: stars (points), and an illustration path (drawIllust function)
+// The illustration is drawn as a cute line-art overlay on the connected stars
 const CONSTELLATIONS = [
   { name: 'おほしさま', emoji: '⭐', points: [
     [0.50, 0.20], [0.38, 0.40], [0.15, 0.40], [0.33, 0.55], [0.26, 0.75], [0.50, 0.62], [0.74, 0.75], [0.67, 0.55], [0.85, 0.40], [0.62, 0.40]
-  ]},
+  ], drawIllust: (ctx, W, H, a) => {
+    // 5-pointed star outline
+    ctx.beginPath();
+    const pts = [[0.50,0.20],[0.62,0.40],[0.85,0.40],[0.67,0.55],[0.74,0.75],[0.50,0.62],[0.26,0.75],[0.33,0.55],[0.15,0.40],[0.38,0.40]];
+    ctx.moveTo(pts[0][0]*W, pts[0][1]*H);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0]*W, pts[i][1]*H);
+    ctx.closePath(); ctx.stroke();
+  }},
   { name: 'さかな', emoji: '🐟', points: [
-    [0.25, 0.45], [0.35, 0.30], [0.55, 0.28], [0.70, 0.35], [0.80, 0.20], [0.80, 0.55], [0.70, 0.45], [0.55, 0.52], [0.35, 0.55]
-  ]},
+    [0.30, 0.40], [0.40, 0.28], [0.55, 0.25], [0.68, 0.30], [0.75, 0.40], [0.68, 0.50], [0.55, 0.55], [0.40, 0.52]
+  ], drawIllust: (ctx, W, H, a) => {
+    // Fish body (oval) + tail
+    ctx.beginPath();
+    ctx.ellipse(0.52*W, 0.40*H, 0.18*W, 0.12*H, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(0.70*W, 0.40*H);
+    ctx.lineTo(0.82*W, 0.28*H);
+    ctx.lineTo(0.82*W, 0.52*H);
+    ctx.closePath(); ctx.stroke();
+    // Eye
+    ctx.beginPath();
+    ctx.arc(0.42*W, 0.37*H, 3, 0, Math.PI*2);
+    ctx.fill();
+    // Mouth
+    ctx.beginPath();
+    ctx.arc(0.35*W, 0.41*H, 4, -0.5, 0.5);
+    ctx.stroke();
+  }},
   { name: 'おうち', emoji: '🏠', points: [
     [0.30, 0.65], [0.30, 0.40], [0.50, 0.20], [0.70, 0.40], [0.70, 0.65]
-  ]},
+  ], drawIllust: (ctx, W, H, a) => {
+    // House body
+    ctx.beginPath();
+    ctx.rect(0.30*W, 0.40*H, 0.40*W, 0.25*H);
+    ctx.stroke();
+    // Roof
+    ctx.beginPath();
+    ctx.moveTo(0.26*W, 0.40*H);
+    ctx.lineTo(0.50*W, 0.18*H);
+    ctx.lineTo(0.74*W, 0.40*H);
+    ctx.closePath(); ctx.stroke();
+    // Door
+    ctx.beginPath();
+    ctx.rect(0.44*W, 0.50*H, 0.12*W, 0.15*H);
+    ctx.stroke();
+    // Window
+    ctx.beginPath();
+    ctx.rect(0.34*W, 0.45*H, 0.07*W, 0.07*H);
+    ctx.stroke();
+    // Chimney
+    ctx.beginPath();
+    ctx.rect(0.60*W, 0.22*H, 0.06*W, 0.12*H);
+    ctx.stroke();
+  }},
   { name: 'ハート', emoji: '💖', points: [
     [0.50, 0.70], [0.30, 0.50], [0.25, 0.35], [0.35, 0.22], [0.50, 0.32], [0.65, 0.22], [0.75, 0.35], [0.70, 0.50]
-  ]},
+  ], drawIllust: (ctx, W, H, a) => {
+    // Heart shape using bezier curves
+    ctx.beginPath();
+    ctx.moveTo(0.50*W, 0.70*H);
+    ctx.bezierCurveTo(0.20*W, 0.50*H, 0.20*W, 0.22*H, 0.50*W, 0.32*H);
+    ctx.bezierCurveTo(0.80*W, 0.22*H, 0.80*W, 0.50*H, 0.50*W, 0.70*H);
+    ctx.stroke();
+  }},
   { name: 'ちょうちょ', emoji: '🦋', points: [
-    [0.50, 0.30], [0.35, 0.22], [0.20, 0.30], [0.25, 0.50], [0.40, 0.55], [0.50, 0.50], [0.60, 0.55], [0.75, 0.50], [0.80, 0.30], [0.65, 0.22]
-  ]},
+    [0.50, 0.35], [0.38, 0.25], [0.22, 0.28], [0.25, 0.45], [0.42, 0.50], [0.58, 0.50], [0.75, 0.45], [0.78, 0.28], [0.62, 0.25]
+  ], drawIllust: (ctx, W, H, a) => {
+    // Left wing
+    ctx.beginPath();
+    ctx.ellipse(0.35*W, 0.35*H, 0.13*W, 0.10*H, -0.3, 0, Math.PI*2);
+    ctx.stroke();
+    // Right wing
+    ctx.beginPath();
+    ctx.ellipse(0.65*W, 0.35*H, 0.13*W, 0.10*H, 0.3, 0, Math.PI*2);
+    ctx.stroke();
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(0.50*W, 0.40*H, 0.02*W, 0.10*H, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // Antennae
+    ctx.beginPath();
+    ctx.moveTo(0.49*W, 0.30*H); ctx.quadraticCurveTo(0.44*W, 0.20*H, 0.40*W, 0.18*H);
+    ctx.moveTo(0.51*W, 0.30*H); ctx.quadraticCurveTo(0.56*W, 0.20*H, 0.60*W, 0.18*H);
+    ctx.stroke();
+  }},
   { name: 'くま', emoji: '🐻', points: [
-    [0.35, 0.18], [0.30, 0.30], [0.35, 0.40], [0.40, 0.55], [0.50, 0.60], [0.60, 0.55], [0.65, 0.40], [0.70, 0.30], [0.65, 0.18]
-  ]},
+    [0.35, 0.20], [0.30, 0.32], [0.32, 0.48], [0.40, 0.60], [0.50, 0.65], [0.60, 0.60], [0.68, 0.48], [0.70, 0.32], [0.65, 0.20]
+  ], drawIllust: (ctx, W, H, a) => {
+    // Head
+    ctx.beginPath();
+    ctx.ellipse(0.50*W, 0.42*H, 0.16*W, 0.18*H, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // Left ear
+    ctx.beginPath();
+    ctx.arc(0.35*W, 0.22*H, 0.06*W, 0, Math.PI*2);
+    ctx.stroke();
+    // Right ear
+    ctx.beginPath();
+    ctx.arc(0.65*W, 0.22*H, 0.06*W, 0, Math.PI*2);
+    ctx.stroke();
+    // Eyes
+    ctx.beginPath();
+    ctx.arc(0.44*W, 0.38*H, 3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0.56*W, 0.38*H, 3, 0, Math.PI*2);
+    ctx.fill();
+    // Nose
+    ctx.beginPath();
+    ctx.ellipse(0.50*W, 0.44*H, 4, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Mouth
+    ctx.beginPath();
+    ctx.arc(0.50*W, 0.44*H, 6, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  }},
 ];
 
 let constellationMode = false;
-let constellationActive = null; // { constellation, traced: [bool], currentIdx, completed, completeTime }
-let constellationFadeIn = 0;   // 0→1 fade in
+let constellationActive = null;
+let constellationFadeIn = 0;
+let constellationGuideAlpha = 1; // starts at 1, fades to 0 as guide disappears
 let lastConstellationIdx = -1;
 
 function enterConstellationMode() {
   if (constellationMode) return;
   constellationMode = true;
   constellationFadeIn = 0;
-  // Pick a random constellation (different from last)
+  constellationGuideAlpha = 1; // show full guide at start
   let idx;
   do { idx = Math.floor(Math.random() * CONSTELLATIONS.length); } while (idx === lastConstellationIdx && CONSTELLATIONS.length > 1);
   lastConstellationIdx = idx;
@@ -1241,7 +1346,7 @@ function enterConstellationMode() {
     completeTime: 0,
     starScreenPos: c.points.map(p => ({ x: p[0] * W, y: p[1] * H })),
   };
-  constellationActive.traced[0] = true; // first star is always "found"
+  constellationActive.traced[0] = true;
 }
 
 function exitConstellationMode() {
@@ -1250,7 +1355,6 @@ function exitConstellationMode() {
   constellationFadeIn = 0;
 }
 
-// Check if pointer is near a constellation star
 function checkConstellationTap(px, py) {
   if (!constellationActive || constellationActive.completed) return;
   const ca = constellationActive;
@@ -1258,26 +1362,24 @@ function checkConstellationTap(px, py) {
   if (nextIdx >= ca.constellation.points.length) return;
   const star = ca.starScreenPos[nextIdx];
   const dx = px - star.x, dy = py - star.y;
-  const hitR = 35; // generous touch target
+  const hitR = 45; // generous touch target for toddlers
   if (dx * dx + dy * dy < hitR * hitR) {
     ca.traced[nextIdx] = true;
     ca.currentIdx = nextIdx;
-    // Sparkle on connection
-    for (let i = 0; i < 8; i++) addParticle(star.x, star.y, { r: 255, g: 255, b: 200 }, 3);
-    // Play a note if audio is available
+    for (let i = 0; i < 12; i++) addParticle(star.x, star.y, { r: 255, g: 255, b: 200 }, 4);
     if (audioCtx && audioCtx.state === 'running') {
       const freq = PENTA_CANDIDATES[nextIdx % PENTA_CANDIDATES.length];
       setupMasterChain();
       playMarimbaNote(freq, audioCtx.currentTime, 0.4, 0);
     }
-    // Check completion
+    // Fade out guide faster when player starts tracing
+    constellationGuideAlpha = Math.min(constellationGuideAlpha, 0.3);
     if (nextIdx === ca.constellation.points.length - 1) {
       ca.completed = true;
       ca.completeTime = 0;
-      // Celebration particles
-      for (let i = 0; i < 40; i++) {
-        const sx = W * 0.3 + Math.random() * W * 0.4;
-        const sy = H * 0.2 + Math.random() * H * 0.4;
+      for (let i = 0; i < 50; i++) {
+        const sx = W * 0.2 + Math.random() * W * 0.6;
+        const sy = H * 0.15 + Math.random() * H * 0.5;
         addConfetti(sx, sy);
       }
     }
@@ -1290,11 +1392,16 @@ function drawConstellation(dt) {
 
   constellationFadeIn = Math.min(1, constellationFadeIn + dt * 0.002);
 
+  // Guide fades out over time (starts visible, slowly disappears)
+  if (!ca.completed && constellationGuideAlpha > 0) {
+    constellationGuideAlpha = Math.max(0, constellationGuideAlpha - dt * 0.0003);
+  }
+
   if (ca.completed) {
     ca.completeTime += dt;
   }
 
-  // Recalculate positions (in case of resize)
+  // Recalculate positions
   for (let i = 0; i < ca.constellation.points.length; i++) {
     ca.starScreenPos[i].x = ca.constellation.points[i][0] * W;
     ca.starScreenPos[i].y = ca.constellation.points[i][1] * H;
@@ -1302,13 +1409,39 @@ function drawConstellation(dt) {
 
   const alpha = constellationFadeIn;
 
-  // Draw traced lines
+  // ── Guide: show full shape as faded preview ──
+  if (constellationGuideAlpha > 0.01 && !ca.completed) {
+    ctx.save();
+    ctx.globalAlpha = alpha * constellationGuideAlpha * 0.3;
+    ctx.strokeStyle = 'rgba(180, 200, 255, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]); // dashed line
+    ctx.beginPath();
+    for (let i = 0; i < ca.starScreenPos.length; i++) {
+      const s = ca.starScreenPos[i];
+      if (i === 0) ctx.moveTo(s.x, s.y);
+      else ctx.lineTo(s.x, s.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Also show illustration as faded hint
+    ctx.globalAlpha = alpha * constellationGuideAlpha * 0.15;
+    ctx.strokeStyle = 'rgba(200, 220, 255, 0.5)';
+    ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
+    ctx.lineWidth = 1.5;
+    if (ca.constellation.drawIllust) {
+      ca.constellation.drawIllust(ctx, W, H, constellationGuideAlpha);
+    }
+    ctx.restore();
+  }
+
+  // ── Traced lines (bright) ──
   ctx.save();
-  ctx.globalAlpha = alpha * 0.8;
-  ctx.strokeStyle = 'rgba(200, 220, 255, 0.8)';
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.strokeStyle = 'rgba(200, 230, 255, 0.9)';
   ctx.lineWidth = 3;
-  ctx.shadowColor = 'rgba(150, 200, 255, 0.6)';
-  ctx.shadowBlur = 10;
+  ctx.shadowColor = 'rgba(150, 200, 255, 0.7)';
+  ctx.shadowBlur = 12;
   ctx.beginPath();
   for (let i = 0; i <= ca.currentIdx && i < ca.starScreenPos.length; i++) {
     const s = ca.starScreenPos[i];
@@ -1319,62 +1452,101 @@ function drawConstellation(dt) {
   ctx.shadowBlur = 0;
   ctx.restore();
 
-  // Draw stars
+  // ── Stars ──
   for (let i = 0; i < ca.starScreenPos.length; i++) {
     const s = ca.starScreenPos[i];
     const isTraced = ca.traced[i];
     const isNext = i === ca.currentIdx + 1 && !ca.completed;
 
-    // Star glow
-    const glow = isTraced ? 1 : isNext ? 0.5 + 0.5 * Math.sin(lastTime * 0.005) : 0.25;
-    const starSize = isNext ? 6 + 2 * Math.sin(lastTime * 0.004) : isTraced ? 5 : 3;
+    // Size: next star is BIG and pulsing, traced stars are medium, others small
+    const pulse = Math.sin(lastTime * 0.005);
+    const starSize = isNext ? 10 + 4 * pulse : isTraced ? 6 : 4;
+    const glow = isTraced ? 1 : isNext ? 0.7 + 0.3 * pulse : 0.35;
 
+    // Outer glow aura
+    if (isNext || isTraced) {
+      ctx.globalAlpha = alpha * glow * 0.25;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, starSize * 3, 0, Math.PI * 2);
+      ctx.fillStyle = isNext ? 'rgba(255,230,100,0.3)' : 'rgba(200,220,255,0.2)';
+      ctx.fill();
+    }
+
+    // Star core
     ctx.globalAlpha = alpha * glow;
     ctx.fillStyle = isTraced ? '#fff' : isNext ? '#ffe080' : 'rgba(200,210,255,0.6)';
     ctx.beginPath();
     ctx.arc(s.x, s.y, starSize, 0, Math.PI * 2);
     ctx.fill();
 
-    // Outer glow ring for next star
+    // Cross sparkle for next star
     if (isNext) {
-      ctx.globalAlpha = alpha * 0.3 * (0.5 + 0.5 * Math.sin(lastTime * 0.006));
+      ctx.globalAlpha = alpha * (0.4 + 0.3 * pulse);
+      ctx.strokeStyle = 'rgba(255,240,150,0.8)';
+      ctx.lineWidth = 1.5;
+      const len = starSize * 2;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, 20, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255, 230, 120, 0.5)';
-      ctx.lineWidth = 2;
+      ctx.moveTo(s.x - len, s.y); ctx.lineTo(s.x + len, s.y);
+      ctx.moveTo(s.x, s.y - len); ctx.lineTo(s.x, s.y + len);
       ctx.stroke();
+    }
+
+    // Number label (small, near star)
+    if (!ca.completed) {
+      ctx.globalAlpha = alpha * (isTraced ? 0.5 : isNext ? 0.8 : 0.25);
+      const numSize = Math.min(W * 0.03, 14);
+      ctx.font = `700 ${numSize}px 'Zen Maru Gothic', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = isNext ? '#ffe080' : '#aaccff';
+      ctx.fillText(`${i + 1}`, s.x, s.y - starSize - 4);
     }
   }
 
-  // Show name + emoji on completion
+  // ── Completion: illustration + name ──
   if (ca.completed) {
-    const t = Math.min(1, ca.completeTime / 800);
+    const t = Math.min(1, ca.completeTime / 1000);
+    const cx = ca.starScreenPos.reduce((s, p) => s + p.x, 0) / ca.starScreenPos.length;
+    const cy = ca.starScreenPos.reduce((s, p) => s + p.y, 0) / ca.starScreenPos.length;
+
+    // Draw the illustration over the stars (fades in)
+    ctx.save();
+    ctx.globalAlpha = alpha * t * 0.7;
+    ctx.strokeStyle = 'rgba(200, 230, 255, 0.9)';
+    ctx.fillStyle = 'rgba(200, 230, 255, 0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(150, 200, 255, 0.5)';
+    ctx.shadowBlur = 8;
+    if (ca.constellation.drawIllust) {
+      ca.constellation.drawIllust(ctx, W, H, t);
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Name + emoji (below illustration)
     ctx.globalAlpha = alpha * t;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // Emoji
-    const emojiSize = Math.min(W * 0.15, 60) * (0.8 + t * 0.2);
+    const emojiSize = Math.min(W * 0.12, 50) * (0.8 + t * 0.2);
     ctx.font = `${emojiSize}px sans-serif`;
-    const cx = ca.starScreenPos.reduce((s, p) => s + p.x, 0) / ca.starScreenPos.length;
-    const cy = ca.starScreenPos.reduce((s, p) => s + p.y, 0) / ca.starScreenPos.length;
-    ctx.fillText(ca.constellation.emoji, cx, cy - 10);
-    // Name
-    const nameSize = Math.min(W * 0.06, 28);
+    const nameY = Math.max(...ca.starScreenPos.map(p => p.y)) + 40;
+    ctx.fillText(ca.constellation.emoji, cx, nameY);
+    const nameSize = Math.min(W * 0.07, 30);
     ctx.font = `900 ${nameSize}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(100,150,255,0.5)';
-    ctx.shadowBlur = 12;
-    ctx.fillText(ca.constellation.name, cx, cy + emojiSize * 0.6);
+    ctx.shadowColor = 'rgba(100,150,255,0.6)';
+    ctx.shadowBlur = 15;
+    ctx.fillText(ca.constellation.name + '！', cx, nameY + emojiSize * 0.7);
     ctx.shadowBlur = 0;
   } else {
-    // Hint text for first time
-    ctx.globalAlpha = alpha * 0.6;
+    // Hint text
+    ctx.globalAlpha = alpha * 0.7;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    const hintSize = Math.min(W * 0.04, 18);
+    const hintSize = Math.min(W * 0.045, 20);
     ctx.font = `700 ${hintSize}px 'Zen Maru Gothic', sans-serif`;
-    ctx.fillStyle = 'rgba(200,220,255,0.7)';
-    ctx.fillText('ひかる ほしを つなごう！', W / 2, H - 30);
+    ctx.fillStyle = 'rgba(200,220,255,0.8)';
+    ctx.fillText('ひかる ほしを じゅんばんに タップ！', W / 2, H - 25);
   }
   ctx.globalAlpha = 1;
 }
