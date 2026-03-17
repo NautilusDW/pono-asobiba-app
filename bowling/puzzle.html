@@ -56,7 +56,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 
 <script>
 'use strict';
-console.log('puzzle v5 loaded'); // cache buster verification
+console.log('puzzle v6 loaded — 8 tiers, physics freeze'); // cache buster
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
@@ -127,12 +127,15 @@ function playBuf(buf, volume, rate) {
   src.start(0);
 }
 
-// ── Tier System (shared) ──
+// ── Tier System (8 tiers: small → large) ──
 const TIERS = [
-  { img: 0,  r: 18, mass: 0.5, name: 'うさぎ' },
-  { img: 5,  r: 24, mass: 0.8, name: 'アライグマ' },
-  { img: 4,  r: 32, mass: 1.2, name: 'アヒル' },
-  { img: 6,  r: 42, mass: 2.0, name: 'ハリネズミ' },
+  { img: 8,  r: 12, mass: 0.3, name: 'ヒヨコ' },
+  { img: 0,  r: 15, mass: 0.5, name: 'うさぎ' },
+  { img: 1,  r: 19, mass: 0.7, name: 'カエル' },
+  { img: 11, r: 24, mass: 1.0, name: 'ネコ' },
+  { img: 2,  r: 30, mass: 1.4, name: 'キツネ' },
+  { img: 4,  r: 37, mass: 2.0, name: 'アヒル' },
+  { img: 6,  r: 46, mass: 2.8, name: 'ハリネズミ' },
   { img: 10, r: 54, mass: 3.5, name: 'クマ' },
 ];
 const MAX_TIER = TIERS.length - 1;
@@ -141,12 +144,12 @@ const MAX_TIER = TIERS.length - 1;
 const GRAVITY = 0.25;
 const RESTITUTION = 0.08;
 const FLOOR_DAMP = 0.1;
-const MAX_FALLEN = 40;
+const MAX_FALLEN = 60;
 const BALL_SPEED = 14;
 const MIN_DRAG = 10;
 const SETTLE_WAIT = 120;
 const COMBO_WINDOW = 90;
-const GRID_PIN_R = 18; // all grid pins rendered at tier0 size for uniform grid
+const GRID_PIN_R = 14; // all grid pins rendered at small size for uniform grid
 
 // ── Pin images (shared) ──
 const tierCanvases = [];
@@ -262,7 +265,7 @@ function initGrid() {
     const sr = Math.floor(Math.random() * FILL_ROWS);
     const sc = Math.floor(Math.random() * GRID_COLS);
     // More even tier distribution — harder to find matching clusters
-    const tier = Math.floor(Math.random() * 3);
+    const tier = Math.floor(Math.random() * 4); // 0-3: ヒヨコ,うさぎ,カエル,ネコ
     if (!gridPins[sr][sc]) {
       gridPins[sr][sc] = { tier, bomb: false };
       seeds.push({ row: sr, col: sc, tier });
@@ -385,17 +388,17 @@ function refillGrid() {
   // New top row — mostly random tiers (harder to chain)
   gridPins[0] = [];
   for (let c = 0; c < GRID_COLS; c++) {
-    let tier = Math.floor(Math.random() * 3); // even distribution
-    // Only 20% chance to match a neighbor (was 65%)
+    let tier = Math.floor(Math.random() * 4); // 0-3: ヒヨコ,うさぎ,カエル,ネコ
+    // Only 20% chance to match a neighbor
     if (Math.random() < 0.2) {
-      const tierCounts = [0, 0, 0];
+      const tierCounts = new Array(TIERS.length).fill(0);
       for (const nb of getNeighbors(0, c)) {
         if (gridPins[nb.row] && gridPins[nb.row][nb.col] && !gridPins[nb.row][nb.col].bomb) {
           tierCounts[gridPins[nb.row][nb.col].tier]++;
         }
       }
       let maxC = 0;
-      for (let t = 0; t < 3; t++) { if (tierCounts[t] > maxC) { maxC = tierCounts[t]; tier = t; } }
+      for (let t = 0; t < 4; t++) { if (tierCounts[t] > maxC) { maxC = tierCounts[t]; tier = t; } }
     }
     gridPins[0][c] = { tier, bomb: false };
   }
@@ -420,7 +423,7 @@ const fallen = [];
 
 function addFallen(x, y, tier, vx, vy, bomb) {
   const t = TIERS[tier];
-  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0, graceTimer: 30 });
+  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0 });
 }
 
 function fallenPhysics() {
@@ -577,7 +580,7 @@ function detectFallenMerges() {
   let mergedAny = false;
   for (let i = 0; i < n; i++) {
     const a = fallen[i];
-    if (a.dead || a.merging || visited[i] || a.graceTimer > 0) continue;
+    if (a.dead || a.merging || visited[i]) continue;
     // BFS cluster
     const cluster = [i]; visited[i] = 1;
     let qi = 0;
@@ -587,7 +590,7 @@ function detectFallenMerges() {
       for (let j = 0; j < n; j++) {
         if (visited[j]) continue;
         const cb = fallen[j];
-        if (cb.dead || cb.merging || cb.graceTimer > 0 || cb.tier !== ca.tier) continue;
+        if (cb.dead || cb.merging || cb.tier !== ca.tier) continue;
         const dx = cb.x - ca.x, dy = cb.y - ca.y;
         const mergeDist = (ca.r + cb.r) * 1.15; // slightly generous for post-collision detection
         if (dx * dx + dy * dy < mergeDist * mergeDist) {
@@ -636,11 +639,12 @@ let ballTier = 0;
 
 function pickBallTier() {
   const r = Math.random();
-  if (r < 0.50) return 0;
-  if (r < 0.75) return 1;
-  if (r < 0.90) return 2;
-  if (r < 0.98) return 3;
-  return 4;
+  if (r < 0.40) return 0; // ヒヨコ
+  if (r < 0.65) return 1; // うさぎ
+  if (r < 0.80) return 2; // カエル
+  if (r < 0.92) return 3; // ネコ
+  if (r < 0.98) return 4; // キツネ
+  return 5; // アヒル (rare)
 }
 
 // ── Grid merge check: BFS from a cell, merge all connected same-tier ──
@@ -674,24 +678,33 @@ function gridMergeCheck(startRow, startCol, tier) {
   }
   cx /= cluster.length; cy /= cluster.length;
 
-  // Remove all cluster pins from grid and drop each one individually (same tier)
+  // Remove all cluster pins from grid
   const count = cluster.length;
   for (const cell of cluster) {
     gridPins[cell.row][cell.col] = null;
     const p = gridToScreen(cell.row, cell.col);
     spawnParticles(p.x, p.y, 5 + tier * 2);
-    // Drop each pin individually to the bottom area — no tier upgrade in grid
-    addFallen(p.x, p.y, tier, (Math.random() - 0.5) * 1.5, 1 + Math.random());
-    fallen[fallen.length - 1].flashTimer = 8;
   }
 
-  spawnPopup(cx, cy - 20, count + '体 おちた！', '#4ECDC4');
+  const multiBonus = count >= 3 ? count : 1;
+
+  if (tier < MAX_TIER) {
+    const tierJump = count >= 5 ? Math.min(3, MAX_TIER - tier) : count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
+    const nt = tier + tierJump;
+    addFallen(cx, cy, nt, (Math.random() - 0.5) * 1, 1);
+    fallen[fallen.length - 1].flashTimer = 8;
+    spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
+    if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
+  } else {
+    spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
+    playBuf(explodeBuf, 0.4, 0.5);
+  }
   spawnParticles(cx, cy, 10 + tier * 4 + count * 2);
   spawnRing(cx, cy, 40 + tier * 15, '#fff');
   playBuf(mergeBuf, 0.5 + tier * 0.15, 1.0);
-  score += Math.round((tier + 1) * 10 * (1 + combo * 0.3) * count);
+  score += Math.round((tier + 1) * 15 * (1 + combo * 0.5) * multiBonus);
   combo++; comboTimer = COMBO_WINDOW;
-  triggerShake(0.3 + count * 0.1);
+  triggerShake(0.5 + tier * 0.3 + (count >= 3 ? 0.3 : 0));
 
   // Check for orphans
   const orphans = findOrphans();
@@ -1119,6 +1132,10 @@ function loop(now) {
     if (fallenSettled() || settleTimer <= 0) {
       settleTimer--;
       if (settleTimer <= 0) {
+        // Freeze all fallen bodies — physics stops until next settling
+        for (const b of fallen) {
+          if (!b.dead) { b.vx = 0; b.vy = 0; }
+        }
         // Next shot
         refillGrid();
         ballTier = pickBallTier();
@@ -1130,11 +1147,9 @@ function loop(now) {
     }
   }
 
-  // Fallen physics + merge detection in ALL phases
+  // Outside settling: NO physics, just tick bombs
   if (gamePhase !== 'settling') {
-    fallenPhysics();
     tickBombs();
-    detectFallenMerges();
   }
 
   // Combo timer
