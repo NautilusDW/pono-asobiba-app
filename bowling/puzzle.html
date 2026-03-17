@@ -138,8 +138,8 @@ const MAX_TIER = TIERS.length - 1;
 
 // ── Constants ──
 const GRAVITY = 0.15;
-const RESTITUTION = 0.15;
-const FLOOR_DAMP = 0.1;
+const RESTITUTION = 0.3;
+const FLOOR_DAMP = 0.35;
 const MAX_FALLEN = 40;
 const BALL_SPEED = 14;
 const MIN_DRAG = 10;
@@ -419,49 +419,41 @@ const fallen = [];
 
 function addFallen(x, y, tier, vx, vy, bomb) {
   const t = TIERS[tier];
-  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0, frozen: false });
+  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0 });
 }
 
 function fallenPhysics() {
   const floorY = H - 10;
   for (let i = 0; i < fallen.length; i++) {
     const b = fallen[i];
-    if (b.dead || b.frozen) continue;
+    if (b.dead) continue;
     b.vy += GRAVITY;
     b.x += b.vx; b.y += b.vy;
-    b.vx *= 0.96; // strong horizontal friction
-    // Floor
+    // Air friction
+    b.vx *= 0.99;
+    // Floor bounce with damping
     if (b.y + b.r > floorY) {
       b.y = floorY - b.r;
       b.vy *= -FLOOR_DAMP;
-      if (Math.abs(b.vy) < 1) b.vy = 0;
-      b.vx *= 0.8;
+      b.vx *= 0.85; // friction on floor contact
+      // Kill tiny bounces
+      if (Math.abs(b.vy) < 0.8) { b.vy = 0; }
     }
     // Walls
-    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.3; }
-    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.3; }
-    // Freeze if very slow and on floor
-    const spd2 = b.vx * b.vx + b.vy * b.vy;
-    if (spd2 < 0.1 && b.y + b.r >= floorY - 1) {
-      b.vx = 0; b.vy = 0; b.frozen = true;
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.4; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.4; }
+    // Ground friction when resting on floor
+    if (b.y + b.r >= floorY - 2 && Math.abs(b.vy) < 0.5) {
+      b.vx *= 0.9;
+      if (Math.abs(b.vx) < 0.1) b.vx = 0;
     }
   }
-  // Body-body collisions (heavily damped)
+  // Body-body collisions — always resolve overlap to prevent stacking
   for (let i = 0; i < fallen.length; i++) {
     if (fallen[i].dead) continue;
     for (let j = i + 1; j < fallen.length; j++) {
       if (fallen[j].dead) continue;
-      const str = resolveCollision(fallen[i], fallen[j]);
-      if (str > 0) {
-        // Extra damping on collision
-        fallen[i].vx *= 0.7; fallen[i].vy *= 0.7;
-        fallen[j].vx *= 0.7; fallen[j].vy *= 0.7;
-        // Unfreeze if pushed significantly
-        if (str > 1) {
-          fallen[i].frozen = false;
-          fallen[j].frozen = false;
-        }
-      }
+      resolveCollision(fallen[i], fallen[j]);
     }
   }
 }
@@ -659,33 +651,24 @@ function gridMergeCheck(startRow, startCol, tier) {
   }
   cx /= cluster.length; cy /= cluster.length;
 
-  // Remove all cluster pins from grid
+  // Remove all cluster pins from grid and drop each one individually (same tier)
+  const count = cluster.length;
   for (const cell of cluster) {
     gridPins[cell.row][cell.col] = null;
     const p = gridToScreen(cell.row, cell.col);
     spawnParticles(p.x, p.y, 5 + tier * 2);
-  }
-
-  const count = cluster.length;
-  const multiBonus = count >= 3 ? count : 1;
-
-  if (tier < MAX_TIER) {
-    const tierJump = count >= 5 ? Math.min(3, MAX_TIER - tier) : count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
-    const nt = tier + tierJump;
-    addFallen(cx, cy, nt, (Math.random() - 0.5) * 1, 1);
+    // Drop each pin individually to the bottom area — no tier upgrade in grid
+    addFallen(p.x, p.y, tier, (Math.random() - 0.5) * 1.5, 1 + Math.random());
     fallen[fallen.length - 1].flashTimer = 8;
-    spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
-    if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
-  } else {
-    spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
-    playBuf(explodeBuf, 0.4, 0.5);
   }
+
+  spawnPopup(cx, cy - 20, count + '体 おちた！', '#4ECDC4');
   spawnParticles(cx, cy, 10 + tier * 4 + count * 2);
   spawnRing(cx, cy, 40 + tier * 15, '#fff');
   playBuf(mergeBuf, 0.5 + tier * 0.15, 1.0);
-  score += Math.round((tier + 1) * 15 * (1 + combo * 0.5) * multiBonus);
+  score += Math.round((tier + 1) * 10 * (1 + combo * 0.3) * count);
   combo++; comboTimer = COMBO_WINDOW;
-  triggerShake(0.5 + tier * 0.3 + (count >= 3 ? 0.3 : 0));
+  triggerShake(0.3 + count * 0.1);
 
   // Check for orphans
   const orphans = findOrphans();
@@ -1056,7 +1039,6 @@ function drawEffects() {
 function fallenSettled() {
   for (const b of fallen) {
     if (b.dead) continue;
-    if (b.frozen) continue;
     if (b.vx * b.vx + b.vy * b.vy > 0.05) return false;
   }
   return true;
@@ -1124,18 +1106,21 @@ function loop(now) {
 
   // Fallen physics: only run gravity to settle new drops, no merge detection outside settling
   if (gamePhase !== 'settling') {
-    // Only gravity for unfrozen bodies — no merge detection
+    // Only gravity for bodies — no merge detection
     const floorY = H - 10;
     for (let i = 0; i < fallen.length; i++) {
       const b = fallen[i];
-      if (b.dead || b.frozen) continue;
+      if (b.dead) continue;
       b.vy += GRAVITY;
       b.x += b.vx; b.y += b.vy;
       b.vx *= 0.92;
-      if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy = 0; b.vx *= 0.5; }
-      if (b.x - b.r < 0) { b.x = b.r; b.vx = 0; }
-      if (b.x + b.r > W) { b.x = W - b.r; b.vx = 0; }
-      if (b.vx * b.vx + b.vy * b.vy < 0.1) { b.vx = 0; b.vy = 0; b.frozen = true; }
+      if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy *= -FLOOR_DAMP; b.vx *= 0.5; }
+      if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.4; }
+      if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.4; }
+      if (b.y + b.r >= floorY - 2 && Math.abs(b.vy) < 0.5) {
+        b.vx *= 0.9;
+        if (Math.abs(b.vx) < 0.1) b.vx = 0;
+      }
     }
     tickBombs();
   }
