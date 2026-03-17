@@ -244,14 +244,15 @@
   }
 
   function _renderPopup(ach) {
-    // Create overlay
-    var overlay = document.createElement('div');
-    overlay.id = 'ach-popup-overlay';
-    overlay.style.cssText = [
-      'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;',
-      'display:flex;align-items:center;justify-content:center;',
-      'background:rgba(0,0,0,0.45);',
-      'animation:achFadeIn 0.3s ease;',
+    // Top banner — does NOT block taps on the game below
+    var banner = document.createElement('div');
+    banner.id = 'ach-popup-overlay';
+    banner.style.cssText = [
+      'position:fixed;top:0;left:0;width:100%;z-index:99999;',
+      'pointer-events:none;',
+      'display:flex;justify-content:center;',
+      'padding:8px 12px;',
+      'animation:achSlideDown 0.35s ease;',
       'font-family:"Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;',
     ].join('');
 
@@ -266,44 +267,41 @@
 
     var box = document.createElement('div');
     box.style.cssText = [
-      'background:linear-gradient(145deg,#fff8e1,#fffde7);',
-      'border-radius:24px;padding:28px 36px;text-align:center;',
-      'box-shadow:0 8px 32px rgba(0,0,0,0.25);',
-      'max-width:320px;width:85%;',
-      'animation:achBounceIn 0.4s cubic-bezier(0.34,1.56,0.64,1);',
+      'background:linear-gradient(90deg,#fff8e1,#fffde7);',
+      'border-radius:14px;padding:10px 20px;',
+      'box-shadow:0 4px 16px rgba(0,0,0,0.3);',
+      'display:flex;align-items:center;gap:10px;',
+      'max-width:95%;width:100%;',
+      'pointer-events:auto;',
     ].join('');
 
     box.innerHTML = [
-      '<div style="font-size:2.5rem;margin-bottom:4px;">🎉</div>',
-      '<div style="font-size:1.1rem;font-weight:bold;color:#e65100;">できた！</div>',
-      '<div style="font-size:0.85rem;color:#ff8f00;margin:4px 0;">' + stars + '</div>',
-      '<div style="font-size:1.2rem;font-weight:bold;color:#3e2723;margin:8px 0;">' + ach.name + '</div>',
-      '<div style="font-size:0.8rem;color:#6d4c41;margin-bottom:12px;">' + ach.desc + '</div>',
-      '<div style="font-size:2.2rem;margin:8px 0;">' + rewardIcon + '</div>',
-      '<div style="font-size:0.75rem;color:#8d6e63;">ごほうび ゲット！</div>',
+      '<div style="font-size:1.6rem;flex-shrink:0;">🎉</div>',
+      '<div style="flex:1;min-width:0;">',
+        '<div style="font-size:0.85rem;font-weight:bold;color:#e65100;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">',
+          stars + ' ' + ach.name,
+        '</div>',
+        '<div style="font-size:0.7rem;color:#6d4c41;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ach.desc + '</div>',
+      '</div>',
+      '<div style="font-size:1.4rem;flex-shrink:0;">' + rewardIcon + '</div>',
     ].join('');
 
-    overlay.appendChild(box);
+    banner.appendChild(box);
+    document.body.appendChild(banner);
 
-    // Particle effects
-    _addParticles(overlay);
-
-    document.body.appendChild(overlay);
-
-    // Dismiss on tap or after 3s
+    // Auto-dismiss after 3s
     var dismissed = false;
     function dismiss() {
       if (dismissed) return;
       dismissed = true;
-      overlay.style.opacity = '0';
-      overlay.style.transition = 'opacity 0.25s';
+      banner.style.animation = 'achSlideUp 0.3s ease forwards';
       setTimeout(function () {
-        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (banner.parentNode) banner.parentNode.removeChild(banner);
         _showNextPopup();
-      }, 260);
+      }, 310);
     }
 
-    overlay.addEventListener('pointerdown', dismiss);
+    box.addEventListener('pointerdown', dismiss);
     setTimeout(dismiss, 3000);
   }
 
@@ -343,14 +341,9 @@
               'transform:translate(calc(-50px + 100px * var(--r)),calc(-80px + 40px * var(--r))) scale(0)}',
       '}',
     ].join('');
-    // Simpler particle animation
     style.textContent = [
-      '@keyframes achFadeIn{from{opacity:0}to{opacity:1}}',
-      '@keyframes achBounceIn{',
-        '0%{transform:scale(0.3);opacity:0}',
-        '60%{transform:scale(1.05);opacity:1}',
-        '100%{transform:scale(1)}',
-      '}',
+      '@keyframes achSlideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}',
+      '@keyframes achSlideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}',
       '@keyframes achParticle{',
         '0%{opacity:1;transform:translateY(0) scale(1)}',
         '100%{opacity:0;transform:translateY(-80px) scale(0)}',
