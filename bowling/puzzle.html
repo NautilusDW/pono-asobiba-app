@@ -56,6 +56,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 
 <script>
 'use strict';
+console.log('puzzle v4 loaded'); // cache buster verification
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
@@ -143,7 +144,7 @@ const FLOOR_DAMP = 0.2;
 const MAX_FALLEN = 40;
 const BALL_SPEED = 14;
 const MIN_DRAG = 10;
-const SETTLE_WAIT = 60;
+const SETTLE_WAIT = 120;
 const COMBO_WINDOW = 90;
 const GRID_PIN_R = 18; // all grid pins rendered at tier0 size for uniform grid
 
@@ -427,37 +428,44 @@ function fallenPhysics() {
   for (let i = 0; i < fallen.length; i++) {
     const b = fallen[i];
     if (b.dead) continue;
-    b.vy += GRAVITY;
-    b.x += b.vx; b.y += b.vy;
-    // Air friction
-    b.vx *= 0.97;
-    b.vy *= 0.995;
-    // Floor bounce with damping
-    if (b.y + b.r > floorY) {
+    const onFloor = b.y + b.r >= floorY - 1;
+    const slow = Math.abs(b.vx) < 0.3 && Math.abs(b.vy) < 0.3;
+    if (onFloor && slow) {
+      // Resting on floor — no gravity, just friction
+      b.vy = 0;
       b.y = floorY - b.r;
-      b.vy *= -FLOOR_DAMP;
       b.vx *= 0.7;
-      if (Math.abs(b.vy) < 1.0) { b.vy = 0; }
+      if (Math.abs(b.vx) < 0.1) b.vx = 0;
+    } else {
+      // Active physics
+      b.vy += GRAVITY;
+      b.x += b.vx; b.y += b.vy;
+      b.vx *= 0.96;
+      if (b.y + b.r > floorY) {
+        b.y = floorY - b.r;
+        b.vy *= -FLOOR_DAMP;
+        b.vx *= 0.6;
+        if (Math.abs(b.vy) < 1.2) b.vy = 0;
+      }
+      if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.2; }
+      if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.2; }
     }
-    // Walls
-    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.3; }
-    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.3; }
-    // Ground friction — resting on floor
-    if (b.y + b.r >= floorY - 2 && Math.abs(b.vy) < 1.0) {
-      b.vx *= 0.8;
-      if (Math.abs(b.vx) < 0.15) b.vx = 0;
-    }
-    // Kill micro-movements
-    if (Math.abs(b.vx) < 0.05) b.vx = 0;
-    if (Math.abs(b.vy) < 0.05) b.vy = 0;
   }
-  // Body-body collisions — always resolve overlap to prevent stacking
+  // Body-body collisions — position correction + minimal velocity
   for (let i = 0; i < fallen.length; i++) {
     if (fallen[i].dead) continue;
     for (let j = i + 1; j < fallen.length; j++) {
       if (fallen[j].dead) continue;
       resolveCollision(fallen[i], fallen[j]);
     }
+  }
+  // Re-clamp floor after collision push
+  for (let i = 0; i < fallen.length; i++) {
+    const b = fallen[i];
+    if (b.dead) continue;
+    if (b.y + b.r > floorY) { b.y = floorY - b.r; if (b.vy > 0) b.vy = 0; }
+    if (b.x - b.r < 0) b.x = b.r;
+    if (b.x + b.r > W) b.x = W - b.r;
   }
 }
 
@@ -467,17 +475,24 @@ function resolveCollision(a, b) {
   if (dist2 >= minDist * minDist || dist2 < 0.001) return 0;
   const dist = Math.sqrt(dist2), nx = dx / dist, ny = dy / dist;
   const overlap = minDist - dist, totalMass = a.mass + b.mass;
+  // Push apart (position only)
   a.x -= nx * overlap * (b.mass / totalMass);
   a.y -= ny * overlap * (b.mass / totalMass);
   b.x += nx * overlap * (a.mass / totalMass);
   b.y += ny * overlap * (a.mass / totalMass);
+  // Velocity response — very low restitution
   const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
   if (dvn > 0) return 0;
-  const j = -(1 + RESTITUTION) * dvn / (1 / a.mass + 1 / b.mass);
+  const aSpeed = Math.abs(a.vx) + Math.abs(a.vy);
+  const bSpeed = Math.abs(b.vx) + Math.abs(b.vy);
+  const lowEnergy = aSpeed < 1.0 && bSpeed < 1.0;
+  // Nearly-stopped bodies: just separate, almost no bounce
+  const rest = lowEnergy ? 0.01 : RESTITUTION;
+  const j = -(1 + rest) * dvn / (1 / a.mass + 1 / b.mass);
   a.vx += (j / a.mass) * nx; a.vy += (j / a.mass) * ny;
   b.vx -= (j / b.mass) * nx; b.vy -= (j / b.mass) * ny;
-  // Dampen post-collision velocity to help settling
-  const damp = 0.85;
+  // Heavy damping
+  const damp = lowEnergy ? 0.3 : 0.75;
   a.vx *= damp; a.vy *= damp;
   b.vx *= damp; b.vy *= damp;
   return Math.abs(dvn);
@@ -1045,9 +1060,12 @@ function drawEffects() {
 
 // ── Settled check for fallen bodies ──
 function fallenSettled() {
+  const floorY = H - 10;
   for (const b of fallen) {
     if (b.dead) continue;
-    if (b.vx * b.vx + b.vy * b.vy > 0.05) return false;
+    // Still falling from grid area — not settled
+    if (b.y + b.r < floorY - 5) return false;
+    if (b.vx * b.vx + b.vy * b.vy > 0.04) return false;
   }
   return true;
 }
@@ -1112,10 +1130,11 @@ function loop(now) {
     }
   }
 
-  // Fallen physics outside settling: gravity + collision (no merge detection)
+  // Fallen physics + merge detection in ALL phases
   if (gamePhase !== 'settling') {
     fallenPhysics();
     tickBombs();
+    detectFallenMerges();
   }
 
   // Combo timer
