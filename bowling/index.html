@@ -207,10 +207,11 @@ function resolveCollision(a, b) {
 }
 
 function wallBounce(b) {
-  if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.y - b.r < HUD_HEIGHT) { b.y = HUD_HEIGHT + b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
-  if (b.y + b.r > H) { b.y = H - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
+  const wallPad = 8; // keep pins inside visible border
+  if (b.x - b.r < wallPad) { b.x = wallPad + b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
+  if (b.x + b.r > W - wallPad) { b.x = W - wallPad - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
+  if (b.y - b.r < HUD_HEIGHT + 4) { b.y = HUD_HEIGHT + 4 + b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
+  if (b.y + b.r > H - wallPad) { b.y = H - wallPad - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
 }
 
 // ── Game state ──
@@ -303,6 +304,7 @@ function endBonusStage() {
   bonusActive = false;
   gamePhase = 'bonus_result';
   phaseTimer = 180; // 3 seconds to show results
+  ballTrail = [];
 
   // Calculate chain bonus (added on top of points already earned during bonus)
   let chainBonus = 0;
@@ -434,11 +436,11 @@ function startArrangePhase() {
         }
       }
     }
-    // Clamp within bounds after each iteration
+    // Clamp within field bounds (inside walls)
     for (let i = 0; i < n; i++) {
       const r = pins[i].r;
-      pos[i].x = Math.max(r + 8, Math.min(W - r - 8, pos[i].x));
-      pos[i].y = Math.max(r + 8, Math.min(areaBot, pos[i].y));
+      pos[i].x = Math.max(r + 12, Math.min(W - r - 12, pos[i].x));
+      pos[i].y = Math.max(HUD_HEIGHT + r + 8, Math.min(areaBot, pos[i].y));
     }
     if (!anyOverlap) break;
   }
@@ -894,11 +896,11 @@ let chainDisplay = 0, chainDisplayTimer = 0;
 function drawChainCounter() {
   if (chainDisplayTimer > 0) {
     chainDisplayTimer--;
-    const scale = 1 + (chainDisplay - 2) * 0.15;
     ctx.globalAlpha = Math.min(1, chainDisplayTimer / 30);
     ctx.fillStyle = '#FF6B6B';
-    ctx.font = 'bold ' + Math.round(36*scale) + 'px "Zen Maru Gothic"';
-    ctx.textAlign = 'center'; ctx.fillText(chainDisplay + '連鎖！', W/2, HUD_HEIGHT + (H - HUD_HEIGHT) * 0.25);
+    ctx.font = 'bold 18px "Zen Maru Gothic"';
+    ctx.textAlign = 'center';
+    ctx.fillText(chainDisplay + '連鎖', W/2, HUD_HEIGHT + (H - HUD_HEIGHT) * 0.25);
     ctx.globalAlpha = 1;
   }
 }
@@ -943,21 +945,18 @@ function drawBallPreview(now) {
     ctx.globalAlpha = 1;
   }
 
-  // Ball tier label
-  ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.8;
-  ctx.font = 'bold 14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-  ctx.fillText(TIERS[ballTier].name, ballX, ballY + half + 28);
-  ctx.globalAlpha = 1;
 }
 
 function drawBallTrail() {
+  // Remove faded points
+  while (ballTrail.length > 0 && ballTrail[0].alpha < 0.03) ballTrail.shift();
   if (ballTrail.length < 2) return;
   for (let i = 1; i < ballTrail.length; i++) {
     const a = ballTrail[i-1], b = ballTrail[i];
-    if (a.alpha < 0.05) continue;
-    ctx.globalAlpha = b.alpha * 0.5;
+    if (a.alpha < 0.03) continue;
+    ctx.globalAlpha = b.alpha * 0.4;
     ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 2 + b.alpha * 2;
+    ctx.lineWidth = 1.5 + b.alpha * 1.5;
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
   }
   ctx.globalAlpha = 1;
@@ -1033,31 +1032,18 @@ function drawBonusHUD(now) {
   ctx.fillStyle = barColor; ctx.fillRect(barX, barY, barW * ratio, barH);
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(barX, barY, barW, barH);
 
-  // Chain display in HUD
-  if (bonusMaxChain >= 2) {
+  // Chain counter in HUD (small, just the number ticking up)
+  if (combo >= 2) {
     ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold 16px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+    ctx.fillText(combo + '連鎖', W / 2, 68);
+  } else if (bonusMaxChain >= 2) {
+    ctx.fillStyle = '#aaa'; ctx.font = '13px "Zen Maru Gothic"'; ctx.textAlign = 'center';
     ctx.fillText('最高 ' + bonusMaxChain + '連鎖', W / 2, 68);
   }
 
   // HUD bottom border
   ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(0, HUD_HEIGHT); ctx.lineTo(W, HUD_HEIGHT); ctx.stroke();
-
-  // Current chain in field (big text, only momentary)
-  if (combo >= 2) {
-    const chainScale = 1 + combo * 0.05;
-    ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold ' + Math.round(24 * chainScale) + 'px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-    ctx.globalAlpha = 0.9;
-    ctx.fillText(combo + '連鎖！', W / 2, HUD_HEIGHT + (H - HUD_HEIGHT) * 0.3);
-    ctx.globalAlpha = 1;
-  }
-
-  // Pulsing border around field
-  const borderAlpha = 0.3 + Math.sin(now * 0.006) * 0.2;
-  ctx.globalAlpha = borderAlpha;
-  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 6;
-  ctx.strokeRect(3, HUD_HEIGHT, W - 6, H - HUD_HEIGHT - 3);
-  ctx.globalAlpha = 1;
 }
 
 function drawBonusResult() {
@@ -1200,7 +1186,7 @@ function loop(now) {
       }
     }
     // Fade trail
-    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.96;
+    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.92;
 
     // Check settled
     if (isSettled()) {
@@ -1209,6 +1195,7 @@ function loop(now) {
         gamePhase = 'result';
         phaseTimer = RESULT_TIME;
         settledFrames = 0;
+        ballTrail = [];
         comboEl.classList.remove('show');
       }
     } else {
@@ -1278,7 +1265,7 @@ function loop(now) {
         if (ballTrail.length > MAX_TRAIL) ballTrail.shift();
       }
     }
-    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.96;
+    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.92;
 
     // Remove old balls (shorter lifetime in bonus)
     for (let i = bodies.length - 1; i >= 0; i--) {
@@ -1334,7 +1321,9 @@ function loop(now) {
     const hue = ((now * 0.05) % 30) + 140;
     ctx.fillStyle = `hsl(${hue}, 45%, 22%)`;
     ctx.fillRect(0, HUD_HEIGHT, W, H - HUD_HEIGHT);
-    drawBallTrail(); drawBodies(); drawEffects(); drawChainCounter();
+    // Field border
+    ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 4; ctx.strokeRect(4, HUD_HEIGHT + 2, W-8, H - HUD_HEIGHT - 6);
+    drawBallTrail(); drawBodies(); drawEffects();
     ctx.restore();
     drawBonusHUD(now);
     drawBallPreview(now);
@@ -1367,7 +1356,7 @@ function loop(now) {
       if (shotNumber === 0) {
         ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
         ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-        ctx.fillText('引っ張ってボールを発射！', W/2, H*0.95);
+        ctx.fillText('引っ張ってボールを発射！', W/2, H * BALL_SPAWN_Y - 40);
         ctx.globalAlpha = 1;
       }
     }
