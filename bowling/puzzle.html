@@ -137,9 +137,9 @@ const TIERS = [
 const MAX_TIER = TIERS.length - 1;
 
 // ── Constants ──
-const GRAVITY = 0.12;
-const RESTITUTION = 0.6;
-const FLOOR_DAMP = 0.3;
+const GRAVITY = 0.15;
+const RESTITUTION = 0.15;
+const FLOOR_DAMP = 0.1;
 const MAX_FALLEN = 40;
 const BALL_SPEED = 14;
 const MIN_DRAG = 10;
@@ -419,29 +419,49 @@ const fallen = [];
 
 function addFallen(x, y, tier, vx, vy, bomb) {
   const t = TIERS[tier];
-  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0 }); // 3 seconds at 60fps
+  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0, frozen: false });
 }
 
 function fallenPhysics() {
   const floorY = H - 10;
   for (let i = 0; i < fallen.length; i++) {
     const b = fallen[i];
-    if (b.dead) continue;
+    if (b.dead || b.frozen) continue;
     b.vy += GRAVITY;
     b.x += b.vx; b.y += b.vy;
-    b.vx *= 0.995; b.vy *= 0.995;
+    b.vx *= 0.96; // strong horizontal friction
     // Floor
-    if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy *= -FLOOR_DAMP; if (Math.abs(b.vy) < 0.5) b.vy = 0; b.vx *= 0.9; }
+    if (b.y + b.r > floorY) {
+      b.y = floorY - b.r;
+      b.vy *= -FLOOR_DAMP;
+      if (Math.abs(b.vy) < 1) b.vy = 0;
+      b.vx *= 0.8;
+    }
     // Walls
-    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.5; }
-    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.5; }
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.3; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.3; }
+    // Freeze if very slow and on floor
+    const spd2 = b.vx * b.vx + b.vy * b.vy;
+    if (spd2 < 0.1 && b.y + b.r >= floorY - 1) {
+      b.vx = 0; b.vy = 0; b.frozen = true;
+    }
   }
-  // Body-body collisions
+  // Body-body collisions (heavily damped)
   for (let i = 0; i < fallen.length; i++) {
     if (fallen[i].dead) continue;
     for (let j = i + 1; j < fallen.length; j++) {
       if (fallen[j].dead) continue;
-      resolveCollision(fallen[i], fallen[j]);
+      const str = resolveCollision(fallen[i], fallen[j]);
+      if (str > 0) {
+        // Extra damping on collision
+        fallen[i].vx *= 0.7; fallen[i].vy *= 0.7;
+        fallen[j].vx *= 0.7; fallen[j].vy *= 0.7;
+        // Unfreeze if pushed significantly
+        if (str > 1) {
+          fallen[i].frozen = false;
+          fallen[j].frozen = false;
+        }
+      }
     }
   }
 }
@@ -570,19 +590,18 @@ function detectFallenMerges() {
       const multiBonus = count >= 3 ? count : 1;
 
       if (tier < MAX_TIER) {
-        const tierJump = count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
+        const tierJump = count >= 5 ? Math.min(2, MAX_TIER - tier) : 1;
         const nt = tier + tierJump;
-        addFallen(cx, cy, nt, 0, -2);
+        addFallen(cx, cy, nt, 0, 0); // no upward bounce — settle in place
         fallen[fallen.length - 1].flashTimer = 8;
         spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
-        if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+        if (count >= 4) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
       } else {
         spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
         playBuf(explodeBuf, 0.4, 0.5);
       }
-      spawnParticles(cx, cy, 10 + tier * 4 + count * 2);
-      spawnRing(cx, cy, 40 + tier * 20, '#fff');
-      if (count >= 3) spawnRing(cx, cy, 60 + tier * 25, '#FFD700');
+      spawnParticles(cx, cy, 8 + tier * 3);
+      spawnRing(cx, cy, 30 + tier * 15, '#fff');
       playBuf(mergeBuf, 0.4 + tier * 0.15, 1 + combo * 0.05);
       const baseScore = (tier + 1) * 10 * (1 + combo * 0.5);
       score += Math.round(baseScore * multiBonus);
@@ -629,8 +648,8 @@ function gridMergeCheck(startRow, startCol, tier) {
     }
   }
 
-  // Need at least 3 connected same-tier pins to merge
-  if (cluster.length < 3) return;
+  // Need at least 2 connected same-tier pins to merge (grid = upper area)
+  if (cluster.length < 2) return;
 
   // Calculate center
   let cx = 0, cy = 0;
@@ -653,19 +672,18 @@ function gridMergeCheck(startRow, startCol, tier) {
   if (tier < MAX_TIER) {
     const tierJump = count >= 5 ? Math.min(3, MAX_TIER - tier) : count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
     const nt = tier + tierJump;
-    addFallen(cx, cy, nt, (Math.random() - 0.5) * 2, 1);
+    addFallen(cx, cy, nt, (Math.random() - 0.5) * 1, 1);
     fallen[fallen.length - 1].flashTimer = 8;
     spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
-    if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！x' + multiBonus, '#FF6B6B');
+    if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
   } else {
     spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
     playBuf(explodeBuf, 0.4, 0.5);
   }
-  spawnParticles(cx, cy, 15 + tier * 5 + count * 3);
-  spawnRing(cx, cy, 50 + tier * 20, '#fff');
-  if (count >= 3) spawnRing(cx, cy, 70 + tier * 25, '#FFD700');
+  spawnParticles(cx, cy, 10 + tier * 4 + count * 2);
+  spawnRing(cx, cy, 40 + tier * 15, '#fff');
   playBuf(mergeBuf, 0.5 + tier * 0.15, 1.0);
-  score += Math.round((tier + 1) * 20 * (1 + combo * 0.5) * multiBonus);
+  score += Math.round((tier + 1) * 15 * (1 + combo * 0.5) * multiBonus);
   combo++; comboTimer = COMBO_WINDOW;
   triggerShake(0.5 + tier * 0.3 + (count >= 3 ? 0.3 : 0));
 
@@ -1038,14 +1056,14 @@ function drawEffects() {
 function fallenSettled() {
   for (const b of fallen) {
     if (b.dead) continue;
-    if (b.vx * b.vx + b.vy * b.vy > 0.1) return false;
+    if (b.frozen) continue;
+    if (b.vx * b.vx + b.vy * b.vy > 0.05) return false;
   }
   return true;
 }
 
 // ── Main Loop ──
 let prevFrameTime = performance.now();
-let fpsFrames = 0, fpsLast = performance.now(), fpsDisplay = '--';
 
 initGrid();
 ballTier = pickBallTier();
@@ -1053,9 +1071,6 @@ ballTier = pickBallTier();
 function loop(now) {
   let elapsed = now - prevFrameTime; prevFrameTime = now;
   if (elapsed > 100) elapsed = 100;
-  fpsFrames++;
-  if (now - fpsLast >= 500) { fpsDisplay = (fpsFrames / ((now - fpsLast) / 1000)).toFixed(0); fpsFrames = 0; fpsLast = now; }
-
   // ── Phase logic ──
   if (gamePhase === 'flight' && ball) {
     // Sub-step movement to prevent tunneling through pins at steep angles
@@ -1107,11 +1122,22 @@ function loop(now) {
     }
   }
 
-  // Fallen physics always runs (gravity doesn't stop)
+  // Fallen physics: only run gravity to settle new drops, no merge detection outside settling
   if (gamePhase !== 'settling') {
-    fallenPhysics();
+    // Only gravity for unfrozen bodies — no merge detection
+    const floorY = H - 10;
+    for (let i = 0; i < fallen.length; i++) {
+      const b = fallen[i];
+      if (b.dead || b.frozen) continue;
+      b.vy += GRAVITY;
+      b.x += b.vx; b.y += b.vy;
+      b.vx *= 0.92;
+      if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy = 0; b.vx *= 0.5; }
+      if (b.x - b.r < 0) { b.x = b.r; b.vx = 0; }
+      if (b.x + b.r > W) { b.x = W - b.r; b.vx = 0; }
+      if (b.vx * b.vx + b.vy * b.vy < 0.1) { b.vx = 0; b.vy = 0; b.frozen = true; }
+    }
     tickBombs();
-    detectFallenMerges();
   }
 
   // Combo timer
@@ -1140,10 +1166,6 @@ function loop(now) {
 
   drawBallPreview(now);
   scoreEl.textContent = score;
-
-  // FPS debug
-  ctx.fillStyle = '#0f0'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
-  ctx.fillText(fpsDisplay + 'fps  grid:' + countGridPins() + '  fallen:' + fallen.length + '  ' + gamePhase, 60, 22);
 
   requestAnimationFrame(loop);
 }
