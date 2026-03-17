@@ -56,7 +56,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 
 <script>
 'use strict';
-console.log('puzzle v6 loaded — 8 tiers, physics freeze'); // cache buster
+console.log('puzzle v7 loaded'); // cache buster
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('touchstart', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
@@ -132,7 +132,7 @@ const TIERS = [
   { img: 8,  r: 12, mass: 0.3, name: 'ヒヨコ' },
   { img: 0,  r: 15, mass: 0.5, name: 'うさぎ' },
   { img: 1,  r: 19, mass: 0.7, name: 'カエル' },
-  { img: 11, r: 24, mass: 1.0, name: 'ネコ' },
+  { img: 3,  r: 24, mass: 1.0, name: 'パンダ' },
   { img: 2,  r: 30, mass: 1.4, name: 'キツネ' },
   { img: 4,  r: 37, mass: 2.0, name: 'アヒル' },
   { img: 6,  r: 46, mass: 2.8, name: 'ハリネズミ' },
@@ -423,35 +423,52 @@ const fallen = [];
 
 function addFallen(x, y, tier, vx, vy, bomb) {
   const t = TIERS[tier];
-  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0 });
+  fallen.push({ x, y, vx: vx || 0, vy: vy || 0, r: t.r, mass: t.mass, tier, dead: false, merging: false, flashTimer: 0, bomb: !!bomb, fuseTimer: bomb ? 180 : 0, sleeping: false, sleepCounter: 0 });
+  // Wake nearby sleeping bodies when a new body arrives
+  const newB = fallen[fallen.length - 1];
+  for (const b of fallen) {
+    if (b === newB || b.dead || !b.sleeping) continue;
+    const dx = b.x - x, dy = b.y - y;
+    const wakeDist = (b.r + newB.r) * 3;
+    if (dx * dx + dy * dy < wakeDist * wakeDist) {
+      b.sleeping = false; b.sleepCounter = 0;
+    }
+  }
 }
+
+const SLEEP_THRESHOLD = 0.15; // velocity magnitude to start counting
+const SLEEP_FRAMES = 20;     // consecutive frames below threshold to sleep
 
 function fallenPhysics() {
   const floorY = H - 10;
   for (let i = 0; i < fallen.length; i++) {
     const b = fallen[i];
     if (b.dead) continue;
-    if (b.graceTimer > 0) b.graceTimer--;
-    const onFloor = b.y + b.r >= floorY - 1;
-    const slow = Math.abs(b.vx) < 0.5 && Math.abs(b.vy) < 0.5;
-    if (onFloor && slow) {
-      // Resting on floor — clamp, no gravity
-      b.vy = 0;
+    // Sleeping bodies: skip physics entirely
+    if (b.sleeping) continue;
+    b.vy += GRAVITY;
+    b.x += b.vx; b.y += b.vy;
+    b.vx *= 0.95;
+    // Floor
+    if (b.y + b.r > floorY) {
       b.y = floorY - b.r;
+      b.vy *= -FLOOR_DAMP;
       b.vx *= 0.5;
-      if (Math.abs(b.vx) < 0.2) b.vx = 0;
-    } else {
-      b.vy += GRAVITY;
-      b.x += b.vx; b.y += b.vy;
-      b.vx *= 0.94;
-      if (b.y + b.r > floorY) {
-        b.y = floorY - b.r;
-        b.vy *= -FLOOR_DAMP;
-        b.vx *= 0.5;
-        if (Math.abs(b.vy) < 2.0) b.vy = 0;
+      if (Math.abs(b.vy) < 1.5) b.vy = 0;
+    }
+    // Walls
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.2; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.2; }
+    // Sleep check
+    const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    if (speed < SLEEP_THRESHOLD && b.y + b.r >= floorY - 3) {
+      b.sleepCounter++;
+      if (b.sleepCounter >= SLEEP_FRAMES) {
+        b.vx = 0; b.vy = 0;
+        b.sleeping = true;
       }
-      if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.15; }
-      if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.15; }
+    } else {
+      b.sleepCounter = 0;
     }
   }
   // Body-body collisions
@@ -459,13 +476,15 @@ function fallenPhysics() {
     if (fallen[i].dead) continue;
     for (let j = i + 1; j < fallen.length; j++) {
       if (fallen[j].dead) continue;
+      // Skip if BOTH are sleeping
+      if (fallen[i].sleeping && fallen[j].sleeping) continue;
       resolveCollision(fallen[i], fallen[j]);
     }
   }
   // Re-clamp after collision
   for (let i = 0; i < fallen.length; i++) {
     const b = fallen[i];
-    if (b.dead) continue;
+    if (b.dead || b.sleeping) continue;
     if (b.y + b.r > floorY) { b.y = floorY - b.r; b.vy = 0; }
     if (b.x - b.r < 0) b.x = b.r;
     if (b.x + b.r > W) b.x = W - b.r;
@@ -477,13 +496,31 @@ function resolveCollision(a, b) {
   const dist2 = dx * dx + dy * dy, minDist = a.r + b.r;
   if (dist2 >= minDist * minDist || dist2 < 0.001) return 0;
   const dist = Math.sqrt(dist2), nx = dx / dist, ny = dy / dist;
-  const overlap = minDist - dist, totalMass = a.mass + b.mass;
-  // Push apart (position only)
+  const overlap = minDist - dist;
+  // If one is sleeping, treat it as immovable (infinite mass)
+  if (a.sleeping && !b.sleeping) {
+    b.x += nx * overlap; b.y += ny * overlap;
+    const dvn = -b.vx * nx - b.vy * ny;
+    if (dvn < 0) { b.vx += dvn * nx * 0.5; b.vy += dvn * ny * 0.5; }
+    // Wake sleeping body if hit hard enough
+    const impactSpeed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    if (impactSpeed > 2.0) { a.sleeping = false; a.sleepCounter = 0; }
+    return Math.abs(dvn);
+  }
+  if (b.sleeping && !a.sleeping) {
+    a.x -= nx * overlap; a.y -= ny * overlap;
+    const dvn = a.vx * nx + a.vy * ny;
+    if (dvn > 0) { a.vx -= dvn * nx * 0.5; a.vy -= dvn * ny * 0.5; }
+    const impactSpeed = Math.sqrt(a.vx * a.vx + a.vy * a.vy);
+    if (impactSpeed > 2.0) { b.sleeping = false; b.sleepCounter = 0; }
+    return Math.abs(dvn);
+  }
+  // Both awake — normal collision
+  const totalMass = a.mass + b.mass;
   a.x -= nx * overlap * (b.mass / totalMass);
   a.y -= ny * overlap * (b.mass / totalMass);
   b.x += nx * overlap * (a.mass / totalMass);
   b.y += ny * overlap * (a.mass / totalMass);
-  // Velocity response — very low restitution
   const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
   if (dvn > 0) return 0;
   const aSpeed = Math.abs(a.vx) + Math.abs(a.vy);
@@ -1031,17 +1068,25 @@ function drawBallPreview(now) {
   ctx.lineTo(bx + nx * 40, by + ny * 40);
   ctx.stroke(); ctx.globalAlpha = 1;
 
-  // Ball preview
+  // Ball preview — large glow background for visibility
   const pulse = 0.7 + Math.sin(now * 0.004) * 0.2;
-  ctx.globalAlpha = aiming ? 0.9 : pulse;
-  ctx.drawImage(tierCanvases[ballTier], bx - half, by - half, drawS, drawS);
-  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(bx, by, half + 3, 0, Math.PI * 2); ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.7;
-  ctx.font = 'bold 14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-  ctx.fillText(TIERS[ballTier].name, bx, by + half + 16);
+  const previewR = half + 8;
+  const previewS = previewR * 2;
+  // Glowing circle behind the ball
+  const glow = ctx.createRadialGradient(bx, by, previewR * 0.3, bx, by, previewR + 12);
+  glow.addColorStop(0, 'rgba(255,215,0,0.5)');
+  glow.addColorStop(0.6, 'rgba(255,215,0,0.2)');
+  glow.addColorStop(1, 'rgba(255,215,0,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(bx, by, previewR + 12, 0, Math.PI * 2); ctx.fill();
+  // Dark circle backdrop
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath(); ctx.arc(bx, by, previewR + 2, 0, Math.PI * 2); ctx.fill();
+  // Ball image (slightly larger)
+  ctx.globalAlpha = aiming ? 1.0 : pulse;
+  ctx.drawImage(tierCanvases[ballTier], bx - previewR, by - previewR, previewS, previewS);
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(bx, by, previewR + 2, 0, Math.PI * 2); ctx.stroke();
   ctx.globalAlpha = 1;
 }
 
@@ -1075,8 +1120,7 @@ function drawEffects() {
 function fallenSettled() {
   const floorY = H - 10;
   for (const b of fallen) {
-    if (b.dead) continue;
-    // Still falling from grid area — not settled
+    if (b.dead || b.sleeping) continue;
     if (b.y + b.r < floorY - 5) return false;
     if (b.vx * b.vx + b.vy * b.vy > 0.04) return false;
   }
@@ -1132,9 +1176,11 @@ function loop(now) {
     if (fallenSettled() || settleTimer <= 0) {
       settleTimer--;
       if (settleTimer <= 0) {
-        // Freeze all fallen bodies — physics stops until next settling
+        // Force-sleep all remaining awake bodies
         for (const b of fallen) {
-          if (!b.dead) { b.vx = 0; b.vy = 0; }
+          if (!b.dead && !b.sleeping) {
+            b.vx = 0; b.vy = 0; b.sleeping = true; b.sleepCounter = SLEEP_FRAMES;
+          }
         }
         // Next shot
         refillGrid();
@@ -1147,8 +1193,9 @@ function loop(now) {
     }
   }
 
-  // Outside settling: NO physics, just tick bombs
+  // Outside settling: still run physics for any awake bodies (new drops wake neighbors)
   if (gamePhase !== 'settling') {
+    fallenPhysics();
     tickBombs();
   }
 
