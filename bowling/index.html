@@ -314,7 +314,11 @@ function endBonusStage() {
   else if (bonusMaxChain >= 2) chainBonus = 200;
 
   bonusTotalScore += chainBonus;
-  score += chainBonus; // only add the chain bonus (merge scores already added during play)
+  // Bonus scores are reduced to 1/3 — subtract 2/3 of merge gains, add reduced chain bonus
+  const mergeGains = bonusTotalScore - chainBonus; // what processMerges already added to score
+  score -= Math.round(mergeGains * 2 / 3); // reduce merge gains to 1/3
+  score += Math.round(chainBonus / 3); // add 1/3 of chain bonus
+  bonusTotalScore = Math.round(bonusTotalScore / 3); // display reduced total
 
   // Fireworks for good bonus
   if (bonusTotalScore > 500) {
@@ -1079,10 +1083,11 @@ function drawBonusResult() {
   else if (bonusMaxChain >= 6) chainBonus = 1000;
   else if (bonusMaxChain >= 4) chainBonus = 500;
   else if (bonusMaxChain >= 2) chainBonus = 200;
-  if (chainBonus > 0) {
+  const displayChainBonus = Math.round(chainBonus / 3);
+  if (displayChainBonus > 0) {
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 20px "Zen Maru Gothic"';
-    ctx.fillText('連鎖ボーナス +' + chainBonus, W / 2, y); y += 35;
+    ctx.fillText('連鎖ボーナス +' + displayChainBonus, W / 2, y); y += 35;
   }
 
   ctx.fillStyle = '#fff';
