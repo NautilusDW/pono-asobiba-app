@@ -315,8 +315,6 @@ function endBonusStage() {
 
   bonusTotalScore += chainBonus;
   score += chainBonus; // only add the chain bonus (merge scores already added during play)
-  // Record best chain from bonus play too
-  if (bonusMaxChain > bestChain) { bestChain = bonusMaxChain; localStorage.setItem('bowling_best_chain', String(bestChain)); }
 
   // Fireworks for good bonus
   if (bonusTotalScore > 500) {
