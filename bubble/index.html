@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2026-03-17e -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -14,7 +15,7 @@ html, body {
   background: #000;
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
-canvas { display: block; width: 100%; height: 100%; }
+canvas { display: block; }
 #back-btn, #bgm-btn {
   position: fixed; z-index: 100;
   background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
@@ -25,7 +26,9 @@ canvas { display: block; width: 100%; height: 100%; }
 #back-btn { top: 12px; left: 12px; }
 #bgm-btn { top: 12px; right: 12px; }
 #start-screen {
-  position: fixed; inset: 0; z-index: 9999;
+  position: fixed; top: 0; bottom: 0; left: 50%; z-index: 9999;
+  transform: translateX(-50%);
+  width: min(100%, 100vh * 9 / 16);
   background: linear-gradient(180deg, rgba(135,206,250,0.85) 0%, rgba(176,226,255,0.7) 50%, rgba(255,255,255,0.5) 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   cursor: pointer;
@@ -49,6 +52,7 @@ canvas { display: block; width: 100%; height: 100%; }
   <div class="bubble-icon">🫧</div>
   <div class="title">しゃぼんだまパーティー</div>
   <div class="tap">タップしてスタート</div>
+  <div style="position:absolute;bottom:8px;right:8px;font-size:10px;color:rgba(255,255,255,0.4)">v17d</div>
 </div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <button id="bgm-btn" onclick="switchBGMTrack()">🎵</button>
@@ -63,10 +67,34 @@ let W, H;
 // Offscreen buffer for refraction lens effect
 const bgCanvas = document.createElement('canvas');
 const bgCtx = bgCanvas.getContext('2d');
+const TARGET_RATIO = 9 / 16; // mobile portrait aspect ratio
 function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+  const winRatio = winW / winH;
+  let cw, ch;
+  if (winRatio > TARGET_RATIO) {
+    // Too wide (PC) — pillarbox
+    ch = winH;
+    cw = Math.round(winH * TARGET_RATIO);
+  } else {
+    // Taller or exact — use full width
+    cw = winW;
+    ch = Math.round(winW / TARGET_RATIO);
+  }
+  W = canvas.width = cw;
+  H = canvas.height = ch;
+  canvas.style.width = cw + 'px';
+  canvas.style.height = ch + 'px';
+  canvas.style.margin = '0 auto';
+  canvas.style.display = 'block';
   bgCanvas.width = W; bgCanvas.height = H;
+  // Position UI buttons relative to canvas
+  const offsetLeft = Math.round((winW - cw) / 2);
+  const backBtn = document.getElementById('back-btn');
+  const bgmBtn = document.getElementById('bgm-btn');
+  if (backBtn) backBtn.style.left = (offsetLeft + 12) + 'px';
+  if (bgmBtn) bgmBtn.style.right = (offsetLeft + 12) + 'px';
 }
 resize();
 window.addEventListener('resize', resize);
@@ -431,6 +459,328 @@ document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
 
+// ── Event System (tap/drag alternating events) ──
+const TAP_EVENTS = [
+  {
+    id: 'find_pono', type: 'tap', label: 'ポノを さがしてね！', icon: '🦔',
+    onEnter() {
+      // Mark one random bubble as Pono
+      eventPonoFound = 0;
+      eventPonoTimer = 0;
+      spawnPonoBubble();
+    },
+    onExit() {
+      // Clear all Pono markers
+      for (let i = 0; i < bcount; i++) bpono[i] = 0;
+      eventPonoFound = 0;
+    },
+    onTick(dt) {
+      eventPonoTimer += dt;
+      // If no Pono found after 5s, spawn another
+      if (eventPonoTimer > 5000 && !hasPonoBubble()) {
+        spawnPonoBubble();
+        eventPonoTimer = 0;
+      }
+    }
+  },
+  {
+    id: 'color_match', type: 'tap', label: '', icon: '🎨',
+    onEnter() {
+      eventTargetColor = Math.floor(Math.random() * COLORS.length);
+      eventColorMatches = 0;
+      this.label = 'おなじいろを タップ！';
+    },
+    onExit() { eventTargetColor = -1; eventColorMatches = 0; },
+    onTick(dt) {}
+  },
+  {
+    id: 'big_bubbles', type: 'tap', label: 'おおきいの パン！', icon: '💥',
+    onEnter() { eventBigMode = true; },
+    onExit() { eventBigMode = false; },
+    onTick(dt) {}
+  },
+  {
+    id: 'creature_hunt', type: 'tap', label: 'いきもの みつけて！', icon: '🦋',
+    onEnter() {
+      eventCreatureBoost = true;
+      nextCreatureBoostTime = 2000 + Math.random() * 1500;
+    },
+    onExit() {
+      eventCreatureBoost = false;
+    },
+    onTick(dt) {}
+  },
+];
+
+const DRAG_EVENTS = [
+  {
+    id: 'rainbow_trail', type: 'drag', label: 'にじを かこう！', icon: '🌈',
+    onEnter() { eventTrailMode = 'rainbow'; },
+    onExit() { eventTrailMode = null; },
+    onTick(dt) {}
+  },
+  {
+    id: 'bubble_sweep', type: 'drag', label: 'いっぱい わろう！', icon: '🫧',
+    onEnter() { eventSweepMode = true; },
+    onExit() { eventSweepMode = false; },
+    onTick(dt) {}
+  },
+  {
+    id: 'star_draw', type: 'drag', label: 'おほしさま かこう！', icon: '⭐',
+    onEnter() {
+      // Arrange bubbles in a circle pattern
+      eventStarMode = true;
+      arrangeStarBubbles();
+    },
+    onExit() { eventStarMode = false; },
+    onTick(dt) {}
+  },
+  {
+    id: 'music_paint', type: 'drag', label: 'おんがくで おえかき！', icon: '🎵',
+    onEnter() { eventMusicPaint = true; eventLastPopColor = null; },
+    onExit() { eventMusicPaint = false; eventLastPopColor = null; },
+    onTick(dt) {}
+  },
+];
+
+const EVENT_SEQUENCE = ['tap', 'drag', 'tap', 'drag', 'tap', 'drag', 'tap', 'drag'];
+let eventState = 'FREE_PLAY'; // FREE_PLAY | EVENT_INTRO | EVENT_ACTIVE | EVENT_OUTRO
+let eventIndex = 0;
+let tapEventIndex = 0, dragEventIndex = 0;
+let currentEvent = null;
+let eventTimer = 0;
+let eventOverlayAlpha = 0;
+let eventIconBounce = 0;
+let eventActiveTime = 0; // time within EVENT_ACTIVE (for shrink-to-corner)
+
+const FREE_PLAY_DURATION = 25000;  // 25s free play between events
+const EVENT_INTRO_DURATION = 2000; // 2s intro
+const EVENT_ACTIVE_DURATION = 15000; // 15s active
+const EVENT_OUTRO_DURATION = 1500;  // 1.5s outro
+
+// Event-specific state
+let eventPonoFound = 0;
+let eventPonoTimer = 0;
+let eventTargetColor = -1;
+let eventColorMatches = 0;
+let eventBigMode = false;
+let eventCreatureBoost = false;
+let nextCreatureBoostTime = 2000;
+let eventTrailMode = null; // null | 'rainbow'
+let eventSweepMode = false;
+let eventStarMode = false;
+let eventMusicPaint = false;
+let eventLastPopColor = null;
+
+// bpono is declared alongside other bubble arrays after MAX_BUBBLES
+
+// Gentle hint system
+let hintEmoji = '';
+let hintX = 0, hintY = 0, hintLife = 0;
+let hintCooldown = 0;
+
+function hasPonoBubble() {
+  for (let i = 0; i < bcount; i++) if (balive[i] && bpono[i]) return true;
+  return false;
+}
+
+function spawnPonoBubble() {
+  if (bcount >= MAX_BUBBLES) return;
+  const sz = Math.min(W, H) / 600;
+  const r = (55 + Math.random() * 25) * sz;
+  addBubble(Math.random() * (W - r * 2) + r, H + r, r, false, 0);
+  bpono[bcount - 1] = 1;
+  // Shimmer color
+  bcolorIdx[bcount - 1] = Math.floor(Math.random() * COLORS.length);
+  bvy[bcount - 1] = -(0.3 + Math.random() * 0.3);
+}
+
+function arrangeStarBubbles() {
+  // Clear existing and spawn bubbles in a circle
+  const cx = W / 2, cy = H * 0.45;
+  const radius = Math.min(W, H) * 0.28;
+  const count = 8;
+  const sz = Math.min(W, H) / 600;
+  for (let n = 0; n < count; n++) {
+    if (bcount >= MAX_BUBBLES) break;
+    const angle = (n / count) * Math.PI * 2 - Math.PI / 2;
+    const bx2 = cx + Math.cos(angle) * radius;
+    const by2 = cy + Math.sin(angle) * radius;
+    const r = (40 + Math.random() * 20) * sz;
+    addBubble(bx2, by2, r, false, 0.8);
+    bvy[bcount - 1] = 0; // stationary
+    bvx[bcount - 1] = 0;
+  }
+}
+
+function showGentleHint(type, x, y) {
+  if (hintCooldown > 0) return;
+  hintEmoji = type === 'tap' ? '👆' : '👉';
+  hintX = x; hintY = y - 50;
+  hintLife = 1;
+  hintCooldown = 2000; // 2s cooldown
+}
+
+function updateEventSystem(dt) {
+  // Don't run events during constellation mode
+  if (constellationMode) return;
+
+  // Update hint cooldown
+  if (hintCooldown > 0) hintCooldown -= dt;
+  if (hintLife > 0) hintLife -= dt * 0.001;
+
+  eventTimer += dt;
+
+  switch (eventState) {
+    case 'FREE_PLAY':
+      if (eventTimer >= FREE_PLAY_DURATION) {
+        // Pick next event
+        const type = EVENT_SEQUENCE[eventIndex % EVENT_SEQUENCE.length];
+        if (type === 'tap') {
+          currentEvent = TAP_EVENTS[tapEventIndex % TAP_EVENTS.length];
+          tapEventIndex++;
+        } else {
+          currentEvent = DRAG_EVENTS[dragEventIndex % DRAG_EVENTS.length];
+          dragEventIndex++;
+        }
+        eventIndex++;
+        eventState = 'EVENT_INTRO';
+        eventTimer = 0;
+        eventOverlayAlpha = 0;
+        eventIconBounce = 0;
+      }
+      break;
+
+    case 'EVENT_INTRO':
+      eventOverlayAlpha = Math.min(1, eventOverlayAlpha + dt * 0.002);
+      if (eventTimer >= EVENT_INTRO_DURATION) {
+        eventState = 'EVENT_ACTIVE';
+        eventTimer = 0;
+        eventActiveTime = 0;
+        currentEvent.onEnter();
+      }
+      break;
+
+    case 'EVENT_ACTIVE':
+      eventActiveTime += dt;
+      currentEvent.onTick(dt);
+      // Fade overlay label after 3s
+      if (eventActiveTime > 3000) {
+        eventOverlayAlpha = Math.max(0.5, eventOverlayAlpha - dt * 0.0005);
+      }
+      if (eventTimer >= EVENT_ACTIVE_DURATION) {
+        currentEvent.onExit();
+        eventState = 'EVENT_OUTRO';
+        eventTimer = 0;
+        // Celebration particles
+        for (let i = 0; i < 30; i++) {
+          addConfetti(W * 0.2 + Math.random() * W * 0.6, H * 0.3 + Math.random() * H * 0.3);
+        }
+      }
+      break;
+
+    case 'EVENT_OUTRO':
+      eventOverlayAlpha = Math.max(0, 1 - eventTimer / EVENT_OUTRO_DURATION);
+      if (eventTimer >= EVENT_OUTRO_DURATION) {
+        currentEvent = null;
+        eventOverlayAlpha = 0;
+        eventState = 'FREE_PLAY';
+        eventTimer = 0;
+      }
+      break;
+  }
+}
+
+function drawEventOverlay(dt) {
+  if (!currentEvent && hintLife <= 0) return;
+  ctx.save();
+
+  // Draw gentle hint emoji
+  if (hintLife > 0) {
+    ctx.globalAlpha = hintLife * 0.8;
+    ctx.font = '36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(hintEmoji, hintX, hintY - (1 - hintLife) * 30);
+  }
+
+  if (!currentEvent || eventOverlayAlpha < 0.01) { ctx.restore(); return; }
+
+  const shrunk = eventState === 'EVENT_ACTIVE' && eventActiveTime > 3000;
+  eventIconBounce += dt * 0.004;
+  const bounceY = Math.sin(eventIconBounce) * (shrunk ? 3 : 8);
+
+  if (shrunk) {
+    // Small icon + label in top-left corner
+    const iconSz = Math.min(W * 0.08, 36);
+    ctx.globalAlpha = eventOverlayAlpha * 0.7;
+    ctx.font = `${iconSz}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentEvent.icon, 60, 30 + bounceY);
+    const lblSz = Math.min(W * 0.035, 16);
+    ctx.font = `900 ${lblSz}px 'Zen Maru Gothic', sans-serif`;
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    const shortLabel = currentEvent.label.length > 10
+      ? currentEvent.label.slice(0, 10) + '...' : currentEvent.label;
+    ctx.fillText(shortLabel, 60 + iconSz + 4, 30 + bounceY);
+    ctx.shadowBlur = 0;
+  } else {
+    // Centered big icon + label
+    // Dim background during intro
+    if (eventState === 'EVENT_INTRO') {
+      const introT = eventTimer / EVENT_INTRO_DURATION;
+      ctx.globalAlpha = (1 - introT) * 0.15;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    const iconSz = Math.min(W * 0.15, 80);
+    ctx.globalAlpha = eventOverlayAlpha * 0.9;
+    ctx.font = `${iconSz}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentEvent.icon, W / 2, H * 0.18 + bounceY);
+
+    const lblSz = Math.min(W * 0.06, 28);
+    ctx.font = `900 ${lblSz}px 'Zen Maru Gothic', sans-serif`;
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(currentEvent.label, W / 2, H * 0.18 + iconSz * 0.6 + bounceY);
+    ctx.shadowBlur = 0;
+
+    // Color match: show target color circle
+    if (currentEvent.id === 'color_match' && eventTargetColor >= 0) {
+      const tc = COLORS[eventTargetColor];
+      ctx.globalAlpha = eventOverlayAlpha * 0.8;
+      ctx.beginPath();
+      ctx.arc(W / 2, H * 0.35, Math.min(W * 0.06, 30), 0, Math.PI * 2);
+      ctx.fillStyle = `rgb(${tc.r},${tc.g},${tc.b})`;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+    }
+  }
+
+  // Draw Pono count for find_pono event
+  if (currentEvent.id === 'find_pono' && eventState === 'EVENT_ACTIVE') {
+    ctx.globalAlpha = 0.7;
+    ctx.font = `bold ${Math.min(W * 0.05, 22)}px 'Zen Maru Gothic', sans-serif`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(`🦔 × ${eventPonoFound}`, W / 2, H * 0.92);
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.restore();
+}
+
 // ── Color → Note mapping & combo tracking ──
 // Each COLORS index maps to a pentatonic note
 let lastPopColorIdx = -1;
@@ -587,17 +937,24 @@ const bgolden = new Uint8Array(MAX_BUBBLES + 20);
 const balive = new Uint8Array(MAX_BUBBLES + 20);
 const bfadeIn = new Uint8Array(MAX_BUBBLES + 20);
 const bcreature = new Int8Array(MAX_BUBBLES + 20).fill(-1); // -1 = normal, 0+ = creature index
+const bpono = new Uint8Array(MAX_BUBBLES + 20); // Pono bubble tracking (event system)
 let bcount = 0;
 
 function addBubble(x, y, radius, golden, opacity) {
   if (bcount >= bx.length) return;
   const i = bcount++;
   const sz = Math.min(W, H) / 600;
-  // Occasionally spawn big bubbles (10% chance: 2-3x normal size)
-  const bigChance = Math.random();
-  const baseR = bigChance < 0.05 ? (120 + Math.random() * 80)
-              : bigChance < 0.12 ? (80 + Math.random() * 50)
-              : (35 + Math.random() * 45);
+  // Big bubbles event: force large radius
+  let baseR;
+  if (eventBigMode && !radius) {
+    baseR = 100 + Math.random() * 80; // 2-3x normal
+  } else {
+    // Occasionally spawn big bubbles (10% chance: 2-3x normal size)
+    const bigChance = Math.random();
+    baseR = bigChance < 0.05 ? (120 + Math.random() * 80)
+                : bigChance < 0.12 ? (80 + Math.random() * 50)
+                : (35 + Math.random() * 45);
+  }
   br[i] = radius || baseR * sz;
   bx[i] = x ?? (Math.random() * W);
   by[i] = y ?? (H + br[i] + Math.random() * 100);
@@ -613,6 +970,7 @@ function addBubble(x, y, radius, golden, opacity) {
   balive[i] = 1;
   bfadeIn[i] = (opacity != null && opacity >= 0.8) ? 0 : 1;
   bcreature[i] = -1; // normal bubble by default
+  bpono[i] = 0;
 }
 
 // ── Particles (flat arrays) ──
@@ -779,7 +1137,7 @@ function drawPopAnims(dt) {
   }
 }
 
-// ── Finger trail (sparkle trail on drag) ──
+// ── Finger trail (light streak on drag) ──
 const MAX_TRAIL = 80;
 const trailX = new Float32Array(MAX_TRAIL);
 const trailY = new Float32Array(MAX_TRAIL);
@@ -788,6 +1146,7 @@ const trailSize = new Float32Array(MAX_TRAIL);
 const trailHue = new Float32Array(MAX_TRAIL);
 let trailCount = 0;
 let trailLastX = 0, trailLastY = 0;
+let trailHueOffset = 0;
 
 function addTrailPoint(x, y) {
   if (trailCount >= MAX_TRAIL) {
@@ -803,12 +1162,16 @@ function addTrailPoint(x, y) {
   trailX[i] = x; trailY[i] = y;
   trailLife[i] = 1;
   trailSize[i] = 6 + Math.random() * 6;
-  trailHue[i] = (lastTime * 0.1 + i * 20) % 360;
+  trailHueOffset += 2;
+  trailHue[i] = trailHueOffset % 360;
 }
 
 function drawTrail(dt) {
+  // Decay rate: slower in rainbow mode for longer trails
+  const decayRate = eventTrailMode === 'rainbow' ? 0.0008 : 0.0015;
+  const sizeMul = eventTrailMode === 'rainbow' ? 2 : 1;
   for (let i = trailCount - 1; i >= 0; i--) {
-    trailLife[i] -= dt * 0.0015; // slower decay = longer trail
+    trailLife[i] -= dt * decayRate;
     if (trailLife[i] <= 0) {
       trailCount--;
       if (i < trailCount) {
@@ -819,11 +1182,12 @@ function drawTrail(dt) {
       continue;
     }
     const a = trailLife[i];
-    const s = trailSize[i] * a;
+    const s = trailSize[i] * a * sizeMul;
+    const sat = eventTrailMode === 'rainbow' ? 100 : 80;
     ctx.globalAlpha = a * 0.7;
     ctx.beginPath();
     ctx.arc(trailX[i], trailY[i], s, 0, Math.PI * 2);
-    ctx.fillStyle = `hsla(${trailHue[i]}, 80%, 75%, ${a})`;
+    ctx.fillStyle = `hsla(${trailHue[i]}, ${sat}%, 75%, ${a})`;
     ctx.fill();
     // Inner sparkle
     if (a > 0.5) {
@@ -885,14 +1249,47 @@ let goldenTimer = 0;
 const GOLDEN_INTERVAL = 12000;
 
 // ── Pop logic ──
-function popBubble(idx, chainDepth) {
+function popBubble(idx, chainDepth, muted) {
   if (!balive[idx]) return;
   balive[idx] = 0;
   const x0 = bx[idx], y0 = by[idx];
   lastPopX = x0; lastPopY = y0;
   const isGolden = bgolden[idx];
   const isCreature = bcreature[idx] >= 0;
+  const isPono = bpono[idx] === 1;
   const color = isGolden ? { r: 255, g: 215, b: 60 } : COLORS[bcolorIdx[idx]];
+
+  // ── Pono bubble found! ──
+  if (isPono) {
+    bpono[idx] = 0;
+    eventPonoFound++;
+    // Big celebration
+    for (let i = 0; i < 40; i++) addConfetti(x0, y0);
+    spawnFlyingCreature(x0, y0, 0); // reuse flying system with 🦋 (index 0)
+    playCreatureReveal();
+    // Spawn another Pono if event still active
+    if (eventState === 'EVENT_ACTIVE' && currentEvent && currentEvent.id === 'find_pono') {
+      setTimeout(() => spawnPonoBubble(), 1500);
+    }
+  }
+
+  // ── Color match event: check if correct color ──
+  if (currentEvent && currentEvent.id === 'color_match' && eventState === 'EVENT_ACTIVE' && !isGolden && !isCreature) {
+    if (bcolorIdx[idx] === eventTargetColor) {
+      eventColorMatches++;
+      // Big fanfare for correct color
+      for (let i = 0; i < 15; i++) addConfetti(x0, y0);
+      if (eventColorMatches >= 5) {
+        eventTargetColor = Math.floor(Math.random() * COLORS.length);
+        eventColorMatches = 0;
+      }
+    }
+  }
+
+  // ── Music paint: track last popped color ──
+  if (eventMusicPaint && !isGolden) {
+    eventLastPopColor = COLORS[bcolorIdx[idx]];
+  }
 
   // ── 実績トラッキング ──
   if (window.incrementStat) {
@@ -901,10 +1298,11 @@ function popBubble(idx, chainDepth) {
     if (chainDepth > 0) window.setStatMax('bubble_chain', chainDepth + 1);
   }
 
-  // Pop animation (inflate → ring → fade)
+  // Pop animation (inflate → ring → fade) — muted = smaller
   addPopAnim(x0, y0, br[idx], color);
 
-  const count = isGolden ? 15 : isCreature ? 10 : 6;
+  const particleMul = muted ? 0.5 : 1;
+  const count = Math.round((isGolden ? 15 : isCreature ? 10 : 6) * particleMul);
   for (let i = 0; i < count; i++) {
     addParticle(x0, y0, color, isGolden ? 5 + Math.random() * 5 : undefined);
   }
@@ -991,12 +1389,12 @@ function spawnGolden() {
 }
 
 // ── Input ──
-function handlePop(x, y) {
+function handlePop(x, y, muted) {
   for (let i = bcount - 1; i >= 0; i--) {
     if (!balive[i]) continue;
     const dx = x - bx[i], dy = y - by[i];
     if (dx * dx + dy * dy < br[i] * br[i] * 1.3) {
-      popBubble(i, 0);
+      popBubble(i, 0, muted);
       return;
     }
   }
@@ -1013,37 +1411,54 @@ let isDragging = false;
 let pointerStartX = 0, pointerStartY = 0;
 const DRAG_THRESHOLD = 12; // px — must move this far before drag mode activates
 
+function canvasXY(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
   if (!gameStarted) return;
+  const { x, y } = canvasXY(e);
   isDragging = false;
-  pointerStartX = e.clientX;
-  pointerStartY = e.clientY;
+  pointerStartX = x;
+  pointerStartY = y;
   if (constellationMode) {
-    checkConstellationTap(e.clientX, e.clientY);
+    checkConstellationTap(x, y);
     return;
   }
-  handlePop(e.clientX, e.clientY);
+  // During drag events: tap still works but with muted feedback
+  if (currentEvent && currentEvent.type === 'drag' && eventState === 'EVENT_ACTIVE') {
+    handlePop(x, y, true); // muted=true
+    showGentleHint('drag', x, y);
+    return;
+  }
+  handlePop(x, y);
 });
 canvas.addEventListener('pointermove', e => {
   if (!gameStarted) return;
   if (e.buttons > 0 || e.pressure > 0) {
+    const { x, y } = canvasXY(e);
     if (!isDragging) {
-      const dx = e.clientX - pointerStartX, dy = e.clientY - pointerStartY;
+      const dx = x - pointerStartX, dy = y - pointerStartY;
       if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
       isDragging = true;
     }
-    // Finger trail (both modes)
-    const tdx = e.clientX - trailLastX, tdy = e.clientY - trailLastY;
-    if (tdx * tdx + tdy * tdy > 64) {
-      addTrailPoint(e.clientX, e.clientY);
-      trailLastX = e.clientX; trailLastY = e.clientY;
+    // Finger trail (both modes — never disabled)
+    const tdx = x - trailLastX, tdy = y - trailLastY;
+    if (tdx * tdx + tdy * tdy > 9) {
+      addTrailPoint(x, y);
+      trailLastX = x; trailLastY = y;
     }
     if (constellationMode) {
-      checkConstellationTap(e.clientX, e.clientY);
+      checkConstellationTap(x, y);
       return;
     }
-    handlePop(e.clientX, e.clientY);
+    // During tap events: drag still draws trail but doesn't pop
+    if (currentEvent && currentEvent.type === 'tap' && eventState === 'EVENT_ACTIVE') {
+      showGentleHint('tap', x, y);
+      return; // skip handlePop
+    }
+    handlePop(x, y);
   }
 });
 canvas.addEventListener('pointerup', () => { isDragging = false; });
@@ -1197,131 +1612,101 @@ for (let i = 0; i < STAR_COUNT; i++) {
   });
 }
 
-// ── Constellation mode (night) ──
-// Each constellation has: stars (points), and an illustration path (drawIllust function)
-// The illustration is drawn as a cute line-art overlay on the connected stars
+// ── Constellation mode (night) — 12 Zodiac constellations ──
+// Each constellation: name, emoji, points (stars to trace in order), illustImg (preloaded PNG)
+// Star positions derived from chicodeza.com star chart images (illust2)
 const CONSTELLATIONS = [
-  { name: 'おほしさま', emoji: '⭐', points: [
-    [0.50, 0.20], [0.38, 0.40], [0.15, 0.40], [0.33, 0.55], [0.26, 0.75], [0.50, 0.62], [0.74, 0.75], [0.67, 0.55], [0.85, 0.40], [0.62, 0.40]
-  ], drawIllust: (ctx, W, H, a) => {
-    // 5-pointed star outline
-    ctx.beginPath();
-    const pts = [[0.50,0.20],[0.62,0.40],[0.85,0.40],[0.67,0.55],[0.74,0.75],[0.50,0.62],[0.26,0.75],[0.33,0.55],[0.15,0.40],[0.38,0.40]];
-    ctx.moveTo(pts[0][0]*W, pts[0][1]*H);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0]*W, pts[i][1]*H);
-    ctx.closePath(); ctx.stroke();
-  }},
-  { name: 'さかな', emoji: '🐟', points: [
-    [0.30, 0.40], [0.40, 0.28], [0.55, 0.25], [0.68, 0.30], [0.75, 0.40], [0.68, 0.50], [0.55, 0.55], [0.40, 0.52]
-  ], drawIllust: (ctx, W, H, a) => {
-    // Fish body (oval) + tail
-    ctx.beginPath();
-    ctx.ellipse(0.52*W, 0.40*H, 0.18*W, 0.12*H, 0, 0, Math.PI*2);
-    ctx.stroke();
-    // Tail
-    ctx.beginPath();
-    ctx.moveTo(0.70*W, 0.40*H);
-    ctx.lineTo(0.82*W, 0.28*H);
-    ctx.lineTo(0.82*W, 0.52*H);
-    ctx.closePath(); ctx.stroke();
-    // Eye
-    ctx.beginPath();
-    ctx.arc(0.42*W, 0.37*H, 3, 0, Math.PI*2);
-    ctx.fill();
-    // Mouth
-    ctx.beginPath();
-    ctx.arc(0.35*W, 0.41*H, 4, -0.5, 0.5);
-    ctx.stroke();
-  }},
-  { name: 'おうち', emoji: '🏠', points: [
-    [0.30, 0.65], [0.30, 0.40], [0.50, 0.20], [0.70, 0.40], [0.70, 0.65]
-  ], drawIllust: (ctx, W, H, a) => {
-    // House body
-    ctx.beginPath();
-    ctx.rect(0.30*W, 0.40*H, 0.40*W, 0.25*H);
-    ctx.stroke();
-    // Roof
-    ctx.beginPath();
-    ctx.moveTo(0.26*W, 0.40*H);
-    ctx.lineTo(0.50*W, 0.18*H);
-    ctx.lineTo(0.74*W, 0.40*H);
-    ctx.closePath(); ctx.stroke();
-    // Door
-    ctx.beginPath();
-    ctx.rect(0.44*W, 0.50*H, 0.12*W, 0.15*H);
-    ctx.stroke();
-    // Window
-    ctx.beginPath();
-    ctx.rect(0.34*W, 0.45*H, 0.07*W, 0.07*H);
-    ctx.stroke();
-    // Chimney
-    ctx.beginPath();
-    ctx.rect(0.60*W, 0.22*H, 0.06*W, 0.12*H);
-    ctx.stroke();
-  }},
-  { name: 'ハート', emoji: '💖', points: [
-    [0.50, 0.70], [0.30, 0.50], [0.25, 0.35], [0.35, 0.22], [0.50, 0.32], [0.65, 0.22], [0.75, 0.35], [0.70, 0.50]
-  ], drawIllust: (ctx, W, H, a) => {
-    // Heart shape using bezier curves
-    ctx.beginPath();
-    ctx.moveTo(0.50*W, 0.70*H);
-    ctx.bezierCurveTo(0.20*W, 0.50*H, 0.20*W, 0.22*H, 0.50*W, 0.32*H);
-    ctx.bezierCurveTo(0.80*W, 0.22*H, 0.80*W, 0.50*H, 0.50*W, 0.70*H);
-    ctx.stroke();
-  }},
-  { name: 'ちょうちょ', emoji: '🦋', points: [
-    [0.50, 0.35], [0.38, 0.25], [0.22, 0.28], [0.25, 0.45], [0.42, 0.50], [0.58, 0.50], [0.75, 0.45], [0.78, 0.28], [0.62, 0.25]
-  ], drawIllust: (ctx, W, H, a) => {
-    // Left wing
-    ctx.beginPath();
-    ctx.ellipse(0.35*W, 0.35*H, 0.13*W, 0.10*H, -0.3, 0, Math.PI*2);
-    ctx.stroke();
-    // Right wing
-    ctx.beginPath();
-    ctx.ellipse(0.65*W, 0.35*H, 0.13*W, 0.10*H, 0.3, 0, Math.PI*2);
-    ctx.stroke();
-    // Body
-    ctx.beginPath();
-    ctx.ellipse(0.50*W, 0.40*H, 0.02*W, 0.10*H, 0, 0, Math.PI*2);
-    ctx.stroke();
-    // Antennae
-    ctx.beginPath();
-    ctx.moveTo(0.49*W, 0.30*H); ctx.quadraticCurveTo(0.44*W, 0.20*H, 0.40*W, 0.18*H);
-    ctx.moveTo(0.51*W, 0.30*H); ctx.quadraticCurveTo(0.56*W, 0.20*H, 0.60*W, 0.18*H);
-    ctx.stroke();
-  }},
-  { name: 'くま', emoji: '🐻', points: [
-    [0.35, 0.20], [0.30, 0.32], [0.32, 0.48], [0.40, 0.60], [0.50, 0.65], [0.60, 0.60], [0.68, 0.48], [0.70, 0.32], [0.65, 0.20]
-  ], drawIllust: (ctx, W, H, a) => {
-    // Head
-    ctx.beginPath();
-    ctx.ellipse(0.50*W, 0.42*H, 0.16*W, 0.18*H, 0, 0, Math.PI*2);
-    ctx.stroke();
-    // Left ear
-    ctx.beginPath();
-    ctx.arc(0.35*W, 0.22*H, 0.06*W, 0, Math.PI*2);
-    ctx.stroke();
-    // Right ear
-    ctx.beginPath();
-    ctx.arc(0.65*W, 0.22*H, 0.06*W, 0, Math.PI*2);
-    ctx.stroke();
-    // Eyes
-    ctx.beginPath();
-    ctx.arc(0.44*W, 0.38*H, 3, 0, Math.PI*2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0.56*W, 0.38*H, 3, 0, Math.PI*2);
-    ctx.fill();
-    // Nose
-    ctx.beginPath();
-    ctx.ellipse(0.50*W, 0.44*H, 4, 3, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Mouth
-    ctx.beginPath();
-    ctx.arc(0.50*W, 0.44*H, 6, 0.2, Math.PI - 0.2);
-    ctx.stroke();
-  }},
+  { name: 'おひつじざ', emoji: '♈', id: 'aries',
+    img: 'ohitujiza-illust1.png',
+    points: [
+      [0.08, 0.50], [0.48, 0.40], [0.72, 0.55], [0.88, 0.22], [0.82, 0.10]
+    ]},
+  { name: 'おうしざ', emoji: '♉', id: 'taurus',
+    img: 'oushiza-illust1.png',
+    points: [
+      [0.12, 0.06], [0.06, 0.30], [0.36, 0.22], [0.44, 0.24], [0.50, 0.20],
+      [0.66, 0.18], [0.84, 0.16], [0.42, 0.36], [0.50, 0.40], [0.62, 0.45],
+      [0.92, 0.50]
+    ]},
+  { name: 'ふたござ', emoji: '♊', id: 'gemini',
+    img: 'futagoza-illust1.png',
+    points: [
+      [0.06, 0.22], [0.22, 0.15], [0.20, 0.30], [0.28, 0.35], [0.40, 0.08],
+      [0.55, 0.30], [0.78, 0.40], [0.88, 0.42], [0.92, 0.44], [0.55, 0.70],
+      [0.52, 0.80]
+    ]},
+  { name: 'かにざ', emoji: '♋', id: 'cancer',
+    img: 'kaniza-illust1.png',
+    points: [
+      [0.14, 0.06], [0.32, 0.35], [0.40, 0.38], [0.62, 0.36], [0.65, 0.42],
+      [0.40, 0.52], [0.06, 0.78], [0.92, 0.90]
+    ]},
+  { name: 'ししざ', emoji: '♌', id: 'leo',
+    img: 'shishiza-illust1.png',
+    points: [
+      [0.08, 0.58], [0.20, 0.42], [0.20, 0.52], [0.18, 0.62], [0.22, 0.72],
+      [0.28, 0.80], [0.22, 0.88], [0.55, 0.55], [0.65, 0.40], [0.60, 0.30],
+      [0.55, 0.22], [0.72, 0.08], [0.80, 0.12], [0.92, 0.14], [0.92, 0.52]
+    ]},
+  { name: 'おとめざ', emoji: '♍', id: 'virgo',
+    img: 'otomeza-illust1.png',
+    points: [
+      [0.60, 0.06], [0.72, 0.10], [0.88, 0.20], [0.50, 0.30], [0.55, 0.35],
+      [0.62, 0.40], [0.72, 0.50], [0.80, 0.55], [0.30, 0.45], [0.40, 0.50],
+      [0.50, 0.55], [0.60, 0.65], [0.55, 0.75], [0.08, 0.82]
+    ]},
+  { name: 'てんびんざ', emoji: '♎', id: 'libra',
+    img: 'tennbinnza-illust1.png',
+    points: [
+      [0.32, 0.08], [0.18, 0.35], [0.10, 0.48], [0.25, 0.48], [0.55, 0.62],
+      [0.85, 0.35], [0.88, 0.90]
+    ]},
+  { name: 'さそりざ', emoji: '♏', id: 'scorpio',
+    img: 'sasoriza-illust1.png',
+    points: [
+      [0.10, 0.62], [0.18, 0.58], [0.12, 0.72], [0.22, 0.78], [0.35, 0.55],
+      [0.50, 0.45], [0.55, 0.40], [0.65, 0.35], [0.78, 0.18], [0.85, 0.12],
+      [0.92, 0.10], [0.88, 0.22], [0.95, 0.30]
+    ]},
+  { name: 'いてざ', emoji: '♐', id: 'sagittarius',
+    img: 'iteza-illust1.png',
+    points: [
+      [0.06, 0.48], [0.22, 0.45], [0.30, 0.38], [0.35, 0.42], [0.42, 0.32],
+      [0.50, 0.30], [0.65, 0.22], [0.72, 0.15], [0.82, 0.08], [0.85, 0.18],
+      [0.90, 0.25], [0.92, 0.32], [0.12, 0.72], [0.20, 0.80], [0.25, 0.90],
+      [0.50, 0.60], [0.55, 0.68]
+    ]},
+  { name: 'やぎざ', emoji: '♑', id: 'capricorn',
+    img: 'yagiza-illust1.png',
+    points: [
+      [0.08, 0.20], [0.15, 0.15], [0.30, 0.15], [0.50, 0.18], [0.88, 0.18],
+      [0.85, 0.30], [0.62, 0.60], [0.50, 0.80], [0.48, 0.85], [0.18, 0.40],
+      [0.22, 0.55]
+    ]},
+  { name: 'みずがめざ', emoji: '♒', id: 'aquarius',
+    img: 'mizugameza-illust1.png',
+    points: [
+      [0.35, 0.06], [0.38, 0.08], [0.45, 0.10], [0.42, 0.22], [0.35, 0.28],
+      [0.50, 0.30], [0.58, 0.38], [0.15, 0.42], [0.28, 0.50], [0.35, 0.58],
+      [0.32, 0.65], [0.38, 0.80], [0.40, 0.90]
+    ]},
+  { name: 'うおざ', emoji: '♓', id: 'pisces',
+    img: 'uoza-illust1.png',
+    points: [
+      [0.15, 0.08], [0.12, 0.15], [0.15, 0.22], [0.18, 0.32], [0.12, 0.50],
+      [0.08, 0.62], [0.10, 0.80], [0.25, 0.82], [0.35, 0.82], [0.50, 0.80],
+      [0.62, 0.80], [0.75, 0.72], [0.80, 0.68], [0.88, 0.70], [0.92, 0.75]
+    ]},
 ];
+
+// Preload constellation illustration images
+const constellationImages = {};
+for (const c of CONSTELLATIONS) {
+  const img = new Image();
+  img.onerror = () => console.warn(`Failed to load constellation: ${c.id}/${c.img}`);
+  img.src = `../assets/images/constellations/${c.id}/${c.img}`;
+  constellationImages[c.id] = img;
+}
 
 let constellationMode = false;
 let constellationActive = null;
@@ -1409,6 +1794,16 @@ function drawConstellation(dt) {
 
   const alpha = constellationFadeIn;
 
+  // ── Cache bounding box for image drawing ──
+  const padding = W * 0.05;
+  let bbMinX = Infinity, bbMaxX = -Infinity, bbMinY = Infinity, bbMaxY = -Infinity;
+  for (const p of ca.starScreenPos) {
+    if (p.x < bbMinX) bbMinX = p.x;
+    if (p.x > bbMaxX) bbMaxX = p.x;
+    if (p.y < bbMinY) bbMinY = p.y;
+    if (p.y > bbMaxY) bbMaxY = p.y;
+  }
+
   // ── Guide: show full shape as faded preview ──
   if (constellationGuideAlpha > 0.01 && !ca.completed) {
     ctx.save();
@@ -1424,13 +1819,27 @@ function drawConstellation(dt) {
     }
     ctx.stroke();
     ctx.setLineDash([]);
-    // Also show illustration as faded hint
-    ctx.globalAlpha = alpha * constellationGuideAlpha * 0.15;
-    ctx.strokeStyle = 'rgba(200, 220, 255, 0.5)';
-    ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
-    ctx.lineWidth = 1.5;
-    if (ca.constellation.drawIllust) {
-      ca.constellation.drawIllust(ctx, W, H, constellationGuideAlpha);
+    // Also show illustration as faded hint (preloaded PNG)
+    const guideImg = constellationImages[ca.constellation.id];
+    if (guideImg && guideImg.complete && guideImg.naturalWidth > 0) {
+      ctx.globalAlpha = alpha * constellationGuideAlpha * 0.15;
+      ctx.globalCompositeOperation = 'screen';
+      const imgAspect = guideImg.naturalWidth / guideImg.naturalHeight;
+      const gMinX = bbMinX - padding, gMaxX = bbMaxX + padding;
+      const gMinY = bbMinY - padding, gMaxY = bbMaxY + padding;
+      const areaW = gMaxX - gMinX;
+      const areaH = gMaxY - gMinY;
+      const areaAspect = areaW / areaH;
+      let drawW, drawH;
+      if (imgAspect > areaAspect) {
+        drawW = areaW; drawH = areaW / imgAspect;
+      } else {
+        drawH = areaH; drawW = areaH * imgAspect;
+      }
+      const drawX = gMinX + (areaW - drawW) / 2;
+      const drawY = gMinY + (areaH - drawH) / 2;
+      ctx.drawImage(guideImg, drawX, drawY, drawW, drawH);
+      ctx.globalCompositeOperation = 'source-over';
     }
     ctx.restore();
   }
@@ -1453,13 +1862,13 @@ function drawConstellation(dt) {
   ctx.restore();
 
   // ── Stars ──
+  ctx.save();
+  const pulse = Math.sin(lastTime * 0.005);
   for (let i = 0; i < ca.starScreenPos.length; i++) {
     const s = ca.starScreenPos[i];
     const isTraced = ca.traced[i];
     const isNext = i === ca.currentIdx + 1 && !ca.completed;
 
-    // Size: next star is BIG and pulsing, traced stars are medium, others small
-    const pulse = Math.sin(lastTime * 0.005);
     const starSize = isNext ? 10 + 4 * pulse : isTraced ? 6 : 4;
     const glow = isTraced ? 1 : isNext ? 0.7 + 0.3 * pulse : 0.35;
 
@@ -1502,34 +1911,47 @@ function drawConstellation(dt) {
       ctx.fillText(`${i + 1}`, s.x, s.y - starSize - 4);
     }
   }
+  ctx.restore();
 
   // ── Completion: illustration + name ──
   if (ca.completed) {
     const t = Math.min(1, ca.completeTime / 1000);
     const cx = ca.starScreenPos.reduce((s, p) => s + p.x, 0) / ca.starScreenPos.length;
-    const cy = ca.starScreenPos.reduce((s, p) => s + p.y, 0) / ca.starScreenPos.length;
 
-    // Draw the illustration over the stars (fades in)
-    ctx.save();
-    ctx.globalAlpha = alpha * t * 0.7;
-    ctx.strokeStyle = 'rgba(200, 230, 255, 0.9)';
-    ctx.fillStyle = 'rgba(200, 230, 255, 0.9)';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = 'rgba(150, 200, 255, 0.5)';
-    ctx.shadowBlur = 8;
-    if (ca.constellation.drawIllust) {
-      ca.constellation.drawIllust(ctx, W, H, t);
+    // Draw the illustration over the stars (fades in, preloaded PNG)
+    const completeImg = constellationImages[ca.constellation.id];
+    if (completeImg && completeImg.complete && completeImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.globalAlpha = alpha * t * 0.7;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.shadowColor = 'rgba(150, 200, 255, 0.5)';
+      ctx.shadowBlur = 8;
+      const imgMinX = bbMinX - padding, imgMaxX = bbMaxX + padding;
+      const imgMinY = bbMinY - padding, imgMaxY = bbMaxY + padding;
+      const areaW = imgMaxX - imgMinX;
+      const areaH = imgMaxY - imgMinY;
+      const imgAspect = completeImg.naturalWidth / completeImg.naturalHeight;
+      const areaAspect = areaW / areaH;
+      let drawW, drawH;
+      if (imgAspect > areaAspect) {
+        drawW = areaW; drawH = areaW / imgAspect;
+      } else {
+        drawH = areaH; drawW = areaH * imgAspect;
+      }
+      const drawX = imgMinX + (areaW - drawW) / 2;
+      const drawY = imgMinY + (areaH - drawH) / 2;
+      ctx.drawImage(completeImg, drawX, drawY, drawW, drawH);
+      ctx.restore();
     }
-    ctx.shadowBlur = 0;
-    ctx.restore();
 
     // Name + emoji (below illustration)
+    ctx.save();
     ctx.globalAlpha = alpha * t;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const emojiSize = Math.min(W * 0.12, 50) * (0.8 + t * 0.2);
     ctx.font = `${emojiSize}px sans-serif`;
-    const nameY = Math.max(...ca.starScreenPos.map(p => p.y)) + 40;
+    const nameY = bbMaxY + 40;
     ctx.fillText(ca.constellation.emoji, cx, nameY);
     const nameSize = Math.min(W * 0.07, 30);
     ctx.font = `900 ${nameSize}px 'Zen Maru Gothic', sans-serif`;
@@ -1537,9 +1959,10 @@ function drawConstellation(dt) {
     ctx.shadowColor = 'rgba(100,150,255,0.6)';
     ctx.shadowBlur = 15;
     ctx.fillText(ca.constellation.name + '！', cx, nameY + emojiSize * 0.7);
-    ctx.shadowBlur = 0;
+    ctx.restore();
   } else {
     // Hint text
+    ctx.save();
     ctx.globalAlpha = alpha * 0.7;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -1547,8 +1970,8 @@ function drawConstellation(dt) {
     ctx.font = `700 ${hintSize}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = 'rgba(200,220,255,0.8)';
     ctx.fillText('ひかる ほしを じゅんばんに タップ！', W / 2, H - 25);
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
 }
 
 function getSkyColors(time) {
@@ -1687,6 +2110,9 @@ function loop(time) {
     exitConstellationMode();
   }
 
+  // ── Event system update ──
+  updateEventSystem(dt);
+
   // During constellation mode: fade out bubbles, skip spawning
   if (constellationMode) {
     // Fade out existing bubbles
@@ -1699,7 +2125,9 @@ function loop(time) {
   } else {
     // Spawn — faster base rate + emergency refill when low
     spawnTimer += dt;
-    const spawnInterval = bcount < 20 ? 80 : bcount < 35 ? 150 : 250;
+    // Sweep mode: spawn faster
+    const sweepMul = eventSweepMode ? 0.5 : 1;
+    const spawnInterval = (bcount < 20 ? 80 : bcount < 35 ? 150 : 250) * sweepMul;
     if (spawnTimer > spawnInterval) { spawnBubble(); spawnTimer = 0; }
     // Emergency burst: if very few bubbles, spawn several at once
     if (bcount < 15) {
@@ -1722,6 +2150,7 @@ function loop(time) {
         bcolorIdx[i] = bcolorIdx[bcount]; bgolden[i] = bgolden[bcount];
         balive[i] = balive[bcount]; bfadeIn[i] = bfadeIn[bcount];
         bcreature[i] = bcreature[bcount];
+        bpono[i] = bpono[bcount];
       }
       continue;
     }
@@ -1841,6 +2270,27 @@ function loop(time) {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
+
+  // Draw Pono emoji on Pono bubbles (find_pono event)
+  for (let i = 0; i < bcount; i++) {
+    if (!balive[i] || !bpono[i]) continue;
+    const r = br[i], x0 = bx[i], y0 = by[i];
+    const opacity = bopacity[i];
+    if (opacity < 0.3) continue;
+    // Semi-hidden Pono — slightly transparent, peeks out
+    ctx.globalAlpha = opacity * (0.4 + 0.3 * Math.sin(lastTime * 0.003 + i * 2));
+    ctx.font = `${r * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🦔', x0, y0);
+    // Subtle shimmer ring
+    ctx.globalAlpha = opacity * 0.25 * (0.5 + 0.5 * Math.sin(lastTime * 0.004 + i));
+    ctx.beginPath();
+    ctx.arc(x0, y0, r * 1.08, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,220,150,0.5)`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
   ctx.globalAlpha = 1;
 
   // Update & draw flying creatures (after pop)
@@ -1939,16 +2389,24 @@ function loop(time) {
   // Finger trail
   drawTrail(dt);
 
+  // Event overlay (on top of trail and bubbles)
+  drawEventOverlay(dt);
+
   // Update combo timer
   if (comboTimer > 0) comboTimer -= dt;
 
   // Creature bubble spawning (not during constellation mode)
   if (!constellationMode) {
     creatureTimer += dt;
-    if (creatureTimer >= nextCreatureTime) {
+    const creatureThreshold = eventCreatureBoost ? nextCreatureBoostTime : nextCreatureTime;
+    if (creatureTimer >= creatureThreshold) {
       spawnCreatureBubble();
       creatureTimer = 0;
-      nextCreatureTime = CREATURE_MIN_INTERVAL + Math.random() * (CREATURE_MAX_INTERVAL - CREATURE_MIN_INTERVAL);
+      if (eventCreatureBoost) {
+        nextCreatureBoostTime = 2000 + Math.random() * 1500;
+      } else {
+        nextCreatureTime = CREATURE_MIN_INTERVAL + Math.random() * (CREATURE_MAX_INTERVAL - CREATURE_MIN_INTERVAL);
+      }
     }
   }
 
