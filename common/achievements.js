@@ -134,9 +134,16 @@
       }
     }
 
-    // Show popups sequentially
+    // Queue popups — show immediately or defer if game is busy
     if (newlyUnlocked.length > 0) {
-      _showAchievementQueue(newlyUnlocked);
+      if (window._achDeferPopups) {
+        // Game requested deferral — queue for later
+        for (var k = 0; k < newlyUnlocked.length; k++) {
+          _deferredQueue.push(newlyUnlocked[k]);
+        }
+      } else {
+        _showAchievementQueue(newlyUnlocked);
+      }
     }
   }
 
@@ -210,6 +217,17 @@
   // ═══ 解除ポップアップUI ═══════════════════════════════════════════
   var _popupQueue = [];
   var _popupShowing = false;
+  var _deferredQueue = [];
+
+  // Games set window._achDeferPopups = true during active gameplay,
+  // then call window.flushAchievementPopups() between stages
+  window._achDeferPopups = false;
+  window.flushAchievementPopups = function () {
+    window._achDeferPopups = false;
+    if (_deferredQueue.length > 0) {
+      _showAchievementQueue(_deferredQueue.splice(0));
+    }
+  };
 
   function _showAchievementQueue(achList) {
     for (var i = 0; i < achList.length; i++) {

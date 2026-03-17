@@ -315,6 +315,8 @@ function endBonusStage() {
 
   bonusTotalScore += chainBonus;
   score += chainBonus; // only add the chain bonus (merge scores already added during play)
+  // Record best chain from bonus play too
+  if (bonusMaxChain > bestChain) { bestChain = bonusMaxChain; localStorage.setItem('bowling_best_chain', String(bestChain)); }
 
   // Fireworks for good bonus
   if (bonusTotalScore > 500) {
@@ -341,6 +343,8 @@ function pickBallTier() {
 function startArrangePhase() {
   gamePhase = 'arrange';
   phaseTimer = ARRANGE_TIME;
+  // Show any deferred achievement popups now (between stages)
+  if (window.flushAchievementPopups) window.flushAchievementPopups();
 
   // Clean up dead and balls
   for (let i = bodies.length - 1; i >= 0; i--) {
@@ -784,6 +788,7 @@ canvas.addEventListener('pointerup', e => {
   b.vy = ny * speed;
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
   gamePhase = 'action';
+  window._achDeferPopups = true; // defer achievement popups during gameplay
   roundMerges = 0;
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
@@ -1257,15 +1262,7 @@ function loop(now) {
     }
     if (combo > prevCombo && combo >= 3) { chainDisplay = combo; chainDisplayTimer = 60; }
 
-    // Ball trail
-    for (let i = 0; i < bodies.length; i++) {
-      const b = bodies[i];
-      if (b.type === 'ball' && !b.dead) {
-        ballTrail.push({ x: b.x, y: b.y, alpha: 1 });
-        if (ballTrail.length > MAX_TRAIL) ballTrail.shift();
-      }
-    }
-    for (let i = 0; i < ballTrail.length; i++) ballTrail[i].alpha *= 0.92;
+    // No ball trail in bonus stage
 
     // Remove old balls (shorter lifetime in bonus)
     for (let i = bodies.length - 1; i >= 0; i--) {
@@ -1323,7 +1320,7 @@ function loop(now) {
     ctx.fillRect(0, HUD_HEIGHT, W, H - HUD_HEIGHT);
     // Field border
     ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 4; ctx.strokeRect(4, HUD_HEIGHT + 2, W-8, H - HUD_HEIGHT - 6);
-    drawBallTrail(); drawBodies(); drawEffects();
+    drawBodies(); drawEffects();
     ctx.restore();
     drawBonusHUD(now);
     drawBallPreview(now);
