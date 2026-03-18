@@ -172,6 +172,37 @@ html, body {
 .btn-undo          { background: #FEF3C7; color: #D97706; }
 .btn-clear         { background: #FEE2E2; color: #EF4444; }
 .btn-save          { background: linear-gradient(135deg, #4ADE80, #34D399); color: #fff; }
+.btn-gallery       { background: #EEF2FF; color: #6366F1; }
+
+/* Top toolbar (above canvas) */
+.toolbar-top {
+  display: flex; gap: 6px;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Icon-only round buttons (stamp, rainbow, sparkle, bucket, nohami) */
+.icon-btn {
+  width: 44px; height: 44px;
+  border: none; border-radius: 50%;
+  font-size: 1.3rem;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+.icon-btn:active { transform: scale(0.9); }
+.icon-btn.btn-stamp          { background: #FDF4FF; }
+.icon-btn.btn-stamp.active   { background: linear-gradient(135deg, #A855F7, #C084FC); }
+.icon-btn.btn-rainbow        { background: #FFF7ED; }
+.icon-btn.btn-rainbow.active { background: linear-gradient(135deg, #F97316, #FACC15, #4ADE80, #3B82F6, #A855F7); }
+.icon-btn.btn-sparkle        { background: #FEFCE8; }
+.icon-btn.btn-sparkle.active { background: linear-gradient(135deg, #FFD700, #FF69B4); }
+.icon-btn.btn-bucket         { background: #EFF6FF; }
+.icon-btn.btn-bucket.active  { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.icon-btn.btn-nohami         { background: #F0FDF4; }
+.icon-btn.btn-nohami.active  { background: linear-gradient(135deg, #4ADE80, #16A34A); }
 
 /* ===== Save Toast ===== */
 .save-toast {
@@ -186,7 +217,6 @@ html, body {
 .save-toast.show { opacity: 1; }
 
 /* ===== Gallery ===== */
-.btn-gallery { background: #EEF2FF; color: #6366F1; }
 
 .gallery-overlay {
   position: fixed; inset: 0;
@@ -263,26 +293,15 @@ html, body {
   .color-btn { width: 28px; height: 28px; }
   .color-palette { gap: 4px; }
   .toolbar { flex-wrap: wrap; gap: 4px; }
+  .toolbar-top { gap: 4px; }
   .tool-btn { padding: 6px 9px; font-size: 0.76rem; }
+  .icon-btn { width: 38px; height: 38px; font-size: 1.15rem; }
   .size-btn[data-size="4"]  { width: 28px; height: 28px; }
   .size-btn[data-size="14"] { width: 32px; height: 32px; }
   .size-btn[data-size="28"] { width: 36px; height: 36px; }
 }
 
-/* ===== 2列目ツールバー ===== */
-.toolbar-special {
-  display: flex; gap: 6px;
-  align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-/* ===== 特殊ブラシボタン ===== */
-.btn-stamp          { background: #FDF4FF; color: #A855F7; }
-.btn-stamp.active   { background: linear-gradient(135deg, #A855F7, #C084FC); color: #fff; }
-.btn-rainbow        { background: #FFF7ED; color: #F97316; }
-.btn-rainbow.active { background: linear-gradient(135deg, #F97316, #FACC15, #4ADE80, #3B82F6, #A855F7); color: #fff; }
-.btn-sparkle        { background: #FEFCE8; color: #CA8A04; }
-.btn-sparkle.active { background: linear-gradient(135deg, #FFD700, #FF69B4); color: #fff; }
+/* (special brush styles moved to .icon-btn above) */
 
 /* ===== スタンプパネル ===== */
 .stamp-panel {
@@ -324,11 +343,7 @@ html, body {
   .stamp-item  { width: 40px; height: 40px; font-size: 1.3rem; }
 }
 
-/* ===== バケツ・はみ出し防止 ===== */
-.btn-bucket          { background: #EFF6FF; color: #2563EB; }
-.btn-bucket.active   { background: linear-gradient(135deg, #3B82F6, #2563EB); color: #fff; }
-.btn-nohami          { background: #F0FDF4; color: #16A34A; }
-.btn-nohami.active   { background: linear-gradient(135deg, #4ADE80, #16A34A); color: #fff; }
+/* (bucket/nohami styles moved to .icon-btn above) */
 
 /* ===== 入口ヒント ===== */
 .entry-hint {
@@ -360,6 +375,13 @@ html, body {
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
+  <div class="toolbar toolbar-top">
+    <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
+    <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶすてる</button>
+    <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
+    <button class="tool-btn btn-gallery" id="btnGallery">📂 みる</button>
+  </div>
+
   <div class="canvas-wrap" id="canvasWrap">
     <canvas id="drawCanvas"></canvas>
   </div>
@@ -375,18 +397,11 @@ html, body {
     <button class="size-btn active" data-size="14"><span class="size-dot size-dot-m"></span></button>
     <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
     <button class="tool-btn btn-eraser" id="btnEraser">🧹 けす</button>
-    <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
-    <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶ</button>
-    <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
-    <button class="tool-btn btn-gallery" id="btnGallery">📂 みる</button>
-  </div>
-
-  <div class="toolbar toolbar-special">
-    <button class="tool-btn btn-stamp"   id="btnStamp">🔖 スタンプ</button>
-    <button class="tool-btn btn-rainbow" id="btnRainbow">🌈 レインボー</button>
-    <button class="tool-btn btn-sparkle" id="btnSparkle">✨ きらきら</button>
-    <button class="tool-btn btn-bucket"  id="btnBucket">🪣 ぬりつぶす</button>
-    <button class="tool-btn btn-nohami" id="btnNoHami">🔒 はみ出し防止</button>
+    <button class="icon-btn btn-stamp"   id="btnStamp" title="スタンプ">🔖</button>
+    <button class="icon-btn btn-rainbow" id="btnRainbow" title="レインボー">🌈</button>
+    <button class="icon-btn btn-sparkle" id="btnSparkle" title="きらきら">✨</button>
+    <button class="icon-btn btn-bucket"  id="btnBucket" title="ぬりつぶす">🪣</button>
+    <button class="icon-btn btn-nohami" id="btnNoHami" title="はみ出し防止">🔒</button>
   </div>
 </div>
 
