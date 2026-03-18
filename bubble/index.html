@@ -34,17 +34,18 @@ canvas { display: block; }
   cursor: pointer;
 }
 #start-screen .title {
-  font-size: 28px; font-weight: 900; color: #fff;
+  font-size: 26px; font-weight: 900; color: #fff;
   text-shadow: 0 3px 12px rgba(100,180,255,0.6), 0 1px 3px rgba(0,0,0,0.2);
   letter-spacing: 0.05em;
 }
-#start-screen .bubble-icon { font-size: 64px; margin-bottom: 12px; }
+#start-screen .bubble-icon { font-size: 56px; margin-bottom: 8px; }
 #start-screen .desc {
-  font-size: 15px; color: rgba(255,255,255,0.85); margin-top: 12px;
-  line-height: 1.6; text-align: center;
+  font-size: 22px; font-weight: 900; color: #fff;
+  text-shadow: 0 2px 10px rgba(100,180,255,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  margin-top: 20px; line-height: 1.6; text-align: center;
 }
 #start-screen .tap {
-  font-size: 22px; color: rgba(255,255,255,0.9); margin-top: 24px;
+  font-size: 18px; color: rgba(255,255,255,0.7); margin-top: 50px;
   animation: pulse 1.5s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
@@ -467,7 +468,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Event System (tap/drag alternating events) ──
 const TAP_EVENTS = [
   {
-    id: 'find_pono', type: 'tap', label: 'ポノを さがしてね！', icon: '🐻',
+    id: 'find_pono', type: 'tap', label: 'ポノをみつけて タップ！', icon: '🐻',
     onEnter() {
       // Mark one random bubble as Pono
       eventPonoFound = 0;
@@ -495,19 +496,21 @@ const TAP_EVENTS = [
       eventColorMatches = 0;
       eventColorScore = 0;
       const tc = COLORS[eventTargetColor];
-      this.label = 'このいろを タップ！';
+      const names = ['あか','だいだい','きいろ','みどり','みずいろ','あお','むらさき','ピンク'];
+      const colorName = names[eventTargetColor] || 'このいろ';
+      this.label = colorName + 'を みつけて タップ！';
     },
     onExit() { eventTargetColor = -1; eventColorMatches = 0; },
     onTick(dt) {}
   },
   {
-    id: 'big_bubbles', type: 'tap', label: 'おおきいの パン！', icon: '💥',
+    id: 'big_bubbles', type: 'tap', label: 'おおきいシャボン玉を タップ！', icon: '💥',
     onEnter() { eventBigMode = true; },
     onExit() { eventBigMode = false; },
     onTick(dt) {}
   },
   {
-    id: 'creature_hunt', type: 'tap', label: 'いきもの みつけて！', icon: '🦋',
+    id: 'creature_hunt', type: 'tap', label: 'いきものを みつけて タップ！', icon: '🦋',
     onEnter() {
       eventCreatureBoost = true;
       nextCreatureBoostTime = 2000 + Math.random() * 1500;
@@ -527,13 +530,13 @@ const DRAG_EVENTS = [
     onTick(dt) {}
   },
   {
-    id: 'bubble_sweep', type: 'drag', label: 'いっぱい わろう！', icon: '🫧',
+    id: 'bubble_sweep', type: 'drag', label: 'ゆびでなぞって いっぱいわろう！', icon: '🫧',
     onEnter() { eventSweepMode = true; },
     onExit() { eventSweepMode = false; },
     onTick(dt) {}
   },
   {
-    id: 'star_draw', type: 'drag', label: 'おほしさま かこう！', icon: '⭐',
+    id: 'star_draw', type: 'drag', label: 'ゆびでなぞって おほしさまを かこう！', icon: '⭐',
     onEnter() {
       // Arrange bubbles in a circle pattern
       eventStarMode = true;
@@ -543,7 +546,7 @@ const DRAG_EVENTS = [
     onTick(dt) {}
   },
   {
-    id: 'music_paint', type: 'drag', label: 'おんがくで おえかき！', icon: '🎵',
+    id: 'music_paint', type: 'drag', label: 'ゆびでなぞると おとがなるよ！', icon: '🎵',
     onEnter() { eventMusicPaint = true; eventLastPopColor = null; },
     onExit() { eventMusicPaint = false; eventLastPopColor = null; },
     onTick(dt) {}
@@ -1199,7 +1202,7 @@ function drawPopAnims(dt) {
 }
 
 // ── Finger trail (light streak on drag) ──
-const MAX_TRAIL = 150;
+const MAX_TRAIL = 250;
 const trailX = new Float32Array(MAX_TRAIL);
 const trailY = new Float32Array(MAX_TRAIL);
 const trailLife = new Float32Array(MAX_TRAIL);
@@ -1222,14 +1225,14 @@ function addTrailPoint(x, y) {
   const i = trailCount++;
   trailX[i] = x; trailY[i] = y;
   trailLife[i] = 1;
-  trailSize[i] = 8 + Math.random() * 6;
+  trailSize[i] = 10 + Math.random() * 5;
   trailHueOffset += 2;
   trailHue[i] = trailHueOffset % 360;
 }
 
 function drawTrail(dt) {
   // Decay rate: slower in rainbow mode for longer trails
-  const decayRate = eventTrailMode === 'rainbow' ? 0.0008 : 0.0015;
+  const decayRate = eventTrailMode === 'rainbow' ? 0.0006 : 0.0012;
   const sizeMul = eventTrailMode === 'rainbow' ? 2 : 1;
   for (let i = trailCount - 1; i >= 0; i--) {
     trailLife[i] -= dt * decayRate;
@@ -1348,6 +1351,9 @@ function popBubble(idx, chainDepth, muted) {
         spawnPopup(W / 2, H * 0.35, '🎉 すごい！', '#FF6B6B');
         eventTargetColor = Math.floor(Math.random() * COLORS.length);
         eventColorMatches = 0;
+        // Update label with new color name
+        const cNames = ['あか','だいだい','きいろ','みどり','みずいろ','あお','むらさき','ピンク'];
+        if (currentEvent) currentEvent.label = (cNames[eventTargetColor] || 'このいろ') + 'を みつけて タップ！';
       }
     } else {
       colorMatchFlash = -1; // wrong flash
@@ -1514,7 +1520,7 @@ canvas.addEventListener('pointermove', e => {
     }
     // Finger trail (both modes — never disabled)
     const tdx = x - trailLastX, tdy = y - trailLastY;
-    if (tdx * tdx + tdy * tdy > 4) {
+    if (tdx * tdx + tdy * tdy > 1) {
       addTrailPoint(x, y);
       trailLastX = x; trailLastY = y;
     }
@@ -1654,7 +1660,7 @@ const SKY_PHASES = [
 const NUM_PHASES = SKY_PHASES.length;
 const PHASE_DURATION = 20000; // 20s per phase → 100s full cycle
 const TRANSITION_DURATION = 4000; // 4s blend between phases
-let dayTime = PHASE_DURATION; // start at "day" phase
+let dayTime = 0; // start at morning (phase 0)
 
 function lerpColor(a, b, t) {
   return [
@@ -1855,10 +1861,14 @@ function drawConstellation(dt) {
     ca.completeTime += dt;
   }
 
-  // Recalculate positions
+  // Recalculate positions (scaled down to 70% around center)
+  const CONST_SCALE = 0.7;
+  const cxCenter = W * 0.5, cyCenter = H * 0.45;
   for (let i = 0; i < ca.constellation.points.length; i++) {
-    ca.starScreenPos[i].x = ca.constellation.points[i][0] * W;
-    ca.starScreenPos[i].y = ca.constellation.points[i][1] * H;
+    const rawX = ca.constellation.points[i][0] * W;
+    const rawY = ca.constellation.points[i][1] * H;
+    ca.starScreenPos[i].x = cxCenter + (rawX - cxCenter) * CONST_SCALE;
+    ca.starScreenPos[i].y = cyCenter + (rawY - cyCenter) * CONST_SCALE;
   }
 
   const alpha = constellationFadeIn;
