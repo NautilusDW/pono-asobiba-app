@@ -35,12 +35,18 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 #start-screen .title { font-size: 42px; font-weight: 900; color: #FFD700; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
 #start-screen .tap { font-size: 22px; color: #fff; margin-top: 30px; animation: pulse 1.5s infinite; }
 #start-screen .mode-link { font-size: 18px; color: #4ECDC4; margin-top: 24px; text-decoration: underline; cursor: pointer; }
+.shot-mode {
+  padding: 10px 20px; border-radius: 12px; font-size: 18px; font-weight: 700;
+  background: rgba(255,255,255,0.15); color: #ccc; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.2s;
+}
+.shot-mode.selected { background: rgba(255,255,255,0.3); color: #FFD700; border-color: #FFD700; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
 <script src="../common/achievements.js"></script>
 </head>
 <body>
-<div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div><div class="mode-link" onclick="event.stopPropagation();location.href='puzzle.html'">パズルモードで遊ぶ</div></div>
+<div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div><div style="margin-top:20px;display:flex;gap:8px;align-items:center"><div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div><div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div></div><div class="mode-link" onclick="event.stopPropagation();location.href='puzzle.html'">パズルモードで遊ぶ</div></div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <div id="score">0</div>
 <div id="combo"></div>
@@ -560,7 +566,7 @@ function detectMerges() {
     while (qi < cluster.length) {
       const ci = cluster[qi++];
       const ca = bodies[ci];
-      if (ca.vx*ca.vx + ca.vy*ca.vy >= 0.5) hasMoving = true;
+      if (ca.vx*ca.vx + ca.vy*ca.vy >= 0.02) hasMoving = true;
       for (let j = 0; j < n; j++) {
         if (visited[j]) continue;
         const cb = bodies[j];
@@ -749,11 +755,70 @@ function isSettled() {
 }
 
 // ── Input ──
+// ── Shooting mode setting ──
+let shotMode = localStorage.getItem('bowling_shot_mode') || 'slingshot'; // 'slingshot' | 'tap'
+function selectShotMode(mode) {
+  shotMode = mode;
+  localStorage.setItem('bowling_shot_mode', mode);
+  document.getElementById('mode-sling').classList.toggle('selected', mode === 'slingshot');
+  document.getElementById('mode-tap').classList.toggle('selected', mode === 'tap');
+}
+// Restore saved mode on load
+if (shotMode === 'tap') {
+  document.getElementById('mode-sling').classList.remove('selected');
+  document.getElementById('mode-tap').classList.add('selected');
+}
+
 let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
+
+function launchBall(dirX, dirY, power) {
+  const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
+  const dist = Math.sqrt(dirX*dirX + dirY*dirY);
+  if (dist < 0.01) return;
+  const nx = dirX / dist, ny = dirY / dist;
+  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, power);
+
+  if (gamePhase === 'bonus') {
+    const t = TIERS[0];
+    const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball');
+    b.tier = 0;
+    b.vx = nx * speed; b.vy = ny * speed;
+    playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
+    return;
+  }
+
+  const t = TIERS[ballTier];
+  const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball');
+  b.tier = ballTier;
+  b.vx = nx * speed; b.vy = ny * speed;
+  playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
+  gamePhase = 'action';
+  window._achDeferPopups = true;
+  roundMerges = 0;
+  combo = 0; mergePitch = 1.0;
+  if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
+  shotNumber++;
+  ballTrail = [];
+}
 
 canvas.addEventListener('pointerdown', e => {
   if (gamePhase !== 'aim' && gamePhase !== 'bonus') return;
   e.preventDefault();
+
+  if (shotMode === 'tap') {
+    // Tap mode: tap target location, ball flies toward it
+    const rect = canvas.getBoundingClientRect();
+    const tx = e.clientX - rect.left, ty = e.clientY - rect.top;
+    const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
+    const dx = tx - ballX, dy = ty - ballY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 20) return; // too close to ball
+    const power = Math.min(1, dist / (H * 0.5));
+    launchBall(dx, dy, power);
+    return;
+  }
+
+  // Slingshot mode
   aiming = true;
   aimStartX = aimCurX = e.clientX;
   aimStartY = aimCurY = e.clientY;
@@ -773,36 +838,7 @@ canvas.addEventListener('pointerup', e => {
   const dy = aimStartY - aimCurY;
   const dist = Math.sqrt(dx*dx + dy*dy);
   if (dist < MIN_DRAG) return;
-  const nx = dx / dist, ny = dy / dist;
-
-  if (gamePhase === 'bonus') {
-    // Bonus: always tier0, rapid fire allowed
-    const t = TIERS[0];
-    const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
-    const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball');
-    b.tier = 0;
-    const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, dist / 100);
-    b.vx = nx * speed;
-    b.vy = ny * speed;
-    playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
-    return;
-  }
-
-  const t = TIERS[ballTier];
-  const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
-  const b = addBody(ballX, ballY, t.r, t.mass + 3, 'ball'); // ball is heavier than same-tier pin
-  b.tier = ballTier;
-  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * Math.min(1, dist / 100);
-  b.vx = nx * speed;
-  b.vy = ny * speed;
-  playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
-  gamePhase = 'action';
-  window._achDeferPopups = true; // defer achievement popups during gameplay
-  roundMerges = 0;
-  combo = 0; mergePitch = 1.0;
-  if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
-  shotNumber++;
-  ballTrail = []; // reset trail
+  launchBall(dx, dy, dist / 100);
 });
 canvas.addEventListener('pointercancel', () => { aiming = false; });
 
@@ -831,16 +867,21 @@ function drawBg() {
 }
 
 function drawHUD() {
-  // Score
+  // Score (large, right side)
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 28px "Zen Maru Gothic"'; ctx.textAlign = 'right';
   ctx.fillText(score, W - 16, 35);
 
-  // Best records
-  ctx.globalAlpha = 0.5; ctx.font = '12px "Zen Maru Gothic"';
-  if (bestScore > 0) ctx.fillText('BEST: ' + bestScore, W - 16, 55);
-  if (bestChain > 0) ctx.fillText('最高連鎖: ' + bestChain, W - 16, 70);
-  if (roundBestMerges > 0) ctx.fillText('最高合体: ' + roundBestMerges, W - 16, 85);
+  // Best records (horizontal, below score)
+  ctx.globalAlpha = 0.5; ctx.font = '11px "Zen Maru Gothic"';
+  const records = [];
+  if (bestScore > 0) records.push('BEST:' + bestScore);
+  if (bestChain > 0) records.push('連鎖:' + bestChain);
+  if (roundBestMerges > 0) records.push('合体:' + roundBestMerges);
+  if (records.length > 0) {
+    ctx.textAlign = 'right';
+    ctx.fillText(records.join('  '), W - 16, 55);
+  }
   ctx.globalAlpha = 1;
 
   // Shot counter
@@ -925,7 +966,8 @@ function drawBallPreview(now) {
   const t = TIERS[ballTier];
   const half = t.r;
 
-  if (aiming) {
+  if (aiming && shotMode === 'slingshot') {
+    // Slingshot aiming UI
     const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
     const dist = Math.sqrt(dx*dx + dy*dy);
     if (dist > MIN_DRAG) {
@@ -951,7 +993,7 @@ function drawBallPreview(now) {
     ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
     ctx.globalAlpha = 1;
   } else {
-    // Pulsing ball
+    // Pulsing ball (default for tap mode & idle slingshot)
     const pulse = 0.6 + Math.sin(now*0.004)*0.2;
     ctx.globalAlpha = pulse;
     ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
@@ -1364,7 +1406,7 @@ function loop(now) {
       if (shotNumber === 0) {
         ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
         ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-        ctx.fillText('引っ張ってボールを発射！', W/2, H * BALL_SPAWN_Y - 40);
+        ctx.fillText(shotMode === 'tap' ? 'ねらって タップ！' : 'ひっぱって はっしゃ！', W/2, H * BALL_SPAWN_Y - 40);
         ctx.globalAlpha = 1;
       }
     }
