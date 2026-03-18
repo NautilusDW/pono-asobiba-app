@@ -45,7 +45,8 @@ canvas { display: block; }
   margin-top: 20px; line-height: 1.6; text-align: center;
 }
 #start-screen .tap {
-  font-size: 18px; color: rgba(255,255,255,0.7); margin-top: 50px;
+  font-size: 22px; font-weight: 700; color: #F5E6D0; margin-top: 50px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.3);
   animation: pulse 1.5s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
@@ -1813,6 +1814,7 @@ function exitConstellationMode() {
   constellationMode = false;
   constellationActive = null;
   constellationFadeIn = 0;
+  trailCount = 0; // clear trail particles
 }
 
 function checkConstellationTap(px, py) {
@@ -2021,26 +2023,26 @@ function drawConstellation(dt) {
         drawH = areaH; drawW = areaH * imgAspect;
       }
       const drawX = imgMinX + (areaW - drawW) / 2;
-      const drawY = imgMinY + (areaH - drawH) / 2;
+      const drawY = imgMinY + (areaH - drawH) / 2 + H * 0.03; // shift illustration slightly lower
       ctx.drawImage(completeImg, drawX, drawY, drawW, drawH);
       ctx.restore();
     }
 
-    // Name + emoji (below illustration)
+    // Name + emoji (below illustration, with spacing)
     ctx.save();
     ctx.globalAlpha = alpha * t;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const emojiSize = Math.min(W * 0.12, 50) * (0.8 + t * 0.2);
     ctx.font = `${emojiSize}px sans-serif`;
-    const nameY = bbMaxY + 40;
+    const nameY = bbMaxY + 60;
     ctx.fillText(ca.constellation.emoji, cx, nameY);
     const nameSize = Math.min(W * 0.07, 30);
     ctx.font = `900 ${nameSize}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = '#fff';
     ctx.shadowColor = 'rgba(100,150,255,0.6)';
     ctx.shadowBlur = 15;
-    ctx.fillText(ca.constellation.name + '！', cx, nameY + emojiSize * 0.7);
+    ctx.fillText(ca.constellation.name + '！', cx, nameY + emojiSize * 0.8 + 10);
     ctx.restore();
   } else {
     // Hint text
@@ -2105,8 +2107,15 @@ function getNightAmount(cycle) {
 }
 
 function drawSky(dt) {
-  // Pause day/night cycle during constellation mode (so it stays night)
-  if (!constellationMode) dayTime += dt;
+  // During constellation: pause until completed, then fast-forward to dawn
+  if (constellationMode && constellationActive) {
+    if (constellationActive.completed && constellationActive.completeTime > 3000) {
+      dayTime += dt * 3; // fast-forward to morning after showing result
+    }
+    // else: paused (stay night)
+  } else {
+    dayTime += dt;
+  }
   const sky = getSkyColors(dayTime);
 
   // Draw sky gradient
