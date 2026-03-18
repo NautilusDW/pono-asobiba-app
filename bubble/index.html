@@ -462,7 +462,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Event System (tap/drag alternating events) ──
 const TAP_EVENTS = [
   {
-    id: 'find_pono', type: 'tap', label: 'ポノを さがしてね！', icon: '🦔',
+    id: 'find_pono', type: 'tap', label: 'ポノを さがしてね！', icon: '🐻',
     onEnter() {
       // Mark one random bubble as Pono
       eventPonoFound = 0;
@@ -774,7 +774,7 @@ function drawEventOverlay(dt) {
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.4)';
     ctx.shadowBlur = 4;
-    ctx.fillText(`🦔 × ${eventPonoFound}`, W / 2, H * 0.92);
+    ctx.fillText(`🐻 × ${eventPonoFound}`, W / 2, H * 0.92);
     ctx.shadowBlur = 0;
   }
 
@@ -1265,7 +1265,6 @@ function popBubble(idx, chainDepth, muted) {
     eventPonoFound++;
     // Big celebration
     for (let i = 0; i < 40; i++) addConfetti(x0, y0);
-    spawnFlyingCreature(x0, y0, 0); // reuse flying system with 🦋 (index 0)
     playCreatureReveal();
     // Spawn another Pono if event still active
     if (eventState === 'EVENT_ACTIVE' && currentEvent && currentEvent.id === 'find_pono') {
@@ -2282,7 +2281,7 @@ function loop(time) {
     ctx.font = `${r * 0.7}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🦔', x0, y0);
+    ctx.fillText('🐻', x0, y0);
     // Subtle shimmer ring
     ctx.globalAlpha = opacity * 0.25 * (0.5 + 0.5 * Math.sin(lastTime * 0.004 + i));
     ctx.beginPath();
