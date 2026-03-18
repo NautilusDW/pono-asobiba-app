@@ -1138,7 +1138,7 @@ function drawPopAnims(dt) {
 }
 
 // ── Finger trail (light streak on drag) ──
-const MAX_TRAIL = 80;
+const MAX_TRAIL = 150;
 const trailX = new Float32Array(MAX_TRAIL);
 const trailY = new Float32Array(MAX_TRAIL);
 const trailLife = new Float32Array(MAX_TRAIL);
@@ -1161,7 +1161,7 @@ function addTrailPoint(x, y) {
   const i = trailCount++;
   trailX[i] = x; trailY[i] = y;
   trailLife[i] = 1;
-  trailSize[i] = 6 + Math.random() * 6;
+  trailSize[i] = 8 + Math.random() * 6;
   trailHueOffset += 2;
   trailHue[i] = trailHueOffset % 360;
 }
@@ -1444,7 +1444,7 @@ canvas.addEventListener('pointermove', e => {
     }
     // Finger trail (both modes — never disabled)
     const tdx = x - trailLastX, tdy = y - trailLastY;
-    if (tdx * tdx + tdy * tdy > 9) {
+    if (tdx * tdx + tdy * tdy > 4) {
       addTrailPoint(x, y);
       trailLastX = x; trailLastY = y;
     }
