@@ -109,10 +109,18 @@ html, body {
   justify-content: center;
 }
 
-/* Brush size buttons */
+/* Brush size section */
+.size-section {
+  display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
+}
+.size-label {
+  font-size: 0.68rem; font-weight: 700; color: #A89585;
+  flex-shrink: 0; margin-right: 2px;
+}
 .size-btn {
   border: 2.5px solid #D0C8BE;
-  border-radius: 50%;
+  border-radius: 10px;
   cursor: pointer;
   background: #fff;
   display: flex; align-items: center; justify-content: center;
@@ -120,26 +128,25 @@ html, body {
   flex-shrink: 0;
   padding: 0;
   box-shadow: var(--shadow);
+  width: 38px; height: 34px;
 }
 .size-btn.active {
   border-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: #FFF0F5;
 }
-.size-dot {
-  border-radius: 50%;
+.size-line {
+  border-radius: 3px;
   background: var(--text);
   transition: background 0.15s;
   pointer-events: none;
+  width: 22px;
 }
-.size-btn.active .size-dot { background: #fff; }
+.size-btn.active .size-line { background: var(--primary); }
 
-/* Size-specific dimensions */
-.size-btn[data-size="4"]  { width: 32px; height: 32px; }
-.size-btn[data-size="14"] { width: 36px; height: 36px; }
-.size-btn[data-size="28"] { width: 40px; height: 40px; }
-.size-dot-s { width: 5px;  height: 5px; }
-.size-dot-m { width: 12px; height: 12px; }
-.size-dot-l { width: 20px; height: 20px; }
+/* Size-specific line thickness */
+.size-line-s { height: 2px; }
+.size-line-m { height: 6px; }
+.size-line-l { height: 12px; }
 
 /* Tool buttons */
 .tool-btn {
@@ -281,9 +288,9 @@ html, body {
   .toolbar-top { gap: 4px; }
   .tool-btn { padding: 6px 9px; font-size: 0.76rem; }
   .icon-btn { width: 38px; height: 38px; font-size: 1.15rem; }
-  .size-btn[data-size="4"]  { width: 28px; height: 28px; }
-  .size-btn[data-size="14"] { width: 32px; height: 32px; }
-  .size-btn[data-size="28"] { width: 36px; height: 36px; }
+  .size-btn { width: 32px; height: 28px; }
+  .size-line { width: 18px; }
+  .size-label { font-size: 0.62rem; }
 }
 
 /* (special brush styles moved to .icon-btn above) */
@@ -363,8 +370,8 @@ html, body {
 
   <div class="toolbar toolbar-top">
     <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
-    <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶすてる</button>
-    <button class="tool-btn btn-save" id="btnSave">💾 ほぞん</button>
+    <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶけす</button>
+    <button class="tool-btn btn-save" id="btnSave">💾 とっておく</button>
     <button class="tool-btn btn-gallery" id="btnGallery">📂 みる</button>
   </div>
 
@@ -379,10 +386,13 @@ html, body {
   <div class="color-palette" id="colorPalette"></div>
 
   <div class="toolbar">
-    <button class="size-btn" data-size="4"><span class="size-dot size-dot-s"></span></button>
-    <button class="size-btn active" data-size="14"><span class="size-dot size-dot-m"></span></button>
-    <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
-    <button class="tool-btn btn-eraser" id="btnEraser">🧹 けす</button>
+    <div class="size-section">
+      <span class="size-label">ふとさ</span>
+      <button class="size-btn" data-size="4"><span class="size-line size-line-s"></span></button>
+      <button class="size-btn active" data-size="14"><span class="size-line size-line-m"></span></button>
+      <button class="size-btn" data-size="28"><span class="size-line size-line-l"></span></button>
+    </div>
+    <button class="tool-btn btn-eraser" id="btnEraser">🧹 けしゴム</button>
     <button class="icon-btn btn-stamp"   id="btnStamp" title="スタンプ">🔖</button>
     <button class="icon-btn btn-rainbow" id="btnRainbow" title="レインボー">🌈</button>
     <button class="icon-btn btn-sparkle" id="btnSparkle" title="きらきら">✨</button>
@@ -391,18 +401,18 @@ html, body {
   </div>
 </div>
 
-<div class="save-toast" id="saveToast">ほぞんしたよ！🎨</div>
+<div class="save-toast" id="saveToast">とっておいたよ！🎨</div>
 <div class="entry-hint" id="entryHint">🎮 かいた絵をほぞんすると、いろんなせかいで使えるよ！</div>
 
 <!-- Gallery Overlay -->
 <div id="galleryOverlay" class="gallery-overlay hidden">
   <div class="gallery-modal">
     <div class="gallery-header">
-      <h2>🎨 ほぞんしたえ</h2>
+      <h2>🎨 とっておいたえ</h2>
       <button id="btnGalleryClose" class="gallery-close">✕</button>
     </div>
     <div id="galleryGrid" class="gallery-grid"></div>
-    <p id="galleryEmpty" class="gallery-empty hidden">まだほぞんしたえがないよ！</p>
+    <p id="galleryEmpty" class="gallery-empty hidden">まだとっておいたえがないよ！</p>
   </div>
 </div>
 
