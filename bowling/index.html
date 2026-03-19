@@ -283,6 +283,7 @@ function startBonusIntro() {
 
 function startBonusStage() {
   gamePhase = 'bonus';
+  slingshotPhase = 'aim'; // reset gauge
   bonusActive = true;
   bonusStartTime = performance.now();
   bonusLastRowTime = bonusStartTime;
@@ -771,6 +772,13 @@ if (shotMode === 'tap') {
 
 let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
 
+// ── Two-step slingshot: aim direction → power gauge ──
+let slingshotPhase = 'aim'; // 'aim' | 'gauge'
+let gaugeDir = { nx: 0, ny: -1 }; // locked direction (normalized)
+let gaugeT = 0;           // gauge cursor position 0→1→0 (bouncing)
+let gaugeSpeed = 0.0025;  // cursor speed (per ms)
+let gaugeGoingRight = true;
+
 function launchBall(dirX, dirY, power) {
   const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
   const dist = Math.sqrt(dirX*dirX + dirY*dirY);
@@ -818,29 +826,46 @@ canvas.addEventListener('pointerdown', e => {
     return;
   }
 
-  // Slingshot mode
+  // Slingshot mode: two-step
+  if (slingshotPhase === 'gauge') {
+    // Step 2: tap to lock power gauge
+    // Power = how close to center (0.5 = max power)
+    const power = 1 - Math.abs(gaugeT - 0.5) * 2; // 1.0 at center, 0.0 at edges
+    const finalPower = 0.3 + power * 0.7; // min 0.3, max 1.0
+    launchBall(gaugeDir.nx, gaugeDir.ny, finalPower);
+    slingshotPhase = 'aim';
+    aiming = false;
+    return;
+  }
+
+  // Step 1: start aiming direction
   aiming = true;
   aimStartX = aimCurX = e.clientX;
   aimStartY = aimCurY = e.clientY;
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', e => {
-  if (!aiming) return;
+  if (!aiming || slingshotPhase === 'gauge') return;
   e.preventDefault();
   aimCurX = e.clientX;
   aimCurY = e.clientY;
 });
 canvas.addEventListener('pointerup', e => {
-  if (!aiming) return;
+  if (!aiming || slingshotPhase === 'gauge') return;
   e.preventDefault();
   aiming = false;
   const dx = aimStartX - aimCurX;
   const dy = aimStartY - aimCurY;
   const dist = Math.sqrt(dx*dx + dy*dy);
   if (dist < MIN_DRAG) return;
-  launchBall(dx, dy, dist / 100);
+  // Lock direction, enter gauge phase
+  gaugeDir.nx = dx / dist;
+  gaugeDir.ny = dy / dist;
+  gaugeT = 0;
+  gaugeGoingRight = true;
+  slingshotPhase = 'gauge';
 });
-canvas.addEventListener('pointercancel', () => { aiming = false; });
+canvas.addEventListener('pointercancel', () => { aiming = false; slingshotPhase = 'aim'; });
 
 // ── Draw ──
 function drawBg() {
@@ -966,13 +991,89 @@ function drawBallPreview(now) {
   const t = TIERS[ballTier];
   const half = t.r;
 
-  if (aiming && shotMode === 'slingshot') {
-    // Slingshot aiming UI
+  if (shotMode === 'slingshot' && slingshotPhase === 'gauge') {
+    // Step 2: Power gauge phase — direction locked, gauge bouncing
+    const { nx, ny } = gaugeDir;
+
+    // Draw locked direction arrow (trajectory dots)
+    ctx.globalAlpha = 0.5;
+    for (let d = 0; d < 8; d++) {
+      const dd = 30 + d * 25;
+      ctx.beginPath();
+      ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+
+    // Draw power gauge bar (horizontal, below ball)
+    const gaugeW = 120, gaugeH = 14;
+    const gaugeX = ballX - gaugeW / 2;
+    const gaugeY = ballY + half + 16;
+
+    // Background
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.roundRect(gaugeX, gaugeY, gaugeW, gaugeH, gaugeH / 2);
+    ctx.fill();
+
+    // Color zones: edges = red/weak, center = green/strong
+    const gradient = ctx.createLinearGradient(gaugeX, 0, gaugeX + gaugeW, 0);
+    gradient.addColorStop(0, '#F44336');
+    gradient.addColorStop(0.3, '#FF9800');
+    gradient.addColorStop(0.5, '#4CAF50');
+    gradient.addColorStop(0.7, '#FF9800');
+    gradient.addColorStop(1, '#F44336');
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.roundRect(gaugeX, gaugeY, gaugeW, gaugeH, gaugeH / 2);
+    ctx.fill();
+
+    // Center zone highlight
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#4CAF50';
+    const centerW = gaugeW * 0.2;
+    ctx.fillRect(ballX - centerW / 2, gaugeY, centerW, gaugeH);
+
+    // Moving cursor line
+    ctx.globalAlpha = 1;
+    const cursorX = gaugeX + gaugeT * gaugeW;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cursorX, gaugeY - 3);
+    ctx.lineTo(cursorX, gaugeY + gaugeH + 3);
+    ctx.stroke();
+
+    // Cursor glow
+    ctx.shadowColor = '#fff';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(cursorX, gaugeY + gaugeH / 2, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // "タップ！" label
+    ctx.globalAlpha = 0.5 + Math.sin(now * 0.006) * 0.3;
+    ctx.font = '900 16px "Zen Maru Gothic"';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('タップ！', ballX, gaugeY + gaugeH + 22);
+    ctx.globalAlpha = 1;
+
+    // Ball at rest (solid)
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (aiming && shotMode === 'slingshot') {
+    // Step 1: Aiming direction UI
     const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
     const dist = Math.sqrt(dx*dx + dy*dy);
     if (dist > MIN_DRAG) {
       const nx = dx / dist, ny = dy / dist;
-      const power = Math.min(1, dist / 100);
       ctx.globalAlpha = 0.4;
       for (let d = 0; d < 8; d++) {
         const dd = 30 + d * 25;
@@ -980,10 +1081,6 @@ function drawBallPreview(now) {
         ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
         ctx.fillStyle = '#fff'; ctx.fill();
       }
-      ctx.globalAlpha = 0.7;
-      ctx.fillStyle = '#333'; ctx.fillRect(ballX - 30, ballY + half + 10, 60, 8);
-      const barColor = power < 0.5 ? '#4CAF50' : power < 0.8 ? '#FF9800' : '#F44336';
-      ctx.fillStyle = barColor; ctx.fillRect(ballX - 30, ballY + half + 10, 60 * power, 8);
       ctx.globalAlpha = 1;
     }
     // Ball at rest
@@ -1211,6 +1308,18 @@ function loop(now) {
         if (b.type === 'pin' && !b.dead) { b.x = b.targetX; b.y = b.targetY; }
       }
       gamePhase = 'aim';
+      slingshotPhase = 'aim'; // reset for new shot
+    }
+  }
+
+  // Power gauge cursor bounce (slingshot step 2)
+  if (slingshotPhase === 'gauge' && (gamePhase === 'aim' || gamePhase === 'bonus')) {
+    if (gaugeGoingRight) {
+      gaugeT += gaugeSpeed * elapsed;
+      if (gaugeT >= 1) { gaugeT = 1; gaugeGoingRight = false; }
+    } else {
+      gaugeT -= gaugeSpeed * elapsed;
+      if (gaugeT <= 0) { gaugeT = 0; gaugeGoingRight = true; }
     }
   }
 
@@ -1406,7 +1515,7 @@ function loop(now) {
       if (shotNumber === 0) {
         ctx.globalAlpha = 0.4 + Math.sin(now*0.004)*0.2;
         ctx.fillStyle = '#fff'; ctx.font = '18px "Zen Maru Gothic"'; ctx.textAlign = 'center';
-        ctx.fillText(shotMode === 'tap' ? 'ねらって タップ！' : 'ひっぱって はっしゃ！', W/2, H * BALL_SPAWN_Y - 40);
+        ctx.fillText(shotMode === 'tap' ? 'ねらって タップ！' : 'ひっぱって ねらおう！', W/2, H * BALL_SPAWN_Y - 40);
         ctx.globalAlpha = 1;
       }
     }
