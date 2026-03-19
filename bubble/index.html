@@ -491,22 +491,47 @@ const TAP_EVENTS = [
     }
   },
   {
-    id: 'color_match', type: 'tap', label: '', icon: '🎨',
+    id: 'sparkle_tap', type: 'tap', label: 'キラキラを タップ！', icon: '✨',
     onEnter() {
-      eventTargetColor = Math.floor(Math.random() * COLORS.length);
-      eventColorMatches = 0;
-      eventColorScore = 0;
-      const tc = COLORS[eventTargetColor];
-      const names = ['あか','だいだい','きいろ','みどり','みずいろ','あお','むらさき','ピンク'];
-      const colorName = names[eventTargetColor] || 'このいろ';
-      this.label = colorName + 'を みつけて タップ！';
+      eventSparkleMode = true;
+      eventSparkleCount = 0;
+      // Mark some existing bubbles as sparkle
+      let marked = 0;
+      for (let i = 0; i < bcount && marked < 5; i++) {
+        if (balive[i] && !bgolden[i] && bcreature[i] < 0 && !bpono[i]) {
+          bsparkle[i] = 1;
+          marked++;
+        }
+      }
     },
-    onExit() { eventTargetColor = -1; eventColorMatches = 0; },
-    onTick(dt) {}
+    onExit() {
+      eventSparkleMode = false;
+      for (let i = 0; i < bcount; i++) bsparkle[i] = 0;
+    },
+    onTick(dt) {
+      // Continuously spawn sparkle bubbles
+      eventSparkleTimer += dt;
+      if (eventSparkleTimer > 1500) {
+        let marked = 0;
+        for (let i = 0; i < bcount && marked < 2; i++) {
+          if (balive[i] && !bgolden[i] && bcreature[i] < 0 && !bpono[i] && !bsparkle[i]) {
+            bsparkle[i] = 1;
+            marked++;
+          }
+        }
+        eventSparkleTimer = 0;
+      }
+    }
   },
   {
-    id: 'big_bubbles', type: 'tap', label: 'おおきいシャボン玉を タップ！', icon: '💥',
-    onEnter() { eventBigMode = true; },
+    id: 'big_bubbles', type: 'tap', label: 'おおきいシャボン玉を パン！', icon: '🫧',
+    onEnter() {
+      eventBigMode = true;
+      // Replace all small bubbles with big ones
+      for (let i = 0; i < bcount; i++) {
+        if (balive[i] && br[i] < 60) { balive[i] = 0; }
+      }
+    },
     onExit() { eventBigMode = false; },
     onTick(dt) {}
   },
@@ -525,8 +550,8 @@ const TAP_EVENTS = [
 
 const DRAG_EVENTS = [
   {
-    id: 'rainbow_trail', type: 'drag', label: 'ゆびで にじを かこう！', icon: '🌈',
-    onEnter() { eventTrailMode = 'rainbow'; },
+    id: 'rainbow_trail', type: 'drag', label: 'にじいろで シャボン玉を わろう！', icon: '🌈',
+    onEnter() { eventTrailMode = 'rainbow'; eventRainbowPops = 0; },
     onExit() { eventTrailMode = null; if (window.incrementStat) window.incrementStat('bubble_rainbow_trails', 1); },
     onTick(dt) {}
   },
@@ -537,7 +562,7 @@ const DRAG_EVENTS = [
     onTick(dt) {}
   },
   {
-    id: 'star_draw', type: 'drag', label: 'ゆびでなぞって おほしさまを かこう！', icon: '⭐',
+    id: 'star_draw', type: 'drag', label: 'まるく ならんだ シャボン玉！', icon: '⭐',
     onEnter() {
       // Arrange bubbles in a circle pattern
       eventStarMode = true;
@@ -584,6 +609,11 @@ let eventSweepMode = false;
 let eventStarMode = false;
 let eventMusicPaint = false;
 let eventLastPopColor = null;
+let eventSparkleMode = false;
+let eventSparkleCount = 0;
+let eventSparkleTimer = 0;
+let eventRainbowPops = 0; // pops during rainbow event
+let totalPops = (() => { try { const s = JSON.parse(localStorage.getItem('pono_stats') || '{}'); return s.bubble_pops || 0; } catch(e) { return 0; } })();
 
 // bpono is declared alongside other bubble arrays after MAX_BUBBLES
 
@@ -648,6 +678,18 @@ function showGentleHint(type, x, y) {
 function updateEventSystem(dt) {
   // Don't run events during constellation mode
   if (constellationMode) return;
+  // Don't start new events when night is approaching (prevent overlap with constellation)
+  const nightAmt = getSkyColors(dayTime).nightAmount;
+  if (nightAmt > 0.3 && eventState === 'FREE_PLAY') return;
+  // Force-end active event if night is imminent
+  if (nightAmt > 0.6 && eventState === 'EVENT_ACTIVE' && currentEvent) {
+    currentEvent.onExit();
+    currentEvent = null;
+    eventState = 'FREE_PLAY';
+    eventTimer = 0;
+    eventOverlayAlpha = 0;
+    return;
+  }
 
   // Update hint cooldown
   if (hintCooldown > 0) hintCooldown -= dt;
@@ -776,64 +818,73 @@ function drawEventOverlay(dt) {
     ctx.fillText(currentEvent.label, W / 2, H * 0.18 + iconSz * 0.6 + bounceY);
     ctx.shadowBlur = 0;
 
-    // Color match: show target color with outline + progress
-    if (currentEvent.id === 'color_match' && eventTargetColor >= 0) {
-      const tc = COLORS[eventTargetColor];
-      const circleR = Math.min(W * 0.09, 45);
-      ctx.globalAlpha = eventOverlayAlpha * 0.9;
-      // White outline ring
-      ctx.beginPath();
-      ctx.arc(W / 2, H * 0.35, circleR + 4, 0, Math.PI * 2);
-      ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.stroke();
-      // Color circle
-      ctx.beginPath();
-      ctx.arc(W / 2, H * 0.35, circleR, 0, Math.PI * 2);
-      ctx.fillStyle = `rgb(${tc.r},${tc.g},${tc.b})`;
-      ctx.fill();
-      // Match counter below
-      ctx.font = `bold ${Math.min(W * 0.045, 20)}px 'Zen Maru Gothic', sans-serif`;
-      ctx.fillStyle = '#fff';
-      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
-      ctx.fillText(`${eventColorMatches} / 5`, W / 2, H * 0.35 + circleR + 22);
-      ctx.shadowBlur = 0;
-    }
-
-    // Rainbow trail: show drag guide
+    // Rainbow trail: show sub-label + pop counter
     if (currentEvent.id === 'rainbow_trail') {
       const guideAlpha = eventState === 'EVENT_INTRO' ? 1 : Math.max(0, 1 - eventActiveTime / 4000);
       if (guideAlpha > 0.01) {
-        ctx.globalAlpha = eventOverlayAlpha * guideAlpha * 0.6;
-        ctx.font = `${Math.min(W * 0.05, 22)}px 'Zen Maru Gothic', sans-serif`;
+        ctx.globalAlpha = eventOverlayAlpha * guideAlpha * 0.7;
+        ctx.font = `${Math.min(W * 0.04, 18)}px 'Zen Maru Gothic', sans-serif`;
         ctx.fillStyle = '#fff';
         ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 6;
-        ctx.fillText('ゆびで なぞってみてね 👆〰️', W / 2, H * 0.32);
+        ctx.fillText('ゆびで シャボン玉を わってね！', W / 2, H * 0.32);
+        ctx.fillText('にじいろの あとが のこるよ', W / 2, H * 0.37);
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // Star draw: show sub-label
+    if (currentEvent.id === 'star_draw') {
+      const guideAlpha = eventState === 'EVENT_INTRO' ? 1 : Math.max(0, 1 - eventActiveTime / 4000);
+      if (guideAlpha > 0.01) {
+        ctx.globalAlpha = eventOverlayAlpha * guideAlpha * 0.7;
+        ctx.font = `${Math.min(W * 0.04, 18)}px 'Zen Maru Gothic', sans-serif`;
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 6;
+        ctx.fillText('まるく ならんだ シャボン玉を', W / 2, H * 0.32);
+        ctx.fillText('ゆびで つなげて わろう！', W / 2, H * 0.37);
         ctx.shadowBlur = 0;
       }
     }
   }
 
-  // Draw Pono count for find_pono event
-  if (currentEvent.id === 'find_pono' && eventState === 'EVENT_ACTIVE') {
+  // Draw event-specific counters (bottom center)
+  if (eventState === 'EVENT_ACTIVE') {
     ctx.globalAlpha = 0.7;
     ctx.font = `bold ${Math.min(W * 0.05, 22)}px 'Zen Maru Gothic', sans-serif`;
-    ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.4)';
     ctx.shadowBlur = 4;
-    ctx.fillText(`🐻 × ${eventPonoFound}`, W / 2, H * 0.92);
+    if (currentEvent.id === 'find_pono') {
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`🐻 × ${eventPonoFound}`, W / 2, H * 0.92);
+    } else if (currentEvent.id === 'sparkle_tap') {
+      ctx.fillStyle = '#FFD700';
+      ctx.fillText(`✨ × ${eventSparkleCount}`, W / 2, H * 0.92);
+    } else if (currentEvent.id === 'rainbow_trail') {
+      ctx.fillStyle = '#FFD700';
+      ctx.fillText(`🌈 × ${eventRainbowPops}`, W / 2, H * 0.92);
+    }
     ctx.shadowBlur = 0;
-  }
 
-  // Draw color match score
-  if (currentEvent.id === 'color_match' && eventState === 'EVENT_ACTIVE') {
-    ctx.globalAlpha = 0.7;
-    ctx.font = `bold ${Math.min(W * 0.05, 22)}px 'Zen Maru Gothic', sans-serif`;
-    ctx.fillStyle = '#FFD700';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(`⭐ × ${eventColorScore}`, W / 2, H * 0.92);
-    ctx.shadowBlur = 0;
+    // ── Countdown timer bar ──
+    const remaining = Math.max(0, EVENT_ACTIVE_DURATION - eventTimer);
+    const progress = remaining / EVENT_ACTIVE_DURATION;
+    const barW = W * 0.5;
+    const barH = 6;
+    const barX = (W - barW) / 2;
+    const barY = H * 0.96;
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.roundRect(barX, barY, barW, barH, barH / 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.8;
+    // Color from green→yellow→red
+    const hue = progress * 120; // 120=green, 60=yellow, 0=red
+    ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
+    ctx.beginPath();
+    ctx.roundRect(barX, barY, barW * progress, barH, barH / 2);
+    ctx.fill();
   }
 
   ctx.restore();
@@ -996,6 +1047,7 @@ const balive = new Uint8Array(MAX_BUBBLES + 20);
 const bfadeIn = new Uint8Array(MAX_BUBBLES + 20);
 const bcreature = new Int8Array(MAX_BUBBLES + 20).fill(-1); // -1 = normal, 0+ = creature index
 const bpono = new Uint8Array(MAX_BUBBLES + 20); // Pono bubble tracking (event system)
+const bsparkle = new Uint8Array(MAX_BUBBLES + 20); // Sparkle bubble tracking (event system)
 let bcount = 0;
 
 function addBubble(x, y, radius, golden, opacity) {
@@ -1029,6 +1081,7 @@ function addBubble(x, y, radius, golden, opacity) {
   bfadeIn[i] = (opacity != null && opacity >= 0.8) ? 0 : 1;
   bcreature[i] = -1; // normal bubble by default
   bpono[i] = 0;
+  bsparkle[i] = 0;
 }
 
 // ── Particles (flat arrays) ──
@@ -1337,29 +1390,16 @@ function popBubble(idx, chainDepth, muted) {
     }
   }
 
-  // ── Color match event: check if correct color ──
-  if (currentEvent && currentEvent.id === 'color_match' && eventState === 'EVENT_ACTIVE' && !isGolden && !isCreature) {
-    if (bcolorIdx[idx] === eventTargetColor) {
-      eventColorMatches++;
-      eventColorScore++;
-      if (window.incrementStat) window.incrementStat('bubble_color_score', 1);
-      colorMatchFlash = 1; // correct flash
-      // Confetti burst for correct match
-      for (let i = 0; i < 20; i++) addConfetti(x0, y0);
-      spawnPopup(x0, y0 - 30, 'あたり！⭐', '#FFD700');
-      if (eventColorMatches >= 5) {
-        // Completed a set of 5! Big celebration
-        for (let i = 0; i < 40; i++) addConfetti(W / 2, H * 0.4);
-        spawnPopup(W / 2, H * 0.35, '🎉 すごい！', '#FF6B6B');
-        eventTargetColor = Math.floor(Math.random() * COLORS.length);
-        eventColorMatches = 0;
-        // Update label with new color name
-        const cNames = ['あか','だいだい','きいろ','みどり','みずいろ','あお','むらさき','ピンク'];
-        if (currentEvent) currentEvent.label = (cNames[eventTargetColor] || 'このいろ') + 'を みつけて タップ！';
-      }
-    } else {
-      colorMatchFlash = -1; // wrong flash
-      spawnPopup(x0, y0 - 20, 'ちがうよ〜', '#aaa');
+  // ── Sparkle bubble tapped! ──
+  if (bsparkle[idx] && eventSparkleMode && eventState === 'EVENT_ACTIVE') {
+    bsparkle[idx] = 0;
+    eventSparkleCount++;
+    if (window.incrementStat) window.incrementStat('bubble_sparkle', 1);
+    for (let i = 0; i < 25; i++) addConfetti(x0, y0);
+    spawnPopup(x0, y0 - 30, '✨ キラキラ！', '#FFD700');
+    if (eventSparkleCount % 5 === 0) {
+      for (let i = 0; i < 40; i++) addConfetti(W / 2, H * 0.4);
+      spawnPopup(W / 2, H * 0.35, '🎉 すごい！', '#FF6B6B');
     }
   }
 
@@ -1367,6 +1407,9 @@ function popBubble(idx, chainDepth, muted) {
   if (eventMusicPaint && !isGolden) {
     eventLastPopColor = COLORS[bcolorIdx[idx]];
   }
+
+  totalPops++;
+  if (eventTrailMode === 'rainbow') eventRainbowPops++;
 
   // ── 実績トラッキング ──
   if (window.incrementStat) {
@@ -2113,8 +2156,10 @@ function getNightAmount(cycle) {
 }
 
 function drawSky(dt) {
+  // Don't advance time before game starts
+  if (!gameStarted) { /* dayTime stays at 0 = morning */ }
   // During constellation: pause until completed, then fast-forward to dawn
-  if (constellationMode && constellationActive) {
+  else if (constellationMode && constellationActive) {
     if (constellationActive.completed && constellationActive.completeTime > 3000) {
       dayTime += dt * 3; // fast-forward to morning after showing result
     }
@@ -2176,6 +2221,9 @@ document.getElementById('start-screen').addEventListener('pointerdown', function
   // Show UI buttons
   document.getElementById('back-btn').style.display = 'flex';
   document.getElementById('bgm-btn').style.display = 'flex';
+
+  // Always start at morning
+  dayTime = 0;
 
   // Spawn initial bubbles
   for (let i = 0; i < 40; i++) {
@@ -2249,6 +2297,7 @@ function loop(time) {
         balive[i] = balive[bcount]; bfadeIn[i] = bfadeIn[bcount];
         bcreature[i] = bcreature[bcount];
         bpono[i] = bpono[bcount];
+        bsparkle[i] = bsparkle[bcount];
       }
       continue;
     }
@@ -2300,28 +2349,7 @@ function loop(time) {
   }
   ctx.globalAlpha = 1;
 
-  // Color match: highlight target-colored bubbles with a pulsing ring
-  if (currentEvent && currentEvent.id === 'color_match' && eventState === 'EVENT_ACTIVE' && eventTargetColor >= 0) {
-    const tc = COLORS[eventTargetColor];
-    const ringPulse = 0.5 + 0.5 * Math.sin(lastTime * 0.006);
-    for (let i = 0; i < bcount; i++) {
-      if (!balive[i] || bcolorIdx[i] !== eventTargetColor || bgolden[i]) continue;
-      const r = br[i], x0 = bx[i], y0 = by[i];
-      ctx.globalAlpha = bopacity[i] * (0.3 + 0.3 * ringPulse);
-      ctx.beginPath();
-      ctx.arc(x0, y0, r + 4 + ringPulse * 3, 0, Math.PI * 2);
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = `rgb(${tc.r},${tc.g},${tc.b})`;
-      ctx.shadowColor = `rgba(${tc.r},${tc.g},${tc.b},0.6)`;
-      ctx.shadowBlur = 8;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-    ctx.globalAlpha = 1;
-    // Decay flash
-    if (colorMatchFlash > 0) colorMatchFlash = Math.max(0, colorMatchFlash - dt * 0.003);
-    if (colorMatchFlash < 0) colorMatchFlash = Math.min(0, colorMatchFlash + dt * 0.003);
-  }
+  // (color_match removed — replaced by sparkle_tap event)
 
   // Update & draw particles
   for (let i = pcount - 1; i >= 0; i--) {
@@ -2411,6 +2439,31 @@ function loop(time) {
     ctx.strokeStyle = `rgba(255,220,150,0.5)`;
     ctx.lineWidth = 2;
     ctx.stroke();
+  }
+
+  // Draw sparkle effect on sparkle bubbles (sparkle_tap event)
+  for (let i = 0; i < bcount; i++) {
+    if (!balive[i] || !bsparkle[i]) continue;
+    const r = br[i], x0 = bx[i], y0 = by[i];
+    const opacity = bopacity[i];
+    if (opacity < 0.3) continue;
+    // Pulsing golden glow ring
+    const pulse = 0.5 + 0.5 * Math.sin(lastTime * 0.006 + i * 1.5);
+    ctx.globalAlpha = opacity * (0.4 + 0.4 * pulse);
+    ctx.beginPath();
+    ctx.arc(x0, y0, r + 5 + pulse * 4, 0, Math.PI * 2);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(255,215,0,0.8)`;
+    ctx.shadowColor = 'rgba(255,215,0,0.6)';
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Star emoji in center
+    ctx.globalAlpha = opacity * (0.6 + 0.3 * pulse);
+    ctx.font = `${r * 0.6}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✨', x0, y0);
   }
   ctx.globalAlpha = 1;
 
@@ -2527,6 +2580,21 @@ function loop(time) {
 
   // Event overlay (on top of trail and bubbles)
   drawEventOverlay(dt);
+
+  // ── Persistent HUD: pop count (top right) ──
+  if (gameStarted && !constellationMode) {
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.font = `bold ${Math.min(W * 0.04, 18)}px 'Zen Maru Gothic', sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 3;
+    ctx.fillText(`🫧 ${totalPops}`, W - 16, 10);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
 
   // Update combo timer
   if (comboTimer > 0) comboTimer -= dt;
