@@ -151,7 +151,8 @@ const COMBO_WINDOW = 90;
 const MAX_MERGES_PER_FRAME = 4;
 const MAGNET_RANGE = 2.5;
 const MAGNET_FORCE = 0.15;
-const BALL_SPAWN_Y = 0.88;   // ratio
+const BALL_SPAWN_Y = 0.78;   // ratio (moved up to make room for aim bar)
+const AIM_BAR_Y = 0.88;     // horizontal bar for aiming
 const MIN_DRAG = 10;
 const MAX_SPEED = 22;
 const MIN_SPEED = 8;
@@ -772,8 +773,10 @@ if (shotMode === 'tap') {
 
 let aiming = false, aimStartX = 0, aimStartY = 0, aimCurX = 0, aimCurY = 0;
 
-// ── Two-step slingshot: aim direction → power gauge ──
+// ── Two-step slingshot: aim bar → power gauge ──
 let slingshotPhase = 'aim'; // 'aim' | 'gauge'
+let aimBarDragging = false;  // is user dragging on aim bar?
+let aimAngle = 0;            // -1 (far left) to +1 (far right), 0 = straight up
 let gaugeDir = { nx: 0, ny: -1 }; // locked direction (normalized)
 let gaugeT = 0;           // gauge cursor position 0→1→0 (bouncing)
 let gaugeSpeed = 0.0025;  // cursor speed (per ms)
@@ -829,43 +832,48 @@ canvas.addEventListener('pointerdown', e => {
   // Slingshot mode: two-step
   if (slingshotPhase === 'gauge') {
     // Step 2: tap to lock power gauge
-    // Power = how close to center (0.5 = max power)
     const power = 1 - Math.abs(gaugeT - 0.5) * 2; // 1.0 at center, 0.0 at edges
     const finalPower = 0.3 + power * 0.7; // min 0.3, max 1.0
     launchBall(gaugeDir.nx, gaugeDir.ny, finalPower);
     slingshotPhase = 'aim';
-    aiming = false;
+    aimBarDragging = false;
     return;
   }
 
-  // Step 1: start aiming direction
-  aiming = true;
-  aimStartX = aimCurX = e.clientX;
-  aimStartY = aimCurY = e.clientY;
-  canvas.setPointerCapture(e.pointerId);
+  // Step 1: touch aim bar to start aiming
+  const rect = canvas.getBoundingClientRect();
+  const tx = (e.clientX - rect.left);
+  const ty = (e.clientY - rect.top);
+  // Accept touches in the lower portion of screen (aim bar area)
+  const barY = H * AIM_BAR_Y;
+  if (ty > barY - 40 && ty < barY + 40) {
+    aimBarDragging = true;
+    aimAngle = Math.max(-1, Math.min(1, (tx - W / 2) / (W * 0.35)));
+    canvas.setPointerCapture(e.pointerId);
+  }
 });
 canvas.addEventListener('pointermove', e => {
-  if (!aiming || slingshotPhase === 'gauge') return;
+  if (!aimBarDragging || slingshotPhase === 'gauge') return;
   e.preventDefault();
-  aimCurX = e.clientX;
-  aimCurY = e.clientY;
+  const rect = canvas.getBoundingClientRect();
+  const tx = (e.clientX - rect.left);
+  aimAngle = Math.max(-1, Math.min(1, (tx - W / 2) / (W * 0.35)));
 });
 canvas.addEventListener('pointerup', e => {
-  if (!aiming || slingshotPhase === 'gauge') return;
+  if (!aimBarDragging) return;
   e.preventDefault();
-  aiming = false;
-  const dx = aimStartX - aimCurX;
-  const dy = aimStartY - aimCurY;
-  const dist = Math.sqrt(dx*dx + dy*dy);
-  if (dist < MIN_DRAG) return;
-  // Lock direction, enter gauge phase
-  gaugeDir.nx = dx / dist;
-  gaugeDir.ny = dy / dist;
+  aimBarDragging = false;
+  // Lock direction from aimAngle, enter gauge phase
+  // aimAngle: -1 = far left (~-50°), 0 = straight up, +1 = far right (~+50°)
+  const maxAngle = Math.PI * 0.28; // ~50 degrees max
+  const angle = -Math.PI / 2 + aimAngle * maxAngle; // -π/2 is straight up
+  gaugeDir.nx = Math.cos(angle);
+  gaugeDir.ny = Math.sin(angle);
   gaugeT = 0;
   gaugeGoingRight = true;
   slingshotPhase = 'gauge';
 });
-canvas.addEventListener('pointercancel', () => { aiming = false; slingshotPhase = 'aim'; });
+canvas.addEventListener('pointercancel', () => { aimBarDragging = false; slingshotPhase = 'aim'; });
 
 // ── Draw ──
 function drawBg() {
@@ -990,12 +998,16 @@ function drawBallPreview(now) {
   const ballX = W / 2, ballY = H * BALL_SPAWN_Y;
   const t = TIERS[ballTier];
   const half = t.r;
+  const barY = H * AIM_BAR_Y;
+  const barW = W * 0.7;
+  const barH = 12;
+  const barX = (W - barW) / 2;
 
   if (shotMode === 'slingshot' && slingshotPhase === 'gauge') {
-    // Step 2: Power gauge phase — direction locked, gauge bouncing
+    // ── Step 2: Power gauge (direction already locked) ──
     const { nx, ny } = gaugeDir;
 
-    // Draw locked direction arrow (trajectory dots)
+    // Draw locked trajectory dots
     ctx.globalAlpha = 0.5;
     for (let d = 0; d < 8; d++) {
       const dd = 30 + d * 25;
@@ -1004,16 +1016,14 @@ function drawBallPreview(now) {
       ctx.fillStyle = '#fff'; ctx.fill();
     }
 
-    // Draw power gauge bar (horizontal, below ball)
-    const gaugeW = 120, gaugeH = 14;
-    const gaugeX = ballX - gaugeW / 2;
-    const gaugeY = ballY + half + 16;
+    // Power gauge bar (at aim bar position)
+    const gaugeW = barW * 0.8, gaugeH = 14;
+    const gaugeX = (W - gaugeW) / 2;
 
-    // Background
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = '#222';
     ctx.beginPath();
-    ctx.roundRect(gaugeX, gaugeY, gaugeW, gaugeH, gaugeH / 2);
+    ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
     ctx.fill();
 
     // Color zones: edges = red/weak, center = green/strong
@@ -1026,63 +1036,106 @@ function drawBallPreview(now) {
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.roundRect(gaugeX, gaugeY, gaugeW, gaugeH, gaugeH / 2);
+    ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
     ctx.fill();
 
     // Center zone highlight
     ctx.globalAlpha = 0.3;
     ctx.fillStyle = '#4CAF50';
     const centerW = gaugeW * 0.2;
-    ctx.fillRect(ballX - centerW / 2, gaugeY, centerW, gaugeH);
+    ctx.fillRect(W / 2 - centerW / 2, barY - gaugeH / 2, centerW, gaugeH);
 
-    // Moving cursor line
+    // Moving cursor
     ctx.globalAlpha = 1;
     const cursorX = gaugeX + gaugeT * gaugeW;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(cursorX, gaugeY - 3);
-    ctx.lineTo(cursorX, gaugeY + gaugeH + 3);
+    ctx.moveTo(cursorX, barY - gaugeH / 2 - 4);
+    ctx.lineTo(cursorX, barY + gaugeH / 2 + 4);
     ctx.stroke();
-
-    // Cursor glow
-    ctx.shadowColor = '#fff';
-    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#fff'; ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.arc(cursorX, gaugeY + gaugeH / 2, 5, 0, Math.PI * 2);
+    ctx.arc(cursorX, barY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Ball (solid)
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+  } else if (shotMode === 'slingshot') {
+    // ── Step 1: Aim bar (idle or dragging) ──
+
+    // Calculate current direction from aimAngle
+    const maxAngle = Math.PI * 0.28;
+    const angle = -Math.PI / 2 + aimAngle * maxAngle;
+    const nx = Math.cos(angle), ny = Math.sin(angle);
+
+    // Draw trajectory dots
+    const dotAlpha = aimBarDragging ? 0.6 : 0.25;
+    ctx.globalAlpha = dotAlpha;
+    for (let d = 0; d < 8; d++) {
+      const dd = 30 + d * 25;
+      ctx.beginPath();
+      ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+
+    // Draw aim bar background
+    ctx.globalAlpha = 0.35;
     ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.roundRect(barX, barY - barH / 2, barW, barH, barH / 2);
+    ctx.fill();
+
+    // Draw aim bar knob (current position)
+    const knobX = W / 2 + aimAngle * (barW * 0.35);
+    ctx.globalAlpha = 0.9;
+    // Knob track highlight
+    ctx.fillStyle = 'rgba(255,215,0,0.3)';
+    const trackStart = Math.min(W / 2, knobX);
+    const trackEnd = Math.max(W / 2, knobX);
+    ctx.fillRect(trackStart, barY - barH / 2, trackEnd - trackStart, barH);
+
+    // Knob circle
+    ctx.shadowColor = 'rgba(255,215,0,0.6)'; ctx.shadowBlur = aimBarDragging ? 12 : 6;
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(knobX, barY, aimBarDragging ? 14 : 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Ball at rest (solid)
-    ctx.globalAlpha = 0.9;
-    ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
-    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
-    ctx.globalAlpha = 1;
-  } else if (aiming && shotMode === 'slingshot') {
-    // Step 1: Aiming direction UI
-    const dx = aimStartX - aimCurX, dy = aimStartY - aimCurY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > MIN_DRAG) {
-      const nx = dx / dist, ny = dy / dist;
-      ctx.globalAlpha = 0.4;
-      for (let d = 0; d < 8; d++) {
-        const dd = 30 + d * 25;
-        ctx.beginPath();
-        ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
-        ctx.fillStyle = '#fff'; ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+    // Center tick mark
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, barY - barH / 2 - 4);
+    ctx.lineTo(W / 2, barY + barH / 2 + 4);
+    ctx.stroke();
+
+    // ◀ ▶ arrows at edges
+    ctx.globalAlpha = 0.3;
+    ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('◀', barX - 12, barY);
+    ctx.fillText('▶', barX + barW + 12, barY);
+
+    // Ball (pulsing when idle, solid when dragging)
+    if (aimBarDragging) {
+      ctx.globalAlpha = 0.9;
+    } else {
+      ctx.globalAlpha = 0.6 + Math.sin(now * 0.004) * 0.2;
     }
-    // Ball at rest
-    ctx.globalAlpha = 0.9;
     ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
-    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = aimBarDragging ? 3 : 2;
     ctx.beginPath(); ctx.arc(ballX, ballY, half + 4, 0, Math.PI*2); ctx.stroke();
     ctx.globalAlpha = 1;
+
   } else {
-    // Pulsing ball (default for tap mode & idle slingshot)
+    // Pulsing ball (tap mode)
     const pulse = 0.6 + Math.sin(now*0.004)*0.2;
     ctx.globalAlpha = pulse;
     ctx.drawImage(tierCanvases[ballTier], ballX - half, ballY - half);
@@ -1094,49 +1147,43 @@ function drawBallPreview(now) {
 }
 
 function drawSlingshotGuide(now) {
-  const ballY = H * BALL_SPAWN_Y;
-  const guideY = ballY - 45;
+  const guideY = H * BALL_SPAWN_Y - 50;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
 
   if (slingshotPhase === 'gauge') {
-    // Step 2: gauge active — show power guide
-    ctx.globalAlpha = 0.7;
-    ctx.font = '900 15px "Zen Maru Gothic"';
+    // Step 2: gauge active
+    ctx.globalAlpha = 0.8;
+    ctx.font = '900 16px "Zen Maru Gothic"';
     ctx.fillStyle = '#FFD700';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
     ctx.fillText('つよさを きめよう！', W / 2, guideY);
     ctx.font = '13px "Zen Maru Gothic"';
     ctx.fillStyle = '#fff';
     ctx.fillText('まんなかで タップ → つよく うてるよ', W / 2, guideY + 20);
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
-  } else if (aiming) {
-    // Step 1 active: dragging to aim
+  } else if (aimBarDragging) {
+    // Step 1: dragging the bar
     ctx.globalAlpha = 0.7;
     ctx.font = '900 15px "Zen Maru Gothic"';
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
-    ctx.fillText('ゆびを うごかして ねらおう！', W / 2, guideY);
+    ctx.fillText('ひだりみぎに うごかして ねらおう！', W / 2, guideY);
     ctx.font = '13px "Zen Maru Gothic"';
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('はなすと つぎへ すすむよ', W / 2, guideY + 20);
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
+    ctx.fillText('ゆびを はなすと つぎへ すすむよ', W / 2, guideY + 20);
   } else {
-    // Idle: waiting for first touch
+    // Idle: waiting for touch on bar
     const pulse = 0.5 + Math.sin(now * 0.004) * 0.3;
     ctx.globalAlpha = pulse;
-    ctx.font = '900 17px "Zen Maru Gothic"';
+    ctx.font = '900 16px "Zen Maru Gothic"';
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
-    ctx.fillText('がめんを タッチ！', W / 2, guideY);
+    ctx.fillText('① ほうこうを きめよう', W / 2, guideY);
     ctx.font = '13px "Zen Maru Gothic"';
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('ひっぱって ほうこうを きめよう', W / 2, guideY + 20);
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
+    ctx.fillText('したの バーを さわって ひだりみぎに！', W / 2, guideY + 20);
   }
+
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
 }
 
 function drawBallTrail() {
