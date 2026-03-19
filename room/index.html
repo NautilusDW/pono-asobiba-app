@@ -68,15 +68,14 @@
       padding: 4px 10px; color: white; font-weight: bold; font-size: 14px;
       display: flex; align-items: center; gap: 3px;
     }
-    #ui-btn-shop {
+    #ui-btn-takara {
       background: rgba(255,154,60,0.9); color: white; border: none;
       border-radius: 16px; padding: 5px 14px;
       font-size: 14px; font-weight: bold; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
     }
-    #ui-btn-ach, #ui-btn-sticker {
-      background: rgba(0,0,0,0.35); color: white; border: none;
-      border-radius: 50%; width: 30px; height: 30px;
-      font-size: 16px; cursor: pointer;
+    #ui-btn-takara img {
+      width: 22px; height: 22px; object-fit: contain;
     }
     #ui-btn-info {
       background: rgba(0,0,0,0.3); color: white; border: none;
@@ -312,6 +311,82 @@
     }
     .cat-tab.on { background: var(--orange); color: white; border-color: var(--orange-dark); }
 
+    /* ── たからばこ top tabs ── */
+    .takara-tabs {
+      display: flex; gap: 4px; padding: 8px 10px 6px;
+      border-bottom: 2px solid #ffe5cc;
+      overflow-x: auto; flex-shrink: 0;
+    }
+    .takara-tab {
+      padding: 6px 10px; border-radius: 18px;
+      border: 2px solid transparent; background: #f0e4d8;
+      font-size: 12px; font-weight: bold; color: #666; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .takara-tab.on { background: linear-gradient(135deg, #FF9A3C, #E07800); color: white; border-color: #c06800; }
+    .takara-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    .takara-content.hidden { display: none; }
+
+    /* Sticker/Achievement/Highscore inline content */
+    .takara-scroll { flex: 1; overflow-y: auto; padding: 12px; scrollbar-width: thin; }
+
+    /* High score list in たからばこ */
+    .hs-game-section { margin-bottom: 16px; }
+    .hs-game-title {
+      font-size: 15px; font-weight: bold; color: #5B4A3F;
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 2px solid #ffe5cc;
+    }
+    .hs-inline-table {
+      width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 4px;
+    }
+    .hs-inline-table th {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #fff; font-weight: 900; padding: 4px 6px;
+      text-align: center; font-size: 11px;
+    }
+    .hs-inline-table th:first-child { border-radius: 8px 0 0 0; }
+    .hs-inline-table th:last-child  { border-radius: 0 8px 0 0; }
+    .hs-inline-table td {
+      padding: 5px 6px; text-align: center; color: #5B4A3F;
+      font-weight: 700; border-bottom: 1px solid #F0E6D6;
+    }
+    .hs-inline-table tr:nth-child(even) td { background: rgba(255,215,0,0.08); }
+    .hs-inline-empty { color: #A89585; font-size: 13px; padding: 8px 0; text-align: center; }
+
+    /* Sticker grid in たからばこ */
+    .takara-sticker-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    }
+    .takara-sticker-cell {
+      aspect-ratio: 1; border-radius: 12px;
+      background: #f5f0e8; border: 2px solid #e8e0d4;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 28px; position: relative;
+    }
+    .takara-sticker-cell.owned { background: #fff8e7; border-color: #FFD700; }
+    .takara-sticker-cell.sparkle { background: linear-gradient(135deg, #fff8e7, #fffbe6); border-color: #FFD700; box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+    .takara-sticker-count {
+      font-size: 9px; font-weight: 900; color: #e07800;
+      position: absolute; bottom: 2px; right: 4px;
+    }
+    .takara-sticker-empty { font-size: 20px; color: #ccc; }
+
+    /* Achievement list in たからばこ */
+    .takara-ach-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #f0e6d6;
+    }
+    .takara-ach-icon { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; }
+    .takara-ach-info { flex: 1; }
+    .takara-ach-name { font-size: 13px; font-weight: 900; color: #333; }
+    .takara-ach-desc { font-size: 11px; color: #888; }
+    .takara-ach-stars { font-size: 11px; color: #FFD700; flex-shrink: 0; }
+    .takara-ach-locked { opacity: 0.4; }
+    .takara-ach-game-hd { font-size: 14px; font-weight: 900; color: #e07800; margin: 12px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #ffe5cc; }
+    .takara-ach-game-hd:first-child { margin-top: 0; }
+
     /* Empty inventory state */
     .inv-empty {
       padding: 32px 16px; text-align: center;
@@ -483,6 +558,7 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/stickers.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/highscore.js"></script>
 </head>
 <body>
 
@@ -502,9 +578,7 @@
       <div id="area-dots"></div>
       <div id="ui-right">
         <div id="pts-disp">&#x2B50; <span id="pts-num">0</span></div>
-        <button id="ui-btn-shop">おみせ</button>
-        <button id="ui-btn-ach" title="できたこと">🏆</button>
-        <button id="ui-btn-sticker" title="シールちょう">📖</button>
+        <button id="ui-btn-takara"><img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" alt="">たからばこ</button>
         <button id="ui-btn-info">?</button>
       </div>
     </div>
@@ -548,25 +622,41 @@
   <p>あとから かえることも できるよ！</p>
 </div>
 
-<!-- ── Shop modal ─────────────────────────────────── -->
+<!-- ── たからばこ modal ────────────────────────────── -->
 <div class="modal-ov hidden shop-panel" id="shop-ov">
   <div class="sheet" id="shop-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-hd">
-      <span class="sheet-title" id="shop-title">🛍️ おみせ</span>
+      <span class="sheet-title" id="shop-title">📦 たからばこ</span>
       <button class="sheet-close" id="shop-close">✕</button>
     </div>
-    <div class="mode-toggle">
-      <button class="mode-btn buy on" id="mode-buy" onclick="setShopMode('buy')">🛍️ かう</button>
-      <button class="mode-btn bag"    id="mode-bag" onclick="setShopMode('bag')">🎒 てもち</button>
+    <!-- Top-level tabs: もちもの / シール / じっせき / ハイスコア -->
+    <div class="takara-tabs" id="takara-tabs">
+      <button class="takara-tab on" data-tab="items">🛋️ もちもの</button>
+      <button class="takara-tab" data-tab="stickers">⭐ シール</button>
+      <button class="takara-tab" data-tab="achievements">🏆 じっせき</button>
+      <button class="takara-tab" data-tab="highscores">📊 ハイスコア</button>
     </div>
-    <div class="cat-tabs" id="shop-tabs">
-      <button class="cat-tab on" data-cat="wall">🎨 かべがみ</button>
-      <button class="cat-tab" data-cat="floor">🪵 ゆか</button>
-      <button class="cat-tab" data-cat="furn">🛋️ かぐ</button>
-      <button class="cat-tab" data-cat="deco">🪴 かざり</button>
+    <!-- Items tab content (existing shop/inventory) -->
+    <div class="takara-content" id="takara-items">
+      <div class="mode-toggle">
+        <button class="mode-btn buy on" id="mode-buy" onclick="setShopMode('buy')">🛍️ かう</button>
+        <button class="mode-btn bag"    id="mode-bag" onclick="setShopMode('bag')">🎒 てもち</button>
+      </div>
+      <div class="cat-tabs" id="shop-tabs">
+        <button class="cat-tab on" data-cat="wall">🎨 かべがみ</button>
+        <button class="cat-tab" data-cat="floor">🪵 ゆか</button>
+        <button class="cat-tab" data-cat="furn">🛋️ かぐ</button>
+        <button class="cat-tab" data-cat="deco">🪴 かざり</button>
+      </div>
+      <div class="item-grid" id="shop-grid"></div>
     </div>
-    <div class="item-grid" id="shop-grid"></div>
+    <!-- Stickers tab content -->
+    <div class="takara-content hidden" id="takara-stickers"></div>
+    <!-- Achievements tab content -->
+    <div class="takara-content hidden" id="takara-achievements"></div>
+    <!-- High scores tab content -->
+    <div class="takara-content hidden" id="takara-highscores"></div>
   </div>
 </div>
 
@@ -1347,6 +1437,20 @@ function buildRoomArea(areaData) {
     }
   });
 
+  // たからばこ（living room only, tappable）
+  if (areaData.id === 'living' && !locked) {
+    const toybox = document.createElement('div');
+    toybox.style.cssText = 'position:absolute;bottom:12%;right:8%;z-index:90;cursor:pointer;transition:transform 0.15s;';
+    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:14%;width:auto;min-height:60px;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.3));" alt="たからばこ">';
+    toybox.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      toybox.style.transform = 'scale(0.92)';
+      setTimeout(() => { toybox.style.transform = ''; }, 150);
+      openTakarabako();
+    });
+    div.appendChild(toybox);
+  }
+
   applyBackground(div, areaData.id);
   return div;
 }
@@ -1410,8 +1514,154 @@ function setShopMode(mode) {
   shopMode = mode;
   document.getElementById('mode-buy').classList.toggle('on', mode === 'buy');
   document.getElementById('mode-bag').classList.toggle('on', mode === 'bag');
-  document.getElementById('shop-title').textContent = mode === 'buy' ? '🛍️ おみせ' : '🎒 てもち';
+  document.getElementById('shop-title').textContent = '📦 たからばこ';
   renderShopGrid(currentShopCat);
+}
+
+// ── たからばこ ────────────────────────────────────────
+let currentTakaraTab = 'items';
+
+function openTakarabako(tab) {
+  currentTakaraTab = tab || 'items';
+  _syncArea();
+  switchTakaraTab(currentTakaraTab);
+  document.getElementById('shop-ov').classList.remove('hidden');
+}
+
+function switchTakaraTab(tab) {
+  currentTakaraTab = tab;
+  document.querySelectorAll('.takara-tab').forEach(t => {
+    t.classList.toggle('on', t.dataset.tab === tab);
+  });
+  document.querySelectorAll('.takara-content').forEach(c => c.classList.add('hidden'));
+  const content = document.getElementById('takara-' + tab);
+  if (content) content.classList.remove('hidden');
+
+  if (tab === 'items') {
+    renderShopGrid(currentShopCat);
+  } else if (tab === 'stickers') {
+    renderTakaraStickers();
+  } else if (tab === 'achievements') {
+    renderTakaraAchievements();
+  } else if (tab === 'highscores') {
+    renderTakaraHighscores();
+  }
+}
+
+function renderTakaraStickers() {
+  const container = document.getElementById('takara-stickers');
+  const allStickers = window.getAllStickers ? window.getAllStickers() : [];
+  const owned = window.getOwnedStickers ? window.getOwnedStickers() : {};
+  const loginInfo = window.getLoginInfo ? window.getLoginInfo() : {};
+
+  let html = '<div class="takara-scroll">';
+  // Login streak info
+  html += `<div style="text-align:center;margin-bottom:12px;font-size:13px;color:#888;">
+    <strong style="color:#e07800;">📅 ${loginInfo.totalDays || 0}にち</strong> あそんだよ！
+    ｜ シール <strong style="color:#e07800;">${Object.keys(owned).length}</strong>／${allStickers.length}しゅるい
+  </div>`;
+  // Grid
+  html += '<div class="takara-sticker-grid">';
+  allStickers.forEach(s => {
+    const count = owned[s.id] || 0;
+    const cls = count >= 3 ? 'owned sparkle' : count > 0 ? 'owned' : '';
+    html += `<div class="takara-sticker-cell ${cls}">`;
+    if (count > 0) {
+      html += `<span>${s.emoji}</span>`;
+      html += `<span class="takara-sticker-count">×${count}</span>`;
+    } else {
+      html += `<span class="takara-sticker-empty">？</span>`;
+    }
+    html += '</div>';
+  });
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function renderTakaraAchievements() {
+  const container = document.getElementById('takara-achievements');
+  const allAch = window.getAchievements ? window.getAchievements() : [];
+  const unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
+
+  // Group by game
+  const GAME_NAMES = {
+    bubble: '🫧 シャボン玉', bowling: '🎳 ボウリング', breakout: '🧱 ブロックくずし',
+    writing: '✏️ もじ', drawing: '🎨 おえかき', puzzle: '🧩 パズル',
+    wordmatch: '📝 ことばあわせ', coloring: '🖍️ ぬりえ', stacking: '📦 つみあげ'
+  };
+  const groups = {};
+  allAch.forEach(a => {
+    if (!groups[a.game]) groups[a.game] = [];
+    groups[a.game].push(a);
+  });
+
+  const unlockedCount = Object.keys(unlocked).length;
+  let html = '<div class="takara-scroll">';
+  html += `<div style="text-align:center;margin-bottom:12px;font-size:13px;color:#888;">
+    たっせい <strong style="color:#e07800;">${unlockedCount}</strong>／${allAch.length}
+  </div>`;
+
+  for (const [game, achs] of Object.entries(groups)) {
+    html += `<div class="takara-ach-game-hd">${GAME_NAMES[game] || game}</div>`;
+    achs.forEach(a => {
+      const done = unlocked[a.id];
+      const stars = '★'.repeat(a.tier);
+      html += `<div class="takara-ach-item ${done ? '' : 'takara-ach-locked'}">
+        <div class="takara-ach-icon">${done ? '✅' : '🔒'}</div>
+        <div class="takara-ach-info">
+          <div class="takara-ach-name">${a.name}</div>
+          <div class="takara-ach-desc">${a.desc}</div>
+        </div>
+        <div class="takara-ach-stars">${stars}</div>
+      </div>`;
+    });
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderTakaraHighscores() {
+  const container = document.getElementById('takara-highscores');
+  const GAMES = [
+    { id: 'bubble', title: '🫧 シャボン玉パーティー' },
+    { id: 'bowling', title: '🎳 びっくりボウリング' },
+    { id: 'bowling_puzzle', title: '🧩 パズルボウリング' },
+    { id: 'breakout', title: '🧱 ブロックくずし' },
+  ];
+  const RANK_ICONS = ['🥇', '🥈', '🥉', '4', '5'];
+
+  let html = '<div class="takara-scroll">';
+  GAMES.forEach(game => {
+    let scores = [];
+    try { scores = JSON.parse(localStorage.getItem('pono_hiscore_' + game.id)) || []; } catch(e) {}
+    html += `<div class="hs-game-section">`;
+    html += `<div class="hs-game-title">${game.title}</div>`;
+    if (scores.length === 0) {
+      html += `<div class="hs-inline-empty">まだきろくがないよ！</div>`;
+    } else {
+      const hasDiff = scores.some(s => s.difficulty);
+      html += '<table class="hs-inline-table"><tr><th></th><th>スコア</th><th>ひづけ</th><th>じかん</th>';
+      if (hasDiff) html += '<th>モード</th>';
+      html += '</tr>';
+      scores.forEach((s, i) => {
+        const d = new Date(s.ts);
+        const date = (d.getMonth()+1) + '/' + d.getDate();
+        const time = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+        const diffLabel = { easy: '🐣', normal: '⭐', slingshot: '🏹', tap: '👆', '': '—' }[s.difficulty] || s.difficulty || '—';
+        html += `<tr>
+          <td>${RANK_ICONS[i] || (i+1)}</td>
+          <td>${s.score.toLocaleString()}</td>
+          <td>${date}</td>
+          <td>${time}</td>`;
+        if (hasDiff) html += `<td>${diffLabel}</td>`;
+        html += '</tr>';
+      });
+      html += '</table>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 // 🛍️ボタン → 買う画面
@@ -1422,6 +1672,7 @@ function openShop(cat) {
     t.classList.toggle('on', t.dataset.cat === currentShopCat);
   });
   setShopMode('buy');
+  switchTakaraTab('items');
   document.getElementById('shop-ov').classList.remove('hidden');
 }
 
@@ -1433,6 +1684,7 @@ function openInventory(cat) {
     t.classList.toggle('on', t.dataset.cat === cat);
   });
   setShopMode('bag');
+  switchTakaraTab('items');
   document.getElementById('shop-ov').classList.remove('hidden');
 }
 
@@ -1741,16 +1993,15 @@ function init() {
     renderShopGrid(tab.dataset.cat);
   });
 
-  // Achievement board & Sticker book
-  document.getElementById('ui-btn-ach').addEventListener('click', () => {
-    if (window.showAchievementBoard) window.showAchievementBoard();
-  });
-  document.getElementById('ui-btn-sticker').addEventListener('click', () => {
-    if (window.showStickerBook) window.showStickerBook();
+  // たからばこ tab clicks
+  document.getElementById('takara-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.takara-tab');
+    if (!tab) return;
+    switchTakaraTab(tab.dataset.tab);
   });
 
-  // Shop open/close (overlay button)
-  document.getElementById('ui-btn-shop').addEventListener('click', () => openShop(currentShopCat));
+  // たからばこ open (single button replaces shop/ach/sticker)
+  document.getElementById('ui-btn-takara').addEventListener('click', () => openTakarabako());
   document.getElementById('shop-close').addEventListener('click', () =>
     document.getElementById('shop-ov').classList.add('hidden'));
   document.getElementById('shop-ov').addEventListener('click', e => {
