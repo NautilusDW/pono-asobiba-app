@@ -527,7 +527,7 @@ const DRAG_EVENTS = [
   {
     id: 'rainbow_trail', type: 'drag', label: 'ゆびで にじを かこう！', icon: '🌈',
     onEnter() { eventTrailMode = 'rainbow'; },
-    onExit() { eventTrailMode = null; },
+    onExit() { eventTrailMode = null; if (window.incrementStat) window.incrementStat('bubble_rainbow_trails', 1); },
     onTick(dt) {}
   },
   {
@@ -1342,6 +1342,7 @@ function popBubble(idx, chainDepth, muted) {
     if (bcolorIdx[idx] === eventTargetColor) {
       eventColorMatches++;
       eventColorScore++;
+      if (window.incrementStat) window.incrementStat('bubble_color_score', 1);
       colorMatchFlash = 1; // correct flash
       // Confetti burst for correct match
       for (let i = 0; i < 20; i++) addConfetti(x0, y0);
@@ -1372,6 +1373,10 @@ function popBubble(idx, chainDepth, muted) {
     window.incrementStat('bubble_pops', 1);
     if (isGolden) window.incrementStat('bubble_gold', 1);
     if (chainDepth > 0) window.setStatMax('bubble_chain', chainDepth + 1);
+    if (isPono) window.incrementStat('bubble_pono', 1);
+    if (isCreature) window.incrementStat('bubble_creatures', 1);
+    if (eventBigMode && !isGolden && !isCreature) window.incrementStat('bubble_big_pops', 1);
+    if (eventSweepMode) window.incrementStat('bubble_sweep_pops', 1);
   }
 
   // Pop animation (inflate → ring → fade) — muted = smaller
@@ -1839,6 +1844,7 @@ function checkConstellationTap(px, py) {
     if (nextIdx === ca.constellation.points.length - 1) {
       ca.completed = true;
       ca.completeTime = 0;
+      if (window.incrementStat) window.incrementStat('bubble_constellations', 1);
       for (let i = 0; i < 50; i++) {
         const sx = W * 0.2 + Math.random() * W * 0.6;
         const sy = H * 0.15 + Math.random() * H * 0.5;

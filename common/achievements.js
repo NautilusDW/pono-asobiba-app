@@ -15,6 +15,31 @@
     { id: 'bubble_chain', game: 'bubble',   name: 'れんさ名人',           desc: 'れんさ 5かい いじょう',            target: 5,    stat: 'bubble_chain', tier: 5, reward: { type: 'sea',  id: 'whale' } },
     { id: 'bubble_1000',  game: 'bubble',   name: '1000こ突破！',         desc: 'しゃぼんだまを 1000こ わろう',     target: 1000, stat: 'bubble_pops',  tier: 6, reward: { type: 'furn', id: 'ach_coral_table' } },
 
+    // ── しゃぼんだま イベント ───────────────────────────────────────
+    // ポノ発見
+    { id: 'bubble_pono_1',  game: 'bubble', name: 'ポノ はっけん！',       desc: 'ポノを 1かい みつけよう',          target: 1,   stat: 'bubble_pono',          tier: 1, reward: { type: 'sea',  id: 'starfish_event' } },
+    { id: 'bubble_pono_5',  game: 'bubble', name: 'ポノずき',             desc: 'ポノを 5かい みつけよう',          target: 5,   stat: 'bubble_pono',          tier: 2, reward: { type: 'furn', id: 'ach_pono_cushion' } },
+    { id: 'bubble_pono_20', game: 'bubble', name: 'ポノマスター',         desc: 'ポノを 20かい みつけよう',         target: 20,  stat: 'bubble_pono',          tier: 3, reward: { type: 'furn', id: 'ach_pono_plush' } },
+    // いきもの解放
+    { id: 'bubble_creature_1',  game: 'bubble', name: 'いきもの はっけん！', desc: 'いきものを 1ぴき みつけよう',     target: 1,   stat: 'bubble_creatures',     tier: 1, reward: { type: 'sea',  id: 'butterfly_event' } },
+    { id: 'bubble_creature_10', game: 'bubble', name: 'いきもの ともだち',   desc: 'いきものを 10ぴき みつけよう',    target: 10,  stat: 'bubble_creatures',     tier: 2, reward: { type: 'sea',  id: 'frog_event' } },
+    { id: 'bubble_creature_30', game: 'bubble', name: 'いきもの はかせ',     desc: 'いきものを 30ぴき みつけよう',    target: 30,  stat: 'bubble_creatures',     tier: 3, reward: { type: 'sea',  id: 'parrot_event' } },
+    // 星座完成
+    { id: 'bubble_const_1',  game: 'bubble', name: 'はじめての せいざ',     desc: 'せいざを 1つ かんせいしよう',      target: 1,   stat: 'bubble_constellations', tier: 1, reward: { type: 'furn', id: 'ach_star_light' } },
+    { id: 'bubble_const_6',  game: 'bubble', name: 'せいざ はかせ',         desc: 'せいざを 6つ かんせいしよう',      target: 6,   stat: 'bubble_constellations', tier: 2, reward: { type: 'furn', id: 'ach_telescope' } },
+    { id: 'bubble_const_12', game: 'bubble', name: 'せいざマスター',       desc: 'せいざを 12かい かんせいしよう',   target: 12,  stat: 'bubble_constellations', tier: 3, reward: { type: 'furn', id: 'ach_planetarium' } },
+    // 色あわせ
+    { id: 'bubble_color_10',  game: 'bubble', name: 'いろ あわせ！',       desc: 'いろあわせ 10かい せいかい',       target: 10,  stat: 'bubble_color_score',   tier: 1, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
+    { id: 'bubble_color_30',  game: 'bubble', name: 'いろいろ はかせ',     desc: 'いろあわせ 30かい せいかい',       target: 30,  stat: 'bubble_color_score',   tier: 2, reward: { type: 'furn', id: 'ach_color_pencils' } },
+    { id: 'bubble_color_100', game: 'bubble', name: 'カラーマスター',      desc: 'いろあわせ 100かい せいかい',      target: 100, stat: 'bubble_color_score',   tier: 3, reward: { type: 'furn', id: 'ach_rainbow_wall' } },
+    // おおきいシャボン
+    { id: 'bubble_big_20',  game: 'bubble', name: 'おおきいの すき！',     desc: 'おおきいシャボンを 20こ わろう',   target: 20,  stat: 'bubble_big_pops',      tier: 1, reward: { type: 'furn', id: 'ach_big_bubble_deco' } },
+    { id: 'bubble_big_100', game: 'bubble', name: 'パンパン名人',         desc: 'おおきいシャボンを 100こ わろう',  target: 100, stat: 'bubble_big_pops',      tier: 2, reward: { type: 'furn', id: 'ach_circus_tent' } },
+    // なぞりわり
+    { id: 'bubble_sweep_50', game: 'bubble', name: 'なぞりわり名人',      desc: 'なぞりわりで 50こ わろう',         target: 50,  stat: 'bubble_sweep_pops',    tier: 1, reward: { type: 'furn', id: 'ach_wave_rug' } },
+    // にじ描き
+    { id: 'bubble_rainbow_5', game: 'bubble', name: 'にじアーティスト',    desc: 'にじイベントを 5かい クリア',      target: 5,   stat: 'bubble_rainbow_trails', tier: 1, reward: { type: 'furn', id: 'ach_fireworks_wall' } },
+
     // ── もじかき ─────────────────────────────────────────────────
     { id: 'writing_5',       game: 'writing', name: 'はじめてかけた',       desc: '5もじ れんしゅうしよう',           target: 5,    stat: 'writing_chars',    tier: 1, reward: { type: 'sea',  id: 'shell' } },
     { id: 'writing_20',      game: 'writing', name: 'もじもじがんばった',   desc: 'ひらがな 20もじ かこう',           target: 20,   stat: 'writing_hiragana', tier: 2, reward: { type: 'furn', id: 'ach_bookshelf' } },
