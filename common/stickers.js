@@ -41,15 +41,15 @@
   // ═══ 壁紙/床マイルストーン定義 ════════════════════════════════════
   // 解除方法A: 累計ログイン日数
   var LOGIN_MILESTONES = [
-    { days: 3,   reward: { type: 'floor', id: 'floor_wood_warm' },     msg: '3にち あそんだ！' },
+    { days: 3,   reward: { type: 'floor', id: 'floor_wood_warm' },     msg: '3かい あそんだ！' },
     { days: 7,   reward: { type: 'wall',  id: 'wall_kumo_niko' },      msg: '1しゅうかん！' },
-    { days: 12,  reward: { type: 'floor', id: 'floor_wood_light' },    msg: 'もう12にちも！' },
-    { days: 20,  reward: { type: 'wall',  id: 'wall_mizutama' },       msg: '20にち すごい！' },
+    { days: 12,  reward: { type: 'floor', id: 'floor_wood_light' },    msg: 'もう12かいも！' },
+    { days: 20,  reward: { type: 'wall',  id: 'wall_mizutama' },       msg: '20かい すごい！' },
     { days: 30,  reward: { type: 'floor', id: 'floor_white_wood' },    msg: '1かげつ！' },
     { days: 45,  reward: { type: 'wall',  id: 'wall_hoshi' },          msg: 'おほしさま ゲット！' },
     { days: 60,  reward: { type: 'floor', id: 'floor_herringbone' },   msg: '2かげつ！' },
     { days: 80,  reward: { type: 'wall',  id: 'wall_mori' },           msg: 'もりの なかまたち！' },
-    { days: 100, reward: { type: 'floor', id: 'floor_pink' },          msg: '100にち おめでとう！' },
+    { days: 100, reward: { type: 'floor', id: 'floor_pink' },          msg: '100かい おめでとう！' },
     { days: 120, reward: { type: 'wall',  id: 'wall_stripe' },         msg: 'にじいろ ゲット！' },
   ];
 
@@ -333,7 +333,7 @@
 
     // Login streak
     html += '<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:0.85rem;font-weight:bold;color:#5d4037;">📅 れんぞく: ' + loginInfo.streak + 'にちめ</div>';
+    html += '<div style="font-size:0.85rem;font-weight:bold;color:#5d4037;">📅 れんぞく: ' + loginInfo.streak + 'かいめ</div>';
 
     // Week bar
     html += '<div style="display:flex;gap:4px;margin:8px 0;">';
@@ -351,9 +351,9 @@
 
     // Progress
     html += '<div style="background:#fff;border-radius:12px;padding:12px;">';
-    html += '<div style="font-size:0.85rem;font-weight:bold;color:#5d4037;margin-bottom:6px;">📊 あそんだひ: ' + loginInfo.totalDays + 'にち</div>';
+    html += '<div style="font-size:0.85rem;font-weight:bold;color:#5d4037;margin-bottom:6px;">📊 あそんだ かいすう: ' + loginInfo.totalDays + 'かい</div>';
     if (nextLogin) {
-      html += '<div style="font-size:0.75rem;color:#6d4c41;">つぎの ごほうび: あと ' + nextLogin.remaining + 'にち → ' + nextLogin.msg + '</div>';
+      html += '<div style="font-size:0.75rem;color:#6d4c41;">つぎの ごほうび: あと ' + nextLogin.remaining + 'かい → ' + nextLogin.msg + '</div>';
     }
     if (nextSticker) {
       var label = nextSticker.type === 'unique' ? 'しゅるい' : 'キラキラ';
@@ -499,8 +499,8 @@
     ].join('');
 
     var html = '<div style="font-size:2rem;margin-bottom:4px;">📅</div>';
-    html += '<div style="font-size:1rem;font-weight:bold;color:#2e7d32;">' + result.totalDays + 'にちめ！</div>';
-    html += '<div style="font-size:0.8rem;color:#558b2f;margin:4px 0;">れんぞく ' + result.streak + 'にち</div>';
+    html += '<div style="font-size:1rem;font-weight:bold;color:#2e7d32;">' + result.totalDays + 'かいめ！</div>';
+    html += '<div style="font-size:0.8rem;color:#558b2f;margin:4px 0;">れんぞく ' + result.streak + 'かい</div>';
 
     // Sticker reward
     html += '<div style="margin:12px 0;padding:10px;background:#fff;border-radius:14px;">';
@@ -525,7 +525,7 @@
     // Streak bonus
     if (result.streakBonus) {
       html += '<div style="margin:6px 0;padding:8px;background:#e3f2fd;border-radius:10px;">';
-      html += '<div style="font-size:0.85rem;font-weight:bold;color:#1565c0;">🎁 7にち れんぞく ボーナス！</div>';
+      html += '<div style="font-size:0.85rem;font-weight:bold;color:#1565c0;">🎁 7かい れんぞく ボーナス！</div>';
       if (result.streakBonus.type === 'stickers') {
         html += '<div style="font-size:1.2rem;">';
         for (var j = 0; j < result.streakBonus.stickers.length; j++) {

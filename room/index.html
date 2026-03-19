@@ -1440,8 +1440,8 @@ function buildRoomArea(areaData) {
   // たからばこ（living room only, tappable）
   if (areaData.id === 'living' && !locked) {
     const toybox = document.createElement('div');
-    toybox.style.cssText = 'position:absolute;bottom:12%;right:8%;z-index:90;cursor:pointer;transition:transform 0.15s;';
-    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:14%;width:auto;min-height:60px;filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.3));" alt="たからばこ">';
+    toybox.style.cssText = 'position:absolute;bottom:8%;right:6%;z-index:90;cursor:pointer;transition:transform 0.15s;';
+    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:56px;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
     toybox.addEventListener('pointerdown', e => {
       e.stopPropagation();
       toybox.style.transform = 'scale(0.92)';
@@ -1557,7 +1557,7 @@ function renderTakaraStickers() {
   let html = '<div class="takara-scroll">';
   // Login streak info
   html += `<div style="text-align:center;margin-bottom:12px;font-size:13px;color:#888;">
-    <strong style="color:#e07800;">📅 ${loginInfo.totalDays || 0}にち</strong> あそんだよ！
+    <strong style="color:#e07800;">📅 ${loginInfo.totalDays || 0}かい</strong> あそんだよ！
     ｜ シール <strong style="color:#e07800;">${Object.keys(owned).length}</strong>／${allStickers.length}しゅるい
   </div>`;
   // Grid
