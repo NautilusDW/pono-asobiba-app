@@ -16,15 +16,6 @@ html, body {
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
 canvas { display: block; }
-#back-btn, #bgm-btn {
-  position: fixed; z-index: 100;
-  background: rgba(255,255,255,0.85); border: none; border-radius: 50%;
-  width: 44px; height: 44px; font-size: 22px; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
-  display: none;
-}
-#back-btn { top: 12px; left: 12px; }
-#bgm-btn { top: 12px; left: 64px; }
 #start-screen {
   position: fixed; top: 0; bottom: 0; left: 50%; z-index: 9999;
   transform: translateX(-50%);
@@ -75,6 +66,7 @@ canvas { display: block; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
 <script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
 </head>
 <body>
 <div id="start-screen">
@@ -87,8 +79,6 @@ canvas { display: block; }
   </div>
   <div style="position:absolute;bottom:8px;right:8px;font-size:10px;color:rgba(255,255,255,0.4)">v18a</div>
 </div>
-<button id="back-btn" onclick="location.href='../'">🏠</button>
-<button id="bgm-btn" onclick="switchBGMTrack()">🎵</button>
 <canvas id="c"></canvas>
 
 <script>
@@ -2393,8 +2383,11 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     document.getElementById('start-screen').style.display = 'none';
 
     // Show UI buttons
-    document.getElementById('back-btn').style.display = 'flex';
-    document.getElementById('bgm-btn').style.display = 'flex';
+    // Menu initialized on first game start
+    if (!window._menuInited) {
+      initMenu({ bgmToggle: switchBGMTrack });
+      window._menuInited = true;
+    }
 
     // Always start at morning
     dayTime = 0;

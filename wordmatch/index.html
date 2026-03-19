@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,11 +50,7 @@ body {
   position: relative;
   width: 100%;
 }
-.back-link {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  color: var(--primary); font-weight: 700; font-size: 0.85rem;
-  text-decoration: none;
-}
+
 .header h1 {
   font-size: 1.4rem; font-weight: 900; color: var(--primary);
   text-shadow: 2px 2px 0 var(--primary-light);
@@ -609,6 +606,7 @@ function playFanfare() {
 // ひらがなグループ(0-3)とカタカナグループ(4-7)の中でそれぞれシャッフル
 shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
 loadStage(0);
+initMenu();
 </script>
 </body>
 </html>

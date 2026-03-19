@@ -10,6 +10,7 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <script src="../common/points.js"></script>
   <script src="../common/achievements.js"></script>
+  <script src="../common/menu.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
@@ -49,16 +50,6 @@
       transition: transform 0.1s;
     }
     #ui button:active { transform: scale(0.92); }
-    #btnBack {
-      background: rgba(255,255,255,0.85);
-      color: #1a3a6e;
-    }
-    #btnBgm {
-      background: rgba(255,255,255,0.85);
-      color: #1a3a6e;
-      font-size: 1.3rem;
-      padding: 8px 14px;
-    }
     #btnBgCreatures {
       background: rgba(255,255,255,0.85);
       color: #1a3a6e;
@@ -220,10 +211,8 @@
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <div id="ui">
-    <button id="btnBack">← もどる</button>
     <button id="btnBgCreatures">🐟 いきもの</button>
     <span id="seaCount" style="background:rgba(0,0,0,0.45);color:#ffd700;font-size:12px;font-weight:bold;padding:3px 10px;border-radius:14px;font-family:'Zen Maru Gothic',sans-serif;"></span>
-    <button id="btnBgm">🔊</button>
   </div>
 
   <!-- Selection screen -->
@@ -245,18 +234,18 @@
     const bgm = new Audio('../assets/audio/Bubble Hop Playground.mp3');
     bgm.loop = true;
     bgm.volume = 0.45;
-    const btnBgm = document.getElementById('btnBgm');
     function tryStartBgm() {
       if (!bgmStarted && bgmEnabled) {
         bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
       }
     }
-    btnBgm.addEventListener('click', () => {
+    function toggleBgm() {
       bgmEnabled = !bgmEnabled;
-      btnBgm.textContent = bgmEnabled ? '🔊' : '🔇';
       if (bgmEnabled) { tryStartBgm(); bgm.play().catch(() => {}); }
       else bgm.pause();
-    });
+      if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🎵' : '🔇';
+    }
+    initMenu({ bgmToggle: toggleBgm });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) bgm.pause();
       else if (bgmEnabled) bgm.play().catch(() => {});
@@ -314,11 +303,6 @@
       localStorage.setItem(PATTERN_STORE_KEY, JSON.stringify(map));
     }
 
-    // ─── Back button ───────────────────────────────────────
-    document.getElementById('btnBack').addEventListener('click', () => {
-      if (history.length > 1) history.back();
-      else location.href = '../index.html';
-    });
 
     // 5分プレイで3pt（セッション1回）
     let _aquaSessionAwarded = false;

@@ -56,13 +56,6 @@
       background: linear-gradient(180deg, rgba(0,0,0,0.22) 0%, transparent 100%);
     }
     #room-ui > * { pointer-events: auto; }
-    #ui-back {
-      text-decoration: none; color: white; font-size: 18px;
-      width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(0,0,0,0.3);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
     #area-dots { flex: 1; display: flex; justify-content: center; gap: 6px; }
     .adot {
       width: 7px; height: 7px; border-radius: 50%;
@@ -489,6 +482,7 @@
   </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/stickers.js"></script>
+<script src="../common/menu.js"></script>
 </head>
 <body>
 
@@ -505,7 +499,6 @@
   <div id="room-wrap">
     <!-- Floating UI overlay -->
     <div id="room-ui">
-      <a href="../index.html" id="ui-back">&#x25C4;</a>
       <div id="area-dots"></div>
       <div id="ui-right">
         <div id="pts-disp">&#x2B50; <span id="pts-num">0</span></div>
@@ -613,6 +606,8 @@
 
 <script src="items.js"></script>
 <script>
+initMenu();
+
 // ─── Constants ────────────────────────────────────────
 const LS = {
   POINTS:    'pono_points',

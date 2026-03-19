@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,11 +51,7 @@ body {
   width: 100%;
   flex-shrink: 0;
 }
-.back-link {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  color: var(--primary); font-weight: 700; font-size: 0.85rem;
-  text-decoration: none;
-}
+
 .header h1 {
   font-size: 1.4rem; font-weight: 900; color: var(--primary);
   text-shadow: 2px 2px 0 var(--primary-light);
@@ -712,6 +709,7 @@ restartBtn2.addEventListener('click', e => { e.stopPropagation(); startGame(); }
 
 // ページ読み込み完了後すぐにゲーム開始
 startGame();
+initMenu();
 </script>
 </body>
 </html>

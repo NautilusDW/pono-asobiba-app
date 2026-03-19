@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -53,11 +54,6 @@ html, body {
   text-align: center;
   padding: 4px 0;
   position: relative;
-}
-.back-link {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  color: var(--primary); font-weight: 700; font-size: 0.85rem;
-  text-decoration: none;
 }
 .header h1 {
   font-size: 1.3rem; font-weight: 900;
@@ -1110,6 +1106,15 @@ resize();
 updateHUD();
 showOverlay('start');
 requestAnimationFrame(loop);
+
+initMenu({
+  bgmToggle: function() {
+    bgmEnabled = !bgmEnabled;
+    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+    if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+    updateBgmBtn();
+  }
+});
 
 // ===== Overlay button =====
 // overlay は game-wrap の外にあるので touch-action:none の影響を受けない

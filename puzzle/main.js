@@ -584,17 +584,7 @@ function tryStartBgm() {
   });
 }
 
-btnBgm.addEventListener('click', () => {
-  bgmEnabled = !bgmEnabled;
-  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
-  if (bgmEnabled) {
-    bgmStarted = false;
-    tryStartBgm();
-  } else {
-    bgm.pause();
-  }
-  updateBgmBtn();
-});
+// BGM toggle is now handled by initMenu() via common/menu.js
 
 // ページ読み込み時に即再生を試みる。ブロックされたら最初の操作で再試行
 if (bgmEnabled) {
@@ -629,4 +619,21 @@ window.addEventListener('DOMContentLoaded', () => {
   STAGES = [...BASE_STAGES, ...drawingStages];
   resizeObserver.observe(puzzleContainer);
   loadStage(0);
+
+  // Shared menu (gear icon) with BGM toggle
+  if (window.initMenu) {
+    initMenu({
+      bgmToggle: () => {
+        bgmEnabled = !bgmEnabled;
+        localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+        if (bgmEnabled) {
+          bgmStarted = false;
+          tryStartBgm();
+        } else {
+          bgm.pause();
+        }
+        updateBgmBtn();
+      }
+    });
+  }
 });

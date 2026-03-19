@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -50,22 +51,6 @@ html, body {
 
 /* ===== Header ===== */
 .header { text-align: center; padding: 8px 0; flex-shrink: 0; position: relative; }
-.back-link {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  color: var(--primary); font-weight: 700; font-size: 0.85rem;
-  text-decoration: none; padding: 6px 2px;
-}
-.btn-bgm {
-  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--primary-light);
-  border: 2px solid var(--primary);
-  font-size: 1rem; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
-  transition: transform 0.15s;
-}
-.btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 .header h1 {
   font-size: 1.4rem; font-weight: 900;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -415,11 +400,9 @@ html, body {
 
 <div id="app">
   <div class="header">
-    <a href="../index.html" class="back-link">← メニュー</a>
     <h1>ポノのもじかき</h1>
     <div class="subtitle">ゆびでなぞってみよう！</div>
     <div id="streak-badge" class="streak-badge hidden"></div>
-    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
   <div class="category-tabs" id="categoryTabs">
@@ -1090,25 +1073,15 @@ window.KidsTraceApp = {
 };
 
 // ===== BGM =====
-const bgm    = document.getElementById('bgm');
-const btnBgm = document.getElementById('btn-bgm');
+const bgm = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
 bgm.volume = 0.2;
-
-function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
-
-btnBgm.addEventListener('click', () => {
-  bgmEnabled = !bgmEnabled;
-  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
-  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-  updateBgmBtn();
-});
 
 if (bgmEnabled) {
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {
@@ -1116,7 +1089,6 @@ if (bgmEnabled) {
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
   });
 }
-updateBgmBtn();
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
@@ -1124,6 +1096,13 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur',  () => bgm.pause());
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+
+// ===== Menu =====
+initMenu({ bgmToggle: function() {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+}});
 </script>
 </body>
 </html>
