@@ -588,6 +588,7 @@ let tapEventIndex = 0, dragEventIndex = 0;
 let currentEvent = null;
 let eventTimer = 0;
 let eventOverlayAlpha = 0;
+let eventOutroStartAlpha = 0; // alpha at the moment OUTRO begins (avoid flash)
 let eventIconBounce = 0;
 let eventActiveTime = 0; // time within EVENT_ACTIVE (for shrink-to-corner)
 
@@ -615,6 +616,8 @@ let eventSparkleMode = false;
 let eventSparkleCount = 0;
 let eventSparkleTimer = 0;
 let eventRainbowPops = 0; // pops during rainbow event
+let eventScoreBounce = 0; // bounce animation timer (counts down)
+let eventLastScore = 0; // last known score for detecting increments
 let totalPops = 0; // reset each session
 let sessionHighScore = (() => { try { return parseInt(localStorage.getItem('bubble_highscore') || '0'); } catch(e) { return 0; } })();
 let isNewHighScore = false;
@@ -731,6 +734,8 @@ function updateEventSystem(dt) {
         eventTimer = 0;
         eventOverlayAlpha = 0;
         eventIconBounce = 0;
+        eventLastScore = 0;
+        eventScoreBounce = 0;
       }
       break;
 
@@ -761,6 +766,7 @@ function updateEventSystem(dt) {
           spawnPopup(W / 2, H * 0.4, `🌈 ${eventRainbowPops}こ われた！`, '#fff');
         }
         currentEvent.onExit();
+        eventOutroStartAlpha = eventOverlayAlpha; // capture current alpha
         eventState = 'EVENT_OUTRO';
         eventTimer = 0;
         // Celebration particles
@@ -771,7 +777,7 @@ function updateEventSystem(dt) {
       break;
 
     case 'EVENT_OUTRO':
-      eventOverlayAlpha = Math.max(0, 1 - eventTimer / EVENT_OUTRO_DURATION);
+      eventOverlayAlpha = Math.max(0, eventOutroStartAlpha * (1 - eventTimer / EVENT_OUTRO_DURATION));
       if (eventTimer >= EVENT_OUTRO_DURATION) {
         currentEvent = null;
         eventOverlayAlpha = 0;
@@ -872,24 +878,39 @@ function drawEventOverlay(dt) {
     }
   }
 
-  // Draw event-specific counters (bottom center)
+  // Draw event-specific counters (center-upper with bounce animation)
   if (eventState === 'EVENT_ACTIVE') {
-    ctx.globalAlpha = 0.7;
-    ctx.font = `bold ${Math.min(W * 0.05, 22)}px 'Zen Maru Gothic', sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 4;
+    let scoreIcon = '', scoreVal = 0, scoreColor = '#fff';
     if (currentEvent.id === 'find_pono') {
-      ctx.fillStyle = '#fff';
-      ctx.fillText(`🐻 × ${eventPonoFound}`, W / 2, H * 0.92);
+      scoreIcon = '🐻'; scoreVal = eventPonoFound; scoreColor = '#fff';
     } else if (currentEvent.id === 'sparkle_tap') {
-      ctx.fillStyle = '#FFD700';
-      ctx.fillText(`⭐ × ${eventSparkleCount}`, W / 2, H * 0.92);
+      scoreIcon = '⭐'; scoreVal = eventSparkleCount; scoreColor = '#FFD700';
     } else if (currentEvent.id === 'rainbow_trail') {
-      ctx.fillStyle = '#FFD700';
-      ctx.fillText(`🌈 × ${eventRainbowPops}`, W / 2, H * 0.92);
+      scoreIcon = '🌈'; scoreVal = eventRainbowPops; scoreColor = '#FFD700';
     }
-    ctx.shadowBlur = 0;
+    if (scoreIcon && scoreVal > 0) {
+      // Detect increment → trigger bounce
+      if (scoreVal !== eventLastScore) {
+        eventScoreBounce = 400; // 400ms bounce
+        eventLastScore = scoreVal;
+      }
+      if (eventScoreBounce > 0) eventScoreBounce -= dt;
+      const bounceT = Math.max(0, eventScoreBounce / 400);
+      const scale = 1 + bounceT * 0.5; // 1.0 → 1.5 bounce
+      const baseSz = Math.min(W * 0.08, 36);
+      const sz = baseSz * scale;
+      const counterY = H * 0.32;
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.font = `900 ${sz}px 'Zen Maru Gothic', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = scoreColor;
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(`${scoreIcon} × ${scoreVal}`, W / 2, counterY - bounceT * 10);
+      ctx.restore();
+    }
 
     // ── Countdown timer bar ──
     const remaining = Math.max(0, EVENT_ACTIVE_DURATION - eventTimer);
@@ -1585,9 +1606,14 @@ canvas.addEventListener('pointerdown', e => {
     checkConstellationTap(x, y);
     return;
   }
-  // During drag events: tap still works but with muted feedback
+  // During drag events: tap behavior depends on event type
   if (currentEvent && currentEvent.type === 'drag' && eventState === 'EVENT_ACTIVE') {
-    handlePop(x, y, true); // muted=true
+    if (currentEvent.id === 'rainbow_trail') {
+      // Rainbow: taps don't count at all — only dragging
+      showGentleHint('drag', x, y);
+      return;
+    }
+    handlePop(x, y, true); // muted=true for other drag events
     showGentleHint('drag', x, y);
     return;
   }
@@ -2118,21 +2144,21 @@ function drawConstellation(dt) {
       ctx.restore();
     }
 
-    // Name + emoji (below illustration, with spacing)
+    // Name + emoji (centered on screen)
     ctx.save();
     ctx.globalAlpha = alpha * t;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const emojiSize = Math.min(W * 0.12, 50) * (0.8 + t * 0.2);
+    const emojiSize = Math.min(W * 0.15, 60) * (0.8 + t * 0.2);
     ctx.font = `${emojiSize}px sans-serif`;
-    const nameY = bbMaxY + 60;
-    ctx.fillText(ca.constellation.emoji, cx, nameY);
-    const nameSize = Math.min(W * 0.07, 30);
+    const nameY = H * 0.5;
+    ctx.fillText(ca.constellation.emoji, W / 2, nameY);
+    const nameSize = Math.min(W * 0.08, 34);
     ctx.font = `900 ${nameSize}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(100,150,255,0.6)';
-    ctx.shadowBlur = 15;
-    ctx.fillText(ca.constellation.name + '！', cx, nameY + emojiSize * 0.8 + 10);
+    ctx.shadowColor = 'rgba(100,150,255,0.8)';
+    ctx.shadowBlur = 20;
+    ctx.fillText(ca.constellation.name + '！', W / 2, nameY + emojiSize * 0.8 + 10);
     ctx.restore();
   } else {
     // Hint text
@@ -2493,29 +2519,41 @@ function loop(time) {
     const opacity = bopacity[i];
     if (opacity < 0.3) continue;
     const t = lastTime * 0.003 + i * 2;
-    // Draw 4-6 small rotating stars around the bubble
-    const starCount = 5;
-    for (let s = 0; s < starCount; s++) {
-      const angle = (s / starCount) * Math.PI * 2 + t;
-      const dist = r + 6 + Math.sin(t * 2 + s) * 4;
-      const sx = x0 + Math.cos(angle) * dist;
-      const sy = y0 + Math.sin(angle) * dist;
-      const starAlpha = 0.5 + 0.5 * Math.sin(t * 3 + s * 1.5);
-      ctx.globalAlpha = opacity * starAlpha * 0.9;
-      ctx.font = `${Math.max(8, r * 0.25)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(s % 2 === 0 ? '⭐' : '✨', sx, sy);
-    }
-    // Soft golden glow behind bubble
-    ctx.globalAlpha = opacity * 0.25;
-    ctx.shadowColor = 'rgba(255,215,0,0.8)';
-    ctx.shadowBlur = 15;
+    const pulse = 0.7 + 0.3 * Math.sin(t * 4); // pulsing effect
+
+    // Strong golden glow ring (pulsing)
+    ctx.globalAlpha = opacity * 0.6 * pulse;
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 3 + pulse * 2;
+    ctx.shadowColor = 'rgba(255,215,0,0.9)';
+    ctx.shadowBlur = 20 + pulse * 10;
+    ctx.beginPath();
+    ctx.arc(x0, y0, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Fill bubble with golden tint
+    ctx.globalAlpha = opacity * 0.15 * pulse;
+    ctx.fillStyle = 'rgba(255,235,100,0.5)';
     ctx.beginPath();
     ctx.arc(x0, y0, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,235,100,0.2)';
     ctx.fill();
-    ctx.shadowBlur = 0;
+
+    // Larger rotating star emojis
+    const starCount = 6;
+    for (let s = 0; s < starCount; s++) {
+      const angle = (s / starCount) * Math.PI * 2 + t;
+      const dist = r + 10 + Math.sin(t * 2 + s) * 5;
+      const sx = x0 + Math.cos(angle) * dist;
+      const sy = y0 + Math.sin(angle) * dist;
+      const starAlpha = 0.6 + 0.4 * Math.sin(t * 3 + s * 1.2);
+      ctx.globalAlpha = opacity * starAlpha;
+      const starSz = Math.max(12, r * 0.35);
+      ctx.font = `${starSz}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s % 3 === 0 ? '⭐' : s % 3 === 1 ? '✨' : '🌟', sx, sy);
+    }
   }
   ctx.globalAlpha = 1;
 
