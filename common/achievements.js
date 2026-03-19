@@ -28,10 +28,10 @@
     { id: 'bubble_const_1',  game: 'bubble', name: 'はじめての せいざ',     desc: 'せいざを 1つ かんせいしよう',      target: 1,   stat: 'bubble_constellations', tier: 1, reward: { type: 'furn', id: 'ach_star_light' } },
     { id: 'bubble_const_6',  game: 'bubble', name: 'せいざ はかせ',         desc: 'せいざを 6つ かんせいしよう',      target: 6,   stat: 'bubble_constellations', tier: 2, reward: { type: 'furn', id: 'ach_telescope' } },
     { id: 'bubble_const_12', game: 'bubble', name: 'せいざマスター',       desc: 'せいざを 12かい かんせいしよう',   target: 12,  stat: 'bubble_constellations', tier: 3, reward: { type: 'furn', id: 'ach_planetarium' } },
-    // キラキラバブル
-    { id: 'bubble_sparkle_10',  game: 'bubble', name: 'キラキラ はっけん！', desc: 'キラキラを 10こ タップ',            target: 10,  stat: 'bubble_sparkle',       tier: 1, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
-    { id: 'bubble_sparkle_30',  game: 'bubble', name: 'キラキラ ともだち',   desc: 'キラキラを 30こ タップ',            target: 30,  stat: 'bubble_sparkle',       tier: 2, reward: { type: 'furn', id: 'ach_color_pencils' } },
-    { id: 'bubble_sparkle_100', game: 'bubble', name: 'キラキラマスター',    desc: 'キラキラを 100こ タップ',           target: 100, stat: 'bubble_sparkle',       tier: 3, reward: { type: 'furn', id: 'ach_rainbow_wall' } },
+    // おほしさまバブル
+    { id: 'bubble_sparkle_10',  game: 'bubble', name: 'おほしさま はっけん！', desc: 'おほしさまを 10こ タップ',          target: 10,  stat: 'bubble_sparkle',       tier: 1, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
+    { id: 'bubble_sparkle_30',  game: 'bubble', name: 'おほしさま ともだち',   desc: 'おほしさまを 30こ タップ',          target: 30,  stat: 'bubble_sparkle',       tier: 2, reward: { type: 'furn', id: 'ach_color_pencils' } },
+    { id: 'bubble_sparkle_100', game: 'bubble', name: 'おほしさまマスター',    desc: 'おほしさまを 100こ タップ',         target: 100, stat: 'bubble_sparkle',       tier: 3, reward: { type: 'furn', id: 'ach_rainbow_wall' } },
     // おおきいシャボン
     { id: 'bubble_big_20',  game: 'bubble', name: 'おおきいの すき！',     desc: 'おおきいシャボンを 20こ わろう',   target: 20,  stat: 'bubble_big_pops',      tier: 1, reward: { type: 'furn', id: 'ach_big_bubble_deco' } },
     { id: 'bubble_big_100', game: 'bubble', name: 'パンパン名人',         desc: 'おおきいシャボンを 100こ わろう',  target: 100, stat: 'bubble_big_pops',      tier: 2, reward: { type: 'furn', id: 'ach_circus_tent' } },

@@ -24,7 +24,7 @@ canvas { display: block; }
   display: none;
 }
 #back-btn { top: 12px; left: 12px; }
-#bgm-btn { top: 12px; right: 12px; }
+#bgm-btn { top: 12px; left: 64px; }
 #start-screen {
   position: fixed; top: 0; bottom: 0; left: 50%; z-index: 9999;
   transform: translateX(-50%);
@@ -491,7 +491,7 @@ const TAP_EVENTS = [
     }
   },
   {
-    id: 'sparkle_tap', type: 'tap', label: 'キラキラを タップ！', icon: '✨',
+    id: 'sparkle_tap', type: 'tap', label: 'おほしさまを タップ！', icon: '⭐',
     onEnter() {
       eventSparkleMode = true;
       eventSparkleCount = 0;
@@ -539,7 +539,9 @@ const TAP_EVENTS = [
     id: 'creature_hunt', type: 'tap', label: 'いきものを みつけて タップ！', icon: '🦋',
     onEnter() {
       eventCreatureBoost = true;
-      nextCreatureBoostTime = 2000 + Math.random() * 1500;
+      nextCreatureBoostTime = 1000 + Math.random() * 1000;
+      // Immediately spawn a few creatures
+      for (let c = 0; c < 3; c++) spawnCreatureBubble();
     },
     onExit() {
       eventCreatureBoost = false;
@@ -550,7 +552,7 @@ const TAP_EVENTS = [
 
 const DRAG_EVENTS = [
   {
-    id: 'rainbow_trail', type: 'drag', label: 'にじいろで シャボン玉を わろう！', icon: '🌈',
+    id: 'rainbow_trail', type: 'drag', label: 'がめんを なぞってみて！', icon: '🌈',
     onEnter() { eventTrailMode = 'rainbow'; eventRainbowPops = 0; },
     onExit() { eventTrailMode = null; if (window.incrementStat) window.incrementStat('bubble_rainbow_trails', 1); },
     onTick(dt) {}
@@ -650,7 +652,20 @@ function spawnPonoBubble() {
 }
 
 function arrangeStarBubbles() {
-  // Clear existing and spawn bubbles in a circle
+  // Clear most existing bubbles (keep only a few small background ones)
+  let kept = 0;
+  for (let i = 0; i < bcount; i++) {
+    if (balive[i]) {
+      if (kept < 5 && br[i] < 40) {
+        // Keep a few small background bubbles, make them more transparent
+        bopacity[i] = 0.3;
+        kept++;
+      } else {
+        balive[i] = 0;
+      }
+    }
+  }
+  // Spawn bubbles in a circle pattern
   const cx = W / 2, cy = H * 0.45;
   const radius = Math.min(W, H) * 0.28;
   const count = 8;
@@ -777,21 +792,22 @@ function drawEventOverlay(dt) {
   const bounceY = Math.sin(eventIconBounce) * (shrunk ? 3 : 8);
 
   if (shrunk) {
-    // Small icon + label in top-left corner
-    const iconSz = Math.min(W * 0.08, 36);
-    ctx.globalAlpha = eventOverlayAlpha * 0.7;
+    // Small icon + label below buttons (top-left area, y=65 to avoid buttons)
+    const iconSz = Math.min(W * 0.06, 28);
+    const shrunkY = 65;
+    ctx.globalAlpha = eventOverlayAlpha * 0.6;
     ctx.font = `${iconSz}px sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(currentEvent.icon, 60, 30 + bounceY);
-    const lblSz = Math.min(W * 0.035, 16);
+    ctx.fillText(currentEvent.icon, 14, shrunkY + bounceY);
+    const lblSz = Math.min(W * 0.03, 13);
     ctx.font = `900 ${lblSz}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = '#fff';
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 4;
-    const shortLabel = currentEvent.label.length > 10
-      ? currentEvent.label.slice(0, 10) + '...' : currentEvent.label;
-    ctx.fillText(shortLabel, 60 + iconSz + 4, 30 + bounceY);
+    ctx.shadowBlur = 3;
+    const shortLabel = currentEvent.label.length > 12
+      ? currentEvent.label.slice(0, 12) + '…' : currentEvent.label;
+    ctx.fillText(shortLabel, 14 + iconSz + 4, shrunkY + bounceY);
     ctx.shadowBlur = 0;
   } else {
     // Centered big icon + label
@@ -818,7 +834,7 @@ function drawEventOverlay(dt) {
     ctx.fillText(currentEvent.label, W / 2, H * 0.18 + iconSz * 0.6 + bounceY);
     ctx.shadowBlur = 0;
 
-    // Rainbow trail: show sub-label + pop counter
+    // Rainbow trail: show sub-label
     if (currentEvent.id === 'rainbow_trail') {
       const guideAlpha = eventState === 'EVENT_INTRO' ? 1 : Math.max(0, 1 - eventActiveTime / 4000);
       if (guideAlpha > 0.01) {
@@ -826,8 +842,7 @@ function drawEventOverlay(dt) {
         ctx.font = `${Math.min(W * 0.04, 18)}px 'Zen Maru Gothic', sans-serif`;
         ctx.fillStyle = '#fff';
         ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 6;
-        ctx.fillText('ゆびで シャボン玉を わってね！', W / 2, H * 0.32);
-        ctx.fillText('にじいろの あとが のこるよ', W / 2, H * 0.37);
+        ctx.fillText('にじいろの あとが のこるよ！', W / 2, H * 0.34);
         ctx.shadowBlur = 0;
       }
     }
@@ -859,7 +874,7 @@ function drawEventOverlay(dt) {
       ctx.fillText(`🐻 × ${eventPonoFound}`, W / 2, H * 0.92);
     } else if (currentEvent.id === 'sparkle_tap') {
       ctx.fillStyle = '#FFD700';
-      ctx.fillText(`✨ × ${eventSparkleCount}`, W / 2, H * 0.92);
+      ctx.fillText(`⭐ × ${eventSparkleCount}`, W / 2, H * 0.92);
     } else if (currentEvent.id === 'rainbow_trail') {
       ctx.fillStyle = '#FFD700';
       ctx.fillText(`🌈 × ${eventRainbowPops}`, W / 2, H * 0.92);
@@ -1396,7 +1411,7 @@ function popBubble(idx, chainDepth, muted) {
     eventSparkleCount++;
     if (window.incrementStat) window.incrementStat('bubble_sparkle', 1);
     for (let i = 0; i < 25; i++) addConfetti(x0, y0);
-    spawnPopup(x0, y0 - 30, '✨ キラキラ！', '#FFD700');
+    spawnPopup(x0, y0 - 30, '⭐ みつけた！', '#FFD700');
     if (eventSparkleCount % 5 === 0) {
       for (let i = 0; i < 40; i++) addConfetti(W / 2, H * 0.4);
       spawnPopup(W / 2, H * 0.35, '🎉 すごい！', '#FF6B6B');
@@ -2268,6 +2283,10 @@ function loop(time) {
         if (bopacity[i] <= 0) balive[i] = 0;
       }
     }
+  } else if (eventStarMode) {
+    // Star draw: very slow spawning to keep circle visible
+    spawnTimer += dt;
+    if (spawnTimer > 2000 && bcount < 15) { spawnBubble(); spawnTimer = 0; }
   } else {
     // Spawn — faster base rate + emergency refill when low
     spawnTimer += dt;
@@ -2447,23 +2466,30 @@ function loop(time) {
     const r = br[i], x0 = bx[i], y0 = by[i];
     const opacity = bopacity[i];
     if (opacity < 0.3) continue;
-    // Pulsing golden glow ring
-    const pulse = 0.5 + 0.5 * Math.sin(lastTime * 0.006 + i * 1.5);
-    ctx.globalAlpha = opacity * (0.4 + 0.4 * pulse);
+    const t = lastTime * 0.003 + i * 2;
+    // Draw 4-6 small rotating stars around the bubble
+    const starCount = 5;
+    for (let s = 0; s < starCount; s++) {
+      const angle = (s / starCount) * Math.PI * 2 + t;
+      const dist = r + 6 + Math.sin(t * 2 + s) * 4;
+      const sx = x0 + Math.cos(angle) * dist;
+      const sy = y0 + Math.sin(angle) * dist;
+      const starAlpha = 0.5 + 0.5 * Math.sin(t * 3 + s * 1.5);
+      ctx.globalAlpha = opacity * starAlpha * 0.9;
+      ctx.font = `${Math.max(8, r * 0.25)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s % 2 === 0 ? '⭐' : '✨', sx, sy);
+    }
+    // Soft golden glow behind bubble
+    ctx.globalAlpha = opacity * 0.25;
+    ctx.shadowColor = 'rgba(255,215,0,0.8)';
+    ctx.shadowBlur = 15;
     ctx.beginPath();
-    ctx.arc(x0, y0, r + 5 + pulse * 4, 0, Math.PI * 2);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = `rgba(255,215,0,0.8)`;
-    ctx.shadowColor = 'rgba(255,215,0,0.6)';
-    ctx.shadowBlur = 10;
-    ctx.stroke();
+    ctx.arc(x0, y0, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,235,100,0.2)';
+    ctx.fill();
     ctx.shadowBlur = 0;
-    // Star emoji in center
-    ctx.globalAlpha = opacity * (0.6 + 0.3 * pulse);
-    ctx.font = `${r * 0.6}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('✨', x0, y0);
   }
   ctx.globalAlpha = 1;
 
@@ -2607,7 +2633,7 @@ function loop(time) {
       spawnCreatureBubble();
       creatureTimer = 0;
       if (eventCreatureBoost) {
-        nextCreatureBoostTime = 2000 + Math.random() * 1500;
+        nextCreatureBoostTime = 1000 + Math.random() * 1000;
       } else {
         nextCreatureTime = CREATURE_MIN_INTERVAL + Math.random() * (CREATURE_MAX_INTERVAL - CREATURE_MIN_INTERVAL);
       }
