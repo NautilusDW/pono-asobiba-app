@@ -38,15 +38,15 @@ canvas { display: block; }
   text-shadow: 0 3px 12px rgba(100,180,255,0.6), 0 1px 3px rgba(0,0,0,0.2);
   letter-spacing: 0.05em;
 }
-#start-screen .bubble-icon { font-size: 56px; margin-bottom: 8px; }
+#start-screen .bubble-icon { font-size: 56px; margin-top: 12px; margin-bottom: 8px; }
 #start-screen .desc {
   font-size: 22px; font-weight: 900; color: #fff;
   text-shadow: 0 2px 10px rgba(100,180,255,0.5), 0 1px 3px rgba(0,0,0,0.3);
   margin-top: 20px; line-height: 1.6; text-align: center;
 }
 #start-screen .tap {
-  font-size: 22px; font-weight: 700; color: #F5E6D0; margin-top: 50px;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  font-size: 24px; font-weight: 900; color: #FF8C42; margin-top: 50px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255,140,66,0.4);
   animation: pulse 1.5s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
@@ -55,8 +55,8 @@ canvas { display: block; }
 </head>
 <body>
 <div id="start-screen">
-  <div class="bubble-icon">🫧</div>
   <div class="title">しゃぼんだま パーティー</div>
+  <div class="bubble-icon">🫧</div>
   <div class="desc">シャボン玉をタップしてね！<br>いろんなイベントがおきるよ</div>
   <div class="tap">タップしてスタート</div>
   <div style="position:absolute;bottom:8px;right:8px;font-size:10px;color:rgba(255,255,255,0.4)">v17d</div>
@@ -615,7 +615,9 @@ let eventSparkleMode = false;
 let eventSparkleCount = 0;
 let eventSparkleTimer = 0;
 let eventRainbowPops = 0; // pops during rainbow event
-let totalPops = (() => { try { const s = JSON.parse(localStorage.getItem('pono_stats') || '{}'); return s.bubble_pops || 0; } catch(e) { return 0; } })();
+let totalPops = 0; // reset each session
+let sessionHighScore = (() => { try { return parseInt(localStorage.getItem('bubble_highscore') || '0'); } catch(e) { return 0; } })();
+let isNewHighScore = false;
 
 // bpono is declared alongside other bubble arrays after MAX_BUBBLES
 
@@ -750,6 +752,14 @@ function updateEventSystem(dt) {
         eventOverlayAlpha = Math.max(0.5, eventOverlayAlpha - dt * 0.0005);
       }
       if (eventTimer >= EVENT_ACTIVE_DURATION) {
+        // Show event results before exiting
+        if (currentEvent.id === 'find_pono' && eventPonoFound > 0) {
+          spawnPopup(W / 2, H * 0.4, `🐻 ${eventPonoFound}ひき みつけた！`, '#fff');
+        } else if (currentEvent.id === 'sparkle_tap' && eventSparkleCount > 0) {
+          spawnPopup(W / 2, H * 0.4, `⭐ ${eventSparkleCount}こ みつけた！`, '#FFD700');
+        } else if (currentEvent.id === 'rainbow_trail' && eventRainbowPops > 0) {
+          spawnPopup(W / 2, H * 0.4, `🌈 ${eventRainbowPops}こ われた！`, '#fff');
+        }
         currentEvent.onExit();
         eventState = 'EVENT_OUTRO';
         eventTimer = 0;
@@ -1424,6 +1434,16 @@ function popBubble(idx, chainDepth, muted) {
   }
 
   totalPops++;
+  if (totalPops > sessionHighScore) {
+    if (!isNewHighScore && sessionHighScore > 0) {
+      // First time beating high score this session - celebrate!
+      spawnPopup(W / 2, H * 0.15, '🏆 ハイスコア！', '#FFD700');
+      for (let i = 0; i < 20; i++) addConfetti(W * 0.3 + Math.random() * W * 0.4, H * 0.1);
+    }
+    isNewHighScore = true;
+    sessionHighScore = totalPops;
+    try { localStorage.setItem('bubble_highscore', String(sessionHighScore)); } catch(e) {}
+  }
   if (eventTrailMode === 'rainbow') eventRainbowPops++;
 
   // ── 実績トラッキング ──
@@ -1853,11 +1873,13 @@ let constellationFadeIn = 0;
 let constellationGuideAlpha = 1; // starts at 1, fades to 0 as guide disappears
 let lastConstellationIdx = -1;
 
+let constellationInputCooldown = 0; // ms cooldown before accepting taps
 function enterConstellationMode() {
   if (constellationMode) return;
   constellationMode = true;
   constellationFadeIn = 0;
   constellationGuideAlpha = 1; // show full guide at start
+  constellationInputCooldown = 1500; // 1.5s before accepting input
   let idx;
   do { idx = Math.floor(Math.random() * CONSTELLATIONS.length); } while (idx === lastConstellationIdx && CONSTELLATIONS.length > 1);
   lastConstellationIdx = idx;
@@ -1882,6 +1904,7 @@ function exitConstellationMode() {
 
 function checkConstellationTap(px, py) {
   if (!constellationActive || constellationActive.completed) return;
+  if (constellationInputCooldown > 0) return; // wait for cooldown
   const ca = constellationActive;
   const nextIdx = ca.currentIdx + 1;
   if (nextIdx >= ca.constellation.points.length) return;
@@ -1919,6 +1942,9 @@ function drawConstellation(dt) {
   constellationFadeIn = Math.min(1, constellationFadeIn + dt * 0.002);
 
   // Guide fades out over time (starts visible, slowly disappears)
+  // Tick down input cooldown
+  if (constellationInputCooldown > 0) constellationInputCooldown -= dt;
+
   if (!ca.completed && constellationGuideAlpha > 0) {
     constellationGuideAlpha = Math.max(0, constellationGuideAlpha - dt * 0.0003);
   }
@@ -2607,17 +2633,30 @@ function loop(time) {
   // Event overlay (on top of trail and bubbles)
   drawEventOverlay(dt);
 
-  // ── Persistent HUD: pop count (top right) ──
+  // ── Persistent HUD: pop count + high score (top right) ──
   if (gameStarted && !constellationMode) {
     ctx.save();
-    ctx.globalAlpha = 0.6;
-    ctx.font = `bold ${Math.min(W * 0.04, 18)}px 'Zen Maru Gothic', sans-serif`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = '#fff';
     ctx.shadowColor = 'rgba(0,0,0,0.4)';
     ctx.shadowBlur = 3;
+    // Current score
+    ctx.globalAlpha = 0.7;
+    ctx.font = `bold ${Math.min(W * 0.045, 20)}px 'Zen Maru Gothic', sans-serif`;
+    ctx.fillStyle = '#fff';
     ctx.fillText(`🫧 ${totalPops}`, W - 16, 10);
+    // High score indicator
+    if (isNewHighScore) {
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(lastTime * 0.005);
+      ctx.font = `bold ${Math.min(W * 0.03, 13)}px 'Zen Maru Gothic', sans-serif`;
+      ctx.fillStyle = '#FFD700';
+      ctx.fillText('🏆 ハイスコア！', W - 16, 34);
+    } else if (sessionHighScore > 0) {
+      ctx.globalAlpha = 0.4;
+      ctx.font = `bold ${Math.min(W * 0.025, 11)}px 'Zen Maru Gothic', sans-serif`;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`BEST ${sessionHighScore}`, W - 16, 34);
+    }
     ctx.shadowBlur = 0;
     ctx.restore();
   }
