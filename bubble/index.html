@@ -31,7 +31,6 @@ canvas { display: block; }
   width: min(100%, 100vh * 9 / 16);
   background: linear-gradient(180deg, rgba(135,206,250,0.85) 0%, rgba(176,226,255,0.7) 50%, rgba(255,255,255,0.5) 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  cursor: pointer;
 }
 #start-screen .title {
   font-size: 26px; font-weight: 900; color: #fff;
@@ -48,6 +47,30 @@ canvas { display: block; }
   font-size: 24px; font-weight: 900; color: #FF8C42; margin-top: 50px;
   text-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255,140,66,0.4);
   animation: pulse 1.5s infinite;
+  display: none;
+}
+.diff-buttons {
+  display: flex; flex-direction: column; gap: 14px; margin-top: 30px; width: 75%;
+}
+.diff-btn {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 24px; font-weight: 900; border: none; border-radius: 20px;
+  padding: 16px 20px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  letter-spacing: 0.05em;
+  animation: pulse 1.5s infinite;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.diff-btn .diff-sub {
+  font-size: 13px; font-weight: 400; opacity: 0.7;
+}
+.diff-easy {
+  background: linear-gradient(135deg, #a8e6cf, #88d8a8);
+  color: #2d6a4f;
+}
+.diff-normal {
+  background: linear-gradient(135deg, #a8d8ea, #88c0d0);
+  color: #1a4d6e;
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
 </style>
@@ -58,8 +81,11 @@ canvas { display: block; }
   <div class="title">しゃぼんだま パーティー</div>
   <div class="bubble-icon">🫧</div>
   <div class="desc">シャボン玉をタップしてね！<br>いろんなイベントがおきるよ</div>
-  <div class="tap">タップしてスタート</div>
-  <div style="position:absolute;bottom:8px;right:8px;font-size:10px;color:rgba(255,255,255,0.4)">v17d</div>
+  <div class="diff-buttons">
+    <button class="diff-btn diff-easy" data-diff="easy">🐣 かんたん <span class="diff-sub">(3さい〜)</span></button>
+    <button class="diff-btn diff-normal" data-diff="normal">⭐ ふつう <span class="diff-sub">(5さい〜)</span></button>
+  </div>
+  <div style="position:absolute;bottom:8px;right:8px;font-size:10px;color:rgba(255,255,255,0.4)">v18a</div>
 </div>
 <button id="back-btn" onclick="location.href='../'">🏠</button>
 <button id="bgm-btn" onclick="switchBGMTrack()">🎵</button>
@@ -552,15 +578,14 @@ const TAP_EVENTS = [
 
 const DRAG_EVENTS = [
   {
-    id: 'rainbow_trail', type: 'drag', label: 'がめんを なぞってみて！', icon: '🌈',
-    onEnter() { eventTrailMode = 'rainbow'; eventRainbowPops = 0; },
-    onExit() { eventTrailMode = null; if (window.incrementStat) window.incrementStat('bubble_rainbow_trails', 1); },
-    onTick(dt) {}
-  },
-  {
-    id: 'bubble_sweep', type: 'drag', label: 'ゆびでなぞって いっぱいわろう！', icon: '🫧',
-    onEnter() { eventSweepMode = true; },
-    onExit() { eventSweepMode = false; },
+    id: 'rainbow_sweep', type: 'drag', label: 'がめんを なぞってみて！', icon: '🌈',
+    onEnter() { eventTrailMode = 'rainbow'; eventSweepMode = true; eventRainbowPops = 0; },
+    onExit() {
+      eventTrailMode = null; eventSweepMode = false;
+      if (window.incrementStat) {
+        window.incrementStat('bubble_rainbow_trails', 1);
+      }
+    },
     onTick(dt) {}
   },
   {
@@ -592,9 +617,46 @@ let eventOutroStartAlpha = 0; // alpha at the moment OUTRO begins (avoid flash)
 let eventIconBounce = 0;
 let eventActiveTime = 0; // time within EVENT_ACTIVE (for shrink-to-corner)
 
-const FREE_PLAY_DURATION = 25000;  // 25s free play between events
+// ── Difficulty system ──
+let difficulty = (() => { try { return localStorage.getItem('bubble_difficulty') || 'normal'; } catch(e) { return 'normal'; } })();
+const DIFF_CONFIG = {
+  easy: {
+    freeDuration: 30000,
+    eventDuration: 18000,
+    hitRadiusMult: 1.6,
+    bubbleSizeMult: 1.3,
+    showHints: false,
+    constellationAnyTap: true,
+    constellationGuideFade: false,
+    constellationAutoComplete: 12000,
+    tapEvents: ['find_pono', 'big_bubbles', 'creature_hunt'],
+    dragEvents: ['rainbow_sweep'],
+  },
+  normal: {
+    freeDuration: 25000,
+    eventDuration: 15000,
+    hitRadiusMult: 1.3,
+    bubbleSizeMult: 1.0,
+    showHints: true,
+    constellationAnyTap: false,
+    constellationGuideFade: true,
+    constellationAutoComplete: 0,
+    tapEvents: ['find_pono', 'sparkle_tap', 'big_bubbles', 'creature_hunt'],
+    dragEvents: ['rainbow_sweep', 'star_draw', 'music_paint'],
+  }
+};
+let config = DIFF_CONFIG[difficulty];
+let activeTapEvents = TAP_EVENTS;
+let activeDragEvents = DRAG_EVENTS;
+
+function applyDifficulty() {
+  config = DIFF_CONFIG[difficulty];
+  activeTapEvents = TAP_EVENTS.filter(e => config.tapEvents.includes(e.id));
+  activeDragEvents = DRAG_EVENTS.filter(e => config.dragEvents.includes(e.id));
+}
+applyDifficulty();
+
 const EVENT_INTRO_DURATION = 2000; // 2s intro
-const EVENT_ACTIVE_DURATION = 15000; // 15s active
 const EVENT_OUTRO_DURATION = 1500;  // 1.5s outro
 
 // Event-specific state
@@ -719,14 +781,14 @@ function updateEventSystem(dt) {
 
   switch (eventState) {
     case 'FREE_PLAY':
-      if (eventTimer >= FREE_PLAY_DURATION) {
+      if (eventTimer >= config.freeDuration) {
         // Pick next event
         const type = EVENT_SEQUENCE[eventIndex % EVENT_SEQUENCE.length];
         if (type === 'tap') {
-          currentEvent = TAP_EVENTS[tapEventIndex % TAP_EVENTS.length];
+          currentEvent = activeTapEvents[tapEventIndex % activeTapEvents.length];
           tapEventIndex++;
         } else {
-          currentEvent = DRAG_EVENTS[dragEventIndex % DRAG_EVENTS.length];
+          currentEvent = activeDragEvents[dragEventIndex % activeDragEvents.length];
           dragEventIndex++;
         }
         eventIndex++;
@@ -756,13 +818,13 @@ function updateEventSystem(dt) {
       if (eventActiveTime > 3000) {
         eventOverlayAlpha = Math.max(0.5, eventOverlayAlpha - dt * 0.0005);
       }
-      if (eventTimer >= EVENT_ACTIVE_DURATION) {
+      if (eventTimer >= config.eventDuration) {
         // Show event results before exiting
         if (currentEvent.id === 'find_pono' && eventPonoFound > 0) {
           spawnPopup(W / 2, H * 0.4, `🐻 ${eventPonoFound}ひき みつけた！`, '#fff');
         } else if (currentEvent.id === 'sparkle_tap' && eventSparkleCount > 0) {
           spawnPopup(W / 2, H * 0.4, `⭐ ${eventSparkleCount}こ みつけた！`, '#FFD700');
-        } else if (currentEvent.id === 'rainbow_trail' && eventRainbowPops > 0) {
+        } else if (currentEvent.id === 'rainbow_sweep' && eventRainbowPops > 0) {
           spawnPopup(W / 2, H * 0.4, `🌈 ${eventRainbowPops}こ われた！`, '#fff');
         }
         currentEvent.onExit();
@@ -851,7 +913,7 @@ function drawEventOverlay(dt) {
     ctx.shadowBlur = 0;
 
     // Rainbow trail: show sub-label
-    if (currentEvent.id === 'rainbow_trail') {
+    if (currentEvent.id === 'rainbow_sweep') {
       const guideAlpha = eventState === 'EVENT_INTRO' ? 1 : Math.max(0, 1 - eventActiveTime / 4000);
       if (guideAlpha > 0.01) {
         ctx.globalAlpha = eventOverlayAlpha * guideAlpha * 0.7;
@@ -885,7 +947,7 @@ function drawEventOverlay(dt) {
       scoreIcon = '🐻'; scoreVal = eventPonoFound; scoreColor = '#fff';
     } else if (currentEvent.id === 'sparkle_tap') {
       scoreIcon = '⭐'; scoreVal = eventSparkleCount; scoreColor = '#FFD700';
-    } else if (currentEvent.id === 'rainbow_trail') {
+    } else if (currentEvent.id === 'rainbow_sweep') {
       scoreIcon = '🌈'; scoreVal = eventRainbowPops; scoreColor = '#FFD700';
     }
     if (scoreIcon && scoreVal > 0) {
@@ -913,8 +975,8 @@ function drawEventOverlay(dt) {
     }
 
     // ── Countdown timer bar ──
-    const remaining = Math.max(0, EVENT_ACTIVE_DURATION - eventTimer);
-    const progress = remaining / EVENT_ACTIVE_DURATION;
+    const remaining = Math.max(0, config.eventDuration - eventTimer);
+    const progress = remaining / config.eventDuration;
     const barW = W * 0.5;
     const barH = 6;
     const barX = (W - barW) / 2;
@@ -1111,7 +1173,7 @@ function addBubble(x, y, radius, golden, opacity) {
                 : bigChance < 0.12 ? (80 + Math.random() * 50)
                 : (35 + Math.random() * 45);
   }
-  br[i] = radius || baseR * sz;
+  br[i] = radius || (baseR * sz * config.bubbleSizeMult);
   bx[i] = x ?? (Math.random() * W);
   by[i] = y ?? (H + br[i] + Math.random() * 100);
   bgolden[i] = golden ? 1 : 0;
@@ -1573,7 +1635,7 @@ function handlePop(x, y, muted) {
   for (let i = bcount - 1; i >= 0; i--) {
     if (!balive[i]) continue;
     const dx = x - bx[i], dy = y - by[i];
-    if (dx * dx + dy * dy < br[i] * br[i] * 1.3) {
+    if (dx * dx + dy * dy < br[i] * br[i] * config.hitRadiusMult) {
       popBubble(i, 0, muted);
       return;
     }
@@ -1606,15 +1668,10 @@ canvas.addEventListener('pointerdown', e => {
     checkConstellationTap(x, y);
     return;
   }
-  // During drag events: tap behavior depends on event type
+  // During drag events: taps work but with muted audio + hint
   if (currentEvent && currentEvent.type === 'drag' && eventState === 'EVENT_ACTIVE') {
-    if (currentEvent.id === 'rainbow_trail') {
-      // Rainbow: taps don't count at all — only dragging
-      showGentleHint('drag', x, y);
-      return;
-    }
-    handlePop(x, y, true); // muted=true for other drag events
-    showGentleHint('drag', x, y);
+    handlePop(x, y, true); // muted=true for drag events
+    if (config.showHints) showGentleHint('drag', x, y);
     return;
   }
   handlePop(x, y);
@@ -1640,7 +1697,7 @@ canvas.addEventListener('pointermove', e => {
     }
     // During tap events: drag still draws trail but doesn't pop
     if (currentEvent && currentEvent.type === 'tap' && eventState === 'EVENT_ACTIVE') {
-      showGentleHint('tap', x, y);
+      if (config.showHints) showGentleHint('tap', x, y);
       return; // skip handlePop
     }
     handlePop(x, y);
@@ -1935,19 +1992,32 @@ function checkConstellationTap(px, py) {
   const nextIdx = ca.currentIdx + 1;
   if (nextIdx >= ca.constellation.points.length) return;
   const star = ca.starScreenPos[nextIdx];
-  const dx = px - star.x, dy = py - star.y;
-  const hitR = 45; // generous touch target for toddlers
-  if (dx * dx + dy * dy < hitR * hitR) {
+
+  // Easy mode: any tap advances to next star
+  // Normal mode: must tap near the star
+  let hit = false;
+  if (config.constellationAnyTap) {
+    hit = true; // any tap counts
+  } else {
+    const dx = px - star.x, dy = py - star.y;
+    const hitR = 45;
+    hit = (dx * dx + dy * dy < hitR * hitR);
+  }
+
+  if (hit) {
     ca.traced[nextIdx] = true;
     ca.currentIdx = nextIdx;
+    if (ca._autoTimer) ca._autoTimer = 0; // reset auto-complete timer on interaction
     for (let i = 0; i < 12; i++) addParticle(star.x, star.y, { r: 255, g: 255, b: 200 }, 4);
     if (audioCtx && audioCtx.state === 'running') {
       const freq = PENTA_CANDIDATES[nextIdx % PENTA_CANDIDATES.length];
       setupMasterChain();
       playMarimbaNote(freq, audioCtx.currentTime, 0.4, 0);
     }
-    // Fade out guide faster when player starts tracing
-    constellationGuideAlpha = Math.min(constellationGuideAlpha, 0.3);
+    // Fade out guide faster when player starts tracing (normal mode only)
+    if (config.constellationGuideFade) {
+      constellationGuideAlpha = Math.min(constellationGuideAlpha, 0.3);
+    }
     if (nextIdx === ca.constellation.points.length - 1) {
       ca.completed = true;
       ca.completeTime = 0;
@@ -1971,12 +2041,36 @@ function drawConstellation(dt) {
   // Tick down input cooldown
   if (constellationInputCooldown > 0) constellationInputCooldown -= dt;
 
-  if (!ca.completed && constellationGuideAlpha > 0) {
+  // Guide fade: normal mode fades over time, easy mode stays visible
+  if (!ca.completed && constellationGuideAlpha > 0 && config.constellationGuideFade) {
     constellationGuideAlpha = Math.max(0, constellationGuideAlpha - dt * 0.0003);
   }
 
   if (ca.completed) {
     ca.completeTime += dt;
+  }
+
+  // Easy mode: auto-complete after 12s of inactivity
+  if (!ca.completed && config.constellationAutoComplete > 0) {
+    if (!ca._autoTimer) ca._autoTimer = 0;
+    ca._autoTimer += dt;
+    if (ca._autoTimer >= config.constellationAutoComplete) {
+      // Auto-trace all remaining stars
+      for (let i = 0; i < ca.constellation.points.length; i++) {
+        if (!ca.traced[i]) {
+          ca.traced[i] = true;
+          const s = ca.starScreenPos[i];
+          for (let j = 0; j < 8; j++) addParticle(s.x, s.y, { r: 255, g: 255, b: 200 }, 4);
+        }
+      }
+      ca.currentIdx = ca.constellation.points.length - 1;
+      ca.completed = true;
+      ca.completeTime = 0;
+      if (window.incrementStat) window.incrementStat('bubble_constellations', 1);
+      for (let i = 0; i < 50; i++) {
+        addConfetti(W * 0.2 + Math.random() * W * 0.6, H * 0.15 + Math.random() * H * 0.5);
+      }
+    }
   }
 
   // Recalculate positions (scaled down to 70% around center)
@@ -2169,7 +2263,7 @@ function drawConstellation(dt) {
     const hintSize = Math.min(W * 0.045, 20);
     ctx.font = `700 ${hintSize}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = 'rgba(200,220,255,0.8)';
-    ctx.fillText('ひかる ほしを じゅんばんに タップ！', W / 2, H - 25);
+    ctx.fillText(config.constellationAnyTap ? 'がめんを タップしてね！' : 'ひかる ほしを じゅんばんに タップ！', W / 2, H - 25);
     ctx.restore();
   }
 }
@@ -2272,34 +2366,57 @@ function drawSky(dt) {
 // ── Start screen handler ──
 let gameStarted = false;
 
-document.getElementById('start-screen').addEventListener('pointerdown', function handler(e) {
-  e.preventDefault();
-  this.removeEventListener('pointerdown', handler);
+// Highlight previously selected difficulty
+{
+  const savedDiff = localStorage.getItem('bubble_difficulty') || 'normal';
+  const activeBtn = document.querySelector(`.diff-btn[data-diff="${savedDiff}"]`);
+  if (activeBtn) activeBtn.style.outline = '3px solid rgba(255,255,255,0.8)';
+}
 
-  // Init audio + BGM on first user gesture
-  ensureAudio();
-  initBGM();
-  startBGM();
-  bgmPlaying = true;
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('pointerdown', function handler(e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-  // Hide start screen
-  this.style.display = 'none';
+    // Set difficulty
+    difficulty = this.dataset.diff;
+    try { localStorage.setItem('bubble_difficulty', difficulty); } catch(e) {}
+    applyDifficulty();
 
-  // Show UI buttons
-  document.getElementById('back-btn').style.display = 'flex';
-  document.getElementById('bgm-btn').style.display = 'flex';
+    // Init audio + BGM on first user gesture
+    ensureAudio();
+    initBGM();
+    startBGM();
+    bgmPlaying = true;
 
-  // Always start at morning
-  dayTime = 0;
+    // Hide start screen
+    document.getElementById('start-screen').style.display = 'none';
 
-  // Spawn initial bubbles
-  for (let i = 0; i < 40; i++) {
-    addBubble(Math.random() * W, Math.random() * H);
-    bopacity[i] = 1;
-    bfadeIn[i] = 0;
-  }
+    // Show UI buttons
+    document.getElementById('back-btn').style.display = 'flex';
+    document.getElementById('bgm-btn').style.display = 'flex';
 
-  gameStarted = true;
+    // Always start at morning
+    dayTime = 0;
+
+    // Reset event state
+    eventState = 'FREE_PLAY';
+    eventTimer = 0;
+    eventIndex = 0;
+    tapEventIndex = 0;
+    dragEventIndex = 0;
+    totalPops = 0;
+    isNewHighScore = false;
+
+    // Spawn initial bubbles
+    for (let i = 0; i < 40; i++) {
+      addBubble(Math.random() * W, Math.random() * H);
+      bopacity[i] = 1;
+      bfadeIn[i] = 0;
+    }
+
+    gameStarted = true;
+  });
 });
 
 // ── Main loop ──
