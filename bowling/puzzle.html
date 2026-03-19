@@ -459,9 +459,20 @@ function fallenPhysics() {
     // Walls
     if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.2; }
     if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.2; }
-    // Sleep check
+    // Sleep check: near floor OR resting on another body
     const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-    if (speed < SLEEP_THRESHOLD && b.y + b.r >= floorY - 3) {
+    let supported = b.y + b.r >= floorY - 3;
+    if (!supported) {
+      for (let j = 0; j < fallen.length; j++) {
+        if (i === j || fallen[j].dead) continue;
+        const dx = b.x - fallen[j].x, dy = b.y - fallen[j].y;
+        const touchDist = b.r + fallen[j].r + 2;
+        if (dx * dx + dy * dy < touchDist * touchDist && dy < 0) {
+          supported = true; break; // resting on top of another body
+        }
+      }
+    }
+    if (speed < SLEEP_THRESHOLD && supported) {
       b.sleepCounter++;
       if (b.sleepCounter >= SLEEP_FRAMES) {
         b.vx = 0; b.vy = 0;
@@ -828,6 +839,7 @@ function ballHitGrid() {
 let score = 0, combo = 0, comboTimer = 0;
 let gamePhase = 'aim'; // 'aim' | 'flight' | 'settling'
 let settleTimer = 0;
+let settleMaxTimer = 0; // hard safety cap
 let shotNumber = 0;
 let soundThrottle = 0;
 
@@ -1118,10 +1130,8 @@ function drawEffects() {
 
 // ── Settled check for fallen bodies ──
 function fallenSettled() {
-  const floorY = H - 10;
   for (const b of fallen) {
     if (b.dead || b.sleeping) continue;
-    if (b.y + b.r < floorY - 5) return false;
     if (b.vx * b.vx + b.vy * b.vy > 0.04) return false;
   }
   return true;
@@ -1154,16 +1164,19 @@ function loop(now) {
     if (hit) {
       gamePhase = 'settling';
       settleTimer = SETTLE_WAIT;
+      settleMaxTimer = 0;
     }
     // Safety: ball went off screen
     if (ball && (ball.y < -50 || ball.y > H + 50)) {
       ball = null;
       gamePhase = 'settling';
       settleTimer = SETTLE_WAIT;
+      settleMaxTimer = 0;
     }
   }
 
   if (gamePhase === 'settling') {
+    settleMaxTimer++;
     // Run gravity physics on fallen bodies
     fallenPhysics();
     // Tick bombs
@@ -1173,9 +1186,9 @@ function loop(now) {
     const merged = detectFallenMerges();
     if (merged) settleTimer = SETTLE_WAIT;
 
-    if (fallenSettled() || settleTimer <= 0) {
+    if (fallenSettled() || settleTimer <= 0 || settleMaxTimer > 300) {
       settleTimer--;
-      if (settleTimer <= 0) {
+      if (settleTimer <= 0 || settleMaxTimer > 300) {
         // Force-sleep all remaining awake bodies
         for (const b of fallen) {
           if (!b.dead && !b.sleeping) {
