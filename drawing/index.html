@@ -193,8 +193,6 @@ html, body {
 .icon-btn.btn-sparkle.active { background: linear-gradient(135deg, #FFD700, #FF69B4); }
 .icon-btn.btn-bucket         { background: #EFF6FF; }
 .icon-btn.btn-bucket.active  { background: linear-gradient(135deg, #3B82F6, #2563EB); }
-.icon-btn.btn-nohami         { background: #F0FDF4; }
-.icon-btn.btn-nohami.active  { background: linear-gradient(135deg, #4ADE80, #16A34A); }
 
 /* ===== Save Toast ===== */
 .save-toast {
@@ -267,6 +265,41 @@ html, body {
   font-size: 0.65rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
+.gallery-thumb-lock {
+  position: absolute; bottom: 3px; right: 3px;
+  width: 24px; height: 24px;
+  background: rgba(255,255,255,0.85); color: #A89585;
+  border: none; border-radius: 50%;
+  font-size: 0.75rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.gallery-thumb-lock.locked {
+  background: rgba(74,222,128,0.9); color: #fff;
+}
+.gallery-thumb-wrap.locked-wrap {
+  outline: 3px solid #4ADE80;
+}
+/* Delete confirm overlay inside gallery */
+.gallery-del-confirm {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  border-radius: 10px; z-index: 10;
+}
+.gallery-del-confirm p {
+  color: #fff; font-size: 0.7rem; font-weight: 700;
+}
+.gallery-del-confirm .del-btns {
+  display: flex; gap: 6px;
+}
+.gallery-del-confirm button {
+  border: none; border-radius: 10px; padding: 5px 12px;
+  font-family: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer;
+}
+.gallery-del-yes { background: #EF4444; color: #fff; }
+.gallery-del-no  { background: #fff; color: #333; }
 .gallery-empty.hidden { display: none; }
 .gallery-empty {
   text-align: center; color: #A89585;
@@ -397,7 +430,6 @@ html, body {
     <button class="icon-btn btn-rainbow" id="btnRainbow" title="レインボー">🌈</button>
     <button class="icon-btn btn-sparkle" id="btnSparkle" title="きらきら">✨</button>
     <button class="icon-btn btn-bucket"  id="btnBucket" title="ぬりつぶす">🪣</button>
-    <button class="icon-btn btn-nohami" id="btnNoHami" title="はみ出し防止">🔒</button>
   </div>
 </div>
 
@@ -844,17 +876,6 @@ document.getElementById('btnBucket').addEventListener('click', () => {
   deactivateEraser(); deactivateStamp(); deactivateRainbow(); deactivateSparkle();
 });
 
-// ===== はみ出し防止 =====
-document.getElementById('btnNoHami').addEventListener('click', () => {
-  noHami = !noHami;
-  document.getElementById('btnNoHami').classList.toggle('active', noHami);
-  if (noHami) {
-    // 現時点のダーク系ピクセルを「境界」として記録
-    hamiMask = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  } else {
-    hamiMask = null;
-  }
-});
 
 // ===== Undo =====
 document.getElementById('btnUndo').addEventListener('click', () => {
@@ -912,21 +933,50 @@ function renderGallery() {
   empty.classList.add('hidden');
   drawings.forEach((d, i) => {
     const wrap = document.createElement('div');
-    wrap.className = 'gallery-thumb-wrap';
+    wrap.className = 'gallery-thumb-wrap' + (d.locked ? ' locked-wrap' : '');
     const img = document.createElement('img');
     img.src = d.dataUrl;
+
+    // Lock button
+    const lock = document.createElement('button');
+    lock.className = 'gallery-thumb-lock' + (d.locked ? ' locked' : '');
+    lock.textContent = d.locked ? '🔒' : '🔓';
+    lock.addEventListener('click', e => {
+      e.stopPropagation();
+      const updated = loadDrawings();
+      updated[i].locked = !updated[i].locked;
+      saveDrawingsList(updated);
+      renderGallery();
+    });
+
+    // Delete button with confirmation
     const del = document.createElement('button');
     del.className = 'gallery-thumb-del';
     del.textContent = '✕';
     del.addEventListener('click', e => {
       e.stopPropagation();
-      const updated = loadDrawings();
-      updated.splice(i, 1);
-      saveDrawingsList(updated);
-      renderGallery();
+      if (d.locked) return; // ロック中は削除不可
+      // Show confirm overlay
+      const confirm = document.createElement('div');
+      confirm.className = 'gallery-del-confirm';
+      confirm.innerHTML = '<p>ほんとうにけす？</p><div class="del-btns"><button class="gallery-del-yes">けす</button><button class="gallery-del-no">やめる</button></div>';
+      confirm.querySelector('.gallery-del-yes').addEventListener('click', ev => {
+        ev.stopPropagation();
+        const updated = loadDrawings();
+        updated.splice(i, 1);
+        saveDrawingsList(updated);
+        renderGallery();
+      });
+      confirm.querySelector('.gallery-del-no').addEventListener('click', ev => {
+        ev.stopPropagation();
+        confirm.remove();
+      });
+      wrap.appendChild(confirm);
     });
+
     wrap.appendChild(img);
     wrap.appendChild(del);
+    wrap.appendChild(lock);
     grid.appendChild(wrap);
   });
 }
