@@ -8,6 +8,7 @@
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/highscore.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -762,6 +763,7 @@ function onMiss() {
   updateHUD();
   if (lives <= 0) {
     saveHiScore();
+    saveHighScore('breakout', score);
     state = S.GAME_OVER;
     setTimeout(() => showOverlay('gameover'), 500);
   } else {
@@ -778,7 +780,7 @@ function onStageClear() {
   launchConfetti();
   const isLast = stageIdx >= STAGES.length - 1;
   const wasNewRecord = score > hiScore;
-  if (isLast) saveHiScore();
+  if (isLast) { saveHiScore(); saveHighScore('breakout', score); }
   awardPoints(5);
   if (wasNewRecord) awardPoints(10);
   if (window.setStatMax) window.setStatMax('breakout_stages', stageIdx + 1);
@@ -1113,7 +1115,12 @@ initMenu({
     localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
     if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
     updateBgmBtn();
-  }
+  },
+  extraButtons: [{
+    icon: '🏆',
+    label: 'ハイスコア',
+    onClick: () => showHighScoreTable('breakout', '🧱 ブロックくずし ハイスコア')
+  }]
 });
 
 // ===== Overlay button =====

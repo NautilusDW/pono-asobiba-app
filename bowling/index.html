@@ -39,6 +39,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/highscore.js"></script>
 </head>
 <body>
 <div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div><div style="margin-top:20px;display:flex;gap:8px;align-items:center"><div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div><div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div></div><div class="mode-link" onclick="event.stopPropagation();location.href='puzzle.html'">パズルモードで遊ぶ</div></div>
@@ -113,7 +114,13 @@ function initAudio() {
 document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
   e.preventDefault(); this.removeEventListener('pointerdown', handler);
   await initAudio(); this.style.display = 'none';
-  initMenu();
+  initMenu({
+    extraButtons: [{
+      icon: '🏆',
+      label: 'ハイスコア',
+      onClick: () => showHighScoreTable('bowling', '🎳 ボウリング ハイスコア')
+    }]
+  });
 });
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
@@ -1455,6 +1462,7 @@ function loop(now) {
     if (phaseTimer <= 0) {
       // Update best score & chain record
       if (score > bestScore) { bestScore = score; localStorage.setItem('bowling_best', String(bestScore)); }
+      saveHighScore('bowling', score, { difficulty: shotMode });
       if (roundMerges > roundBestMerges) { roundBestMerges = roundMerges; localStorage.setItem('bowling_best_merges', String(roundBestMerges)); }
       // Record best chain from normal play
       if (chainDisplay > bestChain) { bestChain = chainDisplay; localStorage.setItem('bowling_best_chain', String(bestChain)); }
