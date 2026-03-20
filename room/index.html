@@ -1437,15 +1437,18 @@ function buildRoomArea(areaData) {
     }
   });
 
-  // たからばこ（living room only, tappable）
+  // たからばこ（living room only, tappable）— アイソメグリッド座標で配置
   if (areaData.id === 'living' && !locked) {
     const toybox = document.createElement('div');
-    toybox.style.cssText = 'position:absolute;bottom:8%;right:6%;z-index:90;cursor:pointer;transition:transform 0.15s;';
-    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:56px;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
+    // グリッド座標 (6, 1) 付近 = 部屋の右手前側
+    const tbPt = isoGridPt(6, 1);
+    toybox.style.cssText = 'position:absolute;z-index:20;cursor:pointer;transition:transform 0.15s;transform-origin:bottom center;'
+      + 'left:' + (tbPt.x * 100).toFixed(1) + '%;top:' + (tbPt.y * 100).toFixed(1) + '%;transform:translate(-50%,-100%);';
+    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:7%;width:auto;min-height:36px;max-height:56px;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
     toybox.addEventListener('pointerdown', e => {
       e.stopPropagation();
-      toybox.style.transform = 'scale(0.92)';
-      setTimeout(() => { toybox.style.transform = ''; }, 150);
+      toybox.style.transform = 'translate(-50%,-100%) scale(0.92)';
+      setTimeout(() => { toybox.style.transform = 'translate(-50%,-100%)'; }, 150);
       openTakarabako();
     });
     div.appendChild(toybox);
