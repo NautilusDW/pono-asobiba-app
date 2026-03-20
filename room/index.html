@@ -152,6 +152,9 @@
     .room-area {
       flex-shrink: 0; width: 100%; height: 100%; position: relative;
       scroll-snap-align: start; overflow: hidden;
+      background: url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat;
+    }
+    .room-area.edit-mode {
       background: url('../assets/images/Rooms/Room_Base_grid.png') center / 100% 100% no-repeat;
     }
 
@@ -1323,7 +1326,8 @@ function appendEmoji(slot, item) {
 // ─── Apply room background (wall/floor) ──────────────
 // scope:'room' アイテムはフル背景画像として .room-area に直接適用。
 // それ以外は壁/床オーバーレイに適用する。
-const ROOM_BASE_BG = "url('../assets/images/Rooms/Room_Base_grid.png') center / 100% 100% no-repeat";
+const ROOM_BASE_BG = "url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat";
+const ROOM_BASE_BG_GRID = "url('../assets/images/Rooms/Room_Base_grid.png') center / 100% 100% no-repeat";
 
 function applyBackground(areaEl, areaId) {
   const cfg          = state.config[areaId] || {};
@@ -1463,9 +1467,10 @@ function buildRoomArea(areaData) {
     div.appendChild(cover);
   }
 
-  // ── デバッグ: アイソメグリッド表示 ──
+  // ── グリッド表示（もようがえモード時のみ表示） ──
   const debugCanvas = document.createElement('canvas');
-  debugCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;';
+  debugCanvas.className = 'edit-grid-canvas';
+  debugCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;display:none;';
   div.appendChild(debugCanvas);
   requestAnimationFrame(() => {
     const rect = div.getBoundingClientRect();
@@ -1476,23 +1481,13 @@ function buildRoomArea(areaData) {
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     const n = ISO_GRID.cells;
     function gp(u,v) { const p = isoGridPt(u,v); return [p.x*W, p.y*H]; }
-    ctx.strokeStyle = 'rgba(0,255,0,0.5)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
     for (let i = 0; i <= n; i++) {
       ctx.beginPath(); ctx.moveTo(...gp(i,0));
       for (let j=1;j<=n;j++) ctx.lineTo(...gp(i,j)); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(...gp(0,i));
       for (let j=1;j<=n;j++) ctx.lineTo(...gp(j,i)); ctx.stroke();
-    }
-    ctx.fillStyle = 'red';
-    [gp(0,0),gp(n,0),gp(0,n),gp(n,n)].forEach(([x,y]) => {
-      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
-    });
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '10px monospace'; ctx.textAlign = 'center';
-    for (let u=0;u<n;u++) for (let v=0;v<n;v++) {
-      const [cx,cy] = gp(u+0.5,v+0.5);
-      ctx.fillText(u+','+v, cx, cy+3);
     }
   });
 
@@ -2095,6 +2090,10 @@ function init() {
     // 全room-areaにedit-modeクラスをトグル
     document.querySelectorAll('.room-area').forEach(area => {
       area.classList.toggle('edit-mode', on);
+    });
+    // グリッド表示/非表示
+    document.querySelectorAll('.edit-grid-canvas').forEach(c => {
+      c.style.display = on ? 'block' : 'none';
     });
   }
 
