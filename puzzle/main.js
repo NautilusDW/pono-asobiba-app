@@ -564,14 +564,9 @@ btnPlayAgain.addEventListener('click', () => {
 
 // ===== BGM =====
 const bgm    = document.getElementById('bgm');
-const btnBgm = document.getElementById('btn-bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
 bgm.volume = 0.2;
-
-function updateBgmBtn() {
-  btnBgm.textContent = bgmEnabled ? '🔊' : '🔇';
-}
 
 let bgmStarted = false;
 
@@ -595,7 +590,6 @@ if (bgmEnabled) {
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
   });
 }
-updateBgmBtn();
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
@@ -632,8 +626,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
           bgm.pause();
         }
-        updateBgmBtn();
-      }
+              }
     });
   }
 });

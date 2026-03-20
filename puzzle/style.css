@@ -225,22 +225,6 @@ body {
   color: var(--text);
 }
 
-/* ===== Back Link ===== */
-.back-link {
-  text-align: center;
-}
-
-.back-link a {
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-
-.back-link a:hover {
-  text-decoration: underline;
-}
-
 /* ===== Modal ===== */
 .modal-overlay {
   position: fixed;
@@ -326,28 +310,6 @@ body {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
-
-/* ===== BGM Button ===== */
-.btn-bgm {
-  position: fixed;
-  top: 12px;
-  right: 14px;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--primary-light);
-  border: 2px solid var(--primary);
-  font-size: 1.2rem;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px var(--shadow);
-  z-index: 50;
-  transition: transform 0.15s;
-}
-.btn-bgm:active { transform: scale(0.9); }
 
 /* ===== Responsive ===== */
 @media (max-width: 480px) {
