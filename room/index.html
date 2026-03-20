@@ -16,7 +16,8 @@
     body {
       font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', 'Rounded Mplus 1c', sans-serif;
       background: #6ec6ea;
-      height: 100svh; overflow: hidden;
+      /* 100lvh+1px でアドレスバーを引っ込められるスクロール余地を確保 */
+      height: calc(100lvh + 1px); overflow-x: hidden;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
