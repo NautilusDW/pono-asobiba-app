@@ -796,7 +796,6 @@ html, body {
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
       <div class="tool-divider"></div>
       <button class="camera-btn" id="camera-btn" onclick="cycleZoom()">🔍</button>
-      <button class="camera-btn" id="pan-toggle-btn" onclick="togglePanMode()" style="display:none;">✋</button>
       <div class="tool-divider"></div>
       <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
       <button class="undo-btn" onclick="undo()">↩ もどす</button>
@@ -839,7 +838,6 @@ function buildPalette() {
 }
 
 function selectColor(col, sw) {
-  exitPanMode();
   currentColor = col;
   isEraser = false;
   isRainbow = false;
@@ -850,7 +848,6 @@ function selectColor(col, sw) {
 }
 
 function toggleRainbow() {
-  exitPanMode();
   isRainbow = !isRainbow;
   isEraser = false;
   document.getElementById('rainbow-btn').classList.toggle('selected', isRainbow);
@@ -868,7 +865,6 @@ function toggleRainbow() {
 function initSizeBtns() {
   document.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      exitPanMode();
       brushSize = parseInt(btn.dataset.size);
       document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -877,7 +873,6 @@ function initSizeBtns() {
 }
 
 function toggleEraser() {
-  exitPanMode();
   isEraser = !isEraser;
   isBucket = false;
   isRainbow = false;
@@ -892,7 +887,6 @@ function toggleEraser() {
 }
 
 function toggleMask() {
-  exitPanMode();
   isBucket = !isBucket;
   isEraser = false;
   if (!isBucket) activeMask = null;
@@ -1178,18 +1172,17 @@ function applyTransform() {
   document.getElementById('zoom-reset-btn').style.display = zoomScale > 1.01 ? 'block' : 'none';
   // カメラボタンの表示更新
   const camBtn = document.getElementById('camera-btn');
-  const panBtn = document.getElementById('pan-toggle-btn');
   const zoomed = zoomScale > 1.01;
   if (zoomed) {
     camBtn.textContent = '🔍 ×' + Math.round(zoomScale);
     camBtn.classList.add('zoomed');
-    panBtn.style.display = 'inline-block';
-    panBtn.classList.toggle('zoomed', isPanMode);
   } else {
     camBtn.textContent = '🔍';
     camBtn.classList.remove('zoomed');
-    panBtn.style.display = 'none';
   }
+  // ズーム中はドラッグ=パン、×1はドラッグ=描画
+  isPanMode = zoomed;
+  document.getElementById('canvas-wrapper').classList.toggle('pan-mode', zoomed);
 }
 
 function clampPan() {
@@ -1202,9 +1195,8 @@ function clampPan() {
 function resetZoom() {
   zoomScale = 1; panX = 0; panY = 0;
   zoomStepIndex = 0;
-  isPanMode = false;
   applyTransform();
-  document.getElementById('canvas-wrapper').classList.remove('pan-mode', 'panning');
+  document.getElementById('canvas-wrapper').classList.remove('panning');
 }
 
 function cycleZoom() {
@@ -1217,37 +1209,13 @@ function cycleZoom() {
   panX = cx - (cx - panX) * (newScale / zoomScale);
   panY = cy - (cy - panY) * (newScale / zoomScale);
   zoomScale = newScale;
-  // ×1に戻ったらパンモード解除
-  if (zoomScale <= 1.01) {
-    isPanMode = false;
-    wrapperEl.classList.remove('pan-mode');
-  }
   clampPan();
   applyTransform();
 }
 
-function togglePanMode() {
-  isPanMode = !isPanMode;
-  const wrapperEl = document.getElementById('canvas-wrapper');
-  wrapperEl.classList.toggle('pan-mode', isPanMode);
-  applyTransform();
-}
 
-function exitPanMode() {
-  if (!isPanMode) return;
-  isPanMode = false;
-  document.getElementById('canvas-wrapper').classList.remove('pan-mode');
-  applyTransform();
-}
-
-// ピンチ/ホイール後のパンモード自動同期
+// ピンチ/ホイール後のステップ同期
 function syncPanMode() {
-  // ×1に戻ったらパンモード解除
-  if (zoomScale <= 1.01) {
-    isPanMode = false;
-    document.getElementById('canvas-wrapper').classList.remove('pan-mode');
-  }
-  // zoomStepIndexも近い段階に合わせる
   if (zoomScale <= 1.01) zoomStepIndex = 0;
   else if (zoomScale <= 2.5) zoomStepIndex = 1;
   else zoomStepIndex = 2;
