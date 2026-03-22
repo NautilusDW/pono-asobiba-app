@@ -755,7 +755,6 @@ html, body {
 <!-- ===== Coloring Screen ===== -->
 <div id="coloring-screen">
   <div class="coloring-header">
-    <button class="btn-back" onclick="backToSelection()">← もどる</button>
     <div class="coloring-title" id="coloring-title">ぬりえ</div>
     <button class="btn-slots" onclick="openSavePanel()">💾 セーブ</button>
     <button class="btn-save" onclick="saveColored()">⬇ ほぞん</button>
@@ -1288,7 +1287,7 @@ function clearCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-function resizeCanvas(wrapper) {
+function resizeCanvas(wrapper, preserveContent) {
   const w = wrapper.clientWidth;
   const h = wrapper.clientHeight;
 
@@ -1303,8 +1302,17 @@ function resizeCanvas(wrapper) {
     ch = h; cw = h * imgRatio;
   }
 
-  canvas.width = Math.round(cw);
-  canvas.height = Math.round(ch);
+  const newW = Math.round(cw);
+  const newH = Math.round(ch);
+
+  // リサイズ時に既存の描画内容を保持
+  let saved = null;
+  if (preserveContent && canvas.width > 0 && canvas.height > 0) {
+    try { saved = canvas.toDataURL(); } catch(e) {}
+  }
+
+  canvas.width = newW;
+  canvas.height = newH;
   canvas.style.left = Math.round((w - cw) / 2) + 'px';
   canvas.style.top = Math.round((h - ch) / 2) + 'px';
   canvas.style.width = cw + 'px';
@@ -1312,6 +1320,15 @@ function resizeCanvas(wrapper) {
 
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (saved) {
+    const restore = new Image();
+    restore.onload = () => {
+      ctx.drawImage(restore, 0, 0, newW, newH);
+    };
+    restore.src = saved;
+  }
+
   resetZoom();
 }
 
@@ -1516,7 +1533,7 @@ initSizeBtns();
 
 window.addEventListener('resize', () => {
   if (document.getElementById('coloring-screen').style.display !== 'none') {
-    resizeCanvas(document.getElementById('canvas-wrapper'));
+    resizeCanvas(document.getElementById('canvas-wrapper'), true);
   }
 });
 
