@@ -252,26 +252,33 @@
     document.body.appendChild(items);
     document.body.appendChild(overlay);
 
-    // ── モバイルブラウザのアドレスバーを引っ込める ──
-    // body に overflow:hidden があるとスクロールできずアドレスバーが消えない。
-    // タッチデバイスのみ: 1px余分な高さのspacerを追加し、scrollToで押し下げる。
+    // ── Safari コンパクトモード誘発 ──
+    // Safari はページがスクロール可能でないとツールバーを折りたたまない。
+    // タッチデバイスのみ: overflow を解除し、body を 100vh+2px にして scrollTo で
+    // 1px スクロール → Safari がコンパクトモードに切り替わる。
+    // ゲームコンテンツは position:fixed か height:100dvh なので 1px では動かない。
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      (function hideAddressBar() {
-        var spacer = document.createElement('div');
-        spacer.style.cssText = 'height:1px;width:1px;position:absolute;top:calc(100vh + 1px);left:0;pointer-events:none;';
-        document.body.appendChild(spacer);
-        var origHtml = document.documentElement.style.overflow;
-        var origBody = document.body.style.overflow;
-        document.documentElement.style.overflow = 'auto';
-        document.body.style.overflow = 'auto';
-        setTimeout(function() {
-          window.scrollTo(0, 1);
-          setTimeout(function() {
-            document.documentElement.style.overflow = origHtml;
-            document.body.style.overflow = origBody;
-            spacer.remove();
-          }, 400);
-        }, 150);
+      (function triggerCompactMode() {
+        // body に position:fixed がある場合は解除（scrollTo が効かないため）
+        if (getComputedStyle(document.body).position === 'fixed') {
+          document.body.style.setProperty('position', 'relative', 'important');
+        }
+        // overflow を許可し、body を少しだけビューポートより高くする
+        var s = document.createElement('style');
+        s.textContent =
+          'html { overflow-y: auto !important; }' +
+          'body { overflow-y: auto !important; min-height: calc(100vh + 2px) !important; }';
+        document.head.appendChild(s);
+
+        // スクロールで Safari コンパクトモードを誘発
+        requestAnimationFrame(function() {
+          setTimeout(function() { window.scrollTo(0, 1); }, 300);
+        });
+
+        // 戻りスクロール防止（ツールバー再展開を阻止）
+        window.addEventListener('scroll', function() {
+          if (window.scrollY < 1) window.scrollTo(0, 1);
+        });
       })();
     }
   };
