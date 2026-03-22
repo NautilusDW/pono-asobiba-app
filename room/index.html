@@ -156,12 +156,12 @@
       background: #2c5f72;
     }
 
-    /* ─── Portrait: hide room, show notice ─── */
-    @media screen and (orientation: portrait) {
+    /* ─── Portrait: hide room, show notice (モバイルのみ) ─── */
+    @media screen and (orientation: portrait) and (pointer: coarse) {
       #room-scene      { display: none; }
       #portrait-notice { display: flex; }
     }
-    @media screen and (orientation: landscape) {
+    @media screen and (orientation: landscape), (pointer: fine) {
       #room-scene      { display: flex; }
       #portrait-notice { display: none; }
     }
