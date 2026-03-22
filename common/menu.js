@@ -251,28 +251,5 @@
     document.body.appendChild(toggle);
     document.body.appendChild(items);
     document.body.appendChild(overlay);
-
-    // ── モバイルブラウザのアドレスバーを引っ込める ──
-    // body に overflow:hidden があるとスクロールできずアドレスバーが消えない。
-    // 1px余分な高さのspacerを追加し、読み込み時にscrollToで押し下げる。
-    (function hideAddressBar() {
-      var spacer = document.createElement('div');
-      spacer.style.cssText = 'height:1px;width:1px;position:absolute;top:100vh;left:0;pointer-events:none;';
-      document.body.appendChild(spacer);
-      // overflow:hidden だとscrollToが効かないので一時的に解除
-      var origOverflow = document.documentElement.style.overflow;
-      var origBodyOverflow = document.body.style.overflow;
-      document.documentElement.style.overflow = 'auto';
-      document.body.style.overflow = 'auto';
-      setTimeout(function() {
-        window.scrollTo(0, 1);
-        setTimeout(function() {
-          // 元に戻す
-          document.documentElement.style.overflow = origOverflow;
-          document.body.style.overflow = origBodyOverflow;
-          spacer.remove();
-        }, 300);
-      }, 100);
-    })();
   };
 })();

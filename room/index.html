@@ -15,9 +15,8 @@
 
     body {
       font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', 'Rounded Mplus 1c', sans-serif;
-      background: #2c5f72;
-      margin: 0; padding: 0;
-      min-height: 100dvh;
+      background: #6ec6ea;
+      height: 100svh; overflow: hidden;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
@@ -39,10 +38,9 @@
 
     /* ─── Room scene (full viewport, centers room-wrap) ─── */
     #room-scene {
-      position: absolute; inset: 0;
+      position: fixed; inset: 0;
       display: flex; align-items: center; justify-content: center;
       background: #2c5f72;
-      overflow: hidden;
     }
 
     /* ─── Room wrap: JS で 16:9 固定（URLバーの出し入れで再計算しない） ─── */
