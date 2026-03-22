@@ -155,10 +155,7 @@
     .room-area {
       flex-shrink: 0; width: 100%; height: 100%; position: relative;
       scroll-snap-align: start; overflow: hidden;
-      background: url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat;
-    }
-    .room-area.edit-mode {
-      background: url('../assets/images/Rooms/Room_Base_grid.png') center / 100% 100% no-repeat;
+      background: #2c5f72;
     }
 
     /* ─── Portrait: hide room, show notice ─── */
@@ -789,6 +786,9 @@ function loadState() {
   state.points    = parseInt(localStorage.getItem(LS.POINTS)    || '0');
   state.inventory = JSON.parse(localStorage.getItem(LS.INVENTORY) || '[]');
   state.config    = JSON.parse(localStorage.getItem(LS.CONFIG)    || '{}');
+  // デフォルト壁紙: navy_tile（Room_Baseは使用しない）
+  if (!state.config.living) state.config.living = {};
+  if (!state.config.living.wall) state.config.living.wall = 'wall_navy';
   state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
   state.theme     = localStorage.getItem(LS.THEME) || null;
   // 旧アイテムIDの掃除（存在しないものを除去）
@@ -1329,8 +1329,8 @@ function appendEmoji(slot, item) {
 // ─── Apply room background (wall/floor) ──────────────
 // scope:'room' アイテムはフル背景画像として .room-area に直接適用。
 // それ以外は壁/床オーバーレイに適用する。
-const ROOM_BASE_BG = "url('../assets/images/Rooms/Room_Base.png') center / 100% 100% no-repeat";
-const ROOM_BASE_BG_GRID = "url('../assets/images/Rooms/Room_Base_grid.png') center / 100% 100% no-repeat";
+// Room_Baseは使用しない — 壁紙が未設定の場合はフォールバック色のみ
+const ROOM_BASE_BG = "#2c5f72";
 
 function applyBackground(areaEl, areaId) {
   const cfg          = state.config[areaId] || {};
@@ -1500,7 +1500,7 @@ function buildRoomArea(areaData) {
     const tbCell = getGridCell(7, 1);
     toybox.style.cssText = 'position:absolute;z-index:20;cursor:pointer;transition:transform 0.15s;transform-origin:bottom center;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;transform:translate(-50%,0);';
-    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:' + GRID_CELL_PCT.toFixed(2) + '%;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
+    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:' + (GRID_CELL_PCT * 0.55).toFixed(2) + '%;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
     toybox.addEventListener('pointerdown', e => {
       e.stopPropagation();
       toybox.style.transform = 'translate(-50%,0) scale(0.92)';
@@ -1773,8 +1773,8 @@ function renderShopGrid(cat) {
   const cfg = state.config[currentAreaId] || {};
 
   if (shopMode === 'buy') {
-    // 買うモード: 未購入アイテムのみ表示（所持済みはグレーアウト）
-    const items = ROOM_ITEMS.filter(item => item.cat === cat);
+    // 買うモード: 未購入アイテムのみ表示（所持済みはグレーアウト、defaultは除外）
+    const items = ROOM_ITEMS.filter(item => item.cat === cat && !item.default);
     const unowned = items.filter(item => !isOwned(item.id));
     const owned   = items.filter(item =>  isOwned(item.id));
 

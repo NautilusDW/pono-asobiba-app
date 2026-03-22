@@ -66,8 +66,8 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/walls/uchuu.png',
   },
   {
-    id: 'wall_navy', cat: 'wall', name: 'ネイビー', price: 10, theme: 'boy',
-    emoji: '🔷',
+    id: 'wall_navy', cat: 'wall', name: 'ネイビー', price: 0, theme: 'all',
+    emoji: '🔷', default: true,
     roomImg: '../assets/images/Rooms/walls/navy_tile.png',
   },
 
