@@ -144,8 +144,8 @@ const ROOM_ITEMS = [
     id: 'furn_bed_wood', cat: 'furn', name: 'きのベッド', price: 25, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/bed_A_01.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_B_01.png',
-    gridRow: 2, gridCol: 3, cellSize: 2, pivotX: -8, pivotY: 24.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 7,
-    angleB: { cellSize: 2, pivotX: 11, pivotY: 24.2, minRow: 1, maxRow: 7, minCol: 1, maxCol: 6 },
+    gridRow: 2, gridCol: 3, cellSize: 2, footprintSize: 3, pivotX: -8, pivotY: 24.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 24.2, minRow: 1, maxRow: 7, minCol: 1, maxCol: 6 },
     surfaceY: -30, surfaceYB: -30,
   },
   {
@@ -207,8 +207,8 @@ const ROOM_ITEMS = [
     id: 'furn_bed_pink', cat: 'furn', name: 'ピンクベッド', price: 25, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/bed_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_pink_B.png',
-    gridRow: 3, gridCol: 5, cellSize: 2, pivotX: 12.5, pivotY: 27.4, minRow: 1, maxRow: 7, minCol: 1, maxCol: 6,
-    angleB: { cellSize: 2, pivotX: -11, pivotY: 26, minRow: 1, maxRow: 6, minCol: 1, maxCol: 7 },
+    gridRow: 3, gridCol: 5, cellSize: 2, footprintSize: 3, pivotX: 12.5, pivotY: 27.4, minRow: 1, maxRow: 7, minCol: 1, maxCol: 6,
+    angleB: { cellSize: 2, footprintSize: 3, pivotX: -11, pivotY: 26, minRow: 1, maxRow: 6, minCol: 1, maxCol: 7 },
     surfaceY: -30, surfaceYB: -30,
   },
   {

@@ -940,7 +940,7 @@ function getPlacedItems(cfg) {
 // アイテムが占有するセル一覧を返す（cellSizeベース）
 function getFootprint(row, col, item, angle) {
   const props = getAngleProps(item, angle || 'A');
-  const span = Math.ceil(props.cellSize);
+  const span = Math.ceil(props.footprintSize || props.cellSize);
   const cells = [];
   for (let dr = 0; dr < span; dr++) {
     for (let dc = 0; dc < span; dc++) {
@@ -1021,23 +1021,25 @@ function getAngleProps(item, angle) {
   if (!item) return { cellSize: 1, pivotX: 0, pivotY: 0 };
   if (angle === 'B' && item.angleB) {
     return {
-      cellSize: item.angleB.cellSize ?? item.cellSize ?? 1,
-      pivotX:   item.angleB.pivotX   ?? item.pivotX ?? 0,
-      pivotY:   item.angleB.pivotY   ?? item.pivotY ?? 0,
-      minRow:   item.angleB.minRow   ?? item.minRow,
-      maxRow:   item.angleB.maxRow   ?? item.maxRow,
-      minCol:   item.angleB.minCol   ?? item.minCol,
-      maxCol:   item.angleB.maxCol   ?? item.maxCol,
+      cellSize:      item.angleB.cellSize      ?? item.cellSize ?? 1,
+      footprintSize: item.angleB.footprintSize  ?? item.footprintSize,
+      pivotX:        item.angleB.pivotX         ?? item.pivotX ?? 0,
+      pivotY:        item.angleB.pivotY         ?? item.pivotY ?? 0,
+      minRow:        item.angleB.minRow         ?? item.minRow,
+      maxRow:        item.angleB.maxRow         ?? item.maxRow,
+      minCol:        item.angleB.minCol         ?? item.minCol,
+      maxCol:        item.angleB.maxCol         ?? item.maxCol,
     };
   }
   return {
-    cellSize: item.cellSize ?? 1,
-    pivotX:   item.pivotX ?? 0,
-    pivotY:   item.pivotY ?? 0,
-    minRow:   item.minRow,
-    maxRow:   item.maxRow,
-    minCol:   item.minCol,
-    maxCol:   item.maxCol,
+    cellSize:      item.cellSize ?? 1,
+    footprintSize: item.footprintSize,
+    pivotX:        item.pivotX ?? 0,
+    pivotY:        item.pivotY ?? 0,
+    minRow:        item.minRow,
+    maxRow:        item.maxRow,
+    minCol:        item.minCol,
+    maxCol:        item.maxCol,
   };
 }
 
@@ -1096,9 +1098,12 @@ function _applyGridPos(el, row, col, areaId) {
   }
   const totalPivotY = props.pivotY + extraY;
   el.style.transform = `translate(calc(-50% - ${props.pivotX}%), ${totalPivotY}%)`;
-  // ラグ→壁より上・家具より下(z=18)、デコ→最前面、それ以外→通常
+  // ラグ→壁より上・家具より下(z=18)
+  // デコ→家具の上に乗っている場合のみ+100（前後関係を維持しつつ家具の上に表示）
+  //       床に直置きの場合は家具と同じdepthベース
+  const isOnSurface = extraY !== 0;
   el.style.zIndex    = PASSTHROUGH_IDS.has(itemId) ? 18
-                     : (item && item.cat === 'deco') ? 100 + cell.z
+                     : (item && item.cat === 'deco' && isOnSurface) ? 100 + cell.z
                      : cell.z;
 }
 
@@ -1431,8 +1436,9 @@ function buildRoomArea(areaData) {
   // 壁クリック: room-area自体で検出（wallはpointer-events:noneのため）
   div.addEventListener('click', e => {
     if (locked || !editMode) return;
-    // floor や家具をクリックした場合は無視
-    if (e.target.closest('.room-floor') || e.target.closest('.item-placed')) return;
+    // floor・家具・デコ・宝箱・回転ボタンをクリックした場合は無視
+    if (e.target.closest('.room-floor') || e.target.closest('.item-placed')
+        || e.target.closest('.btn-rotate') || e.target.closest('.toybox-item')) return;
     openInventory('wall');
   });
 
@@ -1578,6 +1584,8 @@ function buildRoomArea(areaData) {
       tbOnMove(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
     toybox.addEventListener('touchend', tbOnEnd);
+    // クリックイベントの伝播を防止（壁/床インベントリが誤って開くのを防ぐ）
+    toybox.addEventListener('click', e => { e.stopPropagation(); });
     toybox.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
       e.preventDefault();
