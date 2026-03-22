@@ -2093,32 +2093,42 @@
     // ─── Resize handling ───────────────────────────────────
     // Use rAF to wait for PixiJS to finish its own resize before we query W()/H()
     let resizeRaf = null;
+    let resizeTimer = null;
+    function fullResize() {
+      resizePixiApp();
+      makeBackground();
+      drawSand(); // updates sandTopY
+      makeSeaweeds();
+      repositionRocks();
+      const safeH = H() * 0.80;
+      creatures.forEach(c => {
+        if (c.pattern === 'crawl') {
+          const newY = sandTopY - c.halfH;
+          c.obj.y = newY;
+          c.baseY = newY;
+        } else if (c.pattern === 'sway') {
+          c.obj.y = sandTopY;
+          c.baseY = sandTopY;
+        } else {
+          // Clamp all creatures inside new safe area
+          if (c.obj.x < 30) { c.obj.x = 30; c.baseX = 30; }
+          if (c.obj.x > W() - 30) { c.obj.x = W() - 30; c.baseX = W() - 30; }
+          if (c.obj.y < 30) { c.obj.y = 30; c.baseY = 30; }
+          if (c.obj.y > safeH) { c.obj.y = safeH * 0.85; c.baseY = c.obj.y; }
+        }
+      });
+    }
     window.addEventListener('resize', () => {
       cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(() => {
-        resizePixiApp();
-        makeBackground();
-        drawSand(); // updates sandTopY
-        makeSeaweeds();
-        repositionRocks();
-        const safeH = H() * 0.80;
-        creatures.forEach(c => {
-          if (c.pattern === 'crawl') {
-            const newY = sandTopY - c.halfH;
-            c.obj.y = newY;
-            c.baseY = newY;
-          } else if (c.pattern === 'sway') {
-            c.obj.y = sandTopY;
-            c.baseY = sandTopY;
-          } else {
-            // Clamp all creatures inside new safe area
-            if (c.obj.x < 30) { c.obj.x = 30; c.baseX = 30; }
-            if (c.obj.x > W() - 30) { c.obj.x = W() - 30; c.baseX = W() - 30; }
-            if (c.obj.y < 30) { c.obj.y = 30; c.baseY = 30; }
-            if (c.obj.y > safeH) { c.obj.y = safeH * 0.85; c.baseY = c.obj.y; }
-          }
-        });
-      });
+      clearTimeout(resizeTimer);
+      resizeRaf = requestAnimationFrame(fullResize);
+      // iOS の回転時に innerWidth/Height が遅延更新されることがあるため再実行
+      resizeTimer = setTimeout(fullResize, 300);
+    });
+    // orientationchange は resize より先に発火し、寸法が古い場合があるため遅延リサイズ
+    window.addEventListener('orientationchange', () => {
+      setTimeout(fullResize, 200);
+      setTimeout(fullResize, 500);
     });
 
     // ─── Sprite creature on/off toggle ─────────────────────
