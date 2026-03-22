@@ -1997,21 +1997,17 @@ function selectTheme(t) {
 })();
 
 // ─── 16:9 固定サイズ ────────────────────────────────────
-// モバイル: screen.width/height（URL バー無視）
-// PC: window.innerWidth/Height（ウィンドウリサイズに追従）
+// モバイル・PC 共に window.innerWidth/Height を使用
+// （ブラウザUI込みで可視領域に収める）
 const _isMobile = window.matchMedia('(pointer: coarse)').matches;
 let   _lastInnerW = 0;
 
 function lockRoomSize() {
-  let W, H;
-  if (_isMobile) {
-    W = Math.max(screen.width, screen.height);
-    H = Math.min(screen.width, screen.height);
-  } else {
-    W = window.innerWidth;
-    H = window.innerHeight;
-  }
-  _lastInnerW = window.innerWidth;
+  // モバイル・PC 共に window.innerWidth/Height を使用
+  // （screen.width/height はブラウザUIを無視するため使わない）
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  _lastInnerW = W;
   const ratio = 16 / 9;
   let w, h;
   if (W / H >= ratio) { h = H; w = Math.round(H * ratio); }
@@ -2021,10 +2017,7 @@ function lockRoomSize() {
 }
 lockRoomSize();
 window.addEventListener('orientationchange', () => setTimeout(lockRoomSize, 300));
-// PC: ウィンドウリサイズに追従。モバイルは幅が変わった時だけ（URL バーの出し入れは無視）
-window.addEventListener('resize', () => {
-  if (!_isMobile || window.innerWidth !== _lastInnerW) lockRoomSize();
-});
+window.addEventListener('resize', lockRoomSize);
 
 // ─── Init ─────────────────────────────────────────────
 function init() {

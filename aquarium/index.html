@@ -264,31 +264,7 @@
       document.getElementById('pwa-tip').style.display = 'block';
     }
 
-    function tryFullscreen() {
-      if (!window.matchMedia('(pointer: coarse)').matches) return;
-      const el = document.documentElement;
-      // 標準 API
-      if (el.requestFullscreen && !document.fullscreenElement) {
-        el.requestFullscreen().catch(() => {});
-        return;
-      }
-      // iOS webkit プレフィックス（効果は限定的）
-      if (el.webkitRequestFullscreen && !document.webkitFullscreenElement) {
-        try { el.webkitRequestFullscreen(); } catch(e) {}
-        return;
-      }
-      // フォールバック: スクロールトリックでアドレスバーを押し上げる
-      if (window.innerWidth > window.innerHeight) {
-        const origH = document.body.style.height;
-        document.body.style.height = (window.screen.height + 1) + 'px';
-        window.scrollTo(0, 1);
-        setTimeout(() => { document.body.style.height = origH; }, 200);
-      }
-    }
-    document.addEventListener('pointerdown', tryFullscreen, { once: true });
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > window.innerHeight) tryFullscreen();
-    });
+    // フルスクリーン処理は common/menu.js の --vh ベースに統一
 
     // ─── Pattern persistence ────────────────────────────────
     const PATTERN_STORE_KEY = 'pono_umi_patterns';
