@@ -112,6 +112,11 @@
       pointer-events: none;
       cursor: default;
     }
+    /* 宝箱は通常モードでもタップ可能 */
+    .room-area:not(.edit-mode) .toybox-item {
+      pointer-events: auto;
+      cursor: pointer;
+    }
     .room-area:not(.edit-mode) .btn-rotate { display: none; }
     @keyframes editWiggle {
       /* filter で揺れ感を出す（transform は位置をずらすので使わない） */
@@ -457,17 +462,17 @@
 
     /* Item grid */
     .item-grid {
-      flex: 1; overflow-y: auto; padding: 12px;
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      flex: 1; overflow-y: auto; padding: 6px 8px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
       scrollbar-width: thin;
     }
 
     .item-card {
-      border-radius: 14px; padding: 10px 6px 8px;
-      background: white; border: 3px solid #f0e0d0;
+      border-radius: 10px; padding: 5px 3px 4px;
+      background: white; border: 2px solid #f0e0d0;
       text-align: center; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 5px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       transition: transform 0.1s, border-color 0.15s;
     }
     .item-card:active { transform: scale(0.95); }
@@ -476,18 +481,18 @@
     .item-card.locked { opacity: 0.45; cursor: default; }
 
     .item-prev {
-      width: 64px; height: 64px; border-radius: 10px; overflow: hidden;
+      width: 100%; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
-      font-size: 38px;
+      font-size: 32px;
     }
-    .item-prev.wall-prev  { width: 64px; height: 44px; border-radius: 6px; }
-    .item-prev.floor-prev { width: 64px; height: 24px; border-radius: 6px; }
+    .item-prev.wall-prev  { aspect-ratio: 1.5; border-radius: 4px; }
+    .item-prev.floor-prev { aspect-ratio: 3; border-radius: 4px; }
     .item-prev img { width: 100%; height: 100%; object-fit: contain; }
 
-    .item-card-name { font-size: 11px; font-weight: bold; color: #444; line-height: 1.3; }
-    .item-card-price { font-size: 12px; font-weight: bold; color: #e07800; }
+    .item-card-name { font-size: 9px; font-weight: bold; color: #444; line-height: 1.2; }
+    .item-card-price { font-size: 10px; font-weight: bold; color: #e07800; }
     .item-badge {
-      font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold;
+      font-size: 8px; padding: 1px 5px; border-radius: 8px; font-weight: bold;
     }
     .badge-owned  { background: #e8f5e9; color: #388e3c; }
     .badge-placed { background: #fff3e0; color: #f57c00; }
@@ -1493,31 +1498,76 @@ function buildRoomArea(areaData) {
     }
   });
 
-  // たからばこ（living room only, tappable）— 固定位置(7,1)に配置
+  // たからばこ（living room only）— ドラッグ移動対応
   if (areaData.id === 'living' && !locked) {
+    const tbRow = (state.config.living && state.config.living.toyboxRow) ?? 7;
+    const tbCol = (state.config.living && state.config.living.toyboxCol) ?? 1;
     const toybox = document.createElement('div');
-    const tbCell = getGridCell(7, 1);
+    toybox.className = 'item-placed toybox-item';
+    toybox.dataset.row = tbRow;
+    toybox.dataset.col = tbCol;
     const tbHeight = GRID_CELL_PCT.toFixed(2);
-    toybox.style.cssText = 'position:absolute;z-index:20;cursor:pointer;transition:transform 0.15s;transform-origin:bottom center;'
+    const tbCell = getGridCell(tbRow, tbCol);
+    toybox.style.cssText = 'position:absolute;z-index:20;cursor:pointer;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;'
       + 'height:' + tbHeight + '%;width:auto;'
-      + 'display:flex;align-items:flex-end;justify-content:center;';
+      + 'display:flex;align-items:flex-end;justify-content:center;'
+      + 'pointer-events:auto;';
     toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:100%;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
-    // タップ: たからばこメニューを開く（ドラッグと区別するため距離判定）
-    let tbStartX = 0, tbStartY = 0, tbMoved = false;
-    toybox.addEventListener('pointerdown', e => {
-      tbStartX = e.clientX; tbStartY = e.clientY; tbMoved = false;
-      if (!editMode) e.stopPropagation();
-    });
-    toybox.addEventListener('pointermove', e => {
-      if (Math.abs(e.clientX - tbStartX) + Math.abs(e.clientY - tbStartY) > 8) tbMoved = true;
-    });
-    toybox.addEventListener('pointerup', e => {
-      if (!tbMoved && !editMode) {
+
+    // ドラッグ（editモード）+ タップ（通常モード）
+    let tbStartX = 0, tbStartY = 0, tbDragging = false;
+    function tbOnMove(cx, cy) {
+      if (!editMode) return;
+      if (!tbDragging && (Math.abs(cx - tbStartX) > 6 || Math.abs(cy - tbStartY) > 6)) {
+        tbDragging = true;
+      }
+      if (!tbDragging) return;
+      const area = toybox.closest('.room-area');
+      if (!area) return;
+      const raw = getRowColFromPoint(area, cx, cy);
+      const row = Math.max(0, Math.min(ISO_GRID.cells - 1, raw.row));
+      const col = Math.max(0, Math.min(ISO_GRID.cells - 1, raw.col));
+      toybox.dataset.row = row;
+      toybox.dataset.col = col;
+      toybox.classList.add('dragging');
+      const c = getGridCell(row, col);
+      toybox.style.left = c.leftPct + '%';
+      toybox.style.bottom = c.bottomPct + '%';
+    }
+    function tbOnEnd() {
+      toybox.classList.remove('dragging');
+      if (tbDragging) {
+        if (!state.config.living) state.config.living = {};
+        state.config.living.toyboxRow = parseInt(toybox.dataset.row);
+        state.config.living.toyboxCol = parseInt(toybox.dataset.col);
+        saveState();
+      } else if (!editMode) {
+        toybox.style.transition = 'transform 0.15s';
         toybox.style.transform = 'scale(0.92)';
-        setTimeout(() => { toybox.style.transform = ''; }, 150);
+        setTimeout(() => { toybox.style.transform = ''; toybox.style.transition = ''; }, 150);
         openTakarabako();
       }
+      tbDragging = false;
+    }
+    toybox.addEventListener('touchstart', e => {
+      tbStartX = e.touches[0].clientX; tbStartY = e.touches[0].clientY;
+      tbDragging = false;
+    }, { passive: true });
+    toybox.addEventListener('touchmove', e => {
+      e.preventDefault();
+      tbOnMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+    toybox.addEventListener('touchend', tbOnEnd);
+    toybox.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      tbStartX = e.clientX; tbStartY = e.clientY;
+      tbDragging = false;
+      function mm(e) { tbOnMove(e.clientX, e.clientY); }
+      function mu() { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); tbOnEnd(); }
+      window.addEventListener('mousemove', mm);
+      window.addEventListener('mouseup', mu);
     });
     div.appendChild(toybox);
   }
