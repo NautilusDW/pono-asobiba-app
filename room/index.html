@@ -1323,12 +1323,7 @@ function renderSlotContent(slot, itemId, angle) {
     appendEmoji(slot, item);
   }
 
-  // Floor item shadow
-  if (item.cat === 'furn' || item.cat === 'deco') {
-    const sh = document.createElement('div');
-    sh.className = 'slot-shadow';
-    slot.appendChild(sh);
-  }
+  // シャドウなし（以前の slot-shadow は廃止）
 }
 
 function appendEmoji(slot, item) {
@@ -1526,13 +1521,14 @@ function buildRoomArea(areaData) {
     const tbPivotY = 23.3;
     const tbHeight = (tbCellSize * GRID_CELL_PCT).toFixed(2);
     const tbCell = getGridCell(tbRow, tbCol);
-    toybox.style.cssText = 'position:absolute;z-index:200;cursor:pointer;'
+    toybox.style.cssText = 'position:absolute;cursor:pointer;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;'
       + 'height:' + tbHeight + '%;width:auto;'
+      + 'z-index:' + (100 + tbCell.z) + ';'
       + 'display:flex;align-items:flex-end;justify-content:center;'
       + 'pointer-events:auto;'
       + 'transform:translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%);';
-    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:100%;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
+    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:100%;width:auto;" alt="たからばこ">';
 
     // ドラッグ（editモード）+ タップ（通常モード）
     let tbStartX = 0, tbStartY = 0, tbDragging = false;
@@ -1553,7 +1549,9 @@ function buildRoomArea(areaData) {
       const c = getGridCell(row, col);
       toybox.style.left = c.leftPct + '%';
       toybox.style.bottom = c.bottomPct + '%';
+      toybox.style.zIndex = 100 + c.z;
     }
+    const tbTransform = 'translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%)';
     function tbOnEnd() {
       toybox.classList.remove('dragging');
       if (tbDragging) {
@@ -1562,11 +1560,13 @@ function buildRoomArea(areaData) {
         state.config.living.toyboxCol = parseInt(toybox.dataset.col);
         saveState();
       } else if (!editMode) {
+        // タップアニメ（pivot transform を壊さないよう scale を追加）
         toybox.style.transition = 'transform 0.15s';
-        toybox.style.transform = 'scale(0.92)';
-        setTimeout(() => { toybox.style.transform = ''; toybox.style.transition = ''; }, 150);
+        toybox.style.transform = tbTransform + ' scale(0.92)';
+        setTimeout(() => { toybox.style.transform = tbTransform; toybox.style.transition = ''; }, 150);
         openTakarabako();
       }
+      // editMode でタップ（ドラッグなし）→ 何もしない（メニューを開かない）
       tbDragging = false;
     }
     toybox.addEventListener('touchstart', e => {
