@@ -1862,9 +1862,6 @@ function renderShopGrid(cat) {
     const unowned = items.filter(item => !isOwned(item.id));
     const owned   = items.filter(item =>  isOwned(item.id));
 
-    // 壁・床: デフォルトに戻すカード
-    _makeResetCard(cat, cfg, grid);
-
     if (unowned.length === 0 && owned.length > 0) {
       // 全部買い済み
       const msg = document.createElement('div');
@@ -1893,6 +1890,9 @@ function renderShopGrid(cat) {
       });
     }
 
+    // 壁・床: デフォルトに戻すカード（一番最後）
+    _makeResetCard(cat, cfg, grid);
+
   } else {
     // てもちモード: 所持済みアイテムのみ表示
     const owned = ROOM_ITEMS.filter(item => item.cat === cat && isOwned(item.id));
@@ -1907,13 +1907,13 @@ function renderShopGrid(cat) {
       return;
     }
 
-    // 壁・床: デフォルトに戻すカード
-    _makeResetCard(cat, cfg, grid);
-
     owned.forEach(item => {
       const card = _makeShopCard(item, 'place', cfg);
       grid.appendChild(card);
     });
+
+    // 壁・床: デフォルトに戻すカード（一番最後）
+    _makeResetCard(cat, cfg, grid);
   }
 }
 
