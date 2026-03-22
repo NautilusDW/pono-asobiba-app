@@ -126,9 +126,11 @@
     .room-area.edit-mode .item-placed.dragging {
       animation: none;
     }
-    .room-area.edit-mode .room-wall,
     .room-area.edit-mode .room-floor {
       cursor: pointer;
+    }
+    .room-area.edit-mode {
+      cursor: pointer;  /* 壁クリック用（room-areaで検出） */
     }
     .edit-banner {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
@@ -194,6 +196,7 @@
     .room-wall {
       cursor: default;
       z-index: 15;  /* アイテムの奥側を隠す（depth 0-1のz=10,13より上） */
+      pointer-events: none;  /* マスクはpointer-eventsに影響しないため無効化 */
       -webkit-mask-image: url('../assets/images/Rooms/masks/wall.png');
       mask-image: url('../assets/images/Rooms/masks/wall.png');
     }
@@ -1411,20 +1414,25 @@ function buildRoomArea(areaData) {
   const cfg = state.config[areaData.id] || {};
   const locked = !state.unlocked.includes(areaData.id);
 
-  // Wall overlay（テクスチャ上書き用・クリックでてもち）
+  // Wall overlay（テクスチャ上書き用・pointer-events:noneなのでroom-areaでクリック検出）
   const wall = document.createElement('div');
   wall.className = 'room-wall';
-  wall.addEventListener('click', e => {
-    if (locked || !editMode) return;
-    openInventory('wall');
-  });
 
-  // Floor overlay（テクスチャ上書き用、壁より上位）
+  // Floor overlay（テクスチャ上書き用）
   const floor = document.createElement('div');
   floor.className = 'room-floor';
   floor.addEventListener('click', e => {
     if (locked || !editMode) return;
+    e.stopPropagation();
     openInventory('floor');
+  });
+
+  // 壁クリック: room-area自体で検出（wallはpointer-events:noneのため）
+  div.addEventListener('click', e => {
+    if (locked || !editMode) return;
+    // floor や家具をクリックした場合は無視
+    if (e.target.closest('.room-floor') || e.target.closest('.item-placed')) return;
+    openInventory('wall');
   });
 
   div.appendChild(wall);
