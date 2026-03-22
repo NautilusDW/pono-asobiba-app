@@ -445,16 +445,6 @@ html, body {
   color: #EF4444;
 }
 
-.threshold-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  padding: 2px 0;
-}
-.threshold-label { font-size: 0.78rem; color: #8B6A55; font-weight: 700; white-space: nowrap; }
-.threshold-val { font-size: 0.78rem; color: #8B6A55; font-weight: 700; width: 28px; text-align: right; }
-#threshold-slider { flex: 1; max-width: 160px; accent-color: #8855FF; }
 
 /* Save slot button */
 .btn-slots {
@@ -678,15 +668,6 @@ html, body {
   }
 
   /* Threshold row stacks vertically */
-  .threshold-row {
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 0;
-  }
-  .threshold-label { font-size: 0.65rem; }
-  .threshold-val { width: auto; }
-  #threshold-slider { max-width: 64px; }
 }
 </style>
 </head>
@@ -792,19 +773,13 @@ html, body {
       <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
       <button class="size-btn" data-size="50"><span class="size-dot size-dot-xl"></span></button>
       <button class="size-btn" data-size="80"><span class="size-dot size-dot-xxl"></span></button>
-      <div class="tool-divider"></div>
+    </div>
+    <div class="tool-row">
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
-      <div class="tool-divider"></div>
       <button class="camera-btn" id="camera-btn" onclick="cycleZoom()">🔍</button>
-      <div class="tool-divider"></div>
       <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
       <button class="undo-btn" onclick="undo()">↩ もどす</button>
       <button class="clear-btn" onclick="clearCanvas()">全消し</button>
-    </div>
-    <div class="threshold-row" id="threshold-row" style="display:none;">
-      <span class="threshold-label">線の太さ</span>
-      <input type="range" id="threshold-slider" min="50" max="240" value="180" oninput="onThresholdChange(this.value)">
-      <span class="threshold-val" id="threshold-val">180</span>
     </div>
   </div>
 </div>
@@ -892,12 +867,6 @@ function toggleMask() {
   if (!isBucket) activeMask = null;
   document.getElementById('bucket-btn').classList.toggle('selected', isBucket);
   document.getElementById('eraser-btn').classList.remove('selected');
-  document.getElementById('threshold-row').style.display = isBucket ? 'flex' : 'none';
-}
-
-function onThresholdChange(val) {
-  lineThreshold = parseInt(val);
-  document.getElementById('threshold-val').textContent = val;
 }
 
 // ===== Line mask (はみ出し防止) =====
@@ -1594,7 +1563,6 @@ buildPalette();
 initSizeBtns();
 // はみ出し防止デフォルトON: ボタン状態を反映
 document.getElementById('bucket-btn').classList.add('selected');
-document.getElementById('threshold-row').style.display = 'flex';
 
 window.addEventListener('resize', () => {
   if (document.getElementById('coloring-screen').style.display !== 'none') {
