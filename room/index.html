@@ -50,12 +50,12 @@
       position: relative; overflow: hidden;
     }
 
-    /* ─── Floating UI overlay (inside room-wrap) ─── */
+    /* ─── Floating UI overlay (inside room-wrap, bottom) ─── */
     #room-ui {
-      position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 50;
       display: flex; align-items: center; padding: 8px 10px; gap: 8px;
       pointer-events: none;
-      background: linear-gradient(180deg, rgba(0,0,0,0.22) 0%, transparent 100%);
+      background: linear-gradient(0deg, rgba(0,0,0,0.22) 0%, transparent 100%);
     }
     #room-ui > * { pointer-events: auto; }
     #area-dots { flex: 1; display: flex; justify-content: center; gap: 6px; }
@@ -124,7 +124,7 @@
       cursor: pointer;
     }
     .edit-banner {
-      position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
       z-index: 55; background: rgba(255,100,100,0.92); color: #fff;
       border-radius: 20px; padding: 8px 20px;
       font-size: 14px; font-weight: bold;
