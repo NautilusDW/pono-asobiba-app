@@ -1224,6 +1224,9 @@ function _addDragHandlers(el, areaId) {
     dragging = false;
   }
 
+  // 合成clickが壁/床ハンドラに漏れるのを防止
+  el.addEventListener('click', e => { e.stopPropagation(); });
+
   // ── タッチ ──────────────────────────────────────────
   el.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
@@ -1233,10 +1236,15 @@ function _addDragHandlers(el, areaId) {
 
   el.addEventListener('touchmove', e => {
     e.preventDefault();
+    e.stopPropagation();
     onMove(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: false });
 
-  el.addEventListener('touchend', onEnd);
+  el.addEventListener('touchend', e => {
+    e.preventDefault();  // 合成clickイベント抑制
+    e.stopPropagation(); // 壁/床インベントリへの伝播防止
+    onEnd();
+  });
 
   // ── マウス（PC）──────────────────────────────────────
   el.addEventListener('mousedown', e => {
