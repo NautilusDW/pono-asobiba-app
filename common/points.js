@@ -97,9 +97,10 @@
     ].join('');
     document.head.appendChild(style);
 
-    // HUDバッジ
+    // HUDバッジ（当面非表示）
     _hud = document.createElement('div');
     _hud.id = 'pono-hud';
+    _hud.style.display = 'none';
     _hud.title = 'ポノのおへやへ';
     _hud.innerHTML = '<span class="phud-star">⭐</span><span class="phud-num">0pt</span>';
     _hud.addEventListener('click', function () {
