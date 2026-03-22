@@ -385,7 +385,7 @@ html, body {
   color: #6633CC;
 }
 
-.pan-btn {
+.camera-btn {
   padding: 5px 10px;
   border-radius: 20px;
   font-family: inherit;
@@ -399,8 +399,8 @@ html, body {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.pan-btn:active { transform: scale(0.92); }
-.pan-btn.selected {
+.camera-btn:active { transform: scale(0.92); }
+.camera-btn.zoomed {
   background: #E8F4FD;
   border-color: #3388FF;
   color: #3388FF;
@@ -795,7 +795,7 @@ html, body {
       <div class="tool-divider"></div>
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
       <div class="tool-divider"></div>
-      <button class="pan-btn" id="pan-btn" onclick="togglePanMode()">✋ 移動</button>
+      <button class="camera-btn" id="camera-btn" onclick="cycleZoom()">🔍</button>
       <div class="tool-divider"></div>
       <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
       <button class="undo-btn" onclick="undo()">↩ もどす</button>
@@ -1163,11 +1163,22 @@ canvas.addEventListener('mouseleave', endDraw);
 let zoomScale = 1;
 let panX = 0, panY = 0;
 let isPanMode = false;
+const ZOOM_STEPS = [1, 2, 3];
+let zoomStepIndex = 0;
 
 function applyTransform() {
   document.getElementById('canvas-transform').style.transform =
     `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
   document.getElementById('zoom-reset-btn').style.display = zoomScale > 1.01 ? 'block' : 'none';
+  // カメラボタンの表示更新
+  const camBtn = document.getElementById('camera-btn');
+  if (zoomScale > 1.01) {
+    camBtn.textContent = '🔍 ×' + Math.round(zoomScale);
+    camBtn.classList.add('zoomed');
+  } else {
+    camBtn.textContent = '🔍';
+    camBtn.classList.remove('zoomed');
+  }
 }
 
 function clampPan() {
@@ -1179,14 +1190,37 @@ function clampPan() {
 
 function resetZoom() {
   zoomScale = 1; panX = 0; panY = 0;
+  zoomStepIndex = 0;
+  isPanMode = false;
   applyTransform();
   document.getElementById('canvas-wrapper').classList.remove('pan-mode', 'panning');
 }
 
-function togglePanMode() {
-  isPanMode = !isPanMode;
-  document.getElementById('pan-btn').classList.toggle('selected', isPanMode);
+function cycleZoom() {
+  zoomStepIndex = (zoomStepIndex + 1) % ZOOM_STEPS.length;
+  const newScale = ZOOM_STEPS[zoomStepIndex];
+  // ズーム時は中心を基準にする
+  const wrapperEl = document.getElementById('canvas-wrapper');
+  const ww = wrapperEl.clientWidth, wh = wrapperEl.clientHeight;
+  const cx = ww / 2, cy = wh / 2;
+  panX = cx - (cx - panX) * (newScale / zoomScale);
+  panY = cy - (cy - panY) * (newScale / zoomScale);
+  zoomScale = newScale;
+  // ×2以上なら自動的にパンモードON、×1ならOFF
+  isPanMode = zoomScale > 1.01;
+  wrapperEl.classList.toggle('pan-mode', isPanMode);
+  clampPan();
+  applyTransform();
+}
+
+// ピンチ/ホイール後のパンモード自動同期
+function syncPanMode() {
+  isPanMode = zoomScale > 1.01;
   document.getElementById('canvas-wrapper').classList.toggle('pan-mode', isPanMode);
+  // zoomStepIndexも近い段階に合わせる
+  if (zoomScale <= 1.01) zoomStepIndex = 0;
+  else if (zoomScale <= 2.5) zoomStepIndex = 1;
+  else zoomStepIndex = 2;
 }
 
 // --- Touch handling ---
@@ -1242,6 +1276,7 @@ wrapper.addEventListener('touchmove', (e) => {
     panX += midX - pinchPrevMidX;
     panY += midY - pinchPrevMidY;
     zoomScale = newScale;
+    syncPanMode();
     clampPan();
     applyTransform();
     pinchPrevDist = dist; pinchPrevMidX = midX; pinchPrevMidY = midY;
@@ -1266,6 +1301,33 @@ wrapper.addEventListener('touchend', (e) => {
   }
 }, { passive: false });
 
+// マウスドラッグでパン (PC — ズーム中のみ)
+let mousePanning = false;
+wrapper.addEventListener('mousedown', (e) => {
+  if (isPanMode) {
+    mousePanning = true;
+    panStartX = panX; panStartY = panY;
+    panTouchStartX = e.clientX; panTouchStartY = e.clientY;
+    wrapper.classList.add('panning');
+    e.preventDefault();
+  }
+});
+wrapper.addEventListener('mousemove', (e) => {
+  if (mousePanning) {
+    panX = panStartX + e.clientX - panTouchStartX;
+    panY = panStartY + e.clientY - panTouchStartY;
+    clampPan();
+    applyTransform();
+    e.preventDefault();
+  }
+});
+wrapper.addEventListener('mouseup', () => {
+  if (mousePanning) { mousePanning = false; wrapper.classList.remove('panning'); }
+});
+wrapper.addEventListener('mouseleave', () => {
+  if (mousePanning) { mousePanning = false; wrapper.classList.remove('panning'); }
+});
+
 // マウスホイールでズーム (PC)
 wrapper.addEventListener('wheel', (e) => {
   e.preventDefault();
@@ -1276,6 +1338,7 @@ wrapper.addEventListener('wheel', (e) => {
   panX = lx - (lx - panX) * (newScale / zoomScale);
   panY = ly - (ly - panY) * (newScale / zoomScale);
   zoomScale = newScale;
+  syncPanMode();
   clampPan();
   applyTransform();
 }, { passive: false });
