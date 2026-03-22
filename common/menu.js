@@ -252,33 +252,48 @@
     document.body.appendChild(items);
     document.body.appendChild(overlay);
 
-    // ── Safari コンパクトモード誘発 ──
-    // Safari はページがスクロール可能でないとツールバーを折りたたまない。
-    // タッチデバイスのみ: overflow を解除し、body を 100vh+2px にして scrollTo で
-    // 1px スクロール → Safari がコンパクトモードに切り替わる。
-    // ゲームコンテンツは position:fixed か height:100dvh なので 1px では動かない。
+    // ── モバイル: ブラウザUIがあっても画面内に収める ──
+    // Safari/Chrome のツールバーで上下が狭くなっても、ゲーム全体が見えるようにする。
+    // window.innerHeight（実際の可視領域）をCSS変数 --vh に反映し、
+    // body や position:fixed 要素の高さをそれに合わせる。
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      (function triggerCompactMode() {
-        // body に position:fixed がある場合は解除（scrollTo が効かないため）
-        if (getComputedStyle(document.body).position === 'fixed') {
-          document.body.style.setProperty('position', 'relative', 'important');
+      (function fitVisibleViewport() {
+        // --vh を実際の可視高さに設定
+        function updateVH() {
+          document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
         }
-        // overflow を許可し、body を少しだけビューポートより高くする
+        updateVH();
+        window.addEventListener('resize', updateVH);
+        window.addEventListener('orientationchange', function() {
+          setTimeout(updateVH, 150);
+        });
+
+        var appH = 'calc(var(--vh) * 100)';
+
+        // body + 主要コンテナの高さを可視領域にフィットさせる CSS
         var s = document.createElement('style');
         s.textContent =
-          'html { overflow-y: auto !important; }' +
-          'body { overflow-y: auto !important; min-height: calc(100vh + 2px) !important; }';
+          '@media (pointer: coarse) {' +
+          '  html, body {' +
+          '    height: ' + appH + ' !important;' +
+          '    max-height: ' + appH + ' !important;' +
+          '    min-height: 0 !important;' +
+          '  }' +
+          // ゲームコンテナ（height:100dvh を使っている要素）
+          '  #app, #coloring-screen, .page {' +
+          '    height: ' + appH + ' !important;' +
+          '    max-height: ' + appH + ' !important;' +
+          '    min-height: 0 !important;' +
+          '  }' +
+          // position:fixed の全画面要素
+          '  #room-scene, #start-screen, #selection-screen,' +
+          '  #portrait-notice, #portrait-overlay,' +
+          '  .pono-confirm-overlay {' +
+          '    height: ' + appH + ' !important;' +
+          '    bottom: auto !important;' +
+          '  }' +
+          '}';
         document.head.appendChild(s);
-
-        // スクロールで Safari コンパクトモードを誘発
-        requestAnimationFrame(function() {
-          setTimeout(function() { window.scrollTo(0, 1); }, 300);
-        });
-
-        // 戻りスクロール防止（ツールバー再展開を阻止）
-        window.addEventListener('scroll', function() {
-          if (window.scrollY < 1) window.scrollTo(0, 1);
-        });
       })();
     }
   };
