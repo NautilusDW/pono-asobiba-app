@@ -1522,7 +1522,7 @@ function buildRoomArea(areaData) {
     toybox.dataset.col = tbCol;
     const tbHeight = GRID_CELL_PCT.toFixed(2);
     const tbCell = getGridCell(tbRow, tbCol);
-    toybox.style.cssText = 'position:absolute;z-index:20;cursor:pointer;'
+    toybox.style.cssText = 'position:absolute;z-index:200;cursor:pointer;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;'
       + 'height:' + tbHeight + '%;width:auto;'
       + 'display:flex;align-items:flex-end;justify-content:center;'
