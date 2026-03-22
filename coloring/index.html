@@ -257,6 +257,53 @@ html, body {
   box-shadow: var(--shadow);
 }
 
+/* Floating canvas buttons */
+.canvas-float-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(139,106,85,0.5);
+  background: rgba(255,248,231,0.92);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.1s;
+  padding: 0;
+  z-index: 50;
+}
+.canvas-float-btn:active { transform: scale(0.88); }
+
+.camera-float {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+}
+.camera-float.zoomed {
+  background: #E8F4FD;
+  border-color: #3388FF;
+}
+
+.canvas-float-group.top-left {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+}
+
+.canvas-float-btn.eraser-selected {
+  background: #F0E6D8;
+  border-color: #8B6A55;
+}
+.canvas-float-btn.clear-float {
+  border-color: rgba(239,68,68,0.6);
+}
+
 /* Toolbar */
 .toolbar {
   background: rgba(255,248,231,0.97);
@@ -385,64 +432,12 @@ html, body {
   color: #6633CC;
 }
 
-.camera-btn {
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: 2px solid #A89585;
-  color: #5B4A3F;
-  background: #fff;
-  transition: transform 0.1s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.camera-btn:active { transform: scale(0.92); }
-.camera-btn.zoomed {
-  background: #E8F4FD;
-  border-color: #3388FF;
-  color: #3388FF;
-}
-
 .tool-divider {
   width: 2px;
   height: 28px;
   background: #E5D9C8;
   border-radius: 2px;
   flex-shrink: 0;
-}
-
-.eraser-btn, .undo-btn, .clear-btn {
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: 2px solid;
-  transition: transform 0.1s;
-  background: #fff;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.eraser-btn:active, .undo-btn:active, .clear-btn:active { transform: scale(0.92); }
-.eraser-btn {
-  border-color: #A89585;
-  color: #5B4A3F;
-}
-.eraser-btn.selected {
-  background: #F0E6D8;
-  border-color: #8B6A55;
-}
-.undo-btn {
-  border-color: #A89585;
-  color: #5B4A3F;
-}
-.clear-btn {
-  border-color: #EF4444;
-  color: #EF4444;
 }
 
 
@@ -658,7 +653,7 @@ html, body {
   }
 
   /* Action buttons fill sidebar width */
-  .bucket-btn, .eraser-btn, .undo-btn, .clear-btn {
+  .bucket-btn {
     width: 68px;
     font-size: 0.68rem;
     padding: 5px 3px;
@@ -666,8 +661,6 @@ html, body {
     white-space: normal;
     line-height: 1.2;
   }
-
-  /* Threshold row stacks vertically */
 }
 </style>
 </head>
@@ -760,6 +753,12 @@ html, body {
       <img id="nurie-overlay" alt="ぬりえ">
     </div>
     <button id="zoom-reset-btn" onclick="resetZoom()">1:1 もどす</button>
+    <button class="canvas-float-btn camera-float" id="camera-btn" onclick="cycleZoom()">🔍</button>
+    <div class="canvas-float-group top-left">
+      <button class="canvas-float-btn" id="eraser-btn" onclick="toggleEraser()">🧹</button>
+      <button class="canvas-float-btn" onclick="undo()">↩</button>
+      <button class="canvas-float-btn clear-float" onclick="clearCanvas()">🗑</button>
+    </div>
   </div>
   <div id="brush-cursor"></div>
 
@@ -776,10 +775,6 @@ html, body {
     </div>
     <div class="tool-row">
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
-      <button class="camera-btn" id="camera-btn" onclick="cycleZoom()">🔍</button>
-      <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
-      <button class="undo-btn" onclick="undo()">↩ もどす</button>
-      <button class="clear-btn" onclick="clearCanvas()">全消し</button>
     </div>
   </div>
 </div>
@@ -816,7 +811,7 @@ function selectColor(col, sw) {
   currentColor = col;
   isEraser = false;
   isRainbow = false;
-  document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('eraser-btn').classList.remove('eraser-selected');
   document.getElementById('rainbow-btn').classList.remove('selected');
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
   sw.classList.add('selected');
@@ -826,7 +821,7 @@ function toggleRainbow() {
   isRainbow = !isRainbow;
   isEraser = false;
   document.getElementById('rainbow-btn').classList.toggle('selected', isRainbow);
-  document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('eraser-btn').classList.remove('eraser-selected');
   document.getElementById('bucket-btn').classList.remove('selected');
   if (!isRainbow) {
     const idx = COLORS.indexOf(currentColor);
@@ -851,7 +846,7 @@ function toggleEraser() {
   isEraser = !isEraser;
   isBucket = false;
   isRainbow = false;
-  document.getElementById('eraser-btn').classList.toggle('selected', isEraser);
+  document.getElementById('eraser-btn').classList.toggle('eraser-selected', isEraser);
   document.getElementById('bucket-btn').classList.remove('selected');
   document.getElementById('rainbow-btn').classList.remove('selected');
   if (!isEraser) {
@@ -866,7 +861,7 @@ function toggleMask() {
   isEraser = false;
   if (!isBucket) activeMask = null;
   document.getElementById('bucket-btn').classList.toggle('selected', isBucket);
-  document.getElementById('eraser-btn').classList.remove('selected');
+  document.getElementById('eraser-btn').classList.remove('eraser-selected');
 }
 
 // ===== Line mask (はみ出し防止) =====
@@ -1144,7 +1139,7 @@ function applyTransform() {
   const camBtn = document.getElementById('camera-btn');
   const zoomed = zoomScale > 1.01;
   if (zoomed) {
-    camBtn.textContent = '🔍 ×' + Math.round(zoomScale);
+    camBtn.textContent = '×' + Math.round(zoomScale);
     camBtn.classList.add('zoomed');
   } else {
     camBtn.textContent = '🔍';
