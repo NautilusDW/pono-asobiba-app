@@ -796,6 +796,7 @@ html, body {
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
       <div class="tool-divider"></div>
       <button class="camera-btn" id="camera-btn" onclick="cycleZoom()">🔍</button>
+      <button class="camera-btn" id="pan-toggle-btn" onclick="togglePanMode()" style="display:none;">✋</button>
       <div class="tool-divider"></div>
       <button class="eraser-btn" id="eraser-btn" onclick="toggleEraser()">消しゴム</button>
       <button class="undo-btn" onclick="undo()">↩ もどす</button>
@@ -1172,12 +1173,17 @@ function applyTransform() {
   document.getElementById('zoom-reset-btn').style.display = zoomScale > 1.01 ? 'block' : 'none';
   // カメラボタンの表示更新
   const camBtn = document.getElementById('camera-btn');
-  if (zoomScale > 1.01) {
+  const panBtn = document.getElementById('pan-toggle-btn');
+  const zoomed = zoomScale > 1.01;
+  if (zoomed) {
     camBtn.textContent = '🔍 ×' + Math.round(zoomScale);
     camBtn.classList.add('zoomed');
+    panBtn.style.display = '';
+    panBtn.classList.toggle('zoomed', isPanMode);
   } else {
     camBtn.textContent = '🔍';
     camBtn.classList.remove('zoomed');
+    panBtn.style.display = 'none';
   }
 }
 
@@ -1206,17 +1212,29 @@ function cycleZoom() {
   panX = cx - (cx - panX) * (newScale / zoomScale);
   panY = cy - (cy - panY) * (newScale / zoomScale);
   zoomScale = newScale;
-  // ×2以上なら自動的にパンモードON、×1ならOFF
-  isPanMode = zoomScale > 1.01;
-  wrapperEl.classList.toggle('pan-mode', isPanMode);
+  // ×1に戻ったらパンモード解除
+  if (zoomScale <= 1.01) {
+    isPanMode = false;
+    wrapperEl.classList.remove('pan-mode');
+  }
   clampPan();
   applyTransform();
 }
 
+function togglePanMode() {
+  isPanMode = !isPanMode;
+  const wrapperEl = document.getElementById('canvas-wrapper');
+  wrapperEl.classList.toggle('pan-mode', isPanMode);
+  document.getElementById('pan-toggle-btn').classList.toggle('zoomed', isPanMode);
+}
+
 // ピンチ/ホイール後のパンモード自動同期
 function syncPanMode() {
-  isPanMode = zoomScale > 1.01;
-  document.getElementById('canvas-wrapper').classList.toggle('pan-mode', isPanMode);
+  // ×1に戻ったらパンモード解除
+  if (zoomScale <= 1.01) {
+    isPanMode = false;
+    document.getElementById('canvas-wrapper').classList.remove('pan-mode');
+  }
   // zoomStepIndexも近い段階に合わせる
   if (zoomScale <= 1.01) zoomStepIndex = 0;
   else if (zoomScale <= 2.5) zoomStepIndex = 1;
