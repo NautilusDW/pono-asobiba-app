@@ -1530,14 +1530,24 @@ function buildRoomArea(areaData) {
     toybox.style.cssText = 'position:absolute;cursor:pointer;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;'
       + 'height:' + tbHeight + '%;width:auto;'
-      + 'z-index:' + (100 + tbCell.z) + ';'
+      + 'z-index:' + tbCell.z + ';'
       + 'display:flex;align-items:flex-end;justify-content:center;'
       + 'pointer-events:auto;'
       + 'transform:translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%);';
     toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:100%;width:auto;" alt="たからばこ">';
 
-    // ドラッグ（editモード）+ タップ（通常モード）
+    // ドラッグ（editモード）+ タップ（通常モードのみメニュー）
+    const tbTransform = 'translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%)';
     let tbStartX = 0, tbStartY = 0, tbDragging = false;
+    let tbBusy = false; // メニュー誤開き防止フラグ
+
+    function tbUpdatePos(row, col) {
+      const c = getGridCell(row, col);
+      toybox.style.left = c.leftPct + '%';
+      toybox.style.bottom = c.bottomPct + '%';
+      toybox.style.zIndex = c.z; // 家具と同じdepthベース
+    }
+
     function tbOnMove(cx, cy) {
       if (!editMode) return;
       if (!tbDragging && (Math.abs(cx - tbStartX) > 6 || Math.abs(cy - tbStartY) > 6)) {
@@ -1552,47 +1562,54 @@ function buildRoomArea(areaData) {
       toybox.dataset.row = row;
       toybox.dataset.col = col;
       toybox.classList.add('dragging');
-      const c = getGridCell(row, col);
-      toybox.style.left = c.leftPct + '%';
-      toybox.style.bottom = c.bottomPct + '%';
-      toybox.style.zIndex = 100 + c.z;
+      tbUpdatePos(row, col);
     }
-    const tbTransform = 'translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%)';
-    function tbOnEnd() {
+
+    function tbOnEnd(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       toybox.classList.remove('dragging');
       if (tbDragging) {
         if (!state.config.living) state.config.living = {};
         state.config.living.toyboxRow = parseInt(toybox.dataset.row);
         state.config.living.toyboxCol = parseInt(toybox.dataset.col);
         saveState();
-      } else if (!editMode) {
-        // タップアニメ（pivot transform を壊さないよう scale を追加）
-        toybox.style.transition = 'transform 0.15s';
-        toybox.style.transform = tbTransform + ' scale(0.92)';
-        setTimeout(() => { toybox.style.transform = tbTransform; toybox.style.transition = ''; }, 150);
-        openTakarabako();
       }
-      // editMode でタップ（ドラッグなし）→ 何もしない（メニューを開かない）
       tbDragging = false;
+      // editMode中は一切メニューを開かない。タッチ操作後500ms間もブロック
+      tbBusy = true;
+      setTimeout(() => { tbBusy = false; }, 500);
     }
+
     toybox.addEventListener('touchstart', e => {
+      e.stopPropagation();
       tbStartX = e.touches[0].clientX; tbStartY = e.touches[0].clientY;
       tbDragging = false;
     }, { passive: true });
     toybox.addEventListener('touchmove', e => {
-      e.preventDefault();
+      e.preventDefault(); e.stopPropagation();
       tbOnMove(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
-    toybox.addEventListener('touchend', tbOnEnd);
-    // クリックイベントの伝播を防止（壁/床インベントリが誤って開くのを防ぐ）
-    toybox.addEventListener('click', e => { e.stopPropagation(); });
+    toybox.addEventListener('touchend', e => { tbOnEnd(e); });
+
+    // clickは通常モードのメニュー開閉専用。editMode中・busy中は完全ブロック
+    toybox.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (editMode || tbBusy) return;
+      toybox.style.transition = 'transform 0.15s';
+      toybox.style.transform = tbTransform + ' scale(0.92)';
+      setTimeout(() => { toybox.style.transform = tbTransform; toybox.style.transition = ''; }, 150);
+      openTakarabako();
+    });
+
+    // PC用マウスドラッグ
     toybox.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
-      e.preventDefault();
+      e.preventDefault(); e.stopPropagation();
       tbStartX = e.clientX; tbStartY = e.clientY;
       tbDragging = false;
-      function mm(e) { tbOnMove(e.clientX, e.clientY); }
-      function mu() { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); tbOnEnd(); }
+      function mm(ev) { tbOnMove(ev.clientX, ev.clientY); }
+      function mu(ev) { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); tbOnEnd(ev); }
       window.addEventListener('mousemove', mm);
       window.addEventListener('mouseup', mu);
     });
