@@ -1520,13 +1520,18 @@ function buildRoomArea(areaData) {
     toybox.className = 'item-placed toybox-item';
     toybox.dataset.row = tbRow;
     toybox.dataset.col = tbCol;
-    const tbHeight = GRID_CELL_PCT.toFixed(2);
+    // deco_toybox_pink と同じ cellSize:0.8, pivotX:11, pivotY:23.3
+    const tbCellSize = 0.8;
+    const tbPivotX = 11;
+    const tbPivotY = 23.3;
+    const tbHeight = (tbCellSize * GRID_CELL_PCT).toFixed(2);
     const tbCell = getGridCell(tbRow, tbCol);
     toybox.style.cssText = 'position:absolute;z-index:200;cursor:pointer;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;'
       + 'height:' + tbHeight + '%;width:auto;'
       + 'display:flex;align-items:flex-end;justify-content:center;'
-      + 'pointer-events:auto;';
+      + 'pointer-events:auto;'
+      + 'transform:translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%);';
     toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:100%;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
 
     // ドラッグ（editモード）+ タップ（通常モード）
