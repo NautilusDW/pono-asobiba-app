@@ -821,7 +821,7 @@ const COLORS = [
 let currentColor = COLORS[0];
 let brushSize = 4;
 let isEraser = false;
-let isBucket = false;
+let isBucket = true;  // はみ出し防止デフォルトON
 let isRainbow = false;
 let rainbowHue = 0;
 
@@ -1530,6 +1530,9 @@ document.addEventListener('fullscreenchange', () => {
 // ===== Init =====
 buildPalette();
 initSizeBtns();
+// はみ出し防止デフォルトON: ボタン状態を反映
+document.getElementById('bucket-btn').classList.add('selected');
+document.getElementById('threshold-row').style.display = 'flex';
 
 window.addEventListener('resize', () => {
   if (document.getElementById('coloring-screen').style.display !== 'none') {
