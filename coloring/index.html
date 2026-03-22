@@ -839,6 +839,7 @@ function buildPalette() {
 }
 
 function selectColor(col, sw) {
+  exitPanMode();
   currentColor = col;
   isEraser = false;
   isRainbow = false;
@@ -849,6 +850,7 @@ function selectColor(col, sw) {
 }
 
 function toggleRainbow() {
+  exitPanMode();
   isRainbow = !isRainbow;
   isEraser = false;
   document.getElementById('rainbow-btn').classList.toggle('selected', isRainbow);
@@ -866,6 +868,7 @@ function toggleRainbow() {
 function initSizeBtns() {
   document.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      exitPanMode();
       brushSize = parseInt(btn.dataset.size);
       document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -874,6 +877,7 @@ function initSizeBtns() {
 }
 
 function toggleEraser() {
+  exitPanMode();
   isEraser = !isEraser;
   isBucket = false;
   isRainbow = false;
@@ -888,6 +892,7 @@ function toggleEraser() {
 }
 
 function toggleMask() {
+  exitPanMode();
   isBucket = !isBucket;
   isEraser = false;
   if (!isBucket) activeMask = null;
@@ -1178,7 +1183,7 @@ function applyTransform() {
   if (zoomed) {
     camBtn.textContent = '🔍 ×' + Math.round(zoomScale);
     camBtn.classList.add('zoomed');
-    panBtn.style.display = '';
+    panBtn.style.display = 'inline-block';
     panBtn.classList.toggle('zoomed', isPanMode);
   } else {
     camBtn.textContent = '🔍';
@@ -1225,7 +1230,14 @@ function togglePanMode() {
   isPanMode = !isPanMode;
   const wrapperEl = document.getElementById('canvas-wrapper');
   wrapperEl.classList.toggle('pan-mode', isPanMode);
-  document.getElementById('pan-toggle-btn').classList.toggle('zoomed', isPanMode);
+  applyTransform();
+}
+
+function exitPanMode() {
+  if (!isPanMode) return;
+  isPanMode = false;
+  document.getElementById('canvas-wrapper').classList.remove('pan-mode');
+  applyTransform();
 }
 
 // ピンチ/ホイール後のパンモード自動同期
