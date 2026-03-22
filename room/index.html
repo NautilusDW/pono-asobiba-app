@@ -1494,23 +1494,10 @@ function buildRoomArea(areaData) {
     }
   });
 
-  // たからばこ（living room only, tappable）— 空きセルに配置
+  // たからばこ（living room only, tappable）— 固定位置(7,1)に配置
   if (areaData.id === 'living' && !locked) {
     const toybox = document.createElement('div');
-    // 家具と重ならない空きセルを探す（候補: 右手前の角周辺）
-    const tbCandidates = [[7,1],[6,1],[7,0],[6,0],[7,2],[5,1],[5,0]];
-    let tbRow = 7, tbCol = 1;
-    const placedItems = cfg.placed || getPlacedItems(cfg);
-    for (const [r, c] of tbCandidates) {
-      const occupied = placedItems.some(p => {
-        const item = getItem(p.id);
-        if (!item) return false;
-        const foot = getFootprint(p.row ?? 0, p.col ?? 0, item, p.angle || 'A');
-        return foot.some(f => f.row === r && f.col === c);
-      });
-      if (!occupied) { tbRow = r; tbCol = c; break; }
-    }
-    const tbCell = getGridCell(tbRow, tbCol);
+    const tbCell = getGridCell(7, 1);
     toybox.style.cssText = 'position:absolute;z-index:20;cursor:pointer;transition:transform 0.15s;transform-origin:bottom center;'
       + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;transform:translate(-50%,0);';
     toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:' + GRID_CELL_PCT.toFixed(2) + '%;width:auto;filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.3));" alt="たからばこ">';
