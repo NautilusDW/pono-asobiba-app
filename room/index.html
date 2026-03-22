@@ -488,8 +488,8 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 32px;
     }
-    .item-prev.wall-prev  { aspect-ratio: 1.5; border-radius: 4px; }
-    .item-prev.floor-prev { aspect-ratio: 3; border-radius: 4px; }
+    .item-prev.wall-prev  { aspect-ratio: 1.2; border-radius: 4px; }
+    .item-prev.floor-prev { aspect-ratio: 1.2; border-radius: 4px; }
     .item-prev img { width: 100%; height: 100%; object-fit: contain; }
 
     .item-card-name { font-size: 9px; font-weight: bold; color: #444; line-height: 1.2; }
@@ -708,7 +708,7 @@
     </div>
     <!-- Items tab content (existing shop/inventory) -->
     <div class="takara-content" id="takara-items">
-      <div class="mode-toggle">
+      <div class="mode-toggle" style="display:none;">
         <button class="mode-btn buy on" id="mode-buy" onclick="setShopMode('buy')">🛍️ かう</button>
         <button class="mode-btn bag"    id="mode-bag" onclick="setShopMode('bag')">🎒 てもち</button>
       </div>
@@ -1259,13 +1259,19 @@ function makeItemPreview(item) {
   const gradKey = item.cat === 'wall' ? 'wallGrad' : item.cat === 'floor' ? 'floorGrad' : null;
 
   if (item.cat === 'wall' || item.cat === 'floor') {
-    // 壁・床: roomImg があれば画像プレビュー、なければグラデーション
-    div.style.background = '#f0ebe4'; // 透過PNGの背景
+    // 壁・床: roomImg があれば画像プレビュー（模様が見えるよう中央を拡大）
+    div.style.background = '#f0ebe4';
     if (gradKey && item[gradKey]) div.style.background = item[gradKey];
     if (item.roomImg) {
       const img = document.createElement('img');
       img.src = item.roomImg;
-      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+      // 壁: 上部中央を拡大（壁紙模様が見える位置）
+      // 床: 中央やや下を拡大（木目等が見える位置）
+      if (item.cat === 'wall') {
+        img.style.cssText = 'position:absolute;width:250%;height:250%;left:50%;top:30%;transform:translate(-50%,-30%);object-fit:cover;';
+      } else {
+        img.style.cssText = 'position:absolute;width:300%;height:300%;left:50%;top:55%;transform:translate(-50%,-55%);object-fit:cover;';
+      }
       img.onerror = () => img.remove();
       div.style.position = 'relative'; div.style.overflow = 'hidden';
       div.appendChild(img);
@@ -1632,7 +1638,7 @@ function refreshArea(areaId) {
 let editMode = false;
 let currentShopCat = 'wall';
 let currentAreaId  = 'living';
-let shopMode       = 'buy'; // 'buy' | 'bag'
+let shopMode       = 'bag'; // 'buy' | 'bag'（当面は買う/手持ち非表示のため bag 固定）
 
 function _syncArea() {
   const scroll = document.getElementById('room-scroll');
@@ -1807,7 +1813,7 @@ function openShop(cat) {
   document.querySelectorAll('.cat-tab').forEach(t => {
     t.classList.toggle('on', t.dataset.cat === currentShopCat);
   });
-  setShopMode('buy');
+  setShopMode('bag');
   switchTakaraTab('items');
   document.getElementById('shop-ov').classList.remove('hidden');
   _shiftRoom(true);
