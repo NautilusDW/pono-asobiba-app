@@ -1059,6 +1059,7 @@ function getPos(e, rect) {
 
 function startDraw(e) {
   e.preventDefault();
+  if (isPanMode) return;
   const rect = canvas.getBoundingClientRect();
   const pos = getPos(e, rect);
   const scaleX = canvas.width / rect.width;
