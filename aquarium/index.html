@@ -238,6 +238,7 @@
       if (!bgmStarted && bgmEnabled) {
         bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
       }
+      SFX.init();
     }
     function toggleBgm() {
       bgmEnabled = !bgmEnabled;
@@ -253,6 +254,79 @@
     window.addEventListener('blur',  () => bgm.pause());
     window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
+
+    // ─── SFX: Web Audio合成 ──────────────────────────────────
+    const SFX = {
+      ctx: null,
+      init() {
+        if (this.ctx) return;
+        try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+      },
+      play(name) {
+        if (!this.ctx || !bgmEnabled) return;
+        const ctx = this.ctx;
+        const now = ctx.currentTime;
+        const g = ctx.createGain();
+        g.connect(ctx.destination);
+        if (name === 'pop') {
+          // シャボン玉が割れる: 短いサイン波ピッチダウン
+          const o = ctx.createOscillator();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(600, now);
+          o.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+          g.gain.setValueAtTime(0.25, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          o.connect(g); o.start(now); o.stop(now + 0.15);
+        } else if (name === 'chomp') {
+          // エサを食べる: 2連クリック
+          for (let i = 0; i < 2; i++) {
+            const o = ctx.createOscillator();
+            const gi = ctx.createGain();
+            o.type = 'square';
+            o.frequency.value = 300 + i * 100;
+            gi.gain.setValueAtTime(0.15, now + i * 0.07);
+            gi.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.05);
+            o.connect(gi); gi.connect(ctx.destination);
+            o.start(now + i * 0.07); o.stop(now + i * 0.07 + 0.06);
+          }
+        } else if (name === 'splash') {
+          // 水面タップ: ノイズバースト
+          const bufSize = ctx.sampleRate * 0.08;
+          const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          const filt = ctx.createBiquadFilter();
+          filt.type = 'lowpass'; filt.frequency.value = 800;
+          g.gain.setValueAtTime(0.2, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          src.connect(filt); filt.connect(g);
+          src.start(now); src.stop(now + 0.1);
+        } else if (name === 'honk') {
+          // クラクション: 低いスクエア波
+          const o = ctx.createOscillator();
+          o.type = 'square';
+          o.frequency.setValueAtTime(180, now);
+          g.gain.setValueAtTime(0.18, now);
+          g.gain.setValueAtTime(0.18, now + 0.15);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          o.connect(g); o.start(now); o.stop(now + 0.25);
+        } else if (name === 'collect') {
+          // アイテム獲得: 上昇アルペジオ
+          [400, 500, 600, 800].forEach((freq, i) => {
+            const o = ctx.createOscillator();
+            const gi = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = freq;
+            gi.gain.setValueAtTime(0.12, now + i * 0.06);
+            gi.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.1);
+            o.connect(gi); gi.connect(ctx.destination);
+            o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.12);
+          });
+        }
+      }
+    };
 
     // ─── Fullscreen: スマホのみ ─────────────────────────────────
     // iOS Safari は document の requestFullscreen が使えないため
@@ -382,7 +456,67 @@
     app.stage.filterArea = new PIXI.Rectangle(0, 0, app.screen.width, app.screen.height);
     const steerGfx   = new PIXI.Graphics();
     const rippleGfx  = new PIXI.Graphics();
-    layerTop.addChild(steerGfx, rippleGfx);
+    const particleGfx = new PIXI.Graphics();
+    const foodGfx     = new PIXI.Graphics();
+    layerTop.addChild(steerGfx, rippleGfx, particleGfx);
+    layerFg.addChild(foodGfx);
+
+    // ─── Particle system (shared) ─────────────────────────────
+    const particles = []; // { x, y, vx, vy, life, maxLife, color, size, emoji? }
+    function spawnParticle(x, y, opts = {}) {
+      if (particles.length >= 50) return;
+      particles.push({
+        x, y,
+        vx: opts.vx || (Math.random() - 0.5) * 2,
+        vy: opts.vy || -(1 + Math.random() * 2),
+        life: opts.life || 60,
+        maxLife: opts.life || 60,
+        color: opts.color || 0xffaacc,
+        size: opts.size || 4,
+        emoji: opts.emoji || null,
+        _txt: null, // PIXI.Text for emoji particles
+      });
+    }
+    function spawnHearts(x, y, count) {
+      const emojis = ['❤️', '💖', '✨'];
+      for (let i = 0; i < count; i++) {
+        spawnParticle(x, y, {
+          vx: (Math.random() - 0.5) * 3,
+          vy: -(1.5 + Math.random() * 2),
+          life: 50 + Math.random() * 20,
+          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          size: 14 + Math.random() * 6,
+        });
+      }
+    }
+    function spawnSparkles(x, y, count, color) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 1.5 + Math.random() * 2.5;
+        spawnParticle(x, y, {
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          life: 30 + Math.random() * 20,
+          color: color || [0xffee55, 0xff88cc, 0x88ddff, 0xaaffaa][Math.floor(Math.random() * 4)],
+          size: 3 + Math.random() * 4,
+        });
+      }
+    }
+
+    // ─── Food pellets ─────────────────────────────────────────
+    const foodPellets = []; // { x, y, age, eaten }
+    function spawnFood(x, y) {
+      if (foodPellets.length >= 5) return;
+      foodPellets.push({ x, y, age: 0, eaten: false });
+      SFX.play('splash');
+    }
+
+    // ─── Pop bubbles (mini-game) ──────────────────────────────
+    const popBubbles = [];
+    let popBubbleTimer = 1800 + Math.random() * 1800; // 30-60s initial delay
+    let popBubbleWaveTotal = 0, popBubbleWavePopped = 0;
+    const popBubbleGfx = new PIXI.Graphics();
+    layerTop.addChild(popBubbleGfx);
 
     // ─── Background: BG_A.png as PixiJS sprite so ripple filter covers it ──
     let _bgSprite = null;
@@ -651,7 +785,7 @@
         const c = {
           obj,
           pattern: 'float',
-          octopus: true, bgSprite: true,
+          octopus: true, bgSprite: true, reactionType: 'ink',
           octTexSurprised: octopusTex.surprised,
           octTexNormal: octopusTex.frames,
           animFrame: 0,
@@ -708,7 +842,7 @@
         const c = {
           obj,
           pattern: 'jellyfish',
-          jellysprite: true, bgSprite: true,
+          jellysprite: true, bgSprite: true, reactionType: 'glow',
           octTexSurprised: jellyfishTex.surprised,
           octTexNormal: [jellyfishTex.surprised, ...jellyfishTex.frames], // 001→002→003
           animFrame: 0,
@@ -770,7 +904,7 @@
         const c = {
           obj,
           pattern: 'float',  // gentle drift — swim was too frantic
-          turtlesprite: true, bgSprite: true,
+          turtlesprite: true, bgSprite: true, reactionType: 'shell',
           octTexSurprised: turtleTex.surprised,
           octTexNormal: [turtleTex.surprised, ...turtleTex.frames], // 001→002→003
           animFrame: 0,
@@ -828,7 +962,7 @@
         const c = {
           obj,
           pattern: 'swim',
-          fishS01sprite: true, bgSprite: true,
+          fishS01sprite: true, bgSprite: true, reactionType: 'jump',
           octTexSurprised: fishS01Tex.surprised,
           octTexNormal: [fishS01Tex.frames[0]], // 002のみ（泳ぎの絵）
           animFrame: 0,
@@ -885,7 +1019,7 @@
         const c = {
           obj,
           pattern: 'drift',  // 低速漂流
-          sunfishsprite: true, bgSprite: true,
+          sunfishsprite: true, bgSprite: true, reactionType: 'spin',
           octTexSurprised: sunfishTex.surprised,             // 001=驚き顔（タップ時のみ）
           octTexNormal: [normalTex],                          // 002=普通顔（常時）
           animFrame: 0,
@@ -950,7 +1084,7 @@
         const c = {
           obj,
           pattern: 'swim',
-          submarinesprite: true, bgSprite: true,
+          submarinesprite: true, bgSprite: true, reactionType: 'honk',
           subTex001, subTex002, subTex003,
           // 001 フラッシュ（15秒間隔、タイマーをずらす）
           subTimer1: 500 + Math.random() * 600,
@@ -1018,7 +1152,7 @@
         const c = {
           obj,
           pattern: 'swim',
-          sharksprite: true, bgSprite: true,
+          sharksprite: true, bgSprite: true, reactionType: 'chomp_react',
           octTexSurprised: sharkTex.surprised,                    // 001 驚き
           octTexNormal: sharkTex.frames.length > 0
             ? [sharkTex.frames[0]]                                // 002 通常
@@ -1421,6 +1555,7 @@
         _pulsePeriod: 90 + Math.random() * 40,
         hiderState: null,  // null | 'hidden' | 'fleeing' | 'seeking'
         hideRock:   null,
+        reactionType: 'sparkle',
       };
 
       layerMid.addChild(obj);
@@ -1611,6 +1746,38 @@
               c.obj.scale.x = spd > 0 ? sc : -sc;
             }
           }
+        }
+
+        // ── Unique reaction animations ────────────────────────
+        if (c._glowTimer > 0) {
+          c._glowTimer -= delta;
+          const t = c._glowTimer / 30;
+          c.obj.tint = t > 0.5 ? 0x66ffcc : 0xffffff;
+          if (c._glowTimer <= 0) c.obj.tint = 0xffffff;
+        }
+        if (c._shellTimer > 0) {
+          c._shellTimer -= delta;
+          const bs = c.obj._baseScale || Math.abs(c.obj.scale.x);
+          const t = c._shellTimer / 30;
+          c.obj.scale.y = bs * (0.5 + 0.5 * (1 - t));
+          if (c._shellTimer <= 0) { c.obj.scale.y = bs; c.obj._baseScale = null; }
+        }
+        if (c._honkTimer > 0) {
+          c._honkTimer -= delta;
+          c.obj.x += Math.sin(c._honkTimer * 4) * 2;
+        }
+        if (c._spinTimer > 0) {
+          c._spinTimer -= delta;
+          c.obj.rotation += (c._spinDir || 1) * 0.052 * delta;
+          if (c._spinTimer <= 0) c.obj.rotation = 0;
+        }
+        if (c._mouthTimer > 0) {
+          c._mouthTimer -= delta;
+          const bs = c.obj._baseScale || Math.abs(c.obj.scale.x);
+          const t = c._mouthTimer / 18;
+          const dir = c.obj.scale.x < 0 ? -1 : 1;
+          c.obj.scale.x = dir * bs * (1 + 0.2 * Math.sin(t * Math.PI));
+          if (c._mouthTimer <= 0) { c.obj.scale.x = dir * bs; c.obj._baseScale = null; }
         }
 
         // ── 潜水艦: 001/002 を別タイマーで短時間フラッシュ + 後ろから泡 ──
@@ -1922,6 +2089,155 @@
         }
       });
 
+      // ── Food pellets: sink + attract creatures ───────────────
+      foodGfx.clear();
+      for (let i = foodPellets.length - 1; i >= 0; i--) {
+        const f = foodPellets[i];
+        f.age += delta;
+        f.y += 0.3 * delta; // sink
+        if (f.age > 600 || f.y > sh) { foodPellets.splice(i, 1); continue; } // ~10s
+        // Draw pellet
+        const fadeIn = Math.min(f.age / 10, 1);
+        foodGfx.beginFill(0xffcc44, 0.9 * fadeIn);
+        foodGfx.drawCircle(f.x, f.y, 4);
+        foodGfx.endFill();
+        foodGfx.beginFill(0xffee88, 0.7 * fadeIn);
+        foodGfx.drawCircle(f.x - 1, f.y - 1, 2);
+        foodGfx.endFill();
+      }
+      // Creatures attracted to food
+      creatures.forEach(c => {
+        if (c.panicTimer > 0 || c.hiderState || c.pattern === 'sway') return;
+        if (foodPellets.length === 0) return;
+        // Find nearest food
+        let nearest = null, nearDist = Infinity;
+        foodPellets.forEach(f => {
+          if (f.eaten) return;
+          const dx = f.x - c.obj.x, dy = f.y - c.obj.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < nearDist) { nearest = f; nearDist = d; }
+        });
+        if (!nearest || nearDist > sw * 0.35) return;
+        // Eat if close enough
+        if (nearDist < c.baseSize * 0.6) {
+          nearest.eaten = true;
+          foodPellets.splice(foodPellets.indexOf(nearest), 1);
+          // Chomp animation: scale pulse
+          c._chompTimer = 15;
+          spawnHearts(c.obj.x, c.obj.y - c.baseSize * 0.3, 3);
+          SFX.play('chomp');
+          return;
+        }
+        // Swim toward food (gentle nudge added to existing velocity)
+        const dx = nearest.x - c.obj.x, dy = nearest.y - c.obj.y;
+        const nd = Math.sqrt(dx * dx + dy * dy);
+        if (nd > 0) {
+          c.vx += (dx / nd) * 0.0008 * delta;
+          c.vy += (dy / nd) * 0.0004 * delta;
+        }
+      });
+      // Chomp animation in ticker
+      creatures.forEach(c => {
+        if (c._chompTimer > 0) {
+          c._chompTimer -= delta;
+          const t = c._chompTimer / 15;
+          const pulse = 1 + 0.3 * Math.sin(t * Math.PI);
+          const bs = c.obj._baseScale || Math.abs(c.obj.scale.x);
+          c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * bs * pulse;
+          c.obj.scale.y = bs * pulse;
+          if (c._chompTimer <= 0) {
+            c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * bs;
+            c.obj.scale.y = bs;
+            c.obj._baseScale = null;
+          }
+        }
+      });
+
+      // ── Pop bubbles (mini-game) ─────────────────────────────
+      popBubbleGfx.clear();
+      if (popBubbleTimer > 0) {
+        popBubbleTimer -= delta;
+        if (popBubbleTimer <= 0 && popBubbles.length === 0) {
+          // Spawn a wave of pop bubbles
+          const count = 8 + Math.floor(Math.random() * 5);
+          const colors = [0xff88aa, 0x88ddff, 0xffee55, 0x88ffaa, 0xcc88ff, 0xffaa55];
+          for (let i = 0; i < count; i++) {
+            popBubbles.push({
+              x: 40 + Math.random() * (sw - 80),
+              y: sh + 20 + Math.random() * 60,
+              r: 18 + Math.random() * 12,
+              vy: 0.5 + Math.random() * 0.3,
+              color: colors[Math.floor(Math.random() * colors.length)],
+              phase: Math.random() * Math.PI * 2,
+              popAnim: 0, // >0 means popping
+            });
+          }
+          popBubbleWaveTotal = count;
+          popBubbleWavePopped = 0;
+          popBubbleTimer = -1; // active wave
+        }
+      } else if (popBubbleTimer === -1 && popBubbles.length === 0) {
+        // Wave finished, reset timer for next wave
+        popBubbleTimer = 1800 + Math.random() * 1800; // 30-60s
+      }
+      for (let i = popBubbles.length - 1; i >= 0; i--) {
+        const pb = popBubbles[i];
+        if (pb.popAnim > 0) {
+          pb.popAnim -= delta;
+          const expand = 1.5 - pb.popAnim / 8;
+          popBubbleGfx.beginFill(pb.color, Math.max(0, pb.popAnim / 8 * 0.5));
+          popBubbleGfx.drawCircle(pb.x, pb.y, pb.r * expand);
+          popBubbleGfx.endFill();
+          if (pb.popAnim <= 0) popBubbles.splice(i, 1);
+          continue;
+        }
+        pb.y -= pb.vy * delta;
+        pb.x += Math.sin(totalT * 1.8 + pb.phase) * 0.5;
+        if (pb.y < -pb.r * 2) { popBubbles.splice(i, 1); continue; }
+        // Draw colorful bubble
+        popBubbleGfx.lineStyle(2, pb.color, 0.85);
+        popBubbleGfx.beginFill(pb.color, 0.2);
+        popBubbleGfx.drawCircle(pb.x, pb.y, pb.r);
+        popBubbleGfx.endFill();
+        // Shine highlight
+        popBubbleGfx.beginFill(0xffffff, 0.5);
+        popBubbleGfx.drawCircle(pb.x - pb.r * 0.25, pb.y - pb.r * 0.25, pb.r * 0.22);
+        popBubbleGfx.endFill();
+      }
+
+      // ── Particles update & draw ─────────────────────────────
+      particleGfx.clear();
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= delta;
+        if (p.life <= 0) {
+          if (p._txt) { layerTop.removeChild(p._txt); p._txt.destroy(); }
+          particles.splice(i, 1);
+          continue;
+        }
+        p.x += p.vx * delta * 0.3;
+        p.y += p.vy * delta * 0.3;
+        p.vy *= 0.98; // gentle deceleration
+        const alpha = Math.min(p.life / p.maxLife, 1) * 0.9;
+        if (p.emoji) {
+          // Emoji particle (use PIXI.Text)
+          if (!p._txt) {
+            p._txt = new PIXI.Text(p.emoji, { fontSize: p.size, fill: '#ffffff' });
+            p._txt.anchor.set(0.5);
+            layerTop.addChild(p._txt);
+          }
+          p._txt.x = p.x;
+          p._txt.y = p.y;
+          p._txt.alpha = alpha;
+          p._txt.scale.set(0.6 + alpha * 0.4);
+        } else {
+          // Colored dot particle
+          particleGfx.beginFill(p.color, alpha);
+          particleGfx.drawCircle(p.x, p.y, p.size * (0.5 + alpha * 0.5));
+          particleGfx.endFill();
+        }
+      }
+
     });
 
     // ─── Landscape UI toggle ────────────────────────────────
@@ -2034,6 +2350,30 @@
           holdCreature.panicTimer = 0;
         }
       } else {
+        // ── Pop bubble tap (highest priority) ────────────────
+        let poppedAny = false;
+        for (const pb of popBubbles) {
+          if (pb.popAnim > 0) continue;
+          const dx = px - pb.x, dy = py - pb.y;
+          if (Math.sqrt(dx * dx + dy * dy) < pb.r + 15) {
+            pb.popAnim = 8; // start pop animation
+            popBubbleWavePopped++;
+            spawnSparkles(pb.x, pb.y, 4, pb.color);
+            SFX.play('pop');
+            poppedAny = true;
+            // All popped? celebration!
+            if (popBubbleWavePopped >= popBubbleWaveTotal) {
+              setTimeout(() => {
+                spawnSparkles(W() * 0.5, H() * 0.4, 12);
+                spawnHearts(W() * 0.5, H() * 0.4, 5);
+                SFX.play('collect');
+              }, 200);
+            }
+            break; // one pop per tap
+          }
+        }
+        if (poppedAny) { steeringMode = false; holdCreature = null; return; }
+
         // ── 目玉タップ優先: 見えている目の近くは必ず反応 ─────
         let eyeRockHit = null;
         for (const h of hiders) {
@@ -2062,6 +2402,7 @@
             ripples.push({ cx: px, cy: py, radius: r0, strength: 0.025 });
         });
         const r = TAP_R();
+        let hitAnyCreature = false;
         creatures.forEach(c => {
           if (c.pattern === 'sway') return; // 揺れるはパニック対象外（位置固定のため）
           const dx = c.obj.x - px, dy = c.obj.y - py;
@@ -2099,7 +2440,52 @@
               break;
             }
           }
+          // ── Unique reaction per creature type ──────────────
+          if (c.reactionType === 'ink') {
+            // Octopus: squirt ink
+            for (let j = 0; j < 6; j++) {
+              const a2 = Math.random() * Math.PI * 2;
+              spawnParticle(c.obj.x, c.obj.y, {
+                vx: Math.cos(a2) * (2 + Math.random() * 2),
+                vy: Math.sin(a2) * (2 + Math.random() * 2),
+                life: 35 + Math.random() * 15,
+                color: 0x222233,
+                size: 5 + Math.random() * 4,
+              });
+            }
+          } else if (c.reactionType === 'glow') {
+            // Jellyfish: flash glow
+            c._glowTimer = 30;
+            c.obj.tint = 0x66ffcc;
+          } else if (c.reactionType === 'shell') {
+            // Turtle: retract into shell
+            c._shellTimer = 30;
+          } else if (c.reactionType === 'honk') {
+            // Submarine: honk + vibrate
+            SFX.play('honk');
+            c._honkTimer = 20;
+          } else if (c.reactionType === 'spin') {
+            // Sunfish: slow spin
+            c._spinTimer = 120;
+            c._spinDir = Math.random() < 0.5 ? 1 : -1;
+          } else if (c.reactionType === 'chomp_react') {
+            // Shark: mouth open (scale.x widen)
+            c._mouthTimer = 18;
+          } else if (c.reactionType === 'jump') {
+            // Fish: jump upward
+            c.panicVy = -1.2;
+            c.panicTimer = Math.max(c.panicTimer, 40);
+          } else if (c.reactionType === 'sparkle') {
+            // User-drawn: sparkle burst
+            spawnSparkles(c.obj.x, c.obj.y, 5);
+          }
+          hitAnyCreature = true;
         });
+
+        // ── Food spawn (fallback: nothing was hit) ──────────
+        if (!hitAnyCreature && !hitRock) {
+          spawnFood(px, py);
+        }
       }
       steeringMode = false;
       holdCreature = null;
