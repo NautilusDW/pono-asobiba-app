@@ -762,32 +762,8 @@
       SFX.play('select');
     });
 
-    // Drag to move fence
+    // Drag to move fence — registered after canvas init (see below)
     let fenceDragStart = null;
-    canvas.addEventListener('pointerdown', function(e) {
-      if (!fenceDragMode) return;
-      const rect = canvas.getBoundingClientRect();
-      fenceDragStart = {
-        px: e.clientX, py: e.clientY,
-        startOffX: state.farm.fenceOffX || 0,
-        startOffY: state.farm.fenceOffY || 0
-      };
-    }, true); // capture phase — only when drag mode is active
-
-    window.addEventListener('pointermove', function(e) {
-      if (!fenceDragStart || !fenceDragMode) return;
-      const dx = e.clientX - fenceDragStart.px;
-      const dy = e.clientY - fenceDragStart.py;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = W() / rect.width, scaleY = H() / rect.height;
-      state.farm.fenceOffX = fenceDragStart.startOffX + dx * scaleX;
-      state.farm.fenceOffY = fenceDragStart.startOffY + dy * scaleY;
-      updateFenceLive();
-    });
-
-    window.addEventListener('pointerup', function() {
-      if (fenceDragStart) { fenceDragStart = null; saveState(); }
-    });
 
     // ═══════════════════════════════════════════════════════════
     // ─── Inventory HUD ───────────────────────────────────────
@@ -1377,6 +1353,33 @@
           }
         }
       }
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Fence Drag (canvas-dependent, must be after canvas init)
+    // ═══════════════════════════════════════════════════════════
+    canvas.addEventListener('pointerdown', function(e) {
+      if (!fenceDragMode) return;
+      fenceDragStart = {
+        px: e.clientX, py: e.clientY,
+        startOffX: state.farm.fenceOffX || 0,
+        startOffY: state.farm.fenceOffY || 0
+      };
+    }, true);
+
+    window.addEventListener('pointermove', function(e) {
+      if (!fenceDragStart || !fenceDragMode) return;
+      const dx = e.clientX - fenceDragStart.px;
+      const dy = e.clientY - fenceDragStart.py;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W() / rect.width, scaleY = H() / rect.height;
+      state.farm.fenceOffX = fenceDragStart.startOffX + dx * scaleX;
+      state.farm.fenceOffY = fenceDragStart.startOffY + dy * scaleY;
+      updateFenceLive();
+    });
+
+    window.addEventListener('pointerup', function() {
+      if (fenceDragStart) { fenceDragStart = null; saveState(); }
     });
 
     // ═══════════════════════════════════════════════════════════
