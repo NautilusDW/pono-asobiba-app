@@ -385,11 +385,7 @@ html, body {
   pointer-events: none;
 }
 .size-btn.active .size-dot { background: #fff; }
-.size-btn[data-size="4"]  { width: 28px; height: 28px; }
-.size-btn[data-size="14"] { width: 32px; height: 32px; }
-.size-btn[data-size="28"] { width: 36px; height: 36px; }
-.size-btn[data-size="50"] { width: 42px; height: 42px; }
-.size-btn[data-size="80"] { width: 48px; height: 48px; }
+.size-btn { width: 36px; height: 36px; }
 .size-dot-s  { width: 5px;  height: 5px; }
 .size-dot-m  { width: 12px; height: 12px; }
 .size-dot-l  { width: 20px; height: 20px; }
@@ -658,19 +654,19 @@ html, body {
     width: 100%;
   }
 
-  /* Tool row wraps within sidebar */
+  /* Tool row as grid in sidebar */
   .tool-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 30px);
+    gap: 4px;
     justify-content: center;
     align-items: center;
-    gap: 4px;
   }
 
-  /* Size buttons compact */
+  /* Size buttons uniform in sidebar */
   .size-btn {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
   }
 
   /* Divider horizontal */
