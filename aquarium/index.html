@@ -1602,6 +1602,27 @@
       creatures.push(c);
     }
 
+    // ─── Day/Night cycle ────────────────────────────────────
+    let dayNightT = 0; // incremented in ticker
+    let nightFactor = 0; // 0=day, 1=night
+
+    // ─── Treasure hunt ───────────────────────────────────────
+    const treasures = []; // { obj, x, y, age, collected }
+    let treasureTimer = 2700 + Math.random() * 2700; // 45-90s initial delay
+    let treasureCount = 0;
+    const TREASURE_EMOJIS = ['🐚', '🦪', '⭐', '🌟', '🪸'];
+    function spawnTreasure() {
+      if (treasures.length >= 3) return;
+      const emoji = TREASURE_EMOJIS[Math.floor(Math.random() * TREASURE_EMOJIS.length)];
+      const x = 60 + Math.random() * (W() - 120);
+      const y = 60 + Math.random() * (H() * 0.7 - 60);
+      const txt = new PIXI.Text(emoji, { fontSize: 28 });
+      txt.anchor.set(0.5);
+      txt.x = x; txt.y = y; txt.alpha = 0;
+      layerTop.addChild(txt);
+      treasures.push({ obj: txt, x, y, age: 0, collected: false, flyT: 0 });
+    }
+
     // ─── Tick: update logic ────────────────────────────────
     let totalT = 0;
     let bubbleSpawnTimer = 0;
@@ -1610,13 +1631,78 @@
       totalT += delta * 0.016; // approx seconds
       bubbleSpawnTimer += delta;
 
-      // Animate light rays
+      // ── Day/Night cycle (3 min period) ────────────────────
+      dayNightT += delta * 0.016;
+      nightFactor = (Math.sin(dayNightT * 0.035) + 1) / 2; // 0→1→0 over ~3min
+      // Background tint
+      if (_bgSprite) {
+        const r = Math.round(255 - nightFactor * 140);
+        const g = Math.round(255 - nightFactor * 120);
+        const b = Math.round(255 - nightFactor * 80);
+        _bgSprite.tint = (r << 16) | (g << 8) | b;
+      }
+
+      // Animate light rays (dimmed at night)
       layerBg.children.forEach(child => {
         if (child._baseX !== undefined) {
           child.x = Math.sin(totalT * 0.3 + child._idx) * 12;
-          child.alpha = 0.5 + Math.sin(totalT * 0.5 + child._idx * 1.2) * 0.3;
+          const baseAlpha = 0.5 + Math.sin(totalT * 0.5 + child._idx * 1.2) * 0.3;
+          child.alpha = baseAlpha * (1 - nightFactor * 0.7);
         }
       });
+
+      // Jellyfish glow at night
+      creatures.forEach(c => {
+        if (c.jellysprite && !c._glowTimer) {
+          if (nightFactor > 0.4) {
+            const glow = Math.floor(nightFactor * 0.6 * 255);
+            c.obj.tint = (255 << 16) | ((255 - glow * 0.3) << 8) | 255;
+          } else {
+            c.obj.tint = 0xffffff;
+          }
+        }
+      });
+
+      // ── Treasure spawn timer ───────────────────────────────
+      treasureTimer -= delta;
+      if (treasureTimer <= 0) {
+        spawnTreasure();
+        treasureTimer = 2700 + Math.random() * 2700; // next in 45-90s
+      }
+      // Treasure update: fade in, pulse, timeout
+      for (let i = treasures.length - 1; i >= 0; i--) {
+        const tr = treasures[i];
+        if (tr.collected) {
+          // Fly to corner animation
+          tr.flyT += delta * 0.04;
+          tr.obj.x += (W() - 30 - tr.obj.x) * Math.min(tr.flyT * 0.3, 1);
+          tr.obj.y += (20 - tr.obj.y) * Math.min(tr.flyT * 0.3, 1);
+          tr.obj.alpha = Math.max(0, 1 - tr.flyT);
+          tr.obj.scale.set(Math.max(0.3, 1 - tr.flyT * 0.5));
+          if (tr.flyT >= 1) {
+            layerTop.removeChild(tr.obj); tr.obj.destroy();
+            treasures.splice(i, 1);
+          }
+          continue;
+        }
+        tr.age += delta;
+        // Fade in over 30 frames
+        tr.obj.alpha = Math.min(tr.age / 30, 0.9);
+        // Gentle pulse
+        const pulse = 1 + Math.sin(tr.age * 0.08) * 0.15;
+        tr.obj.scale.set(pulse);
+        // Glow tint at night
+        if (nightFactor > 0.4) tr.obj.tint = 0xffffaa;
+        else tr.obj.tint = 0xffffff;
+        // Timeout: disappear after ~20 seconds
+        if (tr.age > 1200) {
+          tr.obj.alpha = Math.max(0, 1 - (tr.age - 1200) / 60);
+          if (tr.age > 1260) {
+            layerTop.removeChild(tr.obj); tr.obj.destroy();
+            treasures.splice(i, 1);
+          }
+        }
+      }
 
       // Seaweed
       seaweeds.forEach(sw => {
@@ -2452,6 +2538,40 @@
         }
         if (poppedAny) { steeringMode = false; holdCreature = null; return; }
 
+        // ── Treasure tap ────────────────────────────────────
+        for (const tr of treasures) {
+          if (tr.collected) continue;
+          const dx = px - tr.x, dy = py - tr.y;
+          if (Math.sqrt(dx * dx + dy * dy) < 35) {
+            tr.collected = true;
+            tr.flyT = 0;
+            treasureCount++;
+            spawnSparkles(tr.x, tr.y, 5);
+            SFX.play('collect');
+            if (treasureCount % 5 === 0) {
+              // Bonus every 5 treasures
+              setTimeout(() => {
+                spawnHearts(W() * 0.5, H() * 0.4, 5);
+                if (typeof awardPoints === 'function') awardPoints(2);
+              }, 300);
+            }
+            break;
+          }
+        }
+
+        // ── Bioluminescent touch at night ───────────────────
+        if (nightFactor > 0.4) {
+          for (let j = 0; j < Math.floor(nightFactor * 8); j++) {
+            spawnParticle(px + (Math.random() - 0.5) * 40, py + (Math.random() - 0.5) * 40, {
+              vx: (Math.random() - 0.5) * 1.5,
+              vy: -(0.5 + Math.random()),
+              life: 40 + Math.random() * 30,
+              color: [0x44ffcc, 0x66ffee, 0x88ffdd, 0x44ddff][Math.floor(Math.random() * 4)],
+              size: 2 + Math.random() * 3,
+            });
+          }
+        }
+
         // ── 目玉タップ優先: 見えている目の近くは必ず反応 ─────
         let eyeRockHit = null;
         for (const h of hiders) {
@@ -2471,7 +2591,61 @@
         });
         if (hitRock) {
           shakeRock(hitRock);
-          setTimeout(() => emergeFromRock(hitRock), 550);
+          // Check if any hider is behind this rock
+          const hasHider = hiders.some(h => h.rock === hitRock && h.c.hiderState === 'hidden');
+          if (hasHider) {
+            setTimeout(() => emergeFromRock(hitRock), 550);
+          } else {
+            // Surprise! No creature hiding — random event
+            const roll = Math.random();
+            if (roll < 0.4) {
+              // Crab scuttles out
+              setTimeout(() => {
+                const crab = new PIXI.Text('🦀', { fontSize: 22 });
+                crab.anchor.set(0.5, 1);
+                crab.x = hitRock.x;
+                crab.y = hitRock.y;
+                const dir = Math.random() < 0.5 ? -1 : 1;
+                crab.scale.x = dir;
+                layerTop.addChild(crab);
+                let crabT = 0;
+                const crabTick = (d) => {
+                  crabT += d;
+                  crab.x += dir * 1.5 * d;
+                  crab.y = hitRock.y + Math.sin(crabT * 0.3) * 2;
+                  if (crabT > 180) {
+                    layerTop.removeChild(crab); crab.destroy();
+                    app.ticker.remove(crabTick);
+                  }
+                };
+                app.ticker.add(crabTick);
+              }, 300);
+            } else if (roll < 0.7) {
+              // Sand puff
+              setTimeout(() => {
+                for (let j = 0; j < 6; j++) {
+                  spawnParticle(hitRock.x + (Math.random() - 0.5) * 20, hitRock.y - 5, {
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: -(1 + Math.random() * 1.5),
+                    life: 25 + Math.random() * 15,
+                    color: 0xddcc88,
+                    size: 4 + Math.random() * 3,
+                  });
+                }
+              }, 200);
+            } else {
+              // Treasure from rock!
+              setTimeout(() => {
+                const tx = hitRock.x, ty = hitRock.y - hitRock.height * 0.5;
+                const emoji = TREASURE_EMOJIS[Math.floor(Math.random() * TREASURE_EMOJIS.length)];
+                const txt = new PIXI.Text(emoji, { fontSize: 28 });
+                txt.anchor.set(0.5);
+                txt.x = tx; txt.y = ty; txt.alpha = 0;
+                layerTop.addChild(txt);
+                treasures.push({ obj: txt, x: tx, y: ty, age: 0, collected: false, flyT: 0 });
+              }, 400);
+            }
+          }
         }
 
         // Quick tap → 3本同時・初期半径をずらして1つの波紋イベントに見せる
