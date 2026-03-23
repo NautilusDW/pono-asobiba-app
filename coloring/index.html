@@ -800,10 +800,10 @@ html, body {
       <button class="rainbow-swatch" id="rainbow-btn" onclick="toggleRainbow()"><img src="../assets/images/icons/icons_001.png" style="width:24px;height:24px;object-fit:contain;pointer-events:none;" alt="🌈"></button>
     </div>
     <div class="tool-row">
-      <button class="size-btn active" data-size="4"><span class="size-line size-line-s"></span></button>
-      <button class="size-btn" data-size="14"><span class="size-line size-line-m"></span></button>
-      <button class="size-btn" data-size="28"><span class="size-line size-line-l"></span></button>
-      <button class="size-btn" data-size="50"><span class="size-line size-line-xl"></span></button>
+      <button class="size-btn active" data-size="14"><span class="size-line size-line-s"></span></button>
+      <button class="size-btn" data-size="28"><span class="size-line size-line-m"></span></button>
+      <button class="size-btn" data-size="50"><span class="size-line size-line-l"></span></button>
+      <button class="size-btn" data-size="70"><span class="size-line size-line-xl"></span></button>
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
     </div>
   </div>
@@ -819,7 +819,7 @@ const COLORS = [
 ];
 
 let currentColor = COLORS[0];
-let brushSize = 4;
+let brushSize = 14;
 let isEraser = false;
 let isBucket = true;  // はみ出し防止デフォルトON
 let isRainbow = false;
