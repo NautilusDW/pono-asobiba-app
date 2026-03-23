@@ -1586,10 +1586,23 @@ initSizeBtns();
 // はみ出し防止デフォルトON: ボタン状態を反映
 document.getElementById('bucket-btn').classList.add('selected');
 
+// 回転・リサイズ時: iOSは寸法が遅延更新されるため複数回リレイアウト
+let resizeTimer = null;
+function deferredResize() {
+  if (document.getElementById('coloring-screen').style.display === 'none') return;
+  const w = document.getElementById('canvas-wrapper');
+  resizeCanvas(w, true);
+}
 window.addEventListener('resize', () => {
-  if (document.getElementById('coloring-screen').style.display !== 'none') {
-    resizeCanvas(document.getElementById('canvas-wrapper'), true);
-  }
+  clearTimeout(resizeTimer);
+  deferredResize();
+  resizeTimer = setTimeout(deferredResize, 300);
+  setTimeout(deferredResize, 600);
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(deferredResize, 200);
+  setTimeout(deferredResize, 500);
+  setTimeout(deferredResize, 1000);
 });
 
 initMenu();
