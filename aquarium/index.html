@@ -1946,10 +1946,15 @@
         switch (c.pattern) {
           case 'swim': {
             c.obj.x += c.vx * sw * DT;
-            const waveAmp = sh * 0.06;
-            // Lerp toward target Y — no sudden jump after panic
-            const targetY = c.baseY + Math.sin(c.t * 0.55) * waveAmp;
-            c.obj.y += (targetY - c.obj.y) * Math.min(0.04 * delta, 1);
+            // During boost: move freely in Y direction, update baseY to follow
+            if (c.boostFactor > 1.01) {
+              c.obj.y += c.vy * sh * DT;
+              c.baseY = c.obj.y;
+            } else {
+              const waveAmp = sh * 0.06;
+              const targetY = c.baseY + Math.sin(c.t * 0.55) * waveAmp;
+              c.obj.y += (targetY - c.obj.y) * Math.min(0.04 * delta, 1);
+            }
 
             // Body-wave: skew + rotation oscillation — 潜水艦・サメは形が変わらないのでスキップ
             if (!c.submarinesprite && !c.sharksprite) {
@@ -2001,8 +2006,13 @@
               c.vx += (Math.random() - 0.5) * 0.0008 * delta;
               c.vx *= Math.pow(0.985, delta);
               c.obj.x += c.vx * sw * DT;
-              const bobAmp = sh * 0.04;
-              c.obj.y = c.baseY + Math.sin(c.t * 0.6) * bobAmp;
+              if (c.boostFactor > 1.01) {
+                c.obj.y += c.vy * sh * DT;
+                c.baseY = c.obj.y;
+              } else {
+                const bobAmp = sh * 0.04;
+                c.obj.y = c.baseY + Math.sin(c.t * 0.6) * bobAmp;
+              }
               const baseS = c.obj._baseScale || (c.obj._baseScale = Math.abs(c.obj.scale.x));
               const pulse = baseS * (1 + Math.sin(c.t * 0.9) * 0.04);
               c.obj.scale.y = pulse;
@@ -2016,9 +2026,12 @@
           case 'crawl': {
             // Bottom-dweller: walks on the sand surface
             c.obj.x += c.vx * sw * DT;
-            // Target Y: top of sand minus half the creature height, with tiny bob
-            const crawlY = sandTopY - c.halfH + Math.sin(c.t * 2.2) * 3;
-            c.obj.y += (crawlY - c.obj.y) * Math.min(0.12 * delta, 1);
+            if (c.boostFactor > 1.01) {
+              c.obj.y += c.vy * sh * DT;
+            } else {
+              const crawlY = sandTopY - c.halfH + Math.sin(c.t * 2.2) * 3;
+              c.obj.y += (crawlY - c.obj.y) * Math.min(0.12 * delta, 1);
+            }
             c.obj.rotation = Math.sin(c.t * 2.2) * 0.05;
             if (c.obj.x < 30)      { c.vx =  Math.abs(c.vx); c.obj.x = 30; }
             if (c.obj.x > sw - 30) { c.vx = -Math.abs(c.vx); c.obj.x = sw - 30; }
@@ -2112,12 +2125,14 @@
             // マンボウ: 基本直進、方向転換はほぼなし
             c.vx *= Math.pow(0.9997, delta);
             c.vy *= Math.pow(0.9997, delta);
-            // 速度が落ちすぎたら同じ方向を維持して加速
-            const spd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
-            if (spd < c.speed * 0.3) {
-              const dir = Math.atan2(c.vy, c.vx);
-              c.vx = Math.cos(dir) * c.speed * 0.7;
-              c.vy = Math.sin(dir) * c.speed * 0.15;
+            // 速度が落ちすぎたら同じ方向を維持して加速（ブースト中はスキップ）
+            if (!(c.boostFactor > 1.01)) {
+              const spd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
+              if (spd < c.speed * 0.3) {
+                const dir = Math.atan2(c.vy, c.vx);
+                c.vx = Math.cos(dir) * c.speed * 0.7;
+                c.vy = Math.sin(dir) * c.speed * 0.15;
+              }
             }
             c.obj.x += c.vx * sw * DT;
             c.obj.y += c.vy * sh * DT;
@@ -2330,24 +2345,20 @@
 
     function drawArrow(cx, cy, tx, ty, baseSize) {
       steerGfx.clear();
+      // Circle around creature
+      steerGfx.lineStyle(2.5, 0x38bdf8, 0.75);
+      steerGfx.drawCircle(cx, cy, baseSize * 0.55);
       const dx = tx - cx, dy = ty - cy;
       const dist = Math.sqrt(dx*dx + dy*dy);
-      // Color shifts from blue → orange → red as boost increases
-      const boostMult = Math.max(1.0, Math.min(dist / 30, 16.0));
-      const arrowColor = boostMult < 3 ? 0x38bdf8 : boostMult < 8 ? 0xfbbf24 : 0xf87171;
-      // Circle around creature
-      steerGfx.lineStyle(2.5, arrowColor, 0.75);
-      steerGfx.drawCircle(cx, cy, baseSize * 0.55);
       if (dist < 8) return;
       const angle = Math.atan2(dy, dx);
       const len = Math.min(dist, W() * 0.22);
       const ex = cx + Math.cos(angle) * len;
       const ey = cy + Math.sin(angle) * len;
-      const lineW = 3.5 + (boostMult - 1) * 1.2;
-      steerGfx.lineStyle(lineW, arrowColor, 0.95);
+      steerGfx.lineStyle(3.5, 0x38bdf8, 0.95);
       steerGfx.moveTo(cx, cy);
       steerGfx.lineTo(ex, ey);
-      const hs = 18 + (boostMult - 1) * 4;
+      const hs = 18;
       steerGfx.moveTo(ex, ey);
       steerGfx.lineTo(ex - Math.cos(angle - 0.42)*hs, ey - Math.sin(angle - 0.42)*hs);
       steerGfx.moveTo(ex, ey);
