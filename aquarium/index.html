@@ -1932,7 +1932,7 @@
 
         // ── Boost decay: gradually return to base speed after steering fling ──
         if (c.boostFactor > 1.01) {
-          c.boostFactor = 1 + (c.boostFactor - 1) * Math.pow(0.92, delta);
+          c.boostFactor = 1 + (c.boostFactor - 1) * Math.pow(0.95, delta);
           if (c.boostFactor < 1.05) c.boostFactor = 1.0;
           const curSpd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
           const targetSpd = c.speed * c.boostFactor;
@@ -2149,7 +2149,7 @@
       }
       // Creatures attracted to food
       creatures.forEach(c => {
-        if (c.panicTimer > 0 || c.hiderState || c.pattern === 'sway') return;
+        if (c.panicTimer > 0 || c.hiderState || c.pattern === 'sway' || c.submarinesprite) return;
         if (foodPellets.length === 0) return;
         // Find nearest food
         let nearest = null, nearDist = Infinity;
@@ -2333,8 +2333,8 @@
       const dx = tx - cx, dy = ty - cy;
       const dist = Math.sqrt(dx*dx + dy*dy);
       // Color shifts from blue → orange → red as boost increases
-      const boostMult = Math.max(1.0, Math.min(dist / 50, 8.0));
-      const arrowColor = boostMult < 2 ? 0x38bdf8 : boostMult < 4 ? 0xfbbf24 : 0xf87171;
+      const boostMult = Math.max(1.0, Math.min(dist / 30, 16.0));
+      const arrowColor = boostMult < 3 ? 0x38bdf8 : boostMult < 8 ? 0xfbbf24 : 0xf87171;
       // Circle around creature
       steerGfx.lineStyle(2.5, arrowColor, 0.75);
       steerGfx.drawCircle(cx, cy, baseSize * 0.55);
@@ -2407,7 +2407,7 @@
         const dx = px - holdCreature.obj.x, dy = py - holdCreature.obj.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist > 20) {
-          const boostMult = Math.max(1.0, Math.min(dist / 50, 8.0));
+          const boostMult = Math.max(1.0, Math.min(dist / 30, 16.0));
           holdCreature.vx = (dx / dist) * holdCreature.speed * boostMult;
           holdCreature.vy = (dy / dist) * holdCreature.speed * boostMult;
           holdCreature.boostFactor = boostMult;
@@ -2468,11 +2468,14 @@
             ripples.push({ cx: px, cy: py, radius: r0, strength: 0.025 });
         });
         const r = TAP_R();
-        let hitAnyCreature = false;
+        // Direct hit = close enough that user actually tapped ON a creature (for food suppression)
+        let hitDirect = false;
         creatures.forEach(c => {
-          if (c.pattern === 'sway') return; // 揺れるはパニック対象外（位置固定のため）
+          if (c.pattern === 'sway') return;
           const dx = c.obj.x - px, dy = c.obj.y - py;
-          if (Math.sqrt(dx*dx + dy*dy) >= r) return;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          if (d < c.baseSize * 0.7) hitDirect = true; // actually tapped on creature
+          if (d >= r) return;
           switch (c.panicStyle) {
             case 'flee': default: {
               const angle = Math.atan2(dy, dx);
@@ -2545,11 +2548,10 @@
             // User-drawn: sparkle burst
             spawnSparkles(c.obj.x, c.obj.y, 5);
           }
-          hitAnyCreature = true;
         });
 
-        // ── Food spawn (fallback: nothing was hit) ──────────
-        if (!hitAnyCreature && !hitRock) {
+        // ── Food spawn: only suppress if user tapped directly ON a creature or rock ──
+        if (!hitDirect && !hitRock) {
           spawnFood(px, py);
         }
       }
