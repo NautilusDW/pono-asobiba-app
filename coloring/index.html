@@ -291,9 +291,22 @@ html, body {
   top: 10px;
   left: 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   z-index: 50;
+}
+
+.float-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.zoom-label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #3388FF;
 }
 
 .canvas-float-btn.eraser-selected {
@@ -753,18 +766,18 @@ html, body {
       <img id="nurie-overlay" alt="ぬりえ">
     </div>
     <button id="zoom-reset-btn" onclick="resetZoom()">1:1 もどす</button>
-    <button class="canvas-float-btn camera-float" id="camera-btn" onclick="cycleZoom()">🔍</button>
+    <button class="canvas-float-btn camera-float" id="camera-btn" onclick="cycleZoom()"><img src="../assets/images/icons/icons_003.png" class="float-icon" alt="ズーム"></button>
     <div class="canvas-float-group top-left">
-      <button class="canvas-float-btn" id="eraser-btn" onclick="toggleEraser()">🧹</button>
-      <button class="canvas-float-btn" onclick="undo()">↩</button>
-      <button class="canvas-float-btn clear-float" onclick="clearCanvas()">🗑</button>
+      <button class="canvas-float-btn" id="eraser-btn" onclick="toggleEraser()"><img src="../assets/images/icons/icons_004.png" class="float-icon" alt="消しゴム"></button>
+      <button class="canvas-float-btn" onclick="undo()"><img src="../assets/images/icons/icons3_001.png" class="float-icon" alt="もどす"></button>
+      <button class="canvas-float-btn clear-float" onclick="clearCanvas()"><img src="../assets/images/icons/icons_006.png" class="float-icon" alt="全消し"></button>
     </div>
   </div>
   <div id="brush-cursor"></div>
 
   <div class="toolbar">
     <div class="palette" id="palette">
-      <button class="rainbow-swatch" id="rainbow-btn" onclick="toggleRainbow()">🌈</button>
+      <button class="rainbow-swatch" id="rainbow-btn" onclick="toggleRainbow()"><img src="../assets/images/icons/icons_001.png" style="width:24px;height:24px;object-fit:contain;pointer-events:none;" alt="🌈"></button>
     </div>
     <div class="tool-row">
       <button class="size-btn active" data-size="4"><span class="size-dot size-dot-s"></span></button>
@@ -1139,10 +1152,10 @@ function applyTransform() {
   const camBtn = document.getElementById('camera-btn');
   const zoomed = zoomScale > 1.01;
   if (zoomed) {
-    camBtn.textContent = '×' + Math.round(zoomScale);
+    camBtn.innerHTML = '<span class="zoom-label">×' + Math.round(zoomScale) + '</span>';
     camBtn.classList.add('zoomed');
   } else {
-    camBtn.textContent = '🔍';
+    camBtn.innerHTML = '<img src="../assets/images/icons/icons_003.png" class="float-icon" alt="ズーム">';
     camBtn.classList.remove('zoomed');
   }
   // ズーム中はドラッグ=パン、×1はドラッグ=描画
