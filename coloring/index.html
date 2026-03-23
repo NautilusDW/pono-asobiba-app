@@ -1158,9 +1158,8 @@ function applyTransform() {
     camBtn.innerHTML = '<img src="../assets/images/icons/icons_003.png" class="float-icon" alt="ズーム">';
     camBtn.classList.remove('zoomed');
   }
-  // ズーム中はドラッグ=パン、×1はドラッグ=描画
-  isPanMode = zoomed;
-  document.getElementById('canvas-wrapper').classList.toggle('pan-mode', zoomed);
+  // ズーム中もデフォルトは描画モード（2本指でパン）
+  document.getElementById('canvas-wrapper').classList.toggle('pan-mode', isPanMode);
 }
 
 function clampPan() {
@@ -1221,14 +1220,7 @@ wrapper.addEventListener('touchstart', (e) => {
     if (now - lastTapTime < 280) { resetZoom(); lastTapTime = 0; return; }
     lastTapTime = now;
     isGesturing = false;
-    if (isPanMode) {
-      panStartX = panX; panStartY = panY;
-      panTouchStartX = e.touches[0].clientX;
-      panTouchStartY = e.touches[0].clientY;
-      wrapper.classList.add('panning');
-    } else {
-      startDraw(e);
-    }
+    startDraw(e);
   }
 }, { passive: false });
 
@@ -1257,14 +1249,7 @@ wrapper.addEventListener('touchmove', (e) => {
     applyTransform();
     pinchPrevDist = dist; pinchPrevMidX = midX; pinchPrevMidY = midY;
   } else if (e.touches.length === 1 && !isGesturing) {
-    if (isPanMode) {
-      panX = panStartX + e.touches[0].clientX - panTouchStartX;
-      panY = panStartY + e.touches[0].clientY - panTouchStartY;
-      clampPan();
-      applyTransform();
-    } else {
-      doDraw(e);
-    }
+    doDraw(e);
   }
 }, { passive: false });
 
@@ -1273,14 +1258,14 @@ wrapper.addEventListener('touchend', (e) => {
   if (e.touches.length < 2) isGesturing = false;
   if (e.touches.length === 0) {
     wrapper.classList.remove('panning');
-    if (!isPanMode) endDrawInternal();
+    endDrawInternal();
   }
 }, { passive: false });
 
-// マウスドラッグでパン (PC — ズーム中のみ)
+// マウスドラッグでパン (PC — 中ボタン or Space+ドラッグ)
 let mousePanning = false;
 wrapper.addEventListener('mousedown', (e) => {
-  if (isPanMode) {
+  if (e.button === 1 || (e.button === 0 && isPanMode)) {
     mousePanning = true;
     panStartX = panX; panStartY = panY;
     panTouchStartX = e.clientX; panTouchStartY = e.clientY;
@@ -1318,6 +1303,13 @@ wrapper.addEventListener('wheel', (e) => {
   clampPan();
   applyTransform();
 }, { passive: false });
+
+// フローティングボタンのタッチイベントがcanvas-wrapperに伝播しないようにする
+document.querySelectorAll('.canvas-float-btn, .canvas-float-group').forEach(el => {
+  el.addEventListener('touchstart', e => e.stopPropagation(), { passive: false });
+  el.addEventListener('touchmove', e => e.stopPropagation(), { passive: false });
+  el.addEventListener('touchend', e => e.stopPropagation(), { passive: false });
+});
 
 function clearCanvas() {
   if (!confirm('ぜんぶけしますか？')) return;
