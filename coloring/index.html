@@ -364,33 +364,35 @@ html, body {
 }
 .tool-row::-webkit-scrollbar { display: none; }
 
-/* Brush size buttons */
+/* Brush size buttons (角丸四角 + 太さ違いの横線) */
 .size-btn {
   border: 2.5px solid #D0C8BE;
-  border-radius: 50%;
+  border-radius: 10px;
   background: #fff;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: all 0.15s;
   box-shadow: var(--shadow);
   flex-shrink: 0;
+  padding: 0;
+  width: 36px; height: 32px;
 }
 .size-btn.active {
   border-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: #FFF0F5;
 }
-.size-dot {
-  border-radius: 50%;
+.size-line {
+  border-radius: 3px;
   background: var(--text);
+  transition: background 0.15s;
   pointer-events: none;
+  width: 20px;
 }
-.size-btn.active .size-dot { background: #fff; }
-.size-btn { width: 36px; height: 36px; }
-.size-dot-s  { width: 5px;  height: 5px; }
-.size-dot-m  { width: 12px; height: 12px; }
-.size-dot-l  { width: 20px; height: 20px; }
-.size-dot-xl { width: 28px; height: 28px; }
-.size-dot-xxl{ width: 36px; height: 36px; }
+.size-btn.active .size-line { background: var(--primary); }
+.size-line-s  { height: 2px; }
+.size-line-m  { height: 5px; }
+.size-line-l  { height: 9px; }
+.size-line-xl { height: 14px; }
 
 .rainbow-swatch {
   width: 30px; height: 30px;
@@ -654,19 +656,19 @@ html, body {
     width: 100%;
   }
 
-  /* Tool row as grid in sidebar */
+  /* Tool row wraps in sidebar */
   .tool-row {
-    display: grid;
-    grid-template-columns: repeat(3, 30px);
+    display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     justify-content: center;
     align-items: center;
   }
 
-  /* Size buttons uniform in sidebar */
+  /* Size buttons compact in sidebar */
   .size-btn {
     width: 30px;
-    height: 30px;
+    height: 26px;
   }
 
   /* Divider horizontal */
@@ -678,8 +680,8 @@ html, body {
   /* Action button fill sidebar */
   .bucket-btn {
     width: 96px;
-    font-size: 0.68rem;
-    padding: 5px 3px;
+    font-size: 0.62rem;
+    padding: 4px 3px;
     text-align: center;
     white-space: normal;
     line-height: 1.2;
@@ -790,13 +792,10 @@ html, body {
       <button class="rainbow-swatch" id="rainbow-btn" onclick="toggleRainbow()"><img src="../assets/images/icons/icons_001.png" style="width:24px;height:24px;object-fit:contain;pointer-events:none;" alt="🌈"></button>
     </div>
     <div class="tool-row">
-      <button class="size-btn active" data-size="4"><span class="size-dot size-dot-s"></span></button>
-      <button class="size-btn" data-size="14"><span class="size-dot size-dot-m"></span></button>
-      <button class="size-btn" data-size="28"><span class="size-dot size-dot-l"></span></button>
-      <button class="size-btn" data-size="50"><span class="size-dot size-dot-xl"></span></button>
-      <button class="size-btn" data-size="80"><span class="size-dot size-dot-xxl"></span></button>
-    </div>
-    <div class="tool-row">
+      <button class="size-btn active" data-size="4"><span class="size-line size-line-s"></span></button>
+      <button class="size-btn" data-size="14"><span class="size-line size-line-m"></span></button>
+      <button class="size-btn" data-size="28"><span class="size-line size-line-l"></span></button>
+      <button class="size-btn" data-size="50"><span class="size-line size-line-xl"></span></button>
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
     </div>
   </div>
