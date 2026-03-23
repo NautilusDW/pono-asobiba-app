@@ -9,6 +9,7 @@
 - **部屋アイソメ引き継ぎ**: [memory/room-isometric-handoff.md](memory/room-isometric-handoff.md) — CSS mask未動作・17MB画像問題・巾木JS上書き問題
 - **水族館エンハンス完了**: [memory/aquarium-enhancement-complete.md](memory/aquarium-enhancement-complete.md) — Phase1+2完了、Phase3見送り、卵育て構想
 - **水族館UXフィードバック**: [memory/feedback_aquarium_ux.md](memory/feedback_aquarium_ux.md) — 矢印シンプル・ブースト大胆・音柔らか・複雑さ排除
+- **git push自動化**: [memory/feedback_auto_push.md](memory/feedback_auto_push.md) — post-commitフックでNetlify自動デプロイ
 
 ---
 
@@ -80,6 +81,19 @@ git checkout develop
 (エラー発生時に自動追記されます)
 
 ## Task Analysis History
+
+### 2026-03-23T11:10:17Z - たまごのにわ新セクション(egg/index.html)MVP実装 — 卵育成・孵化演出・成長・卒業・図鑑・SFX・メニュー統合
+- **タスク**: たまごのにわ新セクション(egg/index.html)MVP実装 — 卵育成・孵化演出・成長・卒業・図鑑・SFX・メニュー統合
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 70
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 22, "Glob": 1, "Write": 5, "Edit": 10, "Agent": 5, "ToolSearch": 4, "WebSearch": 5, "ExitPlanMode": 1, "Grep": 5, "Bash": 12}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
 
 直近3件のみ表示。過去の履歴は `logs/` ディレクトリ参照。
 
