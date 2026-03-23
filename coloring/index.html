@@ -602,13 +602,14 @@ html, body {
     flex-direction: row;
   }
 
-  /* Header floats over canvas top-left */
+  /* Header floats over canvas top-right (avoid overlap with float buttons) */
   .coloring-header {
     position: absolute;
-    top: 0; left: 0;
+    top: 0; right: 0;
+    left: auto;
     z-index: 20;
     border-bottom: none;
-    border-radius: 0 0 12px 0;
+    border-radius: 0 0 0 12px;
     background: rgba(255,248,231,0.88);
     padding: 5px 10px;
     gap: 6px;
@@ -618,60 +619,75 @@ html, body {
 
   /* Canvas takes left side */
   .canvas-wrapper {
-    position: relative; /* already is, but ensure for absolute header */
+    position: relative;
     flex: 1;
     height: 100%;
   }
 
-  /* Toolbar becomes right sidebar */
+  /* Toolbar becomes bottom bar in landscape */
   .toolbar {
-    flex-direction: column;
-    border-top: none;
-    border-left: 2px solid #FDE68A;
-    width: 80px;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex-direction: row;
+    border-top: 2px solid #FDE68A;
+    border-left: none;
+    width: 100%;
+    height: auto;
+    overflow-y: visible;
+    overflow-x: auto;
     flex-shrink: 0;
-    padding: 8px 5px;
+    padding: 6px 10px;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
+    gap: 6px;
     scrollbar-width: none;
+    order: 1;
+  }
+  #coloring-screen {
+    flex-direction: column;
   }
   .toolbar::-webkit-scrollbar { display: none; }
 
-  /* Palette stacks vertically */
+  /* Palette wraps into 2 rows */
   .palette {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    gap: 3px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
+    max-width: 260px;
+  }
+  .palette .swatch {
+    width: 24px;
+    height: 24px;
   }
 
-  /* Tool row stacks vertically */
+  /* Tool row inline */
   .tool-row {
-    flex-direction: column;
+    flex-direction: row;
     overflow-x: visible;
     overflow-y: visible;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
-    gap: 3px;
+    gap: 5px;
   }
 
-  /* Divider becomes horizontal line */
+  /* Size buttons smaller in landscape */
+  .size-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Divider vertical */
   .tool-divider {
-    width: 60px;
-    height: 2px;
+    width: 2px;
+    height: 24px;
   }
 
-  /* Action buttons fill sidebar width */
+  /* Action button compact */
   .bucket-btn {
-    width: 68px;
     font-size: 0.68rem;
-    padding: 5px 3px;
+    padding: 4px 8px;
     text-align: center;
-    white-space: normal;
+    white-space: nowrap;
     line-height: 1.2;
   }
 }
@@ -911,25 +927,35 @@ function hexToRgb(hex) {
 
 // ===== はみ出し防止（領域マスク方式）=====
 // キャンバスピクセル → ぬりえネイティブ画像ピクセル の変換係数
+// ズーム(CSS transform)の影響を受けないよう、CSS style値から直接計算する
 function getNurieMapping() {
   const nw = nurieNW, nh = nurieNH;
-  const canvasRect = canvas.getBoundingClientRect();
-  const overlayRect = document.getElementById('nurie-overlay').getBoundingClientRect();
+  // canvas の CSS 配置サイズ（transform前の値）
+  const cw = parseFloat(canvas.style.width);
+  const ch = parseFloat(canvas.style.height);
+  const cl = parseFloat(canvas.style.left);
+  const ct = parseFloat(canvas.style.top);
+  // overlay は 100%×100% なので wrapper と同サイズ
+  const wrapperEl = document.getElementById('canvas-wrapper');
+  const ow = wrapperEl.clientWidth;
+  const oh = wrapperEl.clientHeight;
+  // overlay 内の実際の画像表示領域（object-fit: contain）
   const imgRatio = nw / nh;
-  const elRatio = overlayRect.width / overlayRect.height;
+  const elRatio = ow / oh;
   let imgW, imgH, imgLeft, imgTop;
   if (imgRatio > elRatio) {
-    imgW = overlayRect.width; imgH = overlayRect.width / imgRatio;
-    imgLeft = overlayRect.left; imgTop = overlayRect.top + (overlayRect.height - imgH) / 2;
+    imgW = ow; imgH = ow / imgRatio;
+    imgLeft = 0; imgTop = (oh - imgH) / 2;
   } else {
-    imgH = overlayRect.height; imgW = overlayRect.height * imgRatio;
-    imgLeft = overlayRect.left + (overlayRect.width - imgW) / 2; imgTop = overlayRect.top;
+    imgH = oh; imgW = oh * imgRatio;
+    imgLeft = (ow - imgW) / 2; imgTop = 0;
   }
-  const cssPerPxX = canvasRect.width / canvas.width;
-  const cssPerPxY = canvasRect.height / canvas.height;
+  // canvas pixel → nurie native pixel
+  const cssPerPxX = cw / canvas.width;
+  const cssPerPxY = ch / canvas.height;
   return {
-    ax: cssPerPxX * nw / imgW, bx: (canvasRect.left - imgLeft) * nw / imgW,
-    ay: cssPerPxY * nh / imgH, by: (canvasRect.top - imgTop) * nh / imgH,
+    ax: cssPerPxX * nw / imgW, bx: (cl - imgLeft) * nw / imgW,
+    ay: cssPerPxY * nh / imgH, by: (ct - imgTop) * nh / imgH,
     nw, nh
   };
 }
