@@ -260,31 +260,11 @@
     .fence-swatch:active { transform: scale(0.9); }
     .fence-swatch.active { border-color: #4a7c59; }
     .fence-swatch .sw-name { font-size: 0.55rem; font-weight: 900; color: #666; }
-    .fence-section-label { font-size: 0.7rem; font-weight: 900; color: #999; margin-bottom: 6px; }
-    .fence-slider-row {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-    }
-    .fence-adj {
-      width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ccc;
-      background: #f5f5f5; font-size: 1.1rem; font-weight: 900; cursor: pointer;
-      font-family: inherit; color: #555; touch-action: manipulation;
-    }
-    .fence-adj:active { background: #e0e0e0; transform: scale(0.9); }
-    .fence-val { font-size: 0.85rem; font-weight: 900; color: #555; min-width: 50px; text-align: center; }
-    .fence-drag-hint {
-      margin-top: 10px; font-size: 0.7rem; color: #aaa; font-weight: 700;
-    }
     .fence-cancel {
       margin-top: 14px; background: #ccc; color: #666;
       border: none; border-radius: 50px; padding: 6px 20px;
       font-family: inherit; font-size: 0.8rem; font-weight: 900; cursor: pointer;
     }
-    .fence-reset {
-      margin-top: 6px; background: transparent; color: #c66;
-      border: 1px solid #c66; border-radius: 50px; padding: 4px 16px;
-      font-family: inherit; font-size: 0.7rem; font-weight: 900; cursor: pointer;
-    }
-    .fence-reset:active { background: #fee; }
 
     /* ═══ Inventory HUD ═══ */
     #inventory-hud {
@@ -349,18 +329,9 @@
   <!-- Fence editor overlay -->
   <div id="fence-picker">
     <div class="fence-box">
-      <h3>🏡 さくの せってい</h3>
-      <div class="fence-section-label">いろ</div>
+      <h3>🏡 さくの いろ</h3>
       <div id="fence-grid" class="fence-grid"></div>
-      <div class="fence-section-label" style="margin-top:12px;">おおきさ</div>
-      <div class="fence-slider-row">
-        <button class="fence-adj" id="fenceScaleDown">−</button>
-        <span id="fenceScaleLabel" class="fence-val">100%</span>
-        <button class="fence-adj" id="fenceScaleUp">＋</button>
-      </div>
-      <div class="fence-drag-hint">🤏 さくを ドラッグで いどう できるよ</div>
       <button class="fence-cancel" id="fenceCancel">とじる</button>
-      <button class="fence-reset" id="fenceReset">リセット</button>
     </div>
   </div>
 
@@ -511,9 +482,6 @@
           if (typeof s.farm.unlockedPlots === 'undefined') s.farm.unlockedPlots = 1;
           if (!s.farm.fenceStyle) s.farm.fenceStyle = 'default';
           if (typeof s.farm.totalHarvests === 'undefined') s.farm.totalHarvests = 0;
-          if (typeof s.farm.fenceOffX === 'undefined') s.farm.fenceOffX = 0;
-          if (typeof s.farm.fenceOffY === 'undefined') s.farm.fenceOffY = 0;
-          if (typeof s.farm.fenceScale === 'undefined') s.farm.fenceScale = 1;
           if (!s.inventory) s.inventory = { apple: 0, strawberry: 0, carrot: 0, corn: 0 };
           // Old creature migration
           s.slots.forEach(slot => {
@@ -530,7 +498,7 @@
           return s;
         }
       } catch(e) {}
-      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null], unlockedPlots: 1, fenceStyle: 'default', totalHarvests: 0, fenceOffX: 0, fenceOffY: 0, fenceScale: 1 }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 } };
+      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null], unlockedPlots: 1, fenceStyle: 'default', totalHarvests: 0 }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 } };
     }
 
     function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
@@ -694,13 +662,11 @@
     // ═══════════════════════════════════════════════════════════
     // ─── Fence Picker ──────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    let fenceDragMode = false;
 
     function updateFenceLive() {
-      const w = W(), h = H();
-      [fenceSprite, yardFenceSprite].forEach(sp => {
-        if (!sp || !sp._fenceTex) return;
-        applyFenceTransform(sp, sp._fenceTex, w, h);
+      const tint = getFenceStyle().tint;
+      [...farmFenceSprites, ...yardFenceSprites].forEach(sp => {
+        if (sp) sp.tint = tint;
       });
     }
 
@@ -722,14 +688,11 @@
         });
         grid.appendChild(sw);
       });
-      document.getElementById('fenceScaleLabel').textContent = Math.round((state.farm.fenceScale || 1) * 100) + '%';
       document.getElementById('fence-picker').classList.add('show');
-      fenceDragMode = true;
     }
 
     function closeFencePicker() {
       document.getElementById('fence-picker').classList.remove('show');
-      fenceDragMode = false;
       saveState();
       if (pixiReady) rebuildYardScene();
     }
@@ -737,33 +700,6 @@
     document.getElementById('btnFence').addEventListener('click', () => { SFX.init(); showFencePicker(); });
     document.getElementById('fenceCancel').addEventListener('click', closeFencePicker);
     document.getElementById('fence-picker').addEventListener('click', function(e) { if (e.target === this) closeFencePicker(); });
-
-    // Scale controls
-    document.getElementById('fenceScaleUp').addEventListener('click', () => {
-      state.farm.fenceScale = Math.min(2, (state.farm.fenceScale || 1) + 0.05);
-      document.getElementById('fenceScaleLabel').textContent = Math.round(state.farm.fenceScale * 100) + '%';
-      updateFenceLive();
-      SFX.play('pat');
-    });
-    document.getElementById('fenceScaleDown').addEventListener('click', () => {
-      state.farm.fenceScale = Math.max(0.5, (state.farm.fenceScale || 1) - 0.05);
-      document.getElementById('fenceScaleLabel').textContent = Math.round(state.farm.fenceScale * 100) + '%';
-      updateFenceLive();
-      SFX.play('pat');
-    });
-
-    // Reset
-    document.getElementById('fenceReset').addEventListener('click', () => {
-      state.farm.fenceOffX = 0;
-      state.farm.fenceOffY = 0;
-      state.farm.fenceScale = 1;
-      document.getElementById('fenceScaleLabel').textContent = '100%';
-      updateFenceLive();
-      SFX.play('select');
-    });
-
-    // Drag to move fence — registered after canvas init (see below)
-    let fenceDragStart = null;
 
     // ═══════════════════════════════════════════════════════════
     // ─── Inventory HUD ───────────────────────────────────────
@@ -950,14 +886,14 @@
         layerBg.addChildAt(sp, 1);
       }).catch(() => {});
 
-      // Fence layer (same fence, same tint + position)
-      PIXI.Assets.load('../assets/images/yard/fence_sm.webp').then(tex => {
+      // Fence layer — fence_R2 for yard view (bottom-right boundary)
+      PIXI.Assets.load('../assets/images/yard/fence_R2_sm.webp').then(tex => {
         if (!tex || !layerBg.parent) return;
         const sp = new PIXI.Sprite(tex);
-        applyFenceTransform(sp, tex, w, h);
+        fitBg(sp, tex);
+        sp.tint = getFenceStyle().tint;
         layerBg.addChild(sp);
-        yardFenceSprite = sp;
-        yardFenceSprite._fenceTex = tex;
+        yardFenceSprites = [sp];
       }).catch(() => {});
 
       // Clouds
@@ -1036,23 +972,16 @@
       { id: 'brown',    name: 'こげちゃ',   tint: 0xA07050 },
     ];
     function getFenceStyle() { return FENCE_STYLES.find(f => f.id === (state.farm.fenceStyle || 'default')) || FENCE_STYLES[0]; }
-    let fenceSprite = null;
-    let yardFenceSprite = null;
+    let farmFenceSprites = [];
+    let yardFenceSprites = [];
 
     // Apply saved fence offset + scale to a fence sprite
-    function applyFenceTransform(sp, tex, w, h) {
-      const baseSc = Math.max(w / tex.width, h / tex.height);
-      const sc = baseSc * (state.farm.fenceScale || 1);
-      sp.scale.set(sc);
-      sp.x = (w - tex.width * baseSc) / 2 + (state.farm.fenceOffX || 0);
-      sp.y = (h - tex.height * baseSc) / 2 + (state.farm.fenceOffY || 0);
-      sp.tint = getFenceStyle().tint;
-    }
+    // Fences are now document-sized overlays — no transform needed, just fitSprite + tint
 
     function rebuildFarmScene() {
       farmContainer.removeChildren().forEach(c => c.destroy({children:true}));
       farmPlotSprites = [];
-      fenceSprite = null;
+      farmFenceSprites = [];
       const w = W(), h = H();
       const unlocked = state.farm.unlockedPlots || 1;
 
@@ -1085,17 +1014,15 @@
       }).catch(() => {});
 
       // Layer 2: Hatake (farm plot) sprites — one per unlocked plot
+      // hatake_crop.webp: 238×143, extracted from bbox (166,299) in 1200×670 space
       PIXI.Assets.load('../assets/images/yard/hatake_crop.webp').then(tex => {
         if (!tex || !farmContainer.parent) return;
-        // Reference: hatake_crop was extracted from (164,297)-(407,445) in 1200×670
-        // That means center at (285.5, 371) corresponds to FARM_PLOT_POS[1] = (0.238, 0.549)
-        const refPos = FARM_PLOT_POS[1];
-        const sc = Math.max(w / 1200, h / 670); // same scale as green/fence
+        const sc = Math.max(w / 1200, h / 670);
         const offX = (w - 1200 * sc) / 2;
         const offY = (h - 670 * sc) / 2;
 
         FARM_PLOT_POS.forEach((pos, idx) => {
-          if (idx >= unlocked) return; // only show unlocked plots
+          if (idx >= unlocked) return;
           const sp = new PIXI.Sprite(tex);
           sp.anchor.set(0.5);
           sp.scale.set(sc);
@@ -1158,15 +1085,19 @@
         farmPlotSprites.push({ container: cont, plotIdx: idx, x: px, y: py, size: plotSize });
       });
 
-      // Layer 3: Fence (customizable tint + position)
-      PIXI.Assets.load('../assets/images/yard/fence_sm.webp').then(tex => {
-        if (!tex || !farmContainer.parent) return;
-        const sp = new PIXI.Sprite(tex);
-        applyFenceTransform(sp, tex, w, h);
-        layerFence.addChild(sp);
-        fenceSprite = sp;
-        fenceSprite._fenceTex = tex;
-      }).catch(() => {});
+      // Layer 3: Fences — fence_L1 (left) + fence_R (right), document-sized overlays
+      const fenceTint = getFenceStyle().tint;
+      farmFenceSprites = [];
+      ['fence_L1_sm.webp', 'fence_R_sm.webp'].forEach(fname => {
+        PIXI.Assets.load('../assets/images/yard/' + fname).then(tex => {
+          if (!tex || !farmContainer.parent) return;
+          const sp = new PIXI.Sprite(tex);
+          fitSprite(sp, tex);
+          sp.tint = fenceTint;
+          layerFence.addChild(sp);
+          farmFenceSprites.push(sp);
+        }).catch(() => {});
+      });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1299,7 +1230,6 @@
     // ─── Pointer Interaction ─────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     canvas.addEventListener('pointerdown', function(e) {
-      if (fenceDragMode) return; // fence editing takes priority
       SFX.init();
       const rect=canvas.getBoundingClientRect();
       const scaleX=W()/rect.width,scaleY=H()/rect.height;
@@ -1334,33 +1264,6 @@
           }
         }
       }
-    });
-
-    // ═══════════════════════════════════════════════════════════
-    // ─── Fence Drag (canvas-dependent, must be after canvas init)
-    // ═══════════════════════════════════════════════════════════
-    canvas.addEventListener('pointerdown', function(e) {
-      if (!fenceDragMode) return;
-      fenceDragStart = {
-        px: e.clientX, py: e.clientY,
-        startOffX: state.farm.fenceOffX || 0,
-        startOffY: state.farm.fenceOffY || 0
-      };
-    }, true);
-
-    window.addEventListener('pointermove', function(e) {
-      if (!fenceDragStart || !fenceDragMode) return;
-      const dx = e.clientX - fenceDragStart.px;
-      const dy = e.clientY - fenceDragStart.py;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = W() / rect.width, scaleY = H() / rect.height;
-      state.farm.fenceOffX = fenceDragStart.startOffX + dx * scaleX;
-      state.farm.fenceOffY = fenceDragStart.startOffY + dy * scaleY;
-      updateFenceLive();
-    });
-
-    window.addEventListener('pointerup', function() {
-      if (fenceDragStart) { fenceDragStart = null; saveState(); }
     });
 
     // ═══════════════════════════════════════════════════════════
