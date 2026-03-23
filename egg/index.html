@@ -227,6 +227,34 @@
       font-family: inherit; font-size: 0.8rem; font-weight: 900; cursor: pointer;
     }
 
+    /* ═══ Fence Picker ═══ */
+    #fence-picker {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5); flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    #fence-picker.show { display: flex; }
+    .fence-box {
+      background: #fff; border-radius: 24px; padding: 20px;
+      text-align: center; max-width: 380px; width: 85%;
+    }
+    .fence-box h3 { font-size: 1rem; color: #8D6E63; margin-bottom: 14px; font-weight: 900; }
+    .fence-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .fence-swatch {
+      width: 52px; height: 52px; border-radius: 16px; cursor: pointer;
+      border: 3px solid transparent; transition: transform 0.1s, border-color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 2px;
+    }
+    .fence-swatch:active { transform: scale(0.9); }
+    .fence-swatch.active { border-color: #4a7c59; }
+    .fence-swatch .sw-name { font-size: 0.55rem; font-weight: 900; color: #666; }
+    .fence-cancel {
+      margin-top: 14px; background: #ccc; color: #666;
+      border: none; border-radius: 50px; padding: 6px 20px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 900; cursor: pointer;
+    }
+
     /* ═══ Inventory HUD ═══ */
     #inventory-hud {
       position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
@@ -248,6 +276,9 @@
   <button id="btnFeed" class="action-btn yard-only">🍎</button>
   <button id="btnPlay" class="action-btn disabled yard-only">⚽</button>
   <button id="btnAlbum" class="yard-only">📖 ずかん</button>
+
+  <!-- Farm-only buttons -->
+  <button id="btnFence" class="action-btn farm-only" style="right:14px; background:rgba(180,140,100,0.9);">🏡</button>
 
   <!-- View tabs -->
   <div class="view-tabs">
@@ -283,6 +314,15 @@
       <h3>🍽️ なにを あげる？</h3>
       <div id="food-grid" class="food-grid"></div>
       <button class="food-cancel" id="foodCancel">やめる</button>
+    </div>
+  </div>
+
+  <!-- Fence picker overlay -->
+  <div id="fence-picker">
+    <div class="fence-box">
+      <h3>🏡 さくの いろ</h3>
+      <div id="fence-grid" class="fence-grid"></div>
+      <button class="fence-cancel" id="fenceCancel">とじる</button>
     </div>
   </div>
 
@@ -430,6 +470,9 @@
           if (typeof s.totalHatched === 'undefined') s.totalHatched = 0;
           // Farm migration
           if (!s.farm) s.farm = { plots: [null,null,null,null,null,null] };
+          if (typeof s.farm.unlockedPlots === 'undefined') s.farm.unlockedPlots = 1;
+          if (!s.farm.fenceStyle) s.farm.fenceStyle = 'default';
+          if (typeof s.farm.totalHarvests === 'undefined') s.farm.totalHarvests = 0;
           if (!s.inventory) s.inventory = { apple: 0, strawberry: 0, carrot: 0, corn: 0 };
           // Old creature migration
           s.slots.forEach(slot => {
@@ -446,7 +489,7 @@
           return s;
         }
       } catch(e) {}
-      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null] }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 } };
+      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null], unlockedPlots: 1, fenceStyle: 'default', totalHarvests: 0 }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 } };
     }
 
     function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
@@ -606,6 +649,33 @@
       if (addGrowth(feedTargetSlot, 1)) SFX.play('chomp');
       feedTargetSlot = null;
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Fence Picker ──────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    function showFencePicker() {
+      const grid = document.getElementById('fence-grid'); grid.innerHTML = '';
+      FENCE_STYLES.forEach(fs => {
+        const sw = document.createElement('div');
+        sw.className = 'fence-swatch' + (state.farm.fenceStyle === fs.id ? ' active' : '');
+        const r = (fs.tint >> 16) & 0xFF, g = (fs.tint >> 8) & 0xFF, b = fs.tint & 0xFF;
+        sw.style.background = `rgb(${r},${g},${b})`;
+        sw.innerHTML = `<span class="sw-name">${fs.name}</span>`;
+        sw.addEventListener('click', () => {
+          state.farm.fenceStyle = fs.id;
+          saveState();
+          if (fenceSprite) fenceSprite.tint = fs.tint;
+          grid.querySelectorAll('.fence-swatch').forEach(el => el.classList.remove('active'));
+          sw.classList.add('active');
+          SFX.play('select');
+        });
+        grid.appendChild(sw);
+      });
+      document.getElementById('fence-picker').classList.add('show');
+    }
+    document.getElementById('btnFence').addEventListener('click', () => { SFX.init(); showFencePicker(); });
+    document.getElementById('fenceCancel').addEventListener('click', () => { document.getElementById('fence-picker').classList.remove('show'); });
+    document.getElementById('fence-picker').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
 
     // ═══════════════════════════════════════════════════════════
     // ─── Inventory HUD ───────────────────────────────────────
@@ -823,80 +893,113 @@
     let farmBgSprite = null;
     let farmPlotSprites = []; // { container, plotIdx }
 
-    // Plot positions relative to canvas (measured from yard.png layout)
-    // yard.png has 6 diamond plots in roughly a 3-col × 2-row grid
+    // Plot positions measured from yard.png (relative to 1200×670 canvas)
+    // 6 plots in isometric diamond layout
     const FARM_PLOT_POS = [
-      { rx: 0.225, ry: 0.44 },  // Row 1 left
-      { rx: 0.410, ry: 0.44 },  // Row 1 center
-      { rx: 0.595, ry: 0.44 },  // Row 1 right
-      { rx: 0.225, ry: 0.68 },  // Row 2 left
-      { rx: 0.410, ry: 0.68 },  // Row 2 center
-      { rx: 0.595, ry: 0.68 },  // Row 2 right
+      { rx: 0.355, ry: 0.429 },  // top
+      { rx: 0.238, ry: 0.549 },  // mid-left
+      { rx: 0.483, ry: 0.565 },  // mid-right
+      { rx: 0.367, ry: 0.684 },  // lower-left
+      { rx: 0.611, ry: 0.696 },  // lower-right
+      { rx: 0.493, ry: 0.815 },  // bottom
     ];
+
+    // Fence tint palette (customizable)
+    const FENCE_STYLES = [
+      { id: 'default',  name: 'ノーマル',   tint: 0xFFFFFF },
+      { id: 'white',    name: 'しろ',       tint: 0xE8E8E8 },
+      { id: 'green',    name: 'みどり',     tint: 0x8BC48A },
+      { id: 'blue',     name: 'あお',       tint: 0x88BBDD },
+      { id: 'pink',     name: 'ピンク',     tint: 0xDDAACB },
+      { id: 'brown',    name: 'こげちゃ',   tint: 0xA07050 },
+    ];
+    function getFenceStyle() { return FENCE_STYLES.find(f => f.id === (state.farm.fenceStyle || 'default')) || FENCE_STYLES[0]; }
+    let fenceSprite = null;
 
     function rebuildFarmScene() {
       farmContainer.removeChildren().forEach(c => c.destroy({children:true}));
       farmPlotSprites = [];
+      fenceSprite = null;
       const w = W(), h = H();
+      const unlocked = state.farm.unlockedPlots || 1;
 
-      // Try loading yard.png, fallback to Graphics
+      // Layer 0: sky/grass fallback (shown while images load)
       const bg = new PIXI.Graphics();
-      // Green grass background
-      bg.beginFill(0x8BC34A); bg.drawRect(0,0,w,h); bg.endFill();
-      // Lighter top area (sky hint)
-      bg.beginFill(0xA5D6A7,0.5); bg.drawRect(0,0,w,h*0.15); bg.endFill();
+      bg.beginFill(0x87CEEB); bg.drawRect(0,0,w,h); bg.endFill();
       farmContainer.addChild(bg);
 
-      // Load yard.png as sprite overlay
-      PIXI.Assets.load('../assets/images/yard/yard_sm.webp').then(tex => {
-        if (!tex || !farmContainer.parent) return;
-        const sp = new PIXI.Sprite(tex);
-        // Scale to fit canvas
-        const scaleX = w / tex.width, scaleY = h / tex.height;
-        const sc = Math.max(scaleX, scaleY);
+      // Helper: scale sprite to cover canvas (same as yard.png aspect)
+      function fitSprite(sp, tex) {
+        const sc = Math.max(w / tex.width, h / tex.height);
         sp.scale.set(sc);
         sp.x = (w - tex.width * sc) / 2;
         sp.y = (h - tex.height * sc) / 2;
-        farmContainer.addChildAt(sp, 1);
-        farmBgSprite = sp;
+        return sc;
+      }
+
+      // Containers for layered rendering
+      const layerGreen  = new PIXI.Container();
+      const layerPlots  = new PIXI.Container();
+      const layerCrops  = new PIXI.Container(); // crop emojis on top of plot images
+      const layerFence  = new PIXI.Container();
+      farmContainer.addChild(layerGreen, layerPlots, layerCrops, layerFence);
+
+      // Layer 1: Green grass base
+      PIXI.Assets.load('../assets/images/yard/green_sm.webp').then(tex => {
+        if (!tex || !farmContainer.parent) return;
+        const sp = new PIXI.Sprite(tex); fitSprite(sp, tex);
+        layerGreen.addChild(sp);
       }).catch(() => {});
 
-      // Draw 6 plot overlay areas + crop sprites
+      // Layer 2: Hatake (farm plot) sprites — one per unlocked plot
+      PIXI.Assets.load('../assets/images/yard/hatake_crop.webp').then(tex => {
+        if (!tex || !farmContainer.parent) return;
+        // Reference: hatake_crop was extracted from (164,297)-(407,445) in 1200×670
+        // That means center at (285.5, 371) corresponds to FARM_PLOT_POS[1] = (0.238, 0.549)
+        const refPos = FARM_PLOT_POS[1];
+        const sc = Math.max(w / 1200, h / 670); // same scale as green/fence
+        const offX = (w - 1200 * sc) / 2;
+        const offY = (h - 670 * sc) / 2;
+
+        FARM_PLOT_POS.forEach((pos, idx) => {
+          if (idx >= unlocked) return; // only show unlocked plots
+          const sp = new PIXI.Sprite(tex);
+          sp.anchor.set(0.5);
+          sp.scale.set(sc);
+          sp.x = offX + pos.rx * 1200 * sc;
+          sp.y = offY + pos.ry * 670 * sc;
+          layerPlots.addChild(sp);
+        });
+      }).catch(() => {});
+
+      // Layer 2b: Crop emoji overlays
       FARM_PLOT_POS.forEach((pos, idx) => {
-        const px = w * pos.rx, py = h * pos.ry;
-        const plotSize = Math.min(w, h) * 0.12;
+        if (idx >= unlocked) return;
+        const sc = Math.max(w / 1200, h / 670);
+        const offX = (w - 1200 * sc) / 2;
+        const offY = (h - 670 * sc) / 2;
+        const px = offX + pos.rx * 1200 * sc;
+        const py = offY + pos.ry * 670 * sc;
+        const plotSize = 70 * sc;
 
         const cont = new PIXI.Container();
         cont.x = px; cont.y = py;
 
-        // Diamond shape (subtle highlight)
-        const diamond = new PIXI.Graphics();
-        diamond.beginFill(0x8B6914, 0.15);
-        diamond.moveTo(0, -plotSize*0.6);
-        diamond.lineTo(plotSize*0.9, 0);
-        diamond.lineTo(0, plotSize*0.6);
-        diamond.lineTo(-plotSize*0.9, 0);
-        diamond.closePath();
-        diamond.endFill();
-        cont.addChild(diamond);
-
-        // Crop visual
         const plot = state.farm.plots[idx];
         if (plot) {
           const crop = getCropData(plot.cropType);
           if (crop) {
-            let emoji, scale;
-            if (plot.stage === CROP_STAGE_SEED) { emoji = crop.seedEmoji; scale = 0.35; }
-            else if (plot.stage === CROP_STAGE_SPROUT) { emoji = crop.sproutEmoji; scale = 0.5; }
-            else { emoji = crop.emoji; scale = 0.7; }
+            let emoji, cScale;
+            if (plot.stage === CROP_STAGE_SEED) { emoji = crop.seedEmoji; cScale = 0.35; }
+            else if (plot.stage === CROP_STAGE_SPROUT) { emoji = crop.sproutEmoji; cScale = 0.5; }
+            else { emoji = crop.emoji; cScale = 0.7; }
             const tex = getEmojiTex(emoji, 64);
             const sp = new PIXI.Sprite(tex);
             sp.anchor.set(0.5);
-            sp.scale.set(scale);
-            sp._baseScale = scale;
+            sp.scale.set(cScale);
+            sp._baseScale = cScale;
             sp._isReady = (plot.stage === CROP_STAGE_READY);
             cont.addChild(sp);
-            // Water count indicator (small dots)
             if (plot.stage < CROP_STAGE_READY) {
               const dotG = new PIXI.Graphics();
               const needed = crop.waterNeeded[plot.stage];
@@ -911,7 +1014,6 @@
             }
           }
         } else {
-          // Empty plot — show plus hint
           const plus = new PIXI.Sprite(getEmojiTex('➕', 40));
           plus.anchor.set(0.5);
           plus.scale.set(0.4);
@@ -919,9 +1021,18 @@
           cont.addChild(plus);
         }
 
-        farmContainer.addChild(cont);
+        layerCrops.addChild(cont);
         farmPlotSprites.push({ container: cont, plotIdx: idx, x: px, y: py, size: plotSize });
       });
+
+      // Layer 3: Fence (customizable tint)
+      PIXI.Assets.load('../assets/images/yard/fence_sm.webp').then(tex => {
+        if (!tex || !farmContainer.parent) return;
+        const sp = new PIXI.Sprite(tex); fitSprite(sp, tex);
+        sp.tint = getFenceStyle().tint;
+        layerFence.addChild(sp);
+        fenceSprite = sp;
+      }).catch(() => {});
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1093,7 +1204,7 @@
     // ═══════════════════════════════════════════════════════════
     // ─── Farm Actions ────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    const waterCooldowns = [0,0,0,0,0,0];
+    const waterCooldowns = new Array(6).fill(0);
 
     function waterCrop(plotIdx, x, y) {
       if (waterCooldowns[plotIdx] > 0) return;
@@ -1126,6 +1237,16 @@
       // Harvest!
       state.inventory[plot.cropType] = (state.inventory[plot.cropType] || 0) + 1;
       state.farm.plots[plotIdx] = null;
+      state.farm.totalHarvests = (state.farm.totalHarvests || 0) + 1;
+
+      // Unlock new plots: 3 harvests per new plot, max 6
+      const unlockThresholds = [0, 3, 7, 12, 18, 25]; // harvests needed for plot 1-6
+      const maxPlots = 6;
+      let newUnlock = false;
+      while (state.farm.unlockedPlots < maxPlots && state.farm.totalHarvests >= unlockThresholds[state.farm.unlockedPlots]) {
+        state.farm.unlockedPlots++;
+        newUnlock = true;
+      }
       saveState();
 
       SFX.play('harvest');
@@ -1136,6 +1257,12 @@
 
       if (window.awardPoints) awardPoints(1);
       showToast(crop.name + ' を しゅうかく！🎉');
+      if (newUnlock) {
+        setTimeout(() => {
+          SFX.play('fanfare');
+          showToast('あたらしい はたけが ひらいたよ！🌾');
+        }, 1200);
+      }
     }
 
     // ═══════════════════════════════════════════════════════════
