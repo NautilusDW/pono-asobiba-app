@@ -387,6 +387,90 @@ html, body {
   72%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* Tool icons in buttons */
+.tool-icon {
+  width: 18px; height: 18px;
+  object-fit: contain; pointer-events: none;
+  vertical-align: middle; margin-right: 3px;
+}
+.tool-icon-round {
+  width: 28px; height: 28px;
+  object-fit: contain; pointer-events: none;
+}
+
+/* ===== Landscape layout ===== */
+@media (orientation: landscape) {
+  #app {
+    flex-direction: row;
+    max-width: none;
+    padding: 6px;
+    gap: 0;
+  }
+  .header { display: none; }
+  .canvas-wrap {
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+  }
+  /* Right sidebar */
+  .sidebar-wrap {
+    display: flex;
+    flex-direction: column;
+    width: 114px;
+    height: 100%;
+    gap: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 6px 5px;
+    background: rgba(255,248,231,0.95);
+    border-left: 2px solid #FDE68A;
+    scrollbar-width: none;
+  }
+  .sidebar-wrap::-webkit-scrollbar { display: none; }
+  .toolbar-top {
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+  }
+  .toolbar-top .tool-btn {
+    font-size: 0.62rem;
+    padding: 4px 3px;
+    width: 100%;
+    text-align: center;
+  }
+  .color-palette {
+    display: grid !important;
+    grid-template-columns: repeat(3, 30px);
+    gap: 3px;
+    justify-content: center;
+  }
+  .color-btn { width: 30px; height: 30px; }
+  .toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 3px;
+    justify-content: center;
+    align-items: center;
+  }
+  .size-section {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+  }
+  .size-label { display: none; }
+  .size-btn { width: 30px; height: 26px; }
+  .tool-btn.btn-eraser {
+    font-size: 0.62rem;
+    padding: 4px 3px;
+    width: 100%;
+  }
+  .icon-btn { width: 36px; height: 36px; }
+  .stamp-panel { max-height: 80px; }
+  .stamp-item { width: 36px; height: 36px; font-size: 1.1rem; }
+}
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
@@ -401,37 +485,39 @@ html, body {
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
-  <div class="toolbar toolbar-top">
-    <button class="tool-btn btn-undo" id="btnUndo">↩ もどす</button>
-    <button class="tool-btn btn-clear" id="btnClear">🗑 ぜんぶけす</button>
-    <button class="tool-btn btn-save" id="btnSave">💾 とっておく</button>
-    <button class="tool-btn btn-gallery" id="btnGallery">📂 みる</button>
-  </div>
-
   <div class="canvas-wrap" id="canvasWrap">
     <canvas id="drawCanvas"></canvas>
   </div>
 
-  <div class="stamp-panel hidden" id="stampPanel">
-    <div class="stamp-grid" id="stampGrid"></div>
-  </div>
-
-  <div class="color-palette" id="colorPalette"></div>
-
-  <div class="toolbar">
-    <div class="size-section">
-      <span class="size-label">ふとさ</span>
-      <button class="size-btn" data-size="4"><span class="size-line size-line-s"></span></button>
-      <button class="size-btn active" data-size="14"><span class="size-line size-line-m"></span></button>
-      <button class="size-btn" data-size="28"><span class="size-line size-line-l"></span></button>
+  <div class="sidebar-wrap">
+    <div class="toolbar toolbar-top">
+      <button class="tool-btn btn-undo" id="btnUndo"><img src="../assets/images/icons/icons3_001.png" class="tool-icon" alt="">もどす</button>
+      <button class="tool-btn btn-clear" id="btnClear"><img src="../assets/images/icons/icons_006.png" class="tool-icon" alt="">ぜんぶけす</button>
+      <button class="tool-btn btn-save" id="btnSave">💾 とっておく</button>
+      <button class="tool-btn btn-gallery" id="btnGallery"><img src="../assets/images/icons/icons3_002.png" class="tool-icon" alt="">みる</button>
     </div>
-    <button class="tool-btn btn-eraser" id="btnEraser">🧹 けしゴム</button>
-  </div>
-  <div class="toolbar">
-    <button class="icon-btn btn-stamp"   id="btnStamp" title="スタンプ">🔖</button>
-    <button class="icon-btn btn-rainbow" id="btnRainbow" title="レインボー">🌈</button>
-    <button class="icon-btn btn-sparkle" id="btnSparkle" title="きらきら">✨</button>
-    <button class="icon-btn btn-bucket"  id="btnBucket" title="ぬりつぶす">🪣</button>
+
+    <div class="stamp-panel hidden" id="stampPanel">
+      <div class="stamp-grid" id="stampGrid"></div>
+    </div>
+
+    <div class="color-palette" id="colorPalette"></div>
+
+    <div class="toolbar">
+      <div class="size-section">
+        <span class="size-label">ふとさ</span>
+        <button class="size-btn" data-size="4"><span class="size-line size-line-s"></span></button>
+        <button class="size-btn active" data-size="14"><span class="size-line size-line-m"></span></button>
+        <button class="size-btn" data-size="28"><span class="size-line size-line-l"></span></button>
+      </div>
+      <button class="tool-btn btn-eraser" id="btnEraser"><img src="../assets/images/icons/icons_004.png" class="tool-icon" alt="">けしゴム</button>
+    </div>
+    <div class="toolbar">
+      <button class="icon-btn btn-stamp"   id="btnStamp" title="スタンプ"><img src="../assets/images/icons/icons2_003.png" class="tool-icon-round" alt="スタンプ"></button>
+      <button class="icon-btn btn-rainbow" id="btnRainbow" title="レインボー"><img src="../assets/images/icons/icons_001.png" class="tool-icon-round" alt="🌈"></button>
+      <button class="icon-btn btn-sparkle" id="btnSparkle" title="きらきら"><img src="../assets/images/icons/kirakira.png" class="tool-icon-round" alt="✨"></button>
+      <button class="icon-btn btn-bucket"  id="btnBucket" title="ぬりつぶす">🪣</button>
+    </div>
   </div>
 </div>
 
