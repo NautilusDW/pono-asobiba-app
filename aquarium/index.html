@@ -304,14 +304,22 @@
           src.connect(filt); filt.connect(g);
           src.start(now); src.stop(now + 0.1);
         } else if (name === 'honk') {
-          // クラクション: 低いスクエア波
-          const o = ctx.createOscillator();
-          o.type = 'square';
-          o.frequency.setValueAtTime(180, now);
-          g.gain.setValueAtTime(0.18, now);
-          g.gain.setValueAtTime(0.18, now + 0.15);
-          g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-          o.connect(g); o.start(now); o.stop(now + 0.25);
+          // 潜水艦: かわいい汽笛（高めのサイン波2音）
+          const o1 = ctx.createOscillator();
+          const o2 = ctx.createOscillator();
+          o1.type = 'sine'; o2.type = 'sine';
+          o1.frequency.value = 520;
+          o2.frequency.value = 660;
+          const g1 = ctx.createGain(); const g2 = ctx.createGain();
+          g1.gain.setValueAtTime(0.12, now);
+          g1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          g2.gain.setValueAtTime(0, now);
+          g2.gain.setValueAtTime(0.12, now + 0.12);
+          g2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          o1.connect(g1); g1.connect(ctx.destination);
+          o2.connect(g2); g2.connect(ctx.destination);
+          o1.start(now); o1.stop(now + 0.2);
+          o2.start(now + 0.12); o2.stop(now + 0.3);
         } else if (name === 'collect') {
           // アイテム獲得: 上昇アルペジオ
           [400, 500, 600, 800].forEach((freq, i) => {
@@ -1756,11 +1764,12 @@
           if (c._glowTimer <= 0) c.obj.tint = 0xffffff;
         }
         if (c._shellTimer > 0) {
+          if (!c._shellBaseScale) c._shellBaseScale = Math.abs(c.obj.scale.x);
           c._shellTimer -= delta;
-          const bs = c.obj._baseScale || Math.abs(c.obj.scale.x);
+          const bs = c._shellBaseScale;
           const t = c._shellTimer / 30;
           c.obj.scale.y = bs * (0.5 + 0.5 * (1 - t));
-          if (c._shellTimer <= 0) { c.obj.scale.y = bs; c.obj._baseScale = null; }
+          if (c._shellTimer <= 0) { c.obj.scale.y = bs; c._shellBaseScale = 0; }
         }
         if (c._honkTimer > 0) {
           c._honkTimer -= delta;
@@ -1772,12 +1781,13 @@
           if (c._spinTimer <= 0) c.obj.rotation = 0;
         }
         if (c._mouthTimer > 0) {
+          if (!c._mouthBaseScale) c._mouthBaseScale = Math.abs(c.obj.scale.x);
           c._mouthTimer -= delta;
-          const bs = c.obj._baseScale || Math.abs(c.obj.scale.x);
+          const bs = c._mouthBaseScale;
           const t = c._mouthTimer / 18;
           const dir = c.obj.scale.x < 0 ? -1 : 1;
           c.obj.scale.x = dir * bs * (1 + 0.2 * Math.sin(t * Math.PI));
-          if (c._mouthTimer <= 0) { c.obj.scale.x = dir * bs; c.obj._baseScale = null; }
+          if (c._mouthTimer <= 0) { c.obj.scale.x = dir * bs; c._mouthBaseScale = 0; }
         }
 
         // ── 潜水艦: 001/002 を別タイマーで短時間フラッシュ + 後ろから泡 ──
@@ -2139,16 +2149,18 @@
       // Chomp animation in ticker
       creatures.forEach(c => {
         if (c._chompTimer > 0) {
+          if (!c._chompBaseScale) c._chompBaseScale = Math.abs(c.obj.scale.x);
           c._chompTimer -= delta;
           const t = c._chompTimer / 15;
           const pulse = 1 + 0.3 * Math.sin(t * Math.PI);
-          const bs = c.obj._baseScale || Math.abs(c.obj.scale.x);
-          c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * bs * pulse;
+          const bs = c._chompBaseScale;
+          const dir = c.obj.scale.x < 0 ? -1 : 1;
+          c.obj.scale.x = dir * bs * pulse;
           c.obj.scale.y = bs * pulse;
           if (c._chompTimer <= 0) {
-            c.obj.scale.x = (c.obj.scale.x < 0 ? -1 : 1) * bs;
+            c.obj.scale.x = dir * bs;
             c.obj.scale.y = bs;
-            c.obj._baseScale = null;
+            c._chompBaseScale = 0;
           }
         }
       });
