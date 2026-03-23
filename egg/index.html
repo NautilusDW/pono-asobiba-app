@@ -22,353 +22,275 @@
       font-family: 'Zen Maru Gothic', sans-serif;
       touch-action: manipulation;
     }
-    #pixi-canvas {
-      position: fixed;
-      z-index: 1;
-    }
-    /* Portrait rotation prompt */
+    #pixi-canvas { position: fixed; z-index: 1; }
     #portrait-overlay {
-      display: none;
-      position: fixed; inset: 0; z-index: 9999;
-      background: #4a7c59;
-      flex-direction: column;
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: #4a7c59; flex-direction: column;
       align-items: center; justify-content: center;
-      color: #fff; font-family: inherit; text-align: center;
-      gap: 16px;
+      color: #fff; font-family: inherit; text-align: center; gap: 16px;
     }
-    #portrait-overlay .rot-icon {
-      font-size: 4rem;
-      animation: rotpulse 1.5s ease-in-out infinite;
-    }
-    @keyframes rotpulse {
-      0%,100% { transform: rotate(0deg); }
-      40%      { transform: rotate(90deg); }
-      60%      { transform: rotate(90deg); }
-    }
-    #portrait-overlay p {
-      font-size: 1.1rem; font-weight: 900;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    }
-    @media (pointer: coarse) and (orientation: portrait) {
-      #portrait-overlay { display: flex; }
-    }
-    /* Title label */
+    #portrait-overlay .rot-icon { font-size: 4rem; animation: rotpulse 1.5s ease-in-out infinite; }
+    @keyframes rotpulse { 0%,100%{transform:rotate(0deg)} 40%{transform:rotate(90deg)} 60%{transform:rotate(90deg)} }
+    #portrait-overlay p { font-size: 1.1rem; font-weight: 900; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+    @media (pointer: coarse) and (orientation: portrait) { #portrait-overlay { display: flex; } }
+
     #title-label {
-      position: fixed;
-      top: 12px; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.35);
-      color: #4a7c59;
-      font-size: 1rem;
-      font-weight: 900;
-      padding: 4px 18px;
-      border-radius: 50px;
-      pointer-events: none;
-      z-index: 10;
-      white-space: nowrap;
-      text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.35); color: #4a7c59;
+      font-size: 1rem; font-weight: 900; padding: 4px 18px;
+      border-radius: 50px; pointer-events: none; z-index: 10;
+      white-space: nowrap; text-shadow: 0 1px 2px rgba(255,255,255,0.5);
     }
-    /* Action buttons */
     .action-btn {
-      position: fixed;
-      bottom: 14px;
-      width: 56px; height: 56px;
-      border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.6);
-      font-size: 1.6rem;
-      line-height: 1;
-      cursor: pointer;
-      z-index: 12;
+      position: fixed; bottom: 14px; width: 56px; height: 56px;
+      border-radius: 50%; border: 3px solid rgba(255,255,255,0.6);
+      font-size: 1.6rem; line-height: 1; cursor: pointer; z-index: 12;
       box-shadow: 0 2px 10px rgba(0,0,0,0.25);
       transition: transform 0.1s, background 0.15s;
-      touch-action: manipulation;
-      pointer-events: all;
+      touch-action: manipulation; pointer-events: all;
       display: flex; align-items: center; justify-content: center;
     }
     .action-btn:active { transform: scale(0.9); }
-    #btnFeed {
-      right: 14px;
-      background: rgba(255,160,60,0.9);
-    }
-    #btnFeed.active {
-      background: rgba(56,189,248,0.95);
-      border-color: #fff;
-      animation: btnpulse 1.2s ease-in-out infinite;
-    }
-    #btnPlay {
-      right: 80px;
-      background: rgba(100,200,100,0.9);
-    }
-    #btnPlay.disabled {
-      opacity: 0.35;
-      pointer-events: none;
-    }
-    @keyframes btnpulse {
-      0%,100% { box-shadow: 0 2px 10px rgba(56,189,248,0.3); }
-      50% { box-shadow: 0 2px 20px rgba(56,189,248,0.7); }
-    }
-    /* Album button */
+    #btnFeed { right: 14px; background: rgba(255,160,60,0.9); }
+    #btnFeed.active { background: rgba(56,189,248,0.95); border-color: #fff; animation: btnpulse 1.2s ease-in-out infinite; }
+    #btnPlay { right: 80px; background: rgba(100,200,100,0.9); }
+    #btnPlay.disabled { opacity: 0.35; pointer-events: none; }
+    .yard-only { display: flex; }
+    .farm-only { display: none; }
+    @keyframes btnpulse { 0%,100%{box-shadow:0 2px 10px rgba(56,189,248,0.3)} 50%{box-shadow:0 2px 20px rgba(56,189,248,0.7)} }
+
     #btnAlbum {
-      position: fixed;
-      top: 12px; right: 14px;
-      background: rgba(255,255,255,0.35);
-      color: #4a7c59;
-      border: none; border-radius: 50px;
-      padding: 4px 14px;
-      font-family: inherit;
-      font-size: 0.85rem; font-weight: 900;
-      cursor: pointer; z-index: 12;
-      touch-action: manipulation;
+      position: fixed; top: 12px; right: 14px;
+      background: rgba(255,255,255,0.35); color: #4a7c59;
+      border: none; border-radius: 50px; padding: 4px 14px;
+      font-family: inherit; font-size: 0.85rem; font-weight: 900;
+      cursor: pointer; z-index: 12; touch-action: manipulation;
     }
     #btnAlbum:active { transform: scale(0.92); }
-    /* Album overlay */
     #album-overlay {
-      display: none;
-      position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.6);
-      flex-direction: column;
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6); flex-direction: column;
       align-items: center; justify-content: center;
     }
     #album-overlay.show { display: flex; }
     #album-box {
-      background: #fff;
-      border-radius: 24px;
-      padding: 20px;
-      max-width: 460px; width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-      text-align: center;
+      background: #fff; border-radius: 24px; padding: 20px;
+      max-width: 460px; width: 90%; max-height: 80vh;
+      overflow-y: auto; text-align: center;
     }
-    #album-box h2 {
-      font-size: 1.2rem; color: #4a7c59;
-      margin-bottom: 12px;
-    }
-    .album-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-    .album-item {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 2px;
-    }
+    #album-box h2 { font-size: 1.2rem; color: #4a7c59; margin-bottom: 12px; }
+    .album-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+    .album-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .album-item .emoji { font-size: 2.2rem; }
     .album-item .name { font-size: 0.65rem; color: #888; }
-    .album-empty {
-      color: #aaa; font-size: 0.9rem;
-      padding: 30px 0;
-    }
+    .album-empty { color: #aaa; font-size: 0.9rem; padding: 30px 0; }
     #albumClose {
-      margin-top: 14px;
-      background: #4a7c59; color: #fff;
-      border: none; border-radius: 50px;
-      padding: 8px 28px;
-      font-family: inherit; font-size: 0.95rem;
-      font-weight: 900; cursor: pointer;
+      margin-top: 14px; background: #4a7c59; color: #fff;
+      border: none; border-radius: 50px; padding: 8px 28px;
+      font-family: inherit; font-size: 0.95rem; font-weight: 900; cursor: pointer;
     }
-    /* Graduation overlay */
     #grad-overlay {
-      display: none;
-      position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,0.5);
-      flex-direction: column;
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.5); flex-direction: column;
       align-items: center; justify-content: center;
     }
     #grad-overlay.show { display: flex; }
     #grad-box {
-      background: #fff;
-      border-radius: 24px;
-      padding: 24px 20px;
-      text-align: center;
-      max-width: 320px; width: 85%;
+      background: #fff; border-radius: 24px; padding: 24px 20px;
+      text-align: center; max-width: 320px; width: 85%;
     }
     #grad-box .grad-emoji { font-size: 4rem; }
-    #grad-box .grad-msg {
-      font-size: 1.2rem; font-weight: 900;
-      color: #4a7c59; margin: 8px 0;
-    }
-    #grad-box .grad-name {
-      font-size: 0.85rem; color: #888;
-      margin-bottom: 12px;
-    }
+    #grad-box .grad-msg { font-size: 1.2rem; font-weight: 900; color: #4a7c59; margin: 8px 0; }
+    #grad-box .grad-name { font-size: 0.85rem; color: #888; margin-bottom: 12px; }
     #gradBtn {
-      background: linear-gradient(135deg, #A7F3D0, #34D399);
-      color: #fff; border: none; border-radius: 50px;
-      padding: 10px 24px; font-family: inherit;
-      font-size: 1rem; font-weight: 900;
-      cursor: pointer;
+      background: linear-gradient(135deg,#A7F3D0,#34D399); color: #fff;
+      border: none; border-radius: 50px; padding: 10px 24px;
+      font-family: inherit; font-size: 1rem; font-weight: 900; cursor: pointer;
     }
     #gradBtn:active { transform: scale(0.94); }
-    /* Info toast */
+
     #info-toast {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.7);
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 50px;
-      font-size: 0.9rem; font-weight: 900;
-      z-index: 100;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      background: rgba(0,0,0,0.7); color: #fff;
+      padding: 10px 22px; border-radius: 50px;
+      font-size: 0.9rem; font-weight: 900; z-index: 100;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
     }
     #info-toast.show { opacity: 1; }
 
-    /* ═══ Story Overlay (kamishibai) ═══ */
+    /* ═══ Story Overlay ═══ */
     #story-overlay {
-      display: none;
-      position: fixed; inset: 0; z-index: 500;
-      background: linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%);
-      flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center;
-      cursor: pointer;
-      -webkit-user-select: none; user-select: none;
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: linear-gradient(180deg,#E8F5E9,#C8E6C9);
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; cursor: pointer; -webkit-user-select: none; user-select: none;
     }
     #story-overlay.show { display: flex; }
-    .story-page {
-      display: none;
-      flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 16px;
-      padding: 24px;
-      animation: storyFadeIn 0.6s ease;
-    }
+    .story-page { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; animation: storyFadeIn 0.6s ease; }
     .story-page.active { display: flex; }
     .story-page .story-icon { font-size: 4rem; }
-    .story-page .story-text {
-      font-size: 1.3rem; font-weight: 900;
-      color: #4a7c59;
-      line-height: 2;
-      text-shadow: 0 1px 4px rgba(255,255,255,0.6);
-    }
-    .story-page .story-hint {
-      font-size: 0.75rem; color: #999;
-      margin-top: 12px;
-    }
-    @keyframes storyFadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    .story-page .story-text { font-size: 1.3rem; font-weight: 900; color: #4a7c59; line-height: 2; text-shadow: 0 1px 4px rgba(255,255,255,0.6); }
+    .story-page .story-hint { font-size: 0.75rem; color: #999; margin-top: 12px; }
+    @keyframes storyFadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ═══ Egg Selection Screen ═══ */
+    /* ═══ Egg Selection ═══ */
     #egg-select-overlay {
-      display: none;
-      position: fixed; inset: 0; z-index: 400;
-      background: linear-gradient(180deg, #FFF8E1 0%, #FFECB3 100%);
-      flex-direction: column;
-      align-items: center; justify-content: center;
-      overflow-y: auto;
-      -webkit-user-select: none; user-select: none;
+      display: none; position: fixed; inset: 0; z-index: 400;
+      background: linear-gradient(180deg,#FFF8E1,#FFECB3);
+      flex-direction: column; align-items: center; justify-content: center;
+      overflow-y: auto; -webkit-user-select: none; user-select: none;
     }
     #egg-select-overlay.show { display: flex; }
-    #egg-select-overlay h2 {
-      font-size: 1.1rem; font-weight: 900;
-      color: #8D6E63; margin-bottom: 12px;
-      text-shadow: 0 1px 3px rgba(255,255,255,0.5);
+    #egg-select-overlay h2 { font-size: 1.1rem; font-weight: 900; color: #8D6E63; margin-bottom: 12px; }
+    .egg-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; max-width: 420px; width: 90%; padding: 10px; }
+    .egg-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: transform 0.15s; position: relative; }
+    .egg-cell:active { transform: scale(0.92); }
+    .egg-cell img { width: 64px; height: auto; object-fit: contain; border-radius: 12px; }
+    .egg-cell.locked img { filter: grayscale(1) brightness(0.6); }
+    .egg-cell .egg-label { font-size: 0.6rem; font-weight: 900; color: #8D6E63; text-align: center; }
+    .egg-cell.locked .egg-label { color: #bbb; }
+    .egg-cell .lock-icon { position: absolute; top: 4px; right: 4px; font-size: 0.9rem; }
+
+    /* ═══ View Tabs ═══ */
+    .view-tabs {
+      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 6px; z-index: 15;
     }
-    .egg-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      max-width: 520px; width: 90%;
-      padding: 10px;
+    .view-tab {
+      padding: 8px 20px; border-radius: 50px; border: 2px solid rgba(255,255,255,0.5);
+      font-family: inherit; font-size: 0.85rem; font-weight: 900;
+      cursor: pointer; touch-action: manipulation;
+      transition: background 0.2s, transform 0.1s;
+      background: rgba(255,255,255,0.3); color: #4a7c59;
     }
-    .egg-cell {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 4px;
-      cursor: pointer;
-      transition: transform 0.15s;
+    .view-tab:active { transform: scale(0.94); }
+    .view-tab.active {
+      background: rgba(74,124,89,0.9); color: #fff;
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    /* ═══ Seed Picker ═══ */
+    #seed-picker {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5); flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    #seed-picker.show { display: flex; }
+    .seed-box {
+      background: #fff; border-radius: 24px; padding: 20px;
+      text-align: center; max-width: 360px; width: 85%;
+    }
+    .seed-box h3 { font-size: 1rem; color: #8D6E63; margin-bottom: 14px; font-weight: 900; }
+    .seed-grid { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .seed-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; padding: 10px; border-radius: 16px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .seed-item:hover { background: #FFF8E1; }
+    .seed-item:active { transform: scale(0.9); }
+    .seed-item .seed-emoji { font-size: 2.2rem; }
+    .seed-item .seed-name { font-size: 0.7rem; font-weight: 900; color: #8D6E63; }
+    .seed-cancel {
+      margin-top: 14px; background: #ccc; color: #666;
+      border: none; border-radius: 50px; padding: 6px 20px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 900; cursor: pointer;
+    }
+
+    /* ═══ Food Picker ═══ */
+    #food-picker {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5); flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    #food-picker.show { display: flex; }
+    .food-box {
+      background: #fff; border-radius: 24px; padding: 20px;
+      text-align: center; max-width: 400px; width: 85%;
+    }
+    .food-box h3 { font-size: 1rem; color: #FF8C00; margin-bottom: 14px; font-weight: 900; }
+    .food-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .food-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      cursor: pointer; padding: 8px 12px; border-radius: 16px;
+      transition: background 0.15s, transform 0.1s;
       position: relative;
     }
-    .egg-cell:active { transform: scale(0.92); }
-    .egg-cell img {
-      width: 64px; height: auto;
-      object-fit: contain;
-      border-radius: 12px;
-      transition: filter 0.2s;
+    .food-item:active { transform: scale(0.9); }
+    .food-item.empty { opacity: 0.3; pointer-events: none; }
+    .food-item .food-emoji { font-size: 2rem; }
+    .food-item .food-count { font-size: 0.7rem; font-weight: 900; color: #888; }
+    .food-cancel {
+      margin-top: 14px; background: #ccc; color: #666;
+      border: none; border-radius: 50px; padding: 6px 20px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 900; cursor: pointer;
     }
-    .egg-cell.locked img {
-      filter: grayscale(1) brightness(0.6);
+
+    /* ═══ Inventory HUD ═══ */
+    #inventory-hud {
+      position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 14;
+      background: rgba(255,255,255,0.4); border-radius: 50px;
+      padding: 4px 14px;
     }
-    .egg-cell .egg-label {
-      font-size: 0.6rem; font-weight: 900;
-      color: #8D6E63;
-      text-align: center;
-    }
-    .egg-cell.locked .egg-label {
-      color: #bbb;
-    }
-    .egg-cell .lock-icon {
-      position: absolute;
-      top: 4px; right: 4px;
-      font-size: 0.9rem;
-    }
-    .egg-cell.new-unlock {
-      animation: eggUnlockGlow 1.5s ease-in-out infinite;
-    }
-    @keyframes eggUnlockGlow {
-      0%,100% { filter: drop-shadow(0 0 4px rgba(255,215,0,0.3)); }
-      50% { filter: drop-shadow(0 0 12px rgba(255,215,0,0.8)); }
-    }
+    .inv-item { display: flex; align-items: center; gap: 2px; font-size: 0.75rem; font-weight: 900; color: #555; }
+    .inv-item.zero { opacity: 0.35; }
+    .inv-item .inv-emoji { font-size: 1rem; }
   </style>
 </head>
 <body>
-  <div id="portrait-overlay">
-    <div class="rot-icon">📱</div>
-    <p>スマホを よこむきに<br>してね！</p>
-  </div>
+  <div id="portrait-overlay"><div class="rot-icon">📱</div><p>スマホを よこむきに<br>してね！</p></div>
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🌿 たまごのにわ</div>
-  <button id="btnFeed" class="action-btn">🍎</button>
-  <button id="btnPlay" class="action-btn disabled">⚽</button>
-  <button id="btnAlbum">📖 ずかん</button>
 
-  <!-- Story overlay (kamishibai) -->
+  <!-- Yard-only buttons -->
+  <button id="btnFeed" class="action-btn yard-only">🍎</button>
+  <button id="btnPlay" class="action-btn disabled yard-only">⚽</button>
+  <button id="btnAlbum" class="yard-only">📖 ずかん</button>
+
+  <!-- View tabs -->
+  <div class="view-tabs">
+    <button class="view-tab active" id="tabYard">🌿 にわ</button>
+    <button class="view-tab" id="tabFarm">🌾 はたけ</button>
+  </div>
+
+  <!-- Inventory HUD -->
+  <div id="inventory-hud"></div>
+
+  <!-- Story overlay -->
   <div id="story-overlay">
-    <div class="story-page" id="story-1">
-      <div class="story-icon">🌳</div>
-      <div class="story-text">ポノの もりには<br>「ありがとうの き」が あるんだ</div>
-      <div class="story-hint">タップして つぎへ</div>
-    </div>
-    <div class="story-page" id="story-2">
-      <div class="story-icon">✨</div>
-      <div class="story-text">だれかが 「ありがとう」って おもうと<br>きの えだに ふしぎな たまごが<br>みのるんだって！</div>
-      <div class="story-hint">タップして つぎへ</div>
-    </div>
-    <div class="story-page" id="story-3">
-      <div class="story-icon">🌿</div>
-      <div class="story-text">ある あさ かぜに のって<br>ポノの にわに たまごが おちてきたよ！<br>どの たまごを そだてる？</div>
-      <div class="story-hint">タップして えらぶ</div>
-    </div>
+    <div class="story-page" id="story-1"><div class="story-icon">🌳</div><div class="story-text">ポノの もりには<br>「ありがとうの き」が あるんだ</div><div class="story-hint">タップして つぎへ</div></div>
+    <div class="story-page" id="story-2"><div class="story-icon">✨</div><div class="story-text">だれかが 「ありがとう」って おもうと<br>きの えだに ふしぎな たまごが<br>みのるんだって！</div><div class="story-hint">タップして つぎへ</div></div>
+    <div class="story-page" id="story-3"><div class="story-icon">🌿</div><div class="story-text">ある あさ かぜに のって<br>ポノの にわに たまごが おちてきたよ！<br>どの たまごを そだてる？</div><div class="story-hint">タップして えらぶ</div></div>
   </div>
 
   <!-- Egg selection overlay -->
-  <div id="egg-select-overlay">
-    <h2>そだてる たまごを えらぼう！</h2>
-    <div id="egg-grid" class="egg-grid"></div>
+  <div id="egg-select-overlay"><h2>そだてる たまごを えらぼう！</h2><div id="egg-grid" class="egg-grid"></div></div>
+
+  <!-- Seed picker overlay -->
+  <div id="seed-picker">
+    <div class="seed-box">
+      <h3>🌱 なにを うえる？</h3>
+      <div id="seed-grid" class="seed-grid"></div>
+      <button class="seed-cancel" id="seedCancel">やめる</button>
+    </div>
+  </div>
+
+  <!-- Food picker overlay -->
+  <div id="food-picker">
+    <div class="food-box">
+      <h3>🍽️ なにを あげる？</h3>
+      <div id="food-grid" class="food-grid"></div>
+      <button class="food-cancel" id="foodCancel">やめる</button>
+    </div>
   </div>
 
   <!-- Album overlay -->
-  <div id="album-overlay">
-    <div id="album-box">
-      <h2>📖 ともだちずかん</h2>
-      <div id="album-grid" class="album-grid"></div>
-      <button id="albumClose">とじる</button>
-    </div>
-  </div>
+  <div id="album-overlay"><div id="album-box"><h2>📖 ともだちずかん</h2><div id="album-grid" class="album-grid"></div><button id="albumClose">とじる</button></div></div>
 
   <!-- Graduation overlay -->
-  <div id="grad-overlay">
-    <div id="grad-box">
-      <div class="grad-emoji" id="gradEmoji"></div>
-      <div class="grad-msg">おおきく なったね！</div>
-      <div class="grad-name" id="gradName"></div>
-      <button id="gradBtn">ぼうけんに いってらっしゃい！🌟</button>
-    </div>
-  </div>
+  <div id="grad-overlay"><div id="grad-box"><div class="grad-emoji" id="gradEmoji"></div><div class="grad-msg">おおきく なったね！</div><div class="grad-name" id="gradName"></div><button id="gradBtn">ぼうけんに いってらっしゃい！🌟</button></div></div>
 
   <div id="info-toast"></div>
 
@@ -378,139 +300,79 @@
     'use strict';
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Creature Database (10 Original Spirits) ─────────────
+    // ─── Creature Database (8 Original Spirits) ──────────────
     // ═══════════════════════════════════════════════════════════
     const CREATURES = [
-      // Tier 1: 初期から選べる3種
       { type: 'hinoko',   emoji: '🔥', babyEmoji: '🕯️', name: 'ヒノコ',     eggImage: 'egg_018', tier: 1, desc: 'ちいさな ひの せいれい' },
       { type: 'hanarin',  emoji: '🌸', babyEmoji: '🌱', name: 'ハナリン',   eggImage: 'egg_019', tier: 1, desc: 'はなが さく ようせい' },
       { type: 'shizukun', emoji: '💧', babyEmoji: '🫧', name: 'シズクン',   eggImage: 'egg_020', tier: 1, desc: 'みずたまの ぷるぷる せいれい' },
-      // Tier 2: 卒業1〜2回で解放
       { type: 'morinoko', emoji: '🌿', babyEmoji: '🍀', name: 'モリノコ',   eggImage: 'egg_010', tier: 2, unlockGrad: 1, desc: 'もりの せいれい' },
       { type: 'mokumoku', emoji: '☁️', babyEmoji: '💨', name: 'モクモク',   eggImage: 'egg_006', tier: 2, unlockGrad: 1, desc: 'ふわふわ くもモンスター' },
       { type: 'kiraboshi',emoji: '⭐', babyEmoji: '💫', name: 'キラボシ',   eggImage: 'egg_007', tier: 2, unlockGrad: 2, desc: 'ほしの かけらロボ' },
       { type: 'lovemon',  emoji: '💗', babyEmoji: '💕', name: 'ラブモン',   eggImage: 'egg_013', tier: 2, unlockGrad: 2, desc: 'あいの せいれい' },
-      // Tier 3: 特別実績で解放
       { type: 'nijitama', emoji: '🤖', babyEmoji: '⚙️', name: 'ニジタマ',   eggImage: 'egg_002', tier: 3, unlockCond: 'lifetime_pts_100', unlockHint: 'るいけいポイント 100', desc: 'にじいろ メカたまごロボ' },
     ];
 
-    // Stage thresholds
+    // ─── Crop Database ───────────────────────────────────────
+    const CROPS = [
+      { type: 'apple',      emoji: '🍎', seedEmoji: '🟤', sproutEmoji: '🌱', name: 'りんご',       growHours: [2, 4], waterNeeded: [5, 8], feedPts: 2 },
+      { type: 'strawberry', emoji: '🍓', seedEmoji: '🟤', sproutEmoji: '🌱', name: 'いちご',       growHours: [1, 2], waterNeeded: [3, 5], feedPts: 1 },
+      { type: 'carrot',     emoji: '🥕', seedEmoji: '🟤', sproutEmoji: '🌱', name: 'にんじん',     growHours: [2, 4], waterNeeded: [5, 8], feedPts: 2 },
+      { type: 'corn',       emoji: '🌽', seedEmoji: '🟤', sproutEmoji: '🌱', name: 'とうもろこし', growHours: [4, 8], waterNeeded: [8, 13], feedPts: 3 },
+    ];
+    const CROP_STAGE_SEED = 0, CROP_STAGE_SPROUT = 1, CROP_STAGE_READY = 2;
+
+    function getCropData(type) { return CROPS.find(c => c.type === type); }
+
+    // Stages & thresholds
     const STAGE_EGG = 0, STAGE_BABY = 1, STAGE_KID = 2, STAGE_ADULT = 3;
     const STAGE_THRESHOLDS = [0, 10, 30, 60];
     const STAGE_NAMES = ['たまご', 'あかちゃん', 'こども', 'おとな'];
     const DAILY_CARE_CAP = 15;
 
     // ═══════════════════════════════════════════════════════════
-    // ─── BGM ──────────────────────────────────────────────────
+    // ─── BGM & Menu ──────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let bgmEnabled = true;
-    function toggleBgm() {
-      bgmEnabled = !bgmEnabled;
-      if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🎵' : '🔇';
-    }
+    function toggleBgm() { bgmEnabled = !bgmEnabled; if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🎵' : '🔇'; }
     initMenu({ bgmToggle: toggleBgm });
 
     // ═══════════════════════════════════════════════════════════
-    // ─── SFX: Web Audio 合成 ──────────────────────────────────
+    // ─── SFX ─────────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     const SFX = {
       ctx: null,
-      init() {
-        if (this.ctx) return;
-        try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-      },
+      init() { if (this.ctx) return; try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} },
       play(name) {
         if (!this.ctx || !bgmEnabled) return;
-        const ctx = this.ctx;
-        const now = ctx.currentTime;
+        const ctx = this.ctx, now = ctx.currentTime;
         if (name === 'pat') {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'sine';
-          o.frequency.setValueAtTime(400, now);
-          o.frequency.exponentialRampToValueAtTime(200, now + 0.12);
-          g.gain.setValueAtTime(0.2, now);
-          g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-          o.connect(g); g.connect(ctx.destination);
-          o.start(now); o.stop(now + 0.15);
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type='sine'; o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(200,now+0.12);
+          g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.15);
+          o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.15);
         } else if (name === 'chirp') {
-          [500, 700].forEach((freq, i) => {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.type = 'sine';
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(0.15, now + i * 0.08);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.1);
-            o.connect(g); g.connect(ctx.destination);
-            o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.12);
-          });
+          [500,700].forEach((freq,i) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.setValueAtTime(0.15,now+i*0.08); g.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+0.1); o.connect(g);g.connect(ctx.destination);o.start(now+i*0.08);o.stop(now+i*0.08+0.12); });
         } else if (name === 'chomp') {
-          for (let i = 0; i < 2; i++) {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.type = 'square';
-            o.frequency.value = 300 + i * 100;
-            g.gain.setValueAtTime(0.12, now + i * 0.07);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.05);
-            o.connect(g); g.connect(ctx.destination);
-            o.start(now + i * 0.07); o.stop(now + i * 0.07 + 0.06);
-          }
+          for(let i=0;i<2;i++){const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=300+i*100;g.gain.setValueAtTime(0.12,now+i*0.07);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.07+0.05);o.connect(g);g.connect(ctx.destination);o.start(now+i*0.07);o.stop(now+i*0.07+0.06);}
         } else if (name === 'hatch') {
-          [400, 500, 600, 800].forEach((freq, i) => {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.type = 'sine';
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(0.15, now + i * 0.1);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.15);
-            o.connect(g); g.connect(ctx.destination);
-            o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.18);
-          });
+          [400,500,600,800].forEach((freq,i) => { const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0.15,now+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.15);o.connect(g);g.connect(ctx.destination);o.start(now+i*0.1);o.stop(now+i*0.1+0.18); });
         } else if (name === 'bounce') {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'triangle';
-          o.frequency.setValueAtTime(350, now);
-          o.frequency.exponentialRampToValueAtTime(150, now + 0.08);
-          g.gain.setValueAtTime(0.18, now);
-          g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-          o.connect(g); g.connect(ctx.destination);
-          o.start(now); o.stop(now + 0.1);
+          const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.setValueAtTime(350,now);o.frequency.exponentialRampToValueAtTime(150,now+0.08);g.gain.setValueAtTime(0.18,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.1);o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+0.1);
         } else if (name === 'fanfare') {
-          [523, 587, 659, 698, 784, 880].forEach((freq, i) => {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.type = 'sine';
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(0.12, now + i * 0.12);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.2);
-            o.connect(g); g.connect(ctx.destination);
-            o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.25);
-          });
+          [523,587,659,698,784,880].forEach((freq,i) => { const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0.12,now+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.12+0.2);o.connect(g);g.connect(ctx.destination);o.start(now+i*0.12);o.stop(now+i*0.12+0.25); });
         } else if (name === 'wobble') {
-          const bufSize = ctx.sampleRate * 0.04;
-          const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-          const data = buf.getChannelData(0);
-          for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.15;
-          const src = ctx.createBufferSource();
-          src.buffer = buf;
-          const g = ctx.createGain();
-          g.gain.setValueAtTime(0.12, now);
-          g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-          src.connect(g); g.connect(ctx.destination);
-          src.start(now); src.stop(now + 0.06);
+          const bufSize=ctx.sampleRate*0.04,buf=ctx.createBuffer(1,bufSize,ctx.sampleRate),data=buf.getChannelData(0);for(let i=0;i<bufSize;i++)data[i]=(Math.random()*2-1)*0.15;const src=ctx.createBufferSource();src.buffer=buf;const g=ctx.createGain();g.gain.setValueAtTime(0.12,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.06);src.connect(g);g.connect(ctx.destination);src.start(now);src.stop(now+0.06);
         } else if (name === 'select') {
-          // egg selection: gentle 2-note chime
-          [600, 800].forEach((freq, i) => {
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.type = 'sine';
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(0.12, now + i * 0.1);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.15);
-            o.connect(g); g.connect(ctx.destination);
-            o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.18);
-          });
+          [600,800].forEach((freq,i) => { const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0.12,now+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.15);o.connect(g);g.connect(ctx.destination);o.start(now+i*0.1);o.stop(now+i*0.1+0.18); });
+        } else if (name === 'water') {
+          // gentle splash
+          const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(800,now);o.frequency.exponentialRampToValueAtTime(300,now+0.15);g.gain.setValueAtTime(0.15,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.18);o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+0.2);
+        } else if (name === 'harvest') {
+          // satisfying pop + chime
+          [700,900,1100].forEach((freq,i) => { const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0.15,now+i*0.07);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.07+0.12);o.connect(g);g.connect(ctx.destination);o.start(now+i*0.07);o.stop(now+i*0.07+0.15); });
+        } else if (name === 'plant') {
+          const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(300,now);o.frequency.exponentialRampToValueAtTime(500,now+0.1);g.gain.setValueAtTime(0.12,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.12);o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+0.12);
         }
       }
     };
@@ -519,91 +381,40 @@
     // ═══════════════════════════════════════════════════════════
     // ─── Creature Helpers ────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    function getCreatureData(type) {
-      return CREATURES.find(c => c.type === type);
-    }
+    function getCreatureData(type) { return CREATURES.find(c => c.type === type); }
+    function getCreatureByEgg(eggImage) { return CREATURES.find(c => c.eggImage === eggImage); }
 
-    function getCreatureByEgg(eggImage) {
-      return CREATURES.find(c => c.eggImage === eggImage);
-    }
-
-    // ═══════════════════════════════════════════════════════════
     // ─── Unlock System ──────────────────────────────────────
-    // ═══════════════════════════════════════════════════════════
-    function isEggUnlocked(creature, state) {
+    function isEggUnlocked(creature, st) {
       if (creature.tier === 1) return true;
-      if (creature.tier === 2) {
-        return state.totalGraduated >= (creature.unlockGrad || 1);
-      }
+      if (creature.tier === 2) return st.totalGraduated >= (creature.unlockGrad || 1);
       if (creature.tier === 3) {
-        const cond = creature.unlockCond;
-        if (!cond) return false;
-        if (cond === 'aqua_treasure_5') {
-          const stat = parseInt(localStorage.getItem('pono_stat_aqua_treasures') || '0');
-          return stat >= 5;
-        }
-        if (cond === 'lifetime_pts_200') {
-          const pts = parseInt(localStorage.getItem('pono_lifetime_pts') || '0');
-          return pts >= 200;
-        }
-        if (cond === 'lifetime_pts_100') {
-          const pts = parseInt(localStorage.getItem('pono_lifetime_pts') || '0');
-          return pts >= 100;
-        }
+        if (creature.unlockCond === 'lifetime_pts_100') return parseInt(localStorage.getItem('pono_lifetime_pts') || '0') >= 100;
         return false;
       }
       return false;
     }
-
-    function checkUnlocks(state) {
-      let newUnlocks = [];
-      CREATURES.forEach(c => {
-        if (state.unlockedEggs.includes(c.eggImage)) return;
-        if (isEggUnlocked(c, state)) {
-          state.unlockedEggs.push(c.eggImage);
-          newUnlocks.push(c);
-        }
-      });
-      return newUnlocks;
+    function checkUnlocks(st) {
+      let newU = [];
+      CREATURES.forEach(c => { if (!st.unlockedEggs.includes(c.eggImage) && isEggUnlocked(c, st)) { st.unlockedEggs.push(c.eggImage); newU.push(c); } });
+      return newU;
     }
-
-    function getUnlockHint(creature, state) {
-      if (creature.tier === 2) {
-        const need = creature.unlockGrad || 1;
-        const have = state.totalGraduated;
-        if (have >= need) return '';
-        return 'あと ' + (need - have) + 'かい そつぎょう';
-      }
-      if (creature.tier === 3 && creature.unlockHint) {
-        return creature.unlockHint;
-      }
+    function getUnlockHint(creature, st) {
+      if (creature.tier === 2) { const need = creature.unlockGrad||1; return st.totalGraduated >= need ? '' : 'あと '+(need-st.totalGraduated)+'かい そつぎょう'; }
+      if (creature.tier === 3 && creature.unlockHint) return creature.unlockHint;
       return '???';
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── State Management (localStorage) ──────────────────────
+    // ─── State Management ────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    const STATE_KEY = 'pono_egg_state';
-    const ALBUM_KEY = 'pono_egg_album';
-
-    function generateId() {
-      return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    }
+    const STATE_KEY = 'pono_egg_state', ALBUM_KEY = 'pono_egg_album';
+    function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
     function createEggFromImage(eggImage) {
       const creature = getCreatureByEgg(eggImage);
       if (!creature) return null;
-      return {
-        id: generateId(),
-        creatureType: creature.type,
-        eggImage: eggImage,
-        stage: STAGE_EGG,
-        growthPts: 0,
-        bornAt: Date.now(),
-        dailyCareToday: 0,
-        dailyCareDate: new Date().toDateString(),
-        lastCareAt: 0,
-      };
+      return { id: generateId(), creatureType: creature.type, eggImage, stage: STAGE_EGG, growthPts: 0, bornAt: Date.now(), dailyCareToday: 0, dailyCareDate: new Date().toDateString(), lastCareAt: 0 };
     }
 
     function loadState() {
@@ -612,1214 +423,794 @@
         if (raw) {
           const s = JSON.parse(raw);
           if (!s || !Array.isArray(s.slots)) throw new Error('invalid');
-
-          // ─── Migration from v1 (old format) ───
-          if (!s.unlockedEggs) {
-            s.unlockedEggs = ['egg_018', 'egg_019', 'egg_020'];
-          }
-          if (typeof s.totalGraduated === 'undefined') {
-            s.totalGraduated = 0;
-          }
-          if (typeof s.storyShown === 'undefined') {
-            s.storyShown = true; // existing users skip story
-          }
-          if (typeof s.totalHatched === 'undefined') {
-            s.totalHatched = 0;
-          }
-          // Migrate old creature types to new ones
+          // Migrations
+          if (!s.unlockedEggs) s.unlockedEggs = ['egg_018','egg_019','egg_020'];
+          if (typeof s.totalGraduated === 'undefined') s.totalGraduated = 0;
+          if (typeof s.storyShown === 'undefined') s.storyShown = true;
+          if (typeof s.totalHatched === 'undefined') s.totalHatched = 0;
+          // Farm migration
+          if (!s.farm) s.farm = { plots: [null,null,null,null,null,null] };
+          if (!s.inventory) s.inventory = { apple: 0, strawberry: 0, carrot: 0, corn: 0 };
+          // Old creature migration
           s.slots.forEach(slot => {
             if (slot && !slot.eggImage) {
-              // Old v1 slot — assign a random Tier 1 egg
-              const tier1 = ['egg_018', 'egg_019', 'egg_020'];
-              slot.eggImage = tier1[Math.floor(Math.random() * 3)];
-              const newCreature = getCreatureByEgg(slot.eggImage);
-              if (newCreature) slot.creatureType = newCreature.type;
+              const tier1 = ['egg_018','egg_019','egg_020'];
+              slot.eggImage = tier1[Math.floor(Math.random()*3)];
+              const nc = getCreatureByEgg(slot.eggImage);
+              if (nc) slot.creatureType = nc.type;
             }
           });
-
-          // Daily reset
           const today = new Date().toDateString();
-          s.slots.forEach(slot => {
-            if (slot && slot.dailyCareDate !== today) {
-              slot.dailyCareToday = 0;
-              slot.dailyCareDate = today;
-            }
-          });
-
-          // Check for new unlocks
+          s.slots.forEach(slot => { if (slot && slot.dailyCareDate !== today) { slot.dailyCareToday = 0; slot.dailyCareDate = today; } });
           checkUnlocks(s);
           return s;
         }
       } catch(e) {}
-      // Default: brand new user
-      return {
-        slots: [null],
-        maxSlots: 1,
-        nextEggReady: false,
-        totalHatched: 0,
-        totalGraduated: 0,
-        unlockedEggs: ['egg_018', 'egg_019', 'egg_020'],
-        storyShown: false,
-      };
+      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null] }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 } };
     }
 
-    function saveState() {
-      localStorage.setItem(STATE_KEY, JSON.stringify(state));
-    }
-
-    function loadAlbum() {
-      try {
-        const raw = localStorage.getItem(ALBUM_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch(e) { return []; }
-    }
-
-    function saveAlbum() {
-      localStorage.setItem(ALBUM_KEY, JSON.stringify(album));
-    }
+    function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+    function loadAlbum() { try { const raw = localStorage.getItem(ALBUM_KEY); return raw ? JSON.parse(raw) : []; } catch(e) { return []; } }
+    function saveAlbum() { localStorage.setItem(ALBUM_KEY, JSON.stringify(album)); }
 
     let state = loadState();
     let album = loadAlbum();
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Story (kamishibai) ─────────────────────────────────
+    // ─── Farm Growth Check (time-based) ──────────────────────
+    // ═══════════════════════════════════════════════════════════
+    function checkCropGrowth() {
+      const now = Date.now();
+      let changed = false;
+      state.farm.plots.forEach(plot => {
+        if (!plot) return;
+        const crop = getCropData(plot.cropType);
+        if (!crop) return;
+        if (plot.stage >= CROP_STAGE_READY) return;
+        const hoursElapsed = (now - plot.plantedAt) / (1000 * 60 * 60);
+        const stageIdx = plot.stage; // 0 or 1
+        const timeThresh = crop.growHours[stageIdx];
+        const waterThresh = crop.waterNeeded[stageIdx];
+        if (hoursElapsed >= timeThresh || plot.waterCount >= waterThresh) {
+          plot.stage++;
+          plot.waterCount = 0;
+          if (plot.stage === CROP_STAGE_SPROUT) plot.sproutedAt = now;
+          changed = true;
+        }
+        // Check second stage too (time might have passed for both)
+        if (plot.stage === CROP_STAGE_SPROUT) {
+          const sinceStage = plot.sproutedAt ? (now - plot.sproutedAt) / (1000*60*60) : hoursElapsed;
+          if (sinceStage >= crop.growHours[1] || plot.waterCount >= crop.waterNeeded[1]) {
+            plot.stage = CROP_STAGE_READY;
+            plot.waterCount = 0;
+            changed = true;
+          }
+        }
+      });
+      if (changed) saveState();
+      return changed;
+    }
+    checkCropGrowth(); // on load
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Story ───────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let storyPage = 0;
-
-    function showStory() {
-      const overlay = document.getElementById('story-overlay');
-      overlay.classList.add('show');
-      storyPage = 1;
-      document.getElementById('story-1').classList.add('active');
-    }
-
+    function showStory() { document.getElementById('story-overlay').classList.add('show'); storyPage = 1; document.getElementById('story-1').classList.add('active'); }
     document.getElementById('story-overlay').addEventListener('click', function() {
       SFX.init();
       const prev = document.getElementById('story-' + storyPage);
       if (prev) prev.classList.remove('active');
       storyPage++;
       const next = document.getElementById('story-' + storyPage);
-      if (next) {
-        next.classList.add('active');
-        SFX.play('chirp');
-      } else {
-        // Story done
-        this.classList.remove('show');
-        state.storyShown = true;
-        saveState();
-        showEggSelect();
-      }
+      if (next) { next.classList.add('active'); SFX.play('chirp'); }
+      else { this.classList.remove('show'); state.storyShown = true; saveState(); showEggSelect(); }
     });
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Egg Selection Screen ───────────────────────────────
+    // ─── Egg Selection ───────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    let eggSelectResolve = null;
-
     function showEggSelect() {
-      const overlay = document.getElementById('egg-select-overlay');
-      const grid = document.getElementById('egg-grid');
+      const overlay = document.getElementById('egg-select-overlay'), grid = document.getElementById('egg-grid');
       grid.innerHTML = '';
-
       CREATURES.forEach(c => {
-        const cell = document.createElement('div');
-        cell.className = 'egg-cell';
+        const cell = document.createElement('div'); cell.className = 'egg-cell';
         const unlocked = state.unlockedEggs.includes(c.eggImage);
-
-        const img = document.createElement('img');
-        img.src = '../assets/images/eggs/' + c.eggImage + '.png';
-        img.alt = c.name;
-        cell.appendChild(img);
-
-        const label = document.createElement('div');
-        label.className = 'egg-label';
-
-        if (unlocked) {
-          label.textContent = c.name + '？';
-          cell.addEventListener('click', function() {
-            SFX.play('select');
-            selectEgg(c.eggImage);
-          });
-        } else {
-          cell.classList.add('locked');
-          const lock = document.createElement('div');
-          lock.className = 'lock-icon';
-          lock.textContent = '🔒';
-          cell.appendChild(lock);
-          label.textContent = getUnlockHint(c, state);
-        }
-        cell.appendChild(label);
-        grid.appendChild(cell);
+        const img = document.createElement('img'); img.src = '../assets/images/eggs/' + c.eggImage + '.png'; img.alt = c.name; cell.appendChild(img);
+        const label = document.createElement('div'); label.className = 'egg-label';
+        if (unlocked) { label.textContent = c.name + '？'; cell.addEventListener('click', () => { SFX.play('select'); selectEgg(c.eggImage); }); }
+        else { cell.classList.add('locked'); const lock = document.createElement('div'); lock.className = 'lock-icon'; lock.textContent = '🔒'; cell.appendChild(lock); label.textContent = getUnlockHint(c, state); }
+        cell.appendChild(label); grid.appendChild(cell);
       });
-
       overlay.classList.add('show');
     }
-
     function selectEgg(eggImage) {
-      const overlay = document.getElementById('egg-select-overlay');
-      overlay.classList.remove('show');
-
-      const newEgg = createEggFromImage(eggImage);
-      if (!newEgg) return;
-
-      // Find empty slot
+      document.getElementById('egg-select-overlay').classList.remove('show');
+      const newEgg = createEggFromImage(eggImage); if (!newEgg) return;
       let emptyIdx = state.slots.findIndex(s => s === null);
-      if (emptyIdx === -1) {
-        // Shouldn't happen, but just in case expand
-        state.slots.push(null);
-        emptyIdx = state.slots.length - 1;
-      }
-      state.slots[emptyIdx] = newEgg;
-      state.nextEggReady = false;
-      saveState();
-
-      if (pixiReady) rebuildScene();
-
-      const creature = getCreatureByEgg(eggImage);
-      showToast(creature.name + ' の たまごだ！🥚');
+      if (emptyIdx === -1) { state.slots.push(null); emptyIdx = state.slots.length - 1; }
+      state.slots[emptyIdx] = newEgg; state.nextEggReady = false; saveState();
+      if (pixiReady) rebuildYardScene();
+      showToast(getCreatureByEgg(eggImage).name + ' の たまごだ！🥚');
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Spawn / Flow Control ───────────────────────────────
+    // ─── Seed Picker ─────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    let selectedPlotIdx = -1;
+    function showSeedPicker(plotIdx) {
+      selectedPlotIdx = plotIdx;
+      const grid = document.getElementById('seed-grid'); grid.innerHTML = '';
+      CROPS.forEach(c => {
+        const item = document.createElement('div'); item.className = 'seed-item';
+        item.innerHTML = `<div class="seed-emoji">${c.emoji}</div><div class="seed-name">${c.name}</div>`;
+        item.addEventListener('click', () => { plantCrop(plotIdx, c.type); document.getElementById('seed-picker').classList.remove('show'); });
+        grid.appendChild(item);
+      });
+      document.getElementById('seed-picker').classList.add('show');
+    }
+    document.getElementById('seedCancel').addEventListener('click', () => { document.getElementById('seed-picker').classList.remove('show'); });
+    document.getElementById('seed-picker').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+
+    function plantCrop(plotIdx, cropType) {
+      state.farm.plots[plotIdx] = { cropType, stage: CROP_STAGE_SEED, waterCount: 0, plantedAt: Date.now(), sproutedAt: null };
+      saveState();
+      SFX.play('plant');
+      rebuildFarmScene();
+      showToast(getCropData(cropType).name + ' の たねを うえたよ！🌱');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Food Picker (replaces old random feed) ──────────────
+    // ═══════════════════════════════════════════════════════════
+    let feedTargetSlot = null;
+    function showFoodPicker(sceneSlot) {
+      feedTargetSlot = sceneSlot;
+      const grid = document.getElementById('food-grid'); grid.innerHTML = '';
+      const hasAny = CROPS.some(c => state.inventory[c.type] > 0);
+      CROPS.forEach(c => {
+        const count = state.inventory[c.type] || 0;
+        const item = document.createElement('div');
+        item.className = 'food-item' + (count === 0 ? ' empty' : '');
+        item.innerHTML = `<div class="food-emoji">${c.emoji}</div><div class="food-count">×${count}</div>`;
+        if (count > 0) item.addEventListener('click', () => { feedWithCrop(c.type); document.getElementById('food-picker').classList.remove('show'); });
+        grid.appendChild(item);
+      });
+      // Wild berry fallback
+      if (!hasAny) {
+        const wild = document.createElement('div'); wild.className = 'food-item';
+        wild.innerHTML = '<div class="food-emoji">🫐</div><div class="food-count">のいちご</div>';
+        wild.addEventListener('click', () => { feedWithWildBerry(); document.getElementById('food-picker').classList.remove('show'); });
+        grid.appendChild(wild);
+      }
+      document.getElementById('food-picker').classList.add('show');
+    }
+    document.getElementById('foodCancel').addEventListener('click', () => { document.getElementById('food-picker').classList.remove('show'); feedTargetSlot = null; });
+    document.getElementById('food-picker').addEventListener('click', function(e) { if (e.target === this) { this.classList.remove('show'); feedTargetSlot = null; } });
+
+    function feedWithCrop(cropType) {
+      if (!feedTargetSlot) return;
+      const crop = getCropData(cropType);
+      state.inventory[cropType]--;
+      saveState();
+      updateInventoryHUD();
+      spawnFood(feedTargetSlot.x, feedTargetSlot.y - 50, crop.emoji);
+      feedTargetSlot.chompTimer = 60;
+      if (addGrowth(feedTargetSlot, crop.feedPts)) SFX.play('chomp');
+      feedTargetSlot = null;
+    }
+    function feedWithWildBerry() {
+      if (!feedTargetSlot) return;
+      spawnFood(feedTargetSlot.x, feedTargetSlot.y - 50, '🫐');
+      feedTargetSlot.chompTimer = 60;
+      if (addGrowth(feedTargetSlot, 1)) SFX.play('chomp');
+      feedTargetSlot = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Inventory HUD ───────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    function updateInventoryHUD() {
+      const hud = document.getElementById('inventory-hud'); hud.innerHTML = '';
+      CROPS.forEach(c => {
+        const count = state.inventory[c.type] || 0;
+        const div = document.createElement('div');
+        div.className = 'inv-item' + (count === 0 ? ' zero' : '');
+        div.innerHTML = `<span class="inv-emoji">${c.emoji}</span>×${count}`;
+        hud.appendChild(div);
+      });
+    }
+    updateInventoryHUD();
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── View Switching ──────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    let currentView = 'yard'; // 'yard' | 'farm'
+    const tabYard = document.getElementById('tabYard'), tabFarm = document.getElementById('tabFarm');
+
+    function switchView(view) {
+      if (view === currentView) return;
+      currentView = view;
+      tabYard.classList.toggle('active', view === 'yard');
+      tabFarm.classList.toggle('active', view === 'farm');
+      document.getElementById('title-label').textContent = view === 'yard' ? '🌿 たまごのにわ' : '🌾 はたけ';
+      // Toggle yard-only / farm-only buttons
+      document.querySelectorAll('.yard-only').forEach(el => el.style.display = view === 'yard' ? '' : 'none');
+      document.querySelectorAll('.farm-only').forEach(el => el.style.display = view === 'farm' ? '' : 'none');
+      // Toggle PIXI containers
+      if (yardContainer) yardContainer.visible = (view === 'yard');
+      if (farmContainer) farmContainer.visible = (view === 'farm');
+      layerTop.removeChildren().forEach(c => c.destroy());
+      particles.length = 0;
+    }
+    tabYard.addEventListener('click', () => { SFX.init(); switchView('yard'); });
+    tabFarm.addEventListener('click', () => { SFX.init(); switchView('farm'); });
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Spawn flow ──────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let pixiReady = false;
-
     function trySpawnNewEgg() {
       if (!state.nextEggReady) return;
       const emptyIdx = state.slots.findIndex((s, i) => s === null && i < state.maxSlots);
       if (emptyIdx === -1) return;
-      // Show selection screen instead of auto-creating
       showEggSelect();
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── PixiJS Setup ─────────────────────────────────────────
+    // ─── PixiJS Setup ────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     const canvas = document.getElementById('pixi-canvas');
     const isMobile = () => window.matchMedia('(pointer: coarse)').matches;
-
-    const app = new PIXI.Application({
-      view: canvas,
-      backgroundColor: 0x87CEEB,
-      backgroundAlpha: 1,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    });
-
-    const W = () => app.screen.width;
-    const H = () => app.screen.height;
+    const app = new PIXI.Application({ view: canvas, backgroundColor: 0x87CEEB, backgroundAlpha: 1, antialias: true, resolution: window.devicePixelRatio || 1, autoDensity: true });
+    const W = () => app.screen.width, H = () => app.screen.height;
 
     function resizePixiApp() {
       let cw, ch, ct;
-      if (isMobile()) {
-        cw = window.innerWidth;
-        ch = window.innerHeight;
-        ct = 0;
-      } else {
-        cw = window.innerWidth;
-        ch = Math.round(cw * 9 / 16);
-        ct = Math.round((window.innerHeight - ch) / 2);
-      }
+      if (isMobile()) { cw = window.innerWidth; ch = window.innerHeight; ct = 0; }
+      else { cw = window.innerWidth; ch = Math.round(cw * 9/16); ct = Math.round((window.innerHeight - ch)/2); }
       app.renderer.resize(cw, ch);
-      Object.assign(canvas.style, { width: cw + 'px', height: ch + 'px', top: ct + 'px', left: '0px' });
+      Object.assign(canvas.style, { width: cw+'px', height: ch+'px', top: ct+'px', left: '0px' });
     }
     resizePixiApp();
-    window.addEventListener('resize', () => { resizePixiApp(); rebuildScene(); });
+    window.addEventListener('resize', () => { resizePixiApp(); rebuildYardScene(); rebuildFarmScene(); });
 
-    // ─── Layers ──────────────────────────────────────────────
+    // Layers
     const layerBg  = new PIXI.Container();
     const layerMid = new PIXI.Container();
     const layerFg  = new PIXI.Container();
     const layerTop = new PIXI.Container();
-    app.stage.addChild(layerBg, layerMid, layerFg, layerTop);
+
+    // View containers
+    const yardContainer = new PIXI.Container();
+    const farmContainer = new PIXI.Container();
+    farmContainer.visible = false;
+
+    app.stage.addChild(yardContainer, farmContainer, layerTop);
+    yardContainer.addChild(layerBg, layerMid, layerFg);
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Emoji to Canvas (same as aquarium) ───────────────────
+    // ─── Emoji to Canvas & Texture Cache ─────────────────────
     // ═══════════════════════════════════════════════════════════
     function emojiToCanvas(emoji, size) {
-      const cv = document.createElement('canvas');
-      cv.width = size; cv.height = size;
-      const ctx = cv.getContext('2d');
-      ctx.font = `${size * 0.75}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(emoji, size / 2, size / 2);
-      return cv;
+      const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+      const ctx = cv.getContext('2d'); ctx.font = `${size*0.75}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(emoji, size/2, size/2); return cv;
     }
-
     const _texCache = {};
-    function getEmojiTex(emoji, size) {
-      const key = emoji + '_' + size;
-      if (!_texCache[key]) {
-        _texCache[key] = PIXI.Texture.from(emojiToCanvas(emoji, size));
-      }
-      return _texCache[key];
-    }
+    function getEmojiTex(emoji, size) { const key = emoji+'_'+size; if (!_texCache[key]) _texCache[key] = PIXI.Texture.from(emojiToCanvas(emoji,size)); return _texCache[key]; }
 
-    // ═══════════════════════════════════════════════════════════
-    // ─── Egg Sprite Cache ───────────────────────────────────
-    // ═══════════════════════════════════════════════════════════
+    // Egg sprite cache
     const _eggTexCache = {};
-
     async function loadEggTexture(eggImage) {
       if (_eggTexCache[eggImage]) return _eggTexCache[eggImage];
-      try {
-        const tex = await PIXI.Assets.load('../assets/images/eggs/' + eggImage + '.png');
-        _eggTexCache[eggImage] = tex;
-        return tex;
-      } catch(e) {
-        // Fallback: draw a colored ellipse
-        return null;
-      }
+      try { const tex = await PIXI.Assets.load('../assets/images/eggs/'+eggImage+'.png'); _eggTexCache[eggImage] = tex; return tex; } catch(e) { return null; }
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Particles ────────────────────────────────────────────
+    // ─── Particles ───────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     const particles = [];
-
-    function spawnHearts(x, y, count) {
-      const emojis = ['❤️', '💕', '💖', '✨'];
-      for (let i = 0; i < count; i++) {
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        const tex = getEmojiTex(emoji, 48);
-        const sp = new PIXI.Sprite(tex);
-        sp.anchor.set(0.5);
-        sp.x = x + (Math.random() - 0.5) * 40;
-        sp.y = y;
-        sp.scale.set(0.4 + Math.random() * 0.3);
-        layerTop.addChild(sp);
-        particles.push({
-          obj: sp,
-          vx: (Math.random() - 0.5) * 2,
-          vy: -(1.5 + Math.random() * 2),
-          life: 60 + Math.random() * 30,
-          maxLife: 90,
-        });
-      }
-    }
-
-    function spawnConfetti(x, y, count) {
-      const colors = [0xFF6B6B, 0xFFD93D, 0x6BCB77, 0x4D96FF, 0xFF8BD0, 0xFFA94D];
-      for (let i = 0; i < count; i++) {
-        const g = new PIXI.Graphics();
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        g.beginFill(color);
-        g.drawRect(-4, -4, 8, 8);
-        g.endFill();
-        g.x = x + (Math.random() - 0.5) * 60;
-        g.y = y;
-        g.rotation = Math.random() * Math.PI * 2;
-        layerTop.addChild(g);
-        particles.push({
-          obj: g,
-          vx: (Math.random() - 0.5) * 6,
-          vy: -(3 + Math.random() * 5),
-          life: 80 + Math.random() * 40,
-          maxLife: 120,
-          gravity: 0.12,
-          rotSpeed: (Math.random() - 0.5) * 0.2,
-        });
-      }
-    }
-
-    function spawnStars(x, y, count) {
-      for (let i = 0; i < count; i++) {
-        const tex = getEmojiTex('⭐', 40);
-        const sp = new PIXI.Sprite(tex);
-        sp.anchor.set(0.5);
-        sp.x = x + (Math.random() - 0.5) * 80;
-        sp.y = y + (Math.random() - 0.5) * 60;
-        sp.scale.set(0.2);
-        layerTop.addChild(sp);
-        particles.push({
-          obj: sp,
-          vx: 0, vy: 0,
-          life: 50 + Math.random() * 30,
-          maxLife: 80,
-          scaleUp: true,
-        });
-      }
-    }
-
-    function updateParticles(delta) {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.life -= delta;
-        if (p.life <= 0) {
-          p.obj.parent && p.obj.parent.removeChild(p.obj);
-          p.obj.destroy();
-          particles.splice(i, 1);
-          continue;
-        }
-        p.obj.x += (p.vx || 0) * delta;
-        p.obj.y += (p.vy || 0) * delta;
-        if (p.gravity) p.vy += p.gravity * delta;
-        if (p.rotSpeed) p.obj.rotation += p.rotSpeed * delta;
-        if (p.scaleUp) {
-          const prog = 1 - p.life / p.maxLife;
-          const scale = prog < 0.3 ? prog / 0.3 * 0.6 : 0.6 * (1 - (prog - 0.3) / 0.7);
-          p.obj.scale.set(Math.max(0, scale));
-        } else {
-          p.obj.alpha = Math.min(1, p.life / 20);
-        }
-      }
-    }
+    function spawnHearts(x,y,count) { const emojis=['❤️','💕','💖','✨']; for(let i=0;i<count;i++){const emoji=emojis[Math.floor(Math.random()*emojis.length)],tex=getEmojiTex(emoji,48),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=x+(Math.random()-0.5)*40;sp.y=y;sp.scale.set(0.4+Math.random()*0.3);layerTop.addChild(sp);particles.push({obj:sp,vx:(Math.random()-0.5)*2,vy:-(1.5+Math.random()*2),life:60+Math.random()*30,maxLife:90});} }
+    function spawnConfetti(x,y,count) { const colors=[0xFF6B6B,0xFFD93D,0x6BCB77,0x4D96FF,0xFF8BD0,0xFFA94D]; for(let i=0;i<count;i++){const g=new PIXI.Graphics();g.beginFill(colors[Math.floor(Math.random()*colors.length)]);g.drawRect(-4,-4,8,8);g.endFill();g.x=x+(Math.random()-0.5)*60;g.y=y;g.rotation=Math.random()*Math.PI*2;layerTop.addChild(g);particles.push({obj:g,vx:(Math.random()-0.5)*6,vy:-(3+Math.random()*5),life:80+Math.random()*40,maxLife:120,gravity:0.12,rotSpeed:(Math.random()-0.5)*0.2});} }
+    function spawnStars(x,y,count) { for(let i=0;i<count;i++){const tex=getEmojiTex('⭐',40),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=x+(Math.random()-0.5)*80;sp.y=y+(Math.random()-0.5)*60;sp.scale.set(0.2);layerTop.addChild(sp);particles.push({obj:sp,vx:0,vy:0,life:50+Math.random()*30,maxLife:80,scaleUp:true});} }
+    function spawnWaterDrops(x,y) { for(let i=0;i<5;i++){const tex=getEmojiTex('💧',32),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=x+(Math.random()-0.5)*30;sp.y=y;sp.scale.set(0.3+Math.random()*0.2);layerTop.addChild(sp);particles.push({obj:sp,vx:(Math.random()-0.5)*2,vy:-(1+Math.random()*2),life:30+Math.random()*20,maxLife:50});} }
+    function updateParticles(delta) { for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=delta;if(p.life<=0){p.obj.parent&&p.obj.parent.removeChild(p.obj);p.obj.destroy();particles.splice(i,1);continue;}p.obj.x+=(p.vx||0)*delta;p.obj.y+=(p.vy||0)*delta;if(p.gravity)p.vy+=p.gravity*delta;if(p.rotSpeed)p.obj.rotation+=p.rotSpeed*delta;if(p.scaleUp){const prog=1-p.life/p.maxLife;const scale=prog<0.3?prog/0.3*0.6:0.6*(1-(prog-0.3)/0.7);p.obj.scale.set(Math.max(0,scale));}else{p.obj.alpha=Math.min(1,p.life/20);}} }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Food Pellets ─────────────────────────────────────────
+    // ─── Food Pellets ────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     const foodPellets = [];
-    const FOOD_EMOJIS = ['🍎', '🍓', '🍌', '🍒', '🌿'];
-
-    function spawnFood(x, y) {
-      const emoji = FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)];
-      const tex = getEmojiTex(emoji, 48);
-      const sp = new PIXI.Sprite(tex);
-      sp.anchor.set(0.5);
-      sp.x = x;
-      sp.y = y - 30;
-      sp.scale.set(0.6);
+    function spawnFood(x, y, emoji) {
+      emoji = emoji || '🍎';
+      const tex = getEmojiTex(emoji, 48), sp = new PIXI.Sprite(tex);
+      sp.anchor.set(0.5); sp.x = x; sp.y = y - 30; sp.scale.set(0.6);
       layerMid.addChild(sp);
-      foodPellets.push({
-        obj: sp,
-        vy: 0.5,
-        life: 300,
-        eaten: false,
-      });
+      foodPellets.push({ obj: sp, vy: 0.5, life: 300, eaten: false });
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // ─── Ball (Play action) ───────────────────────────────────
-    // ═══════════════════════════════════════════════════════════
+    // Ball
     let activeBall = null;
-
     function spawnBall() {
-      if (activeBall) {
-        if (activeBall.obj.parent) activeBall.obj.parent.removeChild(activeBall.obj);
-        activeBall.obj.destroy();
-        activeBall = null;
-      }
-      const tex = getEmojiTex('⚽', 56);
-      const sp = new PIXI.Sprite(tex);
-      sp.anchor.set(0.5);
-      sp.x = W() * 0.2 + Math.random() * W() * 0.6;
-      sp.y = H() * 0.2;
-      sp.scale.set(0.55);
-      layerMid.addChild(sp);
-      activeBall = {
-        obj: sp,
-        vx: (Math.random() - 0.5) * 3,
-        vy: 0,
-        bounces: 0,
-        life: 300,
-      };
-      SFX.play('bounce');
+      if(activeBall){if(activeBall.obj.parent)activeBall.obj.parent.removeChild(activeBall.obj);activeBall.obj.destroy();activeBall=null;}
+      const tex=getEmojiTex('⚽',56),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=W()*0.2+Math.random()*W()*0.6;sp.y=H()*0.2;sp.scale.set(0.55);layerMid.addChild(sp);
+      activeBall={obj:sp,vx:(Math.random()-0.5)*3,vy:0,bounces:0,life:300};SFX.play('bounce');
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Draw Background ──────────────────────────────────────
+    // ─── Yard: Background ────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     const clouds = [];
-
-    function drawBackground() {
-      layerBg.removeChildren().forEach(c => c.destroy({ children: true }));
-      const w = W(), h = H();
-
-      // Sky gradient
-      const sky = new PIXI.Graphics();
-      const skySteps = 20;
-      for (let i = 0; i < skySteps; i++) {
-        const t = i / skySteps;
-        const r = Math.round(135 + t * 120);
-        const g = Math.round(206 + t * 49);
-        const b = Math.round(235 + t * 20);
-        const color = (r << 16) | (g << 8) | b;
-        sky.beginFill(color);
-        sky.drawRect(0, h * t / 1, w, h / skySteps + 1);
-        sky.endFill();
-      }
+    function drawYardBackground() {
+      layerBg.removeChildren().forEach(c => c.destroy({children:true}));
+      const w=W(),h=H();
+      const sky=new PIXI.Graphics(),skySteps=20;
+      for(let i=0;i<skySteps;i++){const t=i/skySteps;const r=Math.round(135+t*120),g2=Math.round(206+t*49),b=Math.round(235+t*20);sky.beginFill((r<<16)|(g2<<8)|b);sky.drawRect(0,h*t,w,h/skySteps+1);sky.endFill();}
       layerBg.addChild(sky);
-
-      // Sun
-      const sun = new PIXI.Graphics();
-      sun.beginFill(0xFFE066, 0.7);
-      sun.drawCircle(w * 0.85, h * 0.15, Math.min(w, h) * 0.08);
-      sun.endFill();
-      sun.beginFill(0xFFE066, 0.2);
-      sun.drawCircle(w * 0.85, h * 0.15, Math.min(w, h) * 0.14);
-      sun.endFill();
-      layerBg.addChild(sun);
-
-      // Clouds
-      clouds.length = 0;
-      for (let i = 0; i < 5; i++) {
-        const cloud = new PIXI.Graphics();
-        cloud.beginFill(0xFFFFFF, 0.6 + Math.random() * 0.3);
-        const cx = Math.random() * w * 1.4 - w * 0.2;
-        const cy = h * 0.06 + Math.random() * h * 0.25;
-        const size = 20 + Math.random() * 30;
-        cloud.drawEllipse(0, 0, size * 2, size * 0.7);
-        cloud.drawEllipse(-size * 0.8, -size * 0.3, size * 1.2, size * 0.6);
-        cloud.drawEllipse(size * 0.7, -size * 0.2, size * 1.0, size * 0.5);
-        cloud.endFill();
-        cloud.x = cx; cloud.y = cy;
-        layerBg.addChild(cloud);
-        clouds.push({ obj: cloud, speed: 0.1 + Math.random() * 0.15 });
-      }
-
-      // Ground / grass
-      const grass = new PIXI.Graphics();
-      const grassY = h * 0.72;
-      grass.beginFill(0x6BCB77);
-      grass.drawRect(0, grassY, w, h - grassY);
-      grass.endFill();
-      grass.beginFill(0x7ED988, 0.6);
-      grass.drawRect(0, grassY, w, h * 0.03);
-      grass.endFill();
-      for (let i = 0; i < 12; i++) {
-        const gx = Math.random() * w;
-        const gy = grassY + Math.random() * (h - grassY) * 0.3;
-        grass.beginFill(0x5CB868, 0.5);
-        grass.drawEllipse(gx, gy, 8, 3);
-        grass.endFill();
-      }
+      const sun=new PIXI.Graphics();sun.beginFill(0xFFE066,0.7);sun.drawCircle(w*0.85,h*0.15,Math.min(w,h)*0.08);sun.endFill();sun.beginFill(0xFFE066,0.2);sun.drawCircle(w*0.85,h*0.15,Math.min(w,h)*0.14);sun.endFill();layerBg.addChild(sun);
+      clouds.length=0;
+      for(let i=0;i<5;i++){const cloud=new PIXI.Graphics();cloud.beginFill(0xFFFFFF,0.6+Math.random()*0.3);const size=20+Math.random()*30;cloud.drawEllipse(0,0,size*2,size*0.7);cloud.drawEllipse(-size*0.8,-size*0.3,size*1.2,size*0.6);cloud.drawEllipse(size*0.7,-size*0.2,size*1.0,size*0.5);cloud.endFill();cloud.x=Math.random()*w*1.4-w*0.2;cloud.y=h*0.06+Math.random()*h*0.25;layerBg.addChild(cloud);clouds.push({obj:cloud,speed:0.1+Math.random()*0.15});}
+      const grass=new PIXI.Graphics(),grassY=h*0.72;
+      grass.beginFill(0x6BCB77);grass.drawRect(0,grassY,w,h-grassY);grass.endFill();
+      grass.beginFill(0x7ED988,0.6);grass.drawRect(0,grassY,w,h*0.03);grass.endFill();
+      for(let i=0;i<12;i++){grass.beginFill(0x5CB868,0.5);grass.drawEllipse(Math.random()*w,grassY+Math.random()*(h-grassY)*0.3,8,3);grass.endFill();}
       layerBg.addChild(grass);
-
-      // Flowers on grass
-      const flowerEmojis = ['🌸', '🌼', '🌻', '🌺'];
-      for (let i = 0; i < 6; i++) {
-        const tex = getEmojiTex(flowerEmojis[i % flowerEmojis.length], 32);
-        const sp = new PIXI.Sprite(tex);
-        sp.anchor.set(0.5);
-        sp.x = w * 0.05 + Math.random() * w * 0.9;
-        sp.y = grassY + 5 + Math.random() * (h - grassY) * 0.25;
-        sp.scale.set(0.35 + Math.random() * 0.2);
-        sp.alpha = 0.6;
-        layerBg.addChild(sp);
-      }
-
-      // ありがとうの木 (Thank-you Tree) — on the right side
-      drawThankYouTree(w, h);
+      const flowerEmojis=['🌸','🌼','🌻','🌺'];
+      for(let i=0;i<6;i++){const tex=getEmojiTex(flowerEmojis[i%4],32),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=w*0.05+Math.random()*w*0.9;sp.y=grassY+5+Math.random()*(h-grassY)*0.25;sp.scale.set(0.35+Math.random()*0.2);sp.alpha=0.6;layerBg.addChild(sp);}
+      // ありがとうの木
+      const treeX=w*0.88,treeBaseY=h*0.72;
+      const trunk=new PIXI.Graphics();trunk.beginFill(0x8B6914);trunk.drawRect(treeX-8,treeBaseY-80,16,80);trunk.endFill();
+      trunk.lineStyle(5,0x8B6914);trunk.moveTo(treeX,treeBaseY-60);trunk.lineTo(treeX-30,treeBaseY-90);trunk.moveTo(treeX,treeBaseY-50);trunk.lineTo(treeX+25,treeBaseY-85);layerBg.addChild(trunk);
+      const foliage=new PIXI.Graphics();foliage.beginFill(0x4CAF50,0.85);foliage.drawEllipse(treeX,treeBaseY-100,45,35);foliage.endFill();foliage.beginFill(0x66BB6A,0.8);foliage.drawEllipse(treeX-20,treeBaseY-90,30,25);foliage.drawEllipse(treeX+20,treeBaseY-95,30,25);foliage.endFill();layerBg.addChild(foliage);
+      for(let i=0;i<3;i++){const sp=new PIXI.Sprite(getEmojiTex('✨',24));sp.anchor.set(0.5);sp.x=treeX+(Math.random()-0.5)*50;sp.y=treeBaseY-85+(Math.random()-0.5)*30;sp.scale.set(0.3+Math.random()*0.2);sp.alpha=0.6;layerBg.addChild(sp);}
     }
-
-    function drawThankYouTree(w, h) {
-      const treeX = w * 0.88;
-      const treeBaseY = h * 0.72;
-
-      // Trunk
-      const trunk = new PIXI.Graphics();
-      trunk.beginFill(0x8B6914);
-      trunk.drawRect(treeX - 8, treeBaseY - 80, 16, 80);
-      trunk.endFill();
-      // Branch
-      trunk.lineStyle(5, 0x8B6914);
-      trunk.moveTo(treeX, treeBaseY - 60);
-      trunk.lineTo(treeX - 30, treeBaseY - 90);
-      trunk.moveTo(treeX, treeBaseY - 50);
-      trunk.lineTo(treeX + 25, treeBaseY - 85);
-      layerBg.addChild(trunk);
-
-      // Foliage
-      const foliage = new PIXI.Graphics();
-      foliage.beginFill(0x4CAF50, 0.85);
-      foliage.drawEllipse(treeX, treeBaseY - 100, 45, 35);
-      foliage.endFill();
-      foliage.beginFill(0x66BB6A, 0.8);
-      foliage.drawEllipse(treeX - 20, treeBaseY - 90, 30, 25);
-      foliage.drawEllipse(treeX + 20, treeBaseY - 95, 30, 25);
-      foliage.endFill();
-      layerBg.addChild(foliage);
-
-      // Small sparkles on tree (eggs growing!)
-      for (let i = 0; i < 3; i++) {
-        const sparkle = getEmojiTex('✨', 24);
-        const sp = new PIXI.Sprite(sparkle);
-        sp.anchor.set(0.5);
-        sp.x = treeX + (Math.random() - 0.5) * 50;
-        sp.y = treeBaseY - 85 + (Math.random() - 0.5) * 30;
-        sp.scale.set(0.3 + Math.random() * 0.2);
-        sp.alpha = 0.6;
-        layerBg.addChild(sp);
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // ─── Draw Nest ────────────────────────────────────────────
-    // ═══════════════════════════════════════════════════════════
-    let nestX, nestY;
 
     function drawNest() {
-      const w = W(), h = H();
-      nestX = w * 0.15;
-      nestY = h * 0.70;
-
-      const nest = new PIXI.Graphics();
-      nest.beginFill(0x8B6914, 0.8);
-      nest.drawEllipse(nestX, nestY, 55, 22);
-      nest.endFill();
-      nest.lineStyle(2, 0xBB9640, 0.7);
-      for (let i = 0; i < 8; i++) {
-        const sx = nestX - 40 + Math.random() * 80;
-        const sy = nestY - 8 + Math.random() * 16;
-        const ex = sx + (Math.random() - 0.5) * 30;
-        const ey = sy + (Math.random() - 0.5) * 12;
-        nest.moveTo(sx, sy); nest.lineTo(ex, ey);
-      }
-      nest.lineStyle(3, 0x6B4F0A, 0.6);
-      nest.drawEllipse(nestX, nestY - 4, 52, 16);
+      const w=W(),h=H(),nestX=w*0.15,nestY=h*0.70;
+      const nest=new PIXI.Graphics();nest.beginFill(0x8B6914,0.8);nest.drawEllipse(nestX,nestY,55,22);nest.endFill();
+      nest.lineStyle(2,0xBB9640,0.7);for(let i=0;i<8;i++){const sx=nestX-40+Math.random()*80,sy=nestY-8+Math.random()*16;nest.moveTo(sx,sy);nest.lineTo(sx+(Math.random()-0.5)*30,sy+(Math.random()-0.5)*12);}
+      nest.lineStyle(3,0x6B4F0A,0.6);nest.drawEllipse(nestX,nestY-4,52,16);
       layerBg.addChild(nest);
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Draw Egg (Sprite Image) ─────────────────────────────
+    // ─── Yard: Draw Egg / Creature ───────────────────────────
     // ═══════════════════════════════════════════════════════════
     function drawEgg(slotData, x, y) {
-      const container = new PIXI.Container();
-      container.x = x;
-      container.y = y;
-
-      // Placeholder ellipse (shown until image loads)
-      const placeholder = new PIXI.Graphics();
-      placeholder.beginFill(0xFFE4C4);
-      placeholder.drawEllipse(0, 0, 28, 38);
-      placeholder.endFill();
-      placeholder.beginFill(0xFFFFFF, 0.3);
-      placeholder.drawEllipse(-8, -12, 8, 6);
-      placeholder.endFill();
-      container.addChild(placeholder);
-
-      // Crack overlay (hidden, used during hatch)
-      const crack = new PIXI.Graphics();
-      crack.visible = false;
-      container.addChild(crack);
-
-      // Load sprite image async
+      const container = new PIXI.Container(); container.x = x; container.y = y;
+      const ph = new PIXI.Graphics(); ph.beginFill(0xFFE4C4); ph.drawEllipse(0,0,28,38); ph.endFill(); ph.beginFill(0xFFFFFF,0.3); ph.drawEllipse(-8,-12,8,6); ph.endFill(); container.addChild(ph);
+      const crack = new PIXI.Graphics(); crack.visible = false; container.addChild(crack);
       const eggImage = slotData.eggImage || 'egg_018';
-      loadEggTexture(eggImage).then(tex => {
-        if (tex && container.parent) {
-          // Remove placeholder
-          container.removeChild(placeholder);
-          placeholder.destroy();
-          // Add sprite
-          const sp = new PIXI.Sprite(tex);
-          sp.anchor.set(0.5);
-          // Scale to ~80px tall
-          const targetH = 80;
-          const scale = targetH / tex.height;
-          sp.scale.set(scale);
-          container.addChildAt(sp, 0); // behind crack
-        }
-      });
-
+      loadEggTexture(eggImage).then(tex => { if(tex && container.parent){container.removeChild(ph);ph.destroy();const sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.scale.set(80/tex.height);container.addChildAt(sp,0);} });
       return { container, crack, eggW: 28, eggH: 38 };
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // ─── Draw Creature (emoji-based) ──────────────────────────
-    // ═══════════════════════════════════════════════════════════
     function drawCreature(slotData, x, y) {
-      const data = getCreatureData(slotData.creatureType);
-      if (!data) return new PIXI.Sprite(); // safety
+      const data = getCreatureData(slotData.creatureType); if(!data) return new PIXI.Sprite();
       let emoji, scale;
-
-      if (slotData.stage === STAGE_BABY) {
-        emoji = data.babyEmoji || data.emoji;
-        scale = 0.35;
-      } else if (slotData.stage === STAGE_KID) {
-        emoji = data.emoji;
-        scale = 0.5;
-      } else {
-        emoji = data.emoji;
-        scale = 0.65;
-      }
-
-      const tex = getEmojiTex(emoji, 128);
-      const sp = new PIXI.Sprite(tex);
-      sp.anchor.set(0.5);
-      sp.x = x;
-      sp.y = y;
-      sp._baseScale = scale;
-      sp.scale.set(scale);
-      return sp;
+      if (slotData.stage===STAGE_BABY) { emoji=data.babyEmoji||data.emoji; scale=0.35; }
+      else if (slotData.stage===STAGE_KID) { emoji=data.emoji; scale=0.5; }
+      else { emoji=data.emoji; scale=0.65; }
+      const tex=getEmojiTex(emoji,128),sp=new PIXI.Sprite(tex); sp.anchor.set(0.5); sp.x=x; sp.y=y; sp._baseScale=scale; sp.scale.set(scale); return sp;
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Scene Objects ────────────────────────────────────────
+    // ─── Yard: Scene ─────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     const sceneSlots = [];
-
-    function getSlotPosition(idx, total) {
-      const w = W(), h = H();
-      const grassY = h * 0.68;
-      const spacing = Math.min(w * 0.18, 140);
-      const startX = w * 0.2;
-      return {
-        x: startX + idx * spacing,
-        y: grassY - 5,
-      };
+    function getSlotPosition(idx) {
+      const w=W(),h=H(),grassY=h*0.68,spacing=Math.min(w*0.18,140),startX=w*0.2;
+      return { x: startX + idx * spacing, y: grassY - 5 };
     }
-
-    function rebuildScene() {
-      layerMid.removeChildren().forEach(c => c.destroy({ children: true }));
-      layerFg.removeChildren().forEach(c => c.destroy({ children: true }));
-      foodPellets.length = 0;
-      activeBall = null;
-      sceneSlots.length = 0;
-
-      drawBackground();
-      drawNest();
-
-      const activeSlots = state.slots
-        .map((s, i) => ({ data: s, idx: i }))
-        .filter(s => s.data !== null);
-
-      activeSlots.forEach((s, visualIdx) => {
-        const pos = getSlotPosition(visualIdx, activeSlots.length);
-        let obj, type;
-
-        if (s.data.stage === STAGE_EGG) {
-          const eggObj = drawEgg(s.data, pos.x, pos.y);
-          layerMid.addChild(eggObj.container);
-          obj = eggObj;
-          type = 'egg';
-        } else {
-          const sp = drawCreature(s.data, pos.x, pos.y);
-          layerMid.addChild(sp);
-          obj = sp;
-          type = 'creature';
-        }
-
-        sceneSlots.push({
-          slotIdx: s.idx,
-          obj: obj,
-          data: s.data,
-          type: type,
-          x: pos.x,
-          y: pos.y,
-          wobbleT: Math.random() * Math.PI * 2,
-          bobT: Math.random() * Math.PI * 2,
-          patCooldown: 0,
-          feedCooldown: 0,
-          playCooldown: 0,
-          happyTimer: 0,
-          chompTimer: 0,
-          chaseTarget: null,
-        });
+    function rebuildYardScene() {
+      layerMid.removeChildren().forEach(c=>c.destroy({children:true}));
+      layerFg.removeChildren().forEach(c=>c.destroy({children:true}));
+      foodPellets.length=0; activeBall=null; sceneSlots.length=0;
+      drawYardBackground(); drawNest();
+      const activeSlots = state.slots.map((s,i)=>({data:s,idx:i})).filter(s=>s.data!==null);
+      activeSlots.forEach((s,vi) => {
+        const pos=getSlotPosition(vi); let obj,type;
+        if(s.data.stage===STAGE_EGG){const eggObj=drawEgg(s.data,pos.x,pos.y);layerMid.addChild(eggObj.container);obj=eggObj;type='egg';}
+        else{const sp=drawCreature(s.data,pos.x,pos.y);layerMid.addChild(sp);obj=sp;type='creature';}
+        sceneSlots.push({slotIdx:s.idx,obj,data:s.data,type,x:pos.x,y:pos.y,wobbleT:Math.random()*Math.PI*2,bobT:Math.random()*Math.PI*2,patCooldown:0,feedCooldown:0,playCooldown:0,happyTimer:0,chompTimer:0,chaseTarget:null});
       });
-
       updatePlayButton();
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Hatching Animation ───────────────────────────────────
+    // ─── Farm: Scene ─────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    let hatchingSlot = null;
-    let hatchPhase = 0;
-    let hatchTimer = 0;
+    let farmBgSprite = null;
+    let farmPlotSprites = []; // { container, plotIdx }
 
-    function startHatch(sceneSlot) {
-      hatchingSlot = sceneSlot;
-      hatchPhase = 1;
-      hatchTimer = 0;
-      SFX.play('wobble');
-    }
+    // Plot positions relative to canvas (measured from yard.png layout)
+    // yard.png has 6 diamond plots in roughly a 3-col × 2-row grid
+    const FARM_PLOT_POS = [
+      { rx: 0.225, ry: 0.44 },  // Row 1 left
+      { rx: 0.410, ry: 0.44 },  // Row 1 center
+      { rx: 0.595, ry: 0.44 },  // Row 1 right
+      { rx: 0.225, ry: 0.68 },  // Row 2 left
+      { rx: 0.410, ry: 0.68 },  // Row 2 center
+      { rx: 0.595, ry: 0.68 },  // Row 2 right
+    ];
 
-    function updateHatch(delta) {
-      if (!hatchingSlot) return;
-      hatchTimer += delta;
+    function rebuildFarmScene() {
+      farmContainer.removeChildren().forEach(c => c.destroy({children:true}));
+      farmPlotSprites = [];
+      const w = W(), h = H();
 
-      if (hatchPhase === 1) {
-        if (hatchingSlot.type === 'egg') {
-          const amp = Math.min(hatchTimer * 0.02, 0.15);
-          hatchingSlot.obj.container.rotation = Math.sin(hatchTimer * 0.8) * amp;
-        }
-        if (hatchTimer > 90) {
-          hatchPhase = 2;
-          hatchTimer = 0;
-          if (hatchingSlot.obj.crack) {
-            const crack = hatchingSlot.obj.crack;
-            crack.visible = true;
-            crack.clear();
-            crack.lineStyle(2, 0x333333, 0.8);
-            let cy = -hatchingSlot.obj.eggH * 0.6;
-            let cx = 0;
-            for (let i = 0; i < 5; i++) {
-              const nx = cx + (Math.random() - 0.5) * 15;
-              const ny = cy + hatchingSlot.obj.eggH * 0.25;
-              crack.moveTo(cx, cy); crack.lineTo(nx, ny);
-              cx = nx; cy = ny;
+      // Try loading yard.png, fallback to Graphics
+      const bg = new PIXI.Graphics();
+      // Green grass background
+      bg.beginFill(0x8BC34A); bg.drawRect(0,0,w,h); bg.endFill();
+      // Lighter top area (sky hint)
+      bg.beginFill(0xA5D6A7,0.5); bg.drawRect(0,0,w,h*0.15); bg.endFill();
+      farmContainer.addChild(bg);
+
+      // Load yard.png as sprite overlay
+      PIXI.Assets.load('../assets/images/yard/yard_sm.webp').then(tex => {
+        if (!tex || !farmContainer.parent) return;
+        const sp = new PIXI.Sprite(tex);
+        // Scale to fit canvas
+        const scaleX = w / tex.width, scaleY = h / tex.height;
+        const sc = Math.max(scaleX, scaleY);
+        sp.scale.set(sc);
+        sp.x = (w - tex.width * sc) / 2;
+        sp.y = (h - tex.height * sc) / 2;
+        farmContainer.addChildAt(sp, 1);
+        farmBgSprite = sp;
+      }).catch(() => {});
+
+      // Draw 6 plot overlay areas + crop sprites
+      FARM_PLOT_POS.forEach((pos, idx) => {
+        const px = w * pos.rx, py = h * pos.ry;
+        const plotSize = Math.min(w, h) * 0.12;
+
+        const cont = new PIXI.Container();
+        cont.x = px; cont.y = py;
+
+        // Diamond shape (subtle highlight)
+        const diamond = new PIXI.Graphics();
+        diamond.beginFill(0x8B6914, 0.15);
+        diamond.moveTo(0, -plotSize*0.6);
+        diamond.lineTo(plotSize*0.9, 0);
+        diamond.lineTo(0, plotSize*0.6);
+        diamond.lineTo(-plotSize*0.9, 0);
+        diamond.closePath();
+        diamond.endFill();
+        cont.addChild(diamond);
+
+        // Crop visual
+        const plot = state.farm.plots[idx];
+        if (plot) {
+          const crop = getCropData(plot.cropType);
+          if (crop) {
+            let emoji, scale;
+            if (plot.stage === CROP_STAGE_SEED) { emoji = crop.seedEmoji; scale = 0.35; }
+            else if (plot.stage === CROP_STAGE_SPROUT) { emoji = crop.sproutEmoji; scale = 0.5; }
+            else { emoji = crop.emoji; scale = 0.7; }
+            const tex = getEmojiTex(emoji, 64);
+            const sp = new PIXI.Sprite(tex);
+            sp.anchor.set(0.5);
+            sp.scale.set(scale);
+            sp._baseScale = scale;
+            sp._isReady = (plot.stage === CROP_STAGE_READY);
+            cont.addChild(sp);
+            // Water count indicator (small dots)
+            if (plot.stage < CROP_STAGE_READY) {
+              const dotG = new PIXI.Graphics();
+              const needed = crop.waterNeeded[plot.stage];
+              const have = plot.waterCount;
+              const dotCount = Math.min(needed, 8);
+              for (let d = 0; d < dotCount; d++) {
+                dotG.beginFill(d < have ? 0x42A5F5 : 0xCCCCCC, d < have ? 0.8 : 0.3);
+                dotG.drawCircle(-((dotCount-1)*4) + d*8, plotSize*0.45, 3);
+                dotG.endFill();
+              }
+              cont.addChild(dotG);
             }
           }
-          SFX.play('wobble');
+        } else {
+          // Empty plot — show plus hint
+          const plus = new PIXI.Sprite(getEmojiTex('➕', 40));
+          plus.anchor.set(0.5);
+          plus.scale.set(0.4);
+          plus.alpha = 0.4;
+          cont.addChild(plus);
         }
-      } else if (hatchPhase === 2) {
-        if (hatchingSlot.type === 'egg') {
-          hatchingSlot.obj.container.rotation = Math.sin(hatchTimer * 1.2) * 0.2;
-        }
-        if (hatchTimer > 60) {
-          hatchPhase = 3;
-          hatchTimer = 0;
-          const flash = new PIXI.Graphics();
-          flash.beginFill(0xFFFFFF);
-          flash.drawRect(0, 0, W(), H());
-          flash.endFill();
-          flash.alpha = 0.9;
-          layerTop.addChild(flash);
-          hatchingSlot._flash = flash;
-          SFX.play('hatch');
-        }
-      } else if (hatchPhase === 3) {
-        if (hatchingSlot._flash) {
-          hatchingSlot._flash.alpha = Math.max(0, 0.9 - hatchTimer * 0.03);
-          if (hatchingSlot._flash.alpha <= 0) {
-            layerTop.removeChild(hatchingSlot._flash);
-            hatchingSlot._flash.destroy();
-            hatchingSlot._flash = null;
-          }
-        }
-        if (hatchTimer > 35) {
-          hatchPhase = 4;
-          hatchTimer = 0;
-          const hatchedType = hatchingSlot.data.creatureType;
-          const hatchedSlotIdx = hatchingSlot.slotIdx;
-          hatchingSlot.data.stage = STAGE_BABY;
-          state.totalHatched++;
-          saveState();
-          if (window.incrementStat) window.incrementStat('egg_hatched', 1);
-          if (window.awardPoints) awardPoints(3);
-          hatchingSlot = null;
-          hatchPhase = 0;
-          rebuildScene();
-          const newSlot = sceneSlots.find(s => s.slotIdx === hatchedSlotIdx);
-          if (newSlot) {
-            spawnConfetti(newSlot.x, newSlot.y - 30, 25);
-            spawnStars(newSlot.x, newSlot.y - 20, 8);
-            newSlot.happyTimer = 60;
-          }
-          showToast(getCreatureData(hatchedType).name + ' が うまれたよ！🎉');
+
+        farmContainer.addChild(cont);
+        farmPlotSprites.push({ container: cont, plotIdx: idx, x: px, y: py, size: plotSize });
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Hatch Animation ─────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    let hatchingSlot=null, hatchPhase=0, hatchTimer=0;
+    function startHatch(sceneSlot) { hatchingSlot=sceneSlot; hatchPhase=1; hatchTimer=0; SFX.play('wobble'); }
+    function updateHatch(delta) {
+      if(!hatchingSlot) return;
+      hatchTimer += delta;
+      if(hatchPhase===1){
+        if(hatchingSlot.type==='egg'){const amp=Math.min(hatchTimer*0.02,0.15);hatchingSlot.obj.container.rotation=Math.sin(hatchTimer*0.8)*amp;}
+        if(hatchTimer>90){hatchPhase=2;hatchTimer=0;if(hatchingSlot.obj.crack){const crack=hatchingSlot.obj.crack;crack.visible=true;crack.clear();crack.lineStyle(2,0x333333,0.8);let cy=-hatchingSlot.obj.eggH*0.6,cx=0;for(let i=0;i<5;i++){const nx=cx+(Math.random()-0.5)*15,ny=cy+hatchingSlot.obj.eggH*0.25;crack.moveTo(cx,cy);crack.lineTo(nx,ny);cx=nx;cy=ny;}}SFX.play('wobble');}
+      }else if(hatchPhase===2){
+        if(hatchingSlot.type==='egg')hatchingSlot.obj.container.rotation=Math.sin(hatchTimer*1.2)*0.2;
+        if(hatchTimer>60){hatchPhase=3;hatchTimer=0;const flash=new PIXI.Graphics();flash.beginFill(0xFFFFFF);flash.drawRect(0,0,W(),H());flash.endFill();flash.alpha=0.9;layerTop.addChild(flash);hatchingSlot._flash=flash;SFX.play('hatch');}
+      }else if(hatchPhase===3){
+        if(hatchingSlot._flash){hatchingSlot._flash.alpha=Math.max(0,0.9-hatchTimer*0.03);if(hatchingSlot._flash.alpha<=0){layerTop.removeChild(hatchingSlot._flash);hatchingSlot._flash.destroy();hatchingSlot._flash=null;}}
+        if(hatchTimer>35){
+          const hatchedType=hatchingSlot.data.creatureType,hatchedSlotIdx=hatchingSlot.slotIdx;
+          hatchingSlot.data.stage=STAGE_BABY;state.totalHatched++;saveState();
+          if(window.incrementStat)window.incrementStat('egg_hatched',1);if(window.awardPoints)awardPoints(3);
+          hatchingSlot=null;hatchPhase=0;rebuildYardScene();
+          const newSlot=sceneSlots.find(s=>s.slotIdx===hatchedSlotIdx);
+          if(newSlot){spawnConfetti(newSlot.x,newSlot.y-30,25);spawnStars(newSlot.x,newSlot.y-20,8);newSlot.happyTimer=60;}
+          showToast(getCreatureData(hatchedType).name+' が うまれたよ！🎉');
         }
       }
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Care Actions ─────────────────────────────────────────
+    // ─── Care Actions ────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let feedMode = false;
-
-    function canCare(sceneSlot) {
-      return sceneSlot.data.dailyCareToday < DAILY_CARE_CAP;
-    }
-
+    function canCare(s) { return s.data.dailyCareToday < DAILY_CARE_CAP; }
     function addGrowth(sceneSlot, pts) {
-      if (!canCare(sceneSlot)) {
-        showToast('きょうは おなかいっぱい！また あした🌙');
-        return false;
-      }
-      const actual = Math.min(pts, DAILY_CARE_CAP - sceneSlot.data.dailyCareToday);
-      sceneSlot.data.growthPts += actual;
-      sceneSlot.data.dailyCareToday += actual;
-      sceneSlot.data.lastCareAt = Date.now();
-      saveState();
-      if (sceneSlot.data.stage > STAGE_EGG) {
-        checkStageUp(sceneSlot);
-      }
+      if(!canCare(sceneSlot)){showToast('きょうは おなかいっぱい！また あした🌙');return false;}
+      const actual=Math.min(pts,DAILY_CARE_CAP-sceneSlot.data.dailyCareToday);
+      sceneSlot.data.growthPts+=actual;sceneSlot.data.dailyCareToday+=actual;sceneSlot.data.lastCareAt=Date.now();saveState();
+      if(sceneSlot.data.stage>STAGE_EGG)checkStageUp(sceneSlot);
       return true;
     }
-
     function checkStageUp(sceneSlot) {
-      const d = sceneSlot.data;
-      if (d.stage >= STAGE_ADULT) return;
-      const nextStage = d.stage + 1;
-      if (d.growthPts >= STAGE_THRESHOLDS[nextStage]) {
-        d.stage = nextStage;
-        saveState();
-        rebuildScene();
-        const newSlot = sceneSlots.find(s => s.slotIdx === sceneSlot.slotIdx);
-        if (newSlot) {
-          spawnStars(newSlot.x, newSlot.y - 20, 6);
-          newSlot.happyTimer = 60;
-        }
-        if (nextStage === STAGE_ADULT) {
-          showGraduation(d);
-        } else {
-          const stName = STAGE_NAMES[nextStage];
-          showToast(stName + ' に せいちょうしたよ！✨');
-          SFX.play('chirp');
-        }
+      const d=sceneSlot.data; if(d.stage>=STAGE_ADULT) return;
+      const nextStage=d.stage+1;
+      if(d.growthPts>=STAGE_THRESHOLDS[nextStage]){
+        d.stage=nextStage;saveState();rebuildYardScene();
+        const newSlot=sceneSlots.find(s=>s.slotIdx===sceneSlot.slotIdx);
+        if(newSlot){spawnStars(newSlot.x,newSlot.y-20,6);newSlot.happyTimer=60;}
+        if(nextStage===STAGE_ADULT){showGraduation(d);}else{showToast(STAGE_NAMES[nextStage]+' に せいちょうしたよ！✨');SFX.play('chirp');}
         updatePlayButton();
       }
     }
-
     function doPat(sceneSlot) {
-      if (sceneSlot.patCooldown > 0) return;
-      sceneSlot.patCooldown = 180;
-
-      if (sceneSlot.type === 'egg') {
-        SFX.play('wobble');
-        sceneSlot.wobbleT = 0;
-      } else {
-        SFX.play('pat');
-        sceneSlot.happyTimer = 30;
-      }
-
-      spawnHearts(sceneSlot.x, sceneSlot.y - 30, 3);
-
-      if (addGrowth(sceneSlot, 1)) {
-        if (sceneSlot.data.stage === STAGE_EGG && sceneSlot.data.growthPts >= STAGE_THRESHOLDS[STAGE_BABY]) {
-          startHatch(sceneSlot);
-        }
-      }
+      if(sceneSlot.patCooldown>0)return;sceneSlot.patCooldown=180;
+      if(sceneSlot.type==='egg'){SFX.play('wobble');sceneSlot.wobbleT=0;}else{SFX.play('pat');sceneSlot.happyTimer=30;}
+      spawnHearts(sceneSlot.x,sceneSlot.y-30,3);
+      if(addGrowth(sceneSlot,1)){if(sceneSlot.data.stage===STAGE_EGG&&sceneSlot.data.growthPts>=STAGE_THRESHOLDS[STAGE_BABY])startHatch(sceneSlot);}
     }
-
-    function doFeed(sceneSlot, foodX, foodY) {
-      if (sceneSlot.feedCooldown > 0) return;
-      if (sceneSlot.data.stage === STAGE_EGG) return;
-      sceneSlot.feedCooldown = 600;
-
-      spawnFood(foodX || sceneSlot.x, foodY || sceneSlot.y - 50);
-      sceneSlot.chompTimer = 60;
-
-      if (addGrowth(sceneSlot, 2)) {
-        SFX.play('chomp');
-      }
+    function doFeed(sceneSlot) {
+      if(sceneSlot.feedCooldown>0)return;if(sceneSlot.data.stage===STAGE_EGG)return;
+      sceneSlot.feedCooldown=600;
+      showFoodPicker(sceneSlot);
     }
-
     function doPlay(sceneSlot) {
-      if (sceneSlot.playCooldown > 0) return;
-      if (sceneSlot.data.stage < STAGE_KID) return;
-      sceneSlot.playCooldown = 900;
-
-      spawnBall();
-      sceneSlot.chaseTarget = activeBall;
-
-      if (addGrowth(sceneSlot, 2)) {
-        SFX.play('bounce');
-      }
+      if(sceneSlot.playCooldown>0)return;if(sceneSlot.data.stage<STAGE_KID)return;sceneSlot.playCooldown=900;
+      spawnBall();sceneSlot.chaseTarget=activeBall;if(addGrowth(sceneSlot,2))SFX.play('bounce');
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Graduation ───────────────────────────────────────────
+    // ─── Graduation ──────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    let graduatingData = null;
-
+    let graduatingData=null;
     function showGraduation(slotData) {
-      graduatingData = slotData;
-      const data = getCreatureData(slotData.creatureType);
-      document.getElementById('gradEmoji').textContent = data.emoji;
-      document.getElementById('gradName').textContent = data.name;
-      document.getElementById('grad-overlay').classList.add('show');
-      SFX.play('fanfare');
+      graduatingData=slotData;const data=getCreatureData(slotData.creatureType);
+      document.getElementById('gradEmoji').textContent=data.emoji;document.getElementById('gradName').textContent=data.name;
+      document.getElementById('grad-overlay').classList.add('show');SFX.play('fanfare');
     }
-
     document.getElementById('gradBtn').addEventListener('click', function() {
-      if (!graduatingData) return;
-      // Move to album
-      album.push({
-        id: graduatingData.id,
-        creatureType: graduatingData.creatureType,
-        eggImage: graduatingData.eggImage,
-        graduatedAt: Date.now(),
-      });
-      saveAlbum();
-
-      // Clear slot
-      const slotIdx = state.slots.findIndex(s => s && s.id === graduatingData.id);
-      if (slotIdx >= 0) state.slots[slotIdx] = null;
-
-      // Track graduation count
+      if(!graduatingData) return;
+      album.push({id:graduatingData.id,creatureType:graduatingData.creatureType,eggImage:graduatingData.eggImage,graduatedAt:Date.now()});saveAlbum();
+      const slotIdx=state.slots.findIndex(s=>s&&s.id===graduatingData.id);if(slotIdx>=0)state.slots[slotIdx]=null;
       state.totalGraduated++;
-
-      // Unlock more slots (max 3)
-      if (state.totalGraduated === 1 && state.maxSlots < 2) {
-        state.maxSlots = 2;
-        showToast('スロットが ふえたよ！🎉');
-      } else if (state.totalGraduated >= 3 && state.maxSlots < 3) {
-        state.maxSlots = 3;
-        showToast('スロットが 3つに！🎉');
-      }
-
-      // Check for new unlocks
-      const newUnlocks = checkUnlocks(state);
-      if (newUnlocks.length > 0) {
-        setTimeout(() => {
-          showToast('あたらしい たまご: ' + newUnlocks.map(c => c.name).join('、') + ' 🌟');
-        }, 1500);
-      }
-
-      state.nextEggReady = true;
-      saveState();
-
-      if (window.incrementStat) window.incrementStat('egg_graduated', 1);
-      if (window.awardPoints) awardPoints(5);
-
-      document.getElementById('grad-overlay').classList.remove('show');
-      graduatingData = null;
-
-      rebuildScene();
-      // Show egg selection for next egg
-      setTimeout(() => trySpawnNewEgg(), 800);
+      if(state.totalGraduated===1&&state.maxSlots<2){state.maxSlots=2;showToast('スロットが ふえたよ！🎉');}
+      else if(state.totalGraduated>=3&&state.maxSlots<3){state.maxSlots=3;showToast('スロットが 3つに！🎉');}
+      const newUnlocks=checkUnlocks(state);
+      if(newUnlocks.length>0)setTimeout(()=>showToast('あたらしい たまご: '+newUnlocks.map(c=>c.name).join('、')+' 🌟'),1500);
+      state.nextEggReady=true;saveState();
+      if(window.incrementStat)window.incrementStat('egg_graduated',1);if(window.awardPoints)awardPoints(5);
+      document.getElementById('grad-overlay').classList.remove('show');graduatingData=null;
+      rebuildYardScene();setTimeout(()=>trySpawnNewEgg(),800);
     });
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Album ────────────────────────────────────────────────
+    // ─── Album ───────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     function renderAlbum() {
-      const grid = document.getElementById('album-grid');
-      grid.innerHTML = '';
-      if (album.length === 0) {
-        grid.innerHTML = '<div class="album-empty">まだ ともだちが いないよ<br>たまごを そだてよう！🥚</div>';
-        return;
-      }
-      album.forEach(entry => {
-        const data = getCreatureData(entry.creatureType);
-        if (!data) return;
-        const div = document.createElement('div');
-        div.className = 'album-item';
-        div.innerHTML = `<div class="emoji">${data.emoji}</div><div class="name">${data.name}</div>`;
-        grid.appendChild(div);
-      });
+      const grid=document.getElementById('album-grid');grid.innerHTML='';
+      if(album.length===0){grid.innerHTML='<div class="album-empty">まだ ともだちが いないよ<br>たまごを そだてよう！🥚</div>';return;}
+      album.forEach(entry=>{const data=getCreatureData(entry.creatureType);if(!data)return;const div=document.createElement('div');div.className='album-item';div.innerHTML=`<div class="emoji">${data.emoji}</div><div class="name">${data.name}</div>`;grid.appendChild(div);});
     }
-
-    document.getElementById('btnAlbum').addEventListener('click', function() {
-      renderAlbum();
-      document.getElementById('album-overlay').classList.add('show');
-    });
-    document.getElementById('albumClose').addEventListener('click', function() {
-      document.getElementById('album-overlay').classList.remove('show');
-    });
-    document.getElementById('album-overlay').addEventListener('click', function(e) {
-      if (e.target === this) this.classList.remove('show');
-    });
+    document.getElementById('btnAlbum').addEventListener('click',()=>{renderAlbum();document.getElementById('album-overlay').classList.add('show');});
+    document.getElementById('albumClose').addEventListener('click',()=>document.getElementById('album-overlay').classList.remove('show'));
+    document.getElementById('album-overlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Info Toast ───────────────────────────────────────────
+    // ─── Toast ───────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    let toastTimeout = null;
-    function showToast(msg) {
-      const el = document.getElementById('info-toast');
-      el.textContent = msg;
-      el.classList.add('show');
-      clearTimeout(toastTimeout);
-      toastTimeout = setTimeout(() => el.classList.remove('show'), 2500);
-    }
+    let toastTimeout=null;
+    function showToast(msg){const el=document.getElementById('info-toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove('show'),2500);}
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Button Handlers ──────────────────────────────────────
+    // ─── Buttons ─────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    const btnFeed = document.getElementById('btnFeed');
-    const btnPlay = document.getElementById('btnPlay');
-
-    btnFeed.addEventListener('click', function(e) {
+    const btnFeed=document.getElementById('btnFeed'),btnPlay=document.getElementById('btnPlay');
+    btnFeed.addEventListener('click',function(e){
       e.stopPropagation();
-      feedMode = !feedMode;
-      btnFeed.classList.toggle('active', feedMode);
+      // Find first feedable creature
+      const feedable=sceneSlots.find(s=>s.data.stage>STAGE_EGG&&s.feedCooldown<=0&&canCare(s));
+      if(feedable){doFeed(feedable);}else{showToast('ごはんを あげられる こがいないよ');}
     });
-
-    btnPlay.addEventListener('click', function(e) {
+    btnPlay.addEventListener('click',function(e){
       e.stopPropagation();
-      const playable = sceneSlots.find(s =>
-        s.data.stage >= STAGE_KID && s.playCooldown <= 0 && canCare(s)
-      );
-      if (playable) {
-        doPlay(playable);
-      } else {
-        showToast('あそべる こがいないよ');
-      }
+      const playable=sceneSlots.find(s=>s.data.stage>=STAGE_KID&&s.playCooldown<=0&&canCare(s));
+      if(playable)doPlay(playable);else showToast('あそべる こがいないよ');
     });
-
-    function updatePlayButton() {
-      const hasPlayable = sceneSlots.some(s => s.data.stage >= STAGE_KID);
-      btnPlay.classList.toggle('disabled', !hasPlayable);
-    }
+    function updatePlayButton(){btnPlay.classList.toggle('disabled',!sceneSlots.some(s=>s.data.stage>=STAGE_KID));}
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Pointer Interaction ──────────────────────────────────
+    // ─── Pointer Interaction ─────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     canvas.addEventListener('pointerdown', function(e) {
       SFX.init();
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = W() / rect.width;
-      const scaleY = H() / rect.height;
-      const px = (e.clientX - rect.left) * scaleX;
-      const py = (e.clientY - rect.top) * scaleY;
+      const rect=canvas.getBoundingClientRect();
+      const scaleX=W()/rect.width,scaleY=H()/rect.height;
+      const px=(e.clientX-rect.left)*scaleX,py=(e.clientY-rect.top)*scaleY;
 
-      let tappedSlot = null;
-      let minDist = Infinity;
-      const tapRadius = 60;
-
-      for (const s of sceneSlots) {
-        const dx = px - s.x;
-        const dy = py - s.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < tapRadius && dist < minDist) {
-          minDist = dist;
-          tappedSlot = s;
+      if (currentView === 'yard') {
+        // Yard interaction (same as before)
+        let tappedSlot=null,minDist=Infinity;
+        for(const s of sceneSlots){const dx=px-s.x,dy=py-s.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<60&&dist<minDist){minDist=dist;tappedSlot=s;}}
+        if(tappedSlot){if(hatchingSlot)return;doPat(tappedSlot);return;}
+        if(py>H()*0.7){const emojis=['🌿','🍃'];const tex=getEmojiTex(emojis[Math.floor(Math.random()*emojis.length)],32),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=px;sp.y=py;sp.scale.set(0.4);layerTop.addChild(sp);particles.push({obj:sp,vx:0,vy:-1,life:30,maxLife:30});}
+      } else if (currentView === 'farm') {
+        // Farm interaction
+        let tappedPlot = null;
+        for (const fp of farmPlotSprites) {
+          const dx = px - fp.x, dy = py - fp.y;
+          if (Math.abs(dx) < fp.size && Math.abs(dy) < fp.size * 0.7) {
+            tappedPlot = fp; break;
+          }
         }
-      }
-
-      if (feedMode) {
-        if (tappedSlot && tappedSlot.data.stage > STAGE_EGG) {
-          doFeed(tappedSlot, px, py);
-        } else {
-          showToast('いきものを タップしてね！');
+        if (tappedPlot) {
+          const plot = state.farm.plots[tappedPlot.plotIdx];
+          if (!plot) {
+            // Empty — plant
+            showSeedPicker(tappedPlot.plotIdx);
+          } else if (plot.stage === CROP_STAGE_READY) {
+            // Harvest!
+            harvestCrop(tappedPlot.plotIdx, tappedPlot.x, tappedPlot.y);
+          } else {
+            // Water!
+            waterCrop(tappedPlot.plotIdx, tappedPlot.x, tappedPlot.y);
+          }
         }
-        feedMode = false;
-        btnFeed.classList.remove('active');
-        return;
-      }
-
-      if (tappedSlot) {
-        if (hatchingSlot) return;
-        doPat(tappedSlot);
-        return;
-      }
-
-      // Tap on empty grass
-      if (py > H() * 0.7) {
-        const emojis = ['🌿', '🍃'];
-        const e2 = emojis[Math.floor(Math.random() * emojis.length)];
-        const tex = getEmojiTex(e2, 32);
-        const sp = new PIXI.Sprite(tex);
-        sp.anchor.set(0.5);
-        sp.x = px; sp.y = py;
-        sp.scale.set(0.4);
-        layerTop.addChild(sp);
-        particles.push({ obj: sp, vx: 0, vy: -1, life: 30, maxLife: 30 });
       }
     });
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Main Ticker ──────────────────────────────────────────
+    // ─── Farm Actions ────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    const waterCooldowns = [0,0,0,0,0,0];
+
+    function waterCrop(plotIdx, x, y) {
+      if (waterCooldowns[plotIdx] > 0) return;
+      waterCooldowns[plotIdx] = 180; // 3 sec cooldown
+      const plot = state.farm.plots[plotIdx];
+      if (!plot || plot.stage >= CROP_STAGE_READY) return;
+
+      plot.waterCount++;
+      SFX.play('water');
+      spawnWaterDrops(x, y);
+
+      // Check if water threshold met
+      const crop = getCropData(plot.cropType);
+      if (crop && plot.waterCount >= crop.waterNeeded[plot.stage]) {
+        plot.stage++;
+        plot.waterCount = 0;
+        if (plot.stage === CROP_STAGE_SPROUT) plot.sproutedAt = Date.now();
+        showToast(plot.stage === CROP_STAGE_READY ? crop.name + ' が できたよ！🎉' : 'めが でたよ！🌱');
+      }
+      saveState();
+      rebuildFarmScene();
+    }
+
+    function harvestCrop(plotIdx, x, y) {
+      const plot = state.farm.plots[plotIdx];
+      if (!plot || plot.stage !== CROP_STAGE_READY) return;
+      const crop = getCropData(plot.cropType);
+      if (!crop) return;
+
+      // Harvest!
+      state.inventory[plot.cropType] = (state.inventory[plot.cropType] || 0) + 1;
+      state.farm.plots[plotIdx] = null;
+      saveState();
+
+      SFX.play('harvest');
+      spawnConfetti(x, y, 15);
+      spawnStars(x, y - 10, 5);
+      updateInventoryHUD();
+      rebuildFarmScene();
+
+      if (window.awardPoints) awardPoints(1);
+      showToast(crop.name + ' を しゅうかく！🎉');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Main Ticker ─────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let totalT = 0;
-
     app.ticker.add(function(delta) {
       totalT += delta;
 
-      // Clouds drift
-      for (const c of clouds) {
-        c.obj.x -= c.speed * delta;
-        if (c.obj.x < -100) c.obj.x = W() + 80;
-      }
+      // Water cooldowns
+      for (let i = 0; i < 6; i++) if (waterCooldowns[i] > 0) waterCooldowns[i] -= delta;
 
-      // Scene slot animations
-      for (const s of sceneSlots) {
-        if (s.patCooldown > 0) s.patCooldown -= delta;
-        if (s.feedCooldown > 0) s.feedCooldown -= delta;
-        if (s.playCooldown > 0) s.playCooldown -= delta;
-
-        if (s.type === 'egg') {
-          s.wobbleT += delta * 0.04;
-          if (s.obj.container && !hatchingSlot) {
-            s.obj.container.rotation = Math.sin(s.wobbleT) * 0.06;
-            s.obj.container.y = s.y + Math.sin(s.wobbleT * 1.3) * 2;
+      if (currentView === 'yard') {
+        // Clouds drift
+        for(const c of clouds){c.obj.x-=c.speed*delta;if(c.obj.x<-100)c.obj.x=W()+80;}
+        // Scene slot animations
+        for(const s of sceneSlots){
+          if(s.patCooldown>0)s.patCooldown-=delta;if(s.feedCooldown>0)s.feedCooldown-=delta;if(s.playCooldown>0)s.playCooldown-=delta;
+          if(s.type==='egg'){s.wobbleT+=delta*0.04;if(s.obj.container&&!hatchingSlot){s.obj.container.rotation=Math.sin(s.wobbleT)*0.06;s.obj.container.y=s.y+Math.sin(s.wobbleT*1.3)*2;}}
+          else{s.bobT+=delta*0.05;const bobAmp=s.data.stage===STAGE_BABY?3:2;s.obj.y=s.y+Math.sin(s.bobT)*bobAmp;
+            const bs=s.obj._baseScale||0.5;
+            if(s.happyTimer>0){s.happyTimer-=delta;s.obj.rotation=Math.sin(s.happyTimer*0.5)*0.15;const sc=bs*(1+Math.sin(s.happyTimer*0.3)*0.1);s.obj.scale.set(sc,sc);}
+            else{s.obj.rotation=0;s.obj.scale.set(bs,bs);}
+            if(s.data.stage===STAGE_ADULT&&Math.random()<0.005*delta)spawnStars(s.x+(Math.random()-0.5)*40,s.y-20,1);
+            if(s.chaseTarget&&activeBall){const dx=activeBall.obj.x-s.obj.x;if(Math.abs(dx)>10){s.obj.x+=Math.sign(dx)*1.5*delta;s.obj.scale.x=dx>0?Math.abs(s.obj.scale.x):-Math.abs(s.obj.scale.x);}}
           }
-        } else {
-          s.bobT += delta * 0.05;
-          const bobAmp = s.data.stage === STAGE_BABY ? 3 : 2;
-          s.obj.y = s.y + Math.sin(s.bobT) * bobAmp;
-
-          const bs = s.obj._baseScale || 0.5;
-          if (s.happyTimer > 0) {
-            s.happyTimer -= delta;
-            s.obj.rotation = Math.sin(s.happyTimer * 0.5) * 0.15;
-            const sc = bs * (1 + Math.sin(s.happyTimer * 0.3) * 0.1);
-            s.obj.scale.set(sc, sc);
-          } else {
-            s.obj.rotation = 0;
-            s.obj.scale.set(bs, bs);
-          }
-
-          if (s.data.stage === STAGE_ADULT && Math.random() < 0.005 * delta) {
-            spawnStars(s.x + (Math.random() - 0.5) * 40, s.y - 20, 1);
-          }
-
-          if (s.chaseTarget && activeBall) {
-            const dx = activeBall.obj.x - s.obj.x;
-            if (Math.abs(dx) > 10) {
-              s.obj.x += Math.sign(dx) * 1.5 * delta;
-              s.obj.scale.x = dx > 0 ? Math.abs(s.obj.scale.x) : -Math.abs(s.obj.scale.x);
+        }
+        // Food pellets
+        for(let i=foodPellets.length-1;i>=0;i--){const f=foodPellets[i];f.life-=delta;f.obj.y+=f.vy*delta;if(f.obj.y>H()*0.72){f.obj.y=H()*0.72;f.vy=0;}if(f.life<=0||f.eaten){f.obj.parent&&f.obj.parent.removeChild(f.obj);f.obj.destroy();foodPellets.splice(i,1);}else{f.obj.alpha=Math.min(1,f.life/30);}}
+        // Ball
+        if(activeBall){activeBall.life-=delta;activeBall.obj.x+=activeBall.vx*delta;activeBall.obj.y+=activeBall.vy*delta;activeBall.vy+=0.15*delta;if(activeBall.obj.y>H()*0.7){activeBall.obj.y=H()*0.7;activeBall.vy=-(3+Math.random()*2);activeBall.bounces++;SFX.play('bounce');}if(activeBall.obj.x<20||activeBall.obj.x>W()-20)activeBall.vx*=-1;if(activeBall.life<=0||activeBall.bounces>4){spawnStars(activeBall.obj.x,activeBall.obj.y,3);activeBall.obj.parent&&activeBall.obj.parent.removeChild(activeBall.obj);activeBall.obj.destroy();activeBall=null;sceneSlots.forEach(s=>s.chaseTarget=null);}}
+        updateHatch(delta);
+      } else if (currentView === 'farm') {
+        // Bounce animation for ready crops
+        for (const fp of farmPlotSprites) {
+          const plot = state.farm.plots[fp.plotIdx];
+          if (plot && plot.stage === CROP_STAGE_READY) {
+            const cropSp = fp.container.children.find(c => c._isReady);
+            if (cropSp) {
+              const bs = cropSp._baseScale || 0.7;
+              cropSp.y = Math.sin(totalT * 0.08) * 4;
+              cropSp.scale.set(bs + Math.sin(totalT * 0.06) * 0.04);
             }
           }
         }
       }
 
-      // Update food pellets
-      for (let i = foodPellets.length - 1; i >= 0; i--) {
-        const f = foodPellets[i];
-        f.life -= delta;
-        f.obj.y += f.vy * delta;
-        if (f.obj.y > H() * 0.72) {
-          f.obj.y = H() * 0.72;
-          f.vy = 0;
-        }
-        if (f.life <= 0 || f.eaten) {
-          f.obj.parent && f.obj.parent.removeChild(f.obj);
-          f.obj.destroy();
-          foodPellets.splice(i, 1);
-        } else {
-          f.obj.alpha = Math.min(1, f.life / 30);
-        }
-      }
-
-      // Update ball
-      if (activeBall) {
-        activeBall.life -= delta;
-        activeBall.obj.x += activeBall.vx * delta;
-        activeBall.obj.y += activeBall.vy * delta;
-        activeBall.vy += 0.15 * delta;
-
-        if (activeBall.obj.y > H() * 0.7) {
-          activeBall.obj.y = H() * 0.7;
-          activeBall.vy = -(3 + Math.random() * 2);
-          activeBall.bounces++;
-          SFX.play('bounce');
-        }
-        if (activeBall.obj.x < 20 || activeBall.obj.x > W() - 20) {
-          activeBall.vx *= -1;
-        }
-
-        if (activeBall.life <= 0 || activeBall.bounces > 4) {
-          spawnStars(activeBall.obj.x, activeBall.obj.y, 3);
-          activeBall.obj.parent && activeBall.obj.parent.removeChild(activeBall.obj);
-          activeBall.obj.destroy();
-          activeBall = null;
-          sceneSlots.forEach(s => s.chaseTarget = null);
-        }
-      }
-
-      updateHatch(delta);
       updateParticles(delta);
     });
 
     // ═══════════════════════════════════════════════════════════
-    // ─── 5分プレイで3pt ───────────────────────────────────────
+    // ─── 5min reward ─────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
-    let _eggSessionAwarded = false;
-    setTimeout(function() {
-      if (!_eggSessionAwarded) { _eggSessionAwarded = true; if (window.awardPoints) awardPoints(3); }
-    }, 5 * 60 * 1000);
+    let _eggSessionAwarded=false;
+    setTimeout(()=>{if(!_eggSessionAwarded){_eggSessionAwarded=true;if(window.awardPoints)awardPoints(3);}},5*60*1000);
 
     // ═══════════════════════════════════════════════════════════
-    // ─── Init ─────────────────────────────────────────────────
+    // ─── Init ────────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     pixiReady = true;
-    rebuildScene();
+    rebuildYardScene();
+    rebuildFarmScene();
 
-    // Show story for first-time users, or egg select if needed
     if (!state.storyShown) {
       showStory();
     } else {
-      // Check if there's an empty slot that needs filling
-      const hasEmpty = state.slots.some((s, i) => s === null && i < state.maxSlots);
+      const hasEmpty = state.slots.some((s,i) => s === null && i < state.maxSlots);
       const hasAny = state.slots.some(s => s !== null);
-      if (!hasAny && hasEmpty) {
-        // User has no eggs at all — show selection
-        state.nextEggReady = true;
-        showEggSelect();
-      }
+      if (!hasAny && hasEmpty) { state.nextEggReady = true; showEggSelect(); }
+    }
+
+    // Check for ready crops on load
+    const readyCrops = state.farm.plots.filter(p => p && p.stage === CROP_STAGE_READY);
+    if (readyCrops.length > 0) {
+      setTimeout(() => showToast('はたけに できた さくもつが あるよ！🌾'), 1500);
     }
 
   })();
