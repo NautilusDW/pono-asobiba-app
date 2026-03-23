@@ -1188,7 +1188,7 @@
         obj.alpha = 1.0;
         obj.tint = 0xbbddee; // 遠くにいる感（薄く明るい水色）
 
-        const speed = 0.018 + Math.random() * 0.010; // ゆっくり目
+        const speed = 0.008 + Math.random() * 0.005; // サメはゆっくり悠然と
         const c = {
           obj,
           pattern: 'swim',
@@ -1610,7 +1610,39 @@
     const treasures = []; // { obj, x, y, age, collected }
     let treasureTimer = 2700 + Math.random() * 2700; // 45-90s initial delay
     let treasureCount = 0;
+    let treasureFirstSpawn = true;
     const TREASURE_EMOJIS = ['🐚', '🦪', '⭐', '🌟', '🪸'];
+    function showTreasureAnnounce() {
+      const ann = new PIXI.Text('🔍 たからさがし はじまるよ！', {
+        fontSize: 30, fontFamily: 'Zen Maru Gothic, sans-serif',
+        fontWeight: '900', fill: '#ffe066',
+        stroke: '#885500', strokeThickness: 4,
+        dropShadow: true, dropShadowColor: '#000000',
+        dropShadowDistance: 2, dropShadowAngle: Math.PI / 4
+      });
+      ann.anchor.set(0.5);
+      ann.x = W() * 0.5; ann.y = H() * 0.3;
+      ann.alpha = 0;
+      layerTop.addChild(ann);
+      let annT = 0;
+      const annTick = (d) => {
+        annT += d;
+        if (annT < 15) {
+          ann.alpha = Math.min(1, annT / 15);
+          ann.scale.set(0.8 + (annT / 15) * 0.2);
+        } else if (annT < 120) {
+          ann.y = H() * 0.3 + Math.sin(annT * 0.08) * 3;
+        } else {
+          ann.alpha -= 0.025 * d;
+          if (ann.alpha <= 0) {
+            layerTop.removeChild(ann); ann.destroy();
+            app.ticker.remove(annTick);
+          }
+        }
+      };
+      app.ticker.add(annTick);
+      SFX.play('collect');
+    }
     function spawnTreasure() {
       if (treasures.length >= 3) return;
       const emoji = TREASURE_EMOJIS[Math.floor(Math.random() * TREASURE_EMOJIS.length)];
@@ -1666,8 +1698,15 @@
       // ── Treasure spawn timer ───────────────────────────────
       treasureTimer -= delta;
       if (treasureTimer <= 0) {
-        spawnTreasure();
-        treasureTimer = 2700 + Math.random() * 2700; // next in 45-90s
+        if (treasureFirstSpawn) {
+          treasureFirstSpawn = false;
+          showTreasureAnnounce();
+          // 少し待ってから最初の宝を出す
+          treasureTimer = 120; // 2秒後
+        } else {
+          spawnTreasure();
+          treasureTimer = 2700 + Math.random() * 2700; // next in 45-90s
+        }
       }
       // Treasure update: fade in, pulse, timeout
       for (let i = treasures.length - 1; i >= 0; i--) {
@@ -2525,11 +2564,48 @@
             spawnSparkles(pb.x, pb.y, 4, pb.color);
             SFX.play('pop');
             poppedAny = true;
-            // All popped? celebration!
+            // All popped? BIG celebration!
             if (popBubbleWavePopped >= popBubbleWaveTotal) {
               setTimeout(() => {
-                spawnSparkles(W() * 0.5, H() * 0.4, 12);
-                spawnHearts(W() * 0.5, H() * 0.4, 5);
+                // 大きなお祝いテキスト
+                const cele = new PIXI.Text('🎉 すごい！ 🎉', {
+                  fontSize: 42, fontFamily: 'Zen Maru Gothic, sans-serif',
+                  fontWeight: '900', fill: '#ffe066',
+                  stroke: '#ff6600', strokeThickness: 5,
+                  dropShadow: true, dropShadowColor: '#000000',
+                  dropShadowDistance: 3, dropShadowAngle: Math.PI / 4
+                });
+                cele.anchor.set(0.5);
+                cele.x = W() * 0.5; cele.y = H() * 0.35;
+                cele.scale.set(0.3);
+                layerTop.addChild(cele);
+                // アニメーション: 拡大→維持→フェードアウト
+                let celeT = 0;
+                const celeTick = (d) => {
+                  celeT += d;
+                  if (celeT < 15) {
+                    cele.scale.set(0.3 + (celeT / 15) * 0.7); // 拡大
+                  } else if (celeT < 90) {
+                    cele.scale.set(1.0 + Math.sin(celeT * 0.15) * 0.05); // ぷるぷる
+                    cele.y = H() * 0.35 + Math.sin(celeT * 0.1) * 3;
+                  } else {
+                    cele.alpha -= 0.02 * d;
+                    if (cele.alpha <= 0) {
+                      layerTop.removeChild(cele); cele.destroy();
+                      app.ticker.remove(celeTick);
+                    }
+                  }
+                };
+                app.ticker.add(celeTick);
+                // たくさんのキラキラ＋ハート
+                for (let ci = 0; ci < 5; ci++) {
+                  setTimeout(() => {
+                    const cx = W() * (0.2 + Math.random() * 0.6);
+                    const cy = H() * (0.2 + Math.random() * 0.4);
+                    spawnSparkles(cx, cy, 5);
+                    spawnHearts(cx, cy, 3);
+                  }, ci * 150);
+                }
                 SFX.play('collect');
               }, 200);
             }
@@ -2599,7 +2675,7 @@
             // Surprise! No creature hiding — random event
             const roll = Math.random();
             if (roll < 0.4) {
-              // Crab scuttles out
+              // Crab scuttles out with sparkles!
               setTimeout(() => {
                 const crab = new PIXI.Text('🦀', { fontSize: 22 });
                 crab.anchor.set(0.5, 1);
@@ -2608,11 +2684,20 @@
                 const dir = Math.random() < 0.5 ? -1 : 1;
                 crab.scale.x = dir;
                 layerTop.addChild(crab);
+                // 登場時のキラキラ
+                spawnSparkles(hitRock.x, hitRock.y - 10, 5, 0xffdd44);
+                SFX.play('collect');
                 let crabT = 0;
                 const crabTick = (d) => {
                   crabT += d;
                   crab.x += dir * 1.5 * d;
                   crab.y = hitRock.y + Math.sin(crabT * 0.3) * 2;
+                  // ピカピカ光りながら移動
+                  crab.alpha = 0.7 + Math.sin(crabT * 0.4) * 0.3;
+                  // 移動中もたまにキラキラ
+                  if (crabT % 30 < d) {
+                    spawnSparkles(crab.x, crab.y - 8, 2, 0xffdd44);
+                  }
                   if (crabT > 180) {
                     layerTop.removeChild(crab); crab.destroy();
                     app.ticker.remove(crabTick);
