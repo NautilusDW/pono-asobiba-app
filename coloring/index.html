@@ -600,20 +600,21 @@ html, body {
     flex-direction: row;
   }
 
-  /* Header floats over canvas top-right (avoid overlap with float buttons) */
+  /* Header floats over canvas top-right (サイドバー幅分ずらす) */
   .coloring-header {
     position: absolute;
-    top: 0; right: 0;
+    top: 0; right: 114px;
     left: auto;
     z-index: 20;
     border-bottom: none;
-    border-radius: 0 0 0 12px;
+    border-radius: 0 0 12px 12px;
     background: rgba(255,248,231,0.88);
     padding: 5px 10px;
     gap: 6px;
     width: auto;
   }
   .coloring-title { display: none; }
+  .btn-fullscreen { display: none; }
 
   /* Canvas takes left side */
   .canvas-wrapper {
