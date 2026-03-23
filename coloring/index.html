@@ -291,7 +291,7 @@ html, body {
   top: 10px;
   left: 10px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 8px;
   z-index: 50;
 }
@@ -643,18 +643,20 @@ html, body {
   /* Palette wraps into grid (3 columns to fit sidebar) */
   .palette {
     display: grid;
-    grid-template-columns: repeat(3, 28px);
-    gap: 3px;
+    grid-template-columns: repeat(3, 32px);
+    gap: 4px;
     justify-content: center;
     align-items: center;
   }
   .palette .swatch {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
   .palette .rainbow-swatch {
     grid-column: span 3;
-    width: 100%;
+    width: 34px;
+    height: 34px;
+    justify-self: center;
   }
 
   /* Tool row wraps in sidebar */
@@ -666,10 +668,10 @@ html, body {
     align-items: center;
   }
 
-  /* Size buttons compact in sidebar */
+  /* Size buttons in sidebar */
   .size-btn {
-    width: 30px;
-    height: 26px;
+    width: 36px;
+    height: 30px;
   }
 
   /* Divider horizontal */
@@ -758,7 +760,7 @@ html, body {
     <div class="coloring-title" id="coloring-title">ぬりえ</div>
     <button class="btn-slots" onclick="openSavePanel()">💾 セーブ</button>
     <button class="btn-save" onclick="saveColored()">⬇ ほぞん</button>
-    <button class="btn-fullscreen" id="btn-fullscreen" onclick="toggleFullscreen()" title="全画面">⛶</button>
+    <button class="btn-fullscreen" id="btn-fullscreen" onclick="toggleFullscreen()" title="全画面"><img src="../assets/images/icons/icons_008.png" style="width:20px;height:20px;object-fit:contain;pointer-events:none;vertical-align:middle;" alt="全画面"></button>
   </div>
 
   <!-- Save Panel -->
