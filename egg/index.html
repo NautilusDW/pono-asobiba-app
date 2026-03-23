@@ -899,9 +899,24 @@
         }).catch(() => {});
       });
 
-      // Clouds
+      // Clouds — load random cloud images
       clouds.length=0;
-      for(let i=0;i<4;i++){const cloud=new PIXI.Graphics();cloud.beginFill(0xFFFFFF,0.5+Math.random()*0.3);const size=20+Math.random()*25;cloud.drawEllipse(0,0,size*2,size*0.7);cloud.drawEllipse(-size*0.8,-size*0.3,size*1.2,size*0.6);cloud.drawEllipse(size*0.7,-size*0.2,size*1.0,size*0.5);cloud.endFill();cloud.x=Math.random()*w*1.4-w*0.2;cloud.y=h*0.04+Math.random()*h*0.15;layerBg.addChild(cloud);clouds.push({obj:cloud,speed:0.1+Math.random()*0.12});}
+      const CLOUD_COUNT = 48;
+      for (let i = 0; i < 5; i++) {
+        const idx = String(Math.floor(Math.random() * CLOUD_COUNT) + 1).padStart(3, '0');
+        PIXI.Assets.load('../assets/images/cloud/cloud_' + idx + '.webp').then(tex => {
+          if (!tex || !layerBg.parent) return;
+          const sp = new PIXI.Sprite(tex);
+          sp.anchor.set(0.5);
+          const sc = (0.4 + Math.random() * 0.4) * Math.max(w / 1200, h / 670);
+          sp.scale.set(sc);
+          sp.alpha = 0.5 + Math.random() * 0.3;
+          sp.x = Math.random() * w * 1.4 - w * 0.2;
+          sp.y = h * 0.04 + Math.random() * h * 0.15;
+          layerBg.addChild(sp);
+          clouds.push({ obj: sp, speed: 0.1 + Math.random() * 0.12 });
+        }).catch(() => {});
+      }
     }
 
     // ═══════════════════════════════════════════════════════════

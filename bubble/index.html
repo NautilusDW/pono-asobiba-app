@@ -1698,74 +1698,47 @@ canvas.addEventListener('pointermove', e => {
 canvas.addEventListener('pointerup', () => { isDragging = false; });
 
 // ── Parallax clouds (camera moving upward — clouds drift down) ──
-// Pre-render soft cloud sprites on offscreen canvas for better quality
+// Cloud images loaded from assets/images/cloud/
 const CLOUD_LAYERS = 3;
 const CLOUD_SPEED = [0.15, 0.35, 0.7];
 const CLOUD_ALPHA = [0.08, 0.14, 0.22];
 const CLOUD_SCALE = [0.6, 1.0, 1.6];
-const CLOUD_COUNT = [7, 5, 3];
+const CLOUD_COUNT_PER_LAYER = [7, 5, 3];
+const TOTAL_CLOUD_IMAGES = 48;
 
-function makeCloudSprite(w, h) {
-  const pad = Math.max(w, h) * 0.4; // room for shadowBlur
-  const cw = w + pad * 2, ch = h + pad * 2;
-  const oc = document.createElement('canvas');
-  oc.width = cw; oc.height = ch;
-  const c = oc.getContext('2d');
-  const cx = cw / 2, cy = ch / 2;
-
-  // Use shadowBlur for soft edges
-  c.shadowColor = 'rgba(255,255,255,0.7)';
-  c.shadowBlur = h * 0.6;
-  c.shadowOffsetX = 0; c.shadowOffsetY = 0;
-
-  // Build cloud shape from overlapping circles (more natural than ellipses)
-  c.beginPath();
-  // Main body — wide flat ellipse
-  c.ellipse(cx, cy + h * 0.05, w * 0.42, h * 0.32, 0, 0, Math.PI * 2);
-  // Top puffs
-  const puffs = [
-    { x: -0.18, y: -0.22, r: 0.28 },
-    { x: 0.08, y: -0.32, r: 0.32 },
-    { x: 0.30, y: -0.18, r: 0.22 },
-    { x: -0.32, y: -0.10, r: 0.20 },
-    { x: -0.05, y: -0.15, r: 0.30 },
-  ];
-  for (const p of puffs) {
-    c.moveTo(cx + p.x * w + p.r * w, cy + p.y * h);
-    c.arc(cx + p.x * w, cy + p.y * h, p.r * w * 0.5, 0, Math.PI * 2);
-  }
-  c.fillStyle = 'rgba(255,255,255,0.85)';
-  c.fill();
-
-  // Second pass without shadow for inner glow
-  c.shadowBlur = 0;
-  // Radial gradient for soft inner volume
-  const grad = c.createRadialGradient(cx - w * 0.05, cy - h * 0.15, w * 0.05, cx, cy, w * 0.45);
-  grad.addColorStop(0, 'rgba(255,255,255,0.6)');
-  grad.addColorStop(0.4, 'rgba(255,255,255,0.3)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  c.globalCompositeOperation = 'source-atop';
-  c.fillStyle = grad;
-  c.fillRect(0, 0, cw, ch);
-
-  return { canvas: oc, pad };
+// Preload cloud images
+const cloudImages = [];
+let cloudImagesLoaded = 0;
+for (let i = 1; i <= TOTAL_CLOUD_IMAGES; i++) {
+  const img = new Image();
+  img.src = '../assets/images/cloud/cloud_' + String(i).padStart(3, '0') + '.webp';
+  img.onload = () => { cloudImagesLoaded++; if (cloudImagesLoaded === TOTAL_CLOUD_IMAGES) initClouds(); };
+  img.onerror = () => { cloudImagesLoaded++; };
+  cloudImages.push(img);
 }
 
 const clouds = [];
-for (let layer = 0; layer < CLOUD_LAYERS; layer++) {
-  for (let i = 0; i < CLOUD_COUNT[layer]; i++) {
-    const w = (140 + Math.random() * 200) * CLOUD_SCALE[layer];
-    const h = (50 + Math.random() * 40) * CLOUD_SCALE[layer];
-    clouds.push({
-      x: Math.random() * 2000 - 500,
-      y: Math.random() * 2000 - 500,
-      layer, w, h,
-      sprite: makeCloudSprite(w, h),
-    });
+function initClouds() {
+  if (clouds.length > 0) return; // already initialized
+  for (let layer = 0; layer < CLOUD_LAYERS; layer++) {
+    for (let i = 0; i < CLOUD_COUNT_PER_LAYER[layer]; i++) {
+      const img = cloudImages[Math.floor(Math.random() * cloudImages.length)];
+      const sc = CLOUD_SCALE[layer] * (0.8 + Math.random() * 0.6);
+      const cw = img.naturalWidth * sc;
+      const ch = img.naturalHeight * sc;
+      clouds.push({
+        x: Math.random() * 2000 - 500,
+        y: Math.random() * 2000 - 500,
+        layer, w: cw, h: ch, sc, img,
+      });
+    }
   }
 }
+// Fallback: init with whatever loaded after 2s
+setTimeout(() => { if (clouds.length === 0 && cloudImages.some(i => i.complete)) initClouds(); }, 2000);
 
 function drawClouds(dt, cloudMul) {
+  if (clouds.length === 0) return;
   const mul = cloudMul ?? 1;
   for (let i = 0; i < clouds.length; i++) {
     const c = clouds[i];
@@ -1775,9 +1748,9 @@ function drawClouds(dt, cloudMul) {
       c.y = -c.h - Math.random() * 200;
       c.x = Math.random() * (W + 400) - 200;
     }
+    if (!c.img.complete) continue;
     ctx.globalAlpha = CLOUD_ALPHA[c.layer] * mul;
-    const sp = c.sprite;
-    ctx.drawImage(sp.canvas, c.x - c.w / 2 - sp.pad, c.y - c.h / 2 - sp.pad);
+    ctx.drawImage(c.img, c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
   }
   ctx.globalAlpha = 1;
 }
