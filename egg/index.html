@@ -886,15 +886,18 @@
         layerBg.addChildAt(sp, 1);
       }).catch(() => {});
 
-      // Fence layer — fence_R2 for yard view (bottom-right boundary)
-      PIXI.Assets.load('../assets/images/yard/fence_R2_sm.webp').then(tex => {
-        if (!tex || !layerBg.parent) return;
-        const sp = new PIXI.Sprite(tex);
-        fitBg(sp, tex);
-        sp.tint = getFenceStyle().tint;
-        layerBg.addChild(sp);
-        yardFenceSprites = [sp];
-      }).catch(() => {});
+      // Fence layer — fence_L1 (left) + fence_R (right) for yard view
+      yardFenceSprites = [];
+      ['fence_L1_sm.webp', 'fence_R_sm.webp'].forEach(fname => {
+        PIXI.Assets.load('../assets/images/yard/' + fname).then(tex => {
+          if (!tex || !layerBg.parent) return;
+          const sp = new PIXI.Sprite(tex);
+          fitBg(sp, tex);
+          sp.tint = getFenceStyle().tint;
+          layerBg.addChild(sp);
+          yardFenceSprites.push(sp);
+        }).catch(() => {});
+      });
 
       // Clouds
       clouds.length=0;
@@ -1088,7 +1091,7 @@
       // Layer 3: Fences — fence_L1 (left) + fence_R (right), document-sized overlays
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
-      ['fence_L1_sm.webp', 'fence_R_sm.webp'].forEach(fname => {
+      ['fence_R_sm.webp', 'fence_R2_sm.webp'].forEach(fname => {
         PIXI.Assets.load('../assets/images/yard/' + fname).then(tex => {
           if (!tex || !farmContainer.parent) return;
           const sp = new PIXI.Sprite(tex);
