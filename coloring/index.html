@@ -927,38 +927,9 @@ function hexToRgb(hex) {
 
 
 // ===== はみ出し防止（領域マスク方式）=====
-// キャンバスピクセル → ぬりえネイティブ画像ピクセル の変換係数
-// ズーム(CSS transform)の影響を受けないよう、CSS style値から直接計算する
+// canvas内部解像度 = ぬりえネイティブサイズなので、マッピングは 1:1
 function getNurieMapping() {
-  const nw = nurieNW, nh = nurieNH;
-  // canvas の CSS 配置サイズ（transform前の値）
-  const cw = parseFloat(canvas.style.width);
-  const ch = parseFloat(canvas.style.height);
-  const cl = parseFloat(canvas.style.left);
-  const ct = parseFloat(canvas.style.top);
-  // overlay は 100%×100% なので wrapper と同サイズ
-  const wrapperEl = document.getElementById('canvas-wrapper');
-  const ow = wrapperEl.clientWidth;
-  const oh = wrapperEl.clientHeight;
-  // overlay 内の実際の画像表示領域（object-fit: contain）
-  const imgRatio = nw / nh;
-  const elRatio = ow / oh;
-  let imgW, imgH, imgLeft, imgTop;
-  if (imgRatio > elRatio) {
-    imgW = ow; imgH = ow / imgRatio;
-    imgLeft = 0; imgTop = (oh - imgH) / 2;
-  } else {
-    imgH = oh; imgW = oh * imgRatio;
-    imgLeft = (ow - imgW) / 2; imgTop = 0;
-  }
-  // canvas pixel → nurie native pixel
-  const cssPerPxX = cw / canvas.width;
-  const cssPerPxY = ch / canvas.height;
-  return {
-    ax: cssPerPxX * nw / imgW, bx: (cl - imgLeft) * nw / imgW,
-    ay: cssPerPxY * nh / imgH, by: (ct - imgTop) * nh / imgH,
-    nw, nh
-  };
+  return { ax: 1, bx: 0, ay: 1, by: 0, nw: nurieNW, nh: nurieNH };
 }
 
 // タッチ開始点からフラッドフィルで閉じた領域を activeMask として確定
@@ -1368,46 +1339,44 @@ function clearCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-// 初回のcanvas内部解像度を保持（回転してもピクセルサイズは変えない）
-let canvasFixedW = 0, canvasFixedH = 0;
+// canvas内部解像度はぬりえ画像のネイティブサイズに固定
+let canvasInitialized = false;
 
-function resizeCanvas(wrapper, preserveContent) {
+function layoutCanvas(wrapper) {
   const w = wrapper.clientWidth;
   const h = wrapper.clientHeight;
-
   const img = document.getElementById('nurie-overlay');
   const imgRatio = img.naturalWidth / img.naturalHeight;
   const wrapRatio = w / h;
-
   let cw, ch;
   if (imgRatio > wrapRatio) {
     cw = w; ch = w / imgRatio;
   } else {
     ch = h; cw = h * imgRatio;
   }
-
-  if (preserveContent && canvasFixedW > 0) {
-    // 回転時: 内部解像度は変えず、CSS表示サイズだけ更新
-    canvas.style.left = Math.round((w - cw) / 2) + 'px';
-    canvas.style.top = Math.round((h - ch) / 2) + 'px';
-    canvas.style.width = cw + 'px';
-    canvas.style.height = ch + 'px';
-    resetZoom();
-    return;
-  }
-
-  // 初回 or 新しいぬりえロード時: 内部解像度を確定
-  const newW = Math.round(cw);
-  const newH = Math.round(ch);
-  canvasFixedW = newW;
-  canvasFixedH = newH;
-
-  canvas.width = newW;
-  canvas.height = newH;
   canvas.style.left = Math.round((w - cw) / 2) + 'px';
   canvas.style.top = Math.round((h - ch) / 2) + 'px';
   canvas.style.width = cw + 'px';
   canvas.style.height = ch + 'px';
+}
+
+function resizeCanvas(wrapper, preserveContent) {
+  if (preserveContent && canvasInitialized) {
+    // 回転時: CSS配置だけ更新、内部ピクセルは一切触らない
+    layoutCanvas(wrapper);
+    resetZoom();
+    return;
+  }
+
+  // 初回 or 新しいぬりえロード: 内部解像度をぬりえ画像のネイティブサイズで確定
+  const img = document.getElementById('nurie-overlay');
+  const nw = img.naturalWidth || 800;
+  const nh = img.naturalHeight || 800;
+  canvas.width = nw;
+  canvas.height = nh;
+  canvasInitialized = true;
+
+  layoutCanvas(wrapper);
 
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1503,7 +1472,7 @@ function deleteSlot(slot) {
 let currentNurieName = '';
 
 function startColoring(src, name) {
-  canvasFixedW = 0; canvasFixedH = 0; // 新しいぬりえ: 内部解像度リセット
+  canvasInitialized = false; // 新しいぬりえ: 内部解像度リセット
   currentNurieName = name;
   currentNurieIdx = getNurieIdx(src);
   document.getElementById('coloring-title').textContent = name;
