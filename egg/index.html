@@ -266,6 +266,65 @@
       font-family: inherit; font-size: 0.8rem; font-weight: 900; cursor: pointer;
     }
 
+    /* ═══ Deco Panel (right-side slide) ═══ */
+    #deco-panel {
+      display: none; position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(320px, 52vw); z-index: 80;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.2);
+      flex-direction: column; font-family: inherit;
+      animation: slideInRight 0.25s ease-out;
+      border-radius: 18px 0 0 18px;
+    }
+    #deco-panel.show { display: flex; }
+    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    .deco-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px 6px; border-bottom: 1px solid #eee;
+    }
+    .deco-header h3 { font-size: 0.95rem; color: #4a7c59; margin: 0; }
+    .deco-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: #eee; font-size: 1rem; cursor: pointer; font-family: inherit;
+    }
+    .deco-tabs {
+      display: flex; gap: 4px; padding: 6px 10px;
+      overflow-x: auto; flex-shrink: 0;
+    }
+    .deco-tab {
+      padding: 4px 10px; border-radius: 50px; border: 2px solid #ddd;
+      background: #f5f5f5; font-size: 0.7rem; font-weight: 900;
+      cursor: pointer; white-space: nowrap; font-family: inherit; color: #777;
+    }
+    .deco-tab.on { background: #4a7c59; color: #fff; border-color: #4a7c59; }
+    .deco-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+      padding: 8px 10px; overflow-y: auto; flex: 1;
+    }
+    .deco-card {
+      background: #f9f9f9; border-radius: 12px; border: 2px solid #e0e0e0;
+      padding: 4px; cursor: pointer; text-align: center;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .deco-card:active { transform: scale(0.93); }
+    .deco-card.placed { border-color: #ff9800; background: #fff8e1; }
+    .deco-card img {
+      width: 100%; aspect-ratio: 1; object-fit: contain;
+      pointer-events: none;
+    }
+    .deco-card-name { font-size: 0.55rem; font-weight: 900; color: #888; line-height: 1.2; }
+    .deco-card-badge {
+      font-size: 0.5rem; font-weight: 900; padding: 1px 6px;
+      border-radius: 50px; display: inline-block; margin-top: 2px;
+    }
+    .badge-place { background: #E8F5E9; color: #4a7c59; }
+    .badge-remove { background: #FFF3E0; color: #E65100; }
+    .deco-edit-hint {
+      padding: 6px 10px; text-align: center;
+      font-size: 0.6rem; color: #aaa; font-weight: 700;
+      border-top: 1px solid #eee; flex-shrink: 0;
+    }
+
     /* ═══ Inventory HUD ═══ */
     #inventory-hud {
       position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
@@ -287,6 +346,18 @@
   <button id="btnFeed" class="action-btn yard-only">🍎</button>
   <button id="btnPlay" class="action-btn disabled yard-only">⚽</button>
   <button id="btnAlbum" class="yard-only">📖 ずかん</button>
+  <button id="btnDeco" class="action-btn yard-only" style="right:146px; background:rgba(120,170,100,0.9);">🪴</button>
+
+  <!-- Decoration panel (right-side slide) -->
+  <div id="deco-panel">
+    <div class="deco-header">
+      <h3>🪴 にわの かざり</h3>
+      <button class="deco-close" id="decoClose">✕</button>
+    </div>
+    <div class="deco-tabs" id="deco-tabs"></div>
+    <div class="deco-grid" id="deco-grid"></div>
+    <div class="deco-edit-hint">🤏 おいた かざりは ドラッグで いどう<br>ダブルタップで しまう</div>
+  </div>
 
   <!-- Farm-only buttons -->
   <button id="btnFence" class="action-btn farm-only" style="right:14px; background:rgba(180,140,100,0.9);">🏡</button>
@@ -483,6 +554,7 @@
           if (!s.farm.fenceStyle) s.farm.fenceStyle = 'default';
           if (typeof s.farm.totalHarvests === 'undefined') s.farm.totalHarvests = 0;
           if (!s.inventory) s.inventory = { apple: 0, strawberry: 0, carrot: 0, corn: 0 };
+          if (!s.yardDecos) s.yardDecos = [];
           // Old creature migration
           s.slots.forEach(slot => {
             if (slot && !slot.eggImage) {
@@ -498,7 +570,7 @@
           return s;
         }
       } catch(e) {}
-      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null], unlockedPlots: 1, fenceStyle: 'default', totalHarvests: 0 }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 } };
+      return { slots: [null], maxSlots: 1, nextEggReady: false, totalHatched: 0, totalGraduated: 0, unlockedEggs: ['egg_018','egg_019','egg_020'], storyShown: false, farm: { plots: [null,null,null,null,null,null], unlockedPlots: 1, fenceStyle: 'default', totalHarvests: 0 }, inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 }, yardDecos: [] };
     }
 
     function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
@@ -961,6 +1033,7 @@
         sceneSlots.push({slotIdx:s.idx,obj,data:s.data,type,x:pos.x,y:pos.y,wobbleT:Math.random()*Math.PI*2,bobT:Math.random()*Math.PI*2,patCooldown:0,feedCooldown:0,playCooldown:0,happyTimer:0,chompTimer:0,chaseTarget:null});
       });
       updatePlayButton();
+      if (typeof rebuildDecoSprites === 'function') rebuildDecoSprites();
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1347,6 +1420,285 @@
         }, 1200);
       }
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Yard Decoration System ─────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    const YARD_ASSETS = [
+      // 🌳 おおきな き (Large trees)
+      { id:'ya_001', name:'おおきい き',     cat:'tree', file:'yard_asset_001.webp', scale:0.55 },
+      { id:'ya_002', name:'き',             cat:'tree', file:'yard_asset_002.webp', scale:0.50 },
+      { id:'ya_003', name:'き',             cat:'tree', file:'yard_asset_003.webp', scale:0.50 },
+      { id:'ya_004', name:'き',             cat:'tree', file:'yard_asset_004.webp', scale:0.50 },
+      { id:'ya_005', name:'き',             cat:'tree', file:'yard_asset_005.webp', scale:0.50 },
+      { id:'ya_006', name:'き',             cat:'tree', file:'yard_asset_006.webp', scale:0.48 },
+      { id:'ya_007', name:'き',             cat:'tree', file:'yard_asset_007.webp', scale:0.45 },
+      { id:'ya_008', name:'き',             cat:'tree', file:'yard_asset_008.webp', scale:0.48 },
+      { id:'ya_009', name:'き',             cat:'tree', file:'yard_asset_009.webp', scale:0.45 },
+      { id:'ya_010', name:'き',             cat:'tree', file:'yard_asset_010.webp', scale:0.50 },
+      { id:'ya_011', name:'き',             cat:'tree', file:'yard_asset_011.webp', scale:0.50 },
+      // 🌿 しげみ (Bushes / shrubs on iso tile)
+      { id:'ya_012', name:'しげみ',         cat:'bush', file:'yard_asset_012.webp', scale:0.45 },
+      { id:'ya_013', name:'しげみ',         cat:'bush', file:'yard_asset_013.webp', scale:0.45 },
+      { id:'ya_014', name:'しげみ',         cat:'bush', file:'yard_asset_014.webp', scale:0.45 },
+      { id:'ya_015', name:'まるい しげみ',  cat:'bush', file:'yard_asset_015.webp', scale:0.45 },
+      { id:'ya_016', name:'しげみ',         cat:'bush', file:'yard_asset_016.webp', scale:0.45 },
+      { id:'ya_017', name:'しげみ',         cat:'bush', file:'yard_asset_017.webp', scale:0.45 },
+      { id:'ya_018', name:'しげみ',         cat:'bush', file:'yard_asset_018.webp', scale:0.45 },
+      // 🌸 おはな (Flowers on iso tile)
+      { id:'ya_019', name:'おはな',         cat:'flower', file:'yard_asset_019.webp', scale:0.42 },
+      { id:'ya_020', name:'おはな',         cat:'flower', file:'yard_asset_020.webp', scale:0.42 },
+      { id:'ya_021', name:'おはな',         cat:'flower', file:'yard_asset_021.webp', scale:0.42 },
+      { id:'ya_022', name:'おはな',         cat:'flower', file:'yard_asset_022.webp', scale:0.42 },
+      { id:'ya_023', name:'おはな',         cat:'flower', file:'yard_asset_023.webp', scale:0.42 },
+      { id:'ya_024', name:'おはな',         cat:'flower', file:'yard_asset_024.webp', scale:0.40 },
+      { id:'ya_025', name:'チューリップ',   cat:'flower', file:'yard_asset_025.webp', scale:0.42 },
+      { id:'ya_026', name:'チューリップ',   cat:'flower', file:'yard_asset_026.webp', scale:0.42 },
+      // 🪨 いし (Stones)
+      { id:'ya_027', name:'いし',           cat:'stone', file:'yard_asset_027.webp', scale:0.40 },
+      { id:'ya_028', name:'おおきい いし',  cat:'stone', file:'yard_asset_028.webp', scale:0.42 },
+      { id:'ya_029', name:'いし',           cat:'stone', file:'yard_asset_029.webp', scale:0.42 },
+      { id:'ya_030', name:'いし',           cat:'stone', file:'yard_asset_030.webp', scale:0.42 },
+      { id:'ya_031', name:'いし',           cat:'stone', file:'yard_asset_031.webp', scale:0.40 },
+      { id:'ya_032', name:'ひらたい いし',  cat:'stone', file:'yard_asset_032.webp', scale:0.38 },
+      { id:'ya_033', name:'いし',           cat:'stone', file:'yard_asset_033.webp', scale:0.42 },
+      // 🌱 くさ・しば (Grass / weeds on iso tile)
+      { id:'ya_034', name:'くさ',           cat:'grass', file:'yard_asset_034.webp', scale:0.38 },
+      { id:'ya_035', name:'くさ',           cat:'grass', file:'yard_asset_035.webp', scale:0.38 },
+      { id:'ya_036', name:'しば',           cat:'grass', file:'yard_asset_036.webp', scale:0.38 },
+      { id:'ya_037', name:'くさむら',       cat:'grass', file:'yard_asset_037.webp', scale:0.36 },
+      { id:'ya_038', name:'しば',           cat:'grass', file:'yard_asset_038.webp', scale:0.38 },
+      { id:'ya_039', name:'しば',           cat:'grass', file:'yard_asset_039.webp', scale:0.36 },
+      { id:'ya_040', name:'しば',           cat:'grass', file:'yard_asset_040.webp', scale:0.34 },
+      { id:'ya_041', name:'しば',           cat:'grass', file:'yard_asset_041.webp', scale:0.34 },
+      // 🪵 きりかぶ・なえ (Stumps, saplings, misc)
+      { id:'ya_042', name:'もみの き',      cat:'tree',  file:'yard_asset_042.webp', scale:0.45 },
+      { id:'ya_043', name:'きのこ',         cat:'misc',  file:'yard_asset_043.webp', scale:0.40 },
+      { id:'ya_044', name:'きのこ',         cat:'misc',  file:'yard_asset_044.webp', scale:0.40 },
+      { id:'ya_045', name:'きりかぶ',       cat:'misc',  file:'yard_asset_045.webp', scale:0.38 },
+      { id:'ya_046', name:'きりかぶ',       cat:'misc',  file:'yard_asset_046.webp', scale:0.36 },
+      { id:'ya_047', name:'もみの き',      cat:'tree',  file:'yard_asset_047.webp', scale:0.42 },
+      { id:'ya_048', name:'もみの き',      cat:'tree',  file:'yard_asset_048.webp', scale:0.40 },
+      { id:'ya_049', name:'まるた',         cat:'misc',  file:'yard_asset_049.webp', scale:0.32 },
+      { id:'ya_050', name:'なえ',           cat:'misc',  file:'yard_asset_050.webp', scale:0.35 },
+      { id:'ya_051', name:'いしだたみ',     cat:'stone', file:'yard_asset_051.webp', scale:0.28 },
+      { id:'ya_052', name:'こいし',         cat:'stone', file:'yard_asset_052.webp', scale:0.25 },
+      { id:'ya_053', name:'こいし',         cat:'stone', file:'yard_asset_053.webp', scale:0.25 },
+      { id:'ya_054', name:'こいし',         cat:'stone', file:'yard_asset_054.webp', scale:0.20 },
+      { id:'ya_055', name:'こいし',         cat:'stone', file:'yard_asset_055.webp', scale:0.20 },
+      { id:'ya_056', name:'こいし',         cat:'stone', file:'yard_asset_056.webp', scale:0.18 },
+      { id:'ya_057', name:'こいし',         cat:'stone', file:'yard_asset_057.webp', scale:0.18 },
+      { id:'ya_058', name:'こいし',         cat:'stone', file:'yard_asset_058.webp', scale:0.18 },
+    ];
+
+    const DECO_CATS = [
+      { id: 'all',    label: '🌈 ぜんぶ' },
+      { id: 'tree',   label: '🌳 き' },
+      { id: 'bush',   label: '🌿 しげみ' },
+      { id: 'flower', label: '🌸 おはな' },
+      { id: 'stone',  label: '🪨 いし' },
+      { id: 'grass',  label: '🌱 くさ' },
+      { id: 'misc',   label: '🪵 そのた' },
+    ];
+
+    let decoSprites = []; // { id, uid, sprite, rx, ry } — live PIXI sprites on yard
+    let decoEditMode = false;
+    let decoDragging = null; // { uid, startX, startY, spriteStartX, spriteStartY }
+    let decoCurrentCat = 'all';
+
+    // ── Deco layer (between mid and fg in yard)
+    const layerDeco = new PIXI.Container();
+    yardContainer.addChildAt(layerDeco, yardContainer.children.indexOf(layerFg));
+
+    function getAssetPath(file) {
+      return '../assets/images/tree_stone_flower/' + file;
+    }
+
+    // ── Render placed decos as PIXI sprites
+    function rebuildDecoSprites() {
+      layerDeco.removeChildren().forEach(c => c.destroy({ children: true }));
+      decoSprites = [];
+      const w = W(), h = H();
+      (state.yardDecos || []).forEach(d => {
+        const asset = YARD_ASSETS.find(a => a.id === d.id);
+        if (!asset) return;
+        PIXI.Assets.load(getAssetPath(asset.file)).then(tex => {
+          if (!tex || !layerDeco.parent) return;
+          const sp = new PIXI.Sprite(tex);
+          sp.anchor.set(0.5, 1.0); // bottom-center anchor for natural placement
+          const sc = Math.max(w / 1200, h / 670) * (asset.scale || 0.4);
+          sp.scale.set(sc);
+          sp.x = d.rx * w;
+          sp.y = d.ry * h;
+          layerDeco.addChild(sp);
+          decoSprites.push({ id: d.id, uid: d.uid, sprite: sp, rx: d.rx, ry: d.ry });
+          // Sort by y for depth
+          layerDeco.children.sort((a, b) => a.y - b.y);
+        }).catch(() => {});
+      });
+    }
+
+    // ── Open / close deco panel
+    function openDecoPanel() {
+      SFX.init();
+      renderDecoTabs();
+      renderDecoGrid();
+      document.getElementById('deco-panel').classList.add('show');
+      decoEditMode = true;
+    }
+    function closeDecoPanel() {
+      document.getElementById('deco-panel').classList.remove('show');
+      decoEditMode = false;
+      saveState();
+    }
+    document.getElementById('btnDeco').addEventListener('click', openDecoPanel);
+    document.getElementById('decoClose').addEventListener('click', closeDecoPanel);
+
+    // ── Tabs
+    function renderDecoTabs() {
+      const cont = document.getElementById('deco-tabs');
+      cont.innerHTML = '';
+      DECO_CATS.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'deco-tab' + (decoCurrentCat === cat.id ? ' on' : '');
+        btn.textContent = cat.label;
+        btn.addEventListener('click', () => {
+          decoCurrentCat = cat.id;
+          renderDecoTabs();
+          renderDecoGrid();
+          SFX.play('pat');
+        });
+        cont.appendChild(btn);
+      });
+    }
+
+    // ── Grid
+    function renderDecoGrid() {
+      const grid = document.getElementById('deco-grid');
+      grid.innerHTML = '';
+      const items = decoCurrentCat === 'all'
+        ? YARD_ASSETS
+        : YARD_ASSETS.filter(a => a.cat === decoCurrentCat);
+      const placedIds = new Set((state.yardDecos || []).map(d => d.id));
+
+      items.forEach(asset => {
+        const card = document.createElement('div');
+        card.className = 'deco-card' + (placedIds.has(asset.id) ? ' placed' : '');
+        const img = document.createElement('img');
+        img.src = getAssetPath(asset.file);
+        img.alt = asset.name;
+        img.loading = 'lazy';
+        card.appendChild(img);
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'deco-card-name';
+        nameEl.textContent = asset.name;
+        card.appendChild(nameEl);
+
+        card.addEventListener('click', () => {
+          placeDeco(asset.id);
+          SFX.play('select');
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Place a decoration
+    function placeDeco(assetId) {
+      const uid = assetId + '_' + Date.now();
+      // Place at a slightly random position in the lower-center of yard
+      const rx = 0.3 + Math.random() * 0.4;
+      const ry = 0.5 + Math.random() * 0.3;
+      if (!state.yardDecos) state.yardDecos = [];
+      state.yardDecos.push({ id: assetId, uid, rx, ry });
+      saveState();
+      rebuildDecoSprites();
+      renderDecoGrid();
+      showToast('🪴 かざりを おいたよ！');
+    }
+
+    // ── Remove a decoration by uid
+    function removeDeco(uid) {
+      state.yardDecos = (state.yardDecos || []).filter(d => d.uid !== uid);
+      saveState();
+      rebuildDecoSprites();
+      renderDecoGrid();
+      showToast('📦 かざりを しまったよ');
+      SFX.play('pat');
+    }
+
+    // ── Drag handling for deco sprites
+    let lastDecoTap = { uid: null, time: 0 };
+
+    function handleDecoPointerDown(e) {
+      if (!decoEditMode || currentView !== 'yard') return;
+      const rect = canvas.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width * W();
+      const py = (e.clientY - rect.top) / rect.height * H();
+
+      // Find closest deco sprite
+      let closest = null, minDist = 60;
+      for (const ds of decoSprites) {
+        const dx = px - ds.sprite.x, dy = py - ds.sprite.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist) { minDist = dist; closest = ds; }
+      }
+      if (!closest) return;
+
+      // Double-tap detection
+      const now = Date.now();
+      if (lastDecoTap.uid === closest.uid && now - lastDecoTap.time < 400) {
+        removeDeco(closest.uid);
+        lastDecoTap = { uid: null, time: 0 };
+        return;
+      }
+      lastDecoTap = { uid: closest.uid, time: now };
+
+      // Start drag
+      decoDragging = {
+        uid: closest.uid,
+        startX: e.clientX, startY: e.clientY,
+        spriteStartX: closest.sprite.x, spriteStartY: closest.sprite.y
+      };
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    function handleDecoPointerMove(e) {
+      if (!decoDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W() / rect.width, scaleY = H() / rect.height;
+      const dx = (e.clientX - decoDragging.startX) * scaleX;
+      const dy = (e.clientY - decoDragging.startY) * scaleY;
+      const ds = decoSprites.find(d => d.uid === decoDragging.uid);
+      if (ds) {
+        ds.sprite.x = decoDragging.spriteStartX + dx;
+        ds.sprite.y = decoDragging.spriteStartY + dy;
+        ds.sprite.alpha = 0.75;
+        // Re-sort depth
+        layerDeco.children.sort((a, b) => a.y - b.y);
+      }
+    }
+
+    function handleDecoPointerUp() {
+      if (!decoDragging) return;
+      const ds = decoSprites.find(d => d.uid === decoDragging.uid);
+      if (ds) {
+        ds.sprite.alpha = 1;
+        // Save new position as relative coords
+        ds.rx = ds.sprite.x / W();
+        ds.ry = ds.sprite.y / H();
+        const saved = (state.yardDecos || []).find(d => d.uid === ds.uid);
+        if (saved) { saved.rx = ds.rx; saved.ry = ds.ry; }
+        saveState();
+      }
+      decoDragging = null;
+    }
+
+    // ── Hook deco drag to canvas (must be after canvas init)
+    canvas.addEventListener('pointerdown', handleDecoPointerDown, true);
+    window.addEventListener('pointermove', handleDecoPointerMove);
+    window.addEventListener('pointerup', handleDecoPointerUp);
 
     // ═══════════════════════════════════════════════════════════
     // ─── Main Ticker ─────────────────────────────────────────
