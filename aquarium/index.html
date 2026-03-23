@@ -1721,6 +1721,19 @@
           return;
         }
 
+        // ── Boost decay: gradually return to base speed after steering fling ──
+        if (c.boostFactor > 1.01) {
+          c.boostFactor = 1 + (c.boostFactor - 1) * Math.pow(0.965, delta);
+          if (c.boostFactor < 1.02) c.boostFactor = 1.0;
+          const curSpd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
+          const targetSpd = c.speed * c.boostFactor;
+          if (curSpd > c.speed * 1.05 && curSpd > 0) {
+            const ratio = targetSpd / curSpd;
+            c.vx *= ratio;
+            c.vy *= ratio;
+          }
+        }
+
         switch (c.pattern) {
           case 'swim': {
             c.obj.x += c.vx * sw * DT;
@@ -1947,20 +1960,24 @@
 
     function drawArrow(cx, cy, tx, ty, baseSize) {
       steerGfx.clear();
-      // Circle around creature
-      steerGfx.lineStyle(2.5, 0x38bdf8, 0.75);
-      steerGfx.drawCircle(cx, cy, baseSize * 0.55);
       const dx = tx - cx, dy = ty - cy;
       const dist = Math.sqrt(dx*dx + dy*dy);
+      // Color shifts from blue → orange → red as boost increases
+      const boostMult = Math.max(1.0, Math.min(dist / 80, 3.0));
+      const arrowColor = boostMult < 1.5 ? 0x38bdf8 : boostMult < 2.2 ? 0xfbbf24 : 0xf87171;
+      // Circle around creature
+      steerGfx.lineStyle(2.5, arrowColor, 0.75);
+      steerGfx.drawCircle(cx, cy, baseSize * 0.55);
       if (dist < 8) return;
       const angle = Math.atan2(dy, dx);
       const len = Math.min(dist, W() * 0.22);
       const ex = cx + Math.cos(angle) * len;
       const ey = cy + Math.sin(angle) * len;
-      steerGfx.lineStyle(3.5, 0x38bdf8, 0.95);
+      const lineW = 3.5 + (boostMult - 1) * 1.2;
+      steerGfx.lineStyle(lineW, arrowColor, 0.95);
       steerGfx.moveTo(cx, cy);
       steerGfx.lineTo(ex, ey);
-      const hs = 18;
+      const hs = 18 + (boostMult - 1) * 4;
       steerGfx.moveTo(ex, ey);
       steerGfx.lineTo(ex - Math.cos(angle - 0.42)*hs, ey - Math.sin(angle - 0.42)*hs);
       steerGfx.moveTo(ex, ey);
@@ -2004,12 +2021,14 @@
       const { px, py } = pixiCoords(e.clientX, e.clientY);
 
       if (steeringMode && holdCreature) {
-        // Steer: redirect creature toward pointer
+        // Steer: redirect creature toward pointer with speed boost based on drag distance
         const dx = px - holdCreature.obj.x, dy = py - holdCreature.obj.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist > 20) {
-          holdCreature.vx = (dx / dist) * holdCreature.speed;
-          holdCreature.vy = (dy / dist) * holdCreature.speed * 0.4;
+          const boostMult = Math.max(1.0, Math.min(dist / 80, 3.0));
+          holdCreature.vx = (dx / dist) * holdCreature.speed * boostMult;
+          holdCreature.vy = (dy / dist) * holdCreature.speed * boostMult;
+          holdCreature.boostFactor = boostMult;
           holdCreature.baseY = holdCreature.obj.y;
           holdCreature.baseX = holdCreature.obj.x;
           holdCreature.panicTimer = 0;
