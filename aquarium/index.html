@@ -182,6 +182,37 @@
     @media (pointer: coarse) and (orientation: portrait) {
       #portrait-overlay { display: flex; }
     }
+    /* Feed button (floating) */
+    #btnFeed {
+      position: fixed;
+      bottom: 14px; right: 14px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.5);
+      background: rgba(255,200,60,0.85);
+      color: #fff;
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 12;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      transition: transform 0.1s, background 0.15s;
+      touch-action: manipulation;
+      pointer-events: all;
+    }
+    #btnFeed:active { transform: scale(0.9); }
+    #btnFeed.active {
+      background: rgba(56,189,248,0.95);
+      border-color: #fff;
+      animation: feedpulse 1.2s ease-in-out infinite;
+    }
+    @keyframes feedpulse {
+      0%,100% { box-shadow: 0 2px 10px rgba(56,189,248,0.3); }
+      50% { box-shadow: 0 2px 20px rgba(56,189,248,0.7); }
+    }
+    @media (orientation: landscape) {
+      #btnFeed { bottom: 14px; right: 14px; }
+    }
     /* Title label */
     #title-label {
       position: fixed;
@@ -210,6 +241,7 @@
   </div>
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
+  <button id="btnFeed">🍞</button>
   <div id="ui">
     <button id="btnBgCreatures">🐟 いきもの</button>
     <span id="seaCount" style="background:rgba(0,0,0,0.45);color:#ffd700;font-size:12px;font-weight:bold;padding:3px 10px;border-radius:14px;font-family:'Zen Maru Gothic',sans-serif;"></span>
@@ -1900,8 +1932,8 @@
 
         // ── Boost decay: gradually return to base speed after steering fling ──
         if (c.boostFactor > 1.01) {
-          c.boostFactor = 1 + (c.boostFactor - 1) * Math.pow(0.965, delta);
-          if (c.boostFactor < 1.02) c.boostFactor = 1.0;
+          c.boostFactor = 1 + (c.boostFactor - 1) * Math.pow(0.92, delta);
+          if (c.boostFactor < 1.05) c.boostFactor = 1.0;
           const curSpd = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
           const targetSpd = c.speed * c.boostFactor;
           if (curSpd > c.speed * 1.05 && curSpd > 0) {
@@ -2265,6 +2297,16 @@
     let holdTimerId = null, holdCreature = null, steeringMode = false;
     let lastPointerPx = 0, lastPointerPy = 0;
 
+    // ─── Feed mode toggle ─────────────────────────────────
+    let feedMode = false;
+    const btnFeed = document.getElementById('btnFeed');
+    btnFeed.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      feedMode = !feedMode;
+      btnFeed.classList.toggle('active', feedMode);
+      btnFeed.textContent = feedMode ? '🐟' : '🍞';
+    });
+
     const TAP_R = () => Math.min(W(), H()) * 0.35;
 
     function pixiCoords(clientX, clientY) {
@@ -2291,8 +2333,8 @@
       const dx = tx - cx, dy = ty - cy;
       const dist = Math.sqrt(dx*dx + dy*dy);
       // Color shifts from blue → orange → red as boost increases
-      const boostMult = Math.max(1.0, Math.min(dist / 80, 3.0));
-      const arrowColor = boostMult < 1.5 ? 0x38bdf8 : boostMult < 2.2 ? 0xfbbf24 : 0xf87171;
+      const boostMult = Math.max(1.0, Math.min(dist / 50, 8.0));
+      const arrowColor = boostMult < 2 ? 0x38bdf8 : boostMult < 4 ? 0xfbbf24 : 0xf87171;
       // Circle around creature
       steerGfx.lineStyle(2.5, arrowColor, 0.75);
       steerGfx.drawCircle(cx, cy, baseSize * 0.55);
@@ -2321,7 +2363,7 @@
       // Landscape bottom → show UI
       if (window.innerWidth > window.innerHeight && py > H() * 0.65) showUiTemporarily();
 
-      holdCreature = findNearest(px, py);
+      holdCreature = feedMode ? null : findNearest(px, py);
       steeringMode = false;
       clearTimeout(holdTimerId);
       steerGfx.clear();
@@ -2348,12 +2390,24 @@
       steerGfx.clear();
       const { px, py } = pixiCoords(e.clientX, e.clientY);
 
+      // Feed mode: always drop food, skip other interactions
+      if (feedMode && !steeringMode) {
+        spawnFood(px, py);
+        // Still add ripple
+        [0.005, 0.04, 0.075].forEach(r0 => {
+          if (ripples.length < MAX_RIPPLES)
+            ripples.push({ cx: px, cy: py, radius: r0, strength: 0.025 });
+        });
+        steeringMode = false; holdCreature = null;
+        return;
+      }
+
       if (steeringMode && holdCreature) {
         // Steer: redirect creature toward pointer with speed boost based on drag distance
         const dx = px - holdCreature.obj.x, dy = py - holdCreature.obj.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist > 20) {
-          const boostMult = Math.max(1.0, Math.min(dist / 80, 3.0));
+          const boostMult = Math.max(1.0, Math.min(dist / 50, 8.0));
           holdCreature.vx = (dx / dist) * holdCreature.speed * boostMult;
           holdCreature.vy = (dy / dist) * holdCreature.speed * boostMult;
           holdCreature.boostFactor = boostMult;
