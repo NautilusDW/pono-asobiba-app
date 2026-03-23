@@ -2419,8 +2419,9 @@
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist > 20) {
           const boostMult = Math.max(1.0, Math.min(dist / 30, 16.0));
-          holdCreature.vx = (dx / dist) * holdCreature.speed * boostMult;
-          holdCreature.vy = (dy / dist) * holdCreature.speed * boostMult;
+          const subExtra = holdCreature.submarinesprite ? 2.0 : 1.0;
+          holdCreature.vx = (dx / dist) * holdCreature.speed * boostMult * subExtra;
+          holdCreature.vy = (dy / dist) * holdCreature.speed * boostMult * subExtra;
           holdCreature.boostFactor = boostMult;
           holdCreature.baseY = holdCreature.obj.y;
           holdCreature.baseX = holdCreature.obj.x;
