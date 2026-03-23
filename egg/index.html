@@ -963,25 +963,6 @@
       // Clouds
       clouds.length=0;
       for(let i=0;i<4;i++){const cloud=new PIXI.Graphics();cloud.beginFill(0xFFFFFF,0.5+Math.random()*0.3);const size=20+Math.random()*25;cloud.drawEllipse(0,0,size*2,size*0.7);cloud.drawEllipse(-size*0.8,-size*0.3,size*1.2,size*0.6);cloud.drawEllipse(size*0.7,-size*0.2,size*1.0,size*0.5);cloud.endFill();cloud.x=Math.random()*w*1.4-w*0.2;cloud.y=h*0.04+Math.random()*h*0.15;layerBg.addChild(cloud);clouds.push({obj:cloud,speed:0.1+Math.random()*0.12});}
-
-      // Decorative flowers on grass
-      const flowerEmojis=['🌸','🌼','🌻','🌺'];
-      for(let i=0;i<5;i++){const tex=getEmojiTex(flowerEmojis[i%4],32),sp=new PIXI.Sprite(tex);sp.anchor.set(0.5);sp.x=w*0.1+Math.random()*w*0.8;sp.y=h*0.55+Math.random()*h*0.25;sp.scale.set(0.3+Math.random()*0.15);sp.alpha=0.5;layerBg.addChild(sp);}
-
-      // ありがとうの木
-      const treeX=w*0.82,treeBaseY=h*0.50;
-      const trunk=new PIXI.Graphics();trunk.beginFill(0x8B6914);trunk.drawRect(treeX-8,treeBaseY-70,16,70);trunk.endFill();
-      trunk.lineStyle(5,0x8B6914);trunk.moveTo(treeX,treeBaseY-55);trunk.lineTo(treeX-25,treeBaseY-80);trunk.moveTo(treeX,treeBaseY-45);trunk.lineTo(treeX+22,treeBaseY-75);layerBg.addChild(trunk);
-      const foliage=new PIXI.Graphics();foliage.beginFill(0x4CAF50,0.85);foliage.drawEllipse(treeX,treeBaseY-90,40,30);foliage.endFill();foliage.beginFill(0x66BB6A,0.8);foliage.drawEllipse(treeX-18,treeBaseY-80,25,22);foliage.drawEllipse(treeX+18,treeBaseY-85,25,22);foliage.endFill();layerBg.addChild(foliage);
-      for(let i=0;i<3;i++){const sp=new PIXI.Sprite(getEmojiTex('✨',24));sp.anchor.set(0.5);sp.x=treeX+(Math.random()-0.5)*45;sp.y=treeBaseY-80+(Math.random()-0.5)*25;sp.scale.set(0.25+Math.random()*0.15);sp.alpha=0.5;layerBg.addChild(sp);}
-    }
-
-    function drawNest() {
-      const w=W(),h=H(),nestX=w*0.15,nestY=h*0.52;
-      const nest=new PIXI.Graphics();nest.beginFill(0x8B6914,0.8);nest.drawEllipse(nestX,nestY,50,20);nest.endFill();
-      nest.lineStyle(2,0xBB9640,0.7);for(let i=0;i<8;i++){const sx=nestX-38+Math.random()*76,sy=nestY-7+Math.random()*14;nest.moveTo(sx,sy);nest.lineTo(sx+(Math.random()-0.5)*28,sy+(Math.random()-0.5)*10);}
-      nest.lineStyle(3,0x6B4F0A,0.6);nest.drawEllipse(nestX,nestY-3,47,14);
-      layerBg.addChild(nest);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1017,7 +998,7 @@
       layerMid.removeChildren().forEach(c=>c.destroy({children:true}));
       layerFg.removeChildren().forEach(c=>c.destroy({children:true}));
       foodPellets.length=0; activeBall=null; sceneSlots.length=0;
-      drawYardBackground(); drawNest();
+      drawYardBackground();
       const activeSlots = state.slots.map((s,i)=>({data:s,idx:i})).filter(s=>s.data!==null);
       activeSlots.forEach((s,vi) => {
         const pos=getSlotPosition(vi); let obj,type;

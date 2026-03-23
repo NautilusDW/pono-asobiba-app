@@ -325,6 +325,14 @@ function selectItem(id) {
   document.getElementById('undo-btn').style.display = '';
 
   const item = ITEMS.find(x => x.id === id);
+
+  // Switch background for farm items
+  const bgEl = document.getElementById('room-bg');
+  if (id.startsWith('farm_')) {
+    bgEl.src = '../assets/images/yard/green_sm.png';
+  } else if (!bgEl.src.includes('Room_Base_grid')) {
+    bgEl.src = '../assets/images/Rooms/Room_Base_grid.png';
+  }
   const adj = adjustments[adjKey(id)];
   document.getElementById('sel-name').textContent = item.name + ' (' + id + ') [' + currentAngle + ']';
 
