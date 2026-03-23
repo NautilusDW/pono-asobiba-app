@@ -1059,22 +1059,36 @@ let lastX = 0, lastY = 0;
 // ストローク全体のダーティ矩形（endDrawでのクリーンアップ範囲）
 let strokeX0 = 0, strokeY0 = 0, strokeX1 = 0, strokeY1 = 0;
 
-function getPos(e, rect) {
-  if (e.touches) {
-    const t = e.touches[0];
-    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
-  }
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+function getClientXY(e) {
+  if (e.touches) return { cx: e.touches[0].clientX, cy: e.touches[0].clientY };
+  return { cx: e.clientX, cy: e.clientY };
+}
+
+// クライアント座標 → canvasピクセル座標（zoom/pan を逆算）
+function clientToCanvas(cx, cy) {
+  const wrapRect = document.getElementById('canvas-wrapper').getBoundingClientRect();
+  // wrapper内ローカル座標
+  const wx = cx - wrapRect.left;
+  const wy = cy - wrapRect.top;
+  // transform(translate + scale) を逆算
+  const tx = (wx - panX) / zoomScale;
+  const ty = (wy - panY) / zoomScale;
+  // CSS配置上のcanvas位置を引く
+  const cl = parseFloat(canvas.style.left) || 0;
+  const ct = parseFloat(canvas.style.top) || 0;
+  const cw = parseFloat(canvas.style.width) || canvas.width;
+  const ch = parseFloat(canvas.style.height) || canvas.height;
+  // canvasピクセルへ
+  const x = (tx - cl) * canvas.width / cw;
+  const y = (ty - ct) * canvas.height / ch;
+  return { x, y };
 }
 
 function startDraw(e) {
   e.preventDefault();
   if (isPanMode) return;
-  const rect = canvas.getBoundingClientRect();
-  const pos = getPos(e, rect);
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const x = pos.x * scaleX, y = pos.y * scaleY;
+  const { cx, cy } = getClientXY(e);
+  const { x, y } = clientToCanvas(cx, cy);
 
   const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
   history.push(snapshot);
@@ -1100,12 +1114,8 @@ function startDraw(e) {
 function doDraw(e) {
   e.preventDefault();
   if (!drawing) return;
-  const rect = canvas.getBoundingClientRect();
-  const pos = getPos(e, rect);
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const x = pos.x * scaleX;
-  const y = pos.y * scaleY;
+  const { cx, cy } = getClientXY(e);
+  const { x, y } = clientToCanvas(cx, cy);
 
   const strokeColor = isEraser ? '#FFFFFF' : (isRainbow ? `hsl(${rainbowHue},90%,55%)` : currentColor);
   if (isRainbow) rainbowHue = (rainbowHue + 3) % 360;
