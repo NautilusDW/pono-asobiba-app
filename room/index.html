@@ -930,7 +930,19 @@
     <button class="dbg-btn plus" onclick="dbgEggAdd(5)">+5pt</button>
     <button class="dbg-btn plus" onclick="dbgEggAdd(10)">+10pt</button>
     <button class="dbg-btn plus" onclick="dbgEggAdd(30)">+30pt</button>
-    <button class="dbg-btn minus" onclick="dbgEggReset()">リセット</button>
+    <button class="dbg-btn minus" onclick="dbgEggAdd(-5)">-5pt</button>
+  </div>
+  <div class="dbg-row">
+    <button class="dbg-btn" style="background:#2196f3;color:#fff" onclick="dbgEggSetStage(0)">🥚たまご</button>
+    <button class="dbg-btn" style="background:#e91e63;color:#fff" onclick="dbgEggSetStage(1)">👶あかちゃん</button>
+    <button class="dbg-btn" style="background:#4caf50;color:#fff" onclick="dbgEggSetStage(2)">🧒こども</button>
+  </div>
+  <div class="dbg-row">
+    <button class="dbg-btn" style="background:#ff9800;color:#fff" onclick="dbgEggBackToSelect()">🔄 たまご選びへ</button>
+    <button class="dbg-btn" style="background:#9c27b0;color:#fff" onclick="dbgEggDailyReset()">⏰ 今日の回数リセット</button>
+  </div>
+  <div class="dbg-row">
+    <button class="dbg-btn minus" onclick="dbgEggReset()">🗑 全リセット</button>
   </div>
   <div class="dbg-label" id="dbg-egg-info"></div>
 </div>
@@ -3217,6 +3229,49 @@ function dbgEggAdd(n) {
   _eggModalSlot = slot;
   _dbgEggUpdate();
   // モーダルが開いていれば更新
+  if (!document.getElementById('egg-modal').classList.contains('hidden')) {
+    refreshEggModal();
+  }
+}
+function dbgEggSetStage(targetStage) {
+  // Set pts to exact threshold for given stage
+  var eggState = loadEggState();
+  if (!eggState) return;
+  var slot = getActiveEggSlot(eggState);
+  if (!slot) return;
+  slot.growthPts = EGG_THRESHOLDS[targetStage];
+  slot.stage = targetStage;
+  slot.dailyCareToday = 0;
+  var idx = eggState.slots.findIndex(function(s) { return s && s.id === slot.id; });
+  if (idx >= 0) eggState.slots[idx] = slot;
+  saveEggState(eggState);
+  _eggModalSlot = slot;
+  _dbgEggUpdate();
+  if (!document.getElementById('egg-modal').classList.contains('hidden')) {
+    refreshEggModal();
+  }
+}
+function dbgEggBackToSelect() {
+  // Clear egg state and show egg story/selection
+  localStorage.removeItem('pono_egg_state');
+  _eggModalSlot = null;
+  document.getElementById('egg-modal').classList.add('hidden');
+  document.getElementById('debug-panel').classList.add('hidden');
+  _dbgEggUpdate();
+  showEggStory();
+}
+function dbgEggDailyReset() {
+  var eggState = loadEggState();
+  if (!eggState) return;
+  var slot = getActiveEggSlot(eggState);
+  if (!slot) return;
+  slot.dailyCareToday = 0;
+  slot.dailyCareDate = new Date().toDateString();
+  var idx = eggState.slots.findIndex(function(s) { return s && s.id === slot.id; });
+  if (idx >= 0) eggState.slots[idx] = slot;
+  saveEggState(eggState);
+  _eggModalSlot = slot;
+  _dbgEggUpdate();
   if (!document.getElementById('egg-modal').classList.contains('hidden')) {
     refreshEggModal();
   }
