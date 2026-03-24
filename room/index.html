@@ -630,24 +630,33 @@
     }
 
     /* ─── Egg care modal ─── */
+    /* ─── Egg care modal ─── */
     #egg-modal {
       position: fixed; inset: 0; z-index: 250;
-      background: linear-gradient(160deg, #fff5e6 0%, #ffe0b2 50%, #ffcc80 100%);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 16px;
+      transition: background 0.6s;
     }
     #egg-modal.hidden { display: none; }
+    #egg-modal.stage-egg  { background: linear-gradient(160deg, #4e342e 0%, #6d4c41 50%, #795548 100%); }
+    #egg-modal.stage-baby { background: linear-gradient(160deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%); }
+    #egg-modal.stage-kid  { background: linear-gradient(160deg, #e8f5e9 0%, #a5d6a7 50%, #66bb6a 100%); }
     .egg-modal-close {
       position: absolute; top: 12px; right: 16px;
-      font-size: 28px; background: none; border: none; cursor: pointer; color: #888;
+      font-size: 28px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7);
     }
     .egg-modal-creature {
-      font-size: 100px; line-height: 1;
-      animation: eggWobble 3s ease-in-out infinite;
+      font-size: 100px; line-height: 1; position: relative;
     }
-    .egg-modal-creature.hatching {
-      animation: eggShake 0.15s ease-in-out infinite;
-    }
+    .egg-modal-creature.anim-wobble  { animation: eggWobble 3s ease-in-out infinite; }
+    .egg-modal-creature.anim-glow    { animation: eggGlow 1.5s ease-in-out infinite; }
+    .egg-modal-creature.anim-speech  { animation: eggKnock 0.4s ease-in-out; }
+    .egg-modal-creature.anim-float   { animation: babyFloat 0.6s ease-in-out; }
+    .egg-modal-creature.anim-drink   { animation: babyDrink 0.8s ease-in-out; }
+    .egg-modal-creature.anim-music   { animation: babyMusic 1s ease-in-out; }
+    .egg-modal-creature.anim-happy   { animation: babyHappy 0.5s ease-in-out; }
+    .egg-modal-creature.hatching     { animation: eggShake 0.15s ease-in-out infinite; }
+    .egg-modal-creature.grow-up      { animation: growUp 0.8s ease-out; }
     @keyframes eggWobble {
       0%,100% { transform: rotate(-3deg) translateY(0); }
       25%     { transform: rotate(3deg) translateY(-4px); }
@@ -659,38 +668,93 @@
       25%     { transform: translateX(-6px) rotate(-5deg); }
       75%     { transform: translateX(6px) rotate(5deg); }
     }
-    .egg-modal-name { font-size: 20px; font-weight: bold; color: #333; }
-    .egg-modal-stage { font-size: 14px; color: #777; }
-    .egg-modal-hearts {
-      display: flex; gap: 3px; font-size: 18px;
+    @keyframes eggGlow {
+      0%,100% { filter: drop-shadow(0 0 8px rgba(255,150,50,0.3)); }
+      50%     { filter: drop-shadow(0 0 24px rgba(255,150,50,0.8)); }
     }
+    @keyframes eggKnock {
+      0%,100% { transform: translateY(0); }
+      30%     { transform: translateY(-6px); }
+      60%     { transform: translateY(2px); }
+    }
+    @keyframes babyFloat {
+      0%,100% { transform: translateY(0); }
+      50%     { transform: translateY(-14px); }
+    }
+    @keyframes babyDrink {
+      0%,100% { transform: scale(1); }
+      30%     { transform: scale(1.08); }
+      60%     { transform: scale(0.95); }
+    }
+    @keyframes babyMusic {
+      0%,100% { transform: rotate(0); }
+      20%     { transform: rotate(-5deg); }
+      40%     { transform: rotate(5deg); }
+      60%     { transform: rotate(-3deg); }
+      80%     { transform: rotate(3deg); }
+    }
+    @keyframes babyHappy {
+      0%,100% { transform: scale(1); }
+      50%     { transform: scale(1.12); }
+    }
+    @keyframes growUp {
+      0%   { transform: scale(0.8); opacity: 0.5; }
+      50%  { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    /* Crack overlay on egg */
+    .egg-crack-overlay {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 40px; opacity: 0.4; pointer-events: none;
+    }
+    .egg-modal-name { font-size: 20px; font-weight: bold; }
+    .stage-egg .egg-modal-name { color: #ffcc80; }
+    .stage-baby .egg-modal-name { color: #333; }
+    .stage-kid .egg-modal-name { color: #333; }
+    .egg-modal-stage { font-size: 14px; }
+    .stage-egg .egg-modal-stage { color: #bcaaa4; }
+    .stage-baby .egg-modal-stage, .stage-kid .egg-modal-stage { color: #777; }
+    .egg-modal-hearts { display: flex; gap: 3px; font-size: 18px; }
     .heart-full { color: #e91e63; }
     .heart-empty { color: #ddd; }
-    .egg-modal-actions {
-      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
-    }
+    .stage-egg .heart-empty { color: rgba(255,255,255,0.2); }
+    .egg-modal-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
     .egg-action-btn {
-      width: 90px; height: 80px; border-radius: 16px; border: none;
-      font-size: 32px; cursor: pointer;
+      width: 82px; height: 78px; border-radius: 16px; border: none;
+      font-size: 30px; cursor: pointer;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 4px; box-shadow: 0 3px 8px rgba(0,0,0,0.12);
-      transition: transform 0.1s;
+      gap: 3px; box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      transition: transform 0.1s; color: white;
     }
     .egg-action-btn:active { transform: scale(0.9); }
-    .egg-action-btn span { font-size: 11px; font-weight: bold; }
-    .egg-action-btn.cooldown { opacity: 0.4; pointer-events: none; }
-    #egg-btn-pat  { background: linear-gradient(135deg, #f8bbd0, #f48fb1); color: white; }
-    #egg-btn-warm { background: linear-gradient(135deg, #ffcc80, #ff9800); color: white; }
-    #egg-btn-feed { background: linear-gradient(135deg, #a5d6a7, #66bb6a); color: white; }
+    .egg-action-btn span { font-size: 10px; font-weight: bold; }
+    .egg-action-btn.cooldown { opacity: 0.35; pointer-events: none; }
     .egg-modal-msg {
-      font-size: 15px; color: #555; text-align: center;
-      min-height: 24px;
+      font-size: 15px; text-align: center; min-height: 24px;
     }
+    .stage-egg .egg-modal-msg { color: #ffcc80; }
+    .stage-baby .egg-modal-msg, .stage-kid .egg-modal-msg { color: #555; }
     .egg-modal-garden-btn {
       padding: 12px 28px; border-radius: 20px; border: none;
       background: linear-gradient(135deg, #66bb6a, #388e3c); color: white;
       font-size: 16px; font-weight: bold; cursor: pointer;
       box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+    /* Reaction bubble */
+    .reaction-bubble {
+      position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.9); border-radius: 14px;
+      padding: 4px 12px; font-size: 14px; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      animation: bubblePop 1.8s ease-out forwards;
+      pointer-events: none; z-index: 5;
+    }
+    @keyframes bubblePop {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.5); }
+      15%  { opacity: 1; transform: translateX(-50%) translateY(-5px) scale(1.1); }
+      30%  { transform: translateX(-50%) translateY(0) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
     }
     /* Hatch flash */
     .hatch-flash {
@@ -698,14 +762,29 @@
       animation: hatchFlash 0.8s ease-out forwards;
     }
     @keyframes hatchFlash { 0%{opacity:1} 100%{opacity:0} }
-    /* Heart particle */
-    .heart-particle {
+    /* Floating particle (heart, star, music note) */
+    .float-particle {
       position: absolute; pointer-events: none; font-size: 20px;
-      animation: heartFloat 1s ease-out forwards;
+      animation: floatUp 1.2s ease-out forwards;
     }
-    @keyframes heartFloat {
+    @keyframes floatUp {
       0%   { opacity: 1; transform: translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateY(-60px) scale(0.5); }
+      100% { opacity: 0; transform: translateY(-70px) scale(0.4); }
+    }
+    /* Milestone celebration */
+    .milestone-toast {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: rgba(0,0,0,0.75); color: white; border-radius: 20px;
+      padding: 16px 28px; font-size: 18px; font-weight: bold;
+      z-index: 270; animation: milestoneIn 2.5s ease-out forwards;
+      text-align: center; pointer-events: none;
+    }
+    @keyframes milestoneIn {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
+      15%  { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
+      25%  { transform: translate(-50%,-50%) scale(1); }
+      75%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%,-50%) translateY(-20px); }
     }
 
     /* ─── Debug panel ─── */
@@ -852,19 +931,15 @@
 </div>
 
 <!-- ── Egg care modal ────────────────────────────────── -->
-<div id="egg-modal" class="hidden">
+<div id="egg-modal" class="hidden stage-egg">
   <button class="egg-modal-close" id="egg-modal-close">✕</button>
-  <div class="egg-modal-creature" id="egg-creature">🥚</div>
+  <div class="egg-modal-creature anim-wobble" id="egg-creature">🥚</div>
   <div class="egg-modal-name" id="egg-name"></div>
   <div class="egg-modal-stage" id="egg-stage"></div>
   <div class="egg-modal-hearts" id="egg-hearts"></div>
-  <div class="egg-modal-actions" id="egg-actions">
-    <button class="egg-action-btn" id="egg-btn-pat">🤲<span>なでる</span></button>
-    <button class="egg-action-btn" id="egg-btn-warm">🔥<span>あたためる</span></button>
-    <button class="egg-action-btn" id="egg-btn-feed">🍎<span>ごはん</span></button>
-  </div>
+  <div class="egg-modal-actions" id="egg-actions"></div>
   <div class="egg-modal-msg" id="egg-msg"></div>
-  <button class="egg-modal-garden-btn hidden" id="egg-garden-btn">🌳 おにわに いこう！</button>
+  <button class="egg-modal-garden-btn hidden" id="egg-garden-btn">🌳 おにわで あそぼう！</button>
 </div>
 
 <!-- ── Egg story kamishibai ──────────────────────────── -->
@@ -2481,6 +2556,50 @@ const EGG_THRESHOLDS = [0, 10, 30, 60];
 const EGG_STAGE_NAMES = ['たまご', 'あかちゃん', 'こども', 'おとな'];
 const EGG_DAILY_CAP = 15;
 
+// ── Stage-specific care actions ─────────────────────────
+const ACTION_COLORS = {
+  pat:  'linear-gradient(135deg, #f8bbd0, #f48fb1)',
+  warm: 'linear-gradient(135deg, #ffcc80, #ff9800)',
+  talk: 'linear-gradient(135deg, #b39ddb, #7e57c2)',
+  hold: 'linear-gradient(135deg, #ffab91, #ff7043)',
+  milk: 'linear-gradient(135deg, #81d4fa, #29b6f6)',
+  sing: 'linear-gradient(135deg, #ce93d8, #ab47bc)',
+};
+const EGG_CARE_ACTIONS = {
+  [EGG_STAGE_EGG]: [
+    { id: 'pat',  emoji: '🤲', label: 'なでる',       pts: 1, cd: 3000, anim: 'anim-wobble', particle: '💕' },
+    { id: 'warm', emoji: '🔥', label: 'あたためる',   pts: 1, cd: 5000, anim: 'anim-glow',   particle: '✨' },
+    { id: 'talk', emoji: '🗣️', label: 'はなしかける', pts: 1, cd: 4000, anim: 'anim-speech', particle: '💬' },
+  ],
+  [EGG_STAGE_BABY]: [
+    { id: 'hold', emoji: '🤱', label: 'だっこする', pts: 1, cd: 3000, anim: 'anim-float', particle: '😊' },
+    { id: 'milk', emoji: '🍼', label: 'ミルク',     pts: 2, cd: 5000, anim: 'anim-drink', particle: '🍼' },
+    { id: 'sing', emoji: '🎵', label: 'こもりうた', pts: 1, cd: 4000, anim: 'anim-music', particle: '♪' },
+    { id: 'pat',  emoji: '🤲', label: 'なでる',     pts: 1, cd: 3000, anim: 'anim-happy', particle: '💕' },
+  ],
+};
+
+// ── Creature-specific random reactions ───────────────────
+const CREATURE_REACTIONS = {
+  hinoko:   { egg: ['ぽかぽか！','めらめら♪','あったかい！'], baby: ['ぼーっ🔥','おなかすいた～','だっこ！'] },
+  hanarin:  { egg: ['ふわふわ♪','いいにおい！','きれい～'], baby: ['おはな♪','はらぺこ～','もっとー！'] },
+  shizukun: { egg: ['ぷるるん！','しずく♪','きらきら！'], baby: ['ぴちゃ💧','ごくごく♪','うれしい！'] },
+  morinoko: { egg: ['さわさわ♪','みどり～','もりもり！'], baby: ['はっぱ🍀','おいしい♪','すくすく！'] },
+  mokumoku: { egg: ['ふわ～♪','もくもく！','ふかふか♪'], baby: ['ぽわぽわ☁️','おなか～','ねむい…💤'] },
+  kiraboshi: { egg: ['きらっ⭐','ぴかぴか！','ひかってる♪'], baby: ['しゃきーん！','うまい♪','もっと！'] },
+  lovemon:  { egg: ['だいすき💗','ぽかぽか♪','うれしい！'], baby: ['ちゅっ💕','おいしい♪','なでて～'] },
+  nijitama: { egg: ['ぴぴっ！','カチカチ♪','にじいろ！'], baby: ['ウィーン⚙️','じゅうでん♪','きどう！'] },
+};
+
+// ── Milestones ──────────────────────────────────────────
+const EGG_MILESTONES = [
+  { pts: 5,  msg: 'なかよくなってきたね！', emoji: '🌟' },
+  { pts: 15, msg: 'もっと おおきくなるよ！', emoji: '🎊' },
+  { pts: 20, msg: 'おおきくなったね！', emoji: '🌈' },
+  { pts: 25, msg: 'もうすぐ こどもだね！', emoji: '✨' },
+  { pts: 30, msg: 'おにわで あそべるよ！', emoji: '🌳🎉' },
+];
+
 // Creature data (same as egg/index.html)
 const ROOM_CREATURES = {
   hinoko:   { emoji: '🔥', babyEmoji: '🕯️', name: 'ヒノコ',   eggImage: 'egg_018' },
@@ -2493,8 +2612,8 @@ const ROOM_CREATURES = {
   nijitama: { emoji: '🤖', babyEmoji: '⚙️', name: 'ニジタマ', eggImage: 'egg_002' },
 };
 
-let _eggModalSlot = null; // current active egg data
-let _patCD = 0, _warmCD = 0, _feedCD = 0;
+let _eggModalSlot = null;
+let _timeBonus = 0; // multiplier for first action after long absence
 
 function loadEggState() {
   try {
@@ -2509,7 +2628,6 @@ function saveEggState(eggState) {
 
 function getActiveEggSlot(eggState) {
   if (!eggState || !eggState.slots) return null;
-  // Find first non-null slot
   return eggState.slots.find(s => s !== null) || null;
 }
 
@@ -2526,8 +2644,22 @@ function openEggModal() {
   _eggModalSlot = getActiveEggSlot(eggState);
   if (!_eggModalSlot) return;
 
+  // Check time-away bonus
+  _timeBonus = 0;
+  if (_eggModalSlot.lastCareAt) {
+    const hours = (Date.now() - _eggModalSlot.lastCareAt) / 3600000;
+    if (hours >= 24) _timeBonus = 3;
+    else if (hours >= 6) _timeBonus = 2;
+  }
+
   refreshEggModal();
   document.getElementById('egg-modal').classList.remove('hidden');
+
+  // Show time-away greeting
+  if (_timeBonus > 0) {
+    const msg = _timeBonus >= 3 ? 'さみしかったよ…💧' : 'あいたかったよ！💕';
+    setTimeout(() => showReactionBubble(msg), 400);
+  }
 }
 
 function refreshEggModal() {
@@ -2537,26 +2669,49 @@ function refreshEggModal() {
   if (!creature) return;
 
   const stage = getEggStage(slot.growthPts);
-  slot.stage = stage; // sync
+  slot.stage = stage;
 
-  // Emoji display
+  // Stage class for background
+  const modal = document.getElementById('egg-modal');
+  modal.classList.remove('stage-egg', 'stage-baby', 'stage-kid');
+  if (stage === EGG_STAGE_EGG) modal.classList.add('stage-egg');
+  else if (stage === EGG_STAGE_BABY) modal.classList.add('stage-baby');
+  else modal.classList.add('stage-kid');
+
+  // Creature emoji
   const creatureEl = document.getElementById('egg-creature');
+  creatureEl.className = 'egg-modal-creature'; // reset animations
   if (stage === EGG_STAGE_EGG) {
     creatureEl.textContent = '🥚';
+    creatureEl.classList.add('anim-wobble');
+    // Crack overlay at 8pt+
+    let crack = creatureEl.querySelector('.egg-crack-overlay');
+    if (slot.growthPts >= 8 && !crack) {
+      crack = document.createElement('span');
+      crack.className = 'egg-crack-overlay';
+      crack.textContent = '⚡';
+      creatureEl.appendChild(crack);
+    } else if (slot.growthPts < 8 && crack) {
+      crack.remove();
+    }
   } else if (stage === EGG_STAGE_BABY) {
     creatureEl.textContent = creature.babyEmoji;
+    // Bigger at 20pt+
+    if (slot.growthPts >= 20) creatureEl.style.fontSize = '120px';
+    else creatureEl.style.fontSize = '100px';
   } else {
     creatureEl.textContent = creature.emoji;
+    creatureEl.style.fontSize = '120px';
   }
 
-  // Name & stage
+  // Name & stage label
   document.getElementById('egg-name').textContent = creature.name;
   document.getElementById('egg-stage').textContent = EGG_STAGE_NAMES[stage];
 
   // Hearts progress bar
   const nextThreshold = stage < 3 ? EGG_THRESHOLDS[stage + 1] : EGG_THRESHOLDS[3];
   const prevThreshold = EGG_THRESHOLDS[stage];
-  const progress = Math.min(1, (slot.growthPts - prevThreshold) / (nextThreshold - prevThreshold));
+  const progress = Math.min(1, (slot.growthPts - prevThreshold) / Math.max(1, nextThreshold - prevThreshold));
   const totalHearts = 10;
   const filledHearts = Math.round(progress * totalHearts);
   const heartsEl = document.getElementById('egg-hearts');
@@ -2568,35 +2723,59 @@ function refreshEggModal() {
     heartsEl.appendChild(h);
   }
 
-  // Actions visibility
+  // Actions — dynamic per stage
   const actionsEl = document.getElementById('egg-actions');
   const gardenBtn = document.getElementById('egg-garden-btn');
   const msgEl = document.getElementById('egg-msg');
 
   if (stage >= EGG_STAGE_KID) {
     actionsEl.style.display = 'none';
+    actionsEl.innerHTML = '';
     gardenBtn.classList.remove('hidden');
-    msgEl.textContent = 'おにわで まっているよ！';
+    msgEl.textContent = 'おにわで あそぼう！';
   } else {
-    actionsEl.style.display = 'flex';
     gardenBtn.classList.add('hidden');
-
-    // Daily cap check
+    // Daily cap
     const today = new Date().toDateString();
     if (slot.dailyCareDate !== today) {
       slot.dailyCareToday = 0;
       slot.dailyCareDate = today;
     }
     if (slot.dailyCareToday >= EGG_DAILY_CAP) {
-      msgEl.textContent = 'きょうは もう たくさん おせわ したね！';
+      msgEl.textContent = 'きょうは もう たくさん おせわ したね！🌙';
       actionsEl.style.display = 'none';
+      actionsEl.innerHTML = '';
     } else {
-      msgEl.textContent = '';
+      actionsEl.style.display = 'flex';
+      buildActionButtons(stage);
+      msgEl.textContent = _timeBonus > 0 ? `さいしょの おせわは ${_timeBonus}ばい！` : '';
     }
   }
 }
 
-function doEggCare(type) {
+function buildActionButtons(stage) {
+  const actionsEl = document.getElementById('egg-actions');
+  const actions = EGG_CARE_ACTIONS[stage];
+  if (!actions) { actionsEl.innerHTML = ''; return; }
+
+  // Only rebuild if button set changed
+  const currentIds = Array.from(actionsEl.children).map(b => b.dataset.actionId).join(',');
+  const newIds = actions.map(a => a.id).join(',');
+  if (currentIds === newIds) return; // already built
+
+  actionsEl.innerHTML = '';
+  actions.forEach(action => {
+    const btn = document.createElement('button');
+    btn.className = 'egg-action-btn';
+    btn.dataset.actionId = action.id;
+    btn.style.background = ACTION_COLORS[action.id] || '#888';
+    btn.innerHTML = `${action.emoji}<span>${action.label}</span>`;
+    btn.addEventListener('click', () => doEggCare(action));
+    actionsEl.appendChild(btn);
+  });
+}
+
+function doEggCare(action) {
   if (!_eggModalSlot) return;
   const slot = _eggModalSlot;
 
@@ -2608,12 +2787,19 @@ function doEggCare(type) {
   }
   if (slot.dailyCareToday >= EGG_DAILY_CAP) return;
 
-  const pts = type === 'feed' ? 2 : 1;
+  // Calculate points (with time bonus on first action)
+  let pts = action.pts;
+  if (_timeBonus > 0) {
+    pts *= _timeBonus;
+    _timeBonus = 0; // consume bonus
+  }
+
+  const oldPts = slot.growthPts;
   slot.growthPts += pts;
   slot.dailyCareToday++;
   slot.lastCareAt = Date.now();
 
-  // Save to localStorage
+  // Save
   const eggState = loadEggState();
   if (eggState) {
     const idx = eggState.slots.findIndex(s => s && s.id === slot.id);
@@ -2621,15 +2807,30 @@ function doEggCare(type) {
     saveEggState(eggState);
   }
 
-  // Heart particle
-  spawnHeartParticle();
+  // Animate creature
+  playActionAnim(action.anim);
 
-  // Check for stage transition
+  // Spawn particles
+  spawnFloatParticle(action.particle);
+
+  // Random creature reaction
+  const reactions = CREATURE_REACTIONS[slot.creatureType];
+  if (reactions) {
+    const stage = getEggStage(slot.growthPts);
+    const pool = stage === EGG_STAGE_EGG ? reactions.egg : reactions.baby;
+    if (pool && Math.random() < 0.6) {
+      setTimeout(() => showReactionBubble(pool[Math.floor(Math.random() * pool.length)]), 300);
+    }
+  }
+
+  // Check milestones
+  checkMilestones(oldPts, slot.growthPts);
+
+  // Check stage transitions
   const newStage = getEggStage(slot.growthPts);
   const oldStage = slot.stage;
 
   if (newStage > oldStage && newStage === EGG_STAGE_BABY) {
-    // Hatch!
     doHatchAnimation(() => {
       slot.stage = newStage;
       if (eggState) {
@@ -2638,46 +2839,103 @@ function doEggCare(type) {
       }
       refreshEggModal();
     });
+  } else if (newStage > oldStage && newStage === EGG_STAGE_KID) {
+    doGrowUpAnimation(() => {
+      slot.stage = newStage;
+      if (eggState) saveEggState(eggState);
+      refreshEggModal();
+    });
   } else {
     refreshEggModal();
   }
 
-  // Cooldown
-  const btn = document.getElementById('egg-btn-' + type);
+  // Cooldown on button
+  const btn = document.querySelector(`.egg-action-btn[data-action-id="${action.id}"]`);
   if (btn) {
     btn.classList.add('cooldown');
-    const cd = type === 'warm' ? 5000 : 3000;
-    setTimeout(() => btn.classList.remove('cooldown'), cd);
+    setTimeout(() => btn.classList.remove('cooldown'), action.cd);
   }
 }
 
-function spawnHeartParticle() {
+function playActionAnim(animClass) {
+  const el = document.getElementById('egg-creature');
+  // Remove all anim classes, apply new one briefly
+  el.className = 'egg-modal-creature ' + animClass;
+  // Reset animation if same class
+  el.style.animation = 'none';
+  el.offsetHeight; // force reflow
+  el.style.animation = '';
+}
+
+function spawnFloatParticle(emoji) {
   const modal = document.getElementById('egg-modal');
-  const heart = document.createElement('div');
-  heart.className = 'heart-particle';
-  heart.textContent = '💕';
-  heart.style.left = (40 + Math.random() * 20) + '%';
-  heart.style.top = '40%';
-  modal.appendChild(heart);
-  setTimeout(() => heart.remove(), 1000);
+  for (let i = 0; i < 3; i++) {
+    const p = document.createElement('div');
+    p.className = 'float-particle';
+    p.textContent = emoji;
+    p.style.left = (35 + Math.random() * 30) + '%';
+    p.style.top = (30 + Math.random() * 15) + '%';
+    p.style.animationDelay = (i * 0.15) + 's';
+    modal.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+function showReactionBubble(text) {
+  const creatureEl = document.getElementById('egg-creature');
+  // Remove existing bubble
+  const old = creatureEl.querySelector('.reaction-bubble');
+  if (old) old.remove();
+  const bubble = document.createElement('div');
+  bubble.className = 'reaction-bubble';
+  bubble.textContent = text;
+  creatureEl.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 1800);
+}
+
+function checkMilestones(oldPts, newPts) {
+  for (const m of EGG_MILESTONES) {
+    if (oldPts < m.pts && newPts >= m.pts) {
+      showMilestoneToast(m.emoji + ' ' + m.msg);
+      break; // one at a time
+    }
+  }
+}
+
+function showMilestoneToast(text) {
+  const toast = document.createElement('div');
+  toast.className = 'milestone-toast';
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2800);
 }
 
 function doHatchAnimation(callback) {
   const creatureEl = document.getElementById('egg-creature');
-  creatureEl.classList.add('hatching');
+  creatureEl.className = 'egg-modal-creature hatching';
   document.getElementById('egg-msg').textContent = 'おや…？ たまごが…！';
 
   setTimeout(() => {
-    // Flash
     const flash = document.createElement('div');
     flash.className = 'hatch-flash';
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 800);
 
-    creatureEl.classList.remove('hatching');
-    document.getElementById('egg-msg').textContent = '🎉 うまれたよ！';
+    creatureEl.className = 'egg-modal-creature';
+    showMilestoneToast('🎉 うまれたよ！');
     callback();
   }, 2000);
+}
+
+function doGrowUpAnimation(callback) {
+  const creatureEl = document.getElementById('egg-creature');
+  creatureEl.className = 'egg-modal-creature grow-up';
+  document.getElementById('egg-msg').textContent = 'おおきくなったよ！';
+
+  setTimeout(() => {
+    showMilestoneToast('🌳🎉 おにわで あそべるよ！');
+    callback();
+  }, 1200);
 }
 
 function placeEggIncubator() {
@@ -2753,9 +3011,7 @@ function init() {
   document.getElementById('egg-modal-close').addEventListener('click', () => {
     document.getElementById('egg-modal').classList.add('hidden');
   });
-  document.getElementById('egg-btn-pat').addEventListener('click', () => doEggCare('pat'));
-  document.getElementById('egg-btn-warm').addEventListener('click', () => doEggCare('warm'));
-  document.getElementById('egg-btn-feed').addEventListener('click', () => doEggCare('feed'));
+  // (egg care buttons are now dynamically generated in buildActionButtons())
   document.getElementById('egg-garden-btn').addEventListener('click', () => {
     location.href = '../egg/index.html';
   });
