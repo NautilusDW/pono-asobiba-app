@@ -962,14 +962,16 @@
       // Back=(0.5,0.125), Left=(0.095,0.537), Right=(0.905,0.54)
       // L1: back→left edge, R: back→right edge
       const YARD_FENCES = [
-        { file:'fence_L1_sm.webp', rx:0.399, ry:0.228 },  // L1 奥半分
-        { file:'fence_L1_sm.webp', rx:0.197, ry:0.434 },  // L1 手前半分
-        { file:'fence_R_sm.webp',  rx:0.601, ry:0.229 },  // R 奥半分
-        { file:'fence_R_sm.webp',  rx:0.804, ry:0.437 },  // R 手前半分
+        { file:'fence_L1_sm.webp', rx:0.399, ry:0.228, cellSize:1.45 },  // L1 奥半分
+        { file:'fence_L1_sm.webp', rx:0.197, ry:0.434, cellSize:1.45 },  // L1 手前半分
+        { file:'fence_R_sm.webp',  rx:0.601, ry:0.229, cellSize:1.45 },  // R 奥半分
+        { file:'fence_R_sm.webp',  rx:0.804, ry:0.437, cellSize:1.45 },  // R 手前半分
       ];
       yardFenceSprites = [];
       const yfsc = Math.max(w / 1200, h / 670);
       const yoffX = (w - 1200 * yfsc) / 2, yoffY = (h - 670 * yfsc) / 2;
+      const yimgH = 670 * yfsc;
+      const ycellH = YARD_CELL_H * yimgH;
       // Sort by ry so back fences render first (behind)
       YARD_FENCES.sort((a,b) => a.ry - b.ry);
       YARD_FENCES.forEach(f => {
@@ -977,7 +979,8 @@
           if (!tex || !layerBg.parent) return;
           const sp = new PIXI.Sprite(tex);
           sp.anchor.set(0.5, 0.5);
-          sp.scale.set(yfsc);
+          const hPx = f.cellSize * ycellH;
+          sp.scale.set(hPx / tex.height);
           sp.x = yoffX + f.rx * 1200 * yfsc;
           sp.y = yoffY + f.ry * 670 * yfsc;
           sp.tint = getFenceStyle().tint;
@@ -1214,22 +1217,25 @@
       // Layer 3: Fences — R×2 + R2×2 for farm view
       // R: back→right edge, R2: right→front edge
       const FARM_FENCES = [
-        { file:'fence_R_sm.webp',  rx:0.601, ry:0.229 },  // R 奥半分
-        { file:'fence_R_sm.webp',  rx:0.804, ry:0.437 },  // R 手前半分
-        { file:'fence_R2_sm.webp', rx:0.804, ry:0.641 },  // R2 奥半分
-        { file:'fence_R2_sm.webp', rx:0.601, ry:0.843 },  // R2 手前半分
+        { file:'fence_R_sm.webp',  rx:0.601, ry:0.229, cellSize:1.45 },  // R 奥半分
+        { file:'fence_R_sm.webp',  rx:0.804, ry:0.437, cellSize:1.45 },  // R 手前半分
+        { file:'fence_R2_sm.webp', rx:0.804, ry:0.641, cellSize:1.45 },  // R2 奥半分
+        { file:'fence_R2_sm.webp', rx:0.601, ry:0.843, cellSize:1.45 },  // R2 手前半分
       ];
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
       const ffsc = Math.max(w / 1200, h / 670);
       const foffX = (w - 1200 * ffsc) / 2, foffY = (h - 670 * ffsc) / 2;
+      const fimgH = 670 * ffsc;
+      const fcellH = YARD_CELL_H * fimgH;
       FARM_FENCES.sort((a,b) => a.ry - b.ry);
       FARM_FENCES.forEach(f => {
         PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !farmContainer.parent) return;
           const sp = new PIXI.Sprite(tex);
           sp.anchor.set(0.5, 0.5);
-          sp.scale.set(ffsc);
+          const hPx = f.cellSize * fcellH;
+          sp.scale.set(hPx / tex.height);
           sp.x = foffX + f.rx * 1200 * ffsc;
           sp.y = foffY + f.ry * 670 * ffsc;
           sp.tint = fenceTint;
