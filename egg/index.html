@@ -958,36 +958,28 @@
         layerBg.addChildAt(sp, 1);
       }).catch(() => {});
 
-      // Fence layer — 2 pieces per side, sorted by Y (back=behind)
-      // Grid-based placement matching yard_adjuster ISO_GRID
+      // Fence layer — 2 pieces per side, positioned in 1200×670 space
+      // Back=(0.5,0.125), Left=(0.095,0.537), Right=(0.905,0.54)
+      // L1: back→left edge, R: back→right edge
       const YARD_FENCES = [
-        // L1: 左辺 (back→left), row=0沿い, col=1奥 col=5手前
-        { file:'fence_L1_sm.webp', row:0, col:1, cellSize:1.45, pivotX:-26, pivotY:1.4 },
-        { file:'fence_L1_sm.webp', row:0, col:5, cellSize:1.45, pivotX:-26, pivotY:1.4 },
-        // R: 右辺 (back→right), col=0沿い, row=1奥 row=5手前
-        { file:'fence_R_sm.webp',  row:1, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
-        { file:'fence_R_sm.webp',  row:5, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
+        { file:'fence_L1_sm.webp', rx:0.399, ry:0.228 },  // L1 奥半分
+        { file:'fence_L1_sm.webp', rx:0.197, ry:0.434 },  // L1 手前半分
+        { file:'fence_R_sm.webp',  rx:0.601, ry:0.229 },  // R 奥半分
+        { file:'fence_R_sm.webp',  rx:0.804, ry:0.437 },  // R 手前半分
       ];
       yardFenceSprites = [];
-      // Cover-mode image mapping (same as green base)
       const yfsc = Math.max(w / 1200, h / 670);
-      const yimgW = 1200 * yfsc, yimgH = 670 * yfsc;
-      const yoffX = (w - yimgW) / 2, yoffY = (h - yimgH) / 2;
-      const ycellH = YARD_CELL_H * yimgH;
-      // Sort by grid Y so back fences render first (behind)
-      YARD_FENCES.sort((a,b) => (a.row + a.col) - (b.row + b.col));
+      const yoffX = (w - 1200 * yfsc) / 2, yoffY = (h - 670 * yfsc) / 2;
+      // Sort by ry so back fences render first (behind)
+      YARD_FENCES.sort((a,b) => a.ry - b.ry);
       YARD_FENCES.forEach(f => {
         PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !layerBg.parent) return;
           const sp = new PIXI.Sprite(tex);
-          const pos = yardGridPt(f.row + 0.5, f.col + 0.5);
-          const hPx = f.cellSize * ycellH;
-          const spSc = hPx / tex.height;
-          const spW = tex.width * spSc;
-          sp.anchor.set(0.5, 1);
-          sp.scale.set(spSc);
-          sp.x = yoffX + pos.x * yimgW - (f.pivotX / 100) * spW;
-          sp.y = yoffY + pos.y * yimgH + (f.pivotY / 100) * hPx;
+          sp.anchor.set(0.5, 0.5);
+          sp.scale.set(yfsc);
+          sp.x = yoffX + f.rx * 1200 * yfsc;
+          sp.y = yoffY + f.ry * 670 * yfsc;
           sp.tint = getFenceStyle().tint;
           layerBg.addChild(sp);
           yardFenceSprites.push(sp);
@@ -1219,34 +1211,27 @@
         farmPlotSprites.push({ container: cont, plotIdx: idx, x: px, y: py, size: plotSize });
       });
 
-      // Layer 3: Fences — fence_R×2 + fence_R2×2 for farm view, sorted by Y
+      // Layer 3: Fences — R×2 + R2×2 for farm view
+      // R: back→right edge, R2: right→front edge
       const FARM_FENCES = [
-        // R: 右辺 (back→right), col=0沿い, row=1奥 row=5手前
-        { file:'fence_R_sm.webp',  row:1, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
-        { file:'fence_R_sm.webp',  row:5, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
-        // R2: 右下辺 (right→front), row=7沿い, col=1奥 col=5手前
-        { file:'fence_R2_sm.webp', row:7, col:1, cellSize:1.45, pivotX:-48, pivotY:19.2 },
-        { file:'fence_R2_sm.webp', row:7, col:5, cellSize:1.45, pivotX:-48, pivotY:19.2 },
+        { file:'fence_R_sm.webp',  rx:0.601, ry:0.229 },  // R 奥半分
+        { file:'fence_R_sm.webp',  rx:0.804, ry:0.437 },  // R 手前半分
+        { file:'fence_R2_sm.webp', rx:0.804, ry:0.641 },  // R2 奥半分
+        { file:'fence_R2_sm.webp', rx:0.601, ry:0.843 },  // R2 手前半分
       ];
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
       const ffsc = Math.max(w / 1200, h / 670);
-      const fimgW = 1200 * ffsc, fimgH = 670 * ffsc;
-      const foffX = (w - fimgW) / 2, foffY = (h - fimgH) / 2;
-      const fcellH = YARD_CELL_H * fimgH;
-      FARM_FENCES.sort((a,b) => (a.row + a.col) - (b.row + b.col));
+      const foffX = (w - 1200 * ffsc) / 2, foffY = (h - 670 * ffsc) / 2;
+      FARM_FENCES.sort((a,b) => a.ry - b.ry);
       FARM_FENCES.forEach(f => {
         PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !farmContainer.parent) return;
           const sp = new PIXI.Sprite(tex);
-          const pos = yardGridPt(f.row + 0.5, f.col + 0.5);
-          const hPx = f.cellSize * fcellH;
-          const spSc = hPx / tex.height;
-          const spW = tex.width * spSc;
-          sp.anchor.set(0.5, 1);
-          sp.scale.set(spSc);
-          sp.x = foffX + pos.x * fimgW - (f.pivotX / 100) * spW;
-          sp.y = foffY + pos.y * fimgH + (f.pivotY / 100) * hPx;
+          sp.anchor.set(0.5, 0.5);
+          sp.scale.set(ffsc);
+          sp.x = foffX + f.rx * 1200 * ffsc;
+          sp.y = foffY + f.ry * 670 * ffsc;
           sp.tint = fenceTint;
           layerFence.addChild(sp);
           farmFenceSprites.push(sp);
