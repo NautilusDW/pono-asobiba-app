@@ -723,7 +723,7 @@ document.getElementById('export-btn').onclick = () => {
       const hasCustomBounds =
         adj.minRow !== autoMargin || adj.maxRow !== (7 - autoMargin) ||
         adj.minCol !== autoMargin || adj.maxCol !== (7 - autoMargin);
-      let line = `  // ${item.name} [${label}]\n  { id:'${item.id}', angle:'${label}', cellSize:${adj.cellSize}, pivotX:${adj.pivotX}, pivotY:${adj.pivotY}`;
+      let line = `  // ${item.name} [${label}]\n  { id:'${item.id}', angle:'${label}', row:${adj.row}, col:${adj.col}, cellSize:${adj.cellSize}, pivotX:${adj.pivotX}, pivotY:${adj.pivotY}`;
       if (hasCustomBounds) {
         line += `, minRow:${adj.minRow}, maxRow:${adj.maxRow}, minCol:${adj.minCol}, maxCol:${adj.maxCol}`;
       }
