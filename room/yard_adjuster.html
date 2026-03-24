@@ -69,35 +69,35 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     <summary style="cursor:pointer;font-size:13px;color:#ffd700">🔧 グリッド頂点調整</summary>
     <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
       <label><span>back X</span>
-        <input type="range" id="sl-grid-backX" min="0.3" max="0.7" step="0.001">
+        <input type="range" id="sl-grid-backX" min="0.2" max="0.8" step="0.001">
         <input type="number" id="num-grid-backX" step="0.001" style="width:70px">
       </label>
       <label><span>back Y</span>
-        <input type="range" id="sl-grid-backY" min="0.1" max="0.6" step="0.001">
+        <input type="range" id="sl-grid-backY" min="0.0" max="0.5" step="0.001">
         <input type="number" id="num-grid-backY" step="0.001" style="width:70px">
       </label>
       <label><span>right X</span>
-        <input type="range" id="sl-grid-rightX" min="0.5" max="0.95" step="0.001">
+        <input type="range" id="sl-grid-rightX" min="0.5" max="1.0" step="0.001">
         <input type="number" id="num-grid-rightX" step="0.001" style="width:70px">
       </label>
       <label><span>right Y</span>
-        <input type="range" id="sl-grid-rightY" min="0.4" max="0.8" step="0.001">
+        <input type="range" id="sl-grid-rightY" min="0.2" max="0.8" step="0.001">
         <input type="number" id="num-grid-rightY" step="0.001" style="width:70px">
       </label>
       <label><span>left X</span>
-        <input type="range" id="sl-grid-leftX" min="0.05" max="0.5" step="0.001">
+        <input type="range" id="sl-grid-leftX" min="0.0" max="0.5" step="0.001">
         <input type="number" id="num-grid-leftX" step="0.001" style="width:70px">
       </label>
       <label><span>left Y</span>
-        <input type="range" id="sl-grid-leftY" min="0.4" max="0.8" step="0.001">
+        <input type="range" id="sl-grid-leftY" min="0.2" max="0.8" step="0.001">
         <input type="number" id="num-grid-leftY" step="0.001" style="width:70px">
       </label>
       <label><span>front X</span>
-        <input type="range" id="sl-grid-frontX" min="0.3" max="0.7" step="0.001">
+        <input type="range" id="sl-grid-frontX" min="0.2" max="0.8" step="0.001">
         <input type="number" id="num-grid-frontX" step="0.001" style="width:70px">
       </label>
       <label><span>front Y</span>
-        <input type="range" id="sl-grid-frontY" min="0.7" max="1.0" step="0.001">
+        <input type="range" id="sl-grid-frontY" min="0.5" max="1.0" step="0.001">
         <input type="number" id="num-grid-frontY" step="0.001" style="width:70px">
       </label>
       <div style="display:flex;gap:4px;margin-top:4px">
@@ -115,7 +115,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     <h3 id="sel-name">---</h3>
 
     <label><span>cellSize</span>
-      <input type="range" id="sl-cellSize" min="0.3" max="3.0" step="0.1">
+      <input type="range" id="sl-cellSize" min="0.1" max="15.0" step="0.1">
       <input type="number" id="num-cellSize" step="0.1">
     </label>
 
@@ -171,12 +171,12 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 </div>
 
 <script>
-// ─── ISO_GRID (from room/index.html) ───
+// ─── ISO_GRID (yard — green_sm.png 1200×670 のアイソメダイヤモンドに合わせた値) ───
 const ISO_GRID = {
   cells: 8,
-  back:  { x: 0.5, y: 0.407 },
-  right: { x: 0.762, y: 0.675 },
-  left:  { x: 0.239, y: 0.674 },
+  back:  { x: 0.5, y: 0.125 },
+  right: { x: 0.905, y: 0.54 },
+  left:  { x: 0.095, y: 0.537 },
   front: { x: 0.5, y: 0.944 },
 };
 
@@ -203,9 +203,9 @@ var GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 
 const ITEMS = [
   // ── Farm bases ──
   { id:'farm_hatake', name:'はたけ(畑)', roomImg:'../assets/images/yard/hatake_crop.png', cellSize:1.5, pivotX:0, pivotY:0 },
-  { id:'farm_fence_L1', name:'さく左(fence_L1)', roomImg:'../assets/images/yard/fence_L1_sm.png', cellSize:2.5, pivotX:0, pivotY:0 },
-  { id:'farm_fence_R', name:'さく右(fence_R)', roomImg:'../assets/images/yard/fence_R_sm.png', cellSize:2.5, pivotX:0, pivotY:0 },
-  { id:'farm_fence_R2', name:'さく右下(fence_R2)', roomImg:'../assets/images/yard/fence_R2_sm.png', cellSize:2.5, pivotX:0, pivotY:0 },
+  { id:'farm_fence_L1', name:'さく左(fence_L1)', roomImg:'../assets/images/yard/fence_L1_sm.png', cellSize:1, pivotX:0, pivotY:0, fullSize:true },
+  { id:'farm_fence_R', name:'さく右(fence_R)', roomImg:'../assets/images/yard/fence_R_sm.png', cellSize:1, pivotX:0, pivotY:0, fullSize:true },
+  { id:'farm_fence_R2', name:'さく右下(fence_R2)', roomImg:'../assets/images/yard/fence_R2_sm.png', cellSize:1, pivotX:0, pivotY:0, fullSize:true },
   // ── Yard decorations (58 assets) ──
   { id:'yard_001', name:'おおきい き', roomImg:'../assets/images/tree_stone_flower/yard_asset_001.png', cellSize:1.8, pivotX:0, pivotY:0 },
   { id:'yard_002', name:'き 2', roomImg:'../assets/images/tree_stone_flower/yard_asset_002.png', cellSize:1.5, pivotX:0, pivotY:0 },
@@ -296,7 +296,7 @@ ITEMS.forEach(item => {
 });
 
 // ─── Save / Load from localStorage ───
-const SAVE_KEY = 'furniture_adjuster_data';
+const SAVE_KEY = 'yard_adjuster_data';
 function saveToStorage() {
   localStorage.setItem(SAVE_KEY, JSON.stringify(adjustments));
 }
@@ -576,7 +576,22 @@ let _placedEl = null;
 
 function updateItemPos(id) {
   if (!_placedEl || !id) return;
+  const item = ITEMS.find(x => x.id === id);
   const adj = adjustments[adjKey(id)];
+
+  // ドキュメントサイズのアイテム（柵など）はコンテナ全体にフィット
+  if (item && item.fullSize) {
+    _placedEl.style.left = '0';
+    _placedEl.style.top = '0';
+    _placedEl.style.bottom = 'auto';
+    _placedEl.style.width = '100%';
+    _placedEl.style.height = '100%';
+    _placedEl.style.objectFit = 'fill';
+    _placedEl.style.transform = 'none';
+    _placedEl.style.transformOrigin = 'top left';
+    return;
+  }
+
   const cell = getGridCell(adj.row, adj.col);
   const heightPct = adj.cellSize * GRID_CELL_PCT;
   _placedEl.style.left = cell.leftPct + '%';
@@ -833,7 +848,7 @@ const GRID_DEFAULT = {
   left:  { x: 0.239, y: 0.674 },
   front: { x: 0.5, y: 0.944 },
 };
-const GRID_SAVE_KEY = 'furniture_adjuster_grid';
+const GRID_SAVE_KEY = 'yard_adjuster_grid';
 const gridHistory = []; // undo stack
 function pushGridHistory() {
   gridHistory.push({ back:{...ISO_GRID.back}, right:{...ISO_GRID.right}, left:{...ISO_GRID.left}, front:{...ISO_GRID.front} });
