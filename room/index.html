@@ -633,17 +633,29 @@
     /* ─── Egg care modal ─── */
     #egg-modal {
       position: fixed; inset: 0; z-index: 250;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 16px;
-      transition: background 0.6s;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     }
     #egg-modal.hidden { display: none; }
-    #egg-modal.stage-egg  { background: linear-gradient(160deg, #4e342e 0%, #6d4c41 50%, #795548 100%); }
-    #egg-modal.stage-baby { background: linear-gradient(160deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%); }
-    #egg-modal.stage-kid  { background: linear-gradient(160deg, #e8f5e9 0%, #a5d6a7 50%, #66bb6a 100%); }
+    #egg-modal-card {
+      position: relative;
+      width: 88vw; max-width: 380px;
+      border-radius: 24px;
+      padding: 28px 20px 24px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      transition: background 0.6s;
+      overflow: hidden;
+    }
+    .stage-egg  #egg-modal-card { background: linear-gradient(160deg, #4e342e 0%, #6d4c41 50%, #795548 100%); }
+    .stage-baby #egg-modal-card { background: linear-gradient(160deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%); }
+    .stage-kid  #egg-modal-card { background: linear-gradient(160deg, #e8f5e9 0%, #a5d6a7 50%, #66bb6a 100%); }
     .egg-modal-close {
-      position: absolute; top: 12px; right: 16px;
-      font-size: 28px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7);
+      position: absolute; top: 8px; right: 12px;
+      font-size: 24px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7);
+      z-index: 2;
     }
     .egg-modal-creature {
       font-size: 100px; line-height: 1; position: relative;
@@ -932,14 +944,16 @@
 
 <!-- ── Egg care modal ────────────────────────────────── -->
 <div id="egg-modal" class="hidden stage-egg">
-  <button class="egg-modal-close" id="egg-modal-close">✕</button>
-  <div class="egg-modal-creature anim-wobble" id="egg-creature">🥚</div>
-  <div class="egg-modal-name" id="egg-name"></div>
-  <div class="egg-modal-stage" id="egg-stage"></div>
-  <div class="egg-modal-hearts" id="egg-hearts"></div>
-  <div class="egg-modal-actions" id="egg-actions"></div>
-  <div class="egg-modal-msg" id="egg-msg"></div>
-  <button class="egg-modal-garden-btn hidden" id="egg-garden-btn">🌳 おにわで あそぼう！</button>
+  <div id="egg-modal-card">
+    <button class="egg-modal-close" id="egg-modal-close">✕</button>
+    <div class="egg-modal-creature anim-wobble" id="egg-creature">🥚</div>
+    <div class="egg-modal-name" id="egg-name"></div>
+    <div class="egg-modal-stage" id="egg-stage"></div>
+    <div class="egg-modal-hearts" id="egg-hearts"></div>
+    <div class="egg-modal-actions" id="egg-actions"></div>
+    <div class="egg-modal-msg" id="egg-msg"></div>
+    <button class="egg-modal-garden-btn hidden" id="egg-garden-btn">🌳 おにわで あそぼう！</button>
+  </div>
 </div>
 
 <!-- ── Egg story kamishibai ──────────────────────────── -->
@@ -3010,6 +3024,12 @@ function init() {
   // Egg modal buttons
   document.getElementById('egg-modal-close').addEventListener('click', () => {
     document.getElementById('egg-modal').classList.add('hidden');
+  });
+  // Backdrop click closes modal
+  document.getElementById('egg-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('egg-modal').classList.add('hidden');
+    }
   });
   // (egg care buttons are now dynamically generated in buildActionButtons())
   document.getElementById('egg-garden-btn').addEventListener('click', () => {
