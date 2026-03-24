@@ -828,6 +828,14 @@
     <button class="dbg-btn reset" onclick="dbgReset()">リセット</button>
   </div>
   <div class="dbg-label" id="dbg-info"></div>
+  <h3 style="color:#ff0;margin:10px 0 6px;font-size:13px;">🥚 たまご操作</h3>
+  <div class="dbg-row">
+    <button class="dbg-btn plus" onclick="dbgEggAdd(5)">+5pt</button>
+    <button class="dbg-btn plus" onclick="dbgEggAdd(10)">+10pt</button>
+    <button class="dbg-btn plus" onclick="dbgEggAdd(30)">+30pt</button>
+    <button class="dbg-btn minus" onclick="dbgEggReset()">リセット</button>
+  </div>
+  <div class="dbg-label" id="dbg-egg-info"></div>
 </div>
 
 <!-- ── Points toast ───────────────────────────────── -->
@@ -2867,6 +2875,7 @@ function _dbgUpdate() {
   var dailyUsed = parseInt(localStorage.getItem('pono_points_daily_' + today) || '0', 10);
   document.getElementById('dbg-info').textContent =
     '現在: ' + state.points + 'pt ／ 本日使用: ' + dailyUsed + '/25pt';
+  _dbgEggUpdate();
 }
 function dbgAdd(n) {
   state.points = Math.max(0, state.points + n);
@@ -2892,6 +2901,42 @@ function dbgReset() {
   updatePtsDisplay();
   _dbgUpdate();
   renderShopGrid(currentShopCat);
+}
+
+// ── 卵デバッグ ──
+function _dbgEggUpdate() {
+  var eggState = loadEggState();
+  var info = document.getElementById('dbg-egg-info');
+  if (!eggState) { info.textContent = '卵state なし'; return; }
+  var slot = getActiveEggSlot(eggState);
+  if (!slot) { info.textContent = 'アクティブ卵 なし'; return; }
+  var stage = getEggStage(slot.growthPts);
+  info.textContent = slot.creatureType + ' / ' + EGG_STAGE_NAMES[stage] + ' / ' + slot.growthPts + 'pt / 今日: ' + slot.dailyCareToday + '/' + EGG_DAILY_CAP;
+}
+function dbgEggAdd(n) {
+  var eggState = loadEggState();
+  if (!eggState) return;
+  var slot = getActiveEggSlot(eggState);
+  if (!slot) return;
+  slot.growthPts += n;
+  slot.stage = getEggStage(slot.growthPts);
+  // dailyCareToday もリセット（デバッグ用に無制限）
+  slot.dailyCareToday = 0;
+  var idx = eggState.slots.findIndex(function(s) { return s && s.id === slot.id; });
+  if (idx >= 0) eggState.slots[idx] = slot;
+  saveEggState(eggState);
+  _eggModalSlot = slot;
+  _dbgEggUpdate();
+  // モーダルが開いていれば更新
+  if (!document.getElementById('egg-modal').classList.contains('hidden')) {
+    refreshEggModal();
+  }
+}
+function dbgEggReset() {
+  localStorage.removeItem('pono_egg_state');
+  _eggModalSlot = null;
+  document.getElementById('egg-modal').classList.add('hidden');
+  _dbgEggUpdate();
 }
 </script>
 </body>
