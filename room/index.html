@@ -730,6 +730,7 @@
     .heart-full { color: #e91e63; }
     .heart-empty { color: #ddd; }
     .stage-egg .heart-empty { color: rgba(255,255,255,0.2); }
+    .egg-modal-pts { font-size: 12px; opacity: 0.6; }
     .egg-modal-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
     .egg-action-btn {
       width: 82px; height: 78px; border-radius: 16px; border: none;
@@ -950,6 +951,7 @@
     <div class="egg-modal-name" id="egg-name"></div>
     <div class="egg-modal-stage" id="egg-stage"></div>
     <div class="egg-modal-hearts" id="egg-hearts"></div>
+    <div class="egg-modal-pts" id="egg-pts"></div>
     <div class="egg-modal-actions" id="egg-actions"></div>
     <div class="egg-modal-msg" id="egg-msg"></div>
     <button class="egg-modal-garden-btn hidden" id="egg-garden-btn">🌳 おにわで あそぼう！</button>
@@ -2737,6 +2739,9 @@ function refreshEggModal() {
     heartsEl.appendChild(h);
   }
 
+  // Points display
+  document.getElementById('egg-pts').textContent = slot.growthPts + 'pt ／ ' + nextThreshold + 'pt';
+
   // Actions — dynamic per stage
   const actionsEl = document.getElementById('egg-actions');
   const gardenBtn = document.getElementById('egg-garden-btn');
@@ -2755,13 +2760,13 @@ function refreshEggModal() {
       slot.dailyCareToday = 0;
       slot.dailyCareDate = today;
     }
+    actionsEl.style.display = 'flex';
+    buildActionButtons(stage);
     if (slot.dailyCareToday >= EGG_DAILY_CAP) {
       msgEl.textContent = 'きょうは もう たくさん おせわ したね！🌙';
-      actionsEl.style.display = 'none';
-      actionsEl.innerHTML = '';
+      // Grey out all buttons
+      actionsEl.querySelectorAll('.egg-action-btn').forEach(b => b.classList.add('cooldown'));
     } else {
-      actionsEl.style.display = 'flex';
-      buildActionButtons(stage);
       msgEl.textContent = _timeBonus > 0 ? `さいしょの おせわは ${_timeBonus}ばい！` : '';
     }
   }
