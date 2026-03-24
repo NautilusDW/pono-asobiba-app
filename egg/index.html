@@ -959,12 +959,22 @@
       }).catch(() => {});
 
       // Fence layer — fence_L1 (left) + fence_R (right) for yard view
+      // Cropped images: placed at their original bbox position within 1200×670
+      const YARD_FENCES = [
+        { file:'fence_L1_sm.webp', bx:117, by:17 },
+        { file:'fence_R_sm.webp',  bx:598, by:17 },
+      ];
       yardFenceSprites = [];
-      ['fence_L1_sm.webp', 'fence_R_sm.webp'].forEach(fname => {
-        PIXI.Assets.load('../assets/images/yard/' + fname).then(tex => {
+      const fsc = Math.max(w / 1200, h / 670);
+      const fox = (w - 1200 * fsc) / 2;
+      const foy = (h - 670 * fsc) / 2;
+      YARD_FENCES.forEach(f => {
+        PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !layerBg.parent) return;
           const sp = new PIXI.Sprite(tex);
-          fitBg(sp, tex);
+          sp.scale.set(fsc);
+          sp.x = fox + f.bx * fsc;
+          sp.y = foy + f.by * fsc;
           sp.tint = getFenceStyle().tint;
           layerBg.addChild(sp);
           yardFenceSprites.push(sp);
@@ -1176,14 +1186,24 @@
         farmPlotSprites.push({ container: cont, plotIdx: idx, x: px, y: py, size: plotSize });
       });
 
-      // Layer 3: Fences — fence_L1 (left) + fence_R (right), document-sized overlays
+      // Layer 3: Fences — fence_R + fence_R2 for farm view
+      // Cropped images: placed at their original bbox position within 1200×670
+      const FARM_FENCES = [
+        { file:'fence_R_sm.webp',  bx:598, by:17 },
+        { file:'fence_R2_sm.webp', bx:589, by:290 },
+      ];
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
-      ['fence_R_sm.webp', 'fence_R2_sm.webp'].forEach(fname => {
-        PIXI.Assets.load('../assets/images/yard/' + fname).then(tex => {
+      const fsc2 = Math.max(w / 1200, h / 670);
+      const fox2 = (w - 1200 * fsc2) / 2;
+      const foy2 = (h - 670 * fsc2) / 2;
+      FARM_FENCES.forEach(f => {
+        PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !farmContainer.parent) return;
           const sp = new PIXI.Sprite(tex);
-          fitSprite(sp, tex);
+          sp.scale.set(fsc2);
+          sp.x = fox2 + f.bx * fsc2;
+          sp.y = foy2 + f.by * fsc2;
           sp.tint = fenceTint;
           layerFence.addChild(sp);
           farmFenceSprites.push(sp);
