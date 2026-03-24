@@ -3033,8 +3033,12 @@ function init() {
     // Auto-place incubator if egg exists but not placed yet
     if (!needsEggStory()) placeEggIncubator();
     // Show egg story if first time, then entry selection
+    var params = new URLSearchParams(location.search);
     if (needsEggStory()) {
       showEggStory();
+    } else if (params.get('to') === 'room') {
+      // Coming back from garden — skip entry overlay, go straight to room
+      enterRoom();
     } else {
       showEntryOverlay();
     }
