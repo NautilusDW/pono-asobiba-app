@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ポノのおへや</title>
+  <title>わたしのおうち</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -556,6 +556,158 @@
     #btn-boy  { background: linear-gradient(135deg, #42a5f5, #1565c0); color: white; }
     #btn-girl { background: linear-gradient(135deg, #f06292, #c2185b); color: white; }
 
+    /* ─── Entry selection overlay ─── */
+    #entry-ov {
+      position: fixed; inset: 0; z-index: 400;
+      background: linear-gradient(160deg, #a8e6cf 0%, #dcedc1 50%, #ffd3b6 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 32px;
+    }
+    #entry-ov.hidden { display: none; }
+    #entry-ov h2 { font-size: 28px; color: #333; text-align: center; }
+    .entry-row { display: flex; gap: 28px; }
+    .entry-btn {
+      width: 150px; height: 150px; border-radius: 26px; border: none;
+      font-size: 48px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; box-shadow: 0 5px 14px rgba(0,0,0,0.15);
+      transition: transform 0.12s;
+      position: relative;
+    }
+    .entry-btn:active { transform: scale(0.94); }
+    .entry-btn span { font-size: 16px; font-weight: bold; }
+    #btn-entry-room   { background: linear-gradient(135deg, #ffcc80, #ff9800); color: white; }
+    #btn-entry-garden  { background: linear-gradient(135deg, #a5d6a7, #4caf50); color: white; }
+    #btn-entry-garden.locked { opacity: 0.5; filter: grayscale(0.4); }
+    .lock-badge {
+      position: absolute; top: 8px; right: 8px;
+      font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    }
+    .entry-sub { font-size: 13px; color: #555; text-align: center; }
+
+    /* ─── Egg story overlay ─── */
+    #egg-story-ov {
+      position: fixed; inset: 0; z-index: 600;
+      background: linear-gradient(160deg, #1a1a3e 0%, #2d2b55 50%, #3d2b55 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      color: white; text-align: center;
+      cursor: pointer;
+    }
+    #egg-story-ov.hidden { display: none; }
+    .story-emoji { font-size: 80px; animation: storyBounce 2s ease-in-out infinite; }
+    .story-text { font-size: 22px; line-height: 1.6; max-width: 400px; padding: 0 20px; }
+    .story-hint { font-size: 13px; color: rgba(255,255,255,0.5); }
+    @keyframes storyBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+    /* ─── Egg select in room ─── */
+    #egg-select-ov {
+      position: fixed; inset: 0; z-index: 610;
+      background: linear-gradient(160deg, #ffecd2 0%, #fcb69f 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 24px;
+    }
+    #egg-select-ov.hidden { display: none; }
+    #egg-select-ov h2 { font-size: 24px; color: #333; }
+    .egg-choices { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+    .egg-choice {
+      width: 100px; height: 120px; border-radius: 18px; border: 3px solid rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.5); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      transition: transform 0.12s, box-shadow 0.12s;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    .egg-choice:active { transform: scale(0.92); }
+    .egg-choice:hover { box-shadow: 0 5px 16px rgba(0,0,0,0.2); }
+    .egg-choice .emoji { font-size: 40px; }
+    .egg-choice .name { font-size: 12px; color: #555; font-weight: bold; }
+
+    /* ─── Egg incubator in room ─── */
+    .egg-incubator { animation: incubatorGlow 2s ease-in-out infinite; }
+    @keyframes incubatorGlow {
+      0%,100% { filter: drop-shadow(0 0 4px rgba(255,200,100,0.3)); }
+      50%     { filter: drop-shadow(0 0 12px rgba(255,200,100,0.7)); }
+    }
+
+    /* ─── Egg care modal ─── */
+    #egg-modal {
+      position: fixed; inset: 0; z-index: 250;
+      background: linear-gradient(160deg, #fff5e6 0%, #ffe0b2 50%, #ffcc80 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+    }
+    #egg-modal.hidden { display: none; }
+    .egg-modal-close {
+      position: absolute; top: 12px; right: 16px;
+      font-size: 28px; background: none; border: none; cursor: pointer; color: #888;
+    }
+    .egg-modal-creature {
+      font-size: 100px; line-height: 1;
+      animation: eggWobble 3s ease-in-out infinite;
+    }
+    .egg-modal-creature.hatching {
+      animation: eggShake 0.15s ease-in-out infinite;
+    }
+    @keyframes eggWobble {
+      0%,100% { transform: rotate(-3deg) translateY(0); }
+      25%     { transform: rotate(3deg) translateY(-4px); }
+      50%     { transform: rotate(-2deg) translateY(0); }
+      75%     { transform: rotate(2deg) translateY(-2px); }
+    }
+    @keyframes eggShake {
+      0%,100% { transform: translateX(0) rotate(0); }
+      25%     { transform: translateX(-6px) rotate(-5deg); }
+      75%     { transform: translateX(6px) rotate(5deg); }
+    }
+    .egg-modal-name { font-size: 20px; font-weight: bold; color: #333; }
+    .egg-modal-stage { font-size: 14px; color: #777; }
+    .egg-modal-hearts {
+      display: flex; gap: 3px; font-size: 18px;
+    }
+    .heart-full { color: #e91e63; }
+    .heart-empty { color: #ddd; }
+    .egg-modal-actions {
+      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+    }
+    .egg-action-btn {
+      width: 90px; height: 80px; border-radius: 16px; border: none;
+      font-size: 32px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      transition: transform 0.1s;
+    }
+    .egg-action-btn:active { transform: scale(0.9); }
+    .egg-action-btn span { font-size: 11px; font-weight: bold; }
+    .egg-action-btn.cooldown { opacity: 0.4; pointer-events: none; }
+    #egg-btn-pat  { background: linear-gradient(135deg, #f8bbd0, #f48fb1); color: white; }
+    #egg-btn-warm { background: linear-gradient(135deg, #ffcc80, #ff9800); color: white; }
+    #egg-btn-feed { background: linear-gradient(135deg, #a5d6a7, #66bb6a); color: white; }
+    .egg-modal-msg {
+      font-size: 15px; color: #555; text-align: center;
+      min-height: 24px;
+    }
+    .egg-modal-garden-btn {
+      padding: 12px 28px; border-radius: 20px; border: none;
+      background: linear-gradient(135deg, #66bb6a, #388e3c); color: white;
+      font-size: 16px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+    /* Hatch flash */
+    .hatch-flash {
+      position: fixed; inset: 0; background: white; z-index: 260;
+      animation: hatchFlash 0.8s ease-out forwards;
+    }
+    @keyframes hatchFlash { 0%{opacity:1} 100%{opacity:0} }
+    /* Heart particle */
+    .heart-particle {
+      position: absolute; pointer-events: none; font-size: 20px;
+      animation: heartFloat 1s ease-out forwards;
+    }
+    @keyframes heartFloat {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(0.5); }
+    }
+
     /* ─── Debug panel ─── */
     #debug-panel {
       position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
@@ -683,12 +835,51 @@
 
 <!-- ── Theme select ───────────────────────────────── -->
 <div id="theme-ov">
-  <h2>どんな おへやに<br>したい？</h2>
+  <h2>どんな おうちが<br>すき？</h2>
   <div class="theme-row">
-    <button class="theme-btn" id="btn-boy">🚀<span>おとこの子</span></button>
-    <button class="theme-btn" id="btn-girl">🌸<span>おんなの子</span></button>
+    <button class="theme-btn" id="btn-boy">🚀<span>かっこいい</span></button>
+    <button class="theme-btn" id="btn-girl">🌸<span>かわいい</span></button>
   </div>
   <p>あとから かえることも できるよ！</p>
+</div>
+
+<!-- ── Egg care modal ────────────────────────────────── -->
+<div id="egg-modal" class="hidden">
+  <button class="egg-modal-close" id="egg-modal-close">✕</button>
+  <div class="egg-modal-creature" id="egg-creature">🥚</div>
+  <div class="egg-modal-name" id="egg-name"></div>
+  <div class="egg-modal-stage" id="egg-stage"></div>
+  <div class="egg-modal-hearts" id="egg-hearts"></div>
+  <div class="egg-modal-actions" id="egg-actions">
+    <button class="egg-action-btn" id="egg-btn-pat">🤲<span>なでる</span></button>
+    <button class="egg-action-btn" id="egg-btn-warm">🔥<span>あたためる</span></button>
+    <button class="egg-action-btn" id="egg-btn-feed">🍎<span>ごはん</span></button>
+  </div>
+  <div class="egg-modal-msg" id="egg-msg"></div>
+  <button class="egg-modal-garden-btn hidden" id="egg-garden-btn">🌳 おにわに いこう！</button>
+</div>
+
+<!-- ── Egg story kamishibai ──────────────────────────── -->
+<div id="egg-story-ov" class="hidden">
+  <div class="story-emoji" id="story-emoji">🥚</div>
+  <div class="story-text" id="story-text"></div>
+  <div class="story-hint">タップして つぎへ</div>
+</div>
+
+<!-- ── Egg select ───────────────────────────────────── -->
+<div id="egg-select-ov" class="hidden">
+  <h2>どの たまごを<br>そだてる？</h2>
+  <div class="egg-choices" id="egg-choices"></div>
+</div>
+
+<!-- ── Entry selection (おへや / おにわ) ─────────────── -->
+<div id="entry-ov" class="hidden">
+  <h2>どこに いく？</h2>
+  <div class="entry-row">
+    <button class="entry-btn" id="btn-entry-room">🏠<span>おへや</span></button>
+    <button class="entry-btn" id="btn-entry-garden">🌳<span>おにわ</span><span class="lock-badge" id="garden-lock">🔒</span></button>
+  </div>
+  <p class="entry-sub" id="entry-sub"></p>
 </div>
 
 <!-- ── たからばこ modal ────────────────────────────── -->
@@ -1122,6 +1313,18 @@ function _makeGridItem(p, areaId, locked) {
   el.dataset.angle = angle;
   _applyGridPos(el, row, col, areaId);
   renderSlotContent(el, p.id, angle);
+
+  // 特殊家具: 卵インキュベーター（常にタップ可能、卵モーダルを開く）
+  if (item.special === 'egg_incubator') {
+    el.style.pointerEvents = 'auto';
+    el.style.cursor = 'pointer';
+    el.classList.add('egg-incubator');
+    el.addEventListener('click', e => {
+      if (editMode) return; // 編集モード中はドラッグ優先
+      e.stopPropagation();
+      openEggModal();
+    });
+  }
 
   // 回転ボタン（roomImgBがあるアイテムのみ）
   if (!locked && item.roomImgB) {
@@ -1896,7 +2099,7 @@ function renderShopGrid(cat) {
 
   if (shopMode === 'buy') {
     // 買うモード: 未購入アイテムのみ表示（所持済みはグレーアウト、defaultは除外）
-    const items = ROOM_ITEMS.filter(item => item.cat === cat && !item.default);
+    const items = ROOM_ITEMS.filter(item => item.cat === cat && !item.default && !item.hidden);
     const unowned = items.filter(item => !isOwned(item.id));
     const owned   = items.filter(item =>  isOwned(item.id));
 
@@ -1933,7 +2136,7 @@ function renderShopGrid(cat) {
 
   } else {
     // てもちモード: 所持済みアイテムのみ表示
-    const owned = ROOM_ITEMS.filter(item => item.cat === cat && isOwned(item.id));
+    const owned = ROOM_ITEMS.filter(item => item.cat === cat && !item.hidden && isOwned(item.id));
 
     if (owned.length === 0) {
       const msg = document.createElement('div');
@@ -2113,6 +2316,373 @@ function selectTheme(t) {
   // Give welcome bonus
   const earned = awardPoints(10);
   if (earned > 0) setTimeout(() => showToast(`🎁 はじめのプレゼント +${earned}pt！`), 600);
+
+  // Show egg story if first time, otherwise entry selection
+  if (needsEggStory()) {
+    showEggStory();
+  } else {
+    showEntryOverlay();
+  }
+}
+
+// ─── Entry selection (おへや / おにわ) ───────────────────
+function isGardenUnlocked() {
+  try {
+    const raw = localStorage.getItem('pono_egg_state');
+    if (!raw) return false;
+    const egg = JSON.parse(raw);
+    // Check if any slot reached STAGE_KID (growthPts >= 30)
+    if (egg.slots) {
+      for (const s of egg.slots) {
+        if (s && s.growthPts >= 30) return true;
+      }
+    }
+    return false;
+  } catch (e) { return false; }
+}
+
+function showEntryOverlay() {
+  const ov = document.getElementById('entry-ov');
+  const lockBadge = document.getElementById('garden-lock');
+  const gardenBtn = document.getElementById('btn-entry-garden');
+  const sub = document.getElementById('entry-sub');
+  const unlocked = isGardenUnlocked();
+
+  if (unlocked) {
+    lockBadge.style.display = 'none';
+    gardenBtn.classList.remove('locked');
+    sub.textContent = '';
+  } else {
+    lockBadge.style.display = '';
+    gardenBtn.classList.add('locked');
+    sub.textContent = 'たまごを おせわすると おにわが ひらくよ！';
+  }
+  ov.classList.remove('hidden');
+}
+
+let _roomsRendered = false;
+function enterRoom() {
+  document.getElementById('entry-ov').classList.add('hidden');
+  if (!_roomsRendered) {
+    renderRooms();
+    renderGuide();
+    _roomsRendered = true;
+  }
+}
+
+function enterGarden() {
+  if (!isGardenUnlocked()) return;
+  location.href = '../egg/index.html';
+}
+
+// ─── Egg story kamishibai ────────────────────────────────
+const STORY_PAGES = [
+  { emoji: '🥚✨', text: 'おうちに ふしぎな たまごが\nとどいたよ！' },
+  { emoji: '🤲💕', text: 'やさしく おせわすると\nなにかが うまれるかも…' },
+];
+
+let _storyPage = 0;
+function showEggStory() {
+  _storyPage = 0;
+  const ov = document.getElementById('egg-story-ov');
+  renderStoryPage();
+  ov.classList.remove('hidden');
+  ov.onclick = () => {
+    _storyPage++;
+    if (_storyPage < STORY_PAGES.length) {
+      renderStoryPage();
+    } else {
+      ov.classList.add('hidden');
+      showRoomEggSelect();
+    }
+  };
+}
+
+function renderStoryPage() {
+  const p = STORY_PAGES[_storyPage];
+  document.getElementById('story-emoji').textContent = p.emoji;
+  document.getElementById('story-text').textContent = p.text;
+}
+
+// ─── Egg selection in room ───────────────────────────────
+// Tier 1 starter eggs only
+const ROOM_EGG_CHOICES = [
+  { eggImage: 'egg_018', type: 'hinoko',   emoji: '🔥', name: 'ヒノコ' },
+  { eggImage: 'egg_019', type: 'hanarin',  emoji: '🌸', name: 'ハナリン' },
+  { eggImage: 'egg_020', type: 'shizukun', emoji: '💧', name: 'シズクン' },
+];
+
+function showRoomEggSelect() {
+  const ov = document.getElementById('egg-select-ov');
+  const grid = document.getElementById('egg-choices');
+  grid.innerHTML = '';
+  ROOM_EGG_CHOICES.forEach(c => {
+    const btn = document.createElement('div');
+    btn.className = 'egg-choice';
+    btn.innerHTML = `<div class="emoji">${c.emoji}</div><div class="name">${c.name}</div>`;
+    btn.addEventListener('click', () => selectRoomEgg(c));
+    grid.appendChild(btn);
+  });
+  ov.classList.remove('hidden');
+}
+
+function selectRoomEgg(choice) {
+  // Create egg state (same structure as egg/index.html)
+  const eggState = {
+    slots: [{
+      id: 'egg_' + Date.now(),
+      creatureType: choice.type,
+      eggImage: choice.eggImage,
+      stage: 0, // STAGE_EGG
+      growthPts: 0,
+      bornAt: Date.now(),
+      dailyCareToday: 0,
+      dailyCareDate: new Date().toDateString(),
+      lastCareAt: 0
+    }],
+    maxSlots: 1,
+    nextEggReady: false,
+    totalHatched: 0,
+    totalGraduated: 0,
+    unlockedEggs: ['egg_018', 'egg_019', 'egg_020'],
+    storyShown: true,
+    farm: { plots: [null,null,null,null,null,null], unlockedPlots: 1, fenceStyle: 'default', totalHarvests: 0 },
+    inventory: { apple: 0, strawberry: 0, carrot: 0, corn: 0 },
+    yardDecos: []
+  };
+  localStorage.setItem('pono_egg_state', JSON.stringify(eggState));
+
+  // Close egg select overlay
+  document.getElementById('egg-select-ov').classList.add('hidden');
+
+  // Show entry overlay
+  showEntryOverlay();
+
+  // Auto-place incubator in living room
+  placeEggIncubator();
+}
+
+function needsEggStory() {
+  const raw = localStorage.getItem('pono_egg_state');
+  return !raw;
+}
+
+// ─── Egg Care Modal ──────────────────────────────────────
+const EGG_STAGE_EGG = 0, EGG_STAGE_BABY = 1, EGG_STAGE_KID = 2, EGG_STAGE_ADULT = 3;
+const EGG_THRESHOLDS = [0, 10, 30, 60];
+const EGG_STAGE_NAMES = ['たまご', 'あかちゃん', 'こども', 'おとな'];
+const EGG_DAILY_CAP = 15;
+
+// Creature data (same as egg/index.html)
+const ROOM_CREATURES = {
+  hinoko:   { emoji: '🔥', babyEmoji: '🕯️', name: 'ヒノコ',   eggImage: 'egg_018' },
+  hanarin:  { emoji: '🌸', babyEmoji: '🌱', name: 'ハナリン',  eggImage: 'egg_019' },
+  shizukun: { emoji: '💧', babyEmoji: '🫧', name: 'シズクン',  eggImage: 'egg_020' },
+  morinoko: { emoji: '🌿', babyEmoji: '🍀', name: 'モリノコ',  eggImage: 'egg_010' },
+  mokumoku: { emoji: '☁️', babyEmoji: '💨', name: 'モクモク',  eggImage: 'egg_006' },
+  kiraboshi: { emoji: '⭐', babyEmoji: '💫', name: 'キラボシ', eggImage: 'egg_007' },
+  lovemon:  { emoji: '💗', babyEmoji: '💕', name: 'ラブモン',  eggImage: 'egg_013' },
+  nijitama: { emoji: '🤖', babyEmoji: '⚙️', name: 'ニジタマ', eggImage: 'egg_002' },
+};
+
+let _eggModalSlot = null; // current active egg data
+let _patCD = 0, _warmCD = 0, _feedCD = 0;
+
+function loadEggState() {
+  try {
+    const raw = localStorage.getItem('pono_egg_state');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function saveEggState(eggState) {
+  localStorage.setItem('pono_egg_state', JSON.stringify(eggState));
+}
+
+function getActiveEggSlot(eggState) {
+  if (!eggState || !eggState.slots) return null;
+  // Find first non-null slot
+  return eggState.slots.find(s => s !== null) || null;
+}
+
+function getEggStage(growthPts) {
+  if (growthPts >= EGG_THRESHOLDS[3]) return EGG_STAGE_ADULT;
+  if (growthPts >= EGG_THRESHOLDS[2]) return EGG_STAGE_KID;
+  if (growthPts >= EGG_THRESHOLDS[1]) return EGG_STAGE_BABY;
+  return EGG_STAGE_EGG;
+}
+
+function openEggModal() {
+  const eggState = loadEggState();
+  if (!eggState) return;
+  _eggModalSlot = getActiveEggSlot(eggState);
+  if (!_eggModalSlot) return;
+
+  refreshEggModal();
+  document.getElementById('egg-modal').classList.remove('hidden');
+}
+
+function refreshEggModal() {
+  const slot = _eggModalSlot;
+  if (!slot) return;
+  const creature = ROOM_CREATURES[slot.creatureType];
+  if (!creature) return;
+
+  const stage = getEggStage(slot.growthPts);
+  slot.stage = stage; // sync
+
+  // Emoji display
+  const creatureEl = document.getElementById('egg-creature');
+  if (stage === EGG_STAGE_EGG) {
+    creatureEl.textContent = '🥚';
+  } else if (stage === EGG_STAGE_BABY) {
+    creatureEl.textContent = creature.babyEmoji;
+  } else {
+    creatureEl.textContent = creature.emoji;
+  }
+
+  // Name & stage
+  document.getElementById('egg-name').textContent = creature.name;
+  document.getElementById('egg-stage').textContent = EGG_STAGE_NAMES[stage];
+
+  // Hearts progress bar
+  const nextThreshold = stage < 3 ? EGG_THRESHOLDS[stage + 1] : EGG_THRESHOLDS[3];
+  const prevThreshold = EGG_THRESHOLDS[stage];
+  const progress = Math.min(1, (slot.growthPts - prevThreshold) / (nextThreshold - prevThreshold));
+  const totalHearts = 10;
+  const filledHearts = Math.round(progress * totalHearts);
+  const heartsEl = document.getElementById('egg-hearts');
+  heartsEl.innerHTML = '';
+  for (let i = 0; i < totalHearts; i++) {
+    const h = document.createElement('span');
+    h.className = i < filledHearts ? 'heart-full' : 'heart-empty';
+    h.textContent = '♥';
+    heartsEl.appendChild(h);
+  }
+
+  // Actions visibility
+  const actionsEl = document.getElementById('egg-actions');
+  const gardenBtn = document.getElementById('egg-garden-btn');
+  const msgEl = document.getElementById('egg-msg');
+
+  if (stage >= EGG_STAGE_KID) {
+    actionsEl.style.display = 'none';
+    gardenBtn.classList.remove('hidden');
+    msgEl.textContent = 'おにわで まっているよ！';
+  } else {
+    actionsEl.style.display = 'flex';
+    gardenBtn.classList.add('hidden');
+
+    // Daily cap check
+    const today = new Date().toDateString();
+    if (slot.dailyCareDate !== today) {
+      slot.dailyCareToday = 0;
+      slot.dailyCareDate = today;
+    }
+    if (slot.dailyCareToday >= EGG_DAILY_CAP) {
+      msgEl.textContent = 'きょうは もう たくさん おせわ したね！';
+      actionsEl.style.display = 'none';
+    } else {
+      msgEl.textContent = '';
+    }
+  }
+}
+
+function doEggCare(type) {
+  if (!_eggModalSlot) return;
+  const slot = _eggModalSlot;
+
+  // Daily cap
+  const today = new Date().toDateString();
+  if (slot.dailyCareDate !== today) {
+    slot.dailyCareToday = 0;
+    slot.dailyCareDate = today;
+  }
+  if (slot.dailyCareToday >= EGG_DAILY_CAP) return;
+
+  const pts = type === 'feed' ? 2 : 1;
+  slot.growthPts += pts;
+  slot.dailyCareToday++;
+  slot.lastCareAt = Date.now();
+
+  // Save to localStorage
+  const eggState = loadEggState();
+  if (eggState) {
+    const idx = eggState.slots.findIndex(s => s && s.id === slot.id);
+    if (idx >= 0) eggState.slots[idx] = slot;
+    saveEggState(eggState);
+  }
+
+  // Heart particle
+  spawnHeartParticle();
+
+  // Check for stage transition
+  const newStage = getEggStage(slot.growthPts);
+  const oldStage = slot.stage;
+
+  if (newStage > oldStage && newStage === EGG_STAGE_BABY) {
+    // Hatch!
+    doHatchAnimation(() => {
+      slot.stage = newStage;
+      if (eggState) {
+        eggState.totalHatched = (eggState.totalHatched || 0) + 1;
+        saveEggState(eggState);
+      }
+      refreshEggModal();
+    });
+  } else {
+    refreshEggModal();
+  }
+
+  // Cooldown
+  const btn = document.getElementById('egg-btn-' + type);
+  if (btn) {
+    btn.classList.add('cooldown');
+    const cd = type === 'warm' ? 5000 : 3000;
+    setTimeout(() => btn.classList.remove('cooldown'), cd);
+  }
+}
+
+function spawnHeartParticle() {
+  const modal = document.getElementById('egg-modal');
+  const heart = document.createElement('div');
+  heart.className = 'heart-particle';
+  heart.textContent = '💕';
+  heart.style.left = (40 + Math.random() * 20) + '%';
+  heart.style.top = '40%';
+  modal.appendChild(heart);
+  setTimeout(() => heart.remove(), 1000);
+}
+
+function doHatchAnimation(callback) {
+  const creatureEl = document.getElementById('egg-creature');
+  creatureEl.classList.add('hatching');
+  document.getElementById('egg-msg').textContent = 'おや…？ たまごが…！';
+
+  setTimeout(() => {
+    // Flash
+    const flash = document.createElement('div');
+    flash.className = 'hatch-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 800);
+
+    creatureEl.classList.remove('hatching');
+    document.getElementById('egg-msg').textContent = '🎉 うまれたよ！';
+    callback();
+  }, 2000);
+}
+
+function placeEggIncubator() {
+  // Add egg incubator to living room if not already placed
+  if (!state.config) state.config = {};
+  if (!state.config.living) state.config.living = {};
+  const cfg = state.config.living;
+  if (!cfg.placed) cfg.placed = [];
+  const hasIncubator = cfg.placed.some(p => p.id === 'furn_egg_incubator');
+  if (!hasIncubator) {
+    cfg.placed.push({ id: 'furn_egg_incubator', row: 4, col: 4, angle: 'A' });
+    saveState();
+  }
 }
 
 // ─── Landscape lock ───────────────────────────────────
@@ -2157,10 +2727,31 @@ function init() {
     document.getElementById('btn-girl').addEventListener('click', () => selectTheme('girl'));
   } else {
     document.getElementById('theme-ov').classList.add('hidden');
+    // Auto-place incubator if egg exists but not placed yet
+    if (!needsEggStory()) placeEggIncubator();
+    // Show egg story if first time, then entry selection
+    if (needsEggStory()) {
+      showEggStory();
+    } else {
+      showEntryOverlay();
+    }
   }
 
-  renderRooms();
-  renderGuide();
+  // Entry overlay buttons
+  document.getElementById('btn-entry-room').addEventListener('click', enterRoom);
+  document.getElementById('btn-entry-garden').addEventListener('click', enterGarden);
+
+  // Egg modal buttons
+  document.getElementById('egg-modal-close').addEventListener('click', () => {
+    document.getElementById('egg-modal').classList.add('hidden');
+  });
+  document.getElementById('egg-btn-pat').addEventListener('click', () => doEggCare('pat'));
+  document.getElementById('egg-btn-warm').addEventListener('click', () => doEggCare('warm'));
+  document.getElementById('egg-btn-feed').addEventListener('click', () => doEggCare('feed'));
+  document.getElementById('egg-garden-btn').addEventListener('click', () => {
+    location.href = '../egg/index.html';
+  });
+
   checkDailyBonus();
 
   // Shop tab clicks

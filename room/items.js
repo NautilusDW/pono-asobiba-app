@@ -9,7 +9,7 @@ const ROOM_AREAS = [
   { id: 'living',  name: 'リビング',   emoji: '🏠', cost: 0   },
   { id: 'bedroom', name: 'しんしつ',   emoji: '🛏️', cost: 80  },
   { id: 'kitchen', name: 'だいどころ', emoji: '🍳', cost: 150 },
-  { id: 'garden',  name: 'にわ',       emoji: '🌳', cost: 200 },
+  { id: 'garden',  name: 'テラス',     emoji: '🌳', cost: 200 },
 ];
 
 const ROOM_ITEMS = [
@@ -233,6 +233,15 @@ const ROOM_ITEMS = [
     gridRow: 6, gridCol: 3, cellSize: 2, pivotX: 15, pivotY: 12.3, minRow: 1, maxRow: 6, minCol: 0, maxCol: 6,
     angleB: { cellSize: 2, pivotX: -16.5, pivotY: 12.3, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7 },
     surfaceY: -149, surfaceYB: -145,
+  },
+
+  // ══ たまごのゆりかご（特殊家具）═══════════════════════
+  {
+    id: 'furn_egg_incubator', cat: 'furn', name: 'たまごのゆりかご', price: 0, theme: 'all',
+    emoji: '🪺',
+    special: 'egg_incubator',
+    gridRow: 4, gridCol: 4, cellSize: 1.0, pivotX: 0, pivotY: 0,
+    hidden: true,  // ショップには表示しない（自動配置のみ）
   },
 
   // ══ かざり ═════════════════════════════════════════════

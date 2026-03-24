@@ -101,7 +101,7 @@
     _hud = document.createElement('div');
     _hud.id = 'pono-hud';
     _hud.style.display = 'none';
-    _hud.title = 'ポノのおへやへ';
+    _hud.title = 'わたしのおうちへ';
     _hud.innerHTML = '<span class="phud-star">⭐</span><span class="phud-num">0pt</span>';
     _hud.addEventListener('click', function () {
       location.href = '../room/index.html';
