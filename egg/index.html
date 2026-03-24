@@ -976,7 +976,7 @@
         PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !layerBg.parent) return;
           const sp = new PIXI.Sprite(tex);
-          sp.anchor.set(0.5, 1.0); // center-bottom (matches CSS transformOrigin: bottom center)
+          sp.anchor.set(0.5, 1.0);
           const heightPx = f.cellSize * YARD_CELL_H * h;
           const spSc = heightPx / tex.height;
           sp.scale.set(spSc);
@@ -986,6 +986,7 @@
           sp.tint = getFenceStyle().tint;
           layerBg.addChild(sp);
           yardFenceSprites.push(sp);
+          console.log(`[YARD FENCE] ${f.file} row=${f.row} col=${f.col} → grid=(${p.x.toFixed(3)},${p.y.toFixed(3)}) px=(${sp.x.toFixed(0)},${sp.y.toFixed(0)}) scale=${spSc.toFixed(3)} hPx=${heightPx.toFixed(0)} texW=${tex.width} texH=${tex.height} w=${w} h=${h}`);
         }).catch(() => {});
       });
 
