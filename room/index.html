@@ -2861,7 +2861,7 @@ window.addEventListener('pageshow', function() {
     taps++;
     clearTimeout(tapTimer);
     tapTimer = setTimeout(function() { taps = 0; }, 600);
-    if (taps >= 5) {
+    if (taps >= 2) {
       taps = 0;
       var panel = document.getElementById('debug-panel');
       panel.classList.toggle('hidden');
