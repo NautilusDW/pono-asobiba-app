@@ -983,9 +983,9 @@
 
       // Clouds — load random cloud images
       clouds.length=0;
-      const CLOUD_COUNT = 48;
+      const CLOUD_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,25,26,27,28,29,31,34,35,36,38,39,40,41,42,44,45,46,47,48];
       for (let i = 0; i < 5; i++) {
-        const idx = String(Math.floor(Math.random() * CLOUD_COUNT) + 1).padStart(3, '0');
+        const idx = String(CLOUD_IDS[Math.floor(Math.random() * CLOUD_IDS.length)]).padStart(3, '0');
         PIXI.Assets.load('../assets/images/cloud/cloud_' + idx + '.webp').then(tex => {
           if (!tex || !layerBg.parent) return;
           const sp = new PIXI.Sprite(tex);

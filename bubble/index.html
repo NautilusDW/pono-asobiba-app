@@ -1704,18 +1704,18 @@ const CLOUD_SPEED = [0.15, 0.35, 0.7];
 const CLOUD_ALPHA = [0.08, 0.14, 0.22];
 const CLOUD_SCALE = [0.6, 1.0, 1.6];
 const CLOUD_COUNT_PER_LAYER = [7, 5, 3];
-const TOTAL_CLOUD_IMAGES = 48;
+const CLOUD_IDS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,25,26,27,28,29,31,34,35,36,38,39,40,41,42,44,45,46,47,48];
 
 // Preload cloud images
 const cloudImages = [];
 let cloudImagesLoaded = 0;
-for (let i = 1; i <= TOTAL_CLOUD_IMAGES; i++) {
+CLOUD_IDS.forEach(i => {
   const img = new Image();
   img.src = '../assets/images/cloud/cloud_' + String(i).padStart(3, '0') + '.webp';
-  img.onload = () => { cloudImagesLoaded++; if (cloudImagesLoaded === TOTAL_CLOUD_IMAGES) initClouds(); };
+  img.onload = () => { cloudImagesLoaded++; if (cloudImagesLoaded === CLOUD_IDS.length) initClouds(); };
   img.onerror = () => { cloudImagesLoaded++; };
   cloudImages.push(img);
-}
+});
 
 const clouds = [];
 function initClouds() {
