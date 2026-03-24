@@ -657,6 +657,11 @@
       font-size: 24px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7);
       z-index: 2;
     }
+    .egg-modal-debug {
+      position: absolute; top: 8px; left: 12px;
+      font-size: 20px; background: none; border: none; cursor: pointer; opacity: 0.5;
+      z-index: 2;
+    }
     .egg-modal-creature {
       font-size: 100px; line-height: 1; position: relative;
     }
@@ -946,6 +951,7 @@
 <!-- ── Egg care modal ────────────────────────────────── -->
 <div id="egg-modal" class="hidden stage-egg">
   <div id="egg-modal-card">
+    <button class="egg-modal-debug" id="egg-modal-debug" onclick="_dbgToggle()">🛠</button>
     <button class="egg-modal-close" id="egg-modal-close">✕</button>
     <div class="egg-modal-creature anim-wobble" id="egg-creature">🥚</div>
     <div class="egg-modal-name" id="egg-name"></div>
