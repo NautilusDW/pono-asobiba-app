@@ -961,10 +961,12 @@
       // Fence layer — 2 pieces per side, sorted by Y (back=behind)
       // Grid-based placement matching yard_adjuster ISO_GRID
       const YARD_FENCES = [
-        { file:'fence_L1_sm.webp', row:1, col:2, cellSize:1.45, pivotX:-26, pivotY:1.4 },
-        { file:'fence_L1_sm.webp', row:1, col:5, cellSize:1.45, pivotX:-26, pivotY:1.4 },
-        { file:'fence_R_sm.webp',  row:2, col:1, cellSize:1.45, pivotX:26, pivotY:2.7 },
-        { file:'fence_R_sm.webp',  row:5, col:1, cellSize:1.45, pivotX:26, pivotY:2.7 },
+        // L1: 左辺 (back→left), row=0沿い, col=1奥 col=5手前
+        { file:'fence_L1_sm.webp', row:0, col:1, cellSize:1.45, pivotX:-26, pivotY:1.4 },
+        { file:'fence_L1_sm.webp', row:0, col:5, cellSize:1.45, pivotX:-26, pivotY:1.4 },
+        // R: 右辺 (back→right), col=0沿い, row=1奥 row=5手前
+        { file:'fence_R_sm.webp',  row:1, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
+        { file:'fence_R_sm.webp',  row:5, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
       ];
       yardFenceSprites = [];
       // Cover-mode image mapping (same as green base)
@@ -1219,10 +1221,12 @@
 
       // Layer 3: Fences — fence_R×2 + fence_R2×2 for farm view, sorted by Y
       const FARM_FENCES = [
-        { file:'fence_R_sm.webp',  row:2, col:1, cellSize:1.45, pivotX:26, pivotY:2.7 },
-        { file:'fence_R_sm.webp',  row:5, col:1, cellSize:1.45, pivotX:26, pivotY:2.7 },
-        { file:'fence_R2_sm.webp', row:4, col:4, cellSize:1.45, pivotX:-48, pivotY:19.2 },
-        { file:'fence_R2_sm.webp', row:6, col:5, cellSize:1.45, pivotX:-48, pivotY:19.2 },
+        // R: 右辺 (back→right), col=0沿い, row=1奥 row=5手前
+        { file:'fence_R_sm.webp',  row:1, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
+        { file:'fence_R_sm.webp',  row:5, col:0, cellSize:1.45, pivotX:26, pivotY:2.7 },
+        // R2: 右下辺 (right→front), row=7沿い, col=1奥 col=5手前
+        { file:'fence_R2_sm.webp', row:7, col:1, cellSize:1.45, pivotX:-48, pivotY:19.2 },
+        { file:'fence_R2_sm.webp', row:7, col:5, cellSize:1.45, pivotX:-48, pivotY:19.2 },
       ];
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
