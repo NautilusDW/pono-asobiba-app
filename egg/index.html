@@ -963,14 +963,14 @@
       // L1: back→left edge, R: back→right edge
       // Fence data: same coordinate system as yard_adjuster.html
       // row/col → isoGridPt, cellSize/pivotX/pivotY → same formulas
+      // Fence positions from yard_adjuster export (row/col are exact)
       const YARD_FENCES = [
-        { file:'fence_L1_sm.webp', row:0, col:2, cellSize:1.45, pivotX:-26, pivotY:1.4 },  // L1 奥半分
-        { file:'fence_L1_sm.webp', row:0, col:6, cellSize:1.45, pivotX:-26, pivotY:1.4 },  // L1 手前半分
-        { file:'fence_R_sm.webp',  row:2, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7 },  // R 奥半分
-        { file:'fence_R_sm.webp',  row:6, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7 },  // R 手前半分
+        { file:'fence_L1_sm.webp', row:0, col:7, cellSize:1.45, pivotX:-26, pivotY:1.4 },  // L1_a 手前
+        { file:'fence_L1_sm.webp', row:0, col:3, cellSize:1.45, pivotX:-26, pivotY:1.4 },  // L1_b 奥
+        { file:'fence_R_sm.webp',  row:7, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7 },  // R_a 手前
+        { file:'fence_R_sm.webp',  row:3, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7 },  // R_b 奥
       ];
       yardFenceSprites = [];
-      // Sort by grid position so back fences render first (behind)
       YARD_FENCES.sort((a,b) => (a.row + a.col) - (b.row + b.col));
       YARD_FENCES.forEach(f => {
         PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
@@ -986,7 +986,6 @@
           sp.tint = getFenceStyle().tint;
           layerBg.addChild(sp);
           yardFenceSprites.push(sp);
-          console.log(`[YARD FENCE] ${f.file} row=${f.row} col=${f.col} → grid=(${p.x.toFixed(3)},${p.y.toFixed(3)}) px=(${sp.x.toFixed(0)},${sp.y.toFixed(0)}) scale=${spSc.toFixed(3)} hPx=${heightPx.toFixed(0)} texW=${tex.width} texH=${tex.height} w=${w} h=${h}`);
         }).catch(() => {});
       });
 
@@ -1202,10 +1201,10 @@
       // Layer 3: Fences — R×2 + R2×2 for farm view
       // R: back→right edge, R2: right→front edge
       const FARM_FENCES = [
-        { file:'fence_R_sm.webp',  row:2, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7  },  // R 奥半分
-        { file:'fence_R_sm.webp',  row:6, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7  },  // R 手前半分
-        { file:'fence_R2_sm.webp', row:7, col:1, cellSize:1.45, pivotX:-48, pivotY:19.2 },  // R2 奥半分
-        { file:'fence_R2_sm.webp', row:7, col:5, cellSize:1.45, pivotX:-48, pivotY:19.2 },  // R2 手前半分
+        { file:'fence_R_sm.webp',  row:7, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7  },  // R_a 手前
+        { file:'fence_R_sm.webp',  row:3, col:0, cellSize:1.45, pivotX:26,  pivotY:2.7  },  // R_b 奥
+        { file:'fence_R2_sm.webp', row:7, col:7, cellSize:1.45, pivotX:-48, pivotY:19.2 },  // R2_a 手前
+        { file:'fence_R2_sm.webp', row:7, col:3, cellSize:1.45, pivotX:-48, pivotY:19.2 },  // R2_b 奥
       ];
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
