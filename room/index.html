@@ -3110,20 +3110,22 @@ window.addEventListener('pageshow', function() {
   renderShopGrid(currentShopCat);
 });
 
-// ─── デバッグパネル（pts-disp を5回タップで開く）────────────────
+// ─── デバッグパネル（pts-disp or egg-creature を2回タップで開く）───
+function _dbgToggle() {
+  var panel = document.getElementById('debug-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) _dbgUpdate();
+}
 (function() {
   var taps = 0, tapTimer;
-  document.getElementById('pts-disp').addEventListener('click', function() {
+  function handler() {
     taps++;
     clearTimeout(tapTimer);
     tapTimer = setTimeout(function() { taps = 0; }, 600);
-    if (taps >= 2) {
-      taps = 0;
-      var panel = document.getElementById('debug-panel');
-      panel.classList.toggle('hidden');
-      if (!panel.classList.contains('hidden')) _dbgUpdate();
-    }
-  });
+    if (taps >= 2) { taps = 0; _dbgToggle(); }
+  }
+  document.getElementById('pts-disp').addEventListener('click', handler);
+  document.getElementById('egg-creature').addEventListener('click', handler);
 })();
 
 function _dbgUpdate() {
