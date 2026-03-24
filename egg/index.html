@@ -1603,7 +1603,7 @@
     let lastDecoTap = { uid: null, time: 0 };
 
     function handleDecoPointerDown(e) {
-      if (!decoEditMode || currentView !== 'yard') return;
+      if (currentView !== 'yard') return;
       const rect = canvas.getBoundingClientRect();
       const px = (e.clientX - rect.left) / rect.width * W();
       const py = (e.clientY - rect.top) / rect.height * H();
