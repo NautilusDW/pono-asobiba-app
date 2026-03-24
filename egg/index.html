@@ -967,6 +967,11 @@
         { file:'fence_R_sm.webp',  row:5, col:1, cellSize:1.45, pivotX:26, pivotY:2.7 },
       ];
       yardFenceSprites = [];
+      // Cover-mode image mapping (same as green base)
+      const yfsc = Math.max(w / 1200, h / 670);
+      const yimgW = 1200 * yfsc, yimgH = 670 * yfsc;
+      const yoffX = (w - yimgW) / 2, yoffY = (h - yimgH) / 2;
+      const ycellH = YARD_CELL_H * yimgH;
       // Sort by grid Y so back fences render first (behind)
       YARD_FENCES.sort((a,b) => (a.row + a.col) - (b.row + b.col));
       YARD_FENCES.forEach(f => {
@@ -974,13 +979,13 @@
           if (!tex || !layerBg.parent) return;
           const sp = new PIXI.Sprite(tex);
           const pos = yardGridPt(f.row + 0.5, f.col + 0.5);
-          const cellPx = YARD_CELL_H * w;
-          const hPx = f.cellSize * cellPx;
-          const sc = hPx / tex.height;
+          const hPx = f.cellSize * ycellH;
+          const spSc = hPx / tex.height;
+          const spW = tex.width * spSc;
           sp.anchor.set(0.5, 1);
-          sp.scale.set(sc);
-          sp.x = pos.x * w + (f.pivotX / 100) * hPx;
-          sp.y = pos.y * h - (f.pivotY / 100) * hPx;
+          sp.scale.set(spSc);
+          sp.x = yoffX + pos.x * yimgW - (f.pivotX / 100) * spW;
+          sp.y = yoffY + pos.y * yimgH + (f.pivotY / 100) * hPx;
           sp.tint = getFenceStyle().tint;
           layerBg.addChild(sp);
           yardFenceSprites.push(sp);
@@ -1221,19 +1226,23 @@
       ];
       const fenceTint = getFenceStyle().tint;
       farmFenceSprites = [];
+      const ffsc = Math.max(w / 1200, h / 670);
+      const fimgW = 1200 * ffsc, fimgH = 670 * ffsc;
+      const foffX = (w - fimgW) / 2, foffY = (h - fimgH) / 2;
+      const fcellH = YARD_CELL_H * fimgH;
       FARM_FENCES.sort((a,b) => (a.row + a.col) - (b.row + b.col));
       FARM_FENCES.forEach(f => {
         PIXI.Assets.load('../assets/images/yard/' + f.file).then(tex => {
           if (!tex || !farmContainer.parent) return;
           const sp = new PIXI.Sprite(tex);
           const pos = yardGridPt(f.row + 0.5, f.col + 0.5);
-          const cellPx = YARD_CELL_H * w;
-          const hPx = f.cellSize * cellPx;
-          const sc = hPx / tex.height;
+          const hPx = f.cellSize * fcellH;
+          const spSc = hPx / tex.height;
+          const spW = tex.width * spSc;
           sp.anchor.set(0.5, 1);
-          sp.scale.set(sc);
-          sp.x = pos.x * w + (f.pivotX / 100) * hPx;
-          sp.y = pos.y * h - (f.pivotY / 100) * hPx;
+          sp.scale.set(spSc);
+          sp.x = foffX + pos.x * fimgW - (f.pivotX / 100) * spW;
+          sp.y = foffY + pos.y * fimgH + (f.pivotY / 100) * hPx;
           sp.tint = fenceTint;
           layerFence.addChild(sp);
           farmFenceSprites.push(sp);
