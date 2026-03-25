@@ -122,6 +122,7 @@
     stats[key] = (stats[key] || 0) + (amount || 1);
     _setJSON(LS_STATS, stats);
     _checkAchievements(stats);
+    _showNextRewardHint(key, stats);
     return stats[key];
   };
 
@@ -373,9 +374,77 @@
         '0%{opacity:1;transform:translateY(0) scale(1)}',
         '100%{opacity:0;transform:translateY(-80px) scale(0)}',
       '}',
+      '#ach-next-hint{',
+        'position:fixed;bottom:12px;left:50%;z-index:9502;',
+        'transform:translateX(-50%) translateY(10px);',
+        'background:linear-gradient(135deg,#e0f7fa,#b2ebf2);',
+        'color:#00695c;',
+        'font-size:0.82rem;font-weight:bold;',
+        'padding:8px 18px;border-radius:20px;',
+        'box-shadow:0 3px 12px rgba(0,0,0,0.18);',
+        'pointer-events:none;white-space:nowrap;',
+        'opacity:0;transition:opacity 0.3s,transform 0.3s;',
+        'font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;',
+      '}',
+      '#ach-next-hint.show{opacity:1;transform:translateX(-50%) translateY(0);}',
     ].join('');
     document.head.appendChild(style);
   }
+
+  // ═══ 次の報酬ヒント ════════════════════════════════════════════════
+  var _hintEl = null;
+  var _hintTimer = null;
+
+  function _getNextForStat(statKey, stats) {
+    var unlocked = _getJSON(LS_ACH, {});
+    var best = null;
+    for (var i = 0; i < ACHIEVEMENTS.length; i++) {
+      var a = ACHIEVEMENTS[i];
+      if (a.stat !== statKey) continue;
+      if (unlocked[a.id]) continue;
+      if (!best || a.target < best.target) best = a;
+    }
+    if (!best) return null;
+    var current = stats[statKey] || 0;
+    var remaining = best.target - current;
+    if (remaining <= 0) return null; // about to unlock — popup handles it
+    var icon = best.reward.type === 'sea' ? '🐠' : '🪑';
+    return { remaining: remaining, name: best.name, icon: icon };
+  }
+
+  function _showNextRewardHint(statKey, stats) {
+    var info = _getNextForStat(statKey, stats);
+    if (!info) return;
+    if (!_hintEl) {
+      _hintEl = document.createElement('div');
+      _hintEl.id = 'ach-next-hint';
+      document.body.appendChild(_hintEl);
+    }
+    _hintEl.textContent = 'あと ' + info.remaining + ' で ' + info.icon + ' ' + info.name + ' ゲット！';
+    _hintEl.classList.add('show');
+    clearTimeout(_hintTimer);
+    _hintTimer = setTimeout(function () {
+      if (_hintEl) _hintEl.classList.remove('show');
+    }, 3500);
+  }
+
+  // ═══ 次の報酬を取得（外部から呼べるAPI）══════════════════════════
+  window.getNextReward = function (game) {
+    var stats = _getJSON(LS_STATS, {});
+    var unlocked = _getJSON(LS_ACH, {});
+    var best = null;
+    for (var i = 0; i < ACHIEVEMENTS.length; i++) {
+      var a = ACHIEVEMENTS[i];
+      if (a.game !== game) continue;
+      if (unlocked[a.id]) continue;
+      if (!best || a.target < best.target) best = a;
+    }
+    if (!best) return null;
+    var current = stats[best.stat] || 0;
+    var remaining = best.target - current;
+    var icon = best.reward.type === 'sea' ? '🐠' : '🪑';
+    return { remaining: remaining, name: best.name, icon: icon, desc: best.desc };
+  };
 
   // ═══ 初期化 ════════════════════════════════════════════════════════
   function _init() {
