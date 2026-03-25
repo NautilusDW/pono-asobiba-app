@@ -143,6 +143,7 @@ html, body {
 .ov-back.hidden { display: none; }
 
 </style>
+<script src="../common/menu.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -152,7 +153,6 @@ html, body {
 
 <div id="app">
   <div class="header">
-    <a href="../index.html" class="back-link">← メニュー</a>
     <h1>おかあさんに あいにいこう！</h1>
     <p class="subtitle">みちを つなげて ポノを みちびこう</p>
     <button id="btn-pause" class="btn-pause">⏸</button>
@@ -176,7 +176,7 @@ html, body {
       <div class="ov-title" id="ov-title">おかあさんに あいにいこう！</div>
       <div class="ov-msg" id="ov-msg">みちを つなげよう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
-      <a class="ov-back" id="ov-back" href="../index.html">← メニューにもどる</a>
+      <a class="ov-back" id="ov-back" href="../index.html">← ホームにもどる</a>
     </div>
   </div>
 </div>
@@ -1060,6 +1060,13 @@ window.addEventListener('blur',  () => bgm.pause());
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
 // ===== Init =====
+initMenu({ bgmToggle: function() {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  updateBgmBtn();
+  if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🔊' : '🔇';
+}});
 curCols = LEVELS[0].cols;
 curRows = LEVELS[0].rows;
 resize();
