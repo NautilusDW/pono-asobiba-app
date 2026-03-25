@@ -431,15 +431,20 @@ html, body {
   }
   .sidebar-wrap::-webkit-scrollbar { display: none; }
   .toolbar-top {
-    flex-direction: column;
-    gap: 3px;
-    width: 100%;
+    position: fixed;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    gap: 4px;
+    background: rgba(255,248,231,0.92);
+    padding: 4px 10px;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   }
   .toolbar-top .tool-btn {
     font-size: 0.62rem;
-    padding: 4px 3px;
-    width: 100%;
-    text-align: center;
+    padding: 4px 8px;
   }
   .color-palette {
     display: grid !important;
@@ -486,17 +491,18 @@ html, body {
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
+  <div class="toolbar toolbar-top" id="toolbarTop">
+    <button class="tool-btn btn-undo" id="btnUndo"><img src="../assets/images/icons/icons3_001.png" class="tool-icon" alt="">もどす</button>
+    <button class="tool-btn btn-clear" id="btnClear"><img src="../assets/images/icons/icons_006.png" class="tool-icon" alt="">ぜんぶけす</button>
+    <button class="tool-btn btn-save" id="btnSave">💾 とっておく</button>
+    <button class="tool-btn btn-gallery" id="btnGallery"><img src="../assets/images/icons/icons3_002.png" class="tool-icon" alt="">みる</button>
+  </div>
+
   <div class="canvas-wrap" id="canvasWrap">
     <canvas id="drawCanvas"></canvas>
   </div>
 
   <div class="sidebar-wrap">
-    <div class="toolbar toolbar-top">
-      <button class="tool-btn btn-undo" id="btnUndo"><img src="../assets/images/icons/icons3_001.png" class="tool-icon" alt="">もどす</button>
-      <button class="tool-btn btn-clear" id="btnClear"><img src="../assets/images/icons/icons_006.png" class="tool-icon" alt="">ぜんぶけす</button>
-      <button class="tool-btn btn-save" id="btnSave">💾 とっておく</button>
-      <button class="tool-btn btn-gallery" id="btnGallery"><img src="../assets/images/icons/icons3_002.png" class="tool-icon" alt="">みる</button>
-    </div>
 
     <div class="stamp-panel hidden" id="stampPanel">
       <div class="stamp-grid" id="stampGrid"></div>

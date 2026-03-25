@@ -166,7 +166,7 @@ html, body {
   <!-- overlay は game-wrap の外 -->
   <div class="overlay" id="overlay">
     <div class="ov-card">
-      <div class="ov-icon" id="ov-icon">🐻</div>
+      <div class="ov-icon" id="ov-icon"><img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ"></div>
       <div class="ov-title" id="ov-title">おかあさんに あいにいこう！</div>
       <div class="ov-msg" id="ov-msg">みちを つなげよう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
@@ -856,21 +856,26 @@ function showOverlay(type) {
   overlay.classList.remove('hidden');
   back.classList.remove('hidden');
 
+  var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
+  var reunionTag  = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:56px;height:56px;object-fit:contain;" alt="ポノ">' +
+                    ' ❤️ ' +
+                    '<img src="../assets/images/characters/pono/mom_face_circle.png" style="width:56px;height:56px;object-fit:contain;" alt="おかあさん">';
+
   if (type === 'start' || type === 'stagestart') {
-    icon.textContent  = '🐻';
+    icon.innerHTML    = ponoFaceTag;
     title.textContent = 'おかあさんに あいにいこう！';
     msg.textContent   = LEVELS[stageIdx].storyMsg;
     btn.textContent   = 'たすけにいく ▶';
   } else if (type === 'stageclear') {
     launchConfetti();
-    icon.textContent  = '🐻';
+    icon.innerHTML    = ponoFaceTag;
     title.textContent = `${LEVELS[stageIdx].name} クリア！`;
     msg.textContent   = LEVELS[stageIdx].clearMsg + `\n${moveCount}てかず`;
     btn.textContent   = 'つぎへ ▶';
   } else if (type === 'gameclear') {
     launchConfetti();
     playGameClearSound();
-    icon.textContent  = '🐻❤️🐻';
+    icon.innerHTML    = reunionTag;
     title.textContent = 'おかあさんと さいかい！';
     msg.textContent   = `「やっと あえたね、ポノ！」\n${moveCount}てかず でクリア！`;
     btn.textContent   = 'もう一回 ▶';

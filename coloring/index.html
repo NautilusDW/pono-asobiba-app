@@ -285,6 +285,18 @@ html, body {
   background: #E8F4FD;
   border-color: #3388FF;
 }
+.pan-float {
+  position: absolute;
+  bottom: 14px;
+  left: 62px;
+  font-size: 20px;
+  display: none;
+}
+.pan-float.active {
+  background: #FFF3E0;
+  border-color: #FB923C;
+  box-shadow: 0 0 0 3px rgba(251,146,60,0.3);
+}
 
 .canvas-float-group.top-left {
   position: absolute;
@@ -789,6 +801,7 @@ html, body {
     </div>
     <button id="zoom-reset-btn" onclick="resetZoom()">1:1 もどす</button>
     <button class="canvas-float-btn camera-float" id="camera-btn" onclick="cycleZoom()"><img src="../assets/images/icons/icons_003.png" class="float-icon" alt="ズーム"></button>
+    <button class="canvas-float-btn pan-float" id="pan-btn" onclick="togglePanMode()">✋</button>
     <div class="canvas-float-group top-left">
       <button class="canvas-float-btn" id="eraser-btn" onclick="toggleEraser()"><img src="../assets/images/icons/icons_004.png" class="float-icon" alt="消しゴム"></button>
       <button class="canvas-float-btn" onclick="undo()"><img src="../assets/images/icons/icons3_001.png" class="float-icon" alt="もどす"></button>
@@ -1164,7 +1177,7 @@ canvas.addEventListener('mouseleave', endDraw);
 let zoomScale = 1;
 let panX = 0, panY = 0;
 let isPanMode = false;
-const ZOOM_STEPS = [1, 2, 3];
+const ZOOM_STEPS = [1, 2, 3, 4];
 let zoomStepIndex = 0;
 
 function applyTransform() {
@@ -1173,15 +1186,24 @@ function applyTransform() {
   document.getElementById('zoom-reset-btn').style.display = zoomScale > 1.01 ? 'block' : 'none';
   // カメラボタンの表示更新
   const camBtn = document.getElementById('camera-btn');
+  const panBtn = document.getElementById('pan-btn');
   const zoomed = zoomScale > 1.01;
   if (zoomed) {
     camBtn.innerHTML = '<span class="zoom-label">×' + Math.round(zoomScale) + '</span>';
     camBtn.classList.add('zoomed');
+    panBtn.style.display = 'flex';
   } else {
     camBtn.innerHTML = '<img src="../assets/images/icons/icons_003.png" class="float-icon" alt="ズーム">';
     camBtn.classList.remove('zoomed');
+    panBtn.style.display = 'none';
+    if (isPanMode) { isPanMode = false; panBtn.classList.remove('active'); }
   }
-  // ズーム中もデフォルトは描画モード（2本指でパン）
+  document.getElementById('canvas-wrapper').classList.toggle('pan-mode', isPanMode);
+}
+
+function togglePanMode() {
+  isPanMode = !isPanMode;
+  document.getElementById('pan-btn').classList.toggle('active', isPanMode);
   document.getElementById('canvas-wrapper').classList.toggle('pan-mode', isPanMode);
 }
 
@@ -1218,7 +1240,8 @@ function cycleZoom() {
 function syncPanMode() {
   if (zoomScale <= 1.01) zoomStepIndex = 0;
   else if (zoomScale <= 2.5) zoomStepIndex = 1;
-  else zoomStepIndex = 2;
+  else if (zoomScale <= 3.5) zoomStepIndex = 2;
+  else zoomStepIndex = 3;
 }
 
 // --- Touch handling ---
@@ -1243,7 +1266,13 @@ wrapper.addEventListener('touchstart', (e) => {
     if (now - lastTapTime < 280) { resetZoom(); lastTapTime = 0; return; }
     lastTapTime = now;
     isGesturing = false;
-    startDraw(e);
+    if (isPanMode) {
+      panTouchStartX = e.touches[0].clientX;
+      panTouchStartY = e.touches[0].clientY;
+      panStartX = panX; panStartY = panY;
+    } else {
+      startDraw(e);
+    }
   }
 }, { passive: false });
 
@@ -1272,7 +1301,14 @@ wrapper.addEventListener('touchmove', (e) => {
     applyTransform();
     pinchPrevDist = dist; pinchPrevMidX = midX; pinchPrevMidY = midY;
   } else if (e.touches.length === 1 && !isGesturing) {
-    doDraw(e);
+    if (isPanMode) {
+      panX = panStartX + e.touches[0].clientX - panTouchStartX;
+      panY = panStartY + e.touches[0].clientY - panTouchStartY;
+      clampPan();
+      applyTransform();
+    } else {
+      doDraw(e);
+    }
   }
 }, { passive: false });
 
