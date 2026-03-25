@@ -109,17 +109,13 @@
   // ── Create elements ──
   const toggle = document.createElement('button');
   toggle.className = 'pono-menu-toggle';
-  toggle.textContent = '⚙️';
-  toggle.setAttribute('aria-label', 'メニュー');
+  toggle.textContent = '🏠';
+  toggle.setAttribute('aria-label', 'ホームにもどる');
 
   const items = document.createElement('div');
   items.className = 'pono-menu-items';
 
-  const homeBtn = document.createElement('button');
-  homeBtn.className = 'pono-menu-btn';
-  homeBtn.textContent = '🏠';
-  homeBtn.setAttribute('aria-label', 'ホームにもどる');
-  items.appendChild(homeBtn);
+  const homeBtn = toggle; // 家ボタン＝トグルボタン直接
 
   // Confirm overlay
   const overlay = document.createElement('div');
@@ -168,13 +164,6 @@
 
   // ── Event handlers ──
   toggle.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (menuOpen) closeMenu();
-    else openMenu();
-  });
-
-  homeBtn.addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     showConfirm();
@@ -249,7 +238,11 @@
 
     // Append to body
     document.body.appendChild(toggle);
-    document.body.appendChild(items);
+    // items（BGM等）があれば常時表示
+    if (items.children.length > 0) {
+      items.classList.add('show');
+      document.body.appendChild(items);
+    }
     document.body.appendChild(overlay);
 
     // ── モバイル: ブラウザUIがあっても画面内に収める ──
