@@ -214,13 +214,13 @@ const WALK_FRAMES = 25;
 const WALK_FRAME_W = 92;
 const WALK_FRAME_H = 128;
 const WALK_FPS = 12;
-// Side-walk sprite sheet (71 frames, 77x128 each, facing right)
+// Side-walk sprite sheet (35 frames @12fps, 77x128 each, facing right)
 const imgWalkSideSheet = new Image();
 imgWalkSideSheet.src = '../assets/images/characters/pono/pono_walk_side_sheet.png';
-const SIDE_WALK_FRAMES = 71;
+const SIDE_WALK_FRAMES = 35;
 const SIDE_WALK_FRAME_W = 77;
 const SIDE_WALK_FRAME_H = 128;
-const SIDE_WALK_FPS = 24;
+const SIDE_WALK_SCALE = 1232 / 1132; // compensate taller canvas vs front
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 
@@ -777,9 +777,10 @@ function draw(now) {
     const walkH = Math.floor(cellSize * 0.55);
 
     if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
-      // Side walk
-      const sideW = Math.floor(walkH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
-      const frameIdx = Math.floor(elapsed / (1000 / SIDE_WALK_FPS)) % SIDE_WALK_FRAMES;
+      // Side walk (scaled up to match front character size)
+      const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
+      const sideW = Math.floor(sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
+      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
       const sx = frameIdx * SIDE_WALK_FRAME_W;
       ctx.save();
       if (dCol < 0) {
@@ -787,10 +788,10 @@ function draw(now) {
         ctx.translate(fx, fy);
         ctx.scale(-1, 1);
         ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
-                       -sideW / 2, -walkH / 2, sideW, walkH);
+                       -sideW / 2, -sideH / 2, sideW, sideH);
       } else {
         ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
-                       fx - sideW / 2, fy - walkH / 2, sideW, walkH);
+                       fx - sideW / 2, fy - sideH / 2, sideW, sideH);
       }
       ctx.restore();
     } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
