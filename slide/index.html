@@ -208,6 +208,12 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 // ===== Preload character face images =====
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
+const imgWalkSheet = new Image();
+imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
+const WALK_FRAMES = 8;
+const WALK_FRAME_W = 128;
+const WALK_FRAME_H = 128;
+const WALK_FPS = 10;
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 
@@ -729,8 +735,13 @@ function draw(now) {
     const fx = gridOX + (pA.col + (pB.col - pA.col) * frac) * cellSize + cellSize / 2;
     const fy = gridOY + (pA.row + (pB.row - pA.row) * frac) * cellSize + cellSize / 2;
 
-    const walkSize = Math.floor(cellSize * 0.55);
-    if (imgPono.complete && imgPono.naturalWidth > 0) {
+    const walkSize = Math.floor(cellSize * 0.7);
+    if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
+      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
+      const sx = frameIdx * WALK_FRAME_W;
+      ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
+                     fx - walkSize / 2, fy - walkSize / 2, walkSize, walkSize);
+    } else if (imgPono.complete && imgPono.naturalWidth > 0) {
       ctx.drawImage(imgPono, fx - walkSize / 2, fy - walkSize / 2, walkSize, walkSize);
     } else {
       ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
