@@ -186,6 +186,18 @@
       position: absolute; top: 6px; right: 8px;
       font-size: 1rem; filter: none;
     }
+    .card.coming-soon {
+      filter: grayscale(0.3); opacity: 0.65; pointer-events: none;
+      position: relative;
+    }
+    .card.coming-soon::after {
+      content: 'つくってるよ！';
+      position: absolute; top: 6px; right: 6px;
+      font-size: 0.55rem; font-weight: 900;
+      background: linear-gradient(135deg, #FBBF24, #F59E0B);
+      color: #5C3A00; padding: 2px 8px; border-radius: 20px;
+      filter: none; letter-spacing: 0.03em;
+    }
     .lock-banner {
       grid-column: 1 / -1;
       background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
@@ -529,21 +541,14 @@
         </div>
       </a>
 
-      <a href="bubble/index.html" class="card card-bubble">
-        <span class="card-icon">🫧</span>
+      <!-- 開発中コンテンツ -->
+      <div class="card card-egg coming-soon">
+        <span class="card-icon">🥚</span>
         <div class="card-body">
-          <div class="card-title">しゃぼんだま</div>
-          <div class="card-desc">タップで<br>パチン！</div>
+          <div class="card-title">そだてよう</div>
+          <div class="card-desc">たまごを<br>おせわしよう</div>
         </div>
-      </a>
-
-      <a href="bowling/index.html" class="card card-bowling">
-        <span class="card-icon">🎳</span>
-        <div class="card-body">
-          <div class="card-title">ボウリング</div>
-          <div class="card-desc">フリックで<br>たおそう！</div>
-        </div>
-      </a>
+      </div>
 
       <!-- 購入者限定バナー -->
       <div class="lock-banner" id="lockBanner">
@@ -558,6 +563,22 @@
       </div>
 
       <!-- 購入者限定コンテンツ -->
+      <a href="bubble/index.html" class="card card-bubble locked" id="card-bubble">
+        <span class="card-icon">🫧</span>
+        <div class="card-body">
+          <div class="card-title">しゃぼんだま</div>
+          <div class="card-desc">タップで<br>パチン！</div>
+        </div>
+      </a>
+
+      <a href="bowling/index.html" class="card card-bowling locked" id="card-bowling">
+        <span class="card-icon">🎳</span>
+        <div class="card-body">
+          <div class="card-title">ボウリング</div>
+          <div class="card-desc">フリックで<br>たおそう！</div>
+        </div>
+      </a>
+
       <a href="breakout/index.html" class="card card-breakout locked" id="card-breakout">
         <span class="card-icon">🧱</span>
         <div class="card-body">
@@ -621,7 +642,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-breakout', 'card-stacking', 'card-slide'];
+    const lockedCards = ['card-bubble', 'card-bowling', 'card-breakout', 'card-stacking', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';
