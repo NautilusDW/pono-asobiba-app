@@ -214,6 +214,12 @@ const WALK_FRAMES = 8;
 const WALK_FRAME_W = 92;
 const WALK_FRAME_H = 128;
 const WALK_FPS = 7;
+// Side-walk sprite sheet (7 frames, 73x128 each, facing right)
+const imgWalkSideSheet = new Image();
+imgWalkSideSheet.src = '../assets/images/characters/pono/pono_walk_side_sheet.png';
+const SIDE_WALK_FRAMES = 7;
+const SIDE_WALK_FRAME_W = 73;
+const SIDE_WALK_FRAME_H = 128;
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 
@@ -469,9 +475,17 @@ function traceWinPath() {
   if (level.goal.side === 'left')   { goalRow = level.goal.row; goalCol = 0; goalExitEdge = 3; }
   if (level.goal.side === 'right')  { goalRow = level.goal.row; goalCol = curCols - 1; goalExitEdge = 1; }
 
+  // Add approach point (one cell outside the grid, on start side)
+  const drDir = [-1, 0, 1, 0]; // edge 0=top,1=right,2=bottom,3=left
+  const dcDir = [0, 1, 0, -1];
   const path = [];
+  // Entry point: one cell before start (outside grid)
+  path.push({ row: startRow - drDir[oppositeEdge(startEdge)],
+              col: startCol - dcDir[oppositeEdge(startEdge)] });
+
   let row = startRow, col = startCol, fromEdge = startEdge;
   const visited = new Set();
+  let reachedGoalEdge = -1;
 
   for (let steps = 0; steps < curCols * curRows + 4; steps++) {
     if (row < 0 || row >= curRows || col < 0 || col >= curCols) break;
@@ -491,14 +505,22 @@ function traceWinPath() {
     for (let e = 0; e < 4; e++) {
       if (e === fromEdge || !edges[e]) continue;
       if (row === goalRow && col === goalCol && e === goalExitEdge) {
+        reachedGoalEdge = e;
         exited = true; break;
       }
       const [nr, nc] = getNeighborRC(row, col, e);
       row = nr; col = nc; fromEdge = oppositeEdge(e);
       exited = true; break;
     }
-    if (!exited) break;
+    if (!exited || reachedGoalEdge >= 0) break;
   }
+
+  // Add exit point (one cell beyond goal, outside grid)
+  if (reachedGoalEdge >= 0) {
+    path.push({ row: goalRow + drDir[reachedGoalEdge],
+                col: goalCol + dcDir[reachedGoalEdge] });
+  }
+
   return path;
 }
 
@@ -719,10 +741,10 @@ function draw(now) {
   // Start & Goal markers
   drawStartGoal();
 
-  // Win celebration fox walk
+  // Win celebration walk animation (direction-aware)
   if (winAnim.active && winAnim.path.length > 0) {
     const elapsed = now - winAnim.t0;
-    const dur = winAnim.path.length * 650;
+    const dur = winAnim.path.length * 1300; // slow walk
     const t = Math.min(elapsed / dur, 1);
     const totalPts = winAnim.path.length;
     const exactIdx = t * (totalPts - 1);
@@ -735,15 +757,44 @@ function draw(now) {
     const fx = gridOX + (pA.col + (pB.col - pA.col) * frac) * cellSize + cellSize / 2;
     const fy = gridOY + (pA.row + (pB.row - pA.row) * frac) * cellSize + cellSize / 2;
 
+    // Determine movement direction (look ahead; if same point, look at next segment)
+    let dCol = 0, dRow = 0;
+    if (idxA !== idxB) {
+      dCol = pB.col - pA.col;
+      dRow = pB.row - pA.row;
+    } else if (idxA > 0) {
+      // At last point or boundary — use previous segment direction
+      dCol = pA.col - winAnim.path[idxA - 1].col;
+      dRow = pA.row - winAnim.path[idxA - 1].row;
+    }
+    const isHorizontal = Math.abs(dCol) > Math.abs(dRow);
+
     const walkH = Math.floor(cellSize * 0.55);
-    const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
-    if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
+
+    if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
+      // Side walk
+      const sideW = Math.floor(walkH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
+      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
+      const sx = frameIdx * SIDE_WALK_FRAME_W;
+      ctx.save();
+      if (dCol < 0) {
+        // Moving left — flip horizontally
+        ctx.translate(fx, fy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+                       -sideW / 2, -walkH / 2, sideW, walkH);
+      } else {
+        ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+                       fx - sideW / 2, fy - walkH / 2, sideW, walkH);
+      }
+      ctx.restore();
+    } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
+      // Front walk (vertical movement or side sheet not loaded)
+      const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
       const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
       const sx = frameIdx * WALK_FRAME_W;
       ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
                      fx - walkW / 2, fy - walkH / 2, walkW, walkH);
-    } else if (imgPono.complete && imgPono.naturalWidth > 0) {
-      ctx.drawImage(imgPono, fx - walkW / 2, fy - walkH / 2, walkW, walkH);
     } else {
       ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
