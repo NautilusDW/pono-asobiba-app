@@ -407,6 +407,31 @@
     }
 
 
+    /* ===== Author Block ===== */
+    .author-block {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #E0F2FE, #DBEAFE);
+      border: 2px solid #93C5FD;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px var(--shadow);
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .author-block:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--shadow); }
+    .author-icon { font-size: 2rem; flex-shrink: 0; }
+    .author-title { font-size: 0.95rem; font-weight: 900; color: #3B82F6; }
+    .author-desc { font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-top: 2px; }
+
+    @media (min-width: 640px) {
+      .author-block { max-width: 580px; }
+    }
+
     /* ===== Footer ===== */
     .footer {
       width: 100%;
@@ -518,14 +543,6 @@
         </div>
       </a>
 
-      <a href="message/index.html" class="card card-message">
-        <span class="card-icon">📖</span>
-        <div class="card-body">
-          <div class="card-title">作者より</div>
-          <div class="card-desc">ネモ先生のひとりごと</div>
-        </div>
-      </a>
-
       <a href="aquarium/index.html" class="card card-aquarium">
         <span class="card-icon">🐠</span>
         <div class="card-body">
@@ -541,15 +558,6 @@
           <div class="card-desc">おへやを<br>かざろう！</div>
         </div>
       </a>
-
-      <!-- 開発中コンテンツ -->
-      <div class="card card-egg coming-soon">
-        <span class="card-icon">🥚</span>
-        <div class="card-body">
-          <div class="card-title">そだてよう</div>
-          <div class="card-desc">たまごを<br>おせわしよう</div>
-        </div>
-      </div>
 
       <!-- 購入者限定バナー -->
       <div class="lock-banner" id="lockBanner">
@@ -603,7 +611,24 @@
           <div class="card-desc">おかあさんに<br>あいにいこう</div>
         </div>
       </a>
+
+      <a href="egg/index.html" class="card card-egg locked" id="card-egg">
+        <span class="card-icon">🥚</span>
+        <div class="card-body">
+          <div class="card-title">そだてよう</div>
+          <div class="card-desc">たまごを<br>おせわしよう</div>
+        </div>
+      </a>
     </nav>
+
+    <!-- 作者より（独立ブロック） -->
+    <a href="message/index.html" class="author-block">
+      <span class="author-icon">📖</span>
+      <div class="author-text">
+        <div class="author-title">作者より</div>
+        <div class="author-desc">ネモ先生のひとりごと</div>
+      </div>
+    </a>
 
     <footer class="footer">
       <div class="footer-copy">© こだまのもり出版　All rights reserved.</div>
@@ -643,7 +668,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-bubble', 'card-bowling', 'card-breakout', 'card-stacking', 'card-slide'];
+    const lockedCards = ['card-bubble', 'card-bowling', 'card-breakout', 'card-stacking', 'card-slide', 'card-egg'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';

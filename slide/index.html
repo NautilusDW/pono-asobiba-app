@@ -748,7 +748,7 @@ function draw(now) {
   // Win celebration walk animation (direction-aware)
   if (winAnim.active && winAnim.path.length > 0) {
     const elapsed = now - winAnim.t0;
-    const dur = winAnim.path.length * 1300; // slow walk
+    const dur = winAnim.path.length * 867; // walk speed
     const t = Math.min(elapsed / dur, 1);
     const totalPts = winAnim.path.length;
     const exactIdx = t * (totalPts - 1);
