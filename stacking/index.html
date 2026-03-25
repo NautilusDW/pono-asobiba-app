@@ -101,22 +101,28 @@ body {
 #flash.miss    { background: rgba(239,68,68,0.42); opacity: 1; }
 
 .overlay {
-  position: absolute; inset: 0; z-index: 3;
-  background: rgba(93,78,55,0.78);
-  border-radius: var(--radius);
+  position: fixed; inset: 0; z-index: 3;
+  background: rgba(93,78,55,0.72);
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 10px;
-  /* backdrop-filter は iOS Safari でタッチが子要素に届かない既知バグがあるため削除 */
+  align-items: center; justify-content: center; gap: 0;
 }
 .overlay.hidden { display: none; }
+.overlay-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  max-width: 320px; width: 85vw;
+  padding: 32px 28px 24px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
 .overlay-emoji { font-size: 2.6rem; }
 .overlay-title {
-  font-size: 1.4rem; font-weight: 900; color: #fff;
+  font-size: 1.4rem; font-weight: 900; color: #5D4E37;
   text-align: center; line-height: 1.35;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
 }
-.overlay-score { font-size: 1.4rem; font-weight: 900; color: #FCD34D; }
-.overlay-hi { font-size: 0.85rem; font-weight: 700; color: #FDDCBF; }
+.overlay-score { font-size: 1.4rem; font-weight: 900; color: #F97316; }
+.overlay-hi { font-size: 0.85rem; font-weight: 700; color: #A89585; }
 .overlay-btn {
   margin-top: 4px; padding: 11px 32px;
   border: none; border-radius: 50px;
@@ -161,18 +167,22 @@ body {
   <div id="flash"></div>
   <div id="bird-indicator" style="position:absolute;top:6px;right:8px;z-index:1;font-size:22px;pointer-events:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));">🐦</div>
   <div id="gameover-overlay" class="overlay hidden">
-    <p class="overlay-emoji">🐦</p>
-    <p class="overlay-title">もうすこし<br>だったのに…</p>
-    <p class="overlay-score" id="final-score">たかさ: 0</p>
-    <p class="overlay-hi" id="hi-msg"></p>
-    <button class="overlay-btn" id="retry-btn">もういっかい！</button>
+    <div class="overlay-card">
+      <p class="overlay-emoji">🐦</p>
+      <p class="overlay-title">もうすこし<br>だったのに…</p>
+      <p class="overlay-score" id="final-score">たかさ: 0</p>
+      <p class="overlay-hi" id="hi-msg"></p>
+      <button class="overlay-btn" id="retry-btn">もういっかい！</button>
+    </div>
   </div>
-  <div id="gameclear-overlay" class="overlay hidden" style="background:rgba(34,125,34,0.82);">
-    <p class="overlay-emoji">🐦🌳</p>
-    <p class="overlay-title">コトリが<br>すに かえれた！</p>
-    <p class="overlay-score" id="clear-score">たかさ: 0</p>
-    <p class="overlay-hi" id="clear-hi"></p>
-    <button class="overlay-btn" id="clear-btn">もういっかい！</button>
+  <div id="gameclear-overlay" class="overlay hidden">
+    <div class="overlay-card" style="border: 3px solid #4CAF50;">
+      <p class="overlay-emoji">🐦🌳</p>
+      <p class="overlay-title">コトリが<br>すに かえれた！</p>
+      <p class="overlay-score" id="clear-score">たかさ: 0</p>
+      <p class="overlay-hi" id="clear-hi"></p>
+      <button class="overlay-btn" id="clear-btn">もういっかい！</button>
+    </div>
   </div>
 </div>
 

@@ -100,9 +100,10 @@ html, body {
 
 /* ===== Overlay ===== */
 .overlay {
-  position: absolute; inset: 0; z-index: 20;
+  position: fixed; inset: 0; z-index: 20;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,248,240,0.92);
+  background: rgba(93,78,55,0.72);
+  backdrop-filter: blur(4px);
   animation: fadeIn 0.25s ease;
 }
 .overlay.hidden { display: none; }
@@ -110,20 +111,25 @@ html, body {
 
 .ov-card {
   text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 24px 28px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 32px 32px 24px;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  max-width: 320px;
+  width: 85vw;
 }
 .ov-icon  { font-size: 3.5rem; line-height: 1; }
 .ov-title {
-  font-size: 1.6rem; font-weight: 900;
+  font-size: 1.4rem; font-weight: 900;
   background: linear-gradient(135deg, #4CAF50, #81C784);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.ov-msg { font-size: 0.95rem; font-weight: 700; color: var(--text); white-space: pre-line; }
+.ov-msg { font-size: 0.9rem; font-weight: 700; color: var(--text); white-space: pre-line; line-height: 1.6; }
 .ov-btn {
-  margin-top: 6px; padding: 12px 30px;
+  margin-top: 4px; padding: 14px 36px;
   border: none; border-radius: 50px;
-  font-family: inherit; font-size: 1rem; font-weight: 900;
+  font-family: inherit; font-size: 1.05rem; font-weight: 900;
   background: linear-gradient(135deg, #4CAF50, #81C784);
   color: #fff; cursor: pointer;
   box-shadow: 0 4px 16px rgba(76,175,80,0.4);
@@ -131,8 +137,8 @@ html, body {
 }
 .ov-btn:active { transform: scale(0.95); }
 .ov-back {
-  display: block; margin-top: 10px; font-size: 0.85rem;
-  color: var(--primary); text-decoration: none; text-align: center; font-weight: 700;
+  display: block; font-size: 0.85rem;
+  color: #A89585; text-decoration: none; text-align: center; font-weight: 700;
 }
 .ov-back.hidden { display: none; }
 
@@ -723,9 +729,14 @@ function draw(now) {
     const fx = gridOX + (pA.col + (pB.col - pA.col) * frac) * cellSize + cellSize / 2;
     const fy = gridOY + (pA.row + (pB.row - pA.row) * frac) * cellSize + cellSize / 2;
 
-    ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🐻', fx, fy);
+    const walkSize = Math.floor(cellSize * 0.55);
+    if (imgPono.complete && imgPono.naturalWidth > 0) {
+      ctx.drawImage(imgPono, fx - walkSize / 2, fy - walkSize / 2, walkSize, walkSize);
+    } else {
+      ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🐻', fx, fy);
+    }
 
     if (t >= 1) {
       winAnim.active = false;
