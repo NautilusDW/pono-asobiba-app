@@ -211,9 +211,9 @@ imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgWalkSheet = new Image();
 imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
 const WALK_FRAMES = 8;
-const WALK_FRAME_W = 128;
+const WALK_FRAME_W = 92;
 const WALK_FRAME_H = 128;
-const WALK_FPS = 10;
+const WALK_FPS = 7;
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 
@@ -722,7 +722,7 @@ function draw(now) {
   // Win celebration fox walk
   if (winAnim.active && winAnim.path.length > 0) {
     const elapsed = now - winAnim.t0;
-    const dur = winAnim.path.length * 400;
+    const dur = winAnim.path.length * 650;
     const t = Math.min(elapsed / dur, 1);
     const totalPts = winAnim.path.length;
     const exactIdx = t * (totalPts - 1);
@@ -735,14 +735,15 @@ function draw(now) {
     const fx = gridOX + (pA.col + (pB.col - pA.col) * frac) * cellSize + cellSize / 2;
     const fy = gridOY + (pA.row + (pB.row - pA.row) * frac) * cellSize + cellSize / 2;
 
-    const walkSize = Math.floor(cellSize * 0.7);
+    const walkH = Math.floor(cellSize * 0.55);
+    const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
     if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
       const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
       const sx = frameIdx * WALK_FRAME_W;
       ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
-                     fx - walkSize / 2, fy - walkSize / 2, walkSize, walkSize);
+                     fx - walkW / 2, fy - walkH / 2, walkW, walkH);
     } else if (imgPono.complete && imgPono.naturalWidth > 0) {
-      ctx.drawImage(imgPono, fx - walkSize / 2, fy - walkSize / 2, walkSize, walkSize);
+      ctx.drawImage(imgPono, fx - walkW / 2, fy - walkH / 2, walkW, walkH);
     } else {
       ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
