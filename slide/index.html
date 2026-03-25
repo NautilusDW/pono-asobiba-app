@@ -475,52 +475,56 @@ function traceWinPath() {
   if (level.goal.side === 'left')   { goalRow = level.goal.row; goalCol = 0; goalExitEdge = 3; }
   if (level.goal.side === 'right')  { goalRow = level.goal.row; goalCol = curCols - 1; goalExitEdge = 1; }
 
-  // Add approach point (one cell outside the grid, on start side)
-  const drDir = [-1, 0, 1, 0]; // edge 0=top,1=right,2=bottom,3=left
+  const drDir = [-1, 0, 1, 0];
   const dcDir = [0, 1, 0, -1];
+
+  // BFS to find correct path through tiles (handles CROSS tiles)
+  // State: { row, col, fromEdge, path[] }
+  const queue = [{ row: startRow, col: startCol, fromEdge: startEdge, trail: [] }];
+  const visited = new Set();
+  let foundTrail = null;
+  let foundGoalEdge = -1;
+
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    const r = cur.row, c = cur.col, fe = cur.fromEdge;
+    if (r < 0 || r >= curRows || c < 0 || c >= curCols) continue;
+    const vKey = `${r},${c},${fe}`;
+    if (visited.has(vKey)) continue;
+    visited.add(vKey);
+
+    const idx = r * curCols + c;
+    const tileKey = grid[idx];
+    if (!tileKey || tileKey === 'BLANK') continue;
+    const edges = TILE_TYPES[tileKey].edges;
+    if (!edges[fe]) continue;
+
+    const trail = cur.trail.concat({ row: r, col: c });
+
+    for (let e = 0; e < 4; e++) {
+      if (e === fe || !edges[e]) continue;
+      if (r === goalRow && c === goalCol && e === goalExitEdge) {
+        foundTrail = trail;
+        foundGoalEdge = e;
+        break;
+      }
+      const [nr, nc] = getNeighborRC(r, c, e);
+      queue.push({ row: nr, col: nc, fromEdge: oppositeEdge(e), trail: trail });
+    }
+    if (foundTrail) break;
+  }
+
+  // Build final path: entry → cells → exit
   const path = [];
-  // Entry point: one cell before start (outside grid)
+  // Entry point (one cell outside grid on start side)
   path.push({ row: startRow - drDir[oppositeEdge(startEdge)],
               col: startCol - dcDir[oppositeEdge(startEdge)] });
-
-  let row = startRow, col = startCol, fromEdge = startEdge;
-  const visited = new Set();
-  let reachedGoalEdge = -1;
-
-  for (let steps = 0; steps < curCols * curRows + 4; steps++) {
-    if (row < 0 || row >= curRows || col < 0 || col >= curCols) break;
-    const key = `${row},${col}`;
-    if (visited.has(key)) break;
-    visited.add(key);
-
-    const idx = row * curCols + col;
-    const tileKey = grid[idx];
-    if (!tileKey || tileKey === 'BLANK') break;
-    const edges = TILE_TYPES[tileKey].edges;
-    if (!edges[fromEdge]) break;
-
-    path.push({ row, col });
-
-    let exited = false;
-    for (let e = 0; e < 4; e++) {
-      if (e === fromEdge || !edges[e]) continue;
-      if (row === goalRow && col === goalCol && e === goalExitEdge) {
-        reachedGoalEdge = e;
-        exited = true; break;
-      }
-      const [nr, nc] = getNeighborRC(row, col, e);
-      row = nr; col = nc; fromEdge = oppositeEdge(e);
-      exited = true; break;
-    }
-    if (!exited || reachedGoalEdge >= 0) break;
+  if (foundTrail) {
+    foundTrail.forEach(p => path.push(p));
+    // Exit point (one cell beyond goal)
+    path.push({ row: goalRow + drDir[foundGoalEdge],
+                col: goalCol + dcDir[foundGoalEdge] });
   }
-
-  // Add exit point (one cell beyond goal, outside grid)
-  if (reachedGoalEdge >= 0) {
-    path.push({ row: goalRow + drDir[reachedGoalEdge],
-                col: goalCol + dcDir[reachedGoalEdge] });
-  }
-
   return path;
 }
 
