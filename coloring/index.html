@@ -971,6 +971,9 @@ function isLineAt(x, y, ax, bx, ay, by, nw, nh) {
   return false;
 }
 
+// 仮想黒枠の太さ（端が開いた線を閉じるため）
+const BORDER_WIDTH = 3;
+
 function createRegionMask(startX, startY) {
   activeMask = null;
   if (!nuriePixelData) return;
@@ -979,8 +982,13 @@ function createRegionMask(startX, startY) {
   const sx = Math.round(startX), sy = Math.round(startY);
   if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
 
-  // 開始点がライン上なら領域なし
-  if (isLineAt(sx, sy, ax, bx, ay, by, nw, nh)) return;
+  // 端BORDERピクセルはバリア扱い（開いた線を閉じる仮想黒枠）
+  function isBorder(x, y) {
+    return x < BORDER_WIDTH || x >= w - BORDER_WIDTH || y < BORDER_WIDTH || y >= h - BORDER_WIDTH;
+  }
+
+  // 開始点がライン上or枠上なら領域なし
+  if (isBorder(sx, sy) || isLineAt(sx, sy, ax, bx, ay, by, nw, nh)) return;
 
   const mask = new Uint8Array(w * h);
   const visited = new Uint8Array(w * h);
@@ -990,7 +998,7 @@ function createRegionMask(startX, startY) {
   while (stack.length) {
     const idx = stack.pop();
     const x = idx % w, y = (idx / w) | 0;
-    if (isLineAt(x, y, ax, bx, ay, by, nw, nh)) continue;
+    if (isBorder(x, y) || isLineAt(x, y, ax, bx, ay, by, nw, nh)) continue;
     mask[idx] = 1;
     if (x > 0   && !visited[idx-1]) { visited[idx-1] = 1; stack.push(idx-1); }
     if (x < w-1 && !visited[idx+1]) { visited[idx+1] = 1; stack.push(idx+1); }
