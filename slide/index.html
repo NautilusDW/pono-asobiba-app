@@ -210,16 +210,17 @@ const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgWalkSheet = new Image();
 imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
-const WALK_FRAMES = 8;
+const WALK_FRAMES = 25;
 const WALK_FRAME_W = 92;
 const WALK_FRAME_H = 128;
-const WALK_FPS = 7;
-// Side-walk sprite sheet (7 frames, 73x128 each, facing right)
+const WALK_FPS = 12;
+// Side-walk sprite sheet (71 frames, 77x128 each, facing right)
 const imgWalkSideSheet = new Image();
 imgWalkSideSheet.src = '../assets/images/characters/pono/pono_walk_side_sheet.png';
-const SIDE_WALK_FRAMES = 7;
-const SIDE_WALK_FRAME_W = 73;
+const SIDE_WALK_FRAMES = 71;
+const SIDE_WALK_FRAME_W = 77;
 const SIDE_WALK_FRAME_H = 128;
+const SIDE_WALK_FPS = 24;
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 
@@ -778,7 +779,7 @@ function draw(now) {
     if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
       // Side walk
       const sideW = Math.floor(walkH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
-      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
+      const frameIdx = Math.floor(elapsed / (1000 / SIDE_WALK_FPS)) % SIDE_WALK_FRAMES;
       const sx = frameIdx * SIDE_WALK_FRAME_W;
       ctx.save();
       if (dCol < 0) {
