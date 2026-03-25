@@ -925,26 +925,11 @@
     <button class="dbg-btn reset" onclick="dbgReset()">リセット</button>
   </div>
   <div class="dbg-label" id="dbg-info"></div>
+  <!-- 育成デバッグ: MVP後に有効化
   <h3 style="color:#ff0;margin:10px 0 6px;font-size:13px;">🥚 たまご操作</h3>
-  <div class="dbg-row">
-    <button class="dbg-btn plus" onclick="dbgEggAdd(5)">+5pt</button>
-    <button class="dbg-btn plus" onclick="dbgEggAdd(10)">+10pt</button>
-    <button class="dbg-btn plus" onclick="dbgEggAdd(30)">+30pt</button>
-    <button class="dbg-btn minus" onclick="dbgEggAdd(-5)">-5pt</button>
-  </div>
-  <div class="dbg-row">
-    <button class="dbg-btn" style="background:#2196f3;color:#fff" onclick="dbgEggSetStage(0)">🥚たまご</button>
-    <button class="dbg-btn" style="background:#e91e63;color:#fff" onclick="dbgEggSetStage(1)">👶あかちゃん</button>
-    <button class="dbg-btn" style="background:#4caf50;color:#fff" onclick="dbgEggSetStage(2)">🧒こども</button>
-  </div>
-  <div class="dbg-row">
-    <button class="dbg-btn" style="background:#ff9800;color:#fff" onclick="dbgEggBackToSelect()">🔄 たまご選びへ</button>
-    <button class="dbg-btn" style="background:#9c27b0;color:#fff" onclick="dbgEggDailyReset()">⏰ 今日の回数リセット</button>
-  </div>
-  <div class="dbg-row">
-    <button class="dbg-btn minus" onclick="dbgEggReset()">🗑 全リセット</button>
-  </div>
-  <div class="dbg-label" id="dbg-egg-info"></div>
+  ...省略...
+  -->
+  <div class="dbg-label" id="dbg-egg-info" style="display:none"></div>
 </div>
 
 <!-- ── Points toast ───────────────────────────────── -->
@@ -963,7 +948,7 @@
 <!-- ── Egg care modal ────────────────────────────────── -->
 <div id="egg-modal" class="hidden stage-egg">
   <div id="egg-modal-card">
-    <button class="egg-modal-debug" id="egg-modal-debug" onclick="_dbgToggle()">🛠</button>
+    <!-- MVP後に有効化: <button class="egg-modal-debug" id="egg-modal-debug" onclick="_dbgToggle()">🛠</button> -->
     <button class="egg-modal-close" id="egg-modal-close">✕</button>
     <div class="egg-modal-creature anim-wobble" id="egg-creature">🥚</div>
     <div class="egg-modal-name" id="egg-name"></div>
@@ -3030,18 +3015,13 @@ function init() {
     document.getElementById('btn-girl').addEventListener('click', () => selectTheme('girl'));
   } else {
     document.getElementById('theme-ov').classList.add('hidden');
-    // Auto-place incubator if egg exists but not placed yet
-    if (!needsEggStory()) placeEggIncubator();
-    // Show egg story if first time, then entry selection
-    var params = new URLSearchParams(location.search);
-    if (needsEggStory()) {
-      showEggStory();
-    } else if (params.get('to') === 'room') {
-      // Coming back from garden — skip entry overlay, go straight to room
-      enterRoom();
-    } else {
-      showEntryOverlay();
-    }
+    // ── 育成機能は MVP 後に有効化（コードは保持）──
+    // if (!needsEggStory()) placeEggIncubator();
+    // var params = new URLSearchParams(location.search);
+    // if (needsEggStory()) { showEggStory(); }
+    // else if (params.get('to') === 'room') { enterRoom(); }
+    // else { showEntryOverlay(); }
+    enterRoom(); // MVP: 直接おへやへ
   }
 
   // Entry overlay buttons
@@ -3172,7 +3152,7 @@ function _dbgToggle() {
     if (taps >= 2) { taps = 0; _dbgToggle(); }
   }
   document.getElementById('pts-disp').addEventListener('click', handler);
-  document.getElementById('egg-creature').addEventListener('click', handler);
+  // MVP後に有効化: document.getElementById('egg-creature').addEventListener('click', handler);
 })();
 
 function _dbgUpdate() {
