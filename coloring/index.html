@@ -696,6 +696,7 @@ html, body {
   }
 }
 </style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
 
@@ -1546,7 +1547,8 @@ function printColored() {
     '<!DOCTYPE html><html><head><style>' +
     'body{margin:0;padding:0}img{width:100%;display:block}' +
     '@media print{body{margin:0}}' +
-    '</style></head><body>' +
+    '</style><script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head><body>' +
     '<img src="' + dataURL + '" onload="window.print()">' +
     '</body></html>'
   );
@@ -1560,7 +1562,8 @@ function printNurie(src) {
   win.document.write(
     '<!DOCTYPE html><html><head><style>' +
     'body{margin:0;padding:0}img{width:100%;display:block}' +
-    '</style></head><body>' +
+    '</style><script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head><body>' +
     '<img src="' + src + '" onload="window.print()">' +
     '</body></html>'
   );
