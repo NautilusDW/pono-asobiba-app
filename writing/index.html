@@ -532,7 +532,7 @@ html, body {
   .pono-bubble {
     display: block;
     position: absolute;
-    bottom: 120px; left: 10px;
+    bottom: 180px; left: 10px;
     background: #fff;
     border-radius: 16px;
     padding: 5px 12px;
@@ -564,7 +564,7 @@ html, body {
     100%     { opacity: 0; }
   }
   .progress-hint { display: none; }
-  .streak-badge { left: auto; right: 8px; bottom: 8px; top: auto; transform: none; }
+  .streak-badge { left: auto; right: 8px; bottom: auto; top: 6px; transform: none; }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -945,7 +945,7 @@ function launchConfetti() {
 
 // ===== Word Card + TTS =====
 let _currentWordAudio = null;
-// iOS: ユーザージェスチャー中にAudioを生成+load しておく
+// iOS: ユーザージェスチャー中にplay()を呼んでオーディオをアンロック
 function _preloadWordAudio() {
   const char = CATEGORIES[currentCategory].chars[currentCharIndex];
   let url = null;
@@ -958,8 +958,12 @@ function _preloadWordAudio() {
     if (idx >= 0 && idx <= 45) url = '../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav';
   }
   if (url) {
-    _currentWordAudio = new Audio(url);
-    _currentWordAudio.load();
+    const audio = new Audio(url);
+    audio.volume = 0;
+    // play() during gesture to unlock iOS audio, then pause immediately
+    const p = audio.play();
+    if (p) p.then(() => { audio.pause(); audio.currentTime = 0; audio.volume = 1; }).catch(() => {});
+    _currentWordAudio = audio;
   }
 }
 function speakWord(char, word) {
