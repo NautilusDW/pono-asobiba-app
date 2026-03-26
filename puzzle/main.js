@@ -5,6 +5,16 @@ const BASE_STAGES = [
   { cols: 4, rows: 2, image: '../assets/images/puzzle_birds.jpg'  },
   { cols: 4, rows: 3, image: '../assets/images/puzzle_P01_01.jpg' },
   { cols: 4, rows: 3, image: '../assets/images/puzzle_05.jpg', advanced: true },
+  // ── 新ステージ ──
+  { cols: 4, rows: 3, image: '../assets/images/puzzle_pono_sleep.jpg', advanced: true },
+  { cols: 4, rows: 4, image: '../assets/images/puzzle_pono_water.jpg' },
+  { cols: 4, rows: 4, image: '../assets/images/puzzle_pono_rock.jpg' },
+  { cols: 4, rows: 4, image: '../assets/images/puzzle_pono_unsettled.jpg', advanced: true },
+  { cols: 5, rows: 3, image: '../assets/images/puzzle_pono_sleepy.jpg' },
+  { cols: 5, rows: 3, image: '../assets/images/puzzle_pono_sparkle.jpg', advanced: true },
+  { cols: 5, rows: 4, image: '../assets/images/puzzle_pono_topdown.jpg' },
+  { cols: 5, rows: 4, image: '../assets/images/puzzle_pono_icicle.jpg', advanced: true },
+  { cols: 6, rows: 4, image: '../assets/images/puzzle_pono_owl.jpg', advanced: true },
 ];
 let STAGES = [...BASE_STAGES];
 
