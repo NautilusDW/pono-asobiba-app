@@ -438,6 +438,93 @@
       .author-block { max-width: 580px; }
     }
 
+    /* ===== PWA Banner ===== */
+    .pwa-banner {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+      border: 2px solid #F59E0B;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px var(--shadow);
+      position: relative;
+    }
+    .pwa-banner.hidden { display: none; }
+    .pwa-banner-icon { font-size: 2rem; flex-shrink: 0; }
+    .pwa-banner-title { font-size: 0.88rem; font-weight: 900; color: #92400E; }
+    .pwa-banner-desc { font-size: 0.7rem; font-weight: 700; color: #A16207; margin-top: 2px; }
+    .pwa-banner-how {
+      margin-top: 6px;
+      padding: 4px 14px; border: none; border-radius: 20px;
+      background: #F59E0B; color: #fff;
+      font-family: inherit; font-size: 0.75rem; font-weight: 900;
+      cursor: pointer;
+    }
+    .pwa-banner-how:active { transform: scale(0.95); }
+    .pwa-banner-close {
+      position: absolute; top: 6px; right: 8px;
+      background: none; border: none; font-size: 0.9rem; color: #A16207;
+      cursor: pointer; padding: 4px;
+    }
+
+    @media (min-width: 640px) {
+      .pwa-banner { max-width: 580px; }
+    }
+
+    /* ===== PWA Modal ===== */
+    .pwa-modal-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .pwa-modal-overlay.show {
+      opacity: 1; pointer-events: auto;
+    }
+    .pwa-modal {
+      background: #fff; border-radius: 24px;
+      padding: 24px 20px; max-width: 320px; width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+    .pwa-modal-title {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.05rem; font-weight: 900;
+      color: var(--text); margin-bottom: 16px;
+    }
+    .pwa-modal-section {
+      text-align: left;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #F9FAFB;
+      border-radius: 12px;
+    }
+    .pwa-modal-device {
+      font-size: 0.82rem; font-weight: 900;
+      color: var(--primary); margin-bottom: 6px;
+    }
+    .pwa-modal-steps {
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--text); line-height: 1.8;
+      padding-left: 20px; margin: 0;
+    }
+    .pwa-modal-note {
+      font-size: 0.8rem; font-weight: 900;
+      color: #059669; margin: 10px 0 14px;
+    }
+    .pwa-modal-close {
+      padding: 10px 32px; border: none; border-radius: 30px;
+      background: linear-gradient(135deg, var(--accent), #34D399);
+      color: #fff; font-family: inherit;
+      font-size: 0.95rem; font-weight: 900;
+      cursor: pointer;
+    }
+    .pwa-modal-close:active { transform: scale(0.95); }
+
     /* ===== Footer ===== */
     .footer {
       width: 100%;
@@ -636,6 +723,45 @@
       </div>
     </a>
 
+    <!-- ホーム画面追加バナー（PWA未インストール時のみ表示） -->
+    <div class="pwa-banner" id="pwaBanner">
+      <div class="pwa-banner-icon">📲</div>
+      <div class="pwa-banner-body">
+        <div class="pwa-banner-title">ホームがめんに ついかしよう！</div>
+        <div class="pwa-banner-desc">アプリみたいに すぐあそべるよ</div>
+        <button class="pwa-banner-how" id="pwaHowBtn">やりかた</button>
+      </div>
+      <button class="pwa-banner-close" id="pwaBannerClose" aria-label="とじる">✕</button>
+    </div>
+
+    <!-- ホーム画面追加の説明モーダル -->
+    <div class="pwa-modal-overlay" id="pwaModal">
+      <div class="pwa-modal">
+        <div class="pwa-modal-title">ホームがめんへの ついかのしかた</div>
+
+        <div class="pwa-modal-section">
+          <div class="pwa-modal-device">iPhone / iPad（Safari）</div>
+          <ol class="pwa-modal-steps">
+            <li>したの <strong>□↑ ボタン</strong>（きょうゆう）を タップ</li>
+            <li><strong>「ホーム画面に追加」</strong>を タップ</li>
+            <li>みぎうえの <strong>「追加」</strong>を タップ</li>
+          </ol>
+        </div>
+
+        <div class="pwa-modal-section">
+          <div class="pwa-modal-device">Android（Chrome）</div>
+          <ol class="pwa-modal-steps">
+            <li>みぎうえの <strong>⋮ ボタン</strong>（メニュー）を タップ</li>
+            <li><strong>「ホーム画面に追加」</strong>を タップ</li>
+            <li><strong>「追加」</strong>を タップ</li>
+          </ol>
+        </div>
+
+        <div class="pwa-modal-note">ポノのアイコンが ホームがめんに でるよ！</div>
+        <button class="pwa-modal-close" id="pwaModalClose">わかった！</button>
+      </div>
+    </div>
+
     <footer class="footer">
       <div class="footer-copy">© こだまのもり出版　All rights reserved.</div>
       <div class="footer-note">
@@ -733,6 +859,37 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(function() {});
     }
+
+    // ===== PWA Banner =====
+    (function() {
+      var banner = document.getElementById('pwaBanner');
+      var modal = document.getElementById('pwaModal');
+      // standalone = already installed as PWA
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+      var dismissed = localStorage.getItem('pono_pwa_dismissed');
+
+      if (isStandalone || dismissed) {
+        banner.classList.add('hidden');
+      }
+
+      document.getElementById('pwaBannerClose').addEventListener('click', function() {
+        banner.classList.add('hidden');
+        localStorage.setItem('pono_pwa_dismissed', '1');
+      });
+
+      document.getElementById('pwaHowBtn').addEventListener('click', function() {
+        modal.classList.add('show');
+      });
+
+      document.getElementById('pwaModalClose').addEventListener('click', function() {
+        modal.classList.remove('show');
+      });
+
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.classList.remove('show');
+      });
+    })();
 
   </script>
 </body>
