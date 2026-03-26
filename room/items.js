@@ -289,9 +289,10 @@ const ROOM_ITEMS = [
     gridRow: 6, gridCol: 2, cellSize: 0.7, pivotX: -1.5, pivotY: 20.5,
   },
   {
-    id: 'deco_stroller', cat: 'deco', name: 'ベビーカー', price: 20, theme: 'girl',
-    roomImg: '../assets/images/Rooms/furnitures_final/stroller.png',
-    gridRow: 5, gridCol: 6, cellSize: 0.8, pivotX: 0, pivotY: 27.4,
+    id: 'deco_babycar', cat: 'deco', name: 'ベビーカー', price: 20, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures_final/babycar_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/babycar_B.png',
+    gridRow: 5, gridCol: 6, cellSize: 0.9, pivotX: 0, pivotY: 0,
   },
 ];
 
