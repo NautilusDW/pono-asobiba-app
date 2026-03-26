@@ -157,6 +157,11 @@ body {
   margin-bottom: 10px;
 }
 
+/* ===== Game row (portrait: vertical stack) ===== */
+.game-row {
+  display: contents;
+}
+
 /* ===== Word tray ===== */
 .word-tray {
   display: grid;
@@ -269,31 +274,24 @@ body {
 @media (orientation: landscape) {
   html, body { height: 100dvh; overflow: hidden; }
   body {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: flex-start;
-    align-content: flex-start;
-    padding: 4px 16px;
+    padding: 4px 16px 8px;
     gap: 4px;
   }
-  .header {
-    width: auto;
-    padding: 0;
-    margin-right: 8px;
-  }
-  .header h1 { font-size: 0.9rem; }
-  .stage-info {
-    width: auto;
+  .header h1 { font-size: 1rem; }
+  .stage-name { font-size: 0.85rem; }
+  .stage-num { font-size: 0.65rem; padding: 1px 8px; margin-top: 2px; }
+  /* 絵と言葉を左右に並べるラッパー */
+  .game-row {
     display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 600px;
     align-items: center;
-    gap: 6px;
+    flex: 1;
+    min-height: 0;
   }
-  .stage-name { font-size: 0.8rem; }
-  .stage-num { font-size: 0.65rem; padding: 1px 8px; margin-top: 0; }
   .pic-grid {
     flex: 1;
-    max-width: 45%;
     gap: 6px;
   }
   .pic-slot { padding: 8px 6px 6px; }
@@ -301,9 +299,7 @@ body {
   .pic-label { min-height: 28px; font-size: 0.85rem; }
   .word-tray-wrap {
     flex: 1;
-    max-width: 45%;
     margin-top: 0;
-    align-self: center;
   }
   .word-tray-title { font-size: 0.75rem; margin-bottom: 6px; }
   .word-card { font-size: 0.9rem; padding: 7px 6px; }
@@ -322,10 +318,12 @@ body {
   <p class="stage-num" id="stage-num">ステージ 1 / 8</p>
 </div>
 
-<div class="pic-grid" id="pic-grid"></div>
-<div class="word-tray-wrap">
-  <p class="word-tray-title">えにあう ことばを タップ！</p>
-  <div class="word-tray" id="word-tray"></div>
+<div class="game-row">
+  <div class="pic-grid" id="pic-grid"></div>
+  <div class="word-tray-wrap">
+    <p class="word-tray-title">えにあう ことばを タップ！</p>
+    <div class="word-tray" id="word-tray"></div>
+  </div>
 </div>
 
 <!-- Stage complete modal -->
