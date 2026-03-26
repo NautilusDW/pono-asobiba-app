@@ -161,8 +161,7 @@ html, body {
 /* ===== Tracing Area ===== */
 .trace-area {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-end; position: relative; min-height: 0;
-  padding-bottom: 6px;
+  align-items: center; justify-content: center; position: relative; min-height: 0;
 }
 .canvas-container {
   position: relative;
@@ -195,6 +194,9 @@ html, body {
 /* ===== Controls ===== */
 .controls {
   display: flex; gap: 8px; justify-content: center; padding: 4px 0; flex-shrink: 0;
+}
+.next-row {
+  display: flex; justify-content: center; padding: 6px 0; flex-shrink: 0;
 }
 .ctrl-btn {
   padding: 10px 20px; border: none; border-radius: 30px;
@@ -340,12 +342,11 @@ html, body {
 .pono-deco {
   position: absolute;
   bottom: 0;
-  /* canvas half-width = min(45vw, 210px); align bear left edge with canvas left edge */
   left: calc(50% - min(45vw, 210px));
   width: 90px;
   pointer-events: none;
   filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.15));
-  /* no explicit z-index → canvas-container (later in DOM) stacks on top automatically when narrow */
+  z-index: 100;
 }
 
 /* ===== Word Card ===== */
@@ -418,7 +419,6 @@ html, body {
   <div class="controls">
     <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
     <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
-    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
   </div>
 
   <div class="trace-area">
@@ -433,6 +433,10 @@ html, body {
         <div class="stroke-number-overlay" id="strokeNumbers"></div>
       </div>
     </div>
+  </div>
+
+  <div class="next-row">
+    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
   </div>
 </div>
 
