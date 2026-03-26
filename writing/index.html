@@ -387,15 +387,17 @@ html, body {
 .word-card-first { color: var(--primary); }
 .word-card-note  { font-size: 1.1rem; font-weight: 700; color: var(--text-muted, #888); }
 
-/* ===== Portrait: left-col/right-col are transparent wrappers ===== */
-.left-col, .right-col {
+/* ===== Portrait: wrapper divs are transparent ===== */
+.left-col, .mid-col, .right-col {
   display: contents;
 }
 .row-tabs { display: none; }
-/* Portrait ordering: char-selector before controls, next-row after trace-area */
+/* Portrait ordering */
+.header { order: 1; }
+.category-tabs { order: 2; }
 .char-selector { order: 3; }
 .controls { order: 4; }
-.right-col { order: 5; }
+.trace-area { order: 5; }
 .next-row { order: 10; }
 
 /* ===== Responsive ===== */
@@ -417,32 +419,28 @@ html, body {
     gap: 0;
     align-items: stretch;
   }
-  /* Left column: header + row tabs + controls */
+  /* ── Left column: header + category + row tabs ── */
   .left-col {
     display: flex; flex-direction: column;
     align-items: center; gap: 2px;
-    flex-shrink: 0; width: 110px;
-    max-height: 100dvh; overflow-y: auto;
-    scrollbar-width: none;
+    flex-shrink: 0; width: 100px;
     padding-top: 44px;
     order: 1;
   }
-  .left-col::-webkit-scrollbar { display: none; }
-  .header { padding: 0; }
-  .header h1 { font-size: 0.8rem; }
+  .header { padding: 0; order: auto; }
+  .header h1 { font-size: 0.75rem; }
   .header .subtitle { display: none; }
-  .category-tabs { margin: 2px 0; gap: 3px; }
+  .category-tabs { margin: 2px 0; gap: 3px; order: auto; }
   .category-tab { padding: 3px 7px; font-size: 0.65rem; }
-  /* Row tabs: 2-column compact grid */
   .row-tabs {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr);
-    gap: 2px; width: 100%; padding: 0 4px;
+    gap: 2px; width: 100%; padding: 0 2px;
   }
   .row-tab {
-    padding: 3px 2px; border: 2px solid transparent; border-radius: 8px;
+    padding: 5px 2px; border: 2px solid transparent; border-radius: 8px;
     background: var(--card-bg); font-family: inherit;
-    font-size: 0.8rem; font-weight: 700;
+    font-size: 0.85rem; font-weight: 700;
     cursor: pointer; text-align: center;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     transition: all 0.15s;
@@ -453,60 +451,70 @@ html, body {
   }
   .row-tab.has-done { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
   .row-tab.has-done.active { background: linear-gradient(135deg, #FFF0F5, #FAF0FF); border-color: var(--primary); }
-  /* Char selector: vertical middle column between left and canvas */
+
+  /* ── Middle column: controls(top) + char buttons(bottom) ── */
+  .mid-col {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px; flex-shrink: 0;
+    padding: 6px 4px;
+    order: 2;
+  }
+  .controls {
+    display: flex; flex-direction: column; gap: 4px;
+    width: 100%; align-items: center;
+    order: auto; padding: 0;
+  }
+  .ctrl-btn {
+    padding: 10px 6px; font-size: 0.8rem;
+    width: 100%; min-width: 70px;
+  }
   .char-selector {
     display: flex !important;
     flex-direction: column;
-    gap: 3px; padding: 8px 6px;
+    gap: 4px; padding: 0;
     overflow: visible;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    order: 2;
+    order: auto;
   }
-  .char-btn { min-width: 36px; height: 36px; font-size: 0.95rem; }
-  /* Controls compact in left column */
-  .controls {
-    display: flex; flex-direction: column; gap: 3px;
-    padding: 4px 0; width: 100%;
-    align-items: center;
-    margin-top: auto; /* push to bottom */
-  }
-  .ctrl-btn { padding: 4px 8px; font-size: 0.7rem; width: 95%; }
-  .next-row {
-    order: 0; padding: 0; width: 100%;
-    display: flex; justify-content: center;
-  }
-  .next-row .ctrl-btn { width: 95%; }
-  /* Right column: canvas only, maximized */
+  .char-btn { min-width: 42px; height: 42px; font-size: 1.05rem; }
+
+  /* ── Right column: canvas + つぎ at bottom-right ── */
   .right-col {
-    display: flex;
+    display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     flex: 1; min-width: 0;
-    order: 3;
+    order: 3; position: relative;
   }
   .trace-area {
-    flex: 0; display: flex;
+    flex: 1; display: flex;
     align-items: center; justify-content: center;
-    position: relative;
+    order: auto; position: relative;
+    width: 100%;
   }
   .canvas-container {
-    width: min(88vh, calc(100vw - 230px));
-    height: min(88vh, calc(100vw - 230px));
+    width: min(88vh, calc(100vw - 250px));
+    height: min(88vh, calc(100vw - 250px));
     max-width: none; max-height: none;
+  }
+  .next-row {
+    position: absolute; bottom: 8px; right: 8px;
+    order: auto; padding: 0; width: auto;
+    display: block;
+  }
+  .next-row .ctrl-btn {
+    width: auto; padding: 10px 20px; font-size: 0.9rem;
+    opacity: 0.85;
   }
   /* Pono deco: canvas bottom-left */
   .pono-deco {
     display: block;
     position: absolute;
     bottom: -5px; left: -5px;
-    width: 52px;
+    width: 52px; z-index: 100;
   }
   .hedgehog-wrap { display: none; }
-  /* Streak badge: canvas bottom-left */
-  .streak-badge {
-    left: auto; right: 10px; bottom: 10px;
-  }
+  .streak-badge { left: auto; right: 10px; bottom: 10px; }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -528,18 +536,15 @@ html, body {
     </div>
 
     <div class="row-tabs" id="rowTabs"></div>
+  </div>
 
+  <div class="mid-col">
     <div class="controls">
       <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
       <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
     </div>
-
-    <div class="next-row">
-      <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
-    </div>
+    <div class="char-selector" id="charSelector"></div>
   </div>
-
-  <div class="char-selector" id="charSelector"></div>
 
   <div class="right-col">
     <div class="trace-area">
@@ -554,6 +559,9 @@ html, body {
           <div class="stroke-number-overlay" id="strokeNumbers"></div>
         </div>
       </div>
+    </div>
+    <div class="next-row">
+      <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
     </div>
   </div>
 </div>
