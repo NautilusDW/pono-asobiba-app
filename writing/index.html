@@ -47,6 +47,7 @@ html, body {
   max-width: 600px;
   margin: 0 auto;
   padding: 2px 10px 10px;
+  overflow: hidden;
 }
 
 /* ===== Header ===== */
@@ -1272,11 +1273,27 @@ categoryTabs.addEventListener('click', (e) => {
   loadCharacter();
 });
 
-// ===== Orientation change =====
-landscapeMQ.addEventListener('change', () => {
+// ===== Orientation change — force viewport recalc =====
+function fixViewportHeight() {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.getElementById('app').style.height = vh + 'px';
+}
+function onOrientationChange() {
+  // Force immediate height fix, then let browser settle
+  fixViewportHeight();
+  setTimeout(fixViewportHeight, 100);
+  setTimeout(fixViewportHeight, 300);
   buildRowTabs();
   buildCharSelector();
-});
+}
+landscapeMQ.addEventListener('change', onOrientationChange);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixViewportHeight);
+} else {
+  window.addEventListener('resize', fixViewportHeight);
+}
+// Initial fix
+fixViewportHeight();
 
 // ===== Button handlers =====
 btnClear.addEventListener('click', () => {
