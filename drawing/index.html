@@ -419,27 +419,29 @@ body {
 @media (orientation: landscape) {
   #app {
     flex-direction: row;
+    align-items: stretch;
     max-width: none;
     padding: 0;
     gap: 0;
+    height: 100dvh;
   }
   .header { display: none; }
   /* Canvas area — centered in the space left of sidebar */
   .canvas-wrap {
     flex: 1;
-    height: calc(100dvh - 54px);
+    height: auto;
     min-height: 0;
-    max-height: calc(100dvh - 54px);
+    max-height: none;
     max-width: calc(100vw - 250px);
-    margin: 50px auto 0;
+    margin: 50px 20px 6px;
+    align-self: stretch;
   }
-  /* Right sidebar — normal flex child, no position:fixed */
+  /* Right sidebar — normal flex child */
   .sidebar-wrap {
     position: relative;
     display: flex;
     flex-direction: column;
     width: 150px;
-    height: 100dvh;
     gap: 6px;
     overflow: visible;
     flex-shrink: 0;
