@@ -391,6 +391,9 @@ html, body {
 .left-col, .right-col {
   display: contents;
 }
+.row-tabs { display: none; }
+/* Portrait: next-row goes after trace-area via order */
+.next-row { order: 10; }
 
 /* ===== Responsive ===== */
 @media (max-height: 600px) {
@@ -407,49 +410,88 @@ html, body {
   #app {
     flex-direction: row;
     max-width: 100%;
-    padding: 4px 12px;
-    gap: 10px;
-    align-items: flex-start;
+    padding: 4px 8px;
+    gap: 8px;
+    align-items: stretch;
   }
-  /* Left column: header + tabs + chars */
+  /* Left column: all UI controls */
   .left-col {
     display: flex; flex-direction: column;
-    align-items: center; gap: 2px;
-    flex-shrink: 0; width: auto;
+    align-items: center; gap: 3px;
+    flex-shrink: 0; width: 140px;
     max-height: 100dvh; overflow-y: auto;
     scrollbar-width: none;
+    padding-top: 44px; /* space for fixed menu buttons */
   }
   .left-col::-webkit-scrollbar { display: none; }
-  .header { padding: 2px 0; }
-  .header h1 { font-size: 1rem; }
+  .header { padding: 0; }
+  .header h1 { font-size: 0.85rem; }
   .header .subtitle { display: none; }
-  .category-tabs { margin: 2px 0; gap: 4px; }
-  .category-tab { padding: 4px 10px; font-size: 0.75rem; }
-  .char-selector {
+  .category-tabs { margin: 2px 0; gap: 3px; }
+  .category-tab { padding: 3px 8px; font-size: 0.7rem; }
+  /* Row tabs: 2-column grid */
+  .row-tabs {
     display: grid !important;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 3px; padding: 2px;
-    overflow-x: visible; overflow-y: auto;
-    max-height: none;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px; width: 100%; padding: 0 4px;
+  }
+  .row-tab {
+    padding: 4px 2px; border: 2px solid transparent; border-radius: 10px;
+    background: var(--card-bg); font-family: inherit;
+    font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transition: all 0.15s;
+  }
+  .row-tab.active {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
+    transform: scale(1.05);
+  }
+  .row-tab.has-done {
+    background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+  }
+  .row-tab.has-done.active {
+    background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
+    border-color: var(--primary);
+  }
+  /* Char selector: horizontal row for selected group */
+  .char-selector {
+    display: flex !important;
+    gap: 3px; padding: 2px 4px;
+    overflow-x: visible; overflow-y: visible;
+    flex-wrap: wrap; justify-content: center;
   }
   .char-btn { min-width: 34px; height: 34px; font-size: 0.9rem; }
-  /* Right column: canvas + controls */
-  .right-col {
-    display: flex; flex-direction: column;
+  /* Controls stacked in left column */
+  .controls {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 4px 0; width: 100%;
     align-items: center;
+  }
+  .ctrl-btn { padding: 5px 10px; font-size: 0.75rem; width: 90%; }
+  .next-row {
+    order: 0; padding: 0; width: 100%;
+    display: flex; justify-content: center;
+  }
+  .next-row .ctrl-btn { width: 90%; }
+  /* Right column: canvas only, maximized */
+  .right-col {
+    display: flex;
+    align-items: center; justify-content: center;
     flex: 1; min-width: 0;
-    gap: 2px;
   }
-  .trace-area { flex: 0; }
+  .trace-area {
+    flex: 0; display: flex;
+    align-items: center; justify-content: center;
+  }
   .canvas-container {
-    width: min(45vh, 280px); height: min(45vh, 280px);
-    max-width: 280px; max-height: 280px;
+    width: min(85vh, calc(100vw - 190px));
+    height: min(85vh, calc(100vw - 190px));
+    max-width: none; max-height: none;
   }
-  .controls { padding: 2px 0; }
-  .ctrl-btn { padding: 6px 14px; font-size: 0.8rem; }
-  .next-row { padding: 2px 0; }
-  .pono-deco { width: 52px; bottom: -35px; left: calc(50% - min(22.5vh, 140px)); }
-  .hedgehog-wrap { width: 60px; bottom: calc(100% - 20px); }
+  .pono-deco { display: none; }
+  .hedgehog-wrap { display: none; }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -470,15 +512,21 @@ html, body {
       <button class="category-tab" data-cat="katakana">カタカナ</button>
     </div>
 
-    <div class="char-selector" id="charSelector"></div>
-  </div>
+    <div class="row-tabs" id="rowTabs"></div>
 
-  <div class="right-col">
+    <div class="char-selector" id="charSelector"></div>
+
     <div class="controls">
       <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
       <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
     </div>
 
+    <div class="next-row">
+      <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+    </div>
+  </div>
+
+  <div class="right-col">
     <div class="trace-area">
       <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
       <div class="canvas-wrap">
@@ -491,10 +539,6 @@ html, body {
           <div class="stroke-number-overlay" id="strokeNumbers"></div>
         </div>
       </div>
-    </div>
-
-    <div class="next-row">
-      <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
     </div>
   </div>
 </div>
@@ -550,6 +594,36 @@ const CATEGORIES = {
     chars: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('')
   }
 };
+
+// ===== Gojuon row groupings for landscape mode =====
+const GOJUON_ROWS = {
+  hiragana: [
+    { label: 'あ', start: 0,  count: 5 },
+    { label: 'か', start: 5,  count: 5 },
+    { label: 'さ', start: 10, count: 5 },
+    { label: 'た', start: 15, count: 5 },
+    { label: 'な', start: 20, count: 5 },
+    { label: 'は', start: 25, count: 5 },
+    { label: 'ま', start: 30, count: 5 },
+    { label: 'や', start: 35, count: 3 },
+    { label: 'ら', start: 38, count: 5 },
+    { label: 'わ', start: 43, count: 3 },
+  ],
+  katakana: [
+    { label: 'ア', start: 0,  count: 5 },
+    { label: 'カ', start: 5,  count: 5 },
+    { label: 'サ', start: 10, count: 5 },
+    { label: 'タ', start: 15, count: 5 },
+    { label: 'ナ', start: 20, count: 5 },
+    { label: 'ハ', start: 25, count: 5 },
+    { label: 'マ', start: 30, count: 5 },
+    { label: 'ヤ', start: 35, count: 3 },
+    { label: 'ラ', start: 38, count: 5 },
+    { label: 'ワ', start: 43, count: 3 },
+  ],
+};
+let currentRow = 0;
+const landscapeMQ = window.matchMedia('(orientation: landscape)');
 
 // ===== Word association data (one word per character, same order as CATEGORIES.chars) =====
 const WORD_DATA = {
@@ -1035,31 +1109,87 @@ function loadCharacter() {
   createWriter(char);
 
   // Update char selector
-  document.querySelectorAll('.char-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i === currentCharIndex);
-  });
-
-  // Scroll active button into view
-  const activeBtn = charSelector.querySelector('.char-btn.active');
-  if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  if (landscapeMQ.matches) {
+    // In landscape, rebuild to reflect active state (buttons have globalIdx)
+    buildCharSelector();
+  } else {
+    document.querySelectorAll('.char-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === currentCharIndex);
+    });
+    // Scroll active button into view
+    const activeBtn = charSelector.querySelector('.char-btn.active');
+    if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
 }
 
 function buildCharSelector() {
   charSelector.innerHTML = '';
   const cat = CATEGORIES[currentCategory];
   const stamps = loadStamps();
-  cat.chars.forEach((ch, i) => {
+  const isLandscape = landscapeMQ.matches;
+
+  let charsToShow;
+  if (isLandscape) {
+    // Landscape: show only selected row's characters
+    const rows = GOJUON_ROWS[currentCategory];
+    const row = rows[currentRow] || rows[0];
+    charsToShow = [];
+    for (let j = 0; j < row.count; j++) {
+      charsToShow.push({ ch: cat.chars[row.start + j], globalIdx: row.start + j });
+    }
+  } else {
+    // Portrait: show all characters
+    charsToShow = cat.chars.map((ch, i) => ({ ch, globalIdx: i }));
+  }
+
+  charsToShow.forEach(({ ch, globalIdx }) => {
     const btn = document.createElement('button');
     let cls = 'char-btn';
-    if (i === currentCharIndex) cls += ' active';
-    if (stamps[currentCategory]?.[i]) cls += ' done';
+    if (globalIdx === currentCharIndex) cls += ' active';
+    if (stamps[currentCategory]?.[globalIdx]) cls += ' done';
     btn.className = cls;
     btn.textContent = ch;
     btn.addEventListener('click', () => {
-      currentCharIndex = i;
+      currentCharIndex = globalIdx;
       loadCharacter();
+      // In landscape, update char buttons active state
+      if (isLandscape) buildCharSelector();
     });
     charSelector.appendChild(btn);
+  });
+}
+
+function buildRowTabs() {
+  const rowTabsEl = document.getElementById('rowTabs');
+  if (!rowTabsEl) return;
+  rowTabsEl.innerHTML = '';
+  if (!landscapeMQ.matches) return; // Only in landscape
+
+  const rows = GOJUON_ROWS[currentCategory];
+  const stamps = loadStamps();
+  const cat = CATEGORIES[currentCategory];
+
+  rows.forEach((row, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'row-tab' + (i === currentRow ? ' active' : '');
+    // Check if any char in this row is done
+    let anyDone = false;
+    let allDone = true;
+    for (let j = 0; j < row.count; j++) {
+      if (stamps[currentCategory]?.[row.start + j]) anyDone = true;
+      else allDone = false;
+    }
+    if (allDone) btn.classList.add('has-done');
+    btn.textContent = row.label;
+    btn.addEventListener('click', () => {
+      currentRow = i;
+      // Set currentCharIndex to first char of this row
+      currentCharIndex = row.start;
+      buildRowTabs();
+      buildCharSelector();
+      loadCharacter();
+    });
+    rowTabsEl.appendChild(btn);
   });
 }
 
@@ -1071,12 +1201,20 @@ categoryTabs.addEventListener('click', (e) => {
   if (cat === currentCategory) return;
   currentCategory = cat;
   currentCharIndex = 0;
+  currentRow = 0;
   streak = 0;
   updateStreakBadge();
   document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
+  buildRowTabs();
   buildCharSelector();
   loadCharacter();
+});
+
+// ===== Orientation change =====
+landscapeMQ.addEventListener('change', () => {
+  buildRowTabs();
+  buildCharSelector();
 });
 
 // ===== Button handlers =====
@@ -1103,6 +1241,16 @@ btnHint.addEventListener('click', () => {
 btnNext.addEventListener('click', () => {
   const cat = CATEGORIES[currentCategory];
   currentCharIndex = (currentCharIndex + 1) % cat.chars.length;
+  // Update currentRow if in landscape
+  if (landscapeMQ.matches) {
+    const rows = GOJUON_ROWS[currentCategory];
+    for (let r = 0; r < rows.length; r++) {
+      if (currentCharIndex >= rows[r].start && currentCharIndex < rows[r].start + rows[r].count) {
+        if (currentRow !== r) { currentRow = r; buildRowTabs(); }
+        break;
+      }
+    }
+  }
   loadCharacter();
 });
 
@@ -1120,6 +1268,7 @@ setInterval(() => {
 }, 18000);
 
 // ===== Init =====
+buildRowTabs();
 buildCharSelector();
 loadCharacter();
 

@@ -315,7 +315,7 @@
       color: #fff;
       border-radius: 20px;
       padding: 18px 28px;
-      z-index: 200;
+      z-index: 600;
       display: none;
       align-items: center;
       gap: 12px;
@@ -3160,12 +3160,12 @@
     let tutAutoTimer = null;
 
     function initTutorial() {
-      if (localStorage.getItem(TUT_KEY)) { tutStep = 3; return; }
+      if (sessionStorage.getItem(TUT_KEY)) { tutStep = 3; return; }
       tutStep = 1;
       setTimeout(() => {
         document.getElementById('tutTap').classList.add('show');
         // Auto-advance after 8s if user doesn't tap a creature
-        tutAutoTimer = setTimeout(() => { if (tutStep === 1) onCreatureTapped(); }, 8000);
+        tutAutoTimer = setTimeout(() => { if (tutStep === 1) onCreatureTapped(); }, 15000);
       }, 1200);
     }
 
@@ -3177,7 +3177,7 @@
       setTimeout(() => {
         document.getElementById('tutFeed').classList.add('show');
         // Auto-dismiss feed hint after 8s
-        tutAutoTimer = setTimeout(() => { if (tutStep === 2) onFeedUsed(); }, 8000);
+        tutAutoTimer = setTimeout(() => { if (tutStep === 2) onFeedUsed(); }, 15000);
       }, 600);
     }
 
@@ -3186,7 +3186,7 @@
       clearTimeout(tutAutoTimer);
       tutStep = 3;
       document.getElementById('tutFeed').classList.remove('show');
-      localStorage.setItem(TUT_KEY, '1');
+      sessionStorage.setItem(TUT_KEY, '1');
     }
 
     // ─── Sprite creature on/off toggle ─────────────────────
