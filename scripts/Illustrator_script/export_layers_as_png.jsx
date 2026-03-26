@@ -22,32 +22,35 @@
     var scriptFile = new File($.fileName);
     var settingsFile = new File(scriptFile.parent.fsName + "/._last_export_folder.txt");
 
-    // 前回のフォルダを読み込み → Folder.current に設定してダイアログの初期位置にする
+    // 前回のフォルダを読み込み
+    var lastFolder = null;
     if (settingsFile.exists) {
         settingsFile.open("r");
         var savedPath = settingsFile.read();
         settingsFile.close();
         if (savedPath && new Folder(savedPath).exists) {
-            Folder.current = new Folder(savedPath);
+            lastFolder = new Folder(savedPath);
         }
     }
 
-    // 書き出し先フォルダを選択
-    var prompt = "PNG書き出し先フォルダを選択";
-    if (Folder.current && Folder.current.exists) {
-        prompt += "（前回: " + Folder.current.fsName + "）";
-    }
-    var outputFolder = Folder.selectDialog(prompt);
-    if (!outputFolder) {
+    // 標準のWindowsファイルダイアログでフォルダ選択
+    // File.saveDialog() を使い、選択されたファイルの親フォルダを取得する
+    var initialPath = lastFolder ? lastFolder.fsName + "/export_here.png" : "~/Desktop/export_here.png";
+    var dummyFile = new File(initialPath);
+    var selected = dummyFile.saveDlg(
+        "書き出し先フォルダを開いて「保存」を押してください（ファイル名は無視されます）",
+        "PNG:*.png"
+    );
+    if (!selected) {
         alert("キャンセルされました。");
         return;
     }
+    var outputFolder = selected.parent;
 
     // 選択したフォルダを記憶
     settingsFile.open("w");
     settingsFile.write(outputFolder.fsName);
     settingsFile.close();
-    Folder.current = outputFolder;
 
     // 元のアートボード情報を保存（後で復元）
     var ab = doc.artboards[0];
