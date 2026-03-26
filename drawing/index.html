@@ -426,30 +426,29 @@ html, body {
     height: calc(100dvh - 60px);
     min-height: 0;
     max-height: calc(100dvh - 60px);
-    max-width: calc(100vw - 240px);
+    max-width: calc(100vw - 220px);
     margin: 48px auto 0;
-    transform: translateX(10px);
+    margin-right: 150px;
   }
   /* Right sidebar */
   .sidebar-wrap {
+    position: fixed;
+    right: 0;
+    top: 0;
     display: flex;
     flex-direction: column;
     width: 140px;
     height: 100dvh;
     gap: 8px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible;
     flex-shrink: 0;
     align-items: center;
     padding: 8px 6px;
     background: rgba(255,248,231,0.95);
     border-left: 2px solid #FDE68A;
     scrollbar-width: none;
-    margin-left: auto;
-    margin-top: -6px;
-    margin-bottom: -6px;
-    margin-right: -6px;
-    padding-right: 12px;
+    z-index: 50;
   }
   .sidebar-wrap::-webkit-scrollbar { display: none; }
   .toolbar-top {
@@ -495,7 +494,25 @@ html, body {
     width: 100%;
   }
   .icon-btn { width: 42px; height: 42px; }
-  .stamp-panel { max-height: 90px; }
+  .stamp-panel {
+    position: absolute;
+    left: -130px;
+    top: 50%;
+    transform: translateY(-50%);
+    max-height: 80vh;
+    width: 120px;
+    z-index: 60;
+    border-radius: 16px;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  }
+  .stamp-panel .stamp-grid {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    max-height: 70vh;
+    width: auto;
+    gap: 4px;
+  }
   .stamp-item { width: 40px; height: 40px; font-size: 1.2rem; }
 }
 </style>
@@ -572,14 +589,12 @@ const COLORS = [
   '#F97316', // orange
   '#FBBF24', // amber
   '#EAB308', // yellow
-  '#84CC16', // lime
   '#22C55E', // green
   '#14B8A6', // teal
   '#06B6D4', // cyan
   '#3B82F6', // blue
   '#6366F1', // indigo
   '#8B5CF6', // violet
-  '#A855F7', // purple
   '#EC4899', // pink
   '#F43F5E', // rose
   '#92400E', // dark brown
