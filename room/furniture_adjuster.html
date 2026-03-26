@@ -828,16 +828,20 @@ function recalcGridCellPct() {
   GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
 }
 
-// Load saved grid from localStorage
+// Load saved grid from localStorage (with version check)
+const GRID_VERSION = 2; // bump to force reset to defaults
 try {
   const saved = JSON.parse(localStorage.getItem(GRID_SAVE_KEY));
-  if (saved) {
+  if (saved && saved._v === GRID_VERSION) {
     ['back','right','left','front'].forEach(pt => {
       if (saved[pt]) { ISO_GRID[pt].x = saved[pt].x; ISO_GRID[pt].y = saved[pt].y; }
     });
     recalcGridCellPct();
+  } else {
+    // Old/corrupt data — clear and use defaults
+    localStorage.removeItem(GRID_SAVE_KEY);
   }
-} catch(e) {}
+} catch(e) { localStorage.removeItem(GRID_SAVE_KEY); }
 
 function syncGridSliders() {
   gridPoints.forEach(({pt, axis, key}) => {
@@ -859,7 +863,7 @@ gridPoints.forEach(({pt, axis, key}) => {
     if (selectedId) placeItem(selectedId);
     drawGrid();
     localStorage.setItem(GRID_SAVE_KEY, JSON.stringify({
-      back: ISO_GRID.back, right: ISO_GRID.right, left: ISO_GRID.left, front: ISO_GRID.front
+      _v: GRID_VERSION, back: ISO_GRID.back, right: ISO_GRID.right, left: ISO_GRID.left, front: ISO_GRID.front
     }));
   }
   sl.oninput = () => { num.value = sl.value; update(sl.value); };
@@ -877,7 +881,7 @@ function applyGridState(state) {
   if (selectedId) placeItem(selectedId);
   drawGrid();
   localStorage.setItem(GRID_SAVE_KEY, JSON.stringify({
-    back: ISO_GRID.back, right: ISO_GRID.right, left: ISO_GRID.left, front: ISO_GRID.front
+    _v: GRID_VERSION, back: ISO_GRID.back, right: ISO_GRID.right, left: ISO_GRID.left, front: ISO_GRID.front
   }));
 }
 
