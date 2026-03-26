@@ -493,22 +493,23 @@ body {
   /* Stamp panel — opens to the left of sidebar */
   .stamp-panel {
     position: absolute;
-    left: -140px;
+    left: -160px;
     top: 50%;
     transform: translateY(-50%);
     max-height: 80vh;
-    width: 130px;
+    width: 152px;
     z-index: 60;
     border-radius: 16px;
     box-shadow: -4px 0 20px rgba(0,0,0,0.15);
   }
   .stamp-panel .stamp-grid {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    max-height: 70vh;
+    display: grid;
+    grid-template-columns: repeat(3, 40px);
+    gap: 6px;
+    justify-content: center;
     width: auto;
-    gap: 4px;
+    max-height: 70vh;
+    overflow-y: auto;
   }
   .stamp-item { width: 40px; height: 40px; font-size: 1.2rem; }
 }
