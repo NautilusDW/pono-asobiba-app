@@ -310,22 +310,21 @@ html, body {
 }
 
 /* ===== Responsive ===== */
-@media (max-height: 600px) {
+@media (max-height: 600px) and (orientation: portrait) {
   .header h1 { font-size: 1.1rem; }
   .header .subtitle { display: none; }
-  .color-btn { width: 28px; height: 28px; }
-  .tool-btn { padding: 6px 10px; font-size: 0.75rem; }
 }
 /* 幅が狭い端末（スマホ縦）用 */
-@media (max-width: 430px) {
-  .color-btn { width: 28px; height: 28px; }
-  .color-palette { gap: 4px; }
-  .toolbar { flex-wrap: wrap; gap: 4px; }
+@media (max-width: 430px) and (orientation: portrait) {
+  .color-btn { width: 42px; height: 42px; }
+  .color-palette { gap: 6px; }
+  .toolbar { flex-wrap: wrap; gap: 8px; }
   .toolbar-top { gap: 4px; }
-  .tool-btn { padding: 6px 9px; font-size: 0.76rem; }
-  .icon-btn { width: 38px; height: 38px; font-size: 1.15rem; }
-  .size-btn { width: 32px; height: 28px; }
-  .size-line { width: 18px; }
+  .tool-btn { padding: 10px 14px; font-size: 0.88rem; }
+  .icon-btn { width: 50px; height: 50px; font-size: 1.3rem; }
+  .size-btn { width: 46px; height: 42px; }
+  .size-section { gap: 6px; }
+  .size-line { width: 22px; }
   .size-label { font-size: 0.62rem; }
 }
 
@@ -366,7 +365,7 @@ html, body {
 .stamp-img-btn { padding: 4px; }
 .stamp-img-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 
-@media (max-height: 600px) {
+@media (max-height: 600px) and (orientation: portrait) {
   .stamp-panel { max-height: 80px; }
   .stamp-item  { width: 40px; height: 40px; font-size: 1.3rem; }
 }
