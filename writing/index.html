@@ -891,9 +891,24 @@ function withAudio(fn) {
   if (ctx.state === 'running') { fn(ctx); return; }
   ctx.resume().then(() => fn(ctx)).catch(() => {});
 }
-// iOS/Android: タッチのたびにAudioContextをresumeし続ける（once不使用）
-// バックグラウンド復帰後もsuspendedに戻るため毎回resume
-function unlockAudio() { getAudioCtx().resume().catch(() => {}); }
+// iOS/Android: 最初のタッチでAudioContextを即座にアクティブにする
+// resume()は非同期なので、無音オシレータを鳴らして強制的にrunning状態にする
+function unlockAudio() {
+  const ac = getAudioCtx();
+  ac.resume().catch(() => {});
+  if (ac.state !== 'running') {
+    // 無音オシレータで即アクティブ化
+    try {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      gain.gain.value = 0;
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start();
+      osc.stop(ac.currentTime + 0.001);
+    } catch(e) {}
+  }
+}
 document.addEventListener('touchstart', unlockAudio, { passive: true });
 document.addEventListener('pointerdown', unlockAudio);
 
