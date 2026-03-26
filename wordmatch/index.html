@@ -138,20 +138,36 @@ body {
   to   { transform: scale(1);   opacity: 1; }
 }
 
-/* ===== Word tray ===== */
-.word-tray {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
+/* ===== Word tray wrapper ===== */
+.word-tray-wrap {
   width: 100%;
   max-width: 360px;
+  background: rgba(255,255,255,0.85);
+  border: 2.5px solid #FDE68A;
+  border-radius: 18px;
+  padding: 10px 14px 14px;
+  box-shadow: 0 3px 12px var(--shadow);
+  margin-top: 6px;
+}
+.word-tray-title {
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+/* ===== Word tray ===== */
+.word-tray {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
   min-height: 56px;
-  padding: 4px 0;
 }
 
 .word-card {
-  padding: 10px 22px;
+  padding: 10px 8px;
   border-radius: 50px;
   background: linear-gradient(135deg, #FBBF24, #F97316);
   color: #fff;
@@ -161,6 +177,7 @@ body {
   box-shadow: 0 3px 10px rgba(249,115,22,0.28);
   transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
   letter-spacing: 0.05em;
+  text-align: center;
 }
 
 .word-card.selected {
@@ -254,7 +271,6 @@ body {
 
 <header class="header">
   <h1>ことばあわせ</h1>
-  <p class="subtitle">えにあうことばを タップしよう！</p>
 </header>
 
 <div class="stage-info">
@@ -263,7 +279,10 @@ body {
 </div>
 
 <div class="pic-grid" id="pic-grid"></div>
-<div class="word-tray" id="word-tray"></div>
+<div class="word-tray-wrap">
+  <p class="word-tray-title">えにあう ことばを タップ！</p>
+  <div class="word-tray" id="word-tray"></div>
+</div>
 
 <!-- Stage complete modal -->
 <div id="success-modal" class="modal-overlay hidden">
