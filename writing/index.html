@@ -532,7 +532,7 @@ html, body {
   .pono-bubble {
     display: block;
     position: absolute;
-    bottom: 180px; left: 10px;
+    bottom: 145px; left: 10px;
     background: #fff;
     border-radius: 16px;
     padding: 5px 12px;
@@ -896,6 +896,16 @@ function unlockAudio() { getAudioCtx().resume().catch(() => {}); }
 document.addEventListener('touchstart', unlockAudio, { passive: true });
 document.addEventListener('pointerdown', unlockAudio);
 
+// iOS: HTML Audio要素のアンロック（最初のタッチで無音再生して制限解除）
+let _audioUnlocked = false;
+const _silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');
+function unlockHTMLAudio() {
+  if (_audioUnlocked) return;
+  _silentAudio.play().then(() => { _audioUnlocked = true; }).catch(() => {});
+}
+document.addEventListener('touchstart', unlockHTMLAudio, { passive: true });
+document.addEventListener('pointerdown', unlockHTMLAudio);
+
 function playSuccessSound() {
   withAudio(ac => {
     const now = ac.currentTime;
@@ -945,7 +955,7 @@ function launchConfetti() {
 
 // ===== Word Card + TTS =====
 let _currentWordAudio = null;
-// iOS: ユーザージェスチャー中にplay()を呼んでオーディオをアンロック
+// onComplete時にAudioをプリロード（iOSはtouchstartで既にアンロック済み）
 function _preloadWordAudio() {
   const char = CATEGORIES[currentCategory].chars[currentCharIndex];
   let url = null;
@@ -958,12 +968,8 @@ function _preloadWordAudio() {
     if (idx >= 0 && idx <= 45) url = '../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav';
   }
   if (url) {
-    const audio = new Audio(url);
-    audio.volume = 0;
-    // play() during gesture to unlock iOS audio, then pause immediately
-    const p = audio.play();
-    if (p) p.then(() => { audio.pause(); audio.currentTime = 0; audio.volume = 1; }).catch(() => {});
-    _currentWordAudio = audio;
+    _currentWordAudio = new Audio(url);
+    _currentWordAudio.load();
   }
 }
 function speakWord(char, word) {
