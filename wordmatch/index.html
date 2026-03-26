@@ -274,7 +274,9 @@ body {
 @media (orientation: landscape) {
   html { height: 100dvh; overflow: hidden; margin: 0; padding: 0; }
   body {
-    height: 100dvh;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100dvh;
     overflow: hidden;
     margin: 0;
     padding: 2px 16px 2px;
@@ -291,8 +293,8 @@ body {
     gap: 12px;
     width: 100%;
     max-width: 700px;
-    align-items: stretch;
-    flex: 1;
+    align-items: center;
+    flex: 0 1 auto;
     min-height: 0;
   }
   .pic-grid {
@@ -301,23 +303,19 @@ body {
     align-content: stretch;
   }
   .pic-slot {
-    padding: 6px 6px;
-    flex: 1;
+    padding: 4px 6px;
     min-height: 0;
   }
-  .pic-emoji { font-size: 2.4rem; }
-  .pic-label { min-height: 28px; font-size: 0.85rem; }
+  .pic-emoji { font-size: 2rem; }
+  .pic-label { min-height: 24px; font-size: 0.8rem; }
   .word-tray-wrap {
     flex: 1;
     margin-top: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 14px 14px 18px;
+    padding: 12px 14px 14px;
   }
   .word-tray { gap: 8px; }
-  .word-tray-title { font-size: 0.78rem; margin-bottom: 10px; }
-  .word-card { font-size: 0.95rem; padding: 10px 8px; }
+  .word-tray-title { font-size: 0.75rem; margin-bottom: 8px; }
+  .word-card { font-size: 0.9rem; padding: 8px 6px; }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
