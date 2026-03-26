@@ -70,7 +70,7 @@ html, body {
   overflow: hidden;
   position: relative;
   min-height: 0;
-  max-height: 55vh;
+  max-height: 65vh;
   cursor: crosshair;
 }
 #drawCanvas {
@@ -131,7 +131,7 @@ html, body {
   flex-shrink: 0;
   padding: 0;
   box-shadow: var(--shadow);
-  width: 38px; height: 34px;
+  width: 42px; height: 38px;
 }
 .size-btn.active {
   border-color: var(--primary);
@@ -178,7 +178,7 @@ html, body {
 
 /* Icon-only round buttons (stamp, rainbow, sparkle, bucket, nohami) */
 .icon-btn {
-  width: 44px; height: 44px;
+  width: 48px; height: 48px;
   border: none; border-radius: 50%;
   font-size: 1.3rem;
   cursor: pointer; transition: all 0.2s;
@@ -413,22 +413,24 @@ html, body {
   .header { display: none; }
   .canvas-wrap {
     flex: 1;
-    height: 100%;
+    height: calc(100dvh - 60px);
     min-height: 0;
-    max-height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 60px);
+    max-width: calc(100vw - 200px);
+    margin-top: 48px;
   }
   /* Right sidebar */
   .sidebar-wrap {
     display: flex;
     flex-direction: column;
-    width: 114px;
+    width: 140px;
     max-height: 100%;
-    gap: 4px;
+    gap: 8px;
     overflow-y: auto;
     overflow-x: hidden;
     flex-shrink: 0;
     align-items: center;
-    padding: 6px 5px;
+    padding: 8px 6px;
     background: rgba(255,248,231,0.95);
     border-left: 2px solid #FDE68A;
     scrollbar-width: none;
@@ -452,33 +454,33 @@ html, body {
   }
   .color-palette {
     display: grid !important;
-    grid-template-columns: repeat(3, 30px);
-    gap: 3px;
+    grid-template-columns: repeat(3, 36px);
+    gap: 5px;
     justify-content: center;
   }
-  .color-btn { width: 30px; height: 30px; }
+  .color-btn { width: 36px; height: 36px; }
   .toolbar {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 3px;
+    gap: 5px;
     justify-content: center;
     align-items: center;
   }
   .size-section {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 3px;
+    gap: 5px;
   }
   .size-label { display: none; }
-  .size-btn { width: 30px; height: 26px; }
+  .size-btn { width: 36px; height: 32px; }
   .tool-btn.btn-eraser {
-    font-size: 0.62rem;
-    padding: 4px 3px;
+    font-size: 0.7rem;
+    padding: 6px 6px;
     width: 100%;
   }
-  .icon-btn { width: 36px; height: 36px; }
-  .stamp-panel { max-height: 80px; }
-  .stamp-item { width: 36px; height: 36px; font-size: 1.1rem; }
+  .icon-btn { width: 42px; height: 42px; }
+  .stamp-panel { max-height: 90px; }
+  .stamp-item { width: 40px; height: 40px; font-size: 1.2rem; }
 }
 </style>
 <script src="../common/achievements.js"></script>
