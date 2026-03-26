@@ -149,6 +149,58 @@
         pointer-events: auto;
       }
     }
+    /* ===== Intro overlay ===== */
+    #intro-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: linear-gradient(180deg, #062044 0%, #0a4a6e 50%, #0d6080 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      text-align: center;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      transition: opacity 0.4s;
+    }
+    #intro-overlay.hidden { opacity: 0; pointer-events: none; }
+    .intro-icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .intro-title {
+      font-size: 1.4rem; font-weight: 900; color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      margin-bottom: 6px;
+    }
+    .intro-subtitle {
+      font-size: 0.85rem; font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 20px;
+    }
+    .intro-tips {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 16px 20px;
+      max-width: 340px;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+    .intro-tip {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.8rem; font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .intro-tip:last-child { margin-bottom: 0; }
+    .intro-tip-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .intro-start {
+      padding: 14px 40px; border: none; border-radius: 50px;
+      background: linear-gradient(135deg, #22D3EE, #3B82F6);
+      color: #fff; font-family: inherit;
+      font-size: 1.1rem; font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(34,211,238,0.4);
+      transition: transform 0.15s;
+    }
+    .intro-start:active { transform: scale(0.95); }
+
     /* Portrait rotation prompt */
     #portrait-overlay {
       display: none;
@@ -240,6 +292,32 @@
       iPhoneの場合、Safari の 共有 → 「ホーム画面に追加」すると<br>アドレスバーなしで遊べます
     </div>
   </div>
+  <!-- Intro overlay -->
+  <div id="intro-overlay">
+    <div class="intro-icon">🐠</div>
+    <div class="intro-title">うみのせかい</div>
+    <div class="intro-subtitle">あつめた いきものたちを ながめよう！</div>
+    <div class="intro-tips">
+      <div class="intro-tip">
+        <span class="intro-tip-icon">🎮</span>
+        <span>ほかのゲームで あそぶと<br>いきものが もらえるよ！</span>
+      </div>
+      <div class="intro-tip">
+        <span class="intro-tip-icon">🎨</span>
+        <span>おえかきで かいた えも<br>うみで およがせられるよ！</span>
+      </div>
+      <div class="intro-tip">
+        <span class="intro-tip-icon">👆</span>
+        <span>いきものを タップすると<br>リアクションするよ！</span>
+      </div>
+      <div class="intro-tip">
+        <span class="intro-tip-icon">🍞</span>
+        <span>パンの ボタンで<br>エサを あげられるよ！</span>
+      </div>
+    </div>
+    <button class="intro-start" id="introStartBtn">うみを みる 🌊</button>
+  </div>
+
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <button id="btnFeed">🍞</button>
@@ -1239,7 +1317,7 @@
 
     function assignHiders(n) {
       if (fgRockSprites.length === 0 || creatures.length === 0) return;
-      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState && !c.submarinesprite);
+      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState && !c.submarinesprite && !c.sunfishsprite && !c.sharksprite);
       if (eligible.length === 0) return;
       const shuffledC = [...eligible].sort(() => Math.random() - 0.5);
       const shuffledR = [...fgRockSprites].sort(() => Math.random() - 0.5);
@@ -1285,7 +1363,7 @@
       // 現在隠れ中の生物以外から候補を選ぶ（飛び出した生物cも除外）
       const hiddenSet = new Set(hiders.map(h => h.c));
       const eligible = creatures.filter(cr =>
-        cr !== c && !hiddenSet.has(cr) && cr.pattern !== 'sway' && !cr.hiderState && !cr.submarinesprite
+        cr !== c && !hiddenSet.has(cr) && cr.pattern !== 'sway' && !cr.hiderState && !cr.submarinesprite && !cr.sunfishsprite && !cr.sharksprite
       );
       if (eligible.length === 0) return;
       const newC = eligible[Math.floor(Math.random() * eligible.length)];
@@ -2953,7 +3031,15 @@
       drawSand();
       makeSeaweeds();
       await initRocks();
-      showSelectionScreen();
+
+      // イントロ画面の制御
+      var introEl = document.getElementById('intro-overlay');
+      document.getElementById('introStartBtn').addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        introEl.classList.add('hidden');
+        setTimeout(function() { introEl.style.display = 'none'; }, 400);
+        showSelectionScreen();
+      });
     });
 
   })();
