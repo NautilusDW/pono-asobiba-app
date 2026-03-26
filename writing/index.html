@@ -881,11 +881,9 @@ const completionOverlay = document.getElementById('completionOverlay');
 
 
 // ===== Audio =====
-let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
+// AudioContextをページロード時に即生成（suspendedだが存在はする）
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function getAudioCtx() { return audioCtx; }
 function withAudio(fn) {
   const ctx = getAudioCtx();
   if (ctx.state === 'running') { fn(ctx); return; }
@@ -909,8 +907,9 @@ function unlockAudio() {
     } catch(e) {}
   }
 }
-document.addEventListener('touchstart', unlockAudio, { passive: true });
-document.addEventListener('pointerdown', unlockAudio);
+// capture: true で HanziWriter より先にイベントを受け取る
+document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
+document.addEventListener('pointerdown', unlockAudio, { capture: true });
 
 // iOS対応: 1つのAudio要素を使い回す（最初のタッチでアンロック）
 const _sharedAudio = new Audio();
