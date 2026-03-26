@@ -896,15 +896,28 @@ function unlockAudio() { getAudioCtx().resume().catch(() => {}); }
 document.addEventListener('touchstart', unlockAudio, { passive: true });
 document.addEventListener('pointerdown', unlockAudio);
 
-// iOS: HTML Audio要素のアンロック（最初のタッチで無音再生して制限解除）
-let _audioUnlocked = false;
-const _silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');
-function unlockHTMLAudio() {
-  if (_audioUnlocked) return;
-  _silentAudio.play().then(() => { _audioUnlocked = true; }).catch(() => {});
+// WebAudio経由で音声ファイルを再生（iOS HTML Audio制限を回避）
+const _voiceCache = {};
+function playVoiceViaWebAudio(url, fallbackChar, fallbackWord) {
+  const ac = getAudioCtx();
+  if (ac.state === 'suspended') ac.resume();
+  if (_voiceCache[url]) {
+    const src = ac.createBufferSource();
+    src.buffer = _voiceCache[url];
+    src.connect(ac.destination);
+    src.start(0);
+    return;
+  }
+  fetch(url).then(r => r.arrayBuffer()).then(buf => {
+    ac.decodeAudioData(buf, decoded => {
+      _voiceCache[url] = decoded;
+      const src = ac.createBufferSource();
+      src.buffer = decoded;
+      src.connect(ac.destination);
+      src.start(0);
+    });
+  }).catch(() => { if (fallbackChar) _speakFallback(fallbackChar, fallbackWord); });
 }
-document.addEventListener('touchstart', unlockHTMLAudio, { passive: true });
-document.addEventListener('pointerdown', unlockHTMLAudio);
 
 function playSuccessSound() {
   withAudio(ac => {
@@ -953,55 +966,37 @@ function launchConfetti() {
   setTimeout(() => confettiContainer.innerHTML = '', 3000);
 }
 
-// ===== Word Card + TTS =====
-let _currentWordAudio = null;
-// onComplete時にAudioをプリロード（iOSはtouchstartで既にアンロック済み）
-function _preloadWordAudio() {
-  const char = CATEGORIES[currentCategory].chars[currentCharIndex];
-  let url = null;
+// ===== Word Card + TTS (WebAudio API経由 — iOS対応) =====
+function _getVoiceUrl(char) {
   if (currentCategory === 'hiragana') {
     const idx = CATEGORIES.hiragana.chars.indexOf(char);
-    if (idx >= 0 && idx <= 44) url = '../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav';
-    else if (idx === 45) url = '../assets/voices/katakana/45-katakana.wav';
-  } else if (currentCategory === 'katakana') {
-    const idx = CATEGORIES.katakana.chars.indexOf(char);
-    if (idx >= 0 && idx <= 45) url = '../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav';
+    if (idx >= 0 && idx <= 44) return '../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav';
+    if (idx === 45) return '../assets/voices/katakana/45-katakana.wav';
   }
-  if (url) {
-    _currentWordAudio = new Audio(url);
-    _currentWordAudio.load();
+  if (currentCategory === 'katakana') {
+    const idx = CATEGORIES.katakana.chars.indexOf(char);
+    if (idx >= 0 && idx <= 45) return '../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav';
+  }
+  return null;
+}
+function _preloadWordAudio() {
+  // WebAudio用: fetchしてキャッシュに入れておく
+  const char = CATEGORIES[currentCategory].chars[currentCharIndex];
+  const url = _getVoiceUrl(char);
+  if (url && !_voiceCache[url]) {
+    fetch(url).then(r => r.arrayBuffer()).then(buf => {
+      getAudioCtx().decodeAudioData(buf, decoded => { _voiceCache[url] = decoded; });
+    }).catch(() => {});
   }
 }
 function speakWord(char, word) {
   if (window.speechSynthesis) speechSynthesis.cancel();
-  // プリロード済みのAudioがあればそれを再生
-  if (_currentWordAudio) {
-    _currentWordAudio.currentTime = 0;
-    _currentWordAudio.play().catch(() => _speakFallback(char, word));
-    return;
+  const url = _getVoiceUrl(char);
+  if (url) {
+    playVoiceViaWebAudio(url, char, word);
+  } else {
+    _speakFallback(char, word);
   }
-  if (currentCategory === 'hiragana') {
-    const idx = CATEGORIES.hiragana.chars.indexOf(char);
-    if (idx >= 0 && idx <= 44) {
-      _currentWordAudio = new Audio('../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav');
-      _currentWordAudio.play().catch(() => _speakFallback(char, word));
-      return;
-    }
-    if (idx === 45) {
-      _currentWordAudio = new Audio('../assets/voices/katakana/45-katakana.wav');
-      _currentWordAudio.play().catch(() => _speakFallback(char, word));
-      return;
-    }
-  }
-  if (currentCategory === 'katakana') {
-    const idx = CATEGORIES.katakana.chars.indexOf(char);
-    if (idx >= 0 && idx <= 45) {
-      _currentWordAudio = new Audio('../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav');
-      _currentWordAudio.play().catch(() => _speakFallback(char, word));
-      return;
-    }
-  }
-  _speakFallback(char, word);
 }
 
 function _speakFallback(char, word) {
@@ -1031,6 +1026,19 @@ function showWordCard() {
   }
   clearTimeout(_wordCardTimer);
   card.classList.remove('show', 'hide');
+  // 横向き: キャンバス中央に配置
+  if (landscapeMQ.matches) {
+    const rect = canvasContainer.getBoundingClientRect();
+    card.style.left = (rect.left + rect.width / 2) + 'px';
+    card.style.bottom = 'auto';
+    card.style.top = (rect.top + rect.height / 2) + 'px';
+    card.style.transform = 'translate(-50%, -50%)';
+  } else {
+    card.style.left = '50%';
+    card.style.bottom = '120px';
+    card.style.top = 'auto';
+    card.style.transform = 'translateX(-50%)';
+  }
   card.classList.add('show');
   speakWord(char, data.word);
   _wordCardTimer = setTimeout(() => {
