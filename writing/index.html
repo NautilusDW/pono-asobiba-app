@@ -38,6 +38,10 @@ html, body {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
 }
 
 #app {
@@ -59,7 +63,7 @@ html, body {
 }
 .header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
 .streak-badge {
-  position: fixed; bottom: 10px; left: 10px; z-index: 10000;
+  position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); z-index: 10000;
   display: inline-block;
   background: linear-gradient(135deg, #FCD34D, #F97316);
   color: #fff;
@@ -1286,23 +1290,40 @@ categoryTabs.addEventListener('click', (e) => {
 // ===== Orientation change — force viewport recalc =====
 function fixViewportHeight() {
   const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.getElementById('app').style.height = vh + 'px';
+  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const h = vh + 'px';
+  document.documentElement.style.height = h;
+  document.body.style.height = h;
+  document.body.style.width = vw + 'px';
+  document.getElementById('app').style.height = h;
+  // Kill any scroll offset
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  if (window.visualViewport) {
+    window.scrollTo(window.visualViewport.offsetLeft, window.visualViewport.offsetTop);
+  }
 }
 function onOrientationChange() {
-  // Force immediate height fix, then let browser settle
   fixViewportHeight();
-  setTimeout(fixViewportHeight, 100);
-  setTimeout(fixViewportHeight, 300);
+  setTimeout(fixViewportHeight, 50);
+  setTimeout(fixViewportHeight, 150);
+  setTimeout(fixViewportHeight, 400);
+  setTimeout(fixViewportHeight, 800);
   buildRowTabs();
   buildCharSelector();
 }
 landscapeMQ.addEventListener('change', onOrientationChange);
+window.addEventListener('orientationchange', () => {
+  setTimeout(fixViewportHeight, 50);
+  setTimeout(fixViewportHeight, 200);
+  setTimeout(fixViewportHeight, 500);
+});
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fixViewportHeight);
 } else {
   window.addEventListener('resize', fixViewportHeight);
 }
-// Initial fix
 fixViewportHeight();
 
 // ===== Button handlers =====
