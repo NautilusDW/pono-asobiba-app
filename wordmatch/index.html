@@ -264,6 +264,41 @@ body {
   0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
 }
+
+/* ===== Landscape layout ===== */
+@media (orientation: landscape) {
+  body {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+  .header {
+    width: 100%;
+    padding: 2px 0;
+  }
+  .header h1 { font-size: 1.1rem; }
+  .stage-info { width: 100%; }
+  .stage-name { font-size: 0.9rem; }
+  .stage-num { font-size: 0.68rem; padding: 1px 10px; }
+  .pic-grid {
+    flex: 1;
+    max-width: 45%;
+    gap: 8px;
+  }
+  .pic-slot { padding: 10px 6px 8px; }
+  .pic-emoji { font-size: 2.6rem; }
+  .pic-label { min-height: 32px; font-size: 0.9rem; }
+  .word-tray-wrap {
+    flex: 1;
+    max-width: 45%;
+    margin-top: 0;
+    align-self: center;
+  }
+  .word-card { font-size: 0.95rem; padding: 8px 6px; }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -319,7 +354,7 @@ const STAGES = [
     { emoji: '🚂', word: 'でんしゃ' },
   ]},
   { name: 'どうぶつ 🐾', pairs: [
-    { emoji: 'pono_img', word: 'くま', img: '../assets/images/characters/pono/pono_face_circle.png' },
+    { emoji: '🐻', word: 'くま' },
     { emoji: '🐰', word: 'うさぎ' },
     { emoji: '🐘', word: 'ぞう' },
     { emoji: '🐬', word: 'いるか' },
