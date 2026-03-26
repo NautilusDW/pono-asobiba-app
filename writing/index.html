@@ -897,42 +897,18 @@ function unlockAudio() { getAudioCtx().resume().catch(() => {}); }
 document.addEventListener('touchstart', unlockAudio, { passive: true });
 document.addEventListener('pointerdown', unlockAudio);
 
-// WebAudio経由で音声ファイルを再生（iOS HTML Audio制限を回避）
-const _voiceCache = {};    // url → AudioBuffer
-const _voiceFetch = {};    // url → Promise<AudioBuffer> (重複fetch防止)
-function playVoiceViaWebAudio(url, fallbackChar, fallbackWord) {
-  const ac = getAudioCtx();
-  if (ac.state === 'suspended') ac.resume();
-  // キャッシュ済みなら即再生
-  if (_voiceCache[url]) {
-    const src = ac.createBufferSource();
-    src.buffer = _voiceCache[url];
-    src.connect(ac.destination);
-    src.start(0);
-    return;
-  }
-  // fetch中ならそのPromiseを待つ（二重fetchしない）
-  _fetchAndDecode(url, ac).then(decoded => {
-    const src = ac.createBufferSource();
-    src.buffer = decoded;
-    src.connect(ac.destination);
-    src.start(0);
-  }).catch(() => { if (fallbackChar) _speakFallback(fallbackChar, fallbackWord); });
+// iOS対応: 1つのAudio要素を使い回す（最初のタッチでアンロック）
+const _sharedAudio = new Audio();
+_sharedAudio.preload = 'auto';
+let _sharedAudioUnlocked = false;
+function _unlockSharedAudio() {
+  if (_sharedAudioUnlocked) return;
+  // 無音srcを設定してplay→iOSのAudio制限を解除
+  _sharedAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+  _sharedAudio.play().then(() => { _sharedAudioUnlocked = true; _sharedAudio.pause(); }).catch(() => {});
 }
-function _fetchAndDecode(url, ac) {
-  if (_voiceCache[url]) return Promise.resolve(_voiceCache[url]);
-  if (_voiceFetch[url]) return _voiceFetch[url];
-  _voiceFetch[url] = fetch(url)
-    .then(r => r.arrayBuffer())
-    .then(buf => new Promise((resolve, reject) => {
-      ac.decodeAudioData(buf, decoded => {
-        _voiceCache[url] = decoded;
-        delete _voiceFetch[url];
-        resolve(decoded);
-      }, reject);
-    }));
-  return _voiceFetch[url];
-}
+document.addEventListener('touchstart', _unlockSharedAudio, { passive: true });
+document.addEventListener('pointerdown', _unlockSharedAudio);
 
 function playSuccessSound() {
   withAudio(ac => {
@@ -982,7 +958,7 @@ function launchConfetti() {
   setTimeout(() => confettiContainer.innerHTML = '', 3000);
 }
 
-// ===== Word Card + TTS (WebAudio API経由 — iOS対応) =====
+// ===== Word Card + TTS =====
 function _getVoiceUrl(char) {
   if (currentCategory === 'hiragana') {
     const idx = CATEGORIES.hiragana.chars.indexOf(char);
@@ -995,21 +971,35 @@ function _getVoiceUrl(char) {
   }
   return null;
 }
+let _voicePlayId = 0; // キャンセル用ID
 function _preloadWordAudio() {
+  // 共有Audio要素にsrcをセットしてプリロード
   const char = CATEGORIES[currentCategory].chars[currentCharIndex];
   const url = _getVoiceUrl(char);
-  if (url && !_voiceCache[url]) {
-    _fetchAndDecode(url, getAudioCtx()).catch(() => {});
+  if (url) {
+    _sharedAudio.src = url;
+    _sharedAudio.load();
   }
 }
 function speakWord(char, word) {
   if (window.speechSynthesis) speechSynthesis.cancel();
   const url = _getVoiceUrl(char);
-  if (url) {
-    playVoiceViaWebAudio(url, char, word);
-  } else {
-    _speakFallback(char, word);
+  if (!url) { _speakFallback(char, word); return; }
+  const myId = ++_voicePlayId;
+  // プリロード済みの同じsrcならそのまま再生
+  if (_sharedAudio.src.endsWith(url.replace('../', '/'))) {
+    _sharedAudio.currentTime = 0;
+    _sharedAudio.play().catch(() => _speakFallback(char, word));
+    return;
   }
+  // 違うsrcなら切り替えて再生
+  _sharedAudio.src = url;
+  _sharedAudio.oncanplaythrough = function() {
+    _sharedAudio.oncanplaythrough = null;
+    if (_voicePlayId !== myId) return; // キャンセルされた
+    _sharedAudio.play().catch(() => _speakFallback(char, word));
+  };
+  _sharedAudio.load();
 }
 
 function _speakFallback(char, word) {
