@@ -32,7 +32,7 @@ const ROOM_ITEMS = [
   },
   {
     id: 'wall_mori', cat: 'wall', name: 'もりのどうぶつ', price: 20, theme: 'all',
-    emoji: '🐻',
+    emoji: '🌲',
     roomImg: '../assets/images/Rooms/walls/mori_doubutsu.png',
   },
   {

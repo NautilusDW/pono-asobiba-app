@@ -197,6 +197,8 @@ if (localStorage.getItem('pono_premium') !== '1') {
 }
 
 const { Engine, Render, World, Bodies, Body, Runner, Events } = Matter;
+const _ponoFaceImg = new Image();
+_ponoFaceImg.src = '../assets/images/characters/pono/pono_face_circle.png';
 
 // ===== Sizing =====
 const CW = Math.min(window.innerWidth - 32, 400);
@@ -442,9 +444,13 @@ Events.on(render, 'afterRender', () => {
     const ease = 1 - Math.pow(1 - t, 2); // ease-out quad
     const curY = ponoAnim.fromY + (ponoAnim.toY - ponoAnim.fromY) * ease;
     ctx.save();
-    ctx.font = '28px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🐻', CW / 2, curY);
+    if (_ponoFaceImg.complete) {
+      ctx.drawImage(_ponoFaceImg, CW / 2 - 14, curY - 14, 28, 28);
+    } else {
+      ctx.font = '28px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🐻', CW / 2, curY);
+    }
     ctx.restore();
     if (t >= 1) {
       ponoAnim.active = false;

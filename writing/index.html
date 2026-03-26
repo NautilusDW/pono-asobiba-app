@@ -823,7 +823,7 @@ function updateStreakBadge() {
 
 // ===== Milestone rewards (every 5 streaks) =====
 const MILESTONES = [
-  { scene: '🐻\n🎉',         title: 'すごいね！',     msg: 'ポノも よろこんでるよ！' },
+  { scene: '🎉',  sceneImg: true, title: 'すごいね！',     msg: 'ポノも よろこんでるよ！' },
   { scene: '🌈\n✨',         title: 'さいこう！',     msg: 'にじが でたよ！' },
   { scene: '🏆\n🌟',         title: 'チャンピオン！', msg: 'トロフィー かがやく！' },
   { scene: '🚀\n🌙',         title: 'うちゅうまで！', msg: 'もう とまらない！' },
@@ -833,7 +833,12 @@ const MILESTONES = [
 function showMilestone(count) {
   const data = MILESTONES[(count / 5 - 1) % MILESTONES.length];
   const modal = document.getElementById('milestone-modal');
-  document.getElementById('milestone-scene').textContent = data.scene;
+  const sceneEl = document.getElementById('milestone-scene');
+  if (data.sceneImg) {
+    sceneEl.innerHTML = `<img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ" style="width:64px;height:64px;vertical-align:middle"> ${data.scene}`;
+  } else {
+    sceneEl.textContent = data.scene;
+  }
   document.getElementById('milestone-count').textContent = `🔥 ${count}れんぞく！`;
   document.getElementById('milestone-title').textContent = data.title;
   document.getElementById('milestone-msg').textContent = data.msg;

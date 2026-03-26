@@ -9,7 +9,7 @@
     { id: 'dog',       emoji: '🐶', name: 'いぬ' },
     { id: 'cat',       emoji: '🐱', name: 'ねこ' },
     { id: 'rabbit',    emoji: '🐰', name: 'うさぎ' },
-    { id: 'bear',      emoji: '🐻', name: 'くま' },
+    { id: 'bear',      emoji: '', name: 'くま', img: '/assets/images/characters/pono/pono_face_circle.png' },
     { id: 'panda',     emoji: '🐼', name: 'パンダ' },
     { id: 'chick',     emoji: '🐥', name: 'ひよこ' },
     { id: 'penguin',   emoji: '🐧', name: 'ペンギン' },
@@ -319,7 +319,7 @@
       var opacity = count > 0 ? '1' : '0.4';
 
       html += '<div style="background:' + bg + ';border:' + border + ';border-radius:12px;padding:6px 2px;text-align:center;opacity:' + opacity + ';">';
-      html += '<div style="font-size:1.5rem;">' + s.emoji + '</div>';
+      html += '<div style="font-size:1.5rem;">' + (s.img ? '<img src="' + s.img + '" style="width:1.2em;height:1.2em;vertical-align:middle">' : s.emoji) + '</div>';
       if (count > 0) {
         if (isSparkle) {
           html += '<div style="font-size:0.6rem;color:#f57f17;">✨×' + count + '</div>';
@@ -504,7 +504,7 @@
 
     // Sticker reward
     html += '<div style="margin:12px 0;padding:10px;background:#fff;border-radius:14px;">';
-    html += '<div style="font-size:2rem;">' + result.sticker.emoji + '</div>';
+    html += '<div style="font-size:2rem;">' + (result.sticker.img ? '<img src="' + result.sticker.img + '" style="width:1.2em;height:1.2em;vertical-align:middle">' : result.sticker.emoji) + '</div>';
     html += '<div style="font-size:0.8rem;color:#5d4037;">「' + result.sticker.name + '」の シール ゲット！</div>';
     if (result.isSparkle) {
       html += '<div style="font-size:0.75rem;color:#f57f17;font-weight:bold;">✨ キラキラに しんか！ ✨</div>';
@@ -529,7 +529,8 @@
       if (result.streakBonus.type === 'stickers') {
         html += '<div style="font-size:1.2rem;">';
         for (var j = 0; j < result.streakBonus.stickers.length; j++) {
-          html += result.streakBonus.stickers[j].emoji;
+          var sb = result.streakBonus.stickers[j];
+          html += sb.img ? '<img src="' + sb.img + '" style="width:1.2em;height:1.2em;vertical-align:middle">' : sb.emoji;
         }
         html += '</div>';
       }

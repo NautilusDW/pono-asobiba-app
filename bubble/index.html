@@ -85,6 +85,9 @@ canvas { display: block; }
 
 <script>
 'use strict';
+// ── Preload Pono face image ──
+const _ponoFaceImg = new Image();
+_ponoFaceImg.src = '../assets/images/characters/pono/pono_face_circle.png';
 // ── Canvas setup ──
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -487,7 +490,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Event System (tap/drag alternating events) ──
 const TAP_EVENTS = [
   {
-    id: 'find_pono', type: 'tap', label: 'ポノをみつけて タップ！', icon: '🐻',
+    id: 'find_pono', type: 'tap', label: 'ポノをみつけて タップ！', icon: 'pono_img',
     onEnter() {
       // Mark one random bubble as Pono
       eventPonoFound = 0;
@@ -813,7 +816,7 @@ function updateEventSystem(dt) {
       if (eventTimer >= config.eventDuration) {
         // Show event results before exiting
         if (currentEvent.id === 'find_pono' && eventPonoFound > 0) {
-          spawnPopup(W / 2, H * 0.4, `🐻 ${eventPonoFound}ひき みつけた！`, '#fff');
+          spawnPopup(W / 2, H * 0.4, `ポノ ${eventPonoFound}ひき みつけた！`, '#fff');
         } else if (currentEvent.id === 'sparkle_tap' && eventSparkleCount > 0) {
           spawnPopup(W / 2, H * 0.4, `⭐ ${eventSparkleCount}こ みつけた！`, '#FFD700');
         } else if (currentEvent.id === 'rainbow_sweep' && eventRainbowPops > 0) {
@@ -869,7 +872,11 @@ function drawEventOverlay(dt) {
     ctx.font = `${iconSz}px sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(currentEvent.icon, 14, shrunkY + bounceY);
+    if (currentEvent.icon === 'pono_img' && _ponoFaceImg.complete) {
+      ctx.drawImage(_ponoFaceImg, 14 - iconSz * 0.2, shrunkY + bounceY - iconSz / 2, iconSz, iconSz);
+    } else {
+      ctx.fillText(currentEvent.icon === 'pono_img' ? '🐻' : currentEvent.icon, 14, shrunkY + bounceY);
+    }
     const lblSz = Math.min(W * 0.03, 13);
     ctx.font = `900 ${lblSz}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = '#fff';
@@ -894,7 +901,11 @@ function drawEventOverlay(dt) {
     ctx.font = `${iconSz}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(currentEvent.icon, W / 2, H * 0.18 + bounceY);
+    if (currentEvent.icon === 'pono_img' && _ponoFaceImg.complete) {
+      ctx.drawImage(_ponoFaceImg, W / 2 - iconSz / 2, H * 0.18 + bounceY - iconSz / 2, iconSz, iconSz);
+    } else {
+      ctx.fillText(currentEvent.icon === 'pono_img' ? '🐻' : currentEvent.icon, W / 2, H * 0.18 + bounceY);
+    }
 
     const lblSz = Math.min(W * 0.06, 28);
     ctx.font = `900 ${lblSz}px 'Zen Maru Gothic', sans-serif`;
@@ -936,7 +947,7 @@ function drawEventOverlay(dt) {
   if (eventState === 'EVENT_ACTIVE') {
     let scoreIcon = '', scoreVal = 0, scoreColor = '#fff';
     if (currentEvent.id === 'find_pono') {
-      scoreIcon = '🐻'; scoreVal = eventPonoFound; scoreColor = '#fff';
+      scoreIcon = 'pono'; scoreVal = eventPonoFound; scoreColor = '#fff';
     } else if (currentEvent.id === 'sparkle_tap') {
       scoreIcon = '⭐'; scoreVal = eventSparkleCount; scoreColor = '#FFD700';
     } else if (currentEvent.id === 'rainbow_sweep') {
@@ -962,7 +973,13 @@ function drawEventOverlay(dt) {
       ctx.fillStyle = scoreColor;
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
       ctx.shadowBlur = 8;
-      ctx.fillText(`${scoreIcon} × ${scoreVal}`, W / 2, counterY - bounceT * 10);
+      if (scoreIcon === 'pono' && _ponoFaceImg.complete) {
+        const imgSz = sz * 0.9;
+        ctx.drawImage(_ponoFaceImg, W / 2 - sz * 1.5, counterY - bounceT * 10 - imgSz / 2, imgSz, imgSz);
+        ctx.fillText(`× ${scoreVal}`, W / 2 + sz * 0.3, counterY - bounceT * 10);
+      } else {
+        ctx.fillText(`${scoreIcon} × ${scoreVal}`, W / 2, counterY - bounceT * 10);
+      }
       ctx.restore();
     }
 
@@ -2595,7 +2612,13 @@ function loop(time) {
     ctx.font = `${r * 0.7}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🐻', x0, y0);
+    if (_ponoFaceImg.complete) {
+      const ponoSz = r * 0.7;
+      ctx.drawImage(_ponoFaceImg, x0 - ponoSz / 2, y0 - ponoSz / 2, ponoSz, ponoSz);
+    } else {
+      ctx.font = `${r * 0.7}px sans-serif`;
+      ctx.fillText('🐻', x0, y0);
+    }
     // Subtle shimmer ring
     ctx.globalAlpha = opacity * 0.25 * (0.5 + 0.5 * Math.sin(lastTime * 0.004 + i));
     ctx.beginPath();
