@@ -272,37 +272,52 @@ body {
 
 /* ===== Landscape layout ===== */
 @media (orientation: landscape) {
-  html, body { height: 100dvh; overflow: hidden; }
+  html { height: 100dvh; overflow: hidden; margin: 0; padding: 0; }
   body {
-    padding: 4px 16px 8px;
-    gap: 4px;
+    height: 100dvh;
+    overflow: hidden;
+    margin: 0;
+    padding: 2px 16px 2px;
+    gap: 2px;
   }
-  .header h1 { font-size: 1rem; }
-  .stage-name { font-size: 0.85rem; }
-  .stage-num { font-size: 0.65rem; padding: 1px 8px; margin-top: 2px; }
+  .header { padding: 0; }
+  .header h1 { font-size: 0.9rem; }
+  .stage-info { margin: 0; }
+  .stage-name { font-size: 0.75rem; }
+  .stage-num { font-size: 0.6rem; padding: 1px 8px; margin-top: 1px; }
   /* 絵と言葉を左右に並べるラッパー */
   .game-row {
     display: flex;
     gap: 12px;
     width: 100%;
-    max-width: 600px;
-    align-items: center;
+    max-width: 700px;
+    align-items: stretch;
     flex: 1;
     min-height: 0;
   }
   .pic-grid {
     flex: 1;
     gap: 6px;
+    align-content: stretch;
   }
-  .pic-slot { padding: 8px 6px 6px; }
-  .pic-emoji { font-size: 2.2rem; }
+  .pic-slot {
+    padding: 6px 6px;
+    flex: 1;
+    min-height: 0;
+  }
+  .pic-emoji { font-size: 2.4rem; }
   .pic-label { min-height: 28px; font-size: 0.85rem; }
   .word-tray-wrap {
     flex: 1;
     margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 14px 14px 18px;
   }
-  .word-tray-title { font-size: 0.75rem; margin-bottom: 6px; }
-  .word-card { font-size: 0.9rem; padding: 7px 6px; }
+  .word-tray { gap: 8px; }
+  .word-tray-title { font-size: 0.78rem; margin-bottom: 10px; }
+  .word-card { font-size: 0.95rem; padding: 10px 8px; }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
