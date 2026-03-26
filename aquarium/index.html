@@ -265,6 +265,52 @@
     @media (orientation: landscape) {
       #btnFeed { bottom: 14px; right: 14px; }
     }
+    /* In-aquarium tutorial hints */
+    .tut-hint {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border-radius: 20px;
+      padding: 18px 28px;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-align: center;
+      animation: tutPop 0.4s ease-out;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .tut-hint.show { display: flex; }
+    .tut-hint-icon { font-size: 2rem; }
+    .tut-hint-text { line-height: 1.5; }
+    .tut-hint-feed {
+      flex-direction: column;
+      bottom: 80px; top: auto; right: 16px; left: auto;
+      transform: none;
+      animation: tutPopFeed 0.4s ease-out;
+    }
+    .tut-hint-arrow {
+      font-size: 2.2rem;
+      animation: tutBounce 0.8s ease-in-out infinite;
+    }
+    @keyframes tutPop {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    @keyframes tutPopFeed {
+      0% { opacity: 0; transform: scale(0.7); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes tutBounce {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(8px); }
+    }
     /* Title label */
     #title-label {
       position: fixed;
@@ -306,16 +352,18 @@
         <span class="intro-tip-icon">🎨</span>
         <span>おえかきで かいた えも<br>うみで およがせられるよ！</span>
       </div>
-      <div class="intro-tip">
-        <span class="intro-tip-icon">👆</span>
-        <span>いきものを タップすると<br>リアクションするよ！</span>
-      </div>
-      <div class="intro-tip">
-        <span class="intro-tip-icon">🍞</span>
-        <span>パンの ボタンで<br>エサを あげられるよ！</span>
-      </div>
     </div>
     <button class="intro-start" id="introStartBtn">うみを みる 🌊</button>
+  </div>
+
+  <!-- In-aquarium tutorial hints -->
+  <div class="tut-hint" id="tutTap">
+    <div class="tut-hint-icon">👆</div>
+    <div class="tut-hint-text">いきものを タップしてみよう！<br>リアクションするよ</div>
+  </div>
+  <div class="tut-hint tut-hint-feed" id="tutFeed">
+    <div class="tut-hint-arrow" id="tutFeedArrow">↗</div>
+    <div class="tut-hint-text">🍞を おしてから<br>うみを タッチすると<br>エサが おちるよ！</div>
   </div>
 
   <canvas id="pixi-canvas"></canvas>
@@ -1507,6 +1555,7 @@
           addSunfishCreatures(1);
           addSharkCreatures(1);
           assignHiders(2);
+          initTutorial();
         });
         return;
       }
@@ -1580,6 +1629,7 @@
         addSubmarineCreatures(1);
         addSunfishCreatures(1);
         addSharkCreatures(1);
+        initTutorial();
         return;
       }
       const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
@@ -1592,6 +1642,7 @@
       addSubmarineCreatures(1);
       addSunfishCreatures(1);
       addSharkCreatures(1);
+      initTutorial();
     });
 
     async function initAllCreatures() {
@@ -2668,6 +2719,7 @@
         if (poppedInFeed) { steeringMode = false; holdCreature = null; return; }
 
         spawnFood(px, py);
+        onFeedUsed();
         // Still add ripple
         [0.005, 0.04, 0.075].forEach(r0 => {
           if (ripples.length < MAX_RIPPLES)
@@ -2884,7 +2936,7 @@
           if (c.pattern === 'sway') return;
           const dx = c.obj.x - px, dy = c.obj.y - py;
           const d = Math.sqrt(dx*dx + dy*dy);
-          if (d < c.baseSize * 0.7) hitDirect = true; // actually tapped on creature
+          if (d < c.baseSize * 0.7) { hitDirect = true; onCreatureTapped(); }
           if (d >= r) return;
           switch (c.panicStyle) {
             case 'flee': default: {
@@ -3013,6 +3065,41 @@
       setTimeout(fullResize, 200);
       setTimeout(fullResize, 500);
     });
+
+    // ─── In-aquarium tutorial system ──────────────────────
+    const TUT_KEY = 'aquarium_tut_done';
+    let tutStep = 0; // 0=not started, 1=tap hint shown, 2=feed hint shown, 3=done
+    let tutAutoTimer = null;
+
+    function initTutorial() {
+      if (localStorage.getItem(TUT_KEY)) { tutStep = 3; return; }
+      tutStep = 1;
+      setTimeout(() => {
+        document.getElementById('tutTap').classList.add('show');
+        // Auto-advance after 8s if user doesn't tap a creature
+        tutAutoTimer = setTimeout(() => { if (tutStep === 1) onCreatureTapped(); }, 8000);
+      }, 1200);
+    }
+
+    function onCreatureTapped() {
+      if (tutStep !== 1) return;
+      clearTimeout(tutAutoTimer);
+      tutStep = 2;
+      document.getElementById('tutTap').classList.remove('show');
+      setTimeout(() => {
+        document.getElementById('tutFeed').classList.add('show');
+        // Auto-dismiss feed hint after 8s
+        tutAutoTimer = setTimeout(() => { if (tutStep === 2) onFeedUsed(); }, 8000);
+      }, 600);
+    }
+
+    function onFeedUsed() {
+      if (tutStep !== 2) return;
+      clearTimeout(tutAutoTimer);
+      tutStep = 3;
+      document.getElementById('tutFeed').classList.remove('show');
+      localStorage.setItem(TUT_KEY, '1');
+    }
 
     // ─── Sprite creature on/off toggle ─────────────────────
     let bgCreaturesOn = true;
