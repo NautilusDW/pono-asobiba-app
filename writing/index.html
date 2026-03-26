@@ -392,7 +392,10 @@ html, body {
   display: contents;
 }
 .row-tabs { display: none; }
-/* Portrait: next-row goes after trace-area via order */
+/* Portrait ordering: char-selector before controls, next-row after trace-area */
+.char-selector { order: 3; }
+.controls { order: 4; }
+.right-col { order: 5; }
 .next-row { order: 10; }
 
 /* ===== Responsive ===== */
@@ -411,87 +414,99 @@ html, body {
     flex-direction: row;
     max-width: 100%;
     padding: 4px 8px;
-    gap: 8px;
+    gap: 0;
     align-items: stretch;
   }
-  /* Left column: all UI controls */
+  /* Left column: header + row tabs + controls */
   .left-col {
     display: flex; flex-direction: column;
-    align-items: center; gap: 3px;
-    flex-shrink: 0; width: 140px;
+    align-items: center; gap: 2px;
+    flex-shrink: 0; width: 110px;
     max-height: 100dvh; overflow-y: auto;
     scrollbar-width: none;
-    padding-top: 44px; /* space for fixed menu buttons */
+    padding-top: 44px;
+    order: 1;
   }
   .left-col::-webkit-scrollbar { display: none; }
   .header { padding: 0; }
-  .header h1 { font-size: 0.85rem; }
+  .header h1 { font-size: 0.8rem; }
   .header .subtitle { display: none; }
   .category-tabs { margin: 2px 0; gap: 3px; }
-  .category-tab { padding: 3px 8px; font-size: 0.7rem; }
-  /* Row tabs: 2-column grid */
+  .category-tab { padding: 3px 7px; font-size: 0.65rem; }
+  /* Row tabs: 2-column compact grid */
   .row-tabs {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr);
-    gap: 3px; width: 100%; padding: 0 4px;
+    gap: 2px; width: 100%; padding: 0 4px;
   }
   .row-tab {
-    padding: 4px 2px; border: 2px solid transparent; border-radius: 10px;
+    padding: 3px 2px; border: 2px solid transparent; border-radius: 8px;
     background: var(--card-bg); font-family: inherit;
-    font-size: 0.85rem; font-weight: 700;
+    font-size: 0.8rem; font-weight: 700;
     cursor: pointer; text-align: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     transition: all 0.15s;
   }
   .row-tab.active {
     border-color: var(--primary);
     background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
-    transform: scale(1.05);
   }
-  .row-tab.has-done {
-    background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
-  }
-  .row-tab.has-done.active {
-    background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
-    border-color: var(--primary);
-  }
-  /* Char selector: horizontal row for selected group */
+  .row-tab.has-done { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
+  .row-tab.has-done.active { background: linear-gradient(135deg, #FFF0F5, #FAF0FF); border-color: var(--primary); }
+  /* Char selector: vertical middle column between left and canvas */
   .char-selector {
     display: flex !important;
-    gap: 3px; padding: 2px 4px;
-    overflow-x: visible; overflow-y: visible;
-    flex-wrap: wrap; justify-content: center;
+    flex-direction: column;
+    gap: 3px; padding: 8px 6px;
+    overflow: visible;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    order: 2;
   }
-  .char-btn { min-width: 34px; height: 34px; font-size: 0.9rem; }
-  /* Controls stacked in left column */
+  .char-btn { min-width: 36px; height: 36px; font-size: 0.95rem; }
+  /* Controls compact in left column */
   .controls {
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex; flex-direction: column; gap: 3px;
     padding: 4px 0; width: 100%;
     align-items: center;
+    margin-top: auto; /* push to bottom */
   }
-  .ctrl-btn { padding: 5px 10px; font-size: 0.75rem; width: 90%; }
+  .ctrl-btn { padding: 4px 8px; font-size: 0.7rem; width: 95%; }
   .next-row {
     order: 0; padding: 0; width: 100%;
     display: flex; justify-content: center;
   }
-  .next-row .ctrl-btn { width: 90%; }
+  .next-row .ctrl-btn { width: 95%; }
   /* Right column: canvas only, maximized */
   .right-col {
     display: flex;
     align-items: center; justify-content: center;
     flex: 1; min-width: 0;
+    order: 3;
   }
   .trace-area {
     flex: 0; display: flex;
     align-items: center; justify-content: center;
+    position: relative;
   }
   .canvas-container {
-    width: min(85vh, calc(100vw - 190px));
-    height: min(85vh, calc(100vw - 190px));
+    width: min(88vh, calc(100vw - 230px));
+    height: min(88vh, calc(100vw - 230px));
     max-width: none; max-height: none;
   }
-  .pono-deco { display: none; }
+  /* Pono deco: canvas bottom-left */
+  .pono-deco {
+    display: block;
+    position: absolute;
+    bottom: -5px; left: -5px;
+    width: 52px;
+  }
   .hedgehog-wrap { display: none; }
+  /* Streak badge: canvas bottom-left */
+  .streak-badge {
+    left: auto; right: 10px; bottom: 10px;
+  }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -514,8 +529,6 @@ html, body {
 
     <div class="row-tabs" id="rowTabs"></div>
 
-    <div class="char-selector" id="charSelector"></div>
-
     <div class="controls">
       <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
       <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
@@ -525,6 +538,8 @@ html, body {
       <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
     </div>
   </div>
+
+  <div class="char-selector" id="charSelector"></div>
 
   <div class="right-col">
     <div class="trace-area">
