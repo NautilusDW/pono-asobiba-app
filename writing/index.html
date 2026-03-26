@@ -287,7 +287,7 @@ html, body {
 
 .hedgehog-wrap {
   position: absolute;
-  bottom: calc(100% - 45px);
+  bottom: calc(100% - 30px);
   right: 10px;
   width: 86px;
   pointer-events: none;
@@ -343,7 +343,7 @@ html, body {
   position: absolute;
   bottom: -70px;
   left: calc(50% - min(45vw, 210px));
-  width: 90px;
+  width: 72px;
   pointer-events: none;
   filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.15));
   z-index: 100;
@@ -677,9 +677,11 @@ function withAudio(fn) {
   if (ctx.state === 'running') { fn(ctx); return; }
   ctx.resume().then(() => fn(ctx)).catch(() => {});
 }
-// iOSは最初のタッチでAudioContextをunlockする必要がある
-document.addEventListener('touchstart', () => getAudioCtx().resume(), { once: true, passive: true });
-document.addEventListener('pointerdown', () => getAudioCtx().resume(), { once: true });
+// iOS/Android: タッチのたびにAudioContextをresumeし続ける（once不使用）
+// バックグラウンド復帰後もsuspendedに戻るため毎回resume
+function unlockAudio() { getAudioCtx().resume().catch(() => {}); }
+document.addEventListener('touchstart', unlockAudio, { passive: true });
+document.addEventListener('pointerdown', unlockAudio);
 
 function playSuccessSound() {
   withAudio(ac => {
