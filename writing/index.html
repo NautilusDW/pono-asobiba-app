@@ -392,6 +392,7 @@ html, body {
   display: contents;
 }
 .row-tabs { display: none; }
+.pono-bubble { display: none; }
 /* Portrait ordering */
 .header { order: 1; }
 .category-tabs { order: 2; }
@@ -430,12 +431,13 @@ html, body {
   .header { padding: 0; order: auto; }
   .header h1 { font-size: 0.75rem; }
   .header .subtitle { display: none; }
-  .category-tabs { margin: 2px 0; gap: 3px; order: auto; }
-  .category-tab { padding: 3px 7px; font-size: 0.65rem; }
+  .category-tabs { margin: 2px 0 4px; gap: 3px; order: auto; }
+  .category-tab { padding: 8px 10px; font-size: 0.8rem; }
   .row-tabs {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr);
     gap: 2px; width: 100%; padding: 0 2px;
+    margin-top: 6px;
   }
   .row-tab {
     padding: 5px 2px; border: 2px solid transparent; border-radius: 8px;
@@ -506,14 +508,49 @@ html, body {
     width: auto; padding: 10px 20px; font-size: 0.9rem;
     opacity: 0.85;
   }
-  /* Pono deco: canvas bottom-left */
+  /* Pono deco: canvas bottom-left (bigger, shifted right & up) */
   .pono-deco {
     display: block;
     position: absolute;
-    bottom: -5px; left: -5px;
-    width: 52px; z-index: 100;
+    bottom: 8px; left: 12px;
+    width: 68px; z-index: 100;
   }
   .hedgehog-wrap { display: none; }
+  /* Pono speech bubble (landscape) */
+  .pono-bubble {
+    display: block;
+    position: absolute;
+    bottom: 80px; left: 10px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 900;
+    color: var(--text);
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    z-index: 101;
+    opacity: 0;
+    animation: pono-bubble-pop 18s ease-in-out infinite;
+    animation-delay: 3s;
+    animation-fill-mode: backwards;
+  }
+  .pono-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    left: 20px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 8px solid #fff;
+  }
+  @keyframes pono-bubble-pop {
+    0%, 68%  { opacity: 0; transform: scale(0.5); }
+    73%      { opacity: 1; transform: scale(1.15); }
+    76%, 86% { opacity: 1; transform: scale(1); }
+    91%      { opacity: 0; transform: scale(0.5); }
+    100%     { opacity: 0; }
+  }
   .streak-badge { left: auto; right: 10px; bottom: 10px; }
 }
 </style>
@@ -548,6 +585,7 @@ html, body {
 
   <div class="right-col">
     <div class="trace-area">
+      <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
       <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
       <div class="canvas-wrap">
         <div class="hedgehog-wrap">
@@ -1277,17 +1315,20 @@ btnNext.addEventListener('click', () => {
   loadCharacter();
 });
 
-// ===== Hedgehog speech bubble =====
-const HEDGEHOG_MSGS = [
+// ===== Character speech bubble =====
+const CHEER_MSGS = [
   'がんばれー！', 'いいね！', 'じょうず！', 'もうすこし！',
   'すごーい！', 'ファイト！', 'できるよ！', 'そのちょうし！',
   'いいかんじ！', 'がんばってね！',
 ];
-let _hedgeMsgIdx = 0;
+let _cheerMsgIdx = 0;
 const _hedgeBubble = document.getElementById('hedgehogBubble');
+const _ponoBubble = document.getElementById('ponoBubble');
 setInterval(() => {
-  _hedgeMsgIdx = (_hedgeMsgIdx + 1) % HEDGEHOG_MSGS.length;
-  _hedgeBubble.textContent = HEDGEHOG_MSGS[_hedgeMsgIdx];
+  _cheerMsgIdx = (_cheerMsgIdx + 1) % CHEER_MSGS.length;
+  const msg = CHEER_MSGS[_cheerMsgIdx];
+  _hedgeBubble.textContent = msg;
+  _ponoBubble.textContent = msg;
 }, 18000);
 
 // ===== Init =====
