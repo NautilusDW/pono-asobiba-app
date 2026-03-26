@@ -855,6 +855,7 @@ function showMilestone(count) {
   document.getElementById('milestone-count').textContent = `🔥 ${count}れんぞく！`;
   document.getElementById('milestone-title').textContent = data.title;
   document.getElementById('milestone-msg').textContent = data.msg;
+  alignOverlayToCanvas(modal);
   modal.classList.remove('hidden');
 
   // タップでも自動でも閉じる
@@ -949,6 +950,7 @@ function playStrokeSound() {
 
 // ===== Confetti =====
 function launchConfetti() {
+  alignOverlayToCanvas(confettiContainer);
   const colors = ['#FF6B9D', '#60A5FA', '#C084FC', '#4ADE80', '#FBBF24', '#F87171', '#34D399'];
   for (let i = 0; i < 50; i++) {
     const piece = document.createElement('div');
@@ -1048,9 +1050,25 @@ function showWordCard() {
   }, 3500);
 }
 
+// 横向き: オーバーレイをキャンバス中央に限定
+function alignOverlayToCanvas(el) {
+  if (landscapeMQ.matches) {
+    const r = canvasContainer.getBoundingClientRect();
+    el.style.inset = 'auto';
+    el.style.left = r.left + 'px';
+    el.style.top = r.top + 'px';
+    el.style.width = r.width + 'px';
+    el.style.height = r.height + 'px';
+  } else {
+    el.style.inset = '0';
+    el.style.left = el.style.top = el.style.width = el.style.height = '';
+  }
+}
+
 function showCompletion() {
   playSuccessSound();
   launchConfetti();
+  alignOverlayToCanvas(completionOverlay);
   completionOverlay.classList.add('show');
   setTimeout(() => completionOverlay.classList.remove('show'), 2000);
 
