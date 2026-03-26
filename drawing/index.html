@@ -82,13 +82,13 @@ html, body {
 /* ===== Color Palette ===== */
 .color-palette {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   flex-shrink: 0;
   justify-content: center;
   flex-wrap: wrap;
 }
 .color-btn {
-  width: 38px; height: 38px;
+  width: 42px; height: 42px;
   border-radius: 50%;
   border: 3px solid transparent;
   cursor: pointer;
@@ -106,7 +106,7 @@ html, body {
 /* ===== Toolbar ===== */
 .toolbar {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -114,7 +114,7 @@ html, body {
 
 /* Brush size section */
 .size-section {
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; gap: 8px;
   flex-shrink: 0;
 }
 .size-label {
@@ -131,7 +131,7 @@ html, body {
   flex-shrink: 0;
   padding: 0;
   box-shadow: var(--shadow);
-  width: 42px; height: 38px;
+  width: 46px; height: 42px;
 }
 .size-btn.active {
   border-color: var(--primary);
@@ -416,8 +416,8 @@ html, body {
     height: calc(100dvh - 60px);
     min-height: 0;
     max-height: calc(100dvh - 60px);
-    max-width: calc(100vw - 200px);
-    margin-top: 48px;
+    max-width: calc(100vw - 220px);
+    margin: 48px auto 0;
   }
   /* Right sidebar */
   .sidebar-wrap {
@@ -434,6 +434,7 @@ html, body {
     background: rgba(255,248,231,0.95);
     border-left: 2px solid #FDE68A;
     scrollbar-width: none;
+    margin-left: auto;
   }
   .sidebar-wrap::-webkit-scrollbar { display: none; }
   .toolbar-top {
