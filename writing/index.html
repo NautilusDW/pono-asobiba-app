@@ -926,25 +926,29 @@ function launchConfetti() {
 }
 
 // ===== Word Card + TTS =====
+let _currentWordAudio = null;
 function speakWord(char, word) {
+  // 前の音声を停止してから再生
+  if (_currentWordAudio) { _currentWordAudio.pause(); _currentWordAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
   if (currentCategory === 'hiragana') {
     const idx = CATEGORIES.hiragana.chars.indexOf(char);
     if (idx >= 0 && idx <= 44) {
-      const audio = new Audio('../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav');
-      audio.play().catch(() => _speakFallback(char, word));
+      _currentWordAudio = new Audio('../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav');
+      _currentWordAudio.play().catch(() => _speakFallback(char, word));
       return;
     }
     if (idx === 45) {
-      const audio = new Audio('../assets/voices/katakana/45-katakana.wav');
-      audio.play().catch(() => _speakFallback(char, word));
+      _currentWordAudio = new Audio('../assets/voices/katakana/45-katakana.wav');
+      _currentWordAudio.play().catch(() => _speakFallback(char, word));
       return;
     }
   }
   if (currentCategory === 'katakana') {
     const idx = CATEGORIES.katakana.chars.indexOf(char);
     if (idx >= 0 && idx <= 45) {
-      const audio = new Audio('../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav');
-      audio.play().catch(() => _speakFallback(char, word));
+      _currentWordAudio = new Audio('../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav');
+      _currentWordAudio.play().catch(() => _speakFallback(char, word));
       return;
     }
   }
@@ -998,7 +1002,8 @@ function showCompletion() {
   streak++;
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
-  setTimeout(showWordCard, 500);
+  // 成功音が鳴り終わるのを待ってからワードカード音声を再生（重なり防止）
+  setTimeout(showWordCard, 1200);
 
   // ポイント付与
   awardPoints(2);
