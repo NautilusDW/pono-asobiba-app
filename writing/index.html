@@ -398,11 +398,18 @@ html, body {
 }
 .row-tabs { display: none; }
 .pono-bubble { display: none; }
+/* Progress hint */
+.progress-hint {
+  font-size: 0.7rem; font-weight: 700; color: var(--primary);
+  text-align: center; padding: 2px 0; flex-shrink: 0;
+}
+.progress-hint:empty { display: none; }
 /* Portrait ordering */
 .header { order: 1; }
 .category-tabs { order: 2; }
 .char-selector { order: 3; }
 .controls { order: 4; }
+.progress-hint { order: 4; }
 .trace-area { order: 5; }
 .next-row { order: 10; }
 
@@ -525,7 +532,7 @@ html, body {
   .pono-bubble {
     display: block;
     position: absolute;
-    bottom: 100px; left: 10px;
+    bottom: 120px; left: 10px;
     background: #fff;
     border-radius: 16px;
     padding: 5px 12px;
@@ -556,7 +563,8 @@ html, body {
     91%      { opacity: 0; transform: scale(0.5); }
     100%     { opacity: 0; }
   }
-  .streak-badge { left: auto; right: 10px; bottom: auto; top: 6px; }
+  .progress-hint { display: none; }
+  .streak-badge { left: auto; right: 8px; bottom: 8px; top: auto; transform: none; }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -589,6 +597,7 @@ html, body {
   </div>
 
   <div class="right-col">
+    <div class="progress-hint" id="progressHint"></div>
     <div class="trace-area">
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
       <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
@@ -936,10 +945,31 @@ function launchConfetti() {
 
 // ===== Word Card + TTS =====
 let _currentWordAudio = null;
+// iOS: ユーザージェスチャー中にAudioを生成+load しておく
+function _preloadWordAudio() {
+  const char = CATEGORIES[currentCategory].chars[currentCharIndex];
+  let url = null;
+  if (currentCategory === 'hiragana') {
+    const idx = CATEGORIES.hiragana.chars.indexOf(char);
+    if (idx >= 0 && idx <= 44) url = '../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav';
+    else if (idx === 45) url = '../assets/voices/katakana/45-katakana.wav';
+  } else if (currentCategory === 'katakana') {
+    const idx = CATEGORIES.katakana.chars.indexOf(char);
+    if (idx >= 0 && idx <= 45) url = '../assets/voices/katakana/' + String(idx).padStart(2, '0') + '-katakana.wav';
+  }
+  if (url) {
+    _currentWordAudio = new Audio(url);
+    _currentWordAudio.load();
+  }
+}
 function speakWord(char, word) {
-  // 前の音声を停止してから再生
-  if (_currentWordAudio) { _currentWordAudio.pause(); _currentWordAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
+  // プリロード済みのAudioがあればそれを再生
+  if (_currentWordAudio) {
+    _currentWordAudio.currentTime = 0;
+    _currentWordAudio.play().catch(() => _speakFallback(char, word));
+    return;
+  }
   if (currentCategory === 'hiragana') {
     const idx = CATEGORIES.hiragana.chars.indexOf(char);
     if (idx >= 0 && idx <= 44) {
@@ -1011,8 +1041,11 @@ function showCompletion() {
   streak++;
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
-  // 成功音が鳴り終わるのを待ってからワードカード音声を再生（重なり防止）
+  // 音声を先にロード（ユーザージェスチャー中にAudio生成しないとiOSで鳴らない）
+  _preloadWordAudio();
   setTimeout(showWordCard, 1200);
+
+  updateProgressHint();
 
   // ポイント付与
   awardPoints(2);
@@ -1030,6 +1063,22 @@ function showCompletion() {
   if (done >= total && !localStorage.getItem(bonusKey)) {
     localStorage.setItem(bonusKey, '1');
     awardPoints(20);
+  }
+}
+
+// ===== Progress hint (portrait: above canvas) =====
+function updateProgressHint() {
+  const el = document.getElementById('progressHint');
+  if (!el) return;
+  const stamps = loadStamps();
+  const total = CATEGORIES[currentCategory].chars.length;
+  const done = Object.keys(stamps[currentCategory]).length;
+  const remaining = total - done;
+  const catName = currentCategory === 'hiragana' ? 'ひらがな' : 'カタカナ';
+  if (remaining <= 0) {
+    el.textContent = `🎉 ${catName}マスター！`;
+  } else {
+    el.textContent = `あと ${remaining}もじで ${catName}マスター！`;
   }
 }
 
@@ -1285,6 +1334,7 @@ categoryTabs.addEventListener('click', (e) => {
   buildRowTabs();
   buildCharSelector();
   loadCharacter();
+  updateProgressHint();
 });
 
 // ===== Orientation change — force viewport recalc =====
@@ -1383,6 +1433,7 @@ setInterval(() => {
 buildRowTabs();
 buildCharSelector();
 loadCharacter();
+updateProgressHint();
 
 // ===== Public API for future AI character integration =====
 window.KidsTraceApp = {
