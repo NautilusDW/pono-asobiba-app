@@ -171,8 +171,8 @@ html, body {
   flex-shrink: 0;
 }
 .tool-btn:active { transform: scale(0.93); }
-.btn-eraser        { background: #FEE2E2; color: #EF4444; }
-.btn-eraser.active { background: #EF4444; color: #fff; }
+.icon-btn.btn-eraser        { background: #FEE2E2; }
+.icon-btn.btn-eraser.active { background: #EF4444; }
 .btn-undo          { background: #FEF3C7; color: #D97706; }
 .btn-clear         { background: #FEE2E2; color: #EF4444; }
 .btn-save          { background: linear-gradient(135deg, #4ADE80, #34D399); color: #fff; }
@@ -415,20 +415,22 @@ html, body {
 /* ===== Landscape layout ===== */
 @media (orientation: landscape) {
   #app {
-    flex-direction: row;
+    flex-direction: column;
+    align-items: center;
     max-width: none;
     padding: 6px;
+    padding-right: 146px;
     gap: 0;
   }
   .header { display: none; }
   .canvas-wrap {
-    flex: 1;
     height: calc(100dvh - 60px);
     min-height: 0;
     max-height: calc(100dvh - 60px);
-    max-width: calc(100vw - 220px);
-    margin: 48px auto 0;
-    margin-right: 150px;
+    width: calc(100vw - 240px);
+    max-width: calc(100vw - 240px);
+    margin-top: 48px;
+    flex-shrink: 0;
   }
   /* Right sidebar */
   .sidebar-wrap {
@@ -454,7 +456,7 @@ html, body {
   .toolbar-top {
     position: fixed;
     top: 10px;
-    left: 50%;
+    left: calc((100vw - 146px) / 2);
     transform: translateX(-50%);
     z-index: 100;
     gap: 4px;
@@ -488,11 +490,6 @@ html, body {
   }
   .size-label { display: none; }
   .size-btn { width: 36px; height: 32px; }
-  .tool-btn.btn-eraser {
-    font-size: 0.7rem;
-    padding: 6px 6px;
-    width: 100%;
-  }
   .icon-btn { width: 42px; height: 42px; }
   .stamp-panel {
     position: absolute;
@@ -556,9 +553,9 @@ html, body {
         <button class="size-btn active" data-size="14"><span class="size-line size-line-m"></span></button>
         <button class="size-btn" data-size="28"><span class="size-line size-line-l"></span></button>
       </div>
-      <button class="tool-btn btn-eraser" id="btnEraser"><img src="../assets/images/icons/icons_004.png" class="tool-icon" alt="">けしゴム</button>
     </div>
     <div class="toolbar">
+      <button class="icon-btn btn-eraser"  id="btnEraser" title="けしゴム"><img src="../assets/images/icons/icons_004.png" class="tool-icon-round" alt="けしゴム"></button>
       <button class="icon-btn btn-stamp"   id="btnStamp" title="スタンプ"><img src="../assets/images/icons/icons2_003.png" class="tool-icon-round" alt="スタンプ"></button>
       <button class="icon-btn btn-rainbow" id="btnRainbow" title="レインボー"><img src="../assets/images/icons/icons_001.png" class="tool-icon-round" alt="🌈"></button>
       <button class="icon-btn btn-sparkle" id="btnSparkle" title="きらきら"><img src="../assets/images/icons/kirakira.png" class="tool-icon-round" alt="✨"></button>
@@ -600,7 +597,6 @@ const COLORS = [
   '#92400E', // dark brown
   '#78716C', // gray-brown
   '#1C1917', // black
-  '#FFFFFF', // white
 ];
 
 const palette = document.getElementById('colorPalette');
