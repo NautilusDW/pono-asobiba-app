@@ -50,7 +50,7 @@ html, body {
 }
 
 /* ===== Header ===== */
-.header { text-align: center; padding: 8px 0; flex-shrink: 0; position: relative; }
+.header { text-align: center; padding: 4px 0; flex-shrink: 0; position: relative; }
 .header h1 {
   font-size: 1.4rem; font-weight: 900;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -113,7 +113,7 @@ html, body {
 /* ===== Category Tabs ===== */
 .category-tabs {
   display: flex; gap: 6px; justify-content: center;
-  margin: 8px 0; flex-shrink: 0; flex-wrap: wrap;
+  margin: 4px 0; flex-shrink: 0; flex-wrap: wrap;
 }
 .category-tab {
   padding: 8px 16px; border: none; border-radius: 30px;
@@ -387,6 +387,11 @@ html, body {
 .word-card-first { color: var(--primary); }
 .word-card-note  { font-size: 1.1rem; font-weight: 700; color: var(--text-muted, #888); }
 
+/* ===== Portrait: left-col/right-col are transparent wrappers ===== */
+.left-col, .right-col {
+  display: contents;
+}
+
 /* ===== Responsive ===== */
 @media (max-height: 600px) {
   .header h1 { font-size: 1.1rem; }
@@ -396,6 +401,56 @@ html, body {
   .char-btn { min-width: 36px; height: 36px; font-size: 0.95rem; }
   .controls { padding: 6px 0; }
 }
+
+/* ===== Landscape layout ===== */
+@media (orientation: landscape) {
+  #app {
+    flex-direction: row;
+    max-width: 100%;
+    padding: 4px 12px;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  /* Left column: header + tabs + chars */
+  .left-col {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+    flex-shrink: 0; width: auto;
+    max-height: 100dvh; overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .left-col::-webkit-scrollbar { display: none; }
+  .header { padding: 2px 0; }
+  .header h1 { font-size: 1rem; }
+  .header .subtitle { display: none; }
+  .category-tabs { margin: 2px 0; gap: 4px; }
+  .category-tab { padding: 4px 10px; font-size: 0.75rem; }
+  .char-selector {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px; padding: 2px;
+    overflow-x: visible; overflow-y: auto;
+    max-height: none;
+  }
+  .char-btn { min-width: 34px; height: 34px; font-size: 0.9rem; }
+  /* Right column: canvas + controls */
+  .right-col {
+    display: flex; flex-direction: column;
+    align-items: center;
+    flex: 1; min-width: 0;
+    gap: 2px;
+  }
+  .trace-area { flex: 0; }
+  .canvas-container {
+    width: min(45vh, 280px); height: min(45vh, 280px);
+    max-width: 280px; max-height: 280px;
+  }
+  .controls { padding: 2px 0; }
+  .ctrl-btn { padding: 6px 14px; font-size: 0.8rem; }
+  .next-row { padding: 2px 0; }
+  .pono-deco { width: 52px; bottom: -35px; left: calc(50% - min(22.5vh, 140px)); }
+  .hedgehog-wrap { width: 60px; bottom: calc(100% - 20px); }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -403,40 +458,44 @@ html, body {
 <audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
 
 <div id="app">
-  <div class="header">
-    <h1>ポノのもじかき</h1>
-    <div class="subtitle">ゆびでなぞってみよう！</div>
-    <div id="streak-badge" class="streak-badge hidden"></div>
+  <div class="left-col">
+    <div class="header">
+      <h1>ポノのもじかき</h1>
+      <div class="subtitle">ゆびでなぞってみよう！</div>
+      <div id="streak-badge" class="streak-badge hidden"></div>
+    </div>
+
+    <div class="category-tabs" id="categoryTabs">
+      <button class="category-tab active" data-cat="hiragana">ひらがな</button>
+      <button class="category-tab" data-cat="katakana">カタカナ</button>
+    </div>
+
+    <div class="char-selector" id="charSelector"></div>
   </div>
 
-  <div class="category-tabs" id="categoryTabs">
-    <button class="category-tab active" data-cat="hiragana">ひらがな</button>
-    <button class="category-tab" data-cat="katakana">カタカナ</button>
-  </div>
+  <div class="right-col">
+    <div class="controls">
+      <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
+      <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
+    </div>
 
-  <div class="char-selector" id="charSelector"></div>
-
-  <div class="controls">
-    <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
-    <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
-  </div>
-
-  <div class="trace-area">
-    <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
-    <div class="canvas-wrap">
-      <div class="hedgehog-wrap">
-        <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
-        <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="ハリネズミ">
-      </div>
-      <div class="canvas-container" id="canvasContainer">
-        <div id="writerTarget"></div>
-        <div class="stroke-number-overlay" id="strokeNumbers"></div>
+    <div class="trace-area">
+      <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
+      <div class="canvas-wrap">
+        <div class="hedgehog-wrap">
+          <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
+          <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="ハリネズミ">
+        </div>
+        <div class="canvas-container" id="canvasContainer">
+          <div id="writerTarget"></div>
+          <div class="stroke-number-overlay" id="strokeNumbers"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="next-row">
-    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+    <div class="next-row">
+      <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+    </div>
   </div>
 </div>
 
