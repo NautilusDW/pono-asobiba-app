@@ -81,9 +81,9 @@
     }
     .sel-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
       gap: 10px;
-      width: 100%; max-width: 480px;
+      width: 100%; max-width: 580px;
     }
     .sel-card {
       background: rgba(255,255,255,0.12);
@@ -129,6 +129,29 @@
       transition: transform 0.1s;
     }
     .sel-start-btn:active { transform: scale(0.94); }
+    /* Creature selector section in selection screen */
+    .sel-section-title {
+      font-size: 0.95rem; font-weight: 900; color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      margin: 16px 0 8px; width: 100%; max-width: 580px;
+    }
+    .creature-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; max-width: 580px;
+    }
+    .creature-toggle {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(56,189,248,0.25); border: 2px solid rgba(56,189,248,0.5);
+      border-radius: 12px; padding: 6px 12px;
+      color: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s, border-color 0.15s;
+      touch-action: manipulation;
+    }
+    .creature-toggle.off {
+      opacity: 0.35; border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+    }
+    .creature-toggle-icon { font-size: 1.2rem; }
     .sel-back-btn {
       position: absolute; top: 14px; left: 14px;
       background: rgba(255,255,255,0.15);
@@ -153,45 +176,55 @@
     #intro-overlay {
       position: fixed; inset: 0; z-index: 500;
       background: linear-gradient(180deg, #062044 0%, #0a4a6e 50%, #0d6080 100%);
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: row;
       align-items: center; justify-content: center;
-      padding: 24px;
-      text-align: center;
+      gap: 40px;
+      padding: 24px 48px;
       font-family: 'Zen Maru Gothic', sans-serif;
       transition: opacity 0.4s;
     }
     #intro-overlay.hidden { opacity: 0; pointer-events: none; }
-    .intro-icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .intro-left {
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      flex-shrink: 0;
+    }
+    .intro-icon { font-size: 4rem; margin-bottom: 8px; }
     .intro-title {
-      font-size: 1.4rem; font-weight: 900; color: #fff;
+      font-size: 1.8rem; font-weight: 900; color: #fff;
       text-shadow: 0 2px 8px rgba(0,0,0,0.5);
       margin-bottom: 6px;
     }
     .intro-subtitle {
-      font-size: 0.85rem; font-weight: 700;
+      font-size: 1rem; font-weight: 700;
       color: rgba(255,255,255,0.75);
-      margin-bottom: 20px;
+      margin-bottom: 0;
+    }
+    .intro-right {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px;
     }
     .intro-tips {
       background: rgba(255,255,255,0.1);
       border-radius: 20px;
-      padding: 16px 20px;
-      max-width: 340px;
-      width: 100%;
+      padding: 16px 28px;
       text-align: left;
-      margin-bottom: 24px;
     }
     .intro-tip {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 0.8rem; font-weight: 700;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 1.05rem; font-weight: 700;
       color: rgba(255,255,255,0.9);
       line-height: 1.5;
       margin-bottom: 10px;
+      white-space: nowrap;
     }
     .intro-tip:last-child { margin-bottom: 0; }
-    .intro-tip-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .intro-tip-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .intro-buttons {
+      display: flex; gap: 12px; align-items: center;
+    }
     .intro-start {
-      padding: 14px 40px; border: none; border-radius: 50px;
+      padding: 14px 36px; border: none; border-radius: 50px;
       background: linear-gradient(135deg, #22D3EE, #3B82F6);
       color: #fff; font-family: inherit;
       font-size: 1.1rem; font-weight: 900;
@@ -200,6 +233,14 @@
       transition: transform 0.15s;
     }
     .intro-start:active { transform: scale(0.95); }
+    .intro-config-btn {
+      padding: 14px 28px; border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 50px; background: rgba(255,255,255,0.1);
+      color: #fff; font-family: inherit;
+      font-size: 1rem; font-weight: 900;
+      cursor: pointer; transition: transform 0.15s, background 0.15s;
+    }
+    .intro-config-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
 
     /* Portrait rotation prompt */
     #portrait-overlay {
@@ -340,20 +381,27 @@
   </div>
   <!-- Intro overlay -->
   <div id="intro-overlay">
-    <div class="intro-icon">🐠</div>
-    <div class="intro-title">うみのせかい</div>
-    <div class="intro-subtitle">あつめた いきものたちを ながめよう！</div>
-    <div class="intro-tips">
-      <div class="intro-tip">
-        <span class="intro-tip-icon">🎮</span>
-        <span>ほかのゲームで あそぶと<br>いきものが もらえるよ！</span>
+    <div class="intro-left">
+      <div class="intro-icon">🐠</div>
+      <div class="intro-title">うみのせかい</div>
+      <div class="intro-subtitle">あつめた いきものたちを ながめよう！</div>
+    </div>
+    <div class="intro-right">
+      <div class="intro-tips">
+        <div class="intro-tip">
+          <span class="intro-tip-icon">🎮</span>
+          <span>ゲームで あそぶと いきものが もらえるよ！</span>
+        </div>
+        <div class="intro-tip">
+          <span class="intro-tip-icon">🎨</span>
+          <span>おえかきの えも うみで およがせられるよ！</span>
+        </div>
       </div>
-      <div class="intro-tip">
-        <span class="intro-tip-icon">🎨</span>
-        <span>おえかきで かいた えも<br>うみで およがせられるよ！</span>
+      <div class="intro-buttons">
+        <button class="intro-start" id="introStartBtn">うみを みる 🌊</button>
+        <button class="intro-config-btn" id="introConfigBtn">🎨 おえかき設定</button>
       </div>
     </div>
-    <button class="intro-start" id="introStartBtn">うみを みる 🌊</button>
   </div>
 
   <!-- In-aquarium tutorial hints -->
@@ -362,7 +410,7 @@
     <div class="tut-hint-text">いきものを タップしてみよう！<br>リアクションするよ</div>
   </div>
   <div class="tut-hint tut-hint-feed" id="tutFeed">
-    <div class="tut-hint-arrow" id="tutFeedArrow">↗</div>
+    <div class="tut-hint-arrow" id="tutFeedArrow">↘</div>
     <div class="tut-hint-text">🍞を おしてから<br>うみを タッチすると<br>エサが おちるよ！</div>
   </div>
 
@@ -377,9 +425,19 @@
   <!-- Selection screen -->
   <div id="selection-screen">
     <button class="sel-back-btn" id="btnSelBack">← もどる</button>
-    <div class="sel-title">🌊 うみのせかい</div>
-    <div class="sel-subtitle">えをえらんで、うごきをきめよう！</div>
+    <div class="sel-title">🎨 おえかき設定</div>
+    <div class="sel-subtitle">うみに いれる えと うごきかたを えらぼう！</div>
     <div id="selGrid" class="sel-grid"></div>
+    <div class="sel-section-title">🐟 うみの いきもの</div>
+    <div class="creature-grid" id="creatureGrid">
+      <button class="creature-toggle" data-creature="octopus"><span class="creature-toggle-icon">🐙</span>タコ</button>
+      <button class="creature-toggle" data-creature="jellyfish"><span class="creature-toggle-icon">🪼</span>クラゲ</button>
+      <button class="creature-toggle" data-creature="turtle"><span class="creature-toggle-icon">🐢</span>ウミガメ</button>
+      <button class="creature-toggle" data-creature="fish"><span class="creature-toggle-icon">🐠</span>さかな</button>
+      <button class="creature-toggle" data-creature="submarine"><span class="creature-toggle-icon">🛥️</span>せんすいかん</button>
+      <button class="creature-toggle" data-creature="sunfish"><span class="creature-toggle-icon">🐡</span>マンボウ</button>
+      <button class="creature-toggle" data-creature="shark"><span class="creature-toggle-icon">🦈</span>サメ</button>
+    </div>
     <button id="btnStart" class="sel-start-btn">はじめる！🐠</button>
   </div>
 
@@ -1536,6 +1594,28 @@
       drift:    '🌊 ながれる',
     };
 
+    // ─── Quick start (skip selection, use saved patterns) ────
+    async function quickStartAquarium() {
+      tryStartBgm();
+      if (_rocksReady) await _rocksReady;
+
+      let raw = [];
+      try { raw = JSON.parse(localStorage.getItem('pono_drawings') || '[]'); } catch(e) {}
+      const savedPats = loadSavedPatterns();
+
+      if (raw.length > 0) {
+        const items = raw.map((d, i) => {
+          const dataUrl = d.dataUrl || d;
+          return { dataUrl, pattern: savedPats[dataUrl.slice(0, 120)] || PATTERNS[i % PATTERNS.length] };
+        });
+        const canvases = await Promise.all(items.map(d => removeWhiteBg(d.dataUrl)));
+        canvases.forEach((cv, i) => createCreatureWithPattern(cv, items[i].pattern));
+      }
+
+      addSelectedCreatures();
+      initTutorial();
+    }
+
     // ─── Selection screen ───────────────────────────────────
     let selectionData = []; // [{dataUrl, pattern, selected}]
 
@@ -1547,14 +1627,7 @@
         // No drawings → go straight with ocean sprite creatures
         document.getElementById('selection-screen').classList.add('hidden');
         if (_rocksReady) _rocksReady.then(() => {
-          addOctopusCreatures(3);
-          addJellyfishCreatures(3);
-          addTurtleCreatures(2);
-          addFishS01Creatures(4);
-          addSubmarineCreatures(1);
-          addSunfishCreatures(1);
-          addSharkCreatures(1);
-          assignHiders(2);
+          addSelectedCreatures();
           initTutorial();
         });
         return;
@@ -1603,6 +1676,42 @@
       });
     }
 
+    // ─── Creature toggle state ────────────────────────────
+    const CREATURE_STORE_KEY = 'aquarium_creatures';
+    const ALL_CREATURE_TYPES = ['octopus','jellyfish','turtle','fish','submarine','sunfish','shark'];
+    let creatureToggles = {};
+    try {
+      creatureToggles = JSON.parse(localStorage.getItem(CREATURE_STORE_KEY) || '{}');
+    } catch(e) {}
+    // Default: all on
+    ALL_CREATURE_TYPES.forEach(t => { if (creatureToggles[t] === undefined) creatureToggles[t] = true; });
+
+    function saveCreatureToggles() {
+      localStorage.setItem(CREATURE_STORE_KEY, JSON.stringify(creatureToggles));
+    }
+
+    // Init toggle buttons
+    document.querySelectorAll('.creature-toggle').forEach(btn => {
+      const type = btn.dataset.creature;
+      if (!creatureToggles[type]) btn.classList.add('off');
+      btn.addEventListener('click', () => {
+        creatureToggles[type] = !creatureToggles[type];
+        btn.classList.toggle('off', !creatureToggles[type]);
+        saveCreatureToggles();
+      });
+    });
+
+    function addSelectedCreatures() {
+      if (creatureToggles.octopus) addOctopusCreatures(3);
+      if (creatureToggles.jellyfish) addJellyfishCreatures(3);
+      if (creatureToggles.turtle) addTurtleCreatures(2);
+      if (creatureToggles.fish) addFishS01Creatures(4);
+      if (creatureToggles.submarine) addSubmarineCreatures(1);
+      if (creatureToggles.sunfish) addSunfishCreatures(1);
+      if (creatureToggles.shark) addSharkCreatures(1);
+      assignHiders(2);
+    }
+
     document.getElementById('btnSelBack').addEventListener('click', () => {
       if (history.length > 1) history.back();
       else location.href = '../index.html';
@@ -1620,28 +1729,12 @@
       // Ensure all sprite textures are loaded before creating creatures
       if (_rocksReady) await _rocksReady;
       const chosen = selectionData.filter(d => d.selected);
-      if (chosen.length === 0) {
-        assignHiders(2);
-        addOctopusCreatures(3);
-        addJellyfishCreatures(3);
-        addTurtleCreatures(2);
-        addFishS01Creatures(4);
-        addSubmarineCreatures(1);
-        addSunfishCreatures(1);
-        addSharkCreatures(1);
-        initTutorial();
-        return;
+      if (chosen.length > 0) {
+        const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
+        canvases.forEach((cv, i) => createCreatureWithPattern(cv, chosen[i].pattern));
       }
-      const canvases = await Promise.all(chosen.map(d => removeWhiteBg(d.dataUrl)));
-      canvases.forEach((cv, i) => createCreatureWithPattern(cv, chosen[i].pattern));
-      assignHiders(2);
-      addOctopusCreatures(3);
-      addJellyfishCreatures(3);
-      addTurtleCreatures(2);
-      addFishS01Creatures(4);
-      addSubmarineCreatures(1);
-      addSunfishCreatures(1);
-      addSharkCreatures(1);
+      saveCreatureToggles();
+      addSelectedCreatures();
       initTutorial();
     });
 
@@ -1662,14 +1755,7 @@
       }
       // Add ocean sprite creatures
       if (_rocksReady) await _rocksReady;
-      addOctopusCreatures(3);
-      addJellyfishCreatures(3);
-      addTurtleCreatures(2);
-      addFishS01Creatures(4);
-      addSubmarineCreatures(1);
-      addSunfishCreatures(1);
-      addSharkCreatures(1);
-      assignHiders(2);
+      addSelectedCreatures();
     }
 
     // canvas: HTMLCanvasElement (dimensions always available synchronously)
@@ -2937,7 +3023,9 @@
           const dx = c.obj.x - px, dy = c.obj.y - py;
           const d = Math.sqrt(dx*dx + dy*dy);
           if (d < c.baseSize * 0.7) { hitDirect = true; onCreatureTapped(); }
-          if (d >= r) return;
+          // サメ・マンボウは体に近いときだけ反応（大きいので遠距離反応させない）
+          const effR = (c.sunfishsprite || c.sharksprite) ? c.baseSize * 1.0 : r;
+          if (d >= effR) return;
           switch (c.panicStyle) {
             case 'flee': default: {
               const angle = Math.atan2(dy, dx);
@@ -3121,12 +3209,27 @@
 
       // イントロ画面の制御
       var introEl = document.getElementById('intro-overlay');
-      document.getElementById('introStartBtn').addEventListener('pointerdown', function(e) {
-        e.preventDefault();
+      function hideIntro() {
         introEl.classList.add('hidden');
         setTimeout(function() { introEl.style.display = 'none'; }, 400);
+      }
+      // 「うみを みる」→ 直接アクアリウムへ（前回の設定 or デフォルト）
+      document.getElementById('introStartBtn').addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        hideIntro();
+        quickStartAquarium();
+      });
+      // 「おえかき設定」→ 選択画面へ
+      document.getElementById('introConfigBtn').addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        hideIntro();
         showSelectionScreen();
       });
+      // おえかきがない場合はボタンを非表示
+      try {
+        var drawings = JSON.parse(localStorage.getItem('pono_drawings') || '[]');
+        if (drawings.length === 0) document.getElementById('introConfigBtn').style.display = 'none';
+      } catch(e) {}
     });
 
   })();
