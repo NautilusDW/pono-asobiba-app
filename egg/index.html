@@ -456,7 +456,7 @@
     // ─── BGM & Menu ──────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let bgmEnabled = true;
-    function toggleBgm() { bgmEnabled = !bgmEnabled; if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🎵' : '🔇'; }
+    function toggleBgm() { bgmEnabled = !bgmEnabled; if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled); }
     initMenu({ bgmToggle: toggleBgm });
 
     // ═══════════════════════════════════════════════════════════

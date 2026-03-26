@@ -50,6 +50,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     .pono-menu-btn:active { transform: scale(0.9); }
+    .pono-menu-btn.bgm-off { opacity: 0.4; filter: grayscale(1); }
 
     /* ── Confirm overlay ── */
     .pono-confirm-overlay {

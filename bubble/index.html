@@ -382,7 +382,8 @@ function switchBGMTrack() {
       // Cycled through all tracks → OFF
       bgmPlaying = false;
       bgmAudio = null;
-      document.getElementById('bgm-btn').textContent = '🔇';
+      const _b = document.getElementById('bgm-btn'); if (_b) _b.classList.add('bgm-off');
+      if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.add('bgm-off');
       return;
     }
     bgmCurrentTrack = nextTrack;
@@ -404,7 +405,8 @@ function switchBGMTrack() {
   }
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   bgmAudio.play().catch(() => {});
-  document.getElementById('bgm-btn').textContent = '🎵';
+  const _b2 = document.getElementById('bgm-btn'); if (_b2) _b2.classList.remove('bgm-off');
+  if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.remove('bgm-off');
 }
 
 // BGM will be started from start screen handler (not auto-gesture)

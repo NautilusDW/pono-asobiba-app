@@ -51,6 +51,9 @@ body {
   gap: 10px;
 }
 
+/* ===== BGM button ===== */
+.btn-bgm.bgm-off, .bgm-off { opacity: 0.4; filter: grayscale(1); }
+
 /* ===== Header ===== */
 .header {
   text-align: center;
@@ -1148,8 +1151,10 @@ bgm.volume = 0.2;
 
 function updateBgmIcon() {
   if (window._ponoMenuBgmBtn) {
-    window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🎵' : '🔇';
+    window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled);
   }
+  const localBtn = document.getElementById('btn-bgm');
+  if (localBtn) localBtn.classList.toggle('bgm-off', !bgmEnabled);
 }
 
 function tryStartBgm() {

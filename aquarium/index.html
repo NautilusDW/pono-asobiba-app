@@ -461,7 +461,7 @@
       bgmEnabled = !bgmEnabled;
       if (bgmEnabled) { tryStartBgm(); bgm.play().catch(() => {}); }
       else bgm.pause();
-      if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🎵' : '🔇';
+      if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled);
     }
     initMenu({ bgmToggle: toggleBgm });
     document.addEventListener('visibilitychange', () => {

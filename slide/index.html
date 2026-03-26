@@ -58,6 +58,7 @@ html, body {
   box-shadow: 0 2px 6px var(--shadow); transition: transform 0.15s;
 }
 .btn-bgm:active { transform: translateY(-50%) scale(0.9); }
+.btn-bgm.bgm-off { opacity: 0.4; filter: grayscale(1); }
 .btn-pause {
   position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
   width: 34px; height: 34px; border-radius: 50%;
@@ -156,7 +157,7 @@ html, body {
     <h1>おかあさんに あいにいこう！</h1>
     <p class="subtitle">みちを つなげて ポノを みちびこう</p>
     <button id="btn-pause" class="btn-pause">⏸</button>
-    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
+    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🎵</button>
   </div>
 
   <div class="hud">
@@ -1030,7 +1031,7 @@ let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
 bgm.volume = 0.2;
 
-function updateBgmBtn() { btnBgm.textContent = bgmEnabled ? '🔊' : '🔇'; }
+function updateBgmBtn() { btnBgm.classList.toggle('bgm-off', !bgmEnabled); }
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
@@ -1065,7 +1066,7 @@ initMenu({ bgmToggle: function() {
   localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
   if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
   updateBgmBtn();
-  if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.textContent = bgmEnabled ? '🔊' : '🔇';
+  if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled);
 }});
 curCols = LEVELS[0].cols;
 curRows = LEVELS[0].rows;
