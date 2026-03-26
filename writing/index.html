@@ -58,13 +58,14 @@ html, body {
 }
 .header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
 .streak-badge {
+  position: fixed; bottom: 10px; left: 10px; z-index: 10000;
   display: inline-block;
   background: linear-gradient(135deg, #FCD34D, #F97316);
   color: #fff;
-  font-size: 0.78rem; font-weight: 900;
-  padding: 2px 12px; border-radius: 20px;
-  margin-top: 3px;
+  font-size: 0.65rem; font-weight: 900;
+  padding: 2px 8px; border-radius: 14px;
   animation: stampPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
 }
 .streak-badge.hidden { display: none; }
 @keyframes stampPop {
@@ -160,7 +161,8 @@ html, body {
 /* ===== Tracing Area ===== */
 .trace-area {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; position: relative; min-height: 0;
+  align-items: center; justify-content: flex-end; position: relative; min-height: 0;
+  padding-bottom: 6px;
 }
 .canvas-container {
   position: relative;
@@ -192,7 +194,7 @@ html, body {
 
 /* ===== Controls ===== */
 .controls {
-  display: flex; gap: 8px; justify-content: center; padding: 10px 0; flex-shrink: 0;
+  display: flex; gap: 8px; justify-content: center; padding: 4px 0; flex-shrink: 0;
 }
 .ctrl-btn {
   padding: 10px 20px; border: none; border-radius: 30px;
@@ -413,6 +415,12 @@ html, body {
 
   <div class="char-selector" id="charSelector"></div>
 
+  <div class="controls">
+    <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
+    <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
+    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+  </div>
+
   <div class="trace-area">
     <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
     <div class="canvas-wrap">
@@ -425,12 +433,6 @@ html, body {
         <div class="stroke-number-overlay" id="strokeNumbers"></div>
       </div>
     </div>
-  </div>
-
-  <div class="controls">
-    <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
-    <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
-    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
   </div>
 </div>
 
