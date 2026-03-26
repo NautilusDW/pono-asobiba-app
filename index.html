@@ -43,6 +43,12 @@
   </script>
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ポノあそびば">
+  <meta name="theme-color" content="#F2915A">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
@@ -721,6 +727,11 @@
     // ===== Premium bonus for already-unlocked users =====
     if (localStorage.getItem('pono_premium') === '1' && window.grantPremiumBonus) {
       window.grantPremiumBonus();
+    }
+
+    // ===== PWA Service Worker =====
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
     }
 
   </script>
