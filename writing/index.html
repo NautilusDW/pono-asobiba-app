@@ -898,10 +898,12 @@ document.addEventListener('touchstart', unlockAudio, { passive: true });
 document.addEventListener('pointerdown', unlockAudio);
 
 // WebAudio経由で音声ファイルを再生（iOS HTML Audio制限を回避）
-const _voiceCache = {};
+const _voiceCache = {};    // url → AudioBuffer
+const _voiceFetch = {};    // url → Promise<AudioBuffer> (重複fetch防止)
 function playVoiceViaWebAudio(url, fallbackChar, fallbackWord) {
   const ac = getAudioCtx();
   if (ac.state === 'suspended') ac.resume();
+  // キャッシュ済みなら即再生
   if (_voiceCache[url]) {
     const src = ac.createBufferSource();
     src.buffer = _voiceCache[url];
@@ -909,15 +911,27 @@ function playVoiceViaWebAudio(url, fallbackChar, fallbackWord) {
     src.start(0);
     return;
   }
-  fetch(url).then(r => r.arrayBuffer()).then(buf => {
-    ac.decodeAudioData(buf, decoded => {
-      _voiceCache[url] = decoded;
-      const src = ac.createBufferSource();
-      src.buffer = decoded;
-      src.connect(ac.destination);
-      src.start(0);
-    });
+  // fetch中ならそのPromiseを待つ（二重fetchしない）
+  _fetchAndDecode(url, ac).then(decoded => {
+    const src = ac.createBufferSource();
+    src.buffer = decoded;
+    src.connect(ac.destination);
+    src.start(0);
   }).catch(() => { if (fallbackChar) _speakFallback(fallbackChar, fallbackWord); });
+}
+function _fetchAndDecode(url, ac) {
+  if (_voiceCache[url]) return Promise.resolve(_voiceCache[url]);
+  if (_voiceFetch[url]) return _voiceFetch[url];
+  _voiceFetch[url] = fetch(url)
+    .then(r => r.arrayBuffer())
+    .then(buf => new Promise((resolve, reject) => {
+      ac.decodeAudioData(buf, decoded => {
+        _voiceCache[url] = decoded;
+        delete _voiceFetch[url];
+        resolve(decoded);
+      }, reject);
+    }));
+  return _voiceFetch[url];
 }
 
 function playSuccessSound() {
@@ -982,13 +996,10 @@ function _getVoiceUrl(char) {
   return null;
 }
 function _preloadWordAudio() {
-  // WebAudio用: fetchしてキャッシュに入れておく
   const char = CATEGORIES[currentCategory].chars[currentCharIndex];
   const url = _getVoiceUrl(char);
   if (url && !_voiceCache[url]) {
-    fetch(url).then(r => r.arrayBuffer()).then(buf => {
-      getAudioCtx().decodeAudioData(buf, decoded => { _voiceCache[url] = decoded; });
-    }).catch(() => {});
+    _fetchAndDecode(url, getAudioCtx()).catch(() => {});
   }
 }
 function speakWord(char, word) {
@@ -1077,9 +1088,8 @@ function showCompletion() {
   streak++;
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
-  // 音声を先にロード（ユーザージェスチャー中にAudio生成しないとiOSで鳴らない）
   _preloadWordAudio();
-  setTimeout(showWordCard, 1200);
+  setTimeout(showWordCard, 800);
 
   updateProgressHint();
 
