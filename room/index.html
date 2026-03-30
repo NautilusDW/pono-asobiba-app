@@ -112,10 +112,14 @@
       pointer-events: none;
       cursor: default;
     }
-    /* 宝箱は通常モードでもタップ可能 */
+    /* 宝箱は通常モードでのみタップ可能、編集中は完全無効 */
     .room-area:not(.edit-mode) .toybox-item {
       pointer-events: auto;
       cursor: pointer;
+    }
+    .room-area.edit-mode .toybox-item {
+      pointer-events: none !important;
+      animation: none;
     }
     .room-area:not(.edit-mode) .btn-rotate { display: none; }
     @keyframes editWiggle {

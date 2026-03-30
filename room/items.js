@@ -362,8 +362,8 @@ const ROOM_ITEMS = [
     id: 'furn_chest_blue', cat: 'furn', name: 'あおいチェスト', price: 20, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/chest_blue_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/chest_blue_B.png',
-    gridRow: 5, gridCol: 2, cellSize: 2.1, pivotX: 11, pivotY: 21.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
-    angleB: { cellSize: 2.1, pivotX: -12.5, pivotY: 21.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
+    gridRow: 5, gridCol: 2, cellSize: 2.1, pivotX: 11, pivotY: 21.9, minRow: 1, maxRow: 7, minCol: 0, maxCol: 6,
+    angleB: { cellSize: 2.1, pivotX: -12.5, pivotY: 21.9, minRow: 0, maxRow: 6, minCol: 1, maxCol: 7 },
     surfaceY: -145, surfaceYB: -145,
   },
   {
