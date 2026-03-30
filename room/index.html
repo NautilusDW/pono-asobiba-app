@@ -121,7 +121,8 @@
       pointer-events: none !important;
       animation: none;
     }
-    .room-area:not(.edit-mode) .btn-rotate { display: none; }
+    .room-area:not(.edit-mode) .btn-rotate,
+    .room-area:not(.edit-mode) .btn-stow { display: none; }
     @keyframes editWiggle {
       /* filter で揺れ感を出す（transform は位置をずらすので使わない） */
       0% { filter: brightness(1.0); }
@@ -246,11 +247,10 @@
       height: 100%; width: auto; object-fit: contain;
     }
     /* Rotate button on placed items — 足元に固定表示 */
-    .btn-rotate {
-      position: absolute; bottom: 0; left: 50%;
-      transform: translate(-50%, 50%);
+    .btn-rotate, .btn-stow {
+      position: absolute; bottom: 0;
       width: 34px; height: 34px;
-      background: rgba(255,255,255,0.95); border: 2px solid #7ab;
+      background: rgba(255,255,255,0.95);
       border-radius: 50%; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       font-size: 18px; line-height: 1;
@@ -258,14 +258,26 @@
       opacity: 0; transition: opacity 0.2s;
       pointer-events: none;
     }
+    .btn-rotate {
+      left: 50%; transform: translate(-50%, 50%);
+      border: 2px solid #7ab;
+    }
+    .btn-stow {
+      left: calc(50% + 40px); transform: translate(-50%, 50%);
+      border: 2px solid #d97;
+      font-size: 15px;
+    }
     .item-placed:hover .btn-rotate,
-    .item-placed.show-rotate .btn-rotate {
+    .item-placed:hover .btn-stow,
+    .item-placed.show-rotate .btn-rotate,
+    .item-placed.show-rotate .btn-stow {
       opacity: 1; pointer-events: auto;
     }
     @media (pointer: coarse) {
-      .btn-rotate { opacity: 0.85; pointer-events: auto; }
+      .btn-rotate, .btn-stow { opacity: 0.85; pointer-events: auto; }
     }
     .btn-rotate:active { transform: translate(-50%, 50%) scale(0.85); }
+    .btn-stow:active { transform: translate(-50%, 50%) scale(0.85); }
 
     /* Shadow under floor items */
     .slot-shadow {
@@ -1460,6 +1472,26 @@ function _makeGridItem(p, areaId, locked) {
     el.appendChild(rotBtn);
   }
 
+  // しまうボタン（編集モード時、全家具・デコに表示）
+  if (!locked) {
+    const stowBtn = document.createElement('div');
+    stowBtn.className = 'btn-stow';
+    stowBtn.textContent = '📦';
+    const stowHandler = e => {
+      e.stopPropagation();
+      e.preventDefault();
+      const itm = getItem(el.dataset.itemId);
+      if (!itm) return;
+      const prevAreaId = currentAreaId;
+      currentAreaId = areaId;
+      unplaceItem(itm);
+      currentAreaId = prevAreaId;
+    };
+    stowBtn.addEventListener('click', stowHandler);
+    stowBtn.addEventListener('touchend', stowHandler);
+    el.appendChild(stowBtn);
+  }
+
   if (!locked) _addDragHandlers(el, areaId);
   return el;
 }
@@ -1491,6 +1523,25 @@ function _rotateItem(el, areaId) {
       _rotateItem(el, areaId);
     });
     el.appendChild(rotBtn);
+  }
+  // しまうボタン再追加
+  {
+    const stowBtn = document.createElement('div');
+    stowBtn.className = 'btn-stow';
+    stowBtn.textContent = '📦';
+    const stowHandler = e => {
+      e.stopPropagation();
+      e.preventDefault();
+      const itm = getItem(el.dataset.itemId);
+      if (!itm) return;
+      const prevAreaId = currentAreaId;
+      currentAreaId = areaId;
+      unplaceItem(itm);
+      currentAreaId = prevAreaId;
+    };
+    stowBtn.addEventListener('click', stowHandler);
+    stowBtn.addEventListener('touchend', stowHandler);
+    el.appendChild(stowBtn);
   }
   // stateに保存
   const cfg = state.config[areaId];
@@ -1775,7 +1826,7 @@ function buildRoomArea(areaData) {
     if (locked || !editMode) return;
     // floor・家具・デコ・宝箱・回転ボタンをクリックした場合は無視
     if (e.target.closest('.room-floor') || e.target.closest('.item-placed')
-        || e.target.closest('.btn-rotate') || e.target.closest('.toybox-item')) return;
+        || e.target.closest('.btn-rotate') || e.target.closest('.btn-stow') || e.target.closest('.toybox-item')) return;
     openInventory('wall');
   });
 
