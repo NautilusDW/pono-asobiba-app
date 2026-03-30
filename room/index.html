@@ -892,7 +892,7 @@
       <div id="ui-right">
         <div id="pts-disp" style="display:none;">&#x2B50; <span id="pts-num">0</span></div>
         <button id="ui-btn-edit">🏠 もようがえ</button>
-        <button id="ui-btn-takara"><img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" alt="">たからばこ</button>
+        <button id="ui-btn-takara"><img src="../assets/images/Rooms/furnitures_final/box_A.png" alt="">たからばこ</button>
         <button id="ui-btn-info">?</button>
       </div>
     </div>
@@ -1092,6 +1092,16 @@ function loadState() {
   if (!state.config.living.wall) state.config.living.wall = 'wall_navy';
   state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
   state.theme     = localStorage.getItem(LS.THEME) || null;
+  // 旧アイテムIDのマイグレーション
+  const ID_MIGRATION = { 'deco_toybox_pink': 'deco_box' };
+  state.inventory = state.inventory.map(id => ID_MIGRATION[id] || id);
+  for (const [, area] of Object.entries(state.config)) {
+    if (area && area.placed) {
+      for (const p of area.placed) {
+        if (ID_MIGRATION[p.id]) p.id = ID_MIGRATION[p.id];
+      }
+    }
+  }
   // 旧アイテムIDの掃除（存在しないものを除去）
   state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
   // 全アイテムを所持済みにする（テスト用）
@@ -1246,12 +1256,12 @@ function getFootprint(row, col, item, angle) {
 
 // ─── スタッキング定義 ─────────────────────────────────
 // 衝突を無視するアイテム（上に物を置ける）
-const PASSTHROUGH_IDS = new Set(['deco_rug_pink']);
+const PASSTHROUGH_IDS = new Set(['deco_rug_pink', 'deco_rug_space']);
 // デコを上に乗せられる家具（3段棚は除外）
 const SURFACE_IDS = new Set([
   'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
   'furn_toyshelf2', 'furn_desk2', 'furn_bed_pink', 'furn_desk_pink',
-  'furn_chest_pink',
+  'furn_chest_pink', 'furn_pcdesk', 'furn_chest_blue', 'deco_table_glass',
 ]);
 // 乗せられるアイテム（cat==='deco'のもの）
 function isStackableItem(item) { return item && item.cat === 'deco'; }
@@ -1835,10 +1845,10 @@ function buildRoomArea(areaData) {
     toybox.className = 'item-placed toybox-item';
     toybox.dataset.row = tbRow;
     toybox.dataset.col = tbCol;
-    // deco_toybox_pink と同じ cellSize:0.8, pivotX:11, pivotY:23.3
+    // deco_box と同じ cellSize:0.8, pivotX:15, pivotY:21.9
     const tbCellSize = 0.8;
-    const tbPivotX = 11;
-    const tbPivotY = 23.3;
+    const tbPivotX = 15;
+    const tbPivotY = 21.9;
     const tbHeight = (tbCellSize * GRID_CELL_PCT).toFixed(2);
     const tbCell = getGridCell(tbRow, tbCol);
     toybox.style.cssText = 'position:absolute;cursor:pointer;'
@@ -1848,7 +1858,7 @@ function buildRoomArea(areaData) {
       + 'display:flex;align-items:flex-end;justify-content:center;'
       + 'pointer-events:auto;'
       + 'transform:translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%);';
-    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/toybox_pink.png" style="height:100%;width:auto;" alt="たからばこ">';
+    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/box_A.png" style="height:100%;width:auto;" alt="たからばこ">';
 
     // ドラッグ（editモード）+ タップ（通常モードのみメニュー）
     const tbTransform = 'translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%)';
@@ -2561,8 +2571,8 @@ function selectRoomEgg(choice) {
   // Show entry overlay
   showEntryOverlay();
 
-  // Auto-place incubator in living room
-  placeEggIncubator();
+  // 育成シミュレーション: 一時非表示
+  // placeEggIncubator();
 }
 
 function needsEggStory() {

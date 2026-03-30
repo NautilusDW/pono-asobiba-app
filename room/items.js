@@ -235,14 +235,14 @@ const ROOM_ITEMS = [
     surfaceY: -149, surfaceYB: -145,
   },
 
-  // ══ たまごのゆりかご（特殊家具）═══════════════════════
-  {
-    id: 'furn_egg_incubator', cat: 'furn', name: 'たまごのゆりかご', price: 0, theme: 'all',
-    emoji: '🪺',
-    special: 'egg_incubator',
-    gridRow: 4, gridCol: 4, cellSize: 1.0, pivotX: 0, pivotY: 0,
-    hidden: true,  // ショップには表示しない（自動配置のみ）
-  },
+  // ══ たまごのゆりかご（育成シミュレーション: 一時非表示）══
+  // {
+  //   id: 'furn_egg_incubator', cat: 'furn', name: 'たまごのゆりかご', price: 0, theme: 'all',
+  //   emoji: '🪺',
+  //   special: 'egg_incubator',
+  //   gridRow: 4, gridCol: 4, cellSize: 1.0, pivotX: 0, pivotY: 0,
+  //   hidden: true,
+  // },
 
   // ══ かざり ═════════════════════════════════════════════
   {
@@ -284,15 +284,122 @@ const ROOM_ITEMS = [
     gridRow: 4, gridCol: 4, cellSize: 1.2, pivotX: 0, pivotY: 49.3,
   },
   {
-    id: 'deco_toybox_pink', cat: 'deco', name: 'おもちゃばこ', price: 15, theme: 'girl',
-    roomImg: '../assets/images/Rooms/furnitures_final/toybox_pink.png',
-    gridRow: 6, gridCol: 2, cellSize: 0.7, pivotX: -1.5, pivotY: 20.5,
-  },
-  {
     id: 'deco_babycar', cat: 'deco', name: 'ベビーカー', price: 20, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/babycar_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/babycar_B.png',
-    gridRow: 5, gridCol: 6, cellSize: 0.9, pivotX: 0, pivotY: 0,
+    gridRow: 5, gridCol: 6, cellSize: 0.9, pivotX: 0, pivotY: 27.4,
+    angleB: { cellSize: 0.9, pivotX: 0, pivotY: 0 },
+  },
+
+  // ══ 共通かざり（追加）══════════════════════════════════════
+  {
+    id: 'deco_box', cat: 'deco', name: 'おかたづけばこ', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/box_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/box_B.png',
+    gridRow: 6, gridCol: 2, cellSize: 0.8, pivotX: 15, pivotY: 21.9,
+    angleB: { cellSize: 0.8, pivotX: -12.5, pivotY: 23.3 },
+  },
+  {
+    id: 'furn_shelf_toy', cat: 'furn', name: 'おもちゃだな3', price: 25, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/shelf_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/shelf_B.png',
+    gridRow: 5, gridCol: 3, cellSize: 2, pivotX: -20.5, pivotY: 12.3, minRow: 0, maxRow: 6, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 2, pivotX: 19, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 6 },
+  },
+  {
+    id: 'deco_shelf_wall', cat: 'deco', name: 'かべだな', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/shelf2_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/shelf2_B.png',
+    gridRow: 3, gridCol: 3, cellSize: 1, pivotX: 0, pivotY: 0,
+    angleB: { cellSize: 1, pivotX: 0, pivotY: 0 },
+  },
+  {
+    id: 'deco_tea', cat: 'deco', name: 'ティーセット', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures_final/tea_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/tea_B.png',
+    gridRow: 4, gridCol: 5, cellSize: 0.5, pivotX: 0, pivotY: 46.6,
+    angleB: { cellSize: 0.5, pivotX: 0, pivotY: 46.6 },
+  },
+
+  // ══ boysテーマ ═════════════════════════════════════════════
+  {
+    id: 'deco_vr', cat: 'deco', name: 'VRゴーグル', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/vr_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/vr_B.png',
+    gridRow: 5, gridCol: 5, cellSize: 0.5, pivotX: 0, pivotY: 50.7,
+    angleB: { cellSize: 0.5, pivotX: 0, pivotY: 50.7 },
+  },
+  {
+    id: 'deco_drone', cat: 'deco', name: 'ドローン', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/drone_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/drone_B.png',
+    gridRow: 6, gridCol: 5, cellSize: 0.6, pivotX: 0, pivotY: 47.9,
+    angleB: { cellSize: 0.6, pivotX: 0, pivotY: 47.9 },
+  },
+  {
+    id: 'deco_sportscar', cat: 'deco', name: 'スポーツカー', price: 25, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/sportscar_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/sportscar_B.png',
+    gridRow: 4, gridCol: 3, cellSize: 0.5, pivotX: 0, pivotY: 47.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
+    angleB: { cellSize: 0.5, pivotX: 0, pivotY: 47.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
+  },
+  {
+    id: 'furn_pcdesk', cat: 'furn', name: 'PCデスク＆チェア', price: 30, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/pcdesk_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/pcdesk_B.png',
+    gridRow: 3, gridCol: 4, cellSize: 2, pivotX: 0, pivotY: 49.3, minRow: 0, maxRow: 6, minCol: 0, maxCol: 6,
+    angleB: { cellSize: 2, pivotX: 19, pivotY: 26, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
+    surfaceY: -40, surfaceYB: -40,
+  },
+  {
+    id: 'deco_robot', cat: 'deco', name: 'ロボット', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/robot_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/robot_B.png',
+    gridRow: 6, gridCol: 4, cellSize: 0.7, pivotX: 0, pivotY: 0,
+    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 0 },
+  },
+  {
+    id: 'furn_chest_blue', cat: 'furn', name: 'あおいチェスト', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/chest_blue_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/chest_blue_B.png',
+    gridRow: 5, gridCol: 2, cellSize: 2.1, pivotX: 11, pivotY: 21.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
+    angleB: { cellSize: 2.1, pivotX: -12.5, pivotY: 21.9, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
+    surfaceY: -145, surfaceYB: -145,
+  },
+  {
+    id: 'deco_books', cat: 'deco', name: 'ほんのやま', price: 10, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/books_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/books_B.png',
+    gridRow: 4, gridCol: 6, cellSize: 0.7, pivotX: 0, pivotY: 38.4,
+    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 0 },
+  },
+  {
+    id: 'furn_bookshelf_wood', cat: 'furn', name: 'きのほんだな2', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/bookshelf_wood_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/bookshelf_wood_B.png',
+    gridRow: 2, gridCol: 1, cellSize: 2.2, pivotX: -4, pivotY: -26, minRow: 0, maxRow: 6, minCol: 0, maxCol: 7,
+    angleB: { cellSize: 2.2, pivotX: -16.5, pivotY: -26, minRow: 0, maxRow: 6, minCol: 0, maxCol: 7 },
+  },
+  {
+    id: 'deco_lamp_floor', cat: 'deco', name: 'フロアランプ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/lamp_floor.png',
+    gridRow: 6, gridCol: 1, cellSize: 1.4, pivotX: 0, pivotY: 8.2, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
+  {
+    id: 'deco_rug_space', cat: 'deco', name: 'うちゅうラグ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/rug_space.png',
+    gridRow: 4, gridCol: 4, cellSize: 1.1, pivotX: -0.5, pivotY: 49.3,
+  },
+  {
+    id: 'deco_table_glass', cat: 'deco', name: 'ガラステーブル', price: 20, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/table_glass.png',
+    gridRow: 3, gridCol: 3, cellSize: 1.1, pivotX: 0, pivotY: 26, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    surfaceY: -60,
+  },
+  {
+    id: 'deco_plasma_ball', cat: 'deco', name: 'プラズマボール', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/plasma_ball.png',
+    gridRow: 5, gridCol: 5, cellSize: 0.6, pivotX: 0, pivotY: 27.4,
   },
 ];
 
