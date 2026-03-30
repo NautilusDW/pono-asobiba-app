@@ -1527,11 +1527,20 @@ function _addDragHandlers(el, areaId) {
     if (!dragging) return; // タップは回転ボタンで処理
     let row = parseInt(el.dataset.row);
     let col = parseInt(el.dataset.col);
-    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ
+    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ（見つからなければ元に戻す）
     const item = getItem(el.dataset.itemId);
     if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
       const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
-      row = empty.row; col = empty.col;
+      if (isOverlapping(areaId, empty.row, empty.col, item, el.dataset.angle, el.dataset.itemId)) {
+        // 空きが見つからなかった → 元の位置に戻す
+        const cfg2 = state.config[areaId];
+        const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
+        if (orig) { row = orig.row; col = orig.col; }
+        showToast('ここには おけないよ！');
+      } else {
+        row = empty.row; col = empty.col;
+        showToast('ここには おけないよ！');
+      }
       el.dataset.row = row; el.dataset.col = col;
       _applyGridPos(el, row, col, areaId);
     }
