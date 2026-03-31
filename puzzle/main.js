@@ -566,7 +566,7 @@ btnNextStage.addEventListener('click', () => {
   loadStage(currentStageIndex + 1);
 });
 
-btnPlayAgain.addEventListener('click', () => {
+if (btnPlayAgain) btnPlayAgain.addEventListener('click', () => {
   hideSuccessModal();
   dragPiece = null;
   shufflePieces();
