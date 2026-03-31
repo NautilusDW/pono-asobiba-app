@@ -3078,6 +3078,28 @@ lockRoomSize();
 window.addEventListener('orientationchange', () => setTimeout(lockRoomSize, 300));
 window.addEventListener('resize', lockRoomSize);
 
+// ─── Portrait notice: JS で確実に制御（CSS media query の遅延対策） ───
+function updatePortraitNotice() {
+  const notice = document.getElementById('portrait-notice');
+  const scene = document.getElementById('room-scene');
+  if (!notice || !scene) return;
+  const isPortrait = window.innerHeight > window.innerWidth;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  if (isPortrait && isTouch) {
+    notice.style.display = 'flex';
+    scene.style.display = 'none';
+  } else {
+    notice.style.display = 'none';
+    scene.style.display = 'flex';
+  }
+}
+updatePortraitNotice();
+window.addEventListener('orientationchange', () => {
+  setTimeout(updatePortraitNotice, 100);
+  setTimeout(updatePortraitNotice, 500);
+});
+window.addEventListener('resize', updatePortraitNotice);
+
 // ─── Init ─────────────────────────────────────────────
 function init() {
   loadState();
