@@ -511,53 +511,53 @@ body {
 // ===== Match Stage data =====
 const W = '../assets/images/word/';
 const STAGES = [
-  { name: 'いろ 🌈', pairs: [
+  { name: 'いろ', pairs: [
     { img: W+'color_red.png', word: 'あか' },
     { img: W+'color_blue.png', word: 'あお' },
     { img: W+'color_yellow.png', word: 'きいろ' },
     { img: W+'color_green.png', word: 'みどり' },
   ]},
-  { name: 'のりもの 🚗', pairs: [
-    { img: W+'kotobaasobi_002.png', word: 'でんしゃ' },
-    { img: W+'kotobaasobi_007.png', word: 'ひこうき' },
-    { img: W+'kotobaasobi_005.png', word: 'ふね' },
-    { img: W+'レイヤー 0_028.png', word: 'くるま' },
+  { name: 'のりもの', pairs: [
+    { img: W+'densha.png', word: 'でんしゃ' },
+    { img: W+'hikouki.png', word: 'ひこうき' },
+    { img: W+'fune.png', word: 'ふね' },
+    { img: W+'kuruma.png', word: 'くるま' },
   ]},
-  { name: 'どうぶつ 🐾', pairs: [
-    { img: W+'kotobaasobi_006.png', word: 'うさぎ' },
-    { img: W+'kotobaasobi_001.png', word: 'ぞう' },
-    { img: W+'kotobaasobi_004.png', word: 'いるか' },
-    { img: W+'レイヤー 0_029.png', word: 'くま' },
+  { name: 'どうぶつ', pairs: [
+    { img: W+'usagi.png', word: 'うさぎ' },
+    { img: W+'zou.png', word: 'ぞう' },
+    { img: W+'iruka.png', word: 'いるか' },
+    { img: W+'kuma.png', word: 'くま' },
   ]},
-  { name: 'くだもの 🍎', pairs: [
-    { img: W+'レイヤー 0_039.png', word: 'りんご' },
-    { img: W+'kotobaasobi_008.png', word: 'みかん' },
-    { img: W+'レイヤー 0_044.png', word: 'いちご' },
-    { img: W+'レイヤー 0_036.png', word: 'バナナ' },
+  { name: 'くだもの', pairs: [
+    { img: W+'ringo.png', word: 'りんご' },
+    { img: W+'mikan.png', word: 'みかん' },
+    { img: W+'ichigo.png', word: 'いちご' },
+    { img: W+'banana.png', word: 'バナナ' },
   ]},
-  { name: 'やさい 🥕', pairs: [
-    { img: W+'ninjinkyuuri_001.png', word: 'にんじん' },
-    { img: W+'レイヤー 0_037.png', word: 'トマト' },
-    { img: W+'ninjinkyuuri_002.png', word: 'きゅうり' },
-    { img: W+'kotobaasobi_009.png', word: 'きのこ' },
+  { name: 'やさい', pairs: [
+    { img: W+'ninjin.png', word: 'にんじん' },
+    { img: W+'tomato.png', word: 'トマト' },
+    { img: W+'kyuuri.png', word: 'きゅうり' },
+    { img: W+'kinoko.png', word: 'きのこ' },
   ]},
-  { name: 'どうぶつ2 🦁', pairs: [
-    { img: W+'レイヤー 0_004.png', word: 'キリン' },
-    { img: W+'レイヤー 0_006.png', word: 'さる' },
-    { img: W+'レイヤー 0_003.png', word: 'ライオン' },
-    { img: W+'レイヤー 0_031.png', word: 'パンダ' },
+  { name: 'どうぶつ2', pairs: [
+    { img: W+'kirin.png', word: 'キリン' },
+    { img: W+'saru.png', word: 'さる' },
+    { img: W+'lion.png', word: 'ライオン' },
+    { img: W+'panda.png', word: 'パンダ' },
   ]},
-  { name: 'たべもの 🍚', pairs: [
-    { img: W+'kotobaasobi_010.png', word: 'ごはん' },
-    { img: W+'kotobaasobi_003.png', word: 'ラーメン' },
-    { img: W+'レイヤー 0_042.png', word: 'パン' },
-    { img: W+'レイヤー 0_010.png', word: 'ケーキ' },
+  { name: 'たべもの', pairs: [
+    { img: W+'gohan.png', word: 'ごはん' },
+    { img: W+'ramen.png', word: 'ラーメン' },
+    { img: W+'pan.png', word: 'パン' },
+    { img: W+'cake.png', word: 'ケーキ' },
   ]},
-  { name: 'しぜん 🌸', pairs: [
-    { img: W+'レイヤー 0_032.png', word: 'はな' },
-    { img: W+'レイヤー 0_038.png', word: 'にじ' },
-    { img: W+'レイヤー 0_014.png', word: 'ほし' },
-    { img: W+'レイヤー 0_016.png', word: 'つき' },
+  { name: 'しぜん', pairs: [
+    { img: W+'hana.png', word: 'はな' },
+    { img: W+'niji.png', word: 'にじ' },
+    { img: W+'hoshi.png', word: 'ほし' },
+    { img: W+'tsuki.png', word: 'つき' },
   ]},
 ];
 
@@ -567,32 +567,32 @@ const STAGES = [
 // vImg/hImg: ヒント用画像パス
 const CROSSWORDS = [
   // --- かんたん: ひらがな2文字 ---
-  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'え'], vImg: W+'レイヤー 0_002.png', hImg: W+'レイヤー 0_005.png' },
-  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'く'], vImg: W+'レイヤー 0_008.png', hImg: W+'レイヤー 0_021.png' },
-  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ほ', 'の'], vImg: W+'レイヤー 0_032.png', hImg: W+'natsu.png' },
-  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'も', 'め'], vImg: W+'レイヤー 0_020.png', hImg: W+'レイヤー 0_012.png' },
-  { vWord: 'くも', hWord: 'もり', shared: 'も', vIdx: 1, hIdx: 0, distractors: ['む', 'み', 'め'], vImg: W+'レイヤー 0_045.png', hImg: W+'レイヤー 0_001.png' },
-  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vImg: W+'レイヤー 0_014.png', hImg: W+'レイヤー 0_026.png' },
+  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'え'], vImg: W+'inu.png', hImg: W+'ika.png' },
+  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'く'], vImg: W+'neko.png', hImg: W+'koma.png' },
+  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ほ', 'の'], vImg: W+'hana.png', hImg: W+'natsu.png' },
+  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'も', 'め'], vImg: W+'umi.png', hImg: W+'michi.png' },
+  { vWord: 'くも', hWord: 'もり', shared: 'も', vIdx: 1, hIdx: 0, distractors: ['む', 'み', 'め'], vImg: W+'kumo.png', hImg: W+'mori.png' },
+  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vImg: W+'hoshi.png', hImg: W+'shika.png' },
   { vWord: 'かに', hWord: 'にく', shared: 'に', vIdx: 1, hIdx: 0, distractors: ['ぬ', 'の', 'ね'], vImg: W+'kani.png', hImg: W+'niku.png' },
-  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vImg: W+'レイヤー 0_006.png', hImg: W+'レイヤー 0_033.png' },
+  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vImg: W+'saru.png', hImg: W+'kusa.png' },
   // --- ふつう: ひらがな2-3文字 ---
-  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vImg: W+'レイヤー 0_034.png', hImg: W+'レイヤー 0_028.png' },
-  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['む', 'め', 'も'], vImg: W+'レイヤー 3_001.png', hImg: W+'レイヤー 0_027.png' },
-  { vWord: 'すいか', hWord: 'いちご', shared: 'い', vIdx: 1, hIdx: 0, distractors: ['う', 'え', 'お'], vImg: W+'レイヤー 1_001.png', hImg: W+'レイヤー 0_044.png' },
-  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vImg: W+'レイヤー 0_043.png', hImg: W+'レイヤー 0_038.png' },
-  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vImg: W+'おかし.png', hImg: W+'レイヤー 0_018.png' },
-  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vImg: W+'レイヤー 0_040.png', hImg: W+'fukuro.png' },
-  { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vImg: W+'レイヤー 0_011.png', hImg: W+'kemuri.png' },
-  { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vImg: W+'レイヤー 0_039.png', hImg: W+'レイヤー 0_007.png' },
+  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vImg: W+'sakura.png', hImg: W+'kuruma.png' },
+  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['む', 'め', 'も'], vImg: W+'tamago.png', hImg: W+'yama.png' },
+  { vWord: 'すいか', hWord: 'いちご', shared: 'い', vIdx: 1, hIdx: 0, distractors: ['う', 'え', 'お'], vImg: W+'suika.png', hImg: W+'ichigo.png' },
+  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vImg: W+'kujira.png', hImg: W+'niji.png' },
+  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vImg: W+'okashi.png', hImg: W+'kasa.png' },
+  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vImg: W+'tsukue.png', hImg: W+'fukuro.png' },
+  { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vImg: W+'tokei.png', hImg: W+'kemuri.png' },
+  { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vImg: W+'ringo.png', hImg: W+'minna.png' },
   // --- むずかしめ: カタカナだけ ---
-  { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vImg: W+'レイヤー 0_037.png', hImg: W+'レイヤー 0_029.png' },
-  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['ポ', 'プ', 'ペ'], vImg: W+'レイヤー 0_031.png', hImg: W+'レイヤー 0_042.png' },
-  { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'レイヤー 0_022.png', hImg: W+'レイヤー 0_015.png' },
-  { vWord: 'キリン', hWord: 'リス',     shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'レイヤー 0_004.png', hImg: W+'レイヤー 0_024.png' },
-  { vWord: 'ケーキ', hWord: 'スキー',   shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'コ'], vImg: W+'レイヤー 0_010.png', hImg: W+'レイヤー 0_048.png' },
-  { vWord: 'バナナ', hWord: 'ナベ',     shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'], vImg: W+'レイヤー 0_036.png', hImg: W+'レイヤー 0_041.png' },
-  { vWord: 'カメラ', hWord: 'メガネ',   shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'], vImg: W+'レイヤー 0_046.png', hImg: W+'レイヤー 0_049.png' },
-  { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'], vImg: W+'レイヤー 0_023.png', hImg: W+'レイヤー 0_003.png' },
+  { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vImg: W+'tomato.png', hImg: W+'kuma.png' },
+  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['ポ', 'プ', 'ペ'], vImg: W+'panda.png', hImg: W+'pan.png' },
+  { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'melon.png', hImg: W+'rocket.png' },
+  { vWord: 'キリン', hWord: 'リス',     shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'kirin.png', hImg: W+'risu.png' },
+  { vWord: 'ケーキ', hWord: 'スキー',   shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'コ'], vImg: W+'cake.png', hImg: W+'ski.png' },
+  { vWord: 'バナナ', hWord: 'ナベ',     shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'], vImg: W+'banana.png', hImg: W+'nabe.png' },
+  { vWord: 'カメラ', hWord: 'メガネ',   shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'], vImg: W+'camera.png', hImg: W+'megane.png' },
+  { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'], vImg: W+'taiya.png', hImg: W+'lion.png' },
 ];
 
 // ===== State =====
@@ -976,12 +976,14 @@ function launchConfetti() {
 }
 
 // ===== Audio =====
+let sfxEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let _ac = null;
 function getAC() {
   if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
   return _ac;
 }
 function withAudio(fn) {
+  if (!sfxEnabled) return;
   const ac = getAC();
   if (ac.state === 'running') fn(ac);
   else ac.resume().then(() => fn(ac)).catch(() => {});
@@ -1036,7 +1038,12 @@ function playFanfare() {
 shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
 crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
 loadStage(0);
-initMenu();
+initMenu({
+  bgmToggle: function() {
+    sfxEnabled = !sfxEnabled;
+    localStorage.setItem('pono_bgm_enabled', sfxEnabled ? 'on' : 'off');
+  }
+});
 
 window.addEventListener('orientationchange', () => {
   setTimeout(() => { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }, 100);
