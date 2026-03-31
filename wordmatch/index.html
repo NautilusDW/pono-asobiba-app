@@ -216,7 +216,6 @@ body {
   background: rgba(93,78,55,0.72);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
-  /* backdrop-filter: iOS Safari で子要素タッチが届かない既知バグのため削除 */
   animation: fadeIn 0.3s;
 }
 .modal-overlay.hidden { display: none; }
@@ -270,6 +269,101 @@ body {
   100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
 }
 
+/* ===== Crossword Mode ===== */
+.cross-area {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.cross-grid {
+  display: grid;
+  gap: 4px;
+  justify-content: center;
+}
+
+.cross-cell {
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 900;
+  color: var(--text);
+}
+
+.cross-cell.filled {
+  background: #fff;
+  border: 2.5px solid #FDE68A;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.cross-cell.empty {
+  background: transparent;
+}
+
+.cross-cell.target {
+  background: var(--primary-light);
+  border: 3px solid var(--primary);
+  box-shadow: 0 0 0 3px rgba(242,145,90,0.2), 0 2px 8px var(--shadow);
+  font-size: 2rem;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.cross-cell.target.solved {
+  background: #D1FAE5;
+  border-color: #34D399;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  color: #065F46;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.cross-hint {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-align: center;
+}
+
+.cross-choices {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.cross-choice {
+  padding: 14px 8px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #818CF8, #6366F1);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(99,102,241,0.3);
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
+  text-align: center;
+}
+
+.cross-choice:active {
+  transform: scale(0.92);
+}
+
+.cross-choice.correct {
+  background: linear-gradient(135deg, #34D399, #10B981);
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.cross-choice.wrong {
+  animation: shake 0.35s;
+}
+
 /* ===== Landscape layout ===== */
 @media (orientation: landscape) {
   html { height: 100dvh; overflow: hidden; margin: 0; padding: 0; }
@@ -285,7 +379,6 @@ body {
   .stage-info { margin: 0; }
   .stage-name { font-size: 0.95rem; }
   .stage-num { font-size: 0.7rem; padding: 2px 10px; margin-top: 2px; }
-  /* 絵と言葉を左右に並べるラッパー */
   .game-row {
     display: flex;
     gap: 14px;
@@ -320,6 +413,22 @@ body {
   .word-tray { gap: 10px; }
   .word-tray-title { font-size: 0.82rem; margin-bottom: 10px; }
   .word-card { font-size: 1rem; padding: 10px 8px; }
+
+  /* Crossword landscape */
+  .cross-area {
+    flex: 1;
+    max-width: none;
+    flex-direction: row;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+  }
+  .cross-cell { width: 46px; height: 46px; font-size: 1.3rem; }
+  .cross-cell.target { font-size: 1.6rem; }
+  .cross-choices {
+    max-width: 200px;
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -335,9 +444,9 @@ body {
   <p class="stage-num" id="stage-num">ステージ 1 / 8</p>
 </div>
 
-<div class="game-row">
+<div class="game-row" id="game-area">
   <div class="pic-grid" id="pic-grid"></div>
-  <div class="word-tray-wrap">
+  <div class="word-tray-wrap" id="word-tray-wrap">
     <p class="word-tray-title">えにあう ことばを タップ！</p>
     <div class="word-tray" id="word-tray"></div>
   </div>
@@ -356,8 +465,7 @@ body {
 <div id="confetti-container"></div>
 
 <script>
-// ===== Stage data =====
-// ステージ0-3: ひらがなのみ / ステージ4-7: カタカナ語を含む
+// ===== Match Stage data =====
 const STAGES = [
   { name: 'しぜん 🌸', pairs: [
     { emoji: '🌸', word: 'はな' },
@@ -409,12 +517,53 @@ const STAGES = [
   ]},
 ];
 
+// ===== Crossword puzzles =====
+const CROSSWORDS = [
+  // --- かんたん (2文字) ---
+  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'あ'] },
+  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['か', 'き', 'く'] },
+  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['し', 'す', 'そ'] },
+  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ね', 'の'] },
+  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'め', 'も'] },
+  { vWord: 'そら', hWord: 'から', shared: 'ら', vIdx: 1, hIdx: 1, distractors: ['り', 'る', 'れ'] },
+  { vWord: 'かめ', hWord: 'あめ', shared: 'め', vIdx: 1, hIdx: 1, distractors: ['ま', 'み', 'も'] },
+  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'] },
+  // --- ふつう (3文字) ---
+  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'] },
+  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['み', 'む', 'も'] },
+  { vWord: 'りんご', hWord: 'おんぷ', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'] },
+  { vWord: 'すいか', hWord: 'たいこ', shared: 'い', vIdx: 1, hIdx: 1, distractors: ['う', 'え', 'お'] },
+  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'] },
+  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'] },
+  { vWord: 'つくえ', hWord: 'おくち', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'] },
+  { vWord: 'とけい', hWord: 'けむし', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'] },
+  // --- むずかしめ (カタカナ混合) ---
+  { vWord: 'バナナ', hWord: 'サンド', shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'] },
+  { vWord: 'トマト', hWord: 'クマ',   shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'] },
+  { vWord: 'パンダ', hWord: 'サンド', shared: 'ン', vIdx: 1, hIdx: 1, distractors: ['ソ', 'ノ', 'ワ'] },
+  { vWord: 'メロン', hWord: 'ノート', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'] },
+  { vWord: 'キリン', hWord: 'リボン', shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'] },
+  { vWord: 'ケーキ', hWord: 'スキー', shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'ケ'] },
+  { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'] },
+  { vWord: 'カメラ', hWord: 'メダル', shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'] },
+];
+
 // ===== State =====
-let currentStageNum = 0; // 0-indexed; stages 0-7 = category mode, 8+ = mixed mode
-let shuffledOrder   = []; // shuffled [0..7] — filled at init
+let currentStageNum = 0;
+let shuffledOrder   = [];
 let matchedCount    = 0;
 let selectedCard    = null;
 let selectedPicIdx  = null;
+
+// Stage type schedule: 'match' or 'cross', 3 each alternating
+let crossPool = [];
+let crossIdx  = 0;
+
+function getStageType(num) {
+  // 0-2: match, 3-5: cross, 6-8: match, 9-11: cross, ...
+  const block = Math.floor(num / 3);
+  return (block % 2 === 0) ? 'match' : 'cross';
+}
 
 // ===== Shuffle helper =====
 function shuffle(arr) {
@@ -426,46 +575,65 @@ function shuffle(arr) {
   return a;
 }
 
-// ===== Stage data helpers =====
-function getStageData(num) {
-  if (num < 8) return STAGES[shuffledOrder[num]];
-  return generateMixedStage(num);
+// ===== Match stage data helpers =====
+let matchStageCounter = 0;
+
+function getMatchStageData() {
+  const idx = matchStageCounter % STAGES.length;
+  matchStageCounter++;
+  return STAGES[shuffledOrder[idx % shuffledOrder.length]];
 }
 
-function generateMixedStage(num) {
-  // num=8 → relative=1, num=12 → relative=5, num=16 → relative=9
-  const relative   = num - 7;
-  const crossCount = relative <= 4 ? 1 : relative <= 8 ? 2 : 4;
-  const mainCount  = 4 - crossCount;
-
+function generateMixedStage() {
   const primaryCat = STAGES[Math.floor(Math.random() * STAGES.length)];
+  const crossCount = 1;
+  const mainCount  = 4 - crossCount;
   const mainPairs  = shuffle([...primaryCat.pairs]).slice(0, mainCount);
   const crossPairs = shuffle(
     STAGES.filter(s => s !== primaryCat).flatMap(s => s.pairs)
   ).slice(0, crossCount);
-
-  const label = crossCount >= 4
-    ? 'まぜまぜ 🎲'
-    : crossCount === 2 ? primaryCat.name + ' ＋ まぜ'
-    : primaryCat.name;
-  return { name: label, pairs: shuffle([...mainPairs, ...crossPairs]) };
+  return { name: primaryCat.name + ' ＋', pairs: shuffle([...mainPairs, ...crossPairs]) };
 }
 
-// ===== Load stage =====
+// ===== Crossword helpers =====
+function getCrosswordData() {
+  if (crossPool.length === 0) crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
+  const puzzle = CROSSWORDS[crossPool[crossIdx % crossPool.length]];
+  crossIdx++;
+  return puzzle;
+}
+
+// ===== Load stage (dispatcher) =====
 function loadStage(num) {
   currentStageNum = num;
   matchedCount    = 0;
   selectedCard    = null;
   selectedPicIdx  = null;
-  const stage     = getStageData(num);
+
+  const type = getStageType(num);
+
+  if (type === 'cross') {
+    loadCrosswordStage(num);
+  } else {
+    loadMatchStage(num);
+  }
+}
+
+// ===== Load MATCH stage =====
+function loadMatchStage(num) {
+  const stage = matchStageCounter < 8 ? getMatchStageData() : generateMixedStage();
 
   document.getElementById('stage-name').textContent = stage.name;
-  document.getElementById('stage-num').textContent  =
-    num < 8 ? `ステージ ${num + 1} / 8` : `ステージ ${num + 1} 🎲`;
+  document.getElementById('stage-num').textContent  = `ステージ ${num + 1}`;
 
-  // Build picture grid
-  const grid = document.getElementById('pic-grid');
-  grid.innerHTML = '';
+  // Show match UI, hide cross if present
+  const area = document.getElementById('game-area');
+  area.innerHTML = '';
+
+  const picGrid = document.createElement('div');
+  picGrid.className = 'pic-grid';
+  picGrid.id = 'pic-grid';
+
   stage.pairs.forEach((pair, i) => {
     const slot = document.createElement('div');
     slot.className = 'pic-slot';
@@ -473,12 +641,18 @@ function loadStage(num) {
       <div class="pic-emoji">${pair.img ? `<img src="${pair.img}" alt="${pair.word}" style="width:1em;height:1em;vertical-align:middle">` : pair.emoji}</div>
       <div class="pic-label" data-idx="${i}"></div>
     `;
-    grid.appendChild(slot);
+    picGrid.appendChild(slot);
   });
 
-  // Build word tray (shuffled)
-  const tray = document.getElementById('word-tray');
-  tray.innerHTML = '';
+  const trayWrap = document.createElement('div');
+  trayWrap.className = 'word-tray-wrap';
+  trayWrap.id = 'word-tray-wrap';
+  trayWrap.innerHTML = '<p class="word-tray-title">えにあう ことばを タップ！</p>';
+
+  const tray = document.createElement('div');
+  tray.className = 'word-tray';
+  tray.id = 'word-tray';
+
   shuffle(stage.pairs.map((p, i) => ({ word: p.word, idx: i }))).forEach(({ word, idx }) => {
     const card = document.createElement('div');
     card.className   = 'word-card';
@@ -486,9 +660,167 @@ function loadStage(num) {
     card.textContent = word;
     tray.appendChild(card);
   });
+
+  trayWrap.appendChild(tray);
+  area.appendChild(picGrid);
+  area.appendChild(trayWrap);
+
+  // Store current stage pairs for match logic
+  area.dataset.mode = 'match';
+  area._stagePairs = stage.pairs;
 }
 
-// ===== Tap to select & place =====
+// ===== Load CROSSWORD stage =====
+function loadCrosswordStage(num) {
+  const puzzle = getCrosswordData();
+
+  document.getElementById('stage-name').textContent = 'もじクロス ✏️';
+  document.getElementById('stage-num').textContent  = `ステージ ${num + 1}`;
+
+  const area = document.getElementById('game-area');
+  area.innerHTML = '';
+  area.dataset.mode = 'cross';
+
+  const crossArea = document.createElement('div');
+  crossArea.className = 'cross-area';
+
+  // Build grid
+  const vWord = [...puzzle.vWord];
+  const hWord = [...puzzle.hWord];
+  const vLen = vWord.length;
+  const hLen = hWord.length;
+  const crossRow = puzzle.vIdx; // row where horizontal word sits
+  const crossCol = puzzle.hIdx; // col (in horizontal word) where vertical word sits
+
+  // Grid dimensions
+  const totalRows = vLen;
+  const totalCols = hLen;
+
+  const grid = document.createElement('div');
+  grid.className = 'cross-grid';
+  grid.style.gridTemplateColumns = `repeat(${totalCols}, 52px)`;
+  grid.style.gridTemplateRows = `repeat(${totalRows}, 52px)`;
+
+  for (let r = 0; r < totalRows; r++) {
+    for (let c = 0; c < totalCols; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cross-cell';
+
+      const isVertical = (c === crossCol && r >= 0 && r < vLen);
+      const isHorizontal = (r === crossRow && c >= 0 && c < hLen);
+      const isIntersection = (r === crossRow && c === crossCol);
+
+      if (isIntersection) {
+        cell.classList.add('target');
+        cell.textContent = '？';
+        cell.dataset.answer = puzzle.shared;
+      } else if (isVertical) {
+        cell.classList.add('filled');
+        cell.textContent = vWord[r];
+      } else if (isHorizontal) {
+        cell.classList.add('filled');
+        cell.textContent = hWord[c];
+      } else {
+        cell.classList.add('empty');
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  crossArea.appendChild(grid);
+
+  // Hint text
+  const hint = document.createElement('p');
+  hint.className = 'cross-hint';
+  hint.textContent = 'まんなかに はいる もじは？';
+  crossArea.appendChild(hint);
+
+  // Choice buttons
+  const choices = document.createElement('div');
+  choices.className = 'cross-choices';
+
+  const allChoices = shuffle([puzzle.shared, ...puzzle.distractors]);
+  allChoices.forEach(ch => {
+    const btn = document.createElement('div');
+    btn.className = 'cross-choice';
+    btn.textContent = ch;
+    btn.dataset.char = ch;
+    choices.appendChild(btn);
+  });
+
+  crossArea.appendChild(choices);
+  area.appendChild(crossArea);
+}
+
+// ===== Tap handling =====
+document.addEventListener('click', e => {
+  const area = document.getElementById('game-area');
+  if (!area) return;
+
+  if (area.dataset.mode === 'cross') {
+    handleCrossClick(e);
+    return;
+  }
+
+  // Match mode
+  const card  = e.target.closest('.word-card');
+  const label = e.target.closest('.pic-label:not(.matched)');
+
+  if (card) {
+    if (selectedPicIdx !== null) {
+      const targetLabel = document.querySelector(`.pic-label[data-idx="${selectedPicIdx}"]:not(.matched)`);
+      if (targetLabel) tryMatch(card, targetLabel);
+      else clearSelection();
+    } else {
+      setSelectedCard(selectedCard === card ? null : card);
+    }
+    return;
+  }
+
+  if (label) {
+    if (selectedCard) {
+      tryMatch(selectedCard, label);
+    } else {
+      const picSlot = label.closest('.pic-slot');
+      const idx = parseInt(label.dataset.idx);
+      if (selectedPicIdx === idx) {
+        clearSelection();
+      } else {
+        setSelectedPic(picSlot, idx);
+      }
+    }
+    return;
+  }
+
+  clearSelection();
+});
+
+function handleCrossClick(e) {
+  const choiceBtn = e.target.closest('.cross-choice');
+  if (!choiceBtn) return;
+
+  const targetCell = document.querySelector('.cross-cell.target');
+  if (!targetCell || targetCell.classList.contains('solved')) return;
+
+  if (choiceBtn.dataset.char === targetCell.dataset.answer) {
+    // Correct!
+    playCorrect();
+    targetCell.textContent = targetCell.dataset.answer;
+    targetCell.classList.add('solved');
+    choiceBtn.classList.add('correct');
+    // Disable all choices
+    document.querySelectorAll('.cross-choice').forEach(b => b.style.pointerEvents = 'none');
+    setTimeout(() => showStageComplete(), 800);
+  } else {
+    // Wrong
+    playWrong();
+    choiceBtn.classList.add('wrong');
+    setTimeout(() => choiceBtn.classList.remove('wrong'), 400);
+  }
+}
+
+// ===== Match mode helpers =====
 function clearSelection() {
   if (selectedCard) {
     selectedCard.classList.remove('selected');
@@ -534,68 +866,21 @@ function tryMatch(card, label) {
   }
 }
 
-document.addEventListener('click', e => {
-  const card  = e.target.closest('.word-card');
-  const label = e.target.closest('.pic-label:not(.matched)');
-  const slot  = e.target.closest('.pic-slot');
-
-  if (card) {
-    if (selectedPicIdx !== null) {
-      // 絵を先に選んでいた → マッチ試行
-      const targetLabel = document.querySelector(`.pic-label[data-idx="${selectedPicIdx}"]:not(.matched)`);
-      if (targetLabel) tryMatch(card, targetLabel);
-      else clearSelection();
-    } else {
-      setSelectedCard(selectedCard === card ? null : card);
-    }
-    return;
-  }
-
-  if (label) {
-    if (selectedCard) {
-      // 文字を先に選んでいた → マッチ試行（従来通り）
-      const c = selectedCard;
-      tryMatch(c, label);
-    } else {
-      // 絵を先にタップ → 絵スロットを選択
-      const picSlot = label.closest('.pic-slot');
-      const idx = parseInt(label.dataset.idx);
-      if (selectedPicIdx === idx) {
-        clearSelection();
-      } else {
-        setSelectedPic(picSlot, idx);
-      }
-    }
-    return;
-  }
-
-  // 他の場所をタップ → 選択解除
-  clearSelection();
-});
-
 // ===== Stage complete =====
 function showStageComplete() {
   playFanfare();
   launchConfetti();
   awardPoints(5);
-  if (window.incrementStat) window.incrementStat('wordmatch_correct', 4); // 1ステージ=4問正解
-  const num    = currentStageNum;
-  const isAll8 = num === 7; // ステージ8（インデックス7）をクリアした瞬間
+  if (window.incrementStat) window.incrementStat('wordmatch_correct', 4);
+  const num  = currentStageNum;
+  const type = getStageType(num);
 
-  if (isAll8) {
-    // 8カテゴリ全クリア → まぜまぜステージへの特別メッセージ
-    document.getElementById('modal-emoji').textContent = '🌟';
-    document.getElementById('modal-title').textContent = '8ステージ コンプリート！';
-    document.getElementById('modal-msg').textContent   = 'つぎから まぜまぜ ステージだよ！';
-    document.getElementById('modal-btn').textContent   = 'まぜまぜへ →';
-  } else {
-    document.getElementById('modal-emoji').textContent = '🎉';
-    document.getElementById('modal-title').textContent = `ステージ ${num + 1} クリア！`;
-    document.getElementById('modal-msg').textContent   = num >= 8
-      ? 'すごい！まぜまぜも できたね！'
-      : 'すごい！ぜんぶあったよ！';
-    document.getElementById('modal-btn').textContent   = 'つぎへ →';
-  }
+  document.getElementById('modal-emoji').textContent = '🎉';
+  document.getElementById('modal-title').textContent = `ステージ ${num + 1} クリア！`;
+  document.getElementById('modal-msg').textContent   = type === 'cross'
+    ? 'もじクロス できたね！'
+    : 'すごい！ぜんぶあったよ！';
+  document.getElementById('modal-btn').textContent   = 'つぎへ →';
 
   document.getElementById('modal-btn').onclick = () => {
     document.getElementById('success-modal').classList.add('hidden');
@@ -633,7 +918,6 @@ function withAudio(fn) {
   if (ac.state === 'running') fn(ac);
   else ac.resume().then(() => fn(ac)).catch(() => {});
 }
-// iOS Safari: 最初のタッチで AudioContext をアンロック
 document.addEventListener('touchstart', () => getAC().resume(), { once: true, passive: true });
 document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
 
@@ -681,12 +965,11 @@ function playFanfare() {
 }
 
 // ===== Init =====
-// ひらがなグループ(0-3)とカタカナグループ(4-7)の中でそれぞれシャッフル
 shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
+crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
 loadStage(0);
 initMenu();
 
-// iOS回転時のスクロールリセット
 window.addEventListener('orientationchange', () => {
   setTimeout(() => { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }, 100);
   setTimeout(() => { window.scrollTo(0, 0); }, 300);
