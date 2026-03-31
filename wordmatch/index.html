@@ -361,6 +361,11 @@ body {
 .cross-word-hint-item .hint-emoji {
   font-size: 1.3rem;
 }
+.cross-word-hint-item .hint-img {
+  width: 28px; height: 28px;
+  object-fit: contain;
+  vertical-align: middle;
+}
 
 .cross-choices {
   display: grid;
@@ -498,13 +503,8 @@ body {
 
 <script>
 // ===== Match Stage data =====
+const W = '../assets/images/word/';
 const STAGES = [
-  { name: 'しぜん 🌸', pairs: [
-    { emoji: '🌸', word: 'はな' },
-    { emoji: '🌈', word: 'にじ' },
-    { emoji: '⭐', word: 'ほし' },
-    { emoji: '🌙', word: 'つき' },
-  ]},
   { name: 'いろ 🌈', pairs: [
     { emoji: '🔴', word: 'あか' },
     { emoji: '🔵', word: 'あお' },
@@ -512,74 +512,81 @@ const STAGES = [
     { emoji: '🟢', word: 'みどり' },
   ]},
   { name: 'のりもの 🚗', pairs: [
-    { emoji: '🚗', word: 'くるま' },
-    { emoji: '✈️', word: 'ひこうき' },
-    { emoji: '🚢', word: 'ふね' },
-    { emoji: '🚂', word: 'でんしゃ' },
+    { img: W+'kotobaasobi_002.png', word: 'でんしゃ' },
+    { img: W+'kotobaasobi_007.png', word: 'ひこうき' },
+    { img: W+'kotobaasobi_005.png', word: 'ふね' },
+    { img: W+'レイヤー 0_028.png', word: 'くるま' },
   ]},
   { name: 'どうぶつ 🐾', pairs: [
-    { emoji: '🐻', word: 'くま' },
-    { emoji: '🐰', word: 'うさぎ' },
-    { emoji: '🐘', word: 'ぞう' },
-    { emoji: '🐬', word: 'いるか' },
+    { img: W+'kotobaasobi_006.png', word: 'うさぎ' },
+    { img: W+'kotobaasobi_001.png', word: 'ぞう' },
+    { img: W+'kotobaasobi_004.png', word: 'いるか' },
+    { img: W+'レイヤー 0_009.png', word: 'キリン' },
   ]},
   { name: 'くだもの 🍎', pairs: [
-    { emoji: '🍎', word: 'りんご' },
-    { emoji: '🍌', word: 'バナナ' },
-    { emoji: '🍓', word: 'いちご' },
-    { emoji: '🍊', word: 'みかん' },
+    { img: W+'レイヤー 0_039.png', word: 'りんご' },
+    { img: W+'kotobaasobi_008.png', word: 'みかん' },
+    { img: W+'レイヤー 0_044.png', word: 'いちご' },
+    { img: W+'レイヤー 0_036.png', word: 'バナナ' },
   ]},
   { name: 'やさい 🥕', pairs: [
     { emoji: '🥕', word: 'にんじん' },
-    { emoji: '🍅', word: 'トマト' },
+    { img: W+'レイヤー 0_037.png', word: 'トマト' },
     { emoji: '🥒', word: 'きゅうり' },
-    { emoji: '🍄', word: 'きのこ' },
+    { img: W+'kotobaasobi_009.png', word: 'きのこ' },
   ]},
   { name: 'どうぶつ2 🦁', pairs: [
-    { emoji: '🦒', word: 'キリン' },
-    { emoji: '🐒', word: 'さる' },
-    { emoji: '🦁', word: 'ライオン' },
-    { emoji: '🐼', word: 'パンダ' },
+    { img: W+'レイヤー 0_004.png', word: 'キリン' },
+    { img: W+'レイヤー 0_006.png', word: 'さる' },
+    { img: W+'レイヤー 0_003.png', word: 'ライオン' },
+    { img: W+'レイヤー 0_031.png', word: 'パンダ' },
   ]},
   { name: 'たべもの 🍚', pairs: [
-    { emoji: '🍚', word: 'ごはん' },
-    { emoji: '🍜', word: 'ラーメン' },
-    { emoji: '🍞', word: 'パン' },
-    { emoji: '🍰', word: 'ケーキ' },
+    { img: W+'kotobaasobi_010.png', word: 'ごはん' },
+    { img: W+'kotobaasobi_003.png', word: 'ラーメン' },
+    { img: W+'レイヤー 0_042.png', word: 'パン' },
+    { img: W+'レイヤー 0_010.png', word: 'ケーキ' },
+  ]},
+  { name: 'しぜん 🌸', pairs: [
+    { img: W+'レイヤー 0_032.png', word: 'はな' },
+    { img: W+'レイヤー 0_038.png', word: 'にじ' },
+    { img: W+'レイヤー 0_014.png', word: 'ほし' },
+    { img: W+'レイヤー 0_016.png', word: 'つき' },
   ]},
 ];
 
 // ===== Crossword puzzles =====
 // vEmoji/hEmoji: 5秒後にヒントとして表示する絵文字
 // 選択肢チェック済み: どのdistractorも縦横両方で有効な単語にならないことを確認
+// vImg/hImg: ヒント用画像パス
 const CROSSWORDS = [
   // --- かんたん: ひらがな2文字 ---
-  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'え'], vEmoji: '🐕', hEmoji: '🦑' },
-  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'く'], vEmoji: '🐱', hEmoji: '🧸' },
-  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ほ', 'の'], vEmoji: '🌸', hEmoji: '☀️' },
-  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'も', 'め'], vEmoji: '🌊', hEmoji: '🛤️' },
-  { vWord: 'くも', hWord: 'もり', shared: 'も', vIdx: 1, hIdx: 0, distractors: ['む', 'み', 'め'], vEmoji: '☁️', hEmoji: '🌲' },
-  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vEmoji: '⭐', hEmoji: '🦌' },
-  { vWord: 'つき', hWord: 'きて', shared: 'き', vIdx: 1, hIdx: 0, distractors: ['く', 'け', 'ぐ'], vEmoji: '🌙', hEmoji: '🌳' },
-  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vEmoji: '🐒', hEmoji: '🌿' },
+  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'え'], vImg: W+'レイヤー 0_002.png', hImg: W+'レイヤー 0_005.png' },
+  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'く'], vImg: W+'レイヤー 0_008.png', hImg: W+'レイヤー 0_021.png' },
+  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ほ', 'の'], vImg: W+'レイヤー 0_032.png', hImg: W+'レイヤー 0_009.png' },
+  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'も', 'め'], vImg: W+'レイヤー 0_020.png', hImg: W+'レイヤー 0_012.png' },
+  { vWord: 'くも', hWord: 'もり', shared: 'も', vIdx: 1, hIdx: 0, distractors: ['む', 'み', 'め'], vImg: W+'レイヤー 0_045.png', hImg: W+'レイヤー 0_001.png' },
+  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vImg: W+'レイヤー 0_014.png', hImg: W+'レイヤー 0_026.png' },
+  { vWord: 'つき', hWord: 'きて', shared: 'き', vIdx: 1, hIdx: 0, distractors: ['く', 'け', 'ぐ'], vImg: W+'レイヤー 0_016.png', hImg: W+'レイヤー 0_017.png' },
+  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vImg: W+'レイヤー 0_006.png', hImg: W+'レイヤー 0_033.png' },
   // --- ふつう: ひらがな2-3文字 ---
-  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vEmoji: '🌸', hEmoji: '🚗' },
-  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['む', 'め', 'も'], vEmoji: '🥚', hEmoji: '⛰️' },
-  { vWord: 'すいか', hWord: 'いちご', shared: 'い', vIdx: 1, hIdx: 0, distractors: ['う', 'え', 'お'], vEmoji: '🍉', hEmoji: '🍓' },
-  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vEmoji: '🐋', hEmoji: '🌈' },
-  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vEmoji: '🍬', hEmoji: '☂️' },
-  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vEmoji: '🪑', hEmoji: '👜' },
-  { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vEmoji: '⏰', hEmoji: '💨' },
-  { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vEmoji: '🍎', hEmoji: '👫' },
+  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vImg: W+'レイヤー 0_034.png', hImg: W+'レイヤー 0_028.png' },
+  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['む', 'め', 'も'], vImg: W+'レイヤー 3_001.png', hImg: W+'レイヤー 0_027.png' },
+  { vWord: 'すいか', hWord: 'いちご', shared: 'い', vIdx: 1, hIdx: 0, distractors: ['う', 'え', 'お'], vImg: W+'レイヤー 1_001.png', hImg: W+'レイヤー 0_044.png' },
+  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vImg: W+'レイヤー 0_043.png', hImg: W+'レイヤー 0_038.png' },
+  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vImg: W+'おかし.png', hImg: W+'レイヤー 0_018.png' },
+  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vImg: W+'レイヤー 0_040.png', hImg: '🧳' },
+  { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vImg: W+'レイヤー 0_011.png', hImg: '💨' },
+  { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vImg: W+'レイヤー 0_039.png', hImg: W+'レイヤー 0_007.png' },
   // --- むずかしめ: カタカナだけ ---
-  { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vEmoji: '🍅', hEmoji: '🐻' },
-  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['ポ', 'プ', 'ペ'], vEmoji: '🐼', hEmoji: '🍞' },
-  { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vEmoji: '🍈', hEmoji: '🚀' },
-  { vWord: 'キリン', hWord: 'リス',     shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vEmoji: '🦒', hEmoji: '🐿️' },
-  { vWord: 'ケーキ', hWord: 'スキー',   shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'コ'], vEmoji: '🎂', hEmoji: '⛷️' },
-  { vWord: 'バナナ', hWord: 'ナベ',     shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'], vEmoji: '🍌', hEmoji: '🍲' },
-  { vWord: 'カメラ', hWord: 'メガネ',   shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'], vEmoji: '📷', hEmoji: '👓' },
-  { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'], vEmoji: '🛞', hEmoji: '🦁' },
+  { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vImg: W+'レイヤー 0_037.png', hImg: W+'レイヤー 0_029.png' },
+  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['ポ', 'プ', 'ペ'], vImg: W+'レイヤー 0_031.png', hImg: W+'レイヤー 0_042.png' },
+  { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'レイヤー 0_022.png', hImg: W+'レイヤー 0_015.png' },
+  { vWord: 'キリン', hWord: 'リス',     shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'レイヤー 0_004.png', hImg: W+'レイヤー 0_024.png' },
+  { vWord: 'ケーキ', hWord: 'スキー',   shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'コ'], vImg: W+'レイヤー 0_010.png', hImg: W+'レイヤー 0_048.png' },
+  { vWord: 'バナナ', hWord: 'ナベ',     shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'], vImg: W+'レイヤー 0_036.png', hImg: W+'レイヤー 0_041.png' },
+  { vWord: 'カメラ', hWord: 'メガネ',   shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'], vImg: W+'レイヤー 0_046.png', hImg: W+'レイヤー 0_049.png' },
+  { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'], vImg: W+'レイヤー 0_023.png', hImg: W+'レイヤー 0_003.png' },
 ];
 
 // ===== State =====
@@ -790,9 +797,13 @@ function loadCrosswordStage(num) {
   // Hint area (hidden, shown after 5 seconds)
   const hintArea = document.createElement('div');
   hintArea.className = 'cross-word-hint';
+  const vHint = typeof puzzle.vImg === 'string' && puzzle.vImg.endsWith('.png')
+    ? `<img src="${puzzle.vImg}" class="hint-img" alt="${puzzle.vWord}">` : `<span class="hint-emoji">${puzzle.vImg}</span>`;
+  const hHint = typeof puzzle.hImg === 'string' && puzzle.hImg.endsWith('.png')
+    ? `<img src="${puzzle.hImg}" class="hint-img" alt="${puzzle.hWord}">` : `<span class="hint-emoji">${puzzle.hImg}</span>`;
   hintArea.innerHTML = `
-    <div class="cross-word-hint-item">↕ <span class="hint-emoji">${puzzle.vEmoji}</span> ${puzzle.vWord}</div>
-    <div class="cross-word-hint-item">↔ <span class="hint-emoji">${puzzle.hEmoji}</span> ${puzzle.hWord}</div>
+    <div class="cross-word-hint-item">↕ ${vHint} ${puzzle.vWord}</div>
+    <div class="cross-word-hint-item">↔ ${hHint} ${puzzle.hWord}</div>
   `;
   crossArea.appendChild(hintArea);
 
