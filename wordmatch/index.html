@@ -107,6 +107,12 @@ body {
   pointer-events: none;
 }
 
+.pic-img {
+  width: 100%;
+  max-height: 80px;
+  object-fit: contain;
+}
+
 .pic-label {
   min-height: 38px;
   width: 100%;
@@ -438,6 +444,7 @@ body {
     justify-content: center;
   }
   .pic-emoji { font-size: 2.6rem; }
+  .pic-img { max-height: 60px; }
   .pic-label { min-height: 30px; font-size: 0.9rem; }
   .word-tray-wrap {
     flex: 1;
@@ -521,7 +528,7 @@ const STAGES = [
     { img: W+'kotobaasobi_006.png', word: 'うさぎ' },
     { img: W+'kotobaasobi_001.png', word: 'ぞう' },
     { img: W+'kotobaasobi_004.png', word: 'いるか' },
-    { img: W+'レイヤー 0_009.png', word: 'キリン' },
+    { img: W+'レイヤー 0_029.png', word: 'くま' },
   ]},
   { name: 'くだもの 🍎', pairs: [
     { img: W+'レイヤー 0_039.png', word: 'りんご' },
@@ -681,7 +688,7 @@ function loadMatchStage(num) {
     const slot = document.createElement('div');
     slot.className = 'pic-slot';
     slot.innerHTML = `
-      <div class="pic-emoji">${pair.img ? `<img src="${pair.img}" alt="${pair.word}" style="width:1em;height:1em;vertical-align:middle">` : pair.emoji}</div>
+      <div class="pic-emoji">${pair.img ? `<img src="${pair.img}" alt="${pair.word}" class="pic-img">` : pair.emoji}</div>
       <div class="pic-label" data-idx="${i}"></div>
     `;
     picGrid.appendChild(slot);
