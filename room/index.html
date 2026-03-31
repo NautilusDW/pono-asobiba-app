@@ -887,11 +887,9 @@
 <script src="../common/stickers.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
-<script src="../common/se.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
-<audio id="bgm" loop src="../assets/audio/room_bgm.mp3" preload="auto"></audio>
 
 <!-- マスクは CSS mask-image で RGBA PNG 参照（アルファチャンネルで切り抜き） -->
 
@@ -1077,13 +1075,7 @@
 
 <script src="items.js"></script>
 <script>
-initMenu({
-  bgmToggle: function() {
-    bgmEnabled = !bgmEnabled;
-    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
-    if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-  }
-});
+initMenu();
 
 // ─── Constants ────────────────────────────────────────
 const LS = {
@@ -1507,7 +1499,6 @@ function _makeGridItem(p, areaId, locked) {
 function _rotateItem(el, areaId) {
   const item = getItem(el.dataset.itemId);
   if (!item || !item.roomImgB) return;
-  SE.play('room/rotate');
   const newAngle = el.dataset.angle === 'B' ? 'A' : 'B';
   el.dataset.angle = newAngle;
   const row = parseInt(el.dataset.row);
@@ -1596,10 +1587,10 @@ function _addDragHandlers(el, areaId) {
         const cfg2 = state.config[areaId];
         const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
         if (orig) { row = orig.row; col = orig.col; }
-        SE.play('common/error'); showToast('ここには おけないよ！');
+        showToast('ここには おけないよ！');
       } else {
         row = empty.row; col = empty.col;
-        SE.play('common/error'); showToast('ここには おけないよ！');
+        showToast('ここには おけないよ！');
       }
       el.dataset.row = row; el.dataset.col = col;
       _applyGridPos(el, row, col, areaId);
@@ -2449,8 +2440,6 @@ function placeItem(item) {
   renderShopGrid(item.cat);
   document.getElementById('shop-ov').classList.add('hidden');
   _shiftRoom(false);
-  if (item.cat === 'furn') SE.play('room/place_furniture');
-  else if (item.cat === 'deco') SE.play('room/place_deco');
   showToast(`✨ ${item.name} をかざったよ！`);
   // 家具・かざりを飾った後は自動でもようがえモードON（すぐ位置調整できるように）
   if (item.cat === 'furn' || item.cat === 'deco') {
@@ -2470,7 +2459,6 @@ function unplaceItem(item) {
   saveState();
   refreshArea(currentAreaId);
   renderShopGrid(item.cat);
-  SE.play('room/remove');
   showToast(`📦 ${item.name} をしまったよ！`);
 }
 
@@ -2498,7 +2486,6 @@ function renderGuide() {
 
 // ─── Theme selection ──────────────────────────────────
 function selectTheme(t) {
-  SE.play('room/dress_change');
   state.theme = t;
   localStorage.setItem(LS.THEME, t);
   document.getElementById('theme-ov').classList.add('hidden');
@@ -3354,31 +3341,6 @@ function dbgEggReset() {
   document.getElementById('egg-modal').classList.add('hidden');
   _dbgEggUpdate();
 }
-
-// ===== BGM =====
-const bgm = document.getElementById('bgm');
-let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
-let bgmStarted = false;
-bgm.volume = 0.15;
-
-function tryStartBgm() {
-  if (!bgmEnabled || bgmStarted) return;
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
-}
-
-if (bgmEnabled) {
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
-  });
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
-});
-window.addEventListener('blur', () => bgm.pause());
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 </script>
 </body>
 </html>

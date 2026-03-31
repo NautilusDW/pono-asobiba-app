@@ -8,7 +8,6 @@
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
-<script src="../common/se.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -926,11 +925,31 @@ document.addEventListener('touchstart', _unlockSharedAudio, { passive: true });
 document.addEventListener('pointerdown', _unlockSharedAudio);
 
 function playSuccessSound() {
-  SE.play('writing/hanamaru');
+  withAudio(ac => {
+    const now = ac.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const osc = ac.createOscillator(), gain = ac.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, now + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.4);
+    });
+  });
 }
 
 function playStrokeSound() {
-  SE.play('writing/stroke_done');
+  withAudio(ac => {
+    const now = ac.currentTime;
+    const osc = ac.createOscillator(), gain = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start(now); osc.stop(now + 0.15);
+  });
 }
 
 // ===== Confetti =====
@@ -1244,7 +1263,7 @@ function startQuiz() {
       showCompletion();
     },
     onMistake: function(data) {
-      SE.play('writing/stroke_miss');
+      // Small vibrate feedback if available
     },
     showHintAfterMisses: 3,
     highlightOnComplete: true,

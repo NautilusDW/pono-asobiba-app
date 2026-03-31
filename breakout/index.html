@@ -9,7 +9,6 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
-<script src="../common/se.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -514,7 +513,7 @@ function beep(ac, freq, t, dur, type = 'sine', vol = 0.25) {
   o.start(t); o.stop(t + dur + 0.02);
 }
 
-function playBlockHit()  { SE.play('breakout/brick'); }
+function playBlockHit()  { withAudio(ac => beep(ac, 500 + Math.random()*300, ac.currentTime, 0.07, 'square', 0.18)); }
 function playIronHit()   { withAudio(ac => beep(ac, 200 + Math.random()*50, ac.currentTime, 0.12, 'sawtooth', 0.15)); }
 function playIronWeaken() {
   withAudio(ac => {
@@ -523,9 +522,19 @@ function playIronWeaken() {
     beep(ac, 523, t + 0.5, 0.3, 'sine', 0.25);
   });
 }
-function playPaddleHit() { SE.play('breakout/paddle'); }
-function playMiss()      { SE.play('breakout/fall'); }
-function playStageClear() { SE.play('breakout/clear'); }
+function playPaddleHit() { withAudio(ac => beep(ac, 350, ac.currentTime, 0.1, 'sine', 0.28)); }
+function playMiss()      {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [350, 280, 200].forEach((f, i) => beep(ac, f, t + i*0.1, 0.15, 'sine', 0.25));
+  });
+}
+function playStageClear() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => beep(ac, f, t + i*0.13, 0.3, 'sine', 0.28));
+  });
+}
 
 // ===== Ball =====
 function launchBall() {
@@ -705,7 +714,13 @@ function checkBlocks() {
 }
 
 // ===== Power-ups =====
-function playPickupSound() { SE.play('common/point'); }
+function playPickupSound() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    beep(ac, 880, t, 0.07, 'sine', 0.22);
+    beep(ac, 1100, t + 0.07, 0.07, 'sine', 0.22);
+  });
+}
 
 function applyEffect(type) {
   playPickupSound();

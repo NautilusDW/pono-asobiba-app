@@ -10,7 +10,6 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <script src="../common/points.js"></script>
   <script src="../common/achievements.js"></script>
-  <script src="../common/se.js"></script>
   <script src="../common/menu.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
@@ -340,7 +339,6 @@
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
-<audio id="bgm" loop src="../assets/audio/egg_bgm.mp3" preload="auto"></audio>
   <div id="portrait-overlay"><div class="rot-icon">📱</div><p>スマホを よこむきに<br>してね！</p></div>
   <canvas id="pixi-canvas"></canvas>
   <button id="btnBack" onclick="location.href='../room/index.html?to=room'" style="position:fixed;top:12px;left:14px;z-index:12;padding:8px 14px;border-radius:12px;border:none;background:rgba(255,255,255,0.85);font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-family:inherit;">← おうち</button>
@@ -501,7 +499,6 @@
       }
     };
     document.addEventListener('pointerdown', () => SFX.init(), { once: true });
-    SE.preload(['egg/tap', 'egg/crack', 'egg/hatch', 'egg/creature']);
 
     // ═══════════════════════════════════════════════════════════
     // ─── Creature Helpers ────────────────────────────────────
@@ -1236,16 +1233,16 @@
     // ─── Hatch Animation ─────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let hatchingSlot=null, hatchPhase=0, hatchTimer=0;
-    function startHatch(sceneSlot) { hatchingSlot=sceneSlot; hatchPhase=1; hatchTimer=0; SE.play('egg/tap'); }
+    function startHatch(sceneSlot) { hatchingSlot=sceneSlot; hatchPhase=1; hatchTimer=0; SFX.play('wobble'); }
     function updateHatch(delta) {
       if(!hatchingSlot) return;
       hatchTimer += delta;
       if(hatchPhase===1){
         if(hatchingSlot.type==='egg'){const amp=Math.min(hatchTimer*0.02,0.15);hatchingSlot.obj.container.rotation=Math.sin(hatchTimer*0.8)*amp;}
-        if(hatchTimer>90){hatchPhase=2;hatchTimer=0;if(hatchingSlot.obj.crack){const crack=hatchingSlot.obj.crack;crack.visible=true;crack.clear();crack.lineStyle(2,0x333333,0.8);let cy=-hatchingSlot.obj.eggH*0.6,cx=0;for(let i=0;i<5;i++){const nx=cx+(Math.random()-0.5)*15,ny=cy+hatchingSlot.obj.eggH*0.25;crack.moveTo(cx,cy);crack.lineTo(nx,ny);cx=nx;cy=ny;}}SE.play('egg/crack');}
+        if(hatchTimer>90){hatchPhase=2;hatchTimer=0;if(hatchingSlot.obj.crack){const crack=hatchingSlot.obj.crack;crack.visible=true;crack.clear();crack.lineStyle(2,0x333333,0.8);let cy=-hatchingSlot.obj.eggH*0.6,cx=0;for(let i=0;i<5;i++){const nx=cx+(Math.random()-0.5)*15,ny=cy+hatchingSlot.obj.eggH*0.25;crack.moveTo(cx,cy);crack.lineTo(nx,ny);cx=nx;cy=ny;}}SFX.play('wobble');}
       }else if(hatchPhase===2){
         if(hatchingSlot.type==='egg')hatchingSlot.obj.container.rotation=Math.sin(hatchTimer*1.2)*0.2;
-        if(hatchTimer>60){hatchPhase=3;hatchTimer=0;const flash=new PIXI.Graphics();flash.beginFill(0xFFFFFF);flash.drawRect(0,0,W(),H());flash.endFill();flash.alpha=0.9;layerTop.addChild(flash);hatchingSlot._flash=flash;SE.play('egg/hatch');}
+        if(hatchTimer>60){hatchPhase=3;hatchTimer=0;const flash=new PIXI.Graphics();flash.beginFill(0xFFFFFF);flash.drawRect(0,0,W(),H());flash.endFill();flash.alpha=0.9;layerTop.addChild(flash);hatchingSlot._flash=flash;SFX.play('hatch');}
       }else if(hatchPhase===3){
         if(hatchingSlot._flash){hatchingSlot._flash.alpha=Math.max(0,0.9-hatchTimer*0.03);if(hatchingSlot._flash.alpha<=0){layerTop.removeChild(hatchingSlot._flash);hatchingSlot._flash.destroy();hatchingSlot._flash=null;}}
         if(hatchTimer>35){
@@ -1254,7 +1251,7 @@
           if(window.incrementStat)window.incrementStat('egg_hatched',1);if(window.awardPoints)awardPoints(3);
           hatchingSlot=null;hatchPhase=0;rebuildYardScene();
           const newSlot=sceneSlots.find(s=>s.slotIdx===hatchedSlotIdx);
-          if(newSlot){SE.play('egg/creature');spawnConfetti(newSlot.x,newSlot.y-30,25);spawnStars(newSlot.x,newSlot.y-20,8);newSlot.happyTimer=60;}
+          if(newSlot){spawnConfetti(newSlot.x,newSlot.y-30,25);spawnStars(newSlot.x,newSlot.y-20,8);newSlot.happyTimer=60;}
           showToast(getCreatureData(hatchedType).name+' が うまれたよ！🎉');
         }
       }
@@ -1285,7 +1282,7 @@
     }
     function doPat(sceneSlot) {
       if(sceneSlot.patCooldown>0)return;sceneSlot.patCooldown=180;
-      if(sceneSlot.type==='egg'){SE.play('egg/tap');sceneSlot.wobbleT=0;}else{SFX.play('pat');sceneSlot.happyTimer=30;}
+      if(sceneSlot.type==='egg'){SFX.play('wobble');sceneSlot.wobbleT=0;}else{SFX.play('pat');sceneSlot.happyTimer=30;}
       spawnHearts(sceneSlot.x,sceneSlot.y-30,3);
       if(addGrowth(sceneSlot,1)){if(sceneSlot.data.stage===STAGE_EGG&&sceneSlot.data.growthPts>=STAGE_THRESHOLDS[STAGE_BABY])startHatch(sceneSlot);}
     }
@@ -1789,37 +1786,6 @@
     }
 
   })();
-
-// ===== BGM =====
-const bgm = document.getElementById('bgm');
-let bgmStarted = false;
-bgm.volume = 0.15;
-
-function tryStartBgm() {
-  if (!bgmEnabled || bgmStarted) return;
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
-}
-
-// Update toggleBgm to also control BGM audio
-const _origToggleBgm = toggleBgm;
-toggleBgm = function() {
-  _origToggleBgm();
-  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-};
-
-if (bgmEnabled) {
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
-  });
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
-});
-window.addEventListener('blur', () => bgm.pause());
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
   </script>
 </body>
 </html>

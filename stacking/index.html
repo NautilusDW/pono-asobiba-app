@@ -8,7 +8,6 @@
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
-<script src="../common/se.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -146,7 +145,6 @@ body {
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
-<audio id="bgm" loop src="../assets/audio/stacking_bgm.mp3" preload="auto"></audio>
 
 <header class="header">
   <h1>コトリをたすけよう！</h1>
@@ -269,7 +267,6 @@ function triggerFreeze() {
   });
 
   freezeSegment++;
-  SE.play('stacking/combo');
   if (freezeSegment >= 1) karasuActive = true; // 1回目フリーズ後にカラス登場
 
   // スクロール中だった場合はキャンセルし、カメラを直接最終位置に移動
@@ -530,7 +527,6 @@ function dropBlock() {
   });
   Body.setVelocity(fallingBody, { x: 0, y: 4 });
   World.add(engine.world, fallingBody);
-  SE.play('stacking/drop');
 
   if (isHit) {
     // Block will land on platform/stack — wait for it to settle then score
@@ -583,7 +579,6 @@ function checkHit() {
   currentShape = getNextShape();
   updateScore();
   showFlash('success');
-  SE.play('stacking/stack');
   if (score % 10 === 0) awardPoints(5);
   if (window.setStatMax) window.setStatMax('stacking_height', score);
 
@@ -599,7 +594,6 @@ function doMiss() {
   lastTs = null;
   currentShape = getNextShape();
   showFlash('miss');
-  SE.play('stacking/collapse');
 }
 
 // Clean up blocks far below the viewport
@@ -615,7 +609,6 @@ Events.on(engine, 'afterUpdate', () => {
 // ===== Game Clear =====
 function doGameClear() {
   gameActive = false;
-  SE.play('stacking/clear');
   Render.stop(render);
   Runner.stop(runner);
   if (score > hiScore) {
@@ -730,43 +723,9 @@ const restartBtn2 = document.getElementById('restart-btn2');
 restartBtn2.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); startGame(); }, { passive: false });
 restartBtn2.addEventListener('click', e => { e.stopPropagation(); startGame(); });
 
-// SE preload
-SE.preload(['stacking/stack','stacking/drop','stacking/collapse','stacking/combo','stacking/clear']);
-
 // ページ読み込み完了後すぐにゲーム開始
 startGame();
-initMenu({
-  bgmToggle: function() {
-    bgmEnabled = !bgmEnabled;
-    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
-    if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-  }
-});
-
-// ===== BGM =====
-const bgm = document.getElementById('bgm');
-let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
-let bgmStarted = false;
-bgm.volume = 0.2;
-
-function tryStartBgm() {
-  if (!bgmEnabled || bgmStarted) return;
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
-}
-
-if (bgmEnabled) {
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
-  });
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
-});
-window.addEventListener('blur', () => bgm.pause());
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+initMenu();
 </script>
 </body>
 </html>

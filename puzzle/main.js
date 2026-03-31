@@ -83,12 +83,31 @@ document.addEventListener('pointerdown', () => getSfxCtx().resume(), { once: tru
 
 // ===== Audio: Snap Sound =====
 function playSnapSound() {
-  SE.play('common/tap');
+  withAudio(actx => {
+    const osc = actx.createOscillator(), gain = actx.createGain();
+    osc.connect(gain); gain.connect(actx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, actx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, actx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.3, actx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.2);
+    osc.start(actx.currentTime); osc.stop(actx.currentTime + 0.2);
+  });
 }
 
 // ===== Audio: Completion Fanfare =====
 function playFanfare() {
-  SE.play('common/success');
+  withAudio(actx => {
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = actx.createOscillator(), gain = actx.createGain();
+      osc.connect(gain); gain.connect(actx.destination);
+      osc.type = 'triangle'; osc.frequency.value = freq;
+      const t = actx.currentTime + i * 0.15;
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+      osc.start(t); osc.stop(t + 0.4);
+    });
+  });
 }
 
 // ===== Confetti =====
