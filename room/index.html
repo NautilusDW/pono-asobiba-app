@@ -891,6 +891,7 @@
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+<audio id="bgm" loop src="../assets/audio/room_bgm.mp3" preload="auto"></audio>
 
 <!-- マスクは CSS mask-image で RGBA PNG 参照（アルファチャンネルで切り抜き） -->
 
@@ -1076,7 +1077,13 @@
 
 <script src="items.js"></script>
 <script>
-initMenu();
+initMenu({
+  bgmToggle: function() {
+    bgmEnabled = !bgmEnabled;
+    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+    if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  }
+});
 
 // ─── Constants ────────────────────────────────────────
 const LS = {
@@ -3347,6 +3354,31 @@ function dbgEggReset() {
   document.getElementById('egg-modal').classList.add('hidden');
   _dbgEggUpdate();
 }
+
+// ===== BGM =====
+const bgm = document.getElementById('bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+let bgmStarted = false;
+bgm.volume = 0.15;
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+if (bgmEnabled) {
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+    document.addEventListener('pointerdown', tryStartBgm, { once: true });
+  });
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgm.pause(); }
+  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+});
+window.addEventListener('blur', () => bgm.pause());
+window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 </script>
 </body>
 </html>
