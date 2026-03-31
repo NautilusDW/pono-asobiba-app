@@ -809,8 +809,8 @@ function loadCrosswordStage(num) {
   const hHint = typeof puzzle.hImg === 'string' && puzzle.hImg.endsWith('.png')
     ? `<img src="${puzzle.hImg}" class="hint-img" alt="${puzzle.hWord}">` : `<span class="hint-emoji">${puzzle.hImg}</span>`;
   hintArea.innerHTML = `
-    <div class="cross-word-hint-item">↕ ${vHint} ${puzzle.vWord}</div>
-    <div class="cross-word-hint-item">↔ ${hHint} ${puzzle.hWord}</div>
+    <div class="cross-word-hint-item">↕ ${vHint}</div>
+    <div class="cross-word-hint-item">↔ ${hHint}</div>
   `;
   crossArea.appendChild(hintArea);
 
