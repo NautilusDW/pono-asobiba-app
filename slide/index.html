@@ -145,6 +145,7 @@ html, body {
 
 </style>
 <script src="../common/menu.js"></script>
+<script src="../common/se.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -346,37 +347,15 @@ function calcLayout() {
 
 window.addEventListener('resize', resize);
 
-// ===== Audio =====
-let audioCtx = null;
-function withAudio(fn) {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  fn(audioCtx);
-}
-function beep(ac, freq, start, dur, type, vol) {
-  const o = ac.createOscillator();
-  const g = ac.createGain();
-  o.type = type || 'sine';
-  o.frequency.value = freq;
-  g.gain.setValueAtTime(vol || 0.2, start);
-  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
-  o.connect(g); g.connect(ac.destination);
-  o.start(start); o.stop(start + dur);
-}
+// ===== Audio (SE) =====
 function playSlideSound() {
-  withAudio(ac => beep(ac, 350 + Math.random() * 80, ac.currentTime, 0.06, 'sine', 0.15));
+  SE.play('slide/slide', { volume: 0.5 });
 }
 function playClearSound() {
-  withAudio(ac => {
-    const t = ac.currentTime;
-    [523, 659, 784, 1047].forEach((f, i) => beep(ac, f, t + i * 0.12, 0.25, 'sine', 0.2));
-  });
+  SE.play('slide/complete');
 }
 function playGameClearSound() {
-  withAudio(ac => {
-    const t = ac.currentTime;
-    [523,659,784,1047,784,1047,1319].forEach((f,i) => beep(ac, f, t + i*0.15, 0.3, 'sine', 0.22));
-  });
+  SE.play('slide/complete');
 }
 
 // ===== Grid helpers =====

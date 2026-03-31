@@ -8,6 +8,7 @@
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/se.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -854,6 +855,7 @@ function selectColor(col, sw) {
   currentColor = col;
   isEraser = false;
   isRainbow = false;
+  SE.play('coloring/color_select');
   document.getElementById('eraser-btn').classList.remove('eraser-selected');
   document.getElementById('rainbow-btn').classList.remove('selected');
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
@@ -1144,6 +1146,7 @@ function doDraw(e) {
 
 function endDrawInternal() {
   if (drawing && isBucket && !isEraser) applyRegionMask(strokeX0, strokeY0, strokeX1, strokeY1);
+  if (drawing) SE.play('coloring/fill');
   drawing = false;
 }
 
@@ -1490,6 +1493,7 @@ function saveToSlot(slot) {
     alert('保存できませんでした（容量不足）');
     return;
   }
+  SE.play('coloring/area_done');
   updateSavePanel();
 }
 
@@ -1565,6 +1569,7 @@ function saveColored() {
   link.download = currentNurieName + '_いろぬり.png';
   link.href = offscreen.toDataURL('image/png');
   link.click();
+  SE.play('coloring/complete');
   awardPoints(5);
   if (window.incrementStat) window.incrementStat('coloring_complete', 1);
 }
@@ -1629,6 +1634,7 @@ document.addEventListener('fullscreenchange', () => {
 // ===== Init =====
 buildPalette();
 initSizeBtns();
+SE.preload(['coloring/fill', 'coloring/color_select', 'coloring/area_done', 'coloring/complete']);
 // はみ出し防止デフォルトON: ボタン状態を反映
 document.getElementById('bucket-btn').classList.add('selected');
 

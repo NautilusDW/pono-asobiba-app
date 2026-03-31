@@ -518,6 +518,7 @@ body {
 }
 </style>
 <script src="../common/achievements.js"></script>
+<script src="../common/se.js"></script>
 <script src="../common/menu.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -795,6 +796,7 @@ function selectColor(color, btnEl) {
   deactivateEraser();
   deactivateStamp();
   deactivateBucket();
+  SE.play('drawing/color_select');
 }
 
 // ===== OpenMoji Stamp Definitions =====
@@ -886,7 +888,7 @@ function startDraw(e) {
   const { x, y } = getPos(e);
 
   // Stamp mode
-  if (stamping) { saveHistory(); drawStamp(x, y); return; }
+  if (stamping) { saveHistory(); drawStamp(x, y); SE.play('drawing/stamp'); return; }
 
   // Bucket mode
   if (bucketMode) {
@@ -898,6 +900,7 @@ function startDraw(e) {
   saveHistory();
   isDrawing = true;
   lastX = x; lastY = y;
+  SE.play('drawing/brush_start');
   // Draw a dot on tap
   let dotColor;
   if (erasing) dotColor = '#FFFFFF';
@@ -971,7 +974,7 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 document.getElementById('btnEraser').addEventListener('click', () => {
   erasing = !erasing;
   document.getElementById('btnEraser').classList.toggle('active', erasing);
-  if (erasing) { deactivateStamp(); deactivateRainbow(); deactivateSparkle(); deactivateBucket(); }
+  if (erasing) { deactivateStamp(); deactivateRainbow(); deactivateSparkle(); deactivateBucket(); SE.play('drawing/eraser'); }
 });
 
 // ===== Stamp =====
@@ -1035,6 +1038,7 @@ document.getElementById('btnClear').addEventListener('click', () => {
   saveHistory();
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  SE.play('drawing/clear_all');
 });
 
 // ===== Save & Gallery =====

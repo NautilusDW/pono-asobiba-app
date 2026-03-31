@@ -8,6 +8,7 @@
 <script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/se.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -507,6 +508,7 @@ function setSelectedCard(card) {
   if (card) {
     selectedCard = card;
     card.classList.add('selected');
+    SE.play('wordmatch/flip');
     document.querySelectorAll('.pic-label:not(.matched)').forEach(l => l.classList.add('hover'));
   }
 }
@@ -622,63 +624,10 @@ function launchConfetti() {
   }
 }
 
-// ===== Audio =====
-let _ac = null;
-function getAC() {
-  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
-  return _ac;
-}
-function withAudio(fn) {
-  const ac = getAC();
-  if (ac.state === 'running') fn(ac);
-  else ac.resume().then(() => fn(ac)).catch(() => {});
-}
-// iOS Safari: 最初のタッチで AudioContext をアンロック
-document.addEventListener('touchstart', () => getAC().resume(), { once: true, passive: true });
-document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
-
-function playCorrect() {
-  withAudio(ac => {
-    [523.25, 783.99].forEach((freq, i) => {
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.connect(g); g.connect(ac.destination);
-      o.type = 'sine'; o.frequency.value = freq;
-      const t = ac.currentTime + i * 0.13;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.22, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-      o.start(t); o.stop(t + 0.28);
-    });
-  });
-}
-
-function playWrong() {
-  withAudio(ac => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(220, ac.currentTime);
-    o.frequency.exponentialRampToValueAtTime(110, ac.currentTime + 0.22);
-    g.gain.setValueAtTime(0.15, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.22);
-    o.start(); o.stop(ac.currentTime + 0.22);
-  });
-}
-
-function playFanfare() {
-  withAudio(ac => {
-    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.connect(g); g.connect(ac.destination);
-      o.type = 'sine'; o.frequency.value = freq;
-      const t = ac.currentTime + i * 0.1;
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.25, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-      o.start(t); o.stop(t + 0.45);
-    });
-  });
-}
+// ===== Audio (delegated to shared SE player) =====
+function playCorrect() { SE.play('wordmatch/match'); }
+function playWrong()   { SE.play('wordmatch/miss'); }
+function playFanfare() { SE.play('wordmatch/clear'); }
 
 // ===== Init =====
 // ひらがなグループ(0-3)とカタカナグループ(4-7)の中でそれぞれシャッフル

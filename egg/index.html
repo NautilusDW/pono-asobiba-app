@@ -10,6 +10,7 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <script src="../common/points.js"></script>
   <script src="../common/achievements.js"></script>
+  <script src="../common/se.js"></script>
   <script src="../common/menu.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
@@ -499,6 +500,7 @@
       }
     };
     document.addEventListener('pointerdown', () => SFX.init(), { once: true });
+    SE.preload(['egg/tap', 'egg/crack', 'egg/hatch', 'egg/creature']);
 
     // ═══════════════════════════════════════════════════════════
     // ─── Creature Helpers ────────────────────────────────────
@@ -1233,16 +1235,16 @@
     // ─── Hatch Animation ─────────────────────────────────────
     // ═══════════════════════════════════════════════════════════
     let hatchingSlot=null, hatchPhase=0, hatchTimer=0;
-    function startHatch(sceneSlot) { hatchingSlot=sceneSlot; hatchPhase=1; hatchTimer=0; SFX.play('wobble'); }
+    function startHatch(sceneSlot) { hatchingSlot=sceneSlot; hatchPhase=1; hatchTimer=0; SE.play('egg/tap'); }
     function updateHatch(delta) {
       if(!hatchingSlot) return;
       hatchTimer += delta;
       if(hatchPhase===1){
         if(hatchingSlot.type==='egg'){const amp=Math.min(hatchTimer*0.02,0.15);hatchingSlot.obj.container.rotation=Math.sin(hatchTimer*0.8)*amp;}
-        if(hatchTimer>90){hatchPhase=2;hatchTimer=0;if(hatchingSlot.obj.crack){const crack=hatchingSlot.obj.crack;crack.visible=true;crack.clear();crack.lineStyle(2,0x333333,0.8);let cy=-hatchingSlot.obj.eggH*0.6,cx=0;for(let i=0;i<5;i++){const nx=cx+(Math.random()-0.5)*15,ny=cy+hatchingSlot.obj.eggH*0.25;crack.moveTo(cx,cy);crack.lineTo(nx,ny);cx=nx;cy=ny;}}SFX.play('wobble');}
+        if(hatchTimer>90){hatchPhase=2;hatchTimer=0;if(hatchingSlot.obj.crack){const crack=hatchingSlot.obj.crack;crack.visible=true;crack.clear();crack.lineStyle(2,0x333333,0.8);let cy=-hatchingSlot.obj.eggH*0.6,cx=0;for(let i=0;i<5;i++){const nx=cx+(Math.random()-0.5)*15,ny=cy+hatchingSlot.obj.eggH*0.25;crack.moveTo(cx,cy);crack.lineTo(nx,ny);cx=nx;cy=ny;}}SE.play('egg/crack');}
       }else if(hatchPhase===2){
         if(hatchingSlot.type==='egg')hatchingSlot.obj.container.rotation=Math.sin(hatchTimer*1.2)*0.2;
-        if(hatchTimer>60){hatchPhase=3;hatchTimer=0;const flash=new PIXI.Graphics();flash.beginFill(0xFFFFFF);flash.drawRect(0,0,W(),H());flash.endFill();flash.alpha=0.9;layerTop.addChild(flash);hatchingSlot._flash=flash;SFX.play('hatch');}
+        if(hatchTimer>60){hatchPhase=3;hatchTimer=0;const flash=new PIXI.Graphics();flash.beginFill(0xFFFFFF);flash.drawRect(0,0,W(),H());flash.endFill();flash.alpha=0.9;layerTop.addChild(flash);hatchingSlot._flash=flash;SE.play('egg/hatch');}
       }else if(hatchPhase===3){
         if(hatchingSlot._flash){hatchingSlot._flash.alpha=Math.max(0,0.9-hatchTimer*0.03);if(hatchingSlot._flash.alpha<=0){layerTop.removeChild(hatchingSlot._flash);hatchingSlot._flash.destroy();hatchingSlot._flash=null;}}
         if(hatchTimer>35){
@@ -1251,7 +1253,7 @@
           if(window.incrementStat)window.incrementStat('egg_hatched',1);if(window.awardPoints)awardPoints(3);
           hatchingSlot=null;hatchPhase=0;rebuildYardScene();
           const newSlot=sceneSlots.find(s=>s.slotIdx===hatchedSlotIdx);
-          if(newSlot){spawnConfetti(newSlot.x,newSlot.y-30,25);spawnStars(newSlot.x,newSlot.y-20,8);newSlot.happyTimer=60;}
+          if(newSlot){SE.play('egg/creature');spawnConfetti(newSlot.x,newSlot.y-30,25);spawnStars(newSlot.x,newSlot.y-20,8);newSlot.happyTimer=60;}
           showToast(getCreatureData(hatchedType).name+' が うまれたよ！🎉');
         }
       }
@@ -1282,7 +1284,7 @@
     }
     function doPat(sceneSlot) {
       if(sceneSlot.patCooldown>0)return;sceneSlot.patCooldown=180;
-      if(sceneSlot.type==='egg'){SFX.play('wobble');sceneSlot.wobbleT=0;}else{SFX.play('pat');sceneSlot.happyTimer=30;}
+      if(sceneSlot.type==='egg'){SE.play('egg/tap');sceneSlot.wobbleT=0;}else{SFX.play('pat');sceneSlot.happyTimer=30;}
       spawnHearts(sceneSlot.x,sceneSlot.y-30,3);
       if(addGrowth(sceneSlot,1)){if(sceneSlot.data.stage===STAGE_EGG&&sceneSlot.data.growthPts>=STAGE_THRESHOLDS[STAGE_BABY])startHatch(sceneSlot);}
     }
