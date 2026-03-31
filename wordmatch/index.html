@@ -97,6 +97,10 @@ body {
   transition: border-color 0.2s;
 }
 
+.pic-slot {
+  cursor: pointer;
+}
+
 .pic-emoji {
   font-size: 3.4rem;
   line-height: 1;
@@ -330,6 +334,29 @@ body {
   text-align: center;
 }
 
+.cross-word-hint {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.cross-word-hint.visible { opacity: 1; }
+.cross-word-hint-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  background: rgba(255,255,255,0.85);
+  border-radius: 12px;
+  padding: 4px 10px;
+}
+.cross-word-hint-item .hint-emoji {
+  font-size: 1.3rem;
+}
+
 .cross-choices {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -518,34 +545,35 @@ const STAGES = [
 ];
 
 // ===== Crossword puzzles =====
+// vEmoji/hEmoji: 5秒後にヒントとして表示する絵文字
 const CROSSWORDS = [
-  // --- かんたん (2文字) ---
-  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'あ'] },
-  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['か', 'き', 'く'] },
-  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['し', 'す', 'そ'] },
-  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ね', 'の'] },
-  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'め', 'も'] },
-  { vWord: 'そら', hWord: 'から', shared: 'ら', vIdx: 1, hIdx: 1, distractors: ['り', 'る', 'れ'] },
-  { vWord: 'かめ', hWord: 'あめ', shared: 'め', vIdx: 1, hIdx: 1, distractors: ['ま', 'み', 'も'] },
-  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'] },
-  // --- ふつう (3文字) ---
-  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'] },
-  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['み', 'む', 'も'] },
-  { vWord: 'りんご', hWord: 'おんぷ', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'] },
-  { vWord: 'すいか', hWord: 'たいこ', shared: 'い', vIdx: 1, hIdx: 1, distractors: ['う', 'え', 'お'] },
-  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'] },
-  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'] },
-  { vWord: 'つくえ', hWord: 'おくち', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'] },
-  { vWord: 'とけい', hWord: 'けむし', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'] },
-  // --- むずかしめ (カタカナ混合) ---
-  { vWord: 'バナナ', hWord: 'サンド', shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'] },
-  { vWord: 'トマト', hWord: 'クマ',   shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'] },
-  { vWord: 'パンダ', hWord: 'サンド', shared: 'ン', vIdx: 1, hIdx: 1, distractors: ['ソ', 'ノ', 'ワ'] },
-  { vWord: 'メロン', hWord: 'ノート', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'] },
-  { vWord: 'キリン', hWord: 'リボン', shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'] },
-  { vWord: 'ケーキ', hWord: 'スキー', shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'ケ'] },
-  { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'] },
-  { vWord: 'カメラ', hWord: 'メダル', shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'] },
+  // --- かんたん: ひらがな2文字 ---
+  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'あ'], vEmoji: '🐕', hEmoji: '🦑' },
+  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['か', 'き', 'く'], vEmoji: '🐱', hEmoji: '🧸' },
+  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ね', 'の'], vEmoji: '🌸', hEmoji: '☀️' },
+  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'め', 'も'], vEmoji: '🌊', hEmoji: '🛤️' },
+  { vWord: 'そら', hWord: 'から', shared: 'ら', vIdx: 1, hIdx: 1, distractors: ['り', 'る', 'れ'], vEmoji: '🌤️', hEmoji: '🫙' },
+  { vWord: 'かめ', hWord: 'あめ', shared: 'め', vIdx: 1, hIdx: 1, distractors: ['ま', 'み', 'も'], vEmoji: '🐢', hEmoji: '🌧️' },
+  { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vEmoji: '⭐', hEmoji: '🦌' },
+  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['し', 'す', 'そ'], vEmoji: '🐒', hEmoji: '🌿' },
+  // --- ふつう: ひらがな2-3文字 ---
+  { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vEmoji: '🌸', hEmoji: '🚗' },
+  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['み', 'む', 'も'], vEmoji: '🥚', hEmoji: '⛰️' },
+  { vWord: 'すいか', hWord: 'たいこ', shared: 'い', vIdx: 1, hIdx: 1, distractors: ['う', 'え', 'お'], vEmoji: '🍉', hEmoji: '🥁' },
+  { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vEmoji: '🐋', hEmoji: '🌈' },
+  { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vEmoji: '🍬', hEmoji: '☂️' },
+  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vEmoji: '🪑', hEmoji: '👜' },
+  { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vEmoji: '⏰', hEmoji: '💨' },
+  { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vEmoji: '🍎', hEmoji: '👫' },
+  // --- むずかしめ: カタカナだけ ---
+  { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vEmoji: '🍅', hEmoji: '🐻' },
+  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['バ', 'ポ', 'プ'], vEmoji: '🐼', hEmoji: '🍞' },
+  { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vEmoji: '🍈', hEmoji: '🚀' },
+  { vWord: 'キリン', hWord: 'リンゴ',   shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vEmoji: '🦒', hEmoji: '🍎' },
+  { vWord: 'ケーキ', hWord: 'スキー',   shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'コ'], vEmoji: '🎂', hEmoji: '⛷️' },
+  { vWord: 'バナナ', hWord: 'ナベ',     shared: 'ナ', vIdx: 1, hIdx: 0, distractors: ['ニ', 'ヌ', 'ノ'], vEmoji: '🍌', hEmoji: '🍲' },
+  { vWord: 'カメラ', hWord: 'メガネ',   shared: 'メ', vIdx: 1, hIdx: 0, distractors: ['モ', 'マ', 'ミ'], vEmoji: '📷', hEmoji: '👓' },
+  { vWord: 'タイヤ', hWord: 'タイコ',   shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'], vEmoji: '🛞', hEmoji: '🥁' },
 ];
 
 // ===== State =====
@@ -558,6 +586,7 @@ let selectedPicIdx  = null;
 // Stage type schedule: 'match' or 'cross', 3 each alternating
 let crossPool = [];
 let crossIdx  = 0;
+let hintTimer = null;
 
 function getStageType(num) {
   // 0-2: match, 3-5: cross, 6-8: match, 9-11: cross, ...
@@ -609,6 +638,7 @@ function loadStage(num) {
   matchedCount    = 0;
   selectedCard    = null;
   selectedPicIdx  = null;
+  if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
 
   const type = getStageType(num);
 
@@ -750,7 +780,22 @@ function loadCrosswordStage(num) {
   });
 
   crossArea.appendChild(choices);
+
+  // Hint area (hidden, shown after 5 seconds)
+  const hintArea = document.createElement('div');
+  hintArea.className = 'cross-word-hint';
+  hintArea.innerHTML = `
+    <div class="cross-word-hint-item">↕ <span class="hint-emoji">${puzzle.vEmoji}</span> ${puzzle.vWord}</div>
+    <div class="cross-word-hint-item">↔ <span class="hint-emoji">${puzzle.hEmoji}</span> ${puzzle.hWord}</div>
+  `;
+  crossArea.appendChild(hintArea);
+
   area.appendChild(crossArea);
+
+  // Show hint after 5 seconds
+  hintTimer = setTimeout(() => {
+    hintArea.classList.add('visible');
+  }, 5000);
 }
 
 // ===== Tap handling =====
@@ -765,7 +810,8 @@ document.addEventListener('click', e => {
 
   // Match mode
   const card  = e.target.closest('.word-card');
-  const label = e.target.closest('.pic-label:not(.matched)');
+  const slot  = e.target.closest('.pic-slot');
+  const label = slot ? slot.querySelector('.pic-label:not(.matched)') : null;
 
   if (card) {
     if (selectedPicIdx !== null) {
@@ -778,16 +824,15 @@ document.addEventListener('click', e => {
     return;
   }
 
-  if (label) {
+  if (slot && label) {
     if (selectedCard) {
       tryMatch(selectedCard, label);
     } else {
-      const picSlot = label.closest('.pic-slot');
       const idx = parseInt(label.dataset.idx);
       if (selectedPicIdx === idx) {
         clearSelection();
       } else {
-        setSelectedPic(picSlot, idx);
+        setSelectedPic(slot, idx);
       }
     }
     return;
