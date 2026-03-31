@@ -351,7 +351,11 @@ body {
   opacity: 0;
   transition: opacity 0.5s;
 }
-.cross-word-hint.visible { opacity: 1; }
+.cross-word-hint.visible { opacity: 1; animation: hintBlink 1.5s ease-in-out infinite; }
+@keyframes hintBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
 .cross-word-hint-item {
   display: flex;
   align-items: center;
@@ -606,6 +610,7 @@ let selectedPicIdx  = null;
 let crossPool = [];
 let crossIdx  = 0;
 let hintTimer = null;
+let currentCrossPuzzle = null;
 
 function getStageType(num) {
   // 0-2: match, 3-5: cross, 6-8: match, 9-11: cross, ...
@@ -722,6 +727,7 @@ function loadMatchStage(num) {
 // ===== Load CROSSWORD stage =====
 function loadCrosswordStage(num) {
   const puzzle = getCrosswordData();
+  currentCrossPuzzle = puzzle;
 
   document.getElementById('stage-name').textContent = 'もじクロス ✏️';
   document.getElementById('stage-num').textContent  = `ステージ ${num + 1}`;
@@ -800,25 +806,23 @@ function loadCrosswordStage(num) {
 
   crossArea.appendChild(choices);
 
-  // Hint area (hidden, shown after 5 seconds)
+  // Hint area (hidden, shown after 8 seconds — one random image only)
   const hintArea = document.createElement('div');
   hintArea.className = 'cross-word-hint';
-  const vHint = typeof puzzle.vImg === 'string' && puzzle.vImg.endsWith('.png')
-    ? `<img src="${puzzle.vImg}" class="hint-img" alt="${puzzle.vWord}">` : `<span class="hint-emoji">${puzzle.vImg}</span>`;
-  const hHint = typeof puzzle.hImg === 'string' && puzzle.hImg.endsWith('.png')
-    ? `<img src="${puzzle.hImg}" class="hint-img" alt="${puzzle.hWord}">` : `<span class="hint-emoji">${puzzle.hImg}</span>`;
-  hintArea.innerHTML = `
-    <div class="cross-word-hint-item">↕ ${vHint}</div>
-    <div class="cross-word-hint-item">↔ ${hHint}</div>
-  `;
+  const pickV = Math.random() < 0.5;
+  const hintSrc = pickV ? puzzle.vImg : puzzle.hImg;
+  const hintDir = pickV ? '↕' : '↔';
+  const hintEl = typeof hintSrc === 'string' && hintSrc.endsWith('.png')
+    ? `<img src="${hintSrc}" class="hint-img">` : `<span class="hint-emoji">${hintSrc}</span>`;
+  hintArea.innerHTML = `<div class="cross-word-hint-item">${hintDir} ${hintEl}</div>`;
   crossArea.appendChild(hintArea);
 
   area.appendChild(crossArea);
 
-  // Show hint after 5 seconds
+  // Show hint after 8 seconds with blinking
   hintTimer = setTimeout(() => {
     hintArea.classList.add('visible');
-  }, 5000);
+  }, 8000);
 }
 
 // ===== Tap handling =====
@@ -943,7 +947,15 @@ function showStageComplete() {
   const num  = currentStageNum;
   const type = getStageType(num);
 
-  document.getElementById('modal-emoji').textContent = '🎉';
+  const emojiEl = document.getElementById('modal-emoji');
+  if (type === 'cross' && currentCrossPuzzle) {
+    const p = currentCrossPuzzle;
+    const makeImg = (src) => src.endsWith('.png')
+      ? `<img src="${src}" style="height:48px;object-fit:contain;vertical-align:middle">` : `<span style="font-size:2.5rem">${src}</span>`;
+    emojiEl.innerHTML = makeImg(p.vImg) + ' ✕ ' + makeImg(p.hImg);
+  } else {
+    emojiEl.textContent = '🎉';
+  }
   document.getElementById('modal-title').textContent = `ステージ ${num + 1} クリア！`;
   document.getElementById('modal-msg').textContent   = type === 'cross'
     ? 'もじクロス できたね！'
