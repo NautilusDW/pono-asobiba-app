@@ -31,6 +31,30 @@
 - BGM は **ループ前提** で2〜3分程度
 - 全て **ボーカルなし**（BGMは `no vocals, no humming, no singing, instrumental only` を必ず含める）
 
+### プロンプト設計のポイント
+- **具体的な楽器・素材名**を使う（「chime」ではなく「marimba」「kalimba」「woodblock」等）
+- 各ゲームには**テーマ素材**がある（下記参照）— ゲーム内SEはそのテーマに沿わせる
+- 「sparkle」「magical」「bright」「gentle」は控えめに — SUNOはこれらを同じキラキラ系シンセ音に変換しがち
+
+---
+
+## ゲーム別テーマ素材（SE差別化のための指針）
+
+| ゲーム | テーマ素材 | 使うべきキーワード |
+|--------|-----------|-------------------|
+| writing | 鉛筆・紙・木 | pencil, paper, woodblock, marimba |
+| drawing | 絵の具・筆 | paintbrush, canvas, marker, acrylic |
+| coloring | クレヨン・色鉛筆 | crayon, wax, vibraphone, toy piano |
+| stacking | 積み木・おもちゃ | wooden block, toy brick, temple block, drum |
+| breakout | レトロゲーム | 8-bit, chiptune, square wave, pixel, NES |
+| wordmatch | カード・紙 | card, paper snap, handclap |
+| egg | 殻・生き物 | eggshell, ceramic, chirp, peep |
+| room | 家具・部屋 | wood, fabric, porcelain, furniture |
+| aquarium | 水・泡 | water, bubble, splash, underwater |
+| slide | パズルピース | plastic, tile, click, snap |
+| message | 手紙・郵便 | typewriter, paper airplane, brass bell |
+| common | 各種ニュートラル | 上記のどれとも被らないユニークな音 |
+
 ---
 
 ## ファイル命名規則
@@ -51,48 +75,58 @@ assets/sounds/{カテゴリ}/{ファイル名}.mp3
 
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| A1 | `tap.mp3` | ボタンタップ | One Shot | `soft cute button click, bubbly digital pop, children's app UI, bright and gentle, 0.3 seconds` |
-| A2 | `transition.mp3` | 画面遷移 | One Shot | `gentle whoosh transition, soft airy sweep with sparkle tail, kids app page turn, warm and playful, 0.8 seconds` |
-| A3 | `menu_open.mp3` | メニュー開く | One Shot | `playful pop-up open sound, ascending bubbly chime, soft xylophone notes rising, children's app menu, 0.5 seconds` |
-| A4 | `menu_close.mp3` | メニュー閉じる | One Shot | `soft descending chime, gentle closing sound, bubbly notes going down, warm children's UI, 0.4 seconds` |
-| A5 | `achievement.mp3` | 実績解除 | One Shot | `cheerful achievement unlock jingle, bright glockenspiel fanfare with sparkle shimmer, rewarding and magical, children's game celebration, 2 seconds` |
-| A6 | `login_bonus.mp3` | ログインボーナス | One Shot | `magical reward reveal, ascending harp glissando with sparkling chimes, warm and exciting surprise, treasure chest opening, 2.5 seconds` |
-| A7 | `point.mp3` | ポイント獲得 | One Shot | `coin collect pickup, bright cheerful metallic ding with sparkle, cute game reward, 0.3 seconds` |
-| A8 | `error.mp3` | エラー/不正解 | One Shot | `gentle wrong answer buzz, soft low-pitched wobble tone, not harsh or scary, friendly children's app error, 0.5 seconds` |
+| A1 | `tap.mp3` | ボタンタップ | One Shot | `short dry finger tap on hollow wood, single muted knock, no reverb, 0.2 seconds` |
+| A2 | `transition.mp3` | 画面遷移 | One Shot | `quick airy woolen swoosh, fabric being pulled through air, soft and warm, 0.6 seconds` |
+| A3 | `menu_open.mp3` | メニュー開く | One Shot | `three quick ascending marimba notes, playful staccato, wooden mallet on rosewood, 0.4 seconds` |
+| A4 | `menu_close.mp3` | メニュー閉じる | One Shot | `two descending kalimba plucks, soft metallic decay, 0.3 seconds` |
+| A5 | `achievement.mp3` | 実績解除 | One Shot | `toy trumpet fanfare with tambourine shake, triumphant 4-note melody, brass and percussion, children's parade, 2 seconds` |
+| A6 | `login_bonus.mp3` | ログインボーナス | One Shot | `music box lid opening, slow ascending celesta arpeggio, warm analog reverb, treasure discovery, 2.5 seconds` |
+| A7 | `point.mp3` | ポイント獲得 | One Shot | `single crisp coin landing on ceramic plate, clean metallic ring, short decay, 0.3 seconds` |
+| A8 | `error.mp3` | エラー/不正解 | One Shot | `low rubber horn honk, muted and silly, cartoon-style wrong answer, not scary, 0.4 seconds` |
+| A9 | `success.mp3` | 汎用成功 | One Shot | `warm ukulele strum chord, happy major resolution, Hawaiian feel, 1.5 seconds` |
+| A10 | `countdown.mp3` | カウントダウン | One Shot | `three descending timpani beats then ascending horn blast, orchestral countdown 3-2-1-GO, 3.5 seconds` |
+| A11 | `hint.mp3` | ヒント表示 | One Shot | `single glass bottle blow, hollow resonant hoot, owl-like soft tone, curious, 0.5 seconds` |
+| A12 | `back.mp3` | 戻る | One Shot | `short reverse tape effect, quick rewind swoosh, going backward, 0.3 seconds` |
 
 ---
 
 ## B. writing（なぞり書き）SE - `assets/sounds/writing/`
 
+テーマ: **鉛筆・紙・木の音**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| B1 | `stroke.mp3` | なぞり中の筆音 | One Shot | `soft crayon drawing on paper, gentle continuous scratch texture, warm and satisfying, children writing sound, 1.5 seconds` |
-| B2 | `stroke_done.mp3` | 一画完了 | One Shot | `gentle positive ping, soft ascending chime, subtle confirmation tone, warm and encouraging, 0.3 seconds` |
-| B3 | `hanamaru.mp3` | 花丸（全画完成） | One Shot | `bright celebratory starburst jingle, sparkling chimes with xylophone melody, magical completion reward, adorable kids app success, 2 seconds` |
-| B4 | `stroke_miss.mp3` | 書き順ミス | One Shot | `soft gentle nudge sound, friendly low boop, not scary or harsh, encouraging retry tone for children, 0.4 seconds` |
+| B1 | `stroke.mp3` | なぞり中の筆音 | One Shot | `pencil scratching on textured paper, continuous graphite drawing sound, warm friction, ASMR writing, 1.5 seconds` |
+| B2 | `stroke_done.mp3` | 一画完了 | One Shot | `single woodblock tick, sharp dry tap, no resonance, quick confirmation, 0.2 seconds` |
+| B3 | `hanamaru.mp3` | 花丸（全画完成） | One Shot | `ascending xylophone run in C major scale, bouncy wooden mallet hits, ending on high octave with triangle ting, joyful completion, 2 seconds` |
+| B4 | `stroke_miss.mp3` | 書き順ミス | One Shot | `muted rubber squeak, short dull thud on foam, soft and non-threatening, 0.3 seconds` |
 
 ---
 
 ## C. drawing（おえかき）SE - `assets/sounds/drawing/`
 
+テーマ: **絵の具・筆・マーカー**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| C1 | `brush_start.mp3` | ブラシ描き始め | One Shot | `soft paint brush stroke start, gentle wet bristle touch on canvas, satisfying art sound, 0.5 seconds` |
-| C2 | `color_select.mp3` | 色選択 | One Shot | `tiny bubbly pop, cute color palette selection, bright playful digital blip, 0.2 seconds` |
-| C3 | `stamp.mp3` | スタンプ押し | One Shot | `rubber stamp press sound, soft thump with satisfying impact, cute crafting stamp, 0.3 seconds` |
-| C4 | `eraser.mp3` | 消しゴム | One Shot | `soft eraser rubbing on paper, gentle friction sound, clean and satisfying, 0.8 seconds` |
-| C5 | `clear_all.mp3` | 全消し | One Shot | `gentle sweeping clear sound, soft airy whoosh with sparkle, clean slate reset, 0.6 seconds` |
+| C1 | `brush_start.mp3` | ブラシ描き始め | One Shot | `wet paintbrush touching canvas, soft bristle spread sound, acrylic paint texture, 0.4 seconds` |
+| C2 | `color_select.mp3` | 色選択 | One Shot | `plastic marker cap pop, tiny snap click, crisp and quick, 0.15 seconds` |
+| C3 | `stamp.mp3` | スタンプ押し | One Shot | `rubber stamp press on ink pad then paper, firm cushioned thump, crafting desk, 0.3 seconds` |
+| C4 | `eraser.mp3` | 消しゴム | One Shot | `soft eraser rubbing on paper, back-and-forth friction, chalky texture, 0.6 seconds` |
+| C5 | `clear_all.mp3` | 全消し | One Shot | `large paintbrush sweeping across wet canvas, broad watery stroke, clean whoosh, 0.5 seconds` |
 
 ---
 
 ## D. coloring（ぬりえ）SE - `assets/sounds/coloring/`
 
+テーマ: **クレヨン・色鉛筆**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| D1 | `fill.mp3` | 塗り開始 | One Shot | `soft paint splash, gentle watercolor drip sound, colorful and playful, children's art app, 0.5 seconds` |
-| D2 | `color_select.mp3` | 色選択 | One Shot | `cute bubbly pop, bright playful color selection blip, tiny digital chirp, 0.2 seconds` |
-| D3 | `area_done.mp3` | エリア塗り完了 | One Shot | `gentle sparkle shimmer, soft magical completion chime, satisfying fill sound, 0.5 seconds` |
-| D4 | `complete.mp3` | 全部塗り完了 | One Shot | `cheerful celebration fanfare, bright glockenspiel melody with sparkles, adorable kids app masterpiece complete, 2.5 seconds` |
+| D1 | `fill.mp3` | 塗り開始 | One Shot | `thick crayon coloring paper, waxy scribble stroke, satisfying fill texture, 0.4 seconds` |
+| D2 | `color_select.mp3` | 色選択 | One Shot | `crayon box rattle, single crayon picked up from wooden box, light clatter, 0.2 seconds` |
+| D3 | `area_done.mp3` | エリア塗り完了 | One Shot | `two ascending vibraphone notes a perfect fifth apart, warm metallic resonance, 0.4 seconds` |
+| D4 | `complete.mp3` | 全部塗り完了 | One Shot | `toy piano playing cheerful 4-bar melody, upright miniature piano, nursery recital style, warm room acoustic, 2.5 seconds` |
 
 ### BGM（`assets/audio/coloring_bgm.mp3`）
 
@@ -109,13 +143,15 @@ lo-fi chill, gentle music box, soft xylophone, warm analog pad, dreamy and peace
 
 ## E. stacking（つみき）SE - `assets/sounds/stacking/`
 
+テーマ: **積み木・木のおもちゃ**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| E1 | `drop.mp3` | ブロック落下 | One Shot | `wooden block dropping, soft thud landing impact, toy building block, satisfying and cute, 0.3 seconds` |
-| E2 | `stack.mp3` | 積み上げ成功 | One Shot | `gentle stacking click, soft wooden block snapping into place, satisfying toy placement, 0.3 seconds` |
-| E3 | `combo.mp3` | コンボ達成 | One Shot | `ascending cheerful combo chime, playful xylophone scale going up, exciting achievement cascade, 1 second` |
-| E4 | `collapse.mp3` | 崩壊 | One Shot | `wooden blocks tumbling down, soft cascading clatter, toy blocks scattering, playful not scary, 1.5 seconds` |
-| E5 | `clear.mp3` | クリア | One Shot | `bright victory jingle, cheerful celebration melody, sparkling chimes and xylophone, kids game level complete, 2 seconds` |
+| E1 | `drop.mp3` | ブロック落下 | One Shot | `wooden building block dropping onto carpet, soft padded thud, toy playroom, 0.3 seconds` |
+| E2 | `stack.mp3` | 積み上げ成功 | One Shot | `two wooden blocks clicking together, satisfying snap fit, toy brick alignment, 0.2 seconds` |
+| E3 | `combo.mp3` | コンボ達成 | One Shot | `ascending wooden temple blocks, five rapid taps going higher in pitch, percussive roll, 0.8 seconds` |
+| E4 | `collapse.mp3` | 崩壊 | One Shot | `pile of wooden blocks tumbling onto floor, cascading clatter, scattered toys, playful chaos, 1.2 seconds` |
+| E5 | `clear.mp3` | クリア | One Shot | `toy drum roll ending with cymbal crash, children's marching band finish, triumphant, 2 seconds` |
 
 ### BGM（`assets/audio/stacking_bgm.mp3`）
 
@@ -132,12 +168,14 @@ playful chiptune, cute 8-bit melody, bouncy toy piano, warm and cheerful, no voc
 
 ## F. wordmatch（ことばあわせ）SE - `assets/sounds/wordmatch/`
 
+テーマ: **カード・紙**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| F1 | `flip.mp3` | カードめくり | One Shot | `soft card flip sound, gentle paper turning, light and quick, 0.3 seconds` |
-| F2 | `match.mp3` | マッチ成功 | One Shot | `bright happy match chime, two ascending sparkle tones, cheerful recognition ding, adorable kids game, 0.6 seconds` |
-| F3 | `miss.mp3` | マッチ失敗 | One Shot | `soft gentle miss sound, two descending low tones, friendly and not discouraging, 0.5 seconds` |
-| F4 | `clear.mp3` | レベルクリア | One Shot | `cheerful level complete jingle, bright melody with clapping percussion, kids game celebration, 2 seconds` |
+| F1 | `flip.mp3` | カードめくり | One Shot | `playing card flick, single card turning over on table, crisp paper snap, 0.2 seconds` |
+| F2 | `match.mp3` | マッチ成功 | One Shot | `two quick handclaps, rhythmic and cheerful, human clapping celebration, 0.4 seconds` |
+| F3 | `miss.mp3` | マッチ失敗 | One Shot | `card sliding back, soft paper shuffle, quiet retreat sound, not discouraging, 0.3 seconds` |
+| F4 | `clear.mp3` | レベルクリア | One Shot | `children clapping and giggling, group celebration, natural joyful reaction, 2 seconds` |
 
 ### BGM（`assets/audio/wordmatch_bgm.mp3`）
 
@@ -154,12 +192,14 @@ gentle jazz, soft piano, light brushed drums, warm upright bass, cozy and focuse
 
 ## G. egg（たまご）SE - `assets/sounds/egg/`
 
+テーマ: **殻・生き物**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| G1 | `tap.mp3` | タップ（コンコン） | One Shot | `egg shell tapping, gentle knocking on hollow egg, cute tap tap sound, 0.3 seconds` |
-| G2 | `crack.mp3` | ひび割れ | One Shot | `egg cracking sound, delicate shell fracturing, crispy crack with tiny fragments, 0.5 seconds` |
-| G3 | `hatch.mp3` | 孵化 | One Shot | `magical hatching reveal, egg breaking open with sparkle burst, bright chimes ascending, wonderful surprise, 2 seconds` |
-| G4 | `creature.mp3` | 生き物登場 | One Shot | `adorable creature appear sound, cute squeaky chirp with magical shimmer, baby animal reveal, 1 second` |
+| G1 | `tap.mp3` | タップ（コンコン） | One Shot | `fingernail tapping on hollow eggshell, delicate knock knock, ceramic resonance, 0.3 seconds` |
+| G2 | `crack.mp3` | ひび割れ | One Shot | `eggshell cracking and splitting, thin ceramic fracture, crispy snap with fragments falling, 0.5 seconds` |
+| G3 | `hatch.mp3` | 孵化 | One Shot | `eggshell breaking apart completely, fragments scattering on nest, followed by tiny bird peep, 1.5 seconds` |
+| G4 | `creature.mp3` | 生き物登場 | One Shot | `baby chick chirping, tiny peep peep with fluttering wing sound, adorable newborn bird, 1 second` |
 
 ### BGM（`assets/audio/egg_bgm.mp3`）
 
@@ -176,13 +216,15 @@ gentle ambient, soft warm synth pad, twinkling music box, mysterious and cozy, n
 
 ## H. room（おへや）SE - `assets/sounds/room/`
 
+テーマ: **家具・部屋・インテリア**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| H1 | `place_furniture.mp3` | 家具配置 | One Shot | `soft furniture placement thud, gentle wooden drop on floor, satisfying room decoration, 0.4 seconds` |
-| H2 | `place_deco.mp3` | デコ設置 | One Shot | `cute decorating pop, light sparkly placement sound, tiny cheerful blip, 0.3 seconds` |
-| H3 | `dress_change.mp3` | 着替え | One Shot | `fabric rustling, soft clothing change swoosh, gentle wardrobe sound, 0.5 seconds` |
-| H4 | `rotate.mp3` | 家具回転 | One Shot | `gentle turning click, soft mechanical rotation sound, smooth pivot, 0.3 seconds` |
-| H5 | `remove.mp3` | 家具削除 | One Shot | `soft poof vanish sound, gentle airy disappear with tiny sparkle, 0.4 seconds` |
+| H1 | `place_furniture.mp3` | 家具配置 | One Shot | `heavy wooden object placed on hardwood floor, solid satisfying thunk, furniture landing, 0.3 seconds` |
+| H2 | `place_deco.mp3` | デコ設置 | One Shot | `small ceramic ornament placed on shelf, light porcelain tap, careful decoration placement, 0.2 seconds` |
+| H3 | `dress_change.mp3` | 着替え | One Shot | `fabric rustling and clothing swoosh, quick outfit change, zipper and cloth sounds, 0.5 seconds` |
+| H4 | `rotate.mp3` | 家具回転 | One Shot | `wooden furniture scraping slightly on floor, short grinding pivot turn, 0.25 seconds` |
+| H5 | `remove.mp3` | 家具削除 | One Shot | `object being picked up from shelf, light suction release, lifting away sound, 0.3 seconds` |
 
 ### BGM（`assets/audio/room_bgm.mp3`）
 
@@ -199,22 +241,26 @@ cozy room ambient, gentle music box melody, warm soft pad, peaceful and relaxing
 
 ## I. message（おてがみ）SE - `assets/sounds/message/`
 
+テーマ: **手紙・郵便・タイプライター**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| I1 | `type.mp3` | 文字入力 | One Shot | `soft typewriter key press, gentle mechanical click, cute vintage typing, 0.2 seconds` |
-| I2 | `send.mp3` | 送信 | One Shot | `cheerful message sent whoosh, ascending sparkle trail, letter flying away sound, magical and happy, 1 second` |
-| I3 | `receive.mp3` | 受信 | One Shot | `gentle notification arrival, soft bell chime with sparkle, new message alert, warm and inviting, 0.8 seconds` |
+| I1 | `type.mp3` | 文字入力 | One Shot | `old typewriter single keystroke, mechanical lever press and return, vintage click clack, 0.2 seconds` |
+| I2 | `send.mp3` | 送信 | One Shot | `paper airplane throw, quick air release whoosh, letter flying, light and airy, 0.8 seconds` |
+| I3 | `receive.mp3` | 受信 | One Shot | `mailbox opening, single brass hand bell ring, letter delivery notification, warm and clear, 0.6 seconds` |
 
 ---
 
 ## J. breakout（ブロックくずし）SE - `assets/sounds/breakout/`
 
+テーマ: **レトロゲーム・8bit**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| J1 | `paddle.mp3` | ボール打ち返し | One Shot | `paddle bounce hit, bright elastic boing, retro game ball reflect, clean and punchy, 0.2 seconds` |
-| J2 | `brick.mp3` | ブロック破壊 | One Shot | `block break shatter, crispy digital destruction pop, retro arcade brick hit, satisfying, 0.3 seconds` |
-| J3 | `fall.mp3` | 落下ミス | One Shot | `soft descending fail tone, gentle game over droop, not harsh, friendly miss sound, 0.6 seconds` |
-| J4 | `clear.mp3` | クリア | One Shot | `retro arcade victory fanfare, bright chiptune celebration jingle, 8-bit triumph melody, 2 seconds` |
+| J1 | `paddle.mp3` | ボール打ち返し | One Shot | `retro 8-bit ball bounce, short square wave ping pong bleep, classic arcade reflect, 0.15 seconds` |
+| J2 | `brick.mp3` | ブロック破壊 | One Shot | `8-bit explosion, short crunchy pixel destruction, retro NES block shatter, 0.2 seconds` |
+| J3 | `fall.mp3` | 落下ミス | One Shot | `retro game descending wah-wah, 8-bit falling tone, classic arcade life lost, comedic not sad, 0.5 seconds` |
+| J4 | `clear.mp3` | クリア | One Shot | `chiptune victory melody, 8-bit synthesizer fanfare, retro NES stage complete jingle, four ascending square wave notes, 2 seconds` |
 
 ### BGM（`assets/audio/breakout_bgm.mp3`）
 
@@ -231,20 +277,24 @@ retro arcade, upbeat chiptune, 8-bit synthesizer, bouncy and energetic, no vocal
 
 ## K. slide（スライドパズル）SE - `assets/sounds/slide/`
 
+テーマ: **パズルピース・プラスチック**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| K1 | `slide.mp3` | タイルスライド | One Shot | `smooth tile sliding click, soft plastic piece moving, satisfying puzzle slide, 0.2 seconds` |
-| K2 | `complete.mp3` | 完成ファンファーレ | One Shot | `puzzle complete celebration, bright ascending chime melody with sparkle, magical jigsaw solved jingle, 2 seconds` |
+| K1 | `slide.mp3` | タイルスライド | One Shot | `plastic puzzle tile clicking into slot, smooth sliding snap, mechanical grid movement, 0.2 seconds` |
+| K2 | `complete.mp3` | 完成ファンファーレ | One Shot | `music box completing a phrase, final resolving notes with mechanical winding sound, puzzle solved, 2 seconds` |
 
 ---
 
 ## L. aquarium（すいそう）SE - `assets/sounds/aquarium/`
 
+テーマ: **水・泡・水中**
+
 | # | ファイル名 | 用途 | モード | SUNOプロンプト |
 |---|-----------|------|--------|---------------|
-| L1 | `tap_fish.mp3` | 生き物タップ | One Shot | `underwater bubble pop, soft aquatic blip, cute fish interaction, gentle and bubbly, 0.3 seconds` |
-| L2 | `bubbles.mp3` | 泡 | One Shot | `tiny bubbles rising underwater, soft gurgling water sound, gentle aquarium ambience, 1 second` |
-| L3 | `feed.mp3` | 餌やり | One Shot | `gentle splash, soft food dropping into water, tiny plop ripple sound, 0.4 seconds` |
+| L1 | `tap_fish.mp3` | 生き物タップ | One Shot | `single underwater bubble pop, round watery blip, deep submerged plop, 0.2 seconds` |
+| L2 | `bubbles.mp3` | 泡 | One Shot | `stream of small bubbles rising in water, effervescent fizzing, aquarium air pump, 1 second` |
+| L3 | `feed.mp3` | 餌やり | One Shot | `small object splashing into water surface, tiny plop with ripple, fish food dropping, 0.3 seconds` |
 
 ---
 
@@ -252,10 +302,10 @@ retro arcade, upbeat chiptune, 8-bit synthesizer, bouncy and energetic, no vocal
 
 | 種別 | 数 |
 |------|-----|
-| 共通SE | 8 |
+| 共通SE | 12 |
 | ゲーム別SE | 43 |
 | 新規BGM | 6 |
-| **合計** | **57** |
+| **合計** | **61** |
 
 ---
 
@@ -304,6 +354,10 @@ assets/
       login_bonus.mp3
       point.mp3
       error.mp3
+      success.mp3
+      countdown.mp3
+      hint.mp3
+      back.mp3
     writing/
       stroke.mp3
       stroke_done.mp3
@@ -375,6 +429,10 @@ assets/
 - [ ] A6: login_bonus.mp3
 - [ ] A7: point.mp3
 - [ ] A8: error.mp3
+- [ ] A9: success.mp3
+- [ ] A10: countdown.mp3
+- [ ] A11: hint.mp3
+- [ ] A12: back.mp3
 
 ### writing
 - [ ] B1: stroke.mp3
