@@ -512,10 +512,10 @@ body {
 const W = '../assets/images/word/';
 const STAGES = [
   { name: 'いろ 🌈', pairs: [
-    { emoji: '🔴', word: 'あか' },
-    { emoji: '🔵', word: 'あお' },
-    { emoji: '🟡', word: 'きいろ' },
-    { emoji: '🟢', word: 'みどり' },
+    { img: W+'color_red.png', word: 'あか' },
+    { img: W+'color_blue.png', word: 'あお' },
+    { img: W+'color_yellow.png', word: 'きいろ' },
+    { img: W+'color_green.png', word: 'みどり' },
   ]},
   { name: 'のりもの 🚗', pairs: [
     { img: W+'kotobaasobi_002.png', word: 'でんしゃ' },
@@ -581,7 +581,7 @@ const CROSSWORDS = [
   { vWord: 'すいか', hWord: 'いちご', shared: 'い', vIdx: 1, hIdx: 0, distractors: ['う', 'え', 'お'], vImg: W+'レイヤー 1_001.png', hImg: W+'レイヤー 0_044.png' },
   { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vImg: W+'レイヤー 0_043.png', hImg: W+'レイヤー 0_038.png' },
   { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vImg: W+'おかし.png', hImg: W+'レイヤー 0_018.png' },
-  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vImg: W+'レイヤー 0_040.png', hImg: '🧳' },
+  { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vImg: W+'レイヤー 0_040.png', hImg: W+'fukuro.png' },
   { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vImg: W+'レイヤー 0_011.png', hImg: '💨' },
   { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vImg: W+'レイヤー 0_039.png', hImg: W+'レイヤー 0_007.png' },
   // --- むずかしめ: カタカナだけ ---
