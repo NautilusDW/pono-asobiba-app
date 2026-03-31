@@ -64,15 +64,14 @@ body {
   text-align: center;
 }
 .stage-name {
-  font-size: 1.1rem; font-weight: 900; color: var(--text);
+  display: none;
 }
 .stage-num {
-  font-size: 0.75rem; font-weight: 900; color: var(--text-light);
+  font-size: 1.1rem; font-weight: 900; color: var(--text);
   background: var(--primary-light);
   border-radius: 20px;
-  padding: 2px 14px;
+  padding: 4px 18px;
   display: inline-block;
-  margin-top: 3px;
 }
 
 /* ===== Picture grid ===== */
@@ -574,7 +573,7 @@ const CROSSWORDS = [
   { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'も', 'め'], vImg: W+'レイヤー 0_020.png', hImg: W+'レイヤー 0_012.png' },
   { vWord: 'くも', hWord: 'もり', shared: 'も', vIdx: 1, hIdx: 0, distractors: ['む', 'み', 'め'], vImg: W+'レイヤー 0_045.png', hImg: W+'レイヤー 0_001.png' },
   { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vImg: W+'レイヤー 0_014.png', hImg: W+'レイヤー 0_026.png' },
-  { vWord: 'つき', hWord: 'きて', shared: 'き', vIdx: 1, hIdx: 0, distractors: ['く', 'け', 'ぐ'], vImg: W+'レイヤー 0_016.png', hImg: W+'レイヤー 0_017.png' },
+  { vWord: 'かに', hWord: 'にく', shared: 'に', vIdx: 1, hIdx: 0, distractors: ['ぬ', 'の', 'ね'], vImg: '🦀', hImg: '🍖' },
   { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vImg: W+'レイヤー 0_006.png', hImg: W+'レイヤー 0_033.png' },
   // --- ふつう: ひらがな2-3文字 ---
   { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vImg: W+'レイヤー 0_034.png', hImg: W+'レイヤー 0_028.png' },
