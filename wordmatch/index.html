@@ -346,34 +346,49 @@ body {
 
 .cross-word-hint {
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   opacity: 0;
   transition: opacity 0.5s;
 }
-.cross-word-hint.visible { opacity: 1; animation: hintBlink 1.5s ease-in-out infinite; }
-@keyframes hintBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+.cross-word-hint.visible { opacity: 1; }
+.cross-word-hint-label {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--text-light);
 }
 .cross-word-hint-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-light);
-  background: rgba(255,255,255,0.85);
-  border-radius: 12px;
-  padding: 4px 10px;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.9);
+  border: 2.5px solid #FDE68A;
+  border-radius: 14px;
+  padding: 10px 18px;
+  box-shadow: 0 2px 8px var(--shadow);
 }
 .cross-word-hint-item .hint-emoji {
-  font-size: 1.3rem;
+  font-size: 2.2rem;
 }
 .cross-word-hint-item .hint-img {
-  width: 28px; height: 28px;
+  width: 56px; height: 56px;
   object-fit: contain;
   vertical-align: middle;
+  animation: hintBlink 1.5s ease-in-out infinite;
+}
+.cross-word-hint-item .hint-emoji {
+  animation: hintBlink 1.5s ease-in-out infinite;
+}
+.cross-word-hint-item .hint-dir {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text-light);
+}
+@keyframes hintBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
 }
 
 .cross-choices {
@@ -716,8 +731,13 @@ function loadMatchStage(num) {
   });
 
   trayWrap.appendChild(tray);
-  area.appendChild(picGrid);
-  area.appendChild(trayWrap);
+
+  // 一括表示（逐次描画を防ぐ）
+  const frag = document.createDocumentFragment();
+  frag.appendChild(picGrid);
+  frag.appendChild(trayWrap);
+  area.innerHTML = '';
+  area.appendChild(frag);
 
   // Store current stage pairs for match logic
   area.dataset.mode = 'match';
@@ -733,7 +753,6 @@ function loadCrosswordStage(num) {
   document.getElementById('stage-num').textContent  = `ステージ ${num + 1}`;
 
   const area = document.getElementById('game-area');
-  area.innerHTML = '';
   area.dataset.mode = 'cross';
 
   const crossArea = document.createElement('div');
@@ -814,9 +833,14 @@ function loadCrosswordStage(num) {
   const hintDir = pickV ? '↕' : '↔';
   const hintEl = typeof hintSrc === 'string' && hintSrc.endsWith('.png')
     ? `<img src="${hintSrc}" class="hint-img">` : `<span class="hint-emoji">${hintSrc}</span>`;
-  hintArea.innerHTML = `<div class="cross-word-hint-item">${hintDir} ${hintEl}</div>`;
+  hintArea.innerHTML = `
+    <div class="cross-word-hint-label">ヒント</div>
+    <div class="cross-word-hint-item"><span class="hint-dir">${hintDir}</span> ${hintEl}</div>
+  `;
   crossArea.appendChild(hintArea);
 
+  // 一括表示（逐次描画を防ぐ）
+  area.innerHTML = '';
   area.appendChild(crossArea);
 
   // Show hint after 8 seconds with blinking
@@ -952,7 +976,7 @@ function showStageComplete() {
     const p = currentCrossPuzzle;
     const makeImg = (src) => src.endsWith('.png')
       ? `<img src="${src}" style="height:48px;object-fit:contain;vertical-align:middle">` : `<span style="font-size:2.5rem">${src}</span>`;
-    emojiEl.innerHTML = makeImg(p.vImg) + ' ✕ ' + makeImg(p.hImg);
+    emojiEl.innerHTML = makeImg(p.vImg) + '<span style="font-size:1rem;vertical-align:middle;margin:0 6px;color:var(--text-light)">✕</span>' + makeImg(p.hImg);
   } else {
     emojiEl.textContent = '🎉';
   }
