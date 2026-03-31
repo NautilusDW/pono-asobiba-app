@@ -974,9 +974,29 @@ function showStageComplete() {
   const emojiEl = document.getElementById('modal-emoji');
   if (type === 'cross' && currentCrossPuzzle) {
     const p = currentCrossPuzzle;
-    const makeImg = (src) => src.endsWith('.png')
-      ? `<img src="${src}" style="height:48px;object-fit:contain;vertical-align:middle">` : `<span style="font-size:2.5rem">${src}</span>`;
-    emojiEl.innerHTML = makeImg(p.vImg) + '<span style="font-size:1rem;vertical-align:middle;margin:0 6px;color:var(--text-light)">✕</span>' + makeImg(p.hImg);
+    // プリロードしてから一括表示
+    emojiEl.innerHTML = '';
+    const makeEl = (src, delay) => {
+      if (src.endsWith('.png')) {
+        const img = new Image();
+        img.src = src;
+        img.style.cssText = 'height:48px;object-fit:contain;vertical-align:middle;opacity:0;transition:opacity 0.3s;transition-delay:'+delay+'s';
+        img.onload = () => { img.style.opacity = '1'; };
+        return img;
+      }
+      const span = document.createElement('span');
+      span.style.cssText = 'font-size:2.5rem;opacity:0;transition:opacity 0.3s;transition-delay:'+delay+'s';
+      span.textContent = src;
+      requestAnimationFrame(() => { span.style.opacity = '1'; });
+      return span;
+    };
+    const cross = document.createElement('span');
+    cross.style.cssText = 'font-size:1rem;vertical-align:middle;margin:0 6px;color:var(--text-light);opacity:0;transition:opacity 0.3s;transition-delay:0.15s';
+    cross.textContent = '✕';
+    emojiEl.appendChild(makeEl(p.vImg, 0));
+    emojiEl.appendChild(cross);
+    emojiEl.appendChild(makeEl(p.hImg, 0.3));
+    requestAnimationFrame(() => { cross.style.opacity = '1'; });
   } else {
     emojiEl.textContent = '🎉';
   }
