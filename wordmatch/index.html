@@ -322,6 +322,11 @@ body {
   color: #065F46;
 }
 
+.cross-cell.v-cell {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -546,19 +551,20 @@ const STAGES = [
 
 // ===== Crossword puzzles =====
 // vEmoji/hEmoji: 5秒後にヒントとして表示する絵文字
+// 選択肢チェック済み: どのdistractorも縦横両方で有効な単語にならないことを確認
 const CROSSWORDS = [
   // --- かんたん: ひらがな2文字 ---
-  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'あ'], vEmoji: '🐕', hEmoji: '🦑' },
-  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['か', 'き', 'く'], vEmoji: '🐱', hEmoji: '🧸' },
-  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ね', 'の'], vEmoji: '🌸', hEmoji: '☀️' },
-  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'め', 'も'], vEmoji: '🌊', hEmoji: '🛤️' },
-  { vWord: 'そら', hWord: 'から', shared: 'ら', vIdx: 1, hIdx: 1, distractors: ['り', 'る', 'れ'], vEmoji: '🌤️', hEmoji: '🫙' },
-  { vWord: 'かめ', hWord: 'あめ', shared: 'め', vIdx: 1, hIdx: 1, distractors: ['ま', 'み', 'も'], vEmoji: '🐢', hEmoji: '🌧️' },
+  { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'え'], vEmoji: '🐕', hEmoji: '🦑' },
+  { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'く'], vEmoji: '🐱', hEmoji: '🧸' },
+  { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ほ', 'の'], vEmoji: '🌸', hEmoji: '☀️' },
+  { vWord: 'うみ', hWord: 'みち', shared: 'み', vIdx: 1, hIdx: 0, distractors: ['む', 'も', 'め'], vEmoji: '🌊', hEmoji: '🛤️' },
+  { vWord: 'くも', hWord: 'もり', shared: 'も', vIdx: 1, hIdx: 0, distractors: ['む', 'み', 'め'], vEmoji: '☁️', hEmoji: '🌲' },
   { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vEmoji: '⭐', hEmoji: '🦌' },
-  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['し', 'す', 'そ'], vEmoji: '🐒', hEmoji: '🌿' },
+  { vWord: 'つき', hWord: 'きて', shared: 'き', vIdx: 1, hIdx: 0, distractors: ['く', 'け', 'ぐ'], vEmoji: '🌙', hEmoji: '🌳' },
+  { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vEmoji: '🐒', hEmoji: '🌿' },
   // --- ふつう: ひらがな2-3文字 ---
   { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vEmoji: '🌸', hEmoji: '🚗' },
-  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['み', 'む', 'も'], vEmoji: '🥚', hEmoji: '⛰️' },
+  { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['む', 'め', 'も'], vEmoji: '🥚', hEmoji: '⛰️' },
   { vWord: 'すいか', hWord: 'たいこ', shared: 'い', vIdx: 1, hIdx: 1, distractors: ['う', 'え', 'お'], vEmoji: '🍉', hEmoji: '🥁' },
   { vWord: 'くじら', hWord: 'にじ',   shared: 'じ', vIdx: 1, hIdx: 1, distractors: ['ず', 'ぜ', 'ざ'], vEmoji: '🐋', hEmoji: '🌈' },
   { vWord: 'おかし', hWord: 'かさ',   shared: 'か', vIdx: 1, hIdx: 0, distractors: ['き', 'け', 'が'], vEmoji: '🍬', hEmoji: '☂️' },
@@ -567,7 +573,7 @@ const CROSSWORDS = [
   { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vEmoji: '🍎', hEmoji: '👫' },
   // --- むずかしめ: カタカナだけ ---
   { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vEmoji: '🍅', hEmoji: '🐻' },
-  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['バ', 'ポ', 'プ'], vEmoji: '🐼', hEmoji: '🍞' },
+  { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['ポ', 'プ', 'ペ'], vEmoji: '🐼', hEmoji: '🍞' },
   { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vEmoji: '🍈', hEmoji: '🚀' },
   { vWord: 'キリン', hWord: 'リンゴ',   shared: 'リ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vEmoji: '🦒', hEmoji: '🍎' },
   { vWord: 'ケーキ', hWord: 'スキー',   shared: 'キ', vIdx: 2, hIdx: 1, distractors: ['カ', 'ク', 'コ'], vEmoji: '🎂', hEmoji: '⛷️' },
@@ -745,7 +751,7 @@ function loadCrosswordStage(num) {
         cell.textContent = '？';
         cell.dataset.answer = puzzle.shared;
       } else if (isVertical) {
-        cell.classList.add('filled');
+        cell.classList.add('filled', 'v-cell');
         cell.textContent = vWord[r];
       } else if (isHorizontal) {
         cell.classList.add('filled');
