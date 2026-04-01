@@ -155,16 +155,15 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff 60%, #e8ddd0 100%);
-  border: 2px solid rgba(139,69,19,0.1);
+  border-radius: 8px;
+  background: rgba(139,69,19,0.04);
+  border: 1.5px dashed rgba(139,69,19,0.1);
   transition: all 0.3s;
   overflow: hidden;
-  aspect-ratio: 1;
 }
 .bento-slot.filled {
-  border-color: rgba(139,69,19,0.08);
-  background: radial-gradient(circle, #fff 50%, #f0e8d8 100%);
+  border-color: transparent;
+  background: transparent;
 }
 .bento-slot img, .bento-slot span {
   width: 80%; height: 80%;
@@ -310,10 +309,6 @@ html, body {
 .complete-bento .cb-okazu > div {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff 50%, #f0e8d8 100%);
-  border: 1px solid rgba(139,69,19,0.08);
-  aspect-ratio: 1;
 }
 .complete-bento .cb-okazu img,
 .complete-bento .cb-okazu span {
@@ -436,35 +431,38 @@ const RICE_SMALL = [
 ];
 
 const OKAZU_MEAT = [
-  { img: P+'tako_wiener.png', name: 'タコウインナー', cat: 'meat' },
-  { img: P+'hamburg.png',     name: 'ハンバーグ',     cat: 'meat' },
-  { img: P+'karaage.png',     name: 'からあげ',       cat: 'meat' },
-  { img: P+'ebi_fry.png',     name: 'エビフライ',     cat: 'meat' },
-  { img: P+'fries.png',       name: 'フライドポテト', cat: 'meat' },
-  { img: P+'tamagoyaki.png',  name: 'たまごやき',     cat: 'meat' },
-  { img: P+'meatball.png',    name: 'ミートボール',   cat: 'meat' },
-  { img: P+'korokke.png',     name: 'コロッケ',       cat: 'meat' },
-  { img: P+'napolitan.png',   name: 'ナポリタン',     cat: 'meat' },
-  { img: P+'yakizake.png',    name: 'やきざけ',       cat: 'meat' },
+  { img: P+'bento_009.png', name: 'タコウインナー', cat: 'meat' },
+  { img: P+'bento_005.png', name: 'ハンバーグ',     cat: 'meat' },
+  { img: P+'bento_008.png', name: 'からあげ',       cat: 'meat' },
+  { img: P+'bento_004.png', name: 'エビフライ',     cat: 'meat' },
+  { img: P+'bento_014.png', name: 'フライドポテト', cat: 'meat' },
+  { img: P+'bento_007.png', name: 'たまごやき',     cat: 'meat' },
+  { img: P+'bento_011.png', name: 'ミートボール',   cat: 'meat' },
+  { img: P+'bento_018.png', name: 'コロッケ',       cat: 'meat' },
+  { img: P+'bento_025.png', name: 'ナポリタン',     cat: 'meat' },
+  { img: P+'bento_003.png', name: 'やきざけ',       cat: 'meat' },
 ];
 
 const OKAZU_VEG = [
-  { img: P+'broccoli.png',    name: 'ブロッコリー',       cat: 'veg' },
-  { img: P+'mini_tomato.png', name: 'ミニトマト',         cat: 'veg' },
-  { img: P+'corn_spinach.png',name: 'コーンほうれんそう', cat: 'veg' },
-  { img: P+'kinpira.png',     name: 'きんぴらごぼう',     cat: 'veg' },
-  { img: P+'edamame.png',     name: 'えだまめ',           cat: 'veg' },
-  { img: P+'potato_salad.png',name: 'ポテトサラダ',       cat: 'veg' },
-  { emoji: '🥕', name: 'にんじん',     cat: 'veg' },
-  { emoji: '🥒', name: 'きゅうり',     cat: 'veg' },
-  { emoji: '🌽', name: 'とうもろこし', cat: 'veg' },
-  { emoji: '🥬', name: 'レタス',       cat: 'veg' },
+  { img: P+'bento_016.png', name: 'ブロッコリー',       cat: 'veg' },
+  { img: P+'bento_028.png', name: 'ミニトマト',         cat: 'veg' },
+  { img: P+'bento_012.png', name: 'コーンほうれんそう', cat: 'veg' },
+  { img: P+'bento_026.png', name: 'きんぴらごぼう',     cat: 'veg' },
+  { img: P+'bento_021.png', name: 'えだまめ',           cat: 'veg' },
+  { img: P+'bento_017.png', name: 'ポテトサラダ',       cat: 'veg' },
+  { img: P+'bento_006.png', name: 'にんじんいんげん',   cat: 'veg' },
+  { img: P+'bento_013.png', name: 'ブロッコリーコーン', cat: 'veg' },
 ];
 
 const FRUITS = [
-  { img: P+'ichigo.png', name: 'いちご', cat: 'fruit' },
-  { img: P+'mikan.png',  name: 'みかん', cat: 'fruit' },
-  { img: P+'budou.png',  name: 'ぶどう', cat: 'fruit' },
+  { img: P+'bento_023.png', name: 'いちご',   cat: 'fruit' },
+  { img: P+'bento_027.png', name: 'みかん',   cat: 'fruit' },
+  { img: P+'bento_020.png', name: 'ぶどう',   cat: 'fruit' },
+  { img: P+'bento_022.png', name: 'りんご',   cat: 'fruit' },
+  { img: P+'bento_029.png', name: 'バナナ',   cat: 'fruit' },
+  { img: P+'bento_024.png', name: 'ゼリー',   cat: 'fruit' },
+  { img: P+'bento_030.png', name: 'プリン',   cat: 'fruit' },
+  { img: P+'bento_019.png', name: 'メロン',   cat: 'fruit' },
 ];
 
 // ===== Stages =====
