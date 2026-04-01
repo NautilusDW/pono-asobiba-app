@@ -154,6 +154,15 @@
       font-size: 13px; font-weight: bold; cursor: pointer;
     }
     .edit-done-btn:active { transform: scale(0.93); }
+    #btn-theme-toggle {
+      background: rgba(255,255,255,0.25); border: none;
+      border-radius: 14px; padding: 5px 12px;
+      font-size: 13px; font-weight: bold; cursor: pointer;
+      color: #fff;
+      display: flex; align-items: center; gap: 4px;
+      transition: background 0.2s;
+    }
+    #btn-theme-toggle:active { transform: scale(0.93); }
 
     /* ─── Room scroll wrapper (fills room-wrap) ─── */
     #room-scroll {
@@ -914,6 +923,7 @@
     <!-- もようがえ中バナー -->
     <div class="edit-banner" id="edit-banner">
       🔧 もようがえ ちゅう…
+      <button id="btn-theme-toggle"></button>
       <button class="edit-done-btn" id="edit-done-btn">✅ おわり</button>
     </div>
   </div>
@@ -3253,6 +3263,24 @@ function init() {
   });
   editDoneBtn.addEventListener('click', () => {
     setEditMode(false);
+  });
+
+  // ── テーマ切り替えボタン ──
+  const themeToggleBtn = document.getElementById('btn-theme-toggle');
+  function updateThemeToggleIcon() {
+    themeToggleBtn.textContent = state.theme === 'boy' ? '🩵 かっこいい' : '💗 かわいい';
+  }
+  updateThemeToggleIcon();
+  themeToggleBtn.addEventListener('click', () => {
+    const next = state.theme === 'boy' ? 'girl' : 'boy';
+    state.theme = next;
+    localStorage.setItem(LS.THEME, next);
+    updateThemeToggleIcon();
+    showToast(next === 'boy' ? '🩵 かっこいい テーマにしたよ！' : '💗 かわいい テーマにしたよ！');
+    // Refresh shop grid if open so theme-filtered items update
+    if (typeof currentShopCat !== 'undefined' && !document.getElementById('shop-ov').classList.contains('hidden')) {
+      renderShopGrid(currentShopCat);
+    }
   });
 
   // Premium banner → menu

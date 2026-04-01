@@ -110,10 +110,32 @@ html, body {
   border-radius: 10px;
   display: flex;
   flex-direction: row;
-  gap: 5px;
+  gap: 0;
   padding: 6px;
   flex: 1;
   min-height: 0;
+}
+
+/* ── Plastic bento dividers ── */
+.bento-divider-v {
+  width: 4px;
+  background: linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  border-radius: 2px;
+  box-shadow:
+    1px 0 1px rgba(255,255,255,0.45) inset,
+    -1px 0 1px rgba(0,0,0,0.15) inset,
+    2px 0 4px rgba(139,69,19,0.18);
+  flex-shrink: 0;
+}
+.bento-divider-h {
+  height: 4px;
+  background: linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(255,255,255,0.45) inset,
+    0 -1px 1px rgba(0,0,0,0.15) inset,
+    0 2px 4px rgba(139,69,19,0.18);
+  grid-column: 1 / -1;
 }
 
 /* ご飯エリア（左1/3・縦いっぱい） */
@@ -142,15 +164,33 @@ html, body {
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* おかずエリア（右2/3・2列×2行） */
+/* おかずエリア（右2/3・2列×2行 with plastic dividers） */
 .bento-okazu {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: 1fr 4px 1fr;
+  grid-template-rows: 1fr 4px 1fr;
   gap: 0;
   flex: 1;
   min-height: 0;
-  border-left: 2px solid rgba(139,69,19,0.18);
+}
+/* Okazu grid dividers (injected via JS) */
+.bento-okazu .okazu-div-v {
+  grid-column: 2; grid-row: 1 / -1;
+  background: linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  border-radius: 2px;
+  box-shadow:
+    1px 0 1px rgba(255,255,255,0.45) inset,
+    -1px 0 1px rgba(0,0,0,0.15) inset,
+    2px 0 4px rgba(139,69,19,0.18);
+}
+.bento-okazu .okazu-div-h {
+  grid-column: 1 / -1; grid-row: 2;
+  background: linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(255,255,255,0.45) inset,
+    0 -1px 1px rgba(0,0,0,0.15) inset,
+    0 2px 4px rgba(139,69,19,0.18);
 }
 .bento-slot {
   display: flex;
@@ -158,7 +198,6 @@ html, body {
   justify-content: center;
   border-radius: 4px;
   background: rgba(139,69,19,0.04);
-  border: 1.5px solid rgba(139,69,19,0.15);
   transition: all 0.3s;
   overflow: hidden;
 }
@@ -286,7 +325,7 @@ html, body {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  gap: 4px;
+  gap: 0;
   padding: 5px;
 }
 .complete-bento .cb-rice {
@@ -301,14 +340,32 @@ html, body {
 }
 .complete-bento .cb-okazu {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 4px;
+  grid-template-columns: 1fr 4px 1fr;
+  grid-template-rows: 1fr 4px 1fr;
+  gap: 0;
   flex: 1;
 }
 .complete-bento .cb-okazu > div {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+}
+.complete-bento .cb-okazu .okazu-div-v {
+  grid-column: 2; grid-row: 1 / -1;
+  background: linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  border-radius: 2px;
+  box-shadow:
+    1px 0 1px rgba(255,255,255,0.45) inset,
+    -1px 0 1px rgba(0,0,0,0.15) inset,
+    2px 0 4px rgba(139,69,19,0.18);
+}
+.complete-bento .cb-okazu .okazu-div-h {
+  grid-column: 1 / -1; grid-row: 2;
+  background: linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(255,255,255,0.45) inset,
+    0 -1px 1px rgba(0,0,0,0.15) inset,
+    0 2px 4px rgba(139,69,19,0.18);
 }
 .complete-bento .cb-okazu img,
 .complete-bento .cb-okazu span {
@@ -394,6 +451,7 @@ html, body {
     <div class="pono-row">
       <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
       <div class="speech-bubble" id="speech">おなか すいたなー</div>
+      <!-- speech text updated by JS on load -->
     </div>
     <div class="food-tray" id="food-tray"></div>
   </div>
@@ -527,12 +585,31 @@ function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.class
 // ===== Game =====
 function loadStage() {
   stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; usedIds.clear();
-  const rice = document.getElementById('bento-rice');
-  rice.innerHTML = ''; rice.classList.remove('filled');
-  const okazu = document.getElementById('bento-okazu');
-  okazu.innerHTML = ''; okazuSlots = [];
-  for (let i = 0; i < 4; i++) { const s = document.createElement('div'); s.className = 'bento-slot'; okazu.appendChild(s); okazuSlots.push(s); }
-  setSpeech('おべんとう つくろう！');
+
+  // Rebuild bento-inner with vertical divider between rice and okazu
+  const bentoInner = document.getElementById('bento-inner');
+  bentoInner.innerHTML = '';
+  const riceEl = document.createElement('div');
+  riceEl.className = 'bento-rice'; riceEl.id = 'bento-rice';
+  bentoInner.appendChild(riceEl);
+  const vDiv = document.createElement('div');
+  vDiv.className = 'bento-divider-v';
+  bentoInner.appendChild(vDiv);
+  const okazu = document.createElement('div');
+  okazu.className = 'bento-okazu'; okazu.id = 'bento-okazu';
+  bentoInner.appendChild(okazu);
+
+  // Build okazu grid: 4 slots + 1 vertical divider + 1 horizontal divider
+  okazuSlots = [];
+  const s0 = document.createElement('div'); s0.className = 'bento-slot'; s0.style.cssText='grid-column:1;grid-row:1'; okazu.appendChild(s0); okazuSlots.push(s0);
+  const s1 = document.createElement('div'); s1.className = 'bento-slot'; s1.style.cssText='grid-column:3;grid-row:1'; okazu.appendChild(s1); okazuSlots.push(s1);
+  const s2 = document.createElement('div'); s2.className = 'bento-slot'; s2.style.cssText='grid-column:1;grid-row:3'; okazu.appendChild(s2); okazuSlots.push(s2);
+  const s3 = document.createElement('div'); s3.className = 'bento-slot'; s3.style.cssText='grid-column:3;grid-row:3'; okazu.appendChild(s3); okazuSlots.push(s3);
+  const dv = document.createElement('div'); dv.className = 'okazu-div-v'; okazu.appendChild(dv);
+  const dh = document.createElement('div'); dh.className = 'okazu-div-h'; okazu.appendChild(dh);
+
+  const playerName = getPlayerName();
+  setSpeech(playerName ? playerName + 'ちゃん、おなか すいたなー' : 'おなか すいたなー');
   setTimeout(loadStep, 400);
 }
 
@@ -660,10 +737,16 @@ function stageComplete() {
     riceClone.appendChild(img);
   }
   inner.appendChild(riceClone);
-  // おかず
+  // Vertical divider between rice and okazu
+  const cbVDiv = document.createElement('div');
+  cbVDiv.className = 'bento-divider-v';
+  inner.appendChild(cbVDiv);
+
+  // おかず (with dividers matching game bento)
   const okazuClone = document.createElement('div');
   okazuClone.className = 'cb-okazu';
-  okazuSlots.forEach(slot => {
+  // slot 0 (row1 col1)
+  function makeSlotClone(slot) {
     const d = document.createElement('div');
     if (slot.querySelector('img')) {
       const img = document.createElement('img');
@@ -675,10 +758,18 @@ function stageComplete() {
       s.style.cssText = 'font-size:1.4rem;line-height:1';
       d.appendChild(s);
     }
-    okazuClone.appendChild(d);
-  });
+    return d;
+  }
+  const cs0 = makeSlotClone(okazuSlots[0]); cs0.style.cssText='grid-column:1;grid-row:1'; okazuClone.appendChild(cs0);
+  const cs1 = makeSlotClone(okazuSlots[1]); cs1.style.cssText='grid-column:3;grid-row:1'; okazuClone.appendChild(cs1);
+  const cs2 = makeSlotClone(okazuSlots[2]); cs2.style.cssText='grid-column:1;grid-row:3'; okazuClone.appendChild(cs2);
+  const cs3 = makeSlotClone(okazuSlots[3]); cs3.style.cssText='grid-column:3;grid-row:3'; okazuClone.appendChild(cs3);
+  const cdv = document.createElement('div'); cdv.className = 'okazu-div-v'; okazuClone.appendChild(cdv);
+  const cdh = document.createElement('div'); cdh.className = 'okazu-div-h'; okazuClone.appendChild(cdh);
   inner.appendChild(okazuClone);
   cb.appendChild(inner);
+  // Apply profile-based color to complete bento too
+  applyBentoColor();
   document.getElementById('complete-btn').onclick = () => {
     document.getElementById('complete-overlay').classList.add('hidden');
     if (last) stageIdx = 0; else stageIdx++;
@@ -700,7 +791,33 @@ function launchConfetti() {
   }
 }
 
+// ===== Profile & Bento Color =====
+function getPlayerName() {
+  try {
+    const p = JSON.parse(localStorage.getItem('pono_profile') || '{}');
+    return p.name || '';
+  } catch { return ''; }
+}
+function applyBentoColor() {
+  try {
+    const p = JSON.parse(localStorage.getItem('pono_profile') || '{}');
+    const box = document.querySelector('.bento-box');
+    const cbox = document.querySelector('.complete-bento');
+    let bg, border;
+    if (p.gender === 'girl') {
+      bg = '#F9A8D4'; border = '#E879A8';
+    } else if (p.gender === 'boy') {
+      bg = '#93C5FD'; border = '#6A9FDB';
+    } else {
+      return; // keep default brown
+    }
+    if (box) { box.style.background = bg; box.style.borderColor = border; }
+    if (cbox) { cbox.style.background = bg; cbox.style.borderColor = border; }
+  } catch {}
+}
+
 // ===== Init =====
+applyBentoColor();
 loadStage();
 initMenu();
 

@@ -555,12 +555,191 @@
       color: var(--text-light);
       line-height: 1.6;
     }
+
+    /* ===== Profile Overlay ===== */
+    .profile-overlay {
+      position: fixed; inset: 0; z-index: 9970;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      opacity: 1; transition: opacity 0.4s;
+    }
+    .profile-overlay.hidden {
+      opacity: 0; pointer-events: none;
+    }
+    .profile-card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 28px 24px 24px;
+      max-width: 340px; width: 100%;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+      text-align: center;
+      position: relative;
+      animation: profileBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes profileBounceIn {
+      0% { transform: scale(0.7) translateY(30px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .profile-pono {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      object-fit: contain;
+      margin: 0 auto 12px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(242,145,90,0.35));
+    }
+    .profile-title {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.4rem; font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.08em;
+      margin-bottom: 18px;
+      text-shadow: 2px 2px 0 var(--primary-light);
+    }
+    .profile-section-label {
+      font-size: 0.82rem; font-weight: 900;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+    .profile-name-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 3px solid var(--primary-light);
+      border-radius: 50px;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #FFF8F0;
+    }
+    .profile-name-input::placeholder {
+      color: #D0C0A8; font-weight: 400;
+    }
+    .profile-name-input:focus {
+      border-color: var(--primary);
+    }
+    .profile-age-row {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 8px;
+    }
+    .profile-age-btn {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 3px solid var(--primary-light);
+      background: #FFF8F0;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.3rem; font-weight: 900;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .profile-age-btn:active { transform: scale(0.92); }
+    .profile-age-btn.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(242,145,90,0.4);
+      transform: scale(1.08);
+    }
+    .profile-gender-row {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 8px;
+    }
+    .profile-gender-btn {
+      flex: 1; max-width: 140px;
+      padding: 12px 8px;
+      border-radius: 16px;
+      border: 3px solid var(--primary-light);
+      background: #FFF8F0;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 0.95rem; font-weight: 900;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .profile-gender-btn:active { transform: scale(0.95); }
+    .profile-gender-btn.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(242,145,90,0.4);
+      transform: scale(1.05);
+    }
+    .profile-submit-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px 0;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.2rem; font-weight: 900;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #B87200, 0 8px 20px rgba(200,120,0,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .profile-submit-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #B87200, 0 4px 10px rgba(200,120,0,0.2);
+    }
+    .profile-submit-btn:disabled {
+      opacity: 0.45; cursor: default;
+    }
+    .profile-error {
+      font-size: 0.78rem; font-weight: 700;
+      color: #E53E3E;
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+    .profile-section { margin-bottom: 16px; }
   </style>
   <script src="common/achievements.js"></script>
   <script src="common/stickers.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+
+  <!-- ===== First-Visit Profile Overlay ===== -->
+  <div class="profile-overlay" id="profileOverlay">
+    <div class="profile-card">
+      <img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノ" class="profile-pono">
+      <div class="profile-title">ポノと あそぼう！</div>
+
+      <div class="profile-section">
+        <div class="profile-section-label">なまえ（なくてもOK！）</div>
+        <input type="text" class="profile-name-input" id="profileName" placeholder="おなまえ" maxlength="12" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+
+      <div class="profile-section">
+        <div class="profile-section-label">なんさい？</div>
+        <div class="profile-age-row" id="profileAgeRow">
+          <button class="profile-age-btn" data-age="3">3</button>
+          <button class="profile-age-btn" data-age="4">4</button>
+          <button class="profile-age-btn" data-age="5">5</button>
+          <button class="profile-age-btn" data-age="6">6</button>
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <div class="profile-section-label">どっち？</div>
+        <div class="profile-gender-row" id="profileGenderRow">
+          <button class="profile-gender-btn" data-gender="boy">おとこのこ👦</button>
+          <button class="profile-gender-btn" data-gender="girl">おんなのこ👧</button>
+        </div>
+      </div>
+
+      <div class="profile-error" id="profileError"></div>
+      <button class="profile-submit-btn" id="profileSubmit">あそぶ！</button>
+    </div>
+  </div>
+
   <div class="page">
 
     <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="hero-amazon" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る">
@@ -825,6 +1004,68 @@
   </div>
 
   <script>
+    // ===== Profile Overlay (first-visit) =====
+    window.ponoProfile = JSON.parse(localStorage.getItem('pono_profile') || 'null');
+
+    (function() {
+      var overlay = document.getElementById('profileOverlay');
+      if (!overlay) return;
+
+      // Already has profile → hide immediately
+      if (window.ponoProfile) {
+        overlay.classList.add('hidden');
+        return;
+      }
+
+      var selectedAge = null;
+      var selectedGender = null;
+
+      // Age buttons
+      var ageBtns = document.querySelectorAll('#profileAgeRow .profile-age-btn');
+      ageBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          ageBtns.forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+          selectedAge = parseInt(btn.getAttribute('data-age'));
+          document.getElementById('profileError').textContent = '';
+        });
+      });
+
+      // Gender buttons
+      var genderBtns = document.querySelectorAll('#profileGenderRow .profile-gender-btn');
+      genderBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          genderBtns.forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+          selectedGender = btn.getAttribute('data-gender');
+          document.getElementById('profileError').textContent = '';
+        });
+      });
+
+      // Submit
+      document.getElementById('profileSubmit').addEventListener('click', function() {
+        if (!selectedAge) {
+          document.getElementById('profileError').textContent = 'なんさいか おしえてね！';
+          return;
+        }
+        if (!selectedGender) {
+          document.getElementById('profileError').textContent = 'どっちか おしえてね！';
+          return;
+        }
+
+        var profile = {
+          name: document.getElementById('profileName').value.trim() || '',
+          age: selectedAge,
+          gender: selectedGender
+        };
+
+        localStorage.setItem('pono_profile', JSON.stringify(profile));
+        window.ponoProfile = profile;
+
+        overlay.classList.add('hidden');
+      });
+    })();
+
     // ===== PWA Guide: 一度見たら非表示 =====
     (function() {
       const guide = document.getElementById('pwa-guide');
