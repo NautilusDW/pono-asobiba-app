@@ -664,15 +664,16 @@
         <div class="lock-unlocked" id="lockUnlocked">✅ かいじょずみ！</div>
       </div>
 
-      <!-- 購入者限定コンテンツ -->
-      <a href="bubble/index.html" class="card card-bubble locked" id="card-bubble">
+      <!-- シャボン玉: 準備中（グレーアウト） -->
+      <a class="card card-bubble locked" id="card-bubble" style="pointer-events:none;">
         <span class="card-icon">🫧</span>
         <div class="card-body">
           <div class="card-title">しゃぼんだま</div>
-          <div class="card-desc">タップで<br>パチン！</div>
+          <div class="card-desc">もうすぐ<br>あそべるよ！</div>
         </div>
       </a>
 
+      <!-- 購入者限定コンテンツ -->
       <a href="bowling/index.html" class="card card-bowling locked" id="card-bowling">
         <span class="card-icon">🎳</span>
         <div class="card-body">
@@ -689,11 +690,12 @@
         </div>
       </a>
 
-      <a href="stacking/index.html" class="card card-stacking locked" id="card-stacking">
+      <!-- つみき: 準備中（グレーアウト） -->
+      <a class="card card-stacking locked" id="card-stacking" style="pointer-events:none;">
         <span class="card-icon">🏗️</span>
         <div class="card-body">
           <div class="card-title">つみき</div>
-          <div class="card-desc">たかくつもう</div>
+          <div class="card-desc">もうすぐ<br>あそべるよ！</div>
         </div>
       </a>
 
@@ -801,7 +803,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-bubble', 'card-bowling', 'card-breakout', 'card-stacking', 'card-slide'];
+    const lockedCards = ['card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';
