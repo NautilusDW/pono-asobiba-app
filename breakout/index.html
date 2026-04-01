@@ -174,6 +174,58 @@ html, body {
 .ov-back:active { opacity: 0.6; }
 .ov-back.hidden { display: none; }
 
+/* ===== Ending screen (game clear) ===== */
+.ov-card.ending {
+  gap: 10px;
+  padding: 28px 24px 22px;
+  background: linear-gradient(170deg, #FFF8E7 0%, #FFF0F5 50%, #F0F8FF 100%);
+  overflow: visible;
+  position: relative;
+}
+.ov-card.ending .ov-icon { display: none; }
+.ending-hedgehog {
+  width: 140px; height: 140px;
+  object-fit: contain;
+  animation: hedgehogBounce 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgba(249,115,22,0.25));
+}
+@keyframes hedgehogBounce {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+}
+.ending-stars {
+  font-size: 1.6rem; letter-spacing: 6px;
+  animation: starSparkle 1.5s ease-in-out infinite;
+}
+@keyframes starSparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+.ov-card.ending .ov-title {
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #F97316, #EC4899, #8B5CF6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.ov-card.ending .ov-msg {
+  font-size: 0.88rem;
+}
+.ov-btn-home {
+  margin-top: 4px;
+  display: inline-block;
+  padding: 12px 30px;
+  border: none; border-radius: 50px;
+  font-family: inherit; font-size: 1rem; font-weight: 900;
+  background: linear-gradient(135deg, #60A5FA, #818CF8);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(96,165,250,0.4);
+  transition: transform 0.15s;
+  text-decoration: none;
+}
+.ov-btn-home:active { transform: scale(0.95); }
+.ending-hedgehog.hidden { display: none; }
+.ov-btn-home.hidden { display: none; }
+
 
 /* ===== Item legend chips ===== */
 #hud-effects {
@@ -282,11 +334,13 @@ html, body {
 
   <!-- overlay は game-wrap の外: touch-action:none の影響を受けない -->
   <div class="overlay" id="overlay">
-    <div class="ov-card">
+    <div class="ov-card" id="ov-card">
+      <img class="ending-hedgehog hidden" id="ov-hedgehog" src="../assets/images/characters/headgehog/headgehog_smilewavinghands.png" alt="ハリネズミちゃん">
       <div class="ov-icon"  id="ov-icon">🧱</div>
       <div class="ov-title" id="ov-title">ブロックくずし</div>
       <div class="ov-msg"   id="ov-msg">タップして はじめよう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
+      <a class="ov-btn-home hidden" id="ov-btn-home" href="../">🏠 ホームにもどる</a>
       <a class="ov-back hidden" id="ov-back" href="../index.html">← ホームにもどる</a>
     </div>
   </div>
@@ -862,21 +916,31 @@ function launchConfetti() {
 const overlay = document.getElementById('overlay');
 
 function showOverlay(type) {
+  const card  = document.getElementById('ov-card');
   const icon  = document.getElementById('ov-icon');
   const title = document.getElementById('ov-title');
   const msg   = document.getElementById('ov-msg');
   const btn   = document.getElementById('ov-btn');
+  const hedgehogImg = document.getElementById('ov-hedgehog');
+  const btnHome = document.getElementById('ov-btn-home');
   overlay.classList.remove('hidden');
+
+  // Reset ending mode
+  card.classList.remove('ending');
+  hedgehogImg.classList.add('hidden');
+  btnHome.classList.add('hidden');
+  icon.style.display = '';
+  btn.style.display = '';
 
   if (type === 'start') {
     icon.textContent  = '🦔';
     title.textContent = 'ハリネズミちゃんをたすけよう！';
-    msg.textContent   = 'ハリネズミちゃんが いわのむこうで まいご！\nまほうのたまで いわをぜんぶこわそう！';
+    msg.textContent   = 'ハリネズミちゃんが\nいわのむこうで まいご！\nまほうのたまで いわを\nぜんぶ こわそう！';
     btn.textContent   = 'たすけにいく ▶';
   } else if (type === 'stagestart') {
     icon.textContent  = '🔒';
     title.textContent = 'てつの いわ あらわる！';
-    msg.textContent   = 'ハリネズミちゃんの まわりに\nかたい てつの いわが あるよ！\n\nまず まわりの いわを ぜんぶこわすと\nてつの いわが よわくなるよ！';
+    msg.textContent   = 'ハリネズミちゃんの まわりに\nかたい てつの いわが あるよ！\n\nまわりの いわを ぜんぶこわすと\nてつの いわが よわくなるよ！';
     btn.textContent   = 'いくぞ ▶';
   } else if (type === 'stageclear') {
     icon.textContent  = '🦔';
@@ -884,10 +948,17 @@ function showOverlay(type) {
     msg.textContent   = STAGES[stageIdx].clearMsg;
     btn.textContent   = 'つぎへ ▶';
   } else if (type === 'gameclear') {
-    icon.textContent  = '🦔';
-    title.textContent = 'ハリネズミちゃんと さいかい！';
-    msg.textContent   = `「ありがとう、ポノ！」\n${score}てん 🌟ベスト: ${hiScore}てん`;
-    btn.textContent   = 'もう一回 ▶';
+    // Special ending screen with hedgehog image
+    card.classList.add('ending');
+    hedgehogImg.classList.remove('hidden');
+    btnHome.classList.remove('hidden');
+    icon.style.display = 'none';
+    title.innerHTML = '<div class="ending-stars">🌟✨🌟</div>ありがとう！たすけてくれて！';
+    msg.textContent   = `ハリネズミちゃん だいかんげき！\n${score}てん 🌟ベスト: ${hiScore}てん`;
+    btn.textContent   = 'もう一回あそぶ ▶';
+    // Extra confetti burst for the ending
+    launchConfetti();
+    setTimeout(launchConfetti, 800);
   } else if (type === 'gameover') {
     const isRecord = recordShown;
     icon.textContent  = isRecord ? '🌟' : '🦔';
@@ -895,9 +966,13 @@ function showOverlay(type) {
     msg.textContent   = `ハリネズミちゃんが まだ むこうに…\n${score}てん ベスト: ${hiScore}てん`;
     btn.textContent   = 'もう一回 ▶';
   }
-  // メニューに戻るリンク: 全overlay で表示
+  // メニューに戻るリンク: 全overlay で表示（エンディングではホームボタンがあるので非表示）
   const back = document.getElementById('ov-back');
-  back.classList.remove('hidden');
+  if (type === 'gameclear') {
+    back.classList.add('hidden');
+  } else {
+    back.classList.remove('hidden');
+  }
   // Store action type for the pointerup handler
   btn.dataset.ovType = type;
 }
