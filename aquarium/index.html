@@ -327,7 +327,7 @@
       pointer-events: none;
       white-space: nowrap;
     }
-    .tut-hint.show { display: flex; }
+    .tut-hint.show { display: flex; pointer-events: all; cursor: pointer; }
     .tut-hint-icon { font-size: 2rem; }
     .tut-hint-text { line-height: 1.5; }
     .tut-hint-feed {
@@ -537,6 +537,15 @@
           o2.connect(g2); g2.connect(ctx.destination);
           o1.start(now); o1.stop(now + 0.2);
           o2.start(now + 0.12); o2.stop(now + 0.3);
+        } else if (name === 'bloop') {
+          // 生き物タップ: かわいい水中ぽこっ音
+          const o = ctx.createOscillator();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(480, now);
+          o.frequency.exponentialRampToValueAtTime(220, now + 0.12);
+          g.gain.setValueAtTime(0.18, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          o.connect(g); o.start(now); o.stop(now + 0.15);
         } else if (name === 'collect') {
           // アイテム獲得: 上昇アルペジオ
           [400, 500, 600, 800].forEach((freq, i) => {
@@ -1837,21 +1846,40 @@
         dropShadowDistance: 2, dropShadowAngle: Math.PI / 4
       });
       ann.anchor.set(0.5);
-      ann.x = W() * 0.5; ann.y = H() * 0.3;
+      ann.x = W() * 0.5; ann.y = H() * 0.28;
       ann.alpha = 0;
       layerTop.addChild(ann);
+      // Explanation sub-text
+      const annSub = new PIXI.Text('かくれている たからものを\nみつけて タップしよう！', {
+        fontSize: 20, fontFamily: 'Zen Maru Gothic, sans-serif',
+        fontWeight: '700', fill: '#ffffff',
+        stroke: '#885500', strokeThickness: 3,
+        dropShadow: true, dropShadowColor: '#000000',
+        dropShadowDistance: 1, dropShadowAngle: Math.PI / 4,
+        align: 'center'
+      });
+      annSub.anchor.set(0.5);
+      annSub.x = W() * 0.5; annSub.y = H() * 0.28 + 40;
+      annSub.alpha = 0;
+      layerTop.addChild(annSub);
       let annT = 0;
       const annTick = (d) => {
         annT += d;
         if (annT < 15) {
-          ann.alpha = Math.min(1, annT / 15);
-          ann.scale.set(0.8 + (annT / 15) * 0.2);
+          const p = annT / 15;
+          ann.alpha = Math.min(1, p);
+          ann.scale.set(0.8 + p * 0.2);
+          annSub.alpha = Math.min(1, Math.max(0, (annT - 8) / 7));
+          annSub.scale.set(0.8 + Math.min(1, Math.max(0, (annT - 8) / 7)) * 0.2);
         } else if (annT < 120) {
-          ann.y = H() * 0.3 + Math.sin(annT * 0.08) * 3;
+          ann.y = H() * 0.28 + Math.sin(annT * 0.08) * 3;
+          annSub.y = ann.y + 40;
         } else {
           ann.alpha -= 0.025 * d;
+          annSub.alpha -= 0.025 * d;
           if (ann.alpha <= 0) {
             layerTop.removeChild(ann); ann.destroy();
+            layerTop.removeChild(annSub); annSub.destroy();
             app.ticker.remove(annTick);
           }
         }
@@ -3022,7 +3050,7 @@
           if (c.pattern === 'sway') return;
           const dx = c.obj.x - px, dy = c.obj.y - py;
           const d = Math.sqrt(dx*dx + dy*dy);
-          if (d < c.baseSize * 0.7) { hitDirect = true; onCreatureTapped(); }
+          if (d < c.baseSize * 0.7) { if (!hitDirect) SFX.play('bloop'); hitDirect = true; onCreatureTapped(); }
           // サメ・マンボウは体に近いときだけ反応（大きいので遠距離反応させない）
           const effR = (c.sunfishsprite || c.sharksprite) ? c.baseSize * 1.0 : r;
           if (d >= effR) return;
@@ -3167,6 +3195,15 @@
         // Auto-advance after 8s if user doesn't tap a creature
         tutAutoTimer = setTimeout(() => { if (tutStep === 1) onCreatureTapped(); }, 15000);
       }, 1200);
+      // Tap-to-dismiss: tapping the hint itself dismisses it
+      document.getElementById('tutTap').addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        if (tutStep === 1) onCreatureTapped();
+      });
+      document.getElementById('tutFeed').addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        if (tutStep === 2) onFeedUsed();
+      });
     }
 
     function onCreatureTapped() {

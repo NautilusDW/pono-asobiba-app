@@ -497,6 +497,8 @@ body {
 </head>
 <body>
 
+<audio id="bgm" loop src="../assets/audio/wordmatch_bgm.mp3" preload="auto"></audio>
+
 <header class="header">
   <h1>ことばあわせ</h1>
 </header>
@@ -1031,6 +1033,31 @@ function launchConfetti() {
   }
 }
 
+// ===== BGM =====
+const bgm = document.getElementById('bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+let bgmStarted = false;
+bgm.volume = 0.15;
+
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+if (bgmEnabled) {
+  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
+    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+    document.addEventListener('pointerdown', tryStartBgm, { once: true });
+  });
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgm.pause(); }
+  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+});
+window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+
 // ===== Audio =====
 let sfxEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let _ac = null;
@@ -1096,8 +1123,10 @@ crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
 loadStage(0);
 initMenu({
   bgmToggle: function() {
-    sfxEnabled = !sfxEnabled;
-    localStorage.setItem('pono_bgm_enabled', sfxEnabled ? 'on' : 'off');
+    bgmEnabled = !bgmEnabled;
+    sfxEnabled = bgmEnabled;
+    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+    if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
   }
 });
 

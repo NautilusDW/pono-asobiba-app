@@ -16,7 +16,7 @@
   style.textContent = `
     .pono-menu-toggle {
       position: fixed; z-index: 9990;
-      top: 10px; left: 10px;
+      top: 12px; left: 16px;
       width: 40px; height: 40px; border-radius: 50%;
       background: rgba(255,255,255,0.7); border: none;
       font-size: 20px; cursor: pointer;
@@ -31,7 +31,7 @@
     }
     .pono-menu-items {
       position: fixed; z-index: 9989;
-      top: 10px; left: 56px;
+      top: 12px; left: 62px;
       display: flex; gap: 8px;
       opacity: 0; pointer-events: none;
       transform: translateX(-12px);
