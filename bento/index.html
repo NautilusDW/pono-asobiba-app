@@ -37,8 +37,8 @@ html, body {
   flex-direction: column;
   align-items: center;
   height: 100dvh;
-  padding: 52px 16px 16px;
-  gap: 8px;
+  padding: 52px 12px 12px;
+  gap: 6px;
 }
 
 /* ===== Pono area ===== */
@@ -49,7 +49,7 @@ html, body {
   flex-shrink: 0;
 }
 .pono-img {
-  width: 56px; height: 56px;
+  width: 50px; height: 50px;
   object-fit: contain;
   transition: transform 0.3s;
 }
@@ -57,15 +57,15 @@ html, body {
 .speech-bubble {
   background: #fff;
   border-radius: 16px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
+  padding: 7px 12px;
+  font-size: 0.85rem;
   font-weight: 900;
   color: var(--text);
   box-shadow: 0 2px 8px var(--shadow);
   position: relative;
   max-width: 200px;
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 .speech-bubble::before {
   content: '';
@@ -78,44 +78,75 @@ html, body {
 
 /* ===== Bento box ===== */
 .bento-box {
-  width: 90%;
+  width: 92%;
   max-width: 300px;
-  aspect-ratio: 1.5;
   background: #8B4513;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 4px solid #6B3410;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 4px;
-  padding: 8px;
-  box-shadow: 0 4px 16px rgba(93,78,55,0.2), inset 0 2px 4px rgba(255,255,255,0.1);
+  padding: 6px;
+  box-shadow: 0 4px 16px rgba(93,78,55,0.2);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
 }
-.bento-box::before {
-  content: '';
-  position: absolute; inset: 3px;
+.bento-inner {
   background: #FFF8E7;
-  border-radius: 12px;
-  z-index: 0;
-}
-.bento-slot {
-  position: relative;
-  z-index: 1;
+  border-radius: 10px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  min-height: 120px;
+}
+/* ご飯エリア（上段・横長） */
+.bento-rice {
+  width: 100%;
+  height: 52px;
   border-radius: 8px;
   background: rgba(139,69,19,0.06);
   border: 1.5px dashed rgba(139,69,19,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   transition: all 0.3s;
+}
+.bento-rice.filled {
+  border-color: transparent;
+  background: transparent;
+}
+.bento-rice img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+/* おかずエリア（下段・グリッド） */
+.bento-okazu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  flex: 1;
+}
+.bento-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(139,69,19,0.06);
+  border: 1.5px dashed rgba(139,69,19,0.15);
+  min-height: 48px;
+  transition: all 0.3s;
+  overflow: hidden;
 }
 .bento-slot.filled {
   border-color: transparent;
   background: transparent;
+}
+.bento-slot img {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 
@@ -126,35 +157,39 @@ html, body {
 
 /* ===== Question ===== */
 .question {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 900;
   color: var(--text);
   text-align: center;
-  padding: 8px 20px;
+  padding: 6px 16px;
   background: rgba(255,255,255,0.9);
   border-radius: 50px;
   box-shadow: 0 2px 8px var(--shadow);
   flex-shrink: 0;
 }
-.question .color-word {
+.q-highlight {
   display: inline-block;
   padding: 2px 10px;
   border-radius: 8px;
   color: #fff;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
 }
-.color-word.red    { background: #EF4444; }
-.color-word.yellow { background: #EAB308; color: #5D4E37; text-shadow: none; }
-.color-word.green  { background: #22C55E; }
-.color-word.round  { background: #8B5CF6; }
-.color-word.long   { background: #3B82F6; }
-.color-word.free   { background: linear-gradient(135deg, #F97316, #EC4899); }
+.q-highlight.red    { background: #EF4444; }
+.q-highlight.yellow { background: #EAB308; color: #5D4E37; text-shadow: none; }
+.q-highlight.green  { background: #22C55E; }
+.q-highlight.brown  { background: #A16207; }
+.q-highlight.orange { background: #F97316; }
+.q-highlight.meat   { background: #DC2626; }
+.q-highlight.veg    { background: #16A34A; }
+.q-highlight.fruit  { background: #A855F7; }
+.q-highlight.free   { background: linear-gradient(135deg, #F97316, #EC4899); }
+.q-highlight.rice   { background: linear-gradient(135deg, #FFF, #FDE68A); color: #5D4E37; border: 2px solid #EAB308; }
 
 /* ===== Food tray ===== */
 .food-tray {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   max-width: 320px;
   flex: 1;
@@ -166,57 +201,61 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 4px;
+  gap: 3px;
+  padding: 8px 4px;
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 2.5px solid #FDE68A;
   box-shadow: 0 3px 10px var(--shadow);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
-  min-height: 80px;
+  min-height: 76px;
 }
 .food-item:active { transform: scale(0.92); }
-.food-item .food-emoji { font-size: 2.4rem; line-height: 1; pointer-events: none; }
-.food-item .food-name {
-  font-size: 0.7rem; font-weight: 700; color: var(--text-light);
+.food-item .food-img {
+  width: 52px; height: 52px;
+  object-fit: contain;
   pointer-events: none;
+}
+.food-item .food-name {
+  font-size: 0.62rem; font-weight: 700; color: var(--text-light);
+  pointer-events: none;
+  white-space: nowrap;
 }
 .food-item.correct {
   border-color: #34D399;
   background: #D1FAE5;
   animation: correctPop 0.5s;
 }
-.food-item.wrong {
-  animation: shake 0.35s;
-}
+.food-item.wrong { animation: shake 0.35s; }
 .food-item.used {
-  opacity: 0.3;
+  opacity: 0.25;
   pointer-events: none;
   transform: scale(0.85);
 }
 
 @keyframes correctPop {
   0%   { transform: scale(1); }
-  30%  { transform: scale(1.2); }
-  100% { transform: scale(0.85); opacity: 0.3; }
+  30%  { transform: scale(1.15); }
+  100% { transform: scale(0.85); opacity: 0.25; }
 }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-8px); }
-  75%     { transform: translateX(8px); }
+  25%     { transform: translateX(-6px); }
+  75%     { transform: translateX(6px); }
 }
 
-/* ===== Flying food animation ===== */
+/* ===== Flying food ===== */
 .food-flying {
   position: fixed;
-  font-size: 2.4rem;
   z-index: 50;
   pointer-events: none;
+  width: 48px; height: 48px;
+  object-fit: contain;
   transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* ===== Stage complete overlay ===== */
+/* ===== Complete overlay ===== */
 .complete-overlay {
   position: fixed; inset: 0; z-index: 60;
   background: rgba(93,78,55,0.7);
@@ -230,19 +269,18 @@ html, body {
 .complete-card {
   background: #fff;
   border-radius: var(--radius);
-  padding: 28px 24px;
+  padding: 24px 20px;
   text-align: center;
-  max-width: 320px;
+  max-width: 300px;
   width: 100%;
   box-shadow: 0 8px 40px rgba(93,78,55,0.3);
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .complete-emoji { font-size: 3rem; }
-.complete-title { font-size: 1.5rem; font-weight: 900; color: var(--primary); }
-.complete-msg { font-size: 0.9rem; font-weight: 700; color: var(--text-light); }
+.complete-title { font-size: 1.4rem; font-weight: 900; color: var(--primary); }
+.complete-msg { font-size: 0.85rem; font-weight: 700; color: var(--text-light); }
 .complete-btn {
-  margin-top: 4px;
   padding: 12px 32px;
   border: none; border-radius: 50px;
   background: linear-gradient(135deg, #60A5FA, #818CF8);
@@ -252,14 +290,14 @@ html, body {
 }
 .complete-btn:active { transform: scale(0.95); }
 
-/* ===== Wrong message toast ===== */
+/* ===== Wrong toast ===== */
 .wrong-toast {
   position: fixed;
-  bottom: 100px; left: 50%; transform: translateX(-50%);
+  bottom: 90px; left: 50%; transform: translateX(-50%);
   background: rgba(255,255,255,0.95);
   border-radius: 50px;
-  padding: 10px 20px;
-  font-size: 0.85rem; font-weight: 900;
+  padding: 8px 18px;
+  font-size: 0.82rem; font-weight: 900;
   color: var(--text);
   box-shadow: 0 4px 16px var(--shadow);
   z-index: 40;
@@ -312,7 +350,12 @@ html, body {
     <div class="speech-bubble" id="speech">おなか すいたなー</div>
   </div>
 
-  <div class="bento-box" id="bento-box"></div>
+  <div class="bento-box">
+    <div class="bento-inner" id="bento-inner">
+      <div class="bento-rice" id="bento-rice"></div>
+      <div class="bento-okazu" id="bento-okazu"></div>
+    </div>
+  </div>
 
   <div class="question" id="question"></div>
 
@@ -332,64 +375,96 @@ html, body {
 <div id="confetti"></div>
 
 <script>
+const P = '../assets/images/Bento_parts/';
+
 // ===== Food data =====
-const FOODS = [
-  // 赤
-  { emoji: '🍅', name: 'トマト',       color: 'red',    shape: 'round' },
-  { emoji: '🍓', name: 'いちご',       color: 'red',    shape: 'other' },
-  { emoji: '🍎', name: 'りんご',       color: 'red',    shape: 'round' },
-  { emoji: '🦐', name: 'エビフライ',   color: 'red',    shape: 'long'  },
-  // 黄
-  { emoji: '🍌', name: 'バナナ',       color: 'yellow', shape: 'long'  },
-  { emoji: '🌽', name: 'とうもろこし', color: 'yellow', shape: 'long'  },
-  { emoji: '🧀', name: 'チーズ',       color: 'yellow', shape: 'other' },
-  { emoji: '🍳', name: 'たまごやき',   color: 'yellow', shape: 'other' },
-  // 緑
-  { emoji: '🥦', name: 'ブロッコリー', color: 'green',  shape: 'round' },
-  { emoji: '🥒', name: 'きゅうり',     color: 'green',  shape: 'long'  },
-  { emoji: '🥬', name: 'レタス',       color: 'green',  shape: 'other' },
-  // その他
-  { emoji: '🍙', name: 'おにぎり',     color: 'white',  shape: 'round' },
-  { emoji: '🍊', name: 'みかん',       color: 'orange', shape: 'round' },
-  { emoji: '🥕', name: 'にんじん',     color: 'orange', shape: 'long'  },
-  { emoji: '🌭', name: 'ウインナー',   color: 'brown',  shape: 'long'  },
-  { emoji: '🍞', name: 'パン',         color: 'brown',  shape: 'round' },
+const RICE = [
+  { img: P+'rice_umeboshi.png',  name: 'うめぼしごはん' },
+  { img: P+'rice_goma.png',      name: 'ごまごはん' },
+  { img: P+'rice_furikake.png',  name: 'ふりかけごはん' },
+];
+
+const RICE_SMALL = [
+  { img: P+'gohan_shiro.png',    name: 'しろごはん' },
+  { img: P+'gohan_furikake.png', name: 'ふりかけごはん' },
+  { img: P+'onigiri_ume.png',    name: 'うめおにぎり' },
+  { img: P+'onigiri.png',        name: 'おにぎり' },
+];
+
+const OKAZU_MEAT = [
+  { img: P+'tako_wiener.png', name: 'タコウインナー', cat: 'meat', color: 'red' },
+  { img: P+'hamburg.png',     name: 'ハンバーグ',     cat: 'meat', color: 'brown' },
+  { img: P+'karaage.png',     name: 'からあげ',       cat: 'meat', color: 'brown' },
+  { img: P+'ebi_fry.png',     name: 'エビフライ',     cat: 'meat', color: 'orange' },
+  { img: P+'fries.png',       name: 'フライドポテト', cat: 'meat', color: 'yellow' },
+  { img: P+'tamagoyaki.png',  name: 'たまごやき',     cat: 'meat', color: 'yellow' },
+  { img: P+'meatball.png',    name: 'ミートボール',   cat: 'meat', color: 'brown' },
+  { img: P+'korokke.png',     name: 'コロッケ',       cat: 'meat', color: 'brown' },
+  { img: P+'napolitan.png',   name: 'ナポリタン',     cat: 'meat', color: 'red' },
+  { img: P+'yakizake.png',    name: 'やきざけ',       cat: 'meat', color: 'orange' },
+];
+
+const OKAZU_VEG = [
+  { img: P+'broccoli.png',    name: 'ブロッコリー',       cat: 'veg', color: 'green' },
+  { img: P+'mini_tomato.png', name: 'ミニトマト',         cat: 'veg', color: 'red' },
+  { img: P+'corn_spinach.png',name: 'コーンほうれんそう', cat: 'veg', color: 'green' },
+  { img: P+'kinpira.png',     name: 'きんぴらごぼう',     cat: 'veg', color: 'brown' },
+  { img: P+'edamame.png',     name: 'えだまめ',           cat: 'veg', color: 'green' },
+  { img: P+'potato_salad.png',name: 'ポテトサラダ',       cat: 'veg', color: 'yellow' },
+];
+
+const FRUITS = [
+  { img: P+'ichigo.png', name: 'いちご',   cat: 'fruit', color: 'red' },
+  { img: P+'mikan.png',  name: 'みかん',   cat: 'fruit', color: 'orange' },
+  { img: P+'budou.png',  name: 'ぶどう',   cat: 'fruit', color: 'purple' },
 ];
 
 // ===== Stages =====
 const STAGES = [
   {
-    title: 'いろで えらぼう',
-    questions: [
-      { type: 'color', value: 'red',    label: 'あかい',   css: 'red' },
-      { type: 'color', value: 'yellow', label: 'きいろい', css: 'yellow' },
-      { type: 'color', value: 'green',  label: 'みどりの', css: 'green' },
+    title: 'ごはんを えらぼう',
+    steps: [
+      { type: 'rice', label: 'ごはん', css: 'rice', speech: 'まずは ごはん！' },
+      { type: 'pick', pool: 'meat', count: 2, label: 'おかず', css: 'meat', speech: 'おかずを いれよう！' },
+      { type: 'pick', pool: 'veg',  count: 1, label: 'やさい', css: 'veg', speech: 'やさいも いれてね！' },
+      { type: 'pick', pool: 'fruit',count: 1, label: 'フルーツ', css: 'fruit', speech: 'デザート！' },
     ]
   },
   {
-    title: 'かたちで えらぼう',
-    questions: [
-      { type: 'shape', value: 'round', label: 'まるい',   css: 'round' },
-      { type: 'shape', value: 'long',  label: 'ながい',   css: 'long' },
-      { type: 'shape', value: 'round', label: 'まるい',   css: 'round' },
+    title: 'すきな おべんとう',
+    steps: [
+      { type: 'rice', label: 'ごはん', css: 'rice', speech: 'ごはんを えらんでね！' },
+      { type: 'free', count: 3, label: 'すきなもの', css: 'free', speech: 'すきなものを いれてね！' },
     ]
   },
   {
-    title: 'なんでも おべんとう',
-    questions: [
-      { type: 'color', value: 'red',    label: 'あかい',             css: 'red' },
-      { type: 'shape', value: 'long',   label: 'ながい',             css: 'long' },
-      { type: 'free',  value: 'any',    label: 'すきな ものを',       css: 'free' },
+    title: 'いっぱい おべんとう',
+    steps: [
+      { type: 'rice', label: 'ごはん', css: 'rice', speech: 'きょうの ごはんは？' },
+      { type: 'pick', pool: 'meat', count: 2, label: 'おかず', css: 'meat', speech: 'もりもり おかず！' },
+      { type: 'pick', pool: 'veg',  count: 1, label: 'やさい', css: 'veg', speech: 'やさいも だいじ！' },
+      { type: 'pick', pool: 'fruit',count: 1, label: 'フルーツ', css: 'fruit', speech: 'さいごに フルーツ！' },
     ]
   },
 ];
 
 // ===== State =====
 let stageIdx = 0;
-let questionIdx = 0;
-let bentoSlots = [];
-let slotFillCount = 0;
-let usedFoods = new Set();
+let stepIdx = 0;
+let okazuSlots = [];
+let okazuFillCount = 0;
+let pickedInStep = 0;
+let usedImgs = new Set();
+
+// ===== Shuffle =====
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
 
 // ===== Audio =====
 let _ac = null;
@@ -406,234 +481,239 @@ function playPop() {
   const o = ac.createOscillator(), g = ac.createGain();
   o.connect(g); g.connect(ac.destination);
   o.type = 'sine'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.08);
-  g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-  o.start(t); o.stop(t + 0.15);
+  g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+  o.start(t); o.stop(t + 0.12);
 }
-
 function playCorrect() {
   const ac = getAC(), t = ac.currentTime;
   [523, 659, 784].forEach((f, i) => {
     const o = ac.createOscillator(), g = ac.createGain();
     o.connect(g); g.connect(ac.destination);
     o.type = 'sine'; o.frequency.value = f;
-    const st = t + i * 0.1;
-    g.gain.setValueAtTime(0, st);
-    g.gain.linearRampToValueAtTime(0.2, st + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, st + 0.3);
-    o.start(st); o.stop(st + 0.3);
+    const s = t + i * 0.1;
+    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.18, s + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, s + 0.25);
+    o.start(s); o.stop(s + 0.25);
   });
 }
-
 function playWrong() {
   const ac = getAC(), t = ac.currentTime;
   const o = ac.createOscillator(), g = ac.createGain();
   o.connect(g); g.connect(ac.destination);
   o.type = 'triangle';
-  o.frequency.setValueAtTime(200, t);
-  o.frequency.exponentialRampToValueAtTime(120, t + 0.2);
-  g.gain.setValueAtTime(0.12, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-  o.start(t); o.stop(t + 0.2);
+  o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(120, t + 0.18);
+  g.gain.setValueAtTime(0.1, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  o.start(t); o.stop(t + 0.18);
 }
-
 function playFanfare() {
   const ac = getAC(), t = ac.currentTime;
   [523, 659, 784, 1047].forEach((f, i) => {
     const o = ac.createOscillator(), g = ac.createGain();
     o.connect(g); g.connect(ac.destination);
     o.type = 'sine'; o.frequency.value = f;
-    const st = t + i * 0.12;
-    g.gain.setValueAtTime(0, st);
-    g.gain.linearRampToValueAtTime(0.22, st + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, st + 0.5);
-    o.start(st); o.stop(st + 0.5);
+    const s = t + i * 0.12;
+    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.2, s + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, s + 0.45);
+    o.start(s); o.stop(s + 0.45);
   });
 }
 
-// ===== Shuffle helper =====
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// ===== Game logic =====
-function setSpeech(text) {
-  document.getElementById('speech').textContent = text;
-}
-
+// ===== UI helpers =====
+function setSpeech(t) { document.getElementById('speech').textContent = t; }
 function setPono(happy) {
   const img = document.getElementById('pono-img');
-  if (happy) {
-    img.classList.add('happy');
-    setTimeout(() => img.classList.remove('happy'), 600);
-  }
+  if (happy) { img.classList.add('happy'); setTimeout(() => img.classList.remove('happy'), 600); }
 }
 
+// ===== Load stage =====
 function loadStage() {
-  const stage = STAGES[stageIdx];
-  questionIdx = 0;
-  slotFillCount = 0;
-  usedFoods.clear();
+  stepIdx = 0;
+  pickedInStep = 0;
+  okazuFillCount = 0;
+  usedImgs.clear();
 
-  // Build empty bento
-  const box = document.getElementById('bento-box');
-  box.innerHTML = '';
-  bentoSlots = [];
-  for (let i = 0; i < 6; i++) {
-    const slot = document.createElement('div');
-    slot.className = 'bento-slot';
-    box.appendChild(slot);
-    bentoSlots.push(slot);
+  // Build bento box
+  const rice = document.getElementById('bento-rice');
+  rice.innerHTML = '';
+  rice.classList.remove('filled');
+
+  const okazu = document.getElementById('bento-okazu');
+  okazu.innerHTML = '';
+  okazuSlots = [];
+  for (let i = 0; i < 4; i++) {
+    const s = document.createElement('div');
+    s.className = 'bento-slot';
+    okazu.appendChild(s);
+    okazuSlots.push(s);
   }
 
-  setSpeech('おべんとう つくってね！');
-  loadQuestion();
+  setSpeech('おべんとう つくろう！');
+  setTimeout(() => loadStep(), 400);
 }
 
-function loadQuestion() {
+// ===== Load step =====
+function loadStep() {
   const stage = STAGES[stageIdx];
-  if (questionIdx >= stage.questions.length) {
+  if (stepIdx >= stage.steps.length) {
     stageComplete();
     return;
   }
 
-  const q = stage.questions[questionIdx];
-  const questionEl = document.getElementById('question');
+  const step = stage.steps[stepIdx];
+  pickedInStep = 0;
+  setSpeech(step.speech);
 
-  if (q.type === 'free') {
-    questionEl.innerHTML = `<span class="color-word ${q.css}">${q.label}</span> いれてね！`;
-  } else {
-    questionEl.innerHTML = `<span class="color-word ${q.css}">${q.label}</span> ものを いれてね！`;
-  }
-
-  // Pick 6 foods: some correct, some wrong
-  let correct, wrong;
-  if (q.type === 'free') {
-    correct = shuffle(FOODS.filter(f => !usedFoods.has(f.emoji)));
-    wrong = [];
-  } else {
-    correct = shuffle(FOODS.filter(f => f[q.type] === q.value && !usedFoods.has(f.emoji)));
-    wrong = shuffle(FOODS.filter(f => f[q.type] !== q.value && !usedFoods.has(f.emoji)));
-  }
-
-  // Ensure at least 2 correct, fill rest with wrong
-  const picked = [...correct.slice(0, 3), ...wrong.slice(0, 3)];
-  while (picked.length < 6 && wrong.length > picked.length - 3) {
-    picked.push(wrong[picked.length - 3]);
-  }
-  const display = shuffle(picked.slice(0, 6));
+  const qEl = document.getElementById('question');
+  qEl.innerHTML = `<span class="q-highlight ${step.css}">${step.label}</span> を いれてね！`;
 
   const tray = document.getElementById('food-tray');
   tray.innerHTML = '';
-  display.forEach(food => {
-    const item = document.createElement('div');
-    item.className = 'food-item';
-    item.dataset.color = food.color;
-    item.dataset.shape = food.shape;
-    item.dataset.emoji = food.emoji;
-    item.innerHTML = `<span class="food-emoji">${food.emoji}</span><span class="food-name">${food.name}</span>`;
-    item.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      onFoodTap(item, food);
+
+  if (step.type === 'rice') {
+    // Show rice options (横長 rice + 丸/三角)
+    const all = shuffle([...RICE, ...RICE_SMALL]).slice(0, 6);
+    all.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'food-item';
+      item.innerHTML = `<img class="food-img" src="${r.img}" alt="${r.name}"><span class="food-name">${r.name}</span>`;
+      item.addEventListener('pointerdown', e => { e.preventDefault(); onRiceTap(item, r); });
+      tray.appendChild(item);
     });
-    tray.appendChild(item);
-  });
+  } else if (step.type === 'free') {
+    // Show all remaining foods
+    const all = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedImgs.has(f.img))).slice(0, 6);
+    all.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'food-item';
+      item.innerHTML = `<img class="food-img" src="${f.img}" alt="${f.name}"><span class="food-name">${f.name}</span>`;
+      item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
+      tray.appendChild(item);
+    });
+  } else {
+    // Pick from specific pool
+    const pools = { meat: OKAZU_MEAT, veg: OKAZU_VEG, fruit: FRUITS };
+    const correct = shuffle(pools[step.pool].filter(f => !usedImgs.has(f.img)));
+    const others = shuffle(
+      [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS]
+        .filter(f => f.cat !== step.pool && !usedImgs.has(f.img))
+    );
+    const display = shuffle([...correct.slice(0, 3), ...others.slice(0, 3)]).slice(0, 6);
+    display.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'food-item';
+      item.innerHTML = `<img class="food-img" src="${f.img}" alt="${f.name}"><span class="food-name">${f.name}</span>`;
+      item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
+      tray.appendChild(item);
+    });
+  }
 }
 
-function onFoodTap(el, food) {
+// ===== Tap handlers =====
+function onRiceTap(el, rice) {
+  if (el.classList.contains('used')) return;
+  playPop();
+  el.classList.add('correct');
+
+  flyFood(el, document.getElementById('bento-rice'), rice.img, () => {
+    const riceEl = document.getElementById('bento-rice');
+    const img = document.createElement('img');
+    img.src = rice.img;
+    riceEl.innerHTML = '';
+    riceEl.appendChild(img);
+    riceEl.classList.add('filled');
+  });
+
+  setTimeout(() => {
+    el.classList.add('used');
+    playCorrect();
+    setPono(true);
+    setSpeech('おいしそう！');
+    stepIdx++;
+    setTimeout(loadStep, 500);
+  }, 400);
+}
+
+function onOkazuTap(el, food, step) {
   if (el.classList.contains('used')) return;
   playPop();
 
-  const q = STAGES[stageIdx].questions[questionIdx];
-  const isCorrect = q.type === 'free' || food[q.type] === q.value;
+  const isCorrect = step.type === 'free' || food.cat === step.pool;
 
   if (isCorrect) {
-    // Correct!
     el.classList.add('correct');
-    usedFoods.add(food.emoji);
+    usedImgs.add(food.img);
 
-    // Fly food to bento
-    flyToBento(el, food.emoji);
+    const targetSlot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
+    flyFood(el, targetSlot, food.img, () => {
+      if (okazuFillCount < okazuSlots.length) {
+        const img = document.createElement('img');
+        img.src = food.img;
+        okazuSlots[okazuFillCount].innerHTML = '';
+        okazuSlots[okazuFillCount].appendChild(img);
+        okazuSlots[okazuFillCount].classList.add('filled');
+        okazuFillCount++;
+      }
+    });
 
     setTimeout(() => {
       el.classList.add('used');
       playCorrect();
       setPono(true);
-      setSpeech('やったー！');
-
-      // Fill a bento slot
-      if (slotFillCount < bentoSlots.length) {
-        bentoSlots[slotFillCount].textContent = food.emoji;
-        bentoSlots[slotFillCount].classList.add('filled');
-        slotFillCount++;
+      const msgs = ['やったー！', 'いいね！', 'おいしそう！', 'すごい！'];
+      setSpeech(msgs[Math.floor(Math.random() * msgs.length)]);
+      pickedInStep++;
+      if (pickedInStep >= (step.count || 1)) {
+        stepIdx++;
+        setTimeout(loadStep, 500);
       }
-
-      // Next question after a brief pause
-      questionIdx++;
-      setTimeout(loadQuestion, 600);
     }, 400);
   } else {
-    // Wrong
     el.classList.add('wrong');
     playWrong();
-    showWrongToast(q);
+    const catNames = { meat: 'おかず', veg: 'やさい', fruit: 'フルーツ' };
+    showWrongToast('これは ' + (catNames[step.pool] || '') + ' じゃないよ〜');
     setTimeout(() => el.classList.remove('wrong'), 400);
   }
 }
 
-function flyToBento(el, emoji) {
-  const from = el.getBoundingClientRect();
-  const box = document.getElementById('bento-box');
-  const to = box.getBoundingClientRect();
-
-  const fly = document.createElement('div');
+function flyFood(fromEl, toEl, imgSrc, onLand) {
+  const from = fromEl.getBoundingClientRect();
+  const to = toEl.getBoundingClientRect();
+  const fly = document.createElement('img');
   fly.className = 'food-flying';
-  fly.textContent = emoji;
-  fly.style.left = from.left + from.width / 2 - 16 + 'px';
-  fly.style.top = from.top + 'px';
+  fly.src = imgSrc;
+  fly.style.left = (from.left + from.width / 2 - 24) + 'px';
+  fly.style.top = (from.top + from.height / 2 - 24) + 'px';
   document.body.appendChild(fly);
-
   requestAnimationFrame(() => {
-    fly.style.left = to.left + to.width / 2 - 16 + 'px';
-    fly.style.top = to.top + to.height / 2 - 16 + 'px';
-    fly.style.opacity = '0.6';
+    fly.style.left = (to.left + to.width / 2 - 24) + 'px';
+    fly.style.top = (to.top + to.height / 2 - 24) + 'px';
+    fly.style.opacity = '0.5';
     fly.style.transform = 'scale(0.5)';
   });
-
-  setTimeout(() => fly.remove(), 600);
+  setTimeout(() => { fly.remove(); if (onLand) onLand(); }, 500);
 }
 
-function showWrongToast(q) {
-  const toast = document.getElementById('wrong-toast');
-  if (q.type === 'color') {
-    const names = { red: 'あか', yellow: 'きいろ', green: 'みどり' };
-    toast.textContent = 'これは ' + (names[q.value] || '') + ' じゃないよ〜';
-  } else if (q.type === 'shape') {
-    const names = { round: 'まるく', long: 'ながく' };
-    toast.textContent = 'これは ' + (names[q.value] || '') + ' ないよ〜';
-  }
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 1200);
+function showWrongToast(msg) {
+  const t = document.getElementById('wrong-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1200);
 }
 
+// ===== Stage complete =====
 function stageComplete() {
   playFanfare();
   launchConfetti();
   awardPoints(5);
-  setSpeech('おいしそう！ありがとう！');
+  setSpeech('ありがとう！');
   setPono(true);
 
   const isLast = stageIdx >= STAGES.length - 1;
-
   document.getElementById('complete-emoji').textContent = '🍱';
   document.getElementById('complete-title').textContent = 'おべんとう かんせい！';
   document.getElementById('complete-msg').textContent = isLast
-    ? 'ぜんぶ つくれたね！すごい！'
-    : 'おいしそう！ありがとう！';
+    ? 'ぜんぶ つくれたね！すごい！' : 'おいしそう！ポノ よろこんでるよ！';
   document.getElementById('complete-btn').textContent = isLast ? 'もういっかい 🍱' : 'つぎへ →';
   document.getElementById('complete-btn').onclick = () => {
     document.getElementById('complete-overlay').classList.add('hidden');
@@ -644,18 +724,18 @@ function stageComplete() {
 }
 
 function launchConfetti() {
-  const container = document.getElementById('confetti');
-  const colors = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
-  for (let i = 0; i < 45; i++) {
+  const c = document.getElementById('confetti');
+  const cols = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
+  for (let i = 0; i < 40; i++) {
     setTimeout(() => {
-      const c = document.createElement('div');
-      c.className = 'conf';
-      c.style.left = Math.random() * 100 + 'vw';
-      c.style.background = colors[Math.floor(Math.random() * colors.length)];
-      c.style.animationDelay = Math.random() * 0.4 + 's';
-      c.style.animationDuration = (2 + Math.random() * 1.2) + 's';
-      container.appendChild(c);
-      setTimeout(() => c.remove(), 3600);
+      const p = document.createElement('div');
+      p.className = 'conf';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.background = cols[Math.floor(Math.random() * cols.length)];
+      p.style.animationDelay = Math.random() * 0.4 + 's';
+      p.style.animationDuration = (2 + Math.random() * 1.2) + 's';
+      c.appendChild(p);
+      setTimeout(() => p.remove(), 3600);
     }, i * 25);
   }
 }
@@ -664,19 +744,13 @@ function launchConfetti() {
 loadStage();
 initMenu();
 
-// Landscape notice
 function updateLandscapeNotice() {
-  const notice = document.getElementById('landscape-notice');
-  if (!notice) return;
-  const isLandscape = window.innerWidth > window.innerHeight;
-  const isTouch = matchMedia('(pointer: coarse)').matches;
-  notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+  const n = document.getElementById('landscape-notice');
+  if (!n) return;
+  n.style.display = (window.innerWidth > window.innerHeight && matchMedia('(pointer:coarse)').matches) ? 'flex' : 'none';
 }
 updateLandscapeNotice();
-window.addEventListener('orientationchange', () => {
-  setTimeout(updateLandscapeNotice, 100);
-  setTimeout(updateLandscapeNotice, 500);
-});
+window.addEventListener('orientationchange', () => { setTimeout(updateLandscapeNotice, 100); setTimeout(updateLandscapeNotice, 500); });
 window.addEventListener('resize', updateLandscapeNotice);
 </script>
 </body>
