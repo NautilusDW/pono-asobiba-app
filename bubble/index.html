@@ -2449,7 +2449,7 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     gameStarted = true;
 
     // Show tutorial on first visit
-    if (!localStorage.getItem('bubble_tut_seen')) {
+    if (!localStorage.getItem('bubble_tut_v2')) {
       setTimeout(showTutorial, 600);
     }
   });
@@ -2501,7 +2501,7 @@ function showTutorial() {
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
     tutorialActive = false;
-    localStorage.setItem('bubble_tut_seen', '1');
+    localStorage.setItem('bubble_tut_v2', '1');
   }
 
   // Tap dim background to dismiss tutorial
