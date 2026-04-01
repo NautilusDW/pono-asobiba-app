@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-01T02:45:33Z - パズルゲームをポートレート専用に変更（landscape通知追加＋landscape媒体クエリ削除）
+- **タスク**: パズルゲームをポートレート専用に変更（landscape通知追加＋landscape媒体クエリ削除）
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 24
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 131, "Read": 168, "Edit": 100, "Agent": 36, "Write": 4, "Grep": 56, "Glob": 3, "ToolSearch": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-01T01:46:12Z - puzzle/style.css: landscape layout修正 - header overlaid+padding/margin除去+puzzle-frame 100dvh+home button z-index確保
 - **タスク**: puzzle/style.css: landscape layout修正 - header overlaid+padding/margin除去+puzzle-frame 100dvh+home button z-index確保
 - **結果**: 成功
@@ -177,19 +190,6 @@ git checkout develop
 
 ### 2026-04-01T00:18:33Z - stacking/index.html: landscape-notice→portrait-noticeにリネーム＋CSS media query追加＋JS確実制御（home button blocked after rotation fix）
 - **タスク**: stacking/index.html: landscape-notice→portrait-noticeにリネーム＋CSS media query追加＋JS確実制御（home button blocked after rotation fix）
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 22
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 126, "Grep": 56, "Edit": 97, "Read": 185, "Agent": 27, "Write": 4, "Glob": 3, "ToolSearch": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 3個の非効率パターンあり。
-
-
-### 2026-04-01T00:08:51Z - puzzle/style.cssにlandscape用レイアウト追加（@media orientation: landscape）+ HTML sidebar wrapper
-- **タスク**: puzzle/style.cssにlandscape用レイアウト追加（@media orientation: landscape）+ HTML sidebar wrapper
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 500
