@@ -426,41 +426,46 @@ body {
   animation: shake 0.35s;
 }
 
-/* ===== Tutorial overlay ===== */
-.tut-overlay {
-  position: fixed; inset: 0; z-index: 90;
-  background: rgba(93,78,55,0.75);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-  animation: fadeIn 0.3s;
+/* ===== Tutorial (step-by-step overlay) ===== */
+.tut-dim {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(93,78,55,0.6);
+  pointer-events: auto;
 }
-.tut-overlay.hidden { display: none; }
-.tut-box {
+.tut-dim.hidden { display: none; }
+.tut-bubble {
+  position: fixed; z-index: 82;
   background: #fff;
-  border-radius: var(--radius);
-  padding: 28px 24px;
-  text-align: center;
-  max-width: 320px;
-  width: 100%;
-  box-shadow: 0 8px 40px rgba(93,78,55,0.3);
-  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-}
-.tut-box .tut-emoji { font-size: 3rem; margin-bottom: 8px; }
-.tut-box .tut-title {
-  font-size: 1.2rem; font-weight: 900; color: var(--primary);
-  margin-bottom: 10px;
-}
-.tut-box .tut-desc {
+  border-radius: 16px;
+  padding: 14px 18px;
+  max-width: 280px;
+  box-shadow: 0 4px 20px rgba(93,78,55,0.3);
   font-size: 0.9rem; font-weight: 700; color: var(--text);
-  line-height: 1.7; margin-bottom: 14px;
+  line-height: 1.6;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
-.tut-box .tut-btn {
-  padding: 12px 32px; border: none; border-radius: 50px;
+.tut-bubble.hidden { display: none; }
+.tut-bubble::after {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; background: #fff;
+  transform: rotate(45deg);
+}
+.tut-bubble.arrow-down::after { bottom: -8px; left: 50%; margin-left: -8px; }
+.tut-bubble.arrow-up::after { top: -8px; left: 50%; margin-left: -8px; }
+.tut-highlight {
+  position: relative; z-index: 81;
+  box-shadow: 0 0 0 4000px rgba(93,78,55,0.6);
+  border-radius: 16px;
+}
+.tut-next-btn {
+  display: inline-block; margin-top: 10px;
+  padding: 8px 24px; border: none; border-radius: 50px;
   background: linear-gradient(135deg, #60A5FA, #818CF8);
-  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
-  cursor: pointer; box-shadow: 0 4px 14px rgba(96,165,250,0.4);
+  color: #fff; font-family: inherit; font-size: 0.85rem; font-weight: 900;
+  cursor: pointer;
 }
-.tut-box .tut-btn:active { transform: scale(0.95); }
+.tut-next-btn:active { transform: scale(0.95); }
 
 /* ===== Landscape layout ===== */
 @media (orientation: landscape) {
@@ -545,19 +550,9 @@ body {
   <p class="stage-num" id="stage-num">ステージ 1 / 8</p>
 </div>
 
-<!-- Tutorial overlay (初回のみ) -->
-<div class="tut-overlay" id="tut-overlay">
-  <div class="tut-box">
-    <div class="tut-emoji">🚗✏️</div>
-    <div class="tut-title">ことばあわせ</div>
-    <div class="tut-desc">
-      うえの えを みて<br>
-      あう ことばを タップして<br>
-      あわせてね！
-    </div>
-    <button class="tut-btn" id="tut-start-btn">あそぶ！</button>
-  </div>
-</div>
+<!-- Tutorial elements (step-by-step, 初回のみ) -->
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
 
 <div class="game-row" id="game-area">
   <div class="pic-grid" id="pic-grid"></div>
@@ -1174,19 +1169,70 @@ shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
 crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
 loadStage(0);
 
-// Tutorial overlay (初回のみ表示)
+// Tutorial (step-by-step, 初回のみ)
 (function() {
-  const tut = document.getElementById('tut-overlay');
-  if (!tut) return;
-  if (localStorage.getItem('wordmatch_tut_seen')) {
-    tut.classList.add('hidden');
-    return;
+  if (localStorage.getItem('wordmatch_tut_seen')) return;
+
+  const dim = document.getElementById('tut-dim');
+  const bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  let step = 0;
+  const steps = [
+    // Step 0: 絵グリッド全体をハイライト
+    () => {
+      const grid = document.querySelector('.pic-grid');
+      if (!grid) return endTut();
+      grid.classList.add('tut-highlight');
+      dim.classList.remove('hidden');
+      const r = grid.getBoundingClientRect();
+      bubble.className = 'tut-bubble arrow-up';
+      bubble.style.top = (r.bottom + 12) + 'px';
+      bubble.style.left = (r.left + r.width / 2 - 140) + 'px';
+      bubble.innerHTML = 'この えを よく みてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    // Step 1: ことばトレイをハイライト
+    () => {
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      const tray = document.querySelector('.word-tray-wrap');
+      if (!tray) return endTut();
+      tray.classList.add('tut-highlight');
+      const r = tray.getBoundingClientRect();
+      bubble.className = 'tut-bubble arrow-down';
+      bubble.style.top = (r.top - 90) + 'px';
+      bubble.style.left = (r.left + r.width / 2 - 140) + 'px';
+      bubble.innerHTML = 'えに あう ことばを<br>ここから さがしてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    // Step 2: 完了
+    () => {
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      bubble.className = 'tut-bubble';
+      bubble.style.top = '50%';
+      bubble.style.left = '50%';
+      bubble.style.transform = 'translate(-50%, -50%)';
+      bubble.innerHTML = 'えと ことばを<br>あわせて みよう！🎉<br><button class="tut-next-btn" id="tut-next">はじめる！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+    }
+  ];
+
+  function nextStep() {
+    step++;
+    if (step < steps.length) steps[step]();
+    else endTut();
   }
-  document.getElementById('tut-start-btn').addEventListener('pointerdown', e => {
-    e.preventDefault();
-    tut.classList.add('hidden');
+
+  function endTut() {
+    document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
     localStorage.setItem('wordmatch_tut_seen', '1');
-  });
+  }
+
+  // ゲームが描画された後に開始（少し遅延）
+  setTimeout(() => steps[0](), 500);
 })();
 initMenu({
   bgmToggle: function() {

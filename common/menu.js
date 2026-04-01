@@ -135,19 +135,16 @@
     menuOpen = true;
     toggle.classList.add('open');
     items.classList.add('show');
-    resetAutoClose();
   }
 
   function closeMenu() {
     menuOpen = false;
     toggle.classList.remove('open');
-    items.classList.remove('show');
-    clearTimeout(autoCloseTimer);
+    // items は常時表示（音符ボタンが消えないように）
   }
 
   function resetAutoClose() {
-    clearTimeout(autoCloseTimer);
-    autoCloseTimer = setTimeout(closeMenu, 5000);
+    // 自動で閉じない（音符ボタンを常に操作可能にする）
   }
 
   function showConfirm() {
@@ -199,14 +196,18 @@
       bgmBtn.className = 'pono-menu-btn';
       bgmBtn.textContent = '🎵';
       bgmBtn.setAttribute('aria-label', 'おとのオンオフ');
+      // 初期状態を反映
+      if (localStorage.getItem('pono_bgm_enabled') === 'off') {
+        bgmBtn.classList.add('bgm-off');
+      }
       bgmBtn.addEventListener('pointerdown', e => {
         e.preventDefault();
         e.stopPropagation();
         options.bgmToggle();
-        resetAutoClose();
+        // localStorageの状態に基づいてクラスを更新
+        bgmBtn.classList.toggle('bgm-off', localStorage.getItem('pono_bgm_enabled') === 'off');
       });
       items.appendChild(bgmBtn);
-      // Keep reference for icon update
       window._ponoMenuBgmBtn = bgmBtn;
     }
 
