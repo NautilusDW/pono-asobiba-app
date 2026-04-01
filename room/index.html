@@ -172,15 +172,9 @@
       background: #2c5f72;
     }
 
-    /* ─── Portrait: hide room, show notice (モバイルのみ) ─── */
-    @media screen and (orientation: portrait) and (pointer: coarse) {
-      #room-scene      { display: none; }
-      #portrait-notice { display: flex; }
-    }
-    @media screen and (orientation: landscape), (pointer: fine) {
-      #room-scene      { display: flex; }
-      #portrait-notice { display: none; }
-    }
+    /* Portrait/landscape visibility is handled 100% by JS (updatePortraitNotice).
+       CSS media queries were removed because they race with JS inline styles
+       on orientation change, causing the home button to be blocked. */
 
     /*
       アイソメトリック2レイヤー構成:
@@ -3111,7 +3105,7 @@ lockRoomSize();
 window.addEventListener('orientationchange', () => setTimeout(lockRoomSize, 300));
 window.addEventListener('resize', lockRoomSize);
 
-// ─── Portrait notice: JS で確実に制御（CSS media query の遅延対策） ───
+// ─── Portrait notice: 100% JS制御（CSS media queryは競合するため廃止） ───
 function updatePortraitNotice() {
   const notice = document.getElementById('portrait-notice');
   const scene = document.getElementById('room-scene');
@@ -3124,9 +3118,20 @@ function updatePortraitNotice() {
   } else {
     notice.style.display = 'none';
     scene.style.display = 'flex';
+    // Ensure room-scene is clickable after rotation
+    scene.style.pointerEvents = '';
   }
 }
 updatePortraitNotice();
+// Use matchMedia listener (fires reliably when orientation actually changes,
+// unlike orientationchange which can fire before dimensions update)
+const portraitMQL = matchMedia('(orientation: portrait)');
+portraitMQL.addEventListener('change', () => {
+  updatePortraitNotice();
+  // Fire again after a delay as some browsers report stale dimensions initially
+  setTimeout(updatePortraitNotice, 200);
+  setTimeout(updatePortraitNotice, 600);
+});
 window.addEventListener('orientationchange', () => {
   setTimeout(updatePortraitNotice, 100);
   setTimeout(updatePortraitNotice, 500);
