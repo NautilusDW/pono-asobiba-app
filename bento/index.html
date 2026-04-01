@@ -45,15 +45,14 @@ html, body {
   flex: 1.2;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-width: 0;
+  padding: 4px;
 }
 
 .pono-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-left: 54px;
   flex-shrink: 0;
 }
 .pono-img {
@@ -123,9 +122,8 @@ html, body {
   background: transparent;
 }
 .bento-rice img {
+  width: 100%;
   height: 100%;
-  width: auto;
-  max-width: none;
   object-fit: contain;
   border-radius: 6px;
   transform: rotate(90deg);
@@ -176,29 +174,7 @@ html, body {
   min-height: 0;
 }
 
-.question {
-  font-size: 0.9rem;
-  font-weight: 900;
-  color: var(--text);
-  text-align: center;
-  padding: 5px 10px;
-  background: rgba(255,255,255,0.92);
-  border-radius: 50px;
-  box-shadow: 0 2px 8px var(--shadow);
-  flex-shrink: 0;
-}
-.q-highlight {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 6px;
-  color: #fff;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
-}
-.q-highlight.meat   { background: #DC2626; }
-.q-highlight.veg    { background: #16A34A; }
-.q-highlight.fruit  { background: #A855F7; }
-.q-highlight.free   { background: linear-gradient(135deg, #F97316, #EC4899); }
-.q-highlight.rice   { background: linear-gradient(135deg, #FFF, #FDE68A); color: #5D4E37; border: 2px solid #EAB308; text-shadow: none; }
+/* question removed — ポノの吹き出しで指示 */
 
 /* 食材グリッド */
 .food-tray {
@@ -306,7 +282,7 @@ html, body {
   overflow: hidden; border-radius: 6px;
 }
 .complete-bento .cb-rice img {
-  height: 100%; width: auto; max-width: none;
+  width: 100%; height: 100%;
   object-fit: contain; border-radius: 6px;
   transform: rotate(90deg);
 }
@@ -390,10 +366,6 @@ html, body {
 <div id="app">
   <!-- 左: お弁当箱 -->
   <div class="left-panel">
-    <div class="pono-row">
-      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
-      <div class="speech-bubble" id="speech">おなか すいたなー</div>
-    </div>
     <div class="bento-box">
       <div class="bento-inner" id="bento-inner">
         <div class="bento-rice" id="bento-rice"></div>
@@ -402,9 +374,12 @@ html, body {
     </div>
   </div>
 
-  <!-- 右: 食材選択 -->
+  <!-- 右: ポノ + 食材選択 -->
   <div class="right-panel">
-    <div class="question" id="question"></div>
+    <div class="pono-row">
+      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
+      <div class="speech-bubble" id="speech">おなか すいたなー</div>
+    </div>
     <div class="food-tray" id="food-tray"></div>
   </div>
 </div>
@@ -549,7 +524,7 @@ function loadStep() {
   const step = stage.steps[stepIdx];
   pickedInStep = 0;
   setSpeech(step.speech);
-  document.getElementById('question').innerHTML = `<span class="q-highlight ${step.css}">${step.label}</span> を いれてね！`;
+  setSpeech(step.speech);
 
   const tray = document.getElementById('food-tray');
   tray.innerHTML = '';
