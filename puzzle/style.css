@@ -327,112 +327,18 @@ body {
   .page-wrapper { padding: 8px 10px 16px; gap: 8px; }
 }
 
-/* ===== Landscape Layout ===== */
-@media (orientation: landscape) {
-  body {
-    align-items: flex-start;
-  }
-
-  .page-wrapper {
-    max-width: 100%;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: center;
-    align-items: center;
-    padding: 0 12px;
-    margin: 0;
-    gap: 12px;
-    height: 100dvh;
-  }
-
-  /* Header overlaid, not taking vertical space */
-  .header {
-    position: fixed;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    pointer-events: none;
-    width: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .header .title { display: none; }
-  .header .subtitle { display: none; }
-  .header .stage-label {
-    margin: 0;
-    font-size: 0.75rem;
-    pointer-events: auto;
-  }
-
-  /* Puzzle frame fills full viewport height */
-  .puzzle-frame {
-    width: auto;
-    min-width: 0;
-    height: 100dvh;
-    aspect-ratio: 4 / 3;
-    max-height: 100dvh;
-    flex-shrink: 1;
-    border-radius: 0;
-  }
-
-  /* Main area is row layout: puzzle + sidebar */
-  .main {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    height: 100dvh;
-  }
-
-  /* Sidebar stacks vertically beside the puzzle */
-  .sidebar {
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-
-  .controls {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .controls .btn {
-    font-size: 0.9rem;
-    padding: 10px 20px;
-    white-space: nowrap;
-  }
-
-  .progress-bar {
-    width: 100px;
-    height: 22px;
-  }
+/* ===== Landscape Notice (portrait-only) ===== */
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
 }
-
-/* Landscape on very short screens (phones) */
-@media (orientation: landscape) and (max-height: 500px) {
-  .page-wrapper {
-    padding: 0 8px;
-    gap: 8px;
-  }
-
-  .controls .btn {
-    font-size: 0.8rem;
-    padding: 8px 14px;
-  }
-
-  .sidebar { gap: 6px; }
-
-  .progress-bar {
-    width: 80px;
-    height: 18px;
-  }
-
-  .progress-text { font-size: 0.7rem; }
+#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
 }
+#landscape-notice p { font-size: 18px; line-height: 1.6; }

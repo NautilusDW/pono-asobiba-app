@@ -14,6 +14,10 @@
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+  <div id="landscape-notice">
+    <div class="rotate-icon">📱</div>
+    <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+  </div>
   <audio id="bgm" loop src="../assets/audio/puzzle_bgm.mp3" preload="auto"></audio>
   <div class="page-wrapper">
     <header class="header">
@@ -60,5 +64,20 @@
   <div id="confetti-container" class="confetti-container"></div>
 
   <script src="main.js"></script>
+  <script>
+    function updateLandscapeNotice() {
+      const notice = document.getElementById('landscape-notice');
+      if (!notice) return;
+      const isLandscape = window.innerWidth > window.innerHeight;
+      const isTouch = matchMedia('(pointer: coarse)').matches;
+      notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+    }
+    updateLandscapeNotice();
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateLandscapeNotice, 100);
+      setTimeout(updateLandscapeNotice, 500);
+    });
+    window.addEventListener('resize', updateLandscapeNotice);
+  </script>
 </body>
 </html>

@@ -246,6 +246,36 @@
     }
     document.body.appendChild(overlay);
 
+    // ── iOS Safari: 画面回転後にposition:fixedのヒットテスト領域がずれるバグ対策 ──
+    // ボタンをDOMから外して再挿入することで、ブラウザに再計算を強制する
+    function forceMenuRelayout() {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      var parent = toggle.parentNode;
+      if (parent) {
+        parent.removeChild(toggle);
+        parent.appendChild(toggle);
+      }
+      if (items.parentNode) {
+        var ip = items.parentNode;
+        ip.removeChild(items);
+        ip.appendChild(items);
+      }
+    }
+    window.addEventListener('orientationchange', function() {
+      setTimeout(forceMenuRelayout, 200);
+      setTimeout(forceMenuRelayout, 600);
+      setTimeout(forceMenuRelayout, 1000);
+    });
+    var _orientMQL = matchMedia('(orientation: portrait)');
+    if (_orientMQL.addEventListener) {
+      _orientMQL.addEventListener('change', function() {
+        setTimeout(forceMenuRelayout, 100);
+        setTimeout(forceMenuRelayout, 500);
+      });
+    }
+
     // ── モバイル: ブラウザUIがあっても画面内に収める ──
     // Safari/Chrome のツールバーで上下が狭くなっても、ゲーム全体が見えるようにする。
     // window.innerHeight（実際の可視領域）をCSS変数 --vh に反映し、
@@ -254,12 +284,15 @@
       (function fitVisibleViewport() {
         // --vh を実際の可視高さに設定
         function updateVH() {
-          document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+          var vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
+          document.documentElement.style.setProperty('--vh', vh + 'px');
         }
         updateVH();
         window.addEventListener('resize', updateVH);
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', updateVH);
         window.addEventListener('orientationchange', function() {
           setTimeout(updateVH, 150);
+          setTimeout(updateVH, 500);
         });
 
         var appH = 'calc(var(--vh) * 100)';

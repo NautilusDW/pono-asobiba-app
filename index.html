@@ -587,6 +587,31 @@
       <span class="music-label" id="music-label">おとがでるよ</span>
     </div>
 
+    <!-- PWAセットアップの案内 -->
+    <div id="pwa-guide" style="
+      background: rgba(255,255,255,0.9);
+      border: 2px solid #FDE68A;
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin: 0 auto;
+      max-width: 360px;
+      font-size: 0.78rem;
+      color: #5D4E37;
+      line-height: 1.6;
+      box-shadow: 0 2px 8px rgba(93,78,55,0.1);
+    ">
+      <div style="font-weight:900; font-size:0.85rem; margin-bottom:6px;">📱 はじめに よんでね</div>
+      <div>このアプリは <strong>ホームがめんに ついか</strong> すると もっと あそびやすくなるよ！</div>
+      <div style="margin-top:6px; font-size:0.72rem; color:#A89880;">
+        iPhone: <strong>共有ボタン（□↑）→「ホーム画面に追加」</strong><br>
+        Android: <strong>メニュー（⋮）→「ホーム画面に追加」</strong>
+      </div>
+      <button onclick="this.parentElement.style.display='none'; localStorage.setItem('pwa_guide_seen','1')" style="
+        margin-top:8px; padding:6px 16px; border:none; border-radius:20px;
+        background: linear-gradient(135deg,#FBBF24,#F97316); color:white;
+        font-family:inherit; font-size:0.78rem; font-weight:700; cursor:pointer;
+      ">わかった！</button>
+    </div>
 
     <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'" style="display:none;">
       ⭐ <span id="menu-pts">0</span>pt たまってるよ！
@@ -778,6 +803,15 @@
   </div>
 
   <script>
+    // ===== PWA Guide: 一度見たら非表示 / PWAインストール済みなら非表示 =====
+    (function() {
+      const guide = document.getElementById('pwa-guide');
+      if (!guide) return;
+      const seen = localStorage.getItem('pwa_guide_seen');
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (seen || isStandalone) guide.style.display = 'none';
+    })();
+
     // ===== Music Toggle =====
     const toggle = document.getElementById('music-toggle');
     const label  = document.getElementById('music-label');

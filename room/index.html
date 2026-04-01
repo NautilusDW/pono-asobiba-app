@@ -28,6 +28,7 @@
       background: #1a3a4a;
       flex-direction: column; align-items: center; justify-content: center; gap: 20px;
       color: white; text-align: center; padding: 40px;
+      pointer-events: none;
     }
     #portrait-notice .rotate-icon { font-size: 64px; animation: rotateHint 2s ease-in-out infinite; }
     @keyframes rotateHint {
@@ -3114,12 +3115,17 @@ function updatePortraitNotice() {
   const isTouch = matchMedia('(pointer: coarse)').matches;
   if (isPortrait && isTouch) {
     notice.style.display = 'flex';
+    notice.style.pointerEvents = 'auto';
     scene.style.display = 'none';
   } else {
     notice.style.display = 'none';
+    notice.style.pointerEvents = 'none';
     scene.style.display = 'flex';
-    // Ensure room-scene is clickable after rotation
     scene.style.pointerEvents = '';
+    // iOS Safari position:fixed ヒットテスト修正
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }
 }
 updatePortraitNotice();
