@@ -136,6 +136,14 @@ body {
   color: var(--text-light);
 }
 
+/* ===== Sidebar (controls + progress wrapper) ===== */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ===== Controls ===== */
 .controls {
   display: flex;
@@ -317,4 +325,111 @@ body {
   .subtitle { font-size: 0.85rem; }
   .btn { font-size: 0.95rem; padding: 10px 22px; }
   .page-wrapper { padding: 8px 10px 16px; gap: 8px; }
+}
+
+/* ===== Landscape Layout ===== */
+@media (orientation: landscape) {
+  body {
+    align-items: flex-start;
+  }
+
+  .page-wrapper {
+    max-width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 12px;
+    gap: 6px 12px;
+    height: 100dvh;
+  }
+
+  /* Header becomes a compact top bar spanning full width */
+  .header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .header .title { font-size: 1.1rem; }
+  .header .subtitle { display: none; }
+  .header .stage-label { margin-top: 0; font-size: 0.75rem; }
+
+  /* Puzzle frame fills most of the remaining height */
+  .puzzle-frame {
+    width: auto;
+    min-width: 0;
+    /* Use most of viewport height minus header/controls space */
+    height: calc(100dvh - 80px);
+    aspect-ratio: 4 / 3;
+    max-height: calc(100dvh - 80px);
+    flex-shrink: 1;
+  }
+
+  /* Main area is row layout: puzzle + sidebar */
+  .main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  /* Sidebar stacks vertically beside the puzzle */
+  .sidebar {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .controls .btn {
+    font-size: 0.9rem;
+    padding: 10px 20px;
+    white-space: nowrap;
+  }
+
+  .progress-bar {
+    width: 100px;
+    height: 22px;
+  }
+}
+
+/* Landscape on very short screens (phones) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .page-wrapper {
+    padding: 2px 8px;
+    gap: 4px 8px;
+  }
+
+  .header .title { font-size: 0.95rem; }
+
+  .puzzle-frame {
+    height: calc(100dvh - 56px);
+    max-height: calc(100dvh - 56px);
+  }
+
+  .controls .btn {
+    font-size: 0.8rem;
+    padding: 8px 14px;
+  }
+
+  .sidebar { gap: 6px; }
+
+  .progress-bar {
+    width: 80px;
+    height: 18px;
+  }
+
+  .progress-text { font-size: 0.7rem; }
 }

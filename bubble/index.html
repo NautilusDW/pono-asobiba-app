@@ -64,6 +64,21 @@ canvas { display: block; }
   color: #1a4d6e;
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
+
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+#landscape-notice p { font-size: 18px; line-height: 1.6; }
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
@@ -71,6 +86,10 @@ canvas { display: block; }
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+<div id="landscape-notice">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+</div>
 <div id="start-screen">
   <div class="title">しゃぼんだま パーティー</div>
   <div class="bubble-icon">🫧</div>
@@ -2845,6 +2864,20 @@ function loop(time) {
 
 // Start sky-only loop immediately (game content waits for start screen tap)
 requestAnimationFrame(loop);
+
+function updateLandscapeNotice() {
+  const notice = document.getElementById('landscape-notice');
+  if (!notice) return;
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+}
+updateLandscapeNotice();
+window.addEventListener('orientationchange', () => {
+  setTimeout(updateLandscapeNotice, 100);
+  setTimeout(updateLandscapeNotice, 500);
+});
+window.addEventListener('resize', updateLandscapeNotice);
 </script>
 </body>
 </html>

@@ -141,10 +141,37 @@ body {
   animation: blink 1.2s ease-in-out infinite; flex-shrink: 0;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ─── Portrait notice (landscape block for touch devices) ─── */
+#portrait-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+#portrait-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+#portrait-notice p { font-size: 18px; line-height: 1.6; }
+@media screen and (orientation: landscape) and (pointer: coarse) {
+  #portrait-notice { display: flex; }
+}
+@media screen and (orientation: portrait), (pointer: fine) {
+  #portrait-notice { display: none; }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+
+<div id="portrait-notice">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+</div>
 
 <header class="header">
   <h1>コトリをたすけよう！</h1>
@@ -726,6 +753,25 @@ restartBtn2.addEventListener('click', e => { e.stopPropagation(); startGame(); }
 // ページ読み込み完了後すぐにゲーム開始
 startGame();
 initMenu();
+
+// ─── Portrait notice: JS で確実に制御（CSS media query の遅延対策） ───
+function updatePortraitNotice() {
+  const notice = document.getElementById('portrait-notice');
+  if (!notice) return;
+  const isPortrait = window.innerHeight > window.innerWidth;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  if (!isPortrait && isTouch) {
+    notice.style.display = 'flex';
+  } else {
+    notice.style.display = 'none';
+  }
+}
+updatePortraitNotice();
+window.addEventListener('orientationchange', () => {
+  setTimeout(updatePortraitNotice, 100);
+  setTimeout(updatePortraitNotice, 500);
+});
+window.addEventListener('resize', updatePortraitNotice);
 </script>
 </body>
 </html>
