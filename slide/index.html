@@ -1100,11 +1100,18 @@ function updateLandscapeNotice() {
   const isLandscape = window.innerWidth > window.innerHeight;
   const isTouch = matchMedia('(pointer: coarse)').matches;
   notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+  // 縦に戻した時にキャンバスをリサイズ
+  if (!isLandscape || !isTouch) resize();
 }
 updateLandscapeNotice();
 window.addEventListener('orientationchange', () => {
   setTimeout(updateLandscapeNotice, 100);
-  setTimeout(updateLandscapeNotice, 500);
+  setTimeout(updateLandscapeNotice, 300);
+  setTimeout(updateLandscapeNotice, 600);
+  // 回転完了後にリサイズを確実に実行
+  setTimeout(resize, 200);
+  setTimeout(resize, 500);
+  setTimeout(resize, 800);
 });
 window.addEventListener('resize', updateLandscapeNotice);
 </script>
