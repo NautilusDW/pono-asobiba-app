@@ -147,23 +147,23 @@ html, body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 2px;
+  gap: 0;
   flex: 1;
   min-height: 0;
+  border-left: 2px solid rgba(139,69,19,0.18);
 }
 .bento-slot {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 4px;
   background: rgba(139,69,19,0.04);
-  border: 1.5px dashed rgba(139,69,19,0.1);
+  border: 1.5px solid rgba(139,69,19,0.15);
   transition: all 0.3s;
   overflow: hidden;
 }
 .bento-slot.filled {
-  border-color: transparent;
-  background: transparent;
+  background: rgba(255,255,255,0.3);
 }
 .bento-slot img, .bento-slot span {
   width: 95%; height: 95%;
