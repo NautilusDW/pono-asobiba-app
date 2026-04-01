@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ポノの おべんとう | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8F0;
+  --primary: #F2915A;
+  --primary-light: #FDDCBF;
+  --text: #5D4E37;
+  --text-light: #A89880;
+  --shadow: rgba(93,78,55,0.12);
+  --radius: 20px;
+}
+
+html, body {
+  height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDD 100%);
+  color: var(--text);
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100dvh;
+  padding: 52px 16px 16px;
+  gap: 8px;
+}
+
+/* ===== Pono area ===== */
+.pono-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.pono-img {
+  width: 56px; height: 56px;
+  object-fit: contain;
+  transition: transform 0.3s;
+}
+.pono-img.happy { transform: scale(1.15) rotate(-5deg); }
+.speech-bubble {
+  background: #fff;
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--text);
+  box-shadow: 0 2px 8px var(--shadow);
+  position: relative;
+  max-width: 200px;
+  text-align: center;
+  line-height: 1.5;
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 50%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: #fff;
+}
+
+/* ===== Bento box ===== */
+.bento-box {
+  width: 90%;
+  max-width: 300px;
+  aspect-ratio: 1.5;
+  background: #8B4513;
+  border-radius: 16px;
+  border: 4px solid #6B3410;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+  padding: 8px;
+  box-shadow: 0 4px 16px rgba(93,78,55,0.2), inset 0 2px 4px rgba(255,255,255,0.1);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.bento-box::before {
+  content: '';
+  position: absolute; inset: 3px;
+  background: #FFF8E7;
+  border-radius: 12px;
+  z-index: 0;
+}
+.bento-slot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  border-radius: 8px;
+  background: rgba(139,69,19,0.06);
+  border: 1.5px dashed rgba(139,69,19,0.15);
+  transition: all 0.3s;
+}
+.bento-slot.filled {
+  border-color: transparent;
+  background: transparent;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ===== Question ===== */
+.question {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--text);
+  text-align: center;
+  padding: 8px 20px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 50px;
+  box-shadow: 0 2px 8px var(--shadow);
+  flex-shrink: 0;
+}
+.question .color-word {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 8px;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+.color-word.red    { background: #EF4444; }
+.color-word.yellow { background: #EAB308; color: #5D4E37; text-shadow: none; }
+.color-word.green  { background: #22C55E; }
+.color-word.round  { background: #8B5CF6; }
+.color-word.long   { background: #3B82F6; }
+.color-word.free   { background: linear-gradient(135deg, #F97316, #EC4899); }
+
+/* ===== Food tray ===== */
+.food-tray {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  flex: 1;
+  align-content: center;
+}
+
+.food-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: #fff;
+  border-radius: 16px;
+  border: 2.5px solid #FDE68A;
+  box-shadow: 0 3px 10px var(--shadow);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+  min-height: 80px;
+}
+.food-item:active { transform: scale(0.92); }
+.food-item .food-emoji { font-size: 2.4rem; line-height: 1; pointer-events: none; }
+.food-item .food-name {
+  font-size: 0.7rem; font-weight: 700; color: var(--text-light);
+  pointer-events: none;
+}
+.food-item.correct {
+  border-color: #34D399;
+  background: #D1FAE5;
+  animation: correctPop 0.5s;
+}
+.food-item.wrong {
+  animation: shake 0.35s;
+}
+.food-item.used {
+  opacity: 0.3;
+  pointer-events: none;
+  transform: scale(0.85);
+}
+
+@keyframes correctPop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.2); }
+  100% { transform: scale(0.85); opacity: 0.3; }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-8px); }
+  75%     { transform: translateX(8px); }
+}
+
+/* ===== Flying food animation ===== */
+.food-flying {
+  position: fixed;
+  font-size: 2.4rem;
+  z-index: 50;
+  pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ===== Stage complete overlay ===== */
+.complete-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(93,78,55,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s;
+}
+.complete-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.complete-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 8px 40px rgba(93,78,55,0.3);
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.complete-emoji { font-size: 3rem; }
+.complete-title { font-size: 1.5rem; font-weight: 900; color: var(--primary); }
+.complete-msg { font-size: 0.9rem; font-weight: 700; color: var(--text-light); }
+.complete-btn {
+  margin-top: 4px;
+  padding: 12px 32px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #60A5FA, #818CF8);
+  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(96,165,250,0.4);
+}
+.complete-btn:active { transform: scale(0.95); }
+
+/* ===== Wrong message toast ===== */
+.wrong-toast {
+  position: fixed;
+  bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,0.95);
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 0.85rem; font-weight: 900;
+  color: var(--text);
+  box-shadow: 0 4px 16px var(--shadow);
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.wrong-toast.show { opacity: 1; }
+
+/* ===== Confetti ===== */
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 55; overflow: hidden; }
+.conf {
+  position: absolute; width: 10px; height: 10px; border-radius: 3px;
+  top: -15px;
+  animation: confFall 3s ease-in forwards;
+}
+@keyframes confFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== Landscape notice ===== */
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+#landscape-notice p { font-size: 18px; line-height: 1.6; }
+</style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body>
+
+<div id="landscape-notice">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+</div>
+
+<div id="app">
+  <div class="pono-area">
+    <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
+    <div class="speech-bubble" id="speech">おなか すいたなー</div>
+  </div>
+
+  <div class="bento-box" id="bento-box"></div>
+
+  <div class="question" id="question"></div>
+
+  <div class="food-tray" id="food-tray"></div>
+</div>
+
+<div class="complete-overlay hidden" id="complete-overlay">
+  <div class="complete-card">
+    <div class="complete-emoji" id="complete-emoji">🍱</div>
+    <div class="complete-title" id="complete-title">おべんとう かんせい！</div>
+    <div class="complete-msg" id="complete-msg">おいしそう！ありがとう！</div>
+    <button class="complete-btn" id="complete-btn">つぎへ →</button>
+  </div>
+</div>
+
+<div class="wrong-toast" id="wrong-toast"></div>
+<div id="confetti"></div>
+
+<script>
+// ===== Food data =====
+const FOODS = [
+  // 赤
+  { emoji: '🍅', name: 'トマト',       color: 'red',    shape: 'round' },
+  { emoji: '🍓', name: 'いちご',       color: 'red',    shape: 'other' },
+  { emoji: '🍎', name: 'りんご',       color: 'red',    shape: 'round' },
+  { emoji: '🦐', name: 'エビフライ',   color: 'red',    shape: 'long'  },
+  // 黄
+  { emoji: '🍌', name: 'バナナ',       color: 'yellow', shape: 'long'  },
+  { emoji: '🌽', name: 'とうもろこし', color: 'yellow', shape: 'long'  },
+  { emoji: '🧀', name: 'チーズ',       color: 'yellow', shape: 'other' },
+  { emoji: '🍳', name: 'たまごやき',   color: 'yellow', shape: 'other' },
+  // 緑
+  { emoji: '🥦', name: 'ブロッコリー', color: 'green',  shape: 'round' },
+  { emoji: '🥒', name: 'きゅうり',     color: 'green',  shape: 'long'  },
+  { emoji: '🥬', name: 'レタス',       color: 'green',  shape: 'other' },
+  // その他
+  { emoji: '🍙', name: 'おにぎり',     color: 'white',  shape: 'round' },
+  { emoji: '🍊', name: 'みかん',       color: 'orange', shape: 'round' },
+  { emoji: '🥕', name: 'にんじん',     color: 'orange', shape: 'long'  },
+  { emoji: '🌭', name: 'ウインナー',   color: 'brown',  shape: 'long'  },
+  { emoji: '🍞', name: 'パン',         color: 'brown',  shape: 'round' },
+];
+
+// ===== Stages =====
+const STAGES = [
+  {
+    title: 'いろで えらぼう',
+    questions: [
+      { type: 'color', value: 'red',    label: 'あかい',   css: 'red' },
+      { type: 'color', value: 'yellow', label: 'きいろい', css: 'yellow' },
+      { type: 'color', value: 'green',  label: 'みどりの', css: 'green' },
+    ]
+  },
+  {
+    title: 'かたちで えらぼう',
+    questions: [
+      { type: 'shape', value: 'round', label: 'まるい',   css: 'round' },
+      { type: 'shape', value: 'long',  label: 'ながい',   css: 'long' },
+      { type: 'shape', value: 'round', label: 'まるい',   css: 'round' },
+    ]
+  },
+  {
+    title: 'なんでも おべんとう',
+    questions: [
+      { type: 'color', value: 'red',    label: 'あかい',             css: 'red' },
+      { type: 'shape', value: 'long',   label: 'ながい',             css: 'long' },
+      { type: 'free',  value: 'any',    label: 'すきな ものを',       css: 'free' },
+    ]
+  },
+];
+
+// ===== State =====
+let stageIdx = 0;
+let questionIdx = 0;
+let bentoSlots = [];
+let slotFillCount = 0;
+let usedFoods = new Set();
+
+// ===== Audio =====
+let _ac = null;
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (_ac.state === 'suspended') _ac.resume();
+  return _ac;
+}
+document.addEventListener('touchstart', () => getAC().resume(), { once: true, passive: true });
+document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
+
+function playPop() {
+  const ac = getAC(), t = ac.currentTime;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.connect(g); g.connect(ac.destination);
+  o.type = 'sine'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.08);
+  g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+  o.start(t); o.stop(t + 0.15);
+}
+
+function playCorrect() {
+  const ac = getAC(), t = ac.currentTime;
+  [523, 659, 784].forEach((f, i) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sine'; o.frequency.value = f;
+    const st = t + i * 0.1;
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(0.2, st + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, st + 0.3);
+    o.start(st); o.stop(st + 0.3);
+  });
+}
+
+function playWrong() {
+  const ac = getAC(), t = ac.currentTime;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.connect(g); g.connect(ac.destination);
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(200, t);
+  o.frequency.exponentialRampToValueAtTime(120, t + 0.2);
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  o.start(t); o.stop(t + 0.2);
+}
+
+function playFanfare() {
+  const ac = getAC(), t = ac.currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sine'; o.frequency.value = f;
+    const st = t + i * 0.12;
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(0.22, st + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, st + 0.5);
+    o.start(st); o.stop(st + 0.5);
+  });
+}
+
+// ===== Shuffle helper =====
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ===== Game logic =====
+function setSpeech(text) {
+  document.getElementById('speech').textContent = text;
+}
+
+function setPono(happy) {
+  const img = document.getElementById('pono-img');
+  if (happy) {
+    img.classList.add('happy');
+    setTimeout(() => img.classList.remove('happy'), 600);
+  }
+}
+
+function loadStage() {
+  const stage = STAGES[stageIdx];
+  questionIdx = 0;
+  slotFillCount = 0;
+  usedFoods.clear();
+
+  // Build empty bento
+  const box = document.getElementById('bento-box');
+  box.innerHTML = '';
+  bentoSlots = [];
+  for (let i = 0; i < 6; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'bento-slot';
+    box.appendChild(slot);
+    bentoSlots.push(slot);
+  }
+
+  setSpeech('おべんとう つくってね！');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const stage = STAGES[stageIdx];
+  if (questionIdx >= stage.questions.length) {
+    stageComplete();
+    return;
+  }
+
+  const q = stage.questions[questionIdx];
+  const questionEl = document.getElementById('question');
+
+  if (q.type === 'free') {
+    questionEl.innerHTML = `<span class="color-word ${q.css}">${q.label}</span> いれてね！`;
+  } else {
+    questionEl.innerHTML = `<span class="color-word ${q.css}">${q.label}</span> ものを いれてね！`;
+  }
+
+  // Pick 6 foods: some correct, some wrong
+  let correct, wrong;
+  if (q.type === 'free') {
+    correct = shuffle(FOODS.filter(f => !usedFoods.has(f.emoji)));
+    wrong = [];
+  } else {
+    correct = shuffle(FOODS.filter(f => f[q.type] === q.value && !usedFoods.has(f.emoji)));
+    wrong = shuffle(FOODS.filter(f => f[q.type] !== q.value && !usedFoods.has(f.emoji)));
+  }
+
+  // Ensure at least 2 correct, fill rest with wrong
+  const picked = [...correct.slice(0, 3), ...wrong.slice(0, 3)];
+  while (picked.length < 6 && wrong.length > picked.length - 3) {
+    picked.push(wrong[picked.length - 3]);
+  }
+  const display = shuffle(picked.slice(0, 6));
+
+  const tray = document.getElementById('food-tray');
+  tray.innerHTML = '';
+  display.forEach(food => {
+    const item = document.createElement('div');
+    item.className = 'food-item';
+    item.dataset.color = food.color;
+    item.dataset.shape = food.shape;
+    item.dataset.emoji = food.emoji;
+    item.innerHTML = `<span class="food-emoji">${food.emoji}</span><span class="food-name">${food.name}</span>`;
+    item.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      onFoodTap(item, food);
+    });
+    tray.appendChild(item);
+  });
+}
+
+function onFoodTap(el, food) {
+  if (el.classList.contains('used')) return;
+  playPop();
+
+  const q = STAGES[stageIdx].questions[questionIdx];
+  const isCorrect = q.type === 'free' || food[q.type] === q.value;
+
+  if (isCorrect) {
+    // Correct!
+    el.classList.add('correct');
+    usedFoods.add(food.emoji);
+
+    // Fly food to bento
+    flyToBento(el, food.emoji);
+
+    setTimeout(() => {
+      el.classList.add('used');
+      playCorrect();
+      setPono(true);
+      setSpeech('やったー！');
+
+      // Fill a bento slot
+      if (slotFillCount < bentoSlots.length) {
+        bentoSlots[slotFillCount].textContent = food.emoji;
+        bentoSlots[slotFillCount].classList.add('filled');
+        slotFillCount++;
+      }
+
+      // Next question after a brief pause
+      questionIdx++;
+      setTimeout(loadQuestion, 600);
+    }, 400);
+  } else {
+    // Wrong
+    el.classList.add('wrong');
+    playWrong();
+    showWrongToast(q);
+    setTimeout(() => el.classList.remove('wrong'), 400);
+  }
+}
+
+function flyToBento(el, emoji) {
+  const from = el.getBoundingClientRect();
+  const box = document.getElementById('bento-box');
+  const to = box.getBoundingClientRect();
+
+  const fly = document.createElement('div');
+  fly.className = 'food-flying';
+  fly.textContent = emoji;
+  fly.style.left = from.left + from.width / 2 - 16 + 'px';
+  fly.style.top = from.top + 'px';
+  document.body.appendChild(fly);
+
+  requestAnimationFrame(() => {
+    fly.style.left = to.left + to.width / 2 - 16 + 'px';
+    fly.style.top = to.top + to.height / 2 - 16 + 'px';
+    fly.style.opacity = '0.6';
+    fly.style.transform = 'scale(0.5)';
+  });
+
+  setTimeout(() => fly.remove(), 600);
+}
+
+function showWrongToast(q) {
+  const toast = document.getElementById('wrong-toast');
+  if (q.type === 'color') {
+    const names = { red: 'あか', yellow: 'きいろ', green: 'みどり' };
+    toast.textContent = 'これは ' + (names[q.value] || '') + ' じゃないよ〜';
+  } else if (q.type === 'shape') {
+    const names = { round: 'まるく', long: 'ながく' };
+    toast.textContent = 'これは ' + (names[q.value] || '') + ' ないよ〜';
+  }
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1200);
+}
+
+function stageComplete() {
+  playFanfare();
+  launchConfetti();
+  awardPoints(5);
+  setSpeech('おいしそう！ありがとう！');
+  setPono(true);
+
+  const isLast = stageIdx >= STAGES.length - 1;
+
+  document.getElementById('complete-emoji').textContent = '🍱';
+  document.getElementById('complete-title').textContent = 'おべんとう かんせい！';
+  document.getElementById('complete-msg').textContent = isLast
+    ? 'ぜんぶ つくれたね！すごい！'
+    : 'おいしそう！ありがとう！';
+  document.getElementById('complete-btn').textContent = isLast ? 'もういっかい 🍱' : 'つぎへ →';
+  document.getElementById('complete-btn').onclick = () => {
+    document.getElementById('complete-overlay').classList.add('hidden');
+    if (isLast) stageIdx = 0; else stageIdx++;
+    loadStage();
+  };
+  document.getElementById('complete-overlay').classList.remove('hidden');
+}
+
+function launchConfetti() {
+  const container = document.getElementById('confetti');
+  const colors = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
+  for (let i = 0; i < 45; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'conf';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDelay = Math.random() * 0.4 + 's';
+      c.style.animationDuration = (2 + Math.random() * 1.2) + 's';
+      container.appendChild(c);
+      setTimeout(() => c.remove(), 3600);
+    }, i * 25);
+  }
+}
+
+// ===== Init =====
+loadStage();
+initMenu();
+
+// Landscape notice
+function updateLandscapeNotice() {
+  const notice = document.getElementById('landscape-notice');
+  if (!notice) return;
+  const isLandscape = window.innerWidth > window.innerHeight;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+}
+updateLandscapeNotice();
+window.addEventListener('orientationchange', () => {
+  setTimeout(updateLandscapeNotice, 100);
+  setTimeout(updateLandscapeNotice, 500);
+});
+window.addEventListener('resize', updateLandscapeNotice);
+</script>
+</body>
+</html>
