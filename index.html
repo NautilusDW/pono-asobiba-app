@@ -588,36 +588,51 @@
       <span class="music-label" id="music-label">おとがでるよ</span>
     </div>
 
-    <!-- PWAセットアップの案内 -->
+    <!-- PWAセットアップの案内（保護者向け） -->
     <div id="pwa-guide" style="
-      background: rgba(255,255,255,0.9);
-      border: 2px solid #FDE68A;
+      background: #FFF3F3;
+      border: 2px solid #E57373;
       border-radius: 14px;
-      padding: 12px 16px;
-      margin: 0 auto;
+      padding: 14px 16px;
+      margin: 0 auto 8px;
       max-width: 360px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       color: #5D4E37;
-      line-height: 1.6;
-      box-shadow: 0 2px 8px rgba(93,78,55,0.1);
+      line-height: 1.7;
+      box-shadow: 0 2px 8px rgba(93,78,55,0.12);
     ">
-      <div style="font-weight:900; font-size:0.85rem; margin-bottom:6px;">📱 はじめに よんでね</div>
-      <div>このアプリは <strong>ホームがめんに ついか</strong> すると もっと あそびやすくなるよ！</div>
-      <div style="margin-top:6px; font-size:0.72rem; color:#A89880;">
-        iPhone: <strong>共有ボタン（□↑）→「ホーム画面に追加」</strong><br>
-        Android: <strong>メニュー（⋮）→「ホーム画面に追加」</strong>
+      <div style="font-weight:900; font-size:0.9rem; margin-bottom:6px; color:#D32F2F;">⚠️ 保護者の方へ（必ずお読みください）</div>
+      <div>このアプリは<strong>「ホーム画面に追加」してからご利用ください。</strong><br>
+      ブラウザのまま使用すると、<strong>画面表示が崩れたり、正しく動作しない場合があります。</strong></div>
+      <div style="margin-top:8px; padding:10px; background:rgba(255,255,255,0.8); border-radius:10px; font-size:0.75rem;">
+        <strong>📱 iPhone / iPad:</strong><br>
+        画面下の <strong>共有ボタン（□↑）</strong> → <strong>「ホーム画面に追加」</strong><br><br>
+        <strong>🤖 Android:</strong><br>
+        画面右上の <strong>メニュー（⋮）</strong> → <strong>「ホーム画面に追加」</strong>
       </div>
       <button onclick="this.parentElement.style.display='none'; localStorage.setItem('pwa_guide_v2','1')" style="
-        margin-top:8px; padding:6px 16px; border:none; border-radius:20px;
+        margin-top:10px; padding:8px 20px; border:none; border-radius:20px;
         background: linear-gradient(135deg,#FBBF24,#F97316); color:white;
-        font-family:inherit; font-size:0.78rem; font-weight:700; cursor:pointer;
-      ">わかった！</button>
+        font-family:inherit; font-size:0.82rem; font-weight:700; cursor:pointer;
+        width: 100%;
+      ">確認しました</button>
     </div>
 
     <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'" style="display:none;">
       ⭐ <span id="menu-pts">0</span>pt たまってるよ！
       <span id="ach-badge" style="margin-left:8px;font-size:0.8em;"></span>
       　→ わたしのおうち
+    </div>
+
+    <!-- ─── あそびば区切り ─── -->
+    <div style="
+      margin: 12px auto 4px;
+      max-width: 360px;
+      text-align: center;
+      padding: 10px 0 6px;
+      border-top: 2px dashed #FDE68A;
+    ">
+      <div style="font-size: 0.75rem; color: #A89880; font-weight: 700;">🎮 ぜんぶ むりょうで あそべるよ！</div>
     </div>
 
     <nav class="menu">
