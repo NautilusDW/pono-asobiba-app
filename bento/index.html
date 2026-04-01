@@ -499,6 +499,12 @@ const OKAZU_MEAT = [
   { img: P+'bento_018.png', name: 'コロッケ',       cat: 'meat' },
   { img: P+'bento_025.png', name: 'ナポリタン',     cat: 'meat' },
   { img: P+'bento_003.png', name: 'やきざけ',       cat: 'meat' },
+  { emoji: '🍗', name: 'てりやきチキン', cat: 'meat', color: 'brown' },
+  { emoji: '🥟', name: 'ぎょうざ',       cat: 'meat', color: 'yellow' },
+  { emoji: '🧆', name: 'メンチカツ',     cat: 'meat', color: 'brown' },
+  { emoji: '🌯', name: 'はるまき',       cat: 'meat', color: 'yellow' },
+  { emoji: '🥓', name: 'ベーコンまき',   cat: 'meat', color: 'red' },
+  { emoji: '🍥', name: 'かまぼこ',       cat: 'meat', color: 'white' },
 ];
 
 const OKAZU_VEG = [
@@ -510,6 +516,9 @@ const OKAZU_VEG = [
   { img: P+'bento_017.png', name: 'ポテトサラダ',       cat: 'veg' },
   { img: P+'bento_006.png', name: 'にんじんいんげん',   cat: 'veg' },
   { img: P+'bento_013.png', name: 'ブロッコリーコーン', cat: 'veg' },
+  { emoji: '🫑', name: 'ピーマン',       cat: 'veg' },
+  { emoji: '🍆', name: 'なすのにもの',   cat: 'veg' },
+  { emoji: '🫘', name: 'ひじきのにもの', cat: 'veg' },
 ];
 
 const FRUITS = [
@@ -521,6 +530,10 @@ const FRUITS = [
   { img: P+'bento_024.png', name: 'ゼリー',   cat: 'fruit' },
   { img: P+'bento_030.png', name: 'プリン',   cat: 'fruit' },
   { img: P+'bento_019.png', name: 'メロン',   cat: 'fruit' },
+  { emoji: '🍑', name: 'もも',           cat: 'fruit' },
+  { emoji: '🫐', name: 'ブルーベリー',   cat: 'fruit' },
+  { emoji: '🥝', name: 'キウイ',         cat: 'fruit' },
+  { emoji: '🍪', name: 'クッキー',       cat: 'fruit' },
 ];
 
 // ===== Stages =====
@@ -548,6 +561,19 @@ const STAGES = [
     ]
   },
 ];
+
+// お題モード（ステージ3以降、ランダムループ）
+const CHALLENGES = [
+  { speech: 'あかいもの いれてね！', filter: f => f.color === 'red' || f.name.includes('トマト') || f.name.includes('いちご') || f.name.includes('ナポリタン') || f.name.includes('ベーコン'), need: 2 },
+  { speech: 'おにく いっぱい たべたい！', filter: f => f.cat === 'meat', need: 3 },
+  { speech: 'やさいを たくさん！', filter: f => f.cat === 'veg', need: 3 },
+  { speech: 'あまいもの いっぱい！', filter: f => f.cat === 'fruit', need: 3 },
+  { speech: 'なんでも いっぱい！', filter: () => true, need: 4 },
+];
+let challengePool = [];
+let inChallengeMode = false;
+let currentChallenge = null;
+let challengeCorrect = 0;
 
 // ===== State =====
 let stageIdx = 0, stepIdx = 0, okazuSlots = [], okazuFillCount = 0, pickedInStep = 0;
@@ -719,8 +745,10 @@ function stageComplete() {
   setSpeech('ありがとう！'); setPono(true);
   const last = stageIdx >= STAGES.length - 1;
   document.getElementById('complete-title').textContent = '🎉 おべんとう かんせい！';
-  document.getElementById('complete-msg').textContent = last ? 'ぜんぶ つくれたね！すごい！' : 'おいしそう！ありがとう！';
-  document.getElementById('complete-btn').textContent = last ? 'もういっかい 🍱' : 'つぎへ →';
+  document.getElementById('complete-msg').textContent = inChallengeMode
+    ? 'おだい クリア！すごい！'
+    : (last ? 'つぎは おだいモードだよ！' : 'おいしそう！ありがとう！');
+  document.getElementById('complete-btn').textContent = 'つぎへ →';
 
   // お弁当箱の中身をクローンして完成表示
   const cb = document.getElementById('complete-bento');
@@ -772,8 +800,15 @@ function stageComplete() {
   applyBentoColor();
   document.getElementById('complete-btn').onclick = () => {
     document.getElementById('complete-overlay').classList.add('hidden');
-    if (last) stageIdx = 0; else stageIdx++;
-    loadStage();
+    if (inChallengeMode) {
+      loadChallengeStage();
+    } else if (last) {
+      inChallengeMode = true;
+      loadChallengeStage();
+    } else {
+      stageIdx++;
+      loadStage();
+    }
   };
   document.getElementById('complete-overlay').classList.remove('hidden');
 }
@@ -803,17 +838,128 @@ function applyBentoColor() {
     const p = JSON.parse(localStorage.getItem('pono_profile') || '{}');
     const box = document.querySelector('.bento-box');
     const cbox = document.querySelector('.complete-bento');
-    let bg, border;
+    let bg, border, div1, div2;
     if (p.gender === 'girl') {
-      bg = '#F9A8D4'; border = '#E879A8';
+      bg = '#F9A8D4'; border = '#E879A8'; div1 = '#F472B6'; div2 = '#EC4899';
     } else if (p.gender === 'boy') {
-      bg = '#93C5FD'; border = '#6A9FDB';
+      bg = '#93C5FD'; border = '#6A9FDB'; div1 = '#60A5FA'; div2 = '#3B82F6';
     } else {
-      return; // keep default brown
+      return;
     }
     if (box) { box.style.background = bg; box.style.borderColor = border; }
     if (cbox) { cbox.style.background = bg; cbox.style.borderColor = border; }
+    // 仕切りの色も統一
+    document.querySelectorAll('.bento-divider-v, .bento-divider-h, .okazu-div-v, .okazu-div-h').forEach(el => {
+      el.style.background = `linear-gradient(180deg, ${div1}, ${div2})`;
+      el.style.boxShadow = `inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.1)`;
+    });
   } catch {}
+}
+
+// ===== Challenge mode =====
+function loadChallengeStage() {
+  if (challengePool.length === 0) challengePool = shuffle([...CHALLENGES]);
+  currentChallenge = challengePool.pop();
+  challengeCorrect = 0;
+  okazuFillCount = 0;
+  usedIds.clear();
+  stepIdx = 0;
+
+  // Build bento
+  const bentoInner = document.getElementById('bento-inner');
+  bentoInner.innerHTML = '';
+  const riceEl = document.createElement('div');
+  riceEl.className = 'bento-rice'; riceEl.id = 'bento-rice';
+  bentoInner.appendChild(riceEl);
+  const vDiv = document.createElement('div');
+  vDiv.className = 'bento-divider-v';
+  bentoInner.appendChild(vDiv);
+  const okazuGrid = document.createElement('div');
+  okazuGrid.className = 'bento-okazu'; okazuGrid.id = 'bento-okazu';
+  okazuSlots = [];
+  const s0 = document.createElement('div'); s0.className='bento-slot'; s0.style.cssText='grid-column:1;grid-row:1'; okazuGrid.appendChild(s0); okazuSlots.push(s0);
+  const s1 = document.createElement('div'); s1.className='bento-slot'; s1.style.cssText='grid-column:3;grid-row:1'; okazuGrid.appendChild(s1); okazuSlots.push(s1);
+  const s2 = document.createElement('div'); s2.className='bento-slot'; s2.style.cssText='grid-column:1;grid-row:3'; okazuGrid.appendChild(s2); okazuSlots.push(s2);
+  const s3 = document.createElement('div'); s3.className='bento-slot'; s3.style.cssText='grid-column:3;grid-row:3'; okazuGrid.appendChild(s3); okazuSlots.push(s3);
+  const odv = document.createElement('div'); odv.className='okazu-div-v'; okazuGrid.appendChild(odv);
+  const odh = document.createElement('div'); odh.className='okazu-div-h'; okazuGrid.appendChild(odh);
+  bentoInner.appendChild(okazuGrid);
+
+  applyBentoColor();
+  setSpeech(currentChallenge.speech);
+
+  // Step 1: rice
+  loadChallengeRice();
+}
+
+function loadChallengeRice() {
+  setSpeech('まずは ごはん！');
+  const tray = document.getElementById('food-tray');
+  tray.innerHTML = '';
+  shuffle([...RICE, ...RICE_SMALL]).slice(0, 6).forEach(r => {
+    const item = mkItem(r);
+    item.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (item.classList.contains('used')) return;
+      playPop(); item.classList.add('correct');
+      flyFood(item, document.getElementById('bento-rice'), r.img, () => {
+        const re = document.getElementById('bento-rice');
+        const img = document.createElement('img'); img.src = r.img;
+        re.innerHTML = ''; re.appendChild(img); re.classList.add('filled');
+      });
+      setTimeout(() => {
+        item.classList.add('used'); playCorrect(); setPono(true);
+        setSpeech(currentChallenge.speech);
+        loadChallengeOkazu();
+      }, 400);
+    });
+    tray.appendChild(item);
+  });
+}
+
+function loadChallengeOkazu() {
+  const tray = document.getElementById('food-tray');
+  tray.innerHTML = '';
+  // Mix correct and incorrect foods
+  const allFoods = [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS];
+  const correct = shuffle(allFoods.filter(f => currentChallenge.filter(f) && !usedIds.has(fid(f))));
+  const wrong = shuffle(allFoods.filter(f => !currentChallenge.filter(f) && !usedIds.has(fid(f))));
+  const display = shuffle([...correct.slice(0, 4), ...wrong.slice(0, 2)]).slice(0, 6);
+
+  display.forEach(f => {
+    const item = mkItem(f);
+    item.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (item.classList.contains('used')) return;
+      playPop();
+      if (currentChallenge.filter(f)) {
+        item.classList.add('correct'); usedIds.add(fid(f));
+        const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
+        flyFood(item, slot, f.img || f.emoji, () => {
+          if (okazuFillCount < okazuSlots.length) {
+            const n = foodNode(f); okazuSlots[okazuFillCount].innerHTML = '';
+            okazuSlots[okazuFillCount].appendChild(n); okazuSlots[okazuFillCount].classList.add('filled'); okazuFillCount++;
+          }
+        });
+        setTimeout(() => {
+          item.classList.add('used'); playCorrect(); setPono(true);
+          setSpeech(['やったー！','いいね！','おいしそう！','すごい！'][Math.floor(Math.random()*4)]);
+          challengeCorrect++;
+          if (challengeCorrect >= currentChallenge.need) {
+            setTimeout(stageComplete, 500);
+          } else {
+            // Refresh tray with new items
+            setTimeout(loadChallengeOkazu, 400);
+          }
+        }, 400);
+      } else {
+        item.classList.add('wrong'); playWrong();
+        showToast('おだいに あうものを えらんでね！');
+        setTimeout(() => item.classList.remove('wrong'), 400);
+      }
+    });
+    tray.appendChild(item);
+  });
 }
 
 // ===== Init =====
