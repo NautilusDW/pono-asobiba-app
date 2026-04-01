@@ -178,6 +178,7 @@ body {
   gap: 10px;
   width: 100%;
   min-height: 56px;
+  align-content: start;
 }
 
 .word-card {
@@ -655,14 +656,15 @@ function getMatchStageData() {
 }
 
 function generateMixedStage() {
-  const primaryCat = STAGES[Math.floor(Math.random() * STAGES.length)];
-  const crossCount = 1;
-  const mainCount  = 4 - crossCount;
-  const mainPairs  = shuffle([...primaryCat.pairs]).slice(0, mainCount);
-  const crossPairs = shuffle(
-    STAGES.filter(s => s !== primaryCat).flatMap(s => s.pairs)
-  ).slice(0, crossCount);
-  return { name: primaryCat.name + ' ＋', pairs: shuffle([...mainPairs, ...crossPairs]) };
+  // Pick 4 pairs from different categories for variety
+  const cats = shuffle([...STAGES]);
+  const pairs = [];
+  // Take 1 pair from each of 4 different categories
+  for (let i = 0; i < 4 && i < cats.length; i++) {
+    const catPairs = shuffle([...cats[i].pairs]);
+    pairs.push(catPairs[0]);
+  }
+  return { name: 'ミックス', pairs: shuffle(pairs) };
 }
 
 // ===== Crossword helpers =====
