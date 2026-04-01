@@ -1169,17 +1169,14 @@ shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
 crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
 loadStage(0);
 
-// Tutorial (step-by-step, 初回のみ)
-(function() {
-  if (localStorage.getItem('wordmatch_tut_v2')) return;
-
+// Tutorial (step-by-step)
+function showTutorial() {
   const dim = document.getElementById('tut-dim');
   const bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
 
   let step = 0;
   const steps = [
-    // Step 0: 絵グリッド全体をハイライト
     () => {
       const grid = document.querySelector('.pic-grid');
       if (!grid) return endTut();
@@ -1187,13 +1184,11 @@ loadStage(0);
       dim.classList.remove('hidden');
       const r = grid.getBoundingClientRect();
       bubble.className = 'tut-bubble arrow-up';
-      bubble.style.top = (r.bottom + 12) + 'px';
-      bubble.style.left = (r.left + r.width / 2 - 140) + 'px';
+      bubble.style.cssText = 'top:' + (r.bottom + 12) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
       bubble.innerHTML = 'この えを よく みてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
-    // Step 1: ことばトレイをハイライト
     () => {
       document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
       const tray = document.querySelector('.word-tray-wrap');
@@ -1201,29 +1196,20 @@ loadStage(0);
       tray.classList.add('tut-highlight');
       const r = tray.getBoundingClientRect();
       bubble.className = 'tut-bubble arrow-down';
-      bubble.style.top = (r.top - 90) + 'px';
-      bubble.style.left = (r.left + r.width / 2 - 140) + 'px';
-      bubble.innerHTML = 'えに あう ことばを<br>ここから さがしてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.style.cssText = 'top:' + (r.top - 100) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
+      bubble.innerHTML = 'えに あう ことばを<br>ここから えらんで<br>タップしてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
-    // Step 2: 完了
     () => {
       document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
       bubble.className = 'tut-bubble';
-      bubble.style.top = '50%';
-      bubble.style.left = '50%';
-      bubble.style.transform = 'translate(-50%, -50%)';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = 'えと ことばを<br>あわせて みよう！🎉<br><button class="tut-next-btn" id="tut-next">はじめる！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
     }
   ];
 
-  function nextStep() {
-    step++;
-    if (step < steps.length) steps[step]();
-    else endTut();
-  }
-
+  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
   function endTut() {
     document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
     dim.classList.add('hidden');
@@ -1231,16 +1217,26 @@ loadStage(0);
     localStorage.setItem('wordmatch_tut_v2', '1');
   }
 
-  // ゲームが描画された後に開始（少し遅延）
-  setTimeout(() => steps[0](), 500);
-})();
+  steps[0]();
+}
+
+// 初回は強制表示
+if (!localStorage.getItem('wordmatch_tut_v2')) {
+  setTimeout(showTutorial, 500);
+}
+
 initMenu({
   bgmToggle: function() {
     bgmEnabled = !bgmEnabled;
     sfxEnabled = bgmEnabled;
     localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
     if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-  }
+  },
+  extraButtons: [{
+    icon: '❓',
+    label: 'あそびかた',
+    onClick: showTutorial
+  }]
 });
 
 window.addEventListener('orientationchange', () => {

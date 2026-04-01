@@ -79,6 +79,17 @@ canvas { display: block; }
   50% { transform: rotate(-90deg); }
 }
 #landscape-notice p { font-size: 18px; line-height: 1.6; }
+.tut-dim { position:fixed;inset:0;z-index:80;background:rgba(93,78,55,0.6);pointer-events:auto; }
+.tut-dim.hidden { display:none; }
+.tut-bubble { position:fixed;z-index:82;background:#fff;border-radius:16px;padding:14px 18px;max-width:280px;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.tut-bubble.hidden { display:none; }
+.tut-bubble::after { content:'';position:absolute;width:16px;height:16px;background:#fff;transform:rotate(45deg); }
+.tut-bubble.arrow-down::after { bottom:-8px;left:50%;margin-left:-8px; }
+.tut-bubble.arrow-up::after { top:-8px;left:50%;margin-left:-8px; }
+.tut-highlight { position:relative;z-index:81;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
+.tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-next-btn:active { transform:scale(0.95); }
+@keyframes popIn { from{transform:scale(0.8);opacity:0.5} to{transform:scale(1);opacity:1} }
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
@@ -86,6 +97,8 @@ canvas { display: block; }
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
 <div id="landscape-notice">
   <div class="rotate-icon">📱</div>
   <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
@@ -2404,6 +2417,10 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
           icon: '🏆',
           label: 'ハイスコア',
           onClick: () => showHighScoreTable('bubble', '🫧 シャボン玉 ハイスコア')
+        },{
+          icon: '❓',
+          label: 'あそびかた',
+          onClick: showTutorial
         }]
       });
       window._menuInited = true;
@@ -2429,8 +2446,65 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     }
 
     gameStarted = true;
+
+    // Show tutorial on first visit
+    if (!localStorage.getItem('bubble_tut_seen')) {
+      setTimeout(showTutorial, 600);
+    }
   });
 });
+
+// ── Tutorial ──
+function showTutorial() {
+  const dim = document.getElementById('tut-dim');
+  const bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  let step = 0;
+  const steps = [
+    () => {
+      // Highlight canvas (tap area)
+      const cv = document.getElementById('c');
+      if (!cv) return endTut();
+      cv.classList.add('tut-highlight');
+      dim.classList.remove('hidden');
+      const r = cv.getBoundingClientRect();
+      bubble.className = 'tut-bubble arrow-up';
+      bubble.style.cssText = 'top:' + (r.top + Math.min(r.height * 0.25, 120)) + 'px;left:50%;transform:translateX(-50%)';
+      bubble.innerHTML = 'シャボン玉を タップして<br>わってみよう！🫧<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      const cv = document.getElementById('c');
+      if (cv) cv.classList.add('tut-highlight');
+      const r = cv ? cv.getBoundingClientRect() : { top: 0, height: window.innerHeight };
+      bubble.className = 'tut-bubble arrow-up';
+      bubble.style.cssText = 'top:' + (r.top + Math.min(r.height * 0.45, 250)) + 'px;left:50%;transform:translateX(-50%)';
+      bubble.innerHTML = 'ゆびで なぞると<br>いっぱい われるよ！✨<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'いろんな イベントも<br>おきるよ！たのしんでね🎉<br><button class="tut-next-btn" id="tut-next">はじめる！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+    }
+  ];
+
+  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
+  function endTut() {
+    document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
+    localStorage.setItem('bubble_tut_seen', '1');
+  }
+
+  steps[0]();
+}
 
 // ── Main loop ──
 let lastTime = 0;

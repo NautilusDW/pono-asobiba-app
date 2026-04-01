@@ -224,10 +224,25 @@ html, body {
   50% { transform: rotate(-90deg); }
 }
 #landscape-notice p { font-size: 18px; line-height: 1.6; }
+
+/* ===== Tutorial ===== */
+.tut-dim { position:fixed;inset:0;z-index:80;background:rgba(93,78,55,0.6);pointer-events:auto; }
+.tut-dim.hidden { display:none; }
+.tut-bubble { position:fixed;z-index:82;background:#fff;border-radius:16px;padding:14px 18px;max-width:280px;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.tut-bubble.hidden { display:none; }
+.tut-bubble::after { content:'';position:absolute;width:16px;height:16px;background:#fff;transform:rotate(45deg); }
+.tut-bubble.arrow-down::after { bottom:-8px;left:50%;margin-left:-8px; }
+.tut-bubble.arrow-up::after { top:-8px;left:50%;margin-left:-8px; }
+.tut-highlight { position:relative;z-index:81;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
+.tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+@keyframes popIn { from{transform:scale(0.8);opacity:0.5} to{transform:scale(1);opacity:1} }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
 
 <div id="landscape-notice">
   <div class="rotate-icon">📱</div>
@@ -1121,6 +1136,66 @@ updateHUD();
 showOverlay('start');
 requestAnimationFrame(loop);
 
+// ===== Tutorial =====
+function showTutorial() {
+  const dim = document.getElementById('tut-dim');
+  const bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  let step = 0;
+  const steps = [
+    () => {
+      // Step 1: Highlight the game canvas (block area)
+      const gw = document.getElementById('gameWrap');
+      if (!gw) return endTut();
+      gw.classList.add('tut-highlight');
+      dim.classList.remove('hidden');
+      const r = gw.getBoundingClientRect();
+      bubble.className = 'tut-bubble arrow-down';
+      bubble.style.cssText = 'top:' + Math.max(10, r.top - 90) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
+      bubble.innerHTML = 'うえの ブロックを<br>ボールで こわそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      // Step 2: Highlight the paddle area (bottom of game canvas)
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      const gw = document.getElementById('gameWrap');
+      if (!gw) return endTut();
+      gw.classList.add('tut-highlight');
+      const r = gw.getBoundingClientRect();
+      bubble.className = 'tut-bubble arrow-up';
+      bubble.style.cssText = 'top:' + (r.bottom - 80) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
+      bubble.innerHTML = 'ゆびで パドルを うごかして<br>ボールを はねかえそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      // Step 3: Center message
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'ぜんぶ こわせるかな？🧱<br><button class="tut-next-btn" id="tut-next">はじめる！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+    }
+  ];
+
+  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
+  function endTut() {
+    document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
+    localStorage.setItem('breakout_tut_seen', '1');
+  }
+
+  steps[0]();
+}
+
+// First visit auto-show
+if (!localStorage.getItem('breakout_tut_seen')) {
+  setTimeout(showTutorial, 500);
+}
+
 initMenu({
   bgmToggle: function() {
     bgmEnabled = !bgmEnabled;
@@ -1131,6 +1206,10 @@ initMenu({
     icon: '🏆',
     label: 'ハイスコア',
     onClick: () => showHighScoreTable('breakout', '🧱 ブロックくずし ハイスコア')
+  }, {
+    icon: '❓',
+    label: 'あそびかた',
+    onClick: showTutorial
   }]
 });
 
