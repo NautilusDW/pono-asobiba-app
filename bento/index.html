@@ -19,124 +19,131 @@
   --text: #5D4E37;
   --text-light: #A89880;
   --shadow: rgba(93,78,55,0.12);
-  --radius: 20px;
+  --radius: 16px;
 }
 
 html, body {
   height: 100dvh;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-  background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDD 100%);
+  background: linear-gradient(135deg, #FFF8F0 0%, #FFEEDD 100%);
   color: var(--text);
   -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
 
+/* ===== 横向きメインレイアウト ===== */
 #app {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   height: 100dvh;
-  padding: 52px 12px 12px;
+  padding: 6px;
   gap: 6px;
 }
 
-/* ===== Pono area ===== */
-.pono-area {
+/* ── 左: お弁当箱（できるだけ大きく） ── */
+.left-panel {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pono-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  padding-left: 54px;
   flex-shrink: 0;
 }
 .pono-img {
-  width: 50px; height: 50px;
+  width: 36px; height: 36px;
   object-fit: contain;
   transition: transform 0.3s;
 }
-.pono-img.happy { transform: scale(1.15) rotate(-5deg); }
+.pono-img.happy { transform: scale(1.2) rotate(-5deg); }
 .speech-bubble {
   background: #fff;
-  border-radius: 16px;
-  padding: 7px 12px;
-  font-size: 0.85rem;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
   font-weight: 900;
   color: var(--text);
-  box-shadow: 0 2px 8px var(--shadow);
+  box-shadow: 0 1px 6px var(--shadow);
   position: relative;
-  max-width: 200px;
-  text-align: center;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 .speech-bubble::before {
   content: '';
   position: absolute;
-  left: -8px; top: 50%;
+  left: -6px; top: 50%;
   transform: translateY(-50%);
-  border: 8px solid transparent;
+  border: 6px solid transparent;
   border-right-color: #fff;
 }
 
-/* ===== Bento box ===== */
+/* お弁当箱 */
 .bento-box {
-  width: 92%;
-  max-width: 300px;
+  flex: 1;
   background: #8B4513;
   border-radius: 14px;
-  border: 4px solid #6B3410;
+  border: 5px solid #6B3410;
   padding: 6px;
-  box-shadow: 0 4px 16px rgba(93,78,55,0.2);
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(93,78,55,0.25);
+  display: flex;
+  min-height: 0;
 }
 .bento-inner {
   background: #FFF8E7;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   padding: 6px;
-  min-height: 120px;
+  flex: 1;
+  min-height: 0;
 }
-/* ご飯エリア（上段・横幅いっぱい） */
+
+/* ご飯エリア（横幅いっぱい） */
 .bento-rice {
   width: 100%;
-  height: 64px;
+  height: 36%;
   border-radius: 8px;
-  background: rgba(139,69,19,0.06);
-  border: 1.5px dashed rgba(139,69,19,0.15);
+  background: rgba(139,69,19,0.05);
+  border: 2px dashed rgba(139,69,19,0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   transition: all 0.3s;
+  flex-shrink: 0;
 }
 .bento-rice.filled {
   border-color: transparent;
   background: transparent;
 }
 .bento-rice img {
-  width: 100%;
-  height: 100%;
+  width: 100%; height: 100%;
   object-fit: cover;
   border-radius: 6px;
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
-/* おかずエリア（下段・グリッド） */
+
+/* おかずエリア */
 .bento-okazu {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: 5px;
   flex: 1;
+  min-height: 0;
 }
 .bento-slot {
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: rgba(139,69,19,0.06);
-  border: 1.5px dashed rgba(139,69,19,0.15);
-  min-height: 48px;
+  background: rgba(139,69,19,0.05);
+  border: 2px dashed rgba(139,69,19,0.12);
   transition: all 0.3s;
   overflow: hidden;
 }
@@ -144,9 +151,8 @@ html, body {
   border-color: transparent;
   background: transparent;
 }
-.bento-slot img {
-  width: 85%;
-  height: 85%;
+.bento-slot img, .bento-slot span {
+  width: 80%; height: 80%;
   object-fit: contain;
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
@@ -156,45 +162,49 @@ html, body {
   to   { transform: scale(1); opacity: 1; }
 }
 
-/* ===== Question ===== */
+/* ── 右: 食材選択パネル ── */
+.right-panel {
+  width: 42%;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+}
+
 .question {
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 900;
   color: var(--text);
   text-align: center;
-  padding: 6px 16px;
-  background: rgba(255,255,255,0.9);
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.92);
   border-radius: 50px;
   box-shadow: 0 2px 8px var(--shadow);
   flex-shrink: 0;
 }
 .q-highlight {
   display: inline-block;
-  padding: 2px 10px;
-  border-radius: 8px;
+  padding: 1px 8px;
+  border-radius: 6px;
   color: #fff;
   text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
 }
-.q-highlight.red    { background: #EF4444; }
-.q-highlight.yellow { background: #EAB308; color: #5D4E37; text-shadow: none; }
-.q-highlight.green  { background: #22C55E; }
-.q-highlight.brown  { background: #A16207; }
-.q-highlight.orange { background: #F97316; }
 .q-highlight.meat   { background: #DC2626; }
 .q-highlight.veg    { background: #16A34A; }
 .q-highlight.fruit  { background: #A855F7; }
 .q-highlight.free   { background: linear-gradient(135deg, #F97316, #EC4899); }
-.q-highlight.rice   { background: linear-gradient(135deg, #FFF, #FDE68A); color: #5D4E37; border: 2px solid #EAB308; }
+.q-highlight.rice   { background: linear-gradient(135deg, #FFF, #FDE68A); color: #5D4E37; border: 2px solid #EAB308; text-shadow: none; }
 
-/* ===== Food tray ===== */
+/* 食材グリッド */
 .food-tray {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  width: 100%;
-  max-width: 320px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
   flex: 1;
   align-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .food-item {
@@ -202,58 +212,52 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 8px 4px;
+  gap: 2px;
+  padding: 6px 3px;
   background: #fff;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 2.5px solid #FDE68A;
-  box-shadow: 0 3px 10px var(--shadow);
+  box-shadow: 0 2px 8px var(--shadow);
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
-  min-height: 76px;
+  transition: transform 0.15s, opacity 0.3s;
+  min-height: 64px;
 }
-.food-item:active { transform: scale(0.92); }
+.food-item:active { transform: scale(0.9); }
 .food-item .food-img {
-  width: 52px; height: 52px;
+  width: 44px; height: 44px;
   object-fit: contain;
   pointer-events: none;
 }
 .food-item .food-name {
-  font-size: 0.62rem; font-weight: 700; color: var(--text-light);
-  pointer-events: none;
-  white-space: nowrap;
+  font-size: 0.55rem; font-weight: 700; color: var(--text-light);
+  pointer-events: none; white-space: nowrap;
 }
 .food-item.correct {
-  border-color: #34D399;
-  background: #D1FAE5;
+  border-color: #34D399; background: #D1FAE5;
   animation: correctPop 0.5s;
 }
 .food-item.wrong { animation: shake 0.35s; }
 .food-item.used {
-  opacity: 0.25;
-  pointer-events: none;
-  transform: scale(0.85);
+  opacity: 0.2; pointer-events: none; transform: scale(0.85);
 }
 
 @keyframes correctPop {
-  0%   { transform: scale(1); }
-  30%  { transform: scale(1.15); }
-  100% { transform: scale(0.85); opacity: 0.25; }
+  0%  { transform: scale(1); }
+  30% { transform: scale(1.15); }
+  100%{ transform: scale(0.85); opacity: 0.2; }
 }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-6px); }
-  75%     { transform: translateX(6px); }
+  25%     { transform: translateX(-5px); }
+  75%     { transform: translateX(5px); }
 }
 
 /* ===== Flying food ===== */
 .food-flying {
-  position: fixed;
-  z-index: 50;
-  pointer-events: none;
-  width: 48px; height: 48px;
+  position: fixed; z-index: 50; pointer-events: none;
+  width: 40px; height: 40px;
   object-fit: contain;
-  transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  transition: all 0.45s cubic-bezier(0.34,1.56,0.64,1);
 }
 
 /* ===== Complete overlay ===== */
@@ -266,45 +270,32 @@ html, body {
 }
 .complete-overlay.hidden { display: none; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 .complete-card {
-  background: #fff;
-  border-radius: var(--radius);
-  padding: 24px 20px;
-  text-align: center;
-  max-width: 300px;
-  width: 100%;
+  background: #fff; border-radius: var(--radius);
+  padding: 20px; text-align: center;
+  max-width: 280px; width: 100%;
   box-shadow: 0 8px 40px rgba(93,78,55,0.3);
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
-.complete-emoji { font-size: 3rem; }
-.complete-title { font-size: 1.4rem; font-weight: 900; color: var(--primary); }
-.complete-msg { font-size: 0.85rem; font-weight: 700; color: var(--text-light); }
+.complete-emoji { font-size: 2.5rem; }
+.complete-title { font-size: 1.2rem; font-weight: 900; color: var(--primary); }
+.complete-msg { font-size: 0.8rem; font-weight: 700; color: var(--text-light); }
 .complete-btn {
-  padding: 12px 32px;
-  border: none; border-radius: 50px;
+  padding: 10px 28px; border: none; border-radius: 50px;
   background: linear-gradient(135deg, #60A5FA, #818CF8);
-  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(96,165,250,0.4);
+  color: #fff; font-family: inherit; font-size: 0.9rem; font-weight: 900;
+  cursor: pointer; box-shadow: 0 4px 14px rgba(96,165,250,0.4);
 }
 .complete-btn:active { transform: scale(0.95); }
 
 /* ===== Wrong toast ===== */
 .wrong-toast {
-  position: fixed;
-  bottom: 90px; left: 50%; transform: translateX(-50%);
-  background: rgba(255,255,255,0.95);
-  border-radius: 50px;
-  padding: 8px 18px;
-  font-size: 0.82rem; font-weight: 900;
-  color: var(--text);
-  box-shadow: 0 4px 16px var(--shadow);
-  z-index: 40;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
+  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,0.95); border-radius: 50px;
+  padding: 6px 14px; font-size: 0.75rem; font-weight: 900;
+  color: var(--text); box-shadow: 0 4px 16px var(--shadow);
+  z-index: 40; opacity: 0; transition: opacity 0.3s; pointer-events: none;
 }
 .wrong-toast.show { opacity: 1; }
 
@@ -312,55 +303,59 @@ html, body {
 #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 55; overflow: hidden; }
 .conf {
   position: absolute; width: 10px; height: 10px; border-radius: 3px;
-  top: -15px;
-  animation: confFall 3s ease-in forwards;
+  top: -15px; animation: confFall 3s ease-in forwards;
 }
 @keyframes confFall {
   0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
 }
 
-/* ===== Landscape notice ===== */
-#landscape-notice {
+/* ===== Portrait notice ===== */
+#portrait-notice {
   display: none;
   position: fixed; inset: 0; z-index: 9980;
   background: #1a3a4a;
   flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   color: white; text-align: center; padding: 40px;
   font-family: 'Zen Maru Gothic', sans-serif;
+  pointer-events: none;
 }
-#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
-@keyframes rotateHintV {
+#portrait-notice .rotate-icon { font-size: 64px; animation: rotateHint 2s ease-in-out infinite; }
+@keyframes rotateHint {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-90deg); }
+  50%      { transform: rotate(90deg); }
 }
-#landscape-notice p { font-size: 18px; line-height: 1.6; }
+#portrait-notice p { font-size: 18px; line-height: 1.6; }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
 
-<div id="landscape-notice">
+<div id="portrait-notice">
   <div class="rotate-icon">📱</div>
-  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
 </div>
 
 <div id="app">
-  <div class="pono-area">
-    <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
-    <div class="speech-bubble" id="speech">おなか すいたなー</div>
-  </div>
-
-  <div class="bento-box">
-    <div class="bento-inner" id="bento-inner">
-      <div class="bento-rice" id="bento-rice"></div>
-      <div class="bento-okazu" id="bento-okazu"></div>
+  <!-- 左: お弁当箱 -->
+  <div class="left-panel">
+    <div class="pono-row">
+      <img src="../assets/images/characters/pono/pono_face_circle.png" class="pono-img" id="pono-img" alt="ポノ">
+      <div class="speech-bubble" id="speech">おなか すいたなー</div>
+    </div>
+    <div class="bento-box">
+      <div class="bento-inner" id="bento-inner">
+        <div class="bento-rice" id="bento-rice"></div>
+        <div class="bento-okazu" id="bento-okazu"></div>
+      </div>
     </div>
   </div>
 
-  <div class="question" id="question"></div>
-
-  <div class="food-tray" id="food-tray"></div>
+  <!-- 右: 食材選択 -->
+  <div class="right-panel">
+    <div class="question" id="question"></div>
+    <div class="food-tray" id="food-tray"></div>
+  </div>
 </div>
 
 <div class="complete-overlay hidden" id="complete-overlay">
@@ -384,7 +379,6 @@ const RICE = [
   { img: P+'rice_goma.png',      name: 'ごまごはん' },
   { img: P+'rice_furikake.png',  name: 'ふりかけごはん' },
 ];
-
 const RICE_SMALL = [
   { img: P+'gohan_shiro.png',    name: 'しろごはん' },
   { img: P+'gohan_furikake.png', name: 'ふりかけごはん' },
@@ -393,41 +387,40 @@ const RICE_SMALL = [
 ];
 
 const OKAZU_MEAT = [
-  { img: P+'tako_wiener.png', name: 'タコウインナー', cat: 'meat', color: 'red' },
-  { img: P+'hamburg.png',     name: 'ハンバーグ',     cat: 'meat', color: 'brown' },
-  { img: P+'karaage.png',     name: 'からあげ',       cat: 'meat', color: 'brown' },
-  { img: P+'ebi_fry.png',     name: 'エビフライ',     cat: 'meat', color: 'orange' },
-  { img: P+'fries.png',       name: 'フライドポテト', cat: 'meat', color: 'yellow' },
-  { img: P+'tamagoyaki.png',  name: 'たまごやき',     cat: 'meat', color: 'yellow' },
-  { img: P+'meatball.png',    name: 'ミートボール',   cat: 'meat', color: 'brown' },
-  { img: P+'korokke.png',     name: 'コロッケ',       cat: 'meat', color: 'brown' },
-  { img: P+'napolitan.png',   name: 'ナポリタン',     cat: 'meat', color: 'red' },
-  { img: P+'yakizake.png',    name: 'やきざけ',       cat: 'meat', color: 'orange' },
+  { img: P+'tako_wiener.png', name: 'タコウインナー', cat: 'meat' },
+  { img: P+'hamburg.png',     name: 'ハンバーグ',     cat: 'meat' },
+  { img: P+'karaage.png',     name: 'からあげ',       cat: 'meat' },
+  { img: P+'ebi_fry.png',     name: 'エビフライ',     cat: 'meat' },
+  { img: P+'fries.png',       name: 'フライドポテト', cat: 'meat' },
+  { img: P+'tamagoyaki.png',  name: 'たまごやき',     cat: 'meat' },
+  { img: P+'meatball.png',    name: 'ミートボール',   cat: 'meat' },
+  { img: P+'korokke.png',     name: 'コロッケ',       cat: 'meat' },
+  { img: P+'napolitan.png',   name: 'ナポリタン',     cat: 'meat' },
+  { img: P+'yakizake.png',    name: 'やきざけ',       cat: 'meat' },
 ];
 
 const OKAZU_VEG = [
-  { img: P+'broccoli.png',    name: 'ブロッコリー',       cat: 'veg', color: 'green' },
-  { img: P+'mini_tomato.png', name: 'ミニトマト',         cat: 'veg', color: 'red' },
-  { img: P+'corn_spinach.png',name: 'コーンほうれんそう', cat: 'veg', color: 'green' },
-  { img: P+'kinpira.png',     name: 'きんぴらごぼう',     cat: 'veg', color: 'brown' },
-  { img: P+'edamame.png',     name: 'えだまめ',           cat: 'veg', color: 'green' },
-  { img: P+'potato_salad.png',name: 'ポテトサラダ',       cat: 'veg', color: 'yellow' },
-  { emoji: '🥕', name: 'にんじん',     cat: 'veg', color: 'orange' },
-  { emoji: '🥒', name: 'きゅうり',     cat: 'veg', color: 'green' },
-  { emoji: '🌽', name: 'とうもろこし', cat: 'veg', color: 'yellow' },
-  { emoji: '🥬', name: 'レタス',       cat: 'veg', color: 'green' },
+  { img: P+'broccoli.png',    name: 'ブロッコリー',       cat: 'veg' },
+  { img: P+'mini_tomato.png', name: 'ミニトマト',         cat: 'veg' },
+  { img: P+'corn_spinach.png',name: 'コーンほうれんそう', cat: 'veg' },
+  { img: P+'kinpira.png',     name: 'きんぴらごぼう',     cat: 'veg' },
+  { img: P+'edamame.png',     name: 'えだまめ',           cat: 'veg' },
+  { img: P+'potato_salad.png',name: 'ポテトサラダ',       cat: 'veg' },
+  { emoji: '🥕', name: 'にんじん',     cat: 'veg' },
+  { emoji: '🥒', name: 'きゅうり',     cat: 'veg' },
+  { emoji: '🌽', name: 'とうもろこし', cat: 'veg' },
+  { emoji: '🥬', name: 'レタス',       cat: 'veg' },
 ];
 
 const FRUITS = [
-  { img: P+'ichigo.png', name: 'いちご',   cat: 'fruit', color: 'red' },
-  { img: P+'mikan.png',  name: 'みかん',   cat: 'fruit', color: 'orange' },
-  { img: P+'budou.png',  name: 'ぶどう',   cat: 'fruit', color: 'purple' },
+  { img: P+'ichigo.png', name: 'いちご', cat: 'fruit' },
+  { img: P+'mikan.png',  name: 'みかん', cat: 'fruit' },
+  { img: P+'budou.png',  name: 'ぶどう', cat: 'fruit' },
 ];
 
 // ===== Stages =====
 const STAGES = [
   {
-    title: 'ごはんを えらぼう',
     steps: [
       { type: 'rice', label: 'ごはん', css: 'rice', speech: 'まずは ごはん！' },
       { type: 'pick', pool: 'meat', count: 2, label: 'おかず', css: 'meat', speech: 'おかずを いれよう！' },
@@ -436,14 +429,12 @@ const STAGES = [
     ]
   },
   {
-    title: 'すきな おべんとう',
     steps: [
       { type: 'rice', label: 'ごはん', css: 'rice', speech: 'ごはんを えらんでね！' },
       { type: 'free', count: 3, label: 'すきなもの', css: 'free', speech: 'すきなものを いれてね！' },
     ]
   },
   {
-    title: 'いっぱい おべんとう',
     steps: [
       { type: 'rice', label: 'ごはん', css: 'rice', speech: 'きょうの ごはんは？' },
       { type: 'pick', pool: 'meat', count: 2, label: 'おかず', css: 'meat', speech: 'もりもり おかず！' },
@@ -454,299 +445,162 @@ const STAGES = [
 ];
 
 // ===== State =====
-let stageIdx = 0;
-let stepIdx = 0;
-let okazuSlots = [];
-let okazuFillCount = 0;
-let pickedInStep = 0;
-let usedImgs = new Set();
+let stageIdx = 0, stepIdx = 0, okazuSlots = [], okazuFillCount = 0, pickedInStep = 0;
+let usedIds = new Set();
 
-// ===== Shuffle =====
+// ===== Helpers =====
 function shuffle(a) {
-  const b = [...a];
-  for (let i = b.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [b[i], b[j]] = [b[j], b[i]];
-  }
-  return b;
+  const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b;
+}
+function fid(f) { return f.img || f.emoji; }
+function foodVis(f) {
+  return f.img
+    ? `<img class="food-img" src="${f.img}" alt="${f.name}">`
+    : `<span class="food-img" style="font-size:2rem;line-height:1;display:flex;align-items:center;justify-content:center">${f.emoji}</span>`;
+}
+function foodNode(f) {
+  if (f.img) { const i = document.createElement('img'); i.src = f.img; return i; }
+  const s = document.createElement('span'); s.style.cssText = 'font-size:1.6rem;line-height:1'; s.textContent = f.emoji; return s;
 }
 
 // ===== Audio =====
 let _ac = null;
-function getAC() {
-  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
-  if (_ac.state === 'suspended') _ac.resume();
-  return _ac;
-}
+function getAC() { if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume(); return _ac; }
 document.addEventListener('touchstart', () => getAC().resume(), { once: true, passive: true });
 document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
+function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(900,t+0.08); g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.12); }
+function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
+function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
+function playFanfare() { const ac=getAC(),t=ac.currentTime; [523,659,784,1047].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.12;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.2,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.45);o.start(s);o.stop(s+0.45);}); }
 
-function playPop() {
-  const ac = getAC(), t = ac.currentTime;
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
-  o.type = 'sine'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.08);
-  g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-  o.start(t); o.stop(t + 0.12);
-}
-function playCorrect() {
-  const ac = getAC(), t = ac.currentTime;
-  [523, 659, 784].forEach((f, i) => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sine'; o.frequency.value = f;
-    const s = t + i * 0.1;
-    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.18, s + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, s + 0.25);
-    o.start(s); o.stop(s + 0.25);
-  });
-}
-function playWrong() {
-  const ac = getAC(), t = ac.currentTime;
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(120, t + 0.18);
-  g.gain.setValueAtTime(0.1, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-  o.start(t); o.stop(t + 0.18);
-}
-function playFanfare() {
-  const ac = getAC(), t = ac.currentTime;
-  [523, 659, 784, 1047].forEach((f, i) => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sine'; o.frequency.value = f;
-    const s = t + i * 0.12;
-    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.2, s + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, s + 0.45);
-    o.start(s); o.stop(s + 0.45);
-  });
-}
-
-// ===== UI helpers =====
-function foodVisual(f) {
-  return f.img
-    ? `<img class="food-img" src="${f.img}" alt="${f.name}">`
-    : `<span class="food-img" style="font-size:2.4rem;line-height:1;display:flex;align-items:center;justify-content:center">${f.emoji}</span>`;
-}
-function foodBentoImg(f) {
-  if (f.img) {
-    const img = document.createElement('img');
-    img.src = f.img;
-    return img;
-  }
-  const span = document.createElement('span');
-  span.style.cssText = 'font-size:1.8rem;line-height:1';
-  span.textContent = f.emoji;
-  return span;
-}
+// ===== UI =====
 function setSpeech(t) { document.getElementById('speech').textContent = t; }
-function setPono(happy) {
-  const img = document.getElementById('pono-img');
-  if (happy) { img.classList.add('happy'); setTimeout(() => img.classList.remove('happy'), 600); }
-}
+function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.classList.add('happy');setTimeout(()=>i.classList.remove('happy'),600);} }
 
-// ===== Load stage =====
+// ===== Game =====
 function loadStage() {
-  stepIdx = 0;
-  pickedInStep = 0;
-  okazuFillCount = 0;
-  usedImgs.clear();
-
-  // Build bento box
+  stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; usedIds.clear();
   const rice = document.getElementById('bento-rice');
-  rice.innerHTML = '';
-  rice.classList.remove('filled');
-
+  rice.innerHTML = ''; rice.classList.remove('filled');
   const okazu = document.getElementById('bento-okazu');
-  okazu.innerHTML = '';
-  okazuSlots = [];
-  for (let i = 0; i < 4; i++) {
-    const s = document.createElement('div');
-    s.className = 'bento-slot';
-    okazu.appendChild(s);
-    okazuSlots.push(s);
-  }
-
+  okazu.innerHTML = ''; okazuSlots = [];
+  for (let i = 0; i < 4; i++) { const s = document.createElement('div'); s.className = 'bento-slot'; okazu.appendChild(s); okazuSlots.push(s); }
   setSpeech('おべんとう つくろう！');
-  setTimeout(() => loadStep(), 400);
+  setTimeout(loadStep, 400);
 }
 
-// ===== Load step =====
 function loadStep() {
   const stage = STAGES[stageIdx];
-  if (stepIdx >= stage.steps.length) {
-    stageComplete();
-    return;
-  }
-
+  if (stepIdx >= stage.steps.length) { stageComplete(); return; }
   const step = stage.steps[stepIdx];
   pickedInStep = 0;
   setSpeech(step.speech);
-
-  const qEl = document.getElementById('question');
-  qEl.innerHTML = `<span class="q-highlight ${step.css}">${step.label}</span> を いれてね！`;
+  document.getElementById('question').innerHTML = `<span class="q-highlight ${step.css}">${step.label}</span> を いれてね！`;
 
   const tray = document.getElementById('food-tray');
   tray.innerHTML = '';
 
   if (step.type === 'rice') {
-    // Show rice options (横長 rice + 丸/三角)
-    const all = shuffle([...RICE, ...RICE_SMALL]).slice(0, 6);
-    all.forEach(r => {
-      const item = document.createElement('div');
-      item.className = 'food-item';
-      item.innerHTML = `${foodVisual(r)}<span class="food-name">${r.name}</span>`;
+    shuffle([...RICE, ...RICE_SMALL]).slice(0, 6).forEach(r => {
+      const item = mkItem(r);
       item.addEventListener('pointerdown', e => { e.preventDefault(); onRiceTap(item, r); });
       tray.appendChild(item);
     });
   } else if (step.type === 'free') {
-    // Show all remaining foods
-    const all = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedImgs.has(f.img || f.emoji))).slice(0, 6);
-    all.forEach(f => {
-      const item = document.createElement('div');
-      item.className = 'food-item';
-      item.innerHTML = `${foodVisual(f)}<span class="food-name">${f.name}</span>`;
+    shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedIds.has(fid(f)))).slice(0, 6).forEach(f => {
+      const item = mkItem(f);
       item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
       tray.appendChild(item);
     });
   } else {
-    // Pick from specific pool
     const pools = { meat: OKAZU_MEAT, veg: OKAZU_VEG, fruit: FRUITS };
-    const correct = shuffle(pools[step.pool].filter(f => !usedImgs.has(f.img || f.emoji)));
-    const others = shuffle(
-      [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS]
-        .filter(f => f.cat !== step.pool && !usedImgs.has(f.img || f.emoji))
-    );
-    const display = shuffle([...correct.slice(0, 3), ...others.slice(0, 3)]).slice(0, 6);
-    display.forEach(f => {
-      const item = document.createElement('div');
-      item.className = 'food-item';
-      item.innerHTML = `${foodVisual(f)}<span class="food-name">${f.name}</span>`;
+    const correct = shuffle(pools[step.pool].filter(f => !usedIds.has(fid(f))));
+    const others = shuffle([...OKAZU_MEAT,...OKAZU_VEG,...FRUITS].filter(f => f.cat !== step.pool && !usedIds.has(fid(f))));
+    shuffle([...correct.slice(0, 3), ...others.slice(0, 3)]).slice(0, 6).forEach(f => {
+      const item = mkItem(f);
       item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
       tray.appendChild(item);
     });
   }
 }
 
-// ===== Tap handlers =====
+function mkItem(f) {
+  const d = document.createElement('div');
+  d.className = 'food-item';
+  d.innerHTML = `${foodVis(f)}<span class="food-name">${f.name}</span>`;
+  return d;
+}
+
 function onRiceTap(el, rice) {
   if (el.classList.contains('used')) return;
-  playPop();
-  el.classList.add('correct');
-
+  playPop(); el.classList.add('correct');
   flyFood(el, document.getElementById('bento-rice'), rice.img, () => {
-    const riceEl = document.getElementById('bento-rice');
-    const img = document.createElement('img');
-    img.src = rice.img;
-    riceEl.innerHTML = '';
-    riceEl.appendChild(img);
-    riceEl.classList.add('filled');
+    const r = document.getElementById('bento-rice');
+    const img = document.createElement('img'); img.src = rice.img;
+    r.innerHTML = ''; r.appendChild(img); r.classList.add('filled');
   });
-
-  setTimeout(() => {
-    el.classList.add('used');
-    playCorrect();
-    setPono(true);
-    setSpeech('おいしそう！');
-    stepIdx++;
-    setTimeout(loadStep, 500);
-  }, 400);
+  setTimeout(() => { el.classList.add('used'); playCorrect(); setPono(true); setSpeech('おいしそう！'); stepIdx++; setTimeout(loadStep, 500); }, 400);
 }
 
 function onOkazuTap(el, food, step) {
   if (el.classList.contains('used')) return;
   playPop();
-
-  const isCorrect = step.type === 'free' || food.cat === step.pool;
-
-  if (isCorrect) {
-    el.classList.add('correct');
-    usedImgs.add(food.img || food.emoji);
-
-    const targetSlot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
-    flyFood(el, targetSlot, food.img || food.emoji, () => {
+  if (step.type === 'free' || food.cat === step.pool) {
+    el.classList.add('correct'); usedIds.add(fid(food));
+    const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
+    flyFood(el, slot, food.img || food.emoji, () => {
       if (okazuFillCount < okazuSlots.length) {
-        const node = foodBentoImg(food);
-        okazuSlots[okazuFillCount].innerHTML = '';
-        okazuSlots[okazuFillCount].appendChild(node);
-        okazuSlots[okazuFillCount].classList.add('filled');
-        okazuFillCount++;
+        const n = foodNode(food); okazuSlots[okazuFillCount].innerHTML = '';
+        okazuSlots[okazuFillCount].appendChild(n); okazuSlots[okazuFillCount].classList.add('filled'); okazuFillCount++;
       }
     });
-
     setTimeout(() => {
-      el.classList.add('used');
-      playCorrect();
-      setPono(true);
-      const msgs = ['やったー！', 'いいね！', 'おいしそう！', 'すごい！'];
-      setSpeech(msgs[Math.floor(Math.random() * msgs.length)]);
+      el.classList.add('used'); playCorrect(); setPono(true);
+      setSpeech(['やったー！','いいね！','おいしそう！','すごい！'][Math.floor(Math.random()*4)]);
       pickedInStep++;
-      if (pickedInStep >= (step.count || 1)) {
-        stepIdx++;
-        setTimeout(loadStep, 500);
-      }
+      if (pickedInStep >= (step.count || 1)) { stepIdx++; setTimeout(loadStep, 500); }
     }, 400);
   } else {
-    el.classList.add('wrong');
-    playWrong();
-    const catNames = { meat: 'おかず', veg: 'やさい', fruit: 'フルーツ' };
-    showWrongToast('これは ' + (catNames[step.pool] || '') + ' じゃないよ〜');
+    el.classList.add('wrong'); playWrong();
+    const cn = { meat:'おかず', veg:'やさい', fruit:'フルーツ' };
+    showToast('これは ' + (cn[step.pool]||'') + ' じゃないよ〜');
     setTimeout(() => el.classList.remove('wrong'), 400);
   }
 }
 
-function flyFood(fromEl, toEl, imgSrc, onLand) {
-  const from = fromEl.getBoundingClientRect();
-  const to = toEl.getBoundingClientRect();
+function flyFood(from, to, src, cb) {
+  const fr = from.getBoundingClientRect(), tr = to.getBoundingClientRect();
   let fly;
-  if (imgSrc && imgSrc.endsWith('.png')) {
-    fly = document.createElement('img');
-    fly.className = 'food-flying';
-    fly.src = imgSrc;
+  if (src && src.endsWith && src.endsWith('.png')) {
+    fly = document.createElement('img'); fly.className = 'food-flying'; fly.src = src;
   } else {
-    fly = document.createElement('span');
-    fly.className = 'food-flying';
-    fly.style.fontSize = '2.2rem';
-    fly.style.lineHeight = '1';
-    fly.textContent = imgSrc;
+    fly = document.createElement('span'); fly.className = 'food-flying';
+    fly.style.fontSize = '2rem'; fly.style.lineHeight = '1'; fly.textContent = src;
   }
-  fly.style.left = (from.left + from.width / 2 - 24) + 'px';
-  fly.style.top = (from.top + from.height / 2 - 24) + 'px';
+  fly.style.left = (fr.left + fr.width/2 - 20) + 'px';
+  fly.style.top = (fr.top + fr.height/2 - 20) + 'px';
   document.body.appendChild(fly);
   requestAnimationFrame(() => {
-    fly.style.left = (to.left + to.width / 2 - 24) + 'px';
-    fly.style.top = (to.top + to.height / 2 - 24) + 'px';
-    fly.style.opacity = '0.5';
-    fly.style.transform = 'scale(0.5)';
+    fly.style.left = (tr.left + tr.width/2 - 20) + 'px';
+    fly.style.top = (tr.top + tr.height/2 - 20) + 'px';
+    fly.style.opacity = '0.5'; fly.style.transform = 'scale(0.4)';
   });
-  setTimeout(() => { fly.remove(); if (onLand) onLand(); }, 500);
+  setTimeout(() => { fly.remove(); if (cb) cb(); }, 500);
 }
 
-function showWrongToast(msg) {
-  const t = document.getElementById('wrong-toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1200);
-}
+function showToast(m) { const t = document.getElementById('wrong-toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); }
 
-// ===== Stage complete =====
 function stageComplete() {
-  playFanfare();
-  launchConfetti();
-  awardPoints(5);
-  setSpeech('ありがとう！');
-  setPono(true);
-
-  const isLast = stageIdx >= STAGES.length - 1;
+  playFanfare(); launchConfetti(); awardPoints(5);
+  setSpeech('ありがとう！'); setPono(true);
+  const last = stageIdx >= STAGES.length - 1;
   document.getElementById('complete-emoji').textContent = '🍱';
   document.getElementById('complete-title').textContent = 'おべんとう かんせい！';
-  document.getElementById('complete-msg').textContent = isLast
-    ? 'ぜんぶ つくれたね！すごい！' : 'おいしそう！ポノ よろこんでるよ！';
-  document.getElementById('complete-btn').textContent = isLast ? 'もういっかい 🍱' : 'つぎへ →';
+  document.getElementById('complete-msg').textContent = last ? 'ぜんぶ つくれたね！すごい！' : 'おいしそう！ポノ よろこんでるよ！';
+  document.getElementById('complete-btn').textContent = last ? 'もういっかい 🍱' : 'つぎへ →';
   document.getElementById('complete-btn').onclick = () => {
     document.getElementById('complete-overlay').classList.add('hidden');
-    if (isLast) stageIdx = 0; else stageIdx++;
+    if (last) stageIdx = 0; else stageIdx++;
     loadStage();
   };
   document.getElementById('complete-overlay').classList.remove('hidden');
@@ -757,14 +611,10 @@ function launchConfetti() {
   const cols = ['#FF6B9D','#F97316','#EAB308','#22C55E','#3B82F6','#8B5CF6','#F43F5E','#06B6D4'];
   for (let i = 0; i < 40; i++) {
     setTimeout(() => {
-      const p = document.createElement('div');
-      p.className = 'conf';
-      p.style.left = Math.random() * 100 + 'vw';
-      p.style.background = cols[Math.floor(Math.random() * cols.length)];
-      p.style.animationDelay = Math.random() * 0.4 + 's';
-      p.style.animationDuration = (2 + Math.random() * 1.2) + 's';
-      c.appendChild(p);
-      setTimeout(() => p.remove(), 3600);
+      const p = document.createElement('div'); p.className = 'conf';
+      p.style.left = Math.random()*100+'vw'; p.style.background = cols[Math.floor(Math.random()*cols.length)];
+      p.style.animationDelay = Math.random()*0.4+'s'; p.style.animationDuration = (2+Math.random()*1.2)+'s';
+      c.appendChild(p); setTimeout(() => p.remove(), 3600);
     }, i * 25);
   }
 }
@@ -773,14 +623,18 @@ function launchConfetti() {
 loadStage();
 initMenu();
 
-function updateLandscapeNotice() {
-  const n = document.getElementById('landscape-notice');
+// Portrait notice (横向き専用)
+function updateNotice() {
+  const n = document.getElementById('portrait-notice');
   if (!n) return;
-  n.style.display = (window.innerWidth > window.innerHeight && matchMedia('(pointer:coarse)').matches) ? 'flex' : 'none';
+  const portrait = window.innerHeight > window.innerWidth;
+  const touch = matchMedia('(pointer:coarse)').matches;
+  n.style.display = (portrait && touch) ? 'flex' : 'none';
+  n.style.pointerEvents = (portrait && touch) ? 'auto' : 'none';
 }
-updateLandscapeNotice();
-window.addEventListener('orientationchange', () => { setTimeout(updateLandscapeNotice, 100); setTimeout(updateLandscapeNotice, 500); });
-window.addEventListener('resize', updateLandscapeNotice);
+updateNotice();
+window.addEventListener('orientationchange', () => { setTimeout(updateNotice, 100); setTimeout(updateNotice, 500); });
+window.addEventListener('resize', updateNotice);
 </script>
 </body>
 </html>
