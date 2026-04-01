@@ -105,7 +105,8 @@ html, body {
   min-height: 0;
 }
 .bento-inner {
-  background: #FFF8E7;
+  background:
+    repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 12px 12px;
   border-radius: 10px;
   display: flex;
   flex-direction: row;
@@ -154,15 +155,16 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(139,69,19,0.05);
-  border: 2px dashed rgba(139,69,19,0.12);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 60%, #e8ddd0 100%);
+  border: 2px solid rgba(139,69,19,0.1);
   transition: all 0.3s;
   overflow: hidden;
+  aspect-ratio: 1;
 }
 .bento-slot.filled {
-  border-color: transparent;
-  background: transparent;
+  border-color: rgba(139,69,19,0.08);
+  background: radial-gradient(circle, #fff 50%, #f0e8d8 100%);
 }
 .bento-slot img, .bento-slot span {
   width: 80%; height: 80%;
@@ -280,13 +282,13 @@ html, body {
   box-shadow: 0 4px 16px rgba(93,78,55,0.2);
 }
 .complete-bento .cb-inner {
-  background: #FFF8E7;
+  background: repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 10px 10px;
   border-radius: 8px;
   display: flex;
   flex-direction: row;
   gap: 4px;
   padding: 5px;
-  height: 96px;
+  aspect-ratio: 1.8;
 }
 .complete-bento .cb-rice {
   width: 33%; height: 100%;
@@ -306,10 +308,14 @@ html, body {
 .complete-bento .cb-okazu > div {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 50%, #f0e8d8 100%);
+  border: 1px solid rgba(139,69,19,0.08);
+  aspect-ratio: 1;
 }
 .complete-bento .cb-okazu img,
 .complete-bento .cb-okazu span {
-  width: 80%; height: 80%; object-fit: contain;
+  width: 75%; height: 75%; object-fit: contain;
 }
 .complete-title { font-size: 1.1rem; font-weight: 900; color: var(--primary); }
 .complete-pono {
