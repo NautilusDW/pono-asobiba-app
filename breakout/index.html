@@ -1316,6 +1316,13 @@ initMenu({
   ovBtn.addEventListener('touchstart', e => { e.preventDefault(); execAction(); }, { passive: false });
   // click: PC / マウス
   ovBtn.addEventListener('click', execAction);
+
+  // Home button (ending screen): iOS Safari touchstart for reliable navigation
+  const ovBtnHome = document.getElementById('ov-btn-home');
+  ovBtnHome.addEventListener('touchstart', e => {
+    e.preventDefault();
+    window.location.href = '../';
+  }, { passive: false });
 })();
 
 // ===== BGM =====
