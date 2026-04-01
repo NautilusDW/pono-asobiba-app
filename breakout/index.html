@@ -54,6 +54,7 @@ html, body {
   flex-shrink: 0;
   text-align: center;
   padding: 4px 0;
+  padding-top: 50px;
   position: relative;
 }
 .header h1 {
@@ -450,6 +451,11 @@ function resize() {
 }
 
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => {
+  setTimeout(resize, 200);
+  setTimeout(resize, 500);
+  setTimeout(resize, 800);
+});
 
 // ===== Blocks =====
 let hedgehogPos = null; // {x, y, w, h} — position of hedgehog in block grid
@@ -1165,7 +1171,7 @@ function showTutorial() {
       gw.classList.add('tut-highlight');
       const r = gw.getBoundingClientRect();
       bubble.className = 'tut-bubble arrow-up';
-      bubble.style.cssText = 'top:' + (r.bottom - 80) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
+      bubble.style.cssText = 'top:' + (r.bottom - 160) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
       bubble.innerHTML = 'ゆびで パドルを うごかして<br>ボールを はねかえそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
@@ -1191,10 +1197,7 @@ function showTutorial() {
   steps[0]();
 }
 
-// First visit auto-show
-if (!localStorage.getItem('breakout_tut_seen')) {
-  setTimeout(showTutorial, 500);
-}
+// Tutorial is triggered after start button press (see execAction below)
 
 initMenu({
   bgmToggle: function() {
@@ -1225,7 +1228,13 @@ initMenu({
       overlay.classList.add('hidden');
       state = S.READY;
     }
-    else startGame();
+    else {
+      startGame();
+      // Show tutorial on first visit after pressing start
+      if (!localStorage.getItem('breakout_tut_seen')) {
+        setTimeout(showTutorial, 400);
+      }
+    }
   }
 
   // touchstart: iOS Safari でも確実に動作
