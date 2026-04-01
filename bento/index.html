@@ -98,10 +98,10 @@ html, body {
   padding: 6px;
   min-height: 120px;
 }
-/* ご飯エリア（上段・横長） */
+/* ご飯エリア（上段・横幅いっぱい） */
 .bento-rice {
   width: 100%;
-  height: 52px;
+  height: 64px;
   border-radius: 8px;
   background: rgba(139,69,19,0.06);
   border: 1.5px dashed rgba(139,69,19,0.15);
@@ -118,7 +118,8 @@ html, body {
 .bento-rice img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  border-radius: 6px;
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 /* おかずエリア（下段・グリッド） */
@@ -411,6 +412,10 @@ const OKAZU_VEG = [
   { img: P+'kinpira.png',     name: 'きんぴらごぼう',     cat: 'veg', color: 'brown' },
   { img: P+'edamame.png',     name: 'えだまめ',           cat: 'veg', color: 'green' },
   { img: P+'potato_salad.png',name: 'ポテトサラダ',       cat: 'veg', color: 'yellow' },
+  { emoji: '🥕', name: 'にんじん',     cat: 'veg', color: 'orange' },
+  { emoji: '🥒', name: 'きゅうり',     cat: 'veg', color: 'green' },
+  { emoji: '🌽', name: 'とうもろこし', cat: 'veg', color: 'yellow' },
+  { emoji: '🥬', name: 'レタス',       cat: 'veg', color: 'green' },
 ];
 
 const FRUITS = [
@@ -519,6 +524,22 @@ function playFanfare() {
 }
 
 // ===== UI helpers =====
+function foodVisual(f) {
+  return f.img
+    ? `<img class="food-img" src="${f.img}" alt="${f.name}">`
+    : `<span class="food-img" style="font-size:2.4rem;line-height:1;display:flex;align-items:center;justify-content:center">${f.emoji}</span>`;
+}
+function foodBentoImg(f) {
+  if (f.img) {
+    const img = document.createElement('img');
+    img.src = f.img;
+    return img;
+  }
+  const span = document.createElement('span');
+  span.style.cssText = 'font-size:1.8rem;line-height:1';
+  span.textContent = f.emoji;
+  return span;
+}
 function setSpeech(t) { document.getElementById('speech').textContent = t; }
 function setPono(happy) {
   const img = document.getElementById('pono-img');
@@ -575,33 +596,33 @@ function loadStep() {
     all.forEach(r => {
       const item = document.createElement('div');
       item.className = 'food-item';
-      item.innerHTML = `<img class="food-img" src="${r.img}" alt="${r.name}"><span class="food-name">${r.name}</span>`;
+      item.innerHTML = `${foodVisual(r)}<span class="food-name">${r.name}</span>`;
       item.addEventListener('pointerdown', e => { e.preventDefault(); onRiceTap(item, r); });
       tray.appendChild(item);
     });
   } else if (step.type === 'free') {
     // Show all remaining foods
-    const all = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedImgs.has(f.img))).slice(0, 6);
+    const all = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedImgs.has(f.img || f.emoji))).slice(0, 6);
     all.forEach(f => {
       const item = document.createElement('div');
       item.className = 'food-item';
-      item.innerHTML = `<img class="food-img" src="${f.img}" alt="${f.name}"><span class="food-name">${f.name}</span>`;
+      item.innerHTML = `${foodVisual(f)}<span class="food-name">${f.name}</span>`;
       item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
       tray.appendChild(item);
     });
   } else {
     // Pick from specific pool
     const pools = { meat: OKAZU_MEAT, veg: OKAZU_VEG, fruit: FRUITS };
-    const correct = shuffle(pools[step.pool].filter(f => !usedImgs.has(f.img)));
+    const correct = shuffle(pools[step.pool].filter(f => !usedImgs.has(f.img || f.emoji)));
     const others = shuffle(
       [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS]
-        .filter(f => f.cat !== step.pool && !usedImgs.has(f.img))
+        .filter(f => f.cat !== step.pool && !usedImgs.has(f.img || f.emoji))
     );
     const display = shuffle([...correct.slice(0, 3), ...others.slice(0, 3)]).slice(0, 6);
     display.forEach(f => {
       const item = document.createElement('div');
       item.className = 'food-item';
-      item.innerHTML = `<img class="food-img" src="${f.img}" alt="${f.name}"><span class="food-name">${f.name}</span>`;
+      item.innerHTML = `${foodVisual(f)}<span class="food-name">${f.name}</span>`;
       item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
       tray.appendChild(item);
     });
@@ -641,15 +662,14 @@ function onOkazuTap(el, food, step) {
 
   if (isCorrect) {
     el.classList.add('correct');
-    usedImgs.add(food.img);
+    usedImgs.add(food.img || food.emoji);
 
     const targetSlot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
-    flyFood(el, targetSlot, food.img, () => {
+    flyFood(el, targetSlot, food.img || food.emoji, () => {
       if (okazuFillCount < okazuSlots.length) {
-        const img = document.createElement('img');
-        img.src = food.img;
+        const node = foodBentoImg(food);
         okazuSlots[okazuFillCount].innerHTML = '';
-        okazuSlots[okazuFillCount].appendChild(img);
+        okazuSlots[okazuFillCount].appendChild(node);
         okazuSlots[okazuFillCount].classList.add('filled');
         okazuFillCount++;
       }
@@ -679,9 +699,18 @@ function onOkazuTap(el, food, step) {
 function flyFood(fromEl, toEl, imgSrc, onLand) {
   const from = fromEl.getBoundingClientRect();
   const to = toEl.getBoundingClientRect();
-  const fly = document.createElement('img');
-  fly.className = 'food-flying';
-  fly.src = imgSrc;
+  let fly;
+  if (imgSrc && imgSrc.endsWith('.png')) {
+    fly = document.createElement('img');
+    fly.className = 'food-flying';
+    fly.src = imgSrc;
+  } else {
+    fly = document.createElement('span');
+    fly.className = 'food-flying';
+    fly.style.fontSize = '2.2rem';
+    fly.style.lineHeight = '1';
+    fly.textContent = imgSrc;
+  }
   fly.style.left = (from.left + from.width / 2 - 24) + 'px';
   fly.style.top = (from.top + from.height / 2 - 24) + 'px';
   document.body.appendChild(fly);
