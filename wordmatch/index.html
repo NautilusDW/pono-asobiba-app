@@ -1171,7 +1171,7 @@ loadStage(0);
 
 // Tutorial (step-by-step, 初回のみ)
 (function() {
-  if (localStorage.getItem('wordmatch_tut_seen')) return;
+  if (localStorage.getItem('wordmatch_tut_v2')) return;
 
   const dim = document.getElementById('tut-dim');
   const bubble = document.getElementById('tut-bubble');
@@ -1228,7 +1228,7 @@ loadStage(0);
     document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
-    localStorage.setItem('wordmatch_tut_seen', '1');
+    localStorage.setItem('wordmatch_tut_v2', '1');
   }
 
   // ゲームが描画された後に開始（少し遅延）
