@@ -607,7 +607,7 @@
         iPhone: <strong>共有ボタン（□↑）→「ホーム画面に追加」</strong><br>
         Android: <strong>メニュー（⋮）→「ホーム画面に追加」</strong>
       </div>
-      <button onclick="this.parentElement.style.display='none'; localStorage.setItem('pwa_guide_seen','1')" style="
+      <button onclick="this.parentElement.style.display='none'; localStorage.setItem('pwa_guide_v2','1')" style="
         margin-top:8px; padding:6px 16px; border:none; border-radius:20px;
         background: linear-gradient(135deg,#FBBF24,#F97316); color:white;
         font-family:inherit; font-size:0.78rem; font-weight:700; cursor:pointer;
@@ -804,13 +804,11 @@
   </div>
 
   <script>
-    // ===== PWA Guide: 一度見たら非表示 / PWAインストール済みなら非表示 =====
+    // ===== PWA Guide: 一度見たら非表示 =====
     (function() {
       const guide = document.getElementById('pwa-guide');
       if (!guide) return;
-      const seen = localStorage.getItem('pwa_guide_seen');
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      if (seen || isStandalone) guide.style.display = 'none';
+      if (localStorage.getItem('pwa_guide_v2')) guide.style.display = 'none';
     })();
 
     // ===== Music Toggle =====
