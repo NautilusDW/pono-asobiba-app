@@ -46,6 +46,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 <div id="start-screen"><div class="title">びっくりボウリング</div><div class="tap">タップしてスタート</div><div style="margin-top:20px;display:flex;gap:8px;align-items:center"><div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div><div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div></div><div class="mode-link" onclick="event.stopPropagation();location.href='puzzle.html'">パズルモードで遊ぶ</div></div>
 <div id="score">0</div>
 <div id="combo"></div>
+<audio id="bgm" loop src="../assets/audio/Cheery Strike Loop.mp3" preload="auto"></audio>
 <canvas id="c"></canvas>
 
 <script>
@@ -112,10 +113,34 @@ function initAudio() {
   });
 }
 
+// ── BGM ──
+const bgmEl = document.getElementById('bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+bgmEl.volume = 0.2;
+let bgmStarted = false;
+function tryStartBgm() {
+  if (!bgmEnabled || bgmStarted) return;
+  bgmEl.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { bgmEl.pause(); }
+  else if (bgmEnabled) { bgmEl.play().catch(() => {}); }
+});
+window.addEventListener('blur',  () => bgmEl.pause());
+window.addEventListener('focus', () => { if (bgmEnabled) bgmEl.play().catch(() => {}); });
+
 document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
   e.preventDefault(); this.removeEventListener('pointerdown', handler);
   await initAudio(); this.style.display = 'none';
+  tryStartBgm();
   initMenu({
+    bgmToggle: () => {
+      bgmEnabled = !bgmEnabled;
+      localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+      if (bgmEnabled) { bgmStarted = false; tryStartBgm(); }
+      else { bgmEl.pause(); }
+    },
     extraButtons: [{
       icon: '🏆',
       label: 'ハイスコア',
