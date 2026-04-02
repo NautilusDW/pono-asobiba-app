@@ -787,12 +787,12 @@
         <img src="assets/images/Logo/Apple_logo_black.svg.png" style="height:12px;width:auto;vertical-align:-1px;margin-right:3px"> iPhone: <strong>共有（□↑）→ ホーム画面に追加</strong><br>
         <img src="assets/images/Logo/android_official_logo_icon_167880.svg" style="height:12px;width:auto;vertical-align:-1px;margin-right:3px"> Android: <strong>メニュー（⋮）→ ホーム画面に追加</strong>
       </div>
-      <button onclick="this.parentElement.style.display='none'; localStorage.setItem('pwa_guide_v2','1')" style="
-        margin-top:10px; padding:8px 20px; border:none; border-radius:20px;
+      <a href="help.html" style="
+        display:block; margin-top:10px; padding:8px 20px; border:none; border-radius:20px;
         background: linear-gradient(135deg,#FBBF24,#F97316); color:white;
         font-family:inherit; font-size:0.82rem; font-weight:700; cursor:pointer;
-        width: 100%;
-      ">確認しました</button>
+        width: 100%; text-align:center; text-decoration:none;
+      ">詳細</a>
     </div>
 
     <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'" style="display:none;">
@@ -1027,12 +1027,7 @@
       });
     })();
 
-    // ===== PWA Guide: 一度見たら非表示 =====
-    (function() {
-      const guide = document.getElementById('pwa-guide');
-      if (!guide) return;
-      if (localStorage.getItem('pwa_guide_v2')) guide.style.display = 'none';
-    })();
+    // PWA Guide: 常時表示（削除済み）
 
     // ===== Music Toggle =====
     const toggle = document.getElementById('music-toggle');
