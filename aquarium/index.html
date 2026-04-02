@@ -1934,7 +1934,7 @@
       SFX.play('collect');
     }
     function spawnTreasure() {
-      if (treasures.length >= 3) return;
+      if (creatures.length === 0 || treasures.length >= 3) return;
       const emoji = TREASURE_EMOJIS[Math.floor(Math.random() * TREASURE_EMOJIS.length)];
       const x = 60 + Math.random() * (W() - 120);
       const y = 60 + Math.random() * (H() * 0.7 - 60);
@@ -1985,8 +1985,9 @@
         }
       });
 
-      // ── Treasure spawn timer ───────────────────────────────
-      treasureTimer -= delta;
+      // ── Treasure spawn timer ── 生き物がいないときは無効 ──
+      if (creatures.length === 0) { treasureTimer = 2700; }
+      else treasureTimer -= delta;
       if (treasureTimer <= 0) {
         if (treasureFirstSpawn) {
           treasureFirstSpawn = false;

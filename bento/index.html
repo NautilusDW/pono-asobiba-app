@@ -105,8 +105,9 @@ html, body {
   min-height: 0;
 }
 @media (hover: hover) and (pointer: fine) {
-  #app { width: 420px; height: 720px; margin: 48px auto 0; padding: 0 6px 6px; }
-  .bento-box { flex: 1; }
+  #app { width: 420px; height: auto; min-height: 0; margin: 48px auto 0; padding: 0 6px 6px; }
+  .left-panel { flex: none; }
+  .bento-box { flex: none; aspect-ratio: 3 / 4; width: 100%; }
 }
 .bento-inner {
   background:
