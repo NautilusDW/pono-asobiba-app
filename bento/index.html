@@ -103,8 +103,12 @@ html, body {
   box-shadow: 0 4px 20px rgba(93,78,55,0.25);
   display: flex;
   min-height: 0;
-  max-height: min(100%, 60vw);
-  align-self: center;
+}
+@media (min-width: 640px) {
+  .bento-box {
+    max-height: min(100%, 60vw);
+    align-self: center;
+  }
 }
 .bento-inner {
   background:
