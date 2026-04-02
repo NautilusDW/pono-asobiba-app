@@ -63,9 +63,22 @@ const comboEl = document.getElementById('combo');
 let W, H;
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; computeGrid(); }
 
-// ── Background image ──
-const bgImg = new Image();
-bgImg.src = '../assets/images/Bowling/BG/neon02.png';
+// ── Background images ──
+const BG_IMGS = [
+  '../assets/images/Bowling/BG/neon_boy01.png',
+  '../assets/images/Bowling/BG/neon_boy02.png',
+  '../assets/images/Bowling/BG/neon_girl01.png',
+  '../assets/images/Bowling/BG/neon_girl02.png',
+  '../assets/images/Bowling/BG/neon_girl03.png',
+  '../assets/images/Bowling/BG/neon_girl04.png',
+  '../assets/images/Bowling/BG/robot_boy01.png',
+  '../assets/images/Bowling/BG/space_boy01.png',
+  '../assets/images/Bowling/BG/colorful.png',
+  '../assets/images/Bowling/BG/sky.png',
+  '../assets/images/Bowling/BG/neon02.png',
+];
+let bgImgIdx = 0;
+const bgImgObjs = BG_IMGS.map(src => { const img = new Image(); img.src = src; return img; });
 
 // ── Audio (shared) ──
 let audioCtx = null, audioReady = false;
@@ -882,13 +895,15 @@ canvas.addEventListener('pointerup', e => {
   playBuf(launchBuf, 0.4, 0.8 + Math.random() * 0.3);
   gamePhase = 'flight';
   shotNumber++;
+  if (shotNumber % 2 === 0) bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
   aimAngle = Math.PI / 2; // reset to straight up for next shot
 });
 canvas.addEventListener('pointercancel', () => { aiming = false; aimAngle = Math.PI / 2; });
 
 // ── Draw ──
 function drawBg() {
-  if (bgImg.complete && bgImg.naturalWidth > 0) {
+  const bgImg = bgImgObjs[bgImgIdx];
+  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
     ctx.drawImage(bgImg, 0, 0, W, H);
   } else {
     ctx.fillStyle = '#1a2a4a';

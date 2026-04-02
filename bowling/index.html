@@ -190,7 +190,19 @@ const RESULT_TIME = 90;      // frames for result display
 const HUD_HEIGHT = 80;       // top HUD area height in px
 
 // ── Background images ──
-const BG_IMGS = ['../assets/images/Bowling/BG/colorful.png', '../assets/images/Bowling/BG/sky.png'];
+const BG_IMGS = [
+  '../assets/images/Bowling/BG/neon_boy01.png',
+  '../assets/images/Bowling/BG/neon_boy02.png',
+  '../assets/images/Bowling/BG/neon_girl01.png',
+  '../assets/images/Bowling/BG/neon_girl02.png',
+  '../assets/images/Bowling/BG/neon_girl03.png',
+  '../assets/images/Bowling/BG/neon_girl04.png',
+  '../assets/images/Bowling/BG/robot_boy01.png',
+  '../assets/images/Bowling/BG/space_boy01.png',
+  '../assets/images/Bowling/BG/colorful.png',
+  '../assets/images/Bowling/BG/sky.png',
+  '../assets/images/Bowling/BG/neon02.png',
+];
 let bgImgIdx = 0;
 const bgImgObjs = BG_IMGS.map(src => { const img = new Image(); img.src = src; return img; });
 
@@ -842,7 +854,7 @@ function launchBall(dirX, dirY, power) {
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
   shotNumber++;
-  if (shotNumber % 3 === 0) bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
+  if (shotNumber % 2 === 0) bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
   ballTrail = [];
 }
 
