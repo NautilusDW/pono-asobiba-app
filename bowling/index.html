@@ -189,6 +189,11 @@ const ARRANGE_TIME = 50;     // frames for arrange animation
 const RESULT_TIME = 90;      // frames for result display
 const HUD_HEIGHT = 80;       // top HUD area height in px
 
+// ── Background images ──
+const BG_IMGS = ['../assets/images/Bowling/BG/neon01.png', '../assets/images/Bowling/BG/nwon02.png'];
+let bgImgIdx = 0; // 0 = neon01, 1 = nwon02  ← ここを変えて切り替え
+const bgImgObjs = BG_IMGS.map(src => { const img = new Image(); img.src = src; return img; });
+
 // ── Pin images ──
 const tierCanvases = [];
 for (let t = 0; t < TIERS.length; t++) {
@@ -905,26 +910,26 @@ canvas.addEventListener('pointercancel', () => { aimBarDragging = false; slingsh
 
 // ── Draw ──
 function drawBg() {
-  // HUD area (dark strip at top)
-  ctx.fillStyle = '#0d3320';
+  const bgImg = bgImgObjs[bgImgIdx];
+  if (bgImg.complete && bgImg.naturalWidth > 0) {
+    ctx.drawImage(bgImg, 0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#1a1a4e';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // HUD area dark overlay for score readability
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(0, 0, W, HUD_HEIGHT);
 
-  // Game field below HUD
+  // bgFlash overlay
   if (bgFlash > 0.01) {
+    ctx.globalAlpha = bgFlash * 0.5;
     const r = Math.round(30 + 225*bgFlash), g = Math.round(107 + 148*bgFlash), bv = Math.round(64 + 191*bgFlash);
-    ctx.fillStyle = 'rgb('+r+','+g+','+bv+')';
-  } else ctx.fillStyle = '#1e6b40';
-  ctx.fillRect(0, HUD_HEIGHT, W, H - HUD_HEIGHT);
-
-  // Field border
-  ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 6; ctx.strokeRect(2, HUD_HEIGHT, W-4, H - HUD_HEIGHT - 2);
-  ctx.strokeStyle = '#6B3410'; ctx.lineWidth = 2; ctx.strokeRect(6, HUD_HEIGHT + 4, W-12, H - HUD_HEIGHT - 10);
-
-  // Dashed line
-  ctx.globalAlpha = 0.2; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-  ctx.setLineDash([8, 6]);
-  ctx.beginPath(); ctx.moveTo(12, H * 0.75); ctx.lineTo(W - 12, H * 0.75); ctx.stroke();
-  ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = `rgb(${r},${g},${bv})`;
+    ctx.fillRect(0, HUD_HEIGHT, W, H - HUD_HEIGHT);
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawHUD() {
