@@ -44,6 +44,55 @@ li { margin-bottom: 6px; }
 .faq-q { font-weight: 900; font-size: 0.88rem; color: #F2915A; margin-top: 14px; }
 .faq-a { font-size: 0.82rem; margin-top: 4px; padding-left: 12px; border-left: 3px solid #FDE68A; }
 .important { color: #D32F2F; font-weight: 900; }
+
+/* ===== 作者あいさつ ===== */
+.greeting {
+  background: linear-gradient(135deg, #FFF8EE, #FFF0E0);
+  border: 2px solid #FDD9A8;
+  border-radius: 18px;
+  padding: 20px 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(242,145,90,0.12);
+}
+.greeting-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #F2915A;
+  margin-bottom: 14px;
+  letter-spacing: 0.05em;
+}
+.greeting p {
+  font-size: 0.85rem;
+  line-height: 1.9;
+  color: #5D4E37;
+  margin-bottom: 14px;
+}
+.merits {
+  background: rgba(255,255,255,0.75);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+.merits-title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #A0785A;
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+.merit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+.merit-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
 </style>
 </head>
 <body>
@@ -52,6 +101,27 @@ li { margin-bottom: 6px; }
 
 <h1>📖 ヘルプ・よくある質問</h1>
 
+<!-- 作者からのごあいさつ -->
+<div class="greeting">
+  <div class="greeting-title">🌱 このサイトについて</div>
+  <p>
+    大好きな絵本があります。<br>
+    その絵本の世界を、もっと広げたい。<br>
+    読んでくれた子どもたちと、楽しさをもっと共有したい。<br>
+    子どもたちが夢中で遊んで、笑顔になる姿が見たい。<br><br>
+    そんな想いから、この「ポノのあそびば」を作りました。
+  </p>
+  <div class="merits">
+    <div class="merits-title">✨ こんなことができます</div>
+    <div class="merit-item"><span class="merit-icon">🎮</span><span>パズル・おえかき・おべんとう・ことばあわせ・うみのせかいなど、<strong>無料でゲームが遊べます</strong></span></div>
+    <div class="merit-item"><span class="merit-icon">✏️</span><span>ひらがな・カタカナの<strong>なぞり書き</strong>で、楽しく文字を覚えられます</span></div>
+    <div class="merit-item"><span class="merit-icon">📚</span><span>絵本のキャラクター「ポノ」と一緒に遊ぶ、<strong>知育コンテンツ</strong>です</span></div>
+    <div class="merit-item"><span class="merit-icon">🔓</span><span>絵本を購入すると、<strong>さらに多くのゲームが解放</strong>されます</span></div>
+    <div class="merit-item"><span class="merit-icon">📵</span><span>一度読み込んだら、<strong>オフラインでも遊べます</strong>（Wi-Fi不要）</span></div>
+  </div>
+</div>
+
+<!-- ホーム画面への追加 -->
 <div class="section">
   <h2>📱 ホーム画面への追加方法</h2>
   <p>このアプリは<strong class="important">「ホーム画面に追加」してからご利用ください。</strong><br>
@@ -61,7 +131,8 @@ li { margin-bottom: 6px; }
     <div class="device-title"><img src="assets/images/Logo/Apple_logo_black.svg.png" alt="Apple"> iPhone / iPad（Safari）</div>
     <ol>
       <li>Safariで このページ を開きます</li>
-      <li>画面下の <strong>共有ボタン（□↑）</strong> をタップ</li>
+      <li>画面右下の <strong>「…」（3つのドット）</strong> をタップ</li>
+      <li><strong>「共有」</strong>をタップ</li>
       <li><strong>「ホーム画面に追加」</strong>をタップ</li>
       <li>右上の <strong>「追加」</strong>をタップ</li>
       <li>ホーム画面にポノのアイコンが追加されます</li>
@@ -80,6 +151,7 @@ li { margin-bottom: 6px; }
   </div>
 </div>
 
+<!-- よくある質問 -->
 <div class="section">
   <h2>❓ よくある質問</h2>
 
@@ -103,12 +175,6 @@ li { margin-bottom: 6px; }
 
   <div class="faq-q">Q. 通信量はかかりますか？</div>
   <div class="faq-a">初回アクセス時にデータをダウンロードしますが、以降はオフラインでもほとんどのゲームが遊べます。</div>
-</div>
-
-<div class="section">
-  <h2>📬 お問い合わせ</h2>
-  <p>不具合やご要望がございましたら、以下よりお知らせください。</p>
-  <p style="margin-top:8px;"><a href="message/index.html" style="color:#F2915A; font-weight:900;">📖 作者より（ネモ先生のひとりごと）</a></p>
 </div>
 
 </body>
