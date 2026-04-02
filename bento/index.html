@@ -116,25 +116,25 @@ html, body {
   min-height: 0;
 }
 
-/* ── Plastic bento dividers ── */
+/* ── Plastic bento dividers (色はJSでapplyBentoColorから設定) ── */
 .bento-divider-v {
-  width: 4px;
-  background: linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
-  border-radius: 2px;
+  width: 6px;
+  background: var(--div-bg, linear-gradient(180deg, #D4A76A, #B8843E));
+  border-radius: 3px;
   box-shadow:
     1px 0 1px rgba(255,255,255,0.45) inset,
     -1px 0 1px rgba(0,0,0,0.15) inset,
-    2px 0 4px rgba(139,69,19,0.18);
+    2px 0 4px rgba(0,0,0,0.12);
   flex-shrink: 0;
 }
 .bento-divider-h {
-  height: 4px;
-  background: linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
-  border-radius: 2px;
+  height: 6px;
+  background: var(--div-bg, linear-gradient(90deg, #D4A76A, #B8843E));
+  border-radius: 3px;
   box-shadow:
     0 1px 1px rgba(255,255,255,0.45) inset,
     0 -1px 1px rgba(0,0,0,0.15) inset,
-    0 2px 4px rgba(139,69,19,0.18);
+    0 2px 4px rgba(0,0,0,0.12);
   grid-column: 1 / -1;
 }
 
@@ -167,8 +167,8 @@ html, body {
 /* おかずエリア（右2/3・2列×2行 with plastic dividers） */
 .bento-okazu {
   display: grid;
-  grid-template-columns: 1fr 4px 1fr;
-  grid-template-rows: 1fr 4px 1fr;
+  grid-template-columns: 1fr 6px 1fr;
+  grid-template-rows: 1fr 6px 1fr;
   gap: 0;
   flex: 1;
   min-height: 0;
@@ -176,21 +176,21 @@ html, body {
 /* Okazu grid dividers (injected via JS) */
 .bento-okazu .okazu-div-v {
   grid-column: 2; grid-row: 1 / -1;
-  background: linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
-  border-radius: 2px;
+  background: var(--div-bg, linear-gradient(180deg, #D4A76A, #B8843E));
+  border-radius: 3px;
   box-shadow:
     1px 0 1px rgba(255,255,255,0.45) inset,
     -1px 0 1px rgba(0,0,0,0.15) inset,
-    2px 0 4px rgba(139,69,19,0.18);
+    2px 0 4px rgba(0,0,0,0.12);
 }
 .bento-okazu .okazu-div-h {
   grid-column: 1 / -1; grid-row: 2;
-  background: linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
-  border-radius: 2px;
+  background: var(--div-bg, linear-gradient(90deg, #D4A76A, #B8843E));
+  border-radius: 3px;
   box-shadow:
     0 1px 1px rgba(255,255,255,0.45) inset,
     0 -1px 1px rgba(0,0,0,0.15) inset,
-    0 2px 4px rgba(139,69,19,0.18);
+    0 2px 4px rgba(0,0,0,0.12);
 }
 .bento-slot {
   display: flex;
@@ -340,8 +340,8 @@ html, body {
 }
 .complete-bento .cb-okazu {
   display: grid;
-  grid-template-columns: 1fr 4px 1fr;
-  grid-template-rows: 1fr 4px 1fr;
+  grid-template-columns: 1fr 6px 1fr;
+  grid-template-rows: 1fr 6px 1fr;
   gap: 0;
   flex: 1;
 }
@@ -481,12 +481,7 @@ const RICE = [
   { img: P+'rice_goma.png',      name: 'ごまごはん' },
   { img: P+'rice_furikake.png',  name: 'ふりかけごはん' },
 ];
-const RICE_SMALL = [
-  { img: P+'gohan_shiro.png',    name: 'しろごはん' },
-  { img: P+'gohan_furikake.png', name: 'ふりかけごはん' },
-  { img: P+'onigiri_ume.png',    name: 'うめおにぎり' },
-  { img: P+'onigiri.png',        name: 'おにぎり' },
-];
+const RICE_SMALL = [];
 
 const OKAZU_MEAT = [
   { img: P+'tako_wiener2.png',  name: 'タコウインナー', cat: 'meat' },
@@ -855,11 +850,8 @@ function applyBentoColor() {
     }
     if (box) { box.style.background = bg; box.style.borderColor = border; }
     if (cbox) { cbox.style.background = bg; cbox.style.borderColor = border; }
-    // 仕切りの色も統一
-    document.querySelectorAll('.bento-divider-v, .bento-divider-h, .okazu-div-v, .okazu-div-h').forEach(el => {
-      el.style.background = `linear-gradient(180deg, ${div1}, ${div2})`;
-      el.style.boxShadow = `inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.1)`;
-    });
+    // 仕切りの色も統一（CSS変数で一括制御）
+    document.documentElement.style.setProperty('--div-bg', `linear-gradient(180deg, ${div1}, ${div2})`);
   } catch {}
 }
 
