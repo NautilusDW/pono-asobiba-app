@@ -348,11 +348,12 @@ html, body {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .complete-card {
   background: #fff; border-radius: var(--radius);
-  padding: 16px 16px 14px; text-align: center;
-  max-width: 420px; width: 90%;
+  padding: 10px 14px; text-align: center;
+  max-width: 400px; width: 88%;
+  max-height: 90vh; overflow-y: auto;
   box-shadow: 0 8px 40px rgba(93,78,55,0.3);
   animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 /* 完成お弁当のクローン */
 .complete-bento {
@@ -586,40 +587,20 @@ const FRUITS = [
   { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit', sk: 'y' },
 ];
 
-// ===== Stages =====
+// ===== Stages（全ステージ: ごはん→おかず4個自由選択→完成） =====
 const STAGES = [
-  {
-    steps: [
-      { type: 'rice', label: 'ごはん', css: 'rice', speech: 'まずは ごはん！' },
-      { type: 'pick', pool: 'meat', count: 2, label: 'おかず', css: 'meat', speech: 'おかずを いれよう！' },
-      { type: 'pick', pool: 'veg',  count: 1, label: 'やさい', css: 'veg', speech: 'やさいも いれてね！' },
-      { type: 'pick', pool: 'fruit',count: 1, label: 'フルーツ', css: 'fruit', speech: 'デザート！' },
-    ]
-  },
-  {
-    steps: [
-      { type: 'rice', label: 'ごはん', css: 'rice', speech: 'ごはんを えらんでね！' },
-      { type: 'free', count: 3, label: 'すきなもの', css: 'free', speech: 'すきなものを いれてね！' },
-    ]
-  },
-  {
-    steps: [
-      { type: 'rice', label: 'ごはん', css: 'rice', speech: 'きょうの ごはんは？' },
-      { type: 'pick', pool: 'meat', count: 2, label: 'おかず', css: 'meat', speech: 'もりもり おかず！' },
-      { type: 'pick', pool: 'veg',  count: 1, label: 'やさい', css: 'veg', speech: 'やさいも だいじ！' },
-      { type: 'pick', pool: 'fruit',count: 1, label: 'フルーツ', css: 'fruit', speech: 'さいごに フルーツ！' },
-    ]
-  },
+  { speech: 'すきなもの いれてね！' },
+  { speech: 'おいしい おべんとう つくろう！' },
+  { speech: 'きょうは なにを いれる？' },
 ];
 
 // お題モード（ステージ3以降、ランダムループ）
 const CHALLENGES = [
-  { speech: 'あかいもの いれてね！', filter: f => f.color === 'red' || f.name.includes('トマト') || f.name.includes('いちご') || f.name.includes('ナポリタン') || f.name.includes('ベーコン'), need: 2 },
-  { speech: 'おにく いっぱい たべたい！', filter: f => f.cat === 'meat', need: 3 },
-  { speech: 'やさいを たくさん！', filter: f => f.cat === 'veg', need: 3 },
-  { speech: 'あまいもの いっぱい！', filter: f => f.cat === 'fruit', need: 3 },
-  { speech: 'なんでも いっぱい！', filter: () => true, need: 4 },
-  { speech: 'あか・きいろ・みどり ぜんぶ いれてね！', filter: () => true, need: 3, balanced: true },
+  { speech: 'すきなものを いっぱい いれてね！', filter: () => true, need: 4 },
+  { speech: 'おにくを たくさん いれてね！', filter: f => f.cat === 'meat', need: 3 },
+  { speech: 'やさいを たくさん いれてね！', filter: f => f.cat === 'veg', need: 3 },
+  { speech: 'フルーツ たくさん いれてね！', filter: f => f.cat === 'fruit', need: 3 },
+  { speech: 'あか・きいろ・みどり ぜんぶ いれてね！', filter: () => true, need: 4, balanced: true },
   { speech: 'あかの たべものを いれてね！', filter: f => f.sk === 'r', need: 2 },
   { speech: 'きいろの たべものを いれてね！', filter: f => f.sk === 'y', need: 2 },
   { speech: 'みどりの たべものを いれてね！', filter: f => f.sk === 'g', need: 2 },
@@ -695,38 +676,58 @@ function loadStage() {
 }
 
 function loadStep() {
-  const stage = STAGES[stageIdx];
-  if (stepIdx >= stage.steps.length) { stageComplete(); return; }
-  const step = stage.steps[stepIdx];
-  pickedInStep = 0;
-  setSpeech(step.speech);
-  setSpeech(step.speech);
-
-  const tray = document.getElementById('food-tray');
-  tray.innerHTML = '';
-
-  if (step.type === 'rice') {
-    shuffle([...RICE, ...RICE_SMALL]).slice(0, 6).forEach(r => {
+  if (stepIdx === 0) {
+    // ステップ1: ごはん選択
+    setSpeech('まずは ごはん！');
+    const tray = document.getElementById('food-tray');
+    tray.innerHTML = '';
+    shuffle([...RICE]).slice(0, 6).forEach(r => {
       const item = mkItem(r);
       item.addEventListener('pointerdown', e => { e.preventDefault(); onRiceTap(item, r); });
       tray.appendChild(item);
     });
-  } else if (step.type === 'free') {
-    shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedIds.has(fid(f)))).slice(0, 6).forEach(f => {
-      const item = mkItem(f);
-      item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
-      tray.appendChild(item);
-    });
+  } else if (stepIdx === 1) {
+    // ステップ2: おかず4個を自由選択
+    const stage = STAGES[stageIdx];
+    setSpeech(stage ? stage.speech : 'すきなもの いれてね！');
+    loadFreeOkazu();
   } else {
-    const pools = { meat: OKAZU_MEAT, veg: OKAZU_VEG, fruit: FRUITS };
-    const correct = shuffle(pools[step.pool].filter(f => !usedIds.has(fid(f))));
-    const others = shuffle([...OKAZU_MEAT,...OKAZU_VEG,...FRUITS].filter(f => f.cat !== step.pool && !usedIds.has(fid(f))));
-    shuffle([...correct.slice(0, 3), ...others.slice(0, 3)]).slice(0, 6).forEach(f => {
-      const item = mkItem(f);
-      item.addEventListener('pointerdown', e => { e.preventDefault(); onOkazuTap(item, f, step); });
-      tray.appendChild(item);
-    });
+    stageComplete();
   }
+}
+
+function loadFreeOkazu() {
+  const tray = document.getElementById('food-tray');
+  tray.innerHTML = '';
+  const all = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedIds.has(fid(f)))).slice(0, 6);
+  all.forEach(f => {
+    const item = mkItem(f);
+    item.addEventListener('pointerdown', e => { e.preventDefault(); onFreeOkazuTap(item, f); });
+    tray.appendChild(item);
+  });
+}
+
+function onFreeOkazuTap(el, food) {
+  if (el.classList.contains('used')) return;
+  playPop();
+  el.classList.add('correct'); usedIds.add(fid(food)); if (food.sk) bentoSkColors.push(food.sk);
+  const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
+  flyFood(el, slot, food.img || food.emoji, () => {
+    if (okazuFillCount < okazuSlots.length) {
+      const n = foodNode(food); okazuSlots[okazuFillCount].innerHTML = '';
+      okazuSlots[okazuFillCount].appendChild(n); okazuSlots[okazuFillCount].classList.add('filled'); okazuFillCount++;
+    }
+  });
+  setTimeout(() => {
+    el.classList.add('used'); playCorrect(); setPono(true);
+    setSpeech(['やったー！','いいね！','おいしそう！','すごい！'][Math.floor(Math.random()*4)]);
+    if (okazuFillCount >= 4) {
+      stepIdx = 2;
+      setTimeout(loadStep, 500);
+    } else {
+      setTimeout(loadFreeOkazu, 400);
+    }
+  }, 400);
 }
 
 function mkItem(f) {
@@ -748,31 +749,7 @@ function onRiceTap(el, rice) {
   setTimeout(() => { el.classList.add('used'); playCorrect(); setPono(true); setSpeech('おいしそう！'); stepIdx++; setTimeout(loadStep, 500); }, 400);
 }
 
-function onOkazuTap(el, food, step) {
-  if (el.classList.contains('used')) return;
-  playPop();
-  if (step.type === 'free' || food.cat === step.pool) {
-    el.classList.add('correct'); usedIds.add(fid(food)); if (food.sk) bentoSkColors.push(food.sk);
-    const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
-    flyFood(el, slot, food.img || food.emoji, () => {
-      if (okazuFillCount < okazuSlots.length) {
-        const n = foodNode(food); okazuSlots[okazuFillCount].innerHTML = '';
-        okazuSlots[okazuFillCount].appendChild(n); okazuSlots[okazuFillCount].classList.add('filled'); okazuFillCount++;
-      }
-    });
-    setTimeout(() => {
-      el.classList.add('used'); playCorrect(); setPono(true);
-      setSpeech(['やったー！','いいね！','おいしそう！','すごい！'][Math.floor(Math.random()*4)]);
-      pickedInStep++;
-      if (pickedInStep >= (step.count || 1)) { stepIdx++; setTimeout(loadStep, 500); }
-    }, 400);
-  } else {
-    el.classList.add('wrong'); playWrong();
-    const cn = { meat:'おかず', veg:'やさい', fruit:'フルーツ' };
-    showToast('これは ' + (cn[step.pool]||'') + ' じゃないよ〜');
-    setTimeout(() => el.classList.remove('wrong'), 400);
-  }
-}
+// onOkazuTap removed — replaced by onFreeOkazuTap above
 
 function flyFood(from, to, src, cb) {
   const fr = from.getBoundingClientRect(), tr = to.getBoundingClientRect();
