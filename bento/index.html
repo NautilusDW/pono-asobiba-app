@@ -423,14 +423,20 @@ html, body {
 }
 .complete-pono img { width: 32px; height: 32px; object-fit: contain; }
 .complete-pono-msg { font-size: 0.72rem; font-weight: 900; color: var(--text); }
-.complete-btn {
-  padding: 10px 28px; border: none; border-radius: 50px;
-  background: linear-gradient(135deg, #60A5FA, #818CF8);
-  color: #fff; font-family: inherit; font-size: 0.9rem; font-weight: 900;
-  cursor: pointer; box-shadow: 0 4px 14px rgba(96,165,250,0.4);
-  margin-top: 2px;
+.complete-card { position: relative; }
+.complete-close {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 32px; height: 32px;
+  border: none; border-radius: 50%;
+  background: rgba(93,78,55,0.12);
+  color: var(--text);
+  font-size: 1.2rem; font-weight: 900;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
 }
-.complete-btn:active { transform: scale(0.95); }
+.complete-close:active { transform: scale(0.9); background: rgba(93,78,55,0.2); }
 
 /* ===== Wrong toast ===== */
 .wrong-toast {
@@ -505,6 +511,7 @@ html, body {
 
 <div class="complete-overlay hidden" id="complete-overlay">
   <div class="complete-card">
+    <button class="complete-close" id="complete-btn">&times;</button>
     <div class="complete-title" id="complete-title">🎉 おべんとう かんせい！</div>
     <div class="complete-bento" id="complete-bento"></div>
     <div class="balance-row" id="balance-row"></div>
@@ -513,7 +520,6 @@ html, body {
       <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
       <div class="complete-pono-msg" id="complete-msg">おいしそう！ありがとう！</div>
     </div>
-    <button class="complete-btn" id="complete-btn">つぎへ →</button>
   </div>
 </div>
 
