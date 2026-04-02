@@ -3285,40 +3285,46 @@
     });
 
     // ─── Init ──────────────────────────────────────────────
+    let _pixiReady = false;
     app.ticker.addOnce(async () => {
       resizePixiApp();
       makeBackground();
       drawSand();
       makeSeaweeds();
       await initRocks();
-
-      // イントロ画面の制御
-      var introEl = document.getElementById('intro-overlay');
-      function hideIntro() {
-        introEl.classList.add('hidden');
-        setTimeout(function() { introEl.style.display = 'none'; }, 400);
-      }
-      // 「うみを みる」→ 直接アクアリウムへ（前回の設定 or デフォルト）
-      let introHandled = false;
-      document.getElementById('introStartBtn').addEventListener('click', function() {
-        if (introHandled) return;
-        introHandled = true;
-        hideIntro();
-        quickStartAquarium();
-      });
-      // 「おえかき設定」→ 選択画面へ
-      document.getElementById('introConfigBtn').addEventListener('click', function() {
-        if (introHandled) return;
-        introHandled = true;
-        hideIntro();
-        showSelectionScreen();
-      });
-      // おえかきがない場合はボタンを非表示
-      try {
-        var drawings = JSON.parse(localStorage.getItem('pono_drawings') || '[]');
-        if (drawings.length === 0) document.getElementById('introConfigBtn').style.display = 'none';
-      } catch(e) {}
+      _pixiReady = true;
     });
+
+    // イントロ画面の制御（Pixi初期化を待たずにボタンを即登録）
+    var introEl = document.getElementById('intro-overlay');
+    function hideIntro() {
+      introEl.classList.add('hidden');
+      setTimeout(function() { introEl.style.display = 'none'; }, 400);
+    }
+
+    async function waitPixiReady() {
+      while (!_pixiReady) await new Promise(r => setTimeout(r, 50));
+    }
+
+    let introHandled = false;
+    document.getElementById('introStartBtn').addEventListener('click', async function() {
+      if (introHandled) return;
+      introHandled = true;
+      hideIntro();
+      await waitPixiReady();
+      quickStartAquarium();
+    });
+    document.getElementById('introConfigBtn').addEventListener('click', async function() {
+      if (introHandled) return;
+      introHandled = true;
+      hideIntro();
+      await waitPixiReady();
+      showSelectionScreen();
+    });
+    try {
+      var drawings = JSON.parse(localStorage.getItem('pono_drawings') || '[]');
+      if (drawings.length === 0) document.getElementById('introConfigBtn').style.display = 'none';
+    } catch(e) {}
 
   })();
   </script>
