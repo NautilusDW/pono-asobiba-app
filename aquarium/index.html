@@ -1664,7 +1664,16 @@
         document.getElementById('selection-screen').classList.add('hidden');
         if (_rocksReady) _rocksReady.then(() => {
           addSelectedCreatures();
-          initTutorial();
+          if (creatures.length > 0) {
+            initTutorial();
+          } else {
+            const emptyMsg = document.getElementById('emptySeaMsg');
+            if (emptyMsg) {
+              emptyMsg.style.display = 'flex';
+              emptyMsg.addEventListener('pointerdown', () => { emptyMsg.style.display = 'none'; }, { once: true });
+              setTimeout(() => { emptyMsg.style.display = 'none'; }, 8000);
+            }
+          }
         });
         return;
       }
@@ -1778,12 +1787,10 @@
       const emptyMsg = document.getElementById('emptySeaMsg');
       if (!hasAnyCreature && emptyMsg) {
         emptyMsg.style.display = 'flex';
-        // タップで消す
         emptyMsg.addEventListener('pointerdown', () => { emptyMsg.style.display = 'none'; }, { once: true });
-        // 8秒後に自動で消す
         setTimeout(() => { emptyMsg.style.display = 'none'; }, 8000);
       }
-      initTutorial();
+      if (hasAnyCreature) initTutorial();
     });
 
     async function initAllCreatures() {
