@@ -283,6 +283,51 @@ html, body {
   75%     { transform: translateX(5px); }
 }
 
+/* ===== 三色ドット ===== */
+.food-item { position: relative; }
+.sk-dot {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.8);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.sk-dot.sk-r { background: #EF4444; }
+.sk-dot.sk-y { background: #EAB308; }
+.sk-dot.sk-g { background: #22C55E; }
+
+/* ===== 三色バランス表示 ===== */
+.balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.balance-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.balance-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.1);
+}
+.balance-dot.b-r { background: #EF4444; }
+.balance-dot.b-y { background: #EAB308; }
+.balance-dot.b-g { background: #22C55E; }
+.balance-dot.empty { background: #E5E5E5; }
+.balance-msg {
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--primary);
+}
+
 /* ===== Flying food ===== */
 .food-flying {
   position: fixed; z-index: 50; pointer-events: none;
@@ -461,6 +506,8 @@ html, body {
   <div class="complete-card">
     <div class="complete-title" id="complete-title">🎉 おべんとう かんせい！</div>
     <div class="complete-bento" id="complete-bento"></div>
+    <div class="balance-row" id="balance-row"></div>
+    <div class="balance-msg" id="balance-msg"></div>
     <div class="complete-pono">
       <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
       <div class="complete-pono-msg" id="complete-msg">おいしそう！ありがとう！</div>
@@ -476,66 +523,67 @@ html, body {
 const P = '../assets/images/Bento_parts/';
 
 // ===== Food data =====
+// 三色食品群: sk='r'(赤:からだをつくる), 'y'(黄:ちからになる), 'g'(緑:からだのちょうしをととのえる)
 const RICE = [
-  { img: P+'rice_umeboshi.png',  name: 'うめぼしごはん' },
-  { img: P+'rice_goma.png',      name: 'ごまごはん' },
-  { img: P+'rice_furikake.png',  name: 'ふりかけごはん' },
+  { img: P+'rice_umeboshi.png',  name: 'うめぼしごはん', sk: 'y' },
+  { img: P+'rice_goma.png',      name: 'ごまごはん',     sk: 'y' },
+  { img: P+'rice_furikake.png',  name: 'ふりかけごはん', sk: 'y' },
 ];
 const RICE_SMALL = [];
 
 const OKAZU_MEAT = [
-  { img: P+'tako_wiener2.png',  name: 'タコウインナー', cat: 'meat' },
-  { img: P+'hamburg2.png',     name: 'ハンバーグ',     cat: 'meat' },
-  { img: P+'karaage2.png',     name: 'からあげ',       cat: 'meat' },
-  { img: P+'ebi_fry2.png',     name: 'エビフライ',     cat: 'meat' },
-  { img: P+'fries2.png',       name: 'フライドポテト', cat: 'meat' },
-  { img: P+'tamagoyaki2.png',  name: 'たまごやき',     cat: 'meat' },
-  { img: P+'meatball2.png',    name: 'ミートボール',   cat: 'meat' },
-  { img: P+'korokke2.png',     name: 'コロッケ',       cat: 'meat' },
-  { img: P+'napolitan2.png',   name: 'ナポリタン',     cat: 'meat' },
-  { img: P+'yakizake2.png',    name: 'やきざけ',       cat: 'meat' },
-  { img: P+'gyoza.png',        name: 'ぎょうざ',       cat: 'meat' },
-  { img: P+'menchikatsu.png',  name: 'メンチカツ',     cat: 'meat' },
-  { img: P+'harumaki.png',     name: 'はるまき',       cat: 'meat' },
-  { img: P+'bacon_maki.png',   name: 'ベーコンまき',   cat: 'meat' },
-  { img: P+'kamaboko.png',     name: 'かまぼこ',       cat: 'meat' },
-  { img: P+'bacon_aspara.png', name: 'ベーコンアスパラ',cat: 'meat' },
-  { img: P+'cheese_korokke.png',name:'チーズコロッケ',  cat: 'meat' },
-  { img: P+'okonomiyaki.png',  name: 'おこのみやき',   cat: 'meat' },
-  { img: P+'karaage3.png',     name: 'からあげ',       cat: 'meat' },
+  { img: P+'tako_wiener2.png',  name: 'タコウインナー', cat: 'meat', sk: 'r' },
+  { img: P+'hamburg2.png',     name: 'ハンバーグ',     cat: 'meat', sk: 'r' },
+  { img: P+'karaage2.png',     name: 'からあげ',       cat: 'meat', sk: 'r' },
+  { img: P+'ebi_fry2.png',     name: 'エビフライ',     cat: 'meat', sk: 'r' },
+  { img: P+'fries2.png',       name: 'フライドポテト', cat: 'meat', sk: 'y' },
+  { img: P+'tamagoyaki2.png',  name: 'たまごやき',     cat: 'meat', sk: 'r' },
+  { img: P+'meatball2.png',    name: 'ミートボール',   cat: 'meat', sk: 'r' },
+  { img: P+'korokke2.png',     name: 'コロッケ',       cat: 'meat', sk: 'y' },
+  { img: P+'napolitan2.png',   name: 'ナポリタン',     cat: 'meat', sk: 'y' },
+  { img: P+'yakizake2.png',    name: 'やきざけ',       cat: 'meat', sk: 'r' },
+  { img: P+'gyoza.png',        name: 'ぎょうざ',       cat: 'meat', sk: 'r' },
+  { img: P+'menchikatsu.png',  name: 'メンチカツ',     cat: 'meat', sk: 'r' },
+  { img: P+'harumaki.png',     name: 'はるまき',       cat: 'meat', sk: 'y' },
+  { img: P+'bacon_maki.png',   name: 'ベーコンまき',   cat: 'meat', sk: 'r' },
+  { img: P+'kamaboko.png',     name: 'かまぼこ',       cat: 'meat', sk: 'r' },
+  { img: P+'bacon_aspara.png', name: 'ベーコンアスパラ',cat: 'meat', sk: 'r' },
+  { img: P+'cheese_korokke.png',name:'チーズコロッケ',  cat: 'meat', sk: 'r' },
+  { img: P+'okonomiyaki.png',  name: 'おこのみやき',   cat: 'meat', sk: 'y' },
+  { img: P+'karaage3.png',     name: 'からあげ',       cat: 'meat', sk: 'r' },
 ];
 
 const OKAZU_VEG = [
-  { img: P+'broccoli2.png',      name: 'ブロッコリー',       cat: 'veg' },
-  { img: P+'mini_tomato2.png',   name: 'ミニトマト',         cat: 'veg' },
-  { img: P+'corn_spinach2.png',  name: 'コーンほうれんそう', cat: 'veg' },
-  { img: P+'kinpira2.png',       name: 'きんぴらごぼう',     cat: 'veg' },
-  { img: P+'edamame2.png',       name: 'えだまめ',           cat: 'veg' },
-  { img: P+'potato_salad2.png',  name: 'ポテトサラダ',       cat: 'veg' },
-  { img: P+'ninjin_ingen2.png',  name: 'にんじんいんげん',   cat: 'veg' },
-  { img: P+'broccoli_corn2.png', name: 'ブロッコリーコーン', cat: 'veg' },
-  { img: P+'nasu_nimono.png',    name: 'なすのにもの',       cat: 'veg' },
-  { img: P+'hijiki_nimono.png',  name: 'ひじきのにもの',     cat: 'veg' },
-  { img: P+'chikuzenni.png',     name: 'ちくぜんに',         cat: 'veg' },
-  { img: P+'kinoko_itame.png',   name: 'きのこいため',       cat: 'veg' },
-  { img: P+'onsalad.png',        name: 'おんやさい',         cat: 'veg' },
-  { img: P+'corn_butter.png',    name: 'コーンバター',       cat: 'veg' },
-  { img: P+'ham_salad.png',      name: 'ハムサラダ',         cat: 'veg' },
-  { img: P+'kamaboko_pink.png',  name: 'かまぼこ',           cat: 'veg' },
+  { img: P+'broccoli2.png',      name: 'ブロッコリー',       cat: 'veg', sk: 'g' },
+  { img: P+'mini_tomato2.png',   name: 'ミニトマト',         cat: 'veg', sk: 'g' },
+  { img: P+'corn_spinach2.png',  name: 'コーンほうれんそう', cat: 'veg', sk: 'g' },
+  { img: P+'kinpira2.png',       name: 'きんぴらごぼう',     cat: 'veg', sk: 'g' },
+  { img: P+'edamame2.png',       name: 'えだまめ',           cat: 'veg', sk: 'g' },
+  { img: P+'potato_salad2.png',  name: 'ポテトサラダ',       cat: 'veg', sk: 'g' },
+  { img: P+'ninjin_ingen2.png',  name: 'にんじんいんげん',   cat: 'veg', sk: 'g' },
+  { img: P+'broccoli_corn2.png', name: 'ブロッコリーコーン', cat: 'veg', sk: 'g' },
+  { img: P+'nasu_nimono.png',    name: 'なすのにもの',       cat: 'veg', sk: 'g' },
+  { img: P+'hijiki_nimono.png',  name: 'ひじきのにもの',     cat: 'veg', sk: 'g' },
+  { img: P+'chikuzenni.png',     name: 'ちくぜんに',         cat: 'veg', sk: 'g' },
+  { img: P+'kinoko_itame.png',   name: 'きのこいため',       cat: 'veg', sk: 'g' },
+  { img: P+'onsalad.png',        name: 'おんやさい',         cat: 'veg', sk: 'g' },
+  { img: P+'corn_butter.png',    name: 'コーンバター',       cat: 'veg', sk: 'g' },
+  { img: P+'ham_salad.png',      name: 'ハムサラダ',         cat: 'veg', sk: 'g' },
+  { img: P+'kamaboko_pink.png',  name: 'かまぼこ',           cat: 'veg', sk: 'r' },
 ];
 
 const FRUITS = [
-  { img: P+'ichigo2.png',    name: 'いちご',       cat: 'fruit' },
-  { img: P+'mikan2.png',     name: 'みかん',       cat: 'fruit' },
-  { img: P+'budou2.png',     name: 'ぶどう',       cat: 'fruit' },
-  { img: P+'ringo2.png',     name: 'りんご',       cat: 'fruit' },
-  { img: P+'banana2.png',    name: 'バナナ',       cat: 'fruit' },
-  { img: P+'jelly.png',      name: 'ゼリー',       cat: 'fruit' },
-  { img: P+'pudding2.png',   name: 'プリン',       cat: 'fruit' },
-  { img: P+'melon2.png',     name: 'メロン',       cat: 'fruit' },
-  { img: P+'momo.png',       name: 'もも',         cat: 'fruit' },
-  { img: P+'pineapple.png',  name: 'パイナップル', cat: 'fruit' },
-  { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit' },
+  { img: P+'ichigo2.png',    name: 'いちご',       cat: 'fruit', sk: 'g' },
+  { img: P+'mikan2.png',     name: 'みかん',       cat: 'fruit', sk: 'g' },
+  { img: P+'budou2.png',     name: 'ぶどう',       cat: 'fruit', sk: 'g' },
+  { img: P+'ringo2.png',     name: 'りんご',       cat: 'fruit', sk: 'g' },
+  { img: P+'banana2.png',    name: 'バナナ',       cat: 'fruit', sk: 'y' },
+  { img: P+'jelly.png',      name: 'ゼリー',       cat: 'fruit', sk: 'y' },
+  { img: P+'pudding2.png',   name: 'プリン',       cat: 'fruit', sk: 'y' },
+  { img: P+'melon2.png',     name: 'メロン',       cat: 'fruit', sk: 'g' },
+  { img: P+'momo.png',       name: 'もも',         cat: 'fruit', sk: 'g' },
+  { img: P+'pineapple.png',  name: 'パイナップル', cat: 'fruit', sk: 'g' },
+  { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit', sk: 'y' },
 ];
 
 // ===== Stages =====
@@ -571,6 +619,10 @@ const CHALLENGES = [
   { speech: 'やさいを たくさん！', filter: f => f.cat === 'veg', need: 3 },
   { speech: 'あまいもの いっぱい！', filter: f => f.cat === 'fruit', need: 3 },
   { speech: 'なんでも いっぱい！', filter: () => true, need: 4 },
+  { speech: 'あか・きいろ・みどり ぜんぶ いれてね！', filter: () => true, need: 3, balanced: true },
+  { speech: 'あかの たべものを いれてね！', filter: f => f.sk === 'r', need: 2 },
+  { speech: 'きいろの たべものを いれてね！', filter: f => f.sk === 'y', need: 2 },
+  { speech: 'みどりの たべものを いれてね！', filter: f => f.sk === 'g', need: 2 },
 ];
 let challengePool = [];
 let inChallengeMode = false;
@@ -580,6 +632,7 @@ let challengeCorrect = 0;
 // ===== State =====
 let stageIdx = 0, stepIdx = 0, okazuSlots = [], okazuFillCount = 0, pickedInStep = 0;
 let usedIds = new Set();
+let bentoSkColors = []; // 入れた食材の三色を記録
 
 // ===== Helpers =====
 function shuffle(a) {
@@ -612,7 +665,7 @@ function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.class
 
 // ===== Game =====
 function loadStage() {
-  stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; usedIds.clear();
+  stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; usedIds.clear(); bentoSkColors = ['y'];
 
   // Rebuild bento-inner with vertical divider between rice and okazu
   const bentoInner = document.getElementById('bento-inner');
@@ -679,7 +732,8 @@ function loadStep() {
 function mkItem(f) {
   const d = document.createElement('div');
   d.className = 'food-item';
-  d.innerHTML = `${foodVis(f)}<span class="food-name">${f.name}</span>`;
+  const skDot = f.sk ? `<span class="sk-dot sk-${f.sk}"></span>` : '';
+  d.innerHTML = `${skDot}${foodVis(f)}<span class="food-name">${f.name}</span>`;
   return d;
 }
 
@@ -698,7 +752,7 @@ function onOkazuTap(el, food, step) {
   if (el.classList.contains('used')) return;
   playPop();
   if (step.type === 'free' || food.cat === step.pool) {
-    el.classList.add('correct'); usedIds.add(fid(food));
+    el.classList.add('correct'); usedIds.add(fid(food)); if (food.sk) bentoSkColors.push(food.sk);
     const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
     flyFood(el, slot, food.img || food.emoji, () => {
       if (okazuFillCount < okazuSlots.length) {
@@ -800,6 +854,29 @@ function stageComplete() {
   cb.appendChild(inner);
   // Apply profile-based color to complete bento too
   applyBentoColor();
+
+  // 三色バランス表示
+  const rCount = bentoSkColors.filter(c => c === 'r').length;
+  const yCount = bentoSkColors.filter(c => c === 'y').length;
+  const gCount = bentoSkColors.filter(c => c === 'g').length;
+  const balRow = document.getElementById('balance-row');
+  const balMsg = document.getElementById('balance-msg');
+  const dot = (cls, n) => Array(Math.min(n, 3)).fill(`<span class="balance-dot ${cls}"></span>`).join('');
+  const emptyDot = (n) => Array(Math.max(0, n)).fill('<span class="balance-dot empty"></span>').join('');
+  balRow.innerHTML =
+    `<div class="balance-item">${dot('b-r', rCount)}${emptyDot(1 - Math.min(rCount, 1))} あか</div>` +
+    `<div class="balance-item">${dot('b-y', yCount)}${emptyDot(1 - Math.min(yCount, 1))} きいろ</div>` +
+    `<div class="balance-item">${dot('b-g', gCount)}${emptyDot(1 - Math.min(gCount, 1))} みどり</div>`;
+  if (rCount > 0 && yCount > 0 && gCount > 0) {
+    balMsg.textContent = '🌟 バランス ばっちり！';
+  } else {
+    const missing = [];
+    if (rCount === 0) missing.push('あか');
+    if (yCount === 0) missing.push('きいろ');
+    if (gCount === 0) missing.push('みどり');
+    balMsg.textContent = missing.join('と') + 'も いれると もっと いいね！';
+  }
+
   document.getElementById('complete-btn').onclick = () => {
     document.getElementById('complete-overlay').classList.add('hidden');
     if (inChallengeMode) {
@@ -861,7 +938,7 @@ function loadChallengeStage() {
   currentChallenge = challengePool.pop();
   challengeCorrect = 0;
   okazuFillCount = 0;
-  usedIds.clear();
+  usedIds.clear(); bentoSkColors = ['y'];
   stepIdx = 0;
 
   // Build bento
@@ -932,7 +1009,7 @@ function loadChallengeOkazu() {
       if (item.classList.contains('used')) return;
       playPop();
       if (currentChallenge.filter(f)) {
-        item.classList.add('correct'); usedIds.add(fid(f));
+        item.classList.add('correct'); usedIds.add(fid(f)); if (f.sk) bentoSkColors.push(f.sk);
         const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
         flyFood(item, slot, f.img || f.emoji, () => {
           if (okazuFillCount < okazuSlots.length) {
@@ -944,7 +1021,10 @@ function loadChallengeOkazu() {
           item.classList.add('used'); playCorrect(); setPono(true);
           setSpeech(['やったー！','いいね！','おいしそう！','すごい！'][Math.floor(Math.random()*4)]);
           challengeCorrect++;
-          if (challengeCorrect >= currentChallenge.need) {
+          const balOk = currentChallenge.balanced
+            ? (bentoSkColors.includes('r') && bentoSkColors.includes('y') && bentoSkColors.includes('g'))
+            : true;
+          if (challengeCorrect >= currentChallenge.need && balOk) {
             setTimeout(stageComplete, 500);
           } else {
             // Refresh tray with new items
