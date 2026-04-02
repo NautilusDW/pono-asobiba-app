@@ -414,6 +414,33 @@
     <div class="tut-hint-text">🍞を おしてから<br>うみを タッチすると<br>エサが おちるよ！</div>
   </div>
 
+  <!-- 生き物がいないときのメッセージ -->
+  <div id="emptySeaMsg" style="
+    display:none; position:fixed; inset:0; z-index:50;
+    pointer-events:none;
+    display:none; align-items:center; justify-content:center;
+  ">
+    <div style="
+      background:rgba(0,20,60,0.75); border:2px solid rgba(56,189,248,0.4);
+      border-radius:24px; padding:28px 24px; max-width:320px; text-align:center;
+      pointer-events:auto; animation: emptySeaFadeIn 0.8s ease;
+    ">
+      <div style="font-size:2.5rem; margin-bottom:12px;">🌊</div>
+      <div style="font-family:'Zen Maru Gothic',sans-serif; font-size:1.1rem; font-weight:900; color:#7DD3FC; margin-bottom:14px; line-height:1.6;">
+        うみに まだ いきものが<br>いないよ…
+      </div>
+      <div style="font-family:'Zen Maru Gothic',sans-serif; font-size:0.82rem; color:#fff; line-height:1.8; opacity:0.9;">
+        いろんな ゲームを あそぶと<br>
+        うみの いきものが もらえるよ！<br>
+        <span style="color:#FFD700; font-weight:900;">たくさん あつめて<br>にぎやかな うみを つくろう！</span>
+      </div>
+      <div style="margin-top:16px; font-size:1.5rem;">🐙🐠🐢🦈🪼</div>
+    </div>
+  </div>
+  <style>
+    @keyframes emptySeaFadeIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <button id="btnFeed">🍞</button>
@@ -1689,11 +1716,13 @@
     const CREATURE_STORE_KEY = 'aquarium_creatures';
     const ALL_CREATURE_TYPES = ['octopus','jellyfish','turtle','fish','submarine','sunfish','shark'];
     let creatureToggles = {};
+    const _savedCreatureData = localStorage.getItem(CREATURE_STORE_KEY);
+    const _isFirstVisit = !_savedCreatureData;
     try {
-      creatureToggles = JSON.parse(localStorage.getItem(CREATURE_STORE_KEY) || '{}');
+      creatureToggles = JSON.parse(_savedCreatureData || '{}');
     } catch(e) {}
-    // Default: all on
-    ALL_CREATURE_TYPES.forEach(t => { if (creatureToggles[t] === undefined) creatureToggles[t] = true; });
+    // Default: first visit = all off, returning = all on
+    ALL_CREATURE_TYPES.forEach(t => { if (creatureToggles[t] === undefined) creatureToggles[t] = !_isFirstVisit; });
 
     function saveCreatureToggles() {
       localStorage.setItem(CREATURE_STORE_KEY, JSON.stringify(creatureToggles));
@@ -1744,6 +1773,16 @@
       }
       saveCreatureToggles();
       addSelectedCreatures();
+      // 生き物が0匹ならメッセージ表示
+      const hasAnyCreature = creatures.length > 0 || chosen.length > 0;
+      const emptyMsg = document.getElementById('emptySeaMsg');
+      if (!hasAnyCreature && emptyMsg) {
+        emptyMsg.style.display = 'flex';
+        // タップで消す
+        emptyMsg.addEventListener('pointerdown', () => { emptyMsg.style.display = 'none'; }, { once: true });
+        // 8秒後に自動で消す
+        setTimeout(() => { emptyMsg.style.display = 'none'; }, 8000);
+      }
       initTutorial();
     });
 

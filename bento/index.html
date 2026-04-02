@@ -104,6 +104,9 @@ html, body {
   display: flex;
   min-height: 0;
 }
+@media (orientation: landscape) and (min-width: 640px) {
+  .bento-box { max-height: 85vh; align-self: center; }
+}
 .bento-inner {
   background:
     repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 12px 12px;
