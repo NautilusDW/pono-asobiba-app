@@ -1649,7 +1649,16 @@
       }
 
       addSelectedCreatures();
-      initTutorial();
+      if (creatures.length > 0) {
+        initTutorial();
+      } else {
+        const emptyMsg = document.getElementById('emptySeaMsg');
+        if (emptyMsg) {
+          emptyMsg.style.display = 'flex';
+          emptyMsg.addEventListener('pointerdown', () => { emptyMsg.style.display = 'none'; }, { once: true });
+          setTimeout(() => { emptyMsg.style.display = 'none'; }, 8000);
+        }
+      }
     }
 
     // ─── Selection screen ───────────────────────────────────
