@@ -300,6 +300,7 @@ function shouldTriggerBonus() {
 }
 
 function startBonusIntro() {
+  bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
   gamePhase = 'bonus_intro';
   bonusIntroTimer = 120; // 2 seconds intro
   // Clear all bodies for bonus
