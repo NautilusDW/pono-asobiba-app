@@ -792,7 +792,7 @@ function stageComplete() {
   document.getElementById('complete-msg').textContent = inChallengeMode
     ? 'おだい クリア！すごい！'
     : (last ? 'つぎは おだいモードだよ！' : 'おいしそう！ありがとう！');
-  document.getElementById('complete-btn').textContent = 'つぎへ →';
+  document.getElementById('complete-btn').innerHTML = '&times;';
 
   // お弁当箱の中身をクローンして完成表示
   const cb = document.getElementById('complete-bento');
