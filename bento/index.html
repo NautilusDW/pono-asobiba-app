@@ -646,7 +646,7 @@ function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.class
 
 // ===== Game =====
 function loadStage() {
-  stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; usedIds.clear(); bentoSkColors = ['y'];
+  stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; okazuPicked = 0; usedIds.clear(); bentoSkColors = ['y'];
 
   // Rebuild bento-inner with vertical divider between rice and okazu
   const bentoInner = document.getElementById('bento-inner');
@@ -707,21 +707,26 @@ function loadFreeOkazu() {
   });
 }
 
+let okazuPicked = 0;
+
 function onFreeOkazuTap(el, food) {
   if (el.classList.contains('used')) return;
   playPop();
   el.classList.add('correct'); usedIds.add(fid(food)); if (food.sk) bentoSkColors.push(food.sk);
-  const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
+  okazuPicked++;
+  const slotIdx = okazuPicked - 1;
+  const slot = okazuSlots[slotIdx] || okazuSlots[okazuSlots.length - 1];
   flyFood(el, slot, food.img || food.emoji, () => {
-    if (okazuFillCount < okazuSlots.length) {
-      const n = foodNode(food); okazuSlots[okazuFillCount].innerHTML = '';
-      okazuSlots[okazuFillCount].appendChild(n); okazuSlots[okazuFillCount].classList.add('filled'); okazuFillCount++;
+    if (slotIdx < okazuSlots.length) {
+      const n = foodNode(food); okazuSlots[slotIdx].innerHTML = '';
+      okazuSlots[slotIdx].appendChild(n); okazuSlots[slotIdx].classList.add('filled');
+      okazuFillCount = Math.max(okazuFillCount, slotIdx + 1);
     }
   });
   setTimeout(() => {
     el.classList.add('used'); playCorrect(); setPono(true);
     setSpeech(['やったー！','いいね！','おいしそう！','すごい！'][Math.floor(Math.random()*4)]);
-    if (okazuFillCount >= 4) {
+    if (okazuPicked >= 4) {
       stepIdx = 2;
       setTimeout(loadStep, 500);
     } else {
@@ -914,7 +919,7 @@ function loadChallengeStage() {
   if (challengePool.length === 0) challengePool = shuffle([...CHALLENGES]);
   currentChallenge = challengePool.pop();
   challengeCorrect = 0;
-  okazuFillCount = 0;
+  okazuFillCount = 0; okazuPicked = 0;
   usedIds.clear(); bentoSkColors = ['y'];
   stepIdx = 0;
 
