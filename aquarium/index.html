@@ -3306,14 +3306,17 @@
         setTimeout(function() { introEl.style.display = 'none'; }, 400);
       }
       // 「うみを みる」→ 直接アクアリウムへ（前回の設定 or デフォルト）
-      document.getElementById('introStartBtn').addEventListener('pointerdown', function(e) {
-        e.preventDefault();
+      let introHandled = false;
+      document.getElementById('introStartBtn').addEventListener('click', function() {
+        if (introHandled) return;
+        introHandled = true;
         hideIntro();
         quickStartAquarium();
       });
       // 「おえかき設定」→ 選択画面へ
-      document.getElementById('introConfigBtn').addEventListener('pointerdown', function(e) {
-        e.preventDefault();
+      document.getElementById('introConfigBtn').addEventListener('click', function() {
+        if (introHandled) return;
+        introHandled = true;
         hideIntro();
         showSelectionScreen();
       });
