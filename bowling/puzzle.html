@@ -65,7 +65,7 @@ function resize() { W = canvas.width = window.innerWidth; H = canvas.height = wi
 
 // ── Background image ──
 const bgImg = new Image();
-bgImg.src = '../assets/images/Bowling/BG/nwon02.png';
+bgImg.src = '../assets/images/Bowling/BG/neon02.png';
 
 // ── Audio (shared) ──
 let audioCtx = null, audioReady = false;
@@ -195,7 +195,7 @@ function computeGrid() {
   CELL_W = 40;
   ROW_H = Math.floor(CELL_W * 0.866);
   GRID_LEFT = Math.floor((W - GRID_COLS * CELL_W) / 2);
-  GRID_TOP = 45;
+  GRID_TOP = 65;
 }
 computeGrid();
 resize();
@@ -690,6 +690,7 @@ function detectFallenMerges() {
 // ── Ball ──
 let ball = null; // { x, y, vx, vy, tier, r }
 let ballTier = 0;
+let nextTier = 0;
 
 function pickBallTier() {
   const r = Math.random();
@@ -1112,6 +1113,72 @@ function drawBallPreview(now) {
   ctx.globalAlpha = 1;
 }
 
+function drawNextPreview() {
+  const nx = 40, ny = GRID_TOP - 15;
+  const r = GRID_PIN_R * 0.8;
+  const s = r * 2;
+  // Label
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath(); ctx.roundRect(nx - r - 8, ny - r - 16, s + 16, s + 28, 8); ctx.fill();
+  ctx.font = '900 10px "Zen Maru Gothic"'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('NEXT', nx, ny - r - 13);
+  // Ball image
+  ctx.globalAlpha = 0.9;
+  ctx.drawImage(tierCanvases[nextTier], nx - r, ny - r, s, s);
+  ctx.globalAlpha = 1;
+}
+
+function drawTutorial(now) {
+  if (shotNumber > 0) return;
+  const bx = W / 2, by = H * 0.88;
+  const half = GRID_PIN_R;
+
+  if (!aiming) {
+    // Step 1: highlight the ball area with greyout
+    const hPad = 60, vPad = 50;
+    const hx = bx - hPad, hy = by - vPad, hw = hPad * 2, hh = vPad * 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    // top
+    ctx.fillRect(0, 0, W, hy);
+    // bottom
+    ctx.fillRect(0, hy + hh, W, H - hy - hh);
+    // left
+    ctx.fillRect(0, hy, hx, hh);
+    // right
+    ctx.fillRect(hx + hw, hy, W - hx - hw, hh);
+    // gold border
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.roundRect(hx, hy, hw, hh, 14); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Text
+    const pulse = 0.6 + Math.sin(now * 0.004) * 0.3;
+    ctx.globalAlpha = pulse;
+    ctx.font = '900 16px "Zen Maru Gothic"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+    ctx.fillText('① ゆびで ひだりみぎに ねらおう！', W / 2, by - vPad - 30);
+    ctx.font = '13px "Zen Maru Gothic"';
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillText('ゆびを はなすと はっしゃ！', W / 2, by - vPad - 12);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  } else {
+    // Step 2: dragging - show encouraging text
+    ctx.globalAlpha = 0.7;
+    ctx.font = '900 15px "Zen Maru Gothic"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#FFD700';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+    ctx.fillText('いいかんじ！ はなすと とぶよ！', W / 2, by - 60);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+}
+
 function drawEffects() {
   let len = rings.length;
   for (let i = len - 1; i >= 0; i--) {
@@ -1152,6 +1219,7 @@ let prevFrameTime = performance.now();
 
 initGrid();
 ballTier = pickBallTier();
+nextTier = pickBallTier();
 
 function loop(now) {
   let elapsed = now - prevFrameTime; prevFrameTime = now;
@@ -1207,7 +1275,8 @@ function loop(now) {
         }
         // Next shot
         refillGrid();
-        ballTier = pickBallTier();
+        ballTier = nextTier;
+        nextTier = pickBallTier();
         gamePhase = 'aim';
         saveHighScore('bowling_puzzle', score);
         combo = 0;
@@ -1248,6 +1317,10 @@ function loop(now) {
   ctx.restore();
 
   drawBallPreview(now);
+  if (gamePhase === 'aim') {
+    drawNextPreview();
+    drawTutorial(now);
+  }
   scoreEl.textContent = score;
 
   requestAnimationFrame(loop);
