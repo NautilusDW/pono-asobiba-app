@@ -63,6 +63,10 @@ const comboEl = document.getElementById('combo');
 let W, H;
 function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; computeGrid(); }
 
+// ── Background image ──
+const bgImg = new Image();
+bgImg.src = '../assets/images/Bowling/BG/nwon02.png';
+
 // ── Audio (shared) ──
 let audioCtx = null, audioReady = false;
 let bonkBuf = null, popBuf = null, launchBuf = null, comboBuf = null, mergeBuf = null, explodeBuf = null;
@@ -883,11 +887,15 @@ canvas.addEventListener('pointercancel', () => { aiming = false; aimAngle = Math
 
 // ── Draw ──
 function drawBg() {
-  ctx.fillStyle = '#1a2a4a';
-  ctx.fillRect(0, 0, W, H);
+  if (bgImg.complete && bgImg.naturalWidth > 0) {
+    ctx.drawImage(bgImg, 0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#1a2a4a';
+    ctx.fillRect(0, 0, W, H);
+  }
   // Grid area background
   const gridBottom = GRID_TOP + GRID_ROWS * ROW_H + CELL_W;
-  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.fillRect(0, 0, W, gridBottom);
   // Separator line
   ctx.globalAlpha = 0.2; ctx.strokeStyle = '#4ECDC4'; ctx.lineWidth = 1;
