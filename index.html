@@ -854,14 +854,6 @@
         </div>
       </a>
 
-      <a href="coloring/index.html" class="card card-coloring">
-        <span class="card-icon">🖍️</span>
-        <div class="card-body">
-          <div class="card-title">ぬりえ</div>
-          <div class="card-desc">いろをぬろう</div>
-        </div>
-      </a>
-
       <a href="aquarium/index.html" class="card card-aquarium">
         <span class="card-icon">🐠</span>
         <div class="card-body">
@@ -899,6 +891,14 @@
       </div>
 
       <!-- 購入者限定コンテンツ -->
+      <a href="coloring/index.html" class="card card-coloring locked" id="card-coloring">
+        <span class="card-icon">🖍️</span>
+        <div class="card-body">
+          <div class="card-title">ぬりえ</div>
+          <div class="card-desc">いろをぬろう</div>
+        </div>
+      </a>
+
       <a href="bowling/index.html" class="card card-bowling locked" id="card-bowling">
         <span class="card-icon">🎳</span>
         <div class="card-body">
@@ -1096,7 +1096,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-bowling', 'card-breakout', 'card-slide'];
+    const lockedCards = ['card-coloring', 'card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';
