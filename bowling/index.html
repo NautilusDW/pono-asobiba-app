@@ -923,8 +923,8 @@ function drawHUD() {
   // Shot counter
   if (shotNumber > 0) {
     ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.6;
-    ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'left';
-    ctx.fillText('Shot ' + shotNumber, 56, 35);
+    ctx.font = '14px "Zen Maru Gothic"'; ctx.textAlign = 'center';
+    ctx.fillText('Shot ' + shotNumber, W / 2, 35);
     ctx.globalAlpha = 1;
   }
 }
@@ -1149,8 +1149,31 @@ function drawBallPreview(now) {
 
 }
 
+function drawAimBarHighlight() {
+  const barY = H * AIM_BAR_Y;
+  const barW = W * 0.7;
+  const barX = (W - barW) / 2;
+  const vPad = 28, hPad = 16;
+  const hx = barX - hPad, hy = barY - vPad, hw = barW + hPad * 2, hh = vPad * 2;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, HUD_HEIGHT, W, hy - HUD_HEIGHT);
+  ctx.fillRect(0, hy + hh, W, H - hy - hh);
+  ctx.fillRect(0, hy, hx, hh);
+  ctx.fillRect(hx + hw, hy, W - hx - hw, hh);
+  ctx.strokeStyle = '#FFD700';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#FFD700';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.roundRect(hx, hy, hw, hh, 10);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
 function drawSlingshotGuide(now) {
-  const guideY = H * BALL_SPAWN_Y - 50;
+  const guideY = H * BALL_SPAWN_Y - 110;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
@@ -1600,6 +1623,10 @@ function loop(now) {
 
     // Phase-specific UI
     if (gamePhase === 'aim') {
+      // Aim bar highlight overlay (idle state)
+      if (shotMode === 'slingshot' && !aimBarDragging && slingshotPhase === 'aim') {
+        drawAimBarHighlight();
+      }
       drawBallPreview(now);
       // Slingshot guide text (context-sensitive)
       if (shotMode === 'slingshot') {
