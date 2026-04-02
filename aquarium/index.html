@@ -1649,9 +1649,17 @@
       }
 
       addSelectedCreatures();
+      handleEmptyOrStart();
+    }
+
+    function handleEmptyOrStart() {
       if (creatures.length > 0) {
+        document.getElementById('btnFeed').style.display = '';
+        document.getElementById('ui').style.display = '';
         initTutorial();
       } else {
+        document.getElementById('btnFeed').style.display = 'none';
+        document.getElementById('ui').style.display = 'none';
         const emptyMsg = document.getElementById('emptySeaMsg');
         if (emptyMsg) {
           emptyMsg.style.display = 'flex';
@@ -1673,16 +1681,7 @@
         document.getElementById('selection-screen').classList.add('hidden');
         if (_rocksReady) _rocksReady.then(() => {
           addSelectedCreatures();
-          if (creatures.length > 0) {
-            initTutorial();
-          } else {
-            const emptyMsg = document.getElementById('emptySeaMsg');
-            if (emptyMsg) {
-              emptyMsg.style.display = 'flex';
-              emptyMsg.addEventListener('pointerdown', () => { emptyMsg.style.display = 'none'; }, { once: true });
-              setTimeout(() => { emptyMsg.style.display = 'none'; }, 8000);
-            }
-          }
+          handleEmptyOrStart();
         });
         return;
       }
@@ -1791,15 +1790,7 @@
       }
       saveCreatureToggles();
       addSelectedCreatures();
-      // 生き物が0匹ならメッセージ表示
-      const hasAnyCreature = creatures.length > 0 || chosen.length > 0;
-      const emptyMsg = document.getElementById('emptySeaMsg');
-      if (!hasAnyCreature && emptyMsg) {
-        emptyMsg.style.display = 'flex';
-        emptyMsg.addEventListener('pointerdown', () => { emptyMsg.style.display = 'none'; }, { once: true });
-        setTimeout(() => { emptyMsg.style.display = 'none'; }, 8000);
-      }
-      if (hasAnyCreature) initTutorial();
+      handleEmptyOrStart();
     });
 
     async function initAllCreatures() {
@@ -2653,9 +2644,10 @@
         }
       });
 
-      // ── Pop bubbles (mini-game) ─────────────────────────────
+      // ── Pop bubbles (mini-game) — 生き物がいないときは無効 ──
       popBubbleGfx.clear();
-      if (popBubbleTimer > 0) {
+      if (creatures.length === 0) { popBubbleTimer = 1800; }
+      else if (popBubbleTimer > 0) {
         popBubbleTimer -= delta;
         if (popBubbleTimer <= 0 && popBubbles.length === 0) {
           // Spawn a wave of pop bubbles
