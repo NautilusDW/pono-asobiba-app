@@ -3018,7 +3018,7 @@
           const dy = py - r.y;
           return Math.abs(dx) < r.width * 0.7 && dy > -r.height * 1.15 && dy < r.height * 0.1;
         });
-        if (hitRock) {
+        if (hitRock && creatures.length > 0) {
           shakeRock(hitRock);
           // Check if any hider is behind this rock
           const hasHider = hiders.some(h => h.rock === hitRock && h.c.hiderState === 'hidden');
@@ -3298,7 +3298,8 @@
     // イントロ画面の制御（Pixi初期化を待たずにボタンを即登録）
     var introEl = document.getElementById('intro-overlay');
     function hideIntro() {
-      introEl.classList.add('hidden');
+      introEl.style.opacity = '0';
+      introEl.style.transition = 'opacity 0.4s';
       setTimeout(function() { introEl.style.display = 'none'; }, 400);
     }
 
@@ -3307,20 +3308,24 @@
     }
 
     let introHandled = false;
-    document.getElementById('introStartBtn').addEventListener('click', async function() {
+    function onIntroStart() {
       if (introHandled) return;
       introHandled = true;
       hideIntro();
-      await waitPixiReady();
-      quickStartAquarium();
-    });
-    document.getElementById('introConfigBtn').addEventListener('click', async function() {
+      waitPixiReady().then(() => quickStartAquarium());
+    }
+    function onIntroConfig() {
       if (introHandled) return;
       introHandled = true;
       hideIntro();
-      await waitPixiReady();
-      showSelectionScreen();
-    });
+      waitPixiReady().then(() => showSelectionScreen());
+    }
+    var startBtn = document.getElementById('introStartBtn');
+    var configBtn = document.getElementById('introConfigBtn');
+    startBtn.addEventListener('touchend', function(e) { e.preventDefault(); onIntroStart(); });
+    startBtn.addEventListener('click', onIntroStart);
+    configBtn.addEventListener('touchend', function(e) { e.preventDefault(); onIntroConfig(); });
+    configBtn.addEventListener('click', onIntroConfig);
     try {
       var drawings = JSON.parse(localStorage.getItem('pono_drawings') || '[]');
       if (drawings.length === 0) document.getElementById('introConfigBtn').style.display = 'none';
