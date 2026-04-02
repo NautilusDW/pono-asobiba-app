@@ -105,9 +105,13 @@ html, body {
   min-height: 0;
 }
 @media (hover: hover) and (pointer: fine) {
-  #app { width: 420px; height: auto; min-height: 0; margin: 48px auto 0; padding: 0 6px 6px; }
-  .left-panel { flex: none; }
-  .bento-box { flex: none; aspect-ratio: 3 / 4; width: 100%; }
+  html, body { height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #app {
+    width: 390px; height: 780px;
+    flex-shrink: 0;
+    transform-origin: center center;
+  }
+  .game-title { position: absolute; }
 }
 .bento-inner {
   background:
@@ -532,6 +536,23 @@ html, body {
 <div id="confetti"></div>
 
 <script>
+// PC: #appを固定サイズにしてscaleで画面に収める
+(function() {
+  const isPC = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!isPC) return;
+  const APP_W = 390, APP_H = 780;
+  function fitApp() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    const scaleX = window.innerWidth / APP_W;
+    const scaleY = window.innerHeight / APP_H;
+    const s = Math.min(scaleX, scaleY, 1); // 1以下=縮小のみ、拡大はしない
+    app.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fitApp);
+  requestAnimationFrame(fitApp);
+})();
+
 const P = '../assets/images/Bento_parts/';
 
 // ===== Food data =====
