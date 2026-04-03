@@ -663,17 +663,19 @@ function drawStartGoal() {
   const sy = gridOY - cellSize * 0.35;
   const imgSize = Math.floor(cellSize * 0.45);
 
-  if (imgPono.complete && imgPono.naturalWidth > 0) {
-    ctx.drawImage(imgPono, sx - imgSize / 2, sy - imgSize / 2, imgSize, imgSize);
-  } else {
-    ctx.font = `${fontSize}px serif`;
+  if (!winAnim.active) {
+    if (imgPono.complete && imgPono.naturalWidth > 0) {
+      ctx.drawImage(imgPono, sx - imgSize / 2, sy - imgSize / 2, imgSize, imgSize);
+    } else {
+      ctx.font = `${fontSize}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🐻', sx, sy);
+    }
+    ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🐻', sx, sy);
+    ctx.fillStyle = '#5D4E37';
+    ctx.fillText('ポノ', sx, sy + imgSize / 2 + Math.floor(cellSize * 0.06));
   }
-  ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#5D4E37';
-  ctx.fillText('ポノ', sx, sy + imgSize / 2 + Math.floor(cellSize * 0.06));
 
   // Arrow pointing down into grid
   ctx.strokeStyle = var_primary;
@@ -1028,10 +1030,21 @@ function nextStage() {
       overlay.classList.add('hidden');
       state = S.PLAYING;
     } else {
-      startGame();
       localStorage.removeItem('slide_tut_seen'); // テスト用: 毎回表示
       if (!localStorage.getItem('slide_tut_seen')) {
+        // チュートリアル用: 最初からチュートリアル配置で開始
+        overlay.classList.add('hidden');
+        stageIdx = 0;
+        moveCount = 0;
+        curCols = 3; curRows = 3;
+        grid = ['BLANK',null,'BLANK', 'BLANK','V','BLANK', 'V','V','BLANK'];
+        emptyIdx = 1;
+        calcLayout();
+        updateHUD();
+        state = S.PLAYING;
         setTimeout(showTutorial, 500);
+      } else {
+        startGame();
       }
     }
   }
@@ -1122,12 +1135,6 @@ function showTutorial() {
 
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
     e.preventDefault(); e.stopPropagation();
-    // チュートリアル用のグリッドをセット
-    grid = tutGrid.slice();
-    emptyIdx = tutEmpty;
-    curCols = 3; curRows = 3;
-    calcLayout();
-    state = S.PLAYING;
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
 
