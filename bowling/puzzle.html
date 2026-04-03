@@ -188,8 +188,9 @@ function showTutorial() {
   setupTutGrid();
 
   tutShowBubble(
-    '🐥 うえに ヒヨコが 2ひき いるよ！<br>' +
-    'おなじ ヒヨコを ねらって なげよう！<br>' +
+    '🐥 うえに ヒヨコが 2ひき いるよ！<br><br>' +
+    'おなじ ヒヨコを ねらって<br>' +
+    'なげてみよう！<br>' +
     '<button class="tut-next-btn" id="tut-next">やってみる！</button>'
   );
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
@@ -215,8 +216,9 @@ function onTutShotComplete() {
         // 外した → リトライ
         ballTier = 0; nextTier = 0;
         tutShowBubble(
-          'おしい！ もういちど<br>' +
-          'ヒヨコを ねらって なげてみよう！<br>' +
+          'おしい！<br><br>' +
+          'もういちど ヒヨコを<br>' +
+          'ねらって なげてみよう！<br>' +
           '<button class="tut-next-btn" id="tut-next">もういちど！</button>'
         );
         document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
@@ -227,7 +229,7 @@ function onTutShotComplete() {
         // 成功！ → 下の説明
         _tutStep = 2;
         tutShowBubble(
-          '✨ くっついて きえたね！<br>' +
+          '✨ くっついて きえたね！<br><br>' +
           'したに おちた いきものは<br>' +
           '3つ そろうと きえるよ！<br>' +
           '<button class="tut-next-btn" id="tut-next">つぎ →</button>'
@@ -236,8 +238,8 @@ function onTutShotComplete() {
           e.preventDefault(); e.stopPropagation();
           _tutStep = 3;
           tutShowBubble(
-            '🌟 したの いきものを ぜんぶ<br>' +
-            'けすのが もくひょうだよ！<br>' +
+            '🌟 たくさん けして<br>' +
+            'ハイスコアを めざそう！<br>' +
             '<button class="tut-next-btn" id="tut-next">あそぼう！</button>'
           );
           document.getElementById('tut-next').addEventListener('pointerdown', function(ev) {
