@@ -813,6 +813,7 @@ const WORD_DATA = {
 let currentCategory = 'hiragana';
 let currentCharIndex = 0;
 let writer = null;
+let _tutorialActive = false; // チュートリアル表示中フラグ
 let currentScheme = COLOR_SCHEMES[0];
 let currentCharData = null; // store loaded char data for stroke numbers
 
@@ -1216,29 +1217,33 @@ function createWriter(char) {
   });
 
   // まずお手本を1回流してからquizモードへ
-  // 音＋テキストで「お手本だよ」を伝える
-  withAudio(function(ac) {
-    var now = ac.currentTime;
-    var osc = ac.createOscillator(), g = ac.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(523, now);
-    osc.frequency.setValueAtTime(659, now + 0.15);
-    osc.frequency.setValueAtTime(784, now + 0.3);
-    g.gain.setValueAtTime(0.12, now);
-    g.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-    osc.connect(g); g.connect(ac.destination);
-    osc.start(now); osc.stop(now + 0.45);
-  });
-  _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
-  _ponoBubble.textContent = 'このじゅんばんで かくよ！';
-  writer.animateCharacter({
-    onComplete: function() {
-      _hedgeBubble.textContent = 'かいてみよう！';
-      _ponoBubble.textContent = 'かいてみよう！';
-      writer.hideCharacter();
-      startQuiz();
-    }
-  });
+  // チュートリアル表示中はスキップ（チュートリアル終了後に実行される）
+  if (!_tutorialActive) {
+    // チュートリアルが非表示なら通常通りお手本→quiz
+    withAudio(function(ac) {
+      var now = ac.currentTime;
+      var osc = ac.createOscillator(), g = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.setValueAtTime(659, now + 0.15);
+      osc.frequency.setValueAtTime(784, now + 0.3);
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+      osc.connect(g); g.connect(ac.destination);
+      osc.start(now); osc.stop(now + 0.45);
+    });
+    _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
+    _ponoBubble.textContent = 'このじゅんばんで かくよ！';
+    writer.animateCharacter({
+      onComplete: function() {
+        _hedgeBubble.textContent = 'かいてみよう！';
+        _ponoBubble.textContent = 'かいてみよう！';
+        writer.hideCharacter();
+        startQuiz();
+      }
+    });
+  }
+  // チュートリアル表示中はお手本を待機（showTutorialのendTutで開始される）
 }
 
 // ===== Stroke Order Numbers =====
@@ -1513,11 +1518,17 @@ setInterval(() => {
 // ===== Init =====
 buildRowTabs();
 buildCharSelector();
+
+// チュートリアル判定を先に行い、フラグをセットしてからloadCharacterを呼ぶ
+localStorage.removeItem('writing_tut_seen'); // テスト用: 毎回表示
+if (!localStorage.getItem('writing_tut_seen')) {
+  _tutorialActive = true;
+}
+
 loadCharacter();
 updateProgressHint();
 
-localStorage.removeItem('writing_tut_seen'); // テスト用: 毎回表示
-if (!localStorage.getItem('writing_tut_seen')) {
+if (_tutorialActive) {
   setTimeout(showTutorial, 500);
 }
 
@@ -1568,6 +1579,7 @@ function showTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
+  _tutorialActive = true;
   var step = 0;
   var steps = [
     function() {
@@ -1579,7 +1591,7 @@ function showTutorial() {
     },
     function() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'おてほんと おなじように<br>ゆびで なぞってみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
+      bubble.innerHTML = 'おてほんと おなじように<br>じゅんばんどおり ゆびで なぞってみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); endTut(); });
     }
   ];
@@ -1587,7 +1599,33 @@ function showTutorial() {
   function endTut() {
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
+    _tutorialActive = false;
     localStorage.setItem('writing_tut_seen', '1');
+    // チュートリアル終了後にお手本を開始
+    if (writer) {
+      withAudio(function(ac) {
+        var now = ac.currentTime;
+        var osc = ac.createOscillator(), g = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, now);
+        osc.frequency.setValueAtTime(659, now + 0.15);
+        osc.frequency.setValueAtTime(784, now + 0.3);
+        g.gain.setValueAtTime(0.12, now);
+        g.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        osc.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now + 0.45);
+      });
+      _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
+      _ponoBubble.textContent = 'このじゅんばんで かくよ！';
+      writer.animateCharacter({
+        onComplete: function() {
+          _hedgeBubble.textContent = 'かいてみよう！';
+          _ponoBubble.textContent = 'かいてみよう！';
+          writer.hideCharacter();
+          startQuiz();
+        }
+      });
+    }
   }
   steps[0]();
 }
