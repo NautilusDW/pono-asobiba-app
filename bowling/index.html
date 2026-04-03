@@ -143,17 +143,26 @@ function showTutorial() {
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
   var step = 0;
+  var isSling = (shotMode === 'slingshot');
   var steps = [
     function() {
       dim.classList.remove('hidden');
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'したの バーを さわって<br>ほうこうを きめよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      if (isSling) {
+        bubble.innerHTML = '🎳 したの バーを さわって<br>ほうこうを きめよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      } else {
+        bubble.innerHTML = '🎳 ねらいを つけて<br>タップしよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      }
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     function() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'ゆびを はなすと<br>ボールが とぶよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      if (isSling) {
+        bubble.innerHTML = 'ゆびを はなすと<br>ボールが とぶよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      } else {
+        bubble.innerHTML = 'タップした ばしょに<br>ボールが とぶよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      }
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     function() {

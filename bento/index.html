@@ -560,6 +560,7 @@ html, body {
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{transform:scale(0.8);opacity:0.5} to{transform:scale(1);opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -681,6 +682,9 @@ html, body {
     document.getElementById('sk-intro-btn').addEventListener('click', function() {
       localStorage.setItem('bento_sk_intro_done', '1');
       intro.classList.add('hidden');
+      if (!localStorage.getItem('bento_tut_seen')) {
+        setTimeout(showTutorial, 400);
+      }
     });
   }
 })();
@@ -1199,52 +1203,48 @@ function loadChallengeOkazu() {
 
 // ===== Tutorial =====
 function showTutorial() {
-  const dim = document.getElementById('tut-dim');
-  const bubble = document.getElementById('tut-bubble');
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
-
-  let step = 0;
-  const steps = [
-    () => {
+  var step = 0;
+  var foodTray = document.querySelector('.food-tray');
+  var steps = [
+    function() {
       dim.classList.remove('hidden');
-      bubble.className = 'tut-bubble';
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      if (foodTray) foodTray.classList.add('tut-highlight');
+      var rect = foodTray ? foodTray.getBoundingClientRect() : null;
+      if (rect) {
+        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      } else {
+        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      }
       bubble.innerHTML = '🍱 みぎの しょくざいを タップして<br>おべんとうに いれよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
-    () => {
-      bubble.className = 'tut-bubble';
+    function() {
+      if (foodTray) foodTray.classList.remove('tut-highlight');
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'あか・きいろ・みどり<br>バランスよく いれてね！🥦<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
-    },
-    () => {
-      bubble.className = 'tut-bubble';
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'おいしい おべんとうを つくろう！🍙<br><button class="tut-next-btn" id="tut-next">つくろう！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+      bubble.innerHTML = 'あか・きいろ・みどり ぜんぶ いれると ばっちり！<br><button class="tut-next-btn" id="tut-next">つくろう！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
     }
   ];
-
   function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
   function endTut() {
+    dim.removeEventListener('pointerdown', dimTap);
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
+    document.querySelectorAll('.tut-highlight').forEach(function(el) { el.classList.remove('tut-highlight'); });
     localStorage.setItem('bento_tut_seen', '1');
   }
-
+  function dimTap(e) { e.preventDefault(); e.stopPropagation(); nextStep(); }
+  dim.addEventListener('pointerdown', dimTap);
   steps[0]();
 }
 
 // ===== Init =====
 applyBentoColor();
 loadStage();
-
-if (!localStorage.getItem('bento_tut_seen')) {
-  setTimeout(showTutorial, 500);
-}
 
 initMenu({ tutorial: showTutorial });
 

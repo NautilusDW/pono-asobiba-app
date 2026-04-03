@@ -716,6 +716,7 @@ html, body {
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{transform:scale(0.8) translate(-50%,-50%);opacity:0.5} to{transform:scale(1) translate(-50%,-50%);opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -1671,22 +1672,45 @@ function showTutorial() {
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
   var step = 0;
+  var paletteEl = document.getElementById('palette');
+  var toolRowEl = document.querySelector('.tool-row');
+  var bucketEl = document.getElementById('bucket-btn');
   var steps = [
     function() {
       dim.classList.remove('hidden');
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'したの いろを えらんで<br>えを ぬろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      if (paletteEl) paletteEl.classList.add('tut-highlight');
+      var rect = paletteEl ? paletteEl.getBoundingClientRect() : null;
+      if (rect) {
+        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      } else {
+        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      }
+      bubble.innerHTML = 'したの いろを えらんで ぬろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     function() {
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      if (paletteEl) paletteEl.classList.remove('tut-highlight');
+      if (toolRowEl) toolRowEl.classList.add('tut-highlight');
+      var rect = toolRowEl ? toolRowEl.getBoundingClientRect() : null;
+      if (rect) {
+        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      } else {
+        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      }
       bubble.innerHTML = 'ふとさも かえられるよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     function() {
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'はみだしぼうし を ONにすると<br>はみださないよ<br><button class="tut-next-btn" id="tut-next">ぬろう！</button>';
+      if (toolRowEl) toolRowEl.classList.remove('tut-highlight');
+      if (bucketEl) bucketEl.classList.add('tut-highlight');
+      var rect = bucketEl ? bucketEl.getBoundingClientRect() : null;
+      if (rect) {
+        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      } else {
+        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      }
+      bubble.innerHTML = 'はみだしぼうし を ONにすると<br>はみださないよ<br><span style="font-size:0.65rem;color:#999">※とじた せんの なかだけ だよ</span><br><button class="tut-next-btn" id="tut-next">ぬろう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
     }
   ];
@@ -1695,6 +1719,7 @@ function showTutorial() {
     dim.removeEventListener('pointerdown', dimTap);
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
+    document.querySelectorAll('.tut-highlight').forEach(function(el) { el.classList.remove('tut-highlight'); });
     localStorage.setItem('coloring_tut_seen', '1');
   }
   function dimTap(e) { e.preventDefault(); e.stopPropagation(); nextStep(); }
