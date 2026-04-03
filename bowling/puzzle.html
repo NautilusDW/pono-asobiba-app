@@ -58,7 +58,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 <div id="landscape-notice"><div class="rot-icon">📱</div><p>スマホを<br><strong>たてむき</strong>にしてね！</p></div>
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
-<div id="start-screen"><div class="title">パズル<br>ボウリング</div><div class="tap">タップしてスタート</div></div>
+<div id="start-screen" style="display:none"></div>
 <div id="score">0</div>
 <div id="combo"></div>
 <canvas id="c"></canvas>
@@ -261,9 +261,9 @@ function onTutShotComplete() {
   }
 }
 
-document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
-  e.preventDefault(); this.removeEventListener('pointerdown', handler);
-  await initAudio(); this.style.display = 'none';
+// スタート画面なし（トップから遷移済み）→ 即初期化
+(async function() {
+  await initAudio();
   initMenu({
     tutorial: showTutorial,
     extraButtons: [{
@@ -276,7 +276,7 @@ document.getElementById('start-screen').addEventListener('pointerdown', async fu
   if (!localStorage.getItem('bowling_puzzle_tut_seen')) {
     setTimeout(showTutorial, 500);
   }
-});
+})();
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
