@@ -566,10 +566,19 @@ html, body {
   .progress-hint { display: none; }
   .streak-badge { left: auto; right: 8px; bottom: auto; top: 6px; transform: none; }
 }
+
+/* ===== Tutorial ===== */
+.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
+.tut-dim.hidden { display:none; }
+.tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:14px 18px;max-width:280px;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center; }
+.tut-bubble.hidden { display:none; }
+.tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
 <audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
 
 <div id="app">
@@ -1507,6 +1516,10 @@ buildCharSelector();
 loadCharacter();
 updateProgressHint();
 
+if (!localStorage.getItem('writing_tut_seen')) {
+  setTimeout(showTutorial, 500);
+}
+
 // ===== Public API for future AI character integration =====
 window.KidsTraceApp = {
   getCurrentChar,
@@ -1549,12 +1562,41 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('blur',  () => bgm.pause());
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
+// ===== Tutorial =====
+function showTutorial() {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+  var step = 0;
+  var steps = [
+    function() {
+      dim.classList.remove('hidden');
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '✏️ まず おてほんを みてね！<br>このじゅんばんで かくよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); nextStep(); });
+    },
+    function() {
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'おてほんと おなじように<br>ゆびで なぞってみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); endTut(); });
+    }
+  ];
+  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
+  function endTut() {
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
+    localStorage.setItem('writing_tut_seen', '1');
+  }
+  steps[0]();
+}
+
 // ===== Menu =====
 initMenu({ bgmToggle: function() {
   bgmEnabled = !bgmEnabled;
   localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
   if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-}});
+}, tutorial: showTutorial });
 </script>
 </body>
 </html>

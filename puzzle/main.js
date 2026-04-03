@@ -630,20 +630,26 @@ function showTutorial() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = '🧩 ピースを ゆびで うごかそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      requestAnimationFrame(() => {
+        document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      });
     },
     () => {
       bubble.className = 'tut-bubble';
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = 'ただしい ばしょに おくと<br>パチッとはまるよ 💡<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      requestAnimationFrame(() => {
+        document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      });
     },
     () => {
       bubble.className = 'tut-bubble';
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = 'ぜんぶ はめたら できあがり！🎉<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+      requestAnimationFrame(() => {
+        document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+      });
     }
   ];
 
