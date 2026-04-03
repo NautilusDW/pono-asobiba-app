@@ -77,7 +77,7 @@
     }
     .pono-confirm-box {
       background: #fff; border-radius: 24px; padding: 28px 24px 20px;
-      text-align: center; min-width: 220px; max-width: 280px;
+      text-align: center; min-width: 260px; max-width: 320px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
       transform: scale(0.85);
       transition: transform 0.25s;
