@@ -699,6 +699,281 @@
       min-height: 1.2em;
     }
     .profile-section { margin-bottom: 16px; }
+
+    /* ===== Stamp Rally Section ===== */
+    .stamp-rally-section {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 4px;
+    }
+    .stamp-rally-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .stamp-rally-games {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .stamp-rally-game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      width: 80px;
+      padding: 10px 4px 8px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px var(--shadow);
+      position: relative;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.12s;
+    }
+    .stamp-rally-game:active { transform: scale(0.95); }
+    .stamp-rally-game-icon { font-size: 1.6rem; line-height: 1; }
+    .stamp-rally-game-name {
+      font-size: 0.62rem;
+      font-weight: 900;
+      line-height: 1.2;
+      text-align: center;
+    }
+    .stamp-rally-game.completed {
+      background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+      border: 2px solid #66BB6A;
+    }
+    .stamp-rally-game.completed::after {
+      content: '\2705';
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      font-size: 0.9rem;
+    }
+    .stamp-rally-bonus {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: #66BB6A;
+    }
+    .stamp-rally-bonus.pending {
+      color: var(--text-light);
+    }
+
+    /* ===== Mini Stamp Card ===== */
+    .stamp-card-mini {
+      width: 100%;
+      max-width: 400px;
+      margin: 6px auto 0;
+      background: #fff;
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    .stamp-card-mini-title {
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .stamp-card-mini-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+    .stamp-card-slot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2.5px dashed #E0D6C8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #FFF8F0;
+      flex-shrink: 0;
+    }
+    .stamp-card-slot.stamped {
+      border: 2.5px solid var(--primary);
+      background: #FFF3E6;
+    }
+    .stamp-card-slot.stamped img {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+    .stamp-card-slot.milestone::before {
+      content: '\2728';
+      position: absolute;
+      top: -8px;
+      right: -6px;
+      font-size: 0.65rem;
+    }
+    .stamp-card-view-btn {
+      display: block;
+      margin: 8px auto 0;
+      padding: 6px 20px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary-light), #FFE0B2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .stamp-card-view-btn:active { transform: scale(0.95); }
+
+    /* ===== Stamp Card Modal ===== */
+    .stamp-modal-overlay {
+      position: fixed; inset: 0; z-index: 99998;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+      padding: 16px;
+    }
+    .stamp-modal-overlay.show {
+      opacity: 1; pointer-events: auto;
+    }
+    .stamp-modal {
+      background: #fff;
+      border-radius: 24px;
+      padding: 20px 16px 16px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      text-align: center;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .stamp-modal-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .stamp-modal-sub {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+    .stamp-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      justify-items: center;
+      margin-bottom: 14px;
+    }
+    .stamp-modal-slot {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2.5px dashed #E0D6C8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #FFF8F0;
+    }
+    .stamp-modal-slot.stamped {
+      border: 2.5px solid var(--primary);
+      background: #FFF3E6;
+    }
+    .stamp-modal-slot.stamped img {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+    .stamp-modal-slot.milestone {
+      border-color: #FFD700;
+      background: #FFFDE7;
+    }
+    .stamp-modal-slot.milestone .stamp-reward-icon {
+      font-size: 0.6rem;
+      position: absolute;
+      bottom: -10px;
+      white-space: nowrap;
+      font-weight: 700;
+      color: var(--text-light);
+    }
+    .stamp-modal-slot.milestone::before {
+      content: '\2728';
+      position: absolute;
+      top: -8px;
+      right: -6px;
+      font-size: 0.65rem;
+    }
+    .stamp-modal-close-btn {
+      padding: 10px 36px;
+      border: none;
+      border-radius: 30px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .stamp-modal-close-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #B87200;
+    }
+
+    /* ===== Stamp Animation ===== */
+    @keyframes stampBounceIn {
+      0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+      60% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+      80% { transform: scale(0.9) rotate(-2deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+    .stamp-animate {
+      animation: stampBounceIn 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    /* ===== Stamp Reward Milestones in modal ===== */
+    .stamp-modal-rewards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 8px 10px;
+      background: #FFFDE7;
+      border-radius: 12px;
+      border: 1.5px solid #FFE082;
+    }
+    .stamp-reward-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .stamp-reward-row.unlocked {
+      color: #66BB6A;
+    }
+    .stamp-reward-row.locked {
+      color: var(--text-light);
+    }
+    .stamp-reward-days {
+      font-weight: 900;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    @media (min-width: 640px) {
+      .stamp-rally-section { max-width: 580px; }
+      .stamp-card-mini { max-width: 580px; }
+    }
   </style>
   <script src="common/achievements.js"></script>
   <script src="common/stickers.js"></script>
@@ -804,6 +1079,39 @@
       🏠 わたしのおうち
       <span id="ach-badge" style="margin-left:8px;font-size:0.8em;"></span>
       　→ わたしのおうち
+    </div>
+
+    <!-- ===== Stamp Rally Section ===== -->
+    <div class="stamp-rally-section" id="stampRallySection">
+      <div class="stamp-rally-title">🌟 きょうのスタンプラリー</div>
+      <div class="stamp-rally-games" id="stampRallyGames">
+        <!-- JS が3つのゲームカードを生成 -->
+      </div>
+      <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと3つ あそんで ボーナススタンプ！</div>
+    </div>
+
+    <!-- ===== Mini Stamp Card ===== -->
+    <div class="stamp-card-mini" id="stampCardMini">
+      <div class="stamp-card-mini-title">📋 スタンプカード</div>
+      <div class="stamp-card-mini-row" id="stampCardMiniRow">
+        <!-- JS が7マス生成 -->
+      </div>
+      <button class="stamp-card-view-btn" id="stampCardViewBtn">スタンプカードをみる</button>
+    </div>
+
+    <!-- ===== Stamp Card Modal ===== -->
+    <div class="stamp-modal-overlay" id="stampModalOverlay">
+      <div class="stamp-modal">
+        <div class="stamp-modal-title">📋 スタンプカード</div>
+        <div class="stamp-modal-sub" id="stampModalSub"></div>
+        <div class="stamp-modal-grid" id="stampModalGrid">
+          <!-- JS が28マス生成 -->
+        </div>
+        <div class="stamp-modal-rewards" id="stampModalRewards">
+          <!-- JS がマイルストーン報酬一覧を生成 -->
+        </div>
+        <button class="stamp-modal-close-btn" id="stampModalCloseBtn">とじる</button>
+      </div>
     </div>
 
     <!-- ─── あそびば区切り ─── -->
@@ -1154,6 +1462,330 @@
       modal.addEventListener('click', function(e) {
         if (e.target === modal) modal.classList.remove('show');
       });
+    })();
+
+    // ===== Stamp Rally System =====
+    (function() {
+      'use strict';
+
+      // ── Constants ──
+      var LS_STAMP_LOG = 'pono_stamp_log';
+      var LS_DAILY_RALLY = 'pono_daily_rally';
+      var LS_STAMP_REWARDS_GIVEN = 'pono_stamp_rewards_given';
+      var PONO_ICON = 'assets/images/characters/pono/pono_face_circle.png';
+
+      var STAMP_REWARDS = [
+        { days: 3,  type: 'sea',  id: 'medaka',         name: 'メダカ' },
+        { days: 7,  type: 'furn', id: 'ach_small_chair', name: 'ちいさい いす' },
+        { days: 14, type: 'wall', id: 'wall_kumo_niko',  name: 'くも にっこり かべがみ' },
+        { days: 30, type: 'sea',  id: 'whale',           name: 'クジラ' },
+      ];
+
+      var ALL_FREE_GAMES = [
+        { key: 'puzzle',    emoji: '\uD83E\uDDE9', name: 'パズル',        href: 'puzzle/index.html' },
+        { key: 'writing',   emoji: '\u270F\uFE0F', name: 'もじかき',      href: 'writing/index.html' },
+        { key: 'drawing',   emoji: '\uD83C\uDFA8', name: 'おえかき',      href: 'drawing/index.html' },
+        { key: 'bento',     emoji: '\uD83C\uDF71', name: 'おべんとう',    href: 'bento/index.html' },
+        { key: 'wordmatch', emoji: '\uD83D\uDD24', name: 'ことばあわせ',  href: 'wordmatch/index.html' },
+        { key: 'aquarium',  emoji: '\uD83D\uDC20', name: 'うみのせかい',  href: 'aquarium/index.html' },
+      ];
+
+      // ── Helpers ──
+      function getJSON(key, fallback) {
+        try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+        catch (e) { return fallback; }
+      }
+      function setJSON(key, val) {
+        localStorage.setItem(key, JSON.stringify(val));
+      }
+      function getTodayStr() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      }
+
+      // ── 1. Login Stamp (daily auto-grant) ──
+      function getStampLog() {
+        return getJSON(LS_STAMP_LOG, { dates: [], total: 0 });
+      }
+      function saveStampLog(log) {
+        setJSON(LS_STAMP_LOG, log);
+      }
+      function addStampToday() {
+        var log = getStampLog();
+        var today = getTodayStr();
+        if (log.dates.indexOf(today) !== -1) return { added: false, log: log };
+        log.dates.push(today);
+        log.total = log.dates.length;
+        saveStampLog(log);
+        checkStampRewards(log.total);
+        return { added: true, log: log };
+      }
+
+      function checkStampRewards(totalDays) {
+        var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
+        for (var i = 0; i < STAMP_REWARDS.length; i++) {
+          var r = STAMP_REWARDS[i];
+          if (totalDays >= r.days && given.indexOf(r.days) === -1) {
+            if (window.grantReward) {
+              window.grantReward({ type: r.type, id: r.id });
+            }
+            given.push(r.days);
+            setJSON(LS_STAMP_REWARDS_GIVEN, given);
+          }
+        }
+      }
+
+      // ── 2. Daily Challenge (pick 3 games per day) ──
+      function seededRandom(seed) {
+        // Simple hash
+        var x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+      }
+      function getDailySeed() {
+        var d = new Date();
+        return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+      }
+
+      function getDailyRally() {
+        var today = getTodayStr();
+        var rally = getJSON(LS_DAILY_RALLY, null);
+        if (rally && rally.date === today) return rally;
+
+        // Pick 3 random games using seeded random
+        var seed = getDailySeed();
+        var pool = ALL_FREE_GAMES.slice();
+        var picked = [];
+        for (var i = 0; i < 3; i++) {
+          var r = seededRandom(seed + i * 137);
+          var idx = Math.floor(r * pool.length);
+          picked.push(pool[idx].key);
+          pool.splice(idx, 1);
+        }
+
+        rally = {
+          date: today,
+          games: picked,
+          completed: [],
+          stampEarned: false,
+        };
+        setJSON(LS_DAILY_RALLY, rally);
+        return rally;
+      }
+
+      function checkDailyCompletion() {
+        var rally = getDailyRally();
+        var today = new Date().toDateString();
+        var played = [];
+        try {
+          played = JSON.parse(localStorage.getItem('pono_played_' + today) || '[]');
+        } catch(e) { played = []; }
+
+        var changed = false;
+        for (var i = 0; i < rally.games.length; i++) {
+          var g = rally.games[i];
+          if (played.indexOf(g) !== -1 && rally.completed.indexOf(g) === -1) {
+            rally.completed.push(g);
+            changed = true;
+          }
+        }
+
+        // All 3 completed → bonus stamp
+        if (rally.completed.length >= 3 && !rally.stampEarned) {
+          rally.stampEarned = true;
+          // Grant bonus stamp (add an extra stamp for today)
+          var log = getStampLog();
+          var bonusKey = getTodayStr() + '_bonus';
+          if (log.dates.indexOf(bonusKey) === -1) {
+            log.dates.push(bonusKey);
+            log.total = log.dates.length;
+            saveStampLog(log);
+            checkStampRewards(log.total);
+          }
+          changed = true;
+        }
+
+        if (changed) setJSON(LS_DAILY_RALLY, rally);
+        return rally;
+      }
+
+      // ── 3. UI Rendering ──
+      function getGameInfo(key) {
+        for (var i = 0; i < ALL_FREE_GAMES.length; i++) {
+          if (ALL_FREE_GAMES[i].key === key) return ALL_FREE_GAMES[i];
+        }
+        return null;
+      }
+
+      function renderDailyRally() {
+        var rally = checkDailyCompletion();
+        var container = document.getElementById('stampRallyGames');
+        if (!container) return;
+        container.innerHTML = '';
+
+        for (var i = 0; i < rally.games.length; i++) {
+          var info = getGameInfo(rally.games[i]);
+          if (!info) continue;
+          var done = rally.completed.indexOf(rally.games[i]) !== -1;
+          var el = document.createElement('a');
+          el.href = info.href;
+          el.className = 'stamp-rally-game' + (done ? ' completed' : '');
+          el.innerHTML = '<span class="stamp-rally-game-icon">' + info.emoji + '</span>' +
+                         '<span class="stamp-rally-game-name">' + info.name + '</span>';
+          container.appendChild(el);
+        }
+
+        // Update bonus text
+        var bonusEl = document.getElementById('stampRallyBonus');
+        if (bonusEl) {
+          var remaining = 3 - rally.completed.length;
+          if (remaining <= 0) {
+            bonusEl.textContent = '\uD83C\uDF89 ぜんぶクリア！ ボーナススタンプ ゲット！';
+            bonusEl.classList.remove('pending');
+          } else {
+            bonusEl.textContent = 'あと' + remaining + 'つ あそんで ボーナススタンプ！';
+            bonusEl.classList.add('pending');
+          }
+        }
+      }
+
+      function renderMiniStampCard(animateToday) {
+        var log = getStampLog();
+        var container = document.getElementById('stampCardMiniRow');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Show last 7 stamps (or empty slots)
+        var milestones = {};
+        for (var m = 0; m < STAMP_REWARDS.length; m++) {
+          milestones[STAMP_REWARDS[m].days] = true;
+        }
+
+        // Show stamps starting from position (total - 7 + empty remaining)
+        // Show 7 most recent slots based on total count
+        var total = log.total;
+        var startIdx = Math.max(0, total - 7);
+
+        for (var i = 0; i < 7; i++) {
+          var dayNum = startIdx + i + 1;
+          var slot = document.createElement('div');
+          slot.className = 'stamp-card-slot';
+
+          if (dayNum <= total) {
+            slot.classList.add('stamped');
+            var img = document.createElement('img');
+            img.src = PONO_ICON;
+            img.alt = 'stamp';
+            if (animateToday && dayNum === total) {
+              img.classList.add('stamp-animate');
+            }
+            slot.appendChild(img);
+          }
+          if (milestones[dayNum]) {
+            slot.classList.add('milestone');
+          }
+          container.appendChild(slot);
+        }
+      }
+
+      function renderStampModal() {
+        var log = getStampLog();
+        var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
+        var gridEl = document.getElementById('stampModalGrid');
+        var rewardsEl = document.getElementById('stampModalRewards');
+        var subEl = document.getElementById('stampModalSub');
+        if (!gridEl) return;
+
+        // Subtitle
+        if (subEl) {
+          subEl.textContent = 'あつめたスタンプ: ' + log.total + 'こ';
+        }
+
+        // Build milestone lookup
+        var milestoneMap = {};
+        for (var m = 0; m < STAMP_REWARDS.length; m++) {
+          milestoneMap[STAMP_REWARDS[m].days] = STAMP_REWARDS[m];
+        }
+
+        // 28 slots (7x4)
+        gridEl.innerHTML = '';
+        for (var i = 1; i <= 28; i++) {
+          var slot = document.createElement('div');
+          slot.className = 'stamp-modal-slot';
+
+          if (i <= log.total) {
+            slot.classList.add('stamped');
+            var img = document.createElement('img');
+            img.src = PONO_ICON;
+            img.alt = 'stamp';
+            slot.appendChild(img);
+          }
+          if (milestoneMap[i]) {
+            slot.classList.add('milestone');
+            var rewardLabel = document.createElement('span');
+            rewardLabel.className = 'stamp-reward-icon';
+            var rw = milestoneMap[i];
+            var icon = rw.type === 'sea' ? '\uD83D\uDC20' : rw.type === 'furn' ? '\uD83E\uDE91' : rw.type === 'wall' ? '\uD83D\uDDBC\uFE0F' : '\u2B50';
+            rewardLabel.textContent = icon;
+            slot.appendChild(rewardLabel);
+          }
+          gridEl.appendChild(slot);
+        }
+
+        // Rewards list
+        if (rewardsEl) {
+          rewardsEl.innerHTML = '';
+          for (var j = 0; j < STAMP_REWARDS.length; j++) {
+            var r = STAMP_REWARDS[j];
+            var unlocked = given.indexOf(r.days) !== -1;
+            var row = document.createElement('div');
+            row.className = 'stamp-reward-row ' + (unlocked ? 'unlocked' : 'locked');
+            var icon2 = r.type === 'sea' ? '\uD83D\uDC20' : r.type === 'furn' ? '\uD83E\uDE91' : r.type === 'wall' ? '\uD83D\uDDBC\uFE0F' : '\u2B50';
+            row.innerHTML = '<span class="stamp-reward-days">' + r.days + 'にち</span>' +
+                            '<span>' + icon2 + ' ' + r.name + '</span>' +
+                            '<span>' + (unlocked ? '\u2705' : '\uD83D\uDD12') + '</span>';
+            rewardsEl.appendChild(row);
+          }
+        }
+      }
+
+      // ── 4. Event Wiring ──
+
+      // Auto-grant login stamp on page load
+      var stampResult = addStampToday();
+
+      // Render UI
+      renderDailyRally();
+      renderMiniStampCard(stampResult.added);
+
+      // Stamp card modal
+      var stampModalOverlay = document.getElementById('stampModalOverlay');
+      document.getElementById('stampCardViewBtn').addEventListener('click', function() {
+        renderStampModal();
+        stampModalOverlay.classList.add('show');
+      });
+      document.getElementById('stampModalCloseBtn').addEventListener('click', function() {
+        stampModalOverlay.classList.remove('show');
+      });
+      stampModalOverlay.addEventListener('click', function(e) {
+        if (e.target === stampModalOverlay) stampModalOverlay.classList.remove('show');
+      });
+
+      // Re-check daily rally when returning to page (pageshow)
+      window.addEventListener('pageshow', function() {
+        checkDailyCompletion();
+        renderDailyRally();
+        renderMiniStampCard(false);
+      });
+
+      // Also check on visibility change (for when user returns from a game)
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          checkDailyCompletion();
+          renderDailyRally();
+          renderMiniStampCard(false);
+        }
+      });
+
     })();
 
   </script>

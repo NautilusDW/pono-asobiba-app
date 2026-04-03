@@ -195,6 +195,11 @@
     }
   }
 
+  // 外部からの報酬付与用（スタンプラリーなど）
+  window.grantReward = function (reward) {
+    _grantReward(reward);
+  };
+
   // ═══ プレミアムボーナス（パスワード入力時）══════════════════════
   window.grantPremiumBonus = function () {
     if (localStorage.getItem('pono_premium_bonus') === 'granted') return;
