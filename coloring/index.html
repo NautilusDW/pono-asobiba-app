@@ -720,7 +720,8 @@ html, body {
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 @media print {
-  #selection-screen, #coloring-screen, .pono-menu-toggle, .pono-dropdown, .pono-confirm-overlay, canvas, .toolbar, header, #portrait-notice, .tut-dim, .tut-bubble { display:none !important; }
+  html, body { background:#fff !important; background-image:none !important; }
+  body > *:not(#print-overlay) { display:none !important; }
   #print-overlay { position:static !important; display:block !important; background:#fff !important; padding:0 !important; }
   #print-overlay button, #print-overlay div { display:none !important; }
   #print-overlay img { display:block !important; width:100% !important; max-width:100% !important; max-height:none !important; margin:0 !important; }

@@ -95,10 +95,12 @@
     }
     .pono-confirm-yes, .pono-confirm-no {
       font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 18px; font-weight: 900;
+      font-size: 16px; font-weight: 900;
       border: none; border-radius: 16px;
-      padding: 12px 24px; cursor: pointer;
-      min-width: 90px;
+      padding: 14px 0; cursor: pointer;
+      flex: 1; min-width: 0;
+      text-align: center;
+      white-space: nowrap;
       -webkit-tap-highlight-color: transparent;
     }
     .pono-confirm-yes {
