@@ -279,18 +279,29 @@ const LEVELS = [
     goal:  { col: 1, side: 'bottom' },
     // path: V→V→V (まっすぐ)
     solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK'],
+    shuffleMoves: 4,
+  },
+  {
+    name: 'もうすこし',
+    cols: 3, rows: 3,
+    storyMsg: 'もう すこし さきへ！\nまっすぐ つなげよう！',
+    clearMsg: 'いいかんじ！すすめるよ！',
+    start: { col: 1, side: 'top' },
+    goal:  { col: 1, side: 'bottom' },
+    // path: V→V→V (まっすぐ、シャッフル多め)
+    solved: ['BLANK','V','BLANK', null,'V','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 6,
   },
   {
     name: 'まがりかど',
     cols: 3, rows: 3,
-    storyMsg: 'おかあさんの こえが きこえる！\nじゅうじの みちを つなげよう！',
+    storyMsg: 'おかあさんの こえが きこえる！\nまがりかどを つなげよう！',
     clearMsg: 'こえが ちかくなってきた！',
     start: { col: 0, side: 'top' },
     goal:  { col: 1, side: 'bottom' },
-    // path: V→CROSS→right→CROSS→bottom→V→goal (十字でゆるく曲がる)
-    solved: ['V','BLANK','BLANK', 'CROSS','CROSS',null, 'BLANK','V','BLANK'],
-    shuffleMoves: 8,
+    // path: V→CROSS→V (十字1個で曲がる)
+    solved: ['V','BLANK','BLANK', 'CROSS',null,'BLANK', 'BLANK','V','BLANK'],
+    shuffleMoves: 6,
   },
   {
     name: 'ながいみち',
@@ -299,9 +310,9 @@ const LEVELS = [
     clearMsg: 'もりを ぬけたよ！すごい！',
     start: { col: 1, side: 'top' },
     goal:  { col: 1, side: 'bottom' },
-    // path: V→CROSS→CROSS→V (十字が2つで複数ルートあり)
-    solved: ['BLANK','V','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','CROSS',null, 'BLANK','V','BLANK'],
-    shuffleMoves: 10,
+    // path: V→CROSS→V→V (十字1個、グリッド拡大)
+    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','V','BLANK', 'BLANK','V','BLANK'],
+    shuffleMoves: 8,
   },
   {
     name: 'よこにまがる',
@@ -310,9 +321,9 @@ const LEVELS = [
     clearMsg: 'あしあとの さきに…！',
     start: { col: 1, side: 'top' },
     goal:  { col: 2, side: 'bottom' },
-    // path: V→CROSS→right→CROSS→V→V→goal (十字で方向転換)
+    // path: V→CROSS→CROSS→V (十字2個で方向転換)
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
-    shuffleMoves: 14,
+    shuffleMoves: 12,
   },
   {
     name: 'さいごのみち',
@@ -321,9 +332,9 @@ const LEVELS = [
     clearMsg: '「おかあさーん！」',
     start: { col: 1, side: 'top' },
     goal:  { col: 2, side: 'bottom' },
-    // path: CROSS→right→CROSS→V→CROSS→V→V→goal
+    // path: CROSS→right→CROSS→V→CROSS→V→V (十字3個、最難)
     solved: ['BLANK','CROSS','CROSS','BLANK', 'BLANK','BLANK','V','BLANK', 'BLANK',null,'CROSS','BLANK', 'BLANK','BLANK','V','BLANK', 'BLANK','BLANK','V','BLANK'],
-    shuffleMoves: 18,
+    shuffleMoves: 16,
   },
 ];
 

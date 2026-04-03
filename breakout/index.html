@@ -249,15 +249,16 @@ html, body {
 
 /* ===== Pause button ===== */
 .btn-pause {
-  position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
-  width: 34px; height: 34px; border-radius: 50%;
-  background: #FFF3EE; border: 2px solid var(--primary);
-  font-size: 1rem; cursor: pointer;
+  position: fixed; left: 62px; top: 12px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,0.7); border: none;
+  font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
-  z-index: 5; transition: transform 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  z-index: 9988; transition: transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.btn-pause:active { transform: translateY(-50%) scale(0.9); }
+.btn-pause:active { transform: scale(0.9); }
 
 /* ===== Chip expiring blink ===== */
 @keyframes chipBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
