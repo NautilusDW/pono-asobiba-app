@@ -524,6 +524,7 @@ body {
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
@@ -544,7 +545,7 @@ body {
   <div class="toolbar toolbar-top" id="toolbarTop">
     <button class="tool-btn btn-undo" id="btnUndo"><img src="../assets/images/icons/icons3_001.png" class="tool-icon" alt="">もどす</button>
     <button class="tool-btn btn-clear" id="btnClear"><img src="../assets/images/icons/icons_006.png" class="tool-icon" alt="">ぜんぶけす</button>
-    <button class="tool-btn btn-save" id="btnSave">💾 とっておく</button>
+    <button class="tool-btn btn-save" id="btnSave">📸 とっておく</button>
     <button class="tool-btn btn-gallery" id="btnGallery"><img src="../assets/images/icons/icons3_002.png" class="tool-icon" alt="">みる</button>
   </div>
 
@@ -1206,16 +1207,29 @@ function showTutorial() {
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
     () => {
-      bubble.className = 'tut-bubble';
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'うえの ボタンで いろや<br>ふとさを かえられるよ 🖌️<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      // カラーパレットをハイライト
+      var colorRow = document.querySelector('.color-row') || document.querySelector('.palette-row');
+      if (!colorRow) { var toolBtns = document.querySelectorAll('.tool-btn'); colorRow = toolBtns[0] ? toolBtns[0].parentElement : null; }
+      if (colorRow) colorRow.classList.add('tut-highlight');
+      var isPortrait = window.innerHeight > window.innerWidth;
+      if (isPortrait && colorRow) {
+        var cr = colorRow.getBoundingClientRect();
+        bubble.style.cssText = 'bottom:' + (window.innerHeight - cr.top + 10) + 'px;left:50%;transform:translateX(-50%)';
+      } else {
+        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      }
+      bubble.innerHTML = 'ボタンで いろや<br>ふとさを かえられるよ 🖌️<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      document.getElementById('tut-next').addEventListener('pointerdown', e => {
+        e.preventDefault();
+        if (colorRow) colorRow.classList.remove('tut-highlight');
+        nextStep();
+      });
     },
     () => {
       bubble.className = 'tut-bubble';
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '📸を おすと えを ほぞんできるよ<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
+      bubble.innerHTML = '📸 を おすと えを<br>とっておけるよ<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
     }
   ];

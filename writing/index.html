@@ -1624,6 +1624,9 @@ function showTutorial() {
             dim.classList.add('hidden');
             bubble.classList.add('hidden');
             writer.hideCharacter();
+            // 「スタート！」を一瞬表示してからquiz開始
+            _hedgeBubble.textContent = 'スタート！';
+            _ponoBubble.textContent = 'スタート！';
             startQuiz();
           });
         }
