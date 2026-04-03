@@ -1098,15 +1098,21 @@ function showTutorial() {
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
 
-  // チュートリアル用: 固定配置でステップバイステップガイド
-  // solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK']
-  // 固定配置: Vを1個右にずらし、空きを隣に
-  //   BLANK  V     BLANK
-  //   BLANK  V     BLANK
-  //   BLANK  null  V       ← Vが右にずれている
-  // → 正解手順: (2,2)のVをタップ → 空き(2,1)に移動 → 完成！
-  var tutGrid = ['BLANK','V','BLANK', 'BLANK','V','BLANK', 'BLANK',null,'V'];
-  var tutEmpty = 7; // row2,col1
+  // チュートリアル用: 3手で完成する固定配置
+  // 解答: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK']
+  // 3手戻し:
+  //   BLANK  null  BLANK    (row0) 空き=idx1
+  //   BLANK  V     BLANK    (row1)
+  //   V      V     BLANK    (row2) Vが左にずれ
+  // 手順: (1,1)→上 → (2,1)→上 → (2,0)→右 = 3手で完成
+  var tutGrid = ['BLANK',null,'BLANK', 'BLANK','V','BLANK', 'V','V','BLANK'];
+  var tutEmpty = 1; // row0,col1
+  var tutSteps = [
+    { row: 1, col: 1, msg: 'この みちパネルを タッチ！' },
+    { row: 2, col: 1, msg: 'つぎは ここ！' },
+    { row: 2, col: 0, msg: 'さいごは ここ！' }
+  ];
+  var tutStepIdx = 0;
 
   // Step 0: 導入
   dim.classList.remove('hidden');
@@ -1127,10 +1133,15 @@ function showTutorial() {
 
     // 描画を1フレーム待ってからハイライト
     requestAnimationFrame(function() {
-      // Step 1: 動かすパネルをハイライト (row2, col2のV)
-      highlightTile(2, 2, 'ここを タッチ！');
+      showTutStep();
     });
   });
+
+  function showTutStep() {
+    if (tutStepIdx >= tutSteps.length) return;
+    var s = tutSteps[tutStepIdx];
+    highlightTile(s.row, s.col, s.msg);
+  }
 
   var _tutOverlay = null;
 
@@ -1182,9 +1193,13 @@ function showTutorial() {
       // 実際にパネルを動かす
       handleTap(px, py);
 
-      // 少し待ってからクリアチェック
+      // 少し待ってから次のステップ or 完了
       setTimeout(function() {
-        if (checkWin()) {
+        tutStepIdx++;
+        if (tutStepIdx < tutSteps.length) {
+          // 次のステップ
+          requestAnimationFrame(function() { showTutStep(); });
+        } else {
           // チュートリアル完了！
           dim.classList.remove('hidden');
           bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
