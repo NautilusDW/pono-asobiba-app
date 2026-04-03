@@ -676,17 +676,41 @@ html, body {
 // 三色食品群 初回説明
 (function() {
   localStorage.removeItem('bento_sk_intro_done'); // テスト用: 毎回表示
+  localStorage.removeItem('bento_tut_seen'); // テスト用: 毎回表示
   const intro = document.getElementById('sk-intro');
-  if (!localStorage.getItem('bento_sk_intro_done')) {
-    intro.classList.remove('hidden');
-    document.getElementById('sk-intro-btn').addEventListener('click', function() {
-      localStorage.setItem('bento_sk_intro_done', '1');
-      intro.classList.add('hidden');
-      localStorage.removeItem('bento_tut_seen'); // テスト用: 毎回表示
-      if (!localStorage.getItem('bento_tut_seen')) {
-        setTimeout(showTutorial, 400);
-      }
-    });
+  // sk-introボタンのハンドラを常に登録（showTutorialから表示される）
+  document.getElementById('sk-intro-btn').addEventListener('click', function() {
+    localStorage.setItem('bento_sk_intro_done', '1');
+    intro.classList.add('hidden');
+    // Step 2: 食材説明チュートリアルを表示
+    setTimeout(function() {
+      var dim = document.getElementById('tut-dim');
+      var bubble = document.getElementById('tut-bubble');
+      if (!dim || !bubble) return;
+      var foodTray = document.querySelector('.food-tray');
+      dim.classList.remove('hidden');
+      if (foodTray) foodTray.classList.add('tut-highlight');
+      bubble.style.cssText = 'top:50%;left:25%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '🍱 みぎの しょくざいを タップして<br>おべんとうに いれよう！<br><button class="tut-next-btn" id="tut-step2-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-step2-next').addEventListener('pointerdown', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (foodTray) foodTray.classList.remove('tut-highlight');
+        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+        bubble.innerHTML = 'あか・きいろ・みどり ぜんぶ いれると ばっちり！<br><button class="tut-next-btn" id="tut-step2-end">つくろう！</button>';
+        document.getElementById('tut-step2-end').addEventListener('pointerdown', function(ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          dim.classList.add('hidden');
+          bubble.classList.add('hidden');
+          document.querySelectorAll('.tut-highlight').forEach(function(el) { el.classList.remove('tut-highlight'); });
+          localStorage.setItem('bento_tut_seen', '1');
+        });
+      });
+    }, 400);
+  });
+  // チュートリアル未表示なら showTutorial を起動（Step 0から開始）
+  if (!localStorage.getItem('bento_tut_seen')) {
+    setTimeout(showTutorial, 400);
   }
 })();
 
@@ -1207,40 +1231,20 @@ function showTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
-  var step = 0;
-  var foodTray = document.querySelector('.food-tray');
-  var steps = [
-    function() {
-      dim.classList.remove('hidden');
-      if (foodTray) foodTray.classList.add('tut-highlight');
-      var rect = foodTray ? foodTray.getBoundingClientRect() : null;
-      if (rect) {
-        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
-      } else {
-        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      }
-      bubble.innerHTML = '🍱 みぎの しょくざいを タップして<br>おべんとうに いれよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
-    },
-    function() {
-      if (foodTray) foodTray.classList.remove('tut-highlight');
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'あか・きいろ・みどり ぜんぶ いれると ばっちり！<br><button class="tut-next-btn" id="tut-next">つくろう！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
-    }
-  ];
-  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
-  function endTut() {
-    dim.removeEventListener('pointerdown', dimTap);
+
+  // Step 0: 導入メッセージ
+  dim.classList.remove('hidden');
+  bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+  bubble.innerHTML = '🍱 えいようバランスを かんがえながら<br>たべたい おべんとうを つくろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+  bubble.classList.remove('hidden');
+  document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    // Step 0を閉じて三色モーダルを表示
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
-    document.querySelectorAll('.tut-highlight').forEach(function(el) { el.classList.remove('tut-highlight'); });
-    localStorage.setItem('bento_tut_seen', '1');
-  }
-  function dimTap(e) { e.preventDefault(); e.stopPropagation(); nextStep(); }
-  dim.addEventListener('pointerdown', dimTap);
-  steps[0]();
+    var skIntro = document.getElementById('sk-intro');
+    skIntro.classList.remove('hidden');
+  });
 }
 
 // ===== Init =====

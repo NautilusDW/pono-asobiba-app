@@ -1680,13 +1680,23 @@ function showTutorial() {
     function() {
       dim.classList.remove('hidden');
       if (paletteEl) paletteEl.classList.add('tut-highlight');
-      var rect = paletteEl ? paletteEl.getBoundingClientRect() : null;
-      if (rect) {
-        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      var isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      if (isLandscape) {
+        var pr = paletteEl ? paletteEl.getBoundingClientRect() : null;
+        if (pr) {
+          bubble.style.cssText = 'top:50%;right:' + (window.innerWidth - pr.left + 10) + 'px;transform:translateY(-50%)';
+        } else {
+          bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+        }
       } else {
-        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+        var pr = paletteEl ? paletteEl.getBoundingClientRect() : null;
+        if (pr) {
+          bubble.style.cssText = 'bottom:' + (window.innerHeight - pr.top + 10) + 'px;left:50%;transform:translateX(-50%)';
+        } else {
+          bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+        }
       }
-      bubble.innerHTML = 'したの いろを えらんで ぬろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.innerHTML = 'いろを えらんで ぬろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
