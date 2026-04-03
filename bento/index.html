@@ -48,13 +48,13 @@ html, body {
 #app {
   display: flex;
   height: 100dvh;
-  padding: 56px 6px 6px;
+  padding: 56px 6px 12px;
   gap: 6px;
 }
 
 /* ── 左: お弁当箱（できるだけ大きく） ── */
 .left-panel {
-  flex: 0.85;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -108,7 +108,7 @@ html, body {
   html, body { overflow: hidden; }
   body { display: flex; align-items: center; justify-content: center; }
   #app {
-    width: 800px; height: 450px;
+    width: 800px; height: 440px;
     flex-shrink: 0;
     transform-origin: center center;
   }
@@ -650,7 +650,7 @@ html, body {
 // PC: 固定サイズの#appをscaleでウィンドウにフィット
 (function() {
   if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-  var BASE_W = 800, BASE_H = 460;
+  var BASE_W = 800, BASE_H = 440;
   function fit() {
     var el = document.getElementById('app');
     if (!el) return;
