@@ -113,21 +113,23 @@ html, body {
 .btn-color, .btn-dl, .btn-print {
   flex: 1;
   max-width: 140px;
-  padding: 11px 6px;
-  border-radius: 50px;
+  padding: 10px 6px 8px;
+  border-radius: 16px;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   font-weight: 900;
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   transition: transform 0.15s;
   box-shadow: 0 3px 10px rgba(91,74,63,0.12);
   border: none;
+  line-height: 1.3;
 }
 .btn-color:active, .btn-dl:active, .btn-print:active { transform: scale(0.93); }
 
@@ -736,9 +738,9 @@ html, body {
       <img src="../assets/images/nurie001.webp" alt="ぬりえ 1">
       <p class="nurie-label">ぬりえ 1</p>
       <div class="nurie-actions">
-        <button class="btn-color" onclick="startColoring('../assets/images/nurie001.webp', 'ぬりえ1')">🎨 アプリでぬる</button>
-        <a href="../assets/images/nurie001.webp" download="ぬりえ1.webp" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie001.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie001.webp', 'ぬりえ1')">🎨<br>アプリでぬる</button>
+        <a href="../assets/images/nurie001.webp" download="ぬりえ1.webp" class="btn-dl">⬇<br>ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie001.webp')">🖨<br>いんさつ</button>
       </div>
     </div>
 
@@ -746,9 +748,9 @@ html, body {
       <img src="../assets/images/nurie002.webp" alt="ぬりえ 2">
       <p class="nurie-label">ぬりえ 2</p>
       <div class="nurie-actions">
-        <button class="btn-color" onclick="startColoring('../assets/images/nurie002.webp', 'ぬりえ2')">🎨 アプリでぬる</button>
-        <a href="../assets/images/nurie002.webp" download="ぬりえ2.webp" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie002.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie002.webp', 'ぬりえ2')">🎨<br>アプリでぬる</button>
+        <a href="../assets/images/nurie002.webp" download="ぬりえ2.webp" class="btn-dl">⬇<br>ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie002.webp')">🖨<br>いんさつ</button>
       </div>
     </div>
 
@@ -756,9 +758,9 @@ html, body {
       <img src="../assets/images/nurie003.webp" alt="ぬりえ 3">
       <p class="nurie-label">ぬりえ 3</p>
       <div class="nurie-actions">
-        <button class="btn-color" onclick="startColoring('../assets/images/nurie003.webp', 'ぬりえ3')">🎨 アプリでぬる</button>
-        <a href="../assets/images/nurie003.webp" download="ぬりえ3.webp" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie003.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie003.webp', 'ぬりえ3')">🎨<br>アプリでぬる</button>
+        <a href="../assets/images/nurie003.webp" download="ぬりえ3.webp" class="btn-dl">⬇<br>ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie003.webp')">🖨<br>いんさつ</button>
       </div>
     </div>
 
@@ -766,9 +768,9 @@ html, body {
       <img src="../assets/images/nurie004.webp" alt="ぬりえ 4">
       <p class="nurie-label">ぬりえ 4</p>
       <div class="nurie-actions">
-        <button class="btn-color" onclick="startColoring('../assets/images/nurie004.webp', 'ぬりえ4')">🎨 アプリでぬる</button>
-        <a href="../assets/images/nurie004.webp" download="ぬりえ4.webp" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie004.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie004.webp', 'ぬりえ4')">🎨<br>アプリでぬる</button>
+        <a href="../assets/images/nurie004.webp" download="ぬりえ4.webp" class="btn-dl">⬇<br>ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie004.webp')">🖨<br>いんさつ</button>
       </div>
     </div>
 
@@ -776,9 +778,9 @@ html, body {
       <img src="../assets/images/nurie005.webp" alt="ぬりえ 5">
       <p class="nurie-label">ぬりえ 5</p>
       <div class="nurie-actions">
-        <button class="btn-color" onclick="startColoring('../assets/images/nurie005.webp', 'ぬりえ5')">🎨 アプリでぬる</button>
-        <a href="../assets/images/nurie005.webp" download="ぬりえ5.webp" class="btn-dl">⬇ ダウンロード</a>
-        <button class="btn-print" onclick="printNurie('../assets/images/nurie005.webp')">🖨 いんさつ</button>
+        <button class="btn-color" onclick="startColoring('../assets/images/nurie005.webp', 'ぬりえ5')">🎨<br>アプリでぬる</button>
+        <a href="../assets/images/nurie005.webp" download="ぬりえ5.webp" class="btn-dl">⬇<br>ダウンロード</a>
+        <button class="btn-print" onclick="printNurie('../assets/images/nurie005.webp')">🖨<br>いんさつ</button>
       </div>
     </div>
   </div>
@@ -825,8 +827,8 @@ html, body {
       <button class="rainbow-swatch" id="rainbow-btn" onclick="toggleRainbow()"><img src="../assets/images/icons/icons_001.png" style="width:24px;height:24px;object-fit:contain;pointer-events:none;" alt="🌈"></button>
     </div>
     <div class="tool-row">
-      <button class="size-btn active" data-size="14"><span class="size-line size-line-s"></span></button>
-      <button class="size-btn" data-size="28"><span class="size-line size-line-m"></span></button>
+      <button class="size-btn" data-size="14"><span class="size-line size-line-s"></span></button>
+      <button class="size-btn active" data-size="28"><span class="size-line size-line-m"></span></button>
       <button class="size-btn" data-size="50"><span class="size-line size-line-l"></span></button>
       <button class="size-btn" data-size="70"><span class="size-line size-line-xl"></span></button>
       <button class="bucket-btn" id="bucket-btn" onclick="toggleMask()">✏️ はみ出し防止</button>
@@ -844,7 +846,7 @@ const COLORS = [
 ];
 
 let currentColor = COLORS[0];
-let brushSize = 14;
+let brushSize = 28;
 let isEraser = false;
 let isBucket = true;  // はみ出し防止デフォルトON
 let isRainbow = false;
@@ -1672,6 +1674,9 @@ function showTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
+  // 塗り絵画面が表示されていない場合はスキップ
+  var colScreen = document.getElementById('coloring-screen');
+  if (!colScreen || colScreen.style.display === 'none' || colScreen.style.display === '') return;
   var step = 0;
   var paletteEl = document.getElementById('palette');
   var toolRowEl = document.querySelector('.tool-row');
