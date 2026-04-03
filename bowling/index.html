@@ -217,16 +217,24 @@ function showZukan() {
   list.innerHTML = '';
   for (var i = 0; i < TIERS.length; i++) {
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;justify-content:center;padding:4px 0;';
+    row.style.cssText = 'display:flex;align-items:center;padding:4px 0;';
     var cv = document.createElement('canvas');
-    var sz = 40;
-    cv.width = sz; cv.height = sz; cv.style.cssText = 'width:40px;height:40px;flex-shrink:0;';
+    var sz = 36;
+    cv.width = sz; cv.height = sz; cv.style.cssText = 'width:36px;height:36px;flex-shrink:0;';
     if (tierCanvases[i]) cv.getContext('2d').drawImage(tierCanvases[i], 0, 0, sz, sz);
     row.appendChild(cv);
-    var info = document.createElement('span');
-    info.style.cssText = 'font-size:0.85rem;font-weight:700;min-width:100px;text-align:left;';
-    info.textContent = TIERS[i].name + '  ×' + ((i + 1) * 20) + 'pt';
-    row.appendChild(info);
+    var nm = document.createElement('span');
+    nm.style.cssText = 'font-size:0.82rem;font-weight:700;width:80px;text-align:left;margin-left:8px;';
+    nm.textContent = TIERS[i].name;
+    row.appendChild(nm);
+    var mul = document.createElement('span');
+    mul.style.cssText = 'font-size:0.82rem;font-weight:700;color:#999;margin-left:4px;';
+    mul.textContent = '×';
+    row.appendChild(mul);
+    var pts = document.createElement('span');
+    pts.style.cssText = 'font-size:0.82rem;font-weight:900;color:#FFD700;margin-left:4px;width:50px;text-align:right;';
+    pts.textContent = ((i + 1) * 20) + 'pt';
+    row.appendChild(pts);
     list.appendChild(row);
     if (i < TIERS.length - 1) {
       var arrow = document.createElement('div');
