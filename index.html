@@ -1089,7 +1089,7 @@
       <div class="stamp-rally-games" id="stampRallyGames">
         <!-- JS が3つのゲームカードを生成 -->
       </div>
-      <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと3つ あそんで ボーナススタンプ！</div>
+      <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
     </div>
 
     <!-- ===== Mini Stamp Card ===== -->
@@ -1521,11 +1521,11 @@
         var rally = getJSON(LS_DAILY_RALLY, null);
         if (rally && rally.date === today) return rally;
 
-        // Pick 3 random games using seeded random
+        // Pick 2 random games using seeded random
         var seed = getDailySeed();
         var pool = ALL_FREE_GAMES.slice();
         var picked = [];
-        for (var i = 0; i < 3; i++) {
+        for (var i = 0; i < 2; i++) {
           var r = seededRandom(seed + i * 137);
           var idx = Math.floor(r * pool.length);
           picked.push(pool[idx].key);
@@ -1559,8 +1559,8 @@
           }
         }
 
-        // All 3 completed → bonus stamp
-        if (rally.completed.length >= 3 && !rally.stampEarned) {
+        // All 2 completed → bonus stamp
+        if (rally.completed.length >= 2 && !rally.stampEarned) {
           rally.stampEarned = true;
           // Grant bonus stamp (add an extra stamp for today)
           var log = getStampLog();
@@ -1607,7 +1607,7 @@
         // Update bonus text
         var bonusEl = document.getElementById('stampRallyBonus');
         if (bonusEl) {
-          var remaining = 3 - rally.completed.length;
+          var remaining = 2 - rally.completed.length;
           if (remaining <= 0) {
             bonusEl.textContent = '\uD83C\uDF89 ぜんぶクリア！ ボーナススタンプ ゲット！';
             bonusEl.classList.remove('pending');
