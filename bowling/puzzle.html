@@ -353,16 +353,20 @@ const TIERS = [
   { img: 6,  r: 46, mass: 2.8, name: 'ハリネズミ' },
   { img: 10, r: 54, mass: 3.5, name: 'クマ' },
 ];
-const MAX_TIER = TIERS.length - 1;
-
 // ── Difficulty ──
 const _isEasy = new URLSearchParams(location.search).get('diff') === 'easy';
 if (_isEasy) {
-  // やさしいモード: 玉を1.5倍大きく
-  for (var _t = 0; _t < TIERS.length; _t++) {
-    TIERS[_t].r = Math.round(TIERS[_t].r * 1.5);
-  }
+  // やさしい: カエル・キツネを抜いた6種、サイズ1.5倍
+  TIERS.length = 0;
+  TIERS.push(
+    { img: 8,  r: 18, mass: 0.3, name: 'ヒヨコ' },
+    { img: 0,  r: 23, mass: 0.5, name: 'うさぎ' },
+    { img: 2,  r: 45, mass: 1.4, name: 'キツネ' },
+    { img: 6,  r: 69, mass: 2.8, name: 'ハリネズミ' },
+    { img: 10, r: 81, mass: 3.5, name: 'クマ' }
+  );
 }
+const MAX_TIER = TIERS.length - 1;
 
 // ── Constants ──
 const GRAVITY = 0.25;
@@ -489,7 +493,7 @@ function initGrid() {
   for (let i = 0; i < seedCount; i++) {
     const sr = Math.floor(Math.random() * FILL_ROWS);
     const sc = Math.floor(Math.random() * GRID_COLS);
-    const tierMax = _isEasy ? 3 : 4; // やさしい: 0-2、ふつう: 0-3
+    const tierMax = _isEasy ? 3 : 4; // やさしい: 0-2(3種)、ふつう: 0-3(4種)
     const tier = Math.floor(Math.random() * tierMax);
     if (!gridPins[sr][sc]) {
       gridPins[sr][sc] = { tier, bomb: false };
@@ -914,10 +918,12 @@ let nextTier = 0;
 function pickBallTier() {
   const r = Math.random();
   if (_isEasy) {
-    // やさしい: 3種類のみ
-    if (r < 0.45) return 0;
-    if (r < 0.80) return 1;
-    return 2;
+    // やさしい: 5種類（小さい方が多め）
+    if (r < 0.40) return 0;
+    if (r < 0.70) return 1;
+    if (r < 0.90) return 2;
+    if (r < 0.97) return 3;
+    return 4;
   }
   if (r < 0.40) return 0;
   if (r < 0.65) return 1;
