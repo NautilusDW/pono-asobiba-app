@@ -12,11 +12,20 @@ body {
   font-family: 'Zen Maru Gothic', sans-serif;
   background: #FFF8F0;
   color: #5D4E37;
-  padding: 20px 16px 40px;
+  padding: 60px 16px 40px;
   line-height: 1.8;
 }
-.back { display: inline-block; margin-bottom: 16px; color: #F2915A; font-weight: 900; text-decoration: none; font-size: 0.9rem; }
-.back:active { opacity: 0.7; }
+.help-home-btn {
+  position: fixed; top: 12px; left: 16px; z-index: 100;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,0.9); border: none;
+  font-size: 20px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+.help-home-btn:active { transform: scale(0.9); }
 h1 { font-size: 1.4rem; font-weight: 900; color: #F2915A; margin-bottom: 20px; }
 h2 { font-size: 1.1rem; font-weight: 900; color: #5D4E37; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #FDE68A; }
 h3 { font-size: 0.95rem; font-weight: 900; margin: 16px 0 6px; }
@@ -97,7 +106,7 @@ li { margin-bottom: 6px; }
 </head>
 <body>
 
-<a href="./" class="back">← もどる</a>
+<a href="./" class="help-home-btn">🏠</a>
 
 <!-- 作者からのごあいさつ -->
 <div class="greeting">
