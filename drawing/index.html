@@ -520,7 +520,7 @@ body {
 /* ===== Tutorial ===== */
 .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
-.tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:85vw;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.82rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.82rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
@@ -1046,7 +1046,7 @@ document.getElementById('btnClear').addEventListener('click', () => {
   // 確認モーダル
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
-  ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+  ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;white-space:nowrap;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
     '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">ほんとうに ぜんぶ けす？</div>' +
     '<div style="display:flex;gap:12px;justify-content:center;">' +
     '<button id="_clrYes" style="padding:10px 24px;border:none;border-radius:14px;background:linear-gradient(135deg,#ffd3b6,#ffaaa5);color:#8b4513;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">けす</button>' +
