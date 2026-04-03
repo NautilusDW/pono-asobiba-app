@@ -297,10 +297,10 @@ document.getElementById('start-bowling').addEventListener('touchstart', function
 document.getElementById('start-bowling').addEventListener('click', handleBowlingStart);
 // パズルボウリングへの遷移
 // パズルボウリング難易度選択
-document.getElementById('puzzle-easy').addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); location.href = 'puzzle.html?diff=easy'; }, { passive: false });
-document.getElementById('puzzle-easy').addEventListener('click', function(e) { e.stopPropagation(); location.href = 'puzzle.html?diff=easy'; });
-document.getElementById('puzzle-normal').addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); location.href = 'puzzle.html?diff=normal'; }, { passive: false });
-document.getElementById('puzzle-normal').addEventListener('click', function(e) { e.stopPropagation(); location.href = 'puzzle.html?diff=normal'; });
+document.getElementById('puzzle-easy').addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); location.href = 'puzzle.html?diff=easy&_=' + Date.now(); }, { passive: false });
+document.getElementById('puzzle-easy').addEventListener('click', function(e) { e.stopPropagation(); location.href = 'puzzle.html?diff=easy&_=' + Date.now(); });
+document.getElementById('puzzle-normal').addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); location.href = 'puzzle.html?diff=normal&_=' + Date.now(); }, { passive: false });
+document.getElementById('puzzle-normal').addEventListener('click', function(e) { e.stopPropagation(); location.href = 'puzzle.html?diff=normal&_=' + Date.now(); });
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
