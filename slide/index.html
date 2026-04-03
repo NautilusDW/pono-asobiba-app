@@ -1100,13 +1100,13 @@ function showTutorial() {
 
   // チュートリアル用: 固定配置でステップバイステップガイド
   // solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK']
-  // 固定シャッフル: Vを1個ずらした状態から始める
+  // 固定配置: Vを1個右にずらし、空きを隣に
   //   BLANK  V     BLANK
-  //   BLANK  null  BLANK
-  //   V      V     BLANK
-  // → 正解手順: (2,0)をタップ→Vが中央へ → 完成
-  var tutGrid = ['BLANK','V','BLANK', 'BLANK',null,'BLANK', 'V','V','BLANK'];
-  var tutEmpty = 4; // row1,col1
+  //   BLANK  V     BLANK
+  //   BLANK  null  V       ← Vが右にずれている
+  // → 正解手順: (2,2)のVをタップ → 空き(2,1)に移動 → 完成！
+  var tutGrid = ['BLANK','V','BLANK', 'BLANK','V','BLANK', 'BLANK',null,'V'];
+  var tutEmpty = 7; // row2,col1
 
   // Step 0: 導入
   dim.classList.remove('hidden');
@@ -1124,8 +1124,8 @@ function showTutorial() {
     state = S.PLAYING;
     bubble.classList.add('hidden');
 
-    // Step 1: 動かすパネルをハイライト
-    highlightTile(2, 0, 'ここを タッチ！');
+    // Step 1: 動かすパネルをハイライト (row2, col2のV)
+    highlightTile(2, 2, 'ここを タッチ！');
   });
 
   var _tutOverlay = null;
