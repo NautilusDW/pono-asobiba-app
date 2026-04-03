@@ -516,12 +516,22 @@ body {
   }
   .stamp-item { width: 40px; height: 40px; font-size: 1.2rem; }
 }
+
+/* ===== Tutorial ===== */
+.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
+.tut-dim.hidden { display:none; }
+.tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:14px 18px;max-width:280px;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.tut-bubble.hidden { display:none; }
+@keyframes tutPopIn { from{transform:scale(0.8);opacity:0.5} to{transform:scale(1);opacity:1} }
+.tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
 <audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="auto"></audio>
 <div id="app">
   <div class="header">
@@ -1179,7 +1189,52 @@ function toggleBgm() {
   updateBgmIcon();
 }
 
-initMenu({ bgmToggle: toggleBgm });
+// ===== Tutorial =====
+function showTutorial() {
+  const dim = document.getElementById('tut-dim');
+  const bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  let step = 0;
+  const steps = [
+    () => {
+      dim.classList.remove('hidden');
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '🎨 ゆびで じゆうに えを かこう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'うえの ボタンで いろや<br>ふとさを かえられるよ 🖌️<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '📸を おすと えを ほぞんできるよ<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+    }
+  ];
+
+  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
+  function endTut() {
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
+    localStorage.setItem('drawing_tut_seen', '1');
+  }
+
+  steps[0]();
+}
+
+if (!localStorage.getItem('drawing_tut_seen')) {
+  setTimeout(showTutorial, 500);
+}
+
+initMenu({ bgmToggle: toggleBgm, tutorial: showTutorial });
 
 if (bgmEnabled) {
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {

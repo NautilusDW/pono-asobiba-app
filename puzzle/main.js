@@ -616,6 +616,47 @@ const resizeObserver = new ResizeObserver(() => {
   resizeTimer = setTimeout(() => initPuzzle(sourceImg), 250);
 });
 
+// ===== Tutorial =====
+function showTutorial() {
+  const dim = document.getElementById('tut-dim');
+  const bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  let step = 0;
+  const steps = [
+    () => {
+      dim.classList.remove('hidden');
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '🧩 ピースを ゆびで うごかそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'ただしい ばしょに おくと<br>パチッとはまるよ 💡<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'ぜんぶ はめたら できあがり！🎉<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+    }
+  ];
+
+  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
+  function endTut() {
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
+    localStorage.setItem('puzzle_tut_seen', '1');
+  }
+
+  steps[0]();
+}
+
 // ===== Start =====
 window.addEventListener('DOMContentLoaded', () => {
   // Merge fixed stages with any saved drawings
@@ -623,6 +664,11 @@ window.addEventListener('DOMContentLoaded', () => {
   STAGES = [...BASE_STAGES, ...drawingStages];
   resizeObserver.observe(puzzleContainer);
   loadStage(0);
+
+  // Show tutorial on first visit
+  if (!localStorage.getItem('puzzle_tut_seen')) {
+    setTimeout(showTutorial, 500);
+  }
 
   // Shared menu (gear icon) with BGM toggle
   if (window.initMenu) {
@@ -636,7 +682,8 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
           bgm.pause();
         }
-              }
+              },
+      tutorial: showTutorial
     });
   }
 });
