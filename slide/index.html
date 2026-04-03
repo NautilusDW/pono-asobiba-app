@@ -1097,31 +1097,116 @@ function showTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
-  var step = 0;
-  var steps = [
-    function() {
-      dim.classList.remove('hidden');
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'みちを つなげて<br>ポノを すすめよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
-    },
-    function() {
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'パネルを タップすると<br>うごくよ<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
+
+  // チュートリアル用: 固定配置でステップバイステップガイド
+  // solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK']
+  // 固定シャッフル: Vを1個ずらした状態から始める
+  //   BLANK  V     BLANK
+  //   BLANK  null  BLANK
+  //   V      V     BLANK
+  // → 正解手順: (2,0)をタップ→Vが中央へ → 完成
+  var tutGrid = ['BLANK','V','BLANK', 'BLANK',null,'BLANK', 'V','V','BLANK'];
+  var tutEmpty = 4; // row1,col1
+
+  // Step 0: 導入
+  dim.classList.remove('hidden');
+  bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+  bubble.innerHTML = '🌳 パネルを うごかして<br>みちを つなげよう！<br><button class="tut-next-btn" id="tut-next">やってみる →</button>';
+  bubble.classList.remove('hidden');
+
+  document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    // チュートリアル用のグリッドをセット
+    grid = tutGrid.slice();
+    emptyIdx = tutEmpty;
+    curCols = 3; curRows = 3;
+    calcLayout();
+    state = S.PLAYING;
+    bubble.classList.add('hidden');
+
+    // Step 1: 動かすパネルをハイライト
+    highlightTile(2, 0, 'ここを タッチ！');
+  });
+
+  var _tutOverlay = null;
+
+  function highlightTile(row, col, msg) {
+    // パネルのCanvas座標→画面座標に変換
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = rect.width / CW;
+    var scaleY = rect.height / CH;
+    var tx = rect.left + (gridOX + col * cellSize) * scaleX;
+    var ty = rect.top + (gridOY + row * cellSize) * scaleY;
+    var tw = cellSize * scaleX;
+    var th = cellSize * scaleY;
+
+    // ハイライトオーバーレイ
+    if (_tutOverlay) _tutOverlay.remove();
+    _tutOverlay = document.createElement('div');
+    _tutOverlay.style.cssText = 'position:fixed;z-index:9996;border:4px solid #FFD700;border-radius:12px;box-shadow:0 0 0 4000px rgba(0,0,0,0.5),0 0 20px rgba(255,215,0,0.6);pointer-events:none;' +
+      'left:' + tx + 'px;top:' + ty + 'px;width:' + tw + 'px;height:' + th + 'px;';
+    document.body.appendChild(_tutOverlay);
+
+    // 吹き出し（パネルの上に）
+    bubble.style.cssText = 'top:' + Math.max(10, ty - 60) + 'px;left:' + (tx + tw / 2) + 'px;transform:translateX(-50%);z-index:9997';
+    bubble.innerHTML = '👆 ' + msg;
+    bubble.classList.remove('hidden');
+
+    // ユーザーがそのパネルをタップするのを待つ
+    waitForTap(row, col);
+  }
+
+  function waitForTap(targetRow, targetCol) {
+    var targetIdx = targetRow * curCols + targetCol;
+    function onTap(ev) {
+      ev.preventDefault();
+      var rect = canvas.getBoundingClientRect();
+      var px = (ev.clientX - rect.left) * (CW / rect.width);
+      var py = (ev.clientY - rect.top) * (CH / rect.height);
+      var col = Math.floor((px - gridOX) / cellSize);
+      var row = Math.floor((py - gridOY) / cellSize);
+      if (row < 0 || row >= curRows || col < 0 || col >= curCols) return;
+      var tappedIdx = row * curCols + col;
+      if (tappedIdx !== targetIdx) return;
+
+      // 正解タップ！
+      wrap.removeEventListener('pointerdown', onTap, true);
+      if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
+      bubble.classList.add('hidden');
+
+      // 実際にパネルを動かす
+      handleTap(px, py);
+
+      // 少し待ってからクリアチェック
+      setTimeout(function() {
+        if (checkWin()) {
+          // チュートリアル完了！
+          dim.classList.remove('hidden');
+          bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+          bubble.innerHTML = '🎉 できた！<br>みちが つながったよ！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+          bubble.classList.remove('hidden');
+          document.getElementById('tut-next').addEventListener('pointerdown', function(ev2) {
+            ev2.preventDefault(); ev2.stopPropagation();
+            endTut();
+            // 本番のステージ1をシャッフルして開始
+            shuffleGrid(LEVELS[0]);
+            calcLayout();
+            moveCount = 0;
+            updateHUD();
+            state = S.PLAYING;
+          });
+        }
+      }, 500);
     }
-  ];
-  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
+    wrap.addEventListener('pointerdown', onTap, true);
+  }
+
   function endTut() {
-    dim.removeEventListener('pointerdown', dimTap);
+    if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
     localStorage.setItem('slide_tut_seen', '1');
   }
-  function dimTap(e) { e.preventDefault(); e.stopPropagation(); nextStep(); }
-  dim.addEventListener('pointerdown', dimTap);
-  steps[0]();
 }
 
 // ===== Init =====
