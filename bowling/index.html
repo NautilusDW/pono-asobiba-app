@@ -184,6 +184,8 @@ function showTutorial() {
 }
 
 document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
+  // モード選択やパズルリンクのクリックはスキップ
+  if (e.target.closest('.shot-mode') || e.target.closest('.mode-link')) return;
   e.preventDefault(); this.removeEventListener('pointerdown', handler);
   await initAudio(); this.style.display = 'none';
   tryStartBgm();
