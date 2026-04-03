@@ -204,19 +204,27 @@ function onTutShotComplete() {
   if (!_tutActive) return;
 
   if (_tutStep === 1) {
-    // ヒヨコが消えたか確認（gridに残ってるか）
+    // 元のヒヨコ2個が合体で消えたか確認
+    // 合体するとtier0→tier1になるので、グリッド上のtier0の数で判定
+    // ボールがくっついて3個になることもあるが、合体していればtier0は減る
     var hiyo = 0;
     for (var r = 0; r < GRID_ROWS; r++)
       for (var c = 0; c < GRID_COLS; c++)
         if (gridPins[r][c] && gridPins[r][c].tier === 0) hiyo++;
+    // fallenにtier0がいるかもチェック（落ちた=合体で消えた証拠）
+    var fallenHas = false;
+    for (var fi = 0; fi < fallen.length; fi++) {
+      if (!fallen[fi].dead) { fallenHas = true; break; }
+    }
 
     setTimeout(function() {
-      if (hiyo >= 2) {
+      if (hiyo >= 2 && !fallenHas) {
         // 外した → リトライ
         ballTier = 0; nextTier = 0;
         tutShowBubble(
           'おしい！<br><br>' +
-          'もういちど ヒヨコを ねらって なげてみよう！<br>' +
+          'もういちど ヒヨコを<br>' +
+          'ねらって なげてみよう！<br>' +
           '<button class="tut-next-btn" id="tut-next">もういちど！</button>'
         );
         document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
@@ -1041,7 +1049,7 @@ function drawBg() {
     ctx.fillRect(0, 0, W, H);
   }
   // HUD bar (top dark strip for NEXT/score readability)
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
   ctx.fillRect(0, 0, W, GRID_TOP);
   // Grid area background
   const gridBottom = GRID_TOP + GRID_ROWS * ROW_H + CELL_W;
