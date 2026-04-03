@@ -1067,7 +1067,10 @@ canvas.addEventListener('pointercancel', () => { aimBarDragging = false; slingsh
 function drawBg() {
   const bgImg = bgImgObjs[bgImgIdx];
   if (bgImg.complete && bgImg.naturalWidth > 0) {
-    ctx.drawImage(bgImg, 0, 0, W, H);
+    var iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
+    var sc = Math.max(W / iw, H / ih);
+    var dw = iw * sc, dh = ih * sc;
+    ctx.drawImage(bgImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
   } else {
     ctx.fillStyle = '#1a1a4e';
     ctx.fillRect(0, 0, W, H);
