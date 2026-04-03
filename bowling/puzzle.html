@@ -138,42 +138,66 @@ function initAudio() {
     }, 1000);
   });
 }
+var _tutActive = false;
+var _tutStep = 0;
+
 function showTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
-  var step = 0;
-  var steps = [
-    function() {
-      dim.classList.remove('hidden');
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '🎯 ゆびで ひだりみぎに<br>ねらいを きめよう！<br>ゆびを はなすと とぶよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
-    },
-    function() {
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '⬆️ うえの いきものに<br>おなじ いきものを あてると<br>くっついて きえるよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
-    },
-    function() {
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '⬇️ きえた いきものは<br>したに おちるよ！<br>したで 3つ つながると<br>ボーナス！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
-    },
-    function() {
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '🌟 したの いきものを<br>ぜんぶ けすのが もくひょう！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
-    }
-  ];
-  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
-  function endTut() {
+  _tutActive = true;
+  _tutStep = 0;
+
+  // Step 0: 投げ方の説明 → 実際に投げさせる
+  dim.classList.remove('hidden');
+  bubble.style.cssText = 'top:40%;left:50%;transform:translate(-50%,-50%)';
+  bubble.innerHTML = '🎯 ねらいを きめて<br>なげてみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
+  bubble.classList.remove('hidden');
+  document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+    e.preventDefault(); e.stopPropagation();
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
-    localStorage.setItem('bowling_puzzle_tut_seen', '1');
+    _tutStep = 1; // 次は投げた後に表示
+  });
+}
+
+// settling完了時にチュートリアルの次ステップを表示
+function onTutShotComplete() {
+  if (!_tutActive) return;
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  if (_tutStep === 1) {
+    // Step 1: 合体の説明
+    setTimeout(function() {
+      dim.classList.remove('hidden');
+      bubble.style.cssText = 'top:40%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '⬆️ おなじ いきものが<br>くっつくと きえるよ！<br>もう1かい なげてみよう<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        dim.classList.add('hidden');
+        bubble.classList.add('hidden');
+        _tutStep = 2;
+      });
+    }, 500);
+  } else if (_tutStep === 2) {
+    // Step 2: 目標の説明 → チュートリアル終了
+    setTimeout(function() {
+      dim.classList.remove('hidden');
+      bubble.style.cssText = 'top:40%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '🌟 したの いきものを<br>ぜんぶ けすのが<br>もくひょうだよ！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        _tutActive = false;
+        dim.classList.add('hidden');
+        bubble.classList.add('hidden');
+        localStorage.setItem('bowling_puzzle_tut_seen', '1');
+      });
+    }, 500);
   }
-  steps[0]();
 }
 
 document.getElementById('start-screen').addEventListener('pointerdown', async function handler(e) {
@@ -1352,6 +1376,7 @@ function loop(now) {
         gamePhase = 'aim';
         saveHighScore('bowling_puzzle', score);
         combo = 0;
+        onTutShotComplete();
       }
     } else {
       settleTimer--;
