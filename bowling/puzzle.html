@@ -39,17 +39,23 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 #start-screen .title { font-size: 38px; font-weight: 900; color: #4ECDC4; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
 #start-screen .tap { font-size: 22px; color: #fff; margin-top: 30px; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.97)} }
-.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
+.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,0.3);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:14px 18px;max-width:280px;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{transform:scale(0.8) translate(-50%,-50%);opacity:0.5} to{transform:scale(1) translate(-50%,-50%);opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+#landscape-notice { display:none;position:fixed;inset:0;z-index:99999;background:#1a2a4a;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:white;text-align:center;padding:40px;font-family:'Zen Maru Gothic',sans-serif; }
+#landscape-notice .rot-icon { font-size:64px;animation:rotHint 2s ease-in-out infinite; }
+@keyframes rotHint { 0%,100%{transform:rotate(0)} 50%{transform:rotate(-90deg)} }
+#landscape-notice p { font-size:18px;line-height:1.6; }
+@media (orientation:landscape) and (pointer:coarse) { #landscape-notice { display:flex !important; } }
 </style>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 </head>
 <body>
+<div id="landscape-notice"><div class="rot-icon">📱</div><p>スマホを<br><strong>たてむき</strong>にしてね！</p></div>
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 <div id="start-screen"><div class="title">パズルボウリング</div><div class="tap">タップしてスタート</div></div>
@@ -141,18 +147,23 @@ function showTutorial() {
     function() {
       dim.classList.remove('hidden');
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'ゆびで ひだりみぎに<br>ねらいを きめよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.innerHTML = '🎯 ゆびで ひだりみぎに<br>ねらいを きめよう！<br>ゆびを はなすと とぶよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     function() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'ゆびを はなすと<br>ボールが とぶよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.innerHTML = '⬆️ うえの いきものに<br>おなじ いきものを あてると<br>くっついて きえるよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     function() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'おなじ いきものを 3つ<br>つなげると きえるよ！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+      bubble.innerHTML = '⬇️ きえた いきものは<br>したに おちるよ！<br>したで 3つ つながると<br>ボーナス！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
+    },
+    function() {
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '🌟 したの いきものを<br>ぜんぶ けすのが もくひょう！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
     }
   ];
