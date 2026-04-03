@@ -355,6 +355,15 @@ const TIERS = [
 ];
 const MAX_TIER = TIERS.length - 1;
 
+// ── Difficulty ──
+const _isEasy = new URLSearchParams(location.search).get('diff') === 'easy';
+if (_isEasy) {
+  // やさしいモード: 玉を1.5倍大きく
+  for (var _t = 0; _t < TIERS.length; _t++) {
+    TIERS[_t].r = Math.round(TIERS[_t].r * 1.5);
+  }
+}
+
 // ── Constants ──
 const GRAVITY = 0.25;
 const RESTITUTION = 0.08;
@@ -364,7 +373,7 @@ const BALL_SPEED = 14;
 const MIN_DRAG = 10;
 const SETTLE_WAIT = 120;
 const COMBO_WINDOW = 90;
-const GRID_PIN_R = 14; // all grid pins rendered at small size for uniform grid
+const GRID_PIN_R = _isEasy ? 20 : 14; // やさしい: 大きめ
 
 // ── Pin images (shared) ──
 const tierCanvases = [];
@@ -475,13 +484,13 @@ function initGrid() {
   // Makes it harder: same-tier groups are small and scattered
   const FILL_ROWS = 5;
   const seeds = [];
-  // Place 6-8 seed points with random tiers (fewer than before)
-  const seedCount = 6 + Math.floor(Math.random() * 3);
+  // やさしい: 3-4個、ふつう: 6-8個
+  const seedCount = _isEasy ? (3 + Math.floor(Math.random() * 2)) : (6 + Math.floor(Math.random() * 3));
   for (let i = 0; i < seedCount; i++) {
     const sr = Math.floor(Math.random() * FILL_ROWS);
     const sc = Math.floor(Math.random() * GRID_COLS);
-    // More even tier distribution — harder to find matching clusters
-    const tier = Math.floor(Math.random() * 4); // 0-3: ヒヨコ,うさぎ,カエル,ネコ
+    const tierMax = _isEasy ? 3 : 4; // やさしい: 0-2、ふつう: 0-3
+    const tier = Math.floor(Math.random() * tierMax);
     if (!gridPins[sr][sc]) {
       gridPins[sr][sc] = { tier, bomb: false };
       seeds.push({ row: sr, col: sc, tier });
@@ -904,12 +913,18 @@ let nextTier = 0;
 
 function pickBallTier() {
   const r = Math.random();
-  if (r < 0.40) return 0; // ヒヨコ
-  if (r < 0.65) return 1; // うさぎ
-  if (r < 0.80) return 2; // カエル
-  if (r < 0.92) return 3; // ネコ
-  if (r < 0.98) return 4; // キツネ
-  return 5; // アヒル (rare)
+  if (_isEasy) {
+    // やさしい: 3種類のみ
+    if (r < 0.45) return 0;
+    if (r < 0.80) return 1;
+    return 2;
+  }
+  if (r < 0.40) return 0;
+  if (r < 0.65) return 1;
+  if (r < 0.80) return 2;
+  if (r < 0.92) return 3;
+  if (r < 0.98) return 4;
+  return 5;
 }
 
 // ── Grid merge check: BFS from a cell, merge all connected same-tier ──
