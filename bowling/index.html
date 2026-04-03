@@ -359,8 +359,9 @@ const bgImgObjs = BG_IMGS.map(src => { const img = new Image(); img.src = src; r
 
 // ── Pin images ──
 const tierCanvases = [];
+const TIER_MIN_RES = 64;
 for (let t = 0; t < TIERS.length; t++) {
-  const tier = TIERS[t]; const drawSize = tier.r * 2;
+  const tier = TIERS[t]; const drawSize = Math.max(tier.r * 2, TIER_MIN_RES);
   const img = new Image(); img.src = 'pins/pin_' + tier.img + '.png';
   const oc = document.createElement('canvas'); oc.width = oc.height = drawSize;
   tierCanvases.push(oc);
