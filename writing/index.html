@@ -1621,13 +1621,15 @@ function showTutorial() {
           bubble.classList.remove('hidden');
           document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
             e.preventDefault();
-            dim.classList.add('hidden');
-            bubble.classList.add('hidden');
             writer.hideCharacter();
-            // 「スタート！」を一瞬表示してからquiz開始
-            _hedgeBubble.textContent = 'スタート！';
-            _ponoBubble.textContent = 'スタート！';
-            startQuiz();
+            // 「スタート！」モーダルを中央に表示
+            bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+            bubble.innerHTML = '<div style="font-size:1.5rem;font-weight:900;color:#F2915A;">✏️ スタート！</div>';
+            setTimeout(function() {
+              dim.classList.add('hidden');
+              bubble.classList.add('hidden');
+              startQuiz();
+            }, 1200);
           });
         }
       });

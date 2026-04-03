@@ -1208,21 +1208,15 @@ function showTutorial() {
     },
     () => {
       // カラーパレットをハイライト
-      var colorRow = document.querySelector('.color-row') || document.querySelector('.palette-row');
-      if (!colorRow) { var toolBtns = document.querySelectorAll('.tool-btn'); colorRow = toolBtns[0] ? toolBtns[0].parentElement : null; }
-      if (colorRow) colorRow.classList.add('tut-highlight');
-      var isPortrait = window.innerHeight > window.innerWidth;
-      if (isPortrait && colorRow) {
-        var cr = colorRow.getBoundingClientRect();
-        bubble.style.cssText = 'bottom:' + (window.innerHeight - cr.top + 10) + 'px;left:50%;transform:translateX(-50%)';
-      } else {
-        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      }
-      bubble.innerHTML = 'ボタンで いろや<br>ふとさを かえられるよ 🖌️<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      var colorPal = document.getElementById('colorPalette');
+      if (colorPal) colorPal.classList.add('tut-highlight');
+      // 常に中央下寄りに配置（縦横どちらでも見える位置）
+      bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'いろや ふとさを<br>かえられるよ 🖌️<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => {
         e.preventDefault();
-        if (colorRow) colorRow.classList.remove('tut-highlight');
+        if (colorPal) colorPal.classList.remove('tut-highlight');
         nextStep();
       });
     },
