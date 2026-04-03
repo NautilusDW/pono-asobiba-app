@@ -1245,21 +1245,28 @@ function showTutorial() {
       if (!gw) return endTut();
       gw.classList.add('tut-highlight');
       const r = gw.getBoundingClientRect();
-      bubble.className = 'tut-bubble arrow-up';
-      bubble.style.cssText = 'top:' + (r.bottom - 160) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
+      const bw2 = 140; // half of max-width 280
+      const cx2 = r.left + r.width / 2;
+      bubble.className = 'tut-bubble arrow-down';
+      bubble.style.cssText = 'top:' + Math.max(10, r.bottom - 80) + 'px;left:' + Math.max(10, cx2 - bw2) + 'px';
       bubble.innerHTML = 'ゆびで パドルを うごかして<br>ボールを はねかえそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
     () => {
-      // Step 3: Life explanation
+      // Step 3: Life explanation — 吹き出しの三角をハートの中央に合わせる
       document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
       const livesEl = document.getElementById('hud-lives');
       if (livesEl) livesEl.classList.add('tut-highlight');
-      bubble.className = 'tut-bubble arrow-up';
-      const lr = livesEl ? livesEl.getBoundingClientRect() : { top: 60, left: 60, width: 80 };
-      bubble.style.cssText = 'top:' + (lr.bottom + 10) + 'px;left:' + Math.max(10, lr.left + lr.width / 2 - 140) + 'px';
-      bubble.innerHTML = '❤️は いのち だよ！<br>3つ なくなると おわり<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      const lr = livesEl ? livesEl.getBoundingClientRect() : { top: 60, left: 10, width: 80, bottom: 80 };
+      const targetCx = lr.left + lr.width / 2;
+      const bubbleW = 280;
+      const bubbleLeft = Math.max(10, Math.min(targetCx - bubbleW / 2, window.innerWidth - bubbleW - 10));
+      const arrowLeft = targetCx - bubbleLeft;
+      bubble.className = 'tut-bubble';
+      bubble.style.cssText = 'top:' + (lr.bottom + 14) + 'px;left:' + bubbleLeft + 'px';
+      bubble.setAttribute('style', bubble.getAttribute('style') + '--arrow-left:' + arrowLeft + 'px;');
+      bubble.innerHTML = '<style>.tut-bubble-arrow{position:absolute;top:-8px;left:var(--arrow-left,50%);width:16px;height:16px;background:#fff;transform:rotate(45deg);margin-left:-8px;}</style><div class="tut-bubble-arrow"></div>❤️は いのち だよ！<br>3つ なくなると おわり<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
