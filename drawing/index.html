@@ -1222,9 +1222,15 @@ function showTutorial() {
     },
     () => {
       bubble.className = 'tut-bubble';
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      var saveBtn = document.getElementById('btnSave');
+      if (saveBtn) saveBtn.classList.add('tut-highlight');
+      bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = '📸 を おすと えを<br>とっておけるよ<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+      document.getElementById('tut-next').addEventListener('pointerdown', e => {
+        e.preventDefault();
+        if (saveBtn) saveBtn.classList.remove('tut-highlight');
+        endTut();
+      });
     }
   ];
 
