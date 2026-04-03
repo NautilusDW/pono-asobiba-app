@@ -142,6 +142,15 @@ document.getElementById('start-screen').addEventListener('pointerdown', async fu
       else { bgmEl.pause(); }
     },
     extraButtons: [{
+      icon: shotMode === 'slingshot' ? '👆' : '🎯',
+      label: 'モードきりかえ',
+      onClick: () => {
+        const newMode = shotMode === 'slingshot' ? 'tap' : 'slingshot';
+        selectShotMode(newMode);
+        const modeBtn = document.querySelectorAll('.pono-menu-btn')[1];
+        if (modeBtn) modeBtn.textContent = newMode === 'slingshot' ? '👆' : '🎯';
+      }
+    },{
       icon: '🏆',
       label: 'ハイスコア',
       onClick: () => showHighScoreTable('bowling', '🎳 ボウリング ハイスコア')

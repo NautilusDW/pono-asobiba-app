@@ -1252,7 +1252,19 @@ function showTutorial() {
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
     () => {
-      // Step 3: Center message
+      // Step 3: Life explanation
+      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+      const livesEl = document.getElementById('hud-lives');
+      if (livesEl) livesEl.classList.add('tut-highlight');
+      bubble.className = 'tut-bubble arrow-up';
+      const lr = livesEl ? livesEl.getBoundingClientRect() : { top: 60, left: 60, width: 80 };
+      bubble.style.cssText = 'top:' + (lr.bottom + 10) + 'px;left:' + Math.max(10, lr.left + lr.width / 2 - 140) + 'px';
+      bubble.innerHTML = '❤️は いのち だよ！<br>3つ なくなると おわり<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.classList.remove('hidden');
+      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+    },
+    () => {
+      // Step 4: Center message
       document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
       bubble.className = 'tut-bubble';
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';

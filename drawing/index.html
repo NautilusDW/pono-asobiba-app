@@ -1032,9 +1032,19 @@ document.getElementById('btnUndo').addEventListener('click', () => {
 
 // ===== Clear =====
 document.getElementById('btnClear').addEventListener('click', () => {
-  saveHistory();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // 確認モーダル
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+    '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">ほんとうに ぜんぶ けす？</div>' +
+    '<div style="display:flex;gap:12px;justify-content:center;">' +
+    '<button id="_clrYes" style="padding:10px 24px;border:none;border-radius:14px;background:linear-gradient(135deg,#ffd3b6,#ffaaa5);color:#8b4513;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">けす</button>' +
+    '<button id="_clrNo" style="padding:10px 24px;border:none;border-radius:14px;background:linear-gradient(135deg,#a8e6cf,#88d8a8);color:#2d6a4f;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">やめる</button>' +
+    '</div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('_clrYes').onclick = () => { saveHistory(); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); ov.remove(); };
+  document.getElementById('_clrNo').onclick = () => ov.remove();
+  ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
 });
 
 // ===== Save & Gallery =====
