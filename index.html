@@ -1432,7 +1432,10 @@
 
     // ===== PWA Service Worker =====
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(function() {});
+      navigator.serviceWorker.register('/sw.js').then(function(reg) {
+        // 強制的に最新のSWをチェック
+        reg.update();
+      }).catch(function() {});
     }
 
     // ===== Stamp Rally System =====
