@@ -1467,6 +1467,7 @@
 
     // ===== Stamp Rally System =====
     (function() {
+      try {
       'use strict';
 
       // ── Constants ──
@@ -1787,6 +1788,7 @@
         }
       });
 
+    } catch(e) { alert('StampRally Error: ' + e.message + ' at line ' + (e.lineNumber||'')); console.error(e); }
     })();
 
   </script>
