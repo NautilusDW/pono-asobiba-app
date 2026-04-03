@@ -887,12 +887,15 @@ function detectFallenMerges() {
       const multiBonus = count >= 3 ? count : 1;
 
       if (tier < MAX_TIER) {
-        const tierJump = count >= 5 ? Math.min(2, MAX_TIER - tier) : 1;
-        const nt = tier + tierJump;
-        addFallen(cx, cy, nt, 0, 0); // no upward bounce — settle in place
-        fallen[fallen.length - 1].flashTimer = 8;
-        spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
-        if (count >= 4) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
+        const nt = Math.min(tier + 1, MAX_TIER);
+        const spawnCount = Math.ceil(count / EASY_MERGE_COUNT);
+        for (let si = 0; si < spawnCount; si++) {
+          const ox = (si - (spawnCount - 1) / 2) * 20;
+          addFallen(cx + ox, cy, nt, 0, 0);
+          fallen[fallen.length - 1].flashTimer = 8;
+        }
+        spawnPopup(cx, cy - 20, TIERS[nt].name + (spawnCount > 1 ? ' ×' + spawnCount : '') + '!', '#FFD700');
+        if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
       } else {
         spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
         playBuf(explodeBuf, 0.4, 0.5);
@@ -977,11 +980,15 @@ function gridMergeCheck(startRow, startCol, tier) {
   const multiBonus = count >= 3 ? count : 1;
 
   if (tier < MAX_TIER) {
-    const tierJump = count >= 5 ? Math.min(3, MAX_TIER - tier) : count >= 3 ? Math.min(2, MAX_TIER - tier) : 1;
-    const nt = tier + tierJump;
-    addFallen(cx, cy, nt, (Math.random() - 0.5) * 1, 1);
-    fallen[fallen.length - 1].flashTimer = 8;
-    spawnPopup(cx, cy - 20, TIERS[nt].name + '!', '#FFD700');
+    // count個を2個ずつペアにして次のtierに。余りは切り上げ。
+    const nt = tier + 1;
+    const spawnCount = Math.ceil(count / EASY_MERGE_COUNT);
+    for (let si = 0; si < spawnCount; si++) {
+      const ox = (si - (spawnCount - 1) / 2) * 20;
+      addFallen(cx + ox, cy, Math.min(nt, MAX_TIER), (Math.random() - 0.5) * 1, 1);
+      fallen[fallen.length - 1].flashTimer = 8;
+    }
+    spawnPopup(cx, cy - 20, TIERS[Math.min(nt, MAX_TIER)].name + (spawnCount > 1 ? ' ×' + spawnCount : '') + '!', '#FFD700');
     if (count >= 3) spawnPopup(cx, cy - 40, count + '体合体！', '#FF6B6B');
   } else {
     spawnPopup(cx, cy - 20, '大爆発！', '#FF4444');
