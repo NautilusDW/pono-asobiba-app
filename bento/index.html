@@ -54,7 +54,7 @@ html, body {
 
 /* ── 左: お弁当箱（できるだけ大きく） ── */
 .left-panel {
-  flex: 1;
+  flex: 0.85;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -265,7 +265,7 @@ html, body {
 }
 .food-item:active { transform: scale(0.9); }
 .food-item .food-img {
-  width: 56px; height: 56px;
+  width: 64px; height: 64px;
   object-fit: contain;
   pointer-events: none;
 }
@@ -496,7 +496,7 @@ html, body {
 #sk-intro.hidden { display: none; }
 .sk-intro-card {
   background: #fff; border-radius: 24px;
-  padding: 20px 16px 16px; max-width: 520px; width: 100%;
+  padding: 14px 16px 14px; max-width: 520px; width: 100%;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   text-align: center;
 }
@@ -508,7 +508,7 @@ html, body {
   display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
 }
 .sk-intro-col {
-  border-radius: 16px; padding: 10px 6px 12px;
+  border-radius: 16px; padding: 8px 6px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
 .sk-intro-col.sk-r-bg { background: #FEE2E2; }
@@ -530,7 +530,7 @@ html, body {
   display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 2px;
 }
 .sk-intro-imgs img {
-  width: 52px; height: 52px; object-fit: contain;
+  width: 44px; height: 44px; object-fit: contain;
 }
 .sk-intro-btn {
   margin-top: 14px; padding: 12px 32px; border: none; border-radius: 50px;
