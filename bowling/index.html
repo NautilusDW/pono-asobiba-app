@@ -217,23 +217,23 @@ function showZukan() {
   list.innerHTML = '';
   for (var i = 0; i < TIERS.length; i++) {
     var row = document.createElement('div');
-    row.style.cssText = 'display:inline-flex;align-items:center;gap:4px;margin:2px;';
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;justify-content:center;padding:4px 0;';
     var cv = document.createElement('canvas');
-    var sz = 32;
-    cv.width = sz; cv.height = sz; cv.style.cssText = 'width:32px;height:32px;';
+    var sz = 40;
+    cv.width = sz; cv.height = sz; cv.style.cssText = 'width:40px;height:40px;flex-shrink:0;';
     if (tierCanvases[i]) cv.getContext('2d').drawImage(tierCanvases[i], 0, 0, sz, sz);
     row.appendChild(cv);
-    var nm = document.createElement('span');
-    nm.style.cssText = 'font-size:0.75rem;font-weight:700;';
-    nm.textContent = TIERS[i].name;
-    row.appendChild(nm);
-    if (i < TIERS.length - 1) {
-      var arrow = document.createElement('span');
-      arrow.style.cssText = 'font-size:0.9rem;color:#999;margin:0 2px;';
-      arrow.textContent = '→';
-      row.appendChild(arrow);
-    }
+    var info = document.createElement('span');
+    info.style.cssText = 'font-size:0.85rem;font-weight:700;min-width:100px;text-align:left;';
+    info.textContent = TIERS[i].name + '  ×' + ((i + 1) * 20) + 'pt';
+    row.appendChild(info);
     list.appendChild(row);
+    if (i < TIERS.length - 1) {
+      var arrow = document.createElement('div');
+      arrow.style.cssText = 'text-align:center;font-size:1rem;color:#999;line-height:1;';
+      arrow.textContent = '↓';
+      list.appendChild(arrow);
+    }
   }
   ov.style.display = 'flex';
 }
