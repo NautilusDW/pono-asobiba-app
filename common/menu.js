@@ -1,17 +1,16 @@
 // ── common/menu.js ──
-// Shared menu toggle + back-confirm for all games
+// Shared ⚙️ dropdown menu for all games
 // Usage: <script src="../common/menu.js"></script>
-// Then call: initMenu({ bgmToggle: fn }) or just initMenu()
+// Then call: initMenu({ bgmToggle: fn, tutorial: fn, extraButtons: [...] })
 //
 // Creates:
-// 1. A small ⚙️ toggle button (always visible, top-left or wherever specified)
-// 2. Expanding menu with 🏠 (home) and optionally 🎵 (BGM)
-// 3. Confirm overlay when 🏠 is tapped
+// 1. A ⚙️ button (top-left, always visible)
+// 2. Dropdown with: 🏠 もどる / 🎵 おと / ❓ あそびかた / extras
+// 3. Confirm overlay for 🏠
 
 (function() {
   'use strict';
 
-  // ── Inject CSS ──
   const style = document.createElement('style');
   style.textContent = `
     .pono-menu-toggle {
@@ -29,28 +28,41 @@
       background: rgba(255,255,255,0.95);
       transform: rotate(90deg);
     }
-    .pono-menu-items {
+
+    /* ── Dropdown ── */
+    .pono-dropdown {
       position: fixed; z-index: 9989;
-      top: 12px; left: 62px;
-      display: flex; gap: 8px;
+      top: 58px; left: 16px;
+      background: rgba(255,255,255,0.96);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+      padding: 6px;
+      display: flex; flex-direction: column; gap: 4px;
+      min-width: 160px;
       opacity: 0; pointer-events: none;
-      transform: translateX(-12px);
+      transform: translateY(-8px);
       transition: opacity 0.2s, transform 0.2s;
     }
-    .pono-menu-items.show {
+    .pono-dropdown.show {
       opacity: 1; pointer-events: auto;
-      transform: translateX(0);
+      transform: translateY(0);
     }
-    .pono-menu-btn {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(255,255,255,0.9); border: none;
-      font-size: 20px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-      display: flex; align-items: center; justify-content: center;
+    .pono-dd-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      border: none; border-radius: 12px;
+      background: transparent;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 0.88rem; font-weight: 700;
+      color: #5D4E37; cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
     }
-    .pono-menu-btn:active { transform: scale(0.9); }
-    .pono-menu-btn.bgm-off { opacity: 0.4; filter: grayscale(1); }
+    .pono-dd-item:active { background: rgba(242,145,90,0.15); }
+    .pono-dd-icon { font-size: 1.2rem; width: 28px; text-align: center; flex-shrink: 0; }
+    .pono-dd-item.bgm-off .pono-dd-icon { opacity: 0.35; filter: grayscale(1); }
+    .pono-dd-item.bgm-off .pono-dd-label { opacity: 0.5; }
+    .pono-dd-label { white-space: nowrap; }
 
     /* ── Confirm overlay ── */
     .pono-confirm-overlay {
@@ -105,18 +117,15 @@
 
   // ── State ──
   let menuOpen = false;
-  let autoCloseTimer = null;
 
   // ── Create elements ──
   const toggle = document.createElement('button');
   toggle.className = 'pono-menu-toggle';
-  toggle.textContent = '🏠';
-  toggle.setAttribute('aria-label', 'ホームにもどる');
+  toggle.textContent = '⚙️';
+  toggle.setAttribute('aria-label', 'メニュー');
 
-  const items = document.createElement('div');
-  items.className = 'pono-menu-items';
-
-  const homeBtn = toggle; // 家ボタン＝トグルボタン直接
+  const dropdown = document.createElement('div');
+  dropdown.className = 'pono-dropdown';
 
   // Confirm overlay
   const overlay = document.createElement('div');
@@ -134,17 +143,13 @@
   function openMenu() {
     menuOpen = true;
     toggle.classList.add('open');
-    items.classList.add('show');
+    dropdown.classList.add('show');
   }
 
   function closeMenu() {
     menuOpen = false;
     toggle.classList.remove('open');
-    // items は常時表示（音符ボタンが消えないように）
-  }
-
-  function resetAutoClose() {
-    // 自動で閉じない（音符ボタンを常に操作可能にする）
+    dropdown.classList.remove('show');
   }
 
   function showConfirm() {
@@ -160,25 +165,31 @@
     location.href = '../';
   }
 
-  // ── Event handlers ──
+  // Toggle menu
   toggle.addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
-    showConfirm();
+    if (menuOpen) closeMenu();
+    else openMenu();
   });
 
+  // Close menu when tapping outside
+  document.addEventListener('pointerdown', e => {
+    if (menuOpen && !toggle.contains(e.target) && !dropdown.contains(e.target)) {
+      closeMenu();
+    }
+  });
+
+  // Confirm overlay events
   overlay.querySelector('.pono-confirm-yes').addEventListener('pointerdown', e => {
     e.preventDefault();
     goHome();
   });
-
   overlay.querySelector('.pono-confirm-no').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     hideConfirm();
   });
-
-  // Tap outside confirm box to dismiss
   overlay.addEventListener('pointerdown', e => {
     if (e.target === overlay) {
       e.preventDefault();
@@ -186,45 +197,63 @@
     }
   });
 
+  // ── Helper: create a dropdown item ──
+  function createItem(icon, label, onClick) {
+    const item = document.createElement('button');
+    item.className = 'pono-dd-item';
+    item.innerHTML = `<span class="pono-dd-icon">${icon}</span><span class="pono-dd-label">${label}</span>`;
+    item.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick(item);
+    });
+    return item;
+  }
+
   // ── Public API ──
   window.initMenu = function(options) {
     options = options || {};
 
-    // Add BGM button if callback provided
+    // Clear previous items
+    dropdown.innerHTML = '';
+
+    // 🏠 Home
+    dropdown.appendChild(createItem('🏠', 'もどる', () => {
+      closeMenu();
+      showConfirm();
+    }));
+
+    // 🎵 BGM
     if (options.bgmToggle) {
-      const bgmBtn = document.createElement('button');
-      bgmBtn.className = 'pono-menu-btn';
-      bgmBtn.textContent = '🎵';
-      bgmBtn.setAttribute('aria-label', 'おとのオンオフ');
-      // 初期状態を反映
-      if (localStorage.getItem('pono_bgm_enabled') === 'off') {
-        bgmBtn.classList.add('bgm-off');
-      }
-      bgmBtn.addEventListener('pointerdown', e => {
-        e.preventDefault();
-        e.stopPropagation();
+      const bgmItem = createItem('🎵', 'おと ON', (item) => {
         options.bgmToggle();
-        // localStorageの状態に基づいてクラスを更新
-        bgmBtn.classList.toggle('bgm-off', localStorage.getItem('pono_bgm_enabled') === 'off');
+        const isOff = localStorage.getItem('pono_bgm_enabled') === 'off';
+        item.classList.toggle('bgm-off', isOff);
+        item.querySelector('.pono-dd-label').textContent = isOff ? 'おと OFF' : 'おと ON';
       });
-      items.appendChild(bgmBtn);
-      window._ponoMenuBgmBtn = bgmBtn;
+      if (localStorage.getItem('pono_bgm_enabled') === 'off') {
+        bgmItem.classList.add('bgm-off');
+        bgmItem.querySelector('.pono-dd-label').textContent = 'おと OFF';
+      }
+      dropdown.appendChild(bgmItem);
+      window._ponoMenuBgmBtn = bgmItem;
     }
 
-    // Add any extra buttons
+    // ❓ Tutorial
+    if (options.tutorial) {
+      dropdown.appendChild(createItem('❓', 'あそびかた', () => {
+        closeMenu();
+        options.tutorial();
+      }));
+    }
+
+    // Extra buttons
     if (options.extraButtons) {
       options.extraButtons.forEach(btn => {
-        const el = document.createElement('button');
-        el.className = 'pono-menu-btn';
-        el.textContent = btn.icon;
-        if (btn.label) el.setAttribute('aria-label', btn.label);
-        el.addEventListener('pointerdown', e => {
-          e.preventDefault();
-          e.stopPropagation();
+        dropdown.appendChild(createItem(btn.icon, btn.label, () => {
+          closeMenu();
           btn.onClick();
-          resetAutoClose();
-        });
-        items.appendChild(el);
+        }));
       });
     }
 
@@ -233,22 +262,15 @@
     if (existingBack) existingBack.remove();
     const existingBgm = document.getElementById('bgm-btn');
     if (existingBgm) existingBgm.remove();
-    // Remove header back-links
     document.querySelectorAll('.back-link').forEach(el => el.remove());
-    // Remove header btn-bgm
     document.querySelectorAll('.btn-bgm').forEach(el => el.remove());
 
     // Append to body
     document.body.appendChild(toggle);
-    // items（BGM等）があれば常時表示
-    if (items.children.length > 0) {
-      items.classList.add('show');
-      document.body.appendChild(items);
-    }
+    document.body.appendChild(dropdown);
     document.body.appendChild(overlay);
 
     // ── iOS Safari: 画面回転後にposition:fixedのヒットテスト領域がずれるバグ対策 ──
-    // ボタンをDOMから外して再挿入することで、ブラウザに再計算を強制する
     function forceMenuRelayout() {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
@@ -258,10 +280,10 @@
         parent.removeChild(toggle);
         parent.appendChild(toggle);
       }
-      if (items.parentNode) {
-        var ip = items.parentNode;
-        ip.removeChild(items);
-        ip.appendChild(items);
+      if (dropdown.parentNode) {
+        var dp = dropdown.parentNode;
+        dp.removeChild(dropdown);
+        dp.appendChild(dropdown);
       }
     }
     window.addEventListener('orientationchange', function() {
@@ -278,12 +300,8 @@
     }
 
     // ── モバイル: ブラウザUIがあっても画面内に収める ──
-    // Safari/Chrome のツールバーで上下が狭くなっても、ゲーム全体が見えるようにする。
-    // window.innerHeight（実際の可視領域）をCSS変数 --vh に反映し、
-    // body や position:fixed 要素の高さをそれに合わせる。
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
       (function fitVisibleViewport() {
-        // --vh を実際の可視高さに設定
         function updateVH() {
           var vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
           document.documentElement.style.setProperty('--vh', vh + 'px');
@@ -297,8 +315,6 @@
         });
 
         var appH = 'calc(var(--vh) * 100)';
-
-        // body + 主要コンテナの高さを可視領域にフィットさせる CSS
         var s = document.createElement('style');
         s.textContent =
           '@media (pointer: coarse) {' +
@@ -307,13 +323,11 @@
           '    max-height: ' + appH + ' !important;' +
           '    min-height: 0 !important;' +
           '  }' +
-          // ゲームコンテナ（height:100dvh を使っている要素）
           '  #app, #coloring-screen, .page {' +
           '    height: ' + appH + ' !important;' +
           '    max-height: ' + appH + ' !important;' +
           '    min-height: 0 !important;' +
           '  }' +
-          // position:fixed の全画面要素
           '  #room-scene, #start-screen, #selection-screen,' +
           '  #portrait-notice, #portrait-overlay,' +
           '  .pono-confirm-overlay {' +
