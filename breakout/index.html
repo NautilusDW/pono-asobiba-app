@@ -1299,6 +1299,7 @@ initMenu({
     localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
     if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
   },
+  tutorial: showTutorial,
   extraButtons: [{
     icon: '🏆',
     label: 'ハイスコア',
