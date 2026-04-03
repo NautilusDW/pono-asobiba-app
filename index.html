@@ -1434,40 +1434,8 @@
       navigator.serviceWorker.register('/sw.js').catch(function() {});
     }
 
-    // ===== PWA Banner =====
-    (function() {
-      var banner = document.getElementById('pwaBanner');
-      var modal = document.getElementById('pwaModal');
-      // standalone = already installed as PWA
-      var isStandalone = window.matchMedia('(display-mode: standalone)').matches
-                      || window.navigator.standalone === true;
-      var dismissed = localStorage.getItem('pono_pwa_dismissed');
-
-      if (isStandalone || dismissed) {
-        banner.classList.add('hidden');
-      }
-
-      document.getElementById('pwaBannerClose').addEventListener('click', function() {
-        banner.classList.add('hidden');
-        localStorage.setItem('pono_pwa_dismissed', '1');
-      });
-
-      document.getElementById('pwaHowBtn').addEventListener('click', function() {
-        modal.classList.add('show');
-      });
-
-      document.getElementById('pwaModalClose').addEventListener('click', function() {
-        modal.classList.remove('show');
-      });
-
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) modal.classList.remove('show');
-      });
-    })();
-
     // ===== Stamp Rally System =====
     (function() {
-      try {
       'use strict';
 
       // ── Constants ──
@@ -1788,7 +1756,6 @@
         }
       });
 
-    } catch(e) { alert('StampRally Error: ' + e.message + ' at line ' + (e.lineNumber||'')); console.error(e); }
     })();
 
   </script>
