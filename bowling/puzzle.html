@@ -141,6 +141,23 @@ function initAudio() {
 var _tutActive = false;
 var _tutStep = 0;
 
+function setupTutGrid() {
+  // チュートリアル用: シンプルなグリッドを配置
+  // ヒヨコ(tier0)を上部に2個並べる → 投げて合体させる体験
+  for (var r = 0; r < GRID_ROWS; r++) {
+    gridPins[r] = [];
+    for (var c = 0; c < GRID_COLS; c++) gridPins[r][c] = null;
+  }
+  // row0にヒヨコ2個（中央付近、隣同士）
+  gridPins[0][4] = { tier: 0, bomb: false };
+  gridPins[0][5] = { tier: 0, bomb: false };
+  // ボールもヒヨコに固定
+  ballTier = 0;
+  nextTier = 0;
+  // 落下エリアの生き物をクリア
+  fallen.length = 0;
+}
+
 function showTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
@@ -148,20 +165,22 @@ function showTutorial() {
   _tutActive = true;
   _tutStep = 0;
 
-  // Step 0: 投げ方の説明 → 実際に投げさせる
+  // チュートリアル用グリッドをセット
+  setupTutGrid();
+
+  // Step 0: 狙いの説明
   dim.classList.remove('hidden');
   bubble.style.cssText = 'top:40%;left:50%;transform:translate(-50%,-50%)';
-  bubble.innerHTML = '🎯 ねらいを きめて<br>なげてみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
+  bubble.innerHTML = '🐥 うえに おなじ ヒヨコが<br>いるよ！ ねらいを つけて<br>なげてみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
   bubble.classList.remove('hidden');
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
     e.preventDefault(); e.stopPropagation();
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
-    _tutStep = 1; // 次は投げた後に表示
+    _tutStep = 1;
   });
 }
 
-// settling完了時にチュートリアルの次ステップを表示
 function onTutShotComplete() {
   if (!_tutActive) return;
   var dim = document.getElementById('tut-dim');
@@ -169,11 +188,10 @@ function onTutShotComplete() {
   if (!dim || !bubble) return;
 
   if (_tutStep === 1) {
-    // Step 1: 合体の説明
     setTimeout(function() {
       dim.classList.remove('hidden');
       bubble.style.cssText = 'top:40%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '⬆️ おなじ いきものが<br>くっつくと きえるよ！<br>もう1かい なげてみよう<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.innerHTML = '✨ おなじ いきものが<br>くっついて きえたね！<br>もう1かい なげてみよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
         e.preventDefault(); e.stopPropagation();
@@ -181,9 +199,8 @@ function onTutShotComplete() {
         bubble.classList.add('hidden');
         _tutStep = 2;
       });
-    }, 500);
+    }, 800);
   } else if (_tutStep === 2) {
-    // Step 2: 目標の説明 → チュートリアル終了
     setTimeout(function() {
       dim.classList.remove('hidden');
       bubble.style.cssText = 'top:40%;left:50%;transform:translate(-50%,-50%)';
@@ -195,8 +212,15 @@ function onTutShotComplete() {
         dim.classList.add('hidden');
         bubble.classList.add('hidden');
         localStorage.setItem('bowling_puzzle_tut_seen', '1');
+        // 通常ゲームを開始
+        initGrid();
+        ballTier = pickBallTier();
+        nextTier = pickBallTier();
+        score = 0;
+        shotNumber = 0;
+        scoreEl.textContent = '0';
       });
-    }, 500);
+    }, 800);
   }
 }
 
