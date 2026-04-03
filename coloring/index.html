@@ -1684,14 +1684,14 @@ function showTutorial() {
       if (isLandscape) {
         var pr = paletteEl ? paletteEl.getBoundingClientRect() : null;
         if (pr) {
-          bubble.style.cssText = 'top:50%;right:' + (window.innerWidth - pr.left + 10) + 'px;transform:translateY(-50%)';
+          bubble.style.cssText = 'top:' + Math.max(8, pr.top - 10) + 'px;right:' + (window.innerWidth - pr.left + 10) + 'px;max-width:240px';
         } else {
           bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
         }
       } else {
         var pr = paletteEl ? paletteEl.getBoundingClientRect() : null;
         if (pr) {
-          bubble.style.cssText = 'bottom:' + (window.innerHeight - pr.top + 10) + 'px;left:50%;transform:translateX(-50%)';
+          bubble.style.cssText = 'bottom:' + (window.innerHeight - pr.top + 40) + 'px;left:50%;transform:translateX(-50%)';
         } else {
           bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
         }
@@ -1703,11 +1703,17 @@ function showTutorial() {
     function() {
       if (paletteEl) paletteEl.classList.remove('tut-highlight');
       if (toolRowEl) toolRowEl.classList.add('tut-highlight');
-      var rect = toolRowEl ? toolRowEl.getBoundingClientRect() : null;
-      if (rect) {
-        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      var isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      if (isLandscape) {
+        var pr = paletteEl ? paletteEl.getBoundingClientRect() : null;
+        if (pr) {
+          bubble.style.cssText = 'top:' + Math.max(8, pr.top - 10) + 'px;right:' + (window.innerWidth - pr.left + 10) + 'px;max-width:240px';
+        }
       } else {
-        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+        var rect = toolRowEl ? toolRowEl.getBoundingClientRect() : null;
+        if (rect) {
+          bubble.style.cssText = 'bottom:' + (window.innerHeight - rect.top + 40) + 'px;left:50%;transform:translateX(-50%)';
+        }
       }
       bubble.innerHTML = 'ふとさも かえられるよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); nextStep(); });
@@ -1715,11 +1721,18 @@ function showTutorial() {
     function() {
       if (toolRowEl) toolRowEl.classList.remove('tut-highlight');
       if (bucketEl) bucketEl.classList.add('tut-highlight');
-      var rect = bucketEl ? bucketEl.getBoundingClientRect() : null;
-      if (rect) {
-        bubble.style.cssText = 'top:' + Math.max(8, rect.top - 80) + 'px;left:' + (rect.left + rect.width / 2) + 'px;transform:translateX(-50%)';
+      var isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      if (isLandscape) {
+        var pr = paletteEl ? paletteEl.getBoundingClientRect() : null;
+        var br = bucketEl ? bucketEl.getBoundingClientRect() : null;
+        if (pr) {
+          bubble.style.cssText = 'top:' + (br ? br.top + 10 : 200) + 'px;right:' + (window.innerWidth - pr.left + 10) + 'px;max-width:240px';
+        }
       } else {
-        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+        var rect = bucketEl ? bucketEl.getBoundingClientRect() : null;
+        if (rect) {
+          bubble.style.cssText = 'bottom:' + (window.innerHeight - rect.top + 40) + 'px;left:50%;transform:translateX(-50%)';
+        }
       }
       bubble.innerHTML = 'はみだしぼうし を ONにすると<br>はみださないよ<br><span style="font-size:0.65rem;color:#999">※とじた せんの なかだけ だよ</span><br><button class="tut-next-btn" id="tut-next">ぬろう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });

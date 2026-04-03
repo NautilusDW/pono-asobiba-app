@@ -558,7 +558,7 @@ html, body {
 .tut-dim.hidden { display:none; }
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:14px 18px;max-width:280px;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
-@keyframes tutPopIn { from{transform:scale(0.8);opacity:0.5} to{transform:scale(1);opacity:1} }
+@keyframes tutPopIn { from{opacity:0} to{opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 </style>
@@ -690,7 +690,7 @@ html, body {
       var foodTray = document.querySelector('.food-tray');
       dim.classList.remove('hidden');
       if (foodTray) foodTray.classList.add('tut-highlight');
-      bubble.style.cssText = 'top:50%;left:25%;transform:translate(-50%,-50%)';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = '🍱 みぎの しょくざいを タップして<br>おべんとうに いれよう！<br><button class="tut-next-btn" id="tut-step2-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-step2-next').addEventListener('pointerdown', function(e) {
@@ -1235,7 +1235,7 @@ function showTutorial() {
   // Step 0: 導入メッセージ
   dim.classList.remove('hidden');
   bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-  bubble.innerHTML = '🍱 えいようバランスを かんがえながら<br>たべたい おべんとうを つくろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+  bubble.innerHTML = '🍱 えいようバランスを<br>かんがえながら おべんとうを<br>つくろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
   bubble.classList.remove('hidden');
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
     e.preventDefault(); e.stopPropagation();
