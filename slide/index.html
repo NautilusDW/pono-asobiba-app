@@ -297,11 +297,11 @@ const LEVELS = [
     cols: 3, rows: 3,
     storyMsg: 'おかあさんの こえが きこえる！\nまがりかどを つなげよう！',
     clearMsg: 'こえが ちかくなってきた！',
-    start: { col: 0, side: 'top' },
+    start: { col: 1, side: 'top' },
     goal:  { col: 1, side: 'bottom' },
-    // path: V→CROSS→V (十字1個で曲がる)
-    solved: ['V','BLANK','BLANK', 'CROSS',null,'BLANK', 'BLANK','V','BLANK'],
-    shuffleMoves: 6,
+    // path: V→CROSS→V (十字が中央にあり、上下のVで必ずつながる)
+    solved: [null,'V','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
+    shuffleMoves: 4,
   },
   {
     name: 'ながいみち',
@@ -310,9 +310,9 @@ const LEVELS = [
     clearMsg: 'もりを ぬけたよ！すごい！',
     start: { col: 1, side: 'top' },
     goal:  { col: 1, side: 'bottom' },
-    // path: V→CROSS→V→V (十字1個、グリッド拡大)
-    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','V','BLANK', 'BLANK','V','BLANK'],
-    shuffleMoves: 8,
+    // path: V→V→CROSS→V (十字1個、グリッド拡大、BLANKは空きの隣に)
+    solved: ['BLANK','V','BLANK', 'BLANK','V',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
+    shuffleMoves: 6,
   },
   {
     name: 'よこにまがる',
@@ -674,7 +674,7 @@ function drawStartGoal() {
   const sy = gridOY - cellSize * 0.35;
   const imgSize = Math.floor(cellSize * 0.45);
 
-  if (!winAnim.active) {
+  if (!winAnim.active && state === S.PLAYING) {
     if (imgPono.complete && imgPono.naturalWidth > 0) {
       ctx.drawImage(imgPono, sx - imgSize / 2, sy - imgSize / 2, imgSize, imgSize);
     } else {
