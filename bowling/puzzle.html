@@ -273,6 +273,7 @@ function showZukan() {
   var ov = document.getElementById('zukan-overlay');
   var list = document.getElementById('zukan-list');
   list.innerHTML = '';
+  list.style.cssText = 'display:inline-block;text-align:left;';
   for (var i = 0; i < TIERS.length; i++) {
     var row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;padding:4px 0;';
