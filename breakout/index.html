@@ -1248,7 +1248,7 @@ function showTutorial() {
       const bw2 = 140; // half of max-width 280
       const cx2 = r.left + r.width / 2;
       bubble.className = 'tut-bubble arrow-down';
-      bubble.style.cssText = 'top:' + Math.max(10, r.bottom - 80) + 'px;left:' + Math.max(10, cx2 - bw2) + 'px';
+      bubble.style.cssText = 'top:' + Math.max(10, r.bottom - 260) + 'px;left:' + Math.max(10, cx2 - bw2) + 'px';
       bubble.innerHTML = 'ゆびで パドルを うごかして<br>ボールを はねかえそう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
