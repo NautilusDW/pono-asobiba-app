@@ -973,6 +973,12 @@ function showToast(m) { const t = document.getElementById('wrong-toast'); t.text
 
 function stageComplete() {
   playFanfare(); launchConfetti(); awardPoints(5);
+  // スタンプラリー: プレイ記録
+  (function() {
+    var k = 'pono_played_' + new Date().toDateString();
+    var a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('bento') === -1) { a.push('bento'); localStorage.setItem(k, JSON.stringify(a)); }
+  })();
   setSpeech('ありがとう！'); setPono(true);
   const last = stageIdx >= STAGES.length - 1;
   document.getElementById('complete-title').textContent = '🎉 おべんとう かんせい！';

@@ -1115,6 +1115,12 @@ function showCompletion() {
     if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
     if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
   }
+  // スタンプラリー: プレイ記録
+  (function() {
+    var k = 'pono_played_' + new Date().toDateString();
+    var a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('writing') === -1) { a.push('writing'); localStorage.setItem(k, JSON.stringify(a)); }
+  })();
   // カテゴリ全文字クリアボーナス
   const stamps = loadStamps();
   const total = CATEGORIES[currentCategory].chars.length;

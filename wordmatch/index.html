@@ -1018,6 +1018,12 @@ function showStageComplete() {
   launchConfetti();
   awardPoints(5);
   if (window.incrementStat) window.incrementStat('wordmatch_correct', 4);
+  // スタンプラリー: プレイ記録
+  (function() {
+    var k = 'pono_played_' + new Date().toDateString();
+    var a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('wordmatch') === -1) { a.push('wordmatch'); localStorage.setItem(k, JSON.stringify(a)); }
+  })();
   const num  = currentStageNum;
   const type = getStageType(num);
 

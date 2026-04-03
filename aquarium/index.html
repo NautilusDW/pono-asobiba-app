@@ -1653,6 +1653,12 @@
     }
 
     function handleEmptyOrStart() {
+      // スタンプラリー: プレイ記録
+      (function() {
+        var k = 'pono_played_' + new Date().toDateString();
+        var a = JSON.parse(localStorage.getItem(k) || '[]');
+        if (a.indexOf('aquarium') === -1) { a.push('aquarium'); localStorage.setItem(k, JSON.stringify(a)); }
+      })();
       if (creatures.length > 0) {
         document.getElementById('btnFeed').style.display = '';
         document.getElementById('ui').style.display = '';

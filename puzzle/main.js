@@ -141,6 +141,13 @@ function showSuccessModal() {
   awardPoints(5);
   if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
 
+  // スタンプラリー: プレイ記録
+  (function() {
+    var k = 'pono_played_' + new Date().toDateString();
+    var a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('puzzle') === -1) { a.push('puzzle'); localStorage.setItem(k, JSON.stringify(a)); }
+  })();
+
   const isLast = currentStageIndex >= STAGES.length - 1;
   if (isLast) {
     modalStageInfo.textContent = 'ぜんぶ クリア！！';

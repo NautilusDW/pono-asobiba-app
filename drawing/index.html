@@ -1084,6 +1084,12 @@ document.getElementById('btnSave').addEventListener('click', () => {
   if (drawings.length > MAX_DRAWINGS) drawings.length = MAX_DRAWINGS;
   saveDrawingsList(drawings);
   if (window.incrementStat) window.incrementStat('drawing_saves', 1);
+  // スタンプラリー: プレイ記録
+  (function() {
+    var k = 'pono_played_' + new Date().toDateString();
+    var a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('drawing') === -1) { a.push('drawing'); localStorage.setItem(k, JSON.stringify(a)); }
+  })();
   // legacy key for puzzle compatibility
   try { localStorage.setItem('pono_drawing', dataUrl); } catch(e) {}
   const toast = document.getElementById('saveToast');
