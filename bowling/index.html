@@ -167,7 +167,7 @@ function showTutorial() {
     },
     function() {
       bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'おなじ いきものを ぶつけて<br>おおきくしよう！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+      bubble.innerHTML = 'おなじ いきものを<br>ぶつけて おおきくしよう！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); e.stopPropagation(); endTut(); });
     }
   ];
