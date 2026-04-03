@@ -183,11 +183,13 @@ function showTutorial() {
   steps[0]();
 }
 
-document.getElementById('start-screen').addEventListener('click', async function handler(e) {
-  // モード選択やパズルリンクのクリックはスキップ
+var _startHandled = false;
+async function handleStart(e) {
   if (e.target.closest('.shot-mode') || e.target.closest('.mode-link')) return;
-  this.removeEventListener('click', handler);
-  await initAudio(); this.style.display = 'none';
+  if (_startHandled) return;
+  _startHandled = true;
+  var ss = document.getElementById('start-screen');
+  await initAudio(); ss.style.display = 'none';
   tryStartBgm();
   initMenu({
     bgmToggle: () => {
@@ -216,7 +218,9 @@ document.getElementById('start-screen').addEventListener('click', async function
   if (!localStorage.getItem('bowling_tut_seen')) {
     setTimeout(showTutorial, 500);
   }
-});
+}
+document.getElementById('start-screen').addEventListener('touchstart', function(e) { if (!e.target.closest('.shot-mode') && !e.target.closest('.mode-link')) { e.preventDefault(); handleStart(e); } }, { passive: false });
+document.getElementById('start-screen').addEventListener('click', handleStart);
 document.addEventListener('visibilitychange', () => {
   if (audioCtx && document.visibilityState === 'visible' && audioCtx.state !== 'running') audioCtx.resume();
 });
