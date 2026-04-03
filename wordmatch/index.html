@@ -1233,11 +1233,7 @@ initMenu({
     localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
     if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
   },
-  extraButtons: [{
-    icon: '❓',
-    label: 'あそびかた',
-    onClick: showTutorial
-  }]
+  tutorial: showTutorial
 });
 
 window.addEventListener('orientationchange', () => {

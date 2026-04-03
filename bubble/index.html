@@ -2414,14 +2414,11 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     if (!window._menuInited) {
       initMenu({
         bgmToggle: switchBGMTrack,
+        tutorial: showTutorial,
         extraButtons: [{
           icon: '🏆',
           label: 'ハイスコア',
           onClick: () => showHighScoreTable('bubble', '🫧 シャボン玉 ハイスコア')
-        },{
-          icon: '❓',
-          label: 'あそびかた',
-          onClick: showTutorial
         }]
       });
       window._menuInited = true;

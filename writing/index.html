@@ -1207,8 +1207,25 @@ function createWriter(char) {
   });
 
   // まずお手本を1回流してからquizモードへ
+  // 音＋テキストで「お手本だよ」を伝える
+  withAudio(function(ac) {
+    var now = ac.currentTime;
+    var osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523, now);
+    osc.frequency.setValueAtTime(659, now + 0.15);
+    osc.frequency.setValueAtTime(784, now + 0.3);
+    g.gain.setValueAtTime(0.12, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(now); osc.stop(now + 0.45);
+  });
+  _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
+  _ponoBubble.textContent = 'このじゅんばんで かくよ！';
   writer.animateCharacter({
     onComplete: function() {
+      _hedgeBubble.textContent = 'かいてみよう！';
+      _ponoBubble.textContent = 'かいてみよう！';
       writer.hideCharacter();
       startQuiz();
     }
