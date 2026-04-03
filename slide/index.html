@@ -1122,10 +1122,14 @@ function showTutorial() {
     curCols = 3; curRows = 3;
     calcLayout();
     state = S.PLAYING;
+    dim.classList.add('hidden');
     bubble.classList.add('hidden');
 
-    // Step 1: 動かすパネルをハイライト (row2, col2のV)
-    highlightTile(2, 2, 'ここを タッチ！');
+    // 描画を1フレーム待ってからハイライト
+    requestAnimationFrame(function() {
+      // Step 1: 動かすパネルをハイライト (row2, col2のV)
+      highlightTile(2, 2, 'ここを タッチ！');
+    });
   });
 
   var _tutOverlay = null;
@@ -1159,18 +1163,19 @@ function showTutorial() {
   function waitForTap(targetRow, targetCol) {
     var targetIdx = targetRow * curCols + targetCol;
     function onTap(ev) {
-      ev.preventDefault();
       var rect = canvas.getBoundingClientRect();
       var px = (ev.clientX - rect.left) * (CW / rect.width);
       var py = (ev.clientY - rect.top) * (CH / rect.height);
       var col = Math.floor((px - gridOX) / cellSize);
       var row = Math.floor((py - gridOY) / cellSize);
-      if (row < 0 || row >= curRows || col < 0 || col >= curCols) return;
+      if (col < 0 || col >= curCols || row < 0 || row >= curRows) return;
       var tappedIdx = row * curCols + col;
       if (tappedIdx !== targetIdx) return;
 
+      ev.preventDefault();
+      ev.stopPropagation();
       // 正解タップ！
-      wrap.removeEventListener('pointerdown', onTap, true);
+      document.removeEventListener('pointerdown', onTap, true);
       if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
       bubble.classList.add('hidden');
 
@@ -1198,7 +1203,7 @@ function showTutorial() {
         }
       }, 500);
     }
-    wrap.addEventListener('pointerdown', onTap, true);
+    document.addEventListener('pointerdown', onTap, true);
   }
 
   function endTut() {
