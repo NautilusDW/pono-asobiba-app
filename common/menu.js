@@ -134,7 +134,7 @@
     <div class="pono-confirm-box">
       <div class="pono-confirm-title">ほんとうに もどる？</div>
       <div class="pono-confirm-buttons">
-        <button class="pono-confirm-yes">😊 うん</button>
+        <button class="pono-confirm-yes">🏠 もどる</button>
         <button class="pono-confirm-no">✋ まだあそぶ</button>
       </div>
     </div>

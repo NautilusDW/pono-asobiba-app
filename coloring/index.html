@@ -719,6 +719,7 @@ html, body {
 @keyframes tutPopIn { from{transform:scale(0.8) translate(-50%,-50%);opacity:0.5} to{transform:scale(1) translate(-50%,-50%);opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
+@media print { body > *:not(#print-overlay) { display:none !important; } #print-overlay { position:static; } #print-overlay button { display:none !important; } #print-overlay img { max-width:100%;max-height:100%; } }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -1603,33 +1604,32 @@ function printColored() {
   octx.globalCompositeOperation = 'source-over';
 
   const dataURL = offscreen.toDataURL('image/png');
-  const win = window.open('', '_blank');
-  if (!win) return;
-  win.document.write(
-    '<!DOCTYPE html><html><head><style>' +
-    'body{margin:0;padding:0}img{width:100%;display:block}' +
-    '@media print{body{margin:0}}' +
-    '</style><script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"><\/script>' +
-    '</head><body>' +
-    '<img src="' + dataURL + '" onload="window.print()">' +
-    '</body></html>'
-  );
-  win.document.close();
+  showPrintOverlay(dataURL);
 }
 
 // ===== Print original =====
 function printNurie(src) {
-  const win = window.open('', '_blank');
-  if (!win) return;
-  win.document.write(
-    '<!DOCTYPE html><html><head><style>' +
-    'body{margin:0;padding:0}img{width:100%;display:block}' +
-    '</style><script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"><\/script>' +
-    '</head><body>' +
-    '<img src="' + src + '" onload="window.print()">' +
-    '</body></html>'
-  );
-  win.document.close();
+  showPrintOverlay(src);
+}
+
+// ===== Print overlay (inline, no window.open) =====
+function showPrintOverlay(imgSrc) {
+  var ov = document.getElementById('print-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'print-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML = '<img id="print-overlay-img" style="max-width:90%;max-height:70vh;object-fit:contain;margin-bottom:16px;">' +
+      '<div style="display:flex;gap:12px;">' +
+      '<button id="print-overlay-print" style="padding:12px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">🖨 いんさつ</button>' +
+      '<button id="print-overlay-back" style="padding:12px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#ffd3b6,#ffaaa5);color:#8b4513;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">← もどる</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+    document.getElementById('print-overlay-back').addEventListener('click', function() { ov.style.display = 'none'; });
+    document.getElementById('print-overlay-print').addEventListener('click', function() { window.print(); });
+  }
+  document.getElementById('print-overlay-img').src = imgSrc;
+  ov.style.display = 'flex';
 }
 
 // ===== Fullscreen =====
