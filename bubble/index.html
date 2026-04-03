@@ -2446,6 +2446,7 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     gameStarted = true;
 
     // Show tutorial on first visit
+    localStorage.removeItem('bubble_tut_v2'); // テスト用: 毎回表示
     if (!localStorage.getItem('bubble_tut_v2')) {
       setTimeout(showTutorial, 600);
     }

@@ -1029,6 +1029,7 @@ function nextStage() {
       state = S.PLAYING;
     } else {
       startGame();
+      localStorage.removeItem('slide_tut_seen'); // テスト用: 毎回表示
       if (!localStorage.getItem('slide_tut_seen')) {
         setTimeout(showTutorial, 500);
       }

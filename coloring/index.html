@@ -1548,6 +1548,7 @@ function startColoring(src, name) {
     img.src = src;
   }
   // Show tutorial on first coloring session
+  localStorage.removeItem('coloring_tut_seen'); // テスト用: 毎回表示
   if (!localStorage.getItem('coloring_tut_seen')) {
     setTimeout(showTutorial, 500);
   }

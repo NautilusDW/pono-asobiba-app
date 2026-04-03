@@ -1230,6 +1230,7 @@ function showTutorial() {
   steps[0]();
 }
 
+localStorage.removeItem('drawing_tut_seen'); // テスト用: 毎回表示
 if (!localStorage.getItem('drawing_tut_seen')) {
   setTimeout(showTutorial, 500);
 }

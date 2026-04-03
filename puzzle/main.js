@@ -672,6 +672,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadStage(0);
 
   // Show tutorial on first visit
+  localStorage.removeItem('puzzle_tut_seen'); // テスト用: 毎回表示
   if (!localStorage.getItem('puzzle_tut_seen')) {
     setTimeout(showTutorial, 500);
   }

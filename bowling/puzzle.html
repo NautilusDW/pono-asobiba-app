@@ -176,6 +176,7 @@ document.getElementById('start-screen').addEventListener('pointerdown', async fu
       onClick: () => showHighScoreTable('bowling_puzzle', '🧩 パズルボウリング ハイスコア')
     }]
   });
+  localStorage.removeItem('bowling_puzzle_tut_seen'); // テスト用: 毎回表示
   if (!localStorage.getItem('bowling_puzzle_tut_seen')) {
     setTimeout(showTutorial, 500);
   }

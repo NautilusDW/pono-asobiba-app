@@ -1222,6 +1222,7 @@ function showTutorial() {
 }
 
 // 初回は強制表示
+localStorage.removeItem('wordmatch_tut_v2'); // テスト用: 毎回表示
 if (!localStorage.getItem('wordmatch_tut_v2')) {
   setTimeout(showTutorial, 500);
 }
