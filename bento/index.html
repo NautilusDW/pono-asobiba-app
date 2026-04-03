@@ -491,38 +491,46 @@ html, body {
   position: fixed; inset: 0; z-index: 9970;
   background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center;
-  padding: 16px;
+  padding: 12px;
 }
 #sk-intro.hidden { display: none; }
 .sk-intro-card {
   background: #fff; border-radius: 24px;
-  padding: 24px 20px 20px; max-width: 360px; width: 100%;
+  padding: 20px 16px 16px; max-width: 520px; width: 100%;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   text-align: center;
 }
 .sk-intro-title {
   font-size: 1.2rem; font-weight: 900;
-  color: var(--primary); margin-bottom: 16px;
+  color: var(--primary); margin-bottom: 12px;
 }
-.sk-intro-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; margin-bottom: 8px;
-  border-radius: 14px; text-align: left;
+.sk-intro-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
 }
-.sk-intro-row.sk-r-bg { background: #FEE2E2; }
-.sk-intro-row.sk-y-bg { background: #FEF9C3; }
-.sk-intro-row.sk-g-bg { background: #DCFCE7; }
+.sk-intro-col {
+  border-radius: 16px; padding: 10px 6px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.sk-intro-col.sk-r-bg { background: #FEE2E2; }
+.sk-intro-col.sk-y-bg { background: #FEF9C3; }
+.sk-intro-col.sk-g-bg { background: #DCFCE7; }
 .sk-intro-dot {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
 }
 .sk-intro-dot.sk-r { background: #EF4444; }
 .sk-intro-dot.sk-y { background: #EAB308; }
 .sk-intro-dot.sk-g { background: #22C55E; }
 .sk-intro-label {
-  font-size: 0.85rem; font-weight: 900; color: var(--text); line-height: 1.4;
+  font-size: 0.82rem; font-weight: 900; color: var(--text); line-height: 1.3;
 }
-.sk-intro-label small {
-  font-size: 0.7rem; font-weight: 700; color: var(--text-light); display: block;
+.sk-intro-sublabel {
+  font-size: 0.65rem; font-weight: 700; color: var(--text-light); line-height: 1.3;
+}
+.sk-intro-imgs {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 2px;
+}
+.sk-intro-imgs img {
+  width: 52px; height: 52px; object-fit: contain;
 }
 .sk-intro-btn {
   margin-top: 14px; padding: 12px 32px; border: none; border-radius: 50px;
@@ -558,17 +566,40 @@ html, body {
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
     <div class="sk-intro-title">🍱 しょくざいの いろ</div>
-    <div class="sk-intro-row sk-r-bg">
-      <div class="sk-intro-dot sk-r"></div>
-      <div class="sk-intro-label">あか<small>からだを つくる（おにく・おさかな）</small></div>
-    </div>
-    <div class="sk-intro-row sk-y-bg">
-      <div class="sk-intro-dot sk-y"></div>
-      <div class="sk-intro-label">きいろ<small>ちからに なる（ごはん・パン）</small></div>
-    </div>
-    <div class="sk-intro-row sk-g-bg">
-      <div class="sk-intro-dot sk-g"></div>
-      <div class="sk-intro-label">みどり<small>からだの ちょうしを ととのえる（やさい・くだもの）</small></div>
+    <div class="sk-intro-grid">
+      <!-- 赤 -->
+      <div class="sk-intro-col sk-r-bg">
+        <div class="sk-intro-dot sk-r"></div>
+        <div class="sk-intro-label">あか</div>
+        <div class="sk-intro-sublabel">からだを つくる</div>
+        <div class="sk-intro-imgs">
+          <img src="../assets/images/Bento_parts/hamburg2.png" alt="ハンバーグ">
+          <img src="../assets/images/Bento_parts/karaage2.png" alt="からあげ">
+          <img src="../assets/images/Bento_parts/ebi_fry2.png" alt="エビフライ">
+        </div>
+      </div>
+      <!-- 黄 -->
+      <div class="sk-intro-col sk-y-bg">
+        <div class="sk-intro-dot sk-y"></div>
+        <div class="sk-intro-label">きいろ</div>
+        <div class="sk-intro-sublabel">ちからに なる</div>
+        <div class="sk-intro-imgs">
+          <img src="../assets/images/Bento_parts/rice_umeboshi.png" alt="ごはん">
+          <img src="../assets/images/Bento_parts/korokke2.png" alt="コロッケ">
+          <img src="../assets/images/Bento_parts/fries2.png" alt="フライドポテト">
+        </div>
+      </div>
+      <!-- 緑 -->
+      <div class="sk-intro-col sk-g-bg">
+        <div class="sk-intro-dot sk-g"></div>
+        <div class="sk-intro-label">みどり</div>
+        <div class="sk-intro-sublabel">ちょうしを ととのえる</div>
+        <div class="sk-intro-imgs">
+          <img src="../assets/images/Bento_parts/broccoli2.png" alt="ブロッコリー">
+          <img src="../assets/images/Bento_parts/mini_tomato2.png" alt="ミニトマト">
+          <img src="../assets/images/Bento_parts/ichigo2.png" alt="いちご">
+        </div>
+      </div>
     </div>
     <button class="sk-intro-btn" id="sk-intro-btn">わかった！</button>
   </div>
