@@ -1206,8 +1206,13 @@ function createWriter(char) {
     }
   });
 
-  // Start quiz mode
-  startQuiz();
+  // まずお手本を1回流してからquizモードへ
+  writer.animateCharacter({
+    onComplete: function() {
+      writer.hideCharacter();
+      startQuiz();
+    }
+  });
 }
 
 // ===== Stroke Order Numbers =====
