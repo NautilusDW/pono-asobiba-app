@@ -60,14 +60,14 @@ html, body {
 .btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 .btn-bgm.bgm-off { opacity: 0.4; filter: grayscale(1); }
 .btn-pause {
-  position: absolute; right: 40px; top: 50%; transform: translateY(-50%);
+  position: fixed; left: 62px; top: 12px;
   width: 34px; height: 34px; border-radius: 50%;
   background: #FFF3EE; border: 2px solid var(--primary);
   font-size: 1rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px var(--shadow); z-index: 5; transition: transform 0.15s;
+  box-shadow: 0 2px 6px var(--shadow); z-index: 9988; transition: transform 0.15s;
 }
-.btn-pause:active { transform: translateY(-50%) scale(0.9); }
+.btn-pause:active { transform: scale(0.9); }
 
 /* ===== HUD ===== */
 .hud {
@@ -1027,7 +1027,12 @@ function nextStage() {
     else if (t === 'stagestart') {
       overlay.classList.add('hidden');
       state = S.PLAYING;
-    } else startGame();
+    } else {
+      startGame();
+      if (!localStorage.getItem('slide_tut_seen')) {
+        setTimeout(showTutorial, 500);
+      }
+    }
   }
   ovBtn.addEventListener('touchstart', e => { e.preventDefault(); execAction(); }, { passive: false });
   ovBtn.addEventListener('click', execAction);
@@ -1131,9 +1136,6 @@ curRows = LEVELS[0].rows;
 resize();
 updateHUD();
 showOverlay('start');
-if (!localStorage.getItem('slide_tut_seen')) {
-  setTimeout(showTutorial, 500);
-}
 requestAnimationFrame(loop);
 
 function updateLandscapeNotice() {

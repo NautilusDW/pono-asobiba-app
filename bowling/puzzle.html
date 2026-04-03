@@ -158,13 +158,10 @@ function showTutorial() {
   ];
   function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
   function endTut() {
-    dim.removeEventListener('pointerdown', dimTap);
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
     localStorage.setItem('bowling_puzzle_tut_seen', '1');
   }
-  function dimTap(e) { e.preventDefault(); e.stopPropagation(); nextStep(); }
-  dim.addEventListener('pointerdown', dimTap);
   steps[0]();
 }
 
