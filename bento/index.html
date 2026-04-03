@@ -407,7 +407,7 @@ html, body {
 }
 .complete-bento .cb-okazu .okazu-div-v {
   grid-column: 2; grid-row: 1 / -1;
-  background: linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  background: var(--div-bg, linear-gradient(180deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%));
   border-radius: 2px;
   box-shadow:
     1px 0 1px rgba(255,255,255,0.45) inset,
@@ -416,7 +416,7 @@ html, body {
 }
 .complete-bento .cb-okazu .okazu-div-h {
   grid-column: 1 / -1; grid-row: 2;
-  background: linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%);
+  background: var(--div-bg, linear-gradient(90deg, #D4A76A 0%, #C4944F 40%, #B8843E 60%, #D4A76A 100%));
   border-radius: 2px;
   box-shadow:
     0 1px 1px rgba(255,255,255,0.45) inset,
@@ -663,6 +663,7 @@ html, body {
 
 // 三色食品群 初回説明
 (function() {
+  localStorage.removeItem('bento_sk_intro_done'); // テスト用: 毎回表示
   const intro = document.getElementById('sk-intro');
   if (!localStorage.getItem('bento_sk_intro_done')) {
     intro.classList.remove('hidden');
