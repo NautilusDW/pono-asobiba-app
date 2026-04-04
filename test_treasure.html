@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宝箱テスト</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #1a2a4a;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+}
+.test-btn {
+  padding: 20px 40px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #FFD84D, #F5A800);
+  color: #5C3A00; font-family: inherit; font-size: 1.2rem; font-weight: 900;
+  cursor: pointer;
+}
+
+/* 宝箱オーバーレイ */
+#treasure-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(0,0,0,0.7);
+  align-items: center; justify-content: center;
+  flex-direction: column;
+}
+#treasure-overlay.show { display: flex; }
+
+.treasure-container {
+  position: relative;
+  width: 280px; height: 280px;
+  border-radius: 24px;
+  overflow: hidden;
+}
+.treasure-container video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* ゲットしたアイテム（動画の上に重ねる） */
+.treasure-reward {
+  position: absolute;
+  top: 20%; left: 50%;
+  transform: translateX(-50%) scale(0);
+  text-align: center;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.treasure-reward.show {
+  transform: translateX(-50%) scale(1);
+}
+.treasure-reward img {
+  width: 80px; height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(255,215,0,0.5));
+}
+.treasure-reward-name {
+  margin-top: 4px;
+  font-size: 0.9rem; font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.treasure-msg {
+  margin-top: 16px;
+  font-size: 1.1rem; font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.treasure-msg.show { opacity: 1; }
+
+.treasure-close {
+  margin-top: 16px;
+  padding: 12px 32px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #FFD84D, #F5A800);
+  color: #5C3A00; font-family: inherit; font-size: 1rem; font-weight: 900;
+  cursor: pointer;
+  opacity: 0; transition: opacity 0.3s;
+}
+.treasure-close.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<button class="test-btn" onclick="showTreasure()">宝箱を開く</button>
+
+<div id="treasure-overlay">
+  <div class="treasure-container">
+    <video id="treasure-video" muted playsinline>
+      <source src="assets/videos/TreasureBox.mp4" type="video/mp4">
+    </video>
+    <div class="treasure-reward" id="treasure-reward">
+      <img src="assets/images/Bento_parts/hamburg2.png" alt="ごほうび">
+      <div class="treasure-reward-name">ハンバーグ</div>
+    </div>
+  </div>
+  <div class="treasure-msg" id="treasure-msg">🎉 ごほうびを ゲット！</div>
+  <button class="treasure-close" id="treasure-close" onclick="closeTreasure()">やったー！</button>
+</div>
+
+<script>
+function showTreasure() {
+  var overlay = document.getElementById('treasure-overlay');
+  var video = document.getElementById('treasure-video');
+  var reward = document.getElementById('treasure-reward');
+  var msg = document.getElementById('treasure-msg');
+  var closeBtn = document.getElementById('treasure-close');
+
+  // リセット
+  reward.classList.remove('show');
+  msg.classList.remove('show');
+  closeBtn.classList.remove('show');
+  video.currentTime = 0;
+
+  overlay.classList.add('show');
+  video.play();
+
+  // 宝箱が開くタイミング（約3秒後）でアイテムを表示
+  setTimeout(function() {
+    reward.classList.add('show');
+  }, 3000);
+
+  // 動画終了後にメッセージとボタン表示
+  video.onended = function() {
+    msg.classList.add('show');
+    closeBtn.classList.add('show');
+  };
+}
+
+function closeTreasure() {
+  document.getElementById('treasure-overlay').classList.remove('show');
+  document.getElementById('treasure-video').pause();
+}
+</script>
+
+</body>
+</html>
