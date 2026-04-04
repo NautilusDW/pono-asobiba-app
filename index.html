@@ -1431,9 +1431,10 @@
 
       // ── Slot rewards (keyed by 1-based slot number within card) ──
       var CARD_SLOT_REWARDS = {
-        5:  { icon: '\uD83E\uDDF8', name: 'かざり', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png' },
-        10: { icon: '\uD83E\uDE91', name: 'かぐ', type: 'furn', id: 'furn_bear_1', img: 'assets/images/Rooms/furnitures_final/bear_1.png' },
-        15: { icon: '\u2B50', name: 'カードかんせい！', type: 'special' },
+        1:  { icon: '🎁', name: 'デコボックス', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png' },
+        5:  { icon: '🧸', name: 'かざり', type: 'deco', id: 'deco_bear_ribbon', img: '' },
+        10: { icon: '🪑', name: 'かぐ', type: 'furn', id: 'furn_bear_1', img: 'assets/images/Rooms/furnitures_final/bear_1.png' },
+        15: { icon: '⭐', name: 'カードかんせい！', type: 'special' },
       };
 
       // ── Card complete rewards (one per completed card, rotates) ──
@@ -1741,6 +1742,21 @@
               hint.textContent = slotRw.icon;
               slot.appendChild(hint);
               slot.classList.add('reward-slot');
+              (function(rw, el) {
+                el.style.cursor = 'pointer';
+                el.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  var existing = document.querySelector('.slot-detail-popup');
+                  if (existing) existing.remove();
+                  var popup = document.createElement('div');
+                  popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:#fff;border-radius:16px;padding:16px 20px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:180px;';
+                  popup.className = 'slot-detail-popup';
+                  popup.innerHTML = '<div style="font-size:2rem;margin-bottom:6px;">' + rw.icon + '</div><div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + rw.name + '</div>';
+                  document.body.appendChild(popup);
+                  setTimeout(function() { popup.remove(); }, 2000);
+                  popup.addEventListener('click', function() { popup.remove(); });
+                });
+              })(slotRw, slot);
             }
             if (isCurrentSlot) {
               slot.classList.add('current-slot');
@@ -1813,6 +1829,24 @@
                 hint.textContent = slotRw.icon;
                 slotDiv.appendChild(hint);
                 slotDiv.classList.add('reward-slot');
+                // タップで報酬詳細表示
+                (function(rw, el) {
+                  el.style.cursor = 'pointer';
+                  el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var existing = document.querySelector('.slot-detail-popup');
+                    if (existing) existing.remove();
+                    var popup = document.createElement('div');
+                    popup.className = 'slot-detail-popup';
+                    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:#fff;border-radius:16px;padding:16px 20px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:180px;';
+                    popup.innerHTML = '<div style="font-size:2rem;margin-bottom:6px;">' + rw.icon + '</div>' +
+                      '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + rw.name + '</div>' +
+                      (rw.type === 'special' ? '<div style="font-size:0.75rem;color:#999;margin-top:4px;">とくべつな ごほうび！</div>' : '');
+                    document.body.appendChild(popup);
+                    setTimeout(function() { popup.remove(); }, 2000);
+                    popup.addEventListener('click', function() { popup.remove(); });
+                  });
+                })(slotRw, slotDiv);
               }
             }
             rowDiv.appendChild(slotDiv);
