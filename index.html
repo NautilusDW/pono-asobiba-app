@@ -764,7 +764,7 @@
       color: var(--text-light);
     }
 
-    /* ===== Stamp Card (7-slot weekly card) ===== */
+    /* ===== Stamp Card (15-slot, 5×3 card) ===== */
     .stamp-card-section {
       width: 100%;
       max-width: 400px;
@@ -774,6 +774,7 @@
       padding: 10px 14px 12px;
       box-shadow: 0 2px 10px var(--shadow);
       border: 2px solid #FFE8B0;
+      cursor: pointer;
     }
     .stamp-card-header {
       font-size: 0.82rem;
@@ -784,6 +785,13 @@
     }
     .stamp-card-header span {
       color: var(--primary);
+    }
+    .stamp-card-row-label {
+      font-size: 0.6rem;
+      color: #C0B090;
+      text-align: center;
+      margin-bottom: 2px;
+      font-weight: 700;
     }
     .stamp-card {
       display: flex;
@@ -801,13 +809,20 @@
       position: relative;
       background: #FFF8F0;
       flex-shrink: 0;
-      cursor: pointer;
       transition: transform 0.15s;
     }
-    .stamp-card-slot:active { transform: scale(0.92); }
+    .stamp-card-slot .slot-num {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #D5CFC5;
+      position: absolute;
+      pointer-events: none;
+    }
     .stamp-card-slot .slot-hint {
-      font-size: 0.85rem;
-      opacity: 0.3;
+      font-size: 0.7rem;
+      opacity: 0.25;
+      position: absolute;
+      bottom: -1px;
     }
     .stamp-card-slot.stamped {
       border: 2.5px solid #66BB6A;
@@ -824,16 +839,9 @@
       background: #FFFDE7;
       animation: slotPulse 1.5s ease-in-out infinite;
     }
-    .stamp-card-slot.complete-slot {
-      border-color: #FFD700;
-      background: #FFFDE7;
-    }
-    .stamp-card-slot.complete-slot::after {
-      content: '\2B50';
-      position: absolute;
-      top: -8px;
-      right: -6px;
-      font-size: 0.6rem;
+    .stamp-card-slot.reward-slot {
+      border-color: #F2915A;
+      background: #FFF5EE;
     }
     @keyframes slotPulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
@@ -861,26 +869,89 @@
       animation: cardSparkle 1s ease-out;
     }
 
-    /* ===== Slot Tap Popup ===== */
-    .slot-popup {
+    /* ===== Full Card Modal (tap to open 5×3 grid) ===== */
+    .stamp-full-modal-overlay {
       position: fixed;
-      z-index: 99999;
-      background: rgba(0,0,0,0.75);
-      color: #fff;
-      font-size: 0.78rem;
-      font-weight: 900;
-      font-family: inherit;
-      padding: 6px 14px;
-      border-radius: 20px;
-      pointer-events: none;
-      white-space: nowrap;
-      opacity: 0;
-      transform: translateY(4px);
-      transition: opacity 0.15s, transform 0.15s;
+      inset: 0;
+      z-index: 99997;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
     }
-    .slot-popup.show {
-      opacity: 1;
-      transform: translateY(0);
+    .stamp-full-modal {
+      background: linear-gradient(135deg, #FFFDF5, #FFF8E8);
+      border-radius: 20px;
+      padding: 18px 20px 16px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      border: 2px solid #FFE8B0;
+    }
+    .stamp-full-modal-title {
+      font-size: 0.9rem;
+      font-weight: 900;
+      color: #F2915A;
+      margin-bottom: 12px;
+    }
+    .stamp-full-modal-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .stamp-full-modal-slot {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2.5px dashed #E0D6C8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #FFF8F0;
+      flex-shrink: 0;
+    }
+    .stamp-full-modal-slot .slot-num {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #D5CFC5;
+      position: absolute;
+    }
+    .stamp-full-modal-slot .slot-hint {
+      font-size: 0.7rem;
+      opacity: 0.25;
+      position: absolute;
+      bottom: -1px;
+    }
+    .stamp-full-modal-slot.stamped {
+      border: 2.5px solid #66BB6A;
+      background: #F0FFF0;
+    }
+    .stamp-full-modal-slot.stamped img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+    .stamp-full-modal-slot.reward-slot {
+      border-color: #F2915A;
+      background: #FFF5EE;
+    }
+    .stamp-full-modal-close {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: 20px;
+      padding: 8px 28px;
+      cursor: pointer;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
     }
 
     @media (min-width: 640px) {
@@ -1003,11 +1074,12 @@
       <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
     </div>
 
-    <!-- ===== Stamp Card (7-slot weekly) ===== -->
+    <!-- ===== Stamp Card (15-slot, 5×3) ===== -->
     <div class="stamp-card-section" id="stampCardSection">
       <div class="stamp-card-header">📋 スタンプカード <span id="stampCardNum">1まいめ</span></div>
+      <div id="stampCardRowLabel" class="stamp-card-row-label"></div>
       <div class="stamp-card" id="stampCard">
-        <!-- JS が7マスを生成 -->
+        <!-- JS が現在の段の5マスを生成 -->
       </div>
     </div>
 
@@ -1345,7 +1417,7 @@
       }).catch(function() {});
     }
 
-    // ===== Stamp Rally System (Renewed: 7-slot card) =====
+    // ===== Stamp Rally System (15-slot card, 5×3) =====
     (function() {
       'use strict';
 
@@ -1354,21 +1426,22 @@
       var LS_DAILY_RALLY = 'pono_daily_rally';
       var LS_STAMP_REWARDS_GIVEN = 'pono_stamp_rewards_given';
       var PONO_ICON = 'assets/images/characters/pono/pono_face_circle.png';
-      var SLOTS_PER_CARD = 7;
+      var SLOTS_PER_CARD = 15;
+      var SLOTS_PER_ROW = 5;
 
-      // ── Card slot rewards (per-card: slot 0,2,4 = small, slot 6 = card complete) ──
-      var CARD_SLOT_REWARDS = [
-        { slot: 0, icon: '\uD83C\uDF81', name: 'デコボックス', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png' },
-        { slot: 2, icon: '\uD83E\uDDF8', name: 'かざり' },
-        { slot: 4, icon: '\uD83E\uDDF8', name: 'かざり' },
-      ];
+      // ── Slot rewards (keyed by 1-based slot number within card) ──
+      var CARD_SLOT_REWARDS = {
+        5:  { icon: '\uD83E\uDDF8', name: 'かざり', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png' },
+        10: { icon: '\uD83E\uDE91', name: 'かぐ', type: 'furn', id: 'furn_bear_1', img: 'assets/images/Rooms/furnitures_final/bear_1.png' },
+        15: { icon: '\u2B50', name: 'カードかんせい！', type: 'special' },
+      };
 
-      // ── Card complete rewards (one per completed card, rotates after 4) ──
+      // ── Card complete rewards (one per completed card, rotates) ──
       var CARD_COMPLETE_REWARDS = [
-        { card: 1, icon: '\uD83D\uDC20', name: 'メダカ',           type: 'sea',  id: 'medaka' },
-        { card: 2, icon: '\uD83E\uDE91', name: 'とくべつ かぐ',    type: 'furn', id: 'furn_bear_1', img: 'assets/images/Rooms/furnitures_final/bear_1.png' },
-        { card: 3, icon: '\uD83D\uDC2C', name: 'イルカ',           type: 'sea',  id: 'dolphin' },
-        { card: 4, icon: '\uD83D\uDDBC\uFE0F', name: 'とくべつ かべがみ', type: 'wall', id: 'wall_mizutama' },
+        { icon: '\uD83D\uDC20', name: 'メダカ',           type: 'sea',  id: 'medaka' },
+        { icon: '\uD83E\uDE91', name: 'とくべつ かぐ',    type: 'furn', id: 'ach_small_chair' },
+        { icon: '\uD83D\uDC2C', name: 'イルカ',           type: 'sea',  id: 'dolphin' },
+        { icon: '\uD83D\uDDBC\uFE0F', name: 'かべがみ',   type: 'wall', id: 'wall_mizutama' },
       ];
 
       var ALL_FREE_GAMES = [
@@ -1394,29 +1467,29 @@
 
       // ── Card position helpers ──
       function getCardNum(total) {
-        return Math.floor((total > 0 ? total - 1 : 0) / SLOTS_PER_CARD) + 1;
+        return Math.floor(total / SLOTS_PER_CARD) + 1;
       }
-      function getSlotPos(total) {
-        // 0-indexed position within current card (0..6)
-        return total > 0 ? (total - 1) % SLOTS_PER_CARD : -1;
+      function getCardPos(total) {
+        // 0-indexed position within current card (0..14)
+        return total % SLOTS_PER_CARD;
       }
       function getFilledInCard(total) {
-        // How many slots filled in the current card (0..7)
+        // How many slots filled in the current card (0..15)
         if (total <= 0) return 0;
         var mod = total % SLOTS_PER_CARD;
         return mod === 0 ? SLOTS_PER_CARD : mod;
       }
+      function getCurrentRow(total) {
+        // Which row (0,1,2) the current position is in
+        var pos = getCardPos(total);
+        return Math.floor(pos / SLOTS_PER_ROW);
+      }
 
-      // ── Slot reward lookup (for the repeating per-card pattern) ──
-      function getSlotRewardInfo(slotIndex) {
-        // slotIndex: 0-based within card
-        for (var i = 0; i < CARD_SLOT_REWARDS.length; i++) {
-          if (CARD_SLOT_REWARDS[i].slot === slotIndex) return CARD_SLOT_REWARDS[i];
-        }
-        return null;
+      // ── Slot reward lookup (1-based slot number within card) ──
+      function getSlotRewardInfo(slotNum1Based) {
+        return CARD_SLOT_REWARDS[slotNum1Based] || null;
       }
       function getCompleteReward(cardNum) {
-        // Rotates after exhausting the table
         var idx = (cardNum - 1) % CARD_COMPLETE_REWARDS.length;
         return CARD_COMPLETE_REWARDS[idx];
       }
@@ -1441,14 +1514,17 @@
       // ── Reward granting ──
       function checkSlotReward(total) {
         var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
-        var slotPos = getSlotPos(total); // 0-based
+        var filled = getFilledInCard(total);
         var cardNum = getCardNum(total);
-        var isCardComplete = (total % SLOTS_PER_CARD === 0 && total > 0);
+        // filled == total's position within card (1-based: 1..15)
+        // But if card just completed, filled = 15, cardNum = previous card
+        var isCardComplete = (total > 0 && total % SLOTS_PER_CARD === 0);
+        var completedCardNum = isCardComplete ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : 0;
 
-        // Check slot-level rewards (slot 0, 2, 4)
-        var slotRw = getSlotRewardInfo(slotPos);
+        // Check slot-level rewards (slot 5, 10)
+        var slotRw = getSlotRewardInfo(filled);
         var slotKey = 'slot_' + total;
-        if (slotRw && slotRw.type && slotRw.id && given.indexOf(slotKey) === -1) {
+        if (slotRw && slotRw.type !== 'special' && slotRw.id && given.indexOf(slotKey) === -1) {
           if (window.grantReward) {
             window.grantReward({ type: slotRw.type, id: slotRw.id });
           }
@@ -1463,10 +1539,10 @@
           })(slotRw);
         }
 
-        // Check card completion reward (slot 6 = 7th stamp)
+        // Check card completion reward (slot 15 = card complete)
         if (isCardComplete) {
-          var compKey = 'card_' + cardNum;
-          var compRw = getCompleteReward(cardNum);
+          var compKey = 'card_' + completedCardNum;
+          var compRw = getCompleteReward(completedCardNum);
           if (compRw && given.indexOf(compKey) === -1) {
             if (window.grantReward) {
               window.grantReward({ type: compRw.type, id: compRw.id });
@@ -1599,157 +1675,217 @@
         }
       }
 
-      // ── Stamp Card (7-slot) Rendering ──
-      function renderStampCard(animateSlot) {
+      // ── Stamp Card (15-slot, show current row of 5) Rendering ──
+      function renderStampCard(animateSlotInRow) {
         var log = getStampLog();
         var total = log.total;
         var cardNum = getCardNum(total);
         var filled = getFilledInCard(total);
-        // If card is exactly complete, show the completed card (not next empty one)
         var showingCompletedCard = (total > 0 && total % SLOTS_PER_CARD === 0);
 
+        // Determine which row to show (0,1,2)
+        var currentRow;
+        if (showingCompletedCard) {
+          currentRow = 2; // last row
+        } else {
+          currentRow = getCurrentRow(total);
+        }
+        var rowStart = currentRow * SLOTS_PER_ROW; // 0-based index within card
+
         // Update card number
+        var displayCardNum = showingCompletedCard ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : cardNum;
         var numEl = document.getElementById('stampCardNum');
-        if (numEl) numEl.textContent = cardNum + 'まいめ';
+        if (numEl) numEl.textContent = displayCardNum + 'まいめ';
+
+        // Update row label
+        var rowLabel = document.getElementById('stampCardRowLabel');
+        if (rowLabel) {
+          var rowNames = ['1だんめ（1〜5）', '2だんめ（6〜10）', '3だんめ（11〜15）'];
+          rowLabel.textContent = rowNames[currentRow];
+        }
 
         var container = document.getElementById('stampCard');
         if (!container) return;
         container.innerHTML = '';
 
-        for (var i = 0; i < SLOTS_PER_CARD; i++) {
+        for (var i = 0; i < SLOTS_PER_ROW; i++) {
+          var globalIdx = rowStart + i; // 0-based within card (0..14)
+          var slotNum = globalIdx + 1;  // 1-based (1..15)
           var slot = document.createElement('div');
           slot.className = 'stamp-card-slot';
-          var isStamped = (i < filled);
-          var isCurrentSlot = (!showingCompletedCard && i === filled);
-          var isCompleteSlot = (i === SLOTS_PER_CARD - 1);
+          var isStamped = (globalIdx < filled);
+          var isCurrentSlot = (!showingCompletedCard && globalIdx === filled);
 
           // Get reward hint for this slot
-          var slotRw = getSlotRewardInfo(i);
-          var completeRw = isCompleteSlot ? getCompleteReward(cardNum) : null;
+          var slotRw = getSlotRewardInfo(slotNum);
 
           if (isStamped) {
             slot.classList.add('stamped');
             var img = document.createElement('img');
             img.src = PONO_ICON;
             img.alt = 'stamp';
-            // Animate newly added stamp
-            if (animateSlot === i) {
+            if (animateSlotInRow === i) {
               img.classList.add('stamp-bounce');
             }
             slot.appendChild(img);
           } else {
-            // Show hint icon (faded)
-            var hintIcon = '';
-            if (isCompleteSlot && completeRw) {
-              hintIcon = completeRw.icon;
-            } else if (slotRw) {
-              hintIcon = slotRw.icon;
-            }
-            if (hintIcon) {
+            // Number label
+            var numSpan = document.createElement('span');
+            numSpan.className = 'slot-num';
+            numSpan.textContent = String(slotNum).padStart(2, '0');
+            slot.appendChild(numSpan);
+            // Reward hint icon
+            if (slotRw) {
               var hint = document.createElement('span');
               hint.className = 'slot-hint';
-              hint.textContent = hintIcon;
+              hint.textContent = slotRw.icon;
               slot.appendChild(hint);
+              slot.classList.add('reward-slot');
             }
             if (isCurrentSlot) {
               slot.classList.add('current-slot');
             }
           }
 
-          if (isCompleteSlot) {
-            slot.classList.add('complete-slot');
-          }
-
-          // Tap handler for reward detail popup
-          (function(slotIdx, isStmpd) {
-            slot.addEventListener('click', function(e) {
-              showSlotPopup(e, slotIdx, cardNum, isStmpd);
-            });
-          })(i, isStamped);
-
           container.appendChild(slot);
+        }
+
+        // Add tap handler to open full card modal
+        var section = document.getElementById('stampCardSection');
+        if (section && !section._modalBound) {
+          section._modalBound = true;
+          section.addEventListener('click', function() {
+            showFullCardModal();
+          });
         }
       }
 
-      // ── Slot tap popup ──
-      var _popupTimer = null;
-      function showSlotPopup(e, slotIdx, cardNum, isStamped) {
+      // ── Full Card Modal (5×3 grid) ──
+      function showFullCardModal() {
         // Remove existing
-        var old = document.querySelector('.slot-popup');
+        var old = document.querySelector('.stamp-full-modal-overlay');
         if (old) old.remove();
-        if (_popupTimer) clearTimeout(_popupTimer);
 
-        var dayLabel = (slotIdx + 1) + 'にちめ';
-        var rewardText = '';
-        if (slotIdx === SLOTS_PER_CARD - 1) {
-          var cr = getCompleteReward(cardNum);
-          rewardText = cr.icon + ' ' + cr.name;
-        } else {
-          var sr = getSlotRewardInfo(slotIdx);
-          if (sr) {
-            rewardText = sr.icon + ' ' + sr.name;
+        var log = getStampLog();
+        var total = log.total;
+        var cardNum = getCardNum(total);
+        var filled = getFilledInCard(total);
+        var showingCompletedCard = (total > 0 && total % SLOTS_PER_CARD === 0);
+        var displayCardNum = showingCompletedCard ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : cardNum;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'stamp-full-modal-overlay';
+
+        var modal = document.createElement('div');
+        modal.className = 'stamp-full-modal';
+
+        var title = document.createElement('div');
+        title.className = 'stamp-full-modal-title';
+        title.textContent = '\uD83D\uDCCB スタンプカード ' + displayCardNum + 'まいめ';
+        modal.appendChild(title);
+
+        // 3 rows of 5
+        for (var row = 0; row < 3; row++) {
+          var rowDiv = document.createElement('div');
+          rowDiv.className = 'stamp-full-modal-row';
+          for (var col = 0; col < SLOTS_PER_ROW; col++) {
+            var globalIdx = row * SLOTS_PER_ROW + col;
+            var slotNum = globalIdx + 1;
+            var slotDiv = document.createElement('div');
+            slotDiv.className = 'stamp-full-modal-slot';
+            var isStamped = (globalIdx < filled);
+            var slotRw = getSlotRewardInfo(slotNum);
+
+            if (isStamped) {
+              slotDiv.classList.add('stamped');
+              var img = document.createElement('img');
+              img.src = PONO_ICON;
+              img.alt = 'stamp';
+              slotDiv.appendChild(img);
+            } else {
+              var numSpan = document.createElement('span');
+              numSpan.className = 'slot-num';
+              numSpan.textContent = String(slotNum).padStart(2, '0');
+              slotDiv.appendChild(numSpan);
+              if (slotRw) {
+                var hint = document.createElement('span');
+                hint.className = 'slot-hint';
+                hint.textContent = slotRw.icon;
+                slotDiv.appendChild(hint);
+                slotDiv.classList.add('reward-slot');
+              }
+            }
+            rowDiv.appendChild(slotDiv);
           }
+          modal.appendChild(rowDiv);
         }
 
-        var label = dayLabel;
-        if (rewardText) label += ': ' + rewardText;
-        if (isStamped) label = '\u2705 ' + label;
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'stamp-full-modal-close';
+        closeBtn.textContent = 'とじる';
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          overlay.remove();
+        });
+        modal.appendChild(closeBtn);
 
-        var popup = document.createElement('div');
-        popup.className = 'slot-popup';
-        popup.textContent = label;
-        document.body.appendChild(popup);
+        // Prevent clicks on modal from closing
+        modal.addEventListener('click', function(e) { e.stopPropagation(); });
 
-        // Position near the tapped element
-        var rect = e.currentTarget.getBoundingClientRect();
-        popup.style.left = Math.max(8, Math.min(window.innerWidth - 200, rect.left + rect.width / 2 - 60)) + 'px';
-        popup.style.top = (rect.top - 36) + 'px';
-
-        // Force reflow then show
-        popup.offsetWidth;
-        popup.classList.add('show');
-
-        _popupTimer = setTimeout(function() {
-          popup.classList.remove('show');
-          setTimeout(function() { popup.remove(); }, 200);
-        }, 1500);
+        overlay.appendChild(modal);
+        overlay.addEventListener('click', function() { overlay.remove(); });
+        document.body.appendChild(overlay);
       }
 
       // ── Stamp animation ──
       function animateStamp(total) {
         var filled = getFilledInCard(total);
-        var slotIdx = filled - 1;
-        if (slotIdx < 0) return;
-        renderStampCard(slotIdx);
+        // Which row is the newly stamped slot in?
+        var posInCard = filled - 1; // 0-based
+        var posInRow = posInCard % SLOTS_PER_ROW;
+        renderStampCard(posInRow);
       }
 
-      // スタンプ押し演出モーダル
+      // ── Stamp reason text ──
+      function getStampReasonText(total) {
+        return 'ログイン ' + total + 'にちめ！';
+      }
+
+      // スタンプ押し演出モーダル（現在の段の5マスを表示）
       function showStampModal(total, onDone) {
         var cardNum = getCardNum(total);
-        var slotPos = getFilledInCard(total);
+        var filled = getFilledInCard(total);
+        var posInCard = filled - 1; // 0-based index of the newly stamped slot
+        var currentRow = Math.floor(posInCard / SLOTS_PER_ROW);
+        var rowStart = currentRow * SLOTS_PER_ROW;
+
         var ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
-        // ミニカード表示
+
         var cardHtml = '<div style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">';
-        cardHtml += '<div style="font-size:0.85rem;font-weight:900;color:#F2915A;margin-bottom:10px;">📋 スタンプカード ' + cardNum + 'まいめ</div>';
+        // Reason text
+        cardHtml += '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">' + getStampReasonText(total) + '</div>';
+        cardHtml += '<div style="font-size:0.8rem;font-weight:700;color:#F2915A;margin-bottom:10px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>';
         cardHtml += '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:12px;">';
-        for (var i = 0; i < 7; i++) {
-          var filled = i < slotPos - 1;
-          var isNew = i === slotPos - 1;
-          var empty = i >= slotPos;
-          if (filled) {
+        for (var i = 0; i < SLOTS_PER_ROW; i++) {
+          var globalIdx = rowStart + i;
+          var isFilled = globalIdx < posInCard;
+          var isNew = globalIdx === posInCard;
+          if (isFilled) {
             cardHtml += '<div style="width:36px;height:36px;border-radius:50%;background:#E8F5E9;border:2px solid #66BB6A;display:flex;align-items:center;justify-content:center;"><img src="' + PONO_ICON + '" style="width:28px;height:28px;border-radius:50%;"></div>';
           } else if (isNew) {
             cardHtml += '<div id="stamp-new-slot" style="width:36px;height:36px;border-radius:50%;background:#FFF3CD;border:3px solid #FFD700;display:flex;align-items:center;justify-content:center;"><img src="' + PONO_ICON + '" style="width:28px;height:28px;border-radius:50%;opacity:0;" id="stamp-new-icon"></div>';
           } else {
-            cardHtml += '<div style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.08);border:2px solid rgba(0,0,0,0.1);"></div>';
+            var slotNum = globalIdx + 1;
+            cardHtml += '<div style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.08);border:2px solid rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#bbb;font-weight:700;">' + String(slotNum).padStart(2,'0') + '</div>';
           }
         }
         cardHtml += '</div>';
-        cardHtml += '<div id="stamp-msg" style="font-size:0.9rem;font-weight:900;color:#5D4E37;opacity:0;transition:opacity 0.3s;">ポン！✨</div>';
+        cardHtml += '<div id="stamp-msg" style="font-size:0.9rem;font-weight:900;color:#5D4E37;opacity:0;transition:opacity 0.3s;">ポン！\u2728</div>';
         cardHtml += '</div>';
         ov.innerHTML = cardHtml;
         document.body.appendChild(ov);
+
         // スタンプ押しアニメーション（0.5秒後）
         setTimeout(function() {
           var icon = document.getElementById('stamp-new-icon');
@@ -1759,7 +1895,7 @@
           var msg = document.getElementById('stamp-msg');
           if (msg) msg.style.opacity = '1';
         }, 500);
-        // 2秒後に自動で閉じて次へ
+        // 2.5秒後に自動で閉じて次へ
         setTimeout(function() {
           ov.remove();
           if (onDone) onDone();
