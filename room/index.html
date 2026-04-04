@@ -154,16 +154,6 @@
       font-size: 13px; font-weight: bold; cursor: pointer;
     }
     .edit-done-btn:active { transform: scale(0.93); }
-    #btn-theme-toggle {
-      background: rgba(255,255,255,0.25); border: none;
-      border-radius: 14px; padding: 5px 12px;
-      font-size: 13px; font-weight: bold; cursor: pointer;
-      color: #fff;
-      display: flex; align-items: center; gap: 4px;
-      transition: background 0.2s;
-    }
-    #btn-theme-toggle:active { transform: scale(0.93); }
-
     /* ─── Room scroll wrapper (fills room-wrap) ─── */
     #room-scroll {
       width: 100%; height: 100%;
@@ -553,28 +543,7 @@
     .premium-banner-sub  { font-size: 12px; color: #7a5000; margin-top: 2px; }
     .premium-banner-arr  { font-size: 22px; color: #8a6000; }
 
-    /* ─── Theme select overlay ─── */
-    #theme-ov {
-      position: fixed; inset: 0; z-index: 500;
-      background: linear-gradient(160deg, #6ec6ea 0%, #b8e4f7 100%);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 28px;
-    }
-    #theme-ov.hidden { display: none; }
-    #theme-ov h2 { font-size: 26px; color: #333; text-align: center; line-height: 1.4; }
-    #theme-ov p  { font-size: 14px; color: #555; text-align: center; }
-    .theme-row { display: flex; gap: 24px; }
-    .theme-btn {
-      width: 140px; height: 140px; border-radius: 22px; border: none;
-      font-size: 56px; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 8px; box-shadow: 0 5px 14px rgba(0,0,0,0.2);
-      transition: transform 0.12s;
-    }
-    .theme-btn:active { transform: scale(0.94); }
-    .theme-btn span { font-size: 15px; font-weight: bold; }
-    #btn-boy  { background: linear-gradient(135deg, #42a5f5, #1565c0); color: white; }
-    #btn-girl { background: linear-gradient(135deg, #f06292, #c2185b); color: white; }
+    /* ─── Theme select overlay (削除済み) ─── */
 
     /* ─── Entry selection overlay ─── */
     #entry-ov {
@@ -923,7 +892,6 @@
     <!-- もようがえ中バナー -->
     <div class="edit-banner" id="edit-banner">
       🔧 もようがえ ちゅう…
-      <button id="btn-theme-toggle"></button>
       <button class="edit-done-btn" id="edit-done-btn">✅ おわり</button>
     </div>
   </div>
@@ -959,15 +927,7 @@
 <!-- ── Points toast ───────────────────────────────── -->
 <div id="pts-toast"></div>
 
-<!-- ── Theme select ───────────────────────────────── -->
-<div id="theme-ov">
-  <h2>どんな おうちが<br>すき？</h2>
-  <div class="theme-row">
-    <button class="theme-btn" id="btn-boy">🚀<span>かっこいい</span></button>
-    <button class="theme-btn" id="btn-girl">🌸<span>かわいい</span></button>
-  </div>
-  <p>あとから かえることも できるよ！</p>
-</div>
+<!-- ── Theme select (削除済み: pono_profileのgenderから自動設定) ──>
 
 <!-- ── Egg care modal ────────────────────────────────── -->
 <div id="egg-modal" class="hidden stage-egg">
@@ -1145,7 +1105,17 @@ function loadState() {
   if (!state.config.living) state.config.living = {};
   if (!state.config.living.wall) state.config.living.wall = 'wall_navy';
   state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
+  // テーマ: localStorage → pono_profile.gender → デフォルト'boy'
   state.theme     = localStorage.getItem(LS.THEME) || null;
+  if (!state.theme) {
+    try {
+      const prof = JSON.parse(localStorage.getItem('pono_profile') || '{}');
+      state.theme = (prof.gender === 'girl') ? 'girl' : 'boy';
+    } catch(e) {
+      state.theme = 'boy';
+    }
+    localStorage.setItem(LS.THEME, state.theme);
+  }
   // 旧アイテムIDのマイグレーション
   const ID_MIGRATION = { 'deco_toybox_pink': 'deco_box' };
   state.inventory = state.inventory.map(id => ID_MIGRATION[id] || id);
@@ -2522,23 +2492,7 @@ function renderGuide() {
   });
 }
 
-// ─── Theme selection ──────────────────────────────────
-function selectTheme(t) {
-  state.theme = t;
-  localStorage.setItem(LS.THEME, t);
-  document.getElementById('theme-ov').classList.add('hidden');
-
-  // Give welcome bonus
-  const earned = awardPoints(10);
-  if (earned > 0) setTimeout(() => showToast(`🎁 はじめのプレゼント +${earned}pt！`), 600);
-
-  // Show egg story if first time, otherwise entry selection
-  if (needsEggStory()) {
-    showEggStory();
-  } else {
-    showEntryOverlay();
-  }
-}
+// ─── Theme selection (削除済み: pono_profile.genderから自動設定) ──
 
 // ─── Entry selection (おへや / おにわ) ───────────────────
 function isGardenUnlocked() {
@@ -3159,21 +3113,8 @@ function init() {
   loadState();
   updatePtsDisplay();
 
-  // Theme selection
-  if (!state.theme) {
-    document.getElementById('theme-ov').classList.remove('hidden');
-    document.getElementById('btn-boy').addEventListener('click', () => selectTheme('boy'));
-    document.getElementById('btn-girl').addEventListener('click', () => selectTheme('girl'));
-  } else {
-    document.getElementById('theme-ov').classList.add('hidden');
-    // ── 育成機能は MVP 後に有効化（コードは保持）──
-    // if (!needsEggStory()) placeEggIncubator();
-    // var params = new URLSearchParams(location.search);
-    // if (needsEggStory()) { showEggStory(); }
-    // else if (params.get('to') === 'room') { enterRoom(); }
-    // else { showEntryOverlay(); }
-    enterRoom(); // MVP: 直接おへやへ
-  }
+  // テーマはloadStateでpono_profile.genderから自動設定済み → 直接おへやへ
+  enterRoom();
 
   // Entry overlay buttons
   document.getElementById('btn-entry-room').addEventListener('click', enterRoom);
@@ -3265,23 +3206,7 @@ function init() {
     setEditMode(false);
   });
 
-  // ── テーマ切り替えボタン ──
-  const themeToggleBtn = document.getElementById('btn-theme-toggle');
-  function updateThemeToggleIcon() {
-    themeToggleBtn.textContent = state.theme === 'boy' ? '🩵 かっこいい' : '💗 かわいい';
-  }
-  updateThemeToggleIcon();
-  themeToggleBtn.addEventListener('click', () => {
-    const next = state.theme === 'boy' ? 'girl' : 'boy';
-    state.theme = next;
-    localStorage.setItem(LS.THEME, next);
-    updateThemeToggleIcon();
-    showToast(next === 'boy' ? '🩵 かっこいい テーマにしたよ！' : '💗 かわいい テーマにしたよ！');
-    // Refresh shop grid if open so theme-filtered items update
-    if (typeof currentShopCat !== 'undefined' && !document.getElementById('shop-ov').classList.contains('hidden')) {
-      renderShopGrid(currentShopCat);
-    }
-  });
+  // テーマ切り替えボタンは削除済み（pono_profile.genderから自動設定）
 
   // Premium banner → menu
   document.getElementById('premium-banner').addEventListener('click', () => {
