@@ -192,6 +192,7 @@ html, body {
     <div id="hud-stage">はじめてのみち</div>
     <div id="hud-moves">てかず: 0</div>
   </div>
+  <div id="clue-bar" style="display:flex;justify-content:center;gap:4px;padding:2px 8px;flex-shrink:0;"></div>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
@@ -1033,7 +1034,7 @@ function showOverlay(type) {
 
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
   var reunionTag  = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">' +
-                    '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:80px;height:80px;object-fit:contain;" alt="ポノ">' +
+                    '<img src="../assets/images/characters/pono/pono_001.png" style="width:80px;height:80px;object-fit:contain;" alt="ポノ">' +
                     '<span style="font-size:2rem;">❤️</span>' +
                     '<img src="../assets/images/Slide/pono_mom_only.png" style="width:80px;height:80px;object-fit:contain;" alt="おかあさん">' +
                     '</div>';
@@ -1064,6 +1065,29 @@ function showOverlay(type) {
 function updateHUD() {
   document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
   document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
+  updateClueBar();
+}
+
+function updateClueBar() {
+  var bar = document.getElementById('clue-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  for (var i = 0; i < LEVELS.length; i++) {
+    var slot = document.createElement('div');
+    var icon = LEVELS[i].goalIcon;
+    var cleared = i < stageIdx;
+    var current = i === stageIdx;
+    slot.style.cssText = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;' +
+      (cleared ? 'background:#4CAF50;' : current ? 'background:rgba(255,255,255,0.9);border:2px solid #4CAF50;' : 'background:rgba(0,0,0,0.15);');
+    if (cleared) {
+      slot.textContent = icon === 'mom' ? '❤️' : icon;
+    } else if (current) {
+      slot.textContent = '?';
+      slot.style.fontWeight = '900';
+      slot.style.color = '#4CAF50';
+    }
+    bar.appendChild(slot);
+  }
 }
 
 // ===== Start / Next =====
@@ -1197,7 +1221,7 @@ function showTutorial() {
   // Step 0: 導入
   dim.classList.remove('hidden');
   bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-  bubble.innerHTML = '🌳 パネルを うごかして<br>みちを つなげよう！<br><button class="tut-next-btn" id="tut-next">やってみる →</button>';
+  bubble.innerHTML = '🌳 パネルを うごかして<br>みちを つなげよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
   bubble.classList.remove('hidden');
 
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
@@ -1266,9 +1290,12 @@ function showTutorial() {
 
       // 実際にパネルを動かす
       handleTap(px, py);
+      // 次のステップまで操作をブロック
+      state = S.PAUSED;
 
-      // 少し待ってから次のステップ or 完了
+      // アニメーション完了後に次のステップ
       setTimeout(function() {
+        state = S.PLAYING;
         tutStepIdx++;
         if (tutStepIdx < tutSteps.length) {
           // 次のステップ
