@@ -163,6 +163,12 @@ html, body {
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{transform:scale(0.8) translate(-50%,-50%);opacity:0.5} to{transform:scale(1) translate(-50%,-50%);opacity:1} }
+@keyframes heartFloat {
+  0% { opacity:0; transform:translateY(10px) scale(0.6); }
+  30% { opacity:1; transform:translateY(-5px) scale(1); }
+  70% { opacity:1; transform:translateY(-10px) scale(1.1); }
+  100% { opacity:0; transform:translateY(-20px) scale(0.8); }
+}
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 
 </style>
@@ -192,8 +198,7 @@ html, body {
     <div id="hud-stage">はじめてのみち</div>
     <div id="hud-moves">てかず: 0</div>
   </div>
-  <div id="clue-bar" style="display:flex;justify-content:center;gap:4px;padding:2px 8px;flex-shrink:0;"></div>
-  <div id="stage-num" style="text-align:center;font-size:0.7rem;font-weight:700;color:var(--text-light);padding:0 0 2px;flex-shrink:0;"></div>
+  <div id="stage-num" style="text-align:center;font-size:1rem;font-weight:900;color:var(--text-light);padding:0 0 2px;flex-shrink:0;"></div>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
@@ -306,6 +311,7 @@ const LEVELS = [
     storyMsg: 'おかあさんと きたことある！\nこっちだよね！',
     clearMsg: 'あ、この おはな みたことある！',
     goalIcon: '🌸',
+    cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを さがしていました' },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', null,'V','BLANK', 'BLANK','V','BLANK'],
@@ -314,7 +320,7 @@ const LEVELS = [
   {
     name: 'もりの おく',
     cols: 3, rows: 3,
-    storyMsg: 'もりが ふかく なってきた…\nでも ここも きたことある！',
+    storyMsg: 'もりが ふかく なってきた…\nひとりは ちょっと こわいけど…がんばる！',
     clearMsg: 'おかあさんの はなうたが きこえる！',
     goalIcon: '🎵',
     start: { col: 0, side: 'top' },
@@ -329,6 +335,7 @@ const LEVELS = [
     storyMsg: 'ここは ちかみちだって\nおかあさんが おしえてくれた！',
     clearMsg: 'ひかる キノコ！ ここ しってる！',
     goalIcon: '🍄',
+    cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」' },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
@@ -337,7 +344,7 @@ const LEVELS = [
   {
     name: 'ひかる キノコのみち',
     cols: 3, rows: 4,
-    storyMsg: 'このキノコを たどれば\nだいじょうぶ！',
+    storyMsg: 'まっくらだけど がんばる！\nおかあさん…だいじょうぶかな',
     clearMsg: 'きれいな いしが ひかってる！',
     goalIcon: '💎',
     start: { col: 1, side: 'top' },
@@ -351,6 +358,7 @@ const LEVELS = [
     storyMsg: 'あかるく なってきた！\nあとすこし！',
     clearMsg: 'おそとの あかりだ！',
     goalIcon: '🌙',
+    cutscene: { text: 'やっと みつけた！\nはやく ポノに とどけなきゃ！' },
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
@@ -359,7 +367,7 @@ const LEVELS = [
   {
     name: 'おかあさんの こえ',
     cols: 4, rows: 4,
-    storyMsg: 'あ！おかあさんの こえだ！\nもう ちかい！',
+    storyMsg: 'あ！おかあさんの こえだ！\nもうすぐ あえる！',
     clearMsg: 'こえが すぐ ちかくから きこえる！',
     goalIcon: '🔔',
     start: { col: 1, side: 'top' },
@@ -759,9 +767,6 @@ function drawStartGoal() {
     } else if (imgMom.complete && imgMom.naturalWidth > 0) {
       ctx.drawImage(imgMom, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
     }
-    ctx.font = `${Math.floor(cellSize * 0.16)}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('❤️', gx, gy - imgSize / 2 - Math.floor(cellSize * 0.05));
     ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
     ctx.fillStyle = '#5D4E37';
     ctx.fillText('おかあさん', gx, gy + imgSize / 2 + Math.floor(cellSize * 0.06));
@@ -1033,12 +1038,16 @@ function showOverlay(type) {
   const back  = document.getElementById('ov-back');
   overlay.classList.remove('hidden');
   back.classList.add('hidden');
+  title.style.whiteSpace = '';
 
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
-  var reunionTag  = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">' +
-                    '<img src="../assets/images/characters/pono/pono_001.png" style="width:80px;height:80px;object-fit:contain;" alt="ポノ">' +
-                    '<span style="font-size:2rem;">❤️</span>' +
-                    '<img src="../assets/images/Slide/pono_mom_only.png" style="width:80px;height:80px;object-fit:contain;" alt="おかあさん">' +
+  var reunionTag  = '<div style="display:flex;align-items:center;justify-content:center;gap:4px;">' +
+                    '<img src="../assets/images/characters/pono/pono_001.png" style="width:60px;height:60px;object-fit:contain;" alt="ポノ">' +
+                    '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                    '<span style="font-size:1.2rem;animation:heartFloat 1.5s ease-in-out infinite;">❤️</span>' +
+                    '<span style="font-size:1.8rem;animation:heartFloat 1.5s ease-in-out 0.5s infinite;">❤️</span>' +
+                    '</div>' +
+                    '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">' +
                     '</div>';
 
   if (type === 'start' || type === 'stagestart') {
@@ -1052,6 +1061,10 @@ function showOverlay(type) {
     title.textContent = `${LEVELS[stageIdx].name} クリア！`;
     msg.textContent   = LEVELS[stageIdx].clearMsg + `\n${moveCount}てかず`;
     btn.textContent   = 'つぎへ ▶';
+    if (LEVELS[stageIdx].cutscene) {
+      btn.dataset.ovType = 'cutscene';
+      return;
+    }
   } else if (type === 'gameclear') {
     launchConfetti();
     playGameClearSound();
@@ -1069,30 +1082,8 @@ function updateHUD() {
   document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
   var stageNum = document.getElementById('stage-num');
   if (stageNum) stageNum.textContent = 'ステージ ' + (stageIdx + 1) + ' / ' + LEVELS.length;
-  updateClueBar();
 }
 
-function updateClueBar() {
-  var bar = document.getElementById('clue-bar');
-  if (!bar) return;
-  bar.innerHTML = '';
-  for (var i = 0; i < LEVELS.length; i++) {
-    var slot = document.createElement('div');
-    var icon = LEVELS[i].goalIcon;
-    var cleared = i < stageIdx;
-    var current = i === stageIdx;
-    slot.style.cssText = 'width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;' +
-      (cleared ? 'background:#4CAF50;' : current ? 'background:rgba(255,255,255,0.9);border:2px solid #4CAF50;' : 'background:rgba(0,0,0,0.15);');
-    if (cleared) {
-      slot.textContent = icon === 'mom' ? '❤️' : icon;
-    } else if (current) {
-      slot.textContent = '?';
-      slot.style.fontWeight = '900';
-      slot.style.color = '#4CAF50';
-    }
-    bar.appendChild(slot);
-  }
-}
 
 // ===== Start / Next =====
 function startGame() {
@@ -1115,11 +1106,28 @@ function nextStage() {
   showOverlay('stagestart');
 }
 
+// ===== Cutscene =====
+function showCutscene() {
+  var level = LEVELS[stageIdx];
+  if (!level || !level.cutscene) { nextStage(); return; }
+  var icon  = document.getElementById('ov-icon');
+  var title = document.getElementById('ov-title');
+  var msg   = document.getElementById('ov-msg');
+  var btn   = document.getElementById('ov-btn');
+  icon.innerHTML = '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">';
+  title.textContent = level.cutscene.text;
+  title.style.whiteSpace = 'pre-line';
+  msg.textContent = '';
+  btn.textContent = 'つぎへ ▶';
+  btn.dataset.ovType = 'stageclear';
+}
+
 // ===== Overlay button =====
 (function() {
   const ovBtn = document.getElementById('ov-btn');
   function execAction() {
     const t = ovBtn.dataset.ovType;
+    if (t === 'cutscene') { showCutscene(); return; }
     if (t === 'stageclear') nextStage();
     else if (t === 'stagestart') {
       overlay.classList.add('hidden');
