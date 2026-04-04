@@ -708,9 +708,16 @@ html, body {
       });
     }, 400);
   });
-  // チュートリアル未表示なら showTutorial を起動（Step 0から開始）
+  // チュートリアル未表示なら横画面になってから表示
   if (!localStorage.getItem('bento_tut_seen')) {
-    setTimeout(showTutorial, 400);
+    function waitLandscape() {
+      if (window.innerWidth > window.innerHeight) {
+        setTimeout(showTutorial, 500);
+      } else {
+        setTimeout(waitLandscape, 500);
+      }
+    }
+    setTimeout(waitLandscape, 500);
   }
 })();
 
@@ -892,7 +899,31 @@ function loadStep() {
 function loadFreeOkazu() {
   const tray = document.getElementById('food-tray');
   tray.innerHTML = '';
-  const all = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedIds.has(fid(f)))).slice(0, 6);
+  // 三色バランスを考慮して選択肢を作る
+  const available = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedIds.has(fid(f))));
+  const rCount = bentoSkColors.filter(c => c === 'r').length;
+  const yCount = bentoSkColors.filter(c => c === 'y').length;
+  const gCount = bentoSkColors.filter(c => c === 'g').length;
+  // 不足している色の食材を優先的に含める（各色最低1個）
+  const byColor = { r: [], y: [], g: [] };
+  available.forEach(f => { if (f.sk && byColor[f.sk]) byColor[f.sk].push(f); });
+  const picked = [];
+  const usedSet = new Set();
+  // 不足色を優先
+  ['r', 'y', 'g'].forEach(c => {
+    var count = c === 'r' ? rCount : c === 'y' ? yCount : gCount;
+    if (count === 0 && byColor[c].length > 0) {
+      var f = byColor[c].shift();
+      picked.push(f); usedSet.add(fid(f));
+    }
+  });
+  // 残りをランダムで埋める
+  for (var i = 0; i < available.length && picked.length < 6; i++) {
+    if (!usedSet.has(fid(available[i]))) {
+      picked.push(available[i]); usedSet.add(fid(available[i]));
+    }
+  }
+  const all = shuffle(picked);
   all.forEach(f => {
     const item = mkItem(f);
     item.addEventListener('pointerdown', e => { e.preventDefault(); onFreeOkazuTap(item, f); });
