@@ -252,6 +252,8 @@ const SIDE_WALK_FRAME_H = 128;
 const SIDE_WALK_SCALE = 1232 / 1132; // compensate taller canvas vs front
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
+const imgMomFull = new Image();
+imgMomFull.src = '../assets/images/Slide/pono_mom_only.png';
 
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
@@ -270,13 +272,15 @@ const TILE_TYPES = {
 // solved: row-major cols×rows, null = empty space
 // ── Stage backgrounds ──
 const STAGE_BGS = [
-  '../assets/images/Slide/stage1_forest_light.png',
-  '../assets/images/Slide/stage1_forest_light.png',
-  '../assets/images/Slide/stage2_forest_deep.png',
-  '../assets/images/Slide/stage3_cave_entrance.png',
-  '../assets/images/Slide/stage4_cave_mushroom.png',
-  '../assets/images/Slide/stage5_cave_deep.png',
-  '../assets/images/Slide/stage6_night_sky.png',
+  '../assets/images/Slide/stage1_forest_light.png',  // チュートリアル
+  '../assets/images/Slide/stage1_forest_light.png',  // ステージ1
+  '../assets/images/Slide/stage1_forest_light.png',  // ステージ2
+  '../assets/images/Slide/stage2_forest_deep.png',   // ステージ3
+  '../assets/images/Slide/stage3_cave_entrance.png', // ステージ4
+  '../assets/images/Slide/stage4_cave_mushroom.png', // ステージ5
+  '../assets/images/Slide/stage5_cave_deep.png',     // ステージ6
+  '../assets/images/Slide/stage6_night_sky.png',     // ステージ7
+  '../assets/images/Slide/stage6_night_sky.png',     // ステージ8
 ];
 const stageBgImgs = STAGE_BGS.map(function(src) { var img = new Image(); img.src = src; return img; });
 
@@ -284,68 +288,90 @@ const stageBgImgs = STAGE_BGS.map(function(src) { var img = new Image(); img.src
 // CROSS(十字)タイルは4方向すべて接続 → 複数ルート可能で難易度が下がる
 const LEVELS = [
   {
-    name: 'はじめてのみち',
+    name: 'おかあさん まってー！',
     cols: 3, rows: 3,
-    storyMsg: 'ポノが もりで まいごに！\nみちを つなげて あげよう！',
-    clearMsg: 'やったー！みちが つながった！',
+    storyMsg: 'おかあさんが おでかけ！\nおさいふ わすれてるよ！',
+    clearMsg: 'おかあさんの あしあと はっけん！',
+    goalIcon: '🐾',
     start: { col: 1, side: 'top' },
-    goal:  { col: 1, side: 'bottom' },
-    // path: V→V→V (まっすぐ)
+    goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK'],
     shuffleMoves: 4,
   },
   {
-    name: 'もうすこし',
+    name: 'この みち しってる！',
     cols: 3, rows: 3,
-    storyMsg: 'もう すこし さきへ！\nまっすぐ つなげよう！',
-    clearMsg: 'いいかんじ！すすめるよ！',
+    storyMsg: 'おかあさんと きたことある！\nこっちだよね！',
+    clearMsg: 'あ、この おはな みたことある！',
+    goalIcon: '🌸',
     start: { col: 1, side: 'top' },
-    goal:  { col: 1, side: 'bottom' },
-    // path: V→V→V (まっすぐ、シャッフル多め)
+    goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', null,'V','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 6,
   },
   {
-    name: 'まがりかど',
+    name: 'もりの おく',
     cols: 3, rows: 3,
-    storyMsg: 'おかあさんの こえが きこえる！\nまがりかどを つなげよう！',
-    clearMsg: 'こえが ちかくなってきた！',
+    storyMsg: 'もりが ふかく なってきた…\nでも ここも きたことある！',
+    clearMsg: 'おかあさんの はなうたが きこえる！',
+    goalIcon: '🎵',
     start: { col: 1, side: 'top' },
-    goal:  { col: 1, side: 'bottom' },
-    // path: V→CROSS→V (十字が中央にあり、上下のVで必ずつながる)
+    goal: { col: 1, side: 'bottom' },
     solved: [null,'V','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 4,
   },
   {
-    name: 'ながいみち',
+    name: 'どうくつの ちかみち',
     cols: 3, rows: 4,
-    storyMsg: 'もりが ふかくなってきた…\nながい みちを つなげよう！',
-    clearMsg: 'もりを ぬけたよ！すごい！',
+    storyMsg: 'ここは ちかみちだって\nおかあさんが おしえてくれた！',
+    clearMsg: 'ひかる キノコ！ ここ しってる！',
+    goalIcon: '🍄',
     start: { col: 1, side: 'top' },
-    goal:  { col: 1, side: 'bottom' },
-    // path: V→V→CROSS→V (十字1個、グリッド拡大、BLANKは空きの隣に)
-    solved: ['BLANK','V','BLANK', 'BLANK','V',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
+    goal: { col: 1, side: 'bottom' },
+    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','V','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 6,
   },
   {
-    name: 'よこにまがる',
-    cols: 4, rows: 4,
-    storyMsg: 'あしあとを はっけん！\nちかくにいるかも！',
-    clearMsg: 'あしあとの さきに…！',
+    name: 'ひかる キノコのみち',
+    cols: 3, rows: 4,
+    storyMsg: 'このキノコを たどれば\nだいじょうぶ！',
+    clearMsg: 'きれいな いしが ひかってる！',
+    goalIcon: '💎',
     start: { col: 1, side: 'top' },
-    goal:  { col: 2, side: 'bottom' },
-    // path: V→CROSS→CROSS→V (十字2個で方向転換)
+    goal: { col: 1, side: 'bottom' },
+    solved: ['BLANK','V',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK', 'BLANK','V','BLANK'],
+    shuffleMoves: 8,
+  },
+  {
+    name: 'そとが みえた！',
+    cols: 4, rows: 4,
+    storyMsg: 'あかるく なってきた！\nあとすこし！',
+    clearMsg: 'おそとの あかりだ！',
+    goalIcon: '🌙',
+    start: { col: 1, side: 'top' },
+    goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
+    shuffleMoves: 10,
+  },
+  {
+    name: 'おかあさんの こえ',
+    cols: 4, rows: 4,
+    storyMsg: 'あ！おかあさんの こえだ！\nもう ちかい！',
+    clearMsg: 'こえが すぐ ちかくから きこえる！',
+    goalIcon: '🔔',
+    start: { col: 1, side: 'top' },
+    goal: { col: 2, side: 'bottom' },
+    solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', null,'BLANK','V','BLANK', 'BLANK','BLANK','V','BLANK'],
     shuffleMoves: 12,
   },
   {
-    name: 'さいごのみち',
+    name: 'おかあさーん！',
     cols: 4, rows: 5,
     storyMsg: '「ポノーッ！」\nおかあさんの こえだ！',
-    clearMsg: '「おかあさーん！」',
+    clearMsg: '「あらあら ポノ！\nおさいふ とどけに\nきてくれたの？ ありがとう！」',
+    goalIcon: 'mom',
     start: { col: 1, side: 'top' },
-    goal:  { col: 2, side: 'bottom' },
-    // path: CROSS→right→CROSS→V→CROSS→V→V (十字3個、最難)
+    goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','CROSS','CROSS','BLANK', 'BLANK','BLANK','V','BLANK', 'BLANK',null,'CROSS','BLANK', 'BLANK','BLANK','V','BLANK', 'BLANK','BLANK','V','BLANK'],
     shuffleMoves: 16,
   },
@@ -717,25 +743,31 @@ function drawStartGoal() {
   ctx.fillStyle = var_primary;
   ctx.fill();
 
-  // ===== Goal marker (おかあさん) at bottom =====
+  // ===== Goal marker at bottom =====
   const gc = level.goal.col;
   const gx = gridOX + gc * cellSize + cellSize / 2;
   const bottomEdge = gridOY + curRows * cellSize;
   const gy = bottomEdge + cellSize * 0.4;
 
-  if (imgMom.complete && imgMom.naturalWidth > 0) {
-    ctx.drawImage(imgMom, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
-  } else {
-    ctx.font = `${fontSize}px serif`;
+  if (level.goalIcon === 'mom') {
+    // 最終ステージ: お母さん全身画像
+    if (imgMomFull.complete && imgMomFull.naturalWidth > 0) {
+      ctx.drawImage(imgMomFull, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
+    } else if (imgMom.complete && imgMom.naturalWidth > 0) {
+      ctx.drawImage(imgMom, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
+    }
+    ctx.font = `${Math.floor(cellSize * 0.16)}px serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🐻', gx, gy);
+    ctx.fillText('❤️', gx, gy - imgSize / 2 - Math.floor(cellSize * 0.05));
+    ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
+    ctx.fillStyle = '#5D4E37';
+    ctx.fillText('おかあさん', gx, gy + imgSize / 2 + Math.floor(cellSize * 0.06));
+  } else {
+    // 手がかりアイコン（絵文字）
+    ctx.font = `${Math.floor(cellSize * 0.4)}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(level.goalIcon, gx, gy);
   }
-  ctx.font = `${Math.floor(cellSize * 0.16)}px serif`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('❤️', gx, gy - imgSize / 2 - Math.floor(cellSize * 0.05));
-  ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
-  ctx.fillStyle = '#5D4E37';
-  ctx.fillText('おかあさん', gx, gy + imgSize / 2 + Math.floor(cellSize * 0.06));
 
   // Arrow at grid bottom edge
   ctx.strokeStyle = var_primary;
@@ -1242,7 +1274,7 @@ function showTutorial() {
           // 次のステップ
           requestAnimationFrame(function() { showTutStep(); });
         } else {
-          // チュートリアル完了！
+          // チュートリアル完了！ポノが歩き終わるまで待つ
           dim.classList.remove('hidden');
           bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
           bubble.innerHTML = '🎉 できた！<br>みちが つながったよ！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
@@ -1258,7 +1290,7 @@ function showTutorial() {
             state = S.PLAYING;
           });
         }
-      }, 500);
+      }, 3000);
     }
     document.addEventListener('pointerdown', onTap, true);
   }
