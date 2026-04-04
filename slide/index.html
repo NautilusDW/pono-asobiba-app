@@ -1041,7 +1041,7 @@ function showOverlay(type) {
   title.style.whiteSpace = '';
 
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
-  var reunionTag  = '<div style="display:flex;align-items:center;justify-content:center;gap:4px;">' +
+  var reunionTag  = '<div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;">' +
                     '<img src="../assets/images/characters/pono/pono_001.png" style="width:60px;height:60px;object-fit:contain;" alt="ポノ">' +
                     '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                     '<span style="font-size:1.2rem;animation:heartFloat 1.5s ease-in-out infinite;">❤️</span>' +
@@ -1050,11 +1050,16 @@ function showOverlay(type) {
                     '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">' +
                     '</div>';
 
-  if (type === 'start' || type === 'stagestart') {
+  if (type === 'start') {
     icon.innerHTML    = ponoFaceTag;
     title.textContent = 'おかあさんに あいにいこう！';
     msg.textContent   = LEVELS[stageIdx].storyMsg;
     btn.textContent   = 'たすけにいく ▶';
+  } else if (type === 'stagestart') {
+    icon.innerHTML    = ponoFaceTag;
+    title.textContent = 'ステージ ' + (stageIdx + 1);
+    msg.textContent   = LEVELS[stageIdx].storyMsg;
+    btn.textContent   = 'すすむ ▶';
   } else if (type === 'stageclear') {
     launchConfetti();
     icon.innerHTML    = ponoFaceTag;
@@ -1322,21 +1327,40 @@ function showTutorial() {
             requestAnimationFrame(function() { showTutStep(); });
           });
         } else {
-          // チュートリアル完了！ポノが歩き終わるまで待つ
-          dim.classList.remove('hidden');
-          bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-          bubble.innerHTML = '🎉 できた！<br>みちが つながったよ！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
-          bubble.classList.remove('hidden');
-          document.getElementById('tut-next').addEventListener('pointerdown', function(ev2) {
-            ev2.preventDefault(); ev2.stopPropagation();
+          // チュートリアル完了！ポノをゴールまで歩かせる
+          var path = traceWinPath();
+          if (path && path.length > 0) {
+            winAnim.active = true;
+            winAnim.t0 = performance.now();
+            winAnim.path = path;
+            // winAnim完了を待ってからダイアログ
+            var waitWalk = setInterval(function() {
+              if (!winAnim.active) {
+                clearInterval(waitWalk);
+                dim.classList.remove('hidden');
+                bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+                bubble.innerHTML = '🎉 できた！<br>みちが つながったよ！<br><button class="tut-next-btn" id="tut-next">あそぼう！</button>';
+                bubble.classList.remove('hidden');
+                document.getElementById('tut-next').addEventListener('pointerdown', function(ev2) {
+                  ev2.preventDefault(); ev2.stopPropagation();
+                  endTut();
+                  // ステージ1開始オーバーレイを表示
+                  stageIdx = 0;
+                  moveCount = 0;
+                  shuffleGrid(LEVELS[0]);
+                  calcLayout();
+                  updateHUD();
+                  showOverlay('stagestart');
+                });
+              }
+            }, 100);
+          } else {
+            // パスが見つからない場合はそのまま開始
             endTut();
-            // 本番のステージ1をシャッフルして開始
-            shuffleGrid(LEVELS[0]);
-            calcLayout();
-            moveCount = 0;
-            updateHUD();
-            state = S.PLAYING;
-          });
+            stageIdx = 0; moveCount = 0;
+            shuffleGrid(LEVELS[0]); calcLayout(); updateHUD();
+            showOverlay('stagestart');
+          }
         }
       }, 200);
     }
