@@ -319,8 +319,8 @@ const LEVELS = [
     goalIcon: '🎵',
     start: { col: 0, side: 'top' },
     goal: { col: 1, side: 'bottom' },
-    // V→CROSS→V (左上から入って曲がる)
-    solved: ['V','BLANK','BLANK', 'CROSS',null,'BLANK', 'BLANK','V','BLANK'],
+    // V→CROSS→CROSS→V (十字2個で確実に曲がれる)
+    solved: ['V','BLANK','BLANK', 'CROSS','CROSS',null, 'BLANK','V','BLANK'],
     shuffleMoves: 4,
   },
   {
@@ -331,7 +331,7 @@ const LEVELS = [
     goalIcon: '🍄',
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
-    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','V','BLANK', 'BLANK','V','BLANK'],
+    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 6,
   },
   {
@@ -342,7 +342,7 @@ const LEVELS = [
     goalIcon: '💎',
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
-    solved: ['BLANK','V',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK', 'BLANK','V','BLANK'],
+    solved: ['BLANK','V',null, 'BLANK','CROSS','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 8,
   },
   {
@@ -1330,7 +1330,7 @@ function showTutorial() {
             state = S.PLAYING;
           });
         }
-      }, 3000);
+      }, 200);
     }
     document.addEventListener('pointerdown', onTap, true);
   }
