@@ -157,6 +157,16 @@
         _setJSON(LS_ACH, unlocked);
         _grantReward(ach.reward);
         newlyUnlocked.push(ach);
+        // 実績解除でスタンプ+1（localStorageに直接加算）
+        try {
+          var _sl = JSON.parse(localStorage.getItem('pono_stamp_log') || '{"dates":[],"total":0}');
+          var _sk = 'ach_' + ach.id;
+          if (_sl.dates.indexOf(_sk) === -1) {
+            _sl.dates.push(_sk);
+            _sl.total = _sl.dates.length;
+            localStorage.setItem('pono_stamp_log', JSON.stringify(_sl));
+          }
+        } catch(e) {}
       }
     }
 
