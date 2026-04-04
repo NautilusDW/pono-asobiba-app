@@ -1090,6 +1090,20 @@ document.getElementById('btnSave').addEventListener('click', () => {
     var a = JSON.parse(localStorage.getItem(k) || '[]');
     if (a.indexOf('drawing') === -1) { a.push('drawing'); localStorage.setItem(k, JSON.stringify(a)); }
   })();
+  // 初回保存ボーナス: 海でおよがせられるよ
+  if (!localStorage.getItem('pono_drawing_unlocked')) {
+    localStorage.setItem('pono_drawing_unlocked', '1');
+    setTimeout(function() {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+      ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;">' +
+        '<div style="font-size:1.5rem;margin-bottom:8px;">🎉</div>' +
+        '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.6;">すごい！<br>かいた えを うみで<br>およがせられるよ！</div>' +
+        '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">やったー！</button>' +
+        '</div>';
+      document.body.appendChild(ov);
+    }, 500);
+  }
   // legacy key for puzzle compatibility
   try { localStorage.setItem('pono_drawing', dataUrl); } catch(e) {}
   const toast = document.getElementById('saveToast');
@@ -1231,41 +1245,12 @@ function showTutorial() {
       var saveBtn = document.getElementById('btnSave');
       if (saveBtn) saveBtn.classList.add('tut-highlight');
       bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '📸 を おすと えを<br>とっておけるよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      bubble.innerHTML = 'えが かけたら<br>📸 で とっておけるよ！<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => {
         e.preventDefault();
-        nextStep();
-      });
-    },
-    () => {
-      // Step 4: 実際に保存ボタンを押させるインタラクティブステップ
-      bubble.className = 'tut-bubble';
-      var saveBtn = document.getElementById('btnSave');
-      if (saveBtn) saveBtn.classList.add('tut-highlight');
-      bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '📸 を おして<br>えを とっておこう！';
-      bubble.classList.remove('hidden');
-
-      // btnSaveのクリックを検知して次へ進む
-      function onSaveClick() {
         if (saveBtn) saveBtn.classList.remove('tut-highlight');
-        localStorage.setItem('pono_drawing_unlocked', '1');
-        // 保存成功メッセージを表示
-        bubble.innerHTML = 'すごい！🎉<br>うみで およがせられるよ！<br><button class="tut-next-btn" id="tut-next">とじる</button>';
-        document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
-          e.preventDefault();
-          endTut();
-        });
-      }
-      if (saveBtn) {
-        saveBtn.addEventListener('click', onSaveClick, { once: true });
-        // endTut時にリスナーをクリーンアップ
-        var origEndTut = endTut;
-        endTut = function() {
-          saveBtn.removeEventListener('click', onSaveClick);
-          origEndTut();
-        };
-      }
+        endTut();
+      });
     }
   ];
 
