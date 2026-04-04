@@ -1012,9 +1012,9 @@ function launchBall(dirX, dirY, power) {
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
   shotNumber++;
-  // スコアに応じて背景を切り替え（500点ごとに次の背景）
+  // 全背景をスコアに応じてローテーション（500点ごとに切り替え）
   if (bgImgObjs.length > 0) {
-    bgImgIdx = Math.min(Math.floor(score / 500), bgImgObjs.length - 1);
+    bgImgIdx = Math.floor(score / 500) % bgImgObjs.length;
   }
   ballTrail = [];
 }
