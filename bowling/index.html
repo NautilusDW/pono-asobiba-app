@@ -1012,7 +1012,10 @@ function launchBall(dirX, dirY, power) {
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
   shotNumber++;
-  if (shotNumber % 3 === 0 && bgImgObjs.length > 0) bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
+  // スコアに応じて背景を切り替え（500点ごとに次の背景）
+  if (bgImgObjs.length > 0) {
+    bgImgIdx = Math.min(Math.floor(score / 500), bgImgObjs.length - 1);
+  }
   ballTrail = [];
 }
 
