@@ -1460,13 +1460,13 @@
       var PONO_ICON = 'assets/images/characters/pono/pono_face_circle.png';
 
       var STAMP_REWARDS = [
-        { days: 1,  type: 'deco', id: 'deco_box',            name: 'デコボックス' },
-        { days: 3,  type: 'deco', id: 'deco_bear_ribbon',    name: 'リボンベア' },
-        { days: 5,  type: 'deco', id: 'deco_shelf_wall',     name: 'かべかざり' },
-        { days: 7,  type: 'furn', id: 'furn_bear_1',         name: 'くまの ぬいぐるみ' },
-        { days: 10, type: 'wall', id: 'wall_heart',          name: 'ハート かべがみ' },
-        { days: 14, type: 'floor',id: 'floor_wood_warm',     name: 'あったか ゆかいた' },
-        { days: 18, type: 'deco', id: 'deco_tea',            name: 'ティーセット' },
+        { days: 1,  type: 'deco', id: 'deco_box',            name: 'デコボックス',          img: 'assets/images/Rooms/furnitures_final/box_A.png' },
+        { days: 3,  type: 'deco', id: 'deco_bear_ribbon',    name: 'リボンベア',            img: 'assets/images/Rooms/furnitures_final/bear_ribbon.png' },
+        { days: 5,  type: 'deco', id: 'deco_shelf_wall',     name: 'かべかざり',            img: 'assets/images/Rooms/furnitures_final/shelf_wall.png' },
+        { days: 7,  type: 'furn', id: 'furn_bear_1',         name: 'くまの ぬいぐるみ',     img: 'assets/images/Rooms/furnitures_final/bear_1.png' },
+        { days: 10, type: 'wall', id: 'wall_heart',          name: 'ハート かべがみ',       img: '' },
+        { days: 14, type: 'floor',id: 'floor_wood_warm',     name: 'あったか ゆかいた',     img: '' },
+        { days: 18, type: 'deco', id: 'deco_tea',            name: 'ティーセット',          img: 'assets/images/Rooms/furnitures_final/tea.png' },
         { days: 21, type: 'furn', id: 'furn_desk',           name: 'つくえ' },
         { days: 25, type: 'wall', id: 'wall_kumo_niko',      name: 'くも にっこり かべがみ' },
         { days: 28, type: 'floor',id: 'floor_wood_light',    name: 'あかるい ゆかいた' },
@@ -1528,10 +1528,14 @@
             }
             given.push(r.days);
             setJSON(LS_STAMP_REWARDS_GIVEN, given);
-            // 宝箱演出
-            if (window.showTreasure) {
-              window.showTreasure({ name: r.name, img: '' });
-            }
+            // 宝箱演出（スタンプ演出の後に遅延表示）
+            (function(reward) {
+              setTimeout(function() {
+                if (window.showTreasure) {
+                  window.showTreasure({ name: reward.name, img: reward.img || '', label: 'ログインボーナス' });
+                }
+              }, 1500);
+            })(r);
           }
         }
       }

@@ -68,6 +68,12 @@
       '}',
       '.treasure-close.show { opacity:1; }',
       '.treasure-close:active { transform:scale(0.95); }',
+      '.treasure-label {',
+      '  margin-bottom:12px; font-size:1rem; font-weight:900;',
+      '  color:#fff; font-family:"Zen Maru Gothic",sans-serif;',
+      '  text-shadow:0 2px 4px rgba(0,0,0,0.5);',
+      '  letter-spacing:0.05em;',
+      '}',
     ].join('\n');
     document.head.appendChild(style);
 
@@ -75,6 +81,7 @@
     _overlay = document.createElement('div');
     _overlay.id = 'treasure-overlay';
     _overlay.innerHTML =
+      '<div class="treasure-label" id="treasure-label"></div>' +
       '<div class="treasure-container">' +
         '<video id="treasure-video" playsinline>' +
           '<source src="' + _getVideoPath() + '" type="video/mp4">' +
@@ -113,6 +120,8 @@
     _createUI();
 
     var name = options.name || 'ごほうび';
+    var label = options.label || '';
+    document.getElementById('treasure-label').textContent = label;
     var img = options.img || '';
 
     // リセット
