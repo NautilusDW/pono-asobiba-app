@@ -1231,12 +1231,41 @@ function showTutorial() {
       var saveBtn = document.getElementById('btnSave');
       if (saveBtn) saveBtn.classList.add('tut-highlight');
       bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '📸 を おすと えを<br>とっておけるよ<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
+      bubble.innerHTML = '📸 を おすと えを<br>とっておけるよ<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => {
         e.preventDefault();
-        if (saveBtn) saveBtn.classList.remove('tut-highlight');
-        endTut();
+        nextStep();
       });
+    },
+    () => {
+      // Step 4: 実際に保存ボタンを押させるインタラクティブステップ
+      bubble.className = 'tut-bubble';
+      var saveBtn = document.getElementById('btnSave');
+      if (saveBtn) saveBtn.classList.add('tut-highlight');
+      bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = '📸 を おして<br>えを とっておこう！';
+      bubble.classList.remove('hidden');
+
+      // btnSaveのクリックを検知して次へ進む
+      function onSaveClick() {
+        if (saveBtn) saveBtn.classList.remove('tut-highlight');
+        localStorage.setItem('pono_drawing_unlocked', '1');
+        // 保存成功メッセージを表示
+        bubble.innerHTML = 'すごい！🎉<br>うみで およがせられるよ！<br><button class="tut-next-btn" id="tut-next">とじる</button>';
+        document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+          e.preventDefault();
+          endTut();
+        });
+      }
+      if (saveBtn) {
+        saveBtn.addEventListener('click', onSaveClick, { once: true });
+        // endTut時にリスナーをクリーンアップ
+        var origEndTut = endTut;
+        endTut = function() {
+          saveBtn.removeEventListener('click', onSaveClick);
+          origEndTut();
+        };
+      }
     }
   ];
 
