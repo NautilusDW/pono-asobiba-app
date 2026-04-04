@@ -64,7 +64,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
       <div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div>
       <div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div>
     </div>
-    <div id="start-bowling" style="text-align:center;cursor:pointer;width:100%;padding:14px 0;">
+    <div id="start-bowling" style="text-align:center;cursor:pointer;width:100%;padding:20px 0;border-radius:20px;background:rgba(255,255,255,0.1);">
       <div style="font-size:18px;color:#fff;animation:pulse 1.5s infinite;">タップしてスタート</div>
     </div>
   </div>
@@ -1092,8 +1092,8 @@ canvas.addEventListener('pointercancel', () => { aimBarDragging = false; slingsh
 
 // ── Draw ──
 function drawBg() {
-  const bgImg = bgImgObjs[bgImgIdx];
-  if (bgImg.complete && bgImg.naturalWidth > 0) {
+  const bgImg = bgImgObjs.length > 0 ? bgImgObjs[bgImgIdx] : null;
+  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
     var iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
     var sc = Math.max(W / iw, H / ih);
     var dw = iw * sc, dh = ih * sc;
