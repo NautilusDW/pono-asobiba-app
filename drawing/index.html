@@ -1241,16 +1241,41 @@ function showTutorial() {
       });
     },
     () => {
+      // Step3: dimを閉じて自由に描かせる
       bubble.className = 'tut-bubble';
-      var saveBtn = document.getElementById('btnSave');
-      if (saveBtn) saveBtn.classList.add('tut-highlight');
-      bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = 'えが かけたら<br>📸 で とっておけるよ！<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'じゆうに えを かいてみよう！<br>かけたら OK をおしてね<br><button class="tut-next-btn" id="tut-next">かこう！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => {
         e.preventDefault();
+        dim.classList.add('hidden');
+        bubble.classList.add('hidden');
+        // 5秒後に「できた？」ボタンを画面隅に表示
+        setTimeout(function() {
+          var okBtn = document.createElement('button');
+          okBtn.textContent = '✅ できた！';
+          okBtn.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9998;padding:12px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#4ADE80,#22C55E);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);animation:pulse 1.5s infinite;';
+          document.body.appendChild(okBtn);
+          okBtn.addEventListener('click', function() {
+            okBtn.remove();
+            nextStep();
+          });
+        }, 5000);
+      });
+    },
+    () => {
+      // Step4: 📸で保存を促す
+      dim.classList.remove('hidden');
+      var saveBtn = document.getElementById('btnSave');
+      if (saveBtn) saveBtn.classList.add('tut-highlight');
+      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      bubble.innerHTML = 'じょうず！<br>📸 を おして とっておこう！';
+      bubble.classList.remove('hidden');
+      // 📸ボタンのクリックを待つ
+      function onSave() {
         if (saveBtn) saveBtn.classList.remove('tut-highlight');
         endTut();
-      });
+      }
+      if (saveBtn) saveBtn.addEventListener('click', onSave, { once: true });
     }
   ];
 
