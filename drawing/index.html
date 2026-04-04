@@ -1096,10 +1096,13 @@ document.getElementById('btnSave').addEventListener('click', () => {
     setTimeout(function() {
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
-      ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;">' +
+      ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:300px;">' +
         '<div style="font-size:1.5rem;margin-bottom:8px;">🎉</div>' +
-        '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.6;">すごい！<br>かいた えを うみで<br>およがせられるよ！</div>' +
-        '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">やったー！</button>' +
+        '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.8;">' +
+        'とっておけたよ！<br><br>' +
+        '📋「みる」を おすと<br>いつでも みかえせるよ！<br><br>' +
+        '🐠 うみのせかいで<br>えを およがせることも できるよ！</div>' +
+        '<button style="margin-top:14px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">やったー！</button>' +
         '</div>';
       document.body.appendChild(ov);
     }, 500);
@@ -1161,10 +1164,45 @@ function renderGallery() {
       wrap.appendChild(confirm);
     });
 
+    // サムネイルタップで拡大表示
+    img.addEventListener('click', function() {
+      showDrawingPreview(d.dataUrl, i);
+    });
+
     wrap.appendChild(img);
     wrap.appendChild(del);
     wrap.appendChild(lock);
     grid.appendChild(wrap);
+  });
+}
+
+function showDrawingPreview(dataUrl, index) {
+  var existing = document.getElementById('drawing-preview-ov');
+  if (existing) existing.remove();
+  var ov = document.createElement('div');
+  ov.id = 'drawing-preview-ov';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;';
+  ov.innerHTML =
+    '<img src="' + dataUrl + '" style="max-width:90%;max-height:60vh;object-fit:contain;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);">' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button id="preview-continue" style="padding:10px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#4ADE80,#22C55E);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">✏️ つづきを かく</button>' +
+    '<button id="preview-close" style="padding:10px 24px;border:none;border-radius:50px;background:rgba(255,255,255,0.2);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;border:2px solid rgba(255,255,255,0.4);">とじる</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+  document.getElementById('preview-close').addEventListener('click', function() { ov.remove(); });
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  document.getElementById('preview-continue').addEventListener('click', function() {
+    ov.remove();
+    document.getElementById('galleryOverlay').classList.add('hidden');
+    // キャンバスに絵を読み込んで続きから描ける
+    var loadImg = new Image();
+    loadImg.onload = function() {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(loadImg, 0, 0, canvas.width, canvas.height);
+      saveHistory();
+    };
+    loadImg.src = dataUrl;
   });
 }
 
@@ -1253,7 +1291,11 @@ function showTutorial() {
         setTimeout(function() {
           var okBtn = document.createElement('button');
           okBtn.textContent = '✅ できた！';
-          okBtn.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9998;padding:12px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#4ADE80,#22C55E);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);animation:pulse 1.5s infinite;';
+          var cw = document.getElementById('canvasWrap');
+          var cwRect = cw ? cw.getBoundingClientRect() : null;
+          var okBottom = cwRect ? (window.innerHeight - cwRect.bottom + 8) : 80;
+          var okRight = cwRect ? (window.innerWidth - cwRect.right + 8) : 16;
+          okBtn.style.cssText = 'position:fixed;bottom:' + okBottom + 'px;right:' + okRight + 'px;z-index:9998;padding:10px 20px;border:none;border-radius:50px;background:linear-gradient(135deg,#4ADE80,#22C55E);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);animation:pulse 1.5s infinite;';
           document.body.appendChild(okBtn);
           okBtn.addEventListener('click', function() {
             okBtn.remove();
