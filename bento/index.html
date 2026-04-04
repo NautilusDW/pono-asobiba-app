@@ -1004,6 +1004,7 @@ function showToast(m) { const t = document.getElementById('wrong-toast'); t.text
 
 function stageComplete() {
   playFanfare(); launchConfetti(); awardPoints(5);
+  if (window.incrementStat) window.incrementStat('bento_complete', 1);
   // スタンプラリー: プレイ記録
   (function() {
     var k = 'pono_played_' + new Date().toDateString();

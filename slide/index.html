@@ -999,6 +999,7 @@ wrap.addEventListener('pointerdown', e => {
 function onStageClear() {
   state = S.STAGE_CLEAR;
   playClearSound();
+  if (window.incrementStat) window.incrementStat('slide_clears', 1);
   const path = traceWinPath();
   winAnim.active = true;
   winAnim.t0 = performance.now();

@@ -90,6 +90,16 @@
     { id: 'stacking_10', game: 'stacking', name: 'はじめてつめた',   desc: '10だん つもう',                     target: 10, stat: 'stacking_height', tier: 1, reward: { type: 'sea',  id: 'harisenbou' } },
     { id: 'stacking_20', game: 'stacking', name: 'たかくつめた',     desc: '20だん つもう',                     target: 20, stat: 'stacking_height', tier: 2, reward: { type: 'furn', id: 'ach_tsumiki_deco' } },
     { id: 'stacking_30', game: 'stacking', name: 'つみきの王さま',   desc: '30だん つもう',                     target: 30, stat: 'stacking_height', tier: 3, reward: { type: 'sea',  id: 'penguin' } },
+
+    // ── おべんとう ───────────────────────────────────────────────
+    { id: 'bento_1',  game: 'bento', name: 'はじめてのおべんとう', desc: 'おべんとうを 1かい つくろう',   target: 1,  stat: 'bento_complete', tier: 1, reward: { type: 'furn', id: 'ach_small_chair' } },
+    { id: 'bento_3',  game: 'bento', name: 'おべんとうずき',       desc: 'おべんとうを 3かい つくろう',   target: 3,  stat: 'bento_complete', tier: 2, reward: { type: 'sea',  id: 'shrimp' } },
+    { id: 'bento_10', game: 'bento', name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',  target: 10, stat: 'bento_complete', tier: 3, reward: { type: 'furn', id: 'ach_coral_table' } },
+
+    // ── みちつなぎ ───────────────────────────────────────────────
+    { id: 'slide_1',   game: 'slide', name: 'はじめてのみちつなぎ', desc: 'ステージ1を クリアしよう',     target: 1,  stat: 'slide_clears', tier: 1, reward: { type: 'sea',  id: 'starfish' } },
+    { id: 'slide_4',   game: 'slide', name: 'みちつなぎずき',       desc: 'ステージ4まで クリアしよう',   target: 4,  stat: 'slide_clears', tier: 2, reward: { type: 'furn', id: 'ach_book_deco' } },
+    { id: 'slide_all', game: 'slide', name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',          target: 8,  stat: 'slide_clears', tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
   ];
 
   // ═══ プレミアム初期特典 ═════════════════════════════════════════════
