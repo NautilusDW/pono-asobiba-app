@@ -234,27 +234,10 @@
   }
 
   function _renderPopup(ach) {
-    // スタンプゲット トースト（小さく、邪魔にならない）
-    var banner = document.createElement('div');
-    banner.id = 'ach-popup-overlay';
-    banner.style.cssText = [
-      'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;',
-      'pointer-events:none;',
-      'animation:achSlideDown 0.35s ease;',
-      'font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;',
-    ].join('');
-
-    var box = document.createElement('div');
-    box.style.cssText = [
-      'background:linear-gradient(135deg,#4ADE80,#22C55E);',
-      'border-radius:50px;padding:8px 20px;',
-      'box-shadow:0 4px 16px rgba(0,0,0,0.25);',
-      'display:flex;align-items:center;gap:8px;',
-      'pointer-events:auto;color:#fff;',
-    ].join('');
-
-    box.innerHTML = '<span style="font-size:1.1rem;">📋</span>' +
-      '<span style="font-size:0.82rem;font-weight:900;">スタンプ +1！</span>';
+    // ゲーム中はポップアップを出さない（トップ画面に戻った時にまとめて表示）
+    // スタンプはlocalStorageに加算済みなので、表示だけスキップ
+    _showNextPopup();
+    return;
 
     banner.appendChild(box);
     document.body.appendChild(banner);
