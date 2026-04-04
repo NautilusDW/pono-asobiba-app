@@ -62,8 +62,11 @@ body {
 .treasure-reward-name {
   margin-top: 4px;
   font-size: 0.9rem; font-weight: 900;
-  color: #FFD700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 12px;
+  border-radius: 10px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .treasure-msg {
@@ -93,7 +96,7 @@ body {
 
 <div id="treasure-overlay">
   <div class="treasure-container">
-    <video id="treasure-video" muted playsinline>
+    <video id="treasure-video" playsinline>
       <source src="assets/videos/TreasureBox.mp4" type="video/mp4">
     </video>
     <div class="treasure-reward" id="treasure-reward">
