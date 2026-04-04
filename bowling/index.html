@@ -53,17 +53,20 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 <div id="start-screen">
   <div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:320px;">
-    <!-- びっくりボウリング -->
-    <div id="start-bowling" style="text-align:center;cursor:pointer;width:100%;padding:16px 0;border-radius:20px;background:rgba(255,255,255,0.08);">
-      <div style="font-size:32px;font-weight:900;color:#FFD700;text-shadow:3px 3px 6px rgba(0,0,0,0.4);line-height:1.2;">びっくり<br>ボウリング</div>
-      <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
-        <div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div>
-        <div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div>
-      </div>
-      <div style="font-size:16px;color:#fff;margin-top:8px;animation:pulse 1.5s infinite;">タップしてスタート</div>
+    <div style="font-size:32px;font-weight:900;color:#FFD700;text-shadow:3px 3px 6px rgba(0,0,0,0.4);line-height:1.2;">びっくり<br>ボウリング</div>
+    <!-- 男の子/女の子選択 -->
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <div id="gender-boy" class="shot-mode selected" onclick="event.stopPropagation();selectGender('boy')" style="padding:12px 24px;font-size:18px;">🦖 おとこのこ</div>
+      <div id="gender-girl" class="shot-mode" onclick="event.stopPropagation();selectGender('girl')" style="padding:12px 24px;font-size:18px;">🐰 おんなのこ</div>
     </div>
-    <!-- パズルボウリング（一時非公開） -->
-    <!-- <div id="start-puzzle" style="display:none;"></div> -->
+    <!-- 操作モード -->
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div>
+      <div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div>
+    </div>
+    <div id="start-bowling" style="text-align:center;cursor:pointer;width:100%;padding:14px 0;">
+      <div style="font-size:18px;color:#fff;animation:pulse 1.5s infinite;">タップしてスタート</div>
+    </div>
   </div>
 </div>
 <div id="score">0</div>
@@ -251,6 +254,7 @@ async function handleBowlingStart(e) {
   if (e.target.closest('.shot-mode')) return;
   if (_startHandled) return;
   _startHandled = true;
+  loadBgImages();
   var ss = document.getElementById('start-screen');
   await initAudio(); ss.style.display = 'none';
   tryStartBgm();
@@ -332,21 +336,36 @@ const RESULT_TIME = 90;      // frames for result display
 const HUD_HEIGHT = 80;       // top HUD area height in px
 
 // ── Background images ──
-const BG_IMGS = [
-  '../assets/images/Bowling/BG/neon_boy01.png',
-  '../assets/images/Bowling/BG/neon_boy02.png',
-  '../assets/images/Bowling/BG/neon_girl01.png',
-  '../assets/images/Bowling/BG/neon_girl02.png',
-  '../assets/images/Bowling/BG/neon_girl03.png',
-  '../assets/images/Bowling/BG/neon_girl04.png',
-  '../assets/images/Bowling/BG/robot_boy01.png',
-  '../assets/images/Bowling/BG/space_boy01.png',
-  '../assets/images/Bowling/BG/colorful.png',
-  '../assets/images/Bowling/BG/sky.png',
-  '../assets/images/Bowling/BG/neon02.png',
+const BG_BOY = [
+  '../assets/images/Bowling/BG/boy/neon_boy01.png',
+  '../assets/images/Bowling/BG/boy/neon_boy02.png',
+  '../assets/images/Bowling/BG/boy/robot_boy01.png',
+  '../assets/images/Bowling/BG/boy/space_boy01.png',
 ];
+const BG_GIRL = [
+  '../assets/images/Bowling/BG/girl/neon_girl01.png',
+  '../assets/images/Bowling/BG/girl/neon_girl03.png',
+  '../assets/images/Bowling/BG/girl/neon_girl04.png',
+  '../assets/images/Bowling/BG/girl/colorful.png',
+  '../assets/images/Bowling/BG/girl/sky.png',
+];
+let bgGender = 'boy';
 let bgImgIdx = 0;
-const bgImgObjs = BG_IMGS.map(src => { const img = new Image(); img.src = src; return img; });
+let bgImgObjs = [];
+
+function selectGender(g) {
+  bgGender = g;
+  document.getElementById('gender-boy').classList.toggle('selected', g === 'boy');
+  document.getElementById('gender-girl').classList.toggle('selected', g === 'girl');
+}
+
+function loadBgImages() {
+  var list = bgGender === 'boy' ? BG_BOY : BG_GIRL;
+  bgImgObjs = list.map(function(src) { var img = new Image(); img.src = src; return img; });
+  bgImgIdx = 0;
+}
+// プリロード（両方）
+BG_BOY.concat(BG_GIRL).forEach(function(src) { var img = new Image(); img.src = src; });
 
 // ── Pin images ──
 const tierCanvases = [];
@@ -997,7 +1016,7 @@ function launchBall(dirX, dirY, power) {
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
   shotNumber++;
-  if (shotNumber % 2 === 0) bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
+  if (shotNumber % 3 === 0 && bgImgObjs.length > 0) bgImgIdx = (bgImgIdx + 1) % bgImgObjs.length;
   ballTrail = [];
 }
 
