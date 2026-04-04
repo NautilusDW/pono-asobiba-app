@@ -193,6 +193,7 @@ html, body {
     <div id="hud-moves">てかず: 0</div>
   </div>
   <div id="clue-bar" style="display:flex;justify-content:center;gap:4px;padding:2px 8px;flex-shrink:0;"></div>
+  <div id="stage-num" style="text-align:center;font-size:0.7rem;font-weight:700;color:var(--text-light);padding:0 0 2px;flex-shrink:0;"></div>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
@@ -981,7 +982,7 @@ function handleTap(px, py) {
 }
 
 wrap.addEventListener('pointerdown', e => {
-  if (state === S.PAUSED) return;
+  if (state === S.PAUSED || _slideTutActive) return;
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
   const px = (e.clientX - rect.left) * (CW / rect.width);
@@ -1031,7 +1032,7 @@ function showOverlay(type) {
   const btn   = document.getElementById('ov-btn');
   const back  = document.getElementById('ov-back');
   overlay.classList.remove('hidden');
-  back.classList.remove('hidden');
+  back.classList.add('hidden');
 
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
   var reunionTag  = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">' +
@@ -1066,6 +1067,8 @@ function showOverlay(type) {
 function updateHUD() {
   document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
   document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
+  var stageNum = document.getElementById('stage-num');
+  if (stageNum) stageNum.textContent = 'ステージ ' + (stageIdx + 1) + ' / ' + LEVELS.length;
   updateClueBar();
 }
 
@@ -1298,7 +1301,6 @@ function showTutorial() {
 
       // アニメーション完了後にフィードバック→次のステップ
       setTimeout(function() {
-        animating = false;
         tutStepIdx++;
         if (tutStepIdx < tutSteps.length) {
           // フィードバック表示
