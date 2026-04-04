@@ -1152,7 +1152,7 @@
         </div>
       </a>
 
-      <a href="room/index.html" class="card card-room">
+      <a href="room/index.html" class="card card-room" id="card-room">
         <span class="card-icon">🏠</span>
         <div class="card-body">
           <div class="card-title">わたしのおうち</div>
@@ -1385,6 +1385,17 @@
 
     applyUnlockState();
 
+    // わたしのおうちロック/アンロック
+    (function() {
+      var roomCard = document.getElementById('card-room');
+      if (roomCard) {
+        if (!localStorage.getItem('pono_room_unlocked')) {
+          roomCard.classList.add('locked');
+          roomCard.style.pointerEvents = 'none';
+        }
+      }
+    })();
+
     // ===== Achievement Badge =====
     if (window.getAchievements && window.getUnlockedAchievements) {
       var total = window.getAchievements().length;
@@ -1431,9 +1442,11 @@
 
       // ── Slot rewards (keyed by 1-based slot number within card) ──
       var CARD_SLOT_REWARDS = {
-        1:  { icon: '🎁', name: 'デコボックス', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png' },
-        5:  { icon: '🧸', name: 'かざり', type: 'deco', id: 'deco_bear_ribbon', img: '' },
-        10: { icon: '🪑', name: 'かぐ', type: 'furn', id: 'furn_bear_1', img: 'assets/images/Rooms/furnitures_final/bear_1.png' },
+        1:  { icon: '🎁', name: 'デコボックス', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png',
+              afterMsg: 'かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！' },
+        5:  { icon: '🛏️', name: 'ベッド', type: 'furn', id: 'furn_bed_wood', img: 'assets/images/Rooms/furnitures_final/bed_wood.png',
+              unlockRoom: true },
+        10: { icon: '🧸', name: 'かざり', type: 'deco', id: 'deco_bear_ribbon', img: '' },
         15: { icon: '⭐', name: 'カードかんせい！', type: 'special' },
       };
 
@@ -1534,7 +1547,28 @@
           (function(rw) {
             setTimeout(function() {
               if (window.showTreasure) {
-                window.showTreasure({ name: rw.name, img: rw.img || '', label: 'スタンプボーナス' });
+                window.showTreasure({
+                  name: rw.name,
+                  img: rw.img || '',
+                  label: 'スタンプボーナス',
+                  onClose: function() {
+                    // 追加説明メッセージ
+                    if (rw.afterMsg) {
+                      var msgOv = document.createElement('div');
+                      msgOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+                      msgOv.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;">' +
+                        (rw.img ? '<img src="' + rw.img + '" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">' : '') +
+                        '<div style="font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;">' + rw.afterMsg + '</div>' +
+                        '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">わかった！</button>' +
+                        '</div>';
+                      document.body.appendChild(msgOv);
+                    }
+                    // おうちアンロック
+                    if (rw.unlockRoom) {
+                      localStorage.setItem('pono_room_unlocked', '1');
+                    }
+                  }
+                });
               }
             }, 800);
           })(slotRw);
