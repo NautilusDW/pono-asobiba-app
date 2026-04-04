@@ -1272,6 +1272,15 @@
       </div>
     </a>
 
+    <!-- テスト用リセットボタン -->
+    <div style="text-align:center;margin:20px 0;">
+      <button id="resetAllBtn" style="
+        padding:10px 24px; border:2px solid #EF4444; border-radius:50px;
+        background:#FEE2E2; color:#EF4444; font-family:inherit;
+        font-size:0.85rem; font-weight:900; cursor:pointer;
+      ">🔄 ぜんぶリセット（テスト用）</button>
+    </div>
+
     <footer class="footer">
       <div class="footer-copy">© こだまのもり出版　All rights reserved.</div>
       <div class="footer-note">
@@ -1776,6 +1785,22 @@
       });
 
     })();
+
+    // テスト用リセット
+    document.getElementById('resetAllBtn').addEventListener('click', function() {
+      if (!confirm('ほんとうに ぜんぶ リセットしますか？\nすべてのデータが消えます。')) return;
+      localStorage.clear();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var i = 0; i < regs.length; i++) regs[i].unregister();
+        });
+        caches.keys().then(function(keys) {
+          for (var i = 0; i < keys.length; i++) caches.delete(keys[i]);
+        });
+      }
+      alert('リセットしました！ページを再読み込みします。');
+      location.reload();
+    });
 
   </script>
 </body>
