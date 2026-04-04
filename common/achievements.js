@@ -285,47 +285,27 @@
   }
 
   function _renderPopup(ach) {
-    // Top banner — does NOT block taps on the game below
+    // スタンプゲット トースト（小さく、邪魔にならない）
     var banner = document.createElement('div');
     banner.id = 'ach-popup-overlay';
     banner.style.cssText = [
-      'position:fixed;top:0;left:0;width:100%;z-index:99999;',
+      'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;',
       'pointer-events:none;',
-      'display:flex;justify-content:center;',
-      'padding:8px 12px;',
       'animation:achSlideDown 0.35s ease;',
-      'font-family:"Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;',
+      'font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;',
     ].join('');
-
-    // Reward icon
-    var rewardIcon = '';
-    if (ach.reward.type === 'sea') rewardIcon = '🐠';
-    if (ach.reward.type === 'furn') rewardIcon = '🪑';
-
-    // Stars
-    var stars = '';
-    for (var i = 0; i < ach.tier; i++) stars += '★';
 
     var box = document.createElement('div');
     box.style.cssText = [
-      'background:linear-gradient(90deg,#fff8e1,#fffde7);',
-      'border-radius:14px;padding:10px 20px;',
-      'box-shadow:0 4px 16px rgba(0,0,0,0.3);',
-      'display:flex;align-items:center;gap:10px;',
-      'max-width:95%;width:100%;',
-      'pointer-events:auto;',
+      'background:linear-gradient(135deg,#4ADE80,#22C55E);',
+      'border-radius:50px;padding:8px 20px;',
+      'box-shadow:0 4px 16px rgba(0,0,0,0.25);',
+      'display:flex;align-items:center;gap:8px;',
+      'pointer-events:auto;color:#fff;',
     ].join('');
 
-    box.innerHTML = [
-      '<div style="font-size:1.6rem;flex-shrink:0;">🎉</div>',
-      '<div style="flex:1;min-width:0;">',
-        '<div style="font-size:0.85rem;font-weight:bold;color:#e65100;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">',
-          stars + ' ' + ach.name,
-        '</div>',
-        '<div style="font-size:0.7rem;color:#6d4c41;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ach.desc + '</div>',
-      '</div>',
-      '<div style="font-size:1.4rem;flex-shrink:0;">' + rewardIcon + '</div>',
-    ].join('');
+    box.innerHTML = '<span style="font-size:1.1rem;">📋</span>' +
+      '<span style="font-size:0.82rem;font-weight:900;">スタンプ +1！</span>';
 
     banner.appendChild(box);
     document.body.appendChild(banner);
