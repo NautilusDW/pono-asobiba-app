@@ -7,99 +7,38 @@
 
   // ═══ 実績定義 ═══════════════════════════════════════════════════════
   var ACHIEVEMENTS = [
-    // ── しゃぼんだま ─────────────────────────────────────────────
-    { id: 'bubble_10',    game: 'bubble',   name: 'はじめてわれた',       desc: 'しゃぼんだまを 10こ わろう',       target: 10,   stat: 'bubble_pops',  tier: 1, reward: { type: 'sea',  id: 'clownfish' } },
-    { id: 'bubble_50',    game: 'bubble',   name: 'ぱちぱちマスター',     desc: 'しゃぼんだまを 50こ わろう',       target: 50,   stat: 'bubble_pops',  tier: 2, reward: { type: 'furn', id: 'ach_small_chair' } },
-    { id: 'bubble_200',   game: 'bubble',   name: 'しゃぼんだま名人',     desc: 'しゃぼんだまを 200こ わろう',      target: 200,  stat: 'bubble_pops',  tier: 3, reward: { type: 'sea',  id: 'octopus' } },
-    { id: 'bubble_gold',  game: 'bubble',   name: 'ゴールデンハンター',   desc: 'きんシャボンを 10こ わろう',       target: 10,   stat: 'bubble_gold',  tier: 4, reward: { type: 'furn', id: 'ach_kira_wall' } },
-    { id: 'bubble_chain', game: 'bubble',   name: 'れんさ名人',           desc: 'れんさ 5かい いじょう',            target: 5,    stat: 'bubble_chain', tier: 5, reward: { type: 'sea',  id: 'whale' } },
-    { id: 'bubble_1000',  game: 'bubble',   name: '1000こ突破！',         desc: 'しゃぼんだまを 1000こ わろう',     target: 1000, stat: 'bubble_pops',  tier: 6, reward: { type: 'furn', id: 'ach_coral_table' } },
+    // ── はじめて系（一回きり）───────────────────────────────────
+    { id: 'first_login',     game: 'common',    name: 'はじめてのログイン',     desc: 'サイトを ひらこう',              target: 1, stat: 'login_first',       tier: 1, reward: { type: 'furn', id: 'ach_small_chair' } },
+    { id: 'first_profile',   game: 'common',    name: 'なまえを きめた',       desc: 'プロフィールを せっていしよう',   target: 1, stat: 'profile_set',       tier: 1, reward: { type: 'furn', id: 'ach_pono_cushion' } },
+    { id: 'first_puzzle',    game: 'puzzle',    name: 'はじめてのパズル',      desc: 'パズルを 1めん クリアしよう',     target: 1, stat: 'puzzle_clears',     tier: 1, reward: { type: 'sea',  id: 'medaka' } },
+    { id: 'first_writing',   game: 'writing',   name: 'はじめてのもじかき',    desc: '1もじ かんせいしよう',            target: 1, stat: 'writing_chars',     tier: 1, reward: { type: 'sea',  id: 'shell' } },
+    { id: 'first_drawing',   game: 'drawing',   name: 'はじめてのおえかき',    desc: 'えを 1まい ほぞんしよう',         target: 1, stat: 'drawing_saves',     tier: 1, reward: { type: 'sea',  id: 'starfish' } },
+    { id: 'first_bento',     game: 'bento',     name: 'はじめてのおべんとう',  desc: 'おべんとうを 1かい つくろう',     target: 1, stat: 'bento_complete',    tier: 1, reward: { type: 'sea',  id: 'clownfish' } },
+    { id: 'first_wordmatch', game: 'wordmatch', name: 'はじめてのことばあわせ',desc: '1もん せいかいしよう',            target: 1, stat: 'wordmatch_correct', tier: 1, reward: { type: 'sea',  id: 'shrimp' } },
+    { id: 'first_bowling',   game: 'bowling',   name: 'はじめてのボウリング',  desc: '1ラウンド あそぼう',              target: 1, stat: 'bowling_rounds',    tier: 1, reward: { type: 'sea',  id: 'neon_tetra' } },
+    { id: 'first_breakout',  game: 'breakout',  name: 'はじめてのブロックくずし',desc: 'ステージ1を クリアしよう',       target: 1, stat: 'breakout_stages',   tier: 1, reward: { type: 'sea',  id: 'goldfish' } },
+    { id: 'first_slide',     game: 'slide',     name: 'はじめてのみちつなぎ',  desc: 'ステージ1を クリアしよう',        target: 1, stat: 'slide_clears',      tier: 1, reward: { type: 'sea',  id: 'crab' } },
+    { id: 'all_games',       game: 'common',    name: 'ぜんぶ あそんだ！',     desc: 'ぜんぶの ゲームを あそぼう',     target: 1, stat: 'all_games_played',  tier: 2, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
 
-    // ── しゃぼんだま イベント ───────────────────────────────────────
-    // ポノ発見
-    { id: 'bubble_pono_1',  game: 'bubble', name: 'ポノ はっけん！',       desc: 'ポノを 1かい みつけよう',          target: 1,   stat: 'bubble_pono',          tier: 1, reward: { type: 'sea',  id: 'starfish_event' } },
-    { id: 'bubble_pono_5',  game: 'bubble', name: 'ポノずき',             desc: 'ポノを 5かい みつけよう',          target: 5,   stat: 'bubble_pono',          tier: 2, reward: { type: 'furn', id: 'ach_pono_cushion' } },
-    { id: 'bubble_pono_20', game: 'bubble', name: 'ポノマスター',         desc: 'ポノを 20かい みつけよう',         target: 20,  stat: 'bubble_pono',          tier: 3, reward: { type: 'furn', id: 'ach_pono_plush' } },
-    // いきもの解放
-    { id: 'bubble_creature_1',  game: 'bubble', name: 'いきもの はっけん！', desc: 'いきものを 1ぴき みつけよう',     target: 1,   stat: 'bubble_creatures',     tier: 1, reward: { type: 'sea',  id: 'butterfly_event' } },
-    { id: 'bubble_creature_10', game: 'bubble', name: 'いきもの ともだち',   desc: 'いきものを 10ぴき みつけよう',    target: 10,  stat: 'bubble_creatures',     tier: 2, reward: { type: 'sea',  id: 'frog_event' } },
-    { id: 'bubble_creature_30', game: 'bubble', name: 'いきもの はかせ',     desc: 'いきものを 30ぴき みつけよう',    target: 30,  stat: 'bubble_creatures',     tier: 3, reward: { type: 'sea',  id: 'parrot_event' } },
-    // 星座完成
-    { id: 'bubble_const_1',  game: 'bubble', name: 'はじめての せいざ',     desc: 'せいざを 1つ かんせいしよう',      target: 1,   stat: 'bubble_constellations', tier: 1, reward: { type: 'furn', id: 'ach_star_light' } },
-    { id: 'bubble_const_6',  game: 'bubble', name: 'せいざ はかせ',         desc: 'せいざを 6つ かんせいしよう',      target: 6,   stat: 'bubble_constellations', tier: 2, reward: { type: 'furn', id: 'ach_telescope' } },
-    { id: 'bubble_const_12', game: 'bubble', name: 'せいざマスター',       desc: 'せいざを 12かい かんせいしよう',   target: 12,  stat: 'bubble_constellations', tier: 3, reward: { type: 'furn', id: 'ach_planetarium' } },
-    // おほしさまバブル
-    { id: 'bubble_sparkle_10',  game: 'bubble', name: 'おほしさま はっけん！', desc: 'おほしさまを 10こ タップ',          target: 10,  stat: 'bubble_sparkle',       tier: 1, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
-    { id: 'bubble_sparkle_30',  game: 'bubble', name: 'おほしさま ともだち',   desc: 'おほしさまを 30こ タップ',          target: 30,  stat: 'bubble_sparkle',       tier: 2, reward: { type: 'furn', id: 'ach_color_pencils' } },
-    { id: 'bubble_sparkle_100', game: 'bubble', name: 'おほしさまマスター',    desc: 'おほしさまを 100こ タップ',         target: 100, stat: 'bubble_sparkle',       tier: 3, reward: { type: 'furn', id: 'ach_rainbow_wall' } },
-    // おおきいシャボン
-    { id: 'bubble_big_20',  game: 'bubble', name: 'おおきいの すき！',     desc: 'おおきいシャボンを 20こ わろう',   target: 20,  stat: 'bubble_big_pops',      tier: 1, reward: { type: 'furn', id: 'ach_big_bubble_deco' } },
-    { id: 'bubble_big_100', game: 'bubble', name: 'パンパン名人',         desc: 'おおきいシャボンを 100こ わろう',  target: 100, stat: 'bubble_big_pops',      tier: 2, reward: { type: 'furn', id: 'ach_circus_tent' } },
-    // なぞりわり
-    { id: 'bubble_sweep_50', game: 'bubble', name: 'なぞりわり名人',      desc: 'なぞりわりで 50こ わろう',         target: 50,  stat: 'bubble_sweep_pops',    tier: 1, reward: { type: 'furn', id: 'ach_wave_rug' } },
-    // にじ描き
-    { id: 'bubble_rainbow_5', game: 'bubble', name: 'にじアーティスト',    desc: 'にじイベントを 5かい クリア',      target: 5,   stat: 'bubble_rainbow_trails', tier: 1, reward: { type: 'furn', id: 'ach_fireworks_wall' } },
+    // ── 中間 ─────────────────────────────────────────────────────
+    { id: 'writing_20',    game: 'writing',   name: 'もじもじ がんばった',   desc: 'ひらがな 20もじ かこう',         target: 20, stat: 'writing_hiragana',  tier: 2, reward: { type: 'furn', id: 'ach_bookshelf' } },
+    { id: 'puzzle_3',      game: 'puzzle',    name: 'パズルずき',           desc: 'パズルを 3めん クリアしよう',     target: 3,  stat: 'puzzle_clears',     tier: 2, reward: { type: 'furn', id: 'ach_picture_wall' } },
+    { id: 'bento_3',       game: 'bento',     name: 'おべんとうずき',       desc: 'おべんとうを 3かい つくろう',     target: 3,  stat: 'bento_complete',    tier: 2, reward: { type: 'furn', id: 'ach_crayon' } },
+    { id: 'breakout_3',    game: 'breakout',  name: 'どんどんくずす',       desc: 'ステージ3まで クリアしよう',      target: 3,  stat: 'breakout_stages',   tier: 2, reward: { type: 'furn', id: 'ach_block_deco' } },
+    { id: 'slide_4',       game: 'slide',     name: 'みちつなぎずき',       desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'slide_clears',      tier: 2, reward: { type: 'furn', id: 'ach_book_deco' } },
+    { id: 'drawing_5',     game: 'drawing',   name: 'えかきさん',           desc: 'えを 5まい ほぞんしよう',         target: 5,  stat: 'drawing_saves',     tier: 2, reward: { type: 'furn', id: 'ach_easel' } },
+    { id: 'bowling_20',    game: 'bowling',   name: 'ボウリングずき',       desc: '20ラウンド あそぼう',             target: 20, stat: 'bowling_rounds',    tier: 2, reward: { type: 'furn', id: 'ach_bowling_toy' } },
+    { id: 'wordmatch_15',  game: 'wordmatch', name: 'ことばずき',           desc: '15もん せいかいしよう',           target: 15, stat: 'wordmatch_correct', tier: 2, reward: { type: 'furn', id: 'ach_coral_deco' } },
 
-    // ── もじかき ─────────────────────────────────────────────────
-    { id: 'writing_5',       game: 'writing', name: 'はじめてかけた',       desc: '5もじ れんしゅうしよう',           target: 5,    stat: 'writing_chars',    tier: 1, reward: { type: 'sea',  id: 'shell' } },
-    { id: 'writing_20',      game: 'writing', name: 'もじもじがんばった',   desc: 'ひらがな 20もじ かこう',           target: 20,   stat: 'writing_hiragana', tier: 2, reward: { type: 'furn', id: 'ach_bookshelf' } },
-    { id: 'writing_hira',    game: 'writing', name: 'ひらがなマスター',     desc: 'ひらがな ぜんぶ かこう',           target: 46,   stat: 'writing_hiragana', tier: 3, reward: { type: 'sea',  id: 'turtle' } },
-    { id: 'writing_kata20',  game: 'writing', name: 'カタカナチャレンジ',   desc: 'カタカナ 20もじ かこう',           target: 20,   stat: 'writing_katakana', tier: 4, reward: { type: 'furn', id: 'ach_sofa' } },
-    { id: 'writing_kata',    game: 'writing', name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46,   stat: 'writing_katakana', tier: 5, reward: { type: 'sea',  id: 'shark' } },
-
-    // ── パズル ───────────────────────────────────────────────────
-    { id: 'puzzle_1',    game: 'puzzle', name: 'はじめてクリア',     desc: 'パズルを 1つ クリアしよう',         target: 1,  stat: 'puzzle_clears', tier: 1, reward: { type: 'sea',  id: 'medaka' } },
-    { id: 'puzzle_3',    game: 'puzzle', name: 'パズルずき',         desc: 'パズルを 3つ クリアしよう',         target: 3,  stat: 'puzzle_clears', tier: 2, reward: { type: 'furn', id: 'ach_picture_wall' } },
-    { id: 'puzzle_all',  game: 'puzzle', name: 'パズルマスター',     desc: 'パズルを ぜんぶ クリアしよう',      target: 6,  stat: 'puzzle_clears', tier: 3, reward: { type: 'sea',  id: 'pufferfish' } },
-    { id: 'puzzle_2x',   game: 'puzzle', name: 'もういっかい！',     desc: 'ぜんぶ 2しゅう クリアしよう',       target: 12, stat: 'puzzle_clears', tier: 4, reward: { type: 'sea',  id: 'squid' } },
-    { id: 'puzzle_3x',   game: 'puzzle', name: 'パズルの王さま',     desc: 'ぜんぶ 3しゅう クリアしよう',       target: 18, stat: 'puzzle_clears', tier: 5, reward: { type: 'furn', id: 'ach_sea_rug' } },
-
-    // ── ボウリング ───────────────────────────────────────────────
-    { id: 'bowling_5',     game: 'bowling', name: 'はじめてのショット',   desc: '5ラウンド あそぼう',             target: 5,  stat: 'bowling_rounds', tier: 1, reward: { type: 'sea',  id: 'neon_tetra' } },
-    { id: 'bowling_20',    game: 'bowling', name: 'ボウリングずき',       desc: '20ラウンド あそぼう',            target: 20, stat: 'bowling_rounds', tier: 2, reward: { type: 'furn', id: 'ach_bowling_toy' } },
-    { id: 'bowling_tier2', game: 'bowling', name: 'Tier2とうたつ',        desc: 'Tier2の ボールを つくろう',      target: 1,  stat: 'bowling_tier2',  tier: 3, reward: { type: 'sea',  id: 'crab' } },
-    { id: 'bowling_tier3', game: 'bowling', name: 'Tier3とうたつ',        desc: 'Tier3の ボールを つくろう',      target: 1,  stat: 'bowling_tier3',  tier: 4, reward: { type: 'furn', id: 'ach_big_nuigurumi' } },
-    { id: 'bowling_tier4', game: 'bowling', name: 'Tier4とうたつ',        desc: 'Tier4の ボールを つくろう',      target: 1,  stat: 'bowling_tier4',  tier: 5, reward: { type: 'sea',  id: 'blue_whale' } },
-
-    // ── おえかき ─────────────────────────────────────────────────
-    { id: 'drawing_1',     game: 'drawing', name: 'はじめてのえ',       desc: 'えを 1まい ほぞんしよう',         target: 1,  stat: 'drawing_saves',  tier: 1, reward: { type: 'sea',  id: 'starfish' } },
-    { id: 'drawing_5',     game: 'drawing', name: 'えかきさん',         desc: 'えを 5まい ほぞんしよう',         target: 5,  stat: 'drawing_saves',  tier: 2, reward: { type: 'furn', id: 'ach_crayon' } },
-    { id: 'drawing_10',    game: 'drawing', name: 'アーティスト',       desc: 'えを 10まい ほぞんしよう',        target: 10, stat: 'drawing_saves',  tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
-    { id: 'drawing_20',    game: 'drawing', name: 'だいアーティスト',   desc: 'えを 20まい ほぞんしよう',        target: 20, stat: 'drawing_saves',  tier: 4, reward: { type: 'furn', id: 'ach_easel' } },
-    { id: 'drawing_stamp', game: 'drawing', name: 'スタンプマスター',   desc: 'スタンプを ぜんぶ つかおう',      target: 1,  stat: 'drawing_all_stamps', tier: 5, reward: { type: 'sea',  id: 'seal' } },
-
-    // ── ことばあわせ ─────────────────────────────────────────────
-    { id: 'wordmatch_5',     game: 'wordmatch', name: 'はじめてのことば',   desc: '5もん せいかいしよう',          target: 5,  stat: 'wordmatch_correct',  tier: 1, reward: { type: 'sea',  id: 'shrimp' } },
-    { id: 'wordmatch_15',    game: 'wordmatch', name: 'ことばずき',         desc: '15もん せいかいしよう',         target: 15, stat: 'wordmatch_correct',  tier: 2, reward: { type: 'furn', id: 'ach_book_deco' } },
-    { id: 'wordmatch_all',   game: 'wordmatch', name: 'ことばマスター',     desc: 'ぜんもん せいかいしよう',       target: 30, stat: 'wordmatch_correct',  tier: 3, reward: { type: 'sea',  id: 'butterfly_fish' } },
-    { id: 'wordmatch_perf',  game: 'wordmatch', name: 'かんぺき！',         desc: 'ノーミスで ぜんもん',           target: 1,  stat: 'wordmatch_perfect',  tier: 4, reward: { type: 'sea',  id: 'lobster' } },
-    { id: 'wordmatch_2x',    game: 'wordmatch', name: '2しゅうめ！',        desc: 'ぜんもん 2しゅう せいかい',     target: 60, stat: 'wordmatch_correct',  tier: 5, reward: { type: 'furn', id: 'ach_coral_deco' } },
-
-    // ── ぬりえ ───────────────────────────────────────────────────
-    { id: 'coloring_1', game: 'coloring', name: 'はじめてぬれた',   desc: 'ぬりえを 1まい かんせい',          target: 1, stat: 'coloring_complete', tier: 1, reward: { type: 'sea',  id: 'guppy' } },
-    { id: 'coloring_3', game: 'coloring', name: 'ぬりえずき',       desc: 'ぬりえを 3まい かんせい',          target: 3, stat: 'coloring_complete', tier: 2, reward: { type: 'furn', id: 'ach_palette_deco' } },
-    { id: 'coloring_5', game: 'coloring', name: 'ぬりえマスター',   desc: 'ぬりえを 5まい かんせい',          target: 5, stat: 'coloring_complete', tier: 3, reward: { type: 'sea',  id: 'giant_squid' } },
-
-    // ── ブロックくずし ───────────────────────────────────────────
-    { id: 'breakout_1', game: 'breakout', name: 'はじめてくずした',   desc: 'ステージ1を クリアしよう',         target: 1,  stat: 'breakout_stages', tier: 1, reward: { type: 'sea',  id: 'goldfish' } },
-    { id: 'breakout_3', game: 'breakout', name: 'どんどんくずす',     desc: 'ステージ3まで クリアしよう',       target: 3,  stat: 'breakout_stages', tier: 2, reward: { type: 'furn', id: 'ach_block_deco' } },
-    { id: 'breakout_5', game: 'breakout', name: 'ブロックマスター',   desc: 'ステージ5まで クリアしよう',       target: 5,  stat: 'breakout_stages', tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' } },
-    { id: 'breakout_all', game: 'breakout', name: 'ぜんぶくずした！', desc: 'ぜんぶ クリアしよう',              target: 10, stat: 'breakout_stages', tier: 4, reward: { type: 'furn', id: 'ach_castle' } },
-
-    // ── つみき ───────────────────────────────────────────────────
-    { id: 'stacking_10', game: 'stacking', name: 'はじめてつめた',   desc: '10だん つもう',                     target: 10, stat: 'stacking_height', tier: 1, reward: { type: 'sea',  id: 'harisenbou' } },
-    { id: 'stacking_20', game: 'stacking', name: 'たかくつめた',     desc: '20だん つもう',                     target: 20, stat: 'stacking_height', tier: 2, reward: { type: 'furn', id: 'ach_tsumiki_deco' } },
-    { id: 'stacking_30', game: 'stacking', name: 'つみきの王さま',   desc: '30だん つもう',                     target: 30, stat: 'stacking_height', tier: 3, reward: { type: 'sea',  id: 'penguin' } },
-
-    // ── おべんとう ───────────────────────────────────────────────
-    { id: 'bento_1',  game: 'bento', name: 'はじめてのおべんとう', desc: 'おべんとうを 1かい つくろう',   target: 1,  stat: 'bento_complete', tier: 1, reward: { type: 'furn', id: 'ach_small_chair' } },
-    { id: 'bento_3',  game: 'bento', name: 'おべんとうずき',       desc: 'おべんとうを 3かい つくろう',   target: 3,  stat: 'bento_complete', tier: 2, reward: { type: 'sea',  id: 'shrimp' } },
-    { id: 'bento_10', game: 'bento', name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',  target: 10, stat: 'bento_complete', tier: 3, reward: { type: 'furn', id: 'ach_coral_table' } },
-
-    // ── みちつなぎ ───────────────────────────────────────────────
-    { id: 'slide_1',   game: 'slide', name: 'はじめてのみちつなぎ', desc: 'ステージ1を クリアしよう',     target: 1,  stat: 'slide_clears', tier: 1, reward: { type: 'sea',  id: 'starfish' } },
-    { id: 'slide_4',   game: 'slide', name: 'みちつなぎずき',       desc: 'ステージ4まで クリアしよう',   target: 4,  stat: 'slide_clears', tier: 2, reward: { type: 'furn', id: 'ach_book_deco' } },
-    { id: 'slide_all', game: 'slide', name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',          target: 8,  stat: 'slide_clears', tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
+    // ── マスター ─────────────────────────────────────────────────
+    { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 6,  stat: 'puzzle_clears',     tier: 3, reward: { type: 'sea',  id: 'pufferfish' } },
+    { id: 'writing_hira',  game: 'writing',   name: 'ひらがなマスター',     desc: 'ひらがな ぜんぶ かこう',           target: 46, stat: 'writing_hiragana',  tier: 3, reward: { type: 'sea',  id: 'turtle' } },
+    { id: 'writing_kata',  game: 'writing',   name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46, stat: 'writing_katakana',  tier: 3, reward: { type: 'sea',  id: 'shark' } },
+    { id: 'breakout_all',  game: 'breakout',  name: 'ブロックマスター',     desc: 'ぜんぶ クリアしよう',              target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' } },
+    { id: 'slide_all',     game: 'slide',     name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',              target: 8,  stat: 'slide_clears',      tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
+    { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' } },
+    { id: 'wordmatch_all', game: 'wordmatch', name: 'ことばマスター',       desc: 'ぜんもん せいかいしよう',          target: 30, stat: 'wordmatch_correct', tier: 3, reward: { type: 'sea',  id: 'butterfly_fish' } },
+    { id: 'bento_10',      game: 'bento',     name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',     target: 10, stat: 'bento_complete',    tier: 3, reward: { type: 'sea',  id: 'octopus' } },
   ];
 
   // ═══ プレミアム初期特典 ═════════════════════════════════════════════
