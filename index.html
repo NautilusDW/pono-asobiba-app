@@ -1355,6 +1355,9 @@
         window.ponoProfile = profile;
 
         overlay.classList.add('hidden');
+
+        // プロフィール設定後にスタンプ付与
+        if (window._initStampRally) window._initStampRally();
       });
     })();
 
@@ -1748,12 +1751,17 @@
 
       // ── 4. Event Wiring ──
 
-      // Auto-grant login stamp on page load
-      var stampResult = addStampToday();
+      // スタンプ初期化（プロフィール設定後に呼ぶ）
+      window._initStampRally = function() {
+        var stampResult = addStampToday();
+        renderDailyRally();
+        renderMiniStampCard(stampResult.added);
+      };
 
-      // Render UI
-      renderDailyRally();
-      renderMiniStampCard(stampResult.added);
+      // プロフィール設定済みなら即実行、未設定ならプロフィール完了後に呼ばれる
+      if (window.ponoProfile) {
+        window._initStampRally();
+      }
 
       // Stamp card modal
       var stampModalOverlay = document.getElementById('stampModalOverlay');
