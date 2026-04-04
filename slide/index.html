@@ -938,7 +938,7 @@ function updateAnim(now) {
     updateHUD();
     animating = false;
 
-    if (checkWin()) {
+    if (!_slideTutActive && checkWin()) {
       onStageClear();
     }
   }
@@ -1197,7 +1197,9 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('blur',  () => bgm.pause());
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
+var _slideTutActive = false;
 function showTutorial() {
+  _slideTutActive = true;
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
@@ -1323,6 +1325,7 @@ function showTutorial() {
   }
 
   function endTut() {
+    _slideTutActive = false;
     if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
