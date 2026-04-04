@@ -1290,12 +1290,12 @@ function showTutorial() {
 
       // 実際にパネルを動かす
       handleTap(px, py);
-      // 次のステップまで操作をブロック
-      state = S.PAUSED;
+      // 次のステップまで操作をブロック（animatingフラグで）
+      animating = true;
 
       // アニメーション完了後に次のステップ
       setTimeout(function() {
-        state = S.PLAYING;
+        animating = false;
         tutStepIdx++;
         if (tutStepIdx < tutSteps.length) {
           // 次のステップ
