@@ -316,9 +316,10 @@ const LEVELS = [
     storyMsg: 'もりが ふかく なってきた…\nでも ここも きたことある！',
     clearMsg: 'おかあさんの はなうたが きこえる！',
     goalIcon: '🎵',
-    start: { col: 1, side: 'top' },
+    start: { col: 0, side: 'top' },
     goal: { col: 1, side: 'bottom' },
-    solved: [null,'V','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
+    // V→CROSS→V (左上から入って曲がる)
+    solved: ['V','BLANK','BLANK', 'CROSS',null,'BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 4,
   },
   {
@@ -1295,13 +1296,21 @@ function showTutorial() {
       // 次のステップまで操作をブロック（animatingフラグで）
       animating = true;
 
-      // アニメーション完了後に次のステップ
+      // アニメーション完了後にフィードバック→次のステップ
       setTimeout(function() {
         animating = false;
         tutStepIdx++;
         if (tutStepIdx < tutSteps.length) {
-          // 次のステップ
-          requestAnimationFrame(function() { showTutStep(); });
+          // フィードバック表示
+          var msgs = ['いいね！', 'すごい！', 'そのちょうし！'];
+          bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+          bubble.innerHTML = '✨ ' + msgs[Math.min(tutStepIdx - 1, msgs.length - 1)] + '<br><button class="tut-next-btn" id="tut-next">つぎ！</button>';
+          bubble.classList.remove('hidden');
+          document.getElementById('tut-next').addEventListener('pointerdown', function(fe) {
+            fe.preventDefault(); fe.stopPropagation();
+            bubble.classList.add('hidden');
+            requestAnimationFrame(function() { showTutStep(); });
+          });
         } else {
           // チュートリアル完了！ポノが歩き終わるまで待つ
           dim.classList.remove('hidden');
