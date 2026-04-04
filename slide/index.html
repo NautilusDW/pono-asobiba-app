@@ -268,6 +268,18 @@ const TILE_TYPES = {
 
 // ===== Level data =====
 // solved: row-major cols×rows, null = empty space
+// ── Stage backgrounds ──
+const STAGE_BGS = [
+  '../assets/images/Block/stage1_forest_light.png',
+  '../assets/images/Block/stage1_forest_light.png',
+  '../assets/images/Block/stage2_forest_deep.png',
+  '../assets/images/Block/stage3_cave_entrance.png',
+  '../assets/images/Block/stage4_cave_mushroom.png',
+  '../assets/images/Block/stage5_cave_deep.png',
+  '../assets/images/Block/stage6_night_sky.png',
+];
+const stageBgImgs = STAGE_BGS.map(function(src) { var img = new Image(); img.src = src; return img; });
+
 // start/goal: { col, side: 'top'|'bottom' } — 縦方向（上→下）
 // CROSS(十字)タイルは4方向すべて接続 → 複数ルート可能で難易度が下がる
 const LEVELS = [
@@ -745,9 +757,18 @@ function drawStartGoal() {
 const var_primary = '#4CAF50';
 
 function draw(now) {
-  // Background
-  ctx.fillStyle = '#E8F5E9';
-  ctx.fillRect(0, 0, CW, CH);
+  // Background image (stage-specific)
+  var bgIdx = Math.min(stageIdx, stageBgImgs.length - 1);
+  var bgImg = stageBgImgs[bgIdx];
+  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+    var iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
+    var sc = Math.max(CW / iw, CH / ih);
+    var dw = iw * sc, dh = ih * sc;
+    ctx.drawImage(bgImg, (CW - dw) / 2, (CH - dh) / 2, dw, dh);
+  } else {
+    ctx.fillStyle = '#E8F5E9';
+    ctx.fillRect(0, 0, CW, CH);
+  }
 
   // Grid background (wooden frame)
   const frameP = 6;
