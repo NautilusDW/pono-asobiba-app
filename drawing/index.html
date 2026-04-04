@@ -1291,15 +1291,16 @@ function showTutorial() {
       });
     },
     () => {
-      // ツールをハイライト（消しゴム・スタンプ・虹・きらきら・バケツ）
-      var toolBar = document.querySelectorAll('.icon-btn');
-      toolBar.forEach(function(btn) { btn.classList.add('tut-highlight'); });
+      // ツールバー全体をハイライト（消しゴム・スタンプ・虹・きらきら・バケツ）
+      var toolBars = document.querySelectorAll('.sidebar-wrap > .toolbar');
+      var toolBarEl = toolBars.length > 1 ? toolBars[1] : toolBars[0];
+      if (toolBarEl) toolBarEl.classList.add('tut-highlight');
       bubble.style.cssText = 'top:60%;left:50%;transform:translate(-50%,-50%)';
       bubble.innerHTML = 'けしゴム・スタンプ・にじいろ<br>きらきら・ぬりつぶし も あるよ！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => {
         e.preventDefault();
-        toolBar.forEach(function(btn) { btn.classList.remove('tut-highlight'); });
+        if (toolBarEl) toolBarEl.classList.remove('tut-highlight');
         nextStep();
       });
     },
