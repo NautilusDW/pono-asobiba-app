@@ -83,7 +83,7 @@
     _overlay.innerHTML =
       '<div class="treasure-label" id="treasure-label"></div>' +
       '<div class="treasure-container">' +
-        '<video id="treasure-video" playsinline muted>' +
+        '<video id="treasure-video" playsinline>' +
           '<source src="' + _getVideoPath() + '" type="video/mp4">' +
         '</video>' +
         '<div class="treasure-reward" id="treasure-reward">' +
@@ -149,17 +149,18 @@
     _video.load();
 
     _overlay.classList.add('show');
+    // muted で再生開始し、再生できたら unmute して音を出す
+    _video.muted = true;
     _video.play().then(function() {
-      // 再生成功 — 動画の長さに基づいてフォールバック設定
+      // 再生成功 → ミュート解除して音を出す
+      _video.muted = false;
       var dur = _video.duration;
       if (dur && isFinite(dur)) {
-        // 動画終了+0.5秒後にもボタンが出てなければ強制表示
         setTimeout(function() {
           _msg.classList.add('show');
           _closeBtn.classList.add('show');
         }, (dur * 1000) + 500);
       } else {
-        // 長さ不明の場合は6秒後にフォールバック
         setTimeout(function() {
           _msg.classList.add('show');
           _closeBtn.classList.add('show');
