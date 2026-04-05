@@ -1485,16 +1485,22 @@
               afterMsg: 'かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！' },
         5:  { icon: '🛏️', name: 'ベッド', type: 'furn', id: 'furn_bed_A', img: 'assets/images/Rooms/furnitures_final/bed_A_01.png',
               unlockRoom: true },
-        10: { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'deco_bear_ribbon', img: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png' },
+        10: (function() {
+              var g = 'boy';
+              try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
+              return g === 'girl'
+                ? { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'deco_bear_ribbon', img: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png' }
+                : { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'furn_bear_1',      img: 'assets/images/Rooms/furnitures_final/bear_A.png' };
+            })(),
         15: { icon: '⭐', name: 'カードかんせい！', type: 'special' },
       };
 
       // ── Card complete rewards (one per completed card, rotates) ──
       var CARD_COMPLETE_REWARDS = [
-        { icon: '\uD83D\uDC20', name: 'メダカ',           type: 'sea',  id: 'medaka',          img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
-        { icon: '\uD83E\uDE91', name: 'とくべつ かぐ',    type: 'furn', id: 'ach_small_chair', img: 'assets/images/Rooms/furnitures_final/bear_A.png' },
-        { icon: '\uD83D\uDC2C', name: 'イルカ',           type: 'sea',  id: 'dolphin',         img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
-        { icon: '\uD83D\uDDBC\uFE0F', name: 'かべがみ',   type: 'wall', id: 'wall_mizutama',  img: 'assets/images/Rooms/walls/mizutama.png' },
+        { icon: '🐠', name: 'さかな',      type: 'sea',  id: 'medaka',        img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
+        { icon: '🖼️', name: 'かべがみ',    type: 'wall', id: 'wall_mizutama', img: 'assets/images/Rooms/walls/mizutama.png' },
+        { icon: '🐢', name: 'ウミガメ',     type: 'sea',  id: 'turtle',        img: 'assets/images/ocean/Turtle/Turtle_001.png' },
+        { icon: '🪼', name: 'クラゲ',       type: 'sea',  id: 'jellyfish',     img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
       ];
 
       var ALL_FREE_GAMES = [
