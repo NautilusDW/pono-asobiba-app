@@ -119,8 +119,8 @@
       cursor: pointer;
     }
     .room-area.edit-mode .toybox-item {
-      pointer-events: none !important;
-      animation: none;
+      pointer-events: auto;
+      cursor: grab;
     }
     .room-area:not(.edit-mode) .btn-rotate,
     .room-area:not(.edit-mode) .btn-stow { display: none; }
@@ -1101,9 +1101,8 @@ function loadState() {
   state.points    = parseInt(localStorage.getItem(LS.POINTS)    || '0');
   state.inventory = JSON.parse(localStorage.getItem(LS.INVENTORY) || '[]');
   state.config    = JSON.parse(localStorage.getItem(LS.CONFIG)    || '{}');
-  // デフォルト壁紙: navy_tile（Room_Baseは使用しない）
+  // デフォルト壁紙・床（性別で自動選択）
   if (!state.config.living) state.config.living = {};
-  if (!state.config.living.wall) state.config.living.wall = 'wall_navy';
   var _rawUnlocked = localStorage.getItem(LS.UNLOCKED);
   try { state.unlocked = JSON.parse(_rawUnlocked); } catch(e) { state.unlocked = null; }
   if (!Array.isArray(state.unlocked)) state.unlocked = ['living'];
@@ -1117,6 +1116,13 @@ function loadState() {
       state.theme = 'boy';
     }
     localStorage.setItem(LS.THEME, state.theme);
+  }
+  // デフォルト壁・床（性別ベース）
+  if (!state.config.living.wall) {
+    state.config.living.wall = (state.theme === 'girl') ? 'wall_heart' : 'wall_navy';
+  }
+  if (!state.config.living.floor) {
+    state.config.living.floor = (state.theme === 'girl') ? 'floor_pink_plain' : 'floor_wood_warm';
   }
   // 旧アイテムIDのマイグレーション
   const ID_MIGRATION = { 'deco_toybox_pink': 'deco_box' };
