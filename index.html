@@ -1274,6 +1274,11 @@
     // ===== Profile Overlay (first-visit) =====
     window.ponoProfile = JSON.parse(localStorage.getItem('pono_profile') || 'null');
 
+    // はじめてのログイン実績
+    if (window.incrementStat) {
+      window.incrementStat('login_first', 1);
+    }
+
     (function() {
       var overlay = document.getElementById('profileOverlay');
       if (!overlay) return;
@@ -1328,6 +1333,9 @@
 
         localStorage.setItem('pono_profile', JSON.stringify(profile));
         window.ponoProfile = profile;
+
+        // なまえをきめた実績
+        if (window.incrementStat) window.incrementStat('profile_set', 1);
 
         overlay.classList.add('hidden');
 
