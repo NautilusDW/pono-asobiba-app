@@ -855,6 +855,33 @@
     #btn-cancel { background: #eee; color: #555; }
     #btn-buy    { background: var(--orange); color: white; }
     #btn-buy:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Tutorial ── */
+    .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
+    .tut-dim.hidden { display:none; }
+    .tut-bubble {
+      position:fixed;z-index:9997;background:#fff;border-radius:16px;
+      padding:14px 18px;max-width:none;
+      box-shadow:0 4px 20px rgba(93,78,55,0.3);
+      font-size:0.95rem;font-weight:700;color:#5D4E37;
+      line-height:1.7;text-align:center;white-space:nowrap;
+      animation:tutPopIn 0.3s ease;
+    }
+    .tut-bubble.hidden { display:none; }
+    @keyframes tutPopIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .tut-btn {
+      display:inline-block;margin-top:10px;padding:10px 28px;
+      border:none;border-radius:50px;
+      background:linear-gradient(135deg,#4CAF50,#81C784);
+      color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;
+      cursor:pointer;box-shadow:0 3px 10px rgba(76,175,80,0.3);
+    }
+    .tut-btn:active { transform:scale(0.95); }
+    .tut-highlight {
+      position:relative;z-index:9996;
+      box-shadow:0 0 0 4000px rgba(93,78,55,0.6);
+      border-radius:12px;
+    }
   </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/stickers.js"></script>
@@ -865,6 +892,10 @@
 <body>
 
 <!-- マスクは CSS mask-image で RGBA PNG 参照（アルファチャンネルで切り抜き） -->
+
+<!-- ── Tutorial ──────────────────────────────────── -->
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
 
 <!-- ── Portrait notice ────────────────────────────── -->
 <div id="portrait-notice">
@@ -1072,7 +1103,8 @@ initMenu({
     bgmEnabled = !bgmEnabled;
     localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
     if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-  }
+  },
+  tutorial: showRoomTutorial
 });
 
 // ─── Constants ────────────────────────────────────────
@@ -1917,40 +1949,58 @@ function buildRoomArea(areaData) {
     }
   });
 
-  // たからばこ（living room only）— ドラッグ移動対応
+  // たからばこ（living room only）— ドラッグ移動・回転対応
   if (areaData.id === 'living' && !locked) {
     const tbRow = (state.config.living && state.config.living.toyboxRow) ?? 7;
     const tbCol = (state.config.living && state.config.living.toyboxCol) ?? 1;
+    let tbAngle = (state.config.living && state.config.living.toyboxAngle) || 'A';
     const toybox = document.createElement('div');
     toybox.className = 'item-placed toybox-item';
     toybox.dataset.row = tbRow;
     toybox.dataset.col = tbCol;
-    // deco_box と同じ cellSize:0.8, pivotX:15, pivotY:21.9
-    const tbCellSize = 0.8;
-    const tbPivotX = 15;
-    const tbPivotY = 21.9;
-    const tbHeight = (tbCellSize * GRID_CELL_PCT).toFixed(2);
-    const tbCell = getGridCell(tbRow, tbCol);
-    toybox.style.cssText = 'position:absolute;cursor:pointer;'
-      + 'left:' + tbCell.leftPct + '%;bottom:' + tbCell.bottomPct + '%;'
-      + 'height:' + tbHeight + '%;width:auto;'
-      + 'z-index:' + tbCell.z + ';'
-      + 'display:flex;align-items:flex-end;justify-content:center;'
-      + 'pointer-events:auto;'
-      + 'transform:translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%);';
-    toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/box_A.png" style="height:100%;width:auto;" alt="たからばこ">';
+    // deco_box と同じ cellSize / pivot
+    const TB_A = { cellSize: 0.8, pivotX: 15, pivotY: 21.9 };
+    const TB_B = { cellSize: 0.8, pivotX: -12.5, pivotY: 23.3 };
+
+    function tbParams() { return tbAngle === 'B' ? TB_B : TB_A; }
+
+    function tbApplyStyle(row, col) {
+      var p = tbParams();
+      var h = (p.cellSize * GRID_CELL_PCT).toFixed(2);
+      var c = getGridCell(row, col);
+      toybox.style.cssText = 'position:absolute;cursor:pointer;'
+        + 'left:' + c.leftPct + '%;bottom:' + c.bottomPct + '%;'
+        + 'height:' + h + '%;width:auto;'
+        + 'z-index:' + c.z + ';'
+        + 'display:flex;align-items:flex-end;justify-content:center;'
+        + 'pointer-events:auto;touch-action:none;'
+        + 'transform:translate(calc(-50% - ' + p.pivotX + '%), ' + p.pivotY + '%);';
+      var imgFile = tbAngle === 'B' ? 'box_B.png' : 'box_A.png';
+      toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/' + imgFile + '" style="height:100%;width:auto;" alt="たからばこ">';
+    }
+    tbApplyStyle(tbRow, tbCol);
+
+    // 回転ボタン
+    const tbRotBtn = document.createElement('div');
+    tbRotBtn.className = 'btn-rotate';
+    tbRotBtn.textContent = '\u{1F504}';
+    function tbRotate(e) {
+      e.stopPropagation(); e.preventDefault();
+      tbAngle = tbAngle === 'B' ? 'A' : 'B';
+      var row = parseInt(toybox.dataset.row), col = parseInt(toybox.dataset.col);
+      tbApplyStyle(row, col);
+      toybox.appendChild(tbRotBtn);
+      if (!state.config.living) state.config.living = {};
+      state.config.living.toyboxAngle = tbAngle;
+      saveState();
+    }
+    tbRotBtn.addEventListener('click', tbRotate);
+    tbRotBtn.addEventListener('touchend', tbRotate);
+    toybox.appendChild(tbRotBtn);
 
     // ドラッグ（editモード）+ タップ（通常モードのみメニュー）
-    const tbTransform = 'translate(calc(-50% - ' + tbPivotX + '%), ' + tbPivotY + '%)';
     let tbStartX = 0, tbStartY = 0, tbDragging = false;
-    let tbBusy = false; // メニュー誤開き防止フラグ
-
-    function tbUpdatePos(row, col) {
-      const c = getGridCell(row, col);
-      toybox.style.left = c.leftPct + '%';
-      toybox.style.bottom = c.bottomPct + '%';
-      toybox.style.zIndex = c.z; // 家具と同じdepthベース
-    }
+    let tbBusy = false;
 
     function tbOnMove(cx, cy) {
       if (!editMode) return;
@@ -1966,7 +2016,10 @@ function buildRoomArea(areaData) {
       toybox.dataset.row = row;
       toybox.dataset.col = col;
       toybox.classList.add('dragging');
-      tbUpdatePos(row, col);
+      var c = getGridCell(row, col);
+      toybox.style.left = c.leftPct + '%';
+      toybox.style.bottom = c.bottomPct + '%';
+      toybox.style.zIndex = c.z;
     }
 
     function tbOnEnd(e) {
@@ -1979,7 +2032,6 @@ function buildRoomArea(areaData) {
         saveState();
       }
       tbDragging = false;
-      // editMode中は一切メニューを開かない。タッチ操作後500ms間もブロック
       tbBusy = true;
       setTimeout(() => { tbBusy = false; }, 500);
     }
@@ -1995,14 +2047,11 @@ function buildRoomArea(areaData) {
     }, { passive: false });
     toybox.addEventListener('touchend', e => { tbOnEnd(e); });
 
-    // clickは通常モードのメニュー開閉専用。editMode中・busy中は完全ブロック
+    // clickは通常モードのメニュー開閉専用
     toybox.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
       if (editMode || tbBusy) return;
-      toybox.style.transition = 'transform 0.15s';
-      toybox.style.transform = tbTransform + ' scale(0.92)';
-      setTimeout(() => { toybox.style.transform = tbTransform; toybox.style.transition = ''; }, 150);
       openTakarabako();
     });
 
@@ -3116,6 +3165,76 @@ window.addEventListener('orientationchange', () => {
 });
 window.addEventListener('resize', updatePortraitNotice);
 
+// ─── Room Tutorial ──────────────────────────────────────
+function showRoomTutorial() {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  var step = 0;
+
+  var STEPS = [
+    {
+      text: 'ここは ポノの おへやだよ！<br>すきに アレンジできるよ',
+      pos: function() { return { top: '40%', left: '50%', transform: 'translate(-50%,-50%)' }; },
+    },
+    {
+      text: 'これは 「たからばこ」！<br>タップすると<br>もちものが みれるよ',
+      target: function() { return document.querySelector('.toybox-item'); },
+      pos: function(r) { return { bottom: (window.innerHeight - r.top + 10) + 'px', left: Math.max(10, r.left - 20) + 'px' }; },
+    },
+    {
+      text: '「もようがえ」ボタンで<br>かぐや かざりを<br>すきな ばしょに うごかせるよ',
+      target: function() { return document.getElementById('ui-btn-edit'); },
+      pos: function(r) { return { bottom: (window.innerHeight - r.top + 10) + 'px', left: Math.max(10, r.left - 40) + 'px' }; },
+    },
+    {
+      text: 'かべがみ、ゆか、かぐ、かざり…<br>あそんで あつめて<br>じぶんだけの おへやを つくろう！',
+      pos: function() { return { top: '40%', left: '50%', transform: 'translate(-50%,-50%)' }; },
+    },
+  ];
+
+  function showStep() {
+    // reset highlights
+    document.querySelectorAll('.tut-highlight').forEach(function(e) { e.classList.remove('tut-highlight'); });
+    if (step >= STEPS.length) {
+      dim.classList.add('hidden');
+      bubble.classList.add('hidden');
+      localStorage.setItem('room_tut_seen', '1');
+      return;
+    }
+    var s = STEPS[step];
+    dim.classList.remove('hidden');
+    bubble.classList.remove('hidden');
+    bubble.innerHTML = s.text + '<br><button class="tut-btn" id="tut-next">' + (step < STEPS.length - 1 ? 'つぎへ ▶' : 'わかった！') + '</button>';
+
+    // position
+    bubble.style.cssText = 'position:fixed;z-index:9997;';
+    if (s.target) {
+      var el = s.target();
+      if (el) {
+        el.classList.add('tut-highlight');
+        var r = el.getBoundingClientRect();
+        var posObj = s.pos(r);
+        for (var k in posObj) bubble.style[k] = posObj[k];
+      }
+    } else {
+      var posObj = s.pos();
+      for (var k in posObj) bubble.style[k] = posObj[k];
+    }
+
+    document.getElementById('tut-next').addEventListener('click', function() {
+      step++;
+      showStep();
+    });
+  }
+
+  dim.addEventListener('click', function(e) {
+    if (e.target === dim) { step++; showStep(); }
+  });
+
+  step = 0;
+  showStep();
+}
+
 // ─── Init ─────────────────────────────────────────────
 function init() {
   loadState();
@@ -3123,6 +3242,11 @@ function init() {
 
   // テーマはloadStateでpono_profile.genderから自動設定済み → 直接おへやへ
   enterRoom();
+
+  // 初回チュートリアル
+  if (!localStorage.getItem('room_tut_seen')) {
+    setTimeout(showRoomTutorial, 600);
+  }
 
   // Entry overlay buttons
   document.getElementById('btn-entry-room').addEventListener('click', enterRoom);
