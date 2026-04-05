@@ -63,14 +63,15 @@ html, body {
 }
 .header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
 .streak-badge {
-  position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); z-index: 10000;
+  position: absolute; top: 4px; right: 4px; z-index: 200;
   display: inline-block;
   background: linear-gradient(135deg, #FCD34D, #F97316);
   color: #fff;
-  font-size: 0.65rem; font-weight: 900;
-  padding: 2px 8px; border-radius: 14px;
+  font-size: 0.75rem; font-weight: 900;
+  padding: 4px 10px; border-radius: 14px;
   animation: stampPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
   pointer-events: none;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.3);
 }
 .streak-badge.hidden { display: none; }
 @keyframes stampPop {
@@ -564,7 +565,7 @@ html, body {
     100%     { opacity: 0; }
   }
   .progress-hint { display: none; }
-  .streak-badge { left: auto; right: 8px; bottom: auto; top: 6px; transform: none; }
+  .streak-badge { right: 0; top: 2px; }
 }
 
 /* ===== Tutorial ===== */
@@ -586,7 +587,6 @@ html, body {
     <div class="header">
       <h1>ポノのもじかき</h1>
       <div class="subtitle">ゆびでなぞってみよう！</div>
-      <div id="streak-badge" class="streak-badge hidden"></div>
     </div>
 
     <div class="category-tabs" id="categoryTabs">
@@ -614,6 +614,7 @@ html, body {
         <div class="hedgehog-wrap">
           <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
           <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="ハリネズミ">
+          <div id="streak-badge" class="streak-badge hidden"></div>
         </div>
         <div class="canvas-container" id="canvasContainer">
           <div id="writerTarget"></div>
@@ -621,9 +622,9 @@ html, body {
         </div>
       </div>
     </div>
-    <div class="next-row">
-      <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
-    </div>
+      <div class="next-row">
+        <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+      </div>
   </div>
 </div>
 

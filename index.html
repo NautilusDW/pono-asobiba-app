@@ -1574,18 +1574,6 @@
             localStorage.setItem('pono_room_card_open', '1');
             var rc = document.getElementById('card-room');
             if (rc) { rc.classList.remove('locked'); rc.style.pointerEvents = ''; }
-            // おうちアンロック通知（宝箱演出の後に表示）
-            setTimeout(function() {
-              var unlockOv = document.createElement('div');
-              unlockOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
-              unlockOv.innerHTML = '<div style="background:#fff;border-radius:24px;padding:24px;text-align:center;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
-                '<div style="font-size:3rem;margin-bottom:8px;">🏠✨</div>' +
-                '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:6px;">おへやが つかえるよ！</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:#A89880;line-height:1.6;margin-bottom:14px;">「わたしのおうち」で<br>おへやを じゆうに<br>アレンジしてみよう！</div>' +
-                '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff9a3c,#ff6347);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">やったー！</button>' +
-                '</div>';
-              document.body.appendChild(unlockOv);
-            }, 4000); // 宝箱演出の後（約4秒後）
           }
         }
         if (pendingRewards.length > 0) setJSON(LS_STAMP_REWARDS_GIVEN, given);
@@ -1595,6 +1583,18 @@
         var slotKey = firstReward ? firstReward.key : null;
         if (slotRw) {
           (function(rw) {
+            function _showRoomUnlock() {
+              if (!rw.unlockRoom) return;
+              var unlockOv = document.createElement('div');
+              unlockOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+              unlockOv.innerHTML = '<div style="background:#fff;border-radius:24px;padding:24px;text-align:center;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+                '<div style="font-size:3rem;margin-bottom:8px;">🏠✨</div>' +
+                '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:6px;">おへやが つかえるよ！</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:#A89880;line-height:1.6;margin-bottom:14px;">「わたしのおうち」で<br>おへやを じゆうに<br>アレンジしてみよう！</div>' +
+                '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff9a3c,#ff6347);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">やったー！</button>' +
+                '</div>';
+              document.body.appendChild(unlockOv);
+            }
             setTimeout(function() {
               if (window.showTreasure) {
                 window.showTreasure({
@@ -1602,16 +1602,21 @@
                   img: rw.img || '',
                   label: 'スタンプボーナス',
                   onClose: function() {
-                    // 追加説明メッセージ
                     if (rw.afterMsg) {
                       var msgOv = document.createElement('div');
                       msgOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
                       msgOv.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;">' +
                         (rw.img ? '<img src="' + rw.img + '" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">' : '') +
                         '<div style="font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;">' + rw.afterMsg + '</div>' +
-                        '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style]\').parentElement.remove()">わかった！</button>' +
+                        '<button id="afterMsgBtn" style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">わかった！</button>' +
                         '</div>';
                       document.body.appendChild(msgOv);
+                      document.getElementById('afterMsgBtn').addEventListener('click', function() {
+                        msgOv.remove();
+                        _showRoomUnlock();
+                      });
+                    } else {
+                      _showRoomUnlock();
                     }
                   }
                 });
@@ -2114,18 +2119,36 @@
         var result = addStampToday();
         renderDailyRally();
         renderStampCard(-1);
+
+        function _afterLogin() {
+          // ゲーム戻り分の実績スタンプ演出
+          if (window._pendingAchStamp) {
+            var achTotal = getStampLog().total; // 最新値
+            delete window._pendingAchStamp;
+            setTimeout(function() {
+              showStampModal(achTotal, function() {
+                animateStamp(achTotal);
+                setTimeout(function() { checkSlotReward(achTotal); }, 500);
+              }, 'じっせき かいほう！🏆');
+            }, 500);
+          } else {
+            // 報酬チェックのみ
+            var t = getStampLog().total;
+            setTimeout(function() { checkSlotReward(t); }, 500);
+          }
+          // before値を最新に更新
+          localStorage.setItem(_LS_STAMP_BEFORE, String(getStampLog().total));
+        }
+
         if (result.added) {
-          // 1. スタンプ押し演出モーダル
           setTimeout(function() {
             showStampModal(result.log.total, function() {
-              // 2. カードに反映
               animateStamp(result.log.total);
-              // 3. 報酬チェック（宝箱演出）
-              setTimeout(function() {
-                checkSlotReward(result.log.total);
-              }, 500);
+              _afterLogin();
             });
           }, 500);
+        } else {
+          _afterLogin();
         }
       };
 
@@ -2135,38 +2158,48 @@
       }
 
       // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
-      // ゲームに行く前のtotalをlocalStorageに保存
       var _LS_STAMP_BEFORE = 'pono_stamp_before_game';
-      var currentTotal = getStampLog().total;
-      var beforeGame = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
 
-      // 初回ロード時: beforeGameより増えていたら演出
-      if (currentTotal > beforeGame && beforeGame > 0) {
-        setTimeout(function() {
-          showStampModal(currentTotal, function() {
-            animateStamp(currentTotal);
-            setTimeout(function() {
-              checkSlotReward(currentTotal);
-            }, 500);
-          }, 'じっせき かいほう！🏆');
-        }, 1200);
-      }
-      // 現在のtotalを保存（ゲームに行く前の基準値）
-      localStorage.setItem(_LS_STAMP_BEFORE, String(currentTotal));
+      // ゲームから戻った分の実績スタンプ演出（ログインスタンプより先にチェック）
+      (function() {
+        var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
+        var now = getStampLog().total;
+        if (now > before && before > 0) {
+          // ログインスタンプ演出の後に表示するためキューに入れる
+          window._pendingAchStamp = now;
+        }
+        // 現在値を保存
+        localStorage.setItem(_LS_STAMP_BEFORE, String(now));
+      })();
 
-      // ゲームカードをクリックした時にも現在値を保存
+      // ゲームカードをクリックした時に現在値を保存
       document.querySelectorAll('.card').forEach(function(card) {
         card.addEventListener('click', function() {
           localStorage.setItem(_LS_STAMP_BEFORE, String(getStampLog().total));
         });
       });
 
-      // visibilitychange でも検出（タブ切替で戻った場合）
+      // pageshow / visibilitychange
+      window.addEventListener('pageshow', function() {
+        var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
+        var now = getStampLog().total;
+        if (now > before && before > 0) {
+          localStorage.setItem(_LS_STAMP_BEFORE, String(now));
+          showStampModal(now, function() {
+            animateStamp(now);
+            setTimeout(function() { checkSlotReward(now); }, 500);
+          }, 'じっせき かいほう！🏆');
+        }
+        checkDailyCompletion();
+        renderDailyRally();
+        renderStampCard(-1);
+      });
+
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          var now = getStampLog().total;
           var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
-          if (now > before) {
+          var now = getStampLog().total;
+          if (now > before && before > 0) {
             localStorage.setItem(_LS_STAMP_BEFORE, String(now));
             showStampModal(now, function() {
               animateStamp(now);
@@ -2177,13 +2210,6 @@
           renderDailyRally();
           renderStampCard(-1);
         }
-      });
-
-      // pageshow（bfcache復帰）
-      window.addEventListener('pageshow', function() {
-        checkDailyCompletion();
-        renderDailyRally();
-        renderStampCard(-1);
       });
 
     })();
