@@ -1387,6 +1387,14 @@
 
     // わたしのおうちロック/アンロック
     (function() {
+      // 旧キーからのマイグレーション
+      if (!localStorage.getItem('pono_room_card_open') && localStorage.getItem('pono_room_unlocked')) {
+        var v = localStorage.getItem('pono_room_unlocked');
+        if (v === '1' || v === 'true') {
+          localStorage.setItem('pono_room_card_open', '1');
+          localStorage.removeItem('pono_room_unlocked');
+        }
+      }
       var roomCard = document.getElementById('card-room');
       if (roomCard) {
         if (!localStorage.getItem('pono_room_card_open')) {
