@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理ダッシュボード | ポノのあそびば</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #1a1a2e; color: #e0e0e0;
+  min-height: 100vh; padding: 20px;
+}
+h1 { text-align: center; font-size: 1.5rem; color: #FFD84D; margin-bottom: 6px; }
+.subtitle { text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 24px; }
+.tabs {
+  display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;
+}
+.tab {
+  padding: 8px 16px; border: none; border-radius: 20px;
+  background: #2a2a4a; color: #aaa; font-family: inherit;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.tab.active { background: #FFD84D; color: #1a1a2e; }
+.panel { display: none; }
+.panel.active { display: block; }
+.section { background: #2a2a4a; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+.section-title { font-size: 1rem; font-weight: 900; color: #FFD84D; margin-bottom: 12px; border-bottom: 1px solid #3a3a5a; padding-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+th { text-align: left; padding: 6px 8px; color: #FFD84D; border-bottom: 1px solid #3a3a5a; font-size: 0.7rem; }
+td { padding: 6px 8px; border-bottom: 1px solid #2a2a3a; vertical-align: middle; }
+tr:hover { background: rgba(255,216,77,0.05); }
+.img-cell { width: 50px; }
+.img-cell img { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,0.08); }
+.tier-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 0.65rem; font-weight: 900; color: #fff;
+}
+.tier-1 { background: #4CAF50; }
+.tier-2 { background: #2196F3; }
+.tier-3 { background: #FF9800; }
+.type-badge {
+  display: inline-block; padding: 2px 6px; border-radius: 8px;
+  font-size: 0.65rem; font-weight: 700;
+}
+.type-sea  { background: #1565C0; color: #fff; }
+.type-furn { background: #6D4C41; color: #fff; }
+.type-deco { background: #7B1FA2; color: #fff; }
+.type-wall { background: #00838F; color: #fff; }
+.type-floor { background: #558B2F; color: #fff; }
+.type-special { background: #F9A825; color: #333; }
+.tool-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: #3a3a5a; border-radius: 12px;
+  color: #e0e0e0; text-decoration: none; font-weight: 700; font-size: 0.85rem;
+  transition: background 0.2s; margin: 4px;
+}
+.tool-link:hover { background: #4a4a6a; }
+.tool-icon { font-size: 1.3rem; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.stat-card {
+  background: #1a1a2e; border-radius: 10px; padding: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.stat-key { font-size: 0.75rem; color: #aaa; }
+.stat-val { font-size: 1.1rem; font-weight: 900; color: #4CAF50; }
+.slot-row { display: flex; align-items: center; gap: 6px; }
+.slot-num { width: 24px; text-align: center; font-weight: 900; color: #FFD84D; }
+</style>
+</head>
+<body>
+
+<h1>🛠 ポノのあそびば 管理ダッシュボード</h1>
+<p class="subtitle">報酬・実績・ツール一覧</p>
+
+<div class="tabs">
+  <button class="tab active" data-panel="stamp">🎟 スタンプ報酬</button>
+  <button class="tab" data-panel="achievements">🏆 実績一覧</button>
+  <button class="tab" data-panel="stats">📊 統計/状態</button>
+  <button class="tab" data-panel="tools">🔧 ツール</button>
+</div>
+
+<!-- ===== スタンプ報酬 ===== -->
+<div class="panel active" id="panel-stamp">
+  <div class="section">
+    <div class="section-title">スロット報酬（カード内の到達報酬）</div>
+    <table>
+      <tr><th>スロット</th><th>画像</th><th>名前</th><th>種類</th><th>ID</th><th>備考</th></tr>
+      <tr>
+        <td class="slot-num">1</td>
+        <td class="img-cell"><img src="../assets/images/Rooms/furnitures_final/box_A.png"></td>
+        <td>🎁 デコボックス</td>
+        <td><span class="type-badge type-deco">deco</span></td>
+        <td><code>deco_box</code></td>
+        <td>+説明メッセージ</td>
+      </tr>
+      <tr>
+        <td class="slot-num">5</td>
+        <td class="img-cell"><img src="../assets/images/Rooms/furnitures_final/bed_A_01.png"></td>
+        <td>🛏️ ベッド</td>
+        <td><span class="type-badge type-furn">furn</span></td>
+        <td><code>furn_bed_A</code></td>
+        <td>🏠 おうちアンロック</td>
+      </tr>
+      <tr>
+        <td class="slot-num">10</td>
+        <td class="img-cell">
+          <img src="../assets/images/Rooms/furnitures_final/bear_A.png" title="男の子用">
+          <img src="../assets/images/Rooms/furnitures_final/bear_ribbon_A.png" title="女の子用">
+        </td>
+        <td>🧸 くまのぬいぐるみ</td>
+        <td><span class="type-badge type-deco">deco</span></td>
+        <td>男:<code>furn_bear_1</code><br>女:<code>deco_bear_ribbon</code></td>
+        <td>性別で自動切替</td>
+      </tr>
+      <tr>
+        <td class="slot-num">15</td>
+        <td class="img-cell">⭐</td>
+        <td>⭐ カードかんせい！</td>
+        <td><span class="type-badge type-special">special</span></td>
+        <td>—</td>
+        <td>カード完成報酬へ</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">カード完成報酬（15枚目到達ごと・ローテーション）</div>
+    <table>
+      <tr><th>#</th><th>画像</th><th>名前</th><th>種類</th><th>ID</th></tr>
+      <tr>
+        <td>1枚目</td>
+        <td class="img-cell"><img src="../assets/images/ocean/Fish_S01/Fish_S01_001.png"></td>
+        <td>🐠 さかな</td>
+        <td><span class="type-badge type-sea">sea</span></td>
+        <td><code>medaka</code></td>
+      </tr>
+      <tr>
+        <td>2枚目</td>
+        <td class="img-cell"><img src="../assets/images/Rooms/walls/mizutama.png"></td>
+        <td>🖼️ かべがみ</td>
+        <td><span class="type-badge type-wall">wall</span></td>
+        <td><code>wall_mizutama</code></td>
+      </tr>
+      <tr>
+        <td>3枚目</td>
+        <td class="img-cell"><img src="../assets/images/ocean/Turtle/Turtle_001.png"></td>
+        <td>🐢 ウミガメ</td>
+        <td><span class="type-badge type-sea">sea</span></td>
+        <td><code>turtle</code></td>
+      </tr>
+      <tr>
+        <td>4枚目</td>
+        <td class="img-cell"><img src="../assets/images/ocean/JellyFish/JellyFish_001.png"></td>
+        <td>🪼 クラゲ</td>
+        <td><span class="type-badge type-sea">sea</span></td>
+        <td><code>jellyfish</code></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== 実績一覧 ===== -->
+<div class="panel" id="panel-achievements">
+  <div class="section">
+    <div class="section-title">はじめて系（tier 1）</div>
+    <table id="ach-table-1">
+      <tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr>
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">がんばった系（tier 2）</div>
+    <table id="ach-table-2">
+      <tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr>
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">マスター系（tier 3）</div>
+    <table id="ach-table-3">
+      <tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== 統計/状態 ===== -->
+<div class="panel" id="panel-stats">
+  <div class="section">
+    <div class="section-title">現在のlocalStorage統計</div>
+    <div class="stat-grid" id="stats-grid"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">スタンプ状態</div>
+    <div class="stat-grid" id="stamp-info"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">解除済み実績</div>
+    <div id="unlocked-list" style="font-size:0.8rem;"></div>
+  </div>
+</div>
+
+<!-- ===== ツール ===== -->
+<div class="panel" id="panel-tools">
+  <div class="section">
+    <div class="section-title">おへや関連ツール</div>
+    <a class="tool-link" href="../room/furniture_adjuster.html"><span class="tool-icon">🪑</span> 家具ピボット調整</a>
+    <a class="tool-link" href="../room/furniture_gallery.html"><span class="tool-icon">🖼</span> 家具ギャラリー</a>
+    <a class="tool-link" href="../room/yard_adjuster.html"><span class="tool-icon">🌳</span> 庭調整ツール</a>
+    <a class="tool-link" href="../room/index.html"><span class="tool-icon">🏠</span> おへや（本番）</a>
+  </div>
+  <div class="section">
+    <div class="section-title">テスト・デバッグ</div>
+    <a class="tool-link" href="../test_treasure.html"><span class="tool-icon">🎁</span> 宝箱テスト</a>
+    <a class="tool-link" href="../index.html"><span class="tool-icon">🏠</span> トップページ</a>
+    <a class="tool-link" href="../help.html"><span class="tool-icon">❓</span> ヘルプページ</a>
+  </div>
+  <div class="section">
+    <div class="section-title">ゲーム一覧</div>
+    <a class="tool-link" href="../puzzle/index.html"><span class="tool-icon">🧩</span> パズル</a>
+    <a class="tool-link" href="../writing/index.html"><span class="tool-icon">✏️</span> もじかき</a>
+    <a class="tool-link" href="../drawing/index.html"><span class="tool-icon">🎨</span> おえかき</a>
+    <a class="tool-link" href="../bento/index.html"><span class="tool-icon">🍱</span> おべんとう</a>
+    <a class="tool-link" href="../wordmatch/index.html"><span class="tool-icon">🔤</span> ことばあわせ</a>
+    <a class="tool-link" href="../bowling/index.html"><span class="tool-icon">🎳</span> ボウリング</a>
+    <a class="tool-link" href="../breakout/index.html"><span class="tool-icon">🧱</span> ブロックくずし</a>
+    <a class="tool-link" href="../slide/index.html"><span class="tool-icon">🛤</span> みちつなぎ</a>
+    <a class="tool-link" href="../aquarium/index.html"><span class="tool-icon">🐠</span> うみのせかい</a>
+    <a class="tool-link" href="../coloring/index.html"><span class="tool-icon">🖍</span> ぬりえ</a>
+  </div>
+</div>
+
+<script src="../common/achievements.js"></script>
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+// Populate achievements tables
+var ACHIEVEMENTS = window.getAchievements ? window.getAchievements() : [];
+var unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
+var stats = JSON.parse(localStorage.getItem('pono_stats') || '{}');
+
+ACHIEVEMENTS.forEach(function(ach) {
+  var table = document.getElementById('ach-table-' + ach.tier);
+  if (!table) return;
+  var done = !!unlocked[ach.id];
+  var val = stats[ach.stat] || 0;
+  var tr = document.createElement('tr');
+  tr.style.opacity = done ? '1' : '0.6';
+  var typeClass = 'type-' + (ach.reward ? ach.reward.type : 'furn');
+  tr.innerHTML =
+    '<td><code>' + ach.id + '</code></td>' +
+    '<td>' + (done ? '✅ ' : '🔒 ') + ach.name + '</td>' +
+    '<td style="font-size:0.7rem;color:#aaa;">' + ach.desc + '</td>' +
+    '<td>' + val + '/' + ach.target + ' <span style="color:#888;">(' + ach.stat + ')</span></td>' +
+    '<td>' + (ach.reward ? '<span class="type-badge ' + typeClass + '">' + ach.reward.type + '</span> <code>' + ach.reward.id + '</code>' : '—') + '</td>';
+  table.appendChild(tr);
+});
+
+// Populate stats
+var statsGrid = document.getElementById('stats-grid');
+var allKeys = Object.keys(stats).sort();
+allKeys.forEach(function(key) {
+  var card = document.createElement('div');
+  card.className = 'stat-card';
+  card.innerHTML = '<span class="stat-key">' + key + '</span><span class="stat-val">' + stats[key] + '</span>';
+  statsGrid.appendChild(card);
+});
+if (allKeys.length === 0) statsGrid.innerHTML = '<div style="color:#666;">統計データなし</div>';
+
+// Stamp info
+var stampInfo = document.getElementById('stamp-info');
+var stampLog = JSON.parse(localStorage.getItem('pono_stamp_log') || '{"dates":[],"total":0}');
+var given = JSON.parse(localStorage.getItem('pono_stamp_rewards_given') || '[]');
+[
+  ['スタンプ合計', stampLog.total],
+  ['スタンプ日数', stampLog.dates.filter(function(d){ return !d.startsWith('ach_'); }).length],
+  ['実績スタンプ', stampLog.dates.filter(function(d){ return d.startsWith('ach_'); }).length],
+  ['カード枚数', Math.floor(stampLog.total / 15) + 1],
+  ['カード内位置', (stampLog.total % 15) || (stampLog.total > 0 ? 15 : 0)],
+  ['付与済み報酬数', given.length],
+].forEach(function(item) {
+  var card = document.createElement('div');
+  card.className = 'stat-card';
+  card.innerHTML = '<span class="stat-key">' + item[0] + '</span><span class="stat-val">' + item[1] + '</span>';
+  stampInfo.appendChild(card);
+});
+
+// Unlocked achievements list
+var unlockedList = document.getElementById('unlocked-list');
+var unlockedKeys = Object.keys(unlocked);
+if (unlockedKeys.length === 0) {
+  unlockedList.innerHTML = '<div style="color:#666;">解除済みなし</div>';
+} else {
+  unlockedKeys.forEach(function(id) {
+    var ach = ACHIEVEMENTS.find(function(a) { return a.id === id; });
+    var div = document.createElement('div');
+    div.style.cssText = 'padding:4px 0;border-bottom:1px solid #2a2a3a;';
+    div.textContent = '✅ ' + (ach ? ach.name : id);
+    unlockedList.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
