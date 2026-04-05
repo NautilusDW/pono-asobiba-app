@@ -1939,7 +1939,7 @@
       }
 
       // スタンプ押し演出モーダル（現在の段の5マスを表示）
-      function showStampModal(total, onDone) {
+      function showStampModal(total, onDone, reasonText) {
         var cardNum = getCardNum(total);
         var filled = getFilledInCard(total);
         var posInCard = filled - 1; // 0-based index of the newly stamped slot
@@ -1951,7 +1951,8 @@
 
         var cardHtml = '<div style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">';
         // Reason text
-        cardHtml += '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">' + getStampReasonText(total) + '</div>';
+        var rText = reasonText || getStampReasonText(total);
+        cardHtml += '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">' + rText + '</div>';
         cardHtml += '<div style="font-size:0.8rem;font-weight:700;color:#F2915A;margin-bottom:10px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>';
         cardHtml += '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:12px;">';
         for (var i = 0; i < SLOTS_PER_ROW; i++) {
@@ -2015,19 +2016,40 @@
         window._initStampRally();
       }
 
-      // Re-check daily rally when returning to page
-      window.addEventListener('pageshow', function() {
+      // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
+      var _lastKnownStampTotal = getStampLog().total;
+
+      function _checkNewStamps() {
+        var log = getStampLog();
+        var newTotal = log.total;
+        if (newTotal > _lastKnownStampTotal) {
+          _lastKnownStampTotal = newTotal;
+          // 演出: 最新のスタンプ分だけ表示
+          showStampModal(newTotal, function() {
+            animateStamp(newTotal);
+            setTimeout(function() {
+              checkSlotReward(newTotal);
+            }, 500);
+          }, 'じっせき かいほう！🏆');
+        } else {
+          _lastKnownStampTotal = newTotal;
+        }
         checkDailyCompletion();
         renderDailyRally();
         renderStampCard(-1);
-      });
+      }
 
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+      window.addEventListener('pageshow', function(e) {
+        if (e.persisted) _checkNewStamps();
+        else {
           checkDailyCompletion();
           renderDailyRally();
           renderStampCard(-1);
         }
+      });
+
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) _checkNewStamps();
       });
 
     })();
