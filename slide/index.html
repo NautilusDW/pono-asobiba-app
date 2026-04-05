@@ -128,6 +128,18 @@ html, body {
   white-space: nowrap;
 }
 .ov-msg { font-size: 0.9rem; font-weight: 700; color: var(--text); white-space: pre-line; line-height: 1.6; }
+
+/* Cutscene full-image mode */
+.ov-card.cutscene-mode { max-width: 360px; padding: 16px 16px 20px; gap: 10px; }
+.ov-card.cutscene-mode .ov-icon { font-size: unset; line-height: unset; }
+.cutscene-img {
+  width: 100%; border-radius: 16px;
+  object-fit: cover; aspect-ratio: 16/9;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+.ov-card.cutscene-mode .ov-title {
+  font-size: 1rem; white-space: pre-line; line-height: 1.6;
+}
 .ov-btn {
   margin-top: 4px; padding: 14px 36px;
   border: none; border-radius: 50px;
@@ -311,7 +323,7 @@ const LEVELS = [
     storyMsg: 'おかあさんと きたことある！\nこっちだよね！',
     clearMsg: 'あ、この おはな みたことある！',
     goalIcon: '🌸',
-    cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを さがしていました' },
+    cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを\nさがしていました', img: '../assets/images/Slide/cutscene_1.png' },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', null,'V','BLANK', 'BLANK','V','BLANK'],
@@ -335,7 +347,7 @@ const LEVELS = [
     storyMsg: 'ここは ちかみちだって\nおかあさんが おしえてくれた！',
     clearMsg: 'ひかる キノコ！ ここ しってる！',
     goalIcon: '🍄',
-    cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」' },
+    cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」', img: '../assets/images/Slide/cutscene_2.png' },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
@@ -358,7 +370,7 @@ const LEVELS = [
     storyMsg: 'あかるく なってきた！\nあとすこし！',
     clearMsg: 'おそとの あかりだ！',
     goalIcon: '🌙',
-    cutscene: { text: 'やっと みつけた！\nはやく ポノに とどけなきゃ！' },
+    cutscene: { text: 'やっと みつけた！\nはやく ポノに とどけなきゃ！', img: '../assets/images/Slide/cutscene_3.png' },
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
@@ -1040,6 +1052,7 @@ function showOverlay(type) {
   overlay.classList.remove('hidden');
   back.classList.add('hidden');
   title.style.whiteSpace = '';
+  document.querySelector('.ov-card').classList.remove('cutscene-mode');
 
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
   var reunionTag  = '<div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;">' +
@@ -1074,9 +1087,11 @@ function showOverlay(type) {
   } else if (type === 'gameclear') {
     launchConfetti();
     playGameClearSound();
-    icon.innerHTML    = reunionTag;
+    var card = document.querySelector('.ov-card');
+    card.classList.add('cutscene-mode');
+    icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="おかあさんと いっしょ">';
     title.textContent = 'おかあさんと さいかい！';
-    msg.textContent   = `「やっと あえたね、ポノ！」\n${moveCount}てかず でクリア！`;
+    msg.textContent   = `「やっと あえたね、ポノ！\nおさいふ とどけに きてくれたの？\nありがとう！」\n${moveCount}てかず でクリア！`;
     btn.textContent   = 'もう一回 ▶';
   }
 
@@ -1116,11 +1131,17 @@ function nextStage() {
 function showCutscene() {
   var level = LEVELS[stageIdx];
   if (!level || !level.cutscene) { nextStage(); return; }
+  var card  = document.querySelector('.ov-card');
   var icon  = document.getElementById('ov-icon');
   var title = document.getElementById('ov-title');
   var msg   = document.getElementById('ov-msg');
   var btn   = document.getElementById('ov-btn');
-  icon.innerHTML = '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">';
+  card.classList.add('cutscene-mode');
+  if (level.cutscene.img) {
+    icon.innerHTML = '<img src="' + level.cutscene.img + '" class="cutscene-img" alt="カットイン">';
+  } else {
+    icon.innerHTML = '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">';
+  }
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
   msg.textContent = '';
