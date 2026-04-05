@@ -33,13 +33,6 @@ td { padding: 6px 8px; border-bottom: 1px solid #2a2a3a; vertical-align: middle;
 tr:hover { background: rgba(255,216,77,0.05); }
 .img-cell { width: 50px; }
 .img-cell img { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,0.08); }
-.tier-badge {
-  display: inline-block; padding: 2px 8px; border-radius: 10px;
-  font-size: 0.65rem; font-weight: 900; color: #fff;
-}
-.tier-1 { background: #4CAF50; }
-.tier-2 { background: #2196F3; }
-.tier-3 { background: #FF9800; }
 .type-badge {
   display: inline-block; padding: 2px 6px; border-radius: 8px;
   font-size: 0.65rem; font-weight: 700;
@@ -65,8 +58,59 @@ tr:hover { background: rgba(255,216,77,0.05); }
 }
 .stat-key { font-size: 0.75rem; color: #aaa; }
 .stat-val { font-size: 1.1rem; font-weight: 900; color: #4CAF50; }
-.slot-row { display: flex; align-items: center; gap: 6px; }
-.slot-num { width: 24px; text-align: center; font-weight: 900; color: #FFD84D; }
+
+/* ── Upload UI ── */
+.upload-card {
+  background: #1a1a2e; border-radius: 14px; padding: 14px;
+  margin-bottom: 12px; border: 1px solid #3a3a5a;
+}
+.upload-card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.upload-card-header img {
+  width: 56px; height: 56px; object-fit: contain; border-radius: 10px;
+  background: rgba(255,255,255,0.06); border: 2px solid #3a3a5a;
+}
+.upload-card-header .no-img {
+  width: 56px; height: 56px; border-radius: 10px;
+  background: rgba(255,255,255,0.04); border: 2px dashed #555;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: #555;
+}
+.upload-card-info { flex: 1; }
+.upload-card-name { font-weight: 900; font-size: 0.9rem; }
+.upload-card-meta { font-size: 0.7rem; color: #888; margin-top: 2px; }
+.upload-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.upload-btn {
+  padding: 6px 14px; border: none; border-radius: 10px;
+  font-family: inherit; font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.upload-btn-file { background: #3B82F6; color: #fff; }
+.upload-btn-file:hover { background: #2563EB; }
+.upload-btn-push { background: #10B981; color: #fff; }
+.upload-btn-push:hover { background: #059669; }
+.upload-btn-push:disabled { opacity: 0.4; cursor: default; }
+.upload-preview {
+  width: 48px; height: 48px; object-fit: contain; border-radius: 8px;
+  background: rgba(255,255,255,0.08); display: none;
+}
+.upload-status { font-size: 0.7rem; margin-top: 4px; }
+.upload-status.ok { color: #10B981; }
+.upload-status.err { color: #EF4444; }
+.gh-token-row {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+}
+.gh-token-row input {
+  flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid #3a3a5a; background: #1a1a2e; color: #e0e0e0;
+  font-family: inherit; font-size: 0.8rem;
+}
+.gh-token-row button {
+  padding: 8px 14px; border: none; border-radius: 10px;
+  background: #6366F1; color: #fff; font-family: inherit;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -76,6 +120,7 @@ tr:hover { background: rgba(255,216,77,0.05); }
 
 <div class="tabs">
   <button class="tab active" data-panel="stamp">🎟 スタンプ報酬</button>
+  <button class="tab" data-panel="upload">📤 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
@@ -88,7 +133,7 @@ tr:hover { background: rgba(255,216,77,0.05); }
     <table>
       <tr><th>スロット</th><th>画像</th><th>名前</th><th>種類</th><th>ID</th><th>備考</th></tr>
       <tr>
-        <td class="slot-num">1</td>
+        <td style="font-weight:900;color:#FFD84D;text-align:center;">1</td>
         <td class="img-cell"><img src="../assets/images/Rooms/furnitures_final/box_A.png"></td>
         <td>🎁 デコボックス</td>
         <td><span class="type-badge type-deco">deco</span></td>
@@ -96,7 +141,7 @@ tr:hover { background: rgba(255,216,77,0.05); }
         <td>+説明メッセージ</td>
       </tr>
       <tr>
-        <td class="slot-num">5</td>
+        <td style="font-weight:900;color:#FFD84D;text-align:center;">5</td>
         <td class="img-cell"><img src="../assets/images/Rooms/furnitures_final/bed_A_01.png"></td>
         <td>🛏️ ベッド</td>
         <td><span class="type-badge type-furn">furn</span></td>
@@ -104,7 +149,7 @@ tr:hover { background: rgba(255,216,77,0.05); }
         <td>🏠 おうちアンロック</td>
       </tr>
       <tr>
-        <td class="slot-num">10</td>
+        <td style="font-weight:900;color:#FFD84D;text-align:center;">10</td>
         <td class="img-cell">
           <img src="../assets/images/Rooms/furnitures_final/bear_A.png" title="男の子用">
           <img src="../assets/images/Rooms/furnitures_final/bear_ribbon_A.png" title="女の子用">
@@ -115,7 +160,7 @@ tr:hover { background: rgba(255,216,77,0.05); }
         <td>性別で自動切替</td>
       </tr>
       <tr>
-        <td class="slot-num">15</td>
+        <td style="font-weight:900;color:#FFD84D;text-align:center;">15</td>
         <td class="img-cell">⭐</td>
         <td>⭐ カードかんせい！</td>
         <td><span class="type-badge type-special">special</span></td>
@@ -124,62 +169,57 @@ tr:hover { background: rgba(255,216,77,0.05); }
       </tr>
     </table>
   </div>
-
   <div class="section">
     <div class="section-title">カード完成報酬（15枚目到達ごと・ローテーション）</div>
     <table>
       <tr><th>#</th><th>画像</th><th>名前</th><th>種類</th><th>ID</th></tr>
-      <tr>
-        <td>1枚目</td>
-        <td class="img-cell"><img src="../assets/images/ocean/Fish_S01/Fish_S01_001.png"></td>
-        <td>🐠 さかな</td>
-        <td><span class="type-badge type-sea">sea</span></td>
-        <td><code>medaka</code></td>
-      </tr>
-      <tr>
-        <td>2枚目</td>
-        <td class="img-cell"><img src="../assets/images/Rooms/walls/mizutama.png"></td>
-        <td>🖼️ かべがみ</td>
-        <td><span class="type-badge type-wall">wall</span></td>
-        <td><code>wall_mizutama</code></td>
-      </tr>
-      <tr>
-        <td>3枚目</td>
-        <td class="img-cell"><img src="../assets/images/ocean/Turtle/Turtle_001.png"></td>
-        <td>🐢 ウミガメ</td>
-        <td><span class="type-badge type-sea">sea</span></td>
-        <td><code>turtle</code></td>
-      </tr>
-      <tr>
-        <td>4枚目</td>
-        <td class="img-cell"><img src="../assets/images/ocean/JellyFish/JellyFish_001.png"></td>
-        <td>🪼 クラゲ</td>
-        <td><span class="type-badge type-sea">sea</span></td>
-        <td><code>jellyfish</code></td>
-      </tr>
+      <tr><td>1枚目</td><td class="img-cell"><img src="../assets/images/ocean/Fish_S01/Fish_S01_001.png"></td><td>🐠 さかな</td><td><span class="type-badge type-sea">sea</span></td><td><code>medaka</code></td></tr>
+      <tr><td>2枚目</td><td class="img-cell"><img src="../assets/images/Rooms/walls/mizutama.png"></td><td>🖼️ かべがみ</td><td><span class="type-badge type-wall">wall</span></td><td><code>wall_mizutama</code></td></tr>
+      <tr><td>3枚目</td><td class="img-cell"><img src="../assets/images/ocean/Turtle/Turtle_001.png"></td><td>🐢 ウミガメ</td><td><span class="type-badge type-sea">sea</span></td><td><code>turtle</code></td></tr>
+      <tr><td>4枚目</td><td class="img-cell"><img src="../assets/images/ocean/JellyFish/JellyFish_001.png"></td><td>🪼 クラゲ</td><td><span class="type-badge type-sea">sea</span></td><td><code>jellyfish</code></td></tr>
     </table>
+  </div>
+</div>
+
+<!-- ===== 報酬管理（アップロード） ===== -->
+<div class="panel" id="panel-upload">
+  <div class="section">
+    <div class="section-title">🔑 GitHub 認証</div>
+    <div class="gh-token-row">
+      <input type="password" id="gh-token" placeholder="GitHub Personal Access Token (repo権限)">
+      <button id="gh-save">保存</button>
+      <span id="gh-status" style="font-size:0.75rem;"></span>
+    </div>
+    <div style="font-size:0.7rem;color:#666;">
+      トークン作成: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens<br>
+      Repository access: kids-writing-app のみ、Permissions: Contents (Read and write)
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📤 スロット報酬 画像アップロード</div>
+    <div id="slot-upload-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📤 カード完成報酬 画像アップロード</div>
+    <div id="card-upload-list"></div>
   </div>
 </div>
 
 <!-- ===== 実績一覧 ===== -->
 <div class="panel" id="panel-achievements">
   <div class="section">
-    <div class="section-title">はじめて系（tier 1）</div>
-    <table id="ach-table-1">
-      <tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr>
-    </table>
+    <div class="section-title">はじめて系（tier 1）— 11個</div>
+    <table id="ach-table-1"><tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr></table>
   </div>
   <div class="section">
-    <div class="section-title">がんばった系（tier 2）</div>
-    <table id="ach-table-2">
-      <tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr>
-    </table>
+    <div class="section-title">がんばった系（tier 2）— 8個</div>
+    <table id="ach-table-2"><tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr></table>
   </div>
   <div class="section">
-    <div class="section-title">マスター系（tier 3）</div>
-    <table id="ach-table-3">
-      <tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr>
-    </table>
+    <div class="section-title">マスター系（tier 3）— 8個</div>
+    <table id="ach-table-3"><tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr></table>
   </div>
 </div>
 
@@ -231,7 +271,15 @@ tr:hover { background: rgba(255,216,77,0.05); }
 
 <script src="../common/achievements.js"></script>
 <script>
-// Tab switching
+'use strict';
+
+// ── GitHub config ──
+var GH_OWNER = 'NautilusDW';
+var GH_REPO  = 'kids-writing-app';
+var GH_BRANCH = 'develop';
+var LS_TOKEN = 'admin_gh_token';
+
+// ── Tab switching ──
 document.querySelectorAll('.tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -241,7 +289,187 @@ document.querySelectorAll('.tab').forEach(function(tab) {
   });
 });
 
-// Populate achievements tables
+// ── GitHub Token ──
+var ghTokenInput = document.getElementById('gh-token');
+var ghStatus = document.getElementById('gh-status');
+ghTokenInput.value = localStorage.getItem(LS_TOKEN) || '';
+if (ghTokenInput.value) ghStatus.textContent = '✅ 保存済み';
+
+document.getElementById('gh-save').addEventListener('click', function() {
+  var v = ghTokenInput.value.trim();
+  if (v) {
+    localStorage.setItem(LS_TOKEN, v);
+    ghStatus.textContent = '✅ 保存しました';
+    ghStatus.style.color = '#10B981';
+  } else {
+    localStorage.removeItem(LS_TOKEN);
+    ghStatus.textContent = '❌ クリアしました';
+    ghStatus.style.color = '#EF4444';
+  }
+});
+
+// ── GitHub API: upload file ──
+function ghUpload(filePath, base64Content, commitMsg, callback) {
+  var token = localStorage.getItem(LS_TOKEN);
+  if (!token) { callback('トークンが設定されていません'); return; }
+
+  var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath;
+
+  // まず既存ファイルのSHAを取得（更新の場合に必要）
+  fetch(apiUrl + '?ref=' + GH_BRANCH, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).then(function(r) { return r.ok ? r.json() : null; })
+  .then(function(existing) {
+    var body = {
+      message: commitMsg,
+      content: base64Content,
+      branch: GH_BRANCH
+    };
+    if (existing && existing.sha) body.sha = existing.sha;
+
+    return fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+  }).then(function(r) {
+    if (r.ok) { callback(null); }
+    else { r.json().then(function(j) { callback(j.message || 'エラー'); }); }
+  }).catch(function(e) { callback(e.message); });
+}
+
+// ── Upload card builder ──
+function buildUploadCard(container, config) {
+  // config: { label, currentImg, targetPath, id }
+  var card = document.createElement('div');
+  card.className = 'upload-card';
+
+  var header = document.createElement('div');
+  header.className = 'upload-card-header';
+
+  if (config.currentImg) {
+    var img = document.createElement('img');
+    img.src = '../' + config.currentImg;
+    img.onerror = function() { img.style.display = 'none'; };
+    header.appendChild(img);
+  } else {
+    var noImg = document.createElement('div');
+    noImg.className = 'no-img';
+    noImg.textContent = '?';
+    header.appendChild(noImg);
+  }
+
+  var info = document.createElement('div');
+  info.className = 'upload-card-info';
+  info.innerHTML = '<div class="upload-card-name">' + config.label + '</div>' +
+    '<div class="upload-card-meta">パス: <code>' + config.targetPath + '</code></div>';
+  header.appendChild(info);
+  card.appendChild(header);
+
+  // Upload row
+  var row = document.createElement('div');
+  row.className = 'upload-row';
+
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+
+  var fileBtn = document.createElement('button');
+  fileBtn.className = 'upload-btn upload-btn-file';
+  fileBtn.textContent = '📁 ファイルを選択';
+  fileBtn.addEventListener('click', function() { fileInput.click(); });
+
+  var preview = document.createElement('img');
+  preview.className = 'upload-preview';
+
+  var pushBtn = document.createElement('button');
+  pushBtn.className = 'upload-btn upload-btn-push';
+  pushBtn.textContent = '🚀 GitHubにアップロード';
+  pushBtn.disabled = true;
+
+  var status = document.createElement('div');
+  status.className = 'upload-status';
+
+  var _base64 = null;
+  var _fileName = '';
+
+  fileInput.addEventListener('change', function() {
+    var file = fileInput.files[0];
+    if (!file) return;
+    _fileName = file.name;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      // base64部分だけ抽出（data:image/png;base64,XXXX → XXXX）
+      _base64 = e.target.result.split(',')[1];
+      pushBtn.disabled = false;
+      status.textContent = '✅ ' + _fileName + ' 読み込み済み';
+      status.className = 'upload-status ok';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  pushBtn.addEventListener('click', function() {
+    if (!_base64) return;
+    pushBtn.disabled = true;
+    status.textContent = '⏳ アップロード中...';
+    status.className = 'upload-status';
+
+    var ext = _fileName.split('.').pop() || 'png';
+    var path = config.targetPath;
+    // 拡張子が異なる場合は置換
+    if (ext !== 'png') {
+      path = path.replace(/\.[^.]+$/, '.' + ext);
+    }
+
+    ghUpload(path, _base64, '🎁 報酬画像更新: ' + config.label, function(err) {
+      if (err) {
+        status.textContent = '❌ ' + err;
+        status.className = 'upload-status err';
+        pushBtn.disabled = false;
+      } else {
+        status.textContent = '✅ アップロード成功！Netlifyが自動デプロイします';
+        status.className = 'upload-status ok';
+        // 現在の画像を更新
+        var curImg = card.querySelector('.upload-card-header img');
+        if (curImg) curImg.src = preview.src;
+      }
+    });
+  });
+
+  row.appendChild(fileInput);
+  row.appendChild(fileBtn);
+  row.appendChild(preview);
+  row.appendChild(pushBtn);
+  card.appendChild(row);
+  card.appendChild(status);
+  container.appendChild(card);
+}
+
+// ── Build slot upload cards ──
+var slotList = document.getElementById('slot-upload-list');
+[
+  { label: 'スロット1: デコボックス', currentImg: 'assets/images/Rooms/furnitures_final/box_A.png', targetPath: 'assets/images/Rooms/furnitures_final/box_A.png' },
+  { label: 'スロット5: ベッド', currentImg: 'assets/images/Rooms/furnitures_final/bed_A_01.png', targetPath: 'assets/images/Rooms/furnitures_final/bed_A_01.png' },
+  { label: 'スロット10: くま（男の子）', currentImg: 'assets/images/Rooms/furnitures_final/bear_A.png', targetPath: 'assets/images/Rooms/furnitures_final/bear_A.png' },
+  { label: 'スロット10: くま（女の子）', currentImg: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png', targetPath: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png' },
+].forEach(function(c) { buildUploadCard(slotList, c); });
+
+// ── Build card complete upload cards ──
+var cardList = document.getElementById('card-upload-list');
+[
+  { label: '1枚目: さかな', currentImg: 'assets/images/ocean/Fish_S01/Fish_S01_001.png', targetPath: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
+  { label: '2枚目: かべがみ', currentImg: 'assets/images/Rooms/walls/mizutama.png', targetPath: 'assets/images/Rooms/walls/mizutama.png' },
+  { label: '3枚目: ウミガメ', currentImg: 'assets/images/ocean/Turtle/Turtle_001.png', targetPath: 'assets/images/ocean/Turtle/Turtle_001.png' },
+  { label: '4枚目: クラゲ', currentImg: 'assets/images/ocean/JellyFish/JellyFish_001.png', targetPath: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
+].forEach(function(c) { buildUploadCard(cardList, c); });
+
+// ── Achievements ──
 var ACHIEVEMENTS = window.getAchievements ? window.getAchievements() : [];
 var unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
 var stats = JSON.parse(localStorage.getItem('pono_stats') || '{}');
@@ -263,7 +491,7 @@ ACHIEVEMENTS.forEach(function(ach) {
   table.appendChild(tr);
 });
 
-// Populate stats
+// ── Stats ──
 var statsGrid = document.getElementById('stats-grid');
 var allKeys = Object.keys(stats).sort();
 allKeys.forEach(function(key) {
@@ -274,7 +502,7 @@ allKeys.forEach(function(key) {
 });
 if (allKeys.length === 0) statsGrid.innerHTML = '<div style="color:#666;">統計データなし</div>';
 
-// Stamp info
+// ── Stamp info ──
 var stampInfo = document.getElementById('stamp-info');
 var stampLog = JSON.parse(localStorage.getItem('pono_stamp_log') || '{"dates":[],"total":0}');
 var given = JSON.parse(localStorage.getItem('pono_stamp_rewards_given') || '[]');
@@ -292,7 +520,7 @@ var given = JSON.parse(localStorage.getItem('pono_stamp_rewards_given') || '[]')
   stampInfo.appendChild(card);
 });
 
-// Unlocked achievements list
+// ── Unlocked list ──
 var unlockedList = document.getElementById('unlocked-list');
 var unlockedKeys = Object.keys(unlocked);
 if (unlockedKeys.length === 0) {
