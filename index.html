@@ -973,7 +973,14 @@
 <body>
 
   <!-- ===== First-Visit Profile Overlay ===== -->
-  <div class="profile-overlay" id="profileOverlay">
+  <script>
+    // プロフィール設定済みなら最初から非表示（フラッシュ防止）
+    if (localStorage.getItem('pono_profile')) {
+      document.write('<div class="profile-overlay hidden" id="profileOverlay">');
+    } else {
+      document.write('<div class="profile-overlay" id="profileOverlay">');
+    }
+  </script>
     <div class="profile-card">
       <img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノ" class="profile-pono">
       <div class="profile-title">ポノと あそぼう！</div>
@@ -2269,12 +2276,28 @@
         renderDailyRally();
         renderStampCard(-1);
 
+        // ゲーム戻り検出: ログインスタンプ加算前のtotalと、ゲーム出発前のtotalを比較
+        var _beforeGame = parseInt(localStorage.getItem('pono_stamp_before') || '0');
+        // addStampTodayの前のtotal（ログイン分を除いた純増を見るため）
+        var _totalBeforeLogin = getStampLog().total - (result.added ? 1 : 0);
+        var _achGained = (_beforeGame > 0 && _totalBeforeLogin > _beforeGame);
+
         function _afterLogin() {
-          // 報酬チェック
           var t = getStampLog().total;
-          setTimeout(function() { checkSlotReward(t); }, 500);
-          // visibilitychange検出用の基準値を設定
+          if (_achGained) {
+            // ゲーム中に実績スタンプが増えた → 演出
+            setTimeout(function() {
+              showStampModal(t, function() {
+                animateStamp(t);
+                setTimeout(function() { checkSlotReward(t); }, 500);
+              }, 'じっせき かいほう！🏆');
+            }, 500);
+          } else {
+            setTimeout(function() { checkSlotReward(t); }, 500);
+          }
+          // 基準値を更新
           _stampTotalAfterInit = t;
+          localStorage.setItem('pono_stamp_before', String(t));
         }
 
         if (result.added) {
@@ -2301,7 +2324,9 @@
       // ゲームカードをクリックした時に現在値を保存
       document.querySelectorAll('.card').forEach(function(card) {
         card.addEventListener('click', function() {
-          _stampTotalAfterInit = getStampLog().total;
+          var t = getStampLog().total;
+          _stampTotalAfterInit = t;
+          localStorage.setItem('pono_stamp_before', String(t));
         });
       });
 
