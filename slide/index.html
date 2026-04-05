@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>おかあさんに あいにいこう！| ポノのあそびば</title>
+<title>おかあさん どこいったの？| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -200,7 +200,7 @@ html, body {
 
 <div id="app">
   <div class="header">
-    <h1>おかあさんに あいにいこう！</h1>
+    <h1>おかあさん どこいったの？</h1>
     <p class="subtitle">みちを つなげて ポノを みちびこう</p>
     <button id="btn-pause" class="btn-pause">⏸</button>
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🎵</button>
@@ -221,7 +221,7 @@ html, body {
   <div class="overlay" id="overlay">
     <div class="ov-card">
       <div class="ov-icon" id="ov-icon"><img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ"></div>
-      <div class="ov-title" id="ov-title">おかあさんに あいにいこう！</div>
+      <div class="ov-title" id="ov-title">おかあさん どこいったの？</div>
       <div class="ov-msg" id="ov-msg">みちを つなげよう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
       <a class="ov-back" id="ov-back" href="../index.html">← ホームにもどる</a>
@@ -307,10 +307,10 @@ const stageBgImgs = STAGE_BGS.map(function(src) { var img = new Image(); img.src
 // CROSS(十字)タイルは4方向すべて接続 → 複数ルート可能で難易度が下がる
 const LEVELS = [
   {
-    name: 'おかあさん まってー！',
+    name: 'おかあさん いないよ？',
     cols: 3, rows: 3,
-    storyMsg: 'おかあさんが おでかけ！\nおさいふ わすれてるよ！',
-    clearMsg: 'おかあさんの あしあと はっけん！',
+    storyMsg: 'あそびから かえったら\nおかあさんが いない…\nどこに いったんだろう？',
+    clearMsg: 'あ！おかあさんの あしあとだ！',
     goalIcon: '🐾',
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
@@ -318,10 +318,10 @@ const LEVELS = [
     shuffleMoves: 4,
   },
   {
-    name: 'この みち しってる！',
+    name: 'もりの いりぐち',
     cols: 3, rows: 3,
-    storyMsg: 'おかあさんと きたことある！\nこっちだよね！',
-    clearMsg: 'あ、この おはな みたことある！',
+    storyMsg: 'あしあとが もりに つづいてる！\nおかあさーん！',
+    clearMsg: 'あ、この おはな…\nどこかで みたことある…',
     goalIcon: '🌸',
     cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを\nさがしていました', img: '../assets/images/Slide/cutscene_1.png' },
     start: { col: 1, side: 'top' },
@@ -330,10 +330,10 @@ const LEVELS = [
     shuffleMoves: 6,
   },
   {
-    name: 'もりの おく',
+    name: 'きいたことある おと',
     cols: 3, rows: 3,
-    storyMsg: 'もりが ふかく なってきた…\nひとりは ちょっと こわいけど…がんばる！',
-    clearMsg: 'おかあさんの はなうたが きこえる！',
+    storyMsg: 'もりが ふかく なってきた…\nなんだか この みち\nしってる きがする…',
+    clearMsg: 'この はなうた…\nきいたことある きがする！',
     goalIcon: '🎵',
     start: { col: 0, side: 'top' },
     goal: { col: 1, side: 'bottom' },
@@ -342,10 +342,10 @@ const LEVELS = [
     shuffleMoves: 4,
   },
   {
-    name: 'どうくつの ちかみち',
+    name: 'ふしぎな どうくつ',
     cols: 3, rows: 4,
-    storyMsg: 'ここは ちかみちだって\nおかあさんが おしえてくれた！',
-    clearMsg: 'ひかる キノコ！ ここ しってる！',
+    storyMsg: 'どうくつだ！ なんだか\nここも みたことある きがする…\nおもいだせないけど…',
+    clearMsg: 'ひかる キノコ！\nなつかしい かんじがする…',
     goalIcon: '🍄',
     cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」', img: '../assets/images/Slide/cutscene_2.png' },
     start: { col: 1, side: 'top' },
@@ -356,8 +356,8 @@ const LEVELS = [
   {
     name: 'ひかる キノコのみち',
     cols: 3, rows: 4,
-    storyMsg: 'まっくらだけど がんばる！\nおかあさん…だいじょうぶかな',
-    clearMsg: 'きれいな いしが ひかってる！',
+    storyMsg: 'まっくらだけど がんばる！\nおかあさん どこにいるの…',
+    clearMsg: 'きれいな いし…\nぜったい ここ きたことある！',
     goalIcon: '💎',
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
@@ -370,7 +370,7 @@ const LEVELS = [
     storyMsg: 'あかるく なってきた！\nあとすこし！',
     clearMsg: 'おそとの あかりだ！',
     goalIcon: '🌙',
-    cutscene: { text: 'やっと みつけた！\nはやく ポノに とどけなきゃ！', img: '../assets/images/Slide/cutscene_3.png' },
+    cutscene: { text: 'やっと ぜんぶ みつけた！\nはやく ポノに\nとどけなきゃ！', img: '../assets/images/Slide/cutscene_3.png' },
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
@@ -391,7 +391,7 @@ const LEVELS = [
     name: 'おかあさーん！',
     cols: 4, rows: 5,
     storyMsg: '「ポノーッ！」\nおかあさんの こえだ！',
-    clearMsg: '「あらあら ポノ！\nおさいふ とどけに\nきてくれたの？ ありがとう！」',
+    clearMsg: '「ポノ！ さがしにきてくれたの？」',
     goalIcon: 'mom',
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
@@ -1066,9 +1066,9 @@ function showOverlay(type) {
 
   if (type === 'start') {
     icon.innerHTML    = ponoFaceTag;
-    title.textContent = 'おかあさんに あいにいこう！';
+    title.textContent = 'おかあさん どこいったの？';
     msg.textContent   = LEVELS[stageIdx].storyMsg;
-    btn.textContent   = 'たすけにいく ▶';
+    btn.textContent   = 'さがしにいく ▶';
   } else if (type === 'stagestart') {
     icon.innerHTML    = ponoFaceTag;
     title.textContent = 'ステージ ' + (stageIdx + 1);
@@ -1091,7 +1091,7 @@ function showOverlay(type) {
     card.classList.add('cutscene-mode');
     icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="おかあさんと いっしょ">';
     title.textContent = 'おかあさんと さいかい！';
-    msg.textContent   = `「やっと あえたね、ポノ！\nおさいふ とどけに きてくれたの？\nありがとう！」\n${moveCount}てかず でクリア！`;
+    msg.textContent   = `「ポノの だいすきな きのみと\nキノコを とりにきたの。\nおそくなって ごめんね！\nいっしょに かえろう！」\n${moveCount}てかず でクリア！`;
     btn.textContent   = 'もう一回 ▶';
   }
 
