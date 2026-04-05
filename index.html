@@ -1389,7 +1389,7 @@
     (function() {
       var roomCard = document.getElementById('card-room');
       if (roomCard) {
-        if (!localStorage.getItem('pono_room_unlocked')) {
+        if (!localStorage.getItem('pono_room_card_open')) {
           roomCard.classList.add('locked');
           roomCard.style.pointerEvents = 'none';
         }
@@ -1546,7 +1546,7 @@
           setJSON(LS_STAMP_REWARDS_GIVEN, given);
           // おうちアンロックは宝箱を待たず即時実行
           if (slotRw.unlockRoom) {
-            localStorage.setItem('pono_room_unlocked', '1');
+            localStorage.setItem('pono_room_card_open', '1');
             var rc = document.getElementById('card-room');
             if (rc) { rc.classList.remove('locked'); rc.style.pointerEvents = ''; }
           }

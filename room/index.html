@@ -1104,7 +1104,9 @@ function loadState() {
   // デフォルト壁紙: navy_tile（Room_Baseは使用しない）
   if (!state.config.living) state.config.living = {};
   if (!state.config.living.wall) state.config.living.wall = 'wall_navy';
-  state.unlocked  = JSON.parse(localStorage.getItem(LS.UNLOCKED)  || '["living"]');
+  var _rawUnlocked = localStorage.getItem(LS.UNLOCKED);
+  try { state.unlocked = JSON.parse(_rawUnlocked); } catch(e) { state.unlocked = null; }
+  if (!Array.isArray(state.unlocked)) state.unlocked = ['living'];
   // テーマ: localStorage → pono_profile.gender → デフォルト'boy'
   state.theme     = localStorage.getItem(LS.THEME) || null;
   if (!state.theme) {
