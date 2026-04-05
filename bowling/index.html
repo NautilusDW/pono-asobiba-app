@@ -1012,10 +1012,7 @@ function launchBall(dirX, dirY, power) {
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
   shotNumber++;
-  // 全背景をスコアに応じてローテーション（500点ごとに切り替え）
-  if (bgImgObjs.length > 0) {
-    bgImgIdx = Math.floor(score / 500) % bgImgObjs.length;
-  }
+  // 背景はaimフェーズ移行時に更新（launch時は変えない）
   ballTrail = [];
 }
 
@@ -1647,6 +1644,11 @@ function loop(now) {
       }
       gamePhase = 'aim';
       slingshotPhase = 'aim'; // reset for new shot
+      // 背景切替: 10000点ごと、戻らない（最後の背景で固定）
+      if (bgImgObjs.length > 1) {
+        var newIdx = Math.min(Math.floor(score / 10000), bgImgObjs.length - 1);
+        if (newIdx > bgImgIdx) bgImgIdx = newIdx;
+      }
     }
   }
 

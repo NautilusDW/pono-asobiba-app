@@ -2163,23 +2163,11 @@
         renderStampCard(-1);
 
         function _afterLogin() {
-          // ゲーム戻り分の実績スタンプ演出
-          if (window._pendingAchStamp) {
-            var achTotal = getStampLog().total; // 最新値
-            delete window._pendingAchStamp;
-            setTimeout(function() {
-              showStampModal(achTotal, function() {
-                animateStamp(achTotal);
-                setTimeout(function() { checkSlotReward(achTotal); }, 500);
-              }, 'じっせき かいほう！🏆');
-            }, 500);
-          } else {
-            // 報酬チェックのみ
-            var t = getStampLog().total;
-            setTimeout(function() { checkSlotReward(t); }, 500);
-          }
-          // before値を最新に更新
-          localStorage.setItem(_LS_STAMP_BEFORE, String(getStampLog().total));
+          // 報酬チェック
+          var t = getStampLog().total;
+          setTimeout(function() { checkSlotReward(t); }, 500);
+          // visibilitychange検出用の基準値を設定
+          _stampTotalAfterInit = t;
         }
 
         if (result.added) {
@@ -2200,58 +2188,40 @@
       }
 
       // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
-      var _LS_STAMP_BEFORE = 'pono_stamp_before_game';
-
-      // ゲームから戻った分の実績スタンプ演出（ログインスタンプより先にチェック）
-      (function() {
-        var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
-        var now = getStampLog().total;
-        if (now > before && before > 0) {
-          // ログインスタンプ演出の後に表示するためキューに入れる
-          window._pendingAchStamp = now;
-        }
-        // 現在値を保存
-        localStorage.setItem(_LS_STAMP_BEFORE, String(now));
-      })();
+      // _initStampRally完了後のtotalを記録。visibilitychangeで差分検出
+      var _stampTotalAfterInit = -1;
 
       // ゲームカードをクリックした時に現在値を保存
       document.querySelectorAll('.card').forEach(function(card) {
         card.addEventListener('click', function() {
-          localStorage.setItem(_LS_STAMP_BEFORE, String(getStampLog().total));
+          _stampTotalAfterInit = getStampLog().total;
         });
       });
 
-      // pageshow / visibilitychange
-      window.addEventListener('pageshow', function() {
-        var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
-        var now = getStampLog().total;
-        if (now > before && before > 0) {
-          localStorage.setItem(_LS_STAMP_BEFORE, String(now));
-          showStampModal(now, function() {
-            animateStamp(now);
-            setTimeout(function() { checkSlotReward(now); }, 500);
-          }, 'じっせき かいほう！🏆');
-        }
-        checkDailyCompletion();
-        renderDailyRally();
-        renderStampCard(-1);
-      });
-
+      // visibilitychange（ゲームから戻った時）
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
           var now = getStampLog().total;
-          if (now > before && before > 0) {
-            localStorage.setItem(_LS_STAMP_BEFORE, String(now));
+          if (_stampTotalAfterInit >= 0 && now > _stampTotalAfterInit) {
+            _stampTotalAfterInit = now;
             showStampModal(now, function() {
               animateStamp(now);
               setTimeout(function() { checkSlotReward(now); }, 500);
             }, 'じっせき かいほう！🏆');
+          } else {
+            _stampTotalAfterInit = now;
           }
           checkDailyCompletion();
           renderDailyRally();
           renderStampCard(-1);
         }
+      });
+
+      // pageshow
+      window.addEventListener('pageshow', function() {
+        checkDailyCompletion();
+        renderDailyRally();
+        renderStampCard(-1);
       });
 
     })();
