@@ -141,11 +141,13 @@
     document.getElementById('treasure-reward-name').textContent = name;
     _onClose = options.onClose || null;
 
-    // 動画パスを再設定し、sourceも更新
+    // 動画をリセットして再読込
+    _video.pause();
     var vpath = _getVideoPath();
     _video.src = vpath;
     var sourceEl = _video.querySelector('source');
     if (sourceEl) sourceEl.src = vpath;
+    _video.currentTime = 0;
     _video.load();
 
     _overlay.classList.add('show');
