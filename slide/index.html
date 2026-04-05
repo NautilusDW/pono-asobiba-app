@@ -1108,13 +1108,12 @@ function updateHUD() {
 
 // ===== Start / Next =====
 function startGame() {
-  overlay.classList.add('hidden');
   stageIdx = 0;
   moveCount = 0;
   shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
   updateHUD();
-  state = S.PLAYING;
+  showOverlay('stagestart');
 }
 
 function nextStage() {
@@ -1160,9 +1159,8 @@ function showCutscene() {
       overlay.classList.add('hidden');
       state = S.PLAYING;
     } else {
-      localStorage.removeItem('slide_tut_seen'); // テスト用: 毎回表示
       if (!localStorage.getItem('slide_tut_seen')) {
-        // チュートリアル用: 最初からチュートリアル配置で開始
+        // チュートリアルから開始（ステージダイアログなし）
         overlay.classList.add('hidden');
         stageIdx = 0;
         moveCount = 0;
@@ -1170,7 +1168,11 @@ function showCutscene() {
         grid = ['BLANK',null,'BLANK', 'BLANK','V','BLANK', 'V','V','BLANK'];
         emptyIdx = 1;
         calcLayout();
-        updateHUD();
+        // HUDを「チュートリアル」表示
+        document.getElementById('hud-stage').textContent = 'れんしゅう';
+        document.getElementById('hud-moves').textContent = '';
+        var stageNum = document.getElementById('stage-num');
+        if (stageNum) stageNum.textContent = 'チュートリアル';
         state = S.PLAYING;
         setTimeout(showTutorial, 500);
       } else {
@@ -1366,22 +1368,14 @@ function showTutorial() {
                 document.getElementById('tut-next').addEventListener('pointerdown', function(ev2) {
                   ev2.preventDefault(); ev2.stopPropagation();
                   endTut();
-                  // ステージ1開始オーバーレイを表示
-                  stageIdx = 0;
-                  moveCount = 0;
-                  shuffleGrid(LEVELS[0]);
-                  calcLayout();
-                  updateHUD();
-                  showOverlay('stagestart');
+                  // ステージ1を直接開始（ダイアログなし）
+                  startGame();
                 });
               }
             }, 100);
           } else {
-            // パスが見つからない場合はそのまま開始
             endTut();
-            stageIdx = 0; moveCount = 0;
-            shuffleGrid(LEVELS[0]); calcLayout(); updateHUD();
-            showOverlay('stagestart');
+            startGame();
           }
         }
       }, 200);
