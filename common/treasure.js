@@ -83,7 +83,7 @@
     _overlay.innerHTML =
       '<div class="treasure-label" id="treasure-label"></div>' +
       '<div class="treasure-container">' +
-        '<video id="treasure-video" playsinline>' +
+        '<video id="treasure-video" playsinline muted>' +
           '<source src="' + _getVideoPath() + '" type="video/mp4">' +
         '</video>' +
         '<div class="treasure-reward" id="treasure-reward">' +
@@ -130,16 +130,42 @@
     _closeBtn.classList.remove('show');
 
     // アイテム画像と名前
-    document.getElementById('treasure-reward-img').src = img;
+    var rewardImg = document.getElementById('treasure-reward-img');
+    if (img) {
+      rewardImg.src = img;
+      rewardImg.style.display = '';
+    } else {
+      rewardImg.src = '';
+      rewardImg.style.display = 'none';
+    }
     document.getElementById('treasure-reward-name').textContent = name;
     _onClose = options.onClose || null;
 
-    // 動画パスを再設定（相対パス対応）
-    _video.src = _getVideoPath();
-    _video.currentTime = 0;
+    // 動画パスを再設定し、sourceも更新
+    var vpath = _getVideoPath();
+    _video.src = vpath;
+    var sourceEl = _video.querySelector('source');
+    if (sourceEl) sourceEl.src = vpath;
+    _video.load();
 
     _overlay.classList.add('show');
-    _video.play().catch(function() {
+    _video.play().then(function() {
+      // 再生成功 — 動画の長さに基づいてフォールバック設定
+      var dur = _video.duration;
+      if (dur && isFinite(dur)) {
+        // 動画終了+0.5秒後にもボタンが出てなければ強制表示
+        setTimeout(function() {
+          _msg.classList.add('show');
+          _closeBtn.classList.add('show');
+        }, (dur * 1000) + 500);
+      } else {
+        // 長さ不明の場合は6秒後にフォールバック
+        setTimeout(function() {
+          _msg.classList.add('show');
+          _closeBtn.classList.add('show');
+        }, 6000);
+      }
+    }).catch(function() {
       // 自動再生失敗時はスキップしてアイテム表示
       _reward.classList.add('show');
       _msg.classList.add('show');
