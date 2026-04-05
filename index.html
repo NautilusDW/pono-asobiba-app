@@ -2017,39 +2017,55 @@
       }
 
       // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
-      var _lastKnownStampTotal = getStampLog().total;
+      // ゲームに行く前のtotalをlocalStorageに保存
+      var _LS_STAMP_BEFORE = 'pono_stamp_before_game';
+      var currentTotal = getStampLog().total;
+      var beforeGame = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
 
-      function _checkNewStamps() {
-        var log = getStampLog();
-        var newTotal = log.total;
-        if (newTotal > _lastKnownStampTotal) {
-          _lastKnownStampTotal = newTotal;
-          // 演出: 最新のスタンプ分だけ表示
-          showStampModal(newTotal, function() {
-            animateStamp(newTotal);
+      // 初回ロード時: beforeGameより増えていたら演出
+      if (currentTotal > beforeGame && beforeGame > 0) {
+        setTimeout(function() {
+          showStampModal(currentTotal, function() {
+            animateStamp(currentTotal);
             setTimeout(function() {
-              checkSlotReward(newTotal);
+              checkSlotReward(currentTotal);
             }, 500);
           }, 'じっせき かいほう！🏆');
-        } else {
-          _lastKnownStampTotal = newTotal;
-        }
-        checkDailyCompletion();
-        renderDailyRally();
-        renderStampCard(-1);
+        }, 1200);
       }
+      // 現在のtotalを保存（ゲームに行く前の基準値）
+      localStorage.setItem(_LS_STAMP_BEFORE, String(currentTotal));
 
-      window.addEventListener('pageshow', function(e) {
-        if (e.persisted) _checkNewStamps();
-        else {
+      // ゲームカードをクリックした時にも現在値を保存
+      document.querySelectorAll('.card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          localStorage.setItem(_LS_STAMP_BEFORE, String(getStampLog().total));
+        });
+      });
+
+      // visibilitychange でも検出（タブ切替で戻った場合）
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          var now = getStampLog().total;
+          var before = parseInt(localStorage.getItem(_LS_STAMP_BEFORE) || '0');
+          if (now > before) {
+            localStorage.setItem(_LS_STAMP_BEFORE, String(now));
+            showStampModal(now, function() {
+              animateStamp(now);
+              setTimeout(function() { checkSlotReward(now); }, 500);
+            }, 'じっせき かいほう！🏆');
+          }
           checkDailyCompletion();
           renderDailyRally();
           renderStampCard(-1);
         }
       });
 
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) _checkNewStamps();
+      // pageshow（bfcache復帰）
+      window.addEventListener('pageshow', function() {
+        checkDailyCompletion();
+        renderDailyRally();
+        renderStampCard(-1);
       });
 
     })();

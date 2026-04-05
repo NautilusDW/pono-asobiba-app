@@ -512,13 +512,13 @@ html, body {
     max-width: none; max-height: none;
   }
   .next-row {
-    position: absolute; bottom: 8px; right: 8px;
+    position: absolute; bottom: 12px; right: 12px;
     order: auto; padding: 0; width: auto;
-    display: block;
+    display: block; z-index: 100;
   }
   .next-row .ctrl-btn {
-    width: auto; padding: 10px 20px; font-size: 0.9rem;
-    opacity: 0.85;
+    width: auto; padding: 14px 28px; font-size: 1.05rem;
+    box-shadow: 0 4px 16px rgba(74,222,128,0.4);
   }
   /* Pono deco: canvas bottom-left (bigger, shifted right & up) */
   .pono-deco {
@@ -1245,7 +1245,22 @@ function createWriter(char) {
         _hedgeBubble.textContent = 'かいてみよう！';
         _ponoBubble.textContent = 'かいてみよう！';
         writer.hideCharacter();
-        startQuiz();
+        // 「スタート！」表示してからquiz開始
+        var dim = document.getElementById('tut-dim');
+        var bubble = document.getElementById('tut-bubble');
+        if (dim && bubble) {
+          dim.classList.remove('hidden');
+          bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+          bubble.innerHTML = '<div style="font-size:1.5rem;font-weight:900;color:#F2915A;">✏️ スタート！</div>';
+          bubble.classList.remove('hidden');
+          setTimeout(function() {
+            dim.classList.add('hidden');
+            bubble.classList.add('hidden');
+            startQuiz();
+          }, 1000);
+        } else {
+          startQuiz();
+        }
       }
     });
   }
@@ -1526,7 +1541,6 @@ buildRowTabs();
 buildCharSelector();
 
 // チュートリアル判定を先に行い、フラグをセットしてからloadCharacterを呼ぶ
-localStorage.removeItem('writing_tut_seen'); // テスト用: 毎回表示
 if (!localStorage.getItem('writing_tut_seen')) {
   _tutorialActive = true;
 }
@@ -1586,62 +1600,41 @@ function showTutorial() {
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
   _tutorialActive = true;
-  var step = 0;
-  var steps = [
-    function() {
-      dim.classList.remove('hidden');
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '✏️ まず おてほんを みてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', function(e) { e.preventDefault(); endTut(); });
-    }
-  ];
-  function nextStep() { step++; step < steps.length ? steps[step]() : endTut(); }
-  function endTut() {
+
+  // 1ステップ: 説明 → お手本再生 → スタート
+  dim.classList.remove('hidden');
+  bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+  bubble.innerHTML = '✏️ おてほんを みて<br>おなじ じゅんばんで<br>ゆびで なぞってみよう！<br><button class="tut-next-btn" id="tut-next">おてほんを みる ▶</button>';
+  bubble.classList.remove('hidden');
+
+  document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
+    e.preventDefault();
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
     _tutorialActive = false;
     localStorage.setItem('writing_tut_seen', '1');
-    // チュートリアル終了後にお手本を開始
+    // お手本再生 → スタート
     if (writer) {
-      withAudio(function(ac) {
-        var now = ac.currentTime;
-        var osc = ac.createOscillator(), g = ac.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523, now);
-        osc.frequency.setValueAtTime(659, now + 0.15);
-        osc.frequency.setValueAtTime(784, now + 0.3);
-        g.gain.setValueAtTime(0.12, now);
-        g.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-        osc.connect(g); g.connect(ac.destination);
-        osc.start(now); osc.stop(now + 0.45);
-      });
       _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
       _ponoBubble.textContent = 'このじゅんばんで かくよ！';
       writer.animateCharacter({
         onComplete: function() {
-          // お手本終了後に「なぞってみよう」を表示
+          _hedgeBubble.textContent = 'かいてみよう！';
+          _ponoBubble.textContent = 'かいてみよう！';
+          writer.hideCharacter();
           dim.classList.remove('hidden');
           bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-          bubble.innerHTML = 'おてほんと おなじように<br>じゅんばんどおり ゆびで<br>なぞってみよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
+          bubble.innerHTML = '<div style="font-size:1.5rem;font-weight:900;color:#F2915A;">✏️ スタート！</div>';
           bubble.classList.remove('hidden');
-          document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
-            e.preventDefault();
-            writer.hideCharacter();
-            // 「スタート！」モーダルを中央に表示
-            bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-            bubble.innerHTML = '<div style="font-size:1.5rem;font-weight:900;color:#F2915A;">✏️ スタート！</div>';
-            setTimeout(function() {
-              dim.classList.add('hidden');
-              bubble.classList.add('hidden');
-              startQuiz();
-            }, 1200);
-          });
+          setTimeout(function() {
+            dim.classList.add('hidden');
+            bubble.classList.add('hidden');
+            startQuiz();
+          }, 1000);
         }
       });
     }
-  }
-  steps[0]();
+  });
 }
 
 // ===== Menu =====
