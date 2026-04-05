@@ -405,6 +405,7 @@ function trySnap(piece) {
   if (Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY) < SNAP_DIST) {
     piece.x = piece.homeX; piece.y = piece.homeY;
     piece.snapped = true;
+    piece.zOrder = -1; // はめ込み済みは常に背後
     rebuildPath(piece);
     snappedCount++;
     updateProgress();
