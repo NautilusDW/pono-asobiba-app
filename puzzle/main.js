@@ -502,10 +502,14 @@ function initPuzzle(img) {
   updateProgress();
   buildPieces();
 
-  puzzleCanvas.addEventListener('pointerdown',  onPointerDown,  { passive: false });
-  puzzleCanvas.addEventListener('pointermove',  onPointerMove,  { passive: false });
-  puzzleCanvas.addEventListener('pointerup',    onPointerUp,    { passive: false });
-  puzzleCanvas.addEventListener('pointercancel', onPointerUp,   { passive: false });
+  puzzleCanvas.addEventListener('pointerdown', function(e) {
+    onPointerDown(e);
+    if (dragPiece) puzzleCanvas.setPointerCapture(e.pointerId);
+  }, { passive: false });
+  puzzleCanvas.addEventListener('pointermove',   onPointerMove,  { passive: false });
+  puzzleCanvas.addEventListener('pointerup',     onPointerUp,    { passive: false });
+  puzzleCanvas.addEventListener('pointercancel', onPointerUp,    { passive: false });
+  puzzleCanvas.addEventListener('lostpointercapture', onPointerUp);
 
   loadingEl.classList.add('hidden');
   shufflePieces();
