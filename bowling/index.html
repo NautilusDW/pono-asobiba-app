@@ -92,7 +92,20 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
 let W, H;
-function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+// 背景(9:16)の実際の描画範囲 → バウンド判定に使用
+let bgLeft = 0, bgTop = 0, bgRight = 0, bgBottom = 0;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  // 9:16背景のcontain描画範囲を計算
+  var bgAspect = 9 / 16;
+  var sc = Math.min(W / 9, H / 16);
+  var dw = 9 * sc, dh = 16 * sc;
+  bgLeft = (W - dw) / 2;
+  bgTop = (H - dh) / 2;
+  bgRight = bgLeft + dw;
+  bgBottom = bgTop + dh;
+}
 resize();
 window.addEventListener('resize', resize);
 
@@ -417,11 +430,19 @@ function resolveCollision(a, b) {
 }
 
 function wallBounce(b) {
-  const wallPad = 8; // keep pins inside visible border
-  if (b.x - b.r < wallPad) { b.x = wallPad + b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.x + b.r > W - wallPad) { b.x = W - wallPad - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
-  if (b.y - b.r < HUD_HEIGHT + 4) { b.y = HUD_HEIGHT + 4 + b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
-  if (b.y + b.r > H - wallPad) { b.y = H - wallPad - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
+  const pad = 4;
+  // 左右: 背景の端に合わせる
+  var left = Math.max(bgLeft, 0) + pad;
+  var right = Math.min(bgRight, W) - pad;
+  // 上: HUDか背景上端の大きい方
+  var top = Math.max(bgTop, HUD_HEIGHT) + pad;
+  // 下: 背景下端
+  var bottom = Math.min(bgBottom, H) - pad;
+
+  if (b.x - b.r < left) { b.x = left + b.r; b.vx = Math.abs(b.vx) * WALL_RESTITUTION; }
+  if (b.x + b.r > right) { b.x = right - b.r; b.vx = -Math.abs(b.vx) * WALL_RESTITUTION; }
+  if (b.y - b.r < top) { b.y = top + b.r; b.vy = Math.abs(b.vy) * WALL_RESTITUTION; }
+  if (b.y + b.r > bottom) { b.y = bottom - b.r; b.vy = -Math.abs(b.vy) * WALL_RESTITUTION; }
 }
 
 // ── Game state ──
@@ -1114,14 +1135,18 @@ function drawBg() {
   ctx.shadowColor = 'rgba(255,255,255,0.6)';
   ctx.shadowBlur = 8;
   // Left wall
+  var wl = Math.max(bgLeft, 0) + 2;
+  var wr = Math.min(bgRight, W) - 2;
+  var wt = Math.max(bgTop, HUD_HEIGHT);
+  var wb = Math.min(bgBottom, H);
   ctx.beginPath();
-  ctx.moveTo(2, HUD_HEIGHT);
-  ctx.lineTo(2, H);
+  ctx.moveTo(wl, wt);
+  ctx.lineTo(wl, wb);
   ctx.stroke();
   // Right wall
   ctx.beginPath();
-  ctx.moveTo(W - 2, HUD_HEIGHT);
-  ctx.lineTo(W - 2, H);
+  ctx.moveTo(wr, wt);
+  ctx.lineTo(wr, wb);
   ctx.stroke();
   ctx.restore();
 }
