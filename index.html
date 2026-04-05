@@ -1430,9 +1430,18 @@
 
     // ===== PWA Service Worker =====
     if ('serviceWorker' in navigator) {
+      // SW更新時に自動リロード（ユーザーは何もしなくていい）
+      var _swRefreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (_swRefreshing) return;
+        _swRefreshing = true;
+        window.location.reload();
+      });
       navigator.serviceWorker.register('/sw.js').then(function(reg) {
-        // 強制的に最新のSWをチェック
+        // 起動のたびにSW更新チェック
         reg.update();
+        // 30分ごとにバックグラウンドで更新チェック
+        setInterval(function() { reg.update(); }, 30 * 60 * 1000);
       }).catch(function() {});
     }
 

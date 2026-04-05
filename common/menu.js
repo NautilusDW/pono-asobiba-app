@@ -11,6 +11,21 @@
 (function() {
   'use strict';
 
+  // ── PWA SW更新チェック（全ページ共通）──
+  // SW更新時に自動リロードし、ユーザーが古いコードを使い続けないようにする
+  if ('serviceWorker' in navigator) {
+    var _swRefreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (_swRefreshing) return;
+      _swRefreshing = true;
+      window.location.reload();
+    });
+    // ゲームページ起動時にSW更新チェック
+    navigator.serviceWorker.ready.then(function(reg) {
+      reg.update();
+    });
+  }
+
   const style = document.createElement('style');
   style.textContent = `
     .pono-menu-toggle {
