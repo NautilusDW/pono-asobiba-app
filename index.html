@@ -1547,26 +1547,41 @@
         var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
         var filled = getFilledInCard(total);
         var cardNum = getCardNum(total);
-        // filled == total's position within card (1-based: 1..15)
-        // But if card just completed, filled = 15, cardNum = previous card
         var isCardComplete = (total > 0 && total % SLOTS_PER_CARD === 0);
         var completedCardNum = isCardComplete ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : 0;
 
-        // Check slot-level rewards (slot 5, 10)
-        var slotRw = getSlotRewardInfo(filled);
-        var slotKey = 'slot_' + total;
-        if (slotRw && slotRw.type !== 'special' && slotRw.id && given.indexOf(slotKey) === -1) {
-          if (window.grantReward) {
-            window.grantReward({ type: slotRw.type, id: slotRw.id });
+        // Check ALL slot-level rewards up to current position (catch skipped ones)
+        var pendingRewards = [];
+        for (var s = 1; s <= filled; s++) {
+          var rw = getSlotRewardInfo(s);
+          if (!rw || rw.type === 'special' || !rw.id) continue;
+          // slotKeyはカード番号+スロット番号で一意に
+          var sk = 'card' + cardNum + '_slot' + s;
+          if (given.indexOf(sk) === -1) {
+            pendingRewards.push({ rw: rw, key: sk });
           }
-          given.push(slotKey);
-          setJSON(LS_STAMP_REWARDS_GIVEN, given);
-          // おうちアンロックは宝箱を待たず即時実行
-          if (slotRw.unlockRoom) {
+        }
+
+        // 順番に報酬を付与（最初の1個だけ宝箱演出、残りはサイレント）
+        var firstReward = pendingRewards.length > 0 ? pendingRewards[0] : null;
+        for (var i = 0; i < pendingRewards.length; i++) {
+          var pr = pendingRewards[i];
+          if (window.grantReward) {
+            window.grantReward({ type: pr.rw.type, id: pr.rw.id });
+          }
+          given.push(pr.key);
+          if (pr.rw.unlockRoom) {
             localStorage.setItem('pono_room_card_open', '1');
             var rc = document.getElementById('card-room');
             if (rc) { rc.classList.remove('locked'); rc.style.pointerEvents = ''; }
           }
+        }
+        if (pendingRewards.length > 0) setJSON(LS_STAMP_REWARDS_GIVEN, given);
+
+        // 宝箱演出は最初の未取得報酬だけ表示
+        var slotRw = firstReward ? firstReward.rw : null;
+        var slotKey = firstReward ? firstReward.key : null;
+        if (slotRw) {
           (function(rw) {
             setTimeout(function() {
               if (window.showTreasure) {
@@ -1907,6 +1922,20 @@
           modal.appendChild(rowDiv);
         }
 
+        // ボタン行: 履歴 + 閉じる
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:4px;';
+
+        var histBtn = document.createElement('button');
+        histBtn.className = 'stamp-full-modal-close';
+        histBtn.style.cssText += 'background:#E0F2FE;color:#0EA5E9;';
+        histBtn.textContent = '📋 りれき';
+        histBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          showRewardHistory();
+        });
+        btnRow.appendChild(histBtn);
+
         var closeBtn = document.createElement('button');
         closeBtn.className = 'stamp-full-modal-close';
         closeBtn.textContent = 'とじる';
@@ -1914,7 +1943,8 @@
           e.stopPropagation();
           overlay.remove();
         });
-        modal.appendChild(closeBtn);
+        btnRow.appendChild(closeBtn);
+        modal.appendChild(btnRow);
 
         // Prevent clicks on modal from closing
         modal.addEventListener('click', function(e) { e.stopPropagation(); });
@@ -1922,6 +1952,82 @@
         overlay.appendChild(modal);
         overlay.addEventListener('click', function() { overlay.remove(); });
         document.body.appendChild(overlay);
+      }
+
+      // ── Reward History Modal ──
+      function showRewardHistory() {
+        var old = document.querySelector('.reward-history-ov');
+        if (old) old.remove();
+
+        var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
+        // 全報酬定義からもらったものを収集
+        var items = [];
+        for (var slot in CARD_SLOT_REWARDS) {
+          var rw = CARD_SLOT_REWARDS[slot];
+          if (!rw || rw.type === 'special') continue;
+          // givenの中にこのスロットのキーがあるか
+          var found = false;
+          for (var g = 0; g < given.length; g++) {
+            if (given[g].indexOf('_slot' + slot) !== -1) { found = true; break; }
+          }
+          if (found) items.push(rw);
+        }
+        // カード完成報酬
+        for (var g = 0; g < given.length; g++) {
+          if (given[g].indexOf('card_') === 0) {
+            var cn = parseInt(given[g].replace('card_', ''));
+            var cr = getCompleteReward(cn);
+            if (cr) items.push(cr);
+          }
+        }
+
+        var ov = document.createElement('div');
+        ov.className = 'reward-history-ov';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:20px;max-width:320px;width:90%;max-height:70vh;overflow-y:auto;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+        var title = document.createElement('div');
+        title.style.cssText = 'font-size:1.05rem;font-weight:900;color:#5D4E37;margin-bottom:12px;';
+        title.textContent = '📋 もらった ごほうび';
+        box.appendChild(title);
+
+        if (items.length === 0) {
+          var empty = document.createElement('div');
+          empty.style.cssText = 'font-size:0.85rem;color:#999;padding:20px 0;';
+          empty.textContent = 'まだ ごほうびは ないよ\nスタンプを あつめよう！';
+          empty.style.whiteSpace = 'pre-line';
+          box.appendChild(empty);
+        } else {
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(0,0,0,0.06);';
+            var imgHtml = '';
+            if (it.img) {
+              imgHtml = '<img src="' + it.img + '" style="width:40px;height:40px;object-fit:contain;">';
+            } else {
+              imgHtml = '<span style="font-size:1.5rem;">' + (it.icon || '🎁') + '</span>';
+            }
+            row.innerHTML = '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + imgHtml + '</div>' +
+              '<div style="text-align:left;font-size:0.85rem;font-weight:700;color:#5D4E37;">' + it.name + '</div>';
+            box.appendChild(row);
+          }
+        }
+
+        var closeBtn = document.createElement('button');
+        closeBtn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
+        closeBtn.textContent = 'とじる';
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          ov.remove();
+        });
+        box.appendChild(closeBtn);
+
+        ov.appendChild(box);
+        ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+        document.body.appendChild(ov);
       }
 
       // ── Stamp animation ──
