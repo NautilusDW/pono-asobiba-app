@@ -1066,9 +1066,16 @@ function showOverlay(type) {
 
   if (type === 'start') {
     icon.innerHTML    = ponoFaceTag;
-    title.textContent = 'おかあさん どこいったの？';
-    msg.textContent   = LEVELS[stageIdx].storyMsg;
-    btn.textContent   = 'さがしにいく ▶';
+    if (!localStorage.getItem('slide_tut_seen')) {
+      // 初回: ゲーム説明
+      title.textContent = 'みちつなぎ';
+      msg.textContent   = 'パネルを うごかして\nみちを つなげよう！\nまずは れんしゅうから！';
+      btn.textContent   = 'やってみる ▶';
+    } else {
+      title.textContent = 'おかあさん どこいったの？';
+      msg.textContent   = LEVELS[stageIdx].storyMsg;
+      btn.textContent   = 'さがしにいく ▶';
+    }
   } else if (type === 'stagestart') {
     icon.innerHTML    = ponoFaceTag;
     title.textContent = 'ステージ ' + (stageIdx + 1);
