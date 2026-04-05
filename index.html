@@ -1960,6 +1960,16 @@
         });
         btnRow.appendChild(histBtn);
 
+        var achBtn = document.createElement('button');
+        achBtn.className = 'stamp-full-modal-close';
+        achBtn.style.cssText += 'background:#FEF3C7;color:#D97706;';
+        achBtn.textContent = '🏆 じっせき';
+        achBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          showAchievementList();
+        });
+        btnRow.appendChild(achBtn);
+
         var closeBtn = document.createElement('button');
         closeBtn.className = 'stamp-full-modal-close';
         closeBtn.textContent = 'とじる';
@@ -2042,6 +2052,95 @@
 
         var closeBtn = document.createElement('button');
         closeBtn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
+        closeBtn.textContent = 'とじる';
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          ov.remove();
+        });
+        box.appendChild(closeBtn);
+
+        ov.appendChild(box);
+        ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+        document.body.appendChild(ov);
+      }
+
+      // ── Achievement List Modal ──
+      function showAchievementList() {
+        var old = document.querySelector('.ach-list-ov');
+        if (old) old.remove();
+
+        var allAch = window.getAchievements ? window.getAchievements() : [];
+        var unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
+        var stats = JSON.parse(localStorage.getItem('pono_stats') || '{}');
+
+        var ov = document.createElement('div');
+        ov.className = 'ach-list-ov';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:16px;max-width:340px;width:92%;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+        // タイトル + カウント
+        var doneCount = Object.keys(unlocked).length;
+        var titleDiv = document.createElement('div');
+        titleDiv.style.cssText = 'text-align:center;margin-bottom:12px;';
+        titleDiv.innerHTML = '<div style="font-size:1.05rem;font-weight:900;color:#5D4E37;">🏆 じっせき</div>' +
+          '<div style="font-size:0.8rem;font-weight:700;color:#D97706;margin-top:2px;">' + doneCount + ' / ' + allAch.length + ' かいほう</div>';
+        box.appendChild(titleDiv);
+
+        // tier別ラベル
+        var tierLabels = { 1: 'はじめて', 2: 'がんばった', 3: 'マスター' };
+        var tierColors = { 1: '#4CAF50', 2: '#2196F3', 3: '#FF9800' };
+        var currentTier = 0;
+
+        for (var i = 0; i < allAch.length; i++) {
+          var ach = allAch[i];
+          var done = !!unlocked[ach.id];
+          var statVal = stats[ach.stat] || 0;
+
+          // tierヘッダー
+          if (ach.tier !== currentTier) {
+            currentTier = ach.tier;
+            var header = document.createElement('div');
+            header.style.cssText = 'font-size:0.75rem;font-weight:900;color:' + tierColors[currentTier] + ';padding:8px 4px 4px;border-bottom:2px solid ' + tierColors[currentTier] + ';margin-bottom:4px;';
+            header.textContent = tierLabels[currentTier] || '';
+            box.appendChild(header);
+          }
+
+          var row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid rgba(0,0,0,0.05);' + (done ? '' : 'opacity:0.5;');
+
+          // アイコン
+          var iconDiv = document.createElement('div');
+          iconDiv.style.cssText = 'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;' +
+            (done ? 'background:#E8F5E9;' : 'background:rgba(0,0,0,0.08);');
+          iconDiv.textContent = done ? '✅' : '🔒';
+          row.appendChild(iconDiv);
+
+          // テキスト
+          var textDiv = document.createElement('div');
+          textDiv.style.cssText = 'flex:1;min-width:0;';
+          textDiv.innerHTML = '<div style="font-size:0.8rem;font-weight:900;color:#5D4E37;">' + ach.name + '</div>' +
+            '<div style="font-size:0.65rem;color:#A89880;font-weight:700;">' + ach.desc + '</div>';
+          row.appendChild(textDiv);
+
+          // 進捗
+          var progDiv = document.createElement('div');
+          progDiv.style.cssText = 'flex-shrink:0;text-align:right;';
+          if (done) {
+            progDiv.innerHTML = '<span style="font-size:0.7rem;font-weight:900;color:#4CAF50;">かんせい！</span>';
+          } else {
+            var pct = Math.min(100, Math.floor((statVal / ach.target) * 100));
+            progDiv.innerHTML = '<div style="font-size:0.65rem;font-weight:700;color:#A89880;">' + statVal + '/' + ach.target + '</div>' +
+              '<div style="width:40px;height:5px;background:rgba(0,0,0,0.1);border-radius:3px;margin-top:2px;"><div style="width:' + pct + '%;height:100%;background:' + tierColors[currentTier] + ';border-radius:3px;"></div></div>';
+          }
+          row.appendChild(progDiv);
+          box.appendChild(row);
+        }
+
+        // 閉じるボタン
+        var closeBtn = document.createElement('button');
+        closeBtn.style.cssText = 'display:block;margin:12px auto 0;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
         closeBtn.textContent = 'とじる';
         closeBtn.addEventListener('click', function(e) {
           e.stopPropagation();
