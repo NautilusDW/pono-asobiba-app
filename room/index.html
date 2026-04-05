@@ -878,9 +878,10 @@
     }
     .tut-btn:active { transform:scale(0.95); }
     .tut-highlight {
-      position:relative;z-index:9996;
-      box-shadow:0 0 0 4000px rgba(93,78,55,0.6);
+      z-index:9996 !important;
+      box-shadow:0 0 0 4000px rgba(93,78,55,0.6) !important;
       border-radius:12px;
+      pointer-events:none;
     }
   </style>
 <script src="../common/achievements.js"></script>
@@ -3166,35 +3167,67 @@ window.addEventListener('orientationchange', () => {
 window.addEventListener('resize', updatePortraitNotice);
 
 // ─── Room Tutorial ──────────────────────────────────────
+function _waitForLandscape(cb) {
+  // 既に横画面なら即実行
+  if (window.innerWidth > window.innerHeight) { cb(); return; }
+  // 横になるまで待つ
+  function check() {
+    if (window.innerWidth > window.innerHeight) {
+      window.removeEventListener('resize', check);
+      setTimeout(cb, 400); // レイアウト安定を待つ
+    }
+  }
+  window.addEventListener('resize', check);
+}
+
 function showRoomTutorial() {
+  _waitForLandscape(function() { _runRoomTutorial(); });
+}
+
+function _runRoomTutorial() {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   var step = 0;
+  var _spotlight = null; // fixed position spotlight clone
 
   var STEPS = [
     {
-      text: 'ここは ポノの おへやだよ！<br>すきに アレンジできるよ',
-      pos: function() { return { top: '40%', left: '50%', transform: 'translate(-50%,-50%)' }; },
+      text: 'ここは わたしの おへやだよ！<br>すきに アレンジできるよ',
     },
     {
       text: 'これは 「たからばこ」！<br>タップすると<br>もちものが みれるよ',
       target: function() { return document.querySelector('.toybox-item'); },
-      pos: function(r) { return { bottom: (window.innerHeight - r.top + 10) + 'px', left: Math.max(10, r.left - 20) + 'px' }; },
     },
     {
       text: '「もようがえ」ボタンで<br>かぐや かざりを<br>すきな ばしょに うごかせるよ',
       target: function() { return document.getElementById('ui-btn-edit'); },
-      pos: function(r) { return { bottom: (window.innerHeight - r.top + 10) + 'px', left: Math.max(10, r.left - 40) + 'px' }; },
     },
     {
       text: 'かべがみ、ゆか、かぐ、かざり…<br>あそんで あつめて<br>じぶんだけの おへやを つくろう！',
-      pos: function() { return { top: '40%', left: '50%', transform: 'translate(-50%,-50%)' }; },
     },
   ];
 
+  function clearSpotlight() {
+    if (_spotlight) { _spotlight.remove(); _spotlight = null; }
+  }
+
+  function makeSpotlight(el) {
+    // ターゲット位置にfixed配置のスポットライト枠を作る
+    clearSpotlight();
+    var r = el.getBoundingClientRect();
+    var pad = 6;
+    _spotlight = document.createElement('div');
+    _spotlight.style.cssText =
+      'position:fixed;z-index:9996;pointer-events:none;border-radius:12px;' +
+      'box-shadow:0 0 0 4000px rgba(93,78,55,0.65);' +
+      'top:' + (r.top - pad) + 'px;left:' + (r.left - pad) + 'px;' +
+      'width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px;';
+    document.body.appendChild(_spotlight);
+    return r;
+  }
+
   function showStep() {
-    // reset highlights
-    document.querySelectorAll('.tut-highlight').forEach(function(e) { e.classList.remove('tut-highlight'); });
+    clearSpotlight();
     if (step >= STEPS.length) {
       dim.classList.add('hidden');
       bubble.classList.add('hidden');
@@ -3202,23 +3235,37 @@ function showRoomTutorial() {
       return;
     }
     var s = STEPS[step];
-    dim.classList.remove('hidden');
     bubble.classList.remove('hidden');
     bubble.innerHTML = s.text + '<br><button class="tut-btn" id="tut-next">' + (step < STEPS.length - 1 ? 'つぎへ ▶' : 'わかった！') + '</button>';
 
-    // position
-    bubble.style.cssText = 'position:fixed;z-index:9997;';
     if (s.target) {
+      dim.classList.add('hidden');
       var el = s.target();
       if (el) {
-        el.classList.add('tut-highlight');
-        var r = el.getBoundingClientRect();
-        var posObj = s.pos(r);
-        for (var k in posObj) bubble.style[k] = posObj[k];
+        var r = makeSpotlight(el);
+        // バブルをターゲットの上に配置
+        bubble.style.cssText = 'position:fixed;z-index:9997;';
+        bubble.style.bottom = (window.innerHeight - r.top + 14) + 'px';
+        bubble.style.left = (r.left + r.width / 2) + 'px';
+        bubble.style.transform = 'translateX(-50%)';
+        // 画面外補正
+        requestAnimationFrame(function() {
+          var br = bubble.getBoundingClientRect();
+          if (br.left < 8) { bubble.style.left = '8px'; bubble.style.transform = ''; }
+          if (br.right > window.innerWidth - 8) {
+            bubble.style.left = ''; bubble.style.right = '8px'; bubble.style.transform = '';
+          }
+          // 上に収まらないなら下に
+          if (br.top < 8) {
+            bubble.style.bottom = '';
+            bubble.style.top = (r.bottom + 14) + 'px';
+          }
+        });
       }
     } else {
-      var posObj = s.pos();
-      for (var k in posObj) bubble.style[k] = posObj[k];
+      dim.classList.remove('hidden');
+      clearSpotlight();
+      bubble.style.cssText = 'position:fixed;z-index:9997;top:40%;left:50%;transform:translate(-50%,-50%);';
     }
 
     document.getElementById('tut-next').addEventListener('click', function() {
@@ -3243,9 +3290,9 @@ function init() {
   // テーマはloadStateでpono_profile.genderから自動設定済み → 直接おへやへ
   enterRoom();
 
-  // 初回チュートリアル
+  // 初回チュートリアル（横画面になってから表示）
   if (!localStorage.getItem('room_tut_seen')) {
-    setTimeout(showRoomTutorial, 600);
+    showRoomTutorial();
   }
 
   // Entry overlay buttons
