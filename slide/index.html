@@ -631,33 +631,53 @@ function traceWinPath() {
 }
 
 // ===== Drawing =====
-const GRASS_COLOR = '#7EC850';
-const GRASS_DARK  = '#5DA83A';
-const DIRT_COLOR  = '#C8956B';
-const DIRT_BORDER = '#8B6B42';
-const DIRT_LIGHT  = '#DEB887';
-const EMPTY_COLOR = '#3D5A2E';
+// テーマ: 森 / 洞窟 / 夜空
+const THEMES = {
+  forest: {
+    tile: '#8AD460', tileBlank: '#7EC850', tileBorder: '#5DA83A',
+    path: '#C8956B', pathBorder: '#8B6B42', pathLight: '#DEB887',
+    empty: '#3D5A2E', blanks: ['🌼', '🍀', '🌿', '🍄'],
+  },
+  cave: {
+    tile: '#6B7B8D', tileBlank: '#5A6A7A', tileBorder: '#3E4E5E',
+    path: '#9E8E78', pathBorder: '#6E5E4A', pathLight: '#BEB0A0',
+    empty: '#2E3E4E', blanks: ['🍄', '💎', '🪨', '✨'],
+  },
+  night: {
+    tile: '#5C7A5C', tileBlank: '#4A6A4A', tileBorder: '#3A5A3A',
+    path: '#B8A888', pathBorder: '#7A6A4A', pathLight: '#D8C8A8',
+    empty: '#2A3A2A', blanks: ['🌙', '⭐', '🌿', '🔔'],
+  },
+};
+function getTheme() {
+  // stageIdx+1 = STAGE_BGS index (0=tutorial)
+  var bgIdx = stageIdx + 1;
+  if (bgIdx >= 4 && bgIdx <= 6) return THEMES.cave;
+  if (bgIdx >= 7) return THEMES.night;
+  return THEMES.forest;
+}
+// Legacy constants (for code that still references them)
+var GRASS_COLOR, GRASS_DARK, DIRT_COLOR, DIRT_BORDER, DIRT_LIGHT, EMPTY_COLOR;
 
 function drawTile(x, y, size, tileKey, isAnimating) {
+  const th = getTheme();
   const r = size * 0.1;
   const gap = 3;
 
   // Tile background
   ctx.beginPath();
   ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
-  ctx.fillStyle = tileKey === 'BLANK' ? GRASS_COLOR : '#8AD460';
+  ctx.fillStyle = tileKey === 'BLANK' ? th.tileBlank : th.tile;
   ctx.fill();
-  ctx.strokeStyle = GRASS_DARK;
+  ctx.strokeStyle = th.tileBorder;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   if (tileKey === 'BLANK') {
-    // Draw small decorations on blank tiles
     const seed = (x * 7 + y * 13) | 0;
-    const flowers = ['🌼', '🍀', '🌿', '🍄'];
     ctx.font = `${Math.floor(size * 0.2)}px serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(flowers[((seed >> 3) & 3)], x + size / 2, y + size / 2);
+    ctx.fillText(th.blanks[((seed >> 3) & 3)], x + size / 2, y + size / 2);
     return;
   }
 
@@ -667,9 +687,8 @@ function drawTile(x, y, size, tileKey, isAnimating) {
   const cy = y + size / 2;
   const pathW = size * 0.30;
 
-  // Draw border first, then fill
   for (let pass = 0; pass < 2; pass++) {
-    ctx.strokeStyle = pass === 0 ? DIRT_BORDER : DIRT_COLOR;
+    ctx.strokeStyle = pass === 0 ? th.pathBorder : th.path;
     ctx.lineWidth = pass === 0 ? pathW + 4 : pathW;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -678,26 +697,22 @@ function drawTile(x, y, size, tileKey, isAnimating) {
     for (let e = 0; e < 4; e++) if (edges[e]) openEdges.push(e);
 
     if (openEdges.length === 2) {
-      // Straight or turn
       const [a, b] = openEdges;
       const pa = edgePoint(x, y, size, a);
       const pb = edgePoint(x, y, size, b);
 
       if (Math.abs(a - b) === 2) {
-        // Straight line
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
         ctx.lineTo(pb.x, pb.y);
         ctx.stroke();
       } else {
-        // Curve
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
         ctx.quadraticCurveTo(cx, cy, pb.x, pb.y);
         ctx.stroke();
       }
     } else {
-      // T-junction or cross — draw lines from center to each open edge
       for (const e of openEdges) {
         const p = edgePoint(x, y, size, e);
         ctx.beginPath();
@@ -709,7 +724,7 @@ function drawTile(x, y, size, tileKey, isAnimating) {
   }
 
   // Light highlight on path center
-  ctx.fillStyle = DIRT_LIGHT;
+  ctx.fillStyle = th.pathLight;
   ctx.globalAlpha = 0.3;
   ctx.beginPath();
   ctx.arc(cx, cy, pathW * 0.2, 0, Math.PI * 2);
@@ -822,15 +837,18 @@ function draw(now) {
     ctx.fillRect(0, 0, CW, CH);
   }
 
-  // Grid background (wooden frame)
+  // Grid background (frame — wood for forest, stone for cave)
+  var _th = getTheme();
+  var _isCave = (_th === THEMES.cave);
+  var _isNight = (_th === THEMES.night);
   const frameP = 6;
-  ctx.fillStyle = '#6D4C2A';
+  ctx.fillStyle = _isCave ? '#4A5568' : _isNight ? '#4A5A3A' : '#6D4C2A';
   ctx.beginPath();
   ctx.roundRect(gridOX - frameP, gridOY - frameP,
     cellSize * curCols + frameP * 2, cellSize * curRows + frameP * 2, 12);
   ctx.fill();
 
-  ctx.fillStyle = '#8B6B42';
+  ctx.fillStyle = _isCave ? '#5A6A7A' : _isNight ? '#5A6A4A' : '#8B6B42';
   ctx.beginPath();
   ctx.roundRect(gridOX - frameP + 2, gridOY - frameP + 2,
     cellSize * curCols + frameP * 2 - 4, cellSize * curRows + frameP * 2 - 4, 10);
@@ -839,7 +857,7 @@ function draw(now) {
   // Empty space
   const eRow = Math.floor(emptyIdx / curCols), eCol = emptyIdx % curCols;
   const ex = gridOX + eCol * cellSize, ey = gridOY + eRow * cellSize;
-  ctx.fillStyle = EMPTY_COLOR;
+  ctx.fillStyle = getTheme().empty;
   ctx.fillRect(ex + 2, ey + 2, cellSize - 4, cellSize - 4);
 
   // Draw tiles
