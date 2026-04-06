@@ -1006,15 +1006,17 @@ function loadImports() {
       if (ITEMS.find(function(it) { return it.id === imp.id; })) return;
       imp._imported = true;
       ITEMS.push(imp);
-      // adjustmentsがなければ初期化
-      if (!adjustments[adjKey(imp.id, 'A')]) {
-        adjustments[adjKey(imp.id, 'A')] = {
+      // adjustmentsがなければ初期化（既にlocalStorageから復元済みなら上書きしない）
+      var aKey = imp.id + '_A';
+      if (!adjustments[aKey]) {
+        adjustments[aKey] = {
           cellSize: imp.cellSize || 1.0, pivotX: imp.pivotX || 0, pivotY: imp.pivotY || 0,
           minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, row: 4, col: 4, surfaceY: 0
         };
       }
-      if (imp.roomImgB && !adjustments[adjKey(imp.id, 'B')]) {
-        adjustments[adjKey(imp.id, 'B')] = Object.assign({}, adjustments[adjKey(imp.id, 'A')]);
+      var bKey = imp.id + '_B';
+      if (imp.roomImgB && !adjustments[bKey]) {
+        adjustments[bKey] = Object.assign({}, adjustments[aKey]);
       }
       // アイテムリストにボタン追加
       var btn = document.createElement('div');
