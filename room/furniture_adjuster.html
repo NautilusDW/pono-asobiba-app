@@ -1019,18 +1019,32 @@ function handleImportFiles(files) {
         var cleanName = rawName.replace(/[^a-zA-Z0-9_\-]/g, '_');
         var itemId = 'import_' + _importCounter + '_' + cleanName;
 
-        // Detect if this is a B-angle image (filename contains _B or _b)
+        // Detect if this is a B-angle image:
+        // 1. ファイル名に _B が含まれる
+        // 2. 既に選択中のインポートアイテムにA画像があり、2枚目のドロップ
         var isB = /_[Bb]$/.test(rawName) || /_[Bb]_/.test(rawName);
+        if (!isB && selectedId) {
+          var existItem = ITEMS.find(function(it) { return it.id === selectedId; });
+          if (existItem && existItem._imported && existItem.roomImg && !existItem.roomImgB) {
+            // A画像があってB画像がないインポートアイテムに2枚目 → Bとして扱う
+            isB = true;
+          }
+        }
 
-        if (isB && selectedId && selectedId.startsWith('import_')) {
+        if (isB && selectedId) {
           // Add as B angle to current selected item
           var item = ITEMS.find(function(it) { return it.id === selectedId; });
           if (item) {
             item.roomImgB = dataUrl;
             _importedDataB = dataUrl.split(',')[1];
             document.getElementById('btn-save-import-b').disabled = false;
-            // Add B adjustment
-            adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')]);
+            // Add B adjustment if missing
+            if (!adjustments[adjKey(item.id, 'B')]) {
+              adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
+                cellSize: 1.0, pivotX: 0, pivotY: 0,
+                minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+              });
+            }
             // Update AB toggle visibility
             var abToggle = document.getElementById('ab-toggle');
             if (abToggle) abToggle.style.display = '';
