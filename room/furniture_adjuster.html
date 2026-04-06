@@ -298,7 +298,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   </div>
 </div>
 
-<script src="items.js"></script>
+<script>document.write('<script src="items.js?v=' + Date.now() + '"><\/script>');</script>
 <script>
 // ─── ISO_GRID (from room/index.html) ───
 const ISO_GRID = {
@@ -1711,10 +1711,9 @@ var NAME_DICT = {
 
 // ファイル名 → { id, name, cat, theme } を自動推定
 function autoNameFromFile(filename) {
-  // 拡張子・A/Bサフィックス・番号を除去してベース名取得
+  // 拡張子を除去、A/Bサフィックスのみ除去（末尾数字は維持）
   var base = filename.replace(/\.[^.]+$/, '')
-    .replace(/[_\-]?[ABab](?:_?\d+)?$/, '')
-    .replace(/[_\-]?\d+$/, '');
+    .replace(/[_\-]?[ABab](?:[_\-]?\d+)?$/, ''); // _A, _A_01, _B_02 等
   var parts = base.toLowerCase().replace(/[^a-z0-9]+/g, '_').split('_').filter(Boolean);
 
   // テーマ推定
@@ -1778,12 +1777,13 @@ function handleImportFiles(files) {
     if (files[fi].type.startsWith('image/')) fileArr.push(files[fi]);
   }
 
-  // ベース名抽出（_A, _B サフィックス除去）
+  // ベース名抽出（_A, _B サフィックス除去、小文字化）
   function getBaseName(fname) {
     return fname.replace(/\.[^.]+$/, '')                    // 拡張子除去
       .replace(/[_\-]?[Bb](?:[_\-]?\d+)?$/, '')            // _B, _B_01 除去
       .replace(/[_\-]?[Aa](?:[_\-]?\d+)?$/, '')            // _A, _A_01 除去
-      .replace(/[^a-zA-Z0-9_\-]/g, '_');
+      .toLowerCase()
+      .replace(/[^a-z0-9_\-]/g, '_');
   }
   function isAngleB(fname) {
     var n = fname.replace(/\.[^.]+$/, '');
@@ -1800,13 +1800,6 @@ function handleImportFiles(files) {
   });
 
   var groupKeys = Object.keys(groups);
-  // 1ファイルだけ & B判定で既存アイテムに追加するケース
-  if (groupKeys.length === 1 && !groups[groupKeys[0]].a && groups[groupKeys[0]].b && selectedId) {
-    var existItem = ITEMS.find(function(it) { return it.id === selectedId; });
-    if (existItem && existItem._imported && existItem.roomImg && !existItem.roomImgB) {
-      groups[groupKeys[0]].a = null; // Bのみ → 既存に追加
-    }
-  }
 
   var warnEl = document.getElementById('import-id-warn');
   var addedCount = 0;
@@ -1815,32 +1808,37 @@ function handleImportFiles(files) {
   groupKeys.forEach(function(base) {
     var g = groups[base];
 
-    // B画像のみ → 選択中アイテムに追加
-    if (!g.a && g.b && selectedId) {
-      (function(bFile) {
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          var item = ITEMS.find(function(it) { return it.id === selectedId; });
-          if (!item) return;
-          item.roomImgB = ev.target.result;
-          _importedDataB = ev.target.result.split(',')[1];
-          document.getElementById('btn-save-import-b').disabled = false;
-          if (!adjustments[adjKey(item.id, 'B')]) {
-            adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
-              cellSize: 1.0, pivotX: 0, pivotY: 0,
-              minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
-            });
-          }
-          var abToggle = document.getElementById('ab-toggle');
-          if (abToggle) abToggle.style.display = '';
-          var status = document.getElementById('import-save-status');
-          status.textContent = '✅ B角度画像を追加';
-          status.style.color = '#2196F3';
-          saveImports();
-        };
-        reader.readAsDataURL(bFile);
-      })(g.b);
-      return;
+    // B画像のみ → 選択中アイテムに追加（selectedId or _lastImportedId）
+    if (!g.a && g.b) {
+      var targetId = selectedId || _lastImportedId;
+      if (targetId) {
+        (function(bFile) {
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            var item = ITEMS.find(function(it) { return it.id === targetId; });
+            if (!item) return;
+            item.roomImgB = ev.target.result;
+            _importedDataB = ev.target.result.split(',')[1];
+            document.getElementById('btn-save-import-b').disabled = false;
+            if (!adjustments[adjKey(item.id, 'B')]) {
+              adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
+                cellSize: 1.0, pivotX: 0, pivotY: 0,
+                minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+              });
+            }
+            var abToggle = document.getElementById('ab-toggle');
+            if (abToggle) abToggle.style.display = '';
+            var warnEl2 = document.getElementById('import-id-warn');
+            if (warnEl2) {
+              warnEl2.textContent = '✅ B画像を追加しました: ' + item.name + ' (' + item.id + ')';
+              warnEl2.style.color = '#2196F3';
+            }
+            if (item._imported) saveImports();
+          };
+          reader.readAsDataURL(bFile);
+        })(g.b);
+        return;
+      }
     }
 
     if (!g.a) return; // A画像なし → スキップ
@@ -1866,41 +1864,58 @@ function handleImportFiles(files) {
         var itemCat = manualId ? catSelect.value : auto.cat;
         var itemTheme = manualId ? themeSelect.value : auto.theme;
 
-        // 重複チェック（同じIDが既にあれば番号付加）
-        var origId = itemId;
-        var suffix = 2;
-        while (ITEMS.find(function(it) { return it.id === itemId; })) {
-          itemId = origId + suffix;
-          suffix++;
+        // 重複チェック: 同じIDのインポートアイテムがあれば上書き、items.js由来なら番号付加
+        var existing = ITEMS.find(function(it) { return it.id === itemId; });
+        var newItem;
+        if (existing && existing._imported) {
+          // インポートアイテムの画像差し替え
+          existing.roomImg = evA.target.result;
+          existing.name = itemName;
+          existing.cat = itemCat;
+          existing.theme = itemTheme;
+          newItem = existing;
+          // サムネイル更新
+          var btnImg = document.querySelector('.item-btn[data-id="' + itemId + '"] img');
+          if (btnImg) btnImg.src = evA.target.result;
+        } else {
+          // items.js由来と重複しないよう番号付加
+          var origId = itemId;
+          var suffix = 2;
+          while (ITEMS.find(function(it) { return it.id === itemId; })) {
+            itemId = origId + suffix;
+            suffix++;
+          }
+          newItem = {
+            id: itemId, name: itemName, cat: itemCat, theme: itemTheme,
+            roomImg: evA.target.result, cellSize: 1.0, pivotX: 0, pivotY: 0,
+            _imported: true
+          };
+          ITEMS.push(newItem);
         }
-
-        // New A-angle item
-        var newItem = {
-          id: itemId, name: itemName, cat: itemCat, theme: itemTheme,
-          roomImg: evA.target.result, cellSize: 1.0, pivotX: 0, pivotY: 0,
-          _imported: true
-        };
-        ITEMS.push(newItem);
         _importedDataA = evA.target.result.split(',')[1];
         _importedDataB = null;
 
-        adjustments[adjKey(itemId, 'A')] = {
-          cellSize: 1.0, pivotX: 0, pivotY: 0,
-          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
-          row: 4, col: 4, surfaceY: 0
-        };
+        if (!adjustments[adjKey(itemId, 'A')]) {
+          adjustments[adjKey(itemId, 'A')] = {
+            cellSize: 1.0, pivotX: 0, pivotY: 0,
+            minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+            row: 4, col: 4, surfaceY: 0
+          };
+        }
 
-        // Add to item list
-        var btn = document.createElement('div');
-        btn.className = 'item-btn';
-        btn.dataset.id = itemId;
-        btn.title = itemName + ' (' + itemId + ')';
-        btn.style.borderColor = '#4CAF50';
-        var imgEl = document.createElement('img');
-        imgEl.src = evA.target.result;
-        btn.appendChild(imgEl);
-        btn.onclick = function() { selectItem(itemId); };
-        listEl.appendChild(btn);
+        // アイテムリストにボタン追加（既存アイテムの場合はスキップ）
+        if (!document.querySelector('.item-btn[data-id="' + itemId + '"]')) {
+          var btn = document.createElement('div');
+          btn.className = 'item-btn';
+          btn.dataset.id = itemId;
+          btn.title = itemName + ' (' + itemId + ')';
+          btn.style.borderColor = '#4CAF50';
+          var imgEl = document.createElement('img');
+          imgEl.src = evA.target.result;
+          btn.appendChild(imgEl);
+          btn.onclick = function() { selectItem(itemId); };
+          listEl.appendChild(btn);
+        }
         addedCount++;
 
         // B画像も同時に読み込み
