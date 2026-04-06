@@ -163,7 +163,7 @@ tr:hover { background: #FFFAF0; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ── Upload inline ── */
-.upload-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.upload-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; padding: 6px; border: 2px dashed transparent; border-radius: 8px; transition: all 0.2s; }
 .upload-status { font-size: 0.7rem; margin-top: 2px; }
 .upload-status.ok { color: #4CAF50; }
 .upload-status.err { color: #EF4444; }
@@ -472,6 +472,10 @@ document.getElementById('gh-save-stamp').addEventListener('click', function() {
 
 // ════════════════════════════════════════════════════════════════
 // GitHub Token (settings tab)
+// ── ブラウザのデフォルトドラッグ動作を無効化（ファイルが開かれるのを防止） ──
+document.addEventListener('dragover', function(e) { e.preventDefault(); });
+document.addEventListener('drop', function(e) { e.preventDefault(); });
+
 // ════════════════════════════════════════════════════════════════
 var ghTokenSettings = document.getElementById('gh-token-settings');
 ghTokenSettings.value = getToken();
@@ -938,9 +942,8 @@ function makeImgField(currentPath, key, parentCard) {
   var _base64 = null;
   var _fileName = '';
 
-  fileInput.addEventListener('change', function() {
-    var file = fileInput.files[0];
-    if (!file) return;
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
     _fileName = file.name;
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -952,6 +955,25 @@ function makeImgField(currentPath, key, parentCard) {
       status.className = 'upload-status ok';
     };
     reader.readAsDataURL(file);
+  }
+
+  fileInput.addEventListener('change', function() { handleFile(fileInput.files[0]); });
+
+  // Drag & Drop on the entire upload row
+  uploadRow.addEventListener('dragover', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    uploadRow.style.background = 'rgba(255,215,77,0.15)';
+    uploadRow.style.borderColor = '#ffd700';
+  });
+  uploadRow.addEventListener('dragleave', function() {
+    uploadRow.style.background = '';
+    uploadRow.style.borderColor = '';
+  });
+  uploadRow.addEventListener('drop', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    uploadRow.style.background = '';
+    uploadRow.style.borderColor = '';
+    if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
   });
 
   pushBtn.addEventListener('click', function() {
