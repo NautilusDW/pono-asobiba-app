@@ -72,6 +72,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 .snap-del{background:#555;color:#ccc;border:none;padding:3px 6px;border-radius:4px;cursor:pointer;font-size:11px}
 .snap-del:hover{background:#f44336;color:#fff}
 .snap-empty{color:#555;font-size:12px;text-align:center;padding:8px}
+#surface-furn-select option{background:#222;color:#eee}
 </style>
 </head>
 <body>
@@ -219,6 +220,19 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <button id="btn-surface-preview" style="padding:4px 12px;border:1px solid #ff9800;border-radius:4px;background:#333;color:#ff9800;cursor:pointer;font-size:12px">🧸 プレビューON</button>
       </div>
     </div>
+
+    <div id="deco-on-surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
+      <h3 style="color:#4CAF50">🪑 家具の上でプレビュー</h3>
+      <div style="font-size:11px;color:#888;margin-bottom:4px">家具を選んでデコの乗り具合を確認・調整</div>
+      <select id="surface-furn-select" style="width:100%;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px;margin-bottom:6px"></select>
+      <label><span>surfaceY</span>
+        <input type="range" id="sl-decoSurfY" min="-200" max="0" step="0.5">
+        <input type="number" id="num-decoSurfY" step="0.5">
+      </label>
+      <div style="margin-top:4px">
+        <button id="btn-deco-surface-preview" style="padding:4px 12px;border:1px solid #4CAF50;border-radius:4px;background:#333;color:#4CAF50;cursor:pointer;font-size:12px">🪑 プレビューON</button>
+      </div>
+    </div>
   </div>
 
   <div class="row" style="gap:6px">
@@ -319,6 +333,10 @@ const SURFACE_IDS = new Set([
   'furn_toyshelf2', 'furn_desk2', 'furn_bed_pink', 'furn_desk_pink',
   'furn_chest_pink', 'furn_pcdesk', 'furn_chest_blue', 'deco_table_glass',
 ]);
+
+// デコアイテム判定（家具の上に乗せられるもの）
+function isDecoItem(id) { return id && (id.startsWith('deco_') || id === 'furn_bear_1'); }
+const SURFACE_ITEMS = ITEMS.filter(it => SURFACE_IDS.has(it.id));
 
 // Per-item adjustments (editable state) — separate for A and B angles
 const adjustments = {};
@@ -576,6 +594,16 @@ function selectItem(id) {
   }
   removeSurfacePreview();
 
+  // デコの「家具の上でプレビュー」セクション表示/非表示
+  const decoSurfSec = document.getElementById('deco-on-surface-section');
+  if (isDecoItem(id)) {
+    decoSurfSec.style.display = '';
+    initDecoSurfaceSelect();
+  } else {
+    decoSurfSec.style.display = 'none';
+    removeDecoSurfacePreview();
+  }
+
   placeItem(id);
   drawGrid();
 }
@@ -591,8 +619,8 @@ function updateAngleButtons() {
   b.style.borderColor = currentAngle === 'B' ? '#ffd700' : '#555';
 }
 
-document.getElementById('btn-angle-a').onclick = () => { currentAngle = 'A'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); if (_surfacePreviewOn) updateSurfacePreview(); };
-document.getElementById('btn-angle-b').onclick = () => { currentAngle = 'B'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); if (_surfacePreviewOn) updateSurfacePreview(); };
+document.getElementById('btn-angle-a').onclick = () => { currentAngle = 'A'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); if (_surfacePreviewOn) updateSurfacePreview(); if (_decoSurfOn) { syncDecoSurfSlider(); updateDecoSurfacePreview(); } };
+document.getElementById('btn-angle-b').onclick = () => { currentAngle = 'B'; updateAngleButtons(); if (selectedId) reloadSliders(selectedId); if (_surfacePreviewOn) updateSurfacePreview(); if (_decoSurfOn) { syncDecoSurfSlider(); updateDecoSurfacePreview(); } };
 
 function reloadSliders(id) {
   const adj = adjustments[adjKey(id)];
@@ -755,6 +783,131 @@ document.getElementById('btn-surface-preview').onclick = () => {
   updateSurfacePreview();
 };
 
+// ─── Deco-on-surface preview (reverse direction: select deco → preview on furniture) ───
+let _decoSurfFurnEl = null;  // furniture image shown behind deco
+let _decoSurfOn = false;
+let _decoSurfFurnId = null;  // which surface furniture is selected
+
+function initDecoSurfaceSelect() {
+  const sel = document.getElementById('surface-furn-select');
+  if (sel.children.length > 0) {
+    // Already populated, just sync slider
+    syncDecoSurfSlider();
+    return;
+  }
+  SURFACE_ITEMS.forEach(it => {
+    const opt = document.createElement('option');
+    opt.value = it.id;
+    opt.textContent = it.name;
+    sel.appendChild(opt);
+  });
+  _decoSurfFurnId = SURFACE_ITEMS.length > 0 ? SURFACE_ITEMS[0].id : null;
+  sel.onchange = () => {
+    _decoSurfFurnId = sel.value;
+    syncDecoSurfSlider();
+    if (_decoSurfOn) updateDecoSurfacePreview();
+  };
+  syncDecoSurfSlider();
+}
+
+function syncDecoSurfSlider() {
+  if (!_decoSurfFurnId) return;
+  const furnAdj = adjustments[adjKey(_decoSurfFurnId, currentAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
+  if (!furnAdj) return;
+  const val = furnAdj.surfaceY || 0;
+  document.getElementById('sl-decoSurfY').value = val;
+  document.getElementById('num-decoSurfY').value = val;
+}
+
+function removeDecoSurfacePreview() {
+  if (_decoSurfFurnEl) { _decoSurfFurnEl.remove(); _decoSurfFurnEl = null; }
+  _decoSurfOn = false;
+  const btn = document.getElementById('btn-deco-surface-preview');
+  btn.textContent = '🪑 プレビューON';
+  btn.style.background = '#333';
+}
+
+function updateDecoSurfacePreview() {
+  if (!_decoSurfOn || !_decoSurfFurnEl || !selectedId || !_decoSurfFurnId) return;
+  const adj = adjustments[adjKey(selectedId)];
+  const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
+  if (!furnItem) return;
+  const furnAdj = adjustments[adjKey(_decoSurfFurnId, currentAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
+  if (!furnAdj) return;
+
+  // Place furniture at same cell as deco
+  const cell = getGridCell(adj.row, adj.col);
+  const furnSize = (furnAdj.cellSize || 1) * GRID_CELL_PCT;
+  const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
+  if (!_decoSurfFurnEl.src.endsWith(furnImg.replace('../', '/'))) {
+    _decoSurfFurnEl.src = furnImg;
+  }
+  _decoSurfFurnEl.style.left = cell.leftPct + '%';
+  _decoSurfFurnEl.style.bottom = cell.bottomPct + '%';
+  _decoSurfFurnEl.style.height = furnSize.toFixed(2) + '%';
+  _decoSurfFurnEl.style.width = 'auto';
+  _decoSurfFurnEl.style.transform = `translate(calc(-50% - ${furnAdj.pivotX || 0}%), ${furnAdj.pivotY || 0}%)`;
+  _decoSurfFurnEl.style.zIndex = 50;
+
+  // Update deco position with surfaceY offset applied
+  if (_placedEl) {
+    const surfY = furnAdj.surfaceY || 0;
+    const decoAdj = adjustments[adjKey(selectedId)];
+    const totalPivotY = decoAdj.pivotY + surfY;
+    _placedEl.style.transform = `translate(calc(-50% - ${decoAdj.pivotX}%), ${totalPivotY}%)`;
+    _placedEl.style.zIndex = 150;
+  }
+}
+
+document.getElementById('btn-deco-surface-preview').onclick = () => {
+  if (_decoSurfOn) {
+    removeDecoSurfacePreview();
+    // Reset deco position without surfaceY
+    if (selectedId) updateItemPos(selectedId);
+    return;
+  }
+  if (!_decoSurfFurnId) return;
+  _decoSurfOn = true;
+  const btn = document.getElementById('btn-deco-surface-preview');
+  btn.textContent = '🪑 プレビューOFF';
+  btn.style.background = '#4CAF50';
+
+  const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
+  if (!furnItem) return;
+  const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
+  const el = document.createElement('img');
+  el.src = furnImg;
+  el.style.position = 'absolute';
+  el.style.width = 'auto';
+  el.style.pointerEvents = 'none';
+  el.style.opacity = '0.6';
+  el.style.filter = 'drop-shadow(0 0 4px #4CAF50)';
+  el.style.transformOrigin = 'bottom center';
+  document.getElementById('item-layer').appendChild(el);
+  _decoSurfFurnEl = el;
+  updateDecoSurfacePreview();
+};
+
+// Deco surfaceY slider bindings
+{
+  const sl = document.getElementById('sl-decoSurfY');
+  const num = document.getElementById('num-decoSurfY');
+  let pushed = false;
+  function updateDecoSurfY(val) {
+    if (!_decoSurfFurnId) return;
+    if (!pushed) { pushUndo(); pushed = true; }
+    const key = adjKey(_decoSurfFurnId, currentAngle);
+    if (!adjustments[key]) return;
+    adjustments[key].surfaceY = parseFloat(val);
+    if (_decoSurfOn) updateDecoSurfacePreview();
+    saveToStorage();
+  }
+  sl.onpointerdown = () => { pushed = false; };
+  sl.oninput = () => { num.value = sl.value; updateDecoSurfY(sl.value); };
+  num.onfocus = () => { pushUndo(); };
+  num.oninput = () => { sl.value = num.value; updateDecoSurfY(num.value); };
+}
+
 // ─── Place item on grid ───
 let _placedEl = null;
 
@@ -781,6 +934,9 @@ function placeItem(id) {
     // プレビューを一時退避してからクリア
     if (_surfacePreviewEl && _surfacePreviewEl.parentNode === itemLayer) {
       itemLayer.removeChild(_surfacePreviewEl);
+    }
+    if (_decoSurfFurnEl && _decoSurfFurnEl.parentNode === itemLayer) {
+      itemLayer.removeChild(_decoSurfFurnEl);
     }
     itemLayer.innerHTML = '';
     if (!id || !item) { _placedEl = null; return; }
@@ -826,6 +982,10 @@ function placeItem(id) {
   if (_surfacePreviewOn && _surfacePreviewEl) {
     itemLayer.appendChild(_surfacePreviewEl);
     updateSurfacePreview();
+  }
+  if (_decoSurfOn && _decoSurfFurnEl) {
+    itemLayer.appendChild(_decoSurfFurnEl);
+    updateDecoSurfacePreview();
   }
 }
 
