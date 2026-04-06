@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宝箱テスト</title>
+<title>宝箱テスト（全種類）</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,136 +11,124 @@ body {
   font-family: 'Zen Maru Gothic', sans-serif;
   background: #1a2a4a;
   color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh;
+  padding: 20px;
+}
+h1 { text-align: center; font-size: 1.3rem; color: #FFD700; margin-bottom: 16px; }
+h2 { font-size: 1rem; color: #aaa; margin: 16px 0 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+.btn-grid {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
 }
 .test-btn {
-  padding: 20px 40px; border: none; border-radius: 50px;
-  background: linear-gradient(135deg, #FFD84D, #F5A800);
-  color: #5C3A00; font-family: inherit; font-size: 1.2rem; font-weight: 900;
-  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 14px; border: 2px solid #555; border-radius: 14px;
+  background: #2a3a5a; color: #fff; font-family: inherit;
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  min-width: 90px; transition: all 0.15s;
 }
-
-/* 宝箱オーバーレイ */
-#treasure-overlay {
-  display: none;
-  position: fixed; inset: 0; z-index: 99999;
-  background: rgba(0,0,0,0.7);
-  align-items: center; justify-content: center;
-  flex-direction: column;
+.test-btn:hover { border-color: #FFD700; background: #3a4a6a; }
+.test-btn:active { transform: scale(0.95); }
+.test-btn img {
+  width: 56px; height: 56px; object-fit: contain; border-radius: 8px;
+  background: #fff; border: 1px solid #ddd;
 }
-#treasure-overlay.show { display: flex; }
-
-.treasure-container {
-  position: relative;
-  width: 280px; height: 280px;
-  border-radius: 24px;
-  overflow: hidden;
+.test-btn .icon { font-size: 1.5rem; }
+.test-btn .name { font-size: 0.65rem; color: #ccc; }
+.back-link {
+  display: block; text-align: center; margin-top: 20px;
+  color: #FFD700; font-size: 0.85rem;
 }
-.treasure-container video {
-  width: 100%; height: 100%;
-  object-fit: cover;
-}
-
-/* ゲットしたアイテム（動画の上に重ねる） */
-.treasure-reward {
-  position: absolute;
-  top: 20%; left: 50%;
-  transform: translateX(-50%) scale(0);
-  text-align: center;
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none;
-}
-.treasure-reward.show {
-  transform: translateX(-50%) scale(1);
-}
-.treasure-reward img {
-  width: 80px; height: 80px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(255,215,0,0.5));
-}
-.treasure-reward-name {
-  margin-top: 4px;
-  font-size: 0.9rem; font-weight: 900;
-  color: #fff;
-  background: rgba(0,0,0,0.6);
-  padding: 2px 12px;
-  border-radius: 10px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-}
-
-.treasure-msg {
-  margin-top: 16px;
-  font-size: 1.1rem; font-weight: 900;
-  color: #FFD700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.treasure-msg.show { opacity: 1; }
-
-.treasure-close {
-  margin-top: 16px;
-  padding: 12px 32px; border: none; border-radius: 50px;
-  background: linear-gradient(135deg, #FFD84D, #F5A800);
-  color: #5C3A00; font-family: inherit; font-size: 1rem; font-weight: 900;
-  cursor: pointer;
-  opacity: 0; transition: opacity 0.3s;
-}
-.treasure-close.show { opacity: 1; }
 </style>
 </head>
 <body>
 
-<button class="test-btn" onclick="showTreasure()">宝箱を開く</button>
+<h1>🎁 宝箱テスト（全種類）</h1>
+<div id="rewards-list"></div>
+<a href="index.html" class="back-link">← トップにもどる</a>
 
-<div id="treasure-overlay">
-  <div class="treasure-container">
-    <video id="treasure-video" playsinline>
-      <source src="assets/videos/TreasureBox.mp4" type="video/mp4">
-    </video>
-    <div class="treasure-reward" id="treasure-reward">
-      <img src="assets/images/Bento_parts/hamburg2.png" alt="ごほうび">
-      <div class="treasure-reward-name">ハンバーグ</div>
-    </div>
-  </div>
-  <div class="treasure-msg" id="treasure-msg">🎉 ごほうびを ゲット！</div>
-  <button class="treasure-close" id="treasure-close" onclick="closeTreasure()">やったー！</button>
-</div>
-
+<script src="common/treasure.js"></script>
 <script>
-function showTreasure() {
-  var overlay = document.getElementById('treasure-overlay');
-  var video = document.getElementById('treasure-video');
-  var reward = document.getElementById('treasure-reward');
-  var msg = document.getElementById('treasure-msg');
-  var closeBtn = document.getElementById('treasure-close');
+(function() {
+  var container = document.getElementById('rewards-list');
 
-  // リセット
-  reward.classList.remove('show');
-  msg.classList.remove('show');
-  closeBtn.classList.remove('show');
-  video.currentTime = 0;
+  fetch('assets/data/rewards.json', { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      // スロット報酬
+      var h2slot = document.createElement('h2');
+      h2slot.textContent = '📌 スロット報酬';
+      container.appendChild(h2slot);
+      var slotGrid = document.createElement('div');
+      slotGrid.className = 'btn-grid';
+      container.appendChild(slotGrid);
 
-  overlay.classList.add('show');
-  video.play();
+      var slots = data.slotRewards || {};
+      Object.keys(slots).sort(function(a,b){ return parseInt(a)-parseInt(b); }).forEach(function(num) {
+        var rw = slots[num];
+        // gendered の場合は boy/girl 両方出す
+        if (rw.gendered) {
+          ['boy','girl'].forEach(function(g) {
+            var sub = rw[g];
+            if (!sub) return;
+            addButton(slotGrid, {
+              label: 'スロット' + num + (g === 'boy' ? '♂' : '♀'),
+              icon: rw.icon,
+              name: rw.name,
+              img: sub.img || '',
+              tag: 'スタンプ #' + num
+            });
+          });
+        } else {
+          addButton(slotGrid, {
+            label: 'スロット' + num,
+            icon: rw.icon,
+            name: rw.name,
+            img: rw.img || '',
+            tag: 'スタンプ #' + num
+          });
+        }
+      });
 
-  // 宝箱が開くタイミング（約3秒後）でアイテムを表示
-  setTimeout(function() {
-    reward.classList.add('show');
-  }, 3000);
+      // カード完成報酬
+      var h2card = document.createElement('h2');
+      h2card.textContent = '⭐ カード完成報酬';
+      container.appendChild(h2card);
+      var cardGrid = document.createElement('div');
+      cardGrid.className = 'btn-grid';
+      container.appendChild(cardGrid);
 
-  // 動画終了後にメッセージとボタン表示
-  video.onended = function() {
-    msg.classList.add('show');
-    closeBtn.classList.add('show');
-  };
-}
+      var cards = data.cardCompleteRewards || [];
+      cards.forEach(function(rw, i) {
+        addButton(cardGrid, {
+          label: 'カード' + (i+1) + '枚目',
+          icon: rw.icon,
+          name: rw.name,
+          img: rw.img || '',
+          tag: 'カードかんせい #' + (i+1)
+        });
+      });
+    })
+    .catch(function(e) {
+      container.innerHTML = '<div style="color:#f44;text-align:center;padding:20px;">rewards.json 読み込み失敗: ' + e.message + '</div>';
+    });
 
-function closeTreasure() {
-  document.getElementById('treasure-overlay').classList.remove('show');
-  document.getElementById('treasure-video').pause();
-}
+  function addButton(grid, opts) {
+    var btn = document.createElement('button');
+    btn.className = 'test-btn';
+    var hasImg = opts.img && opts.img.indexOf('.png') !== -1;
+    btn.innerHTML =
+      (hasImg ? '<img src="' + opts.img + '" alt="">' : '<div class="icon">' + (opts.icon || '🎁') + '</div>') +
+      '<div>' + opts.label + '</div>' +
+      '<div class="name">' + opts.name + '</div>';
+    btn.addEventListener('click', function() {
+      window.showTreasure({
+        name: opts.name,
+        img: opts.img || '',
+        label: opts.tag || 'テスト'
+      });
+    });
+    grid.appendChild(btn);
+  }
+})();
 </script>
 
 </body>
