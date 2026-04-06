@@ -157,8 +157,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
           <input type="text" id="import-item-id" placeholder="例: deco_newbear" style="flex:1;min-width:100px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px;font-family:monospace">
         </div>
         <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-          <span style="font-size:11px;color:#aaa;min-width:25px;">名前:</span>
-          <input type="text" id="import-item-name" placeholder="例: あたらしいくま" style="flex:1;min-width:100px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px">
+          <span style="font-size:11px;color:#aaa;min-width:25px;">表示名:</span>
+          <input type="text" id="import-item-name" placeholder="日本語で入力（例: あたらしいくま）" style="flex:1;min-width:100px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px">
         </div>
         <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
           <span style="font-size:11px;color:#aaa;min-width:25px;">分類:</span>
@@ -198,8 +198,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 
   <div class="section" id="selected-info" style="display:none">
     <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
-      <input type="text" id="edit-item-id" style="flex:1;background:#222;color:#ffd700;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:12px;font-family:monospace" title="アイテムID">
-      <input type="text" id="edit-item-name" style="flex:1;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:12px" title="表示名">
+      <input type="text" id="edit-item-id" placeholder="ID" style="flex:1;background:#222;color:#ffd700;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:12px;font-family:monospace" title="アイテムID">
+      <input type="text" id="edit-item-name" placeholder="表示名（日本語）" style="flex:1;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:12px" title="表示名（アプリで表示される名前）">
     </div>
     <label style="margin:4px 0;cursor:pointer;font-size:12px;color:#4CAF50">
       <input type="checkbox" id="chk-stackable"> 🪑 家具の上に置ける
@@ -1579,7 +1579,11 @@ function handleImportFiles(files) {
         var warnEl = document.getElementById('import-id-warn');
         var itemId = (idInput.value || '').trim().replace(/[^a-zA-Z0-9_]/g, '_');
         if (!itemId) itemId = catSelect.value + '_' + cleanName.toLowerCase();
-        var itemName = (nameInput2.value || '').trim() || rawName;
+        var itemName = (nameInput2.value || '').trim();
+        if (!itemName) {
+          warnEl.textContent = '⚠️ 表示名を入力してください（日本語）';
+          return;
+        }
         var itemCat = catSelect.value;
         var itemTheme = themeSelect.value;
 
