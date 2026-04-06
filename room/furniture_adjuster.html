@@ -213,6 +213,13 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       </label>
     </div>
 
+    <div style="display:flex;gap:4px;margin-bottom:4px">
+      <button id="btn-replace-a" style="flex:1;background:#333;color:#4CAF50;border:1px solid #4CAF50;padding:4px;border-radius:4px;cursor:pointer;font-size:11px">🔄 A画像</button>
+      <button id="btn-replace-b" style="flex:1;background:#333;color:#2196F3;border:1px solid #2196F3;padding:4px;border-radius:4px;cursor:pointer;font-size:11px">🔄 B画像</button>
+      <button id="btn-delete-item" style="flex:0 0 auto;background:#333;color:#f44;border:1px solid #f44;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">🗑</button>
+      <input type="file" id="replace-file" accept="image/*" style="display:none">
+    </div>
+
     <label><span>cellSize</span>
       <input type="range" id="sl-cellSize" min="0.3" max="3.0" step="0.1">
       <input type="number" id="num-cellSize" step="0.1">
@@ -765,6 +772,77 @@ document.getElementById('edit-item-theme').addEventListener('change', function()
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
   if (item) item.theme = this.value;
   saveToStorage();
+});
+
+// ─── Delete item ───
+document.getElementById('btn-delete-item').addEventListener('click', function() {
+  if (!selectedId) return;
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  if (!confirm('「' + item.name + '」(' + selectedId + ') を削除しますか？')) return;
+  // ITEMS配列から除去
+  var idx = ITEMS.indexOf(item);
+  if (idx !== -1) ITEMS.splice(idx, 1);
+  // adjustments除去
+  delete adjustments[selectedId + '_A'];
+  delete adjustments[selectedId + '_B'];
+  // アイテムリストのボタン除去
+  var btn = document.querySelector('.item-btn[data-id="' + selectedId + '"]');
+  if (btn) btn.remove();
+  // プレビュー消去
+  var layer = document.getElementById('item-layer');
+  layer.innerHTML = '';
+  document.getElementById('selected-info').style.display = 'none';
+  selectedId = null;
+  saveToStorage();
+  if (item._imported) saveImports();
+  drawGrid();
+});
+
+// ─── Replace A/B images ───
+var _replaceTarget = null; // 'A' or 'B'
+document.getElementById('btn-replace-a').addEventListener('click', function() {
+  _replaceTarget = 'A';
+  document.getElementById('replace-file').click();
+});
+document.getElementById('btn-replace-b').addEventListener('click', function() {
+  _replaceTarget = 'B';
+  document.getElementById('replace-file').click();
+});
+document.getElementById('replace-file').addEventListener('change', function() {
+  if (!this.files[0] || !selectedId || !_replaceTarget) return;
+  var file = this.files[0];
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var item = ITEMS.find(function(x) { return x.id === selectedId; });
+    if (!item) return;
+    if (_replaceTarget === 'A') {
+      item.roomImg = ev.target.result;
+      // B adjustments がなければ作成
+    } else {
+      item.roomImgB = ev.target.result;
+      if (!adjustments[adjKey(item.id, 'B')]) {
+        adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
+          cellSize: 1.0, pivotX: 0, pivotY: 0,
+          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+        });
+      }
+    }
+    // アイコンサムネイルも更新
+    var btnImg = document.querySelector('.item-btn[data-id="' + selectedId + '"] img');
+    if (btnImg && _replaceTarget === 'A') btnImg.src = ev.target.result;
+    // プレビュー再描画
+    placeItem(selectedId);
+    saveImports();
+    saveToStorage();
+    var status = document.getElementById('import-save-status');
+    if (status) {
+      status.textContent = '✅ ' + _replaceTarget + '画像を差し替えました';
+      status.style.color = '#4CAF50';
+    }
+  };
+  reader.readAsDataURL(file);
+  this.value = ''; // リセット
 });
 
 // ─── Stackable checkbox ───
