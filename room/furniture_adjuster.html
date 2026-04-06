@@ -174,8 +174,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <div style="font-size:12px;color:#ffd700;font-weight:bold;margin-bottom:4px">🚀 GitHubに保存</div>
         <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
           <span style="font-size:11px;color:#aaa;">ファイル名:</span>
-          <input type="text" id="import-save-name" placeholder="例: bear_new" style="flex:1;min-width:100px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px">
-          <span style="font-size:11px;color:#888">_A.png / _B.png</span>
+          <span id="import-save-name" style="font-size:12px;color:#ffd700;font-family:monospace">---</span>
+          <span style="font-size:11px;color:#888">_A.png / _B.png（IDから自動生成）</span>
         </div>
         <div style="display:flex;gap:4px;margin-top:6px">
           <button id="btn-save-import-a" style="flex:1;background:#4CAF50;color:#fff;border:none;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold" disabled>A画像を保存</button>
@@ -584,6 +584,8 @@ function selectItem(id) {
   const adj = adjustments[adjKey(id)];
   document.getElementById('edit-item-id').value = id;
   document.getElementById('edit-item-name').value = item.name;
+  var _fnEl = document.getElementById('import-save-name');
+  if (_fnEl) _fnEl.textContent = id.replace(/^(furn_|deco_)/, '');
 
   // Show/hide A/B toggle
   const abToggle = document.getElementById('ab-toggle');
@@ -744,6 +746,9 @@ document.getElementById('edit-item-id').addEventListener('change', function() {
   if (btn) btn.dataset.id = newId;
   selectedId = newId;
   this.value = newId;
+  // ファイル名表示を連動
+  var fnEl = document.getElementById('import-save-name');
+  if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
   saveToStorage();
   if (item._imported) saveImports();
 });
@@ -1692,7 +1697,7 @@ function handleImportFiles(files) {
 
         // Auto-suggest filename（IDからプレフィックス除去）
         var nameInput = document.getElementById('import-save-name');
-        nameInput.value = itemId.replace(/^(furn_|deco_)/, '');
+        nameInput.textContent = itemId.replace(/^(furn_|deco_)/, '');
 
         // フォームをクリア（次のインポートに備える）
         idInput.value = '';
@@ -1713,8 +1718,8 @@ function handleImportFiles(files) {
 
 // ─── GitHub Save Buttons ───
 document.getElementById('btn-save-import-a').addEventListener('click', function() {
-  var name = document.getElementById('import-save-name').value.trim();
-  if (!name) { alert('ファイル名を入力してください'); return; }
+  var name = (selectedId || '').replace(/^(furn_|deco_)/, '');
+  if (!name) { alert('アイテムを選択してください'); return; }
   if (!_importedDataA && selectedId) {
     var item = ITEMS.find(function(it) { return it.id === selectedId; });
     if (item && item.roomImg && item.roomImg.startsWith('data:')) {
@@ -1746,8 +1751,8 @@ document.getElementById('btn-save-import-a').addEventListener('click', function(
 });
 
 document.getElementById('btn-save-import-b').addEventListener('click', function() {
-  var name = document.getElementById('import-save-name').value.trim();
-  if (!name) { alert('ファイル名を入力してください'); return; }
+  var name = (selectedId || '').replace(/^(furn_|deco_)/, '');
+  if (!name) { alert('アイテムを選択してください'); return; }
   if (!_importedDataB && selectedId) {
     var item = ITEMS.find(function(it) { return it.id === selectedId; });
     if (item && item.roomImgB && item.roomImgB.startsWith('data:')) {
