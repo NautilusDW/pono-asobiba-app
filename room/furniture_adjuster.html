@@ -329,8 +329,12 @@ function getGridCell(u, v) {
 var GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 * (16 / 9);
 
 // ─── Items (items.js の ROOM_ITEMS から動的構築) ───
+var DELETED_KEY = 'furniture_adjuster_deleted';
+var _deletedIds = (function() { try { return JSON.parse(localStorage.getItem(DELETED_KEY)) || []; } catch(e) { return []; } })();
+var _deletedSet = new Set(_deletedIds);
+
 var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
-  .filter(function(it) { return it.cat === 'furn' || it.cat === 'deco'; })
+  .filter(function(it) { return (it.cat === 'furn' || it.cat === 'deco') && !_deletedSet.has(it.id); })
   .map(function(it) {
     return {
       id: it.id, name: it.name, cat: it.cat,
@@ -790,9 +794,17 @@ document.getElementById('btn-delete-item').addEventListener('click', function() 
   var layer = document.getElementById('item-layer');
   layer.innerHTML = '';
   document.getElementById('selected-info').style.display = 'none';
+  var deletedId = item.id;
   selectedId = null;
   saveToStorage();
-  if (item._imported) saveImports();
+  if (item._imported) {
+    saveImports();
+  } else {
+    // items.js由来のアイテムは削除リストに追加（リロード時もフィルタ）
+    _deletedIds.push(deletedId);
+    _deletedSet.add(deletedId);
+    localStorage.setItem(DELETED_KEY, JSON.stringify(_deletedIds));
+  }
   drawGrid();
 });
 
