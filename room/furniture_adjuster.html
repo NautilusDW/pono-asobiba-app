@@ -72,7 +72,6 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 .snap-del{background:#555;color:#ccc;border:none;padding:3px 6px;border-radius:4px;cursor:pointer;font-size:11px}
 .snap-del:hover{background:#f44336;color:#fff}
 .snap-empty{color:#555;font-size:12px;text-align:center;padding:8px}
-#surface-furn-select option{background:#222;color:#eee}
 </style>
 </head>
 <body>
@@ -223,12 +222,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 
     <div id="deco-on-surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
       <h3 style="color:#4CAF50">🪑 家具の上でプレビュー</h3>
-      <div style="font-size:11px;color:#888;margin-bottom:4px">家具を選んでデコの乗り具合を確認・調整</div>
+      <div style="font-size:11px;color:#888;margin-bottom:4px">家具を選んで配置の見た目を確認</div>
       <select id="surface-furn-select" style="width:100%;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px;margin-bottom:6px"></select>
-      <label><span>surfaceY</span>
-        <input type="range" id="sl-decoSurfY" min="-200" max="0" step="0.5">
-        <input type="number" id="num-decoSurfY" step="0.5">
-      </label>
       <div style="margin-top:4px">
         <button id="btn-deco-surface-preview" style="padding:4px 12px;border:1px solid #4CAF50;border-radius:4px;background:#333;color:#4CAF50;cursor:pointer;font-size:12px">🪑 プレビューON</button>
       </div>
@@ -812,12 +807,7 @@ function initDecoSurfaceSelect() {
 }
 
 function syncDecoSurfSlider() {
-  if (!_decoSurfFurnId) return;
-  const furnAdj = adjustments[adjKey(_decoSurfFurnId, currentAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
-  if (!furnAdj) return;
-  const val = furnAdj.surfaceY || 0;
-  document.getElementById('sl-decoSurfY').value = val;
-  document.getElementById('num-decoSurfY').value = val;
+  // no-op: surfaceYスライダー削除済み
 }
 
 function removeDecoSurfacePreview() {
@@ -830,14 +820,13 @@ function removeDecoSurfacePreview() {
 
 function updateDecoSurfacePreview() {
   if (!_decoSurfOn || !_decoSurfFurnEl || !selectedId || !_decoSurfFurnId) return;
-  const adj = adjustments[adjKey(selectedId)];
   const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
   if (!furnItem) return;
   const furnAdj = adjustments[adjKey(_decoSurfFurnId, currentAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
   if (!furnAdj) return;
 
-  // Place furniture at same cell as deco
-  const cell = getGridCell(adj.row, adj.col);
+  // Place furniture at its own configured position
+  const cell = getGridCell(furnAdj.row, furnAdj.col);
   const furnSize = (furnAdj.cellSize || 1) * GRID_CELL_PCT;
   const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
   if (!_decoSurfFurnEl.src.endsWith(furnImg.replace('../', '/'))) {
@@ -878,25 +867,6 @@ document.getElementById('btn-deco-surface-preview').onclick = () => {
   updateDecoSurfacePreview();
 };
 
-// Deco surfaceY slider bindings
-{
-  const sl = document.getElementById('sl-decoSurfY');
-  const num = document.getElementById('num-decoSurfY');
-  let pushed = false;
-  function updateDecoSurfY(val) {
-    if (!_decoSurfFurnId) return;
-    if (!pushed) { pushUndo(); pushed = true; }
-    const key = adjKey(_decoSurfFurnId, currentAngle);
-    if (!adjustments[key]) return;
-    adjustments[key].surfaceY = parseFloat(val);
-    if (_decoSurfOn) updateDecoSurfacePreview();
-    saveToStorage();
-  }
-  sl.onpointerdown = () => { pushed = false; };
-  sl.oninput = () => { num.value = sl.value; updateDecoSurfY(sl.value); };
-  num.onfocus = () => { pushUndo(); };
-  num.oninput = () => { sl.value = num.value; updateDecoSurfY(num.value); };
-}
 
 // ─── Place item on grid ───
 let _placedEl = null;
