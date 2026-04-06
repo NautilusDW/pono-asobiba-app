@@ -1927,7 +1927,12 @@ function handleImportFiles(files) {
 // ─── GitHub Save Buttons ───
 document.getElementById('btn-save-import-a').addEventListener('click', function() {
   var name = (selectedId || '').replace(/^(furn_|deco_)/, '');
-  if (!name) { alert('アイテムを選択してください'); return; }
+  if (!name) {
+    // selectedIdが無い場合、最後にインポートしたアイテムを探す
+    var lastImport = ITEMS.filter(function(it) { return it._imported; }).pop();
+    if (lastImport) { selectItem(lastImport.id); name = lastImport.id.replace(/^(furn_|deco_)/, ''); }
+    if (!name) { alert('先にアイテムをインポートまたは選択してください'); return; }
+  }
   if (!_importedDataA && selectedId) {
     var item = ITEMS.find(function(it) { return it.id === selectedId; });
     if (item && item.roomImg && item.roomImg.startsWith('data:')) {
@@ -1960,7 +1965,11 @@ document.getElementById('btn-save-import-a').addEventListener('click', function(
 
 document.getElementById('btn-save-import-b').addEventListener('click', function() {
   var name = (selectedId || '').replace(/^(furn_|deco_)/, '');
-  if (!name) { alert('アイテムを選択してください'); return; }
+  if (!name) {
+    var lastImport = ITEMS.filter(function(it) { return it._imported; }).pop();
+    if (lastImport) { selectItem(lastImport.id); name = lastImport.id.replace(/^(furn_|deco_)/, ''); }
+    if (!name) { alert('先にアイテムをインポートまたは選択してください'); return; }
+  }
   if (!_importedDataB && selectedId) {
     var item = ITEMS.find(function(it) { return it.id === selectedId; });
     if (item && item.roomImgB && item.roomImgB.startsWith('data:')) {
