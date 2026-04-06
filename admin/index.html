@@ -974,10 +974,36 @@ function makeImgField(currentPath, key, parentCard) {
       preview.style.display = 'block';
       _base64 = e.target.result.split(',')[1];
       pushBtn.disabled = false;
-      // 自動パス生成
-      var autoPath = _autoImgPath(parentCard, key);
+
+      // ファイル名からID・名前を自動生成
+      var rawName = file.name.replace(/\.[^.]+$/, ''); // 拡張子除去
+      // _A, _B, _01 などのサフィックスを除去してベース名を取得
+      var baseName = rawName.replace(/[_\-]?[ABab]$/, '').replace(/[_\-]?\d+$/, '');
+      var cleanId = baseName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+
+      // IDフィールドを更新（空または汎用IDの場合のみ）
+      var idInput = parentCard.querySelector('[data-key="' + key.replace('img', 'id').replace('-img', '-id') + '"]')
+        || parentCard.querySelector('[data-key="id"]');
+      if (idInput) {
+        var curId = idInput.value.trim();
+        if (!curId || curId.startsWith('reward_slot_') || curId.startsWith('reward_card_')) {
+          idInput.value = cleanId;
+        }
+      }
+
+      // 名前フィールドを更新（空または「ごほうびN」の場合のみ）
+      var nameInput = parentCard.querySelector('[data-key="name"]');
+      if (nameInput) {
+        var curName = nameInput.value.trim();
+        if (!curName || /^ごほうび\d+$/.test(curName)) {
+          nameInput.value = baseName.replace(/[_\-]/g, ' ');
+        }
+      }
+
+      // 画像パスを自動生成
+      var autoPath = 'assets/images/rewards/' + cleanId + '.png';
       inp.value = autoPath;
-      status.textContent = '📷 → ' + autoPath;
+      status.textContent = '📷 ' + rawName + ' → ' + cleanId;
       status.className = 'upload-status ok';
     };
     reader.readAsDataURL(file);
