@@ -1344,6 +1344,8 @@ const SURFACE_IDS = new Set([
 // 乗せられるアイテム（cat==='deco' + 壁掛け家具）
 const STACKABLE_FURN = new Set(['furn_toyshelf']);
 function isStackableItem(item) { return item && (item.cat === 'deco' || STACKABLE_FURN.has(item.id)); }
+// surfaceYオフセットを受けるアイテム（壁掛けは除外）
+function getsSurfaceOffset(item) { return item && item.cat === 'deco' && !STACKABLE_FURN.has(item.id); }
 
 // 指定セルに他のアイテムの占有範囲が重なるか
 function isOverlapping(areaId, row, col, item, angle, excludeId) {
@@ -1474,9 +1476,9 @@ function _applyGridPos(el, row, col, areaId) {
   el.style.bottom    = cell.bottomPct + '%';
   el.style.height    = (props.cellSize * GRID_CELL_PCT).toFixed(2) + '%';
   el.style.width     = 'auto';
-  // デコが家具の上に乗っている場合、surfaceYを加算して持ち上げる
+  // デコが家具の上に乗っている場合、surfaceYを加算して持ち上げる（壁掛けは除外）
   let extraY = 0;
-  if (item && isStackableItem(item)) {
+  if (item && getsSurfaceOffset(item)) {
     extraY = _getSurfaceOffset(areaId, row, col, itemId);
   }
   const totalPivotY = props.pivotY + extraY;
