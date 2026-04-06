@@ -344,9 +344,8 @@ function loadFromStorage() {
     Object.keys(adjustments).forEach(key => {
       if (adjustments[key].surfaceY == null) adjustments[key].surfaceY = 0;
     });
-    console.log('[furniture_adjuster] loadFromStorage: ' + restored + ' keys restored, deco_box_A pivotY=' + (adjustments['deco_box_A'] ? adjustments['deco_box_A'].pivotY : 'N/A'));
     return restored > 0;
-  } catch(e) { console.error('[furniture_adjuster] loadFromStorage error:', e); return false; }
+  } catch(e) { return false; }
 }
 const hadSave = loadFromStorage();
 
@@ -1261,9 +1260,12 @@ drawGrid();
 // Auto-select first item
 if (ITEMS.length > 0) selectItem(ITEMS[0].id);
 if (hadSave) {
-  const st = document.getElementById('save-status');
-  st.textContent = '前回の保存データを復元しました';
-  setTimeout(() => st.textContent = '', 3000);
+  var st = document.getElementById('import-save-status');
+  if (st) {
+    st.textContent = '✅ 前回の保存データを復元しました';
+    st.style.color = '#4CAF50';
+    setTimeout(function() { st.textContent = ''; }, 3000);
+  }
 }
 </script>
 </body>
