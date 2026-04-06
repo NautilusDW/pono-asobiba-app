@@ -328,15 +328,16 @@ function loadFromStorage() {
     if (!data) return false;
     Object.keys(data).forEach(key => {
       if (adjustments[key]) {
-        // New format: key already has _A / _B suffix
         Object.assign(adjustments[key], data[key]);
       } else if (!key.endsWith('_A') && !key.endsWith('_B')) {
-        // Old format migration: bare id → copy into both _A and _B
+        // Old format migration
         if (adjustments[key + '_A']) Object.assign(adjustments[key + '_A'], data[key]);
         if (adjustments[key + '_B']) Object.assign(adjustments[key + '_B'], data[key]);
+      } else {
+        // インポートアイテムなど、まだITEMSに存在しないキーもそのまま保存
+        adjustments[key] = data[key];
       }
     });
-    // surfaceYが未設定のエントリにデフォルト値を補完
     Object.keys(adjustments).forEach(key => {
       if (adjustments[key].surfaceY == null) {
         adjustments[key].surfaceY = 0;
