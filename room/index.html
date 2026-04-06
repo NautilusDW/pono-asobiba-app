@@ -1280,7 +1280,8 @@ function getRowColFromPoint(areaEl, clientX, clientY) {
 // ─── Item lookup ──────────────────────────────────────
 function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
 
-function isOwned(id)  { return state.inventory.includes(id); }
+const DEBUG_MODE = localStorage.getItem('pono_debug') === '1';
+function isOwned(id)  { return DEBUG_MODE || state.inventory.includes(id); }
 function isPlaced(id) {
   return Object.values(state.config).some(cfg => {
     if (cfg.wall === id || cfg.floor === id) return true;
@@ -1851,7 +1852,7 @@ function buildRoomArea(areaData) {
   div.dataset.area = areaData.id;
 
   const cfg = state.config[areaData.id] || {};
-  const locked = !state.unlocked.includes(areaData.id);
+  const locked = DEBUG_MODE ? false : !state.unlocked.includes(areaData.id);
 
   // Wall overlay（テクスチャ上書き用・pointer-events:noneなのでroom-areaでクリック検出）
   const wall = document.createElement('div');

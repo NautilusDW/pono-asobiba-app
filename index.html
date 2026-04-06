@@ -1254,13 +1254,23 @@
       </div>
     </a>
 
-    <!-- テスト用リセットボタン -->
-    <div style="text-align:center;margin:20px 0;">
+    <!-- テスト用ボタン -->
+    <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <button id="resetAllBtn" style="
         padding:10px 24px; border:2px solid #EF4444; border-radius:50px;
         background:#FEE2E2; color:#EF4444; font-family:inherit;
         font-size:0.85rem; font-weight:900; cursor:pointer;
-      ">🔄 ぜんぶリセット（テスト用）</button>
+      ">🔄 ぜんぶリセット</button>
+      <button id="debugToggleBtn" style="
+        padding:10px 24px; border:2px solid #6366F1; border-radius:50px;
+        background:#EEF2FF; color:#6366F1; font-family:inherit;
+        font-size:0.85rem; font-weight:900; cursor:pointer;
+      ">🛠 デバッグ OFF</button>
+      <a href="room/furniture_adjuster.html" style="
+        padding:10px 24px; border:2px solid #F59E0B; border-radius:50px;
+        background:#FEF3C7; color:#D97706; font-family:inherit;
+        font-size:0.85rem; font-weight:900; cursor:pointer; text-decoration:none;
+      ">🔧 ピボットツール</a>
     </div>
 
     <footer class="footer">
@@ -2415,6 +2425,25 @@
       alert('リセットしました！ページを再読み込みします。');
       location.reload();
     });
+
+    // デバッグモード トグル
+    (function() {
+      var btn = document.getElementById('debugToggleBtn');
+      var KEY = 'pono_debug';
+      function sync() {
+        var on = localStorage.getItem(KEY) === '1';
+        btn.textContent = on ? '🛠 デバッグ ON' : '🛠 デバッグ OFF';
+        btn.style.background = on ? '#6366F1' : '#EEF2FF';
+        btn.style.color = on ? '#fff' : '#6366F1';
+      }
+      sync();
+      btn.addEventListener('click', function() {
+        var on = localStorage.getItem(KEY) === '1';
+        localStorage.setItem(KEY, on ? '0' : '1');
+        sync();
+        alert(on ? 'デバッグモード OFF' : 'デバッグモード ON\nおへやで全家具アンロック＆配置自由');
+      });
+    })();
 
   </script>
 </body>
