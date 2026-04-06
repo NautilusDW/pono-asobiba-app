@@ -146,7 +146,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_B_01.png',
     gridRow: 2, gridCol: 3, cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 11, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
     angleB: { cellSize: 2, footprintSize: 3, pivotX: -13.5, pivotY: 9.6, minRow: 1, maxRow: 7, minCol: 2, maxCol: 7 },
-    surfaceY: -156, surfaceYB: -74,
+    surfaceY: -91.5, surfaceYB: -74,
   },
   {
     id: 'furn_desk', cat: 'furn', name: 'あおいつくえ', price: 25, theme: 'all',
