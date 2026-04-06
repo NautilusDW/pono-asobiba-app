@@ -1077,10 +1077,11 @@ function handleImportFiles(files) {
         _importedDataA = dataUrl.split(',')[1];
         _importedDataB = null;
 
-        // Init adjustments
+        // Init adjustments（中央に配置）
         adjustments[adjKey(itemId, 'A')] = {
           cellSize: 1.0, pivotX: 0, pivotY: 0,
-          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+          row: 4, col: 4, surfaceY: 0
         };
 
         // Add to item list
