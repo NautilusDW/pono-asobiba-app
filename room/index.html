@@ -114,6 +114,18 @@
       50% { box-shadow: 0 0 0 6px rgba(255,100,100,0); }
     }
 
+    /* ── 拡大/縮小ボタン ── */
+    .zoom-btn {
+      width: 40px; height: 40px; border: none; border-radius: 50%;
+      background: rgba(0,0,0,0.45); color: #fff;
+      font-size: 20px; font-weight: bold; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: background 0.15s, transform 0.1s;
+    }
+    .zoom-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.6); }
+    #zoom-reset { font-size: 10px; }
+
     /* ── もようがえモード ── */
     .room-area.edit-mode .item-placed {
       animation: editWiggle 0.5s ease-in-out infinite alternate;
@@ -916,6 +928,12 @@
     <div id="side-btns">
       <button class="side-btn" id="ui-btn-takara"><img src="../assets/images/Rooms/furnitures_final/box_A.png" alt="">たからばこ</button>
       <button class="side-btn" id="ui-btn-edit">🏠 もようがえ</button>
+    </div>
+    <!-- 拡大/縮小 -->
+    <div id="zoom-btns" style="position:absolute;bottom:10px;left:10px;z-index:55;display:flex;flex-direction:column;gap:4px;pointer-events:auto">
+      <button class="zoom-btn" id="zoom-in">＋</button>
+      <button class="zoom-btn" id="zoom-reset">●</button>
+      <button class="zoom-btn" id="zoom-out">ー</button>
     </div>
     <!-- Room scroll -->
     <div id="room-scroll"></div>
@@ -3377,6 +3395,28 @@ function init() {
   });
 
   // テーマ切り替えボタンは削除済み（pono_profile.genderから自動設定）
+
+  // ── ズーム ──
+  (function() {
+    var zoom = 1;
+    var scroll = document.getElementById('room-scroll');
+    function applyZoom() {
+      scroll.style.transform = 'scale(' + zoom + ')';
+      scroll.style.transformOrigin = 'center center';
+    }
+    document.getElementById('zoom-in').addEventListener('click', function() {
+      zoom = Math.min(3, zoom + 0.25);
+      applyZoom();
+    });
+    document.getElementById('zoom-out').addEventListener('click', function() {
+      zoom = Math.max(0.5, zoom - 0.25);
+      applyZoom();
+    });
+    document.getElementById('zoom-reset').addEventListener('click', function() {
+      zoom = 1;
+      applyZoom();
+    });
+  })();
 
   // Premium banner → menu
   document.getElementById('premium-banner').addEventListener('click', () => {
