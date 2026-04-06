@@ -324,27 +324,29 @@ function saveToStorage() {
 }
 function loadFromStorage() {
   try {
-    const data = JSON.parse(localStorage.getItem(SAVE_KEY));
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
     if (!data) return false;
+    var restored = 0;
     Object.keys(data).forEach(key => {
       if (adjustments[key]) {
         Object.assign(adjustments[key], data[key]);
+        restored++;
       } else if (!key.endsWith('_A') && !key.endsWith('_B')) {
-        // Old format migration
-        if (adjustments[key + '_A']) Object.assign(adjustments[key + '_A'], data[key]);
-        if (adjustments[key + '_B']) Object.assign(adjustments[key + '_B'], data[key]);
+        if (adjustments[key + '_A']) { Object.assign(adjustments[key + '_A'], data[key]); restored++; }
+        if (adjustments[key + '_B']) { Object.assign(adjustments[key + '_B'], data[key]); restored++; }
       } else {
-        // インポートアイテムなど、まだITEMSに存在しないキーもそのまま保存
         adjustments[key] = data[key];
+        restored++;
       }
     });
     Object.keys(adjustments).forEach(key => {
-      if (adjustments[key].surfaceY == null) {
-        adjustments[key].surfaceY = 0;
-      }
+      if (adjustments[key].surfaceY == null) adjustments[key].surfaceY = 0;
     });
-    return true;
-  } catch(e) { return false; }
+    console.log('[furniture_adjuster] loadFromStorage: ' + restored + ' keys restored, deco_box_A pivotY=' + (adjustments['deco_box_A'] ? adjustments['deco_box_A'].pivotY : 'N/A'));
+    return restored > 0;
+  } catch(e) { console.error('[furniture_adjuster] loadFromStorage error:', e); return false; }
 }
 const hadSave = loadFromStorage();
 
