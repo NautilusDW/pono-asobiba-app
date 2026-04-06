@@ -987,6 +987,67 @@ function ghUploadFile(path, base64, msg, cb) {
     .catch(function(e) { cb(e.message); });
 }
 
+// ─── Imported Items Persistence ───
+var IMPORT_SAVE_KEY = 'furniture_adjuster_imports';
+
+function saveImports() {
+  var imports = ITEMS.filter(function(it) { return it._imported; }).map(function(it) {
+    return { id: it.id, name: it.name, roomImg: it.roomImg, roomImgB: it.roomImgB || null, cellSize: it.cellSize, pivotX: it.pivotX, pivotY: it.pivotY };
+  });
+  try { localStorage.setItem(IMPORT_SAVE_KEY, JSON.stringify(imports)); } catch(e) {}
+}
+
+function loadImports() {
+  try {
+    var data = JSON.parse(localStorage.getItem(IMPORT_SAVE_KEY));
+    if (!data || !data.length) return;
+    data.forEach(function(imp) {
+      // 重複チェック
+      if (ITEMS.find(function(it) { return it.id === imp.id; })) return;
+      imp._imported = true;
+      ITEMS.push(imp);
+      // adjustmentsがなければ初期化
+      if (!adjustments[adjKey(imp.id, 'A')]) {
+        adjustments[adjKey(imp.id, 'A')] = {
+          cellSize: imp.cellSize || 1.0, pivotX: imp.pivotX || 0, pivotY: imp.pivotY || 0,
+          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, row: 4, col: 4, surfaceY: 0
+        };
+      }
+      if (imp.roomImgB && !adjustments[adjKey(imp.id, 'B')]) {
+        adjustments[adjKey(imp.id, 'B')] = Object.assign({}, adjustments[adjKey(imp.id, 'A')]);
+      }
+      // アイテムリストにボタン追加
+      var btn = document.createElement('div');
+      btn.className = 'item-btn';
+      btn.dataset.id = imp.id;
+      btn.title = imp.name + ' (インポート)';
+      btn.style.borderColor = '#4CAF50';
+      var img = document.createElement('img');
+      img.src = imp.roomImg;
+      btn.appendChild(img);
+      btn.onclick = function() { selectItem(imp.id); };
+      listEl.appendChild(btn);
+      // インポートリストにサムネイル
+      var thumb = document.createElement('img');
+      thumb.className = 'import-thumb';
+      thumb.src = imp.roomImg;
+      thumb.title = imp.name;
+      thumb.onclick = function() { selectItem(imp.id); };
+      document.getElementById('import-list').appendChild(thumb);
+      if (imp.roomImgB) {
+        var thumbB = document.createElement('img');
+        thumbB.className = 'import-thumb';
+        thumbB.src = imp.roomImgB;
+        thumbB.title = imp.name + ' (B)';
+        thumbB.style.borderColor = '#2196F3';
+        thumbB.onclick = function() { selectItem(imp.id); };
+        document.getElementById('import-list').appendChild(thumbB);
+      }
+      _importCounter++;
+    });
+  } catch(e) {}
+}
+
 // ─── Image Import ───
 var _importCounter = 0;
 var _importedDataA = null; // base64 (without prefix)
@@ -1059,6 +1120,7 @@ function handleImportFiles(files) {
             var status = document.getElementById('import-save-status');
             status.textContent = '✅ B角度画像を追加: ' + rawName;
             status.style.color = '#2196F3';
+            saveImports();
             return;
           }
         }
@@ -1114,6 +1176,7 @@ function handleImportFiles(files) {
 
         // Select it
         selectItem(itemId);
+        saveImports();
       };
       reader.readAsDataURL(file);
     })(files[i]);
@@ -1187,6 +1250,7 @@ document.getElementById('btn-save-import-b').addEventListener('click', function(
 });
 
 // ─── Init ───
+loadImports(); // 前回インポートした画像を復元
 window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId); drawGrid(); } else drawGrid(); });
 drawGrid();
 // Auto-select first item
