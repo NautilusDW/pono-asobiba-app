@@ -732,11 +732,12 @@ function buildSlotCard(slotNum, data) {
         var base = { type: currentData.type || 'deco', id: currentData.id || '', img: currentData.img || '' };
         var empty = { type: currentData.type || 'deco', id: '', img: '' };
 
+        var baseId = base.id.replace(/_boy$|_girl$/, '');
         document.getElementById('_gd_boy').onclick = function() {
           dlg.remove();
           currentData.gendered = true;
-          currentData.boy = base;
-          currentData.girl = empty;
+          currentData.boy = { type: base.type, id: baseId + '_boy', img: base.img };
+          currentData.girl = { type: empty.type, id: baseId + '_girl', img: '' };
           delete currentData.type; delete currentData.id; delete currentData.img;
           rewardsData.slotRewards[sn] = currentData;
           renderSlotRewards();
@@ -744,8 +745,8 @@ function buildSlotCard(slotNum, data) {
         document.getElementById('_gd_girl').onclick = function() {
           dlg.remove();
           currentData.gendered = true;
-          currentData.boy = empty;
-          currentData.girl = base;
+          currentData.boy = { type: empty.type, id: baseId + '_boy', img: '' };
+          currentData.girl = { type: base.type, id: baseId + '_girl', img: base.img };
           delete currentData.type; delete currentData.id; delete currentData.img;
           rewardsData.slotRewards[sn] = currentData;
           renderSlotRewards();
@@ -755,10 +756,11 @@ function buildSlotCard(slotNum, data) {
           cb.checked = false;
         };
       } else {
-        // データがないならそのまま切替
+        // データがないならそのまま切替（IDにサフィックス付与）
+        var baseId2 = (currentData.id || '').replace(/_boy$|_girl$/, '') || 'reward_' + sn;
         currentData.gendered = true;
-        currentData.boy = { type: 'deco', id: '', img: '' };
-        currentData.girl = { type: 'deco', id: '', img: '' };
+        currentData.boy = { type: 'deco', id: baseId2 + '_boy', img: '' };
+        currentData.girl = { type: 'deco', id: baseId2 + '_girl', img: '' };
         delete currentData.type; delete currentData.id; delete currentData.img;
         rewardsData.slotRewards[sn] = currentData;
         renderSlotRewards();
@@ -1029,12 +1031,17 @@ function makeImgField(currentPath, key, parentCard) {
       var cleanId = baseName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
 
       // IDフィールドを更新（空または汎用IDの場合のみ）
-      var idInput = parentCard.querySelector('[data-key="' + key.replace('img', 'id').replace('-img', '-id') + '"]')
+      var idKey = key.replace('img', 'id').replace('-img', '-id');
+      var idInput = parentCard.querySelector('[data-key="' + idKey + '"]')
         || parentCard.querySelector('[data-key="id"]');
       if (idInput) {
         var curId = idInput.value.trim();
-        if (!curId || curId.startsWith('reward_slot_') || curId.startsWith('reward_card_')) {
-          idInput.value = cleanId;
+        if (!curId || curId.startsWith('reward_slot_') || curId.startsWith('reward_card_') || curId.startsWith('reward_')) {
+          // 男女別の場合はサフィックスを付ける
+          var idSuffix = '';
+          if (idKey.indexOf('boy') !== -1) idSuffix = '_boy';
+          if (idKey.indexOf('girl') !== -1) idSuffix = '_girl';
+          idInput.value = cleanId + idSuffix;
         }
       }
 
