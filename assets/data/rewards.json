@@ -4,17 +4,10 @@
     "1": {
       "name": "デコボックス",
       "icon": "🎁",
-      "gendered": true,
-      "boy": {
-        "type": "deco",
-        "id": "deco_box",
-        "img": "assets/images/rewards/reward_slot_1_boy.png"
-      },
-      "girl": {
-        "type": "deco",
-        "id": "deco_box",
-        "img": "assets/images/rewards/reward_slot_1_girl.png"
-      },
+      "gendered": false,
+      "type": "deco",
+      "id": "deco_box_girl",
+      "img": "assets/images/rewards/box.png",
       "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！"
     },
     "5": {
@@ -22,14 +15,14 @@
       "icon": "🛏️",
       "gendered": true,
       "boy": {
-        "type": "deco",
-        "id": "bed",
-        "img": "assets/images/rewards/reward_slot_5_boy.png"
+        "type": "furn",
+        "id": "bed_a",
+        "img": "assets/images/rewards/bed_a.png"
       },
       "girl": {
-        "type": "deco",
-        "id": "bed",
-        "img": "assets/images/rewards/bed_girl.png"
+        "type": "furn",
+        "id": "bed_b",
+        "img": "assets/images/rewards/____.png"
       },
       "unlockRoom": true
     },
