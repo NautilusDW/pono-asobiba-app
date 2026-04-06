@@ -708,25 +708,72 @@ function buildSlotCard(slotNum, data) {
 
   var genderedCheck = makeCheckbox('男女別にする', isGendered, 'gendered');
   genderedCheck.querySelector('input').addEventListener('change', function() {
-    var checked = this.checked;
+    var cb = this;
     var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
     var currentData = collectSlotData(card);
-    if (checked) {
-      currentData.gendered = true;
-      currentData.boy = { type: currentData.type || 'deco', id: currentData.id || '', img: currentData.img || '' };
-      currentData.girl = { type: currentData.type || 'deco', id: '', img: '' };
-      delete currentData.type; delete currentData.id; delete currentData.img;
-    } else {
-      currentData.gendered = false;
-      if (currentData.boy) {
-        currentData.type = currentData.boy.type || 'deco';
-        currentData.id = currentData.boy.id || '';
-        currentData.img = currentData.boy.img || '';
+
+    if (cb.checked) {
+      // non-gendered → gendered: 既存データをどちらに残すか聞く
+      var hasData = (currentData.type && currentData.type !== 'deco') || currentData.id || currentData.img;
+      if (hasData) {
+        // 選択ダイアログ
+        var dlg = document.createElement('div');
+        dlg.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        dlg.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;text-align:center;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+          '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">今の設定をどちらに残しますか？</div>' +
+          '<div style="display:flex;gap:12px;justify-content:center;">' +
+            '<button id="_gd_boy" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;">👦 おとこのこ</button>' +
+            '<button id="_gd_girl" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#F472B6,#EC4899);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;">👧 おんなのこ</button>' +
+          '</div>' +
+          '<button id="_gd_cancel" style="margin-top:12px;padding:8px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.8rem;cursor:pointer;">キャンセル</button>' +
+        '</div>';
+        document.body.appendChild(dlg);
+
+        var base = { type: currentData.type || 'deco', id: currentData.id || '', img: currentData.img || '' };
+        var empty = { type: currentData.type || 'deco', id: '', img: '' };
+
+        document.getElementById('_gd_boy').onclick = function() {
+          dlg.remove();
+          currentData.gendered = true;
+          currentData.boy = base;
+          currentData.girl = empty;
+          delete currentData.type; delete currentData.id; delete currentData.img;
+          rewardsData.slotRewards[sn] = currentData;
+          renderSlotRewards();
+        };
+        document.getElementById('_gd_girl').onclick = function() {
+          dlg.remove();
+          currentData.gendered = true;
+          currentData.boy = empty;
+          currentData.girl = base;
+          delete currentData.type; delete currentData.id; delete currentData.img;
+          rewardsData.slotRewards[sn] = currentData;
+          renderSlotRewards();
+        };
+        document.getElementById('_gd_cancel').onclick = function() {
+          dlg.remove();
+          cb.checked = false;
+        };
+      } else {
+        // データがないならそのまま切替
+        currentData.gendered = true;
+        currentData.boy = { type: 'deco', id: '', img: '' };
+        currentData.girl = { type: 'deco', id: '', img: '' };
+        delete currentData.type; delete currentData.id; delete currentData.img;
+        rewardsData.slotRewards[sn] = currentData;
+        renderSlotRewards();
       }
+    } else {
+      // gendered → non-gendered: boy側のデータを残す（girlにデータがあればboyを優先）
+      currentData.gendered = false;
+      var src = (currentData.boy && currentData.boy.id) ? currentData.boy : (currentData.girl || {});
+      currentData.type = src.type || 'deco';
+      currentData.id = src.id || '';
+      currentData.img = src.img || '';
       delete currentData.boy; delete currentData.girl;
+      rewardsData.slotRewards[sn] = currentData;
+      renderSlotRewards();
     }
-    rewardsData.slotRewards[sn] = currentData;
-    renderSlotRewards();
   });
   row3.appendChild(genderedCheck);
 
