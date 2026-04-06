@@ -19,6 +19,20 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:10
 .placed-item:active{cursor:grabbing}
 .placed-item.selected{outline:2px solid #ff0;outline-offset:2px}
 
+/* ─── Back button ─── */
+.back-btn{position:fixed;top:12px;right:12px;z-index:9999;padding:8px 16px;background:#ffd700;color:#1a1a2e;border:none;border-radius:20px;font-weight:bold;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.back-btn:hover{background:#ffed4a}
+
+/* ─── Import zone ─── */
+.import-zone{border:2px dashed #555;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;background:#1a2744;margin-bottom:8px}
+.import-zone:hover,.import-zone.drag-over{border-color:#ffd700;background:#1e2f55}
+.import-zone p{font-size:12px;color:#aaa;margin-top:4px}
+.import-zone .icon{font-size:28px}
+.import-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.import-thumb{width:48px;height:48px;border:2px solid #444;border-radius:6px;object-fit:contain;background:#222;cursor:pointer}
+.import-thumb:hover{border-color:#ffd700}
+.import-thumb.active{border-color:#4CAF50;box-shadow:0 0 6px #4CAF50}
+
 /* ─── Right: Controls ─── */
 #controls{width:360px;overflow-y:auto;background:#16213e;padding:16px;display:flex;flex-direction:column;gap:12px}
 #controls h2{font-size:16px;color:#ffd700;border-bottom:1px solid #333;padding-bottom:6px}
@@ -45,6 +59,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 </head>
 <body>
 
+<a href="../admin/index.html" class="back-btn">← 管理画面にもどる</a>
 <div id="room-panel">
   <div id="room-wrapper">
     <div id="room-container">
@@ -106,6 +121,22 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       </div>
       <button id="grid-export-btn" style="margin-top:4px;background:#ff9800;color:#1a1a2e;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">グリッド値をコピー</button>
       <div id="grid-export-result" style="font-size:11px;color:#4CAF50;min-height:16px"></div>
+    </div>
+  </details>
+
+  <details style="background:#1a2744;padding:8px;border-radius:8px">
+    <summary style="cursor:pointer;font-size:13px;color:#4CAF50">📥 画像をインポート</summary>
+    <div style="margin-top:8px">
+      <div class="import-zone" id="import-zone">
+        <div class="icon">📁</div>
+        <div style="font-size:13px;font-weight:bold;color:#ffd700">クリック or ドラッグ&ドロップ</div>
+        <p>PNG画像（A角度）を追加できます</p>
+        <input type="file" id="import-file" accept="image/*" multiple style="display:none">
+      </div>
+      <div class="import-row" id="import-list"></div>
+      <div style="font-size:11px;color:#666;margin-top:4px">
+        インポートした画像はブラウザ内のみ（保存にはエクスポート後にitems.jsへ反映が必要）
+      </div>
     </div>
   </details>
 
@@ -917,6 +948,83 @@ document.getElementById('grid-export-btn').onclick = () => {
 };
 
 syncGridSliders();
+
+// ─── Image Import ───
+var _importCounter = 0;
+var importZone = document.getElementById('import-zone');
+var importFile = document.getElementById('import-file');
+var importList = document.getElementById('import-list');
+
+importZone.addEventListener('click', function() { importFile.click(); });
+importFile.addEventListener('change', function() { handleImportFiles(this.files); });
+
+// Drag & Drop
+importZone.addEventListener('dragover', function(e) { e.preventDefault(); importZone.classList.add('drag-over'); });
+importZone.addEventListener('dragleave', function() { importZone.classList.remove('drag-over'); });
+importZone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  importZone.classList.remove('drag-over');
+  handleImportFiles(e.dataTransfer.files);
+});
+
+function handleImportFiles(files) {
+  for (var i = 0; i < files.length; i++) {
+    (function(file) {
+      if (!file.type.startsWith('image/')) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        _importCounter++;
+        var dataUrl = e.target.result;
+        var name = file.name.replace(/\.[^.]+$/, '');
+        var itemId = 'import_' + _importCounter + '_' + name.replace(/[^a-zA-Z0-9_]/g, '_');
+
+        // Add to ITEMS array
+        var newItem = {
+          id: itemId,
+          name: name,
+          roomImg: dataUrl,
+          cellSize: 1.0,
+          pivotX: 0,
+          pivotY: 0,
+          _imported: true
+        };
+        ITEMS.push(newItem);
+
+        // Init adjustments
+        adjustments[adjKey(itemId, 'A')] = {
+          cellSize: 1.0, pivotX: 0, pivotY: 0,
+          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+        };
+
+        // Add to item list
+        var btn = document.createElement('div');
+        btn.className = 'item-btn';
+        btn.dataset.id = itemId;
+        btn.title = name + ' (インポート)';
+        btn.style.borderColor = '#4CAF50';
+        var img = document.createElement('img');
+        img.src = dataUrl;
+        btn.appendChild(img);
+        btn.onclick = function() { selectItem(itemId); };
+        listEl.appendChild(btn);
+
+        // Add thumbnail to import list
+        var thumb = document.createElement('img');
+        thumb.className = 'import-thumb';
+        thumb.src = dataUrl;
+        thumb.title = name;
+        thumb.onclick = function() { selectItem(itemId); };
+        importList.appendChild(thumb);
+
+        // Auto-select the first imported item
+        if (_importCounter === 1 || ITEMS.length === 1) {
+          selectItem(itemId);
+        }
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+}
 
 // ─── Init ───
 window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId); drawGrid(); } else drawGrid(); });
