@@ -964,6 +964,128 @@ function _autoImgPath(parentCard, key) {
   return 'assets/images/rewards/' + itemId + suffix + '.png';
 }
 
+// ── 既存画像ブラウザ（モーダル）──
+var _imgBrowserCache = null; // { folder: [files] }
+
+function _fetchImgFolder(folder, cb) {
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + folder + '?ref=' + GH_BRANCH;
+  fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : []; })
+    .then(function(files) {
+      cb(files.filter(function(f) { return f.name.match(/\.(png|jpg|jpeg|webp)$/i); }));
+    })
+    .catch(function() { cb([]); });
+}
+
+function openImageBrowser(onSelect) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:16px;max-width:600px;width:95%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
+  header.innerHTML = '<div style="font-size:1rem;font-weight:900;color:#5D4E37;">📂 プロジェクト内の画像を選択</div>';
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'background:#eee;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;';
+  closeBtn.onclick = function() { ov.remove(); };
+  header.appendChild(closeBtn);
+  box.appendChild(header);
+
+  // フォルダタブ
+  var folders = [
+    { label: '🪑 家具', path: 'assets/images/Rooms/furnitures_final' },
+    { label: '🧱 壁紙', path: 'assets/images/Rooms/walls' },
+    { label: '🐠 海', path: 'assets/images/ocean' },
+    { label: '🎁 報酬', path: 'assets/images/rewards' },
+  ];
+  var tabRow = document.createElement('div');
+  tabRow.style.cssText = 'display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;';
+  folders.forEach(function(f) {
+    var btn = document.createElement('button');
+    btn.textContent = f.label;
+    btn.style.cssText = 'padding:6px 12px;border:2px solid #ddd;border-radius:12px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;';
+    btn.onclick = function() {
+      tabRow.querySelectorAll('button').forEach(function(b) { b.style.borderColor = '#ddd'; b.style.background = '#fff'; });
+      btn.style.borderColor = '#FF6B9D';
+      btn.style.background = '#FFF0F5';
+      loadFolder(f.path);
+    };
+    tabRow.appendChild(btn);
+  });
+  box.appendChild(tabRow);
+
+  var grid = document.createElement('div');
+  grid.style.cssText = 'overflow-y:auto;flex:1;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;';
+  grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">フォルダを選んでください</div>';
+  box.appendChild(grid);
+  ov.appendChild(box);
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+
+  function loadFolder(path) {
+    grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">読み込み中...</div>';
+
+    // 海フォルダはサブフォルダ構造
+    if (path === 'assets/images/ocean') {
+      _fetchImgFolder(path, function(items) {
+        grid.innerHTML = '';
+        // サブフォルダをリスト
+        var subDirs = items.length === 0 ? [] : [];
+        // GitHub APIはフォルダもファイルも返す
+        var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH;
+        fetch(url, { headers: ghHeaders() })
+          .then(function(r) { return r.json(); })
+          .then(function(all) {
+            grid.innerHTML = '';
+            all.forEach(function(item) {
+              if (item.type === 'dir') {
+                // サブフォルダ内の最初の画像を取得
+                _fetchImgFolder(item.path, function(subFiles) {
+                  subFiles.forEach(function(f) { addThumb(f); });
+                });
+              } else if (item.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
+                addThumb(item);
+              }
+            });
+          });
+      });
+    } else {
+      _fetchImgFolder(path, function(files) {
+        grid.innerHTML = '';
+        if (files.length === 0) {
+          grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">画像がありません</div>';
+          return;
+        }
+        files.forEach(function(f) { addThumb(f); });
+      });
+    }
+
+    function addThumb(f) {
+      var thumb = document.createElement('div');
+      thumb.style.cssText = 'width:70px;height:70px;border:2px solid #eee;border-radius:8px;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;flex-shrink:0;';
+      thumb.title = f.path;
+      var img = document.createElement('img');
+      img.src = f.download_url;
+      img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+      thumb.addEventListener('click', function() {
+        onSelect(f.path, f.download_url);
+        ov.remove();
+      });
+      thumb.addEventListener('mouseenter', function() { thumb.style.borderColor = '#FF6B9D'; });
+      thumb.addEventListener('mouseleave', function() { thumb.style.borderColor = '#eee'; });
+      grid.appendChild(thumb);
+    }
+  }
+
+  // 自動で最初のフォルダを開く
+  if (tabRow.children.length > 0) tabRow.children[0].click();
+}
+
 function makeImgField(currentPath, key, parentCard) {
   var div = document.createElement('div');
   div.className = 'reward-field';
@@ -977,14 +1099,16 @@ function makeImgField(currentPath, key, parentCard) {
   div.appendChild(inp);
 
   // 現在の画像プレビュー（あれば）
+  var curPreview = document.createElement('img');
+  curPreview.className = 'upload-preview-small';
   if (currentPath) {
-    var curPreview = document.createElement('img');
     curPreview.src = '../' + currentPath;
-    curPreview.className = 'upload-preview-small';
     curPreview.style.display = 'block';
-    curPreview.onerror = function() { this.style.display = 'none'; };
-    div.appendChild(curPreview);
+  } else {
+    curPreview.style.display = 'none';
   }
+  curPreview.onerror = function() { this.style.display = 'none'; };
+  div.appendChild(curPreview);
 
   // Upload inline
   var uploadRow = document.createElement('div');
@@ -1112,7 +1236,30 @@ function makeImgField(currentPath, key, parentCard) {
     });
   });
 
+  // 「既存画像から選択」ボタン
+  var browseBtn = document.createElement('button');
+  browseBtn.className = 'btn btn-sm';
+  browseBtn.type = 'button';
+  browseBtn.style.cssText = 'background:#FEF3C7;color:#D97706;border:1px solid #FCD34D;';
+  browseBtn.textContent = '📂 既存から選択';
+  browseBtn.addEventListener('click', function() {
+    openImageBrowser(function(path, downloadUrl) {
+      inp.value = path;
+      curPreview.src = downloadUrl;
+      curPreview.style.display = 'block';
+      preview.style.display = 'none';
+      pushBtn.disabled = true;
+      _base64 = null;
+      status.textContent = '✅ ' + path;
+      status.className = 'upload-status ok';
+      // カードのプレビューも更新
+      var cardPrev = parentCard.querySelector('.reward-preview-img');
+      if (cardPrev) cardPrev.src = downloadUrl;
+    });
+  });
+
   uploadRow.appendChild(fileInput);
+  uploadRow.appendChild(browseBtn);
   uploadRow.appendChild(fileBtn);
   uploadRow.appendChild(preview);
   uploadRow.appendChild(pushBtn);
