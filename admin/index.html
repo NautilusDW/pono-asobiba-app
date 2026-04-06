@@ -996,10 +996,11 @@ function openImageBrowser(onSelect) {
 
   // フォルダタブ
   var folders = [
-    { label: '🪑 家具', path: 'assets/images/Rooms/furnitures_final' },
+    { label: '✅ 調整済み', path: '_items_js' },
     { label: '🧱 壁紙', path: 'assets/images/Rooms/walls' },
     { label: '🐠 海', path: 'assets/images/ocean' },
     { label: '🎁 報酬', path: 'assets/images/rewards' },
+    { label: '📁 家具(全)', path: 'assets/images/Rooms/furnitures_final' },
   ];
   var tabRow = document.createElement('div');
   tabRow.style.cssText = 'display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;';
@@ -1027,6 +1028,54 @@ function openImageBrowser(onSelect) {
 
   function loadFolder(path) {
     grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">読み込み中...</div>';
+
+    // 調整済みアイテム（items.jsから取得）
+    if (path === '_items_js') {
+      fetch('../room/items.js', { cache: 'no-store' })
+        .then(function(r) { return r.text(); })
+        .then(function(src) {
+          grid.innerHTML = '';
+          // roomImg のパスを正規表現で抽出
+          var re = /id:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'/g;
+          var match;
+          var seen = {};
+          while ((match = re.exec(src)) !== null) {
+            var itemId = match[1];
+            var itemName = match[2];
+            var imgPath = match[3].replace(/^\.\.\//,''); // ../assets → assets
+            if (seen[imgPath]) continue;
+            seen[imgPath] = true;
+            (function(id, name, p) {
+              var thumb = document.createElement('div');
+              thumb.style.cssText = 'width:70px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;';
+              thumb.title = name + ' (' + id + ')';
+              var imgEl = document.createElement('img');
+              imgEl.src = '../' + p;
+              imgEl.style.cssText = 'width:64px;height:64px;object-fit:contain;border:2px solid #eee;border-radius:8px;background:#fafafa;';
+              imgEl.loading = 'lazy';
+              var label = document.createElement('div');
+              label.style.cssText = 'font-size:0.55rem;color:#888;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:70px;';
+              label.textContent = name;
+              thumb.appendChild(imgEl);
+              thumb.appendChild(label);
+              thumb.addEventListener('click', function() {
+                onSelect(p, '../' + p);
+                ov.remove();
+              });
+              thumb.addEventListener('mouseenter', function() { imgEl.style.borderColor = '#FF6B9D'; });
+              thumb.addEventListener('mouseleave', function() { imgEl.style.borderColor = '#eee'; });
+              grid.appendChild(thumb);
+            })(itemId, itemName, imgPath);
+          }
+          if (grid.children.length === 0) {
+            grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">アイテムがありません</div>';
+          }
+        })
+        .catch(function() {
+          grid.innerHTML = '<div style="color:#f44;font-size:0.8rem;padding:20px;text-align:center;width:100%;">items.jsの読み込みに失敗</div>';
+        });
+      return;
+    }
 
     // 海フォルダはサブフォルダ構造
     if (path === 'assets/images/ocean') {
