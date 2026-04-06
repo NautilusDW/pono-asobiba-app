@@ -967,6 +967,7 @@
     }
   </style>
   <script src="common/achievements.js"></script>
+  <script src="room/items.js"></script>
   <script src="common/treasure.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -1578,6 +1579,14 @@
       }
 
       // ── Slot reward lookup (gendered対応) ──
+      // furn/deco の場合は ROOM_ITEMS から画像を解決（rewards.json より items.js を優先）
+      function _resolveRewardImg(type, id, fallbackImg) {
+        if ((type === 'furn' || type === 'deco') && id && typeof ROOM_ITEMS !== 'undefined') {
+          var found = ROOM_ITEMS.find(function(it) { return it.id === id; });
+          if (found && found.roomImg) return found.roomImg.replace(/^\.\.\//, '');
+        }
+        return fallbackImg || '';
+      }
       function getSlotRewardInfo(slotNum1Based) {
         var rw = CARD_SLOT_REWARDS[slotNum1Based] || null;
         if (!rw) return null;
@@ -1585,7 +1594,8 @@
           var g = 'boy';
           try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
           var v = rw[g] || rw['boy'] || {};
-          return { icon: rw.icon, name: rw.name, type: v.type, id: v.id, img: v.img,
+          return { icon: rw.icon, name: rw.name, type: v.type, id: v.id,
+                   img: _resolveRewardImg(v.type, v.id, v.img),
                    unlockRoom: v.unlockRoom || rw.unlockRoom, afterMsg: v.afterMsg || rw.afterMsg };
         }
         return rw;
@@ -1593,7 +1603,9 @@
       function getCompleteReward(cardNum) {
         if (CARD_COMPLETE_REWARDS.length === 0) return null;
         var idx = (cardNum - 1) % CARD_COMPLETE_REWARDS.length;
-        return CARD_COMPLETE_REWARDS[idx];
+        var rw = CARD_COMPLETE_REWARDS[idx];
+        if (rw) rw.img = _resolveRewardImg(rw.type, rw.id, rw.img);
+        return rw;
       }
 
       // ── 1. Login Stamp (daily auto-grant) ──

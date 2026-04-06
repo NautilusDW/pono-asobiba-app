@@ -1035,17 +1035,18 @@ function openImageBrowser(onSelect) {
         .then(function(r) { return r.text(); })
         .then(function(src) {
           grid.innerHTML = '';
-          // roomImg のパスを正規表現で抽出
-          var re = /id:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'/g;
+          // roomImg のパスを正規表現で抽出（cat も取得）
+          var re = /id:\s*'([^']+)'[\s\S]*?cat:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'/g;
           var match;
           var seen = {};
           while ((match = re.exec(src)) !== null) {
             var itemId = match[1];
-            var itemName = match[2];
-            var imgPath = match[3].replace(/^\.\.\//,''); // ../assets → assets
+            var itemCat = match[2];
+            var itemName = match[3];
+            var imgPath = match[4].replace(/^\.\.\//,''); // ../assets → assets
             if (seen[imgPath]) continue;
             seen[imgPath] = true;
-            (function(id, name, p) {
+            (function(id, cat, name, p) {
               var thumb = document.createElement('div');
               thumb.style.cssText = 'width:70px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;';
               thumb.title = name + ' (' + id + ')';
@@ -1059,13 +1060,13 @@ function openImageBrowser(onSelect) {
               thumb.appendChild(imgEl);
               thumb.appendChild(label);
               thumb.addEventListener('click', function() {
-                onSelect(p, '../' + p);
+                onSelect(p, '../' + p, { id: id, cat: cat, name: name });
                 ov.remove();
               });
               thumb.addEventListener('mouseenter', function() { imgEl.style.borderColor = '#FF6B9D'; });
               thumb.addEventListener('mouseleave', function() { imgEl.style.borderColor = '#eee'; });
               grid.appendChild(thumb);
-            })(itemId, itemName, imgPath);
+            })(itemId, itemCat, itemName, imgPath);
           }
           if (grid.children.length === 0) {
             grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">アイテムがありません</div>';
@@ -1292,7 +1293,7 @@ function makeImgField(currentPath, key, parentCard) {
   browseBtn.style.cssText = 'background:#FEF3C7;color:#D97706;border:1px solid #FCD34D;';
   browseBtn.textContent = '📂 既存から選択';
   browseBtn.addEventListener('click', function() {
-    openImageBrowser(function(path, downloadUrl) {
+    openImageBrowser(function(path, downloadUrl, meta) {
       inp.value = path;
       curPreview.src = downloadUrl;
       curPreview.style.display = 'block';
@@ -1304,6 +1305,24 @@ function makeImgField(currentPath, key, parentCard) {
       // カードのプレビューも更新
       var cardPrev = parentCard.querySelector('.reward-preview-img');
       if (cardPrev) cardPrev.src = downloadUrl;
+
+      // items.js からの選択時: ID・名前・タイプを自動入力
+      if (meta && meta.id) {
+        var idKey2 = key.replace('img', 'id').replace('-img', '-id');
+        var idInp2 = parentCard.querySelector('[data-key="' + idKey2 + '"]')
+          || parentCard.querySelector('[data-key="id"]');
+        if (idInp2) idInp2.value = meta.id;
+
+        var typeKey = key.replace('img', 'type').replace('-img', '-type');
+        var typeInp = parentCard.querySelector('[data-key="' + typeKey + '"]')
+          || parentCard.querySelector('[data-key="type"]');
+        if (typeInp) typeInp.value = meta.cat || 'deco';
+
+        var nameInp = parentCard.querySelector('[data-key="name"]');
+        if (nameInp && meta.name) nameInp.value = meta.name;
+
+        status.textContent = '✅ ' + meta.name + ' (' + meta.id + ')';
+      }
     });
   });
 
