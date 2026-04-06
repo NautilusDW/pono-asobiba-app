@@ -1924,78 +1924,83 @@ function handleImportFiles(files) {
   });
 }
 
+// ─── Image to base64 helper (data: URL or fetch from path) ───
+function getImageBase64(imgSrc, cb) {
+  if (!imgSrc) { cb(null); return; }
+  if (imgSrc.startsWith('data:')) { cb(imgSrc.split(',')[1]); return; }
+  // URL → fetch → base64
+  fetch(imgSrc).then(function(r) { return r.blob(); }).then(function(blob) {
+    var reader = new FileReader();
+    reader.onload = function() { cb(reader.result.split(',')[1]); };
+    reader.readAsDataURL(blob);
+  }).catch(function() { cb(null); });
+}
+
 // ─── GitHub Save Buttons ───
-document.getElementById('btn-save-import-a').addEventListener('click', function() {
-  var name = (selectedId || '').replace(/^(furn_|deco_)/, '');
-  if (!name) {
-    // selectedIdが無い場合、最後にインポートしたアイテムを探す
+function _getSaveId() {
+  var id = selectedId;
+  if (!id) {
     var lastImport = ITEMS.filter(function(it) { return it._imported; }).pop();
-    if (lastImport) { selectItem(lastImport.id); name = lastImport.id.replace(/^(furn_|deco_)/, ''); }
-    if (!name) { alert('先にアイテムをインポートまたは選択してください'); return; }
+    if (lastImport) { selectItem(lastImport.id); id = lastImport.id; }
   }
-  if (!_importedDataA && selectedId) {
-    var item = ITEMS.find(function(it) { return it.id === selectedId; });
-    if (item && item.roomImg && item.roomImg.startsWith('data:')) {
-      _importedDataA = item.roomImg.split(',')[1];
-    }
-  }
-  if (!_importedDataA) { alert('A画像がありません'); return; }
+  return id;
+}
+
+document.getElementById('btn-save-import-a').addEventListener('click', function() {
+  var id = _getSaveId();
+  if (!id) { alert('先にアイテムをインポートまたは選択してください'); return; }
+  var name = id.replace(/^(furn_|deco_)/, '');
+  var item = ITEMS.find(function(it) { return it.id === id; });
+  if (!item || !item.roomImg) { alert('A画像がありません'); return; }
   var path = FURN_PATH + name + '_A.png';
-  var btn = this;
+  var saveBtn = this;
   var status = document.getElementById('import-save-status');
-  btn.disabled = true;
-  status.textContent = '⏳ A画像をアップロード中...';
+  saveBtn.disabled = true;
+  status.textContent = '⏳ A画像を準備中...';
   status.style.color = '#ffd700';
-  ghUploadFile(path, _importedDataA, '🪑 家具画像追加: ' + name + '_A.png', function(err) {
-    if (err) {
-      status.textContent = '❌ ' + err;
-      status.style.color = '#f44336';
-      btn.disabled = false;
-    } else {
-      status.textContent = '✅ A画像を保存しました: ' + path;
-      status.style.color = '#4CAF50';
-      // Update item's roomImg path
-      if (selectedId) {
-        var item = ITEMS.find(function(it) { return it.id === selectedId; });
-        if (item) item._savedPathA = '../' + path;
+  getImageBase64(item.roomImg, function(b64) {
+    if (!b64) { status.textContent = '❌ A画像の読み込みに失敗'; status.style.color = '#f44336'; saveBtn.disabled = false; return; }
+    status.textContent = '⏳ A画像をアップロード中...';
+    ghUploadFile(path, b64, '🪑 家具画像追加: ' + name + '_A.png', function(err) {
+      if (err) {
+        status.textContent = '❌ ' + err;
+        status.style.color = '#f44336';
+        saveBtn.disabled = false;
+      } else {
+        status.textContent = '✅ A画像を保存: ' + path;
+        status.style.color = '#4CAF50';
+        saveBtn.disabled = false;
       }
-    }
+    });
   });
 });
 
 document.getElementById('btn-save-import-b').addEventListener('click', function() {
-  var name = (selectedId || '').replace(/^(furn_|deco_)/, '');
-  if (!name) {
-    var lastImport = ITEMS.filter(function(it) { return it._imported; }).pop();
-    if (lastImport) { selectItem(lastImport.id); name = lastImport.id.replace(/^(furn_|deco_)/, ''); }
-    if (!name) { alert('先にアイテムをインポートまたは選択してください'); return; }
-  }
-  if (!_importedDataB && selectedId) {
-    var item = ITEMS.find(function(it) { return it.id === selectedId; });
-    if (item && item.roomImgB && item.roomImgB.startsWith('data:')) {
-      _importedDataB = item.roomImgB.split(',')[1];
-    }
-  }
-  if (!_importedDataB) { alert('B画像がありません'); return; }
+  var id = _getSaveId();
+  if (!id) { alert('先にアイテムをインポートまたは選択してください'); return; }
+  var name = id.replace(/^(furn_|deco_)/, '');
+  var item = ITEMS.find(function(it) { return it.id === id; });
+  if (!item || !item.roomImgB) { alert('B画像がありません'); return; }
   var path = FURN_PATH + name + '_B.png';
-  var btn = this;
+  var saveBtn = this;
   var status = document.getElementById('import-save-status');
-  btn.disabled = true;
-  status.textContent = '⏳ B画像をアップロード中...';
+  saveBtn.disabled = true;
+  status.textContent = '⏳ B画像を準備中...';
   status.style.color = '#ffd700';
-  ghUploadFile(path, _importedDataB, '🪑 家具画像追加: ' + name + '_B.png', function(err) {
-    if (err) {
-      status.textContent = '❌ ' + err;
-      status.style.color = '#f44336';
-      btn.disabled = false;
-    } else {
-      status.textContent = '✅ B画像を保存しました: ' + path;
-      status.style.color = '#4CAF50';
-      if (selectedId) {
-        var item = ITEMS.find(function(it) { return it.id === selectedId; });
-        if (item) item._savedPathB = '../' + path;
+  getImageBase64(item.roomImgB, function(b64) {
+    if (!b64) { status.textContent = '❌ B画像の読み込みに失敗'; status.style.color = '#f44336'; saveBtn.disabled = false; return; }
+    status.textContent = '⏳ B画像をアップロード中...';
+    ghUploadFile(path, b64, '🪑 家具画像追加: ' + name + '_B.png', function(err) {
+      if (err) {
+        status.textContent = '❌ ' + err;
+        status.style.color = '#f44336';
+        saveBtn.disabled = false;
+      } else {
+        status.textContent = '✅ B画像を保存: ' + path;
+        status.style.color = '#4CAF50';
+        saveBtn.disabled = false;
       }
-    }
+    });
   });
 });
 
