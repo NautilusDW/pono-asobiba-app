@@ -9,253 +9,338 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Zen Maru Gothic', sans-serif;
-  background: #1a1a2e; color: #e0e0e0;
-  min-height: 100vh; padding: 20px;
+  background: #FFF8E7; color: #5D4E37;
+  min-height: 100vh; padding: 0 0 40px;
 }
-h1 { text-align: center; font-size: 1.5rem; color: #FFD84D; margin-bottom: 6px; }
-.subtitle { text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 24px; }
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, #FF6B9D 0%, #FFD84D 50%, #4CAF50 100%);
+  padding: 20px 16px 16px; text-align: center; margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.header h1 { font-size: 1.5rem; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.15); margin-bottom: 4px; }
+.header .subtitle { font-size: 0.8rem; color: rgba(255,255,255,0.85); }
+
+/* ── Tabs ── */
 .tabs {
-  display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;
+  display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;
+  margin: 0 16px 20px; padding: 0;
 }
 .tab {
-  padding: 8px 16px; border: none; border-radius: 20px;
-  background: #2a2a4a; color: #aaa; font-family: inherit;
-  font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  padding: 8px 14px; border: 2px solid transparent; border-radius: 20px;
+  background: #fff; color: #5D4E37; font-family: inherit;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
-.tab.active { background: #FFD84D; color: #1a1a2e; }
-.panel { display: none; }
+.tab:hover { border-color: #FF6B9D; color: #FF6B9D; }
+.tab.active { background: #FF6B9D; color: #fff; border-color: #FF6B9D; }
+
+/* ── Panels & Sections ── */
+.panel { display: none; padding: 0 16px; }
 .panel.active { display: block; }
-.section { background: #2a2a4a; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
-.section-title { font-size: 1rem; font-weight: 900; color: #FFD84D; margin-bottom: 12px; border-bottom: 1px solid #3a3a5a; padding-bottom: 8px; }
+.section {
+  background: #fff; border-radius: 16px; padding: 18px;
+  margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.section-title {
+  font-size: 1rem; font-weight: 900; color: #FF6B9D;
+  margin-bottom: 12px; border-bottom: 2px solid #FFF0F5;
+  padding-bottom: 8px;
+}
+
+/* ── Tables ── */
 table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-th { text-align: left; padding: 6px 8px; color: #FFD84D; border-bottom: 1px solid #3a3a5a; font-size: 0.7rem; }
-td { padding: 6px 8px; border-bottom: 1px solid #2a2a3a; vertical-align: middle; }
-tr:hover { background: rgba(255,216,77,0.05); }
-.img-cell { width: 50px; }
-.img-cell img { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,0.08); }
+th { text-align: left; padding: 8px; color: #FF6B9D; border-bottom: 2px solid #FFF0F5; font-size: 0.75rem; font-weight: 900; }
+td { padding: 8px; border-bottom: 1px solid #F5F0E8; vertical-align: middle; }
+tr:hover { background: #FFFAF0; }
+
+/* ── Type Badges ── */
 .type-badge {
-  display: inline-block; padding: 2px 6px; border-radius: 8px;
-  font-size: 0.65rem; font-weight: 700;
+  display: inline-block; padding: 2px 8px; border-radius: 8px;
+  font-size: 0.65rem; font-weight: 700; color: #fff;
 }
-.type-sea  { background: #1565C0; color: #fff; }
-.type-furn { background: #6D4C41; color: #fff; }
-.type-deco { background: #7B1FA2; color: #fff; }
-.type-wall { background: #00838F; color: #fff; }
-.type-floor { background: #558B2F; color: #fff; }
-.type-special { background: #F9A825; color: #333; }
-.tool-link {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 16px; background: #3a3a5a; border-radius: 12px;
-  color: #e0e0e0; text-decoration: none; font-weight: 700; font-size: 0.85rem;
-  transition: background 0.2s; margin: 4px;
-}
-.tool-link:hover { background: #4a4a6a; }
-.tool-icon { font-size: 1.3rem; }
+.type-sea     { background: #1565C0; }
+.type-furn    { background: #6D4C41; }
+.type-deco    { background: #7B1FA2; }
+.type-wall    { background: #00838F; }
+.type-floor   { background: #558B2F; }
+.type-special { background: #F9A825; color: #5D4E37; }
+
+/* ── Stat Grid ── */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .stat-card {
-  background: #1a1a2e; border-radius: 10px; padding: 10px;
+  background: #FFF8E7; border-radius: 12px; padding: 12px;
   display: flex; justify-content: space-between; align-items: center;
+  border: 1px solid #F5F0E8;
 }
-.stat-key { font-size: 0.75rem; color: #aaa; }
+.stat-key { font-size: 0.75rem; color: #8B7355; }
 .stat-val { font-size: 1.1rem; font-weight: 900; color: #4CAF50; }
 
-/* ── Upload UI ── */
-.upload-card {
-  background: #1a1a2e; border-radius: 14px; padding: 14px;
-  margin-bottom: 12px; border: 1px solid #3a3a5a;
+/* ── Tool Links ── */
+.tool-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: #FFF8E7; border-radius: 12px;
+  color: #5D4E37; text-decoration: none; font-weight: 700; font-size: 0.85rem;
+  transition: all 0.2s; margin: 4px; border: 1px solid #F5F0E8;
 }
-.upload-card-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+.tool-link:hover { background: #FFD84D; border-color: #FFD84D; }
+.tool-icon { font-size: 1.3rem; }
+
+/* ── Image Cell ── */
+.img-cell { width: 50px; }
+.img-cell img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #FFF8E7; }
+
+/* ── Reward Card Editor ── */
+.reward-card {
+  background: #FFF8E7; border-radius: 14px; padding: 16px;
+  margin-bottom: 12px; border: 1px solid #F5F0E8; position: relative;
 }
-.upload-card-header img {
+.reward-card-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 8px; }
+.reward-card-row:last-child { margin-bottom: 0; }
+.reward-field { display: flex; flex-direction: column; gap: 3px; }
+.reward-field label { font-size: 0.68rem; color: #8B7355; font-weight: 700; }
+.reward-field input,
+.reward-field select,
+.reward-field textarea {
+  padding: 6px 10px; border-radius: 8px; border: 1px solid #E0D8CC;
+  font-family: inherit; font-size: 0.8rem; color: #5D4E37; background: #fff;
+}
+.reward-field input:focus,
+.reward-field select:focus,
+.reward-field textarea:focus { outline: none; border-color: #FF6B9D; box-shadow: 0 0 0 2px rgba(255,107,157,0.15); }
+.reward-field textarea { resize: vertical; min-height: 40px; }
+.reward-field-short input { width: 70px; }
+.reward-field-mid input { width: 140px; }
+
+.reward-preview-img {
   width: 56px; height: 56px; object-fit: contain; border-radius: 10px;
-  background: rgba(255,255,255,0.06); border: 2px solid #3a3a5a;
+  background: #fff; border: 2px solid #E0D8CC; flex-shrink: 0;
 }
-.upload-card-header .no-img {
+.reward-preview-placeholder {
   width: 56px; height: 56px; border-radius: 10px;
-  background: rgba(255,255,255,0.04); border: 2px dashed #555;
+  background: #fff; border: 2px dashed #ccc;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; color: #555;
+  font-size: 1.5rem; color: #ccc; flex-shrink: 0;
 }
-.upload-card-info { flex: 1; }
-.upload-card-name { font-weight: 900; font-size: 0.9rem; }
-.upload-card-meta { font-size: 0.7rem; color: #888; margin-top: 2px; }
-.upload-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.upload-btn {
-  padding: 6px 14px; border: none; border-radius: 10px;
-  font-family: inherit; font-size: 0.75rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s;
+
+.reward-delete-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: #EF4444; color: #fff; border: none; border-radius: 8px;
+  font-size: 0.7rem; font-weight: 700; padding: 4px 10px; cursor: pointer;
+  font-family: inherit; transition: background 0.2s;
 }
-.upload-btn-file { background: #3B82F6; color: #fff; }
-.upload-btn-file:hover { background: #2563EB; }
-.upload-btn-push { background: #10B981; color: #fff; }
-.upload-btn-push:hover { background: #059669; }
-.upload-btn-push:disabled { opacity: 0.4; cursor: default; }
-.upload-preview {
-  width: 48px; height: 48px; object-fit: contain; border-radius: 8px;
-  background: rgba(255,255,255,0.08); display: none;
+.reward-delete-btn:hover { background: #DC2626; }
+
+/* ── Gendered split ── */
+.gendered-split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  background: #fff; border-radius: 10px; padding: 10px; margin-top: 6px;
 }
-.upload-status { font-size: 0.7rem; margin-top: 4px; }
-.upload-status.ok { color: #10B981; }
+.gendered-col { display: flex; flex-direction: column; gap: 6px; }
+.gendered-col-title { font-size: 0.75rem; font-weight: 900; text-align: center; padding: 3px; border-radius: 6px; }
+.gendered-boy { background: #E3F2FD; color: #1565C0; }
+.gendered-girl { background: #FCE4EC; color: #C2185B; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 8px 16px; border: none; border-radius: 10px;
+  font-family: inherit; font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; display: inline-flex;
+  align-items: center; gap: 6px;
+}
+.btn-pink { background: #FF6B9D; color: #fff; }
+.btn-pink:hover { background: #E5558A; }
+.btn-green { background: #4CAF50; color: #fff; }
+.btn-green:hover { background: #388E3C; }
+.btn-gold { background: #FFD84D; color: #5D4E37; }
+.btn-gold:hover { background: #FFC107; }
+.btn-blue { background: #3B82F6; color: #fff; }
+.btn-blue:hover { background: #2563EB; }
+.btn-purple { background: #6366F1; color: #fff; }
+.btn-purple:hover { background: #4F46E5; }
+.btn-sm { font-size: 0.72rem; padding: 5px 12px; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Upload inline ── */
+.upload-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.upload-status { font-size: 0.7rem; margin-top: 2px; }
+.upload-status.ok { color: #4CAF50; }
 .upload-status.err { color: #EF4444; }
-.gh-token-row {
-  display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+.upload-preview-small { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #fff; display: none; }
+
+/* ── Pagination ── */
+.pagination { display: flex; gap: 6px; align-items: center; justify-content: center; margin: 12px 0; flex-wrap: wrap; }
+.pagination button { min-width: 36px; }
+
+/* ── Save Bar ── */
+.save-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, #FF6B9D, #FF8FB1);
+  padding: 10px 16px; border-radius: 0 0 16px 16px; margin: -0px 0 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  box-shadow: 0 4px 12px rgba(255,107,157,0.3); flex-wrap: wrap;
 }
-.gh-token-row input {
-  flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 10px;
-  border: 1px solid #3a3a5a; background: #1a1a2e; color: #e0e0e0;
-  font-family: inherit; font-size: 0.8rem;
+.save-bar-msg { color: #fff; font-size: 0.8rem; font-weight: 700; }
+.save-bar .btn { box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+
+/* ── GitHub token compact ── */
+.gh-compact {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 14px; padding: 12px; background: #FFF8E7;
+  border-radius: 10px; border: 1px solid #F5F0E8;
 }
-.gh-token-row button {
-  padding: 8px 14px; border: none; border-radius: 10px;
-  background: #6366F1; color: #fff; font-family: inherit;
-  font-size: 0.8rem; font-weight: 700; cursor: pointer;
+.gh-compact input {
+  flex: 1; min-width: 200px; padding: 7px 12px; border-radius: 8px;
+  border: 1px solid #E0D8CC; font-family: inherit; font-size: 0.8rem;
+  color: #5D4E37; background: #fff;
 }
+.gh-compact input:focus { outline: none; border-color: #FF6B9D; }
+.gh-compact-status { font-size: 0.75rem; color: #8B7355; }
+
+/* ── Checkbox label ── */
+.check-label { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; cursor: pointer; white-space: nowrap; }
+.check-label input[type="checkbox"] { accent-color: #FF6B9D; width: 16px; height: 16px; }
+
+/* ── GitHub Settings Tab ── */
+.gh-settings-card {
+  background: #FFF8E7; border-radius: 12px; padding: 16px; margin-bottom: 12px;
+}
+
+/* ── Progress bar ── */
+.progress-bar-wrap {
+  width: 100%; height: 6px; background: #F0EBE0; border-radius: 3px; overflow: hidden; margin-top: 4px;
+}
+.progress-bar-fill {
+  height: 100%; background: #4CAF50; border-radius: 3px; transition: width 0.3s;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 12px 24px; border-radius: 12px; color: #fff;
+  font-family: 'Zen Maru Gothic', sans-serif; font-weight: 700; font-size: 0.85rem;
+  z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.toast.show { opacity: 1; }
+.toast-ok { background: #4CAF50; }
+.toast-err { background: #EF4444; }
+
+/* ── Loading spinner ── */
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<h1>🛠 ポノのあそびば 管理ダッシュボード</h1>
-<p class="subtitle">報酬・実績・ツール一覧</p>
+<div class="header">
+  <h1>🛠 ポノのあそびば 管理ダッシュボード</h1>
+  <p class="subtitle">報酬管理・実績・統計・ツール</p>
+</div>
 
 <div class="tabs">
-  <button class="tab active" data-panel="stamp">🎟 スタンプ報酬</button>
-  <button class="tab" data-panel="upload">📤 報酬管理</button>
+  <button class="tab active" data-panel="stamp">🎟 スタンプ報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
+  <button class="tab" data-panel="github">🔑 GitHub設定</button>
 </div>
 
-<!-- ===== スタンプ報酬 ===== -->
+<!-- ===== 🎟 スタンプ報酬管理 ===== -->
 <div class="panel active" id="panel-stamp">
-  <div class="section">
-    <div class="section-title">スロット報酬（カード内の到達報酬）</div>
-    <table>
-      <tr><th>スロット</th><th>画像</th><th>名前</th><th>種類</th><th>ID</th><th>備考</th></tr>
-      <tr>
-        <td style="font-weight:900;color:#FFD84D;text-align:center;">1</td>
-        <td class="img-cell"><img src="../assets/images/Rooms/furnitures_final/box_A.png"></td>
-        <td>🎁 デコボックス</td>
-        <td><span class="type-badge type-deco">deco</span></td>
-        <td><code>deco_box</code></td>
-        <td>+説明メッセージ</td>
-      </tr>
-      <tr>
-        <td style="font-weight:900;color:#FFD84D;text-align:center;">5</td>
-        <td class="img-cell"><img src="../assets/images/Rooms/furnitures_final/bed_A_01.png"></td>
-        <td>🛏️ ベッド</td>
-        <td><span class="type-badge type-furn">furn</span></td>
-        <td><code>furn_bed_A</code></td>
-        <td>🏠 おうちアンロック</td>
-      </tr>
-      <tr>
-        <td style="font-weight:900;color:#FFD84D;text-align:center;">10</td>
-        <td class="img-cell">
-          <img src="../assets/images/Rooms/furnitures_final/bear_A.png" title="男の子用">
-          <img src="../assets/images/Rooms/furnitures_final/bear_ribbon_A.png" title="女の子用">
-        </td>
-        <td>🧸 くまのぬいぐるみ</td>
-        <td><span class="type-badge type-deco">deco</span></td>
-        <td>男:<code>furn_bear_1</code><br>女:<code>deco_bear_ribbon</code></td>
-        <td>性別で自動切替</td>
-      </tr>
-      <tr>
-        <td style="font-weight:900;color:#FFD84D;text-align:center;">15</td>
-        <td class="img-cell">⭐</td>
-        <td>⭐ カードかんせい！</td>
-        <td><span class="type-badge type-special">special</span></td>
-        <td>—</td>
-        <td>カード完成報酬へ</td>
-      </tr>
-    </table>
-  </div>
-  <div class="section">
-    <div class="section-title">カード完成報酬（15枚目到達ごと・ローテーション）</div>
-    <table>
-      <tr><th>#</th><th>画像</th><th>名前</th><th>種類</th><th>ID</th></tr>
-      <tr><td>1枚目</td><td class="img-cell"><img src="../assets/images/ocean/Fish_S01/Fish_S01_001.png"></td><td>🐠 さかな</td><td><span class="type-badge type-sea">sea</span></td><td><code>medaka</code></td></tr>
-      <tr><td>2枚目</td><td class="img-cell"><img src="../assets/images/Rooms/walls/mizutama.png"></td><td>🖼️ かべがみ</td><td><span class="type-badge type-wall">wall</span></td><td><code>wall_mizutama</code></td></tr>
-      <tr><td>3枚目</td><td class="img-cell"><img src="../assets/images/ocean/Turtle/Turtle_001.png"></td><td>🐢 ウミガメ</td><td><span class="type-badge type-sea">sea</span></td><td><code>turtle</code></td></tr>
-      <tr><td>4枚目</td><td class="img-cell"><img src="../assets/images/ocean/JellyFish/JellyFish_001.png"></td><td>🪼 クラゲ</td><td><span class="type-badge type-sea">sea</span></td><td><code>jellyfish</code></td></tr>
-    </table>
-  </div>
-</div>
-
-<!-- ===== 報酬管理（アップロード） ===== -->
-<div class="panel" id="panel-upload">
-  <div class="section">
-    <div class="section-title">🔑 GitHub 認証</div>
-    <div class="gh-token-row">
-      <input type="password" id="gh-token" placeholder="GitHub Personal Access Token (repo権限)">
-      <button id="gh-save">保存</button>
-      <span id="gh-status" style="font-size:0.75rem;"></span>
-    </div>
-    <div style="font-size:0.7rem;color:#666;">
-      トークン作成: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens<br>
-      Repository access: kids-writing-app のみ、Permissions: Contents (Read and write)
+  <!-- Save Bar (sticky) -->
+  <div class="save-bar">
+    <span class="save-bar-msg" id="save-bar-msg">rewards.json を編集中</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-gold" id="btn-reload-rewards">🔄 再読込</button>
+      <button class="btn btn-green" id="btn-save-rewards" style="font-size:0.85rem;">💾 保存（GitHubにコミット）</button>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">📤 スロット報酬 画像アップロード</div>
-    <div id="slot-upload-list"></div>
+  <!-- GitHub token compact -->
+  <div class="section" style="padding:12px 16px;">
+    <div class="gh-compact">
+      <span style="font-weight:900;font-size:0.8rem;">🔑</span>
+      <input type="password" id="gh-token-stamp" placeholder="GitHub Personal Access Token">
+      <button class="btn btn-purple btn-sm" id="gh-save-stamp">保存</button>
+      <span class="gh-compact-status" id="gh-status-stamp"></span>
+    </div>
   </div>
 
+  <!-- Slot Rewards -->
   <div class="section">
-    <div class="section-title">📤 カード完成報酬 画像アップロード</div>
-    <div id="card-upload-list"></div>
+    <div class="section-title">🎰 スロット報酬（カード内の到達報酬）</div>
+    <div id="slot-rewards-container"></div>
+    <div class="pagination" id="slot-pagination"></div>
+    <div style="text-align:center;margin-top:8px;">
+      <button class="btn btn-pink" id="btn-add-slot">+ スロット報酬を追加</button>
+    </div>
+  </div>
+
+  <!-- Card Complete Rewards -->
+  <div class="section">
+    <div class="section-title">⭐ カード完成報酬（15枚目到達ごと・ローテーション）</div>
+    <div id="card-rewards-container"></div>
+    <div style="text-align:center;margin-top:8px;">
+      <button class="btn btn-pink" id="btn-add-card">+ カード完成報酬を追加</button>
+    </div>
   </div>
 </div>
 
-<!-- ===== 実績一覧 ===== -->
+<!-- ===== 🏆 実績一覧 ===== -->
 <div class="panel" id="panel-achievements">
   <div class="section">
-    <div class="section-title">はじめて系（tier 1）— 11個</div>
-    <table id="ach-table-1"><tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr></table>
+    <div class="section-title">⭐ はじめて系（tier 1）</div>
+    <table id="ach-table-1"><tr><th>ID</th><th>名前</th><th>説明</th><th>進捗</th><th>報酬</th></tr></table>
   </div>
   <div class="section">
-    <div class="section-title">がんばった系（tier 2）— 8個</div>
-    <table id="ach-table-2"><tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr></table>
+    <div class="section-title">💪 がんばった系（tier 2）</div>
+    <table id="ach-table-2"><tr><th>ID</th><th>名前</th><th>説明</th><th>進捗</th><th>報酬</th></tr></table>
   </div>
   <div class="section">
-    <div class="section-title">マスター系（tier 3）— 8個</div>
-    <table id="ach-table-3"><tr><th>ID</th><th>名前</th><th>説明</th><th>条件</th><th>報酬</th></tr></table>
+    <div class="section-title">👑 マスター系（tier 3）</div>
+    <table id="ach-table-3"><tr><th>ID</th><th>名前</th><th>説明</th><th>進捗</th><th>報酬</th></tr></table>
   </div>
 </div>
 
-<!-- ===== 統計/状態 ===== -->
+<!-- ===== 📊 統計/状態 ===== -->
 <div class="panel" id="panel-stats">
   <div class="section">
-    <div class="section-title">現在のlocalStorage統計</div>
+    <div class="section-title">📈 pono_stats キー・値一覧</div>
     <div class="stat-grid" id="stats-grid"></div>
   </div>
   <div class="section">
-    <div class="section-title">スタンプ状態</div>
+    <div class="section-title">🎟 スタンプ状態</div>
     <div class="stat-grid" id="stamp-info"></div>
   </div>
   <div class="section">
-    <div class="section-title">解除済み実績</div>
+    <div class="section-title">✅ 解除済み実績</div>
     <div id="unlocked-list" style="font-size:0.8rem;"></div>
   </div>
 </div>
 
-<!-- ===== ツール ===== -->
+<!-- ===== 🔧 ツール ===== -->
 <div class="panel" id="panel-tools">
   <div class="section">
-    <div class="section-title">おへや関連ツール</div>
+    <div class="section-title">🏠 おへや関連ツール</div>
     <a class="tool-link" href="../room/furniture_adjuster.html"><span class="tool-icon">🪑</span> 家具ピボット調整</a>
     <a class="tool-link" href="../room/furniture_gallery.html"><span class="tool-icon">🖼</span> 家具ギャラリー</a>
     <a class="tool-link" href="../room/yard_adjuster.html"><span class="tool-icon">🌳</span> 庭調整ツール</a>
     <a class="tool-link" href="../room/index.html"><span class="tool-icon">🏠</span> おへや（本番）</a>
   </div>
   <div class="section">
-    <div class="section-title">テスト・デバッグ</div>
+    <div class="section-title">🧪 テスト・デバッグ</div>
     <a class="tool-link" href="../test_treasure.html"><span class="tool-icon">🎁</span> 宝箱テスト</a>
     <a class="tool-link" href="../index.html"><span class="tool-icon">🏠</span> トップページ</a>
     <a class="tool-link" href="../help.html"><span class="tool-icon">❓</span> ヘルプページ</a>
   </div>
   <div class="section">
-    <div class="section-title">ゲーム一覧</div>
+    <div class="section-title">🎮 ゲーム一覧</div>
     <a class="tool-link" href="../puzzle/index.html"><span class="tool-icon">🧩</span> パズル</a>
     <a class="tool-link" href="../writing/index.html"><span class="tool-icon">✏️</span> もじかき</a>
     <a class="tool-link" href="../drawing/index.html"><span class="tool-icon">🎨</span> おえかき</a>
@@ -269,17 +354,89 @@ tr:hover { background: rgba(255,216,77,0.05); }
   </div>
 </div>
 
+<!-- ===== 🔑 GitHub設定 ===== -->
+<div class="panel" id="panel-github">
+  <div class="section">
+    <div class="section-title">🔑 Personal Access Token</div>
+    <div class="gh-settings-card">
+      <div class="reward-field" style="margin-bottom:10px;">
+        <label>GitHub PAT（Fine-grained token / repo権限）</label>
+        <input type="password" id="gh-token-settings" style="width:100%;max-width:500px;padding:8px 12px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.85rem;" placeholder="ghp_xxxx...">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-purple" id="gh-save-settings">💾 保存</button>
+        <button class="btn btn-blue" id="gh-test-settings">🔗 接続テスト</button>
+      </div>
+      <div id="gh-settings-result" style="margin-top:10px;font-size:0.8rem;"></div>
+    </div>
+    <div style="font-size:0.72rem;color:#8B7355;margin-top:10px;line-height:1.6;">
+      <strong>トークン作成手順:</strong><br>
+      GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens<br>
+      Repository access: <code>kids-writing-app</code> のみ<br>
+      Permissions: Contents (Read and write)
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">📡 現在のトークン状態</div>
+    <div id="gh-token-status-display" style="font-size:0.85rem;"></div>
+  </div>
+</div>
+
+<!-- Toast element -->
+<div class="toast" id="toast"></div>
+
 <script src="../common/achievements.js"></script>
 <script>
 'use strict';
 
-// ── GitHub config ──
-var GH_OWNER = 'NautilusDW';
-var GH_REPO  = 'kids-writing-app';
+// ════════════════════════════════════════════════════════════════
+// Config
+// ════════════════════════════════════════════════════════════════
+var GH_OWNER  = 'NautilusDW';
+var GH_REPO   = 'kids-writing-app';
 var GH_BRANCH = 'develop';
-var LS_TOKEN = 'admin_gh_token';
+var LS_TOKEN  = 'admin_gh_token';
+var REWARDS_PATH = 'assets/data/rewards.json';
+var REWARDS_API  = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH + '?ref=' + GH_BRANCH;
 
-// ── Tab switching ──
+// ════════════════════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════════════════════
+var rewardsData = null;       // parsed rewards.json
+var rewardsFileSha = null;    // SHA for PUT update
+var slotPage = 0;
+var SLOT_PAGE_SIZE = 10;
+
+// ════════════════════════════════════════════════════════════════
+// Utilities
+// ════════════════════════════════════════════════════════════════
+function getToken() { return localStorage.getItem(LS_TOKEN) || ''; }
+
+function showToast(msg, ok) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (ok ? 'toast-ok' : 'toast-err');
+  setTimeout(function() { el.className = 'toast'; }, 3000);
+}
+
+function utf8ToBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function base64ToUtf8(b64) {
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+function ghHeaders() {
+  var h = { 'Accept': 'application/vnd.github+json' };
+  var t = getToken();
+  if (t) h['Authorization'] = 'Bearer ' + t;
+  return h;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Tab Switching
+// ════════════════════════════════════════════════════════════════
 document.querySelectorAll('.tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -289,89 +446,471 @@ document.querySelectorAll('.tab').forEach(function(tab) {
   });
 });
 
-// ── GitHub Token ──
-var ghTokenInput = document.getElementById('gh-token');
-var ghStatus = document.getElementById('gh-status');
-ghTokenInput.value = localStorage.getItem(LS_TOKEN) || '';
-if (ghTokenInput.value) ghStatus.textContent = '✅ 保存済み';
+// ════════════════════════════════════════════════════════════════
+// GitHub Token (stamp tab compact)
+// ════════════════════════════════════════════════════════════════
+var ghTokenStamp = document.getElementById('gh-token-stamp');
+var ghStatusStamp = document.getElementById('gh-status-stamp');
+ghTokenStamp.value = getToken();
+if (ghTokenStamp.value) ghStatusStamp.textContent = '✅ 保存済み';
 
-document.getElementById('gh-save').addEventListener('click', function() {
-  var v = ghTokenInput.value.trim();
+document.getElementById('gh-save-stamp').addEventListener('click', function() {
+  var v = ghTokenStamp.value.trim();
   if (v) {
     localStorage.setItem(LS_TOKEN, v);
-    ghStatus.textContent = '✅ 保存しました';
-    ghStatus.style.color = '#10B981';
+    ghStatusStamp.textContent = '✅ 保存しました';
+    // sync to settings tab
+    document.getElementById('gh-token-settings').value = v;
+    updateTokenStatusDisplay();
+    showToast('トークンを保存しました', true);
   } else {
     localStorage.removeItem(LS_TOKEN);
-    ghStatus.textContent = '❌ クリアしました';
-    ghStatus.style.color = '#EF4444';
+    ghStatusStamp.textContent = '❌ クリアしました';
+    showToast('トークンをクリアしました', false);
   }
 });
 
-// ── GitHub API: upload file ──
+// ════════════════════════════════════════════════════════════════
+// GitHub Token (settings tab)
+// ════════════════════════════════════════════════════════════════
+var ghTokenSettings = document.getElementById('gh-token-settings');
+ghTokenSettings.value = getToken();
+
+document.getElementById('gh-save-settings').addEventListener('click', function() {
+  var v = ghTokenSettings.value.trim();
+  if (v) {
+    localStorage.setItem(LS_TOKEN, v);
+    ghTokenStamp.value = v;
+    ghStatusStamp.textContent = '✅ 保存済み';
+    updateTokenStatusDisplay();
+    showToast('トークンを保存しました', true);
+  } else {
+    localStorage.removeItem(LS_TOKEN);
+    updateTokenStatusDisplay();
+    showToast('トークンをクリアしました', false);
+  }
+});
+
+document.getElementById('gh-test-settings').addEventListener('click', function() {
+  var result = document.getElementById('gh-settings-result');
+  var t = getToken();
+  if (!t) { result.innerHTML = '<span style="color:#EF4444;">トークンが設定されていません</span>'; return; }
+  result.innerHTML = '<span class="spinner"></span> 接続テスト中...';
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO, { headers: ghHeaders() })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, data: j }; }); })
+    .then(function(res) {
+      if (res.ok) {
+        result.innerHTML = '<span style="color:#4CAF50;">✅ 接続成功！</span><br>' +
+          '<span style="font-size:0.75rem;">リポジトリ: ' + res.data.full_name + '<br>' +
+          'デフォルトブランチ: ' + res.data.default_branch + '<br>' +
+          '権限: ' + (res.data.permissions ? Object.keys(res.data.permissions).filter(function(k){return res.data.permissions[k];}).join(', ') : '不明') + '</span>';
+      } else {
+        result.innerHTML = '<span style="color:#EF4444;">❌ エラー: ' + (res.data.message || '不明なエラー') + '</span>';
+      }
+    })
+    .catch(function(e) { result.innerHTML = '<span style="color:#EF4444;">❌ 通信エラー: ' + e.message + '</span>'; });
+});
+
+function updateTokenStatusDisplay() {
+  var el = document.getElementById('gh-token-status-display');
+  var t = getToken();
+  if (t) {
+    var masked = t.substring(0, 8) + '...' + t.substring(t.length - 4);
+    el.innerHTML = '<span style="color:#4CAF50;font-weight:900;">✅ トークン設定済み</span><br>' +
+      '<span style="font-size:0.75rem;color:#8B7355;">値: <code>' + masked + '</code></span>';
+  } else {
+    el.innerHTML = '<span style="color:#EF4444;font-weight:900;">❌ トークン未設定</span><br>' +
+      '<span style="font-size:0.75rem;color:#8B7355;">上のフォームからPATを設定してください</span>';
+  }
+}
+updateTokenStatusDisplay();
+
+// ════════════════════════════════════════════════════════════════
+// GitHub API: Upload file
+// ════════════════════════════════════════════════════════════════
 function ghUpload(filePath, base64Content, commitMsg, callback) {
-  var token = localStorage.getItem(LS_TOKEN);
+  var token = getToken();
   if (!token) { callback('トークンが設定されていません'); return; }
 
   var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath;
 
-  // まず既存ファイルのSHAを取得（更新の場合に必要）
-  fetch(apiUrl + '?ref=' + GH_BRANCH, {
-    headers: { 'Authorization': 'Bearer ' + token }
-  }).then(function(r) { return r.ok ? r.json() : null; })
-  .then(function(existing) {
-    var body = {
-      message: commitMsg,
-      content: base64Content,
-      branch: GH_BRANCH
-    };
-    if (existing && existing.sha) body.sha = existing.sha;
+  // Get existing SHA if file exists
+  fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(existing) {
+      var body = {
+        message: commitMsg,
+        content: base64Content,
+        branch: GH_BRANCH
+      };
+      if (existing && existing.sha) body.sha = existing.sha;
 
-    return fetch(apiUrl, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-  }).then(function(r) {
-    if (r.ok) { callback(null); }
-    else { r.json().then(function(j) { callback(j.message || 'エラー'); }); }
-  }).catch(function(e) { callback(e.message); });
+      return fetch(apiUrl, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify(body)
+      });
+    })
+    .then(function(r) {
+      if (r.ok) { callback(null); }
+      else { r.json().then(function(j) { callback(j.message || 'エラー'); }); }
+    })
+    .catch(function(e) { callback(e.message); });
 }
 
-// ── Upload card builder ──
-function buildUploadCard(container, config) {
-  // config: { label, currentImg, targetPath, id }
+// ════════════════════════════════════════════════════════════════
+// Rewards JSON: Fetch from GitHub
+// ════════════════════════════════════════════════════════════════
+function fetchRewards() {
+  var msg = document.getElementById('save-bar-msg');
+  msg.textContent = '🔄 rewards.json を読み込み中...';
+  document.getElementById('slot-rewards-container').innerHTML = '';
+  document.getElementById('card-rewards-container').innerHTML = '';
+
+  fetch(REWARDS_API, { headers: ghHeaders() })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      rewardsFileSha = data.sha;
+      var json = base64ToUtf8(data.content.replace(/\n/g, ''));
+      rewardsData = JSON.parse(json);
+      msg.textContent = '✅ rewards.json 読み込み完了';
+      renderSlotRewards();
+      renderCardRewards();
+    })
+    .catch(function(e) {
+      msg.textContent = '❌ 読み込み失敗: ' + e.message;
+      // Fallback: try local
+      fetch('../' + REWARDS_PATH)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          rewardsData = d;
+          rewardsFileSha = null;
+          msg.textContent = '⚠️ ローカルから読み込み（SHAなし）';
+          renderSlotRewards();
+          renderCardRewards();
+        })
+        .catch(function() { msg.textContent = '❌ rewards.json の読み込みに完全に失敗しました'; });
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// Render Slot Rewards (with pagination)
+// ════════════════════════════════════════════════════════════════
+function renderSlotRewards() {
+  if (!rewardsData) return;
+  var container = document.getElementById('slot-rewards-container');
+  container.innerHTML = '';
+
+  // Convert slotRewards object to sorted array of {slot, data}
+  var slots = [];
+  var sr = rewardsData.slotRewards || {};
+  Object.keys(sr).forEach(function(key) {
+    slots.push({ slot: parseInt(key), data: sr[key] });
+  });
+  slots.sort(function(a, b) { return a.slot - b.slot; });
+
+  // Pagination
+  var totalPages = Math.max(1, Math.ceil(slots.length / SLOT_PAGE_SIZE));
+  if (slotPage >= totalPages) slotPage = totalPages - 1;
+  var start = slotPage * SLOT_PAGE_SIZE;
+  var pageSlots = slots.slice(start, start + SLOT_PAGE_SIZE);
+
+  pageSlots.forEach(function(item) {
+    container.appendChild(buildSlotCard(item.slot, item.data));
+  });
+
+  renderSlotPagination(totalPages);
+}
+
+function renderSlotPagination(totalPages) {
+  var pag = document.getElementById('slot-pagination');
+  pag.innerHTML = '';
+  if (totalPages <= 1) return;
+  for (var i = 0; i < totalPages; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-sm ' + (i === slotPage ? 'btn-pink' : 'btn-gold');
+    btn.textContent = (i + 1);
+    btn.dataset.page = i;
+    btn.addEventListener('click', function() {
+      slotPage = parseInt(this.dataset.page);
+      renderSlotRewards();
+    });
+    pag.appendChild(btn);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Build Slot Reward Card (editable)
+// ════════════════════════════════════════════════════════════════
+function buildSlotCard(slotNum, data) {
   var card = document.createElement('div');
-  card.className = 'upload-card';
+  card.className = 'reward-card';
+  card.dataset.slotNum = slotNum;
 
-  var header = document.createElement('div');
-  header.className = 'upload-card-header';
+  var isGendered = !!data.gendered;
 
-  if (config.currentImg) {
-    var img = document.createElement('img');
-    img.src = '../' + config.currentImg;
-    img.onerror = function() { img.style.display = 'none'; };
-    header.appendChild(img);
+  // Delete button
+  var delBtn = document.createElement('button');
+  delBtn.className = 'reward-delete-btn';
+  delBtn.textContent = '🗑 削除';
+  delBtn.addEventListener('click', function() {
+    if (confirm('スロット ' + slotNum + ' を削除しますか？')) {
+      delete rewardsData.slotRewards[slotNum];
+      renderSlotRewards();
+    }
+  });
+  card.appendChild(delBtn);
+
+  // Row 1: slot number, icon, name
+  var row1 = document.createElement('div');
+  row1.className = 'reward-card-row';
+
+  // Preview image
+  var previewSrc = isGendered ? (data.boy && data.boy.img) : data.img;
+  if (previewSrc) {
+    var prevImg = document.createElement('img');
+    prevImg.className = 'reward-preview-img';
+    prevImg.src = '../' + previewSrc;
+    prevImg.onerror = function() { this.style.display = 'none'; };
+    row1.appendChild(prevImg);
   } else {
-    var noImg = document.createElement('div');
-    noImg.className = 'no-img';
-    noImg.textContent = '?';
-    header.appendChild(noImg);
+    var ph = document.createElement('div');
+    ph.className = 'reward-preview-placeholder';
+    ph.textContent = data.icon || '?';
+    row1.appendChild(ph);
   }
 
-  var info = document.createElement('div');
-  info.className = 'upload-card-info';
-  info.innerHTML = '<div class="upload-card-name">' + config.label + '</div>' +
-    '<div class="upload-card-meta">パス: <code>' + config.targetPath + '</code></div>';
-  header.appendChild(info);
-  card.appendChild(header);
+  row1.appendChild(makeField('スロット番号', 'number', slotNum, 'slot-num', 'reward-field-short'));
+  row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
+  row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  card.appendChild(row1);
 
-  // Upload row
-  var row = document.createElement('div');
-  row.className = 'upload-row';
+  // Row 2: type, id, img (non-gendered)
+  if (!isGendered) {
+    var row2 = document.createElement('div');
+    row2.className = 'reward-card-row';
+    row2.appendChild(makeTypeSelect(data.type || 'deco', 'type'));
+    row2.appendChild(makeField('ID', 'text', data.id || '', 'id', 'reward-field-mid'));
+    row2.appendChild(makeImgField(data.img || '', 'img', card));
+    card.appendChild(row2);
+  }
+
+  // Row 3: checkboxes
+  var row3 = document.createElement('div');
+  row3.className = 'reward-card-row';
+
+  var genderedCheck = makeCheckbox('男女別にする', isGendered, 'gendered');
+  genderedCheck.querySelector('input').addEventListener('change', function() {
+    var checked = this.checked;
+    var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
+    var currentData = collectSlotData(card);
+    if (checked) {
+      currentData.gendered = true;
+      currentData.boy = { type: currentData.type || 'deco', id: currentData.id || '', img: currentData.img || '' };
+      currentData.girl = { type: currentData.type || 'deco', id: '', img: '' };
+      delete currentData.type; delete currentData.id; delete currentData.img;
+    } else {
+      currentData.gendered = false;
+      if (currentData.boy) {
+        currentData.type = currentData.boy.type || 'deco';
+        currentData.id = currentData.boy.id || '';
+        currentData.img = currentData.boy.img || '';
+      }
+      delete currentData.boy; delete currentData.girl;
+    }
+    rewardsData.slotRewards[sn] = currentData;
+    renderSlotRewards();
+  });
+  row3.appendChild(genderedCheck);
+
+  // unlockRoom checkbox (only for non-special types)
+  var unlockCheck = makeCheckbox('おうちアンロック', !!data.unlockRoom, 'unlockRoom');
+  row3.appendChild(unlockCheck);
+  card.appendChild(row3);
+
+  // Gendered split
+  if (isGendered) {
+    var split = document.createElement('div');
+    split.className = 'gendered-split';
+
+    split.appendChild(buildGenderedCol('👦 おとこのこ', data.boy || {}, 'boy', card));
+    split.appendChild(buildGenderedCol('👧 おんなのこ', data.girl || {}, 'girl', card));
+    card.appendChild(split);
+  }
+
+  // afterMsg
+  var row4 = document.createElement('div');
+  row4.className = 'reward-card-row';
+  var msgField = document.createElement('div');
+  msgField.className = 'reward-field';
+  msgField.style.flex = '1';
+  var msgLabel = document.createElement('label');
+  msgLabel.textContent = '追加メッセージ（省略可）';
+  var msgArea = document.createElement('textarea');
+  msgArea.dataset.key = 'afterMsg';
+  msgArea.value = data.afterMsg || '';
+  msgArea.rows = 2;
+  msgArea.style.width = '100%';
+  msgField.appendChild(msgLabel);
+  msgField.appendChild(msgArea);
+  row4.appendChild(msgField);
+  card.appendChild(row4);
+
+  return card;
+}
+
+function buildGenderedCol(title, data, prefix, parentCard) {
+  var col = document.createElement('div');
+  col.className = 'gendered-col';
+
+  var titleDiv = document.createElement('div');
+  titleDiv.className = 'gendered-col-title ' + (prefix === 'boy' ? 'gendered-boy' : 'gendered-girl');
+  titleDiv.textContent = title;
+  col.appendChild(titleDiv);
+
+  col.appendChild(makeTypeSelect(data.type || 'deco', prefix + '-type'));
+  col.appendChild(makeField('ID', 'text', data.id || '', prefix + '-id', ''));
+  col.appendChild(makeImgField(data.img || '', prefix + '-img', parentCard));
+
+  return col;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Build Card Complete Reward Card (editable)
+// ════════════════════════════════════════════════════════════════
+function renderCardRewards() {
+  if (!rewardsData) return;
+  var container = document.getElementById('card-rewards-container');
+  container.innerHTML = '';
+
+  var cards = rewardsData.cardCompleteRewards || [];
+  cards.forEach(function(data, idx) {
+    container.appendChild(buildCardCompleteCard(idx, data));
+  });
+}
+
+function buildCardCompleteCard(idx, data) {
+  var card = document.createElement('div');
+  card.className = 'reward-card';
+  card.dataset.cardIdx = idx;
+
+  // Delete
+  var delBtn = document.createElement('button');
+  delBtn.className = 'reward-delete-btn';
+  delBtn.textContent = '🗑 削除';
+  delBtn.addEventListener('click', function() {
+    if (confirm((idx + 1) + '枚目のカード完成報酬を削除しますか？')) {
+      rewardsData.cardCompleteRewards.splice(idx, 1);
+      renderCardRewards();
+    }
+  });
+  card.appendChild(delBtn);
+
+  // Row 1
+  var row1 = document.createElement('div');
+  row1.className = 'reward-card-row';
+
+  if (data.img) {
+    var prevImg = document.createElement('img');
+    prevImg.className = 'reward-preview-img';
+    prevImg.src = '../' + data.img;
+    prevImg.onerror = function() { this.style.display = 'none'; };
+    row1.appendChild(prevImg);
+  } else {
+    var ph = document.createElement('div');
+    ph.className = 'reward-preview-placeholder';
+    ph.textContent = data.icon || '?';
+    row1.appendChild(ph);
+  }
+
+  var numDisplay = document.createElement('div');
+  numDisplay.className = 'reward-field';
+  numDisplay.innerHTML = '<label>#</label><div style="font-weight:900;font-size:1rem;color:#FF6B9D;">' + (idx + 1) + '枚目</div>';
+  row1.appendChild(numDisplay);
+
+  row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
+  row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  card.appendChild(row1);
+
+  // Row 2
+  var row2 = document.createElement('div');
+  row2.className = 'reward-card-row';
+  row2.appendChild(makeTypeSelect(data.type || 'sea', 'type'));
+  row2.appendChild(makeField('ID', 'text', data.id || '', 'id', 'reward-field-mid'));
+  row2.appendChild(makeImgField(data.img || '', 'img', card));
+  card.appendChild(row2);
+
+  return card;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Form Helpers
+// ════════════════════════════════════════════════════════════════
+function makeField(label, type, value, key, extraClass) {
+  var div = document.createElement('div');
+  div.className = 'reward-field ' + (extraClass || '');
+  var lbl = document.createElement('label');
+  lbl.textContent = label;
+  var inp = document.createElement('input');
+  inp.type = type;
+  inp.value = value;
+  inp.dataset.key = key;
+  div.appendChild(lbl);
+  div.appendChild(inp);
+  return div;
+}
+
+function makeTypeSelect(currentType, key) {
+  var div = document.createElement('div');
+  div.className = 'reward-field';
+  var lbl = document.createElement('label');
+  lbl.textContent = 'タイプ';
+  var sel = document.createElement('select');
+  sel.dataset.key = key;
+  ['deco', 'furn', 'sea', 'wall', 'floor', 'special'].forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    if (t === currentType) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  div.appendChild(lbl);
+  div.appendChild(sel);
+  return div;
+}
+
+function makeCheckbox(label, checked, key) {
+  var wrap = document.createElement('label');
+  wrap.className = 'check-label';
+  var cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = checked;
+  cb.dataset.key = key;
+  wrap.appendChild(cb);
+  wrap.appendChild(document.createTextNode(' ' + label));
+  return wrap;
+}
+
+function makeImgField(currentPath, key, parentCard) {
+  var div = document.createElement('div');
+  div.className = 'reward-field';
+  div.style.flex = '1';
+  var lbl = document.createElement('label');
+  lbl.textContent = '画像パス';
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = currentPath;
+  inp.dataset.key = key;
+  inp.style.width = '100%';
+  inp.style.minWidth = '200px';
+  div.appendChild(lbl);
+  div.appendChild(inp);
+
+  // Upload inline
+  var uploadRow = document.createElement('div');
+  uploadRow.className = 'upload-inline';
 
   var fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -379,16 +918,18 @@ function buildUploadCard(container, config) {
   fileInput.style.display = 'none';
 
   var fileBtn = document.createElement('button');
-  fileBtn.className = 'upload-btn upload-btn-file';
-  fileBtn.textContent = '📁 ファイルを選択';
+  fileBtn.className = 'btn btn-blue btn-sm';
+  fileBtn.type = 'button';
+  fileBtn.textContent = '📁 選択';
   fileBtn.addEventListener('click', function() { fileInput.click(); });
 
   var preview = document.createElement('img');
-  preview.className = 'upload-preview';
+  preview.className = 'upload-preview-small';
 
   var pushBtn = document.createElement('button');
-  pushBtn.className = 'upload-btn upload-btn-push';
-  pushBtn.textContent = '🚀 GitHubにアップロード';
+  pushBtn.className = 'btn btn-green btn-sm';
+  pushBtn.type = 'button';
+  pushBtn.textContent = '🚀 アップロード';
   pushBtn.disabled = true;
 
   var status = document.createElement('div');
@@ -405,10 +946,9 @@ function buildUploadCard(container, config) {
     reader.onload = function(e) {
       preview.src = e.target.result;
       preview.style.display = 'block';
-      // base64部分だけ抽出（data:image/png;base64,XXXX → XXXX）
       _base64 = e.target.result.split(',')[1];
       pushBtn.disabled = false;
-      status.textContent = '✅ ' + _fileName + ' 読み込み済み';
+      status.textContent = '✅ ' + _fileName;
       status.className = 'upload-status ok';
     };
     reader.readAsDataURL(file);
@@ -416,60 +956,276 @@ function buildUploadCard(container, config) {
 
   pushBtn.addEventListener('click', function() {
     if (!_base64) return;
+    var path = inp.value.trim();
+    if (!path) { showToast('画像パスを入力してください', false); return; }
     pushBtn.disabled = true;
     status.textContent = '⏳ アップロード中...';
     status.className = 'upload-status';
 
-    var ext = _fileName.split('.').pop() || 'png';
-    var path = config.targetPath;
-    // 拡張子が異なる場合は置換
-    if (ext !== 'png') {
-      path = path.replace(/\.[^.]+$/, '.' + ext);
-    }
-
-    ghUpload(path, _base64, '🎁 報酬画像更新: ' + config.label, function(err) {
+    ghUpload(path, _base64, '🎁 報酬画像更新: ' + path, function(err) {
       if (err) {
         status.textContent = '❌ ' + err;
         status.className = 'upload-status err';
         pushBtn.disabled = false;
       } else {
-        status.textContent = '✅ アップロード成功！Netlifyが自動デプロイします';
+        status.textContent = '✅ アップロード成功！';
         status.className = 'upload-status ok';
-        // 現在の画像を更新
-        var curImg = card.querySelector('.upload-card-header img');
-        if (curImg) curImg.src = preview.src;
+        showToast('画像をアップロードしました', true);
+        // Update preview in card
+        var cardPrev = parentCard.querySelector('.reward-preview-img');
+        if (cardPrev) cardPrev.src = preview.src;
       }
     });
   });
 
-  row.appendChild(fileInput);
-  row.appendChild(fileBtn);
-  row.appendChild(preview);
-  row.appendChild(pushBtn);
-  card.appendChild(row);
-  card.appendChild(status);
-  container.appendChild(card);
+  uploadRow.appendChild(fileInput);
+  uploadRow.appendChild(fileBtn);
+  uploadRow.appendChild(preview);
+  uploadRow.appendChild(pushBtn);
+  div.appendChild(uploadRow);
+  div.appendChild(status);
+
+  return div;
 }
 
-// ── Build slot upload cards ──
-var slotList = document.getElementById('slot-upload-list');
-[
-  { label: 'スロット1: デコボックス', currentImg: 'assets/images/Rooms/furnitures_final/box_A.png', targetPath: 'assets/images/Rooms/furnitures_final/box_A.png' },
-  { label: 'スロット5: ベッド', currentImg: 'assets/images/Rooms/furnitures_final/bed_A_01.png', targetPath: 'assets/images/Rooms/furnitures_final/bed_A_01.png' },
-  { label: 'スロット10: くま（男の子）', currentImg: 'assets/images/Rooms/furnitures_final/bear_A.png', targetPath: 'assets/images/Rooms/furnitures_final/bear_A.png' },
-  { label: 'スロット10: くま（女の子）', currentImg: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png', targetPath: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png' },
-].forEach(function(c) { buildUploadCard(slotList, c); });
+// ════════════════════════════════════════════════════════════════
+// Collect Data from Cards
+// ════════════════════════════════════════════════════════════════
+function collectSlotData(card) {
+  var d = {};
+  d.name = (card.querySelector('[data-key="name"]') || {}).value || '';
+  d.icon = (card.querySelector('[data-key="icon"]') || {}).value || '';
 
-// ── Build card complete upload cards ──
-var cardList = document.getElementById('card-upload-list');
-[
-  { label: '1枚目: さかな', currentImg: 'assets/images/ocean/Fish_S01/Fish_S01_001.png', targetPath: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
-  { label: '2枚目: かべがみ', currentImg: 'assets/images/Rooms/walls/mizutama.png', targetPath: 'assets/images/Rooms/walls/mizutama.png' },
-  { label: '3枚目: ウミガメ', currentImg: 'assets/images/ocean/Turtle/Turtle_001.png', targetPath: 'assets/images/ocean/Turtle/Turtle_001.png' },
-  { label: '4枚目: クラゲ', currentImg: 'assets/images/ocean/JellyFish/JellyFish_001.png', targetPath: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
-].forEach(function(c) { buildUploadCard(cardList, c); });
+  var genCb = card.querySelector('[data-key="gendered"]');
+  var isGendered = genCb && genCb.checked;
+  d.gendered = isGendered;
 
-// ── Achievements ──
+  if (isGendered) {
+    d.boy = {
+      type: (card.querySelector('[data-key="boy-type"]') || {}).value || 'deco',
+      id:   (card.querySelector('[data-key="boy-id"]') || {}).value || '',
+      img:  (card.querySelector('[data-key="boy-img"]') || {}).value || ''
+    };
+    d.girl = {
+      type: (card.querySelector('[data-key="girl-type"]') || {}).value || 'deco',
+      id:   (card.querySelector('[data-key="girl-id"]') || {}).value || '',
+      img:  (card.querySelector('[data-key="girl-img"]') || {}).value || ''
+    };
+  } else {
+    d.type = (card.querySelector('[data-key="type"]') || {}).value || 'deco';
+    d.id   = (card.querySelector('[data-key="id"]') || {}).value || '';
+    d.img  = (card.querySelector('[data-key="img"]') || {}).value || '';
+  }
+
+  var unlockCb = card.querySelector('[data-key="unlockRoom"]');
+  if (unlockCb && unlockCb.checked) d.unlockRoom = true;
+
+  var msgEl = card.querySelector('[data-key="afterMsg"]');
+  if (msgEl && msgEl.value.trim()) d.afterMsg = msgEl.value.trim();
+
+  return d;
+}
+
+function collectAllRewards() {
+  var result = { version: rewardsData ? rewardsData.version || 1 : 1 };
+
+  // Slot rewards
+  result.slotRewards = {};
+  document.querySelectorAll('#slot-rewards-container .reward-card').forEach(function(card) {
+    var slotNumEl = card.querySelector('[data-key="slot-num"]');
+    var sn = parseInt(slotNumEl.value);
+    if (isNaN(sn)) return;
+    result.slotRewards[sn] = collectSlotData(card);
+  });
+
+  // Also include slots not on current page
+  if (rewardsData && rewardsData.slotRewards) {
+    var visibleSlots = {};
+    document.querySelectorAll('#slot-rewards-container .reward-card').forEach(function(card) {
+      var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
+      visibleSlots[sn] = true;
+    });
+    // Re-add slots not visible on current page from original data
+    Object.keys(rewardsData.slotRewards).forEach(function(key) {
+      var sn = parseInt(key);
+      if (!visibleSlots[sn] && !result.slotRewards[sn]) {
+        result.slotRewards[sn] = rewardsData.slotRewards[sn];
+      }
+    });
+  }
+
+  // Card complete rewards
+  result.cardCompleteRewards = [];
+  document.querySelectorAll('#card-rewards-container .reward-card').forEach(function(card) {
+    var d = {};
+    d.icon = (card.querySelector('[data-key="icon"]') || {}).value || '';
+    d.name = (card.querySelector('[data-key="name"]') || {}).value || '';
+    d.type = (card.querySelector('[data-key="type"]') || {}).value || 'sea';
+    d.id   = (card.querySelector('[data-key="id"]') || {}).value || '';
+    d.img  = (card.querySelector('[data-key="img"]') || {}).value || '';
+    result.cardCompleteRewards.push(d);
+  });
+
+  return result;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Validation
+// ════════════════════════════════════════════════════════════════
+function validateRewards(data) {
+  var errors = [];
+
+  // Check duplicate slot numbers
+  var slotNums = Object.keys(data.slotRewards).map(Number);
+  var seen = {};
+  slotNums.forEach(function(n) {
+    if (seen[n]) errors.push('スロット番号 ' + n + ' が重複しています');
+    seen[n] = true;
+  });
+
+  // Check required fields for slots
+  Object.keys(data.slotRewards).forEach(function(key) {
+    var d = data.slotRewards[key];
+    if (!d.name) errors.push('スロット ' + key + ': 名前が空です');
+    if (d.gendered) {
+      if (!d.boy || !d.boy.id) errors.push('スロット ' + key + ': 男の子用IDが空です');
+      if (!d.girl || !d.girl.id) errors.push('スロット ' + key + ': 女の子用IDが空です');
+    } else {
+      if (d.type !== 'special') {
+        if (!d.id) errors.push('スロット ' + key + ': IDが空です');
+      }
+    }
+  });
+
+  // Check card complete rewards
+  data.cardCompleteRewards.forEach(function(d, i) {
+    if (!d.name) errors.push('カード完成 ' + (i + 1) + '枚目: 名前が空です');
+    if (!d.type) errors.push('カード完成 ' + (i + 1) + '枚目: タイプが空です');
+    if (!d.id) errors.push('カード完成 ' + (i + 1) + '枚目: IDが空です');
+  });
+
+  return errors;
+}
+
+// ════════════════════════════════════════════════════════════════
+// Save to GitHub
+// ════════════════════════════════════════════════════════════════
+document.getElementById('btn-save-rewards').addEventListener('click', function() {
+  var token = getToken();
+  if (!token) { showToast('GitHubトークンを設定してください', false); return; }
+
+  // First, save visible slot data back to rewardsData
+  document.querySelectorAll('#slot-rewards-container .reward-card').forEach(function(card) {
+    var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
+    if (!isNaN(sn)) {
+      rewardsData.slotRewards[sn] = collectSlotData(card);
+    }
+  });
+
+  var data = collectAllRewards();
+
+  // Validate
+  var errors = validateRewards(data);
+  if (errors.length > 0) {
+    showToast('バリデーションエラー: ' + errors[0], false);
+    alert('バリデーションエラー:\n' + errors.join('\n'));
+    return;
+  }
+
+  var json = JSON.stringify(data, null, 2);
+  var b64 = utf8ToBase64(json);
+
+  var msg = document.getElementById('save-bar-msg');
+  var btn = document.getElementById('btn-save-rewards');
+  btn.disabled = true;
+  msg.textContent = '💾 保存中...';
+
+  var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH;
+
+  // Get fresh SHA
+  fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(existing) {
+      var body = {
+        message: '🎁 報酬定義を更新',
+        content: b64,
+        branch: GH_BRANCH
+      };
+      if (existing && existing.sha) body.sha = existing.sha;
+
+      return fetch(apiUrl, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify(body)
+      });
+    })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'PUT failed'); });
+      return r.json();
+    })
+    .then(function(res) {
+      rewardsFileSha = res.content.sha;
+      msg.textContent = '✅ 保存成功！（commit: ' + res.commit.sha.substring(0, 7) + '）';
+      showToast('rewards.json を保存しました', true);
+      btn.disabled = false;
+    })
+    .catch(function(e) {
+      msg.textContent = '❌ 保存失敗: ' + e.message;
+      showToast('保存失敗: ' + e.message, false);
+      btn.disabled = false;
+    });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Add Slot / Card
+// ════════════════════════════════════════════════════════════════
+document.getElementById('btn-add-slot').addEventListener('click', function() {
+  if (!rewardsData) { showToast('先にrewards.jsonを読み込んでください', false); return; }
+  var sr = rewardsData.slotRewards || {};
+  var maxSlot = 0;
+  Object.keys(sr).forEach(function(k) { var n = parseInt(k); if (n > maxSlot) maxSlot = n; });
+  var newSlot = maxSlot + 1;
+  sr[newSlot] = {
+    icon: '🎁',
+    name: 'ごほうび' + newSlot,
+    type: 'deco',
+    id: 'reward_slot_' + newSlot,
+    img: '',
+    gendered: false
+  };
+  rewardsData.slotRewards = sr;
+  // Go to last page
+  var total = Object.keys(sr).length;
+  slotPage = Math.max(0, Math.ceil(total / SLOT_PAGE_SIZE) - 1);
+  renderSlotRewards();
+  showToast('スロット ' + newSlot + ' を追加しました', true);
+});
+
+document.getElementById('btn-add-card').addEventListener('click', function() {
+  if (!rewardsData) { showToast('先にrewards.jsonを読み込んでください', false); return; }
+  if (!rewardsData.cardCompleteRewards) rewardsData.cardCompleteRewards = [];
+  var num = rewardsData.cardCompleteRewards.length + 1;
+  rewardsData.cardCompleteRewards.push({
+    icon: '🎁',
+    name: 'ごほうび' + num,
+    type: 'sea',
+    id: 'reward_card_' + num,
+    img: ''
+  });
+  renderCardRewards();
+  showToast('カード完成報酬 ' + num + '枚目 を追加しました', true);
+});
+
+// Reload
+document.getElementById('btn-reload-rewards').addEventListener('click', function() {
+  if (confirm('未保存の変更は破棄されます。再読込しますか？')) {
+    fetchRewards();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// Achievements Tab
+// ════════════════════════════════════════════════════════════════
 var ACHIEVEMENTS = window.getAchievements ? window.getAchievements() : [];
 var unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
 var stats = JSON.parse(localStorage.getItem('pono_stats') || '{}');
@@ -479,19 +1235,28 @@ ACHIEVEMENTS.forEach(function(ach) {
   if (!table) return;
   var done = !!unlocked[ach.id];
   var val = stats[ach.stat] || 0;
+  var pct = Math.min(100, Math.round((val / ach.target) * 100));
   var tr = document.createElement('tr');
   tr.style.opacity = done ? '1' : '0.6';
   var typeClass = 'type-' + (ach.reward ? ach.reward.type : 'furn');
   tr.innerHTML =
-    '<td><code>' + ach.id + '</code></td>' +
+    '<td><code style="font-size:0.7rem;">' + ach.id + '</code></td>' +
     '<td>' + (done ? '✅ ' : '🔒 ') + ach.name + '</td>' +
-    '<td style="font-size:0.7rem;color:#aaa;">' + ach.desc + '</td>' +
-    '<td>' + val + '/' + ach.target + ' <span style="color:#888;">(' + ach.stat + ')</span></td>' +
-    '<td>' + (ach.reward ? '<span class="type-badge ' + typeClass + '">' + ach.reward.type + '</span> <code>' + ach.reward.id + '</code>' : '—') + '</td>';
+    '<td style="font-size:0.7rem;color:#8B7355;">' + ach.desc + '</td>' +
+    '<td style="min-width:120px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:0.7rem;">' +
+        '<span>' + val + '/' + ach.target + '</span>' +
+        '<span style="color:#8B7355;">' + pct + '%</span>' +
+      '</div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pct + '%;' + (done ? 'background:#FFD84D;' : '') + '"></div></div>' +
+    '</td>' +
+    '<td>' + (ach.reward ? '<span class="type-badge ' + typeClass + '">' + ach.reward.type + '</span> <code style="font-size:0.65rem;">' + ach.reward.id + '</code>' : '—') + '</td>';
   table.appendChild(tr);
 });
 
-// ── Stats ──
+// ════════════════════════════════════════════════════════════════
+// Stats Tab
+// ════════════════════════════════════════════════════════════════
 var statsGrid = document.getElementById('stats-grid');
 var allKeys = Object.keys(stats).sort();
 allKeys.forEach(function(key) {
@@ -500,9 +1265,9 @@ allKeys.forEach(function(key) {
   card.innerHTML = '<span class="stat-key">' + key + '</span><span class="stat-val">' + stats[key] + '</span>';
   statsGrid.appendChild(card);
 });
-if (allKeys.length === 0) statsGrid.innerHTML = '<div style="color:#666;">統計データなし</div>';
+if (allKeys.length === 0) statsGrid.innerHTML = '<div style="color:#8B7355;">統計データなし</div>';
 
-// ── Stamp info ──
+// Stamp info
 var stampInfo = document.getElementById('stamp-info');
 var stampLog = JSON.parse(localStorage.getItem('pono_stamp_log') || '{"dates":[],"total":0}');
 var given = JSON.parse(localStorage.getItem('pono_stamp_rewards_given') || '[]');
@@ -520,20 +1285,26 @@ var given = JSON.parse(localStorage.getItem('pono_stamp_rewards_given') || '[]')
   stampInfo.appendChild(card);
 });
 
-// ── Unlocked list ──
+// Unlocked list
 var unlockedList = document.getElementById('unlocked-list');
 var unlockedKeys = Object.keys(unlocked);
 if (unlockedKeys.length === 0) {
-  unlockedList.innerHTML = '<div style="color:#666;">解除済みなし</div>';
+  unlockedList.innerHTML = '<div style="color:#8B7355;">解除済みなし</div>';
 } else {
   unlockedKeys.forEach(function(id) {
     var ach = ACHIEVEMENTS.find(function(a) { return a.id === id; });
     var div = document.createElement('div');
-    div.style.cssText = 'padding:4px 0;border-bottom:1px solid #2a2a3a;';
+    div.style.cssText = 'padding:6px 0;border-bottom:1px solid #F5F0E8;';
     div.textContent = '✅ ' + (ach ? ach.name : id);
     unlockedList.appendChild(div);
   });
 }
+
+// ════════════════════════════════════════════════════════════════
+// Init: fetch rewards on load
+// ════════════════════════════════════════════════════════════════
+fetchRewards();
+
 </script>
 </body>
 </html>

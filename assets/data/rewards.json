@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "slotRewards": {
+    "1": {
+      "icon": "🎁",
+      "name": "デコボックス",
+      "type": "deco",
+      "id": "deco_box",
+      "img": "assets/images/Rooms/furnitures_final/box_A.png",
+      "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！",
+      "gendered": false
+    },
+    "5": {
+      "icon": "🛏️",
+      "name": "ベッド",
+      "type": "furn",
+      "id": "furn_bed_A",
+      "img": "assets/images/Rooms/furnitures_final/bed_A_01.png",
+      "unlockRoom": true,
+      "gendered": false
+    },
+    "10": {
+      "icon": "🧸",
+      "name": "くまのぬいぐるみ",
+      "gendered": true,
+      "boy": {
+        "type": "deco",
+        "id": "furn_bear_1",
+        "img": "assets/images/Rooms/furnitures_final/bear_A.png"
+      },
+      "girl": {
+        "type": "deco",
+        "id": "deco_bear_ribbon",
+        "img": "assets/images/Rooms/furnitures_final/bear_ribbon_A.png"
+      }
+    },
+    "15": {
+      "icon": "⭐",
+      "name": "カードかんせい！",
+      "type": "special",
+      "gendered": false
+    }
+  },
+  "cardCompleteRewards": [
+    {
+      "icon": "🐠",
+      "name": "さかな",
+      "type": "sea",
+      "id": "medaka",
+      "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png"
+    },
+    {
+      "icon": "🖼️",
+      "name": "かべがみ",
+      "type": "wall",
+      "id": "wall_mizutama",
+      "img": "assets/images/Rooms/walls/mizutama.png"
+    },
+    {
+      "icon": "🐢",
+      "name": "ウミガメ",
+      "type": "sea",
+      "id": "turtle",
+      "img": "assets/images/ocean/Turtle/Turtle_001.png"
+    },
+    {
+      "icon": "🪼",
+      "name": "クラゲ",
+      "type": "sea",
+      "id": "jellyfish",
+      "img": "assets/images/ocean/JellyFish/JellyFish_001.png"
+    }
+  ]
+}

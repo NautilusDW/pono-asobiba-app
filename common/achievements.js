@@ -143,6 +143,7 @@
     var listKey;
     if (reward.type === 'sea')  listKey = LS_SEA;
     if (reward.type === 'furn') listKey = LS_FURN;
+    if (reward.type === 'deco') listKey = LS_FURN;
     if (reward.type === 'wall') listKey = LS_WALL;
     if (reward.type === 'floor') listKey = LS_FLOOR;
     if (!listKey) return;

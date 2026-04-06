@@ -1544,11 +1544,44 @@
         return Math.floor(pos / SLOTS_PER_ROW);
       }
 
-      // ── Slot reward lookup (1-based slot number within card) ──
+      // ── 外部JSON読み込み（フォールバック: 上記ハードコード値） ──
+      var _rewardsReady = false;
+      function _loadRewardsJSON(cb) {
+        try {
+          var ctrl = new AbortController();
+          var tid = setTimeout(function() { ctrl.abort(); }, 3000);
+          fetch('assets/data/rewards.json?_=' + Date.now(), { signal: ctrl.signal })
+            .then(function(r) { clearTimeout(tid); return r.json(); })
+            .then(function(data) {
+              if (data.slotRewards) {
+                var sr = {};
+                for (var k in data.slotRewards) sr[parseInt(k)] = data.slotRewards[k];
+                CARD_SLOT_REWARDS = sr;
+              }
+              if (data.cardCompleteRewards) {
+                CARD_COMPLETE_REWARDS = data.cardCompleteRewards;
+              }
+            })
+            .catch(function() { /* フォールバック: ハードコード値をそのまま使用 */ })
+            .finally(function() { _rewardsReady = true; if (cb) cb(); });
+        } catch(e) { _rewardsReady = true; if (cb) cb(); }
+      }
+
+      // ── Slot reward lookup (gendered対応) ──
       function getSlotRewardInfo(slotNum1Based) {
-        return CARD_SLOT_REWARDS[slotNum1Based] || null;
+        var rw = CARD_SLOT_REWARDS[slotNum1Based] || null;
+        if (!rw) return null;
+        if (rw.gendered) {
+          var g = 'boy';
+          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
+          var v = rw[g] || rw['boy'] || {};
+          return { icon: rw.icon, name: rw.name, type: v.type, id: v.id, img: v.img,
+                   unlockRoom: v.unlockRoom || rw.unlockRoom, afterMsg: v.afterMsg || rw.afterMsg };
+        }
+        return rw;
       }
       function getCompleteReward(cardNum) {
+        if (CARD_COMPLETE_REWARDS.length === 0) return null;
         var idx = (cardNum - 1) % CARD_COMPLETE_REWARDS.length;
         return CARD_COMPLETE_REWARDS[idx];
       }
@@ -2318,10 +2351,13 @@
         }
       };
 
+      // 外部JSONを読み込んでからスタンプラリー初期化
       // プロフィール設定済みなら即実行、未設定ならプロフィール完了後に呼ばれる
-      if (window.ponoProfile) {
-        window._initStampRally();
-      }
+      _loadRewardsJSON(function() {
+        if (window.ponoProfile) {
+          window._initStampRally();
+        }
+      });
 
       // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
       // _initStampRally完了後のtotalを記録。visibilitychangeで差分検出
