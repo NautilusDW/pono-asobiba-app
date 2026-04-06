@@ -849,22 +849,11 @@ function updateDecoSurfacePreview() {
   _decoSurfFurnEl.style.width = 'auto';
   _decoSurfFurnEl.style.transform = `translate(calc(-50% - ${furnAdj.pivotX || 0}%), ${furnAdj.pivotY || 0}%)`;
   _decoSurfFurnEl.style.zIndex = 50;
-
-  // Update deco position with surfaceY offset applied
-  if (_placedEl) {
-    const surfY = furnAdj.surfaceY || 0;
-    const decoAdj = adjustments[adjKey(selectedId)];
-    const totalPivotY = decoAdj.pivotY + surfY;
-    _placedEl.style.transform = `translate(calc(-50% - ${decoAdj.pivotX}%), ${totalPivotY}%)`;
-    _placedEl.style.zIndex = 150;
-  }
 }
 
 document.getElementById('btn-deco-surface-preview').onclick = () => {
   if (_decoSurfOn) {
     removeDecoSurfacePreview();
-    // Reset deco position without surfaceY
-    if (selectedId) updateItemPos(selectedId);
     return;
   }
   if (!_decoSurfFurnId) return;
