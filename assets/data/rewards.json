@@ -2,26 +2,40 @@
   "version": 1,
   "slotRewards": {
     "1": {
-      "icon": "🎁",
       "name": "デコボックス",
-      "type": "deco",
-      "id": "deco_box",
-      "img": "assets/images/Rooms/furnitures_final/box_A.png",
-      "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！",
-      "gendered": false
+      "icon": "🎁",
+      "gendered": true,
+      "boy": {
+        "type": "deco",
+        "id": "deco_box",
+        "img": "assets/images/rewards/reward_slot_1_boy.png"
+      },
+      "girl": {
+        "type": "deco",
+        "id": "deco_box",
+        "img": "assets/images/rewards/reward_slot_1_girl.png"
+      },
+      "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！"
     },
     "5": {
-      "icon": "🛏️",
       "name": "ベッド",
-      "type": "furn",
-      "id": "furn_bed_A",
-      "img": "assets/images/Rooms/furnitures_final/bed_A_01.png",
-      "unlockRoom": true,
-      "gendered": false
+      "icon": "🛏️",
+      "gendered": true,
+      "boy": {
+        "type": "deco",
+        "id": "bed",
+        "img": "assets/images/rewards/reward_slot_5_boy.png"
+      },
+      "girl": {
+        "type": "deco",
+        "id": "bed",
+        "img": "assets/images/rewards/bed_girl.png"
+      },
+      "unlockRoom": true
     },
     "10": {
-      "icon": "🧸",
       "name": "くまのぬいぐるみ",
+      "icon": "🧸",
       "gendered": true,
       "boy": {
         "type": "deco",
@@ -35,10 +49,12 @@
       }
     },
     "15": {
-      "icon": "⭐",
       "name": "カードかんせい！",
+      "icon": "⭐",
+      "gendered": false,
       "type": "special",
-      "gendered": false
+      "id": "",
+      "img": ""
     }
   },
   "cardCompleteRewards": [
