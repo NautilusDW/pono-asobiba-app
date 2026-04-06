@@ -150,7 +150,6 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <p>PNG画像（A角度用・B角度用）を追加できます</p>
         <input type="file" id="import-file" accept="image/*" multiple style="display:none">
       </div>
-      <div class="import-row" id="import-list"></div>
       <div style="margin-top:8px;border-top:1px solid #333;padding-top:8px">
         <div style="font-size:12px;color:#4CAF50;font-weight:bold;margin-bottom:4px">📋 アイテム情報</div>
         <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
@@ -198,7 +197,10 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   <div id="item-list"></div>
 
   <div class="section" id="selected-info" style="display:none">
-    <h3 id="sel-name">---</h3>
+    <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+      <input type="text" id="edit-item-id" style="flex:1;background:#222;color:#ffd700;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:12px;font-family:monospace" title="アイテムID">
+      <input type="text" id="edit-item-name" style="flex:1;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:12px" title="表示名">
+    </div>
     <label style="margin:4px 0;cursor:pointer;font-size:12px;color:#4CAF50">
       <input type="checkbox" id="chk-stackable"> 🪑 家具の上に置ける
     </label>
@@ -572,7 +574,8 @@ function selectItem(id) {
     bgEl.src = '../assets/images/Rooms/Room_Base_grid.png';
   }
   const adj = adjustments[adjKey(id)];
-  document.getElementById('sel-name').textContent = item.name + ' (' + id + ') [' + currentAngle + ']';
+  document.getElementById('edit-item-id').value = id;
+  document.getElementById('edit-item-name').value = item.name;
 
   // Show/hide A/B toggle
   const abToggle = document.getElementById('ab-toggle');
@@ -640,7 +643,8 @@ document.getElementById('btn-angle-b').onclick = () => { currentAngle = 'B'; upd
 function reloadSliders(id) {
   const adj = adjustments[adjKey(id)];
   const item = ITEMS.find(x => x.id === id);
-  document.getElementById('sel-name').textContent = item.name + ' (' + id + ') [' + currentAngle + ']';
+  document.getElementById('edit-item-id').value = id;
+  document.getElementById('edit-item-name').value = item.name;
   syncSlider('cellSize', adj.cellSize);
   syncSlider('pivotX', adj.pivotX);
   syncSlider('pivotY', adj.pivotY);
@@ -691,6 +695,48 @@ document.getElementById('undo-btn').onclick = () => {
   saveToStorage();
   document.getElementById('undo-btn').disabled = undoStack.length === 0;
 };
+
+// ─── ID/Name editing ───
+document.getElementById('edit-item-name').addEventListener('change', function() {
+  if (!selectedId) return;
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (item) item.name = this.value.trim();
+  // ボタンのtitleも更新
+  var btn = document.querySelector('.item-btn[data-id="' + selectedId + '"]');
+  if (btn) btn.title = this.value.trim() + ' (' + selectedId + ')';
+  saveToStorage();
+});
+
+document.getElementById('edit-item-id').addEventListener('change', function() {
+  if (!selectedId) return;
+  var newId = this.value.trim().replace(/[^a-zA-Z0-9_]/g, '_');
+  if (!newId || newId === selectedId) { this.value = selectedId; return; }
+  // 重複チェック
+  if (ITEMS.find(function(x) { return x.id === newId; })) {
+    alert('ID「' + newId + '」は既に使われています');
+    this.value = selectedId;
+    return;
+  }
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  // adjustments のキーを移動
+  ['A','B'].forEach(function(angle) {
+    var oldKey = selectedId + '_' + angle;
+    var newKey = newId + '_' + angle;
+    if (adjustments[oldKey]) {
+      adjustments[newKey] = adjustments[oldKey];
+      delete adjustments[oldKey];
+    }
+  });
+  item.id = newId;
+  // ボタンのdata-idも更新
+  var btn = document.querySelector('.item-btn[data-id="' + selectedId + '"]');
+  if (btn) btn.dataset.id = newId;
+  selectedId = newId;
+  this.value = newId;
+  saveToStorage();
+  if (item._imported) saveImports();
+});
 
 // ─── Stackable checkbox ───
 document.getElementById('chk-stackable').onchange = function() {
@@ -1490,22 +1536,6 @@ function loadImports() {
       btn.appendChild(img);
       btn.onclick = function() { selectItem(imp.id); };
       listEl.appendChild(btn);
-      // インポートリストにサムネイル
-      var thumb = document.createElement('img');
-      thumb.className = 'import-thumb';
-      thumb.src = imp.roomImg;
-      thumb.title = imp.name;
-      thumb.onclick = function() { selectItem(imp.id); };
-      document.getElementById('import-list').appendChild(thumb);
-      if (imp.roomImgB) {
-        var thumbB = document.createElement('img');
-        thumbB.className = 'import-thumb';
-        thumbB.src = imp.roomImgB;
-        thumbB.title = imp.name + ' (B)';
-        thumbB.style.borderColor = '#2196F3';
-        thumbB.onclick = function() { selectItem(imp.id); };
-        document.getElementById('import-list').appendChild(thumbB);
-      }
       _importCounter++;
     });
   } catch(e) {}
@@ -1517,7 +1547,6 @@ var _importedDataA = null; // base64 (without prefix)
 var _importedDataB = null;
 var importZone = document.getElementById('import-zone');
 var importFile = document.getElementById('import-file');
-var importList = document.getElementById('import-list');
 
 importZone.addEventListener('click', function() { importFile.click(); });
 importFile.addEventListener('change', function() { handleImportFiles(this.files); });
@@ -1590,14 +1619,6 @@ function handleImportFiles(files) {
             // Update AB toggle visibility
             var abToggle = document.getElementById('ab-toggle');
             if (abToggle) abToggle.style.display = '';
-            // Thumbnail
-            var thumb = document.createElement('img');
-            thumb.className = 'import-thumb';
-            thumb.src = dataUrl;
-            thumb.title = rawName + ' (B角度)';
-            thumb.style.borderColor = '#2196F3';
-            thumb.onclick = function() { selectItem(item.id); };
-            importList.appendChild(thumb);
             var status = document.getElementById('import-save-status');
             status.textContent = '✅ B角度画像を追加: ' + rawName;
             status.style.color = '#2196F3';
@@ -1640,14 +1661,6 @@ function handleImportFiles(files) {
         btn.appendChild(img);
         btn.onclick = function() { selectItem(itemId); };
         listEl.appendChild(btn);
-
-        // Thumbnail
-        var thumb = document.createElement('img');
-        thumb.className = 'import-thumb';
-        thumb.src = dataUrl;
-        thumb.title = rawName + ' (A角度)';
-        thumb.onclick = function() { selectItem(itemId); };
-        importList.appendChild(thumb);
 
         // Auto-suggest filename（IDからプレフィックス除去）
         var nameInput = document.getElementById('import-save-name');
