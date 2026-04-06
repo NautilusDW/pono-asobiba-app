@@ -1323,8 +1323,9 @@ const SURFACE_IDS = new Set([
   'furn_toyshelf2', 'furn_desk2', 'furn_bed_pink', 'furn_desk_pink',
   'furn_chest_pink', 'furn_pcdesk', 'furn_chest_blue', 'deco_table_glass',
 ]);
-// 乗せられるアイテム（cat==='deco'のもの）
-function isStackableItem(item) { return item && item.cat === 'deco'; }
+// 乗せられるアイテム（cat==='deco' + 壁掛け家具）
+const STACKABLE_FURN = new Set(['furn_toyshelf']);
+function isStackableItem(item) { return item && (item.cat === 'deco' || STACKABLE_FURN.has(item.id)); }
 
 // 指定セルに他のアイテムの占有範囲が重なるか
 function isOverlapping(areaId, row, col, item, angle, excludeId) {
