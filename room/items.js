@@ -370,8 +370,8 @@ const ROOM_ITEMS = [
     id: 'deco_books', cat: 'deco', name: 'ほんのやま', price: 10, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/books_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/books_B.png',
-    gridRow: 4, gridCol: 6, cellSize: 0.7, pivotX: 0, pivotY: 0,
-    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 0 },
+    gridRow: 4, gridCol: 6, cellSize: 0.7, pivotX: 0, pivotY: 43,
+    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 43 },
   },
   {
     id: 'furn_bookshelf_wood', cat: 'furn', name: 'きのほんだな2', price: 20, theme: 'boy',
@@ -419,4 +419,10 @@ const POINT_GUIDE = [
   { emoji: '🦊', name: 'みちつなぎ',      how: '1ステージ クリアしたら',           pt: 5, premium: true },
   { emoji: '🌟', name: 'まいにちボーナス', how: 'まいにちあそんだら',              pt: 3  },
   { emoji: '📅', name: '1にちの さいだい', how: '（どのゲームでも うえかぎ）',     pt: 25, note: true },
+  {
+    id: 'import_1_A', cat: 'deco', name: 'A', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/import_1_A_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/import_1_A_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 11, pivotY: 28.8, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
 ];
