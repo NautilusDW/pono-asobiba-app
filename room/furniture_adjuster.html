@@ -55,6 +55,25 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 #export-btn:hover{background:#ffed4a}
 #export-area{width:100%;height:120px;background:#111;color:#0f0;border:1px solid #444;border-radius:4px;font-family:monospace;font-size:11px;resize:vertical}
 #info{font-size:12px;color:#888;line-height:1.4}
+
+/* ─── Snapshot UI ─── */
+.snap-section{background:#1a2744;padding:10px;border-radius:8px}
+.snap-section summary{cursor:pointer;font-size:13px;color:#ff9800;font-weight:bold}
+.snap-save-row{display:flex;gap:4px;margin-top:8px}
+.snap-save-row input{flex:1;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px}
+.snap-save-btn{background:#ff9800;color:#1a1a2e;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;white-space:nowrap}
+.snap-save-btn:hover{background:#ffb74d}
+.snap-list{max-height:200px;overflow-y:auto;margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.snap-item{background:#111;border:1px solid #333;border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:11px}
+.snap-item.auto{border-left:3px solid #666}
+.snap-item.manual{border-left:3px solid #ff9800}
+.snap-name{flex:1;color:#eee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snap-time{color:#666;font-size:10px;white-space:nowrap}
+.snap-restore{background:#4CAF50;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px}
+.snap-restore:hover{background:#66BB6A}
+.snap-del{background:#555;color:#ccc;border:none;padding:3px 6px;border-radius:4px;cursor:pointer;font-size:11px}
+.snap-del:hover{background:#f44336;color:#fff}
+.snap-empty{color:#555;font-size:12px;text-align:center;padding:8px}
 </style>
 </head>
 <body>
@@ -210,6 +229,18 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   </div>
   <div style="font-size:11px;color:#666;text-align:center;margin-top:2px">※ 変更は自動保存されます</div>
 
+  <details class="snap-section" open>
+    <summary>📸 スナップショット（復元ポイント）</summary>
+    <div class="snap-save-row">
+      <input type="text" id="snap-name" placeholder="名前（例: ベッド調整後）">
+      <button class="snap-save-btn" id="snap-save-btn">💾 保存</button>
+    </div>
+    <div id="snap-list" class="snap-list"></div>
+    <div style="font-size:10px;color:#555;margin-top:4px;text-align:center">
+      ページ読み込み時に自動保存されます（最大20件）
+    </div>
+  </details>
+
   <button id="export-btn">全アイテムの値をエクスポート</button>
   <textarea id="export-area" readonly></textarea>
 </div>
@@ -348,6 +379,128 @@ function loadFromStorage() {
   } catch(e) { return false; }
 }
 const hadSave = loadFromStorage();
+
+// ─── Snapshot System (persistent undo points) ───
+const SNAP_KEY = 'furniture_adjuster_snapshots';
+const SNAP_MAX = 20;
+
+function getSnapshots() {
+  try { return JSON.parse(localStorage.getItem(SNAP_KEY)) || []; }
+  catch(e) { return []; }
+}
+
+function saveSnapshots(list) {
+  localStorage.setItem(SNAP_KEY, JSON.stringify(list));
+}
+
+function createSnapshot(name, isAuto) {
+  var snaps = getSnapshots();
+  var snap = {
+    name: name,
+    auto: !!isAuto,
+    time: new Date().toISOString(),
+    data: JSON.parse(JSON.stringify(adjustments))
+  };
+  snaps.unshift(snap); // newest first
+  // Auto snapshots: keep max 5, manual: unlimited up to SNAP_MAX total
+  var autoCount = 0;
+  snaps = snaps.filter(function(s) {
+    if (s.auto) { autoCount++; return autoCount <= 5; }
+    return true;
+  });
+  if (snaps.length > SNAP_MAX) snaps.length = SNAP_MAX;
+  saveSnapshots(snaps);
+  renderSnapshotList();
+  return snap;
+}
+
+function restoreSnapshot(index) {
+  var snaps = getSnapshots();
+  if (index < 0 || index >= snaps.length) return;
+  var snap = snaps[index];
+  // First, auto-save current state before restoring
+  createSnapshot('復元前の自動バックアップ', true);
+  // Restore
+  Object.keys(snap.data).forEach(function(key) {
+    adjustments[key] = Object.assign({}, snap.data[key]);
+  });
+  saveToStorage();
+  // Refresh UI
+  if (selectedId) reloadSliders(selectedId);
+  renderSnapshotList();
+}
+
+function deleteSnapshot(index) {
+  var snaps = getSnapshots();
+  if (index < 0 || index >= snaps.length) return;
+  snaps.splice(index, 1);
+  saveSnapshots(snaps);
+  renderSnapshotList();
+}
+
+function fmtSnapTime(iso) {
+  var d = new Date(iso);
+  var mm = (d.getMonth()+1).toString().padStart(2,'0');
+  var dd = d.getDate().toString().padStart(2,'0');
+  var hh = d.getHours().toString().padStart(2,'0');
+  var mi = d.getMinutes().toString().padStart(2,'0');
+  return mm + '/' + dd + ' ' + hh + ':' + mi;
+}
+
+function renderSnapshotList() {
+  var el = document.getElementById('snap-list');
+  if (!el) return;
+  var snaps = getSnapshots();
+  if (snaps.length === 0) {
+    el.innerHTML = '<div class="snap-empty">スナップショットなし</div>';
+    return;
+  }
+  el.innerHTML = '';
+  snaps.forEach(function(snap, i) {
+    var item = document.createElement('div');
+    item.className = 'snap-item ' + (snap.auto ? 'auto' : 'manual');
+    item.innerHTML =
+      '<span class="snap-name" title="' + snap.name + '">' +
+      (snap.auto ? '🔄 ' : '📌 ') + snap.name + '</span>' +
+      '<span class="snap-time">' + fmtSnapTime(snap.time) + '</span>' +
+      '<button class="snap-restore" data-i="' + i + '">復元</button>' +
+      '<button class="snap-del" data-i="' + i + '">✕</button>';
+    el.appendChild(item);
+  });
+  // Event delegation
+  el.onclick = function(e) {
+    var btn = e.target;
+    if (btn.classList.contains('snap-restore')) {
+      var idx = parseInt(btn.dataset.i);
+      var s = getSnapshots()[idx];
+      if (s && confirm('「' + s.name + '」を復元しますか？\n（現在の状態は自動バックアップされます）')) {
+        restoreSnapshot(idx);
+      }
+    } else if (btn.classList.contains('snap-del')) {
+      var idx2 = parseInt(btn.dataset.i);
+      var s2 = getSnapshots()[idx2];
+      if (s2 && confirm('「' + s2.name + '」を削除しますか？')) {
+        deleteSnapshot(idx2);
+      }
+    }
+  };
+}
+
+// Auto-snapshot on page load (if data exists)
+if (hadSave) {
+  createSnapshot('ページ読込時の自動保存', true);
+}
+
+// Manual save button
+document.getElementById('snap-save-btn').onclick = function() {
+  var nameInput = document.getElementById('snap-name');
+  var name = nameInput.value.trim() || ('手動保存 ' + new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'}));
+  createSnapshot(name, false);
+  nameInput.value = '';
+};
+
+// Render initial list
+renderSnapshotList();
 
 let selectedId = null;
 
