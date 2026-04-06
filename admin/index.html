@@ -571,7 +571,7 @@ function fetchRewards() {
   document.getElementById('slot-rewards-container').innerHTML = '';
   document.getElementById('card-rewards-container').innerHTML = '';
 
-  fetch(REWARDS_API, { headers: ghHeaders() })
+  fetch(REWARDS_API + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
@@ -1245,6 +1245,8 @@ document.getElementById('btn-save-rewards').addEventListener('click', function()
     })
     .then(function(res) {
       rewardsFileSha = res.content.sha;
+      // 保存したデータでメモリ上のrewardsDataも更新
+      rewardsData = data;
       msg.textContent = '✅ 保存成功！（commit: ' + res.commit.sha.substring(0, 7) + '）';
       showToast('rewards.json を保存しました', true);
       btn.disabled = false;
