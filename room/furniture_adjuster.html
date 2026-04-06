@@ -329,13 +329,14 @@ const ITEMS = [
 
 // サーフェス家具（デコを上に乗せられる）
 const SURFACE_IDS = new Set([
-  'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
+  'furn_bed_wood', 'furn_desk', 'furn_shelf2',
   'furn_toyshelf2', 'furn_desk2', 'furn_bed_pink', 'furn_desk_pink',
   'furn_chest_pink', 'furn_pcdesk', 'furn_chest_blue', 'deco_table_glass',
 ]);
 
-// デコアイテム判定（家具の上に乗せられるもの）
-function isDecoItem(id) { return id && (id.startsWith('deco_') || id === 'furn_bear_1'); }
+// デコアイテム判定（家具の上/壁に配置できるもの）
+const DECO_IDS = new Set(['furn_bear_1', 'furn_toyshelf']);
+function isDecoItem(id) { return id && (id.startsWith('deco_') || DECO_IDS.has(id)); }
 const SURFACE_ITEMS = ITEMS.filter(it => SURFACE_IDS.has(it.id));
 
 // Per-item adjustments (editable state) — separate for A and B angles
