@@ -1570,6 +1570,71 @@ function loadImports() {
   } catch(e) {}
 }
 
+// ─── Auto-naming dictionary (built from existing items.js patterns) ───
+var NAME_DICT = {
+  // 家具
+  bed: 'ベッド', desk: 'つくえ', bookshelf: 'ほんだな', shelf: 'たな',
+  toyshelf: 'おもちゃだな', chest: 'チェスト', pcdesk: 'PCデスク',
+  table: 'テーブル', chair: 'いす', sofa: 'ソファ', closet: 'クローゼット',
+  cabinet: 'キャビネット', drawer: 'たんす', mirror: 'かがみ', clock: 'とけい',
+  // デコ
+  bear: 'くま', bunny: 'うさぎ', doll: 'おにんぎょう', dinosaur: 'きょうりゅう',
+  robot: 'ロボット', car: 'くるま', sportscar: 'スポーツカー', train: 'でんしゃ',
+  drone: 'ドローン', vr: 'VRゴーグル', carousel: 'メリーゴーランド',
+  babycar: 'ベビーカー', box: 'はこ', books: 'ほんのやま', book: 'ほん',
+  lamp: 'ランプ', rug: 'ラグ', tea: 'ティーセット', ball: 'ボール',
+  plasma: 'プラズマ', flower: 'おはな', plant: 'しょくぶつ', star: 'ほし',
+  heart: 'ハート', ribbon: 'リボン', crown: 'おうかん', hat: 'ぼうし',
+  // 修飾語（前置）
+  pink: 'ピンク', blue: 'あおい', red: 'あかい', green: 'みどりの',
+  white: 'しろい', wood: 'きの', wooden: 'きの', glass: 'ガラス',
+  space: 'うちゅう', big: 'おおきな', small: 'ちいさな', mini: 'ミニ',
+  wall: 'かべ', floor: 'ゆかの', new: 'あたらしい', old: 'ふるい',
+  cute: 'かわいい', cool: 'かっこいい', fancy: 'おしゃれな',
+};
+
+// ファイル名 → { id, name, cat, theme } を自動推定
+function autoNameFromFile(filename) {
+  // 拡張子・A/Bサフィックス・番号を除去してベース名取得
+  var base = filename.replace(/\.[^.]+$/, '')
+    .replace(/[_\-]?[ABab](?:_?\d+)?$/, '')
+    .replace(/[_\-]?\d+$/, '');
+  var parts = base.toLowerCase().replace(/[^a-z0-9]+/g, '_').split('_').filter(Boolean);
+
+  // テーマ推定
+  var theme = 'all';
+  var themeWords = { pink: 'girl', ribbon: 'girl', doll: 'girl', bunny: 'girl', carousel: 'girl',
+    blue: 'boy', space: 'boy', robot: 'boy', drone: 'boy', vr: 'boy', sportscar: 'boy' };
+  parts.forEach(function(p) { if (themeWords[p]) theme = themeWords[p]; });
+
+  // カテゴリ推定（大きい家具 vs 小さい飾り）
+  var furnWords = new Set(['bed','desk','bookshelf','shelf','toyshelf','chest','pcdesk','table','chair','sofa','closet','cabinet','drawer']);
+  var cat = 'deco';
+  parts.forEach(function(p) { if (furnWords.has(p)) cat = 'furn'; });
+
+  // ID生成
+  var id = cat + '_' + parts.join('_');
+
+  // 表示名生成
+  var modifiers = []; // 前置修飾語
+  var nouns = [];     // 名詞
+  var modWords = new Set(['pink','blue','red','green','white','wood','wooden','glass','space','big','small','mini','wall','floor','new','old','cute','cool','fancy']);
+  parts.forEach(function(p) {
+    if (modWords.has(p)) {
+      modifiers.push(NAME_DICT[p] || p);
+    } else if (NAME_DICT[p]) {
+      nouns.push(NAME_DICT[p]);
+    } else {
+      // 未知語 → カタカナ風に（そのまま）
+      nouns.push(p.charAt(0).toUpperCase() + p.slice(1));
+    }
+  });
+  var name = modifiers.join('') + nouns.join('');
+  if (!name) name = base;
+
+  return { id: id, name: name, cat: cat, theme: theme };
+}
+
 // ─── Image Import ───
 var _importCounter = 0;
 var _importedDataA = null; // base64 (without prefix)
@@ -1590,93 +1655,118 @@ importZone.addEventListener('drop', function(e) {
 });
 
 function handleImportFiles(files) {
-  for (var i = 0; i < files.length; i++) {
-    (function(file) {
-      if (!file.type.startsWith('image/')) return;
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        _importCounter++;
-        var dataUrl = e.target.result;
-        var rawName = file.name.replace(/\.[^.]+$/, '');
-        var cleanName = rawName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+  // ── 一括インポート: まずファイルを A/B でグループ化 ──
+  var fileArr = [];
+  for (var fi = 0; fi < files.length; fi++) {
+    if (files[fi].type.startsWith('image/')) fileArr.push(files[fi]);
+  }
 
-        // フォームからID/名前/カテゴリを取得（未入力なら自動生成）
+  // ベース名抽出（_A, _B サフィックス除去）
+  function getBaseName(fname) {
+    return fname.replace(/\.[^.]+$/, '')                    // 拡張子除去
+      .replace(/[_\-]?[Bb](?:[_\-]?\d+)?$/, '')            // _B, _B_01 除去
+      .replace(/[_\-]?[Aa](?:[_\-]?\d+)?$/, '')            // _A, _A_01 除去
+      .replace(/[^a-zA-Z0-9_\-]/g, '_');
+  }
+  function isAngleB(fname) {
+    var n = fname.replace(/\.[^.]+$/, '');
+    return /[_\-][Bb](?:[_\-]?\d+)?$/.test(n);
+  }
+
+  // グループ化: { baseName: { a: File|null, b: File|null } }
+  var groups = {};
+  fileArr.forEach(function(f) {
+    var base = getBaseName(f.name);
+    if (!groups[base]) groups[base] = { a: null, b: null };
+    if (isAngleB(f.name)) groups[base].b = f;
+    else groups[base].a = f;
+  });
+
+  var groupKeys = Object.keys(groups);
+  // 1ファイルだけ & B判定で既存アイテムに追加するケース
+  if (groupKeys.length === 1 && !groups[groupKeys[0]].a && groups[groupKeys[0]].b && selectedId) {
+    var existItem = ITEMS.find(function(it) { return it.id === selectedId; });
+    if (existItem && existItem._imported && existItem.roomImg && !existItem.roomImgB) {
+      groups[groupKeys[0]].a = null; // Bのみ → 既存に追加
+    }
+  }
+
+  var warnEl = document.getElementById('import-id-warn');
+  var addedCount = 0;
+
+  // 各グループを処理
+  groupKeys.forEach(function(base) {
+    var g = groups[base];
+
+    // B画像のみ → 選択中アイテムに追加
+    if (!g.a && g.b && selectedId) {
+      (function(bFile) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var item = ITEMS.find(function(it) { return it.id === selectedId; });
+          if (!item) return;
+          item.roomImgB = ev.target.result;
+          _importedDataB = ev.target.result.split(',')[1];
+          document.getElementById('btn-save-import-b').disabled = false;
+          if (!adjustments[adjKey(item.id, 'B')]) {
+            adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
+              cellSize: 1.0, pivotX: 0, pivotY: 0,
+              minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+            });
+          }
+          var abToggle = document.getElementById('ab-toggle');
+          if (abToggle) abToggle.style.display = '';
+          var status = document.getElementById('import-save-status');
+          status.textContent = '✅ B角度画像を追加';
+          status.style.color = '#2196F3';
+          saveImports();
+        };
+        reader.readAsDataURL(bFile);
+      })(g.b);
+      return;
+    }
+
+    if (!g.a) return; // A画像なし → スキップ
+
+    // A画像を読み込んでアイテム作成
+    (function(aFile, bFile, baseName) {
+      var readerA = new FileReader();
+      readerA.onload = function(evA) {
+        _importCounter++;
+
+        // フォームから手動入力があればそれを使う、なければ自動生成
         var idInput = document.getElementById('import-item-id');
         var nameInput2 = document.getElementById('import-item-name');
         var catSelect = document.getElementById('import-item-cat');
         var themeSelect = document.getElementById('import-item-theme');
-        var warnEl = document.getElementById('import-id-warn');
-        var itemId = (idInput.value || '').trim().replace(/[^a-zA-Z0-9_]/g, '_');
-        if (!itemId) itemId = catSelect.value + '_' + cleanName.toLowerCase();
-        var itemName = (nameInput2.value || '').trim();
-        if (!itemName) {
-          warnEl.textContent = '⚠️ 表示名を入力してください（日本語）';
-          return;
-        }
-        var itemCat = catSelect.value;
-        var itemTheme = themeSelect.value;
+        var manualId = (idInput.value || '').trim().replace(/[^a-zA-Z0-9_]/g, '_');
+        var manualName = (nameInput2.value || '').trim();
 
-        // 重複チェック
-        if (ITEMS.find(function(it) { return it.id === itemId; })) {
-          warnEl.textContent = '⚠️ ID「' + itemId + '」は既に存在します';
-          return;
-        }
-        warnEl.textContent = '';
+        // 自動生成
+        var auto = autoNameFromFile(baseName);
+        var itemId = manualId || auto.id;
+        var itemName = manualName || auto.name;
+        var itemCat = manualId ? catSelect.value : auto.cat;
+        var itemTheme = manualId ? themeSelect.value : auto.theme;
 
-        // Detect if this is a B-angle image:
-        // 1. ファイル名に _B が含まれる
-        // 2. 既に選択中のインポートアイテムにA画像があり、2枚目のドロップ
-        var isB = /_[Bb]$/.test(rawName) || /_[Bb]_/.test(rawName);
-        if (!isB && selectedId) {
-          var existItem = ITEMS.find(function(it) { return it.id === selectedId; });
-          if (existItem && existItem._imported && existItem.roomImg && !existItem.roomImgB) {
-            // A画像があってB画像がないインポートアイテムに2枚目 → Bとして扱う
-            isB = true;
-          }
-        }
-
-        if (isB && selectedId) {
-          // Add as B angle to current selected item
-          var item = ITEMS.find(function(it) { return it.id === selectedId; });
-          if (item) {
-            item.roomImgB = dataUrl;
-            _importedDataB = dataUrl.split(',')[1];
-            document.getElementById('btn-save-import-b').disabled = false;
-            // Add B adjustment if missing
-            if (!adjustments[adjKey(item.id, 'B')]) {
-              adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
-                cellSize: 1.0, pivotX: 0, pivotY: 0,
-                minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
-              });
-            }
-            // Update AB toggle visibility
-            var abToggle = document.getElementById('ab-toggle');
-            if (abToggle) abToggle.style.display = '';
-            var status = document.getElementById('import-save-status');
-            status.textContent = '✅ B角度画像を追加: ' + rawName;
-            status.style.color = '#2196F3';
-            saveImports();
-            return;
-          }
+        // 重複チェック（同じIDが既にあれば番号付加）
+        var origId = itemId;
+        var suffix = 2;
+        while (ITEMS.find(function(it) { return it.id === itemId; })) {
+          itemId = origId + suffix;
+          suffix++;
         }
 
         // New A-angle item
         var newItem = {
-          id: itemId,
-          name: itemName,
-          cat: itemCat,
-          theme: itemTheme,
-          roomImg: dataUrl,
-          cellSize: 1.0,
-          pivotX: 0,
-          pivotY: 0,
+          id: itemId, name: itemName, cat: itemCat, theme: itemTheme,
+          roomImg: evA.target.result, cellSize: 1.0, pivotX: 0, pivotY: 0,
           _imported: true
         };
         ITEMS.push(newItem);
-        _importedDataA = dataUrl.split(',')[1];
+        _importedDataA = evA.target.result.split(',')[1];
         _importedDataB = null;
 
-        // Init adjustments（中央に配置）
         adjustments[adjKey(itemId, 'A')] = {
           cellSize: 1.0, pivotX: 0, pivotY: 0,
           minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
@@ -1687,33 +1777,45 @@ function handleImportFiles(files) {
         var btn = document.createElement('div');
         btn.className = 'item-btn';
         btn.dataset.id = itemId;
-        btn.title = rawName + ' (インポート)';
+        btn.title = itemName + ' (' + itemId + ')';
         btn.style.borderColor = '#4CAF50';
-        var img = document.createElement('img');
-        img.src = dataUrl;
-        btn.appendChild(img);
+        var imgEl = document.createElement('img');
+        imgEl.src = evA.target.result;
+        btn.appendChild(imgEl);
         btn.onclick = function() { selectItem(itemId); };
         listEl.appendChild(btn);
+        addedCount++;
 
-        // Auto-suggest filename（IDからプレフィックス除去）
-        var nameInput = document.getElementById('import-save-name');
-        nameInput.textContent = itemId.replace(/^(furn_|deco_)/, '');
+        // B画像も同時に読み込み
+        if (bFile) {
+          var readerB = new FileReader();
+          readerB.onload = function(evB) {
+            newItem.roomImgB = evB.target.result;
+            _importedDataB = evB.target.result.split(',')[1];
+            adjustments[adjKey(itemId, 'B')] = Object.assign({}, adjustments[adjKey(itemId, 'A')]);
+            document.getElementById('btn-save-import-b').disabled = false;
+            saveImports();
+          };
+          readerB.readAsDataURL(bFile);
+        }
 
-        // フォームをクリア（次のインポートに備える）
+        // フォームをクリア
         idInput.value = '';
         nameInput2.value = '';
 
-        // Enable save buttons
         document.getElementById('btn-save-import-a').disabled = false;
-        document.getElementById('btn-save-import-b').disabled = true;
+        var fnEl = document.getElementById('import-save-name');
+        if (fnEl) fnEl.textContent = itemId.replace(/^(furn_|deco_)/, '');
 
-        // Select it
         selectItem(itemId);
         saveImports();
+
+        warnEl.textContent = '✅ ' + addedCount + '件追加: ' + itemName + ' (' + itemId + ')';
+        warnEl.style.color = '#4CAF50';
       };
-      reader.readAsDataURL(file);
-    })(files[i]);
-  }
+      readerA.readAsDataURL(aFile);
+    })(g.a, g.b, base);
+  });
 }
 
 // ─── GitHub Save Buttons ───
