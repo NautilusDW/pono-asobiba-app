@@ -252,6 +252,11 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 
   <button id="export-btn">全アイテムの値をエクスポート</button>
   <textarea id="export-area" readonly></textarea>
+
+  <div style="margin-top:8px;border-top:2px solid #4CAF50;padding-top:8px">
+    <button id="deploy-btn" style="width:100%;background:#4CAF50;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:14px">🚀 items.js に反映＆デプロイ</button>
+    <div id="deploy-status" style="font-size:12px;min-height:18px;margin-top:4px;text-align:center"></div>
+  </div>
 </div>
 
 <script>
@@ -1296,6 +1301,123 @@ function ghUploadFile(path, base64, msg, cb) {
     .then(function(r) { if (r.ok) cb(null); else r.json().then(function(j) { cb(j.message || 'Error'); }); })
     .catch(function(e) { cb(e.message); });
 }
+
+// ─── Deploy to items.js via GitHub API ───
+document.getElementById('deploy-btn').addEventListener('click', function() {
+  var status = document.getElementById('deploy-status');
+  if (!ghToken()) { status.textContent = '❌ PAT未設定（管理画面で設定してください）'; status.style.color = '#f44336'; return; }
+  if (!confirm('items.js の調整値を更新してデプロイしますか？\n（cellSize, pivotX, pivotY, minRow〜maxCol, surfaceY を上書き）')) return;
+
+  status.textContent = '⏳ items.js を読み込み中...';
+  status.style.color = '#ffd700';
+  var btn = this;
+  btn.disabled = true;
+
+  var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
+  fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(file) {
+      if (!file.content) throw new Error('ファイルが取得できません');
+      var text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+      status.textContent = '⏳ 値をマージ中...';
+
+      // 各アイテムの値を更新
+      ITEMS.forEach(function(item) {
+        if (item._imported) return; // インポートアイテムはスキップ
+        var adjA = adjustments[adjKey(item.id, 'A')];
+        var adjB = item.roomImgB ? adjustments[adjKey(item.id, 'B')] : null;
+        if (!adjA) return;
+
+        // アイテムブロックを探す
+        var idPattern = new RegExp("id:\\s*'" + item.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
+        var idMatch = idPattern.exec(text);
+        if (!idMatch) return;
+
+        // ブロック末尾を探す（次の "\n  {" or "\n];"）
+        var blockStart = text.lastIndexOf('{', idMatch.index);
+        var blockEnd = text.indexOf('\n  },', idMatch.index);
+        if (blockEnd === -1) blockEnd = text.indexOf('\n  }\n', idMatch.index);
+        if (blockEnd === -1) return;
+        blockEnd += 4; // include "},"
+        var block = text.substring(blockStart, blockEnd);
+
+        // A角度のプロパティ更新（トップレベル）
+        function replProp(blk, prop, val) {
+          var re = new RegExp('(\\b' + prop + ':\\s*)-?[\\d.]+');
+          if (re.test(blk)) return blk.replace(re, '$1' + val);
+          return blk; // プロパティが無ければそのまま
+        }
+
+        var newBlock = block;
+        newBlock = replProp(newBlock, 'cellSize', adjA.cellSize);
+        newBlock = replProp(newBlock, 'pivotX', adjA.pivotX);
+        newBlock = replProp(newBlock, 'pivotY', adjA.pivotY);
+
+        // minRow〜maxCol（存在する場合のみ更新）
+        if (/\bminRow:/.test(newBlock)) {
+          newBlock = replProp(newBlock, 'minRow', adjA.minRow);
+          newBlock = replProp(newBlock, 'maxRow', adjA.maxRow);
+          newBlock = replProp(newBlock, 'minCol', adjA.minCol);
+          newBlock = replProp(newBlock, 'maxCol', adjA.maxCol);
+        }
+
+        // surfaceY（トップレベル、A角度）
+        if (SURFACE_IDS.has(item.id) && adjA.surfaceY) {
+          newBlock = replProp(newBlock, 'surfaceY', adjA.surfaceY);
+        }
+
+        // surfaceYB（トップレベル、B角度）
+        if (SURFACE_IDS.has(item.id) && adjB && adjB.surfaceY) {
+          newBlock = replProp(newBlock, 'surfaceYB', adjB.surfaceY);
+        }
+
+        // angleB 更新
+        if (adjB) {
+          var angleBMatch = /angleB:\s*\{([^}]+)\}/.exec(newBlock);
+          if (angleBMatch) {
+            var abInner = angleBMatch[1];
+            abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
+            abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
+            abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
+            if (/\bminRow:/.test(abInner)) {
+              abInner = abInner.replace(/(minRow:\s*)-?[\d.]+/, '$1' + adjB.minRow);
+              abInner = abInner.replace(/(maxRow:\s*)-?[\d.]+/, '$1' + adjB.maxRow);
+              abInner = abInner.replace(/(minCol:\s*)-?[\d.]+/, '$1' + adjB.minCol);
+              abInner = abInner.replace(/(maxCol:\s*)-?[\d.]+/, '$1' + adjB.maxCol);
+            }
+            newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + '}');
+          }
+        }
+
+        text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
+      });
+
+      // GitHub にプッシュ
+      status.textContent = '⏳ items.js をアップロード中...';
+      var encoded = btoa(unescape(encodeURIComponent(text)));
+      return fetch(apiUrl, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          message: '🪑 ピボットツールから items.js 自動更新',
+          content: encoded,
+          sha: file.sha,
+          branch: GH_BRANCH
+        })
+      });
+    })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Push failed'); });
+      status.textContent = '✅ items.js を更新しました！Netlifyが自動デプロイします';
+      status.style.color = '#4CAF50';
+      btn.disabled = false;
+    })
+    .catch(function(e) {
+      status.textContent = '❌ ' + e.message;
+      status.style.color = '#f44336';
+      btn.disabled = false;
+    });
+});
 
 // ─── Imported Items Persistence ───
 var IMPORT_SAVE_KEY = 'furniture_adjuster_imports';
