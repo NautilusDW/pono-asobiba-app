@@ -930,7 +930,7 @@ document.getElementById('export-btn').onclick = () => {
         line += `, minRow:${adj.minRow}, maxRow:${adj.maxRow}, minCol:${adj.minCol}, maxCol:${adj.maxCol}`;
       }
       if (SURFACE_IDS.has(item.id) && adj.surfaceY) {
-        line += `, surfaceY:${adj.surfaceY}`;
+        line += label === 'B' ? `, surfaceYB:${adj.surfaceY}` : `, surfaceY:${adj.surfaceY}`;
       }
       line += ' },';
       return line;
