@@ -897,20 +897,45 @@ function makeCheckbox(label, checked, key) {
   return wrap;
 }
 
+function _autoImgPath(parentCard, key) {
+  // カードのIDフィールドからパスを自動生成
+  var idInput = parentCard.querySelector('[data-key="id"]')
+    || parentCard.querySelector('[data-key="boy-id"]')
+    || parentCard.querySelector('[data-key="girl-id"]');
+  var itemId = idInput ? idInput.value.trim() : '';
+  if (!itemId) {
+    // スロット番号からフォールバック
+    var slotInput = parentCard.querySelector('[data-key="slot-num"]');
+    itemId = slotInput ? 'reward_slot_' + slotInput.value : 'reward_' + Date.now();
+  }
+  // key が boy-img / girl-img なら性別サフィックス
+  var suffix = '';
+  if (key.indexOf('boy') !== -1) suffix = '_boy';
+  if (key.indexOf('girl') !== -1) suffix = '_girl';
+  return 'assets/images/rewards/' + itemId + suffix + '.png';
+}
+
 function makeImgField(currentPath, key, parentCard) {
   var div = document.createElement('div');
   div.className = 'reward-field';
   div.style.flex = '1';
-  var lbl = document.createElement('label');
-  lbl.textContent = '画像パス';
+
+  // 画像パス（hidden input — ユーザーには見せず自動管理）
   var inp = document.createElement('input');
-  inp.type = 'text';
+  inp.type = 'hidden';
   inp.value = currentPath;
   inp.dataset.key = key;
-  inp.style.width = '100%';
-  inp.style.minWidth = '200px';
-  div.appendChild(lbl);
   div.appendChild(inp);
+
+  // 現在の画像プレビュー（あれば）
+  if (currentPath) {
+    var curPreview = document.createElement('img');
+    curPreview.src = '../' + currentPath;
+    curPreview.className = 'upload-preview-small';
+    curPreview.style.display = 'block';
+    curPreview.onerror = function() { this.style.display = 'none'; };
+    div.appendChild(curPreview);
+  }
 
   // Upload inline
   var uploadRow = document.createElement('div');
@@ -924,7 +949,7 @@ function makeImgField(currentPath, key, parentCard) {
   var fileBtn = document.createElement('button');
   fileBtn.className = 'btn btn-blue btn-sm';
   fileBtn.type = 'button';
-  fileBtn.textContent = '📁 選択';
+  fileBtn.textContent = '📁 画像を選択 / ドロップ';
   fileBtn.addEventListener('click', function() { fileInput.click(); });
 
   var preview = document.createElement('img');
@@ -933,25 +958,26 @@ function makeImgField(currentPath, key, parentCard) {
   var pushBtn = document.createElement('button');
   pushBtn.className = 'btn btn-green btn-sm';
   pushBtn.type = 'button';
-  pushBtn.textContent = '🚀 アップロード';
+  pushBtn.textContent = '🚀 保存';
   pushBtn.disabled = true;
 
   var status = document.createElement('div');
   status.className = 'upload-status';
 
   var _base64 = null;
-  var _fileName = '';
 
   function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
-    _fileName = file.name;
     var reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
       preview.style.display = 'block';
       _base64 = e.target.result.split(',')[1];
       pushBtn.disabled = false;
-      status.textContent = '✅ ' + _fileName;
+      // 自動パス生成
+      var autoPath = _autoImgPath(parentCard, key);
+      inp.value = autoPath;
+      status.textContent = '📷 → ' + autoPath;
       status.className = 'upload-status ok';
     };
     reader.readAsDataURL(file);
@@ -959,7 +985,7 @@ function makeImgField(currentPath, key, parentCard) {
 
   fileInput.addEventListener('change', function() { handleFile(fileInput.files[0]); });
 
-  // Drag & Drop on the entire upload row
+  // Drag & Drop
   uploadRow.addEventListener('dragover', function(e) {
     e.preventDefault(); e.stopPropagation();
     uploadRow.style.background = 'rgba(255,215,77,0.15)';
@@ -979,23 +1005,29 @@ function makeImgField(currentPath, key, parentCard) {
   pushBtn.addEventListener('click', function() {
     if (!_base64) return;
     var path = inp.value.trim();
-    if (!path) { showToast('画像パスを入力してください', false); return; }
+    if (!path) {
+      path = _autoImgPath(parentCard, key);
+      inp.value = path;
+    }
     pushBtn.disabled = true;
     status.textContent = '⏳ アップロード中...';
     status.className = 'upload-status';
 
-    ghUpload(path, _base64, '🎁 報酬画像更新: ' + path, function(err) {
+    ghUpload(path, _base64, '🎁 報酬画像: ' + path, function(err) {
       if (err) {
         status.textContent = '❌ ' + err;
         status.className = 'upload-status err';
         pushBtn.disabled = false;
       } else {
-        status.textContent = '✅ アップロード成功！';
+        status.textContent = '✅ 保存完了: ' + path;
         status.className = 'upload-status ok';
-        showToast('画像をアップロードしました', true);
-        // Update preview in card
+        showToast('画像を保存しました', true);
+        // カードのプレビューも更新
         var cardPrev = parentCard.querySelector('.reward-preview-img');
         if (cardPrev) cardPrev.src = preview.src;
+        if (div.querySelector('.upload-preview-small:first-of-type') && div.querySelector('.upload-preview-small:first-of-type') !== preview) {
+          div.querySelector('.upload-preview-small:first-of-type').src = preview.src;
+        }
       }
     });
   });
