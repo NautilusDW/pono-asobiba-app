@@ -283,15 +283,10 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   </div>
   <div style="font-size:11px;color:#666;text-align:center;margin-top:2px">※ 変更は自動保存されます</div>
 
-  <details class="snap-section">
-    <summary>📸 スナップショット（復元ポイント）</summary>
-    <div style="margin-top:8px">
-      <button class="snap-save-btn" id="snap-save-btn" style="width:100%;padding:8px;font-size:13px">💾 現在の状態を保存</button>
-    </div>
+  <button class="snap-save-btn" id="snap-save-btn" style="width:100%;padding:8px;font-size:12px">💾 スナップショット保存</button>
+  <details class="snap-section" style="margin-top:4px">
+    <summary style="font-size:11px">📸 復元ポイント一覧</summary>
     <div id="snap-list" class="snap-list"></div>
-    <div style="font-size:10px;color:#555;margin-top:4px;text-align:center">
-      ページ読み込み時に自動保存されます（最大20件）
-    </div>
   </details>
 
   <button id="export-btn">全アイテムの値をエクスポート</button>
