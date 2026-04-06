@@ -130,12 +130,25 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       <div class="import-zone" id="import-zone">
         <div class="icon">📁</div>
         <div style="font-size:13px;font-weight:bold;color:#ffd700">クリック or ドラッグ&ドロップ</div>
-        <p>PNG画像（A角度）を追加できます</p>
+        <p>PNG画像（A角度用・B角度用）を追加できます</p>
         <input type="file" id="import-file" accept="image/*" multiple style="display:none">
       </div>
       <div class="import-row" id="import-list"></div>
-      <div style="font-size:11px;color:#666;margin-top:4px">
-        インポートした画像はブラウザ内のみ（保存にはエクスポート後にitems.jsへ反映が必要）
+      <div style="margin-top:8px;border-top:1px solid #333;padding-top:8px">
+        <div style="font-size:12px;color:#ffd700;font-weight:bold;margin-bottom:4px">🚀 GitHubに保存</div>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;color:#aaa;">ファイル名:</span>
+          <input type="text" id="import-save-name" placeholder="例: bear_new" style="flex:1;min-width:100px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px">
+          <span style="font-size:11px;color:#888">_A.png / _B.png</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:6px">
+          <button id="btn-save-import-a" style="flex:1;background:#4CAF50;color:#fff;border:none;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold" disabled>A画像を保存</button>
+          <button id="btn-save-import-b" style="flex:1;background:#2196F3;color:#fff;border:none;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold" disabled>B画像を保存</button>
+        </div>
+        <div id="import-save-status" style="font-size:11px;min-height:16px;margin-top:4px"></div>
+        <div style="font-size:10px;color:#555;margin-top:2px">
+          PAT: 管理画面で設定したトークンを使用（localStorage: admin_gh_token）
+        </div>
       </div>
     </div>
   </details>
@@ -949,8 +962,35 @@ document.getElementById('grid-export-btn').onclick = () => {
 
 syncGridSliders();
 
+// ─── GitHub Upload (reuse admin PAT) ───
+var GH_OWNER = 'NautilusDW', GH_REPO = 'kids-writing-app', GH_BRANCH = 'develop';
+var FURN_PATH = 'assets/images/Rooms/furnitures_final/';
+
+function ghToken() { return localStorage.getItem('admin_gh_token') || ''; }
+function ghHeaders() { return { 'Authorization': 'Bearer ' + ghToken(), 'Accept': 'application/vnd.github+json' }; }
+
+function ghUploadFile(path, base64, msg, cb) {
+  if (!ghToken()) { cb('PAT未設定（管理画面で設定してください）'); return; }
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
+  fetch(url + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(existing) {
+      var body = { message: msg, content: base64, branch: GH_BRANCH };
+      if (existing && existing.sha) body.sha = existing.sha;
+      return fetch(url, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify(body)
+      });
+    })
+    .then(function(r) { if (r.ok) cb(null); else r.json().then(function(j) { cb(j.message || 'Error'); }); })
+    .catch(function(e) { cb(e.message); });
+}
+
 // ─── Image Import ───
 var _importCounter = 0;
+var _importedDataA = null; // base64 (without prefix)
+var _importedDataB = null;
 var importZone = document.getElementById('import-zone');
 var importFile = document.getElementById('import-file');
 var importList = document.getElementById('import-list');
@@ -975,13 +1015,44 @@ function handleImportFiles(files) {
       reader.onload = function(e) {
         _importCounter++;
         var dataUrl = e.target.result;
-        var name = file.name.replace(/\.[^.]+$/, '');
-        var itemId = 'import_' + _importCounter + '_' + name.replace(/[^a-zA-Z0-9_]/g, '_');
+        var rawName = file.name.replace(/\.[^.]+$/, '');
+        var cleanName = rawName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+        var itemId = 'import_' + _importCounter + '_' + cleanName;
 
-        // Add to ITEMS array
+        // Detect if this is a B-angle image (filename contains _B or _b)
+        var isB = /_[Bb]$/.test(rawName) || /_[Bb]_/.test(rawName);
+
+        if (isB && selectedId && selectedId.startsWith('import_')) {
+          // Add as B angle to current selected item
+          var item = ITEMS.find(function(it) { return it.id === selectedId; });
+          if (item) {
+            item.roomImgB = dataUrl;
+            _importedDataB = dataUrl.split(',')[1];
+            document.getElementById('btn-save-import-b').disabled = false;
+            // Add B adjustment
+            adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')]);
+            // Update AB toggle visibility
+            var abToggle = document.getElementById('ab-toggle');
+            if (abToggle) abToggle.style.display = '';
+            // Thumbnail
+            var thumb = document.createElement('img');
+            thumb.className = 'import-thumb';
+            thumb.src = dataUrl;
+            thumb.title = rawName + ' (B角度)';
+            thumb.style.borderColor = '#2196F3';
+            thumb.onclick = function() { selectItem(item.id); };
+            importList.appendChild(thumb);
+            var status = document.getElementById('import-save-status');
+            status.textContent = '✅ B角度画像を追加: ' + rawName;
+            status.style.color = '#2196F3';
+            return;
+          }
+        }
+
+        // New A-angle item
         var newItem = {
           id: itemId,
-          name: name,
+          name: rawName,
           roomImg: dataUrl,
           cellSize: 1.0,
           pivotX: 0,
@@ -989,6 +1060,8 @@ function handleImportFiles(files) {
           _imported: true
         };
         ITEMS.push(newItem);
+        _importedDataA = dataUrl.split(',')[1];
+        _importedDataB = null;
 
         // Init adjustments
         adjustments[adjKey(itemId, 'A')] = {
@@ -1000,7 +1073,7 @@ function handleImportFiles(files) {
         var btn = document.createElement('div');
         btn.className = 'item-btn';
         btn.dataset.id = itemId;
-        btn.title = name + ' (インポート)';
+        btn.title = rawName + ' (インポート)';
         btn.style.borderColor = '#4CAF50';
         var img = document.createElement('img');
         img.src = dataUrl;
@@ -1008,23 +1081,95 @@ function handleImportFiles(files) {
         btn.onclick = function() { selectItem(itemId); };
         listEl.appendChild(btn);
 
-        // Add thumbnail to import list
+        // Thumbnail
         var thumb = document.createElement('img');
         thumb.className = 'import-thumb';
         thumb.src = dataUrl;
-        thumb.title = name;
+        thumb.title = rawName + ' (A角度)';
         thumb.onclick = function() { selectItem(itemId); };
         importList.appendChild(thumb);
 
-        // Auto-select the first imported item
-        if (_importCounter === 1 || ITEMS.length === 1) {
-          selectItem(itemId);
-        }
+        // Auto-suggest filename
+        var nameInput = document.getElementById('import-save-name');
+        nameInput.value = cleanName;
+
+        // Enable save buttons
+        document.getElementById('btn-save-import-a').disabled = false;
+        document.getElementById('btn-save-import-b').disabled = true;
+
+        // Select it
+        selectItem(itemId);
       };
       reader.readAsDataURL(file);
     })(files[i]);
   }
 }
+
+// ─── GitHub Save Buttons ───
+document.getElementById('btn-save-import-a').addEventListener('click', function() {
+  var name = document.getElementById('import-save-name').value.trim();
+  if (!name) { alert('ファイル名を入力してください'); return; }
+  if (!_importedDataA && selectedId) {
+    var item = ITEMS.find(function(it) { return it.id === selectedId; });
+    if (item && item.roomImg && item.roomImg.startsWith('data:')) {
+      _importedDataA = item.roomImg.split(',')[1];
+    }
+  }
+  if (!_importedDataA) { alert('A画像がありません'); return; }
+  var path = FURN_PATH + name + '_A.png';
+  var btn = this;
+  var status = document.getElementById('import-save-status');
+  btn.disabled = true;
+  status.textContent = '⏳ A画像をアップロード中...';
+  status.style.color = '#ffd700';
+  ghUploadFile(path, _importedDataA, '🪑 家具画像追加: ' + name + '_A.png', function(err) {
+    if (err) {
+      status.textContent = '❌ ' + err;
+      status.style.color = '#f44336';
+      btn.disabled = false;
+    } else {
+      status.textContent = '✅ A画像を保存しました: ' + path;
+      status.style.color = '#4CAF50';
+      // Update item's roomImg path
+      if (selectedId) {
+        var item = ITEMS.find(function(it) { return it.id === selectedId; });
+        if (item) item._savedPathA = '../' + path;
+      }
+    }
+  });
+});
+
+document.getElementById('btn-save-import-b').addEventListener('click', function() {
+  var name = document.getElementById('import-save-name').value.trim();
+  if (!name) { alert('ファイル名を入力してください'); return; }
+  if (!_importedDataB && selectedId) {
+    var item = ITEMS.find(function(it) { return it.id === selectedId; });
+    if (item && item.roomImgB && item.roomImgB.startsWith('data:')) {
+      _importedDataB = item.roomImgB.split(',')[1];
+    }
+  }
+  if (!_importedDataB) { alert('B画像がありません'); return; }
+  var path = FURN_PATH + name + '_B.png';
+  var btn = this;
+  var status = document.getElementById('import-save-status');
+  btn.disabled = true;
+  status.textContent = '⏳ B画像をアップロード中...';
+  status.style.color = '#ffd700';
+  ghUploadFile(path, _importedDataB, '🪑 家具画像追加: ' + name + '_B.png', function(err) {
+    if (err) {
+      status.textContent = '❌ ' + err;
+      status.style.color = '#f44336';
+      btn.disabled = false;
+    } else {
+      status.textContent = '✅ B画像を保存しました: ' + path;
+      status.style.color = '#4CAF50';
+      if (selectedId) {
+        var item = ITEMS.find(function(it) { return it.id === selectedId; });
+        if (item) item._savedPathB = '../' + path;
+      }
+    }
+  });
+});
 
 // ─── Init ───
 window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId); drawGrid(); } else drawGrid(); });
