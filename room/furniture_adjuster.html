@@ -554,15 +554,25 @@ const canvas = document.getElementById('grid-canvas');
 const ctx = canvas.getContext('2d');
 const itemLayer = document.getElementById('item-layer');
 
+// サムネイル画像選択（_A.png を含む方を優先）
+function thumbSrcFor(item) {
+  var a = item.roomImg || '';
+  var b = item.roomImgB || '';
+  // _A を含む方を優先
+  if (/_A\.png$/i.test(a)) return a;
+  if (/_A\.png$/i.test(b)) return b;
+  return a || b;
+}
+
 // Build item list
 const listEl = document.getElementById('item-list');
 ITEMS.forEach(item => {
   const btn = document.createElement('div');
   btn.className = 'item-btn' + (item.roomImgB ? ' has-b' : '');
   btn.dataset.id = item.id;
-  btn.title = item.name + (item.roomImgB ? ' (A/B)' : '');
+  btn.title = item.name + ' (' + item.id + ')' + (item.roomImgB ? ' [A/B]' : '');
   const img = document.createElement('img');
-  img.src = item.roomImg;
+  img.src = thumbSrcFor(item);
   btn.appendChild(img);
   btn.onclick = () => selectItem(item.id);
   listEl.appendChild(btn);
@@ -1743,6 +1753,7 @@ function autoNameFromFile(filename) {
 
 // ─── Image Import ───
 var _importCounter = 0;
+var _lastImportedId = null;  // 直近インポートのID（フォーム編集時の参照元）
 var _importedDataA = null; // base64 (without prefix)
 var _importedDataB = null;
 var importZone = document.getElementById('import-zone');
@@ -1905,9 +1916,12 @@ function handleImportFiles(files) {
           readerB.readAsDataURL(bFile);
         }
 
-        // フォームをクリア
-        idInput.value = '';
-        nameInput2.value = '';
+        // フォームに自動生成値を入力（編集可能な状態で保持）
+        idInput.value = itemId;
+        nameInput2.value = itemName;
+        catSelect.value = itemCat;
+        themeSelect.value = itemTheme;
+        _lastImportedId = itemId; // 後続の編集で参照
 
         document.getElementById('btn-save-import-a').disabled = false;
         var fnEl = document.getElementById('import-save-name');
@@ -1916,13 +1930,64 @@ function handleImportFiles(files) {
         selectItem(itemId);
         saveImports();
 
-        warnEl.textContent = '✅ ' + addedCount + '件追加: ' + itemName + ' (' + itemId + ')';
+        warnEl.textContent = '✅ 追加: ' + itemName + ' → IDや表示名をこの上で編集できます';
         warnEl.style.color = '#4CAF50';
       };
       readerA.readAsDataURL(aFile);
     })(g.a, g.b, base);
   });
 }
+
+// ─── Import form edit handlers (最後にインポートしたアイテムを更新) ───
+(function() {
+  var idInp = document.getElementById('import-item-id');
+  var nameInp = document.getElementById('import-item-name');
+  var catSel = document.getElementById('import-item-cat');
+  var themeSel = document.getElementById('import-item-theme');
+  var fnEl = document.getElementById('import-save-name');
+
+  function updateLast() {
+    if (!_lastImportedId) return;
+    var item = ITEMS.find(function(x) { return x.id === _lastImportedId; });
+    if (!item) return;
+    var newId = (idInp.value || '').trim().replace(/[^a-zA-Z0-9_]/g, '_');
+    if (newId && newId !== item.id) {
+      // 重複チェック
+      if (ITEMS.find(function(x) { return x.id === newId && x !== item; })) {
+        return; // 重複は無視
+      }
+      // adjustments キー移動
+      ['A','B'].forEach(function(angle) {
+        var oldKey = item.id + '_' + angle;
+        var newKey = newId + '_' + angle;
+        if (adjustments[oldKey]) {
+          adjustments[newKey] = adjustments[oldKey];
+          delete adjustments[oldKey];
+        }
+      });
+      // ボタンのdata-id更新
+      var btn = document.querySelector('.item-btn[data-id="' + item.id + '"]');
+      if (btn) btn.dataset.id = newId;
+      item.id = newId;
+      _lastImportedId = newId;
+      if (selectedId === item.id || selectedId === null) selectedId = newId;
+      if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+    }
+    item.name = (nameInp.value || '').trim() || item.name;
+    item.cat = catSel.value;
+    item.theme = themeSel.value;
+    // 選択中アイテムの編集欄にも反映
+    var editIdEl = document.getElementById('edit-item-id');
+    var editNameEl = document.getElementById('edit-item-name');
+    if (editIdEl && selectedId === item.id) editIdEl.value = item.id;
+    if (editNameEl && selectedId === item.id) editNameEl.value = item.name;
+    saveImports();
+  }
+  idInp.addEventListener('input', updateLast);
+  nameInp.addEventListener('input', updateLast);
+  catSel.addEventListener('change', updateLast);
+  themeSel.addEventListener('change', updateLast);
+})();
 
 // ─── Image to base64 helper (data: URL or fetch from path) ───
 function getImageBase64(imgSrc, cb) {
