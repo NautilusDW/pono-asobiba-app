@@ -255,6 +255,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     <div style="display:flex;gap:4px;margin-top:4px">
       <button id="btn-flip-a-to-b" style="flex:1;background:#333;color:#2196F3;border:1px solid #2196F3;padding:5px;border-radius:4px;cursor:pointer;font-size:11px">A → 反転 → B</button>
       <button id="btn-flip-b-to-a" style="flex:1;background:#333;color:#4CAF50;border:1px solid #4CAF50;padding:5px;border-radius:4px;cursor:pointer;font-size:11px">B → 反転 → A</button>
+      <button id="btn-swap-ab" style="flex:0 0 auto;background:#333;color:#ffd700;border:1px solid #ffd700;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:11px" title="A画像とB画像を入れ替え">⇄ A↔B</button>
     </div>
 
     <div id="save-status"></div>
@@ -1094,6 +1095,46 @@ function flipItemImage(fromAngle) {
 
 document.getElementById('btn-flip-a-to-b').addEventListener('click', function() { flipItemImage('A'); });
 document.getElementById('btn-flip-b-to-a').addEventListener('click', function() { flipItemImage('B'); });
+
+// ─── A↔B スワップ（画像と調整値を入れ替え） ───
+document.getElementById('btn-swap-ab').addEventListener('click', function() {
+  if (!selectedId) { alert('アイテムを選択してください'); return; }
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  if (!item.roomImg && !item.roomImgB) { alert('画像がありません'); return; }
+
+  // 画像を入れ替え
+  var tmpImg = item.roomImg;
+  item.roomImg = item.roomImgB || '';
+  item.roomImgB = tmpImg || '';
+
+  // adjustments も入れ替え
+  var aKey = adjKey(item.id, 'A');
+  var bKey = adjKey(item.id, 'B');
+  var tmpAdj = adjustments[aKey];
+  adjustments[aKey] = adjustments[bKey];
+  adjustments[bKey] = tmpAdj;
+  // 片方が undefined にならないよう補完
+  if (!adjustments[aKey] && adjustments[bKey]) adjustments[aKey] = Object.assign({}, adjustments[bKey]);
+  if (!adjustments[bKey] && adjustments[aKey]) adjustments[bKey] = Object.assign({}, adjustments[aKey]);
+
+  // 未保存マーク
+  item._savedToGithub = false;
+
+  // UI更新
+  var btnImg = document.querySelector('.item-btn[data-id="' + item.id + '"] img');
+  if (btnImg) btnImg.src = item.roomImg || '';
+  updateABThumbs(item);
+  if (typeof reloadSliders === 'function') reloadSliders(item.id);
+  placeItem(item.id);
+  updateUnsavedIndicator(item);
+  refreshUnsavedBanner();
+  saveToStorage();
+  if (item._imported) saveImports();
+
+  var status = document.getElementById('save-status');
+  if (status) { status.textContent = '⇄ A画像とB画像を入れ替えました（未保存）'; status.style.color = '#ffd700'; }
+});
 
 // ─── Stackable checkbox ───
 document.getElementById('chk-stackable').onchange = function() {
