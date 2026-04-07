@@ -2325,8 +2325,15 @@ function handleImportFiles(files) {
         updateUnsavedIndicator(newItem);
         refreshUnsavedBanner();
 
-        warnEl.textContent = '✅ 追加: ' + itemName + ' → IDや表示名をこの上で編集できます';
+        warnEl.textContent = '✅ 追加: ' + itemName + ' → 🤖 AIで命名中...';
         warnEl.style.color = '#4CAF50';
+
+        // AI命名を自動実行（B画像読み込みを少し待ってから）
+        if (typeof window.aiGenerateName === 'function') {
+          setTimeout(function() {
+            try { window.aiGenerateName(); } catch(e) {}
+          }, bFile ? 600 : 200);
+        }
       };
       readerA.readAsDataURL(aFile);
     })(g.a, g.b, base);
@@ -2475,6 +2482,8 @@ function handleImportFiles(files) {
   }
 
   btn.addEventListener('click', aiGenerateName);
+  // 他の場所（インポート処理）から呼べるようグローバル公開
+  window.aiGenerateName = aiGenerateName;
 })();
 
 // ─── Import form edit handlers (最後にインポートしたアイテムを更新) ───
