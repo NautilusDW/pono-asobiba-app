@@ -814,7 +814,49 @@ document.getElementById('edit-item-cat').addEventListener('change', function() {
 document.getElementById('edit-item-theme').addEventListener('change', function() {
   if (!selectedId) return;
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
-  if (item) item.theme = this.value;
+  if (!item) return;
+  var newTheme = this.value;
+  item.theme = newTheme;
+
+  // インポートアイテムの場合はIDを自動更新（_boy/_girl 付与）
+  if (item._imported) {
+    var newId = resolveEffectiveId(item.id, newTheme);
+    if (newId !== item.id) {
+      // 重複チェック
+      var conflict = ITEMS.find(function(x) { return x.id === newId && x !== item; });
+      if (conflict) {
+        alert('ID「' + newId + '」は既に存在します（' + conflict.name + '）。テーマ変更を取り消します。');
+        this.value = item.theme.replace(/_(boy|girl)$/, '');
+        // 元のテーマに戻す
+        var origTheme = item.id.endsWith('_boy') ? 'boy' : item.id.endsWith('_girl') ? 'girl' : 'all';
+        item.theme = origTheme;
+        this.value = origTheme;
+        return;
+      }
+      // adjustmentsキー移動
+      ['A','B'].forEach(function(angle) {
+        var oldKey = item.id + '_' + angle;
+        var newKey = newId + '_' + angle;
+        if (adjustments[oldKey]) {
+          adjustments[newKey] = adjustments[oldKey];
+          delete adjustments[oldKey];
+        }
+      });
+      // ボタンのdata-id更新
+      var btn = document.querySelector('.item-btn[data-id="' + item.id + '"]');
+      if (btn) btn.dataset.id = newId;
+      item.id = newId;
+      selectedId = newId;
+      _lastImportedId = newId;
+      // フォーム反映
+      document.getElementById('edit-item-id').value = newId;
+      var impIdInp = document.getElementById('import-item-id');
+      if (impIdInp) impIdInp.value = newId;
+      var fnEl = document.getElementById('import-save-name');
+      if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+      saveImports();
+    }
+  }
   saveToStorage();
 });
 
@@ -1828,6 +1870,16 @@ importZone.addEventListener('drop', function(e) {
   handleImportFiles(e.dataTransfer.files);
 });
 
+// テーマに応じたIDのsuffix付与（_boy/_girl 自動管理）
+function resolveEffectiveId(baseId, theme) {
+  if (!baseId) return baseId;
+  // 既存の _boy / _girl suffixを剥がしてベース化
+  var stripped = baseId.replace(/_(boy|girl)$/i, '');
+  if (theme === 'boy') return stripped + '_boy';
+  if (theme === 'girl') return stripped + '_girl';
+  return stripped;
+}
+
 function handleImportFiles(files) {
   // ── 一括インポート: まずファイルを A/B でグループ化 ──
   var fileArr = [];
@@ -1921,6 +1973,9 @@ function handleImportFiles(files) {
         var itemCat = manualId ? catSelect.value : auto.cat;
         var itemTheme = manualId ? themeSelect.value : auto.theme;
 
+        // テーマに応じたsuffix自動付与（_boy / _girl）
+        itemId = resolveEffectiveId(itemId, itemTheme);
+
         // 重複チェック: 同じIDのインポートアイテムがあれば上書き、items.js由来なら番号付加
         var existing = ITEMS.find(function(it) { return it.id === itemId; });
         var newItem;
@@ -1934,14 +1989,13 @@ function handleImportFiles(files) {
           // サムネイル更新
           var btnImg = document.querySelector('.item-btn[data-id="' + itemId + '"] img');
           if (btnImg) btnImg.src = evA.target.result;
+        } else if (existing) {
+          // items.js由来のアイテムと重複 → 警告して停止
+          warnEl.textContent = '⚠️ ID「' + itemId + '」（' + existing.name + '）は既に存在します。ベースIDかテーマを変更してください';
+          warnEl.style.color = '#f44336';
+          return;
         } else {
-          // items.js由来と重複しないよう番号付加
-          var origId = itemId;
-          var suffix = 2;
-          while (ITEMS.find(function(it) { return it.id === itemId; })) {
-            itemId = origId + suffix;
-            suffix++;
-          }
+          // 新規作成（既存IDはelse ifで処理済みなので番号付加不要）
           newItem = {
             id: itemId, name: itemName, cat: itemCat, theme: itemTheme,
             roomImg: evA.target.result, cellSize: 1.0, pivotX: 0, pivotY: 0,
@@ -2085,6 +2139,9 @@ function handleImportFiles(files) {
       var newName = (result.name || '').trim();
       var newCat = (result.cat || 'deco').trim();
       var newTheme = (result.theme || 'all').trim();
+
+      // テーマに応じたsuffix適用（_boy/_girl）
+      newId = resolveEffectiveId(newId, newTheme);
 
       // ID重複チェック
       if (ITEMS.find(function(x) { return x.id === newId && x !== item; })) {
