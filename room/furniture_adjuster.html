@@ -1119,10 +1119,35 @@ document.getElementById('btn-swap-ab').addEventListener('click', async function(
   swapBtn.disabled = true;
 
   try {
-    // ファイル名: items.js のパスから抽出（例: '../assets/.../bed_pink_A.png' → 'bed_pink_A.png'）
-    var aFileName = (item.roomImg.match(/\/([^/]+)$/) || [null, ''])[1];
-    var bFileName = (item.roomImgB.match(/\/([^/]+)$/) || [null, ''])[1];
-    if (!aFileName || !bFileName) { throw new Error('ファイル名取得失敗'); }
+    // ファイル名取得: items.js の ROOM_ITEMS から元の roomImg/roomImgB パスを再取得
+    // （item.roomImg は data URL に置換されている可能性があるため直接使えない）
+    var origA = '', origB = '';
+    if (typeof ROOM_ITEMS !== 'undefined') {
+      var origItem = ROOM_ITEMS.find(function(x) { return x.id === item.id; });
+      if (origItem) {
+        origA = origItem.roomImg || '';
+        origB = origItem.roomImgB || '';
+      }
+    }
+    // ROOM_ITEMS にない (インポートアイテム等) 場合は ID からファイル名を生成
+    if (!origA || !origB) {
+      origA = '../assets/images/Rooms/furnitures_final/' + item.id + '_A.png';
+      origB = '../assets/images/Rooms/furnitures_final/' + item.id + '_B.png';
+    }
+    function extractFileName(pathStr) {
+      if (!pathStr || pathStr.startsWith('data:')) return '';
+      var m = pathStr.match(/\/([^/]+\.png)$/i);
+      return m ? m[1] : '';
+    }
+    var aFileName = extractFileName(origA);
+    var bFileName = extractFileName(origB);
+    if (!aFileName || !bFileName) {
+      throw new Error('ファイル名が特定できません（items.js の roomImg/roomImgB を確認してください）');
+    }
+    // ファイル名にベース64データ片や異常に長い名前が含まれていないか安全チェック
+    if (aFileName.length > 100 || bFileName.length > 100 || /[^a-zA-Z0-9_\-.]/.test(aFileName) || /[^a-zA-Z0-9_\-.]/.test(bFileName)) {
+      throw new Error('不正なファイル名を検出: ' + aFileName + ' / ' + bFileName);
+    }
 
     // 両画像をbase64で取得
     status.textContent = '⏳ A画像を読み込み中...';
