@@ -1617,175 +1617,230 @@ function ghUploadFile(path, base64, msg, cb) {
 }
 
 // ─── Deploy to items.js via GitHub API ───
-document.getElementById('deploy-btn').addEventListener('click', function() {
+document.getElementById('deploy-btn').addEventListener('click', async function() {
   var status = document.getElementById('deploy-status');
   if (!ghToken()) { status.textContent = '❌ PAT未設定（管理画面で設定してください）'; status.style.color = '#f44336'; return; }
-  if (!confirm('items.js の調整値を更新してデプロイしますか？\n（cellSize, pivotX, pivotY, minRow〜maxCol, surfaceY を上書き）')) return;
+  var unsavedItems = getUnsavedItems();
+  var msg = 'items.jsに反映＆デプロイしますか？\n\n';
+  msg += '・ピボット値・分類・テーマ・名前 を items.js に反映\n';
+  if (unsavedItems.length > 0) msg += '・未保存画像 ' + unsavedItems.length + '件 を GitHub にアップロード\n';
+  if (_deletedIds.length > 0) msg += '・削除済み ' + _deletedIds.length + '件 を items.js から除去\n';
+  if (!confirm(msg)) return;
 
-  status.textContent = '⏳ items.js を読み込み中...';
+  status.textContent = '⏳ 開始...';
   status.style.color = '#ffd700';
   var btn = this;
   btn.disabled = true;
 
+  // ── ステップ1: 未保存画像をすべてアップロード ──
+  if (unsavedItems.length > 0) {
+    var uploadFailed = false;
+    for (var i = 0; i < unsavedItems.length; i++) {
+      var ui = unsavedItems[i];
+      var nm = ui.id;
+      status.textContent = '⏳ 画像 ' + (i+1) + '/' + unsavedItems.length + ': ' + ui.name;
+
+      // A画像
+      if (ui.roomImg) {
+        var b64A = await new Promise(function(r) { getImageBase64(ui.roomImg, r); });
+        if (b64A) {
+          var errA = await new Promise(function(r) {
+            ghUploadFile(FURN_PATH + nm + '_A.png', b64A, '🪑 家具画像追加: ' + nm + '_A.png', r);
+          });
+          if (errA) { status.textContent = '❌ A画像失敗 (' + ui.name + '): ' + errA; status.style.color = '#f44336'; btn.disabled = false; return; }
+        }
+      }
+      // B画像
+      if (ui.roomImgB) {
+        var b64B = await new Promise(function(r) { getImageBase64(ui.roomImgB, r); });
+        if (b64B) {
+          var errB = await new Promise(function(r) {
+            ghUploadFile(FURN_PATH + nm + '_B.png', b64B, '🪑 家具画像追加: ' + nm + '_B.png', r);
+          });
+          if (errB) { status.textContent = '❌ B画像失敗 (' + ui.name + '): ' + errB; status.style.color = '#f44336'; btn.disabled = false; return; }
+        }
+      }
+      ui._savedToGithub = true;
+    }
+    if (ITEMS.some(function(it) { return it._imported; })) saveImports();
+    refreshAllUnsavedIndicators();
+    refreshUnsavedBanner();
+  }
+
+  // ── ステップ2: items.js を取得・更新 ──
   var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
-  fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
-    .then(function(r) { return r.json(); })
-    .then(function(file) {
-      if (!file.content) throw new Error('ファイルが取得できません');
-      var text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
-      status.textContent = '⏳ 値をマージ中...';
+  try {
+    var fileResp = await fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
+    var file = await fileResp.json();
+    if (!file.content) throw new Error('items.js が取得できません');
+    var text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+    status.textContent = '⏳ items.js をマージ中...';
 
-      // 各アイテムの値を更新（既存アイテムのみ）
-      ITEMS.forEach(function(item) {
-        if (item._imported) return; // インポートアイテムは後で追記
-        var adjA = adjustments[adjKey(item.id, 'A')];
-        var adjB = item.roomImgB ? adjustments[adjKey(item.id, 'B')] : null;
-        if (!adjA) return;
+    // 各アイテムの値を更新（既存アイテムのみ）
+    ITEMS.forEach(function(item) {
+      if (item._imported) return; // インポートアイテムは後で追記
+      var adjA = adjustments[adjKey(item.id, 'A')];
+      var adjB = item.roomImgB ? adjustments[adjKey(item.id, 'B')] : null;
+      if (!adjA) return;
 
-        // アイテムブロックを探す
-        var idPattern = new RegExp("id:\\s*'" + item.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
-        var idMatch = idPattern.exec(text);
-        if (!idMatch) return;
+      // アイテムブロックを探す
+      var idPattern = new RegExp("id:\\s*'" + item.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
+      var idMatch = idPattern.exec(text);
+      if (!idMatch) return;
 
-        // ブロック末尾を探す（次の "\n  {" or "\n];"）
-        var blockStart = text.lastIndexOf('{', idMatch.index);
-        var blockEnd = text.indexOf('\n  },', idMatch.index);
-        if (blockEnd === -1) blockEnd = text.indexOf('\n  }\n', idMatch.index);
-        if (blockEnd === -1) return;
-        blockEnd += 4; // include "},"
-        var block = text.substring(blockStart, blockEnd);
+      // ブロック末尾を探す（次の "\n  {" or "\n];"）
+      var blockStart = text.lastIndexOf('{', idMatch.index);
+      var blockEnd = text.indexOf('\n  },', idMatch.index);
+      if (blockEnd === -1) blockEnd = text.indexOf('\n  }\n', idMatch.index);
+      if (blockEnd === -1) return;
+      blockEnd += 4; // include "},"
+      var block = text.substring(blockStart, blockEnd);
 
-        // A角度のプロパティ更新（トップレベル）
-        function replProp(blk, prop, val) {
-          var re = new RegExp('(\\b' + prop + ':\\s*)-?[\\d.]+');
-          if (re.test(blk)) return blk.replace(re, '$1' + val);
-          return blk; // プロパティが無ければそのまま
-        }
+      // プロパティ更新ヘルパー
+      function replProp(blk, prop, val) {
+        var re = new RegExp('(\\b' + prop + ':\\s*)-?[\\d.]+');
+        if (re.test(blk)) return blk.replace(re, '$1' + val);
+        return blk;
+      }
+      function replStrProp(blk, prop, val) {
+        var re = new RegExp("(\\b" + prop + ":\\s*')[^']*(')");
+        if (re.test(blk)) return blk.replace(re, "$1" + val.replace(/'/g, "\\'") + "$2");
+        return blk;
+      }
 
-        var newBlock = block;
-        newBlock = replProp(newBlock, 'cellSize', adjA.cellSize);
-        newBlock = replProp(newBlock, 'pivotX', adjA.pivotX);
-        newBlock = replProp(newBlock, 'pivotY', adjA.pivotY);
+      var newBlock = block;
+      // override（cat/theme/name）を反映
+      var ov = _overrides[item.id];
+      if (ov) {
+        if (ov.cat) newBlock = replStrProp(newBlock, 'cat', ov.cat);
+        if (ov.theme) newBlock = replStrProp(newBlock, 'theme', ov.theme);
+        if (ov.name) newBlock = replStrProp(newBlock, 'name', ov.name);
+      }
+      newBlock = replProp(newBlock, 'cellSize', adjA.cellSize);
+      newBlock = replProp(newBlock, 'pivotX', adjA.pivotX);
+      newBlock = replProp(newBlock, 'pivotY', adjA.pivotY);
 
-        // minRow〜maxCol（存在する場合のみ更新）
-        if (/\bminRow:/.test(newBlock)) {
-          newBlock = replProp(newBlock, 'minRow', adjA.minRow);
-          newBlock = replProp(newBlock, 'maxRow', adjA.maxRow);
-          newBlock = replProp(newBlock, 'minCol', adjA.minCol);
-          newBlock = replProp(newBlock, 'maxCol', adjA.maxCol);
-        }
+      // minRow〜maxCol（存在する場合のみ更新）
+      if (/\bminRow:/.test(newBlock)) {
+        newBlock = replProp(newBlock, 'minRow', adjA.minRow);
+        newBlock = replProp(newBlock, 'maxRow', adjA.maxRow);
+        newBlock = replProp(newBlock, 'minCol', adjA.minCol);
+        newBlock = replProp(newBlock, 'maxCol', adjA.maxCol);
+      }
 
-        // surfaceY（トップレベル、A角度）
-        if (SURFACE_IDS.has(item.id) && adjA.surfaceY) {
-          newBlock = replProp(newBlock, 'surfaceY', adjA.surfaceY);
-        }
+      // surfaceY（トップレベル、A角度）
+      if (SURFACE_IDS.has(item.id) && adjA.surfaceY) {
+        newBlock = replProp(newBlock, 'surfaceY', adjA.surfaceY);
+      }
 
-        // surfaceYB（トップレベル、B角度）
-        if (SURFACE_IDS.has(item.id) && adjB && adjB.surfaceY) {
-          newBlock = replProp(newBlock, 'surfaceYB', adjB.surfaceY);
-        }
+      // surfaceYB（トップレベル、B角度）
+      if (SURFACE_IDS.has(item.id) && adjB && adjB.surfaceY) {
+        newBlock = replProp(newBlock, 'surfaceYB', adjB.surfaceY);
+      }
 
-        // angleB 更新
-        if (adjB) {
-          var angleBMatch = /angleB:\s*\{([^}]+)\}/.exec(newBlock);
-          if (angleBMatch) {
-            var abInner = angleBMatch[1];
-            abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
-            abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
-            abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
-            if (/\bminRow:/.test(abInner)) {
-              abInner = abInner.replace(/(minRow:\s*)-?[\d.]+/, '$1' + adjB.minRow);
-              abInner = abInner.replace(/(maxRow:\s*)-?[\d.]+/, '$1' + adjB.maxRow);
-              abInner = abInner.replace(/(minCol:\s*)-?[\d.]+/, '$1' + adjB.minCol);
-              abInner = abInner.replace(/(maxCol:\s*)-?[\d.]+/, '$1' + adjB.maxCol);
-            }
-            newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + '}');
+      // angleB 更新
+      if (adjB) {
+        var angleBMatch = /angleB:\s*\{([^}]+)\}/.exec(newBlock);
+        if (angleBMatch) {
+          var abInner = angleBMatch[1];
+          abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
+          abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
+          abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
+          if (/\bminRow:/.test(abInner)) {
+            abInner = abInner.replace(/(minRow:\s*)-?[\d.]+/, '$1' + adjB.minRow);
+            abInner = abInner.replace(/(maxRow:\s*)-?[\d.]+/, '$1' + adjB.maxRow);
+            abInner = abInner.replace(/(minCol:\s*)-?[\d.]+/, '$1' + adjB.minCol);
+            abInner = abInner.replace(/(maxCol:\s*)-?[\d.]+/, '$1' + adjB.maxCol);
           }
-        }
-
-        text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
-      });
-
-      // インポートアイテムを新規追記
-      var importedItems = ITEMS.filter(function(it) { return it._imported; });
-      if (importedItems.length > 0) {
-        var closingBracket = text.lastIndexOf('];');
-        if (closingBracket !== -1) {
-          var newEntries = importedItems.map(function(item) {
-            var adj = adjustments[adjKey(item.id, 'A')] || {};
-            // ファイル名 = ID（完全一致）
-            var baseName = item.id;
-            var imgPath = "'../assets/images/Rooms/furnitures_final/" + baseName + "_A.png'";
-            var entry = "  {\n" +
-              "    id: '" + item.id + "', cat: '" + (item.cat || 'deco') + "', name: '" + (item.name || '') + "', price: 15, theme: '" + (item.theme || 'all') + "',\n" +
-              "    roomImg: " + imgPath + ",\n";
-            if (item.roomImgB) {
-              var imgPathB = "'../assets/images/Rooms/furnitures_final/" + baseName + "_B.png'";
-              entry += "    roomImgB: " + imgPathB + ",\n";
-            }
-            entry += "    gridRow: 4, gridCol: 4, cellSize: " + (adj.cellSize || 1) +
-              ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
-            if (adj.minRow != null) {
-              entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
-                ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;
-            }
-            entry += ",\n  },";
-            return entry;
-          }).join('\n');
-          text = text.substring(0, closingBracket) + newEntries + '\n' + text.substring(closingBracket);
-          status.textContent = '⏳ ' + importedItems.length + '件の新規アイテムを追記...';
+          newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + '}');
         }
       }
 
-      // 削除済みアイテムをitems.jsから除去
-      if (_deletedIds.length > 0) {
-        _deletedIds.forEach(function(delId) {
-          var idPat = new RegExp("id:\\s*'" + delId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
-          var m = idPat.exec(text);
-          if (!m) return;
-          var bStart = text.lastIndexOf('{', m.index);
-          // 直前の空行やコメント行も含めて除去
-          var lineStart = text.lastIndexOf('\n', bStart - 1);
-          if (lineStart === -1) lineStart = 0;
-          var bEnd = text.indexOf('\n', text.indexOf('},', m.index));
-          if (bEnd === -1) return;
-          bEnd += 1; // 改行含む
-          text = text.substring(0, lineStart) + text.substring(bEnd);
-        });
-        status.textContent = '⏳ ' + _deletedIds.length + '件のアイテムを削除...';
-      }
-
-      // GitHub にプッシュ
-      status.textContent = '⏳ items.js をアップロード中...';
-      var encoded = btoa(unescape(encodeURIComponent(text)));
-      return fetch(apiUrl, {
-        method: 'PUT',
-        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          message: '🪑 ピボットツールから items.js 自動更新',
-          content: encoded,
-          sha: file.sha,
-          branch: GH_BRANCH
-        })
-      });
-    })
-    .then(function(r) {
-      if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'Push failed'); });
-      // デプロイ成功 → インポートアイテムのフラグをクリア
-      ITEMS.forEach(function(it) { if (it._imported) delete it._imported; });
-      localStorage.removeItem(IMPORT_SAVE_KEY);
-      // 削除リストもクリア（items.jsから除去済み）
-      _deletedIds = []; _deletedSet.clear();
-      localStorage.removeItem(DELETED_KEY);
-      status.textContent = '✅ items.js を更新しました！Netlifyが自動デプロイします';
-      status.style.color = '#4CAF50';
-      btn.disabled = false;
-    })
-    .catch(function(e) {
-      status.textContent = '❌ ' + e.message;
-      status.style.color = '#f44336';
-      btn.disabled = false;
+      text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
     });
+
+    // インポートアイテムを新規追記
+    var importedItems = ITEMS.filter(function(it) { return it._imported; });
+    if (importedItems.length > 0) {
+      var closingBracket = text.lastIndexOf('];');
+      if (closingBracket !== -1) {
+        var newEntries = importedItems.map(function(item) {
+          var adj = adjustments[adjKey(item.id, 'A')] || {};
+          var baseName = item.id;
+          var imgPath = "'../assets/images/Rooms/furnitures_final/" + baseName + "_A.png'";
+          var entry = "  {\n" +
+            "    id: '" + item.id + "', cat: '" + (item.cat || 'deco') + "', name: '" + (item.name || '') + "', price: 15, theme: '" + (item.theme || 'all') + "',\n" +
+            "    roomImg: " + imgPath + ",\n";
+          if (item.roomImgB) {
+            var imgPathB = "'../assets/images/Rooms/furnitures_final/" + baseName + "_B.png'";
+            entry += "    roomImgB: " + imgPathB + ",\n";
+          }
+          entry += "    gridRow: 4, gridCol: 4, cellSize: " + (adj.cellSize || 1) +
+            ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
+          if (adj.minRow != null) {
+            entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
+              ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;
+          }
+          entry += ",\n  },";
+          return entry;
+        }).join('\n');
+        text = text.substring(0, closingBracket) + newEntries + '\n' + text.substring(closingBracket);
+        status.textContent = '⏳ ' + importedItems.length + '件の新規アイテムを追記...';
+      }
+    }
+
+    // 削除済みアイテムをitems.jsから除去
+    if (_deletedIds.length > 0) {
+      _deletedIds.forEach(function(delId) {
+        var idPat = new RegExp("id:\\s*'" + delId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
+        var m = idPat.exec(text);
+        if (!m) return;
+        var bStart = text.lastIndexOf('{', m.index);
+        var lineStart = text.lastIndexOf('\n', bStart - 1);
+        if (lineStart === -1) lineStart = 0;
+        var bEnd = text.indexOf('\n', text.indexOf('},', m.index));
+        if (bEnd === -1) return;
+        bEnd += 1;
+        text = text.substring(0, lineStart) + text.substring(bEnd);
+      });
+      status.textContent = '⏳ ' + _deletedIds.length + '件のアイテムを削除...';
+    }
+
+    // GitHub にプッシュ
+    status.textContent = '⏳ items.js をアップロード中...';
+    var encoded = btoa(unescape(encodeURIComponent(text)));
+    var pushResp = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        message: '🪑 ピボットツールから items.js 自動更新',
+        content: encoded,
+        sha: file.sha,
+        branch: GH_BRANCH
+      })
+    });
+    if (!pushResp.ok) {
+      var errBody = await pushResp.json();
+      throw new Error(errBody.message || 'Push failed');
+    }
+
+    // デプロイ成功 → 各種フラグ・キャッシュをクリア
+    ITEMS.forEach(function(it) { if (it._imported) delete it._imported; });
+    localStorage.removeItem(IMPORT_SAVE_KEY);
+    _deletedIds = []; _deletedSet.clear();
+    localStorage.removeItem(DELETED_KEY);
+    _overrides = {};
+    localStorage.removeItem(OVERRIDE_KEY);
+    refreshAllUnsavedIndicators();
+    refreshUnsavedBanner();
+    status.textContent = '✅ items.js を更新しました！Netlifyが自動デプロイします';
+    status.style.color = '#4CAF50';
+    btn.disabled = false;
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = '#f44336';
+    btn.disabled = false;
+  }
 });
 
 // ─── Imported Items Persistence ───
