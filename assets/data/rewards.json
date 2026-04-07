@@ -42,10 +42,10 @@
       "icon": "🧸",
       "gendered": true,
       "boy": {
-        "name": "",
+        "name": "スポーツカー",
         "type": "deco",
-        "id": "furn_bear_1",
-        "img": "assets/images/Rooms/furnitures_final/bear_A.png"
+        "id": "deco_sportscar",
+        "img": "assets/images/Rooms/furnitures_final/sportscar_A.png"
       },
       "girl": {
         "name": "",
@@ -57,10 +57,19 @@
     "15": {
       "name": "カードかんせい！",
       "icon": "⭐",
-      "gendered": false,
-      "type": "special",
-      "id": "",
-      "img": ""
+      "gendered": true,
+      "boy": {
+        "name": "",
+        "type": "deco",
+        "id": "reward_15_boy",
+        "img": ""
+      },
+      "girl": {
+        "name": "",
+        "type": "deco",
+        "id": "reward_15_girl",
+        "img": ""
+      }
     }
   },
   "cardCompleteRewards": [
