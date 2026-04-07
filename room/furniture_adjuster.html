@@ -2491,9 +2491,20 @@ function handleImportFiles(files) {
 
       statusEl.textContent = '✅ ' + newName + ' (' + newId + ')';
       statusEl.style.color = '#4CAF50';
+      // インポート時の暫定メッセージもクリア
+      var warnEl = document.getElementById('import-id-warn');
+      if (warnEl) {
+        warnEl.textContent = '✅ ' + newName + ' (' + newId + ')';
+        warnEl.style.color = '#4CAF50';
+      }
     } catch (e) {
       statusEl.textContent = '❌ ' + e.message;
       statusEl.style.color = '#f44336';
+      var warnEl2 = document.getElementById('import-id-warn');
+      if (warnEl2) {
+        warnEl2.textContent = '❌ AI命名失敗: ' + e.message;
+        warnEl2.style.color = '#f44336';
+      }
     } finally {
       btn.disabled = false;
     }
