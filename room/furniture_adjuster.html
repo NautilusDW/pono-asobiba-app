@@ -772,16 +772,18 @@ document.getElementById('edit-item-name').addEventListener('change', function() 
 
 document.getElementById('edit-item-id').addEventListener('change', function() {
   if (!selectedId) return;
-  var newId = this.value.trim().replace(/[^a-zA-Z0-9_]/g, '_');
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  // 入力されたIDをテーマと組み合わせて最終ID計算
+  var rawId = this.value.trim().replace(/[^a-zA-Z0-9_]/g, '_');
+  var newId = resolveEffectiveId(rawId, item.theme || 'all');
   if (!newId || newId === selectedId) { this.value = selectedId; return; }
   // 重複チェック
-  if (ITEMS.find(function(x) { return x.id === newId; })) {
+  if (ITEMS.find(function(x) { return x.id === newId && x !== item; })) {
     alert('ID「' + newId + '」は既に使われています');
     this.value = selectedId;
     return;
   }
-  var item = ITEMS.find(function(x) { return x.id === selectedId; });
-  if (!item) return;
   // adjustments のキーを移動
   ['A','B'].forEach(function(angle) {
     var oldKey = selectedId + '_' + angle;
@@ -2216,37 +2218,45 @@ function handleImportFiles(files) {
     if (!_lastImportedId) return;
     var item = ITEMS.find(function(x) { return x.id === _lastImportedId; });
     if (!item) return;
-    var newId = (idInp.value || '').trim().replace(/[^a-zA-Z0-9_]/g, '_');
-    if (newId && newId !== item.id) {
-      // 重複チェック
-      if (ITEMS.find(function(x) { return x.id === newId && x !== item; })) {
-        return; // 重複は無視
-      }
-      // adjustments キー移動
-      ['A','B'].forEach(function(angle) {
-        var oldKey = item.id + '_' + angle;
-        var newKey = newId + '_' + angle;
-        if (adjustments[oldKey]) {
-          adjustments[newKey] = adjustments[oldKey];
-          delete adjustments[oldKey];
-        }
-      });
-      // ボタンのdata-id更新
-      var btn = document.querySelector('.item-btn[data-id="' + item.id + '"]');
-      if (btn) btn.dataset.id = newId;
-      item.id = newId;
-      _lastImportedId = newId;
-      if (selectedId === item.id || selectedId === null) selectedId = newId;
-      if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
-    }
+    // まずcat/theme/nameを先に更新（IDはテーマに依存するため）
     item.name = (nameInp.value || '').trim() || item.name;
     item.cat = catSel.value;
     item.theme = themeSel.value;
+    // テーマを踏まえた最終IDを計算
+    var rawId = (idInp.value || '').trim().replace(/[^a-zA-Z0-9_]/g, '_');
+    var newId = resolveEffectiveId(rawId || item.id, item.theme);
+    if (newId && newId !== item.id) {
+      // 重複チェック（最終IDで）
+      if (ITEMS.find(function(x) { return x.id === newId && x !== item; })) {
+        // 重複は黙ってスキップ（入力途中の可能性）
+      } else {
+        // adjustments キー移動
+        ['A','B'].forEach(function(angle) {
+          var oldKey = item.id + '_' + angle;
+          var newKey = newId + '_' + angle;
+          if (adjustments[oldKey]) {
+            adjustments[newKey] = adjustments[oldKey];
+            delete adjustments[oldKey];
+          }
+        });
+        // ボタンのdata-id更新
+        var btn = document.querySelector('.item-btn[data-id="' + item.id + '"]');
+        if (btn) btn.dataset.id = newId;
+        item.id = newId;
+        _lastImportedId = newId;
+        if (selectedId !== null) selectedId = newId;
+        if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+      }
+    }
     // 選択中アイテムの編集欄にも反映
     var editIdEl = document.getElementById('edit-item-id');
     var editNameEl = document.getElementById('edit-item-name');
+    var editCatEl = document.getElementById('edit-item-cat');
+    var editThemeEl = document.getElementById('edit-item-theme');
     if (editIdEl && selectedId === item.id) editIdEl.value = item.id;
     if (editNameEl && selectedId === item.id) editNameEl.value = item.name;
+    if (editCatEl) editCatEl.value = item.cat;
+    if (editThemeEl) editThemeEl.value = item.theme;
     saveImports();
   }
   idInp.addEventListener('input', updateLast);
