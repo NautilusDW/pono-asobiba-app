@@ -420,6 +420,12 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/deco_vr_blue_boy_B.png',
     gridRow: 4, gridCol: 4, cellSize: 0.4, pivotX: 0, pivotY: 44.1, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
+  {
+    id: 'deco_rocket_boy', cat: 'deco', name: 'ロケット', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/deco_rocket_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/deco_rocket_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 0.5, pivotX: 0, pivotY: 25.9, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
 ];
 
 // ── ポイント獲得方法のリスト（説明画面用） ─────────────────
