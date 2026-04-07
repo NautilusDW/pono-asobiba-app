@@ -1579,11 +1579,21 @@
       }
 
       // ── Slot reward lookup (gendered対応) ──
-      // furn/deco の場合は ROOM_ITEMS から画像を解決（rewards.json より items.js を優先）
+      // furn/deco の場合は ROOM_ITEMS から画像を解決（A角度を必ず優先）
       function _resolveRewardImg(type, id, fallbackImg) {
         if ((type === 'furn' || type === 'deco') && id && typeof ROOM_ITEMS !== 'undefined') {
           var found = ROOM_ITEMS.find(function(it) { return it.id === id; });
-          if (found && found.roomImg) return found.roomImg.replace(/^\.\.\//, '');
+          if (found) {
+            var a = found.roomImg || '';
+            var b = found.roomImgB || '';
+            // _A.pngを含む方を優先（items.jsで roomImg が _B を指している場合への対策）
+            var picked = /_A\.png$/i.test(a) ? a : (/_A\.png$/i.test(b) ? b : (a || b));
+            if (picked) return picked.replace(/^\.\.\//, '');
+          }
+        }
+        // フォールバック画像も _B.png なら _A.png に置換
+        if (fallbackImg && /_B\.png$/i.test(fallbackImg)) {
+          return fallbackImg.replace(/_B\.png$/i, '_A.png');
         }
         return fallbackImg || '';
       }

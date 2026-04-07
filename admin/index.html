@@ -678,12 +678,12 @@ function buildSlotCard(slotNum, data) {
   var row1 = document.createElement('div');
   row1.className = 'reward-card-row';
 
-  // Preview image
+  // Preview image (常に A 角度を表示)
   var previewSrc = isGendered ? (data.boy && data.boy.img) : data.img;
   if (previewSrc) {
     var prevImg = document.createElement('img');
     prevImg.className = 'reward-preview-img';
-    prevImg.src = '../' + previewSrc;
+    prevImg.src = '../' + toAImg(previewSrc);
     prevImg.onerror = function() { this.style.display = 'none'; };
     row1.appendChild(prevImg);
   } else {
@@ -874,7 +874,7 @@ function buildCardCompleteCard(idx, data) {
   if (data.img) {
     var prevImg = document.createElement('img');
     prevImg.className = 'reward-preview-img';
-    prevImg.src = '../' + data.img;
+    prevImg.src = '../' + toAImg(data.img);
     prevImg.onerror = function() { this.style.display = 'none'; };
     row1.appendChild(prevImg);
   } else {
@@ -905,6 +905,12 @@ function buildCardCompleteCard(idx, data) {
 // ════════════════════════════════════════════════════════════════
 // Form Helpers
 // ════════════════════════════════════════════════════════════════
+// 画像パスを必ずA角度版に変換するヘルパー
+function toAImg(path) {
+  if (!path) return path;
+  return path.replace(/_B(\.png)$/i, '_A$1');
+}
+
 // アイテム選択フィールド: ピボット調整ツール由来のIDを表示+選択ボタン
 // type/id/img をまとめて管理（hidden input + 表示用テキスト + 選択ボタン）
 function makeItemPickerField(currentType, currentId, currentImg, prefix, parentCard) {
@@ -942,7 +948,7 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
 
   var thumb = document.createElement('img');
   thumb.style.cssText = 'width:40px;height:40px;object-fit:contain;border-radius:6px;background:#fff;border:1px solid #ddd;';
-  if (currentImg) thumb.src = '../' + currentImg;
+  if (currentImg) thumb.src = '../' + toAImg(currentImg);
   thumb.onerror = function() { this.style.display = 'none'; };
   row.appendChild(thumb);
 
@@ -965,8 +971,11 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
   pickBtn.style.cssText = 'background:#FEF3C7;color:#D97706;border:1px solid #FCD34D;border-radius:6px;padding:6px 10px;font-family:inherit;font-size:0.7rem;font-weight:bold;cursor:pointer;white-space:nowrap;';
   pickBtn.addEventListener('click', function() {
     openImageBrowser(function(path, downloadUrl, meta) {
-      imgInp.value = path;
-      thumb.src = downloadUrl;
+      // 必ずA角度パスで保存
+      var aPath = toAImg(path);
+      var aDownloadUrl = toAImg(downloadUrl);
+      imgInp.value = aPath;
+      thumb.src = aDownloadUrl;
       thumb.style.display = '';
       if (meta && meta.id) {
         idInp.value = meta.id;
@@ -977,9 +986,9 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
           if (nameInp && (!nameInp.value || /^ごほうび\d+$/.test(nameInp.value))) {
             nameInp.value = meta.name || '';
           }
-          // カードプレビュー画像も更新
+          // カードプレビュー画像も更新（A角度）
           var cardPrev = parentCard.querySelector('.reward-preview-img');
-          if (cardPrev) cardPrev.src = downloadUrl;
+          if (cardPrev) cardPrev.src = aDownloadUrl;
         }
       }
       refreshInfo();
