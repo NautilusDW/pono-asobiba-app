@@ -808,39 +808,46 @@ function drawPono(now) {
 
   const fx = gridOX + pc * cellSize + cellSize / 2;
   const fy = gridOY + pr * cellSize + cellSize / 2;
-
-  const isHorizontal = Math.abs(dc) > Math.abs(dr) && walkAnim != null;
   const walkH = Math.floor(cellSize * 0.85);
-  const elapsed = walkAnim ? (now - walkAnim.t0) : now;
+  const baseSize = Math.floor(cellSize * 0.78);
 
-  if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
-    const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
-    const sideW = Math.floor(sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
-    const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
-    const sx = frameIdx * SIDE_WALK_FRAME_W;
-    ctx.save();
-    if (dc < 0) {
-      ctx.translate(fx, fy); ctx.scale(-1, 1);
-      ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
-                    -sideW / 2, -sideH / 2, sideW, sideH);
-    } else {
-      ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
-                    fx - sideW / 2, fy - sideH / 2, sideW, sideH);
-    }
-    ctx.restore();
-  } else if (walkAnim && imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
-    const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
-    const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
-    const sx = frameIdx * WALK_FRAME_W;
-    ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
-                  fx - walkW / 2, fy - walkH / 2, walkW, walkH);
-  } else if (imgPono.complete && imgPono.naturalWidth > 0) {
-    const sz = Math.floor(cellSize * 0.78);
-    ctx.drawImage(imgPono, fx - sz / 2, fy - sz / 2, sz, sz);
+  // ── Base layer: ALWAYS draw something visible at pono's position ──
+  // (so even if walking sprite drawing fails, pono is never invisible)
+  if (imgPono.complete && imgPono.naturalWidth > 0) {
+    ctx.drawImage(imgPono, fx - baseSize / 2, fy - baseSize / 2, baseSize, baseSize);
   } else {
     ctx.font = Math.floor(cellSize * 0.6) + 'px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('🐻', fx, fy);
+  }
+
+  // ── Overdraw walking sprite if walking ──
+  if (walkAnim) {
+    const elapsed = now - walkAnim.t0;
+    const isHorizontal = Math.abs(dc) > Math.abs(dr);
+    if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
+      const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
+      const sideW = Math.floor(sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
+      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
+      const sx = frameIdx * SIDE_WALK_FRAME_W;
+      ctx.save();
+      if (dc < 0) {
+        ctx.translate(fx, fy); ctx.scale(-1, 1);
+        ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+                      -sideW / 2, -sideH / 2, sideW, sideH);
+      } else {
+        ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+                      fx - sideW / 2, fy - sideH / 2, sideW, sideH);
+      }
+      ctx.restore();
+    } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
+      const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
+      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
+      const sx = frameIdx * WALK_FRAME_W;
+      ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
+                    fx - walkW / 2, fy - walkH / 2, walkW, walkH);
+    }
+    // If neither walk sheet loaded, base static face is already drawn
   }
 }
 
