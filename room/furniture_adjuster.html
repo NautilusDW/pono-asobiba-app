@@ -643,19 +643,18 @@ const canvas = document.getElementById('grid-canvas');
 const ctx = canvas.getContext('2d');
 const itemLayer = document.getElementById('item-layer');
 
-// ロード時のキャッシュバスター（このセッション中は同じ値で固定 = 同セッションでは再取得しない）
-var THUMB_CB = '?cb=' + Date.now();
-
-// サムネイル画像選択（_A.png を含む方を優先 + キャッシュバスター付与）
+// サムネイル画像選択（_A.png を含む方を優先）
+// キャッシュバスターは付けない: SW側で画像は常にnetwork-fetch (cache: 'no-store') に
+// 設定済みなので、生のパスのままで最新が取れる。
+// ?cb=xxx を付けると thumb-a スロット (updateABThumbs) とURLが一致せず
+// 別々のキャッシュエントリになって表示が食い違う問題があるため。
 function thumbSrcFor(item) {
   var a = item.roomImg || '';
   var b = item.roomImgB || '';
   // _A を含む方を優先
-  var picked = /_A\.png$/i.test(a) ? a : (/_A\.png$/i.test(b) ? b : (a || b));
-  if (!picked) return '';
-  // data: URL ならそのまま、それ以外はキャッシュバスター付与
-  if (picked.startsWith('data:')) return picked;
-  return picked + THUMB_CB;
+  if (/_A\.png$/i.test(a)) return a;
+  if (/_A\.png$/i.test(b)) return b;
+  return a || b;
 }
 
 // Build item list
