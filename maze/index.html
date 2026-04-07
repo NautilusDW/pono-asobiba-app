@@ -763,10 +763,10 @@ canvas.addEventListener('touchend', function(e) {
 }, { passive: true });
 
 // ====== Start ======
-ovBtn.addEventListener('click', function() {
+ovBtn.onclick = function() {
   hideOverlay();
   loadStage(0);
-});
+};
 
 // Init menu
 if (window.initMenu) {
