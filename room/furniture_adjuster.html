@@ -374,6 +374,15 @@ var GRID_CELL_PCT = (ISO_GRID.right.x - ISO_GRID.left.x) / ISO_GRID.cells * 100 
 // ─── Items (items.js の ROOM_ITEMS から動的構築) ───
 var DELETED_KEY = 'furniture_adjuster_deleted';
 var _deletedIds = (function() { try { return JSON.parse(localStorage.getItem(DELETED_KEY)) || []; } catch(e) { return []; } })();
+// items.jsに既に無いIDは削除リストから除去（クリーンアップ）
+if (typeof ROOM_ITEMS !== 'undefined' && _deletedIds.length > 0) {
+  var validIds = new Set(ROOM_ITEMS.map(function(it) { return it.id; }));
+  var beforeLen = _deletedIds.length;
+  _deletedIds = _deletedIds.filter(function(id) { return validIds.has(id); });
+  if (_deletedIds.length !== beforeLen) {
+    try { localStorage.setItem(DELETED_KEY, JSON.stringify(_deletedIds)); } catch(e) {}
+  }
+}
 var _deletedSet = new Set(_deletedIds);
 
 // items.js由来アイテムへのカスタム編集を保持するoverride
@@ -2043,9 +2052,11 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
     localStorage.removeItem(OVERRIDE_KEY);
     refreshAllUnsavedIndicators();
     refreshUnsavedBanner();
-    status.textContent = '✅ items.js を更新しました！Netlifyが自動デプロイします';
+    status.textContent = '✅ 更新完了！3秒後にリロードします（最新のitems.js反映）';
     status.style.color = '#4CAF50';
     btn.disabled = false;
+    // 3秒後に自動リロードして最新のitems.jsを反映
+    setTimeout(function() { location.reload(); }, 3000);
   } catch (e) {
     status.textContent = '❌ ' + e.message;
     status.style.color = '#f44336';
