@@ -330,13 +330,6 @@ const ROOM_ITEMS = [
     angleB: { cellSize: 0.5, pivotX: 0, pivotY: 52.1 },
   },
   {
-    id: 'deco_drone', cat: 'deco', name: 'ドローン', price: 20, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/drone_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/drone_B.png',
-    gridRow: 6, gridCol: 5, cellSize: 0.6, pivotX: 0, pivotY: 50.7,
-    angleB: { cellSize: 0.6, pivotX: 0, pivotY: 50.7 },
-  },
-  {
     id: 'deco_sportscar', cat: 'deco', name: 'スポーツカー', price: 25, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/sportscar_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/sportscar_B.png',
@@ -408,12 +401,24 @@ const ROOM_ITEMS = [
     id: 'furn_bookshelf_blue_round_boy', cat: 'furn', name: 'あおいまるいほんだな', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_bookshelf_blue_round_boy_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_bookshelf_blue_round_boy_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 4, gridCol: 4, cellSize: 1.7, pivotX: -16, pivotY: 13.3, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
     id: 'deco_drone_white_boy', cat: 'deco', name: 'しろいドローン', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/deco_drone_white_boy_A.png',
     gridRow: 4, gridCol: 4, cellSize: 0.5, pivotX: 0, pivotY: 46.9, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
+  {
+    id: 'furn_pcdesk_blue_boy', cat: 'furn', name: 'あおいPCデスク＆チェア', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_pcdesk_blue_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_pcdesk_blue_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 1.8, pivotX: 6.5, pivotY: 2.1, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
+  },
+  {
+    id: 'deco_vr_blue_boy', cat: 'deco', name: 'あおいVRゴーグル', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/deco_vr_blue_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/deco_vr_blue_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 0.4, pivotX: 0, pivotY: 44.1, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
 ];
 
