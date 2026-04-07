@@ -182,8 +182,8 @@ const ROOM_ITEMS = [
     id: 'furn_shelf2', cat: 'furn', name: 'おおきなたな', price: 20, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/Shelf02_B.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/Shelf02_A.png',
-    gridRow: 4, gridCol: 1, cellSize: 1.8, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7,
-    angleB: { cellSize: 1.8, pivotX: -15, pivotY: 13.7, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7 },
+    gridRow: 4, gridCol: 1, cellSize: 1.8, pivotX: -15, pivotY: 13.7, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 1.8, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
     surfaceY: -125.5, surfaceYB: -125.5,
   },
   {
@@ -207,17 +207,17 @@ const ROOM_ITEMS = [
     id: 'furn_bed_pink', cat: 'furn', name: 'ピンクベッド', price: 25, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/bed_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_pink_B.png',
-    gridRow: 3, gridCol: 5, cellSize: 2, footprintSize: 3, pivotX: -11, pivotY: 12.3, minRow: 1, maxRow: 7, minCol: 2, maxCol: 7,
-    angleB: { cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 12.3, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7 },
-    surfaceY: -97.5, surfaceYB: -83,
+    gridRow: 3, gridCol: 5, cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 12.3, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 2, footprintSize: 3, pivotX: -11, pivotY: 12.3, minRow: 1, maxRow: 7, minCol: 2, maxCol: 7 },
+    surfaceY: -83, surfaceYB: -97.5,
   },
   {
     id: 'furn_desk_pink', cat: 'furn', name: 'ピンクつくえ', price: 25, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/desk_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/desk_pink_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1.8, pivotX: -13.5, pivotY: 9.6, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
-    angleB: { cellSize: 1.8, pivotX: 8, pivotY: 6.8, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7 },
-    surfaceY: -129.5, surfaceYB: -123.5,
+    gridRow: 4, gridCol: 4, cellSize: 1.8, pivotX: 8, pivotY: 6.8, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 1.8, pivotX: -13.5, pivotY: 9.6, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
+    surfaceY: -123.5, surfaceYB: -129.5,
   },
   {
     id: 'furn_bookshelf_pink', cat: 'furn', name: 'ピンクほんだな', price: 20, theme: 'girl',
@@ -230,9 +230,9 @@ const ROOM_ITEMS = [
     id: 'furn_chest_pink', cat: 'furn', name: 'ピンクチェスト', price: 20, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/chest_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/chest_pink_B.png',
-    gridRow: 6, gridCol: 3, cellSize: 1.8, pivotX: 15, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7,
-    angleB: { cellSize: 1.2, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
-    surfaceY: -131.5, surfaceYB: -145,
+    gridRow: 6, gridCol: 3, cellSize: 1.2, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
+    angleB: { cellSize: 1.8, pivotX: 15, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
+    surfaceY: -131.5, surfaceYB: -131.5,
   },
 
   // ══ たまごのゆりかご（育成シミュレーション: 一時非表示）══
@@ -249,8 +249,8 @@ const ROOM_ITEMS = [
     id: 'deco_dinosaur', cat: 'deco', name: 'きょうりゅう', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/Dinasour01_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/Dinasour01_B.png',
-    gridRow: 4, gridCol: 3, cellSize: 0.8, pivotX: -8.1, pivotY: 27.4,
-    angleB: { cellSize: 0.8, pivotX: -8.1, pivotY: 19.2 },
+    gridRow: 4, gridCol: 3, cellSize: 0.8, pivotX: -8.1, pivotY: 19.2,
+    angleB: { cellSize: 0.8, pivotX: -8.1, pivotY: 27.4 },
   },
   {
     id: 'deco_bear_ribbon', cat: 'deco', name: 'リボンくま', price: 15, theme: 'girl',
@@ -322,13 +322,6 @@ const ROOM_ITEMS = [
   },
 
   // ══ boysテーマ ═════════════════════════════════════════════
-  {
-    id: 'deco_vr', cat: 'deco', name: 'VRゴーグル', price: 15, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/vr_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/vr_B.png',
-    gridRow: 5, gridCol: 5, cellSize: 0.5, pivotX: 0, pivotY: 52.1,
-    angleB: { cellSize: 0.5, pivotX: 0, pivotY: 52.1 },
-  },
   {
     id: 'deco_sportscar', cat: 'deco', name: 'スポーツカー', price: 25, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/sportscar_A.png',
