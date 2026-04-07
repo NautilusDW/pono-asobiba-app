@@ -73,6 +73,26 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
 .snap-del:hover{background:#f44336;color:#fff}
 .snap-empty{color:#555;font-size:12px;text-align:center;padding:8px}
 .replace-drop.drag-over{background:#1e2f55 !important;filter:brightness(1.3)}
+
+/* ─── A/B Image Panel (統合UI) ─── */
+#ab-image-panel{display:flex;gap:8px;margin-top:6px}
+.img-slot{flex:1;position:relative;background:#111;border:2px dashed #555;border-radius:8px;padding:6px;cursor:pointer;text-align:center;transition:all 0.15s;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.img-slot:hover{border-color:#ffd700;background:#1a1a2e}
+.img-slot.drag-over{border-color:#4CAF50;background:#1e3a1e;filter:brightness(1.2)}
+.img-slot.slot-a{border-color:#4CAF50}
+.img-slot.slot-b{border-color:#2196F3}
+.img-slot .slot-label{position:absolute;top:3px;left:6px;font-size:10px;font-weight:bold;color:#fff;background:rgba(0,0,0,0.6);padding:1px 6px;border-radius:8px}
+.img-slot.slot-a .slot-label{background:#4CAF50}
+.img-slot.slot-b .slot-label{background:#2196F3}
+.img-slot img{max-width:100%;max-height:80px;object-fit:contain;display:block}
+.img-slot .drop-hint{font-size:10px;color:#888;margin-top:4px}
+.img-slot.empty .drop-hint{color:#666}
+.img-slot.empty::after{content:'？';font-size:32px;color:#444;font-weight:bold;position:absolute}
+.img-slot.empty img{display:none !important}
+#btn-save-github{width:100%;background:#ffd700;color:#1a1a2e;border:none;padding:10px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px;margin-top:6px}
+#btn-save-github:hover{background:#ffed4a}
+#btn-save-github:disabled{background:#555;color:#888;cursor:not-allowed}
+#save-status{font-size:11px;min-height:16px;text-align:center;margin-top:4px;color:#aaa}
 </style>
 </head>
 <body>
@@ -138,12 +158,12 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   </details>
 
   <details style="background:#1a2744;padding:8px;border-radius:8px">
-    <summary style="cursor:pointer;font-size:13px;color:#4CAF50">📥 画像をインポート</summary>
+    <summary style="cursor:pointer;font-size:13px;color:#4CAF50">➕ 新規アイテム作成（画像インポート）</summary>
     <div style="margin-top:8px">
       <div class="import-zone" id="import-zone">
         <div class="icon">📁</div>
-        <div style="font-size:13px;font-weight:bold;color:#ffd700">クリック or ドラッグ&ドロップ</div>
-        <p>PNG画像（A角度用・B角度用）を追加できます</p>
+        <div style="font-size:13px;font-weight:bold;color:#ffd700">新規アイテムを作る</div>
+        <p>A/Bペアをまとめてドロップ or A画像だけドロップ<br><span style="color:#666">※ 既存アイテムの画像差し替えは下のA/B画像スロットから</span></p>
         <input type="file" id="import-file" accept="image/*" multiple style="display:none">
       </div>
       <div style="margin-top:8px;border-top:1px solid #333;padding-top:8px">
@@ -175,21 +195,9 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
           <div id="ai-name-status" style="font-size:10px;color:#aaa;min-height:12px;margin-top:2px">Netlify Function経由（サーバー側APIキー）</div>
         </div>
       </div>
-      <div style="margin-top:4px;border-top:1px solid #333;padding-top:8px">
-        <div style="font-size:12px;color:#ffd700;font-weight:bold;margin-bottom:4px">🚀 GitHubに保存</div>
-        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:11px;color:#aaa;">ファイル名:</span>
-          <span id="import-save-name" style="font-size:12px;color:#ffd700;font-family:monospace">---</span>
-          <span style="font-size:11px;color:#888">_A.png / _B.png（IDから自動生成）</span>
-        </div>
-        <div style="display:flex;gap:4px;margin-top:6px">
-          <button id="btn-save-import-a" style="flex:1;background:#4CAF50;color:#fff;border:none;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold" disabled>A画像を保存</button>
-          <button id="btn-save-import-b" style="flex:1;background:#2196F3;color:#fff;border:none;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold" disabled>B画像を保存</button>
-        </div>
-        <div id="import-save-status" style="font-size:11px;min-height:16px;margin-top:4px"></div>
-        <div style="font-size:10px;color:#555;margin-top:2px">
-          PAT: 管理画面で設定したトークンを使用（localStorage: admin_gh_token）
-        </div>
+      <div style="margin-top:4px;border-top:1px solid #333;padding-top:6px;font-size:10px;color:#666">
+        💡 保存はアイテムを選んでから下の「🚀 GitHubに両方保存」ボタンで行います<br>
+        PAT: 管理画面で設定したトークンを使用
       </div>
     </div>
   </details>
@@ -218,12 +226,30 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       </label>
     </div>
 
-    <div style="display:flex;gap:4px;margin-bottom:4px">
-      <div id="drop-replace-a" class="replace-drop" style="flex:1;background:#333;color:#4CAF50;border:2px solid #4CAF50;padding:6px 4px;border-radius:4px;cursor:pointer;font-size:11px;text-align:center;transition:all 0.15s">🔄 A画像<br><span style="font-size:9px;color:#666">クリック/ドロップ</span></div>
-      <div id="drop-replace-b" class="replace-drop" style="flex:1;background:#333;color:#2196F3;border:2px solid #2196F3;padding:6px 4px;border-radius:4px;cursor:pointer;font-size:11px;text-align:center;transition:all 0.15s">🔄 B画像<br><span style="font-size:9px;color:#666">クリック/ドロップ</span></div>
-      <button id="btn-delete-item" style="flex:0 0 auto;background:#333;color:#f44;border:1px solid #f44;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">🗑</button>
-      <input type="file" id="replace-file-a" accept="image/*" style="display:none">
-      <input type="file" id="replace-file-b" accept="image/*" style="display:none">
+    <div style="font-size:10px;color:#888;margin-top:4px">
+      ファイル名: <span id="import-save-name" style="color:#ffd700;font-family:monospace">---</span>_A.png / _B.png
+    </div>
+
+    <div id="ab-image-panel">
+      <div id="img-slot-a" class="img-slot slot-a empty drop-replace" data-angle="A">
+        <div class="slot-label">A画像</div>
+        <img id="thumb-a" alt="" style="display:none">
+        <div class="drop-hint">クリック or ドロップ</div>
+      </div>
+      <div id="img-slot-b" class="img-slot slot-b empty drop-replace" data-angle="B">
+        <div class="slot-label">B画像</div>
+        <img id="thumb-b" alt="" style="display:none">
+        <div class="drop-hint">クリック or ドロップ</div>
+      </div>
+    </div>
+    <input type="file" id="replace-file-a" accept="image/*" style="display:none">
+    <input type="file" id="replace-file-b" accept="image/*" style="display:none">
+
+    <div id="save-status"></div>
+    <button id="btn-save-github">🚀 GitHubに両方保存（A+B）</button>
+
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button id="btn-delete-item" style="flex:1;background:#333;color:#f44;border:1px solid #f44;padding:6px;border-radius:4px;cursor:pointer;font-size:11px">🗑 このアイテムを削除</button>
     </div>
 
     <label><span>cellSize</span>
@@ -642,6 +668,9 @@ function selectItem(id) {
   const chkStack = document.getElementById('chk-stackable');
   chkStack.checked = adj.stackable || false;
 
+  // A/Bサムネイル更新
+  if (typeof updateABThumbs === 'function') updateABThumbs(item);
+
   // デコの「家具の上でプレビュー」セクション表示/非表示
   updateDecoSectionVisibility(id);
 
@@ -822,6 +851,31 @@ document.getElementById('btn-delete-item').addEventListener('click', function() 
   drawGrid();
 });
 
+// ─── A/B thumbnail update ───
+function updateABThumbs(item) {
+  var tA = document.getElementById('thumb-a');
+  var tB = document.getElementById('thumb-b');
+  var slotA = document.getElementById('img-slot-a');
+  var slotB = document.getElementById('img-slot-b');
+  if (!tA || !tB) return;
+  if (item && item.roomImg) {
+    tA.src = item.roomImg;
+    tA.style.display = 'block';
+    slotA.classList.remove('empty');
+  } else {
+    tA.style.display = 'none';
+    slotA.classList.add('empty');
+  }
+  if (item && item.roomImgB) {
+    tB.src = item.roomImgB;
+    tB.style.display = 'block';
+    slotB.classList.remove('empty');
+  } else {
+    tB.style.display = 'none';
+    slotB.classList.add('empty');
+  }
+}
+
 // ─── Replace A/B images (click + drag & drop) ───
 function replaceImage(angle, file) {
   if (!file || !file.type.startsWith('image/') || !selectedId) return;
@@ -843,17 +897,19 @@ function replaceImage(angle, file) {
     var btnImg = document.querySelector('.item-btn[data-id="' + selectedId + '"] img');
     if (btnImg && angle === 'A') btnImg.src = ev.target.result;
     placeItem(selectedId);
+    updateABThumbs(item);
     saveImports();
     saveToStorage();
-    var status = document.getElementById('import-save-status');
-    if (status) { status.textContent = '✅ ' + angle + '画像を差し替え'; status.style.color = '#4CAF50'; }
+    var status = document.getElementById('save-status');
+    if (status) { status.textContent = '✅ ' + angle + '画像を差し替え（まだGitHubには保存されていません）'; status.style.color = '#4CAF50'; }
   };
   reader.readAsDataURL(file);
 }
 
 ['A','B'].forEach(function(angle) {
-  var dropEl = document.getElementById('drop-replace-' + angle.toLowerCase());
+  var dropEl = document.getElementById('img-slot-' + angle.toLowerCase());
   var fileEl = document.getElementById('replace-file-' + angle.toLowerCase());
+  if (!dropEl || !fileEl) return;
   // クリック → ファイル選択
   dropEl.addEventListener('click', function() { fileEl.click(); });
   fileEl.addEventListener('change', function() { replaceImage(angle, this.files[0]); this.value = ''; });
@@ -1757,8 +1813,6 @@ function autoNameFromFile(filename) {
 // ─── Image Import ───
 var _importCounter = 0;
 var _lastImportedId = null;  // 直近インポートのID（フォーム編集時の参照元）
-var _importedDataA = null; // base64 (without prefix)
-var _importedDataB = null;
 var importZone = document.getElementById('import-zone');
 var importFile = document.getElementById('import-file');
 
@@ -1822,8 +1876,6 @@ function handleImportFiles(files) {
             var item = ITEMS.find(function(it) { return it.id === targetId; });
             if (!item) return;
             item.roomImgB = ev.target.result;
-            _importedDataB = ev.target.result.split(',')[1];
-            document.getElementById('btn-save-import-b').disabled = false;
             if (!adjustments[adjKey(item.id, 'B')]) {
               adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
                 cellSize: 1.0, pivotX: 0, pivotY: 0,
@@ -1837,6 +1889,7 @@ function handleImportFiles(files) {
               warnEl2.textContent = '✅ B画像を追加しました: ' + item.name + ' (' + item.id + ')';
               warnEl2.style.color = '#2196F3';
             }
+            if (selectedId === item.id) updateABThumbs(item);
             if (item._imported) saveImports();
           };
           reader.readAsDataURL(bFile);
@@ -1896,8 +1949,6 @@ function handleImportFiles(files) {
           };
           ITEMS.push(newItem);
         }
-        _importedDataA = evA.target.result.split(',')[1];
-        _importedDataB = null;
 
         if (!adjustments[adjKey(itemId, 'A')]) {
           adjustments[adjKey(itemId, 'A')] = {
@@ -1927,9 +1978,8 @@ function handleImportFiles(files) {
           var readerB = new FileReader();
           readerB.onload = function(evB) {
             newItem.roomImgB = evB.target.result;
-            _importedDataB = evB.target.result.split(',')[1];
             adjustments[adjKey(itemId, 'B')] = Object.assign({}, adjustments[adjKey(itemId, 'A')]);
-            document.getElementById('btn-save-import-b').disabled = false;
+            if (selectedId === itemId) updateABThumbs(newItem);
             saveImports();
           };
           readerB.readAsDataURL(bFile);
@@ -1942,7 +1992,6 @@ function handleImportFiles(files) {
         themeSelect.value = itemTheme;
         _lastImportedId = itemId; // 後続の編集で参照
 
-        document.getElementById('btn-save-import-a').disabled = false;
         var fnEl = document.getElementById('import-save-name');
         if (fnEl) fnEl.textContent = itemId.replace(/^(furn_|deco_)/, '');
 
@@ -2171,62 +2220,51 @@ function _getSaveId() {
   return id;
 }
 
-document.getElementById('btn-save-import-a').addEventListener('click', function() {
+// 統合保存ボタン: A+B両方を順次保存
+document.getElementById('btn-save-github').addEventListener('click', async function() {
   var id = _getSaveId();
-  if (!id) { alert('先にアイテムをインポートまたは選択してください'); return; }
-  var name = id.replace(/^(furn_|deco_)/, '');
+  var status = document.getElementById('save-status');
+  if (!id) { status.textContent = '❌ アイテムを選択してください'; status.style.color = '#f44336'; return; }
   var item = ITEMS.find(function(it) { return it.id === id; });
-  if (!item || !item.roomImg) { alert('A画像がありません'); return; }
-  var path = FURN_PATH + name + '_A.png';
+  if (!item) { status.textContent = '❌ アイテムが見つかりません'; status.style.color = '#f44336'; return; }
+  var name = id.replace(/^(furn_|deco_)/, '');
   var saveBtn = this;
-  var status = document.getElementById('import-save-status');
   saveBtn.disabled = true;
-  status.textContent = '⏳ A画像を準備中...';
-  status.style.color = '#ffd700';
-  getImageBase64(item.roomImg, function(b64) {
-    if (!b64) { status.textContent = '❌ A画像の読み込みに失敗'; status.style.color = '#f44336'; saveBtn.disabled = false; return; }
-    status.textContent = '⏳ A画像をアップロード中...';
-    ghUploadFile(path, b64, '🪑 家具画像追加: ' + name + '_A.png', function(err) {
-      if (err) {
-        status.textContent = '❌ ' + err;
-        status.style.color = '#f44336';
-        saveBtn.disabled = false;
-      } else {
-        status.textContent = '✅ A画像を保存: ' + path;
-        status.style.color = '#4CAF50';
-        saveBtn.disabled = false;
-      }
-    });
-  });
-});
 
-document.getElementById('btn-save-import-b').addEventListener('click', function() {
-  var id = _getSaveId();
-  if (!id) { alert('先にアイテムをインポートまたは選択してください'); return; }
-  var name = id.replace(/^(furn_|deco_)/, '');
-  var item = ITEMS.find(function(it) { return it.id === id; });
-  if (!item || !item.roomImgB) { alert('B画像がありません'); return; }
-  var path = FURN_PATH + name + '_B.png';
-  var saveBtn = this;
-  var status = document.getElementById('import-save-status');
-  saveBtn.disabled = true;
-  status.textContent = '⏳ B画像を準備中...';
-  status.style.color = '#ffd700';
-  getImageBase64(item.roomImgB, function(b64) {
-    if (!b64) { status.textContent = '❌ B画像の読み込みに失敗'; status.style.color = '#f44336'; saveBtn.disabled = false; return; }
-    status.textContent = '⏳ B画像をアップロード中...';
-    ghUploadFile(path, b64, '🪑 家具画像追加: ' + name + '_B.png', function(err) {
-      if (err) {
-        status.textContent = '❌ ' + err;
-        status.style.color = '#f44336';
-        saveBtn.disabled = false;
-      } else {
-        status.textContent = '✅ B画像を保存: ' + path;
-        status.style.color = '#4CAF50';
-        saveBtn.disabled = false;
-      }
+  function uploadOne(imgSrc, suffix) {
+    return new Promise(function(resolve) {
+      if (!imgSrc) { resolve({ ok: false, skip: true }); return; }
+      getImageBase64(imgSrc, function(b64) {
+        if (!b64) { resolve({ ok: false, err: suffix + '画像の読み込み失敗' }); return; }
+        ghUploadFile(FURN_PATH + name + '_' + suffix + '.png', b64,
+          '🪑 家具画像追加: ' + name + '_' + suffix + '.png', function(err) {
+            if (err) resolve({ ok: false, err: err });
+            else resolve({ ok: true });
+          });
+      });
     });
-  });
+  }
+
+  status.textContent = '⏳ A画像を保存中...';
+  status.style.color = '#ffd700';
+  var rA = await uploadOne(item.roomImg, 'A');
+
+  status.textContent = '⏳ B画像を保存中...';
+  var rB = await uploadOne(item.roomImgB, 'B');
+
+  // 結果表示
+  var parts = [];
+  if (rA.ok) parts.push('✅ A');
+  else if (rA.skip) parts.push('⚪ A（なし）');
+  else parts.push('❌ A: ' + rA.err);
+  if (rB.ok) parts.push('✅ B');
+  else if (rB.skip) parts.push('⚪ B（なし）');
+  else parts.push('❌ B: ' + rB.err);
+  var anyOk = rA.ok || rB.ok;
+  var anyErr = (!rA.ok && !rA.skip) || (!rB.ok && !rB.skip);
+  status.textContent = parts.join(' / ') + (anyOk ? ' → ' + name + '_A.png / _B.png' : '');
+  status.style.color = anyErr ? '#f44336' : (anyOk ? '#4CAF50' : '#aaa');
+  saveBtn.disabled = false;
 });
 
 // ─── Init ───
@@ -2236,7 +2274,7 @@ drawGrid();
 // Auto-select first item
 if (ITEMS.length > 0) selectItem(ITEMS[0].id);
 if (hadSave) {
-  var st = document.getElementById('import-save-status');
+  var st = document.getElementById('save-status');
   if (st) {
     st.textContent = '✅ 前回の保存データを復元しました';
     st.style.color = '#4CAF50';
