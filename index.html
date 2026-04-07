@@ -1594,7 +1594,8 @@
           var g = 'boy';
           try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
           var v = rw[g] || rw['boy'] || {};
-          return { icon: rw.icon, name: rw.name, type: v.type, id: v.id,
+          // 男女別の名前があればそれを優先、無ければ総称名
+          return { icon: rw.icon, name: v.name || rw.name, type: v.type, id: v.id,
                    img: _resolveRewardImg(v.type, v.id, v.img),
                    unlockRoom: v.unlockRoom || rw.unlockRoom, afterMsg: v.afterMsg || rw.afterMsg };
         }
