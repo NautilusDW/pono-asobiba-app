@@ -182,8 +182,8 @@ const ROOM_ITEMS = [
     id: 'furn_shelf2', cat: 'furn', name: 'おおきなたな', price: 20, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/Shelf02_B.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/Shelf02_A.png',
-    gridRow: 4, gridCol: 1, cellSize: 1.8, pivotX: -15, pivotY: 13.7, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
-    angleB: { cellSize: 1.8, pivotX: 16.5, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
+    gridRow: 4, gridCol: 1, cellSize: 1.8, pivotX: 16.5, pivotY: 30.1, minRow: 0, maxRow: 7, minCol: 0, maxCol: 6,
+    angleB: { cellSize: 1.8, pivotX: -17.5, pivotY: 30.1, minRow: 0, maxRow: 6, minCol: 0, maxCol: 7 },
     surfaceY: -125.5, surfaceYB: -125.5,
   },
   {
@@ -198,8 +198,8 @@ const ROOM_ITEMS = [
     id: 'furn_desk2', cat: 'furn', name: 'きのつくえ', price: 25, theme: 'all',
     roomImg: '../assets/images/Rooms/furnitures_final/desk02_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/desk02_B.png',
-    gridRow: 3, gridCol: 4, cellSize: 1.8, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
-    angleB: { cellSize: 1.8, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
+    gridRow: 3, gridCol: 4, cellSize: 1.6, pivotX: 12, pivotY: 6.3, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 1.6, pivotX: -14.5, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
     surfaceY: -40, surfaceYB: -40,
   },
 
@@ -230,8 +230,8 @@ const ROOM_ITEMS = [
     id: 'furn_chest_pink', cat: 'furn', name: 'ピンクチェスト', price: 20, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/chest_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/chest_pink_B.png',
-    gridRow: 6, gridCol: 3, cellSize: 1.2, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
-    angleB: { cellSize: 1.8, pivotX: 15, pivotY: 13.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
+    gridRow: 6, gridCol: 3, cellSize: 1.8, pivotX: 21.5, pivotY: 28.7, minRow: 0, maxRow: 7, minCol: 0, maxCol: 6,
+    angleB: { cellSize: 1.8, pivotX: 16, pivotY: 14.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
     surfaceY: -131.5, surfaceYB: -131.5,
   },
 
