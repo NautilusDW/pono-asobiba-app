@@ -2046,14 +2046,17 @@ function loadImports() {
   try {
     var data = JSON.parse(localStorage.getItem(IMPORT_SAVE_KEY));
     if (!data || !data.length) return;
+    var cleaned = [];
     data.forEach(function(imp) {
-      // 重複チェック
+      // 破損データ（画像なし）をスキップ
+      if (!imp || !imp.id || !imp.roomImg) return;
+      // 既存ITEMSとID重複ならスキップ（items.js由来とぶつかる場合）
       if (ITEMS.find(function(it) { return it.id === imp.id; })) return;
       imp._imported = true;
-      // _savedToGithub はlocalStorageから復元（明示的にfalseならfalse、未定義でもfalse）
       imp._savedToGithub = !!imp._savedToGithub;
       ITEMS.push(imp);
-      // adjustmentsがなければ初期化（既にlocalStorageから復元済みなら上書きしない）
+      cleaned.push(imp);
+      // adjustments初期化
       var aKey = imp.id + '_A';
       if (!adjustments[aKey]) {
         adjustments[aKey] = {
@@ -2065,20 +2068,37 @@ function loadImports() {
       if (imp.roomImgB && !adjustments[bKey]) {
         adjustments[bKey] = Object.assign({}, adjustments[aKey]);
       }
-      // アイテムリストにボタン追加
-      var btn = document.createElement('div');
-      btn.className = 'item-btn';
-      btn.dataset.id = imp.id;
-      btn.title = imp.name + ' (インポート)';
-      btn.style.borderColor = '#4CAF50';
-      var img = document.createElement('img');
-      img.src = imp.roomImg;
-      btn.appendChild(img);
-      btn.onclick = function() { selectItem(imp.id); };
-      listEl.appendChild(btn);
+      // アイテムリストボタン追加
+      ensureItemButton(imp);
       _importCounter++;
     });
+    // 破損データがあったらクリーンアップしたものに上書き保存
+    if (cleaned.length !== data.length) {
+      try { localStorage.setItem(IMPORT_SAVE_KEY, JSON.stringify(cleaned.map(function(it) {
+        return {
+          id: it.id, name: it.name, cat: it.cat, theme: it.theme,
+          roomImg: it.roomImg, roomImgB: it.roomImgB || null,
+          cellSize: it.cellSize, pivotX: it.pivotX, pivotY: it.pivotY,
+          surfaceY: it.surfaceY || 0, _savedToGithub: !!it._savedToGithub
+        };
+      }))); } catch(e) {}
+    }
   } catch(e) {}
+}
+
+// ITEMS配列のアイテムに対応するボタンが無ければ作成（孤児救済）
+function ensureItemButton(imp) {
+  if (document.querySelector('.item-btn[data-id="' + imp.id + '"]')) return;
+  var btn = document.createElement('div');
+  btn.className = 'item-btn';
+  btn.dataset.id = imp.id;
+  btn.title = imp.name + ' (' + imp.id + ')';
+  btn.style.borderColor = '#4CAF50';
+  var img = document.createElement('img');
+  img.src = imp.roomImg || '';
+  btn.appendChild(img);
+  btn.onclick = function() { selectItem(imp.id); };
+  listEl.appendChild(btn);
 }
 
 // ─── Auto-naming dictionary (built from existing items.js patterns) ───
@@ -2214,6 +2234,11 @@ function handleImportFiles(files) {
     // B画像のみ → 選択中アイテムに追加（selectedId or _lastImportedId）
     if (!g.a && g.b) {
       var targetId = selectedId || _lastImportedId;
+      if (!targetId) {
+        warnEl.textContent = '⚠️ B画像「' + base + '」を追加するアイテムが選択されていません';
+        warnEl.style.color = '#f44336';
+        return;
+      }
       if (targetId) {
         (function(bFile) {
           var reader = new FileReader();
@@ -2269,7 +2294,7 @@ function handleImportFiles(files) {
         // テーマに応じたsuffix自動付与（_boy / _girl）
         itemId = resolveEffectiveId(itemId, itemTheme);
 
-        // 重複チェック: 同じIDのインポートアイテムがあれば上書き、items.js由来なら番号付加
+        // 重複チェック
         var existing = ITEMS.find(function(it) { return it.id === itemId; });
         var newItem;
         if (existing && existing._imported) {
@@ -2278,17 +2303,23 @@ function handleImportFiles(files) {
           existing.name = itemName;
           existing.cat = itemCat;
           existing.theme = itemTheme;
+          existing._savedToGithub = false;
           newItem = existing;
-          // サムネイル更新
           var btnImg = document.querySelector('.item-btn[data-id="' + itemId + '"] img');
           if (btnImg) btnImg.src = evA.target.result;
-        } else if (existing) {
-          // items.js由来のアイテムと重複 → 警告して停止
-          warnEl.textContent = '⚠️ ID「' + itemId + '」（' + existing.name + '）は既に存在します。ベースIDかテーマを変更してください';
-          warnEl.style.color = '#f44336';
-          return;
         } else {
-          // 新規作成（既存IDはelse ifで処理済みなので番号付加不要）
+          // items.js由来と衝突する場合は連番付与（_boy/_girl suffixを保持）
+          if (existing) {
+            var themeSfx = '';
+            var baseId = itemId;
+            var sfxMatch = itemId.match(/^(.*?)(_boy|_girl)$/);
+            if (sfxMatch) { baseId = sfxMatch[1]; themeSfx = sfxMatch[2]; }
+            var suf = 2;
+            while (ITEMS.find(function(x) { return x.id === baseId + '_' + suf + themeSfx; })) suf++;
+            itemId = baseId + '_' + suf + themeSfx;
+            warnEl.textContent = '⚠️ 既存IDと衝突したので「' + itemId + '」に変更しました';
+            warnEl.style.color = '#ff9800';
+          }
           newItem = {
             id: itemId, name: itemName, cat: itemCat, theme: itemTheme,
             roomImg: evA.target.result, cellSize: 1.0, pivotX: 0, pivotY: 0,
@@ -2706,6 +2737,10 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
 
 // ─── Init ───
 loadImports(); // 前回インポートした画像を復元
+// 孤児救済: ITEMSにあるけどボタンが無いインポートアイテムにボタンを作る
+ITEMS.forEach(function(it) {
+  if (it._imported) ensureItemButton(it);
+});
 window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId); drawGrid(); } else drawGrid(); });
 drawGrid();
 // Auto-select first item
