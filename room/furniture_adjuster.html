@@ -1762,12 +1762,24 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       var idMatch = idPattern.exec(text);
       if (!idMatch) return;
 
-      // ブロック末尾を探す（次の "\n  {" or "\n];"）
+      // ブロック境界を中括弧の対応で正確に探す
       var blockStart = text.lastIndexOf('{', idMatch.index);
-      var blockEnd = text.indexOf('\n  },', idMatch.index);
-      if (blockEnd === -1) blockEnd = text.indexOf('\n  }\n', idMatch.index);
+      var depth = 0;
+      var blockEnd = -1;
+      for (var bi = blockStart; bi < text.length; bi++) {
+        var ch = text.charAt(bi);
+        if (ch === '{') depth++;
+        else if (ch === '}') {
+          depth--;
+          if (depth === 0) {
+            // 次の ',' まで含める
+            blockEnd = bi + 1;
+            if (text.charAt(blockEnd) === ',') blockEnd++;
+            break;
+          }
+        }
+      }
       if (blockEnd === -1) return;
-      blockEnd += 4; // include "},"
       var block = text.substring(blockStart, blockEnd);
 
       // プロパティ更新ヘルパー
@@ -1836,7 +1848,23 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
     // インポートアイテムを新規追記
     var importedItems = ITEMS.filter(function(it) { return it._imported; });
     if (importedItems.length > 0) {
-      var closingBracket = text.lastIndexOf('];');
+      // ROOM_ITEMS配列の終端を正確に探す（POINT_GUIDE等の他の配列と区別）
+      var roomItemsStart = text.indexOf('const ROOM_ITEMS');
+      var closingBracket = -1;
+      if (roomItemsStart !== -1) {
+        var arrStart = text.indexOf('[', roomItemsStart);
+        if (arrStart !== -1) {
+          var d = 0;
+          for (var ri = arrStart; ri < text.length; ri++) {
+            var rch = text.charAt(ri);
+            if (rch === '[') d++;
+            else if (rch === ']') {
+              d--;
+              if (d === 0) { closingBracket = ri; break; }
+            }
+          }
+        }
+      }
       if (closingBracket !== -1) {
         var newEntries = importedItems.map(function(item) {
           var adj = adjustments[adjKey(item.id, 'A')] || {};
@@ -1863,18 +1891,35 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       }
     }
 
-    // 削除済みアイテムをitems.jsから除去
+    // 削除済みアイテムをitems.jsから除去（中括弧対応で正確に）
     if (_deletedIds.length > 0) {
       _deletedIds.forEach(function(delId) {
         var idPat = new RegExp("id:\\s*'" + delId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
         var m = idPat.exec(text);
         if (!m) return;
         var bStart = text.lastIndexOf('{', m.index);
+        // 中括弧の対応でブロック末尾を探す
+        var d = 0, bEnd = -1;
+        for (var di = bStart; di < text.length; di++) {
+          var dch = text.charAt(di);
+          if (dch === '{') d++;
+          else if (dch === '}') {
+            d--;
+            if (d === 0) {
+              bEnd = di + 1;
+              if (text.charAt(bEnd) === ',') bEnd++;
+              // 行末まで含める
+              var nl = text.indexOf('\n', bEnd);
+              if (nl !== -1) bEnd = nl + 1;
+              break;
+            }
+          }
+        }
+        if (bEnd === -1) return;
+        // 直前の空行やコメント行は残す（行頭から）
         var lineStart = text.lastIndexOf('\n', bStart - 1);
         if (lineStart === -1) lineStart = 0;
-        var bEnd = text.indexOf('\n', text.indexOf('},', m.index));
-        if (bEnd === -1) return;
-        bEnd += 1;
+        else lineStart += 1; // 改行文字を含まない
         text = text.substring(0, lineStart) + text.substring(bEnd);
       });
       status.textContent = '⏳ ' + _deletedIds.length + '件のアイテムを削除...';
