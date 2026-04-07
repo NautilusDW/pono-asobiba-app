@@ -6,11 +6,13 @@
       "icon": "🎁",
       "gendered": true,
       "boy": {
+        "name": "おもちゃばこ",
         "type": "deco",
-        "id": "deco_box",
-        "img": "assets/images/rewards/.png"
+        "id": "deco_box_boy",
+        "img": "assets/images/Rooms/furnitures_final/deco_box_boy_A.png"
       },
       "girl": {
+        "name": "おかたづけばこ",
         "type": "deco",
         "id": "deco_box",
         "img": "assets/images/Rooms/furnitures_final/box_A.png"
@@ -22,14 +24,16 @@
       "icon": "🛏️",
       "gendered": true,
       "boy": {
+        "name": "きのベッド",
         "type": "furn",
         "id": "furn_bed_wood",
         "img": "assets/images/Rooms/furnitures_final/bed_A_01.png"
       },
       "girl": {
+        "name": "ピンクベッド",
         "type": "furn",
         "id": "furn_bed_pink",
-        "img": "assets/images/rewards/____.png"
+        "img": "assets/images/Rooms/furnitures_final/bed_pink_A.png"
       },
       "unlockRoom": true
     },
@@ -38,11 +42,13 @@
       "icon": "🧸",
       "gendered": true,
       "boy": {
+        "name": "",
         "type": "deco",
         "id": "furn_bear_1",
         "img": "assets/images/Rooms/furnitures_final/bear_A.png"
       },
       "girl": {
+        "name": "",
         "type": "deco",
         "id": "deco_bear_ribbon",
         "img": "assets/images/Rooms/furnitures_final/bear_ribbon_A.png"
