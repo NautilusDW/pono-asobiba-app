@@ -357,14 +357,7 @@ const ROOM_ITEMS = [
     roomImgB: '../assets/images/Rooms/furnitures_final/robot_B.png',
     gridRow: 6, gridCol: 4, cellSize: 0.7, pivotX: 0, pivotY: 37,
     angleB: { cellSize: 0.7, pivotX: 0, pivotY: 37 },
-  },
-  {
-    id: 'furn_chest_blue', cat: 'furn', name: 'あおいチェスト', price: 20, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/chest_blue_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/chest_blue_B.png',
-    gridRow: 5, gridCol: 2, cellSize: 1.2, footprintSize: 2, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
-    angleB: { cellSize: 1.2, footprintSize: 2, pivotX: 0, pivotY: 0, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6 },
-    surfaceY: -145, surfaceYB: -145,
+  },    surfaceY: -145, surfaceYB: -145,
   },
   {
     id: 'deco_books', cat: 'deco', name: 'ほんのやま', price: 10, theme: 'boy',
@@ -389,14 +382,7 @@ const ROOM_ITEMS = [
     id: 'deco_rug_space', cat: 'deco', name: 'うちゅうラグ', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/rug_space.png',
     gridRow: 4, gridCol: 4, cellSize: 1.1, pivotX: 0, pivotY: 50.7,
-  },
-  {
-    id: 'deco_table_glass', cat: 'deco', name: 'ガラステーブル', price: 20, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/table_glass.png',
-    gridRow: 3, gridCol: 3, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
-    surfaceY: -60,
-  },
-  {
+  },  {
     id: 'deco_plasma_ball', cat: 'deco', name: 'プラズマボール', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/plasma_ball.png',
     gridRow: 5, gridCol: 5, cellSize: 0.6, pivotX: 0, pivotY: 26,
@@ -424,5 +410,11 @@ const POINT_GUIDE = [
     roomImg: '../assets/images/Rooms/furnitures_final/import_1_A_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/import_1_A_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 11, pivotY: 28.8, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
+  {
+    id: 'deco_box_boy', cat: 'deco', name: 'おもちゃばこ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/deco_box_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/deco_box_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 0.85, pivotX: 10.5, pivotY: 24.5, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
 ];
