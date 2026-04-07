@@ -643,14 +643,19 @@ const canvas = document.getElementById('grid-canvas');
 const ctx = canvas.getContext('2d');
 const itemLayer = document.getElementById('item-layer');
 
-// サムネイル画像選択（_A.png を含む方を優先）
+// ロード時のキャッシュバスター（このセッション中は同じ値で固定 = 同セッションでは再取得しない）
+var THUMB_CB = '?cb=' + Date.now();
+
+// サムネイル画像選択（_A.png を含む方を優先 + キャッシュバスター付与）
 function thumbSrcFor(item) {
   var a = item.roomImg || '';
   var b = item.roomImgB || '';
   // _A を含む方を優先
-  if (/_A\.png$/i.test(a)) return a;
-  if (/_A\.png$/i.test(b)) return b;
-  return a || b;
+  var picked = /_A\.png$/i.test(a) ? a : (/_A\.png$/i.test(b) ? b : (a || b));
+  if (!picked) return '';
+  // data: URL ならそのまま、それ以外はキャッシュバスター付与
+  if (picked.startsWith('data:')) return picked;
+  return picked + THUMB_CB;
 }
 
 // Build item list
