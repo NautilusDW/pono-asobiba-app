@@ -633,7 +633,7 @@ function selectItem(id) {
   document.getElementById('edit-item-id').value = id;
   document.getElementById('edit-item-name').value = item.name;
   var _fnEl = document.getElementById('import-save-name');
-  if (_fnEl) _fnEl.textContent = id.replace(/^(furn_|deco_)/, '');
+  if (_fnEl) _fnEl.textContent = id;
 
   // Show/hide A/B toggle
   const abToggle = document.getElementById('ab-toggle');
@@ -801,7 +801,7 @@ document.getElementById('edit-item-id').addEventListener('change', function() {
   this.value = newId;
   // ファイル名表示を連動
   var fnEl = document.getElementById('import-save-name');
-  if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+  if (fnEl) fnEl.textContent = newId;
   saveToStorage();
   if (item._imported) saveImports();
 });
@@ -855,7 +855,7 @@ document.getElementById('edit-item-theme').addEventListener('change', function()
       var impIdInp = document.getElementById('import-item-id');
       if (impIdInp) impIdInp.value = newId;
       var fnEl = document.getElementById('import-save-name');
-      if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+      if (fnEl) fnEl.textContent = newId;
       saveImports();
     }
   }
@@ -1669,7 +1669,8 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
         if (closingBracket !== -1) {
           var newEntries = importedItems.map(function(item) {
             var adj = adjustments[adjKey(item.id, 'A')] || {};
-            var baseName = item.id.replace(/^(furn_|deco_)/, '');
+            // ファイル名 = ID（完全一致）
+            var baseName = item.id;
             var imgPath = "'../assets/images/Rooms/furnitures_final/" + baseName + "_A.png'";
             var entry = "  {\n" +
               "    id: '" + item.id + "', cat: '" + (item.cat || 'deco') + "', name: '" + (item.name || '') + "', price: 15, theme: '" + (item.theme || 'all') + "',\n" +
@@ -2049,7 +2050,7 @@ function handleImportFiles(files) {
         _lastImportedId = itemId; // 後続の編集で参照
 
         var fnEl = document.getElementById('import-save-name');
-        if (fnEl) fnEl.textContent = itemId.replace(/^(furn_|deco_)/, '');
+        if (fnEl) fnEl.textContent = itemId;
 
         selectItem(itemId);
         saveImports();
@@ -2178,7 +2179,7 @@ function handleImportFiles(files) {
       document.getElementById('import-item-cat').value = newCat;
       document.getElementById('import-item-theme').value = newTheme;
       var fnEl = document.getElementById('import-save-name');
-      if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+      if (fnEl) fnEl.textContent = newId;
 
       // 選択中アイテムの編集欄にも反映
       var editIdEl = document.getElementById('edit-item-id');
@@ -2245,7 +2246,7 @@ function handleImportFiles(files) {
         item.id = newId;
         _lastImportedId = newId;
         if (selectedId !== null) selectedId = newId;
-        if (fnEl) fnEl.textContent = newId.replace(/^(furn_|deco_)/, '');
+        if (fnEl) fnEl.textContent = newId;
       }
     }
     // 選択中アイテムの編集欄にも反映
@@ -2294,7 +2295,7 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
   if (!id) { status.textContent = '❌ アイテムを選択してください'; status.style.color = '#f44336'; return; }
   var item = ITEMS.find(function(it) { return it.id === id; });
   if (!item) { status.textContent = '❌ アイテムが見つかりません'; status.style.color = '#f44336'; return; }
-  var name = id.replace(/^(furn_|deco_)/, '');
+  var name = id; // ファイル名 = ID（完全一致）
   var saveBtn = this;
   saveBtn.disabled = true;
 
