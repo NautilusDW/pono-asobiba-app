@@ -398,18 +398,12 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
   .filter(function(it) { return (it.cat === 'furn' || it.cat === 'deco') && !_deletedSet.has(it.id); })
   .map(function(it) {
     var ov = _overrides[it.id] || {};
-    // swapped オーバーライドが立っていれば A/B を入れ替えてロード
-    var imgA = it.roomImg, imgB = it.roomImgB || null;
-    if (ov.swapped) {
-      imgA = it.roomImgB || null;
-      imgB = it.roomImg || null;
-    }
     return {
       id: it.id,
       name: ov.name || it.name,
       cat: ov.cat || it.cat,
       theme: ov.theme || it.theme || 'all',
-      roomImg: imgA, roomImgB: imgB,
+      roomImg: it.roomImg, roomImgB: it.roomImgB || null,
       cellSize: it.cellSize || 1, pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
       surfaceY: it.surfaceY || 0
     };
@@ -1112,49 +1106,84 @@ document.getElementById('btn-flip-a-to-b').addEventListener('click', function() 
 document.getElementById('btn-flip-b-to-a').addEventListener('click', function() { flipItemImage('B'); });
 
 // ─── A↔B スワップ（画像と調整値を入れ替え） ───
-document.getElementById('btn-swap-ab').addEventListener('click', function() {
+document.getElementById('btn-swap-ab').addEventListener('click', async function() {
   if (!selectedId) { alert('アイテムを選択してください'); return; }
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
   if (!item) return;
-  if (!item.roomImg && !item.roomImgB) { alert('画像がありません'); return; }
+  if (!item.roomImg || !item.roomImgB) { alert('A画像とB画像の両方が必要です'); return; }
 
-  // 画像を入れ替え
-  var tmpImg = item.roomImg;
-  item.roomImg = item.roomImgB || '';
-  item.roomImgB = tmpImg || '';
-
-  // adjustments も入れ替え
-  var aKey = adjKey(item.id, 'A');
-  var bKey = adjKey(item.id, 'B');
-  var tmpAdj = adjustments[aKey];
-  adjustments[aKey] = adjustments[bKey];
-  adjustments[bKey] = tmpAdj;
-  if (!adjustments[aKey] && adjustments[bKey]) adjustments[aKey] = Object.assign({}, adjustments[bKey]);
-  if (!adjustments[bKey] && adjustments[aKey]) adjustments[bKey] = Object.assign({}, adjustments[aKey]);
-
-  // 未保存マーク
-  item._savedToGithub = false;
-
-  // items.js由来アイテムの場合は override に swapped フラグを記録（トグル式）
-  if (!item._imported) {
-    var ov = _overrides[item.id] || {};
-    ov.swapped = !ov.swapped;
-    saveOverride(item.id, { swapped: ov.swapped });
-  }
-
-  // UI更新
-  var btnImg = document.querySelector('.item-btn[data-id="' + item.id + '"] img');
-  if (btnImg) btnImg.src = item.roomImg || '';
-  updateABThumbs(item);
-  if (typeof reloadSliders === 'function') reloadSliders(item.id);
-  placeItem(item.id);
-  updateUnsavedIndicator(item);
-  refreshUnsavedBanner();
-  saveToStorage();
-  if (item._imported) saveImports();
+  if (!confirm('A画像ファイルとB画像ファイルの中身を入れ替えてGitHubに保存しますか？\n\n（A角度（右下向き）の絵が _A.png になります）')) return;
 
   var status = document.getElementById('save-status');
-  if (status) { status.textContent = '⇄ A画像とB画像を入れ替えました（未保存）'; status.style.color = '#ffd700'; }
+  var swapBtn = this;
+  swapBtn.disabled = true;
+
+  try {
+    // ファイル名: items.js のパスから抽出（例: '../assets/.../bed_pink_A.png' → 'bed_pink_A.png'）
+    var aFileName = (item.roomImg.match(/\/([^/]+)$/) || [null, ''])[1];
+    var bFileName = (item.roomImgB.match(/\/([^/]+)$/) || [null, ''])[1];
+    if (!aFileName || !bFileName) { throw new Error('ファイル名取得失敗'); }
+
+    // 両画像をbase64で取得
+    status.textContent = '⏳ A画像を読み込み中...';
+    status.style.color = '#ffd700';
+    var b64A = await new Promise(function(r) { getImageBase64(item.roomImg, r); });
+    if (!b64A) throw new Error('A画像の読み込みに失敗');
+
+    status.textContent = '⏳ B画像を読み込み中...';
+    var b64B = await new Promise(function(r) { getImageBase64(item.roomImgB, r); });
+    if (!b64B) throw new Error('B画像の読み込みに失敗');
+
+    // 中身を入れ替えてGitHubにアップロード
+    // A画像ファイルにB画像の中身を入れる
+    status.textContent = '⏳ A画像ファイルを更新中（B中身をアップロード）...';
+    var errA = await new Promise(function(r) {
+      ghUploadFile(FURN_PATH + aFileName, b64B, '🔄 A↔B swap: ' + aFileName, r);
+    });
+    if (errA) throw new Error('A保存失敗: ' + errA);
+
+    // B画像ファイルにA画像の中身を入れる
+    status.textContent = '⏳ B画像ファイルを更新中（A中身をアップロード）...';
+    var errB = await new Promise(function(r) {
+      ghUploadFile(FURN_PATH + bFileName, b64A, '🔄 A↔B swap: ' + bFileName, r);
+    });
+    if (errB) throw new Error('B保存失敗: ' + errB);
+
+    // ローカルのITEMS（ブラウザ表示用）も即座に更新
+    // data: URL ではなく file:// URL の場合: 単純にA/Bプロパティを入れ替えると参照が正しくなる
+    // ただしファイル中身が入れ替わったので、URL は変えずキャッシュバスターを追加して再読み込み
+    var cb = '?v=' + Date.now();
+    var newAUrl = item.roomImg.split('?')[0] + cb;
+    var newBUrl = item.roomImgB.split('?')[0] + cb;
+    item.roomImg = newAUrl;
+    item.roomImgB = newBUrl;
+
+    // adjustments の A/B も入れ替え
+    var aKey = adjKey(item.id, 'A');
+    var bKey = adjKey(item.id, 'B');
+    var tmpAdj = adjustments[aKey];
+    adjustments[aKey] = adjustments[bKey];
+    adjustments[bKey] = tmpAdj;
+    if (!adjustments[aKey] && adjustments[bKey]) adjustments[aKey] = Object.assign({}, adjustments[bKey]);
+    if (!adjustments[bKey] && adjustments[aKey]) adjustments[bKey] = Object.assign({}, adjustments[aKey]);
+
+    // UI更新
+    var btnImg = document.querySelector('.item-btn[data-id="' + item.id + '"] img');
+    if (btnImg) btnImg.src = newAUrl;
+    updateABThumbs(item);
+    if (typeof reloadSliders === 'function') reloadSliders(item.id);
+    placeItem(item.id);
+    saveToStorage();
+    if (item._imported) saveImports();
+
+    status.textContent = '✅ A画像とB画像のファイル中身を入れ替えてGitHubに保存しました';
+    status.style.color = '#4CAF50';
+    swapBtn.disabled = false;
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = '#f44336';
+    swapBtn.disabled = false;
+  }
 });
 
 // ─── Stackable checkbox ───
@@ -1870,26 +1899,12 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       }
 
       var newBlock = block;
-      // override（cat/theme/name/swapped）を反映
+      // override（cat/theme/name）を反映
       var ov = _overrides[item.id];
       if (ov) {
         if (ov.cat) newBlock = replStrProp(newBlock, 'cat', ov.cat);
         if (ov.theme) newBlock = replStrProp(newBlock, 'theme', ov.theme);
         if (ov.name) newBlock = replStrProp(newBlock, 'name', ov.name);
-        // swapped: roomImg と roomImgB の値を入れ替える
-        if (ov.swapped) {
-          var imgAMatch = /(\broomImg:\s*')([^']+)(')/.exec(newBlock);
-          var imgBMatch = /(\broomImgB:\s*')([^']+)(')/.exec(newBlock);
-          if (imgAMatch && imgBMatch) {
-            var imgAVal = imgAMatch[2];
-            var imgBVal = imgBMatch[2];
-            // 一旦プレースホルダに置換してから入れ替え（同時置換の安全策）
-            newBlock = newBlock.replace(/(\broomImg:\s*')[^']+(')/, '$1__SWAP_A__$2');
-            newBlock = newBlock.replace(/(\broomImgB:\s*')[^']+(')/, '$1__SWAP_B__$2');
-            newBlock = newBlock.replace('__SWAP_A__', imgBVal);
-            newBlock = newBlock.replace('__SWAP_B__', imgAVal);
-          }
-        }
       }
       newBlock = replProp(newBlock, 'cellSize', adjA.cellSize);
       newBlock = replProp(newBlock, 'pivotX', adjA.pivotX);
