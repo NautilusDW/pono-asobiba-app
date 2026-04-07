@@ -398,12 +398,22 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
     };
   });
 
-// サーフェス家具（デコを上に乗せられる）— items.js の surfaceY 有無から自動構築
+// サーフェス家具（デコを上に乗せられる）— furnカテゴリ全てを許可
+// （items.jsの既存surfaceY設定もそのまま使うが、新規家具にも常にスライダーを出す）
 var SURFACE_IDS = new Set(
   (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
-    .filter(function(it) { return it.surfaceY != null && it.surfaceY !== 0; })
+    .filter(function(it) {
+      // furnカテゴリ または 既にsurfaceYが設定されている
+      return it.cat === 'furn' || (it.surfaceY != null && it.surfaceY !== 0);
+    })
     .map(function(it) { return it.id; })
 );
+// 新規インポート/cat=furnのアイテムも常にサーフェス対応
+function isSurfaceCapable(item) {
+  if (!item) return false;
+  if (SURFACE_IDS.has(item.id)) return true;
+  return item.cat === 'furn';
+}
 
 // デコアイテム判定（家具の上/壁に配置できるもの）
 const DECO_IDS = new Set(['furn_bear_1', 'furn_toyshelf']);
@@ -692,7 +702,7 @@ function selectItem(id) {
 
   // surfaceYセクション表示/非表示
   const surfSec = document.getElementById('surface-section');
-  if (SURFACE_IDS.has(id)) {
+  if (isSurfaceCapable(item)) {
     surfSec.style.display = '';
     syncSlider('surfaceY', adj.surfaceY || 0);
   } else {
@@ -755,7 +765,7 @@ function reloadSliders(id) {
   document.getElementById('num-maxCol').value = adj.maxCol;
   // surfaceY
   const surfSec2 = document.getElementById('surface-section');
-  if (SURFACE_IDS.has(id)) {
+  if (isSurfaceCapable(item)) {
     surfSec2.style.display = '';
     syncSlider('surfaceY', adj.surfaceY || 0);
   } else {
@@ -1240,6 +1250,7 @@ function removeDecoSurfacePreview() {
   const btn = document.getElementById('btn-deco-surface-preview');
   btn.textContent = '🪑 プレビューON';
   btn.style.background = '#333';
+  btn.style.color = '#4CAF50';
 }
 
 function updateDecoSurfacePreview() {
@@ -1274,6 +1285,7 @@ document.getElementById('btn-deco-surface-preview').onclick = () => {
   const btn = document.getElementById('btn-deco-surface-preview');
   btn.textContent = '🪑 プレビューOFF';
   btn.style.background = '#4CAF50';
+  btn.style.color = '#fff';
 
   const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
   if (!furnItem) return;
@@ -1868,6 +1880,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       if (closingBracket !== -1) {
         var newEntries = importedItems.map(function(item) {
           var adj = adjustments[adjKey(item.id, 'A')] || {};
+          var adjB = item.roomImgB ? (adjustments[adjKey(item.id, 'B')] || {}) : null;
           var baseName = item.id;
           var imgPath = "'../assets/images/Rooms/furnitures_final/" + baseName + "_A.png'";
           var entry = "  {\n" +
@@ -1883,7 +1896,17 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
             entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
               ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;
           }
-          entry += ",\n  },";
+          entry += ',';
+          // surfaceY (家具のみ、設定があれば)
+          if (item.cat === 'furn' && adj.surfaceY) {
+            entry += '\n    surfaceY: ' + adj.surfaceY + ',';
+            if (adjB && adjB.surfaceY) {
+              entry += ' surfaceYB: ' + adjB.surfaceY + ',';
+            } else {
+              entry += ' surfaceYB: ' + adj.surfaceY + ',';
+            }
+          }
+          entry += '\n  },';
           return entry;
         }).join('\n');
         text = text.substring(0, closingBracket) + newEntries + '\n' + text.substring(closingBracket);
