@@ -66,23 +66,26 @@ function openDirs(g, r, c, ex) {
   return out;
 }
 
+// Auto-walk STRAIGHT only. Stops at obstacle, L-bend, junction, or goal.
 function autoWalk(g, sr, sc, dr, dc) {
   const path = [];
   let r = sr, c = sc;
-  const v = new Set([r + ',' + c]);
   while (true) {
     const nr = r + dr, nc = c + dc;
     if (!isW(g, nr, nc)) break;
-    const k = nr + ',' + nc;
-    if (v.has(k)) break;
     r = nr; c = nc;
     path.push({ r, c });
-    v.add(k);
     if (g[r][c] === 'G') break;
-    const opts = openDirs(g, r, c, [dr, dc]);
-    if (opts.length === 0) break;
-    if (opts.length === 1) { dr = opts[0][0]; dc = opts[0][1]; continue; }
-    break;
+    if (!isW(g, r + dr, c + dc)) break;
+    let sides = 0;
+    if (dr === 0) {
+      if (isW(g, r - 1, c)) sides++;
+      if (isW(g, r + 1, c)) sides++;
+    } else {
+      if (isW(g, r, c - 1)) sides++;
+      if (isW(g, r, c + 1)) sides++;
+    }
+    if (sides > 0) break;
   }
   return path;
 }
