@@ -2586,12 +2586,16 @@ function handleImportFiles(files) {
 
 // ─── Image to base64 helper (data: URL or fetch from path) ───
 function getImageBase64(imgSrc, cb) {
-  if (!imgSrc) { cb(null); return; }
+  if (!imgSrc || imgSrc === 'null' || imgSrc === 'undefined') { cb(null); return; }
   if (imgSrc.startsWith('data:')) { cb(imgSrc.split(',')[1]); return; }
   // URL → fetch → base64
-  fetch(imgSrc).then(function(r) { return r.blob(); }).then(function(blob) {
+  fetch(imgSrc).then(function(r) {
+    if (!r.ok) throw new Error('fetch failed: ' + r.status);
+    return r.blob();
+  }).then(function(blob) {
     var reader = new FileReader();
     reader.onload = function() { cb(reader.result.split(',')[1]); };
+    reader.onerror = function() { cb(null); };
     reader.readAsDataURL(blob);
   }).catch(function() { cb(null); });
 }
@@ -2619,7 +2623,11 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
 
   function uploadOne(imgSrc, suffix) {
     return new Promise(function(resolve) {
-      if (!imgSrc) { resolve({ ok: false, skip: true }); return; }
+      // 空文字列・null・undefined・"null"文字列もスキップ扱い
+      if (!imgSrc || imgSrc === 'null' || imgSrc === 'undefined') {
+        resolve({ ok: false, skip: true });
+        return;
+      }
       getImageBase64(imgSrc, function(b64) {
         if (!b64) { resolve({ ok: false, err: suffix + '画像の読み込み失敗' }); return; }
         ghUploadFile(FURN_PATH + name + '_' + suffix + '.png', b64,
@@ -2631,11 +2639,17 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
     });
   }
 
-  status.textContent = '⏳ A画像を保存中...';
-  status.style.color = '#ffd700';
+  // A画像
+  if (item.roomImg) {
+    status.textContent = '⏳ A画像を保存中...';
+    status.style.color = '#ffd700';
+  }
   var rA = await uploadOne(item.roomImg, 'A');
 
-  status.textContent = '⏳ B画像を保存中...';
+  // B画像（存在する時だけステータス更新）
+  if (item.roomImgB) {
+    status.textContent = '⏳ B画像を保存中...';
+  }
   var rB = await uploadOne(item.roomImgB, 'B');
 
   // 結果表示
