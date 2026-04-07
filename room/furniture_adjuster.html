@@ -2375,8 +2375,20 @@ function handleImportFiles(files) {
           var readerB = new FileReader();
           readerB.onload = function(evB) {
             newItem.roomImgB = evB.target.result;
-            adjustments[adjKey(itemId, 'B')] = Object.assign({}, adjustments[adjKey(itemId, 'A')]);
-            if (selectedId === itemId) updateABThumbs(newItem);
+            // newItem の現在のID（AI命名後に変わっている可能性あり）でadjustmentsキーを設定
+            var curId = newItem.id;
+            if (!adjustments[adjKey(curId, 'B')]) {
+              adjustments[adjKey(curId, 'B')] = Object.assign({}, adjustments[adjKey(curId, 'A')] || {
+                cellSize: 1.0, pivotX: 0, pivotY: 0,
+                minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+              });
+            }
+            // 選択中ならA/Bトグルとサムネイルを表示更新
+            if (selectedId === curId) {
+              updateABThumbs(newItem);
+              var abToggle = document.getElementById('ab-toggle');
+              if (abToggle) abToggle.style.display = '';
+            }
             saveImports();
           };
           readerB.readAsDataURL(bFile);
