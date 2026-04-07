@@ -207,9 +207,9 @@ const ROOM_ITEMS = [
     id: 'furn_bed_pink', cat: 'furn', name: 'ピンクベッド', price: 25, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/bed_pink_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_pink_B.png',
-    gridRow: 3, gridCol: 5, cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 12.3, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
-    angleB: { cellSize: 2, footprintSize: 3, pivotX: -11, pivotY: 12.3, minRow: 1, maxRow: 7, minCol: 2, maxCol: 7 },
-    surfaceY: -83, surfaceYB: -97.5,
+    gridRow: 3, gridCol: 5, cellSize: 2, footprintSize: 3, pivotX: -11, pivotY: 12.3, minRow: 1, maxRow: 7, minCol: 2, maxCol: 7,
+    angleB: { cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 12.3, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7 },
+    surfaceY: -97.5, surfaceYB: -83,
   },
   {
     id: 'furn_desk_pink', cat: 'furn', name: 'ピンクつくえ', price: 25, theme: 'girl',
