@@ -1151,8 +1151,8 @@ function openImageBrowser(onSelect) {
           var re = /id:\s*'([^']+)'[\s\S]*?cat:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'(?:[\s\S]*?roomImgB:\s*'([^']+)')?/g;
           var match;
           var seen = {};
-          // キャッシュバスター（同じセッションで一度生成したものを使い回し）
-          var cb = '?v=' + Date.now();
+          // キャッシュバスター: ピッカー開く度に新しい値（GitHubの最新画像を確実に取得）
+          var cb = '?v=' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
           while ((match = re.exec(src)) !== null) {
             var itemId = match[1];
             var itemCat = match[2];
