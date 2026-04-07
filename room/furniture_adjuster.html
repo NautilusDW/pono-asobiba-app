@@ -1149,14 +1149,13 @@ document.getElementById('btn-swap-ab').addEventListener('click', async function(
     });
     if (errB) throw new Error('B保存失敗: ' + errB);
 
-    // ローカルのITEMS（ブラウザ表示用）も即座に更新
-    // data: URL ではなく file:// URL の場合: 単純にA/Bプロパティを入れ替えると参照が正しくなる
-    // ただしファイル中身が入れ替わったので、URL は変えずキャッシュバスターを追加して再読み込み
-    var cb = '?v=' + Date.now();
-    var newAUrl = item.roomImg.split('?')[0] + cb;
-    var newBUrl = item.roomImgB.split('?')[0] + cb;
-    item.roomImg = newAUrl;
-    item.roomImgB = newBUrl;
+    // ローカルのITEMS（ブラウザ表示用）を即座に更新
+    // GitHubアップロード後はNetlifyのキャッシュ反映に時間がかかるので、
+    // base64 data URLを直接ローカルにセット → 即座に新しい絵が見える
+    var dataUrlA = 'data:image/png;base64,' + b64B; // A画像ファイルにはB中身が入った
+    var dataUrlB = 'data:image/png;base64,' + b64A; // B画像ファイルにはA中身が入った
+    item.roomImg = dataUrlA;
+    item.roomImgB = dataUrlB;
 
     // adjustments の A/B も入れ替え
     var aKey = adjKey(item.id, 'A');
@@ -1169,14 +1168,17 @@ document.getElementById('btn-swap-ab').addEventListener('click', async function(
 
     // UI更新
     var btnImg = document.querySelector('.item-btn[data-id="' + item.id + '"] img');
-    if (btnImg) btnImg.src = newAUrl;
-    updateABThumbs(item);
+    if (btnImg) btnImg.src = dataUrlA;
+    var tA = document.getElementById('thumb-a');
+    var tB = document.getElementById('thumb-b');
+    if (tA) { tA.src = dataUrlA; tA.style.display = 'block'; }
+    if (tB) { tB.src = dataUrlB; tB.style.display = 'block'; }
     if (typeof reloadSliders === 'function') reloadSliders(item.id);
     placeItem(item.id);
     saveToStorage();
     if (item._imported) saveImports();
 
-    status.textContent = '✅ A画像とB画像のファイル中身を入れ替えてGitHubに保存しました';
+    status.textContent = '✅ A画像とB画像を入れ替えました（GitHub保存済み）';
     status.style.color = '#4CAF50';
     swapBtn.disabled = false;
   } catch (e) {
