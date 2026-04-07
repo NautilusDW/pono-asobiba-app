@@ -389,12 +389,18 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
   .filter(function(it) { return (it.cat === 'furn' || it.cat === 'deco') && !_deletedSet.has(it.id); })
   .map(function(it) {
     var ov = _overrides[it.id] || {};
+    // swapped オーバーライドが立っていれば A/B を入れ替えてロード
+    var imgA = it.roomImg, imgB = it.roomImgB || null;
+    if (ov.swapped) {
+      imgA = it.roomImgB || null;
+      imgB = it.roomImg || null;
+    }
     return {
       id: it.id,
       name: ov.name || it.name,
       cat: ov.cat || it.cat,
       theme: ov.theme || it.theme || 'all',
-      roomImg: it.roomImg, roomImgB: it.roomImgB || null,
+      roomImg: imgA, roomImgB: imgB,
       cellSize: it.cellSize || 1, pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
       surfaceY: it.surfaceY || 0
     };
@@ -1114,12 +1120,18 @@ document.getElementById('btn-swap-ab').addEventListener('click', function() {
   var tmpAdj = adjustments[aKey];
   adjustments[aKey] = adjustments[bKey];
   adjustments[bKey] = tmpAdj;
-  // 片方が undefined にならないよう補完
   if (!adjustments[aKey] && adjustments[bKey]) adjustments[aKey] = Object.assign({}, adjustments[bKey]);
   if (!adjustments[bKey] && adjustments[aKey]) adjustments[bKey] = Object.assign({}, adjustments[aKey]);
 
   // 未保存マーク
   item._savedToGithub = false;
+
+  // items.js由来アイテムの場合は override に swapped フラグを記録（トグル式）
+  if (!item._imported) {
+    var ov = _overrides[item.id] || {};
+    ov.swapped = !ov.swapped;
+    saveOverride(item.id, { swapped: ov.swapped });
+  }
 
   // UI更新
   var btnImg = document.querySelector('.item-btn[data-id="' + item.id + '"] img');
@@ -1849,12 +1861,26 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       }
 
       var newBlock = block;
-      // override（cat/theme/name）を反映
+      // override（cat/theme/name/swapped）を反映
       var ov = _overrides[item.id];
       if (ov) {
         if (ov.cat) newBlock = replStrProp(newBlock, 'cat', ov.cat);
         if (ov.theme) newBlock = replStrProp(newBlock, 'theme', ov.theme);
         if (ov.name) newBlock = replStrProp(newBlock, 'name', ov.name);
+        // swapped: roomImg と roomImgB の値を入れ替える
+        if (ov.swapped) {
+          var imgAMatch = /(\broomImg:\s*')([^']+)(')/.exec(newBlock);
+          var imgBMatch = /(\broomImgB:\s*')([^']+)(')/.exec(newBlock);
+          if (imgAMatch && imgBMatch) {
+            var imgAVal = imgAMatch[2];
+            var imgBVal = imgBMatch[2];
+            // 一旦プレースホルダに置換してから入れ替え（同時置換の安全策）
+            newBlock = newBlock.replace(/(\broomImg:\s*')[^']+(')/, '$1__SWAP_A__$2');
+            newBlock = newBlock.replace(/(\broomImgB:\s*')[^']+(')/, '$1__SWAP_B__$2');
+            newBlock = newBlock.replace('__SWAP_A__', imgBVal);
+            newBlock = newBlock.replace('__SWAP_B__', imgAVal);
+          }
+        }
       }
       newBlock = replProp(newBlock, 'cellSize', adjA.cellSize);
       newBlock = replProp(newBlock, 'pivotX', adjA.pivotX);
