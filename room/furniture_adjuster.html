@@ -42,7 +42,8 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:10
 .item-btn.active{border-color:#ffd700}
 .item-btn.has-b{box-shadow:0 0 0 2px #4CAF50 inset}
 .item-btn.unsaved{position:relative;outline:2px dashed #ff9800;outline-offset:-2px}
-.item-btn.unsaved::after{content:'●';position:absolute;top:-2px;right:-2px;color:#ff9800;font-size:14px;text-shadow:0 0 3px #000}
+.item-btn.unsaved::after{content:'●';position:absolute;top:-2px;right:-2px;color:#ff9800;font-size:14px;text-shadow:0 0 3px #000;pointer-events:none}
+.item-btn img{pointer-events:none}
 #unsaved-banner{background:#ff9800;color:#1a1a2e;padding:8px 10px;border-radius:6px;font-size:11px;font-weight:bold;margin:6px 0;display:none}
 #unsaved-banner.show{display:block}
 #unsaved-banner ul{margin:4px 0 0 16px;font-weight:normal;font-size:10px;max-height:80px;overflow-y:auto}
@@ -2097,7 +2098,8 @@ function ensureItemButton(imp) {
   var img = document.createElement('img');
   img.src = imp.roomImg || '';
   btn.appendChild(img);
-  btn.onclick = function() { selectItem(imp.id); };
+  // dataset.id から最新IDを取得
+  btn.onclick = function() { selectItem(this.dataset.id); };
   listEl.appendChild(btn);
 }
 
@@ -2362,7 +2364,8 @@ function handleImportFiles(files) {
           var imgEl = document.createElement('img');
           imgEl.src = evA.target.result;
           btn.appendChild(imgEl);
-          btn.onclick = function() { selectItem(itemId); };
+          // dataset.id から最新IDを取得（後でID変更されても追従）
+          btn.onclick = function() { selectItem(this.dataset.id); };
           listEl.appendChild(btn);
         }
         addedCount++;
