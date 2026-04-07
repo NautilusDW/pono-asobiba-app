@@ -544,8 +544,9 @@ function ghUpload(filePath, base64Content, commitMsg, callback) {
 
   var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath;
 
-  // Get existing SHA if file exists
-  fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+  // Get existing SHA if file exists（HTTPキャッシュバイパスで最新SHA取得）
+  var shaUrl = apiUrl + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
+  fetch(shaUrl, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(existing) {
       var body = {
@@ -1229,8 +1230,8 @@ function openImageBrowser(onSelect) {
         // サブフォルダをリスト
         var subDirs = items.length === 0 ? [] : [];
         // GitHub APIはフォルダもファイルも返す
-        var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH;
-        fetch(url, { headers: ghHeaders() })
+        var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
+        fetch(url, { headers: ghHeaders(), cache: 'no-store' })
           .then(function(r) { return r.json(); })
           .then(function(all) {
             grid.innerHTML = '';
@@ -1644,8 +1645,9 @@ document.getElementById('btn-save-rewards').addEventListener('click', function()
 
   var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH;
 
-  // Get fresh SHA
-  fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+  // Get fresh SHA（ブラウザHTTPキャッシュをバイパスして最新SHAを取得）
+  var shaUrl = apiUrl + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
+  fetch(shaUrl, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(existing) {
       var body = {
