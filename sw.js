@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 21;
+const CACHE_VERSION = 22;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -22,6 +22,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
+
   // HTML はキャッシュしない（常に最新を取得）
   const isHTML = event.request.destination === 'document'
     || event.request.headers.get('accept')?.includes('text/html');
@@ -31,7 +32,19 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-  // アセット類は network-first + cache fallback
+
+  // 画像は SW キャッシュをスキップして常にネットワーク取得
+  // （ピボットツールでスワップした画像が即反映されるように）
+  // オフライン時のみ既存キャッシュにフォールバック
+  if (event.request.destination === 'image') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // その他のアセット類は network-first + cache fallback
   event.respondWith(
     fetch(event.request)
       .then(response => {
