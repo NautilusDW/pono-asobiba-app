@@ -37,7 +37,6 @@ function autoWalk(stage, startR, startC, dr, dc) {
   return path;
 }
 
-// Find shortest sequence of player choices from S to G
 function solve(stageRaw) {
   const grid = stageRaw.grid;
   const rows = grid.length;
@@ -48,14 +47,13 @@ function solve(stageRaw) {
     if (grid[r][c] === 'G') goal = {r, c};
   }
   const stage = { grid, rows, cols };
-  // BFS over (r,c) states. Each step = one player direction choice.
   const seen = new Set();
-  const q = [{r: start.r, c: start.c, clicks: 0, history: []}];
+  const q = [{r: start.r, c: start.c, clicks: 0}];
   seen.add(start.r + ',' + start.c);
   while (q.length) {
     const cur = q.shift();
     if (cur.r === goal.r && cur.c === goal.c) {
-      return { reached: true, clicks: cur.clicks, history: cur.history };
+      return { reached: true, clicks: cur.clicks };
     }
     const dirs = getOpenDirs(stage, cur.r, cur.c, null);
     for (const [dr, dc] of dirs) {
@@ -65,36 +63,28 @@ function solve(stageRaw) {
       const key = last.r + ',' + last.c;
       if (seen.has(key)) continue;
       seen.add(key);
-      q.push({
-        r: last.r, c: last.c,
-        clicks: cur.clicks + 1,
-        history: cur.history.concat([{
-          dir: dr === -1 ? '↑' : dr === 1 ? '↓' : dc === -1 ? '←' : '→',
-          to: key,
-          steps: path.length
-        }])
-      });
+      q.push({ r: last.r, c: last.c, clicks: cur.clicks + 1 });
     }
   }
   return { reached: false };
 }
 
-function countJunctions(stageRaw) {
-  const grid = stageRaw.grid;
-  const rows = grid.length, cols = grid[0].length;
-  const stage = { grid, rows, cols };
-  let junctions = 0;
+function countDeadEnds(stageRaw) {
+  const g = stageRaw.grid;
+  const rows = g.length, cols = g[0].length;
+  const stage = { grid: g, rows, cols };
+  let n = 0;
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     if (!isWalkable(stage, r, c)) continue;
-    const dirs = getOpenDirs(stage, r, c, null);
-    if (dirs.length >= 3) junctions++;
+    if (g[r][c] === 'S' || g[r][c] === 'G') continue;
+    if (getOpenDirs(stage, r, c, null).length === 1) n++;
   }
-  return junctions;
+  return n;
 }
 
 const STAGES = [
   {
-    name: 'S1 — straight L',
+    name: 'S1 — straight (1 click intro)',
     grid: [
       'S####',
       '.####',
@@ -104,7 +94,7 @@ const STAGES = [
     ],
   },
   {
-    name: 'S2 — choice at S',
+    name: 'S2 — choice at S (1 click)',
     grid: [
       'S...C',
       '.####',
@@ -114,57 +104,74 @@ const STAGES = [
     ],
   },
   {
-    name: 'S3 — mid corridor + cat dead end',
+    name: 'S3 — 2 junctions cat+water',
     grid: [
-      'S.....',
+      'S#####',
       '.#####',
-      '..A...',
-      '####C.',
-      '.....G',
-    ],
-  },
-  {
-    name: 'S4 — water blocks side branch',
-    grid: [
-      'S.....',
+      '.....C',
       '.####.',
-      '...W..',
+      '....W.',
       '.####.',
       'G.....',
     ],
   },
   {
-    name: 'S5 — bigger snake with thorn',
+    name: 'S4 — 3 junctions',
     grid: [
-      'S.....',
+      'S#####',
+      '.#####',
+      '.....C',
       '.####.',
-      '...T..',
+      '.....C',
       '.####.',
-      '......',
+      '.....W',
       '.####.',
       'G.....',
     ],
   },
   {
-    name: 'S6 — long with apple bonus',
+    name: 'S5 — 4 junctions + apple',
     grid: [
-      'S......',
-      '.#####.',
-      '.......',
-      '.#####.',
-      '.A.....',
-      '######.',
-      'G......',
+      'S#####',
+      '.#####',
+      '.A...C',
+      '.####.',
+      '.....C',
+      '.####.',
+      '.....C',
+      '.####.',
+      '.....W',
+      '.####.',
+      'G.....',
+    ],
+  },
+  {
+    name: 'S6 — 5 junctions + 2 apples',
+    grid: [
+      'S#####',
+      '.#####',
+      '.A...C',
+      '.####.',
+      '.....C',
+      '.####.',
+      '.A...C',
+      '.####.',
+      '.....C',
+      '.####.',
+      '.....W',
+      '.####.',
+      'G.....',
     ],
   },
 ];
 
 let allOk = true;
 for (const s of STAGES) {
+  const widths = [...new Set(s.grid.map(r => r.length))];
   const res = solve(s);
-  const j = countJunctions(s);
-  console.log(`${s.name}: reached=${res.reached} clicks=${res.clicks||'-'} junctions=${j}`);
-  if (!res.reached) { allOk = false; console.log('  HISTORY:', res.history); }
-  else if (res.history.length <= 5) console.log('  path:', res.history.map(h => h.dir).join(' '));
+  const dead = countDeadEnds(s);
+  const ok = widths.length === 1 && res.reached;
+  if (!ok) allOk = false;
+  console.log(`${s.name}: ${s.grid.length}x${widths.join(',')} reach=${res.reached} clicks=${res.clicks||'-'} dead-ends=${dead} ${ok?'OK':'FAIL'}`);
 }
 process.exit(allOk ? 0 : 1);
