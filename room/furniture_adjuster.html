@@ -172,10 +172,10 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <div id="import-id-warn" style="font-size:11px;color:#f44336;min-height:14px"></div>
         <div style="margin-top:6px;border-top:1px solid #333;padding-top:6px">
           <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
-            <span style="font-size:11px;color:#aaa">🤖 AI:</span>
-            <input type="password" id="anthropic-key" placeholder="Anthropic API Key (sk-ant-...)" style="flex:1;min-width:80px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:11px;font-family:monospace">
+            <span style="font-size:11px;color:#aaa">🤖 Gemini:</span>
+            <input type="password" id="gemini-key" placeholder="Google AI Studio API Key" style="flex:1;min-width:80px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:11px;font-family:monospace">
           </div>
-          <button id="btn-ai-name" style="width:100%;background:#9c27b0;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:bold">🤖 AIで画像を見て名前を付ける</button>
+          <button id="btn-ai-name" style="width:100%;background:#4285f4;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:bold">🤖 AIで画像を見て名前を付ける</button>
           <div id="ai-name-status" style="font-size:10px;color:#aaa;min-height:12px;margin-top:2px"></div>
         </div>
       </div>
@@ -1961,21 +1961,21 @@ function handleImportFiles(files) {
   });
 }
 
-// ─── AI Vision Naming (Claude API) ───
+// ─── AI Vision Naming (Gemini API) ───
 (function() {
-  var keyInput = document.getElementById('anthropic-key');
+  var keyInput = document.getElementById('gemini-key');
   var btn = document.getElementById('btn-ai-name');
   var statusEl = document.getElementById('ai-name-status');
 
-  // APIキーをlocalStorageから復元
-  keyInput.value = localStorage.getItem('anthropic_api_key') || '';
+  // APIキーをlocalStorageから復元（旧anthropic_api_keyからの移行はしない）
+  keyInput.value = localStorage.getItem('gemini_api_key') || '';
   keyInput.addEventListener('change', function() {
-    localStorage.setItem('anthropic_api_key', keyInput.value);
+    localStorage.setItem('gemini_api_key', keyInput.value);
   });
 
   async function aiGenerateName() {
     var apiKey = keyInput.value.trim();
-    if (!apiKey) { statusEl.textContent = '❌ APIキーを入力してください'; statusEl.style.color = '#f44336'; return; }
+    if (!apiKey) { statusEl.textContent = '❌ Gemini APIキーを入力してください'; statusEl.style.color = '#f44336'; return; }
 
     // 対象画像の取得（最後にインポート or 選択中）
     var targetId = _lastImportedId || selectedId;
@@ -2024,34 +2024,34 @@ function handleImportFiles(files) {
         '- IDは短く、既存のパターンに倣う\n' +
         '- ピンク/リボン/お人形系はgirl、青/ロボット/宇宙系はboy、それ以外はall';
 
-      var apiResp = await fetch('https://api.anthropic.com/v1/messages', {
+      var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+      var apiResp = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 500,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } },
-              { type: 'text', text: prompt }
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mediaType, data: base64Data } },
+              { text: prompt }
             ]
-          }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: 'application/json'
+          }
         })
       });
 
       if (!apiResp.ok) {
         var err = await apiResp.text();
-        throw new Error('API Error: ' + apiResp.status + ' ' + err.substring(0, 100));
+        throw new Error('API Error: ' + apiResp.status + ' ' + err.substring(0, 150));
       }
       var data = await apiResp.json();
-      var text = data.content[0].text.trim();
-      // JSONブロック抽出（```json...```で囲まれている場合も対応）
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        throw new Error('無効な応答: ' + JSON.stringify(data).substring(0, 150));
+      }
+      var text = data.candidates[0].content.parts[0].text.trim();
+      // JSONブロック抽出
       var jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('JSONが見つかりません: ' + text);
       var result = JSON.parse(jsonMatch[0]);
