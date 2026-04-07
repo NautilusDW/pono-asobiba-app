@@ -5,18 +5,19 @@ split_sprites.py
 
 使い方:
   pip install Pillow
-  python split_sprites.py <入力PNG> [出力フォルダ]
+  python split_sprites.py <入力PNG> [出力フォルダ] [base_name] [--flip-b]
 
 例:
   python split_sprites.py OceanRocks.png output/
-  python split_sprites.py OceanRocks.png   # → output/ に保存
+  python split_sprites.py OceanRocks.png              # → output/ に保存
+  python split_sprites.py chair.png out/ chair --flip-b  # A/Bペア出力
 """
 
 import sys
 import os
 from PIL import Image
 
-def split_sprites(input_path, output_dir=None, base_name=None, min_size=20, padding=4, alpha_threshold=10):
+def split_sprites(input_path, output_dir=None, base_name=None, min_size=20, padding=4, alpha_threshold=10, flip_b=False):
     img = Image.open(input_path).convert('RGBA')
     pixels = img.load()
     w, h = img.size
@@ -78,19 +79,37 @@ def split_sprites(input_path, output_dir=None, base_name=None, min_size=20, padd
     base = base_name or os.path.splitext(os.path.basename(input_path))[0]
 
     for i, sprite in enumerate(sprites):
-        out_path = os.path.join(output_dir, f'{base}_{i+1:03d}.png')
-        sprite.save(out_path)
-        print(f'  saved: {out_path}  ({sprite.size[0]}x{sprite.size[1]})')
+        if flip_b:
+            # A/B両方出力
+            out_a = os.path.join(output_dir, f'{base}_{i+1:03d}_A.png')
+            sprite.save(out_a)
+            print(f'  saved: {out_a}  ({sprite.size[0]}x{sprite.size[1]})')
 
-    print(f'\n{len(sprites)} sprites extracted from {input_path}')
+            flipped = sprite.transpose(Image.FLIP_LEFT_RIGHT)
+            out_b = os.path.join(output_dir, f'{base}_{i+1:03d}_B.png')
+            flipped.save(out_b)
+            print(f'  saved: {out_b}  ({flipped.size[0]}x{flipped.size[1]})')
+        else:
+            # 従来通り単一出力
+            out_path = os.path.join(output_dir, f'{base}_{i+1:03d}.png')
+            sprite.save(out_path)
+            print(f'  saved: {out_path}  ({sprite.size[0]}x{sprite.size[1]})')
+
+    total = len(sprites) * (2 if flip_b else 1)
+    mode = ' (A/B pairs)' if flip_b else ''
+    print(f'\n{total} files from {len(sprites)} sprites{mode} in {input_path}')
     return sprites
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    # --flip-b フラグを拾ってから位置引数を解析
+    args = [a for a in sys.argv[1:] if a != '--flip-b']
+    flip_b = '--flip-b' in sys.argv
+
+    if len(args) < 1:
         print(__doc__)
         sys.exit(1)
 
-    input_file = sys.argv[1]
-    output_folder = sys.argv[2] if len(sys.argv) > 2 else 'output'
-    custom_name   = sys.argv[3] if len(sys.argv) > 3 else None
-    split_sprites(input_file, output_folder, base_name=custom_name)
+    input_file = args[0]
+    output_folder = args[1] if len(args) > 1 else 'output'
+    custom_name   = args[2] if len(args) > 2 else None
+    split_sprites(input_file, output_folder, base_name=custom_name, flip_b=flip_b)
