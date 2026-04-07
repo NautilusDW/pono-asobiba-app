@@ -47,9 +47,10 @@ html, body {
 .hud {
   display: flex; justify-content: space-between; align-items: center;
   padding: 3px 8px; font-size: 0.85rem; font-weight: 700;
-  flex-shrink: 0;
+  flex-shrink: 0; gap: 8px;
 }
 #hud-stage { color: var(--primary); }
+#hud-apples { color: var(--accent); }
 #hud-moves { color: var(--text); }
 
 .game-wrap {
@@ -63,6 +64,31 @@ html, body {
 }
 #gameCanvas { display: block; width: 100%; height: 100%; }
 
+/* Arrow buttons (HTML overlay) */
+#arrowLayer { position: absolute; inset: 0; pointer-events: none; }
+.maze-arrow {
+  position: absolute;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6C8E3F, #A4C76D);
+  color: white;
+  border: 3px solid white;
+  font-size: 1.4rem; font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: auto;
+  font-family: inherit;
+  animation: arrowPulse 1.2s ease-in-out infinite;
+  transform: translate(-50%, -50%);
+  padding: 0;
+}
+.maze-arrow:active { transform: translate(-50%, -50%) scale(0.9); }
+@keyframes arrowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.12); }
+}
+
 /* Hint message */
 .hint {
   position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
@@ -72,9 +98,11 @@ html, body {
   box-shadow: 0 2px 8px var(--shadow);
   pointer-events: none;
   white-space: nowrap;
+  opacity: 0.9;
+  transition: opacity 0.3s;
 }
 
-/* Voice bubble (calling for help) */
+/* Voice bubble */
 .voice {
   position: absolute; right: 12px; top: 12px;
   background: #FFFAE6; color: var(--text);
@@ -83,6 +111,7 @@ html, body {
   box-shadow: 0 2px 8px var(--shadow);
   border: 2px solid #F5C842;
   animation: voiceBob 1.6s ease-in-out infinite;
+  z-index: 4;
 }
 .voice::after {
   content: ''; position: absolute;
@@ -95,6 +124,22 @@ html, body {
 @keyframes voiceBob {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-3px); }
+}
+
+/* Apple pickup popup */
+.pickup {
+  position: absolute;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--accent);
+  pointer-events: none;
+  animation: pickupRise 0.9s ease-out forwards;
+  z-index: 6;
+}
+@keyframes pickupRise {
+  0%   { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  20%  { transform: translate(-50%, -10px) scale(1.3); opacity: 1; }
+  100% { transform: translate(-50%, -50px) scale(1); opacity: 0; }
 }
 
 /* ===== Overlay ===== */
@@ -114,10 +159,10 @@ html, body {
   animation: pop 0.3s ease-out;
 }
 @keyframes pop {
-  0% { transform: scale(0.7); opacity: 0; }
+  0%   { transform: scale(0.7); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
-.ov-icon { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom: 8px; }
+.ov-icon { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
 .ov-icon img { width: 72px; height: 72px; object-fit: contain; }
 .ov-title {
   font-size: 1.15rem; font-weight: 900;
@@ -138,7 +183,7 @@ html, body {
 }
 .ov-btn:active { transform: scale(0.95); }
 
-/* Encounter cutscene (Pono + Hedgehog meet) */
+/* Encounter cutscene */
 .encounter {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
@@ -152,15 +197,17 @@ html, body {
 .encounter-inner {
   display: flex; align-items: flex-end; gap: 24px;
   animation: meetIn 0.6s ease-out;
+  position: relative;
 }
 .encounter img { width: 100px; height: 130px; object-fit: contain; }
 .encounter .heart {
   position: absolute; font-size: 2.2rem;
+  left: 50%; top: -10px; transform: translateX(-50%);
   animation: heartFloat 1.6s ease-out infinite;
 }
 @keyframes heartFloat {
-  0%   { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(-50px) scale(1.4); opacity: 0; }
+  0%   { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50px) scale(1.4); opacity: 0; }
 }
 @keyframes meetIn {
   0% { transform: scale(0.5); opacity: 0; }
@@ -184,24 +231,26 @@ html, body {
 <div id="app">
   <div class="header">
     <h1>ハリネズミくんを たすけよう</h1>
-    <p class="subtitle">どうぶつを よけて ハリネズミくんに あいにいこう</p>
+    <p class="subtitle">やじるしを タップして すすもう</p>
   </div>
 
   <div class="hud">
     <div id="hud-stage">ステージ 1</div>
+    <div id="hud-apples">🍎 0/0</div>
     <div id="hud-moves">てかず: 0</div>
   </div>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
-    <div class="hint" id="hint">タップ または ↑↓←→ ですすもう</div>
+    <div id="arrowLayer"></div>
+    <div class="hint" id="hint">やじるしを タップしてね</div>
     <div class="voice" id="voice">たすけて〜</div>
     <div class="encounter" id="encounter">
       <div class="encounter-inner">
         <img id="enc-pono" src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
         <img id="enc-hh" src="../assets/images/characters/headgehog/headgehog_smilewavinghands.png" alt="ハリネズミ">
+        <div class="heart">💚</div>
       </div>
-      <div class="heart" style="left:48%;top:30%;">💚</div>
     </div>
     <div class="confetti-container" id="confetti"></div>
   </div>
@@ -210,10 +259,10 @@ html, body {
     <div class="ov-card">
       <div class="ov-icon">
         <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
-        <img src="../assets/images/characters/headgehog/headgehog_front.png" alt="ハリネズミ" id="ov-hh">
+        <img src="../assets/images/characters/headgehog/headgehog_front.png" alt="ハリネズミ">
       </div>
       <div class="ov-title" id="ov-title">ハリネズミくんを たすけよう</div>
-      <div class="ov-msg" id="ov-msg">もりの おくで\nハリネズミくんが まいごに なっちゃった！\nポノが たすけに いこう！</div>
+      <div class="ov-msg" id="ov-msg">もりの おくで\nハリネズミくんが まいごに なっちゃった！\nやじるしを タップして\nすすもう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
     </div>
   </div>
@@ -243,119 +292,10 @@ const imgHedgehog = new Image();
 imgHedgehog.src = HEDGEHOG_FRONT;
 
 // ====== Tile types ======
-// 0 = path (walkable)
-// 1 = wall (rock/tree)
-// 2 = sleeping cat
-// 3 = water puddle
-// 4 = rolling apple (resets to start when stepped on)
-// 5 = thorn bush
-// 9 = goal (also walkable)
+// In char form: '.'=path, '#'=wall, 'C'=cat, 'W'=water, 'A'=apple, 'T'=thorn, 'S'=start, 'G'=goal
+// Walkable: '.', 'S', 'G', 'A'
 const T = { PATH:0, WALL:1, CAT:2, WATER:3, APPLE:4, THORN:5, GOAL:9 };
 
-// ====== Stage data (8 levels) ======
-// '.'=path, '#'=wall, 'C'=cat, 'W'=water, 'A'=apple, 'T'=thorn, 'S'=start, 'G'=goal
-const STAGES = [
-  {
-    name: 'ステージ 1 — はじまりのもり',
-    grid: [
-      'S....',
-      '.###.',
-      '.#.#.',
-      '.#.#.',
-      '....G',
-    ],
-  },
-  {
-    name: 'ステージ 2 — ねこに きをつけて',
-    grid: [
-      'S.#..',
-      '.#.C.',
-      '.#.#.',
-      '...#.',
-      '##..G',
-    ],
-  },
-  {
-    name: 'ステージ 3 — みずたまり',
-    grid: [
-      'S......',
-      '#####W.',
-      '.....#.',
-      '.###.#.',
-      '.#C..#.',
-      '.#####.',
-      '......G',
-    ],
-  },
-  {
-    name: 'ステージ 4 — ふたつのみち',
-    grid: [
-      'S.#....',
-      '..#.##.',
-      '....#..',
-      '##..#.C',
-      '..#.#..',
-      '.#...##',
-      '.#W...G',
-    ],
-  },
-  {
-    name: 'ステージ 5 — トゲトゲもり',
-    grid: [
-      'S..T...',
-      '##.#.T.',
-      '.....#.',
-      '.T##...',
-      '...#.##',
-      '.C.#A..',
-      '##....G',
-    ],
-  },
-  {
-    name: 'ステージ 6 — まよいみち',
-    grid: [
-      'S..#.....',
-      '##.#.###.',
-      '...#.#.#.',
-      '.###.#.#.',
-      '.....#.#.',
-      '##W#.#.#.',
-      '.....#...',
-      '.C##.#.##',
-      '........G',
-    ],
-  },
-  {
-    name: 'ステージ 7 — どうぶつだらけ',
-    grid: [
-      'S..C..#..',
-      '##.#..#.W',
-      '...#.....',
-      '.T.#.###.',
-      '.#.#.#.#.',
-      '.#...#.#.',
-      '.####A.#.',
-      '.....###.',
-      '##C#....G',
-    ],
-  },
-  {
-    name: 'ステージ 8 — さいごのもり',
-    grid: [
-      'S..#.....',
-      '##.#.##.#',
-      '...#.#...',
-      '.###.#.##',
-      '.....#.C.',
-      '##W#.#.#.',
-      '.T.#.#.#.',
-      '.#.....#.',
-      '##C##T..G',
-    ],
-  },
-];
-
-// Char → tile code mapping
 function parseCell(ch) {
   switch (ch) {
     case '#': return T.WALL;
@@ -364,35 +304,107 @@ function parseCell(ch) {
     case 'A': return T.APPLE;
     case 'T': return T.THORN;
     case 'G': return T.GOAL;
-    default:  return T.PATH; // '.', 'S'
+    default:  return T.PATH;
   }
 }
 
-function buildStage(stage) {
-  const rows = stage.grid.length;
-  const cols = stage.grid[0].length;
+// ====== Stage data ======
+const STAGES = [
+  {
+    name: 'ステージ 1 — はじまりのもり',
+    grid: [
+      'S####',
+      '.####',
+      '.####',
+      '.####',
+      '....G',
+    ],
+  },
+  {
+    name: 'ステージ 2 — どっちに いく？',
+    grid: [
+      'S...C',
+      '.####',
+      '.####',
+      '.####',
+      'G####',
+    ],
+  },
+  {
+    name: 'ステージ 3 — りんごを みつけたよ',
+    grid: [
+      'S.....',
+      '.#####',
+      '..A...',
+      '####C.',
+      '.....G',
+    ],
+  },
+  {
+    name: 'ステージ 4 — みずたまり',
+    grid: [
+      'S.....',
+      '.####.',
+      '...W..',
+      '.####.',
+      'G.....',
+    ],
+  },
+  {
+    name: 'ステージ 5 — トゲトゲもり',
+    grid: [
+      'S.....',
+      '.####.',
+      '...T..',
+      '.####.',
+      '......',
+      '.####.',
+      'G.....',
+    ],
+  },
+  {
+    name: 'ステージ 6 — おくふかい もり',
+    grid: [
+      'S......',
+      '.#####.',
+      '.......',
+      '.#####.',
+      '.A.....',
+      '######.',
+      'G......',
+    ],
+  },
+];
+
+function buildStage(stageDef) {
+  const rows = stageDef.grid.length;
+  const cols = stageDef.grid[0].length;
   const cells = [];
   let start = null, goal = null;
+  let totalApples = 0;
   for (let r = 0; r < rows; r++) {
     const row = [];
     for (let c = 0; c < cols; c++) {
-      const ch = stage.grid[r][c];
-      row.push(parseCell(ch));
+      const ch = stageDef.grid[r][c];
+      const t = parseCell(ch);
+      row.push(t);
       if (ch === 'S') start = { r, c };
       if (ch === 'G') goal  = { r, c };
+      if (t === T.APPLE) totalApples++;
     }
     cells.push(row);
   }
-  return { rows, cols, cells, start, goal, name: stage.name };
+  return { rows, cols, cells, start, goal, name: stageDef.name, totalApples };
 }
 
 // ====== Game state ======
 let stageIdx = 0;
 let stage = null;
 let pono = { r: 0, c: 0 };
-let trail = []; // visited cells for footprints
+let trail = [];
 let moves = 0;
-let walkAnim = null; // {fromR,fromC,toR,toC,t0,dur}
+let applesCollected = 0;
+let walkAnim = null;
 let cleared = false;
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
@@ -404,26 +416,31 @@ const ovMsg = document.getElementById('ov-msg');
 const ovBtn = document.getElementById('ov-btn');
 const hudStage = document.getElementById('hud-stage');
 const hudMoves = document.getElementById('hud-moves');
+const hudApples = document.getElementById('hud-apples');
 const hint = document.getElementById('hint');
 const voice = document.getElementById('voice');
 const encounter = document.getElementById('encounter');
+const arrowLayer = document.getElementById('arrowLayer');
+const gameWrap = document.getElementById('gameWrap');
 
 let cellSize = 48, gridOX = 0, gridOY = 0;
 
 function resizeCanvas() {
-  const wrap = document.getElementById('gameWrap');
-  const w = wrap.clientWidth, h = wrap.clientHeight;
+  const w = gameWrap.clientWidth, h = gameWrap.clientHeight;
   const dpr = window.devicePixelRatio || 1;
   canvas.width  = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
   canvas.style.width  = w + 'px';
   canvas.style.height = h + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (stage) computeLayout(w, h);
+  if (stage) {
+    computeLayout(w, h);
+    if (!walkAnim && !cleared) showArrows();
+  }
 }
 
 function computeLayout(w, h) {
-  const padX = 16, padY = 16;
+  const padX = 24, padY = 24;
   const availW = w - padX * 2;
   const availH = h - padY * 2;
   cellSize = Math.floor(Math.min(availW / stage.cols, availH / stage.rows));
@@ -435,91 +452,167 @@ function computeLayout(w, h) {
 
 window.addEventListener('resize', resizeCanvas);
 
-// ====== Loading stage ======
+// ====== Walkable / direction helpers ======
+function isWalkable(r, c) {
+  if (r < 0 || r >= stage.rows || c < 0 || c >= stage.cols) return false;
+  const t = stage.cells[r][c];
+  return t === T.PATH || t === T.APPLE || t === T.GOAL;
+}
+
+function getOpenDirs(r, c, excludeBack) {
+  const dirs = [];
+  for (const d of [[-1,0],[1,0],[0,-1],[0,1]]) {
+    if (excludeBack && d[0] === -excludeBack[0] && d[1] === -excludeBack[1]) continue;
+    if (isWalkable(r+d[0], c+d[1])) dirs.push(d);
+  }
+  return dirs;
+}
+
+// Compute auto-walk path: walks until junction, dead-end, goal, or loop
+function computeAutoWalk(startR, startC, dr, dc) {
+  const path = [];
+  let r = startR, c = startC;
+  const visited = new Set([r+','+c]);
+  while (true) {
+    const nr = r + dr, nc = c + dc;
+    if (!isWalkable(nr, nc)) break;
+    const key = nr + ',' + nc;
+    if (visited.has(key)) break;
+    r = nr; c = nc;
+    path.push({ r, c, dr, dc });
+    visited.add(key);
+    if (stage.cells[r][c] === T.GOAL) break;
+    const opts = getOpenDirs(r, c, [dr, dc]);
+    if (opts.length === 0) break;
+    if (opts.length === 1) { dr = opts[0][0]; dc = opts[0][1]; continue; }
+    break; // junction
+  }
+  return path;
+}
+
+// ====== Walk animation ======
+function startWalk(path) {
+  if (path.length === 0) return;
+  hideArrows();
+  walkAnim = {
+    path: path,
+    fromR: pono.r,
+    fromC: pono.c,
+    t0: performance.now(),
+    perCell: 220,
+  };
+}
+
+function finishWalk() {
+  if (!walkAnim) return;
+  const path = walkAnim.path;
+  const last = path[path.length - 1];
+  // Collect apples & add trail
+  for (const p of path) {
+    if (stage.cells[p.r][p.c] === T.APPLE) {
+      stage.cells[p.r][p.c] = T.PATH;
+      applesCollected++;
+      spawnPickup(p.r, p.c);
+    }
+    if (!trail.find(t => t.r === p.r && t.c === p.c)) {
+      trail.push({ r: p.r, c: p.c });
+    }
+  }
+  pono.r = last.r; pono.c = last.c;
+  moves++;
+  hudMoves.textContent = 'てかず: ' + moves;
+  hudApples.textContent = '🍎 ' + applesCollected + '/' + stage.totalApples;
+  walkAnim = null;
+  if (stage.cells[last.r][last.c] === T.GOAL) {
+    onClear();
+  } else {
+    showArrows();
+  }
+}
+
+// ====== Arrow UI ======
+function showArrows() {
+  hideArrows();
+  if (cleared || walkAnim) return;
+  const dirs = getOpenDirs(pono.r, pono.c, null);
+  if (dirs.length === 0) return;
+  const fx = gridOX + pono.c * cellSize + cellSize / 2;
+  const fy = gridOY + pono.r * cellSize + cellSize / 2;
+  const offset = cellSize * 0.95;
+  for (const d of dirs) {
+    const dr = d[0], dc = d[1];
+    const btn = document.createElement('button');
+    btn.className = 'maze-arrow';
+    btn.textContent = dr === -1 ? '↑' : dr === 1 ? '↓' : dc === -1 ? '←' : '→';
+    btn.style.left = (fx + dc * offset) + 'px';
+    btn.style.top  = (fy + dr * offset) + 'px';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (walkAnim || cleared) return;
+      const path = computeAutoWalk(pono.r, pono.c, dr, dc);
+      if (path.length === 0) return;
+      startWalk(path);
+    });
+    arrowLayer.appendChild(btn);
+  }
+}
+
+function hideArrows() {
+  while (arrowLayer.firstChild) arrowLayer.removeChild(arrowLayer.firstChild);
+}
+
+// ====== Apple pickup popup ======
+function spawnPickup(r, c) {
+  const fx = gridOX + c * cellSize + cellSize / 2;
+  const fy = gridOY + r * cellSize + cellSize / 2;
+  const el = document.createElement('div');
+  el.className = 'pickup';
+  el.textContent = '+🍎';
+  el.style.left = fx + 'px';
+  el.style.top  = fy + 'px';
+  gameWrap.appendChild(el);
+  setTimeout(function() { el.remove(); }, 1000);
+}
+
+// ====== Hint ======
+let hintTimer = null;
+function showHint(msg, ms) {
+  hint.textContent = msg;
+  hint.style.opacity = '1';
+  if (hintTimer) clearTimeout(hintTimer);
+  hintTimer = setTimeout(function() { hint.style.opacity = '0.55'; }, ms || 2000);
+}
+
+// ====== Stage loading ======
 function loadStage(idx) {
   stageIdx = idx;
   stage = buildStage(STAGES[idx]);
   pono = { r: stage.start.r, c: stage.start.c };
   trail = [{ r: pono.r, c: pono.c }];
   moves = 0;
+  applesCollected = 0;
   cleared = false;
   walkAnim = null;
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
+  hudApples.textContent = '🍎 0/' + stage.totalApples;
   voice.style.display = '';
   encounter.classList.remove('show');
   resizeCanvas();
+  showArrows();
+  showHint('やじるしを タップしてね', 2500);
 }
 
-// ====== Movement ======
-function tryMove(dr, dc) {
-  if (cleared || walkAnim) return;
-  const nr = pono.r + dr, nc = pono.c + dc;
-  if (nr < 0 || nr >= stage.rows || nc < 0 || nc >= stage.cols) return;
-  const tile = stage.cells[nr][nc];
-  // Blocked tiles
-  if (tile === T.WALL || tile === T.CAT || tile === T.WATER || tile === T.THORN) {
-    flashBlock(nr, nc, tile);
-    return;
-  }
-  // Apple = step but reset to start (after walking onto it)
-  const wasApple = (tile === T.APPLE);
-
-  walkAnim = {
-    fromR: pono.r, fromC: pono.c,
-    toR: nr, toC: nc,
-    t0: performance.now(), dur: 240,
-    onDone: function() {
-      pono.r = nr; pono.c = nc;
-      moves++;
-      hudMoves.textContent = 'てかず: ' + moves;
-      if (!trail.find(p => p.r === nr && p.c === nc)) {
-        trail.push({ r: nr, c: nc });
-      }
-      if (wasApple) {
-        // Roll back to start after a short pause
-        setTimeout(function() {
-          pono.r = stage.start.r;
-          pono.c = stage.start.c;
-          trail = [{ r: pono.r, c: pono.c }];
-          showHint('りんごに ぶつかった！もどっちゃった〜', 1600);
-        }, 250);
-      } else if (tile === T.GOAL) {
-        onClear();
-      }
-    }
-  };
-}
-
-let blockFlash = null;
-function flashBlock(r, c, tile) {
-  blockFlash = { r, c, t0: performance.now() };
-  const msg = tile === T.CAT   ? 'ねこさん おやすみちゅう…' :
-              tile === T.WATER ? 'みずたまりは わたれないよ' :
-              tile === T.THORN ? 'とげに チクッと しちゃう！' :
-                                  'こっちは とおれないよ';
-  showHint(msg, 1200);
-}
-
-let hintTimer = null;
-function showHint(msg, ms) {
-  hint.textContent = msg;
-  hint.style.opacity = '1';
-  if (hintTimer) clearTimeout(hintTimer);
-  hintTimer = setTimeout(function() { hint.style.opacity = '0.55'; }, ms || 1500);
-}
-
-// ====== Clear handling ======
+// ====== Clear ======
 function onClear() {
   cleared = true;
+  hideArrows();
   voice.style.display = 'none';
-  // Show encounter cutscene
+  if (window.incrementStat) window.incrementStat('maze_clears', 1);
   setTimeout(function() {
     encounter.classList.add('show');
     spawnConfetti();
-    if (window.incrementStat) window.incrementStat('maze_clears', 1);
   }, 200);
-
   setTimeout(function() {
     encounter.classList.remove('show');
     showStageClearOverlay();
@@ -567,7 +660,7 @@ function draw(now) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (!stage) { requestAnimationFrame(draw); return; }
 
-  // Background grid
+  // Cells
   for (let r = 0; r < stage.rows; r++) {
     for (let c = 0; c < stage.cols; c++) {
       const x = gridOX + c * cellSize;
@@ -576,47 +669,29 @@ function draw(now) {
     }
   }
 
-  // Trail (footprints)
-  for (let i = 0; i < trail.length; i++) {
-    const p = trail[i];
+  // Trail
+  for (const p of trail) {
     const x = gridOX + p.c * cellSize + cellSize / 2;
     const y = gridOY + p.r * cellSize + cellSize / 2;
     ctx.save();
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = 0.3;
     ctx.fillStyle = '#6C8E3F';
     ctx.beginPath();
-    ctx.arc(x - 4, y, 3, 0, Math.PI * 2);
-    ctx.arc(x + 4, y, 3, 0, Math.PI * 2);
+    ctx.arc(x - 4, y, 2.5, 0, Math.PI * 2);
+    ctx.arc(x + 4, y, 2.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
-  // Block flash
-  if (blockFlash) {
-    const elapsed = now - blockFlash.t0;
-    if (elapsed < 400) {
-      const a = (1 - elapsed / 400) * 0.5;
-      ctx.fillStyle = 'rgba(255,80,80,' + a + ')';
-      ctx.fillRect(gridOX + blockFlash.c * cellSize, gridOY + blockFlash.r * cellSize, cellSize, cellSize);
-    } else {
-      blockFlash = null;
-    }
-  }
-
-  // Pono
   drawPono(now);
-
   requestAnimationFrame(draw);
 }
 
 function drawCell(x, y, tile, r, c, now) {
-  // Path base
   if (tile === T.WALL) {
-    // Wall = rock/tree
-    ctx.fillStyle = '#8B6F47';
+    ctx.fillStyle = '#3E5A24';
     ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-    ctx.fillStyle = '#6B4F2A';
-    ctx.font = Math.floor(cellSize * 0.6) + 'px serif';
+    ctx.font = Math.floor(cellSize * 0.7) + 'px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('🌳', x + cellSize / 2, y + cellSize / 2);
     return;
@@ -625,21 +700,15 @@ function drawCell(x, y, tile, r, c, now) {
   // Walkable base
   ctx.fillStyle = (r + c) % 2 === 0 ? '#EFE7D2' : '#E8DFC4';
   ctx.fillRect(x, y, cellSize, cellSize);
-  ctx.strokeStyle = 'rgba(108,142,63,0.15)';
+  ctx.strokeStyle = 'rgba(108,142,63,0.18)';
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
 
   if (tile === T.PATH) return;
 
-  ctx.font = Math.floor(cellSize * 0.62) + 'px serif';
+  ctx.font = Math.floor(cellSize * 0.65) + 'px serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  let emoji = '';
-  if (tile === T.CAT)   emoji = '😺';
-  if (tile === T.WATER) emoji = '💧';
-  if (tile === T.APPLE) emoji = '🍎';
-  if (tile === T.THORN) emoji = '🌵';
   if (tile === T.GOAL) {
-    // Draw hedgehog at goal
     if (imgHedgehog.complete && imgHedgehog.naturalWidth > 0) {
       const sz = Math.floor(cellSize * 0.85);
       const bob = Math.sin(now / 280) * 2;
@@ -649,33 +718,42 @@ function drawCell(x, y, tile, r, c, now) {
     }
     return;
   }
+  let emoji = '';
+  if (tile === T.CAT)   emoji = '😺';
+  if (tile === T.WATER) emoji = '💧';
+  if (tile === T.APPLE) emoji = '🍎';
+  if (tile === T.THORN) emoji = '🌵';
   if (emoji) {
-    // Slight bobbing
-    const bob = (tile === T.CAT) ? Math.sin(now / 600 + r + c) * 1.5 : 0;
+    const bob = (tile === T.CAT) ? Math.sin(now / 600 + r + c) * 1.5 :
+                (tile === T.APPLE) ? Math.sin(now / 400 + r + c) * 2 : 0;
     ctx.fillText(emoji, x + cellSize / 2, y + cellSize / 2 + bob);
   }
 }
 
 function drawPono(now) {
-  // Resolve current pixel position (with walk animation)
-  let pr = pono.r, pc = pono.c;
-  let dRow = 0, dCol = 0;
+  let pr, pc, dr = 0, dc = 0;
   if (walkAnim) {
-    const t = Math.min((now - walkAnim.t0) / walkAnim.dur, 1);
-    pr = walkAnim.fromR + (walkAnim.toR - walkAnim.fromR) * t;
-    pc = walkAnim.fromC + (walkAnim.toC - walkAnim.fromC) * t;
-    dRow = walkAnim.toR - walkAnim.fromR;
-    dCol = walkAnim.toC - walkAnim.fromC;
-    if (t >= 1) {
-      const cb = walkAnim.onDone;
-      walkAnim = null;
-      if (cb) cb();
+    const totalElapsed = now - walkAnim.t0;
+    const segIdx = Math.floor(totalElapsed / walkAnim.perCell);
+    if (segIdx >= walkAnim.path.length) {
+      finishWalk();
+      pr = pono.r; pc = pono.c;
+    } else {
+      const t = (totalElapsed - segIdx * walkAnim.perCell) / walkAnim.perCell;
+      const seg = walkAnim.path[segIdx];
+      const fromR = segIdx === 0 ? walkAnim.fromR : walkAnim.path[segIdx - 1].r;
+      const fromC = segIdx === 0 ? walkAnim.fromC : walkAnim.path[segIdx - 1].c;
+      pr = fromR + (seg.r - fromR) * t;
+      pc = fromC + (seg.c - fromC) * t;
+      dr = seg.dr; dc = seg.dc;
     }
+  } else {
+    pr = pono.r; pc = pono.c;
   }
   const fx = gridOX + pc * cellSize + cellSize / 2;
   const fy = gridOY + pr * cellSize + cellSize / 2;
 
-  const isHorizontal = Math.abs(dCol) > Math.abs(dRow) && walkAnim != null;
+  const isHorizontal = Math.abs(dc) > Math.abs(dr) && walkAnim != null;
   const walkH = Math.floor(cellSize * 0.85);
   const elapsed = walkAnim ? (now - walkAnim.t0) : now;
 
@@ -685,7 +763,7 @@ function drawPono(now) {
     const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
     const sx = frameIdx * SIDE_WALK_FRAME_W;
     ctx.save();
-    if (dCol < 0) {
+    if (dc < 0) {
       ctx.translate(fx, fy); ctx.scale(-1, 1);
       ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
                     -sideW / 2, -sideH / 2, sideW, sideH);
@@ -710,57 +788,21 @@ function drawPono(now) {
   }
 }
 
-// ====== Input ======
-// Keyboard
+// ====== Keyboard input (also supported) ======
 window.addEventListener('keydown', function(e) {
   if (overlay.classList.contains('show')) return;
-  if (e.key === 'ArrowUp')    { tryMove(-1, 0); e.preventDefault(); }
-  if (e.key === 'ArrowDown')  { tryMove( 1, 0); e.preventDefault(); }
-  if (e.key === 'ArrowLeft')  { tryMove( 0,-1); e.preventDefault(); }
-  if (e.key === 'ArrowRight') { tryMove( 0, 1); e.preventDefault(); }
+  if (cleared || walkAnim) return;
+  let dr = 0, dc = 0;
+  if (e.key === 'ArrowUp')    dr = -1;
+  else if (e.key === 'ArrowDown')  dr = 1;
+  else if (e.key === 'ArrowLeft')  dc = -1;
+  else if (e.key === 'ArrowRight') dc = 1;
+  else return;
+  e.preventDefault();
+  if (!isWalkable(pono.r + dr, pono.c + dc)) return;
+  const path = computeAutoWalk(pono.r, pono.c, dr, dc);
+  if (path.length > 0) startWalk(path);
 });
-
-// Tap on adjacent cell
-canvas.addEventListener('pointerdown', function(e) {
-  if (overlay.classList.contains('show')) return;
-  if (!stage) return;
-  const rect = canvas.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  const py = e.clientY - rect.top;
-  const cc = Math.floor((px - gridOX) / cellSize);
-  const cr = Math.floor((py - gridOY) / cellSize);
-  if (cr < 0 || cr >= stage.rows || cc < 0 || cc >= stage.cols) return;
-  const dr = cr - pono.r, dc = cc - pono.c;
-  // Adjacent only
-  if (Math.abs(dr) + Math.abs(dc) === 1) {
-    tryMove(dr, dc);
-  } else if (dr === 0 && dc === 0) {
-    // tap on pono = no-op
-  } else {
-    // Hint: use swipe instead
-    showHint('となりの マスを タップしてね', 1200);
-  }
-});
-
-// Swipe
-let swipeStart = null;
-canvas.addEventListener('touchstart', function(e) {
-  if (e.touches.length === 1) {
-    swipeStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }
-}, { passive: true });
-canvas.addEventListener('touchend', function(e) {
-  if (!swipeStart || !e.changedTouches[0]) { swipeStart = null; return; }
-  const dx = e.changedTouches[0].clientX - swipeStart.x;
-  const dy = e.changedTouches[0].clientY - swipeStart.y;
-  swipeStart = null;
-  if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return; // treat as tap (handled above)
-  if (Math.abs(dx) > Math.abs(dy)) {
-    tryMove(0, dx > 0 ? 1 : -1);
-  } else {
-    tryMove(dy > 0 ? 1 : -1, 0);
-  }
-}, { passive: true });
 
 // ====== Start ======
 ovBtn.onclick = function() {
@@ -768,7 +810,6 @@ ovBtn.onclick = function() {
   loadStage(0);
 };
 
-// Init menu
 if (window.initMenu) {
   window.initMenu({
     bgmToggle: function() {
@@ -777,7 +818,7 @@ if (window.initMenu) {
     },
     tutorial: function() {
       ovTitle.textContent = 'あそびかた';
-      ovMsg.textContent = 'タップ または ↑↓←→ で\nうごかそう！\n\nねこ・みず・トゲ・きは\nとおれないよ。\nりんごに ぶつかると\nもどっちゃうよ！';
+      ovMsg.textContent = 'やじるしを タップすると\nつぎの わかれみちまで\nじどうで すすむよ！\n\n🍎りんごは あつめると\nボーナスだよ！\n\n😺ねこ・💧みず・🌵トゲは\nとおれないよ。';
       ovBtn.textContent = 'わかった ▶';
       ovBtn.onclick = function() { hideOverlay(); };
       showOverlay();
@@ -785,7 +826,6 @@ if (window.initMenu) {
   });
 }
 
-// Show start overlay
 showOverlay();
 loadStage(0);
 requestAnimationFrame(draw);
