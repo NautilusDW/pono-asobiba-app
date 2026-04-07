@@ -49,12 +49,34 @@
   var outFolder = Folder.selectDialog('分割PNGの保存先フォルダを選んでください');
   if (!outFolder) { tmpPng.remove(); return; }
 
-  // ── B画像（左右反転版）も出力するか確認
-  var exportFlipB = confirm(
-    'B画像（左右反転版）も出力しますか？\n\n' +
-    'はい → {name}_NNN_A.png と {name}_NNN_B.png を両方出力\n' +
-    'いいえ → {name}_NNN.png のみ（従来通り）'
-  );
+  // ── B画像（左右反転版）も出力するか確認（ScriptUI ダイアログ）
+  var exportFlipB = (function() {
+    var dlg = new Window('dialog', 'B画像も出力しますか？');
+    dlg.orientation = 'column';
+    dlg.alignChildren = 'fill';
+    dlg.margins = 20;
+    dlg.spacing = 12;
+
+    var msg = dlg.add('statictext', undefined,
+      'B画像（左右反転版）も出力しますか？\n\n' +
+      '「はい」 → {name}_NNN_A.png と {name}_NNN_B.png の両方\n' +
+      '「いいえ」 → {name}_NNN.png のみ（従来通り）',
+      { multiline: true });
+    msg.preferredSize = [380, 80];
+
+    var btns = dlg.add('group');
+    btns.alignment = 'center';
+    btns.spacing = 10;
+    var yesBtn = btns.add('button', undefined, 'はい (A+B)', { name: 'ok' });
+    var noBtn  = btns.add('button', undefined, 'いいえ (Aのみ)', { name: 'cancel' });
+
+    var result = false;
+    yesBtn.onClick = function() { result = true;  dlg.close(1); };
+    noBtn.onClick  = function() { result = false; dlg.close(2); };
+
+    dlg.show();
+    return result;
+  })();
 
   // ── Python 呼び出し（Windows: VBScript 経由、Mac: shell script 経由）
   var pyPath   = pyScript.fsName;
@@ -66,12 +88,19 @@
 
   if ($.os.indexOf('Windows') !== -1) {
     // Windows: VBScript で Python をサイレント実行
-    // Chr(34) でクォートを安全に埋め込む
-    var flipArg = exportFlipB ? ' & " " & Chr(34) & "--flip-b" & Chr(34)' : '';
+    // DQ = Chr(34) クォート変数を作って読みやすく組み立てる
     var vbs = new File(Folder.temp + '/run_split.vbs');
     vbs.open('w');
     vbs.writeln('Set sh = CreateObject("WScript.Shell")');
-    vbs.writeln('cmd = "python " & Chr(34) & "' + pyPath + '" & Chr(34) & " " & Chr(34) & "' + inPath + '" & Chr(34) & " " & Chr(34) & "' + outPath + '" & Chr(34) & " " & Chr(34) & "' + baseName + '" & Chr(34)' + flipArg);
+    vbs.writeln('DQ = Chr(34)');
+    // コマンドを段階的に組み立てる
+    vbs.writeln('cmd = "python " & DQ & "' + pyPath + '" & DQ');
+    vbs.writeln('cmd = cmd & " " & DQ & "' + inPath + '" & DQ');
+    vbs.writeln('cmd = cmd & " " & DQ & "' + outPath + '" & DQ');
+    vbs.writeln('cmd = cmd & " " & DQ & "' + baseName + '" & DQ');
+    if (exportFlipB) {
+      vbs.writeln('cmd = cmd & " --flip-b"');
+    }
     vbs.writeln('sh.Run cmd, 0, True');
     // Python完了後に一時ファイルを削除してからダイアログ
     vbs.writeln('Set fso = CreateObject("Scripting.FileSystemObject")');
