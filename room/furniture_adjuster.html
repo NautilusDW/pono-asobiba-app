@@ -194,10 +194,10 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
             <option value="girl">girl</option>
           </select>
         </div>
-        <div id="import-id-warn" style="font-size:11px;color:#f44336;min-height:14px"></div>
+        <div id="import-id-warn" style="font-size:11px;color:#f44336;min-height:14px;word-break:break-word;white-space:normal"></div>
         <div style="margin-top:6px;border-top:1px solid #333;padding-top:6px">
           <button id="btn-ai-name" style="width:100%;background:#4285f4;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">🤖 AIで画像を見て名前を付ける</button>
-          <div id="ai-name-status" style="font-size:10px;color:#aaa;min-height:12px;margin-top:2px">Netlify Function経由（サーバー側APIキー）</div>
+          <div id="ai-name-status" style="font-size:10px;color:#aaa;min-height:12px;margin-top:2px;word-break:break-word;white-space:normal">Netlify Function経由（サーバー側APIキー）</div>
         </div>
       </div>
       <div style="margin-top:4px;border-top:1px solid #333;padding-top:6px;font-size:10px;color:#666">
@@ -2412,7 +2412,17 @@ function handleImportFiles(files) {
 
       var data = await apiResp.json();
       if (!apiResp.ok) {
-        throw new Error(data.error || ('Proxy error: ' + apiResp.status));
+        // Geminiの詳細エラーも含めて表示
+        var detailMsg = '';
+        if (data.details) {
+          if (data.details.error && data.details.error.message) {
+            detailMsg = ': ' + data.details.error.message;
+          } else {
+            try { detailMsg = ': ' + JSON.stringify(data.details).substring(0, 300); } catch(_) {}
+          }
+        }
+        console.error('AI命名エラー詳細:', data);
+        throw new Error('[' + apiResp.status + '] ' + (data.error || 'Proxy error') + detailMsg);
       }
       var text = (data.text || '').trim();
       // JSONブロック抽出
