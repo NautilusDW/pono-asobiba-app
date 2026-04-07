@@ -41,6 +41,11 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:10
 .item-btn img{max-width:100%;max-height:100%;object-fit:contain}
 .item-btn.active{border-color:#ffd700}
 .item-btn.has-b{box-shadow:0 0 0 2px #4CAF50 inset}
+.item-btn.unsaved{position:relative;outline:2px dashed #ff9800;outline-offset:-2px}
+.item-btn.unsaved::after{content:'●';position:absolute;top:-2px;right:-2px;color:#ff9800;font-size:14px;text-shadow:0 0 3px #000}
+#unsaved-banner{background:#ff9800;color:#1a1a2e;padding:8px 10px;border-radius:6px;font-size:11px;font-weight:bold;margin:6px 0;display:none}
+#unsaved-banner.show{display:block}
+#unsaved-banner ul{margin:4px 0 0 16px;font-weight:normal;font-size:10px;max-height:80px;overflow-y:auto}
 .item-btn:hover{border-color:#888}
 
 label{display:flex;align-items:center;gap:8px;font-size:13px}
@@ -202,6 +207,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     </div>
   </details>
 
+  <div id="unsaved-banner">⚠️ <span id="unsaved-banner-text">未保存</span></div>
   <div id="item-list"></div>
 
   <div class="section" id="selected-info" style="display:none">
@@ -478,11 +484,21 @@ function saveSnapshots(list) {
 
 function createSnapshot(name, isAuto) {
   var snaps = getSnapshots();
+  // imports（インポート画像）を取得（容量大なので注意）
+  var importsRaw = null;
+  try { importsRaw = localStorage.getItem(IMPORT_SAVE_KEY); } catch(e) {}
+  var overridesRaw = null;
+  try { overridesRaw = localStorage.getItem(OVERRIDE_KEY); } catch(e) {}
+  var deletedRaw = null;
+  try { deletedRaw = localStorage.getItem(DELETED_KEY); } catch(e) {}
   var snap = {
     name: name,
     auto: !!isAuto,
     time: new Date().toISOString(),
-    data: JSON.parse(JSON.stringify(adjustments))
+    data: JSON.parse(JSON.stringify(adjustments)),
+    imports: importsRaw,
+    overrides: overridesRaw,
+    deleted: deletedRaw
   };
   snaps.unshift(snap); // newest first
   // Auto snapshots: keep max 5, manual: unlimited up to SNAP_MAX total
@@ -503,14 +519,18 @@ function restoreSnapshot(index) {
   var snap = snaps[index];
   // First, auto-save current state before restoring
   createSnapshot('復元前の自動バックアップ', true);
-  // Restore
+  // adjustments を復元
   Object.keys(snap.data).forEach(function(key) {
     adjustments[key] = Object.assign({}, snap.data[key]);
   });
   saveToStorage();
-  // Refresh UI
-  if (selectedId) reloadSliders(selectedId);
-  renderSnapshotList();
+  // imports / overrides / deleted も復元（あれば）
+  if (snap.imports != null) localStorage.setItem(IMPORT_SAVE_KEY, snap.imports);
+  if (snap.overrides != null) localStorage.setItem(OVERRIDE_KEY, snap.overrides);
+  if (snap.deleted != null) localStorage.setItem(DELETED_KEY, snap.deleted);
+  // ページリロードで完全反映するのが最も安全
+  alert('復元しました。ページを再読込します。');
+  location.reload();
 }
 
 function deleteSnapshot(index) {
@@ -961,12 +981,15 @@ function replaceImage(angle, file) {
     }
     var btnImg = document.querySelector('.item-btn[data-id="' + selectedId + '"] img');
     if (btnImg && angle === 'A') btnImg.src = ev.target.result;
+    item._savedToGithub = false; // 画像が変わったので未保存
     placeItem(selectedId);
     updateABThumbs(item);
+    updateUnsavedIndicator(item);
     saveImports();
     saveToStorage();
     var status = document.getElementById('save-status');
-    if (status) { status.textContent = '✅ ' + angle + '画像を差し替え（まだGitHubには保存されていません）'; status.style.color = '#4CAF50'; }
+    if (status) { status.textContent = '✅ ' + angle + '画像を差し替え（まだGitHubには保存されていません）'; status.style.color = '#ff9800'; }
+    refreshUnsavedBanner();
   };
   reader.readAsDataURL(file);
 }
@@ -1776,11 +1799,51 @@ function saveImports() {
       theme: it.theme || 'all',
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
       cellSize: it.cellSize, pivotX: it.pivotX, pivotY: it.pivotY,
-      surfaceY: it.surfaceY || 0
+      surfaceY: it.surfaceY || 0,
+      _savedToGithub: !!it._savedToGithub
     };
   });
   try { localStorage.setItem(IMPORT_SAVE_KEY, JSON.stringify(imports)); } catch(e) {}
 }
+
+// ─── 未保存アイテムの管理 ───
+function getUnsavedItems() {
+  return ITEMS.filter(function(it) { return it._imported && !it._savedToGithub; });
+}
+function updateUnsavedIndicator(item) {
+  if (!item) return;
+  var btn = document.querySelector('.item-btn[data-id="' + item.id + '"]');
+  if (!btn) return;
+  if (item._imported && !item._savedToGithub) btn.classList.add('unsaved');
+  else btn.classList.remove('unsaved');
+}
+function refreshAllUnsavedIndicators() {
+  ITEMS.forEach(updateUnsavedIndicator);
+}
+function refreshUnsavedBanner() {
+  var unsaved = getUnsavedItems();
+  var banner = document.getElementById('unsaved-banner');
+  var text = document.getElementById('unsaved-banner-text');
+  if (!banner || !text) return;
+  if (unsaved.length === 0) {
+    banner.classList.remove('show');
+    return;
+  }
+  banner.classList.add('show');
+  var names = unsaved.slice(0, 5).map(function(it) { return it.name + ' (' + it.id + ')'; });
+  var more = unsaved.length > 5 ? '... 他 ' + (unsaved.length - 5) + '件' : '';
+  text.innerHTML = unsaved.length + '件のアイテムがGitHubに未保存です:<ul><li>' + names.join('</li><li>') + '</li></ul>' + more;
+  refreshAllUnsavedIndicators();
+}
+
+// ページ離脱時の警告
+window.addEventListener('beforeunload', function(e) {
+  if (getUnsavedItems().length > 0) {
+    e.preventDefault();
+    e.returnValue = ''; // 旧ブラウザ用
+    return '';
+  }
+});
 
 function loadImports() {
   try {
@@ -1790,6 +1853,8 @@ function loadImports() {
       // 重複チェック
       if (ITEMS.find(function(it) { return it.id === imp.id; })) return;
       imp._imported = true;
+      // _savedToGithub はlocalStorageから復元（明示的にfalseならfalse、未定義でもfalse）
+      imp._savedToGithub = !!imp._savedToGithub;
       ITEMS.push(imp);
       // adjustmentsがなければ初期化（既にlocalStorageから復元済みなら上書きしない）
       var aKey = imp.id + '_A';
@@ -2030,7 +2095,8 @@ function handleImportFiles(files) {
           newItem = {
             id: itemId, name: itemName, cat: itemCat, theme: itemTheme,
             roomImg: evA.target.result, cellSize: 1.0, pivotX: 0, pivotY: 0,
-            _imported: true
+            _imported: true,
+            _savedToGithub: false
           };
           ITEMS.push(newItem);
         }
@@ -2082,6 +2148,8 @@ function handleImportFiles(files) {
 
         selectItem(itemId);
         saveImports();
+        updateUnsavedIndicator(newItem);
+        refreshUnsavedBanner();
 
         warnEl.textContent = '✅ 追加: ' + itemName + ' → IDや表示名をこの上で編集できます';
         warnEl.style.color = '#4CAF50';
@@ -2359,8 +2427,12 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
   var anyOk = rA.ok || rB.ok;
   var anyErr = (!rA.ok && !rA.skip) || (!rB.ok && !rB.skip);
 
-  // 成功した場合、自動でスナップショットも保存
+  // 成功した場合、自動でスナップショットも保存 + 保存済みフラグ
   if (anyOk && !anyErr) {
+    item._savedToGithub = true;
+    if (item._imported) saveImports();
+    updateUnsavedIndicator(item);
+    refreshUnsavedBanner();
     var d = new Date();
     var snapName = '保存: ' + item.name + ' (' +
       d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
@@ -2379,6 +2451,9 @@ window.addEventListener('resize', () => { if (selectedId) { placeItem(selectedId
 drawGrid();
 // Auto-select first item
 if (ITEMS.length > 0) selectItem(ITEMS[0].id);
+// 未保存アイテムのバナー＆インジケーター初期表示
+refreshAllUnsavedIndicators();
+refreshUnsavedBanner();
 if (hadSave) {
   var st = document.getElementById('save-status');
   if (st) {
