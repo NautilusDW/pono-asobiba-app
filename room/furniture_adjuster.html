@@ -251,6 +251,11 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     <input type="file" id="replace-file-a" accept="image/*" style="display:none">
     <input type="file" id="replace-file-b" accept="image/*" style="display:none">
 
+    <div style="display:flex;gap:4px;margin-top:4px">
+      <button id="btn-flip-a-to-b" style="flex:1;background:#333;color:#2196F3;border:1px solid #2196F3;padding:5px;border-radius:4px;cursor:pointer;font-size:11px">A → 反転 → B</button>
+      <button id="btn-flip-b-to-a" style="flex:1;background:#333;color:#4CAF50;border:1px solid #4CAF50;padding:5px;border-radius:4px;cursor:pointer;font-size:11px">B → 反転 → A</button>
+    </div>
+
     <div id="save-status"></div>
     <button id="btn-save-github">🚀 GitHubに両方保存（A+B）</button>
 
@@ -1009,6 +1014,75 @@ function replaceImage(angle, file) {
     if (e.dataTransfer.files[0]) replaceImage(angle, e.dataTransfer.files[0]);
   });
 });
+
+// ─── 左右反転生成 (A↔B) ───
+function flipImageHorizontal(srcUrl) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      var ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, 0);
+      try {
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) { reject(e); }
+    };
+    img.onerror = function() { reject(new Error('画像読み込み失敗')); };
+    img.src = srcUrl;
+  });
+}
+
+function flipItemImage(fromAngle) {
+  if (!selectedId) { alert('アイテムを選択してください'); return; }
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  var src = fromAngle === 'A' ? item.roomImg : item.roomImgB;
+  if (!src) {
+    alert(fromAngle + '画像がまだありません。先に ' + fromAngle + ' 画像を入れてください。');
+    return;
+  }
+  var toAngle = fromAngle === 'A' ? 'B' : 'A';
+  // 既に反対側がある場合は上書き確認
+  var existing = toAngle === 'A' ? item.roomImg : item.roomImgB;
+  if (existing && !confirm(toAngle + '画像を反転版で上書きしますか？')) return;
+
+  var status = document.getElementById('save-status');
+  if (status) { status.textContent = '⏳ ' + fromAngle + '画像を反転中...'; status.style.color = '#ffd700'; }
+
+  flipImageHorizontal(src).then(function(flippedDataUrl) {
+    if (toAngle === 'A') {
+      item.roomImg = flippedDataUrl;
+      var btnImg = document.querySelector('.item-btn[data-id="' + selectedId + '"] img');
+      if (btnImg) btnImg.src = flippedDataUrl;
+    } else {
+      item.roomImgB = flippedDataUrl;
+      if (!adjustments[adjKey(item.id, 'B')]) {
+        adjustments[adjKey(item.id, 'B')] = Object.assign({}, adjustments[adjKey(item.id, 'A')] || {
+          cellSize: 1.0, pivotX: 0, pivotY: 0,
+          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, surfaceY: 0
+        });
+      }
+    }
+    item._savedToGithub = false;
+    placeItem(selectedId);
+    updateABThumbs(item);
+    updateUnsavedIndicator(item);
+    refreshUnsavedBanner();
+    if (item._imported) saveImports();
+    saveToStorage();
+    if (status) { status.textContent = '✅ ' + toAngle + '画像を反転生成しました（未保存）'; status.style.color = '#4CAF50'; }
+  }).catch(function(e) {
+    if (status) { status.textContent = '❌ 反転失敗: ' + e.message; status.style.color = '#f44336'; }
+  });
+}
+
+document.getElementById('btn-flip-a-to-b').addEventListener('click', function() { flipItemImage('A'); });
+document.getElementById('btn-flip-b-to-a').addEventListener('click', function() { flipItemImage('B'); });
 
 // ─── Stackable checkbox ───
 document.getElementById('chk-stackable').onchange = function() {
