@@ -812,6 +812,7 @@ document.getElementById('edit-item-cat').addEventListener('change', function() {
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
   if (item) item.cat = this.value;
   saveToStorage();
+  if (item && item._imported) saveImports();
 });
 document.getElementById('edit-item-theme').addEventListener('change', function() {
   if (!selectedId) return;
@@ -860,6 +861,7 @@ document.getElementById('edit-item-theme').addEventListener('change', function()
     }
   }
   saveToStorage();
+  if (item._imported) saveImports();
 });
 
 // ─── Delete item ───
@@ -1749,7 +1751,14 @@ var IMPORT_SAVE_KEY = 'furniture_adjuster_imports';
 
 function saveImports() {
   var imports = ITEMS.filter(function(it) { return it._imported; }).map(function(it) {
-    return { id: it.id, name: it.name, roomImg: it.roomImg, roomImgB: it.roomImgB || null, cellSize: it.cellSize, pivotX: it.pivotX, pivotY: it.pivotY };
+    return {
+      id: it.id, name: it.name,
+      cat: it.cat || 'deco',
+      theme: it.theme || 'all',
+      roomImg: it.roomImg, roomImgB: it.roomImgB || null,
+      cellSize: it.cellSize, pivotX: it.pivotX, pivotY: it.pivotY,
+      surfaceY: it.surfaceY || 0
+    };
   });
   try { localStorage.setItem(IMPORT_SAVE_KEY, JSON.stringify(imports)); } catch(e) {}
 }
@@ -2330,7 +2339,17 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
   else parts.push('❌ B: ' + rB.err);
   var anyOk = rA.ok || rB.ok;
   var anyErr = (!rA.ok && !rA.skip) || (!rB.ok && !rB.skip);
-  status.textContent = parts.join(' / ') + (anyOk ? ' → ' + name + '_A.png / _B.png' : '');
+
+  // 成功した場合、自動でスナップショットも保存
+  if (anyOk && !anyErr) {
+    var d = new Date();
+    var snapName = '保存: ' + item.name + ' (' +
+      d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+      ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ')';
+    createSnapshot(snapName, false);
+  }
+
+  status.textContent = parts.join(' / ') + (anyOk ? ' → ' + name + '_A.png / _B.png' : '') + (anyOk && !anyErr ? ' [📸 スナップショット保存]' : '');
   status.style.color = anyErr ? '#f44336' : (anyOk ? '#4CAF50' : '#aaa');
   saveBtn.disabled = false;
 });
