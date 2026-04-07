@@ -1147,22 +1147,47 @@ function openImageBrowser(onSelect) {
         .then(function(r) { return r.text(); })
         .then(function(src) {
           grid.innerHTML = '';
-          // id, cat, name, roomImg, roomImgB を抽出（roomImgB は省略可）
-          var re = /id:\s*'([^']+)'[\s\S]*?cat:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'(?:[\s\S]*?roomImgB:\s*'([^']+)')?/g;
-          var match;
+          // アイテムブロック単位でパース: id: '...' を見つけて、
+          // その前の '{' から閉じ '},' までを切り出して各フィールドを抽出
+          var idRe = /id:\s*'([^']+)'/g;
           var seen = {};
-          // キャッシュバスター: ピッカー開く度に新しい値（GitHubの最新画像を確実に取得）
           var cb = '?v=' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-          while ((match = re.exec(src)) !== null) {
-            var itemId = match[1];
-            var itemCat = match[2];
-            var itemName = match[3];
-            var rawA = match[4] || '';
-            var rawB = match[5] || '';
-            // _A.png を含む方を優先
-            var picked = /_A\.png$/i.test(rawA) ? rawA : (/_A\.png$/i.test(rawB) ? rawB : (rawA || rawB));
-            var imgPath = picked.replace(/^\.\.\//,''); // ../assets → assets
+          var idMatch;
+          while ((idMatch = idRe.exec(src)) !== null) {
+            var itemId = idMatch[1];
             if (seen[itemId]) continue;
+
+            // このidから前後のブロック境界を探す
+            var idPos = idMatch.index;
+            var blockStart = src.lastIndexOf('{', idPos);
+            if (blockStart < 0) continue;
+            // 中括弧カウントでブロック終端を探す（angleB等のネスト対応）
+            var depth = 0, blockEnd = -1;
+            for (var bi = blockStart; bi < src.length; bi++) {
+              var ch = src.charAt(bi);
+              if (ch === '{') depth++;
+              else if (ch === '}') {
+                depth--;
+                if (depth === 0) { blockEnd = bi + 1; break; }
+              }
+            }
+            if (blockEnd < 0) continue;
+            var block = src.substring(blockStart, blockEnd);
+
+            // 各フィールドをブロック内から抽出
+            var catM = /\bcat:\s*'([^']+)'/.exec(block);
+            var nameM = /\bname:\s*'([^']+)'/.exec(block);
+            var imgM = /\broomImg:\s*'([^']+)'/.exec(block);
+            var imgBM = /\broomImgB:\s*'([^']+)'/.exec(block);
+            if (!catM || !nameM || !imgM) continue;
+            var itemCat = catM[1];
+            var itemName = nameM[1];
+            // furn/decoのみ表示
+            if (itemCat !== 'furn' && itemCat !== 'deco') continue;
+            var rawA = imgM[1];
+            var rawB = imgBM ? imgBM[1] : '';
+            var picked = /_A\.png$/i.test(rawA) ? rawA : (/_A\.png$/i.test(rawB) ? rawB : (rawA || rawB));
+            var imgPath = picked.replace(/^\.\.\//,'');
             seen[itemId] = true;
             (function(id, cat, name, p) {
               var thumb = document.createElement('div');
