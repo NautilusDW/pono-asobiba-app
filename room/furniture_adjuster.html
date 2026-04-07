@@ -363,11 +363,24 @@ var DELETED_KEY = 'furniture_adjuster_deleted';
 var _deletedIds = (function() { try { return JSON.parse(localStorage.getItem(DELETED_KEY)) || []; } catch(e) { return []; } })();
 var _deletedSet = new Set(_deletedIds);
 
+// items.js由来アイテムへのカスタム編集を保持するoverride
+var OVERRIDE_KEY = 'furniture_adjuster_overrides';
+var _overrides = (function() { try { return JSON.parse(localStorage.getItem(OVERRIDE_KEY)) || {}; } catch(e) { return {}; } })();
+function saveOverride(itemId, fields) {
+  if (!itemId) return;
+  _overrides[itemId] = Object.assign(_overrides[itemId] || {}, fields);
+  try { localStorage.setItem(OVERRIDE_KEY, JSON.stringify(_overrides)); } catch(e) {}
+}
+
 var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
   .filter(function(it) { return (it.cat === 'furn' || it.cat === 'deco') && !_deletedSet.has(it.id); })
   .map(function(it) {
+    var ov = _overrides[it.id] || {};
     return {
-      id: it.id, name: it.name, cat: it.cat,
+      id: it.id,
+      name: ov.name || it.name,
+      cat: ov.cat || it.cat,
+      theme: ov.theme || it.theme || 'all',
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
       cellSize: it.cellSize || 1, pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
       surfaceY: it.surfaceY || 0
@@ -763,11 +776,14 @@ document.getElementById('undo-btn').onclick = () => {
 document.getElementById('edit-item-name').addEventListener('change', function() {
   if (!selectedId) return;
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
-  if (item) item.name = this.value.trim();
+  if (!item) return;
+  item.name = this.value.trim();
   // ボタンのtitleも更新
   var btn = document.querySelector('.item-btn[data-id="' + selectedId + '"]');
-  if (btn) btn.title = this.value.trim() + ' (' + selectedId + ')';
+  if (btn) btn.title = item.name + ' (' + selectedId + ')';
   saveToStorage();
+  if (item._imported) saveImports();
+  else saveOverride(item.id, { name: item.name });
 });
 
 document.getElementById('edit-item-id').addEventListener('change', function() {
@@ -810,9 +826,11 @@ document.getElementById('edit-item-id').addEventListener('change', function() {
 document.getElementById('edit-item-cat').addEventListener('change', function() {
   if (!selectedId) return;
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
-  if (item) item.cat = this.value;
+  if (!item) return;
+  item.cat = this.value;
   saveToStorage();
-  if (item && item._imported) saveImports();
+  if (item._imported) saveImports();
+  else saveOverride(item.id, { cat: item.cat });
 });
 document.getElementById('edit-item-theme').addEventListener('change', function() {
   if (!selectedId) return;
@@ -862,6 +880,7 @@ document.getElementById('edit-item-theme').addEventListener('change', function()
   }
   saveToStorage();
   if (item._imported) saveImports();
+  else saveOverride(item.id, { theme: item.theme });
 });
 
 // ─── Delete item ───
