@@ -2200,17 +2200,32 @@ function handleImportFiles(files) {
     if (files[fi].type.startsWith('image/')) fileArr.push(files[fi]);
   }
 
-  // ベース名抽出（_A, _B サフィックス除去、小文字化）
+  // ベース名抽出（A/B サフィックスとオプションの数字を除去、小文字化）
   function getBaseName(fname) {
-    return fname.replace(/\.[^.]+$/, '')                    // 拡張子除去
-      .replace(/[_\-]?[Bb](?:[_\-]?\d+)?$/, '')            // _B, _B_01 除去
-      .replace(/[_\-]?[Aa](?:[_\-]?\d+)?$/, '')            // _A, _A_01 除去
-      .toLowerCase()
-      .replace(/[^a-z0-9_\-]/g, '_');
+    var n = fname.replace(/\.[^.]+$/, ''); // 拡張子除去
+    // 末尾の数字（_01等）を一旦除去
+    n = n.replace(/[_\-]?\d+$/, '');
+    // _B, -B, _A, -A を末尾から除去
+    n = n.replace(/[_\-][AaBb]$/, '');
+    // camelCase の PCdeskA/PCdeskB の末尾大文字 A/B を除去
+    n = n.replace(/([a-z])[AB]$/, '$1');
+    // 単独の A/B（ファイル名がそれだけ）を除去
+    n = n.replace(/^[AB]$/, '');
+    return n.toLowerCase().replace(/[^a-z0-9_\-]/g, '_');
   }
   function isAngleB(fname) {
     var n = fname.replace(/\.[^.]+$/, '');
-    return /[_\-][Bb](?:[_\-]?\d+)?$/.test(n);
+    // 末尾の数字を除去してから B/A 判定
+    var noNum = n.replace(/[_\-]?\d+$/, '');
+    // 末尾が B または b で終わる
+    // ただし「ab」「Bob」のような単語末ではなく、明確な角度マーカーのみ
+    // → 区切り文字あり（_B, -B）
+    // → または直前が大文字＋大文字B（PCdeskB の B）
+    // → または全部大文字最後の B
+    if (/[_\-][Bb]$/.test(noNum)) return true;
+    if (/[a-z]B$/.test(noNum)) return true;  // PCdeskB のような camelCase 末尾の大文字B
+    if (/^B$/.test(noNum)) return true;       // ファイル名が B のみ
+    return false;
   }
 
   // グループ化: { baseName: { a: File|null, b: File|null } }
@@ -2453,20 +2468,30 @@ function handleImportFiles(files) {
         '- 区別がつかない場合のみ、最後の手段として表示名末尾に「2」「3」を付ける（例: ほんだな2）\n' +
         '- ピンク/リボン/お人形系はgirl、青/ロボット/宇宙系はboy、それ以外はall';
 
-      // Netlify Function プロキシ経由でGemini API呼び出し
-      var apiResp = await fetch('/.netlify/functions/ai-name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64Data,
-          mimeType: mediaType,
-          prompt: prompt
-        })
-      });
-
-      var data = await apiResp.json();
-      if (!apiResp.ok) {
-        // Geminiの詳細エラーも含めて表示
+      // Netlify Function プロキシ経由でGemini API呼び出し（503/429リトライ付き）
+      var apiResp, data;
+      var maxRetries = 4;
+      for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        apiResp = await fetch('/.netlify/functions/ai-name', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: base64Data,
+            mimeType: mediaType,
+            prompt: prompt
+          })
+        });
+        data = await apiResp.json();
+        if (apiResp.ok) break;
+        // 503/429 はリトライ対象（指数バックオフ）
+        if ((apiResp.status === 503 || apiResp.status === 429) && attempt < maxRetries) {
+          var waitMs = 1500 * attempt; // 1.5s, 3s, 4.5s
+          statusEl.textContent = '⏳ ' + apiResp.status + ' 混雑中... ' + (waitMs/1000) + '秒待ってリトライ (' + attempt + '/' + maxRetries + ')';
+          statusEl.style.color = '#ff9800';
+          await new Promise(function(r) { setTimeout(r, waitMs); });
+          continue;
+        }
+        // リトライ対象外 or 最大リトライ到達
         var detailMsg = '';
         if (data.details) {
           if (data.details.error && data.details.error.message) {
