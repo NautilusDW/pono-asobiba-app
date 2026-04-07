@@ -1142,27 +1142,34 @@ function openImageBrowser(onSelect) {
 
     // 調整済みアイテム（items.jsから取得）
     if (path === '_items_js') {
-      fetch('../room/items.js', { cache: 'no-store' })
+      // キャッシュバスター付きで取得
+      fetch('../room/items.js?v=' + Date.now(), { cache: 'no-store' })
         .then(function(r) { return r.text(); })
         .then(function(src) {
           grid.innerHTML = '';
-          // roomImg のパスを正規表現で抽出（cat も取得）
-          var re = /id:\s*'([^']+)'[\s\S]*?cat:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'/g;
+          // id, cat, name, roomImg, roomImgB を抽出（roomImgB は省略可）
+          var re = /id:\s*'([^']+)'[\s\S]*?cat:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?roomImg:\s*'([^']+)'(?:[\s\S]*?roomImgB:\s*'([^']+)')?/g;
           var match;
           var seen = {};
+          // キャッシュバスター（同じセッションで一度生成したものを使い回し）
+          var cb = '?v=' + Date.now();
           while ((match = re.exec(src)) !== null) {
             var itemId = match[1];
             var itemCat = match[2];
             var itemName = match[3];
-            var imgPath = match[4].replace(/^\.\.\//,''); // ../assets → assets
-            if (seen[imgPath]) continue;
-            seen[imgPath] = true;
+            var rawA = match[4] || '';
+            var rawB = match[5] || '';
+            // _A.png を含む方を優先
+            var picked = /_A\.png$/i.test(rawA) ? rawA : (/_A\.png$/i.test(rawB) ? rawB : (rawA || rawB));
+            var imgPath = picked.replace(/^\.\.\//,''); // ../assets → assets
+            if (seen[itemId]) continue;
+            seen[itemId] = true;
             (function(id, cat, name, p) {
               var thumb = document.createElement('div');
               thumb.style.cssText = 'width:70px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;';
               thumb.title = name + ' (' + id + ')';
               var imgEl = document.createElement('img');
-              imgEl.src = '../' + p;
+              imgEl.src = '../' + p + cb;
               imgEl.style.cssText = 'width:64px;height:64px;object-fit:contain;border:2px solid #eee;border-radius:8px;background:#fafafa;';
               imgEl.loading = 'lazy';
               var label = document.createElement('div');
@@ -1171,7 +1178,8 @@ function openImageBrowser(onSelect) {
               thumb.appendChild(imgEl);
               thumb.appendChild(label);
               thumb.addEventListener('click', function() {
-                onSelect(p, '../' + p, { id: id, cat: cat, name: name });
+                // 保存値はキャッシュバスター無し、表示URLはキャッシュバスター付き
+                onSelect(p, '../' + p + cb, { id: id, cat: cat, name: name });
                 ov.remove();
               });
               thumb.addEventListener('mouseenter', function() { imgEl.style.borderColor = '#FF6B9D'; });
