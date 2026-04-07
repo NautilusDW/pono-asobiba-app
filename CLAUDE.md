@@ -14,6 +14,42 @@
 3. エラーが発生した場合は、同じアプローチを繰り返さず、別の方法を試すこと。
 4. 大きな変更は小さなステップに分割し、各ステップで検証すること。
 
+## Agent Orchestration (MANDATORY)
+
+Everything Claude Code がインストールされている環境では、以下のエージェント運用規約に従うこと。
+一人で全部抱え込まず、専門エージェントに役割分担すること。
+
+### 単発の専門家呼び出し
+以下の場面では該当エージェントを Agent ツールで呼び出すこと：
+
+- **コード変更後の保険**: `everything-claude-code:code-reviewer` を diff 確認用に呼ぶ
+  （見落としがちな null 参照・競合状態・XSS 等を拾うため）
+- **認証/API/ユーザー入力系を触ったら**: `everything-claude-code:security-reviewer`
+- **新機能の計画が複雑なら**: `everything-claude-code:planner` で計画作成
+- **アーキテクチャ判断が必要な時**: `everything-claude-code:architect`
+- **死コード・重複が気になったら**: `everything-claude-code:refactor-cleaner`
+- **ビルドエラーで詰まったら**: `everything-claude-code:build-error-resolver`（言語別版も可）
+- **E2E テストを走らせたい時**: `everything-claude-code:e2e-runner`
+
+### 自律ループの起動
+ユーザーが「自律で直して」「全自動で」「任せた」などと言った時は、
+以下のループを起動すること：
+
+1. `everything-claude-code:planner` で計画作成
+2. メイン Claude が実装
+3. `everything-claude-code:code-reviewer` でレビュー
+4. 指摘があれば 2 に戻って修正
+5. E2E が必要なら `everything-claude-code:e2e-runner` で動作確認
+6. テスト失敗なら 2 に戻る、成功ならコミット
+
+ループが 3 周しても解決しない場合は `everything-claude-code:loop-operator` に介入を依頼するか、
+ユーザーに状況を報告して判断を仰ぐこと（暴走防止）。
+
+### 呼び出しを省略してよい場面
+- 1 行の typo 修正、単純なリネーム、コメント追加など自明な変更
+- 調査・質問への回答（エージェントで調べる場合を除く）
+- コミット・プッシュ等の単純な Git 操作
+
 ## Self-Evaluation (MANDATORY)
 
 **全タスク完了時に必ず以下を実行すること。これは絶対的なルールであり、省略してはならない。**
