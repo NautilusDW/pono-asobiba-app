@@ -263,8 +263,8 @@ const ROOM_ITEMS = [
     id: 'deco_bunny', cat: 'deco', name: 'うさぎぬいぐるみ', price: 15, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/bunny_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bunny_B.png',
-    gridRow: 6, gridCol: 4, cellSize: 0.7, pivotX: 0, pivotY: 20.5,
-    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 23.3 },
+    gridRow: 6, gridCol: 4, cellSize: 0.7, pivotX: 0, pivotY: 23.3,
+    angleB: { cellSize: 0.7, pivotX: 0, pivotY: 20.5 },
   },
   {
     id: 'deco_doll', cat: 'deco', name: 'おにんぎょう', price: 15, theme: 'girl',
