@@ -2374,8 +2374,12 @@ function handleImportFiles(files) {
         });
       }
 
-      // 既存アイテム名リスト（一貫性のため参考情報として送信）
-      var existingNames = ITEMS.slice(0, 30).map(function(it) { return it.id + ': ' + it.name; }).join('\n');
+      // 既存アイテム全件（自分自身を除く）— 重複回避と命名パターン参照のため
+      var existingList = ITEMS.filter(function(it) { return it !== item; })
+        .map(function(it) { return it.id + ' / ' + it.name; });
+      var existingNames = existingList.join('\n');
+      var existingIdSet = new Set(ITEMS.filter(function(it) { return it !== item; }).map(function(it) { return it.id; }));
+      var existingNameSet = new Set(ITEMS.filter(function(it) { return it !== item; }).map(function(it) { return it.name; }));
 
       var prompt = '添付の画像は子供向け3Dゲームの家具/飾りアイテムのイラストです。\n' +
         '以下のJSON形式で、この画像に最適な情報を返してください。余計な説明は一切含めず、JSONのみ出力してください。\n\n' +
@@ -2385,12 +2389,14 @@ function handleImportFiles(files) {
         '  "cat": "furn（大きい家具）または deco（小さい飾り）",\n' +
         '  "theme": "all / boy / girl のいずれか"\n' +
         '}\n\n' +
-        '既存アイテムの命名パターン（この命名規則に合わせること）:\n' +
+        '⚠️ 既に登録済みのアイテム一覧（ID / 表示名）— これと重複するID・表示名は絶対に使わないこと。\n' +
+        '同じ種類のものでも色・形・特徴で区別すること（例: deco_bear, deco_bear_brown, deco_bear_white）:\n' +
         existingNames + '\n\n' +
-        '注意:\n' +
-        '- 同じようなものがあれば、同じ単語を使う（例: 棚なら「ほんだな」「たな」で統一）\n' +
-        '- 色の修飾語は前置（ピンクベッド、あおいつくえ）\n' +
-        '- IDは短く、既存のパターンに倣う\n' +
+        '命名ルール:\n' +
+        '- 既存と似た系統なら同じ単語を使う（例: 棚は「ほんだな」「たな」で統一、ベッドは「ベッド」）\n' +
+        '- 色や特徴の修飾語は前置（例: ピンクベッド、あおいつくえ、ちいさなくま）\n' +
+        '- 既に同じものがあれば、色違い・サイズ違い・装飾違いとして区別する\n' +
+        '- 区別がつかない場合のみ、最後の手段として表示名末尾に「2」「3」を付ける（例: ほんだな2）\n' +
         '- ピンク/リボン/お人形系はgirl、青/ロボット/宇宙系はboy、それ以外はall';
 
       // Netlify Function プロキシ経由でGemini API呼び出し
@@ -2423,11 +2429,23 @@ function handleImportFiles(files) {
       // テーマに応じたsuffix適用（_boy/_girl）
       newId = resolveEffectiveId(newId, newTheme);
 
-      // ID重複チェック
+      // ID重複チェック（重複時はベースIDに _2, _3 ... を付加してから theme suffix）
       if (ITEMS.find(function(x) { return x.id === newId && x !== item; })) {
+        // _boy/_girl suffix を一旦剥がしてベースID取得
+        var themeSfx = '';
+        var baseId = newId;
+        var sfxMatch = newId.match(/^(.*?)(_boy|_girl)$/);
+        if (sfxMatch) { baseId = sfxMatch[1]; themeSfx = sfxMatch[2]; }
         var suf = 2;
-        while (ITEMS.find(function(x) { return x.id === newId + suf && x !== item; })) suf++;
-        newId = newId + suf;
+        while (ITEMS.find(function(x) { return x.id === baseId + '_' + suf + themeSfx && x !== item; })) suf++;
+        newId = baseId + '_' + suf + themeSfx;
+      }
+
+      // 表示名の重複チェック（同じ name のアイテムがあれば「2」「3」を付加）
+      if (newName && ITEMS.find(function(x) { return x.name === newName && x !== item; })) {
+        var nsuf = 2;
+        while (ITEMS.find(function(x) { return x.name === newName + nsuf && x !== item; })) nsuf++;
+        newName = newName + nsuf;
       }
 
       // adjustments キー移動
