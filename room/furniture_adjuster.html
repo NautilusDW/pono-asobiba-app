@@ -1177,19 +1177,18 @@ document.getElementById('btn-swap-ab').addEventListener('click', async function(
     // ローカルのITEMS（ブラウザ表示用）を即座に更新
     // GitHubアップロード後はNetlifyのキャッシュ反映に時間がかかるので、
     // base64 data URLを直接ローカルにセット → 即座に新しい絵が見える
-    var dataUrlA = 'data:image/png;base64,' + b64B; // A画像ファイルにはB中身が入った
-    var dataUrlB = 'data:image/png;base64,' + b64A; // B画像ファイルにはA中身が入った
+    // ※ ファイル「中身」を入れ替えたので、
+    //   ・ roomImg (='..._A.png') には「B画像の中身」が入る → A角度の絵になる
+    //   ・ roomImgB (='..._B.png') には「A画像の中身」が入る → B角度の絵になる
+    var dataUrlA = 'data:image/png;base64,' + b64B; // _A.png ファイルにはB画像中身が入った
+    var dataUrlB = 'data:image/png;base64,' + b64A; // _B.png ファイルにはA画像中身が入った
     item.roomImg = dataUrlA;
     item.roomImgB = dataUrlB;
 
-    // adjustments の A/B も入れ替え
-    var aKey = adjKey(item.id, 'A');
-    var bKey = adjKey(item.id, 'B');
-    var tmpAdj = adjustments[aKey];
-    adjustments[aKey] = adjustments[bKey];
-    adjustments[bKey] = tmpAdj;
-    if (!adjustments[aKey] && adjustments[bKey]) adjustments[aKey] = Object.assign({}, adjustments[bKey]);
-    if (!adjustments[bKey] && adjustments[aKey]) adjustments[bKey] = Object.assign({}, adjustments[aKey]);
+    // ⚠️ adjustments (pivotX/Y/cellSize 等) は入れ替えない。
+    // items.js の roomImg/roomImgB パスと adjustments の対応は変わっていない
+    // （ファイル名と items.js の参照は同じ、中身だけ入れ替わった）。
+    // ピボット値の方向を調整する必要があれば、ユーザーが個別にスライダーで修正する。
 
     // UI更新
     var btnImg = document.querySelector('.item-btn[data-id="' + item.id + '"] img');
@@ -1198,12 +1197,11 @@ document.getElementById('btn-swap-ab').addEventListener('click', async function(
     var tB = document.getElementById('thumb-b');
     if (tA) { tA.src = dataUrlA; tA.style.display = 'block'; }
     if (tB) { tB.src = dataUrlB; tB.style.display = 'block'; }
-    if (typeof reloadSliders === 'function') reloadSliders(item.id);
     placeItem(item.id);
     saveToStorage();
     if (item._imported) saveImports();
 
-    status.textContent = '✅ A画像とB画像を入れ替えました（GitHub保存済み）';
+    status.textContent = '✅ A画像とB画像のファイル中身を入れ替えました（GitHub保存済み）';
     status.style.color = '#4CAF50';
     swapBtn.disabled = false;
   } catch (e) {
@@ -1806,7 +1804,10 @@ function ghHeaders() { return { 'Authorization': 'Bearer ' + ghToken(), 'Accept'
 function ghUploadFile(path, base64, msg, cb) {
   if (!ghToken()) { cb('PAT未設定（管理画面で設定してください）'); return; }
   var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
-  fetch(url + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+  // cache: 'no-store' で必ず最新の SHA を取得（連続スワップ時の sha mismatch 防止）
+  // タイムスタンプもURLに追加してproxy/CDNキャッシュも無効化
+  var cacheBuster = '&_cb=' + Date.now();
+  fetch(url + '?ref=' + GH_BRANCH + cacheBuster, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(existing) {
       var body = { message: msg, content: base64, branch: GH_BRANCH };
@@ -1814,7 +1815,8 @@ function ghUploadFile(path, base64, msg, cb) {
       return fetch(url, {
         method: 'PUT',
         headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        cache: 'no-store'
       });
     })
     .then(function(r) { if (r.ok) cb(null); else r.json().then(function(j) { cb(j.message || 'Error'); }); })
