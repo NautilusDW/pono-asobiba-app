@@ -171,12 +171,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         </div>
         <div id="import-id-warn" style="font-size:11px;color:#f44336;min-height:14px"></div>
         <div style="margin-top:6px;border-top:1px solid #333;padding-top:6px">
-          <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
-            <span style="font-size:11px;color:#aaa">🤖 Gemini:</span>
-            <input type="password" id="gemini-key" placeholder="Google AI Studio API Key" style="flex:1;min-width:80px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:3px 6px;font-size:11px;font-family:monospace">
-          </div>
-          <button id="btn-ai-name" style="width:100%;background:#4285f4;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:bold">🤖 AIで画像を見て名前を付ける</button>
-          <div id="ai-name-status" style="font-size:10px;color:#aaa;min-height:12px;margin-top:2px"></div>
+          <button id="btn-ai-name" style="width:100%;background:#4285f4;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">🤖 AIで画像を見て名前を付ける</button>
+          <div id="ai-name-status" style="font-size:10px;color:#aaa;min-height:12px;margin-top:2px">Netlify Function経由（サーバー側APIキー）</div>
         </div>
       </div>
       <div style="margin-top:4px;border-top:1px solid #333;padding-top:8px">
@@ -1961,22 +1957,12 @@ function handleImportFiles(files) {
   });
 }
 
-// ─── AI Vision Naming (Gemini API) ───
+// ─── AI Vision Naming (Netlify Function proxy → Gemini) ───
 (function() {
-  var keyInput = document.getElementById('gemini-key');
   var btn = document.getElementById('btn-ai-name');
   var statusEl = document.getElementById('ai-name-status');
 
-  // APIキーをlocalStorageから復元（旧anthropic_api_keyからの移行はしない）
-  keyInput.value = localStorage.getItem('gemini_api_key') || '';
-  keyInput.addEventListener('change', function() {
-    localStorage.setItem('gemini_api_key', keyInput.value);
-  });
-
   async function aiGenerateName() {
-    var apiKey = keyInput.value.trim();
-    if (!apiKey) { statusEl.textContent = '❌ Gemini APIキーを入力してください'; statusEl.style.color = '#f44336'; return; }
-
     // 対象画像の取得（最後にインポート or 選択中）
     var targetId = _lastImportedId || selectedId;
     if (!targetId) { statusEl.textContent = '❌ 先にアイテムをインポートまたは選択してください'; statusEl.style.color = '#f44336'; return; }
@@ -2024,33 +2010,22 @@ function handleImportFiles(files) {
         '- IDは短く、既存のパターンに倣う\n' +
         '- ピンク/リボン/お人形系はgirl、青/ロボット/宇宙系はboy、それ以外はall';
 
-      var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
-      var apiResp = await fetch(apiUrl, {
+      // Netlify Function プロキシ経由でGemini API呼び出し
+      var apiResp = await fetch('/.netlify/functions/ai-name', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: mediaType, data: base64Data } },
-              { text: prompt }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            responseMimeType: 'application/json'
-          }
+          image: base64Data,
+          mimeType: mediaType,
+          prompt: prompt
         })
       });
 
-      if (!apiResp.ok) {
-        var err = await apiResp.text();
-        throw new Error('API Error: ' + apiResp.status + ' ' + err.substring(0, 150));
-      }
       var data = await apiResp.json();
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        throw new Error('無効な応答: ' + JSON.stringify(data).substring(0, 150));
+      if (!apiResp.ok) {
+        throw new Error(data.error || ('Proxy error: ' + apiResp.status));
       }
-      var text = data.candidates[0].content.parts[0].text.trim();
+      var text = (data.text || '').trim();
       // JSONブロック抽出
       var jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('JSONが見つかりません: ' + text);
