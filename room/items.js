@@ -141,7 +141,7 @@ const ROOM_ITEMS = [
     angleB: { cellSize: 0.7, pivotX: 3.3, pivotY: 26 },
   },
   {
-    id: 'furn_bed_wood', cat: 'furn', name: 'きのベッド', price: 25, theme: 'all',
+    id: 'furn_bed_wood', cat: 'furn', name: 'きのベッド', price: 25, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/bed_A_01.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/bed_B_01.png',
     gridRow: 2, gridCol: 3, cellSize: 2, footprintSize: 3, pivotX: 11, pivotY: 11, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
@@ -149,7 +149,7 @@ const ROOM_ITEMS = [
     surfaceY: -91.5, surfaceYB: -74,
   },
   {
-    id: 'furn_desk', cat: 'furn', name: 'あおいつくえ', price: 25, theme: 'all',
+    id: 'furn_desk', cat: 'furn', name: 'あおいつくえ', price: 25, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/desk_A_01.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/desk_B_01.png',
     gridRow: 2, gridCol: 2, cellSize: 1.9, pivotX: 12.5, pivotY: 4.1, minRow: 1, maxRow: 6, minCol: 1, maxCol: 6,
@@ -157,7 +157,7 @@ const ROOM_ITEMS = [
     surfaceY: -136.5, surfaceYB: -129.5,
   },
   {
-    id: 'furn_bookshelf_w', cat: 'furn', name: 'しろいほんだな', price: 20, theme: 'all',
+    id: 'furn_bookshelf_w', cat: 'furn', name: 'しろいほんだな', price: 20, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/BookShelf01_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/BookShelf01_B.png',
     gridRow: 1, gridCol: 2, cellSize: 2.3, footprintSize: 2, pivotX: -16.5, pivotY: 8.2, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
@@ -293,7 +293,7 @@ const ROOM_ITEMS = [
 
   // ══ 共通かざり（追加）══════════════════════════════════════
   {
-    id: 'deco_box', cat: 'deco', name: 'おかたづけばこ', price: 15, theme: 'all',
+    id: 'deco_box', cat: 'deco', name: 'おかたづけばこ', price: 15, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/box_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/box_B.png',
     gridRow: 6, gridCol: 2, cellSize: 0.8, pivotX: 11, pivotY: 20.5,
@@ -307,7 +307,7 @@ const ROOM_ITEMS = [
     angleB: { cellSize: 1.9, pivotX: 19, pivotY: 11, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7 },
   },
   {
-    id: 'deco_shelf_wall', cat: 'deco', name: 'かべだな', price: 15, theme: 'all',
+    id: 'deco_shelf_wall', cat: 'deco', name: 'かべだな', price: 15, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/shelf2_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/shelf2_B.png',
     gridRow: 3, gridCol: 3, cellSize: 1.1, pivotX: -9.5, pivotY: -100,
@@ -391,6 +391,29 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/furnitures_final/deco_box_boy_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/deco_box_boy_B.png',
     gridRow: 4, gridCol: 4, cellSize: 0.85, pivotX: 10.5, pivotY: 24.5, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
+  {
+    id: 'furn_bed_blue_boy', cat: 'furn', name: 'あおベッド', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_bed_blue_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 2.1, pivotX: 10.5, pivotY: 11.9, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
+  },
+  {
+    id: 'furn_bookshelf_blue_boy', cat: 'furn', name: 'あおいほんだな', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_bookshelf_blue_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_bookshelf_blue_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 2.3, pivotX: -17.5, pivotY: 9.1, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
+  },
+  {
+    id: 'furn_bookshelf_blue_round_boy', cat: 'furn', name: 'あおいまるいほんだな', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_bookshelf_blue_round_boy_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_bookshelf_blue_round_boy_B.png',
+    gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+  },
+  {
+    id: 'deco_drone_white_boy', cat: 'deco', name: 'しろいドローン', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/deco_drone_white_boy_A.png',
+    gridRow: 4, gridCol: 4, cellSize: 0.5, pivotX: 0, pivotY: 46.9, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
 ];
 
