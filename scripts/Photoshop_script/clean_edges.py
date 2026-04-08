@@ -93,6 +93,18 @@ def smooth_alpha(img: Image.Image, blur_radius: float = 0.6) -> Image.Image:
     return Image.merge("RGBA", (r, g, b, a_curved))
 
 
+def _light_smooth(img: Image.Image, blur_radius: float = 0.5) -> Image.Image:
+    """
+    S カーブを使わない軽いアルファスムージング。
+    距離変換フェザリング済みマスクを潰さないよう、ぼかしだけ適用。
+    """
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    r, g, b, a = img.split()
+    a_blur = a.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+    return Image.merge("RGBA", (r, g, b, a_blur))
+
+
 # ---------------------------------------------------------------------------
 # Mode 1: rembg (semantic segmentation)
 # ---------------------------------------------------------------------------
@@ -142,28 +154,94 @@ def process_rembg(
 # Mode 2: auto-fake-bg (color-based: uniform border + checker pattern)
 # ---------------------------------------------------------------------------
 
+def _border_connected(candidate: "np.ndarray") -> "np.ndarray":
+    """
+    candidate (bool mask) のうち、画像の縁に接続している連結成分だけを True に。
+    scipy があれば ndimage.label を使う。無ければ反復膨張でフォールバック。
+    """
+    h, w = candidate.shape
+    try:
+        from scipy import ndimage  # type: ignore
+
+        labels, _ = ndimage.label(candidate, structure=np.ones((3, 3), dtype=np.uint8))
+        border_labels = set()
+        border_labels.update(labels[0, :].tolist())
+        border_labels.update(labels[-1, :].tolist())
+        border_labels.update(labels[:, 0].tolist())
+        border_labels.update(labels[:, -1].tolist())
+        border_labels.discard(0)
+        if not border_labels:
+            return np.zeros_like(candidate)
+        return np.isin(labels, list(border_labels))
+    except ImportError:
+        # Fallback: 反復膨張 (BFS をフラットに展開)
+        result = np.zeros_like(candidate)
+        result[0, :] = candidate[0, :]
+        result[-1, :] = candidate[-1, :]
+        result[:, 0] = candidate[:, 0]
+        result[:, -1] = candidate[:, -1]
+        for _ in range(max(h, w)):
+            new = result.copy()
+            new[1:, :] |= result[:-1, :] & candidate[1:, :]
+            new[:-1, :] |= result[1:, :] & candidate[:-1, :]
+            new[:, 1:] |= result[:, :-1] & candidate[:, 1:]
+            new[:, :-1] |= result[:, 1:] & candidate[:, :-1]
+            if np.array_equal(new, result):
+                break
+            result = new
+        return result
+
+
+def _feather_mask(bg_mask: "np.ndarray", feather_px: float) -> "np.ndarray":
+    """
+    背景マスクを距離変換でフェザリングし、0.0-1.0 の前景率 (float32) を返す。
+    feather_px は縁のグラデーション幅 (ピクセル)。
+    scipy が無ければガウスぼかしで近似。
+    """
+    fg_mask = ~bg_mask
+    if feather_px <= 0:
+        return fg_mask.astype(np.float32)
+    try:
+        from scipy import ndimage  # type: ignore
+
+        dist_in = ndimage.distance_transform_edt(fg_mask)
+        dist_out = ndimage.distance_transform_edt(~fg_mask)
+        signed = dist_in - dist_out  # >0 前景内部, <0 背景内部
+        # 縁 (signed=0) を中心に feather_px の範囲でグラデーション
+        alpha = np.clip((signed + feather_px) / (2.0 * feather_px), 0.0, 1.0)
+        return alpha.astype(np.float32)
+    except ImportError:
+        # フォールバック: PIL の GaussianBlur で近似
+        from PIL import ImageFilter as _IF
+        im = Image.fromarray((fg_mask.astype(np.uint8) * 255), mode="L")
+        im = im.filter(_IF.GaussianBlur(radius=max(0.5, feather_px)))
+        return np.array(im, dtype=np.float32) / 255.0
+
+
 def process_auto_fake_bg(
     img: Image.Image,
     border_tolerance: int = 32,
     gray_tolerance: int = 18,
     gray_saturation_max: int = 22,
     gray_brightness_min: int = 140,
+    feather: float = 1.5,
+    remove_checker: bool = True,
 ) -> Image.Image:
     """
     生成 AI の "ニセ透明背景" を色ベースで除去する。
 
-    Step 1: 画像の四辺からピクセルをサンプルし、それに近い色をすべて透明化
-            (→ 赤/青などの外枠を除去)
-    Step 2: 残った領域から 低彩度・高明度 のピクセル (市松模様のグレー 2 色)
-            を検出し、それも透明化
-    Step 3: アルファをモルフォロジー的に軽くクリーンアップ
+    Step 1: 画像の四辺からピクセルをサンプルし、それに近い色をマスク候補に
+    Step 2: 低彩度・高明度 (市松模様のグレー) もマスク候補に追加 (オプション)
+    Step 3: 候補のうち 画像の縁に連結している領域 だけを背景確定
+            (→ 魚の目の白など孤立した島は前景として残る)
+    Step 4: 距離変換で縁をフェザリング (→ ジャギ解消)
     """
     rgba = np.array(img.convert("RGBA"))
     h, w = rgba.shape[:2]
     rgb = rgba[:, :, :3].astype(np.int16)
-    alpha = rgba[:, :, 3].copy()
+    alpha = rgba[:, :, 3].astype(np.float32) / 255.0
 
-    # --- Step 1: border color removal ------------------------------------
+    # --- Step 1: border color candidate ----------------------------------
     border_samples = np.concatenate([
         rgb[0, :, :].reshape(-1, 3),
         rgb[-1, :, :].reshape(-1, 3),
@@ -171,57 +249,57 @@ def process_auto_fake_bg(
         rgb[:, -1, :].reshape(-1, 3),
     ])
 
-    # Cluster border samples: bucket by (R>>4, G>>4, B>>4) and take top-K
+    # バケット量子化 (R>>4, G>>4, B>>4) で上位 K 個を抽出
     buckets = {}
     for px in border_samples:
         key = (int(px[0]) >> 4, int(px[1]) >> 4, int(px[2]) >> 4)
         buckets[key] = buckets.get(key, 0) + 1
     top_border = sorted(buckets.items(), key=lambda kv: -kv[1])[:8]
-    border_colors = np.array([[(k[0] << 4) + 8, (k[1] << 4) + 8, (k[2] << 4) + 8] for k, _ in top_border], dtype=np.int16)
-
-    bg_mask = np.zeros((h, w), dtype=bool)
-    for bc in border_colors:
-        diff = np.max(np.abs(rgb - bc.reshape(1, 1, 3)), axis=2)
-        bg_mask |= diff <= border_tolerance
-
-    # --- Step 2: checker gray detection ----------------------------------
-    # 残ったピクセルから、低彩度 (R≈G≈B) かつ明度が高めのものを集計
-    not_bg = ~bg_mask
-    r_ch = rgb[:, :, 0]
-    g_ch = rgb[:, :, 1]
-    b_ch = rgb[:, :, 2]
-    brightness = (r_ch + g_ch + b_ch) // 3
-    max_c = np.maximum(np.maximum(r_ch, g_ch), b_ch)
-    min_c = np.minimum(np.minimum(r_ch, g_ch), b_ch)
-    saturation = max_c - min_c
-
-    gray_candidate = (
-        not_bg
-        & (saturation <= gray_saturation_max)
-        & (brightness >= gray_brightness_min)
+    border_colors = np.array(
+        [[(k[0] << 4) + 8, (k[1] << 4) + 8, (k[2] << 4) + 8] for k, _ in top_border],
+        dtype=np.int16,
     )
 
-    if gray_candidate.sum() > 100:
-        # 明度ヒストグラムから頻出の 2 色を抽出 (市松模様は 2 階調)
-        gray_brightnesses = brightness[gray_candidate]
-        hist, bin_edges = np.histogram(gray_brightnesses, bins=range(gray_brightness_min, 256, 4))
-        top_idx = np.argsort(hist)[::-1][:4]
-        top_grays = [(bin_edges[i] + bin_edges[i + 1]) // 2 for i in top_idx if hist[i] > 20]
+    candidate = np.zeros((h, w), dtype=bool)
+    for bc in border_colors:
+        diff = np.max(np.abs(rgb - bc.reshape(1, 1, 3)), axis=2)
+        candidate |= diff <= border_tolerance
 
-        for tg in top_grays:
-            diff = np.abs(brightness - tg)
-            gray_pixel = (
-                (diff <= gray_tolerance)
-                & (saturation <= gray_saturation_max)
-                & (brightness >= gray_brightness_min)
-            )
-            bg_mask |= gray_pixel
+    # --- Step 2: checker gray candidate ----------------------------------
+    if remove_checker:
+        r_ch, g_ch, b_ch = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+        brightness = (r_ch + g_ch + b_ch) // 3
+        saturation = (
+            np.maximum(np.maximum(r_ch, g_ch), b_ch)
+            - np.minimum(np.minimum(r_ch, g_ch), b_ch)
+        )
+        gray_region = (saturation <= gray_saturation_max) & (brightness >= gray_brightness_min)
 
-    # --- Step 3: build new alpha -----------------------------------------
-    new_alpha = np.where(bg_mask, 0, alpha).astype(np.uint8)
+        # 既にマーク済みでないグレー候補から頻出明度 2-4 色を検出
+        pending_gray = gray_region & ~candidate
+        if pending_gray.sum() > 100:
+            gb = brightness[pending_gray]
+            hist, bin_edges = np.histogram(gb, bins=range(gray_brightness_min, 256, 4))
+            top_idx = np.argsort(hist)[::-1][:4]
+            top_grays = [
+                (bin_edges[i] + bin_edges[i + 1]) // 2
+                for i in top_idx
+                if hist[i] > 20
+            ]
+            for tg in top_grays:
+                diff = np.abs(brightness - tg)
+                gray_pixel = (diff <= gray_tolerance) & gray_region
+                candidate |= gray_pixel
+
+    # --- Step 3: keep only border-connected parts (preserves eye whites) -
+    bg_mask = _border_connected(candidate)
+
+    # --- Step 4: feathered alpha -----------------------------------------
+    fg_ratio = _feather_mask(bg_mask, feather_px=feather)
+    new_alpha = np.clip(fg_ratio * alpha, 0.0, 1.0) * 255.0
 
     result = rgba.copy()
-    result[:, :, 3] = new_alpha
+    result[:, :, 3] = new_alpha.astype(np.uint8)
     return Image.fromarray(result, mode="RGBA")
 
 
@@ -329,10 +407,12 @@ def clean_one(
 
         if mode == "auto-fake-bg":
             cut = process_auto_fake_bg(original)
+            # auto-fake-bg は既にフェザリング済みなので、軽いぼかしだけ
+            if blur_radius > 0:
+                cut = _light_smooth(cut, blur_radius=blur_radius)
         else:
             cut = process_rembg(original, session=session, use_matting=use_matting, bbox=bbox)
-
-        cut = smooth_alpha(cut, blur_radius=blur_radius)
+            cut = smooth_alpha(cut, blur_radius=blur_radius)
 
         if preview:
             ok = show_preview(original, cut, title=input_path.name)
