@@ -700,7 +700,9 @@ function showArrows() {
   if (dirs.length === 0) return;
   const fx = gridOX + pono.c * cellSize + cellSize / 2;
   const fy = gridOY + pono.r * cellSize + cellSize / 2;
-  const offset = cellSize * 0.95;
+  // Arrow offset: minimum 56px so arrows stay finger-friendly even on dense mazes.
+  // Scales up with cellSize for big mazes (chevrons reach the next cell center).
+  const offset = Math.max(56, cellSize * 0.95);
   for (const d of dirs) {
     const dr = d[0], dc = d[1];
     const btn = document.createElement('button');
