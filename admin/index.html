@@ -335,7 +335,7 @@ tr:hover { background: #FFFAF0; }
       <div class="reward-card-row">
         <div class="reward-field reward-field-mid">
           <label>表示名</label>
-          <input type="text" id="newCreatureName" placeholder="メダカ">
+          <input type="text" id="newCreatureName" placeholder="画像をアップロードすると自動命名">
         </div>
         <div class="reward-field reward-field-mid">
           <label>ID（半角英数）</label>
@@ -344,6 +344,10 @@ tr:hover { background: #FFFAF0; }
         <div class="reward-field reward-field-short">
           <label>絵文字</label>
           <input type="text" id="newCreatureIcon" placeholder="🐠" value="🐠">
+        </div>
+        <div class="reward-field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button id="btn-ai-name-creature" type="button" style="background:#4285f4;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:bold;white-space:nowrap;" title="画像を見てAIが名前を考えます">🤖 AIで命名</button>
         </div>
       </div>
 
@@ -1545,37 +1549,122 @@ function _processFile(file) {
   });
 }
 
-// ファイル名から表示名と ID を自動生成してフォームに反映
-// 家具アップローダーと同じ哲学: 拡張子・サフィックス除去 → snake_case ID
-function _autoFillCreatureFromFileName(filename) {
+// ─── AI Vision 命名 (Netlify Function → Gemini) ─────────────
+// 家具ツールの aiGenerateName と同じパターン。creature の画像を見て
+// 表示名と ID を自動生成する。
+async function aiNameCreature(imageBase64, mimeType) {
   var nameInp = document.getElementById('newCreatureName');
   var idInp = document.getElementById('newCreatureId');
-  if (!nameInp || !idInp) return;
+  var iconInp = document.getElementById('newCreatureIcon');
+  var status = document.getElementById('deployCreatureStatus');
+  if (!nameInp || !idInp || !iconInp) return;
 
-  // 拡張子除去
-  var raw = (filename || '').replace(/\.[^.]+$/, '');
-  // _normal_1 / _surprised / _happy / _001 などのサフィックスを除去
-  var base = raw
-    .replace(/[_\-]?(normal|surprised|happy)[_\-]?\d*$/i, '')
-    .replace(/[_\-]?\d+$/, '')
-    .replace(/[_\-]+$/, '');
-  if (!base) return;
-
-  // ID: 半角英数+_ に変換
-  var cleanId = base
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .toLowerCase()
-    .replace(/^_+|_+$/g, '')
-    .replace(/_+/g, '_');
-  if (!cleanId) return;
-
-  // 表示名: 空なら base（見やすく空白に変換）
-  if (!nameInp.value.trim()) {
-    nameInp.value = base.replace(/[_\-]/g, ' ');
+  function setStatus(text, color) {
+    if (!status) return;
+    status.textContent = text || '';
+    status.style.color = color || '#5D4E37';
   }
-  // ID: 空 or 手動フラグが立っていなければ更新
-  if (!idInp.value.trim() && !idInp.dataset.manual) {
-    idInp.value = cleanId;
+
+  setStatus('🤖 画像を見て名前を考え中...', '#0369A1');
+
+  // 既存登録済み生き物（hardcode + dynamic）— 重複回避と命名参考のため
+  var existing = [];
+  HARDCODED_CREATURES.forEach(function(c) {
+    existing.push(c.id + ' / ' + c.displayName);
+  });
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(function(c) {
+      existing.push(c.id + ' / ' + c.displayName);
+    });
+  }
+  var existingText = existing.join('\n');
+  var existingIdSet = {};
+  var existingNameSet = {};
+  HARDCODED_CREATURES.concat((creaturesData && creaturesData.creatures) || []).forEach(function(c) {
+    existingIdSet[c.id] = true;
+    existingNameSet[c.displayName] = true;
+  });
+
+  var prompt = '添付の画像は子供向け水族館ゲームに登場する海の生き物（または水中に住む生き物・乗り物）のイラストです。\n' +
+    '以下のJSON形式で、この画像に最適な情報を返してください。余計な説明は一切含めず、JSONのみ出力してください。\n\n' +
+    '{\n' +
+    '  "id": "英語スネークケースの短いID（例: medaka, clownfish, sea_turtle）",\n' +
+    '  "name": "ひらがな・カタカナ中心の短い日本語表示名（例: メダカ、クマノミ、アオウミガメ）",\n' +
+    '  "icon": "この生き物を表す絵文字1文字（例: 🐠 🐡 🪼 🦐 🦀 🐙 🐢 🦈）"\n' +
+    '}\n\n' +
+    '⚠️ 既に登録済みの生き物一覧（ID / 表示名）— これと重複するID・表示名は絶対に使わないこと。\n' +
+    '同じ種類でも色・特徴で区別すること（例: clownfish, clownfish_orange）:\n' +
+    existingText + '\n\n' +
+    '命名ルール:\n' +
+    '- 子供にも読みやすい短い日本語表示名\n' +
+    '- ID は半角英数とアンダースコアのみ\n' +
+    '- 既に同じものがあれば、色違い・種類違いとして区別する\n' +
+    '- 区別がつかない場合のみ、最後の手段として表示名末尾に「2」「3」を付ける\n' +
+    '- 絵文字はその生き物を最も自然に表すもの';
+
+  try {
+    var apiResp, data;
+    var maxRetries = 4;
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      apiResp = await fetch('/.netlify/functions/ai-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: imageBase64,
+          mimeType: mimeType || 'image/png',
+          prompt: prompt
+        })
+      });
+      data = await apiResp.json();
+      if (apiResp.ok) break;
+      if ((apiResp.status === 503 || apiResp.status === 429) && attempt < maxRetries) {
+        var waitMs = 1500 * attempt;
+        setStatus('⏳ ' + apiResp.status + ' 混雑中... ' + (waitMs / 1000) + '秒待ってリトライ (' + attempt + '/' + maxRetries + ')', '#F59E0B');
+        await new Promise(function(r) { setTimeout(r, waitMs); });
+        continue;
+      }
+      var detailMsg = '';
+      if (data && data.details && data.details.error && data.details.error.message) {
+        detailMsg = ': ' + data.details.error.message;
+      }
+      throw new Error('[' + apiResp.status + '] ' + ((data && data.error) || 'Proxy error') + detailMsg);
+    }
+
+    var text = (data.text || '').trim();
+    var jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSONが見つかりません: ' + text);
+    var result = JSON.parse(jsonMatch[0]);
+
+    var newId = (result.id || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+    var newName = (result.name || '').trim();
+    var newIcon = (result.icon || '').trim() || '🐠';
+
+    // ID 重複チェック — 重複があれば _2, _3 ...
+    var origId = newId;
+    var suf = 2;
+    while (existingIdSet[newId]) {
+      newId = origId + '_' + suf;
+      suf++;
+    }
+
+    // 表示名重複チェック — 重複があれば 2, 3 ...
+    var origName = newName;
+    var nsuf = 2;
+    while (existingNameSet[newName]) {
+      newName = origName + nsuf;
+      nsuf++;
+    }
+
+    // フォームに反映（手動フラグを立てて意図的上書き扱い）
+    nameInp.value = newName;
+    idInp.value = newId;
+    idInp.dataset.manual = '';  // 自動生成扱い: ユーザーが name を変えたら再追随
+    iconInp.value = newIcon;
+
+    setStatus('✅ ' + newIcon + ' ' + newName + ' (' + newId + ')', '#16A34A');
+  } catch (e) {
+    console.error('[aiNameCreature] failed:', e);
+    setStatus('❌ AI命名失敗: ' + e.message, '#DC2626');
   }
 }
 
@@ -1620,9 +1709,17 @@ function _wireCreatureDropZones() {
             pendingCreatureFiles[key] = processed[0];
             _renderDropZone(zone, processed[0]);
           }
-          // 先頭ファイルから表示名と ID を自動生成
-          if (processed[0] && processed[0].name) {
-            _autoFillCreatureFromFileName(processed[0].name);
+          // AI 自動命名: 「ふつう」の1枚目がアップロードされ、
+          // かつ表示名がまだ空の時だけ自動で画像認識命名を走らせる
+          if (key === 'normal' && processed[0] && processed[0].base64) {
+            var nameInp = document.getElementById('newCreatureName');
+            if (nameInp && !nameInp.value.trim()) {
+              // mimeType は dataUrl から推定
+              var mime = 'image/png';
+              var m = (processed[0].dataUrl || '').match(/^data:([^;]+);/);
+              if (m) mime = m[1];
+              aiNameCreature(processed[0].base64, mime);
+            }
           }
         })
         .catch(function(e) {
@@ -1813,6 +1910,19 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btn) btn.addEventListener('click', deployNewCreature);
   var reloadBtn = document.getElementById('btn-reload-creatures');
   if (reloadBtn) reloadBtn.addEventListener('click', fetchSeaCreatures);
+  // AI 命名ボタン: ふつうの1枚目の base64 を使って手動で再実行
+  var aiBtn = document.getElementById('btn-ai-name-creature');
+  if (aiBtn) aiBtn.addEventListener('click', function() {
+    var first = pendingCreatureFiles.normal[0];
+    if (!first || !first.base64) {
+      showToast('まず「ふつうのかお」を1枚アップロードしてください', false);
+      return;
+    }
+    var mime = 'image/png';
+    var m = (first.dataUrl || '').match(/^data:([^;]+);/);
+    if (m) mime = m[1];
+    aiNameCreature(first.base64, mime);
+  });
 });
 
 function buildCardCompleteCard(idx, data) {
