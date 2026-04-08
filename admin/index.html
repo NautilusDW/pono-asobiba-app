@@ -305,6 +305,106 @@ tr:hover { background: #FFFAF0; }
     </div>
     <div id="first-clear-rewards-container"></div>
   </div>
+
+  <!-- Sea Creatures (海のいきもの管理) -->
+  <div class="section">
+    <div class="section-title">🐠 海のいきもの管理（aquarium に泳がせる）</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      表情ごとに分けた PNG をアップロードすると、水族館で自動的に泳ぎ始めます。
+      <strong>ふつう</strong>1〜3枚（複数なら呼吸のように切り替え）、
+      <strong>おどろき</strong>1枚必須、<strong>わらう</strong>1枚は将来の餌時用（任意）。
+    </div>
+
+    <!-- 既存生き物一覧 -->
+    <div id="sea-creatures-list" style="margin-bottom:14px;"></div>
+
+    <!-- 新規追加フォーム -->
+    <div class="reward-card" style="background:#F0F9FF;border-color:#7DD3FC;">
+      <div style="font-size:0.95rem;font-weight:900;color:#0369A1;margin-bottom:10px;">+ 新しいいきものを追加</div>
+
+      <div class="reward-card-row">
+        <div class="reward-field reward-field-mid">
+          <label>表示名</label>
+          <input type="text" id="newCreatureName" placeholder="メダカ">
+        </div>
+        <div class="reward-field reward-field-mid">
+          <label>ID（半角英数）</label>
+          <input type="text" id="newCreatureId" placeholder="medaka">
+        </div>
+        <div class="reward-field reward-field-short">
+          <label>絵文字</label>
+          <input type="text" id="newCreatureIcon" placeholder="🐠" value="🐠">
+        </div>
+      </div>
+
+      <div class="reward-card-row">
+        <div class="reward-field">
+          <label>パターン</label>
+          <select id="newCreaturePattern">
+            <option value="swim">🏊 およぐ</option>
+            <option value="float">🪼 ただよう</option>
+            <option value="jellyfish">🪼 ぷかぷか</option>
+            <option value="drift">🌊 ながれる</option>
+            <option value="sway">🌿 ゆれる</option>
+            <option value="crawl">🦀 あるく</option>
+          </select>
+        </div>
+        <div class="reward-field">
+          <label>反応</label>
+          <select id="newCreatureReaction">
+            <option value="jump">ジャンプ</option>
+            <option value="ink">スミ吐き</option>
+            <option value="shell">こうらに隠れる</option>
+            <option value="glow">光る</option>
+          </select>
+        </div>
+        <div class="reward-field reward-field-short">
+          <label>サイズ(px)</label>
+          <input type="number" id="newCreatureSize" value="70" min="20" max="300">
+        </div>
+        <div class="reward-field reward-field-short">
+          <label>数</label>
+          <input type="number" id="newCreatureCount" value="3" min="1" max="10">
+        </div>
+      </div>
+
+      <div class="reward-card-row" style="gap:12px;flex-wrap:wrap;">
+        <!-- ふつうのかお (1〜3枚) -->
+        <div id="newCreatureNormalDrop" class="creature-drop" data-key="normal" style="flex:1;min-width:200px;background:#fff;border:2px dashed #7DD3FC;border-radius:8px;padding:10px;text-align:center;cursor:pointer;">
+          <div style="font-size:0.85rem;font-weight:900;color:#0369A1;margin-bottom:4px;">😊 ふつうのかお（1〜3枚）</div>
+          <div style="font-size:0.65rem;color:#888;margin-bottom:6px;">複数枚あると呼吸のようにパタパタ動きます</div>
+          <div class="creature-drop-thumbs" style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;min-height:50px;align-items:center;">
+            <span style="font-size:0.7rem;color:#aaa;">クリック / ドラッグでアップロード</span>
+          </div>
+        </div>
+
+        <!-- おどろいたかお (1枚) -->
+        <div id="newCreatureSurprisedDrop" class="creature-drop" data-key="surprised" style="flex:1;min-width:200px;background:#fff;border:2px dashed #FCA5A5;border-radius:8px;padding:10px;text-align:center;cursor:pointer;">
+          <div style="font-size:0.85rem;font-weight:900;color:#DC2626;margin-bottom:4px;">😲 おどろいたかお（1枚・必須）</div>
+          <div style="font-size:0.65rem;color:#888;margin-bottom:6px;">タップされた時に切り替わります</div>
+          <div class="creature-drop-thumbs" style="display:flex;gap:4px;justify-content:center;min-height:50px;align-items:center;">
+            <span style="font-size:0.7rem;color:#aaa;">クリック / ドラッグでアップロード</span>
+          </div>
+        </div>
+
+        <!-- わらうかお (1枚, 任意) -->
+        <div id="newCreatureHappyDrop" class="creature-drop" data-key="happy" style="flex:1;min-width:200px;background:#fff;border:2px dashed #FCD34D;border-radius:8px;padding:10px;text-align:center;cursor:pointer;">
+          <div style="font-size:0.85rem;font-weight:900;color:#D97706;margin-bottom:4px;">😄 わらうかお（任意）</div>
+          <div style="font-size:0.65rem;color:#888;margin-bottom:6px;">将来エサをあげた時に使います</div>
+          <div class="creature-drop-thumbs" style="display:flex;gap:4px;justify-content:center;min-height:50px;align-items:center;">
+            <span style="font-size:0.7rem;color:#aaa;">クリック / ドラッグでアップロード</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reward-card-row" style="margin-top:10px;justify-content:center;">
+        <button id="btn-deploy-creature" class="btn btn-green" style="padding:12px 28px;font-size:1rem;">
+          🚀 アップロードして登録
+        </button>
+        <div id="deployCreatureStatus" style="font-size:0.75rem;color:#5D4E37;margin-left:12px;align-self:center;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== 🏆 実績一覧 ===== -->
@@ -412,12 +512,16 @@ var GH_REPO   = 'kids-writing-app';
 var GH_BRANCH = 'develop';
 var LS_TOKEN  = 'admin_gh_token';
 var REWARDS_PATH = 'assets/data/rewards.json';
+var CREATURES_PATH = 'assets/data/creatures.json';
 var REWARDS_API  = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH + '?ref=' + GH_BRANCH;
 
 // ════════════════════════════════════════════════════════════════
 // State
 // ════════════════════════════════════════════════════════════════
 var rewardsData = null;       // parsed rewards.json
+var creaturesData = null;     // parsed creatures.json
+// 新規追加生き物のアップロード待ちファイル: { normal: [File], surprised: File, happy: File }
+var pendingCreatureFiles = { normal: [], surprised: null, happy: null };
 var rewardsFileSha = null;    // SHA for PUT update
 var slotPage = 0;
 var SLOT_PAGE_SIZE = 10;
@@ -587,6 +691,9 @@ function fetchRewards() {
   document.getElementById('slot-rewards-container').innerHTML = '';
   document.getElementById('card-rewards-container').innerHTML = '';
   document.getElementById('first-clear-rewards-container').innerHTML = '';
+
+  // creatures.json も並行して読み込む
+  fetchSeaCreatures();
 
   fetch(REWARDS_API + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) {
@@ -1208,6 +1315,355 @@ function collectFirstClearCardData(card) {
 
   return d;
 }
+
+// ════════════════════════════════════════════════════════════════
+// Sea Creatures (creatures.json) — 海のいきもの管理
+// ════════════════════════════════════════════════════════════════
+function fetchSeaCreatures() {
+  var listEl = document.getElementById('sea-creatures-list');
+  if (listEl) listEl.innerHTML = '<div style="color:#aaa;font-size:0.8rem;">読み込み中...</div>';
+  // GitHub から取得（cache バイパス）
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (!data || !data.content) {
+        // ファイルが存在しない時は空で初期化
+        creaturesData = { version: 1, creatures: [] };
+      } else {
+        try {
+          creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, '')));
+        } catch (e) {
+          creaturesData = { version: 1, creatures: [] };
+        }
+      }
+      if (!creaturesData.creatures) creaturesData.creatures = [];
+      renderSeaCreatures();
+    })
+    .catch(function(e) {
+      console.warn('[fetchSeaCreatures] failed:', e);
+      // ネットワーク失敗時は ローカルから fallback
+      fetch('../' + CREATURES_PATH + '?_=' + Date.now(), { cache: 'no-store' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(d) {
+          creaturesData = d || { version: 1, creatures: [] };
+          if (!creaturesData.creatures) creaturesData.creatures = [];
+          renderSeaCreatures();
+        })
+        .catch(function() {
+          creaturesData = { version: 1, creatures: [] };
+          renderSeaCreatures();
+        });
+    });
+}
+
+function renderSeaCreatures() {
+  var listEl = document.getElementById('sea-creatures-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  if (!creaturesData || !creaturesData.creatures || creaturesData.creatures.length === 0) {
+    listEl.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:10px;text-align:center;">まだ登録されたいきものはありません</div>';
+    return;
+  }
+  creaturesData.creatures.forEach(function(c) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #E0D8CC;border-radius:8px;margin-bottom:6px;';
+    // サムネ
+    var firstNormal = (c.expressions && c.expressions.normal);
+    if (Array.isArray(firstNormal)) firstNormal = firstNormal[0];
+    if (firstNormal) {
+      var img = document.createElement('img');
+      img.src = '../assets/images/ocean/' + c.folder + '/' + firstNormal + '?_=' + Date.now();
+      img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#f5f5f5;border-radius:6px;';
+      img.onerror = function() { this.style.display = 'none'; };
+      row.appendChild(img);
+    }
+    // 情報（textContent で XSS を防ぐ）
+    var info = document.createElement('div');
+    info.style.cssText = 'flex:1;font-size:0.8rem;';
+    var titleDiv = document.createElement('div');
+    titleDiv.style.cssText = 'font-weight:900;color:#0369A1;';
+    titleDiv.textContent = (c.icon || '🐠') + ' ' + (c.displayName || c.id);
+    info.appendChild(titleDiv);
+    var metaDiv = document.createElement('div');
+    metaDiv.style.cssText = 'font-size:0.7rem;color:#888;font-family:monospace;';
+    metaDiv.textContent = c.id + ' / ' + (c.pattern || 'swim') + ' / ' + (c.spawnCount || 1) + '体';
+    info.appendChild(metaDiv);
+    row.appendChild(info);
+    listEl.appendChild(row);
+  });
+}
+
+// ファイル → base64
+function _fileToBase64(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      // data:image/png;base64,XXXXX → XXXXX 部分だけ
+      var s = reader.result || '';
+      var idx = s.indexOf(',');
+      resolve(idx >= 0 ? s.substring(idx + 1) : s);
+    };
+    reader.onerror = function() { reject(reader.error); };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ファイル → naturalWidth (画像の元サイズ取得)
+function _fileToNaturalWidth(file) {
+  return new Promise(function(resolve) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+      resolve(img.naturalWidth || 600);
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = function() {
+      resolve(600);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+}
+
+// ghUpload を Promise 化
+function ghUploadPromise(filePath, base64, msg) {
+  return new Promise(function(resolve, reject) {
+    ghUpload(filePath, base64, msg, function(err) {
+      if (err) reject(new Error(err));
+      else resolve();
+    });
+  });
+}
+
+// ドロップゾーンに UI を描画
+// 古い blob URL は revoke してメモリリークを防ぐ
+function _renderDropZone(zone, files) {
+  var thumbs = zone.querySelector('.creature-drop-thumbs');
+  if (!thumbs) return;
+  // 既存のサムネ画像の blob URL を revoke
+  thumbs.querySelectorAll('img').forEach(function(oldImg) {
+    if (oldImg.src && oldImg.src.indexOf('blob:') === 0) {
+      try { URL.revokeObjectURL(oldImg.src); } catch (e) {}
+    }
+  });
+  thumbs.innerHTML = '';
+  if (!files || (Array.isArray(files) && files.length === 0)) {
+    var hint = document.createElement('span');
+    hint.style.cssText = 'font-size:0.7rem;color:#aaa;';
+    hint.textContent = 'クリック / ドラッグでアップロード';
+    thumbs.appendChild(hint);
+    return;
+  }
+  var arr = Array.isArray(files) ? files : [files];
+  arr.forEach(function(f, i) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block;';
+    var img = document.createElement('img');
+    var url = URL.createObjectURL(f);
+    img.src = url;
+    img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#fafafa;border:1px solid #ddd;border-radius:6px;';
+    wrap.appendChild(img);
+    var name = document.createElement('div');
+    name.style.cssText = 'font-size:0.55rem;color:#888;text-align:center;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    name.textContent = f.name;
+    wrap.appendChild(name);
+    thumbs.appendChild(wrap);
+  });
+}
+
+// ドロップゾーンの初期化
+function _wireCreatureDropZones() {
+  var zones = document.querySelectorAll('.creature-drop');
+  zones.forEach(function(zone) {
+    var key = zone.dataset.key; // 'normal' / 'surprised' / 'happy'
+    // 隠しファイル input
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/webp';
+    input.multiple = (key === 'normal');
+    input.style.display = 'none';
+    zone.appendChild(input);
+
+    function handleFiles(fileList) {
+      var arr = Array.from(fileList || []).filter(function(f) { return f && /^image\//.test(f.type); });
+      if (arr.length === 0) return;
+      if (key === 'normal') {
+        // 最大3枚まで
+        pendingCreatureFiles.normal = arr.slice(0, 3);
+        _renderDropZone(zone, pendingCreatureFiles.normal);
+      } else {
+        pendingCreatureFiles[key] = arr[0];
+        _renderDropZone(zone, pendingCreatureFiles[key]);
+      }
+    }
+
+    input.addEventListener('change', function() { handleFiles(input.files); input.value = ''; });
+    zone.addEventListener('click', function(e) {
+      if (e.target.tagName === 'IMG') return; // サムネクリックはアップロードを起動しない
+      input.click();
+    });
+    zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.style.background = '#FEF3C7'; });
+    zone.addEventListener('dragleave', function() { zone.style.background = '#fff'; });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      zone.style.background = '#fff';
+      handleFiles(e.dataTransfer.files);
+    });
+  });
+
+  // 表示名 → ID 自動生成
+  var nameInp = document.getElementById('newCreatureName');
+  var idInp = document.getElementById('newCreatureId');
+  if (nameInp && idInp) {
+    nameInp.addEventListener('input', function() {
+      // ユーザーが手動で書いていなければ自動生成
+      if (!idInp.dataset.manual) {
+        idInp.value = nameInp.value
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '_')
+          .replace(/^_+|_+$/g, '')
+          .replace(/_+/g, '_');
+      }
+    });
+    idInp.addEventListener('input', function() { idInp.dataset.manual = '1'; });
+  }
+}
+
+// デプロイボタン: PNG群と creatures.json をまとめて GitHub にアップロード
+function deployNewCreature() {
+  var btn = document.getElementById('btn-deploy-creature');
+  if (btn && btn.disabled) return; // 二重クリック防止
+  var token = getToken();
+  if (!token) { showToast('GitHubトークンを設定してください', false); return; }
+  var status = document.getElementById('deployCreatureStatus');
+  function setStatus(text, color) {
+    status.textContent = text || '';
+    status.style.color = color || '#5D4E37';
+  }
+  function unlock() { if (btn) btn.disabled = false; }
+
+  // 入力収集
+  var displayName = document.getElementById('newCreatureName').value.trim();
+  var id = document.getElementById('newCreatureId').value.trim().toLowerCase();
+  var icon = document.getElementById('newCreatureIcon').value.trim() || '🐠';
+  var pattern = document.getElementById('newCreaturePattern').value;
+  var reactionType = document.getElementById('newCreatureReaction').value;
+  var baseSizePx = parseInt(document.getElementById('newCreatureSize').value) || 70;
+  var spawnCount = parseInt(document.getElementById('newCreatureCount').value) || 3;
+
+  // バリデーション（バリデーション失敗時は disabled せず即 return）
+  if (!displayName) { showToast('表示名を入力してください', false); return; }
+  if (!id || !/^[a-z0-9_]+$/.test(id)) { showToast('ID は半角英数とアンダースコアのみ', false); return; }
+  if (pendingCreatureFiles.normal.length === 0) { showToast('ふつうのかおを1枚以上アップロードしてください', false); return; }
+  if (!pendingCreatureFiles.surprised) { showToast('おどろいたかおを1枚アップロードしてください', false); return; }
+
+  // 既存 ID と重複していないか
+  var existing = (creaturesData && creaturesData.creatures) || [];
+  if (existing.some(function(c) { return c.id === id; })) {
+    showToast('ID "' + id + '" は既に登録済みです', false);
+    return;
+  }
+
+  // ここから先は I/O が走るのでボタンをロック
+  if (btn) btn.disabled = true;
+
+  // フォルダ名は ID と同じ (英数で安全)
+  var folder = id.charAt(0).toUpperCase() + id.slice(1);
+
+  // ファイル名を組み立てる
+  var normalNames = pendingCreatureFiles.normal.map(function(f, i) {
+    return folder + '_normal_' + (i + 1) + '.png';
+  });
+  var surprisedName = folder + '_surprised.png';
+  var happyName = pendingCreatureFiles.happy ? folder + '_happy.png' : null;
+
+  setStatus('🔄 画像をアップロード中... 0/' + (normalNames.length + 1 + (happyName ? 1 : 0)));
+
+  // ナチュラル幅を取得（先頭1枚から）
+  _fileToNaturalWidth(pendingCreatureFiles.normal[0]).then(function(naturalWidth) {
+
+    // アップロードタスクを順次実行
+    var tasks = [];
+    pendingCreatureFiles.normal.forEach(function(file, i) {
+      tasks.push({ file: file, name: normalNames[i] });
+    });
+    tasks.push({ file: pendingCreatureFiles.surprised, name: surprisedName });
+    if (pendingCreatureFiles.happy) tasks.push({ file: pendingCreatureFiles.happy, name: happyName });
+
+    var uploaded = 0;
+    function uploadNext(idx) {
+      if (idx >= tasks.length) return Promise.resolve();
+      var t = tasks[idx];
+      return _fileToBase64(t.file).then(function(b64) {
+        var path = 'assets/images/ocean/' + folder + '/' + t.name;
+        return ghUploadPromise(path, b64, '🐠 add creature: ' + id + ' / ' + t.name);
+      }).then(function() {
+        uploaded++;
+        setStatus('🔄 画像をアップロード中... ' + uploaded + '/' + tasks.length);
+        return uploadNext(idx + 1);
+      });
+    }
+
+    return uploadNext(0).then(function() {
+      // creatures.json を更新
+      setStatus('🔄 creatures.json を更新中...');
+      var newEntry = {
+        id: id,
+        displayName: displayName,
+        icon: icon,
+        folder: folder,
+        expressions: {
+          normal: normalNames.length === 1 ? normalNames[0] : normalNames,
+          surprised: surprisedName
+        },
+        pattern: pattern,
+        reactionType: reactionType,
+        baseSizePx: baseSizePx,
+        baseSizeJitter: 30,
+        imgWidthHint: naturalWidth,
+        speedMin: 0.04,
+        speedMax: 0.07,
+        spawnCount: spawnCount,
+        rewardType: 'sea'
+      };
+      if (happyName) newEntry.expressions.happy = happyName;
+      if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+      creaturesData.creatures.push(newEntry);
+
+      var json = JSON.stringify(creaturesData, null, 2);
+      var b64 = utf8ToBase64(json);
+      return ghUploadPromise(CREATURES_PATH, b64, '🐠 register creature: ' + id);
+    });
+  }).then(function() {
+    setStatus('✅ 登録完了！aquarium で確認してください', '#16A34A');
+    showToast('🐠 ' + displayName + ' を登録しました', true);
+    // フォームをリセット
+    pendingCreatureFiles = { normal: [], surprised: null, happy: null };
+    document.getElementById('newCreatureName').value = '';
+    document.getElementById('newCreatureId').value = '';
+    document.getElementById('newCreatureId').dataset.manual = '';
+    document.querySelectorAll('.creature-drop').forEach(function(zone) { _renderDropZone(zone, null); });
+    // 一覧再描画
+    fetchSeaCreatures();
+  }).catch(function(e) {
+    console.error('[deployNewCreature] failed:', e);
+    setStatus('❌ 失敗: ' + e.message, '#DC2626');
+    showToast('登録失敗: ' + e.message, false);
+    // 失敗時はメモリ上の creatures.json から push してしまったエントリを巻き戻す
+    if (creaturesData && creaturesData.creatures && creaturesData.creatures.length > 0) {
+      var last = creaturesData.creatures[creaturesData.creatures.length - 1];
+      if (last && last.id === id) creaturesData.creatures.pop();
+    }
+  }).then(unlock, unlock);
+}
+
+// 起動時にドロップゾーンを wire
+document.addEventListener('DOMContentLoaded', function() {
+  _wireCreatureDropZones();
+  var btn = document.getElementById('btn-deploy-creature');
+  if (btn) btn.addEventListener('click', deployNewCreature);
+});
 
 function buildCardCompleteCard(idx, data) {
   var card = document.createElement('div');

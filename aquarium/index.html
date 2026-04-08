@@ -473,6 +473,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+  <script src="dynamic-creatures.js"></script>
   <script>
   (function() {
     'use strict';
@@ -960,10 +961,36 @@
       bgTemp.forEach(s => { layerBgRocks.addChild(s); bgRockSprites.push(s); });
     }
 
-    let _rocksReady = null; // Promise that resolves when all textures loaded
+    let _rocksReady = null; // Promise that resolves when all textures loaded (incl. dynamic)
     async function initRocks() {
       if (!_rocksReady) {
-        _rocksReady = Promise.all([loadRockTextures(), loadOctopusTex(), loadJellyfishTex(), loadTurtleTex(), loadFishS01Tex(), loadSubmarineTex(), loadSunfishTex(), loadSharkTex()]);
+        // Hardcoded 7 体 + dynamic 全部を含む単一の Promise.
+        // これを await すれば addSelectedCreatures 時には全テクスチャが揃っている。
+        _rocksReady = (async function() {
+          const hardcoded = await Promise.all([
+            loadRockTextures(), loadOctopusTex(), loadJellyfishTex(),
+            loadTurtleTex(), loadFishS01Tex(), loadSubmarineTex(),
+            loadSunfishTex(), loadSharkTex()
+          ]);
+          // Dynamic creatures: 失敗しても既存の動作には影響させない
+          if (window.AquariumDynamicCreatures && !window._dynCreaturesLoaded) {
+            try {
+              await window.AquariumDynamicCreatures.loadConfig('../');
+              const cfg = window.AquariumDynamicCreatures._getConfig();
+              if (cfg && cfg.creatures) {
+                cfg.creatures.forEach(function (c) {
+                  if (creatureToggles[c.id] === undefined) creatureToggles[c.id] = !_isFirstVisit;
+                });
+              }
+              if (typeof maybeAddDynamicToggles === 'function') maybeAddDynamicToggles();
+              await window.AquariumDynamicCreatures.loadAllTextures('../');
+              window._dynCreaturesLoaded = true;
+            } catch (e) {
+              console.warn('[aquarium] dynamic creatures load failed:', e);
+            }
+          }
+          return hardcoded;
+        })();
       }
       if (!rockTextures) {
         [rockTextures, octopusTex, jellyfishTex, turtleTex, fishS01Tex, submarineTex, sunfishTex, sharkTex] = await _rocksReady;
@@ -1756,7 +1783,7 @@
     }
 
     // Init toggle buttons
-    document.querySelectorAll('.creature-toggle').forEach(btn => {
+    function _wireCreatureToggle(btn) {
       const type = btn.dataset.creature;
       if (!creatureToggles[type]) btn.classList.add('off');
       btn.addEventListener('click', () => {
@@ -1764,7 +1791,32 @@
         btn.classList.toggle('off', !creatureToggles[type]);
         saveCreatureToggles();
       });
-    });
+    }
+    document.querySelectorAll('.creature-toggle').forEach(_wireCreatureToggle);
+
+    // ── Dynamic creatures: トグルボタンを creatures.json から append ──
+    // initRocks() 内で loadConfig() 済みなら即追加、まだなら待機。
+    // 重複追加を防ぐため _dynTogglesAdded フラグを使う。
+    let _dynTogglesAdded = false;
+    function maybeAddDynamicToggles() {
+      if (_dynTogglesAdded) return;
+      if (!window.AquariumDynamicCreatures || !window.AquariumDynamicCreatures._getConfig) return;
+      const cfg = window.AquariumDynamicCreatures._getConfig();
+      if (!cfg) return; // まだ読み込まれていない
+      _dynTogglesAdded = true;
+      const grid = document.getElementById('creatureGrid');
+      if (!grid) return;
+      window.AquariumDynamicCreatures.appendToggleButtons(grid, creatureToggles);
+      // 新しく append されたボタンにリスナーを付与
+      grid.querySelectorAll('.creature-toggle').forEach(btn => {
+        // 既にリスナー付きの hardcode 7体は data-wired を見て skip
+        if (btn.dataset.wired === '1') return;
+        btn.dataset.wired = '1';
+        _wireCreatureToggle(btn);
+      });
+    }
+    // hardcode 7体に印を付けておく（後の重複 wiring を防ぐ）
+    document.querySelectorAll('.creature-toggle').forEach(btn => { btn.dataset.wired = '1'; });
 
     function addSelectedCreatures() {
       if (creatureToggles.octopus) addOctopusCreatures(3);
@@ -1774,6 +1826,24 @@
       if (creatureToggles.submarine) addSubmarineCreatures(1);
       if (creatureToggles.sunfish) addSunfishCreatures(1);
       if (creatureToggles.shark) addSharkCreatures(1);
+
+      // ── Dynamic creatures from creatures.json ──
+      // 既存7体に加えて、管理画面から登録された生き物をスポーン
+      if (window.AquariumDynamicCreatures) {
+        try {
+          window.AquariumDynamicCreatures.addAllSelected({
+            creatures: creatures,
+            layerMid: layerMid,
+            W: W, H: H,
+            isMobile: isMobile,
+            mobSf: mobSf,
+            toggles: creatureToggles
+          });
+        } catch (e) {
+          console.warn('[aquarium] dynamic addAllSelected failed:', e);
+        }
+      }
+
       assignHiders(2);
     }
 

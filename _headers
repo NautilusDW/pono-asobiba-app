@@ -12,6 +12,9 @@
 /assets/data/*.json
   Cache-Control: no-cache, no-store, must-revalidate
 
+/assets/data/creatures.json
+  Cache-Control: no-cache, no-store, must-revalidate
+
 # 家具画像はピボットツールから動的に上書きされるため、CDN/ブラウザでキャッシュさせない
 /assets/images/Rooms/furnitures_final/*
   Cache-Control: no-cache, must-revalidate
