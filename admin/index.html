@@ -372,6 +372,13 @@ tr:hover { background: #FFFAF0; }
             <option value="glow">光る</option>
           </select>
         </div>
+        <div class="reward-field" title="アップロードした画像の頭の向き。水族館では常にこの方向に泳ぐ">
+          <label>むき</label>
+          <select id="newCreatureFacing">
+            <option value="right">→ みぎむき</option>
+            <option value="left">← ひだりむき</option>
+          </select>
+        </div>
         <div class="reward-field reward-field-short">
           <label>サイズ(px)</label>
           <input type="number" id="newCreatureSize" value="70" min="20" max="300">
@@ -1350,6 +1357,8 @@ function collectFirstClearCardData(card) {
 function fetchSeaCreatures() {
   var listEl = document.getElementById('sea-creatures-list');
   if (listEl) listEl.innerHTML = '<div style="color:#aaa;font-size:0.8rem;">読み込み中...</div>';
+  // フォルダキャッシュをリセット（最新のファイル一覧を取り直す）
+  _creatureFolderCache = {};
   // GitHub から取得（cache バイパス）
   var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
   fetch(url, { headers: ghHeaders(), cache: 'no-store' })
@@ -1397,6 +1406,31 @@ var HARDCODED_CREATURES = [
   { id: 'shark',     displayName: 'サメ',         icon: '🦈', folder: 'Shark',    thumb: 'Shark_002.png',     pattern: 'drift',     spawnCount: 1, source: 'hardcode' }
 ];
 
+// フォルダごとの GitHub Contents API 結果キャッシュ（fileName → download_url）
+// 動的生き物のサムネは Netlify CDN ではなく GitHub の raw URL を直接使うことで、
+// デプロイ遅延や CDN キャッシュの影響を受けずに確実に表示できる
+var _creatureFolderCache = {};
+function _loadCreatureFolderFiles(folder) {
+  if (_creatureFolderCache[folder]) return Promise.resolve(_creatureFolderCache[folder]);
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/ocean/' + folder + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  return fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : []; })
+    .then(function(files) {
+      var map = {};
+      if (Array.isArray(files)) {
+        files.forEach(function(f) {
+          if (f && f.name && f.download_url) map[f.name] = f.download_url;
+        });
+      }
+      _creatureFolderCache[folder] = map;
+      return map;
+    })
+    .catch(function() {
+      _creatureFolderCache[folder] = {};
+      return {};
+    });
+}
+
 function _buildCreatureRow(c) {
   var row = document.createElement('div');
   row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #E0D8CC;border-radius:8px;margin-bottom:6px;';
@@ -1410,9 +1444,33 @@ function _buildCreatureRow(c) {
   }
   if (thumbPath) {
     var img = document.createElement('img');
-    img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
     img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#f5f5f5;border-radius:6px;';
-    img.onerror = function() { this.style.display = 'none'; };
+    // hardcode は従来通りローカルパス、dynamic は GitHub raw URL を使う
+    if (c.source === 'hardcode') {
+      img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
+      img.onerror = function() { this.style.display = 'none'; };
+    } else {
+      img.style.display = 'none';
+      _loadCreatureFolderFiles(c.folder).then(function(map) {
+        var url = map[thumbPath];
+        if (url) {
+          img.src = url;
+          img.style.display = '';
+        } else {
+          // フォールバック: ローカルパスを試す（Netlify 経由）
+          img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
+          img.style.display = '';
+          img.onerror = function() {
+            img.style.display = 'none';
+            var errMsg = document.createElement('div');
+            errMsg.style.cssText = 'width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:6px;font-size:0.6rem;color:#DC2626;text-align:center;';
+            errMsg.textContent = '❌';
+            errMsg.title = thumbPath + ' が見つかりません';
+            row.insertBefore(errMsg, img.nextSibling);
+          };
+        }
+      });
+    }
     row.appendChild(img);
   }
 
@@ -1476,13 +1534,30 @@ function openCreatureEditModal(creatureId) {
 
   var title = document.createElement('div');
   title.style.cssText = 'font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:6px;text-align:center;';
-  title.textContent = '⚙️ ' + (target.displayName || target.id) + ' の反応を調整';
+  title.textContent = '⚙️ ' + (target.displayName || target.id) + ' を調整';
   box.appendChild(title);
 
   var hint = document.createElement('div');
   hint.style.cssText = 'font-size:0.7rem;color:#888;margin-bottom:16px;text-align:center;';
-  hint.textContent = 'タップされた時の速さと距離（続く時間）を調整できます';
+  hint.textContent = '向き・反応スピード・距離を調整できます';
   box.appendChild(hint);
+
+  // 向き
+  var curFacing = target.facingDir === 'left' ? 'left' : 'right';
+  var facingLabel = document.createElement('label');
+  facingLabel.style.cssText = 'display:block;font-size:0.8rem;font-weight:700;color:#5D4E37;margin-bottom:4px;';
+  facingLabel.textContent = 'むき';
+  box.appendChild(facingLabel);
+  var facingSelect = document.createElement('select');
+  facingSelect.style.cssText = 'width:100%;padding:6px;border-radius:6px;border:1px solid #ccc;font-family:inherit;margin-bottom:16px;';
+  var optR = document.createElement('option');
+  optR.value = 'right'; optR.textContent = '→ みぎむき';
+  facingSelect.appendChild(optR);
+  var optL = document.createElement('option');
+  optL.value = 'left'; optL.textContent = '← ひだりむき';
+  facingSelect.appendChild(optL);
+  facingSelect.value = curFacing;
+  box.appendChild(facingSelect);
 
   // はんのうスピード
   var curSpeed = target.reactionSpeed != null ? target.reactionSpeed : 1.0;
@@ -1546,12 +1621,14 @@ function openCreatureEditModal(creatureId) {
 
     var newSpeed = parseFloat(speedSlider.value) || 1.0;
     var newDur = parseFloat(durSlider.value) || 1.0;
+    var newFacing = facingSelect.value === 'left' ? 'left' : 'right';
     target.reactionSpeed = newSpeed;
     target.reactionDuration = newDur;
+    target.facingDir = newFacing;
 
     var json = JSON.stringify(creaturesData, null, 2);
     var b64 = utf8ToBase64(json);
-    ghUploadPromise(CREATURES_PATH, b64, '⚙️ tune creature: ' + target.id + ' speed=' + newSpeed + ' dur=' + newDur)
+    ghUploadPromise(CREATURES_PATH, b64, '⚙️ tune creature: ' + target.id + ' facing=' + newFacing + ' speed=' + newSpeed + ' dur=' + newDur)
       .then(function() {
         showToast('✅ ' + (target.displayName || target.id) + ' を更新しました', true);
         ov.remove();
@@ -1562,6 +1639,7 @@ function openCreatureEditModal(creatureId) {
         // 失敗時はメモリ上の変更を巻き戻す
         target.reactionSpeed = curSpeed;
         target.reactionDuration = curDur;
+        target.facingDir = curFacing;
         saveBtn.disabled = false;
         saveBtn.textContent = '💾 保存';
       });
@@ -1934,6 +2012,7 @@ function deployNewCreature() {
   var spawnCount = parseInt(document.getElementById('newCreatureCount').value) || 3;
   var reactionSpeed = parseFloat(document.getElementById('newCreatureReactionSpeed').value) || 1.0;
   var reactionDuration = parseFloat(document.getElementById('newCreatureReactionDuration').value) || 1.0;
+  var facingDir = document.getElementById('newCreatureFacing').value === 'left' ? 'left' : 'right';
 
   // バリデーション（バリデーション失敗時は disabled せず即 return）
   if (!displayName) { showToast('表示名を入力してください', false); return; }
@@ -2005,6 +2084,7 @@ function deployNewCreature() {
       },
       pattern: pattern,
       reactionType: reactionType,
+      facingDir: facingDir,
       baseSizePx: baseSizePx,
       baseSizeJitter: 30,
       imgWidthHint: naturalWidth,

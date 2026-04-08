@@ -125,12 +125,21 @@
     var speedMax = cfg.speedMax != null ? cfg.speedMax : 0.07;
     var speed = speedMin + Math.random() * (speedMax - speedMin);
 
+    // 向き: creatures.json の facingDir を尊重し、全個体を同じ方向に揃える
+    // ('right' は画像が右向き → scale.x は正, vx は正 / 'left' は逆)
+    var facingDir = cfg.facingDir === 'left' ? 'left' : 'right';
+    var dirSign = facingDir === 'right' ? 1 : -1;
+    obj.scale.x = Math.abs(obj.scale.x) * dirSign;
+
     var c = {
       obj: obj,
       pattern: cfg.pattern || 'swim',
       // 動的生成フラグ（既存ループでフィルタ可能にしておく）
       dynamicCreature: true,
       dynamicId: cfg.id,
+      // 向き: 固定。画面端でも反転せず wrap around する
+      facingDir: facingDir,
+      facingSign: dirSign,
       // タップ反応の速さと時間の倍率（aquarium のタップハンドラが適用）
       // 1.0 が既存7体と同じ強さ。0.5 で半分、2.0 で倍
       reactionSpeedMul: cfg.reactionSpeed != null ? cfg.reactionSpeed : 1,
@@ -141,16 +150,21 @@
       // → 既存のタップ反応・呼吸切替ロジックがそのまま動く
       octTexSurprised: tex.surprised,
       octTexNormal: tex.normal,
-      // 笑う表情はオプション。未使用だが将来のフックとして保持
-      _happyTex: tex.happy || null,
+      // 笑う表情（餌を食べた直後に切り替え、1 秒後に normal に戻る）
+      happyTex: tex.happy || null,
+      happyTimer: 0,
       animFrame: 0,
       animTimer: Math.random() * 20,
       t: Math.random() * Math.PI * 2,
       baseX: startX,
       baseY: startY,
-      vx: (Math.random() < 0.5 ? 1 : -1) * speed,
+      vx: dirSign * speed,
       vy: (Math.random() - 0.5) * speed * 0.15,
       speed: speed,
+      // 海流による後退モード（たまに発動して vx を一時反転）
+      // 頭の向き (scale.x) は変えず、位置だけ後退する
+      _driftBackTimer: 0,
+      _driftCheckTimer: 120 + Math.random() * 180,
       panicTimer: 0,
       panicVx: 0,
       panicVy: 0,

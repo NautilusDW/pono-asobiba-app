@@ -2241,6 +2241,12 @@
               c.obj.texture = c.octTexSurprised;
               c.obj._baseScale = null;
             }
+          } else if (c.dynamicCreature && c.happyTimer > 0 && c.happyTex) {
+            // 動的生き物: 餌を食べた直後の笑顔表情
+            if (c.obj.texture !== c.happyTex) {
+              c.obj.texture = c.happyTex;
+              c.obj._baseScale = null;
+            }
           } else if (c.jellysprite) {
             // Jellyfish: 3-frame pulse sync
             // open=frame0(001), contracting=frame1(002), peak=frame2(003)
@@ -2710,6 +2716,10 @@
           c._chompTimer = 15;
           spawnHearts(c.obj.x, c.obj.y - c.baseSize * 0.3, 3);
           SFX.play('chomp');
+          // 動的生き物: happy 表情が定義されていれば一定時間切替（ticker 末尾で texture 更新）
+          if (c.dynamicCreature && c.happyTex) {
+            c.happyTimer = 60; // 約 1 秒
+          }
           return;
         }
         // Swim toward food (gentle nudge added to existing velocity)
@@ -2831,6 +2841,56 @@
           particleGfx.endFill();
         }
       }
+
+      // ── Dynamic creatures: 向き固定 + 海流モード + happy タイマー ──
+      // 既存ループが scale.x を反転したり vx を反転させる箇所がたくさんあるので、
+      // ticker の末尾で動的生き物だけ scale.x と vx の符号を facingSign に固定する
+      creatures.forEach(c => {
+        if (!c.dynamicCreature) return;
+        if (c._flybyState || c.panicTimer > 0 || c.hiderState) return;
+
+        // happy 表情のタイマー (餌を食べた後に有効)
+        if (c.happyTimer > 0) {
+          c.happyTimer -= delta;
+          if (c.happyTex && c.obj.texture !== c.happyTex) {
+            c.obj.texture = c.happyTex;
+            c.obj._baseScale = null;
+          }
+        }
+
+        // 海流後退モード
+        if (c._driftBackTimer > 0) {
+          c._driftBackTimer -= delta;
+          // 後退中は vx を facingSign の逆方向に固定 (ゆるく後退)
+          c.vx = -c.facingSign * c.speed * 0.35;
+          if (c._driftBackTimer <= 0) {
+            // 終了 → 次の check までクールダウン
+            c._driftCheckTimer = 600 + Math.random() * 900; // 10-25s 後
+          }
+        } else {
+          c._driftCheckTimer -= delta;
+          if (c._driftCheckTimer <= 0) {
+            // 発動判定: 約 8% の確率で発動、それ以外は短い間隔で再判定
+            if (Math.random() < 0.08) {
+              c._driftBackTimer = 30 + Math.random() * 60; // 0.5-1.5 秒の後退
+            } else {
+              c._driftCheckTimer = 180 + Math.random() * 240; // 3-7 秒後に再判定
+            }
+          }
+          // 通常時は vx の符号を facingSign に強制 (seeking 等の反転を打ち消す)
+          if (Math.sign(c.vx || 0) !== c.facingSign && Math.abs(c.vx) > 0.001) {
+            c.vx = c.facingSign * Math.abs(c.vx);
+          }
+        }
+
+        // scale.x を facingSign に強制固定
+        // (swim パターンの skew/rotation は OK だが、scale.x の反転だけ防ぐ)
+        const absScaleX = Math.abs(c.obj.scale.x);
+        const desiredSign = c.facingSign;
+        if (Math.sign(c.obj.scale.x) !== desiredSign && absScaleX > 0.001) {
+          c.obj.scale.x = desiredSign * absScaleX;
+        }
+      });
 
       // ── Flyby update: たまに 1 体が手前層を横切る ───────────
       // 既存の position update の最後に置くことで、通常の vx/vy 適用後に
