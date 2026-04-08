@@ -2449,14 +2449,104 @@
           checkDailyCompletion();
           renderDailyRally();
           renderStampCard(-1);
+          // ゲームからの「はじめてクリア」報酬が保留されていれば演出
+          checkPendingFirstClear();
         }
       });
+
+      // ── ゲーム初回クリア報酬: ホーム帰還時の演出 ──
+      // common/first-clear.js が localStorage.pono_pending_first_clear に
+      // 配列で積んだ情報を順番に処理する。
+      function checkPendingFirstClear() {
+        var pending;
+        try { pending = JSON.parse(localStorage.getItem('pono_pending_first_clear') || '[]'); }
+        catch(e) { pending = []; }
+        if (!Array.isArray(pending) || pending.length === 0) return;
+
+        // 先頭1件ずつ処理（複数あれば閉じた後に次を表示）
+        var item = pending.shift();
+        localStorage.setItem('pono_pending_first_clear', JSON.stringify(pending));
+        showFirstClearCelebration(item, function() {
+          if (pending.length > 0) {
+            // 残りがあれば少し間を空けて次を表示
+            setTimeout(checkPendingFirstClear, 400);
+          }
+        });
+      }
+
+      // 祝賀モーダル（スタンプカード風の見た目だが、スタンプではなく達成バッジを見せる）
+      function showFirstClearCelebration(item, onDone) {
+        if (!item) { if (onDone) onDone(); return; }
+
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:24px 20px 18px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.35);';
+
+        var title = document.createElement('div');
+        title.style.cssText = 'font-size:1.05rem;font-weight:900;color:#F2915A;margin-bottom:8px;';
+        title.textContent = '🏆 はじめての クリア！';
+        box.appendChild(title);
+
+        var sub = document.createElement('div');
+        sub.style.cssText = 'font-size:0.8rem;font-weight:700;color:#5D4E37;margin-bottom:14px;';
+        sub.textContent = 'ごほうびを ゲットしたよ！';
+        box.appendChild(sub);
+
+        // スタンプ風の丸いバッジ
+        var badge = document.createElement('div');
+        badge.style.cssText = 'width:110px;height:110px;margin:0 auto 12px;border-radius:50%;background:#FFF3CD;border:4px solid #FFD700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(255,215,0,0.2);animation:stampSlotGlow 0.8s ease-out;';
+        if (item.img) {
+          var img = document.createElement('img');
+          img.src = item.img;
+          img.style.cssText = 'width:80px;height:80px;object-fit:contain;';
+          img.onerror = function() {
+            img.style.display = 'none';
+            var ic = document.createElement('div');
+            ic.style.cssText = 'font-size:3.5rem;';
+            ic.textContent = item.icon || '🎁';
+            badge.appendChild(ic);
+          };
+          badge.appendChild(img);
+        } else {
+          var ic = document.createElement('div');
+          ic.style.cssText = 'font-size:3.5rem;';
+          ic.textContent = item.icon || '🎁';
+          badge.appendChild(ic);
+        }
+        box.appendChild(badge);
+
+        // アイテム名
+        var nameEl = document.createElement('div');
+        nameEl.style.cssText = 'font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:4px;';
+        nameEl.textContent = item.name || '';
+        box.appendChild(nameEl);
+
+        var msgEl = document.createElement('div');
+        msgEl.style.cssText = 'font-size:0.75rem;color:#888;margin-bottom:16px;';
+        msgEl.textContent = 'あたらしい ともだちだよ！';
+        box.appendChild(msgEl);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = 'やったー！';
+        closeBtn.style.cssText = 'padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#F2915A,#EC6A3C);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(242,145,90,0.4);';
+        closeBtn.addEventListener('click', function() {
+          ov.remove();
+          if (onDone) onDone();
+        });
+        box.appendChild(closeBtn);
+
+        ov.appendChild(box);
+        document.body.appendChild(ov);
+      }
 
       // pageshow
       window.addEventListener('pageshow', function() {
         checkDailyCompletion();
         renderDailyRally();
         renderStampCard(-1);
+        checkPendingFirstClear();
       });
 
     })();

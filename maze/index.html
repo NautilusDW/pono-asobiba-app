@@ -273,6 +273,7 @@ html, body {
 <script src="../common/menu.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/treasure.js"></script>
+<script src="../common/first-clear.js"></script>
 
 <script>
 'use strict';
@@ -783,16 +784,32 @@ function onClear() {
 function showStageClearOverlay() {
   const isLast = stageIdx >= STAGES.length - 1;
   if (isLast) {
-    ovTitle.textContent = 'ぜんぶ クリア！';
-    ovMsg.textContent = 'ハリネズミくんを\nぜんぶ たすけたよ！\nすごいね ポノ！';
-    ovBtn.textContent = 'もういちど あそぶ';
-    ovBtn.onclick = function() { hideOverlay(); loadStage(0); };
+    // 最終ステージ: 初回クリア報酬を試みる。宝箱が出たら、閉じた後に
+    // 通常の「ぜんぶクリア」オーバーレイを表示する（onClose でチェーン）。
+    if (window.triggerFirstClearReward) {
+      window.triggerFirstClearReward('maze', {
+        onClose: function() { _showMazeFinalOverlay(); }
+      }).then(function(shown) {
+        // 既に付与済み・定義なし等で宝箱が出なかった場合は即オーバーレイ
+        if (!shown) _showMazeFinalOverlay();
+      }).catch(function() { _showMazeFinalOverlay(); });
+    } else {
+      _showMazeFinalOverlay();
+    }
   } else {
     ovTitle.textContent = 'ステージ クリア！';
     ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！';
     ovBtn.textContent = 'つぎへ ▶';
     ovBtn.onclick = function() { hideOverlay(); loadStage(stageIdx + 1); };
+    showOverlay();
   }
+}
+
+function _showMazeFinalOverlay() {
+  ovTitle.textContent = 'ぜんぶ クリア！';
+  ovMsg.textContent = 'ハリネズミくんを\nぜんぶ たすけたよ！\nすごいね ポノ！';
+  ovBtn.textContent = 'もういちど あそぶ';
+  ovBtn.onclick = function() { hideOverlay(); loadStage(0); };
   showOverlay();
 }
 

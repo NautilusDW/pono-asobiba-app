@@ -296,6 +296,15 @@ tr:hover { background: #FFFAF0; }
       <button class="btn btn-pink" id="btn-add-card">+ カード完成報酬を追加</button>
     </div>
   </div>
+
+  <!-- First Clear Rewards (ゲーム初回クリア) -->
+  <div class="section">
+    <div class="section-title">🏆 ゲーム初回クリア報酬（最終ステージ突破で宝箱）</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      各ゲームを初めてクリアした時に1回だけもらえる報酬。ゲーム画面で宝箱が出て、ホームに戻ると祝賀モーダルが表示されます。
+    </div>
+    <div id="first-clear-rewards-container"></div>
+  </div>
 </div>
 
 <!-- ===== 🏆 実績一覧 ===== -->
@@ -577,6 +586,7 @@ function fetchRewards() {
   msg.textContent = '🔄 rewards.json を読み込み中...';
   document.getElementById('slot-rewards-container').innerHTML = '';
   document.getElementById('card-rewards-container').innerHTML = '';
+  document.getElementById('first-clear-rewards-container').innerHTML = '';
 
   fetch(REWARDS_API + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) {
@@ -590,6 +600,7 @@ function fetchRewards() {
       msg.textContent = '✅ rewards.json 読み込み完了';
       renderSlotRewards();
       renderCardRewards();
+      renderFirstClearRewards();
     })
     .catch(function(e) {
       msg.textContent = '❌ 読み込み失敗: ' + e.message;
@@ -602,6 +613,7 @@ function fetchRewards() {
           msg.textContent = '⚠️ ローカルから読み込み（SHAなし）';
           renderSlotRewards();
           renderCardRewards();
+          renderFirstClearRewards();
         })
         .catch(function() { msg.textContent = '❌ rewards.json の読み込みに完全に失敗しました'; });
     });
@@ -957,6 +969,221 @@ function renderCardRewards() {
   cards.forEach(function(data, idx) {
     container.appendChild(buildCardCompleteCard(idx, data));
   });
+}
+
+// ════════════════════════════════════════════════════════════════
+// First-Clear Rewards (各ゲームの初回クリア報酬)
+// ════════════════════════════════════════════════════════════════
+// サポートするゲーム一覧（ID + 表示名）
+// ゲームが増えたらここに追加するだけで UI に現れる
+var FIRST_CLEAR_GAMES = [
+  { id: 'maze',      label: '🌲 めいろ',       hint: '最終ステージ（10）クリアで発動' },
+  { id: 'breakout',  label: '🧱 ブロックくずし', hint: '最終ステージクリアで発動（要実装）' },
+  { id: 'puzzle',    label: '🧩 パズル',        hint: '最終ステージクリアで発動（要実装）' },
+  { id: 'wordmatch', label: '📝 ことばあわせ',   hint: '最終ステージクリアで発動（要実装）' },
+  { id: 'slide',     label: '🛝 すべりだい',    hint: '最終ステージクリアで発動（要実装）' }
+];
+
+function renderFirstClearRewards() {
+  if (!rewardsData) return;
+  var container = document.getElementById('first-clear-rewards-container');
+  container.innerHTML = '';
+
+  if (!rewardsData.firstClearRewards) rewardsData.firstClearRewards = {};
+  var fcr = rewardsData.firstClearRewards;
+
+  FIRST_CLEAR_GAMES.forEach(function(game) {
+    var data = fcr[game.id] || {};
+    container.appendChild(buildFirstClearCard(game, data));
+  });
+}
+
+function buildFirstClearCard(game, data) {
+  var card = document.createElement('div');
+  card.className = 'reward-card';
+  card.dataset.gameId = game.id;
+
+  var isGendered = !!data.gendered;
+
+  // Row 1: game title + preview + name/icon
+  var row1 = document.createElement('div');
+  row1.className = 'reward-card-row';
+
+  // Preview
+  var previewSrc = isGendered ? (data.boy && data.boy.img) : data.img;
+  if (previewSrc) {
+    var prevImg = document.createElement('img');
+    prevImg.className = 'reward-preview-img';
+    prevImg.src = '../' + toAImg(previewSrc);
+    prevImg.onerror = function() { this.style.display = 'none'; };
+    row1.appendChild(prevImg);
+  } else {
+    var ph = document.createElement('div');
+    ph.className = 'reward-preview-placeholder';
+    ph.textContent = data.icon || '?';
+    row1.appendChild(ph);
+  }
+
+  // ゲームラベル
+  var labelDiv = document.createElement('div');
+  labelDiv.className = 'reward-field';
+  labelDiv.innerHTML = '<label>ゲーム</label>' +
+    '<div style="font-weight:900;font-size:1rem;color:#FF6B9D;">' + game.label + '</div>' +
+    '<div style="font-size:0.65rem;color:#888;">' + game.hint + '</div>';
+  row1.appendChild(labelDiv);
+
+  if (!isGendered) {
+    row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
+    row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  } else {
+    var hName = document.createElement('input');
+    hName.type = 'hidden'; hName.dataset.key = 'name'; hName.value = data.name || '';
+    row1.appendChild(hName);
+    var hIcon = document.createElement('input');
+    hIcon.type = 'hidden'; hIcon.dataset.key = 'icon'; hIcon.value = data.icon || '';
+    row1.appendChild(hIcon);
+    var note = document.createElement('div');
+    note.style.cssText = 'font-size:0.7rem;color:#888;flex:1;padding:6px 10px;';
+    note.textContent = '※ 男女別の時はそれぞれの名前が使われます';
+    row1.appendChild(note);
+  }
+  card.appendChild(row1);
+
+  // Row 2: アイテム選択 (non-gendered)
+  if (!isGendered) {
+    var row2 = document.createElement('div');
+    row2.className = 'reward-card-row';
+    row2.appendChild(makeItemPickerField(data.type || 'sea', data.id || '', data.img || '', '', card));
+    card.appendChild(row2);
+  }
+
+  // Row 3: 男女別チェックボックス + クリアボタン
+  var row3 = document.createElement('div');
+  row3.className = 'reward-card-row';
+
+  var genderedCheck = makeCheckbox('男女別にする', isGendered, 'gendered');
+  genderedCheck.querySelector('input').addEventListener('change', function() {
+    var cb = this;
+    var currentData = collectFirstClearCardData(card);
+    if (cb.checked) {
+      var hasData = (currentData.type && currentData.type !== 'sea') || currentData.id || currentData.img;
+      if (hasData) {
+        var dlg = document.createElement('div');
+        dlg.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        dlg.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;text-align:center;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+          '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">今の設定をどちらに残しますか？</div>' +
+          '<div style="display:flex;gap:12px;justify-content:center;">' +
+            '<button id="_gdf_boy" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;">👦 おとこのこ</button>' +
+            '<button id="_gdf_girl" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#F472B6,#EC4899);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;">👧 おんなのこ</button>' +
+          '</div>' +
+          '<button id="_gdf_cancel" style="margin-top:12px;padding:8px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.8rem;cursor:pointer;">キャンセル</button>' +
+        '</div>';
+        document.body.appendChild(dlg);
+        var base = { type: currentData.type || 'sea', id: currentData.id || '', img: currentData.img || '' };
+        var empty = { type: 'sea', id: '', img: '' };
+        var baseId = base.id.replace(/_boy$|_girl$/, '');
+        document.getElementById('_gdf_boy').onclick = function() {
+          dlg.remove();
+          currentData.gendered = true;
+          currentData.boy  = { type: base.type, id: baseId + '_boy',  img: base.img };
+          currentData.girl = { type: empty.type, id: baseId + '_girl', img: '' };
+          delete currentData.type; delete currentData.id; delete currentData.img;
+          rewardsData.firstClearRewards[game.id] = currentData;
+          renderFirstClearRewards();
+        };
+        document.getElementById('_gdf_girl').onclick = function() {
+          dlg.remove();
+          currentData.gendered = true;
+          currentData.boy  = { type: empty.type, id: baseId + '_boy',  img: '' };
+          currentData.girl = { type: base.type, id: baseId + '_girl', img: base.img };
+          delete currentData.type; delete currentData.id; delete currentData.img;
+          rewardsData.firstClearRewards[game.id] = currentData;
+          renderFirstClearRewards();
+        };
+        document.getElementById('_gdf_cancel').onclick = function() {
+          dlg.remove();
+          cb.checked = false;
+        };
+      } else {
+        currentData.gendered = true;
+        currentData.boy  = { type: 'sea', id: game.id + '_boy',  img: '' };
+        currentData.girl = { type: 'sea', id: game.id + '_girl', img: '' };
+        delete currentData.type; delete currentData.id; delete currentData.img;
+        rewardsData.firstClearRewards[game.id] = currentData;
+        renderFirstClearRewards();
+      }
+    } else {
+      currentData.gendered = false;
+      var src = (currentData.boy && currentData.boy.id) ? currentData.boy : (currentData.girl || {});
+      currentData.type = src.type || 'sea';
+      currentData.id   = src.id || '';
+      currentData.img  = src.img || '';
+      delete currentData.boy; delete currentData.girl;
+      rewardsData.firstClearRewards[game.id] = currentData;
+      renderFirstClearRewards();
+    }
+  });
+  row3.appendChild(genderedCheck);
+
+  // クリアボタン（この1ゲーム分だけ設定を消す）
+  var clrBtn = document.createElement('button');
+  clrBtn.type = 'button';
+  clrBtn.textContent = '🗑 この設定をクリア';
+  clrBtn.style.cssText = 'background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:8px;padding:6px 12px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;margin-left:auto;';
+  clrBtn.addEventListener('click', function() {
+    if (!confirm(game.label + ' の初回クリア報酬をクリアしますか？')) return;
+    delete rewardsData.firstClearRewards[game.id];
+    renderFirstClearRewards();
+  });
+  row3.appendChild(clrBtn);
+  card.appendChild(row3);
+
+  // Gendered split
+  if (isGendered) {
+    var split = document.createElement('div');
+    split.className = 'gendered-split';
+    split.appendChild(buildGenderedCol('👦 おとこのこ', data.boy || {}, 'boy', card));
+    split.appendChild(buildGenderedCol('👧 おんなのこ', data.girl || {}, 'girl', card));
+    card.appendChild(split);
+  }
+
+  return card;
+}
+
+// 1ゲーム分のデータ収集
+function collectFirstClearCardData(card) {
+  var d = {};
+  d.icon = (card.querySelector('[data-key="icon"]') || {}).value || '';
+  d.name = (card.querySelector('[data-key="name"]') || {}).value || '';
+
+  var genCb = card.querySelector('[data-key="gendered"]');
+  var isGendered = genCb && genCb.checked;
+  d.gendered = isGendered;
+
+  if (isGendered) {
+    d.boy = {
+      name: (card.querySelector('[data-key="boy-name"]')  || {}).value || '',
+      type: (card.querySelector('[data-key="boy-type"]')  || {}).value || 'sea',
+      id:   (card.querySelector('[data-key="boy-id"]')    || {}).value || '',
+      img:  (card.querySelector('[data-key="boy-img"]')   || {}).value || ''
+    };
+    d.girl = {
+      name: (card.querySelector('[data-key="girl-name"]') || {}).value || '',
+      type: (card.querySelector('[data-key="girl-type"]') || {}).value || 'sea',
+      id:   (card.querySelector('[data-key="girl-id"]')   || {}).value || '',
+      img:  (card.querySelector('[data-key="girl-img"]')  || {}).value || ''
+    };
+    var bn = d.boy.name || '';
+    var gn = d.girl.name || '';
+    if (bn && gn && bn !== gn) d.name = bn + ' / ' + gn;
+    else d.name = bn || gn || d.name;
+  } else {
+    d.type = (card.querySelector('[data-key="type"]') || {}).value || 'sea';
+    d.id   = (card.querySelector('[data-key="id"]')   || {}).value || '';
+    d.img  = (card.querySelector('[data-key="img"]')  || {}).value || '';
+  }
+
+  return d;
 }
 
 function buildCardCompleteCard(idx, data) {
@@ -1877,6 +2104,22 @@ function collectAllRewards() {
     result.cardCompleteRewards.push(collectCardData(card));
   });
 
+  // First-clear rewards: 各ゲーム毎に DOM から収集（未設定ゲームは除外）
+  result.firstClearRewards = {};
+  document.querySelectorAll('#first-clear-rewards-container .reward-card').forEach(function(card) {
+    var gameId = card.dataset.gameId;
+    if (!gameId) return;
+    var d = collectFirstClearCardData(card);
+    // 有効なエントリのみ保存（id が入っているか、gendered で boy/girl のいずれかに id がある）
+    var hasData = false;
+    if (d.gendered) {
+      hasData = (d.boy && d.boy.id) || (d.girl && d.girl.id);
+    } else {
+      hasData = !!d.id;
+    }
+    if (hasData) result.firstClearRewards[gameId] = d;
+  });
+
   return result;
 }
 
@@ -1957,6 +2200,19 @@ function validateRewards(data) {
       if (!d.id)   errors.push('カード完成 ' + (i + 1) + '枚目: IDが空です');
     }
   });
+
+  // Check first-clear rewards（設定されているゲームのみチェック）
+  if (data.firstClearRewards) {
+    Object.keys(data.firstClearRewards).forEach(function(gameId) {
+      var d = data.firstClearRewards[gameId];
+      if (d.gendered) {
+        if (!d.boy  || !d.boy.id)  errors.push('初回クリア [' + gameId + ']: 男の子用IDが空です');
+        if (!d.girl || !d.girl.id) errors.push('初回クリア [' + gameId + ']: 女の子用IDが空です');
+      } else {
+        if (!d.id) errors.push('初回クリア [' + gameId + ']: IDが空です');
+      }
+    });
+  }
 
   return errors;
 }
