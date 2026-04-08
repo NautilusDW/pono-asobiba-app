@@ -1518,6 +1518,8 @@ class CleanEdgesGUI:
                         and other.name_result.base_name == original_base_name):
                     other.name_result.base_name = new_base
                     other.name_result.base_slug = new_base_slug
+                    # For the bulk targets, rebuild the filename since we just
+                    # changed one of their slug fields.
                     other.rebuild_filename_from_parts()
                     self._update_sprite_card_labels(other)
                     updated += 1
@@ -1525,8 +1527,9 @@ class CleanEdgesGUI:
                 f"Updated species '{original_base_name}' → '{new_base}' on {updated + 1} sprite(s)."
             )
 
-        # Save edited filename via rebuild path so cards stay in sync
-        s.rebuild_filename_from_parts()
+        # For the edited sprite itself, trust the dialog's applied values
+        # (manual_filename may have been typed by hand and shouldn't be
+        # overwritten by slug-based composition).
         self._update_sprite_card_labels(s)
 
     # ==================================================================== AI naming

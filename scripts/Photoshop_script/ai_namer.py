@@ -97,6 +97,30 @@ motion (動き):
 6. variant の日本語推奨: 通常 / 笑顔 / 驚き / 困惑 / 怒り / 悲しみ / ウィンク
 7. motion の日本語推奨: 静止 / 歩行1 / 歩行2 / ジャンプ / 待機 / 攻撃
 
+===== 漠然ラベル禁止ルール =====
+
+種類を "さかな" / "魚" / "動物" / "モンスター" / "キャラ" のような
+漠然とした総称で片付けないこと。正確な種名が分からなくても、
+**色・模様・形・目立つ特徴** を base_name に含めて区別可能にすること。
+
+悪い例 (NG):
+  base_name: さかな     base_slug: sakana
+  base_name: 魚         base_slug: fish
+  base_name: 動物       base_slug: animal
+
+良い例 (OK):
+  base_name: 青い丸魚            base_slug: aoi_marusakana
+  base_name: 縞模様の黄色い魚    base_slug: shima_kiiro_sakana
+  base_name: 赤いタコ            base_slug: aka_tako
+  base_name: 紫の星型魚          base_slug: murasaki_hoshi_sakana
+  base_name: 緑のカエル          base_slug: midori_kaeru
+
+ルール:
+- 特定の種名 (熱帯魚, 蝶々魚, クマノミ, ドラえもん) が分かるならそれを使う
+- 分からないときは、色 + 形/模様 + 大分類 を組み合わせて造語する
+- 同じ画像に似た別個体があっても区別できる命名を目指す
+- 単に "sakana" や "fish" で終わらせない
+
 ===== 出力形式 =====
 
 以下の JSON 1 つだけを返してください。マークダウンフェンス禁止。
