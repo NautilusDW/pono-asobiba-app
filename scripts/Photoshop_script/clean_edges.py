@@ -108,12 +108,11 @@ def _shrink_alpha(a: Image.Image, shrink_px: float) -> Image.Image:
     # Distance from each fg pixel to the nearest background pixel
     dist = distance_transform_edt(fg_mask)
 
-    # Pixels with dist >= shrink_px stay full strength.
-    # Pixels with dist < shrink_px get faded out smoothly.
-    # factor = clip(dist - (shrink_px - 1), 0, 1)
-    #   - dist=shrink_px → factor=1 (fully kept)
-    #   - dist=shrink_px-1 → factor=0 (eroded away)
-    factor = np.clip(dist - (shrink_px - 1.0), 0.0, 1.0)
+    # factor = clip(dist - shrink_px, 0, 1)
+    #   - dist == shrink_px      → factor 0 (this pixel is the new boundary)
+    #   - dist == shrink_px + 1  → factor 1 (deep inside the eroded region)
+    #   - dist == shrink_px + 0.5 → factor 0.5 (sub-pixel AA on the boundary)
+    factor = np.clip(dist - shrink_px, 0.0, 1.0)
     new_alpha = (arr.astype(np.float32) * factor).astype(np.uint8)
     return Image.fromarray(new_alpha, mode="L")
 
