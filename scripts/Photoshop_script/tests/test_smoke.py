@@ -131,18 +131,26 @@ class TestSplitSpritesWrapper(unittest.TestCase):
 class TestAiNamer(unittest.TestCase):
     def test_parse_valid_json(self):
         text = (
-            '{"base_name":"隠れクマの実","variant":"サプライズ",'
+            '{"base_name":"隠れクマの実","variant":"サプライズ","motion":"歩行1",'
             '"filename":"kuma_mi_surprise","variant_candidates":["笑顔","驚き"],'
             '"confidence":0.8,"needs_user_input":false}'
         )
         r = ai_namer.parse_response(text)
         self.assertEqual(r.base_name, "隠れクマの実")
         self.assertEqual(r.variant, "サプライズ")
+        self.assertEqual(r.motion, "歩行1")
         self.assertEqual(r.filename, "kuma_mi_surprise")
         self.assertEqual(r.variant_candidates, ["笑顔", "驚き"])
         self.assertAlmostEqual(r.confidence, 0.8)
         self.assertFalse(r.needs_user_input)
         self.assertIsNone(r.error)
+
+    def test_parse_no_motion(self):
+        # motion is optional
+        text = '{"base_name":"a","variant":"b","filename":"a_b"}'
+        r = ai_namer.parse_response(text)
+        self.assertEqual(r.motion, "")
+        self.assertEqual(r.filename, "a_b")
 
     def test_parse_fenced_json(self):
         text = '```json\n{"base_name":"a","variant":"b","filename":"a_b","confidence":0.5}\n```'

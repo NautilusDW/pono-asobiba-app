@@ -44,11 +44,11 @@ exports.handler = async function(event) {
   }
 
   // Gemini モデル選択 (2026-04 時点で動作確認済み)
-  // - gemini-2.5-flash-lite : 無料枠 ~1000 req/日 (デフォルト)
-  // - gemini-flash-latest   : 現行安定版へのエイリアス
+  // - gemini-flash-latest   : 現行安定版へのエイリアス (デフォルト・別クォータプール)
+  // - gemini-2.5-flash-lite : 無料枠 ~1000 req/日
   // - gemini-2.5-flash      : 無料枠 20 req/日のみ (バッチ処理には不向き)
   // クライアントが body.model を指定した場合はそれを使う
-  var model = body.model || 'gemini-2.5-flash-lite';
+  var model = body.model || 'gemini-flash-latest';
   var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
     + encodeURIComponent(model)
     + ':generateContent?key=' + encodeURIComponent(apiKey);

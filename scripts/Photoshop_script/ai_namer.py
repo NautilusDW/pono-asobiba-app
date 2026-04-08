@@ -42,13 +42,13 @@ NETLIFY_AI_NAME_URL = (
 )
 
 # Gemini model selection (probed live 2026-04-08):
-#   gemini-2.5-flash-lite : free tier ~1000 req/day (DEFAULT, good quality + quota)
-#   gemini-flash-latest   : alias to current stable flash (auto-upgrades)
+#   gemini-flash-latest   : alias to current stable flash (DEFAULT, separate quota pool)
+#   gemini-2.5-flash-lite : free tier ~1000 req/day (good fallback)
 #   gemini-2.5-flash      : free tier only 20 req/day — avoid for batch naming
-#   gemini-2.0-flash*     : currently rate-limited (shared quota pool)
+#   gemini-2.0-flash*     : shared quota pool, often rate-limited
 #   gemini-1.5-flash      : deprecated / not found on v1beta
 # The Netlify function reads body.model and falls back to this if omitted.
-GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_MODEL = "gemini-flash-latest"
 
 
 SPRITE_NAMING_PROMPT = """\
@@ -58,26 +58,51 @@ SPRITE_NAMING_PROMPT = """\
 ユーザーからの追加コンテキスト: "{user_context}"
 (空欄の場合はあなたが画像から判断してください)
 
+===== 既に使用中の語彙 (絶対に優先して再利用すること) =====
+
+base_name (種類) の既出語彙:
+{existing_base_names_block}
+
+variant (表情) の既出語彙:
+{existing_variants_block}
+
+motion (動き) の既出語彙:
+{existing_motions_block}
+
 既存ファイル名 (重複回避のため参考に):
 {existing_names_block}
 
-以下の JSON 1 つだけを返してください。余計な説明やマークダウンフェンスは一切付けないでください。
+===== 語彙統一ルール (最優先・絶対) =====
+
+- 同じ種類の生き物・モチーフには **必ず同じ base_name 文字列** を使うこと。
+  例: "青い熱帯魚" が既出なら、似た魚を「縞模様の魚」「島々フィッシュ」などと勝手に言い換えない。
+- 似た表情には **必ず同じ variant 文字列** を使うこと。
+  例: "驚き" が既出なら「サプライズ」「びっくり」など類義語を勝手に作らない。
+- 新しい語彙を導入するのは、既存のどれとも明らかに違う場合のみ。
+- 日本語で短く統一感のある語彙を選ぶこと (ひらがな/カタカナ/漢字 OK、英語は避ける)。
+- 表情の推奨語彙: 通常 / 笑顔 / 驚き / 困惑 / 怒り / 悲しみ / ウィンク
+- 動きの推奨語彙: 静止 / 歩行1 / 歩行2 / ジャンプ / 待機 / 攻撃 (該当しなければ空欄)
+
+===== 出力形式 =====
+
+以下の JSON 1 つだけを返してください。余計な説明やマークダウンフェンスは一切付けないこと。
 
 {{
-  "base_name":          "日本語でキャラ/モチーフの種類 (例: 隠れクマの実)",
-  "variant":            "表情・状態の日本語短名 (例: サプライズ)",
-  "filename":           "ASCII英数+アンダースコアのファイル名 stem (.png なし、例: kuma_mi_surprise)",
-  "variant_candidates": ["代替variant1", "代替variant2"],
+  "base_name":          "日本語でキャラ/モチーフの種類 (既存語彙があれば必ずそれを使う)",
+  "variant":            "表情・状態の日本語短名 (既存語彙があれば必ずそれを使う)",
+  "motion":             "動き・ポーズの日本語短名 (該当しなければ空文字列)",
+  "filename":           "ASCII英数+アンダースコアのファイル名 stem (.png なし)",
+  "variant_candidates": ["代替variant候補1", "代替variant候補2"],
   "confidence":         0.0,
   "needs_user_input":   false
 }}
 
-ルール:
-- filename は小文字ASCIIと数字とアンダースコアのみ。日本語・空白・記号禁止
-- filename には base_name と variant の両方のニュアンスを含める
-- 画像だけでは表情やアニメーションのコマ順などが断定できない場合は needs_user_input を true にして variant_candidates に 3-5 個の候補を出す
-- 既存ファイル名と重複する場合は末尾に _2, _3 などで区別
-- confidence は 0.0-1.0 (高いほど自信あり)
+細則:
+- filename は小文字 ASCII と数字とアンダースコアのみ。日本語・空白・記号禁止。
+- filename には base_name + variant (+ motion があれば motion) のニュアンスを含める。
+- 画像だけでは表情・動きが断定困難なら needs_user_input を true にして variant_candidates に 3-5 個の候補を出す。
+- 既存ファイル名と重複する場合は末尾に _2, _3 で区別。
+- confidence は 0.0-1.0 (高いほど自信あり)。
 """
 
 
@@ -87,6 +112,7 @@ class NameResult:
 
     base_name: str = ""
     variant: str = ""
+    motion: str = ""  # pose / animation frame (may be empty)
     filename: str = ""
     variant_candidates: List[str] = field(default_factory=list)
     confidence: float = 0.0
@@ -164,6 +190,7 @@ def parse_response(text: str) -> NameResult:
 
     result.base_name = str(data.get("base_name", "") or "").strip()
     result.variant = str(data.get("variant", "") or "").strip()
+    result.motion = str(data.get("motion", "") or "").strip()
     result.filename = _sanitize_filename(str(data.get("filename", "") or ""))
 
     vc = data.get("variant_candidates") or []
@@ -177,9 +204,10 @@ def parse_response(text: str) -> NameResult:
 
     result.needs_user_input = bool(data.get("needs_user_input", False))
 
-    # filename が空なら base_name + variant から自動生成
+    # filename が空なら base_name + variant (+ motion) から自動生成
     if not result.filename:
-        auto = f"{result.base_name}_{result.variant}"
+        parts = [result.base_name, result.variant, result.motion]
+        auto = "_".join(p for p in parts if p)
         result.filename = _sanitize_filename(auto) or "sprite"
 
     return result
@@ -234,6 +262,9 @@ def request_sprite_name(
     img: Image.Image,
     user_context: str = "",
     existing_names: Optional[List[str]] = None,
+    existing_base_names: Optional[List[str]] = None,
+    existing_variants: Optional[List[str]] = None,
+    existing_motions: Optional[List[str]] = None,
     timeout: int = 30,
     max_retries: int = 5,
     url: str = NETLIFY_AI_NAME_URL,
@@ -242,14 +273,26 @@ def request_sprite_name(
     スプライト画像を Netlify 経由で Gemini に送信し、命名結果を返す。
     ネットワーク/パース失敗時も NameResult を返す (error フィールドに詳細)。
 
-    レート制限 (429) に対しては Gemini が返す "retry in Xs" を優先して尊重し、
-    それがない場合は指数バックオフ (5s, 10s, 20s, 40s, 60s) する。
+    語彙統一のため existing_base_names/variants/motions をプロンプトに埋め、
+    Gemini に既存語彙の再利用を強制する。
     """
     existing_names = existing_names or []
-    existing_block = "\n".join(f"  - {n}" for n in existing_names[:50]) or "  (なし)"
+    existing_base_names = existing_base_names or []
+    existing_variants = existing_variants or []
+    existing_motions = existing_motions or []
+
+    def _fmt_block(items):
+        items = [i for i in items if i]
+        if not items:
+            return "  (まだなし — 新規に命名してよい)"
+        return "\n".join(f"  - {i}" for i in items)
+
     prompt = SPRITE_NAMING_PROMPT.format(
         user_context=(user_context or "").strip() or "(指定なし)",
-        existing_names_block=existing_block,
+        existing_base_names_block=_fmt_block(sorted(set(existing_base_names))),
+        existing_variants_block=_fmt_block(sorted(set(existing_variants))),
+        existing_motions_block=_fmt_block(sorted(set(existing_motions))),
+        existing_names_block=_fmt_block(existing_names[:50]),
     )
 
     try:

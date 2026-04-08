@@ -213,10 +213,23 @@ class SpriteItem:
     @property
     def display_name(self) -> str:
         if self.name_result and self.name_result.base_name:
-            base = self.name_result.base_name
-            variant = self.name_result.variant
-            return f"{base}  {variant}".strip() if variant else base
+            parts = [self.name_result.base_name]
+            if self.name_result.variant:
+                parts.append(self.name_result.variant)
+            if self.name_result.motion:
+                parts.append(self.name_result.motion)
+            return "  ".join(parts)
         return f"#{self.info.index}"
+
+    def rebuild_filename_from_parts(self) -> None:
+        """base_name + variant + motion から filename を再生成して name_result に反映。"""
+        if self.name_result is None:
+            self.name_result = NameResult()
+        parts = [self.name_result.base_name, self.name_result.variant, self.name_result.motion]
+        combined = "_".join(p for p in parts if p)
+        fn = _sanitize_filename(combined) or f"sprite_{self.info.index:03d}"
+        self.name_result.filename = fn
+        self.manual_filename = fn
 
 
 # ============================================================================
@@ -225,20 +238,37 @@ class SpriteItem:
 
 
 class VariantPickerDialog(tk.Toplevel):
-    """画像から判別できない属性をユーザーに選ばせる小さなダイアログ。"""
+    """
+    スプライトの命名を編集するダイアログ。
+    3 フィールド (Species / Expression / Motion) + 一括適用チェックボックス。
+    """
 
-    def __init__(self, parent: tk.Tk, sprite: SpriteItem):
+    def __init__(
+        self,
+        parent: tk.Tk,
+        sprite: SpriteItem,
+        all_sprites: List["SpriteItem"],
+        known_base_names: List[str],
+        known_variants: List[str],
+        known_motions: List[str],
+    ):
         super().__init__(parent)
         self.title(f"Edit sprite  #{sprite.info.index}")
         self.configure(bg=THEME["bg_panel"])
         self.transient(parent)
         self.grab_set()
         self.result_applied = False
+        self.bulk_apply_species = False  # set True if user checks the box
+        self.original_base_name = (sprite.name_result.base_name if sprite.name_result else "")
 
         self._sprite = sprite
+        self._all_sprites = all_sprites
+        self._known_base_names = sorted(set(n for n in known_base_names if n))
+        self._known_variants = sorted(set(v for v in known_variants if v))
+        self._known_motions = sorted(set(m for m in known_motions if m))
+
         self._build_ui()
 
-        # Center on parent
         self.update_idletasks()
         px = parent.winfo_rootx() + parent.winfo_width() // 2 - self.winfo_width() // 2
         py = parent.winfo_rooty() + parent.winfo_height() // 2 - self.winfo_height() // 2
@@ -247,52 +277,112 @@ class VariantPickerDialog(tk.Toplevel):
     def _build_ui(self):
         s = self._sprite
 
-        # Thumbnail
+        # --- Thumbnail ---
         thumb = s.info.image.copy()
-        thumb.thumbnail((200, 200), Image.LANCZOS)
+        thumb.thumbnail((220, 220), Image.LANCZOS)
         bg = checker_composite(thumb)
         self._photo = ImageTk.PhotoImage(bg)
         tk.Label(self, image=self._photo, bg=THEME["bg_panel"]).pack(padx=16, pady=(16, 8))
 
+        # --- Form ---
         form = ttk.Frame(self, style="Panel.TFrame")
         form.pack(fill=tk.X, padx=16, pady=4)
 
-        # Base name
-        ttk.Label(form, text="Base name (種類):", style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=4)
+        row = 0
+
+        # 1. Species (base_name)
+        ttk.Label(form, text="1. 種類 (Species)",
+                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        row += 1
+        ttk.Label(form, text="例: 熱帯魚", style="Muted.TLabel").grid(row=row, column=0, columnspan=2, sticky="w")
+        row += 1
         self.base_var = tk.StringVar(value=(s.name_result.base_name if s.name_result else ""))
-        ttk.Entry(form, textvariable=self.base_var, width=32).grid(row=0, column=1, sticky="ew", padx=(8, 0))
-
-        # Variant (combobox + manual entry)
-        ttk.Label(form, text="Variant (表情・状態):", style="Panel.TLabel").grid(row=1, column=0, sticky="w", pady=4)
-        self.variant_var = tk.StringVar(value=(s.name_result.variant if s.name_result else ""))
-        variant_candidates = s.name_result.variant_candidates if s.name_result else []
-        self.variant_combo = ttk.Combobox(form, textvariable=self.variant_var, values=variant_candidates, width=30)
-        self.variant_combo.grid(row=1, column=1, sticky="ew", padx=(8, 0))
-
-        # Filename
-        ttk.Label(form, text="Filename (英数字):", style="Panel.TLabel").grid(row=2, column=0, sticky="w", pady=4)
-        self.filename_var = tk.StringVar(value=s.effective_filename)
-        ttk.Entry(form, textvariable=self.filename_var, width=32).grid(row=2, column=1, sticky="ew", padx=(8, 0))
-
-        # Regenerate filename from base+variant
-        ttk.Button(form, text="Regenerate filename", command=self._regenerate_filename, style="Toolbar.TButton").grid(
-            row=3, column=1, sticky="e", pady=(2, 0)
+        self.base_combo = ttk.Combobox(
+            form, textvariable=self.base_var, values=self._known_base_names, width=36,
         )
+        self.base_combo.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
+        row += 1
 
+        # 2. Expression (variant)
+        ttk.Label(form, text="2. 表情 (Expression)",
+                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        row += 1
+        ttk.Label(form, text="例: 通常 / 笑顔 / 驚き / 困惑",
+                  style="Muted.TLabel").grid(row=row, column=0, columnspan=2, sticky="w")
+        row += 1
+        self.variant_var = tk.StringVar(value=(s.name_result.variant if s.name_result else ""))
+        # Combine AI candidates with known vocab from other sprites
+        ai_candidates = s.name_result.variant_candidates if s.name_result else []
+        variant_choices = sorted(set(list(ai_candidates) + self._known_variants + [
+            "通常", "笑顔", "驚き", "困惑", "怒り", "悲しみ", "ウィンク"
+        ]))
+        self.variant_combo = ttk.Combobox(
+            form, textvariable=self.variant_var, values=variant_choices, width=36,
+        )
+        self.variant_combo.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
+        row += 1
+
+        # 3. Motion
+        ttk.Label(form, text="3. 動き (Motion)",
+                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        row += 1
+        ttk.Label(form, text="例: 静止 / 歩行1 / 歩行2 / ジャンプ (該当なければ空欄)",
+                  style="Muted.TLabel").grid(row=row, column=0, columnspan=2, sticky="w")
+        row += 1
+        self.motion_var = tk.StringVar(value=(s.name_result.motion if s.name_result else ""))
+        motion_choices = sorted(set(self._known_motions + [
+            "", "静止", "歩行1", "歩行2", "ジャンプ", "待機", "攻撃"
+        ]))
+        self.motion_combo = ttk.Combobox(
+            form, textvariable=self.motion_var, values=motion_choices, width=36,
+        )
+        self.motion_combo.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
+        row += 1
+
+        # 4. Filename (auto-generated, user-editable)
+        ttk.Label(form, text="4. ファイル名 (Filename)",
+                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        row += 1
+        self.filename_var = tk.StringVar(value=s.effective_filename)
+        fn_row = ttk.Frame(form, style="Panel.TFrame")
+        fn_row.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
+        ttk.Entry(fn_row, textvariable=self.filename_var, width=28).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(fn_row, text="🔄 Auto", command=self._regenerate_filename,
+                   style="Toolbar.TButton").pack(side=tk.LEFT, padx=(4, 0))
+        row += 1
+
+        # Auto-regenerate filename when any of the 3 fields changes
+        self._auto_regenerate = True
+        for var in (self.base_var, self.variant_var, self.motion_var):
+            var.trace_add("write", self._on_field_change)
+
+        # --- Bulk apply checkbox (only meaningful if base_name changes) ---
+        self.bulk_var = tk.BooleanVar(value=False)
+        matching_count = self._count_matching_species()
+        if matching_count > 1:
+            ttk.Checkbutton(
+                form,
+                text=f"☑ この種類 ({matching_count} 個) の base_name をまとめて更新",
+                variable=self.bulk_var,
+            ).grid(row=row, column=0, columnspan=2, sticky="w", pady=(4, 4))
+            row += 1
+
+        form.columnconfigure(0, weight=1)
         form.columnconfigure(1, weight=1)
 
-        # If raw text is present (AI error), show it
+        # --- AI raw text (on error) ---
         if s.name_result and s.name_result.raw_text and s.name_result.error:
-            raw_frame = ttk.LabelFrame(self, text="AI raw response (for reference)")
+            raw_frame = ttk.LabelFrame(self, text=" AI error / raw response ")
             raw_frame.pack(fill=tk.X, padx=16, pady=(6, 0))
-            text = tk.Text(raw_frame, height=3, wrap="word",
+            text = tk.Text(raw_frame, height=4, wrap="word",
                            bg=THEME["bg_input"], fg=THEME["fg_muted"],
                            borderwidth=0, font=FONT_SMALL)
-            text.insert("1.0", s.name_result.raw_text[:400])
+            err_msg = s.name_result.error or ""
+            text.insert("1.0", f"{err_msg}\n\n{s.name_result.raw_text[:500]}")
             text.configure(state="disabled")
             text.pack(fill=tk.X, padx=4, pady=4)
 
-        # Buttons
+        # --- Buttons ---
         btns = ttk.Frame(self, style="Panel.TFrame")
         btns.pack(fill=tk.X, padx=16, pady=(12, 16))
         ttk.Button(btns, text="Cancel", command=self._cancel).pack(side=tk.RIGHT, padx=(6, 0))
@@ -301,15 +391,33 @@ class VariantPickerDialog(tk.Toplevel):
         self.bind("<Return>", lambda e: self._apply())
         self.bind("<Escape>", lambda e: self._cancel())
 
+    def _count_matching_species(self) -> int:
+        """このスプライトと同じ base_name を持つ (自分を含む) 個数。"""
+        if not self.original_base_name:
+            return 0
+        return sum(
+            1 for s in self._all_sprites
+            if s.name_result and s.name_result.base_name == self.original_base_name
+        )
+
+    def _on_field_change(self, *_):
+        if self._auto_regenerate:
+            self._regenerate_filename()
+
     def _regenerate_filename(self):
         base = self.base_var.get().strip()
         variant = self.variant_var.get().strip()
-        fn = _sanitize_filename(f"{base}_{variant}") or f"sprite_{self._sprite.info.index:03d}"
+        motion = self.motion_var.get().strip()
+        combined = "_".join(p for p in (base, variant, motion) if p)
+        fn = _sanitize_filename(combined) or f"sprite_{self._sprite.info.index:03d}"
+        self._auto_regenerate = False
         self.filename_var.set(fn)
+        self._auto_regenerate = True
 
     def _apply(self):
         base = self.base_var.get().strip()
         variant = self.variant_var.get().strip()
+        motion = self.motion_var.get().strip()
         filename = _sanitize_filename(self.filename_var.get())
         if not filename:
             filename = f"sprite_{self._sprite.info.index:03d}"
@@ -318,9 +426,13 @@ class VariantPickerDialog(tk.Toplevel):
             self._sprite.name_result = NameResult()
         self._sprite.name_result.base_name = base
         self._sprite.name_result.variant = variant
+        self._sprite.name_result.motion = motion
         self._sprite.name_result.filename = filename
         self._sprite.name_result.needs_user_input = False
+        self._sprite.name_result.error = None  # clear stale errors after manual edit
         self._sprite.manual_filename = filename
+
+        self.bulk_apply_species = bool(self.bulk_var.get())
         self.result_applied = True
         self.destroy()
 
@@ -928,8 +1040,6 @@ class CleanEdgesGUI:
         s.thumb_photo = ImageTk.PhotoImage(composite)
         thumb_lbl = tk.Label(card, image=s.thumb_photo, bg=THEME["bg_panel"], cursor="hand2")
         thumb_lbl.pack(padx=6, pady=(6, 2))
-        thumb_lbl.bind("<Double-Button-1>", lambda e, sp=s: self._open_variant_dialog(sp))
-        thumb_lbl.bind("<Button-1>", lambda e, sp=s: self._toggle_sprite(sp))
 
         # Checkbox + index
         row = tk.Frame(card, bg=THEME["bg_panel"])
@@ -951,14 +1061,34 @@ class CleanEdgesGUI:
         # Name label
         s.name_label = tk.Label(card, text=s.display_name,
                                 bg=THEME["bg_panel"], fg=THEME["fg_main"],
-                                font=FONT_BASE, wraplength=150, justify="center")
+                                font=FONT_BASE, wraplength=150, justify="center", cursor="hand2")
         s.name_label.pack(fill=tk.X, padx=6, pady=(2, 0))
 
         # Filename label
         s.status_label = tk.Label(card, text=s.effective_filename + ".png",
                                   bg=THEME["bg_panel"], fg=THEME["accent"],
-                                  font=FONT_SMALL, wraplength=150, justify="center")
+                                  font=FONT_SMALL, wraplength=150, justify="center", cursor="hand2")
         s.status_label.pack(fill=tk.X, padx=6, pady=(0, 6))
+
+        # Bind double-click to OPEN edit dialog on every part of the card.
+        # Also bind single-click on the name/filename labels (not the thumbnail
+        # — thumbnail single-click toggles selection for quick deselection).
+        def _open_edit(event=None, sp=s):
+            self._open_variant_dialog(sp)
+
+        def _toggle(event=None, sp=s):
+            self._toggle_sprite(sp)
+
+        # Thumbnail: single-click toggles selection, double-click edits
+        thumb_lbl.bind("<Button-1>", _toggle)
+        thumb_lbl.bind("<Double-Button-1>", _open_edit)
+
+        # Card frame, name label, filename label: any click opens edit
+        for w in (card, s.name_label, s.status_label):
+            w.bind("<Double-Button-1>", _open_edit)
+        # Single click on the name/filename also opens edit (more discoverable)
+        s.name_label.bind("<Button-1>", _open_edit)
+        s.status_label.bind("<Button-1>", _open_edit)
 
     def _relayout_sprite_cards(self):
         """Re-grid cards based on current canvas width."""
@@ -1027,10 +1157,42 @@ class CleanEdgesGUI:
             self._set_card_state(s, "ok")
 
     def _open_variant_dialog(self, s: SpriteItem):
-        dialog = VariantPickerDialog(self.root, s)
+        # Snapshot vocabulary BEFORE the dialog so we can detect a base_name change
+        original_base_name = (s.name_result.base_name if s.name_result else "")
+        base_names, variants, motions = self._collect_known_vocabulary()
+
+        dialog = VariantPickerDialog(
+            self.root, s,
+            all_sprites=self.sprites,
+            known_base_names=base_names,
+            known_variants=variants,
+            known_motions=motions,
+        )
         self.root.wait_window(dialog)
-        if dialog.result_applied:
-            self._update_sprite_card_labels(s)
+        if not dialog.result_applied:
+            return
+
+        new_base = (s.name_result.base_name if s.name_result else "")
+        new_variant = (s.name_result.variant if s.name_result else "")
+        new_motion = (s.name_result.motion if s.name_result else "")
+
+        # Bulk apply: rewrite base_name on all sprites with the original name
+        if dialog.bulk_apply_species and original_base_name and new_base and new_base != original_base_name:
+            updated = 0
+            for other in self.sprites:
+                if other is s:
+                    continue
+                if (other.name_result
+                        and other.name_result.base_name == original_base_name):
+                    other.name_result.base_name = new_base
+                    other.rebuild_filename_from_parts()
+                    self._update_sprite_card_labels(other)
+                    updated += 1
+            self.status_var.set(
+                f"Updated species '{original_base_name}' → '{new_base}' on {updated + 1} sprite(s)."
+            )
+
+        self._update_sprite_card_labels(s)
 
     # ==================================================================== AI naming
 
@@ -1047,89 +1209,113 @@ class CleanEdgesGUI:
             messagebox.showinfo("No selection", "Select at least one sprite.")
             return
 
-        context = self.ai_context_var.get().strip()
-        existing = [s.effective_filename for s in self.sprites if s.name_result and s not in targets]
-
         # Increment generation to invalidate any stale callbacks
         self._ai_generation += 1
-        current_gen = self._ai_generation
+        gen = self._ai_generation
 
         if self._ai_executor is not None:
             self._ai_executor.shutdown(wait=False)
-        # Serial execution (max_workers=1) to avoid hitting Gemini free-tier
-        # rate limits (20 req/min on gemini-2.5-flash)
         self._ai_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-        # Mark all target cards as "pending" (blue border + ⏳ label)
+        # Mark all target cards as "pending" (blue border + ⏳ label) upfront
         for s in targets:
             self._set_card_state(s, "pending")
 
-        total = len(targets)
-        self._set_busy(f"Naming with AI  0/{total}  (Gemini free tier: serial, auto-retry on rate limit)",
-                       determinate_max=total)
+        self._ai_queue = list(targets)  # popped from front
+        self._ai_total = len(targets)
+        self._ai_counts = {"n": 0, "ok": 0, "fail": 0}
 
-        completed = {"n": 0, "ok": 0, "fail": 0}
+        self._set_busy(
+            f"Naming with AI  0/{self._ai_total}  (vocabulary unified across batch)",
+            determinate_max=self._ai_total,
+        )
+        self._submit_next_ai(gen)
 
-        def worker(sprite: SpriteItem, existing_snapshot: List[str]):
-            if current_gen != self._ai_generation:
-                return sprite, None
-            try:
-                result = request_sprite_name(
-                    sprite.info.image,
-                    user_context=context,
-                    existing_names=existing_snapshot,
-                )
-            except Exception as e:
-                result = NameResult()
-                result.error = f"unexpected: {e}"
-            return sprite, result
+    def _collect_known_vocabulary(self) -> tuple:
+        """現在までに確定している base_name / variant / motion の一覧を返す。"""
+        base_names = [
+            s.name_result.base_name for s in self.sprites
+            if s.name_result and s.name_result.base_name and not s.name_result.error
+        ]
+        variants = [
+            s.name_result.variant for s in self.sprites
+            if s.name_result and s.name_result.variant and not s.name_result.error
+        ]
+        motions = [
+            s.name_result.motion for s in self.sprites
+            if s.name_result and s.name_result.motion and not s.name_result.error
+        ]
+        return base_names, variants, motions
 
-        def on_future_done(fut):
-            if current_gen != self._ai_generation:
-                return
-            try:
-                sprite, result = fut.result()
-            except Exception as e:
-                traceback.print_exc()
-                err_msg = f"AI error: {e}"
-                self.root.after(0, lambda: self._set_busy_error(err_msg))
-                return
-            self.root.after(0, self._apply_ai_result, sprite, result, completed, total, current_gen)
-
-        for s in targets:
-            snapshot = list(existing)
-            fut = self._ai_executor.submit(worker, s, snapshot)
-            fut.add_done_callback(on_future_done)
-
-    def _set_busy_error(self, message: str):
-        """Show an error flash in the status bar without clearing progress."""
-        self.status_icon.config(fg=THEME["err"])
-        self.status_var.set(message)
-        self.root.update_idletasks()
-
-    def _apply_ai_result(
-        self,
-        sprite: SpriteItem,
-        result: Optional[NameResult],
-        completed: dict,
-        total: int,
-        gen: int,
-    ):
-        # Stale batch guard
+    def _submit_next_ai(self, gen: int):
+        """
+        1 件だけ submit する。前のスプライトの結果が適用されてから呼ばれるので、
+        既に確定した語彙 (base_name/variant/motion) をプロンプトに乗せられる。
+        """
         if gen != self._ai_generation:
             return
-        completed["n"] += 1
+        if not self._ai_queue:
+            self._finalize_ai_batch(gen)
+            return
+
+        sprite = self._ai_queue.pop(0)
+        context = self.ai_context_var.get().strip()
+        existing_base_names, existing_variants, existing_motions = self._collect_known_vocabulary()
+        existing_filenames = [
+            s.effective_filename for s in self.sprites
+            if s is not sprite and s.name_result and not s.name_result.error
+        ]
+
+        def worker():
+            if gen != self._ai_generation:
+                return None
+            try:
+                return request_sprite_name(
+                    sprite.info.image,
+                    user_context=context,
+                    existing_names=existing_filenames,
+                    existing_base_names=existing_base_names,
+                    existing_variants=existing_variants,
+                    existing_motions=existing_motions,
+                )
+            except Exception as e:
+                r = NameResult()
+                r.error = f"unexpected: {e}"
+                return r
+
+        def on_done(fut):
+            if gen != self._ai_generation:
+                return
+            try:
+                result = fut.result()
+            except Exception as e:
+                traceback.print_exc()
+                result = NameResult()
+                result.error = str(e)
+            self.root.after(0, self._apply_ai_result_chained, sprite, result, gen)
+
+        fut = self._ai_executor.submit(worker)
+        fut.add_done_callback(on_done)
+
+    def _apply_ai_result_chained(self, sprite: SpriteItem, result: Optional[NameResult], gen: int):
+        """
+        main thread 上で 1 件の結果を反映し、次の sprite を submit する。
+        """
+        if gen != self._ai_generation:
+            return
+
+        self._ai_counts["n"] += 1
         if result is not None:
             sprite.name_result = result
             if result.error:
-                completed["fail"] += 1
+                self._ai_counts["fail"] += 1
             else:
-                completed["ok"] += 1
-                # de-dup filename against all existing filenames
+                self._ai_counts["ok"] += 1
+                # De-dup filename across the whole batch
                 if result.filename:
                     used = {
                         s.effective_filename for s in self.sprites
-                        if s is not sprite and (s.name_result or s.manual_filename)
+                        if s is not sprite and s.name_result and not s.name_result.error
                     }
                     base_fn = result.filename
                     fn = base_fn
@@ -1138,43 +1324,50 @@ class CleanEdgesGUI:
                         fn = f"{base_fn}_{suf}"
                         suf += 1
                     result.filename = fn
-            # Update card visual
             self._update_sprite_card_labels(sprite)
 
         self._set_progress(
-            completed["n"],
-            message=f"Naming with AI  {completed['n']}/{total}  (ok:{completed['ok']}  fail:{completed['fail']})",
+            self._ai_counts["n"],
+            message=(
+                f"Naming with AI  {self._ai_counts['n']}/{self._ai_total}  "
+                f"(ok:{self._ai_counts['ok']}  fail:{self._ai_counts['fail']})"
+            ),
         )
 
-        if completed["n"] >= total:
-            ok = completed["ok"]
-            fail = completed["fail"]
-            if fail == 0:
-                self._clear_busy(f"AI naming complete: {ok}/{total} succeeded")
-            else:
-                self._clear_busy(
-                    f"AI naming finished: {ok} ok, {fail} failed. Click failed cards for details.",
-                    icon_color=THEME["warn"],
-                )
-                # Show first failure reason in a dialog once per batch
-                first_error = next(
-                    (s.name_result.error for s in self.sprites
-                     if s.name_result and s.name_result.error),
-                    None,
-                )
-                if first_error:
-                    quota_hint = ""
-                    if "429" in first_error or "quota" in first_error.lower() or "rate" in first_error.lower():
-                        quota_hint = (
-                            "\n\n⚠ This looks like a Gemini free-tier rate limit "
-                            "(20 requests/minute). Wait 60 seconds and click "
-                            "'Name All with AI' again — failed sprites will be retried."
-                        )
-                    messagebox.showwarning(
-                        "Some sprites failed",
-                        f"{fail} sprite(s) could not be named.\n\n"
-                        f"First error:\n{first_error[:400]}{quota_hint}",
+        # Submit next
+        self._submit_next_ai(gen)
+
+    def _finalize_ai_batch(self, gen: int):
+        if gen != self._ai_generation:
+            return
+        ok = self._ai_counts["ok"]
+        fail = self._ai_counts["fail"]
+        total = self._ai_total
+
+        if fail == 0:
+            self._clear_busy(f"AI naming complete: {ok}/{total} succeeded")
+        else:
+            self._clear_busy(
+                f"AI naming finished: {ok} ok, {fail} failed. Double-click failed cards for details.",
+                icon_color=THEME["warn"],
+            )
+            first_error = next(
+                (s.name_result.error for s in self.sprites
+                 if s.name_result and s.name_result.error),
+                None,
+            )
+            if first_error:
+                quota_hint = ""
+                if "429" in first_error or "quota" in first_error.lower() or "rate" in first_error.lower():
+                    quota_hint = (
+                        "\n\n⚠ This looks like a Gemini free-tier rate limit. "
+                        "Wait a minute and click 'Name All with AI' again."
                     )
+                messagebox.showwarning(
+                    "Some sprites failed",
+                    f"{fail} sprite(s) could not be named.\n\n"
+                    f"First error:\n{first_error[:400]}{quota_hint}",
+                )
 
     def _set_card_state(self, s: SpriteItem, state: str):
         """
