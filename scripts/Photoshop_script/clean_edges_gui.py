@@ -709,14 +709,14 @@ class CleanEdgesGUI:
 
         if step is None:
             step = 0.1 if decimal else 1
-        fmt = "%.2f" if decimal else "%d"
 
-        spin = tk.Spinbox(
-            row,
+        # Tk Spinbox only accepts float-style formats (%.Nf), not %d.
+        # For integers we omit the format option entirely; tk will display
+        # the IntVar value as-is without trailing zeros.
+        spin_kwargs = dict(
             textvariable=var,
             from_=mn, to=mx, increment=step,
             width=6,
-            format=fmt,
             bg=THEME["bg_input"], fg=THEME["fg_main"],
             buttonbackground=THEME["bg_input"],
             insertbackground=THEME["fg_main"],
@@ -727,6 +727,9 @@ class CleanEdgesGUI:
             bd=0,
             justify="right",
         )
+        if decimal:
+            spin_kwargs["format"] = "%.2f"
+        spin = tk.Spinbox(row, **spin_kwargs)
         spin.pack(side=tk.LEFT)
         # Return the slider for state-toggle (enable/disable). The spinbox
         # state is tracked separately because it's a tk widget (not ttk).
