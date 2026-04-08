@@ -530,7 +530,9 @@ var REWARDS_API  = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + 
 // ════════════════════════════════════════════════════════════════
 var rewardsData = null;       // parsed rewards.json
 var creaturesData = null;     // parsed creatures.json
-// 新規追加生き物のアップロード待ちファイル: { normal: [File], surprised: File, happy: File }
+// 新規追加生き物のアップロード待ちファイル
+// File 参照ではなく {name, base64, dataUrl, naturalWidth} を保持することで
+// 「長時間保持した File が stale になる → NotReadableError」を回避
 var pendingCreatureFiles = { normal: [], surprised: null, happy: null };
 var rewardsFileSha = null;    // SHA for PUT update
 var slotPage = 0;
@@ -1464,38 +1466,6 @@ function renderSeaCreatures() {
   });
 }
 
-// ファイル → base64
-function _fileToBase64(file) {
-  return new Promise(function(resolve, reject) {
-    var reader = new FileReader();
-    reader.onload = function() {
-      // data:image/png;base64,XXXXX → XXXXX 部分だけ
-      var s = reader.result || '';
-      var idx = s.indexOf(',');
-      resolve(idx >= 0 ? s.substring(idx + 1) : s);
-    };
-    reader.onerror = function() { reject(reader.error); };
-    reader.readAsDataURL(file);
-  });
-}
-
-// ファイル → naturalWidth (画像の元サイズ取得)
-function _fileToNaturalWidth(file) {
-  return new Promise(function(resolve) {
-    var url = URL.createObjectURL(file);
-    var img = new Image();
-    img.onload = function() {
-      resolve(img.naturalWidth || 600);
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = function() {
-      resolve(600);
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-  });
-}
-
 // ghUpload を Promise 化
 function ghUploadPromise(filePath, base64, msg) {
   return new Promise(function(resolve, reject) {
@@ -1507,39 +1477,106 @@ function ghUploadPromise(filePath, base64, msg) {
 }
 
 // ドロップゾーンに UI を描画
-// 古い blob URL は revoke してメモリリークを防ぐ
-function _renderDropZone(zone, files) {
+// items は {name, dataUrl, base64, naturalWidth} オブジェクトの配列または単体
+function _renderDropZone(zone, items) {
   var thumbs = zone.querySelector('.creature-drop-thumbs');
   if (!thumbs) return;
-  // 既存のサムネ画像の blob URL を revoke
-  thumbs.querySelectorAll('img').forEach(function(oldImg) {
-    if (oldImg.src && oldImg.src.indexOf('blob:') === 0) {
-      try { URL.revokeObjectURL(oldImg.src); } catch (e) {}
-    }
-  });
   thumbs.innerHTML = '';
-  if (!files || (Array.isArray(files) && files.length === 0)) {
+  if (!items || (Array.isArray(items) && items.length === 0)) {
     var hint = document.createElement('span');
     hint.style.cssText = 'font-size:0.7rem;color:#aaa;';
     hint.textContent = 'クリック / ドラッグでアップロード';
     thumbs.appendChild(hint);
     return;
   }
-  var arr = Array.isArray(files) ? files : [files];
-  arr.forEach(function(f, i) {
+  var arr = Array.isArray(items) ? items : [items];
+  arr.forEach(function(item) {
     var wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative;display:inline-block;';
     var img = document.createElement('img');
-    var url = URL.createObjectURL(f);
-    img.src = url;
+    img.src = item.dataUrl; // data URL なので revoke 不要
     img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#fafafa;border:1px solid #ddd;border-radius:6px;';
     wrap.appendChild(img);
     var name = document.createElement('div');
     name.style.cssText = 'font-size:0.55rem;color:#888;text-align:center;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-    name.textContent = f.name;
+    name.textContent = item.name;
     wrap.appendChild(name);
     thumbs.appendChild(wrap);
   });
+}
+
+// File → {name, base64, dataUrl, naturalWidth} 即時変換
+// 選択した瞬間に base64 化することで、後から File が stale になる問題を回避
+function _processFile(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var dataUrl = reader.result || '';
+      var idx = dataUrl.indexOf(',');
+      var base64 = idx >= 0 ? dataUrl.substring(idx + 1) : '';
+      // naturalWidth を取得するために Image を1回ロード
+      var img = new Image();
+      img.onload = function() {
+        resolve({
+          name: file.name,
+          base64: base64,
+          dataUrl: dataUrl,
+          naturalWidth: img.naturalWidth || 600
+        });
+      };
+      img.onerror = function() {
+        resolve({
+          name: file.name,
+          base64: base64,
+          dataUrl: dataUrl,
+          naturalWidth: 600
+        });
+      };
+      img.src = dataUrl;
+    };
+    reader.onerror = function() {
+      reject(reader.error || new Error('failed to read file'));
+    };
+    try {
+      reader.readAsDataURL(file);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+// ファイル名から表示名と ID を自動生成してフォームに反映
+// 家具アップローダーと同じ哲学: 拡張子・サフィックス除去 → snake_case ID
+function _autoFillCreatureFromFileName(filename) {
+  var nameInp = document.getElementById('newCreatureName');
+  var idInp = document.getElementById('newCreatureId');
+  if (!nameInp || !idInp) return;
+
+  // 拡張子除去
+  var raw = (filename || '').replace(/\.[^.]+$/, '');
+  // _normal_1 / _surprised / _happy / _001 などのサフィックスを除去
+  var base = raw
+    .replace(/[_\-]?(normal|surprised|happy)[_\-]?\d*$/i, '')
+    .replace(/[_\-]?\d+$/, '')
+    .replace(/[_\-]+$/, '');
+  if (!base) return;
+
+  // ID: 半角英数+_ に変換
+  var cleanId = base
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .toLowerCase()
+    .replace(/^_+|_+$/g, '')
+    .replace(/_+/g, '_');
+  if (!cleanId) return;
+
+  // 表示名: 空なら base（見やすく空白に変換）
+  if (!nameInp.value.trim()) {
+    nameInp.value = base.replace(/[_\-]/g, ' ');
+  }
+  // ID: 空 or 手動フラグが立っていなければ更新
+  if (!idInp.value.trim() && !idInp.dataset.manual) {
+    idInp.value = cleanId;
+  }
 }
 
 // ドロップゾーンの初期化
@@ -1555,20 +1592,60 @@ function _wireCreatureDropZones() {
     input.style.display = 'none';
     zone.appendChild(input);
 
+    // ファイルを即時 base64 化して pendingCreatureFiles に格納
     function handleFiles(fileList) {
       var arr = Array.from(fileList || []).filter(function(f) { return f && /^image\//.test(f.type); });
       if (arr.length === 0) return;
-      if (key === 'normal') {
-        // 最大3枚まで
-        pendingCreatureFiles.normal = arr.slice(0, 3);
-        _renderDropZone(zone, pendingCreatureFiles.normal);
-      } else {
-        pendingCreatureFiles[key] = arr[0];
-        _renderDropZone(zone, pendingCreatureFiles[key]);
+
+      // プレースホルダーを「処理中...」にする
+      var thumbs = zone.querySelector('.creature-drop-thumbs');
+      if (thumbs) {
+        thumbs.innerHTML = '';
+        var loading = document.createElement('span');
+        loading.style.cssText = 'font-size:0.7rem;color:#0369A1;';
+        loading.textContent = '⏳ 読み込み中...';
+        thumbs.appendChild(loading);
       }
+
+      // normal のみ複数対応 (最大3枚)
+      var files = (key === 'normal') ? arr.slice(0, 3) : [arr[0]];
+
+      // すべて並列で _processFile
+      Promise.all(files.map(_processFile))
+        .then(function(processed) {
+          if (key === 'normal') {
+            pendingCreatureFiles.normal = processed;
+            _renderDropZone(zone, processed);
+          } else {
+            pendingCreatureFiles[key] = processed[0];
+            _renderDropZone(zone, processed[0]);
+          }
+          // 先頭ファイルから表示名と ID を自動生成
+          if (processed[0] && processed[0].name) {
+            _autoFillCreatureFromFileName(processed[0].name);
+          }
+        })
+        .catch(function(e) {
+          console.error('[_wireCreatureDropZones] _processFile failed:', e);
+          showToast('ファイル読み込み失敗: ' + (e && e.message ? e.message : e), false);
+          // プレースホルダーを戻す
+          if (key === 'normal') {
+            pendingCreatureFiles.normal = [];
+            _renderDropZone(zone, []);
+          } else {
+            pendingCreatureFiles[key] = null;
+            _renderDropZone(zone, null);
+          }
+        });
     }
 
-    input.addEventListener('change', function() { handleFiles(input.files); input.value = ''; });
+    // change イベント: input.value を先に掴んでから clear（clear 後も File 参照は有効だが
+    // 即時処理に切り替わったので元々 stale 問題は起きない）
+    input.addEventListener('change', function() {
+      var files = input.files;
+      input.value = ''; // 同じファイルを再選択できるようにクリア
+      handleFiles(files);
+    });
     zone.addEventListener('click', function(e) {
       if (e.target.tagName === 'IMG') return; // サムネクリックはアップロードを起動しない
       input.click();
@@ -1582,12 +1659,11 @@ function _wireCreatureDropZones() {
     });
   });
 
-  // 表示名 → ID 自動生成
+  // 表示名 → ID 自動生成（ユーザーがフォームから手で入力した時）
   var nameInp = document.getElementById('newCreatureName');
   var idInp = document.getElementById('newCreatureId');
   if (nameInp && idInp) {
     nameInp.addEventListener('input', function() {
-      // ユーザーが手動で書いていなければ自動生成
       if (!idInp.dataset.manual) {
         idInp.value = nameInp.value
           .toLowerCase()
@@ -1642,69 +1718,71 @@ function deployNewCreature() {
   var folder = id.charAt(0).toUpperCase() + id.slice(1);
 
   // ファイル名を組み立てる
-  var normalNames = pendingCreatureFiles.normal.map(function(f, i) {
+  var normalNames = pendingCreatureFiles.normal.map(function(_, i) {
     return folder + '_normal_' + (i + 1) + '.png';
   });
   var surprisedName = folder + '_surprised.png';
   var happyName = pendingCreatureFiles.happy ? folder + '_happy.png' : null;
 
-  setStatus('🔄 画像をアップロード中... 0/' + (normalNames.length + 1 + (happyName ? 1 : 0)));
+  var totalUploads = normalNames.length + 1 + (happyName ? 1 : 0);
+  setStatus('🔄 画像をアップロード中... 0/' + totalUploads);
 
-  // ナチュラル幅を取得（先頭1枚から）
-  _fileToNaturalWidth(pendingCreatureFiles.normal[0]).then(function(naturalWidth) {
+  // naturalWidth は normal 1枚目に既に保存されている（_processFile 時点で取得済み）
+  var naturalWidth = pendingCreatureFiles.normal[0].naturalWidth || 600;
 
-    // アップロードタスクを順次実行
-    var tasks = [];
-    pendingCreatureFiles.normal.forEach(function(file, i) {
-      tasks.push({ file: file, name: normalNames[i] });
-    });
-    tasks.push({ file: pendingCreatureFiles.surprised, name: surprisedName });
-    if (pendingCreatureFiles.happy) tasks.push({ file: pendingCreatureFiles.happy, name: happyName });
+  // アップロードタスクを組み立てる（base64 は既に保持済み）
+  var tasks = [];
+  pendingCreatureFiles.normal.forEach(function(item, i) {
+    tasks.push({ base64: item.base64, name: normalNames[i] });
+  });
+  tasks.push({ base64: pendingCreatureFiles.surprised.base64, name: surprisedName });
+  if (pendingCreatureFiles.happy) {
+    tasks.push({ base64: pendingCreatureFiles.happy.base64, name: happyName });
+  }
 
-    var uploaded = 0;
-    function uploadNext(idx) {
-      if (idx >= tasks.length) return Promise.resolve();
-      var t = tasks[idx];
-      return _fileToBase64(t.file).then(function(b64) {
-        var path = 'assets/images/ocean/' + folder + '/' + t.name;
-        return ghUploadPromise(path, b64, '🐠 add creature: ' + id + ' / ' + t.name);
-      }).then(function() {
+  // 順次アップロード
+  var uploaded = 0;
+  function uploadNext(idx) {
+    if (idx >= tasks.length) return Promise.resolve();
+    var t = tasks[idx];
+    var path = 'assets/images/ocean/' + folder + '/' + t.name;
+    return ghUploadPromise(path, t.base64, '🐠 add creature: ' + id + ' / ' + t.name)
+      .then(function() {
         uploaded++;
-        setStatus('🔄 画像をアップロード中... ' + uploaded + '/' + tasks.length);
+        setStatus('🔄 画像をアップロード中... ' + uploaded + '/' + totalUploads);
         return uploadNext(idx + 1);
       });
-    }
+  }
 
-    return uploadNext(0).then(function() {
-      // creatures.json を更新
-      setStatus('🔄 creatures.json を更新中...');
-      var newEntry = {
-        id: id,
-        displayName: displayName,
-        icon: icon,
-        folder: folder,
-        expressions: {
-          normal: normalNames.length === 1 ? normalNames[0] : normalNames,
-          surprised: surprisedName
-        },
-        pattern: pattern,
-        reactionType: reactionType,
-        baseSizePx: baseSizePx,
-        baseSizeJitter: 30,
-        imgWidthHint: naturalWidth,
-        speedMin: 0.04,
-        speedMax: 0.07,
-        spawnCount: spawnCount,
-        rewardType: 'sea'
-      };
-      if (happyName) newEntry.expressions.happy = happyName;
-      if (!creaturesData) creaturesData = { version: 1, creatures: [] };
-      creaturesData.creatures.push(newEntry);
+  uploadNext(0).then(function() {
+    // creatures.json を更新
+    setStatus('🔄 creatures.json を更新中...');
+    var newEntry = {
+      id: id,
+      displayName: displayName,
+      icon: icon,
+      folder: folder,
+      expressions: {
+        normal: normalNames.length === 1 ? normalNames[0] : normalNames,
+        surprised: surprisedName
+      },
+      pattern: pattern,
+      reactionType: reactionType,
+      baseSizePx: baseSizePx,
+      baseSizeJitter: 30,
+      imgWidthHint: naturalWidth,
+      speedMin: 0.04,
+      speedMax: 0.07,
+      spawnCount: spawnCount,
+      rewardType: 'sea'
+    };
+    if (happyName) newEntry.expressions.happy = happyName;
+    if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+    creaturesData.creatures.push(newEntry);
 
-      var json = JSON.stringify(creaturesData, null, 2);
-      var b64 = utf8ToBase64(json);
-      return ghUploadPromise(CREATURES_PATH, b64, '🐠 register creature: ' + id);
-    });
+    var json = JSON.stringify(creaturesData, null, 2);
+    var b64 = utf8ToBase64(json);
+    return ghUploadPromise(CREATURES_PATH, b64, '🐠 register creature: ' + id);
   }).then(function() {
     setStatus('✅ 登録完了！aquarium で確認してください', '#16A34A');
     showToast('🐠 ' + displayName + ' を登録しました', true);
