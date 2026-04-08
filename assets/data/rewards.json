@@ -76,13 +76,24 @@
     {
       "icon": "🐠",
       "name": "さかな",
-      "type": "sea",
-      "id": "medaka",
-      "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png"
+      "gendered": true,
+      "boy": {
+        "name": "あおぞら",
+        "type": "wall",
+        "id": "wall_aozora",
+        "img": "assets/images/Rooms/walls/aozora.png"
+      },
+      "girl": {
+        "name": "みずたま",
+        "type": "wall",
+        "id": "wall_mizutama",
+        "img": "assets/images/Rooms/walls/mizutama.png"
+      }
     },
     {
       "icon": "🖼️",
       "name": "かべがみ",
+      "gendered": false,
       "type": "wall",
       "id": "wall_mizutama",
       "img": "assets/images/Rooms/walls/mizutama.png"
@@ -90,6 +101,7 @@
     {
       "icon": "🐢",
       "name": "ウミガメ",
+      "gendered": false,
       "type": "sea",
       "id": "turtle",
       "img": "assets/images/ocean/Turtle/Turtle_001.png"
@@ -97,6 +109,7 @@
     {
       "icon": "🪼",
       "name": "クラゲ",
+      "gendered": false,
       "type": "sea",
       "id": "jellyfish",
       "img": "assets/images/ocean/JellyFish/JellyFish_001.png"
