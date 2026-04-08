@@ -70,12 +70,15 @@ html, body {
   position: absolute;
   width: 42px; height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6C8E3F, #A4C76D);
+  background: linear-gradient(135deg, rgba(108,142,63,0.72), rgba(164,199,109,0.72));
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   color: white;
-  border: 3px solid white;
+  border: 3px solid rgba(255,255,255,0.85);
   font-size: 1.4rem; font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
   display: flex; align-items: center; justify-content: center;
   pointer-events: auto;
   font-family: inherit;
@@ -87,6 +90,92 @@ html, body {
 @keyframes arrowPulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50%      { transform: translate(-50%, -50%) scale(1.12); }
+}
+/* Breeze arrow: green tinted, glow */
+.maze-arrow-breeze {
+  background: linear-gradient(135deg, rgba(96,200,160,0.85), rgba(160,235,200,0.85));
+  border-color: #fff;
+  box-shadow: 0 0 14px rgba(96,200,160,0.85);
+}
+
+/* ── Charm bar (りんごで集めるおまもり) ── */
+.charms {
+  display: flex; justify-content: center; gap: 8px;
+  padding: 4px 0 6px;
+  flex-shrink: 0;
+}
+.charm {
+  background: linear-gradient(135deg, #FFFAE6, #FFF3C4);
+  border: 2px solid #F5C842;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: transform 0.15s, opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.charm:disabled {
+  opacity: 0.3;
+  filter: grayscale(0.6);
+  cursor: not-allowed;
+}
+.charm:not(:disabled):active {
+  transform: scale(0.92);
+}
+.charm.active {
+  background: linear-gradient(135deg, #FFE066, #FFC93C);
+  box-shadow: 0 0 14px rgba(255,201,60,0.8);
+  animation: charmPulse 0.7s ease-in-out infinite;
+}
+@keyframes charmPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+.charm-icon { font-size: 1.1rem; }
+.charm-num { font-weight: 900; min-width: 8px; }
+
+/* Charm gain popup */
+.charm-popup {
+  position: absolute;
+  background: linear-gradient(135deg, #FFE066, #FFC93C);
+  border: 2px solid #fff;
+  border-radius: 16px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #5D4E37;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  pointer-events: none;
+  z-index: 70;
+  animation: charmGain 2.4s ease-out forwards;
+  white-space: nowrap;
+}
+@keyframes charmGain {
+  0%   { transform: translate(-50%, 20px) scale(0.5); opacity: 0; }
+  15%  { transform: translate(-50%, -10px) scale(1.15); opacity: 1; }
+  80%  { transform: translate(-50%, -20px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50px) scale(0.95); opacity: 0; }
+}
+
+/* Warp flash effect */
+.warp-flash {
+  position: absolute;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,200,0.95), rgba(255,200,80,0));
+  pointer-events: none;
+  z-index: 55;
+  transform: translate(-50%, -50%);
+  animation: warpBurst 0.8s ease-out forwards;
+}
+@keyframes warpBurst {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
 }
 
 /* Hint message */
@@ -238,6 +327,18 @@ html, body {
     <div id="hud-stage">ステージ 1</div>
     <div id="hud-apples">🍎 0/0</div>
     <div id="hud-moves">てかず: 0</div>
+  </div>
+
+  <div class="charms" id="charms">
+    <button class="charm" id="charm-hint" disabled title="ようせいのヒント">
+      <span class="charm-icon">🧚</span><span class="charm-num" id="charm-hint-n">0</span>
+    </button>
+    <button class="charm" id="charm-breeze" disabled title="そよかぜパス">
+      <span class="charm-icon">🍃</span><span class="charm-num" id="charm-breeze-n">0</span>
+    </button>
+    <button class="charm" id="charm-warp" disabled title="ほしのワープ">
+      <span class="charm-icon">🌟</span><span class="charm-num" id="charm-warp-n">0</span>
+    </button>
   </div>
 
   <div class="game-wrap" id="gameWrap">
@@ -559,6 +660,30 @@ let walkAnim = null;
 let cleared = false;
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
+// ── Charm system (りんごでアンロックするおまもり) ──
+// totalApples = 累計収集数 (永続)
+// usedHint/usedBreeze/usedWarp = 使用回数 (永続)
+// 所持数 = floor(totalApples / N) - used
+let totalApples = parseInt(localStorage.getItem('pono_maze_total_apples') || '0', 10);
+let usedHint   = parseInt(localStorage.getItem('pono_maze_used_hint')   || '0', 10);
+let usedBreeze = parseInt(localStorage.getItem('pono_maze_used_breeze') || '0', 10);
+let usedWarp   = parseInt(localStorage.getItem('pono_maze_used_warp')   || '0', 10);
+let breezeActive = false;
+let hintActiveUntil = 0;
+let hintCells = new Set();
+
+const CHARM_HINT_COST = 3;   // 3りんごで 1個 ヒント
+const CHARM_BREEZE_COST = 5; // 5りんごで 1個 そよかぜ
+const CHARM_WARP_COST = 8;   // 8りんごで 1個 ワープ
+
+function getCharms() {
+  return {
+    hint:   Math.max(0, Math.floor(totalApples / CHARM_HINT_COST)   - usedHint),
+    breeze: Math.max(0, Math.floor(totalApples / CHARM_BREEZE_COST) - usedBreeze),
+    warp:   Math.max(0, Math.floor(totalApples / CHARM_WARP_COST)   - usedWarp),
+  };
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
@@ -573,6 +698,12 @@ const voice = document.getElementById('voice');
 const encounter = document.getElementById('encounter');
 const arrowLayer = document.getElementById('arrowLayer');
 const gameWrap = document.getElementById('gameWrap');
+const charmHintBtn   = document.getElementById('charm-hint');
+const charmBreezeBtn = document.getElementById('charm-breeze');
+const charmWarpBtn   = document.getElementById('charm-warp');
+const charmHintN   = document.getElementById('charm-hint-n');
+const charmBreezeN = document.getElementById('charm-breeze-n');
+const charmWarpN   = document.getElementById('charm-warp-n');
 
 let cellSize = 48, gridOX = 0, gridOY = 0;
 
@@ -674,7 +805,15 @@ function finishWalk() {
     if (stage.cells[p.r][p.c] === T.APPLE) {
       stage.cells[p.r][p.c] = T.PATH;
       applesCollected++;
+      // Persist & check for newly-unlocked charms
+      const beforeCharms = getCharms();
+      totalApples++;
+      localStorage.setItem('pono_maze_total_apples', String(totalApples));
+      const afterCharms = getCharms();
       spawnPickup(p.r, p.c);
+      if (afterCharms.hint > beforeCharms.hint) spawnCharmPopup('🧚 ようせいの ヒント！');
+      if (afterCharms.breeze > beforeCharms.breeze) spawnCharmPopup('🍃 そよかぜパス！');
+      if (afterCharms.warp > beforeCharms.warp) spawnCharmPopup('🌟 ほしのワープ！');
     }
     if (!trail.find(t => t.r === p.r && t.c === p.c)) {
       trail.push({ r: p.r, c: p.c });
@@ -685,6 +824,7 @@ function finishWalk() {
   hudMoves.textContent = 'てかず: ' + moves;
   hudApples.textContent = '🍎 ' + applesCollected + '/' + stage.totalApples;
   walkAnim = null;
+  updateCharmsUI();
   if (stage.cells[last.r][last.c] === T.GOAL) {
     onClear();
   } else {
@@ -693,29 +833,59 @@ function finishWalk() {
 }
 
 // ====== Arrow UI ======
+function isObstacleCell(r, c) {
+  if (r < 0 || r >= stage.rows || c < 0 || c >= stage.cols) return false;
+  const t = stage.cells[r][c];
+  return t === T.CAT || t === T.WATER || t === T.THORN || t === T.STONE;
+}
+
 function showArrows() {
   hideArrows();
   if (cleared || walkAnim) return;
-  const dirs = getOpenDirs(pono.r, pono.c, null);
-  if (dirs.length === 0) return;
   const fx = gridOX + pono.c * cellSize + cellSize / 2;
   const fy = gridOY + pono.r * cellSize + cellSize / 2;
-  // Arrow offset: minimum 56px so arrows stay finger-friendly even on dense mazes.
-  // Scales up with cellSize for big mazes (chevrons reach the next cell center).
   const offset = Math.max(56, cellSize * 0.95);
-  for (const d of dirs) {
-    const dr = d[0], dc = d[1];
+
+  // Collect direction set:
+  //  - normal walkable neighbors
+  //  - if breezeActive: also include adjacent obstacle directions
+  const allDirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  const validDirs = [];
+  for (const d of allDirs) {
+    const nr = pono.r + d[0], nc = pono.c + d[1];
+    if (isWalkable(nr, nc)) {
+      validDirs.push({ d, breeze: false });
+    } else if (breezeActive && isObstacleCell(nr, nc)) {
+      validDirs.push({ d, breeze: true });
+    }
+  }
+  if (validDirs.length === 0) return;
+
+  for (const v of validDirs) {
+    const dr = v.d[0], dc = v.d[1];
     const btn = document.createElement('button');
-    btn.className = 'maze-arrow';
+    btn.className = 'maze-arrow' + (v.breeze ? ' maze-arrow-breeze' : '');
     btn.textContent = dr === -1 ? '↑' : dr === 1 ? '↓' : dc === -1 ? '←' : '→';
     btn.style.left = (fx + dc * offset) + 'px';
     btn.style.top  = (fy + dr * offset) + 'px';
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (walkAnim || cleared) return;
-      const path = computeAutoWalk(pono.r, pono.c, dr, dc);
-      if (path.length === 0) return;
-      startWalk(path);
+      if (v.breeze) {
+        // そよかぜパス: 隣接障害物を消費して通過
+        const obsR = pono.r + dr, obsC = pono.c + dc;
+        if (isObstacleCell(obsR, obsC)) {
+          stage.cells[obsR][obsC] = T.PATH;
+        }
+        breezeActive = false;
+        const path = computeAutoWalk(pono.r, pono.c, dr, dc);
+        if (path.length > 0) startWalk(path);
+        else { showArrows(); updateCharmsUI(); }
+      } else {
+        const path = computeAutoWalk(pono.r, pono.c, dr, dc);
+        if (path.length === 0) return;
+        startWalk(path);
+      }
     });
     arrowLayer.appendChild(btn);
   }
@@ -738,6 +908,142 @@ function spawnPickup(r, c) {
   setTimeout(function() { el.remove(); }, 1000);
 }
 
+// ====== Charm UI + effects ======
+function spawnCharmPopup(text) {
+  const el = document.createElement('div');
+  el.className = 'charm-popup';
+  el.textContent = text;
+  el.style.left = '50%';
+  el.style.top = '40%';
+  gameWrap.appendChild(el);
+  setTimeout(function() { el.remove(); }, 2400);
+}
+
+function spawnWarpFlash(r, c) {
+  const fx = gridOX + c * cellSize + cellSize / 2;
+  const fy = gridOY + r * cellSize + cellSize / 2;
+  const el = document.createElement('div');
+  el.className = 'warp-flash';
+  el.style.left = fx + 'px';
+  el.style.top  = fy + 'px';
+  gameWrap.appendChild(el);
+  setTimeout(function() { el.remove(); }, 800);
+}
+
+function updateCharmsUI() {
+  const c = getCharms();
+  charmHintN.textContent   = c.hint;
+  charmBreezeN.textContent = c.breeze;
+  charmWarpN.textContent   = c.warp;
+  const lock = cleared || !!walkAnim || overlay.classList.contains('show');
+  charmHintBtn.disabled   = c.hint   <= 0 || lock;
+  charmBreezeBtn.disabled = c.breeze <= 0 || lock;
+  charmWarpBtn.disabled   = c.warp   <= 0 || lock;
+  charmBreezeBtn.classList.toggle('active', breezeActive);
+}
+
+// Solve cell-level path from current pono to G (returns array of {r,c} or null)
+function solveCellPath() {
+  if (!stage) return null;
+  const goalR = stage.goal.r, goalC = stage.goal.c;
+  const startKey = pono.r + ',' + pono.c;
+  const seen = new Set([startKey]);
+  const parent = new Map();
+  const q = [{ r: pono.r, c: pono.c }];
+  while (q.length) {
+    const u = q.shift();
+    if (u.r === goalR && u.c === goalC) break;
+    const dirs = getOpenDirs(u.r, u.c, null);
+    for (const d of dirs) {
+      const path = computeAutoWalk(u.r, u.c, d[0], d[1]);
+      if (path.length === 0) continue;
+      const last = path[path.length - 1];
+      const k = last.r + ',' + last.c;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      parent.set(k, { from: u.r + ',' + u.c, segment: path });
+      q.push({ r: last.r, c: last.c });
+    }
+  }
+  const goalKey = goalR + ',' + goalC;
+  if (!parent.has(goalKey) && goalKey !== startKey) return null;
+  // Trace back
+  const segments = [];
+  let cur = goalKey;
+  while (parent.has(cur)) {
+    const p = parent.get(cur);
+    segments.unshift(p.segment);
+    cur = p.from;
+  }
+  // Flatten cells
+  const cells = [{ r: pono.r, c: pono.c }];
+  for (const seg of segments) for (const cell of seg) cells.push({ r: cell.r, c: cell.c });
+  return cells;
+}
+
+// 🧚 ヒント: 解の道を 3秒間 光らせる
+function activateHint() {
+  if (cleared || walkAnim) return;
+  const c = getCharms();
+  if (c.hint <= 0) return;
+  const path = solveCellPath();
+  if (!path || path.length === 0) return;
+  hintCells = new Set(path.map(p => p.r + ',' + p.c));
+  hintActiveUntil = performance.now() + 3000;
+  usedHint++;
+  localStorage.setItem('pono_maze_used_hint', String(usedHint));
+  updateCharmsUI();
+  showHint('🧚 ようせいが せいかいの みちを おしえてくれたよ！', 3000);
+}
+
+// 🍃 そよかぜパス: 次の1回だけ障害物を通り抜けられる
+function activateBreeze() {
+  if (cleared || walkAnim) return;
+  const c = getCharms();
+  if (c.breeze <= 0) return;
+  if (breezeActive) return; // already active
+  breezeActive = true;
+  usedBreeze++;
+  localStorage.setItem('pono_maze_used_breeze', String(usedBreeze));
+  showHint('🍃 そよかぜパス！しょうがいぶつを とおりぬけられるよ', 3000);
+  // Refresh arrows so obstacle directions become tappable
+  showArrows();
+  updateCharmsUI();
+}
+
+// 🌟 ほしのワープ: 解の中間地点へ瞬間移動
+function activateWarp() {
+  if (cleared || walkAnim) return;
+  const c = getCharms();
+  if (c.warp <= 0) return;
+  const path = solveCellPath();
+  if (!path || path.length < 4) {
+    showHint('もう ゴールが ちかいよ！', 1500);
+    return;
+  }
+  const midIdx = Math.floor(path.length / 2);
+  const mid = path[midIdx];
+  spawnWarpFlash(pono.r, pono.c);
+  setTimeout(function() {
+    pono.r = mid.r;
+    pono.c = mid.c;
+    if (!trail.find(t => t.r === mid.r && t.c === mid.c)) {
+      trail.push({ r: mid.r, c: mid.c });
+    }
+    spawnWarpFlash(mid.r, mid.c);
+    showArrows();
+  }, 300);
+  usedWarp++;
+  localStorage.setItem('pono_maze_used_warp', String(usedWarp));
+  showHint('🌟 ほしのワープ！とおくへ とんだよ！', 2500);
+  updateCharmsUI();
+}
+
+// Wire up buttons
+charmHintBtn.addEventListener('click',   function() { activateHint();   });
+charmBreezeBtn.addEventListener('click', function() { activateBreeze(); });
+charmWarpBtn.addEventListener('click',   function() { activateWarp();   });
+
 // ====== Hint ======
 let hintTimer = null;
 function showHint(msg, ms) {
@@ -757,6 +1063,9 @@ function loadStage(idx) {
   applesCollected = 0;
   cleared = false;
   walkAnim = null;
+  breezeActive = false;
+  hintActiveUntil = 0;
+  hintCells.clear();
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
   hudApples.textContent = '🍎 0/' + stage.totalApples;
@@ -764,6 +1073,7 @@ function loadStage(idx) {
   encounter.classList.remove('show');
   resizeCanvas();
   showArrows();
+  updateCharmsUI();
   showHint('やじるしを タップしてね', 2500);
 }
 
@@ -772,6 +1082,7 @@ function onClear() {
   cleared = true;
   hideArrows();
   voice.style.display = 'none';
+  updateCharmsUI();
   if (window.incrementStat) window.incrementStat('maze_clears', 1);
   setTimeout(function() {
     encounter.classList.add('show');
@@ -815,8 +1126,8 @@ function _showMazeFinalOverlay() {
   showOverlay();
 }
 
-function showOverlay() { overlay.classList.add('show'); }
-function hideOverlay() { overlay.classList.remove('show'); }
+function showOverlay() { overlay.classList.add('show'); updateCharmsUI(); }
+function hideOverlay() { overlay.classList.remove('show'); updateCharmsUI(); }
 
 // ====== Confetti ======
 function spawnConfetti() {
@@ -849,6 +1160,24 @@ function draw(now) {
           const y = gridOY + r * cellSize;
           drawCell(x, y, stage.cells[r][c], r, c, now);
         }
+      }
+      // Hint highlight (drawn over cells)
+      if (now < hintActiveUntil && hintCells.size > 0) {
+        const remaining = (hintActiveUntil - now) / 3000;
+        const baseAlpha = Math.min(0.55, remaining * 0.65 + 0.15);
+        const pulse = 0.15 * Math.sin(now / 180);
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 220, 80, ' + (baseAlpha + pulse).toFixed(3) + ')';
+        for (const k of hintCells) {
+          const [hr, hc] = k.split(',').map(Number);
+          const hx = gridOX + hc * cellSize;
+          const hy = gridOY + hr * cellSize;
+          ctx.fillRect(hx + 2, hy + 2, cellSize - 4, cellSize - 4);
+        }
+        ctx.restore();
+      } else if (hintActiveUntil !== 0 && now >= hintActiveUntil) {
+        hintActiveUntil = 0;
+        hintCells.clear();
       }
       // Trail
       for (const p of trail) {
@@ -1030,7 +1359,12 @@ if (window.initMenu) {
     },
     tutorial: function() {
       ovTitle.textContent = 'あそびかた';
-      ovMsg.textContent = 'やじるしを タップすると\nつぎの わかれみちまで\nじどうで すすむよ！\n\n🍎りんごは あつめると\nボーナスだよ！\n\n😺ねこ・💧みず・🌵トゲは\nとおれないよ。';
+      ovMsg.textContent =
+        'やじるしを タップすると\nつぎの わかれみちまで\nじどうで すすむよ！\n\n' +
+        '🍎りんごを あつめると\nおまもりが もらえるよ！\n\n' +
+        '🧚 3こで「ようせいの ヒント」\n   せいかいの みちが ひかるよ\n' +
+        '🍃 5こで「そよかぜパス」\n   1かい とおりぬけ できるよ\n' +
+        '🌟 8こで「ほしの ワープ」\n   とおくへ とべるよ';
       ovBtn.textContent = 'わかった ▶';
       ovBtn.onclick = function() { hideOverlay(); };
       showOverlay();
@@ -1038,6 +1372,7 @@ if (window.initMenu) {
   });
 }
 
+updateCharmsUI();
 showOverlay();
 loadStage(0);
 requestAnimationFrame(draw);

@@ -626,14 +626,14 @@ class CleanEdgesGUI:
         self.gray_tol = tk.IntVar(value=18)
         self.feather_var = tk.DoubleVar(value=1.5)
         self.blur_var = tk.DoubleVar(value=0.5)
-        self.shrink_var = tk.IntVar(value=0)
+        self.shrink_var = tk.DoubleVar(value=0.0)
 
         self._slider_widgets = []  # for enable/disable
-        self._slider_widgets.append(self._make_slider(sec_bg, "Border tol",   self.border_tol,  0, 100,  decimal=False))
-        self._slider_widgets.append(self._make_slider(sec_bg, "Gray tol",     self.gray_tol,    0, 60,   decimal=False))
-        self._slider_widgets.append(self._make_slider(sec_bg, "Edge feather", self.feather_var, 0, 10.0, decimal=True))
-        self._slider_widgets.append(self._make_slider(sec_bg, "Alpha shrink", self.shrink_var,  0, 8,    decimal=False))
-        self._slider_widgets.append(self._make_slider(sec_bg, "Alpha blur",   self.blur_var,    0, 5.0,  decimal=True))
+        self._slider_widgets.append(self._make_slider(sec_bg, "Border tol",   self.border_tol,  0, 100,  decimal=False, step=1))
+        self._slider_widgets.append(self._make_slider(sec_bg, "Gray tol",     self.gray_tol,    0, 60,   decimal=False, step=1))
+        self._slider_widgets.append(self._make_slider(sec_bg, "Edge feather", self.feather_var, 0, 10.0, decimal=True,  step=0.1))
+        self._slider_widgets.append(self._make_slider(sec_bg, "Alpha shrink", self.shrink_var,  0, 8.0,  decimal=True,  step=0.1))
+        self._slider_widgets.append(self._make_slider(sec_bg, "Alpha blur",   self.blur_var,    0, 5.0,  decimal=True,  step=0.1))
 
         self.auto_process_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(sec_bg, text="Auto-reprocess on slider change",
@@ -694,23 +694,43 @@ class CleanEdgesGUI:
         ttk.Button(sec_export, text="Save Selected Sprites", command=self.on_save_selected_sprites,
                    style="Accent.TButton").pack(fill=tk.X, pady=(4, 2))
 
-    def _make_slider(self, parent, label, var, mn, mx, decimal=False):
+    def _make_slider(self, parent, label, var, mn, mx, decimal=False, step=None):
+        """
+        Create a row with: label + slider + spinbox.
+        The spinbox lets the user click and type a precise value, and also
+        provides up/down arrows. Slider and spinbox share the same Var,
+        so changing one updates the other automatically.
+        """
         row = ttk.Frame(parent, style="Panel.TFrame")
         row.pack(fill=tk.X, pady=1)
         ttk.Label(row, text=label, width=12, style="Panel.TLabel").pack(side=tk.LEFT)
         scale = ttk.Scale(row, variable=var, from_=mn, to=mx, orient=tk.HORIZONTAL)
         scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 4))
-        val_lbl = ttk.Label(row, width=5, anchor="e", style="Panel.TLabel")
-        val_lbl.pack(side=tk.LEFT)
 
-        def _update(*_):
-            if decimal:
-                val_lbl.config(text=f"{var.get():.2f}")
-            else:
-                val_lbl.config(text=str(int(var.get())))
+        if step is None:
+            step = 0.1 if decimal else 1
+        fmt = "%.2f" if decimal else "%d"
 
-        var.trace_add("write", _update)
-        _update()
+        spin = tk.Spinbox(
+            row,
+            textvariable=var,
+            from_=mn, to=mx, increment=step,
+            width=6,
+            format=fmt,
+            bg=THEME["bg_input"], fg=THEME["fg_main"],
+            buttonbackground=THEME["bg_input"],
+            insertbackground=THEME["fg_main"],
+            highlightthickness=1,
+            highlightbackground=THEME["border"],
+            highlightcolor=THEME["accent"],
+            relief="flat",
+            bd=0,
+            justify="right",
+        )
+        spin.pack(side=tk.LEFT)
+        # Return the slider for state-toggle (enable/disable). The spinbox
+        # state is tracked separately because it's a tk widget (not ttk).
+        scale._companion_spinbox = spin  # type: ignore[attr-defined]
         return scale
 
     def _update_mode(self):
@@ -724,8 +744,11 @@ class CleanEdgesGUI:
         #   0=Border tol, 1=Gray tol, 2=Edge feather (auto-fake-bg only)
         #   3=Alpha shrink, 4=Alpha blur (apply to both modes)
         for i, scale in enumerate(self._slider_widgets):
-            if i < 3:
-                scale.configure(state=("disabled" if is_rembg else "normal"))
+            new_state = "disabled" if (is_rembg and i < 3) else "normal"
+            scale.configure(state=new_state)
+            spin = getattr(scale, "_companion_spinbox", None)
+            if spin is not None:
+                spin.configure(state=new_state)
 
     # -------- Preview area (Notebook) --------
     def _build_preview_area(self, parent):
@@ -862,13 +885,15 @@ class CleanEdgesGUI:
             "gray_tol": int(self.gray_tol.get()),
             "feather": float(self.feather_var.get()),
             "blur": float(self.blur_var.get()),
-            "shrink": int(self.shrink_var.get()),
+            "shrink": float(self.shrink_var.get()),
             "rembg_model": self.model_var.get(),
             "matting": bool(self.matting_var.get()),
             "split_min_size": int(self.split_min_size_var.get()),
             "split_padding": int(self.split_padding_var.get()),
             "split_alpha": int(self.split_alpha_var.get()),
             "split_flip_b": bool(self.split_flip_b_var.get()),
+            "bg_mode": (self.bg_mode_var.get() if hasattr(self, "bg_mode_var") else "Checker"),
+            "bg_custom_color": list(self._custom_bg_color),
         }
 
     def _apply_preset(self, name: str):
@@ -881,13 +906,23 @@ class CleanEdgesGUI:
             self.gray_tol.set(int(p.get("gray_tol", 18)))
             self.feather_var.set(float(p.get("feather", 1.5)))
             self.blur_var.set(float(p.get("blur", 0.5)))
-            self.shrink_var.set(int(p.get("shrink", 0)))
+            self.shrink_var.set(float(p.get("shrink", 0.0)))
             self.model_var.set(p.get("rembg_model", "isnet-general-use"))
             self.matting_var.set(bool(p.get("matting", True)))
             self.split_min_size_var.set(int(p.get("split_min_size", 20)))
             self.split_padding_var.set(int(p.get("split_padding", 4)))
             self.split_alpha_var.set(int(p.get("split_alpha", 10)))
             self.split_flip_b_var.set(bool(p.get("split_flip_b", False)))
+            # Restore custom color BEFORE setting bg_mode so that when bg_mode_var
+            # trace fires, it sees the right color.
+            custom = p.get("bg_custom_color")
+            if isinstance(custom, (list, tuple)) and len(custom) == 3:
+                try:
+                    self._custom_bg_color = (int(custom[0]), int(custom[1]), int(custom[2]))
+                except (TypeError, ValueError):
+                    pass
+            if hasattr(self, "bg_mode_var"):
+                self.bg_mode_var.set(p.get("bg_mode", "Checker"))
         finally:
             self._suppress_preset_apply = False
         self._update_mode()
@@ -1422,7 +1457,8 @@ class CleanEdgesGUI:
 
         self._ai_queue = list(targets)  # popped from front
         self._ai_total = len(targets)
-        self._ai_counts = {"n": 0, "ok": 0, "fail": 0}
+        self._ai_counts = {"n": 0, "ok": 0, "fail": 0, "consecutive_fail": 0}
+        self._ai_aborted_reason = None
 
         self._set_busy(
             f"Naming with AI  0/{self._ai_total}  (vocabulary unified across batch)",
@@ -1499,6 +1535,7 @@ class CleanEdgesGUI:
     def _apply_ai_result_chained(self, sprite: SpriteItem, result: Optional[NameResult], gen: int):
         """
         main thread 上で 1 件の結果を反映し、次の sprite を submit する。
+        連続失敗が一定回数を超えたらバッチ全体を中断 (quota 枯渇等)。
         """
         if gen != self._ai_generation:
             return
@@ -1508,8 +1545,14 @@ class CleanEdgesGUI:
             sprite.name_result = result
             if result.error:
                 self._ai_counts["fail"] += 1
+                self._ai_counts["consecutive_fail"] += 1
+                # Detect quota errors → abort whole batch immediately
+                err = result.error or ""
+                if "daily quota" in err.lower() or "PerDay" in err or "RequestsPerDay" in err:
+                    self._ai_aborted_reason = "daily_quota"
             else:
                 self._ai_counts["ok"] += 1
+                self._ai_counts["consecutive_fail"] = 0
                 # De-dup filename across the whole batch
                 if result.filename:
                     used = {
@@ -1525,6 +1568,10 @@ class CleanEdgesGUI:
                     result.filename = fn
             self._update_sprite_card_labels(sprite)
 
+        # Early abort: if 3 in a row failed, stop wasting time
+        if self._ai_counts["consecutive_fail"] >= 3 and self._ai_aborted_reason is None:
+            self._ai_aborted_reason = "consecutive_failures"
+
         self._set_progress(
             self._ai_counts["n"],
             message=(
@@ -1533,17 +1580,58 @@ class CleanEdgesGUI:
             ),
         )
 
+        if self._ai_aborted_reason is not None:
+            # Mark remaining sprites as skipped/idle and finalize
+            remaining = len(self._ai_queue)
+            self._ai_queue = []
+            for s in self.sprites:
+                if s.selected and s.name_result is None:
+                    # Reset card visual back to idle
+                    self._set_card_state(s, "idle")
+            self._finalize_ai_batch(gen, skipped=remaining)
+            return
+
         # Submit next
         self._submit_next_ai(gen)
 
-    def _finalize_ai_batch(self, gen: int):
+    def _finalize_ai_batch(self, gen: int, skipped: int = 0):
         if gen != self._ai_generation:
             return
         ok = self._ai_counts["ok"]
         fail = self._ai_counts["fail"]
         total = self._ai_total
+        reason = self._ai_aborted_reason
 
-        if fail == 0:
+        if reason == "daily_quota":
+            self._clear_busy(
+                f"Aborted: Gemini daily quota exhausted. ok:{ok} fail:{fail} skipped:{skipped}",
+                icon_color=THEME["err"],
+            )
+            messagebox.showerror(
+                "Gemini daily quota exhausted",
+                "Gemini AI's free-tier daily request limit has been reached.\n\n"
+                f"Naming was aborted to avoid wasted retries.\n"
+                f"  ok: {ok}\n  failed: {fail}\n  skipped: {skipped}\n\n"
+                "The quota resets at 09:00 JST (00:00 UTC). Until then, "
+                "double-click each sprite card to enter names manually.",
+            )
+        elif reason == "consecutive_failures":
+            self._clear_busy(
+                f"Aborted after 3 consecutive failures. ok:{ok} fail:{fail} skipped:{skipped}",
+                icon_color=THEME["err"],
+            )
+            first_error = next(
+                (s.name_result.error for s in self.sprites
+                 if s.name_result and s.name_result.error),
+                "(unknown)",
+            )
+            messagebox.showwarning(
+                "AI naming aborted",
+                f"Aborted after 3 consecutive failures to avoid waiting.\n\n"
+                f"  ok: {ok}\n  failed: {fail}\n  skipped: {skipped}\n\n"
+                f"First error:\n{first_error[:400]}",
+            )
+        elif fail == 0:
             self._clear_busy(f"AI naming complete: {ok}/{total} succeeded")
         else:
             self._clear_busy(
@@ -1556,16 +1644,10 @@ class CleanEdgesGUI:
                 None,
             )
             if first_error:
-                quota_hint = ""
-                if "429" in first_error or "quota" in first_error.lower() or "rate" in first_error.lower():
-                    quota_hint = (
-                        "\n\n⚠ This looks like a Gemini free-tier rate limit. "
-                        "Wait a minute and click 'Name All with AI' again."
-                    )
                 messagebox.showwarning(
                     "Some sprites failed",
                     f"{fail} sprite(s) could not be named.\n\n"
-                    f"First error:\n{first_error[:400]}{quota_hint}",
+                    f"First error:\n{first_error[:400]}",
                 )
 
     def _set_card_state(self, s: SpriteItem, state: str):
@@ -1686,7 +1768,9 @@ class CleanEdgesGUI:
         return bg
 
     def _on_bg_change(self, *_):
-        if self.bg_mode_var.get() == "Custom...":
+        # Skip the color picker when a preset is being loaded — the preset
+        # already restored the custom color via _apply_preset.
+        if self.bg_mode_var.get() == "Custom..." and not self._suppress_preset_apply:
             rgb, _hex = colorchooser.askcolor(
                 color="#%02x%02x%02x" % self._custom_bg_color,
                 title="Pick preview background color",

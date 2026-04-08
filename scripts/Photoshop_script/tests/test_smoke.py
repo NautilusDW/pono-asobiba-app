@@ -222,6 +222,38 @@ class TestAiNamer(unittest.TestCase):
         self.assertEqual(r.base_name, "ok")
         self.assertEqual(r.filename, "ok_go")
 
+    def test_is_daily_quota_error(self):
+        body_daily = '{"details":{"error":{"message":"Quota exceeded ... PerDay ..."}}}'
+        body_minute = '{"details":{"error":{"message":"Per minute limit"}}}'
+        self.assertTrue(ai_namer._is_daily_quota_error(body_daily))
+        self.assertFalse(ai_namer._is_daily_quota_error(body_minute))
+        self.assertFalse(ai_namer._is_daily_quota_error(""))
+
+    def test_request_daily_quota_fails_fast(self):
+        """A daily-quota 429 should NOT trigger retries."""
+        calls = []
+        def fake_post(url, payload, timeout):
+            calls.append(1)
+            return 429, '{"details":{"error":{"message":"RequestsPerDay limit exceeded"}}}'
+
+        orig = ai_namer._post_json
+        ai_namer._post_json = fake_post
+        try:
+            from PIL import Image
+            img = Image.new("RGBA", (4, 4), (255, 0, 0, 255))
+            import time as _time
+            orig_sleep = _time.sleep
+            _time.sleep = lambda s: None
+            try:
+                r = ai_namer.request_sprite_name(img, max_retries=5)
+            finally:
+                _time.sleep = orig_sleep
+        finally:
+            ai_namer._post_json = orig
+
+        self.assertEqual(len(calls), 1, "Should fail fast on daily quota, not retry")
+        self.assertIn("daily quota", r.error.lower())
+
     def test_request_network_error(self):
         def fake_post(url, payload, timeout):
             return 0, "network error: ..."
@@ -274,6 +306,16 @@ class TestAlphaShrink(unittest.TestCase):
         a = Image.new("L", (10, 10), 255)
         out = clean_edges._shrink_alpha(a, 0)
         self.assertEqual(out.getpixel((5, 5)), 255)
+
+    def test_shrink_fractional_accepts_float(self):
+        from PIL import Image
+        a = Image.new("L", (20, 20), 0)
+        for y in range(5, 15):
+            for x in range(5, 15):
+                a.putpixel((x, y), 255)
+        out = clean_edges._shrink_alpha(a, 0.5)
+        # Center stays full, boundary fades
+        self.assertEqual(out.getpixel((10, 10)), 255)
 
     def test_shrink_erodes_edges(self):
         from PIL import Image

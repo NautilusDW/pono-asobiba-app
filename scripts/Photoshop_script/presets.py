@@ -52,6 +52,7 @@ BUILTIN_PRESETS: Dict[str, Dict[str, Any]] = {
         "split_padding": 4,
         "split_alpha": 10,
         "split_flip_b": False,
+        "bg_mode": "Checker",
     },
     "Sharp edges": {
         "mode": "auto-fake-bg",
@@ -66,6 +67,7 @@ BUILTIN_PRESETS: Dict[str, Dict[str, Any]] = {
         "split_padding": 4,
         "split_alpha": 10,
         "split_flip_b": False,
+        "bg_mode": "Checker",
     },
     "Soft fringe-free": {
         "mode": "auto-fake-bg",
@@ -80,6 +82,7 @@ BUILTIN_PRESETS: Dict[str, Dict[str, Any]] = {
         "split_padding": 4,
         "split_alpha": 10,
         "split_flip_b": False,
+        "bg_mode": "Checker",
     },
     "rembg AI": {
         "mode": "rembg",
@@ -94,6 +97,7 @@ BUILTIN_PRESETS: Dict[str, Dict[str, Any]] = {
         "split_padding": 4,
         "split_alpha": 10,
         "split_flip_b": False,
+        "bg_mode": "Checker",
     },
 }
 

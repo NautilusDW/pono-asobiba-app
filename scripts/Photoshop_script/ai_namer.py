@@ -258,6 +258,16 @@ def _parse_retry_after_seconds(body: str) -> Optional[float]:
     return None
 
 
+def _is_daily_quota_error(body: str) -> bool:
+    """
+    429 のうち、リトライしても解消しない 1 日制限系エラーを検出する。
+    "PerDay" / "RequestsPerDay" を含むなら True。
+    """
+    if not body:
+        return False
+    return ("PerDay" in body) or ("RequestsPerDay" in body)
+
+
 def request_sprite_name(
     img: Image.Image,
     user_context: str = "",
@@ -266,7 +276,7 @@ def request_sprite_name(
     existing_variants: Optional[List[str]] = None,
     existing_motions: Optional[List[str]] = None,
     timeout: int = 30,
-    max_retries: int = 5,
+    max_retries: int = 3,
     url: str = NETLIFY_AI_NAME_URL,
 ) -> NameResult:
     """
@@ -309,7 +319,9 @@ def request_sprite_name(
         "model": GEMINI_MODEL,
     }
 
-    backoff_schedule = [5, 10, 20, 40, 60]  # seconds per attempt on 429/503
+    # Shorter, more user-friendly backoff. Long backoffs make a stuck batch
+    # feel frozen — better to fail fast and let the user retry.
+    backoff_schedule = [3, 6, 12]  # seconds per attempt
 
     last_error = ""
     last_status = 0
@@ -329,10 +341,17 @@ def request_sprite_name(
             result = parse_response(text)
             return result
 
+        # 429 with a daily quota error: retrying within the same day is
+        # pointless. Fail fast so the batch doesn't waste time.
+        if status == 429 and _is_daily_quota_error(body):
+            last_error = "daily quota exceeded (try again after Gemini quota reset)"
+            break
+
         if status in (503, 429) and attempt < max_retries:
-            # Prefer Gemini's suggested retry_after, else fall back to schedule
+            # Prefer Gemini's suggested retry_after, else fall back to schedule.
+            # Cap retry_after at 15s — anything longer means wait until tomorrow.
             retry_after = _parse_retry_after_seconds(body)
-            if retry_after is not None:
+            if retry_after is not None and retry_after <= 15:
                 wait_s = max(retry_after + 1.0, 3.0)
             else:
                 wait_s = backoff_schedule[min(attempt - 1, len(backoff_schedule) - 1)]
@@ -340,10 +359,8 @@ def request_sprite_name(
             continue
 
         if status == 0 and attempt < max_retries:
-            # Network error (DNS / timeout / connection reset). Retry with
-            # a shorter backoff than for rate-limit since this is usually
-            # a transient blip.
-            time.sleep(min(2 + attempt, 8))
+            # Network blip — short retry
+            time.sleep(min(2 + attempt, 6))
             continue
 
         # Non-retryable status or max retries exceeded

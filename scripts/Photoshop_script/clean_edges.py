@@ -69,19 +69,53 @@ SUPPORTED_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 # Alpha smoothing (shared by all modes)
 # ---------------------------------------------------------------------------
 
-def _shrink_alpha(a: Image.Image, shrink_px: int) -> Image.Image:
+def _shrink_alpha(a: Image.Image, shrink_px: float) -> Image.Image:
     """
-    Erode the alpha channel by `shrink_px` pixels using a MinFilter
-    (morphological erosion). Useful for pulling foreground edges
-    inward to remove background fringes.
+    Erode the alpha channel by `shrink_px` pixels (supports fractional values).
+
+    Implementation:
+      - If scipy is available, use Euclidean distance transform for
+        smooth sub-pixel shrink: each pixel's alpha is multiplied by
+        clamp(distance_to_background - shrink_px + 1, 0, 1).
+      - Fallback (no scipy): integer rounding + iterative MinFilter.
     """
+    try:
+        shrink_px = float(shrink_px)
+    except (TypeError, ValueError):
+        return a
     if shrink_px <= 0:
         return a
-    # Apply MinFilter iteratively. Each MinFilter(3) erodes by 1px.
-    out = a
-    for _ in range(int(shrink_px)):
-        out = out.filter(ImageFilter.MinFilter(3))
-    return out
+
+    try:
+        from scipy.ndimage import distance_transform_edt  # type: ignore
+    except ImportError:
+        # Fallback to integer MinFilter erosion
+        n = int(round(shrink_px))
+        out = a
+        for _ in range(n):
+            out = out.filter(ImageFilter.MinFilter(3))
+        return out
+
+    arr = np.array(a, dtype=np.uint8)
+    if arr.size == 0:
+        return a
+
+    # Foreground = alpha > 0; treat partial alphas as fg too
+    fg_mask = arr > 0
+    if not fg_mask.any():
+        return a
+
+    # Distance from each fg pixel to the nearest background pixel
+    dist = distance_transform_edt(fg_mask)
+
+    # Pixels with dist >= shrink_px stay full strength.
+    # Pixels with dist < shrink_px get faded out smoothly.
+    # factor = clip(dist - (shrink_px - 1), 0, 1)
+    #   - dist=shrink_px → factor=1 (fully kept)
+    #   - dist=shrink_px-1 → factor=0 (eroded away)
+    factor = np.clip(dist - (shrink_px - 1.0), 0.0, 1.0)
+    new_alpha = (arr.astype(np.float32) * factor).astype(np.uint8)
+    return Image.fromarray(new_alpha, mode="L")
 
 
 def smooth_alpha(
