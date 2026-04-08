@@ -382,6 +382,17 @@ tr:hover { background: #FFFAF0; }
         </div>
       </div>
 
+      <div class="reward-card-row">
+        <div class="reward-field" style="flex:1;">
+          <label title="タップされた時の移動の速さ（1.0が既定）">はんのうスピード: <span id="newCreatureSpeedVal" style="font-weight:900;color:#0369A1;">1.0</span></label>
+          <input type="range" id="newCreatureReactionSpeed" value="1.0" min="0.1" max="2.0" step="0.1" style="width:100%;">
+        </div>
+        <div class="reward-field" style="flex:1;">
+          <label title="タップされた時の移動が続く時間（距離に直結、1.0が既定）">はんのうのながさ: <span id="newCreatureDurationVal" style="font-weight:900;color:#0369A1;">1.0</span></label>
+          <input type="range" id="newCreatureReactionDuration" value="1.0" min="0.1" max="2.0" step="0.1" style="width:100%;">
+        </div>
+      </div>
+
       <div class="reward-card-row" style="gap:12px;flex-wrap:wrap;">
         <!-- ふつうのかお (1〜3枚) -->
         <div id="newCreatureNormalDrop" class="creature-drop" data-key="normal" style="flex:1;min-width:200px;background:#fff;border:2px dashed #7DD3FC;border-radius:8px;padding:10px;text-align:center;cursor:pointer;">
@@ -1433,7 +1444,133 @@ function _buildCreatureRow(c) {
   }
   row.appendChild(badge);
 
+  // 動的生き物のみ: ⚙️ 編集ボタン
+  if (c.source === 'dynamic') {
+    var editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = '⚙️';
+    editBtn.title = '反応の速さ・長さを調整';
+    editBtn.style.cssText = 'background:#E0F2FE;color:#0369A1;border:1px solid #7DD3FC;border-radius:6px;padding:6px 10px;font-size:0.9rem;cursor:pointer;margin-left:4px;';
+    editBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openCreatureEditModal(c.id);
+    });
+    row.appendChild(editBtn);
+  }
+
   return row;
+}
+
+// ⚙️ 動的生き物編集モーダル（反応の速さと長さを調整）
+function openCreatureEditModal(creatureId) {
+  if (!creaturesData || !creaturesData.creatures) return;
+  var idx = creaturesData.creatures.findIndex(function(c) { return c.id === creatureId; });
+  if (idx < 0) return;
+  var target = creaturesData.creatures[idx];
+
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:6px;text-align:center;';
+  title.textContent = '⚙️ ' + (target.displayName || target.id) + ' の反応を調整';
+  box.appendChild(title);
+
+  var hint = document.createElement('div');
+  hint.style.cssText = 'font-size:0.7rem;color:#888;margin-bottom:16px;text-align:center;';
+  hint.textContent = 'タップされた時の速さと距離（続く時間）を調整できます';
+  box.appendChild(hint);
+
+  // はんのうスピード
+  var curSpeed = target.reactionSpeed != null ? target.reactionSpeed : 1.0;
+  var speedLabel = document.createElement('label');
+  speedLabel.style.cssText = 'display:block;font-size:0.8rem;font-weight:700;color:#5D4E37;margin-bottom:4px;';
+  speedLabel.textContent = 'はんのうスピード: ';
+  var speedVal = document.createElement('span');
+  speedVal.style.cssText = 'font-weight:900;color:#0369A1;';
+  speedVal.textContent = curSpeed.toFixed(1);
+  speedLabel.appendChild(speedVal);
+  box.appendChild(speedLabel);
+  var speedSlider = document.createElement('input');
+  speedSlider.type = 'range';
+  speedSlider.min = '0.1';
+  speedSlider.max = '2.0';
+  speedSlider.step = '0.1';
+  speedSlider.value = curSpeed;
+  speedSlider.style.cssText = 'width:100%;margin-bottom:16px;';
+  speedSlider.addEventListener('input', function() { speedVal.textContent = parseFloat(speedSlider.value).toFixed(1); });
+  box.appendChild(speedSlider);
+
+  // はんのうのながさ
+  var curDur = target.reactionDuration != null ? target.reactionDuration : 1.0;
+  var durLabel = document.createElement('label');
+  durLabel.style.cssText = 'display:block;font-size:0.8rem;font-weight:700;color:#5D4E37;margin-bottom:4px;';
+  durLabel.textContent = 'はんのうのながさ: ';
+  var durVal = document.createElement('span');
+  durVal.style.cssText = 'font-weight:900;color:#0369A1;';
+  durVal.textContent = curDur.toFixed(1);
+  durLabel.appendChild(durVal);
+  box.appendChild(durLabel);
+  var durSlider = document.createElement('input');
+  durSlider.type = 'range';
+  durSlider.min = '0.1';
+  durSlider.max = '2.0';
+  durSlider.step = '0.1';
+  durSlider.value = curDur;
+  durSlider.style.cssText = 'width:100%;margin-bottom:20px;';
+  durSlider.addEventListener('input', function() { durVal.textContent = parseFloat(durSlider.value).toFixed(1); });
+  box.appendChild(durSlider);
+
+  // ボタン
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.textContent = 'キャンセル';
+  cancelBtn.style.cssText = 'padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;';
+  cancelBtn.addEventListener('click', function() { ov.remove(); });
+  btnRow.appendChild(cancelBtn);
+
+  var saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.textContent = '💾 保存';
+  saveBtn.style.cssText = 'padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
+  saveBtn.addEventListener('click', function() {
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ 保存中...';
+
+    var newSpeed = parseFloat(speedSlider.value) || 1.0;
+    var newDur = parseFloat(durSlider.value) || 1.0;
+    target.reactionSpeed = newSpeed;
+    target.reactionDuration = newDur;
+
+    var json = JSON.stringify(creaturesData, null, 2);
+    var b64 = utf8ToBase64(json);
+    ghUploadPromise(CREATURES_PATH, b64, '⚙️ tune creature: ' + target.id + ' speed=' + newSpeed + ' dur=' + newDur)
+      .then(function() {
+        showToast('✅ ' + (target.displayName || target.id) + ' を更新しました', true);
+        ov.remove();
+        renderSeaCreatures();
+      })
+      .catch(function(e) {
+        showToast('保存失敗: ' + e.message, false);
+        // 失敗時はメモリ上の変更を巻き戻す
+        target.reactionSpeed = curSpeed;
+        target.reactionDuration = curDur;
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 保存';
+      });
+  });
+  btnRow.appendChild(saveBtn);
+  box.appendChild(btnRow);
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
 }
 
 function renderSeaCreatures() {
@@ -1795,6 +1932,8 @@ function deployNewCreature() {
   var reactionType = document.getElementById('newCreatureReaction').value;
   var baseSizePx = parseInt(document.getElementById('newCreatureSize').value) || 70;
   var spawnCount = parseInt(document.getElementById('newCreatureCount').value) || 3;
+  var reactionSpeed = parseFloat(document.getElementById('newCreatureReactionSpeed').value) || 1.0;
+  var reactionDuration = parseFloat(document.getElementById('newCreatureReactionDuration').value) || 1.0;
 
   // バリデーション（バリデーション失敗時は disabled せず即 return）
   if (!displayName) { showToast('表示名を入力してください', false); return; }
@@ -1872,6 +2011,8 @@ function deployNewCreature() {
       speedMin: 0.04,
       speedMax: 0.07,
       spawnCount: spawnCount,
+      reactionSpeed: reactionSpeed,
+      reactionDuration: reactionDuration,
       rewardType: 'sea'
     };
     if (happyName) newEntry.expressions.happy = happyName;
@@ -1911,6 +2052,17 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btn) btn.addEventListener('click', deployNewCreature);
   var reloadBtn = document.getElementById('btn-reload-creatures');
   if (reloadBtn) reloadBtn.addEventListener('click', fetchSeaCreatures);
+  // スライダー値の表示更新
+  var spdSlider = document.getElementById('newCreatureReactionSpeed');
+  var spdVal = document.getElementById('newCreatureSpeedVal');
+  if (spdSlider && spdVal) {
+    spdSlider.addEventListener('input', function() { spdVal.textContent = parseFloat(spdSlider.value).toFixed(1); });
+  }
+  var durSlider = document.getElementById('newCreatureReactionDuration');
+  var durVal = document.getElementById('newCreatureDurationVal');
+  if (durSlider && durVal) {
+    durSlider.addEventListener('input', function() { durVal.textContent = parseFloat(durSlider.value).toFixed(1); });
+  }
   // AI 命名ボタン: ふつうの1枚目の base64 を使って手動で再実行
   var aiBtn = document.getElementById('btn-ai-name-creature');
   if (aiBtn) aiBtn.addEventListener('click', function() {

@@ -131,6 +131,10 @@
       // 動的生成フラグ（既存ループでフィルタ可能にしておく）
       dynamicCreature: true,
       dynamicId: cfg.id,
+      // タップ反応の速さと時間の倍率（aquarium のタップハンドラが適用）
+      // 1.0 が既存7体と同じ強さ。0.5 で半分、2.0 で倍
+      reactionSpeedMul: cfg.reactionSpeed != null ? cfg.reactionSpeed : 1,
+      reactionTimerMul: cfg.reactionDuration != null ? cfg.reactionDuration : 1,
       bgSprite: true,
       reactionType: cfg.reactionType || 'jump',
       // 既存の hardcode と同じプロパティ名を使う（octTexSurprised / octTexNormal）

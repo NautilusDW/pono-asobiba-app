@@ -3215,6 +3215,18 @@
               break;
             }
           }
+          // ── 動的生き物の反応倍率を適用 ──
+          // 既存7体は reactionSpeedMul/reactionTimerMul が undefined → 1 で no-op
+          // 動的生き物は creatures.json で設定された倍率で速さと時間をスケール
+          const _rsMul = c.reactionSpeedMul != null ? c.reactionSpeedMul : 1;
+          const _rtMul = c.reactionTimerMul != null ? c.reactionTimerMul : 1;
+          if (_rsMul !== 1) {
+            c.panicVx *= _rsMul;
+            c.panicVy *= _rsMul;
+          }
+          if (_rtMul !== 1) {
+            c.panicTimer *= _rtMul;
+          }
           // ── Unique reaction per creature type ──────────────
           if (c.reactionType === 'ink') {
             // Octopus: squirt ink
