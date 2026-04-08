@@ -339,8 +339,42 @@ function auditNoUselessObstacles(g) {
   return true;
 }
 
-// ─── Place apples then obstacles at player-reachable dead-ends ───
-function placeObstacles(rawGrid, rng, applesCount) {
+// AUDIT 6: Obstacles must actually BLOCK something.
+// For each obstacle (C/W/T/R), if we replace it with '.', the optimal solution
+// click count must DECREASE (i.e. without it, the player has a shortcut).
+// This guarantees the obstacle is forcing a detour, not just decoration.
+function auditObstaclesAreBlockers(g) {
+  const baseClicks = solveClicks(g);
+  for (let r = 0; r < g.length; r++) for (let c = 0; c < g[0].length; c++) {
+    const ch = g[r][c];
+    if (ch !== 'C' && ch !== 'W' && ch !== 'T' && ch !== 'R') continue;
+    // Replace this single obstacle with '.' and re-solve
+    const grid2 = g.slice();
+    const row = g[r].split('');
+    row[c] = '.';
+    grid2[r] = row.join('');
+    const newClicks = solveClicks(grid2);
+    // If removing the obstacle does NOT change clicks, it wasn't blocking anything
+    if (newClicks === baseClicks) return false;
+    if (newClicks < 0) return false;
+  }
+  return true;
+}
+
+// ─── Place apples (at dead-ends) and obstacles (ON the path, blocking shortcuts) ───
+//
+// Apples = bonus collectibles → at dead-ends is fine (player must detour to grab)
+// Obstacles (C/W/T) = MUST block a path the player would otherwise take.
+// Strategy:
+//   1. Place apples at random dead-ends (player-reachable)
+//   2. For each obstacle slot:
+//      - Find a non-S, non-G, non-A path cell whose conversion to obstacle:
+//        a) keeps the maze solvable
+//        b) keeps no-dead-state property
+//        c) keeps no-stranded (no orphaned path cells)
+//        d) does NOT change other obstacles' positions to invalid
+//        e) actually CHANGES the optimal solution click count (it's a blocker)
+function placeObstacles(rawGrid, rng, obstacleCount, applesCount) {
   const arr = rawGrid.map((r) => r.split(''));
   const rows = arr.length, cols = arr[0].length;
 
@@ -364,26 +398,71 @@ function placeObstacles(rawGrid, rng, applesCount) {
     return list;
   }
 
+  // ── 1. Apples at dead-ends ──
   let reachable = playerReachableCells(gridStr());
   let de = deadEnds(reachable);
-  for (let i = de.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [de[i], de[j]] = [de[j], de[i]];
-  }
+  shuffle(de, rng);
   for (let i = 0; i < Math.min(applesCount, de.length); i++) {
     arr[de[i].r][de[i].c] = 'A';
   }
-  reachable = playerReachableCells(gridStr());
-  de = deadEnds(reachable);
-  for (let i = de.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [de[i], de[j]] = [de[j], de[i]];
+
+  // ── 2. Obstacles ON path cells, only if they actually block ──
+  const obstacleChars = ['C', 'W', 'T'];
+  let placed = 0;
+  let attempts = 0;
+  const maxAttempts = 200;
+  while (placed < obstacleCount && attempts < maxAttempts) {
+    attempts++;
+    // Collect all candidate cells: '.' that are player-reachable
+    reachable = playerReachableCells(gridStr());
+    const candidates = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      if (arr[r][c] !== '.') continue;
+      if (!reachable.has(r + ',' + c)) continue;
+      // Skip dead-ends — not blockers
+      let n = 0;
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        if (isPath(r + dr, c + dc)) n++;
+      }
+      if (n === 1) continue;
+      candidates.push({ r, c });
+    }
+    if (candidates.length === 0) break;
+    shuffle(candidates, rng);
+    // Try each candidate
+    let success = false;
+    for (const cand of candidates) {
+      const ch = obstacleChars[Math.floor(rng() * obstacleChars.length)];
+      const before = arr[cand.r][cand.c];
+      const beforeClicks = solveClicks(gridStr());
+      arr[cand.r][cand.c] = ch;
+      const newGrid = gridStr();
+      const newClicks = solveClicks(newGrid);
+      if (
+        newClicks > 0 &&
+        newClicks !== beforeClicks &&  // MUST change solution = actual blocker
+        auditNoDeadStates(newGrid) &&
+        auditNoStranded(newGrid)
+      ) {
+        success = true;
+        placed++;
+        break;
+      } else {
+        // Revert
+        arr[cand.r][cand.c] = before;
+      }
+    }
+    if (!success) break; // No more valid placements
   }
-  const obstacles = ['C', 'W', 'T'];
-  for (const d of de) {
-    arr[d.r][d.c] = obstacles[Math.floor(rng() * obstacles.length)];
-  }
+
   return gridStr();
+}
+
+function shuffle(arr, rng) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
 
 function countCh(g, ch) {
@@ -392,25 +471,26 @@ function countCh(g, ch) {
   return n;
 }
 
-// ─── Search loop with full pipeline + real-junction requirement ───
-function findStage(cellRows, cellCols, minClicks, minRealJunctions, applesCount) {
+// ─── Search loop with full pipeline + real-junction + blocker audit ───
+function findStage(cellRows, cellCols, minClicks, minRealJunctions, obstacleCount, applesCount) {
   let best = null;
-  for (let seed = 1; seed <= 20000; seed++) {
+  for (let seed = 1; seed <= 30000; seed++) {
     const rng = mulberry32(seed * 7919 + 13);
     const raw = genMaze(cellRows, cellCols, seed);
     const pruned = pruneUnreachable(raw);
     if (!pruned) continue;
-    const final = placeObstacles(pruned, rng, applesCount);
+    const final = placeObstacles(pruned, rng, obstacleCount, applesCount);
+    if (countCh(final, 'C') + countCh(final, 'W') + countCh(final, 'T') < obstacleCount) continue;
     if (!auditNoDeadStates(final)) continue;
     if (!auditNoSpamSolve(final)) continue;
     if (!auditNoStranded(final)) continue;
     if (!auditNoUselessObstacles(final)) continue;
+    if (!auditObstaclesAreBlockers(final)) continue;
     const clicks = solveClicks(final);
     if (clicks < minClicks) continue;
     const metrics = realJunctionMetrics(final);
     if (metrics.realJunctionsOnSolution < minRealJunctions) continue;
     const dirs = solutionDirections(final);
-    // Score: prioritize real junctions on solution, then click count, then dir variety
     const score = metrics.realJunctionsOnSolution * 100 + clicks * 10 + dirs * 3;
     if (!best || score > best.score) {
       best = {
@@ -429,13 +509,13 @@ function findStage(cellRows, cellCols, minClicks, minRealJunctions, applesCount)
 }
 
 // ─── Stage specs ───
-// minRealJunctions = number of TRUE branching choices on the solution path.
-// If you can solve a stage with N real choices, the player must choose right N times.
+// Tall layouts (rows >= cols) so cells stay big enough for arrow buttons.
+// Viewport ~540×600 → max recommended grid: 11 cols × 14 rows ish.
 const SPECS = [
-  { rows: 3, cols: 3, minClicks: 3, minRealJunctions: 1, apples: 0, name: 'ステージ 2 — わかれみち' },
-  { rows: 4, cols: 4, minClicks: 5, minRealJunctions: 2, apples: 1, name: 'ステージ 3 — ふかいもり' },
-  { rows: 6, cols: 6, minClicks: 8, minRealJunctions: 3, apples: 2, name: 'ステージ 4 — めいろの もり' },
-  { rows: 9, cols: 9, minClicks: 12, minRealJunctions: 5, apples: 3, name: 'ステージ 5 — まいごの もり' },
+  { rows: 4,  cols: 3, minClicks: 3,  minRealJunctions: 1, obstacles: 1, apples: 0, name: 'ステージ 2 — わかれみち' },
+  { rows: 5,  cols: 4, minClicks: 5,  minRealJunctions: 2, obstacles: 1, apples: 1, name: 'ステージ 3 — ふかいもり' },
+  { rows: 7,  cols: 5, minClicks: 8,  minRealJunctions: 3, obstacles: 2, apples: 2, name: 'ステージ 4 — めいろの もり' },
+  { rows: 10, cols: 7, minClicks: 12, minRealJunctions: 5, obstacles: 3, apples: 3, name: 'ステージ 5 — まいごの もり' },
 ];
 
 console.log('=== Generating stages ===\n');
