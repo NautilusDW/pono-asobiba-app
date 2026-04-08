@@ -23,7 +23,9 @@
       "reactionSpeed": 0.7,
       "reactionDuration": 0.4,
       "museum": "aquarium",
-      "zones": ["tropical_reef"],
+      "zones": [
+        "tropical_reef"
+      ],
       "profile": {
         "readingName": "くまのみ",
         "subtitle": "しましまの かわいい さかな",
@@ -58,7 +60,9 @@
       "reactionDuration": 1,
       "rewardType": "sea",
       "museum": "aquarium",
-      "zones": ["tropical_reef"],
+      "zones": [
+        "tropical_reef"
+      ],
       "profile": {
         "readingName": "なんようはぎ",
         "subtitle": "あおいろが きれいな さかな",
@@ -93,7 +97,9 @@
       "reactionDuration": 1,
       "rewardType": "sea",
       "museum": "aquarium",
-      "zones": ["tropical_reef"],
+      "zones": [
+        "tropical_reef"
+      ],
       "profile": {
         "readingName": "ふぐ",
         "subtitle": "ふくらんで まんまるに なるよ",
@@ -105,6 +111,29 @@
           "ゆっくり およぐのに むねびれを ぱたぱた つかうよ"
         ]
       }
+    },
+    {
+      "id": "mandarinfish",
+      "displayName": "ニシキテグリ",
+      "icon": "🐠",
+      "folder": "Mandarinfish",
+      "expressions": {
+        "normal": "Mandarinfish_normal_1.png",
+        "surprised": "Mandarinfish_surprised.png",
+        "happy": "Mandarinfish_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 1,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 353,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 5,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
