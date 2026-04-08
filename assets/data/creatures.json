@@ -1,4 +1,25 @@
 {
   "version": 1,
-  "creatures": []
+  "creatures": [
+    {
+      "id": "clownfish",
+      "displayName": "クマノミ",
+      "icon": "🐠",
+      "folder": "Clownfish",
+      "expressions": {
+        "normal": "Clownfish_normal_1.png",
+        "surprised": "Clownfish_surprised.png",
+        "happy": "Clownfish_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 325,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "rewardType": "sea"
+    }
+  ]
 }
