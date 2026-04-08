@@ -266,6 +266,80 @@ class TestCleanEdges(unittest.TestCase):
         self.assertGreater(arr[40, 50, 3], 200)  # fish body
 
 
+# -------------------------------------------------------------------- shrink + presets
+
+class TestAlphaShrink(unittest.TestCase):
+    def test_shrink_zero_is_noop(self):
+        from PIL import Image
+        a = Image.new("L", (10, 10), 255)
+        out = clean_edges._shrink_alpha(a, 0)
+        self.assertEqual(out.getpixel((5, 5)), 255)
+
+    def test_shrink_erodes_edges(self):
+        from PIL import Image
+        a = Image.new("L", (10, 10), 0)
+        # 4x4 fg block at (3,3)..(6,6)
+        for y in range(3, 7):
+            for x in range(3, 7):
+                a.putpixel((x, y), 255)
+        out = clean_edges._shrink_alpha(a, 1)
+        # The block should shrink: corner pixels become 0
+        self.assertEqual(out.getpixel((3, 3)), 0)
+        # Center remains 255
+        self.assertEqual(out.getpixel((4, 4)), 255)
+
+    def test_smooth_alpha_accepts_shrink(self):
+        from PIL import Image
+        img = Image.new("RGBA", (20, 20), (255, 0, 0, 255))
+        out = clean_edges.smooth_alpha(img, blur_radius=0.5, shrink_px=1)
+        self.assertEqual(out.size, (20, 20))
+
+    def test_light_smooth_accepts_shrink(self):
+        from PIL import Image
+        img = Image.new("RGBA", (20, 20), (255, 0, 0, 255))
+        out = clean_edges._light_smooth(img, blur_radius=0.5, shrink_px=2)
+        self.assertEqual(out.size, (20, 20))
+
+
+class TestPresets(unittest.TestCase):
+    def test_initial_data_has_builtins(self):
+        data = presets_mod._initial_data()
+        self.assertIn("Standard", data["presets"])
+        self.assertEqual(data["default"], "Standard")
+
+    def test_load_returns_dict_when_file_missing(self):
+        # Even if file is missing, returns valid dict
+        data = presets_mod.load_presets()
+        self.assertIn("presets", data)
+        self.assertIn("default", data)
+        self.assertIn("Standard", data["presets"])
+
+    def test_upsert_and_get(self):
+        data = presets_mod._initial_data()
+        presets_mod.upsert_preset(data, "MyTest", {"border_tol": 99, "shrink": 5})
+        p = presets_mod.get_preset(data, "MyTest")
+        self.assertEqual(p["border_tol"], 99)
+        self.assertEqual(p["shrink"], 5)
+
+    def test_delete_refuses_last_preset(self):
+        data = {"default": "only", "presets": {"only": {}}}
+        ok = presets_mod.delete_preset(data, "only")
+        self.assertFalse(ok)
+        self.assertIn("only", data["presets"])
+
+    def test_delete_updates_default(self):
+        data = {"default": "a", "presets": {"a": {}, "b": {}}}
+        ok = presets_mod.delete_preset(data, "a")
+        self.assertTrue(ok)
+        self.assertEqual(data["default"], "b")
+
+    def test_get_preset_falls_back_to_standard(self):
+        data = presets_mod._initial_data()
+        p = presets_mod.get_preset(data, "NonExistent")
+        # Should fall back to Standard
+        self.assertIn("border_tol", p)
+
+
 # -------------------------------------------------------------------- GUI imports
 
 class TestGuiImports(unittest.TestCase):
