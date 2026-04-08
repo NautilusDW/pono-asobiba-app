@@ -447,6 +447,13 @@
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <button id="btnFeed">🍞</button>
+  <!-- Zone header (museum mode only, hidden in free-play) -->
+  <link rel="stylesheet" href="zone-header.css">
+  <div id="zoneHeader" style="display:none;">
+    <button id="btnZoneBack" class="zone-header-back">← もどる</button>
+    <span class="zone-header-label"></span>
+  </div>
+
   <div id="ui">
     <button id="btnBgCreatures">🐟 いきもの</button>
     <span id="seaCount" style="background:rgba(0,0,0,0.45);color:#ffd700;font-size:12px;font-weight:bold;padding:3px 10px;border-radius:14px;font-family:'Zen Maru Gothic',sans-serif;"></span>
@@ -472,6 +479,8 @@
     <button id="btnStart" class="sel-start-btn">はじめる！🐠</button>
   </div>
 
+  <script src="../common/museum-data.js"></script>
+  <script src="zone-boot.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
   <script src="dynamic-creatures.js"></script>
   <script>
@@ -1779,7 +1788,7 @@
 
     // ─── Creature toggle state ────────────────────────────
     const CREATURE_STORE_KEY = 'aquarium_creatures';
-    const ALL_CREATURE_TYPES = ['octopus','jellyfish','turtle','fish','submarine','sunfish','shark'];
+    const ALL_CREATURE_TYPES = ['octopus','jellyfish','turtle','fish','submarine','sunfish','shark','clownfish','blue_tang','pufferfish'];
     let creatureToggles = {};
     const _savedCreatureData = localStorage.getItem(CREATURE_STORE_KEY);
     const _isFirstVisit = !_savedCreatureData;
@@ -1789,7 +1798,22 @@
     // Default: first visit = all off, returning = all on
     ALL_CREATURE_TYPES.forEach(t => { if (creatureToggles[t] === undefined) creatureToggles[t] = !_isFirstVisit; });
 
+    // Museum mode: ZoneBoot overrides toggles in-memory only (no localStorage write)
+    const _isMuseumMode = window.ZoneBoot && window.ZoneBoot.isMuseumMode;
+    if (_isMuseumMode) {
+      // MuseumData must load first to resolve zone creatures
+      window.MuseumData.load('..').then(() => {
+        window.ZoneBoot.apply(creatureToggles, ALL_CREATURE_TYPES);
+        // Re-wire toggle button visual state for museum mode
+        document.querySelectorAll('.creature-toggle').forEach(btn => {
+          btn.classList.toggle('off', !creatureToggles[btn.dataset.creature]);
+        });
+      }).catch(e => console.warn('[aquarium] MuseumData load failed:', e));
+    }
+
     function saveCreatureToggles() {
+      // In museum mode, never overwrite the user's free-play preferences
+      if (_isMuseumMode) return;
       localStorage.setItem(CREATURE_STORE_KEY, JSON.stringify(creatureToggles));
     }
 
@@ -1862,6 +1886,14 @@
       if (history.length > 1) history.back();
       else location.href = '../index.html';
     });
+
+    // Zone header back button (museum mode)
+    const _zoneBackBtn = document.getElementById('btnZoneBack');
+    if (_zoneBackBtn) {
+      _zoneBackBtn.addEventListener('click', () => {
+        location.href = 'map.html';
+      });
+    }
 
     // ピンチズーム無効（選択画面）
     document.getElementById('selection-screen').addEventListener('touchmove', (e) => {

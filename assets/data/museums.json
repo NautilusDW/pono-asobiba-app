@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "zones": [
+    {
+      "id": "tropical_reef",
+      "displayName": "ねったいのうみ",
+      "subtitle": "あたたかい サンゴのうみ",
+      "icon": "🐠",
+      "status": "open",
+      "mapX": 0.22,
+      "mapY": 0.30,
+      "tint": "0x2EB5E0",
+      "creatures": ["clownfish", "blue_tang", "pufferfish", "fish", "turtle"]
+    },
+    {
+      "id": "japan_coast",
+      "displayName": "にほんのうみ",
+      "subtitle": "ポノの すんでる うみ",
+      "icon": "🐙",
+      "status": "open",
+      "mapX": 0.72,
+      "mapY": 0.30,
+      "tint": "0x1E7FB5",
+      "creatures": ["octopus", "turtle", "sunfish", "fish"]
+    },
+    {
+      "id": "jellyfish_room",
+      "displayName": "クラゲのへや",
+      "subtitle": "ひかる ふしぎな へや",
+      "icon": "🪼",
+      "status": "open",
+      "mapX": 0.22,
+      "mapY": 0.68,
+      "tint": "0x7A4FBF",
+      "creatures": ["jellyfish"]
+    },
+    {
+      "id": "big_fish",
+      "displayName": "おおきなさかな",
+      "subtitle": "どきどき おおきな さかな",
+      "icon": "🦈",
+      "status": "open",
+      "mapX": 0.72,
+      "mapY": 0.68,
+      "tint": "0x0D3B66",
+      "creatures": ["shark", "sunfish", "submarine"]
+    },
+    {
+      "id": "cold_ocean",
+      "displayName": "つめたいうみ",
+      "subtitle": "こおりの うかぶ うみ",
+      "icon": "🧊",
+      "status": "locked",
+      "mapX": 0.47,
+      "mapY": 0.12,
+      "tint": "0x6EC6F0"
+    },
+    {
+      "id": "deep_sea",
+      "displayName": "しんかい",
+      "subtitle": "まっくらな ふかいうみ",
+      "icon": "🔦",
+      "status": "locked",
+      "mapX": 0.47,
+      "mapY": 0.86,
+      "tint": "0x0A1628"
+    },
+    {
+      "id": "rivers",
+      "displayName": "かわといけ",
+      "subtitle": "きれいな みずのながれ",
+      "icon": "🏞️",
+      "status": "locked",
+      "mapX": 0.08,
+      "mapY": 0.50,
+      "tint": "0x3A9E6B"
+    },
+    {
+      "id": "tide_pool",
+      "displayName": "いそのみずたまり",
+      "subtitle": "いわばの かくれんぼ",
+      "icon": "🪸",
+      "status": "locked",
+      "mapX": 0.88,
+      "mapY": 0.50,
+      "tint": "0xE87D3E"
+    }
+  ]
+}

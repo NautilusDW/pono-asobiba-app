@@ -21,7 +21,20 @@
       "spawnCount": 3,
       "rewardType": "sea",
       "reactionSpeed": 0.7,
-      "reactionDuration": 0.4
+      "reactionDuration": 0.4,
+      "museum": "aquarium",
+      "zones": ["tropical_reef"],
+      "profile": {
+        "readingName": "くまのみ",
+        "subtitle": "しましまの かわいい さかな",
+        "habitat": "イソギンチャクの なか",
+        "sizeText": "てのひらくらい",
+        "funFacts": [
+          "イソギンチャクの どくに まけない からだを もっているよ",
+          "おとうさんが たまごを まもる やさしい パパだよ",
+          "えいがの ニモの モデルに なった さかなだよ"
+        ]
+      }
     },
     {
       "id": "blue_tang",
@@ -43,7 +56,20 @@
       "spawnCount": 3,
       "reactionSpeed": 1,
       "reactionDuration": 1,
-      "rewardType": "sea"
+      "rewardType": "sea",
+      "museum": "aquarium",
+      "zones": ["tropical_reef"],
+      "profile": {
+        "readingName": "なんようはぎ",
+        "subtitle": "あおいろが きれいな さかな",
+        "habitat": "あたたかい サンゴのうみ",
+        "sizeText": "てのひらくらい",
+        "funFacts": [
+          "しっぽの ちかくに とがった とげが あるよ",
+          "えいがの ドリーの モデルに なった さかなだよ",
+          "むれを つくって いっしょに およぐのが すきだよ"
+        ]
+      }
     },
     {
       "id": "pufferfish",
@@ -65,7 +91,20 @@
       "spawnCount": 3,
       "reactionSpeed": 1,
       "reactionDuration": 1,
-      "rewardType": "sea"
+      "rewardType": "sea",
+      "museum": "aquarium",
+      "zones": ["tropical_reef"],
+      "profile": {
+        "readingName": "ふぐ",
+        "subtitle": "ふくらんで まんまるに なるよ",
+        "habitat": "あたたかい うみの そこ",
+        "sizeText": "にぎりこぶしくらい",
+        "funFacts": [
+          "びっくりすると おなかを ふくらませて おおきく みせるよ",
+          "するどい くちばしで かいがらを かみくだけるよ",
+          "ゆっくり およぐのに むねびれを ぱたぱた つかうよ"
+        ]
+      }
     }
   ]
 }
