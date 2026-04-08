@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔬 クリーンエッジスタジオ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #111827; color: #e0e0e0;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  font-size: 13px;
+}
+
+/* ── Header ── */
+.header {
+  background: #1f2937; padding: 9px 16px;
+  display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid #374151; flex-shrink: 0;
+}
+.header h1 { font-size: 0.95rem; font-weight: 700; color: #f87171; white-space: nowrap; }
+.header nav { display: flex; gap: 8px; }
+.header nav a {
+  color: #9ca3af; text-decoration: none; font-size: 0.75rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+.header nav a:hover { background: rgba(255,255,255,0.1); color: #e0e0e0; }
+.header-spacer { flex: 1; }
+
+/* ── Main Layout ── */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* ── Left Panel ── */
+.left-panel {
+  width: 248px; flex-shrink: 0; background: #1f2937;
+  border-right: 1px solid #374151; overflow-y: auto;
+  padding: 10px 10px 60px; display: flex; flex-direction: column; gap: 8px;
+}
+.section {
+  background: #111827; border-radius: 8px; padding: 10px;
+  border: 1px solid #374151;
+}
+.section-title {
+  font-size: 0.66rem; font-weight: 700; color: #6b7280;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.form-row { margin-bottom: 6px; }
+.form-row label { display: flex; justify-content: space-between; font-size: 0.7rem; color: #9ca3af; margin-bottom: 3px; }
+.form-row .val { color: #f87171; font-weight: 700; }
+.form-row input[type="range"] { width: 100%; accent-color: #f87171; cursor: pointer; }
+.form-row input[type="number"],
+.form-row select,
+.form-row input[type="text"],
+.form-row input[type="password"] {
+  width: 100%; padding: 5px 8px;
+  background: #1f2937; border: 1px solid #374151;
+  border-radius: 6px; color: #e0e0e0; font-size: 0.75rem; font-family: inherit;
+}
+.form-row input:focus, .form-row select:focus {
+  outline: none; border-color: #f87171;
+}
+.form-row-2col { display: flex; gap: 6px; }
+.form-row-2col .form-row { flex: 1; }
+
+.btn {
+  width: 100%; padding: 7px; border: none; border-radius: 7px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s; font-family: inherit; margin-top: 4px;
+}
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary   { background: #f87171; color: #fff; }
+.btn-primary:hover:not(:disabled)   { background: #ef4444; }
+.btn-secondary { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+.btn-secondary:hover:not(:disabled) { background: #374151; color: #e0e0e0; }
+.btn-green { background: #22c55e; color: #fff; }
+.btn-green:hover:not(:disabled) { background: #16a34a; }
+
+.drop-zone {
+  border: 2px dashed #374151; border-radius: 8px;
+  padding: 14px 8px; text-align: center; cursor: pointer;
+  transition: all 0.2s;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: #f87171; background: rgba(248,113,113,0.05); }
+.drop-zone.has-file { border-style: solid; border-color: #22c55e; background: rgba(34,197,94,0.05); }
+.drop-icon { font-size: 1.6rem; }
+.drop-text { font-size: 0.68rem; color: #6b7280; margin-top: 4px; }
+.file-info { font-size: 0.65rem; color: #22c55e; text-align: center; margin-top: 4px; }
+
+/* ── Right Panel ── */
+.right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.tab-bar {
+  display: flex; background: #1f2937;
+  border-bottom: 1px solid #374151; flex-shrink: 0; padding: 0 4px;
+}
+.tab-btn {
+  padding: 8px 14px; background: none; border: none;
+  color: #6b7280; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.15s; font-family: inherit;
+}
+.tab-btn.active { color: #f87171; border-bottom-color: #f87171; }
+.tab-btn:hover:not(.active) { color: #d1d5db; }
+
+.tab-content { flex: 1; overflow-y: auto; display: none; }
+.tab-content.active { display: block; }
+
+/* ── Compare Tab ── */
+.compare-wrap {
+  display: flex; gap: 10px; padding: 12px;
+  justify-content: center; align-items: flex-start;
+}
+.compare-side { flex: 1; min-width: 0; }
+.compare-label { font-size: 0.68rem; color: #6b7280; margin-bottom: 4px; text-align: center; }
+.compare-canvas-box {
+  background: repeating-conic-gradient(#2d2d2d 0% 25%, #1a1a1a 0% 50%) 0 0 / 12px 12px;
+  border-radius: 6px; overflow: hidden; border: 1px solid #374151;
+  min-height: 60px; display: flex; align-items: center; justify-content: center;
+}
+.compare-canvas-box canvas { max-width: 100%; display: block; }
+.compare-placeholder { font-size: 0.72rem; color: #4b5563; padding: 20px; text-align: center; }
+
+/* ── Sprites Tab ── */
+.sprites-bar {
+  display: flex; gap: 6px; align-items: center; padding: 7px 12px;
+  background: #1f2937; border-bottom: 1px solid #374151;
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.sprites-count { font-size: 0.72rem; color: #6b7280; }
+.tbtn {
+  padding: 4px 10px; border: none; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.tbtn-ghost  { background: rgba(255,255,255,0.05); color: #9ca3af; }
+.tbtn-ghost:hover  { background: rgba(255,255,255,0.1); color: #e0e0e0; }
+.tbtn-blue   { background: #2563eb; color: #fff; }
+.tbtn-blue:hover   { background: #1d4ed8; }
+.tbtn-green  { background: #22c55e; color: #fff; }
+.tbtn-green:hover  { background: #16a34a; }
+
+.sprites-grid {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  padding: 12px; align-content: flex-start;
+}
+.empty-msg { padding: 20px; font-size: 0.78rem; color: #4b5563; }
+
+/* ── Sprite Card ── */
+.sprite-card {
+  background: #1f2937; border: 2px solid #374151; border-radius: 10px;
+  width: 210px; overflow: hidden; transition: border-color 0.15s;
+}
+.sprite-card.selected { border-color: #22c55e; }
+.card-hdr {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 8px; background: #111827;
+}
+.card-hdr input[type="checkbox"] { accent-color: #22c55e; width: 13px; height: 13px; cursor: pointer; }
+.card-num  { font-size: 0.7rem; font-weight: 700; color: #9ca3af; flex: 1; }
+.card-dims { font-size: 0.65rem; color: #4b5563; }
+.card-preview {
+  background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 0 0 / 10px 10px;
+  height: 110px; display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.card-preview canvas { max-width: 100%; max-height: 110px; }
+.card-body { padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.card-name {
+  width: 100%; padding: 4px 6px;
+  background: #111827; border: 1px solid #374151; border-radius: 5px;
+  color: #e0e0e0; font-size: 0.72rem; font-family: inherit;
+}
+.card-name:focus { outline: none; border-color: #f87171; }
+.card-id {
+  width: 100%; padding: 4px 6px;
+  background: #111827; border: 1px solid #374151; border-radius: 5px;
+  color: #6b7280; font-size: 0.68rem; font-family: inherit;
+}
+.card-id:focus { outline: none; border-color: #60a5fa; }
+.card-row { display: flex; gap: 4px; align-items: center; }
+.card-expr {
+  flex: 1; padding: 4px 6px;
+  background: #111827; border: 1px solid #374151; border-radius: 5px;
+  color: #e0e0e0; font-size: 0.7rem; font-family: inherit;
+}
+.card-expr:focus { outline: none; border-color: #f87171; }
+.icon-btn {
+  padding: 4px 6px; border: none; border-radius: 5px;
+  font-size: 0.78rem; cursor: pointer; transition: background 0.15s; line-height: 1;
+  font-family: inherit;
+}
+.icon-btn-ai  { background: #1d4ed8; color: #fff; }
+.icon-btn-ai:hover  { background: #2563eb; }
+.icon-btn-flip { background: rgba(255,255,255,0.06); color: #9ca3af; }
+.icon-btn-flip:hover { background: rgba(255,255,255,0.12); color: #e0e0e0; }
+.icon-btn-del  { background: rgba(239,68,68,0.15); color: #f87171; }
+.icon-btn-del:hover  { background: rgba(239,68,68,0.25); }
+
+/* ── Deploy Bar ── */
+.deploy-bar {
+  background: #1f2937; border-top: 1px solid #374151;
+  padding: 8px 14px; display: none; gap: 8px;
+  align-items: center; flex-wrap: wrap; flex-shrink: 0;
+}
+.deploy-bar.show { display: flex; }
+.deploy-status { font-size: 0.72rem; color: #9ca3af; flex: 1; min-width: 160px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  padding: 9px 18px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+  z-index: 9999; opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.toast.show { opacity: 1; }
+.toast-ok  { background: #22c55e; color: #fff; }
+.toast-err { background: #ef4444; color: #fff; }
+
+/* ── Loading Overlay ── */
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px; z-index: 9998;
+}
+.loading-overlay.show { display: flex; }
+.spinner {
+  width: 34px; height: 34px;
+  border: 4px solid rgba(255,255,255,0.15); border-top-color: #f87171;
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-msg { font-size: 0.82rem; color: #e0e0e0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔬 クリーンエッジスタジオ</h1>
+  <div class="header-spacer"></div>
+  <nav>
+    <a href="../admin/index.html">← 管理ダッシュボード</a>
+    <a href="../aquarium/index.html" target="_blank">🐠 水族館を確認</a>
+  </nav>
+</div>
+
+<div class="main">
+
+  <!-- ════════ LEFT PANEL ════════ -->
+  <div class="left-panel">
+
+    <!-- 1. Input -->
+    <div class="section">
+      <div class="section-title">1. 画像を開く</div>
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-icon">🖼️</div>
+        <div class="drop-text">ここにドラッグ<br>またはクリック</div>
+        <input type="file" id="file-input" accept="image/*" style="display:none">
+      </div>
+      <div class="file-info" id="file-info"></div>
+    </div>
+
+    <!-- 2. BG Removal -->
+    <div class="section">
+      <div class="section-title">2. 背景除去</div>
+      <div class="form-row">
+        <label>ゆるさ <span class="val" id="tol-val">35</span></label>
+        <input type="range" id="tolerance" min="0" max="140" value="35">
+      </div>
+      <div class="form-row">
+        <label>フチなめらか <span class="val" id="feather-val">2</span></label>
+        <input type="range" id="feather" min="0" max="10" value="2">
+      </div>
+    </div>
+
+    <!-- 3. Split -->
+    <div class="section">
+      <div class="section-title">3. スプライト分割</div>
+      <div class="form-row">
+        <label>最小サイズ (px)</label>
+        <input type="number" id="min-size" value="20" min="1" max="300">
+      </div>
+      <div class="form-row">
+        <label>余白 (px)</label>
+        <input type="number" id="padding" value="4" min="0" max="60">
+      </div>
+      <div class="form-row">
+        <label>アルファしきい値</label>
+        <input type="number" id="alpha-thresh" value="10" min="0" max="255">
+      </div>
+    </div>
+
+    <!-- 4. Creature Defaults -->
+    <div class="section">
+      <div class="section-title">4. 生き物の初期設定</div>
+      <div class="form-row">
+        <label>むき</label>
+        <select id="def-facing">
+          <option value="right">→ みぎむき</option>
+          <option value="left">← ひだりむき</option>
+        </select>
+      </div>
+      <div class="form-row-2col">
+        <div class="form-row">
+          <label>サイズ (px)</label>
+          <input type="number" id="def-size" value="70" min="20" max="300">
+        </div>
+        <div class="form-row">
+          <label>数</label>
+          <input type="number" id="def-count" value="3" min="1" max="10">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>パターン</label>
+        <select id="def-pattern">
+          <option value="swim">🏊 およぐ</option>
+          <option value="float">🪼 ただよう</option>
+          <option value="jellyfish">🪼 ぷかぷか</option>
+          <option value="drift">🌊 ながれる</option>
+          <option value="sway">🌿 ゆれる</option>
+          <option value="crawl">🦀 あるく</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>反応</label>
+        <select id="def-reaction">
+          <option value="jump">ジャンプ</option>
+          <option value="ink">スミ吐き</option>
+          <option value="shell">こうらに隠れる</option>
+          <option value="glow">光る</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>はんのうスピード <span class="val" id="speed-val">1.0</span></label>
+        <input type="range" id="def-speed" min="0.1" max="2.0" step="0.1" value="1.0">
+      </div>
+      <div class="form-row">
+        <label>はんのうの長さ <span class="val" id="dur-val">1.0</span></label>
+        <input type="range" id="def-duration" min="0.1" max="2.0" step="0.1" value="1.0">
+      </div>
+    </div>
+
+    <!-- 5. GitHub Token -->
+    <div class="section">
+      <div class="section-title">5. GitHub トークン</div>
+      <div class="form-row">
+        <input type="password" id="gh-token" placeholder="ghp_xxxx...">
+      </div>
+      <div id="gh-token-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <button class="btn btn-primary"   id="btn-process" disabled>▶ 背景を消す</button>
+    <button class="btn btn-secondary" id="btn-split"   disabled>✂️ スプライトを分割</button>
+
+  </div><!-- /left-panel -->
+
+  <!-- ════════ RIGHT PANEL ════════ -->
+  <div class="right-panel">
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="compare">比較</button>
+      <button class="tab-btn" data-tab="sprites" id="tab-sprites-btn">スプライト (0)</button>
+    </div>
+
+    <!-- Compare tab -->
+    <div class="tab-content active" id="tab-compare">
+      <div class="compare-wrap">
+        <div class="compare-side">
+          <div class="compare-label">元画像</div>
+          <div class="compare-canvas-box" id="box-orig">
+            <div class="compare-placeholder">画像を開くと表示されます</div>
+          </div>
+        </div>
+        <div class="compare-side">
+          <div class="compare-label">処理後（背景除去済み）</div>
+          <div class="compare-canvas-box" id="box-proc">
+            <div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprites tab -->
+    <div class="tab-content" id="tab-sprites">
+      <div class="sprites-bar" id="sprites-bar" style="display:none">
+        <span class="sprites-count" id="sprites-count">0体</span>
+        <button class="tbtn tbtn-ghost" id="btn-sel-all">全選択</button>
+        <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
+        <button class="tbtn tbtn-blue"  id="btn-ai-all">🤖 AIで一括命名</button>
+        <div style="flex:1"></div>
+        <button class="tbtn tbtn-green" id="btn-deploy">🐠 GitHubに登録</button>
+      </div>
+      <div id="sprites-grid" class="sprites-grid">
+        <div class="empty-msg">「スプライトを分割」を実行してください。</div>
+      </div>
+    </div>
+
+    <!-- Deploy status bar -->
+    <div class="deploy-bar" id="deploy-bar">
+      <span class="deploy-status" id="deploy-status"></span>
+    </div>
+
+  </div><!-- /right-panel -->
+</div><!-- /main -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-msg" id="loading-msg">処理中...</div>
+</div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════
+// Config
+// ════════════════════════════════════════════════════════════
+const GH_OWNER  = 'NautilusDW';
+const GH_REPO   = 'kids-writing-app';
+const GH_BRANCH = 'develop';
+const LS_TOKEN  = 'admin_gh_token';
+const CREATURES_PATH = 'assets/data/creatures.json';
+const HARDCODED_IDS  = ['octopus','jellyfish','turtle','fish','submarine','sunfish','shark'];
+
+// ════════════════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════════════════
+let originalCanvas  = null;
+let processedCanvas = null;
+let sprites = [];            // [{canvas, srcX, srcY, w, h, name, id, icon, expr}]
+let creaturesData   = null;
+
+// ════════════════════════════════════════════════════════════
+// Utilities
+// ════════════════════════════════════════════════════════════
+const getToken = () => localStorage.getItem(LS_TOKEN) || '';
+const setToken = v  => localStorage.setItem(LS_TOKEN, v);
+
+function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function base64ToUtf8(b64) { return decodeURIComponent(escape(atob(b64))); }
+
+function showToast(msg, ok) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (ok ? 'toast-ok' : 'toast-err');
+  setTimeout(() => { el.className = 'toast'; }, 3200);
+}
+
+function showLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg || '処理中...';
+  document.getElementById('loading-overlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function ghHeaders() {
+  const h = { 'Accept': 'application/vnd.github+json' };
+  const t = getToken();
+  if (t) h['Authorization'] = 'Bearer ' + t;
+  return h;
+}
+
+function ghUploadPromise(filePath, base64Content, commitMsg) {
+  return new Promise((resolve, reject) => {
+    const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${filePath}`;
+    fetch(apiUrl + `?ref=${GH_BRANCH}&_cb=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(existing => {
+        const body = { message: commitMsg, content: base64Content, branch: GH_BRANCH };
+        if (existing && existing.sha) body.sha = existing.sha;
+        return fetch(apiUrl, {
+          method: 'PUT',
+          headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+          body: JSON.stringify(body)
+        });
+      })
+      .then(r => {
+        if (r.ok) resolve();
+        else r.json().then(j => reject(new Error(j.message || 'Upload error')));
+      })
+      .catch(reject);
+  });
+}
+
+function canvasToBase64(canvas) {
+  return canvas.toDataURL('image/png').split(',')[1];
+}
+
+// ════════════════════════════════════════════════════════════
+// GitHub Token
+// ════════════════════════════════════════════════════════════
+const ghTokenInput = document.getElementById('gh-token');
+ghTokenInput.value = getToken();
+document.getElementById('gh-token-status').textContent = getToken() ? '✅ 設定済み（管理ダッシュボードと共有）' : '未設定';
+ghTokenInput.addEventListener('input', () => {
+  const v = ghTokenInput.value.trim();
+  setToken(v);
+  document.getElementById('gh-token-status').textContent = v ? '✅ 保存しました' : '';
+});
+
+// ════════════════════════════════════════════════════════════
+// Sliders: value display
+// ════════════════════════════════════════════════════════════
+document.getElementById('tolerance').addEventListener('input', function() {
+  document.getElementById('tol-val').textContent = this.value;
+});
+document.getElementById('feather').addEventListener('input', function() {
+  document.getElementById('feather-val').textContent = this.value;
+});
+document.getElementById('def-speed').addEventListener('input', function() {
+  document.getElementById('speed-val').textContent = parseFloat(this.value).toFixed(1);
+});
+document.getElementById('def-duration').addEventListener('input', function() {
+  document.getElementById('dur-val').textContent = parseFloat(this.value).toFixed(1);
+});
+
+// ════════════════════════════════════════════════════════════
+// Tab Switching
+// ════════════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// File Loading
+// ════════════════════════════════════════════════════════════
+function loadImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      originalCanvas = document.createElement('canvas');
+      originalCanvas.width  = img.naturalWidth;
+      originalCanvas.height = img.naturalHeight;
+      originalCanvas.getContext('2d').drawImage(img, 0, 0);
+
+      // Show original in compare
+      const cvOrig = document.createElement('canvas');
+      cvOrig.width  = img.naturalWidth;
+      cvOrig.height = img.naturalHeight;
+      cvOrig.getContext('2d').drawImage(img, 0, 0);
+      cvOrig.style.maxWidth = '100%';
+      const boxOrig = document.getElementById('box-orig');
+      boxOrig.innerHTML = '';
+      boxOrig.appendChild(cvOrig);
+
+      // Clear processed side
+      document.getElementById('box-proc').innerHTML = '<div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>';
+
+      // Drop zone feedback
+      const dz = document.getElementById('drop-zone');
+      dz.classList.add('has-file');
+      dz.querySelector('.drop-icon').textContent = '✅';
+      dz.querySelector('.drop-text').textContent = file.name;
+      document.getElementById('file-info').textContent = img.naturalWidth + '×' + img.naturalHeight + ' px';
+
+      document.getElementById('btn-process').disabled = false;
+      document.getElementById('btn-split').disabled = true;
+      sprites = [];
+      renderSpritesGrid();
+      showToast('画像を読み込みました', true);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadImageFile(fileInput.files[0]);
+  fileInput.value = '';
+});
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && /^image\//.test(file.type)) loadImageFile(file);
+});
+
+// ════════════════════════════════════════════════════════════
+// Background Removal
+// ════════════════════════════════════════════════════════════
+function sampleBgColor(data, w, h) {
+  const sz = Math.max(3, Math.min(10, Math.floor(Math.min(w, h) * 0.025)));
+  const corners = [[0, 0], [w - sz, 0], [0, h - sz], [w - sz, h - sz]];
+  let rS = 0, gS = 0, bS = 0, n = 0;
+  for (const [cx, cy] of corners) {
+    for (let dy = 0; dy < sz; dy++) {
+      for (let dx = 0; dx < sz; dx++) {
+        const px = Math.min(cx + dx, w - 1);
+        const py = Math.min(cy + dy, h - 1);
+        const i = (py * w + px) * 4;
+        if (data[i + 3] > 10) { rS += data[i]; gS += data[i+1]; bS += data[i+2]; n++; }
+      }
+    }
+  }
+  return n > 0 ? [rS/n, gS/n, bS/n] : [255, 255, 255];
+}
+
+function removeBgFromCanvas(canvas, tolerance, featherRadius) {
+  const w = canvas.width, h = canvas.height;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  const [bgR, bgG, bgB] = sampleBgColor(d, w, h);
+  const isBg = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+
+  function tryMark(idx) {
+    if (idx < 0 || idx >= w * h || isBg[idx]) return;
+    const i = idx * 4;
+    if (d[i + 3] < 10) { isBg[idx] = 1; return; }
+    const dr = d[i] - bgR, dg = d[i+1] - bgG, db = d[i+2] - bgB;
+    if (Math.sqrt(dr*dr + dg*dg + db*db) <= tolerance) {
+      isBg[idx] = 1;
+      queue[tail++] = idx;
+    }
+  }
+
+  for (let x = 0; x < w; x++) { tryMark(x); tryMark((h-1)*w + x); }
+  for (let y = 1; y < h-1; y++) { tryMark(y*w); tryMark(y*w + w-1); }
+
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % w;
+    const y = (idx - x) / w;
+    if (x > 0)   tryMark(idx - 1);
+    if (x < w-1) tryMark(idx + 1);
+    if (y > 0)   tryMark(idx - w);
+    if (y < h-1) tryMark(idx + w);
+  }
+
+  for (let i = 0; i < w * h; i++) { if (isBg[i]) d[i*4+3] = 0; }
+
+  if (featherRadius > 0) {
+    const alpha = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) alpha[i] = d[i*4+3];
+
+    const tmp = new Float32Array(w * h);
+    const r = featherRadius;
+
+    // Horizontal box blur
+    for (let y = 0; y < h; y++) {
+      let sum = 0, wnd = 0;
+      const base = y * w;
+      for (let x = 0; x < w; x++) {
+        if (x + r < w) { sum += alpha[base + x + r]; wnd++; }
+        if (x - r - 1 >= 0) { sum -= alpha[base + x - r - 1]; wnd--; }
+        if (x === 0) { // init left side
+          sum = 0; wnd = 0;
+          for (let k = 0; k <= r && k < w; k++) { sum += alpha[base + k]; wnd++; }
+        }
+        tmp[base + x] = wnd > 0 ? sum / wnd : alpha[base + x];
+      }
+    }
+
+    // Vertical box blur
+    for (let x = 0; x < w; x++) {
+      let sum = 0, wnd = 0;
+      for (let y = 0; y < h; y++) {
+        if (y + r < h) { sum += tmp[(y + r) * w + x]; wnd++; }
+        if (y - r - 1 >= 0) { sum -= tmp[(y - r - 1) * w + x]; wnd--; }
+        if (y === 0) {
+          sum = 0; wnd = 0;
+          for (let k = 0; k <= r && k < h; k++) { sum += tmp[k * w + x]; wnd++; }
+        }
+        alpha[y * w + x] = wnd > 0 ? sum / wnd : tmp[y * w + x];
+      }
+    }
+
+    for (let i = 0; i < w * h; i++) d[i*4+3] = Math.round(alpha[i]);
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+document.getElementById('btn-process').addEventListener('click', async () => {
+  if (!originalCanvas) return;
+  showLoading('背景を消しています...');
+  await new Promise(r => setTimeout(r, 30));
+
+  const tolerance = parseFloat(document.getElementById('tolerance').value);
+  const feather   = parseInt(document.getElementById('feather').value);
+
+  processedCanvas = document.createElement('canvas');
+  processedCanvas.width  = originalCanvas.width;
+  processedCanvas.height = originalCanvas.height;
+  processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
+
+  removeBgFromCanvas(processedCanvas, tolerance, feather);
+
+  const cv = document.createElement('canvas');
+  cv.width  = processedCanvas.width;
+  cv.height = processedCanvas.height;
+  cv.getContext('2d').drawImage(processedCanvas, 0, 0);
+  cv.style.maxWidth = '100%';
+  const box = document.getElementById('box-proc');
+  box.innerHTML = '';
+  box.appendChild(cv);
+
+  document.getElementById('btn-split').disabled = false;
+  hideLoading();
+  showToast('背景除去完了！', true);
+});
+
+// ════════════════════════════════════════════════════════════
+// Sprite Splitting (Union-Find Connected Components)
+// ════════════════════════════════════════════════════════════
+function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr) {
+  const w = canvas.width, h = canvas.height;
+  const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+
+  const fg = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) fg[i] = d[i*4+3] > alphaThr ? 1 : 0;
+
+  // Union-Find with path compression
+  const parent = new Int32Array(w * h).fill(-1);
+  function find(i) {
+    while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; }
+    return i;
+  }
+  function unite(a, b) {
+    a = find(a); b = find(b);
+    if (a !== b) { if (a < b) parent[b] = a; else parent[a] = b; }
+  }
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!fg[i]) continue;
+      parent[i] = i;
+      if (y > 0 && fg[i - w]) unite(i, i - w);
+      if (x > 0 && fg[i - 1]) unite(i, i - 1);
+    }
+  }
+
+  // Collect bounding boxes
+  const boxes = new Map();
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!fg[i] || parent[i] < 0) continue;
+      const root = find(i);
+      if (!boxes.has(root)) boxes.set(root, { x1: x, y1: y, x2: x, y2: y });
+      const b = boxes.get(root);
+      if (x < b.x1) b.x1 = x; if (y < b.y1) b.y1 = y;
+      if (x > b.x2) b.x2 = x; if (y > b.y2) b.y2 = y;
+    }
+  }
+
+  const result = [];
+  for (const [, b] of boxes) {
+    const sw = b.x2 - b.x1 + 1, sh = b.y2 - b.y1 + 1;
+    if (sw < minSize && sh < minSize) continue;
+
+    const px = Math.min(pad, b.x1, w - b.x2 - 1);
+    const py = Math.min(pad, b.y1, h - b.y2 - 1);
+    const sx = Math.max(0, b.x1 - px),  sy = Math.max(0, b.y1 - py);
+    const sw2 = Math.min(w, b.x2 + px + 1) - sx;
+    const sh2 = Math.min(h, b.y2 + py + 1) - sy;
+
+    const sc = document.createElement('canvas');
+    sc.width = sw2; sc.height = sh2;
+    sc.getContext('2d').drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
+
+    result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
+                  name: '', id: '', icon: '🐠', expr: 'normal' });
+  }
+
+  // Sort: top-to-bottom, left-to-right
+  result.sort((a, b) => {
+    const ra = Math.floor(a.srcY / 80), rb = Math.floor(b.srcY / 80);
+    return ra !== rb ? ra - rb : a.srcX - b.srcX;
+  });
+  return result;
+}
+
+document.getElementById('btn-split').addEventListener('click', async () => {
+  if (!processedCanvas) return;
+  showLoading('スプライトを検出中...');
+  await new Promise(r => setTimeout(r, 30));
+
+  const minSize  = parseInt(document.getElementById('min-size').value)  || 20;
+  const padding  = parseInt(document.getElementById('padding').value)   || 4;
+  const alphaThr = parseInt(document.getElementById('alpha-thresh').value) || 10;
+
+  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr);
+  renderSpritesGrid();
+
+  // Switch to sprites tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="sprites"]').classList.add('active');
+  document.getElementById('tab-sprites').classList.add('active');
+
+  hideLoading();
+  showToast(sprites.length + '体のスプライトを検出しました', true);
+});
+
+// ════════════════════════════════════════════════════════════
+// Sprites Grid
+// ════════════════════════════════════════════════════════════
+function renderSpritesGrid() {
+  const grid    = document.getElementById('sprites-grid');
+  const toolbar = document.getElementById('sprites-bar');
+  document.getElementById('tab-sprites-btn').textContent = `スプライト (${sprites.length})`;
+
+  if (sprites.length === 0) {
+    grid.innerHTML = '<div class="empty-msg">「スプライトを分割」を実行してください。</div>';
+    toolbar.style.display = 'none';
+    document.getElementById('deploy-bar').classList.remove('show');
+    return;
+  }
+
+  toolbar.style.display = 'flex';
+  document.getElementById('sprites-count').textContent = sprites.length + '体';
+  document.getElementById('deploy-bar').classList.add('show');
+
+  grid.innerHTML = '';
+  sprites.forEach((sp, idx) => grid.appendChild(createSpriteCard(sp, idx)));
+}
+
+function createSpriteCard(sp, idx) {
+  const card = document.createElement('div');
+  card.className = 'sprite-card selected';
+  card.dataset.idx = idx;
+
+  const maxW = 198, maxH = 110;
+  const scale = Math.min(1, maxW / sp.w, maxH / sp.h);
+  const pv = document.createElement('canvas');
+  pv.width  = Math.round(sp.w * scale);
+  pv.height = Math.round(sp.h * scale);
+  pv.getContext('2d').drawImage(sp.canvas, 0, 0, pv.width, pv.height);
+
+  card.innerHTML = `
+    <div class="card-hdr">
+      <input type="checkbox" class="sp-check" checked>
+      <span class="card-num">#${idx + 1}</span>
+      <span class="card-dims">${sp.w}×${sp.h}</span>
+    </div>
+    <div class="card-preview" id="cpv-${idx}"></div>
+    <div class="card-body">
+      <input type="text" class="card-name sp-name" placeholder="生き物の名前（同じ名前でグループ化）" value="${sp.name}">
+      <input type="text" class="card-id sp-id"   placeholder="ID（半角英数）例: medaka" value="${sp.id}">
+      <div class="card-row">
+        <select class="card-expr sp-expr">
+          <option value="normal"    ${sp.expr==='normal'    ?'selected':''}>😊 ふつう</option>
+          <option value="surprised" ${sp.expr==='surprised' ?'selected':''}>😲 おどろき</option>
+          <option value="happy"     ${sp.expr==='happy'     ?'selected':''}>😄 わらう</option>
+        </select>
+        <button class="icon-btn icon-btn-ai"   data-idx="${idx}" title="AIで命名">🤖</button>
+        <button class="icon-btn icon-btn-flip" data-idx="${idx}" data-action="flip" title="左右反転">↔</button>
+        <button class="icon-btn icon-btn-del"  data-idx="${idx}" data-action="del"  title="削除">✕</button>
+      </div>
+    </div>`;
+
+  card.querySelector('.card-preview').appendChild(pv);
+
+  const check = card.querySelector('.sp-check');
+  check.addEventListener('change', () => card.classList.toggle('selected', check.checked));
+
+  card.querySelector('.sp-name').addEventListener('input', function() { sprites[idx].name = this.value; });
+  card.querySelector('.sp-id').addEventListener('input', function() { sprites[idx].id = this.value; });
+  card.querySelector('.sp-expr').addEventListener('change', function() { sprites[idx].expr = this.value; });
+
+  card.querySelector('[data-action="flip"]').addEventListener('click', () => {
+    flipSprite(idx);
+    refreshCardPreview(card, idx);
+  });
+
+  card.querySelector('[data-action="del"]').addEventListener('click', () => {
+    sprites.splice(idx, 1);
+    renderSpritesGrid();
+  });
+
+  card.querySelector('.icon-btn-ai').addEventListener('click', async () => {
+    const btn = card.querySelector('.icon-btn-ai');
+    btn.textContent = '⏳'; btn.disabled = true;
+    try {
+      await aiNameSprite(idx);
+      card.querySelector('.sp-name').value = sprites[idx].name;
+      card.querySelector('.sp-id').value   = sprites[idx].id;
+    } catch (e) {
+      showToast('AI命名失敗: ' + e.message, false);
+    }
+    btn.textContent = '🤖'; btn.disabled = false;
+  });
+
+  return card;
+}
+
+function refreshCardPreview(card, idx) {
+  const sp = sprites[idx];
+  const maxW = 198, maxH = 110;
+  const scale = Math.min(1, maxW / sp.w, maxH / sp.h);
+  const pv = document.createElement('canvas');
+  pv.width  = Math.round(sp.w * scale);
+  pv.height = Math.round(sp.h * scale);
+  pv.getContext('2d').drawImage(sp.canvas, 0, 0, pv.width, pv.height);
+  const wrap = card.querySelector('.card-preview');
+  wrap.innerHTML = '';
+  wrap.appendChild(pv);
+}
+
+// ════════════════════════════════════════════════════════════
+// Sprite Flip
+// ════════════════════════════════════════════════════════════
+function flipSprite(idx) {
+  const sp = sprites[idx];
+  const fc = document.createElement('canvas');
+  fc.width = sp.canvas.width; fc.height = sp.canvas.height;
+  const ctx = fc.getContext('2d');
+  ctx.translate(fc.width, 0); ctx.scale(-1, 1);
+  ctx.drawImage(sp.canvas, 0, 0);
+  sp.canvas = fc;
+}
+
+// ════════════════════════════════════════════════════════════
+// Toolbar Buttons
+// ════════════════════════════════════════════════════════════
+document.getElementById('btn-sel-all').addEventListener('click', () => {
+  document.querySelectorAll('.sprite-card').forEach(c => {
+    c.classList.add('selected');
+    c.querySelector('.sp-check').checked = true;
+  });
+});
+document.getElementById('btn-desel-all').addEventListener('click', () => {
+  document.querySelectorAll('.sprite-card').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.sp-check').checked = false;
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// AI Naming
+// ════════════════════════════════════════════════════════════
+function getExistingIdSet() {
+  const ids = new Set(HARDCODED_IDS);
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(c => ids.add(c.id));
+  }
+  sprites.forEach(sp => { if (sp.id) ids.add(sp.id); });
+  return ids;
+}
+
+async function aiNameSprite(idx) {
+  const sp = sprites[idx];
+  const base64 = sp.canvas.toDataURL('image/png').split(',')[1];
+  const existingIds = getExistingIdSet();
+
+  const prompt = `添付の画像は子供向け水族館ゲームに登場する海の生き物のイラストです。
+以下のJSON形式のみを返してください。余計な説明は不要です。
+
+{
+  "id": "英語スネークケースID（例: medaka, clownfish, sea_turtle）",
+  "name": "日本語表示名・ひらがな/カタカナ中心（例: メダカ、クマノミ）",
+  "icon": "最適な絵文字1文字"
+}
+
+使用禁止ID（既登録）: ${[...existingIds].join(', ')}
+ルール: IDは半角英数とアンダースコアのみ。既存IDと重複禁止。`;
+
+  const r = await fetch('/.netlify/functions/ai-name', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64, mimeType: 'image/png', prompt })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'API error');
+
+  const m = (data.text || '').match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('JSONが見つかりません');
+  const res = JSON.parse(m[0]);
+
+  let newId = (res.id || '').toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_') || 'creature';
+  let newName = (res.name || '').trim() || newId;
+  let newIcon = (res.icon || '🐠').trim();
+
+  // Dedup
+  const origId = newId; let suf = 2;
+  while (existingIds.has(newId)) { newId = origId + '_' + suf++; }
+
+  sprites[idx].id   = newId;
+  sprites[idx].name = newName;
+  sprites[idx].icon = newIcon;
+}
+
+document.getElementById('btn-ai-all').addEventListener('click', async () => {
+  const cards = [...document.querySelectorAll('.sprite-card.selected')];
+  if (!cards.length) { showToast('スプライトを選択してください', false); return; }
+
+  showLoading(`AIで命名中... 0/${cards.length}`);
+  let done = 0, failed = 0;
+
+  for (const card of cards) {
+    const idx = parseInt(card.dataset.idx);
+    try {
+      await aiNameSprite(idx);
+      card.querySelector('.sp-name').value = sprites[idx].name;
+      card.querySelector('.sp-id').value   = sprites[idx].id;
+      done++;
+      document.getElementById('loading-msg').textContent = `AIで命名中... ${done}/${cards.length}`;
+    } catch (e) {
+      failed++;
+    }
+    if (cards.indexOf(card) < cards.length - 1) {
+      await new Promise(r => setTimeout(r, 500)); // rate-limit
+    }
+  }
+
+  hideLoading();
+  showToast(`命名完了: ${done}体成功${failed > 0 ? ' / ' + failed + '体失敗' : ''}`, failed === 0);
+});
+
+// ════════════════════════════════════════════════════════════
+// Deploy to GitHub
+// ════════════════════════════════════════════════════════════
+async function fetchCreaturesData() {
+  try {
+    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CREATURES_PATH}?ref=${GH_BRANCH}&_=${Date.now()}`;
+    const r = await fetch(url, { headers: ghHeaders(), cache: 'no-store' });
+    if (r.ok) {
+      const d = await r.json();
+      creaturesData = JSON.parse(base64ToUtf8(d.content.replace(/\n/g, '')));
+    } else {
+      const r2 = await fetch('../' + CREATURES_PATH);
+      creaturesData = r2.ok ? await r2.json() : { version: 1, creatures: [] };
+    }
+  } catch (e) {
+    creaturesData = { version: 1, creatures: [] };
+  }
+  if (!creaturesData.creatures) creaturesData.creatures = [];
+}
+
+document.getElementById('btn-deploy').addEventListener('click', async () => {
+  if (!getToken()) { showToast('GitHubトークンを設定してください', false); return; }
+
+  // Collect selected
+  const selectedCards = [...document.querySelectorAll('.sprite-card.selected')];
+  if (!selectedCards.length) { showToast('スプライトを選択してください', false); return; }
+
+  // Validate names
+  const unnamed = selectedCards.filter(c => !sprites[parseInt(c.dataset.idx)].name.trim());
+  if (unnamed.length) { showToast('すべての選択スプライトに名前をつけてください', false); return; }
+
+  // Group by creature name
+  const groups = new Map();
+  for (const card of selectedCards) {
+    const sp = sprites[parseInt(card.dataset.idx)];
+    const key = sp.name.trim();
+    if (!groups.has(key)) {
+      const rawId = sp.id || key.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/, '').replace(/_+/g, '_') || 'creature';
+      groups.set(key, { id: rawId, name: key, icon: sp.icon || '🐠', normal: [], surprised: null, happy: null });
+    }
+    const g = groups.get(key);
+    if (sp.id) g.id = sp.id;
+    if (sp.icon && sp.icon !== '🐠') g.icon = sp.icon;
+
+    if      (sp.expr === 'normal'    && g.normal.length < 3) g.normal.push(sp);
+    else if (sp.expr === 'surprised' && !g.surprised)        g.surprised = sp;
+    else if (sp.expr === 'happy'     && !g.happy)            g.happy = sp;
+  }
+
+  // Validate groups
+  for (const [name, g] of groups) {
+    if (!g.normal.length) { showToast(`「${name}」のふつうのかお画像がありません`, false); return; }
+    if (!g.surprised)     { showToast(`「${name}」のおどろきのかお画像がありません`, false); return; }
+  }
+
+  const setStatus = msg => {
+    document.getElementById('deploy-status').textContent = msg;
+    document.getElementById('loading-msg').textContent = msg;
+  };
+
+  showLoading('creatures.json を確認中...');
+  await fetchCreaturesData();
+
+  const existingIds = new Set([...HARDCODED_IDS, ...creaturesData.creatures.map(c => c.id)]);
+  for (const [, g] of groups) {
+    if (existingIds.has(g.id)) {
+      hideLoading();
+      showToast(`ID "${g.id}" は既に登録済みです。IDを変更してください。`, false);
+      return;
+    }
+  }
+
+  // Creature params from UI
+  const facing   = document.getElementById('def-facing').value;
+  const sizePx   = parseInt(document.getElementById('def-size').value)     || 70;
+  const count    = parseInt(document.getElementById('def-count').value)    || 3;
+  const pattern  = document.getElementById('def-pattern').value;
+  const reaction = document.getElementById('def-reaction').value;
+  const speed    = parseFloat(document.getElementById('def-speed').value)    || 1.0;
+  const duration = parseFloat(document.getElementById('def-duration').value) || 1.0;
+
+  // Count total uploads
+  let totalUploads = 0;
+  for (const [, g] of groups) totalUploads += g.normal.length + 1 + (g.happy ? 1 : 0);
+  let uploaded = 0;
+
+  try {
+    for (const [, g] of groups) {
+      const folder  = g.id.charAt(0).toUpperCase() + g.id.slice(1);
+      const normNames = g.normal.map((_, i) => `${folder}_normal_${i+1}.png`);
+      const surprName = `${folder}_surprised.png`;
+      const happyName = g.happy ? `${folder}_happy.png` : null;
+
+      for (let i = 0; i < g.normal.length; i++) {
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (ふつう${i+1})`);
+        await ghUploadPromise(
+          `assets/images/ocean/${folder}/${normNames[i]}`,
+          canvasToBase64(g.normal[i].canvas),
+          `🐠 studio: ${g.id} / ${normNames[i]}`
+        );
+      }
+
+      setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (おどろき)`);
+      await ghUploadPromise(
+        `assets/images/ocean/${folder}/${surprName}`,
+        canvasToBase64(g.surprised.canvas),
+        `🐠 studio: ${g.id} / ${surprName}`
+      );
+
+      if (g.happy) {
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (わらう)`);
+        await ghUploadPromise(
+          `assets/images/ocean/${folder}/${happyName}`,
+          canvasToBase64(g.happy.canvas),
+          `🐠 studio: ${g.id} / ${happyName}`
+        );
+      }
+
+      const entry = {
+        id: g.id, displayName: g.name, icon: g.icon, folder,
+        expressions: {
+          normal:    normNames.length === 1 ? normNames[0] : normNames,
+          surprised: surprName
+        },
+        pattern, reactionType: reaction, facingDir: facing,
+        baseSizePx: sizePx, baseSizeJitter: 30,
+        imgWidthHint: g.normal[0].w,
+        speedMin: 0.04, speedMax: 0.07,
+        spawnCount: count, reactionSpeed: speed, reactionDuration: duration,
+        rewardType: 'sea'
+      };
+      if (happyName) entry.expressions.happy = happyName;
+      creaturesData.creatures.push(entry);
+    }
+
+    setStatus('🔄 creatures.json を更新中...');
+    await ghUploadPromise(
+      CREATURES_PATH,
+      utf8ToBase64(JSON.stringify(creaturesData, null, 2)),
+      `🐠 studio: register ${groups.size} creature(s)`
+    );
+
+    hideLoading();
+    setStatus(`✅ ${groups.size}体を登録しました！水族館を確認してください。`);
+    showToast(`🐠 ${groups.size}体の生き物を登録しました`, true);
+
+  } catch (e) {
+    hideLoading();
+    setStatus('❌ エラー: ' + e.message);
+    showToast('登録失敗: ' + e.message, false);
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// Init
+// ════════════════════════════════════════════════════════════
+fetchCreaturesData(); // preload for duplicate ID check
+</script>
+</body>
+</html>
