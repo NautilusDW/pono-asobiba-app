@@ -2381,6 +2381,12 @@
 
         // ── Panic: burst then rapid water-resistance deceleration ──
         if (c.panicTimer > 0) {
+          // フライバイ中は位置クランプもスキップ（タイマーだけ消化して return）
+          // フライバイ独自の位置更新は ticker 末尾で行われるので、ここで触ると上書き競合する
+          if (c._flybyState) {
+            c.panicTimer -= delta;
+            return;
+          }
           c.wasInPanic = true;
           c.panicTimer -= delta;
           // マンボウはほとんど動かない・パニック持続も短め
