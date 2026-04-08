@@ -308,16 +308,18 @@ def process_auto_fake_bg(
 # ---------------------------------------------------------------------------
 
 def checker_composite(img: Image.Image, tile: int = 16) -> Image.Image:
-    """アルファがわかりやすいように市松模様の上に合成した画像を返す (表示専用)。"""
+    """アルファがわかりやすいように市松模様の上に合成した画像を返す (表示専用)。
+    numpy でベクトル化。大きな画像でも即座に生成される。"""
     if img.mode != "RGBA":
         img = img.convert("RGBA")
     w, h = img.size
-    bg = Image.new("RGB", (w, h), (200, 200, 200))
-    px = bg.load()
-    for y in range(h):
-        for x in range(w):
-            if ((x // tile) + (y // tile)) % 2 == 0:
-                px[x, y] = (240, 240, 240)
+    ys = np.arange(h).reshape(-1, 1)
+    xs = np.arange(w).reshape(1, -1)
+    mask = (((xs // tile) + (ys // tile)) % 2 == 0)
+    arr = np.empty((h, w, 3), dtype=np.uint8)
+    arr[mask] = (240, 240, 240)
+    arr[~mask] = (200, 200, 200)
+    bg = Image.fromarray(arr, mode="RGB")
     bg.paste(img, mask=img.split()[3])
     return bg
 

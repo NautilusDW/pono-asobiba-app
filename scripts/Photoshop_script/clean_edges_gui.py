@@ -58,7 +58,8 @@ class CleanEdgesGUI:
     def __init__(self, root: tk.Tk, initial_path: Path = None):
         self.root = root
         self.root.title("Clean Edges - background removal")
-        self.root.geometry("1280x820")
+        self.root.geometry("1600x950")
+        self.root.minsize(1100, 700)
         self.root.configure(bg="#1e1e1e")
 
         self.input_path: Path = None
@@ -146,17 +147,30 @@ class CleanEdgesGUI:
 
         left_frame = ttk.LabelFrame(display, text="Original")
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
-        self.left_label = tk.Label(left_frame, bg="#2a2a2a")
-        self.left_label.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        left_inner = tk.Frame(left_frame, bg="#2a2a2a")
+        left_inner.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        left_inner.pack_propagate(False)
+        self.left_canvas = tk.Canvas(
+            left_inner, bg="#2a2a2a", highlightthickness=0, bd=0
+        )
+        self.left_canvas.pack(fill=tk.BOTH, expand=True)
 
         right_frame = ttk.LabelFrame(display, text="Result (on checker background)")
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
-        self.right_label = tk.Label(right_frame, bg="#2a2a2a")
-        self.right_label.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        right_inner = tk.Frame(right_frame, bg="#2a2a2a")
+        right_inner.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        right_inner.pack_propagate(False)
+        self.right_canvas = tk.Canvas(
+            right_inner, bg="#2a2a2a", highlightthickness=0, bd=0
+        )
+        self.right_canvas.pack(fill=tk.BOTH, expand=True)
 
-        # Redraw thumbnails when window resized
-        self.left_label.bind("<Configure>", lambda e: self._refresh_previews())
-        self.right_label.bind("<Configure>", lambda e: self._refresh_previews())
+        # Redraw thumbnails when canvas is resized by window resize.
+        # (Canvas does NOT resize to fit its content like Label does,
+        #  so no infinite shrink loop.)
+        self._resize_after = None
+        self.left_canvas.bind("<Configure>", lambda e: self._schedule_redraw())
+        self.right_canvas.bind("<Configure>", lambda e: self._schedule_redraw())
 
         # -------- Status bar --------
         self.status_var = tk.StringVar(value="Ready. Click 'Open Image...' to begin.")
@@ -302,23 +316,39 @@ class CleanEdgesGUI:
             self._debounce_id = self.root.after(200, self.on_process)
 
     # --------------------------------------------------------- Preview
-    def _refresh_previews(self):
-        if self.original_img is not None:
-            self._show_in(self.left_label, self.original_img, checker=False)
-        if self.result_img is not None:
-            self._show_in(self.right_label, self.result_img, checker=True)
+    def _schedule_redraw(self):
+        """Debounce canvas <Configure> events while the user is resizing."""
+        if self._resize_after is not None:
+            try:
+                self.root.after_cancel(self._resize_after)
+            except Exception:
+                pass
+        self._resize_after = self.root.after(60, self._refresh_previews)
 
-    def _show_in(self, label: tk.Label, img: Image.Image, checker: bool):
-        label.update_idletasks()
-        w = max(label.winfo_width() - 8, 300)
-        h = max(label.winfo_height() - 8, 300)
+    def _refresh_previews(self):
+        self._resize_after = None
+        if self.original_img is not None:
+            self._show_in(self.left_canvas, self.original_img, checker=False)
+        if self.result_img is not None:
+            self._show_in(self.right_canvas, self.result_img, checker=True)
+
+    def _show_in(self, canvas: tk.Canvas, img: Image.Image, checker: bool):
+        canvas.update_idletasks()
+        w = canvas.winfo_width()
+        h = canvas.winfo_height()
+        if w < 10 or h < 10:
+            # Canvas not realized yet; defer once.
+            self.root.after(50, lambda: self._show_in(canvas, img, checker))
+            return
 
         disp = checker_composite(img) if checker else img.convert("RGBA")
         disp = disp.copy()
         disp.thumbnail((w, h), Image.LANCZOS)
         photo = ImageTk.PhotoImage(disp)
-        label.config(image=photo)
-        label.image = photo  # keep reference
+
+        canvas.delete("all")
+        canvas.create_image(w // 2, h // 2, image=photo, anchor=tk.CENTER)
+        canvas.image = photo  # keep a reference so it isn't garbage-collected
 
 
 def main():
