@@ -144,8 +144,8 @@ class CleanEdgesGUI:
 
         self._make_slider(sliders, "Border tolerance", self.border_tol, 0, 100, 0)
         self._make_slider(sliders, "Gray tolerance", self.gray_tol, 0, 60, 1)
-        self._make_slider(sliders, "Edge feather (px)", self.feather_var, 0.0, 5.0, 2, decimal=True)
-        self._make_slider(sliders, "Alpha blur (px)", self.blur_var, 0.0, 3.0, 3, decimal=True)
+        self._make_slider(sliders, "Edge feather (px)", self.feather_var, 0.0, 10.0, 2, decimal=True)
+        self._make_slider(sliders, "Alpha blur (px)", self.blur_var, 0.0, 5.0, 3, decimal=True)
 
         self.auto_process_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
@@ -184,8 +184,27 @@ class CleanEdgesGUI:
         # (Canvas does NOT resize to fit its content like Label does,
         #  so no infinite shrink loop.)
         self._resize_after = None
-        self.left_canvas.bind("<Configure>", lambda e: self._schedule_redraw())
-        self.right_canvas.bind("<Configure>", lambda e: self._schedule_redraw())
+        for cv in (self.left_canvas, self.right_canvas):
+            cv.bind("<Configure>", lambda e: self._schedule_redraw())
+            # Zoom: mouse wheel (Windows/Mac: <MouseWheel>, Linux: Button-4/5)
+            cv.bind("<MouseWheel>", self._on_wheel)
+            cv.bind("<Button-4>", lambda e: self._on_wheel_linux(e, up=True))
+            cv.bind("<Button-5>", lambda e: self._on_wheel_linux(e, up=False))
+            # Pan: left-drag
+            cv.bind("<ButtonPress-1>", self._on_drag_start)
+            cv.bind("<B1-Motion>", self._on_drag_move)
+            cv.bind("<ButtonRelease-1>", self._on_drag_end)
+            # Double-click to reset view
+            cv.bind("<Double-Button-1>", lambda e: self.on_zoom_fit())
+            # Change cursor to show it's interactive
+            cv.configure(cursor="fleur")
+
+        # Keyboard shortcuts
+        self.root.bind("<KeyPress-plus>", lambda e: self.on_zoom_button(1.5))
+        self.root.bind("<KeyPress-equal>", lambda e: self.on_zoom_button(1.5))
+        self.root.bind("<KeyPress-minus>", lambda e: self.on_zoom_button(1 / 1.5))
+        self.root.bind("<KeyPress-0>", lambda e: self.on_zoom_fit())
+        self.root.bind("<KeyPress-1>", lambda e: self.on_zoom_100())
 
         # -------- Status bar --------
         self.status_var = tk.StringVar(value="Ready. Click 'Open Image...' to begin.")
@@ -346,24 +365,206 @@ class CleanEdgesGUI:
             self._show_in(self.left_canvas, self.original_img, checker=False)
         if self.result_img is not None:
             self._show_in(self.right_canvas, self.result_img, checker=True)
+        # Update zoom indicator
+        self.zoom_label.config(text=f"{int(round(self._effective_zoom_percent()))}%")
+
+    def _base_scale(self, canvas_w: int, canvas_h: int, img_w: int, img_h: int) -> float:
+        """Scale that fits the whole image inside the canvas (zoom=1.0)."""
+        if img_w <= 0 or img_h <= 0:
+            return 1.0
+        return min(canvas_w / img_w, canvas_h / img_h)
+
+    def _effective_zoom_percent(self) -> float:
+        """Show zoom as % of 1:1 (actual pixels). 100% = one image pixel per screen pixel."""
+        if self.original_img is None:
+            return 100.0
+        w = max(self.left_canvas.winfo_width(), 10)
+        h = max(self.left_canvas.winfo_height(), 10)
+        img_w, img_h = self.original_img.size
+        base = self._base_scale(w, h, img_w, img_h)
+        return base * self.zoom * 100.0
+
+    def _compute_viewport(self, canvas_w, canvas_h, img_w, img_h):
+        """Return (crop_box, actual_scale) where crop_box is in image coords."""
+        base = self._base_scale(canvas_w, canvas_h, img_w, img_h)
+        actual_scale = base * self.zoom
+        if actual_scale <= 0:
+            actual_scale = 1.0
+
+        # How much of the image fits in the canvas at this scale?
+        view_w_img = canvas_w / actual_scale
+        view_h_img = canvas_h / actual_scale
+
+        cx = self.view_cx if self.view_cx is not None else img_w / 2
+        cy = self.view_cy if self.view_cy is not None else img_h / 2
+
+        # Clamp the view center so the viewport stays over the image (when possible)
+        if view_w_img < img_w:
+            half = view_w_img / 2
+            cx = max(half, min(img_w - half, cx))
+        else:
+            cx = img_w / 2
+        if view_h_img < img_h:
+            half = view_h_img / 2
+            cy = max(half, min(img_h - half, cy))
+        else:
+            cy = img_h / 2
+
+        self.view_cx = cx
+        self.view_cy = cy
+
+        left = cx - view_w_img / 2
+        top = cy - view_h_img / 2
+        right = left + view_w_img
+        bottom = top + view_h_img
+
+        return (left, top, right, bottom), actual_scale
 
     def _show_in(self, canvas: tk.Canvas, img: Image.Image, checker: bool):
         canvas.update_idletasks()
         w = canvas.winfo_width()
         h = canvas.winfo_height()
         if w < 10 or h < 10:
-            # Canvas not realized yet; defer once.
             self.root.after(50, lambda: self._show_in(canvas, img, checker))
             return
 
-        disp = checker_composite(img) if checker else img.convert("RGBA")
-        disp = disp.copy()
-        disp.thumbnail((w, h), Image.LANCZOS)
-        photo = ImageTk.PhotoImage(disp)
+        img_w, img_h = img.size
+        (l, t, r, b), scale = self._compute_viewport(w, h, img_w, img_h)
 
+        # Crop the visible region (with 1px padding for safe resize)
+        cl = max(0, int(l))
+        ct = max(0, int(t))
+        cr = min(img_w, int(r) + 1)
+        cb = min(img_h, int(b) + 1)
+        if cr <= cl or cb <= ct:
+            canvas.delete("all")
+            return
+        crop = img.crop((cl, ct, cr, cb))
+
+        if checker:
+            crop = checker_composite(crop)
+        else:
+            crop = crop.convert("RGBA")
+
+        # Resize to display size.
+        # When zoomed in past 1:1, use NEAREST so the user can see actual pixel edges
+        # (ideal for inspecting jaggies). Otherwise use LANCZOS for smooth thumbnails.
+        disp_w = max(1, int((cr - cl) * scale))
+        disp_h = max(1, int((cb - ct) * scale))
+        resample = Image.NEAREST if scale > 1.2 else Image.LANCZOS
+        crop = crop.resize((disp_w, disp_h), resample)
+
+        photo = ImageTk.PhotoImage(crop)
+
+        # Position so that the visible region's image-space (l,t) maps to (0,0) on screen
+        # offset_x = (cl - l) * scale  (positive if crop started inside visible rect)
+        offset_x = (cl - l) * scale
+        offset_y = (ct - t) * scale
+        # Center the image area in the canvas
         canvas.delete("all")
-        canvas.create_image(w // 2, h // 2, image=photo, anchor=tk.CENTER)
-        canvas.image = photo  # keep a reference so it isn't garbage-collected
+        canvas.create_image(offset_x, offset_y, image=photo, anchor=tk.NW)
+        canvas.image = photo  # keep a reference
+
+    # ------------------------------------------------------------- Zoom/Pan
+    def on_zoom_fit(self):
+        self.zoom = 1.0
+        self.view_cx = None
+        self.view_cy = None
+        self._refresh_previews()
+
+    def on_zoom_100(self):
+        """Set zoom to actual-pixels (1 image pixel == 1 screen pixel)."""
+        if self.original_img is None:
+            return
+        w = max(self.left_canvas.winfo_width(), 10)
+        h = max(self.left_canvas.winfo_height(), 10)
+        img_w, img_h = self.original_img.size
+        base = self._base_scale(w, h, img_w, img_h)
+        self.zoom = 1.0 / base if base > 0 else 1.0
+        self._refresh_previews()
+
+    def on_zoom_button(self, factor: float):
+        self._apply_zoom(factor, anchor_x=None, anchor_y=None, canvas=None)
+
+    def _apply_zoom(self, factor: float, anchor_x, anchor_y, canvas):
+        """
+        factor: multiplicative zoom change.
+        (anchor_x, anchor_y): canvas-space point that should stay under the cursor,
+        or None to zoom around the view center.
+        """
+        if self.original_img is None:
+            return
+        new_zoom = max(0.1, min(64.0, self.zoom * factor))
+        if new_zoom == self.zoom:
+            return
+
+        if anchor_x is not None and anchor_y is not None and canvas is not None:
+            w = max(canvas.winfo_width(), 10)
+            h = max(canvas.winfo_height(), 10)
+            img_w, img_h = self.original_img.size
+            (l, t, r, b), old_scale = self._compute_viewport(w, h, img_w, img_h)
+
+            # Point in image space under the cursor BEFORE zoom
+            img_x = l + anchor_x / old_scale
+            img_y = t + anchor_y / old_scale
+
+            # Apply new zoom
+            self.zoom = new_zoom
+
+            # Compute new scale
+            base = self._base_scale(w, h, img_w, img_h)
+            new_scale = base * self.zoom
+
+            # Solve for new center so that (img_x, img_y) lands back at (anchor_x, anchor_y)
+            new_view_w = w / new_scale
+            new_view_h = h / new_scale
+            self.view_cx = img_x - (anchor_x / new_scale - new_view_w / 2)
+            self.view_cy = img_y - (anchor_y / new_scale - new_view_h / 2)
+        else:
+            self.zoom = new_zoom
+
+        self._refresh_previews()
+
+    def _on_wheel(self, event):
+        # Windows: event.delta is ±120 per notch
+        factor = 1.25 if event.delta > 0 else 1 / 1.25
+        self._apply_zoom(factor, event.x, event.y, event.widget)
+
+    def _on_wheel_linux(self, event, up: bool):
+        factor = 1.25 if up else 1 / 1.25
+        self._apply_zoom(factor, event.x, event.y, event.widget)
+
+    def _on_drag_start(self, event):
+        if self.original_img is None:
+            return
+        self._drag_state = (
+            event.x, event.y,
+            self.view_cx if self.view_cx is not None else self.original_img.width / 2,
+            self.view_cy if self.view_cy is not None else self.original_img.height / 2,
+        )
+        event.widget.configure(cursor="hand2")
+
+    def _on_drag_move(self, event):
+        if self._drag_state is None or self.original_img is None:
+            return
+        sx, sy, cx0, cy0 = self._drag_state
+        canvas = event.widget
+        w = max(canvas.winfo_width(), 10)
+        h = max(canvas.winfo_height(), 10)
+        img_w, img_h = self.original_img.size
+        base = self._base_scale(w, h, img_w, img_h)
+        actual_scale = base * self.zoom
+        if actual_scale <= 0:
+            return
+        dx = (event.x - sx) / actual_scale
+        dy = (event.y - sy) / actual_scale
+        self.view_cx = cx0 - dx
+        self.view_cy = cy0 - dy
+        self._refresh_previews()
+
+    def _on_drag_end(self, event):
+        self._drag_state = None
+        event.widget.configure(cursor="fleur")
 
 
 def main():
