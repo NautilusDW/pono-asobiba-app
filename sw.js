@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 29;
+const CACHE_VERSION = 30;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -37,6 +37,17 @@ self.addEventListener('fetch', event => {
   // （ピボットツールでスワップした画像が即反映されるように）
   // オフライン時のみ既存キャッシュにフォールバック
   if (event.request.destination === 'image') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 動画 (宝箱・ハリネズミ等) も SW キャッシュをスキップ
+  // 古い mp4 がキャッシュされると再生が止まる問題の対策
+  if (event.request.destination === 'video'
+      || event.request.url.includes('/assets/videos/')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .catch(() => caches.match(event.request))

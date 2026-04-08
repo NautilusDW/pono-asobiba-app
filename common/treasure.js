@@ -115,9 +115,24 @@
     return 'assets/videos/TreasureBox.mp4';
   }
 
+  // 進行中のタイマーを追跡して次回呼出前にクリアする
+  var _pendingTimers = [];
+  function _clearPendingTimers() {
+    _pendingTimers.forEach(function(t) { clearTimeout(t); });
+    _pendingTimers = [];
+  }
+  function _later(fn, ms) {
+    var id = setTimeout(fn, ms);
+    _pendingTimers.push(id);
+    return id;
+  }
+
   window.showTreasure = function(options) {
-    // options: { name: 'アイテム名', img: 'path/to/img.png', onClose: function }
+    // options: { name: 'アイテム名', img: 'path/to/img.png', onClose: function, label: '...' }
     _createUI();
+
+    // 前回呼び出しのタイマーをクリア（連打時の二重 show を防ぐ）
+    _clearPendingTimers();
 
     var name = options.name || 'ごほうび';
     var label = options.label || '';
@@ -141,49 +156,68 @@
     document.getElementById('treasure-reward-name').textContent = name;
     _onClose = options.onClose || null;
 
-    // 動画をリセットして再読込
+    // ── 動画の準備 ──
+    // 注意: <video src="..."> と <source src="..."> を同時に設定すると
+    // ブラウザによっては競合・race condition が起きるので、<source> だけ
+    // 使い、video.removeAttribute('src') で src 属性を剥がしてから
+    // sourceEl.src を更新 → video.load() の順にする。
     _video.pause();
+    _video.onended = null; // 古い handler を必ず剥がす（prior call が firing するのを防ぐ）
     var vpath = _getVideoPath();
-    _video.src = vpath;
     var sourceEl = _video.querySelector('source');
-    if (sourceEl) sourceEl.src = vpath;
+    if (sourceEl) {
+      // キャッシュバスター付きで毎回確実に最新の mp4 を取得
+      // (PWA の SW や CDN が古い mp4 を返すと再生が止まる問題の対策)
+      var cacheBusted = vpath + (vpath.indexOf('?') < 0 ? '?' : '&') + '_cb=' + Date.now();
+      sourceEl.src = cacheBusted;
+    }
+    // video.src が直接設定されていたら剥がす（二重ソース回避）
+    if (_video.hasAttribute('src')) _video.removeAttribute('src');
     _video.currentTime = 0;
     _video.load();
 
     _overlay.classList.add('show');
-    // muted で再生開始し、再生できたら unmute して音を出す
-    _video.muted = true;
-    _video.play().then(function() {
-      // 再生成功 → ミュート解除して音を出す
-      _video.muted = false;
-      var dur = _video.duration;
-      if (dur && isFinite(dur)) {
-        setTimeout(function() {
-          _msg.classList.add('show');
-          _closeBtn.classList.add('show');
-        }, (dur * 1000) + 500);
-      } else {
-        setTimeout(function() {
-          _msg.classList.add('show');
-          _closeBtn.classList.add('show');
-        }, 6000);
-      }
-    }).catch(function() {
-      // 自動再生失敗時はスキップしてアイテム表示
-      _reward.classList.add('show');
-      _msg.classList.add('show');
-      _closeBtn.classList.add('show');
-    });
 
-    // 宝箱が開くタイミング（約3秒後）でアイテムを表示
-    setTimeout(function() {
+    // アイテム表示タイマー（宝箱が開く約3秒後）
+    _later(function() {
       _reward.classList.add('show');
     }, 3000);
 
-    // 動画終了後にメッセージとボタン表示
+    // 動画終了ハンドラを先にセット（play 前）
     _video.onended = function() {
       _msg.classList.add('show');
       _closeBtn.classList.add('show');
     };
+
+    // muted で再生開始し、再生できたら unmute して音を出す
+    _video.muted = true;
+    var playPromise = _video.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.then(function() {
+        // 再生成功 → ミュート解除して音を出す
+        _video.muted = false;
+        // duration が分かれば duration+0.5s 後にメッセージ表示
+        // (onended が firing しないケースへの保険)
+        var dur = _video.duration;
+        var fallbackMs = (dur && isFinite(dur) && dur > 0) ? (dur * 1000) + 500 : 6000;
+        _later(function() {
+          _msg.classList.add('show');
+          _closeBtn.classList.add('show');
+        }, fallbackMs);
+      }).catch(function(err) {
+        // 自動再生失敗 (iOS Safari のユーザー操作不足など)
+        // → 動画はスキップしてすぐにアイテムとボタンを出す
+        console.warn('[treasure] video.play() failed:', err);
+        _reward.classList.add('show');
+        _msg.classList.add('show');
+        _closeBtn.classList.add('show');
+      });
+    } else {
+      // 古いブラウザ: play() が undefined を返す
+      _later(function() {
+        _msg.classList.add('show');
+        _closeBtn.classList.add('show');
+      }, 6000);
+    }
   };
 })();

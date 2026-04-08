@@ -9,6 +9,9 @@
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
 
+/assets/videos/*
+  Cache-Control: no-cache, must-revalidate
+
 /assets/data/*.json
   Cache-Control: no-cache, no-store, must-revalidate
 
