@@ -789,8 +789,22 @@ function buildSlotCard(slotNum, data) {
       }
     });
   }
-  row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
-  row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  if (!isGendered) {
+    row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
+    row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  } else {
+    // 男女別の時は name/icon はフィールド非表示（実ゲームでは v.name が使われる）
+    var hName2 = document.createElement('input');
+    hName2.type = 'hidden'; hName2.dataset.key = 'name'; hName2.value = data.name || '';
+    row1.appendChild(hName2);
+    var hIcon2 = document.createElement('input');
+    hIcon2.type = 'hidden'; hIcon2.dataset.key = 'icon'; hIcon2.value = data.icon || '';
+    row1.appendChild(hIcon2);
+    var note2 = document.createElement('div');
+    note2.style.cssText = 'font-size:0.7rem;color:#888;flex:1;padding:6px 10px;';
+    note2.textContent = '※ 男女別の時はそれぞれの名前が使われます';
+    row1.appendChild(note2);
+  }
   card.appendChild(row1);
 
   // Row 2: アイテム選択 (non-gendered)
@@ -988,8 +1002,23 @@ function buildCardCompleteCard(idx, data) {
   numDisplay.innerHTML = '<label>#</label><div style="font-weight:900;font-size:1rem;color:#FF6B9D;">' + (idx + 1) + '枚目</div>';
   row1.appendChild(numDisplay);
 
-  row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
-  row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  if (!isGendered) {
+    row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
+    row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
+  } else {
+    // 男女別の時は name/icon はフィールド非表示（実ゲームでは v.name が使われるため冗長）
+    // collectCardData で boy/girl から自動合成するので hidden input だけ残す
+    var hName = document.createElement('input');
+    hName.type = 'hidden'; hName.dataset.key = 'name'; hName.value = data.name || '';
+    row1.appendChild(hName);
+    var hIcon = document.createElement('input');
+    hIcon.type = 'hidden'; hIcon.dataset.key = 'icon'; hIcon.value = data.icon || '';
+    row1.appendChild(hIcon);
+    var note = document.createElement('div');
+    note.style.cssText = 'font-size:0.7rem;color:#888;flex:1;padding:6px 10px;';
+    note.textContent = '※ 男女別の時はそれぞれの名前が使われます';
+    row1.appendChild(note);
+  }
   card.appendChild(row1);
 
   // Row 2: アイテム選択 (non-gendered)
@@ -1192,8 +1221,22 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
             }
           }
           // カードプレビュー画像を更新（gendered の時は boy 側変更時だけ）
-          var cardPrev = parentCard.querySelector('.reward-preview-img');
-          if (cardPrev && (prefix !== 'girl')) cardPrev.src = aDownloadUrl;
+          if (prefix !== 'girl') {
+            var cardPrev = parentCard.querySelector('.reward-preview-img');
+            if (cardPrev) {
+              cardPrev.src = aDownloadUrl;
+            } else {
+              // 初回: placeholder（🎁などの絵文字表示）を img に差し替え
+              var ph = parentCard.querySelector('.reward-preview-placeholder');
+              if (ph) {
+                var newImg = document.createElement('img');
+                newImg.className = 'reward-preview-img';
+                newImg.src = aDownloadUrl;
+                newImg.onerror = function() { this.style.display = 'none'; };
+                ph.parentNode.replaceChild(newImg, ph);
+              }
+            }
+          }
         }
       }
       refreshInfo();
@@ -1779,13 +1822,12 @@ function collectSlotData(card) {
       id:   (card.querySelector('[data-key="girl-id"]') || {}).value || '',
       img:  (card.querySelector('[data-key="girl-img"]') || {}).value || ''
     };
-    // 表示用の総称名: 上のname欄が空なら "boy名 / girl名" を自動生成
-    if (!d.name) {
-      var bn = d.boy.name || '';
-      var gn = d.girl.name || '';
-      if (bn && gn && bn !== gn) d.name = bn + ' / ' + gn;
-      else d.name = bn || gn || '';
-    }
+    // gendered 時は総称名を常に boy/girl から再合成
+    //（トップの name フィールドは非表示で手入力不可）
+    var bnS = d.boy.name || '';
+    var gnS = d.girl.name || '';
+    if (bnS && gnS && bnS !== gnS) d.name = bnS + ' / ' + gnS;
+    else d.name = bnS || gnS || d.name;
   } else {
     d.type = (card.querySelector('[data-key="type"]') || {}).value || 'deco';
     d.id   = (card.querySelector('[data-key="id"]') || {}).value || '';
@@ -1861,13 +1903,12 @@ function collectCardData(card) {
       id:   (card.querySelector('[data-key="girl-id"]')   || {}).value || '',
       img:  (card.querySelector('[data-key="girl-img"]')  || {}).value || ''
     };
-    // 総称名が空なら boy/girl から自動生成
-    if (!d.name) {
-      var bn = d.boy.name || '';
-      var gn = d.girl.name || '';
-      if (bn && gn && bn !== gn) d.name = bn + ' / ' + gn;
-      else d.name = bn || gn || '';
-    }
+    // gendered 時は総称名を常に boy/girl から再合成
+    //（トップの name フィールドは非表示で手入力不可なので古い値を温存しない）
+    var bn = d.boy.name || '';
+    var gn = d.girl.name || '';
+    if (bn && gn && bn !== gn) d.name = bn + ' / ' + gn;
+    else d.name = bn || gn || d.name;
   } else {
     d.type = (card.querySelector('[data-key="type"]') || {}).value || 'sea';
     d.id   = (card.querySelector('[data-key="id"]')   || {}).value || '';
