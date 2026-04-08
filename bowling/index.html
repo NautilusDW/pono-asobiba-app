@@ -23,12 +23,44 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 #start-screen {
   position: fixed; inset: 0; z-index: 9999;
   background: linear-gradient(135deg, #1a5c3a 0%, #2d8f5e 100%);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  overflow-y: auto; padding: 20px 16px 24px;
 }
-#start-screen .title { font-size: 42px; font-weight: 900; color: #FFD700; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); }
-#start-screen .tap { font-size: 22px; color: #fff; margin-top: 30px; animation: pulse 1.5s infinite; }
-#start-screen .mode-link { font-size: 18px; color: #4ECDC4; margin-top: 24px; text-decoration: underline; cursor: pointer; }
+#start-screen .title { font-size: 36px; font-weight: 900; color: #FFD700; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); text-align:center; margin-bottom:4px; }
+/* BG picker grid */
+#bg-picker-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  width: 100%; max-width: 480px; margin: 12px 0;
+}
+.bg-card {
+  position: relative; border-radius: 10px; overflow: hidden;
+  border: 3px solid transparent; cursor: pointer;
+  aspect-ratio: 9/16; background: #111;
+  transition: border-color 0.15s, transform 0.1s;
+  touch-action: manipulation;
+}
+.bg-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bg-card.selected { border-color: #FFD700; transform: scale(1.04); }
+.bg-card.locked { cursor: default; }
+.bg-card.locked img { filter: brightness(0.35); }
+.bg-card .bg-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  color: #fff; font-size: 0.62rem; font-weight: 700;
+  padding: 10px 4px 4px; text-align: center; line-height: 1.2;
+}
+.bg-card .lock-icon {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-size: 1.4rem; display: none;
+}
+.bg-card.locked .lock-icon { display: block; }
+.bg-card .lock-hint {
+  position: absolute; top: 3px; right: 3px; left: 3px;
+  background: rgba(0,0,0,0.6); border-radius: 6px;
+  color: #FFD700; font-size: 0.52rem; font-weight: 700;
+  padding: 2px 4px; text-align: center; display: none; line-height: 1.3;
+}
+.bg-card.locked .lock-hint { display: block; }
 .shot-mode {
   padding: 10px 20px; border-radius: 12px; font-size: 18px; font-weight: 700;
   background: rgba(255,255,255,0.15); color: #ccc; cursor: pointer;
@@ -52,21 +84,18 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 <div id="start-screen">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:320px;">
-    <div style="font-size:32px;font-weight:900;color:#FFD700;text-shadow:3px 3px 6px rgba(0,0,0,0.4);line-height:1.2;">びっくり<br>ボウリング</div>
-    <!-- 男の子/女の子選択 -->
-    <div style="display:flex;gap:12px;justify-content:center;">
-      <div id="gender-boy" class="shot-mode selected" onclick="event.stopPropagation();selectGender('boy')" style="padding:12px 24px;font-size:18px;">🦖 おとこのこ</div>
-      <div id="gender-girl" class="shot-mode" onclick="event.stopPropagation();selectGender('girl')" style="padding:12px 24px;font-size:18px;">🐰 おんなのこ</div>
-    </div>
-    <!-- 操作モード -->
-    <div style="display:flex;gap:8px;justify-content:center;">
-      <div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div>
-      <div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div>
-    </div>
-    <div id="start-bowling" style="text-align:center;cursor:pointer;width:100%;padding:20px 0;border-radius:20px;background:rgba(255,255,255,0.1);">
-      <div style="font-size:18px;color:#fff;animation:pulse 1.5s infinite;">タップしてスタート</div>
-    </div>
+  <div class="title">🎳 びっくり<br>ボウリング</div>
+  <!-- 操作モード -->
+  <div style="display:flex;gap:8px;justify-content:center;margin:8px 0 4px;">
+    <div id="mode-sling" class="shot-mode selected" onclick="event.stopPropagation();selectShotMode('slingshot')">ひっぱる</div>
+    <div id="mode-tap" class="shot-mode" onclick="event.stopPropagation();selectShotMode('tap')">タップ</div>
+  </div>
+  <!-- 背景選択 -->
+  <div style="font-size:0.85rem;font-weight:700;color:#B0FFCC;margin:6px 0 2px;">🖼️ おすきな はいけいを えらんでね</div>
+  <div id="bg-picker-grid"></div>
+  <!-- スタートボタン -->
+  <div id="start-bowling" style="text-align:center;cursor:pointer;width:100%;max-width:320px;padding:16px 0;border-radius:20px;background:rgba(255,255,255,0.1);margin-top:4px;">
+    <div style="font-size:20px;color:#fff;animation:pulse 1.5s infinite;">タップしてスタート 🎳</div>
   </div>
 </div>
 <div id="score">0</div>
@@ -349,32 +378,81 @@ const RESULT_TIME = 90;      // frames for result display
 const HUD_HEIGHT = 80;       // top HUD area height in px
 
 // ── Background images ──
-// デフォルト背景（2枚ずつ）。追加分は将来景品として解除
-const BG_BOY = [
-  '../assets/images/Bowling/BG/boy/circuit.png',
-  '../assets/images/Bowling/BG/boy/dinasour.png',
+// 全背景定義。id が pono_unlocked_bg に含まれていれば選択可能
+const ALL_BG_DEFS = [
+  // デフォルト解除（最初から選べる）
+  { id: 'bg_bowling_circuit',      src: '../assets/images/Bowling/BG/boy/circuit.png',         label: 'かいろのせかい', unlockBy: null },
+  { id: 'bg_bowling_colorful',     src: '../assets/images/Bowling/BG/girl/colorful.png',        label: 'カラフル',       unlockBy: null },
+  // 実績で解除
+  { id: 'bg_bowling_dinasour',     src: '../assets/images/Bowling/BG/boy/dinasour.png',         label: 'きょうりゅう',   unlockBy: '5ラウンドで解除' },
+  { id: 'bg_bowling_unicorn',      src: '../assets/images/Bowling/BG/girl/unicorn.png',         label: 'ユニコーン',     unlockBy: '5ラウンドで解除' },
+  { id: 'bg_bowling_neon_boy01',   src: '../assets/images/Bowling/BG/boy/neon_boy01.png',       label: 'ネオン1',        unlockBy: '10ラウンドで解除' },
+  { id: 'bg_bowling_neon_girl01',  src: '../assets/images/Bowling/BG/girl/neon_girl01.png',     label: 'ネオンガール1',  unlockBy: '10ラウンドで解除' },
+  { id: 'bg_bowling_neon_boy02',   src: '../assets/images/Bowling/BG/boy/neon_boy02.png',       label: 'ネオン2',        unlockBy: '20ラウンドで解除' },
+  { id: 'bg_bowling_neon_girl02',  src: '../assets/images/Bowling/BG/girl/neon_girl02.png',     label: 'ネオンガール2',  unlockBy: '20ラウンドで解除' },
+  { id: 'bg_bowling_pirates',      src: '../assets/images/Bowling/BG/boy/pirates.png',          label: 'かいぞく',       unlockBy: '30ラウンドで解除' },
+  { id: 'bg_bowling_neon_girl03',  src: '../assets/images/Bowling/BG/girl/neon_girl03.png',     label: 'ネオンガール3',  unlockBy: '30ラウンドで解除' },
+  { id: 'bg_bowling_robot_boy01',  src: '../assets/images/Bowling/BG/boy/robot_boy01.png',      label: 'ロボット',       unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_neon_girl04',  src: '../assets/images/Bowling/BG/girl/neon_girl04.png',     label: 'ネオンガール4',  unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_space_boy01',  src: '../assets/images/Bowling/BG/boy/space_boy01.png',      label: 'うちゅう',       unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_rocket',       src: '../assets/images/Bowling/BG/boy/rocket.png',           label: 'ロケット',       unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_sky',          src: '../assets/images/Bowling/BG/girl/sky.png',             label: 'そらのせかい',   unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_sweets',       src: '../assets/images/Bowling/BG/girl/sweets.png',          label: 'おかしのくに',   unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_princessgarden', src: '../assets/images/Bowling/BG/girl/princessgarden.png', label: 'おひめさまのにわ', unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_stadium',      src: '../assets/images/Bowling/BG/boy/stadium.png',          label: 'スタジアム',     unlockBy: '50ラウンドで解除' },
+  { id: 'bg_bowling_neon02',       src: '../assets/images/Bowling/BG/girl/neon02.png',          label: 'ネオン02',       unlockBy: '50ラウンドで解除' },
 ];
-const BG_GIRL = [
-  '../assets/images/Bowling/BG/girl/colorful.png',
-  '../assets/images/Bowling/BG/girl/unicorn.png',
-];
-let bgGender = 'boy';
-let bgImgIdx = 0;
-let bgImgObjs = [];
+const DEFAULT_BG_IDS = ['bg_bowling_circuit', 'bg_bowling_colorful'];
 
-function selectGender(g) {
-  bgGender = g;
-  document.getElementById('gender-boy').classList.toggle('selected', g === 'boy');
-  document.getElementById('gender-girl').classList.toggle('selected', g === 'girl');
+let selectedBgId = localStorage.getItem('pono_last_bg_bowling') || 'bg_bowling_circuit';
+let bgImgObjs = [];
+let bgImgIdx = 0;
+
+function _isBgUnlocked(id) {
+  if (DEFAULT_BG_IDS.indexOf(id) !== -1) return true;
+  return typeof window.isUnlockedBg === 'function' && window.isUnlockedBg(id);
 }
 
+function buildBgPicker() {
+  var grid = document.getElementById('bg-picker-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  ALL_BG_DEFS.forEach(function(def) {
+    var unlocked = _isBgUnlocked(def.id);
+    var card = document.createElement('div');
+    card.className = 'bg-card' + (unlocked ? '' : ' locked') + (def.id === selectedBgId && unlocked ? ' selected' : '');
+    card.innerHTML = '<img src="' + def.src + '" alt="" loading="lazy">'
+      + '<div class="bg-label">' + def.label + '</div>'
+      + '<div class="lock-icon">🔒</div>'
+      + (def.unlockBy ? '<div class="lock-hint">' + def.unlockBy + '</div>' : '');
+    if (unlocked) {
+      card.addEventListener('click', function(e) { e.stopPropagation(); selectBg(def.id); });
+      card.addEventListener('touchstart', function(e) { e.stopPropagation(); selectBg(def.id); }, { passive: true });
+    }
+    grid.appendChild(card);
+  });
+}
+
+function selectBg(id) {
+  selectedBgId = id;
+  localStorage.setItem('pono_last_bg_bowling', id);
+  document.querySelectorAll('.bg-card').forEach(function(c, i) {
+    c.classList.toggle('selected', ALL_BG_DEFS[i] && ALL_BG_DEFS[i].id === id);
+  });
+}
+
+// 選択背景のみロード
 function loadBgImages() {
-  var list = bgGender === 'boy' ? BG_BOY : BG_GIRL;
-  bgImgObjs = list.map(function(src) { var img = new Image(); img.src = src; return img; });
+  var def = ALL_BG_DEFS.find(function(d) { return d.id === selectedBgId; }) || ALL_BG_DEFS[0];
+  var img = new Image(); img.src = def.src;
+  bgImgObjs = [img];
   bgImgIdx = 0;
 }
-// プリロード（両方）
-BG_BOY.concat(BG_GIRL).forEach(function(src) { var img = new Image(); img.src = src; });
+// プリロード（全背景）
+ALL_BG_DEFS.forEach(function(d) { var img = new Image(); img.src = d.src; });
+
+// ページロード時にピッカー描画
+buildBgPicker();
 
 // ── Pin images ──
 const tierCanvases = [];
@@ -1669,11 +1747,7 @@ function loop(now) {
       }
       gamePhase = 'aim';
       slingshotPhase = 'aim'; // reset for new shot
-      // 背景切替: 10000点ごと、戻らない（最後の背景で固定）
-      if (bgImgObjs.length > 1) {
-        var newIdx = Math.min(Math.floor(score / 10000), bgImgObjs.length - 1);
-        if (newIdx > bgImgIdx) bgImgIdx = newIdx;
-      }
+      // 背景は選択時に固定（自動切替なし）
     }
   }
 

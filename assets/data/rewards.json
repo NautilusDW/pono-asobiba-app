@@ -140,6 +140,24 @@
       "type": "sea",
       "id": "medaka",
       "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png"
+    },
+    "bowling": {
+      "icon": "🎳",
+      "name": "スタジアムのはいけい",
+      "gendered": false,
+      "type": "bg",
+      "id": "bg_bowling_stadium",
+      "img": "assets/images/Bowling/BG/boy/stadium.png",
+      "afterMsg": "スタジアムの はいけいが\nつかえるようになったよ！\nボウリングの はいけいえらびで\nためしてみてね！"
+    },
+    "breakout": {
+      "icon": "🧱",
+      "name": "ふかいもりのはいけい",
+      "gendered": false,
+      "type": "bg",
+      "id": "bg_breakout_forest_deep",
+      "img": "assets/images/Block/stage2_forest_deep.png",
+      "afterMsg": "ふかいもりの はいけいが\nつかえるようになったよ！\nつぎのゲームから えらべるよ！"
     }
   }
 }

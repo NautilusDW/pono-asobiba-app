@@ -29,14 +29,21 @@
     { id: 'slide_4',       game: 'slide',     name: 'みちつなぎずき',       desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'slide_clears',      tier: 2, reward: { type: 'furn', id: 'ach_book_deco' } },
     { id: 'maze_4',        game: 'maze',      name: 'めいろずき',           desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'maze_clears',       tier: 2, reward: { type: 'furn', id: 'ach_hedgehog_plush' } },
     { id: 'drawing_5',     game: 'drawing',   name: 'えかきさん',           desc: 'えを 5まい ほぞんしよう',         target: 5,  stat: 'drawing_saves',     tier: 2, reward: { type: 'furn', id: 'ach_easel' } },
+    { id: 'bowling_5',     game: 'bowling',   name: 'ボウリングはじまった', desc: '5ラウンド あそぼう',              target: 5,  stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_dinasour' } },
+    { id: 'bowling_10',    game: 'bowling',   name: 'ボウリングじょうず',   desc: '10ラウンド あそぼう',             target: 10, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_neon_boy01' } },
     { id: 'bowling_20',    game: 'bowling',   name: 'ボウリングずき',       desc: '20ラウンド あそぼう',             target: 20, stat: 'bowling_rounds',    tier: 2, reward: { type: 'furn', id: 'ach_bowling_toy' } },
+    { id: 'bowling_30',    game: 'bowling',   name: 'ボウリングプロ',       desc: '30ラウンド あそぼう',             target: 30, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_pirates' } },
     { id: 'wordmatch_15',  game: 'wordmatch', name: 'ことばずき',           desc: '15もん せいかいしよう',           target: 15, stat: 'wordmatch_correct', tier: 2, reward: { type: 'furn', id: 'ach_coral_deco' } },
+    { id: 'breakout_2',    game: 'breakout',  name: 'ブロック2だんめ',      desc: 'ステージ2まで クリアしよう',      target: 2,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_forest_deep' } },
+    { id: 'breakout_4',    game: 'breakout',  name: 'ブロック4だんめ',      desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_cave_mushroom' } },
 
     // ── マスター ─────────────────────────────────────────────────
     { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 6,  stat: 'puzzle_clears',     tier: 3, reward: { type: 'sea',  id: 'pufferfish' } },
     { id: 'writing_hira',  game: 'writing',   name: 'ひらがなマスター',     desc: 'ひらがな ぜんぶ かこう',           target: 46, stat: 'writing_hiragana',  tier: 3, reward: { type: 'sea',  id: 'turtle' } },
     { id: 'writing_kata',  game: 'writing',   name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46, stat: 'writing_katakana',  tier: 3, reward: { type: 'sea',  id: 'shark' } },
+    { id: 'bowling_50',    game: 'bowling',   name: 'ボウリングマスター',   desc: '50ラウンド あそぼう',              target: 50, stat: 'bowling_rounds',    tier: 3, reward: { type: 'bg',   id: 'bg_bowling_space_boy01' } },
     { id: 'breakout_all',  game: 'breakout',  name: 'ブロックマスター',     desc: 'ぜんぶ クリアしよう',              target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' } },
+    { id: 'breakout_all_bg', game: 'breakout', name: 'ブロックぜんせい',    desc: 'ぜんぶの ステージを クリアしよう', target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'bg',   id: 'bg_breakout_night_sky' } },
     { id: 'slide_all',     game: 'slide',     name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',              target: 8,  stat: 'slide_clears',      tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
     { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 10, stat: 'maze_clears',       tier: 3, reward: { type: 'sea',  id: 'seahorse' } },
     { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' } },
@@ -59,6 +66,7 @@
   var LS_FURN   = 'pono_unlocked_furn';
   var LS_WALL   = 'pono_unlocked_wall';
   var LS_FLOOR  = 'pono_unlocked_floor';
+  var LS_BG     = 'pono_unlocked_bg';
 
   function _getJSON(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) || fallback; }
@@ -144,11 +152,12 @@
   function _grantReward(reward) {
     if (!reward) return;
     var listKey;
-    if (reward.type === 'sea')  listKey = LS_SEA;
-    if (reward.type === 'furn') listKey = LS_FURN;
-    if (reward.type === 'deco') listKey = LS_FURN;
-    if (reward.type === 'wall') listKey = LS_WALL;
+    if (reward.type === 'sea')   listKey = LS_SEA;
+    if (reward.type === 'furn')  listKey = LS_FURN;
+    if (reward.type === 'deco')  listKey = LS_FURN;
+    if (reward.type === 'wall')  listKey = LS_WALL;
     if (reward.type === 'floor') listKey = LS_FLOOR;
+    if (reward.type === 'bg')    listKey = LS_BG;
     if (!listKey) return;
 
     var list = _getJSON(listKey, []);
@@ -161,6 +170,14 @@
   // 外部からの報酬付与用（スタンプラリーなど）
   window.grantReward = function (reward) {
     _grantReward(reward);
+  };
+
+  // 背景解除チェック
+  window.isUnlockedBg = function (id) {
+    return _getJSON(LS_BG, []).indexOf(id) !== -1;
+  };
+  window.getUnlockedBgs = function () {
+    return _getJSON(LS_BG, []);
   };
 
   // ═══ プレミアムボーナス（パスワード入力時）══════════════════════

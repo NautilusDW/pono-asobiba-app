@@ -141,13 +141,46 @@ html, body {
 .ov-card {
   text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
-  padding: 32px 32px 24px;
+  padding: 28px 24px 20px;
   background: #fff;
   border-radius: 24px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  max-width: 320px;
-  width: 85vw;
+  max-width: 360px;
+  width: 90vw;
+  max-height: 90dvh;
+  overflow-y: auto;
 }
+/* BG picker (start overlay only) */
+#bg-picker-breakout {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
+  width: 100%; margin: 4px 0;
+}
+.brk-bg-card {
+  position: relative; border-radius: 8px; overflow: hidden;
+  border: 3px solid transparent; cursor: pointer;
+  aspect-ratio: 9/16; background: #111;
+  transition: border-color 0.15s, transform 0.1s;
+  touch-action: manipulation;
+}
+.brk-bg-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.brk-bg-card.selected { border-color: #F97316; transform: scale(1.05); }
+.brk-bg-card.locked { cursor: default; }
+.brk-bg-card.locked img { filter: brightness(0.3); }
+.brk-bg-card .bg-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  color: #fff; font-size: 0.58rem; font-weight: 700;
+  padding: 10px 3px 3px; text-align: center; line-height: 1.2;
+}
+.brk-bg-card .lock-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 1.2rem; display: none; }
+.brk-bg-card.locked .lock-icon { display: block; }
+.brk-bg-card .lock-hint {
+  position: absolute; top: 2px; right: 2px; left: 2px;
+  background: rgba(0,0,0,0.65); border-radius: 5px;
+  color: #FACC15; font-size: 0.48rem; font-weight: 700;
+  padding: 2px 3px; text-align: center; display: none; line-height: 1.3;
+}
+.brk-bg-card.locked .lock-hint { display: block; }
 .ov-icon  { font-size: 3.5rem; line-height: 1; }
 .ov-title {
   font-size: 1.8rem; font-weight: 900;
@@ -340,6 +373,11 @@ html, body {
       <div class="ov-icon"  id="ov-icon">🧱</div>
       <div class="ov-title" id="ov-title">ブロックくずし</div>
       <div class="ov-msg"   id="ov-msg">タップして はじめよう！</div>
+      <!-- 背景ピッカー (start overlay のみ表示) -->
+      <div id="bg-picker-breakout-wrap" style="display:none;width:100%;">
+        <div style="font-size:0.78rem;font-weight:700;color:#F97316;margin-bottom:6px;">🖼️ はいけいを えらんでね</div>
+        <div id="bg-picker-breakout"></div>
+      </div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
       <a class="ov-btn-home hidden" id="ov-btn-home" href="../">🏠 ホームにもどる</a>
       <a class="ov-back hidden" id="ov-back" href="../index.html">← ホームにもどる</a>
@@ -932,12 +970,18 @@ function showOverlay(type) {
   btnHome.classList.add('hidden');
   icon.style.display = '';
   btn.style.display = '';
+  // Hide bg picker by default (shown only on 'start')
+  const _bpw = document.getElementById('bg-picker-breakout-wrap');
+  if (_bpw) _bpw.style.display = 'none';
 
   if (type === 'start') {
     icon.textContent  = '🦔';
     title.textContent = 'ハリネズミちゃんをたすけよう！';
     msg.textContent   = 'ハリネズミちゃんが\nいわのむこうで まいご！\nまほうのたまで いわを\nぜんぶ こわそう！';
     btn.textContent   = 'たすけにいく ▶';
+    // 背景ピッカーを表示
+    const pickerWrap = document.getElementById('bg-picker-breakout-wrap');
+    if (pickerWrap) { pickerWrap.style.display = 'block'; buildBrkBgPicker(); }
   } else if (type === 'stagestart') {
     icon.textContent  = '🔒';
     title.textContent = 'てつの いわ あらわる！';
@@ -981,6 +1025,8 @@ function showOverlay(type) {
 // ===== Start / Next =====
 function startGame() {
   overlay.classList.add('hidden');
+  // 選択された背景を適用
+  applyBrkBg();
   lives = 3; score = 0; stageIdx = 0;
   recordShown = false;
   resetEffects();
@@ -996,6 +1042,8 @@ function startGame() {
 function nextStage() {
   overlay.classList.add('hidden');
   stageIdx++;
+  // ステージ進行に応じて背景を解除
+  unlockBrkBgForStage(stageIdx);
   resetEffects();
   buildBlocks();
   paddle.x = (CW - paddle.w) / 2;
@@ -1211,6 +1259,74 @@ function togglePause() {
 const btnPause = document.getElementById('btn-pause');
 btnPause.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); togglePause(); }, { passive: false });
 btnPause.addEventListener('click', e => { e.stopPropagation(); togglePause(); });
+
+// ===== Background picker (Breakout) =====
+const BRK_BG_DEFS = [
+  { id: 'bg_breakout_forest_light',  src: '../assets/images/Block/stage1_forest_light.png',  label: 'あかるいもり',   unlockBy: null },
+  { id: 'bg_breakout_forest_deep',   src: '../assets/images/Block/stage2_forest_deep.png',   label: 'ふかいもり',     unlockBy: 'ステージ2クリアで解除' },
+  { id: 'bg_breakout_cave_entrance', src: '../assets/images/Block/stage3_cave_entrance.png', label: 'どうくつのいりぐち', unlockBy: 'ステージ3クリアで解除' },
+  { id: 'bg_breakout_cave_mushroom', src: '../assets/images/Block/stage4_cave_mushroom.png', label: 'きのこどうくつ', unlockBy: 'ステージ4クリアで解除' },
+  { id: 'bg_breakout_cave_deep',     src: '../assets/images/Block/stage5_cave_deep.png',     label: 'しんかいどうくつ', unlockBy: 'ステージ5クリアで解除' },
+  { id: 'bg_breakout_night_sky',     src: '../assets/images/Block/stage6_night_sky.png',     label: 'よるのそら',     unlockBy: 'ぜんクリアで解除' },
+];
+const BRK_DEFAULT_BG_IDS = ['bg_breakout_forest_light'];
+let brkSelectedBgId = localStorage.getItem('pono_last_bg_breakout') || 'bg_breakout_forest_light';
+
+function _isBrkBgUnlocked(id) {
+  if (BRK_DEFAULT_BG_IDS.indexOf(id) !== -1) return true;
+  return typeof window.isUnlockedBg === 'function' && window.isUnlockedBg(id);
+}
+
+function buildBrkBgPicker() {
+  const grid = document.getElementById('bg-picker-breakout');
+  if (!grid || grid.dataset.built) return;
+  grid.dataset.built = '1';
+  BRK_BG_DEFS.forEach(function(def) {
+    const unlocked = _isBrkBgUnlocked(def.id);
+    const card = document.createElement('div');
+    card.className = 'brk-bg-card' + (unlocked ? '' : ' locked') + (def.id === brkSelectedBgId && unlocked ? ' selected' : '');
+    card.innerHTML = '<img src="' + def.src + '" alt="" loading="lazy">'
+      + '<div class="bg-label">' + def.label + '</div>'
+      + '<div class="lock-icon">🔒</div>'
+      + (def.unlockBy ? '<div class="lock-hint">' + def.unlockBy + '</div>' : '');
+    if (unlocked) {
+      card.addEventListener('pointerdown', function(e) { e.stopPropagation(); selectBrkBg(def.id); });
+    }
+    grid.appendChild(card);
+  });
+}
+
+function selectBrkBg(id) {
+  brkSelectedBgId = id;
+  localStorage.setItem('pono_last_bg_breakout', id);
+  const cards = document.querySelectorAll('.brk-bg-card');
+  cards.forEach(function(c, i) {
+    c.classList.toggle('selected', BRK_BG_DEFS[i] && BRK_BG_DEFS[i].id === id);
+  });
+}
+
+function applyBrkBg() {
+  const def = BRK_BG_DEFS.find(function(d) { return d.id === brkSelectedBgId; }) || BRK_BG_DEFS[0];
+  document.body.style.backgroundImage = 'url("' + def.src + '")';
+}
+
+// ステージクリアで新しい bg を自動解除（achievements.js の bg type を利用）
+// ステージ index が advance したタイミングで対応する bg を解除
+function unlockBrkBgForStage(idx) {
+  const map = {
+    1: 'bg_breakout_forest_deep',
+    2: 'bg_breakout_cave_entrance',
+    3: 'bg_breakout_cave_mushroom',
+    4: 'bg_breakout_cave_deep',
+  };
+  const bgId = map[idx];
+  if (bgId && typeof window.grantReward === 'function') {
+    window.grantReward({ type: 'bg', id: bgId });
+    // Rebuild picker to reflect new unlock
+    const grid = document.getElementById('bg-picker-breakout');
+    if (grid) { grid.innerHTML = ''; delete grid.dataset.built; }
+  }
+}
 
 // ===== Init =====
 resize();
