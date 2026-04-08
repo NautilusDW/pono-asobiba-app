@@ -1147,6 +1147,25 @@ function buildFirstClearCard(game, data) {
     card.appendChild(split);
   }
 
+  // afterMsg（宝箱とホーム祝賀モーダルを閉じた後に表示するメッセージ）
+  var row4f = document.createElement('div');
+  row4f.className = 'reward-card-row';
+  var msgFieldF = document.createElement('div');
+  msgFieldF.className = 'reward-field';
+  msgFieldF.style.flex = '1';
+  var msgLabelF = document.createElement('label');
+  msgLabelF.textContent = '追加メッセージ（省略可）';
+  msgLabelF.title = '宝箱とホーム祝賀モーダルを閉じた後に表示されるメッセージ';
+  var msgAreaF = document.createElement('textarea');
+  msgAreaF.dataset.key = 'afterMsg';
+  msgAreaF.value = data.afterMsg || '';
+  msgAreaF.rows = 2;
+  msgAreaF.style.width = '100%';
+  msgFieldF.appendChild(msgLabelF);
+  msgFieldF.appendChild(msgAreaF);
+  row4f.appendChild(msgFieldF);
+  card.appendChild(row4f);
+
   return card;
 }
 
@@ -1182,6 +1201,10 @@ function collectFirstClearCardData(card) {
     d.id   = (card.querySelector('[data-key="id"]')   || {}).value || '';
     d.img  = (card.querySelector('[data-key="img"]')  || {}).value || '';
   }
+
+  // afterMsg（宝箱・祝賀モーダル閉じ後に表示するメッセージ）
+  var msgEl = card.querySelector('[data-key="afterMsg"]');
+  if (msgEl && msgEl.value.trim()) d.afterMsg = msgEl.value.trim();
 
   return d;
 }
@@ -1340,6 +1363,25 @@ function buildCardCompleteCard(idx, data) {
     split.appendChild(buildGenderedCol('👧 おんなのこ', data.girl || {}, 'girl', card));
     card.appendChild(split);
   }
+
+  // afterMsg（宝箱を閉じた後に表示するメッセージ）
+  var row4c = document.createElement('div');
+  row4c.className = 'reward-card-row';
+  var msgFieldC = document.createElement('div');
+  msgFieldC.className = 'reward-field';
+  msgFieldC.style.flex = '1';
+  var msgLabelC = document.createElement('label');
+  msgLabelC.textContent = '追加メッセージ（省略可）';
+  msgLabelC.title = '宝箱を閉じた後にポップアップで表示されるメッセージ';
+  var msgAreaC = document.createElement('textarea');
+  msgAreaC.dataset.key = 'afterMsg';
+  msgAreaC.value = data.afterMsg || '';
+  msgAreaC.rows = 2;
+  msgAreaC.style.width = '100%';
+  msgFieldC.appendChild(msgLabelC);
+  msgFieldC.appendChild(msgAreaC);
+  row4c.appendChild(msgFieldC);
+  card.appendChild(row4c);
 
   return card;
 }
@@ -2157,6 +2199,10 @@ function collectCardData(card) {
     d.id   = (card.querySelector('[data-key="id"]')   || {}).value || '';
     d.img  = (card.querySelector('[data-key="img"]')  || {}).value || '';
   }
+
+  // afterMsg（宝箱閉じ後に表示するメッセージ）
+  var msgEl = card.querySelector('[data-key="afterMsg"]');
+  if (msgEl && msgEl.value.trim()) d.afterMsg = msgEl.value.trim();
 
   return d;
 }
