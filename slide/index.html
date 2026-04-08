@@ -274,6 +274,15 @@ imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 const imgMomFull = new Image();
 imgMomFull.src = '../assets/images/Slide/pono_mom_only.png';
 
+// BLANK タイル用テクスチャ（各テーマ1枚ずつ）
+const blankTextures = {
+  forest: new Image(),
+  cave:   new Image(),
+  night:  new Image(),
+};
+blankTextures.forest.src = '../assets/images/Road/forestTile.png';
+// cave/night はまだ画像がないので読み込まない（フォールバック描画）
+
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
 const TILE_TYPES = {
@@ -637,16 +646,19 @@ const THEMES = {
     tile: '#8AD460', tileBlank: '#7EC850', tileBorder: '#5DA83A',
     path: '#C8956B', pathBorder: '#8B6B42', pathLight: '#DEB887',
     empty: '#3D5A2E', blanks: ['🌼', '🍀', '🌿', '🍄'],
+    textureKey: 'forest',
   },
   cave: {
     tile: '#6B7B8D', tileBlank: '#5A6A7A', tileBorder: '#3E4E5E',
     path: '#9E8E78', pathBorder: '#6E5E4A', pathLight: '#BEB0A0',
     empty: '#2E3E4E', blanks: ['🍄', '💎', '🪨', '✨'],
+    textureKey: 'cave',
   },
   night: {
     tile: '#5C7A5C', tileBlank: '#4A6A4A', tileBorder: '#3A5A3A',
     path: '#B8A888', pathBorder: '#7A6A4A', pathLight: '#D8C8A8',
     empty: '#2A3A2A', blanks: ['🌙', '⭐', '🌿', '🔔'],
+    textureKey: 'night',
   },
 };
 function getTheme() {
@@ -674,10 +686,22 @@ function drawTile(x, y, size, tileKey, isAnimating) {
   ctx.stroke();
 
   if (tileKey === 'BLANK') {
-    const seed = (x * 7 + y * 13) | 0;
-    ctx.font = `${Math.floor(size * 0.2)}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(th.blanks[((seed >> 3) & 3)], x + size / 2, y + size / 2);
+    // テクスチャ画像があれば角丸内にクリップして全面に貼る
+    const tex = blankTextures[th.textureKey];
+    if (tex && tex.complete && tex.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+      ctx.clip();
+      ctx.drawImage(tex, x + gap, y + gap, size - gap * 2, size - gap * 2);
+      ctx.restore();
+    } else {
+      // フォールバック: 既存の絵文字装飾
+      const seed = (x * 7 + y * 13) | 0;
+      ctx.font = `${Math.floor(size * 0.2)}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(th.blanks[((seed >> 3) & 3)], x + size / 2, y + size / 2);
+    }
     return;
   }
 
