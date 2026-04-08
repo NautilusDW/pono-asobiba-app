@@ -379,13 +379,33 @@ class CleanEdgesGUI:
         self.toolbar.pack(side=tk.TOP, fill=tk.X)
         self._build_toolbar(self.toolbar)
 
-        # Status bar (at bottom)
+        # Status bar (at bottom) — more prominent: larger, with progressbar
         self.status_var = tk.StringVar(value="Ready. Open an image to begin.")
-        status_frame = ttk.Frame(self.root, style="Panel.TFrame")
+        status_frame = tk.Frame(self.root, bg=THEME["bg_panel"], height=32)
         status_frame.pack(side=tk.BOTTOM, fill=tk.X)
-        ttk.Label(status_frame, textvariable=self.status_var, style="Status.TLabel").pack(
-            side=tk.LEFT, fill=tk.X, expand=True
+        status_frame.pack_propagate(False)
+
+        self.status_icon_var = tk.StringVar(value="●")
+        self.status_icon = tk.Label(
+            status_frame, textvariable=self.status_icon_var,
+            bg=THEME["bg_panel"], fg=THEME["ok"],
+            font=("Segoe UI", 11, "bold"), padx=10,
         )
+        self.status_icon.pack(side=tk.LEFT)
+
+        self.status_label = tk.Label(
+            status_frame, textvariable=self.status_var,
+            bg=THEME["bg_panel"], fg=THEME["fg_main"],
+            font=("Segoe UI", 10), anchor="w",
+        )
+        self.status_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.progress_bar = ttk.Progressbar(
+            status_frame, mode="indeterminate", length=240,
+        )
+        # Packed/unpacked dynamically via _set_busy / _clear_busy
+
+        self._busy = False
 
         # Main split: sidebar + preview area
         body = ttk.Frame(self.root)
@@ -663,6 +683,62 @@ class CleanEdgesGUI:
         self.sprites_canvas.bind("<MouseWheel>", _on_wheel)
         self.sprites_frame.bind("<MouseWheel>", _on_wheel)
 
+    # ==================================================================== Busy state
+
+    def _set_busy(self, message: str, determinate_max: Optional[int] = None, icon_color: str = None):
+        """
+        Enter busy state: show progressbar + status icon goes yellow.
+        If determinate_max given, progressbar shows value/max; else indeterminate.
+        """
+        self._busy = True
+        self.status_var.set(message)
+        self.status_icon.config(fg=icon_color or THEME["warn"])
+        self.status_icon_var.set("⏳")
+        self.status_label.config(fg=THEME["warn"])
+
+        try:
+            self.progress_bar.stop()
+        except Exception:
+            pass
+
+        if determinate_max is not None and determinate_max > 0:
+            self.progress_bar.configure(mode="determinate", maximum=determinate_max, value=0)
+        else:
+            self.progress_bar.configure(mode="indeterminate")
+            self.progress_bar.start(12)
+
+        # Pack if not already packed
+        if not self.progress_bar.winfo_ismapped():
+            self.progress_bar.pack(side=tk.RIGHT, padx=10, pady=6)
+
+        self.root.update_idletasks()
+
+    def _set_progress(self, value: int, message: Optional[str] = None):
+        """Update determinate progress (and optionally status text)."""
+        if message:
+            self.status_var.set(message)
+        try:
+            self.progress_bar["value"] = value
+        except Exception:
+            pass
+        self.root.update_idletasks()
+
+    def _clear_busy(self, final_message: str = "Ready.", icon_color: str = None):
+        """Exit busy state: hide progressbar + status icon goes green (or given color)."""
+        self._busy = False
+        try:
+            self.progress_bar.stop()
+        except Exception:
+            pass
+        if self.progress_bar.winfo_ismapped():
+            self.progress_bar.pack_forget()
+
+        self.status_icon.config(fg=icon_color or THEME["ok"])
+        self.status_icon_var.set("●")
+        self.status_label.config(fg=THEME["fg_main"])
+        self.status_var.set(final_message)
+        self.root.update_idletasks()
+
     # ==================================================================== File ops
 
     def on_open(self):
@@ -730,8 +806,7 @@ class CleanEdgesGUI:
             return
 
         mode = self.mode_var.get()
-        self.status_var.set(f"Processing [{mode}]...")
-        self.root.update_idletasks()
+        self._set_busy(f"Processing [{mode}]... (this may take a few seconds)")
 
         try:
             if mode == "auto-fake-bg":
@@ -751,11 +826,11 @@ class CleanEdgesGUI:
 
             self.result_img = cut
             self._refresh_previews()
-            self.status_var.set(f"Done [{mode}]. Ready to split or save.")
+            self._clear_busy(f"Done [{mode}]. Ready to split or save.")
         except Exception as e:
             traceback.print_exc()
+            self._clear_busy(f"Error: {e}", icon_color=THEME["err"])
             messagebox.showerror("Processing failed", str(e))
-            self.status_var.set(f"Error: {e}")
 
     def _ensure_session(self):
         model = self.model_var.get()
@@ -793,8 +868,7 @@ class CleanEdgesGUI:
             if self.result_img is None:
                 return
 
-        self.status_var.set("Splitting sprites...")
-        self.root.update_idletasks()
+        self._set_busy("Splitting sprites... (scanning connected components)")
         try:
             infos = extract_sprites(
                 self.result_img,
@@ -804,8 +878,8 @@ class CleanEdgesGUI:
             )
         except Exception as e:
             traceback.print_exc()
+            self._clear_busy(f"Split error: {e}", icon_color=THEME["err"])
             messagebox.showerror("Split failed", str(e))
-            self.status_var.set(f"Split error: {e}")
             return
 
         self._clear_sprites()
@@ -816,7 +890,7 @@ class CleanEdgesGUI:
         self.sprites_summary_var.set(f"{len(self.sprites)} sprites")
         tab_index = self.notebook.index(self.sprites_tab)
         self.notebook.tab(tab_index, text=f"  Sprites ({len(self.sprites)})  ")
-        self.status_var.set(f"Split complete: {len(self.sprites)} sprite(s) found.")
+        self._clear_busy(f"Split complete: {len(self.sprites)} sprite(s) found. Click [Name All with AI] next.")
 
     def _clear_sprites(self):
         for s in self.sprites:
@@ -928,16 +1002,29 @@ class CleanEdgesGUI:
         if s.name_label is not None:
             s.name_label.config(text=s.display_name)
         if s.status_label is not None:
-            s.status_label.config(text=s.effective_filename + ".png")
-        if s.card_frame is not None:
-            if s.name_result and s.name_result.needs_user_input:
-                s.card_frame.config(highlightbackground=THEME["warn"], highlightthickness=2)
-            elif s.name_result and s.name_result.error:
-                s.card_frame.config(highlightbackground=THEME["err"], highlightthickness=2)
-            elif s.name_result:
-                s.card_frame.config(highlightbackground=THEME["ok"], highlightthickness=2)
+            if s.name_result and s.name_result.error:
+                # Show compact error hint on the card
+                err = s.name_result.error or ""
+                if "429" in err or "quota" in err.lower():
+                    short = "❌ rate limit"
+                elif "HTTP" in err:
+                    short = f"❌ {err.split(':')[0]}"
+                elif "network" in err.lower():
+                    short = "❌ offline?"
+                else:
+                    short = "❌ AI failed"
+                s.status_label.config(text=short, fg=THEME["err"])
             else:
-                s.card_frame.config(highlightbackground=THEME["border"], highlightthickness=1)
+                s.status_label.config(text=s.effective_filename + ".png", fg=THEME["accent"])
+
+        if s.name_result is None:
+            self._set_card_state(s, "idle")
+        elif s.name_result.error:
+            self._set_card_state(s, "err")
+        elif s.name_result.needs_user_input:
+            self._set_card_state(s, "warn")
+        else:
+            self._set_card_state(s, "ok")
 
     def _open_variant_dialog(self, s: SpriteItem):
         dialog = VariantPickerDialog(self.root, s)
@@ -961,23 +1048,29 @@ class CleanEdgesGUI:
             return
 
         context = self.ai_context_var.get().strip()
-        existing = [s.effective_filename for s in self.sprites if s.name_result]
+        existing = [s.effective_filename for s in self.sprites if s.name_result and s not in targets]
 
-        # Increment generation; any in-flight callbacks from previous batches
-        # will see a mismatch and become no-ops.
+        # Increment generation to invalidate any stale callbacks
         self._ai_generation += 1
         current_gen = self._ai_generation
 
         if self._ai_executor is not None:
             self._ai_executor.shutdown(wait=False)
-        self._ai_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        # Serial execution (max_workers=1) to avoid hitting Gemini free-tier
+        # rate limits (20 req/min on gemini-2.5-flash)
+        self._ai_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-        completed = {"n": 0}
+        # Mark all target cards as "pending" (blue border + ⏳ label)
+        for s in targets:
+            self._set_card_state(s, "pending")
+
         total = len(targets)
-        self.status_var.set(f"Naming 0/{total} with AI...")
+        self._set_busy(f"Naming with AI  0/{total}  (Gemini free tier: serial, auto-retry on rate limit)",
+                       determinate_max=total)
+
+        completed = {"n": 0, "ok": 0, "fail": 0}
 
         def worker(sprite: SpriteItem, existing_snapshot: List[str]):
-            # Quick abort: if a newer batch started before we even ran, bail.
             if current_gen != self._ai_generation:
                 return sprite, None
             try:
@@ -992,14 +1085,14 @@ class CleanEdgesGUI:
             return sprite, result
 
         def on_future_done(fut):
-            # Discard stale callbacks (user re-clicked "Name All" before we finished)
             if current_gen != self._ai_generation:
                 return
             try:
                 sprite, result = fut.result()
             except Exception as e:
                 traceback.print_exc()
-                self.root.after(0, lambda: self.status_var.set(f"AI error: {e}"))
+                err_msg = f"AI error: {e}"
+                self.root.after(0, lambda: self._set_busy_error(err_msg))
                 return
             self.root.after(0, self._apply_ai_result, sprite, result, completed, total, current_gen)
 
@@ -1007,6 +1100,12 @@ class CleanEdgesGUI:
             snapshot = list(existing)
             fut = self._ai_executor.submit(worker, s, snapshot)
             fut.add_done_callback(on_future_done)
+
+    def _set_busy_error(self, message: str):
+        """Show an error flash in the status bar without clearing progress."""
+        self.status_icon.config(fg=THEME["err"])
+        self.status_var.set(message)
+        self.root.update_idletasks()
 
     def _apply_ai_result(
         self,
@@ -1016,29 +1115,90 @@ class CleanEdgesGUI:
         total: int,
         gen: int,
     ):
-        # Stale batch guard — if a newer batch has started, drop this result silently.
+        # Stale batch guard
         if gen != self._ai_generation:
             return
         completed["n"] += 1
         if result is not None:
             sprite.name_result = result
-            # de-duplicate filename against other sprites
-            if result.filename:
-                used = {
-                    s.effective_filename for s in self.sprites
-                    if s is not sprite and (s.name_result or s.manual_filename)
-                }
-                base_fn = result.filename
-                fn = base_fn
-                suf = 2
-                while fn in used:
-                    fn = f"{base_fn}_{suf}"
-                    suf += 1
-                result.filename = fn
+            if result.error:
+                completed["fail"] += 1
+            else:
+                completed["ok"] += 1
+                # de-dup filename against all existing filenames
+                if result.filename:
+                    used = {
+                        s.effective_filename for s in self.sprites
+                        if s is not sprite and (s.name_result or s.manual_filename)
+                    }
+                    base_fn = result.filename
+                    fn = base_fn
+                    suf = 2
+                    while fn in used:
+                        fn = f"{base_fn}_{suf}"
+                        suf += 1
+                    result.filename = fn
+            # Update card visual
             self._update_sprite_card_labels(sprite)
-        self.status_var.set(f"Naming {completed['n']}/{total} with AI...")
+
+        self._set_progress(
+            completed["n"],
+            message=f"Naming with AI  {completed['n']}/{total}  (ok:{completed['ok']}  fail:{completed['fail']})",
+        )
+
         if completed["n"] >= total:
-            self.status_var.set(f"AI naming done ({total} sprites).")
+            ok = completed["ok"]
+            fail = completed["fail"]
+            if fail == 0:
+                self._clear_busy(f"AI naming complete: {ok}/{total} succeeded")
+            else:
+                self._clear_busy(
+                    f"AI naming finished: {ok} ok, {fail} failed. Click failed cards for details.",
+                    icon_color=THEME["warn"],
+                )
+                # Show first failure reason in a dialog once per batch
+                first_error = next(
+                    (s.name_result.error for s in self.sprites
+                     if s.name_result and s.name_result.error),
+                    None,
+                )
+                if first_error:
+                    quota_hint = ""
+                    if "429" in first_error or "quota" in first_error.lower() or "rate" in first_error.lower():
+                        quota_hint = (
+                            "\n\n⚠ This looks like a Gemini free-tier rate limit "
+                            "(20 requests/minute). Wait 60 seconds and click "
+                            "'Name All with AI' again — failed sprites will be retried."
+                        )
+                    messagebox.showwarning(
+                        "Some sprites failed",
+                        f"{fail} sprite(s) could not be named.\n\n"
+                        f"First error:\n{first_error[:400]}{quota_hint}",
+                    )
+
+    def _set_card_state(self, s: SpriteItem, state: str):
+        """
+        Visually mark a sprite card as one of:
+          "idle"    — default gray border
+          "pending" — blue accent border + ⏳ label (AI in progress)
+          "ok"      — green border (AI named successfully)
+          "warn"    — yellow border (needs user input)
+          "err"     — red border (AI failed)
+        """
+        if s.card_frame is None:
+            return
+        colors = {
+            "idle":    (THEME["border"], 1),
+            "pending": (THEME["accent"], 2),
+            "ok":      (THEME["ok"], 2),
+            "warn":    (THEME["warn"], 2),
+            "err":     (THEME["err"], 2),
+        }
+        color, width = colors.get(state, (THEME["border"], 1))
+        s.card_frame.config(highlightbackground=color, highlightthickness=width)
+
+        if state == "pending" and s.status_label is not None:
+            s.status_label.config(text="⏳  naming...", fg=THEME["accent"])
 
     # ==================================================================== Save sprites
 

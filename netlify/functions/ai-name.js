@@ -43,8 +43,14 @@ exports.handler = async function(event) {
     };
   }
 
-  // Gemini 2.5 Flash に画像を送信
-  var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+  // Gemini モデル選択
+  // - gemini-2.5-flash  : 無料枠 20 req/日 (かなりきつい)
+  // - gemini-1.5-flash  : 無料枠 1500 req/日 (デフォルト)
+  // クライアントが body.model を指定した場合はそれを使う
+  var model = body.model || 'gemini-1.5-flash';
+  var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
+    + encodeURIComponent(model)
+    + ':generateContent?key=' + encodeURIComponent(apiKey);
 
   try {
     var resp = await fetch(apiUrl, {

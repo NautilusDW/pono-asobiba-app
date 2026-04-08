@@ -41,6 +41,13 @@ NETLIFY_AI_NAME_URL = (
     "https://pono-asobiba.netlify.app/.netlify/functions/ai-name"
 )
 
+# Gemini model selection:
+#   gemini-1.5-flash  : free tier 1500 req/day (default, recommended)
+#   gemini-2.5-flash  : free tier only 20 req/day — avoid for batch naming
+#   gemini-2.0-flash  : free tier 1500 req/day (newer, similar quality)
+# The Netlify function reads body.model and falls back to this if omitted.
+GEMINI_MODEL = "gemini-1.5-flash"
+
 
 SPRITE_NAMING_PROMPT = """\
 あなたは子供向け知育アプリの素材命名アシスタントです。
@@ -202,17 +209,39 @@ def _post_json(url: str, payload: dict, timeout: int = 30) -> tuple:
         return 0, f"network error: {e}"
 
 
+_RETRY_AFTER_RE = re.compile(r"retry in\s+([\d.]+)\s*s", re.IGNORECASE)
+
+
+def _parse_retry_after_seconds(body: str) -> Optional[float]:
+    """
+    Gemini の 429 レスポンスから "Please retry in 3.5s" 的な秒数を取り出す。
+    見つからなければ None。
+    """
+    if not body:
+        return None
+    m = _RETRY_AFTER_RE.search(body)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            return None
+    return None
+
+
 def request_sprite_name(
     img: Image.Image,
     user_context: str = "",
     existing_names: Optional[List[str]] = None,
     timeout: int = 30,
-    max_retries: int = 4,
+    max_retries: int = 5,
     url: str = NETLIFY_AI_NAME_URL,
 ) -> NameResult:
     """
     スプライト画像を Netlify 経由で Gemini に送信し、命名結果を返す。
     ネットワーク/パース失敗時も NameResult を返す (error フィールドに詳細)。
+
+    レート制限 (429) に対しては Gemini が返す "retry in Xs" を優先して尊重し、
+    それがない場合は指数バックオフ (5s, 10s, 20s, 40s, 60s) する。
     """
     existing_names = existing_names or []
     existing_block = "\n".join(f"  - {n}" for n in existing_names[:50]) or "  (なし)"
@@ -232,7 +261,10 @@ def request_sprite_name(
         "image": b64,
         "mimeType": "image/png",
         "prompt": prompt,
+        "model": GEMINI_MODEL,
     }
+
+    backoff_schedule = [5, 10, 20, 40, 60]  # seconds per attempt on 429/503
 
     last_error = ""
     last_status = 0
@@ -243,7 +275,6 @@ def request_sprite_name(
         last_body = body
 
         if status == 200:
-            # 期待レスポンス: { "text": "..." }
             try:
                 data = json.loads(body)
             except (json.JSONDecodeError, ValueError):
@@ -251,16 +282,19 @@ def request_sprite_name(
                 break
             text = data.get("text", "") if isinstance(data, dict) else ""
             result = parse_response(text)
-            if result.error:
-                return result
             return result
 
         if status in (503, 429) and attempt < max_retries:
-            # 指数バックオフ: 1.5s, 3s, 4.5s
-            time.sleep(1.5 * attempt)
+            # Prefer Gemini's suggested retry_after, else fall back to schedule
+            retry_after = _parse_retry_after_seconds(body)
+            if retry_after is not None:
+                wait_s = max(retry_after + 1.0, 3.0)
+            else:
+                wait_s = backoff_schedule[min(attempt - 1, len(backoff_schedule) - 1)]
+            time.sleep(wait_s)
             continue
 
-        # 非リトライ対象 or 最大試行回数超過
+        # Non-retryable status or max retries exceeded
         last_error = f"HTTP {status}: {body[:200]}"
         break
 
