@@ -1634,7 +1634,8 @@
             name: v.name || rw.name,
             type: v.type,
             id:   v.id,
-            img:  _resolveRewardImg(v.type, v.id, v.img)
+            img:  _resolveRewardImg(v.type, v.id, v.img),
+            afterMsg: v.afterMsg || rw.afterMsg || ''
           };
         }
         // 非破壊でコピーを返す（元配列を汚さない）
@@ -1643,9 +1644,55 @@
           name: rw.name,
           type: rw.type,
           id:   rw.id,
-          img:  _resolveRewardImg(rw.type, rw.id, rw.img)
+          img:  _resolveRewardImg(rw.type, rw.id, rw.img),
+          afterMsg: rw.afterMsg || ''
         };
       }
+
+      // ── afterMsg オーバーレイ（共通） ──
+      // 宝箱演出を閉じた後や、祝賀モーダルを閉じた後に呼ぶ。
+      // rw: { name, img, afterMsg } のオブジェクト
+      // onDone: 閉じた後のコールバック（省略可）
+      window.showAfterMsgOverlay = function(rw, onDone) {
+        if (!rw || !rw.afterMsg) { if (onDone) onDone(); return; }
+        var msgOv = document.createElement('div');
+        msgOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+        if (rw.img) {
+          var img = document.createElement('img');
+          img.src = rw.img;
+          img.style.cssText = 'width:80px;height:80px;object-fit:contain;margin-bottom:8px;';
+          img.onerror = function() { this.style.display = 'none'; };
+          box.appendChild(img);
+        }
+
+        if (rw.name) {
+          var nameEl = document.createElement('div');
+          nameEl.style.cssText = 'font-size:0.85rem;font-weight:900;color:#F2915A;margin-bottom:8px;';
+          nameEl.textContent = rw.name;
+          box.appendChild(nameEl);
+        }
+
+        var msgEl = document.createElement('div');
+        msgEl.style.cssText = 'font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;';
+        msgEl.textContent = rw.afterMsg;
+        box.appendChild(msgEl);
+
+        var btn = document.createElement('button');
+        btn.textContent = 'わかった！';
+        btn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
+        btn.addEventListener('click', function() {
+          msgOv.remove();
+          if (onDone) onDone();
+        });
+        box.appendChild(btn);
+
+        msgOv.appendChild(box);
+        document.body.appendChild(msgOv);
+      };
 
       // ── 1. Login Stamp (daily auto-grant) ──
       function getStampLog() {
@@ -1724,22 +1771,7 @@
                   img: rw.img || '',
                   label: 'スタンプボーナス',
                   onClose: function() {
-                    if (rw.afterMsg) {
-                      var msgOv = document.createElement('div');
-                      msgOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
-                      msgOv.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;">' +
-                        (rw.img ? '<img src="' + rw.img + '" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">' : '') +
-                        '<div style="font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;">' + rw.afterMsg + '</div>' +
-                        '<button id="afterMsgBtn" style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">わかった！</button>' +
-                        '</div>';
-                      document.body.appendChild(msgOv);
-                      document.getElementById('afterMsgBtn').addEventListener('click', function() {
-                        msgOv.remove();
-                        _showRoomUnlock();
-                      });
-                    } else {
-                      _showRoomUnlock();
-                    }
+                    window.showAfterMsgOverlay(rw, _showRoomUnlock);
                   }
                 });
               }
@@ -1767,7 +1799,15 @@
             (function(rw) {
               setTimeout(function() {
                 if (window.showTreasure) {
-                  window.showTreasure({ name: rw.name, img: rw.img || '', label: 'カードかんせいボーナス' });
+                  window.showTreasure({
+                    name: rw.name,
+                    img: rw.img || '',
+                    label: 'カードかんせいボーナス',
+                    onClose: function() {
+                      // afterMsg があれば宝箱を閉じた後に表示
+                      window.showAfterMsgOverlay(rw);
+                    }
+                  });
                 }
               }, 1200);
             })(compRw);
@@ -2467,9 +2507,17 @@
         var item = pending.shift();
         localStorage.setItem('pono_pending_first_clear', JSON.stringify(pending));
         showFirstClearCelebration(item, function() {
-          if (pending.length > 0) {
-            // 残りがあれば少し間を空けて次を表示
-            setTimeout(checkPendingFirstClear, 400);
+          // 祝賀モーダルを閉じた後、afterMsg があればそれを表示
+          var next = function() {
+            if (pending.length > 0) {
+              // 残りがあれば少し間を空けて次を表示
+              setTimeout(checkPendingFirstClear, 400);
+            }
+          };
+          if (item && item.afterMsg) {
+            window.showAfterMsgOverlay(item, next);
+          } else {
+            next();
           }
         });
       }

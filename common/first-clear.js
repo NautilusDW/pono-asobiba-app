@@ -70,7 +70,8 @@
         name: v.name || rw.name,
         type: v.type,
         id:   v.id,
-        img:  v.img
+        img:  v.img,
+        afterMsg: v.afterMsg || rw.afterMsg || ''
       };
     }
     return {
@@ -78,8 +79,44 @@
       name: rw.name,
       type: rw.type,
       id:   rw.id,
-      img:  rw.img
+      img:  rw.img,
+      afterMsg: rw.afterMsg || ''
     };
+  }
+
+  // ゲームページで showAfterMsgOverlay が無い場合のフォールバック
+  function _simpleAfterMsg(name, img, msg, onDone) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+    if (img) {
+      var i = document.createElement('img');
+      i.src = img;
+      i.style.cssText = 'width:80px;height:80px;object-fit:contain;margin-bottom:8px;';
+      i.onerror = function () { this.style.display = 'none'; };
+      box.appendChild(i);
+    }
+    if (name) {
+      var n = document.createElement('div');
+      n.style.cssText = 'font-size:0.85rem;font-weight:900;color:#F2915A;margin-bottom:8px;';
+      n.textContent = name;
+      box.appendChild(n);
+    }
+    var m = document.createElement('div');
+    m.style.cssText = 'font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;';
+    m.textContent = msg;
+    box.appendChild(m);
+    var btn = document.createElement('button');
+    btn.textContent = 'わかった！';
+    btn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
+    btn.addEventListener('click', function () {
+      ov.remove();
+      if (onDone) onDone();
+    });
+    box.appendChild(btn);
+    ov.appendChild(box);
+    document.body.appendChild(ov);
   }
 
   // 付与済み判定
@@ -102,13 +139,14 @@
     var pending = _getJSON(LS_PENDING, []);
     if (!Array.isArray(pending)) pending = [];
     pending.push({
-      gameId: gameId,
-      name:   rw.name || '',
-      icon:   rw.icon || '🎁',
-      type:   rw.type || '',
-      id:     rw.id || '',
-      img:    rw.img || '',
-      ts:     Date.now()
+      gameId:   gameId,
+      name:     rw.name || '',
+      icon:     rw.icon || '🎁',
+      type:     rw.type || '',
+      id:       rw.id || '',
+      img:      rw.img || '',
+      afterMsg: rw.afterMsg || '',
+      ts:       Date.now()
     });
     _setJSON(LS_PENDING, pending);
   }
@@ -153,16 +191,31 @@
         _queuePending(gameId, rw);
 
         // 宝箱演出を即座に表示
+        // 閉じた後: afterMsg があれば表示 → opts.onClose を呼ぶ
+        var resolvedImg = _resolveImgPath(rw.img);
+        var chainedClose = function() {
+          if (rw.afterMsg && typeof window.showAfterMsgOverlay === 'function') {
+            window.showAfterMsgOverlay(
+              { name: rw.name, img: resolvedImg, afterMsg: rw.afterMsg },
+              opts.onClose || null
+            );
+          } else if (rw.afterMsg) {
+            // showAfterMsgOverlay が無いゲームページ用の簡易実装
+            _simpleAfterMsg(rw.name, resolvedImg, rw.afterMsg, opts.onClose || null);
+          } else if (opts.onClose) {
+            opts.onClose();
+          }
+        };
+
         if (window.showTreasure) {
           window.showTreasure({
             name: rw.name,
-            img:  _resolveImgPath(rw.img),
+            img:  resolvedImg,
             label: 'はじめての クリア！🎉',
-            onClose: opts.onClose || null
+            onClose: chainedClose
           });
-        } else if (opts.onClose) {
-          // showTreasure が無い環境では直接 onClose を呼ぶ
-          setTimeout(opts.onClose, 0);
+        } else {
+          chainedClose();
         }
 
         return true;
