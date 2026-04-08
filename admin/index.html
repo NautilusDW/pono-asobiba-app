@@ -234,6 +234,34 @@ tr:hover { background: #FFFAF0; }
   border-radius: 50%; animation: spin 0.6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Home tab ── */
+.home-stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-bottom:4px; }
+.home-stat-card { background:#FFF8E7; border-radius:12px; padding:12px 14px; border:1px solid #F5F0E8; }
+.home-stat-num  { font-size:1.6rem; font-weight:900; color:#FF6B9D; line-height:1; }
+.home-stat-lbl  { font-size:0.72rem; color:#8B7355; margin-top:2px; }
+.home-shortcut-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+.home-shortcut { display:flex; align-items:center; gap:8px; background:#FFF8E7; border:1px solid #F5F0E8; border-radius:12px; padding:10px 14px; cursor:pointer; text-decoration:none; color:#5D4E37; font-weight:700; font-size:0.82rem; transition:background 0.15s; }
+.home-shortcut:hover { background:#FFE4F0; }
+
+/* ── Roadmap / Museum tabs ── */
+.rm-filter-bar  { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.rm-filter-bar select { padding:4px 8px; border:1px solid #E0D8CC; border-radius:8px; font-family:inherit; font-size:0.78rem; color:#5D4E37; background:#fff; }
+.rm-table       { width:100%; border-collapse:collapse; font-size:0.78rem; }
+.rm-table th    { text-align:left; padding:7px 8px; color:#FF6B9D; border-bottom:2px solid #FFF0F5; font-size:0.72rem; font-weight:900; white-space:nowrap; }
+.rm-table td    { padding:7px 8px; border-bottom:1px solid #F5F0E8; vertical-align:middle; }
+.rm-table tr:hover { background:#FFFAF0; }
+.prio-badge     { display:inline-block; padding:2px 7px; border-radius:7px; font-size:0.62rem; font-weight:900; color:#fff; }
+.prio-P0 { background:#DC2626; } .prio-P1 { background:#F97316; }
+.prio-P2 { background:#FACC15; color:#5D4E37; } .prio-P3 { background:#94A3B8; }
+.st-badge       { display:inline-block; padding:2px 7px; border-radius:7px; font-size:0.62rem; font-weight:900; }
+.st-planned     { background:#DBEAFE; color:#1E40AF; }
+.st-in_progress { background:#FEF3C7; color:#92400E; }
+.st-done        { background:#D1FAE5; color:#065F46; }
+.st-dropped     { background:#FEE2E2; color:#991B1B; }
+.zone-chip { display:inline-block; padding:2px 7px; background:#E0F2FE; color:#0369A1; border-radius:7px; font-size:0.62rem; font-weight:700; }
+.museum-progress-bar { height:8px; background:#F5F0E8; border-radius:4px; overflow:hidden; margin-top:4px; }
+.museum-progress-fill { height:100%; background:linear-gradient(90deg,#FF6B9D,#FFD84D); border-radius:4px; transition:width 0.4s; }
 </style>
 </head>
 <body>
@@ -243,23 +271,87 @@ tr:hover { background: #FFFAF0; }
     <a href="../index.html" style="color:#fff;text-decoration:none;font-size:0.85rem;font-weight:bold;background:rgba(0,0,0,0.2);padding:6px 14px;border-radius:20px">← トップ</a>
     <div style="text-align:center;flex:1">
       <h1 style="margin:0">🛠 管理ダッシュボード</h1>
-      <p class="subtitle">報酬管理・実績・統計・ツール</p>
+      <p class="subtitle">ポノのあそびば 開発管理</p>
     </div>
     <a href="../room/furniture_adjuster.html" style="color:#fff;text-decoration:none;font-size:0.85rem;font-weight:bold;background:rgba(0,0,0,0.2);padding:6px 14px;border-radius:20px">🔧 ピボット</a>
   </div>
 </div>
 
 <div class="tabs">
-  <button class="tab active" data-panel="stamp">🎟 スタンプ報酬管理</button>
+  <button class="tab active" data-panel="home">📋 ホーム</button>
+  <button class="tab" data-panel="roadmap">🗺 ロードマップ</button>
   <button class="tab" data-panel="creatures">🐠 海のいきもの</button>
+  <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
   <button class="tab" data-panel="github">🔑 GitHub設定</button>
 </div>
 
+<!-- ===== 📋 ホーム ===== -->
+<div class="panel active" id="panel-home">
+  <div class="section">
+    <div class="section-title">📊 プロジェクト概要</div>
+    <div class="home-stat-grid" id="home-stat-grid">
+      <div class="home-stat-card"><div class="home-stat-num" id="hs-creatures">…</div><div class="home-stat-lbl">登録済み生き物</div></div>
+      <div class="home-stat-card"><div class="home-stat-num" id="hs-planned">…</div><div class="home-stat-lbl">追加予定生き物</div></div>
+      <div class="home-stat-card"><div class="home-stat-num" id="hs-open">…</div><div class="home-stat-lbl">開放ゾーン</div></div>
+      <div class="home-stat-card"><div class="home-stat-num" id="hs-locked">…</div><div class="home-stat-lbl">ロック中ゾーン</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">🏛 ミュージアムの進捗</div>
+    <div id="home-museum-progress"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">🔥 次にやること（優先度上位）</div>
+    <div id="home-next-todos"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">🚀 よく使うショートカット</div>
+    <div class="home-shortcut-grid">
+      <a class="home-shortcut" href="#" onclick="switchTab('creatures');return false;">🐠 海のいきもの登録</a>
+      <a class="home-shortcut" href="#" onclick="switchTab('roadmap');return false;">🗺 ロードマップ詳細</a>
+      <a class="home-shortcut" href="#" onclick="switchTab('stamp');return false;">🎟 報酬を編集</a>
+      <a class="home-shortcut" href="../room/furniture_adjuster.html">🔧 家具ピボット</a>
+      <a class="home-shortcut" href="../aquarium/map.html" target="_blank">🌊 水族館を見る</a>
+      <a class="home-shortcut" href="#" onclick="switchTab('stats');return false;">📊 統計を見る</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 🗺 ロードマップ ===== -->
+<div class="panel" id="panel-roadmap">
+  <div class="section">
+    <div class="section-title">🏛 ミュージアム計画</div>
+    <div id="roadmap-museums"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">🐾 追加予定の生き物</div>
+    <div class="rm-filter-bar">
+      <select id="rm-filter-museum"><option value="">すべてのミュージアム</option><option value="aquarium">🐠 水族館</option><option value="zoo">🦁 動物園</option><option value="insect_museum">🦋 昆虫館</option></select>
+      <select id="rm-filter-zone"><option value="">すべてのゾーン</option></select>
+      <select id="rm-filter-status">
+        <option value="">すべての状態</option>
+        <option value="planned">📋 計画中</option>
+        <option value="in_progress">🔧 制作中</option>
+        <option value="done">✅ 完了</option>
+        <option value="dropped">❌ 中止</option>
+      </select>
+      <select id="rm-filter-priority">
+        <option value="">すべての優先度</option>
+        <option value="P0">P0（最優先）</option>
+        <option value="P1">P1</option>
+        <option value="P2">P2</option>
+        <option value="P3">P3</option>
+      </select>
+    </div>
+    <div id="roadmap-table-wrap" style="overflow-x:auto;"></div>
+  </div>
+</div>
+
 <!-- ===== 🎟 スタンプ報酬管理 ===== -->
-<div class="panel active" id="panel-stamp">
+<div class="panel" id="panel-stamp">
   <!-- Save Bar (sticky) -->
   <div class="save-bar">
     <span class="save-bar-msg" id="save-bar-msg">rewards.json を編集中</span>
@@ -599,18 +691,218 @@ function ghHeaders() {
 // ════════════════════════════════════════════════════════════════
 // Tab Switching
 // ════════════════════════════════════════════════════════════════
+function switchTab(panelId) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  var btn = document.querySelector('.tab[data-panel="' + panelId + '"]');
+  if (btn) btn.classList.add('active');
+  var panel = document.getElementById('panel-' + panelId);
+  if (panel) panel.classList.add('active');
+  if (panelId === 'creatures' && typeof fetchSeaCreatures === 'function') fetchSeaCreatures();
+  if (panelId === 'roadmap')   renderRoadmap();
+  if (panelId === 'home')      renderHome();
+}
+
 document.querySelectorAll('.tab').forEach(function(tab) {
-  tab.addEventListener('click', function() {
-    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
-    tab.classList.add('active');
-    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
-    // 海のいきもの タブを開いた時は初回/再表示時に一覧を読込
-    if (tab.dataset.panel === 'creatures' && typeof fetchSeaCreatures === 'function') {
-      fetchSeaCreatures();
-    }
-  });
+  tab.addEventListener('click', function() { switchTab(tab.dataset.panel); });
 });
+
+// ════════════════════════════════════════════════════════════════
+// Roadmap & Home — data loading
+// ════════════════════════════════════════════════════════════════
+var _roadmapData = null;
+var _museumsData = null;
+var _creaturesDataHome = null;
+
+function _fetchJson(path) {
+  return fetch(path + '?_cb=' + Date.now(), { cache: 'no-store' }).then(function(r) {
+    if (!r.ok) throw new Error(path + ' ' + r.status);
+    return r.json();
+  });
+}
+
+function loadRoadmapData() {
+  return Promise.all([
+    _fetchJson('../admin/data/roadmap.json'),
+    _fetchJson('../assets/data/museums.json'),
+    _fetchJson('../assets/data/creatures.json')
+  ]).then(function(results) {
+    _roadmapData   = results[0];
+    _museumsData   = results[1];
+    _creaturesDataHome = results[2];
+  }).catch(function(e) {
+    console.warn('[admin] roadmap/museums/creatures load failed:', e);
+    _roadmapData   = _roadmapData   || { museums: [], plannedCreatures: [] };
+    _museumsData   = _museumsData   || { zones: [] };
+    _creaturesDataHome = _creaturesDataHome || { creatures: [] };
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// Home Tab
+// ════════════════════════════════════════════════════════════════
+var _homeRendered = false;
+function renderHome() {
+  if (_roadmapData) { _doRenderHome(); return; }
+  loadRoadmapData().then(_doRenderHome);
+}
+
+function _doRenderHome() {
+  var creatures  = (_creaturesDataHome && _creaturesDataHome.creatures) || [];
+  var zones      = (_museumsData && _museumsData.zones) || [];
+  var planned    = (_roadmapData && _roadmapData.plannedCreatures) || [];
+  var openZones  = zones.filter(function(z) { return z.status === 'open'; }).length;
+  var lockedZones= zones.filter(function(z) { return z.status === 'locked'; }).length;
+
+  document.getElementById('hs-creatures').textContent = creatures.length + ' 体';
+  document.getElementById('hs-planned').textContent   = planned.length + ' 体';
+  document.getElementById('hs-open').textContent      = openZones + ' ゾーン';
+  document.getElementById('hs-locked').textContent    = lockedZones + ' ゾーン';
+
+  // Museum progress
+  var museumWrap = document.getElementById('home-museum-progress');
+  var museums = (_roadmapData && _roadmapData.museums) || [];
+  museumWrap.innerHTML = '';
+  museums.forEach(function(m) {
+    var zoneCount  = zones.length;
+    var doneCount  = planned.filter(function(c) { return c.museum === m.id && c.status === 'done'; }).length;
+    var totalPlanned = planned.filter(function(c) { return c.museum === m.id; }).length;
+    var pct = totalPlanned > 0 ? Math.round(doneCount / totalPlanned * 100) : 0;
+    var statusLabel = { planned: '📋 計画中', in_progress: '🔧 進行中', done: '✅ 完了', dropped: '❌ 中止' }[m.status] || m.status;
+    var div = document.createElement('div');
+    div.style.cssText = 'margin-bottom:12px;';
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      + '<span style="font-weight:900;">' + m.icon + ' ' + m.displayName + '</span>'
+      + '<span style="font-size:0.72rem;color:#8B7355;">' + statusLabel + ' / 完了 ' + doneCount + '/' + totalPlanned + ' 種</span>'
+      + '</div>'
+      + '<div class="museum-progress-bar"><div class="museum-progress-fill" style="width:' + pct + '%"></div></div>';
+    museumWrap.appendChild(div);
+  });
+
+  // Next todos
+  var todosWrap = document.getElementById('home-next-todos');
+  todosWrap.innerHTML = '';
+  var priorityOrder = { P0:0, P1:1, P2:2, P3:3 };
+  var topTodos = planned
+    .filter(function(c) { return c.status === 'planned' || c.status === 'in_progress'; })
+    .sort(function(a, b) { return (priorityOrder[a.priority]||9) - (priorityOrder[b.priority]||9); })
+    .slice(0, 8);
+  if (topTodos.length === 0) {
+    todosWrap.innerHTML = '<div style="color:#8B7355;font-size:0.82rem;">計画中の項目がありません</div>';
+  } else {
+    var tbl = '<table class="rm-table"><thead><tr><th>優先</th><th>生き物</th><th>ゾーン</th><th>状態</th><th>メモ</th></tr></thead><tbody>';
+    topTodos.forEach(function(c) {
+      tbl += '<tr>'
+        + '<td><span class="prio-badge prio-' + c.priority + '">' + c.priority + '</span></td>'
+        + '<td>' + c.icon + ' ' + c.displayName + '</td>'
+        + '<td><span class="zone-chip">' + (c.zone || '-') + '</span></td>'
+        + '<td><span class="st-badge st-' + c.status + '">' + c.status + '</span></td>'
+        + '<td style="color:#8B7355;font-size:0.72rem;">' + (c.notes || '') + '</td>'
+        + '</tr>';
+    });
+    tbl += '</tbody></table>';
+    todosWrap.innerHTML = tbl;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Roadmap Tab
+// ════════════════════════════════════════════════════════════════
+var _roadmapRendered = false;
+function renderRoadmap() {
+  if (_roadmapData) { _doRenderRoadmap(); return; }
+  loadRoadmapData().then(_doRenderRoadmap);
+}
+
+function _doRenderRoadmap() {
+  var planned = (_roadmapData && _roadmapData.plannedCreatures) || [];
+  var museums = (_roadmapData && _roadmapData.museums) || [];
+  var zones   = (_museumsData && _museumsData.zones) || [];
+
+  // Museum cards
+  var museumWrap = document.getElementById('roadmap-museums');
+  if (museumWrap) {
+    museumWrap.innerHTML = '';
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;';
+    museums.forEach(function(m) {
+      var mPlanned = planned.filter(function(c) { return c.museum === m.id; });
+      var mDone    = mPlanned.filter(function(c) { return c.status === 'done'; });
+      var pct = mPlanned.length > 0 ? Math.round(mDone.length / mPlanned.length * 100) : 0;
+      var card = document.createElement('div');
+      card.className = 'section';
+      card.style.cssText = 'margin:0;';
+      card.innerHTML = '<div style="font-size:1.4rem;margin-bottom:4px;">' + m.icon + '</div>'
+        + '<div style="font-weight:900;font-size:0.95rem;">' + m.displayName + '</div>'
+        + '<div style="font-size:0.72rem;color:#8B7355;margin:4px 0;">' + (m.description || '') + '</div>'
+        + '<div style="font-size:0.72rem;color:#8B7355;">完了 ' + mDone.length + '/' + mPlanned.length + ' 種</div>'
+        + '<div class="museum-progress-bar"><div class="museum-progress-fill" style="width:' + pct + '%"></div></div>'
+        + (m.targetDate ? '<div style="font-size:0.68rem;color:#FF6B9D;margin-top:4px;">目標: ' + m.targetDate + '</div>' : '');
+      grid.appendChild(card);
+    });
+    museumWrap.appendChild(grid);
+  }
+
+  // Populate zone filter
+  var zoneSelect = document.getElementById('rm-filter-zone');
+  if (zoneSelect && zoneSelect.options.length <= 1) {
+    zones.forEach(function(z) {
+      var opt = document.createElement('option');
+      opt.value = z.id; opt.textContent = (z.icon || '') + ' ' + z.displayName;
+      zoneSelect.appendChild(opt);
+    });
+  }
+
+  // Apply filters + render table
+  function applyRoadmapFilter() {
+    var fMuseum   = document.getElementById('rm-filter-museum').value;
+    var fZone     = document.getElementById('rm-filter-zone').value;
+    var fStatus   = document.getElementById('rm-filter-status').value;
+    var fPriority = document.getElementById('rm-filter-priority').value;
+
+    var filtered = planned.filter(function(c) {
+      return (!fMuseum   || c.museum   === fMuseum)
+          && (!fZone     || c.zone     === fZone)
+          && (!fStatus   || c.status   === fStatus)
+          && (!fPriority || c.priority === fPriority);
+    });
+
+    var priorityOrder = { P0:0, P1:1, P2:2, P3:3 };
+    filtered.sort(function(a, b) {
+      return (priorityOrder[a.priority]||9) - (priorityOrder[b.priority]||9)
+          || a.zone.localeCompare(b.zone);
+    });
+
+    var wrap = document.getElementById('roadmap-table-wrap');
+    if (!wrap) return;
+    if (filtered.length === 0) {
+      wrap.innerHTML = '<div style="color:#8B7355;padding:16px;font-size:0.82rem;">該当する項目がありません</div>';
+      return;
+    }
+    var tbl = '<table class="rm-table"><thead><tr>'
+      + '<th>優先</th><th>アイコン</th><th>生き物名</th><th>ゾーン</th><th>状態</th><th>メモ</th>'
+      + '</tr></thead><tbody>';
+    filtered.forEach(function(c) {
+      tbl += '<tr>'
+        + '<td><span class="prio-badge prio-' + (c.priority||'P3') + '">' + (c.priority||'?') + '</span></td>'
+        + '<td style="font-size:1.2rem;">' + (c.icon||'') + '</td>'
+        + '<td style="font-weight:700;">' + c.displayName + '</td>'
+        + '<td><span class="zone-chip">' + (c.zone||'-') + '</span></td>'
+        + '<td><span class="st-badge st-' + (c.status||'planned') + '">' + (c.status||'planned') + '</span></td>'
+        + '<td style="color:#8B7355;font-size:0.72rem;max-width:200px;">' + (c.notes||'') + '</td>'
+        + '</tr>';
+    });
+    tbl += '</tbody></table>';
+    wrap.innerHTML = tbl;
+  }
+
+  ['rm-filter-museum','rm-filter-zone','rm-filter-status','rm-filter-priority'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.removeEventListener('change', applyRoadmapFilter); el.addEventListener('change', applyRoadmapFilter); }
+  });
+
+  applyRoadmapFilter();
+}
 
 // ════════════════════════════════════════════════════════════════
 // GitHub Token (stamp tab compact)
@@ -3418,9 +3710,10 @@ if (unlockedKeys.length === 0) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// Init: fetch rewards on load
+// Init: fetch rewards on load + render home tab
 // ════════════════════════════════════════════════════════════════
 fetchRewards();
+renderHome();
 
 </script>
 </body>
