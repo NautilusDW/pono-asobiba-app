@@ -41,12 +41,14 @@ NETLIFY_AI_NAME_URL = (
     "https://pono-asobiba.netlify.app/.netlify/functions/ai-name"
 )
 
-# Gemini model selection:
-#   gemini-1.5-flash  : free tier 1500 req/day (default, recommended)
-#   gemini-2.5-flash  : free tier only 20 req/day — avoid for batch naming
-#   gemini-2.0-flash  : free tier 1500 req/day (newer, similar quality)
+# Gemini model selection (probed live 2026-04-08):
+#   gemini-2.5-flash-lite : free tier ~1000 req/day (DEFAULT, good quality + quota)
+#   gemini-flash-latest   : alias to current stable flash (auto-upgrades)
+#   gemini-2.5-flash      : free tier only 20 req/day — avoid for batch naming
+#   gemini-2.0-flash*     : currently rate-limited (shared quota pool)
+#   gemini-1.5-flash      : deprecated / not found on v1beta
 # The Netlify function reads body.model and falls back to this if omitted.
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 
 SPRITE_NAMING_PROMPT = """\

@@ -43,11 +43,12 @@ exports.handler = async function(event) {
     };
   }
 
-  // Gemini モデル選択
-  // - gemini-2.5-flash  : 無料枠 20 req/日 (かなりきつい)
-  // - gemini-1.5-flash  : 無料枠 1500 req/日 (デフォルト)
+  // Gemini モデル選択 (2026-04 時点で動作確認済み)
+  // - gemini-2.5-flash-lite : 無料枠 ~1000 req/日 (デフォルト)
+  // - gemini-flash-latest   : 現行安定版へのエイリアス
+  // - gemini-2.5-flash      : 無料枠 20 req/日のみ (バッチ処理には不向き)
   // クライアントが body.model を指定した場合はそれを使う
-  var model = body.model || 'gemini-1.5-flash';
+  var model = body.model || 'gemini-2.5-flash-lite';
   var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
     + encodeURIComponent(model)
     + ':generateContent?key=' + encodeURIComponent(apiKey);
