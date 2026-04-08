@@ -58,50 +58,64 @@ SPRITE_NAMING_PROMPT = """\
 ユーザーからの追加コンテキスト: "{user_context}"
 (空欄の場合はあなたが画像から判断してください)
 
-===== 既に使用中の語彙 (絶対に優先して再利用すること) =====
+スプライト 1 個ごとに 6 つのフィールドを返します:
+  【日本語 (人間が読む表示用)】
+    base_name    モチーフの種類       例: 蝶々魚
+    variant      表情・状態           例: 驚き
+    motion       動き・ポーズ         例: 歩行1 (該当なしなら空文字)
+  【ASCII slug (ファイル名用)】
+    base_slug    base_name の slug    例: chouchouuo
+    variant_slug variant の slug      例: surprise
+    motion_slug  motion の slug       例: walk1 (motion が空なら空)
 
-base_name (種類) の既出語彙:
-{existing_base_names_block}
+ファイル名は base_slug + "_" + variant_slug (+ "_" + motion_slug) と
+我々が組み立てるので、filename フィールドは返さなくてよい。
 
-variant (表情) の既出語彙:
+===== 既出の語彙 (絶対に再利用、新しい言い換えを発明しない) =====
+
+base (種類):
+{existing_bases_block}
+
+variant (表情):
 {existing_variants_block}
 
-motion (動き) の既出語彙:
+motion (動き):
 {existing_motions_block}
 
-既存ファイル名 (重複回避のため参考に):
-{existing_names_block}
+===== 語彙統一ルール (最優先) =====
 
-===== 語彙統一ルール (最優先・絶対) =====
-
-- 同じ種類の生き物・モチーフには **必ず同じ base_name 文字列** を使うこと。
-  例: "青い熱帯魚" が既出なら、似た魚を「縞模様の魚」「島々フィッシュ」などと勝手に言い換えない。
-- 似た表情には **必ず同じ variant 文字列** を使うこと。
-  例: "驚き" が既出なら「サプライズ」「びっくり」など類義語を勝手に作らない。
-- 新しい語彙を導入するのは、既存のどれとも明らかに違う場合のみ。
-- 日本語で短く統一感のある語彙を選ぶこと (ひらがな/カタカナ/漢字 OK、英語は避ける)。
-- 表情の推奨語彙: 通常 / 笑顔 / 驚き / 困惑 / 怒り / 悲しみ / ウィンク
-- 動きの推奨語彙: 静止 / 歩行1 / 歩行2 / ジャンプ / 待機 / 攻撃 (該当しなければ空欄)
+1. 上の既出語彙のうち、このスプライトと意味的に同じものがあれば、
+   その base_name と base_slug をそのまま再利用する。
+   variant / motion も同様。新しい言い換えを作らない。
+2. slug は小文字 ASCII (a-z) + 数字 + アンダースコアのみ。
+3. base_slug の表記スタイルはバッチ全体で統一する:
+   - 既出に romaji 系 (chouchouuo) があれば romaji を続ける
+   - 既出に英訳系 (butterflyfish) があれば英訳を続ける
+   - 何もない初回はどちらでもよいが、以降はそれを守る
+4. variant_slug は英語短名: normal / smile / surprise / confused / angry / sad / wink
+5. motion_slug は英語短名: stand / walk1 / walk2 / jump / idle / attack (空欄可)
+6. variant の日本語推奨: 通常 / 笑顔 / 驚き / 困惑 / 怒り / 悲しみ / ウィンク
+7. motion の日本語推奨: 静止 / 歩行1 / 歩行2 / ジャンプ / 待機 / 攻撃
 
 ===== 出力形式 =====
 
-以下の JSON 1 つだけを返してください。余計な説明やマークダウンフェンスは一切付けないこと。
+以下の JSON 1 つだけを返してください。マークダウンフェンス禁止。
 
 {{
-  "base_name":          "日本語でキャラ/モチーフの種類 (既存語彙があれば必ずそれを使う)",
-  "variant":            "表情・状態の日本語短名 (既存語彙があれば必ずそれを使う)",
-  "motion":             "動き・ポーズの日本語短名 (該当しなければ空文字列)",
-  "filename":           "ASCII英数+アンダースコアのファイル名 stem (.png なし)",
+  "base_name":          "種類 (日本語)",
+  "base_slug":          "種類 (ASCII slug)",
+  "variant":            "表情 (日本語)",
+  "variant_slug":       "表情 (ASCII slug)",
+  "motion":             "動き (日本語、なければ空文字)",
+  "motion_slug":        "動き (ASCII slug、なければ空文字)",
   "variant_candidates": ["代替variant候補1", "代替variant候補2"],
   "confidence":         0.0,
   "needs_user_input":   false
 }}
 
 細則:
-- filename は小文字 ASCII と数字とアンダースコアのみ。日本語・空白・記号禁止。
-- filename には base_name + variant (+ motion があれば motion) のニュアンスを含める。
-- 画像だけでは表情・動きが断定困難なら needs_user_input を true にして variant_candidates に 3-5 個の候補を出す。
-- 既存ファイル名と重複する場合は末尾に _2, _3 で区別。
+- 画像だけでは表情・動きが断定困難なら needs_user_input を true に。
+- variant_candidates には 3-5 個の代替候補。
 - confidence は 0.0-1.0 (高いほど自信あり)。
 """
 
@@ -113,12 +127,29 @@ class NameResult:
     base_name: str = ""
     variant: str = ""
     motion: str = ""  # pose / animation frame (may be empty)
-    filename: str = ""
+    base_slug: str = ""      # ASCII slug for base_name
+    variant_slug: str = ""   # ASCII slug for variant
+    motion_slug: str = ""    # ASCII slug for motion (may be empty)
+    filename: str = ""       # composed from slugs (kept for backward compat)
     variant_candidates: List[str] = field(default_factory=list)
     confidence: float = 0.0
     needs_user_input: bool = False
     raw_text: str = ""       # Gemini からの生テキスト (デバッグ用)
     error: Optional[str] = None  # 失敗時のエラー概要
+
+    def compose_filename(self) -> str:
+        """
+        Build the canonical filename stem from the 3 slugs.
+        Always: {base_slug}_{variant_slug}[_{motion_slug}]
+        Falls back to a sanitized join of the Japanese names if slugs missing.
+        """
+        parts = [self.base_slug, self.variant_slug, self.motion_slug]
+        parts = [p for p in parts if p]
+        if parts:
+            return "_".join(parts)
+        # Fallback: derive from Japanese fields
+        jp_parts = [self.base_name, self.variant, self.motion]
+        return _sanitize_filename("_".join(p for p in jp_parts if p)) or "sprite"
 
 
 def _encode_png(img: Image.Image) -> str:
@@ -191,7 +222,15 @@ def parse_response(text: str) -> NameResult:
     result.base_name = str(data.get("base_name", "") or "").strip()
     result.variant = str(data.get("variant", "") or "").strip()
     result.motion = str(data.get("motion", "") or "").strip()
-    result.filename = _sanitize_filename(str(data.get("filename", "") or ""))
+
+    # Slugs go through sanitization to enforce ASCII-only
+    result.base_slug = _sanitize_filename(str(data.get("base_slug", "") or ""))
+    result.variant_slug = _sanitize_filename(str(data.get("variant_slug", "") or ""))
+    result.motion_slug = _sanitize_filename(str(data.get("motion_slug", "") or ""))
+
+    # Old "filename" field accepted for backward compat, but slug-based
+    # composition takes precedence.
+    legacy_fn = _sanitize_filename(str(data.get("filename", "") or ""))
 
     vc = data.get("variant_candidates") or []
     if isinstance(vc, list):
@@ -204,11 +243,14 @@ def parse_response(text: str) -> NameResult:
 
     result.needs_user_input = bool(data.get("needs_user_input", False))
 
-    # filename が空なら base_name + variant (+ motion) から自動生成
-    if not result.filename:
-        parts = [result.base_name, result.variant, result.motion]
-        auto = "_".join(p for p in parts if p)
-        result.filename = _sanitize_filename(auto) or "sprite"
+    # Build the canonical filename from slugs.
+    composed = result.compose_filename()
+    if composed and composed != "sprite":
+        result.filename = composed
+    elif legacy_fn:
+        result.filename = legacy_fn
+    else:
+        result.filename = "sprite"
 
     return result
 
@@ -271,38 +313,49 @@ def _is_daily_quota_error(body: str) -> bool:
 def request_sprite_name(
     img: Image.Image,
     user_context: str = "",
-    existing_names: Optional[List[str]] = None,
-    existing_base_names: Optional[List[str]] = None,
-    existing_variants: Optional[List[str]] = None,
-    existing_motions: Optional[List[str]] = None,
+    existing_names: Optional[List[str]] = None,  # legacy, ignored
+    existing_bases: Optional[List[tuple]] = None,    # list of (jp_name, slug)
+    existing_variants: Optional[List[tuple]] = None,
+    existing_motions: Optional[List[tuple]] = None,
     timeout: int = 30,
     max_retries: int = 3,
     url: str = NETLIFY_AI_NAME_URL,
 ) -> NameResult:
     """
     スプライト画像を Netlify 経由で Gemini に送信し、命名結果を返す。
-    ネットワーク/パース失敗時も NameResult を返す (error フィールドに詳細)。
 
-    語彙統一のため existing_base_names/variants/motions をプロンプトに埋め、
-    Gemini に既存語彙の再利用を強制する。
+    既出の語彙は (日本語, slug) のタプルのリストで渡し、
+    プロンプト内で "日本語 = slug" の形で AI に提示する。
+    こうすることで AI は同じ意味のフィールドに対して必ず同じ slug を返す。
     """
-    existing_names = existing_names or []
-    existing_base_names = existing_base_names or []
+    existing_bases = existing_bases or []
     existing_variants = existing_variants or []
     existing_motions = existing_motions or []
 
-    def _fmt_block(items):
-        items = [i for i in items if i]
-        if not items:
+    def _fmt_pair_block(pairs):
+        # Deduplicate by (jp, slug)
+        seen = set()
+        out = []
+        for jp, slug in pairs:
+            if not jp and not slug:
+                continue
+            key = (jp, slug)
+            if key in seen:
+                continue
+            seen.add(key)
+            if slug:
+                out.append(f"  - {jp} = {slug}")
+            else:
+                out.append(f"  - {jp}")
+        if not out:
             return "  (まだなし — 新規に命名してよい)"
-        return "\n".join(f"  - {i}" for i in items)
+        return "\n".join(sorted(out))
 
     prompt = SPRITE_NAMING_PROMPT.format(
         user_context=(user_context or "").strip() or "(指定なし)",
-        existing_base_names_block=_fmt_block(sorted(set(existing_base_names))),
-        existing_variants_block=_fmt_block(sorted(set(existing_variants))),
-        existing_motions_block=_fmt_block(sorted(set(existing_motions))),
-        existing_names_block=_fmt_block(existing_names[:50]),
+        existing_bases_block=_fmt_pair_block(existing_bases),
+        existing_variants_block=_fmt_pair_block(existing_variants),
+        existing_motions_block=_fmt_pair_block(existing_motions),
     )
 
     try:

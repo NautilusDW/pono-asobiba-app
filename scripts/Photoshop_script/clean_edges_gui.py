@@ -247,8 +247,12 @@ class SpriteItem:
         """ユーザー編集 > AI 結果 > フォールバックの順に返す。"""
         if self.manual_filename:
             return self.manual_filename
-        if self.name_result and self.name_result.filename:
-            return self.name_result.filename
+        if self.name_result:
+            composed = self.name_result.compose_filename()
+            if composed and composed != "sprite":
+                return composed
+            if self.name_result.filename:
+                return self.name_result.filename
         return f"sprite_{self.info.index:03d}"
 
     @property
@@ -263,14 +267,14 @@ class SpriteItem:
         return f"#{self.info.index}"
 
     def rebuild_filename_from_parts(self) -> None:
-        """base_name + variant + motion から filename を再生成して name_result に反映。"""
+        """slug 3 つから filename を再生成して name_result に反映。"""
         if self.name_result is None:
             self.name_result = NameResult()
-        parts = [self.name_result.base_name, self.name_result.variant, self.name_result.motion]
-        combined = "_".join(p for p in parts if p)
-        fn = _sanitize_filename(combined) or f"sprite_{self.info.index:03d}"
+        fn = self.name_result.compose_filename()
+        if not fn or fn == "sprite":
+            fn = f"sprite_{self.info.index:03d}"
         self.name_result.filename = fn
-        self.manual_filename = fn
+        self.manual_filename = ""  # clear so effective_filename uses composed value
 
 
 # ============================================================================
@@ -289,9 +293,9 @@ class VariantPickerDialog(tk.Toplevel):
         parent: tk.Tk,
         sprite: SpriteItem,
         all_sprites: List["SpriteItem"],
-        known_base_names: List[str],
-        known_variants: List[str],
-        known_motions: List[str],
+        known_bases: List[tuple],     # list of (jp, slug)
+        known_variants: List[tuple],
+        known_motions: List[tuple],
     ):
         super().__init__(parent)
         self.title(f"Edit sprite  #{sprite.info.index}")
@@ -304,9 +308,13 @@ class VariantPickerDialog(tk.Toplevel):
 
         self._sprite = sprite
         self._all_sprites = all_sprites
-        self._known_base_names = sorted(set(n for n in known_base_names if n))
-        self._known_variants = sorted(set(v for v in known_variants if v))
-        self._known_motions = sorted(set(m for m in known_motions if m))
+        # known_* are now (jp, slug) tuples; build jp→slug lookup tables
+        self._jp_to_slug_base = {jp: slug for jp, slug in known_bases if jp}
+        self._jp_to_slug_variant = {jp: slug for jp, slug in known_variants if jp}
+        self._jp_to_slug_motion = {jp: slug for jp, slug in known_motions if jp}
+        self._known_base_names = sorted(set(jp for jp, _ in known_bases if jp))
+        self._known_variants = sorted(set(jp for jp, _ in known_variants if jp))
+        self._known_motions = sorted(set(jp for jp, _ in known_motions if jp))
 
         self._build_ui()
 
@@ -331,54 +339,64 @@ class VariantPickerDialog(tk.Toplevel):
 
         row = 0
 
-        # 1. Species (base_name)
-        ttk.Label(form, text="1. 種類 (Species)",
-                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
-        row += 1
-        ttk.Label(form, text="例: 熱帯魚", style="Muted.TLabel").grid(row=row, column=0, columnspan=2, sticky="w")
-        row += 1
-        self.base_var = tk.StringVar(value=(s.name_result.base_name if s.name_result else ""))
-        self.base_combo = ttk.Combobox(
-            form, textvariable=self.base_var, values=self._known_base_names, width=36,
-        )
-        self.base_combo.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
-        row += 1
+        def _add_field(label_text, hint_text, jp_var, slug_var, jp_choices):
+            nonlocal row
+            ttk.Label(form, text=label_text, style="Heading.TLabel").grid(
+                row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
+            row += 1
+            ttk.Label(form, text=hint_text, style="Muted.TLabel").grid(
+                row=row, column=0, columnspan=2, sticky="w")
+            row += 1
+            # Japanese (combobox)
+            jp_combo = ttk.Combobox(form, textvariable=jp_var, values=jp_choices, width=22)
+            jp_combo.grid(row=row, column=0, sticky="ew", padx=(0, 4), pady=(2, 4))
+            # Slug (entry)
+            slug_entry = ttk.Entry(form, textvariable=slug_var, width=18)
+            slug_entry.grid(row=row, column=1, sticky="ew", pady=(2, 4))
+            row += 1
+            ttk.Label(form, text="日本語表示  ←→  ASCII slug (filename)",
+                      style="Muted.TLabel").grid(
+                row=row, column=0, columnspan=2, sticky="w", pady=(0, 6))
+            row += 1
+            return jp_combo, slug_entry
 
-        # 2. Expression (variant)
-        ttk.Label(form, text="2. 表情 (Expression)",
-                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
-        row += 1
-        ttk.Label(form, text="例: 通常 / 笑顔 / 驚き / 困惑",
-                  style="Muted.TLabel").grid(row=row, column=0, columnspan=2, sticky="w")
-        row += 1
-        self.variant_var = tk.StringVar(value=(s.name_result.variant if s.name_result else ""))
-        # Combine AI candidates with known vocab from other sprites
-        ai_candidates = s.name_result.variant_candidates if s.name_result else []
+        # 1. Species
+        nr = s.name_result
+        self.base_var = tk.StringVar(value=(nr.base_name if nr else ""))
+        self.base_slug_var = tk.StringVar(value=(nr.base_slug if nr else ""))
+        _add_field(
+            "1. 種類 (Species)",
+            "例: 蝶々魚  /  chouchouuo",
+            self.base_var, self.base_slug_var,
+            self._known_base_names,
+        )
+
+        # 2. Expression
+        self.variant_var = tk.StringVar(value=(nr.variant if nr else ""))
+        self.variant_slug_var = tk.StringVar(value=(nr.variant_slug if nr else ""))
+        ai_candidates = nr.variant_candidates if nr else []
         variant_choices = sorted(set(list(ai_candidates) + self._known_variants + [
             "通常", "笑顔", "驚き", "困惑", "怒り", "悲しみ", "ウィンク"
         ]))
-        self.variant_combo = ttk.Combobox(
-            form, textvariable=self.variant_var, values=variant_choices, width=36,
+        _add_field(
+            "2. 表情 (Expression)",
+            "例: 驚き  /  surprise",
+            self.variant_var, self.variant_slug_var,
+            variant_choices,
         )
-        self.variant_combo.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
-        row += 1
 
         # 3. Motion
-        ttk.Label(form, text="3. 動き (Motion)",
-                  style="Heading.TLabel").grid(row=row, column=0, columnspan=2, sticky="w", pady=(6, 2))
-        row += 1
-        ttk.Label(form, text="例: 静止 / 歩行1 / 歩行2 / ジャンプ (該当なければ空欄)",
-                  style="Muted.TLabel").grid(row=row, column=0, columnspan=2, sticky="w")
-        row += 1
-        self.motion_var = tk.StringVar(value=(s.name_result.motion if s.name_result else ""))
+        self.motion_var = tk.StringVar(value=(nr.motion if nr else ""))
+        self.motion_slug_var = tk.StringVar(value=(nr.motion_slug if nr else ""))
         motion_choices = sorted(set(self._known_motions + [
             "", "静止", "歩行1", "歩行2", "ジャンプ", "待機", "攻撃"
         ]))
-        self.motion_combo = ttk.Combobox(
-            form, textvariable=self.motion_var, values=motion_choices, width=36,
+        _add_field(
+            "3. 動き (Motion)",
+            "例: 歩行1  /  walk1  (該当なければ空欄)",
+            self.motion_var, self.motion_slug_var,
+            motion_choices,
         )
-        self.motion_combo.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(2, 8))
-        row += 1
 
         # 4. Filename (auto-generated, user-editable)
         ttk.Label(form, text="4. ファイル名 (Filename)",
@@ -392,9 +410,15 @@ class VariantPickerDialog(tk.Toplevel):
                    style="Toolbar.TButton").pack(side=tk.LEFT, padx=(4, 0))
         row += 1
 
-        # Auto-regenerate filename when any of the 3 fields changes
+        # When the user types a Japanese name that matches an existing one,
+        # auto-fill the slug from the known vocabulary mapping.
+        self.base_var.trace_add("write", self._on_base_jp_change)
+        self.variant_var.trace_add("write", self._on_variant_jp_change)
+        self.motion_var.trace_add("write", self._on_motion_jp_change)
+
+        # Any field change re-generates the filename
         self._auto_regenerate = True
-        for var in (self.base_var, self.variant_var, self.motion_var):
+        for var in (self.base_slug_var, self.variant_slug_var, self.motion_slug_var):
             var.trace_add("write", self._on_field_change)
 
         # --- Bulk apply checkbox (only meaningful if base_name changes) ---
@@ -445,12 +469,37 @@ class VariantPickerDialog(tk.Toplevel):
         if self._auto_regenerate:
             self._regenerate_filename()
 
+    def _on_base_jp_change(self, *_):
+        jp = self.base_var.get().strip()
+        if jp in self._jp_to_slug_base and self._jp_to_slug_base[jp]:
+            self.base_slug_var.set(self._jp_to_slug_base[jp])
+
+    def _on_variant_jp_change(self, *_):
+        jp = self.variant_var.get().strip()
+        if jp in self._jp_to_slug_variant and self._jp_to_slug_variant[jp]:
+            self.variant_slug_var.set(self._jp_to_slug_variant[jp])
+
+    def _on_motion_jp_change(self, *_):
+        jp = self.motion_var.get().strip()
+        if jp in self._jp_to_slug_motion and self._jp_to_slug_motion[jp]:
+            self.motion_slug_var.set(self._jp_to_slug_motion[jp])
+
     def _regenerate_filename(self):
-        base = self.base_var.get().strip()
-        variant = self.variant_var.get().strip()
-        motion = self.motion_var.get().strip()
-        combined = "_".join(p for p in (base, variant, motion) if p)
-        fn = _sanitize_filename(combined) or f"sprite_{self._sprite.info.index:03d}"
+        slugs = [
+            _sanitize_filename(self.base_slug_var.get()),
+            _sanitize_filename(self.variant_slug_var.get()),
+            _sanitize_filename(self.motion_slug_var.get()),
+        ]
+        slugs = [s for s in slugs if s]
+        if slugs:
+            fn = "_".join(slugs)
+        else:
+            jp_combined = "_".join(p for p in (
+                self.base_var.get().strip(),
+                self.variant_var.get().strip(),
+                self.motion_var.get().strip(),
+            ) if p)
+            fn = _sanitize_filename(jp_combined) or f"sprite_{self._sprite.info.index:03d}"
         self._auto_regenerate = False
         self.filename_var.set(fn)
         self._auto_regenerate = True
@@ -459,18 +508,25 @@ class VariantPickerDialog(tk.Toplevel):
         base = self.base_var.get().strip()
         variant = self.variant_var.get().strip()
         motion = self.motion_var.get().strip()
+        base_slug = _sanitize_filename(self.base_slug_var.get())
+        variant_slug = _sanitize_filename(self.variant_slug_var.get())
+        motion_slug = _sanitize_filename(self.motion_slug_var.get())
         filename = _sanitize_filename(self.filename_var.get())
         if not filename:
             filename = f"sprite_{self._sprite.info.index:03d}"
 
         if self._sprite.name_result is None:
             self._sprite.name_result = NameResult()
-        self._sprite.name_result.base_name = base
-        self._sprite.name_result.variant = variant
-        self._sprite.name_result.motion = motion
-        self._sprite.name_result.filename = filename
-        self._sprite.name_result.needs_user_input = False
-        self._sprite.name_result.error = None  # clear stale errors after manual edit
+        nr = self._sprite.name_result
+        nr.base_name = base
+        nr.variant = variant
+        nr.motion = motion
+        nr.base_slug = base_slug
+        nr.variant_slug = variant_slug
+        nr.motion_slug = motion_slug
+        nr.filename = filename
+        nr.needs_user_input = False
+        nr.error = None  # clear stale errors after manual edit
         self._sprite.manual_filename = filename
 
         self.bulk_apply_species = bool(self.bulk_var.get())
@@ -1436,12 +1492,12 @@ class CleanEdgesGUI:
     def _open_variant_dialog(self, s: SpriteItem):
         # Snapshot vocabulary BEFORE the dialog so we can detect a base_name change
         original_base_name = (s.name_result.base_name if s.name_result else "")
-        base_names, variants, motions = self._collect_known_vocabulary()
+        bases, variants, motions = self._collect_known_vocabulary()
 
         dialog = VariantPickerDialog(
             self.root, s,
             all_sprites=self.sprites,
-            known_base_names=base_names,
+            known_bases=bases,
             known_variants=variants,
             known_motions=motions,
         )
@@ -1450,10 +1506,9 @@ class CleanEdgesGUI:
             return
 
         new_base = (s.name_result.base_name if s.name_result else "")
-        new_variant = (s.name_result.variant if s.name_result else "")
-        new_motion = (s.name_result.motion if s.name_result else "")
+        new_base_slug = (s.name_result.base_slug if s.name_result else "")
 
-        # Bulk apply: rewrite base_name on all sprites with the original name
+        # Bulk apply: rewrite base_name + base_slug on all sprites with the original name
         if dialog.bulk_apply_species and original_base_name and new_base and new_base != original_base_name:
             updated = 0
             for other in self.sprites:
@@ -1462,6 +1517,7 @@ class CleanEdgesGUI:
                 if (other.name_result
                         and other.name_result.base_name == original_base_name):
                     other.name_result.base_name = new_base
+                    other.name_result.base_slug = new_base_slug
                     other.rebuild_filename_from_parts()
                     self._update_sprite_card_labels(other)
                     updated += 1
@@ -1469,6 +1525,8 @@ class CleanEdgesGUI:
                 f"Updated species '{original_base_name}' → '{new_base}' on {updated + 1} sprite(s)."
             )
 
+        # Save edited filename via rebuild path so cards stay in sync
+        s.rebuild_filename_from_parts()
         self._update_sprite_card_labels(s)
 
     # ==================================================================== AI naming
@@ -1510,20 +1568,24 @@ class CleanEdgesGUI:
         self._submit_next_ai(gen)
 
     def _collect_known_vocabulary(self) -> tuple:
-        """現在までに確定している base_name / variant / motion の一覧を返す。"""
-        base_names = [
-            s.name_result.base_name for s in self.sprites
-            if s.name_result and s.name_result.base_name and not s.name_result.error
-        ]
-        variants = [
-            s.name_result.variant for s in self.sprites
-            if s.name_result and s.name_result.variant and not s.name_result.error
-        ]
-        motions = [
-            s.name_result.motion for s in self.sprites
-            if s.name_result and s.name_result.motion and not s.name_result.error
-        ]
-        return base_names, variants, motions
+        """
+        現在までに確定している (jp, slug) ペアの一覧を返す。
+        bases, variants, motions それぞれ list[(str, str)]。
+        """
+        bases = []
+        variants = []
+        motions = []
+        for s in self.sprites:
+            r = s.name_result
+            if not r or r.error:
+                continue
+            if r.base_name or r.base_slug:
+                bases.append((r.base_name, r.base_slug))
+            if r.variant or r.variant_slug:
+                variants.append((r.variant, r.variant_slug))
+            if r.motion or r.motion_slug:
+                motions.append((r.motion, r.motion_slug))
+        return bases, variants, motions
 
     def _submit_next_ai(self, gen: int):
         """
@@ -1538,11 +1600,7 @@ class CleanEdgesGUI:
 
         sprite = self._ai_queue.pop(0)
         context = self.ai_context_var.get().strip()
-        existing_base_names, existing_variants, existing_motions = self._collect_known_vocabulary()
-        existing_filenames = [
-            s.effective_filename for s in self.sprites
-            if s is not sprite and s.name_result and not s.name_result.error
-        ]
+        existing_bases, existing_variants, existing_motions = self._collect_known_vocabulary()
 
         def worker():
             if gen != self._ai_generation:
@@ -1551,8 +1609,7 @@ class CleanEdgesGUI:
                 return request_sprite_name(
                     sprite.info.image,
                     user_context=context,
-                    existing_names=existing_filenames,
-                    existing_base_names=existing_base_names,
+                    existing_bases=existing_bases,
                     existing_variants=existing_variants,
                     existing_motions=existing_motions,
                 )
@@ -1596,19 +1653,21 @@ class CleanEdgesGUI:
             else:
                 self._ai_counts["ok"] += 1
                 self._ai_counts["consecutive_fail"] = 0
-                # De-dup filename across the whole batch
-                if result.filename:
-                    used = {
-                        s.effective_filename for s in self.sprites
-                        if s is not sprite and s.name_result and not s.name_result.error
-                    }
-                    base_fn = result.filename
-                    fn = base_fn
-                    suf = 2
-                    while fn in used:
-                        fn = f"{base_fn}_{suf}"
-                        suf += 1
-                    result.filename = fn
+                # Filename is composed from slugs in compose_filename().
+                # When two sprites legitimately share the same slug
+                # (e.g. two "驚き" frames of the same fish), we still want
+                # unique filenames on disk — append _2, _3 only on collision.
+                composed = result.compose_filename()
+                used = {
+                    s.effective_filename for s in self.sprites
+                    if s is not sprite and s.name_result and not s.name_result.error
+                }
+                fn = composed
+                suf = 2
+                while fn in used:
+                    fn = f"{composed}_{suf}"
+                    suf += 1
+                result.filename = fn
             self._update_sprite_card_labels(sprite)
 
         # Early abort: if 3 in a row failed, stop wasting time
