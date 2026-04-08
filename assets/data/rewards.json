@@ -2,7 +2,7 @@
   "version": 1,
   "slotRewards": {
     "1": {
-      "name": "デコボックス",
+      "name": "おもちゃばこ / おかたづけばこ",
       "icon": "🎁",
       "gendered": true,
       "boy": {
@@ -20,7 +20,7 @@
       "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！"
     },
     "5": {
-      "name": "ベッド",
+      "name": "きのベッド / ピンクベッド",
       "icon": "🛏️",
       "gendered": true,
       "boy": {
@@ -37,8 +37,16 @@
       },
       "unlockRoom": true
     },
+    "8": {
+      "name": "かめ",
+      "icon": "🎁",
+      "gendered": false,
+      "type": "deco",
+      "id": "reward_slot_16",
+      "img": "assets/images/ocean/Turtle/Turtle_001.png"
+    },
     "10": {
-      "name": "くまのぬいぐるみ",
+      "name": "スポーツカー",
       "icon": "🧸",
       "gendered": true,
       "boy": {
@@ -55,7 +63,7 @@
       }
     },
     "15": {
-      "name": "カードかんせい！",
+      "name": "あおいPCデスク＆チェア / ピンクつくえ",
       "icon": "⭐",
       "gendered": true,
       "boy": {
@@ -75,7 +83,7 @@
   "cardCompleteRewards": [
     {
       "icon": "🐠",
-      "name": "さかな",
+      "name": "あおぞら / みずたま",
       "gendered": true,
       "boy": {
         "name": "あおぞら",
@@ -92,11 +100,20 @@
     },
     {
       "icon": "🖼️",
-      "name": "かべがみ",
-      "gendered": false,
-      "type": "wall",
-      "id": "wall_mizutama",
-      "img": "assets/images/Rooms/walls/mizutama.png"
+      "name": "きょうりゅう / ハート",
+      "gendered": true,
+      "boy": {
+        "name": "きょうりゅう",
+        "type": "wall",
+        "id": "wall_kyouryu",
+        "img": "assets/images/Rooms/walls/kyouryu.png"
+      },
+      "girl": {
+        "name": "ハート",
+        "type": "wall",
+        "id": "wall_heart",
+        "img": "assets/images/Rooms/walls/heart.png"
+      }
     },
     {
       "icon": "🐢",
