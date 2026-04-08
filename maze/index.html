@@ -341,11 +341,11 @@ const STAGES = [
     name: 'ステージ 2 — わかれみち',
     grid: [
       '#######',
-      '#S#...#',
-      '#.#.#.#',
-      '#.#.#.#',
-      '#.#.#.#',
-      '#...#G#',
+      '#S....#',
+      '#####.#',
+      '#C#...#',
+      '#.#.###',
+      '#....G#',
       '#######',
     ],
   },
@@ -353,13 +353,13 @@ const STAGES = [
     name: 'ステージ 3 — ふかいもり',
     grid: [
       '#########',
-      '#S#.....#',
-      '#.#.###.#',
-      '#.#...#.#',
-      '#.###.#.#',
-      '#...#.#.#',
-      '###.#.#.#',
-      '#A....#G#',
+      '#S#...#W#',
+      '#.#.#.#.#',
+      '#...#...#',
+      '#######.#',
+      '#...#...#',
+      '#.#.#.###',
+      '#A#....G#',
       '#########',
     ],
   },
@@ -367,15 +367,15 @@ const STAGES = [
     name: 'ステージ 4 — めいろの もり',
     grid: [
       '#############',
-      '#S..#......A#',
-      '###.#.###.###',
-      '#C#.#.#T#...#',
-      '#.#.#.#.###.#',
-      '#...#...#...#',
-      '#.#######.#.#',
-      '#.....#...#.#',
-      '#####.#.###.#',
-      '#..A#.#.###.#',
+      '#S#W........#',
+      '#.#####.###.#',
+      '#.#.....#...#',
+      '#.#.#####.###',
+      '#...#.....#A#',
+      '#####.#####.#',
+      '#A#...#T....#',
+      '#.#.#####.#.#',
+      '#.#...#...#.#',
       '#.###.#.###.#',
       '#.......###G#',
       '#############',
@@ -385,23 +385,23 @@ const STAGES = [
     name: 'ステージ 5 — まいごの もり',
     grid: [
       '###################',
-      '#S..#A#.....#.....#',
-      '###.#.#.###.#.###.#',
-      '#A#.#...#...#.#...#',
-      '#.#.#.###.###.#.###',
-      '#...#...#.....#...#',
-      '#.#####.#########.#',
-      '#.....#.#.....#...#',
-      '#####.#.#.###.#.#.#',
-      '#...#.#W#.#A....#.#',
-      '#.#.#.###.#######.#',
-      '#.#.#...#.....#...#',
-      '#.#.###.#####.#.###',
-      '#.#...#...#...#...#',
-      '#.###.###.#.#####.#',
-      '#...#.#...#.#####.#',
-      '###.#.#.###.#####.#',
-      '#T..#.......#####G#',
+      '#S......#A......#C#',
+      '#######.#####.#.#.#',
+      '#....A#.#...#.#.#.#',
+      '#.#.###.#.#.#.#.#.#',
+      '#.#.....#.#...#.#.#',
+      '#.#######.#####.#.#',
+      '#.#.......#..A#...#',
+      '#.#.###.###.#####.#',
+      '#.#.#W#.#.......#.#',
+      '#.#.#.#.#.###.#.#.#',
+      '#.#...#.#...#.#W#.#',
+      '#.#####.###.#.###.#',
+      '#.......###.#.....#',
+      '###########.#######',
+      '###########.......#',
+      '#################.#',
+      '#################G#',
       '###################',
     ],
   },
@@ -818,21 +818,18 @@ function drawPono(now) {
   const walkH = Math.floor(cellSize * 0.85);
   const baseSize = Math.floor(cellSize * 0.78);
 
-  // ── Base layer: ALWAYS draw something visible at pono's position ──
-  // (so even if walking sprite drawing fails, pono is never invisible)
-  if (imgPono.complete && imgPono.naturalWidth > 0) {
-    ctx.drawImage(imgPono, fx - baseSize / 2, fy - baseSize / 2, baseSize, baseSize);
-  } else {
-    ctx.font = Math.floor(cellSize * 0.6) + 'px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🐻', fx, fy);
-  }
+  // Decide which sprite to draw. Walk sprite has priority during walking;
+  // static face is the fallback (and the only thing drawn when idle).
+  const isHorizontal = walkAnim ? Math.abs(dc) > Math.abs(dr) : false;
+  const sideAvailable = imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0;
+  const frontAvailable = imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0;
+  const wantsWalkSide  = !!walkAnim && isHorizontal && sideAvailable;
+  const wantsWalkFront = !!walkAnim && !wantsWalkSide && frontAvailable;
+  const drawingWalkSprite = wantsWalkSide || wantsWalkFront;
 
-  // ── Overdraw walking sprite if walking ──
-  if (walkAnim) {
+  if (drawingWalkSprite) {
     const elapsed = now - walkAnim.t0;
-    const isHorizontal = Math.abs(dc) > Math.abs(dr);
-    if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
+    if (wantsWalkSide) {
       const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
       const sideW = Math.floor(sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
       const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
@@ -847,14 +844,21 @@ function drawPono(now) {
                       fx - sideW / 2, fy - sideH / 2, sideW, sideH);
       }
       ctx.restore();
-    } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
+    } else {
       const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
       const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
       const sx = frameIdx * WALK_FRAME_W;
       ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
                     fx - walkW / 2, fy - walkH / 2, walkW, walkH);
     }
-    // If neither walk sheet loaded, base static face is already drawn
+  } else if (imgPono.complete && imgPono.naturalWidth > 0) {
+    // Idle (or walk sprite missing): draw static face
+    ctx.drawImage(imgPono, fx - baseSize / 2, fy - baseSize / 2, baseSize, baseSize);
+  } else {
+    // Last-resort fallback
+    ctx.font = Math.floor(cellSize * 0.6) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🐻', fx, fy);
   }
 }
 

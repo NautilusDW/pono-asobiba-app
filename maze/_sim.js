@@ -210,6 +210,76 @@ function auditNoSpamSolve(g) {
   return true;
 }
 
+// AUDIT 3b: Real-junction count along the solution path
+// A "real junction" is a cell where the player has ≥2 walkable directions
+// (excluding the direction they came from). L-bends / corners count as 1 → snake.
+// Returns: { totalClicks, realJunctionsOnSolution, allRealJunctions }
+function realJunctionMetrics(g) {
+  let s = null, gl = null;
+  for (let r = 0; r < g.length; r++) for (let c = 0; c < g[0].length; c++) {
+    if (g[r][c] === 'S') s = { r, c };
+    if (g[r][c] === 'G') gl = { r, c };
+  }
+  // BFS to find shortest solution and trace back
+  const parent = new Map();
+  const seen = new Set([s.r + ',' + s.c]);
+  const q = [{ r: s.r, c: s.c }];
+  while (q.length) {
+    const u = q.shift();
+    if (u.r === gl.r && u.c === gl.c) break;
+    for (const [dr, dc] of openDirs(g, u.r, u.c, null)) {
+      const p = autoWalk(g, u.r, u.c, dr, dc);
+      if (p.length === 0) continue;
+      const l = p[p.length - 1];
+      const k = l.r + ',' + l.c;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      parent.set(k, { from: u.r + ',' + u.c, dirArr: [dr, dc] });
+      q.push({ r: l.r, c: l.c });
+    }
+  }
+  // Trace solution path of (cell, incomingDirection) pairs
+  const trace = [];
+  let cur = gl.r + ',' + gl.c;
+  while (parent.has(cur)) {
+    const p = parent.get(cur);
+    const [r, c] = cur.split(',').map(Number);
+    trace.unshift({ r, c, from: p.from, incoming: p.dirArr });
+    cur = p.from;
+  }
+  // For each step in the solution (except final goal arrival), count
+  // walkable choices at the START of that step
+  let realJunctionsOnSolution = 0;
+  // The "decision point" is the cell BEFORE each click. That's the parent.
+  // Actually decision happens at the current pono position when clicking.
+  // For each parent → child edge, check parent's openDirs (excluding back from previous).
+  // For S, the back is null.
+  for (let i = 0; i < trace.length; i++) {
+    const step = trace[i];
+    const [pr, pc] = step.from.split(',').map(Number);
+    // Previous incoming direction (the back direction from parent's parent)
+    let back = null;
+    if (i > 0) {
+      const prev = trace[i - 1];
+      back = prev.incoming;
+    }
+    const dirs = openDirs(g, pr, pc, back);
+    if (dirs.length >= 2) realJunctionsOnSolution++;
+  }
+  // Count all real junctions in the maze (anywhere)
+  let allRealJunctions = 0;
+  for (let r = 0; r < g.length; r++) for (let c = 0; c < g[0].length; c++) {
+    if (!isW(g, r, c)) continue;
+    if (g[r][c] === 'G') continue;
+    if (openDirs(g, r, c, null).length >= 3) allRealJunctions++;
+  }
+  return {
+    clicks: trace.length,
+    realJunctionsOnSolution,
+    allRealJunctions,
+  };
+}
+
 // AUDIT 3: Solution path uses N distinct directions
 function solutionDirections(g) {
   let s = null, gl = null;
@@ -322,46 +392,56 @@ function countCh(g, ch) {
   return n;
 }
 
-// ─── Search loop with full pipeline ───
-function findStage(cellRows, cellCols, minClicks, applesCount) {
+// ─── Search loop with full pipeline + real-junction requirement ───
+function findStage(cellRows, cellCols, minClicks, minRealJunctions, applesCount) {
   let best = null;
-  for (let seed = 1; seed <= 8000; seed++) {
+  for (let seed = 1; seed <= 20000; seed++) {
     const rng = mulberry32(seed * 7919 + 13);
     const raw = genMaze(cellRows, cellCols, seed);
-    // Step 1: prune unreachable corridors
     const pruned = pruneUnreachable(raw);
     if (!pruned) continue;
-    // Step 2: place obstacles
     const final = placeObstacles(pruned, rng, applesCount);
-    // Step 3: full audit
     if (!auditNoDeadStates(final)) continue;
     if (!auditNoSpamSolve(final)) continue;
     if (!auditNoStranded(final)) continue;
     if (!auditNoUselessObstacles(final)) continue;
     const clicks = solveClicks(final);
     if (clicks < minClicks) continue;
+    const metrics = realJunctionMetrics(final);
+    if (metrics.realJunctionsOnSolution < minRealJunctions) continue;
     const dirs = solutionDirections(final);
-    const score = clicks * 10 + dirs * 3;
+    // Score: prioritize real junctions on solution, then click count, then dir variety
+    const score = metrics.realJunctionsOnSolution * 100 + clicks * 10 + dirs * 3;
     if (!best || score > best.score) {
-      best = { grid: final, clicks, dirs, seed, score };
+      best = {
+        grid: final,
+        clicks,
+        dirs,
+        seed,
+        score,
+        realJunctionsOnSolution: metrics.realJunctionsOnSolution,
+        allRealJunctions: metrics.allRealJunctions,
+      };
     }
-    if (best && best.clicks >= minClicks + 2 && best.dirs >= 3) break;
+    if (best && best.realJunctionsOnSolution >= minRealJunctions + 1 && best.clicks >= minClicks + 1) break;
   }
   return best;
 }
 
 // ─── Stage specs ───
+// minRealJunctions = number of TRUE branching choices on the solution path.
+// If you can solve a stage with N real choices, the player must choose right N times.
 const SPECS = [
-  { rows: 3, cols: 3, minClicks: 3, apples: 0, name: 'ステージ 2 — わかれみち' },
-  { rows: 4, cols: 4, minClicks: 5, apples: 1, name: 'ステージ 3 — ふかいもり' },
-  { rows: 6, cols: 6, minClicks: 8, apples: 2, name: 'ステージ 4 — めいろの もり' },
-  { rows: 9, cols: 9, minClicks: 12, apples: 3, name: 'ステージ 5 — まいごの もり' },
+  { rows: 3, cols: 3, minClicks: 3, minRealJunctions: 1, apples: 0, name: 'ステージ 2 — わかれみち' },
+  { rows: 4, cols: 4, minClicks: 5, minRealJunctions: 2, apples: 1, name: 'ステージ 3 — ふかいもり' },
+  { rows: 6, cols: 6, minClicks: 8, minRealJunctions: 3, apples: 2, name: 'ステージ 4 — めいろの もり' },
+  { rows: 9, cols: 9, minClicks: 12, minRealJunctions: 5, apples: 3, name: 'ステージ 5 — まいごの もり' },
 ];
 
 console.log('=== Generating stages ===\n');
 const results = [];
 for (const spec of SPECS) {
-  const r = findStage(spec.rows, spec.cols, spec.minClicks, spec.apples);
+  const r = findStage(spec.rows, spec.cols, spec.minClicks, spec.minRealJunctions, spec.apples);
   if (!r) { console.log(spec.name, '— FAILED'); continue; }
   results.push(Object.assign({}, spec, r));
   const apples = countCh(r.grid, 'A');
@@ -369,7 +449,7 @@ for (const spec of SPECS) {
   const water = countCh(r.grid, 'W');
   const thorn = countCh(r.grid, 'T');
   console.log(spec.name);
-  console.log(`  ${r.grid.length}x${r.grid[0].length}  clicks=${r.clicks} (min=${spec.minClicks})  dirs=${r.dirs}  seed=${r.seed}`);
+  console.log(`  ${r.grid.length}x${r.grid[0].length}  clicks=${r.clicks}  realJ-on-sol=${r.realJunctionsOnSolution} (min=${spec.minRealJunctions})  dirs=${r.dirs}  seed=${r.seed}`);
   console.log(`  apples=${apples} cats=${cats} water=${water} thorn=${thorn}`);
   for (const row of r.grid) console.log('  ' + row);
   console.log();
@@ -385,10 +465,13 @@ for (const r of results) {
   const noSpam = auditNoSpamSolve(r.grid);
   const stranded = auditNoStranded(r.grid);
   const useless = auditNoUselessObstacles(r.grid);
-  const ok = widths.length === 1 && clicks >= r.minClicks && dead && noSpam && stranded && useless;
+  const metrics = realJunctionMetrics(r.grid);
+  const realJOk = metrics.realJunctionsOnSolution >= r.minRealJunctions;
+  const ok = widths.length === 1 && clicks >= r.minClicks && dead && noSpam && stranded && useless && realJOk;
   if (!ok) allOk = false;
   console.log(
     `${r.name}: w=${widths.join(',')} clicks=${clicks}/${r.minClicks} ` +
+    `realJ=${metrics.realJunctionsOnSolution}/${r.minRealJunctions} ` +
     `dead=${dead?'pass':'FAIL'} noSpam=${noSpam?'pass':'FAIL'} ` +
     `noStranded=${stranded?'pass':'FAIL'} noUseless=${useless?'pass':'FAIL'} ` +
     `${ok ? 'OK' : 'FAIL'}`
