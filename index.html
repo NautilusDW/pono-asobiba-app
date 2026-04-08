@@ -1624,8 +1624,27 @@
         if (CARD_COMPLETE_REWARDS.length === 0) return null;
         var idx = (cardNum - 1) % CARD_COMPLETE_REWARDS.length;
         var rw = CARD_COMPLETE_REWARDS[idx];
-        if (rw) rw.img = _resolveRewardImg(rw.type, rw.id, rw.img);
-        return rw;
+        if (!rw) return null;
+        if (rw.gendered) {
+          var g = 'boy';
+          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
+          var v = rw[g] || rw['boy'] || {};
+          return {
+            icon: rw.icon,
+            name: v.name || rw.name,
+            type: v.type,
+            id:   v.id,
+            img:  _resolveRewardImg(v.type, v.id, v.img)
+          };
+        }
+        // 非破壊でコピーを返す（元配列を汚さない）
+        return {
+          icon: rw.icon,
+          name: rw.name,
+          type: rw.type,
+          id:   rw.id,
+          img:  _resolveRewardImg(rw.type, rw.id, rw.img)
+        };
       }
 
       // ── 1. Login Stamp (daily auto-grant) ──

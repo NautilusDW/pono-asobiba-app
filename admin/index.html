@@ -654,6 +654,81 @@ function renderSlotPagination(totalPages) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// Slot number edit → sync all visible cards back into rewardsData,
+// validate for conflicts, and re-render with auto-sort.
+// ════════════════════════════════════════════════════════════════
+function syncAndResortSlots(triggerCard, oldSlot) {
+  var visibleCards = Array.prototype.slice.call(
+    document.querySelectorAll('#slot-rewards-container .reward-card')
+  );
+
+  // 1) 現在ページに元々あった番号群を記録
+  var oldPageNums = {};
+  visibleCards.forEach(function(c) {
+    var n = parseInt(c.dataset.slotNum);
+    if (!isNaN(n)) oldPageNums[n] = true;
+  });
+
+  // 2) 各カードの新番号を読み取り、重複・無効チェック
+  var seen = {};
+  var invalid = false;
+  var dup = false;
+  visibleCards.forEach(function(c) {
+    var n = parseInt((c.querySelector('[data-key="slot-num"]') || {}).value);
+    if (isNaN(n) || n < 1) { invalid = true; return; }
+    if (seen[n]) { dup = true; }
+    seen[n] = true;
+  });
+  if (invalid || dup) {
+    if (triggerCard) {
+      var inp = triggerCard.querySelector('[data-key="slot-num"]');
+      if (inp) inp.value = oldSlot;
+    }
+    showToast(dup ? 'スロット番号が重複しています' : 'スロット番号が不正です', false);
+    return;
+  }
+
+  // 3) 他ページ（非表示）の番号と重複していないか
+  var otherPageDup = null;
+  Object.keys(rewardsData.slotRewards).forEach(function(k) {
+    var n = parseInt(k);
+    if (oldPageNums[n]) return; // 現在ページのものは上書き対象なので無視
+    if (seen[n]) otherPageDup = n;
+  });
+  if (otherPageDup !== null) {
+    if (triggerCard) {
+      var inp2 = triggerCard.querySelector('[data-key="slot-num"]');
+      if (inp2) inp2.value = oldSlot;
+    }
+    showToast('スロット番号 ' + otherPageDup + ' は他のページで使用中です', false);
+    return;
+  }
+
+  // 4) 現在ページの旧番号群を削除してから新データで再配置
+  Object.keys(oldPageNums).forEach(function(n) {
+    delete rewardsData.slotRewards[parseInt(n)];
+  });
+  visibleCards.forEach(function(c) {
+    var n = parseInt(c.querySelector('[data-key="slot-num"]').value);
+    rewardsData.slotRewards[n] = collectSlotData(c);
+  });
+
+  // 5) 編集したカードの新番号が別ページに行く場合、そのページへジャンプ
+  if (triggerCard) {
+    var newN = parseInt(triggerCard.querySelector('[data-key="slot-num"]').value);
+    if (!isNaN(newN)) {
+      var sortedNums = Object.keys(rewardsData.slotRewards)
+        .map(function(k) { return parseInt(k); })
+        .sort(function(a, b) { return a - b; });
+      var pos = sortedNums.indexOf(newN);
+      if (pos >= 0) slotPage = Math.floor(pos / SLOT_PAGE_SIZE);
+    }
+  }
+
+  renderSlotRewards();
+}
+
+// ════════════════════════════════════════════════════════════════
 // Build Slot Reward Card (editable)
 // ════════════════════════════════════════════════════════════════
 function buildSlotCard(slotNum, data) {
@@ -694,7 +769,15 @@ function buildSlotCard(slotNum, data) {
     row1.appendChild(ph);
   }
 
-  row1.appendChild(makeField('スロット番号', 'number', slotNum, 'slot-num', 'reward-field-short'));
+  var slotNumField = makeField('スロット番号', 'number', slotNum, 'slot-num', 'reward-field-short');
+  row1.appendChild(slotNumField);
+  // 番号変更時の自動ソート
+  var slotNumInput = slotNumField.querySelector('input');
+  if (slotNumInput) {
+    slotNumInput.addEventListener('change', function() {
+      syncAndResortSlots(card, slotNum);
+    });
+  }
   row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
   row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
   card.appendChild(row1);
@@ -856,6 +939,8 @@ function buildCardCompleteCard(idx, data) {
   card.className = 'reward-card';
   card.dataset.cardIdx = idx;
 
+  var isGendered = !!data.gendered;
+
   // Delete
   var delBtn = document.createElement('button');
   delBtn.className = 'reward-delete-btn';
@@ -872,10 +957,12 @@ function buildCardCompleteCard(idx, data) {
   var row1 = document.createElement('div');
   row1.className = 'reward-card-row';
 
-  if (data.img) {
+  // Preview: gendered なら boy 側を表示
+  var previewSrc = isGendered ? (data.boy && data.boy.img) : data.img;
+  if (previewSrc) {
     var prevImg = document.createElement('img');
     prevImg.className = 'reward-preview-img';
-    prevImg.src = '../' + toAImg(data.img);
+    prevImg.src = '../' + toAImg(previewSrc);
     prevImg.onerror = function() { this.style.display = 'none'; };
     row1.appendChild(prevImg);
   } else {
@@ -894,11 +981,98 @@ function buildCardCompleteCard(idx, data) {
   row1.appendChild(makeField('アイコン', 'text', data.icon || '', 'icon', 'reward-field-short'));
   card.appendChild(row1);
 
-  // Row 2: アイテム選択
-  var row2 = document.createElement('div');
-  row2.className = 'reward-card-row';
-  row2.appendChild(makeItemPickerField(data.type || 'sea', data.id || '', data.img || '', '', card));
-  card.appendChild(row2);
+  // Row 2: アイテム選択 (non-gendered)
+  if (!isGendered) {
+    var row2 = document.createElement('div');
+    row2.className = 'reward-card-row';
+    row2.appendChild(makeItemPickerField(data.type || 'sea', data.id || '', data.img || '', '', card));
+    card.appendChild(row2);
+  }
+
+  // Row 3: 男女別チェックボックス
+  var row3 = document.createElement('div');
+  row3.className = 'reward-card-row';
+
+  var genderedCheck = makeCheckbox('男女別にする', isGendered, 'gendered');
+  genderedCheck.querySelector('input').addEventListener('change', function() {
+    var cb = this;
+    var cardIdx = parseInt(card.dataset.cardIdx);
+    var currentData = collectCardData(card);
+
+    if (cb.checked) {
+      // non-gendered → gendered
+      var hasData = (currentData.type && currentData.type !== 'sea') || currentData.id || currentData.img;
+      if (hasData) {
+        var dlg = document.createElement('div');
+        dlg.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+        dlg.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;text-align:center;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+          '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">今の設定をどちらに残しますか？</div>' +
+          '<div style="display:flex;gap:12px;justify-content:center;">' +
+            '<button id="_gdc_boy" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;">👦 おとこのこ</button>' +
+            '<button id="_gdc_girl" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#F472B6,#EC4899);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;">👧 おんなのこ</button>' +
+          '</div>' +
+          '<button id="_gdc_cancel" style="margin-top:12px;padding:8px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.8rem;cursor:pointer;">キャンセル</button>' +
+        '</div>';
+        document.body.appendChild(dlg);
+
+        var base = { type: currentData.type || 'sea', id: currentData.id || '', img: currentData.img || '' };
+        var empty = { type: currentData.type || 'sea', id: '', img: '' };
+        var baseId = base.id.replace(/_boy$|_girl$/, '');
+
+        document.getElementById('_gdc_boy').onclick = function() {
+          dlg.remove();
+          currentData.gendered = true;
+          currentData.boy  = { type: base.type,  id: baseId + '_boy',  img: base.img };
+          currentData.girl = { type: empty.type, id: baseId + '_girl', img: '' };
+          delete currentData.type; delete currentData.id; delete currentData.img;
+          rewardsData.cardCompleteRewards[cardIdx] = currentData;
+          renderCardRewards();
+        };
+        document.getElementById('_gdc_girl').onclick = function() {
+          dlg.remove();
+          currentData.gendered = true;
+          currentData.boy  = { type: empty.type, id: baseId + '_boy',  img: '' };
+          currentData.girl = { type: base.type,  id: baseId + '_girl', img: base.img };
+          delete currentData.type; delete currentData.id; delete currentData.img;
+          rewardsData.cardCompleteRewards[cardIdx] = currentData;
+          renderCardRewards();
+        };
+        document.getElementById('_gdc_cancel').onclick = function() {
+          dlg.remove();
+          cb.checked = false;
+        };
+      } else {
+        var baseId2 = (currentData.id || '').replace(/_boy$|_girl$/, '') || 'reward_card_' + (cardIdx + 1);
+        currentData.gendered = true;
+        currentData.boy  = { type: 'sea', id: baseId2 + '_boy',  img: '' };
+        currentData.girl = { type: 'sea', id: baseId2 + '_girl', img: '' };
+        delete currentData.type; delete currentData.id; delete currentData.img;
+        rewardsData.cardCompleteRewards[cardIdx] = currentData;
+        renderCardRewards();
+      }
+    } else {
+      // gendered → non-gendered: boy 側を優先的に残す
+      currentData.gendered = false;
+      var src = (currentData.boy && currentData.boy.id) ? currentData.boy : (currentData.girl || {});
+      currentData.type = src.type || 'sea';
+      currentData.id   = src.id || '';
+      currentData.img  = src.img || '';
+      delete currentData.boy; delete currentData.girl;
+      rewardsData.cardCompleteRewards[cardIdx] = currentData;
+      renderCardRewards();
+    }
+  });
+  row3.appendChild(genderedCheck);
+  card.appendChild(row3);
+
+  // Gendered split
+  if (isGendered) {
+    var split = document.createElement('div');
+    split.className = 'gendered-split';
+    split.appendChild(buildGenderedCol('👦 おとこのこ', data.boy || {}, 'boy', card));
+    split.appendChild(buildGenderedCol('👧 おんなのこ', data.girl || {}, 'girl', card));
+    card.appendChild(split);
+  }
 
   return card;
 }
@@ -1560,16 +1734,49 @@ function collectAllRewards() {
   // Card complete rewards
   result.cardCompleteRewards = [];
   document.querySelectorAll('#card-rewards-container .reward-card').forEach(function(card) {
-    var d = {};
-    d.icon = (card.querySelector('[data-key="icon"]') || {}).value || '';
-    d.name = (card.querySelector('[data-key="name"]') || {}).value || '';
-    d.type = (card.querySelector('[data-key="type"]') || {}).value || 'sea';
-    d.id   = (card.querySelector('[data-key="id"]') || {}).value || '';
-    d.img  = (card.querySelector('[data-key="img"]') || {}).value || '';
-    result.cardCompleteRewards.push(d);
+    result.cardCompleteRewards.push(collectCardData(card));
   });
 
   return result;
+}
+
+// カード完成報酬1枚分のデータ収集（gendered対応）
+function collectCardData(card) {
+  var d = {};
+  d.icon = (card.querySelector('[data-key="icon"]') || {}).value || '';
+  d.name = (card.querySelector('[data-key="name"]') || {}).value || '';
+
+  var genCb = card.querySelector('[data-key="gendered"]');
+  var isGendered = genCb && genCb.checked;
+  d.gendered = isGendered;
+
+  if (isGendered) {
+    d.boy = {
+      name: (card.querySelector('[data-key="boy-name"]')  || {}).value || '',
+      type: (card.querySelector('[data-key="boy-type"]')  || {}).value || 'sea',
+      id:   (card.querySelector('[data-key="boy-id"]')    || {}).value || '',
+      img:  (card.querySelector('[data-key="boy-img"]')   || {}).value || ''
+    };
+    d.girl = {
+      name: (card.querySelector('[data-key="girl-name"]') || {}).value || '',
+      type: (card.querySelector('[data-key="girl-type"]') || {}).value || 'sea',
+      id:   (card.querySelector('[data-key="girl-id"]')   || {}).value || '',
+      img:  (card.querySelector('[data-key="girl-img"]')  || {}).value || ''
+    };
+    // 総称名が空なら boy/girl から自動生成
+    if (!d.name) {
+      var bn = d.boy.name || '';
+      var gn = d.girl.name || '';
+      if (bn && gn && bn !== gn) d.name = bn + ' / ' + gn;
+      else d.name = bn || gn || '';
+    }
+  } else {
+    d.type = (card.querySelector('[data-key="type"]') || {}).value || 'sea';
+    d.id   = (card.querySelector('[data-key="id"]')   || {}).value || '';
+    d.img  = (card.querySelector('[data-key="img"]')  || {}).value || '';
+  }
+
+  return d;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1603,8 +1810,13 @@ function validateRewards(data) {
   // Check card complete rewards
   data.cardCompleteRewards.forEach(function(d, i) {
     if (!d.name) errors.push('カード完成 ' + (i + 1) + '枚目: 名前が空です');
-    if (!d.type) errors.push('カード完成 ' + (i + 1) + '枚目: タイプが空です');
-    if (!d.id) errors.push('カード完成 ' + (i + 1) + '枚目: IDが空です');
+    if (d.gendered) {
+      if (!d.boy  || !d.boy.id)  errors.push('カード完成 ' + (i + 1) + '枚目: 男の子用IDが空です');
+      if (!d.girl || !d.girl.id) errors.push('カード完成 ' + (i + 1) + '枚目: 女の子用IDが空です');
+    } else {
+      if (!d.type) errors.push('カード完成 ' + (i + 1) + '枚目: タイプが空です');
+      if (!d.id)   errors.push('カード完成 ' + (i + 1) + '枚目: IDが空です');
+    }
   });
 
   return errors;
