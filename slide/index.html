@@ -676,27 +676,35 @@ function drawTile(x, y, size, tileKey, isAnimating) {
   const r = size * 0.1;
   const gap = 3;
 
-  // Tile background
+  // Tile background — テクスチャがあれば全タイル共通の下地として使用
+  const tex = blankTextures[th.textureKey];
+  const hasTex = tex && tex.complete && tex.naturalWidth > 0;
+
   ctx.beginPath();
   ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
-  ctx.fillStyle = tileKey === 'BLANK' ? th.tileBlank : th.tile;
-  ctx.fill();
-  ctx.strokeStyle = th.tileBorder;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  if (hasTex) {
+    // 下地としてテクスチャを角丸クリップで貼る
+    ctx.save();
+    ctx.clip();
+    ctx.drawImage(tex, x + gap, y + gap, size - gap * 2, size - gap * 2);
+    ctx.restore();
+    // 枠線だけ再描画
+    ctx.beginPath();
+    ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
+    ctx.strokeStyle = th.tileBorder;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = tileKey === 'BLANK' ? th.tileBlank : th.tile;
+    ctx.fill();
+    ctx.strokeStyle = th.tileBorder;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
   if (tileKey === 'BLANK') {
-    // テクスチャ画像があれば角丸内にクリップして全面に貼る
-    const tex = blankTextures[th.textureKey];
-    if (tex && tex.complete && tex.naturalWidth > 0) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
-      ctx.clip();
-      ctx.drawImage(tex, x + gap, y + gap, size - gap * 2, size - gap * 2);
-      ctx.restore();
-    } else {
-      // フォールバック: 既存の絵文字装飾
+    // テクスチャ未ロード時のフォールバック絵文字
+    if (!hasTex) {
       const seed = (x * 7 + y * 13) | 0;
       ctx.font = `${Math.floor(size * 0.2)}px serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
