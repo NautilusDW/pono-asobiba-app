@@ -772,10 +772,21 @@ function buildSlotCard(slotNum, data) {
   var slotNumField = makeField('スロット番号', 'number', slotNum, 'slot-num', 'reward-field-short');
   row1.appendChild(slotNumField);
   // 番号変更時の自動ソート
+  // NOTE: change ではなく blur で発火させる理由:
+  //   スピナー矢印をクリックすると change が1クリックごとに発火し、
+  //   15→14→13→...→10 と減らす途中で「10 は既に存在」重複エラーが
+  //   出て 10 以下にできなくなる。blur なら矢印連打中は発火せず、
+  //   ユーザーが確定した時点でのみ同期するので自然に動く。
   var slotNumInput = slotNumField.querySelector('input');
   if (slotNumInput) {
-    slotNumInput.addEventListener('change', function() {
+    slotNumInput.addEventListener('blur', function() {
       syncAndResortSlots(card, slotNum);
+    });
+    slotNumInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        slotNumInput.blur();
+      }
     });
   }
   row1.appendChild(makeField('名前', 'text', data.name || '', 'name', 'reward-field-mid'));
