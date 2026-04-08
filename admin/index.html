@@ -1166,15 +1166,34 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
       if (meta && meta.id) {
         idInp.value = meta.id;
         typeInp.value = meta.cat || 'deco';
-        // 親カードのname自動入力（未設定なら）
+        // 親カードのname自動入力（未設定 or デフォルトなら）
         if (parentCard) {
           var nameInp = parentCard.querySelector('[data-key="' + (prefix ? prefix + '-name' : 'name') + '"]');
           if (nameInp && (!nameInp.value || /^ごほうび\d+$/.test(nameInp.value))) {
             nameInp.value = meta.name || '';
           }
-          // カードプレビュー画像も更新（A角度）
+          // gendered 時: boy/girl の入力をピッカーで行ったら、トップの総称 name も
+          // "boy / girl" 形式で自動合成。ただしユーザーが自分で書いた名前は上書きしない
+          //（デフォルト「ごほうびN」や空、または以前の自動合成結果の時だけ更新）
+          if (prefix === 'boy' || prefix === 'girl') {
+            var topNameInp = parentCard.querySelector('[data-key="name"]');
+            if (topNameInp) {
+              var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
+              var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
+              var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
+              var cur = topNameInp.value || '';
+              var isAutoOrEmpty =
+                !cur
+                || /^ごほうび\d+$/.test(cur)
+                || / \/ /.test(cur)   // 前回合成された「X / Y」形式
+                || cur === bn
+                || cur === gn;
+              if (isAutoOrEmpty && combined) topNameInp.value = combined;
+            }
+          }
+          // カードプレビュー画像を更新（gendered の時は boy 側変更時だけ）
           var cardPrev = parentCard.querySelector('.reward-preview-img');
-          if (cardPrev) cardPrev.src = aDownloadUrl;
+          if (cardPrev && (prefix !== 'girl')) cardPrev.src = aDownloadUrl;
         }
       }
       refreshInfo();
@@ -1204,6 +1223,14 @@ function makeField(label, type, value, key, extraClass) {
   div.className = 'reward-field ' + (extraClass || '');
   var lbl = document.createElement('label');
   lbl.textContent = label;
+  // キーに応じた簡易ヒント（宝箱・履歴表示の用途を明示）
+  var hintMap = {
+    'name':  '宝箱演出と「もらった ごほうび」履歴に表示',
+    'icon':  '画像がない時だけ履歴でフォールバック表示',
+    'boy-name':  'プロフィールが男の子の時に宝箱演出で表示',
+    'girl-name': 'プロフィールが女の子の時に宝箱演出で表示'
+  };
+  if (hintMap[key]) lbl.title = hintMap[key];
   var inp = document.createElement('input');
   inp.type = type;
   inp.value = value;
