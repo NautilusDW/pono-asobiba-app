@@ -69,20 +69,44 @@ SUPPORTED_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 # Alpha smoothing (shared by all modes)
 # ---------------------------------------------------------------------------
 
-def smooth_alpha(img: Image.Image, blur_radius: float = 0.6) -> Image.Image:
+def _shrink_alpha(a: Image.Image, shrink_px: int) -> Image.Image:
     """
-    アルファチャンネルだけを軽くぼかし、S カーブで押し込んで
-    ジャギ由来のザラつきを除去しつつセミ透明縁を保つ。
+    Erode the alpha channel by `shrink_px` pixels using a MinFilter
+    (morphological erosion). Useful for pulling foreground edges
+    inward to remove background fringes.
+    """
+    if shrink_px <= 0:
+        return a
+    # Apply MinFilter iteratively. Each MinFilter(3) erodes by 1px.
+    out = a
+    for _ in range(int(shrink_px)):
+        out = out.filter(ImageFilter.MinFilter(3))
+    return out
+
+
+def smooth_alpha(
+    img: Image.Image,
+    blur_radius: float = 0.6,
+    shrink_px: int = 0,
+) -> Image.Image:
+    """
+    アルファチャンネルだけを処理して縁を整える:
+      1. shrink (erosion) で縁を内側に引っ込める (背景フリンジ対策)
+      2. Gaussian blur で段差を溶かす
+      3. S カーブで 0/255 近傍を引き締める
     """
     if img.mode != "RGBA":
         img = img.convert("RGBA")
 
     r, g, b, a = img.split()
 
-    # 1) Gaussian blur で段差を溶かす
+    # 1) Erode (shrink) the alpha mask
+    a = _shrink_alpha(a, shrink_px)
+
+    # 2) Gaussian blur で段差を溶かす
     a_blur = a.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
-    # 2) S カーブ (contrast curve) で 0/255 近傍を引き締める
+    # 3) S カーブ (contrast curve) で 0/255 近傍を引き締める
     lut = []
     for i in range(256):
         x = (i - 128) / 128.0
@@ -93,16 +117,23 @@ def smooth_alpha(img: Image.Image, blur_radius: float = 0.6) -> Image.Image:
     return Image.merge("RGBA", (r, g, b, a_curved))
 
 
-def _light_smooth(img: Image.Image, blur_radius: float = 0.5) -> Image.Image:
+def _light_smooth(
+    img: Image.Image,
+    blur_radius: float = 0.5,
+    shrink_px: int = 0,
+) -> Image.Image:
     """
     S カーブを使わない軽いアルファスムージング。
     距離変換フェザリング済みマスクを潰さないよう、ぼかしだけ適用。
+    shrink_px > 0 のときは MinFilter で縁を引っ込めてからぼかす。
     """
     if img.mode != "RGBA":
         img = img.convert("RGBA")
     r, g, b, a = img.split()
-    a_blur = a.filter(ImageFilter.GaussianBlur(radius=blur_radius))
-    return Image.merge("RGBA", (r, g, b, a_blur))
+    a = _shrink_alpha(a, shrink_px)
+    if blur_radius > 0:
+        a = a.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+    return Image.merge("RGBA", (r, g, b, a))
 
 
 # ---------------------------------------------------------------------------

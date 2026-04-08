@@ -53,6 +53,7 @@ from clean_edges import (  # noqa: E402
 )
 from sprite_splitter import SpriteInfo, extract_sprites, make_flipped_pair  # noqa: E402
 from ai_namer import NameResult, request_sprite_name, _sanitize_filename  # noqa: E402
+import presets as presets_mod  # noqa: E402
 
 
 REMBG_MODELS = [
@@ -477,8 +478,16 @@ class CleanEdgesGUI:
         self._ai_executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
         self._ai_generation = 0  # monotonic counter; stale callbacks are discarded
 
+        # Presets (load from JSON, will be applied after _build_ui)
+        self._presets_data = presets_mod.load_presets()
+        self._suppress_preset_apply = False  # used to avoid recursive apply
+
         # -------- Build UI --------
         self._build_ui()
+
+        # Apply default preset (after vars exist)
+        default_name = self._presets_data.get("default", "Standard")
+        self._apply_preset(default_name)
 
         if initial_path:
             self._load_image(Path(initial_path))
@@ -556,9 +565,37 @@ class CleanEdgesGUI:
 
     # -------- Sidebar --------
     def _build_sidebar(self, parent):
+        # 0. Presets (top — affects everything below)
+        sec_preset = ttk.LabelFrame(parent, text=" Preset ", padding=(10, 6))
+        sec_preset.pack(fill=tk.X, padx=8, pady=(8, 4))
+
+        self.preset_name_var = tk.StringVar(value=self._presets_data.get("default", "Standard"))
+        self.preset_combo = ttk.Combobox(
+            sec_preset, textvariable=self.preset_name_var,
+            values=self._preset_names(), state="readonly",
+        )
+        self.preset_combo.pack(fill=tk.X, pady=(0, 4))
+        self.preset_combo.bind("<<ComboboxSelected>>", self._on_preset_selected)
+
+        btn_row = ttk.Frame(sec_preset, style="Panel.TFrame")
+        btn_row.pack(fill=tk.X)
+        ttk.Button(btn_row, text="💾 Save", command=self._on_preset_save_or_overwrite,
+                   style="Toolbar.TButton", width=8).pack(side=tk.LEFT, padx=(0, 2))
+        ttk.Button(btn_row, text="＋ New",  command=self._on_preset_save_as,
+                   style="Toolbar.TButton", width=7).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_row, text="⭐ Default", command=self._on_preset_set_default,
+                   style="Toolbar.TButton", width=9).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_row, text="🗑", command=self._on_preset_delete,
+                   style="Toolbar.TButton", width=3).pack(side=tk.LEFT, padx=(2, 0))
+
+        self.preset_default_label_var = tk.StringVar(value="")
+        ttk.Label(sec_preset, textvariable=self.preset_default_label_var,
+                  style="Muted.TLabel").pack(fill=tk.X, pady=(4, 0))
+        self._refresh_preset_default_label()
+
         # 1. Input section
         sec_input = ttk.LabelFrame(parent, text=" 1. Input ", padding=(10, 6))
-        sec_input.pack(fill=tk.X, padx=8, pady=(8, 4))
+        sec_input.pack(fill=tk.X, padx=8, pady=(4, 4))
         self.input_path_var = tk.StringVar(value="(no file)")
         ttk.Label(sec_input, textvariable=self.input_path_var, style="Muted.TLabel", wraplength=260).pack(fill=tk.X)
         self.input_dim_var = tk.StringVar(value="")
@@ -589,18 +626,20 @@ class CleanEdgesGUI:
         self.gray_tol = tk.IntVar(value=18)
         self.feather_var = tk.DoubleVar(value=1.5)
         self.blur_var = tk.DoubleVar(value=0.5)
+        self.shrink_var = tk.IntVar(value=0)
 
         self._slider_widgets = []  # for enable/disable
         self._slider_widgets.append(self._make_slider(sec_bg, "Border tol",   self.border_tol,  0, 100,  decimal=False))
         self._slider_widgets.append(self._make_slider(sec_bg, "Gray tol",     self.gray_tol,    0, 60,   decimal=False))
         self._slider_widgets.append(self._make_slider(sec_bg, "Edge feather", self.feather_var, 0, 10.0, decimal=True))
+        self._slider_widgets.append(self._make_slider(sec_bg, "Alpha shrink", self.shrink_var,  0, 8,    decimal=False))
         self._slider_widgets.append(self._make_slider(sec_bg, "Alpha blur",   self.blur_var,    0, 5.0,  decimal=True))
 
         self.auto_process_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(sec_bg, text="Auto-reprocess on slider change",
                         variable=self.auto_process_var).pack(anchor="w", pady=(4, 2))
 
-        for v in (self.border_tol, self.gray_tol, self.feather_var, self.blur_var):
+        for v in (self.border_tol, self.gray_tol, self.feather_var, self.blur_var, self.shrink_var):
             v.trace_add("write", self._on_param_change)
 
         # 3. Split section
@@ -681,11 +720,12 @@ class CleanEdgesGUI:
             self.matting_chk.state(["!disabled"])
         else:
             self.matting_chk.state(["disabled"])
-        # Disable auto-fake-bg sliders when in rembg mode (except blur which applies to both)
+        # Slider indices (matches creation order):
+        #   0=Border tol, 1=Gray tol, 2=Edge feather (auto-fake-bg only)
+        #   3=Alpha shrink, 4=Alpha blur (apply to both modes)
         for i, scale in enumerate(self._slider_widgets):
-            if i < 3:  # border, gray, feather
+            if i < 3:
                 scale.configure(state=("disabled" if is_rembg else "normal"))
-            # index 3 = alpha blur, common to both
 
     # -------- Preview area (Notebook) --------
     def _build_preview_area(self, parent):
@@ -794,6 +834,156 @@ class CleanEdgesGUI:
             self.sprites_canvas.yview_scroll(-1 if e.delta > 0 else 1, "units")
         self.sprites_canvas.bind("<MouseWheel>", _on_wheel)
         self.sprites_frame.bind("<MouseWheel>", _on_wheel)
+
+    # ==================================================================== Presets
+
+    def _preset_names(self) -> List[str]:
+        return sorted(self._presets_data.get("presets", {}).keys())
+
+    def _refresh_preset_combo(self):
+        names = self._preset_names()
+        self.preset_combo.configure(values=names)
+        if self.preset_name_var.get() not in names and names:
+            self.preset_name_var.set(names[0])
+        self._refresh_preset_default_label()
+
+    def _refresh_preset_default_label(self):
+        default = self._presets_data.get("default", "Standard")
+        current = self.preset_name_var.get()
+        if current == default:
+            self.preset_default_label_var.set(f"⭐ '{default}' is the startup default")
+        else:
+            self.preset_default_label_var.set(f"(startup default: ⭐ {default})")
+
+    def _current_settings_dict(self) -> dict:
+        return {
+            "mode": self.mode_var.get(),
+            "border_tol": int(self.border_tol.get()),
+            "gray_tol": int(self.gray_tol.get()),
+            "feather": float(self.feather_var.get()),
+            "blur": float(self.blur_var.get()),
+            "shrink": int(self.shrink_var.get()),
+            "rembg_model": self.model_var.get(),
+            "matting": bool(self.matting_var.get()),
+            "split_min_size": int(self.split_min_size_var.get()),
+            "split_padding": int(self.split_padding_var.get()),
+            "split_alpha": int(self.split_alpha_var.get()),
+            "split_flip_b": bool(self.split_flip_b_var.get()),
+        }
+
+    def _apply_preset(self, name: str):
+        """Load a preset's values into all the GUI Vars."""
+        p = presets_mod.get_preset(self._presets_data, name)
+        self._suppress_preset_apply = True
+        try:
+            self.mode_var.set(p.get("mode", "auto-fake-bg"))
+            self.border_tol.set(int(p.get("border_tol", 32)))
+            self.gray_tol.set(int(p.get("gray_tol", 18)))
+            self.feather_var.set(float(p.get("feather", 1.5)))
+            self.blur_var.set(float(p.get("blur", 0.5)))
+            self.shrink_var.set(int(p.get("shrink", 0)))
+            self.model_var.set(p.get("rembg_model", "isnet-general-use"))
+            self.matting_var.set(bool(p.get("matting", True)))
+            self.split_min_size_var.set(int(p.get("split_min_size", 20)))
+            self.split_padding_var.set(int(p.get("split_padding", 4)))
+            self.split_alpha_var.set(int(p.get("split_alpha", 10)))
+            self.split_flip_b_var.set(bool(p.get("split_flip_b", False)))
+        finally:
+            self._suppress_preset_apply = False
+        self._update_mode()
+        self._refresh_preset_default_label()
+        # Reprocess if image is loaded
+        if self.original_img is not None:
+            self.on_process()
+
+    def _on_preset_selected(self, _event=None):
+        if self._suppress_preset_apply:
+            return
+        name = self.preset_name_var.get()
+        self._apply_preset(name)
+        self.status_var.set(f"Applied preset: {name}")
+
+    def _on_preset_save_or_overwrite(self):
+        """Save current values into the currently selected preset (overwrite)."""
+        name = self.preset_name_var.get()
+        if not name:
+            return
+        if not messagebox.askyesno(
+            "Overwrite preset",
+            f"Save current settings into preset '{name}'? "
+            "This will overwrite the existing values.",
+        ):
+            return
+        presets_mod.upsert_preset(self._presets_data, name, self._current_settings_dict())
+        try:
+            presets_mod.save_presets(self._presets_data)
+            self.status_var.set(f"Saved preset: {name}")
+        except Exception as e:
+            messagebox.showerror("Save failed", str(e))
+
+    def _on_preset_save_as(self):
+        """Save current values as a NEW preset (prompts for name)."""
+        from tkinter import simpledialog
+        name = simpledialog.askstring(
+            "New preset",
+            "Preset name:",
+            parent=self.root,
+        )
+        if not name:
+            return
+        name = name.strip()
+        if not name:
+            return
+        if name in self._presets_data.get("presets", {}):
+            if not messagebox.askyesno(
+                "Overwrite",
+                f"Preset '{name}' already exists. Overwrite?",
+            ):
+                return
+        presets_mod.upsert_preset(self._presets_data, name, self._current_settings_dict())
+        try:
+            presets_mod.save_presets(self._presets_data)
+        except Exception as e:
+            messagebox.showerror("Save failed", str(e))
+            return
+        self._suppress_preset_apply = True
+        self.preset_name_var.set(name)
+        self._suppress_preset_apply = False
+        self._refresh_preset_combo()
+        self.status_var.set(f"Created preset: {name}")
+
+    def _on_preset_set_default(self):
+        name = self.preset_name_var.get()
+        if not name:
+            return
+        presets_mod.set_default(self._presets_data, name)
+        try:
+            presets_mod.save_presets(self._presets_data)
+        except Exception as e:
+            messagebox.showerror("Save failed", str(e))
+            return
+        self._refresh_preset_default_label()
+        self.status_var.set(f"'{name}' is now the startup default")
+
+    def _on_preset_delete(self):
+        name = self.preset_name_var.get()
+        if not name:
+            return
+        if not messagebox.askyesno(
+            "Delete preset",
+            f"Delete preset '{name}'?",
+        ):
+            return
+        if not presets_mod.delete_preset(self._presets_data, name):
+            messagebox.showinfo("Cannot delete", "Cannot delete the last remaining preset.")
+            return
+        try:
+            presets_mod.save_presets(self._presets_data)
+        except Exception as e:
+            messagebox.showerror("Save failed", str(e))
+            return
+        self._refresh_preset_combo()
+        self.status_var.set(f"Deleted preset: {name}")
 
     # ==================================================================== Busy state
 
@@ -921,6 +1111,7 @@ class CleanEdgesGUI:
         self._set_busy(f"Processing [{mode}]... (this may take a few seconds)")
 
         try:
+            shrink_px = int(self.shrink_var.get())
             if mode == "auto-fake-bg":
                 cut = process_auto_fake_bg(
                     self.original_img,
@@ -928,13 +1119,21 @@ class CleanEdgesGUI:
                     gray_tolerance=int(self.gray_tol.get()),
                     feather=float(self.feather_var.get()),
                 )
-                if self.blur_var.get() > 0:
-                    cut = _light_smooth(cut, blur_radius=float(self.blur_var.get()))
+                if self.blur_var.get() > 0 or shrink_px > 0:
+                    cut = _light_smooth(
+                        cut,
+                        blur_radius=float(self.blur_var.get()),
+                        shrink_px=shrink_px,
+                    )
             else:
                 self._ensure_session()
                 cut = process_rembg(self.original_img, session=self._rembg_session,
                                     use_matting=bool(self.matting_var.get()))
-                cut = smooth_alpha(cut, blur_radius=float(self.blur_var.get()))
+                cut = smooth_alpha(
+                    cut,
+                    blur_radius=float(self.blur_var.get()),
+                    shrink_px=shrink_px,
+                )
 
             self.result_img = cut
             self._refresh_previews()
@@ -1137,10 +1336,10 @@ class CleanEdgesGUI:
                 err = s.name_result.error or ""
                 if "429" in err or "quota" in err.lower():
                     short = "❌ rate limit"
+                elif "network" in err.lower() or "HTTP 0" in err:
+                    short = "❌ network blip"
                 elif "HTTP" in err:
                     short = f"❌ {err.split(':')[0]}"
-                elif "network" in err.lower():
-                    short = "❌ offline?"
                 else:
                     short = "❌ AI failed"
                 s.status_label.config(text=short, fg=THEME["err"])

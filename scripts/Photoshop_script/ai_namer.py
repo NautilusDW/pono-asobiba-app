@@ -339,8 +339,18 @@ def request_sprite_name(
             time.sleep(wait_s)
             continue
 
+        if status == 0 and attempt < max_retries:
+            # Network error (DNS / timeout / connection reset). Retry with
+            # a shorter backoff than for rate-limit since this is usually
+            # a transient blip.
+            time.sleep(min(2 + attempt, 8))
+            continue
+
         # Non-retryable status or max retries exceeded
-        last_error = f"HTTP {status}: {body[:200]}"
+        if status == 0:
+            last_error = f"network error: {body[:200]}"
+        else:
+            last_error = f"HTTP {status}: {body[:200]}"
         break
 
     fail = NameResult()

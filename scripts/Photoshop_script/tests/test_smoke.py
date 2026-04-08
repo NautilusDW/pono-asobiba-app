@@ -29,6 +29,7 @@ if str(_PARENT) not in sys.path:
 import sprite_splitter  # noqa: E402
 import ai_namer  # noqa: E402
 import clean_edges  # noqa: E402
+import presets as presets_mod  # noqa: E402
 
 
 def _make_test_image_with_three_patches() -> Image.Image:
