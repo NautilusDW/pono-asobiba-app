@@ -1263,6 +1263,7 @@ function _autoImgPath(parentCard, key) {
 
 // ── 既存画像ブラウザ（モーダル）──
 var _imgBrowserCache = null; // { folder: [files] }
+var _itemsLookupCache = null; // { 'assets/images/...' : { id, cat, name } }
 
 function _fetchImgFolder(folder, cb) {
   var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + folder + '?ref=' + GH_BRANCH;
@@ -1272,6 +1273,46 @@ function _fetchImgFolder(folder, cb) {
       cb(files.filter(function(f) { return f.name.match(/\.(png|jpg|jpeg|webp)$/i); }));
     })
     .catch(function() { cb([]); });
+}
+
+// items.js から path→{id,cat,name} のルックアップを1度だけ構築
+// raw folder タブから画像を選んでも名前/IDが自動入力されるように使う
+function _buildItemsLookup(cb) {
+  if (_itemsLookupCache) { cb(_itemsLookupCache); return; }
+  fetch('../room/items.js?v=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.text(); })
+    .then(function(src) {
+      var lookup = {};
+      var idRe = /id:\s*'([^']+)'/g;
+      var m;
+      while ((m = idRe.exec(src)) !== null) {
+        var start = src.lastIndexOf('{', m.index);
+        if (start < 0) continue;
+        var depth = 0, end = -1;
+        for (var i = start; i < src.length; i++) {
+          var ch = src.charAt(i);
+          if (ch === '{') depth++;
+          else if (ch === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+        }
+        if (end < 0) continue;
+        var block = src.substring(start, end);
+        var catM  = /\bcat:\s*'([^']+)'/.exec(block);
+        var nameM = /\bname:\s*'([^']+)'/.exec(block);
+        var imgM  = /\broomImg:\s*'([^']+)'/.exec(block);
+        var imgBM = /\broomImgB:\s*'([^']+)'/.exec(block);
+        if (!catM || !nameM || !imgM) continue;
+        var meta = { id: m[1], cat: catM[1], name: nameM[1] };
+        // A/B 両方のパスを登録（ユーザーがどちらを選んでも引けるように）
+        [imgM[1], imgBM && imgBM[1]].forEach(function(p) {
+          if (!p) return;
+          var norm = p.replace(/^\.\.\//, '');
+          lookup[norm] = meta;
+        });
+      }
+      _itemsLookupCache = lookup;
+      cb(lookup);
+    })
+    .catch(function() { _itemsLookupCache = {}; cb({}); });
 }
 
 function openImageBrowser(onSelect) {
@@ -1295,6 +1336,7 @@ function openImageBrowser(onSelect) {
   var folders = [
     { label: '✅ 調整済み', path: '_items_js' },
     { label: '🧱 壁紙', path: 'assets/images/Rooms/walls' },
+    { label: '🪵 床', path: 'assets/images/Rooms/floors' },
     { label: '🐠 海', path: 'assets/images/ocean' },
     { label: '🎁 報酬', path: 'assets/images/rewards' },
     { label: '📁 家具(全)', path: 'assets/images/Rooms/furnitures_final' },
@@ -1368,8 +1410,8 @@ function openImageBrowser(onSelect) {
             if (!catM || !nameM || !imgM) continue;
             var itemCat = catM[1];
             var itemName = nameM[1];
-            // furn/decoのみ表示
-            if (itemCat !== 'furn' && itemCat !== 'deco') continue;
+            // furn/deco/wall/floor を表示（special等は除外）
+            if (itemCat !== 'furn' && itemCat !== 'deco' && itemCat !== 'wall' && itemCat !== 'floor') continue;
             var rawA = imgM[1];
             var rawB = imgBM ? imgBM[1] : '';
             var picked = /_A\.png$/i.test(rawA) ? rawA : (/_A\.png$/i.test(rawB) ? rawB : (rawA || rawB));
@@ -1444,26 +1486,44 @@ function openImageBrowser(onSelect) {
     }
 
     function addThumb(f) {
+      // items.js から該当エントリを引いてメタ情報を付与
+      var meta = _itemsLookupCache ? _itemsLookupCache[f.path] : null;
+
+      var thumbWrap = document.createElement('div');
+      thumbWrap.style.cssText = 'width:70px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;';
+      thumbWrap.title = meta ? (meta.name + ' (' + meta.id + ')') : f.path;
+
       var thumb = document.createElement('div');
-      thumb.style.cssText = 'width:70px;height:70px;border:2px solid #eee;border-radius:8px;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;flex-shrink:0;';
-      thumb.title = f.path;
+      thumb.style.cssText = 'width:70px;height:70px;border:2px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;';
       var img = document.createElement('img');
       img.src = f.download_url;
       img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
       img.loading = 'lazy';
       thumb.appendChild(img);
-      thumb.addEventListener('click', function() {
-        onSelect(f.path, f.download_url);
+      thumbWrap.appendChild(thumb);
+
+      // 名前ラベル（items.js にメタがある時のみ）
+      if (meta) {
+        var label = document.createElement('div');
+        label.style.cssText = 'font-size:0.55rem;color:#888;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:70px;';
+        label.textContent = meta.name;
+        thumbWrap.appendChild(label);
+      }
+
+      thumbWrap.addEventListener('click', function() {
+        onSelect(f.path, f.download_url, meta || undefined);
         ov.remove();
       });
-      thumb.addEventListener('mouseenter', function() { thumb.style.borderColor = '#FF6B9D'; });
-      thumb.addEventListener('mouseleave', function() { thumb.style.borderColor = '#eee'; });
-      grid.appendChild(thumb);
+      thumbWrap.addEventListener('mouseenter', function() { thumb.style.borderColor = '#FF6B9D'; });
+      thumbWrap.addEventListener('mouseleave', function() { thumb.style.borderColor = '#eee'; });
+      grid.appendChild(thumbWrap);
     }
   }
 
-  // 自動で最初のフォルダを開く
-  if (tabRow.children.length > 0) tabRow.children[0].click();
+  // items.js ルックアップを先に構築してから最初のフォルダを開く
+  _buildItemsLookup(function() {
+    if (tabRow.children.length > 0) tabRow.children[0].click();
+  });
 }
 
 function makeImgField(currentPath, key, parentCard) {
