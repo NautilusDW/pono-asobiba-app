@@ -162,6 +162,42 @@ html, body {
   100% { transform: translate(-50%, -50px) scale(0.95); opacity: 0; }
 }
 
+/* Charm tutorial overlay */
+.charm-tut {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9500;
+}
+.charm-tut.show { display: flex; }
+.charm-tut-card {
+  background: #FFF8F0; border-radius: 24px;
+  padding: 26px 22px 20px;
+  max-width: 300px; width: 88%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  animation: pop 0.3s ease-out;
+}
+.charm-tut-icon { font-size: 3.2rem; margin-bottom: 6px; }
+.charm-tut-name {
+  font-size: 1.1rem; font-weight: 900;
+  color: var(--primary-dark); margin-bottom: 10px;
+}
+.charm-tut-body {
+  font-size: 0.85rem; color: var(--text);
+  line-height: 1.6; margin-bottom: 16px;
+  white-space: pre-line;
+}
+.charm-tut-btn {
+  background: linear-gradient(135deg, #FFD54F, #FFA000);
+  color: #5D3A00; border: none;
+  padding: 10px 28px; border-radius: 999px;
+  font-size: 1rem; font-weight: 900;
+  cursor: pointer; box-shadow: 0 4px 12px rgba(255,165,0,0.4);
+  font-family: inherit;
+}
+.charm-tut-btn:active { transform: scale(0.95); }
+
 /* Warp flash effect */
 .warp-flash {
   position: absolute;
@@ -367,6 +403,18 @@ html, body {
 ハリネズミくんが まいごに なっちゃった！
 やじるしを タップして すすもう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
+    </div>
+  </div>
+
+  <!-- Charm tutorial overlay (first-time unlock) -->
+  <div class="charm-tut" id="charmTut">
+    <div class="charm-tut-card">
+      <div class="charm-tut-icon" id="charmTutIcon">🧚</div>
+      <div class="charm-tut-name" id="charmTutName">ようせいの ヒント</div>
+      <div class="charm-tut-body" id="charmTutBody">ゴールまでの みちを
+ようせいが おしえてくれるよ！
+したの ボタンを おしてね。</div>
+      <button class="charm-tut-btn" id="charmTutBtn">やってみる！</button>
     </div>
   </div>
 </div>
@@ -704,6 +752,66 @@ const charmWarpBtn   = document.getElementById('charm-warp');
 const charmHintN   = document.getElementById('charm-hint-n');
 const charmBreezeN = document.getElementById('charm-breeze-n');
 const charmWarpN   = document.getElementById('charm-warp-n');
+const charmTutEl   = document.getElementById('charmTut');
+const charmTutIcon = document.getElementById('charmTutIcon');
+const charmTutName = document.getElementById('charmTutName');
+const charmTutBody = document.getElementById('charmTutBody');
+const charmTutBtn  = document.getElementById('charmTutBtn');
+
+// Charm tutorial data keyed by type
+const CHARM_TUT_DATA = {
+  hint: {
+    icon: '🧚',
+    name: 'ようせいの ヒント',
+    body: 'ゴールまでの みちを\nようせいが ひかりで おしえてくれるよ！\nしたの 🧚 ボタンを おしてみよう。',
+  },
+  breeze: {
+    icon: '🍃',
+    name: 'そよかぜパス',
+    body: 'つぎの まがりかどまで\nそよかぜが すうっと とばしてくれるよ！\nしたの 🍃 ボタンを おしてみよう。',
+  },
+  warp: {
+    icon: '🌟',
+    name: 'ほしの ワープ',
+    body: 'ほしのちからで ゴールの ちかくまで\nワープできちゃうよ！\nしたの 🌟 ボタンを おしてみよう。',
+  },
+};
+
+let charmTutQueue = []; // types to show in order
+let charmTutShowing = false;
+
+function showNextCharmTutorial() {
+  if (charmTutShowing || charmTutQueue.length === 0) return;
+  const type = charmTutQueue.shift();
+  const seen = localStorage.getItem('pono_maze_charm_seen_' + type);
+  if (seen) { showNextCharmTutorial(); return; } // already seen, skip
+  const data = CHARM_TUT_DATA[type];
+  if (!data) { showNextCharmTutorial(); return; }
+  charmTutIcon.textContent = data.icon;
+  charmTutName.textContent = data.name;
+  charmTutBody.textContent = data.body;
+  charmTutEl.classList.add('show');
+  charmTutShowing = true;
+  // Store dismiss handler so we can remove it later
+  function dismiss() {
+    localStorage.setItem('pono_maze_charm_seen_' + type, '1');
+    charmTutEl.classList.remove('show');
+    charmTutShowing = false;
+    charmTutBtn.removeEventListener('click', dismiss);
+    charmTutEl.removeEventListener('click', bgDismiss);
+    // Show next queued tutorial if any
+    setTimeout(showNextCharmTutorial, 150);
+  }
+  function bgDismiss(e) { if (e.target === charmTutEl) dismiss(); }
+  charmTutBtn.addEventListener('click', dismiss);
+  charmTutEl.addEventListener('click', bgDismiss);
+}
+
+function queueCharmTutorial(type) {
+  if (localStorage.getItem('pono_maze_charm_seen_' + type)) return; // already seen
+  if (!charmTutQueue.includes(type)) charmTutQueue.push(type);
+  showNextCharmTutorial();
+}
 
 let cellSize = 48, gridOX = 0, gridOY = 0;
 
@@ -811,9 +919,18 @@ function finishWalk() {
       localStorage.setItem('pono_maze_total_apples', String(totalApples));
       const afterCharms = getCharms();
       spawnPickup(p.r, p.c);
-      if (afterCharms.hint > beforeCharms.hint) spawnCharmPopup('🧚 ようせいの ヒント！');
-      if (afterCharms.breeze > beforeCharms.breeze) spawnCharmPopup('🍃 そよかぜパス！');
-      if (afterCharms.warp > beforeCharms.warp) spawnCharmPopup('🌟 ほしのワープ！');
+      if (afterCharms.hint > beforeCharms.hint) {
+        spawnCharmPopup('🧚 ようせいの ヒント ゲット！');
+        queueCharmTutorial('hint');
+      }
+      if (afterCharms.breeze > beforeCharms.breeze) {
+        spawnCharmPopup('🍃 そよかぜパス ゲット！');
+        queueCharmTutorial('breeze');
+      }
+      if (afterCharms.warp > beforeCharms.warp) {
+        spawnCharmPopup('🌟 ほしの ワープ ゲット！');
+        queueCharmTutorial('warp');
+      }
     }
     if (!trail.find(t => t.r === p.r && t.c === p.c)) {
       trail.push({ r: p.r, c: p.c });
@@ -870,7 +987,7 @@ function showArrows() {
     btn.style.top  = (fy + dr * offset) + 'px';
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (walkAnim || cleared) return;
+      if (walkAnim || cleared || charmTutShowing) return;
       if (v.breeze) {
         // そよかぜパス: 隣接障害物を消費して通過
         const obsR = pono.r + dr, obsC = pono.c + dc;
@@ -935,7 +1052,7 @@ function updateCharmsUI() {
   charmHintN.textContent   = c.hint;
   charmBreezeN.textContent = c.breeze;
   charmWarpN.textContent   = c.warp;
-  const lock = cleared || !!walkAnim || overlay.classList.contains('show');
+  const lock = cleared || !!walkAnim || overlay.classList.contains('show') || charmTutShowing;
   charmHintBtn.disabled   = c.hint   <= 0 || lock;
   charmBreezeBtn.disabled = c.breeze <= 0 || lock;
   charmWarpBtn.disabled   = c.warp   <= 0 || lock;
@@ -1331,7 +1448,7 @@ function drawPono(now) {
 
 // ====== Keyboard input (also supported) ======
 window.addEventListener('keydown', function(e) {
-  if (overlay.classList.contains('show')) return;
+  if (overlay.classList.contains('show') || charmTutShowing) return;
   if (cleared || walkAnim) return;
   let dr = 0, dc = 0;
   if (e.key === 'ArrowUp')    dr = -1;
