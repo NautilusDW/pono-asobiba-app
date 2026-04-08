@@ -293,7 +293,7 @@ const ROOM_ITEMS = [
 
   // ══ 共通かざり（追加）══════════════════════════════════════
   {
-    id: 'deco_box', cat: 'deco', name: 'おかたづけばこ', price: 15, theme: 'girl',
+    id: 'deco_box', cat: 'deco', name: 'おもちゃばこ', price: 15, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/box_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/box_B.png',
     gridRow: 6, gridCol: 2, cellSize: 0.8, pivotX: 11, pivotY: 20.5,
