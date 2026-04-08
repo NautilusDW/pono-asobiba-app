@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-08T09:55:53Z - Dialog編集後にfilenameがUIに反映されないバグ修正 (rebuild呼び出しが manual_filename を捨てていた) + プロンプトに漠然ラベル禁止ルール追加で色・形で区別可能な命名
+- **タスク**: Dialog編集後にfilenameがUIに反映されないバグ修正 (rebuild呼び出しが manual_filename を捨てていた) + プロンプトに漠然ラベル禁止ルール追加で色・形で区別可能な命名
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 234
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"ToolSearch": 2, "Glob": 1, "Read": 8, "Write": 12, "Edit": 100, "ExitPlanMode": 1, "Bash": 105, "Grep": 3, "Agent": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-08T09:30:15Z - Filename を 3 つの ASCII slug の決定的連結に変更 (base_slug + variant_slug + motion_slug). AI には slug ペア型 vocabulary を渡し、コンポーズは Python 側で実行。VariantPickerDialog も 2 列 (日本語+slug) 化
 - **タスク**: Filename を 3 つの ASCII slug の決定的連結に変更 (base_slug + variant_slug + motion_slug). AI には slug ペア型 vocabulary を渡し、コンポーズは Python 側で実行。VariantPickerDialog も 2 列 (日本語+slug) 化
 - **結果**: 成功
@@ -185,19 +198,6 @@ git checkout develop
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"ToolSearch": 2, "Glob": 1, "Read": 7, "Write": 11, "Edit": 24, "ExitPlanMode": 1, "Bash": 27, "Grep": 3, "Agent": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-08T06:12:19Z - clean_edges_gui.py 大型アップグレード: スプライト分割統合 + Gemini Vision AI命名 + 3ペイン再設計 (planner→実装→code-reviewer→修正フルループ)
-- **タスク**: clean_edges_gui.py 大型アップグレード: スプライト分割統合 + Gemini Vision AI命名 + 3ペイン再設計 (planner→実装→code-reviewer→修正フルループ)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 69
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"ToolSearch": 2, "Glob": 1, "Read": 7, "Write": 9, "Edit": 24, "ExitPlanMode": 1, "Bash": 20, "Grep": 3, "Agent": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
