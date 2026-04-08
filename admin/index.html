@@ -251,6 +251,7 @@ tr:hover { background: #FFFAF0; }
 
 <div class="tabs">
   <button class="tab active" data-panel="stamp">🎟 スタンプ報酬管理</button>
+  <button class="tab" data-panel="creatures">🐠 海のいきもの</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
@@ -306,22 +307,31 @@ tr:hover { background: #FFFAF0; }
     <div id="first-clear-rewards-container"></div>
   </div>
 
-  <!-- Sea Creatures (海のいきもの管理) -->
+</div>
+
+<!-- ===== 🐠 海のいきもの ===== -->
+<div class="panel" id="panel-creatures">
   <div class="section">
-    <div class="section-title">🐠 海のいきもの管理（aquarium に泳がせる）</div>
+    <div class="section-title">🐠 とうろくずみのいきもの</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      現在 aquarium に泳いでいる生き物の一覧です。<strong>既存の7体</strong>（ハードコード）と、
+      <strong>管理画面から追加したもの</strong>（動的登録）の両方が表示されます。
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button id="btn-reload-creatures" class="btn btn-gold btn-sm">🔄 一覧を再読み込み</button>
+    </div>
+    <div id="sea-creatures-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">➕ 新しいいきものを追加</div>
     <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
       表情ごとに分けた PNG をアップロードすると、水族館で自動的に泳ぎ始めます。
       <strong>ふつう</strong>1〜3枚（複数なら呼吸のように切り替え）、
       <strong>おどろき</strong>1枚必須、<strong>わらう</strong>1枚は将来の餌時用（任意）。
     </div>
 
-    <!-- 既存生き物一覧 -->
-    <div id="sea-creatures-list" style="margin-bottom:14px;"></div>
-
-    <!-- 新規追加フォーム -->
     <div class="reward-card" style="background:#F0F9FF;border-color:#7DD3FC;">
-      <div style="font-size:0.95rem;font-weight:900;color:#0369A1;margin-bottom:10px;">+ 新しいいきものを追加</div>
-
       <div class="reward-card-row">
         <div class="reward-field reward-field-mid">
           <label>表示名</label>
@@ -562,6 +572,10 @@ document.querySelectorAll('.tab').forEach(function(tab) {
     document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
     tab.classList.add('active');
     document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    // 海のいきもの タブを開いた時は初回/再表示時に一覧を読込
+    if (tab.dataset.panel === 'creatures' && typeof fetchSeaCreatures === 'function') {
+      fetchSeaCreatures();
+    }
   });
 });
 
@@ -691,9 +705,6 @@ function fetchRewards() {
   document.getElementById('slot-rewards-container').innerHTML = '';
   document.getElementById('card-rewards-container').innerHTML = '';
   document.getElementById('first-clear-rewards-container').innerHTML = '';
-
-  // creatures.json も並行して読み込む
-  fetchSeaCreatures();
 
   fetch(REWARDS_API + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) {
@@ -1357,40 +1368,99 @@ function fetchSeaCreatures() {
     });
 }
 
+// ハードコード7体の表示用メタ（aquarium/index.html と揃えてある）
+// これは既存の生き物を管理画面で一覧表示するためだけのもので、挙動には影響しない
+var HARDCODED_CREATURES = [
+  { id: 'octopus',   displayName: 'タコ',         icon: '🐙', folder: 'octpus',    thumb: 'octpus_002.png',    pattern: 'float',     spawnCount: 3, source: 'hardcode' },
+  { id: 'jellyfish', displayName: 'クラゲ',       icon: '🪼', folder: 'JellyFish', thumb: 'JellyFish_002.png', pattern: 'jellyfish', spawnCount: 3, source: 'hardcode' },
+  { id: 'turtle',    displayName: 'ウミガメ',     icon: '🐢', folder: 'Turtle',    thumb: 'Turtle_002.png',    pattern: 'float',     spawnCount: 2, source: 'hardcode' },
+  { id: 'fish',      displayName: 'さかな',       icon: '🐠', folder: 'Fish_S01',  thumb: 'Fish_S01_002.png',  pattern: 'swim',      spawnCount: 4, source: 'hardcode' },
+  { id: 'submarine', displayName: 'せんすいかん', icon: '🛥️', folder: 'Submarine', thumb: 'Submarine_002.png', pattern: 'float',     spawnCount: 1, source: 'hardcode' },
+  { id: 'sunfish',   displayName: 'マンボウ',     icon: '🐡', folder: 'Sunfish',   thumb: 'Sunfish_002.png',   pattern: 'float',     spawnCount: 1, source: 'hardcode' },
+  { id: 'shark',     displayName: 'サメ',         icon: '🦈', folder: 'Shark',    thumb: 'Shark_002.png',     pattern: 'drift',     spawnCount: 1, source: 'hardcode' }
+];
+
+function _buildCreatureRow(c) {
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #E0D8CC;border-radius:8px;margin-bottom:6px;';
+
+  // サムネ
+  var thumbPath = c.thumb;
+  if (!thumbPath) {
+    var normal = (c.expressions && c.expressions.normal);
+    if (Array.isArray(normal)) normal = normal[0];
+    thumbPath = normal;
+  }
+  if (thumbPath) {
+    var img = document.createElement('img');
+    img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
+    img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#f5f5f5;border-radius:6px;';
+    img.onerror = function() { this.style.display = 'none'; };
+    row.appendChild(img);
+  }
+
+  // 情報（textContent で XSS を防ぐ）
+  var info = document.createElement('div');
+  info.style.cssText = 'flex:1;font-size:0.85rem;';
+  var titleDiv = document.createElement('div');
+  titleDiv.style.cssText = 'font-weight:900;color:#0369A1;';
+  titleDiv.textContent = (c.icon || '🐠') + ' ' + (c.displayName || c.id);
+  info.appendChild(titleDiv);
+  var metaDiv = document.createElement('div');
+  metaDiv.style.cssText = 'font-size:0.7rem;color:#888;font-family:monospace;';
+  metaDiv.textContent = c.id + ' / ' + (c.pattern || 'swim') + ' / ' + (c.spawnCount || 1) + '体';
+  info.appendChild(metaDiv);
+  row.appendChild(info);
+
+  // ソースラベル
+  var badge = document.createElement('div');
+  badge.style.cssText = 'font-size:0.65rem;font-weight:900;padding:4px 8px;border-radius:12px;white-space:nowrap;';
+  if (c.source === 'hardcode') {
+    badge.style.background = '#FEF3C7';
+    badge.style.color = '#92400E';
+    badge.textContent = '既存';
+  } else {
+    badge.style.background = '#DCFCE7';
+    badge.style.color = '#166534';
+    badge.textContent = '追加済';
+  }
+  row.appendChild(badge);
+
+  return row;
+}
+
 function renderSeaCreatures() {
   var listEl = document.getElementById('sea-creatures-list');
   if (!listEl) return;
   listEl.innerHTML = '';
-  if (!creaturesData || !creaturesData.creatures || creaturesData.creatures.length === 0) {
-    listEl.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:10px;text-align:center;">まだ登録されたいきものはありません</div>';
+
+  // セクション1: ハードコード7体
+  var hcHeader = document.createElement('div');
+  hcHeader.style.cssText = 'font-size:0.8rem;font-weight:900;color:#5D4E37;margin:4px 0 6px;';
+  hcHeader.textContent = '🏛 既存のいきもの (7体)';
+  listEl.appendChild(hcHeader);
+  HARDCODED_CREATURES.forEach(function(c) {
+    listEl.appendChild(_buildCreatureRow(c));
+  });
+
+  // セクション2: 動的追加分
+  var dynHeader = document.createElement('div');
+  dynHeader.style.cssText = 'font-size:0.8rem;font-weight:900;color:#5D4E37;margin:14px 0 6px;';
+  var dynCount = (creaturesData && creaturesData.creatures) ? creaturesData.creatures.length : 0;
+  dynHeader.textContent = '✨ 管理画面から追加したいきもの (' + dynCount + '体)';
+  listEl.appendChild(dynHeader);
+
+  if (dynCount === 0) {
+    var emptyMsg = document.createElement('div');
+    emptyMsg.style.cssText = 'color:#aaa;font-size:0.75rem;padding:12px;text-align:center;background:#fafafa;border-radius:8px;';
+    emptyMsg.textContent = 'まだ追加されたいきものはありません。下のフォームから追加できます。';
+    listEl.appendChild(emptyMsg);
     return;
   }
+
   creaturesData.creatures.forEach(function(c) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:1px solid #E0D8CC;border-radius:8px;margin-bottom:6px;';
-    // サムネ
-    var firstNormal = (c.expressions && c.expressions.normal);
-    if (Array.isArray(firstNormal)) firstNormal = firstNormal[0];
-    if (firstNormal) {
-      var img = document.createElement('img');
-      img.src = '../assets/images/ocean/' + c.folder + '/' + firstNormal + '?_=' + Date.now();
-      img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#f5f5f5;border-radius:6px;';
-      img.onerror = function() { this.style.display = 'none'; };
-      row.appendChild(img);
-    }
-    // 情報（textContent で XSS を防ぐ）
-    var info = document.createElement('div');
-    info.style.cssText = 'flex:1;font-size:0.8rem;';
-    var titleDiv = document.createElement('div');
-    titleDiv.style.cssText = 'font-weight:900;color:#0369A1;';
-    titleDiv.textContent = (c.icon || '🐠') + ' ' + (c.displayName || c.id);
-    info.appendChild(titleDiv);
-    var metaDiv = document.createElement('div');
-    metaDiv.style.cssText = 'font-size:0.7rem;color:#888;font-family:monospace;';
-    metaDiv.textContent = c.id + ' / ' + (c.pattern || 'swim') + ' / ' + (c.spawnCount || 1) + '体';
-    info.appendChild(metaDiv);
-    row.appendChild(info);
-    listEl.appendChild(row);
+    var clone = Object.assign({}, c, { source: 'dynamic' });
+    listEl.appendChild(_buildCreatureRow(clone));
   });
 }
 
@@ -1663,6 +1733,8 @@ document.addEventListener('DOMContentLoaded', function() {
   _wireCreatureDropZones();
   var btn = document.getElementById('btn-deploy-creature');
   if (btn) btn.addEventListener('click', deployNewCreature);
+  var reloadBtn = document.getElementById('btn-reload-creatures');
+  if (reloadBtn) reloadBtn.addEventListener('click', fetchSeaCreatures);
 });
 
 function buildCardCompleteCard(idx, data) {
