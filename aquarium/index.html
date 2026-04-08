@@ -1054,7 +1054,8 @@
       if (!octopusTex || !octopusTex.surprised || octopusTex.frames.length === 0) return;
       // Remove any existing octopuses first (avoid duplicates on restart)
       const existing = creatures.filter(c => c.octopus);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.octopus));
 
       const count = Math.min(n, 3);
@@ -1112,7 +1113,8 @@
       if (!jellyfishTex || !jellyfishTex.surprised || jellyfishTex.frames.length === 0) return;
       // Remove any existing image-based jellyfish first
       const existing = creatures.filter(c => c.jellysprite);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.jellysprite));
 
       const count = Math.min(n, 3);
@@ -1174,7 +1176,8 @@
     function addTurtleCreatures(n) {
       if (!turtleTex || !turtleTex.surprised || turtleTex.frames.length === 0) return;
       const existing = creatures.filter(c => c.turtlesprite);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.turtlesprite));
 
       const count = Math.min(n, 3);
@@ -1232,7 +1235,8 @@
     function addFishS01Creatures(n) {
       if (!fishS01Tex || !fishS01Tex.surprised || fishS01Tex.frames.length === 0) return;
       const existing = creatures.filter(c => c.fishS01sprite);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.fishS01sprite));
 
       const count = Math.min(n, 5);
@@ -1288,7 +1292,8 @@
     function addSunfishCreatures(n) {
       if (!sunfishTex || !sunfishTex.surprised) return;
       const existing = creatures.filter(c => c.sunfishsprite);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.sunfishsprite));
 
       const count = Math.min(n, 2);
@@ -1349,7 +1354,8 @@
     function addSubmarineCreatures(n) {
       if (!submarineTex || !submarineTex.surprised || submarineTex.frames.length < 2) return;
       const existing = creatures.filter(c => c.submarinesprite);
-      existing.forEach(c => { layerMid.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.submarinesprite));
 
       const count = Math.min(n, 2);
@@ -1420,7 +1426,8 @@
     function addSharkCreatures(n) {
       if (!sharkTex || !sharkTex.surprised) return;
       const existing = creatures.filter(c => c.sharksprite);
-      existing.forEach(c => { layerBgLife.removeChild(c.obj); });
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(existing);
+      existing.forEach(c => { if (c.obj.parent) c.obj.parent.removeChild(c.obj); });
       creatures.splice(0, creatures.length, ...creatures.filter(c => !c.sharksprite));
 
       const count = Math.min(n, 2);
@@ -1490,7 +1497,8 @@
 
     function assignHiders(n) {
       if (fgRockSprites.length === 0 || creatures.length === 0) return;
-      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState && !c.submarinesprite && !c.sunfishsprite && !c.sharksprite);
+      // フライバイ中の生き物は除外（hider にされると invisible になって戻ってこなくなる）
+      const eligible = creatures.filter(c => c.pattern !== 'sway' && !c.hiderState && !c.submarinesprite && !c.sunfishsprite && !c.sharksprite && !c._flybyState);
       if (eligible.length === 0) return;
       const shuffledC = [...eligible].sort(() => Math.random() - 0.5);
       const shuffledR = [...fgRockSprites].sort(() => Math.random() - 0.5);
@@ -1533,10 +1541,10 @@
       const idx = hiders.findIndex(h => h.c === c);
       if (idx !== -1) hiders.splice(idx, 1);
 
-      // 現在隠れ中の生物以外から候補を選ぶ（飛び出した生物cも除外）
+      // 現在隠れ中の生物以外から候補を選ぶ（飛び出した生物cとフライバイ中も除外）
       const hiddenSet = new Set(hiders.map(h => h.c));
       const eligible = creatures.filter(cr =>
-        cr !== c && !hiddenSet.has(cr) && cr.pattern !== 'sway' && !cr.hiderState && !cr.submarinesprite && !cr.sunfishsprite && !cr.sharksprite
+        cr !== c && !hiddenSet.has(cr) && cr.pattern !== 'sway' && !cr.hiderState && !cr.submarinesprite && !cr.sunfishsprite && !cr.sharksprite && !cr._flybyState
       );
       if (eligible.length === 0) return;
       const newC = eligible[Math.floor(Math.random() * eligible.length)];
@@ -1663,6 +1671,9 @@
 
     // ─── Quick start (skip selection, use saved patterns) ────
     async function quickStartAquarium() {
+      // selection screen はデフォルトで display:flex なので明示的に hide しないと
+      // その上にチュートリアルヒント (tut-hint, z-index:600) が重なって表示されてしまう
+      document.getElementById('selection-screen').classList.add('hidden');
       tryStartBgm();
       if (_rocksReady) await _rocksReady;
 
@@ -1874,8 +1885,12 @@
     });
 
     async function initAllCreatures() {
-      // Clear existing
-      creatures.forEach(c => layerMid.removeChild(c.obj));
+      // Clear existing — フライバイ中の creature がいれば先に解除
+      if (typeof _clearFlybyIfRemoved === 'function') _clearFlybyIfRemoved(creatures);
+      creatures.forEach(c => {
+        // フライバイ中の生き物は layerFg にいる可能性があるので両方から除去
+        if (c.obj.parent) c.obj.parent.removeChild(c.obj);
+      });
       creatures.length = 0;
 
       const rawUrls = getDrawingDataUrls();
@@ -2217,8 +2232,8 @@
       creatures.forEach(c => {
         c.t += DT;
 
-        // ── Sprite texture animation: Octopus & JellyFish ──────────
-        if (c.octopus || c.jellysprite || c.turtlesprite || c.fishS01sprite || c.sunfishsprite || c.sharksprite) {
+        // ── Sprite texture animation: Octopus & JellyFish & Dynamic ──────────
+        if (c.octopus || c.jellysprite || c.turtlesprite || c.fishS01sprite || c.sunfishsprite || c.sharksprite || c.dynamicCreature) {
           c.animTimer += delta;
           if (c.panicTimer > 0) {
             // Surprised face while panicking
@@ -2811,6 +2826,28 @@
         }
       }
 
+      // ── Flyby update: たまに 1 体が手前層を横切る ───────────
+      // 既存の position update の最後に置くことで、通常の vx/vy 適用後に
+      // 上書きでフライバイ独自の位置にできる
+      if (flybyCreature && flybyCreature._flybyState) {
+        const c = flybyCreature;
+        const s = c._flybyState;
+        c.obj.x += s.speed * s.dir * delta;
+        s.phaseT += delta * 0.05;
+        c.obj.y = s.targetY + Math.sin(s.phaseT) * 6;
+        // 画面外に出たら終了
+        const offX = Math.abs(c.baseSize) * 3;
+        if ((s.dir > 0 && c.obj.x > W() + offX) ||
+            (s.dir < 0 && c.obj.x < -offX)) {
+          endFlyby();
+        }
+      } else if (creatures.length > 0) {
+        flybyTimer -= delta;
+        if (flybyTimer <= 0) {
+          startFlyby();
+        }
+      }
+
     });
 
     // ─── Landscape UI toggle ────────────────────────────────
@@ -3182,6 +3219,15 @@
           // サメ・マンボウは体に近いときだけ反応（大きいので遠距離反応させない）
           const effR = (c.sunfishsprite || c.sharksprite) ? c.baseSize * 1.0 : r;
           if (d >= effR) return;
+          // フライバイ中は位置を動かさず、驚き顔タイマーだけ短く設定する
+          // (位置移動するとフライバイの流れが乱れるため)
+          if (c._flybyState) {
+            c.panicVx = 0;
+            c.panicVy = 0;
+            c.panicTimer = 30;
+            // reactionType エフェクト (ink, glow, shell など) は通常通り発動
+            // (この後の reactionType 分岐に進むため、ここで return せず switch だけスキップ)
+          } else {
           switch (c.panicStyle) {
             case 'flee': default: {
               const angle = Math.atan2(dy, dx);
@@ -3227,6 +3273,7 @@
           if (_rtMul !== 1) {
             c.panicTimer *= _rtMul;
           }
+          } // end else (フライバイ中でない場合の panic 処理)
           // ── Unique reaction per creature type ──────────────
           if (c.reactionType === 'ink') {
             // Octopus: squirt ink
@@ -3364,6 +3411,96 @@
       tutStep = 3;
       document.getElementById('tutFeed').classList.remove('show');
       sessionStorage.setItem(TUT_KEY, '1');
+    }
+
+    // ─── Flyby system: たまに 1 体が手前層を横切る演出 ───────────
+    // ちっちゃい生き物の表情やリアクションをじっくり見られるようにする
+    let flybyTimer = 900 + Math.random() * 900; // 初回 15-30 秒後
+    let flybyCreature = null;
+    const FLYBY_NEXT_MIN = 1800; // 30秒
+    const FLYBY_NEXT_MAX = 3600; // 60秒
+
+    // creatures から削除される時に呼ぶ: flybyCreature が含まれていればクリア
+    // (トグルオフ・initAllCreatures などで使う)
+    function _clearFlybyIfRemoved(removed) {
+      if (!flybyCreature) return;
+      var arr = Array.isArray(removed) ? removed : [removed];
+      if (arr.indexOf(flybyCreature) !== -1) {
+        // 元に戻す処理を実行（layer/scale 復元なしでも、creature 自体が削除されるので OK）
+        flybyCreature._flybyState = null;
+        flybyCreature = null;
+        flybyTimer = FLYBY_NEXT_MIN + Math.random() * (FLYBY_NEXT_MAX - FLYBY_NEXT_MIN);
+      }
+    }
+    // 動的生き物モジュール (dynamic-creatures.js) からも呼べるよう公開
+    window._clearFlybyIfRemoved = _clearFlybyIfRemoved;
+
+    function startFlyby() {
+      if (flybyCreature) return;
+      // 候補: bgSprite かつ パニック中でない、隠れていない、底辺パターンでもない
+      const candidates = creatures.filter(c =>
+        c.bgSprite &&
+        c.panicTimer === 0 &&
+        !c.hiderState &&
+        c.pattern !== 'sway' &&
+        c.pattern !== 'crawl' &&
+        !c._flybyState &&
+        c.obj.visible
+      );
+      if (candidates.length === 0) {
+        // 候補が無ければ短い時間後に再試行
+        flybyTimer = 600;
+        return;
+      }
+      const c = candidates[Math.floor(Math.random() * candidates.length)];
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      const origScaleAbs = Math.abs(c.obj.scale.x);
+      const targetScale = origScaleAbs * 2.5;
+      const targetY = H() * (0.40 + Math.random() * 0.25);
+      const startX = dir > 0 ? -Math.abs(c.baseSize) * 2 : W() + Math.abs(c.baseSize) * 2;
+
+      c._flybyState = {
+        origScale: origScaleAbs,
+        origScaleSignX: c.obj.scale.x < 0 ? -1 : 1,
+        origX: c.obj.x,
+        origY: c.obj.y,
+        dir: dir,
+        targetY: targetY,
+        speed: 0.9 + Math.random() * 0.4,
+        phaseT: 0
+      };
+
+      // 進行方向に応じて左右反転（ほとんどの絵は右向きが正）
+      c.obj.scale.set(targetScale);
+      if (dir < 0) c.obj.scale.x *= -1;
+      c.obj.x = startX;
+      c.obj.y = targetY;
+
+      // 手前層に移動（layerFg は海草と砂と泡のレイヤーで、layerMid より前）
+      layerFg.addChild(c.obj);
+
+      flybyCreature = c;
+    }
+
+    function endFlyby() {
+      if (!flybyCreature) return;
+      const c = flybyCreature;
+      if (c._flybyState) {
+        // 元 scale に戻す
+        c.obj.scale.set(c._flybyState.origScale);
+        if (c._flybyState.origScaleSignX < 0) c.obj.scale.x *= -1;
+        // 画面内のランダムな位置に再配置（orig に戻すと開始位置が画面外なので不自然）
+        const safeBottom = H() * (isMobile() ? 0.55 : 0.72);
+        c.obj.x = 80 + Math.random() * Math.max(W() - 160, 1);
+        c.obj.y = 80 + Math.random() * Math.max(safeBottom - 160, 1);
+        c.baseX = c.obj.x;
+        c.baseY = c.obj.y;
+        c._flybyState = null;
+      }
+      // 元のレイヤー (layerMid) に戻す
+      layerMid.addChild(c.obj);
+      flybyCreature = null;
+      flybyTimer = FLYBY_NEXT_MIN + Math.random() * (FLYBY_NEXT_MAX - FLYBY_NEXT_MIN);
     }
 
     // ─── Sprite creature on/off toggle ─────────────────────

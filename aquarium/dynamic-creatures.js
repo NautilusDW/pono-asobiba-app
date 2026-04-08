@@ -180,7 +180,12 @@
     var existing = ctx.creatures.filter(function (c) {
       return c.dynamicCreature && c.dynamicId === cfg.id;
     });
-    existing.forEach(function (c) { ctx.layerMid.removeChild(c.obj); });
+    // フライバイ中の creature が含まれていたら先に解除（aquarium 側の関数）
+    if (typeof window._clearFlybyIfRemoved === 'function') window._clearFlybyIfRemoved(existing);
+    existing.forEach(function (c) {
+      // フライバイ中は layerFg にいる可能性もあるので parent から取り除く
+      if (c.obj.parent) c.obj.parent.removeChild(c.obj);
+    });
     var kept = ctx.creatures.filter(function (c) {
       return !(c.dynamicCreature && c.dynamicId === cfg.id);
     });
