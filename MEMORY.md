@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-08T09:30:15Z - Filename を 3 つの ASCII slug の決定的連結に変更 (base_slug + variant_slug + motion_slug). AI には slug ペア型 vocabulary を渡し、コンポーズは Python 側で実行。VariantPickerDialog も 2 列 (日本語+slug) 化
+- **タスク**: Filename を 3 つの ASCII slug の決定的連結に変更 (base_slug + variant_slug + motion_slug). AI には slug ペア型 vocabulary を渡し、コンポーズは Python 側で実行。VariantPickerDialog も 2 列 (日本語+slug) 化
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 227
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"ToolSearch": 2, "Glob": 1, "Read": 8, "Write": 12, "Edit": 98, "ExitPlanMode": 1, "Bash": 100, "Grep": 3, "Agent": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-08T08:57:53Z - Gemini paid tier 動作確認 (live test 3 calls シーケンシャル+語彙統一 PASS)
 - **タスク**: Gemini paid tier 動作確認 (live test 3 calls シーケンシャル+語彙統一 PASS)
 - **結果**: 成功
@@ -185,19 +198,6 @@ git checkout develop
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"ToolSearch": 2, "Glob": 1, "Read": 7, "Write": 9, "Edit": 24, "ExitPlanMode": 1, "Bash": 20, "Grep": 3, "Agent": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-08T05:18:59Z - clean_edges_gui.py プレビュー背景色切替機能 (Checker/Black/White/Magenta/Green/Cyan/Red/Custom)
-- **タスク**: clean_edges_gui.py プレビュー背景色切替機能 (Checker/Black/White/Magenta/Green/Cyan/Red/Custom)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 46
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"ToolSearch": 2, "Glob": 1, "Read": 4, "Write": 4, "Edit": 20, "ExitPlanMode": 1, "Bash": 14}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
