@@ -67,16 +67,18 @@
     if (!header) return;
 
     let zoneName = zoneId;
+    let zoneIcon = '🐠';
     if (window.MuseumData) {
       const zone = window.MuseumData.getZone(zoneId);
       if (zone) {
         zoneName = zone.displayName;
-        const tintHex = zone.tint ? zone.tint.replace('0x', '#') : '#1E7FB5';
-        header.style.background = tintHex;
+        if (zone.icon) zoneIcon = zone.icon;
       }
     }
 
+    const iconEl = header.querySelector('.zone-header-icon');
     const label = header.querySelector('.zone-header-label');
+    if (iconEl) iconEl.textContent = zoneIcon;
     if (label) label.textContent = zoneName;
 
     header.style.display = 'flex';

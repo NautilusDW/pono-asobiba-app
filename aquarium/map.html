@@ -89,9 +89,40 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    /* Portrait rotation prompt */
+    #portrait-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #061428;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #fff; font-family: 'Zen Maru Gothic', sans-serif;
+      text-align: center; gap: 16px;
+    }
+    #portrait-overlay .rot-icon {
+      font-size: 4rem;
+      animation: rotpulse 1.5s ease-in-out infinite;
+    }
+    @keyframes rotpulse {
+      0%,100% { transform: rotate(0deg); }
+      40%      { transform: rotate(90deg); }
+      60%      { transform: rotate(90deg); }
+    }
+    #portrait-overlay p {
+      font-size: 1.1rem; font-weight: 900;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    @media (pointer: coarse) and (orientation: portrait) {
+      #portrait-overlay { display: flex; }
+    }
   </style>
 </head>
 <body>
+  <div id="portrait-overlay">
+    <div class="rot-icon">📱</div>
+    <p>スマホを よこむきに<br>してね！</p>
+  </div>
   <div id="mapHeader">
     <button id="btnMapBack">← もどる</button>
     <div id="mapTitle">🐠 すいぞくかん</div>

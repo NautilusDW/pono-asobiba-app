@@ -1,0 +1,383 @@
+{
+  "version": 1,
+  "museums": [
+    {
+      "id": "aquarium",
+      "displayName": "水族館",
+      "icon": "🏛",
+      "status": "in_progress",
+      "priority": "P0",
+      "description": "海の生き物を集めるミュージアム"
+    },
+    {
+      "id": "zoo",
+      "displayName": "動物園",
+      "icon": "🦁",
+      "status": "planned",
+      "priority": "P1",
+      "targetDate": "2026-Q3",
+      "description": "陸の動物を集めるミュージアム"
+    },
+    {
+      "id": "insect_museum",
+      "displayName": "昆虫館",
+      "icon": "🦋",
+      "status": "planned",
+      "priority": "P2",
+      "targetDate": "2026-Q4",
+      "description": "虫たちのミュージアム"
+    }
+  ],
+  "plannedCreatures": [
+    {
+      "id": "seahorse",
+      "displayName": "タツノオトシゴ",
+      "icon": "🐴",
+      "museum": "aquarium",
+      "zone": "tropical_reef",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "ねったいのうみの目玉。ゆっくり浮かぶ動きが5歳に人気"
+    },
+    {
+      "id": "manta_ray",
+      "displayName": "マンタ",
+      "icon": "🦈",
+      "museum": "aquarium",
+      "zone": "tropical_reef",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "おおきなさかなゾーンとの兼用も可"
+    },
+    {
+      "id": "butterflyfish",
+      "displayName": "チョウチョウウオ",
+      "icon": "🐠",
+      "museum": "aquarium",
+      "zone": "tropical_reef",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "カラフル担当"
+    },
+    {
+      "id": "lionfish",
+      "displayName": "ミノカサゴ",
+      "icon": "🐟",
+      "museum": "aquarium",
+      "zone": "tropical_reef",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "ひれが派手で絵になる"
+    },
+    {
+      "id": "parrotfish",
+      "displayName": "ブダイ",
+      "icon": "🐟",
+      "museum": "aquarium",
+      "zone": "tropical_reef",
+      "status": "planned",
+      "priority": "P3"
+    },
+    {
+      "id": "sea_bream",
+      "displayName": "タイ",
+      "icon": "🐟",
+      "museum": "aquarium",
+      "zone": "japan_coast",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "日本の海の定番。めでたい魚！"
+    },
+    {
+      "id": "squid",
+      "displayName": "イカ",
+      "icon": "🦑",
+      "museum": "aquarium",
+      "zone": "japan_coast",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "日本感◎。タコと並べると面白い"
+    },
+    {
+      "id": "crab",
+      "displayName": "カニ",
+      "icon": "🦀",
+      "museum": "aquarium",
+      "zone": "japan_coast",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "いそのみずたまりとの兼用も可"
+    },
+    {
+      "id": "flounder",
+      "displayName": "ヒラメ",
+      "icon": "🐟",
+      "museum": "aquarium",
+      "zone": "japan_coast",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "底を這う動き・目が両側についてる特徴が子供受けする"
+    },
+    {
+      "id": "eel",
+      "displayName": "ウナギ",
+      "icon": "🐍",
+      "museum": "aquarium",
+      "zone": "japan_coast",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "くねくね動きが面白い"
+    },
+    {
+      "id": "moon_jellyfish",
+      "displayName": "ミズクラゲ",
+      "icon": "🪼",
+      "museum": "aquarium",
+      "zone": "jellyfish_room",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "既存クラゲの色違い小型版として実装しやすい"
+    },
+    {
+      "id": "sea_slug",
+      "displayName": "ウミウシ",
+      "icon": "🐌",
+      "museum": "aquarium",
+      "zone": "jellyfish_room",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "カラフルで幻想的。クラゲの部屋に合う"
+    },
+    {
+      "id": "comb_jelly",
+      "displayName": "クシクラゲ",
+      "icon": "🪼",
+      "museum": "aquarium",
+      "zone": "jellyfish_room",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "発光演出ができる。しんかいゾーンとの兼用も"
+    },
+    {
+      "id": "anemone",
+      "displayName": "イソギンチャク",
+      "icon": "🌸",
+      "museum": "aquarium",
+      "zone": "jellyfish_room",
+      "status": "planned",
+      "priority": "P3",
+      "notes": "揺れる固定型。クマノミの家にもなる"
+    },
+    {
+      "id": "whale",
+      "displayName": "クジラ",
+      "icon": "🐋",
+      "museum": "aquarium",
+      "zone": "big_fish",
+      "status": "planned",
+      "priority": "P0",
+      "notes": "おおきなさかなゾーンの最大の目玉！"
+    },
+    {
+      "id": "dolphin",
+      "displayName": "イルカ",
+      "icon": "🐬",
+      "museum": "aquarium",
+      "zone": "big_fish",
+      "status": "planned",
+      "priority": "P0",
+      "notes": "子供人気No.1候補。ジャンプ演出もできる"
+    },
+    {
+      "id": "whale_shark",
+      "displayName": "ジンベイザメ",
+      "icon": "🦈",
+      "museum": "aquarium",
+      "zone": "big_fish",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "サメと並べると大小対比が楽しい"
+    },
+    {
+      "id": "hammerhead",
+      "displayName": "シュモクザメ",
+      "icon": "🦈",
+      "museum": "aquarium",
+      "zone": "big_fish",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "頭の形がユニーク"
+    },
+    {
+      "id": "ray",
+      "displayName": "エイ",
+      "icon": "🦈",
+      "museum": "aquarium",
+      "zone": "big_fish",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "平たく飛ぶように泳ぐ動きが面白い"
+    },
+    {
+      "id": "penguin",
+      "displayName": "ペンギン",
+      "icon": "🐧",
+      "museum": "aquarium",
+      "zone": "cold_ocean",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "つめたいうみゾーン解放後の目玉"
+    },
+    {
+      "id": "orca",
+      "displayName": "シャチ",
+      "icon": "🐋",
+      "museum": "aquarium",
+      "zone": "cold_ocean",
+      "status": "planned",
+      "priority": "P1"
+    },
+    {
+      "id": "seal",
+      "displayName": "アザラシ",
+      "icon": "🦭",
+      "museum": "aquarium",
+      "zone": "cold_ocean",
+      "status": "planned",
+      "priority": "P2"
+    },
+    {
+      "id": "narwhal",
+      "displayName": "イッカク",
+      "icon": "🦄",
+      "museum": "aquarium",
+      "zone": "cold_ocean",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "幻想的。子供に人気"
+    },
+    {
+      "id": "beluga",
+      "displayName": "シロイルカ",
+      "icon": "🐬",
+      "museum": "aquarium",
+      "zone": "cold_ocean",
+      "status": "planned",
+      "priority": "P2"
+    },
+    {
+      "id": "anglerfish",
+      "displayName": "チョウチンアンコウ",
+      "icon": "🎣",
+      "museum": "aquarium",
+      "zone": "deep_sea",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "怖くて面白い。発光演出必須"
+    },
+    {
+      "id": "giant_squid",
+      "displayName": "ダイオウイカ",
+      "icon": "🦑",
+      "museum": "aquarium",
+      "zone": "deep_sea",
+      "status": "planned",
+      "priority": "P1"
+    },
+    {
+      "id": "isopod",
+      "displayName": "オオグソクムシ",
+      "icon": "🪲",
+      "museum": "aquarium",
+      "zone": "deep_sea",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "子供にウケる不思議な虫っぽい見た目"
+    },
+    {
+      "id": "koi",
+      "displayName": "コイ",
+      "icon": "🐟",
+      "museum": "aquarium",
+      "zone": "rivers",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "日本の川の定番。カラフルなバリエーション"
+    },
+    {
+      "id": "catfish",
+      "displayName": "ナマズ",
+      "icon": "🐟",
+      "museum": "aquarium",
+      "zone": "rivers",
+      "status": "planned",
+      "priority": "P2"
+    },
+    {
+      "id": "giant_salamander",
+      "displayName": "オオサンショウウオ",
+      "icon": "🦎",
+      "museum": "aquarium",
+      "zone": "rivers",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "日本固有種で特別感あり"
+    },
+    {
+      "id": "crayfish",
+      "displayName": "ザリガニ",
+      "icon": "🦞",
+      "museum": "aquarium",
+      "zone": "rivers",
+      "status": "planned",
+      "priority": "P2",
+      "notes": "子供が大好き"
+    },
+    {
+      "id": "frog",
+      "displayName": "カエル",
+      "icon": "🐸",
+      "museum": "aquarium",
+      "zone": "rivers",
+      "status": "planned",
+      "priority": "P3"
+    },
+    {
+      "id": "hermit_crab",
+      "displayName": "ヤドカリ",
+      "icon": "🦀",
+      "museum": "aquarium",
+      "zone": "tide_pool",
+      "status": "planned",
+      "priority": "P1",
+      "notes": "子供の大好物。宿を背負う見た目が面白い"
+    },
+    {
+      "id": "starfish",
+      "displayName": "ヒトデ",
+      "icon": "⭐",
+      "museum": "aquarium",
+      "zone": "tide_pool",
+      "status": "planned",
+      "priority": "P1"
+    },
+    {
+      "id": "shrimp",
+      "displayName": "エビ",
+      "icon": "🦐",
+      "museum": "aquarium",
+      "zone": "tide_pool",
+      "status": "planned",
+      "priority": "P2"
+    },
+    {
+      "id": "sea_urchin",
+      "displayName": "ウニ",
+      "icon": "🌸",
+      "museum": "aquarium",
+      "zone": "tide_pool",
+      "status": "planned",
+      "priority": "P3"
+    }
+  ]
+}

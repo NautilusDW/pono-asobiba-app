@@ -447,10 +447,10 @@
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <button id="btnFeed">🍞</button>
-  <!-- Zone header (museum mode only, hidden in free-play) -->
+  <!-- Zone name badge (museum mode only, hidden in free-play) -->
   <link rel="stylesheet" href="zone-header.css">
   <div id="zoneHeader" style="display:none;">
-    <button id="btnZoneBack" class="zone-header-back">← もどる</button>
+    <span class="zone-header-icon"></span>
     <span class="zone-header-label"></span>
   </div>
 
@@ -1887,13 +1887,6 @@
       else location.href = '../index.html';
     });
 
-    // Zone header back button (museum mode)
-    const _zoneBackBtn = document.getElementById('btnZoneBack');
-    if (_zoneBackBtn) {
-      _zoneBackBtn.addEventListener('click', () => {
-        location.href = 'map.html';
-      });
-    }
 
     // ピンチズーム無効（選択画面）
     document.getElementById('selection-screen').addEventListener('touchmove', (e) => {
