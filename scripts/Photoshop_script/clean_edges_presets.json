@@ -1,0 +1,70 @@
+{
+  "default": "Standard",
+  "presets": {
+    "Standard": {
+      "mode": "auto-fake-bg",
+      "border_tol": 100,
+      "gray_tol": 18,
+      "feather": 3.0120481927710845,
+      "blur": 1.0240963855421685,
+      "shrink": 2.0240963855421685,
+      "rembg_model": "isnet-general-use",
+      "matting": true,
+      "split_min_size": 20,
+      "split_padding": 4,
+      "split_alpha": 10,
+      "split_flip_b": false,
+      "bg_mode": "Red",
+      "bg_custom_color": [
+        128,
+        128,
+        128
+      ]
+    },
+    "Sharp edges": {
+      "mode": "auto-fake-bg",
+      "border_tol": 24,
+      "gray_tol": 12,
+      "feather": 0.5,
+      "blur": 0.0,
+      "shrink": 1,
+      "rembg_model": "isnet-general-use",
+      "matting": true,
+      "split_min_size": 20,
+      "split_padding": 4,
+      "split_alpha": 10,
+      "split_flip_b": false,
+      "bg_mode": "Checker"
+    },
+    "Soft fringe-free": {
+      "mode": "auto-fake-bg",
+      "border_tol": 40,
+      "gray_tol": 22,
+      "feather": 3.0,
+      "blur": 1.0,
+      "shrink": 2,
+      "rembg_model": "isnet-general-use",
+      "matting": true,
+      "split_min_size": 20,
+      "split_padding": 4,
+      "split_alpha": 10,
+      "split_flip_b": false,
+      "bg_mode": "Checker"
+    },
+    "rembg AI": {
+      "mode": "rembg",
+      "border_tol": 32,
+      "gray_tol": 18,
+      "feather": 1.5,
+      "blur": 0.6,
+      "shrink": 0,
+      "rembg_model": "isnet-general-use",
+      "matting": true,
+      "split_min_size": 20,
+      "split_padding": 4,
+      "split_alpha": 10,
+      "split_flip_b": false,
+      "bg_mode": "Checker"
+    }
+  }
+}
