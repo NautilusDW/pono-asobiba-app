@@ -24,7 +24,7 @@ import traceback
 from pathlib import Path
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, colorchooser
 
 from PIL import Image, ImageTk
 
@@ -75,6 +75,9 @@ class CleanEdgesGUI:
         self.view_cy = None
         self._drag_state = None  # (start_x, start_y, initial_cx, initial_cy)
 
+        # Result-preview background color
+        self._custom_bg_color = (128, 128, 128)
+
         self._build_ui()
 
         if initial_path:
@@ -123,6 +126,17 @@ class CleanEdgesGUI:
         self.matting_chk.pack(side=tk.LEFT, padx=(8, 0))
 
         ttk.Button(top, text="  Process  ", command=self.on_process).pack(side=tk.RIGHT, padx=(12, 0))
+
+        # Preview background selector
+        self.bg_mode_var = tk.StringVar(value="Checker")
+        bg_combo = ttk.Combobox(
+            top, textvariable=self.bg_mode_var,
+            values=["Checker", "Black", "White", "Magenta", "Green", "Cyan", "Red", "Custom..."],
+            width=11, state="readonly",
+        )
+        bg_combo.pack(side=tk.RIGHT, padx=(4, 8))
+        ttk.Label(top, text="Preview BG:").pack(side=tk.RIGHT, padx=(16, 2))
+        self.bg_mode_var.trace_add("write", self._on_bg_change)
 
         # Zoom controls (right side)
         self.zoom_label = ttk.Label(top, text="100%", width=6, anchor="e")
@@ -349,6 +363,45 @@ class CleanEdgesGUI:
                 self.root.after_cancel(self._debounce_id)
             self._debounce_id = self.root.after(200, self.on_process)
 
+    # ------------------------------------------------------- Background
+    def _composite_on_bg(self, img: Image.Image) -> Image.Image:
+        """Compose the RGBA image onto the user-selected preview background."""
+        mode = self.bg_mode_var.get()
+        if mode == "Checker":
+            return checker_composite(img)
+        if img.mode != "RGBA":
+            img = img.convert("RGBA")
+        solid_colors = {
+            "Black":   (0, 0, 0),
+            "White":   (255, 255, 255),
+            "Magenta": (255, 0, 255),
+            "Green":   (0, 255, 0),
+            "Cyan":    (0, 255, 255),
+            "Red":     (255, 0, 0),
+        }
+        if mode == "Custom...":
+            color = self._custom_bg_color
+        else:
+            color = solid_colors.get(mode, (128, 128, 128))
+        bg = Image.new("RGB", img.size, color)
+        bg.paste(img, mask=img.split()[3])
+        return bg
+
+    def _on_bg_change(self, *_):
+        if self.bg_mode_var.get() == "Custom...":
+            rgb, _hex = colorchooser.askcolor(
+                color="#%02x%02x%02x" % self._custom_bg_color,
+                title="Pick preview background color",
+            )
+            if rgb is None:
+                # user cancelled — just leave selection as "Custom..." with previous color
+                pass
+            else:
+                self._custom_bg_color = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
+        # Redraw just the right (result) canvas since only it uses bg
+        if self.result_img is not None:
+            self._show_in(self.right_canvas, self.result_img, checker=True)
+
     # --------------------------------------------------------- Preview
     def _schedule_redraw(self):
         """Debounce canvas <Configure> events while the user is resizing."""
@@ -442,7 +495,7 @@ class CleanEdgesGUI:
         crop = img.crop((cl, ct, cr, cb))
 
         if checker:
-            crop = checker_composite(crop)
+            crop = self._composite_on_bg(crop)
         else:
             crop = crop.convert("RGBA")
 

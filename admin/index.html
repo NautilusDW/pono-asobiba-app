@@ -1406,11 +1406,12 @@ function _buildCreatureRow(c) {
   }
 
   // 情報（textContent で XSS を防ぐ）
+  // 絵文字は画像が既に左に出ているので冗長。表示名だけ見せる。
   var info = document.createElement('div');
   info.style.cssText = 'flex:1;font-size:0.85rem;';
   var titleDiv = document.createElement('div');
   titleDiv.style.cssText = 'font-weight:900;color:#0369A1;';
-  titleDiv.textContent = (c.icon || '🐠') + ' ' + (c.displayName || c.id);
+  titleDiv.textContent = c.displayName || c.id;
   info.appendChild(titleDiv);
   var metaDiv = document.createElement('div');
   metaDiv.style.cssText = 'font-size:0.7rem;color:#888;font-family:monospace;';
