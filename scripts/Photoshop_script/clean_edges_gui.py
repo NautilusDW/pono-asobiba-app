@@ -87,9 +87,33 @@ THEME = {
     "border":      "#3a3a40",
 }
 
-FONT_BASE = ("Segoe UI", 10)
-FONT_HEADING = ("Segoe UI", 10, "bold")
-FONT_SMALL = ("Segoe UI", 9)
+# Pick a system font that has proper Japanese glyph coverage.
+# "Yu Gothic UI" ships with Windows 10+ and renders both Latin and CJK
+# cleanly. Falls back via tkinter's font matching if not present.
+def _pick_font_family() -> str:
+    candidates = ("Yu Gothic UI", "Meiryo UI", "MS UI Gothic", "Segoe UI")
+    try:
+        import tkinter.font as tkfont
+        # tk root is needed to query fonts; create a temp one if necessary
+        try:
+            available = set(tkfont.families())
+        except RuntimeError:
+            _tmp = tk.Tk()
+            _tmp.withdraw()
+            available = set(tkfont.families())
+            _tmp.destroy()
+        for name in candidates:
+            if name in available:
+                return name
+    except Exception:
+        pass
+    return "Yu Gothic UI"  # safe default on Windows
+
+
+_FONT_FAMILY = _pick_font_family()
+FONT_BASE = (_FONT_FAMILY, 10)
+FONT_HEADING = (_FONT_FAMILY, 10, "bold")
+FONT_SMALL = (_FONT_FAMILY, 9)
 
 
 def _apply_theme(root: tk.Tk) -> None:
@@ -101,6 +125,22 @@ def _apply_theme(root: tk.Tk) -> None:
         pass
 
     root.configure(bg=THEME["bg_main"])
+
+    # Override Tk's named default fonts so that built-in dialogs
+    # (filedialog, messagebox, simpledialog) also use the Japanese-capable
+    # font instead of the bitmap fallback.
+    try:
+        import tkinter.font as tkfont
+        for fname in ("TkDefaultFont", "TkTextFont", "TkMenuFont",
+                      "TkHeadingFont", "TkCaptionFont", "TkSmallCaptionFont",
+                      "TkIconFont", "TkTooltipFont"):
+            try:
+                f = tkfont.nametofont(fname)
+                f.configure(family=_FONT_FAMILY, size=10)
+            except tk.TclError:
+                pass
+    except Exception:
+        pass
 
     style.configure(".",
                     background=THEME["bg_main"],
