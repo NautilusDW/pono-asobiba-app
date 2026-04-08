@@ -38,7 +38,7 @@
     { id: 'writing_kata',  game: 'writing',   name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46, stat: 'writing_katakana',  tier: 3, reward: { type: 'sea',  id: 'shark' } },
     { id: 'breakout_all',  game: 'breakout',  name: 'ブロックマスター',     desc: 'ぜんぶ クリアしよう',              target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' } },
     { id: 'slide_all',     game: 'slide',     name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',              target: 8,  stat: 'slide_clears',      tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
-    { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 8,  stat: 'maze_clears',       tier: 3, reward: { type: 'sea',  id: 'seahorse' } },
+    { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 10, stat: 'maze_clears',       tier: 3, reward: { type: 'sea',  id: 'seahorse' } },
     { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' } },
     { id: 'wordmatch_all', game: 'wordmatch', name: 'ことばマスター',       desc: 'ぜんもん せいかいしよう',          target: 30, stat: 'wordmatch_correct', tier: 3, reward: { type: 'sea',  id: 'butterfly_fish' } },
     { id: 'bento_10',      game: 'bento',     name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',     target: 10, stat: 'bento_complete',    tier: 3, reward: { type: 'sea',  id: 'octopus' } },

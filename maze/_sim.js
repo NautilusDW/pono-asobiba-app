@@ -467,13 +467,25 @@ function findStage(cellRows, cellCols, minClicks, minRealJunctions, obstacleCoun
 // ─── Stage specs ───
 // TALL aspect (rows ≥ cols), so cells stay big enough for arrow buttons.
 // Player viewport ~ 540×600 px → recommended max ~11 cols × 14 rows.
+// 11 stages: tutorial + 1..10. Difficulty curve:
+//   - tutorial: tiny, 1 obstacle, learning the controls
+//   - S1-S3: small, 1 obstacle, simple branches
+//   - S4-S5: medium, 2 obstacles, multi-branch
+//   - S6-S7: bigger, 2-3 obstacles
+//   - S8: ≈ previous S5 difficulty (3 obstacles, 8x6)
+//   - S9-S10: bigger than S8, more obstacles (4-5)
 const SPECS = [
-  { rows: 3, cols: 3, minClicks: 2, minRealJunctions: 1, obstacles: 1, apples: 0, name: 'チュートリアル — やじるしを おしてみよう' },
-  { rows: 4, cols: 3, minClicks: 3, minRealJunctions: 1, obstacles: 1, apples: 0, name: 'ステージ 1 — どっちに いく？' },
-  { rows: 5, cols: 3, minClicks: 4, minRealJunctions: 2, obstacles: 1, apples: 1, name: 'ステージ 2 — わかれみち' },
-  { rows: 5, cols: 4, minClicks: 5, minRealJunctions: 2, obstacles: 1, apples: 1, name: 'ステージ 3 — ふかいもり' },
-  { rows: 7, cols: 5, minClicks: 8, minRealJunctions: 3, obstacles: 2, apples: 2, name: 'ステージ 4 — めいろの もり' },
-  { rows: 8, cols: 6, minClicks: 10, minRealJunctions: 4, obstacles: 3, apples: 2, name: 'ステージ 5 — まいごの もり' },
+  { rows: 3, cols: 3, minClicks: 2,  minRealJunctions: 1, obstacles: 1, apples: 0, name: 'チュートリアル — やじるしを おしてみよう' },
+  { rows: 4, cols: 3, minClicks: 3,  minRealJunctions: 1, obstacles: 1, apples: 0, name: 'ステージ 1 — どっちに いく？' },
+  { rows: 5, cols: 3, minClicks: 4,  minRealJunctions: 2, obstacles: 1, apples: 1, name: 'ステージ 2 — わかれみち' },
+  { rows: 5, cols: 4, minClicks: 5,  minRealJunctions: 2, obstacles: 1, apples: 1, name: 'ステージ 3 — ふかいもり' },
+  { rows: 6, cols: 4, minClicks: 6,  minRealJunctions: 3, obstacles: 2, apples: 1, name: 'ステージ 4 — みっつの わかれみち' },
+  { rows: 7, cols: 5, minClicks: 7,  minRealJunctions: 3, obstacles: 2, apples: 2, name: 'ステージ 5 — もりのおく' },
+  { rows: 7, cols: 5, minClicks: 8,  minRealJunctions: 4, obstacles: 3, apples: 2, name: 'ステージ 6 — ちょうちょのもり' },
+  { rows: 8, cols: 5, minClicks: 9,  minRealJunctions: 4, obstacles: 3, apples: 2, name: 'ステージ 7 — つきよのもり' },
+  { rows: 8, cols: 6, minClicks: 10, minRealJunctions: 4, obstacles: 3, apples: 2, name: 'ステージ 8 — まいごの もり' },
+  { rows: 8, cols: 6, minClicks: 11, minRealJunctions: 5, obstacles: 4, apples: 2, name: 'ステージ 9 — ふしぎの もり' },
+  { rows: 9, cols: 6, minClicks: 12, minRealJunctions: 5, obstacles: 5, apples: 3, name: 'ステージ 10 — さいごの もり' },
 ];
 
 console.log('=== Generating stages ===\n');
