@@ -69,6 +69,12 @@ class CleanEdgesGUI:
         self._rembg_session = None
         self._rembg_session_model = None
 
+        # Viewport state (shared between left & right canvases so they stay in sync)
+        self.zoom = 1.0  # 1.0 = fit image to canvas
+        self.view_cx = None  # image-space center; None = center of image
+        self.view_cy = None
+        self._drag_state = None  # (start_x, start_y, initial_cx, initial_cy)
+
         self._build_ui()
 
         if initial_path:
@@ -117,6 +123,15 @@ class CleanEdgesGUI:
         self.matting_chk.pack(side=tk.LEFT, padx=(8, 0))
 
         ttk.Button(top, text="  Process  ", command=self.on_process).pack(side=tk.RIGHT, padx=(12, 0))
+
+        # Zoom controls (right side)
+        self.zoom_label = ttk.Label(top, text="100%", width=6, anchor="e")
+        self.zoom_label.pack(side=tk.RIGHT, padx=(6, 4))
+        ttk.Button(top, text="Fit", width=4, command=self.on_zoom_fit).pack(side=tk.RIGHT, padx=1)
+        ttk.Button(top, text="1:1", width=4, command=self.on_zoom_100).pack(side=tk.RIGHT, padx=1)
+        ttk.Button(top, text="+", width=3, command=lambda: self.on_zoom_button(1.5)).pack(side=tk.RIGHT, padx=1)
+        ttk.Button(top, text="−", width=3, command=lambda: self.on_zoom_button(1/1.5)).pack(side=tk.RIGHT, padx=1)
+        ttk.Label(top, text="Zoom:").pack(side=tk.RIGHT, padx=(16, 4))
 
         # -------- Sliders --------
         sliders = ttk.LabelFrame(self.root, text="Parameters")
