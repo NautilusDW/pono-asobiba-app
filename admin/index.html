@@ -2015,6 +2015,231 @@ function openCreatureEditModal(creatureId) {
   document.body.appendChild(ov);
 }
 
+// ════════════════════════════════════════════════════════════════
+// 📖 図鑑 (Encyclopedia)
+// ════════════════════════════════════════════════════════════════
+
+function fetchEncyclopedia() {
+  // creaturesData が未ロードなら GitHub から取得してからレンダリング
+  if (!creaturesData) {
+    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+    fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (data && data.content) {
+          try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) { creaturesData = { version: 1, creatures: [] }; }
+        } else {
+          creaturesData = { version: 1, creatures: [] };
+        }
+        if (!creaturesData.creatures) creaturesData.creatures = [];
+        renderEncyclopedia();
+      })
+      .catch(function() {
+        fetch('../' + CREATURES_PATH + '?_=' + Date.now(), { cache: 'no-store' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(d) {
+            creaturesData = d || { version: 1, creatures: [] };
+            if (!creaturesData.creatures) creaturesData.creatures = [];
+            renderEncyclopedia();
+          });
+      });
+  } else {
+    renderEncyclopedia();
+  }
+}
+
+function renderEncyclopedia() {
+  var grid = document.getElementById('encyclopedia-grid');
+  var countEl = document.getElementById('enc-count');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  var catFilter  = (document.getElementById('enc-filter-category') || {}).value || '';
+  var zoneFilter = (document.getElementById('enc-filter-zone') || {}).value || '';
+
+  // 全生き物リストを組み立て（ハードコード7体 + 動的N体）
+  var allItems = [];
+  HARDCODED_CREATURES.forEach(function(c) {
+    var p = HARDCODED_PROFILES_ADMIN[c.id] || {};
+    allItems.push({ id: c.id, displayName: c.displayName, icon: c.icon, zones: HARDCODED_ZONES_ADMIN[c.id] || [], profile: p, source: 'hardcode' });
+  });
+  var dynCreatures = (creaturesData && creaturesData.creatures) || [];
+  dynCreatures.forEach(function(c) {
+    allItems.push({ id: c.id, displayName: c.displayName || c.id, icon: c.icon || '🐟', zones: c.zones || [], profile: c.profile || {}, source: 'dynamic' });
+  });
+
+  // フィルタリング
+  var filtered = allItems.filter(function(item) {
+    if (catFilter && (item.profile.category || '') !== catFilter) return false;
+    if (zoneFilter && !item.zones.includes(zoneFilter)) return false;
+    return true;
+  });
+
+  countEl.textContent = filtered.length + ' 体 / 全' + allItems.length + ' 体';
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="color:#aaa;font-size:0.85rem;padding:20px;">該当なし</div>';
+    return;
+  }
+
+  filtered.forEach(function(item) {
+    var p = item.profile;
+    var missingCategory = !p.category;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:14px;padding:16px;border:2px solid ' + (missingCategory ? '#FCA5A5' : '#F5F0E8') + ';position:relative;';
+
+    // ソースバッジ
+    var badge = document.createElement('span');
+    badge.style.cssText = 'position:absolute;top:10px;right:10px;font-size:0.6rem;padding:2px 7px;border-radius:6px;font-weight:700;background:' + (item.source === 'hardcode' ? '#E0E7FF;color:#4338CA' : '#D1FAE5;color:#065F46') + ';';
+    badge.textContent = item.source === 'hardcode' ? '既存' : '追加';
+    card.appendChild(badge);
+
+    // ヘッダ（アイコン＋名前）
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;';
+    header.innerHTML = '<span style="font-size:1.8rem;">' + (item.icon || '🐟') + '</span>'
+      + '<div><div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + item.displayName + '</div>'
+      + '<div style="font-size:0.7rem;color:#8B7355;">' + (p.readingName || '') + '</div></div>';
+    card.appendChild(header);
+
+    // 図鑑情報
+    var info = document.createElement('div');
+    info.style.cssText = 'font-size:0.78rem;line-height:1.7;';
+    var categoryHtml = p.category
+      ? '<div><span style="color:#0369A1;">🐟 どんな なかま？</span><br><span style="margin-left:1em;">' + p.category + '</span></div>'
+      : '<div style="color:#EF4444;">⚠️ なかま未入力</div>';
+    var habitatHtml = p.habitat
+      ? '<div style="margin-top:6px;"><span style="color:#0369A1;">🌊 どこに すんでいるの？</span><br><span style="margin-left:1em;">' + p.habitat + '</span></div>'
+      : '';
+    var facts = Array.isArray(p.funFacts) ? p.funFacts : [];
+    var factsHtml = facts.length > 0
+      ? '<div style="margin-top:6px;"><span style="color:#0369A1;">✨ すごいところ</span><ul style="margin:4px 0 0 1.2em;padding:0;">'
+        + facts.map(function(f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>'
+      : '';
+    // ゾーンバッジ
+    var zoneNames = { tropical_reef: '熱帯サンゴ礁', japan_coast: '日本の海', jellyfish_room: 'クラゲ水槽', big_fish: '大型魚' };
+    var zonesHtml = item.zones.length > 0
+      ? '<div style="margin-top:8px;">' + item.zones.map(function(z) { return '<span style="display:inline-block;margin:2px;padding:2px 7px;background:#EFF6FF;color:#1D4ED8;border-radius:6px;font-size:0.65rem;font-weight:700;">' + (zoneNames[z] || z) + '</span>'; }).join('') + '</div>'
+      : '';
+    info.innerHTML = categoryHtml + habitatHtml + factsHtml + zonesHtml;
+    card.appendChild(info);
+
+    // 編集ボタン（動的のみ有効）
+    var editBtn = document.createElement('button');
+    editBtn.style.cssText = 'margin-top:12px;width:100%;padding:7px;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:' + (item.source === 'dynamic' ? 'pointer' : 'default') + ';background:' + (item.source === 'dynamic' ? 'linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff' : '#F3F4F6;color:#9CA3AF') + ';';
+    editBtn.textContent = item.source === 'dynamic' ? '✏️ 図鑑を編集' : '🔒 コードで固定（編集不可）';
+    editBtn.disabled = item.source !== 'dynamic';
+    if (item.source === 'dynamic') {
+      editBtn.addEventListener('click', function() { openProfileEditModal(item.id); });
+    }
+    card.appendChild(editBtn);
+
+    grid.appendChild(card);
+  });
+}
+
+// 📖 図鑑プロフィール編集モーダル（動的生き物のみ）
+function openProfileEditModal(creatureId) {
+  if (!creaturesData || !creaturesData.creatures) return;
+  var idx = creaturesData.creatures.findIndex(function(c) { return c.id === creatureId; });
+  if (idx < 0) return;
+  var target = creaturesData.creatures[idx];
+  var curProfile = target.profile || {};
+
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:4px;text-align:center;';
+  title.textContent = '📖 ' + (target.displayName || target.id) + ' の図鑑を編集';
+  box.appendChild(title);
+  var hint = document.createElement('div');
+  hint.style.cssText = 'font-size:0.7rem;color:#888;margin-bottom:16px;text-align:center;';
+  hint.textContent = 'ひらがな・やさしい ことばで いれてね';
+  box.appendChild(hint);
+
+  function makeField(labelText, el) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:12px;';
+    var lbl = document.createElement('label');
+    lbl.style.cssText = 'display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:4px;';
+    lbl.textContent = labelText;
+    wrap.appendChild(lbl);
+    wrap.appendChild(el);
+    box.appendChild(wrap);
+    return el;
+  }
+
+  var inputStyle = 'width:100%;padding:6px 10px;border-radius:6px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.8rem;';
+  var taStyle = inputStyle + 'min-height:54px;resize:vertical;';
+
+  var readingInput = document.createElement('input'); readingInput.style.cssText = inputStyle; readingInput.value = curProfile.readingName || '';
+  makeField('📛 ふりがな', readingInput);
+
+  var catSelect = document.createElement('select'); catSelect.style.cssText = inputStyle;
+  var catOptions = ['さかなの なかま','なんこつぎょるいの なかま','たこや いかの なかま','くらげの なかま','うみがめの なかま','こうかくるいの なかま（カニ・エビ）','のりものの なかま','うみの いきもの（その他）'];
+  catOptions.forEach(function(opt) { var o = document.createElement('option'); o.value = opt; o.textContent = opt; if (opt === curProfile.category) o.selected = true; catSelect.appendChild(o); });
+  makeField('🐟 どんな なかま？', catSelect);
+
+  var habitatTa = document.createElement('textarea'); habitatTa.style.cssText = taStyle; habitatTa.value = curProfile.habitat || '';
+  makeField('🌊 どこに すんでいるの？', habitatTa);
+
+  var factInputs = [];
+  var existingFacts = Array.isArray(curProfile.funFacts) ? curProfile.funFacts.slice(0, 4) : [];
+  while (existingFacts.length < 4) existingFacts.push('');
+  for (var i = 0; i < 4; i++) {
+    var ta = document.createElement('textarea'); ta.style.cssText = taStyle; ta.value = existingFacts[i];
+    ta.placeholder = i < 3 ? '（ひつよう）' : '（なくてもOK）';
+    makeField('✨ すごいところ ' + (i + 1), ta);
+    factInputs.push(ta);
+  }
+
+  // ボタン行
+  var btnRow = document.createElement('div'); btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;margin-top:4px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.textContent = 'キャンセル';
+  cancelBtn.style.cssText = 'padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;';
+  cancelBtn.addEventListener('click', function() { ov.remove(); });
+  btnRow.appendChild(cancelBtn);
+
+  var saveBtn = document.createElement('button'); saveBtn.type = 'button'; saveBtn.textContent = '💾 保存';
+  saveBtn.style.cssText = 'padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
+  saveBtn.addEventListener('click', function() {
+    if (saveBtn.disabled) return;
+    var facts = factInputs.map(function(t) { return t.value.trim(); }).filter(function(v) { return v; });
+    if (facts.length < 3) { showToast('すごいところは 3こ いじょう いれてね', false); return; }
+    saveBtn.disabled = true; saveBtn.textContent = '⏳ 保存中...';
+    var oldProfile = target.profile ? JSON.parse(JSON.stringify(target.profile)) : {};
+    target.profile = Object.assign(target.profile || {}, {
+      readingName: readingInput.value.trim() || (target.profile && target.profile.readingName) || '',
+      category: catSelect.value,
+      habitat: habitatTa.value.trim(),
+      funFacts: facts
+    });
+    var json = JSON.stringify(creaturesData, null, 2);
+    var b64 = utf8ToBase64(json);
+    ghUploadPromise(CREATURES_PATH, b64, '📖 update profile: ' + target.id)
+      .then(function() {
+        showToast('✅ ' + (target.displayName || target.id) + ' の図鑑を保存しました', true);
+        ov.remove();
+        renderEncyclopedia();
+      })
+      .catch(function(e) {
+        showToast('保存失敗: ' + e.message, false);
+        target.profile = oldProfile;
+        saveBtn.disabled = false; saveBtn.textContent = '💾 保存';
+      });
+  });
+  btnRow.appendChild(saveBtn);
+  box.appendChild(btnRow);
+
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+}
+
 function renderSeaCreatures() {
   var listEl = document.getElementById('sea-creatures-list');
   if (!listEl) return;
