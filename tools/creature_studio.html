@@ -1547,7 +1547,14 @@ async function aiNameSprite(idx) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ image: base64, mimeType: 'image/png', prompt })
   });
-  const data = await r.json();
+  const ct = r.headers.get('content-type') || '';
+  let data;
+  if (ct.includes('application/json')) {
+    data = await r.json();
+  } else {
+    const txt = await r.text();
+    throw new Error('HTTP ' + r.status + ' (non-JSON): ' + txt.slice(0, 100));
+  }
   if (!r.ok) throw new Error(data.error || 'API error');
 
   const m = (data.text || '').match(/\{[\s\S]*\}/);
@@ -1637,7 +1644,14 @@ async function aiGroupSprites(idxList) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ images, prompt })
   });
-  const data = await r.json();
+  const ct2 = r.headers.get('content-type') || '';
+  let data;
+  if (ct2.includes('application/json')) {
+    data = await r.json();
+  } else {
+    const txt = await r.text();
+    throw new Error('HTTP ' + r.status + ' (non-JSON): ' + txt.slice(0, 100));
+  }
   if (!r.ok) throw new Error(data.error || 'API error');
 
   const m = (data.text || '').match(/\[[\s\S]*\]/);

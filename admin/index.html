@@ -2699,9 +2699,16 @@ async function aiNameCreature(imageBase64, mimeType) {
           prompt: prompt
         })
       });
-      data = await apiResp.json();
+      // Netlify が HTML エラーページを返す場合（502/503 等）は JSON でないため個別に処理
+      var ct = apiResp.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        data = await apiResp.json();
+      } else {
+        var rawText = await apiResp.text();
+        data = { error: 'HTTP ' + apiResp.status + ' (non-JSON response)', raw: rawText.slice(0, 200) };
+      }
       if (apiResp.ok) break;
-      if ((apiResp.status === 503 || apiResp.status === 429) && attempt < maxRetries) {
+      if ((apiResp.status === 503 || apiResp.status === 502 || apiResp.status === 429) && attempt < maxRetries) {
         var waitMs = 1500 * attempt;
         setStatus('⏳ ' + apiResp.status + ' 混雑中... ' + (waitMs / 1000) + '秒待ってリトライ (' + attempt + '/' + maxRetries + ')', '#F59E0B');
         await new Promise(function(r) { setTimeout(r, waitMs); });
