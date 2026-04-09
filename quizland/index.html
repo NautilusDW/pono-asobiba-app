@@ -462,6 +462,7 @@ body {
 </div>
 
 <div class="hud">
+  <button id="hud-back-btn" style="background:none;border:none;font-family:inherit;font-size:0.75rem;font-weight:900;color:var(--text-light);cursor:pointer;padding:2px 4px;">◀ タイトルへ</button>
   <div id="hud-label">もんだい <span id="q-num">1</span> / <span id="q-total">6</span></div>
   <div class="hud-progress" id="hud-progress"></div>
 </div>
@@ -864,6 +865,13 @@ document.getElementById('cat-all-btn').addEventListener('click', function() {
 document.getElementById('cat-start-btn').addEventListener('click', function() {
   document.getElementById('category-screen').classList.add('hidden');
   initGame();
+});
+
+// HUD back button → タイトル（カテゴリー選択）へ
+document.getElementById('hud-back-btn').addEventListener('click', function() {
+  document.getElementById('result-overlay').classList.add('hidden');
+  buildCategoryScreen();
+  document.getElementById('category-screen').classList.remove('hidden');
 });
 
 // Result retry button (same categories)
