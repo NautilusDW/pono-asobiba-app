@@ -298,6 +298,9 @@ body {
 /* Grab cursor for panning */
 .compare-canvas-box.zoomed { cursor: grab; }
 .compare-canvas-box.zoomed.dragging { cursor: grabbing; }
+/* Point erase mode */
+.compare-canvas-box.erase-mode { cursor: crosshair !important; }
+.tbtn.active { background: #f87171 !important; color: #fff !important; }
 </style>
 </head>
 <body>
@@ -421,6 +424,9 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-zoom-in"  style="padding:3px 9px;font-size:1rem" title="拡大">+</button>
         <button class="tbtn tbtn-ghost" id="btn-zoom-fit" style="padding:3px 8px;font-size:0.72rem" title="画面に合わせる">Fit</button>
         <button class="tbtn tbtn-ghost" id="btn-zoom-100" style="padding:3px 8px;font-size:0.72rem" title="等倍 (1:1)">1:1</button>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <button class="tbtn tbtn-ghost" id="btn-erase-mode" style="padding:3px 8px;font-size:0.72rem" title="ポイント消去モード (囲まれた背景を消す)">🎯 消去</button>
+        <button class="tbtn tbtn-ghost" id="btn-erase-undo" style="padding:3px 8px;font-size:0.72rem" title="消去を戻す (Ctrl+Z)" disabled>↩ 戻す</button>
         <div style="flex:1"></div>
         <span class="zb-label">背景:</span>
         <select id="bg-mode-select">
@@ -508,6 +514,9 @@ let creaturesData   = null;
 let compareZoom = 0;         // 0 = fit mode
 let bgMode      = 'checker';
 let customBgColor = '#808080';
+let eraseMode = false;
+let eraseUndoStack = [];
+const ERASE_UNDO_MAX = 20;
 
 // ════════════════════════════════════════════════════════════
 // Utilities
@@ -756,6 +765,7 @@ let panState = null;  // { startX, startY, sl, st }
 ['box-orig', 'box-proc'].forEach(id => {
   document.getElementById(id).addEventListener('mousedown', e => {
     if (e.button !== 0) return;
+    if (eraseMode && id === 'box-proc') return;
     e.preventDefault();
     const box = document.getElementById('box-orig'); // always anchor to orig
     panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
@@ -778,6 +788,122 @@ document.addEventListener('mouseup', () => {
   if (!panState) return;
   panState = null;
   document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.remove('dragging'));
+});
+
+// ════════════════════════════════════════════════════════════
+// Point Erase Mode（囲まれた背景をクリックで消去）
+// ════════════════════════════════════════════════════════════
+
+function setEraseMode(on) {
+  if (on && !processedCanvas) {
+    showToast('先に「背景を消す」を実行してください', false);
+    return;
+  }
+  eraseMode = on;
+  document.getElementById('btn-erase-mode').classList.toggle('active', on);
+  document.getElementById('box-proc').classList.toggle('erase-mode', on);
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById('btn-erase-undo');
+  const n = eraseUndoStack.length;
+  btn.textContent = n > 0 ? `↩ 戻す (${n})` : '↩ 戻す';
+  btn.disabled = n === 0;
+}
+
+function pushEraseUndo() {
+  const ctx = processedCanvas.getContext('2d');
+  eraseUndoStack.push(ctx.getImageData(0, 0, processedCanvas.width, processedCanvas.height));
+  if (eraseUndoStack.length > ERASE_UNDO_MAX) eraseUndoStack.shift();
+  updateUndoButton();
+}
+
+function popEraseUndo() {
+  if (!eraseUndoStack.length) return;
+  processedCanvas.getContext('2d').putImageData(eraseUndoStack.pop(), 0, 0);
+  redrawCompare();
+  updateUndoButton();
+}
+
+function clearEraseUndo() {
+  eraseUndoStack = [];
+  updateUndoButton();
+}
+
+/** クリック座標 → processedCanvas のピクセル座標 */
+function clickToProcessedCoord(e) {
+  const box = document.getElementById('box-proc');
+  const cv = box.querySelector('canvas');
+  if (!cv || !processedCanvas) return null;
+  const rect = cv.getBoundingClientRect();
+  const cssX = e.clientX - rect.left;
+  const cssY = e.clientY - rect.top;
+  if (cssX < 0 || cssY < 0 || cssX >= rect.width || cssY >= rect.height) return null;
+  const px = Math.floor(cssX * processedCanvas.width  / rect.width);
+  const py = Math.floor(cssY * processedCanvas.height / rect.height);
+  if (px < 0 || px >= processedCanvas.width || py < 0 || py >= processedCanvas.height) return null;
+  return { x: px, y: py };
+}
+
+/** 起点ピクセルの色を seed にローカル flood fill で透明化 */
+function pointEraseFill(startX, startY, tolerance) {
+  const w = processedCanvas.width, h = processedCanvas.height;
+  const ctx = processedCanvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+  const idx0 = (startY * w + startX) * 4;
+  if (d[idx0 + 3] < 10) return false;
+  const seedR = d[idx0], seedG = d[idx0+1], seedB = d[idx0+2];
+  const visited = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+  const si = startY * w + startX;
+  visited[si] = 1; queue[tail++] = si;
+  while (head < tail) {
+    const pi = queue[head++];
+    d[pi * 4 + 3] = 0;
+    const px = pi % w, py = (pi - px) / w;
+    const nb = [];
+    if (px > 0)     nb.push(pi - 1);
+    if (px < w - 1) nb.push(pi + 1);
+    if (py > 0)     nb.push(pi - w);
+    if (py < h - 1) nb.push(pi + w);
+    for (const ni of nb) {
+      if (visited[ni]) continue;
+      visited[ni] = 1;
+      const i4 = ni * 4;
+      if (d[i4 + 3] < 10) continue;
+      const dr = d[i4] - seedR, dg = d[i4+1] - seedG, db = d[i4+2] - seedB;
+      if (Math.sqrt(dr*dr + dg*dg + db*db) <= tolerance) queue[tail++] = ni;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return true;
+}
+
+document.getElementById('btn-erase-mode').addEventListener('click', () => setEraseMode(!eraseMode));
+document.getElementById('btn-erase-undo').addEventListener('click', popEraseUndo);
+
+document.getElementById('box-proc').addEventListener('click', e => {
+  if (!eraseMode || !processedCanvas) return;
+  const coord = clickToProcessedCoord(e);
+  if (!coord) return;
+  const tolerance = parseFloat(document.getElementById('tolerance').value);
+  pushEraseUndo();
+  if (!pointEraseFill(coord.x, coord.y, tolerance)) {
+    eraseUndoStack.pop();
+    updateUndoButton();
+    return;
+  }
+  redrawCompare();
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA')) return;
+    if (eraseUndoStack.length > 0) { e.preventDefault(); popEraseUndo(); }
+  }
 });
 
 // ════════════════════════════════════════════════════════════
@@ -916,6 +1042,8 @@ function loadImageFile(file) {
       originalCanvas.getContext('2d').drawImage(img, 0, 0);
 
       processedCanvas = null;
+      setEraseMode(false);
+      clearEraseUndo();
       redrawCompare();
       document.getElementById('box-proc').innerHTML =
         '<div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>';
@@ -1136,6 +1264,7 @@ function runProcess(showUI) {
   const shrink    = parseFloat(document.getElementById('shrink').value);
   const alphaBlur = parseFloat(document.getElementById('ablur').value);
 
+  clearEraseUndo();
   processedCanvas = document.createElement('canvas');
   processedCanvas.width  = originalCanvas.width;
   processedCanvas.height = originalCanvas.height;
