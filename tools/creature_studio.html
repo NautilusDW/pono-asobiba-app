@@ -437,7 +437,8 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-zoom-100" style="padding:3px 8px;font-size:0.72rem" title="等倍 (1:1)">1:1</button>
         <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
         <button class="tbtn tbtn-ghost" id="btn-erase-point" style="padding:3px 8px;font-size:0.72rem" title="ポイント消去 (色で塗りつぶし)">🎯 ポイント</button>
-        <input type="number" id="erase-tolerance" min="0" max="255" value="30" step="1" style="width:52px;display:none;padding:4px 6px;background:#111827;border:1px solid #374151;border-radius:4px;color:#f87171;font-size:0.85rem;font-weight:700;text-align:center" title="色の近似値（大きいほど広く消える）">
+        <input type="range" id="erase-tol-slider" min="0" max="255" value="30" style="width:60px;display:none;accent-color:#f87171" title="色の近似値">
+        <input type="number" id="erase-tolerance" min="0" max="255" value="30" step="1" style="width:44px;display:none;padding:3px 4px;background:#111827;border:1px solid #374151;border-radius:4px;color:#f87171;font-size:0.82rem;font-weight:700;text-align:center" title="色の近似値（大きいほど広く消える）">
         <button class="tbtn tbtn-ghost" id="btn-erase-brush" style="padding:3px 8px;font-size:0.72rem" title="ブラシ消去 (ドラッグで消す)">🖌 ブラシ</button>
         <input type="range" id="brush-size" min="5" max="80" value="20" style="width:60px;display:none" title="ブラシサイズ">
         <span id="brush-size-label" style="font-size:0.68rem;color:#9ca3af;display:none">20px</span>
@@ -841,7 +842,9 @@ function setEraseMode(on, tool) {
   boxProc.classList.toggle('erase-mode', on && eraseTool === 'point');
   boxProc.classList.toggle('erase-brush', on && eraseTool === 'brush');
   // ツール固有UI
-  document.getElementById('erase-tolerance').style.display = (on && eraseTool === 'point') ? '' : 'none';
+  const showPoint = on && eraseTool === 'point';
+  document.getElementById('erase-tolerance').style.display = showPoint ? '' : 'none';
+  document.getElementById('erase-tol-slider').style.display = showPoint ? '' : 'none';
   const show = on && eraseTool === 'brush';
   document.getElementById('brush-size').style.display = show ? '' : 'none';
   document.getElementById('brush-size-label').style.display = show ? '' : 'none';
@@ -860,6 +863,14 @@ function updateBrushCursorSize() {
 document.getElementById('brush-size').addEventListener('input', function() {
   document.getElementById('brush-size-label').textContent = this.value + 'px';
   updateBrushCursorSize();
+});
+
+// ポイント消去トレランスのスライダー↔数値連動
+document.getElementById('erase-tol-slider').addEventListener('input', function() {
+  document.getElementById('erase-tolerance').value = this.value;
+});
+document.getElementById('erase-tolerance').addEventListener('input', function() {
+  document.getElementById('erase-tol-slider').value = this.value;
 });
 
 function updateUndoButton() {
@@ -935,48 +946,98 @@ function pointEraseFill(startX, startY, tolerance) {
       if (Math.sqrt(dr*dr + dg*dg + db*db) <= tolerance) queue[tail++] = ni;
     }
   }
-  // アンチエイリアス: 消去境界から外側2pxにグラデーションをかける
-  // Pass 1: 消去ピクセルに直接隣接 → アルファ × 0.3
-  // Pass 2: Pass 1 で処理されたピクセルに隣接 → アルファ × 0.7
-  const aaProcessed = new Uint8Array(w * h);
-  const aaPasses = [[0.3, queue, tail], [0.7, null, 0]];
-  let aaRing = [];
-  // Pass 1
-  for (let hi = 0; hi < tail; hi++) {
-    const pi = queue[hi];
-    const px = pi % w, py = (pi - px) / w;
-    const nb2 = [pi-1, pi+1, pi-w, pi+w, pi-w-1, pi-w+1, pi+w-1, pi+w+1]; // 8方向
-    for (const ni of nb2) {
-      if (ni < 0 || ni >= w*h || visited[ni] || aaProcessed[ni]) continue;
-      // 境界チェック
-      const nx = ni % w;
-      if (Math.abs(nx - px) > 1) continue;
-      const a = d[ni * 4 + 3];
-      if (a > 0) {
-        d[ni * 4 + 3] = Math.round(a * 0.3);
-        aaProcessed[ni] = 1;
-        aaRing.push(ni);
+  ctx.putImageData(imgData, 0, 0);
+
+  // フチなめらか: 消去境界付近のアルファにboxBlurをかける（背景除去と同品質）
+  // 境界から±R px の範囲だけ処理（全体ブラーは重いので局所的に）
+  const featherR = parseFloat(document.getElementById('feather').value) || 2;
+  if (featherR > 0) {
+    const R = Math.ceil(featherR) + 1;
+    // 消去境界の近傍ピクセルを収集（境界からR px以内）
+    const nearBorder = new Uint8Array(w * h);
+    let ring = [];
+    for (let hi = 0; hi < tail; hi++) {
+      const pi = queue[hi];
+      const px = pi % w, py = (pi - px) / w;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = px+dx, ny = py+dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        const ni = ny*w+nx;
+        if (!visited[ni] && !nearBorder[ni]) { nearBorder[ni] = 1; ring.push(ni); }
       }
     }
-  }
-  // Pass 2
-  const aaRing2 = aaRing;
-  for (const pi of aaRing2) {
-    const px = pi % w, py = (pi - px) / w;
-    const nb2 = [pi-1, pi+1, pi-w, pi+w, pi-w-1, pi-w+1, pi+w-1, pi+w+1];
-    for (const ni of nb2) {
-      if (ni < 0 || ni >= w*h || visited[ni] || aaProcessed[ni]) continue;
-      const nx = ni % w;
-      if (Math.abs(nx - px) > 1) continue;
-      const a = d[ni * 4 + 3];
-      if (a > 0) {
-        d[ni * 4 + 3] = Math.round(a * 0.7);
-        aaProcessed[ni] = 1;
+    // BFS で R px まで拡張
+    for (let dist = 1; dist < R; dist++) {
+      const next = [];
+      for (const pi of ring) {
+        const px = pi % w, py = (pi - px) / w;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = px+dx, ny = py+dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          const ni = ny*w+nx;
+          if (!nearBorder[ni] && !visited[ni]) { nearBorder[ni] = 1; next.push(ni); }
+        }
+      }
+      ring = next;
+    }
+
+    // 対象範囲のbboxを求めて局所ImageDataで処理
+    let bx1=w, by1=h, bx2=0, by2=0;
+    for (let i = 0; i < w*h; i++) {
+      if (nearBorder[i] || visited[i]) {
+        const x = i%w, y = (i-x)/w;
+        if (x<bx1) bx1=x; if (y<by1) by1=y;
+        if (x>bx2) bx2=x; if (y>by2) by2=y;
       }
     }
+    bx1 = Math.max(0, bx1-R); by1 = Math.max(0, by1-R);
+    bx2 = Math.min(w-1, bx2+R); by2 = Math.min(h-1, by2+R);
+    const rw = bx2-bx1+1, rh = by2-by1+1;
+    const localImg = ctx.getImageData(bx1, by1, rw, rh);
+    const ld = localImg.data;
+
+    // 局所boxBlur（アルファチャンネルのみ、nearBorder領域だけ書き戻し）
+    const r = Math.max(1, Math.round(featherR));
+    const src = new Float32Array(rw * rh);
+    for (let i = 0; i < rw*rh; i++) src[i] = ld[i*4+3];
+    // 水平
+    const tmp = new Float32Array(rw * rh);
+    for (let y = 0; y < rh; y++) {
+      const base = y*rw; let sum=0, cnt=0;
+      for (let k=0; k<=r&&k<rw; k++){sum+=src[base+k];cnt++;}
+      tmp[base]=sum/cnt;
+      for (let x=1; x<rw; x++){
+        if(x+r<rw){sum+=src[base+x+r];cnt++;}
+        if(x-r-1>=0){sum-=src[base+x-r-1];cnt--;}
+        tmp[base+x]=sum/cnt;
+      }
+    }
+    // 垂直
+    const out = new Float32Array(rw * rh);
+    for (let x = 0; x < rw; x++){
+      let sum=0, cnt=0;
+      for(let k=0; k<=r&&k<rh; k++){sum+=tmp[k*rw+x];cnt++;}
+      out[x]=sum/cnt;
+      for(let y=1; y<rh; y++){
+        if(y+r<rh){sum+=tmp[(y+r)*rw+x];cnt++;}
+        if(y-r-1>=0){sum-=tmp[(y-r-1)*rw+x];cnt--;}
+        out[y*rw+x]=sum/cnt;
+      }
+    }
+
+    // nearBorder のピクセルだけブラー結果で上書き
+    for (let ly = 0; ly < rh; ly++) {
+      for (let lx = 0; lx < rw; lx++) {
+        const gi = (by1+ly)*w + (bx1+lx);
+        if (nearBorder[gi]) {
+          ld[(ly*rw+lx)*4+3] = Math.round(out[ly*rw+lx]);
+        }
+      }
+    }
+    ctx.putImageData(localImg, bx1, by1);
   }
 
-  ctx.putImageData(imgData, 0, 0);
   return true;
 }
 
