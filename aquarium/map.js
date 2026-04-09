@@ -27,15 +27,10 @@
     btn.style.left = (zone.mapX * 100) + '%';
     btn.style.top  = (zone.mapY * 100) + '%';
 
-    var iconEl = document.createElement('span');
-    iconEl.className = 'zone-icon';
-    iconEl.textContent = zone.icon || '🐠';
-
     var nameEl = document.createElement('span');
     nameEl.className = 'zone-name';
     nameEl.textContent = zone.displayName;
 
-    btn.appendChild(iconEl);
     btn.appendChild(nameEl);
 
     if (zone.status !== 'open') {

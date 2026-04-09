@@ -91,11 +91,14 @@ window.Encyclopedia = (function () {
         '.enc-card-new{position:absolute;top:4px;right:4px;',
         'background:#F59E0B;color:#fff;font-size:0.55rem;font-weight:900;',
         'border-radius:8px;padding:1px 5px;line-height:1.4;}',
-        '.enc-icon{font-size:2.4rem;line-height:1;margin-bottom:4px;display:block;}',
-        '.enc-icon.locked-icon{filter:grayscale(1) brightness(0.35);}',
-        '.enc-name{font-size:0.7rem;font-weight:700;color:#fff;line-height:1.3;display:block;}',
+        '.enc-thumb-wrap{width:64px;height:64px;margin:0 auto 5px;position:relative;}',
+        '.enc-thumb{width:100%;height:100%;object-fit:contain;display:block;}',
+        '.enc-thumb.locked-img{filter:grayscale(1) brightness(0.25);}',
+        '.enc-thumb-fallback{font-size:2.4rem;line-height:64px;text-align:center;',
+        'display:block;width:64px;height:64px;}',
+        '.enc-name{font-size:0.7rem;font-weight:700;color:#fff;line-height:1.3;display:block;text-align:center;}',
         '.enc-name.locked-name{color:rgba(255,255,255,0.2);}',
-        '.enc-lock-mark{font-size:0.9rem;display:block;margin-top:2px;}',
+        '.enc-lock-mark{font-size:0.9rem;display:block;margin-top:2px;text-align:center;}',
 
         /* 詳細モーダル */
         '.enc-detail-bg{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.6);',
@@ -105,7 +108,8 @@ window.Encyclopedia = (function () {
         'box-shadow:0 8px 40px rgba(0,0,0,0.6);border:1.5px solid rgba(56,189,248,0.25);',
         'max-height:90dvh;overflow-y:auto;}',
         '.enc-detail-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}',
-        '.enc-detail-icon{font-size:3rem;line-height:1;}',
+        '.enc-detail-icon{width:72px;height:72px;object-fit:contain;flex-shrink:0;}',
+        '.enc-detail-icon-fb{font-size:3rem;line-height:72px;width:72px;height:72px;text-align:center;flex-shrink:0;}',
         '.enc-detail-name{font-size:1.2rem;font-weight:900;color:#fff;}',
         '.enc-detail-reading{font-size:0.78rem;color:rgba(255,255,255,0.55);}',
         '.enc-detail-row{margin-bottom:12px;}',
@@ -254,15 +258,34 @@ window.Encyclopedia = (function () {
     var card = document.createElement('div');
     card.className = 'enc-card ' + (isUnlocked ? 'unlocked' : 'locked');
 
-    var iconEl = document.createElement('span');
-    iconEl.className = 'enc-icon' + (isUnlocked ? '' : ' locked-icon');
-    iconEl.textContent = isUnlocked ? (creature.icon || '🐟') : '🐟';
+    // サムネイル
+    var thumbWrap = document.createElement('div');
+    thumbWrap.className = 'enc-thumb-wrap';
+    if (creature.imgFolder && creature.thumb) {
+      var img = document.createElement('img');
+      img.className = 'enc-thumb' + (isUnlocked ? '' : ' locked-img');
+      img.src = _basePath + '/assets/images/ocean/' + creature.imgFolder + '/' + creature.thumb;
+      img.alt = isUnlocked ? creature.displayName : '???';
+      img.onerror = function () {
+        img.style.display = 'none';
+        var fb = document.createElement('span');
+        fb.className = 'enc-thumb-fallback';
+        fb.textContent = creature.icon || '🐟';
+        thumbWrap.appendChild(fb);
+      };
+      thumbWrap.appendChild(img);
+    } else {
+      var fb = document.createElement('span');
+      fb.className = 'enc-thumb-fallback';
+      fb.textContent = isUnlocked ? (creature.icon || '🐟') : '🐟';
+      thumbWrap.appendChild(fb);
+    }
 
     var nameEl = document.createElement('span');
     nameEl.className = 'enc-name' + (isUnlocked ? '' : ' locked-name');
     nameEl.textContent = isUnlocked ? creature.displayName : '???';
 
-    card.appendChild(iconEl);
+    card.appendChild(thumbWrap);
     card.appendChild(nameEl);
 
     if (!isUnlocked) {
@@ -296,9 +319,26 @@ window.Encyclopedia = (function () {
     // ヘッダ
     var dh = document.createElement('div');
     dh.className = 'enc-detail-header';
-    var iconEl = document.createElement('div');
-    iconEl.className = 'enc-detail-icon';
-    iconEl.textContent = creature.icon || '🐟';
+    // サムネイル（詳細版・大）
+    if (creature.imgFolder && creature.thumb) {
+      var dImg = document.createElement('img');
+      dImg.className = 'enc-detail-icon';
+      dImg.src = _basePath + '/assets/images/ocean/' + creature.imgFolder + '/' + creature.thumb;
+      dImg.alt = creature.displayName;
+      dImg.onerror = function () {
+        dImg.style.display = 'none';
+        var fb = document.createElement('div');
+        fb.className = 'enc-detail-icon-fb';
+        fb.textContent = creature.icon || '🐟';
+        dh.insertBefore(fb, dh.firstChild);
+      };
+      dh.appendChild(dImg);
+    } else {
+      var fb = document.createElement('div');
+      fb.className = 'enc-detail-icon-fb';
+      fb.textContent = creature.icon || '🐟';
+      dh.appendChild(fb);
+    }
     var nameWrap = document.createElement('div');
     var nameEl = document.createElement('div');
     nameEl.className = 'enc-detail-name';
@@ -308,7 +348,6 @@ window.Encyclopedia = (function () {
     readingEl.textContent = p.readingName || '';
     nameWrap.appendChild(nameEl);
     nameWrap.appendChild(readingEl);
-    dh.appendChild(iconEl);
     dh.appendChild(nameWrap);
     box.appendChild(dh);
 

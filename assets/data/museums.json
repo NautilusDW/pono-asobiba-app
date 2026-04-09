@@ -24,26 +24,26 @@
       "creatures": ["shark", "sunfish", "submarine"]
     },
     {
-      "id": "japan_coast",
-      "displayName": "にほんのうみ",
-      "subtitle": "ポノの すんでる うみ",
-      "icon": "🐙",
-      "status": "open",
-      "mapX": 0.80,
-      "mapY": 0.24,
-      "tint": "0x1E7FB5",
-      "creatures": ["octopus", "turtle", "sunfish", "pufferfish", "fish"]
-    },
-    {
       "id": "tropical_reef",
       "displayName": "ねったいのうみ",
       "subtitle": "あたたかい サンゴのうみ",
       "icon": "🐠",
       "status": "open",
-      "mapX": 0.87,
-      "mapY": 0.46,
+      "mapX": 0.80,
+      "mapY": 0.24,
       "tint": "0x2EB5E0",
       "creatures": ["clownfish", "blue_tang", "pufferfish", "fish", "turtle"]
+    },
+    {
+      "id": "japan_coast",
+      "displayName": "にほんのうみ",
+      "subtitle": "ポノの すんでる うみ",
+      "icon": "🐙",
+      "status": "open",
+      "mapX": 0.87,
+      "mapY": 0.46,
+      "tint": "0x1E7FB5",
+      "creatures": ["octopus", "turtle", "sunfish", "pufferfish", "fish"]
     },
     {
       "id": "cold_ocean",
@@ -61,8 +61,8 @@
       "subtitle": "いわばの かくれんぼ",
       "icon": "🪸",
       "status": "locked",
-      "mapX": 0.84,
-      "mapY": 0.65,
+      "mapX": 0.33,
+      "mapY": 0.74,
       "tint": "0xE87D3E"
     },
     {
