@@ -1295,7 +1295,9 @@ function createSpriteCard(sp, idx) {
       <input type="text" class="card-id sp-id"   placeholder="ID（英数）例: medaka" value="${sp.id}">
       <div class="card-row">
         <select class="card-expr sp-expr">
-          <option value="normal"    ${sp.expr==='normal'    ?'selected':''}>😊 ふつう</option>
+          <option value="normal"    ${sp.expr==='normal'    ?'selected':''}>🏊 コマ1</option>
+          <option value="normal_2"  ${sp.expr==='normal_2'  ?'selected':''}>🏊 コマ2</option>
+          <option value="normal_3"  ${sp.expr==='normal_3'  ?'selected':''}>🏊 コマ3</option>
           <option value="surprised" ${sp.expr==='surprised' ?'selected':''}>😲 おどろき</option>
           <option value="happy"     ${sp.expr==='happy'     ?'selected':''}>😄 わらう</option>
         </select>
@@ -1729,21 +1731,28 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
     const key = sp.name.trim();
     if (!groups.has(key)) {
       const rawId = sp.id || key.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/, '').replace(/_+/g, '_') || 'creature';
-      groups.set(key, { id: rawId, name: key, icon: sp.icon || '🐠', normal: [], surprised: null, happy: null });
+      groups.set(key, { id: rawId, name: key, icon: sp.icon || '🐠', frames: [null, null, null], surprised: null, happy: null });
     }
     const g = groups.get(key);
     if (sp.id) g.id = sp.id;
     if (sp.icon && sp.icon !== '🐠') g.icon = sp.icon;
 
-    if      (sp.expr === 'normal'    && g.normal.length < 3) g.normal.push(sp);
-    else if (sp.expr === 'surprised' && !g.surprised)        g.surprised = sp;
-    else if (sp.expr === 'happy'     && !g.happy)            g.happy = sp;
+    if      (sp.expr === 'normal'    ) g.frames[0] = sp;
+    else if (sp.expr === 'normal_2'  ) g.frames[1] = sp;
+    else if (sp.expr === 'normal_3'  ) g.frames[2] = sp;
+    else if (sp.expr === 'surprised' && !g.surprised) g.surprised = sp;
+    else if (sp.expr === 'happy'     && !g.happy)     g.happy = sp;
+  }
+
+  // frames[null,null,null] → 詰めた配列に変換
+  for (const [, g] of groups) {
+    g.normal = g.frames.filter(f => f !== null);
   }
 
   // Validate groups
   for (const [name, g] of groups) {
-    if (!g.normal.length) { showToast(`「${name}」のふつうのかお画像がありません`, false); return; }
-    if (!g.surprised)     { showToast(`「${name}」のおどろきのかお画像がありません`, false); return; }
+    if (!g.normal.length) { showToast(`「${name}」のコマ1画像がありません`, false); return; }
+    if (!g.surprised)     { showToast(`「${name}」のおどろき画像がありません`, false); return; }
   }
 
   const setStatus = msg => {
@@ -1770,7 +1779,7 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
   try {
     for (const [, g] of groups) {
-      // 生き物設定はグループの代表スプライト（最初のnormal）から読む
+      // 生き物設定はグループの代表スプライト（コマ1）から読む
       const rep = g.normal[0] || g.surprised;
       const facing   = rep.facing   || 'right';
       const sizePx   = rep.sizePx   || 70;
@@ -1786,7 +1795,8 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
       const happyName = g.happy ? `${folder}_happy.png` : null;
 
       for (let i = 0; i < g.normal.length; i++) {
-        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (ふつう${i+1})`);
+        const label = g.normal.length > 1 ? `コマ${i+1}` : 'ふつう';
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (${label})`);
         await ghUploadPromise(
           `assets/images/ocean/${folder}/${normNames[i]}`,
           canvasToBase64(g.normal[i].canvas),
