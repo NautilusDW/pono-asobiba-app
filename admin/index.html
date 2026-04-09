@@ -621,7 +621,9 @@ tr:hover { background: #FFFAF0; }
         <option value="たこや いかの なかま">たこや いかの なかま</option>
         <option value="くらげの なかま">くらげの なかま</option>
         <option value="うみがめの なかま">うみがめの なかま</option>
+        <option value="こうかくるいの なかま（カニ・エビ）">こうかくるいの なかま（カニ・エビ）</option>
         <option value="のりものの なかま">のりものの なかま</option>
+        <option value="うみの いきもの（その他）">うみの いきもの（その他）</option>
       </select>
       <select id="enc-filter-zone" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
         <option value="">🌊 ゾーンで絞り込み</option>
@@ -630,7 +632,7 @@ tr:hover { background: #FFFAF0; }
         <option value="jellyfish_room">クラゲ水槽</option>
         <option value="big_fish">大型魚</option>
       </select>
-      <button onclick="renderEncyclopedia()" style="padding:6px 12px;background:#60A5FA;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再表示</button>
+      <button onclick="fetchEncyclopedia()" style="padding:6px 12px;background:#60A5FA;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再表示</button>
       <span id="enc-count" style="font-size:0.75rem;color:#888;margin-left:4px;"></span>
     </div>
     <div id="encyclopedia-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
@@ -2019,6 +2021,12 @@ function openCreatureEditModal(creatureId) {
 // 📖 図鑑 (Encyclopedia)
 // ════════════════════════════════════════════════════════════════
 
+function _encEscHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = String(str || '');
+  return d.innerHTML;
+}
+
 function fetchEncyclopedia() {
   // creaturesData が未ロードなら GitHub から取得してからレンダリング
   if (!creaturesData) {
@@ -2041,6 +2049,10 @@ function fetchEncyclopedia() {
             creaturesData = d || { version: 1, creatures: [] };
             if (!creaturesData.creatures) creaturesData.creatures = [];
             renderEncyclopedia();
+          })
+          .catch(function() {
+            creaturesData = { version: 1, creatures: [] };
+            renderEncyclopedia();
           });
       });
   } else {
@@ -2051,7 +2063,7 @@ function fetchEncyclopedia() {
 function renderEncyclopedia() {
   var grid = document.getElementById('encyclopedia-grid');
   var countEl = document.getElementById('enc-count');
-  if (!grid) return;
+  if (!grid || !countEl) return;
   grid.innerHTML = '';
 
   var catFilter  = (document.getElementById('enc-filter-category') || {}).value || '';
@@ -2082,44 +2094,44 @@ function renderEncyclopedia() {
     return;
   }
 
+  var zoneNames = { tropical_reef: '熱帯サンゴ礁', japan_coast: '日本の海', jellyfish_room: 'クラゲ水槽', big_fish: '大型魚' };
+
   filtered.forEach(function(item) {
     var p = item.profile;
     var missingCategory = !p.category;
     var card = document.createElement('div');
     card.style.cssText = 'background:#fff;border-radius:14px;padding:16px;border:2px solid ' + (missingCategory ? '#FCA5A5' : '#F5F0E8') + ';position:relative;';
 
-    // ソースバッジ
+    // ソースバッジ（textContent で安全に設定）
     var badge = document.createElement('span');
     badge.style.cssText = 'position:absolute;top:10px;right:10px;font-size:0.6rem;padding:2px 7px;border-radius:6px;font-weight:700;background:' + (item.source === 'hardcode' ? '#E0E7FF;color:#4338CA' : '#D1FAE5;color:#065F46') + ';';
     badge.textContent = item.source === 'hardcode' ? '既存' : '追加';
     card.appendChild(badge);
 
-    // ヘッダ（アイコン＋名前）
+    // ヘッダ（アイコン＋名前）— escHtml でサニタイズ
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;';
-    header.innerHTML = '<span style="font-size:1.8rem;">' + (item.icon || '🐟') + '</span>'
-      + '<div><div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + item.displayName + '</div>'
-      + '<div style="font-size:0.7rem;color:#8B7355;">' + (p.readingName || '') + '</div></div>';
+    header.innerHTML = '<span style="font-size:1.8rem;">' + _encEscHtml(item.icon || '🐟') + '</span>'
+      + '<div><div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + _encEscHtml(item.displayName) + '</div>'
+      + '<div style="font-size:0.7rem;color:#8B7355;">' + _encEscHtml(p.readingName || '') + '</div></div>';
     card.appendChild(header);
 
-    // 図鑑情報
+    // 図鑑情報 — 各フィールドをサニタイズ
     var info = document.createElement('div');
     info.style.cssText = 'font-size:0.78rem;line-height:1.7;';
     var categoryHtml = p.category
-      ? '<div><span style="color:#0369A1;">🐟 どんな なかま？</span><br><span style="margin-left:1em;">' + p.category + '</span></div>'
+      ? '<div><span style="color:#0369A1;">🐟 どんな なかま？</span><br><span style="margin-left:1em;">' + _encEscHtml(p.category) + '</span></div>'
       : '<div style="color:#EF4444;">⚠️ なかま未入力</div>';
     var habitatHtml = p.habitat
-      ? '<div style="margin-top:6px;"><span style="color:#0369A1;">🌊 どこに すんでいるの？</span><br><span style="margin-left:1em;">' + p.habitat + '</span></div>'
+      ? '<div style="margin-top:6px;"><span style="color:#0369A1;">🌊 どこに すんでいるの？</span><br><span style="margin-left:1em;">' + _encEscHtml(p.habitat) + '</span></div>'
       : '';
     var facts = Array.isArray(p.funFacts) ? p.funFacts : [];
     var factsHtml = facts.length > 0
       ? '<div style="margin-top:6px;"><span style="color:#0369A1;">✨ すごいところ</span><ul style="margin:4px 0 0 1.2em;padding:0;">'
-        + facts.map(function(f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>'
+        + facts.map(function(f) { return '<li>' + _encEscHtml(f) + '</li>'; }).join('') + '</ul></div>'
       : '';
-    // ゾーンバッジ
-    var zoneNames = { tropical_reef: '熱帯サンゴ礁', japan_coast: '日本の海', jellyfish_room: 'クラゲ水槽', big_fish: '大型魚' };
     var zonesHtml = item.zones.length > 0
-      ? '<div style="margin-top:8px;">' + item.zones.map(function(z) { return '<span style="display:inline-block;margin:2px;padding:2px 7px;background:#EFF6FF;color:#1D4ED8;border-radius:6px;font-size:0.65rem;font-weight:700;">' + (zoneNames[z] || z) + '</span>'; }).join('') + '</div>'
+      ? '<div style="margin-top:8px;">' + item.zones.map(function(z) { return '<span style="display:inline-block;margin:2px;padding:2px 7px;background:#EFF6FF;color:#1D4ED8;border-radius:6px;font-size:0.65rem;font-weight:700;">' + _encEscHtml(zoneNames[z] || z) + '</span>'; }).join('') + '</div>'
       : '';
     info.innerHTML = categoryHtml + habitatHtml + factsHtml + zonesHtml;
     card.appendChild(info);
@@ -2130,7 +2142,7 @@ function renderEncyclopedia() {
     editBtn.textContent = item.source === 'dynamic' ? '✏️ 図鑑を編集' : '🔒 コードで固定（編集不可）';
     editBtn.disabled = item.source !== 'dynamic';
     if (item.source === 'dynamic') {
-      editBtn.addEventListener('click', function() { openProfileEditModal(item.id); });
+      editBtn.addEventListener('click', (function(id) { return function() { openProfileEditModal(id); }; })(item.id));
     }
     card.appendChild(editBtn);
 
@@ -2230,6 +2242,7 @@ function openProfileEditModal(creatureId) {
         showToast('保存失敗: ' + e.message, false);
         target.profile = oldProfile;
         saveBtn.disabled = false; saveBtn.textContent = '💾 保存';
+        renderEncyclopedia();
       });
   });
   btnRow.appendChild(saveBtn);
