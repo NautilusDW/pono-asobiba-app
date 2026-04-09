@@ -204,6 +204,30 @@ body {
 .icon-btn-del  { background: rgba(239,68,68,0.15); color: #f87171; }
 .icon-btn-del:hover  { background: rgba(239,68,68,0.25); }
 
+/* ── Sprite card: creature settings (collapsible) ── */
+.card-details { border-top: 1px solid #374151; }
+.card-details summary {
+  padding: 5px 8px; font-size: 0.68rem; color: #6b7280;
+  cursor: pointer; user-select: none; list-style: none;
+  display: flex; align-items: center; gap: 4px;
+}
+.card-details summary::-webkit-details-marker { display: none; }
+.card-details[open] summary { color: #9ca3af; }
+.card-details summary::before { content: '▶'; font-size: 0.55rem; transition: transform 0.15s; }
+.card-details[open] summary::before { transform: rotate(90deg); }
+.card-settings {
+  padding: 0 8px 8px; display: flex; flex-direction: column; gap: 4px;
+}
+.cs-row { display: flex; gap: 4px; }
+.cs-field { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.cs-field label { font-size: 0.62rem; color: #6b7280; }
+.cs-field select, .cs-field input[type="number"] {
+  width: 100%; padding: 3px 5px;
+  background: #111827; border: 1px solid #374151; border-radius: 4px;
+  color: #e0e0e0; font-size: 0.7rem; font-family: inherit;
+}
+.cs-field input[type="range"] { width: 100%; accent-color: #f87171; margin-top: 2px; }
+
 /* ── Deploy Bar ── */
 .deploy-bar {
   background: #1f2937; border-top: 1px solid #374151;
@@ -353,59 +377,9 @@ body {
       </div>
     </div>
 
-    <!-- 4. Creature Defaults -->
+    <!-- 4. GitHub Token -->
     <div class="section">
-      <div class="section-title">4. 生き物の初期設定</div>
-      <div class="form-row">
-        <label>むき</label>
-        <select id="def-facing">
-          <option value="right">→ みぎむき</option>
-          <option value="left">← ひだりむき</option>
-        </select>
-      </div>
-      <div class="form-row-2col">
-        <div class="form-row">
-          <label>サイズ (px)</label>
-          <input type="number" id="def-size" value="70" min="20" max="300">
-        </div>
-        <div class="form-row">
-          <label>数</label>
-          <input type="number" id="def-count" value="3" min="1" max="10">
-        </div>
-      </div>
-      <div class="form-row">
-        <label>パターン</label>
-        <select id="def-pattern">
-          <option value="swim">🏊 およぐ</option>
-          <option value="float">🪼 ただよう</option>
-          <option value="jellyfish">🪼 ぷかぷか</option>
-          <option value="drift">🌊 ながれる</option>
-          <option value="sway">🌿 ゆれる</option>
-          <option value="crawl">🦀 あるく</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>反応</label>
-        <select id="def-reaction">
-          <option value="jump">ジャンプ</option>
-          <option value="ink">スミ吐き</option>
-          <option value="shell">こうらに隠れる</option>
-          <option value="glow">光る</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>はんのうスピード <span class="val" id="speed-val">1.0</span></label>
-        <input type="range" id="def-speed" min="0.1" max="2.0" step="0.1" value="1.0">
-      </div>
-      <div class="form-row">
-        <label>はんのうの長さ <span class="val" id="dur-val">1.0</span></label>
-        <input type="range" id="def-duration" min="0.1" max="2.0" step="0.1" value="1.0">
-      </div>
-    </div>
-
-    <!-- 5. GitHub Token -->
-    <div class="section">
-      <div class="section-title">5. GitHub トークン</div>
+      <div class="section-title">4. GitHub トークン</div>
       <div class="form-row">
         <input type="password" id="gh-token" placeholder="ghp_xxxx...">
       </div>
@@ -626,12 +600,6 @@ function scheduleReprocess() {
   });
 });
 
-document.getElementById('def-speed').addEventListener('input', function() {
-  document.getElementById('speed-val').textContent = parseFloat(this.value).toFixed(1);
-});
-document.getElementById('def-duration').addEventListener('input', function() {
-  document.getElementById('dur-val').textContent = parseFloat(this.value).toFixed(1);
-});
 
 // ════════════════════════════════════════════════════════════
 // Tab Switching
@@ -1149,7 +1117,10 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr) {
     sc.getContext('2d').drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
     result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
-                  name: '', id: '', icon: '🐠', expr: 'normal' });
+                  name: '', id: '', icon: '🐠', expr: 'normal',
+                  facing: 'right', sizePx: 70, count: 3,
+                  pattern: 'swim', reaction: 'jump',
+                  speed: 1.0, duration: 1.0 });
   }
 
   // Sort: top-to-bottom, left-to-right
@@ -1217,6 +1188,9 @@ function createSpriteCard(sp, idx) {
   pv.height = Math.round(sp.h * scale);
   pv.getContext('2d').drawImage(sp.canvas, 0, 0, pv.width, pv.height);
 
+  const sel = (val, opts) => opts.map(([v,t]) =>
+    `<option value="${v}" ${sp[val]===v?'selected':''}>${t}</option>`).join('');
+
   card.innerHTML = `
     <div class="card-hdr">
       <input type="checkbox" class="sp-check" checked>
@@ -1225,8 +1199,8 @@ function createSpriteCard(sp, idx) {
     </div>
     <div class="card-preview" id="cpv-${idx}"></div>
     <div class="card-body">
-      <input type="text" class="card-name sp-name" placeholder="生き物の名前（同じ名前でグループ化）" value="${sp.name}">
-      <input type="text" class="card-id sp-id"   placeholder="ID（半角英数）例: medaka" value="${sp.id}">
+      <input type="text" class="card-name sp-name" placeholder="名前（同じ名前でグループ化）" value="${sp.name}">
+      <input type="text" class="card-id sp-id"   placeholder="ID（英数）例: medaka" value="${sp.id}">
       <div class="card-row">
         <select class="card-expr sp-expr">
           <option value="normal"    ${sp.expr==='normal'    ?'selected':''}>😊 ふつう</option>
@@ -1237,7 +1211,53 @@ function createSpriteCard(sp, idx) {
         <button class="icon-btn icon-btn-flip" data-idx="${idx}" data-action="flip" title="左右反転">↔</button>
         <button class="icon-btn icon-btn-del"  data-idx="${idx}" data-action="del"  title="削除">✕</button>
       </div>
-    </div>`;
+    </div>
+    <details class="card-details">
+      <summary>⚙ 生き物の設定</summary>
+      <div class="card-settings">
+        <div class="cs-row">
+          <div class="cs-field">
+            <label>むき</label>
+            <select class="sp-facing">
+              <option value="right" ${sp.facing==='right'?'selected':''}>→ みぎ</option>
+              <option value="left"  ${sp.facing==='left' ?'selected':''}>← ひだり</option>
+            </select>
+          </div>
+          <div class="cs-field">
+            <label>パターン</label>
+            <select class="sp-pattern">
+              ${sel('pattern',[['swim','🏊 およぐ'],['float','🪼 ただよう'],['jellyfish','🪼 ぷかぷか'],['drift','🌊 ながれる'],['sway','🌿 ゆれる'],['crawl','🦀 あるく']])}
+            </select>
+          </div>
+        </div>
+        <div class="cs-row">
+          <div class="cs-field">
+            <label>サイズ (px)</label>
+            <input type="number" class="sp-sizepx" value="${sp.sizePx}" min="20" max="300">
+          </div>
+          <div class="cs-field">
+            <label>数</label>
+            <input type="number" class="sp-count" value="${sp.count}" min="1" max="10">
+          </div>
+        </div>
+        <div class="cs-field">
+          <label>反応</label>
+          <select class="sp-reaction">
+            ${sel('reaction',[['jump','ジャンプ'],['ink','スミ吐き'],['shell','こうらに隠れる'],['glow','光る']])}
+          </select>
+        </div>
+        <div class="cs-row">
+          <div class="cs-field">
+            <label>スピード <span class="sp-speed-val">${sp.speed.toFixed(1)}</span></label>
+            <input type="range" class="sp-speed" min="0.1" max="2.0" step="0.1" value="${sp.speed}">
+          </div>
+          <div class="cs-field">
+            <label>長さ <span class="sp-dur-val">${sp.duration.toFixed(1)}</span></label>
+            <input type="range" class="sp-duration" min="0.1" max="2.0" step="0.1" value="${sp.duration}">
+          </div>
+        </div>
+      </div>
+    </details>`;
 
   card.querySelector('.card-preview').appendChild(pv);
 
@@ -1247,6 +1267,21 @@ function createSpriteCard(sp, idx) {
   card.querySelector('.sp-name').addEventListener('input', function() { sprites[idx].name = this.value; });
   card.querySelector('.sp-id').addEventListener('input', function() { sprites[idx].id = this.value; });
   card.querySelector('.sp-expr').addEventListener('change', function() { sprites[idx].expr = this.value; });
+
+  // Creature settings
+  card.querySelector('.sp-facing').addEventListener('change',   function() { sprites[idx].facing   = this.value; });
+  card.querySelector('.sp-pattern').addEventListener('change',  function() { sprites[idx].pattern  = this.value; });
+  card.querySelector('.sp-reaction').addEventListener('change', function() { sprites[idx].reaction = this.value; });
+  card.querySelector('.sp-sizepx').addEventListener('input',   function() { sprites[idx].sizePx   = parseInt(this.value) || 70; });
+  card.querySelector('.sp-count').addEventListener('input',    function() { sprites[idx].count    = parseInt(this.value) || 3; });
+  card.querySelector('.sp-speed').addEventListener('input', function() {
+    sprites[idx].speed = parseFloat(this.value);
+    card.querySelector('.sp-speed-val').textContent = sprites[idx].speed.toFixed(1);
+  });
+  card.querySelector('.sp-duration').addEventListener('input', function() {
+    sprites[idx].duration = parseFloat(this.value);
+    card.querySelector('.sp-dur-val').textContent = sprites[idx].duration.toFixed(1);
+  });
 
   card.querySelector('[data-action="flip"]').addEventListener('click', () => {
     flipSprite(idx);
@@ -1470,15 +1505,6 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
     }
   }
 
-  // Creature params from UI
-  const facing   = document.getElementById('def-facing').value;
-  const sizePx   = parseInt(document.getElementById('def-size').value)     || 70;
-  const count    = parseInt(document.getElementById('def-count').value)    || 3;
-  const pattern  = document.getElementById('def-pattern').value;
-  const reaction = document.getElementById('def-reaction').value;
-  const speed    = parseFloat(document.getElementById('def-speed').value)    || 1.0;
-  const duration = parseFloat(document.getElementById('def-duration').value) || 1.0;
-
   // Count total uploads
   let totalUploads = 0;
   for (const [, g] of groups) totalUploads += g.normal.length + 1 + (g.happy ? 1 : 0);
@@ -1486,6 +1512,16 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
   try {
     for (const [, g] of groups) {
+      // 生き物設定はグループの代表スプライト（最初のnormal）から読む
+      const rep = g.normal[0] || g.surprised;
+      const facing   = rep.facing   || 'right';
+      const sizePx   = rep.sizePx   || 70;
+      const count    = rep.count    || 3;
+      const pattern  = rep.pattern  || 'swim';
+      const reaction = rep.reaction || 'jump';
+      const speed    = rep.speed    || 1.0;
+      const duration = rep.duration || 1.0;
+
       const folder  = g.id.charAt(0).toUpperCase() + g.id.slice(1);
       const normNames = g.normal.map((_, i) => `${folder}_normal_${i+1}.png`);
       const surprName = `${folder}_surprised.png`;
