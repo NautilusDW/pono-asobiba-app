@@ -606,6 +606,8 @@ ghTokenInput.addEventListener('input', () => {
 let reprocessTimer = null;
 function scheduleReprocess() {
   if (!document.getElementById('auto-reprocess').checked) return;
+  // ポイント/ブラシ消去済みの場合は自動再処理をスキップ（手動の消去が失われるため）
+  if (eraseUndoStack.length > 0) return;
   clearTimeout(reprocessTimer);
   reprocessTimer = setTimeout(runProcess, 120);
 }
@@ -1467,37 +1469,32 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
   for (let i = 0; i < w * h; i++) fg[i] = d[i*4+3] > alphaThr ? 1 : 0;
 
   // 膨張マスク: mergeGap 以内の隙間を埋めて近接パーツを結合する
-  // Union-Findは膨張マスクで実行し、切り出しは元の fg で行う
+  // BFS距離変換で前景からの距離が mergeGap/2 以内のピクセルを膨張
   let fgForUF = fg;
   if (mergeGap > 0) {
     const half = Math.ceil(mergeGap / 2);
     fgForUF = new Uint8Array(w * h);
-    // 水平膨張
-    const tmp = new Uint8Array(w * h);
+    const dist = new Int32Array(w * h).fill(0x7fffffff);
+    const q = new Int32Array(w * h * 2); // x,y ペア
+    let qHead = 0, qTail = 0;
     for (let y = 0; y < h; y++) {
-      const base = y * w;
-      let last = -half - 1; // 最後に前景を見た x 位置
       for (let x = 0; x < w; x++) {
-        if (fg[base + x]) last = x;
-        if (x - last <= half) tmp[base + x] = 1;
-      }
-      last = w + half + 1;
-      for (let x = w - 1; x >= 0; x--) {
-        if (fg[base + x]) last = x;
-        if (last - x <= half) tmp[base + x] = 1;
+        const i = y * w + x;
+        if (fg[i]) { dist[i] = 0; fgForUF[i] = 1; q[qTail++] = x; q[qTail++] = y; }
       }
     }
-    // 垂直膨張
-    for (let x = 0; x < w; x++) {
-      let last = -half - 1;
-      for (let y = 0; y < h; y++) {
-        if (tmp[y * w + x]) last = y;
-        if (y - last <= half) fgForUF[y * w + x] = 1;
-      }
-      last = h + half + 1;
-      for (let y = h - 1; y >= 0; y--) {
-        if (tmp[y * w + x]) last = y;
-        if (last - y <= half) fgForUF[y * w + x] = 1;
+    while (qHead < qTail) {
+      const cx = q[qHead++], cy = q[qHead++];
+      const cd = dist[cy * w + cx];
+      if (cd >= half) continue;
+      const nb = [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];
+      for (const [nx, ny] of nb) {
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        const ni = ny * w + nx;
+        if (dist[ni] <= cd + 1) continue;
+        dist[ni] = cd + 1;
+        fgForUF[ni] = 1;
+        q[qTail++] = nx; q[qTail++] = ny;
       }
     }
   }
