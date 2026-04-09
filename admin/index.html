@@ -284,6 +284,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
+  <button class="tab" data-panel="encyclopedia">📖 図鑑</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
   <button class="tab" data-panel="github">🔑 GitHub設定</button>
 </div>
@@ -297,6 +298,7 @@ tr:hover { background: #FFFAF0; }
       <div class="home-stat-card"><div class="home-stat-num" id="hs-planned">…</div><div class="home-stat-lbl">追加予定生き物</div></div>
       <div class="home-stat-card"><div class="home-stat-num" id="hs-open">…</div><div class="home-stat-lbl">開放ゾーン</div></div>
       <div class="home-stat-card"><div class="home-stat-num" id="hs-locked">…</div><div class="home-stat-lbl">ロック中ゾーン</div></div>
+      <div class="home-stat-card"><div class="home-stat-num" id="hs-encyclopedia">…</div><div class="home-stat-lbl">図鑑入力済み</div></div>
     </div>
   </div>
   <div class="section">
@@ -604,6 +606,37 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div>
 
+<!-- ===== 📖 図鑑 ===== -->
+<div class="panel" id="panel-encyclopedia">
+  <div class="section">
+    <div class="section-title">📖 いきもの図鑑</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      水族館の全生き物の図鑑データです。<strong>動的追加の3体</strong>は編集できます。<strong>既存の7体</strong>は閲覧のみです。
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+      <select id="enc-filter-category" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
+        <option value="">🐟 なかまで絞り込み</option>
+        <option value="さかなの なかま">さかなの なかま</option>
+        <option value="なんこつぎょるいの なかま">なんこつぎょるいの なかま</option>
+        <option value="たこや いかの なかま">たこや いかの なかま</option>
+        <option value="くらげの なかま">くらげの なかま</option>
+        <option value="うみがめの なかま">うみがめの なかま</option>
+        <option value="のりものの なかま">のりものの なかま</option>
+      </select>
+      <select id="enc-filter-zone" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
+        <option value="">🌊 ゾーンで絞り込み</option>
+        <option value="tropical_reef">熱帯サンゴ礁</option>
+        <option value="japan_coast">日本の海</option>
+        <option value="jellyfish_room">クラゲ水槽</option>
+        <option value="big_fish">大型魚</option>
+      </select>
+      <button onclick="renderEncyclopedia()" style="padding:6px 12px;background:#60A5FA;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再表示</button>
+      <span id="enc-count" style="font-size:0.75rem;color:#888;margin-left:4px;"></span>
+    </div>
+    <div id="encyclopedia-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+  </div>
+</div>
+
 <!-- ===== 🔑 GitHub設定 ===== -->
 <div class="panel" id="panel-github">
   <div class="section">
@@ -703,6 +736,7 @@ function switchTab(panelId) {
   if (panelId === 'creatures' && typeof fetchSeaCreatures === 'function') fetchSeaCreatures();
   if (panelId === 'roadmap')   renderRoadmap();
   if (panelId === 'home')      renderHome();
+  if (panelId === 'encyclopedia') fetchEncyclopedia();
 }
 
 document.querySelectorAll('.tab').forEach(function(tab) {
@@ -756,10 +790,17 @@ function _doRenderHome() {
   var openZones  = zones.filter(function(z) { return z.status === 'open'; }).length;
   var lockedZones= zones.filter(function(z) { return z.status === 'locked'; }).length;
 
-  document.getElementById('hs-creatures').textContent = creatures.length + ' 体';
-  document.getElementById('hs-planned').textContent   = planned.length + ' 体';
-  document.getElementById('hs-open').textContent      = openZones + ' ゾーン';
-  document.getElementById('hs-locked').textContent    = lockedZones + ' ゾーン';
+  var HARDCODED_COUNT = 7;
+  var dynWithCategory = creatures.filter(function(c) { return c.profile && c.profile.category; }).length;
+  var hcWithCategory = Object.values(HARDCODED_PROFILES_ADMIN).filter(function(p) { return p.category; }).length;
+  var encTotal = HARDCODED_COUNT + creatures.length;
+  var encDone  = hcWithCategory + dynWithCategory;
+
+  document.getElementById('hs-creatures').textContent  = creatures.length + ' 体';
+  document.getElementById('hs-planned').textContent    = planned.length + ' 体';
+  document.getElementById('hs-open').textContent       = openZones + ' ゾーン';
+  document.getElementById('hs-locked').textContent     = lockedZones + ' ゾーン';
+  document.getElementById('hs-encyclopedia').textContent = encDone + ' / ' + encTotal + ' 体';
 
   // Museum progress
   var museumWrap = document.getElementById('home-museum-progress');
