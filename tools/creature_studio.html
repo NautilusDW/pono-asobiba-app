@@ -1923,8 +1923,8 @@ async function aiNameSprite(idx) {
 async function aiGroupSprites(idxList) {
   const existingIds = getExistingIdSet();
 
-  // 全スプライトを縮小してbase64に変換（大量送信時のペイロード削減）
-  const MAX_THUMB = 200; // 命名には高解像度は不要
+  // 全スプライトを縮小してbase64に変換（ペイロード+処理時間の削減）
+  const MAX_THUMB = 128;
   const images = idxList.map(i => {
     const src = sprites[i].canvas;
     const scale = Math.min(1, MAX_THUMB / Math.max(src.width, src.height));
@@ -1933,7 +1933,7 @@ async function aiGroupSprites(idxList) {
     tc.width = tw; tc.height = th;
     tc.getContext('2d').drawImage(src, 0, 0, tw, th);
     return {
-      data:     tc.toDataURL('image/jpeg', 0.7).split(',')[1],
+      data:     tc.toDataURL('image/jpeg', 0.6).split(',')[1],
       mimeType: 'image/jpeg'
     };
   });
@@ -1998,8 +1998,8 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
 
   const idxList = cards.map(c => parseInt(c.dataset.idx));
 
-  // バッチ分割（Netlifyペイロード制限対策: 最大10枚ずつ）
-  const BATCH = 10;
+  // バッチ分割（Netlify Function 10秒タイムアウト対策: 最大5枚ずつ）
+  const BATCH = 5;
   const batches = [];
   for (let i = 0; i < idxList.length; i += BATCH) {
     batches.push(idxList.slice(i, i + BATCH));
