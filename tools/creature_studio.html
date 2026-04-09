@@ -146,6 +146,8 @@ body {
 .tbtn-blue:hover   { background: #1d4ed8; }
 .tbtn-green  { background: #22c55e; color: #fff; }
 .tbtn-green:hover  { background: #16a34a; }
+.tbtn-purple { background: #7c3aed; color: #fff; }
+.tbtn-purple:hover { background: #6d28d9; }
 
 .sprites-grid {
   display: flex; flex-wrap: wrap; gap: 10px;
@@ -455,6 +457,7 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-sel-all">全選択</button>
         <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
         <button class="tbtn tbtn-blue"  id="btn-ai-all">🤖 AIで一括命名</button>
+        <button class="tbtn tbtn-purple" id="btn-ai-group">🤖 グループ命名</button>
         <div style="flex:1"></div>
         <button class="tbtn tbtn-green" id="btn-deploy">🐠 GitHubに登録</button>
       </div>
@@ -1497,6 +1500,35 @@ document.getElementById('btn-ai-all').addEventListener('click', async () => {
 
   hideLoading();
   showToast(`命名完了: ${done}体成功${failed > 0 ? ' / ' + failed + '体失敗' : ''}`, failed === 0);
+});
+
+// グループ命名: 選択中の先頭スプライトだけAIにかけ、名前/ID/アイコンを全選択カードに伝播
+document.getElementById('btn-ai-group').addEventListener('click', async () => {
+  const cards = [...document.querySelectorAll('.sprite-card.selected')];
+  if (!cards.length) { showToast('スプライトを選択してください', false); return; }
+
+  const firstIdx = parseInt(cards[0].dataset.idx);
+  showLoading(`AIで命名中... (1回のAPI呼び出しで ${cards.length}体に適用)`);
+  try {
+    await aiNameSprite(firstIdx);
+    const src = sprites[firstIdx];
+
+    // 全選択カードに名前・ID・アイコンを伝播（表情はそのまま）
+    cards.forEach(card => {
+      const idx = parseInt(card.dataset.idx);
+      sprites[idx].name = src.name;
+      sprites[idx].id   = src.id;
+      sprites[idx].icon = src.icon;
+      card.querySelector('.sp-name').value = src.name;
+      card.querySelector('.sp-id').value   = src.id;
+    });
+
+    hideLoading();
+    showToast(`グループ命名完了 — ${cards.length}体を「${src.name}」に設定 (API: 1回)`, true);
+  } catch (e) {
+    hideLoading();
+    showToast('AI命名失敗: ' + e.message, false);
+  }
 });
 
 // ════════════════════════════════════════════════════════════
