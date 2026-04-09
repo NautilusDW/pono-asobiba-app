@@ -232,6 +232,28 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-msg { font-size: 0.82rem; color: #e0e0e0; }
+
+/* ── Zoom + BG Bar ── */
+.zoom-bar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 5px 10px; background: #1f2937;
+  border-bottom: 1px solid #374151; flex-shrink: 0;
+}
+.zoom-bar .zb-label { font-size: 0.72rem; color: #9ca3af; white-space: nowrap; }
+#zoom-level-display {
+  min-width: 40px; text-align: center; font-size: 0.75rem;
+  font-weight: 700; color: #f87171;
+}
+.zoom-bar select {
+  padding: 3px 6px; background: #111827; border: 1px solid #374151;
+  border-radius: 6px; color: #e0e0e0; font-size: 0.72rem; font-family: inherit;
+}
+.zoom-bar select:focus { outline: none; border-color: #f87171; }
+.compare-canvas-box {
+  overflow: hidden; transition: background 0.2s;
+}
+.compare-canvas-box.zoomed { overflow: auto; display: block; }
+.compare-canvas-box.zoomed canvas { display: block; }
 </style>
 </head>
 <body>
@@ -249,6 +271,22 @@ body {
 
   <!-- ════════ LEFT PANEL ════════ -->
   <div class="left-panel">
+
+    <!-- 0. Presets -->
+    <div class="section">
+      <div class="section-title">0. プリセット</div>
+      <div style="display:flex;gap:4px;margin-bottom:5px;align-items:center">
+        <select id="preset-select" style="flex:1;padding:5px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#e0e0e0;font-size:0.75rem;font-family:inherit">
+          <option value="">— プリセット選択 —</option>
+        </select>
+        <button class="tbtn tbtn-ghost" id="btn-preset-load" style="white-space:nowrap;padding:5px 8px;font-size:0.7rem">読込</button>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="text" id="preset-name-input" placeholder="プリセット名" style="flex:1;padding:5px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#e0e0e0;font-size:0.75rem;font-family:inherit">
+        <button class="tbtn tbtn-blue" id="btn-preset-save" style="padding:5px 8px;font-size:0.72rem" title="保存">💾</button>
+        <button class="tbtn tbtn-ghost" id="btn-preset-del" style="padding:5px 8px;font-size:0.72rem" title="削除">🗑</button>
+      </div>
+    </div>
 
     <!-- 1. Input -->
     <div class="section">
@@ -271,6 +309,10 @@ body {
       <div class="form-row">
         <label>フチなめらか <span class="val" id="feather-val">2</span></label>
         <input type="range" id="feather" min="0" max="10" value="2">
+      </div>
+      <div class="form-row">
+        <label>シュリンク <span class="val" id="shrink-val">0</span></label>
+        <input type="range" id="shrink" min="0" max="8" step="1" value="0">
       </div>
     </div>
 
@@ -366,6 +408,28 @@ body {
 
     <!-- Compare tab -->
     <div class="tab-content active" id="tab-compare">
+      <!-- Zoom + BG bar -->
+      <div class="zoom-bar">
+        <span class="zb-label">ズーム:</span>
+        <button class="tbtn tbtn-ghost" id="btn-zoom-out" style="padding:3px 9px;font-size:1rem" title="縮小">−</button>
+        <span id="zoom-level-display">Fit</span>
+        <button class="tbtn tbtn-ghost" id="btn-zoom-in"  style="padding:3px 9px;font-size:1rem" title="拡大">+</button>
+        <button class="tbtn tbtn-ghost" id="btn-zoom-fit" style="padding:3px 8px;font-size:0.72rem" title="画面に合わせる">Fit</button>
+        <button class="tbtn tbtn-ghost" id="btn-zoom-100" style="padding:3px 8px;font-size:0.72rem" title="等倍 (1:1)">1:1</button>
+        <div style="flex:1"></div>
+        <span class="zb-label">背景:</span>
+        <select id="bg-mode-select">
+          <option value="checker">チェッカー</option>
+          <option value="black">黒</option>
+          <option value="white">白</option>
+          <option value="magenta">マゼンタ</option>
+          <option value="green">緑</option>
+          <option value="cyan">シアン</option>
+          <option value="custom">カスタム...</option>
+        </select>
+        <input type="color" id="bg-custom-color" value="#808080"
+               style="display:none;width:32px;height:26px;padding:2px;border:none;border-radius:4px;background:none;cursor:pointer">
+      </div>
       <div class="compare-wrap">
         <div class="compare-side">
           <div class="compare-label">元画像</div>
@@ -433,6 +497,11 @@ let originalCanvas  = null;
 let processedCanvas = null;
 let sprites = [];            // [{canvas, srcX, srcY, w, h, name, id, icon, expr}]
 let creaturesData   = null;
+
+// Compare view state
+let compareZoom = 0;         // 0 = fit mode
+let bgMode      = 'checker';
+let customBgColor = '#808080';
 
 // ════════════════════════════════════════════════════════════
 // Utilities
@@ -512,6 +581,9 @@ document.getElementById('tolerance').addEventListener('input', function() {
 document.getElementById('feather').addEventListener('input', function() {
   document.getElementById('feather-val').textContent = this.value;
 });
+document.getElementById('shrink').addEventListener('input', function() {
+  document.getElementById('shrink-val').textContent = this.value;
+});
 document.getElementById('def-speed').addEventListener('input', function() {
   document.getElementById('speed-val').textContent = parseFloat(this.value).toFixed(1);
 });
@@ -532,8 +604,178 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ════════════════════════════════════════════════════════════
-// File Loading
+// Compare View: zoom & BG helpers
 // ════════════════════════════════════════════════════════════
+const CHECKER_BG = 'repeating-conic-gradient(#2d2d2d 0% 25%, #1a1a1a 0% 50%) 0 0 / 12px 12px';
+const BG_STYLES = {
+  checker: CHECKER_BG,
+  black:   '#000',
+  white:   '#fff',
+  magenta: '#ff00ff',
+  green:   '#00ff00',
+  cyan:    '#00ffff',
+};
+
+function getBgStyle() {
+  if (bgMode === 'custom') return customBgColor;
+  return BG_STYLES[bgMode] || CHECKER_BG;
+}
+
+function drawInBox(boxId, srcCanvas, applyBg) {
+  const box = document.getElementById(boxId);
+  if (!srcCanvas) {
+    box.innerHTML = '<div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>';
+    box.style.background = CHECKER_BG;
+    box.classList.remove('zoomed');
+    return;
+  }
+  if (applyBg) box.style.background = getBgStyle();
+
+  if (compareZoom <= 0) {
+    // Fit mode
+    const cv = document.createElement('canvas');
+    cv.width = srcCanvas.width; cv.height = srcCanvas.height;
+    cv.getContext('2d').drawImage(srcCanvas, 0, 0);
+    cv.style.maxWidth = '100%'; cv.style.height = 'auto'; cv.style.display = 'block';
+    box.classList.remove('zoomed');
+    box.innerHTML = ''; box.appendChild(cv);
+  } else {
+    const w = Math.max(1, Math.round(srcCanvas.width * compareZoom));
+    const h = Math.max(1, Math.round(srcCanvas.height * compareZoom));
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(srcCanvas, 0, 0, w, h);
+    box.classList.add('zoomed');
+    box.innerHTML = ''; box.appendChild(cv);
+  }
+}
+
+function redrawCompare() {
+  drawInBox('box-orig', originalCanvas, false);
+  if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
+  const lbl = document.getElementById('zoom-level-display');
+  lbl.textContent = compareZoom <= 0 ? 'Fit' : Math.round(compareZoom * 100) + '%';
+}
+
+// ════════════════════════════════════════════════════════════
+// Zoom controls
+// ════════════════════════════════════════════════════════════
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  compareZoom = compareZoom <= 0 ? 1.5 : Math.min(compareZoom * 1.5, 8);
+  redrawCompare();
+});
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  if (compareZoom <= 0) return;
+  compareZoom = compareZoom / 1.5;
+  if (compareZoom < 0.15) compareZoom = 0;
+  redrawCompare();
+});
+document.getElementById('btn-zoom-fit').addEventListener('click', () => {
+  compareZoom = 0; redrawCompare();
+});
+document.getElementById('btn-zoom-100').addEventListener('click', () => {
+  compareZoom = 1.0; redrawCompare();
+});
+
+// ════════════════════════════════════════════════════════════
+// BG color
+// ════════════════════════════════════════════════════════════
+const bgModeSelect = document.getElementById('bg-mode-select');
+const bgCustomInput = document.getElementById('bg-custom-color');
+
+bgModeSelect.addEventListener('change', () => {
+  bgMode = bgModeSelect.value;
+  if (bgMode === 'custom') {
+    bgCustomInput.style.display = '';
+    bgCustomInput.click();
+  } else {
+    bgCustomInput.style.display = 'none';
+  }
+  if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
+});
+
+bgCustomInput.addEventListener('input', () => {
+  customBgColor = bgCustomInput.value;
+  if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
+});
+
+// ════════════════════════════════════════════════════════════
+// Presets (localStorage)
+// ════════════════════════════════════════════════════════════
+const PRESETS_KEY = 'ces_presets_v1';
+
+function loadAllPresets() {
+  try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '{}'); } catch { return {}; }
+}
+function saveAllPresets(data) {
+  localStorage.setItem(PRESETS_KEY, JSON.stringify(data));
+}
+function getCurrentSettings() {
+  return {
+    tolerance:  document.getElementById('tolerance').value,
+    feather:    document.getElementById('feather').value,
+    shrink:     document.getElementById('shrink').value,
+    minSize:    document.getElementById('min-size').value,
+    padding:    document.getElementById('padding').value,
+    alphaThresh:document.getElementById('alpha-thresh').value,
+  };
+}
+function applyPresetSettings(s) {
+  const set = (id, val, lblId) => {
+    if (val === undefined) return;
+    document.getElementById(id).value = val;
+    if (lblId) document.getElementById(lblId).textContent = val;
+  };
+  set('tolerance',   s.tolerance,   'tol-val');
+  set('feather',     s.feather,     'feather-val');
+  set('shrink',      s.shrink,      'shrink-val');
+  set('min-size',    s.minSize);
+  set('padding',     s.padding);
+  set('alpha-thresh',s.alphaThresh);
+}
+function refreshPresetSelect() {
+  const sel = document.getElementById('preset-select');
+  const presets = loadAllPresets();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— プリセット選択 —</option>';
+  Object.keys(presets).sort().forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+document.getElementById('btn-preset-save').addEventListener('click', () => {
+  const name = document.getElementById('preset-name-input').value.trim();
+  if (!name) { showToast('プリセット名を入力してください', false); return; }
+  const presets = loadAllPresets();
+  presets[name] = getCurrentSettings();
+  saveAllPresets(presets);
+  refreshPresetSelect();
+  document.getElementById('preset-select').value = name;
+  showToast(`「${name}」を保存しました`, true);
+});
+document.getElementById('btn-preset-load').addEventListener('click', () => {
+  const name = document.getElementById('preset-select').value;
+  if (!name) { showToast('プリセットを選択してください', false); return; }
+  const presets = loadAllPresets();
+  if (presets[name]) {
+    applyPresetSettings(presets[name]);
+    showToast(`「${name}」を読み込みました`, true);
+  }
+});
+document.getElementById('btn-preset-del').addEventListener('click', () => {
+  const name = document.getElementById('preset-select').value;
+  if (!name) return;
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  const presets = loadAllPresets();
+  delete presets[name];
+  saveAllPresets(presets);
+  refreshPresetSelect();
+  showToast('削除しました', true);
+});
+refreshPresetSelect();
+
 function loadImageFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
@@ -544,18 +786,10 @@ function loadImageFile(file) {
       originalCanvas.height = img.naturalHeight;
       originalCanvas.getContext('2d').drawImage(img, 0, 0);
 
-      // Show original in compare
-      const cvOrig = document.createElement('canvas');
-      cvOrig.width  = img.naturalWidth;
-      cvOrig.height = img.naturalHeight;
-      cvOrig.getContext('2d').drawImage(img, 0, 0);
-      cvOrig.style.maxWidth = '100%';
-      const boxOrig = document.getElementById('box-orig');
-      boxOrig.innerHTML = '';
-      boxOrig.appendChild(cvOrig);
-
-      // Clear processed side
-      document.getElementById('box-proc').innerHTML = '<div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>';
+      processedCanvas = null;
+      redrawCompare();
+      document.getElementById('box-proc').innerHTML =
+        '<div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>';
 
       // Drop zone feedback
       const dz = document.getElementById('drop-zone');
@@ -611,7 +845,7 @@ function sampleBgColor(data, w, h) {
   return n > 0 ? [rS/n, gS/n, bS/n] : [255, 255, 255];
 }
 
-function removeBgFromCanvas(canvas, tolerance, featherRadius) {
+function removeBgFromCanvas(canvas, tolerance, featherRadius, shrinkPx) {
   const w = canvas.width, h = canvas.height;
   const ctx = canvas.getContext('2d');
   const imgData = ctx.getImageData(0, 0, w, h);
@@ -647,6 +881,29 @@ function removeBgFromCanvas(canvas, tolerance, featherRadius) {
   }
 
   for (let i = 0; i < w * h; i++) { if (isBg[i]) d[i*4+3] = 0; }
+
+  // Alpha shrink (erosion) — pulls edges inward by shrinkPx pixels
+  if (shrinkPx > 0) {
+    const n = Math.max(1, Math.round(shrinkPx));
+    const alpha = new Uint8Array(w * h);
+    const buf   = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) alpha[i] = d[i * 4 + 3];
+    for (let iter = 0; iter < n; iter++) {
+      buf.set(alpha);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = y * w + x;
+          let m = buf[i];
+          if (x > 0)   m = Math.min(m, buf[i - 1]);
+          if (x < w-1) m = Math.min(m, buf[i + 1]);
+          if (y > 0)   m = Math.min(m, buf[i - w]);
+          if (y < h-1) m = Math.min(m, buf[i + w]);
+          alpha[i] = m;
+        }
+      }
+    }
+    for (let i = 0; i < w * h; i++) d[i * 4 + 3] = alpha[i];
+  }
 
   if (featherRadius > 0) {
     const alpha = new Float32Array(w * h);
@@ -697,22 +954,15 @@ document.getElementById('btn-process').addEventListener('click', async () => {
 
   const tolerance = parseFloat(document.getElementById('tolerance').value);
   const feather   = parseInt(document.getElementById('feather').value);
+  const shrink    = parseInt(document.getElementById('shrink').value);
 
   processedCanvas = document.createElement('canvas');
   processedCanvas.width  = originalCanvas.width;
   processedCanvas.height = originalCanvas.height;
   processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
 
-  removeBgFromCanvas(processedCanvas, tolerance, feather);
-
-  const cv = document.createElement('canvas');
-  cv.width  = processedCanvas.width;
-  cv.height = processedCanvas.height;
-  cv.getContext('2d').drawImage(processedCanvas, 0, 0);
-  cv.style.maxWidth = '100%';
-  const box = document.getElementById('box-proc');
-  box.innerHTML = '';
-  box.appendChild(cv);
+  removeBgFromCanvas(processedCanvas, tolerance, feather, shrink);
+  redrawCompare();
 
   document.getElementById('btn-split').disabled = false;
   hideLoading();
