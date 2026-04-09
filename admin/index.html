@@ -3073,54 +3073,68 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
       // 必ずA角度パスで保存
       var aPath = toAImg(path);
       var aDownloadUrl = toAImg(downloadUrl);
+
+      // meta が無い時はファイルパスから推測する
+      // 例: assets/images/ocean/Clownfish/Clownfish_normal_1.png → id:clownfish, name:Clownfish
+      if (!meta || !meta.id) {
+        meta = meta || {};
+        var fname = aPath.split('/').pop().replace(/\.(png|jpg|jpeg|webp)$/i, '');
+        var guessedId = fname
+          .replace(/_normal_\d+$/, '')
+          .replace(/_\d+$/, '')
+          .replace(/_A$|_B$/, '')
+          .toLowerCase();
+        if (!meta.id)   meta.id   = guessedId;
+        if (!meta.name) meta.name = guessedId;
+        if (!meta.cat) {
+          // パスから type を推測
+          if (/\/ocean\//i.test(aPath) || /^bg_.*_sea_/i.test(aPath)) meta.cat = 'sea';
+          else if (/\/Bowling\/BG\//i.test(aPath) || /\/Block\//i.test(aPath)) meta.cat = 'bg';
+          else if (/\/walls\//i.test(aPath))  meta.cat = 'wall';
+          else if (/\/floors\//i.test(aPath)) meta.cat = 'floor';
+          else meta.cat = 'furn';
+        }
+      }
+
+      // 画像/ID/Type を常に更新
       imgInp.value = aPath;
+      idInp.value = meta.id;
+      typeInp.value = meta.cat || 'deco';
       thumb.src = aDownloadUrl;
       thumb.style.display = '';
-      if (meta && meta.id) {
-        idInp.value = meta.id;
-        typeInp.value = meta.cat || 'deco';
-        // 親カードのname自動入力（選択時は常に上書き。hidden name にも書き込む）
-        if (parentCard) {
-          var nameKey = prefix ? prefix + '-name' : 'name';
-          var nameInp = parentCard.querySelector('[data-key="' + nameKey + '"]');
-          if (nameInp && meta.name) {
-            nameInp.value = meta.name;
+
+      // 親カードのnameを常に上書き（visible input / hidden input 両対応）
+      if (parentCard) {
+        var nameKey = prefix ? prefix + '-name' : 'name';
+        var nameInp = parentCard.querySelector('[data-key="' + nameKey + '"]');
+        if (nameInp && meta.name) {
+          nameInp.value = meta.name;
+        }
+        // gendered 時: boy/girl の入力をピッカーで行ったら、トップの総称 name も合成
+        if (prefix === 'boy' || prefix === 'girl') {
+          var topNameInp = parentCard.querySelector('[data-key="name"]');
+          if (topNameInp) {
+            var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
+            var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
+            var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
+            if (combined) topNameInp.value = combined;
           }
-          // gendered 時: boy/girl の入力をピッカーで行ったら、トップの総称 name も
-          // "boy / girl" 形式で自動合成。ただしユーザーが自分で書いた名前は上書きしない
-          //（デフォルト「ごほうびN」や空、または以前の自動合成結果の時だけ更新）
-          if (prefix === 'boy' || prefix === 'girl') {
-            var topNameInp = parentCard.querySelector('[data-key="name"]');
-            if (topNameInp) {
-              var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
-              var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
-              var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
-              var cur = topNameInp.value || '';
-              var isAutoOrEmpty =
-                !cur
-                || /^ごほうび\d+$/.test(cur)
-                || / \/ /.test(cur)   // 前回合成された「X / Y」形式
-                || cur === bn
-                || cur === gn;
-              if (isAutoOrEmpty && combined) topNameInp.value = combined;
-            }
-          }
-          // カードプレビュー画像を更新（gendered の時は boy 側変更時だけ）
-          if (prefix !== 'girl') {
-            var cardPrev = parentCard.querySelector('.reward-preview-img');
-            if (cardPrev) {
-              cardPrev.src = aDownloadUrl;
-              cardPrev.style.display = ''; // 前回の onerror で非表示になっていたら戻す
-            } else {
-              // 初回: placeholder（🎁などの絵文字表示）を img に差し替え
-              var ph = parentCard.querySelector('.reward-preview-placeholder');
-              if (ph) {
-                var newImg = document.createElement('img');
-                newImg.className = 'reward-preview-img';
-                newImg.src = aDownloadUrl;
-                newImg.onerror = function() { this.style.display = 'none'; };
-                ph.parentNode.replaceChild(newImg, ph);
-              }
+        }
+        // カードプレビュー画像を更新（gendered の時は boy 側変更時だけ）
+        if (prefix !== 'girl') {
+          var cardPrev = parentCard.querySelector('.reward-preview-img');
+          if (cardPrev) {
+            cardPrev.src = aDownloadUrl;
+            cardPrev.style.display = ''; // 前回の onerror で非表示になっていたら戻す
+          } else {
+            // 初回: placeholder（🎁などの絵文字表示）を img に差し替え
+            var ph = parentCard.querySelector('.reward-preview-placeholder');
+            if (ph) {
+              var newImg = document.createElement('img');
+              newImg.className = 'reward-preview-img';
+              newImg.src = aDownloadUrl;
+              newImg.onerror = function() { this.style.display = 'none'; };
+              ph.parentNode.replaceChild(newImg, ph);
             }
           }
         }
