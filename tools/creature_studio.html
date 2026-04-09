@@ -1855,7 +1855,12 @@ function getExistingIdSet() {
 
 async function aiNameSprite(idx) {
   const sp = sprites[idx];
-  const base64 = sp.canvas.toDataURL('image/png').split(',')[1];
+  const scale = Math.min(1, 200 / Math.max(sp.canvas.width, sp.canvas.height));
+  const tw = Math.round(sp.canvas.width * scale), th = Math.round(sp.canvas.height * scale);
+  const tc = document.createElement('canvas');
+  tc.width = tw; tc.height = th;
+  tc.getContext('2d').drawImage(sp.canvas, 0, 0, tw, th);
+  const base64 = tc.toDataURL('image/jpeg', 0.7).split(',')[1];
   const existingIds = getExistingIdSet();
 
   const prompt = `添付の画像は子供向け水族館ゲームに登場する海の生き物のイラストです。
@@ -1918,11 +1923,20 @@ async function aiNameSprite(idx) {
 async function aiGroupSprites(idxList) {
   const existingIds = getExistingIdSet();
 
-  // 全スプライトをbase64に変換
-  const images = idxList.map(i => ({
-    data:     sprites[i].canvas.toDataURL('image/png').split(',')[1],
-    mimeType: 'image/png'
-  }));
+  // 全スプライトを縮小してbase64に変換（大量送信時のペイロード削減）
+  const MAX_THUMB = 200; // 命名には高解像度は不要
+  const images = idxList.map(i => {
+    const src = sprites[i].canvas;
+    const scale = Math.min(1, MAX_THUMB / Math.max(src.width, src.height));
+    const tw = Math.round(src.width * scale), th = Math.round(src.height * scale);
+    const tc = document.createElement('canvas');
+    tc.width = tw; tc.height = th;
+    tc.getContext('2d').drawImage(src, 0, 0, tw, th);
+    return {
+      data:     tc.toDataURL('image/jpeg', 0.7).split(',')[1],
+      mimeType: 'image/jpeg'
+    };
+  });
 
   const prompt =
 `以下の${idxList.length}枚の画像は子供向け水族館ゲームに登場する海の生き物のスプライトです。
