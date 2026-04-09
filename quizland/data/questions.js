@@ -104,6 +104,32 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'opposite', category:'opposite', word:'うえ',     q:'「うえ」の はんたいは？',     answer:3, choices:['みぎ','まえ','ひだり','した'] }
   ],
 
+  // ── どうぶつ ──────────────────────────────────────
+  animal: [
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐶', q:'これは なに？', answer:0, choices:['いぬ','ねこ','うさぎ','くま'] },
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐱', q:'これは なに？', answer:1, choices:['いぬ','ねこ','うさぎ','くま'] },
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐘', q:'これは なに？', answer:2, choices:['きりん','ライオン','ぞう','パンダ'] },
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐼', q:'これは なに？', answer:0, choices:['パンダ','くま','ねこ','たぬき'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🦁', q:'これは なに？', answer:1, choices:['とら','ライオン','ひょう','チーター'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🦒', q:'これは なに？', answer:2, choices:['うま','シマウマ','きりん','らくだ'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🐸', q:'これは なに？', answer:0, choices:['かえる','トカゲ','かめ','ヘビ'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🐯', q:'これは なに？', answer:3, choices:['ライオン','チーター','ひょう','とら'] },
+    { level:3, type:'emoji_name', category:'animal', emoji:'🦊', q:'これは なに？', answer:1, choices:['たぬき','きつね','おおかみ','いぬ'] },
+    { level:3, type:'emoji_name', category:'animal', emoji:'🦔', q:'これは なに？', answer:2, choices:['もぐら','ねずみ','ハリネズミ','りす'] }
+  ],
+
+  // ── むし ──────────────────────────────────────────
+  insect: [
+    { level:1, type:'emoji_name', category:'insect', emoji:'🦋', q:'これは なに？', answer:0, choices:['ちょうちょ','トンボ','はち','かぶとむし'] },
+    { level:1, type:'emoji_name', category:'insect', emoji:'🐞', q:'これは なに？', answer:2, choices:['はち','あり','てんとうむし','かぶとむし'] },
+    { level:2, type:'emoji_name', category:'insect', emoji:'🐝', q:'これは なに？', answer:1, choices:['あり','はち','ちょうちょ','かぶとむし'] },
+    { level:2, type:'emoji_name', category:'insect', emoji:'🪲', q:'これは なに？', answer:0, choices:['かぶとむし','クワガタ','ダンゴムシ','あり'] },
+    { level:2, type:'emoji_name', category:'insect', emoji:'🐜', q:'これは なに？', answer:3, choices:['はち','ちょうちょ','ゴキブリ','あり'] },
+    { level:3, type:'emoji_name', category:'insect', emoji:'🪳', q:'これは なに？', answer:1, choices:['あり','ゴキブリ','ダンゴムシ','カマキリ'] },
+    { level:3, type:'emoji_name', category:'insect', emoji:'🦗', q:'これは なに？', answer:2, choices:['バッタ','セミ','コオロギ','カマキリ'] },
+    { level:3, type:'emoji_name', category:'insect', emoji:'🦟', q:'これは なに？', answer:0, choices:['か','あぶ','はえ','はち'] }
+  ],
+
   // ── からだのぶぶん ────────────────────────────────
   body: [
     { level:1, type:'emoji_name', category:'body', emoji:'👁️', q:'これは からだの どこ？', answer:1, choices:['はな','め','くち','みみ'] },
@@ -123,6 +149,8 @@ const QUIZLAND_CATEGORIES = {
   food:         { label: 'たべもの',         emoji: '🍎' },
   vehicle:      { label: 'のりもの',         emoji: '🚗' },
   dino:         { label: 'きょうりゅう',     emoji: '🦕' },
+  animal:       { label: 'どうぶつ',         emoji: '🐘' },
+  insect:       { label: 'むし',             emoji: '🦋' },
   weather:      { label: 'てんき',           emoji: '☀️' },
   opposite:     { label: 'はんたいことば',   emoji: '🔄' },
   body:         { label: 'からだ',           emoji: '✋' }

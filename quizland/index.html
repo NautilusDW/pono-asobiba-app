@@ -482,6 +482,7 @@ body {
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
     <button class="modal-btn" id="result-btn">もう一回 ▶</button>
+    <button class="modal-btn modal-btn-cat" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🎯 カテゴリーをかえる</button>
     <a href="../index.html" class="modal-back">← メニューにもどる</a>
   </div>
 </div>
@@ -865,9 +866,16 @@ document.getElementById('cat-start-btn').addEventListener('click', function() {
   initGame();
 });
 
-// Result retry button
+// Result retry button (same categories)
 document.getElementById('result-btn').addEventListener('click', function() {
   initGame();
+});
+
+// Result "change category" button → back to category screen
+document.getElementById('result-cat-btn').addEventListener('click', function() {
+  document.getElementById('result-overlay').classList.add('hidden');
+  buildCategoryScreen();
+  document.getElementById('category-screen').classList.remove('hidden');
 });
 
 })();

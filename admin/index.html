@@ -285,6 +285,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="encyclopedia">📖 図鑑</button>
+  <button class="tab" data-panel="illust">🎨 イラスト管理</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
   <button class="tab" data-panel="github">🔑 GitHub設定</button>
 </div>
@@ -639,6 +640,19 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div>
 
+<!-- ===== 🎨 イラスト管理 ===== -->
+<div class="panel" id="panel-illust">
+  <div class="section">
+    <div class="section-title">🎨 クイズ用イラスト 制作リスト</div>
+    <div id="illust-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:0.8rem;font-weight:700;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button onclick="illustSetAll('done')"    style="padding:5px 12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ 全部完成にする</button>
+      <button onclick="illustSetAll('todo')"    style="padding:5px 12px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 全部リセット</button>
+    </div>
+    <div id="illust-groups"></div>
+  </div>
+</div>
+
 <!-- ===== 🔑 GitHub設定 ===== -->
 <div class="panel" id="panel-github">
   <div class="section">
@@ -739,6 +753,7 @@ function switchTab(panelId) {
   if (panelId === 'roadmap')   renderRoadmap();
   if (panelId === 'home')      renderHome();
   if (panelId === 'encyclopedia') fetchEncyclopedia();
+  if (panelId === 'illust')    renderIllust();
 }
 
 document.querySelectorAll('.tab').forEach(function(tab) {
@@ -4337,6 +4352,164 @@ if (unlockedKeys.length === 0) {
     div.style.cssText = 'padding:6px 0;border-bottom:1px solid #F5F0E8;';
     div.textContent = '✅ ' + (ach ? ach.name : id);
     unlockedList.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// イラスト管理
+// ════════════════════════════════════════════════════════════════
+var ILLUST_GROUPS = [
+  {
+    id: 'dino', label: '🦕 きょうりゅう', priority: '高', note: 'emoji が 🦕🦖 の2種類しかなく見分けにくい。最優先で制作推奨。',
+    items: [
+      { id: 'dino_trex',           name: 'ティラノサウルス' },
+      { id: 'dino_brachiosaurus',  name: 'ブラキオサウルス' },
+      { id: 'dino_triceratops',    name: 'トリケラトプス' },
+      { id: 'dino_stegosaurus',    name: 'ステゴサウルス' },
+      { id: 'dino_pteranodon',     name: 'プテラノドン' },
+      { id: 'dino_raptor',         name: 'ヴェロキラプトル' }
+    ]
+  },
+  {
+    id: 'animal', label: '🐘 どうぶつ', priority: '中', note: '将来の動物園アプリに流用予定。ふんわりかわいいタッチで。',
+    items: [
+      { id: 'animal_dog',       name: 'いぬ' },
+      { id: 'animal_cat',       name: 'ねこ' },
+      { id: 'animal_elephant',  name: 'ぞう' },
+      { id: 'animal_panda',     name: 'パンダ' },
+      { id: 'animal_lion',      name: 'ライオン' },
+      { id: 'animal_giraffe',   name: 'きりん' },
+      { id: 'animal_frog',      name: 'かえる' },
+      { id: 'animal_tiger',     name: 'とら' },
+      { id: 'animal_fox',       name: 'きつね' },
+      { id: 'animal_hedgehog',  name: 'ハリネズミ' },
+      { id: 'animal_rabbit',    name: 'うさぎ' },
+      { id: 'animal_bear',      name: 'くま' }
+    ]
+  },
+  {
+    id: 'insect', label: '🦋 むし', priority: '中', note: '将来の虫博物館アプリに流用予定。図鑑風の細かいタッチでもOK。',
+    items: [
+      { id: 'insect_butterfly',  name: 'ちょうちょ' },
+      { id: 'insect_ladybug',    name: 'てんとうむし' },
+      { id: 'insect_bee',        name: 'はち' },
+      { id: 'insect_beetle',     name: 'かぶとむし' },
+      { id: 'insect_stag',       name: 'クワガタ' },
+      { id: 'insect_ant',        name: 'あり' },
+      { id: 'insect_cricket',    name: 'コオロギ' },
+      { id: 'insect_grasshopper',name: 'バッタ' }
+    ]
+  },
+  {
+    id: 'food', label: '🍎 たべもの', priority: '低', note: 'emoji がわかりやすいので今は不要。アプリのテイストに合わせたい場合のみ。',
+    items: [
+      { id: 'food_apple',       name: 'りんご' },
+      { id: 'food_banana',      name: 'バナナ' },
+      { id: 'food_strawberry',  name: 'いちご' },
+      { id: 'food_orange',      name: 'みかん' },
+      { id: 'food_grape',       name: 'ぶどう' },
+      { id: 'food_watermelon',  name: 'すいか' },
+      { id: 'food_carrot',      name: 'にんじん' },
+      { id: 'food_mushroom',    name: 'きのこ' }
+    ]
+  },
+  {
+    id: 'vehicle', label: '🚗 のりもの', priority: '低', note: 'emoji が明快なので今は不要。',
+    items: [
+      { id: 'vehicle_car',       name: 'くるま' },
+      { id: 'vehicle_train',     name: 'でんしゃ' },
+      { id: 'vehicle_airplane',  name: 'ひこうき' },
+      { id: 'vehicle_bus',       name: 'バス' },
+      { id: 'vehicle_firetruck', name: 'しょうぼうしゃ' },
+      { id: 'vehicle_ship',      name: 'ふね' },
+      { id: 'vehicle_rocket',    name: 'ロケット' },
+      { id: 'vehicle_bicycle',   name: 'じてんしゃ' }
+    ]
+  }
+];
+
+var ILLUST_STATUS_KEY = 'quiz_illust_status';
+
+function illustGetStatus() {
+  try { return JSON.parse(localStorage.getItem(ILLUST_STATUS_KEY) || '{}'); } catch(e) { return {}; }
+}
+function illustSetStatus(id, status) {
+  var s = illustGetStatus(); s[id] = status;
+  localStorage.setItem(ILLUST_STATUS_KEY, JSON.stringify(s));
+}
+function illustSetAll(status) {
+  var s = {};
+  ILLUST_GROUPS.forEach(function(g) { g.items.forEach(function(it) { s[it.id] = status; }); });
+  localStorage.setItem(ILLUST_STATUS_KEY, JSON.stringify(s));
+  renderIllust();
+}
+
+var PRIORITY_COLOR = { '高': '#EF4444', '中': '#F97316', '低': '#6B7280' };
+var STATUS_LABEL   = { 'todo': '未作成', 'wip': '作成中', 'done': '完成' };
+var STATUS_COLOR   = { 'todo': '#9CA3AF', 'wip': '#FBBF24', 'done': '#10B981' };
+var STATUS_NEXT    = { 'todo': 'wip', 'wip': 'done', 'done': 'todo' };
+
+function renderIllust() {
+  var statuses = illustGetStatus();
+  var allItems = 0, doneItems = 0, wipItems = 0;
+  ILLUST_GROUPS.forEach(function(g) {
+    g.items.forEach(function(it) {
+      allItems++;
+      var s = statuses[it.id] || 'todo';
+      if (s === 'done') doneItems++;
+      if (s === 'wip')  wipItems++;
+    });
+  });
+
+  // Summary
+  document.getElementById('illust-summary').innerHTML =
+    '<span style="background:#10B981;color:#fff;padding:4px 10px;border-radius:8px;">✅ 完成 ' + doneItems + '</span>' +
+    '<span style="background:#FBBF24;color:#5D4E37;padding:4px 10px;border-radius:8px;">🖌 作成中 ' + wipItems + '</span>' +
+    '<span style="background:#9CA3AF;color:#fff;padding:4px 10px;border-radius:8px;">📋 未作成 ' + (allItems - doneItems - wipItems) + '</span>' +
+    '<span style="background:#3B82F6;color:#fff;padding:4px 10px;border-radius:8px;">合計 ' + doneItems + ' / ' + allItems + '</span>';
+
+  // Groups
+  var container = document.getElementById('illust-groups');
+  container.innerHTML = '';
+  ILLUST_GROUPS.forEach(function(g) {
+    var div = document.createElement('div');
+    div.style.cssText = 'margin-bottom:20px;';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+    header.innerHTML =
+      '<span style="font-size:1rem;font-weight:900;">' + g.label + '</span>' +
+      '<span style="background:' + PRIORITY_COLOR[g.priority] + ';color:#fff;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">優先度 ' + g.priority + '</span>' +
+      '<span style="font-size:0.72rem;color:#8B7355;">' + g.note + '</span>';
+    div.appendChild(header);
+
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;';
+
+    g.items.forEach(function(it) {
+      var s = statuses[it.id] || 'todo';
+      var card = document.createElement('div');
+      card.style.cssText =
+        'display:flex;align-items:center;justify-content:space-between;padding:7px 10px;' +
+        'border-radius:10px;border:2px solid ' + STATUS_COLOR[s] + ';' +
+        'background:' + (s === 'done' ? '#F0FDF4' : s === 'wip' ? '#FFFBEB' : '#F9FAFB') + ';' +
+        'cursor:pointer;font-size:0.78rem;font-weight:700;gap:6px;';
+      card.title = 'クリックでステータス変更';
+      card.innerHTML =
+        '<span>' + it.name + '</span>' +
+        '<span style="background:' + STATUS_COLOR[s] + ';color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;white-space:nowrap;">' + STATUS_LABEL[s] + '</span>';
+      card.addEventListener('click', (function(itemId) {
+        return function() {
+          var cur = illustGetStatus()[itemId] || 'todo';
+          illustSetStatus(itemId, STATUS_NEXT[cur]);
+          renderIllust();
+        };
+      })(it.id));
+      grid.appendChild(card);
+    });
+
+    div.appendChild(grid);
+    container.appendChild(div);
   });
 }
 
