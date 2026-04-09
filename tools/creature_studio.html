@@ -1604,20 +1604,23 @@ function computeThumb(canvas) {
   c.width = c.height = S;
   c.getContext('2d').drawImage(canvas, 0, 0, S, S);
   const d = c.getContext('2d').getImageData(0, 0, S, S).data;
-  const v = new Float32Array(S * S);
+  // RGB 3チャンネル（グレースケールだと色の違いが消える → 別種が同種に誤判定される）
+  const v = new Float32Array(S * S * 3);
   let norm = 0;
   for (let i = 0; i < S * S; i++) {
     const a = d[i*4+3] / 255;
-    v[i] = (0.299*d[i*4] + 0.587*d[i*4+1] + 0.114*d[i*4+2]) / 255 * a;
-    norm += v[i] * v[i];
+    v[i*3]   = d[i*4]   / 255 * a;
+    v[i*3+1] = d[i*4+1] / 255 * a;
+    v[i*3+2] = d[i*4+2] / 255 * a;
+    norm += v[i*3]**2 + v[i*3+1]**2 + v[i*3+2]**2;
   }
   norm = Math.sqrt(norm) || 1;
-  for (let i = 0; i < S*S; i++) v[i] /= norm;
+  for (let i = 0; i < v.length; i++) v[i] /= norm;
   return v;
 }
 
 /** コサイン類似度 ≥ threshold でグリーディークラスタリング */
-function groupBySimilarity(idxList, threshold = 0.55) {
+function groupBySimilarity(idxList, threshold = 0.75) {
   const thumbs = idxList.map(i => computeThumb(sprites[i].canvas));
   const groups = [];
   const used = new Set();
