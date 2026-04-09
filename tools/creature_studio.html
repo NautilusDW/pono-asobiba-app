@@ -394,6 +394,10 @@ body {
         <label>アルファしきい値</label>
         <input type="number" id="alpha-thresh" value="10" min="0" max="255">
       </div>
+      <div class="form-row">
+        <label>結合距離 (px)</label>
+        <input type="number" id="merge-gap" value="15" min="0" max="100" title="この距離以内のパーツを1つのスプライトとして結合">
+      </div>
     </div>
 
     <!-- 4. GitHub Token -->
@@ -1451,7 +1455,7 @@ function _cleanSpriteEdges(canvas, tolerance, bgColor) {
   if (changed) ctx.putImageData(imgData, 0, 0);
 }
 
-function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
+function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap) {
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
 
@@ -1462,7 +1466,43 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
   const fg = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) fg[i] = d[i*4+3] > alphaThr ? 1 : 0;
 
-  // Union-Find with path compression
+  // 膨張マスク: mergeGap 以内の隙間を埋めて近接パーツを結合する
+  // Union-Findは膨張マスクで実行し、切り出しは元の fg で行う
+  let fgForUF = fg;
+  if (mergeGap > 0) {
+    const half = Math.ceil(mergeGap / 2);
+    fgForUF = new Uint8Array(w * h);
+    // 水平膨張
+    const tmp = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const base = y * w;
+      let last = -half - 1; // 最後に前景を見た x 位置
+      for (let x = 0; x < w; x++) {
+        if (fg[base + x]) last = x;
+        if (x - last <= half) tmp[base + x] = 1;
+      }
+      last = w + half + 1;
+      for (let x = w - 1; x >= 0; x--) {
+        if (fg[base + x]) last = x;
+        if (last - x <= half) tmp[base + x] = 1;
+      }
+    }
+    // 垂直膨張
+    for (let x = 0; x < w; x++) {
+      let last = -half - 1;
+      for (let y = 0; y < h; y++) {
+        if (tmp[y * w + x]) last = y;
+        if (y - last <= half) fgForUF[y * w + x] = 1;
+      }
+      last = h + half + 1;
+      for (let y = h - 1; y >= 0; y--) {
+        if (tmp[y * w + x]) last = y;
+        if (last - y <= half) fgForUF[y * w + x] = 1;
+      }
+    }
+  }
+
+  // Union-Find with path compression（膨張マスクで結合判定）
   const parent = new Int32Array(w * h).fill(-1);
   function find(i) {
     while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; }
@@ -1476,10 +1516,10 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
-      if (!fg[i]) continue;
+      if (!fgForUF[i]) continue;
       parent[i] = i;
-      if (y > 0 && fg[i - w]) unite(i, i - w);
-      if (x > 0 && fg[i - 1]) unite(i, i - 1);
+      if (y > 0 && fgForUF[i - w]) unite(i, i - w);
+      if (x > 0 && fgForUF[i - 1]) unite(i, i - 1);
     }
   }
 
@@ -1559,8 +1599,9 @@ document.getElementById('btn-split').addEventListener('click', async () => {
   const padding  = parseInt(document.getElementById('padding').value)   || 4;
   const alphaThr = parseInt(document.getElementById('alpha-thresh').value) || 10;
   const bgTol    = parseFloat(document.getElementById('tolerance').value) || 35;
+  const mergeGap = parseInt(document.getElementById('merge-gap').value) || 0;
 
-  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol);
+  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap);
   renderSpritesGrid();
 
   // Switch to sprites tab
