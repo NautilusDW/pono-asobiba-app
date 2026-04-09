@@ -110,36 +110,19 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'opposite', category:'opposite', word:'うえ',     q:'「うえ」の はんたいは？',     answer:3, choices:['みぎ','まえ','ひだり','した'] }
   ],
 
-  // ── どうぶつ（名前当てではなく豆知識型） ──────────
+  // ── どうぶつ ──────────────────────────────────────
   animal: [
-    // Level 1
-    { level:1, type:'trivia', category:'animal',
-      q:'いちばん くびが ながい どうぶつは？',
-      answer:1, choices:['ゾウ','キリン','シマウマ','ライオン'] },
-    { level:1, type:'trivia', category:'animal',
-      q:'いちばん おおきな りくの どうぶつは？',
-      answer:0, choices:['ゾウ','カバ','サイ','キリン'] },
-    { level:1, type:'trivia', category:'animal',
-      q:'たけを たべる どうぶつは？',
-      answer:2, choices:['ライオン','ゾウ','パンダ','キツネ'] },
-    { level:1, type:'trivia', category:'animal',
-      q:'しろと くろの しまもようの どうぶつは？',
-      answer:1, choices:['うま','シマウマ','パンダ','タヌキ'] },
-    // Level 2
-    { level:2, type:'trivia', category:'animal',
-      q:'うまは どうやって ねむる？',
-      hint:'ねころばなくても ねむれるよ！',
-      answer:0, choices:['たったまま','ねころんで','きに ぶらさがって','うみの なかで'] },
-    { level:2, type:'trivia', category:'animal',
-      q:'いちばん おそい どうぶつは？',
-      answer:2, choices:['カタツムリ','カメ','ナマケモノ','ウシ'] },
-    { level:2, type:'trivia', category:'animal',
-      q:'カンガルーの あかちゃんは どこで そだつ？',
-      answer:1, choices:['すの なか','おなかの ふくろ','きの うえ','あなの なか'] },
-    { level:2, type:'trivia', category:'animal',
-      q:'きつねの なきごえは？',
-      answer:0, choices:['コンコン','ワンワン','ニャー','モー'] },
-    // Level 3
+    // Level 1: 名前当て（やさしい）
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐶', q:'これは なに？', answer:0, choices:['いぬ','ねこ','うさぎ','くま'] },
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐱', q:'これは なに？', answer:1, choices:['いぬ','ねこ','うさぎ','くま'] },
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐘', q:'これは なに？', answer:2, choices:['きりん','ライオン','ぞう','パンダ'] },
+    { level:1, type:'emoji_name', category:'animal', emoji:'🐼', q:'これは なに？', answer:0, choices:['パンダ','くま','ねこ','たぬき'] },
+    // Level 2: 名前当て（ふつう・やや難しい動物）
+    { level:2, type:'emoji_name', category:'animal', emoji:'🦁', q:'これは なに？', answer:1, choices:['とら','ライオン','ひょう','チーター'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🦒', q:'これは なに？', answer:2, choices:['うま','シマウマ','きりん','らくだ'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🐸', q:'これは なに？', answer:0, choices:['かえる','トカゲ','かめ','ヘビ'] },
+    { level:2, type:'emoji_name', category:'animal', emoji:'🐯', q:'これは なに？', answer:3, choices:['ライオン','チーター','ひょう','とら'] },
+    // Level 3: 豆知識型（むずかしい）
     { level:3, type:'trivia', category:'animal',
       q:'たまごを うむ ほにゅうるいは？',
       hint:'オーストラリアに すむ ふしぎな どうぶつ！',
@@ -150,27 +133,16 @@ const QUIZLAND_QUESTIONS = {
       answer:2, choices:['においで わかる','めで みえる','こえを つかう','かぜで わかる'] }
   ],
 
-  // ── むし（名前当てではなく豆知識型） ──────────────
+  // ── むし ──────────────────────────────────────────
   insect: [
-    // Level 1
-    { level:1, type:'trivia', category:'insect',
-      q:'みつを あつめる むしは？',
-      answer:0, choices:['ハチ','アリ','ちょうちょ','カブトムシ'] },
-    { level:1, type:'trivia', category:'insect',
-      q:'さなぎに なって へんしんする むしは？',
-      answer:1, choices:['アリ','ちょうちょ','バッタ','セミ'] },
-    // Level 2
-    { level:2, type:'trivia', category:'insect',
-      q:'むしの あしは なんぼん？',
-      answer:1, choices:['4ぼん','6ぼん','8ぼん','10ぼん'] },
-    { level:2, type:'trivia', category:'insect',
-      q:'てんとうむしは なぜ あかい？',
-      hint:'てきに にげてもらうためだよ！',
-      answer:0, choices:['あぶないよと おしえるため','あたたかく するため','おなかが すいたから','たのしいから'] },
-    { level:2, type:'trivia', category:'insect',
-      q:'じぶんの からだより おもいものを はこべる むしは？',
-      answer:2, choices:['ちょうちょ','セミ','アリ','ハチ'] },
-    // Level 3
+    // Level 1: 名前当て（やさしい）
+    { level:1, type:'emoji_name', category:'insect', emoji:'🦋', q:'これは なに？', answer:0, choices:['ちょうちょ','トンボ','はち','かぶとむし'] },
+    { level:1, type:'emoji_name', category:'insect', emoji:'🐞', q:'これは なに？', answer:2, choices:['はち','あり','てんとうむし','かぶとむし'] },
+    // Level 2: 名前当て（ふつう・やや難しい虫）
+    { level:2, type:'emoji_name', category:'insect', emoji:'🐝', q:'これは なに？', answer:1, choices:['あり','はち','ちょうちょ','かぶとむし'] },
+    { level:2, type:'emoji_name', category:'insect', emoji:'🪲', q:'これは なに？', answer:0, choices:['かぶとむし','クワガタ','ダンゴムシ','あり'] },
+    { level:2, type:'emoji_name', category:'insect', emoji:'🐜', q:'これは なに？', answer:3, choices:['はち','ちょうちょ','セミ','あり'] },
+    // Level 3: 豆知識型（むずかしい）
     { level:3, type:'trivia', category:'insect',
       q:'セミは ちめんの なかで どのくらい すごす？',
       hint:'おとなに なるまで とても ながい！',
