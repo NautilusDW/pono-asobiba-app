@@ -53,15 +53,27 @@ exports.handler = async function(event) {
     + encodeURIComponent(model)
     + ':generateContent?key=' + encodeURIComponent(apiKey);
 
+  // 複数画像モード: body.images = [{data, mimeType}, ...]
+  var images = body.images;
+  var parts;
+  if (images && Array.isArray(images) && images.length > 0) {
+    parts = images.map(function(img) {
+      return { inline_data: { mime_type: img.mimeType || 'image/png', data: img.data } };
+    });
+    parts.push({ text: prompt });
+  } else if (imageBase64) {
+    parts = [{ inline_data: { mime_type: mimeType, data: imageBase64 } }, { text: prompt }];
+  } else {
+    parts = [{ text: prompt }];
+  }
+
   try {
     var resp = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
-          parts: imageBase64
-            ? [{ inline_data: { mime_type: mimeType, data: imageBase64 } }, { text: prompt }]
-            : [{ text: prompt }]
+          parts: parts
         }],
         generationConfig: {
           temperature: 0.3,

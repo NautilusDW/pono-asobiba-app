@@ -1594,49 +1594,69 @@ document.getElementById('btn-ai-all').addEventListener('click', async () => {
 });
 
 // ════════════════════════════════════════════════════════════
-// グループ命名: 視覚的類似度で自動グループ分け → グループごとに1回AI
+// グループ命名: Gemini に全スプライトをまとめて送り、種類ごとにグループ分け＆命名
 // ════════════════════════════════════════════════════════════
 
-/** スプライトを 32×32 アルファ加重グレースケールに縮小してコサイン正規化 */
-function computeThumb(canvas) {
-  const S = 32;
-  const c = document.createElement('canvas');
-  c.width = c.height = S;
-  c.getContext('2d').drawImage(canvas, 0, 0, S, S);
-  const d = c.getContext('2d').getImageData(0, 0, S, S).data;
-  // RGB 3チャンネル（グレースケールだと色の違いが消える → 別種が同種に誤判定される）
-  const v = new Float32Array(S * S * 3);
-  let norm = 0;
-  for (let i = 0; i < S * S; i++) {
-    const a = d[i*4+3] / 255;
-    v[i*3]   = d[i*4]   / 255 * a;
-    v[i*3+1] = d[i*4+1] / 255 * a;
-    v[i*3+2] = d[i*4+2] / 255 * a;
-    norm += v[i*3]**2 + v[i*3+1]**2 + v[i*3+2]**2;
-  }
-  norm = Math.sqrt(norm) || 1;
-  for (let i = 0; i < v.length; i++) v[i] /= norm;
-  return v;
-}
+/**
+ * 全スプライトを1回のGemini呼び出しでグループ分けして命名する
+ * @param {number[]} idxList  - スプライトインデックスの配列
+ * @returns {Promise<{indices:number[], id:string, name:string, icon:string}[]>}
+ *   indices はidxList上の位置（0始まり）ではなく実際のspriteインデックス
+ */
+async function aiGroupSprites(idxList) {
+  const existingIds = getExistingIdSet();
 
-/** コサイン類似度 ≥ threshold でグリーディークラスタリング */
-function groupBySimilarity(idxList, threshold = 0.75) {
-  const thumbs = idxList.map(i => computeThumb(sprites[i].canvas));
-  const groups = [];
-  const used = new Set();
-  for (let i = 0; i < idxList.length; i++) {
-    if (used.has(i)) continue;
-    const g = [idxList[i]];
-    used.add(i);
-    for (let j = i + 1; j < idxList.length; j++) {
-      if (used.has(j)) continue;
-      let dot = 0;
-      for (let k = 0; k < thumbs[i].length; k++) dot += thumbs[i][k] * thumbs[j][k];
-      if (dot >= threshold) { g.push(idxList[j]); used.add(j); }
-    }
-    groups.push(g);
+  // 全スプライトをbase64に変換
+  const images = idxList.map(i => ({
+    data:     sprites[i].canvas.toDataURL('image/png').split(',')[1],
+    mimeType: 'image/png'
+  }));
+
+  const prompt =
+`以下の${idxList.length}枚の画像は子供向け水族館ゲームに登場する海の生き物のスプライトです。
+同じ種類の生き物（表情違い・向き違いを含む）を同じグループにまとめ、各グループに名前をつけてください。
+画像は0から${idxList.length - 1}まで番号が付いています（送信順）。
+
+以下のJSON配列のみを返してください：
+[
+  {
+    "indices": [同じ生き物の画像番号の配列（0始まり）],
+    "id": "英語スネークケースID（例: clownfish, manta_ray, sea_turtle）",
+    "name": "日本語名・ひらがな/カタカナ中心（例: クマノミ）",
+    "icon": "最適な絵文字1文字"
   }
-  return groups;
+]
+
+使用禁止ID（既登録）: ${[...existingIds].join(', ')}
+ルール: 全画像番号を必ずどれかのグループに含める。IDは半角英数とアンダースコアのみ。重複IDは禁止。`;
+
+  const r = await fetch('/.netlify/functions/ai-name', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ images, prompt })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'API error');
+
+  const m = (data.text || '').match(/\[[\s\S]*\]/);
+  if (!m) throw new Error('Geminiの応答からJSONが見つかりません');
+  const raw = JSON.parse(m[0]);
+
+  // position index → actual sprite index に変換 + ID dedup
+  const usedIds = new Set(existingIds);
+  return raw.map(g => {
+    let id = (g.id || '').toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_') || 'creature';
+    const origId = id; let suf = 2;
+    while (usedIds.has(id)) { id = origId + '_' + suf++; }
+    usedIds.add(id);
+    return {
+      indices: (g.indices || []).map(pos => idxList[pos]),
+      id,
+      name: (g.name || id).trim(),
+      icon: (g.icon || '🐠').trim()
+    };
+  });
 }
 
 document.getElementById('btn-ai-group').addEventListener('click', async () => {
@@ -1644,38 +1664,31 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
   if (!cards.length) { showToast('スプライトを選択してください', false); return; }
 
   const idxList = cards.map(c => parseInt(c.dataset.idx));
-  const groups  = groupBySimilarity(idxList, 0.55);
+  showLoading(`Geminiでグループ分け中... (${idxList.length}体 → API 1回)`);
 
-  showLoading(`グループ命名中... 0/${groups.length}種類`);
-  let done = 0, failed = 0;
+  try {
+    const groups = await aiGroupSprites(idxList);
 
-  for (let gi = 0; gi < groups.length; gi++) {
-    const group = groups[gi];
-    try {
-      await aiNameSprite(group[0]);
-      const src = sprites[group[0]];
-      group.forEach(idx => {
-        sprites[idx].name = src.name;
-        sprites[idx].id   = src.id;
-        sprites[idx].icon = src.icon;
+    groups.forEach(g => {
+      g.indices.forEach(idx => {
+        if (idx == null || idx === undefined) return;
+        sprites[idx].name = g.name;
+        sprites[idx].id   = g.id;
+        sprites[idx].icon = g.icon;
         const card = document.querySelector(`.sprite-card[data-idx="${idx}"]`);
         if (card) {
-          card.querySelector('.sp-name').value = src.name;
-          card.querySelector('.sp-id').value   = src.id;
+          card.querySelector('.sp-name').value = g.name;
+          card.querySelector('.sp-id').value   = g.id;
         }
       });
-      done++;
-    } catch (e) { failed++; }
-    document.getElementById('loading-msg').textContent =
-      `グループ命名中... ${done + failed}/${groups.length}種類`;
-    if (gi < groups.length - 1) await new Promise(r => setTimeout(r, 500));
-  }
+    });
 
-  hideLoading();
-  showToast(
-    `命名完了: ${done}種類 / ${idxList.length}体 (API: ${done}回)${failed ? ' / ' + failed + '失敗' : ''}`,
-    failed === 0
-  );
+    hideLoading();
+    showToast(`グループ命名完了: ${groups.length}種類 / ${idxList.length}体 (API: 1回)`, true);
+  } catch (e) {
+    hideLoading();
+    showToast('グループ命名失敗: ' + e.message, false);
+  }
 });
 
 // ════════════════════════════════════════════════════════════
