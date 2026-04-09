@@ -655,20 +655,20 @@ const THEMES = {
     empty: '#2E3E4E', blanks: ['🍄', '💎', '🪨', '✨'],
     textureKey: 'cave',
   },
-  night: {
-    tile: '#5C7A5C', tileBlank: '#4A6A4A', tileBorder: '#3A5A3A',
-    path: '#B8A888', pathBorder: '#7A6A4A', pathLight: '#D8C8A8',
-    empty: '#2A3A2A', blanks: ['🌙', '⭐', '🌿', '🔔'],
-    textureKey: 'night',
+  orangeForest: {
+    tile: '#C87A3A', tileBlank: '#B86A2A', tileBorder: '#8B4A1A',
+    path: '#C8956B', pathBorder: '#8B6B42', pathLight: '#DEB887',
+    empty: '#5A2A10', blanks: ['🍂', '🍁', '🌰', '🍄'],
+    textureKey: 'orangeForest',
   },
 };
 function getTheme() {
   // stageIdx 0-based → ユーザー表示は stageIdx+1
   // ステージ1-3 (stageIdx 0-2): forest
   // ステージ4-7 (stageIdx 3-6): cave
-  // ステージ8   (stageIdx 7):   night
+  // ステージ8+  (stageIdx 7+):  orangeForest
   if (stageIdx >= 3 && stageIdx <= 6) return THEMES.cave;
-  if (stageIdx >= 7) return THEMES.night;
+  if (stageIdx >= 7) return THEMES.orangeForest;
   return THEMES.forest;
 }
 // Legacy constants (for code that still references them)
@@ -875,15 +875,15 @@ function draw(now) {
   // Grid background (frame — wood for forest, stone for cave)
   var _th = getTheme();
   var _isCave = (_th === THEMES.cave);
-  var _isNight = (_th === THEMES.night);
+  var _isOrangeForest = (_th === THEMES.orangeForest);
   const frameP = 6;
-  ctx.fillStyle = _isCave ? '#4A5568' : _isNight ? '#4A5A3A' : '#6D4C2A';
+  ctx.fillStyle = _isCave ? '#4A5568' : _isOrangeForest ? '#6B3A18' : '#6D4C2A';
   ctx.beginPath();
   ctx.roundRect(gridOX - frameP, gridOY - frameP,
     cellSize * curCols + frameP * 2, cellSize * curRows + frameP * 2, 12);
   ctx.fill();
 
-  ctx.fillStyle = _isCave ? '#5A6A7A' : _isNight ? '#5A6A4A' : '#8B6B42';
+  ctx.fillStyle = _isCave ? '#5A6A7A' : _isOrangeForest ? '#8B5A2A' : '#8B6B42';
   ctx.beginPath();
   ctx.roundRect(gridOX - frameP + 2, gridOY - frameP + 2,
     cellSize * curCols + frameP * 2 - 4, cellSize * curRows + frameP * 2 - 4, 10);
