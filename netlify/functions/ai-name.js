@@ -35,11 +35,11 @@ exports.handler = async function(event) {
   var imageBase64 = body.image;
   var mimeType = body.mimeType || 'image/png';
   var prompt = body.prompt;
-  if (!imageBase64 || !prompt) {
+  if (!prompt) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'image と prompt が必要です' })
+      body: JSON.stringify({ error: 'prompt が必要です' })
     };
   }
 
@@ -59,10 +59,9 @@ exports.handler = async function(event) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
-          parts: [
-            { inline_data: { mime_type: mimeType, data: imageBase64 } },
-            { text: prompt }
-          ]
+          parts: imageBase64
+            ? [{ inline_data: { mime_type: mimeType, data: imageBase64 } }, { text: prompt }]
+            : [{ text: prompt }]
         }],
         generationConfig: {
           temperature: 0.3,

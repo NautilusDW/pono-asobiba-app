@@ -2209,6 +2209,70 @@ function openProfileEditModal(creatureId) {
     factInputs.push(ta);
   }
 
+  // 🤖 AI自動入力ボタン
+  var aiStatus = document.createElement('div');
+  aiStatus.style.cssText = 'font-size:0.72rem;color:#888;text-align:center;min-height:1.2em;margin-bottom:6px;';
+  box.appendChild(aiStatus);
+
+  var aiBtn = document.createElement('button'); aiBtn.type = 'button';
+  aiBtn.textContent = '🤖 AIで自動入力';
+  aiBtn.style.cssText = 'display:block;width:100%;padding:9px;border:2px dashed #A78BFA;border-radius:8px;background:#F5F3FF;color:#6D28D9;font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:12px;';
+  aiBtn.addEventListener('click', async function() {
+    if (aiBtn.disabled) return;
+    var creatureName = target.displayName || target.id;
+    aiBtn.disabled = true; aiBtn.textContent = '⏳ AIが考えています...'; aiStatus.textContent = '';
+
+    var prompt = '水族館の生き物「' + creatureName + '」について、5歳の子供向けの図鑑データをJSONで生成してください。'
+      + 'ひらがなを多用し、やさしい言葉で書いてください。語尾は「〜よ」「〜だよ」にしてください。\n\n'
+      + '以下のJSONフォーマットで返してください（コードブロック不要、JSONのみ）:\n'
+      + '{\n'
+      + '  "readingName": "（ひらがなのよみかた）",\n'
+      + '  "category": "（下記から1つ選択）",\n'
+      + '  "habitat": "（どこにすんでいるか、ひとこと）",\n'
+      + '  "funFacts": [\n'
+      + '    "（すごいところ1、一文）",\n'
+      + '    "（すごいところ2、一文）",\n'
+      + '    "（すごいところ3、一文）",\n'
+      + '    "（すごいところ4、一文）"\n'
+      + '  ]\n'
+      + '}\n\n'
+      + 'categoryの選択肢: さかなの なかま / なんこつぎょるいの なかま / たこや いかの なかま / くらげの なかま / うみがめの なかま / こうかくるいの なかま（カニ・エビ） / のりものの なかま / うみの いきもの（その他）';
+
+    try {
+      var resp = await fetch('/.netlify/functions/ai-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt })
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'AI error');
+      var text = (data.text || '').trim();
+      var jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('JSONが見つかりません: ' + text.slice(0, 80));
+      var result = JSON.parse(jsonMatch[0]);
+
+      if (result.readingName) readingInput.value = result.readingName;
+      if (result.category) {
+        for (var i = 0; i < catSelect.options.length; i++) {
+          if (catSelect.options[i].value === result.category) { catSelect.selectedIndex = i; break; }
+        }
+      }
+      if (result.habitat) habitatTa.value = result.habitat;
+      if (Array.isArray(result.funFacts)) {
+        for (var j = 0; j < factInputs.length; j++) {
+          factInputs[j].value = result.funFacts[j] || '';
+        }
+      }
+      aiStatus.textContent = '✅ 自動入力しました。内容を確認してから保存してください。';
+      aiStatus.style.color = '#16A34A';
+    } catch(e) {
+      aiStatus.textContent = '❌ AI失敗: ' + e.message;
+      aiStatus.style.color = '#DC2626';
+    }
+    aiBtn.disabled = false; aiBtn.textContent = '🤖 AIで自動入力';
+  });
+  box.appendChild(aiBtn);
+
   // ボタン行
   var btnRow = document.createElement('div'); btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;margin-top:4px;';
   var cancelBtn = document.createElement('button'); cancelBtn.type = 'button'; cancelBtn.textContent = 'キャンセル';
