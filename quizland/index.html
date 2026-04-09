@@ -180,6 +180,15 @@ body {
   color: #EC4899;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
 }
+.shape-rectangle { width: 160px; height: 80px; border-radius: 10px; background: #8B5CF6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-diamond {
+  width: 90px; height: 90px;
+  background: #EF4444;
+  transform: rotate(45deg);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.shape-oval { width: 150px; height: 90px; border-radius: 50%; background: #10B981; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
 /* ===== Choices ===== */
 .choices {
@@ -659,8 +668,11 @@ function renderShapeName(stage, q) {
   if (q.shape === 'circle')   wrap.innerHTML = '<div class="shape-circle"></div>';
   if (q.shape === 'square')   wrap.innerHTML = '<div class="shape-square"></div>';
   if (q.shape === 'triangle') wrap.innerHTML = '<div class="shape-triangle"></div>';
-  if (q.shape === 'star')     wrap.innerHTML = '<div class="shape-star">★</div>';
-  if (q.shape === 'heart')    wrap.innerHTML = '<div class="shape-heart">♥</div>';
+  if (q.shape === 'star')      wrap.innerHTML = '<div class="shape-star">★</div>';
+  if (q.shape === 'heart')     wrap.innerHTML = '<div class="shape-heart">♥</div>';
+  if (q.shape === 'rectangle') wrap.innerHTML = '<div class="shape-rectangle"></div>';
+  if (q.shape === 'diamond')   wrap.innerHTML = '<div class="shape-diamond"></div>';
+  if (q.shape === 'oval')      wrap.innerHTML = '<div class="shape-oval"></div>';
   stage.appendChild(wrap);
 }
 

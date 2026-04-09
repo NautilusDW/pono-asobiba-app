@@ -4528,8 +4528,12 @@ function renderQuestions() {
   tbody.innerHTML = '';
   filtered.forEach(function(q) {
     var meta = (QUIZLAND_CATEGORIES[q._cat] || { emoji:'?', label: q._cat });
-    var correctChoice = q.choices ? q.choices[q.answer] : (q.word || '-');
-    var otherChoices  = q.choices ? q.choices.filter(function(_, i) { return i !== q.answer; }).join(' / ') : '-';
+    var choiceLabel = function(c) {
+      return (q.type === 'order_color' && typeof QUIZLAND_COLORS !== 'undefined' && QUIZLAND_COLORS[c])
+        ? QUIZLAND_COLORS[c].name : c;
+    };
+    var correctChoice = q.choices ? choiceLabel(q.choices[q.answer]) : (q.word || '-');
+    var otherChoices  = q.choices ? q.choices.filter(function(_, i) { return i !== q.answer; }).map(choiceLabel).join(' / ') : '-';
     var qText = q.q || ('「' + (q.word || q.emoji || '') + '」の はんたいは？');
     var tr = document.createElement('tr');
     tr.innerHTML =
