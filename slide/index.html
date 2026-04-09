@@ -276,13 +276,13 @@ imgMomFull.src = '../assets/images/Slide/pono_mom_only.png';
 
 // BLANK タイル用テクスチャ（各テーマ1枚ずつ）
 const blankTextures = {
-  forest: new Image(),
-  cave:   new Image(),
-  night:  new Image(),
+  forest:       new Image(),
+  cave:         new Image(),
+  orangeForest: new Image(),
 };
-blankTextures.forest.src = '../assets/images/Road/forestTile.png';
-blankTextures.cave.src   = '../assets/images/Road/caveTile.png';
-// night はまだ画像がないので読み込まない（フォールバック描画）
+blankTextures.forest.src       = '../assets/images/Road/forestTile.png';
+blankTextures.cave.src         = '../assets/images/Road/caveTile.png';
+blankTextures.orangeForest.src = '../assets/images/Road/orangeForestTile.png';
 
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
