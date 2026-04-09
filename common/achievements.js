@@ -35,7 +35,10 @@
     { id: 'bowling_20',    game: 'bowling',   name: 'ボウリングずき',       desc: '20ラウンド あそぼう',             target: 20, stat: 'bowling_rounds',    tier: 2, reward: { type: 'furn', id: 'ach_bowling_toy' } },
     { id: 'bowling_30',    game: 'bowling',   name: 'ボウリングプロ',       desc: '30ラウンド あそぼう',             target: 30, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_pirates' } },
     { id: 'wordmatch_15',  game: 'wordmatch', name: 'ことばずき',           desc: '15もん せいかいしよう',           target: 15, stat: 'wordmatch_correct', tier: 2, reward: { type: 'furn', id: 'ach_coral_deco' } },
-    { id: 'quizland_20',   game: 'quizland',  name: 'クイズずき',           desc: '20もん せいかいしよう',           target: 20, stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'ach_quiz_badge' } },
+    { id: 'quizland_5',    game: 'quizland',  name: 'クイズはじめたよ',    desc: '5もん せいかいしよう',            target: 5,  stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'ach_quiz_badge' } },
+    { id: 'quizland_15',   game: 'quizland',  name: 'クイズじょうず',       desc: '15もん せいかいしよう',           target: 15, stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'ach_quiz_ribbon' } },
+    { id: 'quizland_30',   game: 'quizland',  name: 'クイズずき',           desc: '30もん せいかいしよう',           target: 30, stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'ach_quiz_medal' } },
+    { id: 'quizland_clear5', game: 'quizland',name: 'クイズ 5かいクリア',  desc: '5かい ぜんもん クリアしよう',     target: 5,  stat: 'quizland_clears',   tier: 2, reward: { type: 'furn', id: 'ach_quiz_trophy' } },
     { id: 'breakout_2',    game: 'breakout',  name: 'ブロック2だんめ',      desc: 'ステージ2まで クリアしよう',      target: 2,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_forest_deep' } },
     { id: 'breakout_4',    game: 'breakout',  name: 'ブロック4だんめ',      desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_cave_mushroom' } },
 
@@ -51,6 +54,7 @@
     { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' } },
     { id: 'wordmatch_all', game: 'wordmatch', name: 'ことばマスター',       desc: 'ぜんもん せいかいしよう',          target: 30, stat: 'wordmatch_correct', tier: 3, reward: { type: 'sea',  id: 'butterfly_fish' } },
     { id: 'quizland_all',  game: 'quizland',  name: 'クイズマスター',       desc: '50もん せいかいしよう',            target: 50, stat: 'quizland_correct',  tier: 3, reward: { type: 'sea',  id: 'squid' } },
+    { id: 'quizland_god',  game: 'quizland',  name: 'クイズのかみさま',     desc: '100もん せいかいしよう',           target: 100,stat: 'quizland_correct',  tier: 3, reward: { type: 'sea',  id: 'seahorse_gold' } },
     { id: 'bento_10',      game: 'bento',     name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',     target: 10, stat: 'bento_complete',    tier: 3, reward: { type: 'sea',  id: 'octopus' } },
   ];
 

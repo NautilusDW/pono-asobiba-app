@@ -692,6 +692,7 @@ function showResult() {
     : `${TOTAL_Q}もんちゅう ${correctCount}もん せいかい。\nもういちど やってみよう！`;
   document.getElementById('result-overlay').classList.remove('hidden');
   if (cleared) {
+    if (window.incrementStat) window.incrementStat('quizland_clears', 1);
     playFanfare();
     launchConfetti();
     setTimeout(launchConfetti, 400);
