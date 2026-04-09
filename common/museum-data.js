@@ -102,6 +102,17 @@
     }
   };
 
+  // ── Display metadata for the 7 hardcoded creatures ────────────────────────
+  const HARDCODED_META = {
+    octopus:   { displayName: 'タコ',         icon: '🐙', imgFolder: 'octpus',    thumb: 'octpus_002.png' },
+    jellyfish: { displayName: 'クラゲ',       icon: '🪼', imgFolder: 'JellyFish', thumb: 'JellyFish_002.png' },
+    turtle:    { displayName: 'ウミガメ',     icon: '🐢', imgFolder: 'Turtle',    thumb: 'Turtle_002.png' },
+    fish:      { displayName: 'さかな',       icon: '🐠', imgFolder: 'Fish_S01',  thumb: 'Fish_S01_002.png' },
+    submarine: { displayName: 'せんすいかん', icon: '🛥️', imgFolder: 'Submarine', thumb: 'Submarine_002.png' },
+    sunfish:   { displayName: 'マンボウ',     icon: '🐡', imgFolder: 'Sunfish',   thumb: 'Sunfish_002.png' },
+    shark:     { displayName: 'サメ',         icon: '🦈', imgFolder: 'Shark',     thumb: 'Shark_002.png' }
+  };
+
   // ── Hardcoded zone assignments for the 7 built-in creatures ───────────────
   const HARDCODED_ZONES = {
     octopus:    ['japan_coast'],
@@ -199,6 +210,42 @@
   }
 
   /**
+   * Return all creatures (hardcoded 7 + dynamic from creatures.json) with full metadata.
+   * Must call load() first.
+   * @returns {Array<{id, displayName, icon, imgFolder, thumb, zones, profile, source}>}
+   */
+  function getAllCreatures() {
+    const result = [];
+    Object.entries(HARDCODED_META).forEach(([id, meta]) => {
+      result.push({
+        id,
+        displayName: meta.displayName,
+        icon: meta.icon,
+        imgFolder: meta.imgFolder,
+        thumb: meta.thumb,
+        zones: HARDCODED_ZONES[id] || [],
+        profile: HARDCODED_PROFILES[id] || null,
+        source: 'hardcode'
+      });
+    });
+    if (_creaturesData) {
+      _creaturesData.forEach(c => {
+        result.push({
+          id: c.id,
+          displayName: c.displayName,
+          icon: c.icon,
+          imgFolder: c.folder,
+          thumb: c.expressions && c.expressions.normal,
+          zones: c.zones || [],
+          profile: c.profile || null,
+          source: 'dynamic'
+        });
+      });
+    }
+    return result;
+  }
+
+  /**
    * Return profile for a creature (hardcoded or from creatures.json).
    * @param {string} creatureId
    */
@@ -217,6 +264,7 @@
     getCreaturesForZone,
     getZone,
     getZones,
-    getProfile
+    getProfile,
+    getAllCreatures
   };
 })();

@@ -2,35 +2,13 @@
   "version": 1,
   "zones": [
     {
-      "id": "tropical_reef",
-      "displayName": "ねったいのうみ",
-      "subtitle": "あたたかい サンゴのうみ",
-      "icon": "🐠",
-      "status": "open",
-      "mapX": 0.22,
-      "mapY": 0.30,
-      "tint": "0x2EB5E0",
-      "creatures": ["clownfish", "blue_tang", "pufferfish", "fish", "turtle"]
-    },
-    {
-      "id": "japan_coast",
-      "displayName": "にほんのうみ",
-      "subtitle": "ポノの すんでる うみ",
-      "icon": "🐙",
-      "status": "open",
-      "mapX": 0.72,
-      "mapY": 0.30,
-      "tint": "0x1E7FB5",
-      "creatures": ["octopus", "turtle", "sunfish", "pufferfish", "fish"]
-    },
-    {
       "id": "jellyfish_room",
       "displayName": "クラゲのへや",
       "subtitle": "ひかる ふしぎな へや",
       "icon": "🪼",
       "status": "open",
-      "mapX": 0.22,
-      "mapY": 0.68,
+      "mapX": 0.11,
+      "mapY": 0.24,
       "tint": "0x7A4FBF",
       "creatures": ["jellyfish"]
     },
@@ -40,10 +18,32 @@
       "subtitle": "どきどき おおきな さかな",
       "icon": "🦈",
       "status": "open",
-      "mapX": 0.72,
-      "mapY": 0.68,
+      "mapX": 0.47,
+      "mapY": 0.14,
       "tint": "0x0D3B66",
       "creatures": ["shark", "sunfish", "submarine"]
+    },
+    {
+      "id": "japan_coast",
+      "displayName": "にほんのうみ",
+      "subtitle": "ポノの すんでる うみ",
+      "icon": "🐙",
+      "status": "open",
+      "mapX": 0.80,
+      "mapY": 0.24,
+      "tint": "0x1E7FB5",
+      "creatures": ["octopus", "turtle", "sunfish", "pufferfish", "fish"]
+    },
+    {
+      "id": "tropical_reef",
+      "displayName": "ねったいのうみ",
+      "subtitle": "あたたかい サンゴのうみ",
+      "icon": "🐠",
+      "status": "open",
+      "mapX": 0.87,
+      "mapY": 0.46,
+      "tint": "0x2EB5E0",
+      "creatures": ["clownfish", "blue_tang", "pufferfish", "fish", "turtle"]
     },
     {
       "id": "cold_ocean",
@@ -51,29 +51,9 @@
       "subtitle": "こおりの うかぶ うみ",
       "icon": "🧊",
       "status": "locked",
-      "mapX": 0.47,
-      "mapY": 0.12,
+      "mapX": 0.07,
+      "mapY": 0.57,
       "tint": "0x6EC6F0"
-    },
-    {
-      "id": "deep_sea",
-      "displayName": "しんかい",
-      "subtitle": "まっくらな ふかいうみ",
-      "icon": "🔦",
-      "status": "locked",
-      "mapX": 0.47,
-      "mapY": 0.86,
-      "tint": "0x0A1628"
-    },
-    {
-      "id": "rivers",
-      "displayName": "かわといけ",
-      "subtitle": "きれいな みずのながれ",
-      "icon": "🏞️",
-      "status": "locked",
-      "mapX": 0.08,
-      "mapY": 0.50,
-      "tint": "0x3A9E6B"
     },
     {
       "id": "tide_pool",
@@ -81,9 +61,29 @@
       "subtitle": "いわばの かくれんぼ",
       "icon": "🪸",
       "status": "locked",
-      "mapX": 0.88,
-      "mapY": 0.50,
+      "mapX": 0.84,
+      "mapY": 0.65,
       "tint": "0xE87D3E"
+    },
+    {
+      "id": "rivers",
+      "displayName": "かわといけ",
+      "subtitle": "きれいな みずのながれ",
+      "icon": "🏞️",
+      "status": "locked",
+      "mapX": 0.44,
+      "mapY": 0.80,
+      "tint": "0x3A9E6B"
+    },
+    {
+      "id": "deep_sea",
+      "displayName": "しんかい",
+      "subtitle": "まっくらな ふかいうみ",
+      "icon": "🔦",
+      "status": "locked",
+      "mapX": 0.22,
+      "mapY": 0.80,
+      "tint": "0x0A1628"
     }
   ]
 }

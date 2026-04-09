@@ -303,8 +303,30 @@
       0%,100% { box-shadow: 0 2px 10px rgba(56,189,248,0.3); }
       50% { box-shadow: 0 2px 20px rgba(56,189,248,0.7); }
     }
+    /* 図鑑ボタン (floating, left side) */
+    #btnZukan {
+      position: fixed;
+      bottom: 14px; left: 14px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 3px solid rgba(56,189,248,0.5);
+      background: rgba(6,20,60,0.85);
+      color: #fff;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 12;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      transition: transform 0.1s;
+      touch-action: manipulation;
+      pointer-events: all;
+      display: none; /* JS で表示 */
+    }
+    #btnZukan:active { transform: scale(0.9); }
+
     @media (orientation: landscape) {
       #btnFeed { bottom: 14px; right: 14px; }
+      #btnZukan { bottom: 14px; left: 14px; }
     }
     /* In-aquarium tutorial hints */
     .tut-hint {
@@ -447,6 +469,7 @@
   <canvas id="pixi-canvas"></canvas>
   <div id="title-label">🐠 うみのせかい</div>
   <button id="btnFeed">🍞</button>
+  <button id="btnZukan">📖</button>
   <!-- Zone name badge (museum mode only, hidden in free-play) -->
   <link rel="stylesheet" href="zone-header.css">
   <div id="zoneHeader" style="display:none;">
@@ -480,6 +503,7 @@
   </div>
 
   <script src="../common/museum-data.js"></script>
+  <script src="../common/encyclopedia.js"></script>
   <script src="zone-boot.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
   <script src="dynamic-creatures.js"></script>
@@ -1712,10 +1736,12 @@
       })();
       if (creatures.length > 0) {
         document.getElementById('btnFeed').style.display = '';
+        document.getElementById('btnZukan').style.display = '';
         document.getElementById('ui').style.display = '';
         initTutorial();
       } else {
         document.getElementById('btnFeed').style.display = 'none';
+        document.getElementById('btnZukan').style.display = 'none';
         document.getElementById('ui').style.display = 'none';
         const emptyMsg = document.getElementById('emptySeaMsg');
         if (emptyMsg) {
@@ -2953,6 +2979,12 @@
     // ─── Pointer: tap=panic, hold 400ms=steer ──────────────
     let holdTimerId = null, holdCreature = null, steeringMode = false;
     let lastPointerPx = 0, lastPointerPy = 0;
+
+    // ─── 図鑑ボタン ────────────────────────────────────────
+    document.getElementById('btnZukan').addEventListener('click', function (e) {
+      e.stopPropagation();
+      Encyclopedia.open('..');
+    });
 
     // ─── Feed mode toggle ─────────────────────────────────
     let feedMode = false;
