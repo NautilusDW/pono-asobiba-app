@@ -111,6 +111,42 @@
           "からだに つよい どくを もっていて てきから みを まもるよ"
         ]
       }
+    },
+    {
+      "id": "mandarinfish",
+      "displayName": "ニシキテグリ",
+      "icon": "🐠",
+      "folder": "Mandarinfish",
+      "expressions": {
+        "normal": "Mandarinfish_normal_1.png",
+        "surprised": "Mandarinfish_surprised.png",
+        "happy": "Mandarinfish_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 1,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 353,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 5,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea",
+      "museum": "aquarium",
+      "zones": ["tropical_reef"],
+      "profile": {
+        "readingName": "にしきてぐり",
+        "category": "さかなの なかま",
+        "habitat": "あたたかい うみの、さんごの すきまに すんでいるよ。",
+        "funFacts": [
+          "からだが とっても カラフルで、おようふくを きている みたいに きれいだよ。",
+          "おとなに なっても 6センチくらいで、てのひらに のるくらい ちいさいんだよ。",
+          "ひれを パタパタ うごかして、うみの なかを ふわふわ およぐよ。",
+          "よるに なると、なかよしと いっしょに ダンスを おどるみたいに およぐよ。"
+        ]
+      }
     }
   ]
 }
