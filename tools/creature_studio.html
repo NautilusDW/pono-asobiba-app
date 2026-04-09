@@ -1399,54 +1399,51 @@ document.getElementById('btn-process').addEventListener('click', () => runProces
 // Sprite Splitting (Union-Find Connected Components)
 // ════════════════════════════════════════════════════════════
 /**
- * スプライト個別の外周 flood fill: 外周の透明ピクセルから連結する
- * 「ほぼ白/グレー/背景色」ピクセルを透明にする。
- * これによりキリンの足の間やコウモリの翼内側が自動除去される。
+ * スプライト個別に外周 flood fill で囲まれた背景を除去。
+ * 全体画像では囲まれていた背景色が、個別矩形では外周に露出するため、
+ * ここで改めて色ベースの flood fill を実行すれば自動除去できる。
  */
-function _cleanSpriteEdges(canvas, alphaThr) {
+function _cleanSpriteEdges(canvas, tolerance) {
   const w = canvas.width, h = canvas.height;
   const ctx = canvas.getContext('2d');
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
 
-  // 外周から透明ピクセルを起点に flood fill（色の類似度ではなく
-  // 「周囲が既に透明 → 隣接する低彩度/白系ピクセルも背景」方式）
+  // 背景色をこのスプライトの四隅からサンプリング
+  const [bgR, bgG, bgB] = sampleBgColor(d, w, h);
+
   const isBg = new Uint8Array(w * h);
   const queue = new Int32Array(w * h);
   let head = 0, tail = 0;
 
-  // Phase 1: 外周の透明ピクセルをシードにする
-  for (let x = 0; x < w; x++) {
-    if (d[x * 4 + 3] <= alphaThr)                       { isBg[x] = 1; queue[tail++] = x; }
-    const bi = (h - 1) * w + x;
-    if (d[bi * 4 + 3] <= alphaThr && !isBg[bi])         { isBg[bi] = 1; queue[tail++] = bi; }
-  }
-  for (let y = 1; y < h - 1; y++) {
-    const li = y * w;
-    if (d[li * 4 + 3] <= alphaThr && !isBg[li])         { isBg[li] = 1; queue[tail++] = li; }
-    const ri = y * w + w - 1;
-    if (d[ri * 4 + 3] <= alphaThr && !isBg[ri])         { isBg[ri] = 1; queue[tail++] = ri; }
-  }
-
-  // Phase 2: BFS — 透明ピクセルに隣接する「ほぼ透明」ピクセルも背景に含める
-  while (head < tail) {
-    const idx = queue[head++];
-    const x = idx % w, y = (idx - x) / w;
-    const nb = [];
-    if (x > 0)     nb.push(idx - 1);
-    if (x < w - 1) nb.push(idx + 1);
-    if (y > 0)     nb.push(idx - w);
-    if (y < h - 1) nb.push(idx + w);
-    for (const ni of nb) {
-      if (isBg[ni]) continue;
-      if (d[ni * 4 + 3] <= alphaThr) {
-        isBg[ni] = 1;
-        queue[tail++] = ni;
-      }
+  function tryMark(idx) {
+    if (idx < 0 || idx >= w * h || isBg[idx]) return;
+    const i = idx * 4;
+    // 既に透明ならBG扱い（伝播する）
+    if (d[i + 3] < 10) { isBg[idx] = 1; queue[tail++] = idx; return; }
+    // 色が背景色に近ければBG
+    const dr = d[i] - bgR, dg = d[i+1] - bgG, db = d[i+2] - bgB;
+    if (Math.sqrt(dr*dr + dg*dg + db*db) <= tolerance) {
+      isBg[idx] = 1;
+      queue[tail++] = idx;
     }
   }
 
-  // Phase 3: 変更があったピクセルを透明化
+  // 外周からシード
+  for (let x = 0; x < w; x++) { tryMark(x); tryMark((h-1)*w + x); }
+  for (let y = 1; y < h-1; y++) { tryMark(y*w); tryMark(y*w + w-1); }
+
+  // BFS
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % w, y = (idx - x) / w;
+    if (x > 0)   tryMark(idx - 1);
+    if (x < w-1) tryMark(idx + 1);
+    if (y > 0)   tryMark(idx - w);
+    if (y < h-1) tryMark(idx + w);
+  }
+
+  // 透明化
   let changed = false;
   for (let i = 0; i < w * h; i++) {
     if (isBg[i] && d[i * 4 + 3] > 0) {
@@ -1457,7 +1454,7 @@ function _cleanSpriteEdges(canvas, alphaThr) {
   if (changed) ctx.putImageData(imgData, 0, 0);
 }
 
-function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr) {
+function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
 
@@ -1515,7 +1512,7 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr) {
     sc.getContext('2d').drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
     // 各スプライト個別に外周 flood fill で囲まれた背景を自動除去
-    _cleanSpriteEdges(sc, alphaThr);
+    _cleanSpriteEdges(sc, bgTolerance);
 
     result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
                   name: '', id: '', icon: '🐠', expr: 'normal',
@@ -1540,8 +1537,9 @@ document.getElementById('btn-split').addEventListener('click', async () => {
   const minSize  = parseInt(document.getElementById('min-size').value)  || 20;
   const padding  = parseInt(document.getElementById('padding').value)   || 4;
   const alphaThr = parseInt(document.getElementById('alpha-thresh').value) || 10;
+  const bgTol    = parseFloat(document.getElementById('tolerance').value) || 35;
 
-  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr);
+  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol);
   renderSpritesGrid();
 
   // Switch to sprites tab
