@@ -147,8 +147,6 @@ body {
 .tbtn-blue:hover   { background: #1d4ed8; }
 .tbtn-green  { background: #22c55e; color: #fff; }
 .tbtn-green:hover  { background: #16a34a; }
-.tbtn-purple { background: #7c3aed; color: #fff; }
-.tbtn-purple:hover { background: #6d28d9; }
 
 .sprites-grid {
   display: flex; flex-wrap: wrap; gap: 10px;
@@ -473,8 +471,7 @@ body {
         <span class="sprites-count" id="sprites-count">0体</span>
         <button class="tbtn tbtn-ghost" id="btn-sel-all">全選択</button>
         <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
-        <button class="tbtn tbtn-blue"  id="btn-ai-all">🤖 AIで一括命名</button>
-        <button class="tbtn tbtn-purple" id="btn-ai-group">🤖 グループ命名</button>
+        <button class="tbtn tbtn-blue" id="btn-ai-group">🤖 AI命名</button>
         <div style="flex:1"></div>
         <button class="tbtn tbtn-green" id="btn-deploy">🐠 GitHubに登録</button>
       </div>
@@ -1906,32 +1903,7 @@ async function aiNameSprite(idx) {
   sprites[idx].icon = newIcon;
 }
 
-document.getElementById('btn-ai-all').addEventListener('click', async () => {
-  const cards = [...document.querySelectorAll('.sprite-card.selected')];
-  if (!cards.length) { showToast('スプライトを選択してください', false); return; }
 
-  showLoading(`AIで命名中... 0/${cards.length}`);
-  let done = 0, failed = 0;
-
-  for (const card of cards) {
-    const idx = parseInt(card.dataset.idx);
-    try {
-      await aiNameSprite(idx);
-      card.querySelector('.sp-name').value = sprites[idx].name;
-      card.querySelector('.sp-id').value   = sprites[idx].id;
-      done++;
-      document.getElementById('loading-msg').textContent = `AIで命名中... ${done}/${cards.length}`;
-    } catch (e) {
-      failed++;
-    }
-    if (cards.indexOf(card) < cards.length - 1) {
-      await new Promise(r => setTimeout(r, 500)); // rate-limit
-    }
-  }
-
-  hideLoading();
-  showToast(`命名完了: ${done}体成功${failed > 0 ? ' / ' + failed + '体失敗' : ''}`, failed === 0);
-});
 
 // ════════════════════════════════════════════════════════════
 // グループ命名: Gemini に全スプライトをまとめて送り、種類ごとにグループ分け＆命名
