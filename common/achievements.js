@@ -125,6 +125,10 @@
             _sl.dates.push(_sk);
             _sl.total = _sl.dates.length;
             localStorage.setItem('pono_stamp_log', JSON.stringify(_sl));
+            // スタンプ理由をキューに保存（メニュー画面でポップアップに使う）
+            var _pend = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
+            _pend.push({ name: ach.name, desc: ach.desc });
+            localStorage.setItem('pono_stamp_pending', JSON.stringify(_pend));
           }
         } catch(e) {}
       }

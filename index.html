@@ -2322,6 +2322,24 @@
         return 'ログイン ' + total + 'にちめ！';
       }
 
+      // 実績スタンプの理由をlocalStorageから取り出してテキストに変換
+      // 取り出したら消去（1回限り）
+      function consumeAchReasonText() {
+        try {
+          var pending = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
+          localStorage.removeItem('pono_stamp_pending');
+          if (pending.length === 0) return 'じっせき かいほう！🏆';
+          if (pending.length === 1) {
+            return '🏆「' + pending[0].name + '」\n' + pending[0].desc;
+          }
+          // 複数まとめて解除
+          return '🏆 じっせき ' + pending.length + 'こ かいほう！\n' +
+            pending.map(function(p) { return '・' + p.name; }).join('\n');
+        } catch(e) {
+          return 'じっせき かいほう！🏆';
+        }
+      }
+
       // スタンプ押し演出モーダル（現在の段の5マスを表示）
       function showStampModal(total, onDone, reasonText) {
         var cardNum = getCardNum(total);
@@ -2334,9 +2352,12 @@
         ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
 
         var cardHtml = '<div style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">';
-        // Reason text
+        // Reason text (supports \n for multiline)
         var rText = reasonText || getStampReasonText(total);
-        cardHtml += '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">' + rText + '</div>';
+        var rHtml = rText.split('\n').map(function(line, i) {
+          return '<span style="display:block;' + (i > 0 ? 'font-size:0.78rem;font-weight:700;color:#9C8070;margin-top:2px;' : '') + '">' + line + '</span>';
+        }).join('');
+        cardHtml += '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;white-space:normal;">' + rHtml + '</div>';
         cardHtml += '<div style="font-size:0.8rem;font-weight:700;color:#F2915A;margin-bottom:10px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>';
         cardHtml += '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;">';
         for (var i = 0; i < SLOTS_PER_ROW; i++) {
@@ -2430,7 +2451,7 @@
               showStampModal(t, function() {
                 animateStamp(t);
                 setTimeout(function() { checkSlotReward(t); }, 500);
-              }, 'じっせき かいほう！🏆');
+              }, consumeAchReasonText());
             }, 500);
           } else {
             setTimeout(function() { checkSlotReward(t); }, 500);
@@ -2482,7 +2503,7 @@
             showStampModal(now, function() {
               animateStamp(now);
               setTimeout(function() { checkSlotReward(now); }, 500);
-            }, 'じっせき かいほう！🏆');
+            }, consumeAchReasonText());
           } else {
             _stampTotalAfterInit = now;
           }
