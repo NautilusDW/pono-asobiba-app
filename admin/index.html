@@ -285,6 +285,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="encyclopedia">📖 図鑑</button>
+  <button class="tab" data-panel="questions">📝 問題管理</button>
   <button class="tab" data-panel="illust">🎨 イラスト管理</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
   <button class="tab" data-panel="github">🔑 GitHub設定</button>
@@ -640,6 +641,39 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div>
 
+<!-- ===== 📝 問題管理 ===== -->
+<div class="panel" id="panel-questions">
+  <div class="section">
+    <div class="section-title">📝 クイズランド 問題一覧</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+      <select id="q-filter-cat" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.8rem;font-weight:700;">
+        <option value="">すべてのカテゴリー</option>
+      </select>
+      <select id="q-filter-diff" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.8rem;font-weight:700;">
+        <option value="">すべての難易度</option>
+        <option value="1">☆ やさしい (Lv1)</option>
+        <option value="2">★ ふつう (Lv2)</option>
+        <option value="3">★★ むずかしい (Lv3)</option>
+      </select>
+      <span id="q-count" style="font-size:0.78rem;color:#8B7355;font-weight:700;"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="q-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;white-space:nowrap;">カテゴリー</th>
+            <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;white-space:nowrap;">難易度</th>
+            <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">もんだい</th>
+            <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">せいかい</th>
+            <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">せんたくし</th>
+          </tr>
+        </thead>
+        <tbody id="q-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 🎨 イラスト管理 ===== -->
 <div class="panel" id="panel-illust">
   <div class="section">
@@ -685,6 +719,7 @@ tr:hover { background: #FFFAF0; }
 <div class="toast" id="toast"></div>
 
 <script src="../common/achievements.js"></script>
+<script src="../quizland/data/questions.js"></script>
 <script>
 'use strict';
 
@@ -754,6 +789,7 @@ function switchTab(panelId) {
   if (panelId === 'home')      renderHome();
   if (panelId === 'encyclopedia') fetchEncyclopedia();
   if (panelId === 'illust')    renderIllust();
+  if (panelId === 'questions') renderQuestions();
 }
 
 document.querySelectorAll('.tab').forEach(function(tab) {
@@ -4436,6 +4472,75 @@ if (unlockedKeys.length === 0) {
     div.style.cssText = 'padding:6px 0;border-bottom:1px solid #F5F0E8;';
     div.textContent = '✅ ' + (ach ? ach.name : id);
     unlockedList.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// 問題管理
+// ════════════════════════════════════════════════════════════════
+var DIFF_LABEL = { 1: '☆ やさしい', 2: '★ ふつう', 3: '★★ むずかしい' };
+var DIFF_BG    = { 1: '#D1FAE5', 2: '#FEF3C7', 3: '#FEE2E2' };
+var DIFF_COLOR = { 1: '#065F46', 2: '#92400E', 3: '#991B1B' };
+
+function renderQuestions() {
+  if (typeof QUIZLAND_QUESTIONS === 'undefined') {
+    document.getElementById('q-tbody').innerHTML = '<tr><td colspan="5" style="color:#888;padding:12px;">questions.js を読み込めませんでした</td></tr>';
+    return;
+  }
+  // カテゴリーセレクト初期化
+  var catSel = document.getElementById('q-filter-cat');
+  if (catSel.options.length <= 1) {
+    Object.keys(QUIZLAND_CATEGORIES).forEach(function(k) {
+      var opt = document.createElement('option');
+      opt.value = k;
+      opt.textContent = QUIZLAND_CATEGORIES[k].emoji + ' ' + QUIZLAND_CATEGORIES[k].label;
+      catSel.appendChild(opt);
+    });
+    catSel.addEventListener('change', renderQuestions);
+    document.getElementById('q-filter-diff').addEventListener('change', renderQuestions);
+  }
+  var filterCat  = catSel.value;
+  var filterDiff = document.getElementById('q-filter-diff').value;
+
+  var allQ = [];
+  Object.keys(QUIZLAND_QUESTIONS).forEach(function(cat) {
+    (QUIZLAND_QUESTIONS[cat] || []).forEach(function(q) {
+      allQ.push(Object.assign({ _cat: cat }, q));
+    });
+  });
+
+  var filtered = allQ.filter(function(q) {
+    if (filterCat  && q._cat      !== filterCat)      return false;
+    if (filterDiff && String(q.level) !== filterDiff) return false;
+    return true;
+  });
+
+  document.getElementById('q-count').textContent = filtered.length + ' 問';
+
+  var tbody = document.getElementById('q-tbody');
+  tbody.innerHTML = '';
+  filtered.forEach(function(q) {
+    var meta = (QUIZLAND_CATEGORIES[q._cat] || { emoji:'?', label: q._cat });
+    var correctChoice = q.choices ? q.choices[q.answer] : (q.word || '-');
+    var otherChoices  = q.choices ? q.choices.filter(function(_, i) { return i !== q.answer; }).join(' / ') : '-';
+    var qText = q.q || ('「' + (q.word || q.emoji || '') + '」の はんたいは？');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;white-space:nowrap;">' +
+        '<span style="font-size:1rem;">' + meta.emoji + '</span> ' +
+        '<span style="font-size:0.72rem;color:#5D4E37;">' + meta.label + '</span>' +
+      '</td>' +
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;">' +
+        '<span style="background:' + DIFF_BG[q.level] + ';color:' + DIFF_COLOR[q.level] + ';padding:2px 7px;border-radius:6px;font-size:0.68rem;font-weight:700;white-space:nowrap;">' +
+          DIFF_LABEL[q.level] +
+        '</span>' +
+      '</td>' +
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;font-weight:700;">' + qText +
+        (q.hint ? '<br><span style="font-size:0.68rem;color:#8B7355;">💡 ' + q.hint + '</span>' : '') +
+      '</td>' +
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#10B981;font-weight:900;">✅ ' + correctChoice + '</td>' +
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#8B7355;font-size:0.72rem;">' + otherChoices + '</td>';
+    tbody.appendChild(tr);
   });
 }
 
