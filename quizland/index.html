@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>クイズランド | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<script src="../common/points.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
+<script src="./data/questions.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFF8E7;
+  --primary: #F59E0B;
+  --primary-light: #FDE68A;
+  --accent: #FBBF24;
+  --text: #5D4E37;
+  --text-light: #A89880;
+  --success: #10B981;
+  --danger: #EF4444;
+  --shadow: rgba(93,78,55,0.12);
+  --radius: 20px;
+}
+
+html, body {
+  min-height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  background: linear-gradient(170deg, #FFF8E7 0%, #FEF3C7 50%, #FDE68A 100%);
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px 32px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* ===== Header ===== */
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+.pono-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 2px 8px var(--shadow);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pono-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.pono-avatar.jump { animation: ponojump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes ponojump {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-18px) scale(1.08); }
+}
+
+.header h1 {
+  font-size: 1.5rem; font-weight: 900; color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+}
+
+/* ===== HUD ===== */
+.hud {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 16px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px var(--shadow);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.hud-progress {
+  display: flex; gap: 4px;
+}
+.hud-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #E5E7EB;
+  transition: background 0.3s;
+}
+.hud-dot.done    { background: var(--success); }
+.hud-dot.current { background: var(--primary); transform: scale(1.3); }
+
+/* ===== Stage area ===== */
+.stage {
+  width: 100%;
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  box-shadow: 0 4px 16px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 260px;
+}
+
+.question {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+#stage-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 100px;
+}
+
+/* ===== Item rows (for order/count) ===== */
+.item-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.color-chip {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  border: 3px solid rgba(255,255,255,0.8);
+  box-shadow: 0 3px 8px var(--shadow);
+}
+.count-item {
+  width: 52px; height: 52px;
+  object-fit: contain;
+}
+
+/* ===== Shapes ===== */
+.shape-display {
+  width: 140px; height: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.shape-circle { width: 120px; height: 120px; border-radius: 50%; background: #FBBF24; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-square { width: 120px; height: 120px; border-radius: 12px; background: #60A5FA; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-triangle {
+  width: 0; height: 0;
+  border-left: 65px solid transparent;
+  border-right: 65px solid transparent;
+  border-bottom: 115px solid #10B981;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+.shape-star {
+  font-size: 120px; line-height: 1;
+  color: #F97316;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+.shape-heart {
+  font-size: 120px; line-height: 1;
+  color: #EC4899;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+/* ===== Choices ===== */
+.choices {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.choice-btn {
+  padding: 16px 12px;
+  border: 3px solid var(--primary-light);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice-btn:hover { background: var(--primary-light); }
+.choice-btn:active { transform: scale(0.96); }
+.choice-btn.correct {
+  background: #D1FAE5 !important;
+  border-color: var(--success) !important;
+  color: #065F46;
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.choice-btn.wrong {
+  background: #FEE2E2 !important;
+  border-color: var(--danger) !important;
+  animation: shake 0.4s;
+}
+.choice-color {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  margin-right: 8px;
+  border: 2px solid rgba(255,255,255,0.8);
+  flex-shrink: 0;
+}
+@keyframes popIn {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+/* ===== Feedback bubble ===== */
+.feedback {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: #fff;
+  border: 4px solid var(--success);
+  border-radius: 24px;
+  padding: 20px 36px;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--success);
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.feedback.show { transform: translate(-50%, -50%) scale(1); }
+
+/* ===== Confetti ===== */
+.confetti {
+  position: fixed;
+  top: -20px;
+  width: 10px; height: 14px;
+  z-index: 90;
+  pointer-events: none;
+  animation: confFall 2.5s linear forwards;
+}
+@keyframes confFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== Start screen ===== */
+.start-screen {
+  position: fixed; inset: 0; z-index: 50;
+  background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+}
+.start-screen.hidden { display: none; }
+.start-title {
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 3px 3px 0 #F59E0B, 6px 6px 0 rgba(0,0,0,0.15);
+  text-align: center;
+  line-height: 1.2;
+}
+.start-subtitle {
+  font-size: 1rem;
+  color: #5D4E37;
+  font-weight: 700;
+  text-align: center;
+}
+.start-btn {
+  padding: 18px 48px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #EF4444, #F97316);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(239,68,68,0.4);
+  transition: transform 0.15s;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.start-btn:active { transform: scale(0.95); }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* ===== Result modal ===== */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(93,78,55,0.72);
+  backdrop-filter: blur(4px);
+}
+.overlay.hidden { display: none; }
+.modal {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px 28px 24px;
+  max-width: 320px;
+  width: 90vw;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+.modal-icon { font-size: 3rem; line-height: 1; }
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.modal-msg {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: pre-line;
+}
+.modal-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #F59E0B, #F97316);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+  transition: transform 0.1s;
+}
+.modal-btn:active { transform: scale(0.95); }
+.modal-back {
+  font-size: 0.82rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Start Screen ===== -->
+<div class="start-screen" id="start-screen">
+  <div class="start-title">🧠 クイズランド 🧠</div>
+  <div class="start-subtitle">ポノと いっしょに<br>もんだいを といてみよう！</div>
+  <button class="start-btn" id="start-btn">はじめる ▶</button>
+</div>
+
+<!-- ===== Game UI ===== -->
+<div class="header">
+  <div class="pono-avatar" id="pono-avatar">
+    <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
+  </div>
+  <h1>クイズランド</h1>
+</div>
+
+<div class="hud">
+  <div id="hud-label">もんだい <span id="q-num">1</span> / <span id="q-total">6</span></div>
+  <div class="hud-progress" id="hud-progress"></div>
+</div>
+
+<div class="stage">
+  <div class="question" id="question-text">よういちゅう…</div>
+  <div id="stage-area"></div>
+  <div class="choices" id="choices"></div>
+</div>
+
+<!-- ===== Feedback bubble ===== -->
+<div class="feedback" id="feedback">やったー！</div>
+
+<!-- ===== Result modal ===== -->
+<div class="overlay hidden" id="result-overlay">
+  <div class="modal">
+    <div class="modal-icon" id="result-icon">🎉</div>
+    <div class="modal-title" id="result-title">クリア！</div>
+    <div class="modal-msg" id="result-msg"></div>
+    <button class="modal-btn" id="result-btn">もう一回 ▶</button>
+    <a href="../index.html" class="modal-back">← メニューにもどる</a>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ═══════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════
+const TOTAL_Q = 6; // MVP: 6 問
+let playlist = [];
+let questionIdx = 0;
+let correctCount = 0;
+let currentQ = null;
+let locked = false; // 回答直後の連打防止
+
+// ═══════════════════════════════════════════════════════════
+// Audio (wordmatch から流用)
+// ═══════════════════════════════════════════════════════════
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playCorrect() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [523.25, 783.99].forEach((f, i) => {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.frequency.value = f;
+    o.type = 'sine';
+    g.gain.setValueAtTime(0.18, t + i * 0.08);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.28);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t + i * 0.08);
+    o.stop(t + i * 0.08 + 0.3);
+  });
+}
+function playWrong() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(220, t);
+  o.frequency.exponentialRampToValueAtTime(110, t + 0.2);
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t);
+  o.stop(t + 0.22);
+}
+function playFanfare() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.value = f;
+    g.gain.setValueAtTime(0.15, t + i * 0.15);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.4);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t + i * 0.15);
+    o.stop(t + i * 0.15 + 0.4);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Confetti
+// ═══════════════════════════════════════════════════════════
+function launchConfetti() {
+  const colors = ['#FBBF24', '#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + '%';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = (Math.random() * 0.6) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Playlist building
+// ═══════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildPlaylist() {
+  // MVP: 各タイプから 2 問ずつ、計 6 問
+  // level 1〜2 の中からランダムに選ぶ
+  const types = ['order_color', 'count_total', 'shape_name'];
+  const list = [];
+  types.forEach(type => {
+    const pool = QUIZLAND_QUESTIONS[type].filter(q => q.level <= 2);
+    const picked = shuffle(pool).slice(0, 2);
+    list.push(...picked);
+  });
+  return shuffle(list);
+}
+
+// ═══════════════════════════════════════════════════════════
+// Rendering
+// ═══════════════════════════════════════════════════════════
+function renderOrderColor(stage, q) {
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  q.items.forEach(colorKey => {
+    const chip = document.createElement('div');
+    chip.className = 'color-chip';
+    chip.style.background = QUIZLAND_COLORS[colorKey].code;
+    row.appendChild(chip);
+  });
+  stage.appendChild(row);
+}
+
+function renderCountTotal(stage, q) {
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  for (let i = 0; i < q.count; i++) {
+    const img = document.createElement('img');
+    img.className = 'count-item';
+    img.src = QUIZLAND_WORD_IMG + q.item + '.png';
+    img.alt = '';
+    row.appendChild(img);
+  }
+  stage.appendChild(row);
+}
+
+function renderShapeName(stage, q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'shape-display';
+  if (q.shape === 'circle')   wrap.innerHTML = '<div class="shape-circle"></div>';
+  if (q.shape === 'square')   wrap.innerHTML = '<div class="shape-square"></div>';
+  if (q.shape === 'triangle') wrap.innerHTML = '<div class="shape-triangle"></div>';
+  if (q.shape === 'star')     wrap.innerHTML = '<div class="shape-star">★</div>';
+  if (q.shape === 'heart')    wrap.innerHTML = '<div class="shape-heart">♥</div>';
+  stage.appendChild(wrap);
+}
+
+function renderChoices(q) {
+  const tray = document.getElementById('choices');
+  tray.innerHTML = '';
+  q.choices.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.dataset.idx = i;
+    if (q.type === 'order_color') {
+      // 色チップ + 色名
+      const chip = document.createElement('div');
+      chip.className = 'choice-color';
+      chip.style.background = QUIZLAND_COLORS[choice].code;
+      btn.appendChild(chip);
+      const label = document.createElement('span');
+      label.textContent = QUIZLAND_COLORS[choice].name;
+      btn.appendChild(label);
+    } else if (q.type === 'count_total') {
+      btn.textContent = String(choice);
+      btn.style.fontSize = '1.6rem';
+    } else {
+      btn.textContent = choice;
+    }
+    btn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      if (locked) return;
+      onChoice(i, btn);
+    });
+    tray.appendChild(btn);
+  });
+}
+
+function loadQuestion(q) {
+  currentQ = q;
+  locked = false;
+  document.getElementById('question-text').textContent = q.q;
+  const stage = document.getElementById('stage-area');
+  stage.innerHTML = '';
+  switch (q.type) {
+    case 'order_color': renderOrderColor(stage, q); break;
+    case 'count_total': renderCountTotal(stage, q); break;
+    case 'shape_name':  renderShapeName(stage, q); break;
+  }
+  renderChoices(q);
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById('q-num').textContent = (questionIdx + 1);
+  document.getElementById('q-total').textContent = TOTAL_Q;
+  const prog = document.getElementById('hud-progress');
+  prog.innerHTML = '';
+  for (let i = 0; i < TOTAL_Q; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'hud-dot';
+    if (i < questionIdx) dot.classList.add('done');
+    if (i === questionIdx) dot.classList.add('current');
+    prog.appendChild(dot);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Answer handling
+// ═══════════════════════════════════════════════════════════
+function onChoice(idx, btn) {
+  if (locked) return;
+  locked = true;
+  ensureAudio();
+  const correct = (idx === currentQ.answer);
+  if (correct) {
+    btn.classList.add('correct');
+    playCorrect();
+    showFeedback('やったー！');
+    ponoJump();
+    launchConfetti();
+    correctCount++;
+    if (window.incrementStat) window.incrementStat('quizland_correct', 1);
+    setTimeout(nextQuestion, 1000);
+  } else {
+    btn.classList.add('wrong');
+    playWrong();
+    showFeedback('ちがうよ〜', true);
+    // 正解を光らせる
+    setTimeout(() => {
+      const allBtns = document.querySelectorAll('.choice-btn');
+      allBtns.forEach((b, i) => {
+        if (i === currentQ.answer) b.classList.add('correct');
+      });
+    }, 400);
+    setTimeout(nextQuestion, 1600);
+  }
+}
+
+function showFeedback(text, wrong) {
+  const el = document.getElementById('feedback');
+  el.textContent = text;
+  el.style.color = wrong ? 'var(--danger)' : 'var(--success)';
+  el.style.borderColor = wrong ? 'var(--danger)' : 'var(--success)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 700);
+}
+
+function ponoJump() {
+  const av = document.getElementById('pono-avatar');
+  av.classList.remove('jump');
+  void av.offsetWidth; // reflow
+  av.classList.add('jump');
+}
+
+function nextQuestion() {
+  questionIdx++;
+  if (questionIdx >= TOTAL_Q) {
+    showResult();
+    return;
+  }
+  loadQuestion(playlist[questionIdx]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// Result
+// ═══════════════════════════════════════════════════════════
+function showResult() {
+  const cleared = correctCount >= Math.ceil(TOTAL_Q * 0.7); // 70% 以上で clear
+  document.getElementById('result-icon').textContent = cleared ? '🎉' : '💪';
+  document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
+  document.getElementById('result-msg').textContent = cleared
+    ? `${TOTAL_Q}もんちゅう ${correctCount}もん せいかい！`
+    : `${TOTAL_Q}もんちゅう ${correctCount}もん せいかい。\nもういちど やってみよう！`;
+  document.getElementById('result-overlay').classList.remove('hidden');
+  if (cleared) {
+    playFanfare();
+    launchConfetti();
+    setTimeout(launchConfetti, 400);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════
+function initGame() {
+  playlist = buildPlaylist();
+  questionIdx = 0;
+  correctCount = 0;
+  document.getElementById('result-overlay').classList.add('hidden');
+  loadQuestion(playlist[0]);
+}
+
+// Start button
+document.getElementById('start-btn').addEventListener('click', function() {
+  ensureAudio();
+  document.getElementById('start-screen').classList.add('hidden');
+  initGame();
+  // メニュー初期化（menu.js）
+  if (typeof initMenu === 'function') {
+    initMenu({
+      bgmToggle: function() { /* BGM なし */ },
+      tutorial: function() { alert('いろ・かず・かたちの クイズに こたえよう！'); }
+    });
+  }
+});
+
+// Result retry button
+document.getElementById('result-btn').addEventListener('click', function() {
+  initGame();
+});
+
+})();
+</script>
+</body>
+</html>
