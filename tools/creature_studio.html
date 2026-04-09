@@ -1000,6 +1000,18 @@ document.getElementById('btn-erase-brush').addEventListener('click', () => {
 });
 document.getElementById('btn-erase-undo').addEventListener('click', popEraseUndo);
 
+// ── 消去モード中の右ドラッグでパン ──
+document.getElementById('box-proc').addEventListener('mousedown', e => {
+  if (!eraseMode || e.button !== 2) return;
+  e.preventDefault();
+  const box = document.getElementById('box-orig');
+  panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
+  document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.add('dragging'));
+});
+document.getElementById('box-proc').addEventListener('contextmenu', e => {
+  if (eraseMode) e.preventDefault();
+});
+
 // ── ポイント消去: クリック ──
 document.getElementById('box-proc').addEventListener('click', e => {
   if (!eraseMode || eraseTool !== 'point' || !processedCanvas || panMoved) return;
