@@ -311,16 +311,16 @@
   ],
   "firstClearRewards": {
     "puzzle": {
-      "icon": "🧩",
-      "name": "タコ",
+      "icon": "🐠",
+      "name": "クマノミ",
       "gendered": false,
       "type": "sea",
-      "id": "octopus",
-      "img": "assets/images/ocean/octpus/octpus_001.png",
-      "afterMsg": "はじめての パズルクリア！\nタコが なかまに なったよ！"
+      "id": "clownfish",
+      "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png",
+      "afterMsg": "はじめての パズルクリア！\nクマノミが なかまに なったよ！"
     },
     "writing": {
-      "icon": "✏️",
+      "icon": "🐠",
       "name": "ナンヨウハギ",
       "gendered": false,
       "type": "sea",
@@ -329,7 +329,7 @@
       "afterMsg": "はじめての もじかき！\nナンヨウハギが なかまに\nなったよ！"
     },
     "drawing": {
-      "icon": "🎨",
+      "icon": "🐠",
       "name": "ニシキテグリ",
       "gendered": false,
       "type": "sea",
@@ -338,7 +338,7 @@
       "afterMsg": "はじめての おえかき！\nニシキテグリが なかまに\nなったよ！"
     },
     "bento": {
-      "icon": "🍱",
+      "icon": "🐡",
       "name": "ふぐ",
       "gendered": false,
       "type": "sea",
@@ -347,13 +347,14 @@
       "afterMsg": "はじめての おべんとう！\nふぐが なかまに なったよ！"
     },
     "wordmatch": {
-      "icon": "🔤",
-      "name": "クラゲ",
+      "icon": "🐠",
+      "name": "チョウチョウウオ",
       "gendered": false,
       "type": "sea",
-      "id": "jellyfish",
-      "img": "assets/images/ocean/JellyFish/JellyFish_001.png",
-      "afterMsg": "はじめての ことばあわせ！\nクラゲが なかまに なったよ！"
+      "id": "butterflyfish",
+      "img": "assets/images/ocean/Butterflyfish/Butterflyfish_normal_1.png",
+      "afterMsg": "はじめての ことばあわせ！\nチョウチョウウオが なかまに\nなったよ！",
+      "_placeholder": "画像未作成 — butterflyfish を熱帯魚として追加予定"
     },
     "bowling": {
       "icon": "🎳",
@@ -374,31 +375,43 @@
       "afterMsg": "ふかいもりの はいけいが\nつかえるようになったよ！\nつぎのゲームから えらべるよ！"
     },
     "slide": {
-      "icon": "🐢",
-      "name": "ウミガメ",
+      "icon": "🐴",
+      "name": "タツノオトシゴ",
       "gendered": false,
       "type": "sea",
-      "id": "turtle",
-      "img": "assets/images/ocean/Turtle/Turtle_001.png",
-      "afterMsg": "はじめての みちつなぎクリア！\nウミガメが なかまに なったよ！"
+      "id": "seahorse",
+      "img": "assets/images/ocean/Seahorse/Seahorse_normal_1.png",
+      "afterMsg": "はじめての みちつなぎクリア！\nタツノオトシゴが なかまに\nなったよ！",
+      "_placeholder": "画像未作成 — seahorse を熱帯魚として追加予定"
     },
     "maze": {
       "icon": "🐠",
-      "name": "メダカ",
+      "name": "ミノカサゴ",
       "gendered": false,
       "type": "sea",
-      "id": "medaka",
-      "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png",
-      "afterMsg": "はじめての めいろクリア！\nメダカが なかまに なったよ！"
+      "id": "lionfish",
+      "img": "assets/images/ocean/Lionfish/Lionfish_normal_1.png",
+      "afterMsg": "はじめての めいろクリア！\nミノカサゴが なかまに\nなったよ！",
+      "_placeholder": "画像未作成 — lionfish を熱帯魚として追加予定"
     },
     "quizland": {
-      "icon": "🧠",
-      "name": "マンボウ",
+      "icon": "🦈",
+      "name": "マンタ",
       "gendered": false,
       "type": "sea",
-      "id": "sunfish",
-      "img": "assets/images/ocean/Sunfish/Sunfish_001.png",
-      "afterMsg": "はじめての クイズクリア！\nマンボウが なかまに なったよ！"
+      "id": "manta_ray",
+      "img": "assets/images/ocean/MantaRay/MantaRay_normal_1.png",
+      "afterMsg": "はじめての クイズクリア！\nマンタが なかまに なったよ！",
+      "_placeholder": "画像未作成 — manta_ray を熱帯魚として追加予定"
+    },
+    "coloring": {
+      "icon": "🐠",
+      "name": "カクレクマノミ",
+      "gendered": false,
+      "type": "sea",
+      "id": "kakurekumanomi",
+      "img": "assets/images/ocean/Kakurekumanomi/Kakurekumanomi_normal_1.png",
+      "afterMsg": "はじめての ぬりえ！\nカクレクマノミが なかまに\nなったよ！"
     }
   }
 }
