@@ -133,6 +133,7 @@ body {
   display: flex; gap: 6px; align-items: center; padding: 7px 12px;
   background: #1f2937; border-bottom: 1px solid #374151;
   flex-shrink: 0; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 10;
 }
 .sprites-count { font-size: 0.72rem; color: #6b7280; }
 .tbtn {
@@ -1592,33 +1593,86 @@ document.getElementById('btn-ai-all').addEventListener('click', async () => {
   showToast(`命名完了: ${done}体成功${failed > 0 ? ' / ' + failed + '体失敗' : ''}`, failed === 0);
 });
 
-// グループ命名: 選択中の先頭スプライトだけAIにかけ、名前/ID/アイコンを全選択カードに伝播
+// ════════════════════════════════════════════════════════════
+// グループ命名: 視覚的類似度で自動グループ分け → グループごとに1回AI
+// ════════════════════════════════════════════════════════════
+
+/** スプライトを 32×32 アルファ加重グレースケールに縮小してコサイン正規化 */
+function computeThumb(canvas) {
+  const S = 32;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  c.getContext('2d').drawImage(canvas, 0, 0, S, S);
+  const d = c.getContext('2d').getImageData(0, 0, S, S).data;
+  const v = new Float32Array(S * S);
+  let norm = 0;
+  for (let i = 0; i < S * S; i++) {
+    const a = d[i*4+3] / 255;
+    v[i] = (0.299*d[i*4] + 0.587*d[i*4+1] + 0.114*d[i*4+2]) / 255 * a;
+    norm += v[i] * v[i];
+  }
+  norm = Math.sqrt(norm) || 1;
+  for (let i = 0; i < S*S; i++) v[i] /= norm;
+  return v;
+}
+
+/** コサイン類似度 ≥ threshold でグリーディークラスタリング */
+function groupBySimilarity(idxList, threshold = 0.55) {
+  const thumbs = idxList.map(i => computeThumb(sprites[i].canvas));
+  const groups = [];
+  const used = new Set();
+  for (let i = 0; i < idxList.length; i++) {
+    if (used.has(i)) continue;
+    const g = [idxList[i]];
+    used.add(i);
+    for (let j = i + 1; j < idxList.length; j++) {
+      if (used.has(j)) continue;
+      let dot = 0;
+      for (let k = 0; k < thumbs[i].length; k++) dot += thumbs[i][k] * thumbs[j][k];
+      if (dot >= threshold) { g.push(idxList[j]); used.add(j); }
+    }
+    groups.push(g);
+  }
+  return groups;
+}
+
 document.getElementById('btn-ai-group').addEventListener('click', async () => {
   const cards = [...document.querySelectorAll('.sprite-card.selected')];
   if (!cards.length) { showToast('スプライトを選択してください', false); return; }
 
-  const firstIdx = parseInt(cards[0].dataset.idx);
-  showLoading(`AIで命名中... (1回のAPI呼び出しで ${cards.length}体に適用)`);
-  try {
-    await aiNameSprite(firstIdx);
-    const src = sprites[firstIdx];
+  const idxList = cards.map(c => parseInt(c.dataset.idx));
+  const groups  = groupBySimilarity(idxList, 0.55);
 
-    // 全選択カードに名前・ID・アイコンを伝播（表情はそのまま）
-    cards.forEach(card => {
-      const idx = parseInt(card.dataset.idx);
-      sprites[idx].name = src.name;
-      sprites[idx].id   = src.id;
-      sprites[idx].icon = src.icon;
-      card.querySelector('.sp-name').value = src.name;
-      card.querySelector('.sp-id').value   = src.id;
-    });
+  showLoading(`グループ命名中... 0/${groups.length}種類`);
+  let done = 0, failed = 0;
 
-    hideLoading();
-    showToast(`グループ命名完了 — ${cards.length}体を「${src.name}」に設定 (API: 1回)`, true);
-  } catch (e) {
-    hideLoading();
-    showToast('AI命名失敗: ' + e.message, false);
+  for (let gi = 0; gi < groups.length; gi++) {
+    const group = groups[gi];
+    try {
+      await aiNameSprite(group[0]);
+      const src = sprites[group[0]];
+      group.forEach(idx => {
+        sprites[idx].name = src.name;
+        sprites[idx].id   = src.id;
+        sprites[idx].icon = src.icon;
+        const card = document.querySelector(`.sprite-card[data-idx="${idx}"]`);
+        if (card) {
+          card.querySelector('.sp-name').value = src.name;
+          card.querySelector('.sp-id').value   = src.id;
+        }
+      });
+      done++;
+    } catch (e) { failed++; }
+    document.getElementById('loading-msg').textContent =
+      `グループ命名中... ${done + failed}/${groups.length}種類`;
+    if (gi < groups.length - 1) await new Promise(r => setTimeout(r, 500));
   }
+
+  hideLoading();
+  showToast(
+    `命名完了: ${done}種類 / ${idxList.length}体 (API: ${done}回)${failed ? ' / ' + failed + '失敗' : ''}`,
+    failed === 0
+  );
 });
 
 // ════════════════════════════════════════════════════════════
