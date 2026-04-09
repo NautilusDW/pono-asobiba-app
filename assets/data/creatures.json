@@ -225,6 +225,29 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "seahorse",
+      "displayName": "タツノオトシゴ",
+      "icon": "🐠",
+      "folder": "Seahorse",
+      "expressions": {
+        "normal": "Seahorse_normal_1.png",
+        "surprised": "Seahorse_surprised.png",
+        "happy": "Seahorse_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 210,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
