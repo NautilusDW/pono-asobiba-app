@@ -2069,7 +2069,8 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
   // Validate groups
   for (const [name, g] of groups) {
     if (!g.normal.length) { showToast(`「${name}」のコマ1画像がありません`, false); return; }
-    if (!g.surprised)     { showToast(`「${name}」のおどろき画像がありません`, false); return; }
+    // おどろきがない場合はコマ1で代用（静止画1枚だけの登録を許可）
+    if (!g.surprised) g.surprised = g.normal[0];
   }
 
   const setStatus = msg => {
@@ -2089,9 +2090,12 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
     }
   }
 
-  // Count total uploads
+  // Count total uploads（surprisedがnormalと同一の場合も1回はアップロード必要）
   let totalUploads = 0;
-  for (const [, g] of groups) totalUploads += g.normal.length + 1 + (g.happy ? 1 : 0);
+  for (const [, g] of groups) {
+    const hasSeparateSurprised = !g.normal.includes(g.surprised);
+    totalUploads += g.normal.length + (hasSeparateSurprised ? 1 : 0) + (g.happy ? 1 : 0);
+  }
   let uploaded = 0;
 
   try {
@@ -2108,7 +2112,8 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
       const folder  = g.id.charAt(0).toUpperCase() + g.id.slice(1);
       const normNames = g.normal.map((_, i) => `${folder}_normal_${i+1}.png`);
-      const surprName = `${folder}_surprised.png`;
+      const hasSeparateSurprised = !g.normal.includes(g.surprised);
+      const surprName = hasSeparateSurprised ? `${folder}_surprised.png` : normNames[0];
       const happyName = g.happy ? `${folder}_happy.png` : null;
 
       for (let i = 0; i < g.normal.length; i++) {
@@ -2121,12 +2126,14 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
         );
       }
 
-      setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (おどろき)`);
-      await ghUploadPromise(
-        `assets/images/ocean/${folder}/${surprName}`,
-        canvasToBase64(g.surprised.canvas),
-        `🐠 studio: ${g.id} / ${surprName}`
-      );
+      if (hasSeparateSurprised) {
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (おどろき)`);
+        await ghUploadPromise(
+          `assets/images/ocean/${folder}/${surprName}`,
+          canvasToBase64(g.surprised.canvas),
+          `🐠 studio: ${g.id} / ${surprName}`
+        );
+      }
 
       if (g.happy) {
         setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (わらう)`);
