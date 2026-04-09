@@ -1997,12 +1997,29 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
   if (!cards.length) { showToast('スプライトを選択してください', false); return; }
 
   const idxList = cards.map(c => parseInt(c.dataset.idx));
-  showLoading(`Geminiでグループ分け中... (${idxList.length}体 → API 1回)`);
+
+  // バッチ分割（Netlifyペイロード制限対策: 最大10枚ずつ）
+  const BATCH = 10;
+  const batches = [];
+  for (let i = 0; i < idxList.length; i += BATCH) {
+    batches.push(idxList.slice(i, i + BATCH));
+  }
+
+  showLoading(`AI命名中... 0/${batches.length}バッチ (${idxList.length}体)`);
+  let allGroups = [];
+  let done = 0;
 
   try {
-    const groups = await aiGroupSprites(idxList);
+    for (const batch of batches) {
+      const groups = await aiGroupSprites(batch);
+      allGroups = allGroups.concat(groups);
+      done++;
+      document.getElementById('loading-msg').textContent =
+        `AI命名中... ${done}/${batches.length}バッチ`;
+      if (done < batches.length) await new Promise(r => setTimeout(r, 500));
+    }
 
-    groups.forEach(g => {
+    allGroups.forEach(g => {
       g.indices.forEach(idx => {
         if (idx == null || idx === undefined) return;
         sprites[idx].name = g.name;
@@ -2017,10 +2034,12 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
     });
 
     hideLoading();
-    showToast(`グループ命名完了: ${groups.length}種類 / ${idxList.length}体 (API: 1回)`, true);
+    const apiCalls = batches.length;
+    showToast(`命名完了: ${allGroups.length}種類 / ${idxList.length}体 (API: ${apiCalls}回)`, true);
   } catch (e) {
     hideLoading();
     showToast('グループ命名失敗: ' + e.message, false);
+    console.error('[aiGroupSprites]', e);
   }
 });
 
