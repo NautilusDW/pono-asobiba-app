@@ -296,6 +296,8 @@ body {
 /* Grab cursor for panning */
 .compare-canvas-box.zoomed { cursor: grab; }
 .compare-canvas-box.zoomed.dragging { cursor: grabbing; }
+/* Link mode */
+.compare-canvas-box.link-mode { cursor: crosshair !important; }
 /* Erase mode */
 .compare-canvas-box.erase-mode { cursor: crosshair !important; }
 .compare-canvas-box.erase-brush { cursor: none !important; }
@@ -440,6 +442,9 @@ body {
         <input type="range" id="brush-size" min="5" max="80" value="20" style="width:60px;display:none" title="ブラシサイズ">
         <span id="brush-size-label" style="font-size:0.68rem;color:#9ca3af;display:none">20px</span>
         <button class="tbtn tbtn-ghost" id="btn-erase-undo" style="padding:3px 8px;font-size:0.72rem" title="消去を戻す (Ctrl+Z)" disabled>↩ 戻す</button>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <button class="tbtn tbtn-ghost" id="btn-link-mode" style="padding:3px 8px;font-size:0.72rem" title="リンクツール: 線で繋いだパーツを1つのスプライトに結合">🔗 リンク</button>
+        <button class="tbtn tbtn-ghost" id="btn-link-clear" style="padding:3px 8px;font-size:0.72rem" title="リンクを全て消去">🔗✕</button>
         <div style="flex:1"></div>
         <span class="zb-label">背景:</span>
         <select id="bg-mode-select">
@@ -531,6 +536,8 @@ let eraseTool = 'point';       // 'point' | 'brush'
 let eraseUndoStack = [];
 const ERASE_UNDO_MAX = 10;
 let brushDragging = false;     // ブラシドラッグ中フラグ
+let linkMode = false;
+let linkLines = [];            // [{x1,y1,x2,y2}] processedCanvas座標
 
 // ════════════════════════════════════════════════════════════
 // Utilities
@@ -703,6 +710,7 @@ function drawInBox(boxId, srcCanvas, applyBg) {
 function redrawCompare() {
   drawInBox('box-orig', originalCanvas, false);
   if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
+  drawLinkOverlay();
   const lbl = document.getElementById('zoom-level-display');
   lbl.textContent = compareZoom <= 0 ? 'Fit' : Math.round(compareZoom * 100) + '%';
 }
@@ -781,7 +789,7 @@ let panState = null;  // { startX, startY, sl, st }
 ['box-orig', 'box-proc'].forEach(id => {
   document.getElementById(id).addEventListener('mousedown', e => {
     if (e.button !== 0) return;
-    if (eraseMode && id === 'box-proc') return;
+    if ((eraseMode || linkMode) && id === 'box-proc') return;
     e.preventDefault();
     const box = document.getElementById('box-orig'); // always anchor to orig
     panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
@@ -824,6 +832,7 @@ function setEraseMode(on, tool) {
     showToast('先に「背景を消す」を実行してください', false);
     return;
   }
+  if (on) setLinkMode(false); // リンクモードと排他
   eraseMode = on;
   if (tool) eraseTool = tool;
   const boxProc = document.getElementById('box-proc');
@@ -1002,14 +1011,14 @@ document.getElementById('btn-erase-undo').addEventListener('click', popEraseUndo
 
 // ── 消去モード中の右ドラッグでパン ──
 document.getElementById('box-proc').addEventListener('mousedown', e => {
-  if (!eraseMode || e.button !== 2) return;
+  if (!(eraseMode || linkMode) || e.button !== 2) return;
   e.preventDefault();
   const box = document.getElementById('box-orig');
   panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
   document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.add('dragging'));
 });
 document.getElementById('box-proc').addEventListener('contextmenu', e => {
-  if (eraseMode) e.preventDefault();
+  if (eraseMode || linkMode) e.preventDefault();
 });
 
 // ── ポイント消去: クリック ──
@@ -1075,6 +1084,70 @@ document.addEventListener('keydown', e => {
     if (eraseUndoStack.length > 0) { e.preventDefault(); popEraseUndo(); }
   }
 });
+
+// ════════════════════════════════════════════════════════════
+// Link Mode（パーツ結合マーキング）
+// ════════════════════════════════════════════════════════════
+
+function setLinkMode(on) {
+  if (on && !processedCanvas) { showToast('先に「背景を消す」を実行してください', false); return; }
+  linkMode = on;
+  if (on) setEraseMode(false); // 消去モードと排他
+  document.getElementById('btn-link-mode').classList.toggle('active', on);
+  document.getElementById('box-proc').classList.toggle('link-mode', on);
+}
+
+let _linkStart = null; // {x, y} in processedCanvas coords
+
+document.getElementById('btn-link-mode').addEventListener('click', () => setLinkMode(!linkMode));
+document.getElementById('btn-link-clear').addEventListener('click', () => {
+  linkLines = [];
+  redrawCompare();
+  showToast('リンクを全て消去しました', true);
+});
+
+document.getElementById('box-proc').addEventListener('mousedown', e => {
+  if (!linkMode || !processedCanvas || e.button !== 0) return;
+  e.preventDefault();
+  const coord = clickToProcessedCoord(e);
+  if (coord) _linkStart = coord;
+});
+document.getElementById('box-proc').addEventListener('mouseup', e => {
+  if (!linkMode || !_linkStart || e.button !== 0) return;
+  const coord = clickToProcessedCoord(e);
+  if (!coord) { _linkStart = null; return; }
+  const dx = coord.x - _linkStart.x, dy = coord.y - _linkStart.y;
+  if (Math.sqrt(dx*dx + dy*dy) > 5) {
+    linkLines.push({ x1: _linkStart.x, y1: _linkStart.y, x2: coord.x, y2: coord.y });
+    redrawCompare();
+  }
+  _linkStart = null;
+});
+
+// リンク線の描画（redrawCompare 後に呼ぶ）
+function drawLinkOverlay() {
+  if (!linkLines.length) return;
+  const box = document.getElementById('box-proc');
+  const cv = box.querySelector('canvas');
+  if (!cv || !processedCanvas) return;
+  const ctx = cv.getContext('2d');
+  const sx = cv.width / processedCanvas.width;
+  const sy = cv.height / processedCanvas.height;
+  ctx.save();
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
+  for (const ln of linkLines) {
+    ctx.beginPath();
+    ctx.moveTo(ln.x1 * sx, ln.y1 * sy);
+    ctx.lineTo(ln.x2 * sx, ln.y2 * sy);
+    ctx.stroke();
+    // 端点マーカー
+    ctx.fillStyle = '#22d3ee';
+    ctx.beginPath(); ctx.arc(ln.x1 * sx, ln.y1 * sy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ln.x2 * sx, ln.y2 * sy, 4, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
 
 // ════════════════════════════════════════════════════════════
 // BG color
@@ -1609,6 +1682,23 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     }
   }
 
+  // リンク線によるマージ: 線の両端が属するボックスを強制結合
+  if (linkLines.length > 0) {
+    for (const ln of linkLines) {
+      let boxA = null, boxB = null;
+      for (const bx of boxList) {
+        if (ln.x1 >= bx.x1 && ln.x1 <= bx.x2 && ln.y1 >= bx.y1 && ln.y1 <= bx.y2) boxA = bx;
+        if (ln.x2 >= bx.x1 && ln.x2 <= bx.x2 && ln.y2 >= bx.y1 && ln.y2 <= bx.y2) boxB = bx;
+      }
+      if (boxA && boxB && boxA !== boxB) {
+        boxA.x1 = Math.min(boxA.x1, boxB.x1); boxA.y1 = Math.min(boxA.y1, boxB.y1);
+        boxA.x2 = Math.max(boxA.x2, boxB.x2); boxA.y2 = Math.max(boxA.y2, boxB.y2);
+        boxA.roots = boxA.roots.concat(boxB.roots);
+        boxList.splice(boxList.indexOf(boxB), 1);
+      }
+    }
+  }
+
   // Build root→mergedBox lookup for component mask
   const boxes = new Map();
   const rootToMerged = new Map();
@@ -1809,8 +1899,15 @@ function createSpriteCard(sp, idx) {
   // チェックボックスのデフォルト動作を抑制（グリッドレベルで管理）
   card.querySelector('.sp-check').addEventListener('click', e => e.preventDefault());
 
-  card.querySelector('.sp-name').addEventListener('input', function() { sprites[idx].name = this.value; });
-  card.querySelector('.sp-id').addEventListener('input', function() { sprites[idx].id = this.value; });
+  card.querySelector('.sp-name').addEventListener('input', function() {
+    sprites[idx].name = this.value;
+    const idEl = card.querySelector('.sp-id');
+    if (!idEl.dataset.manual) autoTranslateId(this.value, idEl, idx);
+  });
+  card.querySelector('.sp-id').addEventListener('input', function() {
+    this.dataset.manual = '1';
+    sprites[idx].id = this.value;
+  });
   card.querySelector('.sp-expr').addEventListener('change', function() { sprites[idx].expr = this.value; });
 
   // Creature settings
@@ -1845,6 +1942,7 @@ function createSpriteCard(sp, idx) {
       await aiNameSprite(idx);
       card.querySelector('.sp-name').value = sprites[idx].name;
       card.querySelector('.sp-id').value   = sprites[idx].id;
+      delete card.querySelector('.sp-id').dataset.manual;
     } catch (e) {
       showToast('AI命名失敗: ' + e.message, false);
     }
@@ -1974,6 +2072,38 @@ function getExistingIdSet() {
   }
   sprites.forEach(sp => { if (sp.id) ids.add(sp.id); });
   return ids;
+}
+
+// 日本語名→英語ID自動変換（ローカルで可能ならローカル、無理ならAPI）
+let _translateTimer = null;
+function autoTranslateId(name, idEl, idx) {
+  clearTimeout(_translateTimer);
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  // ASCII のみなら即時ローカル変換
+  if (/^[\x20-\x7E]+$/.test(trimmed)) {
+    const id = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+    idEl.value = id; sprites[idx].id = id;
+    return;
+  }
+  // 日本語含む場合: デバウンスしてAPI翻訳
+  _translateTimer = setTimeout(async () => {
+    if (idEl.dataset.manual) return;
+    try {
+      const r = await fetch('/.netlify/functions/ai-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `「${trimmed}」を英語のスネークケースID 1語で返してください。例: カブトムシ→beetle、しょうぼうしゃ→fire_engine。IDのみ出力、説明不要。` })
+      });
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) return;
+      const data = await r.json();
+      if (!r.ok) return;
+      let id = (data.text || '').trim().toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+      if (id && !idEl.dataset.manual) { idEl.value = id; sprites[idx].id = id; }
+    } catch {}
+  }, 600);
 }
 
 async function aiNameSprite(idx) {
