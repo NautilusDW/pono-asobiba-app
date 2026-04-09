@@ -255,6 +255,22 @@ body {
   border-radius: 6px; color: #e0e0e0; font-size: 0.72rem; font-family: inherit;
 }
 .zoom-bar select:focus { outline: none; border-color: #f87171; }
+
+/* val-input: スライダー横の数値（クリックで直接編集可） */
+.val-input {
+  background: none; border: none; border-bottom: 1px dashed transparent;
+  color: #f87171; font-weight: 700; width: 3.2em;
+  text-align: right; font-size: inherit; font-family: inherit;
+  cursor: text; padding: 0 2px; border-radius: 3px;
+  -moz-appearance: textfield;
+}
+.val-input::-webkit-inner-spin-button, .val-input::-webkit-outer-spin-button { opacity: 0.4; }
+.val-input:hover { border-bottom-color: #f87171; }
+.val-input:focus { outline: none; background: #1f2937; border: 1px solid #f87171; }
+
+/* Grab cursor for panning */
+.compare-canvas-box.zoomed { cursor: grab; }
+.compare-canvas-box.zoomed.dragging { cursor: grabbing; }
 </style>
 </head>
 <body>
@@ -304,17 +320,20 @@ body {
     <div class="section">
       <div class="section-title">2. 背景除去</div>
       <div class="form-row">
-        <label>ゆるさ <span class="val" id="tol-val">35</span></label>
+        <label>ゆるさ <input type="number" class="val-input" id="tol-val" value="35" min="0" max="140" step="1"></label>
         <input type="range" id="tolerance" min="0" max="140" value="35">
       </div>
       <div class="form-row">
-        <label>フチなめらか <span class="val" id="feather-val">2</span></label>
+        <label>フチなめらか <input type="number" class="val-input" id="feather-val" value="2" min="0" max="10" step="1"></label>
         <input type="range" id="feather" min="0" max="10" value="2">
       </div>
       <div class="form-row">
-        <label>シュリンク <span class="val" id="shrink-val">0</span></label>
+        <label>シュリンク <input type="number" class="val-input" id="shrink-val" value="0" min="0" max="8" step="1"></label>
         <input type="range" id="shrink" min="0" max="8" step="1" value="0">
       </div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:4px;cursor:pointer">
+        <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171"> 自動リアルタイム更新
+      </label>
     </div>
 
     <!-- 3. Split -->
@@ -574,17 +593,39 @@ ghTokenInput.addEventListener('input', () => {
 });
 
 // ════════════════════════════════════════════════════════════
-// Sliders: value display
+// BG Removal: slider ↔ number input sync + auto-reprocess
 // ════════════════════════════════════════════════════════════
-document.getElementById('tolerance').addEventListener('input', function() {
-  document.getElementById('tol-val').textContent = this.value;
+let reprocessTimer = null;
+function scheduleReprocess() {
+  if (!document.getElementById('auto-reprocess').checked) return;
+  clearTimeout(reprocessTimer);
+  reprocessTimer = setTimeout(runProcess, 120);
+}
+
+// Bind slider + number-input pairs for BG removal params
+[
+  ['tolerance', 'tol-val',     parseInt],
+  ['feather',   'feather-val', parseInt],
+  ['shrink',    'shrink-val',  parseInt],
+].forEach(([sliderId, inputId, parse]) => {
+  const slider = document.getElementById(sliderId);
+  const numIn  = document.getElementById(inputId);
+  slider.addEventListener('input', () => {
+    numIn.value = slider.value;
+    scheduleReprocess();
+  });
+  numIn.addEventListener('input', () => {
+    const v = parse(numIn.value);
+    if (!isNaN(v)) {
+      slider.value = Math.max(+slider.min, Math.min(+slider.max, v));
+      scheduleReprocess();
+    }
+  });
+  numIn.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { numIn.blur(); runProcess(); }
+  });
 });
-document.getElementById('feather').addEventListener('input', function() {
-  document.getElementById('feather-val').textContent = this.value;
-});
-document.getElementById('shrink').addEventListener('input', function() {
-  document.getElementById('shrink-val').textContent = this.value;
-});
+
 document.getElementById('def-speed').addEventListener('input', function() {
   document.getElementById('speed-val').textContent = parseFloat(this.value).toFixed(1);
 });
@@ -660,34 +701,101 @@ function redrawCompare() {
 }
 
 // ════════════════════════════════════════════════════════════
-// Zoom controls
+// Zoom + Pan
 // ════════════════════════════════════════════════════════════
-function zoomBy(factor) {
-  if (compareZoom <= 0) {
-    // Fit mode → calculate current effective zoom to start from
-    const box = document.getElementById('box-orig');
-    const cv  = box.querySelector('canvas');
-    if (cv && originalCanvas) {
-      compareZoom = cv.clientWidth / originalCanvas.width;
-    } else {
-      compareZoom = 1.0;
-    }
+
+/** 現在の実効ズーム倍率を返す（fit mode は canvas の実寸から算出） */
+function effectiveZoom() {
+  if (compareZoom > 0) return compareZoom;
+  const box = document.getElementById('box-orig');
+  const cv  = box.querySelector('canvas');
+  if (cv && originalCanvas && originalCanvas.width > 0) {
+    return cv.clientWidth / originalCanvas.width;
   }
-  compareZoom = Math.max(0.05, Math.min(compareZoom * factor, 16));
-  redrawCompare();
+  return 1;
 }
 
-document.getElementById('btn-zoom-in').addEventListener('click',  () => zoomBy(1.5));
-document.getElementById('btn-zoom-out').addEventListener('click', () => zoomBy(1 / 1.5));
-document.getElementById('btn-zoom-fit').addEventListener('click', () => { compareZoom = 0; redrawCompare(); });
-document.getElementById('btn-zoom-100').addEventListener('click', () => { compareZoom = 1.0; redrawCompare(); });
+/**
+ * ズームを変更し、anchorX/anchorY（ボックス内ピクセル座標）の点が
+ * ズーム後も同じ位置に見えるようスクロール位置を調整する。
+ */
+function zoomAtAnchor(factor, anchorX, anchorY) {
+  const oldZ = effectiveZoom();
+  const newZ = Math.max(0.04, Math.min(oldZ * factor, 20));
 
-// Mouse wheel zoom on compare boxes
+  // anchorの下にある元画像の座標
+  const box = document.getElementById('box-orig');
+  const origX = (box.scrollLeft + anchorX) / oldZ;
+  const origY = (box.scrollTop  + anchorY) / oldZ;
+
+  compareZoom = newZ;
+  redrawCompare();
+
+  // スクロール位置を調整してアンカー点を固定
+  const newSL = origX * newZ - anchorX;
+  const newST = origY * newZ - anchorY;
+  ['box-orig', 'box-proc'].forEach(id => {
+    const b = document.getElementById(id);
+    b.scrollLeft = newSL;
+    b.scrollTop  = newST;
+  });
+}
+
+/** ボタンズーム（画面中央基準） */
+function zoomByButton(factor) {
+  const box = document.getElementById('box-orig');
+  zoomAtAnchor(factor, box.clientWidth / 2, box.clientHeight / 2);
+}
+
+document.getElementById('btn-zoom-in').addEventListener('click',  () => zoomByButton(1.5));
+document.getElementById('btn-zoom-out').addEventListener('click', () => zoomByButton(1 / 1.5));
+document.getElementById('btn-zoom-fit').addEventListener('click', () => { compareZoom = 0; redrawCompare(); });
+document.getElementById('btn-zoom-100').addEventListener('click', () => {
+  compareZoom = 1.0; redrawCompare();
+});
+
+// マウスホイール: ポインター中心ズーム
 ['box-orig', 'box-proc'].forEach(id => {
   document.getElementById(id).addEventListener('wheel', e => {
     e.preventDefault();
-    zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15);
+    const box  = document.getElementById(id);
+    const rect = box.getBoundingClientRect();
+    zoomAtAnchor(e.deltaY < 0 ? 1.15 : 1 / 1.15,
+                 e.clientX - rect.left,
+                 e.clientY - rect.top);
   }, { passive: false });
+});
+
+// ════════════════════════════════════════════════════════════
+// 左ドラッグでパン（両ボックス連動）
+// ════════════════════════════════════════════════════════════
+let panState = null;  // { startX, startY, sl, st }
+
+['box-orig', 'box-proc'].forEach(id => {
+  document.getElementById(id).addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const box = document.getElementById('box-orig'); // always anchor to orig
+    panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
+    document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.add('dragging'));
+  });
+});
+
+document.addEventListener('mousemove', e => {
+  if (!panState) return;
+  const dx = e.clientX - panState.startX;
+  const dy = e.clientY - panState.startY;
+  ['box-orig', 'box-proc'].forEach(id => {
+    const b = document.getElementById(id);
+    b.scrollLeft = panState.sl - dx;
+    b.scrollTop  = panState.st - dy;
+  });
+});
+
+document.addEventListener('mouseup', () => {
+  if (!panState) return;
+  panState = null;
+  document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.remove('dragging'));
 });
 
 // ════════════════════════════════════════════════════════════
@@ -960,10 +1068,9 @@ function removeBgFromCanvas(canvas, tolerance, featherRadius, shrinkPx) {
   ctx.putImageData(imgData, 0, 0);
 }
 
-document.getElementById('btn-process').addEventListener('click', async () => {
+function runProcess(showUI) {
   if (!originalCanvas) return;
-  showLoading('背景を消しています...');
-  await new Promise(r => setTimeout(r, 30));
+  if (showUI) { showLoading('背景を消しています...'); }
 
   const tolerance = parseFloat(document.getElementById('tolerance').value);
   const feather   = parseInt(document.getElementById('feather').value);
@@ -973,14 +1080,13 @@ document.getElementById('btn-process').addEventListener('click', async () => {
   processedCanvas.width  = originalCanvas.width;
   processedCanvas.height = originalCanvas.height;
   processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
-
   removeBgFromCanvas(processedCanvas, tolerance, feather, shrink);
   redrawCompare();
-
   document.getElementById('btn-split').disabled = false;
-  hideLoading();
-  showToast('背景除去完了！', true);
-});
+  if (showUI) { hideLoading(); showToast('背景除去完了！', true); }
+}
+
+document.getElementById('btn-process').addEventListener('click', () => runProcess(true));
 
 // ════════════════════════════════════════════════════════════
 // Sprite Splitting (Union-Find Connected Components)
