@@ -23,7 +23,9 @@
       "reactionSpeed": 0.7,
       "reactionDuration": 0.4,
       "museum": "aquarium",
-      "zones": ["tropical_reef"],
+      "zones": [
+        "tropical_reef"
+      ],
       "profile": {
         "readingName": "かくれくまのみ",
         "category": "さかなの なかま",
@@ -60,7 +62,9 @@
       "reactionDuration": 1,
       "rewardType": "sea",
       "museum": "aquarium",
-      "zones": ["tropical_reef"],
+      "zones": [
+        "tropical_reef"
+      ],
       "profile": {
         "readingName": "なんようはぎ",
         "category": "さかなの なかま",
@@ -97,7 +101,10 @@
       "reactionDuration": 1,
       "rewardType": "sea",
       "museum": "aquarium",
-      "zones": ["tropical_reef", "japan_coast"],
+      "zones": [
+        "tropical_reef",
+        "japan_coast"
+      ],
       "profile": {
         "readingName": "ふぐ",
         "category": "さかなの なかま",
@@ -135,7 +142,9 @@
       "reactionDuration": 1,
       "rewardType": "sea",
       "museum": "aquarium",
-      "zones": ["tropical_reef"],
+      "zones": [
+        "tropical_reef"
+      ],
       "profile": {
         "readingName": "にしきてぐり",
         "category": "さかなの なかま",
@@ -147,6 +156,75 @@
           "よるに なると、なかよしと いっしょに ダンスを おどるみたいに およぐよ。"
         ]
       }
+    },
+    {
+      "id": "manta_ray",
+      "displayName": "マンタ",
+      "icon": "🐟",
+      "folder": "Manta_ray",
+      "expressions": {
+        "normal": "Manta_ray_normal_1.png",
+        "surprised": "Manta_ray_surprised.png",
+        "happy": "Manta_ray_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 268,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "sea_anemone",
+      "displayName": "イソギンチャク",
+      "icon": "🪸",
+      "folder": "Sea_anemone",
+      "expressions": {
+        "normal": "Sea_anemone_normal_1.png",
+        "surprised": "Sea_anemone_surprised.png",
+        "happy": "Sea_anemone_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 226,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "angelfish",
+      "displayName": "エンゼルフィッシュ",
+      "icon": "🐠",
+      "folder": "Angelfish",
+      "expressions": {
+        "normal": "Angelfish_normal_1.png",
+        "surprised": "Angelfish_surprised.png",
+        "happy": "Angelfish_happy.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 246,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
