@@ -1501,7 +1501,7 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
   }
 
   const result = [];
-  for (const [, b] of boxes) {
+  for (const [root, b] of boxes) {
     const sw = b.x2 - b.x1 + 1, sh = b.y2 - b.y1 + 1;
     if (sw < minSize && sh < minSize) continue;
 
@@ -1513,7 +1513,27 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
 
     const sc = document.createElement('canvas');
     sc.width = sw2; sc.height = sh2;
-    sc.getContext('2d').drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
+    const sctx = sc.getContext('2d');
+    sctx.drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
+
+    // ── Component mask: 他の連結成分に属するピクセルを透明化 ──
+    {
+      const sImg = sctx.getImageData(0, 0, sw2, sh2);
+      const sd = sImg.data;
+      let masked = false;
+      for (let ly = 0; ly < sh2; ly++) {
+        const gy = sy + ly;
+        for (let lx = 0; lx < sw2; lx++) {
+          const gx = sx + lx;
+          const gi = gy * w + gx;
+          if (fg[gi] && find(gi) !== root) {
+            sd[(ly * sw2 + lx) * 4 + 3] = 0;
+            masked = true;
+          }
+        }
+      }
+      if (masked) sctx.putImageData(sImg, 0, 0);
+    }
 
     // 各スプライト個別に外周 flood fill で囲まれた背景を自動除去
     _cleanSpriteEdges(sc, bgTolerance, bgColor);
