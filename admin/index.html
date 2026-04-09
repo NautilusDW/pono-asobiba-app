@@ -3075,7 +3075,7 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
       var aDownloadUrl = toAImg(downloadUrl);
 
       // meta が無い時はファイルパスから推測する
-      // 例: assets/images/ocean/Clownfish/Clownfish_normal_1.png → id:clownfish, name:Clownfish
+      // 例: assets/images/ocean/Clownfish/Clownfish_normal_1.png → id:clownfish, name:クマノミ
       if (!meta || !meta.id) {
         meta = meta || {};
         var fname = aPath.split('/').pop().replace(/\.(png|jpg|jpeg|webp)$/i, '');
@@ -3085,7 +3085,6 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
           .replace(/_A$|_B$/, '')
           .toLowerCase();
         if (!meta.id)   meta.id   = guessedId;
-        if (!meta.name) meta.name = guessedId;
         if (!meta.cat) {
           // パスから type を推測
           if (/\/ocean\//i.test(aPath) || /^bg_.*_sea_/i.test(aPath)) meta.cat = 'sea';
@@ -3094,6 +3093,15 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
           else if (/\/floors\//i.test(aPath)) meta.cat = 'floor';
           else meta.cat = 'furn';
         }
+        // sea の場合は日本語ルックアップを優先
+        if (!meta.name && meta.cat === 'sea' && _seaNameLookup[meta.id]) {
+          meta.name = _seaNameLookup[meta.id];
+        }
+        if (!meta.name) meta.name = guessedId;
+      }
+      // meta はあるが name が id そのままの場合、sea ルックアップで日本語化
+      if (meta.cat === 'sea' && meta.name === meta.id && _seaNameLookup[meta.id]) {
+        meta.name = _seaNameLookup[meta.id];
       }
 
       // 画像/ID/Type を常に更新
@@ -3331,7 +3339,36 @@ var SEA_HARDCODED = [
   { id: 'submarine',  name: 'せんすいかん', img: 'assets/images/ocean/Submarine/Submarine_001.png' },
   { id: 'sunfish',    name: 'マンボウ',     img: 'assets/images/ocean/Sunfish/Sunfish_001.png' },
   { id: 'shark',      name: 'サメ',         img: 'assets/images/ocean/Shark/Shark_001.png' },
+  // achievements.js で報酬として使われる固定 sea ID（日本語名を表示するためのマッピング）
+  { id: 'medaka',     name: 'メダカ',       img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
+  { id: 'shell',      name: 'かい',         img: 'assets/images/ocean/Shell/Shell_001.png' },
+  { id: 'starfish',   name: 'ヒトデ',       img: 'assets/images/ocean/Starfish/Starfish_001.png' },
+  { id: 'clownfish',  name: 'クマノミ',     img: 'assets/images/ocean/Clownfish/Clownfish_normal_1.png' },
+  { id: 'blue_tang',  name: 'ナンヨウハギ', img: 'assets/images/ocean/Blue_tang/Blue_tang_normal_1.png' },
+  { id: 'pufferfish', name: 'ふぐ',         img: 'assets/images/ocean/Pufferfish/Pufferfish_normal_1.png' },
+  { id: 'shrimp',     name: 'エビ',         img: 'assets/images/ocean/Shrimp/Shrimp_001.png' },
+  { id: 'crab',       name: 'カニ',         img: 'assets/images/ocean/Crab/Crab_001.png' },
+  { id: 'goldfish',   name: 'きんぎょ',     img: 'assets/images/ocean/Goldfish/Goldfish_001.png' },
+  { id: 'neon_tetra', name: 'ネオンテトラ', img: 'assets/images/ocean/Neon_tetra/Neon_tetra_001.png' },
+  { id: 'seahorse',   name: 'タツノオトシゴ', img: 'assets/images/ocean/Seahorse/Seahorse_001.png' },
+  { id: 'seal',       name: 'アザラシ',     img: 'assets/images/ocean/Seal/Seal_001.png' },
+  { id: 'dolphin',    name: 'イルカ',       img: 'assets/images/ocean/Dolphin/Dolphin_001.png' },
+  { id: 'butterfly_fish', name: 'チョウチョウウオ', img: 'assets/images/ocean/Butterfly_fish/Butterfly_fish_001.png' },
+  { id: 'crocodile_sea', name: 'ワニ',      img: 'assets/images/ocean/Crocodile_sea/Crocodile_sea_001.png' },
 ];
+
+// sea id → Japanese 名のルックアップ（動的ファイル選択時のフォールバックに使用）
+var _seaNameLookup = {};
+SEA_HARDCODED.forEach(function(it) { _seaNameLookup[it.id] = it.name; });
+// creatures.json を非同期で読み込んでマージ
+fetch('../assets/data/creatures.json?v=' + Date.now(), { cache: 'no-store' })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    (data.creatures || []).forEach(function(c) {
+      if (c.id && c.displayName) _seaNameLookup[c.id] = c.displayName;
+    });
+  })
+  .catch(function() { /* ignore */ });
 
 function _renderThumbGrid(grid, items, onSelect, ov) {
   grid.innerHTML = '';

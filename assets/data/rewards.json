@@ -19,6 +19,48 @@
       },
       "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！"
     },
+    "2": {
+      "name": "くまのぬいぐるみ",
+      "icon": "🧸",
+      "gendered": false,
+      "type": "deco",
+      "id": "furn_bear_1",
+      "img": "assets/images/Rooms/furnitures_final/bear_A.png"
+    },
+    "3": {
+      "name": "きょうりゅう / うさぎぬいぐるみ",
+      "icon": "🦕",
+      "gendered": true,
+      "boy": {
+        "name": "きょうりゅう",
+        "type": "deco",
+        "id": "deco_dinosaur",
+        "img": "assets/images/Rooms/furnitures_final/Dinasour01_A.png"
+      },
+      "girl": {
+        "name": "うさぎぬいぐるみ",
+        "type": "deco",
+        "id": "deco_bunny",
+        "img": "assets/images/Rooms/furnitures_final/bunny_A.png"
+      }
+    },
+    "4": {
+      "name": "うちゅうラグ / ピンクラグ",
+      "icon": "🟣",
+      "gendered": true,
+      "boy": {
+        "name": "うちゅうラグ",
+        "type": "deco",
+        "id": "deco_rug_space",
+        "img": "assets/images/Rooms/furnitures_final/rug_space.png"
+      },
+      "girl": {
+        "name": "ピンクラグ",
+        "type": "deco",
+        "id": "deco_rug_pink",
+        "img": "assets/images/Rooms/furnitures_final/rug_pink.png"
+      }
+    },
     "5": {
       "name": "きのベッド / ピンクベッド",
       "icon": "🛏️",
@@ -35,19 +77,73 @@
         "id": "furn_bed_pink",
         "img": "assets/images/Rooms/furnitures_final/bed_pink_A.png"
       },
-      "unlockRoom": true
+      "unlockRoom": true,
+      "afterMsg": "ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！"
+    },
+    "6": {
+      "name": "ほんのやま / ティーセット",
+      "icon": "📚",
+      "gendered": true,
+      "boy": {
+        "name": "ほんのやま",
+        "type": "deco",
+        "id": "deco_books",
+        "img": "assets/images/Rooms/furnitures_final/books_A.png"
+      },
+      "girl": {
+        "name": "ティーセット",
+        "type": "deco",
+        "id": "deco_tea",
+        "img": "assets/images/Rooms/furnitures_final/tea_A.png"
+      }
+    },
+    "7": {
+      "name": "フロアランプ / かべだな",
+      "icon": "💡",
+      "gendered": true,
+      "boy": {
+        "name": "フロアランプ",
+        "type": "deco",
+        "id": "deco_lamp_floor",
+        "img": "assets/images/Rooms/furnitures_final/lamp_floor.png"
+      },
+      "girl": {
+        "name": "かべだな",
+        "type": "deco",
+        "id": "deco_shelf_wall",
+        "img": "assets/images/Rooms/furnitures_final/shelf2_A.png"
+      }
     },
     "8": {
-      "name": "かめ",
-      "icon": "🎁",
+      "name": "かくれクマノミ",
+      "icon": "🐠",
       "gendered": false,
-      "type": "deco",
-      "id": "reward_slot_16",
-      "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png"
+      "type": "sea",
+      "id": "kakurekumanomi",
+      "img": "assets/images/ocean/Kakurekumanomi/Kakurekumanomi_normal_1.png",
+      "afterMsg": "かくれクマノミを みつけたよ！\nみずぞくかんに あそびに\nいってみよう！"
+    },
+    "9": {
+      "name": "あおいつくえ / きのつくえ",
+      "icon": "📝",
+      "gendered": true,
+      "boy": {
+        "name": "あおいつくえ",
+        "type": "furn",
+        "id": "furn_desk",
+        "img": "assets/images/Rooms/furnitures_final/desk_A_01.png"
+      },
+      "girl": {
+        "name": "きのつくえ",
+        "type": "furn",
+        "id": "furn_desk2",
+        "img": "assets/images/Rooms/furnitures_final/desk02_A.png"
+      },
+      "afterMsg": "つくえが とどいたよ！\nベッドと つくえで\nおへやが ととのってきたね！"
     },
     "10": {
-      "name": "スポーツカー",
-      "icon": "🧸",
+      "name": "スポーツカー / リボンくま",
+      "icon": "🏎️",
       "gendered": true,
       "boy": {
         "name": "スポーツカー",
@@ -56,10 +152,60 @@
         "img": "assets/images/Rooms/furnitures_final/sportscar_A.png"
       },
       "girl": {
-        "name": "",
+        "name": "リボンくま",
         "type": "deco",
         "id": "deco_bear_ribbon",
         "img": "assets/images/Rooms/furnitures_final/bear_ribbon_A.png"
+      }
+    },
+    "11": {
+      "name": "きのほんだな",
+      "icon": "📖",
+      "gendered": false,
+      "type": "furn",
+      "id": "furn_bookshelf2",
+      "img": "assets/images/Rooms/furnitures_final/BookShelf02_A.png"
+    },
+    "12": {
+      "name": "ロボット / おにんぎょう",
+      "icon": "🤖",
+      "gendered": true,
+      "boy": {
+        "name": "ロボット",
+        "type": "deco",
+        "id": "deco_robot",
+        "img": "assets/images/Rooms/furnitures_final/robot_A.png"
+      },
+      "girl": {
+        "name": "おにんぎょう",
+        "type": "deco",
+        "id": "deco_doll",
+        "img": "assets/images/Rooms/furnitures_final/doll_A.png"
+      }
+    },
+    "13": {
+      "name": "おもちゃだな",
+      "icon": "🧸",
+      "gendered": false,
+      "type": "furn",
+      "id": "furn_toyshelf",
+      "img": "assets/images/Rooms/furnitures_final/Shelf01_A.png"
+    },
+    "14": {
+      "name": "あおいほんだな / ピンクほんだな",
+      "icon": "📚",
+      "gendered": true,
+      "boy": {
+        "name": "あおいほんだな",
+        "type": "furn",
+        "id": "furn_bookshelf_blue_boy",
+        "img": "assets/images/Rooms/furnitures_final/furn_bookshelf_blue_boy_A.png"
+      },
+      "girl": {
+        "name": "ピンクほんだな",
+        "type": "furn",
+        "id": "furn_bookshelf_pink",
+        "img": "assets/images/Rooms/furnitures_final/bookshelf_pink_A.png"
       }
     },
     "15": {
@@ -77,69 +223,137 @@
         "type": "furn",
         "id": "furn_desk_pink",
         "img": "assets/images/Rooms/furnitures_final/desk_pink_A.png"
-      }
+      },
+      "afterMsg": "カードを ぜんぶ うめたね！\nすごい！つぎは もっと\nすてきな ごほうびが まってるよ！"
     }
   },
   "cardCompleteRewards": [
     {
-      "icon": "🐠",
-      "name": "あおぞら / みずたま",
+      "icon": "🖼️",
+      "name": "あおぞら / ハート",
       "gendered": true,
       "boy": {
-        "name": "あおぞら",
+        "name": "あおぞらのかべがみ",
         "type": "wall",
         "id": "wall_aozora",
         "img": "assets/images/Rooms/walls/aozora.png"
       },
       "girl": {
-        "name": "みずたま",
+        "name": "ハートのかべがみ",
+        "type": "wall",
+        "id": "wall_heart",
+        "img": "assets/images/Rooms/walls/heart.png"
+      },
+      "afterMsg": "あたらしい かべがみを\nてに いれたよ！\nおへやで きがえてみてね！"
+    },
+    {
+      "icon": "🪵",
+      "name": "あたたかもくめのゆか",
+      "gendered": false,
+      "type": "floor",
+      "id": "floor_wood_warm",
+      "img": "assets/images/Rooms/floors/kumo_niko.png",
+      "afterMsg": "あたらしい ゆかを\nてに いれたよ！"
+    },
+    {
+      "icon": "🎳",
+      "name": "きょうりゅう / ユニコーンのボウリングはいけい",
+      "gendered": true,
+      "boy": {
+        "name": "きょうりゅうボウリング",
+        "type": "bg",
+        "id": "bg_bowling_dinasour",
+        "img": "assets/images/Bowling/BG/boy/dinasour.png"
+      },
+      "girl": {
+        "name": "ユニコーンボウリング",
+        "type": "bg",
+        "id": "bg_bowling_unicorn",
+        "img": "assets/images/Bowling/BG/girl/unicorn.png"
+      },
+      "afterMsg": "ボウリングの はいけいが\nふえたよ！ボウリングで\nえらんで あそんでみてね！"
+    },
+    {
+      "icon": "🧱",
+      "name": "どうくつのブロックくずしはいけい",
+      "gendered": false,
+      "type": "bg",
+      "id": "bg_breakout_cave_entrance",
+      "img": "assets/images/Block/stage3_cave_entrance.png",
+      "afterMsg": "ブロックくずしの はいけいが\nふえたよ！"
+    },
+    {
+      "icon": "🖼️",
+      "name": "きょうりゅう / みずたま",
+      "gendered": true,
+      "boy": {
+        "name": "きょうりゅうかべがみ",
+        "type": "wall",
+        "id": "wall_kyouryu",
+        "img": "assets/images/Rooms/walls/kyouryu.png"
+      },
+      "girl": {
+        "name": "みずたまかべがみ",
         "type": "wall",
         "id": "wall_mizutama",
         "img": "assets/images/Rooms/walls/mizutama.png"
       }
     },
     {
-      "icon": "🖼️",
-      "name": "きょうりゅう / ハート",
-      "gendered": true,
-      "boy": {
-        "name": "きょうりゅう",
-        "type": "wall",
-        "id": "wall_kyouryu",
-        "img": "assets/images/Rooms/walls/kyouryu.png"
-      },
-      "girl": {
-        "name": "ハート",
-        "type": "wall",
-        "id": "wall_heart",
-        "img": "assets/images/Rooms/walls/heart.png"
-      }
-    },
-    {
-      "icon": "🐢",
-      "name": "ウミガメ",
+      "icon": "🪵",
+      "name": "ヘリンボーンのゆか",
+      "gendered": false,
+      "type": "floor",
+      "id": "floor_herringbone",
+      "img": "assets/images/Rooms/floors/stripe.png",
+      "afterMsg": "あたらしい ゆかが\nとどいたよ！"
+    }
+  ],
+  "firstClearRewards": {
+    "puzzle": {
+      "icon": "🧩",
+      "name": "タコ",
       "gendered": false,
       "type": "sea",
-      "id": "turtle",
-      "img": "assets/images/ocean/Turtle/Turtle_001.png"
+      "id": "octopus",
+      "img": "assets/images/ocean/octpus/octpus_001.png",
+      "afterMsg": "はじめての パズルクリア！\nタコが なかまに なったよ！"
     },
-    {
-      "icon": "🪼",
+    "writing": {
+      "icon": "✏️",
+      "name": "ナンヨウハギ",
+      "gendered": false,
+      "type": "sea",
+      "id": "blue_tang",
+      "img": "assets/images/ocean/Blue_tang/Blue_tang_normal_1.png",
+      "afterMsg": "はじめての もじかき！\nナンヨウハギが なかまに\nなったよ！"
+    },
+    "drawing": {
+      "icon": "🎨",
+      "name": "ニシキテグリ",
+      "gendered": false,
+      "type": "sea",
+      "id": "mandarinfish",
+      "img": "assets/images/ocean/Mandarinfish/Mandarinfish_normal_1.png",
+      "afterMsg": "はじめての おえかき！\nニシキテグリが なかまに\nなったよ！"
+    },
+    "bento": {
+      "icon": "🍱",
+      "name": "ふぐ",
+      "gendered": false,
+      "type": "sea",
+      "id": "pufferfish",
+      "img": "assets/images/ocean/Pufferfish/Pufferfish_normal_1.png",
+      "afterMsg": "はじめての おべんとう！\nふぐが なかまに なったよ！"
+    },
+    "wordmatch": {
+      "icon": "🔤",
       "name": "クラゲ",
       "gendered": false,
       "type": "sea",
       "id": "jellyfish",
-      "img": "assets/images/ocean/JellyFish/JellyFish_001.png"
-    }
-  ],
-  "firstClearRewards": {
-    "maze": {
-      "icon": "🐠",
-      "name": "メダカ",
-      "gendered": false,
-      "type": "sea",
-      "id": "medaka",
-      "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png"
+      "img": "assets/images/ocean/JellyFish/JellyFish_001.png",
+      "afterMsg": "はじめての ことばあわせ！\nクラゲが なかまに なったよ！"
     },
     "bowling": {
       "icon": "🎳",
@@ -158,6 +372,33 @@
       "id": "bg_breakout_forest_deep",
       "img": "assets/images/Block/stage2_forest_deep.png",
       "afterMsg": "ふかいもりの はいけいが\nつかえるようになったよ！\nつぎのゲームから えらべるよ！"
+    },
+    "slide": {
+      "icon": "🐢",
+      "name": "ウミガメ",
+      "gendered": false,
+      "type": "sea",
+      "id": "turtle",
+      "img": "assets/images/ocean/Turtle/Turtle_001.png",
+      "afterMsg": "はじめての みちつなぎクリア！\nウミガメが なかまに なったよ！"
+    },
+    "maze": {
+      "icon": "🐠",
+      "name": "メダカ",
+      "gendered": false,
+      "type": "sea",
+      "id": "medaka",
+      "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png",
+      "afterMsg": "はじめての めいろクリア！\nメダカが なかまに なったよ！"
+    },
+    "quizland": {
+      "icon": "🧠",
+      "name": "マンボウ",
+      "gendered": false,
+      "type": "sea",
+      "id": "sunfish",
+      "img": "assets/images/ocean/Sunfish/Sunfish_001.png",
+      "afterMsg": "はじめての クイズクリア！\nマンボウが なかまに なったよ！"
     }
   }
 }
