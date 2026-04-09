@@ -352,8 +352,16 @@ body {
         <input type="range" id="feather" min="0" max="10" step="0.1" value="2">
       </div>
       <div class="form-row">
+        <label>グレー許容値 <input type="number" class="val-input" id="graytol-val" value="18" min="0" max="80" step="1"></label>
+        <input type="range" id="graytol" min="0" max="80" step="1" value="18">
+      </div>
+      <div class="form-row">
         <label>シュリンク <input type="number" class="val-input" id="shrink-val" value="0" min="0" max="8" step="1"></label>
         <input type="range" id="shrink" min="0" max="8" step="1" value="0">
+      </div>
+      <div class="form-row">
+        <label>アルファぼかし <input type="number" class="val-input" id="ablur-val" value="0" min="0" max="5" step="0.1"></label>
+        <input type="range" id="ablur" min="0" max="5" step="0.1" value="0">
       </div>
       <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:4px;cursor:pointer">
         <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171"> 自動リアルタイム更新
@@ -580,7 +588,9 @@ function scheduleReprocess() {
 [
   ['tolerance', 'tol-val',     parseInt],
   ['feather',   'feather-val', parseFloat],
+  ['graytol',   'graytol-val', parseInt],
   ['shrink',    'shrink-val',  parseInt],
+  ['ablur',     'ablur-val',   parseFloat],
 ].forEach(([sliderId, inputId, parse]) => {
   const slider = document.getElementById(sliderId);
   const numIn  = document.getElementById(inputId);
@@ -803,7 +813,9 @@ function getCurrentSettings() {
   return {
     tolerance:  document.getElementById('tolerance').value,
     feather:    document.getElementById('feather').value,
+    grayTol:    document.getElementById('graytol').value,
     shrink:     document.getElementById('shrink').value,
+    alphaBlur:  document.getElementById('ablur').value,
     minSize:    document.getElementById('min-size').value,
     padding:    document.getElementById('padding').value,
     alphaThresh:document.getElementById('alpha-thresh').value,
@@ -813,11 +825,13 @@ function applyPresetSettings(s) {
   const set = (id, val, lblId) => {
     if (val === undefined) return;
     document.getElementById(id).value = val;
-    if (lblId) document.getElementById(lblId).textContent = val;
+    if (lblId) document.getElementById(lblId).value = val;
   };
   set('tolerance',   s.tolerance,   'tol-val');
   set('feather',     s.feather,     'feather-val');
+  set('graytol',     s.grayTol,     'graytol-val');
   set('shrink',      s.shrink,      'shrink-val');
+  set('ablur',       s.alphaBlur,   'ablur-val');
   set('min-size',    s.minSize);
   set('padding',     s.padding);
   set('alpha-thresh',s.alphaThresh);
@@ -934,11 +948,57 @@ function sampleBgColor(data, w, h) {
   return n > 0 ? [rS/n, gS/n, bS/n] : [255, 255, 255];
 }
 
-function removeBgFromCanvas(canvas, tolerance, featherRadius, shrinkPx) {
+function removeBgFromCanvas(canvas, tolerance, featherRadius, grayTol, shrinkPx, alphaBlurRadius) {
   const w = canvas.width, h = canvas.height;
   const ctx = canvas.getContext('2d');
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
+
+  // Box blur ユーティリティ（整数 r、スライディングウィンドウ O(w*h)）
+  function boxBlur(s, r) {
+    if (r <= 0) return s.slice();
+    const tmp = new Float32Array(w * h);
+    const out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const base = y * w;
+      let sum = 0, cnt = 0;
+      for (let k = 0; k <= r && k < w; k++) { sum += s[base + k]; cnt++; }
+      tmp[base] = sum / cnt;
+      for (let x = 1; x < w; x++) {
+        if (x + r < w)      { sum += s[base + x + r]; cnt++; }
+        if (x - r - 1 >= 0) { sum -= s[base + x - r - 1]; cnt--; }
+        tmp[base + x] = sum / cnt;
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let sum = 0, cnt = 0;
+      for (let k = 0; k <= r && k < h; k++) { sum += tmp[k * w + x]; cnt++; }
+      out[x] = sum / cnt;
+      for (let y = 1; y < h; y++) {
+        if (y + r < h)      { sum += tmp[(y + r) * w + x]; cnt++; }
+        if (y - r - 1 >= 0) { sum -= tmp[(y - r - 1) * w + x]; cnt--; }
+        out[y * w + x] = sum / cnt;
+      }
+    }
+    return out;
+  }
+
+  function applyBlur(radius) {
+    const r0 = Math.floor(radius), r1 = Math.ceil(radius);
+    const frac = radius - r0;
+    const src = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) src[i] = d[i * 4 + 3];
+    let blurred;
+    if (frac === 0 || r0 === r1) {
+      blurred = boxBlur(src, r1 || r0);
+    } else {
+      const b0 = r0 > 0 ? boxBlur(src, r0) : src;
+      const b1 = boxBlur(src, r1);
+      blurred = new Float32Array(w * h);
+      for (let i = 0; i < w * h; i++) blurred[i] = b0[i] * (1 - frac) + b1[i] * frac;
+    }
+    for (let i = 0; i < w * h; i++) d[i * 4 + 3] = Math.round(blurred[i]);
+  }
 
   const [bgR, bgG, bgB] = sampleBgColor(d, w, h);
   const isBg = new Uint8Array(w * h);
@@ -971,6 +1031,43 @@ function removeBgFromCanvas(canvas, tolerance, featherRadius, shrinkPx) {
 
   for (let i = 0; i < w * h; i++) { if (isBg[i]) d[i*4+3] = 0; }
 
+  // Gray tol: 彩度の低い（グレー/白系）ピクセルを背景として追加除去
+  if (grayTol > 0) {
+    const queue2 = new Int32Array(w * h);
+    let head2 = 0, tail2 = 0;
+
+    function tryGray(idx) {
+      if (idx < 0 || idx >= w * h || isBg[idx]) return;
+      const i = idx * 4;
+      if (d[i + 3] < 10) { isBg[idx] = 1; return; }
+      const r = d[i], g = d[i+1], b = d[i+2];
+      if (Math.max(r,g,b) - Math.min(r,g,b) <= grayTol) {
+        isBg[idx] = 1;
+        queue2[tail2++] = idx;
+      }
+    }
+
+    for (let i = 0; i < w * h; i++) {
+      if (!isBg[i]) continue;
+      const x = i % w, y = (i - x) / w;
+      if (x > 0)   tryGray(i - 1);
+      if (x < w-1) tryGray(i + 1);
+      if (y > 0)   tryGray(i - w);
+      if (y < h-1) tryGray(i + w);
+    }
+
+    while (head2 < tail2) {
+      const idx = queue2[head2++];
+      const x = idx % w, y = (idx - x) / w;
+      if (x > 0)   tryGray(idx - 1);
+      if (x < w-1) tryGray(idx + 1);
+      if (y > 0)   tryGray(idx - w);
+      if (y < h-1) tryGray(idx + w);
+    }
+
+    for (let i = 0; i < w * h; i++) { if (isBg[i]) d[i*4+3] = 0; }
+  }
+
   // Alpha shrink: 整数ピクセルのMinFilterエロージョン（半透明にならない）
   if (shrinkPx > 0) {
     const n = Math.max(1, Math.round(shrinkPx));
@@ -994,58 +1091,11 @@ function removeBgFromCanvas(canvas, tolerance, featherRadius, shrinkPx) {
     for (let i = 0; i < w * h; i++) d[i * 4 + 3] = alpha[i];
   }
 
-  // Feather: スライディングウィンドウ Box Blur（O(w*h)、小数半径は整数ブレンドで対応）
-  if (featherRadius > 0) {
-    const r0 = Math.floor(featherRadius);
-    const r1 = Math.ceil(featherRadius);
-    const frac = featherRadius - r0;
+  // Feather: フチなめらか（エッジのブラー）
+  if (featherRadius > 0) { applyBlur(featherRadius); }
 
-    const src = new Float32Array(w * h);
-    for (let i = 0; i < w * h; i++) src[i] = d[i * 4 + 3];
-
-    function boxBlur(s, r) {
-      if (r <= 0) return s.slice();
-      const tmp = new Float32Array(w * h);
-      const out = new Float32Array(w * h);
-      // Horizontal pass
-      for (let y = 0; y < h; y++) {
-        const base = y * w;
-        let sum = 0, cnt = 0;
-        for (let k = 0; k <= r && k < w; k++) { sum += s[base + k]; cnt++; }
-        tmp[base] = sum / cnt;
-        for (let x = 1; x < w; x++) {
-          if (x + r < w)       { sum += s[base + x + r]; cnt++; }
-          if (x - r - 1 >= 0)  { sum -= s[base + x - r - 1]; cnt--; }
-          tmp[base + x] = sum / cnt;
-        }
-      }
-      // Vertical pass
-      for (let x = 0; x < w; x++) {
-        let sum = 0, cnt = 0;
-        for (let k = 0; k <= r && k < h; k++) { sum += tmp[k * w + x]; cnt++; }
-        out[x] = sum / cnt;
-        for (let y = 1; y < h; y++) {
-          if (y + r < h)       { sum += tmp[(y + r) * w + x]; cnt++; }
-          if (y - r - 1 >= 0)  { sum -= tmp[(y - r - 1) * w + x]; cnt--; }
-          out[y * w + x] = sum / cnt;
-        }
-      }
-      return out;
-    }
-
-    let blurred;
-    if (frac === 0 || r0 === r1) {
-      blurred = boxBlur(src, r1 || r0);
-    } else {
-      // 小数部分: r0とr1のブレンドで滑らかな中間値
-      const b0 = r0 > 0 ? boxBlur(src, r0) : src;
-      const b1 = boxBlur(src, r1);
-      blurred = new Float32Array(w * h);
-      for (let i = 0; i < w * h; i++) blurred[i] = b0[i] * (1 - frac) + b1[i] * frac;
-    }
-
-    for (let i = 0; i < w * h; i++) d[i * 4 + 3] = Math.round(blurred[i]);
-  }
+  // Alpha blur: アルファぼかし（シュリンク後の仕上げブラー）
+  if (alphaBlurRadius > 0) { applyBlur(alphaBlurRadius); }
 
   ctx.putImageData(imgData, 0, 0);
 }
@@ -1056,13 +1106,15 @@ function runProcess(showUI) {
 
   const tolerance = parseFloat(document.getElementById('tolerance').value);
   const feather   = parseFloat(document.getElementById('feather').value);
+  const grayTol   = parseInt(document.getElementById('graytol').value);
   const shrink    = parseFloat(document.getElementById('shrink').value);
+  const alphaBlur = parseFloat(document.getElementById('ablur').value);
 
   processedCanvas = document.createElement('canvas');
   processedCanvas.width  = originalCanvas.width;
   processedCanvas.height = originalCanvas.height;
   processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
-  removeBgFromCanvas(processedCanvas, tolerance, feather, shrink);
+  removeBgFromCanvas(processedCanvas, tolerance, feather, grayTol, shrink, alphaBlur);
   redrawCompare();
   document.getElementById('btn-split').disabled = false;
   if (showUI) { hideLoading(); showToast('背景除去完了！', true); }
