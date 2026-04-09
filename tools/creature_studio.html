@@ -516,7 +516,7 @@ let bgMode      = 'checker';
 let customBgColor = '#808080';
 let eraseMode = false;
 let eraseUndoStack = [];
-const ERASE_UNDO_MAX = 20;
+const ERASE_UNDO_MAX = 10;
 
 // ════════════════════════════════════════════════════════════
 // Utilities
@@ -773,10 +773,13 @@ let panState = null;  // { startX, startY, sl, st }
   });
 });
 
+let panMoved = false;
+
 document.addEventListener('mousemove', e => {
   if (!panState) return;
   const dx = e.clientX - panState.startX;
   const dy = e.clientY - panState.startY;
+  if (Math.hypot(dx, dy) > 3) panMoved = true;
   ['box-orig', 'box-proc'].forEach(id => {
     const b = document.getElementById(id);
     b.scrollLeft = panState.sl - dx;
@@ -788,6 +791,7 @@ document.addEventListener('mouseup', () => {
   if (!panState) return;
   panState = null;
   document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.remove('dragging'));
+  setTimeout(() => { panMoved = false; }, 0);
 });
 
 // ════════════════════════════════════════════════════════════
@@ -885,10 +889,10 @@ document.getElementById('btn-erase-mode').addEventListener('click', () => setEra
 document.getElementById('btn-erase-undo').addEventListener('click', popEraseUndo);
 
 document.getElementById('box-proc').addEventListener('click', e => {
-  if (!eraseMode || !processedCanvas) return;
+  if (!eraseMode || !processedCanvas || panMoved) return;
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
-  const tolerance = parseFloat(document.getElementById('tolerance').value);
+  const tolerance = parseFloat(document.getElementById('tolerance').value) || 35;
   pushEraseUndo();
   if (!pointEraseFill(coord.x, coord.y, tolerance)) {
     eraseUndoStack.pop();
@@ -1264,6 +1268,7 @@ function runProcess(showUI) {
   const shrink    = parseFloat(document.getElementById('shrink').value);
   const alphaBlur = parseFloat(document.getElementById('ablur').value);
 
+  setEraseMode(false);
   clearEraseUndo();
   processedCanvas = document.createElement('canvas');
   processedCanvas.width  = originalCanvas.width;
