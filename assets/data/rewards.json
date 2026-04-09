@@ -115,13 +115,13 @@
       }
     },
     "8": {
-      "name": "かくれクマノミ",
+      "name": "カクレクマノミ",
       "icon": "🐠",
       "gendered": false,
       "type": "sea",
-      "id": "kakurekumanomi",
-      "img": "assets/images/ocean/Kakurekumanomi/Kakurekumanomi_normal_1.png",
-      "afterMsg": "かくれクマノミを みつけたよ！\nみずぞくかんに あそびに\nいってみよう！"
+      "id": "clownfish",
+      "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png",
+      "afterMsg": "カクレクマノミを みつけたよ！\nみずぞくかんに あそびに\nいってみよう！"
     },
     "9": {
       "name": "あおいつくえ / きのつくえ",
@@ -312,12 +312,13 @@
   "firstClearRewards": {
     "puzzle": {
       "icon": "🐠",
-      "name": "クマノミ",
+      "name": "ヤッコ",
       "gendered": false,
       "type": "sea",
-      "id": "clownfish",
-      "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png",
-      "afterMsg": "はじめての パズルクリア！\nクマノミが なかまに なったよ！"
+      "id": "angelfish",
+      "img": "assets/images/ocean/Angelfish/Angelfish_normal_1.png",
+      "afterMsg": "はじめての パズルクリア！\nヤッコが なかまに なったよ！",
+      "_placeholder": "画像未作成 — angelfish を熱帯魚として追加予定"
     },
     "writing": {
       "icon": "🐠",
@@ -405,13 +406,14 @@
       "_placeholder": "画像未作成 — manta_ray を熱帯魚として追加予定"
     },
     "coloring": {
-      "icon": "🐠",
-      "name": "カクレクマノミ",
+      "icon": "🐡",
+      "name": "ハコフグ",
       "gendered": false,
       "type": "sea",
-      "id": "kakurekumanomi",
-      "img": "assets/images/ocean/Kakurekumanomi/Kakurekumanomi_normal_1.png",
-      "afterMsg": "はじめての ぬりえ！\nカクレクマノミが なかまに\nなったよ！"
+      "id": "boxfish",
+      "img": "assets/images/ocean/Boxfish/Boxfish_normal_1.png",
+      "afterMsg": "はじめての ぬりえ！\nハコフグが なかまに なったよ！",
+      "_placeholder": "画像未作成 — boxfish を熱帯魚として追加予定"
     }
   }
 }

@@ -31,23 +31,13 @@
   "plannedCreatures": [
     {
       "id": "clownfish",
-      "displayName": "クマノミ",
-      "icon": "🐠",
-      "museum": "aquarium",
-      "zone": "tropical_reef",
-      "status": "done",
-      "priority": "P0",
-      "notes": "実装済み。イソギンチャクといっしょに"
-    },
-    {
-      "id": "kakurekumanomi",
       "displayName": "カクレクマノミ",
       "icon": "🐠",
       "museum": "aquarium",
       "zone": "tropical_reef",
       "status": "done",
       "priority": "P0",
-      "notes": "画像実装済み（Kakurekumanomi_normal_1.png）。ニモのモデル。オレンジと白のしましま"
+      "notes": "実装済み（Clownfishフォルダに3表情）。ニモのモデル。オレンジと白のしましま。スロット8で水族館誘導の特別報酬としても使用"
     },
     {
       "id": "blue_tang",
@@ -136,8 +126,8 @@
       "museum": "aquarium",
       "zone": "tropical_reef",
       "status": "planned",
-      "priority": "P2",
-      "notes": "画像作成予定。ヨスジフエダイ系の派手な色彩。熱帯の人気魚"
+      "priority": "P1",
+      "notes": "画像作成予定。ヨスジフエダイ系の派手な色彩。熱帯の人気魚。パズル初回クリア報酬で使用"
     },
     {
       "id": "triggerfish",
@@ -156,8 +146,8 @@
       "museum": "aquarium",
       "zone": "tropical_reef",
       "status": "planned",
-      "priority": "P2",
-      "notes": "画像作成予定。四角いハコみたいな体。黄色に黒い水玉"
+      "priority": "P1",
+      "notes": "画像作成予定。四角いハコみたいな体。黄色に黒い水玉。ぬりえ初回クリア報酬で使用"
     },
     {
       "id": "wrasse",
