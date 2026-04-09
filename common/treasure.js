@@ -1,22 +1,45 @@
 // ── common/treasure.js ──
 // 宝箱演出モジュール
-// 使い方: showTreasure({ name: 'アイテム名', img: 'path/to/img.png' })
+// 使い方: showTreasure({ name: 'アイテム名', img: 'path/to/img.png', onClose: fn, label: '...' })
 // 各ゲームで <script src="../common/treasure.js"></script> として読み込む
 
 (function() {
   'use strict';
 
   var _overlay = null;
-  var _video = null;
+  var _container = null;   // .treasure-container (video はここに都度 append)
+  var _video = null;       // 毎回 showTreasure で新規生成
   var _reward = null;
   var _msg = null;
   var _closeBtn = null;
   var _onClose = null;
+  var _pendingTimers = [];
+  var _finished = false;
+  var _fallbackStarted = false; // _fallbackCss 重複挿入ガード用
 
+  // ── パス判定 ────────────────────────────────────────────────────────────────
+  function _getBasePath() {
+    if (document.querySelector('script[src*="../common/treasure.js"]')) {
+      return '../assets/videos/';
+    }
+    return 'assets/videos/';
+  }
+
+  // ── タイマー管理 ─────────────────────────────────────────────────────────────
+  function _clearPendingTimers() {
+    _pendingTimers.forEach(function(t) { clearTimeout(t); });
+    _pendingTimers = [];
+  }
+  function _later(fn, ms) {
+    var id = setTimeout(fn, ms);
+    _pendingTimers.push(id);
+    return id;
+  }
+
+  // ── UI 構築（1回のみ）────────────────────────────────────────────────────────
   function _createUI() {
     if (_overlay) return;
 
-    // CSS
     var style = document.createElement('style');
     style.textContent = [
       '#treasure-overlay {',
@@ -28,6 +51,7 @@
       '.treasure-container {',
       '  position:relative; width:280px; height:280px;',
       '  border-radius:24px; overflow:hidden;',
+      '  background:#000;',
       '}',
       '.treasure-container video {',
       '  width:100%; height:100%; object-fit:cover;',
@@ -74,18 +98,29 @@
       '  text-shadow:0 2px 4px rgba(0,0,0,0.5);',
       '  letter-spacing:0.05em;',
       '}',
+      /* CSS フォールバック: 動画再生完全失敗時の宝箱アニメ */
+      '.treasure-fallback {',
+      '  width:100%; height:100%;',
+      '  display:flex; align-items:center; justify-content:center;',
+      '  background:radial-gradient(circle at 50% 60%, #3D1A00 0%, #0D0500 100%);',
+      '}',
+      '.treasure-fallback-icon {',
+      '  font-size:5rem; line-height:1;',
+      '  animation:tboxOpen 0.5s 0.3s ease both;',
+      '}',
+      '@keyframes tboxOpen {',
+      '  0%   { transform:scale(0.6) rotate(-8deg); opacity:0.5; }',
+      '  60%  { transform:scale(1.2) rotate(4deg);  opacity:1; }',
+      '  100% { transform:scale(1)   rotate(0deg);  opacity:1; }',
+      '}',
     ].join('\n');
     document.head.appendChild(style);
 
-    // HTML
     _overlay = document.createElement('div');
     _overlay.id = 'treasure-overlay';
     _overlay.innerHTML =
       '<div class="treasure-label" id="treasure-label"></div>' +
-      '<div class="treasure-container">' +
-        '<video id="treasure-video" playsinline>' +
-          '<source src="' + _getVideoPath() + '" type="video/mp4">' +
-        '</video>' +
+      '<div class="treasure-container" id="treasure-container">' +
         '<div class="treasure-reward" id="treasure-reward">' +
           '<img id="treasure-reward-img" alt="ごほうび">' +
           '<div class="treasure-reward-name" id="treasure-reward-name"></div>' +
@@ -95,129 +130,189 @@
       '<button class="treasure-close" id="treasure-close">やったー！</button>';
     document.body.appendChild(_overlay);
 
-    _video = document.getElementById('treasure-video');
-    _reward = document.getElementById('treasure-reward');
-    _msg = document.getElementById('treasure-msg');
-    _closeBtn = document.getElementById('treasure-close');
+    _container = document.getElementById('treasure-container');
+    _reward    = document.getElementById('treasure-reward');
+    _msg       = document.getElementById('treasure-msg');
+    _closeBtn  = document.getElementById('treasure-close');
 
     _closeBtn.addEventListener('click', function() {
-      _overlay.classList.remove('show');
-      _video.pause();
-      if (_onClose) { _onClose(); _onClose = null; }
+      _doClose();
     });
   }
 
-  function _getVideoPath() {
-    // ゲームページ（../common/）からのパスとトップページ（common/）からのパスを判定
-    if (document.querySelector('script[src*="../common/treasure.js"]')) {
-      return '../assets/videos/TreasureBox.mp4';
-    }
-    return 'assets/videos/TreasureBox.mp4';
-  }
-
-  // 進行中のタイマーを追跡して次回呼出前にクリアする
-  var _pendingTimers = [];
-  function _clearPendingTimers() {
-    _pendingTimers.forEach(function(t) { clearTimeout(t); });
-    _pendingTimers = [];
-  }
-  function _later(fn, ms) {
-    var id = setTimeout(fn, ms);
-    _pendingTimers.push(id);
-    return id;
-  }
-
-  window.showTreasure = function(options) {
-    // options: { name: 'アイテム名', img: 'path/to/img.png', onClose: function, label: '...' }
-    _createUI();
-
-    // 前回呼び出しのタイマーをクリア（連打時の二重 show を防ぐ）
+  function _doClose() {
     _clearPendingTimers();
+    _destroyVideo();
+    _overlay.classList.remove('show');
+    if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
+  }
 
-    var name = options.name || 'ごほうび';
-    var label = options.label || '';
+  // ── 旧 video を完全破棄 ────────────────────────────────────────────────────
+  function _destroyVideo() {
+    if (_video) {
+      _video.pause();
+      _video.removeAttribute('src');
+      try { _video.load(); } catch(e) {}
+      if (_video.parentNode) _video.parentNode.removeChild(_video);
+      _video = null;
+    }
+  }
+
+  // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────
+  function _showReward() {
+    if (_finished) return;
+    _finished = true;
+    _clearPendingTimers();
+    _reward.classList.add('show');
+    _later(function() { _msg.classList.add('show'); }, 400);
+    _later(function() { _closeBtn.classList.add('show'); }, 800);
+  }
+
+  // ── CSS フォールバックアニメーション ──────────────────────────────────────────
+  function _fallbackCss() {
+    if (_fallbackStarted || _finished) return;
+    _fallbackStarted = true; // DOM 挿入の重複防止
+    // フォールバック要素を挿入
+    var fb = document.createElement('div');
+    fb.className = 'treasure-fallback';
+    fb.innerHTML = '<div class="treasure-fallback-icon">🎁</div>';
+    _container.insertBefore(fb, _container.firstChild);
+    // 1.2秒後に報酬表示
+    _later(function() { _showReward(); }, 1200);
+  }
+
+  // ── メイン: showTreasure ─────────────────────────────────────────────────────
+  window.showTreasure = function(options) {
+    // options: { name, img, onClose, label }
+    _createUI();
+    _clearPendingTimers();
+    _destroyVideo();
+    _finished = false;
+    _fallbackStarted = false;
+
+    // ラベル・アイテム設定
+    var name  = (options && options.name)  || 'ごほうび';
+    var label = (options && options.label) || '';
+    var img   = (options && options.img)   || '';
     document.getElementById('treasure-label').textContent = label;
-    var img = options.img || '';
+    var rewardImg = document.getElementById('treasure-reward-img');
+    rewardImg.src          = img;
+    rewardImg.style.display = img ? '' : 'none';
+    document.getElementById('treasure-reward-name').textContent = name;
+    _onClose = (options && options.onClose) || null;
 
     // リセット
     _reward.classList.remove('show');
     _msg.classList.remove('show');
     _closeBtn.classList.remove('show');
-
-    // アイテム画像と名前
-    var rewardImg = document.getElementById('treasure-reward-img');
-    if (img) {
-      rewardImg.src = img;
-      rewardImg.style.display = '';
-    } else {
-      rewardImg.src = '';
-      rewardImg.style.display = 'none';
-    }
-    document.getElementById('treasure-reward-name').textContent = name;
-    _onClose = options.onClose || null;
-
-    // ── 動画の準備 ──
-    // 注意: <video src="..."> と <source src="..."> を同時に設定すると
-    // ブラウザによっては競合・race condition が起きるので、<source> だけ
-    // 使い、video.removeAttribute('src') で src 属性を剥がしてから
-    // sourceEl.src を更新 → video.load() の順にする。
-    _video.pause();
-    _video.onended = null; // 古い handler を必ず剥がす（prior call が firing するのを防ぐ）
-    var vpath = _getVideoPath();
-    var sourceEl = _video.querySelector('source');
-    if (sourceEl) {
-      // キャッシュバスター付きで毎回確実に最新の mp4 を取得
-      // (PWA の SW や CDN が古い mp4 を返すと再生が止まる問題の対策)
-      var cacheBusted = vpath + (vpath.indexOf('?') < 0 ? '?' : '&') + '_cb=' + Date.now();
-      sourceEl.src = cacheBusted;
-    }
-    // video.src が直接設定されていたら剥がす（二重ソース回避）
-    if (_video.hasAttribute('src')) _video.removeAttribute('src');
-    _video.currentTime = 0;
-    _video.load();
+    // 前回のフォールバック要素を除去
+    var oldFb = _container.querySelector('.treasure-fallback');
+    if (oldFb) oldFb.remove();
 
     _overlay.classList.add('show');
 
-    // アイテム表示タイマー（宝箱が開く約3秒後）
-    _later(function() {
-      _reward.classList.add('show');
-    }, 3000);
+    // ── 動画要素を毎回新規生成 ──
+    // 重要: 全属性を load() 前に設定する（iOS Safari の autoplay 許可条件）
+    var basePath = _getBasePath();
+    var mp4Path  = basePath + 'TreasureBox.mp4?' + Date.now();
+    var webmPath = basePath + 'TreasureBox.webm';
 
-    // 動画終了ハンドラを先にセット（play 前）
-    _video.onended = function() {
-      _msg.classList.add('show');
-      _closeBtn.classList.add('show');
-    };
+    _video = document.createElement('video');
+    _video.muted        = true;
+    _video.playsInline  = true;
+    _video.preload      = 'auto';
+    _video.setAttribute('playsinline', '');
+    _video.setAttribute('webkit-playsinline', '');
 
-    // muted で再生開始し、再生できたら unmute して音を出す
-    _video.muted = true;
-    var playPromise = _video.play();
-    if (playPromise && typeof playPromise.then === 'function') {
-      playPromise.then(function() {
-        // 再生成功 → ミュート解除して音を出す
-        _video.muted = false;
-        // duration が分かれば duration+0.5s 後にメッセージ表示
-        // (onended が firing しないケースへの保険)
-        var dur = _video.duration;
-        var fallbackMs = (dur && isFinite(dur) && dur > 0) ? (dur * 1000) + 500 : 6000;
-        _later(function() {
-          _msg.classList.add('show');
-          _closeBtn.classList.add('show');
-        }, fallbackMs);
-      }).catch(function(err) {
-        // 自動再生失敗 (iOS Safari のユーザー操作不足など)
-        // → 動画はスキップしてすぐにアイテムとボタンを出す
-        console.warn('[treasure] video.play() failed:', err);
-        _reward.classList.add('show');
-        _msg.classList.add('show');
-        _closeBtn.classList.add('show');
-      });
-    } else {
-      // 古いブラウザ: play() が undefined を返す
-      _later(function() {
-        _msg.classList.add('show');
-        _closeBtn.classList.add('show');
-      }, 6000);
+    // WebM (VP9) → MP4 の順でソースを設定
+    var srcWebm = document.createElement('source');
+    srcWebm.src  = webmPath;
+    srcWebm.type = 'video/webm; codecs="vp9"';
+    var srcMp4 = document.createElement('source');
+    srcMp4.src  = mp4Path;
+    srcMp4.type = 'video/mp4';
+    _video.appendChild(srcWebm);
+    _video.appendChild(srcMp4);
+
+    // reward は video の上に重ねる
+    _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
+
+    // ── stale closure 対策: この呼び出しの video をキャプチャ ──────────────────
+    var capturedVideo = _video;
+
+    // ── 2.5秒 soft timeout（canplay が来なければ CSS フォールバック）──
+    var softTimeoutId = _later(function() {
+      if (_video !== capturedVideo) return; // stale呼び出し分は無視
+      console.warn('[treasure] canplay timeout → CSS fallback');
+      _fallbackCss();
+    }, 2500);
+
+    // stalled / error でも即フォールバック
+    function onMediaError() {
+      // 両方のリスナーを解除（once:true でも片方が残るので明示的に除去）
+      capturedVideo.removeEventListener('error',   onMediaError);
+      capturedVideo.removeEventListener('stalled', onMediaError);
+      if (_video !== capturedVideo) return; // stale
+      clearTimeout(softTimeoutId);
+      _pendingTimers = _pendingTimers.filter(function(t) { return t !== softTimeoutId; });
+      console.warn('[treasure] media error → CSS fallback');
+      _fallbackCss();
     }
+    capturedVideo.addEventListener('error',   onMediaError);
+    capturedVideo.addEventListener('stalled', onMediaError);
+
+    // canplay 待ち → play()
+    capturedVideo.addEventListener('canplay', function onCanPlay() {
+      if (_video !== capturedVideo) return; // stale
+      clearTimeout(softTimeoutId);
+      _pendingTimers = _pendingTimers.filter(function(t) { return t !== softTimeoutId; });
+      capturedVideo.removeEventListener('error',   onMediaError);
+      capturedVideo.removeEventListener('stalled', onMediaError);
+
+      // onended → _showReward（排他制御済み）
+      capturedVideo.addEventListener('ended', function() {
+        if (_video !== capturedVideo) return;
+        _showReward();
+      }, { once: true });
+
+      // 再生開始
+      var p = capturedVideo.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function() {
+          if (_video !== capturedVideo) return;
+          // 再生成功 → unmute
+          capturedVideo.muted = false;
+          // duration ベースのフォールバックタイマー
+          var dur = capturedVideo.duration;
+          var fallbackMs = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 7000;
+          _later(function() { if (_video === capturedVideo) _showReward(); }, fallbackMs);
+        }).catch(function(err) {
+          if (_video !== capturedVideo) return;
+          console.warn('[treasure] play() rejected:', err);
+          // 1回だけリトライ（muted 維持）
+          var p2 = capturedVideo.play();
+          if (p2 && typeof p2.then === 'function') {
+            p2.then(function() {
+              if (_video !== capturedVideo) return;
+              var dur = capturedVideo.duration;
+              var fallbackMs = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 7000;
+              _later(function() { if (_video === capturedVideo) _showReward(); }, fallbackMs);
+            }).catch(function() {
+              if (_video !== capturedVideo) return;
+              // 2回失敗 → CSS フォールバック
+              _fallbackCss();
+            });
+          } else {
+            _fallbackCss();
+          }
+        });
+      } else {
+        // 古いブラウザ: play() が Promise を返さない
+        _later(function() { if (_video === capturedVideo) _showReward(); }, 7000);
+      }
+    }, { once: true });
+
+    // load 開始
+    _video.load();
   };
 })();

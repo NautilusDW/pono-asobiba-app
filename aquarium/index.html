@@ -528,7 +528,9 @@
       else bgm.pause();
       if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled);
     }
-    initMenu({ bgmToggle: toggleBgm });
+    initMenu({ bgmToggle: toggleBgm, extraButtons: [
+      { icon: '📖', label: 'ずかん', onClick: function () { Encyclopedia.open('..'); } }
+    ] });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) bgm.pause();
       else if (bgmEnabled) bgm.play().catch(() => {});
