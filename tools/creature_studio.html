@@ -108,18 +108,24 @@ body {
 .tab-content.active { display: block; }
 
 /* ── Compare Tab ── */
+#tab-compare { flex-direction: column; overflow: hidden; }
+#tab-compare.active { display: flex; }
 .compare-wrap {
-  display: flex; gap: 10px; padding: 12px;
-  justify-content: center; align-items: flex-start;
+  flex: 1; min-height: 0;
+  display: flex; gap: 10px; padding: 12px; overflow: hidden;
 }
-.compare-side { flex: 1; min-width: 0; }
-.compare-label { font-size: 0.68rem; color: #6b7280; margin-bottom: 4px; text-align: center; }
+.compare-side { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.compare-label { font-size: 0.68rem; color: #6b7280; margin-bottom: 4px; text-align: center; flex-shrink: 0; }
 .compare-canvas-box {
   background: repeating-conic-gradient(#2d2d2d 0% 25%, #1a1a1a 0% 50%) 0 0 / 12px 12px;
-  border-radius: 6px; overflow: hidden; border: 1px solid #374151;
-  min-height: 60px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; overflow: auto; border: 1px solid #374151;
+  flex: 1; min-height: 60px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
 }
-.compare-canvas-box canvas { max-width: 100%; display: block; }
+/* fit modeのときだけ中央寄せ; zoom時はcanvasが大きくなるのでflex解除 */
+.compare-canvas-box.zoomed { display: block; }
+.compare-canvas-box canvas { display: block; }
 .compare-placeholder { font-size: 0.72rem; color: #4b5563; padding: 20px; text-align: center; }
 
 /* ── Sprites Tab ── */
@@ -249,11 +255,6 @@ body {
   border-radius: 6px; color: #e0e0e0; font-size: 0.72rem; font-family: inherit;
 }
 .zoom-bar select:focus { outline: none; border-color: #f87171; }
-.compare-canvas-box {
-  overflow: hidden; transition: background 0.2s;
-}
-.compare-canvas-box.zoomed { overflow: auto; display: block; }
-.compare-canvas-box.zoomed canvas { display: block; }
 </style>
 </head>
 <body>
@@ -631,23 +632,24 @@ function drawInBox(boxId, srcCanvas, applyBg) {
   }
   if (applyBg) box.style.background = getBgStyle();
 
+  const cv = document.createElement('canvas');
   if (compareZoom <= 0) {
-    // Fit mode
-    const cv = document.createElement('canvas');
+    // Fit mode: canvas at natural size, CSS max-width handles the fitting
     cv.width = srcCanvas.width; cv.height = srcCanvas.height;
     cv.getContext('2d').drawImage(srcCanvas, 0, 0);
-    cv.style.maxWidth = '100%'; cv.style.height = 'auto'; cv.style.display = 'block';
+    cv.style.maxWidth = '100%';
+    cv.style.height = 'auto';
     box.classList.remove('zoomed');
-    box.innerHTML = ''; box.appendChild(cv);
   } else {
+    // Zoom mode: canvas at explicit pixel size, box scrolls
     const w = Math.max(1, Math.round(srcCanvas.width * compareZoom));
     const h = Math.max(1, Math.round(srcCanvas.height * compareZoom));
-    const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
     cv.getContext('2d').drawImage(srcCanvas, 0, 0, w, h);
     box.classList.add('zoomed');
-    box.innerHTML = ''; box.appendChild(cv);
   }
+  box.innerHTML = '';
+  box.appendChild(cv);
 }
 
 function redrawCompare() {
@@ -660,21 +662,32 @@ function redrawCompare() {
 // ════════════════════════════════════════════════════════════
 // Zoom controls
 // ════════════════════════════════════════════════════════════
-document.getElementById('btn-zoom-in').addEventListener('click', () => {
-  compareZoom = compareZoom <= 0 ? 1.5 : Math.min(compareZoom * 1.5, 8);
+function zoomBy(factor) {
+  if (compareZoom <= 0) {
+    // Fit mode → calculate current effective zoom to start from
+    const box = document.getElementById('box-orig');
+    const cv  = box.querySelector('canvas');
+    if (cv && originalCanvas) {
+      compareZoom = cv.clientWidth / originalCanvas.width;
+    } else {
+      compareZoom = 1.0;
+    }
+  }
+  compareZoom = Math.max(0.05, Math.min(compareZoom * factor, 16));
   redrawCompare();
-});
-document.getElementById('btn-zoom-out').addEventListener('click', () => {
-  if (compareZoom <= 0) return;
-  compareZoom = compareZoom / 1.5;
-  if (compareZoom < 0.15) compareZoom = 0;
-  redrawCompare();
-});
-document.getElementById('btn-zoom-fit').addEventListener('click', () => {
-  compareZoom = 0; redrawCompare();
-});
-document.getElementById('btn-zoom-100').addEventListener('click', () => {
-  compareZoom = 1.0; redrawCompare();
+}
+
+document.getElementById('btn-zoom-in').addEventListener('click',  () => zoomBy(1.5));
+document.getElementById('btn-zoom-out').addEventListener('click', () => zoomBy(1 / 1.5));
+document.getElementById('btn-zoom-fit').addEventListener('click', () => { compareZoom = 0; redrawCompare(); });
+document.getElementById('btn-zoom-100').addEventListener('click', () => { compareZoom = 1.0; redrawCompare(); });
+
+// Mouse wheel zoom on compare boxes
+['box-orig', 'box-proc'].forEach(id => {
+  document.getElementById(id).addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15);
+  }, { passive: false });
 });
 
 // ════════════════════════════════════════════════════════════
