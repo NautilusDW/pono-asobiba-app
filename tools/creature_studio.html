@@ -435,7 +435,7 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-zoom-100" style="padding:3px 8px;font-size:0.72rem" title="等倍 (1:1)">1:1</button>
         <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
         <button class="tbtn tbtn-ghost" id="btn-erase-point" style="padding:3px 8px;font-size:0.72rem" title="ポイント消去 (色で塗りつぶし)">🎯 ポイント</button>
-        <input type="number" id="erase-tolerance" min="0" max="255" value="30" step="1" style="width:40px;display:none;padding:2px 4px;background:#111827;border:1px solid #374151;border-radius:4px;color:#f87171;font-size:0.72rem;text-align:center" title="色の近似値（大きいほど広く消える）">
+        <input type="number" id="erase-tolerance" min="0" max="255" value="30" step="1" style="width:52px;display:none;padding:4px 6px;background:#111827;border:1px solid #374151;border-radius:4px;color:#f87171;font-size:0.85rem;font-weight:700;text-align:center" title="色の近似値（大きいほど広く消える）">
         <button class="tbtn tbtn-ghost" id="btn-erase-brush" style="padding:3px 8px;font-size:0.72rem" title="ブラシ消去 (ドラッグで消す)">🖌 ブラシ</button>
         <input type="range" id="brush-size" min="5" max="80" value="20" style="width:60px;display:none" title="ブラシサイズ">
         <span id="brush-size-label" style="font-size:0.68rem;color:#9ca3af;display:none">20px</span>
@@ -926,6 +926,35 @@ function pointEraseFill(startX, startY, tolerance) {
       if (Math.sqrt(dr*dr + dg*dg + db*db) <= tolerance) queue[tail++] = ni;
     }
   }
+  // アンチエイリアス: 消去境界のアルファを滑らかにする
+  // 消去されたピクセル(visited且つalpha=0)に隣接する非消去ピクセルを半透明に
+  for (let hi = 0; hi < tail; hi++) {
+    const pi = queue[hi];
+    const px = pi % w, py = (pi - px) / w;
+    const nb2 = [];
+    if (px > 0)     nb2.push(pi - 1);
+    if (px < w - 1) nb2.push(pi + 1);
+    if (py > 0)     nb2.push(pi - w);
+    if (py < h - 1) nb2.push(pi + w);
+    for (const ni of nb2) {
+      if (visited[ni]) continue;
+      const a = d[ni * 4 + 3];
+      if (a > 10) {
+        // 境界ピクセル: 隣接する消去ピクセルの数に応じてアルファを下げる
+        let erasedNeighbors = 0, totalNeighbors = 0;
+        const nx = ni % w, ny = (ni - nx) / w;
+        if (nx > 0)     { totalNeighbors++; if (d[(ni-1)*4+3] === 0 && visited[ni-1]) erasedNeighbors++; }
+        if (nx < w-1)   { totalNeighbors++; if (d[(ni+1)*4+3] === 0 && visited[ni+1]) erasedNeighbors++; }
+        if (ny > 0)     { totalNeighbors++; if (d[(ni-w)*4+3] === 0 && visited[ni-w]) erasedNeighbors++; }
+        if (ny < h-1)   { totalNeighbors++; if (d[(ni+w)*4+3] === 0 && visited[ni+w]) erasedNeighbors++; }
+        if (erasedNeighbors > 0) {
+          const factor = 1 - erasedNeighbors / totalNeighbors * 0.5;
+          d[ni * 4 + 3] = Math.round(a * factor);
+        }
+      }
+    }
+  }
+
   ctx.putImageData(imgData, 0, 0);
   return true;
 }
@@ -942,11 +971,18 @@ function brushErase(cx, cy, radius) {
   const imgData = ctx.getImageData(x0, y0, rw, rh);
   const d = imgData.data;
   const r2 = r * r;
+  const feather = Math.max(1, r * 0.15); // 端15%をフェザリング
+  const inner2 = (r - feather) * (r - feather);
   for (let dy = 0; dy < rh; dy++) {
     for (let dx = 0; dx < rw; dx++) {
       const ddx = (x0 + dx) - cx, ddy = (y0 + dy) - cy;
-      if (ddx * ddx + ddy * ddy <= r2) {
+      const dist2 = ddx * ddx + ddy * ddy;
+      if (dist2 <= inner2) {
         d[(dy * rw + dx) * 4 + 3] = 0;
+      } else if (dist2 <= r2) {
+        const t = (Math.sqrt(dist2) - (r - feather)) / feather;
+        const a = d[(dy * rw + dx) * 4 + 3];
+        d[(dy * rw + dx) * 4 + 3] = Math.round(a * t);
       }
     }
   }
