@@ -348,12 +348,12 @@ body {
         <input type="range" id="tolerance" min="0" max="140" value="35">
       </div>
       <div class="form-row">
-        <label>フチなめらか <input type="number" class="val-input" id="feather-val" value="2" min="0" max="10" step="1"></label>
-        <input type="range" id="feather" min="0" max="10" value="2">
+        <label>フチなめらか <input type="number" class="val-input" id="feather-val" value="2" min="0" max="10" step="0.1"></label>
+        <input type="range" id="feather" min="0" max="10" step="0.1" value="2">
       </div>
       <div class="form-row">
-        <label>シュリンク <input type="number" class="val-input" id="shrink-val" value="0" min="0" max="8" step="1"></label>
-        <input type="range" id="shrink" min="0" max="8" step="1" value="0">
+        <label>シュリンク <input type="number" class="val-input" id="shrink-val" value="0" min="0" max="8" step="0.5"></label>
+        <input type="range" id="shrink" min="0" max="8" step="0.5" value="0">
       </div>
       <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:4px;cursor:pointer">
         <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171"> 自動リアルタイム更新
@@ -579,8 +579,8 @@ function scheduleReprocess() {
 // Bind slider + number-input pairs for BG removal params
 [
   ['tolerance', 'tol-val',     parseInt],
-  ['feather',   'feather-val', parseInt],
-  ['shrink',    'shrink-val',  parseInt],
+  ['feather',   'feather-val', parseFloat],
+  ['shrink',    'shrink-val',  parseFloat],
 ].forEach(([sliderId, inputId, parse]) => {
   const slider = document.getElementById(sliderId);
   const numIn  = document.getElementById(inputId);
@@ -971,27 +971,41 @@ function removeBgFromCanvas(canvas, tolerance, featherRadius, shrinkPx) {
 
   for (let i = 0; i < w * h; i++) { if (isBg[i]) d[i*4+3] = 0; }
 
-  // Alpha shrink (erosion) — pulls edges inward by shrinkPx pixels
+  // Alpha shrink (erosion) — supports fractional pixels
   if (shrinkPx > 0) {
-    const n = Math.max(1, Math.round(shrinkPx));
-    const alpha = new Uint8Array(w * h);
-    const buf   = new Uint8Array(w * h);
+    const full = Math.floor(shrinkPx);
+    const frac = shrinkPx - full;
+    const alpha = new Float32Array(w * h);
+    const buf   = new Float32Array(w * h);
     for (let i = 0; i < w * h; i++) alpha[i] = d[i * 4 + 3];
-    for (let iter = 0; iter < n; iter++) {
-      buf.set(alpha);
+
+    function erodeOnce(src, dst) {
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const i = y * w + x;
-          let m = buf[i];
-          if (x > 0)   m = Math.min(m, buf[i - 1]);
-          if (x < w-1) m = Math.min(m, buf[i + 1]);
-          if (y > 0)   m = Math.min(m, buf[i - w]);
-          if (y < h-1) m = Math.min(m, buf[i + w]);
-          alpha[i] = m;
+          let m = src[i];
+          if (x > 0)   m = Math.min(m, src[i - 1]);
+          if (x < w-1) m = Math.min(m, src[i + 1]);
+          if (y > 0)   m = Math.min(m, src[i - w]);
+          if (y < h-1) m = Math.min(m, src[i + w]);
+          dst[i] = m;
         }
       }
     }
-    for (let i = 0; i < w * h; i++) d[i * 4 + 3] = alpha[i];
+
+    // 整数部分: full回エロージョン
+    for (let iter = 0; iter < full; iter++) {
+      buf.set(alpha);
+      erodeOnce(buf, alpha);
+    }
+    // 小数部分: もう1回エロージョンしてfrac分ブレンド
+    if (frac > 0) {
+      buf.set(alpha);
+      erodeOnce(buf, buf);  // buf = 1回追加エロージョン結果
+      for (let i = 0; i < w * h; i++) alpha[i] = alpha[i] * (1 - frac) + buf[i] * frac;
+    }
+
+    for (let i = 0; i < w * h; i++) d[i * 4 + 3] = Math.round(alpha[i]);
   }
 
   if (featherRadius > 0) {
@@ -1041,8 +1055,8 @@ function runProcess(showUI) {
   if (showUI) { showLoading('背景を消しています...'); }
 
   const tolerance = parseFloat(document.getElementById('tolerance').value);
-  const feather   = parseInt(document.getElementById('feather').value);
-  const shrink    = parseInt(document.getElementById('shrink').value);
+  const feather   = parseFloat(document.getElementById('feather').value);
+  const shrink    = parseFloat(document.getElementById('shrink').value);
 
   processedCanvas = document.createElement('canvas');
   processedCanvas.width  = originalCanvas.width;
