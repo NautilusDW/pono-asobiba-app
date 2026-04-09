@@ -1403,14 +1403,14 @@ document.getElementById('btn-process').addEventListener('click', () => runProces
  * 全体画像では囲まれていた背景色が、個別矩形では外周に露出するため、
  * ここで改めて色ベースの flood fill を実行すれば自動除去できる。
  */
-function _cleanSpriteEdges(canvas, tolerance) {
+function _cleanSpriteEdges(canvas, tolerance, bgColor) {
   const w = canvas.width, h = canvas.height;
   const ctx = canvas.getContext('2d');
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
 
-  // 背景色をこのスプライトの四隅からサンプリング
-  const [bgR, bgG, bgB] = sampleBgColor(d, w, h);
+  // 背景色は元画像からサンプリング済みのものを使う
+  const [bgR, bgG, bgB] = bgColor;
 
   const isBg = new Uint8Array(w * h);
   const queue = new Int32Array(w * h);
@@ -1457,6 +1457,10 @@ function _cleanSpriteEdges(canvas, tolerance) {
 function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+
+  // 元画像の背景色をサンプリング（スプライト個別cleanで使う）
+  const origD = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height).data;
+  const bgColor = sampleBgColor(origD, originalCanvas.width, originalCanvas.height);
 
   const fg = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) fg[i] = d[i*4+3] > alphaThr ? 1 : 0;
@@ -1512,7 +1516,7 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance) {
     sc.getContext('2d').drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
     // 各スプライト個別に外周 flood fill で囲まれた背景を自動除去
-    _cleanSpriteEdges(sc, bgTolerance);
+    _cleanSpriteEdges(sc, bgTolerance, bgColor);
 
     result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
                   name: '', id: '', icon: '🐠', expr: 'normal',
