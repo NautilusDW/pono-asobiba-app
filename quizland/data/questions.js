@@ -1,161 +1,144 @@
 // ─── Quizland 問題データ ──────────────────────────────
-// Phase 1 MVP: order_color / count_total / shape_name の 3 タイプ、各 5 問
-// level: 1(やさしい) / 2(ふつう) / 3(むずかしい)
-//
-// - order_color: 色チップが並ぶ → 「ひだりから N ばんめは なにいろ？」
-//   items: 並びの色配列、answer: 選択肢インデックス、choices: 色名配列
-// - count_total: 絵が N 個並ぶ → 「いくつ あるかな？」
-//   item: 絵の word ID、count: 個数、answer: 選択肢インデックス、choices: 数字配列
-// - shape_name: 1 つの形を表示 → 「これは どんな かたち？」
-//   shape: 形名、answer: 選択肢インデックス、choices: 形名配列
+// カテゴリー: order_color / count_total / shape_name / food / vehicle / dino / weather / opposite / body
+// type:
+//   order_color : 色チップ並び → 何色？
+//   count_total : 絵が N 個 → いくつ？
+//   shape_name  : 形 → なんの形？
+//   emoji_name  : 大きい emoji → なんの名前？（hint あれば補足表示）
+//   opposite    : 単語 → 反対語は？
+// level: 1(やさしい) 2(ふつう) 3(むずかしい)
 
 const QUIZLAND_QUESTIONS = {
+
+  // ── 色の順番 ─────────────────────────────────────
   order_color: [
-    {
-      level: 1,
-      type: 'order_color',
-      items: ['red', 'blue', 'yellow'],
-      q: 'まんなかは なにいろ？',
-      answer: 1,
-      choices: ['red', 'blue', 'yellow', 'green']
-    },
-    {
-      level: 1,
-      type: 'order_color',
-      items: ['green', 'red', 'yellow'],
-      q: 'ひだりから 1ばんめは なにいろ？',
-      answer: 3,
-      choices: ['red', 'yellow', 'blue', 'green']
-    },
-    {
-      level: 2,
-      type: 'order_color',
-      items: ['red', 'blue', 'yellow', 'green'],
-      q: 'ひだりから 3ばんめは なにいろ？',
-      answer: 1,
-      choices: ['red', 'yellow', 'blue', 'green']
-    },
-    {
-      level: 2,
-      type: 'order_color',
-      items: ['pink', 'blue', 'orange', 'yellow'],
-      q: 'みぎから 1ばんめは なにいろ？',
-      answer: 2,
-      choices: ['pink', 'blue', 'yellow', 'orange']
-    },
-    {
-      level: 3,
-      type: 'order_color',
-      items: ['purple', 'red', 'green', 'blue', 'yellow'],
-      q: 'まんなかは なにいろ？',
-      answer: 2,
-      choices: ['red', 'blue', 'green', 'yellow']
-    }
+    { level:1, type:'order_color', items:['red','blue','yellow'],
+      q:'まんなかは なにいろ？', answer:1, choices:['red','blue','yellow','green'] },
+    { level:1, type:'order_color', items:['green','red','yellow'],
+      q:'ひだりから 1ばんめは なにいろ？', answer:3, choices:['red','yellow','blue','green'] },
+    { level:2, type:'order_color', items:['red','blue','yellow','green'],
+      q:'ひだりから 3ばんめは なにいろ？', answer:1, choices:['red','yellow','blue','green'] },
+    { level:2, type:'order_color', items:['pink','blue','orange','yellow'],
+      q:'みぎから 1ばんめは なにいろ？', answer:2, choices:['pink','blue','yellow','orange'] },
+    { level:3, type:'order_color', items:['purple','red','green','blue','yellow'],
+      q:'まんなかは なにいろ？', answer:2, choices:['red','blue','green','yellow'] }
   ],
 
+  // ── 数をかぞえよう ────────────────────────────────
   count_total: [
-    {
-      level: 1,
-      type: 'count_total',
-      item: 'ringo',
-      count: 2,
-      q: 'りんごは いくつ？',
-      answer: 0,
-      choices: [2, 3, 4, 5]
-    },
-    {
-      level: 1,
-      type: 'count_total',
-      item: 'ichigo',
-      count: 3,
-      q: 'いちごは いくつ？',
-      answer: 1,
-      choices: [2, 3, 4, 5]
-    },
-    {
-      level: 2,
-      type: 'count_total',
-      item: 'hoshi',
-      count: 4,
-      q: 'おほしさまは いくつ？',
-      answer: 1,
-      choices: [3, 4, 5, 6]
-    },
-    {
-      level: 2,
-      type: 'count_total',
-      item: 'hana',
-      count: 5,
-      q: 'おはなは いくつ？',
-      answer: 2,
-      choices: [3, 4, 5, 6]
-    },
-    {
-      level: 3,
-      type: 'count_total',
-      item: 'mikan',
-      count: 7,
-      q: 'みかんは いくつ？',
-      answer: 1,
-      choices: [6, 7, 8, 9]
-    }
+    { level:1, type:'count_total', item:'ringo',  count:2, q:'りんごは いくつ？',     answer:0, choices:[2,3,4,5] },
+    { level:1, type:'count_total', item:'ichigo', count:3, q:'いちごは いくつ？',     answer:1, choices:[2,3,4,5] },
+    { level:2, type:'count_total', item:'hoshi',  count:4, q:'おほしさまは いくつ？', answer:1, choices:[3,4,5,6] },
+    { level:2, type:'count_total', item:'hana',   count:5, q:'おはなは いくつ？',     answer:2, choices:[3,4,5,6] },
+    { level:3, type:'count_total', item:'mikan',  count:7, q:'みかんは いくつ？',     answer:1, choices:[6,7,8,9] }
   ],
 
+  // ── かたち ────────────────────────────────────────
   shape_name: [
-    {
-      level: 1,
-      type: 'shape_name',
-      shape: 'circle',
-      q: 'これは どんな かたち？',
-      answer: 0,
-      choices: ['まる', 'しかく', 'さんかく', 'ほし']
-    },
-    {
-      level: 1,
-      type: 'shape_name',
-      shape: 'square',
-      q: 'これは どんな かたち？',
-      answer: 1,
-      choices: ['まる', 'しかく', 'さんかく', 'ほし']
-    },
-    {
-      level: 1,
-      type: 'shape_name',
-      shape: 'triangle',
-      q: 'これは どんな かたち？',
-      answer: 2,
-      choices: ['まる', 'しかく', 'さんかく', 'ほし']
-    },
-    {
-      level: 2,
-      type: 'shape_name',
-      shape: 'star',
-      q: 'これは どんな かたち？',
-      answer: 3,
-      choices: ['まる', 'しかく', 'さんかく', 'ほし']
-    },
-    {
-      level: 2,
-      type: 'shape_name',
-      shape: 'heart',
-      q: 'これは どんな かたち？',
-      answer: 1,
-      choices: ['ほし', 'はーと', 'さんかく', 'まる']
-    }
+    { level:1, type:'shape_name', shape:'circle',   q:'これは どんな かたち？', answer:0, choices:['まる','しかく','さんかく','ほし'] },
+    { level:1, type:'shape_name', shape:'square',   q:'これは どんな かたち？', answer:1, choices:['まる','しかく','さんかく','ほし'] },
+    { level:1, type:'shape_name', shape:'triangle', q:'これは どんな かたち？', answer:2, choices:['まる','しかく','さんかく','ほし'] },
+    { level:2, type:'shape_name', shape:'star',     q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','ほし'] },
+    { level:2, type:'shape_name', shape:'heart',    q:'これは どんな かたち？', answer:1, choices:['ほし','はーと','さんかく','まる'] }
+  ],
+
+  // ── たべもの ──────────────────────────────────────
+  food: [
+    { level:1, type:'emoji_name', category:'food', emoji:'🍎', q:'これは なに？', answer:0, choices:['りんご','バナナ','みかん','いちご'] },
+    { level:1, type:'emoji_name', category:'food', emoji:'🍌', q:'これは なに？', answer:2, choices:['りんご','いちご','バナナ','ぶどう'] },
+    { level:1, type:'emoji_name', category:'food', emoji:'🍓', q:'これは なに？', answer:1, choices:['バナナ','いちご','みかん','りんご'] },
+    { level:2, type:'emoji_name', category:'food', emoji:'🍊', q:'これは なに？', answer:2, choices:['いちご','ぶどう','みかん','りんご'] },
+    { level:2, type:'emoji_name', category:'food', emoji:'🍇', q:'これは なに？', answer:0, choices:['ぶどう','バナナ','みかん','もも'] },
+    { level:2, type:'emoji_name', category:'food', emoji:'🍉', q:'これは なに？', answer:1, choices:['メロン','すいか','もも','バナナ'] },
+    { level:3, type:'emoji_name', category:'food', emoji:'🥕', q:'これは なに？', answer:0, choices:['にんじん','だいこん','トマト','かぼちゃ'] },
+    { level:3, type:'emoji_name', category:'food', emoji:'🍄', q:'これは なに？', answer:2, choices:['キャベツ','ブロッコリー','きのこ','たまねぎ'] }
+  ],
+
+  // ── のりもの ──────────────────────────────────────
+  vehicle: [
+    { level:1, type:'emoji_name', category:'vehicle', emoji:'🚗', q:'これは なに？', answer:1, choices:['バス','くるま','じてんしゃ','でんしゃ'] },
+    { level:1, type:'emoji_name', category:'vehicle', emoji:'🚂', q:'これは なに？', answer:0, choices:['でんしゃ','バス','くるま','ふね'] },
+    { level:1, type:'emoji_name', category:'vehicle', emoji:'✈️', q:'これは なに？', answer:2, choices:['ロケット','ヘリコプター','ひこうき','バルーン'] },
+    { level:2, type:'emoji_name', category:'vehicle', emoji:'🚌', q:'これは なに？', answer:1, choices:['くるま','バス','でんしゃ','トラック'] },
+    { level:2, type:'emoji_name', category:'vehicle', emoji:'🚒', q:'これは なに？', answer:0, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','トラック'] },
+    { level:2, type:'emoji_name', category:'vehicle', emoji:'🚢', q:'これは なに？', answer:2, choices:['ボート','ヨット','ふね','フェリー'] },
+    { level:3, type:'emoji_name', category:'vehicle', emoji:'🚀', q:'これは なに？', answer:0, choices:['ロケット','ひこうき','UFO','たこあげ'] },
+    { level:3, type:'emoji_name', category:'vehicle', emoji:'🚲', q:'これは なに？', answer:1, choices:['オートバイ','じてんしゃ','キックボード','スクーター'] }
+  ],
+
+  // ── きょうりゅう ──────────────────────────────────
+  dino: [
+    { level:1, type:'emoji_name', category:'dino', emoji:'🦕', hint:'ながい くびが とくちょう',
+      q:'この きょうりゅうは？', answer:0, choices:['ブラキオサウルス','ティラノサウルス','トリケラトプス','プテラノドン'] },
+    { level:1, type:'emoji_name', category:'dino', emoji:'🦖', hint:'でかい あたまと ちいさい うで',
+      q:'この きょうりゅうは？', answer:1, choices:['トリケラトプス','ティラノサウルス','ステゴサウルス','ブラキオサウルス'] },
+    { level:2, type:'emoji_name', category:'dino', emoji:'🦕', hint:'あたまに ツノが 3ぼん！',
+      q:'この きょうりゅうは？', answer:2, choices:['ティラノサウルス','ブラキオサウルス','トリケラトプス','ステゴサウルス'] },
+    { level:2, type:'emoji_name', category:'dino', emoji:'🦕', hint:'せなかに たてがみみたいな ほね',
+      q:'この きょうりゅうは？', answer:3, choices:['ブラキオサウルス','トリケラトプス','プテラノドン','ステゴサウルス'] },
+    { level:3, type:'emoji_name', category:'dino', emoji:'🦕', hint:'そらを とべる つばさがある',
+      q:'この きょうりゅうは？', answer:1, choices:['テリジノサウルス','プテラノドン','ティラノサウルス','ラプトル'] },
+    { level:3, type:'emoji_name', category:'dino', emoji:'🦖', hint:'かみつく ちからが いちばん つよい',
+      q:'この きょうりゅうは？', answer:0, choices:['ティラノサウルス','トリケラトプス','スピノサウルス','ブラキオサウルス'] }
+  ],
+
+  // ── てんき ────────────────────────────────────────
+  weather: [
+    { level:1, type:'emoji_name', category:'weather', emoji:'☀️', q:'この てんきは？', answer:0, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', emoji:'🌧️', q:'この てんきは？', answer:2, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:2, type:'emoji_name', category:'weather', emoji:'⛅', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','かぜ'] },
+    { level:2, type:'emoji_name', category:'weather', emoji:'❄️', q:'この てんきは？', answer:3, choices:['はれ','あめ','かみなり','ゆき'] },
+    { level:3, type:'emoji_name', category:'weather', emoji:'🌈', q:'この てんきは？', answer:2, choices:['かみなり','きり','にじ','あられ'] },
+    { level:3, type:'emoji_name', category:'weather', emoji:'⚡', q:'この てんきは？', answer:0, choices:['かみなり','たつまき','おおかぜ','にじ'] }
+  ],
+
+  // ── はんたいことば ────────────────────────────────
+  opposite: [
+    { level:1, type:'opposite', category:'opposite', word:'おおきい', q:'「おおきい」の はんたいは？', answer:2, choices:['あかい','まるい','ちいさい','やさしい'] },
+    { level:1, type:'opposite', category:'opposite', word:'あつい',   q:'「あつい」の はんたいは？',   answer:1, choices:['やわらかい','つめたい','はやい','くらい'] },
+    { level:2, type:'opposite', category:'opposite', word:'はやい',   q:'「はやい」の はんたいは？',   answer:0, choices:['おそい','かるい','やさしい','あかるい'] },
+    { level:2, type:'opposite', category:'opposite', word:'たかい',   q:'「たかい」の はんたいは？',   answer:3, choices:['おもい','かたい','くらい','ひくい'] },
+    { level:2, type:'opposite', category:'opposite', word:'ながい',   q:'「ながい」の はんたいは？',   answer:1, choices:['かわいい','みじかい','やわらかい','かるい'] },
+    { level:3, type:'opposite', category:'opposite', word:'かるい',   q:'「かるい」の はんたいは？',   answer:2, choices:['やさしい','ふるい','おもい','ちいさい'] },
+    { level:3, type:'opposite', category:'opposite', word:'あかるい', q:'「あかるい」の はんたいは？', answer:0, choices:['くらい','やさしい','きつい','ちいさい'] },
+    { level:3, type:'opposite', category:'opposite', word:'うえ',     q:'「うえ」の はんたいは？',     answer:3, choices:['みぎ','まえ','ひだり','した'] }
+  ],
+
+  // ── からだのぶぶん ────────────────────────────────
+  body: [
+    { level:1, type:'emoji_name', category:'body', emoji:'👁️', q:'これは からだの どこ？', answer:1, choices:['はな','め','くち','みみ'] },
+    { level:1, type:'emoji_name', category:'body', emoji:'👄', q:'これは からだの どこ？', answer:2, choices:['め','みみ','くち','はな'] },
+    { level:2, type:'emoji_name', category:'body', emoji:'👃', q:'これは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] },
+    { level:2, type:'emoji_name', category:'body', emoji:'✋', q:'これは からだの どこ？', answer:3, choices:['あし','おなか','かた','て'] },
+    { level:3, type:'emoji_name', category:'body', emoji:'🦵', q:'これは からだの どこ？', answer:1, choices:['うで','あし','おなか','せなか'] },
+    { level:3, type:'emoji_name', category:'body', emoji:'👂', q:'これは からだの どこ？', answer:2, choices:['め','はな','みみ','くち'] }
   ]
 };
 
-// カラーパレット（CSS 描画用）
-const QUIZLAND_COLORS = {
-  red:    { name: 'あか',    code: '#EF4444' },
-  blue:   { name: 'あお',    code: '#3B82F6' },
-  yellow: { name: 'きいろ',  code: '#FBBF24' },
-  green:  { name: 'みどり',  code: '#10B981' },
-  pink:   { name: 'ピンク',  code: '#EC4899' },
-  orange: { name: 'オレンジ',code: '#F97316' },
-  purple: { name: 'むらさき',code: '#8B5CF6' },
-  cyan:   { name: 'みずいろ',code: '#06B6D4' }
+// ── カテゴリーメタデータ ──────────────────────────
+const QUIZLAND_CATEGORIES = {
+  order_color: { label: 'いろのじゅんばん', emoji: '🎨' },
+  count_total:  { label: 'かずをかぞえよう', emoji: '🔢' },
+  shape_name:   { label: 'かたち',           emoji: '⬛' },
+  food:         { label: 'たべもの',         emoji: '🍎' },
+  vehicle:      { label: 'のりもの',         emoji: '🚗' },
+  dino:         { label: 'きょうりゅう',     emoji: '🦕' },
+  weather:      { label: 'てんき',           emoji: '☀️' },
+  opposite:     { label: 'はんたいことば',   emoji: '🔄' },
+  body:         { label: 'からだ',           emoji: '✋' }
 };
 
-// 絵パス（count_total 用、wordmatch の画像を流用）
+// ── カラーパレット（CSS 描画用）────────────────────
+const QUIZLAND_COLORS = {
+  red:    { name: 'あか',     code: '#EF4444' },
+  blue:   { name: 'あお',     code: '#3B82F6' },
+  yellow: { name: 'きいろ',   code: '#FBBF24' },
+  green:  { name: 'みどり',   code: '#10B981' },
+  pink:   { name: 'ピンク',   code: '#EC4899' },
+  orange: { name: 'オレンジ', code: '#F97316' },
+  purple: { name: 'むらさき', code: '#8B5CF6' },
+  cyan:   { name: 'みずいろ', code: '#06B6D4' }
+};
+
+// ── 絵パス（count_total 用）─────────────────────────
 const QUIZLAND_WORD_IMG = '../assets/images/word/';

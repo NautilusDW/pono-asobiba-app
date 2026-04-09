@@ -268,6 +268,25 @@ body {
   to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
+/* ===== Emoji / Opposite display ===== */
+.emoji-display {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.emoji-main {
+  font-size: 90px; line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+.emoji-hint {
+  font-size: 0.88rem; font-weight: 700; color: var(--text-light); text-align: center;
+}
+.opposite-display {
+  font-size: 2.4rem; font-weight: 900; color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+  padding: 14px 32px;
+  background: var(--primary-light);
+  border-radius: 16px;
+}
+
 /* ===== Start screen ===== */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
@@ -280,6 +299,50 @@ body {
   gap: 20px;
 }
 .start-screen.hidden { display: none; }
+
+/* ===== Category screen ===== */
+.category-screen {
+  position: fixed; inset: 0; z-index: 45;
+  background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 28px 16px 24px; gap: 14px; overflow-y: auto;
+}
+.category-screen.hidden { display: none; }
+.cat-title { font-size: 1.3rem; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #F59E0B; }
+.cat-subtitle { font-size: 0.82rem; font-weight: 700; color: #5D4E37; }
+.cat-all-btn {
+  padding: 7px 22px; border: 2px solid #fff; border-radius: 50px;
+  background: rgba(255,255,255,0.35); color: #fff;
+  font-family: inherit; font-size: 0.82rem; font-weight: 900; cursor: pointer;
+  transition: background 0.15s;
+}
+.cat-all-btn:hover { background: rgba(255,255,255,0.55); }
+.cat-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; width: 100%; max-width: 400px;
+}
+.cat-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 6px; border: 3px solid rgba(255,255,255,0.45); border-radius: 16px;
+  background: rgba(255,255,255,0.25); cursor: pointer;
+  font-family: inherit; font-weight: 900; color: #5D4E37;
+  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.cat-btn.selected {
+  background: #fff; border-color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.cat-emoji { font-size: 1.8rem; line-height: 1.1; }
+.cat-label { font-size: 0.64rem; text-align: center; line-height: 1.3; }
+.cat-start-btn {
+  padding: 15px 48px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #EF4444, #F97316);
+  color: #fff; font-family: inherit; font-size: 1.15rem; font-weight: 900;
+  cursor: pointer; box-shadow: 0 6px 20px rgba(239,68,68,0.4);
+  transition: transform 0.15s; animation: pulse 1.8s ease-in-out infinite;
+}
+.cat-start-btn:active { transform: scale(0.95); }
+.cat-start-btn:disabled { opacity: 0.45; animation: none; }
 .start-title {
   font-size: 2.6rem;
   font-weight: 900;
@@ -381,6 +444,15 @@ body {
   <button class="start-btn" id="start-btn">はじめる ▶</button>
 </div>
 
+<!-- ===== Category Screen ===== -->
+<div class="category-screen hidden" id="category-screen">
+  <div class="cat-title">🎯 カテゴリーえらびます</div>
+  <div class="cat-subtitle">すきなものを えらんでね！</div>
+  <button class="cat-all-btn" id="cat-all-btn">ぜんぶえらぶ / ぜんぶはずす</button>
+  <div class="cat-grid" id="cat-grid"></div>
+  <button class="cat-start-btn" id="cat-start-btn">スタート！ ▶</button>
+</div>
+
 <!-- ===== Game UI ===== -->
 <div class="header">
   <div class="pono-avatar" id="pono-avatar">
@@ -421,12 +493,16 @@ body {
 // ═══════════════════════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════════════════════
-const TOTAL_Q = 6; // MVP: 6 問
+const TOTAL_Q = 6;
 let playlist = [];
 let questionIdx = 0;
 let correctCount = 0;
 let currentQ = null;
-let locked = false; // 回答直後の連打防止
+let locked = false;
+
+// 選択中カテゴリー（デフォルト: 全部ON）
+const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
+let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
 
 // ═══════════════════════════════════════════════════════════
 // Audio (wordmatch から流用)
@@ -512,16 +588,15 @@ function shuffle(arr) {
 }
 
 function buildPlaylist() {
-  // MVP: 各タイプから 2 問ずつ、計 6 問
-  // level 1〜2 の中からランダムに選ぶ
-  const types = ['order_color', 'count_total', 'shape_name'];
+  const cats = ALL_CATS.filter(c => selectedCategories[c]);
+  if (cats.length === 0) return [];
+  const perCat = Math.max(1, Math.ceil(TOTAL_Q / cats.length));
   const list = [];
-  types.forEach(type => {
-    const pool = QUIZLAND_QUESTIONS[type].filter(q => q.level <= 2);
-    const picked = shuffle(pool).slice(0, 2);
-    list.push(...picked);
+  cats.forEach(cat => {
+    const pool = (QUIZLAND_QUESTIONS[cat] || []).filter(q => q.level <= 2);
+    list.push(...shuffle(pool).slice(0, perCat));
   });
-  return shuffle(list);
+  return shuffle(list).slice(0, TOTAL_Q);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -560,6 +635,29 @@ function renderShapeName(stage, q) {
   if (q.shape === 'triangle') wrap.innerHTML = '<div class="shape-triangle"></div>';
   if (q.shape === 'star')     wrap.innerHTML = '<div class="shape-star">★</div>';
   if (q.shape === 'heart')    wrap.innerHTML = '<div class="shape-heart">♥</div>';
+  stage.appendChild(wrap);
+}
+
+function renderEmojiName(stage, q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'emoji-display';
+  const emojiEl = document.createElement('div');
+  emojiEl.className = 'emoji-main';
+  emojiEl.textContent = q.emoji;
+  wrap.appendChild(emojiEl);
+  if (q.hint) {
+    const hint = document.createElement('div');
+    hint.className = 'emoji-hint';
+    hint.textContent = '💡 ' + q.hint;
+    wrap.appendChild(hint);
+  }
+  stage.appendChild(wrap);
+}
+
+function renderOpposite(stage, q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'opposite-display';
+  wrap.textContent = q.word;
   stage.appendChild(wrap);
 }
 
@@ -604,6 +702,8 @@ function loadQuestion(q) {
     case 'order_color': renderOrderColor(stage, q); break;
     case 'count_total': renderCountTotal(stage, q); break;
     case 'shape_name':  renderShapeName(stage, q); break;
+    case 'emoji_name':  renderEmojiName(stage, q); break;
+    case 'opposite':    renderOpposite(stage, q); break;
   }
   renderChoices(q);
   updateHUD();
@@ -710,18 +810,59 @@ function initGame() {
   loadQuestion(playlist[0]);
 }
 
-// Start button
+// ═══════════════════════════════════════════════════════════
+// Category screen
+// ═══════════════════════════════════════════════════════════
+function buildCategoryScreen() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = '';
+  ALL_CATS.forEach(cat => {
+    const meta = QUIZLAND_CATEGORIES[cat];
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (selectedCategories[cat] ? ' selected' : '');
+    btn.dataset.cat = cat;
+    btn.innerHTML = `<span class="cat-emoji">${meta.emoji}</span><span class="cat-label">${meta.label}</span>`;
+    btn.addEventListener('click', function() {
+      selectedCategories[cat] = !selectedCategories[cat];
+      btn.classList.toggle('selected', selectedCategories[cat]);
+      updateCatStartBtn();
+    });
+    grid.appendChild(btn);
+  });
+  updateCatStartBtn();
+}
+
+function updateCatStartBtn() {
+  const anySelected = ALL_CATS.some(c => selectedCategories[c]);
+  document.getElementById('cat-start-btn').disabled = !anySelected;
+}
+
+// Start button → show category screen
 document.getElementById('start-btn').addEventListener('click', function() {
   ensureAudio();
   document.getElementById('start-screen').classList.add('hidden');
-  initGame();
+  buildCategoryScreen();
+  document.getElementById('category-screen').classList.remove('hidden');
   // メニュー初期化（menu.js）
   if (typeof initMenu === 'function') {
     initMenu({
       bgmToggle: function() { /* BGM なし */ },
-      tutorial: function() { alert('いろ・かず・かたちの クイズに こたえよう！'); }
+      tutorial: function() { alert('すきなカテゴリーをえらんで クイズにこたえよう！'); }
     });
   }
+});
+
+// All toggle button
+document.getElementById('cat-all-btn').addEventListener('click', function() {
+  const allOn = ALL_CATS.every(c => selectedCategories[c]);
+  ALL_CATS.forEach(c => { selectedCategories[c] = !allOn; });
+  buildCategoryScreen();
+});
+
+// Category start button → begin game
+document.getElementById('cat-start-btn').addEventListener('click', function() {
+  document.getElementById('category-screen').classList.add('hidden');
+  initGame();
 });
 
 // Result retry button
