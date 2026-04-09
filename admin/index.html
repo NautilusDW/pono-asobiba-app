@@ -3079,11 +3079,12 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
       if (meta && meta.id) {
         idInp.value = meta.id;
         typeInp.value = meta.cat || 'deco';
-        // 親カードのname自動入力（未設定 or デフォルトなら）
+        // 親カードのname自動入力（選択時は常に上書き。hidden name にも書き込む）
         if (parentCard) {
-          var nameInp = parentCard.querySelector('[data-key="' + (prefix ? prefix + '-name' : 'name') + '"]');
-          if (nameInp && (!nameInp.value || /^ごほうび\d+$/.test(nameInp.value))) {
-            nameInp.value = meta.name || '';
+          var nameKey = prefix ? prefix + '-name' : 'name';
+          var nameInp = parentCard.querySelector('[data-key="' + nameKey + '"]');
+          if (nameInp && meta.name) {
+            nameInp.value = meta.name;
           }
           // gendered 時: boy/girl の入力をピッカーで行ったら、トップの総称 name も
           // "boy / girl" 形式で自動合成。ただしユーザーが自分で書いた名前は上書きしない
@@ -3109,6 +3110,7 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
             var cardPrev = parentCard.querySelector('.reward-preview-img');
             if (cardPrev) {
               cardPrev.src = aDownloadUrl;
+              cardPrev.style.display = ''; // 前回の onerror で非表示になっていたら戻す
             } else {
               // 初回: placeholder（🎁などの絵文字表示）を img に差し替え
               var ph = parentCard.querySelector('.reward-preview-placeholder');
