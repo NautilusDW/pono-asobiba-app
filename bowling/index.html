@@ -448,8 +448,7 @@ function loadBgImages() {
   bgImgObjs = [img];
   bgImgIdx = 0;
 }
-// プリロード（全背景）
-ALL_BG_DEFS.forEach(function(d) { var img = new Image(); img.src = d.src; });
+// プリロードしない（全背景を一気に読むと100MB超になるため）
 
 // ページロード時にピッカー描画
 buildBgPicker();

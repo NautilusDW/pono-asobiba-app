@@ -210,6 +210,7 @@ html, body {
   background: rgba(139,69,19,0.04);
   transition: all 0.3s;
   overflow: hidden;
+  position: relative;
 }
 .bento-slot.filled {
   background: rgba(255,255,255,0.3);
@@ -943,7 +944,14 @@ function onFreeOkazuTap(el, food) {
   flyFood(el, slot, food.img || food.emoji, () => {
     if (slotIdx < okazuSlots.length) {
       const n = foodNode(food); okazuSlots[slotIdx].innerHTML = '';
-      okazuSlots[slotIdx].appendChild(n); okazuSlots[slotIdx].classList.add('filled');
+      okazuSlots[slotIdx].appendChild(n);
+      if (food.sk) {
+        const badge = document.createElement('span');
+        const skColor = { r: '#EF4444', y: '#EAB308', g: '#22C55E' }[food.sk] || '#999';
+        badge.style.cssText = `position:absolute;bottom:3px;right:3px;width:10px;height:10px;border-radius:50%;background:${skColor};border:1.5px solid rgba(255,255,255,0.9);pointer-events:none;animation:none;flex-shrink:0`;
+        okazuSlots[slotIdx].appendChild(badge);
+      }
+      okazuSlots[slotIdx].classList.add('filled');
       okazuFillCount = Math.max(okazuFillCount, slotIdx + 1);
     }
   });
