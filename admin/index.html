@@ -1464,13 +1464,42 @@ function renderCardRewards() {
 // ════════════════════════════════════════════════════════════════
 // サポートするゲーム一覧（ID + 表示名）
 // ゲームが増えたらここに追加するだけで UI に現れる
-var FIRST_CLEAR_GAMES = [
-  { id: 'maze',      label: '🌲 めいろ',       hint: '最終ステージ（10）クリアで発動' },
-  { id: 'breakout',  label: '🧱 ブロックくずし', hint: '最終ステージクリアで発動（要実装）' },
-  { id: 'puzzle',    label: '🧩 パズル',        hint: '最終ステージクリアで発動（要実装）' },
-  { id: 'wordmatch', label: '📝 ことばあわせ',   hint: '最終ステージクリアで発動（要実装）' },
-  { id: 'slide',     label: '🛝 すべりだい',    hint: '最終ステージクリアで発動（要実装）' }
+// ゲームマスターリスト（初回クリア報酬で使える全ゲーム）
+var KNOWN_GAMES = [
+  { id: 'puzzle',    label: '🧩 パズル',          hint: '最終ステージクリアで発動' },
+  { id: 'writing',   label: '✏️ もじかき',        hint: 'ひらがな1文字書けたら発動' },
+  { id: 'drawing',   label: '🎨 おえかき',        hint: '初めて絵を保存したら発動' },
+  { id: 'bento',     label: '🍱 おべんとう',      hint: '初めてお弁当を作ったら発動' },
+  { id: 'wordmatch', label: '📝 ことばあわせ',    hint: '最終ステージクリアで発動' },
+  { id: 'bowling',   label: '🎳 びっくりボウリング', hint: '1ラウンド遊んだら発動' },
+  { id: 'breakout',  label: '🧱 ブロックくずし',  hint: '最終ステージクリアで発動' },
+  { id: 'slide',     label: '🛤 みちつなぎ',      hint: '最終ステージクリアで発動' },
+  { id: 'maze',      label: '🌲 めいろ',          hint: '最終ステージ（10）クリアで発動' },
+  { id: 'quizland',  label: '🧠 クイズランド',    hint: '1問正解で発動' },
+  { id: 'coloring',  label: '🖍 ぬりえ',          hint: '初めて塗り終えたら発動' }
 ];
+
+// 現在編集中の first-clear タブに表示するゲーム（既存データ + KNOWN_GAMES + 追加されたもの）
+function getFirstClearGames() {
+  var seen = {};
+  var result = [];
+  // 1. 既に rewards.json に保存されているゲームを先頭に
+  if (rewardsData && rewardsData.firstClearRewards) {
+    Object.keys(rewardsData.firstClearRewards).forEach(function(id) {
+      if (seen[id]) return;
+      seen[id] = true;
+      var known = KNOWN_GAMES.find(function(g) { return g.id === id; });
+      result.push(known || { id: id, label: '🎮 ' + id, hint: '（カスタム）' });
+    });
+  }
+  // 2. KNOWN_GAMES でまだ無いものを追加
+  KNOWN_GAMES.forEach(function(g) {
+    if (seen[g.id]) return;
+    seen[g.id] = true;
+    result.push(g);
+  });
+  return result;
+}
 
 function renderFirstClearRewards() {
   if (!rewardsData) return;
@@ -1480,10 +1509,48 @@ function renderFirstClearRewards() {
   if (!rewardsData.firstClearRewards) rewardsData.firstClearRewards = {};
   var fcr = rewardsData.firstClearRewards;
 
-  FIRST_CLEAR_GAMES.forEach(function(game) {
+  var games = getFirstClearGames();
+  games.forEach(function(game) {
     var data = fcr[game.id] || {};
     container.appendChild(buildFirstClearCard(game, data));
   });
+
+  // 追加ボタン: まだ未設定のゲームを追加できる
+  var unusedGames = KNOWN_GAMES.filter(function(g) { return !fcr[g.id]; });
+  if (unusedGames.length > 0) {
+    var addWrap = document.createElement('div');
+    addWrap.style.cssText = 'margin-top:16px;padding:14px;background:#FFF8E7;border:2px dashed #FCD34D;border-radius:12px;';
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:0.82rem;font-weight:900;color:#D97706;margin-bottom:8px;';
+    lbl.textContent = '➕ ゲームを追加';
+    addWrap.appendChild(lbl);
+
+    var buttonRow = document.createElement('div');
+    buttonRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+    unusedGames.forEach(function(g) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = g.label;
+      btn.style.cssText = 'padding:8px 14px;border:1.5px solid #FCD34D;border-radius:20px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;transition:background 0.15s;';
+      btn.addEventListener('mouseenter', function() { btn.style.background = '#FEF3C7'; });
+      btn.addEventListener('mouseleave', function() { btn.style.background = '#fff'; });
+      btn.addEventListener('click', function() {
+        // 空のエントリを追加して再描画
+        rewardsData.firstClearRewards[g.id] = {
+          icon: '🎁',
+          name: 'ごほうび',
+          gendered: false,
+          type: 'sea',
+          id: '',
+          img: ''
+        };
+        renderFirstClearRewards();
+      });
+      buttonRow.appendChild(btn);
+    });
+    addWrap.appendChild(buttonRow);
+    container.appendChild(addWrap);
+  }
 }
 
 function buildFirstClearCard(game, data) {

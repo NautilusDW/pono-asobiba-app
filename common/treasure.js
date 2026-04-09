@@ -215,7 +215,6 @@
     // 重要: 全属性を load() 前に設定する（iOS Safari の autoplay 許可条件）
     var basePath = _getBasePath();
     var mp4Path  = basePath + 'TreasureBox.mp4?' + Date.now();
-    var webmPath = basePath + 'TreasureBox.webm';
 
     _video = document.createElement('video');
     _video.muted        = true;
@@ -224,14 +223,10 @@
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
 
-    // WebM (VP9) → MP4 の順でソースを設定
-    var srcWebm = document.createElement('source');
-    srcWebm.src  = webmPath;
-    srcWebm.type = 'video/webm; codecs="vp9"';
+    // MP4 のみを使用（TreasureBox.webm は存在しないので source にしない）
     var srcMp4 = document.createElement('source');
     srcMp4.src  = mp4Path;
     srcMp4.type = 'video/mp4';
-    _video.appendChild(srcWebm);
     _video.appendChild(srcMp4);
 
     // reward は video の上に重ねる
