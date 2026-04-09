@@ -1863,12 +1863,12 @@ async function aiNameSprite(idx) {
   const base64 = tc.toDataURL('image/jpeg', 0.7).split(',')[1];
   const existingIds = getExistingIdSet();
 
-  const prompt = `添付の画像は子供向け水族館ゲームに登場する海の生き物のイラストです。
+  const prompt = `添付の画像は子供向けゲームに登場するイラストです（動物、恐竜、食べ物、乗り物など何でもあり得ます）。
 以下のJSON形式のみを返してください。余計な説明は不要です。
 
 {
-  "id": "英語スネークケースID（例: medaka, clownfish, sea_turtle）",
-  "name": "日本語表示名・ひらがな/カタカナ中心（例: メダカ、クマノミ）",
+  "id": "英語スネークケースID（例: apple, fire_truck, triceratops）",
+  "name": "日本語表示名・ひらがな/カタカナ中心（例: りんご、しょうぼうしゃ）",
   "icon": "最適な絵文字1文字"
 }
 
@@ -1939,8 +1939,8 @@ async function aiGroupSprites(idxList) {
   });
 
   const prompt =
-`以下の${idxList.length}枚の画像は子供向け水族館ゲームに登場する海の生き物のスプライトです。
-同じ種類の生き物（表情違い・向き違いを含む）を同じグループにまとめ、各グループに名前をつけてください。
+`以下の${idxList.length}枚の画像は子供向けゲームに登場するイラストです（動物、恐竜、食べ物、乗り物など何でもあり得ます）。
+同じ種類のもの（表情違い・向き違いを含む）を同じグループにまとめ、各グループに名前をつけてください。
 画像は0から${idxList.length - 1}まで番号が付いています（送信順）。
 
 以下のJSON配列のみを返してください：

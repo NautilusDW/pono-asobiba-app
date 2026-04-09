@@ -285,6 +285,10 @@ body {
   font-size: 90px; line-height: 1;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
 }
+.emoji-main-img {
+  max-width: 180px; max-height: 180px; object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
 .emoji-hint {
   font-size: 0.88rem; font-weight: 700; color: var(--text-light); text-align: center;
 }
@@ -679,10 +683,18 @@ function renderShapeName(stage, q) {
 function renderEmojiName(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display';
-  const emojiEl = document.createElement('div');
-  emojiEl.className = 'emoji-main';
-  emojiEl.textContent = q.emoji;
-  wrap.appendChild(emojiEl);
+  if (q.img) {
+    const imgEl = document.createElement('img');
+    imgEl.className = 'emoji-main-img';
+    imgEl.src = '../assets/images/ocean/' + q.img;
+    imgEl.alt = '';
+    wrap.appendChild(imgEl);
+  } else {
+    const emojiEl = document.createElement('div');
+    emojiEl.className = 'emoji-main';
+    emojiEl.textContent = q.emoji;
+    wrap.appendChild(emojiEl);
+  }
   if (q.hint) {
     const hint = document.createElement('div');
     hint.className = 'emoji-hint';
