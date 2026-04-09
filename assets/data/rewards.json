@@ -2,7 +2,7 @@
   "version": 1,
   "slotRewards": {
     "1": {
-      "name": "おもちゃばこ / おかたづけばこ",
+      "name": "おもちゃばこ",
       "icon": "🎁",
       "gendered": true,
       "boy": {
@@ -12,7 +12,7 @@
         "img": "assets/images/Rooms/furnitures_final/deco_box_boy_A.png"
       },
       "girl": {
-        "name": "おかたづけばこ",
+        "name": "おもちゃばこ",
         "type": "deco",
         "id": "deco_box",
         "img": "assets/images/Rooms/furnitures_final/box_A.png"
@@ -38,11 +38,11 @@
       "unlockRoom": true
     },
     "8": {
-      "name": "かめ",
+      "name": "clownfish",
       "icon": "🎁",
       "gendered": false,
-      "type": "deco",
-      "id": "reward_slot_16",
+      "type": "sea",
+      "id": "clownfish",
       "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png"
     },
     "10": {
@@ -135,20 +135,11 @@
   "firstClearRewards": {
     "maze": {
       "icon": "🐠",
-      "name": "メダカ",
+      "name": "blue_tang",
       "gendered": false,
       "type": "sea",
-      "id": "medaka",
-      "img": "assets/images/ocean/Fish_S01/Fish_S01_001.png"
-    },
-    "bowling": {
-      "icon": "🎳",
-      "name": "スタジアムのはいけい",
-      "gendered": false,
-      "type": "bg",
-      "id": "bg_bowling_stadium",
-      "img": "assets/images/Bowling/BG/boy/stadium.png",
-      "afterMsg": "スタジアムの はいけいが\nつかえるようになったよ！\nボウリングの はいけいえらびで\nためしてみてね！"
+      "id": "blue_tang",
+      "img": "assets/images/ocean/Blue_tang/Blue_tang_normal_1.png"
     },
     "breakout": {
       "icon": "🧱",
