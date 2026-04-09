@@ -298,9 +298,16 @@ body {
 /* Grab cursor for panning */
 .compare-canvas-box.zoomed { cursor: grab; }
 .compare-canvas-box.zoomed.dragging { cursor: grabbing; }
-/* Point erase mode */
+/* Erase mode */
 .compare-canvas-box.erase-mode { cursor: crosshair !important; }
+.compare-canvas-box.erase-brush { cursor: none !important; }
 .tbtn.active { background: #f87171 !important; color: #fff !important; }
+.erase-cursor {
+  position: fixed; pointer-events: none; z-index: 99999;
+  border: 2px solid #f87171; border-radius: 50%;
+  transform: translate(-50%, -50%); display: none;
+}
+.erase-brush .erase-cursor { display: block; }
 </style>
 </head>
 <body>
@@ -425,7 +432,10 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-zoom-fit" style="padding:3px 8px;font-size:0.72rem" title="画面に合わせる">Fit</button>
         <button class="tbtn tbtn-ghost" id="btn-zoom-100" style="padding:3px 8px;font-size:0.72rem" title="等倍 (1:1)">1:1</button>
         <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
-        <button class="tbtn tbtn-ghost" id="btn-erase-mode" style="padding:3px 8px;font-size:0.72rem" title="ポイント消去モード (囲まれた背景を消す)">🎯 消去</button>
+        <button class="tbtn tbtn-ghost" id="btn-erase-point" style="padding:3px 8px;font-size:0.72rem" title="ポイント消去 (色で塗りつぶし)">🎯 ポイント</button>
+        <button class="tbtn tbtn-ghost" id="btn-erase-brush" style="padding:3px 8px;font-size:0.72rem" title="ブラシ消去 (ドラッグで消す)">🖌 ブラシ</button>
+        <input type="range" id="brush-size" min="5" max="80" value="20" style="width:60px;display:none" title="ブラシサイズ">
+        <span id="brush-size-label" style="font-size:0.68rem;color:#9ca3af;display:none">20px</span>
         <button class="tbtn tbtn-ghost" id="btn-erase-undo" style="padding:3px 8px;font-size:0.72rem" title="消去を戻す (Ctrl+Z)" disabled>↩ 戻す</button>
         <div style="flex:1"></div>
         <span class="zb-label">背景:</span>
@@ -515,8 +525,10 @@ let compareZoom = 0;         // 0 = fit mode
 let bgMode      = 'checker';
 let customBgColor = '#808080';
 let eraseMode = false;
+let eraseTool = 'point';       // 'point' | 'brush'
 let eraseUndoStack = [];
 const ERASE_UNDO_MAX = 10;
+let brushDragging = false;     // ブラシドラッグ中フラグ
 
 // ════════════════════════════════════════════════════════════
 // Utilities
@@ -795,18 +807,46 @@ document.addEventListener('mouseup', () => {
 });
 
 // ════════════════════════════════════════════════════════════
-// Point Erase Mode（囲まれた背景をクリックで消去）
+// Erase Mode（ポイント消去 + ブラシ消去）
 // ════════════════════════════════════════════════════════════
 
-function setEraseMode(on) {
+// ブラシカーソル要素
+const eraseCursorEl = document.createElement('div');
+eraseCursorEl.className = 'erase-cursor';
+document.body.appendChild(eraseCursorEl);
+
+function setEraseMode(on, tool) {
   if (on && !processedCanvas) {
     showToast('先に「背景を消す」を実行してください', false);
     return;
   }
   eraseMode = on;
-  document.getElementById('btn-erase-mode').classList.toggle('active', on);
-  document.getElementById('box-proc').classList.toggle('erase-mode', on);
+  if (tool) eraseTool = tool;
+  const boxProc = document.getElementById('box-proc');
+  document.getElementById('btn-erase-point').classList.toggle('active', on && eraseTool === 'point');
+  document.getElementById('btn-erase-brush').classList.toggle('active', on && eraseTool === 'brush');
+  boxProc.classList.toggle('erase-mode', on && eraseTool === 'point');
+  boxProc.classList.toggle('erase-brush', on && eraseTool === 'brush');
+  // ブラシサイズUI
+  const show = on && eraseTool === 'brush';
+  document.getElementById('brush-size').style.display = show ? '' : 'none';
+  document.getElementById('brush-size-label').style.display = show ? '' : 'none';
+  if (!show) eraseCursorEl.style.display = 'none';
+  updateBrushCursorSize();
 }
+
+function updateBrushCursorSize() {
+  const r = parseInt(document.getElementById('brush-size').value) || 20;
+  const zoom = effectiveZoom();
+  const cssSize = r * zoom;
+  eraseCursorEl.style.width  = cssSize + 'px';
+  eraseCursorEl.style.height = cssSize + 'px';
+}
+
+document.getElementById('brush-size').addEventListener('input', function() {
+  document.getElementById('brush-size-label').textContent = this.value + 'px';
+  updateBrushCursorSize();
+});
 
 function updateUndoButton() {
   const btn = document.getElementById('btn-erase-undo');
@@ -834,7 +874,7 @@ function clearEraseUndo() {
   updateUndoButton();
 }
 
-/** クリック座標 → processedCanvas のピクセル座標 */
+/** マウス座標 → processedCanvas のピクセル座標 */
 function clickToProcessedCoord(e) {
   const box = document.getElementById('box-proc');
   const cv = box.querySelector('canvas');
@@ -849,7 +889,7 @@ function clickToProcessedCoord(e) {
   return { x: px, y: py };
 }
 
-/** 起点ピクセルの色を seed にローカル flood fill で透明化 */
+/** ポイント消去: flood fill で連結した同色ピクセルを透明化 */
 function pointEraseFill(startX, startY, tolerance) {
   const w = processedCanvas.width, h = processedCanvas.height;
   const ctx = processedCanvas.getContext('2d');
@@ -885,11 +925,43 @@ function pointEraseFill(startX, startY, tolerance) {
   return true;
 }
 
-document.getElementById('btn-erase-mode').addEventListener('click', () => setEraseMode(!eraseMode));
+/** ブラシ消去: 円形範囲のピクセルを透明化 */
+function brushErase(cx, cy, radius) {
+  const w = processedCanvas.width, h = processedCanvas.height;
+  const ctx = processedCanvas.getContext('2d');
+  const r = Math.max(1, Math.round(radius / 2));
+  const x0 = Math.max(0, cx - r), y0 = Math.max(0, cy - r);
+  const x1 = Math.min(w - 1, cx + r), y1 = Math.min(h - 1, cy + r);
+  if (x0 > x1 || y0 > y1) return;
+  const rw = x1 - x0 + 1, rh = y1 - y0 + 1;
+  const imgData = ctx.getImageData(x0, y0, rw, rh);
+  const d = imgData.data;
+  const r2 = r * r;
+  for (let dy = 0; dy < rh; dy++) {
+    for (let dx = 0; dx < rw; dx++) {
+      const ddx = (x0 + dx) - cx, ddy = (y0 + dy) - cy;
+      if (ddx * ddx + ddy * ddy <= r2) {
+        d[(dy * rw + dx) * 4 + 3] = 0;
+      }
+    }
+  }
+  ctx.putImageData(imgData, x0, y0);
+}
+
+// ── ボタンハンドラ ──
+document.getElementById('btn-erase-point').addEventListener('click', () => {
+  if (eraseMode && eraseTool === 'point') setEraseMode(false);
+  else setEraseMode(true, 'point');
+});
+document.getElementById('btn-erase-brush').addEventListener('click', () => {
+  if (eraseMode && eraseTool === 'brush') setEraseMode(false);
+  else setEraseMode(true, 'brush');
+});
 document.getElementById('btn-erase-undo').addEventListener('click', popEraseUndo);
 
+// ── ポイント消去: クリック ──
 document.getElementById('box-proc').addEventListener('click', e => {
-  if (!eraseMode || !processedCanvas || panMoved) return;
+  if (!eraseMode || eraseTool !== 'point' || !processedCanvas || panMoved) return;
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
   const tolerance = parseFloat(document.getElementById('tolerance').value) || 35;
@@ -902,6 +974,47 @@ document.getElementById('box-proc').addEventListener('click', e => {
   redrawCompare();
 });
 
+// ── ブラシ消去: ドラッグ ──
+document.getElementById('box-proc').addEventListener('pointerdown', e => {
+  if (!eraseMode || eraseTool !== 'brush' || !processedCanvas || e.button !== 0) return;
+  e.preventDefault();
+  brushDragging = true;
+  pushEraseUndo();
+  const coord = clickToProcessedCoord(e);
+  if (coord) {
+    const r = parseInt(document.getElementById('brush-size').value) || 20;
+    brushErase(coord.x, coord.y, r);
+  }
+});
+
+document.addEventListener('pointermove', e => {
+  // ブラシカーソル追従
+  if (eraseMode && eraseTool === 'brush') {
+    eraseCursorEl.style.left = e.clientX + 'px';
+    eraseCursorEl.style.top  = e.clientY + 'px';
+    const box = document.getElementById('box-proc');
+    const rect = box.getBoundingClientRect();
+    const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top  && e.clientY <= rect.bottom;
+    eraseCursorEl.style.display = inside ? 'block' : 'none';
+  }
+  // ブラシドラッグ中
+  if (!brushDragging) return;
+  const coord = clickToProcessedCoord(e);
+  if (coord) {
+    const r = parseInt(document.getElementById('brush-size').value) || 20;
+    brushErase(coord.x, coord.y, r);
+    redrawCompare();
+  }
+});
+
+document.addEventListener('pointerup', () => {
+  if (!brushDragging) return;
+  brushDragging = false;
+  redrawCompare();
+});
+
+// ── Ctrl+Z ──
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
     const ae = document.activeElement;
