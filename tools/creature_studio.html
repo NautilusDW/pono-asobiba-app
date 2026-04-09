@@ -1398,6 +1398,65 @@ document.getElementById('btn-process').addEventListener('click', () => runProces
 // ════════════════════════════════════════════════════════════
 // Sprite Splitting (Union-Find Connected Components)
 // ════════════════════════════════════════════════════════════
+/**
+ * スプライト個別の外周 flood fill: 外周の透明ピクセルから連結する
+ * 「ほぼ白/グレー/背景色」ピクセルを透明にする。
+ * これによりキリンの足の間やコウモリの翼内側が自動除去される。
+ */
+function _cleanSpriteEdges(canvas, alphaThr) {
+  const w = canvas.width, h = canvas.height;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  // 外周から透明ピクセルを起点に flood fill（色の類似度ではなく
+  // 「周囲が既に透明 → 隣接する低彩度/白系ピクセルも背景」方式）
+  const isBg = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+
+  // Phase 1: 外周の透明ピクセルをシードにする
+  for (let x = 0; x < w; x++) {
+    if (d[x * 4 + 3] <= alphaThr)                       { isBg[x] = 1; queue[tail++] = x; }
+    const bi = (h - 1) * w + x;
+    if (d[bi * 4 + 3] <= alphaThr && !isBg[bi])         { isBg[bi] = 1; queue[tail++] = bi; }
+  }
+  for (let y = 1; y < h - 1; y++) {
+    const li = y * w;
+    if (d[li * 4 + 3] <= alphaThr && !isBg[li])         { isBg[li] = 1; queue[tail++] = li; }
+    const ri = y * w + w - 1;
+    if (d[ri * 4 + 3] <= alphaThr && !isBg[ri])         { isBg[ri] = 1; queue[tail++] = ri; }
+  }
+
+  // Phase 2: BFS — 透明ピクセルに隣接する「ほぼ透明」ピクセルも背景に含める
+  while (head < tail) {
+    const idx = queue[head++];
+    const x = idx % w, y = (idx - x) / w;
+    const nb = [];
+    if (x > 0)     nb.push(idx - 1);
+    if (x < w - 1) nb.push(idx + 1);
+    if (y > 0)     nb.push(idx - w);
+    if (y < h - 1) nb.push(idx + w);
+    for (const ni of nb) {
+      if (isBg[ni]) continue;
+      if (d[ni * 4 + 3] <= alphaThr) {
+        isBg[ni] = 1;
+        queue[tail++] = ni;
+      }
+    }
+  }
+
+  // Phase 3: 変更があったピクセルを透明化
+  let changed = false;
+  for (let i = 0; i < w * h; i++) {
+    if (isBg[i] && d[i * 4 + 3] > 0) {
+      d[i * 4 + 3] = 0;
+      changed = true;
+    }
+  }
+  if (changed) ctx.putImageData(imgData, 0, 0);
+}
+
 function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr) {
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
@@ -1454,6 +1513,9 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr) {
     const sc = document.createElement('canvas');
     sc.width = sw2; sc.height = sh2;
     sc.getContext('2d').drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
+
+    // 各スプライト個別に外周 flood fill で囲まれた背景を自動除去
+    _cleanSpriteEdges(sc, alphaThr);
 
     result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
                   name: '', id: '', icon: '🐠', expr: 'normal',
