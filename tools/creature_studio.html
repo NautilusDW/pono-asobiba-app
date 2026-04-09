@@ -814,14 +814,17 @@ function saveAllPresets(data) {
 }
 function getCurrentSettings() {
   return {
-    tolerance:  document.getElementById('tolerance').value,
-    feather:    document.getElementById('feather').value,
-    grayTol:    document.getElementById('graytol').value,
-    shrink:     document.getElementById('shrink').value,
-    alphaBlur:  document.getElementById('ablur').value,
-    minSize:    document.getElementById('min-size').value,
-    padding:    document.getElementById('padding').value,
-    alphaThresh:document.getElementById('alpha-thresh').value,
+    tolerance:     document.getElementById('tolerance').value,
+    feather:       document.getElementById('feather').value,
+    grayTol:       document.getElementById('graytol').value,
+    shrink:        document.getElementById('shrink').value,
+    alphaBlur:     document.getElementById('ablur').value,
+    autoReprocess: document.getElementById('auto-reprocess').checked,
+    bgMode:        document.getElementById('bg-mode-select').value,
+    bgCustomColor: document.getElementById('bg-custom-color').value,
+    minSize:       document.getElementById('min-size').value,
+    padding:       document.getElementById('padding').value,
+    alphaThresh:   document.getElementById('alpha-thresh').value,
   };
 }
 function applyPresetSettings(s) {
@@ -835,10 +838,29 @@ function applyPresetSettings(s) {
   set('graytol',     s.grayTol,     'graytol-val');
   set('shrink',      s.shrink,      'shrink-val');
   set('ablur',       s.alphaBlur,   'ablur-val');
+  if (s.autoReprocess !== undefined)
+    document.getElementById('auto-reprocess').checked = s.autoReprocess;
+  if (s.bgMode !== undefined) {
+    document.getElementById('bg-mode-select').value = s.bgMode;
+    bgMode = s.bgMode;
+    const cust = document.getElementById('bg-custom-color');
+    if (s.bgMode === 'custom') {
+      cust.style.display = '';
+      if (s.bgCustomColor) { cust.value = s.bgCustomColor; customBgColor = s.bgCustomColor; }
+    } else {
+      cust.style.display = 'none';
+    }
+    if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
+  }
   set('min-size',    s.minSize);
   set('padding',     s.padding);
   set('alpha-thresh',s.alphaThresh);
 }
+// ドロップダウン選択 → 名前欄に自動入力（上書き保存しやすくする）
+document.getElementById('preset-select').addEventListener('change', function() {
+  if (this.value) document.getElementById('preset-name-input').value = this.value;
+});
+
 function refreshPresetSelect() {
   const sel = document.getElementById('preset-select');
   const presets = loadAllPresets();
@@ -1330,8 +1352,8 @@ function createSpriteCard(sp, idx) {
 
   card.querySelector('.card-preview').appendChild(pv);
 
-  const check = card.querySelector('.sp-check');
-  check.addEventListener('change', () => card.classList.toggle('selected', check.checked));
+  // チェックボックスのデフォルト動作を抑制（グリッドレベルで管理）
+  card.querySelector('.sp-check').addEventListener('click', e => e.preventDefault());
 
   card.querySelector('.sp-name').addEventListener('input', function() { sprites[idx].name = this.value; });
   card.querySelector('.sp-id').addEventListener('input', function() { sprites[idx].id = this.value; });
@@ -1408,17 +1430,85 @@ function flipSprite(idx) {
 // Toolbar Buttons
 // ════════════════════════════════════════════════════════════
 document.getElementById('btn-sel-all').addEventListener('click', () => {
-  document.querySelectorAll('.sprite-card').forEach(c => {
-    c.classList.add('selected');
-    c.querySelector('.sp-check').checked = true;
-  });
+  document.querySelectorAll('.sprite-card').forEach(c => setCardChecked(c, true));
 });
 document.getElementById('btn-desel-all').addEventListener('click', () => {
-  document.querySelectorAll('.sprite-card').forEach(c => {
-    c.classList.remove('selected');
-    c.querySelector('.sp-check').checked = false;
-  });
+  document.querySelectorAll('.sprite-card').forEach(c => setCardChecked(c, false));
 });
+
+// ════════════════════════════════════════════════════════════
+// Sprite Grid Selection (drag / shift+click / ctrl+click)
+// ════════════════════════════════════════════════════════════
+let lastClickedCardIdx = -1;
+
+function setCardChecked(card, selected) {
+  card.classList.toggle('selected', selected);
+  card.querySelector('.sp-check').checked = selected;
+}
+
+(function() {
+  const grid = document.getElementById('sprites-grid');
+  let moveHandler = null, upHandler = null;
+
+  grid.addEventListener('pointerdown', e => {
+    if (!e.target.closest('.card-hdr')) return;
+    e.preventDefault();
+    const startCard = e.target.closest('.sprite-card');
+    if (!startCard) return;
+
+    const startX = e.clientX, startY = e.clientY;
+    const dragTarget = !startCard.classList.contains('selected');
+    let dragMoved = false;
+    const touched = new Set([startCard]);
+
+    moveHandler = mv => {
+      const dx = mv.clientX - startX, dy = mv.clientY - startY;
+      if (!dragMoved && dx * dx + dy * dy < 36) return; // 6px 以内は無視
+      if (!dragMoved) {
+        dragMoved = true;
+        setCardChecked(startCard, dragTarget);
+        lastClickedCardIdx = parseInt(startCard.dataset.idx);
+      }
+      const el = document.elementFromPoint(mv.clientX, mv.clientY);
+      const card = el && el.closest('.sprite-card');
+      if (!card || touched.has(card)) return;
+      touched.add(card);
+      setCardChecked(card, dragTarget);
+    };
+
+    upHandler = up => {
+      document.removeEventListener('pointermove', moveHandler);
+      document.removeEventListener('pointerup',   upHandler);
+      moveHandler = upHandler = null;
+
+      if (!dragMoved) {
+        // クリック確定
+        const clickedIdx = parseInt(startCard.dataset.idx);
+        if (up.shiftKey && lastClickedCardIdx >= 0) {
+          // Shift: 範囲選択（既選択は維持）
+          const from = Math.min(lastClickedCardIdx, clickedIdx);
+          const to   = Math.max(lastClickedCardIdx, clickedIdx);
+          grid.querySelectorAll('.sprite-card').forEach(c => {
+            const i = parseInt(c.dataset.idx);
+            if (i >= from && i <= to) setCardChecked(c, true);
+          });
+          // lastClickedCardIdx はそのまま（アンカー固定）
+        } else if (up.ctrlKey || up.metaKey) {
+          // Ctrl/Cmd: 個別トグル
+          setCardChecked(startCard, !startCard.classList.contains('selected'));
+          lastClickedCardIdx = clickedIdx;
+        } else {
+          // 普通クリック: トグル
+          setCardChecked(startCard, !startCard.classList.contains('selected'));
+          lastClickedCardIdx = clickedIdx;
+        }
+      }
+    };
+
+    document.addEventListener('pointermove', moveHandler);
+    document.addEventListener('pointerup',   upHandler);
+  });
+})();
 
 // ════════════════════════════════════════════════════════════
 // AI Naming
