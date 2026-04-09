@@ -435,6 +435,7 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-zoom-100" style="padding:3px 8px;font-size:0.72rem" title="等倍 (1:1)">1:1</button>
         <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
         <button class="tbtn tbtn-ghost" id="btn-erase-point" style="padding:3px 8px;font-size:0.72rem" title="ポイント消去 (色で塗りつぶし)">🎯 ポイント</button>
+        <input type="number" id="erase-tolerance" min="0" max="255" value="30" step="1" style="width:40px;display:none;padding:2px 4px;background:#111827;border:1px solid #374151;border-radius:4px;color:#f87171;font-size:0.72rem;text-align:center" title="色の近似値（大きいほど広く消える）">
         <button class="tbtn tbtn-ghost" id="btn-erase-brush" style="padding:3px 8px;font-size:0.72rem" title="ブラシ消去 (ドラッグで消す)">🖌 ブラシ</button>
         <input type="range" id="brush-size" min="5" max="80" value="20" style="width:60px;display:none" title="ブラシサイズ">
         <span id="brush-size-label" style="font-size:0.68rem;color:#9ca3af;display:none">20px</span>
@@ -830,7 +831,8 @@ function setEraseMode(on, tool) {
   document.getElementById('btn-erase-brush').classList.toggle('active', on && eraseTool === 'brush');
   boxProc.classList.toggle('erase-mode', on && eraseTool === 'point');
   boxProc.classList.toggle('erase-brush', on && eraseTool === 'brush');
-  // ブラシサイズUI
+  // ツール固有UI
+  document.getElementById('erase-tolerance').style.display = (on && eraseTool === 'point') ? '' : 'none';
   const show = on && eraseTool === 'brush';
   document.getElementById('brush-size').style.display = show ? '' : 'none';
   document.getElementById('brush-size-label').style.display = show ? '' : 'none';
@@ -967,7 +969,7 @@ document.getElementById('box-proc').addEventListener('click', e => {
   if (!eraseMode || eraseTool !== 'point' || !processedCanvas || panMoved) return;
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
-  const tolerance = parseFloat(document.getElementById('tolerance').value) || 35;
+  const tolerance = parseFloat(document.getElementById('erase-tolerance').value) || 30;
   pushEraseUndo();
   if (!pointEraseFill(coord.x, coord.y, tolerance)) {
     eraseUndoStack.pop();
@@ -1520,18 +1522,52 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     }
   }
 
-  // Collect bounding boxes
-  const boxes = new Map();
+  // Collect bounding boxes per component
+  const rawBoxes = new Map();
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (!fg[i] || parent[i] < 0) continue;
       const root = find(i);
-      if (!boxes.has(root)) boxes.set(root, { x1: x, y1: y, x2: x, y2: y });
-      const b = boxes.get(root);
+      if (!rawBoxes.has(root)) rawBoxes.set(root, { x1: x, y1: y, x2: x, y2: y, roots: [root] });
+      const b = rawBoxes.get(root);
       if (x < b.x1) b.x1 = x; if (y < b.y1) b.y1 = y;
       if (x > b.x2) b.x2 = x; if (y > b.y2) b.y2 = y;
     }
+  }
+
+  // Merge bounding boxes that are within mergeGap of each other
+  let boxList = [...rawBoxes.values()];
+  if (mergeGap > 0) {
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (let i = 0; i < boxList.length; i++) {
+        for (let j = i + 1; j < boxList.length; j++) {
+          const a = boxList[i], b = boxList[j];
+          // gap distance between bounding boxes
+          const gx = Math.max(0, Math.max(a.x1, b.x1) - Math.min(a.x2, b.x2));
+          const gy = Math.max(0, Math.max(a.y1, b.y1) - Math.min(a.y2, b.y2));
+          if (Math.sqrt(gx * gx + gy * gy) <= mergeGap) {
+            a.x1 = Math.min(a.x1, b.x1); a.y1 = Math.min(a.y1, b.y1);
+            a.x2 = Math.max(a.x2, b.x2); a.y2 = Math.max(a.y2, b.y2);
+            a.roots = a.roots.concat(b.roots);
+            boxList.splice(j, 1);
+            merged = true; break;
+          }
+        }
+        if (merged) break;
+      }
+    }
+  }
+
+  // Build root→mergedBox lookup for component mask
+  const boxes = new Map();
+  const rootToMerged = new Map();
+  for (const mb of boxList) {
+    const key = mb.roots[0];
+    boxes.set(key, mb);
+    for (const r of mb.roots) rootToMerged.set(r, key);
   }
 
   const result = [];
@@ -1550,8 +1586,9 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     const sctx = sc.getContext('2d');
     sctx.drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
-    // ── Component mask: 他の連結成分に属するピクセルを透明化 ──
+    // ── Component mask: このスプライトグループに属さないピクセルを透明化 ──
     {
+      const allowedRoots = new Set(b.roots);
       const sImg = sctx.getImageData(0, 0, sw2, sh2);
       const sd = sImg.data;
       let masked = false;
@@ -1560,7 +1597,7 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
         for (let lx = 0; lx < sw2; lx++) {
           const gx = sx + lx;
           const gi = gy * w + gx;
-          if (fg[gi] && find(gi) !== root) {
+          if (fg[gi] && !allowedRoots.has(rootToMerged.get(find(gi)))) {
             sd[(ly * sw2 + lx) * 4 + 3] = 0;
             masked = true;
           }
