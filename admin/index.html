@@ -3269,6 +3269,133 @@ function _buildItemsLookup(cb) {
     .catch(function() { _itemsLookupCache = {}; cb({}); });
 }
 
+// ═══════════════════════════════════════════════════════════
+// Special loaders for bg / sea rewards
+// ═══════════════════════════════════════════════════════════
+
+// ボウリング背景の定義（bowling/index.html の ALL_BG_DEFS と一致）
+var BG_BOWLING_DEFS = [
+  { id: 'bg_bowling_circuit',        src: 'assets/images/Bowling/BG/boy/circuit.png',         label: 'かいろのせかい' },
+  { id: 'bg_bowling_colorful',       src: 'assets/images/Bowling/BG/girl/colorful.png',        label: 'カラフル' },
+  { id: 'bg_bowling_dinasour',       src: 'assets/images/Bowling/BG/boy/dinasour.png',         label: 'きょうりゅう' },
+  { id: 'bg_bowling_unicorn',        src: 'assets/images/Bowling/BG/girl/unicorn.png',         label: 'ユニコーン' },
+  { id: 'bg_bowling_neon_boy01',     src: 'assets/images/Bowling/BG/boy/neon_boy01.png',       label: 'ネオン1' },
+  { id: 'bg_bowling_neon_girl01',    src: 'assets/images/Bowling/BG/girl/neon_girl01.png',     label: 'ネオンガール1' },
+  { id: 'bg_bowling_neon_boy02',     src: 'assets/images/Bowling/BG/boy/neon_boy02.png',       label: 'ネオン2' },
+  { id: 'bg_bowling_neon_girl02',    src: 'assets/images/Bowling/BG/girl/neon_girl02.png',     label: 'ネオンガール2' },
+  { id: 'bg_bowling_pirates',        src: 'assets/images/Bowling/BG/boy/pirates.png',          label: 'かいぞく' },
+  { id: 'bg_bowling_neon_girl03',    src: 'assets/images/Bowling/BG/girl/neon_girl03.png',     label: 'ネオンガール3' },
+  { id: 'bg_bowling_robot_boy01',    src: 'assets/images/Bowling/BG/boy/robot_boy01.png',      label: 'ロボット' },
+  { id: 'bg_bowling_neon_girl04',    src: 'assets/images/Bowling/BG/girl/neon_girl04.png',     label: 'ネオンガール4' },
+  { id: 'bg_bowling_space_boy01',    src: 'assets/images/Bowling/BG/boy/space_boy01.png',      label: 'うちゅう' },
+  { id: 'bg_bowling_rocket',         src: 'assets/images/Bowling/BG/boy/rocket.png',           label: 'ロケット' },
+  { id: 'bg_bowling_sky',            src: 'assets/images/Bowling/BG/girl/sky.png',             label: 'そらのせかい' },
+  { id: 'bg_bowling_sweets',         src: 'assets/images/Bowling/BG/girl/sweets.png',          label: 'おかしのくに' },
+  { id: 'bg_bowling_princessgarden', src: 'assets/images/Bowling/BG/girl/princessgarden.png',  label: 'おひめさまのにわ' },
+  { id: 'bg_bowling_stadium',        src: 'assets/images/Bowling/BG/boy/stadium.png',          label: 'スタジアム' },
+  { id: 'bg_bowling_neon02',         src: 'assets/images/Bowling/BG/girl/neon02.png',          label: 'ネオン02' },
+];
+
+// ブロック崩し背景の定義（breakout/index.html の BRK_BG_DEFS と一致）
+var BG_BREAKOUT_DEFS = [
+  { id: 'bg_breakout_forest_light',  src: 'assets/images/Block/stage1_forest_light.png',  label: 'あかるいもり' },
+  { id: 'bg_breakout_forest_deep',   src: 'assets/images/Block/stage2_forest_deep.png',   label: 'ふかいもり' },
+  { id: 'bg_breakout_cave_entrance', src: 'assets/images/Block/stage3_cave_entrance.png', label: 'どうくつのいりぐち' },
+  { id: 'bg_breakout_cave_mushroom', src: 'assets/images/Block/stage4_cave_mushroom.png', label: 'きのこどうくつ' },
+  { id: 'bg_breakout_cave_deep',     src: 'assets/images/Block/stage5_cave_deep.png',     label: 'しんかいどうくつ' },
+  { id: 'bg_breakout_night_sky',     src: 'assets/images/Block/stage6_night_sky.png',     label: 'よるのそら' },
+];
+
+// Hardcoded 海の生き物（aquarium/index.html に直接定義されているもの）
+var SEA_HARDCODED = [
+  { id: 'octopus',    name: 'タコ',         img: 'assets/images/ocean/Octopus/Octopus_001.png' },
+  { id: 'jellyfish',  name: 'クラゲ',       img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
+  { id: 'turtle',     name: 'ウミガメ',     img: 'assets/images/ocean/Turtle/Turtle_001.png' },
+  { id: 'fish',       name: 'さかな',       img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
+  { id: 'submarine',  name: 'せんすいかん', img: 'assets/images/ocean/Submarine/Submarine_001.png' },
+  { id: 'sunfish',    name: 'マンボウ',     img: 'assets/images/ocean/Sunfish/Sunfish_001.png' },
+  { id: 'shark',      name: 'サメ',         img: 'assets/images/ocean/Shark/Shark_001.png' },
+];
+
+function _renderThumbGrid(grid, items, onSelect, ov) {
+  grid.innerHTML = '';
+  var cb = '?v=' + Date.now();
+  items.forEach(function(it) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'width:84px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;';
+    wrap.title = it.name + ' (' + it.id + ')';
+
+    var thumb = document.createElement('div');
+    thumb.style.cssText = 'width:80px;height:80px;border:2px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;';
+    var img = document.createElement('img');
+    img.src = '../' + it.img + cb;
+    img.style.cssText = 'max-width:100%;max-height:100%;object-fit:cover;';
+    img.loading = 'lazy';
+    img.onerror = function() { this.style.display = 'none'; };
+    thumb.appendChild(img);
+    wrap.appendChild(thumb);
+
+    var label = document.createElement('div');
+    label.style.cssText = 'font-size:0.6rem;color:#555;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:84px;font-weight:700;';
+    label.textContent = it.name;
+    wrap.appendChild(label);
+
+    wrap.addEventListener('click', function() {
+      onSelect(it.img, '../' + it.img + cb, { id: it.id, cat: it.cat, name: it.name });
+      ov.remove();
+    });
+    wrap.addEventListener('mouseenter', function() { thumb.style.borderColor = '#FF6B9D'; });
+    wrap.addEventListener('mouseleave', function() { thumb.style.borderColor = '#eee'; });
+    grid.appendChild(wrap);
+  });
+  if (items.length === 0) {
+    grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">アイテムがありません</div>';
+  }
+}
+
+function _loadBgBowling(grid, onSelect, ov) {
+  var items = BG_BOWLING_DEFS.map(function(d) {
+    return { id: d.id, name: d.label, img: d.src, cat: 'bg' };
+  });
+  _renderThumbGrid(grid, items, onSelect, ov);
+}
+
+function _loadBgBreakout(grid, onSelect, ov) {
+  var items = BG_BREAKOUT_DEFS.map(function(d) {
+    return { id: d.id, name: d.label, img: d.src, cat: 'bg' };
+  });
+  _renderThumbGrid(grid, items, onSelect, ov);
+}
+
+function _loadSeaCreatures(grid, onSelect, ov) {
+  grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">読み込み中...</div>';
+  // hardcoded + creatures.json をマージ
+  fetch('../assets/data/creatures.json?v=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var items = SEA_HARDCODED.slice();
+      (data.creatures || []).forEach(function(c) {
+        // folder + expressions.normal から画像パスを組み立てる
+        var img = '';
+        if (c.folder && c.expressions && c.expressions.normal) {
+          img = 'assets/images/ocean/' + c.folder + '/' + c.expressions.normal;
+        }
+        if (!img) return;
+        items.push({ id: c.id, name: c.displayName || c.id, img: img, cat: 'sea' });
+      });
+      // hardcoded にも cat:'sea' をつける
+      items.forEach(function(it) { if (!it.cat) it.cat = 'sea'; });
+      _renderThumbGrid(grid, items, onSelect, ov);
+    })
+    .catch(function() {
+      // creatures.json 取得失敗時は hardcoded のみ
+      var items = SEA_HARDCODED.map(function(it) {
+        return { id: it.id, name: it.name, img: it.img, cat: 'sea' };
+      });
+      _renderThumbGrid(grid, items, onSelect, ov);
+    });
+}
+
 function openImageBrowser(onSelect) {
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
@@ -3289,9 +3416,12 @@ function openImageBrowser(onSelect) {
   // フォルダタブ
   var folders = [
     { label: '✅ 調整済み', path: '_items_js' },
+    { label: '🎳 ボウリング背景', path: '_bg_bowling' },
+    { label: '🧱 ブロック崩し背景', path: '_bg_breakout' },
+    { label: '🐠 海のいきもの', path: '_sea_creatures' },
     { label: '🧱 壁紙', path: 'assets/images/Rooms/walls' },
     { label: '🪵 床', path: 'assets/images/Rooms/floors' },
-    { label: '🐠 海', path: 'assets/images/ocean' },
+    { label: '🐠 海(フォルダ)', path: 'assets/images/ocean' },
     { label: '🎁 報酬', path: 'assets/images/rewards' },
     { label: '📁 家具(全)', path: 'assets/images/Rooms/furnitures_final' },
   ];
@@ -3401,6 +3531,22 @@ function openImageBrowser(onSelect) {
         .catch(function() {
           grid.innerHTML = '<div style="color:#f44;font-size:0.8rem;padding:20px;text-align:center;width:100%;">items.jsの読み込みに失敗</div>';
         });
+      return;
+    }
+
+    // ── 🎳 ボウリング背景 ──
+    if (path === '_bg_bowling') {
+      _loadBgBowling(grid, onSelect, ov);
+      return;
+    }
+    // ── 🧱 ブロック崩し背景 ──
+    if (path === '_bg_breakout') {
+      _loadBgBreakout(grid, onSelect, ov);
+      return;
+    }
+    // ── 🐠 海のいきもの（creatures.json + hardcoded） ──
+    if (path === '_sea_creatures') {
+      _loadSeaCreatures(grid, onSelect, ov);
       return;
     }
 
