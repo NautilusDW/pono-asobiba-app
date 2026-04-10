@@ -3243,28 +3243,31 @@ function adoptStaging(idx, entry) {
 
     var STAGING_PATH = 'assets/data/staging.json';
     var srcPath = 'assets/images/staging/' + entry.folder + '/' + normFile;
-    var dstPath = 'assets/images/ocean/' + entry.folder + '/' + normFile;
+
+    // 既存がある場合は既存のフォルダ・ファイル名に上書き
+    var dstFolder = existing ? existing.folder : entry.folder;
+    var dstNorm = existing ? (Array.isArray(existing.expressions.normal) ? existing.expressions.normal[0] : existing.expressions.normal) : normFile;
+    var dstPath = 'assets/images/ocean/' + dstFolder + '/' + dstNorm;
 
     fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data.content) throw new Error('staging 画像が見つかりません');
-        return ghUploadPromise(dstPath, data.content.replace(/\n/g, ''), '✅ adopt staging: ' + entry.id);
+        return ghUploadPromise(dstPath, data.content.replace(/\n/g, ''), '✅ adopt staging: ' + entry.id + ' → ' + dstPath);
       })
       .then(function() {
+        // creatures.json 更新（既存があれば画像パスは既存を維持、なければ新規追加）
         if (!creaturesData) creaturesData = { version: 1, creatures: [] };
         var existIdx = creaturesData.creatures.findIndex(function(c) { return c.id === entry.id; });
-        var clean = Object.assign({}, entry);
-        delete clean._staging; delete clean._stagedAt; delete clean._duplicateOf;
         if (existIdx >= 0) {
-          creaturesData.creatures[existIdx] = clean;
+          // 既存あり：画像だけ差し替え済み、creatures.jsonの変更は不要（フォルダ・ファイル名は同じ）
         } else {
+          // 新規追加
+          var clean = Object.assign({}, entry);
+          delete clean._staging; delete clean._stagedAt; delete clean._duplicateOf;
           creaturesData.creatures.push(clean);
         }
         return ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '✅ adopt creature: ' + entry.id);
-      })
-      .then(function() {
-        return removeStaging(idx);
       })
       .then(function() {
         ov.remove();
