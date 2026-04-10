@@ -699,6 +699,7 @@ tr:hover { background: #FFFAF0; }
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">もんだい</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">せいかい</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">せんたくし</th>
+            <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">💡 ほそく</th>
             <th style="padding:7px 4px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;width:36px;"></th>
           </tr>
         </thead>
@@ -5273,6 +5274,7 @@ function renderQuestions() {
       '</td>' +
       '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#10B981;font-weight:900;">✅ ' + correctChoice + '</td>' +
       '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#8B7355;font-size:0.72rem;">' + otherChoices + '</td>' +
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#6B7280;font-size:0.68rem;">' + (q.detail || '<span style="color:#D1D5DB">—</span>') + '</td>' +
       '<td style="padding:7px 4px;border-bottom:1px solid #F5F0E8;"><button class="q-edit-btn" style="background:#E0F2FE;color:#0369A1;border:1px solid #7DD3FC;border-radius:6px;padding:4px 8px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">✏️</button></td>';
     // 編集ボタン
     (function(catKey, qIdx) {
