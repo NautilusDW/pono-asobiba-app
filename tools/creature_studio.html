@@ -1785,42 +1785,13 @@ function hueDist(a, b) {
   return d > 180 ? 360 - d : d;
 }
 
-// 色変換適用
-document.getElementById('btn-hue-apply').addEventListener('click', () => {
-  if (!processedRaw) return;
-  const srcHue = parseFloat(document.getElementById('hue-src').value);
-  const dstHue = parseFloat(document.getElementById('hue-dst').value);
-  const range  = parseFloat(document.getElementById('hue-range').value);
-  const satAdj = parseFloat(document.getElementById('hue-sat-adj').value);
-
-  pushEraseUndo(); // 戻せるように
-
-  const w = processedRaw.width, h = processedRaw.height;
-  const ctx = processedRaw.getContext('2d');
-  const imgData = ctx.getImageData(0, 0, w, h);
-  const d = imgData.data;
-
-  for (let i = 0; i < w * h; i++) {
-    const idx = i * 4;
-    if (d[idx+3] < 10) continue; // 透明スキップ
-    const [hue, sat, lit] = rgbToHsl(d[idx], d[idx+1], d[idx+2]);
-    if (hueDist(hue, srcHue) <= range) {
-      // 色相をシフト（元の色相からの差分を保持）
-      const hueOffset = hue - srcHue;
-      let newHue = (dstHue + hueOffset + 360) % 360;
-      let newSat = Math.max(0, Math.min(100, sat + satAdj));
-      const [r, g, b] = hslToRgb(newHue, newSat, lit);
-      d[idx] = r; d[idx+1] = g; d[idx+2] = b;
-    }
-  }
-  ctx.putImageData(imgData, 0, 0);
-  applyFinish();
-  redrawCompare();
-  showToast('色を変換しました（↩ 戻すで取り消し可）', true);
-});
-
-// 画像から色を拾う
+// ── 色変換: 領域選択 → リアルタイムプレビュー → 適用 ──
 let huePickMode = false;
+let hueMask = null;        // Uint8Array: 色変換対象領域のマスク
+let hueSnapshot = null;    // ImageData: 色変換前のスナップショット
+let huePreviewTimer = null;
+
+// 色拾い + 領域選択（flood fillで同色連結領域を取得）
 document.getElementById('btn-hue-pick').addEventListener('click', () => {
   huePickMode = !huePickMode;
   document.getElementById('btn-hue-pick').classList.toggle('active', huePickMode);
@@ -1830,24 +1801,128 @@ document.getElementById('btn-hue-pick').addEventListener('click', () => {
 
 document.getElementById('box-proc').addEventListener('click', e => {
   if (!huePickMode || !processedRaw) return;
-  e.stopImmediatePropagation(); // 消去モード等のハンドラを止める
+  e.stopImmediatePropagation();
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
+
+  const w = processedRaw.width, h = processedRaw.height;
   const ctx = processedRaw.getContext('2d');
-  const px = ctx.getImageData(coord.x, coord.y, 1, 1).data;
-  if (px[3] < 10) return;
-  const [h] = rgbToHsl(px[0], px[1], px[2]);
-  document.getElementById('hue-src').value = Math.round(h);
-  document.getElementById('hue-src-val').textContent = Math.round(h) + '°';
-  document.getElementById('hue-src-swatch').style.background = 'hsl(' + Math.round(h) + ',80%,50%)';
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+  const idx0 = (coord.y * w + coord.x) * 4;
+  if (d[idx0+3] < 10) return;
+
+  const seedH = rgbToHsl(d[idx0], d[idx0+1], d[idx0+2])[0];
+  const range = parseFloat(document.getElementById('hue-range').value);
+
+  // flood fill で同色相の連結領域を取得
+  hueMask = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+  const si = coord.y * w + coord.x;
+  hueMask[si] = 1; queue[tail++] = si;
+
+  while (head < tail) {
+    const pi = queue[head++];
+    const px = pi % w, py = (pi - px) / w;
+    const nb = [];
+    if (px > 0)     nb.push(pi - 1);
+    if (px < w - 1) nb.push(pi + 1);
+    if (py > 0)     nb.push(pi - w);
+    if (py < h - 1) nb.push(pi + w);
+    for (const ni of nb) {
+      if (hueMask[ni]) continue;
+      const i4 = ni * 4;
+      if (d[i4+3] < 10) continue;
+      const [nh] = rgbToHsl(d[i4], d[i4+1], d[i4+2]);
+      if (hueDist(nh, seedH) <= range) {
+        hueMask[ni] = 1;
+        queue[tail++] = ni;
+      }
+    }
+  }
+
+  // スナップショット保存
+  hueSnapshot = ctx.getImageData(0, 0, w, h);
+
+  // 色相を設定
+  document.getElementById('hue-src').value = Math.round(seedH);
+  document.getElementById('hue-src-val').textContent = Math.round(seedH) + '°';
+  document.getElementById('hue-src-swatch').style.background = 'hsl(' + Math.round(seedH) + ',80%,50%)';
+
   huePickMode = false;
   document.getElementById('btn-hue-pick').classList.remove('active');
   document.getElementById('box-proc').style.cursor = '';
-  showToast('色相 ' + Math.round(h) + '° を拾いました', true);
-}, true); // capture=true で消去モードより先に処理
 
-// runProcess 後にボタン有効化
-// (既存のrunProcess内に追加が必要)
+  const count = hueMask.reduce((a, b) => a + b, 0);
+  showToast(`${count}ピクセルを選択しました。スライダーでプレビューできます。`, true);
+
+  // 即座にプレビュー
+  applyHuePreview();
+}, true);
+
+// リアルタイムプレビュー（スライダー操作時）
+function applyHuePreview() {
+  if (!hueMask || !hueSnapshot || !processedRaw) return;
+  const w = processedRaw.width, h = processedRaw.height;
+  const ctx = processedRaw.getContext('2d');
+
+  // スナップショットから復元
+  ctx.putImageData(hueSnapshot, 0, 0);
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  const srcHue = parseFloat(document.getElementById('hue-src').value);
+  const dstHue = parseFloat(document.getElementById('hue-dst').value);
+  const satAdj = parseFloat(document.getElementById('hue-sat-adj').value);
+
+  for (let i = 0; i < w * h; i++) {
+    if (!hueMask[i]) continue;
+    const idx = i * 4;
+    const [hue, sat, lit] = rgbToHsl(d[idx], d[idx+1], d[idx+2]);
+    const hueOffset = hue - srcHue;
+    const newHue = (dstHue + hueOffset + 360) % 360;
+    const newSat = Math.max(0, Math.min(100, sat + satAdj));
+    const [r, g, b] = hslToRgb(newHue, newSat, lit);
+    d[idx] = r; d[idx+1] = g; d[idx+2] = b;
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  // processedCanvasにも反映（表示用）
+  if (processedCanvas) {
+    processedCanvas.width = w; processedCanvas.height = h;
+    processedCanvas.getContext('2d').drawImage(processedRaw, 0, 0);
+  }
+  redrawCompare();
+}
+
+function scheduleHuePreview() {
+  clearTimeout(huePreviewTimer);
+  huePreviewTimer = setTimeout(applyHuePreview, 50);
+}
+
+// スライダー変更でリアルタイムプレビュー
+['hue-dst', 'hue-sat-adj'].forEach(id => {
+  document.getElementById(id).addEventListener('input', scheduleHuePreview);
+});
+
+// 「色を変換」ボタン = 確定
+document.getElementById('btn-hue-apply').addEventListener('click', () => {
+  if (!hueMask || !processedRaw) {
+    showToast('先に「🔍 画像から色を拾う」で領域を選択してください', false);
+    return;
+  }
+  pushEraseUndo();
+  applyHuePreview(); // 最終適用
+  // スナップショットを現在の状態に更新（確定）
+  const ctx = processedRaw.getContext('2d');
+  hueSnapshot = ctx.getImageData(0, 0, processedRaw.width, processedRaw.height);
+  hueMask = null; // マスクをクリア
+  hueSnapshot = null;
+  applyFinish();
+  redrawCompare();
+  showToast('色を変換しました（↩ 戻すで取り消し可）', true);
+});
 
 // Session Save / Load
 // ════════════════════════════════════════════════════════════
