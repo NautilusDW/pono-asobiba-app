@@ -19,14 +19,6 @@
       },
       "afterMsg": "かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！"
     },
-    "2": {
-      "name": "くまのぬいぐるみ",
-      "icon": "🧸",
-      "gendered": false,
-      "type": "deco",
-      "id": "furn_bear_1",
-      "img": "assets/images/Rooms/furnitures_final/bear_A.png"
-    },
     "3": {
       "name": "きょうりゅう / うさぎぬいぐるみ",
       "icon": "🦕",
@@ -42,23 +34,6 @@
         "type": "deco",
         "id": "deco_bunny",
         "img": "assets/images/Rooms/furnitures_final/bunny_A.png"
-      }
-    },
-    "4": {
-      "name": "うちゅうラグ / ピンクラグ",
-      "icon": "🟣",
-      "gendered": true,
-      "boy": {
-        "name": "うちゅうラグ",
-        "type": "deco",
-        "id": "deco_rug_space",
-        "img": "assets/images/Rooms/furnitures_final/rug_space.png"
-      },
-      "girl": {
-        "name": "ピンクラグ",
-        "type": "deco",
-        "id": "deco_rug_pink",
-        "img": "assets/images/Rooms/furnitures_final/rug_pink.png"
       }
     },
     "5": {
@@ -79,23 +54,6 @@
       },
       "unlockRoom": true,
       "afterMsg": "ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！"
-    },
-    "6": {
-      "name": "ほんのやま / ティーセット",
-      "icon": "📚",
-      "gendered": true,
-      "boy": {
-        "name": "ほんのやま",
-        "type": "deco",
-        "id": "deco_books",
-        "img": "assets/images/Rooms/furnitures_final/books_A.png"
-      },
-      "girl": {
-        "name": "ティーセット",
-        "type": "deco",
-        "id": "deco_tea",
-        "img": "assets/images/Rooms/furnitures_final/tea_A.png"
-      }
     },
     "7": {
       "name": "フロアランプ / かべだな",
@@ -123,24 +81,6 @@
       "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png",
       "afterMsg": "カクレクマノミを みつけたよ！\nみずぞくかんに あそびに\nいってみよう！"
     },
-    "9": {
-      "name": "あおいつくえ / きのつくえ",
-      "icon": "📝",
-      "gendered": true,
-      "boy": {
-        "name": "あおいつくえ",
-        "type": "furn",
-        "id": "furn_desk",
-        "img": "assets/images/Rooms/furnitures_final/desk_A_01.png"
-      },
-      "girl": {
-        "name": "きのつくえ",
-        "type": "furn",
-        "id": "furn_desk2",
-        "img": "assets/images/Rooms/furnitures_final/desk02_A.png"
-      },
-      "afterMsg": "つくえが とどいたよ！\nベッドと つくえで\nおへやが ととのってきたね！"
-    },
     "10": {
       "name": "スポーツカー / リボンくま",
       "icon": "🏎️",
@@ -158,14 +98,6 @@
         "img": "assets/images/Rooms/furnitures_final/bear_ribbon_A.png"
       }
     },
-    "11": {
-      "name": "きのほんだな",
-      "icon": "📖",
-      "gendered": false,
-      "type": "furn",
-      "id": "furn_bookshelf2",
-      "img": "assets/images/Rooms/furnitures_final/BookShelf02_A.png"
-    },
     "12": {
       "name": "ロボット / おにんぎょう",
       "icon": "🤖",
@@ -181,31 +113,6 @@
         "type": "deco",
         "id": "deco_doll",
         "img": "assets/images/Rooms/furnitures_final/doll_A.png"
-      }
-    },
-    "13": {
-      "name": "おもちゃだな",
-      "icon": "🧸",
-      "gendered": false,
-      "type": "furn",
-      "id": "furn_toyshelf",
-      "img": "assets/images/Rooms/furnitures_final/Shelf01_A.png"
-    },
-    "14": {
-      "name": "あおいほんだな / ピンクほんだな",
-      "icon": "📚",
-      "gendered": true,
-      "boy": {
-        "name": "あおいほんだな",
-        "type": "furn",
-        "id": "furn_bookshelf_blue_boy",
-        "img": "assets/images/Rooms/furnitures_final/furn_bookshelf_blue_boy_A.png"
-      },
-      "girl": {
-        "name": "ピンクほんだな",
-        "type": "furn",
-        "id": "furn_bookshelf_pink",
-        "img": "assets/images/Rooms/furnitures_final/bookshelf_pink_A.png"
       }
     },
     "15": {
