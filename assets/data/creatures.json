@@ -2668,6 +2668,182 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "bumblebee",
+      "displayName": "はち",
+      "icon": "🐝",
+      "folder": "Bumblebee",
+      "expressions": {
+        "normal": "Bumblebee_normal_1.png",
+        "surprised": "Bumblebee_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 309,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "glow_bug",
+      "displayName": "ほたる",
+      "icon": "🪲",
+      "folder": "Glow_bug",
+      "expressions": {
+        "normal": "Glow_bug_normal_1.png",
+        "surprised": "Glow_bug_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 264,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "larva",
+      "displayName": "いもむし",
+      "icon": "🐛",
+      "folder": "Larva",
+      "expressions": {
+        "normal": "Larva_normal_1.png",
+        "surprised": "Larva_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 298,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "weather_clouds",
+      "displayName": "おてんきのくも",
+      "icon": "☁️",
+      "folder": "Weather_clouds",
+      "expressions": {
+        "normal": "Weather_clouds_normal_1.png",
+        "surprised": "Weather_clouds_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 277,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "eyeballs",
+      "displayName": "めだま",
+      "icon": "👀",
+      "folder": "Eyeballs",
+      "expressions": {
+        "normal": "Eyeballs_normal_1.png",
+        "surprised": "Eyeballs_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 292,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "lips",
+      "displayName": "くちびる",
+      "icon": "👄",
+      "folder": "Lips",
+      "expressions": {
+        "normal": "Lips_normal_1.png",
+        "surprised": "Lips_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 273,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "tongue",
+      "displayName": "した",
+      "icon": "👅",
+      "folder": "Tongue",
+      "expressions": {
+        "normal": "Tongue_normal_1.png",
+        "surprised": "Tongue_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 230,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "sole",
+      "displayName": "あしのうら",
+      "icon": "🦶",
+      "folder": "Sole",
+      "expressions": {
+        "normal": "Sole_normal_1.png",
+        "surprised": "Sole_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 114,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
