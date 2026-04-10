@@ -1873,6 +1873,7 @@ function applyHuePreview() {
   if (!hueMask || !hueSnapshot || !processedRaw) return;
   const w = processedRaw.width, h = processedRaw.height;
   const ctx = processedRaw.getContext('2d');
+  const snapD = hueSnapshot.data; // 元のピクセルデータ（読み取り専用）
 
   // スナップショットから復元
   ctx.putImageData(hueSnapshot, 0, 0);
@@ -1883,15 +1884,12 @@ function applyHuePreview() {
   const dstHue = parseFloat(document.getElementById('hue-dst').value);
   const satAdj = parseFloat(document.getElementById('hue-sat-adj').value);
   const litAdj = parseFloat(document.getElementById('hue-lit-adj').value);
-
-  // 色相シフト量を計算
   const hueShift = dstHue - srcHue;
 
   for (let i = 0; i < w * h; i++) {
     if (!hueMask[i]) continue;
     const idx = i * 4;
     const oR = d[idx], oG = d[idx+1], oB = d[idx+2];
-    // HSL変換 → 色相シフト+彩度調整 → RGB戻し
     const [hue, sat, lit] = rgbToHsl(oR, oG, oB);
     const newHue = (hue + hueShift + 360) % 360;
     const newSat = Math.max(0, Math.min(100, sat + satAdj));
@@ -1908,19 +1906,22 @@ function applyHuePreview() {
       r *= f; g *= f; b *= f;
     }
 
-    // アルファが低い（半透明）ピクセルは変換を弱める（エッジのノイズ防止）
-    const alpha = d[idx + 3] / 255;
-    if (alpha < 1) {
-      const blend = Math.max(0, (alpha - 0.3) / 0.7); // 0.3以下は変換しない
-      r = oR + (r - oR) * blend;
-      g = oG + (g - oG) * blend;
-      b = oB + (b - oB) * blend;
-    }
-
     d[idx]   = Math.max(0, Math.min(255, Math.round(r)));
     d[idx+1] = Math.max(0, Math.min(255, Math.round(g)));
     d[idx+2] = Math.max(0, Math.min(255, Math.round(b)));
   }
+
+  // 背景復元: hueMaskに含まれないピクセルをスナップショットから上書き
+  // → 色変換のHSL丸め誤差で汚れた背景をクリーンに戻す
+  for (let i = 0; i < w * h; i++) {
+    if (hueMask[i]) continue;
+    const idx = i * 4;
+    d[idx]   = snapD[idx];
+    d[idx+1] = snapD[idx+1];
+    d[idx+2] = snapD[idx+2];
+    d[idx+3] = snapD[idx+3];
+  }
+
   ctx.putImageData(imgData, 0, 0);
 
   // processedCanvasにも反映（表示用）
