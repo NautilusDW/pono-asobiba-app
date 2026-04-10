@@ -1634,30 +1634,74 @@ document.getElementById('btn-reset-erase').addEventListener('click', () => {
 // ════════════════════════════════════════════════════════════
 // Session Save / Load
 // ════════════════════════════════════════════════════════════
-const SESSION_KEY = 'ces_session_v1';
+// IndexedDB ベースのセッション保存（localStorage の5MB制限を回避）
+const IDB_NAME = 'ces_studio';
+const IDB_STORE = 'sessions';
+const IDB_KEY = 'current';
 
-document.getElementById('btn-save-session').addEventListener('click', () => {
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function idbPut(data) {
+  return idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(data, IDB_KEY);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  }));
+}
+function idbGet() {
+  return idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+    req.onsuccess = () => { db.close(); resolve(req.result); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  }));
+}
+
+// Canvas → Blob → ArrayBuffer（IndexedDB に効率的に保存）
+function canvasToBlob(cv) {
+  return new Promise(resolve => cv.toBlob(resolve, 'image/png'));
+}
+function blobToCanvas(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      resolve(c);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src = url;
+  });
+}
+
+document.getElementById('btn-save-session').addEventListener('click', async () => {
   if (!processedRaw) { showToast('保存するデータがありません', false); return; }
   showLoading('セッションを保存中...');
   try {
+    const spriteBlobs = await Promise.all(sprites.map(sp => canvasToBlob(sp.canvas)));
     const session = {
       ts: Date.now(),
-      // 元画像
-      original: originalCanvas ? originalCanvas.toDataURL('image/png') : null,
-      // 処理済み素の状態
-      raw: processedRaw.toDataURL('image/png'),
-      // リンク線
+      original: originalCanvas ? await canvasToBlob(originalCanvas) : null,
+      raw: await canvasToBlob(processedRaw),
       links: linkLines,
-      // スプライト情報（canvas はbase64化）
-      sprites: sprites.map(sp => ({
-        data: sp.canvas.toDataURL('image/png'),
+      sprites: sprites.map((sp, i) => ({
+        blob: spriteBlobs[i],
         srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
         name: sp.name, id: sp.id, icon: sp.icon, expr: sp.expr,
         facing: sp.facing, sizePx: sp.sizePx, count: sp.count,
         pattern: sp.pattern, reaction: sp.reaction,
         speed: sp.speed, duration: sp.duration
       })),
-      // 左パネルの設定値
       settings: {
         tolerance:  document.getElementById('tolerance').value,
         feather:    document.getElementById('feather').value,
@@ -1671,7 +1715,7 @@ document.getElementById('btn-save-session').addEventListener('click', () => {
         eraseTol:   document.getElementById('erase-tolerance').value
       }
     };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    await idbPut(session);
     hideLoading();
     showToast('セッションを保存しました', true);
   } catch (e) {
@@ -1680,111 +1724,74 @@ document.getElementById('btn-save-session').addEventListener('click', () => {
   }
 });
 
-document.getElementById('btn-load-session').addEventListener('click', () => {
-  const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) { showToast('保存されたセッションがありません', false); return; }
+document.getElementById('btn-load-session').addEventListener('click', async () => {
   showLoading('セッションを復元中...');
   try {
-    const session = JSON.parse(raw);
-    const loaded = { remaining: 0 };
+    const session = await idbGet();
+    if (!session) { hideLoading(); showToast('保存されたセッションがありません', false); return; }
 
-    function onAllLoaded() {
-      // 設定復元
-      if (session.settings) {
-        const s = session.settings;
-        const set = (id, val, lblId) => {
-          if (val === undefined) return;
-          const el = document.getElementById(id);
-          if (el) el.value = val;
-          if (lblId) { const lbl = document.getElementById(lblId); if (lbl) lbl.value = val; }
-        };
-        set('tolerance', s.tolerance, 'tol-val');
-        set('feather', s.feather, 'feather-val');
-        set('graytol', s.graytol, 'graytol-val');
-        set('shrink', s.shrink, 'shrink-val');
-        set('ablur', s.ablur, 'ablur-val');
-        set('min-size', s.minSize);
-        set('padding', s.padding);
-        set('alpha-thresh', s.alphaThr);
-        set('merge-gap', s.mergeGap);
-        set('erase-tolerance', s.eraseTol);
-        if (s.eraseTol) document.getElementById('erase-tol-slider').value = s.eraseTol;
-      }
-      // リンク線
-      linkLines = session.links || [];
-      // 仕上げ適用してprocessedCanvasを生成
-      if (processedRaw) {
-        processedCanvas = document.createElement('canvas');
-        processedCanvas.width = processedRaw.width;
-        processedCanvas.height = processedRaw.height;
-        applyFinish();
-        redrawCompare();
-        document.getElementById('btn-process').disabled = false;
-        document.getElementById('btn-split').disabled = false;
-        document.getElementById('btn-finish').disabled = false;
-        document.getElementById('btn-reset-erase').disabled = false;
-        document.getElementById('btn-save-session').disabled = false;
-      }
-      // スプライト復元
-      if (session.sprites && session.sprites.length) {
-        renderSpritesGrid();
-      }
-      clearEraseUndo();
-      hideLoading();
-      const ts = new Date(session.ts);
-      showToast('セッション復元: ' + ts.toLocaleString('ja-JP'), true);
-    }
-
-    // 画像を非同期ロード
-    function loadImg(dataUrl, cb) {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth; c.height = img.naturalHeight;
-        c.getContext('2d').drawImage(img, 0, 0);
-        cb(c);
+    // 設定復元
+    if (session.settings) {
+      const s = session.settings;
+      const set = (id, val, lblId) => {
+        if (val === undefined) return;
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+        if (lblId) { const lbl = document.getElementById(lblId); if (lbl) lbl.value = val; }
       };
-      img.onerror = () => cb(null);
-      img.src = dataUrl;
+      set('tolerance', s.tolerance, 'tol-val');
+      set('feather', s.feather, 'feather-val');
+      set('graytol', s.graytol, 'graytol-val');
+      set('shrink', s.shrink, 'shrink-val');
+      set('ablur', s.ablur, 'ablur-val');
+      set('min-size', s.minSize);
+      set('padding', s.padding);
+      set('alpha-thresh', s.alphaThr);
+      set('merge-gap', s.mergeGap);
+      set('erase-tolerance', s.eraseTol);
+      if (s.eraseTol) document.getElementById('erase-tol-slider').value = s.eraseTol;
     }
 
-    let pending = 1 + (session.original ? 1 : 0) + (session.sprites ? session.sprites.length : 0);
-    function dec() { if (--pending === 0) onAllLoaded(); }
+    // 画像復元
+    if (session.original) originalCanvas = await blobToCanvas(session.original);
+    if (session.raw) processedRaw = await blobToCanvas(session.raw);
 
-    // 元画像
-    if (session.original) {
-      loadImg(session.original, c => { if (c) originalCanvas = c; dec(); });
+    linkLines = session.links || [];
+
+    if (processedRaw) {
+      processedCanvas = document.createElement('canvas');
+      processedCanvas.width = processedRaw.width;
+      processedCanvas.height = processedRaw.height;
+      applyFinish();
+      redrawCompare();
+      document.getElementById('btn-process').disabled = false;
+      document.getElementById('btn-split').disabled = false;
+      document.getElementById('btn-finish').disabled = false;
+      document.getElementById('btn-reset-erase').disabled = false;
+      document.getElementById('btn-save-session').disabled = false;
     }
-    // processedRaw
-    loadImg(session.raw, c => {
-      if (c) processedRaw = c;
-      dec();
-    });
-    // スプライト
-    if (session.sprites) {
-      sprites = [];
-      session.sprites.forEach((sp, i) => {
-        loadImg(sp.data, c => {
-          sprites[i] = {
-            canvas: c || document.createElement('canvas'),
-            srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
-            name: sp.name || '', id: sp.id || '', icon: sp.icon || '🐠', expr: sp.expr || 'normal',
-            facing: sp.facing || 'right', sizePx: sp.sizePx || 70, count: sp.count || 3,
-            pattern: sp.pattern || 'swim', reaction: sp.reaction || 'jump',
-            speed: sp.speed || 1.0, duration: sp.duration || 1.0
-          };
-          dec();
-        });
-      });
+
+    // スプライト復元
+    if (session.sprites && session.sprites.length) {
+      sprites = await Promise.all(session.sprites.map(async sp => ({
+        canvas: sp.blob ? await blobToCanvas(sp.blob) : document.createElement('canvas'),
+        srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
+        name: sp.name || '', id: sp.id || '', icon: sp.icon || '🐠', expr: sp.expr || 'normal',
+        facing: sp.facing || 'right', sizePx: sp.sizePx || 70, count: sp.count || 3,
+        pattern: sp.pattern || 'swim', reaction: sp.reaction || 'jump',
+        speed: sp.speed || 1.0, duration: sp.duration || 1.0
+      })));
+      renderSpritesGrid();
     }
+
+    clearEraseUndo();
+    hideLoading();
+    showToast('セッション復元: ' + new Date(session.ts).toLocaleString('ja-JP'), true);
   } catch (e) {
     hideLoading();
     showToast('復元失敗: ' + e.message, false);
   }
 });
-
-// runProcess 後にセーブボタン有効化
-// (btn-save-session の disabled は runProcess 内で解除)
 
 // ════════════════════════════════════════════════════════════
 // Sprite Splitting (Union-Find Connected Components)
@@ -2556,8 +2563,8 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
     showToast(`命名完了: ${allGroups.length}種類 / ${idxList.length}体 (API: ${apiCalls}回)`, true);
   } catch (e) {
     hideLoading();
-    showToast('グループ命名失敗: ' + e.message, false);
-    console.error('[aiGroupSprites]', e);
+    showToast('命名失敗 (バッチ' + done + '/' + batches.length + '): ' + e.message, false);
+    console.error('[aiGroupSprites] batch ' + done + '/' + batches.length, e);
   }
 });
 
