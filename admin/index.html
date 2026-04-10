@@ -5315,6 +5315,8 @@ function openQuizEditModal(catKey, qIdx) {
     '<input id="qe-q" style="' + iStyle + '" value="' + (q.q || '') + '">' +
     '<label style="' + lStyle + '">ヒント</label>' +
     '<input id="qe-hint" style="' + iStyle + '" value="' + (q.hint || '') + '" placeholder="（任意）">' +
+    '<label style="' + lStyle + '">正解後の補足情報</label>' +
+    '<input id="qe-detail" style="' + iStyle + '" value="' + (q.detail || '') + '" placeholder="正解したあとに表示される一言（任意）">' +
     '<label style="' + lStyle + '">選択肢（カンマ区切り）</label>' +
     '<input id="qe-choices" style="' + iStyle + '" value="' + (q.choices || []).join(',') + '">' +
     '<label style="' + lStyle + '">正解の番号（0始まり）</label>' +
@@ -5350,6 +5352,8 @@ function openQuizEditModal(catKey, qIdx) {
     else if (newEmoji) { q.emoji = newEmoji; delete q.img; }
     if (newQ) q.q = newQ;
     if (newHint) q.hint = newHint; else delete q.hint;
+    var newDetail = box.querySelector('#qe-detail').value.trim();
+    if (newDetail) q.detail = newDetail; else delete q.detail;
     if (newChoices.length > 0) q.choices = newChoices;
     q.answer = newAnswer;
 

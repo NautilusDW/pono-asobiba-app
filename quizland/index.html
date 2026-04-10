@@ -806,7 +806,12 @@ function onChoice(idx, btn) {
     launchConfetti();
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
-    setTimeout(nextQuestion, 1000);
+    if (currentQ.detail) {
+      setTimeout(() => showDetail(currentQ.detail), 600);
+      setTimeout(nextQuestion, 2800);
+    } else {
+      setTimeout(nextQuestion, 1000);
+    }
   } else {
     btn.classList.add('wrong');
     playWrong();
@@ -820,6 +825,19 @@ function onChoice(idx, btn) {
     }, 400);
     setTimeout(nextQuestion, 1600);
   }
+}
+
+function showDetail(text) {
+  let el = document.getElementById('detail-popup');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'detail-popup';
+    el.style.cssText = 'position:fixed;bottom:20%;left:50%;transform:translateX(-50%);background:rgba(30,58,95,0.95);color:#FDE68A;padding:12px 20px;border-radius:16px;font-size:0.95rem;font-weight:700;max-width:80vw;text-align:center;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    document.body.appendChild(el);
+  }
+  el.textContent = '💡 ' + text;
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 2000);
 }
 
 function showFeedback(text, wrong) {
