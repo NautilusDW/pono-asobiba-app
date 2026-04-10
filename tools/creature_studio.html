@@ -571,6 +571,7 @@ const HARDCODED_IDS  = ['octopus','jellyfish','turtle','fish','submarine','sunfi
 let originalCanvas  = null;
 let processedCanvas = null;
 let processedRaw    = null;  // 仕上げ(シュリンク/フチなめらか)前の素の状態
+let keepBackground  = false; // 「背景を残す」モードフラグ
 let sprites = [];            // [{canvas, srcX, srcY, w, h, name, id, icon, expr}]
 let creaturesData   = null;
 
@@ -1570,6 +1571,7 @@ function removeBgFromCanvas(canvas, tolerance, featherRadius, grayTol, shrinkPx,
 
 function runProcess(showUI) {
   if (!originalCanvas) return;
+  keepBackground = false;
   if (showUI) { showLoading('背景を消しています...'); }
 
   const tolerance = parseFloat(document.getElementById('tolerance').value);
@@ -1605,6 +1607,7 @@ document.getElementById('btn-process').addEventListener('click', () => runProces
 // 背景除去スキップ — 元画像をそのまま processedRaw/processedCanvas にコピー
 document.getElementById('btn-skip-bg').addEventListener('click', () => {
   if (!originalCanvas) return;
+  keepBackground = true;
   setEraseMode(false);
   clearEraseUndo();
 
@@ -2066,7 +2069,7 @@ function _cleanSpriteEdges(canvas, tolerance, bgColor) {
   if (changed) ctx.putImageData(imgData, 0, 0);
 }
 
-function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap) {
+function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap, keepBg) {
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
 
@@ -2217,8 +2220,8 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     const sctx = sc.getContext('2d');
     sctx.drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
-    // ── Component mask: このスプライトグループに属さないピクセルを透明化 ──
-    {
+    // ── Component mask: このスプライトグループに属さないピクセルを透明化（背景残しモードではスキップ）──
+    if (!keepBg) {
       const allowedRoots = new Set(b.roots);
       const sImg = sctx.getImageData(0, 0, sw2, sh2);
       const sd = sImg.data;
@@ -2238,7 +2241,7 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     }
 
     // 各スプライト個別に外周 flood fill で囲まれた背景を自動除去
-    _cleanSpriteEdges(sc, bgTolerance, bgColor);
+    if (!keepBg) _cleanSpriteEdges(sc, bgTolerance, bgColor);
 
     result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
                   name: '', id: '', icon: '🐠', expr: 'normal',
@@ -2266,7 +2269,7 @@ document.getElementById('btn-split').addEventListener('click', async () => {
   const bgTol    = parseFloat(document.getElementById('tolerance').value) || 35;
   const mergeGap = parseInt(document.getElementById('merge-gap').value) || 0;
 
-  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap);
+  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground);
   renderSpritesGrid();
 
   // Switch to sprites tab
