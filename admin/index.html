@@ -5796,7 +5796,7 @@ function renderIllust() {
         var normFile = creature.expressions && creature.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
         if (normFile) {
-          var imgPath = '../assets/images/ocean/' + creature.folder + '/' + normFile;
+          var imgPath = '../assets/images/ocean/' + creature.folder + '/' + normFile + '?_=' + Date.now();
           var thumb = document.createElement('img');
           thumb.src = imgPath;
           thumb.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:6px;cursor:zoom-in;';

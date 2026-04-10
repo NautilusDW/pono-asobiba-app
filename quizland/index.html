@@ -543,6 +543,7 @@ const DIFF_MIN_LEVEL = { easy: 1, normal: 1, hard: 2 };
 // ═══════════════════════════════════════════════════════════
 // Audio (wordmatch から流用)
 // ═══════════════════════════════════════════════════════════
+window._imgCacheBust = Date.now();
 let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) {
@@ -725,7 +726,7 @@ function renderEmojiName(stage, q) {
   if (q.img) {
     const imgEl = document.createElement('img');
     imgEl.className = 'emoji-main-img';
-    imgEl.src = '../assets/images/ocean/' + q.img;
+    imgEl.src = '../assets/images/ocean/' + q.img + '?v=' + (window._imgCacheBust || '');
     imgEl.alt = '';
     wrap.appendChild(imgEl);
   } else {
