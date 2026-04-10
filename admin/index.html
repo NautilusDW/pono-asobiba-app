@@ -3234,8 +3234,9 @@ function adoptStaging(idx, entry) {
     '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">✅ 差し替え採用</div>' +
     '<div style="text-align:center;margin-bottom:12px;">' +
       '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">新しい画像</div>' +
-      '<img src="' + stagingSrc + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid #F59E0B;background:#FFFBEB;" onerror="this.style.display=\'none\'">' +
-      '<div style="font-size:0.85rem;font-weight:700;color:#5D4E37;margin-top:4px;">' + (entry.displayName || entry.id) + '</div>' +
+      '<img class="checker-bg" src="' + stagingSrc + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid #F59E0B;" onerror="this.style.display=\'none\'">' +
+      '<div style="font-size:0.85rem;font-weight:700;color:#5D4E37;margin-top:4px;">' + (entry.displayName || '') + '</div>' +
+      '<div style="font-size:0.68rem;color:#888;font-family:monospace;">' + entry.id + '</div>' +
     '</div>' +
     '<div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">どの既存エントリの画像を差し替えますか？</div>' +
     '<select id="adopt-target" style="width:100%;padding:8px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;margin-bottom:8px;"></select>' +
@@ -3287,10 +3288,11 @@ function adoptStaging(idx, entry) {
     fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + apiPath + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders() })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(d) {
+        var infoHtml = '<div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-top:4px;">' + (c.displayName || '') + '</div><div style="font-size:0.68rem;color:#888;font-family:monospace;">' + c.id + '</div>';
         if (d && d.download_url) {
-          preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><img class="checker-bg" src="' + d.download_url + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'"><div style="font-size:0.7rem;color:#888;margin-top:2px;">' + c.folder + '/' + en + '</div>';
+          preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">差し替え先（現在）</div><img class="checker-bg" src="' + d.download_url + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'">' + infoHtml;
         } else {
-          preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><img class="checker-bg" src="' + oceanImgUrl(c.folder, en) + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'">';
+          preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">差し替え先（現在）</div><img class="checker-bg" src="' + oceanImgUrl(c.folder, en) + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'">' + infoHtml;
         }
       })
       .catch(function() {
