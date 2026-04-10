@@ -2360,6 +2360,144 @@ function _encEscHtml(str) {
 
 // 🖼️ 画像差し替えモーダル
 // クイズ用簡易編集モーダル（水族館固有項目なし）
+// 未登録イラストの新規アップロードモーダル
+function openNewIllustUploadModal(illustId, illustName) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:450px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;';
+  var iStyle = 'width:100%;padding:6px 8px;border-radius:6px;border:1px solid #ccc;font-family:inherit;font-size:0.85rem;box-sizing:border-box;margin-bottom:8px;';
+  var lStyle = 'display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:3px;margin-top:8px;';
+
+  // IDの推測（illust IDから）
+  var guessId = illustId.replace(/^(dino|animal|insect|weather|body|food|vehicle)_/, '');
+
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">📤 ' + illustName + ' を新規登録</div>' +
+    '<label style="' + lStyle + '">表示名</label>' +
+    '<input id="nu-name" style="' + iStyle + '" value="' + illustName.replace(/ [^\s]+$/, '').replace(/（.*）/, '') + '">' +
+    '<label style="' + lStyle + '">ID（英数スネークケース）</label>' +
+    '<input id="nu-id" style="' + iStyle + '" value="' + guessId + '">' +
+    '<label style="' + lStyle + '">絵文字</label>' +
+    '<input id="nu-icon" style="' + iStyle + 'width:80px;" value="🎨">' +
+    '<div id="nu-staging" style="margin:10px 0;"></div>' +
+    '<div style="font-size:0.72rem;color:#888;margin-bottom:6px;">または PNG をドロップ / 選択</div>' +
+    '<div id="nu-drop" style="border:2px dashed #E0D8CC;border-radius:12px;padding:16px;text-align:center;cursor:pointer;margin-bottom:8px;">' +
+      '<div style="font-size:1.5rem">📁</div>' +
+      '<input type="file" accept="image/png" style="display:none" id="nu-file">' +
+    '</div>' +
+    '<div id="nu-preview" style="text-align:center;margin-bottom:10px;"></div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+      '<button id="nu-cancel" style="padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+      '<button id="nu-save" disabled style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">📤 登録</button>' +
+    '</div>';
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+
+  var newBase64 = null;
+  var dropZone = box.querySelector('#nu-drop');
+  var fileInput = box.querySelector('#nu-file');
+  var preview = box.querySelector('#nu-preview');
+  var saveBtn = box.querySelector('#nu-save');
+
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  dropZone.addEventListener('dragover', function(e) { e.preventDefault(); });
+  dropZone.addEventListener('drop', function(e) { e.preventDefault(); handleNewFile(e.dataTransfer.files[0]); });
+  fileInput.addEventListener('change', function() { if (fileInput.files[0]) handleNewFile(fileInput.files[0]); });
+
+  function handleNewFile(f) {
+    if (!f || !f.type.startsWith('image/')) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      newBase64 = e.target.result.split(',')[1];
+      preview.innerHTML = '<img src="' + e.target.result + '" style="width:100px;height:100px;object-fit:contain;border-radius:8px;border:2px solid #10B981;">';
+      saveBtn.disabled = false;
+    };
+    reader.readAsDataURL(f);
+  }
+
+  // staging候補を表示
+  var stagingEl = box.querySelector('#nu-staging');
+  (function() {
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/data/staging.json?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        var items = [];
+        if (data && data.content) try { items = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+        if (!items.length) return;
+        stagingEl.innerHTML = '<div style="font-size:0.72rem;color:#5D4E37;font-weight:700;margin-bottom:4px;">📦 差し替え候補から選ぶ:</div>';
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+        items.forEach(function(entry) {
+          var nf = entry.expressions && entry.expressions.normal;
+          if (Array.isArray(nf)) nf = nf[0];
+          if (!nf) return;
+          var src = '../assets/images/staging/' + entry.folder + '/' + nf;
+          var card = document.createElement('div');
+          card.style.cssText = 'text-align:center;cursor:pointer;padding:3px;border:2px solid transparent;border-radius:6px;';
+          card.innerHTML = '<img src="' + src + '" style="width:50px;height:50px;object-fit:contain;border-radius:4px;background:#FFFBEB;" onerror="this.parentNode.style.display=\'none\'"><div style="font-size:0.55rem;color:#92400E;">' + (entry.displayName || entry.id) + '</div>';
+          card.addEventListener('click', function() {
+            card.style.borderColor = '#10B981';
+            grid.querySelectorAll('div').forEach(function(c) { if (c !== card) c.style.borderColor = 'transparent'; });
+            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + nf + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d.content) {
+                  newBase64 = d.content.replace(/\n/g, '');
+                  preview.innerHTML = '<img src="' + src + '" style="width:100px;height:100px;object-fit:contain;border-radius:8px;border:2px solid #10B981;">';
+                  saveBtn.disabled = false;
+                  // 表示名・IDも候補から取得
+                  if (entry.displayName) box.querySelector('#nu-name').value = entry.displayName;
+                  if (entry.id) box.querySelector('#nu-id').value = entry.id;
+                  if (entry.icon) box.querySelector('#nu-icon').value = entry.icon;
+                }
+              });
+          });
+          grid.appendChild(card);
+        });
+        stagingEl.appendChild(grid);
+      }).catch(function() {});
+  })();
+
+  box.querySelector('#nu-cancel').addEventListener('click', function() { ov.remove(); });
+  saveBtn.addEventListener('click', function() {
+    if (!newBase64) return;
+    var id = box.querySelector('#nu-id').value.trim();
+    var name = box.querySelector('#nu-name').value.trim();
+    var icon = ([...(box.querySelector('#nu-icon').value.trim())][0] || '') || '🎨';
+    if (!id || !name) { showToast('IDと表示名を入力してください', false); return; }
+    saveBtn.disabled = true; saveBtn.textContent = '⏳ 登録中...';
+
+    var folder = id.charAt(0).toUpperCase() + id.slice(1);
+    var fileName = folder + '_normal_1.png';
+    var filePath = 'assets/images/ocean/' + folder + '/' + fileName;
+
+    ghUploadPromise(filePath, newBase64, '📤 new illust: ' + id)
+      .then(function() {
+        if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+        creaturesData.creatures.push({
+          id: id, displayName: name, icon: icon, folder: folder,
+          expressions: { normal: fileName, surprised: fileName },
+          pattern: 'swim', reactionType: 'jump', facingDir: 'right',
+          baseSizePx: 70, baseSizeJitter: 30, imgWidthHint: 200,
+          speedMin: 0.04, speedMax: 0.07, spawnCount: 1,
+          reactionSpeed: 1.0, reactionDuration: 1.0, rewardType: 'sea'
+        });
+        return ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '📤 register illust: ' + id);
+      })
+      .then(function() {
+        showToast('✅ ' + name + ' を登録しました', true);
+        ov.remove();
+        renderIllust();
+      })
+      .catch(function(e) {
+        showToast('登録失敗: ' + e.message, false);
+        saveBtn.disabled = false; saveBtn.textContent = '📤 登録';
+      });
+  });
+}
+
 function openIllustEditModal(creatureId) {
   if (!creaturesData || !creaturesData.creatures) return;
   var idx = creaturesData.creatures.findIndex(function(c) { return c.id === creatureId; });
@@ -2418,12 +2556,20 @@ function openCreatureReplaceModal(creatureId) {
   var box = document.createElement('div');
   box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:500px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
 
+  // 現在の画像パス
+  var curNormFile = target.expressions && target.expressions.normal;
+  if (Array.isArray(curNormFile)) curNormFile = curNormFile[0];
+  var curSrc = '../assets/images/ocean/' + target.folder + '/' + curNormFile;
+
   box.innerHTML =
     '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center">🖼️ ' + (target.displayName || target.id) + ' の画像を差し替え</div>' +
-    '<div style="font-size:0.72rem;color:#888;margin-bottom:12px;text-align:center">新しい PNG をドロップまたは選択してください</div>' +
-    '<div id="replace-drop" style="border:2px dashed #E0D8CC;border-radius:12px;padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;">' +
-      '<div style="font-size:2rem">📁</div>' +
-      '<div style="font-size:0.8rem;color:#888;margin-top:4px">クリックまたはドラッグ</div>' +
+    '<div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:12px;">' +
+      '<div style="text-align:center"><div style="font-size:0.65rem;color:#888;">現在</div><img src="' + curSrc + '" style="width:80px;height:80px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'"></div>' +
+    '</div>' +
+    '<div id="replace-staging" style="margin-bottom:12px;"></div>' +
+    '<div style="font-size:0.72rem;color:#888;margin-bottom:6px;text-align:center">または PNG をドロップ / 選択</div>' +
+    '<div id="replace-drop" style="border:2px dashed #E0D8CC;border-radius:12px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px;">' +
+      '<div style="font-size:1.5rem">📁</div>' +
       '<input type="file" accept="image/png" style="display:none" id="replace-file-input">' +
     '</div>' +
     '<div id="replace-preview" style="display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:12px"></div>' +
@@ -2465,13 +2611,61 @@ function openCreatureReplaceModal(creatureId) {
     reader.readAsDataURL(f);
   }
 
+  // staging候補を読み込んで表示
+  var stagingEl = box.querySelector('#replace-staging');
+  (function loadStagingCandidates() {
+    var STAGING_PATH = 'assets/data/staging.json';
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        var items = [];
+        if (data && data.content) {
+          try { items = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+        }
+        if (!Array.isArray(items) || items.length === 0) return;
+        stagingEl.innerHTML = '<div style="font-size:0.72rem;color:#5D4E37;font-weight:700;margin-bottom:6px;">📦 差し替え候補から選ぶ:</div>';
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;';
+        items.forEach(function(entry, idx) {
+          var normF = entry.expressions && entry.expressions.normal;
+          if (Array.isArray(normF)) normF = normF[0];
+          if (!normF) return;
+          var imgSrc = '../assets/images/staging/' + entry.folder + '/' + normF;
+          var card = document.createElement('div');
+          card.style.cssText = 'text-align:center;cursor:pointer;padding:4px;border:2px solid transparent;border-radius:8px;transition:border-color 0.15s;';
+          card.innerHTML =
+            '<img src="' + imgSrc + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#FFFBEB;" onerror="this.parentNode.style.display=\'none\'">' +
+            '<div style="font-size:0.6rem;color:#92400E;font-weight:700;margin-top:2px;">' + (entry.displayName || entry.id) + '</div>';
+          card.addEventListener('click', function() {
+            // staging画像のbase64を取得
+            card.style.borderColor = '#F59E0B';
+            grid.querySelectorAll('div').forEach(function(c) { if (c !== card) c.style.borderColor = 'transparent'; });
+            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + normF + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d.content) {
+                  newBase64 = d.content.replace(/\n/g, '');
+                  preview.innerHTML =
+                    '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">現在</div><img src="' + curSrc + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #E0D8CC"></div>' +
+                    '<div style="font-size:1.5rem">→</div>' +
+                    '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">' + (entry.displayName || 'staging') + '</div><img src="' + imgSrc + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #F59E0B"></div>';
+                  saveBtn.disabled = false;
+                }
+              });
+          });
+          grid.appendChild(card);
+        });
+        stagingEl.appendChild(grid);
+      })
+      .catch(function() {});
+  })();
+
   box.querySelector('#replace-cancel').addEventListener('click', function() { ov.remove(); });
   saveBtn.addEventListener('click', function() {
     if (!newBase64 || saveBtn.disabled) return;
     saveBtn.disabled = true;
     saveBtn.textContent = '⏳ アップロード中...';
-    var normFile = target.expressions && target.expressions.normal;
-    if (Array.isArray(normFile)) normFile = normFile[0];
+    var normFile = curNormFile;
     var filePath = 'assets/images/ocean/' + target.folder + '/' + normFile;
     ghUploadPromise(filePath, newBase64, '🖼️ replace image: ' + target.id + ' / ' + normFile)
       .then(function() {
@@ -5509,12 +5703,12 @@ function renderIllust() {
         card.appendChild(noUseEl);
       }
 
-      // ボタン行（creatures.jsonに登録済みの場合のみ表示）
-      if (creature) {
-        var btnRow = document.createElement('div');
-        btnRow.style.cssText = 'display:flex;gap:3px;margin-top:2px;';
+      // ボタン行（全カードに表示）
+      var btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:3px;margin-top:2px;';
 
-        // ⚙️ プロパティ編集
+      if (creature) {
+        // 登録済み: 編集・差し替え・削除
         var editBtn = document.createElement('button');
         editBtn.textContent = '⚙️';
         editBtn.title = 'プロパティを編集';
@@ -5524,7 +5718,6 @@ function renderIllust() {
         })(creature.id);
         btnRow.appendChild(editBtn);
 
-        // 🖼️ 画像差し替え
         var replBtn = document.createElement('button');
         replBtn.textContent = '🖼️';
         replBtn.title = '画像を差し替え';
@@ -5534,7 +5727,6 @@ function renderIllust() {
         })(creature.id);
         btnRow.appendChild(replBtn);
 
-        // 🗑️ 削除
         var delBtn = document.createElement('button');
         delBtn.textContent = '🗑️';
         delBtn.title = '削除';
@@ -5543,9 +5735,22 @@ function renderIllust() {
           delBtn.addEventListener('click', function(e) { e.stopPropagation(); deleteCreature(cId); });
         })(creature.id);
         btnRow.appendChild(delBtn);
-
-        card.appendChild(btnRow);
+      } else {
+        // 未登録: 新規アップロードボタン（差し替えモーダルを流用して新規登録）
+        var uploadBtn = document.createElement('button');
+        uploadBtn.textContent = '📤 画像を登録';
+        uploadBtn.title = 'PNG をアップロードして creatures.json に新規登録';
+        uploadBtn.style.cssText = 'background:#DBEAFE;border:1px solid #93C5FD;border-radius:4px;padding:2px 6px;font-size:0.65rem;font-weight:700;cursor:pointer;color:#1E40AF;';
+        (function(itemId, itemName) {
+          uploadBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openNewIllustUploadModal(itemId, itemName);
+          });
+        })(it.id, it.name);
+        btnRow.appendChild(uploadBtn);
       }
+
+      card.appendChild(btnRow);
 
       grid.appendChild(card);
     });
