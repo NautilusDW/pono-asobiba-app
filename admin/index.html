@@ -699,6 +699,7 @@ tr:hover { background: #FFFAF0; }
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">もんだい</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">せいかい</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">せんたくし</th>
+            <th style="padding:7px 4px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;width:36px;"></th>
           </tr>
         </thead>
         <tbody id="q-tbody"></tbody>
@@ -4889,8 +4890,8 @@ function renderQuestions() {
 
   var allQ = [];
   Object.keys(QUIZLAND_QUESTIONS).forEach(function(cat) {
-    (QUIZLAND_QUESTIONS[cat] || []).forEach(function(q) {
-      allQ.push(Object.assign({ _cat: cat }, q));
+    (QUIZLAND_QUESTIONS[cat] || []).forEach(function(q, idx) {
+      allQ.push(Object.assign({ _cat: cat, _idx: idx }, q));
     });
   });
 
@@ -4939,8 +4940,99 @@ function renderQuestions() {
         (q.hint ? '<br><span style="font-size:0.68rem;color:#8B7355;">💡 ' + q.hint + '</span>' : '') +
       '</td>' +
       '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#10B981;font-weight:900;">✅ ' + correctChoice + '</td>' +
-      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#8B7355;font-size:0.72rem;">' + otherChoices + '</td>';
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;color:#8B7355;font-size:0.72rem;">' + otherChoices + '</td>' +
+      '<td style="padding:7px 4px;border-bottom:1px solid #F5F0E8;"><button class="q-edit-btn" style="background:#E0F2FE;color:#0369A1;border:1px solid #7DD3FC;border-radius:6px;padding:4px 8px;font-size:0.75rem;cursor:pointer;white-space:nowrap;">✏️</button></td>';
+    // 編集ボタン
+    (function(catKey, qIdx) {
+      tr.querySelector('.q-edit-btn').addEventListener('click', function() { openQuizEditModal(catKey, qIdx); });
+    })(q._cat, q._idx);
     tbody.appendChild(tr);
+  });
+}
+
+// クイズ問題編集モーダル
+function openQuizEditModal(catKey, qIdx) {
+  var qArr = QUIZLAND_QUESTIONS[catKey];
+  if (!qArr || !qArr[qIdx]) return;
+  var q = qArr[qIdx];
+
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:500px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;';
+
+  var iStyle = 'width:100%;padding:6px 8px;border-radius:6px;border:1px solid #ccc;font-family:inherit;font-size:0.85rem;box-sizing:border-box;margin-bottom:8px;';
+  var lStyle = 'display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:3px;';
+
+  // 画像プレビュー
+  var imgPreview = '';
+  if (q.img) {
+    imgPreview = '<img id="qe-img-preview" src="../assets/images/ocean/' + q.img + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #E0D8CC;margin-bottom:8px;" onerror="this.style.display=\'none\'">';
+  } else if (q.emoji) {
+    imgPreview = '<div style="font-size:3rem;margin-bottom:8px;">' + q.emoji + '</div>';
+  }
+
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">✏️ 問題を編集</div>' +
+    '<div style="text-align:center;">' + imgPreview + '</div>' +
+    '<label style="' + lStyle + '">画像パス (img)</label>' +
+    '<input id="qe-img" style="' + iStyle + '" value="' + (q.img || '') + '" placeholder="Folder/File_normal_1.png（空欄なら絵文字を使用）">' +
+    '<label style="' + lStyle + '">絵文字 (emoji)</label>' +
+    '<input id="qe-emoji" style="' + iStyle + '" value="' + (q.emoji || '') + '" placeholder="画像がない場合に使用">' +
+    '<label style="' + lStyle + '">問題文</label>' +
+    '<input id="qe-q" style="' + iStyle + '" value="' + (q.q || '') + '">' +
+    '<label style="' + lStyle + '">ヒント</label>' +
+    '<input id="qe-hint" style="' + iStyle + '" value="' + (q.hint || '') + '" placeholder="（任意）">' +
+    '<label style="' + lStyle + '">選択肢（カンマ区切り）</label>' +
+    '<input id="qe-choices" style="' + iStyle + '" value="' + (q.choices || []).join(',') + '">' +
+    '<label style="' + lStyle + '">正解の番号（0始まり）</label>' +
+    '<input id="qe-answer" type="number" min="0" max="3" style="' + iStyle + 'width:80px;" value="' + (q.answer || 0) + '">' +
+    '<div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">' +
+      '<button id="qe-cancel" style="padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+      '<button id="qe-save" style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">💾 保存</button>' +
+    '</div>';
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+
+  // 画像パス変更でプレビュー更新
+  box.querySelector('#qe-img').addEventListener('input', function() {
+    var prev = box.querySelector('#qe-img-preview');
+    if (prev) prev.src = '../assets/images/ocean/' + this.value;
+  });
+
+  box.querySelector('#qe-cancel').addEventListener('click', function() { ov.remove(); });
+  box.querySelector('#qe-save').addEventListener('click', function() {
+    var btn = this;
+    btn.disabled = true; btn.textContent = '⏳ 保存中...';
+
+    // メモリ上のデータを更新
+    var newImg = box.querySelector('#qe-img').value.trim();
+    var newEmoji = box.querySelector('#qe-emoji').value.trim();
+    var newQ = box.querySelector('#qe-q').value.trim();
+    var newHint = box.querySelector('#qe-hint').value.trim();
+    var newChoices = box.querySelector('#qe-choices').value.split(',').map(function(s) { return s.trim(); });
+    var newAnswer = parseInt(box.querySelector('#qe-answer').value) || 0;
+
+    if (newImg) { q.img = newImg; delete q.emoji; }
+    else if (newEmoji) { q.emoji = newEmoji; delete q.img; }
+    if (newQ) q.q = newQ;
+    if (newHint) q.hint = newHint; else delete q.hint;
+    if (newChoices.length > 0) q.choices = newChoices;
+    q.answer = newAnswer;
+
+    // questions.js を再生成してGitHubに保存
+    var jsContent = '// Auto-generated by admin dashboard\nconst QUIZLAND_QUESTIONS = ' + JSON.stringify(QUIZLAND_QUESTIONS, null, 2) + ';\n';
+    ghUploadPromise('quizland/data/questions.js', utf8ToBase64(jsContent), '✏️ edit quiz: ' + catKey + '[' + qIdx + ']')
+      .then(function() {
+        showToast('✅ 問題を保存しました', true);
+        ov.remove();
+        renderQuestions();
+      })
+      .catch(function(e) {
+        showToast('保存失敗: ' + e.message, false);
+        btn.disabled = false; btn.textContent = '💾 保存';
+      });
   });
 }
 
