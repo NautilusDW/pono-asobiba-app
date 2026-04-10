@@ -267,6 +267,7 @@ body {
 /* ===== Confetti ===== */
 #confetti-container {
   position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden;
+  overscroll-behavior: none;
 }
 .confetti-piece {
   position: absolute;
@@ -470,10 +471,12 @@ body {
 
 /* ===== Landscape layout ===== */
 @media (orientation: landscape) {
-  html { height: 100dvh; overflow: hidden; margin: 0; padding: 0; }
+  html { height: 100dvh; overflow: hidden;
+  overscroll-behavior: none; margin: 0; padding: 0; }
   body {
     width: 100%; height: 100dvh;
     overflow: hidden;
+  overscroll-behavior: none;
     margin: 0;
     padding: 6px 16px 4px;
     gap: 4px;

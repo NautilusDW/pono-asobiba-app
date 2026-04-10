@@ -30,6 +30,7 @@ html, body {
   -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* ===== タイトル ===== */
@@ -105,7 +106,8 @@ html, body {
   min-height: 0;
 }
 @media (hover: hover) and (pointer: fine) {
-  html, body { overflow: hidden; }
+  html, body { overflow: hidden;
+  overscroll-behavior: none; }
   body { display: flex; align-items: center; justify-content: center; }
   #app {
     width: 800px; height: 440px;
@@ -159,6 +161,7 @@ html, body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  overscroll-behavior: none;
   transition: all 0.3s;
   flex-shrink: 0;
 }
@@ -210,6 +213,7 @@ html, body {
   background: rgba(139,69,19,0.04);
   transition: all 0.3s;
   overflow: hidden;
+  overscroll-behavior: none;
   position: relative;
 }
 .bento-slot.filled {
@@ -405,6 +409,7 @@ html, body {
 .complete-bento .cb-okazu > div {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 .complete-bento .cb-okazu .okazu-div-v {
   grid-column: 2; grid-row: 1 / -1;
@@ -460,7 +465,8 @@ html, body {
 .wrong-toast.show { opacity: 1; }
 
 /* ===== Confetti ===== */
-#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 55; overflow: hidden; }
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 55; overflow: hidden;
+  overscroll-behavior: none; }
 .conf {
   position: absolute; width: 10px; height: 10px; border-radius: 3px;
   top: -15px; animation: confFall 3s ease-in forwards;

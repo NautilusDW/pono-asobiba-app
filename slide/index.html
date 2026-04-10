@@ -21,6 +21,7 @@
 
 html, body {
   height: 100dvh; overflow: hidden;
+  overscroll-behavior: none;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   background-color: var(--bg);
   background-image: url('../assets/images/BG_03.webp');
@@ -83,6 +84,7 @@ html, body {
   flex: 1; min-height: 0;
   border-radius: var(--radius);
   overflow: hidden;
+  overscroll-behavior: none;
   position: relative;
   touch-action: none;
 }
@@ -92,6 +94,7 @@ html, body {
 .confetti-container {
   position: absolute; inset: 0;
   pointer-events: none; z-index: 10; overflow: hidden;
+  overscroll-behavior: none;
 }
 .confetti-piece { position: absolute; animation: cfall 2.5s ease-out forwards; }
 @keyframes cfall {

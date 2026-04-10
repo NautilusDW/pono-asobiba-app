@@ -24,11 +24,13 @@ html {
   width: 100%; height: 100dvh;
   overflow: hidden;
   margin: 0; padding: 0;
+  overscroll-behavior: none;
 }
 body {
   width: 100%; height: 100dvh;
   overflow: hidden;
   margin: 0; padding: 0;
+  overscroll-behavior: none;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   background-color: var(--bg);
   background-image: url('../assets/images/BG_03.webp');
@@ -190,6 +192,8 @@ body {
   display: flex; gap: 6px;
   align-items: center; justify-content: center;
   flex-shrink: 0;
+  position: relative; z-index: 10;
+  touch-action: manipulation;
 }
 
 /* Icon-only round buttons (stamp, rainbow, sparkle, bucket, nohami) */
