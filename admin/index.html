@@ -788,7 +788,23 @@ function switchTab(panelId) {
   if (panelId === 'roadmap')   renderRoadmap();
   if (panelId === 'home')      renderHome();
   if (panelId === 'encyclopedia') fetchEncyclopedia();
-  if (panelId === 'illust')    renderIllust();
+  if (panelId === 'illust') {
+    if (!creaturesData) {
+      // creatures.json を取得してから制作リストを描画
+      fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (data && data.content) {
+            try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+          }
+          if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+          renderIllust();
+        })
+        .catch(function() { renderIllust(); });
+    } else {
+      renderIllust();
+    }
+  }
   if (panelId === 'questions') renderQuestions();
 }
 
@@ -4695,8 +4711,57 @@ var ILLUST_GROUPS = [
 
 var ILLUST_STATUS_KEY = 'quiz_illust_status';
 
+// 制作リストID → creatures.json ID のマッピング
+var ILLUST_TO_CREATURE = {
+  dino_trex:'tyrannosaurus', dino_brachiosaurus:'brachiosaurus', dino_triceratops:'triceratops',
+  dino_stegosaurus:'stegosaurus', dino_pteranodon:'pteranodon', dino_raptor:'raptor',
+  dino_spinosaurus:'spinosaurus', dino_ankylosaurus:'ankylosaurus', dino_plesiosaurus:'plesiosaur',
+  animal_dog:'dog', animal_cat:'cat', animal_elephant:'elephant', animal_panda:'panda',
+  animal_rabbit:'rabbit', animal_hamster:'hamster', animal_bear:'bear', animal_cow:'cow',
+  animal_lion:'lion', animal_giraffe:'giraffe', animal_frog:'frog', animal_tiger:'tiger',
+  animal_wolf:'wolf', animal_fox:'fox', animal_zebra:'zebra', animal_rhino:'rhino',
+  animal_kangaroo:'kangaroo', animal_gorilla:'gorilla', animal_platypus:'platypus', animal_bat:'bat',
+  insect_butterfly:'butterfly', insect_ladybug:'ladybug', insect_snail:'snail',
+  insect_caterpillar:'caterpillar', insect_ant:'ant', insect_mosquito:'mosquito',
+  insect_bee:'honeybee', insect_cricket:'grasshopper', insect_beetle:'rhinoceros_beetle',
+  insect_spider:'spider', insect_firefly:'firefly', insect_mantis:'mantis',
+  insect_dragonfly:'dragonfly', insect_cicada:'cicada',
+  weather_sun:'sun', weather_rain:'rain_cloud', weather_rainbow:'rainbow',
+  weather_thunder:'thunder_cloud', weather_snow:'snow_cloud', weather_cloud:'cloud',
+  weather_wind:'wind', weather_fog:'fog', weather_tornado:'tornado', weather_typhoon:'hurricane',
+  body_eye:'eye', body_mouth:'mouth', body_hand:'hand', body_foot:'foot',
+  body_arm:'arm', body_nose:'nose', body_tooth:'teeth', body_tongue:'tongue', body_leg:'knee', body_ear:'ear',
+  food_apple:'apple', food_banana:'banana', food_strawberry:'strawberry', food_peach:'peach',
+  food_cherry:'cherry', food_orange:'orange', food_grape:'grapes', food_watermelon:'watermelon',
+  food_carrot:'carrot', food_mushroom:'mushroom', food_lemon:'lemon', food_avocado:'avocado',
+  food_blueberry:'blueberry', food_kiwi:'kiwi', food_corn:'corn', food_edamame:'edamame',
+  vehicle_car:'car', vehicle_train:'train', vehicle_airplane:'airplane', vehicle_bicycle:'bicycle',
+  vehicle_taxi:'taxi', vehicle_bus:'bus', vehicle_firetruck:'fire_engine', vehicle_ship:'cruise_ship',
+  vehicle_rocket:'rocket', vehicle_ambulance:'ambulance', vehicle_helicopter:'helicopter',
+  vehicle_tractor:'tractor', vehicle_yacht:'sailboat', vehicle_ufo:'ufo',
+  vehicle_small_plane:'excavator'
+};
+
 function illustGetStatus() {
-  try { return JSON.parse(localStorage.getItem(ILLUST_STATUS_KEY) || '{}'); } catch(e) { return {}; }
+  // creatures.json から自動判定 + ローカルステータスをマージ
+  var manual = {};
+  try { manual = JSON.parse(localStorage.getItem(ILLUST_STATUS_KEY) || '{}'); } catch(e) {}
+  var creatureIds = new Set();
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(function(c) { creatureIds.add(c.id); });
+  }
+  var result = {};
+  ILLUST_GROUPS.forEach(function(g) {
+    g.items.forEach(function(it) {
+      var cId = ILLUST_TO_CREATURE[it.id];
+      if (cId && creatureIds.has(cId)) {
+        result[it.id] = 'done';
+      } else {
+        result[it.id] = manual[it.id] || 'todo';
+      }
+    });
+  });
+  return result;
 }
 function illustSetStatus(id, status) {
   var s = illustGetStatus(); s[id] = status;
