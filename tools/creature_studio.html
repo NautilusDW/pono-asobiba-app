@@ -450,7 +450,7 @@ body {
 
     <!-- Action buttons -->
     <button class="btn btn-primary"   id="btn-process" disabled>▶ 背景を消す</button>
-    <button class="btn btn-secondary" id="btn-skip-bg" disabled title="背景除去せずにそのまま分割準備（白背景のまま使いたい場合）">⏭ 背景を残す</button>
+    <button class="btn btn-secondary" id="btn-skip-bg" disabled title="背景だけ除去（シュリンク/フチなめらか等なし）。色変換したい場合に。">⏭ 簡易除去</button>
     <button class="btn btn-secondary" id="btn-finish"  disabled title="シュリンク・フチなめらか・αぼかしを現在の画像に上からかける">🔧 仕上げ適用</button>
     <button class="btn btn-secondary" id="btn-reset-erase" disabled title="ポイント/ブラシ消去をすべてリセット">↺ 消去リセット</button>
     <button class="btn btn-secondary" id="btn-split"   disabled>✂️ スプライトを分割</button>
@@ -1607,14 +1607,25 @@ document.getElementById('btn-skip-bg').addEventListener('click', () => {
   if (!originalCanvas) return;
   setEraseMode(false);
   clearEraseUndo();
+
+  const tolerance = parseFloat(document.getElementById('tolerance').value) || 35;
+  const grayTol = parseInt(document.getElementById('graytol').value) || 0;
+
+  // 元画像をコピーして背景のアルファだけ0にする（色は残す = RGB はそのまま）
   processedCanvas = document.createElement('canvas');
   processedCanvas.width = originalCanvas.width;
   processedCanvas.height = originalCanvas.height;
   processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
+
+  // 外周flood fillで背景を透明化（shrink/feather/ablur は適用しない）
+  removeBgFromCanvas(processedCanvas, tolerance, 0, grayTol, 0, 0);
+
+  // processedRaw は背景除去後の素の状態（色変換やポイント消去の基盤）
   processedRaw = document.createElement('canvas');
-  processedRaw.width = originalCanvas.width;
-  processedRaw.height = originalCanvas.height;
-  processedRaw.getContext('2d').drawImage(originalCanvas, 0, 0);
+  processedRaw.width = processedCanvas.width;
+  processedRaw.height = processedCanvas.height;
+  processedRaw.getContext('2d').drawImage(processedCanvas, 0, 0);
+
   redrawCompare();
   document.getElementById('btn-split').disabled = false;
   document.getElementById('btn-finish').disabled = false;
@@ -1622,7 +1633,7 @@ document.getElementById('btn-skip-bg').addEventListener('click', () => {
   document.getElementById('btn-save-session').disabled = false;
   document.getElementById('btn-hue-apply').disabled = false;
   document.getElementById('btn-hue-pick').disabled = false;
-  showToast('背景をそのまま残しました。ポイント消去やブラシで不要部分を消してからスプライト分割できます。', true);
+  showToast('背景を除去しました（フチなめらか等なし）。色変換やポイント消去が使えます。', true);
 });
 
 // 仕上げ適用: processedCanvas にシュリンク+フチなめらか+αぼかしを上からかける
@@ -1824,6 +1835,7 @@ document.getElementById('btn-hue-pick').addEventListener('click', () => {
 
 document.getElementById('box-proc').addEventListener('click', e => {
   if (!huePickMode || !processedRaw) return;
+  e.stopImmediatePropagation(); // 消去モード等のハンドラを止める
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
   const ctx = processedRaw.getContext('2d');
