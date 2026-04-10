@@ -36,6 +36,21 @@ body {
 .tab:hover { border-color: #FF6B9D; color: #FF6B9D; }
 .tab.active { background: #FF6B9D; color: #fff; border-color: #FF6B9D; }
 
+/* ── Sub-tabs (within a panel) ── */
+.sub-tabs {
+  display: flex; gap: 4px; margin-bottom: 16px; padding: 0;
+}
+.sub-tab {
+  padding: 6px 14px; border: 2px solid #E0D8CC; border-radius: 16px;
+  background: #fff; color: #5D4E37; font-family: inherit;
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.sub-tab:hover { border-color: #3B82F6; color: #3B82F6; }
+.sub-tab.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
+.sub-panel { display: none; }
+.sub-panel.active { display: block; }
+
 /* ── Panels & Sections ── */
 .panel { display: none; padding: 0 16px; }
 .panel.active { display: block; }
@@ -280,13 +295,11 @@ tr:hover { background: #FFFAF0; }
 <div class="tabs">
   <button class="tab active" data-panel="home">📋 ホーム</button>
   <button class="tab" data-panel="roadmap">🗺 ロードマップ</button>
-  <button class="tab" data-panel="creatures">🐠 海のいきもの</button>
+  <button class="tab" data-panel="aquarium">🐠 水族館</button>
+  <button class="tab" data-panel="quizland">🧩 クイズランド</button>
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
-  <button class="tab" data-panel="encyclopedia">📖 図鑑</button>
-  <button class="tab" data-panel="questions">📝 問題管理</button>
-  <button class="tab" data-panel="illust">🎨 イラスト管理</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
   <button class="tab" data-panel="github">🔑 GitHub設定</button>
 </div>
@@ -314,7 +327,7 @@ tr:hover { background: #FFFAF0; }
   <div class="section">
     <div class="section-title">🚀 よく使うショートカット</div>
     <div class="home-shortcut-grid">
-      <a class="home-shortcut" href="#" onclick="switchTab('creatures');return false;">🐠 海のいきもの登録</a>
+      <a class="home-shortcut" href="#" onclick="switchTab('aquarium');return false;">🐠 水族館</a>
       <a class="home-shortcut" href="#" onclick="switchTab('roadmap');return false;">🗺 ロードマップ詳細</a>
       <a class="home-shortcut" href="#" onclick="switchTab('stamp');return false;">🎟 報酬を編集</a>
       <a class="home-shortcut" href="../room/furniture_adjuster.html">🔧 家具ピボット</a>
@@ -406,7 +419,12 @@ tr:hover { background: #FFFAF0; }
 </div>
 
 <!-- ===== 🐠 海のいきもの ===== -->
-<div class="panel" id="panel-creatures">
+<div class="panel" id="panel-aquarium">
+  <div class="sub-tabs">
+    <button class="sub-tab active" data-sub="aqua-creatures">🐠 イラスト管理</button>
+    <button class="sub-tab" data-sub="aqua-encyclopedia">📖 図鑑</button>
+  </div>
+  <div class="sub-panel active" id="sub-aqua-creatures">
   <div class="section">
     <div class="section-title">🐠 とうろくずみのいきもの</div>
     <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
@@ -538,7 +556,7 @@ tr:hover { background: #FFFAF0; }
       </div>
     </div>
   </div>
-</div>
+  </div><!-- /sub-aqua-creatures -->
 
 <!-- ===== 🏆 実績一覧 ===== -->
 <div class="panel" id="panel-achievements">
@@ -608,8 +626,8 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div>
 
-<!-- ===== 📖 図鑑 ===== -->
-<div class="panel" id="panel-encyclopedia">
+<!-- 図鑑サブパネル（水族館内） -->
+  <div class="sub-panel" id="sub-aqua-encyclopedia">
   <div class="section">
     <div class="section-title">📖 いきもの図鑑</div>
     <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
@@ -639,10 +657,16 @@ tr:hover { background: #FFFAF0; }
     </div>
     <div id="encyclopedia-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
   </div>
-</div>
+  </div><!-- /sub-aqua-encyclopedia -->
+</div><!-- /panel-aquarium -->
 
-<!-- ===== 📝 問題管理 ===== -->
-<div class="panel" id="panel-questions">
+<!-- ===== 🧩 クイズランド ===== -->
+<div class="panel" id="panel-quizland">
+  <div class="sub-tabs">
+    <button class="sub-tab active" data-sub="quiz-questions">📝 問題管理</button>
+    <button class="sub-tab" data-sub="quiz-illust">🎨 イラスト管理</button>
+  </div>
+  <div class="sub-panel active" id="sub-quiz-questions">
   <div class="section">
     <div class="section-title">📝 クイズランド 問題一覧</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
@@ -672,10 +696,9 @@ tr:hover { background: #FFFAF0; }
       </table>
     </div>
   </div>
-</div>
+  </div><!-- /sub-quiz-questions -->
 
-<!-- ===== 🎨 イラスト管理 ===== -->
-<div class="panel" id="panel-illust">
+  <div class="sub-panel" id="sub-quiz-illust">
   <div class="section">
     <div class="section-title">🎨 クイズ用イラスト 制作リスト</div>
     <div id="illust-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:0.8rem;font-weight:700;"></div>
@@ -685,7 +708,8 @@ tr:hover { background: #FFFAF0; }
     </div>
     <div id="illust-groups"></div>
   </div>
-</div>
+  </div><!-- /sub-quiz-illust -->
+</div><!-- /panel-quizland -->
 
 <!-- ===== 🔑 GitHub設定 ===== -->
 <div class="panel" id="panel-github">
@@ -777,39 +801,87 @@ function ghHeaders() {
 // ════════════════════════════════════════════════════════════════
 // Tab Switching
 // ════════════════════════════════════════════════════════════════
+// 旧ID → 新ID リダイレクト
+var TAB_REDIRECT = { creatures: 'aquarium', encyclopedia: 'aquarium', questions: 'quizland', illust: 'quizland' };
+
 function switchTab(panelId) {
+  // リダイレクト
+  if (TAB_REDIRECT[panelId]) panelId = TAB_REDIRECT[panelId];
+
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
   var btn = document.querySelector('.tab[data-panel="' + panelId + '"]');
   if (btn) btn.classList.add('active');
   var panel = document.getElementById('panel-' + panelId);
   if (panel) panel.classList.add('active');
-  if (panelId === 'creatures' && typeof fetchSeaCreatures === 'function') fetchSeaCreatures();
-  if (panelId === 'roadmap')   renderRoadmap();
-  if (panelId === 'home')      renderHome();
-  if (panelId === 'encyclopedia') fetchEncyclopedia();
-  if (panelId === 'illust') {
-    if (!creaturesData) {
-      // creatures.json を取得してから制作リストを描画
-      fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
-        .then(function(r) { return r.ok ? r.json() : null; })
-        .then(function(data) {
-          if (data && data.content) {
-            try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
-          }
-          if (!creaturesData) creaturesData = { version: 1, creatures: [] };
-          renderIllust();
-        })
-        .catch(function() { renderIllust(); });
-    } else {
-      renderIllust();
+
+  // パネル別の初期化
+  if (panelId === 'aquarium') {
+    fetchSeaCreatures();
+    // 図鑑サブタブが選ばれていたら図鑑も取得
+    var encSub = document.getElementById('sub-aqua-encyclopedia');
+    if (encSub && encSub.classList.contains('active')) fetchEncyclopedia();
+  }
+  if (panelId === 'quizland') {
+    var qSub = document.getElementById('sub-quiz-questions');
+    if (qSub && qSub.classList.contains('active')) renderQuestions();
+    var iSub = document.getElementById('sub-quiz-illust');
+    if (iSub && iSub.classList.contains('active')) {
+      if (!creaturesData) {
+        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(data) {
+            if (data && data.content) {
+              try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+            }
+            if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+            renderIllust();
+          })
+          .catch(function() { renderIllust(); });
+      } else {
+        renderIllust();
+      }
     }
   }
-  if (panelId === 'questions') renderQuestions();
+  if (panelId === 'roadmap') renderRoadmap();
+  if (panelId === 'home')    renderHome();
 }
 
+// メインタブ
 document.querySelectorAll('.tab').forEach(function(tab) {
   tab.addEventListener('click', function() { switchTab(tab.dataset.panel); });
+});
+
+// サブタブ切り替え
+document.querySelectorAll('.sub-tab').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var subId = btn.dataset.sub;
+    var parent = btn.closest('.panel');
+    parent.querySelectorAll('.sub-tab').forEach(function(t) { t.classList.remove('active'); });
+    parent.querySelectorAll('.sub-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var sub = document.getElementById('sub-' + subId);
+    if (sub) sub.classList.add('active');
+
+    // サブタブ切替時の初期化
+    if (subId === 'aqua-encyclopedia') fetchEncyclopedia();
+    if (subId === 'aqua-creatures')    fetchSeaCreatures();
+    if (subId === 'quiz-questions')    renderQuestions();
+    if (subId === 'quiz-illust') {
+      if (!creaturesData) {
+        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(data) {
+            if (data && data.content) {
+              try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+            }
+            if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+            renderIllust();
+          })
+          .catch(function() { renderIllust(); });
+      } else { renderIllust(); }
+    }
+  });
 });
 
 // ════════════════════════════════════════════════════════════════
