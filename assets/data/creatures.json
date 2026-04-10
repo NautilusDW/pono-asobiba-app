@@ -3130,6 +3130,28 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "cricket",
+      "displayName": "コオロギ",
+      "icon": "🦗",
+      "folder": "Cricket",
+      "expressions": {
+        "normal": "Cricket_normal_1.png",
+        "surprised": "Cricket_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 319,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
