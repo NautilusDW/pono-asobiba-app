@@ -435,6 +435,13 @@ body {
           <span id="hue-sat-val" style="font-size:0.7rem;color:#f87171;font-weight:700;width:28px;text-align:right;">0</span>
         </div>
       </div>
+      <div class="form-row">
+        <label>明るさ調整</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="range" id="hue-lit-adj" min="-40" max="40" value="0" style="flex:1">
+          <span id="hue-lit-val" style="font-size:0.7rem;color:#f87171;font-weight:700;width:28px;text-align:right;">0</span>
+        </div>
+      </div>
       <button class="btn btn-primary" id="btn-hue-apply" disabled>🎨 色を変換</button>
       <button class="btn btn-secondary" id="btn-hue-pick" disabled style="margin-top:4px">🔍 画像から色を拾う</button>
     </div>
@@ -1735,7 +1742,7 @@ document.getElementById('btn-reset-erase').addEventListener('click', () => {
 // ════════════════════════════════════════════════════════════
 
 // スライダー連動
-['hue-src','hue-dst','hue-range','hue-sat-adj'].forEach(id => {
+['hue-src','hue-dst','hue-range','hue-sat-adj','hue-lit-adj'].forEach(id => {
   const sl = document.getElementById(id);
   const valEl = document.getElementById(id + '-val');
   const swatchId = id === 'hue-src' ? 'hue-src-swatch' : id === 'hue-dst' ? 'hue-dst-swatch' : null;
@@ -1875,6 +1882,7 @@ function applyHuePreview() {
   const srcHue = parseFloat(document.getElementById('hue-src').value);
   const dstHue = parseFloat(document.getElementById('hue-dst').value);
   const satAdj = parseFloat(document.getElementById('hue-sat-adj').value);
+  const litAdj = parseFloat(document.getElementById('hue-lit-adj').value);
 
   for (let i = 0; i < w * h; i++) {
     if (!hueMask[i]) continue;
@@ -1883,7 +1891,8 @@ function applyHuePreview() {
     const hueOffset = hue - srcHue;
     const newHue = (dstHue + hueOffset + 360) % 360;
     const newSat = Math.max(0, Math.min(100, sat + satAdj));
-    const [r, g, b] = hslToRgb(newHue, newSat, lit);
+    const newLit = Math.max(0, Math.min(100, lit + litAdj));
+    const [r, g, b] = hslToRgb(newHue, newSat, newLit);
     d[idx] = r; d[idx+1] = g; d[idx+2] = b;
   }
   ctx.putImageData(imgData, 0, 0);
@@ -1902,7 +1911,7 @@ function scheduleHuePreview() {
 }
 
 // スライダー変更でリアルタイムプレビュー
-['hue-dst', 'hue-sat-adj'].forEach(id => {
+['hue-dst', 'hue-sat-adj', 'hue-lit-adj'].forEach(id => {
   document.getElementById(id).addEventListener('input', scheduleHuePreview);
 });
 
