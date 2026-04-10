@@ -2025,7 +2025,9 @@ function _buildCreatureRow(c) {
   }
   if (thumbPath) {
     var img = document.createElement('img');
-    img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#f5f5f5;border-radius:6px;';
+    img.style.cssText = 'width:50px;height:50px;object-fit:contain;background:#f5f5f5;border-radius:6px;cursor:zoom-in;';
+    img.title = 'クリックで拡大';
+    img.addEventListener('click', function(e) { e.stopPropagation(); if (img.src) showImagePreview(img.src, c.displayName || c.id); });
     // hardcode は従来通りローカルパス、dynamic は GitHub raw URL を使う
     if (c.source === 'hardcode') {
       img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
@@ -2797,7 +2799,7 @@ function fetchAndRenderStaging() {
     .then(function(data) {
       var items = [];
       if (data && data.content) {
-        try { items = JSON.parse(atob(data.content.replace(/\n/g, ''))); } catch(e) {}
+        try { items = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
       }
       if (!Array.isArray(items) || items.length === 0) {
         section.style.display = 'none';
@@ -2919,7 +2921,7 @@ function removeStaging(idx) {
     .then(function(data) {
       var items = [];
       if (data && data.content) {
-        try { items = JSON.parse(atob(data.content.replace(/\n/g, ''))); } catch(e) {}
+        try { items = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
       }
       if (!Array.isArray(items)) items = [];
       items.splice(idx, 1);
@@ -4914,7 +4916,7 @@ function renderQuestions() {
     // 画像/絵文字 表示
     var imgCell = '';
     if (q.img) {
-      imgCell = '<img src="../assets/images/ocean/' + q.img + '" style="width:32px;height:32px;object-fit:contain;border-radius:4px;" onerror="this.style.display=\'none\'">';
+      imgCell = '<img src="../assets/images/ocean/' + q.img + '" style="width:32px;height:32px;object-fit:contain;border-radius:4px;cursor:zoom-in;" onclick="showImagePreview(this.src,\'' + (q.q || '').replace(/'/g, '') + '\')" onerror="this.style.display=\'none\'">';
     } else if (q.emoji) {
       imgCell = '<span style="font-size:1.5rem;">' + q.emoji + '</span>';
     } else {
@@ -5259,21 +5261,31 @@ function renderIllust() {
         'cursor:pointer;font-size:0.72rem;font-weight:700;gap:4px;text-align:center;';
       card.title = 'クリックでステータス変更';
 
-      // サムネイル
-      var thumbHtml = '';
+      // サムネイル（クリックで拡大）
       if (creature) {
         var normFile = creature.expressions && creature.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
         if (normFile) {
           var imgPath = '../assets/images/ocean/' + creature.folder + '/' + normFile;
-          thumbHtml = '<img src="' + imgPath + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">';
+          var thumb = document.createElement('img');
+          thumb.src = imgPath;
+          thumb.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
+          thumb.title = 'クリックで拡大';
+          thumb.onerror = function() { this.style.display = 'none'; };
+          (function(src, name) {
+            thumb.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(src, name); });
+          })(imgPath, it.name);
+          card.appendChild(thumb);
         }
       }
 
-      card.innerHTML =
-        thumbHtml +
-        '<span>' + it.name + '</span>' +
-        '<span style="background:' + STATUS_COLOR[s] + ';color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;white-space:nowrap;">' + STATUS_LABEL[s] + '</span>';
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = it.name;
+      card.appendChild(nameSpan);
+      var badgeSpan = document.createElement('span');
+      badgeSpan.style.cssText = 'background:' + STATUS_COLOR[s] + ';color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;white-space:nowrap;';
+      badgeSpan.textContent = STATUS_LABEL[s];
+      card.appendChild(badgeSpan);
       card.addEventListener('click', (function(itemId) {
         return function() {
           var cur = illustGetStatus()[itemId] || 'todo';
@@ -5292,6 +5304,22 @@ function renderIllust() {
   _renderStagingIllust(container, creatureLookup);
 }
 
+// 拡大プレビューモーダル（画像クリックで大きく表示）
+function showImagePreview(src, title) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:20px;';
+  ov.addEventListener('click', function() { ov.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:16px;max-width:90vw;max-height:90vh;text-align:center;';
+  box.innerHTML =
+    '<div style="font-size:0.85rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">' + (title || '') + '</div>' +
+    '<img src="' + src + '" style="max-width:80vw;max-height:70vh;object-fit:contain;border-radius:8px;">' +
+    '<div style="margin-top:8px;font-size:0.7rem;color:#888;">クリックで閉じる</div>';
+  box.addEventListener('click', function(e) { e.stopPropagation(); });
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+}
+
 function _renderStagingIllust(container, creatureLookup) {
   var STAGING_PATH = 'assets/data/staging.json';
   fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
@@ -5299,7 +5327,7 @@ function _renderStagingIllust(container, creatureLookup) {
     .then(function(data) {
       var items = [];
       if (data && data.content) {
-        try { items = JSON.parse(atob(data.content.replace(/\n/g, ''))); } catch(e) {}
+        try { items = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
       }
       if (!Array.isArray(items) || items.length === 0) return;
 
@@ -5310,39 +5338,60 @@ function _renderStagingIllust(container, creatureLookup) {
       header.innerHTML =
         '<span style="font-size:1rem;font-weight:900;">📦 差し替え候補 (staging)</span>' +
         '<span style="background:#F59E0B;color:#fff;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">' + items.length + '体</span>' +
-        '<span style="font-size:0.72rem;color:#8B7355;">管理ダッシュボード → 水族館 → イラスト管理で採用/削除できます</span>';
+        '<span style="font-size:0.72rem;color:#8B7355;">水族館 → イラスト管理で採用/削除できます</span>';
       div.appendChild(header);
 
       var grid = document.createElement('div');
       grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;';
 
-      items.forEach(function(entry) {
+      items.forEach(function(entry, idx) {
         var card = document.createElement('div');
         card.style.cssText =
-          'display:flex;flex-direction:column;align-items:center;padding:8px 6px;' +
+          'display:flex;flex-direction:column;align-items:center;padding:8px 6px;position:relative;' +
           'border-radius:10px;border:2px solid #F59E0B;background:#FFFBEB;' +
           'font-size:0.72rem;font-weight:700;gap:4px;text-align:center;';
 
-        // サムネイル
         var normFile = entry.expressions && entry.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
-        if (normFile) {
-          card.innerHTML += '<img src="../assets/images/staging/' + entry.folder + '/' + normFile + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">';
+        var imgSrc = normFile ? '../assets/images/staging/' + entry.folder + '/' + normFile : '';
+
+        // サムネイル（クリックで拡大）
+        if (imgSrc) {
+          var img = document.createElement('img');
+          img.src = imgSrc;
+          img.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
+          img.title = 'クリックで拡大';
+          img.onerror = function() { this.style.display = 'none'; };
+          img.addEventListener('click', function() { showImagePreview(imgSrc, entry.displayName || entry.id); });
+          card.appendChild(img);
         }
 
-        // 既存の画像も小さく表示（比較）
+        // 既存画像との比較（小さく右上に）
         var existing = creatureLookup[entry.id];
         if (existing) {
           var existNorm = existing.expressions && existing.expressions.normal;
           if (Array.isArray(existNorm)) existNorm = existNorm[0];
           if (existNorm) {
-            card.innerHTML += '<img src="../assets/images/ocean/' + existing.folder + '/' + existNorm + '" style="width:28px;height:28px;object-fit:contain;border-radius:4px;border:1px solid #86EFAC;position:absolute;top:2px;right:2px;" title="現在の画像" onerror="this.style.display=\'none\'">';
-            card.style.position = 'relative';
+            var curSrc = '../assets/images/ocean/' + existing.folder + '/' + existNorm;
+            var curImg = document.createElement('img');
+            curImg.src = curSrc;
+            curImg.style.cssText = 'width:24px;height:24px;object-fit:contain;border-radius:4px;border:1px solid #86EFAC;position:absolute;top:4px;right:4px;cursor:zoom-in;';
+            curImg.title = '現在の画像（クリックで拡大）';
+            curImg.onerror = function() { this.style.display = 'none'; };
+            curImg.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(curSrc, '現在: ' + (entry.displayName || entry.id)); });
+            card.appendChild(curImg);
           }
         }
 
-        card.innerHTML += '<span>' + (entry.displayName || entry.id) + '</span>';
-        card.innerHTML += '<span style="background:#F59E0B;color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;">差し替え候補</span>';
+        var nameEl = document.createElement('span');
+        nameEl.textContent = entry.displayName || entry.id;
+        card.appendChild(nameEl);
+
+        var badge = document.createElement('span');
+        badge.style.cssText = 'background:#F59E0B;color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;';
+        badge.textContent = '差し替え候補';
+        card.appendChild(badge);
+
         grid.appendChild(card);
       });
 
