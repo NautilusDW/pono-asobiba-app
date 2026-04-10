@@ -2518,7 +2518,7 @@
     {
       "id": "eyes",
       "displayName": "め",
-      "icon": "👀",
+      "icon": "🧍",
       "folder": "Eyes",
       "expressions": {
         "normal": "Eyes_normal_1.png",
@@ -2529,7 +2529,7 @@
       "facingDir": "right",
       "baseSizePx": 70,
       "baseSizeJitter": 30,
-      "imgWidthHint": 292,
+      "imgWidthHint": 290,
       "speedMin": 0.04,
       "speedMax": 0.07,
       "spawnCount": 3,
@@ -3146,6 +3146,28 @@
       "baseSizePx": 70,
       "baseSizeJitter": 30,
       "imgWidthHint": 319,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "lady_beetle",
+      "displayName": "てんとうむし",
+      "icon": "ÃÂ°ÃÂÃÂÃÂ",
+      "folder": "Lady_beetle",
+      "expressions": {
+        "normal": "Lady_beetle_normal_1.png",
+        "surprised": "Lady_beetle_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 309,
       "speedMin": 0.04,
       "speedMax": 0.07,
       "spawnCount": 3,
