@@ -621,25 +621,52 @@ ghTokenInput.addEventListener('input', () => {
 // BG Removal: slider ↔ number input sync + auto-reprocess
 // ════════════════════════════════════════════════════════════
 let reprocessTimer = null;
-function scheduleReprocess() {
+
+// 背景除去パラメータ変更 → 全体再処理
+function scheduleBgReprocess() {
   if (!document.getElementById('auto-reprocess').checked) return;
   clearTimeout(reprocessTimer);
-  if (processedRaw && processedCanvas) {
-    // 処理済みの場合: processedRaw はそのまま、仕上げだけ再適用
-    reprocessTimer = setTimeout(() => {
-      applyFinish();
-      redrawCompare();
-    }, 200);
-  } else {
-    reprocessTimer = setTimeout(runProcess, 120);
-  }
+  reprocessTimer = setTimeout(runProcess, 150);
 }
 
-// Bind slider + number-input pairs for BG removal params
+// 仕上げパラメータ変更 → 仕上げだけ再適用
+function scheduleFinishReprocess() {
+  if (!document.getElementById('auto-reprocess').checked) return;
+  if (!processedRaw) return;
+  clearTimeout(reprocessTimer);
+  reprocessTimer = setTimeout(() => {
+    applyFinish();
+    redrawCompare();
+  }, 150);
+}
+
+// Bind slider + number-input pairs
+// 背景除去パラメータ（変更すると全体再処理）
 [
   ['tolerance', 'tol-val',     parseInt],
-  ['feather',   'feather-val', parseFloat],
   ['graytol',   'graytol-val', parseInt],
+].forEach(([sliderId, inputId, parse]) => {
+  const slider = document.getElementById(sliderId);
+  const numIn  = document.getElementById(inputId);
+  slider.addEventListener('input', () => {
+    numIn.value = slider.value;
+    scheduleBgReprocess();
+  });
+  numIn.addEventListener('input', () => {
+    const v = parse(numIn.value);
+    if (!isNaN(v)) {
+      slider.value = Math.max(+slider.min, Math.min(+slider.max, v));
+      scheduleBgReprocess();
+    }
+  });
+  numIn.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { numIn.blur(); runProcess(); }
+  });
+});
+
+// 仕上げパラメータ（変更すると仕上げだけ再適用、背景除去はやり直さない）
+[
+  ['feather',   'feather-val', parseFloat],
   ['shrink',    'shrink-val',  parseInt],
   ['ablur',     'ablur-val',   parseFloat],
 ].forEach(([sliderId, inputId, parse]) => {
@@ -647,17 +674,17 @@ function scheduleReprocess() {
   const numIn  = document.getElementById(inputId);
   slider.addEventListener('input', () => {
     numIn.value = slider.value;
-    scheduleReprocess();
+    scheduleFinishReprocess();
   });
   numIn.addEventListener('input', () => {
     const v = parse(numIn.value);
     if (!isNaN(v)) {
       slider.value = Math.max(+slider.min, Math.min(+slider.max, v));
-      scheduleReprocess();
+      scheduleFinishReprocess();
     }
   });
   numIn.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { numIn.blur(); runProcess(); }
+    if (e.key === 'Enter') { numIn.blur(); applyFinish(); redrawCompare(); }
   });
 });
 
