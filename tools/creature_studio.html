@@ -2690,7 +2690,7 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
   if (dupGroups.length > 0) {
     const dupNames = dupGroups.map(g => `「${g.name}」(${g.id})`).join(', ');
-    showToast(`⚠️ ${dupGroups.length}体が重複 → staging に保存します: ${dupNames}`, false);
+    showToast(`📦 ${dupGroups.length}体が重複 → staging に保存します: ${dupNames}`, true);
   }
 
   // 全グループの画像をアップロード（新規は ocean/、重複は staging/）
