@@ -2056,14 +2056,19 @@ document.getElementById('btn-save-session').addEventListener('click', async () =
       raw: await canvasToBlob(processedRaw),
       links: linkLines,
       keepBackground: keepBackground,
-      sprites: sprites.map((sp, i) => ({
-        blob: spriteBlobs[i],
-        srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
-        name: sp.name, id: sp.id, icon: sp.icon, expr: sp.expr,
-        facing: sp.facing, sizePx: sp.sizePx, count: sp.count,
-        pattern: sp.pattern, reaction: sp.reaction,
-        speed: sp.speed, duration: sp.duration
-      })),
+      sprites: sprites.map((sp, i) => {
+        const card = document.querySelector(`.sprite-card[data-idx="${i}"]`);
+        const checked = card ? card.classList.contains('selected') : true;
+        return {
+          blob: spriteBlobs[i],
+          srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
+          name: sp.name, id: sp.id, icon: sp.icon, expr: sp.expr,
+          facing: sp.facing, sizePx: sp.sizePx, count: sp.count,
+          pattern: sp.pattern, reaction: sp.reaction,
+          speed: sp.speed, duration: sp.duration,
+          checked: checked
+        };
+      }),
       settings: {
         tolerance:  document.getElementById('tolerance').value,
         feather:    document.getElementById('feather').value,
@@ -2136,6 +2141,7 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
 
     // スプライト復元
     if (session.sprites && session.sprites.length) {
+      const checkedStates = session.sprites.map(sp => sp.checked !== false);
       sprites = await Promise.all(session.sprites.map(async sp => ({
         canvas: sp.blob ? await blobToCanvas(sp.blob) : document.createElement('canvas'),
         srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
@@ -2145,6 +2151,15 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
         speed: sp.speed || 1.0, duration: sp.duration || 1.0
       })));
       renderSpritesGrid();
+      // チェック状態を復元
+      checkedStates.forEach((checked, i) => {
+        const card = document.querySelector(`.sprite-card[data-idx="${i}"]`);
+        if (card) {
+          card.classList.toggle('selected', checked);
+          const cb = card.querySelector('.sp-check');
+          if (cb) cb.checked = checked;
+        }
+      });
     }
 
     clearEraseUndo();
