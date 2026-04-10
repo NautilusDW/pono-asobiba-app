@@ -402,7 +402,44 @@ body {
       </div>
     </div>
 
-    <!-- 4. GitHub Token -->
+    <!-- 4. 色変換 -->
+    <div class="section">
+      <div class="section-title">4. 色変換</div>
+      <div class="form-row">
+        <label>元の色相（クリックで拾う）</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div id="hue-src-swatch" style="width:24px;height:24px;border-radius:6px;border:2px solid #374151;background:hsl(120,80%,50%);flex-shrink:0;"></div>
+          <input type="range" id="hue-src" min="0" max="360" value="120" style="flex:1;accent-color:#22c55e">
+          <span id="hue-src-val" style="font-size:0.7rem;color:#f87171;font-weight:700;width:28px;text-align:right;">120°</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>色相の幅 ±</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="range" id="hue-range" min="5" max="90" value="30" style="flex:1">
+          <span id="hue-range-val" style="font-size:0.7rem;color:#f87171;font-weight:700;width:28px;text-align:right;">±30°</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>変換先の色相</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div id="hue-dst-swatch" style="width:24px;height:24px;border-radius:6px;border:2px solid #374151;background:hsl(30,80%,50%);flex-shrink:0;"></div>
+          <input type="range" id="hue-dst" min="0" max="360" value="30" style="flex:1;accent-color:#f59e0b">
+          <span id="hue-dst-val" style="font-size:0.7rem;color:#f87171;font-weight:700;width:28px;text-align:right;">30°</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>彩度調整</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="range" id="hue-sat-adj" min="-50" max="50" value="0" style="flex:1">
+          <span id="hue-sat-val" style="font-size:0.7rem;color:#f87171;font-weight:700;width:28px;text-align:right;">0</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-hue-apply" disabled>🎨 色を変換</button>
+      <button class="btn btn-secondary" id="btn-hue-pick" disabled style="margin-top:4px">🔍 画像から色を拾う</button>
+    </div>
+
+    <!-- 5. GitHub Token -->
     <div class="section">
       <div class="section-title">4. GitHub トークン</div>
       <div class="form-row">
@@ -1049,6 +1086,7 @@ document.getElementById('box-proc').addEventListener('contextmenu', e => {
 
 // ── ポイント消去: クリック（processedRaw に対して消去）──
 document.getElementById('box-proc').addEventListener('click', e => {
+  if (huePickMode) return; // 色拾いモード中はスキップ
   if (!eraseMode || eraseTool !== 'point' || !processedRaw || panMoved) return;
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
@@ -1555,6 +1593,8 @@ function runProcess(showUI) {
   document.getElementById('btn-finish').disabled = false;
   document.getElementById('btn-reset-erase').disabled = false;
   document.getElementById('btn-save-session').disabled = false;
+  document.getElementById('btn-hue-apply').disabled = false;
+  document.getElementById('btn-hue-pick').disabled = false;
   if (showUI) { hideLoading(); showToast('背景除去完了！', true); }
 }
 
@@ -1659,6 +1699,124 @@ document.getElementById('btn-reset-erase').addEventListener('click', () => {
 });
 
 // ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// Hue Shift（色変換）
+// ════════════════════════════════════════════════════════════
+
+// スライダー連動
+['hue-src','hue-dst','hue-range','hue-sat-adj'].forEach(id => {
+  const sl = document.getElementById(id);
+  const valEl = document.getElementById(id + '-val');
+  const swatchId = id === 'hue-src' ? 'hue-src-swatch' : id === 'hue-dst' ? 'hue-dst-swatch' : null;
+  sl.addEventListener('input', () => {
+    if (id === 'hue-range') valEl.textContent = '±' + sl.value + '°';
+    else if (id === 'hue-sat-adj') valEl.textContent = sl.value;
+    else valEl.textContent = sl.value + '°';
+    if (swatchId) document.getElementById(swatchId).style.background = 'hsl(' + sl.value + ',80%,50%)';
+  });
+});
+
+// RGB ↔ HSL 変換
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d + 2)/6; break;
+      case b: h = ((r-g)/d + 4)/6; break;
+    }
+  }
+  return [h*360, s*100, l*100];
+}
+function hslToRgb(h, s, l) {
+  h /= 360; s /= 100; l /= 100;
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => { if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+    const q = l < 0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l - q;
+    r = hue2rgb(p, q, h+1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h-1/3);
+  }
+  return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
+}
+
+// 色相距離（0-180）
+function hueDist(a, b) {
+  const d = Math.abs(a - b);
+  return d > 180 ? 360 - d : d;
+}
+
+// 色変換適用
+document.getElementById('btn-hue-apply').addEventListener('click', () => {
+  if (!processedRaw) return;
+  const srcHue = parseFloat(document.getElementById('hue-src').value);
+  const dstHue = parseFloat(document.getElementById('hue-dst').value);
+  const range  = parseFloat(document.getElementById('hue-range').value);
+  const satAdj = parseFloat(document.getElementById('hue-sat-adj').value);
+
+  pushEraseUndo(); // 戻せるように
+
+  const w = processedRaw.width, h = processedRaw.height;
+  const ctx = processedRaw.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  for (let i = 0; i < w * h; i++) {
+    const idx = i * 4;
+    if (d[idx+3] < 10) continue; // 透明スキップ
+    const [hue, sat, lit] = rgbToHsl(d[idx], d[idx+1], d[idx+2]);
+    if (hueDist(hue, srcHue) <= range) {
+      // 色相をシフト（元の色相からの差分を保持）
+      const hueOffset = hue - srcHue;
+      let newHue = (dstHue + hueOffset + 360) % 360;
+      let newSat = Math.max(0, Math.min(100, sat + satAdj));
+      const [r, g, b] = hslToRgb(newHue, newSat, lit);
+      d[idx] = r; d[idx+1] = g; d[idx+2] = b;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  applyFinish();
+  redrawCompare();
+  showToast('色を変換しました（↩ 戻すで取り消し可）', true);
+});
+
+// 画像から色を拾う
+let huePickMode = false;
+document.getElementById('btn-hue-pick').addEventListener('click', () => {
+  huePickMode = !huePickMode;
+  document.getElementById('btn-hue-pick').classList.toggle('active', huePickMode);
+  document.getElementById('box-proc').style.cursor = huePickMode ? 'crosshair' : '';
+  if (huePickMode) { setEraseMode(false); setLinkMode(false); }
+});
+
+document.getElementById('box-proc').addEventListener('click', e => {
+  if (!huePickMode || !processedRaw) return;
+  const coord = clickToProcessedCoord(e);
+  if (!coord) return;
+  const ctx = processedRaw.getContext('2d');
+  const px = ctx.getImageData(coord.x, coord.y, 1, 1).data;
+  if (px[3] < 10) return;
+  const [h] = rgbToHsl(px[0], px[1], px[2]);
+  document.getElementById('hue-src').value = Math.round(h);
+  document.getElementById('hue-src-val').textContent = Math.round(h) + '°';
+  document.getElementById('hue-src-swatch').style.background = 'hsl(' + Math.round(h) + ',80%,50%)';
+  huePickMode = false;
+  document.getElementById('btn-hue-pick').classList.remove('active');
+  document.getElementById('box-proc').style.cursor = '';
+  showToast('色相 ' + Math.round(h) + '° を拾いました', true);
+}, true); // capture=true で消去モードより先に処理
+
+// runProcess 後にボタン有効化
+// (既存のrunProcess内に追加が必要)
+
 // Session Save / Load
 // ════════════════════════════════════════════════════════════
 // IndexedDB ベースのセッション保存（localStorage の5MB制限を回避）
