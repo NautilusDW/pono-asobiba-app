@@ -437,6 +437,14 @@ tr:hover { background: #FFFAF0; }
     <div id="sea-creatures-list"></div>
   </div>
 
+  <div class="section" id="staging-section" style="display:none">
+    <div class="section-title">📦 ステージング（差し替え候補）</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      重複IDで登録されたイラストです。「採用」で既存を上書き、「削除」でステージングから除去。
+    </div>
+    <div id="staging-list"></div>
+  </div>
+
   <div class="section">
     <div class="section-title">➕ 新しいいきものを追加</div>
     <div style="font-size:0.75rem;color:#888;margin:-6px 0 6px;">
@@ -685,6 +693,7 @@ tr:hover { background: #FFFAF0; }
       <table id="q-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
         <thead>
           <tr>
+            <th style="text-align:center;padding:7px 4px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;width:40px;">画像</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;white-space:nowrap;">カテゴリー</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;white-space:nowrap;">難易度</th>
             <th style="text-align:left;padding:7px 8px;color:#FF6B9D;border-bottom:2px solid #FFF0F5;font-size:0.72rem;">もんだい</th>
@@ -2772,6 +2781,153 @@ function renderSeaCreatures() {
     var clone = Object.assign({}, c, { source: 'dynamic' });
     listEl.appendChild(_buildCreatureRow(clone));
   });
+
+  // staging.json の読み込みと表示
+  fetchAndRenderStaging();
+}
+
+function fetchAndRenderStaging() {
+  var STAGING_PATH = 'assets/data/staging.json';
+  var section = document.getElementById('staging-section');
+  var listEl = document.getElementById('staging-list');
+  if (!section || !listEl) return;
+
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      var items = [];
+      if (data && data.content) {
+        try { items = JSON.parse(atob(data.content.replace(/\n/g, ''))); } catch(e) {}
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = '';
+      listEl.innerHTML = '';
+      items.forEach(function(entry, idx) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FFFBEB;border:2px solid #FDE68A;border-radius:10px;margin-bottom:8px;';
+
+        // サムネイル（staging フォルダから）
+        var normFile = entry.expressions && entry.expressions.normal;
+        if (Array.isArray(normFile)) normFile = normFile[0];
+        if (normFile) {
+          var img = document.createElement('img');
+          img.src = '../assets/images/staging/' + entry.folder + '/' + normFile;
+          img.style.cssText = 'width:60px;height:60px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid #E0D8CC;';
+          img.onerror = function() { this.style.display = 'none'; };
+          row.appendChild(img);
+        }
+
+        // 既存の画像も表示（比較用）
+        var existing = creaturesData ? creaturesData.creatures.find(function(c) { return c.id === entry.id; }) : null;
+        if (existing) {
+          var existNorm = existing.expressions && existing.expressions.normal;
+          if (Array.isArray(existNorm)) existNorm = existNorm[0];
+          if (existNorm) {
+            var curImg = document.createElement('img');
+            curImg.src = '../assets/images/ocean/' + existing.folder + '/' + existNorm;
+            curImg.style.cssText = 'width:60px;height:60px;object-fit:contain;background:#F0FDF4;border-radius:8px;border:1px solid #86EFAC;';
+            curImg.title = '現在の画像';
+            curImg.onerror = function() { this.style.display = 'none'; };
+            row.appendChild(curImg);
+          }
+        }
+
+        // 情報
+        var info = document.createElement('div');
+        info.style.cssText = 'flex:1;';
+        info.innerHTML =
+          '<div style="font-weight:900;color:#92400E;">' + (entry.displayName || entry.id) + '</div>' +
+          '<div style="font-size:0.68rem;color:#888;font-family:monospace;">' + entry.id + (existing ? ' (既存あり)' : ' (新規ID)') + '</div>' +
+          '<div style="font-size:0.65rem;color:#aaa;">' + (entry._stagedAt ? new Date(entry._stagedAt).toLocaleString('ja-JP') : '') + '</div>';
+        row.appendChild(info);
+
+        // 採用ボタン（既存を上書き）
+        var adoptBtn = document.createElement('button');
+        adoptBtn.textContent = '✅ 採用';
+        adoptBtn.title = existing ? '既存の画像を上書きして採用' : 'creatures.json に追加';
+        adoptBtn.style.cssText = 'padding:6px 12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;';
+        adoptBtn.addEventListener('click', function() { adoptStaging(idx, entry); });
+        row.appendChild(adoptBtn);
+
+        // 削除ボタン
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️';
+        delBtn.title = 'ステージングから削除';
+        delBtn.style.cssText = 'padding:6px 10px;background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;';
+        delBtn.addEventListener('click', function() { removeStaging(idx); });
+        row.appendChild(delBtn);
+
+        listEl.appendChild(row);
+      });
+    })
+    .catch(function() { section.style.display = 'none'; });
+}
+
+// staging → 採用（ocean にコピー + creatures.json 更新）
+function adoptStaging(idx, entry) {
+  if (!confirm('「' + (entry.displayName || entry.id) + '」を採用しますか？\n既存の画像があれば上書きされます。')) return;
+  showToast('採用処理中...', true);
+
+  var STAGING_PATH = 'assets/data/staging.json';
+  // staging の画像を ocean にコピー
+  var normFile = entry.expressions && entry.expressions.normal;
+  if (Array.isArray(normFile)) normFile = normFile[0];
+  var srcPath = 'assets/images/staging/' + entry.folder + '/' + normFile;
+  var dstPath = 'assets/images/ocean/' + entry.folder + '/' + normFile;
+
+  // GitHub から staging 画像のコンテンツを取得してoceanに書き込み
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.content) throw new Error('staging 画像が見つかりません');
+      return ghUploadPromise(dstPath, data.content.replace(/\n/g, ''), '✅ adopt staging: ' + entry.id);
+    })
+    .then(function() {
+      // creatures.json 更新
+      if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+      var existIdx = creaturesData.creatures.findIndex(function(c) { return c.id === entry.id; });
+      var clean = Object.assign({}, entry);
+      delete clean._staging; delete clean._stagedAt; delete clean._duplicateOf;
+      if (existIdx >= 0) {
+        creaturesData.creatures[existIdx] = clean;
+      } else {
+        creaturesData.creatures.push(clean);
+      }
+      return ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '✅ adopt creature: ' + entry.id);
+    })
+    .then(function() {
+      // staging.json から削除
+      return removeStaging(idx);
+    })
+    .then(function() {
+      showToast('✅ 「' + (entry.displayName || entry.id) + '」を採用しました', true);
+      fetchSeaCreatures();
+    })
+    .catch(function(e) {
+      showToast('採用失敗: ' + e.message, false);
+    });
+}
+
+// staging.json から1件削除
+function removeStaging(idx) {
+  var STAGING_PATH = 'assets/data/staging.json';
+  return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      var items = [];
+      if (data && data.content) {
+        try { items = JSON.parse(atob(data.content.replace(/\n/g, ''))); } catch(e) {}
+      }
+      if (!Array.isArray(items)) items = [];
+      items.splice(idx, 1);
+      return ghUploadPromise(STAGING_PATH, utf8ToBase64(JSON.stringify(items, null, 2)), '📦 remove from staging');
+    })
+    .then(function() {
+      fetchAndRenderStaging();
+    });
 }
 
 // ghUpload を Promise 化
@@ -4755,8 +4911,19 @@ function renderQuestions() {
     var correctChoice = q.choices ? choiceLabel(q.choices[q.answer]) : (q.word || '-');
     var otherChoices  = q.choices ? q.choices.filter(function(_, i) { return i !== q.answer; }).map(choiceLabel).join(' / ') : '-';
     var qText = q.q || ('「' + (q.word || q.emoji || '') + '」の はんたいは？');
+    // 画像/絵文字 表示
+    var imgCell = '';
+    if (q.img) {
+      imgCell = '<img src="../assets/images/ocean/' + q.img + '" style="width:32px;height:32px;object-fit:contain;border-radius:4px;" onerror="this.style.display=\'none\'">';
+    } else if (q.emoji) {
+      imgCell = '<span style="font-size:1.5rem;">' + q.emoji + '</span>';
+    } else {
+      imgCell = '<span style="color:#ccc">-</span>';
+    }
+
     var tr = document.createElement('tr');
     tr.innerHTML =
+      '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;text-align:center;">' + imgCell + '</td>' +
       '<td style="padding:7px 8px;border-bottom:1px solid #F5F0E8;white-space:nowrap;">' +
         '<span style="font-size:1rem;">' + meta.emoji + '</span> ' +
         '<span style="font-size:0.72rem;color:#5D4E37;">' + meta.label + '</span>' +

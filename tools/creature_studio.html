@@ -2633,25 +2633,48 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
   await fetchCreaturesData();
 
   const existingIds = new Set([...HARDCODED_IDS, ...creaturesData.creatures.map(c => c.id)]);
+  const existingNames = new Set(creaturesData.creatures.map(c => c.displayName));
+
+  // 重複/新規を分類
+  const newGroups = [], dupGroups = [];
   for (const [, g] of groups) {
-    if (existingIds.has(g.id)) {
-      hideLoading();
-      showToast(`ID "${g.id}" は既に登録済みです。IDを変更してください。`, false);
-      return;
+    if (existingIds.has(g.id) || existingNames.has(g.name)) {
+      dupGroups.push(g);
+    } else {
+      newGroups.push(g);
     }
   }
 
-  // Count total uploads（surprisedがnormalと同一の場合も1回はアップロード必要）
+  if (dupGroups.length > 0) {
+    const dupNames = dupGroups.map(g => `「${g.name}」(${g.id})`).join(', ');
+    showToast(`⚠️ ${dupGroups.length}体が重複 → staging に保存します: ${dupNames}`, false);
+  }
+
+  // 全グループの画像をアップロード（新規は ocean/、重複は staging/）
   let totalUploads = 0;
-  for (const [, g] of groups) {
+  const allGroups = [...newGroups, ...dupGroups];
+  for (const g of allGroups) {
     const hasSeparateSurprised = !g.normal.includes(g.surprised);
     totalUploads += g.normal.length + (hasSeparateSurprised ? 1 : 0) + (g.happy ? 1 : 0);
   }
   let uploaded = 0;
 
+  // staging.json の取得
+  const STAGING_PATH = 'assets/data/staging.json';
+  let stagingData = [];
   try {
-    for (const [, g] of groups) {
-      // 生き物設定はグループの代表スプライト（コマ1）から読む
+    const sr = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${STAGING_PATH}?ref=${GH_BRANCH}&_=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
+    if (sr.ok) {
+      const sd = await sr.json();
+      if (sd.content) stagingData = JSON.parse(atob(sd.content.replace(/\n/g, '')));
+    }
+  } catch {}
+  if (!Array.isArray(stagingData)) stagingData = [];
+
+  try {
+    for (const g of allGroups) {
+      const isDup = dupGroups.includes(g);
+      const baseDir = isDup ? 'assets/images/staging' : 'assets/images/ocean';
       const rep = g.normal[0] || g.surprised;
       const facing   = rep.facing   || 'right';
       const sizePx   = rep.sizePx   || 70;
@@ -2669,29 +2692,29 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
       for (let i = 0; i < g.normal.length; i++) {
         const label = g.normal.length > 1 ? `コマ${i+1}` : 'ふつう';
-        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (${label})`);
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (${label})${isDup ? ' [staging]' : ''}`);
         await ghUploadPromise(
-          `assets/images/ocean/${folder}/${normNames[i]}`,
+          `${baseDir}/${folder}/${normNames[i]}`,
           canvasToBase64(g.normal[i].canvas),
-          `🐠 studio: ${g.id} / ${normNames[i]}`
+          `🐠 studio: ${g.id} / ${normNames[i]}${isDup ? ' (staging)' : ''}`
         );
       }
 
       if (hasSeparateSurprised) {
-        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (おどろき)`);
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (おどろき)${isDup ? ' [staging]' : ''}`);
         await ghUploadPromise(
-          `assets/images/ocean/${folder}/${surprName}`,
+          `${baseDir}/${folder}/${surprName}`,
           canvasToBase64(g.surprised.canvas),
-          `🐠 studio: ${g.id} / ${surprName}`
+          `🐠 studio: ${g.id} / ${surprName}${isDup ? ' (staging)' : ''}`
         );
       }
 
       if (g.happy) {
-        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (わらう)`);
+        setStatus(`🔄 アップロード中 ${++uploaded}/${totalUploads} — ${g.name} (わらう)${isDup ? ' [staging]' : ''}`);
         await ghUploadPromise(
-          `assets/images/ocean/${folder}/${happyName}`,
+          `${baseDir}/${folder}/${happyName}`,
           canvasToBase64(g.happy.canvas),
-          `🐠 studio: ${g.id} / ${happyName}`
+          `🐠 studio: ${g.id} / ${happyName}${isDup ? ' (staging)' : ''}`
         );
       }
 
@@ -2709,18 +2732,42 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
         rewardType: 'sea'
       };
       if (happyName) entry.expressions.happy = happyName;
-      creaturesData.creatures.push(entry);
+
+      if (isDup) {
+        entry._staging = true;
+        entry._stagedAt = new Date().toISOString();
+        entry._duplicateOf = g.id;
+        stagingData.push(entry);
+      } else {
+        creaturesData.creatures.push(entry);
+      }
     }
 
-    setStatus('🔄 creatures.json を更新中...');
-    await ghUploadPromise(
-      CREATURES_PATH,
-      utf8ToBase64(JSON.stringify(creaturesData, null, 2)),
-      `🐠 studio: register ${groups.size} creature(s)`
-    );
+    // creatures.json 更新（新規のみ）
+    if (newGroups.length > 0) {
+      setStatus('🔄 creatures.json を更新中...');
+      await ghUploadPromise(
+        CREATURES_PATH,
+        utf8ToBase64(JSON.stringify(creaturesData, null, 2)),
+        `🐠 studio: register ${newGroups.length} creature(s)`
+      );
+    }
+
+    // staging.json 更新（重複があれば）
+    if (dupGroups.length > 0) {
+      setStatus('🔄 staging.json を更新中...');
+      await ghUploadPromise(
+        STAGING_PATH,
+        utf8ToBase64(JSON.stringify(stagingData, null, 2)),
+        `📦 studio: stage ${dupGroups.length} duplicate(s)`
+      );
+    }
 
     hideLoading();
-    setStatus(`✅ ${groups.size}体を登録しました！水族館を確認してください。`);
+    let msg = '';
+    if (newGroups.length > 0) msg += `✅ ${newGroups.length}体を登録`;
+    if (dupGroups.length > 0) msg += `${msg ? ' / ' : ''}📦 ${dupGroups.length}体をstaging保存`;
+    setStatus(msg);
     showToast(`🐠 ${groups.size}体の生き物を登録しました`, true);
 
   } catch (e) {
