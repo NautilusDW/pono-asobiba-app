@@ -1911,21 +1911,15 @@ function applyHuePreview() {
     d[idx+2] = Math.max(0, Math.min(255, Math.round(b)));
   }
 
-  // 背景復元: 元画像で「白（背景）」だったピクセルを元の色に戻す
-  // hueMask内であっても、元々白だった部分はスナップショットで上書き
-  // → HSL丸め誤差のノイズが白背景部分に乗るのを完全に防ぐ
-  const bgThreshold = 240; // R,G,B 全てがこれ以上なら「白（背景）」とみなす
+  // 背景復元: 元画像で「背景」だったピクセルを元の色に戻す
+  // 判定: 彩度が低く明度が高い = 白〜グレー系の背景
   for (let i = 0; i < w * h; i++) {
     const idx = i * 4;
     const sR = snapD[idx], sG = snapD[idx+1], sB = snapD[idx+2];
-    if (sR >= bgThreshold && sG >= bgThreshold && sB >= bgThreshold) {
-      // 元々白だった → スナップショットで復元
-      d[idx]   = sR;
-      d[idx+1] = sG;
-      d[idx+2] = sB;
-      d[idx+3] = snapD[idx+3];
-    } else if (!hueMask[i]) {
-      // 白でないが色変換対象でもない → スナップショットで復元
+    const [, sSat, sLit] = rgbToHsl(sR, sG, sB);
+    const isBg = (sSat < 12 && sLit > 85) || // 白〜薄グレー
+                 (snapD[idx+3] < 10);          // 透明
+    if (isBg || !hueMask[i]) {
       d[idx]   = sR;
       d[idx+1] = sG;
       d[idx+2] = sB;
