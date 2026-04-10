@@ -3251,15 +3251,27 @@ function adoptStaging(idx, entry) {
   // 既存エントリのセレクト構築
   var sel = box.querySelector('#adopt-target');
   var preview = box.querySelector('#adopt-target-preview');
+  var bestMatch = -1;
   if (creaturesData && creaturesData.creatures) {
+    var entryName = (entry.displayName || '').toLowerCase();
+    var entryId = (entry.id || '').toLowerCase();
     creaturesData.creatures.forEach(function(c, i) {
       var opt = document.createElement('option');
       opt.value = i;
       opt.textContent = c.displayName + ' (' + c.id + ')';
-      // IDが近いものを初期選択
-      if (c.id === entry.id || c.id === entry._duplicateOf) opt.selected = true;
       sel.appendChild(opt);
+      // ベストマッチを探す（ID完全一致 > displayName一致 > ID部分一致 > displayName部分一致）
+      if (bestMatch < 0) {
+        var cId = (c.id || '').toLowerCase();
+        var cName = (c.displayName || '').toLowerCase();
+        if (cId === entryId) bestMatch = i;
+        else if (cName === entryName && entryName) bestMatch = i;
+        else if (entryId && cId.indexOf(entryId) >= 0) bestMatch = i;
+        else if (entryId && entryId.indexOf(cId) >= 0) bestMatch = i;
+        else if (entryName && cName === entryName) bestMatch = i;
+      }
     });
+    if (bestMatch >= 0) sel.value = bestMatch;
   }
 
   function updatePreview() {
