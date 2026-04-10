@@ -5946,11 +5946,28 @@ function _renderStagingIllust(container, creatureLookup) {
         badge.textContent = '差し替え候補';
         card.appendChild(badge);
 
+        // ボタン行
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:3px;margin-top:2px;';
+
+        // 採用ボタン
+        var adoptBtn = document.createElement('button');
+        adoptBtn.textContent = '✅';
+        adoptBtn.title = '採用（既存を差し替え）';
+        adoptBtn.style.cssText = 'background:#D1FAE5;border:1px solid #6EE7B7;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+        (function(i, e) {
+          adoptBtn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            adoptStaging(i, e);
+          });
+        })(idx, entry);
+        btnRow.appendChild(adoptBtn);
+
         // 削除ボタン
         var delBtn = document.createElement('button');
         delBtn.textContent = '🗑️';
         delBtn.title = 'ステージングから削除';
-        delBtn.style.cssText = 'background:#FEE2E2;border:1px solid #FCA5A5;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;margin-top:2px;';
+        delBtn.style.cssText = 'background:#FEE2E2;border:1px solid #FCA5A5;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
         (function(i) {
           delBtn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -5958,7 +5975,9 @@ function _renderStagingIllust(container, creatureLookup) {
             removeStaging(i).then(function() { renderIllust(); });
           });
         })(idx);
-        card.appendChild(delBtn);
+        btnRow.appendChild(delBtn);
+
+        card.appendChild(btnRow);
 
         grid.appendChild(card);
       });
