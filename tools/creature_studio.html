@@ -948,25 +948,36 @@ function pointEraseFill(startX, startY, tolerance) {
   }
   ctx.putImageData(imgData, 0, 0);
 
-  // フチなめらか: 消去境界付近のアルファにboxBlurをかける（背景除去と同品質）
-  // 境界から±R px の範囲だけ処理（全体ブラーは重いので局所的に）
+  // フチなめらか: 消去境界の両側にboxBlurをかける（背景除去と同品質）
   const featherR = parseFloat(document.getElementById('feather').value) || 2;
   if (featherR > 0) {
-    const R = Math.ceil(featherR) + 1;
-    // 消去境界の近傍ピクセルを収集（境界からR px以内）
-    const nearBorder = new Uint8Array(w * h);
+    const R = Math.ceil(featherR) + 2; // +2: blurカーネルが境界を越えるための余裕
+    // 境界の両側（消去側+非消去側）からR px の範囲を blurRegion に含める
+    const blurRegion = new Uint8Array(w * h);
+    // 現在のアルファ状態を取得（既に消去済みのピクセルを正しく判定するため）
+    const curAlpha = ctx.getImageData(0, 0, w, h).data;
     let ring = [];
+
+    // Step 1: 消去ピクセルで不透明な隣接を持つもの＝境界
     for (let hi = 0; hi < tail; hi++) {
       const pi = queue[hi];
       const px = pi % w, py = (pi - px) / w;
+      let hasFg = false;
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
         const nx = px+dx, ny = py+dy;
         if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
         const ni = ny*w+nx;
-        if (!visited[ni] && !nearBorder[ni]) { nearBorder[ni] = 1; ring.push(ni); }
+        // 不透明な隣接ピクセル（visitedでない＋alpha>10）を非消去側として追加
+        if (!visited[ni] && curAlpha[ni*4+3] > 10 && !blurRegion[ni]) {
+          blurRegion[ni] = 1; ring.push(ni); hasFg = true;
+        }
       }
+      // 境界の消去側ピクセル自身も含める
+      if (hasFg && !blurRegion[pi]) { blurRegion[pi] = 1; ring.push(pi); }
     }
-    // BFS で R px まで拡張
+
+    // Step 2: BFS で両方向に R px 拡張
     for (let dist = 1; dist < R; dist++) {
       const next = [];
       for (const pi of ring) {
@@ -976,32 +987,32 @@ function pointEraseFill(startX, startY, tolerance) {
           const nx = px+dx, ny = py+dy;
           if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
           const ni = ny*w+nx;
-          if (!nearBorder[ni] && !visited[ni]) { nearBorder[ni] = 1; next.push(ni); }
+          if (!blurRegion[ni]) { blurRegion[ni] = 1; next.push(ni); }
         }
       }
       ring = next;
     }
 
-    // 対象範囲のbboxを求めて局所ImageDataで処理
+    // bbox
     let bx1=w, by1=h, bx2=0, by2=0;
     for (let i = 0; i < w*h; i++) {
-      if (nearBorder[i] || visited[i]) {
+      if (blurRegion[i]) {
         const x = i%w, y = (i-x)/w;
         if (x<bx1) bx1=x; if (y<by1) by1=y;
         if (x>bx2) bx2=x; if (y>by2) by2=y;
       }
     }
-    bx1 = Math.max(0, bx1-R); by1 = Math.max(0, by1-R);
-    bx2 = Math.min(w-1, bx2+R); by2 = Math.min(h-1, by2+R);
+    const rPad = Math.max(1, Math.round(featherR)); // blur半径分だけパディング
+    bx1 = Math.max(0, bx1-rPad); by1 = Math.max(0, by1-rPad);
+    bx2 = Math.min(w-1, bx2+rPad); by2 = Math.min(h-1, by2+rPad);
     const rw = bx2-bx1+1, rh = by2-by1+1;
     const localImg = ctx.getImageData(bx1, by1, rw, rh);
     const ld = localImg.data;
 
-    // 局所boxBlur（アルファチャンネルのみ、nearBorder領域だけ書き戻し）
+    // 局所boxBlur（アルファチャンネルのみ）
     const r = Math.max(1, Math.round(featherR));
     const src = new Float32Array(rw * rh);
     for (let i = 0; i < rw*rh; i++) src[i] = ld[i*4+3];
-    // 水平
     const tmp = new Float32Array(rw * rh);
     for (let y = 0; y < rh; y++) {
       const base = y*rw; let sum=0, cnt=0;
@@ -1013,7 +1024,6 @@ function pointEraseFill(startX, startY, tolerance) {
         tmp[base+x]=sum/cnt;
       }
     }
-    // 垂直
     const out = new Float32Array(rw * rh);
     for (let x = 0; x < rw; x++){
       let sum=0, cnt=0;
@@ -1026,11 +1036,11 @@ function pointEraseFill(startX, startY, tolerance) {
       }
     }
 
-    // nearBorder のピクセルだけブラー結果で上書き
+    // blurRegion の全ピクセル（消去側も含む）にブラー結果を書き戻し
     for (let ly = 0; ly < rh; ly++) {
       for (let lx = 0; lx < rw; lx++) {
         const gi = (by1+ly)*w + (bx1+lx);
-        if (nearBorder[gi]) {
+        if (blurRegion[gi]) {
           ld[(ly*rw+lx)*4+3] = Math.round(out[ly*rw+lx]);
         }
       }
