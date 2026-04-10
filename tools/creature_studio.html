@@ -2877,7 +2877,7 @@ async function aiGroupSprites(idxList) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts }],
-      generationConfig: { temperature: 0.2, responseMimeType: 'application/json', maxOutputTokens: 4096 }
+      generationConfig: { temperature: 0.2, responseMimeType: 'application/json', maxOutputTokens: 8192 }
     })
   });
   const data = await r.json();
