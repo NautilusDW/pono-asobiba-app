@@ -551,6 +551,46 @@ function ensureAudio() {
   }
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
+
+// ── BGM ──
+let bgmAudio = null;
+let bgmSource = null;
+let bgmGain = null;
+const BGM_VOLUME = 0.07;
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+
+function initBGM() {
+  if (bgmAudio) return;
+  bgmAudio = new Audio('../assets/audio/quiz_bgm.mp3');
+  bgmAudio.loop = true;
+  bgmAudio.crossOrigin = 'anonymous';
+  bgmAudio.preload = 'auto';
+  if (audioCtx) {
+    bgmSource = audioCtx.createMediaElementSource(bgmAudio);
+    bgmGain = audioCtx.createGain();
+    bgmGain.gain.value = BGM_VOLUME;
+    bgmSource.connect(bgmGain).connect(audioCtx.destination);
+  }
+}
+
+function startBGM() {
+  if (!bgmEnabled) return;
+  ensureAudio();
+  if (!bgmAudio) initBGM();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  bgmAudio.play().catch(function() {});
+}
+
+function stopBGM() {
+  if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; }
+}
+
+function toggleBGM() {
+  bgmEnabled = !bgmEnabled;
+  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+  if (bgmEnabled) startBGM();
+  else stopBGM();
+}
 function playCorrect() {
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
@@ -925,13 +965,14 @@ function updateCatStartBtn() {
 // Start button → show category screen
 document.getElementById('start-btn').addEventListener('click', function() {
   ensureAudio();
+  startBGM();
   document.getElementById('start-screen').classList.add('hidden');
   buildCategoryScreen();
   document.getElementById('category-screen').classList.remove('hidden');
   // メニュー初期化（menu.js）
   if (typeof initMenu === 'function') {
     initMenu({
-      bgmToggle: function() { /* BGM なし */ },
+      bgmToggle: function() { toggleBGM(); },
       tutorial: function() { alert('すきなカテゴリーをえらんで クイズにこたえよう！'); }
     });
   }
