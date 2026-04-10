@@ -2954,6 +2954,182 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "snail_creature",
+      "displayName": "カタツムリ",
+      "icon": "🐌",
+      "folder": "Snail_creature",
+      "expressions": {
+        "normal": "Snail_creature_normal_1.png",
+        "surprised": "Snail_creature_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 327,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "ladybug_insect",
+      "displayName": "テントウムシ",
+      "icon": "🐞",
+      "folder": "Ladybug_insect",
+      "expressions": {
+        "normal": "Ladybug_insect_normal_1.png",
+        "surprised": "Ladybug_insect_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 307,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "pill_bug_crustacean",
+      "displayName": "ダンゴムシ",
+      "icon": "🪲",
+      "folder": "Pill_bug_crustacean",
+      "expressions": {
+        "normal": "Pill_bug_crustacean_normal_1.png",
+        "surprised": "Pill_bug_crustacean_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 318,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "bee_flying",
+      "displayName": "ハチ",
+      "icon": "🐝",
+      "folder": "Bee_flying",
+      "expressions": {
+        "normal": "Bee_flying_normal_1.png",
+        "surprised": "Bee_flying_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 308,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "caterpillar_larva",
+      "displayName": "アオムシ",
+      "icon": "🐛",
+      "folder": "Caterpillar_larva",
+      "expressions": {
+        "normal": "Caterpillar_larva_normal_1.png",
+        "surprised": "Caterpillar_larva_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 296,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "sun_face",
+      "displayName": "おひさま",
+      "icon": "☀️",
+      "folder": "Sun_face",
+      "expressions": {
+        "normal": "Sun_face_normal_1.png",
+        "surprised": "Sun_face_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 276,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "thought_the_user_wants_a_single_english_word_in_snake_case_for_the_japanese_character_means_mouth_or_opening_the_most_direct_translation_for_mouth_is_mouth_snake_case_for_mouth_is_mouth",
+      "displayName": "口",
+      "icon": "🧍",
+      "folder": "Thought_the_user_wants_a_single_english_word_in_snake_case_for_the_japanese_character_means_mouth_or_opening_the_most_direct_translation_for_mouth_is_mouth_snake_case_for_mouth_is_mouth",
+      "expressions": {
+        "normal": "Thought_the_user_wants_a_single_english_word_in_snake_case_for_the_japanese_character_means_mouth_or_opening_the_most_direct_translation_for_mouth_is_mouth_snake_case_for_mouth_is_mouth_normal_1.png",
+        "surprised": "Thought_the_user_wants_a_single_english_word_in_snake_case_for_the_japanese_character_means_mouth_or_opening_the_most_direct_translation_for_mouth_is_mouth_snake_case_for_mouth_is_mouth_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 272,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "knee",
+      "displayName": "ひざ",
+      "icon": "🧍",
+      "folder": "Knee",
+      "expressions": {
+        "normal": "Knee_normal_1.png",
+        "surprised": "Knee_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 180,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
