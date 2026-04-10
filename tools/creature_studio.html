@@ -1748,7 +1748,7 @@ document.getElementById('btn-reset-erase').addEventListener('click', () => {
   const swatchId = id === 'hue-src' ? 'hue-src-swatch' : id === 'hue-dst' ? 'hue-dst-swatch' : null;
   sl.addEventListener('input', () => {
     if (id === 'hue-range') valEl.textContent = '±' + sl.value + '°';
-    else if (id === 'hue-sat-adj') valEl.textContent = sl.value;
+    else if (id === 'hue-sat-adj' || id === 'hue-lit-adj') valEl.textContent = (sl.value > 0 ? '+' : '') + sl.value;
     else valEl.textContent = sl.value + '°';
     if (swatchId) document.getElementById(swatchId).style.background = 'hsl(' + sl.value + ',80%,50%)';
   });
@@ -1891,9 +1891,27 @@ function applyHuePreview() {
     const hueOffset = hue - srcHue;
     const newHue = (dstHue + hueOffset + 360) % 360;
     const newSat = Math.max(0, Math.min(100, sat + satAdj));
-    const newLit = Math.max(0, Math.min(100, lit + litAdj));
-    const [r, g, b] = hslToRgb(newHue, newSat, newLit);
-    d[idx] = r; d[idx+1] = g; d[idx+2] = b;
+    // HSLで色相と彩度を変換
+    let [r, g, b] = hslToRgb(newHue, newSat, lit);
+    // 明るさはRGB乗算方式（ノイズが出にくい）
+    if (litAdj !== 0) {
+      const factor = litAdj > 0 ? 1 + litAdj / 40 : 1 + litAdj / 80;
+      if (litAdj > 0) {
+        // 明るく: 白に近づける
+        r = Math.round(r + (255 - r) * (litAdj / 40));
+        g = Math.round(g + (255 - g) * (litAdj / 40));
+        b = Math.round(b + (255 - b) * (litAdj / 40));
+      } else {
+        // 暗く: 0に近づける
+        const f = 1 + litAdj / 50;
+        r = Math.round(r * f);
+        g = Math.round(g * f);
+        b = Math.round(b * f);
+      }
+    }
+    d[idx] = Math.max(0, Math.min(255, r));
+    d[idx+1] = Math.max(0, Math.min(255, g));
+    d[idx+2] = Math.max(0, Math.min(255, b));
   }
   ctx.putImageData(imgData, 0, 0);
 
