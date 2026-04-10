@@ -50,6 +50,14 @@ body {
 .sub-tab.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
 .sub-panel { display: none; }
 .sub-panel.active { display: block; }
+.checker-bg {
+  background-image: linear-gradient(45deg, #ddd 25%, transparent 25%),
+    linear-gradient(-45deg, #ddd 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ddd 75%),
+    linear-gradient(-45deg, transparent 75%, #ddd 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+}
 
 /* ── Panels & Sections ── */
 .panel { display: none; padding: 0 16px; }
@@ -764,6 +772,17 @@ tr:hover { background: #FFFAF0; }
 var GH_OWNER  = 'NautilusDW';
 var GH_REPO   = 'kids-writing-app';
 var GH_BRANCH = 'develop';
+
+// GitHub Raw URL（CDNキャッシュを回避して即時反映）
+function ghRawUrl(path) {
+  return 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + path + '?_=' + Date.now();
+}
+function oceanImgUrl(folder, file) {
+  return ghRawUrl('assets/images/ocean/' + folder + '/' + file);
+}
+function stagingImgUrl(folder, file) {
+  return ghRawUrl('assets/images/staging/' + folder + '/' + file);
+}
 var LS_TOKEN  = 'admin_gh_token';
 var REWARDS_PATH = 'assets/data/rewards.json';
 var CREATURES_PATH = 'assets/data/creatures.json';
@@ -2032,7 +2051,7 @@ function _buildCreatureRow(c) {
     img.addEventListener('click', function(e) { e.stopPropagation(); if (img.src) showImagePreview(img.src, c.displayName || c.id); });
     // hardcode は従来通りローカルパス、dynamic は GitHub raw URL を使う
     if (c.source === 'hardcode') {
-      img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
+      img.src = oceanImgUrl(c.folder, thumbPath);
       img.onerror = function() { this.style.display = 'none'; };
     } else {
       img.style.display = 'none';
@@ -2043,7 +2062,7 @@ function _buildCreatureRow(c) {
           img.style.display = '';
         } else {
           // フォールバック: ローカルパスを試す（Netlify 経由）
-          img.src = '../assets/images/ocean/' + c.folder + '/' + thumbPath + '?_=' + Date.now();
+          img.src = oceanImgUrl(c.folder, thumbPath);
           img.style.display = '';
           img.onerror = function() {
             img.style.display = 'none';
@@ -3150,7 +3169,7 @@ function fetchAndRenderStaging() {
         if (Array.isArray(normFile)) normFile = normFile[0];
         if (normFile) {
           var img = document.createElement('img');
-          img.src = '../assets/images/staging/' + entry.folder + '/' + normFile;
+          img.src = stagingImgUrl(entry.folder, normFile);
           img.style.cssText = 'width:60px;height:60px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid #E0D8CC;';
           img.onerror = function() { this.style.display = 'none'; };
           row.appendChild(img);
@@ -3206,7 +3225,7 @@ function fetchAndRenderStaging() {
 function adoptStaging(idx, entry) {
   var normFile = entry.expressions && entry.expressions.normal;
   if (Array.isArray(normFile)) normFile = normFile[0];
-  var stagingSrc = '../assets/images/staging/' + entry.folder + '/' + normFile;
+  var stagingSrc = stagingImgUrl(entry.folder, normFile);
 
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -5796,10 +5815,11 @@ function renderIllust() {
         var normFile = creature.expressions && creature.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
         if (normFile) {
-          var imgPath = '../assets/images/ocean/' + creature.folder + '/' + normFile + '?_=' + Date.now();
+          var imgPath = oceanImgUrl(creature.folder, normFile);
           var thumb = document.createElement('img');
           thumb.src = imgPath;
-          thumb.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
+          thumb.className = 'checker-bg';
+          thumb.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           thumb.title = 'クリックで拡大';
           thumb.onerror = function() { this.style.display = 'none'; };
           (function(src, name) {
@@ -5956,13 +5976,14 @@ function _renderStagingIllust(container, creatureLookup) {
 
         var normFile = entry.expressions && entry.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
-        var imgSrc = normFile ? '../assets/images/staging/' + entry.folder + '/' + normFile : '';
+        var imgSrc = normFile ? stagingImgUrl(entry.folder, normFile) : '';
 
         // サムネイル（クリックで拡大）
         if (imgSrc) {
           var img = document.createElement('img');
           img.src = imgSrc;
-          img.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
+          img.className = 'checker-bg';
+          img.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           img.title = 'クリックで拡大';
           img.onerror = function() { this.style.display = 'none'; };
           img.addEventListener('click', function() { showImagePreview(imgSrc, entry.displayName || entry.id); });
@@ -5975,10 +5996,11 @@ function _renderStagingIllust(container, creatureLookup) {
           var existNorm = existing.expressions && existing.expressions.normal;
           if (Array.isArray(existNorm)) existNorm = existNorm[0];
           if (existNorm) {
-            var curSrc = '../assets/images/ocean/' + existing.folder + '/' + existNorm;
+            var curSrc = oceanImgUrl(existing.folder, existNorm);
             var curImg = document.createElement('img');
             curImg.src = curSrc;
-            curImg.style.cssText = 'width:24px;height:24px;object-fit:contain;border-radius:4px;border:1px solid #86EFAC;position:absolute;top:4px;right:4px;cursor:zoom-in;';
+            curImg.className = 'checker-bg';
+            curImg.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;border:2px solid #86EFAC;position:absolute;top:4px;right:4px;cursor:zoom-in;';
             curImg.title = '現在の画像（クリックで拡大）';
             curImg.onerror = function() { this.style.display = 'none'; };
             curImg.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(curSrc, '現在: ' + (entry.displayName || entry.id)); });
