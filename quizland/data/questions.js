@@ -239,19 +239,19 @@ const QUIZLAND_QUESTIONS = {
   // ── てんき ────────────────────────────────────────
   weather: [
     // Level 1
-    { level:1, type:'emoji_name', category:'weather', emoji:'☀️', q:'この てんきは？', answer:0, choices:['はれ','くもり','あめ','ゆき'] },
-    { level:1, type:'emoji_name', category:'weather', emoji:'🌧️', q:'この てんきは？', answer:2, choices:['はれ','くもり','あめ','ゆき'] },
-    { level:1, type:'emoji_name', category:'weather', emoji:'🌈', q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
-    { level:1, type:'emoji_name', category:'weather', emoji:'⚡', q:'これは なに？', answer:0, choices:['かみなり','はれ','くもり','にじ'] },
-    { level:1, type:'emoji_name', category:'weather', emoji:'❄️', q:'この てんきは？', answer:2, choices:['はれ','あめ','ゆき','くもり'] },
-    { level:1, type:'emoji_name', category:'weather', emoji:'☁️', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','ゆき'] },
-    { level:1, type:'emoji_name', category:'weather', emoji:'🌬️', q:'これは なに？', answer:2, choices:['あめ','あらし','かぜ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Sun/Sun_normal_1.png', q:'この てんきは？', answer:0, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Rain/Rain_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Rainbow/Rainbow_normal_1.png', q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Thunder/Thunder_normal_1.png', q:'これは なに？', answer:0, choices:['かみなり','はれ','くもり','にじ'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Snow/Snow_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','あめ','ゆき','くもり'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Cloud/Cloud_normal_1.png', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Wind/Wind_normal_1.png', q:'これは なに？', answer:2, choices:['あめ','あらし','かぜ','ゆき'] },
 
     // Level 2
-    { level:2, type:'emoji_name', category:'weather', emoji:'⛅', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','かぜ'] },
+    { level:2, type:'emoji_name', category:'weather', img:'Cloud/Cloud_normal_1.png', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','かぜ'] },
     { level:2, type:'emoji_name', category:'weather', emoji:'🌫️', q:'これは なに？', answer:1, choices:['あめ','きり','ゆき','かぜ'] },
-    { level:2, type:'emoji_name', category:'weather', emoji:'🌪️', q:'これは なに？', answer:0, choices:['たつまき','おおかぜ','かみなり','あらし'] },
-    { level:2, type:'emoji_name', category:'weather', emoji:'🌀', q:'これは なに？', answer:2, choices:['こうずい','たつまき','たいふう','なみ'] },
+    { level:2, type:'emoji_name', category:'weather', img:'Tornado/Tornado_normal_1.png', q:'これは なに？', answer:0, choices:['たつまき','おおかぜ','かみなり','あらし'] },
+    { level:2, type:'emoji_name', category:'weather', img:'Hurricane/Hurricane_normal_1.png', q:'これは なに？', answer:2, choices:['こうずい','たつまき','たいふう','なみ'] },
     { level:2, type:'trivia', category:'weather',
       q:'にじは なんしょく？',
       answer:1, choices:['5しょく','7しょく','3しょく','10しょく'] },
@@ -383,21 +383,21 @@ const QUIZLAND_QUESTIONS = {
   // ── むし ──────────────────────────────────────────
   insect: [
     // Level 1
-    { level:1, type:'emoji_name', category:'insect', emoji:'🦋', q:'これは なに？', answer:0, choices:['ちょうちょ','トンボ','はち','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🐞', q:'これは なに？', answer:2, choices:['はち','あり','てんとうむし','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🐌', q:'これは なに？', answer:0, choices:['かたつむり','ナメクジ','ダンゴムシ','あり'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🐛', q:'これは なに？', answer:1, choices:['てんとうむし','いもむし','はち','あり'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🐜', q:'これは なに？', answer:1, choices:['はち','あり','ちょうちょ','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🦟', q:'これは なに？', answer:2, choices:['はち','てんとうむし','か','あり'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🐝', q:'これは なに？', answer:0, choices:['はち','あり','ちょうちょ','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', emoji:'🦗', q:'これは なに？', answer:1, choices:['バッタ','コオロギ','セミ','カマキリ'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Butterfly/Butterfly_normal_1.png', q:'これは なに？', answer:0, choices:['ちょうちょ','トンボ','はち','かぶとむし'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Ladybird/Ladybird_normal_1.png', q:'これは なに？', answer:2, choices:['はち','あり','てんとうむし','かぶとむし'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Garden_snail/Garden_snail_normal_1.png', q:'これは なに？', answer:0, choices:['かたつむり','ナメクジ','ダンゴムシ','あり'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Caterpillar/Caterpillar_normal_1.png', q:'これは なに？', answer:1, choices:['てんとうむし','いもむし','はち','あり'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Ant/Ant_normal_1.png', q:'これは なに？', answer:1, choices:['はち','あり','ちょうちょ','かぶとむし'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Mosquito/Mosquito_normal_1.png', q:'これは なに？', answer:2, choices:['はち','てんとうむし','か','あり'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Bee/Bee_normal_1.png', q:'これは なに？', answer:0, choices:['はち','あり','ちょうちょ','かぶとむし'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Grasshopper/Grasshopper_normal_1.png', q:'これは なに？', answer:1, choices:['バッタ','コオロギ','セミ','カマキリ'] },
 
     // Level 2
-    { level:2, type:'emoji_name', category:'insect', emoji:'🐝', q:'これは なに？', answer:1, choices:['あり','はち','ちょうちょ','かぶとむし'] },
-    { level:2, type:'emoji_name', category:'insect', emoji:'🪲', q:'これは なに？', answer:0, choices:['かぶとむし','クワガタ','ダンゴムシ','あり'] },
-    { level:2, type:'emoji_name', category:'insect', emoji:'🐜', q:'これは なに？', answer:3, choices:['はち','ちょうちょ','セミ','あり'] },
-    { level:2, type:'emoji_name', category:'insect', emoji:'🦗', q:'これは なに？', answer:0, choices:['コオロギ','バッタ','セミ','カマキリ'] },
-    { level:2, type:'emoji_name', category:'insect', emoji:'🕷️', q:'これは なに？', answer:1, choices:['あり','クモ','ハチ','てんとうむし'] },
+    { level:2, type:'emoji_name', category:'insect', img:'Bee/Bee_normal_1.png', q:'これは なに？', answer:1, choices:['あり','はち','ちょうちょ','かぶとむし'] },
+    { level:2, type:'emoji_name', category:'insect', img:'Rhinoceros_beetle/Rhinoceros_beetle_normal_1.png', q:'これは なに？', answer:0, choices:['かぶとむし','クワガタ','ダンゴムシ','あり'] },
+    { level:2, type:'emoji_name', category:'insect', img:'Ant/Ant_normal_1.png', q:'これは なに？', answer:3, choices:['はち','ちょうちょ','セミ','あり'] },
+    { level:2, type:'emoji_name', category:'insect', img:'Grasshopper/Grasshopper_normal_1.png', q:'これは なに？', answer:0, choices:['コオロギ','バッタ','セミ','カマキリ'] },
+    { level:2, type:'emoji_name', category:'insect', img:'Arachnid/Arachnid_normal_1.png', q:'これは なに？', answer:1, choices:['あり','クモ','ハチ','てんとうむし'] },
     { level:2, type:'trivia', category:'insect',
       q:'セミが なくのは オス？ メス？',
       answer:0, choices:['オス','メス','りょうほう','なかない'] },
@@ -509,11 +509,11 @@ const QUIZLAND_QUESTIONS = {
   // ── からだのぶぶん ────────────────────────────────
   body: [
     // Level 1
-    { level:1, type:'emoji_name', category:'body', emoji:'👁️', q:'これは からだの どこ？', answer:1, choices:['はな','め','くち','みみ'] },
-    { level:1, type:'emoji_name', category:'body', emoji:'👄', q:'これは からだの どこ？', answer:2, choices:['め','みみ','くち','はな'] },
-    { level:1, type:'emoji_name', category:'body', emoji:'🤚', q:'これは からだの どこ？', answer:2, choices:['あし','かた','て','うで'] },
-    { level:1, type:'emoji_name', category:'body', emoji:'🦶', q:'これは からだの どこ？', answer:0, choices:['あし','て','かた','おなか'] },
-    { level:1, type:'emoji_name', category:'body', emoji:'💪', q:'これは からだの どこ？', answer:3, choices:['て','あし','かた','うで'] },
+    { level:1, type:'emoji_name', category:'body', img:'Eyes/Eyes_normal_1.png', q:'これは からだの どこ？', answer:1, choices:['はな','め','くち','みみ'] },
+    { level:1, type:'emoji_name', category:'body', img:'Mouth_part/Mouth_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','みみ','くち','はな'] },
+    { level:1, type:'emoji_name', category:'body', img:'Palm/Palm_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['あし','かた','て','うで'] },
+    { level:1, type:'emoji_name', category:'body', img:'Foot_part/Foot_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['あし','て','かた','おなか'] },
+    { level:1, type:'emoji_name', category:'body', img:'Forearm/Forearm_normal_1.png', q:'これは からだの どこ？', answer:3, choices:['て','あし','かた','うで'] },
     { level:1, type:'trivia', category:'body',
       q:'においを かぐのは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] },
     { level:1, type:'trivia', category:'body',
@@ -522,9 +522,9 @@ const QUIZLAND_QUESTIONS = {
       q:'ものを きくのは からだの どこ？', answer:2, choices:['め','くち','みみ','はな'] },
 
     // Level 2
-    { level:2, type:'emoji_name', category:'body', emoji:'👃', q:'これは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] },
-    { level:2, type:'emoji_name', category:'body', emoji:'✋', q:'これは からだの どこ？', answer:3, choices:['あし','おなか','かた','て'] },
-    { level:2, type:'emoji_name', category:'body', emoji:'🦷', q:'これは からだの なに？', answer:1, choices:['くちびる','は','した','くち'] },
+    { level:2, type:'emoji_name', category:'body', img:'Nose_part/Nose_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] },
+    { level:2, type:'emoji_name', category:'body', img:'Palm/Palm_normal_1.png', q:'これは からだの どこ？', answer:3, choices:['あし','おなか','かた','て'] },
+    { level:2, type:'emoji_name', category:'body', img:'Teeth/Teeth_normal_1.png', q:'これは からだの なに？', answer:1, choices:['くちびる','は','した','くち'] },
     { level:2, type:'emoji_name', category:'body', emoji:'👅', q:'これは からだの なに？', answer:1, choices:['くちびる','した','は','くち'] },
     { level:2, type:'trivia', category:'body',
       q:'からだで いちばん おおきい きかんは？',
@@ -542,7 +542,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 3
     { level:3, type:'emoji_name', category:'body', emoji:'🦵', q:'これは からだの どこ？', answer:1, choices:['うで','あし','おなか','せなか'] },
-    { level:3, type:'emoji_name', category:'body', emoji:'👂', q:'これは からだの どこ？', answer:2, choices:['め','はな','みみ','くち'] },
+    { level:3, type:'emoji_name', category:'body', img:'Ear_part/Ear_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','はな','みみ','くち'] },
     { level:3, type:'trivia', category:'body',
       q:'にんげんの ほねは ぜんぶで なんぼん？',
       answer:1, choices:['100ほん','206ほん','300ほん','50ほん'] },
