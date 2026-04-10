@@ -450,6 +450,7 @@ body {
 
     <!-- Action buttons -->
     <button class="btn btn-primary"   id="btn-process" disabled>▶ 背景を消す</button>
+    <button class="btn btn-secondary" id="btn-skip-bg" disabled title="背景除去せずにそのまま分割準備（白背景のまま使いたい場合）">⏭ 背景を残す</button>
     <button class="btn btn-secondary" id="btn-finish"  disabled title="シュリンク・フチなめらか・αぼかしを現在の画像に上からかける">🔧 仕上げ適用</button>
     <button class="btn btn-secondary" id="btn-reset-erase" disabled title="ポイント/ブラシ消去をすべてリセット">↺ 消去リセット</button>
     <button class="btn btn-secondary" id="btn-split"   disabled>✂️ スプライトを分割</button>
@@ -1368,6 +1369,7 @@ function loadImageFile(file) {
       document.getElementById('file-info').textContent = img.naturalWidth + '×' + img.naturalHeight + ' px';
 
       document.getElementById('btn-process').disabled = false;
+      document.getElementById('btn-skip-bg').disabled = false;
       document.getElementById('btn-split').disabled = true;
       sprites = [];
       renderSpritesGrid();
@@ -1599,6 +1601,29 @@ function runProcess(showUI) {
 }
 
 document.getElementById('btn-process').addEventListener('click', () => runProcess(true));
+
+// 背景除去スキップ — 元画像をそのまま processedRaw/processedCanvas にコピー
+document.getElementById('btn-skip-bg').addEventListener('click', () => {
+  if (!originalCanvas) return;
+  setEraseMode(false);
+  clearEraseUndo();
+  processedCanvas = document.createElement('canvas');
+  processedCanvas.width = originalCanvas.width;
+  processedCanvas.height = originalCanvas.height;
+  processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
+  processedRaw = document.createElement('canvas');
+  processedRaw.width = originalCanvas.width;
+  processedRaw.height = originalCanvas.height;
+  processedRaw.getContext('2d').drawImage(originalCanvas, 0, 0);
+  redrawCompare();
+  document.getElementById('btn-split').disabled = false;
+  document.getElementById('btn-finish').disabled = false;
+  document.getElementById('btn-reset-erase').disabled = false;
+  document.getElementById('btn-save-session').disabled = false;
+  document.getElementById('btn-hue-apply').disabled = false;
+  document.getElementById('btn-hue-pick').disabled = false;
+  showToast('背景をそのまま残しました。ポイント消去やブラシで不要部分を消してからスプライト分割できます。', true);
+});
 
 // 仕上げ適用: processedCanvas にシュリンク+フチなめらか+αぼかしを上からかける
 function applyFinish() {
