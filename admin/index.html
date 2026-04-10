@@ -2489,7 +2489,13 @@ function openNewIllustUploadModal(illustId, illustName) {
       .then(function() {
         showToast('✅ ' + name + ' を登録しました', true);
         ov.remove();
-        renderIllust();
+        // creatures.json を再取得してから描画（サムネイルが出るように）
+        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(data) {
+            if (data && data.content) try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+            renderIllust();
+          });
       })
       .catch(function(e) {
         showToast('登録失敗: ' + e.message, false);
