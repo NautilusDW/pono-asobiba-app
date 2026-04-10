@@ -3202,88 +3202,96 @@ function fetchAndRenderStaging() {
     .catch(function() { section.style.display = 'none'; });
 }
 
-// staging → 採用（確認モーダル付き）
+// staging → 採用（差し替え先を選べるモーダル）
 function adoptStaging(idx, entry) {
   var normFile = entry.expressions && entry.expressions.normal;
   if (Array.isArray(normFile)) normFile = normFile[0];
   var stagingSrc = '../assets/images/staging/' + entry.folder + '/' + normFile;
 
-  // 既存の画像を取得
-  var existing = creaturesData ? creaturesData.creatures.find(function(c) { return c.id === entry.id; }) : null;
-  var existSrc = '';
-  if (existing) {
-    var en = existing.expressions && existing.expressions.normal;
-    if (Array.isArray(en)) en = en[0];
-    if (en) existSrc = '../assets/images/ocean/' + existing.folder + '/' + en;
-  }
-
-  // カスタム確認モーダル
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
   var box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);text-align:center;';
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:500px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;';
+
+  // 新しい画像のプレビュー
   box.innerHTML =
-    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">✅ 採用の確認</div>' +
-    '<div style="font-size:0.85rem;font-weight:700;color:#5D4E37;margin-bottom:4px;">' + (entry.displayName || entry.id) + '</div>' +
-    '<div style="font-size:0.7rem;color:#888;margin-bottom:12px;font-family:monospace;">ID: ' + entry.id + '</div>' +
-    '<div style="display:flex;gap:16px;justify-content:center;align-items:center;margin-bottom:16px;">' +
-      (existSrc ? '<div style="text-align:center"><div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在</div><img src="' + existSrc + '" style="width:80px;height:80px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.parentNode.innerHTML=\'<div style=color:#aaa>なし</div>\'"></div><div style="font-size:1.5rem;">→</div>' : '') +
-      '<div style="text-align:center"><div style="font-size:0.65rem;color:#888;margin-bottom:4px;">新しい</div><img src="' + stagingSrc + '" style="width:80px;height:80px;object-fit:contain;background:#FFFBEB;border-radius:8px;border:2px solid #F59E0B;" onerror="this.style.display=\'none\'"></div>' +
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">✅ 差し替え採用</div>' +
+    '<div style="text-align:center;margin-bottom:12px;">' +
+      '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">新しい画像</div>' +
+      '<img src="' + stagingSrc + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid #F59E0B;background:#FFFBEB;" onerror="this.style.display=\'none\'">' +
+      '<div style="font-size:0.85rem;font-weight:700;color:#5D4E37;margin-top:4px;">' + (entry.displayName || entry.id) + '</div>' +
     '</div>' +
+    '<div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">どの既存エントリの画像を差し替えますか？</div>' +
+    '<select id="adopt-target" style="width:100%;padding:8px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;margin-bottom:8px;"></select>' +
+    '<div id="adopt-target-preview" style="text-align:center;margin-bottom:12px;"></div>' +
     '<div style="display:flex;gap:10px;justify-content:center;">' +
       '<button id="adopt-cancel" style="padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
-      '<button id="adopt-ok" style="padding:10px 24px;border:none;border-radius:8px;background:#10B981;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">✅ 採用する</button>' +
+      '<button id="adopt-ok" style="padding:10px 24px;border:none;border-radius:8px;background:#10B981;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">✅ 差し替え</button>' +
     '</div>';
+
   ov.appendChild(box);
   document.body.appendChild(ov);
+
+  // 既存エントリのセレクト構築
+  var sel = box.querySelector('#adopt-target');
+  var preview = box.querySelector('#adopt-target-preview');
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(function(c, i) {
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = c.displayName + ' (' + c.id + ')';
+      // IDが近いものを初期選択
+      if (c.id === entry.id || c.id === entry._duplicateOf) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function updatePreview() {
+    var i = parseInt(sel.value);
+    var c = creaturesData.creatures[i];
+    if (!c) { preview.innerHTML = ''; return; }
+    var en = c.expressions && c.expressions.normal;
+    if (Array.isArray(en)) en = en[0];
+    var src = en ? '../assets/images/ocean/' + c.folder + '/' + en : '';
+    preview.innerHTML = src
+      ? '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><img src="' + src + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;background:#f5f5f5;" onerror="this.style.display=\'none\'"><div style="font-size:0.7rem;color:#888;margin-top:2px;">' + c.folder + '/' + en + '</div>'
+      : '<div style="color:#aaa;font-size:0.75rem;">画像なし</div>';
+  }
+  sel.addEventListener('change', updatePreview);
+  updatePreview();
 
   box.querySelector('#adopt-cancel').addEventListener('click', function() { ov.remove(); });
   box.querySelector('#adopt-ok').addEventListener('click', function() {
     var btn = this; btn.disabled = true; btn.textContent = '⏳ 処理中...';
+    var targetIdx = parseInt(sel.value);
+    var target = creaturesData.creatures[targetIdx];
+    if (!target) { showToast('差し替え先が選択されていません', false); return; }
 
-    var STAGING_PATH = 'assets/data/staging.json';
     var srcPath = 'assets/images/staging/' + entry.folder + '/' + normFile;
-
-    // 既存がある場合は既存のフォルダ・ファイル名に上書き
-    var dstFolder = existing ? existing.folder : entry.folder;
-    var dstNorm = existing ? (Array.isArray(existing.expressions.normal) ? existing.expressions.normal[0] : existing.expressions.normal) : normFile;
-    var dstPath = 'assets/images/ocean/' + dstFolder + '/' + dstNorm;
+    var tgtNorm = target.expressions && target.expressions.normal;
+    if (Array.isArray(tgtNorm)) tgtNorm = tgtNorm[0];
+    var dstPath = 'assets/images/ocean/' + target.folder + '/' + tgtNorm;
 
     fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data.content) throw new Error('staging 画像が見つかりません');
-        return ghUploadPromise(dstPath, data.content.replace(/\n/g, ''), '✅ adopt staging: ' + entry.id + ' → ' + dstPath);
-      })
-      .then(function() {
-        // creatures.json 更新（既存があれば画像パスは既存を維持、なければ新規追加）
-        if (!creaturesData) creaturesData = { version: 1, creatures: [] };
-        var existIdx = creaturesData.creatures.findIndex(function(c) { return c.id === entry.id; });
-        if (existIdx >= 0) {
-          // 既存あり：画像だけ差し替え済み、creatures.jsonの変更は不要（フォルダ・ファイル名は同じ）
-        } else {
-          // 新規追加
-          var clean = Object.assign({}, entry);
-          delete clean._staging; delete clean._stagedAt; delete clean._duplicateOf;
-          creaturesData.creatures.push(clean);
-        }
-        return ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '✅ adopt creature: ' + entry.id);
+        return ghUploadPromise(dstPath, data.content.replace(/\n/g, ''), '✅ replace: ' + target.id + ' ← staging/' + entry.folder);
       })
       .then(function() {
         ov.remove();
-        showToast('✅ 「' + (entry.displayName || entry.id) + '」を採用しました', true);
-        // creatures.jsonを再取得してサムネイルを更新
+        showToast('✅ 「' + target.displayName + '」の画像を差し替えました', true);
+        _creatureFolderCache = {};
         return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(d) {
             if (d && d.content) try { creaturesData = JSON.parse(base64ToUtf8(d.content.replace(/\n/g, ''))); } catch(e) {}
-            _creatureFolderCache = {};
             renderIllust();
           });
       })
       .catch(function(e) {
-        showToast('採用失敗: ' + e.message, false);
-        btn.disabled = false; btn.textContent = '✅ 採用する';
+        showToast('差し替え失敗: ' + e.message, false);
+        btn.disabled = false; btn.textContent = '✅ 差し替え';
       });
   });
 }
