@@ -775,31 +775,6 @@
     "_duplicateOf": "ear"
   },
   {
-    "id": "snail_creature",
-    "displayName": "カタツムリ",
-    "icon": "🐌",
-    "folder": "Snail_creature",
-    "expressions": {
-      "normal": "Snail_creature_normal_1.png",
-      "surprised": "Snail_creature_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 327,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:07:40.346Z",
-    "_duplicateOf": "snail_creature"
-  },
-  {
     "id": "ladybug_insect",
     "displayName": "テントウムシ",
     "icon": "🐞",
