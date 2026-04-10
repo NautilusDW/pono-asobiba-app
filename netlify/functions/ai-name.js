@@ -115,9 +115,9 @@ exports.handler = async function(event) {
     };
   } catch (e) {
     return {
-      statusCode: 500,
+      statusCode: e.name === 'AbortError' ? 504 : 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: e.message })
+      body: JSON.stringify({ error: e.name === 'AbortError' ? 'Gemini API timeout (8s)' : e.message })
     };
   }
 };
