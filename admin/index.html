@@ -2504,51 +2504,135 @@ function openNewIllustUploadModal(illustId, illustName) {
   });
 }
 
-function openIllustEditModal(creatureId) {
-  if (!creaturesData || !creaturesData.creatures) return;
-  var idx = creaturesData.creatures.findIndex(function(c) { return c.id === creatureId; });
-  if (idx < 0) return;
-  var target = creaturesData.creatures[idx];
-  var snap = { displayName: target.displayName, icon: target.icon, baseSizePx: target.baseSizePx };
+function openIllustEditModal(creatureId, illustId) {
+  // creature が登録済みの場合
+  var target = null, snap = null;
+  if (creaturesData && creaturesData.creatures) {
+    target = creaturesData.creatures.find(function(c) { return c.id === creatureId; });
+  }
+  if (target) {
+    snap = { displayName: target.displayName, icon: target.icon, baseSizePx: target.baseSizePx };
+  }
 
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
   var box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
-  var iStyle = 'width:100%;padding:6px 8px;border-radius:6px;border:1px solid #ccc;font-family:inherit;font-size:0.85rem;box-sizing:border-box;margin-bottom:8px;';
-  var lStyle = 'display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:3px;margin-top:10px;';
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;';
+  var iStyle = 'width:100%;padding:5px 7px;border-radius:6px;border:1px solid #ccc;font-family:inherit;font-size:0.8rem;box-sizing:border-box;margin-bottom:6px;';
+  var lStyle = 'display:block;font-size:0.75rem;font-weight:700;color:#5D4E37;margin-bottom:2px;margin-top:8px;';
+  var secStyle = 'font-size:0.65rem;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid #E5E7EB;padding-bottom:3px;margin:14px 0 6px;';
+
+  var displayName = target ? (target.displayName || target.id) : (illustId || '');
+
+  // サムネイル
+  var thumbHtml = '';
+  if (target) {
+    var nf = target.expressions && target.expressions.normal;
+    if (Array.isArray(nf)) nf = nf[0];
+    if (nf) thumbHtml = '<img src="../assets/images/ocean/' + target.folder + '/' + nf + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:1px solid #E0D8CC;" onerror="this.style.display=\'none\'">';
+  }
 
   box.innerHTML =
-    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">✏️ ' + (target.displayName || target.id) + ' を編集</div>' +
-    '<div style="font-size:0.7rem;color:#888;margin-bottom:8px;text-align:center;">ID: ' + target.id + '</div>' +
-    '<label style="' + lStyle + '">表示名</label>' +
-    '<input id="ie-name" style="' + iStyle + '" value="' + (target.displayName || '') + '">' +
-    '<label style="' + lStyle + '">絵文字</label>' +
-    '<input id="ie-icon" style="' + iStyle + 'width:80px;" value="' + (target.icon || '') + '">' +
-    '<label style="' + lStyle + '">サイズ (px)</label>' +
-    '<input id="ie-size" type="number" min="20" max="300" style="' + iStyle + 'width:100px;" value="' + (target.baseSizePx || 70) + '">' +
-    '<div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">' +
-      '<button id="ie-cancel" style="padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
-      '<button id="ie-save" style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">💾 保存</button>' +
-    '</div>';
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:4px;text-align:center;">✏️ ' + displayName + '</div>' +
+    '<div style="text-align:center;margin-bottom:10px;">' + thumbHtml + '</div>';
+
+  // --- 基本情報セクション ---
+  if (target) {
+    box.innerHTML +=
+      '<div style="' + secStyle + '">基本情報</div>' +
+      '<label style="' + lStyle + '">表示名</label>' +
+      '<input id="ie-name" style="' + iStyle + '" value="' + (target.displayName || '') + '">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<div><label style="' + lStyle + '">絵文字</label><input id="ie-icon" style="' + iStyle + 'width:60px;" value="' + (target.icon || '') + '"></div>' +
+        '<div><label style="' + lStyle + '">サイズ</label><input id="ie-size" type="number" min="20" max="300" style="' + iStyle + 'width:80px;" value="' + (target.baseSizePx || 70) + '"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;margin-top:10px;">' +
+        '<button id="ie-save" style="padding:6px 16px;border:none;border-radius:8px;background:#3B82F6;color:#fff;font-family:inherit;font-size:0.8rem;font-weight:900;cursor:pointer;">💾 基本情報を保存</button>' +
+      '</div>';
+  }
+
+  // --- 使用問題セクション ---
+  box.innerHTML += '<div style="' + secStyle + '">この画像を使っている問題</div><div id="ie-questions"></div>';
+
+  // --- 閉じるボタン ---
+  box.innerHTML += '<div style="text-align:center;margin-top:14px;"><button id="ie-cancel" style="padding:8px 24px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">閉じる</button></div>';
 
   ov.appendChild(box);
   document.body.appendChild(ov);
+
+  // 閉じるボタン
   box.querySelector('#ie-cancel').addEventListener('click', function() { ov.remove(); });
-  box.querySelector('#ie-save').addEventListener('click', function() {
-    var btn = this; btn.disabled = true; btn.textContent = '⏳ 保存中...';
-    target.displayName = box.querySelector('#ie-name').value.trim() || snap.displayName;
-    target.icon = ([...(box.querySelector('#ie-icon').value.trim())][0] || '') || snap.icon;
-    target.baseSizePx = parseInt(box.querySelector('#ie-size').value) || snap.baseSizePx;
-    var json = JSON.stringify(creaturesData, null, 2);
-    ghUploadPromise(CREATURES_PATH, utf8ToBase64(json), '✏️ edit illust: ' + target.id)
-      .then(function() { showToast('✅ 保存しました', true); ov.remove(); renderIllust(); })
-      .catch(function(e) {
-        showToast('保存失敗: ' + e.message, false);
-        Object.assign(target, snap);
-        btn.disabled = false; btn.textContent = '💾 保存';
-      });
-  });
+
+  // 基本情報保存
+  var saveBtn = box.querySelector('#ie-save');
+  if (saveBtn && target) {
+    saveBtn.addEventListener('click', function() {
+      saveBtn.disabled = true; saveBtn.textContent = '⏳';
+      target.displayName = box.querySelector('#ie-name').value.trim() || snap.displayName;
+      target.icon = ([...(box.querySelector('#ie-icon').value.trim())][0] || '') || snap.icon;
+      target.baseSizePx = parseInt(box.querySelector('#ie-size').value) || snap.baseSizePx;
+      ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '✏️ edit illust: ' + target.id)
+        .then(function() { showToast('✅ 保存しました', true); saveBtn.textContent = '💾 基本情報を保存'; saveBtn.disabled = false; })
+        .catch(function(e) { showToast('保存失敗: ' + e.message, false); Object.assign(target, snap); saveBtn.textContent = '💾 基本情報を保存'; saveBtn.disabled = false; });
+    });
+  }
+
+  // 使用問題一覧を構築
+  var qContainer = box.querySelector('#ie-questions');
+  var usageMap = buildQuizUsageMap();
+  var resolvedIllustId = illustId;
+  // creature ID から illust ID を探す
+  if (!resolvedIllustId && creatureId) {
+    for (var k in ILLUST_TO_CREATURE) {
+      if (ILLUST_TO_CREATURE[k] === creatureId) { resolvedIllustId = k; break; }
+    }
+    if (!resolvedIllustId && typeof CREATURE_TO_ILLUST_FALLBACK !== 'undefined') {
+      resolvedIllustId = CREATURE_TO_ILLUST_FALLBACK[creatureId];
+    }
+  }
+
+  var usage = resolvedIllustId ? usageMap[resolvedIllustId] : null;
+  if (!usage || !usage.details || usage.details.length === 0) {
+    qContainer.innerHTML = '<div style="font-size:0.78rem;color:#aaa;padding:8px;text-align:center;">この画像を使っている問題はありません</div>';
+  } else {
+    // 各問題をカード形式で表示
+    usage.details.forEach(function(d) {
+      var qCard = document.createElement('div');
+      qCard.style.cssText = 'background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;margin-bottom:6px;';
+
+      var catLabels = typeof QUIZLAND_CATEGORIES !== 'undefined' ? QUIZLAND_CATEGORIES : {};
+      var meta = catLabels[d.cat] || {};
+      var diffLabels = { 1: '☆ Lv1', 2: '★ Lv2', 3: '★★ Lv3' };
+      var diffColors = { 1: '#10B981', 2: '#F59E0B', 3: '#EF4444' };
+
+      qCard.innerHTML =
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+          '<span style="font-size:0.9rem;">' + (meta.emoji || '❓') + '</span>' +
+          '<span style="font-size:0.72rem;font-weight:700;color:#5D4E37;">' + (meta.label || d.cat) + '</span>' +
+          '<span style="background:' + (diffColors[d.level] || '#888') + ';color:#fff;padding:1px 6px;border-radius:4px;font-size:0.6rem;font-weight:700;">' + (diffLabels[d.level] || 'Lv?') + '</span>' +
+        '</div>' +
+        '<div style="font-size:0.8rem;font-weight:700;color:#1F2937;">' + d.q + '</div>';
+
+      // ✏️ 編集ボタン
+      var editQBtn = document.createElement('button');
+      editQBtn.textContent = '✏️ この問題を編集';
+      editQBtn.style.cssText = 'margin-top:4px;background:#E0F2FE;border:1px solid #7DD3FC;border-radius:6px;padding:3px 8px;font-size:0.68rem;font-weight:700;cursor:pointer;color:#0369A1;';
+      (function(catKey, qText) {
+        editQBtn.addEventListener('click', function() {
+          // questions.js の該当問題を探して openQuizEditModal を呼ぶ
+          var arr = QUIZLAND_QUESTIONS[catKey];
+          if (!arr) return;
+          for (var i = 0; i < arr.length; i++) {
+            if (arr[i].q === qText) { openQuizEditModal(catKey, i); return; }
+          }
+          showToast('問題が見つかりません', false);
+        });
+      })(d.cat, d.q);
+      qCard.appendChild(editQBtn);
+
+      qContainer.appendChild(qCard);
+    });
+  }
 }
 
 function openCreatureReplaceModal(creatureId) {
@@ -5719,9 +5803,9 @@ function renderIllust() {
         editBtn.textContent = '⚙️';
         editBtn.title = 'プロパティを編集';
         editBtn.style.cssText = 'background:#E0F2FE;border:1px solid #7DD3FC;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
-        (function(cId) {
-          editBtn.addEventListener('click', function(e) { e.stopPropagation(); openIllustEditModal(cId); });
-        })(creature.id);
+        (function(cId, iId) {
+          editBtn.addEventListener('click', function(e) { e.stopPropagation(); openIllustEditModal(cId, iId); });
+        })(creature.id, it.id);
         btnRow.appendChild(editBtn);
 
         var replBtn = document.createElement('button');
