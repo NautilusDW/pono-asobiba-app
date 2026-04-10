@@ -624,8 +624,8 @@ let reprocessTimer = null;
 function scheduleReprocess() {
   if (!document.getElementById('auto-reprocess').checked) return;
   clearTimeout(reprocessTimer);
-  if (processedRaw && eraseUndoStack.length > 0) {
-    // 消去済みの場合: processedRaw はそのまま、仕上げだけ再適用
+  if (processedRaw && processedCanvas) {
+    // 処理済みの場合: processedRaw はそのまま、仕上げだけ再適用
     reprocessTimer = setTimeout(() => {
       applyFinish();
       redrawCompare();
@@ -2449,7 +2449,7 @@ async function aiGroupSprites(idxList) {
   const existingIds = getExistingIdSet();
 
   // 全スプライトを縮小してbase64に変換（ペイロード+処理時間の削減）
-  const MAX_THUMB = 128;
+  const MAX_THUMB = 96;
   const images = idxList.map(i => {
     const src = sprites[i].canvas;
     const scale = Math.min(1, MAX_THUMB / Math.max(src.width, src.height));
@@ -2524,7 +2524,7 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
   const idxList = cards.map(c => parseInt(c.dataset.idx));
 
   // バッチ分割（Netlify Function 10秒タイムアウト対策: 最大5枚ずつ）
-  const BATCH = 5;
+  const BATCH = 3;
   const batches = [];
   for (let i = 0; i < idxList.length; i += BATCH) {
     batches.push(idxList.slice(i, i + BATCH));
