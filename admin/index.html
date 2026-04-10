@@ -4925,16 +4925,16 @@ var ILLUST_TO_CREATURE = {
   animal_lion:'lion', animal_giraffe:'giraffe', animal_frog:'frog', animal_tiger:'tiger',
   animal_wolf:'wolf', animal_fox:'fox', animal_zebra:'zebra', animal_rhino:'rhino',
   animal_kangaroo:'kangaroo', animal_gorilla:'gorilla', animal_platypus:'platypus', animal_bat:'bat',
-  insect_butterfly:'butterfly', insect_ladybug:'ladybug', insect_snail:'snail',
+  insect_butterfly:'butterfly', insect_ladybug:'ladybird', insect_snail:'garden_snail',
   insect_caterpillar:'caterpillar', insect_ant:'ant', insect_mosquito:'mosquito',
-  insect_bee:'honeybee', insect_cricket:'grasshopper', insect_beetle:'rhinoceros_beetle',
-  insect_spider:'spider', insect_firefly:'firefly', insect_mantis:'mantis',
+  insect_bee:'bee', insect_cricket:'grasshopper', insect_beetle:'rhinoceros_beetle',
+  insect_spider:'arachnid', insect_firefly:'lightning_bug', insect_mantis:'praying_mantis',
   insect_dragonfly:'dragonfly', insect_cicada:'cicada',
-  weather_sun:'sun', weather_rain:'rain_cloud', weather_rainbow:'rainbow',
-  weather_thunder:'thunder_cloud', weather_snow:'snow_cloud', weather_cloud:'cloud',
+  weather_sun:'sun', weather_rain:'rain', weather_rainbow:'rainbow',
+  weather_thunder:'thunder', weather_snow:'snow', weather_cloud:'cloud',
   weather_wind:'wind', weather_fog:'fog', weather_tornado:'tornado', weather_typhoon:'hurricane',
-  body_eye:'eye', body_mouth:'mouth', body_hand:'hand', body_foot:'foot',
-  body_arm:'arm', body_nose:'nose', body_tooth:'teeth', body_tongue:'tongue', body_leg:'knee', body_ear:'ear',
+  body_eye:'eyes', body_mouth:'mouth_part', body_hand:'palm', body_foot:'foot_part',
+  body_arm:'forearm', body_nose:'nose_part', body_tooth:'teeth', body_tongue:'tongue', body_leg:'leg', body_ear:'ear_part',
   food_apple:'apple', food_banana:'banana', food_strawberry:'strawberry', food_peach:'peach',
   food_cherry:'cherry', food_orange:'orange', food_grape:'grapes', food_watermelon:'watermelon',
   food_carrot:'carrot', food_mushroom:'mushroom', food_lemon:'lemon', food_avocado:'avocado',
@@ -4946,19 +4946,44 @@ var ILLUST_TO_CREATURE = {
   vehicle_small_plane:'excavator'
 };
 
+// 旧AI命名ID → 制作リストIDのフォールバック（AI命名でIDが違う場合も検出）
+var CREATURE_TO_ILLUST_FALLBACK = {};
+(function() {
+  // ILLUST_TO_CREATURE の逆引き
+  for (var k in ILLUST_TO_CREATURE) CREATURE_TO_ILLUST_FALLBACK[ILLUST_TO_CREATURE[k]] = k;
+  // さらに旧IDのフォールバック（AI命名で別名になったケース）
+  var aliases = {
+    ladybug:'insect_ladybug', snail:'insect_snail', honeybee:'insect_bee',
+    spider:'insect_spider', firefly:'insect_firefly', mantis:'insect_mantis',
+    rain_cloud:'weather_rain', thunder_cloud:'weather_thunder', snow_cloud:'weather_snow',
+    eye:'body_eye', mouth:'body_mouth', hand:'body_hand', foot:'body_foot',
+    arm:'body_arm', nose:'body_nose', ear:'body_ear', knee:'body_leg',
+    woodlouse:'insect_cabbage_white' // だんごむし→制作リストにはないが参考
+  };
+  for (var a in aliases) {
+    if (!CREATURE_TO_ILLUST_FALLBACK[a]) CREATURE_TO_ILLUST_FALLBACK[a] = aliases[a];
+  }
+})();
+
 function illustGetStatus() {
   // creatures.json から自動判定 + ローカルステータスをマージ
   var manual = {};
   try { manual = JSON.parse(localStorage.getItem(ILLUST_STATUS_KEY) || '{}'); } catch(e) {}
-  var creatureIds = new Set();
+
+  // creatures.json の全IDを集め、制作リストIDへの逆引きも用意
+  var doneIllustIds = new Set();
   if (creaturesData && creaturesData.creatures) {
-    creaturesData.creatures.forEach(function(c) { creatureIds.add(c.id); });
+    creaturesData.creatures.forEach(function(c) {
+      // 正引き: ILLUST_TO_CREATURE のvalueに一致
+      var match = CREATURE_TO_ILLUST_FALLBACK[c.id];
+      if (match) doneIllustIds.add(match);
+    });
   }
+
   var result = {};
   ILLUST_GROUPS.forEach(function(g) {
     g.items.forEach(function(it) {
-      var cId = ILLUST_TO_CREATURE[it.id];
-      if (cId && creatureIds.has(cId)) {
+      if (doneIllustIds.has(it.id)) {
         result[it.id] = 'done';
       } else {
         result[it.id] = manual[it.id] || 'todo';
@@ -5028,8 +5053,15 @@ function renderIllust() {
 
     g.items.forEach(function(it) {
       var s = statuses[it.id] || 'todo';
+      // 正引き＋逆引きでcreatureを検索
       var cId = ILLUST_TO_CREATURE[it.id];
       var creature = cId ? creatureLookup[cId] : null;
+      if (!creature) {
+        // 逆引き: creatures.json の全IDから制作リストIDへのマッチを探す
+        for (var ci in creatureLookup) {
+          if (CREATURE_TO_ILLUST_FALLBACK[ci] === it.id) { creature = creatureLookup[ci]; break; }
+        }
+      }
 
       var card = document.createElement('div');
       card.style.cssText =
