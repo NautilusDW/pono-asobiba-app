@@ -5350,8 +5350,7 @@ function renderIllust() {
         'display:flex;flex-direction:column;align-items:center;padding:8px 6px;' +
         'border-radius:10px;border:2px solid ' + STATUS_COLOR[s] + ';' +
         'background:' + (s === 'done' ? '#F0FDF4' : s === 'wip' ? '#FFFBEB' : '#F9FAFB') + ';' +
-        'cursor:pointer;font-size:0.72rem;font-weight:700;gap:4px;text-align:center;';
-      card.title = 'クリックでステータス変更';
+        'font-size:0.72rem;font-weight:700;gap:4px;text-align:center;';
 
       // サムネイル（クリックで拡大）
       if (creature) {
@@ -5374,17 +5373,60 @@ function renderIllust() {
       var nameSpan = document.createElement('span');
       nameSpan.textContent = it.name;
       card.appendChild(nameSpan);
+
+      // ステータスバッジ（クリックでステータス変更）
       var badgeSpan = document.createElement('span');
-      badgeSpan.style.cssText = 'background:' + STATUS_COLOR[s] + ';color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;white-space:nowrap;';
+      badgeSpan.style.cssText = 'background:' + STATUS_COLOR[s] + ';color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;white-space:nowrap;cursor:pointer;';
       badgeSpan.textContent = STATUS_LABEL[s];
-      card.appendChild(badgeSpan);
-      card.addEventListener('click', (function(itemId) {
-        return function() {
+      badgeSpan.title = 'クリックでステータス変更';
+      (function(itemId) {
+        badgeSpan.addEventListener('click', function(e) {
+          e.stopPropagation();
           var cur = illustGetStatus()[itemId] || 'todo';
           illustSetStatus(itemId, STATUS_NEXT[cur]);
           renderIllust();
-        };
-      })(it.id));
+        });
+      })(it.id);
+      card.appendChild(badgeSpan);
+
+      // ボタン行（creatures.jsonに登録済みの場合のみ表示）
+      if (creature) {
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:3px;margin-top:2px;';
+
+        // ⚙️ プロパティ編集
+        var editBtn = document.createElement('button');
+        editBtn.textContent = '⚙️';
+        editBtn.title = 'プロパティを編集';
+        editBtn.style.cssText = 'background:#E0F2FE;border:1px solid #7DD3FC;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+        (function(cId) {
+          editBtn.addEventListener('click', function(e) { e.stopPropagation(); openCreatureEditModal(cId); });
+        })(creature.id);
+        btnRow.appendChild(editBtn);
+
+        // 🖼️ 画像差し替え
+        var replBtn = document.createElement('button');
+        replBtn.textContent = '🖼️';
+        replBtn.title = '画像を差し替え';
+        replBtn.style.cssText = 'background:#FEF3C7;border:1px solid #FDE68A;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+        (function(cId) {
+          replBtn.addEventListener('click', function(e) { e.stopPropagation(); openCreatureReplaceModal(cId); });
+        })(creature.id);
+        btnRow.appendChild(replBtn);
+
+        // 🗑️ 削除
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️';
+        delBtn.title = '削除';
+        delBtn.style.cssText = 'background:#FEE2E2;border:1px solid #FCA5A5;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+        (function(cId) {
+          delBtn.addEventListener('click', function(e) { e.stopPropagation(); deleteCreature(cId); });
+        })(creature.id);
+        btnRow.appendChild(delBtn);
+
+        card.appendChild(btnRow);
+      }
+
       grid.appendChild(card);
     });
 
