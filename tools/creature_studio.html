@@ -1424,6 +1424,15 @@ dropZone.addEventListener('drop', e => {
   if (file && /^image\//.test(file.type)) loadImageFile(file);
 });
 
+// 比較タブへのドラッグ＆ドロップでも画像を読み込み
+const compareTab = document.getElementById('tab-compare');
+compareTab.addEventListener('dragover', e => { e.preventDefault(); });
+compareTab.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && /^image\//.test(file.type)) loadImageFile(file);
+});
+
 // ════════════════════════════════════════════════════════════
 // Background Removal
 // ════════════════════════════════════════════════════════════
@@ -2725,7 +2734,7 @@ function autoTranslateId(name, idEl, idx) {
     const apiKey = getGeminiKey();
     if (!apiKey) return;
     try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2768,7 +2777,7 @@ async function aiNameSprite(idx) {
   const apiKey = getGeminiKey();
   if (!apiKey) throw new Error('Gemini APIキーが設定されていません');
 
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const r = await fetch(apiUrl, {
@@ -2857,7 +2866,7 @@ async function aiGroupSprites(idxList) {
   const apiKey = getGeminiKey();
   if (!apiKey) throw new Error('Gemini APIキーが設定されていません。左パネルの「APIキー」に入力してください。');
 
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const parts = images.map(img => ({ inline_data: { mime_type: img.mimeType, data: img.data } }));
