@@ -154,8 +154,8 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'vehicle', img:'Train/Train_normal_1.png', q:'これは なに？', answer:0, choices:['でんしゃ','バス','くるま','ふね'] },
     { level:1, type:'emoji_name', category:'vehicle', img:'Airplane/Airplane_normal_1.png', q:'これは なに？', answer:2, choices:['ロケット','ヘリコプター','ひこうき','バルーン'] },
     { level:1, type:'emoji_name', category:'vehicle', img:'Bicycle/Bicycle_normal_1.png', q:'これは なに？', answer:1, choices:['オートバイ','じてんしゃ','キックボード','スクーター'] },
-    { level:1, type:'emoji_name', category:'vehicle', img:'Taxi/Taxi_normal_1.png', q:'これは なに？', answer:0, choices:['タクシー','くるま','バス','ちかてつ'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Bus/Bus_normal_1.png', q:'これは なに？', answer:1, choices:['くるま','バス','でんしゃ','トラック'] },
+    { level:1, type:'emoji_name', category:'vehicle', img:'Taxi/Taxi_normal_1.png', q:'これは なに？', answer:0, choices:['タクシー','パトカー','バス','でんしゃ'] },
+    { level:2, type:'emoji_name', category:'vehicle', img:'Bus/Bus_normal_1.png', q:'これは なに？', answer:1, choices:['タクシー','バス','でんしゃ','トラクター'] },
     { level:2, type:'emoji_name', category:'vehicle', img:'Fire_engine/Fire_engine_normal_1.png', q:'これは なに？', answer:0, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','トラック'] },
     { level:2, type:'emoji_name', category:'vehicle', img:'Cruise_ship/Cruise_ship_normal_1.png', q:'これは なに？', answer:2, choices:['ボート','ヨット','ふね','フェリー'] },
     { level:2, type:'emoji_name', category:'vehicle', img:'Rocket/Rocket_normal_1.png', q:'これは なに？', answer:0, choices:['ロケット','ひこうき','UFO','たこあげ'] },
@@ -345,7 +345,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'animal', img:'Tiger/Tiger_normal_1.png', q:'これは なに？', answer:3, choices:['ライオン','チーター','ひょう','とら'] },
     { level:2, type:'emoji_name', category:'animal', img:'Wolf/Wolf_normal_1.png', q:'これは なに？', answer:2, choices:['いぬ','キツネ','おおかみ','タヌキ'] },
     { level:2, type:'emoji_name', category:'animal', img:'Fox/Fox_normal_1.png', q:'これは なに？', answer:1, choices:['いぬ','キツネ','タヌキ','おおかみ'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Zebra/Zebra_normal_1.png', q:'これは なに？', answer:1, choices:['うま','シマウマ','らくだ','きりん'] },
+    { level:2, type:'emoji_name', category:'animal', img:'Zebra/Zebra_normal_1.png', q:'これは なに？', answer:1, choices:['ロバ','シマウマ','らくだ','きりん'] },
     { level:2, type:'emoji_name', category:'animal', img:'Rhino/Rhino_normal_1.png', q:'これは なに？', answer:2, choices:['ゾウ','カバ','サイ','スイギュウ'] },
 
     // Level 3: 豆知識型
