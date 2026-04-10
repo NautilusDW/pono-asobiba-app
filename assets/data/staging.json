@@ -825,31 +825,6 @@
     "_duplicateOf": "pill_bug_crustacean"
   },
   {
-    "id": "spider_web",
-    "displayName": "クモ",
-    "icon": "🕷️",
-    "folder": "Spider_web",
-    "expressions": {
-      "normal": "Spider_web_normal_1.png",
-      "surprised": "Spider_web_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 325,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:07:50.300Z",
-    "_duplicateOf": "spider_web"
-  },
-  {
     "id": "firefly_insect",
     "displayName": "ホタル",
     "icon": "✨",
