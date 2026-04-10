@@ -414,6 +414,7 @@ body {
     <!-- Action buttons -->
     <button class="btn btn-primary"   id="btn-process" disabled>▶ 背景を消す</button>
     <button class="btn btn-secondary" id="btn-finish"  disabled title="シュリンク・フチなめらか・αぼかしを現在の画像に上からかける">🔧 仕上げ適用</button>
+    <button class="btn btn-secondary" id="btn-reset-erase" disabled title="ポイント/ブラシ消去をすべてリセット">↺ 消去リセット</button>
     <button class="btn btn-secondary" id="btn-split"   disabled>✂️ スプライトを分割</button>
 
   </div><!-- /left-panel -->
@@ -526,6 +527,7 @@ const HARDCODED_IDS  = ['octopus','jellyfish','turtle','fish','submarine','sunfi
 // ════════════════════════════════════════════════════════════
 let originalCanvas  = null;
 let processedCanvas = null;
+let processedRaw    = null;  // 仕上げ(シュリンク/フチなめらか)前の素の状態
 let sprites = [];            // [{canvas, srcX, srcY, w, h, name, id, icon, expr}]
 let creaturesData   = null;
 
@@ -617,13 +619,9 @@ let reprocessTimer = null;
 function scheduleReprocess() {
   if (!document.getElementById('auto-reprocess').checked) return;
   clearTimeout(reprocessTimer);
-  if (eraseUndoStack.length > 0) {
-    // 消去済みの場合: 最後の消去状態に戻してから仕上げを再適用
+  if (processedRaw && eraseUndoStack.length > 0) {
+    // 消去済みの場合: processedRaw はそのまま、仕上げだけ再適用
     reprocessTimer = setTimeout(() => {
-      // undoスタックの一番上が「消去直後の状態」なので、その上から仕上げをかけ直す
-      // ※ スタック自体はいじらない（戻せるように）
-      const lastSnap = eraseUndoStack[eraseUndoStack.length - 1];
-      processedCanvas.getContext('2d').putImageData(lastSnap, 0, 0);
       applyFinish();
       redrawCompare();
     }, 200);
@@ -892,16 +890,17 @@ function updateUndoButton() {
 }
 
 function pushEraseUndo() {
-  const ctx = processedCanvas.getContext('2d');
-  eraseUndoStack.push(ctx.getImageData(0, 0, processedCanvas.width, processedCanvas.height));
+  if (!processedRaw) return;
+  const ctx = processedRaw.getContext('2d');
+  eraseUndoStack.push(ctx.getImageData(0, 0, processedRaw.width, processedRaw.height));
   if (eraseUndoStack.length > ERASE_UNDO_MAX) eraseUndoStack.shift();
   updateUndoButton();
 }
 
 function popEraseUndo() {
-  if (!eraseUndoStack.length) return;
-  processedCanvas.getContext('2d').putImageData(eraseUndoStack.pop(), 0, 0);
-  applyFinish(); // 素の状態に仕上げを再適用
+  if (!eraseUndoStack.length || !processedRaw) return;
+  processedRaw.getContext('2d').putImageData(eraseUndoStack.pop(), 0, 0);
+  applyFinish();
   redrawCompare();
   updateUndoButton();
 }
@@ -927,9 +926,9 @@ function clickToProcessedCoord(e) {
 }
 
 /** ポイント消去: flood fill で連結した同色ピクセルを透明化 */
-function pointEraseFill(startX, startY, tolerance) {
-  const w = processedCanvas.width, h = processedCanvas.height;
-  const ctx = processedCanvas.getContext('2d');
+function pointEraseFillOn(canvas, startX, startY, tolerance) {
+  const w = canvas.width, h = canvas.height;
+  const ctx = canvas.getContext('2d');
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
   const idx0 = (startY * w + startX) * 4;
@@ -964,8 +963,9 @@ function pointEraseFill(startX, startY, tolerance) {
 
 /** ブラシ消去: 円形範囲のピクセルを透明化 */
 function brushErase(cx, cy, radius) {
-  const w = processedCanvas.width, h = processedCanvas.height;
-  const ctx = processedCanvas.getContext('2d');
+  if (!processedRaw) return;
+  const w = processedRaw.width, h = processedRaw.height;
+  const ctx = processedRaw.getContext('2d');
   const r = Math.max(1, Math.round(radius / 2));
   const x0 = Math.max(0, cx - r), y0 = Math.max(0, cy - r);
   const x1 = Math.min(w - 1, cx + r), y1 = Math.min(h - 1, cy + r);
@@ -1015,23 +1015,16 @@ document.getElementById('box-proc').addEventListener('contextmenu', e => {
   if (eraseMode || linkMode) e.preventDefault();
 });
 
-// ── ポイント消去: クリック ──
+// ── ポイント消去: クリック（processedRaw に対して消去）──
 document.getElementById('box-proc').addEventListener('click', e => {
-  if (!eraseMode || eraseTool !== 'point' || !processedCanvas || panMoved) return;
+  if (!eraseMode || eraseTool !== 'point' || !processedRaw || panMoved) return;
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
   const tolerance = parseFloat(document.getElementById('erase-tolerance').value) || 30;
-  // undo保存は仕上げ適用前の「素の消去状態」を保存
-  // まず前回の仕上げを剥がして素の状態に戻す
-  if (eraseUndoStack.length > 0) {
-    processedCanvas.getContext('2d').putImageData(eraseUndoStack[eraseUndoStack.length - 1], 0, 0);
-  }
-  pushEraseUndo(); // 素の状態を保存
-  if (!pointEraseFill(coord.x, coord.y, tolerance)) {
+  pushEraseUndo(); // processedRaw の現在の状態をundo保存
+  if (!pointEraseFillOn(processedRaw, coord.x, coord.y, tolerance)) {
     eraseUndoStack.pop();
     updateUndoButton();
-    // 仕上げを再適用して表示を戻す
-    applyFinish(); redrawCompare();
     return;
   }
   applyFinish();
@@ -1043,10 +1036,6 @@ document.getElementById('box-proc').addEventListener('pointerdown', e => {
   if (!eraseMode || eraseTool !== 'brush' || !processedCanvas || e.button !== 0) return;
   e.preventDefault();
   brushDragging = true;
-  // 仕上げを剥がして素の消去状態に戻してからundo保存
-  if (eraseUndoStack.length > 0) {
-    processedCanvas.getContext('2d').putImageData(eraseUndoStack[eraseUndoStack.length - 1], 0, 0);
-  }
   pushEraseUndo();
   const coord = clickToProcessedCoord(e);
   if (coord) {
@@ -1072,7 +1061,9 @@ document.addEventListener('pointermove', e => {
   if (coord) {
     const r = parseInt(document.getElementById('brush-size').value) || 20;
     brushErase(coord.x, coord.y, r);
-    redrawCompare();
+    // ドラッグ中はprocessedRawを直接表示（仕上げは重いのでpointerupで適用）
+    drawInBox('box-proc', processedRaw, true);
+    drawLinkOverlay();
   }
 });
 
@@ -1292,6 +1283,7 @@ function loadImageFile(file) {
       originalCanvas.getContext('2d').drawImage(img, 0, 0);
 
       processedCanvas = null;
+      processedRaw = null;
       setEraseMode(false);
       clearEraseUndo();
       redrawCompare();
@@ -1521,9 +1513,15 @@ function runProcess(showUI) {
   processedCanvas.height = originalCanvas.height;
   processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
   removeBgFromCanvas(processedCanvas, tolerance, feather, grayTol, shrink, alphaBlur);
+  // 素の状態を保存（仕上げ再適用用）
+  processedRaw = document.createElement('canvas');
+  processedRaw.width = processedCanvas.width;
+  processedRaw.height = processedCanvas.height;
+  processedRaw.getContext('2d').drawImage(processedCanvas, 0, 0);
   redrawCompare();
   document.getElementById('btn-split').disabled = false;
   document.getElementById('btn-finish').disabled = false;
+  document.getElementById('btn-reset-erase').disabled = false;
   if (showUI) { hideLoading(); showToast('背景除去完了！', true); }
 }
 
@@ -1531,9 +1529,12 @@ document.getElementById('btn-process').addEventListener('click', () => runProces
 
 // 仕上げ適用: processedCanvas にシュリンク+フチなめらか+αぼかしを上からかける
 function applyFinish() {
-  if (!processedCanvas) return;
-  const w = processedCanvas.width, h = processedCanvas.height;
+  if (!processedRaw) return;
+  // processedRaw（素の状態）から processedCanvas にコピーしてから仕上げを適用
+  const w = processedRaw.width, h = processedRaw.height;
+  processedCanvas.width = w; processedCanvas.height = h;
   const ctx = processedCanvas.getContext('2d');
+  ctx.drawImage(processedRaw, 0, 0);
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
 
@@ -1608,10 +1609,20 @@ function applyFinish() {
 }
 
 document.getElementById('btn-finish').addEventListener('click', () => {
-  if (!processedCanvas) return;
-  pushEraseUndo(); // 戻せるようにundo保存
+  if (!processedRaw) return;
   applyFinish();
-  showToast('仕上げ適用しました（↩ 戻すで取り消し可）', true);
+  redrawCompare();
+  showToast('仕上げ適用しました', true);
+});
+
+document.getElementById('btn-reset-erase').addEventListener('click', () => {
+  if (!processedRaw || !eraseUndoStack.length) return;
+  // 最初のundo（消去前の状態）まで戻す
+  processedRaw.getContext('2d').putImageData(eraseUndoStack[0], 0, 0);
+  clearEraseUndo();
+  applyFinish();
+  redrawCompare();
+  showToast('消去をリセットしました', true);
 });
 
 // ════════════════════════════════════════════════════════════

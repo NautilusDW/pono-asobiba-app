@@ -235,26 +235,24 @@
     // ── stale closure 対策: この呼び出しの video をキャプチャ ──────────────────
     var capturedVideo = _video;
 
-    // ── 2.5秒 soft timeout（canplay が来なければ CSS フォールバック）──
+    // ── 5秒 soft timeout（canplay が来なければ CSS フォールバック）──
+    // モバイル回線では2.5秒では不十分なため延長
     var softTimeoutId = _later(function() {
-      if (_video !== capturedVideo) return; // stale呼び出し分は無視
+      if (_video !== capturedVideo) return;
       console.warn('[treasure] canplay timeout → CSS fallback');
       _fallbackCss();
-    }, 2500);
+    }, 5000);
 
-    // stalled / error でも即フォールバック
+    // error のみフォールバック（stalled はモバイルの正常なバッファリングでも発生するため除外）
     function onMediaError() {
-      // 両方のリスナーを解除（once:true でも片方が残るので明示的に除去）
-      capturedVideo.removeEventListener('error',   onMediaError);
-      capturedVideo.removeEventListener('stalled', onMediaError);
-      if (_video !== capturedVideo) return; // stale
+      capturedVideo.removeEventListener('error', onMediaError);
+      if (_video !== capturedVideo) return;
       clearTimeout(softTimeoutId);
       _pendingTimers = _pendingTimers.filter(function(t) { return t !== softTimeoutId; });
       console.warn('[treasure] media error → CSS fallback');
       _fallbackCss();
     }
-    capturedVideo.addEventListener('error',   onMediaError);
-    capturedVideo.addEventListener('stalled', onMediaError);
+    capturedVideo.addEventListener('error', onMediaError);
 
     // canplay 待ち → play()
     capturedVideo.addEventListener('canplay', function onCanPlay() {
