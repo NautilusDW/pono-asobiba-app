@@ -1911,15 +1911,26 @@ function applyHuePreview() {
     d[idx+2] = Math.max(0, Math.min(255, Math.round(b)));
   }
 
-  // 背景復元: hueMaskに含まれないピクセルをスナップショットから上書き
-  // → 色変換のHSL丸め誤差で汚れた背景をクリーンに戻す
+  // 背景復元: 元画像で「白（背景）」だったピクセルを元の色に戻す
+  // hueMask内であっても、元々白だった部分はスナップショットで上書き
+  // → HSL丸め誤差のノイズが白背景部分に乗るのを完全に防ぐ
+  const bgThreshold = 240; // R,G,B 全てがこれ以上なら「白（背景）」とみなす
   for (let i = 0; i < w * h; i++) {
-    if (hueMask[i]) continue;
     const idx = i * 4;
-    d[idx]   = snapD[idx];
-    d[idx+1] = snapD[idx+1];
-    d[idx+2] = snapD[idx+2];
-    d[idx+3] = snapD[idx+3];
+    const sR = snapD[idx], sG = snapD[idx+1], sB = snapD[idx+2];
+    if (sR >= bgThreshold && sG >= bgThreshold && sB >= bgThreshold) {
+      // 元々白だった → スナップショットで復元
+      d[idx]   = sR;
+      d[idx+1] = sG;
+      d[idx+2] = sB;
+      d[idx+3] = snapD[idx+3];
+    } else if (!hueMask[i]) {
+      // 白でないが色変換対象でもない → スナップショットで復元
+      d[idx]   = sR;
+      d[idx+1] = sG;
+      d[idx+2] = sB;
+      d[idx+3] = snapD[idx+3];
+    }
   }
 
   ctx.putImageData(imgData, 0, 0);
