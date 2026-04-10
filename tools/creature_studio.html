@@ -2563,12 +2563,21 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
 
   try {
     for (const batch of batches) {
-      const groups = await aiGroupSprites(batch);
+      let groups = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          document.getElementById('loading-msg').textContent =
+            `AI命名中... ${done+1}/${batches.length}バッチ${attempt > 1 ? ' (リトライ' + attempt + ')' : ''}`;
+          groups = await aiGroupSprites(batch);
+          break;
+        } catch (retryErr) {
+          if (attempt === 3) throw retryErr;
+          await new Promise(r => setTimeout(r, 2000 * attempt));
+        }
+      }
       allGroups = allGroups.concat(groups);
       done++;
-      document.getElementById('loading-msg').textContent =
-        `AI命名中... ${done}/${batches.length}バッチ`;
-      if (done < batches.length) await new Promise(r => setTimeout(r, 500));
+      if (done < batches.length) await new Promise(r => setTimeout(r, 800));
     }
 
     allGroups.forEach(g => {
