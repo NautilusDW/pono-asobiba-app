@@ -2074,18 +2074,47 @@ function _buildCreatureRow(c) {
   }
   row.appendChild(badge);
 
-  // 動的生き物のみ: ⚙️ 編集ボタン
+  // 動的生き物のみ: 編集・差し替え・削除ボタン
   if (c.source === 'dynamic') {
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:4px;';
+
     var editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.textContent = '⚙️';
-    editBtn.title = '反応の速さ・長さを調整';
-    editBtn.style.cssText = 'background:#E0F2FE;color:#0369A1;border:1px solid #7DD3FC;border-radius:6px;padding:6px 10px;font-size:0.9rem;cursor:pointer;margin-left:4px;';
+    editBtn.title = 'プロパティを編集';
+    editBtn.style.cssText = 'background:#E0F2FE;color:#0369A1;border:1px solid #7DD3FC;border-radius:6px;padding:6px 10px;font-size:0.9rem;cursor:pointer;';
     editBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       openCreatureEditModal(c.id);
     });
-    row.appendChild(editBtn);
+    btnWrap.appendChild(editBtn);
+
+    // 画像差し替えボタン
+    var replaceBtn = document.createElement('button');
+    replaceBtn.type = 'button';
+    replaceBtn.textContent = '🖼️';
+    replaceBtn.title = '画像を差し替え';
+    replaceBtn.style.cssText = 'background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:6px;padding:6px 10px;font-size:0.9rem;cursor:pointer;';
+    replaceBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openCreatureReplaceModal(c.id);
+    });
+    btnWrap.appendChild(replaceBtn);
+
+    // 削除ボタン
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '🗑️';
+    delBtn.title = 'この生き物を削除';
+    delBtn.style.cssText = 'background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:6px;padding:6px 10px;font-size:0.9rem;cursor:pointer;';
+    delBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteCreature(c.id);
+    });
+    btnWrap.appendChild(delBtn);
+
+    row.appendChild(btnWrap);
   }
 
   return row;
@@ -2315,6 +2344,109 @@ function _encEscHtml(str) {
   var d = document.createElement('div');
   d.textContent = String(str || '');
   return d.innerHTML;
+}
+
+// 🖼️ 画像差し替えモーダル
+function openCreatureReplaceModal(creatureId) {
+  if (!creaturesData || !creaturesData.creatures) return;
+  var target = creaturesData.creatures.find(function(c) { return c.id === creatureId; });
+  if (!target) return;
+
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:500px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center">🖼️ ' + (target.displayName || target.id) + ' の画像を差し替え</div>' +
+    '<div style="font-size:0.72rem;color:#888;margin-bottom:12px;text-align:center">新しい PNG をドロップまたは選択してください</div>' +
+    '<div id="replace-drop" style="border:2px dashed #E0D8CC;border-radius:12px;padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;">' +
+      '<div style="font-size:2rem">📁</div>' +
+      '<div style="font-size:0.8rem;color:#888;margin-top:4px">クリックまたはドラッグ</div>' +
+      '<input type="file" accept="image/png" style="display:none" id="replace-file-input">' +
+    '</div>' +
+    '<div id="replace-preview" style="display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:12px"></div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+      '<button id="replace-cancel" style="padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+      '<button id="replace-save" disabled style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">🖼️ 差し替え</button>' +
+    '</div>';
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+
+  var newBase64 = null;
+  var dropZone = box.querySelector('#replace-drop');
+  var fileInput = box.querySelector('#replace-file-input');
+  var preview = box.querySelector('#replace-preview');
+  var saveBtn = box.querySelector('#replace-save');
+
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.style.borderColor = '#F59E0B'; });
+  dropZone.addEventListener('dragleave', function() { dropZone.style.borderColor = '#E0D8CC'; });
+  dropZone.addEventListener('drop', function(e) { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
+  fileInput.addEventListener('change', function() { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+  function handleFile(f) {
+    if (!f || !f.type.startsWith('image/')) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      newBase64 = e.target.result.split(',')[1];
+      // 現在 vs 新をプレビュー
+      var normFile = target.expressions && target.expressions.normal;
+      if (Array.isArray(normFile)) normFile = normFile[0];
+      var curSrc = '../assets/images/ocean/' + target.folder + '/' + normFile;
+      preview.innerHTML =
+        '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">現在</div><img src="' + curSrc + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #E0D8CC"></div>' +
+        '<div style="font-size:1.5rem">→</div>' +
+        '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">新しい</div><img src="' + e.target.result + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #F59E0B"></div>';
+      saveBtn.disabled = false;
+    };
+    reader.readAsDataURL(f);
+  }
+
+  box.querySelector('#replace-cancel').addEventListener('click', function() { ov.remove(); });
+  saveBtn.addEventListener('click', function() {
+    if (!newBase64 || saveBtn.disabled) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ アップロード中...';
+    var normFile = target.expressions && target.expressions.normal;
+    if (Array.isArray(normFile)) normFile = normFile[0];
+    var filePath = 'assets/images/ocean/' + target.folder + '/' + normFile;
+    ghUploadPromise(filePath, newBase64, '🖼️ replace image: ' + target.id + ' / ' + normFile)
+      .then(function() {
+        showToast('✅ ' + (target.displayName || target.id) + ' の画像を差し替えました', true);
+        ov.remove();
+        _creatureFolderCache = {};
+        fetchSeaCreatures();
+      })
+      .catch(function(e) {
+        showToast('差し替え失敗: ' + e.message, false);
+        saveBtn.disabled = false;
+        saveBtn.textContent = '🖼️ 差し替え';
+      });
+  });
+}
+
+// 🗑️ 生き物を削除
+function deleteCreature(creatureId) {
+  if (!creaturesData || !creaturesData.creatures) return;
+  var target = creaturesData.creatures.find(function(c) { return c.id === creatureId; });
+  if (!target) return;
+  if (!confirm('「' + (target.displayName || target.id) + '」を creatures.json から削除しますか？\n（画像ファイルは残ります）')) return;
+
+  creaturesData.creatures = creaturesData.creatures.filter(function(c) { return c.id !== creatureId; });
+  var json = JSON.stringify(creaturesData, null, 2);
+  var b64 = utf8ToBase64(json);
+  ghUploadPromise(CREATURES_PATH, b64, '🗑️ remove creature: ' + creatureId)
+    .then(function() {
+      showToast('✅ ' + (target.displayName || creatureId) + ' を削除しました', true);
+      renderSeaCreatures();
+    })
+    .catch(function(e) {
+      showToast('削除失敗: ' + e.message, false);
+      creaturesData.creatures.push(target);
+    });
 }
 
 function fetchEncyclopedia() {
@@ -4886,18 +5018,40 @@ function renderIllust() {
     div.appendChild(header);
 
     var grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;';
+
+    // creatures.json のルックアップ
+    var creatureLookup = {};
+    if (creaturesData && creaturesData.creatures) {
+      creaturesData.creatures.forEach(function(c) { creatureLookup[c.id] = c; });
+    }
 
     g.items.forEach(function(it) {
       var s = statuses[it.id] || 'todo';
+      var cId = ILLUST_TO_CREATURE[it.id];
+      var creature = cId ? creatureLookup[cId] : null;
+
       var card = document.createElement('div');
       card.style.cssText =
-        'display:flex;align-items:center;justify-content:space-between;padding:7px 10px;' +
+        'display:flex;flex-direction:column;align-items:center;padding:8px 6px;' +
         'border-radius:10px;border:2px solid ' + STATUS_COLOR[s] + ';' +
         'background:' + (s === 'done' ? '#F0FDF4' : s === 'wip' ? '#FFFBEB' : '#F9FAFB') + ';' +
-        'cursor:pointer;font-size:0.78rem;font-weight:700;gap:6px;';
+        'cursor:pointer;font-size:0.72rem;font-weight:700;gap:4px;text-align:center;';
       card.title = 'クリックでステータス変更';
+
+      // サムネイル
+      var thumbHtml = '';
+      if (creature) {
+        var normFile = creature.expressions && creature.expressions.normal;
+        if (Array.isArray(normFile)) normFile = normFile[0];
+        if (normFile) {
+          var imgPath = '../assets/images/ocean/' + creature.folder + '/' + normFile;
+          thumbHtml = '<img src="' + imgPath + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">';
+        }
+      }
+
       card.innerHTML =
+        thumbHtml +
         '<span>' + it.name + '</span>' +
         '<span style="background:' + STATUS_COLOR[s] + ';color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;white-space:nowrap;">' + STATUS_LABEL[s] + '</span>';
       card.addEventListener('click', (function(itemId) {

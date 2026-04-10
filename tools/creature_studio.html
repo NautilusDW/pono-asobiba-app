@@ -417,6 +417,11 @@ body {
     <button class="btn btn-secondary" id="btn-reset-erase" disabled title="ポイント/ブラシ消去をすべてリセット">↺ 消去リセット</button>
     <button class="btn btn-secondary" id="btn-split"   disabled>✂️ スプライトを分割</button>
 
+    <div style="border-top:1px solid #374151;margin-top:10px;padding-top:8px;display:flex;gap:6px;">
+      <button class="btn btn-secondary" id="btn-save-session" disabled style="flex:1;font-size:0.7rem">💾 セーブ</button>
+      <button class="btn btn-secondary" id="btn-load-session" style="flex:1;font-size:0.7rem">📂 ロード</button>
+    </div>
+
   </div><!-- /left-panel -->
 
   <!-- ════════ RIGHT PANEL ════════ -->
@@ -1522,6 +1527,7 @@ function runProcess(showUI) {
   document.getElementById('btn-split').disabled = false;
   document.getElementById('btn-finish').disabled = false;
   document.getElementById('btn-reset-erase').disabled = false;
+  document.getElementById('btn-save-session').disabled = false;
   if (showUI) { hideLoading(); showToast('背景除去完了！', true); }
 }
 
@@ -1624,6 +1630,161 @@ document.getElementById('btn-reset-erase').addEventListener('click', () => {
   redrawCompare();
   showToast('消去をリセットしました', true);
 });
+
+// ════════════════════════════════════════════════════════════
+// Session Save / Load
+// ════════════════════════════════════════════════════════════
+const SESSION_KEY = 'ces_session_v1';
+
+document.getElementById('btn-save-session').addEventListener('click', () => {
+  if (!processedRaw) { showToast('保存するデータがありません', false); return; }
+  showLoading('セッションを保存中...');
+  try {
+    const session = {
+      ts: Date.now(),
+      // 元画像
+      original: originalCanvas ? originalCanvas.toDataURL('image/png') : null,
+      // 処理済み素の状態
+      raw: processedRaw.toDataURL('image/png'),
+      // リンク線
+      links: linkLines,
+      // スプライト情報（canvas はbase64化）
+      sprites: sprites.map(sp => ({
+        data: sp.canvas.toDataURL('image/png'),
+        srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
+        name: sp.name, id: sp.id, icon: sp.icon, expr: sp.expr,
+        facing: sp.facing, sizePx: sp.sizePx, count: sp.count,
+        pattern: sp.pattern, reaction: sp.reaction,
+        speed: sp.speed, duration: sp.duration
+      })),
+      // 左パネルの設定値
+      settings: {
+        tolerance:  document.getElementById('tolerance').value,
+        feather:    document.getElementById('feather').value,
+        graytol:    document.getElementById('graytol').value,
+        shrink:     document.getElementById('shrink').value,
+        ablur:      document.getElementById('ablur').value,
+        minSize:    document.getElementById('min-size').value,
+        padding:    document.getElementById('padding').value,
+        alphaThr:   document.getElementById('alpha-thresh').value,
+        mergeGap:   document.getElementById('merge-gap').value,
+        eraseTol:   document.getElementById('erase-tolerance').value
+      }
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    hideLoading();
+    showToast('セッションを保存しました', true);
+  } catch (e) {
+    hideLoading();
+    showToast('保存失敗: ' + e.message, false);
+  }
+});
+
+document.getElementById('btn-load-session').addEventListener('click', () => {
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) { showToast('保存されたセッションがありません', false); return; }
+  showLoading('セッションを復元中...');
+  try {
+    const session = JSON.parse(raw);
+    const loaded = { remaining: 0 };
+
+    function onAllLoaded() {
+      // 設定復元
+      if (session.settings) {
+        const s = session.settings;
+        const set = (id, val, lblId) => {
+          if (val === undefined) return;
+          const el = document.getElementById(id);
+          if (el) el.value = val;
+          if (lblId) { const lbl = document.getElementById(lblId); if (lbl) lbl.value = val; }
+        };
+        set('tolerance', s.tolerance, 'tol-val');
+        set('feather', s.feather, 'feather-val');
+        set('graytol', s.graytol, 'graytol-val');
+        set('shrink', s.shrink, 'shrink-val');
+        set('ablur', s.ablur, 'ablur-val');
+        set('min-size', s.minSize);
+        set('padding', s.padding);
+        set('alpha-thresh', s.alphaThr);
+        set('merge-gap', s.mergeGap);
+        set('erase-tolerance', s.eraseTol);
+        if (s.eraseTol) document.getElementById('erase-tol-slider').value = s.eraseTol;
+      }
+      // リンク線
+      linkLines = session.links || [];
+      // 仕上げ適用してprocessedCanvasを生成
+      if (processedRaw) {
+        processedCanvas = document.createElement('canvas');
+        processedCanvas.width = processedRaw.width;
+        processedCanvas.height = processedRaw.height;
+        applyFinish();
+        redrawCompare();
+        document.getElementById('btn-process').disabled = false;
+        document.getElementById('btn-split').disabled = false;
+        document.getElementById('btn-finish').disabled = false;
+        document.getElementById('btn-reset-erase').disabled = false;
+        document.getElementById('btn-save-session').disabled = false;
+      }
+      // スプライト復元
+      if (session.sprites && session.sprites.length) {
+        renderSpritesGrid();
+      }
+      clearEraseUndo();
+      hideLoading();
+      const ts = new Date(session.ts);
+      showToast('セッション復元: ' + ts.toLocaleString('ja-JP'), true);
+    }
+
+    // 画像を非同期ロード
+    function loadImg(dataUrl, cb) {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        cb(c);
+      };
+      img.onerror = () => cb(null);
+      img.src = dataUrl;
+    }
+
+    let pending = 1 + (session.original ? 1 : 0) + (session.sprites ? session.sprites.length : 0);
+    function dec() { if (--pending === 0) onAllLoaded(); }
+
+    // 元画像
+    if (session.original) {
+      loadImg(session.original, c => { if (c) originalCanvas = c; dec(); });
+    }
+    // processedRaw
+    loadImg(session.raw, c => {
+      if (c) processedRaw = c;
+      dec();
+    });
+    // スプライト
+    if (session.sprites) {
+      sprites = [];
+      session.sprites.forEach((sp, i) => {
+        loadImg(sp.data, c => {
+          sprites[i] = {
+            canvas: c || document.createElement('canvas'),
+            srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
+            name: sp.name || '', id: sp.id || '', icon: sp.icon || '🐠', expr: sp.expr || 'normal',
+            facing: sp.facing || 'right', sizePx: sp.sizePx || 70, count: sp.count || 3,
+            pattern: sp.pattern || 'swim', reaction: sp.reaction || 'jump',
+            speed: sp.speed || 1.0, duration: sp.duration || 1.0
+          };
+          dec();
+        });
+      });
+    }
+  } catch (e) {
+    hideLoading();
+    showToast('復元失敗: ' + e.message, false);
+  }
+});
+
+// runProcess 後にセーブボタン有効化
+// (btn-save-session の disabled は runProcess 内で解除)
 
 // ════════════════════════════════════════════════════════════
 // Sprite Splitting (Union-Find Connected Components)
