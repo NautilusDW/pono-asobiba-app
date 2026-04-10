@@ -454,15 +454,18 @@ function _isBgUnlocked(id) {
   return typeof window.isUnlockedBg === 'function' && window.isUnlockedBg(id);
 }
 
+var _bgPickerBuilt = false;
 function buildBgPicker() {
   var grid = document.getElementById('bg-picker-grid');
   if (!grid) return;
   grid.innerHTML = '';
+  _bgPickerBuilt = true;
   ALL_BG_DEFS.forEach(function(def) {
     var unlocked = _isBgUnlocked(def.id);
     var card = document.createElement('div');
     card.className = 'bg-card' + (unlocked ? '' : ' locked') + (def.id === selectedBgId && unlocked ? ' selected' : '');
-    card.innerHTML = '<img src="' + def.src + '" alt="" loading="lazy">'
+    // src は data-src に入れて開いた時だけロード
+    card.innerHTML = '<img data-src="' + def.src + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">'
       + '<div class="bg-label">' + def.label + '</div>'
       + '<div class="lock-icon">🔒</div>'
       + (def.unlockBy ? '<div class="lock-hint">' + def.unlockBy + '</div>' : '');
@@ -472,14 +475,22 @@ function buildBgPicker() {
     }
     grid.appendChild(card);
   });
-  updateBgToggleThumb();
+}
+
+function _loadPickerThumbs() {
+  // ピッカーが開かれた時に初めてimg.srcをセット
+  document.querySelectorAll('#bg-picker-grid img[data-src]').forEach(function(img) {
+    img.src = img.getAttribute('data-src');
+    img.removeAttribute('data-src');
+  });
 }
 
 function updateBgToggleThumb() {
   var def = ALL_BG_DEFS.find(function(d) { return d.id === selectedBgId; }) || ALL_BG_DEFS[0];
   var thumbImg = document.getElementById('bg-toggle-thumb-img');
   var label = document.getElementById('bg-toggle-label');
-  if (thumbImg) thumbImg.src = def.src;
+  // サムネはゲームで読み込む本番画像と共有（追加ロードなし）
+  if (thumbImg && !thumbImg.src.includes(def.src.split('/').pop())) thumbImg.src = def.src;
   if (label) label.textContent = def.label;
 }
 
@@ -487,7 +498,10 @@ function toggleBgPicker() {
   var grid = document.getElementById('bg-picker-grid');
   var arrow = document.getElementById('bg-toggle-arrow');
   if (!grid) return;
+  // 初回オープン時にビルド＆サム読み込み
+  if (!_bgPickerBuilt) buildBgPicker();
   var open = grid.classList.toggle('open');
+  if (open) _loadPickerThumbs();
   if (arrow) arrow.style.transform = open ? 'rotate(180deg)' : '';
 }
 
@@ -514,8 +528,9 @@ function loadBgImages() {
 }
 // プリロードしない（全背景を一気に読むと100MB超になるため）
 
-// ページロード時にピッカー描画
-buildBgPicker();
+// ピッカーはトグルを開いた時に初めてビルド（起動時の全画像ロードを防ぐ）
+// buildBgPicker() は toggleBgPicker() 内で初回オープン時に呼ばれる
+updateBgToggleThumb(); // サムネと名前だけ初期化
 
 // ── Pin images ──
 const tierCanvases = [];
