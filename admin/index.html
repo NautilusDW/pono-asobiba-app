@@ -5442,7 +5442,6 @@ var ILLUST_GROUPS = [
       { id: 'weather_snow',      name: 'ゆき ❄️' },
       { id: 'weather_cloud',     name: 'くもり ☁️' },
       { id: 'weather_wind',      name: 'かぜ 🌬️' },
-      { id: 'weather_fog',       name: 'きり 🌫️' },
       { id: 'weather_tornado',   name: 'たつまき 🌪️' },
       { id: 'weather_typhoon',   name: 'たいふう 🌀' },
       { id: 'weather_thermometer', name: 'おんどけい 🌡️' }
@@ -5940,6 +5939,20 @@ function _renderStagingIllust(container, creatureLookup) {
         badge.style.cssText = 'background:#F59E0B;color:#fff;padding:1px 7px;border-radius:6px;font-size:0.65rem;';
         badge.textContent = '差し替え候補';
         card.appendChild(badge);
+
+        // 削除ボタン
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️';
+        delBtn.title = 'ステージングから削除';
+        delBtn.style.cssText = 'background:#FEE2E2;border:1px solid #FCA5A5;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;margin-top:2px;';
+        (function(i) {
+          delBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!confirm('「' + (entry.displayName || entry.id) + '」をステージングから削除しますか？')) return;
+            removeStaging(i).then(function() { renderIllust(); });
+          });
+        })(idx);
+        card.appendChild(delBtn);
 
         grid.appendChild(card);
       });

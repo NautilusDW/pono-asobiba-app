@@ -249,7 +249,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 2
     { level:2, type:'emoji_name', category:'weather', img:'Cloud/Cloud_normal_1.png', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','かぜ'] },
-    { level:2, type:'emoji_name', category:'weather', emoji:'🌫️', q:'これは なに？', answer:1, choices:['あめ','きり','ゆき','かぜ'] },
+    { level:2, type:'trivia', category:'weather', q:'あさ、しろい もやが でる てんきを なんという？', answer:1, choices:['あめ','きり','ゆき','くもり'] },
     { level:2, type:'emoji_name', category:'weather', img:'Tornado/Tornado_normal_1.png', q:'これは なに？', answer:0, choices:['たつまき','おおかぜ','かみなり','あらし'] },
     { level:2, type:'emoji_name', category:'weather', img:'Hurricane/Hurricane_normal_1.png', q:'これは なに？', answer:2, choices:['こうずい','たつまき','たいふう','なみ'] },
     { level:2, type:'trivia', category:'weather',
