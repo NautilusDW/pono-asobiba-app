@@ -2866,6 +2866,94 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "sloth",
+      "displayName": "ナマケモノ",
+      "icon": "🦥",
+      "folder": "Sloth",
+      "expressions": {
+        "normal": "Sloth_normal_1.png",
+        "surprised": "Sloth_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 435,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "police_car",
+      "displayName": "パトカー",
+      "icon": "🚓",
+      "folder": "Police_car",
+      "expressions": {
+        "normal": "Police_car_normal_1.png",
+        "surprised": "Police_car_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 469,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "cabbage_white",
+      "displayName": "モンシロチョウ",
+      "icon": "🦋",
+      "folder": "Cabbage_white",
+      "expressions": {
+        "normal": "Cabbage_white_normal_1.png",
+        "surprised": "Cabbage_white_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 337,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "thermometer",
+      "displayName": "たいおんけい",
+      "icon": "🌡️",
+      "folder": "Thermometer",
+      "expressions": {
+        "normal": "Thermometer_normal_1.png",
+        "surprised": "Thermometer_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 178,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
