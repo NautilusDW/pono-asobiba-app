@@ -566,6 +566,40 @@ tr:hover { background: #FFFAF0; }
   </div>
   </div><!-- /sub-aqua-creatures -->
 
+<!-- 図鑑サブパネル（水族館内） -->
+  <div class="sub-panel" id="sub-aqua-encyclopedia">
+  <div class="section">
+    <div class="section-title">📖 いきもの図鑑</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      水族館の全生き物の図鑑データです。<strong>動的追加の3体</strong>は編集できます。<strong>既存の7体</strong>は閲覧のみです。
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+      <select id="enc-filter-category" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
+        <option value="">🐟 なかまで絞り込み</option>
+        <option value="さかなの なかま">さかなの なかま</option>
+        <option value="なんこつぎょるいの なかま">なんこつぎょるいの なかま</option>
+        <option value="たこや いかの なかま">たこや いかの なかま</option>
+        <option value="くらげの なかま">くらげの なかま</option>
+        <option value="うみがめの なかま">うみがめの なかま</option>
+        <option value="こうかくるいの なかま（カニ・エビ）">こうかくるいの なかま（カニ・エビ）</option>
+        <option value="のりものの なかま">のりものの なかま</option>
+        <option value="うみの いきもの（その他）">うみの いきもの（その他）</option>
+      </select>
+      <select id="enc-filter-zone" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
+        <option value="">🌊 ゾーンで絞り込み</option>
+        <option value="tropical_reef">熱帯サンゴ礁</option>
+        <option value="japan_coast">日本の海</option>
+        <option value="jellyfish_room">クラゲ水槽</option>
+        <option value="big_fish">大型魚</option>
+      </select>
+      <button onclick="fetchEncyclopedia()" style="padding:6px 12px;background:#60A5FA;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再表示</button>
+      <span id="enc-count" style="font-size:0.75rem;color:#888;margin-left:4px;"></span>
+    </div>
+    <div id="encyclopedia-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
+  </div>
+  </div><!-- /sub-aqua-encyclopedia -->
+</div><!-- /panel-aquarium -->
+
 <!-- ===== 🏆 実績一覧 ===== -->
 <div class="panel" id="panel-achievements">
   <div class="section">
@@ -633,40 +667,6 @@ tr:hover { background: #FFFAF0; }
     <a class="tool-link" href="../coloring/index.html"><span class="tool-icon">🖍</span> ぬりえ</a>
   </div>
 </div>
-
-<!-- 図鑑サブパネル（水族館内） -->
-  <div class="sub-panel" id="sub-aqua-encyclopedia">
-  <div class="section">
-    <div class="section-title">📖 いきもの図鑑</div>
-    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
-      水族館の全生き物の図鑑データです。<strong>動的追加の3体</strong>は編集できます。<strong>既存の7体</strong>は閲覧のみです。
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
-      <select id="enc-filter-category" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
-        <option value="">🐟 なかまで絞り込み</option>
-        <option value="さかなの なかま">さかなの なかま</option>
-        <option value="なんこつぎょるいの なかま">なんこつぎょるいの なかま</option>
-        <option value="たこや いかの なかま">たこや いかの なかま</option>
-        <option value="くらげの なかま">くらげの なかま</option>
-        <option value="うみがめの なかま">うみがめの なかま</option>
-        <option value="こうかくるいの なかま（カニ・エビ）">こうかくるいの なかま（カニ・エビ）</option>
-        <option value="のりものの なかま">のりものの なかま</option>
-        <option value="うみの いきもの（その他）">うみの いきもの（その他）</option>
-      </select>
-      <select id="enc-filter-zone" style="padding:6px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;">
-        <option value="">🌊 ゾーンで絞り込み</option>
-        <option value="tropical_reef">熱帯サンゴ礁</option>
-        <option value="japan_coast">日本の海</option>
-        <option value="jellyfish_room">クラゲ水槽</option>
-        <option value="big_fish">大型魚</option>
-      </select>
-      <button onclick="fetchEncyclopedia()" style="padding:6px 12px;background:#60A5FA;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再表示</button>
-      <span id="enc-count" style="font-size:0.75rem;color:#888;margin-left:4px;"></span>
-    </div>
-    <div id="encyclopedia-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;"></div>
-  </div>
-  </div><!-- /sub-aqua-encyclopedia -->
-</div><!-- /panel-aquarium -->
 
 <!-- ===== 🧩 クイズランド ===== -->
 <div class="panel" id="panel-quizland">
