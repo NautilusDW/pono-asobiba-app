@@ -2027,6 +2027,7 @@ document.getElementById('btn-save-session').addEventListener('click', async () =
       original: originalCanvas ? await canvasToBlob(originalCanvas) : null,
       raw: await canvasToBlob(processedRaw),
       links: linkLines,
+      keepBackground: keepBackground,
       sprites: sprites.map((sp, i) => ({
         blob: spriteBlobs[i],
         srcX: sp.srcX, srcY: sp.srcY, w: sp.w, h: sp.h,
@@ -2090,6 +2091,7 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
     if (session.raw) processedRaw = await blobToCanvas(session.raw);
 
     linkLines = session.links || [];
+    keepBackground = session.keepBackground || false;
 
     if (processedRaw) {
       processedCanvas = document.createElement('canvas');

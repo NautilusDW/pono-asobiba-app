@@ -83,7 +83,7 @@ exports.handler = async function(event) {
         generationConfig: {
           temperature: 0.2,
           responseMimeType: 'application/json',
-          maxOutputTokens: 1024
+          maxOutputTokens: 4096
         }
       })
     });
