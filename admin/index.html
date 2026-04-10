@@ -3268,10 +3268,22 @@ function adoptStaging(idx, entry) {
     if (!c) { preview.innerHTML = ''; return; }
     var en = c.expressions && c.expressions.normal;
     if (Array.isArray(en)) en = en[0];
-    var src = en ? '../assets/images/ocean/' + c.folder + '/' + en : '';
-    preview.innerHTML = src
-      ? '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><img src="' + src + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;background:#f5f5f5;" onerror="this.style.display=\'none\'"><div style="font-size:0.7rem;color:#888;margin-top:2px;">' + c.folder + '/' + en + '</div>'
-      : '<div style="color:#aaa;font-size:0.75rem;">画像なし</div>';
+    if (!en) { preview.innerHTML = '<div style="color:#aaa;font-size:0.75rem;">画像なし</div>'; return; }
+    // GitHub APIから直接画像を取得（CDNキャッシュを回避）
+    preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><div style="color:#aaa;font-size:0.7rem;">読み込み中...</div>';
+    var apiPath = 'assets/images/ocean/' + c.folder + '/' + en;
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + apiPath + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders() })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) {
+        if (d && d.download_url) {
+          preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><img class="checker-bg" src="' + d.download_url + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'"><div style="font-size:0.7rem;color:#888;margin-top:2px;">' + c.folder + '/' + en + '</div>';
+        } else {
+          preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><img class="checker-bg" src="' + oceanImgUrl(c.folder, en) + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'">';
+        }
+      })
+      .catch(function() {
+        preview.innerHTML = '<img class="checker-bg" src="' + oceanImgUrl(c.folder, en) + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;border:2px solid #E0D8CC;">';
+      });
   }
   sel.addEventListener('change', updatePreview);
   updatePreview();
@@ -5812,16 +5824,21 @@ function renderIllust() {
         var normFile = creature.expressions && creature.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
         if (normFile) {
-          var imgPath = oceanImgUrl(creature.folder, normFile);
           var thumb = document.createElement('img');
-          thumb.src = imgPath;
           thumb.className = 'checker-bg';
           thumb.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           thumb.title = 'クリックで拡大';
           thumb.onerror = function() { this.style.display = 'none'; };
-          (function(src, name) {
-            thumb.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(src, name); });
-          })(imgPath, it.name);
+          // GitHub APIからdownload_urlを取得（CDNキャッシュ回避）
+          var fallbackSrc = oceanImgUrl(creature.folder, normFile);
+          thumb.src = fallbackSrc;
+          (function(t, folder, file, name) {
+            var apiPath = 'assets/images/ocean/' + folder + '/' + file;
+            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + apiPath + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders() })
+              .then(function(r) { return r.ok ? r.json() : null; })
+              .then(function(d) { if (d && d.download_url) t.src = d.download_url; });
+            t.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(t.src, name); });
+          })(thumb, creature.folder, normFile, it.name);
           card.appendChild(thumb);
         }
       }
