@@ -901,6 +901,7 @@ function pushEraseUndo() {
 function popEraseUndo() {
   if (!eraseUndoStack.length) return;
   processedCanvas.getContext('2d').putImageData(eraseUndoStack.pop(), 0, 0);
+  applyFinish(); // 素の状態に仕上げを再適用
   redrawCompare();
   updateUndoButton();
 }
@@ -1020,12 +1021,20 @@ document.getElementById('box-proc').addEventListener('click', e => {
   const coord = clickToProcessedCoord(e);
   if (!coord) return;
   const tolerance = parseFloat(document.getElementById('erase-tolerance').value) || 30;
-  pushEraseUndo();
+  // undo保存は仕上げ適用前の「素の消去状態」を保存
+  // まず前回の仕上げを剥がして素の状態に戻す
+  if (eraseUndoStack.length > 0) {
+    processedCanvas.getContext('2d').putImageData(eraseUndoStack[eraseUndoStack.length - 1], 0, 0);
+  }
+  pushEraseUndo(); // 素の状態を保存
   if (!pointEraseFill(coord.x, coord.y, tolerance)) {
     eraseUndoStack.pop();
     updateUndoButton();
+    // 仕上げを再適用して表示を戻す
+    applyFinish(); redrawCompare();
     return;
   }
+  applyFinish();
   redrawCompare();
 });
 
@@ -1034,6 +1043,10 @@ document.getElementById('box-proc').addEventListener('pointerdown', e => {
   if (!eraseMode || eraseTool !== 'brush' || !processedCanvas || e.button !== 0) return;
   e.preventDefault();
   brushDragging = true;
+  // 仕上げを剥がして素の消去状態に戻してからundo保存
+  if (eraseUndoStack.length > 0) {
+    processedCanvas.getContext('2d').putImageData(eraseUndoStack[eraseUndoStack.length - 1], 0, 0);
+  }
   pushEraseUndo();
   const coord = clickToProcessedCoord(e);
   if (coord) {
@@ -1066,6 +1079,7 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerup', () => {
   if (!brushDragging) return;
   brushDragging = false;
+  applyFinish();
   redrawCompare();
 });
 
