@@ -68,19 +68,26 @@ exports.handler = async function(event) {
   }
 
   try {
+    // 8秒タイムアウト（Netlify Functionの10秒制限内に収める）
+    var controller = new AbortController();
+    var timeout = setTimeout(function() { controller.abort(); }, 8000);
+
     var resp = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         contents: [{
           parts: parts
         }],
         generationConfig: {
-          temperature: 0.3,
-          responseMimeType: 'application/json'
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 1024
         }
       })
     });
+    clearTimeout(timeout);
 
     var data = await resp.json();
 

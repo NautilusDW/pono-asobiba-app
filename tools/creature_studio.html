@@ -2864,7 +2864,7 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
   const idxList = cards.map(c => parseInt(c.dataset.idx));
 
   // バッチ分割（Netlify Function 10秒タイムアウト対策: 最大5枚ずつ）
-  const BATCH = 3;
+  const BATCH = 5;
   const batches = [];
   for (let i = 0; i < idxList.length; i += BATCH) {
     batches.push(idxList.slice(i, i + BATCH));
@@ -2885,12 +2885,12 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
           break;
         } catch (retryErr) {
           if (attempt === 3) throw retryErr;
-          await new Promise(r => setTimeout(r, 2000 * attempt));
+          await new Promise(r => setTimeout(r, 1500));
         }
       }
       allGroups = allGroups.concat(groups);
       done++;
-      if (done < batches.length) await new Promise(r => setTimeout(r, 800));
+      if (done < batches.length) await new Promise(r => setTimeout(r, 500));
     }
 
     allGroups.forEach(g => {
