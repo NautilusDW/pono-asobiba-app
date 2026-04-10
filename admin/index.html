@@ -773,15 +773,12 @@ var GH_OWNER  = 'NautilusDW';
 var GH_REPO   = 'kids-writing-app';
 var GH_BRANCH = 'develop';
 
-// GitHub Raw URL（CDNキャッシュを回避して即時反映）
-function ghRawUrl(path) {
-  return 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_BRANCH + '/' + path + '?_=' + Date.now();
-}
+// 画像URL（タイムスタンプでキャッシュ回避）
 function oceanImgUrl(folder, file) {
-  return ghRawUrl('assets/images/ocean/' + folder + '/' + file);
+  return '../assets/images/ocean/' + folder + '/' + file + '?_=' + Date.now();
 }
 function stagingImgUrl(folder, file) {
-  return ghRawUrl('assets/images/staging/' + folder + '/' + file);
+  return '../assets/images/staging/' + folder + '/' + file + '?_=' + Date.now();
 }
 var LS_TOKEN  = 'admin_gh_token';
 var REWARDS_PATH = 'assets/data/rewards.json';
