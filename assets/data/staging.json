@@ -825,31 +825,6 @@
     "_duplicateOf": "pill_bug_crustacean"
   },
   {
-    "id": "bee_flying",
-    "displayName": "ハチ",
-    "icon": "🐝",
-    "folder": "Bee_flying",
-    "expressions": {
-      "normal": "Bee_flying_normal_1.png",
-      "surprised": "Bee_flying_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 308,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:07:47.231Z",
-    "_duplicateOf": "bee_flying"
-  },
-  {
     "id": "spider_web",
     "displayName": "クモ",
     "icon": "🕷️",
