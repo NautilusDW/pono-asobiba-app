@@ -68,14 +68,9 @@ exports.handler = async function(event) {
   }
 
   try {
-    // 9.5秒タイムアウト（Netlify Functionの10秒制限ギリギリ）
-    var controller = new AbortController();
-    var timeout = setTimeout(function() { controller.abort(); }, 9500);
-
     var resp = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
       body: JSON.stringify({
         contents: [{
           parts: parts
@@ -87,7 +82,6 @@ exports.handler = async function(event) {
         }
       })
     });
-    clearTimeout(timeout);
 
     var data = await resp.json();
 
@@ -115,9 +109,9 @@ exports.handler = async function(event) {
     };
   } catch (e) {
     return {
-      statusCode: e.name === 'AbortError' ? 504 : 500,
+      statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: e.name === 'AbortError' ? 'Gemini API timeout (9.5s)' : e.message })
+      body: JSON.stringify({ error: e.message })
     };
   }
 };

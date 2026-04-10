@@ -2866,7 +2866,7 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
   const idxList = cards.map(c => parseInt(c.dataset.idx));
 
   // バッチ分割（Netlify Function 10秒タイムアウト対策: 最大5枚ずつ）
-  const BATCH = 5;
+  const BATCH = 2;
   const batches = [];
   for (let i = 0; i < idxList.length; i += BATCH) {
     batches.push(idxList.slice(i, i + BATCH));
