@@ -446,10 +446,16 @@ body {
       <button class="btn btn-secondary" id="btn-hue-pick" disabled style="margin-top:4px">🔍 画像から色を拾う</button>
     </div>
 
-    <!-- 5. GitHub Token -->
+    <!-- 5. API Keys -->
     <div class="section">
-      <div class="section-title">4. GitHub トークン</div>
+      <div class="section-title">5. APIキー</div>
       <div class="form-row">
+        <label>Gemini API キー</label>
+        <input type="password" id="gemini-key" placeholder="AIzaSy...">
+      </div>
+      <div id="gemini-key-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
+      <div class="form-row" style="margin-top:6px;">
+        <label>GitHub トークン</label>
         <input type="password" id="gh-token" placeholder="ghp_xxxx...">
       </div>
       <div id="gh-token-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
@@ -569,6 +575,7 @@ const GH_OWNER  = 'NautilusDW';
 const GH_REPO   = 'kids-writing-app';
 const GH_BRANCH = 'develop';
 const LS_TOKEN  = 'admin_gh_token';
+const LS_GEMINI = 'ces_gemini_key';
 const CREATURES_PATH = 'assets/data/creatures.json';
 const HARDCODED_IDS  = ['octopus','jellyfish','turtle','fish','submarine','sunfish','shark'];
 
@@ -599,6 +606,8 @@ let linkLines = [];            // [{x1,y1,x2,y2}] processedCanvas座標
 // ════════════════════════════════════════════════════════════
 const getToken = () => localStorage.getItem(LS_TOKEN) || '';
 const setToken = v  => localStorage.setItem(LS_TOKEN, v);
+const getGeminiKey = () => localStorage.getItem(LS_GEMINI) || '';
+const setGeminiKey = v => localStorage.setItem(LS_GEMINI, v);
 
 function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
 function base64ToUtf8(b64) { return decodeURIComponent(escape(atob(b64))); }
@@ -652,8 +661,18 @@ function canvasToBase64(canvas) {
 }
 
 // ════════════════════════════════════════════════════════════
-// GitHub Token
+// API Keys
 // ════════════════════════════════════════════════════════════
+// Gemini
+const geminiKeyInput = document.getElementById('gemini-key');
+geminiKeyInput.value = getGeminiKey();
+document.getElementById('gemini-key-status').textContent = getGeminiKey() ? '✅ 設定済み' : '未設定（AI命名に必要）';
+geminiKeyInput.addEventListener('input', () => {
+  const v = geminiKeyInput.value.trim();
+  setGeminiKey(v);
+  document.getElementById('gemini-key-status').textContent = v ? '✅ 保存しました' : '';
+});
+// GitHub
 const ghTokenInput = document.getElementById('gh-token');
 ghTokenInput.value = getToken();
 document.getElementById('gh-token-status').textContent = getToken() ? '✅ 設定済み（管理ダッシュボードと共有）' : '未設定';
@@ -2700,20 +2719,23 @@ function autoTranslateId(name, idEl, idx) {
     idEl.value = id; sprites[idx].id = id;
     return;
   }
-  // 日本語含む場合: デバウンスしてAPI翻訳
+  // 日本語含む場合: デバウンスしてGemini直接翻訳
   _translateTimer = setTimeout(async () => {
     if (idEl.dataset.manual) return;
+    const apiKey = getGeminiKey();
+    if (!apiKey) return;
     try {
-      const r = await fetch('/.netlify/functions/ai-name', {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `「${trimmed}」を英語のスネークケースID 1語で返してください。例: カブトムシ→beetle、しょうぼうしゃ→fire_engine。IDのみ出力、説明不要。` })
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `「${trimmed}」を英語のスネークケースID 1語で返してください。例: カブトムシ→beetle、しょうぼうしゃ→fire_engine。IDのみ出力、説明不要。` }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 64 }
+        })
       });
-      const ct = r.headers.get('content-type') || '';
-      if (!ct.includes('application/json')) return;
       const data = await r.json();
-      if (!r.ok) return;
-      let id = (data.text || '').trim().toLowerCase()
+      if (!r.ok || !data.candidates?.[0]?.content) return;
+      let id = (data.candidates[0].content.parts[0].text || '').trim().toLowerCase()
         .replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
       if (id && !idEl.dataset.manual) { idEl.value = id; sprites[idx].id = id; }
     } catch {}
@@ -2742,22 +2764,30 @@ async function aiNameSprite(idx) {
 使用禁止ID（既登録）: ${[...existingIds].join(', ')}
 ルール: IDは半角英数とアンダースコアのみ。既存IDと重複禁止。`;
 
-  const r = await fetch('/.netlify/functions/ai-name', {
+  // 直接 Gemini API を叩く
+  const apiKey = getGeminiKey();
+  if (!apiKey) throw new Error('Gemini APIキーが設定されていません');
+
+  const model = 'gemini-2.0-flash';
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const r = await fetch(apiUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: base64, mimeType: 'image/png', prompt })
+    body: JSON.stringify({
+      contents: [{ parts: [
+        { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+        { text: prompt }
+      ]}],
+      generationConfig: { temperature: 0.2, responseMimeType: 'application/json', maxOutputTokens: 1024 }
+    })
   });
-  const ct = r.headers.get('content-type') || '';
-  let data;
-  if (ct.includes('application/json')) {
-    data = await r.json();
-  } else {
-    const txt = await r.text();
-    throw new Error('HTTP ' + r.status + ' (non-JSON): ' + txt.slice(0, 100));
-  }
-  if (!r.ok) throw new Error(data.error || 'API error');
+  const data = await r.json();
+  if (!r.ok) throw new Error('Gemini API error: ' + (data.error?.message || 'unknown'));
+  if (!data.candidates?.[0]?.content) throw new Error('Gemini応答が空です');
 
-  const m = (data.text || '').match(/\{[\s\S]*\}/);
+  const text = data.candidates[0].content.parts[0].text;
+  const m = (text || '').match(/\{[\s\S]*\}/);
   if (!m) throw new Error('JSONが見つかりません');
   const res = JSON.parse(m[0]);
 
@@ -2823,23 +2853,31 @@ async function aiGroupSprites(idxList) {
 使用禁止ID（既登録）: ${[...existingIds].join(', ')}
 ルール: 全画像番号を必ずどれかのグループに含める。IDは半角英数とアンダースコアのみ。重複IDは禁止。`;
 
-  const r = await fetch('/.netlify/functions/ai-name', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ images, prompt })
-  });
-  const ct2 = r.headers.get('content-type') || '';
-  let data;
-  if (ct2.includes('application/json')) {
-    data = await r.json();
-  } else {
-    const txt = await r.text();
-    throw new Error('HTTP ' + r.status + ' (non-JSON): ' + txt.slice(0, 100));
-  }
-  if (!r.ok) throw new Error(data.error || 'API error');
+  // 直接 Gemini API を叩く（Netlifyの10秒制限を回避）
+  const apiKey = getGeminiKey();
+  if (!apiKey) throw new Error('Gemini APIキーが設定されていません。左パネルの「APIキー」に入力してください。');
 
-  const m = (data.text || '').match(/\[[\s\S]*\]/);
-  if (!m) throw new Error('Geminiの応答からJSONが見つかりません');
+  const model = 'gemini-2.0-flash';
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const parts = images.map(img => ({ inline_data: { mime_type: img.mimeType, data: img.data } }));
+  parts.push({ text: prompt });
+
+  const r = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.2, responseMimeType: 'application/json', maxOutputTokens: 4096 }
+    })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error('Gemini API error: ' + (data.error?.message || JSON.stringify(data.error || data)));
+  if (!data.candidates?.[0]?.content) throw new Error('Gemini応答が空です');
+
+  const text = data.candidates[0].content.parts[0].text;
+  const m = (text || '').match(/\[[\s\S]*\]/);
+  if (!m) throw new Error('JSONが見つかりません: ' + (text || '').slice(0, 100));
   const raw = JSON.parse(m[0]);
 
   // position index → actual sprite index に変換 + ID dedup
@@ -2865,35 +2903,10 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
 
   const idxList = cards.map(c => parseInt(c.dataset.idx));
 
-  // バッチ分割（Netlify Function 10秒タイムアウト対策: 最大5枚ずつ）
-  const BATCH = 2;
-  const batches = [];
-  for (let i = 0; i < idxList.length; i += BATCH) {
-    batches.push(idxList.slice(i, i + BATCH));
-  }
-
-  showLoading(`AI命名中... 0/${batches.length}バッチ (${idxList.length}体)`);
-  let allGroups = [];
-  let done = 0;
+  showLoading(`AI命名中... (${idxList.length}体 → Gemini直接 1回)`);
 
   try {
-    for (const batch of batches) {
-      let groups = null;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          document.getElementById('loading-msg').textContent =
-            `AI命名中... ${done+1}/${batches.length}バッチ${attempt > 1 ? ' (リトライ' + attempt + ')' : ''}`;
-          groups = await aiGroupSprites(batch);
-          break;
-        } catch (retryErr) {
-          if (attempt === 3) throw retryErr;
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      }
-      allGroups = allGroups.concat(groups);
-      done++;
-      if (done < batches.length) await new Promise(r => setTimeout(r, 500));
-    }
+    const allGroups = await aiGroupSprites(idxList);
 
     allGroups.forEach(g => {
       g.indices.forEach(idx => {
@@ -2910,12 +2923,11 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
     });
 
     hideLoading();
-    const apiCalls = batches.length;
-    showToast(`命名完了: ${allGroups.length}種類 / ${idxList.length}体 (API: ${apiCalls}回)`, true);
+    showToast(`命名完了: ${allGroups.length}種類 / ${idxList.length}体 (API: 1回)`, true);
   } catch (e) {
     hideLoading();
-    showToast('命名失敗 (バッチ' + done + '/' + batches.length + '): ' + e.message, false);
-    console.error('[aiGroupSprites] batch ' + done + '/' + batches.length, e);
+    showToast('命名失敗: ' + e.message, false);
+    console.error('[aiGroupSprites]', e);
   }
 });
 
