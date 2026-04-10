@@ -3300,22 +3300,24 @@ function adoptStaging(idx, entry) {
     if (Array.isArray(tgtNorm)) tgtNorm = tgtNorm[0];
     var dstPath = 'assets/images/ocean/' + target.folder + '/' + tgtNorm;
 
+    var uploadedBase64 = null;
     fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data.content) throw new Error('staging 画像が見つかりません');
-        return ghUploadPromise(dstPath, data.content.replace(/\n/g, ''), '✅ replace: ' + target.id + ' ← staging/' + entry.folder);
+        uploadedBase64 = data.content.replace(/\n/g, '');
+        return ghUploadPromise(dstPath, uploadedBase64, '✅ replace: ' + target.id + ' ← staging/' + entry.folder);
       })
       .then(function() {
         ov.remove();
         showToast('✅ 「' + target.displayName + '」の画像を差し替えました', true);
+        // 差し替えた画像のbase64をセッションに保存（サムネイル即時反映用）
+        if (uploadedBase64) {
+          if (!window._replacedImages) window._replacedImages = {};
+          window._replacedImages[target.folder + '/' + tgtNorm] = 'data:image/png;base64,' + uploadedBase64;
+        }
         _creatureFolderCache = {};
-        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
-          .then(function(r) { return r.ok ? r.json() : null; })
-          .then(function(d) {
-            if (d && d.content) try { creaturesData = JSON.parse(base64ToUtf8(d.content.replace(/\n/g, ''))); } catch(e) {}
-            renderIllust();
-          });
+        renderIllust();
       })
       .catch(function(e) {
         showToast('差し替え失敗: ' + e.message, false);
@@ -5829,16 +5831,16 @@ function renderIllust() {
           thumb.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           thumb.title = 'クリックで拡大';
           thumb.onerror = function() { this.style.display = 'none'; };
-          // GitHub APIからdownload_urlを取得（CDNキャッシュ回避）
-          var fallbackSrc = oceanImgUrl(creature.folder, normFile);
-          thumb.src = fallbackSrc;
-          (function(t, folder, file, name) {
-            var apiPath = 'assets/images/ocean/' + folder + '/' + file;
-            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + apiPath + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders() })
-              .then(function(r) { return r.ok ? r.json() : null; })
-              .then(function(d) { if (d && d.download_url) t.src = d.download_url; });
+          // 差し替え済みの画像があればdata URIで即時表示
+          var replKey = creature.folder + '/' + normFile;
+          if (window._replacedImages && window._replacedImages[replKey]) {
+            thumb.src = window._replacedImages[replKey];
+          } else {
+            thumb.src = oceanImgUrl(creature.folder, normFile);
+          }
+          (function(t, name) {
             t.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(t.src, name); });
-          })(thumb, creature.folder, normFile, it.name);
+          })(thumb, it.name);
           card.appendChild(thumb);
         }
       }
