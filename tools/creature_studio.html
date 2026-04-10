@@ -978,6 +978,7 @@ function pushEraseUndo() {
 function popEraseUndo() {
   if (!eraseUndoStack.length || !processedRaw) return;
   processedRaw.getContext('2d').putImageData(eraseUndoStack.pop(), 0, 0);
+  hueMask = null; hueSnapshot = null; // 色変換プレビュー状態をクリア
   applyFinish();
   redrawCompare();
   updateUndoButton();
@@ -1849,7 +1850,8 @@ document.getElementById('box-proc').addEventListener('click', e => {
     }
   }
 
-  // スナップショット保存
+  // undo保存（色変換前の状態）+ スナップショット保存
+  pushEraseUndo();
   hueSnapshot = ctx.getImageData(0, 0, w, h);
 
   // 色相を設定
@@ -1952,7 +1954,6 @@ document.getElementById('btn-hue-apply').addEventListener('click', () => {
     showToast('先に「🔍 画像から色を拾う」で領域を選択してください', false);
     return;
   }
-  pushEraseUndo();
   applyHuePreview(); // 最終適用
   // スナップショットを現在の状態に更新（確定）
   const ctx = processedRaw.getContext('2d');
