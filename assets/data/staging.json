@@ -1,30 +1,5 @@
 [
   {
-    "id": "wet_day",
-    "displayName": "あめ",
-    "icon": "ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ§ÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ",
-    "folder": "Wet_day",
-    "expressions": {
-      "normal": "Wet_day_normal_1.png",
-      "surprised": "Wet_day_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 278,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T04:19:11.561Z",
-    "_duplicateOf": "wet_day"
-  },
-  {
     "id": "leg",
     "displayName": "あし",
     "icon": "ÃÂÃÂ°ÃÂÃÂÃÂÃÂ¦ÃÂÃÂµ",
