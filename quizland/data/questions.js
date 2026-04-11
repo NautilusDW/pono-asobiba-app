@@ -108,7 +108,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'shape_name', shape:'triangle',  q:'これは どんな かたち？', answer:2, choices:['まる','しかく','さんかく','ほし'] },
     { level:1, type:'shape_name', shape:'heart',     q:'これは どんな かたち？', answer:0, choices:['ハート','まる','しかく','さんかく'] },
     { level:1, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:2, choices:['まる','しかく','ほし','さんかく'] },
-    { level:1, type:'shape_name', shape:'rectangle', q:'これは どんな かたち？', answer:1, choices:['しかく','ながしかく','まる','さんかく'] },
+    { level:1, type:'shape_name', shape:'rectangle', q:'これは どんな かたち？', answer:1, choices:['しかく','ちょうほうけい','まる','さんかく'] },
 
     // Level 2 (名前当て＋性質問題)
     { level:2, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','ほし'] },
@@ -117,7 +117,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','たまごがた'] },
     { level:2, type:'shape_name', shape:'triangle',  q:'このかたちの かどは なんこ？', answer:1, choices:['2こ','3こ','4こ','5こ'] },
     { level:2, type:'shape_name', shape:'square',    q:'このかたちの かどは なんこ？', answer:2, choices:['3こ','5こ','4こ','2こ'] },
-    { level:2, type:'shape_name', shape:'rectangle', q:'このかたちの なまえは？', answer:0, choices:['ながしかく','ひしがた','たまごがた','まる'] },
+    { level:2, type:'shape_name', shape:'rectangle', q:'このかたちの なまえは？', answer:0, choices:['ちょうほうけい','ひしがた','たまごがた','まる'] },
 
     // Level 3 (性質・知識問題)
     { level:3, type:'shape_name', shape:'circle',   q:'このかたちに かどは いくつ？', answer:1, choices:['2こ','0こ（ない）','4こ','1こ'] },
@@ -125,7 +125,7 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'shape_name', shape:'triangle', q:'このかたちは なん「かっけい」？', answer:1, choices:['しかっけい','さんかっけい','ごかっけい','ろっかっけい'] },
     { level:3, type:'shape_name', shape:'square',   q:'このかたちの かどは ぜんぶで いくつ？', answer:2, choices:['3こ','5こ','4こ','6こ'] },
     { level:3, type:'shape_name', shape:'diamond',  q:'ひしがたは どんな かたちの なかま？', answer:1, choices:['まるの なかま','しかくの なかま','さんかくの なかま','ほしの なかま'] },
-    { level:3, type:'shape_name', shape:'rectangle', q:'ながしかくと しかくの ちがいは？', answer:0, choices:['たてと よこの ながさが ちがう','かどの かずが ちがう','まるい','いろが ちがう'] }
+    { level:3, type:'shape_name', shape:'rectangle', q:'ちょうほうけいと しかくの ちがいは？', answer:0, choices:['たてと よこの ながさが ちがう','かどの かずが ちがう','まるい','いろが ちがう'] }
   ],
 
   // ── たべもの ──────────────────────────────────────
