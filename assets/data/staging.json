@@ -1,30 +1,5 @@
 [
   {
-    "id": "roly_poly",
-    "displayName": "だんごむし",
-    "icon": "ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ",
-    "folder": "Roly_poly",
-    "expressions": {
-      "normal": "Roly_poly_normal_1.png",
-      "surprised": "Roly_poly_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 320,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T04:19:06.493Z",
-    "_duplicateOf": "roly_poly"
-  },
-  {
     "id": "orb_weaver",
     "displayName": "クモ",
     "icon": "ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ·ÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ",
