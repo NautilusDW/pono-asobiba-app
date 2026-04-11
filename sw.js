@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 33;
+const CACHE_VERSION = 34;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -22,6 +22,12 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
+
+  // 管理ツール（tools/, admin/）は常にネットワークから取得、キャッシュしない
+  if (event.request.url.includes('/tools/') || event.request.url.includes('/admin/')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
 
   // HTML はキャッシュしない（常に最新を取得）
   const isHTML = event.request.destination === 'document'
