@@ -171,13 +171,12 @@
   // ── CSS フォールバックアニメーション ──────────────────────────────────────────
   function _fallbackCss() {
     if (_fallbackStarted || _finished) return;
-    _fallbackStarted = true; // DOM 挿入の重複防止
-    // フォールバック要素を挿入
+    _fallbackStarted = true;
+    _destroyVideo(); // iOS: video要素を残すと黒い矩形が表示される
     var fb = document.createElement('div');
     fb.className = 'treasure-fallback';
     fb.innerHTML = '<div class="treasure-fallback-icon">🎁</div>';
     _container.insertBefore(fb, _container.firstChild);
-    // 1.2秒後に報酬表示
     _later(function() { _showReward(); }, 1200);
   }
 
@@ -212,100 +211,86 @@
     _overlay.classList.add('show');
 
     // ── 動画要素を毎回新規生成 ──
-    // 重要: 全属性を load() 前に設定する（iOS Safari の autoplay 許可条件）
     var basePath = _getBasePath();
-    var mp4Path  = basePath + 'TreasureBox.mp4?' + Date.now();
+    var mp4Path  = basePath + 'TreasureBox.mp4'; // キャッシュバスターなし（iOS互換性）
 
     _video = document.createElement('video');
-    _video.muted        = true;
-    _video.playsInline  = true;
-    _video.preload      = 'auto';
+    _video.muted       = true;
+    _video.playsInline = true;
+    _video.preload     = 'auto';
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
+    _video.src = mp4Path; // <source>ではなくsrc直接（iOS: errorイベントがvideo要素で発火する）
 
-    // MP4 のみを使用（TreasureBox.webm は存在しないので source にしない）
-    var srcMp4 = document.createElement('source');
-    srcMp4.src  = mp4Path;
-    srcMp4.type = 'video/mp4';
-    _video.appendChild(srcMp4);
-
-    // reward は video の上に重ねる
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
 
-    // ── stale closure 対策: この呼び出しの video をキャプチャ ──────────────────
     var capturedVideo = _video;
+    var readyFired = false; // canplay/loadeddata/即座play の排他フラグ
 
-    // ── 5秒 soft timeout（canplay が来なければ CSS フォールバック）──
-    // モバイル回線では2.5秒では不十分なため延長
+    // ── 3秒 soft timeout ──
     var softTimeoutId = _later(function() {
-      if (_video !== capturedVideo) return;
-      console.warn('[treasure] canplay timeout → CSS fallback');
+      if (_video !== capturedVideo || readyFired) return;
+      console.warn('[treasure] timeout → CSS fallback');
       _fallbackCss();
-    }, 5000);
+    }, 3000);
 
-    // error のみフォールバック（stalled はモバイルの正常なバッファリングでも発生するため除外）
-    function onMediaError() {
-      capturedVideo.removeEventListener('error', onMediaError);
-      if (_video !== capturedVideo) return;
+    // ── エラーハンドラ ──
+    function onMediaError(e) {
+      if (_video !== capturedVideo || readyFired) return;
+      readyFired = true;
       clearTimeout(softTimeoutId);
-      _pendingTimers = _pendingTimers.filter(function(t) { return t !== softTimeoutId; });
-      console.warn('[treasure] media error → CSS fallback');
+      console.warn('[treasure] error → CSS fallback', e);
       _fallbackCss();
     }
     capturedVideo.addEventListener('error', onMediaError);
 
-    // canplay 待ち → play()
-    capturedVideo.addEventListener('canplay', function onCanPlay() {
-      if (_video !== capturedVideo) return; // stale
-      clearTimeout(softTimeoutId);
-      _pendingTimers = _pendingTimers.filter(function(t) { return t !== softTimeoutId; });
-      capturedVideo.removeEventListener('error',   onMediaError);
-      capturedVideo.removeEventListener('stalled', onMediaError);
-
-      // onended → _showReward（排他制御済み）
+    // ── 再生成功時の共通処理 ──
+    function onPlaySuccess() {
+      if (_video !== capturedVideo) return;
+      // ※ iOS: unmute しない（async unmute は iOS で再生停止の原因）
       capturedVideo.addEventListener('ended', function() {
         if (_video !== capturedVideo) return;
         _showReward();
       }, { once: true });
+      // duration ベースのフォールバック
+      var dur = capturedVideo.duration;
+      var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 5000;
+      _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
+    }
 
-      // 再生開始
+    // ── canplay / loadeddata → play() ──
+    function onReady() {
+      if (readyFired || _video !== capturedVideo) return;
+      readyFired = true;
+      clearTimeout(softTimeoutId);
       var p = capturedVideo.play();
       if (p && typeof p.then === 'function') {
-        p.then(function() {
+        p.then(onPlaySuccess).catch(function() {
           if (_video !== capturedVideo) return;
-          // 再生成功 → unmute
-          capturedVideo.muted = false;
-          // duration ベースのフォールバックタイマー
-          var dur = capturedVideo.duration;
-          var fallbackMs = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 7000;
-          _later(function() { if (_video === capturedVideo) _showReward(); }, fallbackMs);
-        }).catch(function(err) {
-          if (_video !== capturedVideo) return;
-          console.warn('[treasure] play() rejected:', err);
-          // 1回だけリトライ（muted 維持）
-          var p2 = capturedVideo.play();
-          if (p2 && typeof p2.then === 'function') {
-            p2.then(function() {
-              if (_video !== capturedVideo) return;
-              var dur = capturedVideo.duration;
-              var fallbackMs = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 7000;
-              _later(function() { if (_video === capturedVideo) _showReward(); }, fallbackMs);
-            }).catch(function() {
-              if (_video !== capturedVideo) return;
-              // 2回失敗 → CSS フォールバック
-              _fallbackCss();
-            });
-          } else {
-            _fallbackCss();
-          }
+          _fallbackCss();
         });
       } else {
-        // 古いブラウザ: play() が Promise を返さない
-        _later(function() { if (_video === capturedVideo) _showReward(); }, 7000);
+        onPlaySuccess();
       }
-    }, { once: true });
+    }
+    capturedVideo.addEventListener('canplay', onReady, { once: true });
+    capturedVideo.addEventListener('loadeddata', onReady, { once: true });
 
-    // load 開始
+    // ── load + 即座に play() を試行（iOS muted autoplay） ──
     _video.load();
+    var p0 = capturedVideo.play();
+    if (p0 && typeof p0.then === 'function') {
+      p0.then(function() {
+        // 即座再生成功 → canplay/loadeddata リスナーを除去
+        capturedVideo.removeEventListener('canplay', onReady);
+        capturedVideo.removeEventListener('loadeddata', onReady);
+        if (readyFired || _video !== capturedVideo) return;
+        readyFired = true;
+        clearTimeout(softTimeoutId);
+        onPlaySuccess();
+      }).catch(function() {
+        // 即座の play 失敗 → canplay/loadeddata を待つ（何もしない）
+      });
+    }
   };
 })();
