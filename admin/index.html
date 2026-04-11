@@ -5990,12 +5990,20 @@ function _renderStagingIllust(container, creatureLookup) {
       header.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
       header.innerHTML =
         '<span style="font-size:1rem;font-weight:900;">📦 差し替え候補 (staging)</span>' +
-        '<span style="background:#F59E0B;color:#fff;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">' + items.length + '体</span>' +
-        '<span style="font-size:0.72rem;color:#8B7355;">水族館 → イラスト管理で採用/削除できます</span>';
+        '<span style="background:#F59E0B;color:#fff;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">' + items.length + '体</span>';
+      var selAllBtn = document.createElement('button');
+      selAllBtn.textContent = '全選択';
+      selAllBtn.style.cssText = 'padding:3px 8px;background:#eee;border:1px solid #ccc;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;';
+      header.appendChild(selAllBtn);
+      var delSelBtn = document.createElement('button');
+      delSelBtn.textContent = '🗑️ 選択を削除';
+      delSelBtn.style.cssText = 'padding:3px 8px;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;color:#DC2626;';
+      header.appendChild(delSelBtn);
       div.appendChild(header);
 
       var grid = document.createElement('div');
       grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;';
+      var checkboxes = [];
 
       items.forEach(function(entry, idx) {
         var card = document.createElement('div');
@@ -6003,6 +6011,15 @@ function _renderStagingIllust(container, creatureLookup) {
           'display:flex;flex-direction:column;align-items:center;padding:8px 6px;position:relative;' +
           'border-radius:10px;border:2px solid #F59E0B;background:#FFFBEB;' +
           'font-size:0.72rem;font-weight:700;gap:4px;text-align:center;';
+
+        // チェックボックス（左上）
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.style.cssText = 'position:absolute;top:4px;left:4px;cursor:pointer;';
+        cb.dataset.idx = idx;
+        cb.addEventListener('click', function(e) { e.stopPropagation(); });
+        card.appendChild(cb);
+        checkboxes.push(cb);
 
         var normFile = entry.expressions && entry.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
@@ -6084,6 +6101,41 @@ function _renderStagingIllust(container, creatureLookup) {
       });
 
       div.appendChild(grid);
+
+      // 全選択ボタン
+      var allChecked = false;
+      selAllBtn.addEventListener('click', function() {
+        allChecked = !allChecked;
+        checkboxes.forEach(function(c) { c.checked = allChecked; });
+        selAllBtn.textContent = allChecked ? '全解除' : '全選択';
+      });
+
+      // 選択削除ボタン
+      delSelBtn.addEventListener('click', function() {
+        var selected = checkboxes.filter(function(c) { return c.checked; }).map(function(c) { return parseInt(c.dataset.idx); });
+        if (!selected.length) { showToast('削除するものを選択してください', false); return; }
+        if (!confirm(selected.length + '件をステージングから削除しますか？')) return;
+        // 大きいインデックスから削除（splice対策）
+        selected.sort(function(a,b) { return b - a; });
+        var STAGING_PATH = 'assets/data/staging.json';
+        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(data) {
+            var sitems = [];
+            if (data && data.content) {
+              try { sitems = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+            }
+            if (!Array.isArray(sitems)) sitems = [];
+            selected.forEach(function(i) { if (i < sitems.length) sitems.splice(i, 1); });
+            return ghUploadPromise(STAGING_PATH, utf8ToBase64(JSON.stringify(sitems, null, 2)), '📦 bulk remove ' + selected.length + ' from staging');
+          })
+          .then(function() {
+            showToast('✅ ' + selected.length + '件を削除しました', true);
+            renderIllust();
+          })
+          .catch(function(e) { showToast('削除失敗: ' + e.message, false); });
+      });
+
       container.appendChild(div);
     })
     .catch(function() {});
