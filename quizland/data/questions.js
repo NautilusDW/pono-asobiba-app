@@ -108,7 +108,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'shape_name', shape:'triangle',  q:'これは どんな かたち？', answer:2, choices:['まる','しかく','さんかく','ほし'] },
     { level:1, type:'shape_name', shape:'heart',     q:'これは どんな かたち？', answer:0, choices:['ハート','まる','しかく','さんかく'] },
     { level:1, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:2, choices:['まる','しかく','ほし','さんかく'] },
-    { level:1, type:'shape_name', shape:'rectangle', q:'これは どんな かたち？', answer:1, choices:['しかく','ちょうほうけい','まる','さんかく'] },
+    { level:2, type:'shape_name', shape:'rectangle', q:'これは どんな かたち？', answer:1, choices:['しかく','ちょうほうけい','まる','さんかく'] },
 
     // Level 2 (名前当て＋性質問題)
     { level:2, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:3, choices:['まる','しかく','さんかく','ほし'] },
@@ -553,7 +553,7 @@ const QUIZLAND_QUESTIONS = {
       detail:'にんげんの ちは てつで あかいけど、タコは どうで あおいよ！'},
     { level:3, type:'trivia', category:'trivia',
       q:'めが 8つある いきものは？',
-      hint:'あしも 8ぽん あるよ！むしじゃないよ！',
+      hint:'あしも 8ぽん あるよ！じつは むしじゃないよ！',
       answer:1, choices:['カブトムシ','クモ','チョウチョ','バッタ'] ,
       detail:'クモの 8つの めは うえ・よこ・まえと いろんな ほうこうを みるよ！'},
     { level:3, type:'trivia', category:'trivia',
