@@ -358,19 +358,28 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'animal', img:'Elephant/Elephant_normal_1.png', q:'これは なに？', answer:2, choices:['きりん','ライオン','ぞう','パンダ'] },
     { level:1, type:'emoji_name', category:'animal', img:'Panda/Panda_normal_1.png', q:'これは なに？', answer:0, choices:['パンダ','くま','ねこ','たぬき'] },
     { level:1, type:'emoji_name', category:'animal', img:'Rabbit/Rabbit_normal_1.png', q:'これは なに？', answer:2, choices:['いぬ','ねこ','うさぎ','くま'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Hamster/Hamster_normal_1.png', q:'これは なに？', answer:2, choices:['ねこ','リス','ハムスター','うさぎ'] },
+    { level:2, type:'emoji_name', category:'animal', img:'Hamster/Hamster_normal_1.png', q:'これは なに？', answer:2, choices:['ねこ','リス','ハムスター','うさぎ'] },
     { level:1, type:'emoji_name', category:'animal', img:'Bear/Bear_normal_1.png', q:'これは なに？', answer:1, choices:['パンダ','くま','たぬき','いのしし'] },
     { level:1, type:'emoji_name', category:'animal', img:'Cow/Cow_normal_1.png', q:'これは なに？', answer:1, choices:['うま','うし','ひつじ','ぶた'] },
 
     // Level 2
     { level:2, type:'emoji_name', category:'animal', img:'Lion/Lion_normal_1.png', q:'これは なに？', answer:1, choices:['とら','ライオン','ひょう','チーター'] },
     { level:2, type:'emoji_name', category:'animal', img:'Giraffe/Giraffe_normal_1.png', q:'これは なに？', answer:2, choices:['うま','シマウマ','きりん','らくだ'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Frog/Frog_normal_1.png', q:'これは なに？', answer:0, choices:['かえる','トカゲ','かめ','ヘビ'] },
+    { level:1, type:'emoji_name', category:'animal', img:'Frog/Frog_normal_1.png', q:'これは なに？', answer:0, choices:['かえる','トカゲ','かめ','ヘビ'] },
     { level:2, type:'emoji_name', category:'animal', img:'Tiger/Tiger_normal_1.png', q:'これは なに？', answer:3, choices:['ライオン','チーター','ひょう','とら'] },
     { level:2, type:'emoji_name', category:'animal', img:'Wolf/Wolf_normal_1.png', q:'これは なに？', answer:2, choices:['ライオン','キツネ','おおかみ','タヌキ'] },
     { level:2, type:'emoji_name', category:'animal', img:'Fox/Fox_normal_1.png', q:'これは なに？', answer:1, choices:['いぬ','キツネ','タヌキ','おおかみ'] },
     { level:2, type:'emoji_name', category:'animal', img:'Zebra/Zebra_normal_1.png', q:'これは なに？', answer:1, choices:['ロバ','シマウマ','らくだ','きりん'] },
     { level:2, type:'emoji_name', category:'animal', img:'Rhino/Rhino_normal_1.png', q:'これは なに？', answer:2, choices:['ゾウ','カバ','サイ','スイギュウ'] },
+
+    // Level 3: 珍しい動物の画像問題
+    { level:3, type:'emoji_name', category:'animal', img:'Platypus/Platypus_normal_1.png', q:'これは なに？', answer:2, choices:['ビーバー','ラッコ','カモノハシ','アザラシ'] },
+    { level:3, type:'emoji_name', category:'animal', img:'Sloth/Sloth_normal_1.png', q:'これは なに？', answer:1, choices:['コアラ','ナマケモノ','サル','タヌキ'] },
+    { level:3, type:'emoji_name', category:'animal', img:'Gorilla/Gorilla_normal_1.png', q:'これは なに？', answer:0, choices:['ゴリラ','チンパンジー','オランウータン','くま'] },
+    { level:3, type:'emoji_name', category:'animal', img:'Kangaroo/Kangaroo_normal_1.png', q:'これは なに？', answer:3, choices:['ウサギ','シカ','キツネ','カンガルー'] },
+    { level:3, type:'emoji_name', category:'animal', img:'Raccoon/Raccoon_normal_1.png', q:'これは なに？', answer:1, choices:['タヌキ','アライグマ','キツネ','ハクビシン'] },
+    { level:3, type:'emoji_name', category:'animal', img:'Bat/Bat_normal_1.png', q:'これは なに？', answer:2, choices:['フクロウ','スズメ','コウモリ','カラス'] },
+    { level:3, type:'emoji_name', category:'animal', img:'Horse/Horse_normal_1.png', q:'これは なに？', answer:0, choices:['ウマ','ロバ','シマウマ','らくだ'] },
 
     // Level 3: 豆知識型
     { level:3, type:'trivia', category:'animal',
@@ -442,6 +451,13 @@ const QUIZLAND_QUESTIONS = {
       q:'カブトムシの ツノが あるのは？',
       answer:0, choices:['オスだけ','メスだけ','りょうほう','どちらにも ない'] ,
       detail:'オスは ツノで たたかって メスに アピールするよ！'},
+
+    // Level 3: 珍しい虫の画像問題
+    { level:3, type:'emoji_name', category:'insect', img:'Lightning_bug/Lightning_bug_normal_1.png', q:'これは なに？', answer:1, choices:['テントウムシ','ホタル','ハエ','カナブン'] },
+    { level:3, type:'emoji_name', category:'insect', img:'Praying_mantis/Praying_mantis_normal_1.png', q:'これは なに？', answer:0, choices:['カマキリ','バッタ','コオロギ','キリギリス'] },
+    { level:3, type:'emoji_name', category:'insect', img:'Dragonfly/Dragonfly_normal_1.png', q:'これは なに？', answer:2, choices:['チョウ','ハチ','トンボ','セミ'] },
+    { level:3, type:'emoji_name', category:'insect', img:'Cicada/Cicada_normal_1.png', q:'これは なに？', answer:3, choices:['カブトムシ','ハチ','カナブン','セミ'] },
+    { level:3, type:'emoji_name', category:'insect', img:'Cabbage_white/Cabbage_white_normal_1.png', q:'これは なに？', answer:1, choices:['アゲハチョウ','モンシロチョウ','ガ','トンボ'] },
 
     // Level 3: 豆知識型
     { level:3, type:'trivia', category:'insect',
