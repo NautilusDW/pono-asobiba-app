@@ -1612,10 +1612,12 @@ function _startWordContextPhase(char, data, onComplete) {
   wcWrap.id = 'wordContextWrap';
 
   // Emoji
-  var emojiDiv = document.createElement('div');
-  emojiDiv.className = 'word-context-emoji';
-  emojiDiv.textContent = data.emoji;
-  wcWrap.appendChild(emojiDiv);
+  if (data.emoji) {
+    var emojiDiv = document.createElement('div');
+    emojiDiv.className = 'word-context-emoji';
+    emojiDiv.textContent = data.emoji;
+    wcWrap.appendChild(emojiDiv);
+  }
 
   // Word row
   var wordRow = document.createElement('div');
@@ -1685,6 +1687,7 @@ function _startWordContextPhase(char, data, onComplete) {
       _hedgeBubble.textContent = 'すごーい！';
       _ponoBubble.textContent = 'すごーい！';
       setTimeout(function() {
+        if (!_rowPracticeActive) return;
         wcWrap.remove();
         canvasWrap.style.display = '';
         if (onComplete) onComplete();
@@ -1736,6 +1739,8 @@ fixViewportHeight();
 
 // ===== Button handlers =====
 btnClear.addEventListener('click', () => {
+  // Ignore during word context phase
+  if (document.getElementById('wordContextWrap')) return;
   if (writer) {
     writerTarget.innerHTML = '';
     const char = getCurrentChar();
@@ -1744,6 +1749,8 @@ btnClear.addEventListener('click', () => {
 });
 
 btnHint.addEventListener('click', () => {
+  // Ignore during word context phase
+  if (document.getElementById('wordContextWrap')) return;
   if (writer) {
     writer.cancelQuiz();
     document.getElementById('demoIndicator').style.display = 'block';
@@ -1848,7 +1855,49 @@ function showTutorial() {
           setTimeout(function() {
             dim.classList.add('hidden');
             bubble.classList.add('hidden');
-            startQuiz();
+            if (_rowPracticeActive) {
+              // Resume row practice Phase 2 (guided quiz)
+              _rowPracticePhase = 'quiz_guided';
+              _hedgeBubble.textContent = 'かいてみよう！';
+              _ponoBubble.textContent = 'かいてみよう！';
+              writer.quiz({
+                onCorrectStroke: function() { playStrokeSound(); },
+                onComplete: function() {
+                  if (!_rowPracticeActive) return;
+                  playSuccessSound();
+                  launchConfetti();
+                  saveStamp(currentCategory, currentCharIndex);
+                  markCharDone(currentCharIndex);
+                  awardPoints(2);
+                  if (window.incrementStat) {
+                    window.incrementStat('writing_chars', 1);
+                    if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
+                    if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
+                  }
+                  var data = WORD_DATA[currentCategory][currentCharIndex];
+                  var char = CATEGORIES[currentCategory].chars[currentCharIndex];
+                  if (data && data.word) {
+                    _rowPracticePhase = 'show_word';
+                    _showRowPracticeWord(char, data, function() {
+                      _rowPracticePhase = 'quiz_free';
+                      _hedgeBubble.textContent = 'ことばで かこう！';
+                      _ponoBubble.textContent = 'ことばで かこう！';
+                      _startWordContextPhase(char, data, function() {
+                        _rowPracticeStep++;
+                        _rowPracticeNextChar();
+                      });
+                    });
+                  } else {
+                    setTimeout(function() { _rowPracticeStep++; _rowPracticeNextChar(); }, 1200);
+                  }
+                },
+                showHintAfterMisses: 3,
+                highlightOnComplete: true,
+                highlightCompleteColor: currentScheme.stroke
+              });
+            } else {
+              startQuiz();
+            }
           }, 1000);
         }
       });
