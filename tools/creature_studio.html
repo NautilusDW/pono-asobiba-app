@@ -123,6 +123,8 @@ body {
 .atbtn:disabled { opacity: 0.4; cursor: default; }
 .atbtn-primary { background: #dc2626; color: #fff; border-color: #dc2626; }
 .atbtn-primary:hover:not(:disabled) { background: #b91c1c; }
+.atbtn-blue { background: #2563eb; color: #fff; border-color: #2563eb; }
+.atbtn-blue:hover:not(:disabled) { background: #1d4ed8; }
 
 .tab-bar {
   display: flex; background: #1f2937;
@@ -507,7 +509,7 @@ body {
     <!-- Action toolbar -->
     <div class="action-toolbar" id="action-toolbar">
       <button class="atbtn atbtn-primary" id="btn-process" disabled>▶ 背景を消す</button>
-      <button class="atbtn" id="btn-skip-bg" disabled title="背景を残したままスプライト分割">⏭ 背景を残す</button>
+      <button class="atbtn atbtn-blue" id="btn-skip-bg" disabled title="背景を残したままスプライト分割">⏭ 背景を残す</button>
       <button class="atbtn" id="btn-finish" disabled title="シュリンク・フチなめらか・αぼかし適用">🔧 仕上げ</button>
       <button class="atbtn" id="btn-split" disabled>✂️ 分割</button>
       <div style="flex:1"></div>
@@ -2631,8 +2633,12 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
           const gi = gy * w + gx;
           if (!fg[gi]) continue;
           const mappedRoot = rootToMerged.get(find(gi));
-          if (mappedRoot === undefined) continue; // minSize以下の小コンポーネント → そのまま
+          if (mappedRoot === undefined) continue; // マッピングなし → そのまま
           if (allowedRoots.has(mappedRoot)) continue; // 自分のスプライト → OK
+          // このコンポーネントが自分のbbox内に完全に収まっている → 自分の一部（目玉等）
+          const otherBox = boxes.get(mappedRoot);
+          if (otherBox && otherBox.x1 >= b.x1 && otherBox.y1 >= b.y1 &&
+              otherBox.x2 <= b.x2 && otherBox.y2 <= b.y2) continue;
           // keepBg: 重なり領域内のみマスク
           if (keepBg && !overlapMask[ly * sw2 + lx]) continue;
           const pi = (ly * sw2 + lx) * 4;
