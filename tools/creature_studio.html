@@ -398,11 +398,12 @@ body {
   padding: 8px 10px; border-top: 1px solid #374151; background: #111827; flex-shrink: 0;
 }
 .composite-preview-wrap {
-  max-height: 90px; overflow: hidden; margin-bottom: 6px;
+  max-height: 280px; overflow: auto; margin-bottom: 6px;
   display: flex; align-items: center; justify-content: center;
   background: #0d1117; border-radius: 6px; border: 1px solid #374151;
+  padding: 4px;
 }
-.composite-preview-wrap canvas { max-height: 85px; object-fit: contain; }
+.composite-preview-wrap canvas { max-width: 100%; max-height: 270px; object-fit: contain; }
 
 /* ── Zoom + BG Bar ── */
 .zoom-bar {
@@ -4083,7 +4084,7 @@ function updateCompositePreview() {
   const cv = composeSelections();
   if (!cv) return;
   // プレビュー用に縮小
-  const maxH = 85, maxW = wrap.clientWidth || 400;
+  const maxH = 260, maxW = wrap.clientWidth || 600;
   const scale = Math.min(1, maxW / cv.width, maxH / cv.height);
   const pvCv = document.createElement('canvas');
   pvCv.width = Math.round(cv.width * scale);
