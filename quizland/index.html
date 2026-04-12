@@ -735,12 +735,17 @@ function renderEmojiName(stage, q) {
     emojiEl.textContent = q.emoji;
     wrap.appendChild(emojiEl);
   }
-  if (q.hint) {
+  if (q.hint && q.img) {
+    // 画像問題のヒント: 3秒後にフェードイン
     const hint = document.createElement('div');
     hint.className = 'emoji-hint';
     hint.textContent = '💡 ' + q.hint;
+    hint.style.opacity = '0';
+    hint.style.transition = 'opacity 0.5s';
     wrap.appendChild(hint);
+    setTimeout(() => { hint.style.opacity = '1'; }, 3000);
   }
+  // trivia問題のhintは表示しない（正解後にdetailと一緒に表示）
   stage.appendChild(wrap);
 }
 
@@ -758,12 +763,7 @@ function renderTrivia(stage, q) {
   emojiEl.className = 'emoji-main';
   emojiEl.textContent = '❓';
   wrap.appendChild(emojiEl);
-  if (q.hint) {
-    const hint = document.createElement('div');
-    hint.className = 'emoji-hint';
-    hint.textContent = q.hint;
-    wrap.appendChild(hint);
-  }
+  // hintは正解後にdetailと一緒に表示するため、ここでは表示しない
   stage.appendChild(wrap);
 }
 
@@ -846,8 +846,9 @@ function onChoice(idx, btn) {
     launchConfetti();
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
-    if (currentQ.detail) {
-      setTimeout(() => showDetail(currentQ.detail), 600);
+    var infoText = currentQ.detail || currentQ.hint || null;
+    if (infoText) {
+      setTimeout(() => showDetail(infoText), 600);
       setTimeout(nextQuestion, 2800);
     } else {
       setTimeout(nextQuestion, 1000);
