@@ -230,7 +230,7 @@ body {
 .sp-id-suggest-list {
   display: none; position: absolute; left: 0; top: 100%; z-index: 999;
   background: #111827; border: 1px solid #374151; border-radius: 6px;
-  max-height: 200px; overflow-y: auto; width: 100%;
+  max-height: 400px; overflow-y: auto; width: 220px;
   box-shadow: 0 6px 16px rgba(0,0,0,0.5);
 }
 .sp-id-suggest-list.open { display: block; }
@@ -695,7 +695,8 @@ body {
       </div>
       <div class="picker-main">
         <div class="picker-toolbar">
-          <button class="tbtn tbtn-ghost active" id="picker-mode-rect" style="padding:3px 8px;font-size:0.72rem" title="矩形選択: ドラッグで範囲を選択">⬜ 矩形</button>
+          <button class="tbtn tbtn-ghost active" id="picker-mode-rect" style="padding:3px 8px;font-size:0.72rem" title="矩形選択: ドラッグで範囲を追加">⬜ 矩形+</button>
+          <button class="tbtn tbtn-ghost" id="picker-mode-rect-sub" style="padding:3px 8px;font-size:0.72rem" title="矩形除外: ドラッグで選択範囲からくり抜く">⬛ 矩形−</button>
           <button class="tbtn tbtn-ghost" id="picker-mode-click" style="padding:3px 8px;font-size:0.72rem" title="クリック選択: キャラクターをクリック (Shift+クリックで追加)">🎯 クリック</button>
           <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
           <label style="font-size:0.68rem;color:#9ca3af;">許容値:</label>
@@ -3661,7 +3662,7 @@ fetchCreaturesData(); // preload for duplicate ID check
 let multiPickerMode = false;
 let pickerImages = [];   // [{canvas, name, selections:[{x,y,w,h}]}]
 let activePickerIdx = -1;
-let pickerSelectMode = 'rect'; // 'rect' | 'click'
+let pickerSelectMode = 'rect'; // 'rect' | 'rect-sub' | 'click'
 let _pickerDrag = null;        // {startX, startY} during rect drag
 
 function switchToTab(name) {
@@ -3860,16 +3861,15 @@ function pickerCoord(e) {
 }
 
 // ── Selection mode toggle ──
-document.getElementById('picker-mode-rect').addEventListener('click', () => {
-  pickerSelectMode = 'rect';
-  document.getElementById('picker-mode-rect').classList.add('active');
-  document.getElementById('picker-mode-click').classList.remove('active');
-});
-document.getElementById('picker-mode-click').addEventListener('click', () => {
-  pickerSelectMode = 'click';
-  document.getElementById('picker-mode-click').classList.add('active');
-  document.getElementById('picker-mode-rect').classList.remove('active');
-});
+function setPickerMode(mode) {
+  pickerSelectMode = mode;
+  document.getElementById('picker-mode-rect').classList.toggle('active', mode === 'rect');
+  document.getElementById('picker-mode-rect-sub').classList.toggle('active', mode === 'rect-sub');
+  document.getElementById('picker-mode-click').classList.toggle('active', mode === 'click');
+}
+document.getElementById('picker-mode-rect').addEventListener('click', () => setPickerMode('rect'));
+document.getElementById('picker-mode-rect-sub').addEventListener('click', () => setPickerMode('rect-sub'));
+document.getElementById('picker-mode-click').addEventListener('click', () => setPickerMode('click'));
 
 // Flood tolerance slider
 document.getElementById('picker-flood-tol').addEventListener('input', function() {
@@ -3890,14 +3890,14 @@ let _dragDiv = null;
 
 pickerCvWrap.addEventListener('mousedown', e => {
   if (activePickerIdx < 0 || e.button !== 0) return;
-  if (pickerSelectMode === 'rect') {
+  if (pickerSelectMode === 'rect' || pickerSelectMode === 'rect-sub') {
     const coord = pickerCoord(e);
     if (!coord) return;
     e.preventDefault();
     _pickerDrag = { startX: coord.x, startY: coord.y };
-    // ドラッグ矩形の表示用div
     _dragDiv = document.createElement('div');
     _dragDiv.className = 'picker-drag-rect';
+    if (pickerSelectMode === 'rect-sub') _dragDiv.style.borderColor = '#ef4444';
     pickerCvWrap.appendChild(_dragDiv);
   } else if (pickerSelectMode === 'click') {
     e.preventDefault();
@@ -3933,20 +3933,52 @@ document.addEventListener('mouseup', e => {
 
   const x1 = Math.min(_pickerDrag.startX, coord.x), y1 = Math.min(_pickerDrag.startY, coord.y);
   const x2 = Math.max(_pickerDrag.startX, coord.x), y2 = Math.max(_pickerDrag.startY, coord.y);
+  const wasSub = pickerSelectMode === 'rect-sub';
   _pickerDrag = null;
 
-  if (x2 - x1 < 10 || y2 - y1 < 10) return; // 小さすぎ → 無視
+  if (x2 - x1 < 10 || y2 - y1 < 10) return;
 
   const src = pickerImages[activePickerIdx].canvas;
-  const sel = {
+  const subRect = {
     x: Math.max(0, x1), y: Math.max(0, y1),
     w: Math.min(src.width, x2) - Math.max(0, x1),
     h: Math.min(src.height, y2) - Math.max(0, y1)
   };
-  if (sel.w < 10 || sel.h < 10) return;
-  pickerImages[activePickerIdx].selections.push(sel);
+  if (subRect.w < 10 || subRect.h < 10) return;
+
+  if (wasSub) {
+    // 既存の選択範囲から除外矩形をくり抜く
+    const pImg = pickerImages[activePickerIdx];
+    const newSels = [];
+    pImg.selections.forEach(sel => {
+      const parts = subtractRect(sel, subRect);
+      parts.forEach(p => { if (p.w >= 5 && p.h >= 5) newSels.push(p); });
+    });
+    pImg.selections = newSels;
+  } else {
+    pickerImages[activePickerIdx].selections.push(subRect);
+  }
   renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
 });
+
+// 矩形 A から矩形 B をくり抜き、残りを最大4個の矩形に分解
+function subtractRect(a, b) {
+  // 重なりチェック
+  const ox1 = Math.max(a.x, b.x), oy1 = Math.max(a.y, b.y);
+  const ox2 = Math.min(a.x + a.w, b.x + b.w), oy2 = Math.min(a.y + a.h, b.y + b.h);
+  if (ox1 >= ox2 || oy1 >= oy2) return [a]; // 重なりなし → そのまま
+
+  const result = [];
+  // 上部
+  if (oy1 > a.y) result.push({ x: a.x, y: a.y, w: a.w, h: oy1 - a.y });
+  // 下部
+  if (oy2 < a.y + a.h) result.push({ x: a.x, y: oy2, w: a.w, h: (a.y + a.h) - oy2 });
+  // 左部（上下の間）
+  if (ox1 > a.x) result.push({ x: a.x, y: oy1, w: ox1 - a.x, h: oy2 - oy1 });
+  // 右部（上下の間）
+  if (ox2 < a.x + a.w) result.push({ x: ox2, y: oy1, w: (a.x + a.w) - ox2, h: oy2 - oy1 });
+  return result;
+}
 
 // ── Click (flood-fill) selection ──
 function pickerFloodSelect(cx, cy, addMode) {
