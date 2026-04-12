@@ -746,7 +746,8 @@ tr:hover { background: #FFFAF0; }
       <button onclick="bentoIllustSetAll('todo')" style="padding:5px 12px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 全部リセット</button>
     </div>
     <div style="font-size:0.72rem;color:#8B7355;margin:-8px 0 12px;line-height:1.5;">
-      ステータスバッジをクリックで 未作成→作成中→完成 を切替。チェックボックスで複数選択→一括操作。
+      ステータスバッジをクリックで 未作成→作成中→完成 を切替。チェックボックスで複数選択→一括操作。<br>
+      ステータスはブラウザに自動保存されます。画像の差し替えは 🖼️ ボタンからGitHubにアップロードできます。
     </div>
     <div id="bento-illust-groups"></div>
   </div>
@@ -6417,13 +6418,14 @@ function _renderStagingIllust(container, creatureLookup) {
 // 🍱 Bento Illustration Management
 // ════════════════════════════════════════════════════════════════
 // sk: 三色食品群 r=赤(からだをつくる) y=黄(ちからになる) g=緑(からだのちょうしをととのえる)
+// カテゴリ: rice=ごはん, main=メインおかず(肉・魚・揚げ物), veg=やさい・サラダ, fruit=フルーツ・デザート
 var BENTO_ILLUST_GROUPS = [
   { id: 'rice', label: '🍚 ごはん', items: [
     { id: 'rice_umeboshi', name: 'うめぼしごはん', sk: 'y' },
     { id: 'rice_goma',     name: 'ごまごはん',     sk: 'y' },
     { id: 'rice_furikake', name: 'ふりかけごはん', sk: 'y' },
   ]},
-  { id: 'meat', label: '🍖 おかず（おにく）', items: [
+  { id: 'meat', label: '🍖 メインおかず（にく・さかな・あげもの）', items: [
     { id: 'tako_wiener',   name: 'タコウインナー', sk: 'r' },
     { id: 'hamburg',       name: 'ハンバーグ',     sk: 'r' },
     { id: 'karaage',       name: 'からあげ',       sk: 'r' },
@@ -6444,7 +6446,7 @@ var BENTO_ILLUST_GROUPS = [
     { id: 'okonomiyaki',   name: 'おこのみやき',   sk: 'y' },
     { id: 'karaage3',      name: 'からあげ（別）', sk: 'r' },
   ]},
-  { id: 'veg', label: '🥦 おかず（やさい）', items: [
+  { id: 'veg', label: '🥦 やさい・サラダ', items: [
     { id: 'broccoli',       name: 'ブロッコリー',       sk: 'g' },
     { id: 'mini_tomato',    name: 'ミニトマト',         sk: 'g' },
     { id: 'corn_spinach',   name: 'コーンほうれんそう', sk: 'g' },
@@ -6799,9 +6801,9 @@ function _openBentoEditModal(itemId, currentName, currentCat) {
     '<label style="font-size:0.75rem;font-weight:700;color:#8B7355;">カテゴリ</label>' +
     '<select id="_bento_edit_cat" style="' + iStyle + '">' +
       '<option value="rice"' + (currentCat === 'rice' ? ' selected' : '') + '>🍚 ごはん</option>' +
-      '<option value="meat"' + (currentCat === 'meat' ? ' selected' : '') + '>🍖 おにく</option>' +
-      '<option value="veg"' + (currentCat === 'veg' ? ' selected' : '') + '>🥦 やさい</option>' +
-      '<option value="fruit"' + (currentCat === 'fruit' ? ' selected' : '') + '>🍓 フルーツ</option>' +
+      '<option value="meat"' + (currentCat === 'meat' ? ' selected' : '') + '>🍖 メインおかず</option>' +
+      '<option value="veg"' + (currentCat === 'veg' ? ' selected' : '') + '>🥦 やさい・サラダ</option>' +
+      '<option value="fruit"' + (currentCat === 'fruit' ? ' selected' : '') + '>🍓 フルーツ・デザート</option>' +
     '</select>' +
     '<label style="font-size:0.75rem;font-weight:700;color:#8B7355;">三色食品群</label>' +
     '<select id="_bento_edit_sk" style="' + iStyle + '">' +
