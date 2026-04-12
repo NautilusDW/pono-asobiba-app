@@ -318,6 +318,82 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-msg { font-size: 0.82rem; color: #e0e0e0; }
 
+/* ── Multi-Image Picker ── */
+.picker-strip {
+  display: flex; gap: 6px; padding: 8px; background: #111827;
+  border-bottom: 1px solid #374151; overflow-x: auto; flex-shrink: 0;
+  align-items: center;
+}
+.picker-thumb {
+  width: 56px; height: 56px; border-radius: 6px; cursor: pointer;
+  object-fit: cover; border: 2px solid #374151; flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+.picker-thumb.active { border-color: #f87171; }
+.picker-thumb-wrap {
+  position: relative; flex-shrink: 0;
+}
+.picker-thumb-del {
+  position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+  border-radius: 50%; background: #ef4444; color: #fff; border: none;
+  font-size: 0.55rem; cursor: pointer; line-height: 1; display: flex;
+  align-items: center; justify-content: center;
+}
+.picker-thumb-label {
+  position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);
+  font-size: 0.5rem; font-weight: 700; color: #fff; background: rgba(0,0,0,0.7);
+  padding: 0 4px; border-radius: 3px; white-space: nowrap;
+}
+.picker-add-btn {
+  width: 56px; height: 56px; border-radius: 6px; border: 2px dashed #374151;
+  background: none; color: #6b7280; font-size: 1.2rem; cursor: pointer;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+.picker-add-btn:hover { border-color: #6b7280; color: #9ca3af; }
+.picker-main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;
+}
+.picker-toolbar {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  background: #1f2937; border-bottom: 1px solid #374151; flex-shrink: 0;
+}
+.picker-canvas-wrap {
+  flex: 1; overflow: hidden; position: relative; background: #0d1117;
+  display: flex; align-items: center; justify-content: center;
+}
+.picker-canvas-wrap canvas { cursor: crosshair; }
+.picker-sel-rect {
+  position: absolute; border: 2px solid #22c55e; background: rgba(34,197,94,0.12);
+  pointer-events: none; box-sizing: border-box;
+}
+.picker-sel-rect .sel-label {
+  position: absolute; top: -18px; left: 0; font-size: 0.6rem; font-weight: 700;
+  color: #22c55e; background: rgba(0,0,0,0.7); padding: 1px 5px; border-radius: 3px;
+}
+.picker-sel-rect .sel-del {
+  position: absolute; top: -8px; right: -8px; width: 16px; height: 16px;
+  border-radius: 50%; background: #ef4444; color: #fff; border: none;
+  font-size: 0.55rem; cursor: pointer; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+}
+.picker-drag-rect {
+  position: absolute; border: 2px dashed #f87171; background: rgba(248,113,113,0.12);
+  pointer-events: none; box-sizing: border-box;
+}
+.picker-click-highlight {
+  position: absolute; border: 2px solid #22c55e; background: rgba(34,197,94,0.08);
+  pointer-events: none; box-sizing: border-box; transition: opacity 0.3s;
+}
+.composite-bottom {
+  padding: 8px 10px; border-top: 1px solid #374151; background: #111827; flex-shrink: 0;
+}
+.composite-preview-wrap {
+  max-height: 90px; overflow: hidden; margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d1117; border-radius: 6px; border: 1px solid #374151;
+}
+.composite-preview-wrap canvas { max-height: 85px; object-fit: contain; }
+
 /* ── Zoom + BG Bar ── */
 .zoom-bar {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
@@ -408,6 +484,12 @@ body {
         <input type="file" id="file-input" accept="image/*" style="display:none">
       </div>
       <div class="file-info" id="file-info"></div>
+      <button class="btn btn-secondary" id="btn-multi-picker" style="margin-top:6px;font-size:0.7rem">📐 マルチ合成モード</button>
+      <div id="multi-drop-zone" class="drop-zone" style="display:none">
+        <div class="drop-icon">📐</div>
+        <div class="drop-text">複数画像をドラッグ<br>またはクリック</div>
+        <input type="file" id="multi-file-input" accept="image/*" multiple style="display:none">
+      </div>
     </div>
 
     <!-- 2. BG Removal -->
@@ -538,6 +620,7 @@ body {
 
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="compare">比較</button>
+      <button class="tab-btn" data-tab="composite" id="tab-composite-btn" style="display:none">合成</button>
       <button class="tab-btn" data-tab="sprites" id="tab-sprites-btn">スプライト (0)</button>
     </div>
 
@@ -591,6 +674,44 @@ body {
             <div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Composite (multi-picker) tab -->
+    <div class="tab-content" id="tab-composite" style="display:flex;flex-direction:column;">
+      <div class="picker-strip" id="picker-strip">
+        <button class="picker-add-btn" id="picker-add-btn" title="画像を追加">+</button>
+      </div>
+      <div class="picker-main">
+        <div class="picker-toolbar">
+          <button class="tbtn tbtn-ghost active" id="picker-mode-rect" style="padding:3px 8px;font-size:0.72rem" title="矩形選択: ドラッグで範囲を選択">⬜ 矩形</button>
+          <button class="tbtn tbtn-ghost" id="picker-mode-click" style="padding:3px 8px;font-size:0.72rem" title="クリック選択: キャラクターをクリック (Shift+クリックで追加)">🎯 クリック</button>
+          <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+          <label style="font-size:0.68rem;color:#9ca3af;">許容値:</label>
+          <input type="range" id="picker-flood-tol" min="5" max="120" value="40" style="width:60px">
+          <span id="picker-flood-tol-val" style="font-size:0.68rem;color:#f87171;font-weight:700;width:24px">40</span>
+          <div style="flex:1"></div>
+          <button class="tbtn tbtn-ghost" id="picker-clear-sel" style="padding:3px 8px;font-size:0.72rem" title="この画像の選択をすべて消去">🗑 選択消去</button>
+        </div>
+        <div class="picker-canvas-wrap" id="picker-canvas-wrap">
+          <canvas id="picker-canvas"></canvas>
+        </div>
+      </div>
+      <div class="composite-bottom">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <label style="font-size:0.68rem;color:#9ca3af;">レイアウト:</label>
+          <select id="composite-layout" style="padding:3px 6px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;font-family:inherit">
+            <option value="horizontal">横並び</option>
+            <option value="vertical">縦並び</option>
+          </select>
+          <label style="font-size:0.68rem;color:#9ca3af;">余白:</label>
+          <input type="number" id="composite-gap" value="16" min="0" max="200" style="width:46px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
+          <span style="font-size:0.6rem;color:#6b7280">px</span>
+          <div style="flex:1"></div>
+          <span id="composite-count" style="font-size:0.65rem;color:#6b7280">選択: 0</span>
+        </div>
+        <div class="composite-preview-wrap" id="composite-preview"></div>
+        <button class="atbtn atbtn-primary" id="btn-compose" disabled style="width:100%;margin-top:6px">🔨 合成して読み込む</button>
       </div>
     </div>
 
@@ -3518,6 +3639,483 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 // Init
 // ════════════════════════════════════════════════════════════
 fetchCreaturesData(); // preload for duplicate ID check
+
+// ════════════════════════════════════════════════════════════
+// Multi-Image Picker (マルチ合成モード)
+// ════════════════════════════════════════════════════════════
+let multiPickerMode = false;
+let pickerImages = [];   // [{canvas, name, selections:[{x,y,w,h}]}]
+let activePickerIdx = -1;
+let pickerSelectMode = 'rect'; // 'rect' | 'click'
+let _pickerDrag = null;        // {startX, startY} during rect drag
+
+function switchToTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(t => {
+    const active = t.id === 'tab-' + name;
+    t.classList.toggle('active', active);
+    if (t.id === 'tab-composite') t.style.display = active ? 'flex' : '';
+  });
+}
+
+// ── Toggle multi-picker mode ──
+document.getElementById('btn-multi-picker').addEventListener('click', () => {
+  multiPickerMode = !multiPickerMode;
+  const btn = document.getElementById('btn-multi-picker');
+  const singleDz = document.getElementById('drop-zone');
+  const multiDz  = document.getElementById('multi-drop-zone');
+  const compTab  = document.getElementById('tab-composite-btn');
+
+  if (multiPickerMode) {
+    btn.textContent = '📐 マルチ合成 ON';
+    btn.style.background = '#dc2626'; btn.style.color = '#fff';
+    singleDz.style.display = 'none';
+    multiDz.style.display = '';
+    compTab.style.display = '';
+    switchToTab('composite');
+  } else {
+    btn.textContent = '📐 マルチ合成モード';
+    btn.style.background = ''; btn.style.color = '';
+    singleDz.style.display = '';
+    multiDz.style.display = 'none';
+    compTab.style.display = 'none';
+    // クリーンアップ
+    pickerImages.forEach(img => { img.canvas.width = 0; img.canvas.height = 0; });
+    pickerImages = [];
+    activePickerIdx = -1;
+    renderPickerStrip();
+    renderPickerPreview();
+    updateCompositePreview();
+    switchToTab('compare');
+  }
+});
+
+// ── Multi drop zone ──
+const multiDz = document.getElementById('multi-drop-zone');
+const multiFileInput = document.getElementById('multi-file-input');
+multiDz.addEventListener('click', () => multiFileInput.click());
+multiDz.addEventListener('dragover', e => { e.preventDefault(); multiDz.classList.add('drag-over'); });
+multiDz.addEventListener('dragleave', () => multiDz.classList.remove('drag-over'));
+multiDz.addEventListener('drop', e => {
+  e.preventDefault(); multiDz.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) addPickerFiles(e.dataTransfer.files);
+});
+multiFileInput.addEventListener('change', () => {
+  if (multiFileInput.files.length) addPickerFiles(multiFileInput.files);
+  multiFileInput.value = '';
+});
+// "+ 追加" button
+document.getElementById('picker-add-btn').addEventListener('click', () => multiFileInput.click());
+
+function addPickerFiles(files) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        // 4096px上限リサイズ
+        let w = img.naturalWidth, h = img.naturalHeight;
+        const MAX = 4096;
+        if (w > MAX || h > MAX) {
+          const s = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * s); h = Math.round(h * s);
+        }
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        pickerImages.push({ canvas: cv, name: file.name, selections: [] });
+        if (activePickerIdx < 0) activePickerIdx = 0;
+        renderPickerStrip();
+        renderPickerPreview();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Picker strip (thumbnails) ──
+function renderPickerStrip() {
+  const strip = document.getElementById('picker-strip');
+  const addBtn = document.getElementById('picker-add-btn');
+  // 既存のサムネイルを削除（+ボタンは残す）
+  strip.querySelectorAll('.picker-thumb-wrap').forEach(el => el.remove());
+
+  pickerImages.forEach((pImg, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'picker-thumb-wrap';
+
+    const thumb = document.createElement('canvas');
+    thumb.className = 'picker-thumb' + (i === activePickerIdx ? ' active' : '');
+    thumb.width = 56; thumb.height = 56;
+    const scale = Math.min(56 / pImg.canvas.width, 56 / pImg.canvas.height);
+    const tw = pImg.canvas.width * scale, th = pImg.canvas.height * scale;
+    thumb.getContext('2d').drawImage(pImg.canvas, (56 - tw) / 2, (56 - th) / 2, tw, th);
+    thumb.addEventListener('click', () => { activePickerIdx = i; renderPickerStrip(); renderPickerPreview(); });
+
+    const label = document.createElement('div');
+    label.className = 'picker-thumb-label';
+    label.textContent = String.fromCharCode(65 + i); // A, B, C...
+
+    const badge = pImg.selections.length > 0
+      ? ` (${pImg.selections.length})`
+      : '';
+    if (badge) label.textContent += badge;
+
+    const del = document.createElement('button');
+    del.className = 'picker-thumb-del';
+    del.textContent = '×';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      pImg.canvas.width = 0; pImg.canvas.height = 0;
+      pickerImages.splice(i, 1);
+      if (activePickerIdx >= pickerImages.length) activePickerIdx = pickerImages.length - 1;
+      renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
+    });
+
+    wrap.appendChild(thumb);
+    wrap.appendChild(label);
+    wrap.appendChild(del);
+    strip.insertBefore(wrap, addBtn);
+  });
+}
+
+// ── Picker preview (main canvas + selection overlays) ──
+function renderPickerPreview() {
+  const wrap = document.getElementById('picker-canvas-wrap');
+  const cv = document.getElementById('picker-canvas');
+  // 既存のオーバーレイを削除
+  wrap.querySelectorAll('.picker-sel-rect,.picker-click-highlight').forEach(el => el.remove());
+
+  if (activePickerIdx < 0 || !pickerImages[activePickerIdx]) {
+    cv.width = 1; cv.height = 1;
+    return;
+  }
+  const pImg = pickerImages[activePickerIdx];
+  const src = pImg.canvas;
+  // fit to container
+  const cw = wrap.clientWidth || 600, ch = wrap.clientHeight || 400;
+  const scale = Math.min(1, cw / src.width, ch / src.height);
+  cv.width = Math.round(src.width * scale);
+  cv.height = Math.round(src.height * scale);
+  cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+
+  // Draw confirmed selections
+  pImg.selections.forEach((sel, si) => {
+    const div = document.createElement('div');
+    div.className = 'picker-sel-rect';
+    const ox = (wrap.clientWidth - cv.width) / 2;
+    const oy = (wrap.clientHeight - cv.height) / 2;
+    div.style.left   = (ox + sel.x * scale) + 'px';
+    div.style.top    = (oy + sel.y * scale) + 'px';
+    div.style.width  = (sel.w * scale) + 'px';
+    div.style.height = (sel.h * scale) + 'px';
+
+    const lbl = document.createElement('span');
+    lbl.className = 'sel-label';
+    lbl.textContent = String.fromCharCode(65 + activePickerIdx) + '-' + (si + 1);
+
+    const del = document.createElement('button');
+    del.className = 'sel-del';
+    del.textContent = '×';
+    del.addEventListener('click', () => {
+      pImg.selections.splice(si, 1);
+      renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
+    });
+
+    div.appendChild(lbl);
+    div.appendChild(del);
+    wrap.appendChild(div);
+  });
+}
+
+// ── Picker coordinate conversion ──
+function pickerCoord(e) {
+  const cv = document.getElementById('picker-canvas');
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width * cv.width;
+  const y = (e.clientY - rect.top)  / rect.height * cv.height;
+  if (activePickerIdx < 0 || !pickerImages[activePickerIdx]) return null;
+  const src = pickerImages[activePickerIdx].canvas;
+  const scale = cv.width / src.width;
+  return { x: Math.round(x / scale), y: Math.round(y / scale) };
+}
+
+// ── Selection mode toggle ──
+document.getElementById('picker-mode-rect').addEventListener('click', () => {
+  pickerSelectMode = 'rect';
+  document.getElementById('picker-mode-rect').classList.add('active');
+  document.getElementById('picker-mode-click').classList.remove('active');
+});
+document.getElementById('picker-mode-click').addEventListener('click', () => {
+  pickerSelectMode = 'click';
+  document.getElementById('picker-mode-click').classList.add('active');
+  document.getElementById('picker-mode-rect').classList.remove('active');
+});
+
+// Flood tolerance slider
+document.getElementById('picker-flood-tol').addEventListener('input', function() {
+  document.getElementById('picker-flood-tol-val').textContent = this.value;
+});
+
+// Clear selections for current image
+document.getElementById('picker-clear-sel').addEventListener('click', () => {
+  if (activePickerIdx >= 0 && pickerImages[activePickerIdx]) {
+    pickerImages[activePickerIdx].selections = [];
+    renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
+  }
+});
+
+// ── Rect drag selection ──
+const pickerCvWrap = document.getElementById('picker-canvas-wrap');
+let _dragDiv = null;
+
+pickerCvWrap.addEventListener('mousedown', e => {
+  if (activePickerIdx < 0 || e.button !== 0) return;
+  if (pickerSelectMode === 'rect') {
+    const coord = pickerCoord(e);
+    if (!coord) return;
+    e.preventDefault();
+    _pickerDrag = { startX: coord.x, startY: coord.y };
+    // ドラッグ矩形の表示用div
+    _dragDiv = document.createElement('div');
+    _dragDiv.className = 'picker-drag-rect';
+    pickerCvWrap.appendChild(_dragDiv);
+  } else if (pickerSelectMode === 'click') {
+    e.preventDefault();
+    const coord = pickerCoord(e);
+    if (!coord) return;
+    pickerFloodSelect(coord.x, coord.y, e.shiftKey);
+  }
+});
+
+document.addEventListener('mousemove', e => {
+  if (!_pickerDrag || !_dragDiv) return;
+  const coord = pickerCoord(e);
+  if (!coord) return;
+  const cv = document.getElementById('picker-canvas');
+  const src = pickerImages[activePickerIdx].canvas;
+  const scale = cv.width / src.width;
+  const ox = (pickerCvWrap.clientWidth - cv.width) / 2;
+  const oy = (pickerCvWrap.clientHeight - cv.height) / 2;
+  const x1 = Math.min(_pickerDrag.startX, coord.x), y1 = Math.min(_pickerDrag.startY, coord.y);
+  const x2 = Math.max(_pickerDrag.startX, coord.x), y2 = Math.max(_pickerDrag.startY, coord.y);
+  _dragDiv.style.left   = (ox + x1 * scale) + 'px';
+  _dragDiv.style.top    = (oy + y1 * scale) + 'px';
+  _dragDiv.style.width  = ((x2 - x1) * scale) + 'px';
+  _dragDiv.style.height = ((y2 - y1) * scale) + 'px';
+});
+
+document.addEventListener('mouseup', e => {
+  if (!_pickerDrag) return;
+  const coord = pickerCoord(e);
+  if (_dragDiv) { _dragDiv.remove(); _dragDiv = null; }
+  if (!coord || activePickerIdx < 0) { _pickerDrag = null; return; }
+
+  const x1 = Math.min(_pickerDrag.startX, coord.x), y1 = Math.min(_pickerDrag.startY, coord.y);
+  const x2 = Math.max(_pickerDrag.startX, coord.x), y2 = Math.max(_pickerDrag.startY, coord.y);
+  _pickerDrag = null;
+
+  if (x2 - x1 < 10 || y2 - y1 < 10) return; // 小さすぎ → 無視
+
+  const src = pickerImages[activePickerIdx].canvas;
+  const sel = {
+    x: Math.max(0, x1), y: Math.max(0, y1),
+    w: Math.min(src.width, x2) - Math.max(0, x1),
+    h: Math.min(src.height, y2) - Math.max(0, y1)
+  };
+  if (sel.w < 10 || sel.h < 10) return;
+  pickerImages[activePickerIdx].selections.push(sel);
+  renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
+});
+
+// ── Click (flood-fill) selection ──
+function pickerFloodSelect(cx, cy, addMode) {
+  const pImg = pickerImages[activePickerIdx];
+  const src = pImg.canvas;
+  const w = src.width, h = src.height;
+  const d = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const tol = parseInt(document.getElementById('picker-flood-tol').value) || 40;
+
+  // 背景色をサンプリング（四隅の平均）
+  const corners = [[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
+  let bgR = 0, bgG = 0, bgB = 0;
+  corners.forEach(([x,y]) => {
+    const i = (y * w + x) * 4;
+    bgR += d[i]; bgG += d[i+1]; bgB += d[i+2];
+  });
+  bgR = Math.round(bgR / 4); bgG = Math.round(bgG / 4); bgB = Math.round(bgB / 4);
+
+  // クリック地点が背景に近い場合は無視
+  const ci = (cy * w + cx) * 4;
+  const cdist = Math.sqrt((d[ci]-bgR)**2 + (d[ci+1]-bgG)**2 + (d[ci+2]-bgB)**2);
+  if (cdist < tol) {
+    showToast('背景をクリックしました。キャラクターの上をクリックしてください', false);
+    return;
+  }
+
+  // BFS で連結前景領域を検出
+  const visited = new Uint8Array(w * h);
+  const queue = [cx + cy * w];
+  visited[cx + cy * w] = 1;
+  let minX = cx, minY = cy, maxX = cx, maxY = cy;
+
+  while (queue.length > 0) {
+    const idx = queue.shift();
+    const px = idx % w, py = Math.floor(idx / w);
+    if (px < minX) minX = px;
+    if (py < minY) minY = py;
+    if (px > maxX) maxX = px;
+    if (py > maxY) maxY = py;
+
+    const neighbors = [
+      px > 0     ? idx - 1 : -1,
+      px < w - 1 ? idx + 1 : -1,
+      py > 0     ? idx - w : -1,
+      py < h - 1 ? idx + w : -1,
+    ];
+    for (const ni of neighbors) {
+      if (ni < 0 || visited[ni]) continue;
+      const pi = ni * 4;
+      const dist = Math.sqrt((d[pi]-bgR)**2 + (d[pi+1]-bgG)**2 + (d[pi+2]-bgB)**2);
+      if (dist >= tol) {
+        visited[ni] = 1;
+        queue.push(ni);
+      }
+    }
+  }
+
+  // bounding box に余白を追加
+  const pad = 4;
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(w - 1, maxX + pad);
+  maxY = Math.min(h - 1, maxY + pad);
+
+  const sel = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+  if (sel.w < 5 || sel.h < 5) return;
+
+  if (!addMode) {
+    // Shift なし → 既存選択をクリアしてこの1つだけ
+    pImg.selections = [sel];
+  } else {
+    pImg.selections.push(sel);
+  }
+  renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
+}
+
+// ── Composite preview + composition ──
+function composeSelections() {
+  // 全画像から全選択を収集
+  const allSels = [];
+  pickerImages.forEach((pImg, imgIdx) => {
+    pImg.selections.forEach(sel => {
+      allSels.push({ canvas: pImg.canvas, ...sel, imgIdx });
+    });
+  });
+  if (allSels.length === 0) return null;
+
+  const gap = parseInt(document.getElementById('composite-gap').value) || 0;
+  const layout = document.getElementById('composite-layout').value;
+
+  let cw, ch;
+  if (layout === 'horizontal') {
+    cw = allSels.reduce((s, r) => s + r.w, 0) + gap * (allSels.length - 1);
+    ch = Math.max(...allSels.map(r => r.h));
+  } else {
+    cw = Math.max(...allSels.map(r => r.w));
+    ch = allSels.reduce((s, r) => s + r.h, 0) + gap * (allSels.length - 1);
+  }
+
+  const cv = document.createElement('canvas');
+  cv.width = cw; cv.height = ch;
+  const ctx = cv.getContext('2d');
+  // 白背景で塗りつぶし
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, cw, ch);
+
+  let dx = 0, dy = 0;
+  allSels.forEach(sel => {
+    if (layout === 'horizontal') {
+      const oy = Math.round((ch - sel.h) / 2);
+      ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, dx, oy, sel.w, sel.h);
+      dx += sel.w + gap;
+    } else {
+      const ox = Math.round((cw - sel.w) / 2);
+      ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, ox, dy, sel.w, sel.h);
+      dy += sel.h + gap;
+    }
+  });
+  return cv;
+}
+
+function updateCompositePreview() {
+  const wrap = document.getElementById('composite-preview');
+  wrap.innerHTML = '';
+  const totalSels = pickerImages.reduce((s, p) => s + p.selections.length, 0);
+  document.getElementById('composite-count').textContent = '選択: ' + totalSels;
+  document.getElementById('btn-compose').disabled = totalSels === 0;
+
+  if (totalSels === 0) return;
+  const cv = composeSelections();
+  if (!cv) return;
+  // プレビュー用に縮小
+  const maxH = 85, maxW = wrap.clientWidth || 400;
+  const scale = Math.min(1, maxW / cv.width, maxH / cv.height);
+  const pvCv = document.createElement('canvas');
+  pvCv.width = Math.round(cv.width * scale);
+  pvCv.height = Math.round(cv.height * scale);
+  pvCv.getContext('2d').drawImage(cv, 0, 0, pvCv.width, pvCv.height);
+  wrap.appendChild(pvCv);
+}
+
+// レイアウト/余白変更 → プレビュー更新
+document.getElementById('composite-layout').addEventListener('change', updateCompositePreview);
+document.getElementById('composite-gap').addEventListener('input', updateCompositePreview);
+
+// ── 合成して読み込む ──
+document.getElementById('btn-compose').addEventListener('click', () => {
+  const composite = composeSelections();
+  if (!composite) return;
+
+  // 既存フローの入力として設定
+  originalCanvas = composite;
+  processedCanvas = null;
+  processedRaw = null;
+  keepBackground = false;
+
+  setEraseMode(false);
+  clearEraseUndo();
+  linkLines = [];
+  cutLines = [];
+  redrawCompare();
+
+  document.getElementById('btn-process').disabled = false;
+  document.getElementById('btn-skip-bg').disabled = false;
+  document.getElementById('btn-split').disabled = true;
+  document.getElementById('btn-finish').disabled = true;
+  document.getElementById('btn-save-session').disabled = false;
+  sprites = [];
+  renderSpritesGrid();
+
+  // ドロップゾーンの表示更新
+  const dz = document.getElementById('drop-zone');
+  dz.classList.add('has-file');
+  dz.querySelector('.drop-icon').textContent = '✅';
+  dz.querySelector('.drop-text').textContent = `合成画像`;
+  document.getElementById('file-info').textContent = composite.width + '×' + composite.height + ' px (合成)';
+
+  switchToTab('compare');
+  showToast(`合成画像 (${composite.width}×${composite.height}) を読み込みました`, true);
+});
+
+// ── Resize observer for picker preview ──
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(() => { if (multiPickerMode) renderPickerPreview(); })
+    .observe(document.getElementById('picker-canvas-wrap'));
+}
+
 </script>
 </body>
 </html>
