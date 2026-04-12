@@ -108,6 +108,22 @@ body {
 /* ── Right Panel ── */
 .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
+.action-toolbar {
+  display: flex; align-items: center; gap: 4px;
+  background: #111827; border-bottom: 1px solid #374151;
+  padding: 5px 8px; flex-shrink: 0;
+}
+.atbtn {
+  padding: 5px 10px; border: 1px solid #374151; border-radius: 6px;
+  background: #1f2937; color: #d1d5db; font-size: 0.72rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+  transition: background 0.15s;
+}
+.atbtn:hover:not(:disabled) { background: #374151; }
+.atbtn:disabled { opacity: 0.4; cursor: default; }
+.atbtn-primary { background: #dc2626; color: #fff; border-color: #dc2626; }
+.atbtn-primary:hover:not(:disabled) { background: #b91c1c; }
+
 .tab-bar {
   display: flex; background: #1f2937;
   border-bottom: 1px solid #374151; flex-shrink: 0; padding: 0 4px;
@@ -480,22 +496,24 @@ body {
 
     <!-- APIキーはヘッダーのドロップダウンに移動 -->
 
-    <!-- Action buttons -->
-    <button class="btn btn-primary"   id="btn-process" disabled>▶ 背景を消す</button>
-    <button class="btn btn-secondary" id="btn-skip-bg" disabled title="背景を残したままスプライト分割（白背景のまま切り分け）">⏭ 背景を残す</button>
-    <button class="btn btn-secondary" id="btn-finish"  disabled title="シュリンク・フチなめらか・αぼかしを現在の画像に上からかける">🔧 仕上げ適用</button>
-    <button class="btn btn-secondary" id="btn-reset-erase" disabled title="ポイント/ブラシ消去をすべてリセット">↺ 消去リセット</button>
-    <button class="btn btn-secondary" id="btn-split"   disabled>✂️ スプライトを分割</button>
-
-    <div style="border-top:1px solid #374151;margin-top:10px;padding-top:8px;display:flex;gap:6px;">
-      <button class="btn btn-secondary" id="btn-save-session" disabled style="flex:1;font-size:0.7rem">💾 セーブ</button>
-      <button class="btn btn-secondary" id="btn-load-session" style="flex:1;font-size:0.7rem">📂 ロード</button>
-    </div>
+    <!-- 消去リセットは左パネルに残す -->
+    <button class="btn btn-secondary" id="btn-reset-erase" disabled title="ポイント/ブラシ消去をすべてリセット" style="margin-top:6px">↺ 消去リセット</button>
 
   </div><!-- /left-panel -->
 
   <!-- ════════ RIGHT PANEL ════════ -->
   <div class="right-panel">
+
+    <!-- Action toolbar -->
+    <div class="action-toolbar" id="action-toolbar">
+      <button class="atbtn atbtn-primary" id="btn-process" disabled>▶ 背景を消す</button>
+      <button class="atbtn" id="btn-skip-bg" disabled title="背景を残したままスプライト分割">⏭ 背景を残す</button>
+      <button class="atbtn" id="btn-finish" disabled title="シュリンク・フチなめらか・αぼかし適用">🔧 仕上げ</button>
+      <button class="atbtn" id="btn-split" disabled>✂️ 分割</button>
+      <div style="flex:1"></div>
+      <button class="atbtn" id="btn-save-session" disabled>💾 セーブ</button>
+      <button class="atbtn" id="btn-load-session">📂 ロード</button>
+    </div>
 
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="compare">比較</button>
@@ -2591,7 +2609,8 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
         for (let lx = 0; lx < sw2; lx++) {
           const gx = sx + lx;
           const gi = gy * w + gx;
-          if (fg[gi] && !allowedRoots.has(rootToMerged.get(find(gi)))) {
+          const mappedRoot = rootToMerged.get(find(gi));
+          if (fg[gi] && mappedRoot !== undefined && !allowedRoots.has(mappedRoot)) {
             const pi = (ly * sw2 + lx) * 4;
             if (keepBg) {
               sd[pi] = 255; sd[pi+1] = 255; sd[pi+2] = 255; sd[pi+3] = 255; // 白で塗る
