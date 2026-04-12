@@ -2395,7 +2395,7 @@ function blobToCanvas(blob) {
 }
 
 document.getElementById('btn-save-session').addEventListener('click', async () => {
-  if (!processedRaw) { showToast('保存するデータがありません', false); return; }
+  if (!processedRaw && !originalCanvas) { showToast('保存するデータがありません', false); return; }
   showLoading('セッションを保存中...');
   try {
     const spriteBlobs = await Promise.all(sprites.map(sp => canvasToBlob(sp.canvas)));
