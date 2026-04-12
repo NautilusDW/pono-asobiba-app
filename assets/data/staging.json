@@ -1025,31 +1025,6 @@
     "_duplicateOf": "spider"
   },
   {
-    "id": "spider",
-    "displayName": "クモ",
-    "icon": "🕷️",
-    "folder": "Spider",
-    "expressions": {
-      "normal": "Spider_normal_1.png",
-      "surprised": "Spider_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 656,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-12T05:42:08.468Z",
-    "_duplicateOf": "spider"
-  },
-  {
     "id": "fly",
     "displayName": "ハエ",
     "icon": "🪰",
