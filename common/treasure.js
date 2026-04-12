@@ -159,9 +159,12 @@
   }
 
   // ── サウンド（AudioContext ファンファーレ）────────────────────────────────────
+  var _treasureAC = null;
   function _playFanfare() {
     try {
-      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (!_treasureAC) _treasureAC = new (window.AudioContext || window.webkitAudioContext)();
+      if (_treasureAC.state === 'suspended') _treasureAC.resume();
+      var ac = _treasureAC;
       var notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
       notes.forEach(function(freq, i) {
         var osc = ac.createOscillator();

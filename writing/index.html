@@ -849,7 +849,17 @@ function saveStamp(category, index) {
 }
 function markCharDone(index) {
   const btns = charSelector.querySelectorAll('.char-btn');
-  if (btns[index]) btns[index].classList.add('done');
+  if (landscapeMQ.matches) {
+    // Landscape: buttons are row-local, find by data-global-idx or compute offset
+    const rows = GOJUON_ROWS[currentCategory];
+    const row = rows[currentRow];
+    if (row) {
+      const localIdx = index - row.start;
+      if (btns[localIdx]) btns[localIdx].classList.add('done');
+    }
+  } else {
+    if (btns[index]) btns[index].classList.add('done');
+  }
 }
 function updateStreakBadge() {
   const badge = document.getElementById('streak-badge');
@@ -1241,8 +1251,8 @@ function createWriter(char) {
 
   // まずお手本を1回流してからquizモードへ
   // チュートリアル表示中はスキップ（チュートリアル終了後に実行される）
-  if (!_tutorialActive) {
-    // チュートリアルが非表示なら通常通りお手本→quiz
+  if (!_tutorialActive && !_rowPracticeActive) {
+    // チュートリアルが非表示 かつ 行練習モードでもなければ通常通りお手本→quiz
     withAudio(function(ac) {
       var now = ac.currentTime;
       var osc = ac.createOscillator(), g = ac.createGain();
@@ -1506,6 +1516,7 @@ function startRowPractice(rowIndex) {
 }
 
 function _rowPracticeNextChar() {
+  if (!_rowPracticeRow) { _rowPracticeActive = false; return; }
   if (_rowPracticeStep >= _rowPracticeRow.count) {
     _rowPracticeComplete();
     return;
@@ -1571,7 +1582,6 @@ function _rowPracticeNextChar() {
                     }
                     _hedgeBubble.textContent = 'すごーい！';
                     _ponoBubble.textContent = 'すごーい！';
-                    awardPoints(2);
                     // Move to next char after delay
                     setTimeout(function() {
                       _rowPracticeStep++;
