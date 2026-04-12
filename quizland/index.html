@@ -162,7 +162,7 @@ body {
   align-items: center;
 }
 .shape-circle { width: 120px; height: 120px; border-radius: 50%; background: #FBBF24; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.shape-square { width: 120px; height: 120px; border-radius: 12px; background: #60A5FA; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-square { width: 120px; height: 120px; border-radius: 0; background: #60A5FA; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .shape-triangle {
   width: 0; height: 0;
   border-left: 65px solid transparent;
@@ -854,16 +854,11 @@ function onChoice(idx, btn) {
     }
   } else {
     btn.classList.add('wrong');
+    btn.disabled = true;
     playWrong();
-    showFeedback('ちがうよ〜', true);
-    // 正解を光らせる
-    setTimeout(() => {
-      const allBtns = document.querySelectorAll('.choice-btn');
-      allBtns.forEach((b, i) => {
-        if (i === currentQ.answer) b.classList.add('correct');
-      });
-    }, 400);
-    setTimeout(nextQuestion, 1600);
+    showFeedback('もういっかい！', true);
+    // もう1回チャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
+    locked = false;
   }
 }
 
