@@ -43,8 +43,8 @@
     // カラー tint をボーダーに反映
     if (zone.tint && zone.status === 'open') {
       var hex = zone.tint.replace('0x', '#');
-      btn.style.borderColor = hex + '99';
-      btn.style.background = hex + '33';
+      btn.style.borderColor = hex + 'AA';
+      btn.style.background = hex + '77';
     }
 
     btn.addEventListener('click', function () {
