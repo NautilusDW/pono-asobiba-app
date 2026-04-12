@@ -3662,14 +3662,17 @@
     }
 
     let introHandled = false;
+    let introReady = false;
+    // ページ読み込み直後のタッチ誤爆を防ぐ（前画面のタップが伝搬する問題）
+    setTimeout(function() { introReady = true; }, 800);
     function onIntroStart() {
-      if (introHandled) return;
+      if (introHandled || !introReady) return;
       introHandled = true;
       hideIntro();
       waitPixiReady().then(() => quickStartAquarium());
     }
     function onIntroConfig() {
-      if (introHandled) return;
+      if (introHandled || !introReady) return;
       introHandled = true;
       hideIntro();
       waitPixiReady().then(() => showSelectionScreen());

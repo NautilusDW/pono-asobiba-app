@@ -230,13 +230,15 @@
     if (cfg.museum && cfg.museum !== 'aquarium') return false;
     // 既知の水棲生物IDならOK
     if (_AQUATIC_IDS.indexOf(cfg.id) >= 0) return true;
-    // folder名で海系を判定（ocean画像のサブフォルダ名から推測）
-    var f = (cfg.folder || cfg.id || '').toLowerCase();
-    var seaKeywords = ['fish','shark','whale','dolphin','turtle','jelly','octop',
-      'squid','crab','lobster','coral','anemone','seahorse','manta','ray',
-      'starfish','seal','otter','penguin','narwhal','orca','submarine','medaka'];
-    for (var i = 0; i < seaKeywords.length; i++) {
-      if (f.indexOf(seaKeywords[i]) >= 0) return true;
+    // folder名で海系を判定（ID先頭 or アンダースコア区切りで完全一致）
+    var id = (cfg.id || '').toLowerCase();
+    var parts = id.split('_');
+    var seaWords = ['fish','shark','whale','dolphin','turtle','jelly','jellyfish',
+      'octopus','squid','crab','lobster','coral','anemone','seahorse','manta',
+      'ray','starfish','seal','otter','penguin','narwhal','orca','submarine','medaka',
+      'clam','shrimp','eel','sea'];
+    for (var i = 0; i < parts.length; i++) {
+      if (seaWords.indexOf(parts[i]) >= 0) return true;
     }
     return false;
   }
