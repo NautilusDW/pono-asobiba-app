@@ -715,12 +715,11 @@ body {
       <div class="composite-bottom">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <label style="font-size:0.68rem;color:#9ca3af;">レイアウト:</label>
-          <select id="composite-layout" style="padding:3px 6px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;font-family:inherit">
-            <option value="horizontal">横並び</option>
-            <option value="vertical">縦並び</option>
-          </select>
+          <label style="font-size:0.68rem;color:#9ca3af;">1行:</label>
+          <input type="number" id="composite-cols" value="5" min="1" max="20" style="width:38px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
+          <span style="font-size:0.6rem;color:#6b7280">個</span>
           <label style="font-size:0.68rem;color:#9ca3af;">余白:</label>
-          <input type="number" id="composite-gap" value="16" min="0" max="200" style="width:46px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
+          <input type="number" id="composite-gap" value="30" min="0" max="200" style="width:46px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
           <span style="font-size:0.6rem;color:#6b7280">px</span>
           <div style="flex:1"></div>
           <span id="composite-count" style="font-size:0.65rem;color:#6b7280">選択: 0</span>
@@ -4037,35 +4036,38 @@ function composeSelections() {
   if (allSels.length === 0) return null;
 
   const gap = parseInt(document.getElementById('composite-gap').value) || 0;
-  const layout = document.getElementById('composite-layout').value;
+  const cols = Math.max(1, parseInt(document.getElementById('composite-cols').value) || 5);
+  const rows = Math.ceil(allSels.length / cols);
 
-  let cw, ch;
-  if (layout === 'horizontal') {
-    cw = allSels.reduce((s, r) => s + r.w, 0) + gap * (allSels.length - 1);
-    ch = Math.max(...allSels.map(r => r.h));
-  } else {
-    cw = Math.max(...allSels.map(r => r.w));
-    ch = allSels.reduce((s, r) => s + r.h, 0) + gap * (allSels.length - 1);
-  }
+  // 各行・各列の最大サイズを計算
+  const colWidths = new Array(cols).fill(0);
+  const rowHeights = new Array(rows).fill(0);
+  allSels.forEach((sel, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    if (sel.w > colWidths[col]) colWidths[col] = sel.w;
+    if (sel.h > rowHeights[row]) rowHeights[row] = sel.h;
+  });
+
+  const cw = colWidths.reduce((s, w) => s + w, 0) + gap * (Math.min(allSels.length, cols) - 1);
+  const ch = rowHeights.reduce((s, h) => s + h, 0) + gap * (rows - 1);
 
   const cv = document.createElement('canvas');
   cv.width = cw; cv.height = ch;
   const ctx = cv.getContext('2d');
-  // 白背景で塗りつぶし
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, cw, ch);
 
-  let dx = 0, dy = 0;
-  allSels.forEach(sel => {
-    if (layout === 'horizontal') {
-      const oy = Math.round((ch - sel.h) / 2);
-      ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, dx, oy, sel.w, sel.h);
-      dx += sel.w + gap;
-    } else {
-      const ox = Math.round((cw - sel.w) / 2);
-      ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, ox, dy, sel.w, sel.h);
-      dy += sel.h + gap;
-    }
+  allSels.forEach((sel, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    // この列・行の開始位置を計算
+    let dx = 0;
+    for (let c = 0; c < col; c++) dx += colWidths[c] + gap;
+    let dy = 0;
+    for (let r = 0; r < row; r++) dy += rowHeights[r] + gap;
+    // セル内で中央揃え
+    dx += Math.round((colWidths[col] - sel.w) / 2);
+    dy += Math.round((rowHeights[row] - sel.h) / 2);
+    ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, dx, dy, sel.w, sel.h);
   });
   return cv;
 }
@@ -4092,7 +4094,7 @@ function updateCompositePreview() {
 }
 
 // レイアウト/余白変更 → プレビュー更新
-document.getElementById('composite-layout').addEventListener('change', updateCompositePreview);
+document.getElementById('composite-cols').addEventListener('input', updateCompositePreview);
 document.getElementById('composite-gap').addEventListener('input', updateCompositePreview);
 
 // ── 合成して読み込む ──
