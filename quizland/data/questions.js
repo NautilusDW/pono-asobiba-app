@@ -206,6 +206,20 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'dino', img:'Ankylosaurus/Ankylosaurus_normal_1.png', hint:'こうらの ような よろいで からだを まもる！',
       q:'この きょうりゅうは？', answer:2, choices:['トリケラトプス','ステゴサウルス','アンキロサウルス','ブラキオサウルス'] },
 
+    // Level 3: 珍しい恐竜の画像問題
+    { level:3, type:'emoji_name', category:'dino', img:'Parasaurolophus/Parasaurolophus_normal_1.png', hint:'あたまに ながい トサカがある！',
+      q:'この きょうりゅうは？', answer:2, choices:['ブラキオサウルス','イグアノドン','パラサウロロフス','トリケラトプス'] },
+    { level:3, type:'emoji_name', category:'dino', img:'Pachycephalosaurus/Pachycephalosaurus_normal_1.png', hint:'あたまが とても かたい！',
+      q:'この きょうりゅうは？', answer:0, choices:['パキケファロサウルス','ステゴサウルス','アンキロサウルス','トリケラトプス'] },
+    { level:3, type:'emoji_name', category:'dino', img:'Allosaurus/Allosaurus_normal_1.png', hint:'ティラノサウルスより まえに いた にくしょくきょうりゅう！',
+      q:'この きょうりゅうは？', answer:1, choices:['ティラノサウルス','アロサウルス','スピノサウルス','ヴェロキラプトル'] },
+    { level:3, type:'emoji_name', category:'dino', img:'Mosasaurus/Mosasaurus_normal_1.png', hint:'うみで くらした おおきな は虫類！',
+      q:'この きょうりゅうは？', answer:3, choices:['プレシオサウルス','イルカ','サメ','モササウルス'] },
+    { level:3, type:'emoji_name', category:'dino', img:'Dimetrodon/Dimetrodon_normal_1.png', hint:'せなかに おおきな ほ（ひれ）がある！',
+      q:'この きょうりゅうは？', answer:0, choices:['ディメトロドン','スピノサウルス','ステゴサウルス','プテラノドン'] },
+    { level:3, type:'emoji_name', category:'dino', img:'Iguanodon/Iguanodon_normal_1.png', hint:'おやゆびが スパイクの ように とがっている！',
+      q:'この きょうりゅうは？', answer:2, choices:['ブラキオサウルス','トリケラトプス','イグアノドン','パラサウロロフス'] },
+
     // Level 3: 豆知識・trivia
     { level:3, type:'trivia', category:'dino',
       q:'そらを とべる きょうりゅうに にた いきものは？',
