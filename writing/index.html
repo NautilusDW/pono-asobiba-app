@@ -177,13 +177,7 @@ html, body {
   .rs-row-label { font-size: 1rem; }
 }
 
-/* ===== Back Button ===== */
-.btn-back {
-  position: absolute; top: 4px; left: 4px; z-index: 200;
-  background: rgba(243,240,235,0.9); color: var(--text);
-  font-size: 0.72rem; font-weight: 900; padding: 6px 12px;
-  border-radius: 16px; border: 1.5px solid #E0D8CC;
-}
+/* (Back button removed - using gear menu instead) */
 
 /* ===== Word Context Grid (Phase 4) ===== */
 .word-context-wrapper {
@@ -482,10 +476,9 @@ html, body {
     padding-top: 8px;
     order: 1;
   }
-  .header { padding: 0; order: auto; }
-  .header h1 { font-size: 0.75rem; }
-  .header .subtitle { display: none; }
-  .btn-back { position: static; margin-bottom: 4px; }
+  .header { padding: 0; order: auto; padding-top: 40px; }
+  .header h1 { font-size: 0.85rem; }
+  .header .subtitle { font-size: 0.65rem; }
 
   /* ── Middle column: controls ── */
   .mid-col {
@@ -1824,25 +1817,64 @@ btnClear.addEventListener('click', () => {
 });
 
 btnHint.addEventListener('click', () => {
-  // Ignore during word context phase
+  // Ignore during word context phase or demo phase
   if (document.getElementById('wordContextWrap')) return;
-  if (writer) {
-    writer.cancelQuiz();
-    document.getElementById('demoIndicator').style.display = 'block';
-    writer.animateCharacter({
-      onComplete: function() {
-        document.getElementById('demoIndicator').style.display = 'none';
-        writer.hideCharacter();
+  if (_rowPracticePhase === 'demo') return;
+  if (!writer) return;
+
+  writer.cancelQuiz();
+  document.getElementById('demoIndicator').style.display = 'block';
+  writer.animateCharacter({
+    onComplete: function() {
+      document.getElementById('demoIndicator').style.display = 'none';
+      writer.hideCharacter();
+      // Row practice mode: restart the guided quiz with row practice handler
+      if (_rowPracticeActive && _rowPracticePhase === 'quiz_guided') {
+        writer.quiz({
+          onCorrectStroke: function() { playStrokeSound(); },
+          onComplete: function() {
+            if (!_rowPracticeActive) return;
+            playSuccessSound();
+            launchConfetti();
+            saveStamp(currentCategory, currentCharIndex);
+            markCharDone(currentCharIndex);
+            awardPoints(2);
+            if (window.incrementStat) {
+              window.incrementStat('writing_chars', 1);
+              if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
+              if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
+            }
+            var data = WORD_DATA[currentCategory][currentCharIndex];
+            var char = CATEGORIES[currentCategory].chars[currentCharIndex];
+            if (data && data.word) {
+              _rowPracticePhase = 'show_word';
+              _showRowPracticeWord(char, data, function() {
+                _rowPracticePhase = 'quiz_free';
+                _hedgeBubble.textContent = 'ことばで かこう！';
+                _ponoBubble.textContent = 'ことばで かこう！';
+                _startWordContextPhase(char, data, function() {
+                  _rowPracticeStep++;
+                  _rowPracticeNextChar();
+                });
+              });
+            } else {
+              setTimeout(function() { _rowPracticeStep++; _rowPracticeNextChar(); }, 1200);
+            }
+          },
+          showHintAfterMisses: 3,
+          highlightOnComplete: true,
+          highlightCompleteColor: currentScheme.stroke
+        });
+      } else {
+        // Normal (non-practice) mode
         startQuiz();
       }
-    });
-  }
+    }
+  });
 });
 
-btnNext.addEventListener('click', () => {
-  // In new flow, "つぎ" returns to selection screen
-  returnToSelect();
-});
+// "つぎ" button is hidden during row practice (shown only for future use)
+btnNext.style.display = 'none'; // Hidden by default in new flow
 
 // ===== Character speech bubble =====
 const CHEER_MSGS = [
