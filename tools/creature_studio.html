@@ -301,6 +301,8 @@ body {
 .compare-canvas-box.zoomed.dragging { cursor: grabbing; }
 /* Link mode */
 .compare-canvas-box.link-mode { cursor: crosshair !important; }
+/* Cut mode */
+.compare-canvas-box.cut-mode { cursor: crosshair !important; }
 /* Erase mode */
 .compare-canvas-box.erase-mode { cursor: crosshair !important; }
 .compare-canvas-box.erase-brush { cursor: none !important; }
@@ -507,6 +509,8 @@ body {
         <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
         <button class="tbtn tbtn-ghost" id="btn-link-mode" style="padding:3px 8px;font-size:0.72rem" title="リンクツール: 線で繋いだパーツを1つのスプライトに結合">🔗 リンク</button>
         <button class="tbtn tbtn-ghost" id="btn-link-clear" style="padding:3px 8px;font-size:0.72rem" title="リンクを全て消去">🔗✕</button>
+        <button class="tbtn tbtn-ghost" id="btn-cut-mode" style="padding:3px 8px;font-size:0.72rem" title="カットツール: 線で区切ったパーツを別のスプライトに分離">✂️ カット</button>
+        <button class="tbtn tbtn-ghost" id="btn-cut-clear" style="padding:3px 8px;font-size:0.72rem" title="カット線を全て消去">✂️✕</button>
         <div style="flex:1"></div>
         <span class="zb-label">背景:</span>
         <select id="bg-mode-select">
@@ -603,6 +607,8 @@ const ERASE_UNDO_MAX = 10;
 let brushDragging = false;     // ブラシドラッグ中フラグ
 let linkMode = false;
 let linkLines = [];            // [{x1,y1,x2,y2}] processedCanvas座標
+let cutMode = false;
+let cutLines = [];             // [{x1,y1,x2,y2}] processedCanvas座標 — 分離線
 
 // ════════════════════════════════════════════════════════════
 // Utilities
@@ -821,6 +827,7 @@ function redrawCompare() {
   drawInBox('box-orig', originalCanvas, false);
   if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
   drawLinkOverlay();
+  drawCutOverlay();
   const lbl = document.getElementById('zoom-level-display');
   lbl.textContent = compareZoom <= 0 ? 'Fit' : Math.round(compareZoom * 100) + '%';
 }
@@ -899,7 +906,7 @@ let panState = null;  // { startX, startY, sl, st }
 ['box-orig', 'box-proc'].forEach(id => {
   document.getElementById(id).addEventListener('mousedown', e => {
     if (e.button !== 0) return;
-    if ((eraseMode || linkMode) && id === 'box-proc') return;
+    if ((eraseMode || linkMode || cutMode) && id === 'box-proc') return;
     e.preventDefault();
     const box = document.getElementById('box-orig'); // always anchor to orig
     panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
@@ -942,7 +949,7 @@ function setEraseMode(on, tool) {
     showToast('先に「背景を消す」を実行してください', false);
     return;
   }
-  if (on) setLinkMode(false); // リンクモードと排他
+  if (on) { setLinkMode(false); setCutMode(false); } // リンク・カットモードと排他
   eraseMode = on;
   if (tool) eraseTool = tool;
   const boxProc = document.getElementById('box-proc');
@@ -1106,14 +1113,14 @@ document.getElementById('btn-erase-undo').addEventListener('click', popEraseUndo
 
 // ── 消去モード中の右ドラッグでパン ──
 document.getElementById('box-proc').addEventListener('mousedown', e => {
-  if (!(eraseMode || linkMode) || e.button !== 2) return;
+  if (!(eraseMode || linkMode || cutMode) || e.button !== 2) return;
   e.preventDefault();
   const box = document.getElementById('box-orig');
   panState = { startX: e.clientX, startY: e.clientY, sl: box.scrollLeft, st: box.scrollTop };
   document.querySelectorAll('.compare-canvas-box').forEach(b => b.classList.add('dragging'));
 });
 document.getElementById('box-proc').addEventListener('contextmenu', e => {
-  if (eraseMode || linkMode) e.preventDefault();
+  if (eraseMode || linkMode || cutMode) e.preventDefault();
 });
 
 // ── ポイント消去: クリック（processedRaw に対して消去）──
@@ -1166,6 +1173,7 @@ document.addEventListener('pointermove', e => {
     // ドラッグ中はprocessedRawを直接表示（仕上げは重いのでpointerupで適用）
     drawInBox('box-proc', processedRaw, true);
     drawLinkOverlay();
+    drawCutOverlay();
   }
 });
 
@@ -1192,7 +1200,7 @@ document.addEventListener('keydown', e => {
 function setLinkMode(on) {
   if (on && !processedCanvas) { showToast('先に「背景を消す」を実行してください', false); return; }
   linkMode = on;
-  if (on) setEraseMode(false); // 消去モードと排他
+  if (on) { setEraseMode(false); setCutMode(false); } // 消去・カットモードと排他
   document.getElementById('btn-link-mode').classList.toggle('active', on);
   document.getElementById('box-proc').classList.toggle('link-mode', on);
 }
@@ -1243,6 +1251,70 @@ function drawLinkOverlay() {
     ctx.stroke();
     // 端点マーカー
     ctx.fillStyle = '#22d3ee';
+    ctx.beginPath(); ctx.arc(ln.x1 * sx, ln.y1 * sy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ln.x2 * sx, ln.y2 * sy, 4, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════
+// Cut Mode（パーツ分離マーキング）— リンクの逆
+// ════════════════════════════════════════════════════════════
+
+function setCutMode(on) {
+  if (on && !processedCanvas) { showToast('先に「背景を消す」を実行してください', false); return; }
+  cutMode = on;
+  if (on) { setEraseMode(false); setLinkMode(false); }
+  document.getElementById('btn-cut-mode').classList.toggle('active', on);
+  document.getElementById('box-proc').classList.toggle('cut-mode', on);
+}
+
+let _cutStart = null;
+
+document.getElementById('btn-cut-mode').addEventListener('click', () => setCutMode(!cutMode));
+document.getElementById('btn-cut-clear').addEventListener('click', () => {
+  cutLines = [];
+  redrawCompare();
+  showToast('カット線を全て消去しました', true);
+});
+
+document.getElementById('box-proc').addEventListener('mousedown', e => {
+  if (!cutMode || !processedCanvas || e.button !== 0) return;
+  e.preventDefault();
+  const coord = clickToProcessedCoord(e);
+  if (coord) _cutStart = coord;
+});
+document.getElementById('box-proc').addEventListener('mouseup', e => {
+  if (!cutMode || !_cutStart || e.button !== 0) return;
+  const coord = clickToProcessedCoord(e);
+  if (!coord) { _cutStart = null; return; }
+  const dx = coord.x - _cutStart.x, dy = coord.y - _cutStart.y;
+  if (Math.sqrt(dx*dx + dy*dy) > 5) {
+    cutLines.push({ x1: _cutStart.x, y1: _cutStart.y, x2: coord.x, y2: coord.y });
+    redrawCompare();
+  }
+  _cutStart = null;
+});
+
+// カット線の描画（redrawCompare 後に呼ぶ）
+function drawCutOverlay() {
+  if (!cutLines.length) return;
+  const box = document.getElementById('box-proc');
+  const cv = box.querySelector('canvas');
+  if (!cv || !processedCanvas) return;
+  const ctx = cv.getContext('2d');
+  const sx = cv.width / processedCanvas.width;
+  const sy = cv.height / processedCanvas.height;
+  ctx.save();
+  ctx.strokeStyle = '#f87171'; ctx.lineWidth = 3;
+  ctx.setLineDash([4, 6]);
+  for (const ln of cutLines) {
+    ctx.beginPath();
+    ctx.moveTo(ln.x1 * sx, ln.y1 * sy);
+    ctx.lineTo(ln.x2 * sx, ln.y2 * sy);
+    ctx.stroke();
+    // 端点マーカー（✂ 赤）
+    ctx.fillStyle = '#f87171';
     ctx.beginPath(); ctx.arc(ln.x1 * sx, ln.y1 * sy, 4, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(ln.x2 * sx, ln.y2 * sy, 4, 0, Math.PI*2); ctx.fill();
   }
@@ -1835,7 +1907,7 @@ document.getElementById('btn-hue-pick').addEventListener('click', () => {
   huePickMode = !huePickMode;
   document.getElementById('btn-hue-pick').classList.toggle('active', huePickMode);
   document.getElementById('box-proc').style.cursor = huePickMode ? 'crosshair' : '';
-  if (huePickMode) { setEraseMode(false); setLinkMode(false); }
+  if (huePickMode) { setEraseMode(false); setLinkMode(false); setCutMode(false); }
 });
 
 document.getElementById('box-proc').addEventListener('click', e => {
@@ -2058,6 +2130,7 @@ document.getElementById('btn-save-session').addEventListener('click', async () =
       original: originalCanvas ? await canvasToBlob(originalCanvas) : null,
       raw: await canvasToBlob(processedRaw),
       links: linkLines,
+      cuts: cutLines,
       keepBackground: keepBackground,
       sprites: sprites.map((sp, i) => {
         const card = document.querySelector(`.sprite-card[data-idx="${i}"]`);
@@ -2127,6 +2200,7 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
     if (session.raw) processedRaw = await blobToCanvas(session.raw);
 
     linkLines = session.links || [];
+    cutLines = session.cuts || [];
     keepBackground = session.keepBackground || false;
 
     if (processedRaw) {
@@ -2251,6 +2325,30 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     fg[i] = 1;
   }
 
+  // カット線バリア: カット線上のピクセルを膨張対象から除外し、Union-Findでも結合させない
+  const cutBarrier = new Uint8Array(w * h);
+  if (cutLines.length > 0) {
+    for (const ln of cutLines) {
+      // Bresenham でカット線上のピクセルをマーク（太さ3px）
+      const dx = Math.abs(ln.x2 - ln.x1), dy = Math.abs(ln.y2 - ln.y1);
+      const sx = ln.x1 < ln.x2 ? 1 : -1, sy = ln.y1 < ln.y2 ? 1 : -1;
+      let err = dx - dy, cx = Math.round(ln.x1), cy = Math.round(ln.y1);
+      const ex = Math.round(ln.x2), ey = Math.round(ln.y2);
+      for (let iter = 0; iter < w + h; iter++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          for (let ox = -1; ox <= 1; ox++) {
+            const px = cx + ox, py = cy + oy;
+            if (px >= 0 && px < w && py >= 0 && py < h) cutBarrier[py * w + px] = 1;
+          }
+        }
+        if (cx === ex && cy === ey) break;
+        const e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; cx += sx; }
+        if (e2 < dx)  { err += dx; cy += sy; }
+      }
+    }
+  }
+
   // 膨張マスク: mergeGap 以内の隙間を埋めて近接パーツを結合する
   // BFS距離変換で前景からの距離が mergeGap/2 以内のピクセルを膨張
   let fgForUF = fg;
@@ -2274,6 +2372,7 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       for (const [nx, ny] of nb) {
         if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
         const ni = ny * w + nx;
+        if (cutBarrier[ni]) continue; // カット線を越えない
         if (dist[ni] <= cd + 1) continue;
         dist[ni] = cd + 1;
         fgForUF[ni] = 1;
@@ -2298,8 +2397,8 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       const i = y * w + x;
       if (!fgForUF[i]) continue;
       parent[i] = i;
-      if (y > 0 && fgForUF[i - w]) unite(i, i - w);
-      if (x > 0 && fgForUF[i - 1]) unite(i, i - 1);
+      if (y > 0 && fgForUF[i - w] && !cutBarrier[i] && !cutBarrier[i - w]) unite(i, i - w);
+      if (x > 0 && fgForUF[i - 1] && !cutBarrier[i] && !cutBarrier[i - 1]) unite(i, i - 1);
     }
   }
 
@@ -2317,6 +2416,26 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     }
   }
 
+  // カット線チェック: 2つのボックスの中心を結ぶ線分がカット線と交差するか判定
+  function _cutBlocked(a, b) {
+    if (!cutLines.length) return false;
+    const acx = (a.x1 + a.x2) / 2, acy = (a.y1 + a.y2) / 2;
+    const bcx = (b.x1 + b.x2) / 2, bcy = (b.y1 + b.y2) / 2;
+    for (const ln of cutLines) {
+      if (_segmentsIntersect(acx, acy, bcx, bcy, ln.x1, ln.y1, ln.x2, ln.y2)) return true;
+    }
+    return false;
+  }
+  function _segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
+    const d1 = (dx-cx)*(ay-cy) - (dy-cy)*(ax-cx);
+    const d2 = (dx-cx)*(by-cy) - (dy-cy)*(bx-cx);
+    const d3 = (bx-ax)*(cy-ay) - (by-ay)*(cx-ax);
+    const d4 = (bx-ax)*(dy-ay) - (by-ay)*(dx-ax);
+    if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+        ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
+    return false;
+  }
+
   // Merge bounding boxes that are within mergeGap of each other
   let boxList = [...rawBoxes.values()];
   if (mergeGap > 0) {
@@ -2326,6 +2445,8 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       for (let i = 0; i < boxList.length; i++) {
         for (let j = i + 1; j < boxList.length; j++) {
           const a = boxList[i], b = boxList[j];
+          // カット線が間にあれば結合しない
+          if (_cutBlocked(a, b)) continue;
           // gap distance between bounding boxes
           const gx = Math.max(0, Math.max(a.x1, b.x1) - Math.min(a.x2, b.x2));
           const gy = Math.max(0, Math.max(a.y1, b.y1) - Math.min(a.y2, b.y2));
