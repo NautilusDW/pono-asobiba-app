@@ -221,6 +221,25 @@ body {
   color: #6b7280; font-size: 0.68rem; font-family: inherit;
 }
 .card-id:focus { outline: none; border-color: #60a5fa; }
+.sp-id-suggest-btn {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: #6b7280; font-size: 0.6rem;
+  cursor: pointer; padding: 2px 4px; line-height: 1;
+}
+.sp-id-suggest-btn:hover { color: #d1d5db; }
+.sp-id-suggest-list {
+  display: none; position: absolute; left: 0; top: 100%; z-index: 999;
+  background: #111827; border: 1px solid #374151; border-radius: 6px;
+  max-height: 200px; overflow-y: auto; width: 100%;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+}
+.sp-id-suggest-list.open { display: block; }
+.sp-id-suggest-item {
+  padding: 4px 8px; font-size: 0.68rem; color: #d1d5db; cursor: pointer;
+  border-bottom: 1px solid #1f2937; display: flex; justify-content: space-between;
+}
+.sp-id-suggest-item:hover { background: #374151; }
+.sp-id-suggest-item .suggest-name { color: #9ca3af; font-size: 0.6rem; }
 .card-row { display: flex; gap: 4px; align-items: center; }
 .card-expr {
   flex: 1; padding: 4px 6px;
@@ -2742,7 +2761,11 @@ function createSpriteCard(sp, idx) {
     <div class="card-preview" id="cpv-${idx}"></div>
     <div class="card-body">
       <input type="text" class="card-name sp-name" placeholder="名前（同じ名前でグループ化）" value="${sp.name}">
-      <input type="text" class="card-id sp-id"   placeholder="ID（英数）例: medaka" value="${sp.id}">
+      <div style="position:relative">
+        <input type="text" class="card-id sp-id" placeholder="ID（英数）例: medaka" value="${sp.id}" autocomplete="off">
+        <button class="sp-id-suggest-btn" title="既存IDから選ぶ" type="button">▼</button>
+        <div class="sp-id-suggest-list"></div>
+      </div>
       <div class="card-row">
         <select class="card-expr sp-expr">
           <option value="normal"    ${sp.expr==='normal'    ?'selected':''}>🏊 コマ1</option>
@@ -2816,6 +2839,28 @@ function createSpriteCard(sp, idx) {
   card.querySelector('.sp-id').addEventListener('input', function() {
     this.dataset.manual = '1';
     sprites[idx].id = this.value;
+    // 入力中にサジェストを絞り込み
+    _filterSuggestList(card, this.value);
+  });
+
+  // ID サジェスト (既存IDから選択)
+  const suggestBtn  = card.querySelector('.sp-id-suggest-btn');
+  const suggestList = card.querySelector('.sp-id-suggest-list');
+  const idInput     = card.querySelector('.sp-id');
+
+  suggestBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (suggestList.classList.contains('open')) {
+      suggestList.classList.remove('open');
+      return;
+    }
+    _buildSuggestList(card, '');
+    suggestList.classList.add('open');
+  });
+
+  // 外クリックで閉じる
+  document.addEventListener('click', e => {
+    if (!card.contains(e.target)) suggestList.classList.remove('open');
   });
   card.querySelector('.sp-expr').addEventListener('change', function() { sprites[idx].expr = this.value; });
 
@@ -2859,6 +2904,52 @@ function createSpriteCard(sp, idx) {
   });
 
   return card;
+}
+
+// ── 既存IDサジェストリスト ──
+function _getExistingCreatures() {
+  if (!creaturesData || !creaturesData.creatures) return [];
+  return creaturesData.creatures.map(c => ({
+    id: c.id,
+    name: c.displayName || c.id
+  })).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+}
+
+function _buildSuggestList(card, filter) {
+  const list = card.querySelector('.sp-id-suggest-list');
+  const idInput = card.querySelector('.sp-id');
+  const idx = parseInt(card.dataset.idx);
+  list.innerHTML = '';
+
+  let items = _getExistingCreatures();
+  if (filter) {
+    const f = filter.toLowerCase();
+    items = items.filter(c => c.id.toLowerCase().includes(f) || c.name.includes(f));
+  }
+
+  if (items.length === 0) {
+    list.innerHTML = '<div style="padding:6px 8px;font-size:0.65rem;color:#6b7280;">該当なし</div>';
+    return;
+  }
+
+  items.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'sp-id-suggest-item';
+    item.innerHTML = `<span>${c.id}</span><span class="suggest-name">${c.name}</span>`;
+    item.addEventListener('click', () => {
+      idInput.value = c.id;
+      idInput.dataset.manual = '1';
+      sprites[idx].id = c.id;
+      list.classList.remove('open');
+    });
+    list.appendChild(item);
+  });
+}
+
+function _filterSuggestList(card, filter) {
+  const list = card.querySelector('.sp-id-suggest-list');
+  if (!list.classList.contains('open')) return;
+  _buildSuggestList(card, filter);
 }
 
 function refreshCardPreview(card, idx) {
