@@ -31,6 +31,20 @@ body {
 }
 .header nav a:hover { background: rgba(255,255,255,0.1); color: #e0e0e0; }
 .header-spacer { flex: 1; }
+.apikey-dropdown { position: relative; margin-left: 8px; }
+.apikey-toggle {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #374151;
+  background: #1f2937; color: #d1d5db; font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.apikey-toggle:hover { background: #374151; }
+.apikey-panel {
+  display: none; position: absolute; right: 0; top: 100%; margin-top: 6px;
+  background: #111827; border: 1px solid #374151; border-radius: 10px;
+  padding: 12px 14px; width: 280px; z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.apikey-panel.open { display: block; }
 
 /* ── Main Layout ── */
 .main { flex: 1; display: flex; overflow: hidden; }
@@ -324,6 +338,21 @@ body {
     <a href="../admin/index.html">← 管理ダッシュボード</a>
     <a href="../aquarium/index.html" target="_blank">🐠 水族館を確認</a>
   </nav>
+  <div class="apikey-dropdown" id="apikey-dropdown">
+    <button class="apikey-toggle" id="apikey-toggle">🔑 APIキー</button>
+    <div class="apikey-panel" id="apikey-panel">
+      <div style="margin-bottom:8px;">
+        <label style="font-size:0.72rem;font-weight:700;color:#d1d5db;">Gemini API キー</label>
+        <input type="password" id="gemini-key" placeholder="AIzaSy..." style="width:100%;margin-top:2px;padding:6px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#f9fafb;font-size:0.8rem;">
+        <div id="gemini-key-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:700;color:#d1d5db;">GitHub トークン</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxx..." style="width:100%;margin-top:2px;padding:6px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#f9fafb;font-size:0.8rem;">
+        <div id="gh-token-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="main">
@@ -451,20 +480,7 @@ body {
       <button class="btn btn-secondary" id="btn-hue-pick" disabled style="margin-top:4px">🔍 画像から色を拾う</button>
     </div>
 
-    <!-- 5. API Keys -->
-    <div class="section">
-      <div class="section-title">5. APIキー</div>
-      <div class="form-row">
-        <label>Gemini API キー</label>
-        <input type="password" id="gemini-key" placeholder="AIzaSy...">
-      </div>
-      <div id="gemini-key-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
-      <div class="form-row" style="margin-top:6px;">
-        <label>GitHub トークン</label>
-        <input type="password" id="gh-token" placeholder="ghp_xxxx...">
-      </div>
-      <div id="gh-token-status" style="font-size:0.65rem;color:#6b7280;margin-top:2px;"></div>
-    </div>
+    <!-- APIキーはヘッダーのドロップダウンに移動 -->
 
     <!-- Action buttons -->
     <button class="btn btn-primary"   id="btn-process" disabled>▶ 背景を消す</button>
@@ -689,6 +705,16 @@ ghTokenInput.addEventListener('input', () => {
   const v = ghTokenInput.value.trim();
   setToken(v);
   document.getElementById('gh-token-status').textContent = v ? '✅ 保存しました' : '';
+});
+
+// APIキー ドロップダウン開閉
+document.getElementById('apikey-toggle').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('apikey-panel').classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  const dd = document.getElementById('apikey-dropdown');
+  if (!dd.contains(e.target)) document.getElementById('apikey-panel').classList.remove('open');
 });
 
 // ════════════════════════════════════════════════════════════
