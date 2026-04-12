@@ -2506,8 +2506,8 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     const sctx = sc.getContext('2d');
     sctx.drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
-    // ── Component mask: このスプライトグループに属さないピクセルを透明化（背景残しモードではスキップ）──
-    if (!keepBg) {
+    // ── Component mask: このスプライトグループに属さない前景ピクセルを透明化 ──
+    {
       const allowedRoots = new Set(b.roots);
       const sImg = sctx.getImageData(0, 0, sw2, sh2);
       const sd = sImg.data;
