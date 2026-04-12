@@ -937,17 +937,28 @@ function initGame() {
 function buildCategoryScreen() {
   const grid = document.getElementById('cat-grid');
   grid.innerHTML = '';
+  const minLv = DIFF_MIN_LEVEL[selectedDifficulty];
+  const maxLv = DIFF_MAX_LEVEL[selectedDifficulty];
   ALL_CATS.forEach(cat => {
     const meta = QUIZLAND_CATEGORIES[cat];
+    const pool = (QUIZLAND_QUESTIONS[cat] || []).filter(q => q.level >= minLv && q.level <= maxLv);
+    const available = pool.length > 0;
     const btn = document.createElement('button');
-    btn.className = 'cat-btn' + (selectedCategories[cat] ? ' selected' : '');
+    btn.className = 'cat-btn' + (selectedCategories[cat] && available ? ' selected' : '');
     btn.dataset.cat = cat;
-    btn.innerHTML = `<span class="cat-emoji">${meta.emoji}</span><span class="cat-label">${meta.label}</span>`;
-    btn.addEventListener('click', function() {
-      selectedCategories[cat] = !selectedCategories[cat];
-      btn.classList.toggle('selected', selectedCategories[cat]);
-      updateCatStartBtn();
-    });
+    if (available) {
+      btn.innerHTML = `<span class="cat-emoji">${meta.emoji}</span><span class="cat-label">${meta.label}</span>`;
+      btn.addEventListener('click', function() {
+        selectedCategories[cat] = !selectedCategories[cat];
+        btn.classList.toggle('selected', selectedCategories[cat]);
+        updateCatStartBtn();
+      });
+    } else {
+      btn.innerHTML = `<span class="cat-emoji" style="opacity:0.3">${meta.emoji}</span><span class="cat-label" style="opacity:0.4">${meta.label}</span><span style="font-size:0.55rem;color:#999;display:block;">ふつう いじょうから</span>`;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+      selectedCategories[cat] = false;
+    }
     grid.appendChild(btn);
   });
   updateCatStartBtn();
@@ -980,6 +991,7 @@ document.querySelectorAll('.diff-btn').forEach(function(btn) {
     selectedDifficulty = btn.dataset.diff;
     document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
+    buildCategoryScreen(); // 難易度に応じてカテゴリの有効/無効を更新
   });
 });
 
