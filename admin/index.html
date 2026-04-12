@@ -742,7 +742,11 @@ tr:hover { background: #FFFAF0; }
     <div id="bento-illust-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:0.8rem;font-weight:700;"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="bentoIllustSetAll('done')" style="padding:5px 12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ 全部完成にする</button>
+      <button onclick="bentoAutoDetectDone()" style="padding:5px 12px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔍 画像ありを自動検出</button>
       <button onclick="bentoIllustSetAll('todo')" style="padding:5px 12px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 全部リセット</button>
+    </div>
+    <div style="font-size:0.72rem;color:#8B7355;margin:-8px 0 12px;line-height:1.5;">
+      ステータスバッジをクリックで 未作成→作成中→完成 を切替。チェックボックスで複数選択→一括操作。
     </div>
     <div id="bento-illust-groups"></div>
   </div>
@@ -6412,67 +6416,101 @@ function _renderStagingIllust(container, creatureLookup) {
 // ════════════════════════════════════════════════════════════════
 // 🍱 Bento Illustration Management
 // ════════════════════════════════════════════════════════════════
+// sk: 三色食品群 r=赤(からだをつくる) y=黄(ちからになる) g=緑(からだのちょうしをととのえる)
 var BENTO_ILLUST_GROUPS = [
   { id: 'rice', label: '🍚 ごはん', items: [
-    { id: 'rice_umeboshi', name: 'うめぼしごはん' },
-    { id: 'rice_goma',     name: 'ごまごはん' },
-    { id: 'rice_furikake', name: 'ふりかけごはん' },
+    { id: 'rice_umeboshi', name: 'うめぼしごはん', sk: 'y' },
+    { id: 'rice_goma',     name: 'ごまごはん',     sk: 'y' },
+    { id: 'rice_furikake', name: 'ふりかけごはん', sk: 'y' },
   ]},
   { id: 'meat', label: '🍖 おかず（おにく）', items: [
-    { id: 'tako_wiener',   name: 'タコウインナー' },
-    { id: 'hamburg',       name: 'ハンバーグ' },
-    { id: 'karaage',       name: 'からあげ' },
-    { id: 'ebi_fry',       name: 'エビフライ' },
-    { id: 'fries',         name: 'フライドポテト' },
-    { id: 'tamagoyaki',    name: 'たまごやき' },
-    { id: 'meatball',      name: 'ミートボール' },
-    { id: 'korokke',       name: 'コロッケ' },
-    { id: 'napolitan',     name: 'ナポリタン' },
-    { id: 'yakizake',      name: 'やきざけ' },
-    { id: 'gyoza',         name: 'ぎょうざ' },
-    { id: 'menchikatsu',   name: 'メンチカツ' },
-    { id: 'harumaki',      name: 'はるまき' },
-    { id: 'bacon_maki',    name: 'ベーコンまき' },
-    { id: 'kamaboko',      name: 'かまぼこ' },
-    { id: 'bacon_aspara',  name: 'ベーコンアスパラ' },
-    { id: 'cheese_korokke',name: 'チーズコロッケ' },
-    { id: 'okonomiyaki',   name: 'おこのみやき' },
-    { id: 'karaage3',      name: 'からあげ（別）' },
+    { id: 'tako_wiener',   name: 'タコウインナー', sk: 'r' },
+    { id: 'hamburg',       name: 'ハンバーグ',     sk: 'r' },
+    { id: 'karaage',       name: 'からあげ',       sk: 'r' },
+    { id: 'ebi_fry',       name: 'エビフライ',     sk: 'r' },
+    { id: 'fries',         name: 'フライドポテト', sk: 'y' },
+    { id: 'tamagoyaki',    name: 'たまごやき',     sk: 'r' },
+    { id: 'meatball',      name: 'ミートボール',   sk: 'r' },
+    { id: 'korokke',       name: 'コロッケ',       sk: 'y' },
+    { id: 'napolitan',     name: 'ナポリタン',     sk: 'y' },
+    { id: 'yakizake',      name: 'やきざけ',       sk: 'r' },
+    { id: 'gyoza',         name: 'ぎょうざ',       sk: 'r' },
+    { id: 'menchikatsu',   name: 'メンチカツ',     sk: 'r' },
+    { id: 'harumaki',      name: 'はるまき',       sk: 'y' },
+    { id: 'bacon_maki',    name: 'ベーコンまき',   sk: 'r' },
+    { id: 'kamaboko',      name: 'かまぼこ',       sk: 'r' },
+    { id: 'bacon_aspara',  name: 'ベーコンアスパラ',sk: 'r' },
+    { id: 'cheese_korokke',name: 'チーズコロッケ',  sk: 'r' },
+    { id: 'okonomiyaki',   name: 'おこのみやき',   sk: 'y' },
+    { id: 'karaage3',      name: 'からあげ（別）', sk: 'r' },
   ]},
   { id: 'veg', label: '🥦 おかず（やさい）', items: [
-    { id: 'broccoli',       name: 'ブロッコリー' },
-    { id: 'mini_tomato',    name: 'ミニトマト' },
-    { id: 'corn_spinach',   name: 'コーンほうれんそう' },
-    { id: 'kinpira',        name: 'きんぴらごぼう' },
-    { id: 'edamame',        name: 'えだまめ' },
-    { id: 'potato_salad',   name: 'ポテトサラダ' },
-    { id: 'ninjin_ingen',   name: 'にんじんいんげん' },
-    { id: 'broccoli_corn',  name: 'ブロッコリーコーン' },
-    { id: 'nasu_nimono',    name: 'なすのにもの' },
-    { id: 'hijiki_nimono',  name: 'ひじきのにもの' },
-    { id: 'chikuzenni',     name: 'ちくぜんに' },
-    { id: 'kinoko_itame',   name: 'きのこいため' },
-    { id: 'onsalad',        name: 'おんやさい' },
-    { id: 'corn_butter',    name: 'コーンバター' },
-    { id: 'ham_salad',      name: 'ハムサラダ' },
-    { id: 'kamaboko_pink',  name: 'かまぼこ（ピンク）' },
+    { id: 'broccoli',       name: 'ブロッコリー',       sk: 'g' },
+    { id: 'mini_tomato',    name: 'ミニトマト',         sk: 'g' },
+    { id: 'corn_spinach',   name: 'コーンほうれんそう', sk: 'g' },
+    { id: 'kinpira',        name: 'きんぴらごぼう',     sk: 'g' },
+    { id: 'edamame',        name: 'えだまめ',           sk: 'g' },
+    { id: 'potato_salad',   name: 'ポテトサラダ',       sk: 'g' },
+    { id: 'ninjin_ingen',   name: 'にんじんいんげん',   sk: 'g' },
+    { id: 'broccoli_corn',  name: 'ブロッコリーコーン', sk: 'g' },
+    { id: 'nasu_nimono',    name: 'なすのにもの',       sk: 'g' },
+    { id: 'hijiki_nimono',  name: 'ひじきのにもの',     sk: 'g' },
+    { id: 'chikuzenni',     name: 'ちくぜんに',         sk: 'g' },
+    { id: 'kinoko_itame',   name: 'きのこいため',       sk: 'g' },
+    { id: 'onsalad',        name: 'おんやさい',         sk: 'g' },
+    { id: 'corn_butter',    name: 'コーンバター',       sk: 'g' },
+    { id: 'ham_salad',      name: 'ハムサラダ',         sk: 'g' },
+    { id: 'kamaboko_pink',  name: 'かまぼこ（ピンク）', sk: 'r' },
   ]},
   { id: 'fruit', label: '🍓 フルーツ・デザート', items: [
-    { id: 'ichigo',    name: 'いちご' },
-    { id: 'mikan',     name: 'みかん' },
-    { id: 'budou',     name: 'ぶどう' },
-    { id: 'ringo',     name: 'りんご' },
-    { id: 'banana',    name: 'バナナ' },
-    { id: 'jelly',     name: 'ゼリー' },
-    { id: 'pudding',   name: 'プリン' },
-    { id: 'melon',     name: 'メロン' },
-    { id: 'momo',      name: 'もも' },
-    { id: 'pineapple', name: 'パイナップル' },
-    { id: 'cookie',    name: 'クッキー' },
+    { id: 'ichigo',    name: 'いちご',       sk: 'g' },
+    { id: 'mikan',     name: 'みかん',       sk: 'g' },
+    { id: 'budou',     name: 'ぶどう',       sk: 'g' },
+    { id: 'ringo',     name: 'りんご',       sk: 'g' },
+    { id: 'banana',    name: 'バナナ',       sk: 'y' },
+    { id: 'jelly',     name: 'ゼリー',       sk: 'y' },
+    { id: 'pudding',   name: 'プリン',       sk: 'y' },
+    { id: 'melon',     name: 'メロン',       sk: 'g' },
+    { id: 'momo',      name: 'もも',         sk: 'g' },
+    { id: 'pineapple', name: 'パイナップル', sk: 'g' },
+    { id: 'cookie',    name: 'クッキー',     sk: 'y' },
   ]},
 ];
 
 var BENTO_ILLUST_KEY = 'bento_illust_status';
+
+function bentoAutoDetectDone() {
+  var pending = 0, found = 0;
+  BENTO_ILLUST_GROUPS.forEach(function(g) {
+    g.items.forEach(function(it) {
+      pending++;
+      var img = new Image();
+      var itemId = it.id;
+      img.onload = function() {
+        found++;
+        bentoIllustSetStatus(itemId, 'done');
+        pending--;
+        if (pending <= 0) { showToast(found + '件の画像を検出しました', true); renderBentoIllust(); }
+      };
+      img.onerror = function() {
+        // Try without '2' suffix
+        var img2 = new Image();
+        img2.onload = function() {
+          found++;
+          bentoIllustSetStatus(itemId, 'done');
+          pending--;
+          if (pending <= 0) { showToast(found + '件の画像を検出しました', true); renderBentoIllust(); }
+        };
+        img2.onerror = function() {
+          pending--;
+          if (pending <= 0) { showToast(found + '件の画像を検出しました', true); renderBentoIllust(); }
+        };
+        img2.src = '../assets/images/Bento_parts/' + itemId + '.png';
+      };
+      img.src = '../assets/images/Bento_parts/' + itemId + '2.png';
+    });
+  });
+}
 
 function bentoIllustGetStatus() {
   try { return JSON.parse(localStorage.getItem(BENTO_ILLUST_KEY) || '{}'); } catch(e) { return {}; }
@@ -6601,26 +6639,42 @@ function renderBentoIllust() {
 
       // Image preview (click to enlarge)
       var imgPath = custom.imgPath || ('../assets/images/Bento_parts/' + it.id + '2.png');
+      var imgFallback = '../assets/images/Bento_parts/' + it.id + '.png';
+      var _resolvedSrc = imgPath; // track the actually loaded src
       var img = document.createElement('img');
       img.className = 'checker-bg';
       img.src = imgPath;
       img.style.cssText = 'width:64px;height:64px;object-fit:contain;display:block;margin:4px auto 4px;cursor:pointer;border-radius:8px;';
       img.onerror = function() {
         if (this.src.indexOf('2.png') > 0) {
-          this.src = '../assets/images/Bento_parts/' + it.id + '.png';
+          _resolvedSrc = imgFallback;
+          this.src = imgFallback;
         } else {
           this.style.display = 'none';
         }
       };
-      (function(src, name) {
-        img.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(src, name); });
-      })(imgPath, displayName);
+      (function(nameStr) {
+        img.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(_resolvedSrc, nameStr); });
+      })(displayName);
       card.appendChild(img);
 
       var nameEl = document.createElement('div');
       nameEl.style.cssText = 'font-size:0.72rem;font-weight:700;color:#5D4E37;margin-bottom:2px;';
       nameEl.textContent = displayName;
       card.appendChild(nameEl);
+
+      // 三色食品群バッジ
+      var skVal = custom.sk || it.sk || '';
+      if (skVal) {
+        var skColors = { r: { bg: '#FEE2E2', c: '#DC2626', label: '赤' }, y: { bg: '#FEF3C7', c: '#D97706', label: '黄' }, g: { bg: '#D1FAE5', c: '#059669', label: '緑' } };
+        var skInfo = skColors[skVal];
+        if (skInfo) {
+          var skBadge = document.createElement('span');
+          skBadge.style.cssText = 'font-size:0.55rem;font-weight:700;color:' + skInfo.c + ';background:' + skInfo.bg + ';padding:1px 6px;border-radius:4px;display:inline-block;margin-bottom:2px;';
+          skBadge.textContent = skInfo.label;
+          card.appendChild(skBadge);
+        }
+      }
 
       // Status badge (click to cycle)
       var badge = document.createElement('span');
@@ -6726,6 +6780,13 @@ function _saveBentoCustomData(data) {
 
 // ── Bento Edit Modal (設定) ──
 function _openBentoEditModal(itemId, currentName, currentCat) {
+  // Find original item to get default sk
+  var origItem = null;
+  BENTO_ILLUST_GROUPS.forEach(function(g) { g.items.forEach(function(it) { if (it.id === itemId) origItem = it; }); });
+  var cd = _getBentoCustomData();
+  var custom = cd[itemId] || {};
+  var currentSk = custom.sk || (origItem && origItem.sk) || '';
+
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;';
   var iStyle = 'width:100%;padding:8px 12px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.85rem;margin-bottom:8px;';
@@ -6742,6 +6803,13 @@ function _openBentoEditModal(itemId, currentName, currentCat) {
       '<option value="veg"' + (currentCat === 'veg' ? ' selected' : '') + '>🥦 やさい</option>' +
       '<option value="fruit"' + (currentCat === 'fruit' ? ' selected' : '') + '>🍓 フルーツ</option>' +
     '</select>' +
+    '<label style="font-size:0.75rem;font-weight:700;color:#8B7355;">三色食品群</label>' +
+    '<select id="_bento_edit_sk" style="' + iStyle + '">' +
+      '<option value=""' + (!currentSk ? ' selected' : '') + '>未設定</option>' +
+      '<option value="r"' + (currentSk === 'r' ? ' selected' : '') + '>🔴 赤（からだをつくる）</option>' +
+      '<option value="y"' + (currentSk === 'y' ? ' selected' : '') + '>🟡 黄（ちからになる）</option>' +
+      '<option value="g"' + (currentSk === 'g' ? ' selected' : '') + '>🟢 緑（ちょうしをととのえる）</option>' +
+    '</select>' +
     '<div style="display:flex;gap:8px;margin-top:12px;">' +
       '<button id="_bento_edit_save" style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer;">保存</button>' +
       '<button id="_bento_edit_cancel" style="flex:1;padding:10px;border:none;border-radius:8px;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
@@ -6751,11 +6819,12 @@ function _openBentoEditModal(itemId, currentName, currentCat) {
   ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
   document.getElementById('_bento_edit_cancel').addEventListener('click', function() { ov.remove(); });
   document.getElementById('_bento_edit_save').addEventListener('click', function() {
-    var cd = _getBentoCustomData();
-    cd[itemId] = cd[itemId] || {};
-    cd[itemId].name = document.getElementById('_bento_edit_name').value.trim() || currentName;
-    cd[itemId].cat = document.getElementById('_bento_edit_cat').value;
-    _saveBentoCustomData(cd);
+    var cd2 = _getBentoCustomData();
+    cd2[itemId] = cd2[itemId] || {};
+    cd2[itemId].name = document.getElementById('_bento_edit_name').value.trim() || currentName;
+    cd2[itemId].cat = document.getElementById('_bento_edit_cat').value;
+    cd2[itemId].sk = document.getElementById('_bento_edit_sk').value;
+    _saveBentoCustomData(cd2);
     ov.remove();
     renderBentoIllust();
     showToast('設定を保存しました', true);
