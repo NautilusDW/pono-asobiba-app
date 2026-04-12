@@ -362,6 +362,16 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 .picker-canvas-wrap canvas { cursor: crosshair; }
+.picker-empty {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border: 3px dashed #374151; border-radius: 12px; margin: 16px;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.picker-empty:hover { border-color: #6b7280; }
+.picker-canvas-wrap.has-images .picker-empty { display: none; }
+.picker-canvas-wrap.drag-over { background: rgba(248,113,113,0.08); }
+.picker-canvas-wrap.drag-over .picker-empty { border-color: #f87171; }
 .picker-sel-rect {
   position: absolute; border: 2px solid #22c55e; background: rgba(34,197,94,0.12);
   pointer-events: none; box-sizing: border-box;
@@ -695,6 +705,11 @@ body {
         </div>
         <div class="picker-canvas-wrap" id="picker-canvas-wrap">
           <canvas id="picker-canvas"></canvas>
+          <div class="picker-empty" id="picker-empty">
+            <div style="font-size:2rem;margin-bottom:8px;">📂</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#9ca3af;">ここに画像をドラッグ＆ドロップ</div>
+            <div style="font-size:0.7rem;color:#6b7280;margin-top:4px;">複数ファイルOK・1枚ずつでもOK</div>
+          </div>
         </div>
       </div>
       <div class="composite-bottom">
@@ -3670,14 +3685,12 @@ document.getElementById('btn-multi-picker').addEventListener('click', () => {
     btn.textContent = '📐 マルチ合成 ON';
     btn.style.background = '#dc2626'; btn.style.color = '#fff';
     singleDz.style.display = 'none';
-    multiDz.style.display = '';
     compTab.style.display = '';
     switchToTab('composite');
   } else {
     btn.textContent = '📐 マルチ合成モード';
     btn.style.background = ''; btn.style.color = '';
     singleDz.style.display = '';
-    multiDz.style.display = 'none';
     compTab.style.display = 'none';
     // クリーンアップ
     pickerImages.forEach(img => { img.canvas.width = 0; img.canvas.height = 0; });
@@ -3788,6 +3801,9 @@ function renderPickerPreview() {
   const cv = document.getElementById('picker-canvas');
   // 既存のオーバーレイを削除
   wrap.querySelectorAll('.picker-sel-rect,.picker-click-highlight').forEach(el => el.remove());
+
+  // 画像の有無でプレースホルダー表示を切替
+  wrap.classList.toggle('has-images', pickerImages.length > 0);
 
   if (activePickerIdx < 0 || !pickerImages[activePickerIdx]) {
     cv.width = 1; cv.height = 1;
@@ -4123,11 +4139,22 @@ if (typeof ResizeObserver !== 'undefined') {
 
 // ── 合成タブ全体でドラッグ&ドロップ受付 ──
 const compositeTab = document.getElementById('tab-composite');
-compositeTab.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+compositeTab.addEventListener('dragover', e => {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+  document.getElementById('picker-canvas-wrap').classList.add('drag-over');
+});
+compositeTab.addEventListener('dragleave', e => {
+  if (!compositeTab.contains(e.relatedTarget))
+    document.getElementById('picker-canvas-wrap').classList.remove('drag-over');
+});
 compositeTab.addEventListener('drop', e => {
   e.preventDefault();
+  document.getElementById('picker-canvas-wrap').classList.remove('drag-over');
   if (e.dataTransfer.files.length) addPickerFiles(e.dataTransfer.files);
 });
+
+// プレースホルダーのクリック → ファイル選択
+document.getElementById('picker-empty').addEventListener('click', () => multiFileInput.click());
 
 </script>
 </body>
