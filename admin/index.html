@@ -5761,6 +5761,12 @@ function buildQuizUsageMap() {
       if (!creatureToIllust[c]) creatureToIllust[c] = CREATURE_TO_ILLUST_FALLBACK[c];
     }
   }
+  // 自動追加分: creature ID → creature ID（自身をキーにする）
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(function(c) {
+      if (!creatureToIllust[c.id]) creatureToIllust[c.id] = c.id;
+    });
+  }
 
   // emoji → illust ID のマッピング
   var emojiToIllust = {
@@ -5854,8 +5860,68 @@ var CREATURE_TO_ILLUST_FALLBACK = {};
   }
 })();
 
+// ── creatures.json から自動的にILLUST_GROUPSを補完する ──
+function buildMergedIllustGroups() {
+  var merged = JSON.parse(JSON.stringify(ILLUST_GROUPS));
+  if (!creaturesData || !creaturesData.creatures) return merged;
+
+  // 既存マッピングでカバーされている creature ID を収集
+  var knownCreatureIds = new Set();
+  for (var k in ILLUST_TO_CREATURE) knownCreatureIds.add(ILLUST_TO_CREATURE[k]);
+  for (var c in CREATURE_TO_ILLUST_FALLBACK) knownCreatureIds.add(c);
+
+  // カテゴリ推測用キーワード
+  var catKeywords = {
+    dino: ['saurus','raptor','pteran','plesio','stego','tricera','brachio','ankylo','dimetro','iguano','mosasaur','parasaur','pachycephalo'],
+    insect: ['beetle','bug','ant','bee','fly','moth','cricket','mantis','dragonfly','cicada','butterfly','spider','snail','slug','firefly','ladybird','caterpillar','mosquito','arachnid','pill_bug','jewel','stag','hercules','swallowtail','cabbage_white','lucan'],
+    animal: ['dog','cat','elephant','panda','rabbit','hamster','bear','cow','lion','giraffe','frog','tiger','wolf','fox','zebra','rhino','kangaroo','gorilla','platypus','bat','sloth','horse','raccoon'],
+    food: ['apple','banana','strawberry','peach','cherry','orange','grape','watermelon','carrot','mushroom','lemon','avocado','blueberry','kiwi','corn','edamame'],
+    vehicle: ['car','train','airplane','bicycle','taxi','bus','fire_engine','ship','rocket','ambulance','helicopter','tractor','sailboat','ufo','excavator','police'],
+    weather: ['sun','rain','rainbow','thunder','snow','cloud','wind','fog','tornado','hurricane','thermometer'],
+    body: ['eye','mouth','hand','palm','foot','arm','nose','tooth','teeth','tongue','leg','ear']
+  };
+
+  function guessCategory(id) {
+    var lower = id.toLowerCase();
+    for (var cat in catKeywords) {
+      for (var i = 0; i < catKeywords[cat].length; i++) {
+        if (lower.indexOf(catKeywords[cat][i]) >= 0) return cat;
+      }
+    }
+    return null;
+  }
+
+  // creatures.json の中でまだマッピングされていないものを検出
+  var uncategorized = [];
+  creaturesData.creatures.forEach(function(c) {
+    if (knownCreatureIds.has(c.id)) return;
+    var cat = guessCategory(c.id);
+    var item = { id: c.id, name: c.displayName || c.id, _autoAdded: true, _creatureId: c.id };
+    if (cat) {
+      var target = merged.find(function(g) { return g.id === cat; });
+      if (target) { target.items.push(item); return; }
+    }
+    uncategorized.push(item);
+  });
+
+  if (uncategorized.length > 0) {
+    merged.push({
+      id: 'uncategorized', label: '❓ 未分類（自動検出）', priority: '低',
+      note: 'creatures.jsonに登録済みだが制作リストに未登録の項目',
+      items: uncategorized, _auto: true
+    });
+  }
+  return merged;
+}
+
+var _mergedIllustGroups = null; // キャッシュ
+function getMergedIllustGroups() {
+  if (!_mergedIllustGroups) _mergedIllustGroups = buildMergedIllustGroups();
+  return _mergedIllustGroups;
+}
+function invalidateMergedIllustGroups() { _mergedIllustGroups = null; }
+
 function illustGetStatus() {
-  // creatures.json から自動判定 + ローカルステータスをマージ
   var manual = {};
   try { manual = JSON.parse(localStorage.getItem(ILLUST_STATUS_KEY) || '{}'); } catch(e) {}
 
@@ -5863,14 +5929,15 @@ function illustGetStatus() {
   var doneIllustIds = new Set();
   if (creaturesData && creaturesData.creatures) {
     creaturesData.creatures.forEach(function(c) {
-      // 正引き: ILLUST_TO_CREATURE のvalueに一致
       var match = CREATURE_TO_ILLUST_FALLBACK[c.id];
       if (match) doneIllustIds.add(match);
+      // 自動追加分: creature ID 自体も done にする
+      doneIllustIds.add(c.id);
     });
   }
 
   var result = {};
-  ILLUST_GROUPS.forEach(function(g) {
+  getMergedIllustGroups().forEach(function(g) {
     g.items.forEach(function(it) {
       if (doneIllustIds.has(it.id)) {
         result[it.id] = 'done';
@@ -5887,7 +5954,7 @@ function illustSetStatus(id, status) {
 }
 function illustSetAll(status) {
   var s = {};
-  ILLUST_GROUPS.forEach(function(g) { g.items.forEach(function(it) { s[it.id] = status; }); });
+  getMergedIllustGroups().forEach(function(g) { g.items.forEach(function(it) { s[it.id] = status; }); });
   localStorage.setItem(ILLUST_STATUS_KEY, JSON.stringify(s));
   renderIllust();
 }
@@ -5901,8 +5968,10 @@ var _illustSortBy  = null; // null=デフォルト順, 'todo'/'wip'/'done'=そ�
 function renderIllust() {
   var statuses = illustGetStatus();
   var usageMap = buildQuizUsageMap();
+  invalidateMergedIllustGroups(); // creatures.json変更時にキャッシュ破棄
+  var mergedGroups = getMergedIllustGroups();
   var allItems = 0, doneItems = 0, wipItems = 0;
-  ILLUST_GROUPS.forEach(function(g) {
+  mergedGroups.forEach(function(g) {
     g.items.forEach(function(it) {
       allItems++;
       var s = statuses[it.id] || 'todo';
@@ -5936,7 +6005,7 @@ function renderIllust() {
     creaturesData.creatures.forEach(function(c) { creatureLookup[c.id] = c; });
   }
 
-  ILLUST_GROUPS.forEach(function(g) {
+  mergedGroups.forEach(function(g) {
     var div = document.createElement('div');
     div.style.cssText = 'margin-bottom:20px;';
 
@@ -5965,13 +6034,17 @@ function renderIllust() {
 
     sortedItems.forEach(function(it) {
       var s = statuses[it.id] || 'todo';
-      // 正引き＋逆引きでcreatureを検索
-      var cId = ILLUST_TO_CREATURE[it.id];
-      var creature = cId ? creatureLookup[cId] : null;
-      if (!creature) {
-        // 逆引き: creatures.json の全IDから制作リストIDへのマッチを探す
-        for (var ci in creatureLookup) {
-          if (CREATURE_TO_ILLUST_FALLBACK[ci] === it.id) { creature = creatureLookup[ci]; break; }
+      // creature を検索: 自動追加分は _creatureId を直接使用
+      var creature = null;
+      if (it._creatureId) {
+        creature = creatureLookup[it._creatureId];
+      } else {
+        var cId = ILLUST_TO_CREATURE[it.id];
+        creature = cId ? creatureLookup[cId] : null;
+        if (!creature) {
+          for (var ci in creatureLookup) {
+            if (CREATURE_TO_ILLUST_FALLBACK[ci] === it.id) { creature = creatureLookup[ci]; break; }
+          }
         }
       }
 
