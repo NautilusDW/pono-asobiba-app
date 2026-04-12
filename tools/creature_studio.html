@@ -4121,6 +4121,14 @@ if (typeof ResizeObserver !== 'undefined') {
     .observe(document.getElementById('picker-canvas-wrap'));
 }
 
+// ── 合成タブ全体でドラッグ&ドロップ受付 ──
+const compositeTab = document.getElementById('tab-composite');
+compositeTab.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+compositeTab.addEventListener('drop', e => {
+  e.preventDefault();
+  if (e.dataTransfer.files.length) addPickerFiles(e.dataTransfer.files);
+});
+
 </script>
 </body>
 </html>
