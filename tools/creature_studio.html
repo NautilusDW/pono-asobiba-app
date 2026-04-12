@@ -2592,7 +2592,12 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
           const gx = sx + lx;
           const gi = gy * w + gx;
           if (fg[gi] && !allowedRoots.has(rootToMerged.get(find(gi)))) {
-            sd[(ly * sw2 + lx) * 4 + 3] = 0;
+            const pi = (ly * sw2 + lx) * 4;
+            if (keepBg) {
+              sd[pi] = 255; sd[pi+1] = 255; sd[pi+2] = 255; sd[pi+3] = 255; // 白で塗る
+            } else {
+              sd[pi+3] = 0; // 透明化
+            }
             masked = true;
           }
         }
