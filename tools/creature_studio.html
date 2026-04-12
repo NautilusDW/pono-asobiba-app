@@ -3044,12 +3044,58 @@ function createSpriteCard(sp, idx) {
 }
 
 // ── 既存IDサジェストリスト ──
+// 管理ダッシュボードの制作リストと同期したマスターリスト
+const KNOWN_CREATURES = {
+  // 恐竜
+  tyrannosaurus:'ティラノサウルス', brachiosaurus:'ブラキオサウルス', triceratops:'トリケラトプス',
+  stegosaurus:'ステゴサウルス', pteranodon:'プテラノドン', raptor:'ヴェロキラプトル',
+  spinosaurus:'スピノサウルス', ankylosaurus:'アンキロサウルス', plesiosaur:'プレシオサウルス',
+  parasaurolophus:'パラサウロロフス', pachycephalosaurus:'パキケファロサウルス',
+  allosaurus:'アロサウルス', mosasaurus:'モササウルス', dimetrodon:'ディメトロドン', iguanodon:'イグアノドン',
+  // 動物
+  dog:'いぬ', cat:'ねこ', elephant:'ぞう', panda:'パンダ', rabbit:'うさぎ', hamster:'ハムスター',
+  bear:'くま', cow:'うし', lion:'ライオン', giraffe:'キリン', frog:'カエル', tiger:'トラ',
+  wolf:'オオカミ', fox:'キツネ', zebra:'シマウマ', rhino:'サイ', kangaroo:'カンガルー',
+  gorilla:'ゴリラ', platypus:'カモノハシ', bat:'コウモリ', sloth:'ナマケモノ', horse:'ウマ', raccoon:'アライグマ',
+  // 昆虫
+  butterfly:'ちょうちょ', ladybird:'てんとうむし', garden_snail:'かたつむり', caterpillar:'いもむし',
+  ant:'あり', mosquito:'か', bee:'はち', cricket:'コオロギ', rhinoceros_beetle:'かぶとむし',
+  arachnid:'クモ', lightning_bug:'ホタル', praying_mantis:'カマキリ', dragonfly:'トンボ',
+  cicada:'セミ', cabbage_white:'モンシロチョウ',
+  hercules_beetle:'ヘラクレスオオカブト', stag_beetle:'クワガタ', lucanidae:'クワガタ(別)',
+  pill_bug:'ダンゴムシ', jewel_beetle:'カナブン', swallowtail_butterfly:'アゲハチョウ',
+  slug:'ナメクジ', moth:'ガ', housefly:'ハエ', snail:'カタツムリ(新)',
+  // 天気
+  sun:'たいよう', rain:'あめ', rainbow:'にじ', thunder:'かみなり', snow:'ゆき', cloud:'くも',
+  wind:'かぜ', fog:'きり', tornado:'たつまき', hurricane:'たいふう', thermometer:'おんどけい',
+  // からだ
+  eyes:'め', mouth_part:'くち', palm:'て', foot_part:'あし', forearm:'うで',
+  nose_part:'はな', teeth:'は', tongue:'した', leg:'あし', ear_part:'みみ',
+  // たべもの
+  apple:'りんご', banana:'バナナ', strawberry:'いちご', peach:'もも', cherry:'さくらんぼ',
+  orange:'オレンジ', grapes:'ぶどう', watermelon:'すいか', carrot:'にんじん', mushroom:'きのこ',
+  lemon:'レモン', avocado:'アボカド', blueberry:'ブルーベリー', kiwi:'キウイ', corn:'とうもろこし', edamame:'えだまめ',
+  // のりもの
+  car:'くるま', train:'でんしゃ', airplane:'ひこうき', bicycle:'じてんしゃ', taxi:'タクシー',
+  bus:'バス', fire_engine:'しょうぼうしゃ', cruise_ship:'ふね', rocket:'ロケット',
+  ambulance:'きゅうきゅうしゃ', helicopter:'ヘリコプター', tractor:'トラクター',
+  sailboat:'ヨット', ufo:'UFO', excavator:'ショベルカー', police_car:'パトカー',
+};
+
 function _getExistingCreatures() {
-  if (!creaturesData || !creaturesData.creatures) return [];
-  return creaturesData.creatures.map(c => ({
-    id: c.id,
-    name: c.displayName || c.id
-  })).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  // creatures.json + マスターリストの両方を統合
+  const map = new Map();
+  // マスターリストを先に入れる
+  for (const [id, name] of Object.entries(KNOWN_CREATURES)) {
+    map.set(id, { id, name });
+  }
+  // creatures.json で上書き（displayNameがあればそちら優先）
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(c => {
+      map.set(c.id, { id: c.id, name: c.displayName || c.id });
+    });
+  }
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 }
 
 function _buildSuggestList(card, filter) {
