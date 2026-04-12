@@ -2514,6 +2514,182 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "snail",
+      "displayName": "カタツムリ",
+      "icon": "🐌",
+      "folder": "Snail",
+      "expressions": {
+        "normal": "Snail_normal_1.png",
+        "surprised": "Snail_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 362,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "stag_beetle",
+      "displayName": "クワガタムシ",
+      "icon": "🪲",
+      "folder": "Stag_beetle",
+      "expressions": {
+        "normal": "Stag_beetle_normal_1.png",
+        "surprised": "Stag_beetle_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 682,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "housefly",
+      "displayName": "ハエ",
+      "icon": "🪰",
+      "folder": "Housefly",
+      "expressions": {
+        "normal": "Housefly_normal_1.png",
+        "surprised": "Housefly_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 339,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "slug",
+      "displayName": "ナメクジ",
+      "icon": "🐌",
+      "folder": "Slug",
+      "expressions": {
+        "normal": "Slug_normal_1.png",
+        "surprised": "Slug_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 468,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "swallowtail_butterfly",
+      "displayName": "アゲハチョウ",
+      "icon": "🦋",
+      "folder": "Swallowtail_butterfly",
+      "expressions": {
+        "normal": "Swallowtail_butterfly_normal_1.png",
+        "surprised": "Swallowtail_butterfly_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 624,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "moth",
+      "displayName": "ガ",
+      "icon": "🦋",
+      "folder": "Moth",
+      "expressions": {
+        "normal": "Moth_normal_1.png",
+        "surprised": "Moth_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 610,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "hercules_beetle",
+      "displayName": "ヘラクレスオオカブト",
+      "icon": "🪲",
+      "folder": "Hercules_beetle",
+      "expressions": {
+        "normal": "Hercules_beetle_normal_1.png",
+        "surprised": "Hercules_beetle_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 1034,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "lucanidae",
+      "displayName": "クワガタ",
+      "icon": "🪲",
+      "folder": "Lucanidae",
+      "expressions": {
+        "normal": "Lucanidae_normal_1.png",
+        "surprised": "Lucanidae_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 762,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
