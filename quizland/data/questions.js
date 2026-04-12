@@ -422,13 +422,13 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'insect', img:'Ant/Ant_normal_1.png', q:'これは なに？', answer:1, choices:['はち','あり','ちょうちょ','かぶとむし'] },
     { level:1, type:'emoji_name', category:'insect', img:'Mosquito/Mosquito_normal_1.png', q:'これは なに？', answer:2, choices:['はち','てんとうむし','か','あり'] },
     { level:1, type:'emoji_name', category:'insect', img:'Bee/Bee_normal_1.png', q:'これは なに？', answer:0, choices:['はち','あり','ちょうちょ','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Grasshopper/Grasshopper_normal_1.png', q:'これは なに？', answer:1, choices:['バッタ','コオロギ','セミ','カマキリ'] },
+    { level:1, type:'emoji_name', category:'insect', img:'Cricket/Cricket_normal_1.png', q:'これは なに？', answer:1, choices:['バッタ','コオロギ','セミ','カマキリ'] },
 
     // Level 2
     { level:2, type:'emoji_name', category:'insect', img:'Bee/Bee_normal_1.png', q:'これは なに？', answer:1, choices:['あり','はち','ちょうちょ','かぶとむし'] },
     { level:2, type:'emoji_name', category:'insect', img:'Rhinoceros_beetle/Rhinoceros_beetle_normal_1.png', q:'これは なに？', answer:0, choices:['かぶとむし','クワガタ','ダンゴムシ','あり'] },
     { level:2, type:'emoji_name', category:'insect', img:'Ant/Ant_normal_1.png', q:'これは なに？', answer:3, choices:['はち','ちょうちょ','セミ','あり'] },
-    { level:2, type:'emoji_name', category:'insect', img:'Grasshopper/Grasshopper_normal_1.png', q:'これは なに？', answer:0, choices:['コオロギ','バッタ','セミ','カマキリ'] },
+    { level:2, type:'emoji_name', category:'insect', img:'Cricket/Cricket_normal_1.png', q:'これは なに？', answer:0, choices:['コオロギ','バッタ','セミ','カマキリ'] },
     { level:2, type:'emoji_name', category:'insect', img:'Arachnid/Arachnid_normal_1.png', q:'これは なに？', answer:1, choices:['あり','クモ','ハチ','てんとうむし'] },
     { level:2, type:'trivia', category:'insect',
       q:'セミが なくのは オス？ メス？',
