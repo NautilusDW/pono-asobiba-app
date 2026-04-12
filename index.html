@@ -1169,6 +1169,14 @@
         </div>
       </a>
 
+      <a href="slide/index.html" class="card card-slide locked" id="card-slide">
+        <span class="card-icon"><img src="assets/images/characters/pono/pono_face_circle.png" style="width:48px;height:48px;object-fit:contain;" alt="ポノ"></span>
+        <div class="card-body">
+          <div class="card-title">みちつなぎ</div>
+          <div class="card-desc">おかあさんに<br>あいにいこう</div>
+        </div>
+      </a>
+
       <a href="maze/index.html" class="card card-maze" id="card-maze">
         <span class="card-icon">🦔</span>
         <div class="card-body">
@@ -1177,10 +1185,23 @@
         </div>
       </a>
 
+      <!-- ─── シミュレーション区切り ─── -->
+      <div style="
+        grid-column: 1 / -1;
+        margin: 14px auto 6px;
+        max-width: 360px;
+        width: 100%;
+        text-align: center;
+        padding: 12px 0 8px;
+        border-top: 2.5px dashed #A7D8F0;
+      ">
+        <div style="font-size: 1.05rem; color: #1E88E5; font-weight: 900;">🐠 みて あそぼう</div>
+      </div>
+
       <a href="aquarium/map.html" class="card card-aquarium">
         <span class="card-icon">🐠</span>
         <div class="card-body">
-          <div class="card-title">うみのせかい</div>
+          <div class="card-title">すいぞくかん</div>
           <div class="card-desc">えをうみで<br>およがせよう</div>
         </div>
       </a>
@@ -1214,14 +1235,6 @@
       </div>
 
       <!-- 購入者限定コンテンツ -->
-      <a href="coloring/index.html" class="card card-coloring locked" id="card-coloring">
-        <span class="card-icon">🖍️</span>
-        <div class="card-body">
-          <div class="card-title">ぬりえ</div>
-          <div class="card-desc">いろをぬろう</div>
-        </div>
-      </a>
-
       <a href="bowling/index.html" class="card card-bowling locked" id="card-bowling">
         <span class="card-icon">🎳</span>
         <div class="card-body">
@@ -1238,28 +1251,36 @@
         </div>
       </a>
 
-      <a href="slide/index.html" class="card card-slide locked" id="card-slide">
-        <span class="card-icon"><img src="assets/images/characters/pono/pono_face_circle.png" style="width:48px;height:48px;object-fit:contain;" alt="ポノ"></span>
+      <!-- 準備中（グレーアウト） -->
+      <a class="card card-coloring locked" id="card-coloring" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🖍️</span>
         <div class="card-body">
-          <div class="card-title">みちつなぎ</div>
-          <div class="card-desc">おかあさんに<br>あいにいこう</div>
+          <div class="card-title">ぬりえ</div>
+          <div class="card-desc">つくってるよ！</div>
         </div>
       </a>
 
-      <!-- 準備中（グレーアウト） -->
-      <a class="card card-bubble locked" id="card-bubble" style="pointer-events:none;">
+      <a class="card card-sugoroku locked" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);background:linear-gradient(135deg,#8B5CF6,#EC4899);">
+        <span class="card-icon">🎲</span>
+        <div class="card-body">
+          <div class="card-title">すごろく</div>
+          <div class="card-desc">ミニゲームで<br>すすもう！</div>
+        </div>
+      </a>
+
+      <a class="card card-bubble locked" id="card-bubble" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
         <span class="card-icon">🫧</span>
         <div class="card-body">
           <div class="card-title">しゃぼんだま</div>
-          <div class="card-desc">もうすぐ<br>あそべるよ！</div>
+          <div class="card-desc">つくってるよ！</div>
         </div>
       </a>
 
-      <a class="card card-stacking locked" id="card-stacking" style="pointer-events:none;">
+      <a class="card card-stacking locked" id="card-stacking" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
         <span class="card-icon">🏗️</span>
         <div class="card-body">
           <div class="card-title">つみき</div>
-          <div class="card-desc">もうすぐ<br>あそべるよ！</div>
+          <div class="card-desc">つくってるよ！</div>
         </div>
       </a>
     </nav>
@@ -1405,7 +1426,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-coloring', 'card-bowling', 'card-breakout', 'card-slide'];
+    const lockedCards = ['card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';
@@ -1499,6 +1520,40 @@
     // ===== Stamp Rally System (15-slot card, 5×3) =====
     (function() {
       'use strict';
+
+      // ── AudioContext unlock + stamp sound ──
+      var _stampAC = null;
+      function _getStampAC() {
+        if (!_stampAC) {
+          try { _stampAC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        }
+        if (_stampAC && _stampAC.state === 'suspended') _stampAC.resume();
+        return _stampAC;
+      }
+      // iOS AudioContext unlock on first touch
+      function _unlockStampAudio() {
+        _getStampAC();
+        document.removeEventListener('touchstart', _unlockStampAudio);
+        document.removeEventListener('pointerdown', _unlockStampAudio);
+      }
+      document.addEventListener('touchstart', _unlockStampAudio, { once: true });
+      document.addEventListener('pointerdown', _unlockStampAudio, { once: true });
+
+      function _playStampPop() {
+        var ac = _getStampAC();
+        if (!ac) return;
+        try {
+          var osc = ac.createOscillator();
+          var g = ac.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, ac.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1320, ac.currentTime + 0.08);
+          g.gain.setValueAtTime(0.18, ac.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.15);
+          osc.connect(g); g.connect(ac.destination);
+          osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.15);
+        } catch(e) {}
+      }
 
       // ── Constants ──
       var LS_STAMP_LOG = 'pono_stamp_log';
@@ -2324,6 +2379,7 @@
         // Which row is the newly stamped slot in?
         var posInCard = filled - 1; // 0-based
         var posInRow = posInCard % SLOTS_PER_ROW;
+        _playStampPop();
         renderStampCard(posInRow);
       }
 

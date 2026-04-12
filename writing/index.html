@@ -578,6 +578,16 @@ html, body {
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap; }
 .tut-bubble.hidden { display:none; }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+#demoIndicator {
+  position:absolute; top:8px; left:50%; transform:translateX(-50%);
+  font-size:0.95rem; font-weight:900; color:#FF6B9D;
+  background:rgba(255,255,255,0.85); padding:4px 14px; border-radius:20px;
+  animation:demoBlink 0.8s ease-in-out infinite;
+  display:none; z-index:200;
+  box-shadow:0 2px 8px rgba(255,107,157,0.3);
+  pointer-events:none;
+}
+@keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -599,6 +609,7 @@ html, body {
     </div>
 
     <div class="row-tabs" id="rowTabs"></div>
+    <div id="practiceRowSelect" style="display:none;"></div>
   </div>
 
   <div class="mid-col">
@@ -612,6 +623,7 @@ html, body {
   <div class="right-col">
     <div class="progress-hint" id="progressHint"></div>
     <div class="trace-area">
+      <div id="demoIndicator">おてほんちゅう</div>
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
       <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
       <div class="canvas-wrap">
@@ -1245,8 +1257,10 @@ function createWriter(char) {
     });
     _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
     _ponoBubble.textContent = 'このじゅんばんで かくよ！';
+    document.getElementById('demoIndicator').style.display = 'block';
     writer.animateCharacter({
       onComplete: function() {
+        document.getElementById('demoIndicator').style.display = 'none';
         _hedgeBubble.textContent = 'かいてみよう！';
         _ponoBubble.textContent = 'かいてみよう！';
         writer.hideCharacter();
@@ -1387,13 +1401,41 @@ function buildCharSelector() {
     btn.className = cls;
     btn.textContent = ch;
     btn.addEventListener('click', () => {
+      exitRowPractice();
       currentCharIndex = globalIdx;
       loadCharacter();
-      // In landscape, update char buttons active state
       if (isLandscape) buildCharSelector();
     });
     charSelector.appendChild(btn);
   });
+
+  // Portrait mode: show practice row selector
+  var practDiv = document.getElementById('practiceRowSelect');
+  if (practDiv) {
+    if (!isLandscape) {
+      practDiv.style.display = 'block';
+      practDiv.innerHTML = '';
+      var title = document.createElement('div');
+      title.style.cssText = 'font-size:0.7rem;font-weight:900;color:#A89880;margin:6px 0 4px;text-align:center;';
+      title.textContent = '▶ れんしゅう';
+      practDiv.appendChild(title);
+      var rowBtns = document.createElement('div');
+      rowBtns.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;justify-content:center;';
+      GOJUON_ROWS[currentCategory].forEach(function(row, i) {
+        var rb = document.createElement('button');
+        rb.style.cssText = 'padding:4px 10px;border:1.5px solid #FF6B9D;border-radius:12px;background:#fff;color:#FF6B9D;font-family:inherit;font-size:0.72rem;font-weight:900;cursor:pointer;';
+        rb.textContent = row.label + 'ぎょう';
+        rb.addEventListener('click', function() {
+          exitRowPractice();
+          startRowPractice(i);
+        });
+        rowBtns.appendChild(rb);
+      });
+      practDiv.appendChild(rowBtns);
+    } else {
+      practDiv.style.display = 'none';
+    }
+  }
 }
 
 function buildRowTabs() {
@@ -1407,6 +1449,9 @@ function buildRowTabs() {
   const cat = CATEGORIES[currentCategory];
 
   rows.forEach((row, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:inline-flex;align-items:center;gap:2px;';
+
     const btn = document.createElement('button');
     btn.className = 'row-tab' + (i === currentRow ? ' active' : '');
     // Check if any char in this row is done
@@ -1419,15 +1464,189 @@ function buildRowTabs() {
     if (allDone) btn.classList.add('has-done');
     btn.textContent = row.label;
     btn.addEventListener('click', () => {
+      exitRowPractice();
       currentRow = i;
-      // Set currentCharIndex to first char of this row
       currentCharIndex = row.start;
       buildRowTabs();
       buildCharSelector();
       loadCharacter();
     });
-    rowTabsEl.appendChild(btn);
+    wrap.appendChild(btn);
+
+    // Practice button
+    const practBtn = document.createElement('button');
+    practBtn.style.cssText = 'padding:2px 6px;border:none;border-radius:8px;background:linear-gradient(135deg,#FF6B9D,#C084FC);color:#fff;font-size:0.6rem;font-weight:900;cursor:pointer;line-height:1;';
+    practBtn.textContent = '▶';
+    practBtn.title = row.label + 'ぎょう れんしゅう';
+    practBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exitRowPractice();
+      startRowPractice(i);
+    });
+    wrap.appendChild(practBtn);
+
+    rowTabsEl.appendChild(wrap);
   });
+}
+
+// ===== Row Practice Mode (5文字1セット) =====
+let _rowPracticeActive = false;
+let _rowPracticeRow = null;   // { start, count, label }
+let _rowPracticeStep = 0;     // 0..count-1 (current char in row)
+let _rowPracticePhase = '';   // 'demo' | 'quiz_guided' | 'show_word' | 'quiz_free' | 'done'
+
+function startRowPractice(rowIndex) {
+  const rows = GOJUON_ROWS[currentCategory];
+  _rowPracticeRow = rows[rowIndex];
+  _rowPracticeStep = 0;
+  _rowPracticeActive = true;
+  currentRow = rowIndex;
+  buildRowTabs();
+  _rowPracticeNextChar();
+}
+
+function _rowPracticeNextChar() {
+  if (_rowPracticeStep >= _rowPracticeRow.count) {
+    _rowPracticeComplete();
+    return;
+  }
+  const globalIdx = _rowPracticeRow.start + _rowPracticeStep;
+  currentCharIndex = globalIdx;
+  buildCharSelector();
+  loadCharacter();
+
+  // Phase 1: Demo
+  _rowPracticePhase = 'demo';
+  setTimeout(function() {
+    if (!writer || !_rowPracticeActive) return;
+    document.getElementById('demoIndicator').style.display = 'block';
+    _hedgeBubble.textContent = 'みて みて！';
+    _ponoBubble.textContent = 'みて みて！';
+    writer.animateCharacter({
+      onComplete: function() {
+        document.getElementById('demoIndicator').style.display = 'none';
+        if (!_rowPracticeActive) return;
+        // Phase 2: Quiz with guides
+        _rowPracticePhase = 'quiz_guided';
+        _hedgeBubble.textContent = 'かいてみよう！';
+        _ponoBubble.textContent = 'かいてみよう！';
+        writer.hideCharacter();
+        writer.quiz({
+          onCorrectStroke: function() { playStrokeSound(); },
+          onComplete: function() {
+            if (!_rowPracticeActive) return;
+            playSuccessSound();
+            launchConfetti();
+            saveStamp(currentCategory, currentCharIndex);
+            markCharDone(currentCharIndex);
+            awardPoints(2);
+            if (window.incrementStat) {
+              window.incrementStat('writing_chars', 1);
+              if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
+              if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
+            }
+            // Phase 3: Show word illustration
+            _rowPracticePhase = 'show_word';
+            const data = WORD_DATA[currentCategory][currentCharIndex];
+            const char = CATEGORIES[currentCategory].chars[currentCharIndex];
+            if (data && data.word) {
+              _showRowPracticeWord(char, data, function() {
+                // Phase 4: Quiz without stroke numbers
+                _rowPracticePhase = 'quiz_free';
+                writerTarget.innerHTML = '';
+                createWriter(char);
+                // Hide stroke order numbers
+                document.getElementById('strokeNumbers').innerHTML = '';
+                _hedgeBubble.textContent = 'こんどは ひとりで！';
+                _ponoBubble.textContent = 'こんどは ひとりで！';
+                writer.hideCharacter();
+                writer.quiz({
+                  onCorrectStroke: function() { playStrokeSound(); },
+                  onComplete: function() {
+                    if (!_rowPracticeActive) return;
+                    playSuccessSound();
+                    // Speak "〇〇のX"
+                    if (data.word) {
+                      speakWord(char, data.word);
+                    }
+                    _hedgeBubble.textContent = 'すごーい！';
+                    _ponoBubble.textContent = 'すごーい！';
+                    awardPoints(2);
+                    // Move to next char after delay
+                    setTimeout(function() {
+                      _rowPracticeStep++;
+                      _rowPracticeNextChar();
+                    }, 1800);
+                  },
+                  showHintAfterMisses: 3,
+                  highlightOnComplete: true,
+                  highlightCompleteColor: currentScheme.stroke
+                });
+              });
+            } else {
+              // No word data (を, ん) — skip word phase
+              setTimeout(function() {
+                _rowPracticeStep++;
+                _rowPracticeNextChar();
+              }, 1200);
+            }
+          },
+          showHintAfterMisses: 3,
+          highlightOnComplete: true,
+          highlightCompleteColor: currentScheme.stroke
+        });
+      }
+    });
+  }, 500);
+}
+
+function _showRowPracticeWord(char, data, onDone) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(93,78,55,0.5);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;';
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;border-radius:24px;padding:28px 24px;text-align:center;width:min(80vw,280px);box-shadow:0 12px 48px rgba(93,78,55,0.25);';
+  card.innerHTML =
+    '<div style="font-size:4rem;margin-bottom:8px;">' + data.emoji + '</div>' +
+    '<div style="font-size:1.8rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">' +
+    '<span style="color:#FF6B9D;opacity:0.5;">' + char + '</span>' + data.word.slice(char.length) +
+    '</div>' +
+    '<div style="font-size:0.85rem;color:#A89880;margin-bottom:14px;">こんどは おてほんなしで<br>かいてみよう！</div>' +
+    '<button style="padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">かく！</button>';
+  ov.appendChild(card);
+  document.body.appendChild(ov);
+  card.querySelector('button').addEventListener('click', function() {
+    ov.remove();
+    if (onDone) onDone();
+  });
+}
+
+function _rowPracticeComplete() {
+  _rowPracticeActive = false;
+  _rowPracticePhase = 'done';
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(93,78,55,0.5);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;';
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;border-radius:28px;padding:32px 28px;text-align:center;width:min(88vw,340px);box-shadow:0 12px 48px rgba(93,78,55,0.25);';
+  var rowLabel = _rowPracticeRow.label;
+  card.innerHTML =
+    '<div style="font-size:4rem;margin-bottom:12px;">🌟</div>' +
+    '<div style="font-size:1.4rem;font-weight:900;color:#FF6B9D;margin-bottom:8px;">よく がんばったね！</div>' +
+    '<div style="font-size:1rem;font-weight:700;color:#5D4E37;margin-bottom:16px;">' + rowLabel + 'ぎょう クリア！</div>' +
+    '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">やったー！</button>';
+  ov.appendChild(card);
+  document.body.appendChild(ov);
+  launchConfetti();
+  card.querySelector('button').addEventListener('click', function() {
+    ov.remove();
+    updateProgressHint();
+    buildCharSelector();
+  });
+}
+
+function exitRowPractice() {
+  _rowPracticeActive = false;
+  _rowPracticePhase = '';
+  document.getElementById('demoIndicator').style.display = 'none';
 }
 
 // ===== Tab switching =====
@@ -1436,6 +1655,7 @@ categoryTabs.addEventListener('click', (e) => {
   if (!btn) return;
   const cat = btn.dataset.cat;
   if (cat === currentCategory) return;
+  exitRowPractice();
   currentCategory = cat;
   currentCharIndex = 0;
   currentRow = 0;
@@ -1500,8 +1720,10 @@ btnClear.addEventListener('click', () => {
 btnHint.addEventListener('click', () => {
   if (writer) {
     writer.cancelQuiz();
+    document.getElementById('demoIndicator').style.display = 'block';
     writer.animateCharacter({
       onComplete: function() {
+        document.getElementById('demoIndicator').style.display = 'none';
         writer.hideCharacter();
         startQuiz();
       }
@@ -1510,6 +1732,7 @@ btnHint.addEventListener('click', () => {
 });
 
 btnNext.addEventListener('click', () => {
+  if (_rowPracticeActive) { exitRowPractice(); return; }
   const cat = CATEGORIES[currentCategory];
   currentCharIndex = (currentCharIndex + 1) % cat.chars.length;
   // Update currentRow if in landscape
@@ -1622,8 +1845,10 @@ function showTutorial() {
     if (writer) {
       _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
       _ponoBubble.textContent = 'このじゅんばんで かくよ！';
+      document.getElementById('demoIndicator').style.display = 'block';
       writer.animateCharacter({
         onComplete: function() {
+          document.getElementById('demoIndicator').style.display = 'none';
           _hedgeBubble.textContent = 'かいてみよう！';
           _ponoBubble.textContent = 'かいてみよう！';
           writer.hideCharacter();

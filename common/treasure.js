@@ -66,7 +66,7 @@
       '  transform:translateX(-50%) scale(1);',
       '}',
       '.treasure-reward img {',
-      '  width:80px; height:80px; object-fit:contain;',
+      '  width:140px; height:140px; object-fit:contain;',
       '  filter:drop-shadow(0 4px 12px rgba(255,215,0,0.5));',
       '}',
       '.treasure-reward-name {',
@@ -158,11 +158,38 @@
     }
   }
 
+  // ── サウンド（AudioContext ファンファーレ）────────────────────────────────────
+  function _playFanfare() {
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      var notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+      notes.forEach(function(freq, i) {
+        var osc = ac.createOscillator();
+        var g = ac.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ac.currentTime + i * 0.12);
+        g.gain.setValueAtTime(0.15, ac.currentTime + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + i * 0.12 + 0.3);
+        osc.connect(g); g.connect(ac.destination);
+        osc.start(ac.currentTime + i * 0.12);
+        osc.stop(ac.currentTime + i * 0.12 + 0.3);
+      });
+    } catch(e) {}
+  }
+
   // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────
   function _showReward() {
     if (_finished) return;
     _finished = true;
     _clearPendingTimers();
+
+    // 動画/フォールバックを隠して背景を表示
+    if (_video) { _video.style.opacity = '0'; _video.style.transition = 'opacity 0.3s'; }
+    var fb = _container.querySelector('.treasure-fallback');
+    if (fb) { fb.style.opacity = '0'; fb.style.transition = 'opacity 0.3s'; }
+    _container.style.background = 'radial-gradient(circle at 50% 50%, #FFD700 0%, #FF8C00 40%, #5C3A00 100%)';
+
+    _playFanfare();
     _reward.classList.add('show');
     _later(function() { _msg.classList.add('show'); }, 400);
     _later(function() { _closeBtn.classList.add('show'); }, 800);
