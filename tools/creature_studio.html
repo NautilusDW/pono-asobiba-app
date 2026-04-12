@@ -2325,30 +2325,6 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     fg[i] = 1;
   }
 
-  // カット線バリア: カット線上のピクセルを膨張対象から除外し、Union-Findでも結合させない
-  const cutBarrier = new Uint8Array(w * h);
-  if (cutLines.length > 0) {
-    for (const ln of cutLines) {
-      // Bresenham でカット線上のピクセルをマーク（太さ3px）
-      const dx = Math.abs(ln.x2 - ln.x1), dy = Math.abs(ln.y2 - ln.y1);
-      const sx = ln.x1 < ln.x2 ? 1 : -1, sy = ln.y1 < ln.y2 ? 1 : -1;
-      let err = dx - dy, cx = Math.round(ln.x1), cy = Math.round(ln.y1);
-      const ex = Math.round(ln.x2), ey = Math.round(ln.y2);
-      for (let iter = 0; iter < w + h; iter++) {
-        for (let oy = -1; oy <= 1; oy++) {
-          for (let ox = -1; ox <= 1; ox++) {
-            const px = cx + ox, py = cy + oy;
-            if (px >= 0 && px < w && py >= 0 && py < h) cutBarrier[py * w + px] = 1;
-          }
-        }
-        if (cx === ex && cy === ey) break;
-        const e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; cx += sx; }
-        if (e2 < dx)  { err += dx; cy += sy; }
-      }
-    }
-  }
-
   // 膨張マスク: mergeGap 以内の隙間を埋めて近接パーツを結合する
   // BFS距離変換で前景からの距離が mergeGap/2 以内のピクセルを膨張
   let fgForUF = fg;
@@ -2372,7 +2348,6 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       for (const [nx, ny] of nb) {
         if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
         const ni = ny * w + nx;
-        if (cutBarrier[ni]) continue; // カット線を越えない
         if (dist[ni] <= cd + 1) continue;
         dist[ni] = cd + 1;
         fgForUF[ni] = 1;
@@ -2397,8 +2372,8 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       const i = y * w + x;
       if (!fgForUF[i]) continue;
       parent[i] = i;
-      if (y > 0 && fgForUF[i - w] && !cutBarrier[i] && !cutBarrier[i - w]) unite(i, i - w);
-      if (x > 0 && fgForUF[i - 1] && !cutBarrier[i] && !cutBarrier[i - 1]) unite(i, i - 1);
+      if (y > 0 && fgForUF[i - w]) unite(i, i - w);
+      if (x > 0 && fgForUF[i - 1]) unite(i, i - 1);
     }
   }
 
