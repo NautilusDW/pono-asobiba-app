@@ -3749,7 +3749,8 @@ function renderPickerStrip() {
     const thumb = document.createElement('canvas');
     thumb.className = 'picker-thumb' + (i === activePickerIdx ? ' active' : '');
     thumb.width = 56; thumb.height = 56;
-    const scale = Math.min(56 / pImg.canvas.width, 56 / pImg.canvas.height);
+    const scale = (pImg.canvas.width > 0 && pImg.canvas.height > 0)
+      ? Math.min(56 / pImg.canvas.width, 56 / pImg.canvas.height) : 1;
     const tw = pImg.canvas.width * scale, th = pImg.canvas.height * scale;
     thumb.getContext('2d').drawImage(pImg.canvas, (56 - tw) / 2, (56 - th) / 2, tw, th);
     thumb.addEventListener('click', () => { activePickerIdx = i; renderPickerStrip(); renderPickerPreview(); });
@@ -3832,14 +3833,14 @@ function renderPickerPreview() {
 
 // ── Picker coordinate conversion ──
 function pickerCoord(e) {
-  const cv = document.getElementById('picker-canvas');
-  const rect = cv.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / rect.width * cv.width;
-  const y = (e.clientY - rect.top)  / rect.height * cv.height;
   if (activePickerIdx < 0 || !pickerImages[activePickerIdx]) return null;
+  const cv = document.getElementById('picker-canvas');
   const src = pickerImages[activePickerIdx].canvas;
-  const scale = cv.width / src.width;
-  return { x: Math.round(x / scale), y: Math.round(y / scale) };
+  const rect = cv.getBoundingClientRect();
+  // CSS座標 → ソース画像座標に直接変換
+  const x = (e.clientX - rect.left) / rect.width  * src.width;
+  const y = (e.clientY - rect.top)  / rect.height * src.height;
+  return { x: Math.round(x), y: Math.round(y) };
 }
 
 // ── Selection mode toggle ──
@@ -3892,6 +3893,7 @@ pickerCvWrap.addEventListener('mousedown', e => {
 
 document.addEventListener('mousemove', e => {
   if (!_pickerDrag || !_dragDiv) return;
+  if (activePickerIdx < 0 || !pickerImages[activePickerIdx]) { _pickerDrag = null; return; }
   const coord = pickerCoord(e);
   if (!coord) return;
   const cv = document.getElementById('picker-canvas');
@@ -3955,14 +3957,16 @@ function pickerFloodSelect(cx, cy, addMode) {
     return;
   }
 
-  // BFS で連結前景領域を検出
+  // BFS で連結前景領域を検出（TypedArray queue で O(n)）
   const visited = new Uint8Array(w * h);
-  const queue = [cx + cy * w];
+  const queue = new Int32Array(w * h);
+  let qHead = 0, qTail = 0;
+  queue[qTail++] = cx + cy * w;
   visited[cx + cy * w] = 1;
   let minX = cx, minY = cy, maxX = cx, maxY = cy;
 
-  while (queue.length > 0) {
-    const idx = queue.shift();
+  while (qHead < qTail) {
+    const idx = queue[qHead++];
     const px = idx % w, py = Math.floor(idx / w);
     if (px < minX) minX = px;
     if (py < minY) minY = py;
@@ -3981,7 +3985,7 @@ function pickerFloodSelect(cx, cy, addMode) {
       const dist = Math.sqrt((d[pi]-bgR)**2 + (d[pi+1]-bgG)**2 + (d[pi+2]-bgB)**2);
       if (dist >= tol) {
         visited[ni] = 1;
-        queue.push(ni);
+        queue[qTail++] = ni;
       }
     }
   }
@@ -4068,6 +4072,7 @@ function updateCompositePreview() {
   pvCv.height = Math.round(cv.height * scale);
   pvCv.getContext('2d').drawImage(cv, 0, 0, pvCv.width, pvCv.height);
   wrap.appendChild(pvCv);
+  cv.width = 0; cv.height = 0; // GPU メモリ解放
 }
 
 // レイアウト/余白変更 → プレビュー更新
