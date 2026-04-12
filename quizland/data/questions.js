@@ -589,7 +589,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'body', img:'Nose_part/Nose_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] },
     { level:2, type:'emoji_name', category:'body', img:'Palm/Palm_normal_1.png', q:'これは からだの どこ？', answer:3, choices:['あし','おなか','かた','て'] },
     { level:2, type:'emoji_name', category:'body', img:'Teeth/Teeth_normal_1.png', q:'これは からだの なに？', answer:1, choices:['ほね','は','つめ','かみ'] },
-    { level:2, type:'emoji_name', category:'body', emoji:'👅', q:'これは からだの なに？', answer:1, choices:['くちびる','した','は','くち'] },
+    { level:2, type:'emoji_name', category:'body', emoji:'👅', q:'これは からだの なに？', answer:1, choices:['ゆび','した','みみ','おなか'] },
     { level:2, type:'trivia', category:'body',
       q:'からだで いちばん おおきい きかんは？',
       hint:'からだの そとを おおっている！',
