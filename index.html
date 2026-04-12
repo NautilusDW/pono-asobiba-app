@@ -1137,14 +1137,6 @@
         </div>
       </a>
 
-      <a href="drawing/index.html" class="card card-drawing">
-        <span class="card-icon">🎨</span>
-        <div class="card-body">
-          <div class="card-title">おえかき</div>
-          <div class="card-desc">かいた えは うみで<br>およがせられるよ🐠</div>
-        </div>
-      </a>
-
       <a href="bento/index.html" class="card card-bento">
         <span class="card-icon">🍱</span>
         <div class="card-body">
@@ -1227,6 +1219,14 @@
       </div>
 
       <!-- 購入者限定コンテンツ -->
+      <a href="drawing/index.html" class="card card-drawing locked" id="card-drawing">
+        <span class="card-icon">🎨</span>
+        <div class="card-body">
+          <div class="card-title">おえかき</div>
+          <div class="card-desc">かいた えは うみで<br>およがせられるよ🐠</div>
+        </div>
+      </a>
+
       <a href="slide/index.html" class="card card-slide locked" id="card-slide">
         <span class="card-icon"><img src="assets/images/characters/pono/pono_face_circle.png" style="width:48px;height:48px;object-fit:contain;" alt="ポノ"></span>
         <div class="card-body">
@@ -1426,7 +1426,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-bowling', 'card-breakout', 'card-slide'];
+    const lockedCards = ['card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';
@@ -1522,25 +1522,42 @@
       'use strict';
 
       // ── AudioContext unlock + stamp sound ──
+      // iOS Safari: AudioContextの作成とresumeをユーザーアクション内で行う
       var _stampAC = null;
-      function _getStampAC() {
+      var _stampUnlocked = false;
+
+      function _ensureStampAC() {
         if (!_stampAC) {
           try { _stampAC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
         }
-        if (_stampAC && _stampAC.state === 'suspended') _stampAC.resume();
+        if (_stampAC && _stampAC.state === 'suspended') {
+          _stampAC.resume().catch(function() {});
+        }
         return _stampAC;
       }
-      // iOS AudioContext unlock on first touch
+
+      // iOS: ユーザーアクション内でAudioContextを初期化+無音再生で完全アンロック
       function _unlockStampAudio() {
-        _getStampAC();
-        document.removeEventListener('touchstart', _unlockStampAudio);
-        document.removeEventListener('pointerdown', _unlockStampAudio);
+        if (_stampUnlocked) return;
+        var ac = _ensureStampAC();
+        if (!ac) return;
+        // 無音バッファ再生でiOS AudioContextを完全にアンロック
+        try {
+          var buf = ac.createBuffer(1, 1, 22050);
+          var src = ac.createBufferSource();
+          src.buffer = buf;
+          src.connect(ac.destination);
+          src.start(0);
+          _stampUnlocked = true;
+        } catch(e) {}
       }
-      document.addEventListener('touchstart', _unlockStampAudio, { once: true });
-      document.addEventListener('pointerdown', _unlockStampAudio, { once: true });
+      // 複数イベントで試行（iOSはtouchstartが最も確実）
+      document.addEventListener('touchstart', _unlockStampAudio, { passive: true });
+      document.addEventListener('touchend', _unlockStampAudio, { passive: true });
+      document.addEventListener('click', _unlockStampAudio);
 
       function _playStampPop() {
-        var ac = _getStampAC();
+        var ac = _ensureStampAC();
         if (!ac) return;
         try {
           var osc = ac.createOscillator();
@@ -1590,7 +1607,6 @@
       var ALL_FREE_GAMES = [
         { key: 'puzzle',    emoji: '\uD83E\uDDE9', name: 'パズル',        href: 'puzzle/index.html' },
         { key: 'writing',   emoji: '\u270F\uFE0F', name: 'もじかき',      href: 'writing/index.html' },
-        { key: 'drawing',   emoji: '\uD83C\uDFA8', name: 'おえかき',      href: 'drawing/index.html' },
         { key: 'bento',     emoji: '\uD83C\uDF71', name: 'おべんとう',    href: 'bento/index.html' },
         { key: 'wordmatch', emoji: '\uD83D\uDD24', name: 'ことばあわせ',  href: 'wordmatch/index.html' },
         { key: 'quizland',  emoji: '\uD83E\uDDE0', name: 'クイズランド',  href: 'quizland/index.html' },

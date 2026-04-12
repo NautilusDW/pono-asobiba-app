@@ -594,12 +594,6 @@ const STAGES = [
     { img: W+'iruka.png', word: 'いるか' },
     { img: W+'kuma.png', word: 'くま' },
   ]},
-  { name: 'いろ', pairs: [
-    { img: W+'color_red.png', word: 'あか' },
-    { img: W+'color_blue.png', word: 'あお' },
-    { img: W+'color_yellow.png', word: 'きいろ' },
-    { img: W+'color_green.png', word: 'みどり' },
-  ]},
   { name: 'くだもの', pairs: [
     { img: W+'ringo.png', word: 'りんご' },
     { img: W+'mikan.png', word: 'みかん' },
@@ -1186,34 +1180,21 @@ function showTutorial() {
   if (!dim || !bubble) return;
 
   let step = 0;
+  // 全ステップで画面中央に配置（縦横どちらでも正しく表示）
+  function centerBubble() {
+    bubble.className = 'tut-bubble';
+    bubble.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9997;max-width:300px;text-align:center;';
+  }
   const steps = [
     () => {
-      const grid = document.querySelector('.pic-grid');
-      if (!grid) return endTut();
-      grid.classList.add('tut-highlight');
       dim.classList.remove('hidden');
-      const r = grid.getBoundingClientRect();
-      bubble.className = 'tut-bubble arrow-up';
-      bubble.style.cssText = 'top:' + (r.bottom + 12) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
-      bubble.innerHTML = 'この えを よく みてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+      centerBubble();
+      bubble.innerHTML = '🖼️ えを よく みてね！<br><br>えに あう ことばを<br>えらんで タップしよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
     },
     () => {
-      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
-      const tray = document.querySelector('.word-tray-wrap');
-      if (!tray) return endTut();
-      tray.classList.add('tut-highlight');
-      const r = tray.getBoundingClientRect();
-      bubble.className = 'tut-bubble arrow-down';
-      bubble.style.cssText = 'top:' + (r.top - 100) + 'px;left:' + Math.max(10, r.left + r.width / 2 - 140) + 'px';
-      bubble.innerHTML = 'えに あう ことばを<br>ここから えらんで<br>タップしてね！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
-    },
-    () => {
-      document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
-      bubble.className = 'tut-bubble';
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+      centerBubble();
       bubble.innerHTML = 'えと ことばを<br>あわせて みよう！🎉<br><button class="tut-next-btn" id="tut-next">はじめる！</button>';
       document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
     }

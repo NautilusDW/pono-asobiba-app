@@ -643,7 +643,6 @@ html, body {
 <div id="app" style="display:none">
   <div class="left-col">
     <div class="header">
-      <button class="ctrl-btn btn-back" id="btnBack">← もどる</button>
       <h1>ポノのもじかき</h1>
       <div class="subtitle" id="practiceRowLabel"></div>
     </div>
@@ -1464,14 +1463,10 @@ function enterPractice(rowIndex) {
   if (label && row) label.textContent = row.label + 'ぎょう れんしゅう';
   // Start BGM on user interaction (satisfies autoplay policy)
   tryStartBgm();
-  // Tutorial on first visit
-  if (!localStorage.getItem('writing_tut_seen')) {
-    _tutorialActive = true;
+  // 毎回1文字目に遊び方を表示してから開始
+  _showHowToPlay(row, function() {
     startRowPractice(rowIndex);
-    setTimeout(showTutorial, 500);
-  } else {
-    startRowPractice(rowIndex);
-  }
+  });
 }
 
 function returnToSelect() {
@@ -1481,6 +1476,35 @@ function returnToSelect() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('rowSelectScreen').classList.remove('hidden');
   buildRowSelectScreen();
+}
+
+// ===== How To Play (毎回1文字目に表示) =====
+function _showHowToPlay(row, onDone) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(93,78,55,0.5);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;padding:20px;';
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;border-radius:28px;padding:28px 24px;text-align:center;width:min(88vw,340px);box-shadow:0 12px 48px rgba(93,78,55,0.25);';
+  var rowChars = '';
+  if (row) {
+    var cat = CATEGORIES[currentCategory];
+    for (var j = 0; j < row.count; j++) rowChars += cat.chars[row.start + j];
+  }
+  card.innerHTML =
+    '<div style="font-size:2.5rem;margin-bottom:8px;">✏️</div>' +
+    '<div style="font-size:1.3rem;font-weight:900;color:#FF6B9D;margin-bottom:6px;">' + (row ? row.label + 'ぎょう' : '') + '</div>' +
+    '<div style="font-size:1.8rem;font-weight:900;color:#5D4E37;letter-spacing:0.2em;margin-bottom:14px;">' + rowChars + '</div>' +
+    '<div style="font-size:0.85rem;font-weight:700;color:#8B7355;line-height:1.8;margin-bottom:16px;">' +
+      '① おてほんを みて じゅんばんを おぼえよう<br>' +
+      '② おなじ じゅんばんで ゆびで なぞろう<br>' +
+      '③ ことばの なかで もういちど かこう' +
+    '</div>' +
+    '<button style="padding:14px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#FF6B9D,#C084FC);color:#fff;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(255,107,157,0.3);">はじめる！</button>';
+  ov.appendChild(card);
+  document.body.appendChild(ov);
+  card.querySelector('button').addEventListener('click', function() {
+    ov.remove();
+    if (onDone) onDone();
+  });
 }
 
 // ===== Row Practice Mode (5文字1セット) =====
@@ -1623,6 +1647,11 @@ function exitRowPractice() {
   if (cw) cw.style.display = '';
   var mc = document.querySelector('.mid-col');
   if (mc) mc.style.display = '';
+  // Restore Pono position
+  var pd = document.querySelector('.pono-deco');
+  var pb = document.getElementById('ponoBubble');
+  if (pd) pd.style.left = '';
+  if (pb) pb.style.left = '';
 }
 
 // ===== Word Context Phase (Phase 4) =====
@@ -1634,6 +1663,15 @@ function _startWordContextPhase(char, data, onComplete) {
   // Hide controls during word context (prevent overlap with 3+ char words)
   var midCol = document.querySelector('.mid-col');
   if (midCol) midCol.style.display = 'none';
+
+  // Adjust Pono position for long words (3+ chars)
+  var ponoDeco = document.querySelector('.pono-deco');
+  var ponoBubbleEl = document.getElementById('ponoBubble');
+  var wordLen = data.word ? data.word.length : 1;
+  if (ponoDeco && wordLen >= 3) {
+    ponoDeco.style.left = wordLen >= 4 ? '-40px' : '-20px';
+    if (ponoBubbleEl) ponoBubbleEl.style.left = wordLen >= 4 ? '-30px' : '-10px';
+  }
 
   // Create word context wrapper
   var wcWrap = document.createElement('div');
@@ -1715,15 +1753,20 @@ function _startWordContextPhase(char, data, onComplete) {
       speakWord(char, data.word);
       _hedgeBubble.textContent = 'すごーい！';
       _ponoBubble.textContent = 'すごーい！';
+      // speakWord再生（約1.5秒）+ 2秒待ちで次へ
       setTimeout(function() {
         if (!_rowPracticeActive) return;
         wcWrap.remove();
         canvasWrap.style.display = '';
-        // Restore controls
         var mc = document.querySelector('.mid-col');
         if (mc) mc.style.display = '';
+        // Restore Pono position
+        var pd = document.querySelector('.pono-deco');
+        var pb = document.getElementById('ponoBubble');
+        if (pd) pd.style.left = '';
+        if (pb) pb.style.left = '';
         if (onComplete) onComplete();
-      }, 2000);
+      }, 3500);
     },
     showHintAfterMisses: 3,
     highlightOnComplete: true,
@@ -1829,8 +1872,8 @@ function tryStartBgm() {
 }
 // BGM starts when entering practice (user tap satisfies autoplay policy)
 
-// ===== Back Button =====
-document.getElementById('btnBack').addEventListener('click', returnToSelect);
+// ===== Back to selection (via menu) =====
+// 歯車メニューの「もどる」から呼ばれる
 
 // ===== Init =====
 // Show row selection screen (practice screen is hidden)
