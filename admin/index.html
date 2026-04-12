@@ -6488,11 +6488,15 @@ function bentoIllustSetAll(status) {
   renderBentoIllust();
 }
 
+var _bentoSelected = {}; // multi-select state: { id: true }
+
 function renderBentoIllust() {
   var statuses = bentoIllustGetStatus();
+  var bentoCustom = _getBentoCustomData();
   var allItems = 0, doneItems = 0, wipItems = 0;
   BENTO_ILLUST_GROUPS.forEach(function(g) {
     g.items.forEach(function(it) {
+      if (bentoCustom[it.id] && bentoCustom[it.id].deleted) return;
       allItems++;
       var s = statuses[it.id] || 'todo';
       if (s === 'done') doneItems++;
@@ -6507,8 +6511,50 @@ function renderBentoIllust() {
     '<span style="background:#9CA3AF;color:#fff;padding:4px 10px;border-radius:8px;">📋 未作成 ' + (allItems - doneItems - wipItems) + '</span>' +
     '<span style="background:#3B82F6;color:#fff;padding:4px 10px;border-radius:8px;">合計 ' + doneItems + ' / ' + allItems + '</span>';
 
+  // Multi-select actions bar
+  var selectedCount = Object.keys(_bentoSelected).filter(function(k) { return _bentoSelected[k]; }).length;
+
   var container = document.getElementById('bento-illust-groups');
   container.innerHTML = '';
+
+  // Batch action bar
+  if (selectedCount > 0) {
+    var batchBar = document.createElement('div');
+    batchBar.style.cssText = 'background:#FEF3C7;border:2px solid #FCD34D;border-radius:12px;padding:10px 14px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+    batchBar.innerHTML =
+      '<span style="font-size:0.82rem;font-weight:900;color:#D97706;">' + selectedCount + '件 選択中</span>';
+
+    var batchDoneBtn = document.createElement('button');
+    batchDoneBtn.textContent = '✅ 完成にする';
+    batchDoneBtn.style.cssText = 'padding:5px 12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:700;cursor:pointer;';
+    batchDoneBtn.addEventListener('click', function() {
+      for (var k in _bentoSelected) { if (_bentoSelected[k]) bentoIllustSetStatus(k, 'done'); }
+      _bentoSelected = {};
+      renderBentoIllust();
+    });
+    batchBar.appendChild(batchDoneBtn);
+
+    var batchDelBtn = document.createElement('button');
+    batchDelBtn.textContent = '🗑️ 削除する';
+    batchDelBtn.style.cssText = 'padding:5px 12px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:700;cursor:pointer;';
+    batchDelBtn.addEventListener('click', function() {
+      if (!confirm(selectedCount + '件を削除しますか？')) return;
+      var cd = _getBentoCustomData();
+      for (var k in _bentoSelected) { if (_bentoSelected[k]) cd[k] = cd[k] || {}; cd[k].deleted = true; }
+      _saveBentoCustomData(cd);
+      _bentoSelected = {};
+      renderBentoIllust();
+    });
+    batchBar.appendChild(batchDelBtn);
+
+    var batchClear = document.createElement('button');
+    batchClear.textContent = '✕ 選択解除';
+    batchClear.style.cssText = 'padding:5px 12px;background:#9CA3AF;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:700;cursor:pointer;';
+    batchClear.addEventListener('click', function() { _bentoSelected = {}; renderBentoIllust(); });
+    batchBar.appendChild(batchClear);
+
+    container.appendChild(batchBar);
+  }
 
   var bentoStatusLabel = { 'todo': '未作成', 'wip': '作成中', 'done': '完成' };
   var bentoStatusColor = { 'todo': '#9CA3AF', 'wip': '#FBBF24', 'done': '#10B981' };
@@ -6518,58 +6564,270 @@ function renderBentoIllust() {
     var div = document.createElement('div');
     div.style.cssText = 'margin-bottom:20px;';
 
-    var gDone = 0, gTotal = g.items.length;
-    g.items.forEach(function(it) { if ((statuses[it.id] || 'todo') === 'done') gDone++; });
+    var visibleItems = g.items.filter(function(it) { return !(bentoCustom[it.id] && bentoCustom[it.id].deleted); });
+    var gDone = 0;
+    visibleItems.forEach(function(it) { if ((statuses[it.id] || 'todo') === 'done') gDone++; });
 
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
     header.innerHTML =
       '<span style="font-size:1rem;font-weight:900;">' + g.label + '</span>' +
-      '<span style="font-size:0.72rem;color:#8B7355;">' + gDone + '/' + gTotal + ' 完成</span>';
+      '<span style="font-size:0.72rem;color:#8B7355;">' + gDone + '/' + visibleItems.length + ' 完成</span>';
     div.appendChild(header);
 
     var grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;';
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;';
 
-    g.items.forEach(function(it) {
+    visibleItems.forEach(function(it) {
       var s = statuses[it.id] || 'todo';
-      var card = document.createElement('div');
-      card.style.cssText = 'background:#fff;border-radius:10px;padding:8px;text-align:center;cursor:pointer;border:2px solid ' + bentoStatusColor[s] + ';transition:all 0.15s;';
+      var custom = bentoCustom[it.id] || {};
+      var displayName = custom.name || it.name;
+      var isSelected = !!_bentoSelected[it.id];
 
-      // Image preview
-      var imgPath = '../assets/images/Bento_parts/' + it.id + '2.png';
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border-radius:10px;padding:8px;text-align:center;border:2px solid ' + (isSelected ? '#3B82F6' : bentoStatusColor[s]) + ';transition:all 0.15s;position:relative;';
+
+      // Checkbox for multi-select
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = isSelected;
+      cb.style.cssText = 'position:absolute;top:4px;left:4px;width:16px;height:16px;cursor:pointer;';
+      cb.addEventListener('change', function(e) {
+        e.stopPropagation();
+        _bentoSelected[it.id] = cb.checked;
+        renderBentoIllust();
+      });
+      card.appendChild(cb);
+
+      // Image preview (click to enlarge)
+      var imgPath = custom.imgPath || ('../assets/images/Bento_parts/' + it.id + '2.png');
       var img = document.createElement('img');
+      img.className = 'checker-bg';
       img.src = imgPath;
-      img.style.cssText = 'width:60px;height:60px;object-fit:contain;display:block;margin:0 auto 4px;';
+      img.style.cssText = 'width:64px;height:64px;object-fit:contain;display:block;margin:4px auto 4px;cursor:pointer;border-radius:8px;';
       img.onerror = function() {
-        // Try without '2' suffix
-        this.src = '../assets/images/Bento_parts/' + it.id + '.png';
-        this.onerror = function() { this.style.display = 'none'; };
+        if (this.src.indexOf('2.png') > 0) {
+          this.src = '../assets/images/Bento_parts/' + it.id + '.png';
+        } else {
+          this.style.display = 'none';
+        }
       };
+      (function(src, name) {
+        img.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(src, name); });
+      })(imgPath, displayName);
       card.appendChild(img);
 
       var nameEl = document.createElement('div');
       nameEl.style.cssText = 'font-size:0.72rem;font-weight:700;color:#5D4E37;margin-bottom:2px;';
-      nameEl.textContent = it.name;
+      nameEl.textContent = displayName;
       card.appendChild(nameEl);
 
-      var badge = document.createElement('div');
-      badge.style.cssText = 'font-size:0.65rem;font-weight:700;color:#fff;background:' + bentoStatusColor[s] + ';padding:2px 8px;border-radius:6px;display:inline-block;';
+      // Status badge (click to cycle)
+      var badge = document.createElement('span');
+      badge.style.cssText = 'font-size:0.6rem;font-weight:700;color:#fff;background:' + bentoStatusColor[s] + ';padding:2px 8px;border-radius:6px;cursor:pointer;display:inline-block;';
       badge.textContent = bentoStatusLabel[s];
+      (function(itemId) {
+        badge.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var cur = statuses[itemId] || 'todo';
+          statuses[itemId] = bentoStatusNext[cur];
+          bentoIllustSetStatus(itemId, bentoStatusNext[cur]);
+          renderBentoIllust();
+        });
+      })(it.id);
       card.appendChild(badge);
 
-      card.addEventListener('click', function() {
-        var next = bentoStatusNext[statuses[it.id] || 'todo'];
-        statuses[it.id] = next;
-        bentoIllustSetStatus(it.id, next);
-        renderBentoIllust();
-      });
+      // Button row: 設定 / 差し替え / 削除
+      var btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:3px;margin-top:4px;justify-content:center;';
 
+      // 設定ボタン
+      var editBtn = document.createElement('button');
+      editBtn.textContent = '⚙️';
+      editBtn.title = '設定';
+      editBtn.style.cssText = 'background:#E0F2FE;border:1px solid #7DD3FC;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+      (function(itemId, origName, cat) {
+        editBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          _openBentoEditModal(itemId, origName, cat);
+        });
+      })(it.id, displayName, it.cat || g.id);
+      btnRow.appendChild(editBtn);
+
+      // 差し替えボタン
+      var replBtn = document.createElement('button');
+      replBtn.textContent = '🖼️';
+      replBtn.title = '画像を差し替え';
+      replBtn.style.cssText = 'background:#FEF3C7;border:1px solid #FDE68A;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+      (function(itemId, itemName) {
+        replBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          _openBentoReplaceModal(itemId, itemName);
+        });
+      })(it.id, displayName);
+      btnRow.appendChild(replBtn);
+
+      // 削除ボタン
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '🗑️';
+      delBtn.title = '削除';
+      delBtn.style.cssText = 'background:#FEE2E2;border:1px solid #FCA5A5;border-radius:4px;padding:2px 5px;font-size:0.7rem;cursor:pointer;';
+      (function(itemId) {
+        delBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (!confirm('「' + displayName + '」を削除しますか？')) return;
+          var cd = _getBentoCustomData();
+          cd[itemId] = cd[itemId] || {};
+          cd[itemId].deleted = true;
+          _saveBentoCustomData(cd);
+          renderBentoIllust();
+        });
+      })(it.id);
+      btnRow.appendChild(delBtn);
+
+      card.appendChild(btnRow);
       grid.appendChild(card);
     });
 
     div.appendChild(grid);
     container.appendChild(div);
+  });
+
+  // Show deleted items count with restore option
+  var deletedCount = 0;
+  BENTO_ILLUST_GROUPS.forEach(function(g) {
+    g.items.forEach(function(it) { if (bentoCustom[it.id] && bentoCustom[it.id].deleted) deletedCount++; });
+  });
+  if (deletedCount > 0) {
+    var restoreDiv = document.createElement('div');
+    restoreDiv.style.cssText = 'text-align:center;margin-top:12px;';
+    var restoreBtn = document.createElement('button');
+    restoreBtn.textContent = '🔄 削除済み ' + deletedCount + '件を復元する';
+    restoreBtn.style.cssText = 'padding:8px 18px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;';
+    restoreBtn.addEventListener('click', function() {
+      var cd = _getBentoCustomData();
+      for (var k in cd) { if (cd[k].deleted) delete cd[k].deleted; }
+      _saveBentoCustomData(cd);
+      renderBentoIllust();
+    });
+    restoreDiv.appendChild(restoreBtn);
+    container.appendChild(restoreDiv);
+  }
+}
+
+// ── Bento custom data (name overrides, deleted flags, image paths) ──
+var BENTO_CUSTOM_KEY = 'bento_illust_custom';
+function _getBentoCustomData() {
+  try { return JSON.parse(localStorage.getItem(BENTO_CUSTOM_KEY) || '{}'); } catch(e) { return {}; }
+}
+function _saveBentoCustomData(data) {
+  localStorage.setItem(BENTO_CUSTOM_KEY, JSON.stringify(data));
+}
+
+// ── Bento Edit Modal (設定) ──
+function _openBentoEditModal(itemId, currentName, currentCat) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var iStyle = 'width:100%;padding:8px 12px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.85rem;margin-bottom:8px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">⚙️ ' + currentName + ' の設定</div>' +
+    '<label style="font-size:0.75rem;font-weight:700;color:#8B7355;">名前</label>' +
+    '<input id="_bento_edit_name" style="' + iStyle + '" value="' + currentName + '">' +
+    '<label style="font-size:0.75rem;font-weight:700;color:#8B7355;">カテゴリ</label>' +
+    '<select id="_bento_edit_cat" style="' + iStyle + '">' +
+      '<option value="rice"' + (currentCat === 'rice' ? ' selected' : '') + '>🍚 ごはん</option>' +
+      '<option value="meat"' + (currentCat === 'meat' ? ' selected' : '') + '>🍖 おにく</option>' +
+      '<option value="veg"' + (currentCat === 'veg' ? ' selected' : '') + '>🥦 やさい</option>' +
+      '<option value="fruit"' + (currentCat === 'fruit' ? ' selected' : '') + '>🍓 フルーツ</option>' +
+    '</select>' +
+    '<div style="display:flex;gap:8px;margin-top:12px;">' +
+      '<button id="_bento_edit_save" style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer;">保存</button>' +
+      '<button id="_bento_edit_cancel" style="flex:1;padding:10px;border:none;border-radius:8px;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+    '</div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  document.getElementById('_bento_edit_cancel').addEventListener('click', function() { ov.remove(); });
+  document.getElementById('_bento_edit_save').addEventListener('click', function() {
+    var cd = _getBentoCustomData();
+    cd[itemId] = cd[itemId] || {};
+    cd[itemId].name = document.getElementById('_bento_edit_name').value.trim() || currentName;
+    cd[itemId].cat = document.getElementById('_bento_edit_cat').value;
+    _saveBentoCustomData(cd);
+    ov.remove();
+    renderBentoIllust();
+    showToast('設定を保存しました', true);
+  });
+}
+
+// ── Bento Replace Modal (差し替え) ──
+function _openBentoReplaceModal(itemId, itemName) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:400px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">🖼️ ' + itemName + ' を差し替え</div>' +
+    '<div style="font-size:0.78rem;color:#8B7355;margin-bottom:12px;">新しい画像ファイル（PNG推奨）を選択してください。<br>GitHubにアップロードされます。</div>' +
+    '<input type="file" id="_bento_replace_file" accept="image/*" style="margin-bottom:12px;">' +
+    '<div id="_bento_replace_preview" style="margin-bottom:12px;text-align:center;"></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button id="_bento_replace_upload" style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer;" disabled>📤 アップロード</button>' +
+      '<button id="_bento_replace_cancel" style="flex:1;padding:10px;border:none;border-radius:8px;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+    '</div>' +
+    '<div id="_bento_replace_status" style="margin-top:8px;font-size:0.78rem;"></div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  document.getElementById('_bento_replace_cancel').addEventListener('click', function() { ov.remove(); });
+
+  var _replaceBase64 = null;
+  document.getElementById('_bento_replace_file').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      _replaceBase64 = ev.target.result.split(',')[1]; // base64 part
+      var prev = document.getElementById('_bento_replace_preview');
+      prev.innerHTML = '<img src="' + ev.target.result + '" style="max-width:120px;max-height:120px;border-radius:8px;" class="checker-bg">';
+      document.getElementById('_bento_replace_upload').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('_bento_replace_upload').addEventListener('click', function() {
+    if (!_replaceBase64) return;
+    var statusEl = document.getElementById('_bento_replace_status');
+    statusEl.textContent = 'アップロード中...';
+    var filePath = 'assets/images/Bento_parts/' + itemId + '2.png';
+    // First check if file exists (GET) to get SHA for update
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(existing) {
+        var body = {
+          message: '🖼️ replace bento: ' + itemId,
+          content: _replaceBase64,
+          branch: GH_BRANCH
+        };
+        if (existing && existing.sha) body.sha = existing.sha;
+        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath, {
+          method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body)
+        });
+      })
+      .then(function(r) {
+        if (r.ok) {
+          statusEl.innerHTML = '<span style="color:#10B981;">✅ アップロード完了！</span>';
+          showToast(itemName + ' を差し替えました', true);
+          setTimeout(function() { ov.remove(); renderBentoIllust(); }, 1500);
+        } else {
+          return r.json().then(function(err) { throw new Error(err.message || 'Upload failed'); });
+        }
+      })
+      .catch(function(err) {
+        statusEl.innerHTML = '<span style="color:#EF4444;">❌ エラー: ' + err.message + '</span>';
+      });
   });
 }
 

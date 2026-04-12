@@ -213,10 +213,41 @@
     }
   }
 
+  // ── 水族館に表示してよい生き物か判定 ──
+  // museum: "aquarium" が設定されていればOK
+  // museum 未設定でも、海の生き物カテゴリに属するものはOK
+  // クイズ用イラスト（恐竜・動物・虫・天気・体・食べ物・乗り物）は除外
+  var _AQUATIC_IDS = [
+    'clownfish','blue_tang','pufferfish','mandarinfish','manta_ray',
+    'sea_anemone','angelfish','seahorse','medaka','turtle','jellyfish',
+    'whale','dolphin','starfish','crab','lobster','squid','coral',
+    'penguin','seal','otter','walrus','narwhal','orca'
+  ];
+  function _isAquatic(cfg) {
+    // 明示的に aquarium 所属ならOK
+    if (cfg.museum === 'aquarium') return true;
+    // 明示的に他のミュージアム所属ならNG
+    if (cfg.museum && cfg.museum !== 'aquarium') return false;
+    // 既知の水棲生物IDならOK
+    if (_AQUATIC_IDS.indexOf(cfg.id) >= 0) return true;
+    // folder名で海系を判定（ocean画像のサブフォルダ名から推測）
+    var f = (cfg.folder || cfg.id || '').toLowerCase();
+    var seaKeywords = ['fish','shark','whale','dolphin','turtle','jelly','octop',
+      'squid','crab','lobster','coral','anemone','seahorse','manta','ray',
+      'starfish','seal','otter','penguin','narwhal','orca','submarine','medaka'];
+    for (var i = 0; i < seaKeywords.length; i++) {
+      if (f.indexOf(seaKeywords[i]) >= 0) return true;
+    }
+    return false;
+  }
+
   // 全部の生き物をスポーン（toggles で OFF のものはスキップ）
+  // 水族館に表示してよい生き物のみスポーンする
   function addAllSelected(ctx) {
     if (!_config || !_config.creatures) return;
     _config.creatures.forEach(function (cfg) {
+      // 水族館フィルター: 水棲生物以外はスキップ
+      if (!_isAquatic(cfg)) return;
       // toggles[cfg.id] === false なら skip。未定義は出す
       if (ctx.toggles && ctx.toggles[cfg.id] === false) return;
       _addOneType(cfg, ctx);
@@ -229,6 +260,8 @@
   function appendToggleButtons(container, toggles) {
     if (!_config || !_config.creatures || _config.creatures.length === 0) return;
     _config.creatures.forEach(function (cfg) {
+      // 水族館フィルター: 水棲生物以外はスキップ
+      if (!_isAquatic(cfg)) return;
       // 既に同じ data-creature が存在するならスキップ
       if (container.querySelector('[data-creature="' + cfg.id + '"]')) return;
       var btn = document.createElement('button');
