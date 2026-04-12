@@ -135,35 +135,78 @@ html, body {
 
 
 /* ===== Character Selector ===== */
-.char-selector {
-  display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px; flex-shrink: 0;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+/* ===== Row Selection Screen ===== */
+#rowSelectScreen {
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100dvh; padding: 24px 16px 40px;
+  background-color: var(--bg);
+  background-image: url('../assets/images/BG_03.webp');
+  background-size: cover; background-position: center;
 }
-.char-selector::-webkit-scrollbar { display: none; }
-.char-btn {
-  min-width: 42px; height: 42px; border: 2px solid transparent; border-radius: 12px;
-  background: var(--card-bg); font-family: inherit; font-size: 1.1rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
-  position: relative;
+#rowSelectScreen.hidden { display: none; }
+.rs-header { text-align: center; margin-bottom: 8px; }
+.rs-header h1 {
+  font-size: 1.6rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.char-btn:hover { transform: scale(1.1); }
-.char-btn.active {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
-  transform: scale(1.1);
+.rs-subtitle { font-size: 0.9rem; color: #A89585; margin-top: 2px; font-weight: 700; }
+.rs-cat-tabs { display: flex; gap: 6px; margin: 10px 0 16px; }
+.rs-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 12px; width: 100%; max-width: 380px;
 }
-.char-btn.done {
+.rs-row-btn {
+  padding: 14px 10px; border: 3px solid #E8E0D8; border-radius: 20px;
+  background: var(--card-bg); font-family: inherit;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(91,74,63,0.08);
+  transition: all 0.2s; text-align: center;
+}
+.rs-row-btn:active { transform: scale(0.95); }
+.rs-row-label { font-size: 1.2rem; font-weight: 900; color: var(--text); }
+.rs-row-chars { font-size: 0.75rem; color: #A89585; margin-top: 4px; font-weight: 700; letter-spacing: 0.15em; }
+.rs-row-btn.all-done {
   background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
   border-color: #34D399;
 }
-.char-btn.done::after {
-  content: '✓';
-  position: absolute;
-  top: 1px; right: 3px;
-  font-size: 0.52rem;
-  color: #059669;
-  line-height: 1;
-  font-weight: 900;
+.rs-row-done-mark { color: #059669; font-size: 0.7rem; font-weight: 900; margin-top: 2px; }
+@media (orientation: landscape) {
+  #rowSelectScreen { min-height: 100dvh; padding: 12px 24px 24px; justify-content: center; }
+  .rs-grid { grid-template-columns: repeat(5, 1fr); max-width: 600px; gap: 8px; }
+  .rs-row-btn { padding: 10px 8px; }
+  .rs-row-label { font-size: 1rem; }
+}
+
+/* ===== Back Button ===== */
+.btn-back {
+  position: absolute; top: 4px; left: 4px; z-index: 200;
+  background: rgba(243,240,235,0.9); color: var(--text);
+  font-size: 0.72rem; font-weight: 900; padding: 6px 12px;
+  border-radius: 16px; border: 1.5px solid #E0D8CC;
+}
+
+/* ===== Word Context Grid (Phase 4) ===== */
+.word-context-wrapper {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; width: 100%; height: 100%;
+}
+.word-context-emoji { font-size: 3.5rem; margin-bottom: 8px; }
+.word-context-row {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.word-context-cell {
+  border-radius: 16px; background: var(--card-bg);
+  box-shadow: 0 3px 12px rgba(91,74,63,0.1);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; border: 2.5px solid #E8E0D8;
+}
+.word-context-cell.writable {
+  border-color: var(--primary);
+  position: relative; touch-action: none;
+}
+.word-context-cell.text-only {
+  font-size: 2.2rem; font-weight: 900; color: var(--text);
+  padding: 8px 14px; min-width: 60px; min-height: 60px;
 }
 
 /* ===== Tracing Area ===== */
@@ -401,7 +444,6 @@ html, body {
 .left-col, .mid-col, .right-col {
   display: contents;
 }
-.row-tabs { display: none; }
 .pono-bubble { display: none; }
 /* Progress hint */
 .progress-hint {
@@ -411,8 +453,6 @@ html, body {
 .progress-hint:empty { display: none; }
 /* Portrait ordering */
 .header { order: 1; }
-.category-tabs { order: 2; }
-.char-selector { order: 3; }
 .controls { order: 4; }
 .progress-hint { order: 4; }
 .trace-area { order: 5; }
@@ -422,9 +462,6 @@ html, body {
 @media (max-height: 600px) {
   .header h1 { font-size: 1.1rem; }
   .header .subtitle { display: none; }
-  .category-tabs { margin: 4px 0; }
-  .category-tab { padding: 6px 12px; font-size: 0.8rem; }
-  .char-btn { min-width: 36px; height: 36px; font-size: 0.95rem; }
   .controls { padding: 6px 0; }
 }
 
@@ -437,41 +474,20 @@ html, body {
     gap: 0;
     align-items: stretch;
   }
-  /* ── Left column: header + category + row tabs ── */
+  /* ── Left column: header + back button ── */
   .left-col {
     display: flex; flex-direction: column;
     align-items: center; gap: 2px;
     flex-shrink: 0; width: 100px;
-    padding-top: 44px;
+    padding-top: 8px;
     order: 1;
   }
   .header { padding: 0; order: auto; }
   .header h1 { font-size: 0.75rem; }
   .header .subtitle { display: none; }
-  .category-tabs { margin: 2px 0 4px; gap: 3px; order: auto; }
-  .category-tab { padding: 8px 10px; font-size: 0.8rem; }
-  .row-tabs {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2px; width: 100%; padding: 0 2px;
-    margin-top: 6px;
-  }
-  .row-tab {
-    padding: 5px 2px; border: 2px solid transparent; border-radius: 8px;
-    background: var(--card-bg); font-family: inherit;
-    font-size: 0.85rem; font-weight: 700;
-    cursor: pointer; text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    transition: all 0.15s;
-  }
-  .row-tab.active {
-    border-color: var(--primary);
-    background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
-  }
-  .row-tab.has-done { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
-  .row-tab.has-done.active { background: linear-gradient(135deg, #FFF0F5, #FAF0FF); border-color: var(--primary); }
+  .btn-back { position: static; margin-bottom: 4px; }
 
-  /* ── Middle column: controls(top) + char buttons(bottom) ── */
+  /* ── Middle column: controls ── */
   .mid-col {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -488,15 +504,6 @@ html, body {
     padding: 10px 6px; font-size: 0.8rem;
     width: 100%; min-width: 70px;
   }
-  .char-selector {
-    display: flex !important;
-    flex-direction: column;
-    gap: 4px; padding: 0;
-    overflow: visible;
-    align-items: center;
-    order: auto;
-  }
-  .char-btn { min-width: 42px; height: 42px; font-size: 1.05rem; }
 
   /* ── Right column: canvas + つぎ at bottom-right ── */
   .right-col {
@@ -596,20 +603,27 @@ html, body {
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 <audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
 
-<div id="app">
+<!-- ===== Row Selection Screen ===== -->
+<div id="rowSelectScreen">
+  <div class="rs-header">
+    <h1>ポノのもじかき</h1>
+    <div class="rs-subtitle">れんしゅうする ぎょうを えらんでね！</div>
+  </div>
+  <div class="rs-cat-tabs" id="rsCategoryTabs">
+    <button class="category-tab active" data-cat="hiragana">ひらがな</button>
+    <button class="category-tab" data-cat="katakana">カタカナ</button>
+  </div>
+  <div class="rs-grid" id="rsGrid"></div>
+</div>
+
+<!-- ===== Practice Screen (hidden initially) ===== -->
+<div id="app" style="display:none">
   <div class="left-col">
     <div class="header">
+      <button class="ctrl-btn btn-back" id="btnBack">← もどる</button>
       <h1>ポノのもじかき</h1>
-      <div class="subtitle">ゆびでなぞってみよう！</div>
+      <div class="subtitle" id="practiceRowLabel"></div>
     </div>
-
-    <div class="category-tabs" id="categoryTabs">
-      <button class="category-tab active" data-cat="hiragana">ひらがな</button>
-      <button class="category-tab" data-cat="katakana">カタカナ</button>
-    </div>
-
-    <div class="row-tabs" id="rowTabs"></div>
-    <div id="practiceRowSelect" style="display:none;"></div>
   </div>
 
   <div class="mid-col">
@@ -617,7 +631,6 @@ html, body {
       <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
       <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
     </div>
-    <div class="char-selector" id="charSelector"></div>
   </div>
 
   <div class="right-col">
@@ -848,18 +861,7 @@ function saveStamp(category, index) {
   localStorage.setItem(STAMP_KEY, JSON.stringify(stamps));
 }
 function markCharDone(index) {
-  const btns = charSelector.querySelectorAll('.char-btn');
-  if (landscapeMQ.matches) {
-    // Landscape: buttons are row-local, find by data-global-idx or compute offset
-    const rows = GOJUON_ROWS[currentCategory];
-    const row = rows[currentRow];
-    if (row) {
-      const localIdx = index - row.start;
-      if (btns[localIdx]) btns[localIdx].classList.add('done');
-    }
-  } else {
-    if (btns[index]) btns[index].classList.add('done');
-  }
+  // No-op: char selector removed; done state tracked via stamps
 }
 function updateStreakBadge() {
   const badge = document.getElementById('streak-badge');
@@ -905,8 +907,6 @@ function showMilestone(count) {
 }
 
 // ===== DOM =====
-const categoryTabs = document.getElementById('categoryTabs');
-const charSelector = document.getElementById('charSelector');
 const writerTarget = document.getElementById('writerTarget');
 const canvasContainer = document.getElementById('canvasContainer');
 const btnClear = document.getElementById('btnClear');
@@ -1368,135 +1368,96 @@ function loadCharacter() {
   const char = getCurrentChar();
 
   createWriter(char);
-
-  // Update char selector
-  if (landscapeMQ.matches) {
-    // In landscape, rebuild to reflect active state (buttons have globalIdx)
-    buildCharSelector();
-  } else {
-    document.querySelectorAll('.char-btn').forEach((btn, i) => {
-      btn.classList.toggle('active', i === currentCharIndex);
-    });
-    // Scroll active button into view
-    const activeBtn = charSelector.querySelector('.char-btn.active');
-    if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }
 }
 
-function buildCharSelector() {
-  charSelector.innerHTML = '';
-  const cat = CATEGORIES[currentCategory];
-  const stamps = loadStamps();
-  const isLandscape = landscapeMQ.matches;
+// ===== Row Selection Screen =====
+let _currentScreen = 'select'; // 'select' | 'practice'
 
-  let charsToShow;
-  if (isLandscape) {
-    // Landscape: show only selected row's characters
-    const rows = GOJUON_ROWS[currentCategory];
-    const row = rows[currentRow] || rows[0];
-    charsToShow = [];
-    for (let j = 0; j < row.count; j++) {
-      charsToShow.push({ ch: cat.chars[row.start + j], globalIdx: row.start + j });
-    }
-  } else {
-    // Portrait: show all characters
-    charsToShow = cat.chars.map((ch, i) => ({ ch, globalIdx: i }));
-  }
-
-  charsToShow.forEach(({ ch, globalIdx }) => {
-    const btn = document.createElement('button');
-    let cls = 'char-btn';
-    if (globalIdx === currentCharIndex) cls += ' active';
-    if (stamps[currentCategory]?.[globalIdx]) cls += ' done';
-    btn.className = cls;
-    btn.textContent = ch;
-    btn.addEventListener('click', () => {
-      exitRowPractice();
-      currentCharIndex = globalIdx;
-      loadCharacter();
-      if (isLandscape) buildCharSelector();
-    });
-    charSelector.appendChild(btn);
-  });
-
-  // Portrait mode: show practice row selector
-  var practDiv = document.getElementById('practiceRowSelect');
-  if (practDiv) {
-    if (!isLandscape) {
-      practDiv.style.display = 'block';
-      practDiv.innerHTML = '';
-      var title = document.createElement('div');
-      title.style.cssText = 'font-size:0.7rem;font-weight:900;color:#A89880;margin:6px 0 4px;text-align:center;';
-      title.textContent = '▶ れんしゅう';
-      practDiv.appendChild(title);
-      var rowBtns = document.createElement('div');
-      rowBtns.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;justify-content:center;';
-      GOJUON_ROWS[currentCategory].forEach(function(row, i) {
-        var rb = document.createElement('button');
-        rb.style.cssText = 'padding:4px 10px;border:1.5px solid #FF6B9D;border-radius:12px;background:#fff;color:#FF6B9D;font-family:inherit;font-size:0.72rem;font-weight:900;cursor:pointer;';
-        rb.textContent = row.label + 'ぎょう';
-        rb.addEventListener('click', function() {
-          exitRowPractice();
-          startRowPractice(i);
-        });
-        rowBtns.appendChild(rb);
-      });
-      practDiv.appendChild(rowBtns);
-    } else {
-      practDiv.style.display = 'none';
-    }
-  }
-}
-
-function buildRowTabs() {
-  const rowTabsEl = document.getElementById('rowTabs');
-  if (!rowTabsEl) return;
-  rowTabsEl.innerHTML = '';
-  if (!landscapeMQ.matches) return; // Only in landscape
-
+function buildRowSelectScreen() {
+  const grid = document.getElementById('rsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
   const rows = GOJUON_ROWS[currentCategory];
-  const stamps = loadStamps();
   const cat = CATEGORIES[currentCategory];
+  const stamps = loadStamps();
 
-  rows.forEach((row, i) => {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:inline-flex;align-items:center;gap:2px;';
-
+  rows.forEach(function(row, i) {
     const btn = document.createElement('button');
-    btn.className = 'row-tab' + (i === currentRow ? ' active' : '');
-    // Check if any char in this row is done
-    let anyDone = false;
+    btn.className = 'rs-row-btn';
+    // Check completion
     let allDone = true;
     for (let j = 0; j < row.count; j++) {
-      if (stamps[currentCategory]?.[row.start + j]) anyDone = true;
-      else allDone = false;
+      if (!stamps[currentCategory]?.[row.start + j]) { allDone = false; break; }
     }
-    if (allDone) btn.classList.add('has-done');
-    btn.textContent = row.label;
-    btn.addEventListener('click', () => {
-      exitRowPractice();
-      currentRow = i;
-      currentCharIndex = row.start;
-      buildRowTabs();
-      buildCharSelector();
-      loadCharacter();
-    });
-    wrap.appendChild(btn);
+    if (allDone) btn.classList.add('all-done');
 
-    // Practice button
-    const practBtn = document.createElement('button');
-    practBtn.style.cssText = 'padding:2px 6px;border:none;border-radius:8px;background:linear-gradient(135deg,#FF6B9D,#C084FC);color:#fff;font-size:0.6rem;font-weight:900;cursor:pointer;line-height:1;';
-    practBtn.textContent = '▶';
-    practBtn.title = row.label + 'ぎょう れんしゅう';
-    practBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      exitRowPractice();
-      startRowPractice(i);
-    });
-    wrap.appendChild(practBtn);
+    // Row label
+    const labelEl = document.createElement('div');
+    labelEl.className = 'rs-row-label';
+    labelEl.textContent = row.label + 'ぎょう';
+    btn.appendChild(labelEl);
 
-    rowTabsEl.appendChild(wrap);
+    // Characters preview
+    const charsEl = document.createElement('div');
+    charsEl.className = 'rs-row-chars';
+    let charsStr = '';
+    for (let j = 0; j < row.count; j++) charsStr += cat.chars[row.start + j];
+    charsEl.textContent = charsStr;
+    btn.appendChild(charsEl);
+
+    if (allDone) {
+      const doneEl = document.createElement('div');
+      doneEl.className = 'rs-row-done-mark';
+      doneEl.textContent = '✓ クリア！';
+      btn.appendChild(doneEl);
+    }
+
+    btn.addEventListener('click', function() { enterPractice(i); });
+    grid.appendChild(btn);
   });
+
+  // Wire category tabs
+  var catTabs = document.querySelectorAll('#rsCategoryTabs .category-tab');
+  catTabs.forEach(function(tab) {
+    tab.classList.toggle('active', tab.dataset.cat === currentCategory);
+    tab.onclick = function() {
+      if (tab.dataset.cat === currentCategory) return;
+      currentCategory = tab.dataset.cat;
+      catTabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      buildRowSelectScreen();
+    };
+  });
+}
+
+function enterPractice(rowIndex) {
+  _currentScreen = 'practice';
+  document.getElementById('rowSelectScreen').classList.add('hidden');
+  document.getElementById('app').style.display = '';
+  // Update practice label
+  const rows = GOJUON_ROWS[currentCategory];
+  const row = rows[rowIndex];
+  var label = document.getElementById('practiceRowLabel');
+  if (label && row) label.textContent = row.label + 'ぎょう れんしゅう';
+  // Start BGM on user interaction (satisfies autoplay policy)
+  tryStartBgm();
+  // Tutorial on first visit
+  if (!localStorage.getItem('writing_tut_seen')) {
+    _tutorialActive = true;
+    startRowPractice(rowIndex);
+    setTimeout(showTutorial, 500);
+  } else {
+    startRowPractice(rowIndex);
+  }
+}
+
+function returnToSelect() {
+  exitRowPractice();
+  if (writer) { writer.cancelQuiz(); }
+  _currentScreen = 'select';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('rowSelectScreen').classList.remove('hidden');
+  buildRowSelectScreen();
 }
 
 // ===== Row Practice Mode (5文字1セット) =====
@@ -1511,7 +1472,6 @@ function startRowPractice(rowIndex) {
   _rowPracticeStep = 0;
   _rowPracticeActive = true;
   currentRow = rowIndex;
-  buildRowTabs();
   _rowPracticeNextChar();
 }
 
@@ -1523,13 +1483,12 @@ function _rowPracticeNextChar() {
   }
   const globalIdx = _rowPracticeRow.start + _rowPracticeStep;
   currentCharIndex = globalIdx;
-  buildCharSelector();
   loadCharacter();
 
-  // Phase 1: Demo
+  // Phase 1: Demo (skip if tutorial is active — tutorial handles the first demo)
   _rowPracticePhase = 'demo';
   setTimeout(function() {
-    if (!writer || !_rowPracticeActive) return;
+    if (!writer || !_rowPracticeActive || _tutorialActive) return;
     document.getElementById('demoIndicator').style.display = 'block';
     _hedgeBubble.textContent = 'みて みて！';
     _ponoBubble.textContent = 'みて みて！';
@@ -1562,35 +1521,13 @@ function _rowPracticeNextChar() {
             const char = CATEGORIES[currentCategory].chars[currentCharIndex];
             if (data && data.word) {
               _showRowPracticeWord(char, data, function() {
-                // Phase 4: Quiz without stroke numbers
+                // Phase 4: Word context writing
                 _rowPracticePhase = 'quiz_free';
-                writerTarget.innerHTML = '';
-                createWriter(char);
-                // Hide stroke order numbers
-                document.getElementById('strokeNumbers').innerHTML = '';
-                _hedgeBubble.textContent = 'こんどは ひとりで！';
-                _ponoBubble.textContent = 'こんどは ひとりで！';
-                writer.hideCharacter();
-                writer.quiz({
-                  onCorrectStroke: function() { playStrokeSound(); },
-                  onComplete: function() {
-                    if (!_rowPracticeActive) return;
-                    playSuccessSound();
-                    // Speak "〇〇のX"
-                    if (data.word) {
-                      speakWord(char, data.word);
-                    }
-                    _hedgeBubble.textContent = 'すごーい！';
-                    _ponoBubble.textContent = 'すごーい！';
-                    // Move to next char after delay
-                    setTimeout(function() {
-                      _rowPracticeStep++;
-                      _rowPracticeNextChar();
-                    }, 1800);
-                  },
-                  showHintAfterMisses: 3,
-                  highlightOnComplete: true,
-                  highlightCompleteColor: currentScheme.stroke
+                _hedgeBubble.textContent = 'ことばで かこう！';
+                _ponoBubble.textContent = 'ことばで かこう！';
+                _startWordContextPhase(char, data, function() {
+                  _rowPracticeStep++;
+                  _rowPracticeNextChar();
                 });
               });
             } else {
@@ -1620,7 +1557,7 @@ function _showRowPracticeWord(char, data, onDone) {
     '<div style="font-size:1.8rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">' +
     '<span style="color:#FF6B9D;opacity:0.5;">' + char + '</span>' + data.word.slice(char.length) +
     '</div>' +
-    '<div style="font-size:0.85rem;color:#A89880;margin-bottom:14px;">こんどは おてほんなしで<br>かいてみよう！</div>' +
+    '<div style="font-size:0.85rem;color:#A89880;margin-bottom:14px;">こんどは ことばの なかで<br>かいてみよう！</div>' +
     '<button style="padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">かく！</button>';
   ov.appendChild(card);
   document.body.appendChild(ov);
@@ -1648,8 +1585,7 @@ function _rowPracticeComplete() {
   launchConfetti();
   card.querySelector('button').addEventListener('click', function() {
     ov.remove();
-    updateProgressHint();
-    buildCharSelector();
+    returnToSelect();
   });
 }
 
@@ -1657,27 +1593,108 @@ function exitRowPractice() {
   _rowPracticeActive = false;
   _rowPracticePhase = '';
   document.getElementById('demoIndicator').style.display = 'none';
+  // Clean up word context if active
+  var wcw = document.getElementById('wordContextWrap');
+  if (wcw) wcw.remove();
+  var cw = document.querySelector('.canvas-wrap');
+  if (cw) cw.style.display = '';
 }
 
-// ===== Tab switching =====
-categoryTabs.addEventListener('click', (e) => {
-  const btn = e.target.closest('.category-tab');
-  if (!btn) return;
-  const cat = btn.dataset.cat;
-  if (cat === currentCategory) return;
-  exitRowPractice();
-  currentCategory = cat;
-  currentCharIndex = 0;
-  currentRow = 0;
-  streak = 0;
-  updateStreakBadge();
-  document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  buildRowTabs();
-  buildCharSelector();
-  loadCharacter();
-  updateProgressHint();
-});
+// ===== Word Context Phase (Phase 4) =====
+function _startWordContextPhase(char, data, onComplete) {
+  var traceArea = document.querySelector('.trace-area');
+  var canvasWrap = document.querySelector('.canvas-wrap');
+  canvasWrap.style.display = 'none';
+
+  // Create word context wrapper
+  var wcWrap = document.createElement('div');
+  wcWrap.className = 'word-context-wrapper';
+  wcWrap.id = 'wordContextWrap';
+
+  // Emoji
+  var emojiDiv = document.createElement('div');
+  emojiDiv.className = 'word-context-emoji';
+  emojiDiv.textContent = data.emoji;
+  wcWrap.appendChild(emojiDiv);
+
+  // Word row
+  var wordRow = document.createElement('div');
+  wordRow.className = 'word-context-row';
+
+  // Left cell: writable canvas
+  var leftCell = document.createElement('div');
+  leftCell.className = 'word-context-cell writable';
+  var cellSize = Math.min(Math.min(window.innerWidth, window.innerHeight) * 0.38, 180);
+  leftCell.style.width = cellSize + 'px';
+  leftCell.style.height = cellSize + 'px';
+  var wcTarget = document.createElement('div');
+  wcTarget.id = 'wcWriterTarget';
+  leftCell.appendChild(wcTarget);
+  wordRow.appendChild(leftCell);
+
+  // Right cell(s): remaining text characters
+  var remaining = data.word.slice(char.length);
+  if (remaining) {
+    for (var ri = 0; ri < remaining.length; ri++) {
+      var rightCell = document.createElement('div');
+      rightCell.className = 'word-context-cell text-only';
+      rightCell.style.width = cellSize + 'px';
+      rightCell.style.height = cellSize + 'px';
+      rightCell.textContent = remaining[ri];
+      wordRow.appendChild(rightCell);
+    }
+  }
+
+  wcWrap.appendChild(wordRow);
+  traceArea.appendChild(wcWrap);
+
+  // Create mini HanziWriter
+  var wcWriter = HanziWriter.create(wcTarget, char, {
+    width: cellSize,
+    height: cellSize,
+    padding: 15,
+    strokeColor: currentScheme.stroke,
+    outlineColor: currentScheme.outline,
+    drawingColor: currentScheme.drawing,
+    highlightColor: currentScheme.highlight,
+    drawingWidth: 14,
+    strokeAnimationSpeed: 0.5,
+    showOutline: true,
+    showCharacter: false,
+    charDataLoader: function(c, onLoad) {
+      var url = 'https://cdn.jsdelivr.net/gh/ailectra/kana-json@v0.0.1/data/' + c + '.json';
+      fetch(url)
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(d) { onLoad(d); })
+        .catch(function() {
+          var url2 = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/' + c + '.json';
+          fetch(url2)
+            .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+            .then(function(d) { onLoad(d); })
+            .catch(function() {});
+        });
+    }
+  });
+
+  wcWriter.quiz({
+    onCorrectStroke: function() { playStrokeSound(); },
+    onComplete: function() {
+      if (!_rowPracticeActive) return;
+      playSuccessSound();
+      speakWord(char, data.word);
+      _hedgeBubble.textContent = 'すごーい！';
+      _ponoBubble.textContent = 'すごーい！';
+      setTimeout(function() {
+        wcWrap.remove();
+        canvasWrap.style.display = '';
+        if (onComplete) onComplete();
+      }, 2000);
+    },
+    showHintAfterMisses: 3,
+    highlightOnComplete: true,
+    highlightCompleteColor: currentScheme.stroke
+  });
+}
 
 // ===== Orientation change — force viewport recalc =====
 function fixViewportHeight() {
@@ -1702,8 +1719,7 @@ function onOrientationChange() {
   setTimeout(fixViewportHeight, 150);
   setTimeout(fixViewportHeight, 400);
   setTimeout(fixViewportHeight, 800);
-  buildRowTabs();
-  buildCharSelector();
+  if (_currentScreen === 'select') buildRowSelectScreen();
 }
 landscapeMQ.addEventListener('change', onOrientationChange);
 window.addEventListener('orientationchange', () => {
@@ -1742,20 +1758,8 @@ btnHint.addEventListener('click', () => {
 });
 
 btnNext.addEventListener('click', () => {
-  if (_rowPracticeActive) { exitRowPractice(); return; }
-  const cat = CATEGORIES[currentCategory];
-  currentCharIndex = (currentCharIndex + 1) % cat.chars.length;
-  // Update currentRow if in landscape
-  if (landscapeMQ.matches) {
-    const rows = GOJUON_ROWS[currentCategory];
-    for (let r = 0; r < rows.length; r++) {
-      if (currentCharIndex >= rows[r].start && currentCharIndex < rows[r].start + rows[r].count) {
-        if (currentRow !== r) { currentRow = r; buildRowTabs(); }
-        break;
-      }
-    }
-  }
-  loadCharacter();
+  // In new flow, "つぎ" returns to selection screen
+  returnToSelect();
 });
 
 // ===== Character speech bubble =====
@@ -1774,39 +1778,6 @@ setInterval(() => {
   _ponoBubble.textContent = msg;
 }, 18000);
 
-// ===== Init =====
-buildRowTabs();
-buildCharSelector();
-
-// チュートリアル判定を先に行い、フラグをセットしてからloadCharacterを呼ぶ
-if (!localStorage.getItem('writing_tut_seen')) {
-  _tutorialActive = true;
-}
-
-loadCharacter();
-updateProgressHint();
-
-if (_tutorialActive) {
-  setTimeout(showTutorial, 500);
-}
-
-// ===== Public API for future AI character integration =====
-window.KidsTraceApp = {
-  getCurrentChar,
-  loadCharacter,
-  setCategory: (cat) => {
-    if (!CATEGORIES[cat]) return;
-    currentCategory = cat;
-    currentCharIndex = 0;
-    document.querySelectorAll('.category-tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.cat === cat);
-    });
-    buildCharSelector();
-    loadCharacter();
-  },
-  showCompletion
-};
-
 // ===== BGM =====
 const bgm = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
@@ -1817,13 +1788,21 @@ function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
+// BGM starts when entering practice (user tap satisfies autoplay policy)
 
-if (bgmEnabled) {
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
-  });
-}
+// ===== Back Button =====
+document.getElementById('btnBack').addEventListener('click', returnToSelect);
+
+// ===== Init =====
+// Show row selection screen (practice screen is hidden)
+buildRowSelectScreen();
+
+// ===== Public API =====
+window.KidsTraceApp = {
+  getCurrentChar,
+  loadCharacter,
+  showCompletion
+};
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
