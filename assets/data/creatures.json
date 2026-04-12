@@ -2514,6 +2514,94 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "snail",
+      "displayName": "カタツムリ",
+      "icon": "🐌",
+      "folder": "Snail",
+      "expressions": {
+        "normal": "Snail_normal_1.png",
+        "surprised": "Snail_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 362,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "stag_beetle",
+      "displayName": "クワガタムシ",
+      "icon": "🪲",
+      "folder": "Stag_beetle",
+      "expressions": {
+        "normal": "Stag_beetle_normal_1.png",
+        "surprised": "Stag_beetle_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 682,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "housefly",
+      "displayName": "ハエ",
+      "icon": "🪰",
+      "folder": "Housefly",
+      "expressions": {
+        "normal": "Housefly_normal_1.png",
+        "surprised": "Housefly_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 339,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "slug",
+      "displayName": "ナメクジ",
+      "icon": "🐌",
+      "folder": "Slug",
+      "expressions": {
+        "normal": "Slug_normal_1.png",
+        "surprised": "Slug_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 468,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 3,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
