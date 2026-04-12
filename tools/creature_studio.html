@@ -360,21 +360,7 @@ body {
   <!-- ════════ LEFT PANEL ════════ -->
   <div class="left-panel">
 
-    <!-- 0. Presets -->
-    <div class="section">
-      <div class="section-title">0. プリセット</div>
-      <div style="display:flex;gap:4px;margin-bottom:5px;align-items:center">
-        <select id="preset-select" style="flex:1;padding:5px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#e0e0e0;font-size:0.75rem;font-family:inherit">
-          <option value="">— プリセット選択 —</option>
-        </select>
-        <button class="tbtn tbtn-ghost" id="btn-preset-load" style="white-space:nowrap;padding:5px 8px;font-size:0.7rem">読込</button>
-      </div>
-      <div style="display:flex;gap:4px;align-items:center">
-        <input type="text" id="preset-name-input" placeholder="プリセット名" style="flex:1;padding:5px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#e0e0e0;font-size:0.75rem;font-family:inherit">
-        <button class="tbtn tbtn-blue" id="btn-preset-save" style="padding:5px 8px;font-size:0.72rem" title="保存">💾</button>
-        <button class="tbtn tbtn-ghost" id="btn-preset-del" style="padding:5px 8px;font-size:0.72rem" title="削除">🗑</button>
-      </div>
-    </div>
+    <!-- Presets (removed — moved inline to each section) -->
 
     <!-- 1. Input -->
     <div class="section">
@@ -389,7 +375,13 @@ body {
 
     <!-- 2. BG Removal -->
     <div class="section">
-      <div class="section-title">2. 背景除去</div>
+      <div class="section-title" style="display:flex;align-items:center;gap:6px;">2. 背景除去
+        <div style="flex:1"></div>
+        <select id="bg-preset-select" style="padding:2px 6px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#9ca3af;font-size:0.65rem;font-family:inherit;max-width:90px"><option value="">プリセット</option></select>
+        <button class="tbtn tbtn-ghost" id="btn-bg-preset-load" style="padding:2px 6px;font-size:0.6rem">読込</button>
+        <button class="tbtn tbtn-blue" id="btn-bg-preset-save" style="padding:2px 6px;font-size:0.6rem">💾</button>
+        <button class="tbtn tbtn-ghost" id="btn-bg-preset-del" style="padding:2px 6px;font-size:0.6rem">🗑</button>
+      </div>
       <div class="form-row">
         <label>ゆるさ <input type="number" class="val-input" id="tol-val" value="35" min="0" max="140" step="1"></label>
         <input type="range" id="tolerance" min="0" max="140" value="35">
@@ -417,22 +409,28 @@ body {
 
     <!-- 3. Split -->
     <div class="section">
-      <div class="section-title">3. スプライト分割</div>
-      <div class="form-row">
-        <label>最小サイズ (px)</label>
-        <input type="number" id="min-size" value="20" min="1" max="300">
+      <div class="section-title" style="display:flex;align-items:center;gap:6px;">3. スプライト分割
+        <div style="flex:1"></div>
+        <select id="split-preset-select" style="padding:2px 6px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#9ca3af;font-size:0.65rem;font-family:inherit;max-width:90px"><option value="">プリセット</option></select>
+        <button class="tbtn tbtn-ghost" id="btn-split-preset-load" style="padding:2px 6px;font-size:0.6rem">読込</button>
+        <button class="tbtn tbtn-blue" id="btn-split-preset-save" style="padding:2px 6px;font-size:0.6rem">💾</button>
+        <button class="tbtn tbtn-ghost" id="btn-split-preset-del" style="padding:2px 6px;font-size:0.6rem">🗑</button>
       </div>
       <div class="form-row">
-        <label>余白 (px)</label>
-        <input type="number" id="padding" value="4" min="0" max="60">
+        <label>最小サイズ (px) <input type="number" class="val-input" id="min-size-val" value="100" min="1" max="500" step="1"></label>
+        <input type="range" id="min-size" min="1" max="500" value="100">
       </div>
       <div class="form-row">
-        <label>アルファしきい値</label>
-        <input type="number" id="alpha-thresh" value="10" min="0" max="255">
+        <label>余白 (px) <input type="number" class="val-input" id="padding-val" value="1" min="0" max="60" step="1"></label>
+        <input type="range" id="padding" min="0" max="60" value="1">
       </div>
       <div class="form-row">
-        <label>結合距離 (px)</label>
-        <input type="number" id="merge-gap" value="0" min="0" max="100" title="この距離以内のパーツを1つのスプライトとして結合（くっつけたいときはリンクツールを使用）">
+        <label>アルファしきい値 <input type="number" class="val-input" id="alpha-thresh-val" value="90" min="0" max="255" step="1"></label>
+        <input type="range" id="alpha-thresh" min="0" max="255" value="90">
+      </div>
+      <div class="form-row">
+        <label>結合距離 (px) <input type="number" class="val-input" id="merge-gap-val" value="0" min="0" max="100" step="1"></label>
+        <input type="range" id="merge-gap" min="0" max="100" value="0" title="この距離以内のパーツを1つのスプライトとして結合（くっつけたいときはリンクツールを使用）">
       </div>
     </div>
 
@@ -1372,40 +1370,63 @@ bgCustomInput.addEventListener('input', () => {
 // ════════════════════════════════════════════════════════════
 // Presets (localStorage)
 // ════════════════════════════════════════════════════════════
-const PRESETS_KEY = 'ces_presets_v1';
+// ════════════════════════════════════════════════════════════
+// スプライト分割 スライダー ↔ 数値 同期
+// ════════════════════════════════════════════════════════════
+[['min-size','min-size-val'],['padding','padding-val'],['alpha-thresh','alpha-thresh-val'],['merge-gap','merge-gap-val']].forEach(([sliderId, valId]) => {
+  const slider = document.getElementById(sliderId);
+  const valEl  = document.getElementById(valId);
+  slider.addEventListener('input', () => { valEl.value = slider.value; });
+  valEl.addEventListener('input',  () => { slider.value = valEl.value; });
+});
 
-function loadAllPresets() {
-  try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '{}'); } catch { return {}; }
+// ════════════════════════════════════════════════════════════
+// プリセット: 背景除去 / スプライト分割 別々
+// ════════════════════════════════════════════════════════════
+const BG_PRESETS_KEY    = 'ces_bg_presets_v1';
+const SPLIT_PRESETS_KEY = 'ces_split_presets_v1';
+
+// --- 汎用ヘルパー ---
+function _loadPresets(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 }
-function saveAllPresets(data) {
-  localStorage.setItem(PRESETS_KEY, JSON.stringify(data));
+function _savePresets(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+function _refreshSelect(selId, key) {
+  const sel = document.getElementById(selId);
+  const data = _loadPresets(key);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">プリセット</option>';
+  Object.keys(data).sort().forEach(name => {
+    const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
 }
-function getCurrentSettings() {
+
+// --- 背景除去プリセット ---
+function _getBgSettings() {
   return {
-    tolerance:     document.getElementById('tolerance').value,
-    feather:       document.getElementById('feather').value,
-    grayTol:       document.getElementById('graytol').value,
-    shrink:        document.getElementById('shrink').value,
-    alphaBlur:     document.getElementById('ablur').value,
+    tolerance: document.getElementById('tolerance').value,
+    feather:   document.getElementById('feather').value,
+    grayTol:   document.getElementById('graytol').value,
+    shrink:    document.getElementById('shrink').value,
+    alphaBlur: document.getElementById('ablur').value,
     autoReprocess: document.getElementById('auto-reprocess').checked,
-    bgMode:        document.getElementById('bg-mode-select').value,
+    bgMode:    document.getElementById('bg-mode-select').value,
     bgCustomColor: document.getElementById('bg-custom-color').value,
-    minSize:       document.getElementById('min-size').value,
-    padding:       document.getElementById('padding').value,
-    alphaThresh:   document.getElementById('alpha-thresh').value,
   };
 }
-function applyPresetSettings(s) {
+function _applyBgSettings(s) {
   const set = (id, val, lblId) => {
     if (val === undefined) return;
     document.getElementById(id).value = val;
     if (lblId) document.getElementById(lblId).value = val;
   };
-  set('tolerance',   s.tolerance,   'tol-val');
-  set('feather',     s.feather,     'feather-val');
-  set('graytol',     s.grayTol,     'graytol-val');
-  set('shrink',      s.shrink,      'shrink-val');
-  set('ablur',       s.alphaBlur,   'ablur-val');
+  set('tolerance', s.tolerance, 'tol-val');
+  set('feather',   s.feather,   'feather-val');
+  set('graytol',   s.grayTol,   'graytol-val');
+  set('shrink',    s.shrink,    'shrink-val');
+  set('ablur',     s.alphaBlur, 'ablur-val');
   if (s.autoReprocess !== undefined)
     document.getElementById('auto-reprocess').checked = s.autoReprocess;
   if (s.bgMode !== undefined) {
@@ -1415,62 +1436,115 @@ function applyPresetSettings(s) {
     if (s.bgMode === 'custom') {
       cust.style.display = '';
       if (s.bgCustomColor) { cust.value = s.bgCustomColor; customBgColor = s.bgCustomColor; }
-    } else {
-      cust.style.display = 'none';
-    }
+    } else { cust.style.display = 'none'; }
     if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
   }
-  set('min-size',    s.minSize);
-  set('padding',     s.padding);
-  set('alpha-thresh',s.alphaThresh);
 }
-// ドロップダウン選択 → 名前欄に自動入力（上書き保存しやすくする）
-document.getElementById('preset-select').addEventListener('change', function() {
-  if (this.value) document.getElementById('preset-name-input').value = this.value;
-});
-
-function refreshPresetSelect() {
-  const sel = document.getElementById('preset-select');
-  const presets = loadAllPresets();
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— プリセット選択 —</option>';
-  Object.keys(presets).sort().forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name; opt.textContent = name;
-    sel.appendChild(opt);
-  });
-  if (cur) sel.value = cur;
-}
-document.getElementById('btn-preset-save').addEventListener('click', () => {
-  const name = document.getElementById('preset-name-input').value.trim();
-  if (!name) { showToast('プリセット名を入力してください', false); return; }
-  const presets = loadAllPresets();
-  presets[name] = getCurrentSettings();
-  saveAllPresets(presets);
-  refreshPresetSelect();
-  document.getElementById('preset-select').value = name;
-  showToast(`「${name}」を保存しました`, true);
-});
-document.getElementById('btn-preset-load').addEventListener('click', () => {
-  const name = document.getElementById('preset-select').value;
-  if (!name) { showToast('プリセットを選択してください', false); return; }
-  const presets = loadAllPresets();
-  if (presets[name]) {
-    applyPresetSettings(presets[name]);
-    showToast(`「${name}」を読み込みました`, true);
-  }
-});
-document.getElementById('btn-preset-del').addEventListener('click', () => {
-  const name = document.getElementById('preset-select').value;
+document.getElementById('btn-bg-preset-save').addEventListener('click', () => {
+  const name = prompt('背景除去プリセット名:');
   if (!name) return;
-  if (!confirm(`「${name}」を削除しますか？`)) return;
-  const presets = loadAllPresets();
-  delete presets[name];
-  saveAllPresets(presets);
-  refreshPresetSelect();
+  const p = _loadPresets(BG_PRESETS_KEY);
+  p[name] = _getBgSettings();
+  _savePresets(BG_PRESETS_KEY, p);
+  _refreshSelect('bg-preset-select', BG_PRESETS_KEY);
+  document.getElementById('bg-preset-select').value = name;
+  showToast(`背景「${name}」を保存`, true);
+});
+document.getElementById('btn-bg-preset-load').addEventListener('click', () => {
+  const name = document.getElementById('bg-preset-select').value;
+  if (!name) { showToast('プリセットを選択してください', false); return; }
+  const p = _loadPresets(BG_PRESETS_KEY);
+  if (p[name]) { _applyBgSettings(p[name]); showToast(`背景「${name}」を読込`, true); }
+});
+document.getElementById('btn-bg-preset-del').addEventListener('click', () => {
+  const name = document.getElementById('bg-preset-select').value;
+  if (!name) return;
+  if (!confirm(`「${name}」を削除？`)) return;
+  const p = _loadPresets(BG_PRESETS_KEY);
+  delete p[name];
+  _savePresets(BG_PRESETS_KEY, p);
+  _refreshSelect('bg-preset-select', BG_PRESETS_KEY);
   showToast('削除しました', true);
 });
-refreshPresetSelect();
+_refreshSelect('bg-preset-select', BG_PRESETS_KEY);
+
+// --- スプライト分割プリセット ---
+function _getSplitSettings() {
+  return {
+    minSize:    document.getElementById('min-size').value,
+    padding:    document.getElementById('padding').value,
+    alphaThresh:document.getElementById('alpha-thresh').value,
+    mergeGap:   document.getElementById('merge-gap').value,
+  };
+}
+function _applySplitSettings(s) {
+  const set = (id, val, valId) => {
+    if (val === undefined) return;
+    document.getElementById(id).value = val;
+    if (valId) document.getElementById(valId).value = val;
+  };
+  set('min-size',    s.minSize,     'min-size-val');
+  set('padding',     s.padding,     'padding-val');
+  set('alpha-thresh',s.alphaThresh, 'alpha-thresh-val');
+  set('merge-gap',   s.mergeGap,    'merge-gap-val');
+}
+document.getElementById('btn-split-preset-save').addEventListener('click', () => {
+  const name = prompt('スプライト分割プリセット名:');
+  if (!name) return;
+  const p = _loadPresets(SPLIT_PRESETS_KEY);
+  p[name] = _getSplitSettings();
+  _savePresets(SPLIT_PRESETS_KEY, p);
+  _refreshSelect('split-preset-select', SPLIT_PRESETS_KEY);
+  document.getElementById('split-preset-select').value = name;
+  showToast(`分割「${name}」を保存`, true);
+});
+document.getElementById('btn-split-preset-load').addEventListener('click', () => {
+  const name = document.getElementById('split-preset-select').value;
+  if (!name) { showToast('プリセットを選択してください', false); return; }
+  const p = _loadPresets(SPLIT_PRESETS_KEY);
+  if (p[name]) { _applySplitSettings(p[name]); showToast(`分割「${name}」を読込`, true); }
+});
+document.getElementById('btn-split-preset-del').addEventListener('click', () => {
+  const name = document.getElementById('split-preset-select').value;
+  if (!name) return;
+  if (!confirm(`「${name}」を削除？`)) return;
+  const p = _loadPresets(SPLIT_PRESETS_KEY);
+  delete p[name];
+  _savePresets(SPLIT_PRESETS_KEY, p);
+  _refreshSelect('split-preset-select', SPLIT_PRESETS_KEY);
+  showToast('削除しました', true);
+});
+_refreshSelect('split-preset-select', SPLIT_PRESETS_KEY);
+
+// 旧プリセット互換: 古いデータがあれば背景除去側にマイグレーション
+(function() {
+  const old = localStorage.getItem('ces_presets_v1');
+  if (old) {
+    try {
+      const oldData = JSON.parse(old);
+      const bgP = _loadPresets(BG_PRESETS_KEY);
+      if (Object.keys(bgP).length === 0) {
+        for (const [name, s] of Object.entries(oldData)) {
+          bgP[name] = { tolerance:s.tolerance, feather:s.feather, grayTol:s.grayTol,
+                        shrink:s.shrink, alphaBlur:s.alphaBlur, autoReprocess:s.autoReprocess,
+                        bgMode:s.bgMode, bgCustomColor:s.bgCustomColor };
+        }
+        _savePresets(BG_PRESETS_KEY, bgP);
+        _refreshSelect('bg-preset-select', BG_PRESETS_KEY);
+      }
+    } catch(e) {}
+    localStorage.removeItem('ces_presets_v1');
+  }
+})();
+
+// 互換: getCurrentSettings / applyPresetSettings（セッション保存/読込で使用）
+function getCurrentSettings() {
+  return Object.assign({}, _getBgSettings(), _getSplitSettings());
+}
+function applyPresetSettings(s) {
+  _applyBgSettings(s);
+  _applySplitSettings(s);
+}
 
 function loadImageFile(file) {
   const reader = new FileReader();
@@ -2213,10 +2287,10 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
       set('graytol', s.graytol, 'graytol-val');
       set('shrink', s.shrink, 'shrink-val');
       set('ablur', s.ablur, 'ablur-val');
-      set('min-size', s.minSize);
-      set('padding', s.padding);
-      set('alpha-thresh', s.alphaThr);
-      set('merge-gap', s.mergeGap);
+      set('min-size', s.minSize, 'min-size-val');
+      set('padding', s.padding, 'padding-val');
+      set('alpha-thresh', s.alphaThr, 'alpha-thresh-val');
+      set('merge-gap', s.mergeGap, 'merge-gap-val');
       set('erase-tolerance', s.eraseTol);
       if (s.eraseTol) document.getElementById('erase-tol-slider').value = s.eraseTol;
     }
