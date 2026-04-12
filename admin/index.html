@@ -3218,6 +3218,131 @@ function fetchAndRenderStaging() {
     .catch(function() { section.style.display = 'none'; });
 }
 
+// staging → 一括差し替えモーダル
+function openBulkAdoptModal(entries) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:90vw;width:900px;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:85vh;overflow-y:auto;';
+
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">✅ 一括差し替え (' + entries.length + '件)</div>' +
+    '<div id="bulk-list"></div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px;">' +
+      '<button id="bulk-cancel" style="padding:10px 20px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+      '<button id="bulk-ok" style="padding:10px 24px;border:none;border-radius:8px;background:#10B981;color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">✅ まとめて差し替え</button>' +
+    '</div>';
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+
+  var listEl = box.querySelector('#bulk-list');
+  var rowData = []; // {entry, select, targetCreature}
+
+  entries.forEach(function(entry) {
+    var normFile = entry.expressions && entry.expressions.normal;
+    if (Array.isArray(normFile)) normFile = normFile[0];
+    var stagSrc = stagingImgUrl(entry.folder, normFile);
+
+    // 行コンテナ（横並び）
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #F0EDE8;';
+
+    // 新しい画像
+    row.innerHTML =
+      '<div style="text-align:center;flex-shrink:0;">' +
+        '<img class="checker-bg" src="' + stagSrc + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;border:2px solid #F59E0B;" onerror="this.style.display=\'none\'">' +
+        '<div style="font-size:0.62rem;color:#92400E;font-weight:700;max-width:70px;overflow:hidden;text-overflow:ellipsis;">' + (entry.displayName || entry.id) + '</div>' +
+      '</div>' +
+      '<div style="font-size:1.2rem;flex-shrink:0;">→</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<select class="bulk-target" style="width:100%;padding:5px;border-radius:6px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.75rem;"></select>' +
+      '</div>' +
+      '<div class="bulk-preview" style="text-align:center;flex-shrink:0;width:56px;"></div>';
+
+    listEl.appendChild(row);
+
+    // セレクトボックス構築
+    var sel = row.querySelector('.bulk-target');
+    var prevEl = row.querySelector('.bulk-preview');
+    var bestMatch = -1;
+    var entryName = (entry.displayName || '').toLowerCase();
+    var entryId = (entry.id || '').toLowerCase();
+
+    if (creaturesData && creaturesData.creatures) {
+      creaturesData.creatures.forEach(function(c, i) {
+        var opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = c.displayName + ' (' + c.id + ')';
+        sel.appendChild(opt);
+        if (bestMatch < 0) {
+          var cId = (c.id || '').toLowerCase();
+          var cName = (c.displayName || '').toLowerCase();
+          if (cId === entryId) bestMatch = i;
+          else if (cName === entryName && entryName) bestMatch = i;
+          else if (entryId && cId.indexOf(entryId) >= 0) bestMatch = i;
+          else if (entryId && entryId.indexOf(cId) >= 0) bestMatch = i;
+        }
+      });
+      if (bestMatch >= 0) sel.value = bestMatch;
+    }
+
+    function updateRowPreview() {
+      var c = creaturesData.creatures[parseInt(sel.value)];
+      if (!c) { prevEl.innerHTML = ''; return; }
+      var en = c.expressions && c.expressions.normal;
+      if (Array.isArray(en)) en = en[0];
+      prevEl.innerHTML = en
+        ? '<img class="checker-bg" src="' + oceanImgUrl(c.folder, en) + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'">'
+        : '';
+    }
+    sel.addEventListener('change', updateRowPreview);
+    updateRowPreview();
+
+    rowData.push({ entry: entry, sel: sel, normFile: normFile });
+  });
+
+  box.querySelector('#bulk-cancel').addEventListener('click', function() { ov.remove(); });
+  box.querySelector('#bulk-ok').addEventListener('click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = '⏳ 処理中...';
+    var total = rowData.length, done = 0, failed = 0;
+
+    function processNext() {
+      if (done + failed >= total) {
+        ov.remove();
+        showToast('✅ ' + done + '件差し替え完了' + (failed ? ' / ' + failed + '件失敗' : ''), done > 0);
+        _creatureFolderCache = {};
+        renderIllust();
+        return;
+      }
+      var rd = rowData[done + failed];
+      var targetIdx = parseInt(rd.sel.value);
+      var target = creaturesData.creatures[targetIdx];
+      if (!target) { failed++; processNext(); return; }
+
+      var srcPath = 'assets/images/staging/' + rd.entry.folder + '/' + rd.normFile;
+      var tgtNorm = target.expressions && target.expressions.normal;
+      if (Array.isArray(tgtNorm)) tgtNorm = tgtNorm[0];
+      var dstPath = 'assets/images/ocean/' + target.folder + '/' + tgtNorm;
+
+      btn.textContent = '⏳ ' + (done + failed + 1) + '/' + total;
+
+      fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data.content) throw new Error('not found');
+          var uploadedBase64 = data.content.replace(/\n/g, '');
+          if (!window._replacedImages) window._replacedImages = {};
+          window._replacedImages[target.folder + '/' + tgtNorm] = 'data:image/png;base64,' + uploadedBase64;
+          return ghUploadPromise(dstPath, uploadedBase64, '✅ bulk replace: ' + target.id);
+        })
+        .then(function() { done++; processNext(); })
+        .catch(function() { failed++; processNext(); });
+    }
+    processNext();
+  });
+}
+
 // staging → 採用（差し替え先を選べるモーダル）
 function adoptStaging(idx, entry) {
   var normFile = entry.expressions && entry.expressions.normal;
@@ -5995,6 +6120,10 @@ function _renderStagingIllust(container, creatureLookup) {
       selAllBtn.textContent = '全選択';
       selAllBtn.style.cssText = 'padding:3px 8px;background:#eee;border:1px solid #ccc;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;';
       header.appendChild(selAllBtn);
+      var adoptSelBtn = document.createElement('button');
+      adoptSelBtn.textContent = '✅ 選択を差し替え';
+      adoptSelBtn.style.cssText = 'padding:3px 8px;background:#D1FAE5;border:1px solid #6EE7B7;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;color:#065F46;';
+      header.appendChild(adoptSelBtn);
       var delSelBtn = document.createElement('button');
       delSelBtn.textContent = '🗑️ 選択を削除';
       delSelBtn.style.cssText = 'padding:3px 8px;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;color:#DC2626;';
@@ -6108,6 +6237,14 @@ function _renderStagingIllust(container, creatureLookup) {
         allChecked = !allChecked;
         checkboxes.forEach(function(c) { c.checked = allChecked; });
         selAllBtn.textContent = allChecked ? '全解除' : '全選択';
+      });
+
+      // 選択一括差し替えボタン
+      adoptSelBtn.addEventListener('click', function() {
+        var selected = checkboxes.filter(function(c) { return c.checked; }).map(function(c) { return parseInt(c.dataset.idx); });
+        if (!selected.length) { showToast('差し替えるものを選択してください', false); return; }
+        var selEntries = selected.map(function(i) { return items[i]; });
+        openBulkAdoptModal(selEntries);
       });
 
       // 選択削除ボタン
