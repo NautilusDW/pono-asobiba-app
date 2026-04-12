@@ -2598,9 +2598,29 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     const sctx = sc.getContext('2d');
     sctx.drawImage(canvas, sx, sy, sw2, sh2, 0, 0, sw2, sh2);
 
-    // ── Component mask: このスプライトグループに属さない前景ピクセルを透明化 ──
+    // ── Component mask: このスプライトグループに属さない前景ピクセルを除去 ──
     {
       const allowedRoots = new Set(b.roots);
+
+      // keepBg: 他のスプライトの bounding box と重なる領域のみマスク対象
+      // （自分だけの領域はマスクしない → 目玉等の誤マスクを防止）
+      let overlapMask = null;
+      if (keepBg) {
+        overlapMask = new Uint8Array(sw2 * sh2);
+        for (const [otherRoot, ob] of boxes) {
+          if (allowedRoots.has(otherRoot)) continue; // 自分自身はスキップ
+          // ob と切り出し領域 (sx,sy,sw2,sh2) の重なり判定
+          const ox1 = Math.max(ob.x1, sx), oy1 = Math.max(ob.y1, sy);
+          const ox2 = Math.min(ob.x2, sx + sw2 - 1), oy2 = Math.min(ob.y2, sy + sh2 - 1);
+          if (ox1 > ox2 || oy1 > oy2) continue;
+          for (let py = oy1; py <= oy2; py++) {
+            for (let px = ox1; px <= ox2; px++) {
+              overlapMask[(py - sy) * sw2 + (px - sx)] = 1;
+            }
+          }
+        }
+      }
+
       const sImg = sctx.getImageData(0, 0, sw2, sh2);
       const sd = sImg.data;
       let masked = false;
@@ -2609,16 +2629,19 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
         for (let lx = 0; lx < sw2; lx++) {
           const gx = sx + lx;
           const gi = gy * w + gx;
+          if (!fg[gi]) continue;
           const mappedRoot = rootToMerged.get(find(gi));
-          if (fg[gi] && mappedRoot !== undefined && !allowedRoots.has(mappedRoot)) {
-            const pi = (ly * sw2 + lx) * 4;
-            if (keepBg) {
-              sd[pi] = 255; sd[pi+1] = 255; sd[pi+2] = 255; sd[pi+3] = 255; // 白で塗る
-            } else {
-              sd[pi+3] = 0; // 透明化
-            }
-            masked = true;
+          if (mappedRoot === undefined) continue; // minSize以下の小コンポーネント → そのまま
+          if (allowedRoots.has(mappedRoot)) continue; // 自分のスプライト → OK
+          // keepBg: 重なり領域内のみマスク
+          if (keepBg && !overlapMask[ly * sw2 + lx]) continue;
+          const pi = (ly * sw2 + lx) * 4;
+          if (keepBg) {
+            sd[pi] = 255; sd[pi+1] = 255; sd[pi+2] = 255; sd[pi+3] = 255;
+          } else {
+            sd[pi+3] = 0;
           }
+          masked = true;
         }
       }
       if (masked) sctx.putImageData(sImg, 0, 0);
