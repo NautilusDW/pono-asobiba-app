@@ -166,17 +166,37 @@
     return 'assets/sounds/se/';
   }
 
+  // iOS: ユーザータッチでAudio要素を事前アンロック
   var _fanfareAudio = null;
+  var _fanfareUnlocked = false;
+  function _ensureFanfareAudio() {
+    if (!_fanfareAudio) {
+      _fanfareAudio = new Audio();
+      _fanfareAudio.preload = 'auto';
+    }
+    return _fanfareAudio;
+  }
+  function _unlockFanfare() {
+    if (_fanfareUnlocked) return;
+    var a = _ensureFanfareAudio();
+    a.src = _getSoundBasePath() + 'TreasureBox.mp3';
+    a.volume = 0.01;
+    var p = a.play();
+    if (p && typeof p.then === 'function') {
+      p.then(function() { a.pause(); a.currentTime = 0; a.volume = 1; _fanfareUnlocked = true; })
+       .catch(function() {});
+    }
+  }
+  document.addEventListener('touchstart', _unlockFanfare, { passive: true, once: false });
+  document.addEventListener('click', _unlockFanfare);
+
   function _playFanfare() {
     try {
-      var src = _getSoundBasePath() + 'TreasureBox.mp3';
-      if (!_fanfareAudio) {
-        _fanfareAudio = new Audio(src);
-      } else {
-        _fanfareAudio.src = src;
-      }
-      _fanfareAudio.currentTime = 0;
-      var p = _fanfareAudio.play();
+      var a = _ensureFanfareAudio();
+      a.src = _getSoundBasePath() + 'TreasureBox.mp3';
+      a.volume = 1;
+      a.currentTime = 0;
+      var p = a.play();
       if (p && typeof p.then === 'function') {
         p.catch(function(e) { console.warn('[treasure] fanfare play failed:', e); });
       }

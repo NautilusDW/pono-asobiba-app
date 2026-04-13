@@ -604,7 +604,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'body', img:'Mouth_part/Mouth_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','みみ','くち','はな'] },
     { level:1, type:'emoji_name', category:'body', img:'Palm/Palm_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['あし','かた','て','うで'] },
     { level:1, type:'emoji_name', category:'body', img:'Foot_part/Foot_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['あし','て','かた','おなか'] },
-    { level:1, type:'emoji_name', category:'body', img:'Forearm/Forearm_normal_1.png', q:'これは からだの どこ？', answer:3, choices:['て','あし','かた','うで'] },
+    { level:1, type:'emoji_name', category:'body', img:'Forearm/Forearm_normal_1.png', q:'これは からだの どこ？', answer:3, choices:['おなか','あし','かた','うで'] },
     { level:1, type:'trivia', category:'body',
       q:'においを かぐのは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] ,
       detail:'はなの おくに「きゅうかく」という においを かんじる ばしょが あるよ！'},

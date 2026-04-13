@@ -1182,10 +1182,12 @@ function loadState() {
   }
   // 旧アイテムIDの掃除（存在しないものを除去）
   state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
-  // 全アイテムを所持済みにする（テスト用）
-  ROOM_ITEMS.forEach(item => {
-    if (!state.inventory.includes(item.id)) state.inventory.push(item.id);
-  });
+  // 全アイテムを所持済みにする（デバッグ用）
+  if (DEBUG_MODE) {
+    ROOM_ITEMS.forEach(item => {
+      if (!state.inventory.includes(item.id)) state.inventory.push(item.id);
+    });
+  }
 }
 function saveState() {
   localStorage.setItem(LS.POINTS,    state.points);
