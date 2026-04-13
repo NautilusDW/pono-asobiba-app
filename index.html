@@ -2380,7 +2380,7 @@
         // Which row is the newly stamped slot in?
         var posInCard = filled - 1; // 0-based
         var posInRow = posInCard % SLOTS_PER_ROW;
-        _playStampPop();
+        // 音は showStampModal 内で鳴らすのでここでは鳴らさない
         renderStampCard(posInRow);
       }
 
