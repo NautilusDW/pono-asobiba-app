@@ -306,21 +306,21 @@
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
     _video.src = mp4Path;
-    _video.style.display = 'none'; // タップまで非表示
-    _video.load(); // プリロードだけ開始
+    _video.load(); // プリロード（最初のフレームを表示）
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
 
-    // ── 「タップして あけよう！」オーバーレイ ──
+    // ── 「タップして あけよう！」オーバーレイ（動画の最初のフレームの上に重ねる） ──
     var tapOverlay = document.createElement('div');
     tapOverlay.style.cssText =
       'position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;' +
-      'align-items:center;justify-content:center;cursor:pointer;' +
-      'background:radial-gradient(circle at 50% 60%, #3D1A00 0%, #0D0500 100%);';
+      'align-items:center;justify-content:flex-end;padding-bottom:24px;cursor:pointer;';
     tapOverlay.innerHTML =
-      '<div style="font-size:4rem;margin-bottom:12px;animation:tboxOpen 0.8s ease both;">🎁</div>' +
-      '<div style="color:#FFD700;font-size:1rem;font-weight:900;font-family:\'Zen Maru Gothic\',sans-serif;' +
-      'text-shadow:0 2px 4px rgba(0,0,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">タップして あけよう！</div>';
+      '<button style="padding:12px 32px;border:none;border-radius:50px;' +
+      'background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;' +
+      'font-family:\'Zen Maru Gothic\',sans-serif;font-size:1rem;font-weight:900;' +
+      'cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);' +
+      'animation:stampBtnPulse 1.2s ease-in-out infinite;">タップして あけよう！</button>';
     _container.appendChild(tapOverlay);
 
     var capturedVideo = _video;
