@@ -166,39 +166,54 @@
     return 'assets/sounds/se/';
   }
 
-  // iOS: ユーザータッチで無音再生してAudio要素をアンロック
-  var _fanfareAudio = null;
-  var _fanfareUnlocked = false;
-  var SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-  function _unlockFanfare() {
-    if (_fanfareUnlocked) return;
-    if (!_fanfareAudio) _fanfareAudio = new Audio();
-    _fanfareAudio.src = SILENT_WAV;
-    _fanfareAudio.volume = 0;
-    var p = _fanfareAudio.play();
-    if (p && typeof p.then === 'function') {
-      p.then(function() {
-        _fanfareAudio.pause();
-        _fanfareUnlocked = true;
-        document.removeEventListener('touchstart', _unlockFanfare);
-        document.removeEventListener('click', _unlockFanfare);
-      }).catch(function() {});
+  // iOS: AudioContext + AudioBuffer でMP3を再生（src変更による再ロック問題を回避）
+  var _fanfareCtx = null;
+  var _fanfareBuffer = null;
+  var _fanfareLoading = false;
+
+  function _ensureFanfareCtx() {
+    if (!_fanfareCtx) {
+      try { _fanfareCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
     }
+    return _fanfareCtx;
+  }
+
+  function _loadFanfareBuffer() {
+    if (_fanfareBuffer || _fanfareLoading) return;
+    var ctx = _ensureFanfareCtx();
+    if (!ctx) return;
+    _fanfareLoading = true;
+    var src = _getSoundBasePath() + 'TreasureBox.mp3';
+    fetch(src).then(function(r) { return r.arrayBuffer(); })
+      .then(function(buf) { return ctx.decodeAudioData(buf); })
+      .then(function(decoded) { _fanfareBuffer = decoded; _fanfareLoading = false; })
+      .catch(function() { _fanfareLoading = false; });
+  }
+
+  function _unlockFanfare() {
+    var ctx = _ensureFanfareCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+    _loadFanfareBuffer();
+    document.removeEventListener('touchstart', _unlockFanfare);
+    document.removeEventListener('click', _unlockFanfare);
   }
   document.addEventListener('touchstart', _unlockFanfare, { passive: true });
   document.addEventListener('click', _unlockFanfare);
+  // ページ読み込み時にもバッファのプリロードを開始
+  _loadFanfareBuffer();
 
   function _playFanfare() {
     try {
-      if (!_fanfareAudio) _fanfareAudio = new Audio();
-      _fanfareAudio.src = _getSoundBasePath() + 'TreasureBox.mp3';
-      _fanfareAudio.volume = 1;
-      _fanfareAudio.currentTime = 0;
-      var p = _fanfareAudio.play();
-      if (p && typeof p.then === 'function') {
-        p.catch(function(e) { console.warn('[treasure] fanfare play failed:', e); });
-      }
-    } catch(e) {}
+      var ctx = _ensureFanfareCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+      if (!_fanfareBuffer) { _loadFanfareBuffer(); return; }
+      var source = ctx.createBufferSource();
+      source.buffer = _fanfareBuffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    } catch(e) { console.warn('[treasure] fanfare error:', e); }
   }
 
   // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────
@@ -207,11 +222,16 @@
     _finished = true;
     _clearPendingTimers();
 
-    // 動画は最後のフレーム（宝箱が開いた状態）で停止させて残す
-    // フォールバック（🎁アニメ）の場合のみ少し薄くする
-    if (_video) { _video.pause(); /* 開いた状態のフレームで停止 */ }
+    // 動画・フォールバックをフェードアウトして報酬を見せる
+    if (_video) {
+      _video.pause();
+      _video.style.transition = 'opacity 0.4s';
+      _video.style.opacity = '0';
+    }
     var fb = _container.querySelector('.treasure-fallback');
-    if (fb) { fb.style.opacity = '0.4'; fb.style.transition = 'opacity 0.3s'; }
+    if (fb) { fb.style.opacity = '0'; fb.style.transition = 'opacity 0.3s'; }
+    // コンテナ背景を暗い半透明に（オーバーレイの背景と馴染む）
+    _container.style.background = 'transparent';
 
     _playFanfare();
     _reward.classList.add('show');
@@ -239,6 +259,8 @@
     _destroyVideo();
     _finished = false;
     _fallbackStarted = false;
+    // コンテナ背景をリセット（前回の透明化を戻す）
+    if (_container) _container.style.background = '#000';
 
     // ラベル・アイテム設定
     var name  = (options && options.name)  || 'ごほうび';

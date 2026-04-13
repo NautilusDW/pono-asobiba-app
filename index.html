@@ -1521,39 +1521,52 @@
     (function() {
       'use strict';
 
-      // ── スタンプ音（MP3）──
-      var _stampAudio = null;
-      var _stampUnlocked = false;
-      var SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-      // iOS: ユーザータッチで無音再生してAudio要素をアンロック
-      function _unlockStampAudio() {
-        if (_stampUnlocked) return;
-        if (!_stampAudio) _stampAudio = new Audio();
-        _stampAudio.src = SILENT_WAV;
-        _stampAudio.volume = 0;
-        var p = _stampAudio.play();
-        if (p && typeof p.then === 'function') {
-          p.then(function() {
-            _stampAudio.pause();
-            _stampUnlocked = true;
-            document.removeEventListener('touchstart', _unlockStampAudio);
-            document.removeEventListener('click', _unlockStampAudio);
-          }).catch(function() {});
+      // ── スタンプ音（AudioContext + AudioBuffer）──
+      var _stampCtx = null;
+      var _stampBuffer = null;
+      var _stampLoading = false;
+
+      function _ensureStampCtx() {
+        if (!_stampCtx) {
+          try { _stampCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
         }
+        return _stampCtx;
+      }
+
+      function _loadStampBuffer() {
+        if (_stampBuffer || _stampLoading) return;
+        var ctx = _ensureStampCtx();
+        if (!ctx) return;
+        _stampLoading = true;
+        fetch('assets/sounds/se/common/success.mp3').then(function(r) { return r.arrayBuffer(); })
+          .then(function(buf) { return ctx.decodeAudioData(buf); })
+          .then(function(decoded) { _stampBuffer = decoded; _stampLoading = false; })
+          .catch(function() { _stampLoading = false; });
+      }
+
+      function _unlockStampAudio() {
+        var ctx = _ensureStampCtx();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+        _loadStampBuffer();
+        document.removeEventListener('touchstart', _unlockStampAudio);
+        document.removeEventListener('click', _unlockStampAudio);
       }
       document.addEventListener('touchstart', _unlockStampAudio, { passive: true });
       document.addEventListener('click', _unlockStampAudio);
+      // ページ読み込み時にもバッファのプリロードを開始
+      _loadStampBuffer();
 
       function _playStampPop() {
         try {
-          if (!_stampAudio) _stampAudio = new Audio();
-          _stampAudio.src = 'assets/sounds/se/common/success.mp3';
-          _stampAudio.volume = 1;
-          _stampAudio.currentTime = 0;
-          var p = _stampAudio.play();
-          if (p && typeof p.then === 'function') {
-            p.catch(function(e) { console.warn('[stamp] sound play failed:', e); });
-          }
+          var ctx = _ensureStampCtx();
+          if (!ctx) return;
+          if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+          if (!_stampBuffer) { _loadStampBuffer(); return; }
+          var source = ctx.createBufferSource();
+          source.buffer = _stampBuffer;
+          source.connect(ctx.destination);
+          source.start(0);
         } catch(e) {}
       }
 
