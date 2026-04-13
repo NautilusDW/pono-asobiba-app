@@ -44,14 +44,21 @@
     style.textContent = [
       '#treasure-overlay {',
       '  display:none; position:fixed; inset:0; z-index:99999;',
-      '  background:rgba(0,0,0,0.7);',
+      '  background:rgba(0,0,0,0);',
       '  align-items:center; justify-content:center; flex-direction:column;',
+      '  transition:background 0.3s;',
       '}',
       '#treasure-overlay.show { display:flex; }',
+      '#treasure-overlay.visible { background:rgba(0,0,0,0.7); }',
       '.treasure-container {',
       '  position:relative; width:280px; height:280px;',
       '  border-radius:24px; overflow:hidden;',
       '  background:#000;',
+      '  transform:scale(0);',
+      '  transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);',
+      '}',
+      '#treasure-overlay.visible .treasure-container {',
+      '  transform:scale(1);',
       '}',
       '.treasure-container video {',
       '  width:100%; height:100%; object-fit:cover;',
@@ -153,8 +160,20 @@
       var tap = _container.querySelector('[style*="z-index:3"]');
       if (tap) tap.remove();
     }
-    _overlay.classList.remove('show');
-    if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
+    // スケールアウトアニメーション
+    if (_container) {
+      _container.style.transition = 'transform 0.3s cubic-bezier(0.6,-0.28,0.74,0.05)';
+      _container.style.transform = 'scale(0)';
+    }
+    _overlay.classList.remove('visible');
+    setTimeout(function() {
+      _overlay.classList.remove('show');
+      // transition をリセット（次回表示時にオーバーシュートに戻す）
+      if (_container) {
+        _container.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      }
+      if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
+    }, 350);
   }
 
   // ── 旧 video を完全破棄 ────────────────────────────────────────────────────
@@ -294,6 +313,9 @@
     if (oldFb) oldFb.remove();
 
     _overlay.classList.add('show');
+    // スケールインアニメーション（1フレーム待ってから）
+    _overlay.classList.remove('visible');
+    requestAnimationFrame(function() { _overlay.classList.add('visible'); });
 
     // ── 動画要素を毎回新規生成（プリロードのみ、再生はタップ後）──
     var basePath = _getBasePath();
