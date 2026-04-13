@@ -2510,43 +2510,71 @@
       // ── 4. Init & Event Wiring ──
 
       window._initStampRally = function() {
+        // ゲーム出発前のtotalを取得（ログインスタンプ追加前）
+        var _beforeGame = parseInt(localStorage.getItem('pono_stamp_before') || '0');
+        var _totalBeforeThisSession = getStampLog().total; // ログイン前のtotal
+
         var result = addStampToday();
         renderDailyRally();
         renderStampCard(-1);
 
-        // ゲーム戻り検出: ログインスタンプ加算前のtotalと、ゲーム出発前のtotalを比較
-        var _beforeGame = parseInt(localStorage.getItem('pono_stamp_before') || '0');
-        // addStampTodayの前のtotal（ログイン分を除いた純増を見るため）
-        var _totalBeforeLogin = getStampLog().total - (result.added ? 1 : 0);
-        var _achGained = (_beforeGame > 0 && _totalBeforeLogin > _beforeGame);
+        var finalTotal = getStampLog().total;
+        // このセッションで増えたスタンプ数（ログイン＋実績含む）
+        var startFrom = _beforeGame > 0 ? _beforeGame : _totalBeforeThisSession;
+        var stampsToShow = finalTotal - startFrom;
 
-        function _afterLogin() {
-          var t = getStampLog().total;
-          if (_achGained) {
-            // ゲーム中に実績スタンプが増えた → 演出
-            setTimeout(function() {
-              showStampModal(t, function() {
-                animateStamp(t);
-                setTimeout(function() { checkSlotReward(t); }, 500);
-              }, consumeAchReasonText());
-            }, 500);
+        // 実績スタンプの理由テキストを取得
+        var achReasons = [];
+        try {
+          var pending = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
+          localStorage.removeItem('pono_stamp_pending');
+          achReasons = pending;
+        } catch(e) {}
+
+        // 各スタンプの理由テキストを準備
+        var stampReasons = [];
+        var loginAdded = result.added;
+        var achIdx = 0;
+        for (var si = 0; si < stampsToShow; si++) {
+          var stampTotal = startFrom + si + 1;
+          if (loginAdded && si === stampsToShow - 1 - achReasons.length) {
+            // ログインスタンプ（実績の前に表示）
+            // 実はログインスタンプはdates配列の最後に追加される
+            stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
+          } else if (achIdx < achReasons.length) {
+            var ach = achReasons[achIdx];
+            stampReasons.push({ total: stampTotal, text: '🏆「' + ach.name + '」\n' + ach.desc });
+            achIdx++;
           } else {
-            setTimeout(function() { checkSlotReward(t); }, 500);
+            stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
           }
-          // 基準値を更新
-          _stampTotalAfterInit = t;
-          localStorage.setItem('pono_stamp_before', String(t));
         }
 
-        if (result.added) {
+        // スタンプを1つずつ順番に表示
+        function showNextStamp(idx) {
+          if (idx >= stampReasons.length) {
+            // 全スタンプ表示完了 → 報酬チェック
+            setTimeout(function() { checkSlotReward(finalTotal); }, 500);
+            _stampTotalAfterInit = finalTotal;
+            localStorage.setItem('pono_stamp_before', String(finalTotal));
+            return;
+          }
+          var info = stampReasons[idx];
           setTimeout(function() {
-            showStampModal(result.log.total, function() {
-              animateStamp(result.log.total);
-              _afterLogin();
-            });
-          }, 500);
+            showStampModal(info.total, function() {
+              animateStamp(info.total);
+              showNextStamp(idx + 1);
+            }, info.text);
+          }, idx === 0 ? 500 : 300);
+        }
+
+        if (stampReasons.length > 0) {
+          showNextStamp(0);
         } else {
-          _afterLogin();
+          // スタンプ増加なし
+          setTimeout(function() { checkSlotReward(finalTotal); }, 500);
+          _stampTotalAfterInit = finalTotal;
+          localStorage.setItem('pono_stamp_before', String(finalTotal));
         }
       };
 
@@ -2575,19 +2603,48 @@
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
           var now = getStampLog().total;
-          if (_stampTotalAfterInit >= 0 && now > _stampTotalAfterInit) {
+          var prev = _stampTotalAfterInit;
+          if (prev >= 0 && now > prev) {
             _stampTotalAfterInit = now;
-            showStampModal(now, function() {
-              animateStamp(now);
-              setTimeout(function() { checkSlotReward(now); }, 500);
-            }, consumeAchReasonText());
+            // 増えた分を1つずつ表示
+            var achReasons = [];
+            try {
+              var pend = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
+              localStorage.removeItem('pono_stamp_pending');
+              achReasons = pend;
+            } catch(e) {}
+
+            var stamps = [];
+            var ai = 0;
+            for (var vi = prev + 1; vi <= now; vi++) {
+              if (ai < achReasons.length) {
+                stamps.push({ total: vi, text: '🏆「' + achReasons[ai].name + '」\n' + achReasons[ai].desc });
+                ai++;
+              } else {
+                stamps.push({ total: vi, text: getStampReasonText(vi) });
+              }
+            }
+
+            function showVisNext(idx) {
+              if (idx >= stamps.length) {
+                setTimeout(function() { checkSlotReward(now); }, 500);
+                return;
+              }
+              var info = stamps[idx];
+              setTimeout(function() {
+                showStampModal(info.total, function() {
+                  animateStamp(info.total);
+                  showVisNext(idx + 1);
+                }, info.text);
+              }, idx === 0 ? 500 : 300);
+            }
+            showVisNext(0);
           } else {
             _stampTotalAfterInit = now;
           }
           checkDailyCompletion();
           renderDailyRally();
           renderStampCard(-1);
-          // ゲームからの「はじめてクリア」報酬が保留されていれば演出
           checkPendingFirstClear();
         }
       });
