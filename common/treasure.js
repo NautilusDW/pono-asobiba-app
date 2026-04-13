@@ -16,7 +16,6 @@
   var _pendingTimers = [];
   var _finished = false;
   var _fallbackStarted = false; // _fallbackCss 重複挿入ガード用
-  var _unmuteSucceeded = false; // MP4内蔵音声のミュート解除成功フラグ
 
   // ── パス判定 ────────────────────────────────────────────────────────────────
   function _getBasePath() {
@@ -214,9 +213,7 @@
     var fb = _container.querySelector('.treasure-fallback');
     if (fb) { fb.style.opacity = '0.4'; fb.style.transition = 'opacity 0.3s'; }
 
-    // 動画のミュート解除が成功していればMP4内蔵音声で既に鳴っている
-    // 失敗時のみMP3フォールバック
-    if (!_unmuteSucceeded) _playFanfare();
+    _playFanfare();
     _reward.classList.add('show');
     _later(function() { _msg.classList.add('show'); }, 400);
     _later(function() { _closeBtn.classList.add('show'); }, 800);
@@ -299,16 +296,10 @@
     capturedVideo.addEventListener('error', onMediaError);
 
     // ── 再生成功時の共通処理 ──
-    _unmuteSucceeded = false;
     function onPlaySuccess() {
       if (_video !== capturedVideo) return;
-      // iOS: 動画のミュート解除を試みる（MP4内蔵音声で映像と同期）
-      // 失敗したらMP3フォールバック（_showReward内で再生）
-      try {
-        capturedVideo.muted = false;
-        _unmuteSucceeded = !capturedVideo.muted;
-      } catch(e) { _unmuteSucceeded = false; }
-
+      // iOS: muted のまま再生（unmute すると再生が止まるため）
+      // 音声は _showReward 内で MP3 を再生
       capturedVideo.addEventListener('ended', function() {
         if (_video !== capturedVideo) return;
         _showReward();
