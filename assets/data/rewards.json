@@ -56,20 +56,20 @@
       "afterMsg": "ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！"
     },
     "7": {
-      "name": "フロアランプ / かべだな",
+      "name": "きのほんだな / しろいほんだな",
       "icon": "💡",
       "gendered": true,
       "boy": {
-        "name": "フロアランプ",
-        "type": "deco",
-        "id": "deco_lamp_floor",
-        "img": "assets/images/Rooms/furnitures_final/lamp_floor.png"
+        "name": "きのほんだな",
+        "type": "furn",
+        "id": "furn_bookshelf2",
+        "img": "assets/images/Rooms/furnitures_final/BookShelf02_A.png"
       },
       "girl": {
-        "name": "かべだな",
-        "type": "deco",
-        "id": "deco_shelf_wall",
-        "img": "assets/images/Rooms/furnitures_final/shelf2_A.png"
+        "name": "しろいほんだな",
+        "type": "furn",
+        "id": "furn_bookshelf_w",
+        "img": "assets/images/Rooms/furnitures_final/BookShelf01_A.png"
       }
     },
     "8": {
