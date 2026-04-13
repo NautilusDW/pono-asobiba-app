@@ -2405,8 +2405,11 @@
       }
 
       // ── Stamp reason text ──
-      function getStampReasonText(total) {
-        return 'ログイン ' + total + 'にちめ！';
+      function getStampReasonText() {
+        // ログイン日数は dates 配列内の日付エントリ（YYYY-MM-DD）のみカウント
+        var log = getStampLog();
+        var loginDays = log.dates.filter(function(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }).length;
+        return 'ログイン ' + loginDays + 'にちめ！';
       }
 
       // 実績スタンプの理由をlocalStorageから取り出してテキストに変換
