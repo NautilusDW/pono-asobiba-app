@@ -362,8 +362,8 @@
         if (_video !== capturedVideo) return;
         // 動画終了0.3秒前にアイテムを表示（endedイベントより早い）
         var dur = capturedVideo.duration;
-        if (dur && isFinite(dur) && dur > 0.5) {
-          var showAt = dur - 0.3;
+        if (dur && isFinite(dur) && dur > 1.5) {
+          var showAt = dur - 1.2;
           capturedVideo.addEventListener('timeupdate', function _onTime() {
             if (_video !== capturedVideo) { capturedVideo.removeEventListener('timeupdate', _onTime); return; }
             if (capturedVideo.currentTime >= showAt) {
