@@ -360,12 +360,25 @@
       // ── 再生成功時の共通処理 ──
       function onPlaySuccess() {
         if (_video !== capturedVideo) return;
+        // 動画終了0.3秒前にアイテムを表示（endedイベントより早い）
+        var dur = capturedVideo.duration;
+        if (dur && isFinite(dur) && dur > 0.5) {
+          var showAt = dur - 0.3;
+          capturedVideo.addEventListener('timeupdate', function _onTime() {
+            if (_video !== capturedVideo) { capturedVideo.removeEventListener('timeupdate', _onTime); return; }
+            if (capturedVideo.currentTime >= showAt) {
+              capturedVideo.removeEventListener('timeupdate', _onTime);
+              _showReward();
+            }
+          });
+        }
+        // endedイベントもフォールバックとして残す
         capturedVideo.addEventListener('ended', function() {
           if (_video !== capturedVideo) return;
           _showReward();
         }, { once: true });
-        var dur = capturedVideo.duration;
-        var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 200) : 5000;
+        // 最終フォールバック（timeupdateもendedも発火しない場合）
+        var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 500) : 5000;
         _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
       }
 

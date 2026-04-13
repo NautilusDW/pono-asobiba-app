@@ -2457,8 +2457,8 @@
           }).join('');
         }
 
-        var cardHtml = '<div style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">';
-        cardHtml += '<div id="stamp-b-reason" style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;white-space:normal;">' + formatReason(firstInfo.text) + '</div>';
+        var cardHtml = '<div style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;min-height:220px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;">';
+        cardHtml += '<div id="stamp-b-reason" style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;white-space:normal;min-height:48px;display:flex;align-items:center;justify-content:center;">' + formatReason(firstInfo.text) + '</div>';
         cardHtml += '<div style="font-size:0.8rem;font-weight:700;color:#F2915A;margin-bottom:10px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>';
         cardHtml += '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;">';
 
