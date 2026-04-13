@@ -1521,55 +1521,22 @@
     (function() {
       'use strict';
 
-      // ── AudioContext unlock + stamp sound ──
-      // iOS Safari: AudioContextの作成とresumeをユーザーアクション内で行う
-      var _stampAC = null;
-      var _stampUnlocked = false;
-
-      function _ensureStampAC() {
-        if (!_stampAC) {
-          try { _stampAC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-        }
-        if (_stampAC && _stampAC.state === 'suspended') {
-          _stampAC.resume().catch(function() {});
-        }
-        return _stampAC;
-      }
-
-      // iOS: ユーザーアクション内でAudioContextを初期化+無音再生で完全アンロック
-      function _unlockStampAudio() {
-        if (_stampUnlocked) return;
-        var ac = _ensureStampAC();
-        if (!ac) return;
-        // 無音バッファ再生でiOS AudioContextを完全にアンロック
-        try {
-          var buf = ac.createBuffer(1, 1, 22050);
-          var src = ac.createBufferSource();
-          src.buffer = buf;
-          src.connect(ac.destination);
-          src.start(0);
-          _stampUnlocked = true;
-        } catch(e) {}
-      }
-      // 複数イベントで試行（iOSはtouchstartが最も確実）
-      document.addEventListener('touchstart', _unlockStampAudio, { passive: true });
-      document.addEventListener('touchend', _unlockStampAudio, { passive: true });
-      document.addEventListener('click', _unlockStampAudio);
-
+      // ── スタンプ音（MP3）──
+      var _stampAudio = null;
       function _playStampPop() {
-        var ac = _ensureStampAC();
-        if (!ac) return;
         try {
-          var osc = ac.createOscillator();
-          var g = ac.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, ac.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(1320, ac.currentTime + 0.08);
-          g.gain.setValueAtTime(0.18, ac.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.15);
-          osc.connect(g); g.connect(ac.destination);
-          osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.15);
-        } catch(e) {}
+          var src = 'assets/sounds/se/common/success.mp3';
+          if (!_stampAudio) {
+            _stampAudio = new Audio(src);
+          } else {
+            _stampAudio.src = src;
+          }
+          _stampAudio.currentTime = 0;
+          var p = _stampAudio.play();
+          if (p && typeof p.then === 'function') {
+            p.catch(function(e) { console.warn('[stamp] sound play failed:', e); });
+          }
+        } catch(e) { console.warn('[stamp] sound error:', e); }
       }
 
       // ── Constants ──
