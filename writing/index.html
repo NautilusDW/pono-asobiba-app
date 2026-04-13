@@ -468,17 +468,16 @@ html, body {
     gap: 0;
     align-items: stretch;
   }
-  /* ── Left column: header + back button ── */
+  /* ── Left column ── */
   .left-col {
-    display: flex; flex-direction: column;
-    align-items: center; gap: 2px;
-    flex-shrink: 0; width: 100px;
-    padding-top: 8px;
-    order: 1;
+    display: none; /* header is now fixed-position, left-col not needed */
   }
-  .header { padding: 0; order: auto; padding-top: 40px; }
-  .header h1 { font-size: 0.85rem; }
-  .header .subtitle { font-size: 0.65rem; }
+  .header {
+    position: fixed; top: 8px; left: 64px; z-index: 9989;
+    padding: 0; order: auto;
+  }
+  .header h1 { font-size: 1.1rem; }
+  .header .subtitle { font-size: 0.7rem; }
 
   /* ── Middle column: controls ── */
   .mid-col {
@@ -1454,8 +1453,9 @@ function enterPractice(rowIndex) {
   const row = rows[rowIndex];
   var label = document.getElementById('practiceRowLabel');
   if (label && row) label.textContent = row.label + 'ぎょう れんしゅう';
-  // Start BGM on user interaction (satisfies autoplay policy)
+  // Start BGM + unlock AudioContext on user interaction
   tryStartBgm();
+  unlockAudio(); // 効果音AudioContextも確実にアンロック
   // 毎回1文字目に遊び方を表示してから開始
   _showHowToPlay(row, function() {
     startRowPractice(rowIndex);
@@ -1536,14 +1536,22 @@ function _rowPracticeNextChar() {
       onComplete: function() {
         document.getElementById('demoIndicator').style.display = 'none';
         if (!_rowPracticeActive) return;
-        // Phase 2: Quiz with guides
-        _rowPracticePhase = 'quiz_guided';
-        _hedgeBubble.textContent = 'かいてみよう！';
-        _ponoBubble.textContent = 'かいてみよう！';
+        // 「なぞり スタート！」表示
         writer.hideCharacter();
-        writer.quiz({
-          onCorrectStroke: function() { playStrokeSound(); },
-          onComplete: function() {
+        var startOv = document.createElement('div');
+        startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+        startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
+        document.body.appendChild(startOv);
+        setTimeout(function() {
+          startOv.remove();
+          if (!_rowPracticeActive) return;
+          // Phase 2: Quiz with guides
+          _rowPracticePhase = 'quiz_guided';
+          _hedgeBubble.textContent = 'かいてみよう！';
+          _ponoBubble.textContent = 'かいてみよう！';
+          writer.quiz({
+            onCorrectStroke: function() { playStrokeSound(); },
+            onComplete: function() {
             if (!_rowPracticeActive) return;
             playSuccessSound();
             launchConfetti();
@@ -1582,6 +1590,7 @@ function _rowPracticeNextChar() {
           highlightOnComplete: true,
           highlightCompleteColor: currentScheme.stroke
         });
+        }, 1000); // なぞりスタート表示時間
       }
     });
   }, 500);
@@ -1683,25 +1692,29 @@ function _startWordContextPhase(char, data, onComplete) {
   var wordRow = document.createElement('div');
   wordRow.className = 'word-context-row';
 
-  // Left cell: writable canvas
+  // Left cell: writable canvas (大きく表示)
   var leftCell = document.createElement('div');
   leftCell.className = 'word-context-cell writable';
-  var cellSize = Math.min(Math.min(window.innerWidth, window.innerHeight) * 0.38, 180);
-  leftCell.style.width = cellSize + 'px';
-  leftCell.style.height = cellSize + 'px';
+  var totalChars = data.word ? data.word.length : 1;
+  // メインの書くマスは大きく、残りは小さく
+  var mainSize = Math.min(Math.min(window.innerWidth, window.innerHeight) * 0.42, 200);
+  var smallSize = Math.min(mainSize * 0.45, 70);
+  leftCell.style.width = mainSize + 'px';
+  leftCell.style.height = mainSize + 'px';
   var wcTarget = document.createElement('div');
   wcTarget.id = 'wcWriterTarget';
   leftCell.appendChild(wcTarget);
   wordRow.appendChild(leftCell);
 
-  // Right cell(s): remaining text characters
+  // Right cell(s): remaining text characters (小さく表示)
   var remaining = data.word.slice(char.length);
   if (remaining) {
     for (var ri = 0; ri < remaining.length; ri++) {
       var rightCell = document.createElement('div');
       rightCell.className = 'word-context-cell text-only';
-      rightCell.style.width = cellSize + 'px';
-      rightCell.style.height = cellSize + 'px';
+      rightCell.style.width = smallSize + 'px';
+      rightCell.style.height = smallSize + 'px';
+      rightCell.style.fontSize = (smallSize * 0.5) + 'px';
       rightCell.textContent = remaining[ri];
       wordRow.appendChild(rightCell);
     }
