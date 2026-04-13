@@ -114,6 +114,10 @@
       '  60%  { transform:scale(1.2) rotate(4deg);  opacity:1; }',
       '  100% { transform:scale(1)   rotate(0deg);  opacity:1; }',
       '}',
+      '@keyframes stampBtnPulse {',
+      '  0%, 100% { transform:scale(1); }',
+      '  50% { transform:scale(1.08); }',
+      '}',
     ].join('\n');
     document.head.appendChild(style);
 
@@ -144,6 +148,11 @@
   function _doClose() {
     _clearPendingTimers();
     _destroyVideo();
+    // タップオーバーレイが残っていたら除去
+    if (_container) {
+      var tap = _container.querySelector('[style*="z-index:3"]');
+      if (tap) tap.remove();
+    }
     _overlay.classList.remove('show');
     if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
   }
@@ -286,7 +295,7 @@
 
     _overlay.classList.add('show');
 
-    // ── 動画要素を毎回新規生成 ──
+    // ── 動画要素を毎回新規生成（プリロードのみ、再生はタップ後）──
     var basePath = _getBasePath();
     var mp4Path  = basePath + 'TreasureBox.mp4';
 
@@ -297,71 +306,104 @@
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
     _video.src = mp4Path;
+    _video.style.display = 'none'; // タップまで非表示
+    _video.load(); // プリロードだけ開始
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
 
+    // ── 「タップして あけよう！」オーバーレイ ──
+    var tapOverlay = document.createElement('div');
+    tapOverlay.style.cssText =
+      'position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;cursor:pointer;' +
+      'background:radial-gradient(circle at 50% 60%, #3D1A00 0%, #0D0500 100%);';
+    tapOverlay.innerHTML =
+      '<div style="font-size:4rem;margin-bottom:12px;animation:tboxOpen 0.8s ease both;">🎁</div>' +
+      '<div style="color:#FFD700;font-size:1rem;font-weight:900;font-family:\'Zen Maru Gothic\',sans-serif;' +
+      'text-shadow:0 2px 4px rgba(0,0,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">タップして あけよう！</div>';
+    _container.appendChild(tapOverlay);
+
     var capturedVideo = _video;
-    var readyFired = false;
 
-    // ── 3秒 soft timeout ──
-    var softTimeoutId = _later(function() {
-      if (_video !== capturedVideo || readyFired) return;
-      _fallbackCss();
-    }, 3000);
+    // ── タップで宝箱を開ける ──
+    tapOverlay.addEventListener('click', function _onTapOpen() {
+      tapOverlay.removeEventListener('click', _onTapOpen);
 
-    // ── エラーハンドラ ──
-    function onMediaError(e) {
-      if (_video !== capturedVideo || readyFired) return;
-      readyFired = true;
-      clearTimeout(softTimeoutId);
-      _fallbackCss();
-    }
-    capturedVideo.addEventListener('error', onMediaError);
+      // AudioContextアンロック（ユーザージェスチャー内）
+      _resumeAC();
 
-    // ── 再生成功時の共通処理 ──
-    function onPlaySuccess() {
-      if (_video !== capturedVideo) return;
-      capturedVideo.addEventListener('ended', function() {
-        if (_video !== capturedVideo) return;
-        _showReward();
-      }, { once: true });
-      var dur = capturedVideo.duration;
-      var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 5000;
-      _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
-    }
+      // タップオーバーレイをフェードアウト
+      tapOverlay.style.transition = 'opacity 0.3s';
+      tapOverlay.style.opacity = '0';
+      setTimeout(function() { if (tapOverlay.parentNode) tapOverlay.remove(); }, 300);
 
-    // ── canplay / loadeddata → play() ──
-    function onReady() {
-      if (readyFired || _video !== capturedVideo) return;
-      readyFired = true;
-      clearTimeout(softTimeoutId);
-      var p = capturedVideo.play();
-      if (p && typeof p.then === 'function') {
-        p.then(onPlaySuccess).catch(function() {
-          if (_video !== capturedVideo) return;
-          _fallbackCss();
-        });
-      } else {
-        onPlaySuccess();
+      // 動画を表示して再生開始
+      capturedVideo.style.display = '';
+      var readyFired = false;
+
+      // ── 3秒 soft timeout ──
+      var softTimeoutId = _later(function() {
+        if (_video !== capturedVideo || readyFired) return;
+        _fallbackCss();
+      }, 3000);
+
+      // ── エラーハンドラ ──
+      function onMediaError() {
+        if (_video !== capturedVideo || readyFired) return;
+        readyFired = true;
+        clearTimeout(softTimeoutId);
+        _fallbackCss();
       }
-    }
-    capturedVideo.addEventListener('canplay', onReady, { once: true });
-    capturedVideo.addEventListener('loadeddata', onReady, { once: true });
+      capturedVideo.addEventListener('error', onMediaError);
 
-    // ── load + 即座に play() を試行（iOS muted autoplay） ──
-    _video.load();
-    var p0 = capturedVideo.play();
-    if (p0 && typeof p0.then === 'function') {
-      p0.then(function() {
-        capturedVideo.removeEventListener('canplay', onReady);
-        capturedVideo.removeEventListener('loadeddata', onReady);
+      // ── 再生成功時の共通処理 ──
+      function onPlaySuccess() {
+        if (_video !== capturedVideo) return;
+        capturedVideo.addEventListener('ended', function() {
+          if (_video !== capturedVideo) return;
+          _showReward();
+        }, { once: true });
+        var dur = capturedVideo.duration;
+        var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 5000;
+        _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
+      }
+
+      // ── canplay / loadeddata → play() ──
+      function onReady() {
         if (readyFired || _video !== capturedVideo) return;
         readyFired = true;
         clearTimeout(softTimeoutId);
-        onPlaySuccess();
-      }).catch(function() {
-        // 即座の play 失敗 → canplay/loadeddata を待つ
-      });
-    }
+        var p = capturedVideo.play();
+        if (p && typeof p.then === 'function') {
+          p.then(onPlaySuccess).catch(function() {
+            if (_video !== capturedVideo) return;
+            _fallbackCss();
+          });
+        } else {
+          onPlaySuccess();
+        }
+      }
+
+      // 動画が既にロード済みなら即再生、そうでなければイベント待ち
+      if (capturedVideo.readyState >= 3) {
+        onReady();
+      } else {
+        capturedVideo.addEventListener('canplay', onReady, { once: true });
+        capturedVideo.addEventListener('loadeddata', onReady, { once: true });
+      }
+
+      // 即座に play() を試行
+      var p0 = capturedVideo.play();
+      if (p0 && typeof p0.then === 'function') {
+        p0.then(function() {
+          capturedVideo.removeEventListener('canplay', onReady);
+          capturedVideo.removeEventListener('loadeddata', onReady);
+          if (readyFired || _video !== capturedVideo) return;
+          readyFired = true;
+          clearTimeout(softTimeoutId);
+          onPlaySuccess();
+        }).catch(function() {});
+      }
+    });
   };
 })();
