@@ -7167,15 +7167,15 @@ function wmBuildUsageMap() {
   var map = {}; // filename → { match: [...], cross: [...] }
   WM_MATCH_STAGES.forEach(function(st) {
     st.words.forEach(function(w) {
-      var fname = w.img.replace(/^.*\//, '');
+      var fname = w.img + '.png';
       if (!map[fname]) map[fname] = { match: [], cross: [] };
       map[fname].match.push(st.name + '「' + w.word + '」');
     });
   });
   WM_CROSSWORDS.forEach(function(cw) {
-    var vFile = cw.vImg.replace(/^.*\//, '');
-    var hFile = cw.hImg.replace(/^.*\//, '');
-    var label = cw.vWord + '×' + cw.hWord;
+    var vFile = cw.img1 + '.png';
+    var hFile = cw.img2 + '.png';
+    var label = cw.vertical + '×' + cw.horizontal;
     if (!map[vFile]) map[vFile] = { match: [], cross: [] };
     map[vFile].cross.push(label);
     if (!map[hFile]) map[hFile] = { match: [], cross: [] };
