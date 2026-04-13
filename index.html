@@ -871,6 +871,88 @@
       50% { transform: scale(1.08); }
     }
 
+    /* ===== 大きなスタンプ演出 ===== */
+    .big-stamp-wrap {
+      position: relative;
+      width: 200px; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 8px auto;
+    }
+    .big-stamp-icon {
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: #FFF3CD;
+      border: 6px solid #FFD700;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 0 rgba(255,215,0,0);
+      transition: box-shadow 0.6s;
+    }
+    .big-stamp-icon.show {
+      animation: stampSlotGlow 1s ease-out forwards;
+    }
+    .big-stamp-icon img {
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(3) rotate(-20deg);
+    }
+    .big-stamp-icon img.show {
+      opacity: 1;
+      transform: scale(1) rotate(0);
+      transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+    }
+    .sparkle {
+      position: absolute;
+      font-size: 1.8rem;
+      pointer-events: none;
+      opacity: 0;
+      animation: sparkleFloat 1.2s ease-out forwards;
+    }
+    @keyframes sparkleFloat {
+      0%   { opacity: 0; transform: scale(0.3) translate(0,0); }
+      30%  { opacity: 1; transform: scale(1.2) translate(var(--dx,0), var(--dy,0)); }
+      100% { opacity: 0; transform: scale(0.8) translate(calc(var(--dx,0) * 1.5), calc(var(--dy,0) * 1.5)); }
+    }
+    .big-stamp-counter {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #A89880;
+      margin-top: 6px;
+    }
+    .stamp-full-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin: 12px auto;
+      max-width: 280px;
+    }
+    .stamp-full-cell {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 700;
+    }
+    .stamp-full-cell.filled {
+      background: #E8F5E9;
+      border: 2px solid #66BB6A;
+    }
+    .stamp-full-cell.filled img {
+      width: 78%; height: 78%; border-radius: 50%;
+    }
+    .stamp-full-cell.new {
+      background: #FFF3CD;
+      border: 2.5px solid #FFD700;
+      animation: stampSlotGlow 0.8s ease-out forwards;
+    }
+    .stamp-full-cell.new img {
+      width: 78%; height: 78%; border-radius: 50%;
+    }
+    .stamp-full-cell.empty {
+      background: rgba(0,0,0,0.08);
+      border: 2px solid rgba(0,0,0,0.1);
+      color: #bbb;
+    }
+
     /* ===== Card Complete Sparkle ===== */
     @keyframes cardSparkle {
       0% { box-shadow: 0 0 0 0 rgba(255,215,0,0); border-color: #FFE8B0; }
@@ -2440,7 +2522,8 @@
         }
       }
 
-      // スタンプ押し演出モーダル（複数スタンプを1つのモーダル内で連続アニメーション）
+      // スタンプ押し演出モーダル（3フェーズ構成）
+      // フェーズ1: うけとるボタン / フェーズ2: 大きなスタンプ1枚ずつ / フェーズ3: 15マスカード
       // stampInfos: [{ total, text }, ...] — 1個でも配列で渡す
       function showStampBatch(stampInfos, onAllDone) {
         var count = stampInfos.length;
@@ -2448,110 +2531,198 @@
 
         var firstInfo = stampInfos[0];
         var lastInfo = stampInfos[count - 1];
-        var cardNum = getCardNum(firstInfo.total);
-
-        // 最初のスタンプの行を表示
-        var firstPosInCard = getFilledInCard(firstInfo.total) - 1;
-        var displayRow = Math.floor(firstPosInCard / SLOTS_PER_ROW);
-        var rowStart = displayRow * SLOTS_PER_ROW;
+        var cardNum = getCardNum(lastInfo.total);
 
         // 各スタンプのカード内位置
         var stampPositions = stampInfos.map(function(info) {
-          return getFilledInCard(info.total) - 1;
+          return getFilledInCard(info.total) - 1; // 0-based
         });
+        // バッチ開始前に埋まっていた数
+        var preFilled = firstInfo.total - 1;
+        var preFilledInCard = preFilled <= 0 ? 0 :
+          (preFilled % SLOTS_PER_CARD === 0 && Math.floor(preFilled / SLOTS_PER_CARD) === cardNum - 1
+            ? SLOTS_PER_CARD : preFilled % SLOTS_PER_CARD);
 
-        var ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:background 0.3s;';
-
-        // 理由テキスト
+        // 理由テキストのHTML生成
         function formatReason(text) {
           return text.split('\n').map(function(line, i) {
             return '<span style="display:block;' + (i > 0 ? 'font-size:0.78rem;font-weight:700;color:#9C8070;margin-top:2px;' : '') + '">' + line + '</span>';
           }).join('');
         }
 
-        var cardHtml = '<div id="stamp-b-card" style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;min-height:220px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:scale(0);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);">';
-        cardHtml += '<div id="stamp-b-reason" style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;white-space:normal;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;">' + formatReason(firstInfo.text) + '</div>';
-        cardHtml += '<div style="font-size:0.8rem;font-weight:700;color:#F2915A;margin-bottom:10px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>';
-        cardHtml += '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;">';
+        // オーバーレイ作成
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:background 0.3s;';
 
-        for (var i = 0; i < SLOTS_PER_ROW; i++) {
-          var globalIdx = rowStart + i;
-          var slotNum = globalIdx + 1;
-          var batchIdx = stampPositions.indexOf(globalIdx);
-          var isPreFilled = globalIdx < firstPosInCard;
+        // カード（固定サイズで3フェーズ共通）
+        var cardEl = document.createElement('div');
+        cardEl.id = 'stamp-b-card';
+        cardEl.style.cssText = 'background:#FFF8E8;border-radius:16px;padding:20px;max-width:360px;width:90%;min-height:400px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:scale(0);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);';
 
-          if (isPreFilled) {
-            cardHtml += '<div style="width:44px;height:44px;border-radius:50%;background:#E8F5E9;border:2px solid #66BB6A;display:flex;align-items:center;justify-content:center;"><img src="' + PONO_ICON + '" style="width:34px;height:34px;border-radius:50%;"></div>';
-          } else if (batchIdx >= 0) {
-            cardHtml += '<div id="stamp-b-slot-' + batchIdx + '" style="width:44px;height:44px;border-radius:50%;background:#FFF3CD;border:3px solid #FFD700;display:flex;align-items:center;justify-content:center;transition:box-shadow 0.5s;"><img src="' + PONO_ICON + '" style="width:34px;height:34px;border-radius:50%;opacity:0;transform:scale(3) rotate(-20deg);" id="stamp-b-icon-' + batchIdx + '"></div>';
-          } else {
-            cardHtml += '<div style="width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.08);border:2px solid rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:#bbb;font-weight:700;">' + String(slotNum).padStart(2,'0') + '</div>';
-          }
-        }
-        cardHtml += '</div>';
-        cardHtml += '<div id="stamp-b-msg" style="font-size:1.1rem;font-weight:900;color:#F2915A;opacity:0;transition:opacity 0.3s;">ポン！✨</div>';
-        cardHtml += '<button id="stamp-b-btn" style="margin-top:10px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(245,168,0,0.4);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
-        cardHtml += '</div>';
+        // 内部コンテンツエリア（フェーズごとに差し替え）
+        var contentEl = document.createElement('div');
+        contentEl.id = 'stamp-b-content';
+        contentEl.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+        cardEl.appendChild(contentEl);
 
-        ov.innerHTML = cardHtml;
+        ov.appendChild(cardEl);
         document.body.appendChild(ov);
 
-        // スケールイン（1フレーム待ってからアニメ開始）
+        // スケールイン
         requestAnimationFrame(function() {
           ov.style.background = 'rgba(0,0,0,0.6)';
-          var card = document.getElementById('stamp-b-card');
-          if (card) card.style.transform = 'scale(1)';
+          cardEl.style.transform = 'scale(1)';
         });
 
-        document.getElementById('stamp-b-btn').addEventListener('click', function() {
-          _resumeAC();
-          this.style.visibility = 'hidden';
+        // ── フェーズ1: うけとるボタン ──
+        function phase1Receive() {
+          contentEl.innerHTML =
+            '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">\uD83C\uDF89 スタンプ ' + count + 'こ ゲット！</div>' +
+            '<div style="font-size:2.5rem;margin-bottom:12px;">\uD83C\uDF81</div>' +
+            '<button id="stamp-b-btn" style="margin-top:20px;padding:14px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
 
-          function animateNext(idx) {
-            if (idx >= count) {
-              setTimeout(function() {
-                // スケールアウト
-                var card = document.getElementById('stamp-b-card');
-                if (card) {
-                  card.style.transition = 'transform 0.3s cubic-bezier(0.6,-0.28,0.74,0.05)';
-                  card.style.transform = 'scale(0)';
-                }
-                ov.style.background = 'rgba(0,0,0,0)';
-                setTimeout(function() {
-                  ov.remove();
-                  if (onAllDone) onAllDone();
-                }, 350);
-              }, 1200);
-              return;
-            }
-            // 理由テキスト更新
-            document.getElementById('stamp-b-reason').innerHTML = formatReason(stampInfos[idx].text);
+          document.getElementById('stamp-b-btn').addEventListener('click', function() {
+            _resumeAC();
+            phase2BigStamps();
+          });
+        }
 
-            var icon = document.getElementById('stamp-b-icon-' + idx);
-            if (icon) {
-              icon.style.transition = 'none';
-              icon.style.opacity = '1';
-              icon.style.transform = 'scale(3) rotate(-20deg)';
-              requestAnimationFrame(function() {
-                icon.style.transition = 'transform 0.6s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s';
-                icon.style.transform = 'scale(1) rotate(0)';
-              });
-            }
-            var slot = document.getElementById('stamp-b-slot-' + idx);
-            if (slot) slot.style.animation = 'stampSlotGlow 0.8s ease-out forwards';
-            var msg = document.getElementById('stamp-b-msg');
-            if (msg) msg.style.opacity = '1';
-            _playStampPop();
+        // ── フェーズ2: 大きなスタンプを1枚ずつ表示 ──
+        function phase2BigStamps() {
+          contentEl.innerHTML =
+            '<div id="stamp-b-reason" style="font-size:1rem;font-weight:900;color:#5D4E37;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:4px;white-space:normal;"></div>' +
+            '<div class="big-stamp-wrap" id="stamp-b-wrap">' +
+              '<div class="big-stamp-icon" id="stamp-b-big">' +
+                '<img src="' + PONO_ICON + '" id="stamp-b-bigimg" alt="">' +
+              '</div>' +
+            '</div>' +
+            '<div id="stamp-b-msg" style="font-size:1.2rem;font-weight:900;color:#F2915A;opacity:0;transition:opacity 0.3s;height:1.5em;">ポン！\u2728</div>' +
+            '<div class="big-stamp-counter" id="stamp-b-counter"></div>';
 
-            setTimeout(function() {
-              if (msg && idx < count - 1) msg.style.opacity = '0';
-              setTimeout(function() { animateNext(idx + 1); }, 400);
-            }, 1500);
+          showBigStamp(0);
+        }
+
+        function spawnSparkles() {
+          var wrap = document.getElementById('stamp-b-wrap');
+          if (!wrap) return;
+          var emojis = ['\u2728', '\u2b50', '\ud83d\udcab', '\u2728'];
+          for (var i = 0; i < 8; i++) {
+            var s = document.createElement('div');
+            s.className = 'sparkle';
+            s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            var angle = (i / 8) * Math.PI * 2 + Math.random() * 0.3;
+            var distance = 80 + Math.random() * 40;
+            var dx = Math.cos(angle) * distance;
+            var dy = Math.sin(angle) * distance;
+            s.style.left = '50%';
+            s.style.top = '50%';
+            s.style.setProperty('--dx', dx + 'px');
+            s.style.setProperty('--dy', dy + 'px');
+            s.style.animationDelay = (i * 0.04) + 's';
+            wrap.appendChild(s);
+            (function(el) {
+              setTimeout(function() { if (el.parentNode) el.remove(); }, 1500);
+            })(s);
+          }
+        }
+
+        function showBigStamp(idx) {
+          if (idx >= count) {
+            phase3FullCard();
+            return;
           }
 
-          setTimeout(function() { animateNext(0); }, 300);
-        });
+          var info = stampInfos[idx];
+          document.getElementById('stamp-b-reason').innerHTML = formatReason(info.text);
+          document.getElementById('stamp-b-counter').textContent = (count > 1) ? (idx + 1) + ' / ' + count : '';
+
+          var bigEl = document.getElementById('stamp-b-big');
+          var imgEl = document.getElementById('stamp-b-bigimg');
+          var msg = document.getElementById('stamp-b-msg');
+
+          // リセット
+          bigEl.classList.remove('show');
+          imgEl.classList.remove('show');
+          msg.style.opacity = '0';
+          if (imgEl) {
+            imgEl.style.opacity = '0';
+            imgEl.style.transform = 'scale(3) rotate(-20deg)';
+          }
+
+          // アニメ開始
+          requestAnimationFrame(function() {
+            bigEl.classList.add('show');
+            imgEl.classList.add('show');
+            spawnSparkles();
+            msg.style.opacity = '1';
+            _playStampPop();
+          });
+
+          // 次へ
+          setTimeout(function() {
+            if (idx < count - 1) {
+              // フェードアウト
+              imgEl.style.transition = 'opacity 0.3s, transform 0.3s';
+              imgEl.style.opacity = '0';
+              imgEl.style.transform = 'scale(0.8) rotate(10deg)';
+              msg.style.opacity = '0';
+              setTimeout(function() {
+                // 再セットアップ
+                imgEl.style.transition = 'none';
+                imgEl.style.transform = 'scale(3) rotate(-20deg)';
+                showBigStamp(idx + 1);
+              }, 350);
+            } else {
+              // 最後: 少し間を空けてフェーズ3へ
+              setTimeout(function() { phase3FullCard(); }, 600);
+            }
+          }, 2000);
+        }
+
+        // ── フェーズ3: 15マスカード表示 ──
+        function phase3FullCard() {
+          var log = getStampLog();
+          var currentTotal = log.total;
+          var thisCardStart = (cardNum - 1) * SLOTS_PER_CARD; // このカードの開始total-1
+
+          var gridHtml = '';
+          for (var i = 0; i < SLOTS_PER_CARD; i++) {
+            var slotNum = i + 1;
+            var slotTotal = thisCardStart + slotNum; // このスロットに対応するtotal値
+            var isNew = stampPositions.indexOf(i) >= 0;
+            var isFilled = slotTotal <= currentTotal;
+
+            if (isNew) {
+              gridHtml += '<div class="stamp-full-cell new"><img src="' + PONO_ICON + '" alt=""></div>';
+            } else if (isFilled) {
+              gridHtml += '<div class="stamp-full-cell filled"><img src="' + PONO_ICON + '" alt=""></div>';
+            } else {
+              gridHtml += '<div class="stamp-full-cell empty">' + String(slotNum).padStart(2, '0') + '</div>';
+            }
+          }
+
+          contentEl.innerHTML =
+            '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>' +
+            '<div class="stamp-full-grid">' + gridHtml + '</div>' +
+            '<div style="font-size:1.3rem;font-weight:900;color:#F2915A;margin:6px 0 12px;">やったー！ \uD83C\uDF89</div>' +
+            '<button id="stamp-b-close" style="padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">やったー！</button>';
+
+          document.getElementById('stamp-b-close').addEventListener('click', closeModal);
+        }
+
+        // モーダル閉じる
+        function closeModal() {
+          cardEl.style.transition = 'transform 0.3s cubic-bezier(0.6,-0.28,0.74,0.05)';
+          cardEl.style.transform = 'scale(0)';
+          ov.style.background = 'rgba(0,0,0,0)';
+          setTimeout(function() {
+            ov.remove();
+            if (onAllDone) onAllDone();
+          }, 350);
+        }
+
+        // フェーズ1スタート
+        phase1Receive();
       }
 
       // ── 4. Init & Event Wiring ──
