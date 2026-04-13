@@ -2510,17 +2510,16 @@
       // ── 4. Init & Event Wiring ──
 
       window._initStampRally = function() {
-        // ゲーム出発前のtotalを取得（ログインスタンプ追加前）
+        // pono_stamp_before: 前回セッション終了時のtotal（未設定なら0＝初回）
         var _beforeGame = parseInt(localStorage.getItem('pono_stamp_before') || '0');
-        var _totalBeforeThisSession = getStampLog().total; // ログイン前のtotal
 
         var result = addStampToday();
         renderDailyRally();
         renderStampCard(-1);
 
         var finalTotal = getStampLog().total;
-        // このセッションで増えたスタンプ数（ログイン＋実績含む）
-        var startFrom = _beforeGame > 0 ? _beforeGame : _totalBeforeThisSession;
+        // _beforeGame が基準。初回（0）なら全スタンプがアニメーション対象
+        var startFrom = _beforeGame;
         var stampsToShow = finalTotal - startFrom;
 
         // 実績スタンプの理由テキストを取得
@@ -2531,20 +2530,17 @@
           achReasons = pending;
         } catch(e) {}
 
-        // 各スタンプの理由テキストを準備
+        // 各スタンプの理由テキストを準備（実績→ログインの順）
         var stampReasons = [];
-        var loginAdded = result.added;
         var achIdx = 0;
         for (var si = 0; si < stampsToShow; si++) {
           var stampTotal = startFrom + si + 1;
-          if (loginAdded && si === stampsToShow - 1 - achReasons.length) {
-            // ログインスタンプ（実績の前に表示）
-            // 実はログインスタンプはdates配列の最後に追加される
-            stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
-          } else if (achIdx < achReasons.length) {
+          if (achIdx < achReasons.length) {
             var ach = achReasons[achIdx];
             stampReasons.push({ total: stampTotal, text: '🏆「' + ach.name + '」\n' + ach.desc });
             achIdx++;
+          } else if (result.added) {
+            stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
           } else {
             stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
           }
