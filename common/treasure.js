@@ -158,26 +158,29 @@
     }
   }
 
-  // ── サウンド（AudioContext ファンファーレ）────────────────────────────────────
-  var _treasureAC = null;
+  // ── サウンド（MP3 ファンファーレ）─────────────────────────────────────────────
+  function _getSoundBasePath() {
+    if (document.querySelector('script[src*="../common/treasure.js"]')) {
+      return '../assets/sounds/se/';
+    }
+    return 'assets/sounds/se/';
+  }
+
+  var _fanfareAudio = null;
   function _playFanfare() {
     try {
-      if (!_treasureAC) _treasureAC = new (window.AudioContext || window.webkitAudioContext)();
-      if (_treasureAC.state === 'suspended') _treasureAC.resume();
-      var ac = _treasureAC;
-      var notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
-      notes.forEach(function(freq, i) {
-        var osc = ac.createOscillator();
-        var g = ac.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, ac.currentTime + i * 0.12);
-        g.gain.setValueAtTime(0.15, ac.currentTime + i * 0.12);
-        g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + i * 0.12 + 0.3);
-        osc.connect(g); g.connect(ac.destination);
-        osc.start(ac.currentTime + i * 0.12);
-        osc.stop(ac.currentTime + i * 0.12 + 0.3);
-      });
-    } catch(e) {}
+      var src = _getSoundBasePath() + 'TreasureBox.mp3';
+      if (!_fanfareAudio) {
+        _fanfareAudio = new Audio(src);
+      } else {
+        _fanfareAudio.src = src;
+      }
+      _fanfareAudio.currentTime = 0;
+      var p = _fanfareAudio.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(function(e) { console.warn('[treasure] fanfare play failed:', e); });
+      }
+    } catch(e) { console.warn('[treasure] fanfare error:', e); }
   }
 
   // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────
