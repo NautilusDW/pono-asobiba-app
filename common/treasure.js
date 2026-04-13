@@ -252,8 +252,18 @@
     } catch(e) {}
   }
 
-  // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────
+  // ── 報酬アイテム表示（動画再生中に呼ばれる）───────────────────────────────
+  var _rewardShown = false;
   function _showReward() {
+    if (_rewardShown) return;
+    _rewardShown = true;
+    // 音はタップ時に再生済み
+    _reward.classList.add('show');
+    _later(function() { _msg.classList.add('show'); }, 400);
+  }
+
+  // ── 動画完了後に閉じるボタンを表示 ─────────────────────────────────────────
+  function _showCloseBtn() {
     if (_finished) return;
     _finished = true;
     _clearPendingTimers();
@@ -264,10 +274,9 @@
     var fb = _container.querySelector('.treasure-fallback');
     if (fb) { fb.style.opacity = '0.4'; fb.style.transition = 'opacity 0.3s'; }
 
-    // 音はタップ時に再生済み
-    _reward.classList.add('show');
-    _later(function() { _msg.classList.add('show'); }, 400);
-    _later(function() { _closeBtn.classList.add('show'); }, 800);
+    // アイテムがまだ表示されていなければ表示
+    _showReward();
+    _later(function() { _closeBtn.classList.add('show'); }, 400);
   }
 
   // ── CSS フォールバックアニメーション ──────────────────────────────────────────
@@ -279,7 +288,8 @@
     fb.className = 'treasure-fallback';
     fb.innerHTML = '<div class="treasure-fallback-icon">🎁</div>';
     _container.insertBefore(fb, _container.firstChild);
-    _later(function() { _showReward(); }, 1200);
+    _later(function() { _showReward(); }, 800);
+    _later(function() { _showCloseBtn(); }, 2000);
   }
 
   // ── メイン: showTreasure ─────────────────────────────────────────────────────
@@ -290,6 +300,7 @@
     _destroyVideo();
     _finished = false;
     _fallbackStarted = false;
+    _rewardShown = false;
     // コンテナ背景をリセット
     if (_container) _container.style.background = '#000';
 
@@ -394,14 +405,14 @@
             }
           });
         }
-        // endedイベントもフォールバックとして残す
+        // endedイベント → 動画完了後に閉じるボタン表示
         capturedVideo.addEventListener('ended', function() {
           if (_video !== capturedVideo) return;
-          _showReward();
+          _showCloseBtn();
         }, { once: true });
-        // 最終フォールバック（timeupdateもendedも発火しない場合）
+        // 最終フォールバック（endedが発火しない場合）
         var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 500) : 5000;
-        _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
+        _later(function() { if (_video === capturedVideo) _showCloseBtn(); }, ms);
       }
 
       // ── canplay / loadeddata → play() ──
