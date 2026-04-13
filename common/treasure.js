@@ -186,11 +186,11 @@
     _finished = true;
     _clearPendingTimers();
 
-    // 動画/フォールバックを隠して背景を表示
-    if (_video) { _video.style.opacity = '0'; _video.style.transition = 'opacity 0.3s'; }
+    // 動画は最後のフレーム（宝箱が開いた状態）で停止させて残す
+    // フォールバック（🎁アニメ）の場合のみ少し薄くする
+    if (_video) { _video.pause(); /* 開いた状態のフレームで停止 */ }
     var fb = _container.querySelector('.treasure-fallback');
-    if (fb) { fb.style.opacity = '0'; fb.style.transition = 'opacity 0.3s'; }
-    _container.style.background = 'radial-gradient(circle at 50% 50%, #FFD700 0%, #FF8C00 40%, #5C3A00 100%)';
+    if (fb) { fb.style.opacity = '0.4'; fb.style.transition = 'opacity 0.3s'; }
 
     _playFanfare();
     _reward.classList.add('show');
