@@ -759,11 +759,35 @@ function renderOpposite(stage, q) {
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
   wrap.className = 'emoji-display';
-  const emojiEl = document.createElement('div');
-  emojiEl.className = 'emoji-main';
-  emojiEl.textContent = '❓';
-  wrap.appendChild(emojiEl);
-  // hintは正解後にdetailと一緒に表示するため、ここでは表示しない
+  wrap.style.position = 'relative';
+
+  // ThinkingPono動画
+  var video = document.createElement('video');
+  video.src = '../assets/videos/ThinkingPono.mp4';
+  video.autoplay = true;
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  video.style.cssText = 'width:160px;height:160px;object-fit:contain;border-radius:16px;';
+  video.play().catch(function() {});
+  wrap.appendChild(video);
+
+  // ?吹き出し（点滅）
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'position:absolute;top:-8px;right:-16px;font-size:2rem;font-weight:900;color:#FF6B9D;background:#fff;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(255,107,157,0.3);animation:quizBubbleBlink 2.5s ease-in-out infinite;';
+  bubble.textContent = '❓';
+  wrap.appendChild(bubble);
+
+  // 吹き出し点滅アニメーション（CSSがなければ追加）
+  if (!document.getElementById('quizBubbleBlinkStyle')) {
+    var st = document.createElement('style');
+    st.id = 'quizBubbleBlinkStyle';
+    st.textContent = '@keyframes quizBubbleBlink { 0%,70%,100% { opacity:1; transform:scale(1); } 80% { opacity:0.3; transform:scale(0.85); } 90% { opacity:1; transform:scale(1.1); } }';
+    document.head.appendChild(st);
+  }
+
   stage.appendChild(wrap);
 }
 
