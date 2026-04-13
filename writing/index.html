@@ -468,14 +468,13 @@ html, body {
     gap: 0;
     align-items: stretch;
   }
-  /* ── Left column ── */
+  /* ── Left column: only header visible ── */
   .left-col {
-    display: none; /* header is now fixed-position, left-col not needed */
-  }
-  .header {
+    display: block;
     position: fixed; top: 8px; left: 64px; z-index: 9989;
-    padding: 0; order: auto;
+    width: auto;
   }
+  .header { padding: 0; }
   .header h1 { font-size: 1.1rem; }
   .header .subtitle { font-size: 0.7rem; }
 
@@ -1725,8 +1724,8 @@ function _startWordContextPhase(char, data, onComplete) {
 
   // Create mini HanziWriter
   var wcWriter = HanziWriter.create(wcTarget, char, {
-    width: cellSize,
-    height: cellSize,
+    width: mainSize,
+    height: mainSize,
     padding: 15,
     strokeColor: currentScheme.stroke,
     outlineColor: currentScheme.outline,
