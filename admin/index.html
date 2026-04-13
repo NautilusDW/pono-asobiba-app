@@ -7162,6 +7162,28 @@ function wmLoadIllust() {
 
 var wmSelectedFiles = {};
 
+// 問題データからファイル名→使用箇所のマップを構築
+function wmBuildUsageMap() {
+  var map = {}; // filename → { match: [...], cross: [...] }
+  WM_MATCH_STAGES.forEach(function(st) {
+    st.words.forEach(function(w) {
+      var fname = w.img.replace(/^.*\//, '');
+      if (!map[fname]) map[fname] = { match: [], cross: [] };
+      map[fname].match.push(st.name + '「' + w.word + '」');
+    });
+  });
+  WM_CROSSWORDS.forEach(function(cw) {
+    var vFile = cw.vImg.replace(/^.*\//, '');
+    var hFile = cw.hImg.replace(/^.*\//, '');
+    var label = cw.vWord + '×' + cw.hWord;
+    if (!map[vFile]) map[vFile] = { match: [], cross: [] };
+    map[vFile].cross.push(label);
+    if (!map[hFile]) map[hFile] = { match: [], cross: [] };
+    map[hFile].cross.push(label);
+  });
+  return map;
+}
+
 function wmRenderIllustGrid() {
   var grid = document.getElementById('wm-illust-grid');
   if (!grid || !wmIllustFiles.length) {
@@ -7169,34 +7191,93 @@ function wmRenderIllustGrid() {
     wmUpdateSelBar();
     return;
   }
-  var html = '';
+  var usageMap = wmBuildUsageMap();
+  grid.innerHTML = '';
   wmIllustFiles.forEach(function(f) {
     var rawUrl = '../assets/images/word/' + f.name + '?_=' + Date.now();
-    var checked = wmSelectedFiles[f.name] ? ' checked' : '';
-    var borderColor = wmSelectedFiles[f.name] ? '#3B82F6' : '#F5F0E8';
-    var bgColor = wmSelectedFiles[f.name] ? '#EFF6FF' : '#FFF8F0';
-    html += '<div style="background:' + bgColor + ';border-radius:12px;padding:10px;text-align:center;border:2px solid ' + borderColor + ';position:relative;">';
-    html += '<label style="position:absolute;top:6px;left:6px;cursor:pointer;"><input type="checkbox" class="wm-cb" data-name="' + f.name + '" data-sha="' + f.sha + '"' + checked + ' style="width:16px;height:16px;cursor:pointer;accent-color:#3B82F6;"></label>';
-    html += '<img src="' + rawUrl + '" style="width:100%;height:100px;object-fit:contain;border-radius:8px;margin-bottom:6px;cursor:zoom-in;" onclick="showImagePreview(this.src,\'' + f.name + '\')" onerror="this.style.opacity=0.3;">';
-    html += '<div style="font-size:0.68rem;font-weight:700;color:#5D4E37;word-break:break-all;margin-bottom:6px;">' + f.name + '</div>';
-    html += '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">';
-    html += '<button onclick="wmEditProps(\'' + f.name + '\',\'' + f.sha + '\')" style="padding:3px 8px;border:none;border-radius:6px;background:#E0F2FE;border:1px solid #7DD3FC;color:#1E40AF;font-size:0.65rem;font-weight:700;cursor:pointer;" title="プロパティ編集">⚙️</button>';
-    html += '<button onclick="wmReplaceImg(\'' + f.name + '\',\'' + f.sha + '\')" style="padding:3px 8px;border:none;border-radius:6px;background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;font-size:0.65rem;font-weight:700;cursor:pointer;" title="画像差し替え">🖼️</button>';
-    html += '<button onclick="wmDeleteImg(\'' + f.name + '\',\'' + f.sha + '\')" style="padding:3px 8px;border:none;border-radius:6px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;font-size:0.65rem;font-weight:700;cursor:pointer;" title="削除">🗑️</button>';
-    html += '</div></div>';
-  });
-  grid.innerHTML = html;
-  // チェックボックスのイベント
-  grid.querySelectorAll('.wm-cb').forEach(function(cb) {
+    var card = document.createElement('div');
+    card.className = 'wm-illust-card';
+    card.dataset.name = f.name;
+    card.dataset.sha = f.sha;
+    var sel = !!wmSelectedFiles[f.name];
+    card.style.cssText = 'background:' + (sel ? '#EFF6FF' : '#FFF8F0') + ';border-radius:12px;padding:10px;text-align:center;border:2px solid ' + (sel ? '#3B82F6' : '#F5F0E8') + ';position:relative;';
+
+    // チェックボックス
+    var cbLabel = document.createElement('label');
+    cbLabel.style.cssText = 'position:absolute;top:6px;left:6px;cursor:pointer;';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'wm-cb';
+    cb.checked = sel;
+    cb.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:#3B82F6;';
     cb.addEventListener('change', function() {
       if (cb.checked) {
-        wmSelectedFiles[cb.dataset.name] = cb.dataset.sha;
+        wmSelectedFiles[f.name] = f.sha;
+        card.style.background = '#EFF6FF';
+        card.style.borderColor = '#3B82F6';
       } else {
-        delete wmSelectedFiles[cb.dataset.name];
+        delete wmSelectedFiles[f.name];
+        card.style.background = '#FFF8F0';
+        card.style.borderColor = '#F5F0E8';
       }
       wmUpdateSelBar();
-      wmRenderIllustGrid();
     });
+    cbLabel.appendChild(cb);
+    card.appendChild(cbLabel);
+
+    // サムネイル
+    var img = document.createElement('img');
+    img.src = rawUrl;
+    img.style.cssText = 'width:100%;height:100px;object-fit:contain;border-radius:8px;margin-bottom:6px;cursor:zoom-in;';
+    img.onerror = function() { this.style.opacity = '0.3'; };
+    (function(name) {
+      img.addEventListener('click', function() { showImagePreview(img.src, name); });
+    })(f.name);
+    card.appendChild(img);
+
+    // ファイル名
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:0.68rem;font-weight:700;color:#5D4E37;word-break:break-all;margin-bottom:4px;';
+    nameEl.textContent = f.name;
+    card.appendChild(nameEl);
+
+    // 使用状況
+    var usage = usageMap[f.name];
+    var usageEl = document.createElement('div');
+    usageEl.style.cssText = 'font-size:0.6rem;font-weight:700;margin-bottom:6px;';
+    if (usage) {
+      var parts = [];
+      if (usage.match.length) parts.push('マッチ×' + usage.match.length);
+      if (usage.cross.length) parts.push('クロス×' + usage.cross.length);
+      usageEl.style.color = '#059669';
+      usageEl.textContent = '✅ ' + parts.join(' / ');
+      usageEl.title = (usage.match.length ? 'マッチ:\n' + usage.match.join('\n') + '\n' : '') +
+                       (usage.cross.length ? 'クロスワード:\n' + usage.cross.join('\n') : '');
+    } else {
+      usageEl.style.color = '#D1D5DB';
+      usageEl.textContent = '— 問題で未使用';
+    }
+    card.appendChild(usageEl);
+
+    // ボタン行
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:4px;justify-content:center;flex-wrap:wrap;';
+    var btns = [
+      { label: '⚙️', title: 'プロパティ編集', bg: '#E0F2FE', bd: '#7DD3FC', col: '#1E40AF', fn: function() { wmEditProps(f.name, f.sha); } },
+      { label: '🖼️', title: '画像差し替え',   bg: '#FEF3C7', bd: '#FDE68A', col: '#92400E', fn: function() { wmReplaceImg(f.name, f.sha); } },
+      { label: '🗑️', title: '削除',           bg: '#FEE2E2', bd: '#FCA5A5', col: '#991B1B', fn: function() { wmDeleteImg(f.name, f.sha); } },
+    ];
+    btns.forEach(function(b) {
+      var btn = document.createElement('button');
+      btn.textContent = b.label;
+      btn.title = b.title;
+      btn.style.cssText = 'padding:3px 8px;border:1px solid ' + b.bd + ';border-radius:6px;background:' + b.bg + ';color:' + b.col + ';font-size:0.65rem;font-weight:700;cursor:pointer;';
+      btn.addEventListener('click', b.fn);
+      btnRow.appendChild(btn);
+    });
+    card.appendChild(btnRow);
+
+    grid.appendChild(card);
   });
   wmUpdateSelBar();
 }
@@ -7210,14 +7291,25 @@ function wmUpdateSelBar() {
   if (cntEl) cntEl.textContent = cnt + ' 件 選択中';
 }
 
+function wmToggleAllCards(selected) {
+  document.querySelectorAll('.wm-illust-card').forEach(function(card) {
+    var cb = card.querySelector('.wm-cb');
+    if (!cb) return;
+    cb.checked = selected;
+    card.style.background = selected ? '#EFF6FF' : '#FFF8F0';
+    card.style.borderColor = selected ? '#3B82F6' : '#F5F0E8';
+  });
+  wmUpdateSelBar();
+}
+
 function wmSelectAll() {
   wmIllustFiles.forEach(function(f) { wmSelectedFiles[f.name] = f.sha; });
-  wmRenderIllustGrid();
+  wmToggleAllCards(true);
 }
 
 function wmDeselectAll() {
   wmSelectedFiles = {};
-  wmRenderIllustGrid();
+  wmToggleAllCards(false);
 }
 
 function wmDeleteSelected() {
