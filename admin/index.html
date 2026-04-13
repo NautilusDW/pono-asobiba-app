@@ -7316,8 +7316,16 @@ function wmDeleteSelected() {
   var names = Object.keys(wmSelectedFiles);
   if (!names.length) return;
   if (!confirm(names.length + ' 件の画像を削除しますか？\nこの操作は取り消せません。\n\n' + names.join('\n'))) return;
+  // GitHub APIは並列DELETEするとsha不整合で失敗するため順次実行
   var done = 0, failed = 0, total = names.length;
-  names.forEach(function(name) {
+  function deleteNext(idx) {
+    if (idx >= total) {
+      wmSelectedFiles = {};
+      showToast('✅ ' + done + '件削除' + (failed ? ' / ' + failed + '件失敗' : ''), done > 0);
+      wmLoadIllust();
+      return;
+    }
+    var name = names[idx];
     var sha = wmSelectedFiles[name];
     var path = 'assets/images/word/' + name;
     fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
@@ -7327,14 +7335,9 @@ function wmDeleteSelected() {
     })
     .then(function(r) { if (!r.ok) throw new Error('失敗'); done++; })
     .catch(function() { failed++; })
-    .then(function() {
-      if (done + failed === total) {
-        wmSelectedFiles = {};
-        showToast('✅ ' + done + '件削除' + (failed ? ' / ' + failed + '件失敗' : ''), done > 0);
-        wmLoadIllust();
-      }
-    });
-  });
+    .then(function() { deleteNext(idx + 1); });
+  }
+  deleteNext(0);
 }
 
 // プロパティ編集（ファイル名変更）
