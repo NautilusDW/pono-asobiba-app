@@ -245,7 +245,7 @@
     var fb = _container.querySelector('.treasure-fallback');
     if (fb) { fb.style.opacity = '0.4'; fb.style.transition = 'opacity 0.3s'; }
 
-    _playFanfare();
+    // 音はタップ時に再生済み
     _reward.classList.add('show');
     _later(function() { _msg.classList.add('show'); }, 400);
     _later(function() { _closeBtn.classList.add('show'); }, 800);
@@ -329,8 +329,9 @@
     tapOverlay.addEventListener('click', function _onTapOpen() {
       tapOverlay.removeEventListener('click', _onTapOpen);
 
-      // AudioContextアンロック（ユーザージェスチャー内）
+      // AudioContextアンロック（ユーザージェスチャー内）→ 即座に音を再生
       _resumeAC();
+      _playFanfare();
 
       // タップオーバーレイをフェードアウト
       tapOverlay.style.transition = 'opacity 0.3s';
