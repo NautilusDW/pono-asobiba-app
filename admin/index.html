@@ -305,6 +305,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="roadmap">🗺 ロードマップ</button>
   <button class="tab" data-panel="aquarium">🐠 水族館</button>
   <button class="tab" data-panel="quizland">🧩 クイズランド</button>
+  <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
@@ -731,6 +732,71 @@ tr:hover { background: #FFFAF0; }
   </div><!-- /sub-quiz-illust -->
 </div><!-- /panel-quizland -->
 
+<!-- ===== 🔤 ことばあわせ ===== -->
+<div class="panel" id="panel-wordmatch">
+  <div class="sub-tabs">
+    <button class="sub-tab active" data-sub="wm-questions">📝 問題管理</button>
+    <button class="sub-tab" data-sub="wm-illust">🎨 イラスト管理</button>
+  </div>
+
+  <!-- サブタブ1: 問題管理 -->
+  <div class="sub-panel active" id="sub-wm-questions">
+  <div class="section">
+    <div class="section-title">📝 ことばあわせ 問題一覧（読み取り専用）</div>
+
+    <div style="font-size:0.85rem;font-weight:900;color:#F2915A;margin:12px 0 8px;">🎴 マッチステージ</div>
+    <div style="overflow-x:auto;">
+      <table id="wm-match-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;white-space:nowrap;">ステージ</th>
+            <th style="text-align:center;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">画像</th>
+            <th style="text-align:left;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">ことば</th>
+          </tr>
+        </thead>
+        <tbody id="wm-match-tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="font-size:0.85rem;font-weight:900;color:#F2915A;margin:20px 0 8px;">🧩 クロスワード</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="wm-cw-filter active" data-diff="all" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">すべて</button>
+      <button class="wm-cw-filter" data-diff="easy" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">☆ かんたん</button>
+      <button class="wm-cw-filter" data-diff="normal" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">★ ふつう</button>
+      <button class="wm-cw-filter" data-diff="hard" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">★★ むずかしめ</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="wm-cw-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;white-space:nowrap;">難易度</th>
+            <th style="text-align:left;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">たてのことば</th>
+            <th style="text-align:left;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">よこのことば</th>
+            <th style="text-align:center;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">共通文字</th>
+            <th style="text-align:center;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">ヒント画像1</th>
+            <th style="text-align:center;padding:7px 8px;color:#F2915A;border-bottom:2px solid #FDE68A;font-size:0.72rem;">ヒント画像2</th>
+          </tr>
+        </thead>
+        <tbody id="wm-cw-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /sub-wm-questions -->
+
+  <!-- サブタブ2: イラスト管理 -->
+  <div class="sub-panel" id="sub-wm-illust">
+  <div class="section">
+    <div class="section-title">🎨 ことばあわせ イラスト管理</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <button onclick="wmLoadIllust()" style="padding:6px 14px;background:linear-gradient(135deg,#F2915A,#E07B4A);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再読み込み</button>
+      <button onclick="wmUploadNew()" style="padding:6px 14px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">➕ 新規アップロード</button>
+      <span id="wm-illust-count" style="font-size:0.78rem;color:#8B7355;font-weight:700;"></span>
+    </div>
+    <div id="wm-illust-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
+  </div>
+  </div><!-- /sub-wm-illust -->
+</div><!-- /panel-wordmatch -->
+
 <!-- ===== 🍱 おべんとう ===== -->
 <div class="panel" id="panel-bento">
   <div class="sub-tabs">
@@ -894,6 +960,12 @@ function switchTab(panelId) {
       }
     }
   }
+  if (panelId === 'wordmatch') {
+    wmRenderMatchTable();
+    wmRenderCwTable();
+    var wmIllSub = document.getElementById('sub-wm-illust');
+    if (wmIllSub && wmIllSub.classList.contains('active')) wmLoadIllust();
+  }
   if (panelId === 'bento')    renderBentoIllust();
   if (panelId === 'roadmap') renderRoadmap();
   if (panelId === 'home')    renderHome();
@@ -933,6 +1005,8 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
           .catch(function() { renderIllust(); });
       } else { renderIllust(); }
     }
+    if (subId === 'wm-questions') { wmRenderMatchTable(); wmRenderCwTable(); }
+    if (subId === 'wm-illust')    wmLoadIllust();
   });
 });
 
@@ -6923,6 +6997,289 @@ function _openBentoReplaceModal(itemId, itemName) {
         statusEl.innerHTML = '<span style="color:#EF4444;">❌ エラー: ' + err.message + '</span>';
       });
   });
+}
+
+// ════════════════════════════════════════════════════════════════
+// 🔤 ことばあわせ 管理
+// ════════════════════════════════════════════════════════════════
+
+// --- マッチステージデータ ---
+var WM_MATCH_STAGES = [
+  { name: 'のりもの', words: [
+    { word: 'でんしゃ', img: 'densya' }, { word: 'ひこうき', img: 'hikouki' },
+    { word: 'ふね', img: 'fune' }, { word: 'くるま', img: 'kuruma' }
+  ]},
+  { name: 'どうぶつ', words: [
+    { word: 'うさぎ', img: 'usagi' }, { word: 'ぞう', img: 'zou' },
+    { word: 'いるか', img: 'iruka' }, { word: 'くま', img: 'kuma' }
+  ]},
+  { name: 'くだもの', words: [
+    { word: 'りんご', img: 'ringo' }, { word: 'みかん', img: 'mikan' },
+    { word: 'いちご', img: 'ichigo' }, { word: 'バナナ', img: 'banana' }
+  ]},
+  { name: 'やさい', words: [
+    { word: 'にんじん', img: 'ninjin' }, { word: 'トマト', img: 'tomato' },
+    { word: 'きゅうり', img: 'kyuuri' }, { word: 'きのこ', img: 'kinoko' }
+  ]},
+  { name: 'どうぶつ2', words: [
+    { word: 'キリン', img: 'kirin' }, { word: 'さる', img: 'saru' },
+    { word: 'ライオン', img: 'raion' }, { word: 'パンダ', img: 'panda' }
+  ]},
+  { name: 'たべもの', words: [
+    { word: 'ごはん', img: 'gohan' }, { word: 'ラーメン', img: 'ramen' },
+    { word: 'パン', img: 'pan' }, { word: 'ケーキ', img: 'cake' }
+  ]},
+  { name: 'しぜん', words: [
+    { word: 'はな', img: 'hana' }, { word: 'にじ', img: 'niji' },
+    { word: 'ほし', img: 'hoshi' }, { word: 'つき', img: 'tsuki' }
+  ]},
+  { name: 'のりもの2', words: [
+    { word: 'タクシー', img: 'taxi' }, { word: 'バス', img: 'bus' },
+    { word: 'じてんしゃ', img: 'jitensha' }, { word: 'ヘリコプター', img: 'helicopter' }
+  ]}
+];
+
+// --- クロスワードデータ ---
+var WM_CROSSWORDS = [
+  // かんたん
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'いぬ', horizontal: 'いか', shared: 'い', img1: 'inu', img2: 'ika' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'ねこ', horizontal: 'こま', shared: 'こ', img1: 'neko', img2: 'koma' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'はな', horizontal: 'なつ', shared: 'な', img1: 'hana', img2: 'natsu' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'うみ', horizontal: 'みち', shared: 'み', img1: 'umi', img2: 'michi' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'くも', horizontal: 'もり', shared: 'も', img1: 'kumo', img2: 'mori' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'ほし', horizontal: 'しか', shared: 'し', img1: 'hoshi', img2: 'shika' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'かに', horizontal: 'にく', shared: 'に', img1: 'kani', img2: 'niku' },
+  { diff: 'easy', diffLabel: '☆ かんたん', vertical: 'さる', horizontal: 'くさ', shared: 'さ', img1: 'saru', img2: 'kusa' },
+  // ふつう
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'さくら', horizontal: 'くるま', shared: 'く', img1: 'sakura', img2: 'kuruma' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'たまご', horizontal: 'やま', shared: 'ま', img1: 'tamago', img2: 'yama' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'すいか', horizontal: 'いちご', shared: 'い', img1: 'suika', img2: 'ichigo' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'くじら', horizontal: 'にじ', shared: 'じ', img1: 'kujira', img2: 'niji' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'おかし', horizontal: 'かさ', shared: 'か', img1: 'okashi', img2: 'kasa' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'つくえ', horizontal: 'ふくろ', shared: 'く', img1: 'tsukue', img2: 'fukuro' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'とけい', horizontal: 'けむり', shared: 'け', img1: 'tokei', img2: 'kemuri' },
+  { diff: 'normal', diffLabel: '★ ふつう', vertical: 'りんご', horizontal: 'みんな', shared: 'ん', img1: 'ringo', img2: 'minna' },
+  // むずかしめ
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'トマト', horizontal: 'クマ', shared: 'マ', img1: 'tomato', img2: 'kuma' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'パンダ', horizontal: 'パン', shared: 'パン', img1: 'panda', img2: 'pan' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'メロン', horizontal: 'ロケット', shared: 'ロ', img1: 'melon', img2: 'rocket' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'キリン', horizontal: 'リス', shared: 'リ', img1: 'kirin', img2: 'risu' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'ケーキ', horizontal: 'スキー', shared: 'キ', img1: 'cake', img2: 'ski' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'バナナ', horizontal: 'ナベ', shared: 'ナ', img1: 'banana', img2: 'nabe' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'カメラ', horizontal: 'メガネ', shared: 'メ', img1: 'camera', img2: 'megane' },
+  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'タイヤ', horizontal: 'ライオン', shared: 'イ', img1: 'taiya', img2: 'raion' }
+];
+
+function wmWordImgUrl(name) {
+  return '../assets/images/word/' + name + '.png?_=' + Date.now();
+}
+
+// --- マッチステージテーブル描画 ---
+function wmRenderMatchTable() {
+  var tbody = document.getElementById('wm-match-tbody');
+  if (!tbody) return;
+  var html = '';
+  WM_MATCH_STAGES.forEach(function(stage) {
+    stage.words.forEach(function(w, i) {
+      html += '<tr style="border-bottom:1px solid #F5F0E8;">';
+      if (i === 0) {
+        html += '<td rowspan="' + stage.words.length + '" style="padding:7px 8px;font-weight:900;color:#5D4E37;vertical-align:top;white-space:nowrap;background:#FFF8F0;">' + stage.name + '</td>';
+      }
+      html += '<td style="padding:5px 8px;text-align:center;"><img src="' + wmWordImgUrl(w.img) + '" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" onerror="this.style.opacity=0.3;this.alt=\'?\';"></td>';
+      html += '<td style="padding:5px 8px;font-weight:700;color:#5D4E37;">' + w.word + '</td>';
+      html += '</tr>';
+    });
+  });
+  tbody.innerHTML = html;
+}
+
+// --- クロスワードテーブル描画 ---
+var wmCwFilterDiff = 'all';
+function wmRenderCwTable() {
+  var tbody = document.getElementById('wm-cw-tbody');
+  if (!tbody) return;
+  var html = '';
+  var filtered = WM_CROSSWORDS.filter(function(cw) {
+    return wmCwFilterDiff === 'all' || cw.diff === wmCwFilterDiff;
+  });
+  filtered.forEach(function(cw) {
+    var diffColor = cw.diff === 'easy' ? '#10B981' : cw.diff === 'normal' ? '#3B82F6' : '#EF4444';
+    html += '<tr style="border-bottom:1px solid #F5F0E8;">';
+    html += '<td style="padding:5px 8px;white-space:nowrap;"><span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;color:#fff;background:' + diffColor + ';">' + cw.diffLabel + '</span></td>';
+    html += '<td style="padding:5px 8px;font-weight:700;color:#5D4E37;">' + cw.vertical + '</td>';
+    html += '<td style="padding:5px 8px;font-weight:700;color:#5D4E37;">' + cw.horizontal + '</td>';
+    html += '<td style="padding:5px 8px;text-align:center;font-weight:900;color:#F2915A;font-size:1rem;">' + cw.shared + '</td>';
+    html += '<td style="padding:5px 8px;text-align:center;"><img src="' + wmWordImgUrl(cw.img1) + '" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" onerror="this.style.opacity=0.3;"></td>';
+    html += '<td style="padding:5px 8px;text-align:center;"><img src="' + wmWordImgUrl(cw.img2) + '" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" onerror="this.style.opacity=0.3;"></td>';
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+// クロスワードフィルタボタン
+document.querySelectorAll('.wm-cw-filter').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.wm-cw-filter').forEach(function(b) { b.classList.remove('active'); b.style.background = '#fff'; b.style.color = '#5D4E37'; b.style.borderColor = '#E0D8CC'; });
+    btn.classList.add('active');
+    btn.style.background = '#F2915A';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#F2915A';
+    wmCwFilterDiff = btn.dataset.diff;
+    wmRenderCwTable();
+  });
+  // 初期スタイル
+  if (btn.dataset.diff === 'all') {
+    btn.style.background = '#F2915A'; btn.style.color = '#fff'; btn.style.borderColor = '#F2915A';
+  }
+});
+
+// --- イラスト管理 ---
+var wmIllustFiles = [];
+
+function wmLoadIllust() {
+  var grid = document.getElementById('wm-illust-grid');
+  var countEl = document.getElementById('wm-illust-count');
+  if (!grid) return;
+  grid.innerHTML = '<div style="text-align:center;padding:24px;color:#8B7355;font-weight:700;">🔄 読み込み中...</div>';
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/word?ref=' + GH_BRANCH + '&_=' + Date.now();
+  fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('API Error: ' + r.status); return r.json(); })
+    .then(function(files) {
+      wmIllustFiles = files.filter(function(f) { return /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(f.name); });
+      if (countEl) countEl.textContent = wmIllustFiles.length + ' 件';
+      wmRenderIllustGrid();
+    })
+    .catch(function(err) {
+      grid.innerHTML = '<div style="text-align:center;padding:24px;color:#EF4444;font-weight:700;">❌ ' + err.message + '</div>';
+    });
+}
+
+function wmRenderIllustGrid() {
+  var grid = document.getElementById('wm-illust-grid');
+  if (!grid || !wmIllustFiles.length) {
+    if (grid) grid.innerHTML = '<div style="text-align:center;padding:24px;color:#8B7355;">画像がありません</div>';
+    return;
+  }
+  var html = '';
+  wmIllustFiles.forEach(function(f) {
+    var rawUrl = '../assets/images/word/' + f.name + '?_=' + Date.now();
+    html += '<div style="background:#FFF8F0;border-radius:12px;padding:10px;text-align:center;border:1px solid #F5F0E8;">';
+    html += '<img src="' + rawUrl + '" style="width:100%;height:100px;object-fit:contain;border-radius:8px;margin-bottom:6px;" onerror="this.style.opacity=0.3;">';
+    html += '<div style="font-size:0.68rem;font-weight:700;color:#5D4E37;word-break:break-all;margin-bottom:6px;">' + f.name + '</div>';
+    html += '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">';
+    html += '<button onclick="wmEditProps(\'' + f.name + '\',\'' + f.sha + '\')" style="padding:3px 8px;border:none;border-radius:6px;background:#3B82F6;color:#fff;font-size:0.65rem;font-weight:700;cursor:pointer;" title="プロパティ編集">⚙️</button>';
+    html += '<button onclick="wmReplaceImg(\'' + f.name + '\',\'' + f.sha + '\')" style="padding:3px 8px;border:none;border-radius:6px;background:#F59E0B;color:#fff;font-size:0.65rem;font-weight:700;cursor:pointer;" title="画像差し替え">🖼️</button>';
+    html += '<button onclick="wmDeleteImg(\'' + f.name + '\',\'' + f.sha + '\')" style="padding:3px 8px;border:none;border-radius:6px;background:#EF4444;color:#fff;font-size:0.65rem;font-weight:700;cursor:pointer;" title="削除">🗑️</button>';
+    html += '</div></div>';
+  });
+  grid.innerHTML = html;
+}
+
+// プロパティ編集（ファイル名変更）
+function wmEditProps(oldName, sha) {
+  var newName = prompt('新しいファイル名を入力してください:', oldName);
+  if (!newName || newName === oldName) return;
+  // ファイル名変更 = 新ファイル作成 + 旧ファイル削除
+  var oldPath = 'assets/images/word/' + oldName;
+  var newPath = 'assets/images/word/' + newName;
+  // まず旧ファイルの内容を取得
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + oldPath + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('取得失敗'); return r.json(); })
+    .then(function(data) {
+      // 新ファイル作成
+      return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + newPath, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ message: 'Rename ' + oldName + ' to ' + newName, content: data.content, branch: GH_BRANCH })
+      }).then(function(r) { if (!r.ok) throw new Error('作成失敗'); return data.sha; });
+    })
+    .then(function(oldSha) {
+      // 旧ファイル削除
+      return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + oldPath, {
+        method: 'DELETE',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ message: 'Delete renamed file ' + oldName, sha: oldSha, branch: GH_BRANCH })
+      });
+    })
+    .then(function() { showToast('✅ ' + oldName + ' → ' + newName + ' に変更しました', true); wmLoadIllust(); })
+    .catch(function(e) { showToast('❌ 名前変更失敗: ' + e.message, false); });
+}
+
+// 画像差し替え
+function wmReplaceImg(fileName, sha) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = function() {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      var base64 = reader.result.split(',')[1];
+      var path = 'assets/images/word/' + fileName;
+      fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ message: 'Replace word image: ' + fileName, content: base64, sha: sha, branch: GH_BRANCH })
+      })
+      .then(function(r) { if (!r.ok) throw new Error('アップロード失敗'); return r.json(); })
+      .then(function() { showToast('✅ ' + fileName + ' を差し替えました', true); wmLoadIllust(); })
+      .catch(function(e) { showToast('❌ 差し替え失敗: ' + e.message, false); });
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+// 画像削除
+function wmDeleteImg(fileName, sha) {
+  if (!confirm(fileName + ' を削除しますか？\nこの操作は取り消せません。')) return;
+  var path = 'assets/images/word/' + fileName;
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+    method: 'DELETE',
+    headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ message: 'Delete word image: ' + fileName, sha: sha, branch: GH_BRANCH })
+  })
+  .then(function(r) { if (!r.ok) throw new Error('削除失敗'); })
+  .then(function() { showToast('✅ ' + fileName + ' を削除しました', true); wmLoadIllust(); })
+  .catch(function(e) { showToast('❌ 削除失敗: ' + e.message, false); });
+}
+
+// 新規アップロード
+function wmUploadNew() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = function() {
+    var files = Array.from(input.files);
+    if (!files.length) return;
+    var done = 0;
+    var failed = 0;
+    files.forEach(function(file) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        var base64 = reader.result.split(',')[1];
+        var path = 'assets/images/word/' + file.name;
+        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+          method: 'PUT',
+          headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ message: 'Add word image: ' + file.name, content: base64, branch: GH_BRANCH })
+        })
+        .then(function(r) { if (!r.ok) throw new Error('失敗'); done++; })
+        .catch(function() { failed++; })
+        .then(function() {
+          if (done + failed === files.length) {
+            showToast('✅ ' + done + '件アップロード' + (failed ? ' / ' + failed + '件失敗' : ''), done > 0);
+            wmLoadIllust();
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
 }
 
 // ════════════════════════════════════════════════════════════════
