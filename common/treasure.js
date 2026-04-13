@@ -166,41 +166,39 @@
     return 'assets/sounds/se/';
   }
 
-  // iOS: ユーザータッチでAudio要素を事前アンロック
+  // iOS: ユーザータッチで無音再生してAudio要素をアンロック
   var _fanfareAudio = null;
   var _fanfareUnlocked = false;
-  function _ensureFanfareAudio() {
-    if (!_fanfareAudio) {
-      _fanfareAudio = new Audio();
-      _fanfareAudio.preload = 'auto';
-    }
-    return _fanfareAudio;
-  }
+  var SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
   function _unlockFanfare() {
     if (_fanfareUnlocked) return;
-    var a = _ensureFanfareAudio();
-    a.src = _getSoundBasePath() + 'TreasureBox.mp3';
-    a.volume = 0.01;
-    var p = a.play();
+    if (!_fanfareAudio) _fanfareAudio = new Audio();
+    _fanfareAudio.src = SILENT_WAV;
+    _fanfareAudio.volume = 0;
+    var p = _fanfareAudio.play();
     if (p && typeof p.then === 'function') {
-      p.then(function() { a.pause(); a.currentTime = 0; a.volume = 1; _fanfareUnlocked = true; })
-       .catch(function() {});
+      p.then(function() {
+        _fanfareAudio.pause();
+        _fanfareUnlocked = true;
+        document.removeEventListener('touchstart', _unlockFanfare);
+        document.removeEventListener('click', _unlockFanfare);
+      }).catch(function() {});
     }
   }
-  document.addEventListener('touchstart', _unlockFanfare, { passive: true, once: false });
+  document.addEventListener('touchstart', _unlockFanfare, { passive: true });
   document.addEventListener('click', _unlockFanfare);
 
   function _playFanfare() {
     try {
-      var a = _ensureFanfareAudio();
-      a.src = _getSoundBasePath() + 'TreasureBox.mp3';
-      a.volume = 1;
-      a.currentTime = 0;
-      var p = a.play();
+      if (!_fanfareAudio) _fanfareAudio = new Audio();
+      _fanfareAudio.src = _getSoundBasePath() + 'TreasureBox.mp3';
+      _fanfareAudio.volume = 1;
+      _fanfareAudio.currentTime = 0;
+      var p = _fanfareAudio.play();
       if (p && typeof p.then === 'function') {
         p.catch(function(e) { console.warn('[treasure] fanfare play failed:', e); });
       }
-    } catch(e) { console.warn('[treasure] fanfare error:', e); }
+    } catch(e) {}
   }
 
   // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────

@@ -1523,24 +1523,22 @@
 
       // ── スタンプ音（MP3）──
       var _stampAudio = null;
-      var _stampAudioUnlocked = false;
-      function _ensureStampAudio() {
-        if (!_stampAudio) {
-          _stampAudio = new Audio();
-          _stampAudio.preload = 'auto';
-        }
-        return _stampAudio;
-      }
-      // iOS: ユーザータッチでAudio要素を事前アンロック
+      var _stampUnlocked = false;
+      var SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+      // iOS: ユーザータッチで無音再生してAudio要素をアンロック
       function _unlockStampAudio() {
-        if (_stampAudioUnlocked) return;
-        var a = _ensureStampAudio();
-        a.src = 'assets/sounds/se/common/success.mp3';
-        a.volume = 0.01;
-        var p = a.play();
+        if (_stampUnlocked) return;
+        if (!_stampAudio) _stampAudio = new Audio();
+        _stampAudio.src = SILENT_WAV;
+        _stampAudio.volume = 0;
+        var p = _stampAudio.play();
         if (p && typeof p.then === 'function') {
-          p.then(function() { a.pause(); a.currentTime = 0; a.volume = 1; _stampAudioUnlocked = true; })
-           .catch(function() {});
+          p.then(function() {
+            _stampAudio.pause();
+            _stampUnlocked = true;
+            document.removeEventListener('touchstart', _unlockStampAudio);
+            document.removeEventListener('click', _unlockStampAudio);
+          }).catch(function() {});
         }
       }
       document.addEventListener('touchstart', _unlockStampAudio, { passive: true });
@@ -1548,15 +1546,15 @@
 
       function _playStampPop() {
         try {
-          var a = _ensureStampAudio();
-          a.src = 'assets/sounds/se/common/success.mp3';
-          a.volume = 1;
-          a.currentTime = 0;
-          var p = a.play();
+          if (!_stampAudio) _stampAudio = new Audio();
+          _stampAudio.src = 'assets/sounds/se/common/success.mp3';
+          _stampAudio.volume = 1;
+          _stampAudio.currentTime = 0;
+          var p = _stampAudio.play();
           if (p && typeof p.then === 'function') {
             p.catch(function(e) { console.warn('[stamp] sound play failed:', e); });
           }
-        } catch(e) { console.warn('[stamp] sound error:', e); }
+        } catch(e) {}
       }
 
       // ── Constants ──
