@@ -1569,8 +1569,14 @@
       var CARD_SLOT_REWARDS = {
         1:  { icon: '🎁', name: 'デコボックス', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png',
               afterMsg: 'かぐを てに いれたら\nじぶんの おへやを\nアレンジできるよ！' },
-        5:  { icon: '🛏️', name: 'ベッド', type: 'furn', id: 'furn_bed_A', img: 'assets/images/Rooms/furnitures_final/bed_A_01.png',
-              unlockRoom: true },
+        5:  (function() {
+              var g = 'boy';
+              try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
+              var afterMsg = 'ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！';
+              return g === 'girl'
+                ? { icon: '🛏️', name: 'ピンクベッド', type: 'furn', id: 'furn_bed_pink', img: 'assets/images/Rooms/furnitures_final/bed_pink_A.png', unlockRoom: true, afterMsg: afterMsg }
+                : { icon: '🛏️', name: 'きのベッド',   type: 'furn', id: 'furn_bed_blue_boy', img: 'assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png', unlockRoom: true, afterMsg: afterMsg };
+            })(),
         10: (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
