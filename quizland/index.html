@@ -261,6 +261,7 @@ body {
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   pointer-events: none;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
 }
 .feedback.show { transform: translate(-50%, -50%) scale(1); }
 
@@ -870,6 +871,12 @@ function onChoice(idx, btn) {
     launchConfetti();
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
+    // スタンプラリー: プレイ記録
+    (function() {
+      var k = 'pono_played_' + new Date().toDateString();
+      var a = JSON.parse(localStorage.getItem(k) || '[]');
+      if (a.indexOf('quizland') === -1) { a.push('quizland'); localStorage.setItem(k, JSON.stringify(a)); }
+    })();
     var infoText = currentQ.detail || currentQ.hint || null;
     if (infoText) {
       setTimeout(() => showDetail(infoText), 600);

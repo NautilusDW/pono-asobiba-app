@@ -160,7 +160,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'vehicle', img:'Cruise_ship/Cruise_ship_normal_1.png', q:'これは なに？', answer:2, choices:['ボート','ヨット','きゃくせん','カヌー'] },
     { level:2, type:'emoji_name', category:'vehicle', img:'Rocket/Rocket_normal_1.png', q:'これは なに？', answer:0, choices:['ロケット','ひこうき','UFO','たこあげ'] },
     { level:2, type:'emoji_name', category:'vehicle', img:'Ambulance/Ambulance_normal_1.png', q:'これは なに？', answer:2, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','トラック'] },
-    { level:2, type:'emoji_name', category:'vehicle', emoji:'🚓', q:'これは なに？', answer:1, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','バス'] },
+    { level:2, type:'emoji_name', category:'vehicle', img:'Police_car/Police_car_normal_1.png', q:'これは なに？', answer:1, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','バス'] },
     { level:3, type:'emoji_name', category:'vehicle', img:'Helicopter/Helicopter_normal_1.png', q:'これは なに？', answer:0, choices:['ヘリコプター','ひこうき','ロケット','グライダー'] },
     { level:3, type:'emoji_name', category:'vehicle', img:'Tractor/Tractor_normal_1.png', q:'これは なに？', answer:1, choices:['くるま','トラクター','トラック','バス'] },
     { level:3, type:'emoji_name', category:'vehicle', img:'Sailboat/Sailboat_normal_1.png', q:'これは なに？', answer:2, choices:['ふね','ボート','ヨット','カヌー'] },
