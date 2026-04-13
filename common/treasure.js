@@ -365,7 +365,7 @@
           _showReward();
         }, { once: true });
         var dur = capturedVideo.duration;
-        var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 5000;
+        var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 200) : 5000;
         _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
       }
 

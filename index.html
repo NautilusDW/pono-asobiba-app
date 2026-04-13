@@ -2427,53 +2427,79 @@
         }
       }
 
-      // スタンプ押し演出モーダル（現在の段の5マスを表示）
-      // autoPlay=true: ボタンなしで自動アニメーション（2枚目以降）
-      function showStampModal(total, onDone, reasonText, autoPlay) {
-        var cardNum = getCardNum(total);
-        var filled = getFilledInCard(total);
-        var posInCard = filled - 1; // 0-based index of the newly stamped slot
-        var currentRow = Math.floor(posInCard / SLOTS_PER_ROW);
-        var rowStart = currentRow * SLOTS_PER_ROW;
+      // スタンプ押し演出モーダル（複数スタンプを1つのモーダル内で連続アニメーション）
+      // stampInfos: [{ total, text }, ...] — 1個でも配列で渡す
+      function showStampBatch(stampInfos, onAllDone) {
+        var count = stampInfos.length;
+        if (count === 0) { if (onAllDone) onAllDone(); return; }
+
+        var firstInfo = stampInfos[0];
+        var lastInfo = stampInfos[count - 1];
+        var cardNum = getCardNum(firstInfo.total);
+
+        // 最初のスタンプの行を表示
+        var firstPosInCard = getFilledInCard(firstInfo.total) - 1;
+        var displayRow = Math.floor(firstPosInCard / SLOTS_PER_ROW);
+        var rowStart = displayRow * SLOTS_PER_ROW;
+
+        // 各スタンプのカード内位置
+        var stampPositions = stampInfos.map(function(info) {
+          return getFilledInCard(info.total) - 1;
+        });
 
         var ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
 
+        // 理由テキスト
+        function formatReason(text) {
+          return text.split('\n').map(function(line, i) {
+            return '<span style="display:block;' + (i > 0 ? 'font-size:0.78rem;font-weight:700;color:#9C8070;margin-top:2px;' : '') + '">' + line + '</span>';
+          }).join('');
+        }
+
         var cardHtml = '<div style="background:#FFF8E8;border-radius:16px;padding:16px 20px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">';
-        // Reason text (supports \n for multiline)
-        var rText = reasonText || getStampReasonText(total);
-        var rHtml = rText.split('\n').map(function(line, i) {
-          return '<span style="display:block;' + (i > 0 ? 'font-size:0.78rem;font-weight:700;color:#9C8070;margin-top:2px;' : '') + '">' + line + '</span>';
-        }).join('');
-        cardHtml += '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;white-space:normal;">' + rHtml + '</div>';
+        cardHtml += '<div id="stamp-b-reason" style="font-size:0.95rem;font-weight:900;color:#5D4E37;margin-bottom:8px;white-space:normal;">' + formatReason(firstInfo.text) + '</div>';
         cardHtml += '<div style="font-size:0.8rem;font-weight:700;color:#F2915A;margin-bottom:10px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>';
         cardHtml += '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px;">';
+
         for (var i = 0; i < SLOTS_PER_ROW; i++) {
           var globalIdx = rowStart + i;
-          var isFilled = globalIdx < posInCard;
-          var isNew = globalIdx === posInCard;
-          if (isFilled) {
+          var slotNum = globalIdx + 1;
+          var batchIdx = stampPositions.indexOf(globalIdx);
+          var isPreFilled = globalIdx < firstPosInCard;
+
+          if (isPreFilled) {
             cardHtml += '<div style="width:44px;height:44px;border-radius:50%;background:#E8F5E9;border:2px solid #66BB6A;display:flex;align-items:center;justify-content:center;"><img src="' + PONO_ICON + '" style="width:34px;height:34px;border-radius:50%;"></div>';
-          } else if (isNew) {
-            cardHtml += '<div id="stamp-new-slot" style="width:44px;height:44px;border-radius:50%;background:#FFF3CD;border:3px solid #FFD700;display:flex;align-items:center;justify-content:center;transition:box-shadow 0.5s;"><img src="' + PONO_ICON + '" style="width:34px;height:34px;border-radius:50%;opacity:0;transform:scale(3) rotate(-20deg);" id="stamp-new-icon"></div>';
+          } else if (batchIdx >= 0) {
+            cardHtml += '<div id="stamp-b-slot-' + batchIdx + '" style="width:44px;height:44px;border-radius:50%;background:#FFF3CD;border:3px solid #FFD700;display:flex;align-items:center;justify-content:center;transition:box-shadow 0.5s;"><img src="' + PONO_ICON + '" style="width:34px;height:34px;border-radius:50%;opacity:0;transform:scale(3) rotate(-20deg);" id="stamp-b-icon-' + batchIdx + '"></div>';
           } else {
-            var slotNum = globalIdx + 1;
             cardHtml += '<div style="width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.08);border:2px solid rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:#bbb;font-weight:700;">' + String(slotNum).padStart(2,'0') + '</div>';
           }
         }
         cardHtml += '</div>';
-        cardHtml += '<div id="stamp-msg" style="font-size:1.1rem;font-weight:900;color:#F2915A;opacity:0;transition:opacity 0.3s;">ポン！✨</div>';
-        // autoPlay=false の場合のみ「うけとる！」ボタンを表示
-        if (!autoPlay) {
-          cardHtml += '<button id="stamp-receive-btn" style="margin-top:10px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(245,168,0,0.4);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
-        }
+        cardHtml += '<div id="stamp-b-msg" style="font-size:1.1rem;font-weight:900;color:#F2915A;opacity:0;transition:opacity 0.3s;">ポン！✨</div>';
+        cardHtml += '<button id="stamp-b-btn" style="margin-top:10px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 3px 12px rgba(245,168,0,0.4);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
         cardHtml += '</div>';
+
         ov.innerHTML = cardHtml;
         document.body.appendChild(ov);
 
-        function _runStampAnim() {
-          setTimeout(function() {
-            var icon = document.getElementById('stamp-new-icon');
+        document.getElementById('stamp-b-btn').addEventListener('click', function() {
+          _resumeAC();
+          this.style.display = 'none';
+
+          function animateNext(idx) {
+            if (idx >= count) {
+              setTimeout(function() {
+                ov.remove();
+                if (onAllDone) onAllDone();
+              }, 1200);
+              return;
+            }
+            // 理由テキスト更新
+            document.getElementById('stamp-b-reason').innerHTML = formatReason(stampInfos[idx].text);
+
+            var icon = document.getElementById('stamp-b-icon-' + idx);
             if (icon) {
               icon.style.transition = 'none';
               icon.style.opacity = '1';
@@ -2483,34 +2509,20 @@
                 icon.style.transform = 'scale(1) rotate(0)';
               });
             }
-            var slot = document.getElementById('stamp-new-slot');
+            var slot = document.getElementById('stamp-b-slot-' + idx);
             if (slot) slot.style.animation = 'stampSlotGlow 0.8s ease-out forwards';
-            setTimeout(function() {
-              var msg = document.getElementById('stamp-msg');
-              if (msg) msg.style.opacity = '1';
-            }, 300);
+            var msg = document.getElementById('stamp-b-msg');
+            if (msg) msg.style.opacity = '1';
             _playStampPop();
-          }, 300);
-          setTimeout(function() {
-            ov.remove();
-            if (onDone) onDone();
-          }, 2500);
-        }
 
-        if (autoPlay) {
-          // 自動再生モード（AudioContext既にアンロック済み）
-          _runStampAnim();
-        } else {
-          // 「うけとる！」ボタンで開始（AudioContextアンロック）
-          var receiveBtn = document.getElementById('stamp-receive-btn');
-          if (receiveBtn) {
-            receiveBtn.addEventListener('click', function() {
-              _resumeAC();
-              receiveBtn.style.display = 'none';
-              _runStampAnim();
-            });
+            setTimeout(function() {
+              if (msg && idx < count - 1) msg.style.opacity = '0';
+              setTimeout(function() { animateNext(idx + 1); }, 200);
+            }, 700);
           }
-        }
+
+          setTimeout(function() { animateNext(0); }, 300);
+        });
       }
 
       // ── 4. Init & Event Wiring ──
@@ -2552,32 +2564,18 @@
           }
         }
 
-        // スタンプを1つずつ順番に表示
-        function showNextStamp(idx) {
-          if (idx >= stampReasons.length) {
-            // 全スタンプ表示完了 → 報酬チェック
-            setTimeout(function() { checkSlotReward(finalTotal); }, 500);
-            _stampTotalAfterInit = finalTotal;
-            localStorage.setItem('pono_stamp_before', String(finalTotal));
-            return;
-          }
-          var info = stampReasons[idx];
-          var isFirst = (idx === 0);
-          setTimeout(function() {
-            showStampModal(info.total, function() {
-              animateStamp(info.total);
-              showNextStamp(idx + 1);
-            }, info.text, !isFirst);
-          }, isFirst ? 500 : 300);
-        }
+        _stampTotalAfterInit = finalTotal;
+        localStorage.setItem('pono_stamp_before', String(finalTotal));
 
         if (stampReasons.length > 0) {
-          showNextStamp(0);
+          setTimeout(function() {
+            showStampBatch(stampReasons, function() {
+              stampReasons.forEach(function(info) { animateStamp(info.total); });
+              setTimeout(function() { checkSlotReward(finalTotal); }, 500);
+            });
+          }, 500);
         } else {
-          // スタンプ増加なし
           setTimeout(function() { checkSlotReward(finalTotal); }, 500);
-          _stampTotalAfterInit = finalTotal;
-          localStorage.setItem('pono_stamp_before', String(finalTotal));
         }
       };
 
@@ -2628,21 +2626,12 @@
               }
             }
 
-            function showVisNext(idx) {
-              if (idx >= stamps.length) {
+            setTimeout(function() {
+              showStampBatch(stamps, function() {
+                stamps.forEach(function(info) { animateStamp(info.total); });
                 setTimeout(function() { checkSlotReward(now); }, 500);
-                return;
-              }
-              var info = stamps[idx];
-              var isFirst = (idx === 0);
-              setTimeout(function() {
-                showStampModal(info.total, function() {
-                  animateStamp(info.total);
-                  showVisNext(idx + 1);
-                }, info.text, !isFirst);
-              }, isFirst ? 500 : 300);
-            }
-            showVisNext(0);
+              });
+            }, 500);
           } else {
             _stampTotalAfterInit = now;
           }
