@@ -50,31 +50,6 @@
     "_duplicateOf": "dragonfly_insect"
   },
   {
-    "id": "rainbow_arc",
-    "displayName": "にじ",
-    "icon": "Ã°ÂÂÂ",
-    "folder": "Rainbow_arc",
-    "expressions": {
-      "normal": "Rainbow_arc_normal_1.png",
-      "surprised": "Rainbow_arc_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 289,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:05:02.872Z",
-    "_duplicateOf": "rainbow_arc"
-  },
-  {
     "id": "wind_gust",
     "displayName": "かぜ",
     "icon": "Ã°ÂÂÂ¬Ã¯Â¸Â",
@@ -423,81 +398,6 @@
     "_staging": true,
     "_stagedAt": "2026-04-10T11:07:59.526Z",
     "_duplicateOf": "sun_face"
-  },
-  {
-    "id": "rain",
-    "displayName": "あめ",
-    "icon": "âï¸",
-    "folder": "Rain",
-    "expressions": {
-      "normal": "Rain_normal_1.png",
-      "surprised": "Rain_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 277,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:08:02.132Z",
-    "_duplicateOf": "rain"
-  },
-  {
-    "id": "thunder",
-    "displayName": "かみなり",
-    "icon": "âï¸",
-    "folder": "Thunder",
-    "expressions": {
-      "normal": "Thunder_normal_1.png",
-      "surprised": "Thunder_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 277,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:08:04.442Z",
-    "_duplicateOf": "thunder"
-  },
-  {
-    "id": "snow",
-    "displayName": "ゆき",
-    "icon": "âï¸",
-    "folder": "Snow",
-    "expressions": {
-      "normal": "Snow_normal_1.png",
-      "surprised": "Snow_normal_1.png"
-    },
-    "pattern": "swim",
-    "reactionType": "jump",
-    "facingDir": "right",
-    "baseSizePx": 70,
-    "baseSizeJitter": 30,
-    "imgWidthHint": 275,
-    "speedMin": 0.04,
-    "speedMax": 0.07,
-    "spawnCount": 3,
-    "reactionSpeed": 1,
-    "reactionDuration": 1,
-    "rewardType": "sea",
-    "_staging": true,
-    "_stagedAt": "2026-04-10T11:08:06.922Z",
-    "_duplicateOf": "snow"
   },
   {
     "id": "rainbow_arc",
