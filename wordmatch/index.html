@@ -45,6 +45,176 @@ body {
   padding-top: 48px;
 }
 
+.hidden { display: none !important; }
+
+/* ===== Difficulty Select Screen ===== */
+#difficulty-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 380px;
+  padding-top: 20px;
+}
+
+.diff-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+  text-align: center;
+}
+
+.diff-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.diff-card {
+  background: #fff;
+  border-radius: 20px;
+  border: 3px solid #FDE68A;
+  box-shadow: 0 4px 16px var(--shadow);
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diff-card:active {
+  transform: scale(0.96);
+}
+
+.diff-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.diff-card-stars {
+  font-size: 1.4rem;
+}
+
+.diff-card-name {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.diff-card-desc {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-left: 2px;
+}
+
+.diff-card-progress {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-top: 4px;
+}
+
+/* ===== Stage Select Screen ===== */
+#stage-select-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 400px;
+  padding-top: 10px;
+}
+
+.stage-select-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+}
+
+.stage-select-back {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 50px;
+  background: rgba(255,255,255,0.8);
+  border: 2px solid #ddd;
+  color: var(--text-light);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stage-select-back:active { transform: scale(0.95); }
+
+.stage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.stage-item {
+  background: #fff;
+  border-radius: 16px;
+  border: 2.5px solid #FDE68A;
+  box-shadow: 0 3px 12px var(--shadow);
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-item:active { transform: scale(0.97); }
+
+.stage-item.cleared {
+  border-color: #34D399;
+  background: #F0FFF4;
+}
+
+.stage-item.current {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(242,145,90,0.2), 0 3px 12px var(--shadow);
+}
+
+.stage-item-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.stage-item.cleared .stage-item-num {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.stage-item-name {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--text);
+  flex: 1;
+}
+
+.stage-item-status {
+  font-size: 1.2rem;
+}
+
 /* ===== Header ===== */
 .header {
   text-align: center;
@@ -264,6 +434,22 @@ body {
 }
 .modal-btn:active { transform: scale(0.95); }
 
+.modal-btn-secondary {
+  margin-top: 4px;
+  padding: 10px 28px;
+  border: 2px solid #ddd;
+  border-radius: 50px;
+  background: rgba(255,255,255,0.9);
+  color: var(--text-light);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s;
+  width: 100%; max-width: 240px;
+}
+.modal-btn-secondary:active { transform: scale(0.95); }
+
 /* ===== Confetti ===== */
 #confetti-container {
   position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden;
@@ -469,6 +655,47 @@ body {
 }
 .tut-next-btn:active { transform: scale(0.95); }
 
+/* ===== Game screen back button ===== */
+.game-back-btn {
+  position: fixed;
+  top: 52px;
+  right: 12px;
+  z-index: 50;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 50px;
+  background: rgba(255,255,255,0.8);
+  border: 2px solid #ddd;
+  color: var(--text-light);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.game-back-btn:active { transform: scale(0.95); }
+
+/* ===== All-clear screen ===== */
+.allclear-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 30px;
+  text-align: center;
+}
+.allclear-emoji { font-size: 4rem; }
+.allclear-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: 2px 2px 0 var(--primary-light);
+}
+.allclear-msg {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
 /* ===== Landscape layout ===== */
 @media (orientation: landscape) {
   html { height: 100dvh; overflow: hidden;
@@ -545,34 +772,76 @@ body {
 
 <audio id="bgm" loop src="../assets/audio/wordmatch_bgm.mp3" preload="auto"></audio>
 
-<header class="header">
-  <h1>ことばあわせ</h1>
-</header>
-
-<div class="stage-info">
-  <p class="stage-name" id="stage-name">どうぶつ 🐾</p>
-  <p class="stage-num" id="stage-num">ステージ 1 / 8</p>
-</div>
-
-<!-- Tutorial elements (step-by-step, 初回のみ) -->
-<div class="tut-dim hidden" id="tut-dim"></div>
-<div class="tut-bubble hidden" id="tut-bubble"></div>
-
-<div class="game-row" id="game-area">
-  <div class="pic-grid" id="pic-grid"></div>
-  <div class="word-tray-wrap" id="word-tray-wrap">
-    <p class="word-tray-title">えにあう ことばを タップ！</p>
-    <div class="word-tray" id="word-tray"></div>
+<!-- ===== 難易度選択画面 ===== -->
+<div id="difficulty-screen">
+  <header class="header">
+    <h1>ことばあわせ</h1>
+  </header>
+  <div class="diff-title">あそびかたを えらんでね！</div>
+  <div class="diff-cards">
+    <div class="diff-card" id="diff-easy">
+      <div class="diff-card-header">
+        <span class="diff-card-stars">⭐</span>
+        <span class="diff-card-name">かんたん</span>
+      </div>
+      <div class="diff-card-desc">えと ことばを あわせよう！</div>
+      <div class="diff-card-progress" id="diff-easy-progress"></div>
+    </div>
+    <div class="diff-card" id="diff-normal">
+      <div class="diff-card-header">
+        <span class="diff-card-stars">⭐⭐</span>
+        <span class="diff-card-name">ふつう</span>
+      </div>
+      <div class="diff-card-desc">マッチ + もじクロス！</div>
+      <div class="diff-card-progress" id="diff-normal-progress"></div>
+    </div>
   </div>
 </div>
 
-<!-- Stage complete modal -->
-<div id="success-modal" class="modal-overlay hidden">
-  <div class="modal-content">
-    <p class="modal-emoji" id="modal-emoji">🎉</p>
-    <p class="modal-title" id="modal-title">ステージ 1 クリア！</p>
-    <p class="modal-msg" id="modal-msg">すごい！ぜんぶあったよ！</p>
-    <button class="modal-btn" id="modal-btn">つぎへ →</button>
+<!-- ===== ステージ選択画面 ===== -->
+<div id="stage-select-screen" class="hidden">
+  <header class="header">
+    <h1>ことばあわせ</h1>
+  </header>
+  <div class="stage-select-title" id="stage-select-title">ステージ</div>
+  <button class="stage-select-back" id="stage-select-back">← もどる</button>
+  <div class="stage-list" id="stage-list"></div>
+</div>
+
+<!-- ===== ゲーム画面 ===== -->
+<div id="game-screen" class="hidden">
+  <header class="header">
+    <h1>ことばあわせ</h1>
+  </header>
+
+  <div class="stage-info">
+    <p class="stage-name" id="stage-name"></p>
+    <p class="stage-num" id="stage-num"></p>
+  </div>
+
+  <!-- Tutorial elements (step-by-step, 初回のみ) -->
+  <div class="tut-dim hidden" id="tut-dim"></div>
+  <div class="tut-bubble hidden" id="tut-bubble"></div>
+
+  <button class="game-back-btn" id="game-back-btn">もどる</button>
+
+  <div class="game-row" id="game-area">
+    <div class="pic-grid" id="pic-grid"></div>
+    <div class="word-tray-wrap" id="word-tray-wrap">
+      <p class="word-tray-title">えにあう ことばを タップ！</p>
+      <div class="word-tray" id="word-tray"></div>
+    </div>
+  </div>
+
+  <!-- Stage complete modal -->
+  <div id="success-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <p class="modal-emoji" id="modal-emoji">🎉</p>
+      <p class="modal-title" id="modal-title">ステージ クリア！</p>
+      <p class="modal-msg" id="modal-msg">すごい！ぜんぶあったよ！</p>
+      <button class="modal-btn" id="modal-btn">つぎへ →</button>
+      <button class="modal-btn-secondary hidden" id="modal-btn2"></button>
+    </div>
   </div>
 </div>
 
@@ -624,14 +893,16 @@ const STAGES = [
     { img: W+'hoshi.png', word: 'ほし' },
     { img: W+'tsuki.png', word: 'つき' },
   ]},
+  { name: 'のりもの2', pairs: [
+    { img: W+'taxi.png', word: 'タクシー' },
+    { img: W+'bus.png', word: 'バス' },
+    { img: W+'jitensha.png', word: 'じてんしゃ' },
+    { img: W+'helicopter.png', word: 'ヘリコプター' },
+  ]},
 ];
 
 // ===== Crossword puzzles =====
-// vEmoji/hEmoji: 5秒後にヒントとして表示する絵文字
-// 選択肢チェック済み: どのdistractorも縦横両方で有効な単語にならないことを確認
-// vImg/hImg: ヒント用画像パス
 const CROSSWORDS = [
-  // --- かんたん: ひらがな2文字 ---
   { vWord: 'いぬ', hWord: 'いか', shared: 'い', vIdx: 0, hIdx: 0, distractors: ['う', 'お', 'え'], vImg: W+'inu.png', hImg: W+'ika.png' },
   { vWord: 'ねこ', hWord: 'こま', shared: 'こ', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'く'], vImg: W+'neko.png', hImg: W+'koma.png' },
   { vWord: 'はな', hWord: 'なつ', shared: 'な', vIdx: 1, hIdx: 0, distractors: ['に', 'ほ', 'の'], vImg: W+'hana.png', hImg: W+'natsu.png' },
@@ -640,7 +911,6 @@ const CROSSWORDS = [
   { vWord: 'ほし', hWord: 'しか', shared: 'し', vIdx: 1, hIdx: 0, distractors: ['す', 'せ', 'ち'], vImg: W+'hoshi.png', hImg: W+'shika.png' },
   { vWord: 'かに', hWord: 'にく', shared: 'に', vIdx: 1, hIdx: 0, distractors: ['ぬ', 'の', 'ね'], vImg: W+'kani.png', hImg: W+'niku.png' },
   { vWord: 'さる', hWord: 'くさ', shared: 'さ', vIdx: 0, hIdx: 1, distractors: ['す', 'せ', 'ぬ'], vImg: W+'saru.png', hImg: W+'kusa.png' },
-  // --- ふつう: ひらがな2-3文字 ---
   { vWord: 'さくら', hWord: 'くるま', shared: 'く', vIdx: 1, hIdx: 0, distractors: ['け', 'き', 'か'], vImg: W+'sakura.png', hImg: W+'kuruma.png' },
   { vWord: 'たまご', hWord: 'やま',   shared: 'ま', vIdx: 1, hIdx: 1, distractors: ['む', 'め', 'も'], vImg: W+'tamago.png', hImg: W+'yama.png' },
   { vWord: 'すいか', hWord: 'いちご', shared: 'い', vIdx: 1, hIdx: 0, distractors: ['う', 'え', 'お'], vImg: W+'suika.png', hImg: W+'ichigo.png' },
@@ -649,7 +919,6 @@ const CROSSWORDS = [
   { vWord: 'つくえ', hWord: 'ふくろ', shared: 'く', vIdx: 1, hIdx: 1, distractors: ['き', 'こ', 'か'], vImg: W+'tsukue.png', hImg: W+'fukuro.png' },
   { vWord: 'とけい', hWord: 'けむり', shared: 'け', vIdx: 1, hIdx: 0, distractors: ['き', 'く', 'こ'], vImg: W+'tokei.png', hImg: W+'kemuri.png' },
   { vWord: 'りんご', hWord: 'みんな', shared: 'ん', vIdx: 1, hIdx: 1, distractors: ['の', 'そ', 'わ'], vImg: W+'ringo.png', hImg: W+'minna.png' },
-  // --- むずかしめ: カタカナだけ ---
   { vWord: 'トマト', hWord: 'クマ',     shared: 'マ', vIdx: 1, hIdx: 1, distractors: ['ミ', 'ム', 'メ'], vImg: W+'tomato.png', hImg: W+'kuma.png' },
   { vWord: 'パンダ', hWord: 'パン',     shared: 'パ', vIdx: 0, hIdx: 0, distractors: ['ポ', 'プ', 'ペ'], vImg: W+'panda.png', hImg: W+'pan.png' },
   { vWord: 'メロン', hWord: 'ロケット', shared: 'ロ', vIdx: 1, hIdx: 0, distractors: ['ル', 'レ', 'ラ'], vImg: W+'melon.png', hImg: W+'rocket.png' },
@@ -660,23 +929,66 @@ const CROSSWORDS = [
   { vWord: 'タイヤ', hWord: 'ライオン', shared: 'イ', vIdx: 1, hIdx: 1, distractors: ['ウ', 'エ', 'ア'], vImg: W+'taiya.png', hImg: W+'lion.png' },
 ];
 
-// ===== State =====
-let currentStageNum = 0;
-let shuffledOrder   = [];
-let matchedCount    = 0;
-let selectedCard    = null;
-let selectedPicIdx  = null;
-
-// Stage type schedule: 'match' or 'cross', 3 each alternating
-let crossPool = [];
-let crossIdx  = 0;
-let hintTimer = null;
+// ===== Game State =====
+let currentDifficulty = null; // 'easy' or 'normal'
+let currentStageIdx   = 0;   // index within the difficulty's stages
+let currentQuestionIdx = 0;  // question index within current stage
+let matchedCount      = 0;
+let selectedCard      = null;
+let selectedPicIdx    = null;
+let hintTimer         = null;
 let currentCrossPuzzle = null;
+let playRecorded      = false;
 
-function getStageType(num) {
-  // 0-2: match, 3-5: cross, 6-8: match, 9-11: cross, ...
-  const block = Math.floor(num / 3);
-  return (block % 2 === 0) ? 'match' : 'cross';
+// ===== Progress helpers =====
+function getProgressKey(diff) {
+  return diff === 'easy' ? 'pono_wordmatch_easy' : 'pono_wordmatch_normal';
+}
+function getCleared(diff) {
+  try { return JSON.parse(localStorage.getItem(getProgressKey(diff)) || '[]'); } catch { return []; }
+}
+function markCleared(diff, stageIdx) {
+  const arr = getCleared(diff);
+  if (!arr.includes(stageIdx)) { arr.push(stageIdx); localStorage.setItem(getProgressKey(diff), JSON.stringify(arr)); }
+}
+function getTotalStages(diff) {
+  return diff === 'easy' ? 7 : 8;
+}
+function getFirstUncleared(diff) {
+  const cleared = getCleared(diff);
+  const total = getTotalStages(diff);
+  for (let i = 0; i < total; i++) { if (!cleared.includes(i)) return i; }
+  return 0; // all cleared, start from 0
+}
+
+// ===== Stage config builders =====
+// かんたん: STAGES[0..6], match only, 4 questions each
+// ふつう: STAGES[0..7], match 4 + cross 3 = 7 questions each
+function getStageQuestions(diff, stageIdx) {
+  const questions = [];
+  if (diff === 'easy') {
+    // 4 match questions
+    const stage = STAGES[stageIdx];
+    questions.push({ type: 'match', data: stage });
+  } else {
+    // Normal: 4 match + 3 cross
+    const stage = STAGES[stageIdx];
+    questions.push({ type: 'match', data: stage });
+    // crossword: 3 per stage, sequential from CROSSWORDS
+    const crossStart = stageIdx * 3;
+    for (let i = 0; i < 3; i++) {
+      const ci = crossStart + i;
+      if (ci < CROSSWORDS.length) {
+        questions.push({ type: 'cross', data: CROSSWORDS[ci] });
+      }
+    }
+  }
+  return questions;
+}
+
+function getStageName(diff, stageIdx) {
+  if (diff === 'easy') return STAGES[stageIdx].name;
+  return STAGES[stageIdx].name;
 }
 
 // ===== Shuffle helper =====
@@ -689,60 +1001,131 @@ function shuffle(arr) {
   return a;
 }
 
-// ===== Match stage data helpers =====
-let matchStageCounter = 0;
-
-function getMatchStageData() {
-  const idx = matchStageCounter % STAGES.length;
-  matchStageCounter++;
-  return STAGES[shuffledOrder[idx % shuffledOrder.length]];
+// ===== Screen navigation =====
+function showScreen(id) {
+  ['difficulty-screen', 'stage-select-screen', 'game-screen'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
 }
 
-function generateMixedStage() {
-  // Pick 4 pairs from different categories for variety
-  const cats = shuffle([...STAGES]);
-  const pairs = [];
-  // Take 1 pair from each of 4 different categories
-  for (let i = 0; i < 4 && i < cats.length; i++) {
-    const catPairs = shuffle([...cats[i].pairs]);
-    pairs.push(catPairs[0]);
+// ===== Difficulty screen =====
+function showDifficultyScreen() {
+  updateDifficultyProgress();
+  showScreen('difficulty-screen');
+}
+
+function updateDifficultyProgress() {
+  const easyCl = getCleared('easy').length;
+  const easyTotal = getTotalStages('easy');
+  const ep = document.getElementById('diff-easy-progress');
+  ep.textContent = easyCl > 0 ? `${easyCl} / ${easyTotal} クリア` : '';
+
+  const normalCl = getCleared('normal').length;
+  const normalTotal = getTotalStages('normal');
+  const np = document.getElementById('diff-normal-progress');
+  np.textContent = normalCl > 0 ? `${normalCl} / ${normalTotal} クリア` : '';
+}
+
+document.getElementById('diff-easy').addEventListener('click', () => {
+  currentDifficulty = 'easy';
+  showStageSelectScreen();
+});
+document.getElementById('diff-normal').addEventListener('click', () => {
+  currentDifficulty = 'normal';
+  showStageSelectScreen();
+});
+
+// ===== Stage select screen =====
+function showStageSelectScreen() {
+  const title = document.getElementById('stage-select-title');
+  title.textContent = currentDifficulty === 'easy' ? '⭐ かんたん' : '⭐⭐ ふつう';
+
+  const list = document.getElementById('stage-list');
+  list.innerHTML = '';
+  const cleared = getCleared(currentDifficulty);
+  const total = getTotalStages(currentDifficulty);
+  const firstUncleared = getFirstUncleared(currentDifficulty);
+
+  for (let i = 0; i < total; i++) {
+    const item = document.createElement('div');
+    item.className = 'stage-item';
+    const isCleared = cleared.includes(i);
+    if (isCleared) item.classList.add('cleared');
+    if (i === firstUncleared && !cleared.includes(firstUncleared)) item.classList.add('current');
+
+    const catName = getStageName(currentDifficulty, i);
+    item.innerHTML = `
+      <div class="stage-item-num">${i + 1}</div>
+      <div class="stage-item-name">${catName}</div>
+      <div class="stage-item-status">${isCleared ? '✅' : ''}</div>
+    `;
+    item.addEventListener('click', () => startStage(i));
+    list.appendChild(item);
   }
-  return { name: 'ミックス', pairs: shuffle(pairs) };
+
+  showScreen('stage-select-screen');
 }
 
-// ===== Crossword helpers =====
-function getCrosswordData() {
-  if (crossPool.length === 0) crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
-  const puzzle = CROSSWORDS[crossPool[crossIdx % crossPool.length]];
-  crossIdx++;
-  return puzzle;
+document.getElementById('stage-select-back').addEventListener('click', () => {
+  showDifficultyScreen();
+});
+
+// ===== Game screen =====
+document.getElementById('game-back-btn').addEventListener('click', () => {
+  showStageSelectScreen();
+});
+
+function startStage(stageIdx) {
+  currentStageIdx = stageIdx;
+  currentQuestionIdx = 0;
+  playRecorded = false;
+  showScreen('game-screen');
+  loadCurrentQuestion();
 }
 
-// ===== Load stage (dispatcher) =====
-function loadStage(num) {
-  currentStageNum = num;
-  matchedCount    = 0;
-  selectedCard    = null;
-  selectedPicIdx  = null;
+function loadCurrentQuestion() {
+  matchedCount   = 0;
+  selectedCard   = null;
+  selectedPicIdx = null;
   if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
 
-  const type = getStageType(num);
+  const questions = getStageQuestions(currentDifficulty, currentStageIdx);
 
-  if (type === 'cross') {
-    loadCrosswordStage(num);
+  if (currentDifficulty === 'easy') {
+    // Easy: single match stage with 4 pairs, all at once
+    const q = questions[0]; // type: 'match'
+    document.getElementById('stage-name').textContent = q.data.name;
+    document.getElementById('stage-num').textContent = `ステージ ${currentStageIdx + 1}  (${currentQuestionIdx + 1}/${1})`;
+    loadMatchStage(q.data);
   } else {
-    loadMatchStage(num);
+    // Normal: questions[0] = match, questions[1..3] = cross
+    if (currentQuestionIdx === 0) {
+      // Match phase
+      const q = questions[0];
+      const totalQ = questions.length; // 4 (1 match + 3 cross)
+      document.getElementById('stage-name').textContent = q.data.name;
+      document.getElementById('stage-num').textContent = `ステージ ${currentStageIdx + 1}  (${currentQuestionIdx + 1}/${totalQ})`;
+      loadMatchStage(q.data);
+    } else {
+      // Crossword phase
+      const crossQ = questions[currentQuestionIdx]; // questions[1], [2], [3]
+      if (crossQ) {
+        const totalQ = questions.length;
+        document.getElementById('stage-name').textContent = 'もじクロス ✏️';
+        document.getElementById('stage-num').textContent = `ステージ ${currentStageIdx + 1}  (${currentQuestionIdx + 1}/${totalQ})`;
+        loadCrosswordStage(crossQ.data);
+      }
+    }
+  }
+
+  // Tutorial on first ever match stage
+  if (currentQuestionIdx === 0 && !localStorage.getItem('wordmatch_tut_v3')) {
+    setTimeout(showTutorial, 500);
   }
 }
 
 // ===== Load MATCH stage =====
-function loadMatchStage(num) {
-  const stage = matchStageCounter < 8 ? getMatchStageData() : generateMixedStage();
-
-  document.getElementById('stage-name').textContent = stage.name;
-  document.getElementById('stage-num').textContent  = `ステージ ${num + 1}`;
-
-  // Show match UI, hide cross if present
+function loadMatchStage(stage) {
   const area = document.getElementById('game-area');
   area.innerHTML = '';
 
@@ -779,25 +1162,19 @@ function loadMatchStage(num) {
 
   trayWrap.appendChild(tray);
 
-  // 一括表示（逐次描画を防ぐ）
   const frag = document.createDocumentFragment();
   frag.appendChild(picGrid);
   frag.appendChild(trayWrap);
   area.innerHTML = '';
   area.appendChild(frag);
 
-  // Store current stage pairs for match logic
   area.dataset.mode = 'match';
   area._stagePairs = stage.pairs;
 }
 
 // ===== Load CROSSWORD stage =====
-function loadCrosswordStage(num) {
-  const puzzle = getCrosswordData();
+function loadCrosswordStage(puzzle) {
   currentCrossPuzzle = puzzle;
-
-  document.getElementById('stage-name').textContent = 'もじクロス ✏️';
-  document.getElementById('stage-num').textContent  = `ステージ ${num + 1}`;
 
   const area = document.getElementById('game-area');
   area.dataset.mode = 'cross';
@@ -805,15 +1182,13 @@ function loadCrosswordStage(num) {
   const crossArea = document.createElement('div');
   crossArea.className = 'cross-area';
 
-  // Build grid
   const vWord = [...puzzle.vWord];
   const hWord = [...puzzle.hWord];
   const vLen = vWord.length;
   const hLen = hWord.length;
-  const crossRow = puzzle.vIdx; // row where horizontal word sits
-  const crossCol = puzzle.hIdx; // col (in horizontal word) where vertical word sits
+  const crossRow = puzzle.vIdx;
+  const crossCol = puzzle.hIdx;
 
-  // Grid dimensions
   const totalRows = vLen;
   const totalCols = hLen;
 
@@ -851,13 +1226,11 @@ function loadCrosswordStage(num) {
 
   crossArea.appendChild(grid);
 
-  // Hint text
   const hint = document.createElement('p');
   hint.className = 'cross-hint';
   hint.textContent = 'まんなかに はいる もじは？';
   crossArea.appendChild(hint);
 
-  // Choice buttons
   const choices = document.createElement('div');
   choices.className = 'cross-choices';
 
@@ -872,7 +1245,6 @@ function loadCrosswordStage(num) {
 
   crossArea.appendChild(choices);
 
-  // Hint area (hidden, shown after 8 seconds — one random image only)
   const hintArea = document.createElement('div');
   hintArea.className = 'cross-word-hint';
   const pickV = Math.random() < 0.5;
@@ -886,11 +1258,9 @@ function loadCrosswordStage(num) {
   `;
   crossArea.appendChild(hintArea);
 
-  // 一括表示（逐次描画を防ぐ）
   area.innerHTML = '';
   area.appendChild(crossArea);
 
-  // Show hint after 8 seconds with blinking
   hintTimer = setTimeout(() => {
     hintArea.classList.add('visible');
   }, 8000);
@@ -899,7 +1269,7 @@ function loadCrosswordStage(num) {
 // ===== Tap handling =====
 document.addEventListener('click', e => {
   const area = document.getElementById('game-area');
-  if (!area) return;
+  if (!area || document.getElementById('game-screen').classList.contains('hidden')) return;
 
   if (area.dataset.mode === 'cross') {
     handleCrossClick(e);
@@ -947,16 +1317,14 @@ function handleCrossClick(e) {
   if (!targetCell || targetCell.classList.contains('solved')) return;
 
   if (choiceBtn.dataset.char === targetCell.dataset.answer) {
-    // Correct!
     playCorrect();
+    if (window.incrementStat) window.incrementStat('wordmatch_correct', 1);
     targetCell.textContent = targetCell.dataset.answer;
     targetCell.classList.add('solved');
     choiceBtn.classList.add('correct');
-    // Disable all choices
     document.querySelectorAll('.cross-choice').forEach(b => b.style.pointerEvents = 'none');
-    setTimeout(() => showStageComplete(), 800);
+    setTimeout(() => onQuestionComplete(), 800);
   } else {
-    // Wrong
     playWrong();
     choiceBtn.classList.add('wrong');
     setTimeout(() => choiceBtn.classList.remove('wrong'), 400);
@@ -997,15 +1365,31 @@ function tryMatch(card, label) {
   clearSelection();
   if (parseInt(card.dataset.idx) === parseInt(label.dataset.idx)) {
     playCorrect();
+    if (window.incrementStat) window.incrementStat('wordmatch_correct', 1);
     label.textContent = card.textContent;
     label.classList.add('matched');
     card.remove();
     matchedCount++;
-    if (matchedCount === 4) setTimeout(showStageComplete, 500);
+    if (matchedCount === 4) setTimeout(() => onQuestionComplete(), 500);
   } else {
     playWrong();
     card.classList.add('shake');
     setTimeout(() => card.classList.remove('shake'), 400);
+  }
+}
+
+// ===== Question complete → advance or stage clear =====
+function onQuestionComplete() {
+  const questions = getStageQuestions(currentDifficulty, currentStageIdx);
+  const totalQ = currentDifficulty === 'easy' ? 1 : questions.length;
+
+  if (currentQuestionIdx + 1 >= totalQ) {
+    // Stage complete!
+    showStageComplete();
+  } else {
+    // Next question in this stage (for normal mode: match→cross transitions)
+    currentQuestionIdx++;
+    loadCurrentQuestion();
   }
 }
 
@@ -1014,55 +1398,100 @@ function showStageComplete() {
   playFanfare();
   launchConfetti();
   awardPoints(5);
-  if (window.incrementStat) window.incrementStat('wordmatch_correct', 4);
-  // スタンプラリー: プレイ記録
-  (function() {
-    var k = 'pono_played_' + new Date().toDateString();
-    var a = JSON.parse(localStorage.getItem(k) || '[]');
-    if (a.indexOf('wordmatch') === -1) { a.push('wordmatch'); localStorage.setItem(k, JSON.stringify(a)); }
-  })();
-  const num  = currentStageNum;
-  const type = getStageType(num);
+
+  // スタンプラリー: プレイ記録 (最初のステージクリア時に1回だけ)
+  if (!playRecorded) {
+    playRecorded = true;
+    (function() {
+      var k = 'pono_played_' + new Date().toDateString();
+      var a = JSON.parse(localStorage.getItem(k) || '[]');
+      if (a.indexOf('wordmatch') === -1) { a.push('wordmatch'); localStorage.setItem(k, JSON.stringify(a)); }
+    })();
+  }
+
+  // Save progress
+  markCleared(currentDifficulty, currentStageIdx);
+
+  const cleared = getCleared(currentDifficulty);
+  const total = getTotalStages(currentDifficulty);
+  const allCleared = cleared.length >= total;
 
   const emojiEl = document.getElementById('modal-emoji');
-  if (type === 'cross' && currentCrossPuzzle) {
-    const p = currentCrossPuzzle;
-    // プリロードしてから一括表示
-    emojiEl.innerHTML = '';
-    const makeEl = (src, delay) => {
-      if (src.endsWith('.png')) {
-        const img = new Image();
-        img.src = src;
-        img.style.cssText = 'height:48px;object-fit:contain;vertical-align:middle;opacity:0;transition:opacity 0.3s;transition-delay:'+delay+'s';
-        img.onload = () => { img.style.opacity = '1'; };
-        return img;
-      }
-      const span = document.createElement('span');
-      span.style.cssText = 'font-size:2.5rem;opacity:0;transition:opacity 0.3s;transition-delay:'+delay+'s';
-      span.textContent = src;
-      requestAnimationFrame(() => { span.style.opacity = '1'; });
-      return span;
-    };
-    const cross = document.createElement('span');
-    cross.style.cssText = 'font-size:1rem;vertical-align:middle;margin:0 6px;color:var(--text-light);opacity:0;transition:opacity 0.3s;transition-delay:0.15s';
-    cross.textContent = '✕';
-    emojiEl.appendChild(makeEl(p.vImg, 0));
-    emojiEl.appendChild(cross);
-    emojiEl.appendChild(makeEl(p.hImg, 0.3));
-    requestAnimationFrame(() => { cross.style.opacity = '1'; });
-  } else {
-    emojiEl.textContent = '🎉';
-  }
-  document.getElementById('modal-title').textContent = `ステージ ${num + 1} クリア！`;
-  document.getElementById('modal-msg').textContent   = type === 'cross'
-    ? 'もじクロス できたね！'
-    : 'すごい！ぜんぶあったよ！';
-  document.getElementById('modal-btn').textContent   = 'つぎへ →';
+  const titleEl = document.getElementById('modal-title');
+  const msgEl   = document.getElementById('modal-msg');
+  const btnEl   = document.getElementById('modal-btn');
+  const btn2El  = document.getElementById('modal-btn2');
 
-  document.getElementById('modal-btn').onclick = () => {
-    document.getElementById('success-modal').classList.add('hidden');
-    loadStage(num + 1);
-  };
+  // Reset btn2
+  btn2El.classList.add('hidden');
+
+  if (allCleared) {
+    // All stages cleared!
+    emojiEl.textContent = '🎉';
+    titleEl.textContent = 'ぜんぶ クリア！🎉';
+    msgEl.textContent = currentDifficulty === 'easy' ? 'かんたんモード ぜんぶクリア！すごい！' : 'ふつうモード ぜんぶクリア！すごい！';
+    btnEl.textContent = 'ステージせんたくへ';
+    btnEl.onclick = () => {
+      document.getElementById('success-modal').classList.add('hidden');
+      showStageSelectScreen();
+    };
+  } else {
+    // Check if last stage in sequence
+    const nextStageIdx = currentStageIdx + 1;
+    const isLastStage = nextStageIdx >= total;
+
+    if (currentDifficulty === 'normal' && currentCrossPuzzle) {
+      const p = currentCrossPuzzle;
+      emojiEl.innerHTML = '';
+      const makeEl = (src, delay) => {
+        if (src.endsWith('.png')) {
+          const img = new Image();
+          img.src = src;
+          img.style.cssText = 'height:48px;object-fit:contain;vertical-align:middle;opacity:0;transition:opacity 0.3s;transition-delay:'+delay+'s';
+          img.onload = () => { img.style.opacity = '1'; };
+          return img;
+        }
+        const span = document.createElement('span');
+        span.style.cssText = 'font-size:2.5rem;opacity:0;transition:opacity 0.3s;transition-delay:'+delay+'s';
+        span.textContent = src;
+        requestAnimationFrame(() => { span.style.opacity = '1'; });
+        return span;
+      };
+      const cross = document.createElement('span');
+      cross.style.cssText = 'font-size:1rem;vertical-align:middle;margin:0 6px;color:var(--text-light);opacity:0;transition:opacity 0.3s;transition-delay:0.15s';
+      cross.textContent = '✕';
+      emojiEl.appendChild(makeEl(p.vImg, 0));
+      emojiEl.appendChild(cross);
+      emojiEl.appendChild(makeEl(p.hImg, 0.3));
+      requestAnimationFrame(() => { cross.style.opacity = '1'; });
+    } else {
+      emojiEl.textContent = '🎉';
+    }
+
+    titleEl.textContent = `ステージ ${currentStageIdx + 1} クリア！`;
+    msgEl.textContent = 'すごい！よくできたね！';
+
+    if (isLastStage) {
+      btnEl.textContent = 'ステージせんたくへ';
+      btnEl.onclick = () => {
+        document.getElementById('success-modal').classList.add('hidden');
+        showStageSelectScreen();
+      };
+    } else {
+      btnEl.textContent = 'つぎへ →';
+      btnEl.onclick = () => {
+        document.getElementById('success-modal').classList.add('hidden');
+        startStage(nextStageIdx);
+      };
+      btn2El.textContent = 'ステージせんたくへ';
+      btn2El.classList.remove('hidden');
+      btn2El.onclick = () => {
+        document.getElementById('success-modal').classList.add('hidden');
+        showStageSelectScreen();
+      };
+    }
+  }
+
   document.getElementById('success-modal').classList.remove('hidden');
 }
 
@@ -1168,19 +1597,13 @@ function playFanfare() {
   });
 }
 
-// ===== Init =====
-shuffledOrder = [...shuffle([0, 1, 2, 3]), ...shuffle([4, 5, 6, 7])];
-crossPool = shuffle([...Array(CROSSWORDS.length).keys()]);
-loadStage(0);
-
-// Tutorial (step-by-step)
+// ===== Tutorial =====
 function showTutorial() {
   const dim = document.getElementById('tut-dim');
   const bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
 
   let step = 0;
-  // 全ステップで画面中央に配置（縦横どちらでも正しく表示）
   function centerBubble() {
     bubble.className = 'tut-bubble';
     bubble.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9997;max-width:300px;text-align:center;';
@@ -1205,17 +1628,14 @@ function showTutorial() {
     document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
-    localStorage.setItem('wordmatch_tut_v2', '1');
+    localStorage.setItem('wordmatch_tut_v3', '1');
   }
 
   steps[0]();
 }
 
-// 初回は強制表示
-localStorage.removeItem('wordmatch_tut_v2'); // テスト用: 毎回表示
-if (!localStorage.getItem('wordmatch_tut_v2')) {
-  setTimeout(showTutorial, 500);
-}
+// ===== Init =====
+showDifficultyScreen();
 
 initMenu({
   bgmToggle: function() {
