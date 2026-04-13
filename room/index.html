@@ -135,8 +135,9 @@
       pointer-events: none;
       cursor: default;
     }
-    /* 宝箱は通常モードでのみタップ可能、編集中は完全無効 */
-    .room-area:not(.edit-mode) .toybox-item {
+    /* 宝箱・本棚は通常モードでのみタップ可能、編集中は完全無効 */
+    .room-area:not(.edit-mode) .toybox-item,
+    .room-area:not(.edit-mode) .bookshelf-item {
       pointer-events: auto;
       cursor: pointer;
     }
@@ -1507,6 +1508,16 @@ function _makeGridItem(p, areaId, locked) {
   el.dataset.angle = angle;
   _applyGridPos(el, row, col, areaId);
   renderSlotContent(el, p.id, angle);
+
+  // 特殊家具: 本棚（タップで図鑑を開く）
+  if (p.id && p.id.indexOf('bookshelf') >= 0) {
+    el.classList.add('bookshelf-item');
+    el.addEventListener('click', function(e) {
+      if (editMode) return;
+      e.stopPropagation();
+      location.href = '../collection/index.html';
+    });
+  }
 
   // 特殊家具: 卵インキュベーター（常にタップ可能、卵モーダルを開く）
   if (item.special === 'egg_incubator') {
@@ -3568,6 +3579,32 @@ function dbgEggReset() {
   document.getElementById('egg-modal').classList.add('hidden');
   _dbgEggUpdate();
 }
+
+// ─── 本棚チュートリアル（1回のみ）───────────────────────
+(function() {
+  if (localStorage.getItem('pono_bookshelf_tut_seen')) return;
+  // 本棚が配置されているか確認
+  setTimeout(function() {
+    var bs = document.querySelector('.bookshelf-item');
+    if (!bs) return;
+    localStorage.setItem('pono_bookshelf_tut_seen', '1');
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.3s ease;';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:24px;padding:24px 20px;text-align:center;max-width:320px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,0.3);';
+    box.innerHTML =
+      '<div style="font-size:3rem;margin-bottom:8px;">📚</div>' +
+      '<div style="font-size:1.1rem;font-weight:900;color:#F2915A;margin-bottom:10px;">ほんだなが ついたよ！</div>' +
+      '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.8;margin-bottom:16px;">' +
+        'ほんだなを タップすると<br>「ずかん」が みられるよ！<br><br>' +
+        'あつめた いきもの、かぐ、<br>じっせきが ぜんぶ みられるよ！' +
+      '</div>' +
+      '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#F2915A,#FFD84D);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">わかった！</button>';
+    box.querySelector('button').addEventListener('click', function() { ov.remove(); });
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+  }, 1500);
+})();
 </script>
 </body>
 </html>

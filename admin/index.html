@@ -3170,7 +3170,30 @@ function renderSeaCreatures() {
     return;
   }
 
-  creaturesData.creatures.forEach(function(c) {
+  // 水棲生物のみ表示（クイズ用イラスト=恐竜・動物・虫・天気等は除外）
+  var seaWords = ['fish','shark','whale','dolphin','turtle','jelly','jellyfish',
+    'octopus','squid','crab','lobster','coral','anemone','seahorse','manta',
+    'ray','starfish','seal','otter','penguin','narwhal','orca','submarine','medaka',
+    'clam','shrimp','eel','sea','clownfish','blue_tang','pufferfish','mandarinfish',
+    'angelfish','sunfish'];
+  var filteredCreatures = creaturesData.creatures.filter(function(c) {
+    if (c.museum === 'aquarium') return true;
+    var parts = (c.id || '').toLowerCase().split('_');
+    for (var i = 0; i < parts.length; i++) {
+      if (seaWords.indexOf(parts[i]) >= 0) return true;
+    }
+    return false;
+  });
+  dynHeader.textContent = '✨ 管理画面から追加したいきもの (' + filteredCreatures.length + '体)';
+
+  if (filteredCreatures.length === 0) {
+    var emptyMsg2 = document.createElement('div');
+    emptyMsg2.style.cssText = 'color:#aaa;font-size:0.75rem;padding:12px;text-align:center;background:#fafafa;border-radius:8px;';
+    emptyMsg2.textContent = 'まだ水族館の生き物は追加されていません。';
+    listEl.appendChild(emptyMsg2);
+  }
+
+  filteredCreatures.forEach(function(c) {
     var clone = Object.assign({}, c, { source: 'dynamic' });
     listEl.appendChild(_buildCreatureRow(clone));
   });

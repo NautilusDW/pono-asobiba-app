@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ずかん｜ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #FFF8E7; color: #5D4E37;
+  min-height: 100dvh;
+}
+
+/* Header */
+.coll-header {
+  background: linear-gradient(135deg, #F2915A 0%, #FFD84D 50%, #60A5FA 100%);
+  padding: 16px; text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.coll-header h1 { font-size: 1.4rem; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+.coll-header .subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.85); margin-top: 2px; }
+.back-btn {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(255,255,255,0.8); border: none; border-radius: 20px;
+  padding: 8px 16px; font-family: inherit; font-size: 0.82rem;
+  font-weight: 900; color: #5D4E37; cursor: pointer;
+}
+
+/* Tabs */
+.coll-tabs {
+  display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;
+  padding: 12px 16px 8px;
+}
+.coll-tab {
+  padding: 8px 14px; border: 2px solid transparent; border-radius: 20px;
+  background: #fff; color: #5D4E37; font-family: inherit;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: all 0.2s;
+}
+.coll-tab:hover { border-color: #F2915A; }
+.coll-tab.active { background: #F2915A; color: #fff; border-color: #F2915A; }
+
+/* Content */
+.coll-content { padding: 0 16px 40px; max-width: 600px; margin: 0 auto; }
+.coll-section { display: none; }
+.coll-section.active { display: block; }
+
+/* Notice */
+.coll-notice {
+  background: #EFF6FF; border: 2px solid #93C5FD; border-radius: 14px;
+  padding: 14px 16px; margin: 12px 0; font-size: 0.8rem; color: #1E40AF;
+  line-height: 1.6; text-align: center;
+}
+
+/* Grid */
+.coll-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px; margin-top: 12px;
+}
+.coll-card {
+  background: #fff; border-radius: 14px; padding: 10px 6px;
+  text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer; transition: transform 0.15s;
+  position: relative;
+}
+.coll-card:active { transform: scale(0.95); }
+.coll-card.locked { filter: brightness(0.6); }
+.coll-card-img {
+  width: 64px; height: 64px; object-fit: contain;
+  display: block; margin: 0 auto 4px; border-radius: 8px;
+}
+.coll-card-img.silhouette {
+  filter: brightness(0) saturate(0); opacity: 0.3;
+}
+.coll-card-name {
+  font-size: 0.68rem; font-weight: 700; color: #5D4E37;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.coll-card-name.locked { color: #ccc; }
+
+/* Detail modal */
+.coll-detail-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.coll-detail {
+  background: linear-gradient(160deg, #0d2240, #0a3a5a);
+  border-radius: 24px; padding: 24px 20px; max-width: 360px; width: 100%;
+  color: #fff; text-align: center;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+}
+.coll-detail-img { width: 120px; height: 120px; object-fit: contain; margin: 0 auto 12px; display: block; border-radius: 12px; }
+.coll-detail-name { font-size: 1.2rem; font-weight: 900; margin-bottom: 2px; }
+.coll-detail-reading { font-size: 0.78rem; opacity: 0.55; margin-bottom: 12px; }
+.coll-detail-label { font-size: 0.72rem; font-weight: 900; color: #38BDF8; margin-top: 10px; }
+.coll-detail-text { font-size: 0.82rem; line-height: 1.6; margin-top: 2px; }
+.coll-detail-facts { text-align: left; padding-left: 4px; margin-top: 4px; }
+.coll-detail-fact { font-size: 0.78rem; line-height: 1.5; margin: 4px 0; }
+.coll-detail-fact::before { content: '⭐ '; }
+.coll-detail-close {
+  margin-top: 16px; padding: 10px 28px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #60A5FA, #3B82F6); color: #fff;
+  font-family: inherit; font-size: 0.9rem; font-weight: 900; cursor: pointer;
+}
+
+/* Stamp section */
+.stamp-list { margin-top: 12px; }
+.stamp-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: #fff; border-radius: 12px;
+  margin-bottom: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.stamp-icon { font-size: 1.5rem; flex-shrink: 0; }
+.stamp-info { flex: 1; }
+.stamp-name { font-size: 0.82rem; font-weight: 900; color: #5D4E37; }
+.stamp-desc { font-size: 0.68rem; color: #A89880; }
+.stamp-status { font-size: 0.75rem; font-weight: 900; }
+.stamp-status.unlocked { color: #10B981; }
+.stamp-status.locked { color: #D1D5DB; }
+
+/* Furniture section */
+.furn-group-title {
+  font-size: 0.9rem; font-weight: 900; color: #F2915A;
+  margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #FFF0F5;
+}
+</style>
+</head>
+<body>
+<div class="coll-header" style="position:relative;">
+  <button class="back-btn" onclick="history.back()">← もどる</button>
+  <h1 id="collTitle">📚 わたしの ずかん</h1>
+  <div class="subtitle">あつめた ものを みてみよう！</div>
+</div>
+
+<div class="coll-tabs" id="collTabs">
+  <button class="coll-tab active" data-tab="sea">🐠 うみのいきもの</button>
+  <button class="coll-tab" data-tab="furn">🏠 かぐ・かざり</button>
+  <button class="coll-tab" data-tab="stamp">🏆 じっせき</button>
+</div>
+
+<div class="coll-content">
+  <!-- 海の生き物 -->
+  <div class="coll-section active" id="sec-sea">
+    <div class="coll-notice">
+      🐠 すいぞくかんが できたら<br>もっと たくさんの いきものに あえるよ！<br>おたのしみに！
+    </div>
+    <div class="coll-grid" id="sea-grid"></div>
+  </div>
+
+  <!-- 家具・かざり -->
+  <div class="coll-section" id="sec-furn">
+    <div id="furn-content"></div>
+  </div>
+
+  <!-- 実績 -->
+  <div class="coll-section" id="sec-stamp">
+    <div class="stamp-list" id="stamp-list"></div>
+  </div>
+</div>
+
+<script src="../common/achievements.js"></script>
+<script src="../room/items.js"></script>
+<script>
+'use strict';
+
+// ===== Title with user name =====
+(function() {
+  try {
+    var p = JSON.parse(localStorage.getItem('pono_profile') || '{}');
+    var name = p.name || '';
+    var title = document.getElementById('collTitle');
+    if (name) {
+      title.textContent = '📚 ' + name + 'の ずかん';
+    }
+  } catch(e) {}
+})();
+
+// ===== Tab switching =====
+document.querySelectorAll('.coll-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.coll-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.coll-section').forEach(function(s) { s.classList.remove('active'); });
+    tab.classList.add('active');
+    var sec = document.getElementById('sec-' + tab.dataset.tab);
+    if (sec) sec.classList.add('active');
+  });
+});
+
+// ===== Sea Creatures =====
+var unlockedSea = [];
+try { unlockedSea = JSON.parse(localStorage.getItem('pono_unlocked_sea') || '[]'); } catch(e) {}
+
+// Load creatures.json for full list
+fetch('../assets/data/creatures.json?_=' + Date.now())
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var grid = document.getElementById('sea-grid');
+    if (!grid || !data.creatures) return;
+
+    // Filter to aquatic only (same logic as dynamic-creatures.js)
+    var seaWords = ['fish','shark','whale','dolphin','turtle','jelly','jellyfish',
+      'octopus','squid','crab','lobster','coral','anemone','seahorse','manta',
+      'ray','starfish','seal','otter','penguin','narwhal','orca','submarine','medaka',
+      'clam','shrimp','eel','sea','clownfish','blue_tang','pufferfish','mandarinfish',
+      'angelfish','sunfish'];
+
+    var aquatic = data.creatures.filter(function(c) {
+      if (c.museum === 'aquarium') return true;
+      var parts = (c.id || '').toLowerCase().split('_');
+      for (var i = 0; i < parts.length; i++) {
+        if (seaWords.indexOf(parts[i]) >= 0) return true;
+      }
+      return false;
+    });
+
+    aquatic.forEach(function(c) {
+      var owned = unlockedSea.indexOf(c.id) >= 0;
+      var card = document.createElement('div');
+      card.className = 'coll-card' + (owned ? '' : ' locked');
+
+      var img = document.createElement('img');
+      img.className = 'coll-card-img' + (owned ? '' : ' silhouette');
+      var folder = c.folder || c.id;
+      var fileName = (c.expressions && c.expressions.normal) || '';
+      if (typeof fileName === 'object') fileName = fileName[0] || '';
+      img.src = '../assets/images/ocean/' + folder + '/' + fileName;
+      img.onerror = function() { this.style.display = 'none'; };
+      card.appendChild(img);
+
+      var name = document.createElement('div');
+      name.className = 'coll-card-name' + (owned ? '' : ' locked');
+      name.textContent = owned ? (c.displayName || c.id) : '？？？';
+      card.appendChild(name);
+
+      if (owned && c.profile) {
+        card.addEventListener('click', function() { showSeaDetail(c); });
+      } else if (owned) {
+        card.addEventListener('click', function() { showSeaDetailSimple(c); });
+      }
+
+      grid.appendChild(card);
+    });
+  })
+  .catch(function() {});
+
+function showSeaDetail(c) {
+  var ov = document.createElement('div');
+  ov.className = 'coll-detail-overlay';
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+
+  var d = document.createElement('div');
+  d.className = 'coll-detail';
+
+  var folder = c.folder || c.id;
+  var fileName = (c.expressions && c.expressions.normal) || '';
+  if (typeof fileName === 'object') fileName = fileName[0] || '';
+
+  d.innerHTML =
+    '<img class="coll-detail-img" src="../assets/images/ocean/' + folder + '/' + fileName + '">' +
+    '<div class="coll-detail-name">' + (c.displayName || c.id) + '</div>' +
+    '<div class="coll-detail-reading">' + (c.profile.readingName || '') + '</div>' +
+    '<div class="coll-detail-label">なかま</div>' +
+    '<div class="coll-detail-text">' + (c.profile.category || '') + '</div>' +
+    (c.profile.habitat ? '<div class="coll-detail-label">すんでいる ところ</div><div class="coll-detail-text">' + c.profile.habitat + '</div>' : '') +
+    (c.profile.funFacts && c.profile.funFacts.length > 0 ?
+      '<div class="coll-detail-label">すごいところ</div><div class="coll-detail-facts">' +
+      c.profile.funFacts.map(function(f) { return '<div class="coll-detail-fact">' + f + '</div>'; }).join('') +
+      '</div>' : '') +
+    '<button class="coll-detail-close">とじる</button>';
+
+  d.querySelector('.coll-detail-close').addEventListener('click', function() { ov.remove(); });
+  ov.appendChild(d);
+  document.body.appendChild(ov);
+}
+
+function showSeaDetailSimple(c) {
+  var ov = document.createElement('div');
+  ov.className = 'coll-detail-overlay';
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+
+  var d = document.createElement('div');
+  d.className = 'coll-detail';
+
+  var folder = c.folder || c.id;
+  var fileName = (c.expressions && c.expressions.normal) || '';
+  if (typeof fileName === 'object') fileName = fileName[0] || '';
+
+  d.innerHTML =
+    '<img class="coll-detail-img" src="../assets/images/ocean/' + folder + '/' + fileName + '">' +
+    '<div class="coll-detail-name">' + (c.displayName || c.id) + '</div>' +
+    '<div class="coll-detail-reading" style="margin-top:8px;">くわしい じょうほうは<br>すいぞくかんが できたら みられるよ！</div>' +
+    '<button class="coll-detail-close">とじる</button>';
+
+  d.querySelector('.coll-detail-close').addEventListener('click', function() { ov.remove(); });
+  ov.appendChild(d);
+  document.body.appendChild(ov);
+}
+
+// ===== Furniture & Decorations =====
+(function() {
+  var container = document.getElementById('furn-content');
+  if (!container || typeof ROOM_ITEMS === 'undefined') return;
+
+  var unlockedFurn = [];
+  try { unlockedFurn = JSON.parse(localStorage.getItem('pono_unlocked_furn') || '[]'); } catch(e) {}
+
+  var categories = {
+    furn: { label: '🪑 かぐ', items: [] },
+    deco: { label: '🧸 かざり', items: [] },
+    wall: { label: '🖼️ かべがみ', items: [] },
+    floor: { label: '🪵 ゆか', items: [] },
+  };
+
+  ROOM_ITEMS.forEach(function(item) {
+    var cat = categories[item.cat];
+    if (cat) cat.items.push(item);
+  });
+
+  Object.keys(categories).forEach(function(key) {
+    var cat = categories[key];
+    if (cat.items.length === 0) return;
+
+    var title = document.createElement('div');
+    title.className = 'furn-group-title';
+    var ownedCount = cat.items.filter(function(it) { return unlockedFurn.indexOf(it.id) >= 0; }).length;
+    title.textContent = cat.label + ' (' + ownedCount + '/' + cat.items.length + ')';
+    container.appendChild(title);
+
+    var grid = document.createElement('div');
+    grid.className = 'coll-grid';
+
+    cat.items.forEach(function(item) {
+      var owned = unlockedFurn.indexOf(item.id) >= 0;
+      var card = document.createElement('div');
+      card.className = 'coll-card' + (owned ? '' : ' locked');
+
+      var img = document.createElement('img');
+      img.className = 'coll-card-img' + (owned ? '' : ' silhouette');
+      var imgSrc = (item.roomImg || '').replace('../', '../');
+      if (imgSrc) img.src = imgSrc;
+      img.onerror = function() { this.style.display = 'none'; };
+      card.appendChild(img);
+
+      var name = document.createElement('div');
+      name.className = 'coll-card-name' + (owned ? '' : ' locked');
+      name.textContent = owned ? item.name : '？？？';
+      card.appendChild(name);
+
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+  });
+})();
+
+// ===== Achievements / Stamps =====
+(function() {
+  var list = document.getElementById('stamp-list');
+  if (!list || typeof getAchievements === 'undefined') return;
+
+  var allAch = getAchievements();
+  var unlocked = {};
+  try { unlocked = JSON.parse(localStorage.getItem('pono_achievements') || '{}'); } catch(e) {}
+
+  allAch.forEach(function(ach) {
+    var isUnlocked = !!unlocked[ach.id];
+    var row = document.createElement('div');
+    row.className = 'stamp-row';
+
+    row.innerHTML =
+      '<div class="stamp-icon">' + (isUnlocked ? ach.icon : '🔒') + '</div>' +
+      '<div class="stamp-info">' +
+        '<div class="stamp-name">' + (isUnlocked ? ach.name : '？？？') + '</div>' +
+        '<div class="stamp-desc">' + (isUnlocked ? ach.desc : 'まだ みつけてないよ') + '</div>' +
+      '</div>' +
+      '<div class="stamp-status ' + (isUnlocked ? 'unlocked' : 'locked') + '">' +
+        (isUnlocked ? '✅' : '🔒') +
+      '</div>';
+
+    list.appendChild(row);
+  });
+})();
+</script>
+</body>
+</html>
