@@ -61,6 +61,7 @@
       '  transform:translateX(-50%) scale(0);',
       '  text-align:center; pointer-events:none;',
       '  transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);',
+      '  z-index:2;',
       '}',
       '.treasure-reward.show {',
       '  transform:translateX(-50%) scale(1);',
@@ -158,7 +159,8 @@
     }
   }
 
-  // ── サウンド（MP3 ファンファーレ）─────────────────────────────────────────────
+  // ── サウンド ────────────────────────────────────────────────────────────────
+  // グローバル共有AudioContext（1ページに1つ。スタンプ音と共有可能）
   function _getSoundBasePath() {
     if (document.querySelector('script[src*="../common/treasure.js"]')) {
       return '../assets/sounds/se/';
@@ -166,54 +168,60 @@
     return 'assets/sounds/se/';
   }
 
-  // iOS: AudioContext + AudioBuffer でMP3を再生（src変更による再ロック問題を回避）
-  var _fanfareCtx = null;
-  var _fanfareBuffer = null;
-  var _fanfareLoading = false;
-
-  function _ensureFanfareCtx() {
-    if (!_fanfareCtx) {
-      try { _fanfareCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  // グローバルAudioContextを取得または作成
+  function _getGlobalAC() {
+    if (!window._ponoAudioCtx) {
+      try { window._ponoAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
     }
-    return _fanfareCtx;
+    return window._ponoAudioCtx;
   }
 
+  // AudioContextのresume（ユーザージェスチャー内で呼ぶ）
+  function _resumeAC() {
+    var ac = _getGlobalAC();
+    if (ac && ac.state === 'suspended') {
+      ac.resume().catch(function() {});
+    }
+  }
+
+  // MP3をAudioBufferとしてプリロード
+  var _fanfareBuffer = null;
+  var _fanfareLoading = false;
   function _loadFanfareBuffer() {
     if (_fanfareBuffer || _fanfareLoading) return;
-    var ctx = _ensureFanfareCtx();
-    if (!ctx) return;
+    var ac = _getGlobalAC();
+    if (!ac) return;
     _fanfareLoading = true;
     var src = _getSoundBasePath() + 'TreasureBox.mp3';
     fetch(src).then(function(r) { return r.arrayBuffer(); })
-      .then(function(buf) { return ctx.decodeAudioData(buf); })
+      .then(function(buf) { return ac.decodeAudioData(buf); })
       .then(function(decoded) { _fanfareBuffer = decoded; _fanfareLoading = false; })
       .catch(function() { _fanfareLoading = false; });
   }
 
-  function _unlockFanfare() {
-    var ctx = _ensureFanfareCtx();
-    if (!ctx) return;
-    if (ctx.state === 'suspended') ctx.resume().catch(function() {});
+  // ユーザージェスチャーでアンロック（touchstart/touchend/click）
+  function _unlockAudio() {
+    _resumeAC();
     _loadFanfareBuffer();
-    document.removeEventListener('touchstart', _unlockFanfare);
-    document.removeEventListener('click', _unlockFanfare);
   }
-  document.addEventListener('touchstart', _unlockFanfare, { passive: true });
-  document.addEventListener('click', _unlockFanfare);
-  // ページ読み込み時にもバッファのプリロードを開始
+  // 複数イベントで試行（iOSはtouchendが最も確実）
+  document.addEventListener('touchstart', _unlockAudio, { passive: true });
+  document.addEventListener('touchend', _unlockAudio, { passive: true });
+  document.addEventListener('click', _unlockAudio);
+  // ページ読み込み時にバッファのプリロードも開始（デコードだけなら制限なし）
   _loadFanfareBuffer();
 
   function _playFanfare() {
     try {
-      var ctx = _ensureFanfareCtx();
-      if (!ctx) return;
-      if (ctx.state === 'suspended') ctx.resume().catch(function() {});
-      if (!_fanfareBuffer) { _loadFanfareBuffer(); return; }
-      var source = ctx.createBufferSource();
+      var ac = _getGlobalAC();
+      if (!ac) return;
+      _resumeAC();
+      if (!_fanfareBuffer) return;
+      var source = ac.createBufferSource();
       source.buffer = _fanfareBuffer;
-      source.connect(ctx.destination);
+      source.connect(ac.destination);
       source.start(0);
-    } catch(e) { console.warn('[treasure] fanfare error:', e); }
+    } catch(e) {}
   }
 
   // ── 報酬・ボタン表示（排他制御付き）─────────────────────────────────────────
@@ -222,16 +230,11 @@
     _finished = true;
     _clearPendingTimers();
 
-    // 動画・フォールバックをフェードアウトして報酬を見せる
-    if (_video) {
-      _video.pause();
-      _video.style.transition = 'opacity 0.4s';
-      _video.style.opacity = '0';
-    }
+    // 動画は最後のフレーム（宝箱が開いた状態）で停止させて残す
+    if (_video) { _video.pause(); }
+    // フォールバック（🎁アニメ）の場合のみ少し薄くする
     var fb = _container.querySelector('.treasure-fallback');
-    if (fb) { fb.style.opacity = '0'; fb.style.transition = 'opacity 0.3s'; }
-    // コンテナ背景を暗い半透明に（オーバーレイの背景と馴染む）
-    _container.style.background = 'transparent';
+    if (fb) { fb.style.opacity = '0.4'; fb.style.transition = 'opacity 0.3s'; }
 
     _playFanfare();
     _reward.classList.add('show');
@@ -259,7 +262,7 @@
     _destroyVideo();
     _finished = false;
     _fallbackStarted = false;
-    // コンテナ背景をリセット（前回の透明化を戻す）
+    // コンテナ背景をリセット
     if (_container) _container.style.background = '#000';
 
     // ラベル・アイテム設定
@@ -285,7 +288,7 @@
 
     // ── 動画要素を毎回新規生成 ──
     var basePath = _getBasePath();
-    var mp4Path  = basePath + 'TreasureBox.mp4'; // キャッシュバスターなし（iOS互換性）
+    var mp4Path  = basePath + 'TreasureBox.mp4';
 
     _video = document.createElement('video');
     _video.muted       = true;
@@ -293,17 +296,16 @@
     _video.preload     = 'auto';
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
-    _video.src = mp4Path; // <source>ではなくsrc直接（iOS: errorイベントがvideo要素で発火する）
+    _video.src = mp4Path;
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
 
     var capturedVideo = _video;
-    var readyFired = false; // canplay/loadeddata/即座play の排他フラグ
+    var readyFired = false;
 
     // ── 3秒 soft timeout ──
     var softTimeoutId = _later(function() {
       if (_video !== capturedVideo || readyFired) return;
-      console.warn('[treasure] timeout → CSS fallback');
       _fallbackCss();
     }, 3000);
 
@@ -312,7 +314,6 @@
       if (_video !== capturedVideo || readyFired) return;
       readyFired = true;
       clearTimeout(softTimeoutId);
-      console.warn('[treasure] error → CSS fallback', e);
       _fallbackCss();
     }
     capturedVideo.addEventListener('error', onMediaError);
@@ -320,13 +321,10 @@
     // ── 再生成功時の共通処理 ──
     function onPlaySuccess() {
       if (_video !== capturedVideo) return;
-      // iOS: muted のまま再生（unmute すると再生が止まるため）
-      // 音声は _showReward 内で MP3 を再生
       capturedVideo.addEventListener('ended', function() {
         if (_video !== capturedVideo) return;
         _showReward();
       }, { once: true });
-      // duration ベースのフォールバック
       var dur = capturedVideo.duration;
       var ms = (dur && isFinite(dur) && dur > 0) ? (dur * 1000 + 800) : 5000;
       _later(function() { if (_video === capturedVideo) _showReward(); }, ms);
@@ -355,7 +353,6 @@
     var p0 = capturedVideo.play();
     if (p0 && typeof p0.then === 'function') {
       p0.then(function() {
-        // 即座再生成功 → canplay/loadeddata リスナーを除去
         capturedVideo.removeEventListener('canplay', onReady);
         capturedVideo.removeEventListener('loadeddata', onReady);
         if (readyFired || _video !== capturedVideo) return;
@@ -363,7 +360,7 @@
         clearTimeout(softTimeoutId);
         onPlaySuccess();
       }).catch(function() {
-        // 即座の play 失敗 → canplay/loadeddata を待つ（何もしない）
+        // 即座の play 失敗 → canplay/loadeddata を待つ
       });
     }
   };

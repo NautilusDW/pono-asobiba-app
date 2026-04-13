@@ -9,7 +9,11 @@
       "Bash(pip install *)",
       "Bash(python scripts/orchestrator.py complete --task \"Phase1をトランスクリプト直接解析に切替\" --result success)",
       "Bash(python scripts/orchestrator.py complete --task \"消費税計算add_tax関数の追加とテスト\" --result success)",
-      "Bash(find d:/claude-rl-test/logs -type f ! -name '.gitkeep' -delete)"
+      "Bash(find d:/claude-rl-test/logs -type f ! -name '.gitkeep' -delete)",
+      "WebSearch",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:www.mattmontag.com)",
+      "WebFetch(domain:medium.com)"
     ]
   },
   "hooks": {
