@@ -2574,12 +2574,32 @@
           cardEl.style.transform = 'scale(1)';
         });
 
-        // ── フェーズ1: うけとるボタン ──
+        // ── フェーズ1: スタンプカード（押される前）+ うけとるボタン ──
         function phase1Receive() {
+          var log = getStampLog();
+          var currentTotal = log.total;
+          var thisCardStart = (cardNum - 1) * SLOTS_PER_CARD;
+
+          var gridHtml = '';
+          for (var i = 0; i < SLOTS_PER_CARD; i++) {
+            var slotNum = i + 1;
+            var slotTotal = thisCardStart + slotNum;
+            // フェーズ1では「新規スタンプは空」の状態を見せる
+            var isNew = stampPositions.indexOf(i) >= 0;
+            var isFilledBefore = slotTotal <= currentTotal && !isNew;
+
+            if (isFilledBefore) {
+              gridHtml += '<div class="stamp-full-cell filled"><img src="' + PONO_ICON + '" alt=""></div>';
+            } else {
+              gridHtml += '<div class="stamp-full-cell empty">' + String(slotNum).padStart(2, '0') + '</div>';
+            }
+          }
+
           contentEl.innerHTML =
-            '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:16px;">\uD83C\uDF89 スタンプ ' + count + 'こ ゲット！</div>' +
-            '<div style="font-size:2.5rem;margin-bottom:12px;">\uD83C\uDF81</div>' +
-            '<button id="stamp-b-btn" style="margin-top:20px;padding:14px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
+            '<div style="font-size:1.1rem;font-weight:900;color:#F2915A;margin-bottom:6px;">\uD83C\uDF89 スタンプ ' + count + 'こ ゲット！</div>' +
+            '<div style="font-size:0.85rem;font-weight:700;color:#8B7355;margin-bottom:8px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>' +
+            '<div class="stamp-full-grid">' + gridHtml + '</div>' +
+            '<button id="stamp-b-btn" style="margin-top:12px;padding:14px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
 
           document.getElementById('stamp-b-btn').addEventListener('click', function() {
             _resumeAC();
@@ -2640,40 +2660,33 @@
           var imgEl = document.getElementById('stamp-b-bigimg');
           var msg = document.getElementById('stamp-b-msg');
 
-          // リセット
+          // インラインスタイルをクリア（CSSクラスが効くように）
+          imgEl.removeAttribute('style');
           bigEl.classList.remove('show');
           imgEl.classList.remove('show');
           msg.style.opacity = '0';
-          if (imgEl) {
-            imgEl.style.opacity = '0';
-            imgEl.style.transform = 'scale(3) rotate(-20deg)';
-          }
 
-          // アニメ開始
+          // 1フレーム待ってからアニメ開始
           requestAnimationFrame(function() {
-            bigEl.classList.add('show');
-            imgEl.classList.add('show');
-            spawnSparkles();
-            msg.style.opacity = '1';
-            _playStampPop();
+            requestAnimationFrame(function() {
+              bigEl.classList.add('show');
+              imgEl.classList.add('show');
+              spawnSparkles();
+              msg.style.opacity = '1';
+              _playStampPop();
+            });
           });
 
           // 次へ
           setTimeout(function() {
             if (idx < count - 1) {
-              // フェードアウト
-              imgEl.style.transition = 'opacity 0.3s, transform 0.3s';
-              imgEl.style.opacity = '0';
-              imgEl.style.transform = 'scale(0.8) rotate(10deg)';
+              // フェードアウト（インラインで上書き）
+              imgEl.style.cssText = 'transition:opacity 0.3s, transform 0.3s; opacity:0; transform:scale(0.8) rotate(10deg);';
               msg.style.opacity = '0';
               setTimeout(function() {
-                // 再セットアップ
-                imgEl.style.transition = 'none';
-                imgEl.style.transform = 'scale(3) rotate(-20deg)';
                 showBigStamp(idx + 1);
               }, 350);
             } else {
-              // 最後: 少し間を空けてフェーズ3へ
               setTimeout(function() { phase3FullCard(); }, 600);
             }
           }, 2000);
