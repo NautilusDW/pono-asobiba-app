@@ -1967,7 +1967,7 @@
                   }
                 });
               }
-            }, 800);
+            }, 200);
           })(slotRw);
         }
 
@@ -2829,11 +2829,11 @@
           setTimeout(function() {
             showStampBatch(stampReasons, function() {
               stampReasons.forEach(function(info) { animateStamp(info.total); });
-              setTimeout(function() { checkSlotReward(finalTotal); }, 500);
+              setTimeout(function() { checkSlotReward(finalTotal); }, 150);
             });
           }, 500);
         } else {
-          setTimeout(function() { checkSlotReward(finalTotal); }, 500);
+          setTimeout(function() { checkSlotReward(finalTotal); }, 150);
         }
       };
 
@@ -2887,7 +2887,7 @@
             setTimeout(function() {
               showStampBatch(stamps, function() {
                 stamps.forEach(function(info) { animateStamp(info.total); });
-                setTimeout(function() { checkSlotReward(now); }, 500);
+                setTimeout(function() { checkSlotReward(now); }, 150);
               });
             }, 500);
           } else {

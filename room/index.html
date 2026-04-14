@@ -3620,11 +3620,21 @@ function _showExtendedBedTutorial() {
       }
     }
 
+    // 子供の名前
+    var _bedKidName = '';
+    var _bedSuffix = '';
+    try {
+      var _bp = JSON.parse(localStorage.getItem('pono_profile') || '{}');
+      _bedKidName = (_bp.name || '').trim();
+      _bedSuffix = _bp.gender === 'girl' ? 'ちゃん' : 'くん';
+    } catch(e) {}
+    var _kidLabel = _bedKidName ? (_bedKidName + _bedSuffix) : 'ポノ';
+
     // ── フェーズ1: ベッド取り出し演出 ──
     _showTutorialStepModal({
       emoji: '🎁✨🛏️',
       title: 'おもちゃばこから ベッドを とりだしたよ！',
-      body: 'ポノの おへやに\nかざって みよう！',
+      body: _kidLabel + 'の おへやに\nかざって みよう！',
       btn: 'つぎへ ▶'
     }, function() {
       if (typeof window._setEditMode === 'function') window._setEditMode(true);
@@ -3650,8 +3660,9 @@ function _showExtendedBedTutorial() {
                   body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわして みよう！',
                   btn: 'やってみる！'
                 }, function() {
-                  setTutPhase('rotate'); // しまうボタンをブロック
-                  // 一周 = A→B→A の2回変化
+                  // 回転フェーズ開始時にも中央リセット（モーダル表示中にズレるのを防ぐ）
+                  resetBedToCenter();
+                  setTutPhase('rotate');
                   waitForRotations(2, function() {
                     setTutPhase(null);
                     showToast2('うまく まわせたね！ 🎉', function() {
@@ -3660,10 +3671,15 @@ function _showExtendedBedTutorial() {
                         emoji: '🎨',
                         title: 'じゆうに かざろう！',
                         body: 'すきな ばしょに\nすきな むきで\nベッドを おいてみよう！\n\nできたら みぎうえの\n「✅ おわり」を おしてね',
-                        btn: 'わかった！'
+                        btn: 'できた！'
                       }, function() {
-                        localStorage.setItem('pono_bed_tutorial_seen', '1');
-                        localStorage.removeItem('pono_bed_tutorial_pending');
+                        // ── フェーズ5: もようがえボタンの案内 ──
+                        setTimeout(function() {
+                          _highlightEditButtonHint(function() {
+                            localStorage.setItem('pono_bed_tutorial_seen', '1');
+                            localStorage.removeItem('pono_bed_tutorial_pending');
+                          });
+                        }, 300);
                       });
                     });
                   });
@@ -3679,6 +3695,50 @@ function _showExtendedBedTutorial() {
 }
 
 // ステップ式チュートリアルモーダル（絵文字・タイトル・本文・ボタン付き）
+// もようがえボタンをハイライトしながら案内
+function _highlightEditButtonHint(onDone) {
+  var btn = document.getElementById('ui-btn-edit');
+  if (!btn) { if (onDone) onDone(); return; }
+  var r = btn.getBoundingClientRect();
+  var spot = document.createElement('div');
+  spot.style.cssText =
+    'position:fixed;z-index:9996;pointer-events:none;border-radius:14px;' +
+    'box-shadow:0 0 0 4000px rgba(0,0,0,0.55);' +
+    'top:' + (r.top - 6) + 'px;left:' + (r.left - 6) + 'px;' +
+    'width:' + (r.width + 12) + 'px;height:' + (r.height + 12) + 'px;' +
+    'transition:opacity 0.3s;';
+  document.body.appendChild(spot);
+  var bubble = document.createElement('div');
+  bubble.style.cssText =
+    'position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:14px 18px;' +
+    'max-width:280px;text-align:center;font-family:inherit;font-size:0.9rem;font-weight:900;' +
+    'color:#5D4E37;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,0.25);' +
+    'transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
+  bubble.innerHTML = 'いつでも この「もようがえ」ボタンから<br>かぐの ばしょや むきを かえられるよ！' +
+    '<br><button id="_hint-ok" style="margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">わかった！</button>';
+  document.body.appendChild(bubble);
+  // 位置調整
+  var br = bubble.getBoundingClientRect();
+  var top = r.bottom + 12;
+  if (top + br.height > window.innerHeight - 10) top = r.top - br.height - 12;
+  bubble.style.top = top + 'px';
+  var left = r.left + r.width / 2 - br.width / 2;
+  if (left < 8) left = 8;
+  if (left + br.width > window.innerWidth - 8) left = window.innerWidth - br.width - 8;
+  bubble.style.left = left + 'px';
+  requestAnimationFrame(function() { bubble.style.transform = 'scale(1)'; });
+  document.getElementById('_hint-ok').addEventListener('click', function() {
+    bubble.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
+    bubble.style.transform = 'scale(0)';
+    spot.style.opacity = '0';
+    setTimeout(function() {
+      bubble.remove();
+      spot.remove();
+      if (onDone) onDone();
+    }, 280);
+  });
+}
+
 function _showTutorialStepModal(step, onDone) {
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;padding:20px;transition:background 0.3s;';
@@ -3810,7 +3870,7 @@ function init() {
         _showFurnitureTutorial(
           ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood'],
           'pono_bookshelf_tutorial_seen',
-          'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグで うごかせるよ！\n\uD83D\uDD04 マークで むきも かえられるよ\n\nできたら ほんだなを タップすると\nずかんが みられるよ！'
+          'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグで うごかせて\n\uD83D\uDD04 マークで むきも かえられるよ\n\nおいた ほんだなを タップすると\nあつめた いきもの・かぐ・じっせきが\n「ずかん」で みられるよ！'
         );
         // 完了検知
         var _interval = setInterval(function() {
@@ -4089,31 +4149,7 @@ function dbgEggReset() {
   _dbgEggUpdate();
 }
 
-// ─── 本棚チュートリアル（1回のみ）───────────────────────
-(function() {
-  if (localStorage.getItem('pono_bookshelf_tut_seen')) return;
-  // 本棚が配置されているか確認
-  setTimeout(function() {
-    var bs = document.querySelector('.bookshelf-item');
-    if (!bs) return;
-    localStorage.setItem('pono_bookshelf_tut_seen', '1');
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.3s ease;';
-    var box = document.createElement('div');
-    box.style.cssText = 'background:#fff;border-radius:24px;padding:24px 20px;text-align:center;max-width:320px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,0.3);';
-    box.innerHTML =
-      '<div style="font-size:3rem;margin-bottom:8px;">📚</div>' +
-      '<div style="font-size:1.1rem;font-weight:900;color:#F2915A;margin-bottom:10px;">ほんだなが ついたよ！</div>' +
-      '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.8;margin-bottom:16px;">' +
-        'ほんだなを タップすると<br>「ずかん」が みられるよ！<br><br>' +
-        'あつめた いきもの、かぐ、<br>じっせきが ぜんぶ みられるよ！' +
-      '</div>' +
-      '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#F2915A,#FFD84D);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">わかった！</button>';
-    box.querySelector('button').addEventListener('click', function() { ov.remove(); });
-    ov.appendChild(box);
-    document.body.appendChild(ov);
-  }, 1500);
-})();
+// 旧本棚チュートリアルは _showFurnitureTutorial（init内）に統合済みのため削除
 </script>
 </body>
 </html>

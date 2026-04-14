@@ -377,11 +377,9 @@
     if (oldFb) oldFb.remove();
 
     _overlay.classList.add('show');
-    // スケールインアニメーション（1フレーム待ってから）
     _overlay.classList.remove('visible');
-    requestAnimationFrame(function() { _overlay.classList.add('visible'); });
 
-    // ── 動画要素を毎回新規生成（プリロードのみ、再生はタップ後）──
+    // ── 動画要素を毎回新規生成 ──
     var basePath = _getBasePath();
     var mp4Path  = basePath + 'TreasureBox_opt.mp4';
 
@@ -392,9 +390,20 @@
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
     _video.src = mp4Path;
-    _video.load(); // プリロード（最初のフレームを表示）
+    _video.load();
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
+
+    // 最初のフレームが描画可能になってからスケールイン
+    var _scaleStarted = false;
+    function _doScaleIn() {
+      if (_scaleStarted) return;
+      _scaleStarted = true;
+      requestAnimationFrame(function() { _overlay.classList.add('visible'); });
+    }
+    _video.addEventListener('loadeddata', _doScaleIn, { once: true });
+    // セーフティ: 200msまでにフレームが来なくてもスケールイン（PWAでloadeddata遅延対策）
+    setTimeout(_doScaleIn, 200);
 
     // ── 「タップして あけよう！」オーバーレイ（動画の最初のフレームの上に重ねる） ──
     var tapOverlay = document.createElement('div');

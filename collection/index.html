@@ -226,6 +226,8 @@ fetch('../assets/data/creatures.json?_=' + Date.now())
 
       var img = document.createElement('img');
       img.className = 'coll-card-img' + (owned ? '' : ' silhouette');
+      img.loading = 'lazy';
+      img.decoding = 'async';
       var folder = c.folder || c.id;
       var fileName = (c.expressions && c.expressions.normal) || '';
       if (typeof fileName === 'object') fileName = fileName[0] || '';
@@ -342,6 +344,8 @@ function showSeaDetailSimple(c) {
 
       var img = document.createElement('img');
       img.className = 'coll-card-img' + (owned ? '' : ' silhouette');
+      img.loading = 'lazy';
+      img.decoding = 'async';
       var imgSrc = (item.roomImg || '').replace('../', '../');
       if (imgSrc) img.src = imgSrc;
       img.onerror = function() { this.style.display = 'none'; };
