@@ -449,6 +449,20 @@ const SIDE_WALK_SCALE = 1232 / 1132;
 const imgHedgehog = new Image();
 imgHedgehog.src = HEDGEHOG_FRONT;
 
+// Obstacle / wall illustrations
+const imgTree  = new Image(); imgTree.src  = '../assets/images/maze/tree.png';
+const imgPond  = new Image(); imgPond.src  = '../assets/images/maze/pond.png';
+const imgHole  = new Image(); imgHole.src  = '../assets/images/maze/hole.png';
+const imgStump = new Image(); imgStump.src = '../assets/images/maze/stump.png';
+const imgRock  = new Image(); imgRock.src  = '../assets/images/maze/rock.png';
+// 障害物をセル位置から決定論的に選ぶ（同じ位置なら常に同じ絵）
+const OBSTACLE_IMGS = [imgPond, imgHole, imgStump, imgRock];
+function _pickObstacleImg(r, c) {
+  // シンプルなハッシュで散らす
+  var h = ((r * 73856093) ^ (c * 19349663)) >>> 0;
+  return OBSTACLE_IMGS[h % OBSTACLE_IMGS.length];
+}
+
 // ====== Tile types ======
 // '.'=path, '#'=wall, 'C'=cat, 'W'=water, 'A'=apple, 'T'=thorn, 'R'=stone, 'S'=start, 'G'=goal
 // Walkable: '.', 'S', 'G', 'A'
@@ -1390,11 +1404,17 @@ function draw(now) {
 
 function drawCell(x, y, tile, r, c, now) {
   if (tile === T.WALL) {
+    // 周りの壁: 緑の下地 + 木のイラスト
     ctx.fillStyle = '#3E5A24';
     ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-    ctx.font = Math.floor(cellSize * 0.7) + 'px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🌳', x + cellSize / 2, y + cellSize / 2);
+    if (imgTree.complete && imgTree.naturalWidth > 0) {
+      const sz = Math.floor(cellSize * 0.95);
+      ctx.drawImage(imgTree, x + (cellSize - sz) / 2, y + (cellSize - sz) / 2, sz, sz);
+    } else {
+      ctx.font = Math.floor(cellSize * 0.7) + 'px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🌳', x + cellSize / 2, y + cellSize / 2);
+    }
     return;
   }
 
@@ -1419,12 +1439,22 @@ function drawCell(x, y, tile, r, c, now) {
     }
     return;
   }
+  // 障害物 (WATER/THORN/STONE): 4種類のイラストを位置で散らして描画
+  if (tile === T.WATER || tile === T.THORN || tile === T.STONE) {
+    const img = _pickObstacleImg(r, c);
+    if (img.complete && img.naturalWidth > 0) {
+      const sz = Math.floor(cellSize * 0.88);
+      ctx.drawImage(img, x + (cellSize - sz) / 2, y + (cellSize - sz) / 2, sz, sz);
+    } else {
+      // Fallback emoji
+      let emoji = (tile === T.WATER) ? '💧' : (tile === T.THORN) ? '🌵' : '🪨';
+      ctx.fillText(emoji, x + cellSize / 2, y + cellSize / 2);
+    }
+    return;
+  }
   let emoji = '';
   if (tile === T.CAT)   emoji = '😺';
-  if (tile === T.WATER) emoji = '💧';
   if (tile === T.APPLE) emoji = '🍎';
-  if (tile === T.THORN) emoji = '🌵';
-  if (tile === T.STONE) emoji = '🪨';
   if (emoji) {
     const bob = (tile === T.CAT) ? Math.sin(now / 600 + r + c) * 1.5 :
                 (tile === T.APPLE) ? Math.sin(now / 400 + r + c) * 2 : 0;
