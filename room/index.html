@@ -3450,20 +3450,19 @@ function _showExtendedBedTutorial() {
     var bedId = item.id;
     var cfg = state.config.living;
 
-    // ベッドを中央に戻す
+    // ベッドを部屋の中央に強制配置
+    // 視覚的に中央に来るよう、A角度のときは row=3, col=2 がベスト（pivotXが正で右に寄るため）
     function resetBedToCenter() {
       var p = cfg.placed.find(x => x.id === bedId);
       if (!p) return;
-      var row = item.gridRow ?? 3;
-      var col = item.gridCol ?? 3;
-      // 他のアイテムを避けて配置
-      var pos = findNearestEmpty('living', row, col, bedId, item, 'A');
-      p.row = pos.row;
-      p.col = pos.col;
+      // 他の placed アイテムを一時的に退避（衝突防止）
+      var others = cfg.placed.filter(x => x.id !== bedId);
+      // チュートリアル中は他アイテムが邪魔しないよう、ベッドを直接中央に
+      p.row = 3;
+      p.col = 2;
       p.angle = 'A';
       saveState();
       refreshArea('living');
-      // refreshArea で.edit-modeクラスが消えるので再適用
       if (typeof window._setEditMode === 'function') window._setEditMode(true);
     }
 
@@ -3657,10 +3656,10 @@ function _showExtendedBedTutorial() {
                 _showTutorialStepModal({
                   emoji: '🔄',
                   title: 'つぎは まわし方！',
-                  body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわして みよう！',
+                  body: 'ベッドの したの\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわして みよう！',
                   btn: 'やってみる！'
                 }, function() {
-                  // 回転フェーズ開始時にも中央リセット（モーダル表示中にズレるのを防ぐ）
+                  // 回転フェーズ開始時にも中央リセット
                   resetBedToCenter();
                   setTutPhase('rotate');
                   waitForRotations(2, function() {
@@ -3717,10 +3716,18 @@ function _highlightEditButtonHint(onDone) {
   bubble.innerHTML = 'いつでも この「もようがえ」ボタンから<br>かぐの ばしょや むきを かえられるよ！' +
     '<br><button id="_hint-ok" style="margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">わかった！</button>';
   document.body.appendChild(bubble);
-  // 位置調整
+  // 位置調整: もようがえボタンの「上」に表示する（下に出ると読めない位置に行くため）
   var br = bubble.getBoundingClientRect();
-  var top = r.bottom + 12;
-  if (top + br.height > window.innerHeight - 10) top = r.top - br.height - 12;
+  var top = r.top - br.height - 12;
+  // 上にはみ出る場合のみ下に回す
+  if (top < 10) {
+    var belowTop = r.bottom + 12;
+    if (belowTop + br.height <= window.innerHeight - 10) {
+      top = belowTop;
+    } else {
+      top = 10;
+    }
+  }
   bubble.style.top = top + 'px';
   var left = r.left + r.width / 2 - br.width / 2;
   if (left < 8) left = 8;
