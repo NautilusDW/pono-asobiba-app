@@ -2695,22 +2695,15 @@
           var hint = document.getElementById('stamp-b-hint');
           var wrap = document.getElementById('stamp-b-wrap');
 
-          // リセット: 空の丸（枠だけ）を表示してタップを待つ
+          // リセット
           imgEl.removeAttribute('style');
           bigEl.classList.remove('show');
           imgEl.classList.remove('show');
           msg.style.opacity = '0';
-          if (hint) hint.style.opacity = '1';
 
-          // タップで押される（ユーザーアクション）
-          var tapped = false;
-          function onTap() {
-            if (tapped) return;
-            tapped = true;
-            wrap.removeEventListener('click', onTap);
+          // スタンプを実際に押すアニメーション
+          function pressStamp() {
             if (hint) hint.style.opacity = '0';
-
-            // スタンプを押すアニメーション
             bigEl.classList.add('show');
             imgEl.classList.add('show');
             spawnSparkles();
@@ -2728,7 +2721,25 @@
               }
             }, 1500);
           }
-          wrap.addEventListener('click', onTap);
+
+          if (idx === 0) {
+            // 1枚目: 自動（「うけとる！」ボタンのタップ延長）
+            if (hint) hint.style.opacity = '0';
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() { pressStamp(); });
+            });
+          } else {
+            // 2枚目以降: 空の丸を表示してタップ待ち
+            if (hint) hint.style.opacity = '1';
+            var tapped = false;
+            function onTap() {
+              if (tapped) return;
+              tapped = true;
+              wrap.removeEventListener('click', onTap);
+              pressStamp();
+            }
+            wrap.addEventListener('click', onTap);
+          }
         }
 
         // ── フェーズ3: 15マスカード表示（スタンプ押された後） ──
