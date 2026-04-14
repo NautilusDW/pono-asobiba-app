@@ -350,6 +350,10 @@
       from { transform: translateY(100%); }
       to   { transform: translateY(0); }
     }
+    @keyframes stampBtnPulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50%      { transform: translateX(-50%) scale(1.08); }
+    }
 
     .sheet-handle { display: none; }
 
@@ -1170,7 +1174,7 @@ function loadState() {
   if (!state.config.living.floor) {
     state.config.living.floor = (state.theme === 'girl') ? 'floor_pink_plain' : 'floor_wood_warm';
   }
-  // 旧アイテムIDのマイグレーション（gender別の入れ替えも含む）
+  // ID マイグレーションテーブル
   const ID_MIGRATION = { 'deco_toybox_pink': 'deco_box' };
   // 男の子プロフィールなのにピンクおもちゃ箱(deco_box)を持ってる場合 → boy版に置換
   // 女の子プロフィールで boy版を持ってる場合 → ピンクに置換
@@ -1179,29 +1183,34 @@ function loadState() {
   } else if (state.theme === 'girl') {
     ID_MIGRATION['deco_box_boy'] = 'deco_box';
   }
-  state.inventory = state.inventory.map(id => ID_MIGRATION[id] || id);
-  for (const [, area] of Object.entries(state.config)) {
-    if (area && area.placed) {
-      for (const p of area.placed) {
-        if (ID_MIGRATION[p.id]) p.id = ID_MIGRATION[p.id];
-      }
-    }
-  }
-  // 旧アイテムIDの掃除（存在しないものを除去）
-  state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
-  // achievements.js/grantReward で獲得した家具・壁・床をマージ
-  // （スタンプ報酬・実績報酬は pono_unlocked_furn 等に保存されるため）
+  const migrate = id => ID_MIGRATION[id] || id;
+
+  // achievements.js/grantReward で獲得した家具・壁・床をマージ（マイグレーション前に実行）
   const MERGE_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor'];
   MERGE_KEYS.forEach(key => {
     try {
       const arr = JSON.parse(localStorage.getItem(key) || '[]');
       arr.forEach(id => {
-        if (ROOM_ITEMS.some(x => x.id === id) && !state.inventory.includes(id)) {
+        if (!state.inventory.includes(id)) {
           state.inventory.push(id);
         }
       });
     } catch(e) {}
   });
+
+  // マイグレーション適用（inventory, config.placed の両方）
+  state.inventory = state.inventory.map(migrate);
+  for (const [, area] of Object.entries(state.config)) {
+    if (area && area.placed) {
+      for (const p of area.placed) {
+        p.id = migrate(p.id);
+      }
+    }
+  }
+  // 旧アイテムIDの掃除（存在しないものを除去）
+  state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
+  // 重複除去
+  state.inventory = Array.from(new Set(state.inventory));
   // 全アイテムを所持済みにする（デバッグ用）
   if (DEBUG_MODE) {
     ROOM_ITEMS.forEach(item => {
@@ -3409,54 +3418,72 @@ function _showExtendedBedTutorial() {
   }
 
   _waitForLandscape(function() {
-    var step = 0;
-    var STEPS = [
-      {
-        emoji: '🎁✨🛏️',
-        title: '宝箱から ベッドを とりだしたよ！',
-        body: 'お気に入りの ばしょに\nおいてみよう！',
-        btn: 'つぎへ ▶',
-        after: function() {
-          // 模様替えモードON
-          if (typeof window._setEditMode === 'function') window._setEditMode(true);
-        }
-      },
-      {
-        emoji: '👆',
-        title: 'ドラッグして うごかそう',
-        body: 'ベッドを おさえて\nすきな ばしょに\nうごかして みてね！',
-        btn: 'つぎへ ▶'
-      },
-      {
-        emoji: '🔄',
-        title: 'むきも かえられるよ',
-        body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！',
-        btn: 'つぎへ ▶'
-      },
-      {
-        emoji: '✅',
-        title: 'きまったら OK！',
-        body: 'みぎうえの「✅ おわり」ボタンを\nおすと かんせい！\n\nまた あとで へんこう できるよ',
-        btn: 'わかった！'
-      }
-    ];
-
-    function showNext() {
-      if (step >= STEPS.length) {
-        localStorage.setItem('pono_bed_tutorial_seen', '1');
-        localStorage.removeItem('pono_bed_tutorial_pending');
-        return;
-      }
-      var s = STEPS[step];
-      _showTutorialStepModal(s, function() {
-        if (s.after) s.after();
-        step++;
-        setTimeout(showNext, 280);
-      });
-    }
-    showNext();
+    // ── フェーズ1: ベッド取り出し + 位置調整の説明 ──
+    _showTutorialStepModal({
+      emoji: '🎁✨🛏️',
+      title: '宝箱から ベッドを とりだしたよ！',
+      body: 'お気に入りの ばしょに\nおいてみよう！',
+      btn: 'つぎへ ▶'
+    }, function() {
+      if (typeof window._setEditMode === 'function') window._setEditMode(true);
+      setTimeout(function() {
+        _showTutorialStepModal({
+          emoji: '👆',
+          title: 'ドラッグして うごかそう',
+          body: 'ベッドを おさえて\nすきな ばしょに\nうごかして みてね！',
+          btn: 'やってみる！'
+        }, function() {
+          // 画面下に「つぎへ」誘導ボタンを表示（ユーザーが動かし終わったらタップ）
+          _showFloatingNextButton('できたら タップ ▶', function() {
+            // ── フェーズ2: 向き変更の説明 ──
+            _showTutorialStepModal({
+              emoji: '🔄',
+              title: 'つぎは むきを かえてみよう',
+              body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！',
+              btn: 'やってみる！'
+            }, function() {
+              _showFloatingNextButton('できたら タップ ▶', function() {
+                // ── フェーズ3: 完成 ──
+                _showTutorialStepModal({
+                  emoji: '✅',
+                  title: 'きまったら OK！',
+                  body: 'みぎうえの「✅ おわり」ボタンを\nおすと かんせい！\n\nまた あとで へんこう できるよ',
+                  btn: 'わかった！'
+                }, function() {
+                  localStorage.setItem('pono_bed_tutorial_seen', '1');
+                  localStorage.removeItem('pono_bed_tutorial_pending');
+                });
+              });
+            });
+          });
+        });
+      }, 280);
+    });
   });
   return true;
+}
+
+// 画面下にフロートする「つぎへ」誘導ボタン
+function _showFloatingNextButton(label, onTap) {
+  var btn = document.createElement('button');
+  btn.textContent = label;
+  btn.style.cssText =
+    'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) scale(0);z-index:9996;' +
+    'padding:12px 32px;border:none;border-radius:50px;' +
+    'background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;' +
+    'font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;' +
+    'box-shadow:0 6px 20px rgba(245,168,0,0.5);' +
+    'transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);' +
+    'animation:stampBtnPulse 1.2s ease-in-out infinite 0.4s;';
+  document.body.appendChild(btn);
+  requestAnimationFrame(function() {
+    btn.style.transform = 'translateX(-50%) scale(1)';
+  });
+  btn.addEventListener('click', function() {
+    btn.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
+    btn.style.transform = 'translateX(-50%) scale(0)';
+    setTimeout(function() { btn.remove(); if (onTap) onTap(); }, 280);
+  });
 }
 
 // ステップ式チュートリアルモーダル（絵文字・タイトル・本文・ボタン付き）
