@@ -181,7 +181,7 @@
   }
 
   function goHome() {
-    location.href = '../';
+    location.href = '../play.html';
   }
 
   // Toggle menu

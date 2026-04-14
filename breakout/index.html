@@ -380,8 +380,8 @@ html, body {
         <div id="bg-picker-breakout"></div>
       </div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
-      <a class="ov-btn-home hidden" id="ov-btn-home" href="../">🏠 ホームにもどる</a>
-      <a class="ov-back hidden" id="ov-back" href="../index.html">← ホームにもどる</a>
+      <a class="ov-btn-home hidden" id="ov-btn-home" href="../play.html">🏠 ホームにもどる</a>
+      <a class="ov-back hidden" id="ov-back" href="../play.html">← ホームにもどる</a>
     </div>
   </div>
 </div>
@@ -389,7 +389,7 @@ html, body {
 <script>
 // ===== Premium Gate =====
 if (localStorage.getItem('pono_premium') !== '1') {
-  location.replace('../index.html');
+  location.replace('../play.html');
 }
 
 // ===== roundRect polyfill =====
@@ -1456,7 +1456,7 @@ initMenu({
   const ovBtnHome = document.getElementById('ov-btn-home');
   ovBtnHome.addEventListener('touchstart', e => {
     e.preventDefault();
-    window.location.href = '../';
+    window.location.href = '../play.html';
   }, { passive: false });
 })();
 
