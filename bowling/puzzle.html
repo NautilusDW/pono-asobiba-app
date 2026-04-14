@@ -1302,6 +1302,7 @@ function drawAimLine(bx, by, nx, ny) {
   }
 
   // Draw segments as dotted line fading out
+  // 背景に暗い影、上に白を重ねて明暗どちらの背景でも視認できるように
   for (let s = 0; s < segments.length; s++) {
     const seg = segments[s];
     const segLen = Math.sqrt((seg.x1 - seg.x0) ** 2 + (seg.y1 - seg.y0) ** 2);
@@ -1310,17 +1311,27 @@ function drawAimLine(bx, by, nx, ny) {
       const t = d / dots;
       const px = seg.x0 + (seg.x1 - seg.x0) * t;
       const py = seg.y0 + (seg.y1 - seg.y0) * t;
-      const alpha = 0.5 * (1 - (traveled > 0 ? ((s * 100 + d * 15) / maxDist) : 0));
-      if (alpha < 0.05) break;
-      ctx.globalAlpha = alpha;
+      const baseAlpha = 1 - (traveled > 0 ? ((s * 100 + d * 15) / maxDist) : 0);
+      if (baseAlpha < 0.1) break;
+      // 暗い縁取り（背景がライトカラーでも読める）
+      ctx.globalAlpha = baseAlpha * 0.7;
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fill();
+      // 白い中心
+      ctx.globalAlpha = baseAlpha * 0.95;
       ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = '#fff'; ctx.fill();
     }
     // Draw reflection marker
     if (s < segments.length - 1) {
-      ctx.globalAlpha = 0.4;
+      // 暗い下敷き
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath(); ctx.arc(seg.x1, seg.y1, 7, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill();
+      // 金色のリング
+      ctx.globalAlpha = 0.85;
       ctx.beginPath(); ctx.arc(seg.x1, seg.y1, 5, 0, Math.PI * 2);
-      ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2; ctx.stroke();
     }
   }
   ctx.globalAlpha = 1;
@@ -1337,32 +1348,51 @@ function drawBallPreview(now) {
   drawAimLine(bx, by, nx, ny);
 
   // Draw horizontal slider track (shows this is left-right control)
+  // 背景に暗い帯を敷いて、どんな背景でも見えるように
   const trackY = by + half + 30;
   const trackW = W * 0.6;
   const trackL = bx - trackW / 2, trackR = bx + trackW / 2;
-  ctx.globalAlpha = 0.2;
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  // 暗い下敷き
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(trackL, trackY); ctx.lineTo(trackR, trackY); ctx.stroke();
-  // Track endpoints (arrows)
-  ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.moveTo(trackL, trackY); ctx.lineTo(trackL + 8, trackY - 5); ctx.lineTo(trackL + 8, trackY + 5); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(trackR, trackY); ctx.lineTo(trackR - 8, trackY - 5); ctx.lineTo(trackR - 8, trackY + 5); ctx.fill();
+  // 白い本体
+  ctx.globalAlpha = 0.85;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(trackL, trackY); ctx.lineTo(trackR, trackY); ctx.stroke();
+  ctx.lineCap = 'butt';
+  // Track endpoints (arrows) - 暗い縁付きで視認性up
   ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.beginPath(); ctx.moveTo(trackL - 2, trackY); ctx.lineTo(trackL + 9, trackY - 6); ctx.lineTo(trackL + 9, trackY + 6); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(trackR + 2, trackY); ctx.lineTo(trackR - 9, trackY - 6); ctx.lineTo(trackR - 9, trackY + 6); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(trackL, trackY); ctx.lineTo(trackL + 7, trackY - 4); ctx.lineTo(trackL + 7, trackY + 4); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(trackR, trackY); ctx.lineTo(trackR - 7, trackY - 4); ctx.lineTo(trackR - 7, trackY + 4); ctx.fill();
 
   // Slider knob position (maps angle to track position)
   const angleNorm = (aimAngle - AIM_MIN) / (AIM_MAX - AIM_MIN); // 0=right, 1=left
   const knobX = trackR - angleNorm * trackW;
-  ctx.globalAlpha = aiming ? 0.8 : 0.4;
+  // 暗い縁 → 金色のノブ
+  ctx.globalAlpha = aiming ? 1 : 0.7;
+  ctx.beginPath(); ctx.arc(knobX, trackY, 10, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill();
   ctx.beginPath(); ctx.arc(knobX, trackY, 8, 0, Math.PI * 2);
   ctx.fillStyle = '#FFD700'; ctx.fill();
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
   ctx.globalAlpha = 1;
 
   // Draw aim direction indicator (short solid line from ball)
-  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3; ctx.globalAlpha = 0.8;
-  ctx.beginPath(); ctx.moveTo(bx, by);
-  ctx.lineTo(bx + nx * 40, by + ny * 40);
-  ctx.stroke(); ctx.globalAlpha = 1;
+  // 暗い縁取りで視認性up
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.7;
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + nx * 40, by + ny * 40); ctx.stroke();
+  ctx.globalAlpha = 0.95;
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + nx * 40, by + ny * 40); ctx.stroke();
+  ctx.lineCap = 'butt'; ctx.globalAlpha = 1;
 
   // Ball preview — large glow background for visibility
   const pulse = 0.7 + Math.sin(now * 0.004) * 0.2;
