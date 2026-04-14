@@ -3708,13 +3708,12 @@ function init() {
       window._bedTutorialDone = false;
       var started = _showExtendedBedTutorial();
       if (!started) {
-        // 何らかの理由で起動しなかったら次へ進む
-        localStorage.setItem('pono_bed_tutorial_seen', '1');
-        localStorage.removeItem('pono_bed_tutorial_pending');
+        // 何らかの理由で起動しなかった（seen=1 既存 or bed見つからず）→ そのまま次へ
+        // seen フラグは触らない（誤って '1' にしないため）
         setTimeout(next, 200);
         return;
       }
-      // 完了検知（in-memory フラグ: ストレージは開始時点で既に '1' に）
+      // 完了検知（in-memory フラグ。seen はフェーズ1モーダル表示時点でセットされる）
       var _interval = setInterval(function() {
         if (window._bedTutorialDone) {
           clearInterval(_interval);
