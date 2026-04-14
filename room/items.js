@@ -75,6 +75,11 @@ const ROOM_ITEMS = [
     emoji: '🆕',
     roomImg: '../assets/images/Rooms/walls/pink.png',
   },
+  {
+    id: 'wall_pink', cat: 'wall', name: 'ピンク', price: 0, theme: 'girl',
+    emoji: '🆕',
+    roomImg: '../assets/images/Rooms/walls/pink.png',
+  },
 
   // ══ ゆか ═════════════════════════════════════════════
   {
