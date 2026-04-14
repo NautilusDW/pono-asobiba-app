@@ -3487,7 +3487,7 @@ function _showExtendedBedTutorial() {
     // ── フェーズ1: ベッド取り出し演出 ──
     _showTutorialStepModal({
       emoji: '🎁✨🛏️',
-      title: 'おもちゃばこから ベッドを とりだしたよ！',
+      title: 'おもちゃばこから\nベッドを とりだしたよ！',
       body: _kidLabel + 'の おへやに\nかざって みよう！',
       btn: 'つぎへ ▶'
     }, function() {
@@ -3497,7 +3497,7 @@ function _showExtendedBedTutorial() {
         _showTutorialStepModal({
           emoji: '👆',
           title: 'まずは うごかし方！',
-          body: 'ベッドを おさえながら\nすきな ばしょに\nドラッグして みてね！',
+          body: 'ベッドを ゆびで おさえて\nすきな ばしょまで\nドラッグしてみよう！',
           btn: 'やってみる！'
         }, function() {
           setTutPhase('move'); // 回転・しまうボタンをブロック
@@ -3511,7 +3511,7 @@ function _showExtendedBedTutorial() {
                 _showTutorialStepModal({
                   emoji: '🔄',
                   title: 'つぎは まわし方！',
-                  body: 'ベッドの したの\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわして みよう！',
+                  body: 'ベッドの したに ある\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわしてみよう！',
                   btn: 'やってみる！'
                 }, function() {
                   // 回転フェーズ開始時にも中央リセット
@@ -3524,7 +3524,7 @@ function _showExtendedBedTutorial() {
                       _showTutorialStepModal({
                         emoji: '🎨',
                         title: 'じゆうに かざろう！',
-                        body: 'すきな ばしょに\nすきな むきで\nベッドを おいてみよう！\n\nできたら みぎうえの\n「✅ おわり」を おしてね',
+                        body: 'すきな ばしょに\nすきな むきで\nベッドを おいてみよう！\n\nできたら みぎうえの\n「✅ おわり」ボタンを おしてね',
                         btn: 'できた！'
                       }, function() {
                         // ── フェーズ5: もようがえボタンの案内 ──
@@ -3570,7 +3570,7 @@ function _highlightEditButtonHint(onDone) {
     'max-width:280px;text-align:center;font-family:inherit;font-size:0.9rem;font-weight:900;' +
     'color:#5D4E37;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,0.25);' +
     'visibility:hidden;top:0;left:0;';
-  bubble.innerHTML = 'いつでも この「もようがえ」ボタンから<br>かぐの ばしょや むきを かえられるよ！' +
+  bubble.innerHTML = 'いつでも この「もようがえ」ボタンから<br>かぐの ばしょや むきを<br>かえられるよ！' +
     '<br><button id="_hint-ok" style="margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">わかった！</button>';
   document.body.appendChild(bubble);
   // 位置調整: もようがえボタンの「上」に表示する（下に出ると読めない位置に行くため）
