@@ -8023,7 +8023,18 @@ async function wfDeploy() {
           '<button id="wf-dismiss" style="padding:6px 14px;border:none;border-radius:6px;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">閉じる</button>' +
         '</div>' +
       '</div>';
-    document.getElementById('wf-reload-now').addEventListener('click', function() { location.reload(); });
+    document.getElementById('wf-reload-now').addEventListener('click', async function() {
+      // Service Worker キャッシュをクリアしてから再読み込み
+      try {
+        if ('caches' in window) {
+          var keys = await caches.keys();
+          await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+        }
+      } catch(e) {}
+      // URL にタイムスタンプを付けてブラウザ HTTP キャッシュもバイパス
+      var url = location.pathname + '?_=' + Date.now() + location.hash;
+      location.replace(url);
+    });
     document.getElementById('wf-dismiss').addEventListener('click', function() { status.innerHTML = ''; });
   } catch (e) {
     status.textContent = '❌ ' + e.message;
