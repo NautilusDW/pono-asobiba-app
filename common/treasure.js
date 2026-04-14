@@ -431,9 +431,10 @@
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
     _video.src = mp4Path;
-    // スケール中に video の黒枠が見えないよう、再生開始までは完全に隠す
-    // （背景画像の poster.jpg だけが見えるようにする）
-    _video.style.display = 'none';
+    // スケール中に video の黒枠が見えないよう、再生開始までは opacity で隠す
+    // （display:none だと iOS で load/preload が走らず動画が止まる事があるため）
+    _video.style.opacity = '0';
+    _video.style.transition = 'opacity 0.2s';
     _video.load();
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
@@ -469,8 +470,8 @@
       tapOverlay.style.opacity = '0';
       setTimeout(function() { if (tapOverlay.parentNode) tapOverlay.remove(); }, 300);
 
-      // 動画を表示して再生開始
-      capturedVideo.style.display = '';
+      // 動画を表示して再生開始（opacity で隠していたので戻す）
+      capturedVideo.style.opacity = '1';
       var readyFired = false;
 
       // ── 3秒 soft timeout ──
