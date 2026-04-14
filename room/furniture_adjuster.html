@@ -1263,16 +1263,20 @@ document.getElementById('chk-stackable').onchange = function() {
 });
 
 ['minRow', 'maxRow', 'minCol', 'maxCol'].forEach(name => {
-  document.getElementById('num-' + name).oninput = (e) => {
+  var inp = document.getElementById('num-' + name);
+  function commit(val) {
     if (!selectedId) return;
     pushUndo();
-    adjustments[adjKey(selectedId)][name] = parseInt(e.target.value) || 0;
+    adjustments[adjKey(selectedId)][name] = parseInt(val) || 0;
     const adj = adjustments[adjKey(selectedId)];
     adj.row = Math.max(adj.minRow, Math.min(adj.maxRow, adj.row));
     adj.col = Math.max(adj.minCol, Math.min(adj.maxCol, adj.col));
     placeItem(selectedId);
     drawGrid();
-  };
+    saveToStorage(); // ★ 永続化しないと deploy 前にページリロード等で失われる
+  }
+  inp.oninput  = (e) => commit(e.target.value);
+  inp.onchange = (e) => commit(e.target.value);
 });
 
 // ─── surfaceY slider binding ───
@@ -1849,6 +1853,13 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   if (typeof _applyNameChange === 'function') _applyNameChange();
   var idInput = document.getElementById('edit-item-id');
   if (idInput) idInput.dispatchEvent(new Event('change'));
+  // ★ min/max/pivot 等の数値フィールドも強制コミット（blur 前に Deploy した場合の対策）
+  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','surfaceY']
+    .forEach(function(n) {
+      var el = document.getElementById('num-' + n);
+      if (el) { el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
+    });
+  saveToStorage();
   var status = document.getElementById('deploy-status');
   if (!ghToken()) { status.textContent = '❌ PAT未設定（管理画面で設定してください）'; status.style.color = '#f44336'; return; }
   var unsavedItems = getUnsavedItems();

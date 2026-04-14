@@ -1600,8 +1600,12 @@ function _addDragHandlers(el, areaId) {
     if (!dragging) return; // タップは回転ボタンで処理
     let row = parseInt(el.dataset.row);
     let col = parseInt(el.dataset.col);
-    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ（見つからなければ元に戻す）
     const item = getItem(el.dataset.itemId);
+    // ★ ピボット調整ツールで設定した min/max 範囲を最終的に強制適用（範囲外で確定するのを防止）
+    const finalClamped = clampToGrid(item, row, col, el.dataset.angle);
+    row = finalClamped.row; col = finalClamped.col;
+    el.dataset.row = row; el.dataset.col = col;
+    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ（見つからなければ元に戻す）
     if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
       const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
       if (isOverlapping(areaId, empty.row, empty.col, item, el.dataset.angle, el.dataset.itemId)) {
@@ -3558,31 +3562,35 @@ function _highlightEditButtonHint(onDone) {
     'transition:opacity 0.3s;';
   document.body.appendChild(spot);
   var bubble = document.createElement('div');
+  // ★ scale(0) のままだと getBoundingClientRect が 0x0 を返して位置計算が狂うので、
+  //    最初は transform なしで測定 → 位置確定後に scale(0) → scale(1) を再適用する
   bubble.style.cssText =
     'position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:14px 18px;' +
     'max-width:280px;text-align:center;font-family:inherit;font-size:0.9rem;font-weight:900;' +
     'color:#5D4E37;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,0.25);' +
-    'transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
+    'visibility:hidden;top:0;left:0;';
   bubble.innerHTML = 'いつでも この「もようがえ」ボタンから<br>かぐの ばしょや むきを かえられるよ！' +
     '<br><button id="_hint-ok" style="margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">わかった！</button>';
   document.body.appendChild(bubble);
   // 位置調整: もようがえボタンの「上」に表示する（下に出ると読めない位置に行くため）
-  var br = bubble.getBoundingClientRect();
-  var top = r.top - br.height - 12;
-  // 上にはみ出る場合のみ下に回す
+  // offsetWidth/Height は CSS transform の影響を受けないので scale(0) でも正しく返る
+  var bw = bubble.offsetWidth;
+  var bh = bubble.offsetHeight;
+  var top = r.top - bh - 12;
   if (top < 10) {
     var belowTop = r.bottom + 12;
-    if (belowTop + br.height <= window.innerHeight - 10) {
-      top = belowTop;
-    } else {
-      top = 10;
-    }
+    top = (belowTop + bh <= window.innerHeight - 10) ? belowTop : 10;
   }
-  bubble.style.top = top + 'px';
-  var left = r.left + r.width / 2 - br.width / 2;
+  var left = r.left + r.width / 2 - bw / 2;
   if (left < 8) left = 8;
-  if (left + br.width > window.innerWidth - 8) left = window.innerWidth - br.width - 8;
+  if (left + bw > window.innerWidth - 8) left = window.innerWidth - bw - 8;
+  bubble.style.top = top + 'px';
   bubble.style.left = left + 'px';
+  // アニメーション準備: scale(0) で可視化 → 次フレームで scale(1)
+  bubble.style.transformOrigin = 'center center';
+  bubble.style.transform = 'scale(0)';
+  bubble.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+  bubble.style.visibility = 'visible';
   requestAnimationFrame(function() { bubble.style.transform = 'scale(1)'; });
   document.getElementById('_hint-ok').addEventListener('click', function() {
     bubble.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
