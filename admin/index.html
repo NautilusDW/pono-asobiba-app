@@ -7923,24 +7923,29 @@ async function wfDeploy() {
         var ierr = await imgPut.json();
         throw new Error('画像アップロード失敗: ' + (ierr.message || ''));
       }
-      // items.js にエントリ挿入: 同カテゴリの最後のブロックの後ろに追加
-      var catComment = item.cat === 'wall' ? 'かべがみ' : 'ゆか';
+      // items.js にエントリ挿入: ROOM_ITEMS 配列の末尾 `];` の直前に追加する
+      // （カテゴリ順を保つより確実性を優先。ROOM_ITEMS 内でカテゴリはどこでも OK）
       var roomImg = '../' + imgPath;
-      var newEntry = '\n  {\n    id: \'' + item.id + '\', cat: \'' + item.cat + '\', name: \'' + item.name.replace(/'/g, "\\'") + '\', price: 0, theme: \'' + item.theme + '\',\n    emoji: \'🆕\',\n    roomImg: \'' + roomImg + '\',\n  },';
-      // 最後の同カテゴリブロックを探して、その直後に挿入
-      var catPattern = new RegExp("cat:\\s*'" + item.cat + "'", 'g');
-      var lastIdx = -1, m;
-      while ((m = catPattern.exec(text)) !== null) lastIdx = m.index;
-      if (lastIdx >= 0) {
-        var bs = text.lastIndexOf('{', lastIdx);
-        var d = 0, be = -1;
-        for (var bi = bs; bi < text.length; bi++) {
-          var ch = text.charAt(bi);
-          if (ch === '{') d++;
-          else if (ch === '}') { d--; if (d === 0) { be = bi + 1; if (text.charAt(be) === ',') be++; break; } }
-        }
-        if (be > 0) text = text.substring(0, be) + newEntry + text.substring(be);
+      var newEntry = '\n  {\n    id: \'' + item.id + '\', cat: \'' + item.cat + '\', name: \'' + item.name.replace(/'/g, "\\'") + '\', theme: \'' + item.theme + '\',\n    emoji: \'🆕\',\n    roomImg: \'' + roomImg + '\',\n  },';
+      // ROOM_ITEMS = [ ... ]; の末尾を探す
+      var roomItemsStart = text.indexOf('ROOM_ITEMS');
+      if (roomItemsStart < 0) {
+        console.error('wfDeploy: ROOM_ITEMS not found in items.js');
+        throw new Error('items.js の ROOM_ITEMS 配列が見つかりません');
       }
+      var arrayOpen = text.indexOf('[', roomItemsStart);
+      if (arrayOpen < 0) throw new Error('items.js: ROOM_ITEMS の [ が見つかりません');
+      // 対応する ] を brace counter で探す
+      var depth = 0, arrayClose = -1;
+      for (var ci = arrayOpen; ci < text.length; ci++) {
+        var ch2 = text.charAt(ci);
+        if (ch2 === '[') depth++;
+        else if (ch2 === ']') { depth--; if (depth === 0) { arrayClose = ci; break; } }
+      }
+      if (arrayClose < 0) throw new Error('items.js: ROOM_ITEMS の ] が見つかりません');
+      // ] の直前に newEntry を挿入
+      text = text.substring(0, arrayClose) + newEntry + '\n' + text.substring(arrayClose);
+      console.log('wfDeploy: inserted', item.id, 'into items.js at position', arrayClose);
     }
 
     // PUT items.js
