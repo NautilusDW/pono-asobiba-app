@@ -158,6 +158,49 @@
     });
   }
 
+  // ── メインBGM フェード制御 ──
+  // play.html に <audio id="play-bgm"> がある場合、宝箱演出の間フェードアウト
+  var _bgmFadeInterval = null;
+  var _bgmOriginalVolume = null;
+  function _fadeBgm(toVolume, durationMs, onDone) {
+    var bgm = document.getElementById('play-bgm');
+    if (!bgm) { if (onDone) onDone(); return; }
+    if (_bgmFadeInterval) { clearInterval(_bgmFadeInterval); _bgmFadeInterval = null; }
+    var startVol = bgm.volume;
+    var steps = Math.max(8, Math.round(durationMs / 50));
+    var stepCount = 0;
+    var delta = (toVolume - startVol) / steps;
+    _bgmFadeInterval = setInterval(function() {
+      stepCount++;
+      var newVol = startVol + delta * stepCount;
+      newVol = Math.max(0, Math.min(1, newVol));
+      bgm.volume = newVol;
+      if (stepCount >= steps) {
+        clearInterval(_bgmFadeInterval);
+        _bgmFadeInterval = null;
+        if (toVolume === 0) bgm.pause();
+        if (onDone) onDone();
+      }
+    }, durationMs / steps);
+  }
+  function _bgmFadeOut() {
+    var bgm = document.getElementById('play-bgm');
+    if (!bgm) return;
+    if (_bgmOriginalVolume === null) _bgmOriginalVolume = bgm.volume;
+    _fadeBgm(0, 500);
+  }
+  function _bgmFadeIn() {
+    var bgm = document.getElementById('play-bgm');
+    if (!bgm) return;
+    var target = _bgmOriginalVolume !== null ? _bgmOriginalVolume : 0.35;
+    _bgmOriginalVolume = null;
+    if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
+    bgm.volume = 0;
+    var p = bgm.play();
+    if (p && typeof p.catch === 'function') p.catch(function() {});
+    _fadeBgm(target, 800);
+  }
+
   function _doClose() {
     _clearPendingTimers();
     _destroyVideo();
@@ -172,6 +215,8 @@
       _container.style.transform = 'scale(0)';
     }
     _overlay.classList.remove('visible');
+    // メインBGMをフェードイン
+    _bgmFadeIn();
     setTimeout(function() {
       _overlay.classList.remove('show');
       // transition をリセット（次回表示時にオーバーシュートに戻す）
@@ -307,6 +352,8 @@
     _finished = false;
     _fallbackStarted = false;
     _rewardShown = false;
+    // メインBGMをフェードアウト（演出中は静かに）
+    _bgmFadeOut();
     // コンテナ背景をリセット
     if (_container) _container.style.background = '#000';
 

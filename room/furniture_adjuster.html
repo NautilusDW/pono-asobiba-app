@@ -445,21 +445,34 @@ function curAdj() { return selectedId ? adjustments[adjKey(selectedId)] : null; 
 ITEMS.forEach(item => {
   const cs = item.cellSize || 1;
   const autoMargin = Math.max(0, Math.ceil(cs) - 1);
+  // 既存 items.js の値を優先（無ければ auto 計算）
   const base = {
     cellSize: item.cellSize,
     pivotX: item.pivotX,
     pivotY: item.pivotY,
-    minRow: autoMargin,
-    maxRow: 7 - autoMargin,
-    minCol: autoMargin,
-    maxCol: 7 - autoMargin,
+    minRow: (item.minRow !== undefined ? item.minRow : autoMargin),
+    maxRow: (item.maxRow !== undefined ? item.maxRow : 7 - autoMargin),
+    minCol: (item.minCol !== undefined ? item.minCol : autoMargin),
+    maxCol: (item.maxCol !== undefined ? item.maxCol : 7 - autoMargin),
     row: 3, col: 3,
     surfaceY: item.surfaceY || 0,
     stackable: isDecoItem(item.id),
   };
   adjustments[adjKey(item.id, 'A')] = Object.assign({}, base);
   if (item.roomImgB) {
-    adjustments[adjKey(item.id, 'B')] = Object.assign({}, base);
+    // B 角度: items.js の angleB を優先、なければ A と同じ
+    var bBase = Object.assign({}, base);
+    if (item.angleB) {
+      if (item.angleB.cellSize !== undefined) bBase.cellSize = item.angleB.cellSize;
+      if (item.angleB.pivotX !== undefined)   bBase.pivotX = item.angleB.pivotX;
+      if (item.angleB.pivotY !== undefined)   bBase.pivotY = item.angleB.pivotY;
+      if (item.angleB.minRow !== undefined)   bBase.minRow = item.angleB.minRow;
+      if (item.angleB.maxRow !== undefined)   bBase.maxRow = item.angleB.maxRow;
+      if (item.angleB.minCol !== undefined)   bBase.minCol = item.angleB.minCol;
+      if (item.angleB.maxCol !== undefined)   bBase.maxCol = item.angleB.maxCol;
+    }
+    if (item.surfaceYB !== undefined) bBase.surfaceY = item.surfaceYB;
+    adjustments[adjKey(item.id, 'B')] = bBase;
   }
 });
 
@@ -1946,16 +1959,28 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
         if (ov.theme) newBlock = replStrProp(newBlock, 'theme', ov.theme);
         if (ov.name) newBlock = replStrProp(newBlock, 'name', ov.name);
       }
-      newBlock = replProp(newBlock, 'cellSize', adjA.cellSize);
-      newBlock = replProp(newBlock, 'pivotX', adjA.pivotX);
-      newBlock = replProp(newBlock, 'pivotY', adjA.pivotY);
+      // 数値プロパティ更新ヘルパー（undefined 防止）
+      function safeReplProp(blk, prop, val) {
+        if (val === undefined || val === null || isNaN(val)) return blk;
+        return replProp(blk, prop, val);
+      }
+      newBlock = safeReplProp(newBlock, 'cellSize', adjA.cellSize);
+      newBlock = safeReplProp(newBlock, 'pivotX', adjA.pivotX);
+      newBlock = safeReplProp(newBlock, 'pivotY', adjA.pivotY);
 
-      // minRow〜maxCol（存在する場合のみ更新）
-      if (/\bminRow:/.test(newBlock)) {
-        newBlock = replProp(newBlock, 'minRow', adjA.minRow);
-        newBlock = replProp(newBlock, 'maxRow', adjA.maxRow);
-        newBlock = replProp(newBlock, 'minCol', adjA.minCol);
-        newBlock = replProp(newBlock, 'maxCol', adjA.maxCol);
+      // minRow〜maxCol（存在すれば更新、無ければ追記）
+      if (adjA.minRow !== undefined && adjA.minRow !== null) {
+        if (/\bminRow:/.test(newBlock)) {
+          newBlock = safeReplProp(newBlock, 'minRow', adjA.minRow);
+          newBlock = safeReplProp(newBlock, 'maxRow', adjA.maxRow);
+          newBlock = safeReplProp(newBlock, 'minCol', adjA.minCol);
+          newBlock = safeReplProp(newBlock, 'maxCol', adjA.maxCol);
+        } else {
+          // 末尾の `}` の前に追記
+          var insertion = ' minRow: ' + adjA.minRow + ', maxRow: ' + adjA.maxRow +
+                          ', minCol: ' + adjA.minCol + ', maxCol: ' + adjA.maxCol + ',';
+          newBlock = newBlock.replace(/(pivotY:\s*-?[\d.]+,?)/, '$1' + insertion);
+        }
       }
 
       // surfaceY（トップレベル、A角度）
