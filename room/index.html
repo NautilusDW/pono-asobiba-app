@@ -3324,6 +3324,83 @@ function _runRoomTutorial() {
   showStep();
 }
 
+// ─── 家具獲得チュートリアル ─────────────────────────────
+// 家具IDの候補、チュートリアルフラグ、テキストを受け取り、初回のみ誘導する
+function _showFurnitureTutorial(itemIds, flagKey, tutorialText, afterOkMsg) {
+  if (localStorage.getItem(flagKey) === '1') return false;
+  // インベントリーに対象アイテムがあるか確認
+  var item = null;
+  for (var i = 0; i < itemIds.length; i++) {
+    if (state.inventory.indexOf(itemIds[i]) !== -1) {
+      var found = ROOM_ITEMS.find(x => x.id === itemIds[i]);
+      if (found) { item = found; break; }
+    }
+  }
+  if (!item) return false;
+
+  // リビングにすでに配置済みか確認
+  if (!state.config.living) state.config.living = {};
+  var cfg = state.config.living;
+  if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
+  var alreadyPlaced = cfg.placed.some(p => p.id === item.id);
+
+  // 未配置なら中央に強制配置
+  if (!alreadyPlaced) {
+    var row = item.gridRow ?? 3;
+    var col = item.gridCol ?? 3;
+    var pos = findNearestEmpty('living', row, col, item.id, item, 'A');
+    cfg.placed.push({ id: item.id, row: pos.row, col: pos.col, angle: 'A' });
+    delete cfg.furn; delete cfg.deco;
+    saveState();
+    refreshArea('living');
+  }
+
+  // 模様替えモードON
+  if (typeof window._setEditMode === 'function') window._setEditMode(true);
+
+  // チュートリアルモーダル表示
+  _waitForLandscape(function() {
+    _showTutorialModal(tutorialText, function() {
+      localStorage.setItem(flagKey, '1');
+      // afterOkMsg があれば2つ目のモーダル
+      if (afterOkMsg) {
+        setTimeout(function() {
+          _showTutorialModal(afterOkMsg, function() {});
+        }, 350);
+      }
+    });
+  });
+  return true;
+}
+
+// 汎用チュートリアルモーダル（スケールイン/アウト付き）
+function _showTutorialModal(text, onDone) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;padding:20px;transition:background 0.3s;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:20px;padding:20px 24px;text-align:center;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
+  var msg = document.createElement('div');
+  msg.style.cssText = 'font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;margin-bottom:14px;';
+  msg.innerHTML = text;
+  box.appendChild(msg);
+  var btn = document.createElement('button');
+  btn.textContent = 'OK！';
+  btn.style.cssText = 'padding:10px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);';
+  btn.addEventListener('click', function() {
+    box.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
+    box.style.transform = 'scale(0)';
+    ov.style.background = 'rgba(0,0,0,0)';
+    setTimeout(function() { ov.remove(); if (onDone) onDone(); }, 300);
+  });
+  box.appendChild(btn);
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.background = 'rgba(0,0,0,0.55)';
+    box.style.transform = 'scale(1)';
+  });
+}
+
 // ─── Init ─────────────────────────────────────────────
 function init() {
   loadState();
@@ -3335,6 +3412,21 @@ function init() {
   // 初回チュートリアル（横画面になってから表示）
   if (!localStorage.getItem('room_tut_seen')) {
     showRoomTutorial();
+  } else {
+    // 家具獲得チュートリアル（優先順位: ベッド → 本棚）
+    var bedShown = _showFurnitureTutorial(
+      ['furn_bed_pink', 'furn_bed_blue_boy'],
+      'pono_bed_tutorial_seen',
+      'ベッドを ゲット！ \uD83D\uDECF\uFE0F\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！'
+    );
+    if (!bedShown) {
+      _showFurnitureTutorial(
+        ['furn_bookshelf_w', 'furn_bookshelf_wood'],
+        'pono_bookshelf_tutorial_seen',
+        'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！',
+        'おいた ほんだなを タップすると\nこれまでに もらった アイテムや\nずかん、きろくが みられるよ！'
+      );
+    }
   }
 
   // Entry overlay buttons
