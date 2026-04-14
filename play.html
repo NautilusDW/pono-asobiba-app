@@ -1155,6 +1155,9 @@
       <div style="font-size: 1.05rem; color: var(--primary); font-weight: 900;">🌟 むりょうで ゲームが あそべるよ！</div>
     </div>
 
+    <!-- メイン BGM -->
+    <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
+
     <div class="music-row">
       <label class="toggle">
         <input type="checkbox" id="music-toggle">
@@ -1447,16 +1450,46 @@
 
     // PWA Guide: 常時表示（削除済み）
 
-    // ===== Music Toggle =====
+    // ===== Music Toggle + BGM =====
     const toggle = document.getElementById('music-toggle');
     const label  = document.getElementById('music-label');
+    const bgm    = document.getElementById('play-bgm');
+    if (bgm) bgm.volume = 0.35;
     const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
     toggle.checked = enabled;
     label.textContent = enabled ? 'おとがでるよ' : 'おとがでないよ';
 
+    function tryPlayBgm() {
+      if (!bgm) return;
+      var p = bgm.play();
+      if (p && typeof p.catch === 'function') p.catch(function() {});
+    }
+    function stopBgm() { if (bgm) bgm.pause(); }
+
+    if (enabled) {
+      // iOS Safari は最初のユーザー操作までブロックされるので、両方試す
+      tryPlayBgm();
+      var _bgmUnlock = function() {
+        if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
+        document.removeEventListener('touchstart', _bgmUnlock);
+        document.removeEventListener('click', _bgmUnlock);
+      };
+      document.addEventListener('touchstart', _bgmUnlock, { passive: true });
+      document.addEventListener('click', _bgmUnlock);
+    }
+
     toggle.addEventListener('change', () => {
-      localStorage.setItem('pono_bgm_enabled', toggle.checked ? 'on' : 'off');
-      label.textContent = toggle.checked ? 'おとがでるよ' : 'おとがでないよ';
+      const on = toggle.checked;
+      localStorage.setItem('pono_bgm_enabled', on ? 'on' : 'off');
+      label.textContent = on ? 'おとがでるよ' : 'おとがでないよ';
+      if (on) tryPlayBgm();
+      else stopBgm();
+    });
+
+    // タブが背景になったら一時停止、戻ったら再開
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) stopBgm();
+      else if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
     });
 
     // ===== Points display =====
