@@ -823,18 +823,21 @@ document.getElementById('undo-btn').onclick = () => {
 };
 
 // ─── ID/Name editing ───
-document.getElementById('edit-item-name').addEventListener('change', function() {
+// change だけだと blur するまで保存されず、その状態で Deploy すると反映されないため input も監視
+function _applyNameChange() {
   if (!selectedId) return;
+  var input = document.getElementById('edit-item-name');
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
   if (!item) return;
-  item.name = this.value.trim();
-  // ボタンのtitleも更新
+  item.name = input.value.trim();
   var btn = document.querySelector('.item-btn[data-id="' + selectedId + '"]');
   if (btn) btn.title = item.name + ' (' + selectedId + ')';
   saveToStorage();
   if (item._imported) saveImports();
   else saveOverride(item.id, { name: item.name });
-});
+}
+document.getElementById('edit-item-name').addEventListener('change', _applyNameChange);
+document.getElementById('edit-item-name').addEventListener('input', _applyNameChange);
 
 document.getElementById('edit-item-id').addEventListener('change', function() {
   if (!selectedId) return;
@@ -1829,6 +1832,10 @@ function ghUploadFile(path, base64, msg, cb) {
 
 // ─── Deploy to items.js via GitHub API ───
 document.getElementById('deploy-btn').addEventListener('click', async function() {
+  // 入力フィールドに未確定の変更があれば強制的に保存
+  if (typeof _applyNameChange === 'function') _applyNameChange();
+  var idInput = document.getElementById('edit-item-id');
+  if (idInput) idInput.dispatchEvent(new Event('change'));
   var status = document.getElementById('deploy-status');
   if (!ghToken()) { status.textContent = '❌ PAT未設定（管理画面で設定してください）'; status.style.color = '#f44336'; return; }
   var unsavedItems = getUnsavedItems();

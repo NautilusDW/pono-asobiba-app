@@ -80,7 +80,7 @@
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── 右下ボタン群（たからばこ＋もようがえ） ── */
+    /* ── 右下ボタン群（おもちゃばこ＋もようがえ） ── */
     #side-btns {
       position: absolute; bottom: 10px; right: 10px; z-index: 55;
       display: flex; flex-direction: column; gap: 6px;
@@ -396,7 +396,7 @@
     }
     .cat-tab.on { background: var(--orange); color: white; border-color: var(--orange-dark); }
 
-    /* ── たからばこ top tabs ── */
+    /* ── おもちゃばこ top tabs ── */
     .takara-tabs {
       display: flex; gap: 3px; padding: 4px 8px;
       border-bottom: 2px solid #ffe5cc;
@@ -415,7 +415,7 @@
     /* Sticker/Achievement/Highscore inline content */
     .takara-scroll { flex: 1; overflow-y: auto; padding: 12px; scrollbar-width: thin; }
 
-    /* High score list in たからばこ */
+    /* High score list in おもちゃばこ */
     .hs-game-section { margin-bottom: 16px; }
     .hs-game-title {
       font-size: 15px; font-weight: bold; color: #5B4A3F;
@@ -439,7 +439,7 @@
     .hs-inline-table tr:nth-child(even) td { background: rgba(255,215,0,0.08); }
     .hs-inline-empty { color: #A89585; font-size: 13px; padding: 8px 0; text-align: center; }
 
-    /* Sticker grid in たからばこ */
+    /* Sticker grid in おもちゃばこ */
     .takara-sticker-grid {
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
     }
@@ -458,7 +458,7 @@
     }
     .takara-sticker-empty { font-size: 20px; color: #ccc; }
 
-    /* Achievement list in たからばこ */
+    /* Achievement list in おもちゃばこ */
     .takara-ach-item {
       display: flex; align-items: center; gap: 10px;
       padding: 8px 0; border-bottom: 1px solid #f0e6d6;
@@ -931,7 +931,7 @@
     </div>
     <!-- 右下ボタン群 -->
     <div id="side-btns">
-      <button class="side-btn" id="ui-btn-takara"><img src="../assets/images/Rooms/furnitures_final/box_A.png" alt="">たからばこ</button>
+      <button class="side-btn" id="ui-btn-takara"><img src="../assets/images/Rooms/furnitures_final/box_A.png" alt="">おもちゃばこ</button>
       <button class="side-btn" id="ui-btn-edit">🏠 もようがえ</button>
     </div>
     <!-- 拡大/縮小 -->
@@ -1017,12 +1017,12 @@
   <p class="entry-sub" id="entry-sub"></p>
 </div>
 
-<!-- ── たからばこ modal ────────────────────────────── -->
+<!-- ── おもちゃばこ modal ────────────────────────────── -->
 <div class="modal-ov hidden shop-panel" id="shop-ov">
   <div class="sheet" id="shop-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-hd">
-      <span class="sheet-title" id="shop-title">📦 たからばこ</span>
+      <span class="sheet-title" id="shop-title">📦 おもちゃばこ</span>
       <button class="sheet-close" id="shop-close">✕</button>
     </div>
     <!-- Top-level tabs: もちもの / シール / じっせき / ハイスコア -->
@@ -2012,7 +2012,7 @@ function buildRoomArea(areaData) {
     }
   });
 
-  // たからばこ（living room only）— ドラッグ移動・回転対応
+  // おもちゃばこ（living room only）— ドラッグ移動・回転対応
   if (areaData.id === 'living' && !locked) {
     const tbRow = (state.config.living && state.config.living.toyboxRow) ?? 7;
     const tbCol = (state.config.living && state.config.living.toyboxCol) ?? 1;
@@ -2044,7 +2044,7 @@ function buildRoomArea(areaData) {
       } else {
         imgFile = tbAngle === 'B' ? 'box_B.png' : 'box_A.png';
       }
-      toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/' + imgFile + '" style="height:100%;width:auto;" alt="たからばこ">';
+      toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/' + imgFile + '" style="height:100%;width:auto;" alt="おもちゃばこ">';
     }
     tbApplyStyle(tbRow, tbCol);
 
@@ -2201,11 +2201,11 @@ function setShopMode(mode) {
   shopMode = mode;
   document.getElementById('mode-buy').classList.toggle('on', mode === 'buy');
   document.getElementById('mode-bag').classList.toggle('on', mode === 'bag');
-  document.getElementById('shop-title').textContent = '📦 たからばこ';
+  document.getElementById('shop-title').textContent = '📦 おもちゃばこ';
   renderShopGrid(currentShopCat);
 }
 
-// ── たからばこ ────────────────────────────────────────
+// ── おもちゃばこ ────────────────────────────────────────
 let currentTakaraTab = 'items';
 
 function _shiftRoom(on) {
@@ -3257,12 +3257,20 @@ function _runRoomTutorial() {
   var step = 0;
   var _spotlight = null; // fixed position spotlight clone
 
+  // プロフィールから名前を取得（あれば「○○のおへや」、なければ「わたしのおへや」）
+  var _kidName = '';
+  try {
+    var _prof = JSON.parse(localStorage.getItem('pono_profile') || '{}');
+    _kidName = (_prof.name || '').trim();
+  } catch(e) {}
+  var _ownerLabel = _kidName ? (_kidName + 'の') : 'わたしの';
+
   var STEPS = [
     {
-      text: 'ここは わたしの おへやだよ！<br>すきに アレンジできるよ',
+      text: 'ここは ' + _ownerLabel + ' おへやだよ！<br>すきに アレンジできるよ',
     },
     {
-      text: 'これは 「たからばこ」！<br>タップすると<br>もちものが みれるよ',
+      text: 'これは 「おもちゃばこ」！<br>タップすると<br>もちものが みれるよ',
       target: function() { return document.querySelector('.toybox-item'); },
     },
     {
@@ -3566,7 +3574,7 @@ function _showExtendedBedTutorial() {
     // ── フェーズ1: ベッド取り出し演出 ──
     _showTutorialStepModal({
       emoji: '🎁✨🛏️',
-      title: '宝箱から ベッドを とりだしたよ！',
+      title: 'おもちゃばこから ベッドを とりだしたよ！',
       body: 'ポノの おへやに\nかざって みよう！',
       btn: 'つぎへ ▶'
     }, function() {
@@ -3718,25 +3726,30 @@ function init() {
     });
   }
 
-  // 2. ベッド拡張チュートリアル（bedPending + bed in inventory）
-  var bedPending = localStorage.getItem('pono_bed_tutorial_pending') === '1';
+  // 2. ベッド拡張チュートリアル（ベッド所持 + 未視聴）
+  // bedPending フラグは参考情報。ベッドがインベントリにあって未視聴ならフラグ無しでも起動
   var bedInInv = ['furn_bed_pink', 'furn_bed_blue_boy'].some(id => state.inventory.indexOf(id) !== -1);
-  if (bedPending && localStorage.getItem('pono_bed_tutorial_seen') !== '1') {
-    if (bedInInv) {
-      tutQueue.push(function(next) {
-        _showExtendedBedTutorial();
-        // 完了検知
-        var _interval = setInterval(function() {
-          if (localStorage.getItem('pono_bed_tutorial_seen') === '1') {
-            clearInterval(_interval);
-            setTimeout(next, 400);
-          }
-        }, 300);
-      });
-    } else {
-      // bed がインベントリに無ければ pending をクリア
-      localStorage.removeItem('pono_bed_tutorial_pending');
-    }
+  if (bedInInv && localStorage.getItem('pono_bed_tutorial_seen') !== '1') {
+    tutQueue.push(function(next) {
+      var started = _showExtendedBedTutorial();
+      if (!started) {
+        // 何らかの理由で起動しなかったら次へ進む
+        localStorage.setItem('pono_bed_tutorial_seen', '1');
+        localStorage.removeItem('pono_bed_tutorial_pending');
+        setTimeout(next, 200);
+        return;
+      }
+      // 完了検知
+      var _interval = setInterval(function() {
+        if (localStorage.getItem('pono_bed_tutorial_seen') === '1') {
+          clearInterval(_interval);
+          setTimeout(next, 400);
+        }
+      }, 300);
+    });
+  } else if (!bedInInv) {
+    // bed がインベントリに無ければ pending をクリア（ゴミ掃除）
+    localStorage.removeItem('pono_bed_tutorial_pending');
   }
 
   // 3. 本棚チュートリアル（本棚所持 + 未視聴、ベッドチュートリアル後）
@@ -3800,14 +3813,14 @@ function init() {
     renderShopGrid(tab.dataset.cat);
   });
 
-  // たからばこ tab clicks
+  // おもちゃばこ tab clicks
   document.getElementById('takara-tabs').addEventListener('click', e => {
     const tab = e.target.closest('.takara-tab');
     if (!tab) return;
     switchTakaraTab(tab.dataset.tab);
   });
 
-  // たからばこ open (single button replaces shop/ach/sticker)
+  // おもちゃばこ open (single button replaces shop/ach/sticker)
   document.getElementById('ui-btn-takara').addEventListener('click', () => openTakarabako());
   document.getElementById('shop-close').addEventListener('click', () => {
     document.getElementById('shop-ov').classList.add('hidden');
