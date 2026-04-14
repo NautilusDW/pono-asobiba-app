@@ -2574,32 +2574,53 @@
           cardEl.style.transform = 'scale(1)';
         });
 
-        // ── フェーズ1: スタンプカード（押される前）+ うけとるボタン ──
-        function phase1Receive() {
+        // 15マスグリッドHTML生成（stamp-full-modal-slot スタイルを流用）
+        // mode: 'before' = 新規スタンプは空表示, 'after' = 新規スタンプは押された状態
+        function buildFullGridHtml(mode) {
           var log = getStampLog();
           var currentTotal = log.total;
           var thisCardStart = (cardNum - 1) * SLOTS_PER_CARD;
+          var html = '';
+          for (var row = 0; row < 3; row++) {
+            html += '<div class="stamp-full-modal-row">';
+            for (var col = 0; col < SLOTS_PER_ROW; col++) {
+              var globalIdx = row * SLOTS_PER_ROW + col;
+              var slotNum = globalIdx + 1;
+              var slotTotal = thisCardStart + slotNum;
+              var isNew = stampPositions.indexOf(globalIdx) >= 0;
+              var isPreFilled = slotTotal <= currentTotal && !isNew;
+              var slotRw = (typeof getSlotRewardInfo === 'function') ? getSlotRewardInfo(slotNum) : null;
 
-          var gridHtml = '';
-          for (var i = 0; i < SLOTS_PER_CARD; i++) {
-            var slotNum = i + 1;
-            var slotTotal = thisCardStart + slotNum;
-            // フェーズ1では「新規スタンプは空」の状態を見せる
-            var isNew = stampPositions.indexOf(i) >= 0;
-            var isFilledBefore = slotTotal <= currentTotal && !isNew;
+              var classes = 'stamp-full-modal-slot';
+              var inner = '';
 
-            if (isFilledBefore) {
-              gridHtml += '<div class="stamp-full-cell filled"><img src="' + PONO_ICON + '" alt=""></div>';
-            } else {
-              gridHtml += '<div class="stamp-full-cell empty">' + String(slotNum).padStart(2, '0') + '</div>';
+              if (isPreFilled) {
+                classes += ' stamped';
+                inner = '<img src="' + PONO_ICON + '" alt="">';
+              } else if (isNew && mode === 'after') {
+                classes += ' stamped';
+                inner = '<img src="' + PONO_ICON + '" alt="">';
+              } else {
+                inner = '<span class="slot-num">' + String(slotNum).padStart(2, '0') + '</span>';
+                if (slotRw) {
+                  inner += '<span class="slot-hint">' + slotRw.icon + '</span>';
+                  classes += ' reward-slot';
+                }
+              }
+              html += '<div class="' + classes + '">' + inner + '</div>';
             }
+            html += '</div>';
           }
+          return html;
+        }
 
+        // ── フェーズ1: スタンプカード（押される前）+ うけとるボタン ──
+        function phase1Receive() {
           contentEl.innerHTML =
-            '<div style="font-size:1.1rem;font-weight:900;color:#F2915A;margin-bottom:6px;">\uD83C\uDF89 スタンプ ' + count + 'こ ゲット！</div>' +
-            '<div style="font-size:0.85rem;font-weight:700;color:#8B7355;margin-bottom:8px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>' +
-            '<div class="stamp-full-grid">' + gridHtml + '</div>' +
-            '<button id="stamp-b-btn" style="margin-top:12px;padding:14px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
+            '<div style="font-size:1.1rem;font-weight:900;color:#F2915A;margin-bottom:4px;">\uD83C\uDF89 スタンプ ' + count + 'こ ゲット！</div>' +
+            '<div class="stamp-full-modal-title" style="margin-bottom:12px;">\uD83D\uDCCB スタンプカード ' + cardNum + 'まいめ</div>' +
+            '<div id="stamp-b-grid">' + buildFullGridHtml('before') + '</div>' +
+            '<button id="stamp-b-btn" style="margin-top:16px;padding:14px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
 
           document.getElementById('stamp-b-btn').addEventListener('click', function() {
             _resumeAC();
@@ -2692,32 +2713,12 @@
           }, 2000);
         }
 
-        // ── フェーズ3: 15マスカード表示 ──
+        // ── フェーズ3: 15マスカード表示（スタンプ押された後） ──
         function phase3FullCard() {
-          var log = getStampLog();
-          var currentTotal = log.total;
-          var thisCardStart = (cardNum - 1) * SLOTS_PER_CARD; // このカードの開始total-1
-
-          var gridHtml = '';
-          for (var i = 0; i < SLOTS_PER_CARD; i++) {
-            var slotNum = i + 1;
-            var slotTotal = thisCardStart + slotNum; // このスロットに対応するtotal値
-            var isNew = stampPositions.indexOf(i) >= 0;
-            var isFilled = slotTotal <= currentTotal;
-
-            if (isNew) {
-              gridHtml += '<div class="stamp-full-cell new"><img src="' + PONO_ICON + '" alt=""></div>';
-            } else if (isFilled) {
-              gridHtml += '<div class="stamp-full-cell filled"><img src="' + PONO_ICON + '" alt=""></div>';
-            } else {
-              gridHtml += '<div class="stamp-full-cell empty">' + String(slotNum).padStart(2, '0') + '</div>';
-            }
-          }
-
           contentEl.innerHTML =
-            '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">\uD83D\uDCCB ' + cardNum + 'まいめ</div>' +
-            '<div class="stamp-full-grid">' + gridHtml + '</div>' +
-            '<div style="font-size:1.3rem;font-weight:900;color:#F2915A;margin:6px 0 12px;">やったー！ \uD83C\uDF89</div>' +
+            '<div class="stamp-full-modal-title" style="margin-bottom:12px;">\uD83D\uDCCB スタンプカード ' + cardNum + 'まいめ</div>' +
+            '<div>' + buildFullGridHtml('after') + '</div>' +
+            '<div style="font-size:1.3rem;font-weight:900;color:#F2915A;margin:10px 0 8px;">やったー！ \uD83C\uDF89</div>' +
             '<button id="stamp-b-close" style="padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">やったー！</button>';
 
           document.getElementById('stamp-b-close').addEventListener('click', closeModal);
