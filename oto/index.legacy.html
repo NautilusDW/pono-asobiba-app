@@ -21,32 +21,42 @@
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
-    /* 水底っぽい背景 (JS で時間変化) */
-    background: linear-gradient(180deg, hsl(200,55%,55%) 0%, hsl(215,60%,25%) 100%);
-    color: #fff;
+    background: linear-gradient(180deg, #FFE8B0 0%, #FFC98A 45%, #FFA5A5 100%);
+    color: #5D4E37;
   }
 
   #app {
     position: fixed; inset: 0;
+    display: flex; flex-direction: column;
   }
 
-  /* ── ステージ全体 (Canvas 背景 + ボタン + ポノ) ── */
+  /* ── ステージ: ポノが踊るエリア ── */
   .stage {
-    position: absolute; inset: 0;
+    flex: 1 1 auto;
+    position: relative; min-height: 0;
     overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-top: max(0px, env(safe-area-inset-top));
   }
-  /* 背景 Canvas (最下層): グラデ / 環境バブル / 波紋 / パーティクル */
-  #bgCanvas {
-    position: absolute; inset: 0;
-    z-index: 0; pointer-events: none;
-  }
-  /* ポノ sprite (中層) */
   .pono-sprite {
-    position: absolute;
-    bottom: 12px; left: 50%; transform: translateX(-50%);
+    position: relative;
     width: 140px; height: 180px;
-    z-index: 2; pointer-events: none;
+    margin-bottom: 8px;
+    pointer-events: none;
     image-rendering: auto;
+  }
+  /* キラキラパーティクル */
+  .spark {
+    position: absolute;
+    width: 28px; height: 28px;
+    pointer-events: none;
+    animation: sparkUp 900ms ease-out forwards;
+    font-size: 24px; line-height: 28px; text-align: center;
+  }
+  @keyframes sparkUp {
+    0%   { transform: translate(-50%,0) scale(0.5); opacity: 0; }
+    20%  { opacity: 1; transform: translate(-50%,-20px) scale(1.1); }
+    100% { transform: translate(calc(-50% + var(--dx,0)), calc(-80px + var(--dy,0))) scale(0.6); opacity: 0; }
   }
 
   /* ── セット切替アイコン (上部) ── */
@@ -59,108 +69,79 @@
   .set-btn {
     width: 48px; height: 48px;
     border-radius: 50%; border: 3px solid #fff;
-    background: rgba(255,255,255,0.92);
+    background: #fff;
     display: flex; align-items: center; justify-content: center;
     font-size: 1.6rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     cursor: pointer;
     transition: transform 0.15s;
     touch-action: manipulation;
   }
   .set-btn:active { transform: scale(0.88); }
   .set-btn.active {
-    border-color: #FFD84D;
-    box-shadow: 0 0 0 3px rgba(255,216,77,0.5), 0 4px 12px rgba(0,0,0,0.25);
+    border-color: #F2915A;
+    box-shadow: 0 0 0 3px rgba(242,145,90,0.35), 0 4px 12px rgba(0,0,0,0.18);
   }
 
-  /* ── 円形 楽器ボタン (上層 / タップ対象) ── */
-  #instruments {
-    position: absolute; inset: 0;
-    z-index: 3; pointer-events: none; /* 子の button だけ効かせる */
+  /* ── 鍵盤エリア ── */
+  .keys {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    padding: 8px max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom));
   }
-  .instr-btn {
-    position: absolute;
-    left: 0; top: 0;
-    width: var(--sz, 128px); height: var(--sz, 128px);
-    border-radius: 50%;
-    border: none;
-    background:
-      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.65), rgba(255,255,255,0) 48%),
-      linear-gradient(180deg, var(--c1, #FF6B9D), var(--c2, #E13870));
-    box-shadow:
-      0 10px 0 rgba(0,0,0,0.22),
-      inset 0 0 0 3px rgba(255,255,255,0.35);
-    color: #fff;
-    font-size: clamp(2.4rem, 9vw, 3.6rem);
+  .key {
+    height: clamp(100px, 22dvh, 180px);
+    border: none; border-radius: 24px;
     display: flex; align-items: center; justify-content: center;
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 900; color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.25);
     cursor: pointer;
-    pointer-events: auto;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.15), inset 0 2px 0 rgba(255,255,255,0.35);
+    transition: transform 0.08s, box-shadow 0.08s;
     touch-action: manipulation;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
-    transition: transform 0.08s, box-shadow 0.08s;
-    /* translate(-50%,-50%) で X,Y 中心指定 */
-    transform: translate(-50%, -50%);
   }
-  .instr-btn.press {
-    transform: translate(-50%, -50%) scale(0.9);
-    box-shadow:
-      0 4px 0 rgba(0,0,0,0.22),
-      inset 0 0 0 3px rgba(255,255,255,0.35);
+  .key:active, .key.press {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15), inset 0 2px 0 rgba(255,255,255,0.35);
   }
-  .instr-btn.i1 { --c1:#FF6B9D; --c2:#E13870; }  /* ピンク */
-  .instr-btn.i2 { --c1:#FFA94D; --c2:#F2742A; }  /* オレンジ */
-  .instr-btn.i3 { --c1:#FFD84D; --c2:#F2B800; }  /* イエロー */
-  .instr-btn.i4 { --c1:#7DD3A0; --c2:#35A86A; }  /* グリーン */
-  .instr-btn.i5 { --c1:#C4B5FD; --c2:#8B5CF6; }  /* パープル */
+  .key.k1 { background: linear-gradient(180deg, #FF6B9D, #E13870); }
+  .key.k2 { background: linear-gradient(180deg, #FFA94D, #F2742A); }
+  .key.k3 { background: linear-gradient(180deg, #FFD84D, #F2B800); }
+  .key.k4 { background: linear-gradient(180deg, #7DD3A0, #35A86A); }
+  .key.k5 { background: linear-gradient(180deg, #7DD3FC, #2892D4); }
+  .key.k6 { background: linear-gradient(180deg, #C4B5FD, #8B5CF6); }
 
-  /* 5 ボタンの散布配置 (CSS variables で position 指定) */
-  .instr-btn[data-idx="0"] { left: 22%; top: 52%; --sz: 128px; }
-  .instr-btn[data-idx="1"] { left: 74%; top: 46%; --sz: 136px; }
-  .instr-btn[data-idx="2"] { left: 48%; top: 62%; --sz: 144px; }
-  .instr-btn[data-idx="3"] { left: 18%; top: 80%; --sz: 128px; }
-  .instr-btn[data-idx="4"] { left: 78%; top: 78%; --sz: 132px; }
-
-  /* 横画面: 縦方向を圧縮 */
+  /* 横画面: 鍵盤を縦にまとめすぎないよう微調整 */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"] { top: 38%; }
-    .instr-btn[data-idx="1"] { top: 32%; }
-    .instr-btn[data-idx="2"] { top: 52%; }
-    .instr-btn[data-idx="3"] { top: 72%; }
-    .instr-btn[data-idx="4"] { top: 70%; }
-    .pono-sprite { width: 110px; height: 150px; bottom: 4px; }
-  }
-  /* 画面が狭い時ボタン縮小 */
-  @media (max-width: 420px) {
-    .instr-btn { --sz: min(30vw, 132px) !important; }
+    .stage { padding-top: 16px; }
+    .key { height: clamp(80px, 26dvh, 140px); }
   }
 </style>
 </head>
 <body>
 <div id="app">
   <div class="stage" id="stage">
-    <!-- 最下層: 背景 Canvas (グラデ + 環境バブル + 波紋 + パーティクル) -->
-    <canvas id="bgCanvas"></canvas>
-
-    <!-- ポノ sprite (中層) -->
-    <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
-
-    <!-- セット切替 (右上) -->
     <div class="sets" id="sets" role="tablist">
       <button class="set-btn active" data-set="voice" aria-label="おとセット1">🗣️</button>
       <button class="set-btn"        data-set="doremi" aria-label="おとセット2">🎹</button>
       <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
       <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
     </div>
+    <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
+  </div>
 
-    <!-- 楽器ボタン (上層 / タップ対象) -->
-    <div id="instruments">
-      <button class="instr-btn i1" data-idx="0" aria-label="おと1">🌸</button>
-      <button class="instr-btn i2" data-idx="1" aria-label="おと2">🦋</button>
-      <button class="instr-btn i3" data-idx="2" aria-label="おと3">⭐</button>
-      <button class="instr-btn i4" data-idx="3" aria-label="おと4">🍀</button>
-      <button class="instr-btn i5" data-idx="4" aria-label="おと5">🎈</button>
-    </div>
+  <div class="keys" id="keys">
+    <button class="key k1" data-idx="0" aria-label="おと1">🌸</button>
+    <button class="key k2" data-idx="1" aria-label="おと2">🦋</button>
+    <button class="key k3" data-idx="2" aria-label="おと3">⭐</button>
+    <button class="key k4" data-idx="3" aria-label="おと4">🍀</button>
+    <button class="key k5" data-idx="4" aria-label="おと5">💧</button>
+    <button class="key k6" data-idx="5" aria-label="おと6">🎈</button>
   </div>
 </div>
 
@@ -195,7 +176,7 @@ document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: 
 // ボイス音源: voices/NN-aiueo.wav を6音ピックアップ (あ か さ た な ま)
 // ★ページロード時に即プリロード開始（decodeAudioData は resume 不要で走る）
 // ────────────────────────────────
-var VOICE_INDICES = [0, 5, 10, 15, 20]; // あ/か/さ/た/な (5ボタンに揃える)
+var VOICE_INDICES = [0, 5, 10, 15, 20, 30]; // あ/か/さ/た/な/ま
 var _voiceBuffers = new Array(VOICE_INDICES.length).fill(null);
 var _voiceRawBuffers = new Array(VOICE_INDICES.length).fill(null); // ArrayBuffer キャッシュ (AC 未作成時)
 var _voiceLoading = false;
@@ -250,12 +231,11 @@ preloadVoiceBuffers();
 // ────────────────────────────────
 // 合成: ドレミ / 太鼓 / 動物
 // ────────────────────────────────
-// 5ボタンに統一: C4/D4/E4/F4/G4
-var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00];
-// たいこ: WebAudio 合成のドラムキット (kick/snare/hat/tom-hi/tom-lo)
-var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo'];
+var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
+// たいこ: WebAudio 合成のドラムキット (kick/snare/hat/tom-hi/tom-lo/cymbal)
+var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo', 'cymbal'];
 // 動物: 実音源ファイル (assets/sounds/animals/)
-var ANIMAL_FILES = ['cat.mp3', 'dog.mp3', 'cow.mp3', 'pig.mp3', 'horse.mp3'];
+var ANIMAL_FILES = ['cat.mp3', 'dog.mp3', 'cow.mp3', 'pig.mp3', 'horse.mp3', 'lion.mp3'];
 var _animalBuffers = new Array(ANIMAL_FILES.length).fill(null);
 var _animalRawBuffers = new Array(ANIMAL_FILES.length).fill(null);
 var _animalLoading = false;
@@ -382,16 +362,12 @@ function playDrum(ac, kind) {
   }
 }
 
-// ホワイトノイズ用 AudioBuffer (durationSec ごとにキャッシュして GC 圧削減)
-var _noiseCache = {};
+// ホワイトノイズ用 AudioBuffer を生成
 function _makeNoiseBuffer(ac, durationSec) {
-  var key = durationSec.toFixed(2);
-  if (_noiseCache[key]) return _noiseCache[key];
   var len = Math.floor(ac.sampleRate * durationSec);
   var buf = ac.createBuffer(1, len, ac.sampleRate);
   var d = buf.getChannelData(0);
   for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-  _noiseCache[key] = buf;
   return buf;
 }
 
@@ -443,54 +419,36 @@ document.addEventListener('pointerdown', triggerPreload, { once: true });
 document.addEventListener('touchstart', triggerPreload, { once: true });
 
 // ────────────────────────────────
-// 楽器ボタン (.instr-btn) タップ
+// 鍵盤タップ
 // ────────────────────────────────
 var tapCount = 0;
 var _clearTriggered = false;
 var TAP_FOR_CLEAR = 12; // 12タップで初回クリア扱い
-var FINALE_EVERY = 60;  // 60タップ毎に虹色フィナーレ
 
-var _pressTimers = new Map();
-document.querySelectorAll('.instr-btn').forEach(function(btn) {
-  btn.addEventListener('pointerdown', function(e) {
+document.querySelectorAll('.key').forEach(function(key) {
+  // pointerdown で即レスポンス (click 待機による遅延回避)
+  key.addEventListener('pointerdown', function(e) {
     e.preventDefault();
-    var idx = parseInt(btn.dataset.idx, 10);
-    // 押下アニメ
-    btn.classList.add('press');
-    var prev = _pressTimers.get(btn); if (prev) clearTimeout(prev);
-    _pressTimers.set(btn, setTimeout(function(){
-      btn.classList.remove('press');
-      _pressTimers.delete(btn);
-    }, 130));
-
-    // 音
+    var idx = parseInt(key.dataset.idx, 10);
     playSetSound(idx);
-
-    // ボタン中心座標 (Canvas 座標系 = CSS px)
-    var rect = btn.getBoundingClientRect();
-    var cx = rect.left + rect.width / 2;
-    var cy = rect.top  + rect.height / 2;
-
-    // エフェクト同時発火
-    spawnRipples(cx, cy);
-    spawnParticles(cx, cy, 8);
-    spawnBurstBubbles(cx, cy, 5);
+    key.classList.add('press');
+    setTimeout(function(){ key.classList.remove('press'); }, 120);
+    // キラキラ演出
+    spawnSparkle(key);
+    // ポノのフレーム送り
     bumpPono();
-
-    // 統計 + クリア判定 + フィナーレ
+    // 統計 + 初回クリア判定
     tapCount++;
     if (window.incrementStat) window.incrementStat('oto_taps', 1);
+    // スタンプラリー記録 (当日1回だけ)
     markPlayedToday();
     if (!_clearTriggered && tapCount >= TAP_FOR_CLEAR) {
       _clearTriggered = true;
       triggerClearReward();
     }
-    if (tapCount > 0 && tapCount % FINALE_EVERY === 0) {
-      triggerFinale();
-    }
   });
   // 誤二重発火防止
-  btn.addEventListener('click', function(e) { e.preventDefault(); });
+  key.addEventListener('click', function(e) { e.preventDefault(); });
 });
 
 function markPlayedToday() {
@@ -511,211 +469,24 @@ function triggerClearReward() {
 }
 
 // ────────────────────────────────
-// 背景 Canvas: 波紋 + パーティクル + 環境バブル + 背景グラデ
+// キラキラエフェクト
 // ────────────────────────────────
-var bgCanvas = document.getElementById('bgCanvas');
-var bgCtx = bgCanvas.getContext('2d');
-var DPR = 1;
-var bgW = 0, bgH = 0;
-function resizeBg() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2); // 毎回最新 DPR
-  bgW = window.innerWidth;
-  bgH = window.innerHeight;
-  bgCanvas.width  = Math.round(bgW * DPR);
-  bgCanvas.height = Math.round(bgH * DPR);
-  bgCanvas.style.width  = bgW + 'px';
-  bgCanvas.style.height = bgH + 'px';
-  bgCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
-}
-resizeBg();
-window.addEventListener('resize', resizeBg);
-// iOS Safari: orientationchange 直後は innerWidth がまだ旧値。100ms/400ms 両方でリトライ
-window.addEventListener('orientationchange', function(){
-  setTimeout(resizeBg, 100);
-  setTimeout(resizeBg, 400);
-});
-if (window.visualViewport) window.visualViewport.addEventListener('resize', resizeBg);
-
-var TAU = Math.PI * 2;
-var SPARK_EMOJIS = ['✨', '⭐', '💖', '🎵', '🎶', '💫', '🌟'];
-
-// ─ 波紋 ─
-var ripples = [];
-var MAX_RIPPLES = 40;
-function spawnRipples(cx, cy) {
-  // 3層を時差で
-  for (var i = 0; i < 3; i++) {
-    ripples.push({ cx: cx, cy: cy, r: 0, maxR: 260, delay: i * 0.08, elapsed: 0 });
-  }
-  if (ripples.length > MAX_RIPPLES) ripples.splice(0, ripples.length - MAX_RIPPLES);
-}
-function updateRipples(dt) {
-  for (var i = ripples.length - 1; i >= 0; i--) {
-    var rp = ripples[i];
-    rp.elapsed += dt;
-    var t = rp.elapsed - rp.delay;
-    if (t < 0) continue;
-    rp.r = t * 380; // 380 px/s
-    if (rp.r > rp.maxR) ripples.splice(i, 1);
-  }
-}
-function drawRipples() {
-  for (var i = 0; i < ripples.length; i++) {
-    var rp = ripples[i];
-    if (rp.r <= 0) continue;
-    var a = Math.max(0, 1 - rp.r / rp.maxR);
-    bgCtx.strokeStyle = 'rgba(200,240,255,' + (a * 0.75) + ')';
-    bgCtx.lineWidth = 3;
-    bgCtx.beginPath();
-    bgCtx.arc(rp.cx, rp.cy, rp.r, 0, TAU);
-    bgCtx.stroke();
-    if (rp.r > 20) {
-      bgCtx.strokeStyle = 'rgba(255,255,255,' + (a * 0.4) + ')';
-      bgCtx.lineWidth = 1.5;
-      bgCtx.beginPath();
-      bgCtx.arc(rp.cx, rp.cy, rp.r - 20, 0, TAU);
-      bgCtx.stroke();
-    }
-  }
-}
-
-// ─ パーティクル (絵文字) ─
-var particles = [];
-var MAX_PARTICLES = 80;
-function spawnParticles(cx, cy, n) {
+var SPARK_EMOJIS = ['✨', '⭐', '💖', '🎵', '🎶', '💫'];
+function spawnSparkle(key) {
+  var rect = key.getBoundingClientRect();
+  var stage = document.getElementById('stage');
+  var stageRect = stage.getBoundingClientRect();
+  var n = 4;
   for (var i = 0; i < n; i++) {
-    var ang = Math.random() * TAU;
-    var sp = 200 + Math.random() * 180; // px/s
-    particles.push({
-      x: cx, y: cy,
-      vx: Math.cos(ang) * sp,
-      vy: Math.sin(ang) * sp - 100,
-      life: 0, maxLife: 0.9 + Math.random() * 0.3,
-      size: 22 + Math.random() * 10,
-      emoji: SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)],
-    });
-  }
-  if (particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
-}
-function updateParticles(dt) {
-  for (var i = particles.length - 1; i >= 0; i--) {
-    var p = particles[i];
-    p.life += dt;
-    if (p.life >= p.maxLife) { particles.splice(i, 1); continue; }
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vy += 400 * dt; // gravity
-    p.vx *= 0.96;     // drag
-  }
-}
-function drawParticles() {
-  bgCtx.textAlign = 'center';
-  bgCtx.textBaseline = 'middle';
-  for (var i = 0; i < particles.length; i++) {
-    var p = particles[i];
-    var t = p.life / p.maxLife;
-    var alpha = t < 0.2 ? (t / 0.2) : (1 - (t - 0.2) / 0.8);
-    bgCtx.globalAlpha = Math.max(0, Math.min(1, alpha));
-    bgCtx.font = p.size + 'px serif';
-    bgCtx.fillText(p.emoji, p.x, p.y);
-  }
-  bgCtx.globalAlpha = 1;
-}
-
-// ─ 環境バブル (常時上昇) + タップ時のバースト ─
-var ambientBubbles = [];
-var MAX_AMBIENT = 22;
-var ambientTimer = 0;
-function addAmbientBubble(sx, sy, extraVy) {
-  if (ambientBubbles.length >= MAX_AMBIENT) return;
-  ambientBubbles.push({
-    x: sx !== undefined ? sx : Math.random() * bgW,
-    y: sy !== undefined ? sy : bgH + 20,
-    r: 8 + Math.random() * 22,
-    vy: -(18 + Math.random() * 30) - (extraVy || 0),
-    phase: Math.random() * TAU,
-    wobbleAmp: 0.3 + Math.random() * 0.5,
-    alpha: 0.55 + Math.random() * 0.25,
-  });
-}
-function spawnBurstBubbles(cx, cy, n) {
-  for (var i = 0; i < n; i++) {
-    addAmbientBubble(cx + (Math.random() - 0.5) * 40, cy + (Math.random() - 0.5) * 20, 40 + Math.random() * 30);
-  }
-}
-function updateAmbientBubbles(dt, now) {
-  ambientTimer += dt;
-  if (ambientTimer > 0.8) {
-    ambientTimer = 0;
-    addAmbientBubble();
-  }
-  for (var i = ambientBubbles.length - 1; i >= 0; i--) {
-    var b = ambientBubbles[i];
-    b.y += b.vy * dt;
-    b.x += Math.sin((now + b.phase * 1000) / 500) * b.wobbleAmp;
-    if (b.y < -b.r) ambientBubbles.splice(i, 1);
-  }
-}
-function drawAmbientBubbles() {
-  for (var i = 0; i < ambientBubbles.length; i++) {
-    var b = ambientBubbles[i];
-    bgCtx.globalAlpha = b.alpha;
-    bgCtx.fillStyle = 'rgba(255,255,255,0.25)';
-    bgCtx.beginPath(); bgCtx.arc(b.x, b.y, b.r, 0, TAU); bgCtx.fill();
-    bgCtx.strokeStyle = 'rgba(255,255,255,0.6)';
-    bgCtx.lineWidth = 1;
-    bgCtx.beginPath(); bgCtx.arc(b.x, b.y, b.r, 0, TAU); bgCtx.stroke();
-    // ハイライト小円
-    bgCtx.fillStyle = 'rgba(255,255,255,0.7)';
-    bgCtx.beginPath(); bgCtx.arc(b.x - b.r * 0.35, b.y - b.r * 0.35, b.r * 0.25, 0, TAU); bgCtx.fill();
-  }
-  bgCtx.globalAlpha = 1;
-}
-
-// ─ 背景グラデーション (時間で色変化) ─
-function drawBG(now) {
-  var h = 210 + Math.sin(now / 30000) * 40; // 170〜250
-  var grad = bgCtx.createLinearGradient(0, 0, 0, bgH);
-  grad.addColorStop(0, 'hsl(' + h + ', 55%, 55%)');
-  grad.addColorStop(1, 'hsl(' + (h - 25) + ', 60%, 22%)');
-  bgCtx.fillStyle = grad;
-  bgCtx.fillRect(0, 0, bgW, bgH);
-}
-
-// ─ フィナーレ (虹色同心円 + 全ボタンからキラキラ) ─
-var finaleStart = 0;
-function triggerFinale() {
-  var now = performance.now();
-  if (finaleStart && (now - finaleStart) < 2500) return; // 多重発火防止
-  finaleStart = now;
-  // 全ボタンからキラキラ + バブル
-  document.querySelectorAll('.instr-btn').forEach(function(b) {
-    var rect = b.getBoundingClientRect();
-    var cx = rect.left + rect.width / 2;
-    var cy = rect.top  + rect.height / 2;
-    spawnParticles(cx, cy, 12);
-    spawnRipples(cx, cy);
-    spawnBurstBubbles(cx, cy, 3);
-  });
-  // アルペジオで現セットの5音
-  for (var i = 0; i < 5; i++) {
-    (function(idx){ setTimeout(function(){ playSetSound(idx); }, idx * 130); })(i);
-  }
-}
-function drawFinale(now) {
-  if (!finaleStart) return;
-  var t = (now - finaleStart) / 2500;
-  if (t >= 1) { finaleStart = 0; return; }
-  var cx = bgW / 2, cy = bgH / 2;
-  var maxR = Math.hypot(bgW, bgH) * 0.6;
-  for (var i = 0; i < 6; i++) {
-    var phase = (t + i / 6) % 1;
-    var r = phase * maxR;
-    var a = Math.max(0, 1 - phase);
-    var hue = (now * 0.3 + i * 60) % 360;
-    bgCtx.strokeStyle = 'hsla(' + hue + ', 85%, 65%, ' + (a * 0.55) + ')';
-    bgCtx.lineWidth = 6;
-    bgCtx.beginPath(); bgCtx.arc(cx, cy, r, 0, TAU); bgCtx.stroke();
+    var s = document.createElement('div');
+    s.className = 'spark';
+    s.textContent = SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)];
+    s.style.left = (rect.left + rect.width / 2 - stageRect.left) + 'px';
+    s.style.top  = (rect.top - stageRect.top - 10) + 'px';
+    s.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px');
+    s.style.setProperty('--dy', (Math.random() * 40 - 60) + 'px');
+    stage.appendChild(s);
+    setTimeout(function(el){ return function(){ el.remove(); }; }(s), 950);
   }
 }
 
@@ -726,18 +497,19 @@ var imgWalk = new Image();
 imgWalk.src = '../assets/images/characters/pono/pono_walk_sheet.png';
 var WALK_FRAMES = 25, WALK_FRAME_W = 92, WALK_FRAME_H = 128;
 
+var currentFrame = 0;
+var autoStepTimer = null;
 var bumpEndAt = 0;
-var _ponoCanvas = document.getElementById('pono');
-var _ponoCtx = _ponoCanvas ? _ponoCanvas.getContext('2d') : null;
 
 function bumpPono() {
+  // 1秒半ほど元気に歩くモード
   bumpEndAt = performance.now() + 1500;
 }
 
 function drawPono(now) {
-  if (!_ponoCanvas || !_ponoCtx) return;
-  var canvas = _ponoCanvas;
-  var ctx = _ponoCtx;
+  var canvas = document.getElementById('pono');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (!imgWalk.complete || imgWalk.naturalWidth === 0) return;
 
@@ -762,23 +534,7 @@ function drawPono(now) {
 }
 
 var _rafId = null;
-var _lastFrame = 0;
 function loop(now) {
-  if (!_lastFrame) _lastFrame = now;
-  var dt = Math.min((now - _lastFrame) / 1000, 0.05);
-  _lastFrame = now;
-
-  // 背景 Canvas を一括更新
-  drawBG(now);
-  updateAmbientBubbles(dt, now);
-  drawAmbientBubbles();
-  updateRipples(dt);
-  drawRipples();
-  updateParticles(dt);
-  drawParticles();
-  drawFinale(now);
-
-  // ポノ
   drawPono(now);
   _rafId = requestAnimationFrame(loop);
 }
@@ -790,7 +546,6 @@ document.addEventListener('visibilitychange', function() {
     if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
     if (_ac && _ac.state === 'running') _ac.suspend().catch(function(){});
   } else {
-    _lastFrame = 0; // 復帰時 dt 暴走防止
     if (!_rafId) _rafId = requestAnimationFrame(loop);
     if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
   }
