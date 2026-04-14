@@ -1149,7 +1149,12 @@
   <div class="page">
 
     <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="hero-amazon" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る">
-      <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中">
+      <picture>
+        <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
+        <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
+        <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.png">
+        <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" loading="eager">
+      </picture>
     </a>
 
     <section class="video-section">

@@ -331,7 +331,7 @@
 
     // ── 動画要素を毎回新規生成（プリロードのみ、再生はタップ後）──
     var basePath = _getBasePath();
-    var mp4Path  = basePath + 'TreasureBox.mp4';
+    var mp4Path  = basePath + 'TreasureBox_opt.mp4';
 
     _video = document.createElement('video');
     _video.muted       = true;
