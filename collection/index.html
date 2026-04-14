@@ -16,34 +16,29 @@ body {
   display: flex; flex-direction: column;
 }
 
-/* Top bar: ⚙ メニューの隣にタイトル（サイドバー幅と合わせる） */
-.coll-topbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px 4px;
-  padding-left: calc(max(16px, env(safe-area-inset-left)) + 48px); /* ⚙ と被らない */
-  flex-shrink: 0;
-}
-.coll-title {
-  width: 130px; flex-shrink: 0;
-  font-size: 0.95rem; font-weight: 900; color: #5D4E37;
-  padding: 6px 8px;
-  background: rgba(255,255,255,0.7); border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  line-height: 1.3;
-}
-
-/* Main wrapper: 左サイドバー + 右コンテンツ */
+/* Main wrapper: 左サイドバー + 右コンテンツ（上下パディング揃え） */
 .coll-main {
   display: flex; flex: 1; min-height: 0;
-  padding: 4px 12px 12px;
-  gap: 10px;
+  padding: 56px 12px 12px; /* ⚙ ボタン分の上余白を確保 */
+  padding-left: calc(max(16px, env(safe-area-inset-left)) + 12px);
+  gap: 12px;
 }
 
-/* Tabs（左サイドバー） */
+/* 左サイドバー: タイトル（⚙の下）+ タブ */
+.coll-sidebar {
+  display: flex; flex-direction: column; gap: 10px;
+  width: 140px; flex-shrink: 0;
+}
+.coll-title {
+  font-size: 0.88rem; font-weight: 900; color: #5D4E37;
+  padding: 10px 8px; text-align: center; line-height: 1.3;
+  background: #fff; border: 2px solid #FDE68A; border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Tabs（左サイドバー内） */
 .coll-tabs {
   display: flex; flex-direction: column; gap: 8px;
-  width: 130px; flex-shrink: 0;
   padding: 0;
 }
 .coll-tab {
@@ -59,13 +54,17 @@ body {
 .coll-tab:hover { border-color: #F2915A; }
 .coll-tab.active { background: #F2915A; color: #fff; border-color: #F2915A; }
 
-/* Content（右エリア） */
+/* Content（右エリア） - ボックスで明確に区切る */
 .coll-content {
   flex: 1; min-width: 0;
-  padding: 0 6px 12px;
+  padding: 14px 14px 16px;
   max-width: none; margin: 0;
   overflow-y: auto;
   position: relative; /* モーダル案内の基準点 */
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border: 1px solid rgba(93,78,55,0.08);
 }
 .coll-section { display: none; }
 .coll-section.active { display: block; }
@@ -180,38 +179,38 @@ body {
 </style>
 </head>
 <body>
-<!-- トップバー: ⚙ メニューの右横にタイトル -->
-<div class="coll-topbar">
-  <div class="coll-title" id="collTitle">📚 わたしの ずかん</div>
-</div>
-
 <div class="coll-main">
-  <div class="coll-tabs" id="collTabs">
-    <button class="coll-tab active" data-tab="sea">
-      <span class="tab-icon">🐠</span><span>うみの<br>いきもの</span>
-    </button>
-    <button class="coll-tab" data-tab="furn">
-      <span class="tab-icon">🏠</span><span>かぐ・<br>かざり</span>
-    </button>
-    <button class="coll-tab" data-tab="stamp">
-      <span class="tab-icon">🏆</span><span>じっせき</span>
-    </button>
+  <!-- 左サイドバー: タイトル（⚙の下）+ タブ -->
+  <div class="coll-sidebar">
+    <div class="coll-title" id="collTitle">📚 わたしの<br>ずかん</div>
+    <div class="coll-tabs" id="collTabs">
+      <button class="coll-tab active" data-tab="furn">
+        <span class="tab-icon">🏠</span><span>かぐ・<br>かざり</span>
+      </button>
+      <button class="coll-tab" data-tab="sea">
+        <span class="tab-icon">🐠</span><span>うみの<br>いきもの</span>
+      </button>
+      <button class="coll-tab" data-tab="stamp">
+        <span class="tab-icon">🏆</span><span>じっせき</span>
+      </button>
+    </div>
   </div>
 
+  <!-- 右コンテンツ（ボックスで区切る） -->
   <div class="coll-content">
+    <!-- 家具・かざり（デフォルトでアクティブ） -->
+    <div class="coll-section active" id="sec-furn">
+      <div id="furn-content"></div>
+    </div>
+
     <!-- 海の生き物 -->
-    <div class="coll-section active" id="sec-sea">
+    <div class="coll-section" id="sec-sea">
       <div class="coll-grid" id="sea-grid"></div>
       <!-- 注意モーダル: 魚グリッドの上に重ねて表示。閉じられる -->
       <div class="coll-notice-modal" id="sea-notice">
         <button class="coll-notice-close" id="sea-notice-close" aria-label="とじる">×</button>
         🐠 すいぞくかんが できたら もっと たくさんの いきものに あえるよ！
       </div>
-    </div>
-
-    <!-- 家具・かざり -->
-    <div class="coll-section" id="sec-furn">
-      <div id="furn-content"></div>
     </div>
 
     <!-- 実績 -->
@@ -243,11 +242,12 @@ if (typeof initMenu === 'function') {
 (function() {
   try {
     var p = JSON.parse(localStorage.getItem('pono_profile') || '{}');
-    var name = p.name || '';
+    var name = (p.name || '').trim();
     var title = document.getElementById('collTitle');
-    if (name) {
-      title.textContent = '📚 ' + name + 'の ずかん';
-    }
+    if (!title) return;
+    // 「〇〇の ずかん」か「わたしの ずかん」。2行で表示
+    var owner = name ? (name + 'の') : 'わたしの';
+    title.innerHTML = '📚 ' + owner + '<br>ずかん';
   } catch(e) {}
 })();
 
