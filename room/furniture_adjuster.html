@@ -1968,21 +1968,42 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
         newBlock = replProp(newBlock, 'surfaceYB', adjB.surfaceY);
       }
 
-      // angleB 更新
+      // angleB 更新（既存ブロックの更新 or 新規挿入）
       if (adjB) {
         var angleBMatch = /angleB:\s*\{([^}]+)\}/.exec(newBlock);
         if (angleBMatch) {
+          // 既存ブロックを更新
           var abInner = angleBMatch[1];
-          abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
-          abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
-          abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
-          if (/\bminRow:/.test(abInner)) {
-            abInner = abInner.replace(/(minRow:\s*)-?[\d.]+/, '$1' + adjB.minRow);
-            abInner = abInner.replace(/(maxRow:\s*)-?[\d.]+/, '$1' + adjB.maxRow);
-            abInner = abInner.replace(/(minCol:\s*)-?[\d.]+/, '$1' + adjB.minCol);
-            abInner = abInner.replace(/(maxCol:\s*)-?[\d.]+/, '$1' + adjB.maxCol);
+          if (/\bcellSize:/.test(abInner)) abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
+          else abInner = ' cellSize: ' + adjB.cellSize + ',' + abInner;
+          if (/\bpivotX:/.test(abInner))   abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
+          else abInner = ' pivotX: ' + adjB.pivotX + ',' + abInner;
+          if (/\bpivotY:/.test(abInner))   abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
+          else abInner = ' pivotY: ' + adjB.pivotY + ',' + abInner;
+          if (adjB.minRow !== undefined && adjB.minRow !== null) {
+            if (/\bminRow:/.test(abInner)) {
+              abInner = abInner.replace(/(minRow:\s*)-?[\d.]+/, '$1' + adjB.minRow);
+              abInner = abInner.replace(/(maxRow:\s*)-?[\d.]+/, '$1' + adjB.maxRow);
+              abInner = abInner.replace(/(minCol:\s*)-?[\d.]+/, '$1' + adjB.minCol);
+              abInner = abInner.replace(/(maxCol:\s*)-?[\d.]+/, '$1' + adjB.maxCol);
+            } else {
+              abInner += ', minRow: ' + adjB.minRow + ', maxRow: ' + adjB.maxRow + ', minCol: ' + adjB.minCol + ', maxCol: ' + adjB.maxCol;
+            }
           }
-          newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + '}');
+          newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + ' }');
+        } else {
+          // angleB ブロックが存在しないので新規挿入（最後の `}` の前に追加）
+          var fields = ['cellSize: ' + adjB.cellSize, 'pivotX: ' + adjB.pivotX, 'pivotY: ' + adjB.pivotY];
+          if (adjB.minRow !== undefined && adjB.minRow !== null) {
+            fields.push('minRow: ' + adjB.minRow, 'maxRow: ' + adjB.maxRow, 'minCol: ' + adjB.minCol, 'maxCol: ' + adjB.maxCol);
+          }
+          var insertion = '\n    angleB: { ' + fields.join(', ') + ' },';
+          // 最後の `}` のすぐ前に挿入
+          var lastBrace = newBlock.lastIndexOf('}');
+          if (lastBrace > 0) {
+            // `}` の前に改行＋インデント＋angleB
+            newBlock = newBlock.slice(0, lastBrace) + insertion + '\n  ' + newBlock.slice(lastBrace);
+          }
         }
       }
 
