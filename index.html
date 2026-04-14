@@ -76,6 +76,7 @@
       color: var(--text);
       -webkit-user-select: none;
       user-select: none;
+      overflow-x: hidden;
     }
 
     .page {
@@ -87,12 +88,13 @@
       gap: 16px;
     }
 
-    /* ── Amazon ヒーローバナー ── */
+    /* ── Amazon ヒーローバナー（横幅100%、画面端まで） ── */
     .hero-amazon {
       display: block;
-      width: 100%;
-      max-width: 540px;
-      margin-top: 16px;
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+      margin-top: 0;
     }
     .hero-amazon img,
     .hero-amazon picture,
@@ -100,8 +102,6 @@
       width: 100%;
       height: auto;
       display: block;
-      border-radius: 14px;
-      box-shadow: 0 4px 16px var(--shadow);
     }
 
     /* ── ミュージックビデオ ── */
