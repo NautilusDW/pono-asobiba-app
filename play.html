@@ -2278,14 +2278,17 @@
           modal.appendChild(rowDiv);
         }
 
-        // ボタン行: 履歴 + 閉じる
+        // ボタン行: 📋 履歴 / 🏆 実績 / ✕ 閉じる（アイコンのみ）
         var btnRow = document.createElement('div');
-        btnRow.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:4px;';
+        btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;margin-top:4px;align-items:center;';
+
+        var iconBtnStyle = 'width:44px;height:44px;border-radius:50%;border:none;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);transition:transform 0.1s;padding:0;';
 
         var histBtn = document.createElement('button');
-        histBtn.className = 'stamp-full-modal-close';
-        histBtn.style.cssText += 'background:#E0F2FE;color:#0EA5E9;';
-        histBtn.textContent = '📋 りれき';
+        histBtn.style.cssText = iconBtnStyle + 'background:#E0F2FE;color:#0EA5E9;';
+        histBtn.textContent = '📋';
+        histBtn.title = 'りれき';
+        histBtn.setAttribute('aria-label', 'りれき');
         histBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           showRewardHistory();
@@ -2293,9 +2296,10 @@
         btnRow.appendChild(histBtn);
 
         var achBtn = document.createElement('button');
-        achBtn.className = 'stamp-full-modal-close';
-        achBtn.style.cssText += 'background:#FEF3C7;color:#D97706;';
-        achBtn.textContent = '🏆 じっせき';
+        achBtn.style.cssText = iconBtnStyle + 'background:#FEF3C7;color:#D97706;';
+        achBtn.textContent = '🏆';
+        achBtn.title = 'じっせき';
+        achBtn.setAttribute('aria-label', 'じっせき');
         achBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           showAchievementList();
@@ -2303,8 +2307,10 @@
         btnRow.appendChild(achBtn);
 
         var closeBtn = document.createElement('button');
-        closeBtn.className = 'stamp-full-modal-close';
-        closeBtn.textContent = 'とじる';
+        closeBtn.style.cssText = iconBtnStyle + 'background:#E5E7EB;color:#5D4E37;font-weight:900;';
+        closeBtn.textContent = '✕';
+        closeBtn.title = 'とじる';
+        closeBtn.setAttribute('aria-label', 'とじる');
         closeBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           overlay.remove();
@@ -2383,8 +2389,9 @@
         }
 
         var closeBtn = document.createElement('button');
-        closeBtn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
-        closeBtn.textContent = 'とじる';
+        closeBtn.style.cssText = 'margin:12px auto 0;display:block;width:44px;height:44px;padding:0;border:none;border-radius:50%;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.1);';
+        closeBtn.textContent = '✕';
+        closeBtn.setAttribute('aria-label', 'とじる');
         closeBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           ov.remove();
@@ -2470,10 +2477,11 @@
           box.appendChild(row);
         }
 
-        // 閉じるボタン
+        // 閉じるボタン（×アイコン）
         var closeBtn = document.createElement('button');
-        closeBtn.style.cssText = 'display:block;margin:12px auto 0;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
-        closeBtn.textContent = 'とじる';
+        closeBtn.style.cssText = 'display:block;margin:12px auto 0;width:44px;height:44px;padding:0;border:none;border-radius:50%;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.1);';
+        closeBtn.textContent = '✕';
+        closeBtn.setAttribute('aria-label', 'とじる');
         closeBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           ov.remove();

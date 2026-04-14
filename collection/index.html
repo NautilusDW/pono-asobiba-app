@@ -16,13 +16,33 @@ body {
   display: flex; flex-direction: column;
 }
 
-/* Main wrapper: 左サイドバー + 右コンテンツ（上下パディング揃え） */
+/* Main wrapper: 左サイドバー + 右コンテンツ（⚙ を廃止して一番上から） */
 .coll-main {
   display: flex; flex: 1; min-height: 0;
-  padding: 56px 12px 12px; /* ⚙ ボタン分の上余白を確保 */
-  padding-left: calc(max(16px, env(safe-area-inset-left)) + 12px);
+  padding: 10px 12px 12px;
   gap: 12px;
 }
+
+/* 右コンテンツのヘッダー行（タブごとのタイトル + × 戻るボタン） */
+.coll-content-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px;
+  padding-bottom: 8px; border-bottom: 1px solid rgba(93,78,55,0.1);
+}
+.coll-content-title {
+  font-size: 0.95rem; font-weight: 900; color: #5D4E37;
+}
+.coll-back-btn {
+  flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,0,0,0.06); border: none;
+  color: #5D4E37; font-size: 1.1rem; font-weight: 900;
+  cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.coll-back-btn:hover { background: rgba(0,0,0,0.12); }
+.coll-back-btn:active { transform: scale(0.9); }
 
 /* 左サイドバー: タイトル（⚙の下）+ タブ */
 .coll-sidebar {
@@ -198,6 +218,12 @@ body {
 
   <!-- 右コンテンツ（ボックスで区切る） -->
   <div class="coll-content">
+    <!-- タブごとの内容タイトル + 閉じる(×) -->
+    <div class="coll-content-header">
+      <div class="coll-content-title" id="collContentTitle">かぐ・かざり</div>
+      <button class="coll-back-btn" id="collBackBtn" aria-label="もどる" title="もどる">✕</button>
+    </div>
+
     <!-- 家具・かざり（デフォルトでアクティブ） -->
     <div class="coll-section active" id="sec-furn">
       <div id="furn-content"></div>
@@ -227,16 +253,16 @@ body {
   <div class="hint">スマホや タブレットを<br>よこに むけると<br>ずかんが ひろく みられるよ</div>
 </div>
 
-<script src="../common/menu.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../room/items.js"></script>
 <script>
 'use strict';
 
-// ===== メニュー初期化（⚙ ボタン） =====
-if (typeof initMenu === 'function') {
-  initMenu({});
-}
+// ===== 戻るボタン =====
+(function() {
+  var btn = document.getElementById('collBackBtn');
+  if (btn) btn.addEventListener('click', function() { history.back(); });
+})();
 
 // ===== Title with user name =====
 (function() {
@@ -266,6 +292,15 @@ if (typeof initMenu === 'function') {
 })();
 
 // ===== Tab switching =====
+var TAB_TITLES = {
+  furn: 'かぐ・かざり',
+  sea:  'うみの いきもの',
+  stamp: 'じっせき',
+};
+function _updateContentTitle(tabKey) {
+  var el = document.getElementById('collContentTitle');
+  if (el && TAB_TITLES[tabKey]) el.textContent = TAB_TITLES[tabKey];
+}
 document.querySelectorAll('.coll-tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
     document.querySelectorAll('.coll-tab').forEach(function(t) { t.classList.remove('active'); });
@@ -273,6 +308,7 @@ document.querySelectorAll('.coll-tab').forEach(function(tab) {
     tab.classList.add('active');
     var sec = document.getElementById('sec-' + tab.dataset.tab);
     if (sec) sec.classList.add('active');
+    _updateContentTitle(tab.dataset.tab);
   });
 });
 
@@ -456,16 +492,19 @@ function showSeaDetailSimple(c) {
   var unlocked = {};
   try { unlocked = JSON.parse(localStorage.getItem('pono_achievements') || '{}'); } catch(e) {}
 
+  // スタンプラリーで名前・条件が全て見られるので、未取得でも隠さず表示
   allAch.forEach(function(ach) {
     var isUnlocked = !!unlocked[ach.id];
     var row = document.createElement('div');
     row.className = 'stamp-row';
+    if (!isUnlocked) row.style.opacity = '0.55';
 
+    // achievement 定義には icon が無いので 🏆 固定（tier は色分けに使わず統一）
     row.innerHTML =
-      '<div class="stamp-icon">' + (isUnlocked ? ach.icon : '🔒') + '</div>' +
+      '<div class="stamp-icon">🏆</div>' +
       '<div class="stamp-info">' +
-        '<div class="stamp-name">' + (isUnlocked ? ach.name : '？？？') + '</div>' +
-        '<div class="stamp-desc">' + (isUnlocked ? ach.desc : 'まだ みつけてないよ') + '</div>' +
+        '<div class="stamp-name">' + ach.name + '</div>' +
+        '<div class="stamp-desc">' + ach.desc + '</div>' +
       '</div>' +
       '<div class="stamp-status ' + (isUnlocked ? 'unlocked' : 'locked') + '">' +
         (isUnlocked ? '✅' : '🔒') +
