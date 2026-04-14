@@ -2242,6 +2242,7 @@
       }
 
       // ── Full Card Modal (5×3 grid) ──
+      window.showFullCardModal = function() { return showFullCardModal.apply(this, arguments); };
       function showFullCardModal() {
         // Remove existing
         var old = document.querySelector('.stamp-full-modal-overlay');
@@ -3086,8 +3087,8 @@
         if (!btn) return;
         var action = btn.dataset.action;
         if (action === 'stamp') {
-          if (typeof showFullCardModal === 'function') {
-            showFullCardModal();
+          if (typeof window.showFullCardModal === 'function') {
+            window.showFullCardModal();
           } else {
             alert('スタンプカードの表示に失敗しました');
           }
