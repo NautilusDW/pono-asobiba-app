@@ -84,8 +84,52 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 0 16px 40px;
+      padding: 0 16px calc(80px + env(safe-area-inset-bottom));
       gap: 16px;
+    }
+
+    /* ===== Bottom Navigation Bar ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 90;
+      display: flex;
+      justify-content: space-around;
+      align-items: stretch;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 -2px 12px rgba(93,78,55,0.15);
+      border-top: 2px solid #FDE68A;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bn-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 8px 4px 10px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: transform 0.1s;
+    }
+    .bn-item:active {
+      transform: scale(0.9);
+    }
+    .bn-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    .bn-label {
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.02em;
     }
 
     /* ===== Header ===== */
@@ -1122,44 +1166,32 @@
 
     <h1 class="site-heading">ポノのあそびば</h1>
 
-    <!-- このサイトについてリンク -->
-    <a href="help.html" style="
-      display:block; max-width:360px; width:100%;
-      text-align:center; text-decoration:none;
-      padding:14px 20px;
-      background: linear-gradient(135deg,#F2915A,#F7C948);
-      border-radius:50px;
-      font-size:1rem; font-weight:900; color:#fff;
-      box-shadow:0 4px 16px rgba(242,145,90,0.35);
-      letter-spacing:0.06em;
-      text-shadow:1px 1px 0 rgba(0,0,0,0.12);
-    ">🌱 このサイトについて</a>
-
-    <!-- PWAセットアップの案内（保護者向け） -->
+    <!-- PWAセットアップの案内（保護者向け・縮小版） -->
     <div id="pwa-guide" style="
       background: #FFF3F3;
       border: 2px solid #E57373;
       border-radius: 14px;
-      padding: 14px 16px;
+      padding: 10px 14px;
       margin: 0 auto 8px;
       max-width: 360px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #5D4E37;
-      line-height: 1.7;
+      line-height: 1.6;
       box-shadow: 0 2px 8px rgba(93,78,55,0.12);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     ">
-      <div style="font-weight:900; font-size:0.88rem; margin-bottom:4px; color:#D32F2F;">⚠️ 保護者の方へ</div>
-      <div style="font-size:0.78rem;">必ず<strong>「ホーム画面に追加」</strong>してからご利用ください。<br>ブラウザのままだと<strong>表示が崩れます。</strong></div>
-      <div style="margin-top:6px; padding:8px 10px; background:rgba(255,255,255,0.8); border-radius:10px; font-size:0.72rem; line-height:1.5;">
-        <img src="assets/images/Logo/Apple_logo_black.svg.png" style="height:12px;width:auto;vertical-align:-1px;margin-right:3px"> iPhone: <strong>共有（□↑）→ ホーム画面に追加</strong><br>
-        <img src="assets/images/Logo/android_official_logo_icon_167880.svg" style="height:12px;width:auto;vertical-align:-1px;margin-right:3px"> Android: <strong>メニュー（⋮）→ ホーム画面に追加</strong>
+      <div style="flex:1;">
+        <div style="font-weight:900; font-size:0.82rem; color:#D32F2F; margin-bottom:2px;">⚠️ 保護者の方へ</div>
+        <div style="font-size:0.73rem;">必ず「ホーム画面に追加」してからご利用ください。ブラウザのままだと表示が崩れます。</div>
       </div>
       <a href="help.html#home-add" style="
-        display:block; margin-top:10px; padding:8px 20px; border:none; border-radius:20px;
+        flex-shrink:0; padding:7px 14px; border-radius:16px;
         background: linear-gradient(135deg,#FBBF24,#F97316); color:white;
-        font-family:inherit; font-size:0.82rem; font-weight:700; cursor:pointer;
-        width: 100%; text-align:center; text-decoration:none;
-      ">詳細</a>
+        font-family:inherit; font-size:0.75rem; font-weight:700; cursor:pointer;
+        text-decoration:none; white-space:nowrap;
+      ">くわしく</a>
     </div>
 
     <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'" style="display:none;">
@@ -1177,14 +1209,7 @@
       <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
     </div>
 
-    <!-- ===== Stamp Card (15-slot, 5×3) ===== -->
-    <div class="stamp-card-section" id="stampCardSection">
-      <div class="stamp-card-header">📋 スタンプカード <span id="stampCardNum">1まいめ</span></div>
-      <div id="stampCardRowLabel" class="stamp-card-row-label"></div>
-      <div class="stamp-card" id="stampCard">
-        <!-- JS が現在の段の5マスを生成 -->
-      </div>
-    </div>
+    <!-- スタンプカードはボトムナビから表示 -->
 
     <!-- ─── あそびば区切り ─── -->
     <div style="
@@ -1664,7 +1689,7 @@
       // ── Slot rewards (keyed by 1-based slot number within card) ──
       var CARD_SLOT_REWARDS = {
         1:  { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png',
-              afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを もっと あつめて\nかぐが もらえたら\n「わたしのおうち」が つかえるよ！\n\nがんばって たくさん ゲットしてね！'] },
+              afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」が\nつかえるように なるよ！'] },
         5:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
@@ -3025,6 +3050,60 @@
       });
     })();
 
+    // ===== Bottom Navigation =====
+    (function() {
+      var nav = document.getElementById('bottomNav');
+      if (!nav) return;
+      nav.addEventListener('click', function(e) {
+        var btn = e.target.closest('.bn-item');
+        if (!btn) return;
+        var action = btn.dataset.action;
+        if (action === 'stamp') {
+          if (typeof showFullCardModal === 'function') showFullCardModal();
+        } else if (action === 'room') {
+          var roomOpen = localStorage.getItem('pono_room_card_open') === '1';
+          if (!roomOpen) {
+            var ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+            ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+              '<div style="font-size:2.5rem;margin-bottom:8px;">🔒</div>' +
+              '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.7;">スタンプを あつめて\nかぐを もらうと\n「わたしのおうち」が\nつかえるように なるよ！</div>' +
+              '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style*=inset:0]\').remove()">わかった！</button>' +
+              '</div>';
+            ov.querySelector('div div').style.whiteSpace = 'pre-line';
+            document.body.appendChild(ov);
+          } else {
+            location.href = 'room/index.html';
+          }
+        } else if (action === 'play') {
+          var menu = document.querySelector('.menu');
+          if (menu) menu.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (action === 'help') {
+          location.href = 'help.html';
+        }
+      });
+    })();
+
   </script>
+
+  <!-- ===== Bottom Navigation Bar ===== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bn-item" data-action="stamp">
+      <span class="bn-icon">📋</span>
+      <span class="bn-label">スタンプ</span>
+    </button>
+    <button class="bn-item" data-action="room">
+      <span class="bn-icon">🏠</span>
+      <span class="bn-label">おうち</span>
+    </button>
+    <button class="bn-item" data-action="play">
+      <span class="bn-icon">🎮</span>
+      <span class="bn-label">あそぶ</span>
+    </button>
+    <button class="bn-item" data-action="help">
+      <span class="bn-icon">❓</span>
+      <span class="bn-label">ヘルプ</span>
+    </button>
+  </nav>
 </body>
 </html>
