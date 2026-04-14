@@ -211,6 +211,8 @@
 
     /* ===== Lock ===== */
     .card.locked { filter: grayscale(1); opacity: 0.5; pointer-events: none; }
+    /* おうちカードはロック中でもタップ可能（案内モーダルを出すため） */
+    #card-room.locked { pointer-events: auto; cursor: pointer; }
     .card.locked::after {
       content: '🔒';
       position: absolute; top: 6px; right: 8px;
@@ -1492,10 +1494,42 @@
       if (roomCard) {
         if (!localStorage.getItem('pono_room_card_open')) {
           roomCard.classList.add('locked');
-          roomCard.style.pointerEvents = 'none';
+          // pointer-events を切らずにタップ時は「もっとスタンプを集めよう」案内を出す
+          roomCard.addEventListener('click', function(e) {
+            if (localStorage.getItem('pono_room_card_open')) return; // 解放後はそのまま遷移
+            e.preventDefault();
+            e.stopPropagation();
+            _showRoomLockedHint();
+          });
         }
       }
     })();
+
+    // ロック中の「わたしのおうち」をタップしたときの案内
+    function _showRoomLockedHint() {
+      // 多重表示防止
+      if (document.getElementById('_room-locked-hint')) return;
+      var ov = document.createElement('div');
+      ov.id = '_room-locked-hint';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:20px;padding:22px 24px;text-align:center;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
+      box.innerHTML =
+        '<div style="font-size:2.6rem;line-height:1;margin-bottom:6px;">🔒🏠</div>' +
+        '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">まだ あけられないよ！</div>' +
+        '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.7;margin-bottom:14px;">スタンプを もっと あつめて<br>ベッドを てに いれると<br>「わたしのおうち」が<br>つかえるように なるよ！</div>' +
+        '<button id="_room-locked-ok" style="padding:10px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">わかった！</button>';
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+      requestAnimationFrame(function() { box.style.transform = 'scale(1)'; });
+      function close() {
+        box.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
+        box.style.transform = 'scale(0)';
+        setTimeout(function() { ov.remove(); }, 250);
+      }
+      document.getElementById('_room-locked-ok').addEventListener('click', close);
+      ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+    }
 
     // ===== Achievement Badge =====
     if (window.getAchievements && window.getUnlockedAchievements) {
@@ -1609,7 +1643,7 @@
         5:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-              var afterMsg = 'ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！';
+              var afterMsg = 'ベッドが ついたよ！\n「わたしのおうち」で\nつかえるように なるよ。';
               return g === 'girl'
                 ? { icon: '🛏️', name: 'ピンクベッド', type: 'furn', id: 'furn_bed_pink', img: 'assets/images/Rooms/furnitures_final/bed_pink_A.png', unlockRoom: true, afterMsg: afterMsg }
                 : { icon: '🛏️', name: 'あおいベッド', type: 'furn', id: 'furn_bed_blue_boy', img: 'assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png', unlockRoom: true, afterMsg: afterMsg };
