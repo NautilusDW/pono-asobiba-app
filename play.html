@@ -1124,55 +1124,8 @@
 
   <div class="page">
 
-    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="hero-amazon" target="_blank" rel="noopener" aria-label="Amazonで絵本を見る">
-      <picture>
-        <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
-        <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
-        <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.png">
-        <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" loading="eager">
-      </picture>
-    </a>
-
-    <section class="video-section">
-      <p class="video-label">🎵 ポノのうた みてね！</p>
-      <div class="video-wrap">
-        <iframe
-          src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-          title="ポノのうた">
-        </iframe>
-      </div>
-    </section>
-
     <h1 class="site-heading">ポノのあそびば</h1>
 
-    <!-- PWAセットアップの案内（保護者向け・縮小版） -->
-    <div id="pwa-guide" style="
-      background: #FFF3F3;
-      border: 2px solid #E57373;
-      border-radius: 14px;
-      padding: 10px 14px;
-      margin: 0 auto 8px;
-      max-width: 360px;
-      font-size: 0.78rem;
-      color: #5D4E37;
-      line-height: 1.6;
-      box-shadow: 0 2px 8px rgba(93,78,55,0.12);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    ">
-      <div style="flex:1;">
-        <div style="font-size:0.76rem;"><strong style="color:#D32F2F;font-weight:900;">必ず「ホーム画面に追加」</strong>してからご利用ください。ブラウザのままだと表示が崩れます。</div>
-      </div>
-      <a href="help.html#home-add" style="
-        flex-shrink:0; padding:7px 14px; border-radius:16px;
-        background: linear-gradient(135deg,#FBBF24,#F97316); color:white;
-        font-family:inherit; font-size:0.75rem; font-weight:700; cursor:pointer;
-        text-decoration:none; white-space:nowrap;
-      ">くわしく</a>
-    </div>
 
     <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'" style="display:none;">
       🏠 わたしのおうち
@@ -3074,6 +3027,10 @@
       <span class="bn-icon">❓</span>
       <span class="bn-label">ヘルプ</span>
     </button>
+    <button class="bn-item" data-action="top">
+      <span class="bn-icon">🌳</span>
+      <span class="bn-label">トップ</span>
+    </button>
   </nav>
 
   <script>
@@ -3110,6 +3067,8 @@
           if (menu) menu.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (action === 'help') {
           location.href = 'help.html';
+        } else if (action === 'top') {
+          location.href = 'index.html';
         }
       });
     })();
