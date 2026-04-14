@@ -3274,11 +3274,6 @@ function _showExtendedBedTutorial() {
   }
   if (!item) return false;
 
-  // ★ 中断対策: チュートリアル開始時点で「視聴済み」マークを付ける。
-  // 途中で戻る/リロードされても再起動して操作不能になる問題を防ぐ。
-  localStorage.setItem('pono_bed_tutorial_seen', '1');
-  localStorage.removeItem('pono_bed_tutorial_pending');
-
   // チュートリアル用に強制中央配置（未配置 or 既存どこにあってもリセット）
   if (!state.config.living) state.config.living = {};
   var cfg = state.config.living;
@@ -3482,6 +3477,12 @@ function _showExtendedBedTutorial() {
       _bedSuffix = _bp.gender === 'girl' ? 'ちゃん' : 'くん';
     } catch(e) {}
     var _kidLabel = _bedKidName ? (_bedKidName + _bedSuffix) : 'ポノ';
+
+    // ★ フェーズ1 モーダルを実際に表示する直前で seen='1' を付ける。
+    //   （_waitForLandscape 待ちのままユーザーが離脱した場合は seen が立たず、
+    //    次回入室時にちゃんと再試行される。逆にここまで来れば「見せた」と見なせる）
+    localStorage.setItem('pono_bed_tutorial_seen', '1');
+    localStorage.removeItem('pono_bed_tutorial_pending');
 
     // ── フェーズ1: ベッド取り出し演出 ──
     _showTutorialStepModal({
