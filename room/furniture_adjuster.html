@@ -2183,6 +2183,10 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
     btn.disabled = false;
 
     // 再読み込みボタン: SW キャッシュを消してからリロード
+    // ★ _overrides は意図的にクリアしない。
+    //   items.js が未更新で返っても override が新しい値を保持することで
+    //   「名前が戻る」現象を完全に防ぐ。override は "items.js より優先"
+    //   なので、items.js が新しくなっても表示は変わらず一貫する。
     var reloadBtn = document.getElementById('_fa-reload');
     if (reloadBtn) {
       reloadBtn.addEventListener('click', async function() {
@@ -2192,9 +2196,6 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
             await Promise.all(keys.map(function(k) { return caches.delete(k); }));
           }
         } catch(e) {}
-        // overrides は items.js が更新されていれば新 ITEMS で上書きされるので、
-        // リロード直前のタイミングで消す（以前は即クリアしていた）
-        localStorage.removeItem(OVERRIDE_KEY);
         location.replace(location.pathname + '?_=' + Date.now());
       });
     }
