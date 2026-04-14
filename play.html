@@ -1635,7 +1635,7 @@
         1:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-              var afterMsg = ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」が\nつかえるように なるよ！'];
+              var afterMsg = ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！'];
               return g === 'girl'
                 ? { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box',     img: 'assets/images/Rooms/furnitures_final/box_A.png',           afterMsg: afterMsg }
                 : { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box_boy', img: 'assets/images/Rooms/furnitures_final/deco_box_boy_A.png', afterMsg: afterMsg };
@@ -1643,7 +1643,7 @@
         5:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-              var afterMsg = 'ベッドが ついたよ！\n「わたしのおうち」で\nつかえるように なるよ。';
+              var afterMsg = 'ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！';
               return g === 'girl'
                 ? { icon: '🛏️', name: 'ピンクベッド', type: 'furn', id: 'furn_bed_pink', img: 'assets/images/Rooms/furnitures_final/bed_pink_A.png', unlockRoom: true, afterMsg: afterMsg }
                 : { icon: '🛏️', name: 'あおいベッド', type: 'furn', id: 'furn_bed_blue_boy', img: 'assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png', unlockRoom: true, afterMsg: afterMsg };
