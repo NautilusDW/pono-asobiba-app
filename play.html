@@ -1877,6 +1877,11 @@
 
       // ── Reward granting ──
       function checkSlotReward(total) {
+        // rewards.json がまだロード中なら少し待ってから再試行
+        if (!_rewardsReady) {
+          setTimeout(function() { checkSlotReward(total); }, 200);
+          return;
+        }
         var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
         var filled = getFilledInCard(total);
         var cardNum = getCardNum(total);
@@ -2535,6 +2540,17 @@
       function showStampBatch(stampInfos, onAllDone) {
         var count = stampInfos.length;
         if (count === 0) { if (onAllDone) onAllDone(); return; }
+        // ★ first-clear celebration と被らないよう busy フラグを立てる
+        window._stampBatchBusy = true;
+        var _origOnAllDone = onAllDone;
+        onAllDone = function() {
+          window._stampBatchBusy = false;
+          if (_origOnAllDone) _origOnAllDone();
+          // スタンプが終わったら溜まっていた first-clear 祝賀を実行
+          if (typeof _scheduleFirstClearAfterStamps === 'function') {
+            setTimeout(_scheduleFirstClearAfterStamps, 400);
+          }
+        };
 
         var firstInfo = stampInfos[0];
         var lastInfo = stampInfos[count - 1];
@@ -2823,13 +2839,13 @@
         }
       };
 
-      // 外部JSONを読み込んでからスタンプラリー初期化
-      // プロフィール設定済みなら即実行、未設定ならプロフィール完了後に呼ばれる
-      _loadRewardsJSON(function() {
-        if (window.ponoProfile) {
-          window._initStampRally();
-        }
-      });
+      // スタンプラリー初期化。rewards.json の取得を待たずに即起動する。
+      // （スタンプ演出自体は rewards.json に依存しないため。ご褒美表示のみ
+      //   checkSlotReward 内で _rewardsReady を待つ）
+      _loadRewardsJSON(function() {}); // 裏でロード開始
+      if (window.ponoProfile) {
+        window._initStampRally();
+      }
 
       // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
       // _initStampRally完了後のtotalを記録。visibilitychangeで差分検出
@@ -2882,9 +2898,16 @@
           checkDailyCompletion();
           renderDailyRally();
           renderStampCard(-1);
-          checkPendingFirstClear();
+          _scheduleFirstClearAfterStamps();
         }
       });
+
+      // スタンプ演出が走っている間は first-clear 祝賀を遅延実行。
+      // スタンプ完了時の onAllDone コールバックで呼び直される。
+      function _scheduleFirstClearAfterStamps() {
+        if (window._stampBatchBusy) return;
+        checkPendingFirstClear();
+      }
 
       // ── ゲーム初回クリア報酬: ホーム帰還時の演出 ──
       // common/first-clear.js が localStorage.pono_pending_first_clear に
@@ -2986,7 +3009,10 @@
         checkDailyCompletion();
         renderDailyRally();
         renderStampCard(-1);
-        checkPendingFirstClear();
+        // ★ first-clear は stamp modal を z-index で被覆してしまうので
+        //   スタンプ演出が走っていない（または終わっている）時だけ実行。
+        //   スタンプ中は showStampBatch 完了時に連鎖して呼ばれる。
+        _scheduleFirstClearAfterStamps();
       });
 
     })();
