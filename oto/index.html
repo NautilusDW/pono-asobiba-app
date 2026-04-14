@@ -232,18 +232,40 @@ preloadVoiceBuffers();
 // 合成: ドレミ / 太鼓 / 動物
 // ────────────────────────────────
 var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
-// animal: お遊びで周波数を広めに使う (ニャー/ワン/ピヨ/モー/ケロ/ブー 風)
-var ANIMAL_PATTERNS = [
-  { type: 'triangle', f0: 700, f1: 420, dur: 0.35, vib: 8 },   // ニャー
-  { type: 'sawtooth', f0: 280, f1: 230, dur: 0.28, vib: 0 },   // ワン
-  { type: 'square',   f0: 1200, f1: 900, dur: 0.18, vib: 24 }, // ピヨ
-  { type: 'sine',     f0: 180, f1: 140, dur: 0.55, vib: 2 },   // モー
-  { type: 'square',   f0: 520, f1: 620, dur: 0.20, vib: 0 },   // ケロ
-  { type: 'sawtooth', f0: 160, f1: 120, dur: 0.30, vib: 0 },   // ブー
-];
 // たいこ: WebAudio 合成のドラムキット (kick/snare/hat/tom-hi/tom-lo/cymbal)
-// 各鍵盤を違うパーカッション音に割り当て
 var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo', 'cymbal'];
+// 動物: 実音源ファイル (assets/sounds/animals/)
+var ANIMAL_FILES = ['cat.mp3', 'dog.mp3', 'cow.mp3', 'pig.mp3', 'horse.mp3', 'lion.mp3'];
+var _animalBuffers = new Array(ANIMAL_FILES.length).fill(null);
+var _animalRawBuffers = new Array(ANIMAL_FILES.length).fill(null);
+var _animalLoading = false;
+function preloadAnimalBuffers() {
+  if (_animalLoading) return;
+  _animalLoading = true;
+  ANIMAL_FILES.forEach(function(file, i) {
+    var url = '../assets/sounds/animals/' + file;
+    fetch(url).then(function(r){ return r.arrayBuffer(); })
+      .then(function(buf){
+        _animalRawBuffers[i] = buf;
+        var ac = getAC();
+        if (!ac) return null;
+        return ac.decodeAudioData(buf.slice(0));
+      })
+      .then(function(decoded){ if (decoded) _animalBuffers[i] = decoded; })
+      .catch(function(){});
+  });
+}
+function _ensureAnimalDecoded() {
+  var ac = getAC(); if (!ac) return;
+  _animalRawBuffers.forEach(function(raw, i) {
+    if (raw && !_animalBuffers[i]) {
+      try {
+        ac.decodeAudioData(raw.slice(0)).then(function(d) { _animalBuffers[i] = d; }).catch(function(){});
+      } catch(e) {}
+    }
+  });
+}
+preloadAnimalBuffers();
 
 function playTone(kind, idx) {
   var ac = getAC(); if (!ac) return;
@@ -258,25 +280,6 @@ function playTone(kind, idx) {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
     o.connect(g); g.connect(ac.destination);
     o.start(t); o.stop(t + 0.85);
-  } else if (kind === 'animal') {
-    var p = ANIMAL_PATTERNS[idx] || ANIMAL_PATTERNS[0];
-    var o2 = ac.createOscillator(), g2 = ac.createGain();
-    o2.type = p.type;
-    o2.frequency.setValueAtTime(p.f0, t);
-    o2.frequency.exponentialRampToValueAtTime(Math.max(40, p.f1), t + p.dur);
-    // ビブラート
-    if (p.vib > 0) {
-      var lfo = ac.createOscillator(), lfoGain = ac.createGain();
-      lfo.frequency.value = p.vib;
-      lfoGain.gain.value = p.f0 * 0.06;
-      lfo.connect(lfoGain); lfoGain.connect(o2.frequency);
-      lfo.start(t); lfo.stop(t + p.dur);
-    }
-    g2.gain.setValueAtTime(0, t);
-    g2.gain.linearRampToValueAtTime(0.28, t + 0.025);
-    g2.gain.exponentialRampToValueAtTime(0.001, t + p.dur + 0.1);
-    o2.connect(g2); g2.connect(ac.destination);
-    o2.start(t); o2.stop(t + p.dur + 0.15);
   } else if (kind === 'taiko') {
     playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   }
@@ -379,6 +382,7 @@ document.querySelectorAll('.set-btn').forEach(function(btn) {
     currentSet = btn.dataset.set;
     unlockAudio();
     _ensureVoiceDecoded();
+    _ensureAnimalDecoded();
     // 切替プレビュー音を0番で1回鳴らす
     playSetSound(0);
   });
@@ -386,28 +390,30 @@ document.querySelectorAll('.set-btn').forEach(function(btn) {
 
 function playSetSound(idx) {
   if (currentSet === 'voice') {
-    // AC が最近作られたばかりで未 decode の raw を試行
     if (!_voiceBuffers[idx]) _ensureVoiceDecoded();
     if (_voiceBuffers[idx] && playBuffer(_voiceBuffers[idx])) return;
-    // まだロード中: フォールバックとして太鼓の kick を鳴らして「反応している」感を出す
-    // （ドレミだと「変な楽器」に聞こえるので太鼓にした）
+    // 未ロードは太鼓フォールバック
     var ac = getAC(); if (ac) playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   } else if (currentSet === 'doremi') {
     playTone('doremi', idx);
   } else if (currentSet === 'taiko') {
     playTone('taiko', idx);
   } else if (currentSet === 'animal') {
-    playTone('animal', idx);
+    if (!_animalBuffers[idx]) _ensureAnimalDecoded();
+    if (_animalBuffers[idx] && playBuffer(_animalBuffers[idx])) return;
+    // 未ロードは太鼓フォールバック
+    var ac2 = getAC(); if (ac2) playDrum(ac2, TAIKO_KINDS[idx] || 'kick');
   }
 }
 
-// 初回ユーザー操作で AudioContext アンロック + voice の再デコード
+// 初回ユーザー操作で AudioContext アンロック + voice/animal の再デコード
 var _preloaded = false;
 function triggerPreload() {
   if (_preloaded) return;
   _preloaded = true;
   unlockAudio();
   _ensureVoiceDecoded();
+  _ensureAnimalDecoded();
 }
 document.addEventListener('pointerdown', triggerPreload, { once: true });
 document.addEventListener('touchstart', triggerPreload, { once: true });
