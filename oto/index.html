@@ -129,7 +129,8 @@
     <div class="sets" id="sets" role="tablist">
       <button class="set-btn active" data-set="voice" aria-label="おとセット1">🗣️</button>
       <button class="set-btn"        data-set="doremi" aria-label="おとセット2">🎹</button>
-      <button class="set-btn"        data-set="animal" aria-label="おとセット3">🐾</button>
+      <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
+      <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
     </div>
     <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
   </div>
@@ -173,21 +174,41 @@ document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: 
 
 // ────────────────────────────────
 // ボイス音源: voices/NN-aiueo.wav を6音ピックアップ (あ か さ た な ま)
+// ★ページロード時に即プリロード開始（decodeAudioData は resume 不要で走る）
 // ────────────────────────────────
 var VOICE_INDICES = [0, 5, 10, 15, 20, 30]; // あ/か/さ/た/な/ま
 var _voiceBuffers = new Array(VOICE_INDICES.length).fill(null);
+var _voiceRawBuffers = new Array(VOICE_INDICES.length).fill(null); // ArrayBuffer キャッシュ (AC 未作成時)
 var _voiceLoading = false;
 function preloadVoiceBuffers() {
   if (_voiceLoading) return;
   _voiceLoading = true;
-  var ac = getAC();
-  if (!ac) return;
+  // fetch はいつでも走らせてよい
   VOICE_INDICES.forEach(function(idx, i) {
     var url = '../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav';
     fetch(url).then(function(r){ return r.arrayBuffer(); })
-      .then(function(buf){ return ac.decodeAudioData(buf); })
-      .then(function(decoded){ _voiceBuffers[i] = decoded; })
+      .then(function(buf){
+        _voiceRawBuffers[i] = buf;
+        var ac = getAC();
+        if (!ac) return null;
+        // decodeAudioData は source ArrayBuffer を消費してしまうので slice
+        return ac.decodeAudioData(buf.slice(0));
+      })
+      .then(function(decoded){ if (decoded) _voiceBuffers[i] = decoded; })
       .catch(function(){ /* 失敗時は WebAudio合成にフォールバック */ });
+  });
+}
+// 未デコード分を AC 作成後に再デコード (iOS で AC が後から作られるケース対応)
+function _ensureVoiceDecoded() {
+  var ac = getAC(); if (!ac) return;
+  _voiceRawBuffers.forEach(function(raw, i) {
+    if (raw && !_voiceBuffers[i]) {
+      try {
+        ac.decodeAudioData(raw.slice(0)).then(function(decoded) {
+          _voiceBuffers[i] = decoded;
+        }).catch(function(){});
+      } catch(e) {}
+    }
   });
 }
 
@@ -204,8 +225,11 @@ function playBuffer(buf) {
   } catch(e) { return false; }
 }
 
+// ページロード後にフェッチ即開始（ユーザー操作を待たない）
+preloadVoiceBuffers();
+
 // ────────────────────────────────
-// 合成: ドレミ (C4, D4, E4, F4, G4, A4) / 動物っぽい (周波数＋エンベロープで表情変化)
+// 合成: ドレミ / 太鼓 / 動物
 // ────────────────────────────────
 var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
 // animal: お遊びで周波数を広めに使う (ニャー/ワン/ピヨ/モー/ケロ/ブー 風)
@@ -217,6 +241,9 @@ var ANIMAL_PATTERNS = [
   { type: 'square',   f0: 520, f1: 620, dur: 0.20, vib: 0 },   // ケロ
   { type: 'sawtooth', f0: 160, f1: 120, dur: 0.30, vib: 0 },   // ブー
 ];
+// たいこ: WebAudio 合成のドラムキット (kick/snare/hat/tom-hi/tom-lo/cymbal)
+// 各鍵盤を違うパーカッション音に割り当て
+var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo', 'cymbal'];
 
 function playTone(kind, idx) {
   var ac = getAC(); if (!ac) return;
@@ -250,7 +277,95 @@ function playTone(kind, idx) {
     g2.gain.exponentialRampToValueAtTime(0.001, t + p.dur + 0.1);
     o2.connect(g2); g2.connect(ac.destination);
     o2.start(t); o2.stop(t + p.dur + 0.15);
+  } else if (kind === 'taiko') {
+    playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   }
+}
+
+// ────────────────────────────────
+// 太鼓 (ドラム) 合成
+// ────────────────────────────────
+function playDrum(ac, kind) {
+  var t = ac.currentTime;
+  if (kind === 'kick') {
+    // バスドラム: 低音正弦波で急降下
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(160, t);
+    o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.28);
+  } else if (kind === 'snare') {
+    // スネア: ノイズ + 短音
+    var nb = _makeNoiseBuffer(ac, 0.22);
+    var ns = ac.createBufferSource(); ns.buffer = nb;
+    var nf = ac.createBiquadFilter(); nf.type = 'highpass'; nf.frequency.value = 1500;
+    var ng = ac.createGain();
+    ng.gain.setValueAtTime(0.5, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    ns.connect(nf); nf.connect(ng); ng.connect(ac.destination);
+    ns.start(t); ns.stop(t + 0.22);
+    // トーン要素
+    var so = ac.createOscillator(), sg = ac.createGain();
+    so.type = 'triangle';
+    so.frequency.setValueAtTime(220, t);
+    so.frequency.exponentialRampToValueAtTime(140, t + 0.08);
+    sg.gain.setValueAtTime(0.35, t);
+    sg.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    so.connect(sg); sg.connect(ac.destination);
+    so.start(t); so.stop(t + 0.12);
+  } else if (kind === 'hat') {
+    // ハイハット: 高域ノイズ短め
+    var hb = _makeNoiseBuffer(ac, 0.08);
+    var hs = ac.createBufferSource(); hs.buffer = hb;
+    var hf = ac.createBiquadFilter(); hf.type = 'highpass'; hf.frequency.value = 6000;
+    var hg = ac.createGain();
+    hg.gain.setValueAtTime(0.35, t);
+    hg.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    hs.connect(hf); hf.connect(hg); hg.connect(ac.destination);
+    hs.start(t); hs.stop(t + 0.08);
+  } else if (kind === 'tom_hi') {
+    // タム高音
+    var tho = ac.createOscillator(), thg = ac.createGain();
+    tho.type = 'sine';
+    tho.frequency.setValueAtTime(320, t);
+    tho.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+    thg.gain.setValueAtTime(0.7, t);
+    thg.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    tho.connect(thg); thg.connect(ac.destination);
+    tho.start(t); tho.stop(t + 0.32);
+  } else if (kind === 'tom_lo') {
+    // タム低音
+    var tlo = ac.createOscillator(), tlg = ac.createGain();
+    tlo.type = 'sine';
+    tlo.frequency.setValueAtTime(200, t);
+    tlo.frequency.exponentialRampToValueAtTime(90, t + 0.25);
+    tlg.gain.setValueAtTime(0.8, t);
+    tlg.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    tlo.connect(tlg); tlg.connect(ac.destination);
+    tlo.start(t); tlo.stop(t + 0.42);
+  } else if (kind === 'cymbal') {
+    // シンバル: 長めの高域ノイズ
+    var cb = _makeNoiseBuffer(ac, 0.6);
+    var cs = ac.createBufferSource(); cs.buffer = cb;
+    var cf = ac.createBiquadFilter(); cf.type = 'highpass'; cf.frequency.value = 4000;
+    var cg = ac.createGain();
+    cg.gain.setValueAtTime(0.4, t);
+    cg.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    cs.connect(cf); cf.connect(cg); cg.connect(ac.destination);
+    cs.start(t); cs.stop(t + 0.6);
+  }
+}
+
+// ホワイトノイズ用 AudioBuffer を生成
+function _makeNoiseBuffer(ac, durationSec) {
+  var len = Math.floor(ac.sampleRate * durationSec);
+  var buf = ac.createBuffer(1, len, ac.sampleRate);
+  var d = buf.getChannelData(0);
+  for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
 }
 
 // ────────────────────────────────
@@ -263,7 +378,7 @@ document.querySelectorAll('.set-btn').forEach(function(btn) {
     btn.classList.add('active');
     currentSet = btn.dataset.set;
     unlockAudio();
-    if (currentSet === 'voice') preloadVoiceBuffers();
+    _ensureVoiceDecoded();
     // 切替プレビュー音を0番で1回鳴らす
     playSetSound(0);
   });
@@ -271,23 +386,28 @@ document.querySelectorAll('.set-btn').forEach(function(btn) {
 
 function playSetSound(idx) {
   if (currentSet === 'voice') {
+    // AC が最近作られたばかりで未 decode の raw を試行
+    if (!_voiceBuffers[idx]) _ensureVoiceDecoded();
     if (_voiceBuffers[idx] && playBuffer(_voiceBuffers[idx])) return;
-    // 未ロード/失敗時はドレミフォールバック
-    playTone('doremi', idx);
+    // まだロード中: フォールバックとして太鼓の kick を鳴らして「反応している」感を出す
+    // （ドレミだと「変な楽器」に聞こえるので太鼓にした）
+    var ac = getAC(); if (ac) playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   } else if (currentSet === 'doremi') {
     playTone('doremi', idx);
+  } else if (currentSet === 'taiko') {
+    playTone('taiko', idx);
   } else if (currentSet === 'animal') {
     playTone('animal', idx);
   }
 }
 
-// 初回ユーザー操作で音源プリロード
+// 初回ユーザー操作で AudioContext アンロック + voice の再デコード
 var _preloaded = false;
 function triggerPreload() {
   if (_preloaded) return;
   _preloaded = true;
   unlockAudio();
-  preloadVoiceBuffers();
+  _ensureVoiceDecoded();
 }
 document.addEventListener('pointerdown', triggerPreload, { once: true });
 document.addEventListener('touchstart', triggerPreload, { once: true });
