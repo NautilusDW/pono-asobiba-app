@@ -1415,65 +1415,86 @@ function drawBallPreview(now) {
     // ── Step 2: Power gauge (direction already locked) ──
     const { nx, ny } = gaugeDir;
 
-    // Draw locked trajectory dots
-    ctx.globalAlpha = 0.5;
+    // Draw locked trajectory dots — 暗い下敷き + 白で視認性強化
     for (let d = 0; d < 8; d++) {
       const dd = 30 + d * 25;
-      ctx.beginPath();
-      ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
+      const r = 2 + (1-d/8)*3;
+      const px = ballX + nx * dd, py = ballY + ny * dd;
+      // 黒い縁
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.arc(px, py, r + 1.5, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fill();
+      // 白い中心
+      ctx.globalAlpha = 0.95;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
       ctx.fillStyle = '#fff'; ctx.fill();
     }
+    ctx.globalAlpha = 1;
 
-    // Power gauge bar (at aim bar position)
-    const gaugeW = barW * 0.8, gaugeH = 14;
+    // Power gauge bar — 厚み up & 色を濃く
+    const gaugeW = barW * 0.8, gaugeH = 22;
     const gaugeX = (W - gaugeW) / 2;
 
-    // 暗い下敷き（不透明）
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#222';
+    // 暗い下敷き
+    ctx.fillStyle = '#1a1a1a';
     ctx.beginPath();
-    ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
+    ctx.roundRect(gaugeX - 2, barY - gaugeH / 2 - 2, gaugeW + 4, gaugeH + 4, (gaugeH + 4) / 2);
     ctx.fill();
 
-    // Color zones: edges = red/weak, center = green/strong（完全不透明）
+    // カラーゾーン: 端＝赤弱 / 中央＝濃い緑強（ビビッドな色に調整）
     const gradient = ctx.createLinearGradient(gaugeX, 0, gaugeX + gaugeW, 0);
-    gradient.addColorStop(0, '#F44336');
-    gradient.addColorStop(0.3, '#FF9800');
-    gradient.addColorStop(0.5, '#4CAF50');
-    gradient.addColorStop(0.7, '#FF9800');
-    gradient.addColorStop(1, '#F44336');
-    ctx.globalAlpha = 1;
+    gradient.addColorStop(0,    '#E53935'); // 強い赤
+    gradient.addColorStop(0.25, '#FB8C00'); // 橙
+    gradient.addColorStop(0.45, '#00C853'); // ビビッド緑（中央手前）
+    gradient.addColorStop(0.5,  '#00E676'); // さらに明るい緑（中央ピーク）
+    gradient.addColorStop(0.55, '#00C853'); // ビビッド緑（中央奥）
+    gradient.addColorStop(0.75, '#FB8C00');
+    gradient.addColorStop(1,    '#E53935');
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
     ctx.fill();
 
-    // Center zone highlight（薄い白で中心強調）
-    ctx.globalAlpha = 0.55;
+    // 中央ゾーンに「★マーク」— 白抜きの小さな星（色を邪魔せず強調）
+    const centerY = barY;
+    ctx.save();
     ctx.fillStyle = '#fff';
-    const centerW = gaugeW * 0.2;
-    ctx.fillRect(W / 2 - centerW / 2, barY - gaugeH / 2, centerW, gaugeH);
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 1;
+    ctx.font = '900 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★', W / 2, centerY);
+    ctx.restore();
 
-    // 白い縁取りで視認性を強化
-    ctx.globalAlpha = 1;
+    // 白い縁取りで視認性強化
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
     ctx.stroke();
 
-    // Moving cursor
+    // Moving cursor — 黒縁 + 白で確実に見える
     ctx.globalAlpha = 1;
     const cursorX = gaugeX + gaugeT * gaugeW;
+    // 黒い外枠
+    ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cursorX, barY - gaugeH / 2 - 6);
+    ctx.lineTo(cursorX, barY + gaugeH / 2 + 6);
+    ctx.stroke();
+    // 白い縦線
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(cursorX, barY - gaugeH / 2 - 4);
-    ctx.lineTo(cursorX, barY + gaugeH / 2 + 4);
+    ctx.moveTo(cursorX, barY - gaugeH / 2 - 6);
+    ctx.lineTo(cursorX, barY + gaugeH / 2 + 6);
     ctx.stroke();
-    ctx.shadowColor = '#fff'; ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(cursorX, barY, 6, 0, Math.PI * 2);
+    ctx.lineCap = 'butt';
+    // 黒縁円 → 白丸
+    ctx.beginPath(); ctx.arc(cursorX, barY, 9, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cursorX, barY, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#fff'; ctx.fill();
-    ctx.shadowBlur = 0;
 
     // Ball (solid)
     ctx.globalAlpha = 0.9;
@@ -1490,15 +1511,22 @@ function drawBallPreview(now) {
     const angle = -Math.PI / 2 + aimAngle * maxAngle;
     const nx = Math.cos(angle), ny = Math.sin(angle);
 
-    // Draw trajectory dots
-    const dotAlpha = aimBarDragging ? 0.6 : 0.25;
-    ctx.globalAlpha = dotAlpha;
+    // Draw trajectory dots — 黒縁 + 白で常に見える
+    const dotAlphaMul = aimBarDragging ? 1 : 0.65;
     for (let d = 0; d < 8; d++) {
       const dd = 30 + d * 25;
-      ctx.beginPath();
-      ctx.arc(ballX + nx * dd, ballY + ny * dd, 2 + (1-d/8)*3, 0, Math.PI*2);
+      const r = 2 + (1-d/8)*3;
+      const px = ballX + nx * dd, py = ballY + ny * dd;
+      // 黒縁
+      ctx.globalAlpha = 0.7 * dotAlphaMul;
+      ctx.beginPath(); ctx.arc(px, py, r + 1.5, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fill();
+      // 白中心
+      ctx.globalAlpha = 0.95 * dotAlphaMul;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
       ctx.fillStyle = '#fff'; ctx.fill();
     }
+    ctx.globalAlpha = 1;
 
     // 暗い縁取りで背景に溶けないように
     ctx.globalAlpha = 1;
@@ -1594,39 +1622,37 @@ function drawSlingshotGuide(now) {
   const guideY = H * BALL_SPAWN_Y - 110;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
 
-  if (slingshotPhase === 'gauge') {
-    // Step 2: gauge active
-    ctx.globalAlpha = 0.8;
-    ctx.font = '900 16px "Zen Maru Gothic"';
-    ctx.fillStyle = '#FFD700';
-    ctx.fillText('つよさを きめよう！', W / 2, guideY);
-    ctx.font = '13px "Zen Maru Gothic"';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('まんなかで タップ → つよく うてるよ', W / 2, guideY + 20);
-  } else if (aimBarDragging) {
-    // Step 1: dragging the bar
-    ctx.globalAlpha = 0.7;
-    ctx.font = '900 15px "Zen Maru Gothic"';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('ひだりみぎに うごかして ねらおう！', W / 2, guideY);
-    ctx.font = '13px "Zen Maru Gothic"';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('ゆびを はなすと つぎへ すすむよ', W / 2, guideY + 20);
-  } else {
-    // Idle: waiting for touch on bar
-    const pulse = 0.5 + Math.sin(now * 0.004) * 0.3;
-    ctx.globalAlpha = pulse;
-    ctx.font = '900 16px "Zen Maru Gothic"';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('① ほうこうを きめよう', W / 2, guideY);
-    ctx.font = '13px "Zen Maru Gothic"';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('したの バーを さわって ひだりみぎに！', W / 2, guideY + 20);
+  // 黒縁取り付きテキスト描画ヘルパー
+  function drawTextWithStroke(text, x, y, fill, strokeAlpha) {
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,' + (strokeAlpha != null ? strokeAlpha : 0.85) + ')';
+    ctx.lineWidth = 5;
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = fill;
+    ctx.fillText(text, x, y);
   }
 
-  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+  if (slingshotPhase === 'gauge') {
+    ctx.font = '900 18px "Zen Maru Gothic"';
+    drawTextWithStroke('つよさを きめよう！', W / 2, guideY, '#FFD700');
+    ctx.font = '900 14px "Zen Maru Gothic"';
+    drawTextWithStroke('まんなかで タップ → つよく うてるよ', W / 2, guideY + 22, '#fff');
+  } else if (aimBarDragging) {
+    ctx.font = '900 17px "Zen Maru Gothic"';
+    drawTextWithStroke('ひだりみぎに うごかして ねらおう！', W / 2, guideY, '#fff');
+    ctx.font = '900 14px "Zen Maru Gothic"';
+    drawTextWithStroke('ゆびを はなすと つぎへ すすむよ', W / 2, guideY + 22, '#fff');
+  } else {
+    const pulse = 0.7 + Math.sin(now * 0.004) * 0.3;
+    ctx.globalAlpha = pulse;
+    ctx.font = '900 18px "Zen Maru Gothic"';
+    drawTextWithStroke('① ほうこうを きめよう', W / 2, guideY, '#fff');
+    ctx.font = '900 14px "Zen Maru Gothic"';
+    drawTextWithStroke('したの バーを さわって ひだりみぎに！', W / 2, guideY + 22, '#fff');
+  }
+
   ctx.globalAlpha = 1;
 }
 
