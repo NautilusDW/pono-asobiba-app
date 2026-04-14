@@ -572,6 +572,9 @@ html, body {
 </head>
 <body>
 
+<!-- BGM (loop) -->
+<audio id="bgm" loop preload="auto" src="../assets/audio/Soft Crayon Day.mp3"></audio>
+
 <div id="portrait-notice">
   <div class="rotate-icon">📱</div>
   <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
@@ -841,6 +844,24 @@ let _ac = null;
 function getAC() { if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume(); return _ac; }
 document.addEventListener('touchstart', () => getAC().resume(), { once: true, passive: true });
 document.addEventListener('pointerdown', () => getAC().resume(), { once: true, passive: true });
+
+// ── BGM ──
+const bgmEl = document.getElementById('bgm');
+let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+if (bgmEl) bgmEl.volume = 0.3;
+function tryPlayBgm() {
+  if (!bgmEl || !bgmEnabled) return;
+  var p = bgmEl.play();
+  if (p && typeof p.catch === 'function') p.catch(function(){});
+}
+function stopBgm() { if (bgmEl) bgmEl.pause(); }
+['touchstart','click','pointerdown'].forEach(function(ev){
+  document.addEventListener(ev, function _bgmUnlock(){
+    if (bgmEnabled) tryPlayBgm();
+    document.removeEventListener(ev, _bgmUnlock);
+  }, { passive: true });
+});
+if (bgmEnabled) tryPlayBgm();
 function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(900,t+0.08); g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.12); }
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
@@ -1302,7 +1323,14 @@ function showTutorial() {
 applyBentoColor();
 loadStage();
 
-initMenu({ tutorial: showTutorial });
+initMenu({
+  tutorial: showTutorial,
+  bgmToggle: function() {
+    bgmEnabled = !bgmEnabled;
+    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+    if (bgmEnabled) tryPlayBgm(); else stopBgm();
+  },
+});
 
 // Portrait notice (横向き専用)
 function updateNotice() {

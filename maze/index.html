@@ -356,6 +356,9 @@ html, body {
 </head>
 <body>
 
+<!-- BGM (loop) -->
+<audio id="bgm" loop preload="auto" src="../assets/audio/Sunny Little Steps.mp3"></audio>
+
 <div id="app">
   <div class="header">
     <h1>ハリネズミくんを たすけよう</h1>
@@ -711,6 +714,64 @@ let walkAnim = null;
 let cleared = false;
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
+// ── Audio: BGM + 効果音（WebAudio合成）──
+const bgmEl = document.getElementById('bgm');
+if (bgmEl) bgmEl.volume = 0.35;
+function tryPlayBgm() {
+  if (!bgmEl || !bgmEnabled) return;
+  var p = bgmEl.play();
+  if (p && typeof p.catch === 'function') p.catch(function(){});
+}
+function stopBgm() { if (bgmEl) bgmEl.pause(); }
+// ユーザー初回操作で BGM 起動（iOS Safari 対策）
+['touchstart','click','pointerdown'].forEach(function(ev){
+  document.addEventListener(ev, function _bgmUnlock(){
+    if (bgmEnabled) tryPlayBgm();
+    document.removeEventListener(ev, _bgmUnlock);
+  }, { passive: true });
+});
+
+let _mzAC = null;
+function _mzGetAC() {
+  if (!_mzAC) try { _mzAC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  if (_mzAC && _mzAC.state === 'suspended') _mzAC.resume();
+  return _mzAC;
+}
+function playTap() {
+  var ac = _mzGetAC(); if (!ac) return;
+  var t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.connect(g); g.connect(ac.destination);
+  o.type = 'sine'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(950, t + 0.06);
+  g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  o.start(t); o.stop(t + 0.1);
+}
+function playApple() {
+  var ac = _mzGetAC(); if (!ac) return;
+  var t = ac.currentTime;
+  [659, 880].forEach(function(f, i) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sine'; o.frequency.value = f;
+    var s = t + i * 0.07;
+    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.18, s + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, s + 0.2);
+    o.start(s); o.stop(s + 0.2);
+  });
+}
+function playStageClearMz() {
+  var ac = _mzGetAC(); if (!ac) return;
+  var t = ac.currentTime;
+  [523, 659, 784, 1047].forEach(function(f, i) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sine'; o.frequency.value = f;
+    var s = t + i * 0.1;
+    g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(0.22, s + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, s + 0.4);
+    o.start(s); o.stop(s + 0.4);
+  });
+}
+
 // ── Charm system (りんごでアンロックするおまもり) ──
 // totalApples = 累計収集数 (永続)
 // usedHint/usedBreeze/usedWarp = 使用回数 (永続)
@@ -916,6 +977,7 @@ function finishWalk() {
     if (stage.cells[p.r][p.c] === T.APPLE) {
       stage.cells[p.r][p.c] = T.PATH;
       applesCollected++;
+      playApple();
       // Persist & check for newly-unlocked charms
       const beforeCharms = getCharms();
       totalApples++;
@@ -991,6 +1053,7 @@ function showArrows() {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (walkAnim || cleared || charmTutShowing) return;
+      playTap();
       if (v.breeze) {
         // そよかぜパス: 隣接障害物を消費して通過
         const obsR = pono.r + dr, obsC = pono.c + dc;
@@ -1204,6 +1267,7 @@ function onClear() {
   voice.style.display = 'none';
   updateCharmsUI();
   if (window.incrementStat) window.incrementStat('maze_clears', 1);
+  playStageClearMz();
   setTimeout(function() {
     encounter.classList.add('show');
     spawnConfetti();
@@ -1476,6 +1540,7 @@ if (window.initMenu) {
     bgmToggle: function() {
       bgmEnabled = !bgmEnabled;
       localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+      if (bgmEnabled) tryPlayBgm(); else stopBgm();
     },
     tutorial: function() {
       ovTitle.textContent = 'あそびかた';
