@@ -1667,12 +1667,12 @@ function showTutorial() {
       centerBubble();
       bubble.innerHTML = '🖼️ えを よく みてね！<br><br>えに あう ことばを<br>えらんで タップしよう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
       bubble.classList.remove('hidden');
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); nextStep(); });
+      document.getElementById('tut-next').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); nextStep(); });
     },
     () => {
       centerBubble();
       bubble.innerHTML = 'えと ことばを<br>あわせて みよう！🎉<br><button class="tut-next-btn" id="tut-next">はじめる！</button>';
-      document.getElementById('tut-next').addEventListener('pointerdown', e => { e.preventDefault(); endTut(); });
+      document.getElementById('tut-next').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); endTut(); });
     }
   ];
 

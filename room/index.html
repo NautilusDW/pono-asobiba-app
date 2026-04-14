@@ -1716,18 +1716,21 @@ function _addDragHandlers(el, areaId) {
 
   // ── タッチ ──────────────────────────────────────────
   el.addEventListener('touchstart', e => {
+    if (!editMode) return; // 模様替えモード外はドラッグ無効
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     dragging = false;
   }, { passive: true });
 
   el.addEventListener('touchmove', e => {
+    if (!editMode) return;
     e.preventDefault();
     e.stopPropagation();
     onMove(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: false });
 
   el.addEventListener('touchend', e => {
+    if (!editMode) return;
     e.preventDefault();  // 合成clickイベント抑制
     e.stopPropagation(); // 壁/床インベントリへの伝播防止
     onEnd();
@@ -1735,6 +1738,7 @@ function _addDragHandlers(el, areaId) {
 
   // ── マウス（PC）──────────────────────────────────────
   el.addEventListener('mousedown', e => {
+    if (!editMode) return;
     if (e.button !== 0) return;
     e.preventDefault();
     startX = e.clientX;
@@ -3376,18 +3380,18 @@ function _showFurnitureTutorial(itemIds, flagKey, tutorialText, afterOkMsg) {
     refreshArea('living');
   }
 
-  // 模様替えモードON
+  // 模様替えモードON（refreshArea後に設定。.edit-mode クラスが再付与される）
   if (typeof window._setEditMode === 'function') window._setEditMode(true);
 
   // チュートリアルモーダル表示
   _waitForLandscape(function() {
     _showTutorialModal(tutorialText, function() {
       localStorage.setItem(flagKey, '1');
-      // afterOkMsg があれば2つ目のモーダル
+      // afterOkMsg があれば2つ目のモーダル（現在は未使用）
       if (afterOkMsg) {
         setTimeout(function() {
           _showTutorialModal(afterOkMsg, function() {});
-        }, 350);
+        }, 400);
       }
     });
   });
@@ -3695,35 +3699,75 @@ function init() {
   // テーマはloadStateでpono_profile.genderから自動設定済み → 直接おへやへ
   enterRoom();
 
-  // ベッド獲得直後に遷移してきた場合は拡張チュートリアル優先
-  var bedPending = localStorage.getItem('pono_bed_tutorial_pending') === '1';
-  if (bedPending && localStorage.getItem('pono_bed_tutorial_seen') !== '1') {
-    // 初回お部屋チュートリアル済みならそのまま、未だなら先に表示してから
-    if (!localStorage.getItem('room_tut_seen')) {
-      // お部屋チュートリアル → 完了後にベッドチュートリアル発火
+  // チュートリアル開始前に残存する動的モーダルを念のため除去
+  document.querySelectorAll('[data-tut-modal]').forEach(el => el.remove());
+
+  // チュートリアルをキューで順次実行
+  var tutQueue = [];
+
+  // 1. お部屋チュートリアル（初回のみ）
+  if (!localStorage.getItem('room_tut_seen')) {
+    tutQueue.push(function(next) {
       showRoomTutorial();
-      var _origSeen = false;
-      var _checkInterval = setInterval(function() {
-        if (localStorage.getItem('room_tut_seen') === '1' && !_origSeen) {
-          _origSeen = true;
-          clearInterval(_checkInterval);
-          setTimeout(function() { _showExtendedBedTutorial(); }, 500);
+      var _interval = setInterval(function() {
+        if (localStorage.getItem('room_tut_seen') === '1') {
+          clearInterval(_interval);
+          setTimeout(next, 400);
         }
-      }, 500);
-    } else {
-      _showExtendedBedTutorial();
-    }
-  } else if (!localStorage.getItem('room_tut_seen')) {
-    showRoomTutorial();
-  } else {
-    // 家具獲得チュートリアル（本棚など）
-    _showFurnitureTutorial(
-      ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood'],
-      'pono_bookshelf_tutorial_seen',
-      'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！',
-      'おいた ほんだなを タップすると\nこれまでに もらった アイテムや\nずかん、きろくが みられるよ！'
-    );
+      }, 300);
+    });
   }
+
+  // 2. ベッド拡張チュートリアル（bedPending + bed in inventory）
+  var bedPending = localStorage.getItem('pono_bed_tutorial_pending') === '1';
+  var bedInInv = ['furn_bed_pink', 'furn_bed_blue_boy'].some(id => state.inventory.indexOf(id) !== -1);
+  if (bedPending && localStorage.getItem('pono_bed_tutorial_seen') !== '1') {
+    if (bedInInv) {
+      tutQueue.push(function(next) {
+        _showExtendedBedTutorial();
+        // 完了検知
+        var _interval = setInterval(function() {
+          if (localStorage.getItem('pono_bed_tutorial_seen') === '1') {
+            clearInterval(_interval);
+            setTimeout(next, 400);
+          }
+        }, 300);
+      });
+    } else {
+      // bed がインベントリに無ければ pending をクリア
+      localStorage.removeItem('pono_bed_tutorial_pending');
+    }
+  }
+
+  // 3. 本棚チュートリアル（本棚所持 + 未視聴、ベッドチュートリアル後）
+  if (localStorage.getItem('pono_bookshelf_tutorial_seen') !== '1') {
+    var hasBookshelf = ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood']
+      .some(id => state.inventory.indexOf(id) !== -1);
+    if (hasBookshelf) {
+      tutQueue.push(function(next) {
+        _showFurnitureTutorial(
+          ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood'],
+          'pono_bookshelf_tutorial_seen',
+          'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグで うごかせるよ！\n\uD83D\uDD04 マークで むきも かえられるよ\n\nできたら ほんだなを タップすると\nずかんが みられるよ！'
+        );
+        // 完了検知
+        var _interval = setInterval(function() {
+          if (localStorage.getItem('pono_bookshelf_tutorial_seen') === '1') {
+            clearInterval(_interval);
+            setTimeout(next, 400);
+          }
+        }, 300);
+      });
+    }
+  }
+
+  // キュー順次実行
+  function runTutQueue() {
+    if (tutQueue.length === 0) return;
+    var fn = tutQueue.shift();
+    fn(runTutQueue);
+  }
+  runTutQueue();
 
   // Entry overlay buttons
   document.getElementById('btn-entry-room').addEventListener('click', enterRoom);
