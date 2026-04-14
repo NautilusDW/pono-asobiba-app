@@ -1297,10 +1297,18 @@ document.getElementById('gh-save-settings').addEventListener('click', function()
 
 document.getElementById('gh-test-settings').addEventListener('click', function() {
   var result = document.getElementById('gh-settings-result');
-  var t = getToken();
+  // ★ 入力欄の現在値を優先。未入力なら localStorage の保存値を使用。
+  //   こうしないと「貼り付け → 保存せずテスト」で古いトークンで叩いてしまう。
+  var inputVal = (ghTokenSettings.value || '').trim();
+  var t = inputVal || getToken();
   if (!t) { result.innerHTML = '<span style="color:#EF4444;">トークンが設定されていません</span>'; return; }
-  result.innerHTML = '<span class="spinner"></span> 接続テスト中...';
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO, { headers: ghHeaders() })
+  var testHeaders = {
+    'Accept': 'application/vnd.github.v3+json',
+    'Authorization': 'Bearer ' + t
+  };
+  result.innerHTML = '<span class="spinner"></span> 接続テスト中...' +
+    (inputVal && inputVal !== getToken() ? '<br><span style="font-size:0.7rem;color:#8B7355;">※ 入力欄の未保存トークンでテスト中</span>' : '');
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO, { headers: testHeaders })
     .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, data: j }; }); })
     .then(function(res) {
       if (res.ok) {
