@@ -360,7 +360,10 @@ body {
   padding: 8px 10px;
   flex-shrink: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  /* ★ body の touch-action:none を上書きして横スワイプでスクロール可能に */
+  touch-action: pan-x;
   max-height: 120px; opacity: 1;
   transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
 }
@@ -522,7 +525,10 @@ body {
 }
 
 /* ===== Tutorial ===== */
-.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
+/* ★ pointer-events: none にして、highlighted ボタン（box-shadow で暗転）以外は
+   下のボタン(📸 など)が直接クリックできるようにする。視覚的な暗転は
+   .tut-highlight の box-shadow が担う */
+.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:none; }
 .tut-dim.hidden { display:none; }
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
@@ -1361,7 +1367,7 @@ function showTutorial() {
   steps[0]();
 }
 
-localStorage.removeItem('drawing_tut_seen'); // テスト用: 毎回表示
+// 初回のみチュートリアル表示
 if (!localStorage.getItem('drawing_tut_seen')) {
   setTimeout(showTutorial, 500);
 }
