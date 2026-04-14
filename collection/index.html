@@ -9,10 +9,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  /* ビューポート高さを固定して、スクロールは左右の内側要素だけで行う */
+  height: 100dvh;
+  overflow: hidden;
+}
 body {
   font-family: 'Zen Maru Gothic', sans-serif;
   background: #FFF8E7; color: #5D4E37;
-  min-height: 100dvh;
   display: flex; flex-direction: column;
 }
 
