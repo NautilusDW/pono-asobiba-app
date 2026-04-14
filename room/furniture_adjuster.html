@@ -2155,20 +2155,49 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       throw new Error(errBody.message || 'Push failed');
     }
 
-    // デプロイ成功 → 各種フラグ・キャッシュをクリア
+    // デプロイ成功 → imported フラグと削除履歴はクリア
+    // ★ _overrides は保持する。Netlify ビルド完了前にリロードされて古い items.js が
+    //   読み込まれると、overrides を消していた場合「変更が消えた」ように見える。
+    //   overrides は「items.js の値より優先」として残し、次回 overrides クリアは手動 or
+    //   新 items.js 読み込み後に初めて行う。
     ITEMS.forEach(function(it) { if (it._imported) delete it._imported; });
     localStorage.removeItem(IMPORT_SAVE_KEY);
     _deletedIds = []; _deletedSet.clear();
     localStorage.removeItem(DELETED_KEY);
-    _overrides = {};
-    localStorage.removeItem(OVERRIDE_KEY);
     refreshAllUnsavedIndicators();
     refreshUnsavedBanner();
-    status.textContent = '✅ 更新完了！3秒後にリロードします（最新のitems.js反映）';
-    status.style.color = '#4CAF50';
+
+    // GitHub commit URL を取得
+    var commitUrl = '';
+    try {
+      var putJson = await pushResp.clone().json();
+      if (putJson && putJson.commit && putJson.commit.html_url) commitUrl = putJson.commit.html_url;
+    } catch(e) {}
+
+    status.innerHTML =
+      '<span style="color:#4CAF50;font-weight:900;">✅ GitHub へのコミット完了！</span><br>' +
+      '<span style="font-size:12px;color:#ccc;">Netlify のビルド反映まで <b>約 30〜60 秒</b> かかります。<br>' +
+      '少し待ってから下のボタンで再読み込みしてください。</span>' +
+      (commitUrl ? '<br><a href="' + commitUrl + '" target="_blank" rel="noopener" style="color:#4FC3F7;font-size:12px;">GitHub コミットを確認</a>' : '') +
+      '<br><button id="_fa-reload" style="margin-top:6px;padding:6px 14px;border:none;border-radius:6px;background:#4CAF50;color:#fff;font-weight:700;cursor:pointer;">🔄 いま再読み込み</button>';
     btn.disabled = false;
-    // 3秒後に自動リロードして最新のitems.jsを反映
-    setTimeout(function() { location.reload(); }, 3000);
+
+    // 再読み込みボタン: SW キャッシュを消してからリロード
+    var reloadBtn = document.getElementById('_fa-reload');
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', async function() {
+        try {
+          if ('caches' in window) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+          }
+        } catch(e) {}
+        // overrides は items.js が更新されていれば新 ITEMS で上書きされるので、
+        // リロード直前のタイミングで消す（以前は即クリアしていた）
+        localStorage.removeItem(OVERRIDE_KEY);
+        location.replace(location.pathname + '?_=' + Date.now());
+      });
+    }
   } catch (e) {
     status.textContent = '❌ ' + e.message;
     status.style.color = '#f44336';
