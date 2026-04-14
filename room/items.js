@@ -293,7 +293,7 @@ const ROOM_ITEMS = [
 
   // ══ 共通かざり（追加）══════════════════════════════════════
   {
-    id: 'deco_box', cat: 'deco', name: 'おもちゃばこ', price: 15, theme: 'girl',
+    id: 'deco_box', cat: 'deco', name: 'たからばこ', price: 15, theme: 'girl',
     roomImg: '../assets/images/Rooms/furnitures_final/box_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/box_B.png',
     gridRow: 6, gridCol: 2, cellSize: 0.8, pivotX: 11, pivotY: 20.5,
@@ -373,13 +373,13 @@ const ROOM_ITEMS = [
     gridRow: 5, gridCol: 5, cellSize: 0.6, pivotX: 0, pivotY: 26,
   },
   {
-    id: 'deco_box_boy', cat: 'deco', name: 'おもちゃばこ', price: 15, theme: 'boy',
+    id: 'deco_box_boy', cat: 'deco', name: 'たからばこ', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/deco_box_boy_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/deco_box_boy_B.png',
     gridRow: 4, gridCol: 4, cellSize: 0.85, pivotX: 10.5, pivotY: 24.5, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
-    id: 'furn_bed_blue_boy', cat: 'furn', name: 'あおベッド', price: 15, theme: 'boy',
+    id: 'furn_bed_blue_boy', cat: 'furn', name: 'あおいベッド', price: 15, theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_bed_blue_boy_B.png',
     gridRow: 4, gridCol: 4, cellSize: 2.1, pivotX: 10.5, pivotY: 11.9, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
