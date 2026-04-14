@@ -2821,19 +2821,24 @@
           achReasons = pending;
         } catch(e) {}
 
-        // 各スタンプの理由テキストを準備（実績→ログインの順）
+        // 各スタンプの理由テキストを準備（ログイン→実績の順）
+        // ログインスタンプは dates 配列の末尾（最新のtotal）になるので、
+        // まず result.added なら最後のスタンプをログインとして扱い、
+        // それ以外は実績 or 汎用テキスト
         var stampReasons = [];
         var achIdx = 0;
+        var loginSlot = result.added ? (stampsToShow - 1) : -1; // ログインスタンプの位置
         for (var si = 0; si < stampsToShow; si++) {
           var stampTotal = startFrom + si + 1;
-          if (achIdx < achReasons.length) {
+          if (si === loginSlot) {
+            stampReasons.push({ total: stampTotal, text: getStampReasonText() });
+          } else if (achIdx < achReasons.length) {
             var ach = achReasons[achIdx];
             stampReasons.push({ total: stampTotal, text: '🏆「' + ach.name + '」\n' + ach.desc });
             achIdx++;
-          } else if (result.added) {
-            stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
           } else {
-            stampReasons.push({ total: stampTotal, text: getStampReasonText(stampTotal) });
+            // 理由テキスト不明なスタンプ（achReasons切れ、ログインでもない）
+            stampReasons.push({ total: stampTotal, text: '🎉 スタンプ ゲット！' });
           }
         }
 

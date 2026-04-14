@@ -1182,6 +1182,19 @@ function loadState() {
   }
   // 旧アイテムIDの掃除（存在しないものを除去）
   state.inventory = state.inventory.filter(id => ROOM_ITEMS.some(x => x.id === id));
+  // achievements.js/grantReward で獲得した家具・壁・床をマージ
+  // （スタンプ報酬・実績報酬は pono_unlocked_furn 等に保存されるため）
+  const MERGE_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor'];
+  MERGE_KEYS.forEach(key => {
+    try {
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.forEach(id => {
+        if (ROOM_ITEMS.some(x => x.id === id) && !state.inventory.includes(id)) {
+          state.inventory.push(id);
+        }
+      });
+    } catch(e) {}
+  });
   // 全アイテムを所持済みにする（デバッグ用）
   if (DEBUG_MODE) {
     ROOM_ITEMS.forEach(item => {
