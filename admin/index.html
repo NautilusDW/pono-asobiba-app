@@ -7925,6 +7925,12 @@ async function wfDeploy() {
       }
       // items.js にエントリ挿入: ROOM_ITEMS 配列の末尾 `];` の直前に追加する
       // （カテゴリ順を保つより確実性を優先。ROOM_ITEMS 内でカテゴリはどこでも OK）
+      // ★ 既に同じ id のエントリがあればスキップ（重複防止）
+      var dupCheck = new RegExp("id:\\s*'" + item.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
+      if (dupCheck.test(text)) {
+        console.warn('wfDeploy: skip inserting duplicate id', item.id);
+        continue;
+      }
       var roomImg = '../' + imgPath;
       var newEntry = '\n  {\n    id: \'' + item.id + '\', cat: \'' + item.cat + '\', name: \'' + item.name.replace(/'/g, "\\'") + '\', theme: \'' + item.theme + '\',\n    emoji: \'🆕\',\n    roomImg: \'' + roomImg + '\',\n  },';
       // ROOM_ITEMS = [ ... ]; の末尾を探す
