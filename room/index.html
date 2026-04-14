@@ -1176,12 +1176,13 @@ function loadState() {
   }
   // ID マイグレーションテーブル
   const ID_MIGRATION = { 'deco_toybox_pink': 'deco_box' };
-  // 男の子プロフィールなのにピンクおもちゃ箱(deco_box)を持ってる場合 → boy版に置換
-  // 女の子プロフィールで boy版を持ってる場合 → ピンクに置換
+  // 性別ごとに gendered アイテム（おもちゃ箱・ベッド）を入れ替え
   if (state.theme === 'boy') {
     ID_MIGRATION['deco_box'] = 'deco_box_boy';
+    ID_MIGRATION['furn_bed_pink'] = 'furn_bed_blue_boy';
   } else if (state.theme === 'girl') {
     ID_MIGRATION['deco_box_boy'] = 'deco_box';
+    ID_MIGRATION['furn_bed_blue_boy'] = 'furn_bed_pink';
   }
   const migrate = id => ID_MIGRATION[id] || id;
 
@@ -3257,13 +3258,17 @@ function _runRoomTutorial() {
   var step = 0;
   var _spotlight = null; // fixed position spotlight clone
 
-  // プロフィールから名前を取得（あれば「○○のおへや」、なければ「わたしのおへや」）
+  // プロフィールから名前と性別を取得
+  // 男の子なら「〇〇くんのおへや」、女の子なら「〇〇ちゃんのおへや」、なければ「わたしのおへや」
   var _kidName = '';
+  var _kidGender = 'boy';
   try {
     var _prof = JSON.parse(localStorage.getItem('pono_profile') || '{}');
     _kidName = (_prof.name || '').trim();
+    _kidGender = _prof.gender === 'girl' ? 'girl' : 'boy';
   } catch(e) {}
-  var _ownerLabel = _kidName ? (_kidName + 'の') : 'わたしの';
+  var _suffix = _kidGender === 'girl' ? 'ちゃん' : 'くん';
+  var _ownerLabel = _kidName ? (_kidName + _suffix + 'の') : 'わたしの';
 
   var STEPS = [
     {
@@ -3420,19 +3425,26 @@ function _showExtendedBedTutorial() {
   }
   if (!item) return false;
 
-  // 未配置なら中央に配置
+  // チュートリアル用に強制中央配置（未配置 or 既存どこにあってもリセット）
   if (!state.config.living) state.config.living = {};
   var cfg = state.config.living;
   if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
-  if (!cfg.placed.some(p => p.id === item.id)) {
-    var row = item.gridRow ?? 3;
-    var col = item.gridCol ?? 3;
-    var pos = findNearestEmpty('living', row, col, item.id, item, 'A');
-    cfg.placed.push({ id: item.id, row: pos.row, col: pos.col, angle: 'A' });
+  // 部屋の中央付近に固定（4x4 グリッド中央）
+  var centerRow = 3;
+  var centerCol = 3;
+  var existing = cfg.placed.find(p => p.id === item.id);
+  if (existing) {
+    var pos = findNearestEmpty('living', centerRow, centerCol, item.id, item, 'A');
+    existing.row = pos.row;
+    existing.col = pos.col;
+    existing.angle = 'A';
+  } else {
+    var pos2 = findNearestEmpty('living', centerRow, centerCol, item.id, item, 'A');
+    cfg.placed.push({ id: item.id, row: pos2.row, col: pos2.col, angle: 'A' });
     delete cfg.furn; delete cfg.deco;
-    saveState();
-    refreshArea('living');
   }
+  saveState();
+  refreshArea('living');
 
   _waitForLandscape(function() {
     var bedId = item.id;
@@ -3580,22 +3592,31 @@ function _showExtendedBedTutorial() {
       _attachBlocker('click', clickBlocker);
       _attachBlocker('touchend', clickBlocker);
 
-      // ドラッグ系（rotateフェーズ中だけ、item-placed への touchstart/mousedown をブロック）
+      // ドラッグ系（rotateフェーズ中だけ、item-placed への touchstart/touchmove/mousedown をブロック）
       // ただし rotate ボタンや stow ボタンへのクリックは妨げない
       if (phase === 'rotate') {
+        var _hintShownThisGesture = false;
         var dragBlocker = function(e) {
           var t = e.target;
-          if (t.closest && t.closest('.btn-rotate')) return;   // 回転ボタンは許可
-          if (t.closest && t.closest('.btn-stow')) return;     // しまうは clickBlockerで処理
+          if (t.closest && t.closest('.btn-rotate')) return;
+          if (t.closest && t.closest('.btn-stow')) return;
           var item = t.closest && t.closest('.item-placed');
           if (item) {
             e.stopPropagation();
             e.preventDefault();
-            showHintToast('いまは \uD83D\uDD04 を おして むきを かえてね！');
+            if (!_hintShownThisGesture) {
+              showHintToast('いまは \uD83D\uDD04 を おして むきを かえてね！');
+              _hintShownThisGesture = true;
+            }
           }
         };
+        var clearGesture = function() { _hintShownThisGesture = false; };
         _attachBlocker('touchstart', dragBlocker);
+        _attachBlocker('touchmove', dragBlocker);
+        _attachBlocker('touchend', clearGesture);
         _attachBlocker('mousedown', dragBlocker);
+        _attachBlocker('mousemove', dragBlocker);
+        _attachBlocker('mouseup', clearGesture);
       }
     }
 
