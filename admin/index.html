@@ -816,6 +816,14 @@ tr:hover { background: #FFFAF0; }
       <button onclick="wfDeploy()" style="padding:6px 14px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🚀 items.js に反映＆デプロイ</button>
     </div>
     <div id="wf-status" style="font-size:0.78rem;color:#8B7355;margin-bottom:8px;min-height:1em;"></div>
+
+    <!-- デフォルト設定 -->
+    <div style="background:#FFF8E8;border:2px solid #FDE68A;border-radius:10px;padding:10px 12px;margin-bottom:14px;">
+      <div style="font-size:0.8rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">🎨 デフォルトの 壁紙・床（性別ごと）</div>
+      <div style="font-size:0.7rem;color:#8B7355;margin-bottom:8px;line-height:1.5;">プロフィール作成直後の こども に、最初に表示される壁紙・床を選びます。</div>
+      <div id="wf-defaults-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
+    </div>
+
     <div id="wf-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;"></div>
   </div>
 </div><!-- /panel-walls -->
@@ -7478,6 +7486,20 @@ var wfCurrentCat = 'wall';
 var wfItems = [];      // ROOM_ITEMS から抽出した壁紙/床
 var wfOverrides = {};  // { id: { name, theme, deleted } }
 var wfNewItems = [];   // 新規追加待ちのアイテム [{ id, cat, name, theme, roomImg, base64 }]
+// デフォルト壁・床 (性別 x cat)。room/index.html の loadState 内ハードコードを上書きする
+var WF_DEFAULTS_KEY = 'wf_defaults';
+var WF_DEFAULTS_BASE = {
+  boy:  { wall: 'wall_navy',  floor: 'floor_wood_warm' },
+  girl: { wall: 'wall_heart', floor: 'floor_pink_plain' },
+};
+var wfDefaults = (function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(WF_DEFAULTS_KEY) || 'null');
+    if (saved && saved.boy && saved.girl) return saved;
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(WF_DEFAULTS_BASE));
+})();
+function wfSaveDefaults() { localStorage.setItem(WF_DEFAULTS_KEY, JSON.stringify(wfDefaults)); }
 var WF_OVERRIDE_KEY = 'wf_overrides';
 try { wfOverrides = JSON.parse(localStorage.getItem(WF_OVERRIDE_KEY) || '{}'); } catch(e) { wfOverrides = {}; }
 function wfSaveOv() { localStorage.setItem(WF_OVERRIDE_KEY, JSON.stringify(wfOverrides)); }
@@ -7487,7 +7509,49 @@ function wfLoadItems() {
   wfItems = ROOM_ITEMS.filter(function(it) { return it.cat === wfCurrentCat; });
 }
 
+// ── デフォルト壁・床のレンダラー（タブと無関係に常時 4 枠表示） ──
+function wfRenderDefaults() {
+  var grid = document.getElementById('wf-defaults-grid');
+  if (!grid || typeof ROOM_ITEMS === 'undefined') return;
+  grid.innerHTML = '';
+  var combos = [
+    { gender: 'boy',  label: '👦 男の子' },
+    { gender: 'girl', label: '👧 女の子' },
+  ];
+  combos.forEach(function(g) {
+    ['wall', 'floor'].forEach(function(c) {
+      var currentId = wfDefaults[g.gender][c];
+      var current = ROOM_ITEMS.find(function(x) { return x.id === currentId; });
+      var imgSrc = current ? (current.roomImg || '').replace(/^\.\.\//, '../') : '';
+      // 候補: そのカテゴリの全アイテム（theme=all + 該当性別）
+      var options = ROOM_ITEMS.filter(function(it) {
+        if (it.cat !== c) return false;
+        var t = it.theme || 'all';
+        return t === 'all' || t === g.gender;
+      });
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border-radius:8px;padding:8px;border:1px solid #FCD34D;';
+      var optsHtml = options.map(function(it) {
+        return '<option value="' + it.id + '"' + (it.id === currentId ? ' selected' : '') + '>' + it.name + '</option>';
+      }).join('');
+      card.innerHTML =
+        '<div style="font-size:0.7rem;font-weight:900;color:#5D4E37;margin-bottom:6px;">' + g.label + ' × ' + (c === 'wall' ? '🧱 壁紙' : '🪵 床') + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          (imgSrc ? '<img src="' + imgSrc + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#eee;flex-shrink:0;" onerror="this.style.opacity=0.3;">' : '<div style="width:48px;height:48px;background:#eee;border-radius:6px;flex-shrink:0;"></div>') +
+          '<select data-gender="' + g.gender + '" data-cat="' + c + '" style="flex:1;padding:5px 6px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.75rem;">' + optsHtml + '</select>' +
+        '</div>';
+      card.querySelector('select').addEventListener('change', function(e) {
+        wfDefaults[g.gender][c] = e.target.value;
+        wfSaveDefaults();
+        wfRenderDefaults(); // プレビュー画像更新
+      });
+      grid.appendChild(card);
+    });
+  });
+}
+
 function wfRender(cat) {
+  wfRenderDefaults();
   wfCurrentCat = cat;
   wfLoadItems();
   // タブ表示更新
@@ -7725,13 +7789,24 @@ async function wfDeploy() {
     return;
   }
   var changedIds = Object.keys(wfOverrides);
-  var totalChanges = changedIds.length + wfNewItems.length;
+  // デフォルト値が初期値と違うかチェック
+  var defaultsChanged =
+    wfDefaults.boy.wall   !== WF_DEFAULTS_BASE.boy.wall   ||
+    wfDefaults.boy.floor  !== WF_DEFAULTS_BASE.boy.floor  ||
+    wfDefaults.girl.wall  !== WF_DEFAULTS_BASE.girl.wall  ||
+    wfDefaults.girl.floor !== WF_DEFAULTS_BASE.girl.floor;
+  // ※ 初期値からの差分のみで判定すると一度デプロイ後に再変更しても検知できないので、
+  //    実際のデプロイ時には常に room/index.html を読んで書換差分があるか確認する（後段で処理）
+  var totalChanges = changedIds.length + wfNewItems.length + (defaultsChanged ? 1 : 0);
   if (totalChanges === 0) {
     status.textContent = 'ℹ️ 変更がありません';
     status.style.color = '#888';
     return;
   }
-  if (!confirm(totalChanges + ' 件の変更を items.js に反映してデプロイしますか？\n（新規: ' + wfNewItems.length + ' / 編集: ' + changedIds.length + '）')) return;
+  var msg = totalChanges + ' 件の変更をデプロイしますか？\n';
+  msg += '・新規: ' + wfNewItems.length + ' / 編集: ' + changedIds.length;
+  if (defaultsChanged) msg += '\n・デフォルト壁・床: 変更あり';
+  if (!confirm(msg)) return;
   status.textContent = '⏳ items.js を取得中...';
   status.style.color = '#FFD700';
   try {
@@ -7818,8 +7893,8 @@ async function wfDeploy() {
       }
     }
 
-    // PUT
-    status.textContent = '⏳ コミット中...';
+    // PUT items.js
+    status.textContent = '⏳ items.js をコミット中...';
     var encoded = btoa(unescape(encodeURIComponent(text)));
     var putResp = await fetch(apiUrl, {
       method: 'PUT',
@@ -7835,6 +7910,42 @@ async function wfDeploy() {
       var err = await putResp.json();
       throw new Error(err.message || 'PUT 失敗');
     }
+
+    // ── デフォルト壁・床を room/index.html に反映 ──
+    status.textContent = '⏳ room/index.html を更新中...';
+    var roomUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/index.html';
+    var roomResp = await fetch(roomUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
+    var roomFile = await roomResp.json();
+    if (!roomFile.content) throw new Error('room/index.html が取得できません');
+    var roomText = decodeURIComponent(escape(atob(roomFile.content.replace(/\n/g, ''))));
+    var origRoomText = roomText;
+    // 「state.config.living.wall = (state.theme === 'girl') ? 'X' : 'Y';」のような行を置換
+    roomText = roomText.replace(
+      /state\.config\.living\.wall\s*=\s*\(state\.theme\s*===\s*'girl'\)\s*\?\s*'[^']+'\s*:\s*'[^']+';/,
+      "state.config.living.wall = (state.theme === 'girl') ? '" + wfDefaults.girl.wall + "' : '" + wfDefaults.boy.wall + "';"
+    );
+    roomText = roomText.replace(
+      /state\.config\.living\.floor\s*=\s*\(state\.theme\s*===\s*'girl'\)\s*\?\s*'[^']+'\s*:\s*'[^']+';/,
+      "state.config.living.floor = (state.theme === 'girl') ? '" + wfDefaults.girl.floor + "' : '" + wfDefaults.boy.floor + "';"
+    );
+    if (roomText !== origRoomText) {
+      var roomEncoded = btoa(unescape(encodeURIComponent(roomText)));
+      var roomPut = await fetch(roomUrl, {
+        method: 'PUT',
+        headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          message: 'feat(room): デフォルト壁・床を更新',
+          content: roomEncoded,
+          sha: roomFile.sha,
+          branch: GH_BRANCH
+        })
+      });
+      if (!roomPut.ok) {
+        var rerr = await roomPut.json();
+        throw new Error('room/index.html 更新失敗: ' + (rerr.message || ''));
+      }
+    }
+
     wfOverrides = {};
     wfNewItems = [];
     wfSaveOv();

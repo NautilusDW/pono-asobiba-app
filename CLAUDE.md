@@ -3,6 +3,23 @@
 このプロジェクトには Self-Evolving Framework が統合されています。
 タスク完了時に自動で学習ループを回し、ベストプラクティスの抽出と難易度調整を行います。
 
+## 推奨ECCスキル（このプロジェクト専用の短縮リスト）
+
+ECCプラグインには多数のスキルが入っているが、このプロジェクト（子供向けWeb知育アプリ / 純JS・HTML・PWA）で実際に使うのは以下。迷ったらこの中から選ぶこと。他の言語系（Go/Kotlin/Swift/Django/Spring/Perl等）・業務系（物流/調達/投資家向け等）スキルは基本的に無視してよい。
+
+- `everything-claude-code:coding-standards` — JS/TS/Reactの書き方
+- `everything-claude-code:frontend-patterns` — フロントエンド全般
+- `everything-claude-code:tdd-workflow` — 機能追加時のテスト駆動
+- `everything-claude-code:security-review` — 入力処理・認証・データ保存系の変更後
+- `everything-claude-code:e2e-testing` — Playwrightでの動作確認
+- `everything-claude-code:deployment-patterns` — sw.js の CACHE_VERSION、Netlifyデプロイ
+- `everything-claude-code:verification-loop` — 大きな変更後の一括検証
+- `everything-claude-code:simplify` — 変更後のコード整理
+- `everything-claude-code:save-session` / `resume-session` — セッション引き継ぎ
+- `everything-claude-code:continuous-learning-v2` — 学習ループ
+- `everything-claude-code:strategic-compact` — 長時間作業時のコンテキスト節約
+- `everything-claude-code:fal-ai-media` — 画像/音声の生成素材が必要な時だけ
+
 ## Base Rules
 
 0. **タスク開始前に `MEMORY.md` を必ず読み込み、過去の失敗・学んだ最適手順を現タスクに反映すること。**

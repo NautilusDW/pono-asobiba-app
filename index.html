@@ -260,6 +260,36 @@
       color: var(--text-light);
       text-align: center;
     }
+
+    /* ===== Rights footer (権利表記) ===== */
+    .rights-footer {
+      width: 100%;
+      max-width: 540px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(93,78,55,0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .rights-footer-copy {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .rights-footer-note {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-light);
+      line-height: 1.7;
+    }
+    .rights-footer-small {
+      font-size: 0.62rem;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -317,6 +347,19 @@
     <a href="help.html" class="help-link">👨‍👩‍👧 保護者の方へ / くわしく</a>
 
     <footer>© ネモ先生 / ポノのあそびば</footer>
+
+    <!-- 権利表記 -->
+    <div class="rights-footer">
+      <div class="rights-footer-copy">© こだまのもり出版　All rights reserved.</div>
+      <div class="rights-footer-note">
+        本サイトに掲載されているテキスト・イラスト・音楽・その他コンテンツの無断転載・複製・改変・二次利用を禁じます。
+      </div>
+      <div class="rights-footer-small">
+        本サイトはNetlify上で運営されています。<br>
+        YouTubeの動画再生にはGoogleのサービスが使用されます。<br>
+        当サイトはお客様の個人情報を収集・保存していません。
+      </div>
+    </div>
 
   </div>
 
