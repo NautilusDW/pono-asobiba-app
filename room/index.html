@@ -3380,6 +3380,127 @@ function _showFurnitureTutorial(itemIds, flagKey, tutorialText, afterOkMsg) {
   return true;
 }
 
+// ─── ベッド獲得後の拡張チュートリアル ──────────────────
+// 宝箱オープン演出 → 位置調整ガイド → 角度ガイド → OKガイド
+function _showExtendedBedTutorial() {
+  if (localStorage.getItem('pono_bed_tutorial_seen') === '1') return false;
+  var bedIds = ['furn_bed_pink', 'furn_bed_blue_boy'];
+  var item = null;
+  for (var i = 0; i < bedIds.length; i++) {
+    if (state.inventory.indexOf(bedIds[i]) !== -1) {
+      var found = ROOM_ITEMS.find(x => x.id === bedIds[i]);
+      if (found) { item = found; break; }
+    }
+  }
+  if (!item) return false;
+
+  // 未配置なら中央に配置
+  if (!state.config.living) state.config.living = {};
+  var cfg = state.config.living;
+  if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
+  if (!cfg.placed.some(p => p.id === item.id)) {
+    var row = item.gridRow ?? 3;
+    var col = item.gridCol ?? 3;
+    var pos = findNearestEmpty('living', row, col, item.id, item, 'A');
+    cfg.placed.push({ id: item.id, row: pos.row, col: pos.col, angle: 'A' });
+    delete cfg.furn; delete cfg.deco;
+    saveState();
+    refreshArea('living');
+  }
+
+  _waitForLandscape(function() {
+    var step = 0;
+    var STEPS = [
+      {
+        emoji: '🎁✨🛏️',
+        title: '宝箱から ベッドを とりだしたよ！',
+        body: 'お気に入りの ばしょに\nおいてみよう！',
+        btn: 'つぎへ ▶',
+        after: function() {
+          // 模様替えモードON
+          if (typeof window._setEditMode === 'function') window._setEditMode(true);
+        }
+      },
+      {
+        emoji: '👆',
+        title: 'ドラッグして うごかそう',
+        body: 'ベッドを おさえて\nすきな ばしょに\nうごかして みてね！',
+        btn: 'つぎへ ▶'
+      },
+      {
+        emoji: '🔄',
+        title: 'むきも かえられるよ',
+        body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！',
+        btn: 'つぎへ ▶'
+      },
+      {
+        emoji: '✅',
+        title: 'きまったら OK！',
+        body: 'みぎうえの「✅ おわり」ボタンを\nおすと かんせい！\n\nまた あとで へんこう できるよ',
+        btn: 'わかった！'
+      }
+    ];
+
+    function showNext() {
+      if (step >= STEPS.length) {
+        localStorage.setItem('pono_bed_tutorial_seen', '1');
+        localStorage.removeItem('pono_bed_tutorial_pending');
+        return;
+      }
+      var s = STEPS[step];
+      _showTutorialStepModal(s, function() {
+        if (s.after) s.after();
+        step++;
+        setTimeout(showNext, 280);
+      });
+    }
+    showNext();
+  });
+  return true;
+}
+
+// ステップ式チュートリアルモーダル（絵文字・タイトル・本文・ボタン付き）
+function _showTutorialStepModal(step, onDone) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;padding:20px;transition:background 0.3s;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:20px;padding:20px 24px;text-align:center;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
+
+  if (step.emoji) {
+    var emojiEl = document.createElement('div');
+    emojiEl.style.cssText = 'font-size:2.8rem;margin-bottom:6px;line-height:1;';
+    emojiEl.textContent = step.emoji;
+    box.appendChild(emojiEl);
+  }
+  if (step.title) {
+    var titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:1.05rem;font-weight:900;color:#F2915A;margin-bottom:10px;';
+    titleEl.textContent = step.title;
+    box.appendChild(titleEl);
+  }
+  var bodyEl = document.createElement('div');
+  bodyEl.style.cssText = 'font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.7;white-space:pre-line;margin-bottom:14px;';
+  bodyEl.textContent = step.body;
+  box.appendChild(bodyEl);
+
+  var btn = document.createElement('button');
+  btn.textContent = step.btn || 'OK！';
+  btn.style.cssText = 'padding:10px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);';
+  btn.addEventListener('click', function() {
+    box.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
+    box.style.transform = 'scale(0)';
+    ov.style.background = 'rgba(0,0,0,0)';
+    setTimeout(function() { ov.remove(); if (onDone) onDone(); }, 280);
+  });
+  box.appendChild(btn);
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.background = 'rgba(0,0,0,0.55)';
+    box.style.transform = 'scale(1)';
+  });
+}
+
 // 汎用チュートリアルモーダル（スケールイン/アウト付き）
 function _showTutorialModal(text, onDone) {
   var ov = document.createElement('div');
@@ -3416,24 +3537,34 @@ function init() {
   // テーマはloadStateでpono_profile.genderから自動設定済み → 直接おへやへ
   enterRoom();
 
-  // 初回チュートリアル（横画面になってから表示）
-  if (!localStorage.getItem('room_tut_seen')) {
+  // ベッド獲得直後に遷移してきた場合は拡張チュートリアル優先
+  var bedPending = localStorage.getItem('pono_bed_tutorial_pending') === '1';
+  if (bedPending && localStorage.getItem('pono_bed_tutorial_seen') !== '1') {
+    // 初回お部屋チュートリアル済みならそのまま、未だなら先に表示してから
+    if (!localStorage.getItem('room_tut_seen')) {
+      // お部屋チュートリアル → 完了後にベッドチュートリアル発火
+      showRoomTutorial();
+      var _origSeen = false;
+      var _checkInterval = setInterval(function() {
+        if (localStorage.getItem('room_tut_seen') === '1' && !_origSeen) {
+          _origSeen = true;
+          clearInterval(_checkInterval);
+          setTimeout(function() { _showExtendedBedTutorial(); }, 500);
+        }
+      }, 500);
+    } else {
+      _showExtendedBedTutorial();
+    }
+  } else if (!localStorage.getItem('room_tut_seen')) {
     showRoomTutorial();
   } else {
-    // 家具獲得チュートリアル（優先順位: ベッド → 本棚）
-    var bedShown = _showFurnitureTutorial(
-      ['furn_bed_pink', 'furn_bed_blue_boy'],
-      'pono_bed_tutorial_seen',
-      'ベッドを ゲット！ \uD83D\uDECF\uFE0F\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！'
+    // 家具獲得チュートリアル（本棚など）
+    _showFurnitureTutorial(
+      ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood'],
+      'pono_bookshelf_tutorial_seen',
+      'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！',
+      'おいた ほんだなを タップすると\nこれまでに もらった アイテムや\nずかん、きろくが みられるよ！'
     );
-    if (!bedShown) {
-      _showFurnitureTutorial(
-        ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood'],
-        'pono_bookshelf_tutorial_seen',
-        'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！',
-        'おいた ほんだなを タップすると\nこれまでに もらった アイテムや\nずかん、きろくが みられるよ！'
-      );
-    }
   }
 
   // Entry overlay buttons

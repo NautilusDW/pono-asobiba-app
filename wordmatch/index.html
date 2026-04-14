@@ -318,6 +318,35 @@ body {
   to   { transform: scale(1);   opacity: 1; }
 }
 
+/* ===== 正解フィードバック ===== */
+.praise-toast {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 9998;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #FFD84D, #F5A800);
+  color: #5C3A00;
+  font-family: inherit;
+  font-size: 1.4rem;
+  font-weight: 900;
+  border-radius: 50px;
+  box-shadow: 0 6px 20px rgba(245, 168, 0, 0.5);
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.4);
+}
+.praise-toast.show {
+  animation: praisePop 1.2s ease-out forwards;
+}
+@keyframes praisePop {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
+  25%  { transform: translate(-50%, -50%) scale(1.15) rotate(5deg); opacity: 1; }
+  40%  { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  80%  { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.9) rotate(0deg); opacity: 0; }
+}
+
 /* ===== Word tray wrapper ===== */
 .word-tray-wrap {
   width: 100%;
@@ -1318,6 +1347,7 @@ function handleCrossClick(e) {
 
   if (choiceBtn.dataset.char === targetCell.dataset.answer) {
     playCorrect();
+    showPraise();
     if (window.incrementStat) window.incrementStat('wordmatch_correct', 1);
     targetCell.textContent = targetCell.dataset.answer;
     targetCell.classList.add('solved');
@@ -1361,10 +1391,29 @@ function setSelectedPic(slot, idx) {
   document.querySelectorAll('.word-card').forEach(c => c.classList.add('hover'));
 }
 
+// 正解フィードバックトースト
+function showPraise() {
+  const PRAISES = ['やったね！ ✨', 'せいかい！ 🎉', 'すごい！ 🌟', 'グッド！ 👍', 'じょうず！ 💫'];
+  const text = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+  let toast = document.getElementById('praise-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'praise-toast';
+    toast.className = 'praise-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = text;
+  toast.classList.remove('show');
+  // アニメ再発火
+  void toast.offsetWidth;
+  toast.classList.add('show');
+}
+
 function tryMatch(card, label) {
   clearSelection();
   if (parseInt(card.dataset.idx) === parseInt(label.dataset.idx)) {
     playCorrect();
+    showPraise();
     if (window.incrementStat) window.incrementStat('wordmatch_correct', 1);
     label.textContent = card.textContent;
     label.classList.add('matched');
