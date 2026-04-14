@@ -1,3 +1,9 @@
+# ──────────────────────────────────────────
+# Netlify キャッシュ戦略 (bandwidth 節約)
+# 2026-04-15 更新: immutable 長期キャッシュで再ダウンロード抑制
+# ──────────────────────────────────────────
+
+# --- HTML はキャッシュしない (常に最新) ---
 /*.html
   Cache-Control: no-cache, no-store, must-revalidate
   Pragma: no-cache
@@ -6,18 +12,46 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Pragma: no-cache
 
+# --- Service Worker 自身は絶対にキャッシュしない ---
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
 
-/assets/videos/*
-  Cache-Control: no-cache, must-revalidate
-
+# --- 動的更新されるデータ類も no-cache ---
 /assets/data/*.json
   Cache-Control: no-cache, no-store, must-revalidate
 
 /assets/data/creatures.json
   Cache-Control: no-cache, no-store, must-revalidate
 
-# 家具画像はピボットツールから動的に上書きされるため、CDN/ブラウザでキャッシュさせない
+# --- ピボットツールから動的更新される家具画像 ---
 /assets/images/Rooms/furnitures_final/*
   Cache-Control: no-cache, must-revalidate
+
+# --- 動画は中期キャッシュ (30日、大容量なので再DL抑制が大) ---
+/assets/videos/*
+  Cache-Control: public, max-age=2592000, immutable
+
+# --- 音声 BGM/SE/ボイス: 長期キャッシュ (1年、ファイル名ベースで不変) ---
+/assets/audio/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/sounds/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/voices/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# --- 画像全般: 長期キャッシュ (家具画像は上で個別指定済み) ---
+/assets/images/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# --- 共通 JS ライブラリ: 長期キャッシュ ---
+# 更新時は HTML 側に ?v= クエリ or SW の CACHE_VERSION bump で管理
+/common/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# --- アイコン/マニフェスト ---
+/favicon.svg
+  Cache-Control: public, max-age=2592000
+/manifest.json
+  Cache-Control: public, max-age=86400
