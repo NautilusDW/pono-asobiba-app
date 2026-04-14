@@ -3505,6 +3505,60 @@ function _showExtendedBedTutorial() {
       }, 1400);
     }
 
+    // ヒントトースト（間違ったボタンを押した時）
+    var _hintBusy = false;
+    function showHintToast(text) {
+      if (_hintBusy) return;
+      _hintBusy = true;
+      var toast = document.createElement('div');
+      toast.style.cssText =
+        'position:fixed;top:55%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:9998;' +
+        'padding:12px 24px;border-radius:50px;' +
+        'background:#fff;color:#5D4E37;border:3px solid #F2915A;' +
+        'font-family:inherit;font-size:1rem;font-weight:900;' +
+        'box-shadow:0 6px 20px rgba(0,0,0,0.25);' +
+        'transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+      toast.textContent = text;
+      document.body.appendChild(toast);
+      requestAnimationFrame(function() {
+        toast.style.transform = 'translate(-50%,-50%) scale(1)';
+      });
+      setTimeout(function() {
+        toast.style.transition = 'transform 0.25s, opacity 0.25s';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%,-50%) scale(0.9)';
+        setTimeout(function() { toast.remove(); _hintBusy = false; }, 250);
+      }, 1500);
+    }
+
+    // チュートリアルフェーズごとの操作ブロック
+    // phase: 'move' → 回転/しまうボタンをブロック, 'rotate' → しまうをブロック, null → 解除
+    var _tutBlocker = null;
+    function setTutPhase(phase) {
+      if (_tutBlocker) {
+        document.removeEventListener('click', _tutBlocker, true);
+        document.removeEventListener('touchend', _tutBlocker, true);
+        _tutBlocker = null;
+      }
+      if (!phase) return;
+      _tutBlocker = function(e) {
+        var t = e.target;
+        var rotBtn = t.closest && t.closest('.btn-rotate');
+        var stowBtn = t.closest && t.closest('.btn-stow');
+        if (phase === 'move' && (rotBtn || stowBtn)) {
+          e.stopPropagation();
+          e.preventDefault();
+          showHintToast('ベッドを タッチして うごかしてね！');
+        } else if (phase === 'rotate' && stowBtn) {
+          e.stopPropagation();
+          e.preventDefault();
+          showHintToast('いまは むきを かえる だけだよ！');
+        }
+      };
+      document.addEventListener('click', _tutBlocker, true);
+      document.addEventListener('touchend', _tutBlocker, true);
+    }
+
     // ── フェーズ1: ベッド取り出し演出 ──
     _showTutorialStepModal({
       emoji: '🎁✨🛏️',
@@ -3521,7 +3575,9 @@ function _showExtendedBedTutorial() {
           body: 'ベッドを おさえながら\nすきな ばしょに\nドラッグして みてね！',
           btn: 'やってみる！'
         }, function() {
+          setTutPhase('move'); // 回転・しまうボタンをブロック
           waitForMove(function() {
+            setTutPhase(null);
             showToast2('うごかせたね！ ✨', function() {
               // ベッドを中央に戻す
               resetBedToCenter();
@@ -3533,8 +3589,10 @@ function _showExtendedBedTutorial() {
                   body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわして みよう！',
                   btn: 'やってみる！'
                 }, function() {
+                  setTutPhase('rotate'); // しまうボタンをブロック
                   // 一周 = A→B→A の2回変化
                   waitForRotations(2, function() {
+                    setTutPhase(null);
                     showToast2('うまく まわせたね！ 🎉', function() {
                       // ── フェーズ4: 自由配置 ──
                       _showTutorialStepModal({
