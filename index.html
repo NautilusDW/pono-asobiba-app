@@ -131,14 +131,15 @@
       border: none;
     }
 
-    /* ── ポノのあそびば 入口ボタン（site-heading 風） ── */
+    /* ── ポノのあそびば 入口ボタン（site-heading 風、2行） ── */
     .enter-btn {
-      display: inline-block;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
       width: fit-content;
       max-width: 90%;
       margin-top: 4px;
-      padding: 14px 28px;
-      font-size: clamp(1.5rem, 5.5vw, 2rem);
+      padding: 12px 32px;
       font-weight: 900;
       color: var(--primary);
       letter-spacing: 0.08em;
@@ -146,14 +147,23 @@
       text-decoration: none;
       background: rgba(255,255,255,0.92);
       border: 3px solid var(--primary-light);
-      border-radius: 50px;
+      border-radius: 28px;
       box-shadow: 0 6px 20px var(--shadow);
       cursor: pointer;
       transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
       animation: enterPulse 2.6s ease-in-out infinite;
+      line-height: 1.15;
     }
-    .enter-btn::before { content: '🌳 '; }
-    .enter-btn::after  { content: ' 🌳'; }
+    .enter-btn-main {
+      font-size: clamp(1.4rem, 5.2vw, 1.9rem);
+    }
+    .enter-btn-main::before { content: '🌳 '; }
+    .enter-btn-main::after  { content: ' 🌳'; }
+    .enter-btn-iri {
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      margin-top: 2px;
+      letter-spacing: 0.18em;
+    }
     .enter-btn:active { transform: scale(0.96); }
     @keyframes enterPulse {
       0%, 100% { transform: scale(1); box-shadow: 0 6px 20px var(--shadow); }
@@ -288,7 +298,10 @@
     </div>
 
     <!-- 入口ボタン -->
-    <a href="play.html" class="enter-btn">ポノのあそびば 入り口</a>
+    <a href="play.html" class="enter-btn">
+      <span class="enter-btn-main">ポノのあそびば</span>
+      <span class="enter-btn-iri">いりぐち</span>
+    </a>
     <div class="enter-btn-sub">⬆ ここから あそべるよ！</div>
 
     <!-- 注意書き -->

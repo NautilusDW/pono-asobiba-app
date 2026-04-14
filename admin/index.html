@@ -307,6 +307,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="quizland">🧩 クイズランド</button>
   <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
+  <button class="tab" data-panel="walls">🧱 壁紙・床</button>
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
@@ -803,6 +804,21 @@ tr:hover { background: #FFFAF0; }
   </div><!-- /sub-wm-illust -->
 </div><!-- /panel-wordmatch -->
 
+<!-- ===== 🧱 壁紙・床 ===== -->
+<div class="panel" id="panel-walls">
+  <div class="section">
+    <div class="section-title">🧱 壁紙・床 管理</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+      <button onclick="wfRender('wall')" id="wf-tab-wall" style="padding:6px 14px;background:#FFF8E8;border:2px solid #FDE68A;color:#5D4E37;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🧱 壁紙</button>
+      <button onclick="wfRender('floor')" id="wf-tab-floor" style="padding:6px 14px;background:#FFF;border:2px solid #ddd;color:#5D4E37;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🪵 床</button>
+      <span id="wf-count" style="font-size:0.78rem;color:#8B7355;font-weight:700;"></span>
+      <button onclick="wfDeploy()" style="margin-left:auto;padding:6px 14px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🚀 items.js に反映＆デプロイ</button>
+    </div>
+    <div id="wf-status" style="font-size:0.78rem;color:#8B7355;margin-bottom:8px;min-height:1em;"></div>
+    <div id="wf-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;"></div>
+  </div>
+</div><!-- /panel-walls -->
+
 <!-- ===== 🍱 おべんとう ===== -->
 <div class="panel" id="panel-bento">
   <div class="sub-tabs">
@@ -859,6 +875,7 @@ tr:hover { background: #FFFAF0; }
 
 <script src="../common/achievements.js"></script>
 <script src="../quizland/data/questions.js"></script>
+<script src="../room/items.js"></script>
 <script>
 'use strict';
 
@@ -7452,6 +7469,175 @@ function wmUploadNew() {
 // ════════════════════════════════════════════════════════════════
 fetchRewards();
 renderHome();
+
+// ════════════════════════════════════════════════════════════════
+// 🧱 壁紙・床 管理
+// ════════════════════════════════════════════════════════════════
+var wfCurrentCat = 'wall';
+var wfItems = [];      // ROOM_ITEMS から抽出した壁紙/床
+var wfOverrides = {};  // { id: { name, theme, price, deleted } }
+var WF_OVERRIDE_KEY = 'wf_overrides';
+try { wfOverrides = JSON.parse(localStorage.getItem(WF_OVERRIDE_KEY) || '{}'); } catch(e) { wfOverrides = {}; }
+function wfSaveOv() { localStorage.setItem(WF_OVERRIDE_KEY, JSON.stringify(wfOverrides)); }
+
+function wfLoadItems() {
+  if (typeof ROOM_ITEMS === 'undefined') return;
+  wfItems = ROOM_ITEMS.filter(function(it) { return it.cat === wfCurrentCat; });
+}
+
+function wfRender(cat) {
+  wfCurrentCat = cat;
+  wfLoadItems();
+  // タブ表示更新
+  var wallBtn = document.getElementById('wf-tab-wall');
+  var floorBtn = document.getElementById('wf-tab-floor');
+  if (wallBtn && floorBtn) {
+    wallBtn.style.background = cat === 'wall' ? '#FFF8E8' : '#FFF';
+    wallBtn.style.borderColor = cat === 'wall' ? '#FDE68A' : '#ddd';
+    floorBtn.style.background = cat === 'floor' ? '#FFF8E8' : '#FFF';
+    floorBtn.style.borderColor = cat === 'floor' ? '#FDE68A' : '#ddd';
+  }
+  document.getElementById('wf-count').textContent = wfItems.length + ' 件';
+  var grid = document.getElementById('wf-grid');
+  grid.innerHTML = '';
+  wfItems.forEach(function(item) {
+    var ov = wfOverrides[item.id] || {};
+    if (ov.deleted) return;
+    var name = ov.name !== undefined ? ov.name : item.name;
+    var theme = ov.theme !== undefined ? ov.theme : (item.theme || 'all');
+    var price = ov.price !== undefined ? ov.price : (item.price || 10);
+    var imgSrc = (item.roomImg || '').replace(/^\.\.\//, '../');
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#FFF8F0;border-radius:12px;padding:10px;border:1px solid #F5F0E8;display:flex;flex-direction:column;gap:6px;';
+    card.innerHTML =
+      '<img src="' + imgSrc + '" loading="lazy" decoding="async" style="width:100%;height:90px;object-fit:cover;border-radius:8px;background:#eee;" onerror="this.style.opacity=0.3;">' +
+      '<div style="font-size:0.65rem;color:#999;word-break:break-all;">' + item.id + '</div>' +
+      '<input type="text" data-field="name" value="' + name.replace(/"/g, '&quot;') + '" placeholder="なまえ" style="padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.78rem;">' +
+      '<select data-field="theme" style="padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.75rem;">' +
+        '<option value="all"' + (theme === 'all' ? ' selected' : '') + '>👫 all</option>' +
+        '<option value="boy"' + (theme === 'boy' ? ' selected' : '') + '>👦 boy</option>' +
+        '<option value="girl"' + (theme === 'girl' ? ' selected' : '') + '>👧 girl</option>' +
+      '</select>' +
+      '<input type="number" data-field="price" value="' + price + '" min="0" placeholder="ねだん" style="padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.78rem;">' +
+      '<button data-action="del" style="padding:5px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">🗑️ 削除</button>';
+    // フィールド変更
+    card.querySelectorAll('input,select').forEach(function(input) {
+      var ev = input.tagName === 'SELECT' ? 'change' : 'input';
+      input.addEventListener(ev, function() {
+        if (!wfOverrides[item.id]) wfOverrides[item.id] = {};
+        var field = input.dataset.field;
+        var val = input.value;
+        if (field === 'price') val = parseInt(val) || 0;
+        wfOverrides[item.id][field] = val;
+        wfSaveOv();
+      });
+    });
+    // 削除
+    card.querySelector('[data-action="del"]').addEventListener('click', function() {
+      if (!confirm('「' + name + '」を削除しますか？\n（次回デプロイ時に items.js から削除されます）')) return;
+      if (!wfOverrides[item.id]) wfOverrides[item.id] = {};
+      wfOverrides[item.id].deleted = true;
+      wfSaveOv();
+      wfRender(wfCurrentCat);
+    });
+    grid.appendChild(card);
+  });
+}
+
+async function wfDeploy() {
+  var status = document.getElementById('wf-status');
+  if (typeof ghToken !== 'function' || !ghToken()) {
+    status.textContent = '❌ GitHub PAT が未設定です';
+    status.style.color = '#f44336';
+    return;
+  }
+  var changedIds = Object.keys(wfOverrides);
+  if (changedIds.length === 0) {
+    status.textContent = 'ℹ️ 変更がありません';
+    status.style.color = '#888';
+    return;
+  }
+  if (!confirm(changedIds.length + ' 件の変更を items.js に反映してデプロイしますか？')) return;
+  status.textContent = '⏳ items.js を取得中...';
+  status.style.color = '#FFD700';
+  try {
+    var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
+    var fileResp = await fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
+    var file = await fileResp.json();
+    if (!file.content) throw new Error('items.js が取得できません');
+    var text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+
+    changedIds.forEach(function(id) {
+      var ov = wfOverrides[id];
+      if (!ov) return;
+      var idPattern = new RegExp("id:\\s*'" + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
+      var idMatch = idPattern.exec(text);
+      if (!idMatch) return;
+      // ブロック境界
+      var blockStart = text.lastIndexOf('{', idMatch.index);
+      var depth = 0, blockEnd = -1;
+      for (var bi = blockStart; bi < text.length; bi++) {
+        var ch = text.charAt(bi);
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { blockEnd = bi + 1; if (text.charAt(blockEnd) === ',') blockEnd++; break; } }
+      }
+      if (blockEnd === -1) return;
+      if (ov.deleted) {
+        // 改行までを含めて削除
+        var lineStart = text.lastIndexOf('\n', blockStart) + 1;
+        var lineEnd = blockEnd;
+        if (text.charAt(lineEnd) === '\n') lineEnd++;
+        text = text.substring(0, lineStart) + text.substring(lineEnd);
+        return;
+      }
+      var block = text.substring(blockStart, blockEnd);
+      function replStrProp(blk, prop, val) {
+        var re = new RegExp("(\\b" + prop + ":\\s*')[^']*(')");
+        return re.test(blk) ? blk.replace(re, "$1" + (val || '').replace(/'/g, "\\'") + "$2") : blk;
+      }
+      function replNumProp(blk, prop, val) {
+        var re = new RegExp("(\\b" + prop + ":\\s*)-?[\\d.]+");
+        return re.test(blk) ? blk.replace(re, "$1" + val) : blk;
+      }
+      var newBlock = block;
+      if (ov.name !== undefined)  newBlock = replStrProp(newBlock, 'name', ov.name);
+      if (ov.theme !== undefined) newBlock = replStrProp(newBlock, 'theme', ov.theme);
+      if (ov.price !== undefined) newBlock = replNumProp(newBlock, 'price', ov.price);
+      text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
+    });
+
+    // PUT
+    status.textContent = '⏳ コミット中...';
+    var encoded = btoa(unescape(encodeURIComponent(text)));
+    var putResp = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        message: 'feat(walls/floors): 管理画面から壁紙・床を更新',
+        content: encoded,
+        sha: file.sha,
+        branch: GH_BRANCH
+      })
+    });
+    if (!putResp.ok) {
+      var err = await putResp.json();
+      throw new Error(err.message || 'PUT 失敗');
+    }
+    wfOverrides = {};
+    wfSaveOv();
+    status.textContent = '✅ デプロイ完了！3秒後に再読み込みします';
+    status.style.color = '#10B981';
+    setTimeout(function() { location.reload(); }, 3000);
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = '#f44336';
+  }
+}
+
+// パネル切替時に初期表示
+document.querySelectorAll('.tab[data-panel="walls"]').forEach(function(btn) {
+  btn.addEventListener('click', function() { setTimeout(function() { wfRender(wfCurrentCat); }, 50); });
+});
 
 </script>
 </body>

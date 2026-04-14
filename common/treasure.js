@@ -203,11 +203,22 @@
 
   function _doClose() {
     _clearPendingTimers();
-    _destroyVideo();
     // タップオーバーレイが残っていたら除去
     if (_container) {
       var tap = _container.querySelector('[style*="z-index:3"]');
       if (tap) tap.remove();
+    }
+    // 動画はまだ削除しない。代わりに「開いた宝箱」画像を背景にして見た目を維持
+    if (_container) {
+      var basePath = _getBasePath();
+      _container.style.backgroundImage = "url('" + basePath + "TreasureBox_open.jpg')";
+      _container.style.backgroundSize = 'cover';
+      _container.style.backgroundPosition = 'center';
+    }
+    if (_video) {
+      _video.pause();
+      _video.style.transition = 'opacity 0.15s';
+      _video.style.opacity = '0';
     }
     // スケールアウトアニメーション
     if (_container) {
@@ -218,10 +229,12 @@
     // メインBGMをフェードイン
     _bgmFadeIn();
     setTimeout(function() {
+      // スケールアウト完了後に動画削除＆オーバーレイ非表示
+      _destroyVideo();
       _overlay.classList.remove('show');
-      // transition をリセット（次回表示時にオーバーシュートに戻す）
       if (_container) {
         _container.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+        _container.style.backgroundImage = '';
       }
       if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
     }, 350);
@@ -354,8 +367,11 @@
     _rewardShown = false;
     // メインBGMをフェードアウト（演出中は静かに）
     _bgmFadeOut();
-    // コンテナ背景をリセット
-    if (_container) _container.style.background = '#000';
+    // コンテナ背景をリセット（後で poster 画像で上書きされる）
+    if (_container) {
+      _container.style.background = '#000';
+      _container.style.backgroundImage = '';
+    }
 
     // ラベル・アイテム設定
     var name  = (options && options.name)  || 'ごほうび';
@@ -376,17 +392,25 @@
     var oldFb = _container.querySelector('.treasure-fallback');
     if (oldFb) oldFb.remove();
 
-    _overlay.classList.add('show');
-    _overlay.classList.remove('visible');
-
     // ── 動画要素を毎回新規生成 ──
     var basePath = _getBasePath();
     var mp4Path  = basePath + 'TreasureBox_opt.mp4';
+    var posterPath = basePath + 'TreasureBox_poster.jpg';
+    var openPath = basePath + 'TreasureBox_open.jpg';
+
+    // コンテナの背景を「閉じた宝箱」のポスター画像にする（スケール中も真っ黒にならない）
+    _container.style.backgroundImage = "url('" + posterPath + "')";
+    _container.style.backgroundSize = 'cover';
+    _container.style.backgroundPosition = 'center';
+
+    _overlay.classList.add('show');
+    _overlay.classList.remove('visible');
 
     _video = document.createElement('video');
     _video.muted       = true;
     _video.playsInline = true;
     _video.preload     = 'auto';
+    _video.poster      = posterPath;
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
     _video.src = mp4Path;
@@ -394,16 +418,8 @@
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
 
-    // 最初のフレームが描画可能になってからスケールイン
-    var _scaleStarted = false;
-    function _doScaleIn() {
-      if (_scaleStarted) return;
-      _scaleStarted = true;
-      requestAnimationFrame(function() { _overlay.classList.add('visible'); });
-    }
-    _video.addEventListener('loadeddata', _doScaleIn, { once: true });
-    // セーフティ: 200msまでにフレームが来なくてもスケールイン（PWAでloadeddata遅延対策）
-    setTimeout(_doScaleIn, 200);
+    // ポスター画像はすぐに表示できるので即スケールイン
+    requestAnimationFrame(function() { _overlay.classList.add('visible'); });
 
     // ── 「タップして あけよう！」オーバーレイ（動画の最初のフレームの上に重ねる） ──
     var tapOverlay = document.createElement('div');
