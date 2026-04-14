@@ -3049,40 +3049,6 @@
       });
     })();
 
-    // ===== Bottom Navigation =====
-    (function() {
-      var nav = document.getElementById('bottomNav');
-      if (!nav) return;
-      nav.addEventListener('click', function(e) {
-        var btn = e.target.closest('.bn-item');
-        if (!btn) return;
-        var action = btn.dataset.action;
-        if (action === 'stamp') {
-          if (typeof showFullCardModal === 'function') showFullCardModal();
-        } else if (action === 'room') {
-          var roomOpen = localStorage.getItem('pono_room_card_open') === '1';
-          if (!roomOpen) {
-            var ov = document.createElement('div');
-            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
-            ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
-              '<div style="font-size:2.5rem;margin-bottom:8px;">🔒</div>' +
-              '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.7;">スタンプを あつめて\nかぐを もらうと\n「わたしのおうち」が\nつかえるように なるよ！</div>' +
-              '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.closest(\'div[style*=inset:0]\').remove()">わかった！</button>' +
-              '</div>';
-            ov.querySelector('div div').style.whiteSpace = 'pre-line';
-            document.body.appendChild(ov);
-          } else {
-            location.href = 'room/index.html';
-          }
-        } else if (action === 'play') {
-          var menu = document.querySelector('.menu');
-          if (menu) menu.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (action === 'help') {
-          location.href = 'help.html';
-        }
-      });
-    })();
-
   </script>
 
   <!-- ===== Bottom Navigation Bar ===== -->
@@ -3104,5 +3070,44 @@
       <span class="bn-label">ヘルプ</span>
     </button>
   </nav>
+
+  <script>
+    // ===== Bottom Navigation =====
+    (function() {
+      var nav = document.getElementById('bottomNav');
+      if (!nav) return;
+      nav.addEventListener('click', function(e) {
+        var btn = e.target.closest('.bn-item');
+        if (!btn) return;
+        var action = btn.dataset.action;
+        if (action === 'stamp') {
+          if (typeof showFullCardModal === 'function') {
+            showFullCardModal();
+          } else {
+            alert('スタンプカードの表示に失敗しました');
+          }
+        } else if (action === 'room') {
+          var roomOpen = localStorage.getItem('pono_room_card_open') === '1';
+          if (!roomOpen) {
+            var ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+            ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+              '<div style="font-size:2.5rem;margin-bottom:8px;">🔒</div>' +
+              '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;">スタンプを あつめて\nかぐを もらうと\n「わたしのおうち」が\nつかえるように なるよ！</div>' +
+              '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.parentNode.parentNode.remove()">わかった！</button>' +
+              '</div>';
+            document.body.appendChild(ov);
+          } else {
+            location.href = 'room/index.html';
+          }
+        } else if (action === 'play') {
+          var menu = document.querySelector('.menu');
+          if (menu) menu.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (action === 'help') {
+          location.href = 'help.html';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
