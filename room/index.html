@@ -3544,16 +3544,26 @@ function _showExtendedBedTutorial() {
     }
 
     // チュートリアルフェーズごとの操作ブロック
-    // phase: 'move' → 回転/しまうボタンをブロック, 'rotate' → しまうをブロック, null → 解除
-    var _tutBlocker = null;
+    // phase: 'move'   → 回転・しまうボタンをブロック（ドラッグはOK）
+    //        'rotate' → ドラッグ・しまうボタンをブロック（回転ボタンはOK）
+    //        null     → 全解除
+    var _tutBlockers = [];
+    function _detachBlockers() {
+      _tutBlockers.forEach(function(b) {
+        document.removeEventListener(b.evt, b.fn, true);
+      });
+      _tutBlockers = [];
+    }
+    function _attachBlocker(evt, fn) {
+      document.addEventListener(evt, fn, true);
+      _tutBlockers.push({ evt: evt, fn: fn });
+    }
     function setTutPhase(phase) {
-      if (_tutBlocker) {
-        document.removeEventListener('click', _tutBlocker, true);
-        document.removeEventListener('touchend', _tutBlocker, true);
-        _tutBlocker = null;
-      }
+      _detachBlockers();
       if (!phase) return;
-      _tutBlocker = function(e) {
+
+      // クリック系（回転・しまう用）のブロッカー
+      var clickBlocker = function(e) {
         var t = e.target;
         var rotBtn = t.closest && t.closest('.btn-rotate');
         var stowBtn = t.closest && t.closest('.btn-stow');
@@ -3567,8 +3577,26 @@ function _showExtendedBedTutorial() {
           showHintToast('いまは むきを かえる だけだよ！');
         }
       };
-      document.addEventListener('click', _tutBlocker, true);
-      document.addEventListener('touchend', _tutBlocker, true);
+      _attachBlocker('click', clickBlocker);
+      _attachBlocker('touchend', clickBlocker);
+
+      // ドラッグ系（rotateフェーズ中だけ、item-placed への touchstart/mousedown をブロック）
+      // ただし rotate ボタンや stow ボタンへのクリックは妨げない
+      if (phase === 'rotate') {
+        var dragBlocker = function(e) {
+          var t = e.target;
+          if (t.closest && t.closest('.btn-rotate')) return;   // 回転ボタンは許可
+          if (t.closest && t.closest('.btn-stow')) return;     // しまうは clickBlockerで処理
+          var item = t.closest && t.closest('.item-placed');
+          if (item) {
+            e.stopPropagation();
+            e.preventDefault();
+            showHintToast('いまは \uD83D\uDD04 を おして むきを かえてね！');
+          }
+        };
+        _attachBlocker('touchstart', dragBlocker);
+        _attachBlocker('mousedown', dragBlocker);
+      }
     }
 
     // ── フェーズ1: ベッド取り出し演出 ──
