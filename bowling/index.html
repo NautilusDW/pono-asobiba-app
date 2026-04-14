@@ -1428,30 +1428,38 @@ function drawBallPreview(now) {
     const gaugeW = barW * 0.8, gaugeH = 14;
     const gaugeX = (W - gaugeW) / 2;
 
-    ctx.globalAlpha = 0.6;
+    // 暗い下敷き（不透明）
+    ctx.globalAlpha = 1;
     ctx.fillStyle = '#222';
     ctx.beginPath();
     ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
     ctx.fill();
 
-    // Color zones: edges = red/weak, center = green/strong
+    // Color zones: edges = red/weak, center = green/strong（完全不透明）
     const gradient = ctx.createLinearGradient(gaugeX, 0, gaugeX + gaugeW, 0);
     gradient.addColorStop(0, '#F44336');
     gradient.addColorStop(0.3, '#FF9800');
     gradient.addColorStop(0.5, '#4CAF50');
     gradient.addColorStop(0.7, '#FF9800');
     gradient.addColorStop(1, '#F44336');
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 1;
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
     ctx.fill();
 
-    // Center zone highlight
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#4CAF50';
+    // Center zone highlight（薄い白で中心強調）
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#fff';
     const centerW = gaugeW * 0.2;
     ctx.fillRect(W / 2 - centerW / 2, barY - gaugeH / 2, centerW, gaugeH);
+
+    // 白い縁取りで視認性を強化
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(gaugeX, barY - gaugeH / 2, gaugeW, gaugeH, gaugeH / 2);
+    ctx.stroke();
 
     // Moving cursor
     ctx.globalAlpha = 1;
@@ -1492,8 +1500,14 @@ function drawBallPreview(now) {
       ctx.fillStyle = '#fff'; ctx.fill();
     }
 
-    // Draw aim bar background
-    ctx.globalAlpha = 0.35;
+    // 暗い縁取りで背景に溶けないように
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.roundRect(barX - 2, barY - barH / 2 - 2, barW + 4, barH + 4, (barH + 4) / 2);
+    ctx.fill();
+
+    // Aim bar 本体（完全不透明の白）
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.roundRect(barX, barY - barH / 2, barW, barH, barH / 2);
@@ -1501,9 +1515,8 @@ function drawBallPreview(now) {
 
     // Draw aim bar knob (current position)
     const knobX = W / 2 + aimAngle * (barW * 0.35);
-    ctx.globalAlpha = 0.9;
-    // Knob track highlight
-    ctx.fillStyle = 'rgba(255,215,0,0.3)';
+    // Knob track highlight（金色で現在位置を示す）
+    ctx.fillStyle = '#FFD700';
     const trackStart = Math.min(W / 2, knobX);
     const trackEnd = Math.max(W / 2, knobX);
     ctx.fillRect(trackStart, barY - barH / 2, trackEnd - trackStart, barH);
@@ -1511,23 +1524,23 @@ function drawBallPreview(now) {
     // Knob circle
     ctx.shadowColor = 'rgba(255,215,0,0.6)'; ctx.shadowBlur = aimBarDragging ? 12 : 6;
     ctx.fillStyle = '#FFD700';
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(knobX, barY, aimBarDragging ? 14 : 10, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
     ctx.shadowBlur = 0;
 
     // Center tick mark
-    ctx.globalAlpha = 0.4;
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+    ctx.strokeStyle = '#5D4E37'; ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(W / 2, barY - barH / 2 - 4);
     ctx.lineTo(W / 2, barY + barH / 2 + 4);
     ctx.stroke();
 
-    // ◀ ▶ arrows at edges
-    ctx.globalAlpha = 0.3;
-    ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fff';
+    // ◀ ▶ arrows at edges — 暗めの文字で常にハッキリ
+    ctx.font = '900 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillText('◀', barX - 12, barY);
     ctx.fillText('▶', barX + barW + 12, barY);
 
