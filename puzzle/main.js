@@ -156,7 +156,16 @@ function showSuccessModal() {
     btnNextStage.classList.remove('hidden');
   }
 
-  setTimeout(() => { successModal.classList.remove('hidden'); }, 800);
+  // ★ 全ステージクリア時は宝箱演出を先に表示、閉じたら成功モーダル
+  if (isLast && window.triggerFirstClearReward) {
+    window.triggerFirstClearReward('puzzle', {
+      onClose: function() { successModal.classList.remove('hidden'); }
+    }).then(function(shown) {
+      if (!shown) setTimeout(function() { successModal.classList.remove('hidden'); }, 800);
+    }).catch(function() { setTimeout(function() { successModal.classList.remove('hidden'); }, 800); });
+  } else {
+    setTimeout(function() { successModal.classList.remove('hidden'); }, 800);
+  }
 }
 
 function hideSuccessModal() {

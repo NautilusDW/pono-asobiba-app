@@ -189,6 +189,8 @@ html, body {
 </style>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/treasure.js"></script>
+<script src="../common/first-clear.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -982,7 +984,16 @@ function draw(now) {
     if (t >= 1) {
       winAnim.active = false;
       const isLast = stageIdx >= LEVELS.length - 1;
-      setTimeout(() => showOverlay(isLast ? 'gameclear' : 'stageclear'), 300);
+      // ★ 全ステージクリア時は宝箱演出を先に表示してから最終オーバーレイ
+      if (isLast && window.triggerFirstClearReward) {
+        window.triggerFirstClearReward('slide', {
+          onClose: function() { showOverlay('gameclear'); }
+        }).then(function(shown) {
+          if (!shown) setTimeout(function() { showOverlay('gameclear'); }, 300);
+        }).catch(function() { setTimeout(function() { showOverlay('gameclear'); }, 300); });
+      } else {
+        setTimeout(function() { showOverlay(isLast ? 'gameclear' : 'stageclear'); }, 300);
+      }
     }
   }
 

@@ -7,6 +7,8 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/treasure.js"></script>
+<script src="../common/first-clear.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1543,7 +1545,19 @@ function showStageComplete() {
     }
   }
 
-  document.getElementById('success-modal').classList.remove('hidden');
+  // ★ 全ステージクリアなら宝箱演出を先に表示、閉じたら成功モーダル
+  var _showSuccessModal = function() {
+    document.getElementById('success-modal').classList.remove('hidden');
+  };
+  if (allCleared && window.triggerFirstClearReward) {
+    window.triggerFirstClearReward('wordmatch', {
+      onClose: _showSuccessModal
+    }).then(function(shown) {
+      if (!shown) _showSuccessModal();
+    }).catch(function() { _showSuccessModal(); });
+  } else {
+    _showSuccessModal();
+  }
 }
 
 // ===== Confetti =====
