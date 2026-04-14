@@ -1257,11 +1257,14 @@ function isPlaced(id) {
 }
 
 // 旧 furn/deco → placed 配列に変換（後方互換）
+// row を明示的に 0 にする。以前は row 未設定で、描画側 (p.row ?? 0) と
+// 衝突判定側 (p.row ?? 0) の両方が 0 にフォールバックしていたため、
+// 視覚位置を維持したまま判定を安定化させる。
 function getPlacedItems(cfg) {
   if (cfg.placed) return cfg.placed;
   const placed = [];
-  if (cfg.furn) placed.push({ id: cfg.furn, col: 2 });
-  if (cfg.deco) placed.push({ id: cfg.deco, col: 5 });
+  if (cfg.furn) placed.push({ id: cfg.furn, row: 0, col: 2, angle: 'A' });
+  if (cfg.deco) placed.push({ id: cfg.deco, row: 0, col: 5, angle: 'A' });
   return placed;
 }
 
@@ -1329,8 +1332,13 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
 }
 
 // 空いている最寄りのセルを探す
+// フェーズ1: 元位置から同心リング状に最近傍を探す
+// フェーズ2: 見つからなければ配置可能範囲を全走査し、壁際優先でスコアリング
+// フェーズ3: それでも無ければ元位置にフォールバック
 function findNearestEmpty(areaId, row, col, excludeId, item, angle) {
   if (!isOverlapping(areaId, row, col, item, angle, excludeId)) return { row, col };
+
+  // ── フェーズ1: 同心リング探索（最寄り優先） ──
   for (let d = 1; d <= 7; d++) {
     for (let dr = -d; dr <= d; dr++) {
       for (let dc = -d; dc <= d; dc++) {
@@ -1344,6 +1352,38 @@ function findNearestEmpty(areaId, row, col, excludeId, item, angle) {
       }
     }
   }
+
+  // ── フェーズ2: 壁際優先の全走査 ──
+  // 家具（本棚・ベッドなど）は奥の壁際に自然に寄せる
+  const props = getAngleProps(item, angle || 'A');
+  const n = ISO_GRID.cells;
+  // footprintSize 優先（getFootprint と同じ span を使う）→ グリッド外配置を防止
+  const span = Math.ceil(props.footprintSize || props.cellSize || 1);
+  const autoMargin = Math.max(0, span - 1);
+  const minR = props.minRow != null ? props.minRow : autoMargin;
+  const maxR = props.maxRow != null ? props.maxRow : n - 1 - autoMargin;
+  const minC = props.minCol != null ? props.minCol : autoMargin;
+  const maxC = props.maxCol != null ? props.maxCol : n - 1 - autoMargin;
+
+  const candidates = [];
+  for (let r = minR; r <= maxR; r++) {
+    for (let c = minC; c <= maxC; c++) {
+      if (isOverlapping(areaId, r, c, item, angle, excludeId)) continue;
+      // 壁からの距離（4辺の最短）: 小さいほど壁際
+      const wallDist = Math.min(r - minR, maxR - r, c - minC, maxC - c);
+      // 元位置からの距離（マンハッタン）: 急激な移動を避ける
+      const origDist = Math.abs(r - row) + Math.abs(c - col);
+      // 家具(furn)は奥(row小)を優先。飾り(deco)は影響なし
+      const backBonus = (item.cat === 'furn') ? (r - minR) * 0.4 : 0;
+      candidates.push({ row: r, col: c, score: wallDist + origDist * 0.3 + backBonus });
+    }
+  }
+  if (candidates.length > 0) {
+    candidates.sort((a, b) => a.score - b.score);
+    return { row: candidates[0].row, col: candidates[0].col };
+  }
+
+  // ── フェーズ3: どこにも置けない（満室） → 元位置フォールバック ──
   return { row, col };
 }
 
