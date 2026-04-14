@@ -192,6 +192,7 @@
     .card-bubble    { background: linear-gradient(135deg, #7DD3FC, #A78BFA); }
     .card-bowling   { background: linear-gradient(135deg, #34D399, #FBBF24); }
     .card-egg       { background: linear-gradient(135deg, #A7F3D0, #FDE68A); }
+    .card-oto       { background: linear-gradient(135deg, #FFA5A5, #FFD84D); }
 
     /* ── Points badge (menu top) ── */
     .pts-row {
@@ -1135,6 +1136,15 @@
 
     <nav class="menu">
       <!-- 無料コンテンツ -->
+      <!-- おとタッチ (3歳〜) - 文字なしタップで音が鳴るシンプル遊び -->
+      <a href="oto/index.html" class="card card-oto">
+        <span class="card-icon">🎵</span>
+        <div class="card-body">
+          <div class="card-title">おとタッチ</div>
+          <div class="card-desc">タッチで おとが<br>なるよ！</div>
+        </div>
+      </a>
+
       <a href="puzzle/index.html" class="card card-puzzle">
         <span class="card-icon">🧩</span>
         <div class="card-body">
@@ -1667,6 +1677,7 @@
       ];
 
       var ALL_FREE_GAMES = [
+        { key: 'oto',       emoji: '\uD83C\uDFB5', name: 'おとタッチ',    href: 'oto/index.html' },
         { key: 'puzzle',    emoji: '\uD83E\uDDE9', name: 'パズル',        href: 'puzzle/index.html' },
         { key: 'writing',   emoji: '\u270F\uFE0F', name: 'もじかき',      href: 'writing/index.html' },
         { key: 'bento',     emoji: '\uD83C\uDF71', name: 'おべんとう',    href: 'bento/index.html' },

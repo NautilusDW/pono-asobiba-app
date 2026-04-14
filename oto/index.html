@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>おとタッチ｜ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
+<script src="../common/treasure.js"></script>
+<script src="../common/first-clear.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100dvh; overflow: hidden;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    background: linear-gradient(180deg, #FFE8B0 0%, #FFC98A 45%, #FFA5A5 100%);
+    color: #5D4E37;
+  }
+
+  #app {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── ステージ: ポノが踊るエリア ── */
+  .stage {
+    flex: 1 1 auto;
+    position: relative; min-height: 0;
+    overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+  .pono-sprite {
+    position: relative;
+    width: 140px; height: 180px;
+    margin-bottom: 8px;
+    pointer-events: none;
+    image-rendering: auto;
+  }
+  /* キラキラパーティクル */
+  .spark {
+    position: absolute;
+    width: 28px; height: 28px;
+    pointer-events: none;
+    animation: sparkUp 900ms ease-out forwards;
+    font-size: 24px; line-height: 28px; text-align: center;
+  }
+  @keyframes sparkUp {
+    0%   { transform: translate(-50%,0) scale(0.5); opacity: 0; }
+    20%  { opacity: 1; transform: translate(-50%,-20px) scale(1.1); }
+    100% { transform: translate(calc(-50% + var(--dx,0)), calc(-80px + var(--dy,0))) scale(0.6); opacity: 0; }
+  }
+
+  /* ── セット切替アイコン (上部) ── */
+  .sets {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    display: flex; gap: 10px; z-index: 10;
+  }
+  .set-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%; border: 3px solid #fff;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    cursor: pointer;
+    transition: transform 0.15s;
+    touch-action: manipulation;
+  }
+  .set-btn:active { transform: scale(0.88); }
+  .set-btn.active {
+    border-color: #F2915A;
+    box-shadow: 0 0 0 3px rgba(242,145,90,0.35), 0 4px 12px rgba(0,0,0,0.18);
+  }
+
+  /* ── 鍵盤エリア ── */
+  .keys {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    padding: 8px max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom));
+  }
+  .key {
+    height: clamp(100px, 22dvh, 180px);
+    border: none; border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 900; color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.15), inset 0 2px 0 rgba(255,255,255,0.35);
+    transition: transform 0.08s, box-shadow 0.08s;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+  .key:active, .key.press {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15), inset 0 2px 0 rgba(255,255,255,0.35);
+  }
+  .key.k1 { background: linear-gradient(180deg, #FF6B9D, #E13870); }
+  .key.k2 { background: linear-gradient(180deg, #FFA94D, #F2742A); }
+  .key.k3 { background: linear-gradient(180deg, #FFD84D, #F2B800); }
+  .key.k4 { background: linear-gradient(180deg, #7DD3A0, #35A86A); }
+  .key.k5 { background: linear-gradient(180deg, #7DD3FC, #2892D4); }
+  .key.k6 { background: linear-gradient(180deg, #C4B5FD, #8B5CF6); }
+
+  /* 横画面: 鍵盤を縦にまとめすぎないよう微調整 */
+  @media (orientation: landscape) {
+    .stage { padding-top: 16px; }
+    .key { height: clamp(80px, 26dvh, 140px); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="stage" id="stage">
+    <div class="sets" id="sets" role="tablist">
+      <button class="set-btn active" data-set="voice" aria-label="おとセット1">🗣️</button>
+      <button class="set-btn"        data-set="doremi" aria-label="おとセット2">🎹</button>
+      <button class="set-btn"        data-set="animal" aria-label="おとセット3">🐾</button>
+    </div>
+    <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
+  </div>
+
+  <div class="keys" id="keys">
+    <button class="key k1" data-idx="0" aria-label="おと1">🌸</button>
+    <button class="key k2" data-idx="1" aria-label="おと2">🦋</button>
+    <button class="key k3" data-idx="2" aria-label="おと3">⭐</button>
+    <button class="key k4" data-idx="3" aria-label="おと4">🍀</button>
+    <button class="key k5" data-idx="4" aria-label="おと5">💧</button>
+    <button class="key k6" data-idx="5" aria-label="おと6">🎈</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ────────────────────────────────
+// Audio: iOS Safari 対応アンロック
+// ────────────────────────────────
+let _ac = null;
+function getAC() {
+  if (!_ac) { try { _ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+  if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
+  return _ac;
+}
+function unlockAudio() {
+  var ac = getAC();
+  if (!ac) return;
+  if (ac.state !== 'running') {
+    try {
+      var o = ac.createOscillator(), g = ac.createGain();
+      g.gain.value = 0;
+      o.connect(g); g.connect(ac.destination);
+      o.start(); o.stop(ac.currentTime + 0.001);
+    } catch(e) {}
+  }
+}
+document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
+document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
+
+// ────────────────────────────────
+// ボイス音源: voices/NN-aiueo.wav を6音ピックアップ (あ か さ た な ま)
+// ────────────────────────────────
+var VOICE_INDICES = [0, 5, 10, 15, 20, 30]; // あ/か/さ/た/な/ま
+var _voiceBuffers = new Array(VOICE_INDICES.length).fill(null);
+var _voiceLoading = false;
+function preloadVoiceBuffers() {
+  if (_voiceLoading) return;
+  _voiceLoading = true;
+  var ac = getAC();
+  if (!ac) return;
+  VOICE_INDICES.forEach(function(idx, i) {
+    var url = '../assets/voices/' + String(idx).padStart(2, '0') + '-aiueo.wav';
+    fetch(url).then(function(r){ return r.arrayBuffer(); })
+      .then(function(buf){ return ac.decodeAudioData(buf); })
+      .then(function(decoded){ _voiceBuffers[i] = decoded; })
+      .catch(function(){ /* 失敗時は WebAudio合成にフォールバック */ });
+  });
+}
+
+function playBuffer(buf) {
+  var ac = getAC(); if (!ac || !buf) return false;
+  try {
+    var src = ac.createBufferSource();
+    src.buffer = buf;
+    var g = ac.createGain();
+    g.gain.value = 0.9;
+    src.connect(g); g.connect(ac.destination);
+    src.start(0);
+    return true;
+  } catch(e) { return false; }
+}
+
+// ────────────────────────────────
+// 合成: ドレミ (C4, D4, E4, F4, G4, A4) / 動物っぽい (周波数＋エンベロープで表情変化)
+// ────────────────────────────────
+var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
+// animal: お遊びで周波数を広めに使う (ニャー/ワン/ピヨ/モー/ケロ/ブー 風)
+var ANIMAL_PATTERNS = [
+  { type: 'triangle', f0: 700, f1: 420, dur: 0.35, vib: 8 },   // ニャー
+  { type: 'sawtooth', f0: 280, f1: 230, dur: 0.28, vib: 0 },   // ワン
+  { type: 'square',   f0: 1200, f1: 900, dur: 0.18, vib: 24 }, // ピヨ
+  { type: 'sine',     f0: 180, f1: 140, dur: 0.55, vib: 2 },   // モー
+  { type: 'square',   f0: 520, f1: 620, dur: 0.20, vib: 0 },   // ケロ
+  { type: 'sawtooth', f0: 160, f1: 120, dur: 0.30, vib: 0 },   // ブー
+];
+
+function playTone(kind, idx) {
+  var ac = getAC(); if (!ac) return;
+  var t = ac.currentTime;
+  if (kind === 'doremi') {
+    var f = DOREMI_FREQS[idx] || 440;
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.3, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.85);
+  } else if (kind === 'animal') {
+    var p = ANIMAL_PATTERNS[idx] || ANIMAL_PATTERNS[0];
+    var o2 = ac.createOscillator(), g2 = ac.createGain();
+    o2.type = p.type;
+    o2.frequency.setValueAtTime(p.f0, t);
+    o2.frequency.exponentialRampToValueAtTime(Math.max(40, p.f1), t + p.dur);
+    // ビブラート
+    if (p.vib > 0) {
+      var lfo = ac.createOscillator(), lfoGain = ac.createGain();
+      lfo.frequency.value = p.vib;
+      lfoGain.gain.value = p.f0 * 0.06;
+      lfo.connect(lfoGain); lfoGain.connect(o2.frequency);
+      lfo.start(t); lfo.stop(t + p.dur);
+    }
+    g2.gain.setValueAtTime(0, t);
+    g2.gain.linearRampToValueAtTime(0.28, t + 0.025);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + p.dur + 0.1);
+    o2.connect(g2); g2.connect(ac.destination);
+    o2.start(t); o2.stop(t + p.dur + 0.15);
+  }
+}
+
+// ────────────────────────────────
+// セット状態
+// ────────────────────────────────
+var currentSet = 'voice';
+document.querySelectorAll('.set-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.set-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentSet = btn.dataset.set;
+    unlockAudio();
+    if (currentSet === 'voice') preloadVoiceBuffers();
+    // 切替プレビュー音を0番で1回鳴らす
+    playSetSound(0);
+  });
+});
+
+function playSetSound(idx) {
+  if (currentSet === 'voice') {
+    if (_voiceBuffers[idx] && playBuffer(_voiceBuffers[idx])) return;
+    // 未ロード/失敗時はドレミフォールバック
+    playTone('doremi', idx);
+  } else if (currentSet === 'doremi') {
+    playTone('doremi', idx);
+  } else if (currentSet === 'animal') {
+    playTone('animal', idx);
+  }
+}
+
+// 初回ユーザー操作で音源プリロード
+var _preloaded = false;
+function triggerPreload() {
+  if (_preloaded) return;
+  _preloaded = true;
+  unlockAudio();
+  preloadVoiceBuffers();
+}
+document.addEventListener('pointerdown', triggerPreload, { once: true });
+document.addEventListener('touchstart', triggerPreload, { once: true });
+
+// ────────────────────────────────
+// 鍵盤タップ
+// ────────────────────────────────
+var tapCount = 0;
+var _clearTriggered = false;
+var TAP_FOR_CLEAR = 12; // 12タップで初回クリア扱い
+
+document.querySelectorAll('.key').forEach(function(key) {
+  // pointerdown で即レスポンス (click 待機による遅延回避)
+  key.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    var idx = parseInt(key.dataset.idx, 10);
+    playSetSound(idx);
+    key.classList.add('press');
+    setTimeout(function(){ key.classList.remove('press'); }, 120);
+    // キラキラ演出
+    spawnSparkle(key);
+    // ポノのフレーム送り
+    bumpPono();
+    // 統計 + 初回クリア判定
+    tapCount++;
+    if (window.incrementStat) window.incrementStat('oto_taps', 1);
+    // スタンプラリー記録 (当日1回だけ)
+    markPlayedToday();
+    if (!_clearTriggered && tapCount >= TAP_FOR_CLEAR) {
+      _clearTriggered = true;
+      triggerClearReward();
+    }
+  });
+  // 誤二重発火防止
+  key.addEventListener('click', function(e) { e.preventDefault(); });
+});
+
+function markPlayedToday() {
+  try {
+    var k = 'pono_played_' + new Date().toDateString();
+    var a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('oto') === -1) { a.push('oto'); localStorage.setItem(k, JSON.stringify(a)); }
+  } catch(e) {}
+}
+
+function triggerClearReward() {
+  // 注: oto_plays は現在 achievement 未定義なので削除。first-clear はタップ回数で発火
+  if (window.triggerFirstClearReward) {
+    window.triggerFirstClearReward('oto', { onClose: function(){} })
+      .then(function(shown){ /* no fallback modal needed - free play continues */ })
+      .catch(function(){});
+  }
+}
+
+// ────────────────────────────────
+// キラキラエフェクト
+// ────────────────────────────────
+var SPARK_EMOJIS = ['✨', '⭐', '💖', '🎵', '🎶', '💫'];
+function spawnSparkle(key) {
+  var rect = key.getBoundingClientRect();
+  var stage = document.getElementById('stage');
+  var stageRect = stage.getBoundingClientRect();
+  var n = 4;
+  for (var i = 0; i < n; i++) {
+    var s = document.createElement('div');
+    s.className = 'spark';
+    s.textContent = SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)];
+    s.style.left = (rect.left + rect.width / 2 - stageRect.left) + 'px';
+    s.style.top  = (rect.top - stageRect.top - 10) + 'px';
+    s.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px');
+    s.style.setProperty('--dy', (Math.random() * 40 - 60) + 'px');
+    stage.appendChild(s);
+    setTimeout(function(el){ return function(){ el.remove(); }; }(s), 950);
+  }
+}
+
+// ────────────────────────────────
+// ポノ スプライト描画
+// ────────────────────────────────
+var imgWalk = new Image();
+imgWalk.src = '../assets/images/characters/pono/pono_walk_sheet.png';
+var WALK_FRAMES = 25, WALK_FRAME_W = 92, WALK_FRAME_H = 128;
+
+var currentFrame = 0;
+var autoStepTimer = null;
+var bumpEndAt = 0;
+
+function bumpPono() {
+  // 1秒半ほど元気に歩くモード
+  bumpEndAt = performance.now() + 1500;
+}
+
+function drawPono(now) {
+  var canvas = document.getElementById('pono');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!imgWalk.complete || imgWalk.naturalWidth === 0) return;
+
+  // タップ中は早送り (12fps)、アイドルは 4fps でゆっくり
+  var fps = (now < bumpEndAt) ? 12 : 4;
+  var frameAdvance = Math.floor(now / (1000 / fps));
+  var f = frameAdvance % WALK_FRAMES;
+  var sx = f * WALK_FRAME_W;
+
+  // 上下の軽いバウンス
+  var bounce = Math.sin(now / 180) * 4;
+  var scale = 1 + Math.sin(now / 220) * 0.03;
+
+  var dw = canvas.width;
+  var dh = canvas.height;
+  // アスペクト維持
+  var drawH = dh * scale;
+  var drawW = (drawH * WALK_FRAME_W / WALK_FRAME_H);
+  ctx.drawImage(imgWalk,
+    sx, 0, WALK_FRAME_W, WALK_FRAME_H,
+    (canvas.width - drawW) / 2, (canvas.height - drawH) + bounce, drawW, drawH);
+}
+
+var _rafId = null;
+function loop(now) {
+  drawPono(now);
+  _rafId = requestAnimationFrame(loop);
+}
+_rafId = requestAnimationFrame(loop);
+
+// ページ非表示で rAF と AudioContext を一時停止、復帰で再開
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    if (_ac && _ac.state === 'running') _ac.suspend().catch(function(){});
+  } else {
+    if (!_rafId) _rafId = requestAnimationFrame(loop);
+    if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
+  }
+});
+
+// ────────────────────────────────
+// 共通メニュー (⚙)
+// ────────────────────────────────
+if (window.initMenu) {
+  initMenu({}); // このゲームは BGM なし。メニューはホームに戻るだけ
+}
+</script>
+</body>
+</html>
