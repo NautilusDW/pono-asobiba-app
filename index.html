@@ -1664,7 +1664,7 @@
       // ── Slot rewards (keyed by 1-based slot number within card) ──
       var CARD_SLOT_REWARDS = {
         1:  { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png',
-              afterMsg: ['あなただけの おもちゃばこだよ！\nこの なかに これから\nスタンプを あつめて もらえる\nたからものを いれられるよ。\nたくさん スタンプを ゲットしよう！', 'スタンプを もっと ゲットすると\nかぐが もらえて\n「わたしのおうち」が\nつかえるように なるから\nがんばってね！'] },
+              afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。\n\nたくさん ゲットしよう！', 'スタンプを もっと あつめると\nかぐが もらえて\n「わたしのおうち」が つかえるよ！\n\nがんばってね！'] },
         5:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
@@ -1851,8 +1851,19 @@
           }
 
           var msgEl = document.createElement('div');
-          msgEl.style.cssText = 'font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;';
-          msgEl.textContent = msgs[pageIdx];
+          // \n\n で段落分割、最後の段落を強調表示
+          var paragraphs = msgs[pageIdx].split('\n\n');
+          paragraphs.forEach(function(p, pi) {
+            var pEl = document.createElement('div');
+            var isLast = (pi === paragraphs.length - 1) && paragraphs.length > 1;
+            if (isLast) {
+              pEl.style.cssText = 'font-size:1.05rem;font-weight:900;color:#F2915A;line-height:1.6;white-space:pre-line;margin-top:10px;';
+            } else {
+              pEl.style.cssText = 'font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.7;white-space:pre-line;';
+            }
+            pEl.textContent = p;
+            msgEl.appendChild(pEl);
+          });
           box.appendChild(msgEl);
 
           var btn = document.createElement('button');
