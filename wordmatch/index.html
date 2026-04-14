@@ -734,7 +734,7 @@ body {
     overflow: hidden;
   overscroll-behavior: none;
     margin: 0;
-    padding: 6px 16px 4px;
+    padding: 6px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left));
     gap: 4px;
   }
   .header { padding: 2px 0; }

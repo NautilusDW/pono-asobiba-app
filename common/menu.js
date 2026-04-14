@@ -30,7 +30,8 @@
   style.textContent = `
     .pono-menu-toggle {
       position: fixed; z-index: 9990;
-      top: 12px; left: 16px;
+      top: max(12px, env(safe-area-inset-top));
+      left: max(16px, env(safe-area-inset-left));
       width: 40px; height: 40px; border-radius: 50%;
       background: rgba(255,255,255,0.7); border: none;
       font-size: 20px; cursor: pointer;
@@ -47,7 +48,8 @@
     /* ── Dropdown ── */
     .pono-dropdown {
       position: fixed; z-index: 9989;
-      top: 58px; left: 16px;
+      top: calc(max(12px, env(safe-area-inset-top)) + 46px);
+      left: max(16px, env(safe-area-inset-left));
       background: rgba(255,255,255,0.96);
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.18);
