@@ -3418,42 +3418,131 @@ function _showExtendedBedTutorial() {
   }
 
   _waitForLandscape(function() {
-    // ── フェーズ1: ベッド取り出し + 位置調整の説明 ──
+    var bedId = item.id;
+    var cfg = state.config.living;
+
+    // ベッドを中央に戻す
+    function resetBedToCenter() {
+      var p = cfg.placed.find(x => x.id === bedId);
+      if (!p) return;
+      var row = item.gridRow ?? 3;
+      var col = item.gridCol ?? 3;
+      // 他のアイテムを避けて配置
+      var pos = findNearestEmpty('living', row, col, bedId, item, 'A');
+      p.row = pos.row;
+      p.col = pos.col;
+      p.angle = 'A';
+      saveState();
+      refreshArea('living');
+    }
+
+    // 現在のベッド位置/角度スナップショット
+    function bedSnapshot() {
+      var p = cfg.placed.find(x => x.id === bedId);
+      return p ? { row: p.row, col: p.col, angle: p.angle } : null;
+    }
+
+    // 位置が変わるまで待つ
+    function waitForMove(onMoved) {
+      var start = bedSnapshot();
+      if (!start) { onMoved(); return; }
+      var timer = setInterval(function() {
+        var now = bedSnapshot();
+        if (!now) return;
+        if (now.row !== start.row || now.col !== start.col) {
+          clearInterval(timer);
+          onMoved();
+        }
+      }, 200);
+    }
+
+    // 角度が N 回変わるまで待つ（一周は2回: A→B→A）
+    function waitForRotations(count, onDone) {
+      var last = bedSnapshot();
+      if (!last) { onDone(); return; }
+      var rotations = 0;
+      var timer = setInterval(function() {
+        var now = bedSnapshot();
+        if (!now) return;
+        if (now.angle !== last.angle) {
+          rotations++;
+          last = now;
+          if (rotations >= count) {
+            clearInterval(timer);
+            onDone();
+          }
+        }
+      }, 200);
+    }
+
+    // 画面中央に小さな褒めトースト
+    function showToast2(text, onDone) {
+      var toast = document.createElement('div');
+      toast.style.cssText =
+        'position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:9997;' +
+        'padding:14px 32px;border-radius:50px;' +
+        'background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;' +
+        'font-family:inherit;font-size:1.3rem;font-weight:900;' +
+        'box-shadow:0 6px 20px rgba(245,168,0,0.5);' +
+        'transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);';
+      toast.textContent = text;
+      document.body.appendChild(toast);
+      requestAnimationFrame(function() {
+        toast.style.transform = 'translate(-50%,-50%) scale(1)';
+      });
+      setTimeout(function() {
+        toast.style.transition = 'transform 0.3s, opacity 0.3s';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%,-50%) scale(0.9)';
+        setTimeout(function() { toast.remove(); if (onDone) onDone(); }, 320);
+      }, 1400);
+    }
+
+    // ── フェーズ1: ベッド取り出し演出 ──
     _showTutorialStepModal({
       emoji: '🎁✨🛏️',
       title: '宝箱から ベッドを とりだしたよ！',
-      body: 'お気に入りの ばしょに\nおいてみよう！',
+      body: 'ポノの おへやに\nかざって みよう！',
       btn: 'つぎへ ▶'
     }, function() {
       if (typeof window._setEditMode === 'function') window._setEditMode(true);
+      // ── フェーズ2: 位置の動かし方 ──
       setTimeout(function() {
         _showTutorialStepModal({
           emoji: '👆',
-          title: 'ドラッグして うごかそう',
-          body: 'ベッドを おさえて\nすきな ばしょに\nうごかして みてね！',
+          title: 'まずは うごかし方！',
+          body: 'ベッドを おさえながら\nすきな ばしょに\nドラッグして みてね！',
           btn: 'やってみる！'
         }, function() {
-          // 画面下に「つぎへ」誘導ボタンを表示（ユーザーが動かし終わったらタップ）
-          _showFloatingNextButton('できたら タップ ▶', function() {
-            // ── フェーズ2: 向き変更の説明 ──
-            _showTutorialStepModal({
-              emoji: '🔄',
-              title: 'つぎは むきを かえてみよう',
-              body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！',
-              btn: 'やってみる！'
-            }, function() {
-              _showFloatingNextButton('できたら タップ ▶', function() {
-                // ── フェーズ3: 完成 ──
+          waitForMove(function() {
+            showToast2('うごかせたね！ ✨', function() {
+              // ベッドを中央に戻す
+              resetBedToCenter();
+              setTimeout(function() {
+                // ── フェーズ3: 回転のやり方 ──
                 _showTutorialStepModal({
-                  emoji: '✅',
-                  title: 'きまったら OK！',
-                  body: 'みぎうえの「✅ おわり」ボタンを\nおすと かんせい！\n\nまた あとで へんこう できるよ',
-                  btn: 'わかった！'
+                  emoji: '🔄',
+                  title: 'つぎは まわし方！',
+                  body: 'ベッドを タップしてから\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわして みよう！',
+                  btn: 'やってみる！'
                 }, function() {
-                  localStorage.setItem('pono_bed_tutorial_seen', '1');
-                  localStorage.removeItem('pono_bed_tutorial_pending');
+                  // 一周 = A→B→A の2回変化
+                  waitForRotations(2, function() {
+                    showToast2('うまく まわせたね！ 🎉', function() {
+                      // ── フェーズ4: 自由配置 ──
+                      _showTutorialStepModal({
+                        emoji: '🎨',
+                        title: 'じゆうに かざろう！',
+                        body: 'すきな ばしょに\nすきな むきで\nベッドを おいてみよう！\n\nできたら みぎうえの\n「✅ おわり」を おしてね',
+                        btn: 'わかった！'
+                      }, function() {
+                        localStorage.setItem('pono_bed_tutorial_seen', '1');
+                        localStorage.removeItem('pono_bed_tutorial_pending');
+                      });
+                    });
+                  });
                 });
-              });
+              }, 300);
             });
           });
         });
@@ -3461,29 +3550,6 @@ function _showExtendedBedTutorial() {
     });
   });
   return true;
-}
-
-// 画面下にフロートする「つぎへ」誘導ボタン
-function _showFloatingNextButton(label, onTap) {
-  var btn = document.createElement('button');
-  btn.textContent = label;
-  btn.style.cssText =
-    'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) scale(0);z-index:9996;' +
-    'padding:12px 32px;border:none;border-radius:50px;' +
-    'background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;' +
-    'font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;' +
-    'box-shadow:0 6px 20px rgba(245,168,0,0.5);' +
-    'transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);' +
-    'animation:stampBtnPulse 1.2s ease-in-out infinite 0.4s;';
-  document.body.appendChild(btn);
-  requestAnimationFrame(function() {
-    btn.style.transform = 'translateX(-50%) scale(1)';
-  });
-  btn.addEventListener('click', function() {
-    btn.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
-    btn.style.transform = 'translateX(-50%) scale(0)';
-    setTimeout(function() { btn.remove(); if (onTap) onTap(); }, 280);
-  });
 }
 
 // ステップ式チュートリアルモーダル（絵文字・タイトル・本文・ボタン付き）
