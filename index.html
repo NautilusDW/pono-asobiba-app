@@ -1664,7 +1664,7 @@
       // ── Slot rewards (keyed by 1-based slot number within card) ──
       var CARD_SLOT_REWARDS = {
         1:  { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png',
-              afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。\n\nたくさん ゲットしよう！', 'スタンプを もっと あつめると\nかぐが もらえて\n「わたしのおうち」が つかえるよ！\n\nがんばってね！'] },
+              afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを もっと あつめて\nかぐが もらえたら\n「わたしのおうち」が つかえるよ！\n\nがんばって たくさん ゲットしてね！'] },
         5:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
@@ -2639,16 +2639,17 @@
           });
         }
 
-        // ── フェーズ2: 大きなスタンプを1枚ずつ表示 ──
+        // ── フェーズ2: 大きなスタンプを1枚ずつ表示（タップでゲット） ──
         function phase2BigStamps() {
           contentEl.innerHTML =
             '<div id="stamp-b-reason" style="font-size:1rem;font-weight:900;color:#5D4E37;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:4px;white-space:normal;"></div>' +
-            '<div class="big-stamp-wrap" id="stamp-b-wrap">' +
+            '<div class="big-stamp-wrap" id="stamp-b-wrap" style="cursor:pointer;">' +
               '<div class="big-stamp-icon" id="stamp-b-big">' +
                 '<img src="' + PONO_ICON + '" id="stamp-b-bigimg" alt="">' +
               '</div>' +
             '</div>' +
             '<div id="stamp-b-msg" style="font-size:1.2rem;font-weight:900;color:#F2915A;opacity:0;transition:opacity 0.3s;height:1.5em;">ポン！\u2728</div>' +
+            '<div id="stamp-b-hint" style="font-size:0.95rem;font-weight:900;color:#F2915A;margin-top:4px;animation:stampBtnPulse 1.2s ease-in-out infinite;">\uD83D\uDC46 タッチして ゲット！</div>' +
             '<div class="big-stamp-counter" id="stamp-b-counter"></div>';
 
           showBigStamp(0);
@@ -2691,37 +2692,43 @@
           var bigEl = document.getElementById('stamp-b-big');
           var imgEl = document.getElementById('stamp-b-bigimg');
           var msg = document.getElementById('stamp-b-msg');
+          var hint = document.getElementById('stamp-b-hint');
+          var wrap = document.getElementById('stamp-b-wrap');
 
-          // インラインスタイルをクリア（CSSクラスが効くように）
+          // リセット: 空の丸（枠だけ）を表示してタップを待つ
           imgEl.removeAttribute('style');
           bigEl.classList.remove('show');
           imgEl.classList.remove('show');
           msg.style.opacity = '0';
+          if (hint) hint.style.opacity = '1';
 
-          // 1フレーム待ってからアニメ開始
-          requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-              bigEl.classList.add('show');
-              imgEl.classList.add('show');
-              spawnSparkles();
-              msg.style.opacity = '1';
-              _playStampPop();
-            });
-          });
+          // タップで押される（ユーザーアクション）
+          var tapped = false;
+          function onTap() {
+            if (tapped) return;
+            tapped = true;
+            wrap.removeEventListener('click', onTap);
+            if (hint) hint.style.opacity = '0';
 
-          // 次へ
-          setTimeout(function() {
-            if (idx < count - 1) {
-              // フェードアウト（インラインで上書き）
-              imgEl.style.cssText = 'transition:opacity 0.3s, transform 0.3s; opacity:0; transform:scale(0.8) rotate(10deg);';
-              msg.style.opacity = '0';
-              setTimeout(function() {
-                showBigStamp(idx + 1);
-              }, 350);
-            } else {
-              setTimeout(function() { phase3FullCard(); }, 600);
-            }
-          }, 2000);
+            // スタンプを押すアニメーション
+            bigEl.classList.add('show');
+            imgEl.classList.add('show');
+            spawnSparkles();
+            msg.style.opacity = '1';
+            _playStampPop();
+
+            // 少し見せてから次へ
+            setTimeout(function() {
+              if (idx < count - 1) {
+                imgEl.style.cssText = 'transition:opacity 0.3s, transform 0.3s; opacity:0; transform:scale(0.8) rotate(10deg);';
+                msg.style.opacity = '0';
+                setTimeout(function() { showBigStamp(idx + 1); }, 350);
+              } else {
+                setTimeout(function() { phase3FullCard(); }, 800);
+              }
+            }, 1500);
+          }
+          wrap.addEventListener('click', onTap);
         }
 
         // ── フェーズ3: 15マスカード表示（スタンプ押された後） ──
