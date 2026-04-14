@@ -1692,8 +1692,14 @@
 
       // ── Slot rewards (keyed by 1-based slot number within card) ──
       var CARD_SLOT_REWARDS = {
-        1:  { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box', img: 'assets/images/Rooms/furnitures_final/box_A.png',
-              afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」が\nつかえるように なるよ！'] },
+        1:  (function() {
+              var g = 'boy';
+              try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
+              var afterMsg = ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」が\nつかえるように なるよ！'];
+              return g === 'girl'
+                ? { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box',     img: 'assets/images/Rooms/furnitures_final/box_A.png',           afterMsg: afterMsg }
+                : { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box_boy', img: 'assets/images/Rooms/furnitures_final/deco_box_boy_A.png', afterMsg: afterMsg };
+            })(),
         5:  (function() {
               var g = 'boy';
               try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
@@ -2094,6 +2100,12 @@
             log.dates.push(bonusKey);
             log.total = log.dates.length;
             saveStampLog(log);
+            // 理由テキストを pono_stamp_pending に追加
+            try {
+              var _pend = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
+              _pend.push({ name: 'きょうのスタンプラリー', desc: '2つの ゲームを クリアしたよ！' });
+              localStorage.setItem('pono_stamp_pending', JSON.stringify(_pend));
+            } catch(e) {}
           }
           changed = true;
         }

@@ -1170,8 +1170,15 @@ function loadState() {
   if (!state.config.living.floor) {
     state.config.living.floor = (state.theme === 'girl') ? 'floor_pink_plain' : 'floor_wood_warm';
   }
-  // 旧アイテムIDのマイグレーション
+  // 旧アイテムIDのマイグレーション（gender別の入れ替えも含む）
   const ID_MIGRATION = { 'deco_toybox_pink': 'deco_box' };
+  // 男の子プロフィールなのにピンクおもちゃ箱(deco_box)を持ってる場合 → boy版に置換
+  // 女の子プロフィールで boy版を持ってる場合 → ピンクに置換
+  if (state.theme === 'boy') {
+    ID_MIGRATION['deco_box'] = 'deco_box_boy';
+  } else if (state.theme === 'girl') {
+    ID_MIGRATION['deco_box_boy'] = 'deco_box';
+  }
   state.inventory = state.inventory.map(id => ID_MIGRATION[id] || id);
   for (const [, area] of Object.entries(state.config)) {
     if (area && area.placed) {
@@ -3421,7 +3428,7 @@ function init() {
     );
     if (!bedShown) {
       _showFurnitureTutorial(
-        ['furn_bookshelf_w', 'furn_bookshelf_wood'],
+        ['furn_bookshelf_w', 'furn_bookshelf2', 'furn_bookshelf_wood'],
         'pono_bookshelf_tutorial_seen',
         'ほんだなを ゲット！ \uD83D\uDCDA\n\nドラッグして すきな ばしょに\nうごかせるよ！\n\n\uD83D\uDD04 マークを タップすると\nむきも かえられるよ！',
         'おいた ほんだなを タップすると\nこれまでに もらった アイテムや\nずかん、きろくが みられるよ！'
