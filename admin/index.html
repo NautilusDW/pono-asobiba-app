@@ -7537,18 +7537,29 @@ function wfRenderDefaults() {
   combos.forEach(function(g) {
     ['wall', 'floor'].forEach(function(c) {
       var currentId = wfDefaults[g.gender][c];
-      var current = ROOM_ITEMS.find(function(x) { return x.id === currentId; });
-      var imgSrc = current ? (current.roomImg || '').replace(/^\.\.\//, '../') : '';
-      // 候補: そのカテゴリの全アイテム（theme=all + 該当性別）
-      var options = ROOM_ITEMS.filter(function(it) {
-        if (it.cat !== c) return false;
+      // 候補プールに wfNewItems (デプロイ待ちの新規) も含める
+      // → 同じデプロイで「新規追加 → デフォルトに採用」が一気にできる
+      var existing = ROOM_ITEMS.filter(function(it) { return it.cat === c; });
+      var pending = wfNewItems.filter(function(it) { return it.cat === c; });
+      var pool = existing.concat(pending);
+      // 現在選択中アイテムの画像を取得（既存 or pending）
+      var current = pool.find(function(x) { return x.id === currentId; });
+      var imgSrc = '';
+      if (current) {
+        if (current.previewUrl) imgSrc = current.previewUrl; // pending は data URL
+        else if (current.roomImg) imgSrc = current.roomImg.replace(/^\.\.\//, '../');
+      }
+      // セレクト候補: theme フィルタ適用
+      var options = pool.filter(function(it) {
         var t = it.theme || 'all';
         return t === 'all' || t === g.gender;
       });
       var card = document.createElement('div');
       card.style.cssText = 'background:#fff;border-radius:8px;padding:8px;border:1px solid #FCD34D;';
       var optsHtml = options.map(function(it) {
-        return '<option value="' + it.id + '"' + (it.id === currentId ? ' selected' : '') + '>' + it.name + '</option>';
+        var isPending = pending.indexOf(it) !== -1;
+        var label = it.name + (isPending ? ' 🆕(新規)' : '');
+        return '<option value="' + it.id + '"' + (it.id === currentId ? ' selected' : '') + '>' + label + '</option>';
       }).join('');
       card.innerHTML =
         '<div style="font-size:0.7rem;font-weight:900;color:#5D4E37;margin-bottom:6px;">' + g.label + ' × ' + (c === 'wall' ? '🧱 壁紙' : '🪵 床') + '</div>' +
@@ -7658,6 +7669,13 @@ function wfRender(cat) {
       '<button data-action="cancel-new" style="padding:5px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">❌ キャンセル</button>';
     card.querySelector('[data-action="cancel-new"]').addEventListener('click', function() {
       wfNewItems.splice(wfNewItems.indexOf(pending), 1);
+      // この pending をデフォルトに採用していた場合は基準値に戻す
+      ['boy', 'girl'].forEach(function(g) {
+        if (wfDefaults[g][pending.cat] === pending.id) {
+          wfDefaults[g][pending.cat] = WF_DEFAULTS_BASE[g][pending.cat];
+        }
+      });
+      wfSaveDefaults();
       wfRender(wfCurrentCat);
     });
     grid.appendChild(card);
