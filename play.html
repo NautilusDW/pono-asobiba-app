@@ -1127,12 +1127,6 @@
     <h1 class="site-heading">ポノのあそびば</h1>
 
 
-    <div class="pts-row" id="pts-row" onclick="location.href='room/index.html'" style="display:none;">
-      🏠 わたしのおうち
-      <span id="ach-badge" style="margin-left:8px;font-size:0.8em;"></span>
-      　→ わたしのおうち
-    </div>
-
     <!-- メイン BGM -->
     <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
 
@@ -1491,15 +1485,6 @@
       if (document.hidden) stopBgm();
       else if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
     });
-
-    // ===== Points display =====
-    function refreshMenuPts() {
-      const pts = parseInt(localStorage.getItem('pono_points') || '0');
-      const el = document.getElementById('menu-pts');
-      if (el) el.textContent = pts;
-    }
-    refreshMenuPts();
-    window.addEventListener('pageshow', refreshMenuPts);
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';

@@ -812,7 +812,8 @@ tr:hover { background: #FFFAF0; }
       <button onclick="wfRender('wall')" id="wf-tab-wall" style="padding:6px 14px;background:#FFF8E8;border:2px solid #FDE68A;color:#5D4E37;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🧱 壁紙</button>
       <button onclick="wfRender('floor')" id="wf-tab-floor" style="padding:6px 14px;background:#FFF;border:2px solid #ddd;color:#5D4E37;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🪵 床</button>
       <span id="wf-count" style="font-size:0.78rem;color:#8B7355;font-weight:700;"></span>
-      <button onclick="wfDeploy()" style="margin-left:auto;padding:6px 14px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🚀 items.js に反映＆デプロイ</button>
+      <button onclick="wfOpenNewModal()" style="margin-left:auto;padding:6px 14px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">➕ 新規追加</button>
+      <button onclick="wfDeploy()" style="padding:6px 14px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🚀 items.js に反映＆デプロイ</button>
     </div>
     <div id="wf-status" style="font-size:0.78rem;color:#8B7355;margin-bottom:8px;min-height:1em;"></div>
     <div id="wf-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;"></div>
@@ -7475,7 +7476,8 @@ renderHome();
 // ════════════════════════════════════════════════════════════════
 var wfCurrentCat = 'wall';
 var wfItems = [];      // ROOM_ITEMS から抽出した壁紙/床
-var wfOverrides = {};  // { id: { name, theme, price, deleted } }
+var wfOverrides = {};  // { id: { name, theme, deleted } }
+var wfNewItems = [];   // 新規追加待ちのアイテム [{ id, cat, name, theme, roomImg, base64 }]
 var WF_OVERRIDE_KEY = 'wf_overrides';
 try { wfOverrides = JSON.parse(localStorage.getItem(WF_OVERRIDE_KEY) || '{}'); } catch(e) { wfOverrides = {}; }
 function wfSaveOv() { localStorage.setItem(WF_OVERRIDE_KEY, JSON.stringify(wfOverrides)); }
@@ -7505,7 +7507,6 @@ function wfRender(cat) {
     if (ov.deleted) return;
     var name = ov.name !== undefined ? ov.name : item.name;
     var theme = ov.theme !== undefined ? ov.theme : (item.theme || 'all');
-    var price = ov.price !== undefined ? ov.price : (item.price || 10);
     var imgSrc = (item.roomImg || '').replace(/^\.\.\//, '../');
     var card = document.createElement('div');
     card.style.cssText = 'background:#FFF8F0;border-radius:12px;padding:10px;border:1px solid #F5F0E8;display:flex;flex-direction:column;gap:6px;';
@@ -7520,20 +7521,23 @@ function wfRender(cat) {
         '<option value="boy"' + (theme === 'boy' ? ' selected' : '') + '>👦 boy</option>' +
         '<option value="girl"' + (theme === 'girl' ? ' selected' : '') + '>👧 girl</option>' +
       '</select>' +
-      '<label style="font-size:0.65rem;color:#888;font-weight:700;">ねだん（pt）<span style="color:#bbb;font-weight:400;font-size:0.6rem;">※今は未使用</span></label>' +
-      '<input type="number" data-field="price" value="' + price + '" min="0" placeholder="ねだん" style="padding:5px 8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.78rem;margin-top:-4px;">' +
-      '<button data-action="del" style="padding:5px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">🗑️ 削除</button>';
+      '<div style="display:flex;gap:6px;margin-top:2px;">' +
+        '<button data-action="replace" style="flex:1;padding:5px;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">🖼️ 差し替え</button>' +
+        '<button data-action="del" style="flex:1;padding:5px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">🗑️ 削除</button>' +
+      '</div>';
     // フィールド変更
     card.querySelectorAll('input,select').forEach(function(input) {
       var ev = input.tagName === 'SELECT' ? 'change' : 'input';
       input.addEventListener(ev, function() {
         if (!wfOverrides[item.id]) wfOverrides[item.id] = {};
         var field = input.dataset.field;
-        var val = input.value;
-        if (field === 'price') val = parseInt(val) || 0;
-        wfOverrides[item.id][field] = val;
+        wfOverrides[item.id][field] = input.value;
         wfSaveOv();
       });
+    });
+    // 画像差し替え
+    card.querySelector('[data-action="replace"]').addEventListener('click', function() {
+      wfOpenReplaceModal(item, name);
     });
     // 拡大表示
     var zoomImg = card.querySelector('[data-action="zoom"]');
@@ -7560,6 +7564,157 @@ function wfRender(cat) {
     });
     grid.appendChild(card);
   });
+
+  // 新規追加待ちのアイテム（pending）
+  wfNewItems.forEach(function(pending, idx) {
+    if (pending.cat !== wfCurrentCat) return;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#E0F2FE;border-radius:12px;padding:10px;border:2px dashed #3B82F6;display:flex;flex-direction:column;gap:6px;';
+    card.innerHTML =
+      '<div style="font-size:0.7rem;color:#1D4ED8;font-weight:900;text-align:center;">🆕 新規（デプロイ待ち）</div>' +
+      '<img src="' + pending.previewUrl + '" style="width:100%;height:90px;object-fit:cover;border-radius:8px;background:#eee;">' +
+      '<div style="font-size:0.65rem;color:#666;word-break:break-all;">' + pending.id + '</div>' +
+      '<div style="font-size:0.72rem;color:#5D4E37;font-weight:700;">' + pending.name + '（' + pending.theme + '）</div>' +
+      '<button data-action="cancel-new" style="padding:5px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">❌ キャンセル</button>';
+    card.querySelector('[data-action="cancel-new"]').addEventListener('click', function() {
+      wfNewItems.splice(wfNewItems.indexOf(pending), 1);
+      wfRender(wfCurrentCat);
+    });
+    grid.appendChild(card);
+  });
+}
+
+// ── 画像差し替えモーダル ──
+function wfOpenReplaceModal(item, displayName) {
+  var imgPath = (item.roomImg || '').replace(/^\.\.\//, '');
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:400px;width:100%;';
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">🖼️ ' + displayName + ' を差し替え</div>' +
+    '<div style="font-size:0.72rem;color:#666;margin-bottom:10px;word-break:break-all;">' + imgPath + '</div>' +
+    '<input type="file" id="_wf_rep_file" accept="image/*" style="margin-bottom:12px;">' +
+    '<div id="_wf_rep_preview" style="text-align:center;margin-bottom:12px;"></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button id="_wf_rep_up" disabled style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;font-weight:900;font-family:inherit;cursor:pointer;">📤 アップロード</button>' +
+      '<button id="_wf_rep_cancel" style="flex:1;padding:10px;border:none;border-radius:8px;background:#E5E7EB;color:#5D4E37;font-weight:700;font-family:inherit;cursor:pointer;">キャンセル</button>' +
+    '</div>' +
+    '<div id="_wf_rep_status" style="margin-top:8px;font-size:0.78rem;"></div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  document.getElementById('_wf_rep_cancel').addEventListener('click', function() { ov.remove(); });
+  var b64 = null;
+  document.getElementById('_wf_rep_file').addEventListener('change', function(e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(ev) {
+      b64 = ev.target.result.split(',')[1];
+      document.getElementById('_wf_rep_preview').innerHTML = '<img src="' + ev.target.result + '" style="max-width:200px;max-height:200px;border-radius:8px;">';
+      document.getElementById('_wf_rep_up').disabled = false;
+    };
+    r.readAsDataURL(f);
+  });
+  document.getElementById('_wf_rep_up').addEventListener('click', function() {
+    if (!b64) return;
+    var st = document.getElementById('_wf_rep_status');
+    st.textContent = 'アップロード中...';
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(existing) {
+        var body = { message: '🖼️ replace wall/floor: ' + item.id, content: b64, branch: GH_BRANCH };
+        if (existing && existing.sha) body.sha = existing.sha;
+        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath, {
+          method: 'PUT', headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+          body: JSON.stringify(body)
+        });
+      })
+      .then(function(r) {
+        if (r.ok) {
+          st.innerHTML = '<span style="color:#10B981;">✅ 完了！</span>';
+          setTimeout(function() { ov.remove(); }, 1200);
+        } else {
+          return r.json().then(function(e) { throw new Error(e.message || 'PUT失敗'); });
+        }
+      })
+      .catch(function(e) { st.innerHTML = '<span style="color:#f44336;">❌ ' + e.message + '</span>'; });
+  });
+}
+
+// ── 新規追加モーダル ──
+function wfOpenNewModal() {
+  var cat = wfCurrentCat;
+  var catLabel = cat === 'wall' ? '壁紙' : '床';
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:420px;width:100%;';
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">➕ 新しい' + catLabel + 'を追加</div>' +
+    '<label style="font-size:0.75rem;color:#8B7355;font-weight:700;">なまえ</label>' +
+    '<input type="text" id="_wf_new_name" placeholder="例: みどりのハート" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.85rem;margin:4px 0 10px;">' +
+    '<label style="font-size:0.75rem;color:#8B7355;font-weight:700;">ID（英数字・_のみ）</label>' +
+    '<input type="text" id="_wf_new_id" placeholder="' + cat + '_<name>" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.85rem;margin:4px 0 10px;">' +
+    '<label style="font-size:0.75rem;color:#8B7355;font-weight:700;">テーマ</label>' +
+    '<select id="_wf_new_theme" style="width:100%;padding:8px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-size:0.85rem;margin:4px 0 10px;">' +
+      '<option value="all">👫 all</option><option value="boy">👦 boy</option><option value="girl">👧 girl</option>' +
+    '</select>' +
+    '<label style="font-size:0.75rem;color:#8B7355;font-weight:700;">画像ファイル（PNG推奨）</label>' +
+    '<input type="file" id="_wf_new_file" accept="image/*" style="margin:6px 0 10px;">' +
+    '<div id="_wf_new_preview" style="text-align:center;margin-bottom:12px;"></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button id="_wf_new_add" style="flex:1;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;font-weight:900;font-family:inherit;cursor:pointer;">➕ 追加（デプロイ待ち）</button>' +
+      '<button id="_wf_new_cancel" style="flex:1;padding:10px;border:none;border-radius:8px;background:#E5E7EB;color:#5D4E37;font-weight:700;font-family:inherit;cursor:pointer;">キャンセル</button>' +
+    '</div>' +
+    '<div id="_wf_new_status" style="margin-top:8px;font-size:0.78rem;color:#888;">※「追加」を押すと pending になり、画面上部の「🚀 デプロイ」でGitHubに反映されます。</div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  document.getElementById('_wf_new_cancel').addEventListener('click', function() { ov.remove(); });
+  var nameInp = document.getElementById('_wf_new_name');
+  var idInp = document.getElementById('_wf_new_id');
+  nameInp.addEventListener('input', function() {
+    if (idInp.dataset.touched) return;
+    var base = nameInp.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    idInp.value = cat + '_' + (base || 'new_' + Date.now());
+  });
+  idInp.addEventListener('input', function() { idInp.dataset.touched = '1'; });
+  var fileData = null, fileName = null, fileUrl = null;
+  document.getElementById('_wf_new_file').addEventListener('change', function(e) {
+    var f = e.target.files[0]; if (!f) return;
+    fileName = f.name;
+    var r = new FileReader();
+    r.onload = function(ev) {
+      fileData = ev.target.result.split(',')[1];
+      fileUrl = ev.target.result;
+      document.getElementById('_wf_new_preview').innerHTML = '<img src="' + fileUrl + '" style="max-width:200px;max-height:200px;border-radius:8px;">';
+    };
+    r.readAsDataURL(f);
+  });
+  document.getElementById('_wf_new_add').addEventListener('click', function() {
+    var name = nameInp.value.trim();
+    var id = idInp.value.trim();
+    var theme = document.getElementById('_wf_new_theme').value;
+    var st = document.getElementById('_wf_new_status');
+    if (!name || !id || !fileData) {
+      st.innerHTML = '<span style="color:#f44336;">名前・ID・画像すべて必須です</span>';
+      return;
+    }
+    if (!/^[a-z0-9_]+$/i.test(id)) {
+      st.innerHTML = '<span style="color:#f44336;">IDは英数字と_のみ</span>';
+      return;
+    }
+    // 拡張子保持、ファイル名は id ベースに統一
+    var ext = (fileName.match(/\.[^.]+$/) || ['.png'])[0];
+    var finalFileName = id.replace(/^(wall_|floor_)/, '') + ext;
+    wfNewItems.push({
+      id: id, cat: cat, name: name, theme: theme,
+      fileName: finalFileName, base64: fileData, previewUrl: fileUrl
+    });
+    ov.remove();
+    wfRender(wfCurrentCat);
+  });
 }
 
 async function wfDeploy() {
@@ -7570,12 +7725,13 @@ async function wfDeploy() {
     return;
   }
   var changedIds = Object.keys(wfOverrides);
-  if (changedIds.length === 0) {
+  var totalChanges = changedIds.length + wfNewItems.length;
+  if (totalChanges === 0) {
     status.textContent = 'ℹ️ 変更がありません';
     status.style.color = '#888';
     return;
   }
-  if (!confirm(changedIds.length + ' 件の変更を items.js に反映してデプロイしますか？')) return;
+  if (!confirm(totalChanges + ' 件の変更を items.js に反映してデプロイしますか？\n（新規: ' + wfNewItems.length + ' / 編集: ' + changedIds.length + '）')) return;
   status.textContent = '⏳ items.js を取得中...';
   status.style.color = '#FFD700';
   try {
@@ -7620,9 +7776,47 @@ async function wfDeploy() {
       var newBlock = block;
       if (ov.name !== undefined)  newBlock = replStrProp(newBlock, 'name', ov.name);
       if (ov.theme !== undefined) newBlock = replStrProp(newBlock, 'theme', ov.theme);
-      if (ov.price !== undefined) newBlock = replNumProp(newBlock, 'price', ov.price);
       text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
     });
+
+    // 新規追加アイテム: 画像を GitHub にアップロード + items.js にエントリ追加
+    for (var ni = 0; ni < wfNewItems.length; ni++) {
+      var item = wfNewItems[ni];
+      status.textContent = '⏳ 画像アップロード中... (' + (ni + 1) + '/' + wfNewItems.length + ')';
+      var imgPath = item.cat === 'wall'
+        ? 'assets/images/Rooms/walls/' + item.fileName
+        : 'assets/images/Rooms/floors/' + item.fileName;
+      var existingResp = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
+      var existing = existingResp.ok ? await existingResp.json() : null;
+      var imgBody = { message: 'feat(walls/floors): 新規画像 ' + item.fileName, content: item.base64, branch: GH_BRANCH };
+      if (existing && existing.sha) imgBody.sha = existing.sha;
+      var imgPut = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath, {
+        method: 'PUT', headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify(imgBody)
+      });
+      if (!imgPut.ok) {
+        var ierr = await imgPut.json();
+        throw new Error('画像アップロード失敗: ' + (ierr.message || ''));
+      }
+      // items.js にエントリ挿入: 同カテゴリの最後のブロックの後ろに追加
+      var catComment = item.cat === 'wall' ? 'かべがみ' : 'ゆか';
+      var roomImg = '../' + imgPath;
+      var newEntry = '\n  {\n    id: \'' + item.id + '\', cat: \'' + item.cat + '\', name: \'' + item.name.replace(/'/g, "\\'") + '\', price: 0, theme: \'' + item.theme + '\',\n    emoji: \'🆕\',\n    roomImg: \'' + roomImg + '\',\n  },';
+      // 最後の同カテゴリブロックを探して、その直後に挿入
+      var catPattern = new RegExp("cat:\\s*'" + item.cat + "'", 'g');
+      var lastIdx = -1, m;
+      while ((m = catPattern.exec(text)) !== null) lastIdx = m.index;
+      if (lastIdx >= 0) {
+        var bs = text.lastIndexOf('{', lastIdx);
+        var d = 0, be = -1;
+        for (var bi = bs; bi < text.length; bi++) {
+          var ch = text.charAt(bi);
+          if (ch === '{') d++;
+          else if (ch === '}') { d--; if (d === 0) { be = bi + 1; if (text.charAt(be) === ',') be++; break; } }
+        }
+        if (be > 0) text = text.substring(0, be) + newEntry + text.substring(be);
+      }
+    }
 
     // PUT
     status.textContent = '⏳ コミット中...';
@@ -7642,6 +7836,7 @@ async function wfDeploy() {
       throw new Error(err.message || 'PUT 失敗');
     }
     wfOverrides = {};
+    wfNewItems = [];
     wfSaveOv();
     status.textContent = '✅ デプロイ完了！3秒後に再読み込みします';
     status.style.color = '#10B981';
