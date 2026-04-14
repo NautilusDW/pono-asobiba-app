@@ -3242,7 +3242,11 @@ function openProfileEditModal(creatureId) {
   btnRow.appendChild(saveBtn);
   box.appendChild(btnRow);
 
-  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  // ★ ドラッグして外で離した場合 (mousedown が入力欄から始まった) は閉じない。
+  //   mousedown と click 両方の target が overlay 自身のときのみ閉じる。
+  var _ovDownOn = null;
+  ov.addEventListener('mousedown', function(e) { _ovDownOn = e.target; });
+  ov.addEventListener('click', function(e) { if (e.target === ov && _ovDownOn === ov) ov.remove(); });
   ov.appendChild(box);
   document.body.appendChild(ov);
 }
@@ -4808,7 +4812,11 @@ function openImageBrowser(onSelect) {
   grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">フォルダを選んでください</div>';
   box.appendChild(grid);
   ov.appendChild(box);
-  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  // ★ ドラッグして外で離した場合 (mousedown が入力欄から始まった) は閉じない。
+  //   mousedown と click 両方の target が overlay 自身のときのみ閉じる。
+  var _ovDownOn = null;
+  ov.addEventListener('mousedown', function(e) { _ovDownOn = e.target; });
+  ov.addEventListener('click', function(e) { if (e.target === ov && _ovDownOn === ov) ov.remove(); });
   document.body.appendChild(ov);
 
   function loadFolder(path) {
@@ -6947,7 +6955,11 @@ function _openBentoEditModal(itemId, currentName, currentCat) {
     '</div>';
   ov.appendChild(box);
   document.body.appendChild(ov);
-  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  // ★ ドラッグして外で離した場合 (mousedown が入力欄から始まった) は閉じない。
+  //   mousedown と click 両方の target が overlay 自身のときのみ閉じる。
+  var _ovDownOn = null;
+  ov.addEventListener('mousedown', function(e) { _ovDownOn = e.target; });
+  ov.addEventListener('click', function(e) { if (e.target === ov && _ovDownOn === ov) ov.remove(); });
   document.getElementById('_bento_edit_cancel').addEventListener('click', function() { ov.remove(); });
   document.getElementById('_bento_edit_save').addEventListener('click', function() {
     var cd2 = _getBentoCustomData();
@@ -6980,7 +6992,11 @@ function _openBentoReplaceModal(itemId, itemName) {
     '<div id="_bento_replace_status" style="margin-top:8px;font-size:0.78rem;"></div>';
   ov.appendChild(box);
   document.body.appendChild(ov);
-  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  // ★ ドラッグして外で離した場合 (mousedown が入力欄から始まった) は閉じない。
+  //   mousedown と click 両方の target が overlay 自身のときのみ閉じる。
+  var _ovDownOn = null;
+  ov.addEventListener('mousedown', function(e) { _ovDownOn = e.target; });
+  ov.addEventListener('click', function(e) { if (e.target === ov && _ovDownOn === ov) ov.remove(); });
   document.getElementById('_bento_replace_cancel').addEventListener('click', function() { ov.remove(); });
 
   var _replaceBase64 = null;
@@ -7667,7 +7683,11 @@ function wfOpenReplaceModal(item, displayName) {
     '<div id="_wf_rep_status" style="margin-top:8px;font-size:0.78rem;"></div>';
   ov.appendChild(box);
   document.body.appendChild(ov);
-  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  // ★ ドラッグして外で離した場合 (mousedown が入力欄から始まった) は閉じない。
+  //   mousedown と click 両方の target が overlay 自身のときのみ閉じる。
+  var _ovDownOn = null;
+  ov.addEventListener('mousedown', function(e) { _ovDownOn = e.target; });
+  ov.addEventListener('click', function(e) { if (e.target === ov && _ovDownOn === ov) ov.remove(); });
   document.getElementById('_wf_rep_cancel').addEventListener('click', function() { ov.remove(); });
   var b64 = null;
   document.getElementById('_wf_rep_file').addEventListener('change', function(e) {
@@ -7734,7 +7754,11 @@ function wfOpenNewModal() {
     '<div id="_wf_new_status" style="margin-top:8px;font-size:0.78rem;color:#888;">※「追加」を押すと pending になり、画面上部の「🚀 デプロイ」でGitHubに反映されます。</div>';
   ov.appendChild(box);
   document.body.appendChild(ov);
-  ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+  // ★ ドラッグして外で離した場合 (mousedown が入力欄から始まった) は閉じない。
+  //   mousedown と click 両方の target が overlay 自身のときのみ閉じる。
+  var _ovDownOn = null;
+  ov.addEventListener('mousedown', function(e) { _ovDownOn = e.target; });
+  ov.addEventListener('click', function(e) { if (e.target === ov && _ovDownOn === ov) ov.remove(); });
   document.getElementById('_wf_new_cancel').addEventListener('click', function() { ov.remove(); });
   var nameInp = document.getElementById('_wf_new_name');
   var idInp = document.getElementById('_wf_new_id');
