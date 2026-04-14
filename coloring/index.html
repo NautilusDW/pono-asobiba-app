@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ぬりえ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
 <style>
@@ -1594,7 +1593,6 @@ function saveColored() {
   link.download = currentNurieName + '_いろぬり.png';
   link.href = offscreen.toDataURL('image/png');
   link.click();
-  awardPoints(5);
   if (window.incrementStat) window.incrementStat('coloring_complete', 1);
 }
 

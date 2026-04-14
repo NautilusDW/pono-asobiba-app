@@ -68,11 +68,6 @@
     }
     .adot.on { background: white; }
     #ui-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    #pts-disp {
-      background: rgba(0,0,0,0.3); border-radius: 16px;
-      padding: 4px 10px; color: white; font-weight: bold; font-size: 14px;
-      display: flex; align-items: center; gap: 3px;
-    }
     #ui-btn-info {
       background: rgba(0,0,0,0.3); color: white; border: none;
       border-radius: 50%; width: 30px; height: 30px;
@@ -842,32 +837,6 @@
     }
     #pts-toast.show { opacity: 1; }
 
-    /* ─── Confirm dialog ─── */
-    #confirm-ov {
-      position: fixed; inset: 0; z-index: 350;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-    }
-    #confirm-ov.hidden { display: none; }
-    .confirm-box {
-      background: white; border-radius: 22px;
-      padding: 24px 20px; max-width: 300px; width: 90%;
-      text-align: center; display: flex; flex-direction: column; gap: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    }
-    .confirm-emoji { font-size: 52px; }
-    .confirm-name  { font-size: 18px; font-weight: bold; color: #333; }
-    .confirm-price { font-size: 16px; color: #e07800; }
-    .confirm-bal   { font-size: 13px; color: #888; }
-    .confirm-btns  { display: flex; gap: 10px; }
-    .confirm-btns button {
-      flex: 1; height: 46px; border-radius: 23px; border: none;
-      font-size: 16px; font-weight: bold; cursor: pointer;
-    }
-    #btn-cancel { background: #eee; color: #555; }
-    #btn-buy    { background: var(--orange); color: white; }
-    #btn-buy:disabled { opacity: 0.4; cursor: default; }
-
     /* ── Tutorial ── */
     .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
     .tut-dim.hidden { display:none; }
@@ -925,7 +894,6 @@
     <div id="room-ui">
       <div id="area-dots"></div>
       <div id="ui-right">
-        <div id="pts-disp" style="display:none;">&#x2B50; <span id="pts-num">0</span></div>
         <button id="ui-btn-info">?</button>
       </div>
     </div>
@@ -973,7 +941,7 @@
   <div class="dbg-label" id="dbg-egg-info" style="display:none"></div>
 </div>
 
-<!-- ── Points toast ───────────────────────────────── -->
+<!-- ── Toast (汎用) ───────────────────────────────── -->
 <div id="pts-toast"></div>
 
 <!-- ── Theme select (削除済み: pono_profileのgenderから自動設定) ──>
@@ -1075,20 +1043,6 @@
   </div>
 </div>
 
-<!-- ── Confirm dialog ────────────────────────────── -->
-<div class="modal-ov hidden" id="confirm-ov">
-  <div class="confirm-box">
-    <div class="confirm-emoji" id="cf-emoji"></div>
-    <div class="confirm-name"  id="cf-name"></div>
-    <div class="confirm-price" id="cf-price"></div>
-    <div class="confirm-bal"   id="cf-bal"></div>
-    <div class="confirm-btns">
-      <button id="btn-cancel">やめる</button>
-      <button id="btn-buy">かう！</button>
-    </div>
-  </div>
-</div>
-
 <script src="items.js"></script>
 <script>
 // ===== BGM =====
@@ -1127,19 +1081,14 @@ initMenu({
 
 // ─── Constants ────────────────────────────────────────
 const LS = {
-  POINTS:    'pono_points',
-  LIFETIME:  'pono_points_lifetime',
   INVENTORY: 'pono_inventory',
   CONFIG:    'pono_room_config',
   UNLOCKED:  'pono_room_unlocked',
-  DAILY:     'pono_points_daily_',
   THEME:     'pono_room_theme',
-  DAILY_BON: 'pono_daily_bonus',
 };
 
 // ─── State ────────────────────────────────────────────
 let state = {
-  points:    0,
   inventory: [],      // array of item ids owned
   config:    {},      // { areaId: { wall, floor, furn, deco } }
   unlocked:  ['living'],
@@ -1148,7 +1097,6 @@ let state = {
 
 // ─── Load / Save ──────────────────────────────────────
 function loadState() {
-  state.points    = parseInt(localStorage.getItem(LS.POINTS)    || '0');
   state.inventory = JSON.parse(localStorage.getItem(LS.INVENTORY) || '[]');
   state.config    = JSON.parse(localStorage.getItem(LS.CONFIG)    || '{}');
   // デフォルト壁紙・床（性別で自動選択）
@@ -1220,44 +1168,10 @@ function loadState() {
   }
 }
 function saveState() {
-  localStorage.setItem(LS.POINTS,    state.points);
   localStorage.setItem(LS.INVENTORY, JSON.stringify(state.inventory));
   localStorage.setItem(LS.CONFIG,    JSON.stringify(state.config));
   localStorage.setItem(LS.UNLOCKED,  JSON.stringify(state.unlocked));
   if (state.theme) localStorage.setItem(LS.THEME, state.theme);
-}
-
-// ─── Daily bonus ─────────────────────────────────────
-function checkDailyBonus() {
-  const today = new Date().toDateString();
-  const last  = localStorage.getItem(LS.DAILY_BON);
-  if (last === today) return;
-  localStorage.setItem(LS.DAILY_BON, today);
-  const earned = awardPoints(
-    localStorage.getItem('pono_premium') === '1' ? 5 : 3
-  );
-  if (earned > 0) showToast(`⭐ まいにちボーナス +${earned}pt！`);
-}
-
-// ─── Award points ─────────────────────────────────────
-function awardPoints(amount) {
-  const today    = new Date().toDateString();
-  const dKey     = LS.DAILY + today;
-  const todayTot = parseInt(localStorage.getItem(dKey) || '0');
-  const actual   = Math.min(amount, Math.max(0, 25 - todayTot));
-  if (actual <= 0) return 0;
-  state.points += actual;
-  const life = parseInt(localStorage.getItem(LS.LIFETIME) || '0');
-  localStorage.setItem(LS.LIFETIME, life + actual);
-  localStorage.setItem(dKey, todayTot + actual);
-  saveState();
-  updatePtsDisplay();
-  return actual;
-}
-
-// ─── UI helpers ───────────────────────────────────────
-function updatePtsDisplay() {
-  document.getElementById('pts-num').textContent = state.points;
 }
 
 let _toastTimer;
@@ -1974,18 +1888,14 @@ function buildRoomArea(areaData) {
     if (needSave) { cfg.placed = placedList; saveState(); }
   }
 
-  // Lock overlay
+  // Lock overlay（スタンプラリーで解放される想定。手動解放は廃止）
   if (locked) {
     const cover = document.createElement('div');
     cover.className = 'lock-cover';
     cover.innerHTML = `
       <div class="lock-icon">${areaData.emoji}</div>
       <div class="lock-name">${areaData.name}</div>
-      <div class="lock-cost">⭐ ${areaData.cost}pt で かいほう</div>
-      <button class="lock-btn" data-area="${areaData.id}" data-cost="${areaData.cost}">
-        かいほうする！
-      </button>`;
-    cover.querySelector('.lock-btn').addEventListener('click', () => unlockArea(areaData));
+      <div class="lock-cost">🔒 スタンプで かいほうされるよ</div>`;
     div.appendChild(cover);
   }
 
@@ -2140,20 +2050,6 @@ function buildRoomArea(areaData) {
 
   applyBackground(div, areaData.id);
   return div;
-}
-
-// ─── Unlock area ──────────────────────────────────────
-function unlockArea(areaData) {
-  if (state.points < areaData.cost) {
-    showToast(`⭐ あと ${areaData.cost - state.points}pt ひつよう！`);
-    return;
-  }
-  state.points -= areaData.cost;
-  state.unlocked.push(areaData.id);
-  saveState();
-  updatePtsDisplay();
-  renderRooms();
-  showToast(`🎉 ${areaData.name} かいほう！`);
 }
 
 // ─── Render all rooms ─────────────────────────────────
@@ -2490,10 +2386,11 @@ function _makeShopCard(item, mode, cfg) {
 
   const badge = document.createElement('div');
   if (mode === 'buy') {
-    badge.className = 'item-badge ' + (state.points >= item.price ? 'badge-lock' : 'badge-lock');
-    badge.style.background = state.points >= item.price ? '#fff3e0' : '#f5f5f5';
-    badge.style.color = state.points >= item.price ? '#f57c00' : '#999';
-    badge.textContent = state.points >= item.price ? `⭐ ${item.price}pt かえる！` : `あと ${item.price - state.points}⭐`;
+    // スタンプ報酬に移行済み。未所持アイテムはロック表示のみ
+    badge.className = 'item-badge badge-lock';
+    badge.style.background = '#f5f5f5';
+    badge.style.color = '#999';
+    badge.textContent = '🔒 スタンプで';
   } else if (mode === 'owned') {
     badge.className = 'item-badge badge-owned';
     badge.textContent = 'もってる ✓';
@@ -2506,46 +2403,10 @@ function _makeShopCard(item, mode, cfg) {
   card.appendChild(name);
   card.appendChild(badge);
 
-  if (mode === 'buy')   card.addEventListener('click', () => showBuyConfirm(item));
   if (mode === 'place' && !placed) card.addEventListener('click', () => placeItem(item));
   if (mode === 'place' && placed)  card.addEventListener('click', () => unplaceItem(item));
 
   return card;
-}
-
-function showBuyConfirm(item) {
-  const cfEmoji = document.getElementById('cf-emoji');
-  cfEmoji.textContent = '';
-  if (item.roomImg) {
-    const img = document.createElement('img');
-    img.src = item.roomImg;
-    img.style.cssText = 'width:64px;height:64px;object-fit:contain;';
-    cfEmoji.textContent = '';
-    cfEmoji.appendChild(img);
-  } else {
-    cfEmoji.textContent = item.emoji || '❓';
-  }
-  document.getElementById('cf-name').textContent  = item.name;
-  document.getElementById('cf-price').textContent = `⭐ ${item.price}pt`;
-  document.getElementById('cf-bal').textContent   = `いまのポイント: ${state.points}pt`;
-  const buyBtn = document.getElementById('btn-buy');
-  buyBtn.disabled = state.points < item.price;
-  buyBtn.onclick = () => { buyItem(item); };
-  document.getElementById('confirm-ov').classList.remove('hidden');
-}
-
-function buyItem(item) {
-  if (state.points < item.price) return;
-  state.points -= item.price;
-  state.inventory.push(item.id);
-  saveState();
-  updatePtsDisplay();
-  document.getElementById('confirm-ov').classList.add('hidden');
-  // 買ったらてもちに入る（自動配置しない）
-  showToast(`🎒 ${item.name} を てもちに いれたよ！`);
-  // てもちモードに切り替えてその場で見せる
-  setShopMode('bag');
-  renderShopGrid(item.cat);
 }
 
 function placeItem(item) {
@@ -2596,26 +2457,10 @@ function unplaceItem(item) {
   showToast(`📦 ${item.name} をしまったよ！`);
 }
 
-// ─── Info / how-to sheet ─────────────────────────────
+// ─── Info / how-to sheet (廃止: ポイント制ガイドは表示しない) ─
 function renderGuide() {
   const list = document.getElementById('guide-list');
-  list.innerHTML = '';
-  POINT_GUIDE.forEach(g => {
-    const row = document.createElement('div');
-    row.className = 'guide-row' + (g.note ? ' guide-row-note' : '');
-    const tags = [
-      g.premium ? '<span class="guide-tag tag-premium">★プレミアム</span>' : '',
-      g.bonus   ? '<span class="guide-tag tag-bonus">ボーナス</span>'      : '',
-    ].join('');
-    row.innerHTML = `
-      <div class="guide-icon">${g.emoji}</div>
-      <div class="guide-body">
-        <div class="guide-game">${g.name} ${tags}</div>
-        <div class="guide-how">${g.how}</div>
-      </div>
-      <div class="guide-pt${g.note ? ' guide-pt-note' : ''}">${g.note ? '上限' : '+'} ${g.pt}pt</div>`;
-    list.appendChild(row);
-  });
+  if (list) list.innerHTML = '';
 }
 
 // ─── Theme selection (削除済み: pono_profile.genderから自動設定) ──
@@ -3425,6 +3270,11 @@ function _showExtendedBedTutorial() {
   }
   if (!item) return false;
 
+  // ★ 中断対策: チュートリアル開始時点で「視聴済み」マークを付ける。
+  // 途中で戻る/リロードされても再起動して操作不能になる問題を防ぐ。
+  localStorage.setItem('pono_bed_tutorial_seen', '1');
+  localStorage.removeItem('pono_bed_tutorial_pending');
+
   // チュートリアル用に強制中央配置（未配置 or 既存どこにあってもリセット）
   if (!state.config.living) state.config.living = {};
   var cfg = state.config.living;
@@ -3675,8 +3525,8 @@ function _showExtendedBedTutorial() {
                         // ── フェーズ5: もようがえボタンの案内 ──
                         setTimeout(function() {
                           _highlightEditButtonHint(function() {
-                            localStorage.setItem('pono_bed_tutorial_seen', '1');
-                            localStorage.removeItem('pono_bed_tutorial_pending');
+                            // 完了フラグ（tutQueue の次ステップ進行用）
+                            window._bedTutorialDone = true;
                           });
                         }, 300);
                       });
@@ -3818,7 +3668,6 @@ function _showTutorialModal(text, onDone) {
 // ─── Init ─────────────────────────────────────────────
 function init() {
   loadState();
-  updatePtsDisplay();
 
   // テーマはloadStateでpono_profile.genderから自動設定済み → 直接おへやへ
   enterRoom();
@@ -3847,6 +3696,7 @@ function init() {
   var bedInInv = ['furn_bed_pink', 'furn_bed_blue_boy'].some(id => state.inventory.indexOf(id) !== -1);
   if (bedInInv && localStorage.getItem('pono_bed_tutorial_seen') !== '1') {
     tutQueue.push(function(next) {
+      window._bedTutorialDone = false;
       var started = _showExtendedBedTutorial();
       if (!started) {
         // 何らかの理由で起動しなかったら次へ進む
@@ -3855,9 +3705,9 @@ function init() {
         setTimeout(next, 200);
         return;
       }
-      // 完了検知
+      // 完了検知（in-memory フラグ: ストレージは開始時点で既に '1' に）
       var _interval = setInterval(function() {
-        if (localStorage.getItem('pono_bed_tutorial_seen') === '1') {
+        if (window._bedTutorialDone) {
           clearInterval(_interval);
           setTimeout(next, 400);
         }
@@ -4006,73 +3856,29 @@ function init() {
     window.location.href = '../play.html';
   });
 
-  // Confirm dialog
-  document.getElementById('btn-cancel').addEventListener('click', () =>
-    document.getElementById('confirm-ov').classList.add('hidden'));
-  document.getElementById('confirm-ov').addEventListener('click', e => {
-    if (e.target === document.getElementById('confirm-ov'))
-      document.getElementById('confirm-ov').classList.add('hidden');
-  });
 }
 
 init();
 
 // ─── pageshow: ゲームから戻ったときにポイントを再読み込み ─────────
-window.addEventListener('pageshow', function() {
+window.addEventListener('pageshow', function(e) {
+  // bfcache 復元時はチュートリアル中断状態が残る可能性があるため強制リロード
+  if (e.persisted) { location.reload(); return; }
   loadState();
-  updatePtsDisplay();
   renderShopGrid(currentShopCat);
 });
 
-// ─── デバッグパネル（pts-disp or egg-creature を2回タップで開く）───
+// ─── デバッグパネル（2回タップで開く。ポイント機能は廃止済み）───
 function _dbgToggle() {
   var panel = document.getElementById('debug-panel');
   panel.classList.toggle('hidden');
   if (!panel.classList.contains('hidden')) _dbgUpdate();
 }
-(function() {
-  var taps = 0, tapTimer;
-  function handler() {
-    taps++;
-    clearTimeout(tapTimer);
-    tapTimer = setTimeout(function() { taps = 0; }, 600);
-    if (taps >= 2) { taps = 0; _dbgToggle(); }
-  }
-  document.getElementById('pts-disp').addEventListener('click', handler);
-  // MVP後に有効化: document.getElementById('egg-creature').addEventListener('click', handler);
-})();
 
 function _dbgUpdate() {
-  var today = new Date().toDateString();
-  var dailyUsed = parseInt(localStorage.getItem('pono_points_daily_' + today) || '0', 10);
-  document.getElementById('dbg-info').textContent =
-    '現在: ' + state.points + 'pt ／ 本日使用: ' + dailyUsed + '/25pt';
+  var info = document.getElementById('dbg-info');
+  if (info) info.textContent = 'ポイント制は廃止済み（スタンプ報酬に移行）';
   _dbgEggUpdate();
-}
-function dbgAdd(n) {
-  state.points = Math.max(0, state.points + n);
-  saveState();
-  updatePtsDisplay();
-  _dbgUpdate();
-  renderShopGrid(currentShopCat);
-}
-function dbgSet() {
-  var v = parseInt(document.getElementById('dbg-input').value, 10);
-  if (isNaN(v)) return;
-  state.points = Math.max(0, v);
-  saveState();
-  updatePtsDisplay();
-  _dbgUpdate();
-  renderShopGrid(currentShopCat);
-}
-function dbgReset() {
-  state.points = 0;
-  var today = new Date().toDateString();
-  localStorage.removeItem('pono_points_daily_' + today);
-  saveState();
-  updatePtsDisplay();
-  _dbgUpdate();
-  renderShopGrid(currentShopCat);
 }
 
 // ── 卵デバッグ ──

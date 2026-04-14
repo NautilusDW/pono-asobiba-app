@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>コトリをたすけよう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<script src="../common/points.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
 <style>
@@ -616,7 +615,6 @@ function checkHit() {
   currentShape = getNextShape();
   updateScore();
   showFlash('success');
-  if (score % 10 === 0) awardPoints(5);
   if (window.setStatMax) window.setStatMax('stacking_height', score);
 
   // フリーズ判定（5ブロックごと）
@@ -653,7 +651,6 @@ function doGameClear() {
     localStorage.setItem('pono_stacking_hi', String(hiScore));
     hiEl.textContent = hiScore;
     document.getElementById('clear-hi').textContent = '🎉 あたらしいきろく！';
-    awardPoints(10);
   } else {
     document.getElementById('clear-hi').textContent = `さいこうきろく: ${hiScore}`;
   }
@@ -672,7 +669,6 @@ function doGameOver() {
     localStorage.setItem('pono_stacking_hi', String(hiScore));
     hiEl.textContent = hiScore;
     hiMsgEl.textContent = '🎉 コトリのすに とどいた！';
-    awardPoints(10);
   } else {
     hiMsgEl.textContent = `さいこう: ${hiScore}`;
   }

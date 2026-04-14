@@ -8,7 +8,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>たまごのにわ｜ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-  <script src="../common/points.js"></script>
   <script src="../common/achievements.js"></script>
   <script src="../common/menu.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1249,7 +1248,7 @@
         if(hatchTimer>35){
           const hatchedType=hatchingSlot.data.creatureType,hatchedSlotIdx=hatchingSlot.slotIdx;
           hatchingSlot.data.stage=STAGE_BABY;state.totalHatched++;saveState();
-          if(window.incrementStat)window.incrementStat('egg_hatched',1);if(window.awardPoints)awardPoints(3);
+          if(window.incrementStat)window.incrementStat('egg_hatched',1);
           hatchingSlot=null;hatchPhase=0;rebuildYardScene();
           const newSlot=sceneSlots.find(s=>s.slotIdx===hatchedSlotIdx);
           if(newSlot){spawnConfetti(newSlot.x,newSlot.y-30,25);spawnStars(newSlot.x,newSlot.y-20,8);newSlot.happyTimer=60;}
@@ -1316,7 +1315,7 @@
       const newUnlocks=checkUnlocks(state);
       if(newUnlocks.length>0)setTimeout(()=>showToast('あたらしい たまご: '+newUnlocks.map(c=>c.name).join('、')+' 🌟'),1500);
       state.nextEggReady=true;saveState();
-      if(window.incrementStat)window.incrementStat('egg_graduated',1);if(window.awardPoints)awardPoints(5);
+      if(window.incrementStat)window.incrementStat('egg_graduated',1);
       document.getElementById('grad-overlay').classList.remove('show');graduatingData=null;
       rebuildYardScene();setTimeout(()=>trySpawnNewEgg(),800);
     });
@@ -1450,7 +1449,6 @@
       updateInventoryHUD();
       rebuildFarmScene();
 
-      if (window.awardPoints) awardPoints(1);
       showToast(crop.name + ' を しゅうかく！🎉');
       if (newUnlock) {
         setTimeout(() => {
@@ -1758,12 +1756,6 @@
 
       updateParticles(delta);
     });
-
-    // ═══════════════════════════════════════════════════════════
-    // ─── 5min reward ─────────────────────────────────────────
-    // ═══════════════════════════════════════════════════════════
-    let _eggSessionAwarded=false;
-    setTimeout(()=>{if(!_eggSessionAwarded){_eggSessionAwarded=true;if(window.awardPoints)awardPoints(3);}},5*60*1000);
 
     // ═══════════════════════════════════════════════════════════
     // ─── Init ────────────────────────────────────────────────

@@ -8,7 +8,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>すいぞくかん｜ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-  <script src="../common/points.js"></script>
   <script src="../common/achievements.js"></script>
   <script src="../common/menu.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -654,12 +653,6 @@
       localStorage.setItem(PATTERN_STORE_KEY, JSON.stringify(map));
     }
 
-
-    // 5分プレイで3pt（セッション1回）
-    let _aquaSessionAwarded = false;
-    setTimeout(function() {
-      if (!_aquaSessionAwarded) { _aquaSessionAwarded = true; awardPoints(3); }
-    }, 5 * 60 * 1000);
 
     // Show unlocked sea creatures count
     if (window.getUnlockedSea) {
@@ -3223,7 +3216,6 @@
               // Bonus every 5 treasures
               setTimeout(() => {
                 spawnHearts(W() * 0.5, H() * 0.4, 5);
-                if (typeof awardPoints === 'function') awardPoints(2);
               }, 300);
             }
             break;

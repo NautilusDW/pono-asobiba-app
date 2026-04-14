@@ -9,6 +9,9 @@
   var _overlay = null;
   var _container = null;   // .treasure-container (video はここに都度 append)
   var _video = null;       // 毎回 showTreasure で新規生成
+  // ポスター画像をモジュールロード時にプリロードしてキャッシュ
+  var _posterPreload = null;
+  var _openPreload = null;
   var _reward = null;
   var _msg = null;
   var _closeBtn = null;
@@ -24,6 +27,17 @@
     }
     return 'assets/videos/';
   }
+
+  // モジュール読み込み時にポスター画像をキャッシュ済みにしておく
+  (function _preloadPosters() {
+    try {
+      var bp = _getBasePath();
+      _posterPreload = new Image();
+      _posterPreload.src = bp + 'TreasureBox_poster.jpg';
+      _openPreload = new Image();
+      _openPreload.src = bp + 'TreasureBox_open.jpg';
+    } catch (e) {}
+  })();
 
   // ── タイマー管理 ─────────────────────────────────────────────────────────────
   function _clearPendingTimers() {
@@ -53,7 +67,9 @@
       '.treasure-container {',
       '  position:relative; width:280px; height:280px;',
       '  border-radius:24px; overflow:hidden;',
-      '  background:#000;',
+      /* フォールバック色: 画像読込中や video の黒枠を隠すための茶系グラデ */
+      '  background:radial-gradient(circle at 50% 60%, #3D1A00 0%, #0D0500 100%);',
+      '  background-size:cover; background-position:center;',
       '  transform:scale(0);',
       '  transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);',
       '}',
@@ -367,9 +383,10 @@
     _rewardShown = false;
     // メインBGMをフェードアウト（演出中は静かに）
     _bgmFadeOut();
-    // コンテナ背景をリセット（後で poster 画像で上書きされる）
+    // コンテナ背景をリセット（poster 読込失敗時の黒枠対策で茶系グラデを下敷きに）
     if (_container) {
-      _container.style.background = '#000';
+      _container.style.background = '';
+      _container.style.backgroundColor = '#3D1A00';
       _container.style.backgroundImage = '';
     }
 
@@ -414,6 +431,9 @@
     _video.setAttribute('playsinline', '');
     _video.setAttribute('webkit-playsinline', '');
     _video.src = mp4Path;
+    // スケール中に video の黒枠が見えないよう、再生開始までは完全に隠す
+    // （背景画像の poster.jpg だけが見えるようにする）
+    _video.style.display = 'none';
     _video.load();
 
     _container.insertBefore(_video, _container.querySelector('.treasure-reward'));
