@@ -2034,7 +2034,12 @@ function buildRoomArea(areaData) {
         + 'display:flex;align-items:flex-end;justify-content:center;'
         + 'pointer-events:auto;touch-action:none;'
         + 'transform:translate(calc(-50% - ' + p.pivotX + '%), ' + p.pivotY + '%);';
-      var imgFile = tbAngle === 'B' ? 'box_B.png' : 'box_A.png';
+      var imgFile;
+      if (state.theme === 'boy') {
+        imgFile = tbAngle === 'B' ? 'deco_box_boy_B.png' : 'deco_box_boy_A.png';
+      } else {
+        imgFile = tbAngle === 'B' ? 'box_B.png' : 'box_A.png';
+      }
       toybox.innerHTML = '<img src="../assets/images/Rooms/furnitures_final/' + imgFile + '" style="height:100%;width:auto;" alt="たからばこ">';
     }
     tbApplyStyle(tbRow, tbCol);
@@ -3434,6 +3439,8 @@ function _showExtendedBedTutorial() {
       p.angle = 'A';
       saveState();
       refreshArea('living');
+      // refreshArea で.edit-modeクラスが消えるので再適用
+      if (typeof window._setEditMode === 'function') window._setEditMode(true);
     }
 
     // 現在のベッド位置/角度スナップショット
