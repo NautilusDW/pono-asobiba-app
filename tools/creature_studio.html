@@ -800,13 +800,15 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-sel-all">全選択</button>
         <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
         <button class="tbtn tbtn-blue" id="btn-ai-group">🤖 AI命名</button>
+        <button class="tbtn tbtn-ghost" id="btn-seq-name" title="先頭のカードに入れた名前を元に、残りに _001, _002, ... と連番で名付け">📝 連番</button>
         <div style="flex:1"></div>
         <label style="font-size:0.7rem;color:#9ca3af;">保存先:</label>
         <select id="deploy-destination" style="padding:4px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#d1d5db;font-size:0.75rem;font-family:inherit;">
-          <option value="aquarium">🐠 水族館</option>
-          <option value="quiz-sound">🐾 音当てクイズ</option>
+          <option value="aquarium">🐠 水族館 (GitHub)</option>
+          <option value="quiz-sound">🐾 音当てクイズ (GitHub)</option>
+          <option value="local">📁 ローカルフォルダ</option>
         </select>
-        <button class="tbtn tbtn-green" id="btn-deploy">🚀 GitHubに登録</button>
+        <button class="tbtn tbtn-green" id="btn-deploy">🚀 書き出す</button>
       </div>
       <div id="sprites-grid" class="sprites-grid">
         <div class="empty-msg">「スプライトを分割」を実行してください。</div>
@@ -3475,6 +3477,33 @@ document.getElementById('btn-desel-all').addEventListener('click', () => {
   document.querySelectorAll('.sprite-card').forEach(c => setCardChecked(c, false));
 });
 
+// 📝 連番で名付け: 選択中カードの先頭の名前 (または入力) を基準に、
+//                 _001, _002, ... と連番名を残りの選択カードに入れる
+document.getElementById('btn-seq-name').addEventListener('click', () => {
+  const selected = [...document.querySelectorAll('.sprite-card.selected')];
+  if (!selected.length) { showToast('スプライトを選択してください', false); return; }
+  // 先頭のカードの名前を取得。空なら prompt
+  const firstIdx = parseInt(selected[0].dataset.idx);
+  let base = (sprites[firstIdx].name || '').trim();
+  if (!base) {
+    base = prompt('ベースとなる名前を入力 (例: dance, pono_walk):', 'sprite');
+    if (base === null) return;
+    base = base.trim();
+    if (!base) return;
+  }
+  // 連番を振る: 単数なら そのまま、複数なら name_001, name_002, ...
+  const total = selected.length;
+  for (let i = 0; i < total; i++) {
+    const idx = parseInt(selected[i].dataset.idx);
+    const newName = (total === 1) ? base : (base + '_' + _pad3(i + 1));
+    sprites[idx].name = newName;
+    // DOM の名前入力欄も更新
+    const nameInput = selected[i].querySelector('.sp-name');
+    if (nameInput) nameInput.value = newName;
+  }
+  showToast('📝 ' + total + ' 枚に「' + base + '_NNN」の連番を設定', true);
+});
+
 // ════════════════════════════════════════════════════════════
 // Sprite Grid Selection (drag / shift+click / ctrl+click)
 // ════════════════════════════════════════════════════════════
@@ -3807,6 +3836,99 @@ async function fetchCreaturesData() {
 
 // 音当てクイズ用デプロイ: 画像を assets/images/quiz-sound/<Folder>/ に保存し、
 // assets/data/quiz-sound-animals.json に追記/更新する。
+// ────────────────────────────────
+// ローカルフォルダ書き出し
+//  - File System Access API が使えるなら フォルダ選択ダイアログで保存
+//  - 使えなければ 個別ダウンロード (ブラウザの Downloads フォルダへ)
+//  - 名前は 「先頭カードの名前 + _001, _002, ...」 と連番で埋める
+//    (名前未入力なら 'sprite' を既定にする)
+// ────────────────────────────────
+function _pad3(n) { var s = String(n); while (s.length < 3) s = '0' + s; return s; }
+
+function _canvasToBlob(canvas) {
+  return new Promise(function(resolve) { canvas.toBlob(resolve, 'image/png'); });
+}
+function _downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function() {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+// 連番ファイル名生成: 先頭の名前が空なら 'sprite', 単数なら "{name}.png"
+function buildSequentialFilenames(selectedCards) {
+  const first = selectedCards[0];
+  let base = first ? (sprites[parseInt(first.dataset.idx)].name || '').trim() : '';
+  if (!base) base = 'sprite';
+  // 半角英数+アンダースコア以外の文字はそのまま残す (日本語ファイル名許可)
+  const names = [];
+  if (selectedCards.length === 1) {
+    names.push(base + '.png');
+  } else {
+    for (let i = 0; i < selectedCards.length; i++) {
+      names.push(base + '_' + _pad3(i + 1) + '.png');
+    }
+  }
+  return { base, names };
+}
+
+async function deployToLocal(selectedCards) {
+  const { base, names } = buildSequentialFilenames(selectedCards);
+  showLoading('ローカルに保存中...');
+  const setStatus = function(msg) {
+    document.getElementById('deploy-status').textContent = msg;
+    document.getElementById('loading-msg').textContent = msg;
+  };
+  try {
+    // File System Access API が使える? (Chrome/Edge/Opera)
+    let dirHandle = null;
+    if (typeof window.showDirectoryPicker === 'function') {
+      try {
+        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      } catch (e) {
+        // ユーザーがキャンセル
+        hideLoading();
+        setStatus('');
+        return;
+      }
+    }
+
+    for (let i = 0; i < selectedCards.length; i++) {
+      const sp = sprites[parseInt(selectedCards[i].dataset.idx)];
+      const filename = names[i];
+      setStatus('💾 保存中 ' + (i + 1) + '/' + selectedCards.length + ' — ' + filename);
+      const blob = await _canvasToBlob(sp.canvas);
+      if (dirHandle) {
+        const fh = await dirHandle.getFileHandle(filename, { create: true });
+        const w  = await fh.createWritable();
+        await w.write(blob);
+        await w.close();
+      } else {
+        // Fallback: 個別ダウンロード
+        _downloadBlob(blob, filename);
+        // ダウンロードが連発するとブラウザにブロックされるので少し待つ
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    hideLoading();
+    if (dirHandle) {
+      setStatus('✅ ' + selectedCards.length + ' 枚を選択したフォルダに保存 (接頭辞: ' + base + ')');
+      showToast('📁 ' + selectedCards.length + ' 枚を保存しました', true);
+    } else {
+      setStatus('✅ ' + selectedCards.length + ' 枚をダウンロード完了 (接頭辞: ' + base + ')');
+      showToast('⬇️ ' + selectedCards.length + ' 枚をダウンロードしました', true);
+    }
+  } catch (e) {
+    hideLoading();
+    setStatus('❌ エラー: ' + e.message);
+    showToast('保存失敗: ' + e.message, false);
+  }
+}
+
 async function deployToQuizSound(selectedCards) {
   const QS_DIR = 'assets/images/quiz-sound';
   const QS_JSON = 'assets/data/quiz-sound-animals.json';
@@ -3882,18 +4004,24 @@ async function deployToQuizSound(selectedCards) {
 }
 
 document.getElementById('btn-deploy').addEventListener('click', async () => {
-  if (!getToken()) { showToast('GitHubトークンを設定してください', false); return; }
-
   // Collect selected
   const selectedCards = [...document.querySelectorAll('.sprite-card.selected')];
   if (!selectedCards.length) { showToast('スプライトを選択してください', false); return; }
 
-  // Validate names
-  const unnamed = selectedCards.filter(c => !sprites[parseInt(c.dataset.idx)].name.trim());
-  if (unnamed.length) { showToast('すべての選択スプライトに名前をつけてください', false); return; }
-
   // 保存先で分岐
   const destination = document.getElementById('deploy-destination').value;
+
+  // ローカルはトークン不要、名前は自動連番で埋められる
+  if (destination === 'local') {
+    return await deployToLocal(selectedCards);
+  }
+
+  if (!getToken()) { showToast('GitHubトークンを設定してください', false); return; }
+
+  // Validate names (GitHub 書き出しでは名前必須)
+  const unnamed = selectedCards.filter(c => !sprites[parseInt(c.dataset.idx)].name.trim());
+  if (unnamed.length) { showToast('すべての選択スプライトに名前をつけてください (📝 連番 ボタンで一括可)', false); return; }
+
   if (destination === 'quiz-sound') {
     return await deployToQuizSound(selectedCards);
   }
