@@ -363,31 +363,6 @@
 
   </div>
 
-  <!-- 入口クリック時に Audio を一瞬鳴らして「ユーザー操作による再生」をブラウザに登録する。
-       これで play.html 遷移後の autoplay 成功率が上がる -->
-  <script>
-    (function() {
-      var btn = document.getElementById('enter-btn');
-      if (!btn) return;
-      btn.addEventListener('click', function(e) {
-        // localStorage で BGM オフなら何もしない
-        if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
-        e.preventDefault();
-        var a = new Audio('assets/audio/play_bgm.mp3');
-        a.volume = 0.001; // ほぼ無音
-        a.play().then(function() {
-          a.pause();
-          // メディアエンゲージメント登録 + 即遷移
-          try { sessionStorage.setItem('pono_audio_unlocked', '1'); } catch(e) {}
-          location.href = btn.href;
-        }).catch(function() {
-          // 失敗しても遷移はする (play.html 側で overlay が出る)
-          location.href = btn.href;
-        });
-      });
-    })();
-  </script>
-
   <!-- Service Worker 登録 -->
   <script>
     if ('serviceWorker' in navigator) {

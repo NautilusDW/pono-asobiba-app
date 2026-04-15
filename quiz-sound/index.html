@@ -115,6 +115,12 @@
     border-color: #FF6B6B;
   }
   .choice-card.disabled { opacity: 0.45; pointer-events: none; }
+  /* 全カードを「同時に」フワッと出現させる (バラバラ表示防止) */
+  .choice-card.hidden { opacity: 0; transform: translateY(8px) scale(0.95); transition: none; }
+  .choice-card:not(.hidden) {
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+    opacity: 1; transform: translateY(0) scale(1);
+  }
   @keyframes correctPop {
     0%   { transform: scale(1); }
     40%  { transform: scale(1.15); }
@@ -377,10 +383,24 @@ function renderQuestion() {
   var choices = buildChoices(ans);
   var box = document.getElementById('choices');
   box.innerHTML = '';
-  var imgsToLoad = [];
+
+  // 全イラストの読み込みが完了するまで Image オブジェクトでプリロード。
+  // 完了したら全カードを「同時に」DOMに挿入 → ふわっとフェードイン → 音再生。
+  // (3歳児に「ランダムにバラバラ出てくる」気持ち悪さを排除)
+  var loaders = choices.map(function(c) {
+    return new Promise(function(resolve) {
+      var im = new Image();
+      im.decoding = 'async';
+      im.onload  = function() { resolve(); };
+      im.onerror = function() { resolve(); };
+      im.src = c.img;
+    });
+  });
+
+  // 隠した状態でカードを構築 (高さ確保用にプレースホルダ)
   choices.forEach(function(c) {
     var card = document.createElement('button');
-    card.className = 'choice-card';
+    card.className = 'choice-card hidden';
     card.dataset.id = c.id;
     card.setAttribute('aria-label', c.name);
     var img = document.createElement('img');
@@ -388,35 +408,26 @@ function renderQuestion() {
     img.alt = c.name;
     img.loading = 'eager';
     img.decoding = 'async';
-    imgsToLoad.push(img);
     card.appendChild(img);
     card.addEventListener('click', function() { onChoose(card, c); });
     box.appendChild(card);
   });
-  // すべてプリロード（既に cache 済みなら何もしない）
+
+  // 音源プリロード
   ANIMALS.forEach(function(a){ loadAudio(a.id, a.sound); });
 
-  // 全イラストの読み込み完了を待ってから 800ms 後に音を再生
-  // (3歳児がイラストを見てから音を聞く時間を確保)
-  var pending = imgsToLoad.length;
+  // 全画像ロード完了 OR 安全弁 (2.5s) で発火
   var done = false;
-  function tryPlay() {
+  function reveal() {
     if (done) return;
     done = true;
-    setTimeout(function() { playAnimalSound(ans.id); }, 800);
+    var cards = box.querySelectorAll('.choice-card');
+    cards.forEach(function(card) { card.classList.remove('hidden'); });
+    // フェードイン後 900ms で音を再生
+    setTimeout(function() { playAnimalSound(ans.id); }, 900);
   }
-  if (pending === 0) { tryPlay(); return; }
-  imgsToLoad.forEach(function(img) {
-    if (img.complete && img.naturalWidth > 0) {
-      pending--;
-      if (pending === 0) tryPlay();
-    } else {
-      img.addEventListener('load',  function() { if (--pending === 0) tryPlay(); });
-      img.addEventListener('error', function() { if (--pending === 0) tryPlay(); });
-    }
-  });
-  // 安全弁: 何かあっても 2.5秒で必ず再生
-  setTimeout(tryPlay, 2500);
+  Promise.all(loaders).then(reveal);
+  setTimeout(reveal, 2500);
 }
 
 // ────────────────────────────────
