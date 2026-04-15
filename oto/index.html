@@ -113,26 +113,35 @@
   .instr-btn.i3 { --c1:#FFD84D; --c2:#F2B800; }  /* イエロー */
   .instr-btn.i4 { --c1:#7DD3A0; --c2:#35A86A; }  /* グリーン */
   .instr-btn.i5 { --c1:#C4B5FD; --c2:#8B5CF6; }  /* パープル */
+  .instr-btn.i6 { --c1:#67E8F9; --c2:#0891B2; }  /* シアン */
+  .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
+  .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
-  /* 5 ボタンの散布配置 (CSS variables で position 指定) */
-  .instr-btn[data-idx="0"] { left: 22%; top: 52%; --sz: 128px; }
-  .instr-btn[data-idx="1"] { left: 74%; top: 46%; --sz: 136px; }
-  .instr-btn[data-idx="2"] { left: 48%; top: 62%; --sz: 144px; }
-  .instr-btn[data-idx="3"] { left: 18%; top: 80%; --sz: 128px; }
-  .instr-btn[data-idx="4"] { left: 78%; top: 78%; --sz: 132px; }
+  /* 8ボタン配置: 2行×4列のジグザグ (ドレミファソラシド) */
+  .instr-btn[data-idx="0"] { left: 15%; top: 45%; --sz: 118px; }
+  .instr-btn[data-idx="1"] { left: 38%; top: 42%; --sz: 122px; }
+  .instr-btn[data-idx="2"] { left: 62%; top: 42%; --sz: 122px; }
+  .instr-btn[data-idx="3"] { left: 85%; top: 45%; --sz: 118px; }
+  .instr-btn[data-idx="4"] { left: 15%; top: 75%; --sz: 122px; }
+  .instr-btn[data-idx="5"] { left: 38%; top: 78%; --sz: 126px; }
+  .instr-btn[data-idx="6"] { left: 62%; top: 78%; --sz: 126px; }
+  .instr-btn[data-idx="7"] { left: 85%; top: 75%; --sz: 122px; }
 
-  /* 横画面: 縦方向を圧縮 */
+  /* 横画面: 縦を圧縮、サイズも下げる */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"] { top: 38%; }
-    .instr-btn[data-idx="1"] { top: 32%; }
-    .instr-btn[data-idx="2"] { top: 52%; }
-    .instr-btn[data-idx="3"] { top: 72%; }
-    .instr-btn[data-idx="4"] { top: 70%; }
+    .instr-btn[data-idx="0"] { top: 40%; --sz: 96px; }
+    .instr-btn[data-idx="1"] { top: 36%; --sz: 102px; }
+    .instr-btn[data-idx="2"] { top: 36%; --sz: 102px; }
+    .instr-btn[data-idx="3"] { top: 40%; --sz: 96px; }
+    .instr-btn[data-idx="4"] { top: 72%; --sz: 100px; }
+    .instr-btn[data-idx="5"] { top: 74%; --sz: 104px; }
+    .instr-btn[data-idx="6"] { top: 74%; --sz: 104px; }
+    .instr-btn[data-idx="7"] { top: 72%; --sz: 100px; }
     .pono-sprite { width: 110px; height: 150px; bottom: 4px; }
   }
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
-    .instr-btn { --sz: min(30vw, 132px) !important; }
+    .instr-btn { --sz: min(22vw, 110px) !important; }
   }
 </style>
 </head>
@@ -149,17 +158,21 @@
     <div class="sets" id="sets" role="tablist">
       <button class="set-btn active" data-set="voice" aria-label="おとセット1">🗣️</button>
       <button class="set-btn"        data-set="doremi" aria-label="おとセット2">🎹</button>
-      <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
-      <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
+      <button class="set-btn"        data-set="kira" aria-label="おとセット3">🎼</button>
+      <button class="set-btn"        data-set="taiko" aria-label="おとセット4">🥁</button>
+      <button class="set-btn"        data-set="animal" aria-label="おとセット5">🐾</button>
     </div>
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
     <div id="instruments">
-      <button class="instr-btn i1" data-idx="0" aria-label="おと1">🌸</button>
-      <button class="instr-btn i2" data-idx="1" aria-label="おと2">🦋</button>
-      <button class="instr-btn i3" data-idx="2" aria-label="おと3">⭐</button>
-      <button class="instr-btn i4" data-idx="3" aria-label="おと4">🍀</button>
-      <button class="instr-btn i5" data-idx="4" aria-label="おと5">🎈</button>
+      <button class="instr-btn i1" data-idx="0" aria-label="ド">🌸</button>
+      <button class="instr-btn i2" data-idx="1" aria-label="レ">🦋</button>
+      <button class="instr-btn i3" data-idx="2" aria-label="ミ">⭐</button>
+      <button class="instr-btn i4" data-idx="3" aria-label="ファ">🍀</button>
+      <button class="instr-btn i5" data-idx="4" aria-label="ソ">🎈</button>
+      <button class="instr-btn i6" data-idx="5" aria-label="ラ">🍎</button>
+      <button class="instr-btn i7" data-idx="6" aria-label="シ">🐟</button>
+      <button class="instr-btn i8" data-idx="7" aria-label="ド高">🌈</button>
     </div>
   </div>
 </div>
@@ -195,7 +208,7 @@ document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: 
 // ボイス音源: voices/NN-aiueo.wav を6音ピックアップ (あ か さ た な ま)
 // ★ページロード時に即プリロード開始（decodeAudioData は resume 不要で走る）
 // ────────────────────────────────
-var VOICE_INDICES = [0, 5, 10, 15, 20]; // あ/か/さ/た/な (5ボタンに揃える)
+var VOICE_INDICES = [0, 5, 10, 15, 20, 25, 30, 35]; // あ/か/さ/た/な/は/ま/や (8ボタン)
 var _voiceBuffers = new Array(VOICE_INDICES.length).fill(null);
 var _voiceRawBuffers = new Array(VOICE_INDICES.length).fill(null); // ArrayBuffer キャッシュ (AC 未作成時)
 var _voiceLoading = false;
@@ -250,12 +263,15 @@ preloadVoiceBuffers();
 // ────────────────────────────────
 // 合成: ドレミ / 太鼓 / 動物
 // ────────────────────────────────
-// 5ボタンに統一: C4/D4/E4/F4/G4
-var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00];
-// たいこ: WebAudio 合成のドラムキット (kick/snare/hat/tom-hi/tom-lo)
-var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo'];
+// ドレミファソラシド (C4〜C5、1オクターブ)
+var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+// きらきら: 木琴/鈴風の高音域 (C5〜C6 を 8分割)
+var KIRA_FREQS = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+// たいこ: WebAudio 合成のドラムキット
+var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo', 'cymbal', 'rim', 'clap'];
 // 動物: 実音源ファイル (assets/sounds/animals/)
-var ANIMAL_FILES = ['cat.mp3', 'dog.mp3', 'cow.mp3', 'pig.mp3', 'horse.mp3'];
+var ANIMAL_FILES = ['cat.mp3', 'dog.mp3', 'cow.mp3', 'pig.mp3', 'horse.mp3',
+                    'lion.mp3', 'frog.mp3', 'crow.mp3'];
 var _animalBuffers = new Array(ANIMAL_FILES.length).fill(null);
 var _animalRawBuffers = new Array(ANIMAL_FILES.length).fill(null);
 var _animalLoading = false;
@@ -379,7 +395,54 @@ function playDrum(ac, kind) {
     cg.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
     cs.connect(cf); cf.connect(cg); cg.connect(ac.destination);
     cs.start(t); cs.stop(t + 0.6);
+  } else if (kind === 'rim') {
+    // リムショット: 木系の短いアタック
+    var ro = ac.createOscillator(), rg = ac.createGain();
+    ro.type = 'square';
+    ro.frequency.setValueAtTime(250, t);
+    ro.frequency.exponentialRampToValueAtTime(160, t + 0.03);
+    rg.gain.setValueAtTime(0.45, t);
+    rg.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    ro.connect(rg); rg.connect(ac.destination);
+    ro.start(t); ro.stop(t + 0.1);
+    // 微量のノイズを足してアタック強化
+    var rnb = _makeNoiseBuffer(ac, 0.02);
+    var rns = ac.createBufferSource(); rns.buffer = rnb;
+    var rng = ac.createGain(); rng.gain.value = 0.15;
+    rns.connect(rng); rng.connect(ac.destination);
+    rns.start(t); rns.stop(t + 0.02);
+  } else if (kind === 'clap') {
+    // 拍手: ノイズ 3発を時差でトリガー
+    [0, 0.015, 0.03].forEach(function(offset) {
+      var cnb = _makeNoiseBuffer(ac, 0.05);
+      var cns = ac.createBufferSource(); cns.buffer = cnb;
+      var cnf = ac.createBiquadFilter();
+      cnf.type = 'bandpass'; cnf.frequency.value = 1500; cnf.Q.value = 1.5;
+      var cng = ac.createGain();
+      cng.gain.setValueAtTime(0.35, t + offset);
+      cng.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.08);
+      cns.connect(cnf); cnf.connect(cng); cng.connect(ac.destination);
+      cns.start(t + offset); cns.stop(t + offset + 0.1);
+    });
   }
+}
+
+// ────────────────────────────────
+// きらきら (木琴/鈴風) 合成: 倍音3つの sine で綺麗に鳴る
+// ────────────────────────────────
+function playKira(ac, idx) {
+  var f = KIRA_FREQS[idx] || 523.25;
+  var t = ac.currentTime;
+  [1.0, 2.01, 3.02].forEach(function(mul, i) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f * mul, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.28 / (i + 1), t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 1.2 - i * 0.2);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 1.3);
+  });
 }
 
 // ホワイトノイズ用 AudioBuffer (durationSec ごとにキャッシュして GC 圧削減)
@@ -420,6 +483,8 @@ function playSetSound(idx) {
     var ac = getAC(); if (ac) playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   } else if (currentSet === 'doremi') {
     playTone('doremi', idx);
+  } else if (currentSet === 'kira') {
+    var ack = getAC(); if (ack) playKira(ack, idx);
   } else if (currentSet === 'taiko') {
     playTone('taiko', idx);
   } else if (currentSet === 'animal') {
@@ -502,11 +567,14 @@ function markPlayedToday() {
 }
 
 function triggerClearReward() {
-  // 注: oto_plays は現在 achievement 未定義なので削除。first-clear はタップ回数で発火
+  // ★ ゲーム内では宝箱モーダルを出さず、トップ帰還時に checkPendingFirstClear で表示させる
+  //    (12タップ達成時に突然モーダルが出ると3歳児がびっくりするため)
+  //    skipImmediate: true で showTreasure 呼び出しを抑制、queue のみ実行される
   if (window.triggerFirstClearReward) {
-    window.triggerFirstClearReward('oto', { onClose: function(){} })
-      .then(function(shown){ /* no fallback modal needed - free play continues */ })
-      .catch(function(){});
+    window.triggerFirstClearReward('oto', {
+      skipImmediate: true,
+      onClose: function(){}
+    }).catch(function(){});
   }
 }
 

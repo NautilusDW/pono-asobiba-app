@@ -207,7 +207,11 @@
           }
         };
 
-        if (window.showTreasure) {
+        if (opts.skipImmediate) {
+          // ゲーム内では表示しない。pono_pending_first_clear にキュー済みなので
+          // play.html の checkPendingFirstClear が帰還時に演出する。
+          if (opts.onClose) opts.onClose();
+        } else if (window.showTreasure) {
           window.showTreasure({
             name: rw.name,
             img:  resolvedImg,
