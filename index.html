@@ -318,21 +318,21 @@
       </div>
     </section>
 
+    <!-- 入口ボタン (ようこその上に配置) -->
+    <a href="play.html" class="enter-btn" id="enter-btn">
+      <span class="enter-btn-main">ポノのあそびば</span>
+      <span class="enter-btn-iri">いりぐち</span>
+    </a>
+    <div class="enter-btn-sub">⬆ ここから あそべるよ！</div>
+
     <!-- 作者コメント -->
-    <div class="author-card">
+    <div class="author-card" id="welcome-card">
       <div class="author-card-title">🌱 ようこそ！</div>
       <div class="author-card-body">はじめまして。「ポノのあそびば」は、絵本『ありがとう』の主人公ポノと一緒に、小さなお子さまが楽しく学べる無料の知育サイトです。
 
 ひらがな・カタカナのなぞり書き、ぬりえ、パズル、クイズなど、いろんな遊びを少しずつ増やしていきます。親子でゆっくり楽しんでもらえたら嬉しいです。</div>
       <div class="author-card-sign">— ネモ先生</div>
     </div>
-
-    <!-- 入口ボタン -->
-    <a href="play.html" class="enter-btn">
-      <span class="enter-btn-main">ポノのあそびば</span>
-      <span class="enter-btn-iri">いりぐち</span>
-    </a>
-    <div class="enter-btn-sub">⬆ ここから あそべるよ！</div>
 
     <!-- 注意書き -->
     <div class="notice-card">
@@ -362,6 +362,31 @@
     </div>
 
   </div>
+
+  <!-- 入口クリック時に Audio を一瞬鳴らして「ユーザー操作による再生」をブラウザに登録する。
+       これで play.html 遷移後の autoplay 成功率が上がる -->
+  <script>
+    (function() {
+      var btn = document.getElementById('enter-btn');
+      if (!btn) return;
+      btn.addEventListener('click', function(e) {
+        // localStorage で BGM オフなら何もしない
+        if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
+        e.preventDefault();
+        var a = new Audio('assets/audio/play_bgm.mp3');
+        a.volume = 0.001; // ほぼ無音
+        a.play().then(function() {
+          a.pause();
+          // メディアエンゲージメント登録 + 即遷移
+          try { sessionStorage.setItem('pono_audio_unlocked', '1'); } catch(e) {}
+          location.href = btn.href;
+        }).catch(function() {
+          // 失敗しても遷移はする (play.html 側で overlay が出る)
+          location.href = btn.href;
+        });
+      });
+    })();
+  </script>
 
   <!-- Service Worker 登録 -->
   <script>

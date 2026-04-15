@@ -377,6 +377,7 @@ function renderQuestion() {
   var choices = buildChoices(ans);
   var box = document.getElementById('choices');
   box.innerHTML = '';
+  var imgsToLoad = [];
   choices.forEach(function(c) {
     var card = document.createElement('button');
     card.className = 'choice-card';
@@ -385,14 +386,37 @@ function renderQuestion() {
     var img = document.createElement('img');
     img.src = c.img;
     img.alt = c.name;
+    img.loading = 'eager';
+    img.decoding = 'async';
+    imgsToLoad.push(img);
     card.appendChild(img);
     card.addEventListener('click', function() { onChoose(card, c); });
     box.appendChild(card);
   });
   // すべてプリロード（既に cache 済みなら何もしない）
   ANIMALS.forEach(function(a){ loadAudio(a.id, a.sound); });
-  // 0.4秒待ってから音を再生（描画が落ち着いてから）
-  setTimeout(function() { playAnimalSound(ans.id); }, 400);
+
+  // 全イラストの読み込み完了を待ってから 800ms 後に音を再生
+  // (3歳児がイラストを見てから音を聞く時間を確保)
+  var pending = imgsToLoad.length;
+  var done = false;
+  function tryPlay() {
+    if (done) return;
+    done = true;
+    setTimeout(function() { playAnimalSound(ans.id); }, 800);
+  }
+  if (pending === 0) { tryPlay(); return; }
+  imgsToLoad.forEach(function(img) {
+    if (img.complete && img.naturalWidth > 0) {
+      pending--;
+      if (pending === 0) tryPlay();
+    } else {
+      img.addEventListener('load',  function() { if (--pending === 0) tryPlay(); });
+      img.addEventListener('error', function() { if (--pending === 0) tryPlay(); });
+    }
+  });
+  // 安全弁: 何かあっても 2.5秒で必ず再生
+  setTimeout(tryPlay, 2500);
 }
 
 // ────────────────────────────────
