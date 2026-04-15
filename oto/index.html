@@ -657,23 +657,54 @@
     box-shadow: 0 3px 0 rgba(0,0,0,0.18);
   }
   .tut-next-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
-  .tut-highlight {
-    position: relative;
-    z-index: 9996 !important;
+  /* スポットライト: anchor 位置に被せて 暗幕に「穴」をあける */
+  .tut-spot {
+    position: fixed;
+    z-index: 9996;
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(93,78,55,0.65);
     outline: 4px solid #FFD84D;
-    outline-offset: 4px;
-    border-radius: 22px;
-    animation: tutPulse 1.2s ease-in-out infinite;
+    outline-offset: 2px;
+    animation: tutSpotPulse 1.2s ease-in-out infinite;
+    transition: all 0.25s ease-out;
   }
-  @keyframes tutPulse {
-    0%, 100% { outline-color: #FFD84D; }
-    50%      { outline-color: #FBBF24; }
+  .tut-spot.hidden { display: none; }
+  @keyframes tutSpotPulse {
+    0%, 100% { outline-color: #FFD84D; outline-width: 4px; }
+    50%      { outline-color: #FBBF24; outline-width: 6px; }
+  }
+
+  /* ── タブレット / PC 向け 大サイズ (min-width 基準で段階的に) ── */
+  @media (min-width: 700px) and (min-height: 600px) {
+    .instr-btn[data-idx="0"],
+    .instr-btn[data-idx="1"],
+    .instr-btn[data-idx="2"],
+    .instr-btn[data-idx="3"],
+    .instr-btn[data-idx="4"],
+    .instr-btn[data-idx="5"],
+    .instr-btn[data-idx="6"],
+    .instr-btn[data-idx="7"] { --sz: 170px; }
+    .pono-wrap { width: 340px; height: 300px; }
+    .pono-sprite { height: 280px; }
+  }
+  @media (min-width: 1000px) and (min-height: 700px) {
+    .instr-btn[data-idx="0"],
+    .instr-btn[data-idx="1"],
+    .instr-btn[data-idx="2"],
+    .instr-btn[data-idx="3"],
+    .instr-btn[data-idx="4"],
+    .instr-btn[data-idx="5"],
+    .instr-btn[data-idx="6"],
+    .instr-btn[data-idx="7"] { --sz: 216px; }
+    .pono-wrap { width: 420px; height: 380px; }
+    .pono-sprite { height: 360px; }
   }
 </style>
 </head>
 <body>
-<!-- チュートリアル用 dim + 吹き出し -->
+<!-- チュートリアル用: 暗幕 / スポットライト / 吹き出し -->
 <div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-spot hidden" id="tut-spot"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 
 <!-- イントロ: タップで AudioContext をアンロック -->
@@ -1868,35 +1899,49 @@ function showTutorial() {
     }
   ];
 
+  var spot = document.getElementById('tut-spot');
   var i = 0;
-  function clearHighlight() {
-    document.querySelectorAll('.tut-highlight').forEach(function(el) {
-      el.classList.remove('tut-highlight');
-    });
+
+  function _hideSpot() { if (spot) spot.classList.add('hidden'); }
+  function _showSpotAt(rect, borderRadius) {
+    if (!spot || !rect) { _hideSpot(); return; }
+    var pad = 6;
+    spot.style.left   = (rect.left - pad) + 'px';
+    spot.style.top    = (rect.top  - pad) + 'px';
+    spot.style.width  = (rect.width  + pad * 2) + 'px';
+    spot.style.height = (rect.height + pad * 2) + 'px';
+    spot.style.borderRadius = borderRadius || '16px';
+    spot.classList.remove('hidden');
   }
+
   function renderStep() {
-    clearHighlight();
     var s = steps[i];
-    dim.classList.remove('hidden');
     var isLast = (i === steps.length - 1);
     bubble.innerHTML = s.msg +
       '<br><button class="tut-next-btn" id="tut-next">' +
       (isLast ? 'わかった！' : 'つぎ →') +
       '</button>';
     bubble.classList.remove('hidden');
-    // 位置決め (一旦 offscreen で描画して実寸取得)
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
+
     var anchorEl = s.anchor ? document.querySelector(s.anchor) : null;
-    var rect = null;
+    var rect = anchorEl ? anchorEl.getBoundingClientRect() : null;
+
     if (anchorEl) {
-      rect = anchorEl.getBoundingClientRect();
-      anchorEl.classList.add('tut-highlight');
+      // スポットライト (anchor と同じ形状) を出し、dim 本体は隠す
+      // (spot 自体が box-shadow で dim 効果を生むので二重にしない)
+      dim.classList.add('hidden');
+      var cs = window.getComputedStyle(anchorEl);
+      // 丸ボタンは border-radius:50% が計算値 に変換されているので文字列をそのまま使う
+      var radius = cs.borderRadius || '16px';
+      _showSpotAt(rect, radius);
+    } else {
+      _hideSpot();
+      dim.classList.remove('hidden');
     }
-    // ブラウザのレイアウト更新を待って再計測
     requestAnimationFrame(function() {
       _tutPositionBubble(bubble, rect, s.side);
     });
-    // つぎボタンのハンドラ
     var btn = document.getElementById('tut-next');
     btn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
@@ -1905,7 +1950,7 @@ function showTutorial() {
       if (i >= steps.length) {
         dim.classList.add('hidden');
         bubble.classList.add('hidden');
-        clearHighlight();
+        _hideSpot();
         try { localStorage.setItem(TUT_SEEN_KEY, '1'); } catch (er) {}
       } else {
         renderStep();
