@@ -20,6 +20,8 @@
     { id: 'first_slide',     game: 'slide',     name: 'はじめてのみちつなぎ',  desc: 'ステージ1を クリアしよう',        target: 1, stat: 'slide_clears',      tier: 1, reward: { type: 'sea',  id: 'crab' } },
     { id: 'first_maze',      game: 'maze',      name: 'はじめてのめいろ',      desc: 'ステージ1を クリアしよう',        target: 1, stat: 'maze_clears',       tier: 1, reward: { type: 'sea',  id: 'jellyfish' } },
     { id: 'first_quizland',  game: 'quizland',  name: 'はじめてのクイズ',      desc: '1もん せいかいしよう',            target: 1, stat: 'quizland_correct', tier: 1, reward: { type: 'furn', id: 'ach_quiz_pencil' } },
+    { id: 'first_oto',         game: 'oto',        name: 'はじめてのおとタッチ', desc: 'ボタンを 1かい たたこう',         target: 1, stat: 'oto_taps',           tier: 1, reward: { type: 'sea',  id: 'sea_anemone' } },
+    { id: 'first_quiz_sound',  game: 'quiz_sound', name: 'はじめてのおとあて',   desc: '1もん せいかいしよう',            target: 1, stat: 'quiz_sound_correct', tier: 1, reward: { type: 'sea',  id: 'mandarinfish' } },
     { id: 'all_games',       game: 'common',    name: 'ぜんぶ あそんだ！',     desc: 'ぜんぶの ゲームを あそぼう',     target: 1, stat: 'all_games_played',  tier: 2, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
 
     // ── 中間 ─────────────────────────────────────────────────────
@@ -41,6 +43,9 @@
     { id: 'quizland_clear5', game: 'quizland',name: 'クイズ 5かいクリア',  desc: '5かい ぜんもん クリアしよう',     target: 5,  stat: 'quizland_clears',   tier: 2, reward: { type: 'furn', id: 'ach_quiz_trophy' } },
     { id: 'breakout_2',    game: 'breakout',  name: 'ブロック2だんめ',      desc: 'ステージ2まで クリアしよう',      target: 2,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_forest_deep' } },
     { id: 'breakout_4',    game: 'breakout',  name: 'ブロック4だんめ',      desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_cave_mushroom' } },
+    { id: 'oto_50',          game: 'oto',        name: 'おとあそびずき',     desc: 'ボタンを 50かい たたこう',        target: 50, stat: 'oto_taps',           tier: 2, reward: { type: 'furn', id: 'ach_quiz_badge' } },
+    { id: 'quiz_sound_10',   game: 'quiz_sound', name: 'おとあてずき',       desc: '10もん せいかいしよう',           target: 10, stat: 'quiz_sound_correct', tier: 2, reward: { type: 'furn', id: 'ach_quiz_ribbon' } },
+    { id: 'quiz_sound_clear_3', game:'quiz_sound', name: 'おとあてくりかえし', desc: '5もんセットを 3かい クリア',    target: 3,  stat: 'quiz_sound_clears',  tier: 2, reward: { type: 'furn', id: 'ach_coral_deco' } },
 
     // ── マスター ─────────────────────────────────────────────────
     { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 6,  stat: 'puzzle_clears',     tier: 3, reward: { type: 'sea',  id: 'pufferfish' } },
@@ -56,6 +61,8 @@
     { id: 'quizland_all',  game: 'quizland',  name: 'クイズマスター',       desc: '50もん せいかいしよう',            target: 50, stat: 'quizland_correct',  tier: 3, reward: { type: 'furn', id: 'ach_quiz_crown' } },
     { id: 'quizland_god',  game: 'quizland',  name: 'クイズのかみさま',     desc: '100もん せいかいしよう',           target: 100,stat: 'quizland_correct',  tier: 3, reward: { type: 'furn', id: 'ach_quiz_star' } },
     { id: 'bento_10',      game: 'bento',     name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',     target: 10, stat: 'bento_complete',    tier: 3, reward: { type: 'sea',  id: 'octopus' } },
+    { id: 'oto_300',       game: 'oto',       name: 'おとマスター',         desc: 'ボタンを 300かい たたこう',        target: 300, stat: 'oto_taps',           tier: 3, reward: { type: 'sea',  id: 'manta_ray' } },
+    { id: 'quiz_sound_50', game: 'quiz_sound',name: 'おとあてマスター',     desc: '50もん せいかいしよう',            target: 50,  stat: 'quiz_sound_correct', tier: 3, reward: { type: 'sea',  id: 'angelfish' } },
   ];
 
   // ═══ プレミアム初期特典 ═════════════════════════════════════════════

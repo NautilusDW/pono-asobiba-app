@@ -177,6 +177,10 @@
       margin-top: -4px;
     }
 
+    /* ── 絵本タイトル: 途中で割れないように nowrap (溢れたら自動で次行) ── */
+    .bookname     { white-space: nowrap; display: inline-block; font-weight: 900; color: var(--primary); }
+    .bookname-sub { display: inline-block; font-size: 0.92em; color: #888; }
+
     /* ── 作者コメント（中央寄せ） ── */
     .author-card {
       width: 100%;
@@ -198,9 +202,10 @@
       font-size: 0.88rem;
       font-weight: 700;
       color: var(--text);
-      line-height: 1.8;
-      white-space: pre-line;
+      line-height: 1.85;
     }
+    .author-card-body p { margin: 0 0 10px; }
+    .author-card-body p:last-child { margin-bottom: 0; }
     .author-card-sign {
       margin-top: 10px;
       font-size: 0.8rem;
@@ -328,9 +333,20 @@
     <!-- 作者コメント -->
     <div class="author-card" id="welcome-card">
       <div class="author-card-title">🌱 ようこそ！</div>
-      <div class="author-card-body">はじめまして。「ポノのあそびば」は、絵本『ありがとうって、うれしいね 〜くまのこ ポノ の ちいさな ものがたり〜』の主人公ポノと一緒に、小さなお子さまが楽しく学べる無料の知育サイトです。
+      <div class="author-card-body">
+        <p>はじめまして。<br>
+        「ポノのあそびば」は、絵本<br>
+        <span class="bookname">『ありがとうって、うれしいね』</span><br>
+        <span class="bookname-sub">〜 くまのこ ポノ の ちいさな ものがたり 〜</span><br>
+        の主人公ポノと一緒に、<br>
+        小さなお子さまが楽しく学べる<br>
+        無料の知育サイトです。</p>
 
-ひらがな・カタカナのなぞり書き、ぬりえ、パズル、クイズなど、いろんな遊びを少しずつ増やしていきます。親子でゆっくり楽しんでもらえたら嬉しいです。</div>
+        <p>ひらがな・カタカナのなぞり書き、<br>
+        ぬりえ、パズル、クイズなど、<br>
+        いろんな遊びを少しずつ増やしていきます。<br>
+        親子でゆっくり楽しんでもらえたら嬉しいです。</p>
+      </div>
       <div class="author-card-sign">— ネモ先生</div>
     </div>
 

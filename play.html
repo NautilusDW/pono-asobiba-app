@@ -1088,8 +1088,12 @@
   #pono-tap-intro .welcome-body {
     font-size: 0.92rem; font-weight: 700; color: #5D4E37;
     margin: 8px 0 0; max-width: 360px; line-height: 1.85;
-    white-space: pre-line; padding: 0 8px;
+    padding: 0 8px;
   }
+  #pono-tap-intro .welcome-body p { margin: 0 0 10px; }
+  #pono-tap-intro .welcome-body p:last-child { margin-bottom: 0; }
+  #pono-tap-intro .bookname     { white-space: nowrap; display: inline-block; font-weight: 900; color: #F2742A; }
+  #pono-tap-intro .bookname-sub { display: inline-block; font-size: 0.92em; color: #888; }
   #pono-tap-intro .welcome-sign {
     font-size: 0.78rem; font-weight: 700; color: #888;
     margin-top: 8px;
@@ -1112,9 +1116,20 @@
 <div id="pono-tap-intro" style="display:none;">
   <h1>🌱 ようこそ！</h1>
   <img src="assets/images/characters/pono/pono_face_circle.png" alt="" onerror="this.style.display='none'">
-  <div class="welcome-body">はじめまして。「ポノのあそびば」は、絵本『ありがとうって、うれしいね 〜くまのこ ポノ の ちいさな ものがたり〜』の主人公ポノと一緒に、小さなお子さまが楽しく学べる無料の知育サイトです。
+  <div class="welcome-body">
+    <p>はじめまして。<br>
+    「ポノのあそびば」は、絵本<br>
+    <span class="bookname">『ありがとうって、うれしいね』</span><br>
+    <span class="bookname-sub">〜 くまのこ ポノ の ちいさな ものがたり 〜</span><br>
+    の主人公ポノと一緒に、<br>
+    小さなお子さまが楽しく学べる<br>
+    無料の知育サイトです。</p>
 
-ひらがな・カタカナのなぞり書き、ぬりえ、パズル、クイズなど、いろんな遊びを少しずつ増やしていきます。親子でゆっくり楽しんでもらえたら嬉しいです。</div>
+    <p>ひらがな・カタカナのなぞり書き、<br>
+    ぬりえ、パズル、クイズなど、<br>
+    いろんな遊びを少しずつ増やしていきます。<br>
+    親子でゆっくり楽しんでもらえたら嬉しいです。</p>
+  </div>
   <div class="welcome-sign">— ネモ先生</div>
   <div class="hint">▶ タップ</div>
 </div>

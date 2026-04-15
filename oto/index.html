@@ -146,6 +146,77 @@
     .instr-btn { --sz: min(22vw, 110px) !important; }
   }
 
+  /* ── 録音/ループ UI ── */
+  .rec-btn { font-size: 1.5rem; }
+  .rec-btn.recording {
+    background: #EF4444;
+    border-color: #fff;
+    animation: recPulse 0.7s ease-in-out infinite;
+  }
+  .rec-btn.looping {
+    background: #FFD84D;
+    border-color: #fff;
+  }
+  @keyframes recPulse {
+    0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+    50%      { transform: scale(1.1); box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+  }
+
+  /* カウントダウン / 録音中バナー (中央オーバーレイ) */
+  .rec-overlay {
+    position: absolute; inset: 0;
+    z-index: 20; pointer-events: none;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0); /* 透過 */
+  }
+  .rec-overlay-num {
+    font-size: 8rem; font-weight: 900; color: #fff;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 24px #EF4444;
+    animation: recCountPop 0.6s ease-out;
+  }
+  .rec-overlay-msg {
+    font-size: 1.4rem; font-weight: 900; color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    margin-top: 8px;
+  }
+  @keyframes recCountPop {
+    0%   { transform: scale(0.4); opacity: 0; }
+    30%  { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+
+  /* ループ進行インジケーター (下端のバー) */
+  .rec-progress {
+    position: absolute;
+    bottom: max(4px, env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%);
+    width: min(80vw, 480px);
+    height: 18px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 9px;
+    overflow: hidden;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .rec-progress-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 0%;
+    background: linear-gradient(90deg, #FFD84D, #F2742A);
+    border-radius: 9px;
+    transition: width 0.05s linear;
+  }
+  .rec-progress-label {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 900; color: #5D4E37;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+  }
+  /* 録音中はバーを赤系に */
+  .rec-progress.recording .rec-progress-fill {
+    background: linear-gradient(90deg, #FCA5A5, #EF4444);
+  }
+
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
   .intro {
     position: fixed; inset: 0;
@@ -217,6 +288,20 @@
       <button class="set-btn"        data-set="kira" aria-label="おとセット2">🎼</button>
       <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
       <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
+      <!-- 録音/ループボタン: state により 🎤 → 🛑 に切替 -->
+      <button class="set-btn rec-btn" id="rec-btn" aria-label="ろくおん">🎤</button>
+    </div>
+
+    <!-- カウントダウン / 録音中バナー -->
+    <div class="rec-overlay" id="rec-overlay" style="display:none;">
+      <div class="rec-overlay-num" id="rec-overlay-num">3</div>
+      <div class="rec-overlay-msg" id="rec-overlay-msg">ろくおん するよ！</div>
+    </div>
+
+    <!-- ループ進行インジケーター (下端) -->
+    <div class="rec-progress" id="rec-progress" style="display:none;">
+      <div class="rec-progress-fill" id="rec-progress-fill"></div>
+      <div class="rec-progress-label" id="rec-progress-label">🔁 ループ中</div>
     </div>
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
@@ -542,6 +627,19 @@ function playSetSound(idx) {
     // 未ロードは太鼓フォールバック
     var ac2 = getAC(); if (ac2) playDrum(ac2, TAIKO_KINDS[idx] || 'kick');
   }
+  // 録音中ならイベントとして記録 (現セット情報も保存し、再生時はそのセットで鳴らす)
+  recordEvent('set', { idx: idx, set: currentSet });
+}
+
+// 「セット名」と「インデックス」を指定して直接音を出す (ループ再生用)
+function playSetSoundFor(set, idx) {
+  if (set === 'doremi')      { playTone('doremi', idx); }
+  else if (set === 'kira')   { var ack = getAC(); if (ack) playKira(ack, idx); }
+  else if (set === 'taiko')  { playTone('taiko', idx); }
+  else if (set === 'animal') {
+    if (_animalBuffers[idx] && playBuffer(_animalBuffers[idx])) return;
+    var ac2 = getAC(); if (ac2) playDrum(ac2, TAIKO_KINDS[idx] || 'kick');
+  }
 }
 
 // 初回ユーザー操作で AudioContext アンロック + voice/animal の再デコード
@@ -632,6 +730,8 @@ function spawnBubbleAt(x, y, colorIdx) {
   });
   // 同じ色 idx (0-6) を kira の音 idx として使う (8音中の先頭7音)
   var ac = getAC(); if (ac) playKira(ac, colorIdx);
+  // 録音中なら kira イベントとして記録
+  recordEvent('kira', { colorIdx: colorIdx });
 }
 
 _stageEl.addEventListener('pointerdown', function(e) {
@@ -1089,6 +1189,218 @@ if (window.initMenu) {
     if (intro) intro.style.display = 'none';
   });
 })();
+
+// ════════════════════════════════════════════════════════════
+// 🎤 ろくおん / ループ機能 (MVP: 1 layer 上書き、固定 8秒)
+// ════════════════════════════════════════════════════════════
+var LOOP_MS = 8000;
+var _recState = 'idle';     // 'idle' | 'countdown' | 'recording' | 'looping'
+var _recEvents = [];        // [{t_ms, kind, args}, ...]  t は 録音開始からの経過 ms
+var _recStartMs = 0;        // performance.now() at recording start
+var _loopStartMs = 0;       // performance.now() at looping start
+var _loopTimers = [];       // setTimeout id 配列 (停止時に clear)
+var _progressRaf = null;
+
+function recordEvent(kind, args) {
+  if (_recState !== 'recording') return;
+  var t = performance.now() - _recStartMs;
+  if (t < 0 || t > LOOP_MS) return;
+  _recEvents.push({ t: t, kind: kind, args: args });
+}
+
+function _setRecBtnState(state) {
+  var btn = document.getElementById('rec-btn');
+  if (!btn) return;
+  btn.classList.remove('recording', 'looping');
+  if (state === 'recording' || state === 'countdown') {
+    btn.classList.add('recording');
+    btn.textContent = '🔴';
+  } else if (state === 'looping') {
+    btn.classList.add('looping');
+    btn.textContent = '🛑';
+  } else {
+    btn.textContent = '🎤';
+  }
+}
+
+function _showOverlay(num, msg) {
+  var ov  = document.getElementById('rec-overlay');
+  var nEl = document.getElementById('rec-overlay-num');
+  var mEl = document.getElementById('rec-overlay-msg');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  nEl.textContent = num != null ? String(num) : '';
+  mEl.textContent = msg || '';
+  // restart animation
+  nEl.style.animation = 'none'; void nEl.offsetWidth; nEl.style.animation = '';
+}
+function _hideOverlay() {
+  var ov = document.getElementById('rec-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+function _showProgress(label, recordingClass) {
+  var bar = document.getElementById('rec-progress');
+  var lab = document.getElementById('rec-progress-label');
+  if (!bar) return;
+  bar.style.display = 'block';
+  bar.classList.toggle('recording', !!recordingClass);
+  if (lab) lab.textContent = label;
+}
+function _hideProgress() {
+  var bar = document.getElementById('rec-progress');
+  if (bar) bar.style.display = 'none';
+  if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
+}
+function _updateProgressFill(ratio) {
+  var fill = document.getElementById('rec-progress-fill');
+  if (fill) fill.style.width = Math.max(0, Math.min(1, ratio)) * 100 + '%';
+}
+
+// カウントダウン → 録音開始 → 8秒後にループ再生
+function startRecording() {
+  if (_recState !== 'idle') return;
+  // 既にループ中ならまず停止
+  stopLoop();
+  unlockAudio();
+  _recState = 'countdown';
+  _setRecBtnState('countdown');
+  _showOverlay(3, 'ろくおん するよ！');
+  setTimeout(function() {
+    if (_recState !== 'countdown') return;
+    _showOverlay(2, 'ろくおん するよ！');
+  }, 700);
+  setTimeout(function() {
+    if (_recState !== 'countdown') return;
+    _showOverlay(1, 'ろくおん するよ！');
+  }, 1400);
+  setTimeout(function() {
+    if (_recState !== 'countdown') return;
+    _showOverlay('スタート!', '');
+  }, 2100);
+  setTimeout(function() {
+    if (_recState !== 'countdown') return;
+    _hideOverlay();
+    _beginRecordingPhase();
+  }, 2700);
+}
+
+function _beginRecordingPhase() {
+  _recState = 'recording';
+  _recEvents = [];
+  _recStartMs = performance.now();
+  _showProgress('🎤 ろくおん中', true);
+  // プログレスバー更新
+  function tick() {
+    if (_recState !== 'recording') return;
+    var elapsed = performance.now() - _recStartMs;
+    _updateProgressFill(elapsed / LOOP_MS);
+    if (elapsed >= LOOP_MS) {
+      _finishRecording();
+      return;
+    }
+    _progressRaf = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function _finishRecording() {
+  if (_recState !== 'recording') return;
+  if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
+  // 録音ゼロでもループには入る (子どもが何もしなかったケース)
+  _startLoop();
+}
+
+function _startLoop() {
+  _recState = 'looping';
+  _setRecBtnState('looping');
+  _loopStartMs = performance.now();
+  _scheduleOneCycle();
+  _showProgress('🔁 ループ中 (' + _recEvents.length + 'おと)', false);
+  // ループ進行バー更新
+  function tickLoop() {
+    if (_recState !== 'looping') return;
+    var elapsed = performance.now() - _loopStartMs;
+    var pos = elapsed % LOOP_MS;
+    _updateProgressFill(pos / LOOP_MS);
+    _progressRaf = requestAnimationFrame(tickLoop);
+  }
+  tickLoop();
+}
+
+// 次の 1サイクル分のイベントを setTimeout でスケジュール
+// サイクル末で自分自身を再起動
+function _scheduleOneCycle() {
+  if (_recState !== 'looping') return;
+  var cycleStart = performance.now();
+  _recEvents.forEach(function(ev) {
+    var id = setTimeout(function() {
+      if (_recState !== 'looping') return;
+      _playRecordedEvent(ev);
+    }, ev.t);
+    _loopTimers.push(id);
+  });
+  // 次サイクルの予約
+  var nextId = setTimeout(function() {
+    // 古い timers を掃除
+    _loopTimers = [];
+    _loopStartMs = performance.now();
+    _scheduleOneCycle();
+  }, LOOP_MS);
+  _loopTimers.push(nextId);
+}
+
+function _playRecordedEvent(ev) {
+  if (ev.kind === 'set') {
+    playSetSoundFor(ev.args.set, ev.args.idx);
+  } else if (ev.kind === 'kira') {
+    var ac = getAC();
+    if (ac) playKira(ac, ev.args.colorIdx);
+  }
+}
+
+function stopLoop() {
+  // すべてのタイマー解除
+  _loopTimers.forEach(function(id) { clearTimeout(id); });
+  _loopTimers = [];
+  if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
+  _recEvents = [];
+  _recState = 'idle';
+  _setRecBtnState('idle');
+  _hideOverlay();
+  _hideProgress();
+}
+
+// 🎤 ボタンハンドラ
+(function() {
+  var btn = document.getElementById('rec-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (_recState === 'idle') {
+      startRecording();
+    } else if (_recState === 'looping') {
+      stopLoop();
+    } else if (_recState === 'recording' || _recState === 'countdown') {
+      // 録音中の再タップ: 即座に終了 → ループ開始 (or キャンセル)
+      if (_recState === 'recording') {
+        _finishRecording();
+      } else {
+        // カウントダウン中はキャンセル
+        _recState = 'idle';
+        _setRecBtnState('idle');
+        _hideOverlay();
+      }
+    }
+  });
+})();
+
+// タブが背景に行ったら録音/ループは停止 (タイマー暴走防止)
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden && _recState !== 'idle') {
+    stopLoop();
+  }
+});
 </script>
 </body>
 </html>
