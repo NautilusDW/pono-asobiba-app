@@ -244,18 +244,18 @@
     box-shadow: 0 0 0 4px rgba(52,211,153,0.4);
   }
 
-  /* ── スロット (録音保存) ── */
+  /* ── スロット (録音保存) ── 画面下中央、バンドバーの真上 */
   .slots-bar {
     position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    left: max(16px, env(safe-area-inset-left));
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
+    left: 50%; transform: translateX(-50%);
     display: flex; gap: 6px;
     align-items: center;
     z-index: 10;
-    background: rgba(255,255,255,0.7);
-    padding: 4px 8px;
+    background: rgba(255,255,255,0.85);
+    padding: 4px 10px;
     border-radius: 24px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   }
   .slots-label {
     font-size: 0.7rem; font-weight: 900; color: #5D4E37;
@@ -1506,14 +1506,13 @@ function startRecording() {
 function _beginRecordingPhase() {
   _recState = 'recording';
   _recEvents = [];
+  // バンドが鳴っていれば全部リスタートして、録音開始時刻と完全に同期させる
+  // (それまでは普通に鳴らしっぱなしで遊ぶ。録音時から拍頭にスナップ)
+  var activeStems = Object.keys(_stemSources).filter(function(n) { return !!_stemSources[n]; });
+  activeStems.forEach(function(n) { _stemStop(n); });
+  _bandStartAC = 0; // リセット → 次の _stemStart で now に再設定される
   _recStartMs = performance.now();
-  // バンド ON ならステムのループ位置に合わせる (= ステム sync)
-  var ac = getAC();
-  if (_bandActive() && ac) {
-    var stemElapsedSec = (ac.currentTime - _bandStartAC) % (_bandLoopMs / 1000);
-    // 録音開始時刻を「ループ頭」と見なすために、_recStartMs を仮想的にバンド頭にずらす
-    _recStartMs = performance.now() - stemElapsedSec * 1000;
-  }
+  activeStems.forEach(function(n) { _stemStart(n); });
   var loopMs = currentLoopMs();
   _showProgress('🎤 ろくおん中 (' + Math.round(loopMs/1000) + '秒)', true);
   function tick() {
