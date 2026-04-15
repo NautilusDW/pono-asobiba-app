@@ -340,20 +340,21 @@
   .song-btn-cap { font-size: 0.55rem; font-weight: 700; color: rgba(255,255,255,0.7); line-height: 1; }
   .song-btn-val { font-size: 0.85rem; font-weight: 900; line-height: 1; }
 
-  /* ── 音色 4種 (角丸枠 sound-sets-box の中) ── */
+  /* ── 音色 (角丸枠 sound-sets-box の中、6個入る) ── */
   .sound-sets {
-    display: flex; gap: 10px;
+    display: flex; gap: 7px;
   }
   .sound-sets .set-btn {
-    width: 44px; height: 44px;
+    width: 40px; height: 40px;
     border-radius: 50%; border: 3px solid #fff;
     background: rgba(255,255,255,0.92);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     box-shadow: 0 3px 8px rgba(0,0,0,0.2);
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
     touch-action: manipulation;
+    flex: 0 0 auto;
   }
   .sound-sets .set-btn:active { transform: scale(0.92); }
   .sound-sets .set-btn.active {
@@ -660,10 +661,12 @@
     <div class="sound-sets-box">
       <div class="sound-sets-label">ねいろ</div>
       <div class="sound-sets" id="sound-sets" role="tablist">
-        <button class="set-btn active" data-set="doremi" aria-label="ドレミ">🎹</button>
-        <button class="set-btn"        data-set="kira"   aria-label="きらきら">🎼</button>
-        <button class="set-btn"        data-set="taiko"  aria-label="たいこ">🥁</button>
-        <button class="set-btn"        data-set="animal" aria-label="どうぶつ">🐾</button>
+        <button class="set-btn active" data-set="doremi"  aria-label="ドレミ">🎹</button>
+        <button class="set-btn"        data-set="kira"    aria-label="きらきら">🎼</button>
+        <button class="set-btn"        data-set="marimba" aria-label="マリンバ">🪘</button>
+        <button class="set-btn"        data-set="blip"    aria-label="ピコ">⚡</button>
+        <button class="set-btn"        data-set="taiko"   aria-label="たいこ">🥁</button>
+        <button class="set-btn"        data-set="animal"  aria-label="どうぶつ">🐾</button>
       </div>
     </div>
 
@@ -1093,6 +1096,54 @@ function playKira(ac, idx) {
   });
 }
 
+// ─── 歯切れ系 音色: 速い曲にも乗る短い音 ───
+// 引数 freqs で和音対応 (コードモード ON 時に 3音、OFF 時は 1音の配列)
+function playMarimbaFreqs(ac, freqs) {
+  var t = ac.currentTime;
+  freqs.forEach(function(f, ci) {
+    // 木琴: 基音 + 4倍音 で木質感
+    [1.0, 4.0].forEach(function(mul, i) {
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = (i === 0) ? 'sine' : 'triangle';
+      o.frequency.setValueAtTime(f * mul, t);
+      g.gain.setValueAtTime(0, t);
+      var peak = (0.26 - ci * 0.03) / (i + 1);
+      if (peak < 0.04) peak = 0.04;
+      g.gain.linearRampToValueAtTime(peak, t + 0.002);    // 超速アタック
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t); o.stop(t + 0.3);
+    });
+  });
+}
+function playBlipFreqs(ac, freqs) {
+  var t = ac.currentTime;
+  freqs.forEach(function(f, ci) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(f, t);
+    // わずかにピッチダウンして「ピコッ」感
+    o.frequency.exponentialRampToValueAtTime(f * 0.94, t + 0.16);
+    var peak = 0.20 - ci * 0.03;
+    if (peak < 0.04) peak = 0.04;
+    g.gain.setValueAtTime(peak, t);
+    g.gain.setValueAtTime(peak * 0.85, t + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.2);
+  });
+}
+
+// 音色ごとの単音 or 和音配列を得るヘルパー
+function _freqsForTap(set, idx) {
+  if (CHORD_MODE === 'on') return _chordFor(idx);
+  if (set === 'doremi')  return [_doremiFreqs()[idx] || 440];
+  if (set === 'kira')    return [_kiraFreqs()[idx]   || 523.25];
+  if (set === 'marimba') return [_doremiFreqs()[idx] || 440];
+  if (set === 'blip')    return [_doremiFreqs()[idx] || 440];
+  return [];
+}
+
 // ホワイトノイズ用 AudioBuffer (durationSec ごとにキャッシュして GC 圧削減)
 var _noiseCache = {};
 function _makeNoiseBuffer(ac, durationSec) {
@@ -1113,13 +1164,15 @@ var currentSet = 'doremi';
 // (旧 .set-btn 一律ハンドラは廃止 — popover 内 .set-btn の専用ハンドラで処理)
 
 function playSetSound(idx) {
-  // doremi/kira + コードモード ON → コード和音
-  if ((currentSet === 'doremi' || currentSet === 'kira') && CHORD_MODE === 'on') {
-    var acC = getAC(); if (acC) playChordTap(acC, currentSet, idx);
-  } else if (currentSet === 'doremi') {
-    playTone('doremi', idx);
-  } else if (currentSet === 'kira') {
-    var ack = getAC(); if (ack) playKira(ack, idx);
+  var ac = getAC();
+  // トーン系 (doremi/kira/marimba/blip) — コードモードと単音対応
+  if (currentSet === 'doremi' || currentSet === 'kira' || currentSet === 'marimba' || currentSet === 'blip') {
+    var freqs = _freqsForTap(currentSet, idx);
+    if (currentSet === 'marimba')     { if (ac) playMarimbaFreqs(ac, freqs); }
+    else if (currentSet === 'blip')   { if (ac) playBlipFreqs(ac, freqs); }
+    else if (CHORD_MODE === 'on')     { if (ac) playChordTap(ac, currentSet, idx); }
+    else if (currentSet === 'doremi') { playTone('doremi', idx); }
+    else                              { if (ac) playKira(ac, idx); }
   } else if (currentSet === 'taiko') {
     playTone('taiko', idx);
   } else if (currentSet === 'animal') {
@@ -1132,11 +1185,20 @@ function playSetSound(idx) {
 
 // 「セット名」と「インデックス」を指定して直接音を出す (ループ再生用)
 function playSetSoundFor(set, idx, useChord) {
+  var ac = getAC();
+  if (set === 'marimba') {
+    if (ac) playMarimbaFreqs(ac, useChord ? _chordFor(idx) : [_doremiFreqs()[idx] || 440]);
+    return;
+  }
+  if (set === 'blip') {
+    if (ac) playBlipFreqs(ac, useChord ? _chordFor(idx) : [_doremiFreqs()[idx] || 440]);
+    return;
+  }
   if ((set === 'doremi' || set === 'kira') && useChord) {
-    var acC = getAC(); if (acC) playChordTap(acC, set, idx); return;
+    if (ac) playChordTap(ac, set, idx); return;
   }
   if (set === 'doremi')      { playTone('doremi', idx); }
-  else if (set === 'kira')   { var ack = getAC(); if (ack) playKira(ack, idx); }
+  else if (set === 'kira')   { if (ac) playKira(ac, idx); }
   else if (set === 'taiko')  { playTone('taiko', idx); }
   else if (set === 'animal') {
     if (_animalBuffers[idx] && playBuffer(_animalBuffers[idx])) return;
@@ -1237,19 +1299,8 @@ function spawnBubbleAt(x, y, colorIdx) {
     colorIdx: colorIdx,
   });
   // 空タップでも 選択中の音色を鳴らす (色 idx を音 idx として再利用)
-  // → 楽器ボタンと「鳴り方」が揃う
   var idx = colorIdx % 8;
-  if (currentSet === 'kira') {
-    var ack = getAC(); if (ack) playKira(ack, idx);
-  } else if (currentSet === 'doremi') {
-    if (CHORD_MODE === 'on') { var acC = getAC(); if (acC) playChordTap(acC, 'doremi', idx); }
-    else playTone('doremi', idx);
-  } else if (currentSet === 'taiko') {
-    playTone('taiko', idx);
-  } else if (currentSet === 'animal') {
-    if (_animalBuffers[idx]) playBuffer(_animalBuffers[idx]);
-    else { var ac3 = getAC(); if (ac3) playDrum(ac3, TAIKO_KINDS[idx] || 'kick'); }
-  }
+  playSetSoundFor(currentSet, idx, CHORD_MODE === 'on');
   recordEvent('kira', { colorIdx: colorIdx });
 }
 
