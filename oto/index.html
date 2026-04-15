@@ -513,6 +513,11 @@
           <button class="scale-btn active" id="scale-major" aria-label="ふつう">ふつう</button>
           <button class="scale-btn"        id="scale-penta" aria-label="ペンタトニック">ペンタ</button>
         </div>
+        <div class="scale-row">
+          <span class="scale-label">わおん</span>
+          <button class="scale-btn active" id="chord-off" aria-label="単音">たんおん</button>
+          <button class="scale-btn"        id="chord-on"  aria-label="コード">コード</button>
+        </div>
       </div>
     </div>
 
@@ -651,6 +656,109 @@ var KIRA_PENTA   = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 13
 var SCALE_MODE = 'major';
 function _doremiFreqs() { return SCALE_MODE === 'penta' ? DOREMI_PENTA : DOREMI_FREQS; }
 function _kiraFreqs()   { return SCALE_MODE === 'penta' ? KIRA_PENTA   : KIRA_FREQS;   }
+
+// ─── コードモード (王道進行 I-IV-V-vi: C, F, G, Am) ───
+var CHORD_MODE = 'off'; // 'off' / 'on'
+// 上段 4ボタン = C F G Am (低オクターブ), 下段 4ボタン = 同じく1オクターブ上
+var CHORDS_C_LOW = [
+  [261.63, 329.63, 392.00],  // C  major   (C E G)
+  [349.23, 440.00, 523.25],  // F  major   (F A C)
+  [392.00, 493.88, 587.33],  // G  major   (G B D)
+  [220.00, 261.63, 329.63],  // Am minor   (A C E)
+];
+var CHORDS_C_HIGH = [
+  [523.25, 659.25, 783.99],
+  [698.46, 880.00, 1046.50],
+  [783.99, 987.77, 1174.66],
+  [440.00, 523.25, 659.25],
+];
+function _chordFor(idx) {
+  return idx < 4 ? CHORDS_C_LOW[idx] : CHORDS_C_HIGH[idx - 4];
+}
+
+// ─── ホールド再生 + ビブラート ───
+// ボタンを長押しすると音が伸び続け、250ms 後にビブラートがかかる。
+// doremi/kira セット (= トーン系) のみ対応。taiko/animal は従来通りのワンショット。
+var _heldNotes = new Map();
+function _supportsHold(set) { return set === 'doremi' || set === 'kira'; }
+function startHeldNote(btn, set, idx) {
+  var ac = getAC(); if (!ac) return false;
+  if (!_supportsHold(set)) return false;
+  var freqs;
+  if (CHORD_MODE === 'on') {
+    freqs = _chordFor(idx);
+  } else if (set === 'kira') {
+    freqs = [_kiraFreqs()[idx] || 523.25];
+  } else {
+    freqs = [_doremiFreqs()[idx] || 440];
+  }
+  var t = ac.currentTime;
+  var oscs = freqs.map(function(f, i) {
+    var o = ac.createOscillator();
+    o.type = (set === 'kira') ? 'sine' : 'triangle';
+    o.frequency.setValueAtTime(f, t);
+    var g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    var peak = (set === 'kira' ? 0.18 : 0.22) - i * 0.025; // 上の倍音は少し控え目
+    if (peak < 0.04) peak = 0.04;
+    g.gain.linearRampToValueAtTime(peak, t + 0.015);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t);
+    return { osc: o, gain: g };
+  });
+  var note = { oscs: oscs, vibratoTo: null, lfo: null, lfoGain: null };
+  // 250ms 後にビブラート LFO 開始
+  note.vibratoTo = setTimeout(function() {
+    if (!_heldNotes.get(btn)) return;
+    var lfo = ac.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 5.5;
+    var lfoG = ac.createGain();
+    lfoG.gain.value = 6;       // ±6Hz の周波数揺らぎ
+    lfo.connect(lfoG);
+    note.oscs.forEach(function(o) { lfoG.connect(o.osc.frequency); });
+    lfo.start();
+    note.lfo = lfo;
+    note.lfoGain = lfoG;
+  }, 250);
+  _heldNotes.set(btn, note);
+  return true;
+}
+function stopHeldNote(btn) {
+  var note = _heldNotes.get(btn);
+  if (!note) return;
+  if (note.vibratoTo) clearTimeout(note.vibratoTo);
+  var ac = getAC(); var t = ac ? ac.currentTime : 0;
+  if (note.lfo) try { note.lfo.stop(t + 0.05); } catch(e){}
+  note.oscs.forEach(function(o) {
+    try {
+      o.gain.gain.cancelScheduledValues(t);
+      o.gain.gain.setValueAtTime(o.gain.gain.value || 0.001, t);
+      o.gain.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
+      o.osc.stop(t + 0.12);
+    } catch(e){}
+  });
+  _heldNotes.delete(btn);
+}
+
+// コードを「タップ風」に短く鳴らす (録音再生用)
+function playChordTap(ac, set, idx) {
+  var freqs = _chordFor(idx);
+  var t = ac.currentTime;
+  freqs.forEach(function(f, i) {
+    var o = ac.createOscillator();
+    o.type = (set === 'kira') ? 'sine' : 'triangle';
+    o.frequency.setValueAtTime(f, t);
+    var g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    var peak = (set === 'kira' ? 0.16 : 0.20) - i * 0.025;
+    if (peak < 0.04) peak = 0.04;
+    g.gain.linearRampToValueAtTime(peak, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.9);
+  });
+}
 // たいこ: WebAudio 合成のドラムキット
 var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo', 'cymbal', 'rim', 'clap'];
 // 動物: 実音源ファイル (assets/sounds/animals/)
@@ -849,7 +957,10 @@ var currentSet = 'doremi';
 // (旧 .set-btn 一律ハンドラは廃止 — popover 内 .set-btn の専用ハンドラで処理)
 
 function playSetSound(idx) {
-  if (currentSet === 'doremi') {
+  // doremi/kira + コードモード ON → コード和音
+  if ((currentSet === 'doremi' || currentSet === 'kira') && CHORD_MODE === 'on') {
+    var acC = getAC(); if (acC) playChordTap(acC, currentSet, idx);
+  } else if (currentSet === 'doremi') {
     playTone('doremi', idx);
   } else if (currentSet === 'kira') {
     var ack = getAC(); if (ack) playKira(ack, idx);
@@ -858,15 +969,16 @@ function playSetSound(idx) {
   } else if (currentSet === 'animal') {
     if (!_animalBuffers[idx]) _ensureAnimalDecoded();
     if (_animalBuffers[idx] && playBuffer(_animalBuffers[idx])) return;
-    // 未ロードは太鼓フォールバック
     var ac2 = getAC(); if (ac2) playDrum(ac2, TAIKO_KINDS[idx] || 'kick');
   }
-  // 録音中ならイベントとして記録 (現セット情報も保存し、再生時はそのセットで鳴らす)
-  recordEvent('set', { idx: idx, set: currentSet });
+  recordEvent('set', { idx: idx, set: currentSet, chord: CHORD_MODE === 'on' });
 }
 
 // 「セット名」と「インデックス」を指定して直接音を出す (ループ再生用)
-function playSetSoundFor(set, idx) {
+function playSetSoundFor(set, idx, useChord) {
+  if ((set === 'doremi' || set === 'kira') && useChord) {
+    var acC = getAC(); if (acC) playChordTap(acC, set, idx); return;
+  }
   if (set === 'doremi')      { playTone('doremi', idx); }
   else if (set === 'kira')   { var ack = getAC(); if (ack) playKira(ack, idx); }
   else if (set === 'taiko')  { playTone('taiko', idx); }
@@ -908,20 +1020,23 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
       _pressTimers.delete(btn);
     }, 130));
 
-    // 音
-    playSetSound(idx);
+    // 音: トーン系セット (doremi/kira) は ホールド対応
+    //     パーカッション系 (taiko/animal) は従来通りワンショット
+    if (_supportsHold(currentSet)) {
+      startHeldNote(btn, currentSet, idx);
+      // 録音中はイベントとして記録 (再生時はタップ風に短く鳴る)
+      recordEvent('set', { idx: idx, set: currentSet, chord: CHORD_MODE === 'on' });
+    } else {
+      playSetSound(idx);
+    }
 
-    // ボタン中心座標 (Canvas 座標系 = CSS px)
     var rect = btn.getBoundingClientRect();
     var cx = rect.left + rect.width / 2;
     var cy = rect.top  + rect.height / 2;
-
-    // エフェクト同時発火 (シャボン玉は出さない: ボタンと関係ない場所でのみ出す設計)
     spawnRipples(cx, cy);
     spawnParticles(cx, cy, 8);
     bumpPono();
 
-    // 統計 + クリア判定 + フィナーレ
     tapCount++;
     if (window.incrementStat) window.incrementStat('oto_taps', 1);
     markPlayedToday();
@@ -933,6 +1048,9 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
       triggerFinale();
     }
   });
+  btn.addEventListener('pointerup',     function() { stopHeldNote(btn); });
+  btn.addEventListener('pointerleave',  function() { stopHeldNote(btn); });
+  btn.addEventListener('pointercancel', function() { stopHeldNote(btn); });
   // 誤二重発火防止
   btn.addEventListener('click', function(e) { e.preventDefault(); });
 });
@@ -1719,7 +1837,7 @@ function _finishRecording() {
 
 function _playRecordedEvent(ev) {
   if (ev.kind === 'set') {
-    playSetSoundFor(ev.args.set, ev.args.idx);
+    playSetSoundFor(ev.args.set, ev.args.idx, !!ev.args.chord);
   } else if (ev.kind === 'kira') {
     var ac = getAC();
     if (ac) playKira(ac, ev.args.colorIdx);
@@ -1737,6 +1855,8 @@ document.addEventListener('visibilitychange', function() {
     }
     _stopAllPlayback();
     Object.keys(_stemSources).forEach(function(n) { _stemStop(n); });
+    // 押しっぱなしのホールド音も全部止める
+    Array.from(_heldNotes.keys()).forEach(function(b) { stopHeldNote(b); });
     _renderRecBar();
     _renderSavedList();
   }
@@ -1959,6 +2079,22 @@ function _renderSavedList() {
   try {
     var saved = localStorage.getItem('pono_oto_scale') || 'major';
     setScale(saved === 'penta' ? 'penta' : 'major');
+  } catch(e) {}
+
+  // コードモード toggle
+  var cOff = document.getElementById('chord-off');
+  var cOn  = document.getElementById('chord-on');
+  function setChord(mode) {
+    CHORD_MODE = mode;
+    try { localStorage.setItem('pono_oto_chord', mode); } catch(e) {}
+    cOff.classList.toggle('active', mode === 'off');
+    cOn.classList.toggle('active',  mode === 'on');
+  }
+  if (cOff) cOff.addEventListener('click', function(e) { e.stopPropagation(); setChord('off'); });
+  if (cOn)  cOn.addEventListener('click',  function(e) { e.stopPropagation(); setChord('on');  });
+  try {
+    var savedC = localStorage.getItem('pono_oto_chord') || 'off';
+    setChord(savedC === 'on' ? 'on' : 'off');
   } catch(e) {}
 })();
 
