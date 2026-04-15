@@ -1481,11 +1481,55 @@ function renderSlotPagination(totalPages) {
     btn.textContent = (i + 1);
     btn.dataset.page = i;
     btn.addEventListener('click', function() {
+      flushAllVisibleCardsToData();      // ページ移動前に 編集内容を保存
       slotPage = parseInt(this.dataset.page);
       renderSlotRewards();
     });
     pag.appendChild(btn);
   }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 自動保存: 再レンダー前に、現在画面に表示されている全カードの
+// 編集内容を rewardsData に書き戻して 未保存の変更が消えないようにする。
+// ════════════════════════════════════════════════════════════════
+function flushAllVisibleCardsToData() {
+  if (!rewardsData || !rewardsData.slotRewards) return;
+  document.querySelectorAll('#slot-rewards-container .reward-card').forEach(function(card) {
+    // dataset.slotNum は カード生成時の slot 番号 (編集中でも変わらない)
+    var originalSn = parseInt(card.dataset.slotNum);
+    if (isNaN(originalSn)) return;
+    if (!(originalSn in rewardsData.slotRewards)) return; // 既に削除済 → スキップ
+    try {
+      rewardsData.slotRewards[originalSn] = collectSlotData(card);
+    } catch (e) { console.warn('[flush] failed for slot', originalSn, e); }
+  });
+}
+function flushAllFirstClearCardsToData() {
+  if (!rewardsData || !rewardsData.firstClearRewards) return;
+  document.querySelectorAll('#first-clear-rewards-container .reward-card').forEach(function(card) {
+    var gid = card.dataset.gameId;
+    if (!gid) return;
+    if (!(gid in rewardsData.firstClearRewards)) return;
+    try {
+      if (typeof collectFirstClearCardData === 'function') {
+        rewardsData.firstClearRewards[gid] = collectFirstClearCardData(card);
+      }
+    } catch (e) { console.warn('[flushFC] failed for', gid, e); }
+  });
+}
+function flushAllCardRewardCardsToData() {
+  if (!rewardsData || !Array.isArray(rewardsData.cardCompleteRewards)) return;
+  document.querySelectorAll('#card-rewards-container .reward-card').forEach(function(card) {
+    var origIdx = parseInt(card.dataset.cardIdx);
+    if (isNaN(origIdx)) return;
+    if (origIdx < 0 || origIdx >= rewardsData.cardCompleteRewards.length) return;
+    try {
+      if (typeof collectCardData === 'function') {
+        rewardsData.cardCompleteRewards[origIdx] = collectCardData(card);
+      }
+    } catch (e) { console.warn('[flushCard] failed for', origIdx, e); }
+  });
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1579,6 +1623,7 @@ function buildSlotCard(slotNum, data) {
   delBtn.textContent = '🗑 削除';
   delBtn.addEventListener('click', function() {
     if (confirm('スロット ' + slotNum + ' を削除しますか？')) {
+      flushAllVisibleCardsToData();     // 他カードの編集を保存してから
       delete rewardsData.slotRewards[slotNum];
       renderSlotRewards();
     }
@@ -1659,6 +1704,7 @@ function buildSlotCard(slotNum, data) {
     var cb = this;
     var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
     var currentData = collectSlotData(card);
+    flushAllVisibleCardsToData();   // 他カードの編集を保存 (自カードは直後の currentData で上書き)
 
     if (cb.checked) {
       // non-gendered → gendered: 既存データをどちらに残すか聞く
@@ -1877,6 +1923,7 @@ function renderFirstClearRewards() {
       btn.addEventListener('mouseenter', function() { btn.style.background = '#FEF3C7'; });
       btn.addEventListener('mouseleave', function() { btn.style.background = '#fff'; });
       btn.addEventListener('click', function() {
+        flushAllFirstClearCardsToData();   // 他カードの編集を保存
         // 空のエントリを追加して再描画
         rewardsData.firstClearRewards[g.id] = {
           icon: '🎁',
@@ -1971,6 +2018,7 @@ function buildFirstClearCard(game, data) {
   genderedCheck.querySelector('input').addEventListener('change', function() {
     var cb = this;
     var currentData = collectFirstClearCardData(card);
+    flushAllFirstClearCardsToData();   // 他カードの編集を保存
     if (cb.checked) {
       var hasData = (currentData.type && currentData.type !== 'sea') || currentData.id || currentData.img;
       if (hasData) {
@@ -2038,6 +2086,7 @@ function buildFirstClearCard(game, data) {
   clrBtn.style.cssText = 'background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:8px;padding:6px 12px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;margin-left:auto;';
   clrBtn.addEventListener('click', function() {
     if (!confirm(game.label + ' の初回クリア報酬をクリアしますか？')) return;
+    flushAllFirstClearCardsToData();   // 他カードの編集を保存
     delete rewardsData.firstClearRewards[game.id];
     renderFirstClearRewards();
   });
@@ -4188,7 +4237,9 @@ function buildCardCompleteCard(idx, data) {
   delBtn.textContent = '🗑 削除';
   delBtn.addEventListener('click', function() {
     if (confirm((idx + 1) + '枚目のカード完成報酬を削除しますか？')) {
+      flushAllCardRewardCardsToData();   // 他カードの編集を保存
       rewardsData.cardCompleteRewards.splice(idx, 1);
+      // 削除後は インデックスがずれるので card-idx の dataset は再描画で振り直す
       renderCardRewards();
     }
   });
@@ -4254,6 +4305,7 @@ function buildCardCompleteCard(idx, data) {
     var cb = this;
     var cardIdx = parseInt(card.dataset.cardIdx);
     var currentData = collectCardData(card);
+    flushAllCardRewardCardsToData();   // 他カードの編集を保存
 
     if (cb.checked) {
       // non-gendered → gendered
@@ -5509,6 +5561,7 @@ document.getElementById('btn-save-rewards').addEventListener('click', function()
 // ════════════════════════════════════════════════════════════════
 document.getElementById('btn-add-slot').addEventListener('click', function() {
   if (!rewardsData) { showToast('先にrewards.jsonを読み込んでください', false); return; }
+  flushAllVisibleCardsToData();   // 他カードの編集を保存
   var sr = rewardsData.slotRewards || {};
   var maxSlot = 0;
   Object.keys(sr).forEach(function(k) { var n = parseInt(k); if (n > maxSlot) maxSlot = n; });
@@ -5522,7 +5575,6 @@ document.getElementById('btn-add-slot').addEventListener('click', function() {
     gendered: false
   };
   rewardsData.slotRewards = sr;
-  // Go to last page
   var total = Object.keys(sr).length;
   slotPage = Math.max(0, Math.ceil(total / SLOT_PAGE_SIZE) - 1);
   renderSlotRewards();
@@ -5531,6 +5583,7 @@ document.getElementById('btn-add-slot').addEventListener('click', function() {
 
 document.getElementById('btn-add-card').addEventListener('click', function() {
   if (!rewardsData) { showToast('先にrewards.jsonを読み込んでください', false); return; }
+  flushAllCardRewardCardsToData();   // 他カードの編集を保存
   if (!rewardsData.cardCompleteRewards) rewardsData.cardCompleteRewards = [];
   var num = rewardsData.cardCompleteRewards.length + 1;
   rewardsData.cardCompleteRewards.push({
