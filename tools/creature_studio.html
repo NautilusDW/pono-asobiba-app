@@ -3049,46 +3049,65 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
 }
 
 document.getElementById('btn-split').addEventListener('click', async () => {
-  // ── マルチ合成モード時: 選択した矩形ごとに 1 スプライトとして取り出す
-  //    (ブロブ検出を介さないので "選択していない領域も分割" 問題が起きない)
+  // ── マルチ合成モード時: 各画像を「1枚処理と同じパイプライン」に通す
+  //    背景除去 → blob 分割 (隣接マスク含む) を画像ごとに走らせるので
+  //    1枚ずつ処理した時と同じ精度の切り出しになる。
+  //    ユーザーが矩形を引いていれば、その範囲に bbox 中心が入る sprite だけを残す。
   if (multiPickerMode) {
-    const totalSels = pickerImages.reduce((s, p) => s + p.selections.length, 0);
-    if (totalSels === 0) {
-      showToast('マルチ合成: 選択された領域がありません', false);
+    if (pickerImages.length === 0) {
+      showToast('マルチ合成: 画像がありません', false);
       return;
     }
-    showLoading('選択範囲を切り出し中...');
-    await new Promise(r => setTimeout(r, 20));
-    // 背景除去のしきい値 (sliders からとってくる)
-    const bgTol = parseFloat(document.getElementById('tolerance').value) || 35;
-    sprites = [];
-    pickerImages.forEach((pImg) => {
-      // 各ソース画像の背景色を画像全体からサンプリング
-      const srcCtx = pImg.canvas.getContext('2d');
-      const srcData = srcCtx.getImageData(0, 0, pImg.canvas.width, pImg.canvas.height).data;
-      const bgColor = sampleBgColor(srcData, pImg.canvas.width, pImg.canvas.height);
+    showLoading('各画像を個別処理中...');
+    await new Promise(r => setTimeout(r, 30));
 
-      pImg.selections.forEach((sel) => {
-        const sc = document.createElement('canvas');
-        sc.width = sel.w; sc.height = sel.h;
-        sc.getContext('2d').drawImage(pImg.canvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
-        // 隣のキャラがハミ出てきた端のピクセルを外周フラッドフィルで透明化
-        // (背景色に近い色のみ消える → キャラ本体は無事)
-        try { _cleanSpriteEdges(sc, bgTol, bgColor); } catch (e) {}
-        // さらに最大コンポーネント以外の破片(色付きの侵入片)を削除
-        try { _keepLargestComponent(sc); } catch (e) {}
-        sprites.push({
-          canvas: sc, srcX: sel.x, srcY: sel.y, w: sel.w, h: sel.h,
-          name: '', id: '', icon: '🐠', expr: 'normal',
-          facing: 'right', sizePx: 70, count: 3,
-          pattern: 'swim', reaction: 'jump',
-          speed: 1.0, duration: 1.0
+    // 1枚処理と同じパラメータを取得
+    const tolerance = parseFloat(document.getElementById('tolerance').value);
+    const feather   = parseFloat(document.getElementById('feather').value);
+    const grayTol   = parseInt(document.getElementById('graytol').value);
+    const shrink    = parseFloat(document.getElementById('shrink').value);
+    const alphaBlur = parseFloat(document.getElementById('ablur').value);
+    const minSize   = parseInt(document.getElementById('min-size').value)  || 20;
+    const padding   = parseInt(document.getElementById('padding').value)   || 4;
+    const alphaThr  = parseInt(document.getElementById('alpha-thresh').value) || 10;
+    const bgTol     = parseFloat(document.getElementById('tolerance').value) || 35;
+    const mergeGap  = parseInt(document.getElementById('merge-gap').value) || 0;
+
+    sprites = [];
+    const savedOrig = originalCanvas;
+    for (const pImg of pickerImages) {
+      // 背景除去 (1枚処理と同じ removeBgFromCanvas)
+      const proc = document.createElement('canvas');
+      proc.width  = pImg.canvas.width;
+      proc.height = pImg.canvas.height;
+      proc.getContext('2d').drawImage(pImg.canvas, 0, 0);
+      removeBgFromCanvas(proc, tolerance, feather, grayTol, shrink, alphaBlur);
+
+      // splitSpritesFromCanvas は originalCanvas から bgColor をサンプルするので一時切替
+      originalCanvas = pImg.canvas;
+      let found = [];
+      try {
+        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, false);
+      } catch (e) { console.warn('split failed for picker image:', e); }
+
+      // 選択矩形があれば bbox 中心が選択内にある sprite だけ残す。なければ全部採用。
+      if (pImg.selections && pImg.selections.length > 0) {
+        found = found.filter(sp => {
+          const cx = sp.srcX + sp.w / 2;
+          const cy = sp.srcY + sp.h / 2;
+          return pImg.selections.some(sel =>
+            cx >= sel.x && cx <= sel.x + sel.w &&
+            cy >= sel.y && cy <= sel.y + sel.h
+          );
         });
-      });
-    });
+      }
+      sprites.push(...found);
+    }
+    originalCanvas = savedOrig;
+
     renderSpritesGrid();
     hideLoading();
-    showToast(sprites.length + '個の選択範囲を切り出しました (背景クリーン適用)', true);
+    showToast(sprites.length + '体を検出しました (各画像を個別処理)', true);
     return;
   }
 
