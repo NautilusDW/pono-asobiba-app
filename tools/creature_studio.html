@@ -2588,69 +2588,124 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
  * 全体画像では囲まれていた背景色が、個別矩形では外周に露出するため、
  * ここで改めて色ベースの flood fill を実行すれば自動除去できる。
  */
-// 不透明領域の連結成分を求め、最大成分とその 18% 以上の大きな成分のみを残す。
-// それ以外 (隣のキャラからの侵入片など) は透明化する。
+// 「キャラ本体」だけを残し、隣のキャラの侵入片を消す。
+// アプローチ: 不透明 (alpha >= ALPHA_HIGH) なピクセルだけで連結成分を作り、
+//             中心に最も近い (or 最大の) 成分を「本体」と判定。
+//             それと十分大きさが同程度の成分以外を透明化する。
 function _keepLargestComponent(canvas) {
   const w = canvas.width, h = canvas.height;
   if (w < 4 || h < 4) return;
   const ctx = canvas.getContext('2d');
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
-  const ALPHA_THR = 20;
-  // ラベリング (BFS)
+
+  // ハイ・しきい値: アンチエイリアスのうっすらピクセルで成分が誤接続しないように高めに
+  const ALPHA_HIGH = 128;
+
   const label = new Int32Array(w * h);
-  const sizes = [0]; // index 0 = unused
+  const sizes = [0];
+  const cxs   = [0]; // 重心 x の合計
+  const cys   = [0]; // 重心 y の合計
   const q = new Int32Array(w * h);
   let nextLabel = 1;
+
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (label[i] !== 0) continue;
-      if (d[i*4 + 3] <= ALPHA_THR) continue;
-      // BFS
+      if (d[i*4 + 3] < ALPHA_HIGH) continue;
       let head = 0, tail = 0;
       q[tail++] = i;
       label[i] = nextLabel;
-      let count = 0;
+      let count = 0, sumX = 0, sumY = 0;
       while (head < tail) {
         const j = q[head++];
         count++;
         const jx = j % w, jy = (j - jx) / w;
-        // 4近傍
-        const nbs = [];
-        if (jx > 0)     nbs.push(j - 1);
-        if (jx < w - 1) nbs.push(j + 1);
-        if (jy > 0)     nbs.push(j - w);
-        if (jy < h - 1) nbs.push(j + w);
-        for (const nj of nbs) {
-          if (label[nj] !== 0) continue;
-          if (d[nj*4 + 3] <= ALPHA_THR) continue;
-          label[nj] = nextLabel;
-          q[tail++] = nj;
-        }
+        sumX += jx; sumY += jy;
+        if (jx > 0     && label[j-1] === 0 && d[(j-1)*4 + 3] >= ALPHA_HIGH) { label[j-1] = nextLabel; q[tail++] = j-1; }
+        if (jx < w - 1 && label[j+1] === 0 && d[(j+1)*4 + 3] >= ALPHA_HIGH) { label[j+1] = nextLabel; q[tail++] = j+1; }
+        if (jy > 0     && label[j-w] === 0 && d[(j-w)*4 + 3] >= ALPHA_HIGH) { label[j-w] = nextLabel; q[tail++] = j-w; }
+        if (jy < h - 1 && label[j+w] === 0 && d[(j+w)*4 + 3] >= ALPHA_HIGH) { label[j+w] = nextLabel; q[tail++] = j+w; }
       }
       sizes[nextLabel] = count;
+      cxs[nextLabel] = sumX / count;
+      cys[nextLabel] = sumY / count;
       nextLabel++;
     }
   }
   if (nextLabel <= 1) return;
-  // 最大コンポーネント
+
+  // 「本体」候補: 中心に近くて十分大きい成分。
+  //   スコア = サイズ - (中心からの距離) * size_max / (画面長辺)  に近い感じ
+  const cxImg = w / 2, cyImg = h / 2;
   let maxSize = 0;
+  for (let k = 1; k < nextLabel; k++) if (sizes[k] > maxSize) maxSize = sizes[k];
+  const diag = Math.sqrt(w*w + h*h);
+  let bestK = 1, bestScore = -Infinity;
   for (let k = 1; k < nextLabel; k++) {
-    if (sizes[k] > maxSize) maxSize = sizes[k];
+    const dx = cxs[k] - cxImg, dy = cys[k] - cyImg;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    // サイズ重視 + 中心ボーナス
+    const score = sizes[k] - dist * (maxSize / diag) * 1.5;
+    if (score > bestScore) { bestScore = score; bestK = k; }
   }
-  // 18% 未満のコンポーネントは破片とみなして除去
-  const KEEP_RATIO = 0.18;
-  const minKeep = maxSize * KEEP_RATIO;
-  const drop = new Uint8Array(nextLabel);
+
+  // 残す成分: 「本体」 + 本体サイズの 60% 以上の他成分 (誤切断保険)
+  const keepThr = sizes[bestK] * 0.6;
+  const keep = new Uint8Array(nextLabel);
+  keep[bestK] = 1;
   for (let k = 1; k < nextLabel; k++) {
-    if (sizes[k] < minKeep) drop[k] = 1;
+    if (sizes[k] >= keepThr) keep[k] = 1;
   }
+
+  // 残す成分のピクセル + その周辺の半透明縁 (アンチエイリアス) も残し、
+  // それ以外は透明化する。
+  // → 「残す」ピクセルから 3px 以内に半透明縁を許容する膨張マスクを作る。
+  const keepMask = new Uint8Array(w * h);
+  const dq = new Int32Array(w * h);
+  let dHead = 0, dTail = 0;
+  for (let i = 0; i < w * h; i++) {
+    if (label[i] !== 0 && keep[label[i]]) {
+      keepMask[i] = 1;
+      dq[dTail++] = i;
+    }
+  }
+  // 3px 膨張: 半透明アンチエイリアス縁を救う
+  const DILATE = 3;
+  const dist = new Int32Array(w * h).fill(0x7fffffff);
+  for (let p = 0; p < dTail; p++) dist[dq[p]] = 0;
+  while (dHead < dTail) {
+    const j = dq[dHead++];
+    const cd = dist[j];
+    if (cd >= DILATE) continue;
+    const jx = j % w, jy = (j - jx) / w;
+    const nbs = [];
+    if (jx > 0)     nbs.push(j - 1);
+    if (jx < w - 1) nbs.push(j + 1);
+    if (jy > 0)     nbs.push(j - w);
+    if (jy < h - 1) nbs.push(j + w);
+    for (const nj of nbs) {
+      if (dist[nj] <= cd + 1) continue;
+      // 半透明 (0 < alpha < ALPHA_HIGH) なら拡張対象
+      const a = d[nj*4 + 3];
+      if (a === 0 || a >= ALPHA_HIGH) {
+        // 完全透明 or 完全不透明な隣セル → keepMask は維持
+        if (a >= ALPHA_HIGH) keepMask[nj] = 1; // 既に同成分のはずだが念のため
+        dist[nj] = cd + 1;
+        dq[dTail++] = nj;
+        continue;
+      }
+      // 半透明 → 救う
+      keepMask[nj] = 1;
+      dist[nj] = cd + 1;
+      dq[dTail++] = nj;
+    }
+  }
+
   let dropped = false;
   for (let i = 0; i < w * h; i++) {
-    const lab = label[i];
-    if (lab === 0) continue;
-    if (drop[lab]) {
+    if (!keepMask[i] && d[i*4 + 3] > 0) {
       d[i*4 + 3] = 0;
       dropped = true;
     }
@@ -2972,7 +3027,11 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
     }
 
     // 各スプライト個別に外周 flood fill で囲まれた背景を自動除去
-    if (!keepBg) _cleanSpriteEdges(sc, bgTolerance, bgColor);
+    if (!keepBg) {
+      _cleanSpriteEdges(sc, bgTolerance, bgColor);
+      // 隣接スプライトの侵入片 (色付きの破片) を本体以外のコンポーネントとして除去
+      try { _keepLargestComponent(sc); } catch (e) {}
+    }
 
     result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
                   name: '', id: '', icon: '🐠', expr: 'normal',
