@@ -40,27 +40,32 @@
     position: absolute; inset: 0;
     z-index: 0; pointer-events: none;
   }
-  /* ポノ sprite (画面ど真ん中、静止画 + CSS で呼吸 + バンプ)
-     高さを固定して幅 auto にする = 全画像で身体 (頭〜足) の大きさが
-     同じに見える (画像自体は頭〜足 540px で正規化済み) */
-  .pono-sprite {
+  /* ポノ ラッパー: 固定サイズ 200×200 の箱を画面中央に置く
+     → 画像の読み込み前後で位置がブレない */
+  .pono-wrap {
     position: absolute;
     top: 50%; left: 50%;
-    height: 200px;           /* 固定 → 全ポーズで身体サイズ一定 */
-    width: auto;
-    max-width: 80vw;
-    z-index: 2; pointer-events: none;
-    transform-origin: center bottom;
+    width: 260px; height: 220px;
     transform: translate(-50%, -50%);
+    z-index: 2; pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: center;
+    transform-origin: center bottom;
     animation: ponoBreathe 2.4s ease-in-out infinite;
+  }
+  .pono-wrap.bump {
+    animation: ponoBump 0.6s ease-out;
+  }
+  /* img は高さ固定 + 幅 auto: アスペクト比を保ったまま 全画像で身体サイズ一定 */
+  .pono-sprite {
+    height: 200px;
+    width: auto;
+    max-width: 100%;
+    pointer-events: none;
     -webkit-user-drag: none;
   }
   @keyframes ponoBreathe {
     0%, 100% { transform: translate(-50%, -50%) scale(1); }
     50%      { transform: translate(-50%, -52%) scale(1.025); }
-  }
-  .pono-sprite.bump {
-    animation: ponoBump 0.6s ease-out;
   }
   @keyframes ponoBump {
     0%   { transform: translate(-50%, -50%) scale(1); }
@@ -646,8 +651,10 @@
     <!-- 最下層: 背景 Canvas (グラデ + 環境バブル + 波紋 + パーティクル) -->
     <canvas id="bgCanvas"></canvas>
 
-    <!-- ポノ sprite (中層) — 高解像度静止画 + CSS で呼吸 -->
-    <img id="pono" class="pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+    <!-- ポノ (中層) — ラッパーで位置決めし、img は高さ固定 + 幅 auto で中央寄せ -->
+    <div class="pono-wrap">
+      <img id="pono" class="pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+    </div>
 
 
     <!-- ばんそう (ドラムの速さだけ) — 画面下、シンプルな角丸枠 -->
@@ -1668,6 +1675,7 @@ function drawFinale(now) {
 // ────────────────────────────────
 // ポノ: 高解像度静止画 + CSS アニメ + タップでダンスポーズを切替
 var _ponoEl = document.getElementById('pono');
+var _ponoWrap = _ponoEl ? _ponoEl.parentElement : null;
 var _bumpTimer = null;
 var _restTimer = null;
 var _ponoDefaultSrc = '../assets/images/characters/pono/pono_001.png';
@@ -1700,13 +1708,14 @@ function bumpPono() {
   // ダンスポーズに差し替え
   var nextSrc = _pickDanceFrame();
   if (_ponoEl.src.indexOf(nextSrc.replace('../','')) < 0) _ponoEl.src = nextSrc;
-  // bump アニメ再起動
-  _ponoEl.classList.remove('bump');
-  void _ponoEl.offsetWidth;
-  _ponoEl.classList.add('bump');
+  // bump アニメ再起動 (ラッパー側にクラス付与)
+  var target = _ponoWrap || _ponoEl;
+  target.classList.remove('bump');
+  void target.offsetWidth;
+  target.classList.add('bump');
   if (_bumpTimer) clearTimeout(_bumpTimer);
   _bumpTimer = setTimeout(function() {
-    _ponoEl.classList.remove('bump');
+    target.classList.remove('bump');
     _bumpTimer = null;
   }, 620);
   // 静止復帰 (最後のタップから 1.2秒経ったらデフォルトに戻す)
