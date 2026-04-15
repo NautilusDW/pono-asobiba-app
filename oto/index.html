@@ -145,9 +145,64 @@
   @media (max-width: 420px) {
     .instr-btn { --sz: min(22vw, 110px) !important; }
   }
+
+  /* ── イントロ画面 (タップで AudioContext アンロック) ── */
+  .intro {
+    position: fixed; inset: 0;
+    background: linear-gradient(180deg, hsl(200,55%,55%) 0%, hsl(215,60%,25%) 100%);
+    z-index: 1000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    text-align: center;
+    color: #fff;
+  }
+  .intro h1 {
+    font-size: 1.8rem; font-weight: 900;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    margin-bottom: 16px;
+  }
+  .intro .intro-pono {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(255,255,255,0.85);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    margin: 8px 0 16px;
+  }
+  .intro .intro-pono img { width: 100%; height: 100%; object-fit: cover; }
+  .intro p {
+    font-size: 1rem; font-weight: 700;
+    line-height: 1.7; margin-bottom: 24px; max-width: 320px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+  }
+  .intro-btn {
+    padding: 14px 40px;
+    border: none; border-radius: 999px;
+    background: linear-gradient(135deg, #FFD84D, #F2B800);
+    color: #fff; font-family: inherit;
+    font-size: 1.4rem; font-weight: 900;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .intro-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+  }
 </style>
 </head>
 <body>
+<!-- イントロ: タップで AudioContext をアンロック -->
+<div class="intro" id="intro">
+  <h1>おとタッチ</h1>
+  <div class="intro-pono">
+    <img src="../assets/images/characters/pono/pono_face_circle.png" alt="">
+  </div>
+  <p>まるい ボタンを タッチすると<br>たのしい おとが なるよ！</p>
+  <button class="intro-btn" id="introBtn">はじめる！</button>
+</div>
+
 <div id="app">
   <div class="stage" id="stage">
     <!-- 最下層: 背景 Canvas (グラデ + 環境バブル + 波紋 + パーティクル) -->
@@ -1020,6 +1075,20 @@ document.addEventListener('visibilitychange', function() {
 if (window.initMenu) {
   initMenu({}); // このゲームは BGM なし。メニューはホームに戻るだけ
 }
+
+// ────────────────────────────────
+// イントロ → タップで AudioContext アンロック → ステージ表示
+// ────────────────────────────────
+(function() {
+  var introBtn = document.getElementById('introBtn');
+  if (!introBtn) return;
+  introBtn.addEventListener('click', function() {
+    unlockAudio();
+    _ensureAnimalDecoded();
+    var intro = document.getElementById('intro');
+    if (intro) intro.style.display = 'none';
+  });
+})();
 </script>
 </body>
 </html>
