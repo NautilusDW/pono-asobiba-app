@@ -40,12 +40,15 @@
     position: absolute; inset: 0;
     z-index: 0; pointer-events: none;
   }
-  /* ポノ sprite (画面ど真ん中、静止画 + CSS で呼吸 + バンプ) */
+  /* ポノ sprite (画面ど真ん中、静止画 + CSS で呼吸 + バンプ)
+     高さを固定して幅 auto にする = 全画像で身体 (頭〜足) の大きさが
+     同じに見える (画像自体は頭〜足 540px で正規化済み) */
   .pono-sprite {
     position: absolute;
     top: 50%; left: 50%;
-    width: 150px; height: auto;
-    max-height: 220px;
+    height: 200px;           /* 固定 → 全ポーズで身体サイズ一定 */
+    width: auto;
+    max-width: 80vw;
     z-index: 2; pointer-events: none;
     transform-origin: center bottom;
     transform: translate(-50%, -50%);
