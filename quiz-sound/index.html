@@ -128,53 +128,107 @@
     80%      { transform: translateX(6px); }
   }
 
-  /* ── マルバツ オーバーレイ ── */
-  .judge {
-    position: fixed; inset: 0;
+  /* ── マルバツ: カードの上に重ねる小型バッジ ── */
+  .judge-mark {
+    position: absolute;
+    left: 50%; top: 4px;
+    transform: translateX(-50%) scale(0.4);
+    font-size: 4.2rem;
     pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14rem;
-    z-index: 100;
+    z-index: 30;
     opacity: 0;
+    text-shadow: 0 4px 0 rgba(0,0,0,0.18);
   }
-  .judge.show {
-    animation: judgePop 0.9s ease-out forwards;
+  .judge-mark.show {
+    animation: judgeBadgePop 0.9s ease-out forwards;
   }
-  @keyframes judgePop {
-    0%   { opacity: 0; transform: scale(0.4); }
-    30%  { opacity: 1; transform: scale(1.2); }
-    50%  { opacity: 1; transform: scale(1); }
-    85%  { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1); }
+  @keyframes judgeBadgePop {
+    0%   { opacity: 0; transform: translateX(-50%) scale(0.4); }
+    30%  { opacity: 1; transform: translateX(-50%) scale(1.25); }
+    55%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    85%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1); }
   }
 
-  /* ── ポノ ── */
-  .pono-cheer {
-    position: fixed;
-    bottom: max(8px, env(safe-area-inset-bottom));
-    right: 8px;
-    width: 86px; height: 110px;
-    z-index: 5;
-    pointer-events: none;
-    transition: transform 0.3s;
+  /* ── 考え中のポノ動画 (中央下、選択肢の下) ── */
+  .thinking-pono {
+    flex: 0 0 auto;
+    margin: 4px auto 8px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(255,255,255,0.6);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex; align-items: center; justify-content: center;
   }
-  .pono-cheer.bump { animation: ponoBump 0.6s ease-out; }
-  @keyframes ponoBump {
-    0%, 100% { transform: translateY(0) scale(1); }
-    25%      { transform: translateY(-12px) scale(1.05); }
-    50%      { transform: translateY(0) scale(1); }
-    75%      { transform: translateY(-6px) scale(1.03); }
+  .thinking-pono video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  /* ── イントロ画面 (タップで AC アンロック) ── */
+  .intro {
+    position: fixed; inset: 0;
+    background: linear-gradient(180deg, #FFE9C4 0%, #FFCEA0 60%, #FFB781 100%);
+    z-index: 200;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  .intro h1 {
+    font-size: 1.7rem; font-weight: 900; color: #F2742A;
+    text-shadow: 2px 2px 0 #fff;
+    margin-bottom: 12px;
+  }
+  .intro .intro-pono {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    margin: 8px 0 16px;
+  }
+  .intro .intro-pono video { width: 100%; height: 100%; object-fit: cover; }
+  .intro p {
+    font-size: 1rem; font-weight: 700; color: #5D4E37;
+    line-height: 1.7; margin-bottom: 24px; max-width: 320px;
+  }
+  .intro-btn {
+    padding: 14px 40px;
+    border: none; border-radius: 999px;
+    background: linear-gradient(135deg, #FFD84D, #F2B800);
+    color: #fff; font-family: inherit;
+    font-size: 1.4rem; font-weight: 900;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .intro-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2);
   }
 
   /* ── 横画面 / 大画面 ── */
   @media (orientation: landscape) {
     .choices { grid-template-columns: repeat(3, 1fr); max-width: 720px; margin: 0 auto; }
-    .pono-cheer { width: 70px; height: 90px; }
+    .thinking-pono { width: 90px; height: 90px; }
   }
 </style>
 </head>
 <body>
-<div id="app">
+<!-- ── イントロ: タップで AudioContext / BGM をアンロック ── -->
+<div class="intro" id="intro">
+  <h1>おとあてクイズ</h1>
+  <div class="intro-pono">
+    <video src="../assets/videos/ThinkingPono.mp4" autoplay loop muted playsinline webkit-playsinline></video>
+  </div>
+  <p>どうぶつの こえを きいて<br>おなじ どうぶつを えらんでね！</p>
+  <button class="intro-btn" id="introBtn">はじめる！</button>
+</div>
+
+<div id="app" style="display:none;">
   <div class="topbar" id="topbar"></div>
 
   <div class="question">
@@ -183,10 +237,11 @@
   </div>
 
   <div class="choices" id="choices"></div>
-</div>
 
-<div class="judge" id="judge"></div>
-<img class="pono-cheer" id="pono" src="../assets/images/characters/pono/pono_face_circle.png" alt="" onerror="this.style.display='none'">
+  <div class="thinking-pono">
+    <video src="../assets/videos/ThinkingPono.mp4" autoplay loop muted playsinline webkit-playsinline></video>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -358,9 +413,8 @@ function onChoose(card, choice) {
     document.querySelectorAll('.choice-card').forEach(function(c){
       if (c !== card) c.classList.add('disabled');
     });
-    showJudge('⭕');
+    showJudgeOnCard(card, '⭕');
     playCorrectChime();
-    bumpPono();
     if (window.incrementStat) window.incrementStat('quiz_sound_correct', 1);
     setTimeout(function() {
       qIndex++;
@@ -372,27 +426,29 @@ function onChoose(card, choice) {
       }
     }, 1200);
   } else {
-    // 不正解: そのカードだけ揺れる。やり直し可能（ペナルティなし）
+    // 不正解: そのカードだけ揺れる + ✕ バッジ。やり直し可能（ペナルティなし）
     card.classList.add('wrong');
+    showJudgeOnCard(card, '✕');
     playWrongBuzz();
     setTimeout(function(){ card.classList.remove('wrong'); }, 500);
   }
 }
 
-function showJudge(mark) {
-  var el = document.getElementById('judge');
-  el.textContent = mark;
-  el.classList.remove('show');
-  // reflow でアニメを再起動
-  void el.offsetWidth;
-  el.classList.add('show');
-}
-function bumpPono() {
-  var p = document.getElementById('pono');
-  if (!p) return;
-  p.classList.remove('bump');
-  void p.offsetWidth;
-  p.classList.add('bump');
+// 指定カードの上に ⭕ / ✕ バッジを出す
+function showJudgeOnCard(card, mark) {
+  // 既存バッジを除去
+  var prev = card.querySelector('.judge-mark');
+  if (prev) prev.remove();
+  var badge = document.createElement('div');
+  badge.className = 'judge-mark';
+  badge.textContent = mark;
+  badge.style.color = (mark === '⭕') ? '#FF4A6B' : '#4A6BFF';
+  card.appendChild(badge);
+  // reflow でアニメ起動
+  void badge.offsetWidth;
+  badge.classList.add('show');
+  // 0.9s + 余裕で削除
+  setTimeout(function(){ if (badge.parentNode) badge.remove(); }, 1100);
 }
 
 // ────────────────────────────────
@@ -459,11 +515,23 @@ document.getElementById('speaker').addEventListener('click', function() {
   if (questions[qIndex]) playAnimalSound(questions[qIndex].id);
 });
 
-questions = buildQuestions();
-qIndex = 0;
-// 全音源プリロード
+// 全音源を先に取得 (デコードはイントロタップ後)
 ANIMALS.forEach(function(a){ loadAudio(a.id, a.sound); });
-renderQuestion();
+
+// イントロ → タップで AudioContext アンロック → クイズ開始
+function startGame() {
+  // AudioContext をユーザー操作中にアンロック (iOS/Safari 必須)
+  var ac = getAC();
+  if (ac && ac.state === 'suspended') ac.resume().catch(function(){});
+  // BGM はここで開始予定 (素材到着後に差し込む)
+
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  questions = buildQuestions();
+  qIndex = 0;
+  renderQuestion();
+}
+document.getElementById('introBtn').addEventListener('click', startGame);
 
 // 共通メニュー (⚙ → ホーム戻る)
 if (window.initMenu) initMenu({});
