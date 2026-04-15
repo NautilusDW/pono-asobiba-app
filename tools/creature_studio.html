@@ -2588,6 +2588,76 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
  * 全体画像では囲まれていた背景色が、個別矩形では外周に露出するため、
  * ここで改めて色ベースの flood fill を実行すれば自動除去できる。
  */
+// 不透明領域の連結成分を求め、最大成分とその 18% 以上の大きな成分のみを残す。
+// それ以外 (隣のキャラからの侵入片など) は透明化する。
+function _keepLargestComponent(canvas) {
+  const w = canvas.width, h = canvas.height;
+  if (w < 4 || h < 4) return;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  const ALPHA_THR = 20;
+  // ラベリング (BFS)
+  const label = new Int32Array(w * h);
+  const sizes = [0]; // index 0 = unused
+  const q = new Int32Array(w * h);
+  let nextLabel = 1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (label[i] !== 0) continue;
+      if (d[i*4 + 3] <= ALPHA_THR) continue;
+      // BFS
+      let head = 0, tail = 0;
+      q[tail++] = i;
+      label[i] = nextLabel;
+      let count = 0;
+      while (head < tail) {
+        const j = q[head++];
+        count++;
+        const jx = j % w, jy = (j - jx) / w;
+        // 4近傍
+        const nbs = [];
+        if (jx > 0)     nbs.push(j - 1);
+        if (jx < w - 1) nbs.push(j + 1);
+        if (jy > 0)     nbs.push(j - w);
+        if (jy < h - 1) nbs.push(j + w);
+        for (const nj of nbs) {
+          if (label[nj] !== 0) continue;
+          if (d[nj*4 + 3] <= ALPHA_THR) continue;
+          label[nj] = nextLabel;
+          q[tail++] = nj;
+        }
+      }
+      sizes[nextLabel] = count;
+      nextLabel++;
+    }
+  }
+  if (nextLabel <= 1) return;
+  // 最大コンポーネント
+  let maxSize = 0;
+  for (let k = 1; k < nextLabel; k++) {
+    if (sizes[k] > maxSize) maxSize = sizes[k];
+  }
+  // 18% 未満のコンポーネントは破片とみなして除去
+  const KEEP_RATIO = 0.18;
+  const minKeep = maxSize * KEEP_RATIO;
+  const drop = new Uint8Array(nextLabel);
+  for (let k = 1; k < nextLabel; k++) {
+    if (sizes[k] < minKeep) drop[k] = 1;
+  }
+  let dropped = false;
+  for (let i = 0; i < w * h; i++) {
+    const lab = label[i];
+    if (lab === 0) continue;
+    if (drop[lab]) {
+      d[i*4 + 3] = 0;
+      dropped = true;
+    }
+  }
+  if (dropped) ctx.putImageData(img, 0, 0);
+}
+
 function _cleanSpriteEdges(canvas, tolerance, bgColor) {
   const w = canvas.width, h = canvas.height;
   const ctx = canvas.getContext('2d');
@@ -2930,12 +3000,24 @@ document.getElementById('btn-split').addEventListener('click', async () => {
     }
     showLoading('選択範囲を切り出し中...');
     await new Promise(r => setTimeout(r, 20));
+    // 背景除去のしきい値 (sliders からとってくる)
+    const bgTol = parseFloat(document.getElementById('tolerance').value) || 35;
     sprites = [];
     pickerImages.forEach((pImg) => {
+      // 各ソース画像の背景色を画像全体からサンプリング
+      const srcCtx = pImg.canvas.getContext('2d');
+      const srcData = srcCtx.getImageData(0, 0, pImg.canvas.width, pImg.canvas.height).data;
+      const bgColor = sampleBgColor(srcData, pImg.canvas.width, pImg.canvas.height);
+
       pImg.selections.forEach((sel) => {
         const sc = document.createElement('canvas');
         sc.width = sel.w; sc.height = sel.h;
         sc.getContext('2d').drawImage(pImg.canvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
+        // 隣のキャラがハミ出てきた端のピクセルを外周フラッドフィルで透明化
+        // (背景色に近い色のみ消える → キャラ本体は無事)
+        try { _cleanSpriteEdges(sc, bgTol, bgColor); } catch (e) {}
+        // さらに最大コンポーネント以外の破片(色付きの侵入片)を削除
+        try { _keepLargestComponent(sc); } catch (e) {}
         sprites.push({
           canvas: sc, srcX: sel.x, srcY: sel.y, w: sel.w, h: sel.h,
           name: '', id: '', icon: '🐠', expr: 'normal',
@@ -2947,7 +3029,7 @@ document.getElementById('btn-split').addEventListener('click', async () => {
     });
     renderSpritesGrid();
     hideLoading();
-    showToast(sprites.length + '個の選択範囲を切り出しました', true);
+    showToast(sprites.length + '個の選択範囲を切り出しました (背景クリーン適用)', true);
     return;
   }
 
