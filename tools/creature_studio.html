@@ -795,7 +795,12 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
         <button class="tbtn tbtn-blue" id="btn-ai-group">🤖 AI命名</button>
         <div style="flex:1"></div>
-        <button class="tbtn tbtn-green" id="btn-deploy">🐠 GitHubに登録</button>
+        <label style="font-size:0.7rem;color:#9ca3af;">保存先:</label>
+        <select id="deploy-destination" style="padding:4px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#d1d5db;font-size:0.75rem;font-family:inherit;">
+          <option value="aquarium">🐠 水族館</option>
+          <option value="quiz-sound">🐾 音当てクイズ</option>
+        </select>
+        <button class="tbtn tbtn-green" id="btn-deploy">🚀 GitHubに登録</button>
       </div>
       <div id="sprites-grid" class="sprites-grid">
         <div class="empty-msg">「スプライトを分割」を実行してください。</div>
@@ -3781,6 +3786,82 @@ async function fetchCreaturesData() {
   if (!creaturesData.creatures) creaturesData.creatures = [];
 }
 
+// 音当てクイズ用デプロイ: 画像を assets/images/quiz-sound/<Folder>/ に保存し、
+// assets/data/quiz-sound-animals.json に追記/更新する。
+async function deployToQuizSound(selectedCards) {
+  const QS_DIR = 'assets/images/quiz-sound';
+  const QS_JSON = 'assets/data/quiz-sound-animals.json';
+  const SOUNDS_DIR = 'assets/sounds/animals'; // sound はファイル名規約 <id>.mp3
+
+  // 既存 quiz-sound-animals.json を取得 (なければ空)
+  let qsData = { animals: [] };
+  let qsSha = null;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${QS_JSON}?ref=${GH_BRANCH}&_=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
+    if (res.ok) {
+      const j = await res.json();
+      qsSha = j.sha;
+      if (j.content) {
+        const decoded = decodeURIComponent(escape(atob(j.content.replace(/\n/g, ''))));
+        qsData = JSON.parse(decoded);
+        if (!qsData.animals) qsData.animals = [];
+      }
+    }
+  } catch (e) { console.warn('quiz-sound-animals.json fetch failed:', e); }
+
+  showLoading('音当てクイズに登録中...');
+  const setStatus = msg => {
+    document.getElementById('deploy-status').textContent = msg;
+    document.getElementById('loading-msg').textContent = msg;
+  };
+
+  let uploaded = 0;
+  const total = selectedCards.length;
+  try {
+    for (const card of selectedCards) {
+      const sp = sprites[parseInt(card.dataset.idx)];
+      const name = sp.name.trim();
+      const id = (sp.id || name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_')) || 'animal';
+      const folder = id.charAt(0).toUpperCase() + id.slice(1);
+      const imgRelPath = `${QS_DIR}/${folder}/${folder}_normal_1.png`;
+      setStatus(`🔄 ${++uploaded}/${total} — ${name} (画像)`);
+      await ghUploadPromise(
+        imgRelPath,
+        canvasToBase64(sp.canvas),
+        `🐾 quiz-sound: ${id} / ${folder}_normal_1.png`
+      );
+      // 既存エントリがあれば更新、無ければ追加
+      const idx = qsData.animals.findIndex(a => a.id === id);
+      const entry = {
+        id,
+        name,
+        icon: sp.icon || '🐾',
+        img: imgRelPath,
+        sound: `${SOUNDS_DIR}/${id}.mp3`, // 規約: 音源ファイル名は <id>.mp3
+        enabled: idx >= 0 ? (qsData.animals[idx].enabled !== false) : true
+      };
+      if (idx >= 0) qsData.animals[idx] = entry;
+      else qsData.animals.push(entry);
+    }
+
+    // quiz-sound-animals.json を更新
+    setStatus('🔄 quiz-sound-animals.json を更新中...');
+    await ghUploadPromise(
+      QS_JSON,
+      utf8ToBase64(JSON.stringify(qsData, null, 2)),
+      `🐾 quiz-sound: register ${total} animal(s)`
+    );
+
+    hideLoading();
+    setStatus(`✅ ${total}体を音当てクイズに登録`);
+    showToast(`🐾 ${total}体を音当てクイズに登録しました`, true);
+  } catch (e) {
+    hideLoading();
+    setStatus('❌ エラー: ' + e.message);
+    showToast('登録失敗: ' + e.message, false);
+  }
+}
+
 document.getElementById('btn-deploy').addEventListener('click', async () => {
   if (!getToken()) { showToast('GitHubトークンを設定してください', false); return; }
 
@@ -3791,6 +3872,13 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
   // Validate names
   const unnamed = selectedCards.filter(c => !sprites[parseInt(c.dataset.idx)].name.trim());
   if (unnamed.length) { showToast('すべての選択スプライトに名前をつけてください', false); return; }
+
+  // 保存先で分岐
+  const destination = document.getElementById('deploy-destination').value;
+  if (destination === 'quiz-sound') {
+    return await deployToQuizSound(selectedCards);
+  }
+  // 既定: 水族館 (元の挙動)
 
   // Group by creature name
   const groups = new Map();

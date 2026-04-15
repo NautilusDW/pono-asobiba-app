@@ -249,17 +249,8 @@
 // ────────────────────────────────
 // 動物データ (画像 + 音源が両方ある6種)
 // ────────────────────────────────
-var ANIMALS = [
-  { id: 'cat',     name: 'ねこ',    img: '../assets/images/ocean/Cat/Cat_normal_1.png',         sound: '../assets/sounds/animals/cat.mp3' },
-  { id: 'dog',     name: 'いぬ',    img: '../assets/images/ocean/Dog/Dog_normal_1.png',         sound: '../assets/sounds/animals/dog.mp3' },
-  { id: 'cow',     name: 'うし',    img: '../assets/images/ocean/Cow/Cow_normal_1.png',         sound: '../assets/sounds/animals/cow.mp3' },
-  { id: 'frog',    name: 'かえる',  img: '../assets/images/ocean/Frog/Frog_normal_1.png',       sound: '../assets/sounds/animals/frog.mp3' },
-  { id: 'horse',   name: 'うま',    img: '../assets/images/ocean/Horse/Horse_normal_1.png',     sound: '../assets/sounds/animals/horse.mp3' },
-  { id: 'lion',    name: 'ライオン', img: '../assets/images/ocean/Lion/Lion_normal_1.png',      sound: '../assets/sounds/animals/lion.mp3' },
-  { id: 'wolf',    name: 'おおかみ', img: '../assets/images/ocean/Wolf/Wolf_normal_1.png',      sound: '../assets/sounds/animals/wolf.mp3' },
-  { id: 'cicada',  name: 'セミ',    img: '../assets/images/ocean/Cicada/Cicada_normal_1.png',   sound: '../assets/sounds/animals/cicada.mp3' },
-  { id: 'cricket', name: 'コオロギ', img: '../assets/images/ocean/Cricket/Cricket_normal_1.png', sound: '../assets/sounds/animals/cricket.mp3' },
-];
+// 動物リストは ../assets/data/quiz-sound-animals.json から読み込み (admin で管理)
+var ANIMALS = []; // 起動時に fetch で投入
 var TOTAL_QUESTIONS = 5;
 var CHOICES_PER_QUESTION = 3;
 
@@ -518,15 +509,43 @@ document.getElementById('speaker').addEventListener('click', function() {
   if (questions[qIndex]) playAnimalSound(questions[qIndex].id);
 });
 
-// 全音源を先に取得 (デコードはイントロタップ後)
-ANIMALS.forEach(function(a){ loadAudio(a.id, a.sound); });
+// quiz-sound-animals.json から動物リストを取得 → enabled のものだけ採用
+function loadAnimalsFromJSON() {
+  return fetch('../assets/data/quiz-sound-animals.json?_=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var list = (data && data.animals) ? data.animals : [];
+      // sound 必須 + enabled === true のものだけ
+      ANIMALS = list
+        .filter(function (a) { return a.enabled !== false && a.sound; })
+        .map(function (a) {
+          return {
+            id:   a.id,
+            name: a.name,
+            // 相対パス調整 (JSON は project root 起点なので ../ を前置)
+            img:   '../' + a.img,
+            sound: '../' + a.sound
+          };
+        });
+      // プリロード
+      ANIMALS.forEach(function (a) { loadAudio(a.id, a.sound); });
+    })
+    .catch(function (e) {
+      console.warn('[quiz-sound] failed to load animal list:', e);
+    });
+}
 
 // イントロ → タップで AudioContext アンロック → クイズ開始
 function startGame() {
   // AudioContext をユーザー操作中にアンロック (iOS/Safari 必須)
   var ac = getAC();
   if (ac && ac.state === 'suspended') ac.resume().catch(function(){});
-  // BGM はここで開始予定 (素材到着後に差し込む)
+
+  if (ANIMALS.length < CHOICES_PER_QUESTION) {
+    // データ未取得 or 有効な動物が少なすぎる場合
+    alert('まだ どうぶつリストが よめません。すこし まってね。');
+    return;
+  }
 
   document.getElementById('intro').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
@@ -535,6 +554,9 @@ function startGame() {
   renderQuestion();
 }
 document.getElementById('introBtn').addEventListener('click', startGame);
+
+// 起動時に動物リストを読み込み開始
+loadAnimalsFromJSON();
 
 // 共通メニュー (⚙ → ホーム戻る)
 if (window.initMenu) initMenu({});

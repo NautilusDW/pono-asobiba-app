@@ -304,6 +304,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab active" data-panel="home">📋 ホーム</button>
   <button class="tab" data-panel="roadmap">🗺 ロードマップ</button>
   <button class="tab" data-panel="aquarium">🐠 水族館</button>
+  <button class="tab" data-panel="quiz-sound">🐾 音当てクイズ</button>
   <button class="tab" data-panel="quizland">🧩 クイズランド</button>
   <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
@@ -610,6 +611,24 @@ tr:hover { background: #FFFAF0; }
   </div>
   </div><!-- /sub-aqua-encyclopedia -->
 </div><!-- /panel-aquarium -->
+
+<!-- ===== 🐾 音当てクイズ ===== -->
+<div class="panel" id="panel-quiz-sound">
+  <div class="section">
+    <div class="section-title">🐾 とうろくずみの動物</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 10px;">
+      音当てクイズで出題される動物の一覧。<strong>有効</strong>のチェックを外すと出題から除外されます。
+      新しい動物は <a href="../tools/creature_studio.html" target="_blank" style="color:#60A5FA;">クリーンエッジスタジオ</a> の保存先で「🐾 音当てクイズ」を選んで登録してください。
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+      <button id="btn-reload-qs" class="btn btn-gold btn-sm">🔄 再読み込み</button>
+      <button id="btn-save-qs" class="btn btn-gold btn-sm" style="background:#22c55e;color:#fff;">💾 GitHubに保存</button>
+      <span id="qs-count" style="font-size:0.75rem;color:#888;"></span>
+      <span id="qs-status" style="font-size:0.72rem;color:#9ca3af;margin-left:auto;"></span>
+    </div>
+    <div id="qs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;"></div>
+  </div>
+</div>
 
 <!-- ===== 🏆 実績一覧 ===== -->
 <div class="panel" id="panel-achievements">
@@ -970,6 +989,9 @@ function switchTab(panelId) {
     // 図鑑サブタブが選ばれていたら図鑑も取得
     var encSub = document.getElementById('sub-aqua-encyclopedia');
     if (encSub && encSub.classList.contains('active')) fetchEncyclopedia();
+  }
+  if (panelId === 'quiz-sound') {
+    if (typeof loadQuizSound === 'function') loadQuizSound();
   }
   if (panelId === 'quizland') {
     var qSub = document.getElementById('sub-quiz-questions');
@@ -8056,6 +8078,129 @@ async function wfDeploy() {
 // パネル切替時に初期表示
 document.querySelectorAll('.tab[data-panel="walls"]').forEach(function(btn) {
   btn.addEventListener('click', function() { setTimeout(function() { wfRender(wfCurrentCat); }, 50); });
+});
+
+// ════════════════════════════════════════════════════════════
+// 🐾 音当てクイズ 管理
+// ════════════════════════════════════════════════════════════
+var QS_JSON_PATH = 'assets/data/quiz-sound-animals.json';
+var qsData = null;
+var qsSha = null;
+
+function setQsStatus(msg) {
+  var el = document.getElementById('qs-status');
+  if (el) el.textContent = msg || '';
+}
+
+function loadQuizSound() {
+  setQsStatus('読み込み中...');
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + QS_JSON_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(),
+        { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(j) {
+      if (j && j.content) {
+        qsSha = j.sha;
+        try { qsData = JSON.parse(base64ToUtf8(j.content.replace(/\n/g, ''))); } catch(e) { qsData = { animals: [] }; }
+      } else {
+        qsData = { animals: [] };
+        qsSha = null;
+      }
+      if (!qsData.animals) qsData.animals = [];
+      renderQuizSound();
+      setQsStatus('');
+    })
+    .catch(function(e) {
+      setQsStatus('❌ 読み込み失敗: ' + e.message);
+      qsData = { animals: [] };
+      renderQuizSound();
+    });
+}
+
+function renderQuizSound() {
+  var grid = document.getElementById('qs-grid');
+  var countEl = document.getElementById('qs-count');
+  if (!grid || !qsData) return;
+  var arr = qsData.animals || [];
+  var enabled = arr.filter(function(a) { return a.enabled !== false && a.sound; }).length;
+  countEl.textContent = '計 ' + arr.length + '体 (出題対象 ' + enabled + '体)';
+  grid.innerHTML = '';
+  arr.forEach(function(a, idx) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border:2px solid ' + (a.enabled !== false ? '#22c55e' : '#cbd5e1') + ';border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;';
+    card.innerHTML =
+      '<div style="background:#f9fafb;border-radius:6px;height:100px;display:flex;align-items:center;justify-content:center;overflow:hidden;">'
+      + (a.img ? '<img src="../' + a.img + '?_=' + Date.now() + '" style="max-width:100%;max-height:100%;object-fit:contain;" onerror="this.style.display=\'none\'">' : '')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:4px;font-size:0.8rem;font-weight:700;color:#334155;">'
+      + '<span>' + (a.icon || '🐾') + '</span><span>' + (a.name || a.id) + '</span>'
+      + '<span style="font-size:0.65rem;color:#9ca3af;margin-left:auto;">' + a.id + '</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;font-size:0.7rem;">'
+      + '<label style="display:flex;align-items:center;gap:3px;cursor:pointer;">'
+      +   '<input type="checkbox" data-qs-idx="' + idx + '" data-qs-act="enabled" ' + (a.enabled !== false ? 'checked' : '') + '> 出題ON'
+      + '</label>'
+      + (a.sound ? '<button data-qs-idx="' + idx + '" data-qs-act="play" style="padding:2px 6px;border:none;background:#60A5FA;color:#fff;border-radius:4px;font-size:0.65rem;cursor:pointer;font-family:inherit;">🔊</button>' : '<span style="color:#ef4444;font-size:0.65rem;">音声なし</span>')
+      + '<button data-qs-idx="' + idx + '" data-qs-act="del" style="padding:2px 6px;border:none;background:#ef4444;color:#fff;border-radius:4px;font-size:0.65rem;cursor:pointer;font-family:inherit;margin-left:auto;">🗑</button>'
+      + '</div>';
+    grid.appendChild(card);
+  });
+  // delegate handlers
+  grid.querySelectorAll('input[data-qs-act="enabled"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var i = parseInt(cb.dataset.qsIdx, 10);
+      if (qsData.animals[i]) qsData.animals[i].enabled = cb.checked;
+      renderQuizSound();
+    });
+  });
+  grid.querySelectorAll('button[data-qs-act="play"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var i = parseInt(btn.dataset.qsIdx, 10);
+      var a = qsData.animals[i];
+      if (a && a.sound) {
+        try { (new Audio('../' + a.sound)).play().catch(function(){}); } catch(e) {}
+      }
+    });
+  });
+  grid.querySelectorAll('button[data-qs-act="del"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var i = parseInt(btn.dataset.qsIdx, 10);
+      var a = qsData.animals[i];
+      if (!a) return;
+      if (!confirm('「' + a.name + '」(' + a.id + ') を削除しますか? (画像/音源ファイルは残ります)')) return;
+      qsData.animals.splice(i, 1);
+      renderQuizSound();
+    });
+  });
+}
+
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'btn-reload-qs') loadQuizSound();
+});
+document.addEventListener('click', function(e) {
+  if (!e.target || e.target.id !== 'btn-save-qs') return;
+  if (!qsData) return;
+  if (!getToken()) { alert('GitHubトークンを設定してください'); return; }
+  setQsStatus('🔄 保存中...');
+  var body = JSON.stringify({
+    message: '🐾 admin: update quiz-sound-animals.json',
+    content: utf8ToBase64(JSON.stringify(qsData, null, 2)),
+    branch: GH_BRANCH,
+    sha: qsSha || undefined
+  });
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + QS_JSON_PATH,
+        { method: 'PUT', headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }), body: body })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'save error'); });
+      return r.json();
+    })
+    .then(function(j) {
+      if (j && j.content) qsSha = j.content.sha;
+      setQsStatus('✅ 保存しました');
+      setTimeout(function() { setQsStatus(''); }, 2500);
+    })
+    .catch(function(e) {
+      setQsStatus('❌ ' + e.message);
+    });
 });
 
 </script>
