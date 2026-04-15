@@ -385,6 +385,7 @@ tr:hover { background: #FFFAF0; }
   <div class="save-bar">
     <span class="save-bar-msg" id="save-bar-msg">rewards.json を編集中</span>
     <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-sm" id="btn-undo-rewards" title="取り消し (Ctrl+Z / Cmd+Z)" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;" disabled>↩ 取り消し</button>
       <button class="btn btn-gold" id="btn-reload-rewards">🔄 再読込</button>
       <button class="btn btn-green" id="btn-save-rewards" style="font-size:0.85rem;">💾 保存（GitHubにコミット）</button>
     </div>
@@ -1481,7 +1482,7 @@ function renderSlotPagination(totalPages) {
     btn.textContent = (i + 1);
     btn.dataset.page = i;
     btn.addEventListener('click', function() {
-      flushAllVisibleCardsToData();      // ページ移動前に 編集内容を保存
+      flushAllVisibleCardsToData();      // ページ移動は Undo 対象外 (ナビゲーションのみ)
       slotPage = parseInt(this.dataset.page);
       renderSlotRewards();
     });
@@ -1493,6 +1494,63 @@ function renderSlotPagination(totalPages) {
 // 自動保存: 再レンダー前に、現在画面に表示されている全カードの
 // 編集内容を rewardsData に書き戻して 未保存の変更が消えないようにする。
 // ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// 取り消し (Undo) スタック — 破壊的操作の前に rewardsData をスナップショット
+// ════════════════════════════════════════════════════════════════
+var _rewardsUndoStack = [];
+var REWARDS_UNDO_MAX = 30;
+
+function snapshotRewardsForUndo() {
+  if (!rewardsData) return;
+  // 最新の DOM 編集も snapshot に含める
+  try { flushAllVisibleCardsToData(); } catch (e) {}
+  try { flushAllFirstClearCardsToData(); } catch (e) {}
+  try { flushAllCardRewardCardsToData(); } catch (e) {}
+  try {
+    _rewardsUndoStack.push(JSON.parse(JSON.stringify(rewardsData)));
+    if (_rewardsUndoStack.length > REWARDS_UNDO_MAX) _rewardsUndoStack.shift();
+    _updateUndoBtn();
+  } catch (e) { console.warn('[undo] snapshot failed:', e); }
+}
+
+function undoRewards() {
+  if (_rewardsUndoStack.length === 0) return;
+  var prev = _rewardsUndoStack.pop();
+  rewardsData = prev;
+  _updateUndoBtn();
+  // 全セクション再描画
+  try { renderSlotRewards(); } catch (e) {}
+  try { renderCardRewards(); } catch (e) {}
+  try { renderFirstClearRewards(); } catch (e) {}
+  if (typeof showToast === 'function') showToast('↩ 取り消しました', true);
+}
+
+function _updateUndoBtn() {
+  var btn = document.getElementById('btn-undo-rewards');
+  if (!btn) return;
+  btn.disabled = _rewardsUndoStack.length === 0;
+  btn.textContent = '↩ 取り消し' + (_rewardsUndoStack.length ? ' (' + _rewardsUndoStack.length + ')' : '');
+}
+
+// ── UI バインド ──
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'btn-undo-rewards') undoRewards();
+});
+// Ctrl+Z / Cmd+Z: テキスト入力中はブラウザ標準のテキスト Undo を優先、
+// それ以外 (ボタン上や画面全体) では 報酬データの取り消し
+document.addEventListener('keydown', function(e) {
+  var isUndo = (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z');
+  if (!isUndo) return;
+  // 🎟 報酬管理タブが表示されている時だけ反応
+  var panel = document.getElementById('panel-stamp');
+  if (!panel || !panel.classList.contains('active')) return;
+  var t = e.target;
+  var tn = t && t.tagName;
+  if (tn === 'INPUT' || tn === 'TEXTAREA' || (t && t.isContentEditable)) return;
+  e.preventDefault();
+  undoRewards();
+});
+
 function flushAllVisibleCardsToData() {
   if (!rewardsData || !rewardsData.slotRewards) return;
   document.querySelectorAll('#slot-rewards-container .reward-card').forEach(function(card) {
@@ -1623,7 +1681,7 @@ function buildSlotCard(slotNum, data) {
   delBtn.textContent = '🗑 削除';
   delBtn.addEventListener('click', function() {
     if (confirm('スロット ' + slotNum + ' を削除しますか？')) {
-      flushAllVisibleCardsToData();     // 他カードの編集を保存してから
+      snapshotRewardsForUndo();         // 取り消し用スナップショット (flush も内包)
       delete rewardsData.slotRewards[slotNum];
       renderSlotRewards();
     }
@@ -1704,7 +1762,7 @@ function buildSlotCard(slotNum, data) {
     var cb = this;
     var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
     var currentData = collectSlotData(card);
-    flushAllVisibleCardsToData();   // 他カードの編集を保存 (自カードは直後の currentData で上書き)
+    snapshotRewardsForUndo();   // 取り消し用スナップショット (flush 内包)
 
     if (cb.checked) {
       // non-gendered → gendered: 既存データをどちらに残すか聞く
@@ -1923,7 +1981,7 @@ function renderFirstClearRewards() {
       btn.addEventListener('mouseenter', function() { btn.style.background = '#FEF3C7'; });
       btn.addEventListener('mouseleave', function() { btn.style.background = '#fff'; });
       btn.addEventListener('click', function() {
-        flushAllFirstClearCardsToData();   // 他カードの編集を保存
+        snapshotRewardsForUndo();          // 取り消し用スナップショット
         // 空のエントリを追加して再描画
         rewardsData.firstClearRewards[g.id] = {
           icon: '🎁',
@@ -2018,7 +2076,7 @@ function buildFirstClearCard(game, data) {
   genderedCheck.querySelector('input').addEventListener('change', function() {
     var cb = this;
     var currentData = collectFirstClearCardData(card);
-    flushAllFirstClearCardsToData();   // 他カードの編集を保存
+    snapshotRewardsForUndo();       // 取り消し用スナップショット
     if (cb.checked) {
       var hasData = (currentData.type && currentData.type !== 'sea') || currentData.id || currentData.img;
       if (hasData) {
@@ -2086,7 +2144,7 @@ function buildFirstClearCard(game, data) {
   clrBtn.style.cssText = 'background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;border-radius:8px;padding:6px 12px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;margin-left:auto;';
   clrBtn.addEventListener('click', function() {
     if (!confirm(game.label + ' の初回クリア報酬をクリアしますか？')) return;
-    flushAllFirstClearCardsToData();   // 他カードの編集を保存
+    snapshotRewardsForUndo();       // 取り消し用スナップショット
     delete rewardsData.firstClearRewards[game.id];
     renderFirstClearRewards();
   });
@@ -4237,9 +4295,8 @@ function buildCardCompleteCard(idx, data) {
   delBtn.textContent = '🗑 削除';
   delBtn.addEventListener('click', function() {
     if (confirm((idx + 1) + '枚目のカード完成報酬を削除しますか？')) {
-      flushAllCardRewardCardsToData();   // 他カードの編集を保存
+      snapshotRewardsForUndo();          // 取り消し用スナップショット
       rewardsData.cardCompleteRewards.splice(idx, 1);
-      // 削除後は インデックスがずれるので card-idx の dataset は再描画で振り直す
       renderCardRewards();
     }
   });
@@ -4305,7 +4362,7 @@ function buildCardCompleteCard(idx, data) {
     var cb = this;
     var cardIdx = parseInt(card.dataset.cardIdx);
     var currentData = collectCardData(card);
-    flushAllCardRewardCardsToData();   // 他カードの編集を保存
+    snapshotRewardsForUndo();      // 取り消し用スナップショット
 
     if (cb.checked) {
       // non-gendered → gendered
@@ -5561,7 +5618,7 @@ document.getElementById('btn-save-rewards').addEventListener('click', function()
 // ════════════════════════════════════════════════════════════════
 document.getElementById('btn-add-slot').addEventListener('click', function() {
   if (!rewardsData) { showToast('先にrewards.jsonを読み込んでください', false); return; }
-  flushAllVisibleCardsToData();   // 他カードの編集を保存
+  snapshotRewardsForUndo();      // 取り消し用スナップショット (flush 内包)
   var sr = rewardsData.slotRewards || {};
   var maxSlot = 0;
   Object.keys(sr).forEach(function(k) { var n = parseInt(k); if (n > maxSlot) maxSlot = n; });
@@ -5583,7 +5640,7 @@ document.getElementById('btn-add-slot').addEventListener('click', function() {
 
 document.getElementById('btn-add-card').addEventListener('click', function() {
   if (!rewardsData) { showToast('先にrewards.jsonを読み込んでください', false); return; }
-  flushAllCardRewardCardsToData();   // 他カードの編集を保存
+  snapshotRewardsForUndo();      // 取り消し用スナップショット (flush 内包)
   if (!rewardsData.cardCompleteRewards) rewardsData.cardCompleteRewards = [];
   var num = rewardsData.cardCompleteRewards.length + 1;
   rewardsData.cardCompleteRewards.push({
@@ -5600,6 +5657,8 @@ document.getElementById('btn-add-card').addEventListener('click', function() {
 // Reload
 document.getElementById('btn-reload-rewards').addEventListener('click', function() {
   if (confirm('未保存の変更は破棄されます。再読込しますか？')) {
+    _rewardsUndoStack = [];
+    _updateUndoBtn();
     fetchRewards();
   }
 });
