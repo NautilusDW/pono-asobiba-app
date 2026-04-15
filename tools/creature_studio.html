@@ -758,13 +758,23 @@ body {
         </div>
       </div>
       <div class="composite-bottom">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
           <label style="font-size:0.68rem;color:#9ca3af;">レイアウト:</label>
           <label style="font-size:0.68rem;color:#9ca3af;">1行:</label>
           <input type="number" id="composite-cols" value="5" min="1" max="20" style="width:38px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
           <span style="font-size:0.6rem;color:#6b7280">個</span>
           <label style="font-size:0.68rem;color:#9ca3af;">余白:</label>
           <input type="number" id="composite-gap" value="30" min="0" max="200" style="width:46px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
+          <span style="font-size:0.6rem;color:#6b7280">px</span>
+          <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+          <label style="font-size:0.68rem;color:#9ca3af;display:flex;align-items:center;gap:3px;cursor:pointer;">
+            <input type="checkbox" id="composite-unify" style="accent-color:#22c55e">
+            サイズ統一
+          </label>
+          <input type="number" id="composite-unify-size" value="200" min="40" max="800" step="10"
+                 disabled
+                 title="長辺をこのサイズにフィット (アスペクト維持)"
+                 style="width:50px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center;opacity:0.4;">
           <span style="font-size:0.6rem;color:#6b7280">px</span>
           <div style="flex:1"></div>
           <span id="composite-count" style="font-size:0.65rem;color:#6b7280">選択: 0</span>
@@ -2825,6 +2835,30 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
         }
       }
 
+      // 隣接スプライトの bbox と重なる「padding 領域」を事前計算
+      // (自分の bbox 外 かつ 他人の bbox 内 のピクセル) → アンチエイリアス端の
+      // 色で fg 判定をすり抜けたピクセルもまとめて消すための強制マスク
+      const strictMask = new Uint8Array(sw2 * sh2);
+      for (const [otherRoot, ob] of boxes) {
+        if (allowedRoots.has(otherRoot)) continue;
+        const ox1 = Math.max(ob.x1, sx), oy1 = Math.max(ob.y1, sy);
+        const ox2 = Math.min(ob.x2, sx + sw2 - 1), oy2 = Math.min(ob.y2, sy + sh2 - 1);
+        if (ox1 > ox2 || oy1 > oy2) continue;
+        for (let py2 = oy1; py2 <= oy2; py2++) {
+          // 自分の bbox 内なら除外 (目玉等の保護)
+          if (py2 >= b.y1 && py2 <= b.y2) {
+            for (let px2 = ox1; px2 <= ox2; px2++) {
+              if (px2 >= b.x1 && px2 <= b.x2) continue;
+              strictMask[(py2 - sy) * sw2 + (px2 - sx)] = 1;
+            }
+          } else {
+            for (let px2 = ox1; px2 <= ox2; px2++) {
+              strictMask[(py2 - sy) * sw2 + (px2 - sx)] = 1;
+            }
+          }
+        }
+      }
+
       const sImg = sctx.getImageData(0, 0, sw2, sh2);
       const sd = sImg.data;
       let masked = false;
@@ -2833,17 +2867,24 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
         for (let lx = 0; lx < sw2; lx++) {
           const gx = sx + lx;
           const gi = gy * w + gx;
+          const pi = (ly * sw2 + lx) * 4;
+
+          // 強制マスク: padding 領域に侵入した隣接スプライトの端 (アンチエイリアス含む) を消す
+          if (!keepBg && strictMask[ly * sw2 + lx]) {
+            sd[pi+3] = 0;
+            masked = true;
+            continue;
+          }
+
           if (!fg[gi]) continue;
           const mappedRoot = rootToMerged.get(find(gi));
-          if (mappedRoot === undefined) continue; // マッピングなし → そのまま
-          if (allowedRoots.has(mappedRoot)) continue; // 自分のスプライト → OK
+          if (mappedRoot === undefined) continue;
+          if (allowedRoots.has(mappedRoot)) continue;
           // このコンポーネントが自分のbbox内に完全に収まっている → 自分の一部（目玉等）
           const otherBox = boxes.get(mappedRoot);
           if (otherBox && otherBox.x1 >= b.x1 && otherBox.y1 >= b.y1 &&
               otherBox.x2 <= b.x2 && otherBox.y2 <= b.y2) continue;
-          // keepBg: 重なり領域内のみマスク
           if (keepBg && !overlapMask[ly * sw2 + lx]) continue;
-          const pi = (ly * sw2 + lx) * 4;
           if (keepBg) {
             sd[pi] = 255; sd[pi+1] = 255; sd[pi+2] = 255; sd[pi+3] = 255;
           } else {
@@ -4194,13 +4235,25 @@ function composeSelections() {
   const cols = Math.max(1, parseInt(document.getElementById('composite-cols').value) || 5);
   const rows = Math.ceil(allSels.length / cols);
 
-  // 各行・各列の最大サイズを計算
+  // サイズ統一: 各選択の長辺を target に合わせてアスペクト維持で縮小拡大
+  const unify = document.getElementById('composite-unify').checked;
+  const target = Math.max(40, parseInt(document.getElementById('composite-unify-size').value) || 200);
+  const drawSize = allSels.map(sel => {
+    if (!unify) return { w: sel.w, h: sel.h };
+    const longSide = Math.max(sel.w, sel.h);
+    if (longSide <= 0) return { w: sel.w, h: sel.h };
+    const scale = target / longSide;
+    return { w: Math.max(1, Math.round(sel.w * scale)), h: Math.max(1, Math.round(sel.h * scale)) };
+  });
+
+  // 各行・各列の最大サイズを計算（drawSize ベース）
   const colWidths = new Array(cols).fill(0);
   const rowHeights = new Array(rows).fill(0);
   allSels.forEach((sel, i) => {
     const col = i % cols, row = Math.floor(i / cols);
-    if (sel.w > colWidths[col]) colWidths[col] = sel.w;
-    if (sel.h > rowHeights[row]) rowHeights[row] = sel.h;
+    const ds = drawSize[i];
+    if (ds.w > colWidths[col]) colWidths[col] = ds.w;
+    if (ds.h > rowHeights[row]) rowHeights[row] = ds.h;
   });
 
   const cw = colWidths.reduce((s, w) => s + w, 0) + gap * (Math.min(allSels.length, cols) - 1);
@@ -4211,18 +4264,21 @@ function composeSelections() {
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, cw, ch);
+  // 縮小時は高品質補間
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   allSels.forEach((sel, i) => {
     const col = i % cols, row = Math.floor(i / cols);
-    // この列・行の開始位置を計算
+    const ds = drawSize[i];
     let dx = 0;
     for (let c = 0; c < col; c++) dx += colWidths[c] + gap;
     let dy = 0;
     for (let r = 0; r < row; r++) dy += rowHeights[r] + gap;
     // セル内で中央揃え
-    dx += Math.round((colWidths[col] - sel.w) / 2);
-    dy += Math.round((rowHeights[row] - sel.h) / 2);
-    ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, dx, dy, sel.w, sel.h);
+    dx += Math.round((colWidths[col] - ds.w) / 2);
+    dy += Math.round((rowHeights[row] - ds.h) / 2);
+    ctx.drawImage(sel.canvas, sel.x, sel.y, sel.w, sel.h, dx, dy, ds.w, ds.h);
   });
   return cv;
 }
@@ -4255,6 +4311,13 @@ function updateCompositePreview() {
 // レイアウト/余白変更 → プレビュー更新
 document.getElementById('composite-cols').addEventListener('input', updateCompositePreview);
 document.getElementById('composite-gap').addEventListener('input', updateCompositePreview);
+document.getElementById('composite-unify').addEventListener('change', () => {
+  const sizeIn = document.getElementById('composite-unify-size');
+  sizeIn.disabled = !document.getElementById('composite-unify').checked;
+  sizeIn.style.opacity = sizeIn.disabled ? '0.4' : '1';
+  updateCompositePreview();
+});
+document.getElementById('composite-unify-size').addEventListener('input', updateCompositePreview);
 
 // ── 合成して読み込む ──
 document.getElementById('btn-compose').addEventListener('click', () => {
