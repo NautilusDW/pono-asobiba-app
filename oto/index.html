@@ -217,13 +217,13 @@
     background: linear-gradient(90deg, #FCA5A5, #EF4444);
   }
 
-  /* ── バンド (ステム) トグル ── */
+  /* ── バンド (ステム) トグル — 画面上 ── */
   .band-bar {
     position: absolute;
-    bottom: max(28px, calc(env(safe-area-inset-bottom) + 28px));
+    top: max(12px, env(safe-area-inset-top));
     left: 50%; transform: translateX(-50%);
-    display: flex; gap: 8px;
-    z-index: 6;
+    display: flex; gap: 10px;
+    z-index: 11;
   }
   .band-btn {
     width: 56px; height: 56px;
@@ -244,75 +244,190 @@
     box-shadow: 0 0 0 4px rgba(52,211,153,0.4);
   }
 
-  /* ── ろくおん スロット ── 画面下中央、バンドバーの真上 */
-  .slots-bar {
+  /* ── ろくおん バー (画面下中央) ── */
+  .rec-bar {
     position: absolute;
-    bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
+    bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
     left: 50%; transform: translateX(-50%);
-    display: flex; gap: 10px;
-    align-items: center;
+    display: flex; gap: 12px; align-items: center;
     z-index: 10;
   }
-  .slot-btn {
+  .rec-main-btn {
     position: relative;
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    border: 4px dashed rgba(255,255,255,0.85);
-    background: rgba(0,0,0,0.5);
+    min-width: 88px; height: 56px;
+    padding: 0 18px;
+    border-radius: 28px;
+    border: 4px solid rgba(255,255,255,0.9);
+    background: rgba(0,0,0,0.55);
     color: #fff;
     cursor: pointer;
     touch-action: manipulation;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.3);
     transition: transform 0.08s, background 0.18s, border-color 0.18s, box-shadow 0.08s;
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column;
-    padding: 0;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: inherit;
   }
-  .slot-btn:active {
-    transform: translateY(3px) scale(0.94);
-    box-shadow: 0 1px 0 rgba(0,0,0,0.25);
-  }
-  .slot-num {
-    position: absolute;
-    top: 4px; left: 0; right: 0;
-    text-align: center;
-    font-size: 0.7rem; font-weight: 900;
-    color: rgba(255,255,255,0.75);
-    line-height: 1;
-  }
-  .slot-icon {
-    margin-top: 8px;
-    font-size: 1.5rem;
-    line-height: 1;
-  }
-  /* 録音済 (Paused): 黄色背景、▶ アイコン */
-  .slot-btn.has-data {
-    border-style: solid;
-    border-color: #FFD84D;
+  .rec-main-btn:active { transform: translateY(3px) scale(0.96); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+  .rec-main-icon { font-size: 1.4rem; line-height: 1; }
+  .rec-main-label { font-size: 0.85rem; font-weight: 900; }
+  /* 録音済 paused (▶) */
+  .rec-main-btn.has-data {
     background: linear-gradient(135deg, #FEF3C7, #FBBF24);
+    border-color: #FFD84D;
     color: #5D4E37;
   }
-  .slot-btn.has-data .slot-num { color: #92400E; }
-  .slot-btn.has-data .slot-icon { font-size: 1.4rem; }
-  /* 再生中: 緑、パルス、⏸ アイコン */
-  .slot-btn.playing {
-    border-color: #fff;
+  /* 再生中 (⏸) */
+  .rec-main-btn.playing {
     background: linear-gradient(135deg, #6EE7B7, #10B981);
-    color: #fff;
-    animation: slotPulse 1.2s ease-in-out infinite;
-  }
-  .slot-btn.playing .slot-num { color: #fff; }
-  /* 録音中: 赤、強パルス */
-  .slot-btn.recording {
     border-color: #fff;
+    color: #fff;
+    animation: recPlayPulse 1.2s ease-in-out infinite;
+  }
+  /* 録音中 (🔴) */
+  .rec-main-btn.recording {
     background: linear-gradient(135deg, #FCA5A5, #EF4444);
+    border-color: #fff;
     color: #fff;
     animation: recPulse 0.6s ease-in-out infinite;
   }
-  .slot-btn.recording .slot-num { color: #fff; }
-  @keyframes slotPulse {
-    0%, 100% { box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 0 0 rgba(16,185,129,0.5); }
-    50%      { box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 0 8px rgba(16,185,129,0); }
+  @keyframes recPlayPulse {
+    0%, 100% { box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 0 0 0 rgba(16,185,129,0.5); }
+    50%      { box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 0 0 10px rgba(16,185,129,0); }
+  }
+  .rec-save-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: linear-gradient(135deg, #60A5FA, #2563EB);
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+    transition: transform 0.08s, box-shadow 0.08s;
+    display: flex; align-items: center; justify-content: center;
+    animation: saveBtnIn 0.4s ease-out;
+  }
+  .rec-save-btn:active { transform: translateY(3px) scale(0.94); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+  @keyframes saveBtnIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* ── 保存リスト (画面最下段、横スクロール) ── */
+  .saved-list {
+    position: absolute;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    display: flex; gap: 8px;
+    padding: 6px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    z-index: 9;
+    justify-content: center;
+    min-height: 50px;
+  }
+  .saved-list::-webkit-scrollbar { display: none; }
+  .saved-item {
+    flex: 0 0 auto;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: linear-gradient(135deg, #C4B5FD, #8B5CF6);
+    color: #fff;
+    font-size: 0.95rem; font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    transition: transform 0.08s, box-shadow 0.08s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .saved-item:active { transform: translateY(2px) scale(0.94); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+  .saved-item.playing {
+    background: linear-gradient(135deg, #6EE7B7, #10B981);
+    animation: recPlayPulse 1.2s ease-in-out infinite;
+  }
+
+  /* ── 音色 折りたたみ (右上) ── */
+  .sets-collapsed {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 12;
+  }
+  .set-trigger {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: rgba(255,255,255,0.92);
+    font-size: 1.7rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s;
+  }
+  .set-trigger:active { transform: scale(0.92); }
+  .set-popover {
+    display: none;
+    position: absolute;
+    top: 60px; right: 0;
+    background: rgba(255,255,255,0.97);
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
+  }
+  .set-popover.open { display: flex; animation: popoverIn 0.18s ease-out; }
+  @keyframes popoverIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .set-popover .set-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  }
+  .set-popover .set-btn:active { transform: scale(0.95); }
+  .set-popover .set-btn.active {
+    background: linear-gradient(135deg, #FEF3C7, #FBBF24);
+    border-color: #F2B800;
+  }
+  .scale-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 8px 2px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 4px;
+  }
+  .scale-label {
+    font-size: 0.7rem; font-weight: 900; color: #5D4E37;
+    margin-right: 6px;
+  }
+  .scale-btn {
+    flex: 1;
+    padding: 6px 10px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.78rem; font-weight: 900;
+    cursor: pointer;
+    color: #5D4E37;
+    transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  }
+  .scale-btn:active { transform: scale(0.94); }
+  .scale-btn.active {
+    background: linear-gradient(135deg, #C4B5FD, #8B5CF6);
+    border-color: #6D28D9;
+    color: #fff;
   }
 
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
@@ -380,12 +495,27 @@
     <!-- ポノ sprite (中層) -->
     <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
 
-    <!-- セット切替 (右上): voice 削除、4セット -->
-    <div class="sets" id="sets" role="tablist">
-      <button class="set-btn active" data-set="doremi" aria-label="おとセット1">🎹</button>
-      <button class="set-btn"        data-set="kira" aria-label="おとセット2">🎼</button>
-      <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
-      <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
+    <!-- バンド (バッキングトラック) — 画面上 -->
+    <div class="band-bar" id="band-bar">
+      <button class="band-btn" id="band-drums"    aria-label="ドラム"    data-stem="drums">🥁</button>
+      <button class="band-btn" id="band-bass"     aria-label="ベース"    data-stem="bass">🎸</button>
+      <button class="band-btn" id="band-keyboard" aria-label="キーボード" data-stem="keyboard">🎹</button>
+    </div>
+
+    <!-- 音色 折りたたみ (右上): 現在の音色 + ペンタトニックトグル -->
+    <div class="sets-collapsed" id="sets">
+      <button class="set-trigger" id="set-trigger" aria-label="おといろえらぶ">🎹</button>
+      <div class="set-popover" id="set-popover">
+        <button class="set-btn active" data-set="doremi" aria-label="ドレミ">🎹</button>
+        <button class="set-btn"        data-set="kira"   aria-label="きらきら">🎼</button>
+        <button class="set-btn"        data-set="taiko"  aria-label="たいこ">🥁</button>
+        <button class="set-btn"        data-set="animal" aria-label="どうぶつ">🐾</button>
+        <div class="scale-row">
+          <span class="scale-label">スケール</span>
+          <button class="scale-btn active" id="scale-major" aria-label="ふつう">ふつう</button>
+          <button class="scale-btn"        id="scale-penta" aria-label="ペンタトニック">ペンタ</button>
+        </div>
+      </div>
     </div>
 
     <!-- カウントダウン / 録音中バナー -->
@@ -400,32 +530,17 @@
       <div class="rec-progress-label" id="rec-progress-label">🔁 ループ中</div>
     </div>
 
-    <!-- バンド (バッキングトラック) トグル — 画面下中央 -->
-    <div class="band-bar" id="band-bar">
-      <button class="band-btn" id="band-drums"    aria-label="ドラム"    data-stem="drums">🥁</button>
-      <button class="band-btn" id="band-bass"     aria-label="ベース"    data-stem="bass">🎸</button>
-      <button class="band-btn" id="band-keyboard" aria-label="キーボード" data-stem="keyboard">🎹</button>
+    <!-- ろくおん バー: 録音 + (録音済時) 保存ボタン — 画面下中央 -->
+    <div class="rec-bar" id="rec-bar">
+      <button class="rec-main-btn" id="rec-main-btn" aria-label="ろくおん">
+        <span class="rec-main-icon" id="rec-main-icon">🎤</span>
+        <span class="rec-main-label" id="rec-main-label">ろくおん</span>
+      </button>
+      <button class="rec-save-btn" id="rec-save-btn" aria-label="ほぞん" style="display:none;">💾</button>
     </div>
 
-    <!-- ろくおん スロット (画面下中央): 各スロットがレコード+再生ボタン -->
-    <div class="slots-bar" id="slots-bar">
-      <button class="slot-btn" data-slot="0" aria-label="ろくおん1">
-        <span class="slot-num">1</span>
-        <span class="slot-icon">🎤</span>
-      </button>
-      <button class="slot-btn" data-slot="1" aria-label="ろくおん2">
-        <span class="slot-num">2</span>
-        <span class="slot-icon">🎤</span>
-      </button>
-      <button class="slot-btn" data-slot="2" aria-label="ろくおん3">
-        <span class="slot-num">3</span>
-        <span class="slot-icon">🎤</span>
-      </button>
-      <button class="slot-btn" data-slot="3" aria-label="ろくおん4">
-        <span class="slot-num">4</span>
-        <span class="slot-icon">🎤</span>
-      </button>
-    </div>
+    <!-- 保存リスト: 画面最下段、横スクロール -->
+    <div class="saved-list" id="saved-list"></div>
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
     <div id="instruments">
@@ -530,6 +645,14 @@ function playBuffer(buf) {
 var DOREMI_FREQS = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
 // きらきら: 木琴/鈴風の高音域 (C5〜C6 を 8分割)
 var KIRA_FREQS = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+// ペンタトニック (Cメジャー: C D E G A) — どのコードにも乗りやすい「失敗しない音階」
+// 8ボタンに合わせて C4 D4 E4 G4 A4 C5 D5 E5 と展開
+var DOREMI_PENTA = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+var KIRA_PENTA   = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
+// スケールモード ('major' = 通常ドレミ / 'penta' = ペンタトニック)
+var SCALE_MODE = 'major';
+function _doremiFreqs() { return SCALE_MODE === 'penta' ? DOREMI_PENTA : DOREMI_FREQS; }
+function _kiraFreqs()   { return SCALE_MODE === 'penta' ? KIRA_PENTA   : KIRA_FREQS;   }
 // たいこ: WebAudio 合成のドラムキット
 var TAIKO_KINDS = ['kick', 'snare', 'hat', 'tom_hi', 'tom_lo', 'cymbal', 'rim', 'clap'];
 // 動物: 実音源ファイル (assets/sounds/animals/)
@@ -570,7 +693,7 @@ function playTone(kind, idx) {
   var ac = getAC(); if (!ac) return;
   var t = ac.currentTime;
   if (kind === 'doremi') {
-    var f = DOREMI_FREQS[idx] || 440;
+    var f = _doremiFreqs()[idx] || 440;
     var o = ac.createOscillator(), g = ac.createGain();
     o.type = 'triangle';
     o.frequency.setValueAtTime(f, t);
@@ -694,7 +817,7 @@ function playDrum(ac, kind) {
 // きらきら (木琴/鈴風) 合成: 倍音3つの sine で綺麗に鳴る
 // ────────────────────────────────
 function playKira(ac, idx) {
-  var f = KIRA_FREQS[idx] || 523.25;
+  var f = _kiraFreqs()[idx] || 523.25;
   var t = ac.currentTime;
   [1.0, 2.01, 3.02].forEach(function(mul, i) {
     var o = ac.createOscillator(), g = ac.createGain();
@@ -725,19 +848,7 @@ function _makeNoiseBuffer(ac, durationSec) {
 // セット状態
 // ────────────────────────────────
 var currentSet = 'doremi';
-document.querySelectorAll('.set-btn').forEach(function(btn) {
-  // 録音ボタンなど data-set を持たないボタンはセット切替対象外 (別ハンドラで処理)
-  if (!btn.dataset.set) return;
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.set-btn[data-set]').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
-    currentSet = btn.dataset.set;
-    unlockAudio();
-    _ensureAnimalDecoded();
-    // 切替プレビュー音を0番で1回鳴らす
-    playSetSound(0);
-  });
-});
+// (旧 .set-btn 一律ハンドラは廃止 — popover 内 .set-btn の専用ハンドラで処理)
 
 function playSetSound(idx) {
   if (currentSet === 'doremi') {
@@ -1329,12 +1440,16 @@ function currentLoopMs() {
 var _recState = 'idle';     // 'idle' | 'countdown' | 'recording' | 'looping'
 var _recEvents = [];        // [{t_ms, kind, args}, ...]  t は 録音開始からの経過 ms
 var _recStartMs = 0;        // performance.now() at recording start
-var _loopStartMs = 0;       // performance.now() at looping start
-var _loopTimers = [];       // setTimeout id 配列 (停止時に clear)
 var _progressRaf = null;
-var _activeSlot = -1;       // 録音先 (-1 = どこにも保存しない、現在選択中スロット)
-var SLOTS = [null, null, null, null]; // 各スロットの events 配列 (null = 空)
-var _activeSlotsPlaying = []; // 再生中スロットインデックス配列
+// 録音は1個だけ。録音すると _curRec に入り、再生 ON/OFF が _curRecPlaying。
+// 「💾 ほぞん」を押すと _saved 配列に追加 (最大10、localStorage 永続化)。
+var _curRec = null;         // {events, loopMs}  - 直近の録音 (null = 録音前)
+var _curRecPlaying = false;
+var _curTimers = [];        // _curRec 再生中のタイマー
+var _saved = [];            // 保存済リスト (新しい順)
+var _activePlayingSavedIdx = -1; // 保存リストから再生中のもの (-1 なら _curRec が再生中 or 何も再生中ではない)
+var SAVED_KEY = 'pono_oto_saved_v1';
+var MAX_SAVED = 10;
 
 function recordEvent(kind, args) {
   if (_recState !== 'recording') return;
@@ -1342,6 +1457,15 @@ function recordEvent(kind, args) {
   var loopMs = currentLoopMs();
   if (t < 0 || t > loopMs) return;
   _recEvents.push({ t: t, kind: kind, args: args });
+}
+
+// localStorage 永続化
+function _loadSaved() {
+  try { _saved = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'); } catch(e) { _saved = []; }
+  if (!Array.isArray(_saved)) _saved = [];
+}
+function _persistSaved() {
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(_saved)); } catch(e) {}
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1406,89 +1530,81 @@ function _stemStop(name) {
 }
 
 // ════════════════════════════════════════════════════════════
-// 録音スロット管理
+// _curRec の再生 / 停止
 // ════════════════════════════════════════════════════════════
-var SLOT_TIMERS = [[],[],[],[]]; // 各スロットの再生中タイマー
-function _saveSlot(idx, events, loopMs) {
-  if (idx < 0) return;
-  SLOTS[idx] = { events: events.slice(), loopMs: loopMs, ts: Date.now() };
-  _renderSlots();
+function _stopAllPlayback() {
+  _curTimers.forEach(function(id) { clearTimeout(id); });
+  _curTimers = [];
+  _curRecPlaying = false;
+  _activePlayingSavedIdx = -1;
 }
-function _clearSlot(idx) {
-  // 再生停止
-  SLOT_TIMERS[idx].forEach(function(id) { clearTimeout(id); });
-  SLOT_TIMERS[idx] = [];
-  SLOTS[idx] = null;
-  var i = _activeSlotsPlaying.indexOf(idx);
-  if (i >= 0) _activeSlotsPlaying.splice(i, 1);
-  _renderSlots();
-}
-function _slotPlay(idx) {
-  var slot = SLOTS[idx]; if (!slot) return;
-  if (_activeSlotsPlaying.indexOf(idx) >= 0) return; // 既に再生中
-  _activeSlotsPlaying.push(idx);
-  // バンドの開始時刻に合わせる、なければ now
+function _playCurRec() {
+  if (!_curRec || _curRecPlaying) return;
+  _stopAllPlayback();
+  _curRecPlaying = true;
   var ac = getAC();
   var loopStartAC = _bandActive() && ac ? _bandStartAC : (ac ? ac.currentTime : 0);
-  // 現在のループサイクル位置にスナップ
-  if (ac) {
-    var elapsed = (ac.currentTime - loopStartAC) % (slot.loopMs / 1000);
-    var pos = elapsed * 1000;
-    _scheduleSlotCycle(idx, slot, pos);
-  }
+  var pos = 0;
+  if (ac) pos = ((ac.currentTime - loopStartAC) % (_curRec.loopMs / 1000)) * 1000;
+  _scheduleCurCycle(pos);
+  _renderRecBar();
 }
-function _slotStop(idx) {
-  SLOT_TIMERS[idx].forEach(function(id) { clearTimeout(id); });
-  SLOT_TIMERS[idx] = [];
-  var i = _activeSlotsPlaying.indexOf(idx);
-  if (i >= 0) _activeSlotsPlaying.splice(i, 1);
-  _renderSlots();
+function _stopCurRec() {
+  _stopAllPlayback();
+  _renderRecBar();
 }
-function _scheduleSlotCycle(idx, slot, startOffsetMs) {
-  if (_activeSlotsPlaying.indexOf(idx) < 0) return;
+function _scheduleCurCycle(startOffsetMs) {
+  if (!_curRecPlaying || !_curRec) return;
   startOffsetMs = startOffsetMs || 0;
-  slot.events.forEach(function(ev) {
+  _curRec.events.forEach(function(ev) {
     var delay = ev.t - startOffsetMs;
-    if (delay < 0) delay += slot.loopMs; // 次サイクルへ
+    if (delay < 0) delay += _curRec.loopMs;
     var id = setTimeout(function() {
-      if (_activeSlotsPlaying.indexOf(idx) < 0) return;
+      if (!_curRecPlaying) return;
       _playRecordedEvent(ev);
     }, delay);
-    SLOT_TIMERS[idx].push(id);
+    _curTimers.push(id);
   });
-  var nextDelay = slot.loopMs - startOffsetMs;
-  if (nextDelay <= 0) nextDelay += slot.loopMs;
+  var nextDelay = _curRec.loopMs - startOffsetMs;
+  if (nextDelay <= 0) nextDelay += _curRec.loopMs;
   var nextId = setTimeout(function() {
-    SLOT_TIMERS[idx] = [];
-    _scheduleSlotCycle(idx, slot, 0);
+    _curTimers = [];
+    _scheduleCurCycle(0);
   }, nextDelay);
-  SLOT_TIMERS[idx].push(nextId);
+  _curTimers.push(nextId);
 }
 
-function _renderSlots() {
-  for (var i = 0; i < 4; i++) {
-    var btn  = document.querySelector('.slot-btn[data-slot="' + i + '"]');
-    if (!btn) continue;
-    var icon = btn.querySelector('.slot-icon');
-    var hasData = !!SLOTS[i];
-    var isPlaying = _activeSlotsPlaying.indexOf(i) >= 0;
-    var isRecording = (_recState === 'recording' || _recState === 'countdown') && _activeSlot === i;
-    btn.classList.toggle('has-data',  hasData && !isRecording);
-    btn.classList.toggle('playing',   isPlaying && !isRecording);
-    btn.classList.toggle('recording', isRecording);
-    if (icon) {
-      if (isRecording)      icon.textContent = '🔴';
-      else if (isPlaying)   icon.textContent = '⏸';
-      else if (hasData)     icon.textContent = '▶';
-      else                  icon.textContent = '🎤';
-    }
+// ════════════════════════════════════════════════════════════
+// rec-bar (録音 + 保存) の表示
+// ════════════════════════════════════════════════════════════
+function _renderRecBar() {
+  var btn   = document.getElementById('rec-main-btn');
+  var icon  = document.getElementById('rec-main-icon');
+  var label = document.getElementById('rec-main-label');
+  var save  = document.getElementById('rec-save-btn');
+  if (!btn) return;
+  btn.classList.remove('has-data', 'playing', 'recording');
+  var isRec = (_recState === 'recording' || _recState === 'countdown');
+  if (isRec) {
+    btn.classList.add('recording');
+    icon.textContent = '🔴';
+    label.textContent = 'ろくおん中';
+  } else if (_curRec && _curRecPlaying) {
+    btn.classList.add('playing');
+    icon.textContent = '⏸';
+    label.textContent = 'えんそう中';
+  } else if (_curRec) {
+    btn.classList.add('has-data');
+    icon.textContent = '▶';
+    label.textContent = 'もういちど';
+  } else {
+    icon.textContent = '🎤';
+    label.textContent = 'ろくおん';
   }
+  // 保存ボタンは _curRec があるときだけ
+  if (save) save.style.display = (_curRec && !isRec) ? '' : 'none';
 }
 
-function _setRecBtnState(state) {
-  // 旧 🎤 ボタンは削除済 — スロットボタンが状態を表示する
-  // (互換のため空関数は残す)
-}
 
 function _showOverlay(num, msg) {
   var ov  = document.getElementById('rec-overlay');
@@ -1527,12 +1643,11 @@ function _updateProgressFill(ratio) {
 // カウントダウン → 録音開始 → 8秒後にループ再生
 function startRecording() {
   if (_recState !== 'idle') return;
-  // 既にループ中ならまず停止
-  stopLoop();
+  // 既存の再生は止める
+  _stopAllPlayback();
   unlockAudio();
   _recState = 'countdown';
-  _setRecBtnState('countdown');
-  _renderSlots();
+  _renderRecBar();
   _showOverlay(3, 'ろくおん するよ！');
   setTimeout(function() {
     if (_recState !== 'countdown') return;
@@ -1555,7 +1670,7 @@ function startRecording() {
 
 function _beginRecordingPhase() {
   _recState = 'recording';
-  _renderSlots();
+  _renderRecBar();
   _recEvents = [];
   // バンドが鳴っていれば全部リスタートして、録音開始時刻と完全に同期させる
   // (それまでは普通に鳴らしっぱなしで遊ぶ。録音時から拍頭にスナップ)
@@ -1583,67 +1698,13 @@ function _finishRecording() {
   if (_recState !== 'recording') return;
   if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
   var loopMs = currentLoopMs();
-  if (_activeSlot >= 0) {
-    _saveSlot(_activeSlot, _recEvents, loopMs);
-    // 既に再生中なら一旦停止して、新しい events で再起動
-    if (_activeSlotsPlaying.indexOf(_activeSlot) >= 0) _slotStop(_activeSlot);
-    _slotPlay(_activeSlot);
-  }
-  // 状態をクリア → 次の録音に備える
-  var savedSlot = _activeSlot;
-  _activeSlot = -1;
+  // 録音した events を _curRec として保存 → 自動再生開始
+  _curRec = { events: _recEvents.slice(), loopMs: loopMs };
   _recEvents = [];
   _recState = 'idle';
   _hideOverlay();
   _hideProgress();
-  _renderSlots();
-}
-
-function _startLoop(loopMs) {
-  loopMs = loopMs || currentLoopMs();
-  _recState = 'looping';
-  _setRecBtnState('looping');
-  _loopStartMs = performance.now();
-  // 録音直後の events を「いまアクティブな loop」として再生
-  // (スロット保存とは別枠 — でも内容は同じになる)
-  if (_activeSlot >= 0 && SLOTS[_activeSlot]) {
-    // スロット側から再生される
-    var slot = SLOTS[_activeSlot];
-    _scheduleSlotCycle(_activeSlot, slot, 0);
-  } else {
-    // スロット未指定: 既存挙動 (一時ループ)
-    _scheduleOneCycle(loopMs);
-  }
-  _renderSlots();
-  var msg = '🔁 ループ中 (' + _recEvents.length + 'おと)';
-  if (_activeSlot >= 0) msg = '🔁 スロット' + (_activeSlot+1) + ' (' + _recEvents.length + 'おと)';
-  _showProgress(msg, false);
-  function tickLoop() {
-    if (_recState !== 'looping') return;
-    var elapsed = performance.now() - _loopStartMs;
-    var pos = elapsed % loopMs;
-    _updateProgressFill(pos / loopMs);
-    _progressRaf = requestAnimationFrame(tickLoop);
-  }
-  tickLoop();
-}
-
-function _scheduleOneCycle(loopMs) {
-  if (_recState !== 'looping') return;
-  loopMs = loopMs || currentLoopMs();
-  _recEvents.forEach(function(ev) {
-    var id = setTimeout(function() {
-      if (_recState !== 'looping') return;
-      _playRecordedEvent(ev);
-    }, ev.t);
-    _loopTimers.push(id);
-  });
-  var nextId = setTimeout(function() {
-    _loopTimers = [];
-    _loopStartMs = performance.now();
-    _scheduleOneCycle(loopMs);
-  }, loopMs);
-  _loopTimers.push(nextId);
+  _playCurRec();  // _renderRecBar はここから呼ばれる
 }
 
 function _playRecordedEvent(ev) {
@@ -1655,28 +1716,19 @@ function _playRecordedEvent(ev) {
   }
 }
 
-function stopLoop() {
-  // すべてのタイマー解除 (一時ループのみ — スロットは別管理)
-  _loopTimers.forEach(function(id) { clearTimeout(id); });
-  _loopTimers = [];
-  if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
-  _recEvents = [];
-  _recState = 'idle';
-  _setRecBtnState('idle');
-  _hideOverlay();
-  _hideProgress();
-}
-
-// (旧 🎤 ボタンは廃止 — スロットボタンが録音/再生/停止を兼ねる)
-
-// タブが背景に行ったら録音/ループは停止 (タイマー暴走防止)
+// タブが背景に行ったら全てのオーディオを停止
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) {
-    if (_recState !== 'idle') stopLoop();
-    // 全ステム停止
+    if (_recState !== 'idle') {
+      _recState = 'idle';
+      if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
+      _hideOverlay();
+      _hideProgress();
+    }
+    _stopAllPlayback();
     Object.keys(_stemSources).forEach(function(n) { _stemStop(n); });
-    // 全スロット停止
-    for (var i = 0; i < 4; i++) _slotStop(i);
+    _renderRecBar();
+    _renderSavedList();
   }
 });
 
@@ -1701,28 +1753,28 @@ document.querySelectorAll('.band-btn').forEach(function(btn) {
 });
 
 // ════════════════════════════════════════════════════════════
-// スロット (録音 + 再生) ボタン
+// 録音メインボタン (画面下中央)
 // ════════════════════════════════════════════════════════════
-// 動作:
-//   - 空スロット タップ            → そのスロットに録音開始 (カウントダウン → 録音 → 自動でループ再生)
-//   - 録音済 (停止中) タップ       → 再生開始
-//   - 録音済 (再生中) タップ       → 停止
-//   - 長押し (800ms)               → 削除 (確認ダイアログ)
-//   - 録音中スロットのタップ       → 録音終了 (即ループ再生)
-document.querySelectorAll('.slot-btn').forEach(function(btn) {
-  var idx = parseInt(btn.dataset.slot, 10);
+// idle (録音前)        → タップで録音開始
+// recording             → タップで録音終了 → ループ再生開始
+// looping (再生中)      → タップで再生停止
+// has-data (停止中)     → タップで再生再開
+// 長押し                → 現在の録音を破棄 (確認)
+(function() {
+  var btn = document.getElementById('rec-main-btn');
+  if (!btn) return;
   var pressTimer = null;
   var longPressed = false;
-
-  btn.addEventListener('pointerdown', function(e) {
+  btn.addEventListener('pointerdown', function() {
     longPressed = false;
     pressTimer = setTimeout(function() {
       pressTimer = null;
-      if (SLOTS[idx]) {
+      if (_curRec && _recState === 'idle') {
         longPressed = true;
-        if (confirm('スロット' + (idx+1) + ' を けすよ。いい?')) {
-          _clearSlot(idx);
-          if (_activeSlot === idx) _activeSlot = -1;
+        if (confirm('いまの ろくおんを けすよ。いい?')) {
+          _stopAllPlayback();
+          _curRec = null;
+          _renderRecBar();
         }
       }
     }, 800);
@@ -1735,35 +1787,175 @@ document.querySelectorAll('.slot-btn').forEach(function(btn) {
     if (longPressed) return;
     e.preventDefault();
     unlockAudio();
-
-    // 録音中のスロットを再タップ → 録音終了
-    if (_recState === 'recording' && _activeSlot === idx) {
+    if (_recState === 'recording') {
       _finishRecording();
-      return;
-    }
-    // 別の録音中タップは無視
-    if (_recState === 'recording' || _recState === 'countdown') return;
-
-    if (SLOTS[idx]) {
-      // 録音済 → 再生 ON/OFF
-      if (_activeSlotsPlaying.indexOf(idx) >= 0) {
-        _slotStop(idx);
-      } else {
-        _slotPlay(idx);
-      }
+    } else if (_recState === 'countdown') {
+      // カウントダウン中はキャンセル
+      _recState = 'idle';
+      _hideOverlay();
+      _renderRecBar();
+    } else if (_curRec && _curRecPlaying) {
+      _stopCurRec();
+    } else if (_curRec) {
+      _playCurRec();
     } else {
-      // 空 → このスロットに直接録音開始
-      _activeSlot = idx;
-      _renderSlots();
       startRecording();
     }
   });
   btn.addEventListener('pointerleave', cancelPress);
   btn.addEventListener('pointercancel', cancelPress);
-});
+})();
 
-// 初回レンダ
-_renderSlots();
+// ════════════════════════════════════════════════════════════
+// 💾 ほぞん ボタン
+// ════════════════════════════════════════════════════════════
+(function() {
+  var btn = document.getElementById('rec-save-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (!_curRec) return;
+    var entry = { events: _curRec.events, loopMs: _curRec.loopMs, ts: Date.now() };
+    _saved.unshift(entry); // 新しい順
+    if (_saved.length > MAX_SAVED) _saved.length = MAX_SAVED;
+    _persistSaved();
+    _renderSavedList();
+    // 軽いフィードバック
+    btn.style.transform = 'scale(0.7)';
+    setTimeout(function() { btn.style.transform = ''; }, 180);
+  });
+})();
+
+// ════════════════════════════════════════════════════════════
+// 保存リスト (画面最下段)
+// ════════════════════════════════════════════════════════════
+function _renderSavedList() {
+  var list = document.getElementById('saved-list');
+  if (!list) return;
+  list.innerHTML = '';
+  _saved.forEach(function(entry, i) {
+    var b = document.createElement('button');
+    b.className = 'saved-item';
+    b.textContent = (i + 1);
+    b.dataset.idx = i;
+    if (_activePlayingSavedIdx === i) b.classList.add('playing');
+    list.appendChild(b);
+  });
+}
+(function() {
+  var list = document.getElementById('saved-list');
+  if (!list) return;
+  var pressTimer = null;
+  var longPressed = false;
+  var pressIdx = -1;
+  list.addEventListener('pointerdown', function(e) {
+    var t = e.target.closest('.saved-item');
+    if (!t) return;
+    pressIdx = parseInt(t.dataset.idx, 10);
+    longPressed = false;
+    pressTimer = setTimeout(function() {
+      pressTimer = null;
+      longPressed = true;
+      if (confirm('ほぞん ' + (pressIdx + 1) + ' を けすよ。いい?')) {
+        _saved.splice(pressIdx, 1);
+        _persistSaved();
+        // 再生中だったら停止
+        if (_activePlayingSavedIdx === pressIdx) {
+          _stopAllPlayback();
+        } else if (_activePlayingSavedIdx > pressIdx) {
+          _activePlayingSavedIdx--;
+        }
+        _renderSavedList();
+        _renderRecBar();
+      }
+    }, 800);
+  });
+  function cancelPress() {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  }
+  list.addEventListener('pointerup', function(e) {
+    cancelPress();
+    if (longPressed) return;
+    var t = e.target.closest('.saved-item');
+    if (!t) return;
+    var idx = parseInt(t.dataset.idx, 10);
+    e.preventDefault();
+    unlockAudio();
+    if (_recState !== 'idle') return;
+    // タップ: 再生中ならその同じスロット → 停止、それ以外なら 該当を _curRec にロードして再生
+    if (_activePlayingSavedIdx === idx) {
+      _stopAllPlayback();
+      _renderSavedList();
+      _renderRecBar();
+      return;
+    }
+    var entry = _saved[idx];
+    if (!entry) return;
+    _curRec = { events: entry.events, loopMs: entry.loopMs };
+    _stopAllPlayback();
+    _playCurRec();
+    _activePlayingSavedIdx = idx;
+    _renderSavedList();
+  });
+  list.addEventListener('pointerleave', cancelPress);
+  list.addEventListener('pointercancel', cancelPress);
+})();
+
+// ════════════════════════════════════════════════════════════
+// 音色 折りたたみ (右上 popover) + ペンタトニック切替
+// ════════════════════════════════════════════════════════════
+(function() {
+  var trigger = document.getElementById('set-trigger');
+  var popover = document.getElementById('set-popover');
+  if (!trigger || !popover) return;
+  function close() { popover.classList.remove('open'); }
+  function open()  { popover.classList.add('open'); }
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (popover.classList.contains('open')) close(); else open();
+  });
+  // 外側クリックで閉じる
+  document.addEventListener('click', function(e) {
+    if (!popover.classList.contains('open')) return;
+    if (popover.contains(e.target) || trigger.contains(e.target)) return;
+    close();
+  });
+  // セット選択 (popover 内 .set-btn)
+  popover.querySelectorAll('.set-btn').forEach(function(b) {
+    b.addEventListener('click', function(e) {
+      e.stopPropagation();
+      popover.querySelectorAll('.set-btn').forEach(function(x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      currentSet = b.dataset.set;
+      trigger.textContent = b.textContent;
+      unlockAudio();
+      _ensureAnimalDecoded();
+      // プレビュー音
+      playSetSound(0);
+      close();
+    });
+  });
+  // スケール toggle (ふつう / ペンタ)
+  var sMajor = document.getElementById('scale-major');
+  var sPenta = document.getElementById('scale-penta');
+  function setScale(mode) {
+    SCALE_MODE = mode;
+    try { localStorage.setItem('pono_oto_scale', mode); } catch(e) {}
+    sMajor.classList.toggle('active', mode === 'major');
+    sPenta.classList.toggle('active', mode === 'penta');
+  }
+  if (sMajor) sMajor.addEventListener('click', function(e) { e.stopPropagation(); setScale('major'); });
+  if (sPenta) sPenta.addEventListener('click', function(e) { e.stopPropagation(); setScale('penta'); });
+  try {
+    var saved = localStorage.getItem('pono_oto_scale') || 'major';
+    setScale(saved === 'penta' ? 'penta' : 'major');
+  } catch(e) {}
+})();
+
+// 初回レンダ + localStorage 復元
+_loadSaved();
+_renderSavedList();
+_renderRecBar();
 </script>
 </body>
 </html>
