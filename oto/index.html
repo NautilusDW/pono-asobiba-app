@@ -117,28 +117,26 @@
   .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
   .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
-  /* 8ボタン配置: クマを中心にした楕円カーブ (中央寄せ版)
-     外側(idx 0,3,4,7) は横が遠いので縦方向にクマ寄り、
-     内側(idx 1,2,5,6) は横がクマと近いので縦方向に少し離す */
-  .instr-btn[data-idx="0"] { left: 13%; top: 38%; --sz: 116px; }
-  .instr-btn[data-idx="1"] { left: 38%; top: 25%; --sz: 122px; }
-  .instr-btn[data-idx="2"] { left: 62%; top: 25%; --sz: 122px; }
-  .instr-btn[data-idx="3"] { left: 87%; top: 38%; --sz: 116px; }
-  .instr-btn[data-idx="4"] { left: 13%; top: 62%; --sz: 116px; }
-  .instr-btn[data-idx="5"] { left: 38%; top: 73%; --sz: 122px; }
-  .instr-btn[data-idx="6"] { left: 62%; top: 73%; --sz: 122px; }
-  .instr-btn[data-idx="7"] { left: 87%; top: 62%; --sz: 116px; }
+  /* 8ボタン配置: 上下4つずつ、すべて同じ高さで等間隔 (カーブなし) */
+  .instr-btn[data-idx="0"] { left: 12.5%; top: 32%; --sz: 118px; }
+  .instr-btn[data-idx="1"] { left: 37.5%; top: 32%; --sz: 118px; }
+  .instr-btn[data-idx="2"] { left: 62.5%; top: 32%; --sz: 118px; }
+  .instr-btn[data-idx="3"] { left: 87.5%; top: 32%; --sz: 118px; }
+  .instr-btn[data-idx="4"] { left: 12.5%; top: 68%; --sz: 118px; }
+  .instr-btn[data-idx="5"] { left: 37.5%; top: 68%; --sz: 118px; }
+  .instr-btn[data-idx="6"] { left: 62.5%; top: 68%; --sz: 118px; }
+  .instr-btn[data-idx="7"] { left: 87.5%; top: 68%; --sz: 118px; }
 
-  /* 横画面: 縦を圧縮しつつカーブは維持 */
+  /* 横画面: 縦を圧縮 */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"] { top: 38%; --sz: 96px; }
-    .instr-btn[data-idx="1"] { top: 22%; --sz: 102px; }
-    .instr-btn[data-idx="2"] { top: 22%; --sz: 102px; }
-    .instr-btn[data-idx="3"] { top: 38%; --sz: 96px; }
-    .instr-btn[data-idx="4"] { top: 62%; --sz: 96px; }
-    .instr-btn[data-idx="5"] { top: 78%; --sz: 102px; }
-    .instr-btn[data-idx="6"] { top: 78%; --sz: 102px; }
-    .instr-btn[data-idx="7"] { top: 62%; --sz: 96px; }
+    .instr-btn[data-idx="0"],
+    .instr-btn[data-idx="1"],
+    .instr-btn[data-idx="2"],
+    .instr-btn[data-idx="3"] { top: 30%; --sz: 96px; }
+    .instr-btn[data-idx="4"],
+    .instr-btn[data-idx="5"],
+    .instr-btn[data-idx="6"],
+    .instr-btn[data-idx="7"] { top: 70%; --sz: 96px; }
     .pono-sprite { width: 110px; height: 150px; }
   }
   /* 画面が狭い時ボタン縮小 */
@@ -1532,34 +1530,44 @@ function _stemStop(name) {
 // ════════════════════════════════════════════════════════════
 // _curRec の再生 / 停止
 // ════════════════════════════════════════════════════════════
+// 世代カウンター: 停止/再起動するたびに増やす。古い世代の timer が遅れて発火しても
+// 世代不一致で何もしないので「全部一斉に鳴る」事故を防ぐ。
+var _playGen = 0;
 function _stopAllPlayback() {
+  _playGen++;                         // 旧世代を無効化
   _curTimers.forEach(function(id) { clearTimeout(id); });
   _curTimers = [];
   _curRecPlaying = false;
   _activePlayingSavedIdx = -1;
 }
 function _playCurRec() {
-  if (!_curRec || _curRecPlaying) return;
-  _stopAllPlayback();
+  if (!_curRec) return;
+  _stopAllPlayback();                 // 既存があれば必ずクリア
   _curRecPlaying = true;
+  var gen = ++_playGen;
   var ac = getAC();
   var loopStartAC = _bandActive() && ac ? _bandStartAC : (ac ? ac.currentTime : 0);
   var pos = 0;
   if (ac) pos = ((ac.currentTime - loopStartAC) % (_curRec.loopMs / 1000)) * 1000;
-  _scheduleCurCycle(pos);
+  // pos が NaN/負の値にならないよう保険
+  if (!isFinite(pos) || pos < 0) pos = 0;
+  _scheduleCurCycle(gen, pos);
   _renderRecBar();
 }
 function _stopCurRec() {
   _stopAllPlayback();
   _renderRecBar();
 }
-function _scheduleCurCycle(startOffsetMs) {
+function _scheduleCurCycle(gen, startOffsetMs) {
+  if (gen !== _playGen) return;       // 古い世代は無視
   if (!_curRecPlaying || !_curRec) return;
   startOffsetMs = startOffsetMs || 0;
   _curRec.events.forEach(function(ev) {
     var delay = ev.t - startOffsetMs;
     if (delay < 0) delay += _curRec.loopMs;
+    if (delay < 0 || !isFinite(delay)) return; // 安全弁
     var id = setTimeout(function() {
+      if (gen !== _playGen) return;   // 世代チェック
       if (!_curRecPlaying) return;
       _playRecordedEvent(ev);
     }, delay);
@@ -1568,8 +1576,10 @@ function _scheduleCurCycle(startOffsetMs) {
   var nextDelay = _curRec.loopMs - startOffsetMs;
   if (nextDelay <= 0) nextDelay += _curRec.loopMs;
   var nextId = setTimeout(function() {
+    if (gen !== _playGen) return;     // 世代チェック → 古いループの再帰を防ぐ
+    if (!_curRecPlaying || !_curRec) return;
     _curTimers = [];
-    _scheduleCurCycle(0);
+    _scheduleCurCycle(gen, 0);
   }, nextDelay);
   _curTimers.push(nextId);
 }
