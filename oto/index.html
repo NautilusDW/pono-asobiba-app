@@ -244,37 +244,76 @@
     box-shadow: 0 0 0 4px rgba(52,211,153,0.4);
   }
 
-  /* ── スロット (録音保存) ── 画面下中央、バンドバーの真上 */
+  /* ── ろくおん スロット ── 画面下中央、バンドバーの真上 */
   .slots-bar {
     position: absolute;
     bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
     left: 50%; transform: translateX(-50%);
-    display: flex; gap: 6px;
+    display: flex; gap: 10px;
     align-items: center;
     z-index: 10;
-    background: rgba(255,255,255,0.85);
-    padding: 4px 10px;
-    border-radius: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
-  .slots-label {
-    font-size: 0.7rem; font-weight: 900; color: #5D4E37;
   }
   .slot-btn {
-    width: 32px; height: 32px;
+    position: relative;
+    width: 64px; height: 64px;
     border-radius: 50%;
-    border: 2px solid #cbd5e1;
-    background: #fff;
-    font-weight: 900; font-size: 0.85rem;
-    color: #94a3b8;
+    border: 4px dashed rgba(255,255,255,0.85);
+    background: rgba(0,0,0,0.5);
+    color: #fff;
     cursor: pointer;
     touch-action: manipulation;
-    transition: transform 0.1s, background 0.15s, border-color 0.15s, color 0.15s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+    transition: transform 0.08s, background 0.18s, border-color 0.18s, box-shadow 0.08s;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    padding: 0;
   }
-  .slot-btn:active { transform: scale(0.92); }
-  .slot-btn.has-data { color: #5D4E37; border-color: #FFD84D; background: #FFF8E1; }
-  .slot-btn.active   { background: #FFD84D; border-color: #F2B800; color: #5D4E37;
-                       box-shadow: 0 0 0 3px rgba(255,216,77,0.5); }
+  .slot-btn:active {
+    transform: translateY(3px) scale(0.94);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  }
+  .slot-num {
+    position: absolute;
+    top: 4px; left: 0; right: 0;
+    text-align: center;
+    font-size: 0.7rem; font-weight: 900;
+    color: rgba(255,255,255,0.75);
+    line-height: 1;
+  }
+  .slot-icon {
+    margin-top: 8px;
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  /* 録音済 (Paused): 黄色背景、▶ アイコン */
+  .slot-btn.has-data {
+    border-style: solid;
+    border-color: #FFD84D;
+    background: linear-gradient(135deg, #FEF3C7, #FBBF24);
+    color: #5D4E37;
+  }
+  .slot-btn.has-data .slot-num { color: #92400E; }
+  .slot-btn.has-data .slot-icon { font-size: 1.4rem; }
+  /* 再生中: 緑、パルス、⏸ アイコン */
+  .slot-btn.playing {
+    border-color: #fff;
+    background: linear-gradient(135deg, #6EE7B7, #10B981);
+    color: #fff;
+    animation: slotPulse 1.2s ease-in-out infinite;
+  }
+  .slot-btn.playing .slot-num { color: #fff; }
+  /* 録音中: 赤、強パルス */
+  .slot-btn.recording {
+    border-color: #fff;
+    background: linear-gradient(135deg, #FCA5A5, #EF4444);
+    color: #fff;
+    animation: recPulse 0.6s ease-in-out infinite;
+  }
+  .slot-btn.recording .slot-num { color: #fff; }
+  @keyframes slotPulse {
+    0%, 100% { box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 0 0 rgba(16,185,129,0.5); }
+    50%      { box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 0 8px rgba(16,185,129,0); }
+  }
 
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
   .intro {
@@ -347,8 +386,6 @@
       <button class="set-btn"        data-set="kira" aria-label="おとセット2">🎼</button>
       <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
       <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
-      <!-- 録音/ループボタン: state により 🎤 → 🛑 に切替 -->
-      <button class="set-btn rec-btn" id="rec-btn" aria-label="ろくおん">🎤</button>
     </div>
 
     <!-- カウントダウン / 録音中バナー -->
@@ -370,13 +407,24 @@
       <button class="band-btn" id="band-keyboard" aria-label="キーボード" data-stem="keyboard">🎹</button>
     </div>
 
-    <!-- 演奏スロット (左上): 録音した自分の演奏を保存・選択 -->
+    <!-- ろくおん スロット (画面下中央): 各スロットがレコード+再生ボタン -->
     <div class="slots-bar" id="slots-bar">
-      <span class="slots-label">えんそう:</span>
-      <button class="slot-btn" data-slot="0" aria-label="スロット1">1</button>
-      <button class="slot-btn" data-slot="1" aria-label="スロット2">2</button>
-      <button class="slot-btn" data-slot="2" aria-label="スロット3">3</button>
-      <button class="slot-btn" data-slot="3" aria-label="スロット4">4</button>
+      <button class="slot-btn" data-slot="0" aria-label="ろくおん1">
+        <span class="slot-num">1</span>
+        <span class="slot-icon">🎤</span>
+      </button>
+      <button class="slot-btn" data-slot="1" aria-label="ろくおん2">
+        <span class="slot-num">2</span>
+        <span class="slot-icon">🎤</span>
+      </button>
+      <button class="slot-btn" data-slot="2" aria-label="ろくおん3">
+        <span class="slot-num">3</span>
+        <span class="slot-icon">🎤</span>
+      </button>
+      <button class="slot-btn" data-slot="3" aria-label="ろくおん4">
+        <span class="slot-num">4</span>
+        <span class="slot-icon">🎤</span>
+      </button>
     </div>
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
@@ -1419,26 +1467,27 @@ function _scheduleSlotCycle(idx, slot, startOffsetMs) {
 
 function _renderSlots() {
   for (var i = 0; i < 4; i++) {
-    var btn = document.querySelector('.slot-btn[data-slot="' + i + '"]');
+    var btn  = document.querySelector('.slot-btn[data-slot="' + i + '"]');
     if (!btn) continue;
-    btn.classList.toggle('has-data', !!SLOTS[i]);
-    btn.classList.toggle('active',  _activeSlotsPlaying.indexOf(i) >= 0);
+    var icon = btn.querySelector('.slot-icon');
+    var hasData = !!SLOTS[i];
+    var isPlaying = _activeSlotsPlaying.indexOf(i) >= 0;
+    var isRecording = (_recState === 'recording' || _recState === 'countdown') && _activeSlot === i;
+    btn.classList.toggle('has-data',  hasData && !isRecording);
+    btn.classList.toggle('playing',   isPlaying && !isRecording);
+    btn.classList.toggle('recording', isRecording);
+    if (icon) {
+      if (isRecording)      icon.textContent = '🔴';
+      else if (isPlaying)   icon.textContent = '⏸';
+      else if (hasData)     icon.textContent = '▶';
+      else                  icon.textContent = '🎤';
+    }
   }
 }
 
 function _setRecBtnState(state) {
-  var btn = document.getElementById('rec-btn');
-  if (!btn) return;
-  btn.classList.remove('recording', 'looping');
-  if (state === 'recording' || state === 'countdown') {
-    btn.classList.add('recording');
-    btn.textContent = '🔴';
-  } else if (state === 'looping') {
-    btn.classList.add('looping');
-    btn.textContent = '🛑';
-  } else {
-    btn.textContent = '🎤';
-  }
+  // 旧 🎤 ボタンは削除済 — スロットボタンが状態を表示する
+  // (互換のため空関数は残す)
 }
 
 function _showOverlay(num, msg) {
@@ -1483,6 +1532,7 @@ function startRecording() {
   unlockAudio();
   _recState = 'countdown';
   _setRecBtnState('countdown');
+  _renderSlots();
   _showOverlay(3, 'ろくおん するよ！');
   setTimeout(function() {
     if (_recState !== 'countdown') return;
@@ -1505,6 +1555,7 @@ function startRecording() {
 
 function _beginRecordingPhase() {
   _recState = 'recording';
+  _renderSlots();
   _recEvents = [];
   // バンドが鳴っていれば全部リスタートして、録音開始時刻と完全に同期させる
   // (それまでは普通に鳴らしっぱなしで遊ぶ。録音時から拍頭にスナップ)
@@ -1532,14 +1583,20 @@ function _finishRecording() {
   if (_recState !== 'recording') return;
   if (_progressRaf) { cancelAnimationFrame(_progressRaf); _progressRaf = null; }
   var loopMs = currentLoopMs();
-  // スロットに保存 (_activeSlot >= 0 なら)
   if (_activeSlot >= 0) {
     _saveSlot(_activeSlot, _recEvents, loopMs);
-    // 録音直後にそのスロットを自動再生対象に
-    if (_activeSlotsPlaying.indexOf(_activeSlot) < 0) _activeSlotsPlaying.push(_activeSlot);
+    // 既に再生中なら一旦停止して、新しい events で再起動
+    if (_activeSlotsPlaying.indexOf(_activeSlot) >= 0) _slotStop(_activeSlot);
+    _slotPlay(_activeSlot);
   }
-  // 既存ループに加えて再生開始
-  _startLoop(loopMs);
+  // 状態をクリア → 次の録音に備える
+  var savedSlot = _activeSlot;
+  _activeSlot = -1;
+  _recEvents = [];
+  _recState = 'idle';
+  _hideOverlay();
+  _hideProgress();
+  _renderSlots();
 }
 
 function _startLoop(loopMs) {
@@ -1610,29 +1667,7 @@ function stopLoop() {
   _hideProgress();
 }
 
-// 🎤 ボタンハンドラ
-(function() {
-  var btn = document.getElementById('rec-btn');
-  if (!btn) return;
-  btn.addEventListener('click', function(e) {
-    e.preventDefault();
-    if (_recState === 'idle') {
-      startRecording();
-    } else if (_recState === 'looping') {
-      stopLoop();
-    } else if (_recState === 'recording' || _recState === 'countdown') {
-      // 録音中の再タップ: 即座に終了 → ループ開始 (or キャンセル)
-      if (_recState === 'recording') {
-        _finishRecording();
-      } else {
-        // カウントダウン中はキャンセル
-        _recState = 'idle';
-        _setRecBtnState('idle');
-        _hideOverlay();
-      }
-    }
-  });
-})();
+// (旧 🎤 ボタンは廃止 — スロットボタンが録音/再生/停止を兼ねる)
 
 // タブが背景に行ったら録音/ループは停止 (タイマー暴走防止)
 document.addEventListener('visibilitychange', function() {
@@ -1666,20 +1701,25 @@ document.querySelectorAll('.band-btn').forEach(function(btn) {
 });
 
 // ════════════════════════════════════════════════════════════
-// スロット (録音保存) ボタン
+// スロット (録音 + 再生) ボタン
 // ════════════════════════════════════════════════════════════
 // 動作:
-//   - 空スロットをタップ → そのスロットを「録音先」に選択 (active 表示)
-//   - 録音済みスロットをタップ → 再生 ON/OFF トグル
-//   - 録音済みスロットを長押し → 削除確認
+//   - 空スロット タップ            → そのスロットに録音開始 (カウントダウン → 録音 → 自動でループ再生)
+//   - 録音済 (停止中) タップ       → 再生開始
+//   - 録音済 (再生中) タップ       → 停止
+//   - 長押し (800ms)               → 削除 (確認ダイアログ)
+//   - 録音中スロットのタップ       → 録音終了 (即ループ再生)
 document.querySelectorAll('.slot-btn').forEach(function(btn) {
   var idx = parseInt(btn.dataset.slot, 10);
-  // 長押しで削除
   var pressTimer = null;
+  var longPressed = false;
+
   btn.addEventListener('pointerdown', function(e) {
+    longPressed = false;
     pressTimer = setTimeout(function() {
       pressTimer = null;
       if (SLOTS[idx]) {
+        longPressed = true;
         if (confirm('スロット' + (idx+1) + ' を けすよ。いい?')) {
           _clearSlot(idx);
           if (_activeSlot === idx) _activeSlot = -1;
@@ -1688,28 +1728,34 @@ document.querySelectorAll('.slot-btn').forEach(function(btn) {
     }, 800);
   });
   function cancelPress() {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; return false; }
-    return true;
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
   }
   btn.addEventListener('pointerup', function(e) {
-    var wasShortPress = cancelPress();
-    if (!wasShortPress) return; // 長押し処理済み
+    cancelPress();
+    if (longPressed) return;
     e.preventDefault();
+    unlockAudio();
+
+    // 録音中のスロットを再タップ → 録音終了
+    if (_recState === 'recording' && _activeSlot === idx) {
+      _finishRecording();
+      return;
+    }
+    // 別の録音中タップは無視
+    if (_recState === 'recording' || _recState === 'countdown') return;
+
     if (SLOTS[idx]) {
-      // 既に保存済み → 再生 ON/OFF トグル
+      // 録音済 → 再生 ON/OFF
       if (_activeSlotsPlaying.indexOf(idx) >= 0) {
         _slotStop(idx);
       } else {
         _slotPlay(idx);
       }
     } else {
-      // 空 → 録音先に選択
-      _activeSlot = (_activeSlot === idx) ? -1 : idx;
+      // 空 → このスロットに直接録音開始
+      _activeSlot = idx;
       _renderSlots();
-      // 視覚フィードバック
-      document.querySelectorAll('.slot-btn').forEach(function(b) {
-        b.classList.toggle('active', _activeSlot === parseInt(b.dataset.slot, 10) || _activeSlotsPlaying.indexOf(parseInt(b.dataset.slot, 10)) >= 0);
-      });
+      startRecording();
     }
   });
   btn.addEventListener('pointerleave', cancelPress);
