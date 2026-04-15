@@ -1663,13 +1663,42 @@ function drawFinale(now) {
 // ────────────────────────────────
 // ポノ スプライト描画
 // ────────────────────────────────
-// ポノ: 高解像度静止画 + CSS アニメ。タップ時にバンプクラスを付与
+// ポノ: 高解像度静止画 + CSS アニメ + タップでダンスポーズを切替
 var _ponoEl = document.getElementById('pono');
 var _bumpTimer = null;
+var _restTimer = null;
+var _ponoDefaultSrc = '../assets/images/characters/pono/pono_001.png';
+var _ponoDanceFrames = [
+  '../assets/images/characters/pono/dance/dance_cheer.png',
+  '../assets/images/characters/pono/dance/dance_tilt.png',
+  '../assets/images/characters/pono/dance/dance_point.png',
+  '../assets/images/characters/pono/dance/dance_wave.png',
+  '../assets/images/characters/pono/dance/dance_cool.png',
+  '../assets/images/characters/pono/dance/dance_walk.png',
+  '../assets/images/characters/pono/dance/dance_shy.png',
+  '../assets/images/characters/pono/dance/dance_smile.png',
+  '../assets/images/characters/pono/dance/dance_hi.png',
+  '../assets/images/characters/pono/dance/dance_hooray.png'
+];
+// プリロード (タップ時にチラつかず即差し替え)
+_ponoDanceFrames.forEach(function(src) { var im = new Image(); im.src = src; });
+var _lastFrameIdx = -1;
+function _pickDanceFrame() {
+  // 連続で同じポーズが出ないよう、直前と違うフレームを選ぶ
+  if (_ponoDanceFrames.length <= 1) return _ponoDanceFrames[0];
+  var idx;
+  do { idx = Math.floor(Math.random() * _ponoDanceFrames.length); }
+  while (idx === _lastFrameIdx);
+  _lastFrameIdx = idx;
+  return _ponoDanceFrames[idx];
+}
 function bumpPono() {
   if (!_ponoEl) return;
+  // ダンスポーズに差し替え
+  var nextSrc = _pickDanceFrame();
+  if (_ponoEl.src.indexOf(nextSrc.replace('../','')) < 0) _ponoEl.src = nextSrc;
+  // bump アニメ再起動
   _ponoEl.classList.remove('bump');
-  // 強制リフロー → アニメ再起動
   void _ponoEl.offsetWidth;
   _ponoEl.classList.add('bump');
   if (_bumpTimer) clearTimeout(_bumpTimer);
@@ -1677,6 +1706,13 @@ function bumpPono() {
     _ponoEl.classList.remove('bump');
     _bumpTimer = null;
   }, 620);
+  // 静止復帰 (最後のタップから 1.2秒経ったらデフォルトに戻す)
+  if (_restTimer) clearTimeout(_restTimer);
+  _restTimer = setTimeout(function() {
+    if (_ponoEl) _ponoEl.src = _ponoDefaultSrc;
+    _lastFrameIdx = -1;
+    _restTimer = null;
+  }, 1200);
 }
 function drawPono() { /* CSS で描画するので no-op */ }
 
