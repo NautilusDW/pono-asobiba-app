@@ -3076,18 +3076,20 @@ document.getElementById('btn-split').addEventListener('click', async () => {
     sprites = [];
     const savedOrig = originalCanvas;
     for (const pImg of pickerImages) {
-      // 背景除去 (1枚処理と同じ removeBgFromCanvas)
+      // 「背景を残す」フラグを尊重: ON なら除去せず原画像をそのまま使う
       const proc = document.createElement('canvas');
       proc.width  = pImg.canvas.width;
       proc.height = pImg.canvas.height;
       proc.getContext('2d').drawImage(pImg.canvas, 0, 0);
-      removeBgFromCanvas(proc, tolerance, feather, grayTol, shrink, alphaBlur);
+      if (!keepBackground) {
+        removeBgFromCanvas(proc, tolerance, feather, grayTol, shrink, alphaBlur);
+      }
 
       // splitSpritesFromCanvas は originalCanvas から bgColor をサンプルするので一時切替
       originalCanvas = pImg.canvas;
       let found = [];
       try {
-        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, false);
+        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground);
       } catch (e) { console.warn('split failed for picker image:', e); }
 
       // 選択矩形があれば bbox 中心が選択内にある sprite だけ残す。なければ全部採用。
