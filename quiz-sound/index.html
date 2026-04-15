@@ -601,11 +601,11 @@ var ALL_ANIMALS = [];           // フィルタ前の全 enabled 動物
 var CONFLICT_GROUPS = [];       // [['sheep','goat'], ...]
 var DIFFICULTY = 'easy';        // 'easy' | 'normal'
 function _applyDifficultyFilter() {
+  // フラグベース: 各動物に easy: bool / normal: bool の独立フラグ
   if (DIFFICULTY === 'easy') {
-    ANIMALS = ALL_ANIMALS.filter(function(a) { return a.difficulty === 'easy'; });
+    ANIMALS = ALL_ANIMALS.filter(function(a) { return a.easy; });
   } else {
-    // ふつう = 全部 (easy + normal)
-    ANIMALS = ALL_ANIMALS.slice();
+    ANIMALS = ALL_ANIMALS.filter(function(a) { return a.normal; });
   }
 }
 function loadAnimalsFromJSON() {
@@ -617,12 +617,16 @@ function loadAnimalsFromJSON() {
       ALL_ANIMALS = list
         .filter(function (a) { return a.enabled !== false && a.sound; })
         .map(function (a) {
+          // 後方互換: 旧 difficulty 文字列があれば easy/normal フラグに変換
+          var isEasy   = (typeof a.easy   === 'boolean') ? a.easy   : (a.difficulty === 'easy');
+          var isNormal = (typeof a.normal === 'boolean') ? a.normal : true; // 旧データ: ふつうには必ず入る
           return {
             id:   a.id,
             name: a.name,
             img:   '../' + a.img,
             sound: '../' + a.sound,
-            difficulty: a.difficulty || 'normal'
+            easy:   !!isEasy,
+            normal: !!isNormal
           };
         });
       _applyDifficultyFilter();

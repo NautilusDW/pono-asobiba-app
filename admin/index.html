@@ -620,9 +620,17 @@ tr:hover { background: #FFFAF0; }
       音当てクイズで出題される動物の一覧。<strong>有効</strong>のチェックを外すと出題から除外されます。
       新しい動物は <a href="../tools/creature_studio.html" target="_blank" style="color:#60A5FA;">クリーンエッジスタジオ</a> の保存先で「🐾 音当てクイズ」を選んで登録してください。
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
       <button id="btn-reload-qs" class="btn btn-gold btn-sm">🔄 再読み込み</button>
       <button id="btn-save-qs" class="btn btn-gold btn-sm" style="background:#22c55e;color:#fff;">💾 GitHubに保存</button>
+      <label style="font-size:0.72rem;color:#5D4E37;display:flex;align-items:center;gap:4px;margin-left:8px;">
+        ひょうじ:
+        <select id="qs-filter" style="font-family:inherit;font-size:0.78rem;padding:3px 6px;border-radius:6px;border:1px solid #ccc;">
+          <option value="all">ぜんぶ</option>
+          <option value="easy">😊 やさしい だけ</option>
+          <option value="normal-only">🤔 ふつう だけ (やさしいに無いもの)</option>
+        </select>
+      </label>
       <span id="qs-count" style="font-size:0.75rem;color:#888;"></span>
       <span id="qs-status" style="font-size:0.72rem;color:#9ca3af;margin-left:auto;"></span>
     </div>
@@ -8116,17 +8124,37 @@ function loadQuizSound() {
     });
 }
 
+function _qsBadge(label, color, on) {
+  var bg = on ? color : '#e2e8f0';
+  var fg = on ? '#fff'  : '#94a3b8';
+  return '<span style="background:' + bg + ';color:' + fg + ';padding:2px 7px;border-radius:10px;font-size:0.62rem;font-weight:900;">' + label + '</span>';
+}
 function renderQuizSound() {
   var grid = document.getElementById('qs-grid');
   var countEl = document.getElementById('qs-count');
+  var filterEl = document.getElementById('qs-filter');
   if (!grid || !qsData) return;
   var arr = qsData.animals || [];
+  // 旧 difficulty フィールド → easy/normal フラグに自動補完 (DOM 操作前に)
+  arr.forEach(function(a) {
+    if (typeof a.easy   !== 'boolean') a.easy   = (a.difficulty === 'easy');
+    if (typeof a.normal !== 'boolean') a.normal = true;
+  });
   var enabled = arr.filter(function(a) { return a.enabled !== false && a.sound; }).length;
-  countEl.textContent = '計 ' + arr.length + '体 (出題対象 ' + enabled + '体)';
+  var easyCnt = arr.filter(function(a) { return a.easy; }).length;
+  var nonlyCnt = arr.filter(function(a) { return a.normal && !a.easy; }).length;
+  countEl.textContent = '計 ' + arr.length + '体 / 出題対象 ' + enabled + ' / やさしい ' + easyCnt + ' / ふつうのみ ' + nonlyCnt;
+
+  var filter = filterEl ? filterEl.value : 'all';
   grid.innerHTML = '';
   arr.forEach(function(a, idx) {
+    // フィルタ判定
+    if (filter === 'easy' && !a.easy) return;
+    if (filter === 'normal-only' && (a.easy || !a.normal)) return;
+
     var card = document.createElement('div');
-    card.style.cssText = 'background:#fff;border:2px solid ' + (a.enabled !== false ? '#22c55e' : '#cbd5e1') + ';border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;';
+    card.style.cssText = 'background:#fff;border:2px solid ' + (a.enabled !== false ? '#22c55e' : '#cbd5e1') + ';border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:5px;';
+    var bothNote = (a.easy && a.normal) ? '<div style="font-size:0.6rem;color:#94a3b8;text-align:center;margin-top:1px;">⇄ やさしい・ふつう 両方</div>' : '';
     card.innerHTML =
       '<div style="background:#f9fafb;border-radius:6px;height:100px;display:flex;align-items:center;justify-content:center;overflow:hidden;">'
       + (a.img ? '<img src="../' + a.img + '?_=' + Date.now() + '" style="max-width:100%;max-height:100%;object-fit:contain;" onerror="this.style.display=\'none\'">' : '')
@@ -8135,6 +8163,16 @@ function renderQuizSound() {
       + '<span>' + (a.icon || '🐾') + '</span><span>' + (a.name || a.id) + '</span>'
       + '<span style="font-size:0.65rem;color:#9ca3af;margin-left:auto;">' + a.id + '</span>'
       + '</div>'
+      // difficulty バッジ (クリックで toggle)
+      + '<div style="display:flex;gap:4px;align-items:center;">'
+      + '  <button data-qs-idx="' + idx + '" data-qs-act="toggleEasy" style="background:none;border:none;padding:0;cursor:pointer;">' + _qsBadge('😊 やさしい', '#10B981', a.easy) + '</button>'
+      + '  <button data-qs-idx="' + idx + '" data-qs-act="toggleNormal" style="background:none;border:none;padding:0;cursor:pointer;">' + _qsBadge('🤔 ふつう', '#F59E0B', a.normal) + '</button>'
+      + '  <span style="margin-left:auto;display:flex;gap:2px;">'
+      + '    <button data-qs-idx="' + idx + '" data-qs-act="up"   title="上へ" style="padding:2px 5px;border:1px solid #cbd5e1;background:#fff;border-radius:3px;font-size:0.7rem;cursor:pointer;font-family:inherit;">▲</button>'
+      + '    <button data-qs-idx="' + idx + '" data-qs-act="down" title="下へ" style="padding:2px 5px;border:1px solid #cbd5e1;background:#fff;border-radius:3px;font-size:0.7rem;cursor:pointer;font-family:inherit;">▼</button>'
+      + '  </span>'
+      + '</div>'
+      + bothNote
       + '<div style="display:flex;align-items:center;gap:6px;font-size:0.7rem;">'
       + '<label style="display:flex;align-items:center;gap:3px;cursor:pointer;">'
       +   '<input type="checkbox" data-qs-idx="' + idx + '" data-qs-act="enabled" ' + (a.enabled !== false ? 'checked' : '') + '> 出題ON'
@@ -8144,7 +8182,13 @@ function renderQuizSound() {
       + '</div>';
     grid.appendChild(card);
   });
-  // delegate handlers
+
+  // ハンドラ統合
+  function withIdx(act, fn) {
+    grid.querySelectorAll('[data-qs-act="' + act + '"]').forEach(function(el) {
+      el.addEventListener('click', function() { fn(parseInt(el.dataset.qsIdx, 10), el); });
+    });
+  }
   grid.querySelectorAll('input[data-qs-act="enabled"]').forEach(function(cb) {
     cb.addEventListener('change', function() {
       var i = parseInt(cb.dataset.qsIdx, 10);
@@ -8152,26 +8196,62 @@ function renderQuizSound() {
       renderQuizSound();
     });
   });
-  grid.querySelectorAll('button[data-qs-act="play"]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var i = parseInt(btn.dataset.qsIdx, 10);
-      var a = qsData.animals[i];
-      if (a && a.sound) {
-        try { (new Audio('../' + a.sound)).play().catch(function(){}); } catch(e) {}
-      }
-    });
+  withIdx('play', function(i) {
+    var a = qsData.animals[i];
+    if (a && a.sound) try { (new Audio('../' + a.sound)).play().catch(function(){}); } catch(e) {}
   });
-  grid.querySelectorAll('button[data-qs-act="del"]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var i = parseInt(btn.dataset.qsIdx, 10);
-      var a = qsData.animals[i];
-      if (!a) return;
-      if (!confirm('「' + a.name + '」(' + a.id + ') を削除しますか? (画像/音源ファイルは残ります)')) return;
-      qsData.animals.splice(i, 1);
-      renderQuizSound();
-    });
+  withIdx('del', function(i) {
+    var a = qsData.animals[i];
+    if (!a) return;
+    if (!confirm('「' + a.name + '」(' + a.id + ') を削除しますか? (画像/音源ファイルは残ります)')) return;
+    qsData.animals.splice(i, 1);
+    renderQuizSound();
+  });
+  withIdx('toggleEasy', function(i) {
+    if (!qsData.animals[i]) return;
+    qsData.animals[i].easy = !qsData.animals[i].easy;
+    renderQuizSound();
+  });
+  withIdx('toggleNormal', function(i) {
+    if (!qsData.animals[i]) return;
+    qsData.animals[i].normal = !qsData.animals[i].normal;
+    renderQuizSound();
+  });
+  // 並び替え (▲▼): フィルタ後の見えてる範囲で前/次の同条件カードと swap
+  function visibleIndices() {
+    var f = filterEl ? filterEl.value : 'all';
+    return arr.map(function(a, i) {
+      if (f === 'easy' && !a.easy) return -1;
+      if (f === 'normal-only' && (a.easy || !a.normal)) return -1;
+      return i;
+    }).filter(function(i) { return i >= 0; });
+  }
+  withIdx('up', function(i) {
+    var vis = visibleIndices();
+    var pos = vis.indexOf(i);
+    if (pos <= 0) return;
+    var prev = vis[pos - 1];
+    var tmp = qsData.animals[i];
+    qsData.animals[i] = qsData.animals[prev];
+    qsData.animals[prev] = tmp;
+    renderQuizSound();
+  });
+  withIdx('down', function(i) {
+    var vis = visibleIndices();
+    var pos = vis.indexOf(i);
+    if (pos < 0 || pos >= vis.length - 1) return;
+    var next = vis[pos + 1];
+    var tmp = qsData.animals[i];
+    qsData.animals[i] = qsData.animals[next];
+    qsData.animals[next] = tmp;
+    renderQuizSound();
   });
 }
+
+// フィルタ変更で再描画
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'qs-filter') renderQuizSound();
+});
 
 document.addEventListener('click', function(e) {
   if (e.target && e.target.id === 'btn-reload-qs') loadQuizSound();
