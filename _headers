@@ -12,6 +12,15 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Pragma: no-cache
 
+# --- 管理ツール (頻繁に更新されるので絶対キャッシュしない) ---
+/tools/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+
+/admin/*
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+
 # --- Service Worker 自身は絶対にキャッシュしない ---
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate
