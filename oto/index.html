@@ -40,13 +40,31 @@
     position: absolute; inset: 0;
     z-index: 0; pointer-events: none;
   }
-  /* ポノ sprite (画面ど真ん中) */
+  /* ポノ sprite (画面ど真ん中、静止画 + CSS で呼吸 + バンプ) */
   .pono-sprite {
     position: absolute;
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 140px; height: 180px;
+    top: 50%; left: 50%;
+    width: 150px; height: auto;
+    max-height: 220px;
     z-index: 2; pointer-events: none;
-    image-rendering: auto;
+    transform-origin: center bottom;
+    transform: translate(-50%, -50%);
+    animation: ponoBreathe 2.4s ease-in-out infinite;
+    -webkit-user-drag: none;
+  }
+  @keyframes ponoBreathe {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50%      { transform: translate(-50%, -52%) scale(1.025); }
+  }
+  .pono-sprite.bump {
+    animation: ponoBump 0.6s ease-out;
+  }
+  @keyframes ponoBump {
+    0%   { transform: translate(-50%, -50%) scale(1); }
+    25%  { transform: translate(-50%, -56%) scale(1.08); }
+    50%  { transform: translate(-50%, -50%) scale(1); }
+    75%  { transform: translate(-50%, -54%) scale(1.04); }
+    100% { transform: translate(-50%, -50%) scale(1); }
   }
 
   /* ── セット切替アイコン (上部) ── */
@@ -624,8 +642,9 @@
     <!-- 最下層: 背景 Canvas (グラデ + 環境バブル + 波紋 + パーティクル) -->
     <canvas id="bgCanvas"></canvas>
 
-    <!-- ポノ sprite (中層) -->
-    <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
+    <!-- ポノ sprite (中層) — 高解像度静止画 + CSS で呼吸 -->
+    <img id="pono" class="pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+
 
     <!-- ばんそう (ドラムの速さだけ) — 画面下、シンプルな角丸枠 -->
     <div class="band-group" id="band-group">
@@ -639,7 +658,7 @@
 
     <!-- 音色4種 (上中央、角丸枠で囲って案内) -->
     <div class="sound-sets-box">
-      <div class="sound-sets-label">おといろ</div>
+      <div class="sound-sets-label">ねいろ</div>
       <div class="sound-sets" id="sound-sets" role="tablist">
         <button class="set-btn active" data-set="doremi" aria-label="ドレミ">🎹</button>
         <button class="set-btn"        data-set="kira"   aria-label="きらきら">🎼</button>
@@ -1217,9 +1236,20 @@ function spawnBubbleAt(x, y, colorIdx) {
     alpha: 0.7 + Math.random() * 0.2,
     colorIdx: colorIdx,
   });
-  // 同じ色 idx (0-6) を kira の音 idx として使う (8音中の先頭7音)
-  var ac = getAC(); if (ac) playKira(ac, colorIdx);
-  // 録音中なら kira イベントとして記録
+  // 空タップでも 選択中の音色を鳴らす (色 idx を音 idx として再利用)
+  // → 楽器ボタンと「鳴り方」が揃う
+  var idx = colorIdx % 8;
+  if (currentSet === 'kira') {
+    var ack = getAC(); if (ack) playKira(ack, idx);
+  } else if (currentSet === 'doremi') {
+    if (CHORD_MODE === 'on') { var acC = getAC(); if (acC) playChordTap(acC, 'doremi', idx); }
+    else playTone('doremi', idx);
+  } else if (currentSet === 'taiko') {
+    playTone('taiko', idx);
+  } else if (currentSet === 'animal') {
+    if (_animalBuffers[idx]) playBuffer(_animalBuffers[idx]);
+    else { var ac3 = getAC(); if (ac3) playDrum(ac3, TAIKO_KINDS[idx] || 'kick'); }
+  }
   recordEvent('kira', { colorIdx: colorIdx });
 }
 
@@ -1582,44 +1612,22 @@ function drawFinale(now) {
 // ────────────────────────────────
 // ポノ スプライト描画
 // ────────────────────────────────
-var imgWalk = new Image();
-imgWalk.src = '../assets/images/characters/pono/pono_walk_sheet.png';
-var WALK_FRAMES = 25, WALK_FRAME_W = 92, WALK_FRAME_H = 128;
-
-var bumpEndAt = 0;
-var _ponoCanvas = document.getElementById('pono');
-var _ponoCtx = _ponoCanvas ? _ponoCanvas.getContext('2d') : null;
-
+// ポノ: 高解像度静止画 + CSS アニメ。タップ時にバンプクラスを付与
+var _ponoEl = document.getElementById('pono');
+var _bumpTimer = null;
 function bumpPono() {
-  bumpEndAt = performance.now() + 1500;
+  if (!_ponoEl) return;
+  _ponoEl.classList.remove('bump');
+  // 強制リフロー → アニメ再起動
+  void _ponoEl.offsetWidth;
+  _ponoEl.classList.add('bump');
+  if (_bumpTimer) clearTimeout(_bumpTimer);
+  _bumpTimer = setTimeout(function() {
+    _ponoEl.classList.remove('bump');
+    _bumpTimer = null;
+  }, 620);
 }
-
-function drawPono(now) {
-  if (!_ponoCanvas || !_ponoCtx) return;
-  var canvas = _ponoCanvas;
-  var ctx = _ponoCtx;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!imgWalk.complete || imgWalk.naturalWidth === 0) return;
-
-  // タップ中は早送り (12fps)、アイドルは 4fps でゆっくり
-  var fps = (now < bumpEndAt) ? 12 : 4;
-  var frameAdvance = Math.floor(now / (1000 / fps));
-  var f = frameAdvance % WALK_FRAMES;
-  var sx = f * WALK_FRAME_W;
-
-  // 上下の軽いバウンス
-  var bounce = Math.sin(now / 180) * 4;
-  var scale = 1 + Math.sin(now / 220) * 0.03;
-
-  var dw = canvas.width;
-  var dh = canvas.height;
-  // アスペクト維持
-  var drawH = dh * scale;
-  var drawW = (drawH * WALK_FRAME_W / WALK_FRAME_H);
-  ctx.drawImage(imgWalk,
-    sx, 0, WALK_FRAME_W, WALK_FRAME_H,
-    (canvas.width - drawW) / 2, (canvas.height - drawH) + bounce, drawW, drawH);
-}
+function drawPono() { /* CSS で描画するので no-op */ }
 
 var _rafId = null;
 var _lastFrame = 0;
