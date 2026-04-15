@@ -234,6 +234,9 @@
 </style>
 </head>
 <body>
+<!-- BGM (ループ再生) -->
+<audio id="quiz-bgm" src="../assets/audio/quiz_sound_bgm.mp3" loop preload="auto"></audio>
+
 <!-- ── イントロ: タップで AudioContext / BGM をアンロック ── -->
 <div class="intro" id="intro">
   <h1>おとあてクイズ</h1>
@@ -580,6 +583,21 @@ function loadAnimalsFromJSON() {
     });
 }
 
+// BGM 制御
+var _bgm = document.getElementById('quiz-bgm');
+if (_bgm) _bgm.volume = 0.32;
+function _startBgm() {
+  if (!_bgm) return;
+  if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
+  try { var p = _bgm.play(); if (p && p.catch) p.catch(function(){}); } catch(e) {}
+}
+function _stopBgm() { if (_bgm) try { _bgm.pause(); } catch(e) {} }
+// タブが背景に行ったら一時停止、戻ったら再開
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) _stopBgm();
+  else _startBgm();
+});
+
 // イントロ → タップで AudioContext アンロック → クイズ開始
 function startGame() {
   // AudioContext をユーザー操作中にアンロック (iOS/Safari 必須)
@@ -591,6 +609,9 @@ function startGame() {
     alert('まだ どうぶつリストが よめません。すこし まってね。');
     return;
   }
+
+  // BGM 開始 (ユーザー操作中なので autoplay 許可される)
+  _startBgm();
 
   document.getElementById('intro').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
