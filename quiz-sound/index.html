@@ -159,7 +159,7 @@
   /* ── 考え中のポノ動画 (中央下、選択肢の下) ── */
   .thinking-pono {
     flex: 0 0 auto;
-    margin: 4px auto 8px;
+    margin: 4px auto 36px;       /* 縦画面で下端から少し離す */
     width: 120px; height: 120px;
     border-radius: 50%;
     overflow: hidden;
@@ -200,6 +200,29 @@
   .intro p {
     font-size: 1rem; font-weight: 700; color: #5D4E37;
     line-height: 1.7; margin-bottom: 24px; max-width: 320px;
+  }
+  .diff-row {
+    display: flex; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .diff-btn {
+    padding: 10px 18px;
+    border: 3px solid #FBBF24;
+    border-radius: 999px;
+    background: #fff;
+    color: #92400E;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.08s, background 0.18s, color 0.18s;
+  }
+  .diff-btn:active { transform: scale(0.94); }
+  .diff-btn.active {
+    background: linear-gradient(135deg, #FBBF24, #F59E0B);
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.4);
   }
   .intro-btn {
     padding: 14px 40px;
@@ -244,6 +267,10 @@
     <video src="../assets/videos/ThinkingPono.mp4" autoplay loop muted playsinline webkit-playsinline></video>
   </div>
   <p>どうぶつの こえを きいて<br>おなじ どうぶつを えらんでね！</p>
+  <div class="diff-row">
+    <button class="diff-btn active" id="diff-easy"   data-diff="easy">😊 やさしい</button>
+    <button class="diff-btn"        id="diff-normal" data-diff="normal">🤔 ふつう</button>
+  </div>
   <button class="intro-btn" id="introBtn">はじめる！</button>
 </div>
 
@@ -370,10 +397,22 @@ function buildQuestions() {
   return out;
 }
 function buildChoices(answer) {
-  var others = ANIMALS.filter(function(a){ return a.id !== answer.id; });
+  // 似ている動物 (CONFLICT_GROUPS) は 同じ問題に出さない
+  var conflictIds = _conflictsOf(answer.id);
+  var others = ANIMALS.filter(function(a){
+    return a.id !== answer.id && conflictIds.indexOf(a.id) < 0;
+  });
   var picks = shuffle(others).slice(0, CHOICES_PER_QUESTION - 1);
   picks.push(answer);
   return shuffle(picks);
+}
+function _conflictsOf(id) {
+  var hits = [];
+  CONFLICT_GROUPS.forEach(function(g) {
+    if (g.indexOf(id) < 0) return;
+    g.forEach(function(other) { if (other !== id && hits.indexOf(other) < 0) hits.push(other); });
+  });
+  return hits;
 }
 
 // ────────────────────────────────
@@ -557,25 +596,36 @@ document.getElementById('speaker').addEventListener('click', function() {
   if (questions[qIndex]) playAnimalSound(questions[qIndex].id);
 });
 
-// quiz-sound-animals.json から動物リストを取得 → enabled のものだけ採用
+// quiz-sound-animals.json から動物リスト + 似てるグループを取得
+var ALL_ANIMALS = [];           // フィルタ前の全 enabled 動物
+var CONFLICT_GROUPS = [];       // [['sheep','goat'], ...]
+var DIFFICULTY = 'easy';        // 'easy' | 'normal'
+function _applyDifficultyFilter() {
+  if (DIFFICULTY === 'easy') {
+    ANIMALS = ALL_ANIMALS.filter(function(a) { return a.difficulty === 'easy'; });
+  } else {
+    // ふつう = 全部 (easy + normal)
+    ANIMALS = ALL_ANIMALS.slice();
+  }
+}
 function loadAnimalsFromJSON() {
   return fetch('../assets/data/quiz-sound-animals.json?_=' + Date.now(), { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       var list = (data && data.animals) ? data.animals : [];
-      // sound 必須 + enabled === true のものだけ
-      ANIMALS = list
+      CONFLICT_GROUPS = (data && data.conflictGroups) ? data.conflictGroups : [];
+      ALL_ANIMALS = list
         .filter(function (a) { return a.enabled !== false && a.sound; })
         .map(function (a) {
           return {
             id:   a.id,
             name: a.name,
-            // 相対パス調整 (JSON は project root 起点なので ../ を前置)
             img:   '../' + a.img,
-            sound: '../' + a.sound
+            sound: '../' + a.sound,
+            difficulty: a.difficulty || 'normal'
           };
         });
-      // プリロード
+      _applyDifficultyFilter();
       ANIMALS.forEach(function (a) { loadAudio(a.id, a.sound); });
     })
     .catch(function (e) {
@@ -620,6 +670,27 @@ function startGame() {
   renderQuestion();
 }
 document.getElementById('introBtn').addEventListener('click', startGame);
+
+// 難易度トグル (やさしい / ふつう)
+document.querySelectorAll('.diff-btn').forEach(function(b) {
+  b.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.diff-btn').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    DIFFICULTY = b.dataset.diff;
+    _applyDifficultyFilter();
+    try { localStorage.setItem('pono_quiz_diff', DIFFICULTY); } catch(e) {}
+  });
+});
+// 復元
+try {
+  var savedDiff = localStorage.getItem('pono_quiz_diff') || 'easy';
+  if (savedDiff !== 'easy' && savedDiff !== 'normal') savedDiff = 'easy';
+  DIFFICULTY = savedDiff;
+  document.querySelectorAll('.diff-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.diff === savedDiff);
+  });
+} catch(e) {}
 
 // 起動時に動物リストを読み込み開始
 loadAnimalsFromJSON();
