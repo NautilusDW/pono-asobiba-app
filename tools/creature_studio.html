@@ -406,10 +406,16 @@ body {
 }
 .picker-canvas-wrap canvas { cursor: crosshair; }
 .picker-empty {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  border: 3px dashed #374151; border-radius: 12px; margin: 16px;
+  padding: 18px 28px;
+  border: 2px dashed #374151; border-radius: 12px;
+  background: rgba(0,0,0,0.3);
   cursor: pointer; transition: border-color 0.2s;
+  max-width: 70%;
+  pointer-events: auto;
 }
 .picker-empty:hover { border-color: #6b7280; }
 .picker-canvas-wrap.has-images .picker-empty { display: none; }
@@ -534,8 +540,8 @@ body {
       <div class="section-title">1. 画像を開く</div>
       <div class="drop-zone" id="drop-zone">
         <div class="drop-icon">🖼️</div>
-        <div class="drop-text">ここにドラッグ<br>またはクリック</div>
-        <input type="file" id="file-input" accept="image/*" style="display:none">
+        <div class="drop-text">ここにドラッグ<br>または クリック<br><span style="font-size:0.6rem;color:#6b7280;">※ 複数ファイル対応</span></div>
+        <input type="file" id="file-input" accept="image/*" multiple style="display:none">
       </div>
       <div class="file-info" id="file-info"></div>
       <button class="btn btn-secondary" id="btn-multi-picker" style="margin-top:6px;font-size:0.7rem">📐 マルチ合成モード</button>
@@ -751,9 +757,9 @@ body {
         <div class="picker-canvas-wrap" id="picker-canvas-wrap">
           <canvas id="picker-canvas"></canvas>
           <div class="picker-empty" id="picker-empty">
-            <div style="font-size:2rem;margin-bottom:8px;">📂</div>
-            <div style="font-size:0.85rem;font-weight:700;color:#9ca3af;">ここに画像をドラッグ＆ドロップ</div>
-            <div style="font-size:0.7rem;color:#6b7280;margin-top:4px;">複数ファイルOK・1枚ずつでもOK</div>
+            <div style="font-size:1.3rem;margin-bottom:4px;">📂</div>
+            <div style="font-size:0.78rem;font-weight:700;color:#9ca3af;">画像をドロップ</div>
+            <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">左の「1. 画像を開く」でもOK</div>
           </div>
         </div>
       </div>
@@ -1822,9 +1828,23 @@ function loadImageFile(file) {
 
 const dropZone  = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
+
+// 統合ドロップ処理: 1ファイル = 単画像モード、2以上 = 自動でマルチ合成モード ON
+function handleDroppedFiles(filesLike) {
+  const files = Array.from(filesLike || []).filter(f => /^image\//.test(f.type));
+  if (!files.length) return;
+  if (files.length === 1) {
+    loadImageFile(files[0]);
+  } else {
+    // 複数 → マルチ合成モードに自動切替して全部取り込む
+    if (!multiPickerMode) document.getElementById('btn-multi-picker').click();
+    addPickerFiles(files);
+  }
+}
+
 dropZone.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) loadImageFile(fileInput.files[0]);
+  if (fileInput.files.length) handleDroppedFiles(fileInput.files);
   fileInput.value = '';
 });
 dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -1832,17 +1852,16 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-ove
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && /^image\//.test(file.type)) loadImageFile(file);
+  handleDroppedFiles(e.dataTransfer.files);
 });
 
-// 比較タブへのドラッグ＆ドロップでも画像を読み込み
+// 比較タブ (=「元画像」エリア含む) へのドラッグ&ドロップでも取り込み
+// 単画像 / 複数画像 どちらもここで受け付ける
 const compareTab = document.getElementById('tab-compare');
 compareTab.addEventListener('dragover', e => { e.preventDefault(); });
 compareTab.addEventListener('drop', e => {
   e.preventDefault();
-  const file = e.dataTransfer.files[0];
-  if (file && /^image\//.test(file.type)) loadImageFile(file);
+  handleDroppedFiles(e.dataTransfer.files);
 });
 
 // ════════════════════════════════════════════════════════════
