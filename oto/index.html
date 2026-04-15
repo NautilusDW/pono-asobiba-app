@@ -40,10 +40,10 @@
     position: absolute; inset: 0;
     z-index: 0; pointer-events: none;
   }
-  /* ポノ sprite (中層) */
+  /* ポノ sprite (画面ど真ん中) */
   .pono-sprite {
     position: absolute;
-    bottom: 12px; left: 50%; transform: translateX(-50%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 140px; height: 180px;
     z-index: 2; pointer-events: none;
     image-rendering: auto;
@@ -117,27 +117,27 @@
   .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
   .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
-  /* 8ボタン配置: 2行×4列のジグザグ (ドレミファソラシド) */
-  .instr-btn[data-idx="0"] { left: 15%; top: 45%; --sz: 118px; }
-  .instr-btn[data-idx="1"] { left: 38%; top: 42%; --sz: 122px; }
-  .instr-btn[data-idx="2"] { left: 62%; top: 42%; --sz: 122px; }
-  .instr-btn[data-idx="3"] { left: 85%; top: 45%; --sz: 118px; }
-  .instr-btn[data-idx="4"] { left: 15%; top: 75%; --sz: 122px; }
-  .instr-btn[data-idx="5"] { left: 38%; top: 78%; --sz: 126px; }
-  .instr-btn[data-idx="6"] { left: 62%; top: 78%; --sz: 126px; }
-  .instr-btn[data-idx="7"] { left: 85%; top: 75%; --sz: 122px; }
+  /* 8ボタン配置: クマを中心に、上4つ・下4つで等間隔 */
+  .instr-btn[data-idx="0"] { left: 12.5%; top: 22%; --sz: 118px; }
+  .instr-btn[data-idx="1"] { left: 37.5%; top: 22%; --sz: 118px; }
+  .instr-btn[data-idx="2"] { left: 62.5%; top: 22%; --sz: 118px; }
+  .instr-btn[data-idx="3"] { left: 87.5%; top: 22%; --sz: 118px; }
+  .instr-btn[data-idx="4"] { left: 12.5%; top: 78%; --sz: 118px; }
+  .instr-btn[data-idx="5"] { left: 37.5%; top: 78%; --sz: 118px; }
+  .instr-btn[data-idx="6"] { left: 62.5%; top: 78%; --sz: 118px; }
+  .instr-btn[data-idx="7"] { left: 87.5%; top: 78%; --sz: 118px; }
 
-  /* 横画面: 縦を圧縮、サイズも下げる */
+  /* 横画面: 上下に寄せて中央のクマと干渉しないように */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"] { top: 40%; --sz: 96px; }
-    .instr-btn[data-idx="1"] { top: 36%; --sz: 102px; }
-    .instr-btn[data-idx="2"] { top: 36%; --sz: 102px; }
-    .instr-btn[data-idx="3"] { top: 40%; --sz: 96px; }
-    .instr-btn[data-idx="4"] { top: 72%; --sz: 100px; }
-    .instr-btn[data-idx="5"] { top: 74%; --sz: 104px; }
-    .instr-btn[data-idx="6"] { top: 74%; --sz: 104px; }
-    .instr-btn[data-idx="7"] { top: 72%; --sz: 100px; }
-    .pono-sprite { width: 110px; height: 150px; bottom: 4px; }
+    .instr-btn[data-idx="0"],
+    .instr-btn[data-idx="1"],
+    .instr-btn[data-idx="2"],
+    .instr-btn[data-idx="3"] { top: 20%; --sz: 96px; }
+    .instr-btn[data-idx="4"],
+    .instr-btn[data-idx="5"],
+    .instr-btn[data-idx="6"],
+    .instr-btn[data-idx="7"] { top: 80%; --sz: 96px; }
+    .pono-sprite { width: 110px; height: 150px; }
   }
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
@@ -154,13 +154,12 @@
     <!-- ポノ sprite (中層) -->
     <canvas id="pono" class="pono-sprite" width="184" height="256"></canvas>
 
-    <!-- セット切替 (右上) -->
+    <!-- セット切替 (右上): voice 削除、4セット -->
     <div class="sets" id="sets" role="tablist">
-      <button class="set-btn active" data-set="voice" aria-label="おとセット1">🗣️</button>
-      <button class="set-btn"        data-set="doremi" aria-label="おとセット2">🎹</button>
-      <button class="set-btn"        data-set="kira" aria-label="おとセット3">🎼</button>
-      <button class="set-btn"        data-set="taiko" aria-label="おとセット4">🥁</button>
-      <button class="set-btn"        data-set="animal" aria-label="おとセット5">🐾</button>
+      <button class="set-btn active" data-set="doremi" aria-label="おとセット1">🎹</button>
+      <button class="set-btn"        data-set="kira" aria-label="おとセット2">🎼</button>
+      <button class="set-btn"        data-set="taiko" aria-label="おとセット3">🥁</button>
+      <button class="set-btn"        data-set="animal" aria-label="おとセット4">🐾</button>
     </div>
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
@@ -257,8 +256,7 @@ function playBuffer(buf) {
   } catch(e) { return false; }
 }
 
-// ページロード後にフェッチ即開始（ユーザー操作を待たない）
-preloadVoiceBuffers();
+// voice セットは廃止したのでフェッチしない
 
 // ────────────────────────────────
 // 合成: ドレミ / 太鼓 / 動物
@@ -461,14 +459,13 @@ function _makeNoiseBuffer(ac, durationSec) {
 // ────────────────────────────────
 // セット状態
 // ────────────────────────────────
-var currentSet = 'voice';
+var currentSet = 'doremi';
 document.querySelectorAll('.set-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.set-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     currentSet = btn.dataset.set;
     unlockAudio();
-    _ensureVoiceDecoded();
     _ensureAnimalDecoded();
     // 切替プレビュー音を0番で1回鳴らす
     playSetSound(0);
@@ -476,12 +473,7 @@ document.querySelectorAll('.set-btn').forEach(function(btn) {
 });
 
 function playSetSound(idx) {
-  if (currentSet === 'voice') {
-    if (!_voiceBuffers[idx]) _ensureVoiceDecoded();
-    if (_voiceBuffers[idx] && playBuffer(_voiceBuffers[idx])) return;
-    // 未ロードは太鼓フォールバック
-    var ac = getAC(); if (ac) playDrum(ac, TAIKO_KINDS[idx] || 'kick');
-  } else if (currentSet === 'doremi') {
+  if (currentSet === 'doremi') {
     playTone('doremi', idx);
   } else if (currentSet === 'kira') {
     var ack = getAC(); if (ack) playKira(ack, idx);
@@ -501,7 +493,6 @@ function triggerPreload() {
   if (_preloaded) return;
   _preloaded = true;
   unlockAudio();
-  _ensureVoiceDecoded();
   _ensureAnimalDecoded();
 }
 document.addEventListener('pointerdown', triggerPreload, { once: true });
@@ -558,24 +549,71 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
 });
 
 // ────────────────────────────────
-// 空タップ (ボタン以外) → シャボン玉破裂判定
+// 空タップ/ドラッグ (ボタン以外)
+//   既存のシャボン玉に当たれば破裂、当たらなければ虹色シャボン玉をその場に生成。
+//   ドラッグ中は一定距離ごとに次々と生成 (シャボン玉ゲームのお絵描き感覚)。
 // ────────────────────────────────
 var _stageEl = document.getElementById('stage');
+var _drag = { active: false, lastX: 0, lastY: 0, colorIdx: 0 };
+var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
+
+function _isOnButton(e) {
+  return !!(e.target && e.target.closest && e.target.closest('.instr-btn, .set-btn'));
+}
+
+// 指定座標に虹色シャボン玉を生成 + キラキラ音
+function spawnBubbleAt(x, y, colorIdx) {
+  if (ambientBubbles.length >= MAX_AMBIENT) ambientBubbles.shift();
+  ambientBubbles.push({
+    x: x, y: y,
+    r: 22 + Math.random() * 22,
+    vy: -(20 + Math.random() * 24),
+    phase: Math.random() * TAU,
+    wobbleAmp: 0.3 + Math.random() * 0.5,
+    alpha: 0.7 + Math.random() * 0.2,
+    colorIdx: colorIdx,
+  });
+  // 同じ色 idx (0-6) を kira の音 idx として使う (8音中の先頭7音)
+  var ac = getAC(); if (ac) playKira(ac, colorIdx);
+}
+
 _stageEl.addEventListener('pointerdown', function(e) {
-  // ボタン上のタップは個別ハンドラに任せる
-  if (e.target && e.target.closest && e.target.closest('.instr-btn, .set-btn')) return;
-  // 座標を Canvas 座標 (CSS px) に変換
+  if (_isOnButton(e)) return;
   var x = e.clientX, y = e.clientY;
   if (popBubbleAt(x, y)) {
-    // 破裂成功時: 統計とラリー記録 (ボタン同様)
     if (window.incrementStat) window.incrementStat('oto_taps', 1);
     markPlayedToday();
     bumpPono();
-  } else {
-    // 当たらなかった場合: 軽い波紋だけ出して反応を返す
-    spawnRipples(x, y);
+    return;
   }
+  // 当たらなかった場合: 虹色シャボン玉を新規生成 + キラキラ音
+  var colorIdx = Math.floor(Math.random() * BUBBLE_COLORS.length);
+  spawnBubbleAt(x, y, colorIdx);
+  _drag.active = true;
+  _drag.lastX = x; _drag.lastY = y;
+  _drag.colorIdx = (colorIdx + 1) % BUBBLE_COLORS.length;
+  if (window.incrementStat) window.incrementStat('oto_taps', 1);
+  markPlayedToday();
 });
+
+_stageEl.addEventListener('pointermove', function(e) {
+  if (!_drag.active) return;
+  if (_isOnButton(e)) return;
+  var x = e.clientX, y = e.clientY;
+  var dx = x - _drag.lastX, dy = y - _drag.lastY;
+  if (dx * dx + dy * dy < DRAG_SPAWN_DIST * DRAG_SPAWN_DIST) return;
+  // 既存シャボン玉に当たれば破裂、そうでなければ生成
+  if (!popBubbleAt(x, y)) {
+    spawnBubbleAt(x, y, _drag.colorIdx);
+    _drag.colorIdx = (_drag.colorIdx + 1) % BUBBLE_COLORS.length;
+  }
+  _drag.lastX = x; _drag.lastY = y;
+});
+
+function _endDrag() { _drag.active = false; }
+_stageEl.addEventListener('pointerup',     _endDrag);
+_stageEl.addEventListener('pointercancel', _endDrag);
+_stageEl.addEventListener('pointerleave',  _endDrag);
 
 function markPlayedToday() {
   try {
@@ -718,13 +756,15 @@ var ambientBubbles = [];
 var MAX_AMBIENT = 22;
 var ambientTimer = 0;
 // バブルの色パレット (bubble/index.html から移植)
+// 虹の7色 (赤・橙・黄・緑・青・藍・紫)。kira 音の8音階のうち先頭7つに対応。
 var BUBBLE_COLORS = [
-  { r: 255, g: 107, b: 157 }, // ピンク
-  { r: 125, g: 211, b: 252 }, // シアン
-  { r: 125, g: 211, b: 160 }, // グリーン
-  { r: 255, g: 216, b: 77 },  // イエロー
-  { r: 196, g: 181, b: 253 }, // パープル
-  { r: 255, g: 169, b: 77 },  // オレンジ
+  { r: 255, g: 90,  b: 95  }, // 赤
+  { r: 255, g: 154, b: 60  }, // 橙
+  { r: 255, g: 216, b: 77  }, // 黄
+  { r: 110, g: 211, b: 130 }, // 緑
+  { r: 90,  g: 170, b: 255 }, // 青
+  { r: 110, g: 110, b: 220 }, // 藍
+  { r: 196, g: 130, b: 240 }, // 紫
 ];
 function addAmbientBubble(sx, sy, extraVy) {
   if (ambientBubbles.length >= MAX_AMBIENT) return;
@@ -869,7 +909,7 @@ function triggerFinale() {
     var cy = rect.top  + rect.height / 2;
     spawnParticles(cx, cy, 12);
     spawnRipples(cx, cy);
-    spawnBurstBubbles(cx, cy, 3);
+    spawnBubbleAt(cx, cy - 30, Math.floor(Math.random() * BUBBLE_COLORS.length));
   });
   // アルペジオで現セットの5音
   for (var i = 0; i < 5; i++) {
