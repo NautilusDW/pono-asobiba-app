@@ -117,26 +117,28 @@
   .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
   .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
-  /* 8ボタン配置: クマを中心に、上4つ・下4つで等間隔 */
-  .instr-btn[data-idx="0"] { left: 12.5%; top: 22%; --sz: 118px; }
-  .instr-btn[data-idx="1"] { left: 37.5%; top: 22%; --sz: 118px; }
-  .instr-btn[data-idx="2"] { left: 62.5%; top: 22%; --sz: 118px; }
-  .instr-btn[data-idx="3"] { left: 87.5%; top: 22%; --sz: 118px; }
-  .instr-btn[data-idx="4"] { left: 12.5%; top: 78%; --sz: 118px; }
-  .instr-btn[data-idx="5"] { left: 37.5%; top: 78%; --sz: 118px; }
-  .instr-btn[data-idx="6"] { left: 62.5%; top: 78%; --sz: 118px; }
-  .instr-btn[data-idx="7"] { left: 87.5%; top: 78%; --sz: 118px; }
+  /* 8ボタン配置: クマを中心にした楕円カーブ
+     上行は内側(idx 1,2)が上に、外側(idx 0,3)が少し下がる
+     下行は内側(idx 5,6)が下に、外側(idx 4,7)が少し上がる */
+  .instr-btn[data-idx="0"] { left: 13%; top: 28%; --sz: 116px; }
+  .instr-btn[data-idx="1"] { left: 36%; top: 19%; --sz: 122px; }
+  .instr-btn[data-idx="2"] { left: 64%; top: 19%; --sz: 122px; }
+  .instr-btn[data-idx="3"] { left: 87%; top: 28%; --sz: 116px; }
+  .instr-btn[data-idx="4"] { left: 13%; top: 72%; --sz: 116px; }
+  .instr-btn[data-idx="5"] { left: 36%; top: 81%; --sz: 122px; }
+  .instr-btn[data-idx="6"] { left: 64%; top: 81%; --sz: 122px; }
+  .instr-btn[data-idx="7"] { left: 87%; top: 72%; --sz: 116px; }
 
-  /* 横画面: 上下に寄せて中央のクマと干渉しないように */
+  /* 横画面: 縦を圧縮しつつカーブは維持 */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"],
-    .instr-btn[data-idx="1"],
-    .instr-btn[data-idx="2"],
-    .instr-btn[data-idx="3"] { top: 20%; --sz: 96px; }
-    .instr-btn[data-idx="4"],
-    .instr-btn[data-idx="5"],
-    .instr-btn[data-idx="6"],
-    .instr-btn[data-idx="7"] { top: 80%; --sz: 96px; }
+    .instr-btn[data-idx="0"] { top: 26%; --sz: 96px; }
+    .instr-btn[data-idx="1"] { top: 16%; --sz: 102px; }
+    .instr-btn[data-idx="2"] { top: 16%; --sz: 102px; }
+    .instr-btn[data-idx="3"] { top: 26%; --sz: 96px; }
+    .instr-btn[data-idx="4"] { top: 74%; --sz: 96px; }
+    .instr-btn[data-idx="5"] { top: 84%; --sz: 102px; }
+    .instr-btn[data-idx="6"] { top: 84%; --sz: 102px; }
+    .instr-btn[data-idx="7"] { top: 74%; --sz: 96px; }
     .pono-sprite { width: 110px; height: 150px; }
   }
   /* 画面が狭い時ボタン縮小 */
