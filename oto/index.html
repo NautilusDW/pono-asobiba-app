@@ -163,7 +163,9 @@
     .instr-btn[data-idx="5"] { top: 73%; --sz: 96px; }
     .instr-btn[data-idx="6"] { top: 73%; --sz: 96px; }
     .instr-btn[data-idx="7"] { top: 58%; --sz: 92px; }
-    .pono-sprite { width: 110px; height: 150px; }
+    /* 横画面: ポノも少し小さく (高さ固定、幅 auto でアスペクト比保持) */
+    .pono-wrap { width: 220px; height: 170px; }
+    .pono-sprite { height: 160px; }
   }
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
