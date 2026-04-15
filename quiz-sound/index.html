@@ -219,11 +219,13 @@
   /* ── 横画面 / 大画面 ── */
   @media (orientation: landscape) {
     .choices { grid-template-columns: repeat(3, 1fr); max-width: 720px; margin: 0 auto; }
-    /* 横画面では下に置くと見切れるので、右上に固定で配置する */
+    /* 横画面: ポノを「なんの どうぶつ？」のテキストボックスと同じ高さに置き、
+       右端を選択肢グリッド (max-width:720px / padding 14px) の右辺に合わせる。
+       選択肢グリッドの右辺 = max(14px, (100vw - 720px) / 2 + 14px) */
     .thinking-pono {
       position: fixed;
-      top: max(8px, env(safe-area-inset-top));
-      right: max(8px, env(safe-area-inset-right));
+      top: calc(max(12px, env(safe-area-inset-top)) + 18px);
+      right: max(14px, calc((100vw - 720px) / 2 + 14px));
       margin: 0;
       width: 76px; height: 76px;
       z-index: 50;
