@@ -633,9 +633,49 @@
     transform: translateY(3px);
     box-shadow: 0 3px 0 rgba(0,0,0,0.3);
   }
+
+  /* ── チュートリアル (bento のスタイルを踏襲) ── */
+  .tut-dim { position:fixed; inset:0; z-index:9995; background:rgba(93,78,55,0.6); pointer-events:auto; }
+  .tut-dim.hidden { display:none; }
+  .tut-bubble {
+    position:fixed; z-index:9997;
+    background:#fff; border-radius:16px;
+    padding:14px 18px; max-width:min(86vw, 380px);
+    box-shadow:0 4px 20px rgba(93,78,55,0.4);
+    font-size:0.95rem; font-weight:700; color:#5D4E37;
+    line-height:1.6; text-align:center;
+    animation: tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .tut-bubble.hidden { display:none; }
+  @keyframes tutPopIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+  .tut-next-btn {
+    display:inline-block; margin-top:10px;
+    padding:8px 24px; border:none; border-radius:50px;
+    background:linear-gradient(135deg,#60A5FA,#818CF8);
+    color:#fff; font-family:inherit;
+    font-size:0.9rem; font-weight:900; cursor:pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.18);
+  }
+  .tut-next-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
+  .tut-highlight {
+    position: relative;
+    z-index: 9996 !important;
+    outline: 4px solid #FFD84D;
+    outline-offset: 4px;
+    border-radius: 22px;
+    animation: tutPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes tutPulse {
+    0%, 100% { outline-color: #FFD84D; }
+    50%      { outline-color: #FBBF24; }
+  }
 </style>
 </head>
 <body>
+<!-- チュートリアル用 dim + 吹き出し -->
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
+
 <!-- イントロ: タップで AudioContext をアンロック -->
 <div class="intro" id="intro">
   <h1>おとタッチ</h1>
@@ -1766,14 +1806,126 @@ document.addEventListener('visibilitychange', function() {
 });
 
 // ────────────────────────────────
-// 共通メニュー (⚙)
+// チュートリアル
 // ────────────────────────────────
-if (window.initMenu) {
-  initMenu({}); // このゲームは BGM なし。メニューはホームに戻るだけ
+var TUT_SEEN_KEY = 'pono_oto_tut_seen';
+function _tutPositionBubble(bubble, anchorRect, preferredSide) {
+  // anchorRect の 上/下/中央 に合わせて bubble を配置、画面外にはみ出さないようクランプ
+  var bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var left, top;
+  if (!anchorRect) {
+    left = Math.round((vw - bw) / 2);
+    top  = Math.round((vh - bh) / 2);
+  } else {
+    var side = preferredSide || 'below';
+    // 縦方向: anchor の下 or 上
+    if (side === 'above') {
+      top = anchorRect.top - bh - 14;
+      if (top < 12) top = anchorRect.bottom + 14; // 上に入らなければ下
+    } else {
+      top = anchorRect.bottom + 14;
+      if (top + bh > vh - 12) top = anchorRect.top - bh - 14; // 下に入らなければ上
+    }
+    // 横方向: anchor の中心にそろえてクランプ
+    var anchorCx = anchorRect.left + anchorRect.width / 2;
+    left = Math.round(anchorCx - bw / 2);
+    if (left < 12) left = 12;
+    if (left + bw > vw - 12) left = vw - bw - 12;
+    if (top < 12) top = 12;
+    if (top + bh > vh - 12) top = vh - bh - 12;
+  }
+  bubble.style.left = left + 'px';
+  bubble.style.top  = top  + 'px';
+}
+
+function showTutorial() {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  if (!dim || !bubble) return;
+
+  // 5ステップ定義
+  var steps = [
+    {
+      msg: '🎵 おとタッチへ ようこそ！<br>まるい ボタンを タッチすると<br>おとが なるよ',
+      anchor: null, side: null
+    },
+    {
+      msg: 'うえの ボタンで <b>ねいろ</b> を<br>えらべるよ (ピアノ / マリンバ など)',
+      anchor: '.sound-sets-box', side: 'below'
+    },
+    {
+      msg: 'なが〜く おしてみよう<br>ドレミ・きらきらは ながく のびるよ ✨',
+      anchor: '.instr-btn[data-idx="1"]', side: 'below'
+    },
+    {
+      msg: 'した の <b>ばんそう</b> で<br>ドラムの はやさを えらんで<br>リズムに のって あそべるよ',
+      anchor: '.band-group', side: 'above'
+    },
+    {
+      msg: 'じゆうに あそんでね！<br><small style="color:#888">⚙ メニューから もういちど みれるよ</small>',
+      anchor: null, side: null
+    }
+  ];
+
+  var i = 0;
+  function clearHighlight() {
+    document.querySelectorAll('.tut-highlight').forEach(function(el) {
+      el.classList.remove('tut-highlight');
+    });
+  }
+  function renderStep() {
+    clearHighlight();
+    var s = steps[i];
+    dim.classList.remove('hidden');
+    var isLast = (i === steps.length - 1);
+    bubble.innerHTML = s.msg +
+      '<br><button class="tut-next-btn" id="tut-next">' +
+      (isLast ? 'わかった！' : 'つぎ →') +
+      '</button>';
+    bubble.classList.remove('hidden');
+    // 位置決め (一旦 offscreen で描画して実寸取得)
+    bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
+    var anchorEl = s.anchor ? document.querySelector(s.anchor) : null;
+    var rect = null;
+    if (anchorEl) {
+      rect = anchorEl.getBoundingClientRect();
+      anchorEl.classList.add('tut-highlight');
+    }
+    // ブラウザのレイアウト更新を待って再計測
+    requestAnimationFrame(function() {
+      _tutPositionBubble(bubble, rect, s.side);
+    });
+    // つぎボタンのハンドラ
+    var btn = document.getElementById('tut-next');
+    btn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      i++;
+      if (i >= steps.length) {
+        dim.classList.add('hidden');
+        bubble.classList.add('hidden');
+        clearHighlight();
+        try { localStorage.setItem(TUT_SEEN_KEY, '1'); } catch (er) {}
+      } else {
+        renderStep();
+      }
+    }, { once: true });
+  }
+  renderStep();
 }
 
 // ────────────────────────────────
-// イントロ → タップで AudioContext アンロック → ステージ表示
+// 共通メニュー (⚙) — ❓ あそびかた 追加
+// ────────────────────────────────
+if (window.initMenu) {
+  initMenu({
+    tutorial: showTutorial
+  });
+}
+
+// ────────────────────────────────
+// イントロ → タップで AudioContext アンロック → ステージ表示 → 初回のみチュートリアル
 // ────────────────────────────────
 (function() {
   var introBtn = document.getElementById('introBtn');
@@ -1783,6 +1935,12 @@ if (window.initMenu) {
     _ensureAnimalDecoded();
     var intro = document.getElementById('intro');
     if (intro) intro.style.display = 'none';
+    // 初回だけチュートリアルを自動表示
+    try {
+      if (!localStorage.getItem(TUT_SEEN_KEY)) {
+        setTimeout(showTutorial, 500);
+      }
+    } catch (e) {}
   });
 })();
 
