@@ -603,8 +603,10 @@ function _makeNoiseBuffer(ac, durationSec) {
 // ────────────────────────────────
 var currentSet = 'doremi';
 document.querySelectorAll('.set-btn').forEach(function(btn) {
+  // 録音ボタンなど data-set を持たないボタンはセット切替対象外 (別ハンドラで処理)
+  if (!btn.dataset.set) return;
   btn.addEventListener('click', function() {
-    document.querySelectorAll('.set-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.set-btn[data-set]').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     currentSet = btn.dataset.set;
     unlockAudio();
