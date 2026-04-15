@@ -536,10 +536,9 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
     var cx = rect.left + rect.width / 2;
     var cy = rect.top  + rect.height / 2;
 
-    // エフェクト同時発火
+    // エフェクト同時発火 (シャボン玉は出さない: ボタンと関係ない場所でのみ出す設計)
     spawnRipples(cx, cy);
     spawnParticles(cx, cy, 8);
-    spawnBurstBubbles(cx, cy, 5);
     bumpPono();
 
     // 統計 + クリア判定 + フィナーレ
@@ -556,6 +555,26 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
   });
   // 誤二重発火防止
   btn.addEventListener('click', function(e) { e.preventDefault(); });
+});
+
+// ────────────────────────────────
+// 空タップ (ボタン以外) → シャボン玉破裂判定
+// ────────────────────────────────
+var _stageEl = document.getElementById('stage');
+_stageEl.addEventListener('pointerdown', function(e) {
+  // ボタン上のタップは個別ハンドラに任せる
+  if (e.target && e.target.closest && e.target.closest('.instr-btn, .set-btn')) return;
+  // 座標を Canvas 座標 (CSS px) に変換
+  var x = e.clientX, y = e.clientY;
+  if (popBubbleAt(x, y)) {
+    // 破裂成功時: 統計とラリー記録 (ボタン同様)
+    if (window.incrementStat) window.incrementStat('oto_taps', 1);
+    markPlayedToday();
+    bumpPono();
+  } else {
+    // 当たらなかった場合: 軽い波紋だけ出して反応を返す
+    spawnRipples(x, y);
+  }
 });
 
 function markPlayedToday() {
@@ -651,13 +670,15 @@ function drawRipples() {
 var particles = [];
 var MAX_PARTICLES = 80;
 function spawnParticles(cx, cy, n) {
+  // 花火のように放射状に広がるだけ (重力なし、均等方向)
   for (var i = 0; i < n; i++) {
-    var ang = Math.random() * TAU;
-    var sp = 200 + Math.random() * 180; // px/s
+    // n 個を均等に配置 + 微揺らぎで自然に
+    var ang = (i / n) * TAU + (Math.random() - 0.5) * 0.3;
+    var sp = 220 + Math.random() * 140; // px/s
     particles.push({
       x: cx, y: cy,
       vx: Math.cos(ang) * sp,
-      vy: Math.sin(ang) * sp - 100,
+      vy: Math.sin(ang) * sp,
       life: 0, maxLife: 0.9 + Math.random() * 0.3,
       size: 22 + Math.random() * 10,
       emoji: SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)],
@@ -672,8 +693,9 @@ function updateParticles(dt) {
     if (p.life >= p.maxLife) { particles.splice(i, 1); continue; }
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-    p.vy += 400 * dt; // gravity
-    p.vx *= 0.96;     // drag
+    // 重力なし。空気抵抗で自然に減速
+    p.vx *= 0.94;
+    p.vy *= 0.94;
   }
 }
 function drawParticles() {
@@ -690,26 +712,107 @@ function drawParticles() {
   bgCtx.globalAlpha = 1;
 }
 
-// ─ 環境バブル (常時上昇) + タップ時のバースト ─
+// ─ 環境バブル (常時上昇) + タップで破裂演出 ─
+// bubble ゲームと同じ「丸・ハイライト・pop アニメ」方式
 var ambientBubbles = [];
 var MAX_AMBIENT = 22;
 var ambientTimer = 0;
+// バブルの色パレット (bubble/index.html から移植)
+var BUBBLE_COLORS = [
+  { r: 255, g: 107, b: 157 }, // ピンク
+  { r: 125, g: 211, b: 252 }, // シアン
+  { r: 125, g: 211, b: 160 }, // グリーン
+  { r: 255, g: 216, b: 77 },  // イエロー
+  { r: 196, g: 181, b: 253 }, // パープル
+  { r: 255, g: 169, b: 77 },  // オレンジ
+];
 function addAmbientBubble(sx, sy, extraVy) {
   if (ambientBubbles.length >= MAX_AMBIENT) return;
   ambientBubbles.push({
     x: sx !== undefined ? sx : Math.random() * bgW,
     y: sy !== undefined ? sy : bgH + 20,
-    r: 8 + Math.random() * 22,
+    r: 18 + Math.random() * 26,  // 大きめにして押しやすく
     vy: -(18 + Math.random() * 30) - (extraVy || 0),
     phase: Math.random() * TAU,
     wobbleAmp: 0.3 + Math.random() * 0.5,
-    alpha: 0.55 + Math.random() * 0.25,
+    alpha: 0.6 + Math.random() * 0.2,
+    colorIdx: Math.floor(Math.random() * BUBBLE_COLORS.length),
   });
 }
-function spawnBurstBubbles(cx, cy, n) {
-  for (var i = 0; i < n; i++) {
-    addAmbientBubble(cx + (Math.random() - 0.5) * 40, cy + (Math.random() - 0.5) * 20, 40 + Math.random() * 30);
+
+// ─ pop アニメーション (bubble ゲームから移植) ─
+var popAnims = [];
+var MAX_POP_ANIMS = 24;
+var POP_ANIM_DURATION = 0.45; // 秒
+function addPopAnim(x, y, r, color) {
+  if (popAnims.length >= MAX_POP_ANIMS) popAnims.shift();
+  popAnims.push({ x: x, y: y, r: r, color: color, time: 0 });
+}
+function updatePopAnims(dt) {
+  for (var i = popAnims.length - 1; i >= 0; i--) {
+    popAnims[i].time += dt / POP_ANIM_DURATION;
+    if (popAnims[i].time >= 1) popAnims.splice(i, 1);
   }
+}
+function drawPopAnims() {
+  for (var i = 0; i < popAnims.length; i++) {
+    var pa = popAnims[i];
+    var t = pa.time;
+    var scale = t < 0.3 ? 1 + t / 0.3 * 0.4 : 1.4 + (t - 0.3) / 0.7 * 0.6;
+    var alpha = t < 0.3 ? 0.7 : 0.7 * (1 - (t - 0.3) / 0.7);
+    var rr = pa.r * scale;
+    bgCtx.save();
+    bgCtx.globalAlpha = Math.max(0, alpha);
+    bgCtx.beginPath();
+    bgCtx.arc(pa.x, pa.y, rr, 0, TAU);
+    if (t < 0.3) {
+      bgCtx.fillStyle = 'rgba(' + pa.color.r + ',' + pa.color.g + ',' + pa.color.b + ',0.4)';
+      bgCtx.fill();
+    }
+    bgCtx.strokeStyle = 'rgba(' + pa.color.r + ',' + pa.color.g + ',' + pa.color.b + ',' + alpha + ')';
+    bgCtx.lineWidth = Math.max(1, 3 * (1 - t));
+    bgCtx.stroke();
+    bgCtx.restore();
+  }
+}
+
+// 指定座標のシャボン玉を破裂 (近いものを優先)。成功時 true
+function popBubbleAt(x, y) {
+  var HIT_MULT = 1.5; // タップ判定を半径の 1.5倍で少し甘めに
+  // 一番近くのヒット対象を選ぶ
+  var hitIdx = -1, hitDist = Infinity;
+  for (var i = 0; i < ambientBubbles.length; i++) {
+    var b = ambientBubbles[i];
+    var dx = x - b.x, dy = y - b.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d < b.r * HIT_MULT && d < hitDist) {
+      hitDist = d; hitIdx = i;
+    }
+  }
+  if (hitIdx < 0) return false;
+  var b2 = ambientBubbles[hitIdx];
+  addPopAnim(b2.x, b2.y, b2.r, BUBBLE_COLORS[b2.colorIdx]);
+  ambientBubbles.splice(hitIdx, 1);
+  // パーティクルも一緒に
+  spawnParticles(b2.x, b2.y, 6);
+  // 軽い波紋も
+  spawnRipples(b2.x, b2.y);
+  // ポップ音 (WebAudio 合成: 短い sine 降下)
+  playPopSound();
+  return true;
+}
+
+function playPopSound() {
+  var ac = getAC(); if (!ac) return;
+  var t = ac.currentTime;
+  var o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(800, t);
+  o.frequency.exponentialRampToValueAtTime(400, t + 0.08);
+  g.gain.setValueAtTime(0.3, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t); o.stop(t + 0.12);
 }
 function updateAmbientBubbles(dt, now) {
   ambientTimer += dt;
@@ -727,11 +830,14 @@ function updateAmbientBubbles(dt, now) {
 function drawAmbientBubbles() {
   for (var i = 0; i < ambientBubbles.length; i++) {
     var b = ambientBubbles[i];
+    var c = BUBBLE_COLORS[b.colorIdx] || { r: 255, g: 255, b: 255 };
     bgCtx.globalAlpha = b.alpha;
-    bgCtx.fillStyle = 'rgba(255,255,255,0.25)';
+    // 色付き半透明塗り
+    bgCtx.fillStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',0.28)';
     bgCtx.beginPath(); bgCtx.arc(b.x, b.y, b.r, 0, TAU); bgCtx.fill();
-    bgCtx.strokeStyle = 'rgba(255,255,255,0.6)';
-    bgCtx.lineWidth = 1;
+    // 縁取り (明るめ)
+    bgCtx.strokeStyle = 'rgba(' + Math.min(255, c.r + 60) + ',' + Math.min(255, c.g + 60) + ',' + Math.min(255, c.b + 60) + ',0.85)';
+    bgCtx.lineWidth = 1.5;
     bgCtx.beginPath(); bgCtx.arc(b.x, b.y, b.r, 0, TAU); bgCtx.stroke();
     // ハイライト小円
     bgCtx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -840,6 +946,8 @@ function loop(now) {
   drawBG(now);
   updateAmbientBubbles(dt, now);
   drawAmbientBubbles();
+  updatePopAnims(dt);
+  drawPopAnims();
   updateRipples(dt);
   drawRipples();
   updateParticles(dt);

@@ -175,11 +175,17 @@
   }
 
   // ── メインBGM フェード制御 ──
-  // play.html に <audio id="play-bgm"> がある場合、宝箱演出の間フェードアウト
+  // 宝箱演出中は完全消音せず、音量を下げるだけ (無音化が一瞬入るのが不自然なため)
+  // 対象: play.html / 各ゲームの id="bgm" or id="play-bgm" 要素
   var _bgmFadeInterval = null;
   var _bgmOriginalVolume = null;
+  var BGM_DUCK_RATIO = 0.25; // 元音量の 25% まで下げる (完全消音はしない)
+
+  function _findBgmEl() {
+    return document.getElementById('play-bgm') || document.getElementById('bgm');
+  }
   function _fadeBgm(toVolume, durationMs, onDone) {
-    var bgm = document.getElementById('play-bgm');
+    var bgm = _findBgmEl();
     if (!bgm) { if (onDone) onDone(); return; }
     if (_bgmFadeInterval) { clearInterval(_bgmFadeInterval); _bgmFadeInterval = null; }
     var startVol = bgm.volume;
@@ -194,27 +200,32 @@
       if (stepCount >= steps) {
         clearInterval(_bgmFadeInterval);
         _bgmFadeInterval = null;
+        // 完全消音時のみ pause (現在は使わないが安全策として残す)
         if (toVolume === 0) bgm.pause();
         if (onDone) onDone();
       }
     }, durationMs / steps);
   }
   function _bgmFadeOut() {
-    var bgm = document.getElementById('play-bgm');
+    var bgm = _findBgmEl();
     if (!bgm) return;
     if (_bgmOriginalVolume === null) _bgmOriginalVolume = bgm.volume;
-    _fadeBgm(0, 500);
+    // 完全に 0 にせず、元音量の 25% までダッキング
+    var duckTo = Math.max(0.05, _bgmOriginalVolume * BGM_DUCK_RATIO);
+    _fadeBgm(duckTo, 400);
   }
   function _bgmFadeIn() {
-    var bgm = document.getElementById('play-bgm');
+    var bgm = _findBgmEl();
     if (!bgm) return;
     var target = _bgmOriginalVolume !== null ? _bgmOriginalVolume : 0.35;
     _bgmOriginalVolume = null;
     if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
-    bgm.volume = 0;
-    var p = bgm.play();
-    if (p && typeof p.catch === 'function') p.catch(function() {});
-    _fadeBgm(target, 800);
+    // pause していないので play() は不要だが念のため (保険)
+    if (bgm.paused) {
+      var p = bgm.play();
+      if (p && typeof p.catch === 'function') p.catch(function() {});
+    }
+    _fadeBgm(target, 600);
   }
 
   function _doClose() {
