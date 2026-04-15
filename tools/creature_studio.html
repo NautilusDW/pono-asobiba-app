@@ -2880,10 +2880,15 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
           const mappedRoot = rootToMerged.get(find(gi));
           if (mappedRoot === undefined) continue;
           if (allowedRoots.has(mappedRoot)) continue;
-          // このコンポーネントが自分のbbox内に完全に収まっている → 自分の一部（目玉等）
+          // このコンポーネントが自分のbbox内に "余裕を持って" 収まっている → 自分の一部（目玉等）
+          // 端ギリギリのものは隣接スプライトの侵入と見なしてマスクする
           const otherBox = boxes.get(mappedRoot);
-          if (otherBox && otherBox.x1 >= b.x1 && otherBox.y1 >= b.y1 &&
-              otherBox.x2 <= b.x2 && otherBox.y2 <= b.y2) continue;
+          if (otherBox) {
+            const insetX = Math.max(3, Math.round((b.x2 - b.x1 + 1) * 0.06));
+            const insetY = Math.max(3, Math.round((b.y2 - b.y1 + 1) * 0.06));
+            if (otherBox.x1 >= b.x1 + insetX && otherBox.y1 >= b.y1 + insetY &&
+                otherBox.x2 <= b.x2 - insetX && otherBox.y2 <= b.y2 - insetY) continue;
+          }
           if (keepBg && !overlapMask[ly * sw2 + lx]) continue;
           if (keepBg) {
             sd[pi] = 255; sd[pi+1] = 255; sd[pi+2] = 255; sd[pi+3] = 255;
