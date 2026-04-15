@@ -117,28 +117,28 @@
   .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
   .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
-  /* 8ボタン配置: 横は等間隔、縦は ポノを円で囲うようなカーブ
-     上行: 内側(1,2)が上に高く、外側(0,3)はポノの肩あたり
-     下行: 内側(5,6)が下に低く、外側(4,7)はポノの腰あたり */
-  .instr-btn[data-idx="0"] { left: 12.5%; top: 38%; --sz: 118px; }
-  .instr-btn[data-idx="1"] { left: 37.5%; top: 25%; --sz: 118px; }
-  .instr-btn[data-idx="2"] { left: 62.5%; top: 25%; --sz: 118px; }
-  .instr-btn[data-idx="3"] { left: 87.5%; top: 38%; --sz: 118px; }
-  .instr-btn[data-idx="4"] { left: 12.5%; top: 62%; --sz: 118px; }
-  .instr-btn[data-idx="5"] { left: 37.5%; top: 75%; --sz: 118px; }
-  .instr-btn[data-idx="6"] { left: 62.5%; top: 75%; --sz: 118px; }
-  .instr-btn[data-idx="7"] { left: 87.5%; top: 62%; --sz: 118px; }
+  /* 8ボタン: ポノ中心の円周に等間隔 (上半円 4個 / 下半円 4個)
+     上半円: 22.5°/67.5°/112.5°/157.5° (右下→上→左下)
+     これで隣接ボタン同士が等距離になり、視覚的に綺麗に並ぶ */
+  .instr-btn[data-idx="0"] { left: 18%; top: 37%; --sz: 116px; }
+  .instr-btn[data-idx="1"] { left: 37%; top: 21%; --sz: 116px; }
+  .instr-btn[data-idx="2"] { left: 63%; top: 21%; --sz: 116px; }
+  .instr-btn[data-idx="3"] { left: 82%; top: 37%; --sz: 116px; }
+  .instr-btn[data-idx="4"] { left: 18%; top: 63%; --sz: 116px; }
+  .instr-btn[data-idx="5"] { left: 37%; top: 79%; --sz: 116px; }
+  .instr-btn[data-idx="6"] { left: 63%; top: 79%; --sz: 116px; }
+  .instr-btn[data-idx="7"] { left: 82%; top: 63%; --sz: 116px; }
 
-  /* 横画面: 縦を圧縮しつつカーブ維持 */
+  /* 横画面: 縦を圧縮しつつ円配置を維持 */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"] { top: 36%; --sz: 96px; }
-    .instr-btn[data-idx="1"] { top: 22%; --sz: 102px; }
-    .instr-btn[data-idx="2"] { top: 22%; --sz: 102px; }
-    .instr-btn[data-idx="3"] { top: 36%; --sz: 96px; }
-    .instr-btn[data-idx="4"] { top: 64%; --sz: 96px; }
-    .instr-btn[data-idx="5"] { top: 78%; --sz: 102px; }
-    .instr-btn[data-idx="6"] { top: 78%; --sz: 102px; }
-    .instr-btn[data-idx="7"] { top: 64%; --sz: 96px; }
+    .instr-btn[data-idx="0"] { top: 35%; --sz: 96px; }
+    .instr-btn[data-idx="1"] { top: 18%; --sz: 100px; }
+    .instr-btn[data-idx="2"] { top: 18%; --sz: 100px; }
+    .instr-btn[data-idx="3"] { top: 35%; --sz: 96px; }
+    .instr-btn[data-idx="4"] { top: 65%; --sz: 96px; }
+    .instr-btn[data-idx="5"] { top: 82%; --sz: 100px; }
+    .instr-btn[data-idx="6"] { top: 82%; --sz: 100px; }
+    .instr-btn[data-idx="7"] { top: 65%; --sz: 96px; }
     .pono-sprite { width: 110px; height: 150px; }
   }
   /* 画面が狭い時ボタン縮小 */
@@ -261,10 +261,10 @@
   }
   .song-btn:active { transform: scale(0.94); }
 
-  /* ── ろくおん バー (画面下中央) ── */
+  /* ── ろくおん バー (画面下) ── */
   .rec-bar {
     position: absolute;
-    bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
+    bottom: max(54px, calc(env(safe-area-inset-bottom) + 54px));
     left: 50%; transform: translateX(-50%);
     display: flex; gap: 12px; align-items: center;
     z-index: 10;
@@ -1025,7 +1025,7 @@ document.addEventListener('touchstart', triggerPreload, { once: true });
 var tapCount = 0;
 var _clearTriggered = false;
 var TAP_FOR_CLEAR = 12; // 12タップで初回クリア扱い
-var FINALE_EVERY = 60;  // 60タップ毎に虹色フィナーレ
+var FINALE_EVERY = 0;   // 0 = フィナーレ無効 (3歳児には突然全部鳴って驚くので OFF)
 
 var _pressTimers = new Map();
 document.querySelectorAll('.instr-btn').forEach(function(btn) {
@@ -1064,7 +1064,7 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
       _clearTriggered = true;
       triggerClearReward();
     }
-    if (tapCount > 0 && tapCount % FINALE_EVERY === 0) {
+    if (FINALE_EVERY > 0 && tapCount > 0 && tapCount % FINALE_EVERY === 0) {
       triggerFinale();
     }
   });
@@ -1621,7 +1621,7 @@ var _bandLoopMs  = 29300;   // mp3 ステム長
 
 // ─── 曲セレクター: mp3 + 3つの合成バンド ───
 var SONGS = [
-  { id: 'mp3',  name: 'うた',     type: 'mp3',   loopMs: 29300 },
+  { id: 'mp3',  name: '⭐',       type: 'mp3',   loopMs: 29300 },
   { id: 's80',  name: '🐢 80',    type: 'synth', bpm: 80,  bars: 4, chords: ['C','F','Am','G'] },
   { id: 's100', name: '🚶 100',   type: 'synth', bpm: 100, bars: 4, chords: ['C','F','Am','G'] },
   { id: 's120', name: '🏃 120',   type: 'synth', bpm: 120, bars: 4, chords: ['C','F','Am','G'] }
