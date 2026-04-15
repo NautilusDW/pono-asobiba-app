@@ -219,13 +219,13 @@
   ],
   "firstClearRewards": {
     "maze": {
-      "icon": "🐠",
-      "name": "ミノカサゴ",
+      "icon": "🦔",
+      "name": "ハリネズミぬいぐるみ",
       "gendered": false,
-      "type": "sea",
-      "id": "lionfish",
-      "img": "assets/images/ocean/Lionfish/Lionfish_normal_1.png",
-      "afterMsg": "はじめての めいろクリア！\nミノカサゴが なかまに\nなったよ！"
+      "type": "furn",
+      "id": "ach_hedgehog_plush",
+      "img": "assets/images/characters/headgehog/headgehog_face.png",
+      "afterMsg": "はじめての めいろクリア！\nハリネズミぬいぐるみが\nもらえたよ！"
     },
     "breakout": {
       "icon": "🧱",
@@ -237,22 +237,22 @@
       "afterMsg": "ふかいもりの はいけいが\nつかえるようになったよ！\nつぎのゲームから えらべるよ！"
     },
     "puzzle": {
-      "icon": "🐠",
-      "name": "ヤッコ",
+      "icon": "🖼️",
+      "name": "ピクチャーフレーム",
       "gendered": false,
-      "type": "sea",
-      "id": "angelfish",
-      "img": "assets/images/ocean/Angelfish/Angelfish_normal_1.png",
-      "afterMsg": "はじめての パズルクリア！\nヤッコが なかまに なったよ！"
+      "type": "furn",
+      "id": "ach_picture_wall",
+      "img": "assets/images/icons/picture_wall.png",
+      "afterMsg": "はじめての パズルクリア！\nピクチャーフレームが\nもらえたよ！"
     },
     "wordmatch": {
-      "icon": "🐠",
-      "name": "チョウチョウウオ",
+      "icon": "🌺",
+      "name": "サンゴのおきもの",
       "gendered": false,
-      "type": "sea",
-      "id": "butterflyfish",
-      "img": "assets/images/ocean/Butterflyfish/Butterflyfish_normal_1.png",
-      "afterMsg": "はじめての ことばあわせ！\nチョウチョウウオが なかまに\nなったよ！"
+      "type": "furn",
+      "id": "ach_coral_deco",
+      "img": "assets/images/icons/coral_deco.png",
+      "afterMsg": "はじめての ことばあわせ！\nサンゴのおきものが\nもらえたよ！"
     },
     "slide": {
       "icon": "🐴",
@@ -264,22 +264,22 @@
       "afterMsg": "はじめての みちつなぎクリア！\nタツノオトシゴが なかまに\nなったよ！"
     },
     "oto": {
-      "icon": "🎵",
-      "name": "ふぐ",
+      "icon": "🐻",
+      "name": "ポノクッション",
       "gendered": false,
-      "type": "sea",
-      "id": "pufferfish",
-      "img": "assets/images/ocean/Pufferfish/Pufferfish_normal_1.png",
-      "afterMsg": "おとタッチで いっぱい あそんだね！\nふぐが なかまに なったよ！"
+      "type": "furn",
+      "id": "ach_pono_cushion",
+      "img": "assets/images/characters/pono/pono_face_circle.png",
+      "afterMsg": "おとタッチで いっぱい あそんだね！\nポノクッションが もらえたよ！"
     },
     "quiz_sound": {
-      "icon": "🐾",
-      "name": "うさぎ",
+      "icon": "✏️",
+      "name": "クイズえんぴつ",
       "gendered": false,
-      "type": "sea",
-      "id": "rabbit",
-      "img": "assets/images/ocean/Rabbit/Rabbit_normal_1.png",
-      "afterMsg": "おとあてクイズ クリア！\nうさぎが なかまに なったよ！"
+      "type": "furn",
+      "id": "ach_quiz_pencil",
+      "img": "assets/images/icons/quiz_pencil.png",
+      "afterMsg": "おとあてクイズ クリア！\nクイズえんぴつが もらえたよ！"
     }
   }
 }
