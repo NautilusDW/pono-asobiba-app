@@ -117,26 +117,28 @@
   .instr-btn.i7 { --c1:#93C5FD; --c2:#2563EB; }  /* ブルー */
   .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
-  /* 8ボタン配置: 上下4つずつ、すべて同じ高さで等間隔 (カーブなし) */
-  .instr-btn[data-idx="0"] { left: 12.5%; top: 32%; --sz: 118px; }
-  .instr-btn[data-idx="1"] { left: 37.5%; top: 32%; --sz: 118px; }
-  .instr-btn[data-idx="2"] { left: 62.5%; top: 32%; --sz: 118px; }
-  .instr-btn[data-idx="3"] { left: 87.5%; top: 32%; --sz: 118px; }
-  .instr-btn[data-idx="4"] { left: 12.5%; top: 68%; --sz: 118px; }
-  .instr-btn[data-idx="5"] { left: 37.5%; top: 68%; --sz: 118px; }
-  .instr-btn[data-idx="6"] { left: 62.5%; top: 68%; --sz: 118px; }
-  .instr-btn[data-idx="7"] { left: 87.5%; top: 68%; --sz: 118px; }
+  /* 8ボタン配置: 横は等間隔、縦は ポノを円で囲うようなカーブ
+     上行: 内側(1,2)が上に高く、外側(0,3)はポノの肩あたり
+     下行: 内側(5,6)が下に低く、外側(4,7)はポノの腰あたり */
+  .instr-btn[data-idx="0"] { left: 12.5%; top: 38%; --sz: 118px; }
+  .instr-btn[data-idx="1"] { left: 37.5%; top: 25%; --sz: 118px; }
+  .instr-btn[data-idx="2"] { left: 62.5%; top: 25%; --sz: 118px; }
+  .instr-btn[data-idx="3"] { left: 87.5%; top: 38%; --sz: 118px; }
+  .instr-btn[data-idx="4"] { left: 12.5%; top: 62%; --sz: 118px; }
+  .instr-btn[data-idx="5"] { left: 37.5%; top: 75%; --sz: 118px; }
+  .instr-btn[data-idx="6"] { left: 62.5%; top: 75%; --sz: 118px; }
+  .instr-btn[data-idx="7"] { left: 87.5%; top: 62%; --sz: 118px; }
 
-  /* 横画面: 縦を圧縮 */
+  /* 横画面: 縦を圧縮しつつカーブ維持 */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"],
-    .instr-btn[data-idx="1"],
-    .instr-btn[data-idx="2"],
-    .instr-btn[data-idx="3"] { top: 30%; --sz: 96px; }
-    .instr-btn[data-idx="4"],
-    .instr-btn[data-idx="5"],
-    .instr-btn[data-idx="6"],
-    .instr-btn[data-idx="7"] { top: 70%; --sz: 96px; }
+    .instr-btn[data-idx="0"] { top: 36%; --sz: 96px; }
+    .instr-btn[data-idx="1"] { top: 22%; --sz: 102px; }
+    .instr-btn[data-idx="2"] { top: 22%; --sz: 102px; }
+    .instr-btn[data-idx="3"] { top: 36%; --sz: 96px; }
+    .instr-btn[data-idx="4"] { top: 64%; --sz: 96px; }
+    .instr-btn[data-idx="5"] { top: 78%; --sz: 102px; }
+    .instr-btn[data-idx="6"] { top: 78%; --sz: 102px; }
+    .instr-btn[data-idx="7"] { top: 64%; --sz: 96px; }
     .pono-sprite { width: 110px; height: 150px; }
   }
   /* 画面が狭い時ボタン縮小 */
@@ -241,6 +243,23 @@
     border-color: #fff;
     box-shadow: 0 0 0 4px rgba(52,211,153,0.4);
   }
+  /* 曲セレクター */
+  .song-btn {
+    min-width: 60px; height: 56px;
+    padding: 0 12px;
+    border-radius: 28px;
+    border: 3px solid rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.1s, background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .song-btn:active { transform: scale(0.94); }
 
   /* ── ろくおん バー (画面下中央) ── */
   .rec-bar {
@@ -495,6 +514,7 @@
 
     <!-- バンド (バッキングトラック) — 画面上 -->
     <div class="band-bar" id="band-bar">
+      <button class="song-btn" id="song-btn" aria-label="きょくをえらぶ">うた</button>
       <button class="band-btn" id="band-drums"    aria-label="ドラム"    data-stem="drums">🥁</button>
       <button class="band-btn" id="band-bass"     aria-label="ベース"    data-stem="bass">🎸</button>
       <button class="band-btn" id="band-keyboard" aria-label="キーボード" data-stem="keyboard">🎹</button>
@@ -1549,8 +1569,9 @@ if (window.initMenu) {
 var LOOP_MS_DEFAULT = 8000;   // 全ステム OFF の時
 var LOOP_MS_BAND    = 29300;  // ステム ON 時 (ステム長と一致)
 function currentLoopMs() {
-  // バンドが1つでも ON ならステム長、なければ既定
-  return _bandActive() ? LOOP_MS_BAND : LOOP_MS_DEFAULT;
+  // バンドが1つでも ON なら、その曲のループ尺。なければ既定 8秒
+  if (_bandActive()) return Math.round(_bandLoopSec() * 1000);
+  return LOOP_MS_DEFAULT;
 }
 
 var _recState = 'idle';     // 'idle' | 'countdown' | 'recording' | 'looping'
@@ -1595,12 +1616,62 @@ var _stemFiles = {
 var _stemBuffers = { drums: null, bass: null, keyboard: null };
 var _stemSources = { drums: null, bass: null, keyboard: null };
 var _stemGains   = { drums: null, bass: null, keyboard: null };
-var _bandStartAC = 0;       // 全ステム共通の開始 AC time (これに揃える)
-var _bandLoopMs  = 29300;   // ステム長 (= LOOP_MS_BAND)
+var _bandStartAC = 0;       // mp3 ステム共通の開始 AC time
+var _bandLoopMs  = 29300;   // mp3 ステム長
 
-function _bandActive() {
-  return !!(_stemSources.drums || _stemSources.bass || _stemSources.keyboard);
+// ─── 曲セレクター: mp3 + 3つの合成バンド ───
+var SONGS = [
+  { id: 'mp3',  name: 'うた',     type: 'mp3',   loopMs: 29300 },
+  { id: 's80',  name: '🐢 80',    type: 'synth', bpm: 80,  bars: 4, chords: ['C','F','Am','G'] },
+  { id: 's100', name: '🚶 100',   type: 'synth', bpm: 100, bars: 4, chords: ['C','F','Am','G'] },
+  { id: 's120', name: '🏃 120',   type: 'synth', bpm: 120, bars: 4, chords: ['C','F','Am','G'] }
+];
+var _curSongIdx = 0;
+function _currentSong() { return SONGS[_curSongIdx]; }
+
+// 各コードの ベース音 (root) と キーボード和音 (3和音)
+var CHORD_NOTES = {
+  C:  { root: 130.81, triad: [261.63, 329.63, 392.00] },
+  F:  { root: 174.61, triad: [349.23, 440.00, 523.25] },
+  G:  { root: 196.00, triad: [392.00, 493.88, 587.33] },
+  Am: { root: 110.00, triad: [220.00, 261.63, 329.63] },
+  Dm: { root: 146.83, triad: [293.66, 349.23, 440.00] },
+  Em: { root: 164.81, triad: [329.63, 392.00, 493.88] }
+};
+
+// ドラムパターン (1小節 = 8 サブビート = 8分音符)
+// 定番のロックビート: K _ S _ K _ S _ + 各ハイハット
+var DRUM_PATTERN = [
+  ['kick','hat'], ['hat'], ['snare','hat'], ['hat'],
+  ['kick','hat'], ['hat'], ['snare','hat'], ['hat']
+];
+
+// ─── 合成バンドの状態 ───
+var _activeStems = { drums: false, bass: false, keyboard: false };
+var _bandClockStart = 0;    // 合成バンドの AC time 開始時刻
+var _scheduledStep = -1;
+var _schedulerInterval = null;
+
+function _synthActive() {
+  return _activeStems.drums || _activeStems.bass || _activeStems.keyboard;
 }
+function _bandActive() {
+  if (_currentSong().type === 'mp3') {
+    return !!(_stemSources.drums || _stemSources.bass || _stemSources.keyboard);
+  }
+  return _synthActive();
+}
+// recordEvent / loop sync が参照する「バンド開始時刻 (AC秒) と ループ長 (ms)」
+function _bandClockStartAC() {
+  return _currentSong().type === 'mp3' ? _bandStartAC : _bandClockStart;
+}
+function _bandLoopSec() {
+  if (_currentSong().type === 'mp3') return _bandLoopMs / 1000;
+  var s = _currentSong();
+  return s.bars * 4 * (60 / s.bpm);
+}
+// currentLoopMs を更新: バンド ON ならその尺を採用
+// (注: 既存の currentLoopMs() を上書き)
 
 function _preloadStems() {
   Object.keys(_stemFiles).forEach(function(name) {
@@ -1646,6 +1717,172 @@ function _stemStop(name) {
 }
 
 // ════════════════════════════════════════════════════════════
+// 合成バンド (ドラム + ベース + キーボード)
+// ════════════════════════════════════════════════════════════
+function _startSongClock() {
+  var ac = getAC(); if (!ac) return;
+  if (_schedulerInterval) return;
+  _bandClockStart = ac.currentTime + 0.05;
+  _scheduledStep = -1;
+  _schedulerInterval = setInterval(_synthScheduler, 25);
+  _synthScheduler();
+}
+function _stopSongClock() {
+  if (_schedulerInterval) { clearInterval(_schedulerInterval); _schedulerInterval = null; }
+  _bandClockStart = 0;
+  _scheduledStep = -1;
+}
+function _synthScheduler() {
+  var ac = getAC(); if (!ac) return;
+  var song = _currentSong();
+  if (song.type !== 'synth' || !_synthActive()) return;
+  var subBeatSec = (60 / song.bpm) / 2;   // 8分音符の長さ (秒)
+  var subPerBar  = 8;
+  var totalSubs  = song.bars * subPerBar;
+  var horizon = ac.currentTime + 0.20;     // 200ms 先読み
+
+  while (true) {
+    var nextStep = _scheduledStep + 1;
+    var stepTime = _bandClockStart + nextStep * subBeatSec;
+    if (stepTime >= horizon) break;
+    if (stepTime < ac.currentTime - 0.02) {
+      _scheduledStep = nextStep;
+      continue;
+    }
+    var stepInLoop = ((nextStep % totalSubs) + totalSubs) % totalSubs;
+    var barIdx     = Math.floor(stepInLoop / subPerBar);
+    var subInBar   = stepInLoop % subPerBar;
+    var chordName  = song.chords[barIdx % song.chords.length];
+    var chord      = CHORD_NOTES[chordName];
+
+    // ドラム: 8分音符ごとのパターン
+    if (_activeStems.drums) {
+      DRUM_PATTERN[subInBar].forEach(function(kind) {
+        playDrumAt(ac, kind, stepTime);
+      });
+    }
+    // ベース: 各小節の頭 (subInBar === 0) でルート音を1小節分サステイン
+    if (_activeStems.bass && subInBar === 0 && chord) {
+      _playBassAt(ac, chord.root, stepTime, subPerBar * subBeatSec * 0.95);
+    }
+    // キーボード: 各小節の頭で和音を1小節分
+    if (_activeStems.keyboard && subInBar === 0 && chord) {
+      _playKbdAt(ac, chord.triad, stepTime, subPerBar * subBeatSec * 0.95);
+    }
+    _scheduledStep = nextStep;
+  }
+}
+
+// 時刻指定 (when = AC秒) で発火する合成楽器
+function playDrumAt(ac, kind, t) {
+  if (kind === 'kick') {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(160, t);
+    o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.28);
+  } else if (kind === 'snare') {
+    var nb = _makeNoiseBuffer(ac, 0.22);
+    var ns = ac.createBufferSource(); ns.buffer = nb;
+    var nf = ac.createBiquadFilter(); nf.type = 'highpass'; nf.frequency.value = 1500;
+    var ng = ac.createGain();
+    ng.gain.setValueAtTime(0.5, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    ns.connect(nf); nf.connect(ng); ng.connect(ac.destination);
+    ns.start(t); ns.stop(t + 0.22);
+    var so = ac.createOscillator(), sg = ac.createGain();
+    so.type = 'triangle';
+    so.frequency.setValueAtTime(220, t);
+    so.frequency.exponentialRampToValueAtTime(140, t + 0.08);
+    sg.gain.setValueAtTime(0.35, t);
+    sg.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    so.connect(sg); sg.connect(ac.destination);
+    so.start(t); so.stop(t + 0.12);
+  } else if (kind === 'hat') {
+    var hb = _makeNoiseBuffer(ac, 0.08);
+    var hs = ac.createBufferSource(); hs.buffer = hb;
+    var hf = ac.createBiquadFilter(); hf.type = 'highpass'; hf.frequency.value = 6000;
+    var hg = ac.createGain();
+    hg.gain.setValueAtTime(0.25, t);
+    hg.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    hs.connect(hf); hf.connect(hg); hg.connect(ac.destination);
+    hs.start(t); hs.stop(t + 0.08);
+  }
+}
+
+function _playBassAt(ac, freq, t, dur) {
+  var o = ac.createOscillator(), g = ac.createGain(), lpf = ac.createBiquadFilter();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(freq, t);
+  lpf.type = 'lowpass'; lpf.frequency.value = 600;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.32, t + 0.02);
+  g.gain.setValueAtTime(0.28, t + dur - 0.1);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(lpf); lpf.connect(g); g.connect(ac.destination);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+
+function _playKbdAt(ac, freqs, t, dur) {
+  freqs.forEach(function(f, i) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(f, t);
+    var peak = 0.13 - i * 0.02;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.03);
+    g.gain.setValueAtTime(peak * 0.7, t + dur - 0.15);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+
+// バンド ON/OFF 統合 (mp3 と synth を一本化)
+function bandToggle(name) {
+  unlockAudio();
+  var song = _currentSong();
+  if (song.type === 'mp3') {
+    if (_stemSources[name]) _stemStop(name); else _stemStart(name);
+  } else {
+    _activeStems[name] = !_activeStems[name];
+    if (_synthActive()) _startSongClock(); else _stopSongClock();
+  }
+  _renderBandBtns();
+}
+function _renderBandBtns() {
+  ['drums', 'bass', 'keyboard'].forEach(function(name) {
+    var btn = document.querySelector('.band-btn[data-stem="' + name + '"]');
+    if (!btn) return;
+    var isOn = (_currentSong().type === 'mp3') ? !!_stemSources[name] : !!_activeStems[name];
+    btn.classList.toggle('on', isOn);
+  });
+}
+function _stopAllBands() {
+  Object.keys(_stemSources).forEach(function(n) { _stemStop(n); });
+  _activeStems = { drums: false, bass: false, keyboard: false };
+  _stopSongClock();
+  _renderBandBtns();
+}
+function _restartActiveBands() {
+  // 録音同期用: 現在 ON のステムを止めて、いま再起動 (録音開始時刻に揃える)
+  var song = _currentSong();
+  if (song.type === 'mp3') {
+    var on = Object.keys(_stemSources).filter(function(n) { return !!_stemSources[n]; });
+    on.forEach(function(n) { _stemStop(n); });
+    _bandStartAC = 0;
+    on.forEach(function(n) { _stemStart(n); });
+  } else {
+    if (!_synthActive()) return;
+    _stopSongClock();
+    _startSongClock();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
 // _curRec の再生 / 停止
 // ════════════════════════════════════════════════════════════
 // 世代カウンター: 停止/再起動するたびに増やす。古い世代の timer が遅れて発火しても
@@ -1664,10 +1901,9 @@ function _playCurRec() {
   _curRecPlaying = true;
   var gen = ++_playGen;
   var ac = getAC();
-  var loopStartAC = _bandActive() && ac ? _bandStartAC : (ac ? ac.currentTime : 0);
+  var loopStartAC = _bandActive() && ac ? _bandClockStartAC() : (ac ? ac.currentTime : 0);
   var pos = 0;
   if (ac) pos = ((ac.currentTime - loopStartAC) % (_curRec.loopMs / 1000)) * 1000;
-  // pos が NaN/負の値にならないよう保険
   if (!isFinite(pos) || pos < 0) pos = 0;
   _scheduleCurCycle(gen, pos);
   _renderRecBar();
@@ -1800,13 +2036,9 @@ function _beginRecordingPhase() {
   _recState = 'recording';
   _renderRecBar();
   _recEvents = [];
-  // バンドが鳴っていれば全部リスタートして、録音開始時刻と完全に同期させる
-  // (それまでは普通に鳴らしっぱなしで遊ぶ。録音時から拍頭にスナップ)
-  var activeStems = Object.keys(_stemSources).filter(function(n) { return !!_stemSources[n]; });
-  activeStems.forEach(function(n) { _stemStop(n); });
-  _bandStartAC = 0; // リセット → 次の _stemStart で now に再設定される
+  // バンド (mp3 / 合成) が鳴っていれば全部リスタートして録音開始時刻と完全同期
   _recStartMs = performance.now();
-  activeStems.forEach(function(n) { _stemStart(n); });
+  _restartActiveBands();
   var loopMs = currentLoopMs();
   _showProgress('🎤 ろくおん中 (' + Math.round(loopMs/1000) + '秒)', true);
   function tick() {
@@ -1854,7 +2086,7 @@ document.addEventListener('visibilitychange', function() {
       _hideProgress();
     }
     _stopAllPlayback();
-    Object.keys(_stemSources).forEach(function(n) { _stemStop(n); });
+    _stopAllBands();
     // 押しっぱなしのホールド音も全部止める
     Array.from(_heldNotes.keys()).forEach(function(b) { stopHeldNote(b); });
     _renderRecBar();
@@ -1868,19 +2100,24 @@ document.addEventListener('visibilitychange', function() {
 document.querySelectorAll('.band-btn').forEach(function(btn) {
   btn.addEventListener('click', function(e) {
     e.preventDefault();
-    unlockAudio();
     var name = btn.dataset.stem;
-    if (!name) return;
-    var on = !btn.classList.contains('on');
-    if (on) {
-      _stemStart(name);
-      btn.classList.add('on');
-    } else {
-      _stemStop(name);
-      btn.classList.remove('on');
-    }
+    if (name) bandToggle(name);
   });
 });
+
+// 曲セレクター: クリックで A → B → C → D → A...
+(function() {
+  var songBtn = document.getElementById('song-btn');
+  if (!songBtn) return;
+  function refreshLabel() { songBtn.textContent = _currentSong().name; }
+  refreshLabel();
+  songBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    _stopAllBands();
+    _curSongIdx = (_curSongIdx + 1) % SONGS.length;
+    refreshLabel();
+  });
+})();
 
 // ════════════════════════════════════════════════════════════
 // 録音メインボタン (画面下中央)
