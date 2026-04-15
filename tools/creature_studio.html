@@ -106,7 +106,46 @@ body {
 .file-info { font-size: 0.65rem; color: #22c55e; text-align: center; margin-top: 4px; }
 
 /* ── Right Panel ── */
-.right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* ── A案: 上下2分割固定レイアウト ──
+   タブを廃して 上=比較 / 下=分割スプライト を常時表示。
+   合成タブはマルチ合成モード中だけ overlay として被せる。 */
+.right-panel.split-mode .tab-bar { display: none; }
+.right-panel.split-mode #tab-compare,
+.right-panel.split-mode #tab-sprites {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 80px;
+  overflow: hidden;
+}
+.right-panel.split-mode #tab-compare { flex: var(--split-top, 1) 1 0; }
+.right-panel.split-mode #tab-sprites { flex: var(--split-bot, 1) 1 0; overflow-y: auto; }
+.split-divider {
+  flex: 0 0 6px;
+  background: #374151;
+  cursor: ns-resize;
+  border-top: 1px solid #1f2937;
+  border-bottom: 1px solid #1f2937;
+  transition: background 0.15s;
+  position: relative;
+}
+.split-divider::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px; height: 2px;
+  background: #6b7280; border-radius: 2px;
+}
+.split-divider:hover { background: #f87171; }
+/* マルチ合成中: composite を overlay */
+.right-panel.split-mode #tab-composite.active {
+  display: flex !important;
+  position: absolute; left: 0; right: 0;
+  top: 36px;       /* action-toolbar の下 */
+  bottom: 0;
+  background: #111827;
+  z-index: 50;
+}
 
 .action-toolbar {
   display: flex; align-items: center; gap: 4px;
@@ -616,7 +655,7 @@ body {
   </div><!-- /left-panel -->
 
   <!-- ════════ RIGHT PANEL ════════ -->
-  <div class="right-panel">
+  <div class="right-panel split-mode">
 
     <!-- Action toolbar -->
     <div class="action-toolbar" id="action-toolbar">
@@ -730,6 +769,9 @@ body {
         <button class="atbtn atbtn-primary" id="btn-compose" disabled style="width:100%;margin-top:6px">🔨 合成して読み込む</button>
       </div>
     </div>
+
+    <!-- 上(比較)と下(分割)を分けるドラッグバー -->
+    <div class="split-divider" id="split-divider" title="ドラッグで上下のサイズ変更"></div>
 
     <!-- Sprites tab -->
     <div class="tab-content" id="tab-sprites">
@@ -4236,6 +4278,65 @@ compositeTab.addEventListener('drop', e => {
 
 // プレースホルダーのクリック → ファイル選択
 document.getElementById('picker-empty').addEventListener('click', () => multiFileInput.click());
+
+// ════════════════════════════════════════════════════════════
+// 分割バー: 上 (比較) と 下 (分割スプライト) のサイズ調整
+// ════════════════════════════════════════════════════════════
+(function initSplitter() {
+  const divider   = document.getElementById('split-divider');
+  const rightPanel = document.querySelector('.right-panel');
+  if (!divider || !rightPanel) return;
+
+  // 保存されたサイズ比を復元
+  const SAVE_KEY = 'ces_split_ratio_v1';
+  try {
+    const saved = parseFloat(localStorage.getItem(SAVE_KEY));
+    if (saved > 0.1 && saved < 0.9) {
+      rightPanel.style.setProperty('--split-top', String(saved));
+      rightPanel.style.setProperty('--split-bot', String(1 - saved));
+    }
+  } catch (e) {}
+
+  let dragging = false;
+  function onDown(e) {
+    dragging = true;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const rect = rightPanel.getBoundingClientRect();
+    // action-toolbar の高さを取得して上限から差し引く
+    const toolbar = document.getElementById('action-toolbar');
+    const tbH = toolbar ? toolbar.getBoundingClientRect().height : 0;
+    const usableTop = rect.top + tbH;
+    const usableH = rect.height - tbH;
+    if (usableH < 100) return;
+    const y = e.clientY;
+    let topPx = y - usableTop;
+    // 最低 80px ずつ確保
+    if (topPx < 80) topPx = 80;
+    if (topPx > usableH - 80) topPx = usableH - 80;
+    const ratio = topPx / usableH;
+    rightPanel.style.setProperty('--split-top', String(ratio));
+    rightPanel.style.setProperty('--split-bot', String(1 - ratio));
+    try { localStorage.setItem(SAVE_KEY, ratio.toFixed(4)); } catch (e) {}
+  }
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    // 比較ペインのキャンバスをリサイズに合わせて再描画
+    if (typeof redrawCompare === 'function') {
+      try { redrawCompare(); } catch (e) {}
+    }
+  }
+  divider.addEventListener('mousedown', onDown);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+})();
 
 </script>
 </body>
