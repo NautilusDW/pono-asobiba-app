@@ -219,7 +219,15 @@
   /* ── 横画面 / 大画面 ── */
   @media (orientation: landscape) {
     .choices { grid-template-columns: repeat(3, 1fr); max-width: 720px; margin: 0 auto; }
-    .thinking-pono { width: 90px; height: 90px; }
+    /* 横画面では下に置くと見切れるので、右上に固定で配置する */
+    .thinking-pono {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      right: max(8px, env(safe-area-inset-right));
+      margin: 0;
+      width: 76px; height: 76px;
+      z-index: 50;
+    }
   }
 </style>
 </head>
