@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T12:37:23Z - rewards.json: replace broken first-clear rewards with real deco items, remove sea/breakout refs
+- **タスク**: rewards.json: replace broken first-clear rewards with real deco items, remove sea/breakout refs
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 29
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 160, "Edit": 146, "Read": 119, "Write": 6, "ExitPlanMode": 3, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 50}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-16T12:32:31Z - admin picker: in-use badge across all tabs + rewards.json broken references audit
 - **タスク**: admin picker: in-use badge across all tabs + rewards.json broken references audit
 - **結果**: 成功
@@ -185,19 +198,6 @@ git checkout develop
 - **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 178, "Bash": 125, "Read": 136, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 36}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-16T09:20:07Z - pivot tool flip-generated B image lost after deploy/reload fix
-- **タスク**: pivot tool flip-generated B image lost after deploy/reload fix
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 27
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 188, "Bash": 122, "Read": 131, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 34}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
