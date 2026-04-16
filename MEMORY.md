@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T09:20:07Z - pivot tool flip-generated B image lost after deploy/reload fix
+- **タスク**: pivot tool flip-generated B image lost after deploy/reload fix
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 188, "Bash": 122, "Read": 131, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 34}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-16T09:06:19Z - clean edge studio: auto-generate flipped B image for furniture
 - **タスク**: clean edge studio: auto-generate flipped B image for furniture
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 119, "Edit": 234, "Bash": 117, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 3, "Monitor": 1, "Agent": 6, "Grep": 6}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-14T09:10:31Z - ポイントシステム完全削除（common/points.js削除、全ゲームのawardPoints呼び出しとscriptタグ削除）
-- **タスク**: ポイントシステム完全削除（common/points.js削除、全ゲームのawardPoints呼び出しとscriptタグ削除）
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 22
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 142, "Edit": 167, "Agent": 9, "Write": 6, "ExitPlanMode": 2, "Grep": 106, "Bash": 67, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
