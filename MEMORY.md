@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T09:42:45Z - pivot-tool: unify _savedToGithub semantic, items.js append now works for CES-queued items
+- **タスク**: pivot-tool: unify _savedToGithub semantic, items.js append now works for CES-queued items
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 29
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 137, "Read": 138, "Edit": 163, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 37}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-16T09:30:26Z - admin reward picker: restore name-protect condition (don't overwrite custom names)
 - **タスク**: admin reward picker: restore name-protect condition (don't overwrite custom names)
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 120, "Edit": 227, "Read": 116, "Write": 11, "ExitPlanMode": 2, "ToolSearch": 1, "Monitor": 1, "Agent": 6, "Grep": 16}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-16T03:32:20Z - pivot tool items disappear after deploy during Netlify build window
-- **タスク**: pivot tool items disappear after deploy during Netlify build window
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 20
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 115, "Edit": 229, "Read": 124, "Write": 12, "ToolSearch": 2, "ExitPlanMode": 3, "Monitor": 1, "Agent": 6, "Grep": 8}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 3個の非効率パターンあり。
 
 
