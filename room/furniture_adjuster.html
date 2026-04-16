@@ -2415,11 +2415,25 @@ async function discoverPendingImports() {
 
     // 既存 ITEMS (items.js + localStorage 由来) の ID セット
     var existingIds = new Set(ITEMS.map(function(it) { return it.id; }));
+    // ★ items.js は id と異なるファイル名を参照しているケース (例: id='furn_bookshelf_w'
+    //   が roomImg='BookShelf01_A.png' を指す) が多数あるため、参照済み画像のベース名
+    //   集合 (BookShelf01, bear, drone 等) も「登録済み」扱いにする。
+    //   これがないと既存家具の画像が discovery で「未調整」として大量に表示される。
+    var referencedImageBases = new Set();
+    ITEMS.forEach(function(it) {
+      [it.roomImg, it.roomImgB].forEach(function(p) {
+        if (!p) return;
+        var fname = String(p).split('/').pop();
+        var bm = fname.match(/^(.+?)_[AB]\.png$/);
+        if (bm) referencedImageBases.add(bm[1]);
+      });
+    });
     var added = 0;
     var rawBase = 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO +
                   '/' + GH_BRANCH + '/assets/images/Rooms/furnitures_final/';
     Object.keys(byId).forEach(function(id) {
       if (existingIds.has(id)) return;
+      if (referencedImageBases.has(id)) return; // items.js が別 ID で参照済み
       if (!byId[id].A) return; // A 画像なしはスキップ
       // ローカル netlify dev だとまだ pull されてない可能性があるので
       // 表示は raw.githubusercontent.com 経由 (deploy 前提なので公開リポジトリでも問題なし)
