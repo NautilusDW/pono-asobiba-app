@@ -405,7 +405,14 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
       theme: ov.theme || it.theme || 'all',
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
       cellSize: it.cellSize || 1, pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
-      surfaceY: it.surfaceY || 0
+      surfaceY: it.surfaceY || 0,
+      // ★ items.js の配置範囲 / B角度データも引き継ぐ
+      //   これが無いと adjustments 初期化で auto-margin にフォールバックし、
+      //   cellSize>=2 の家具に勝手に外側1〜2周の制限が入ってしまう。
+      minRow: it.minRow, maxRow: it.maxRow,
+      minCol: it.minCol, maxCol: it.maxCol,
+      surfaceYB: it.surfaceYB,
+      angleB: it.angleB
     };
   });
 
@@ -507,6 +514,45 @@ function loadFromStorage() {
   } catch(e) { return false; }
 }
 const hadSave = loadFromStorage();
+
+// ─── localStorage に焼き付いた auto-margin バグ値のクリーンアップ ───
+// 過去に ITEMS マッピング不具合で auto-margin (1〜2周制限) が adjustments に
+// 入り、それが saveToStorage() で localStorage に焼き付いた状態をリセット。
+// 条件: items.js に explicit min/max があり、localStorage 復元後の値が
+//       auto-margin と完全一致し、items.js の値と食い違う場合のみ。
+// → ユーザーが意図的に設定した値は変更しない。
+(function cleanupAutoMarginLeakage() {
+  var cleaned = 0;
+  ITEMS.forEach(function(item) {
+    ['A', 'B'].forEach(function(angle) {
+      var key = item.id + '_' + angle;
+      var adj = adjustments[key];
+      if (!adj) return;
+      var src = angle === 'A'
+        ? { minRow: item.minRow, maxRow: item.maxRow, minCol: item.minCol, maxCol: item.maxCol }
+        : (item.angleB || {});
+      // items.js が explicit に min/max を持っているか
+      if (src.minRow == null || src.maxRow == null || src.minCol == null || src.maxCol == null) return;
+      var cs = adj.cellSize || 1;
+      var autoMargin = Math.max(0, Math.ceil(cs) - 1);
+      var matchesAuto =
+        adj.minRow === autoMargin && adj.maxRow === (7 - autoMargin) &&
+        adj.minCol === autoMargin && adj.maxCol === (7 - autoMargin);
+      var mismatchItemsJs =
+        adj.minRow !== src.minRow || adj.maxRow !== src.maxRow ||
+        adj.minCol !== src.minCol || adj.maxCol !== src.maxCol;
+      if (matchesAuto && mismatchItemsJs) {
+        adj.minRow = src.minRow; adj.maxRow = src.maxRow;
+        adj.minCol = src.minCol; adj.maxCol = src.maxCol;
+        cleaned++;
+      }
+    });
+  });
+  if (cleaned > 0) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(adjustments)); } catch(e) {}
+    console.info('[furniture_adjuster] auto-margin バグ値を ' + cleaned + ' 件クリーンアップしました');
+  }
+})();
 
 // ─── Snapshot System (persistent undo points) ───
 const SNAP_KEY = 'furniture_adjuster_snapshots';
