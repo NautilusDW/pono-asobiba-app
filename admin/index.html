@@ -4915,7 +4915,7 @@ fetch('../assets/data/creatures.json?v=' + Date.now(), { cache: 'no-store' })
   })
   .catch(function() { /* ignore */ });
 
-function _renderThumbGrid(grid, items, onSelect, ov) {
+function _renderThumbGrid(grid, items, onSelect, ov, usageMap) {
   grid.innerHTML = '';
   var cb = '?v=' + Date.now();
   items.forEach(function(it) {
@@ -4924,7 +4924,7 @@ function _renderThumbGrid(grid, items, onSelect, ov) {
     wrap.title = it.name + ' (' + it.id + ')';
 
     var thumb = document.createElement('div');
-    thumb.style.cssText = 'width:80px;height:80px;border:2px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;';
+    thumb.style.cssText = 'width:80px;height:80px;border:2px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;position:relative;';
     var img = document.createElement('img');
     img.src = '../' + it.img + cb;
     img.style.cssText = 'max-width:100%;max-height:100%;object-fit:cover;';
@@ -4937,6 +4937,8 @@ function _renderThumbGrid(grid, items, onSelect, ov) {
     label.style.cssText = 'font-size:0.6rem;color:#555;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:84px;font-weight:700;';
     label.textContent = it.name;
     wrap.appendChild(label);
+
+    if (typeof _attachUsageBadge === 'function') _attachUsageBadge(wrap, thumb, usageMap, it.id, it.img);
 
     wrap.addEventListener('click', function() {
       onSelect(it.img, '../' + it.img + cb, { id: it.id, cat: it.cat, name: it.name });
@@ -4951,21 +4953,21 @@ function _renderThumbGrid(grid, items, onSelect, ov) {
   }
 }
 
-function _loadBgBowling(grid, onSelect, ov) {
+function _loadBgBowling(grid, onSelect, ov, usageMap) {
   var items = BG_BOWLING_DEFS.map(function(d) {
     return { id: d.id, name: d.label, img: d.src, cat: 'bg' };
   });
-  _renderThumbGrid(grid, items, onSelect, ov);
+  _renderThumbGrid(grid, items, onSelect, ov, usageMap);
 }
 
-function _loadBgBreakout(grid, onSelect, ov) {
+function _loadBgBreakout(grid, onSelect, ov, usageMap) {
   var items = BG_BREAKOUT_DEFS.map(function(d) {
     return { id: d.id, name: d.label, img: d.src, cat: 'bg' };
   });
-  _renderThumbGrid(grid, items, onSelect, ov);
+  _renderThumbGrid(grid, items, onSelect, ov, usageMap);
 }
 
-function _loadSeaCreatures(grid, onSelect, ov) {
+function _loadSeaCreatures(grid, onSelect, ov, usageMap) {
   grid.innerHTML = '<div style="color:#aaa;font-size:0.8rem;padding:20px;text-align:center;width:100%;">読み込み中...</div>';
   // hardcoded + creatures.json をマージ
   fetch('../assets/data/creatures.json?v=' + Date.now(), { cache: 'no-store' })
@@ -4983,18 +4985,77 @@ function _loadSeaCreatures(grid, onSelect, ov) {
       });
       // hardcoded にも cat:'sea' をつける
       items.forEach(function(it) { if (!it.cat) it.cat = 'sea'; });
-      _renderThumbGrid(grid, items, onSelect, ov);
+      _renderThumbGrid(grid, items, onSelect, ov, usageMap);
     })
     .catch(function() {
       // creatures.json 取得失敗時は hardcoded のみ
       var items = SEA_HARDCODED.map(function(it) {
         return { id: it.id, name: it.name, img: it.img, cat: 'sea' };
       });
-      _renderThumbGrid(grid, items, onSelect, ov);
+      _renderThumbGrid(grid, items, onSelect, ov, usageMap);
     });
 }
 
+// rewards.json 内の使用状況マップを構築 (id とパス両方をキーに)
+//   返り値: { byId: { id: ['S7♂', 'C2'] }, byPath: { 'assets/...': ['S7♂'] } }
+//   表示用に slot/card/firstClear のどこで使われてるかを短い ID で表現:
+//     S<N>=スタンプ, C<N>=カード完成, F<game>=初回クリア, ♂♀ で gendered
+function _buildRewardsUsageMap() {
+  var usage = { byId: {}, byPath: {} };
+  if (typeof rewardsData === 'undefined' || !rewardsData) return usage;
+  function _norm(p) { return (p || '').replace(/^\.\.?\//, '').replace(/[?#].*$/, ''); }
+  function add(map, key, where) {
+    if (!key) return;
+    var k = map === usage.byPath ? _norm(key) : key;
+    if (!k) return;
+    if (!map[k]) map[k] = [];
+    if (map[k].indexOf(where) === -1) map[k].push(where);
+  }
+  function visit(slot, where) {
+    if (!slot) return;
+    if (slot.gendered) {
+      if (slot.boy)  { add(usage.byId, slot.boy.id,  where + '♂'); add(usage.byPath, slot.boy.img,  where + '♂'); }
+      if (slot.girl) { add(usage.byId, slot.girl.id, where + '♀'); add(usage.byPath, slot.girl.img, where + '♀'); }
+    } else {
+      add(usage.byId, slot.id, where);
+      add(usage.byPath, slot.img, where);
+    }
+  }
+  Object.keys(rewardsData.slotRewards || {}).forEach(function(n) { visit(rewardsData.slotRewards[n], 'S' + n); });
+  (rewardsData.cardCompleteRewards || []).forEach(function(c, i) { visit(c, 'C' + (i+1)); });
+  Object.keys(rewardsData.firstClearRewards || {}).forEach(function(g) { visit(rewardsData.firstClearRewards[g], 'F:' + g); });
+  return usage;
+}
+
+// thumbWrap (外側) と thumbInner (枠付きの内側) を受け取り、使用中なら
+// 緑バッジを top-right に重ねて attach する
+function _attachUsageBadge(thumbWrap, thumbInner, usageMap, id, path) {
+  if (!usageMap) return;
+  var locsId   = id   ? (usageMap.byId[id]   || []) : [];
+  var locsPath = path ? (usageMap.byPath[(path || '').replace(/^\.\.?\//, '').replace(/[?#].*$/, '')] || []) : [];
+  // 重複排除してマージ
+  var locs = locsId.slice();
+  locsPath.forEach(function(l) { if (locs.indexOf(l) === -1) locs.push(l); });
+  if (locs.length === 0) return;
+  // thumbInner は relative にして badge を absolute で配置
+  if (thumbInner.style.position !== 'absolute' && thumbInner.style.position !== 'fixed') {
+    thumbInner.style.position = 'relative';
+  }
+  var badge = document.createElement('div');
+  badge.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#22c55e;color:#fff;font-size:0.55rem;font-weight:900;line-height:1;padding:2px 4px;border-radius:6px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);max-width:60px;text-align:center;pointer-events:none;z-index:5;';
+  // 表示は最大 2 件、超えたら "+N"
+  var shown = locs.slice(0, 2).join(',');
+  if (locs.length > 2) shown += '+' + (locs.length - 2);
+  badge.textContent = shown;
+  badge.title = '使用中: ' + locs.join(', ');
+  thumbInner.appendChild(badge);
+  // wrap も title に追記してホバーで全部見えるように
+  if (thumbWrap.title) thumbWrap.title += ' [使用中: ' + locs.join(', ') + ']';
+  else thumbWrap.title = '使用中: ' + locs.join(', ');
+}
+
 function openImageBrowser(onSelect) {
+  var _usageMap = _buildRewardsUsageMap();
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
 
@@ -5105,7 +5166,7 @@ function openImageBrowser(onSelect) {
             seen[itemId] = true;
             (function(id, cat, name, p) {
               var thumb = document.createElement('div');
-              thumb.style.cssText = 'width:70px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;';
+              thumb.style.cssText = 'width:70px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative;';
               thumb.title = name + ' (' + id + ')';
               var imgEl = document.createElement('img');
               imgEl.src = '../' + p + cb;
@@ -5116,6 +5177,7 @@ function openImageBrowser(onSelect) {
               label.textContent = name;
               thumb.appendChild(imgEl);
               thumb.appendChild(label);
+              _attachUsageBadge(thumb, thumb, _usageMap, id, p);
               thumb.addEventListener('click', function() {
                 // 保存値はキャッシュバスター無し、表示URLはキャッシュバスター付き
                 onSelect(p, '../' + p + cb, { id: id, cat: cat, name: name });
@@ -5138,17 +5200,17 @@ function openImageBrowser(onSelect) {
 
     // ── 🎳 ボウリング背景 ──
     if (path === '_bg_bowling') {
-      _loadBgBowling(grid, onSelect, ov);
+      _loadBgBowling(grid, onSelect, ov, _usageMap);
       return;
     }
     // ── 🧱 ブロック崩し背景 ──
     if (path === '_bg_breakout') {
-      _loadBgBreakout(grid, onSelect, ov);
+      _loadBgBreakout(grid, onSelect, ov, _usageMap);
       return;
     }
     // ── 🐠 海のいきもの（creatures.json + hardcoded） ──
     if (path === '_sea_creatures') {
-      _loadSeaCreatures(grid, onSelect, ov);
+      _loadSeaCreatures(grid, onSelect, ov, _usageMap);
       return;
     }
 
@@ -5196,7 +5258,7 @@ function openImageBrowser(onSelect) {
       thumbWrap.title = meta ? (meta.name + ' (' + meta.id + ')') : f.path;
 
       var thumb = document.createElement('div');
-      thumb.style.cssText = 'width:70px;height:70px;border:2px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;';
+      thumb.style.cssText = 'width:70px;height:70px;border:2px solid #eee;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;position:relative;';
       var img = document.createElement('img');
       img.src = f.download_url;
       img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
@@ -5211,6 +5273,9 @@ function openImageBrowser(onSelect) {
         label.textContent = meta.name;
         thumbWrap.appendChild(label);
       }
+
+      // 報酬リスト使用中バッジ
+      _attachUsageBadge(thumbWrap, thumb, _usageMap, meta && meta.id, f.path);
 
       thumbWrap.addEventListener('click', function() {
         onSelect(f.path, f.download_url, meta || undefined);
