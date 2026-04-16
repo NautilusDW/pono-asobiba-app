@@ -1920,6 +1920,48 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   var btn = this;
   btn.disabled = true;
 
+  // ── ステップ0: 既存アイテムの dataUrl 画像 (フリップ生成の B 等) をアップロード ──
+  //   非 _imported の既存アイテムで A/B フリップで生成した画像は dataUrl のまま
+  //   `item.roomImgB` に入っており、unsavedItems の `_imported` フィルタでは拾われない。
+  //   これを検出して <id>_A.png / <id>_B.png としてアップロードし、
+  //   item.roomImg / roomImgB を GitHub パスに置換する。
+  var flipUploads = ITEMS.filter(function(it) {
+    if (it._imported) return false; // インポートアイテムはステップ1で処理される
+    var hasDataA = it.roomImg  && String(it.roomImg ).indexOf('data:') === 0;
+    var hasDataB = it.roomImgB && String(it.roomImgB).indexOf('data:') === 0;
+    return hasDataA || hasDataB;
+  });
+  if (flipUploads.length > 0) {
+    for (var fi = 0; fi < flipUploads.length; fi++) {
+      var fit = flipUploads[fi];
+      var fnm = fit.id;
+      status.textContent = '⏳ フリップ画像 ' + (fi+1) + '/' + flipUploads.length + ': ' + fit.name;
+      // A 側が dataUrl (B→A 反転などのケース)
+      if (fit.roomImg && String(fit.roomImg).indexOf('data:') === 0) {
+        var fB64A = await new Promise(function(r) { getImageBase64(fit.roomImg, r); });
+        if (fB64A) {
+          var fErrA = await new Promise(function(r) {
+            ghUploadFile(FURN_PATH + fnm + '_A.png', fB64A, '🪑 A 画像更新 (フリップ): ' + fnm + '_A.png', r);
+          });
+          if (fErrA) { status.textContent = '❌ A 画像失敗 (' + fit.name + '): ' + fErrA; status.style.color = '#f44336'; btn.disabled = false; return; }
+          fit.roomImg = '../' + FURN_PATH + fnm + '_A.png';
+        }
+      }
+      // B 側が dataUrl (A→反転→B で新規生成された B)
+      if (fit.roomImgB && String(fit.roomImgB).indexOf('data:') === 0) {
+        var fB64B = await new Promise(function(r) { getImageBase64(fit.roomImgB, r); });
+        if (fB64B) {
+          var fErrB = await new Promise(function(r) {
+            ghUploadFile(FURN_PATH + fnm + '_B.png', fB64B, '🪑 B 画像追加 (フリップ): ' + fnm + '_B.png', r);
+          });
+          if (fErrB) { status.textContent = '❌ B 画像失敗 (' + fit.name + '): ' + fErrB; status.style.color = '#f44336'; btn.disabled = false; return; }
+          fit.roomImgB = '../' + FURN_PATH + fnm + '_B.png';
+        }
+      }
+      fit._savedToGithub = true;
+    }
+  }
+
   // ── ステップ1: 未保存画像をすべてアップロード ──
   if (unsavedItems.length > 0) {
     var uploadFailed = false;
@@ -2021,6 +2063,27 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
         if (val === undefined || val === null || isNaN(val)) return blk;
         return replProp(blk, prop, val);
       }
+      // roomImg / roomImgB のパス書き込み (フリップで更新された場合の反映)
+      //   - ステップ0 でアップロード済みなら item.roomImg / roomImgB は
+      //     '../assets/images/...' の GitHub パスになっている
+      //   - roomImgB が items.js 未記載なら roomImg 行の直後に追記する
+      if (item.roomImg && String(item.roomImg).indexOf('data:') !== 0) {
+        if (/\broomImg:\s*'/.test(newBlock)) {
+          newBlock = newBlock.replace(/(\broomImg:\s*')[^']*(')/, "$1" + item.roomImg + "$2");
+        }
+      }
+      if (item.roomImgB && String(item.roomImgB).indexOf('data:') !== 0) {
+        if (/\broomImgB:\s*'/.test(newBlock)) {
+          newBlock = newBlock.replace(/(\broomImgB:\s*')[^']*(')/, "$1" + item.roomImgB + "$2");
+        } else {
+          // roomImg 行の直後に roomImgB 行を挿入
+          newBlock = newBlock.replace(
+            /(\broomImg:\s*'[^']*',)/,
+            "$1\n    roomImgB: '" + item.roomImgB + "',"
+          );
+        }
+      }
+
       newBlock = safeReplProp(newBlock, 'cellSize', adjA.cellSize);
       newBlock = safeReplProp(newBlock, 'pivotX', adjA.pivotX);
       newBlock = safeReplProp(newBlock, 'pivotY', adjA.pivotY);
