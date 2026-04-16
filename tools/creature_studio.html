@@ -3955,7 +3955,16 @@ async function deployImagesOnly(selectedCards, dest) {
     nameCounts[n] = (nameCounts[n] || 0) + 1;
   });
   const nameSeen = {};
-  const filenames = selectedCards.map(c => {
+  // pivot キュー先 (家具) は ID ベースのファイル名を使う
+  // (items.js が '../<dir>/<id>_A.png' を参照するので必須)
+  const preassignedIds = dest.queueForPivot
+    ? selectedCards.map(c => {
+        const sp = sprites[parseInt(c.dataset.idx)];
+        return _uniqueImportId(sp.name || 'furn');
+      })
+    : null;
+  const filenames = selectedCards.map((c, i) => {
+    if (preassignedIds) return preassignedIds[i] + '_A.png';
     const sp = sprites[parseInt(c.dataset.idx)];
     const n = (sp.name || 'sprite').trim();
     if (nameCounts[n] > 1) {
@@ -3982,6 +3991,8 @@ async function deployImagesOnly(selectedCards, dest) {
       setStatus('🔄 ' + (++uploaded) + '/' + selectedCards.length + ' — ' + filename);
       await ghUploadPromise(path, base64, dest.label + ': ' + filename);
       uploadedPaths.push({
+        // preassignedId があれば pivot キューでそのまま ID として使う
+        id: preassignedIds ? preassignedIds[i] : null,
         name: (sp.name || filename.replace(/\.png$/, '')).trim(),
         filename: filename,
         path: path,
@@ -4024,7 +4035,9 @@ function _queueFurnitureForPivotTool(uploaded) {
   if (!Array.isArray(list)) list = [];
 
   uploaded.forEach((u) => {
-    const id = _uniqueImportId(u.name);
+    // preassigned ID (ファイル名と一致) があれば最優先で使う
+    // → items.js の '../<dir>/<id>_A.png' と GitHub 上のファイル名が一致する
+    const id = u.id || _uniqueImportId(u.name);
     if (list.some(x => x && x.id === id)) return;
     list.push({
       id: id, name: u.name, cat: 'furn', theme: 'all',
@@ -4178,7 +4191,9 @@ const SIMPLE_IMAGE_DESTS = {
     openLink: { href: '../admin/index.html#walls', label: '壁紙・床 管理で開く' }
   },
   'furniture': {
-    dir: 'assets/images/Rooms/furnitures', label: '家具 (ピボット前)',
+    // ★ ピボットツールが items.js に書く画像パスと合わせる:
+    //   ../assets/images/Rooms/furnitures_final/<id>_A.png
+    dir: 'assets/images/Rooms/furnitures_final', label: '家具 (ピボット前)',
     openLink: { href: '../room/furniture_adjuster.html', label: 'ピボット調整ツールで開く' },
     queueForPivot: true
   }
