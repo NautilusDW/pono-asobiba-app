@@ -2378,7 +2378,19 @@ async function discoverPendingImports() {
             '&_=' + Date.now();
   try {
     var resp = await fetch(url, { headers: ghHeaders(), cache: 'no-store' });
-    if (!resp.ok) return;
+    if (!resp.ok) {
+      // rate limit (403) や認証失敗 (401) は管理者に見えるよう警告を出す
+      var msg = resp.status === 403 ? 'GitHub API rate limit (403)'
+              : resp.status === 401 ? 'GitHub PAT 認証失敗 (401)'
+              : 'GitHub Contents API ' + resp.status;
+      console.warn('[discoverPendingImports] ' + msg);
+      var sb = document.getElementById('save-status');
+      if (sb) {
+        sb.textContent = '⚠ Discovery 失敗: ' + msg + ' (未調整インポートが検出できません)';
+        sb.style.color = '#FFB74D';
+      }
+      return;
+    }
     var files = await resp.json();
     if (!Array.isArray(files)) return;
 
@@ -2389,6 +2401,11 @@ async function discoverPendingImports() {
       var m = f.name.match(/^(.+?)_([AB])\.png$/);
       if (!m) return;
       var id = m[1];
+      // セキュリティ: ID は ASCII の英数 / アンダースコア / ハイフンのみ許可。
+      //   悪意のあるリポジトリ書き込み権限保持者がファイル名にダブルクォート等を
+      //   含めた場合の querySelector 文字列ベース構築 (ensureItemButton 内) への
+      //   インジェクションを防ぐ。
+      if (!/^[a-zA-Z0-9_\-]+$/.test(id)) return;
       // 旧仕様 _boy / _girl サフィックス付きファイルは legacy とみなしてスキップ
       // (Step 1 で ID immutable 化したので新規には作られない)
       if (/_boy$|_girl$/.test(id)) return;
