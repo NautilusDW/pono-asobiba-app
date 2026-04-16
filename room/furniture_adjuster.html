@@ -43,6 +43,8 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:10
 .item-btn.has-b{box-shadow:0 0 0 2px #4CAF50 inset}
 .item-btn.unsaved{position:relative;outline:2px dashed #ff9800;outline-offset:-2px}
 .item-btn.unsaved::after{content:'●';position:absolute;top:-2px;right:-2px;color:#ff9800;font-size:14px;text-shadow:0 0 3px #000;pointer-events:none}
+.item-btn.multi-selected{outline:3px solid #f44;outline-offset:-3px;position:relative}
+.item-btn.multi-selected::before{content:'✓';position:absolute;top:-3px;left:-3px;background:#f44;color:#fff;font-size:11px;font-weight:900;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none}
 .item-btn img{pointer-events:none}
 #unsaved-banner{background:#ff9800;color:#1a1a2e;padding:8px 10px;border-radius:6px;font-size:11px;font-weight:bold;margin:6px 0;display:none}
 #unsaved-banner.show{display:block}
@@ -716,17 +718,59 @@ function thumbSrcFor(item) {
   return a || b;
 }
 
+// ─── Multi-select 状態 (Ctrl/Cmd+クリックで複数選択して一括削除) ───
+const _multiSelected = new Set();
+function _toggleMultiSelect(id) {
+  if (_multiSelected.has(id)) _multiSelected.delete(id);
+  else _multiSelected.add(id);
+  var btn = document.querySelector('.item-btn[data-id="' + id + '"]');
+  if (btn) btn.classList.toggle('multi-selected', _multiSelected.has(id));
+  _updateDeleteBtnLabel();
+}
+function _clearMultiSelect() {
+  _multiSelected.forEach(function(id) {
+    var btn = document.querySelector('.item-btn[data-id="' + id + '"]');
+    if (btn) btn.classList.remove('multi-selected');
+  });
+  _multiSelected.clear();
+  _updateDeleteBtnLabel();
+}
+function _updateDeleteBtnLabel() {
+  var btn = document.getElementById('btn-delete-item');
+  if (!btn) return;
+  if (_multiSelected.size > 0) {
+    btn.textContent = '🗑 選択した ' + _multiSelected.size + ' 件を削除';
+  } else {
+    btn.textContent = '🗑 このアイテムを削除';
+  }
+}
+// アイテムボタンのクリックハンドラ (修飾キーで multi-select)
+function _onItemBtnClick(e, id) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    _toggleMultiSelect(id);
+    return;
+  }
+  // 通常クリック: multi-select があったら解除して単一選択
+  if (_multiSelected.size > 0) _clearMultiSelect();
+  selectItem(id);
+}
+// ESC で multi-select 解除
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && _multiSelected.size > 0) _clearMultiSelect();
+});
+
 // Build item list
 const listEl = document.getElementById('item-list');
 ITEMS.forEach(item => {
   const btn = document.createElement('div');
   btn.className = 'item-btn' + (item.roomImgB ? ' has-b' : '');
   btn.dataset.id = item.id;
-  btn.title = item.name + ' (' + item.id + ')' + (item.roomImgB ? ' [A/B]' : '');
+  btn.title = item.name + ' (' + item.id + ')' + (item.roomImgB ? ' [A/B]' : '') + '\n(Ctrl+クリック で複数選択)';
   const img = document.createElement('img');
   img.src = thumbSrcFor(item);
   btn.appendChild(img);
-  btn.onclick = () => selectItem(item.id);
+  btn.onclick = (e) => _onItemBtnClick(e, item.id);
   listEl.appendChild(btn);
 });
 
@@ -997,70 +1041,96 @@ document.getElementById('edit-item-theme').addEventListener('change', function()
 
 // ─── Delete item ───
 document.getElementById('btn-delete-item').addEventListener('click', async function() {
-  if (!selectedId) return;
-  var item = ITEMS.find(function(x) { return x.id === selectedId; });
-  if (!item) return;
-  // _imported (Clean Edge / Discovery 由来) は GitHub のファイルも消すか確認
-  var willDeleteGithubFiles = !!item._imported;
-  var confirmMsg = '「' + item.name + '」(' + selectedId + ') を削除しますか？';
-  if (willDeleteGithubFiles) {
-    confirmMsg += '\n\n⚠ GitHub の <id>_A.png / <id>_B.png も削除します (取り消すには git history から復元する必要があります)。';
+  // multi-select に何か入ってればそっちを優先、なければ単一選択
+  var targetIds;
+  if (_multiSelected.size > 0) {
+    targetIds = Array.from(_multiSelected);
+  } else if (selectedId) {
+    targetIds = [selectedId];
+  } else {
+    return;
+  }
+  var targets = targetIds
+    .map(function(id) { return ITEMS.find(function(x) { return x.id === id; }); })
+    .filter(Boolean);
+  if (targets.length === 0) return;
+
+  var anyImported = targets.some(function(it) { return it._imported; });
+  var confirmMsg = targets.length === 1
+    ? '「' + targets[0].name + '」(' + targets[0].id + ') を削除しますか？'
+    : targets.length + ' 件のアイテムを削除しますか？\n\n' +
+      targets.slice(0, 8).map(function(it) { return '・' + it.name + ' (' + it.id + ')'; }).join('\n') +
+      (targets.length > 8 ? '\n... 他 ' + (targets.length - 8) + ' 件' : '');
+  if (anyImported) {
+    confirmMsg += '\n\n⚠ _imported アイテムは GitHub の <id>_A.png / <id>_B.png も削除します (取り消すには git history から復元)。';
   }
   if (!confirm(confirmMsg)) return;
 
-  // ITEMS配列から除去
-  var idx = ITEMS.indexOf(item);
-  if (idx !== -1) ITEMS.splice(idx, 1);
-  // adjustments除去
-  delete adjustments[selectedId + '_A'];
-  delete adjustments[selectedId + '_B'];
-  // アイテムリストのボタン除去
-  var btn = document.querySelector('.item-btn[data-id="' + selectedId + '"]');
-  if (btn) btn.remove();
-  // プレビュー消去
+  var status = document.getElementById('save-status');
+  var deleted = [];
+  var ghQueue = [];
+
+  targets.forEach(function(item) {
+    var did = item.id;
+    var idx = ITEMS.indexOf(item);
+    if (idx !== -1) ITEMS.splice(idx, 1);
+    delete adjustments[did + '_A'];
+    delete adjustments[did + '_B'];
+    var btn = document.querySelector('.item-btn[data-id="' + did + '"]');
+    if (btn) btn.remove();
+    if (item._imported) {
+      ghQueue.push(did);
+    } else {
+      _deletedIds.push(did);
+      _deletedSet.add(did);
+    }
+    deleted.push(did);
+  });
+
+  // プレビュー消去 / 状態リセット
   var layer = document.getElementById('item-layer');
-  layer.innerHTML = '';
+  if (layer) layer.innerHTML = '';
   document.getElementById('selected-info').style.display = 'none';
-  var deletedId = item.id;
   selectedId = null;
+  _clearMultiSelect();
   saveToStorage();
-  if (item._imported) {
+  if (deleted.some(function(id) { return ITEMS.find(function(x) { return x.id === id && x._imported; }); })) {
     saveImports();
-  } else {
-    // items.js由来のアイテムは削除リストに追加（リロード時もフィルタ）
-    _deletedIds.push(deletedId);
-    _deletedSet.add(deletedId);
-    localStorage.setItem(DELETED_KEY, JSON.stringify(_deletedIds));
+  } else if (targets.some(function(it) { return it._imported; })) {
+    saveImports(); // インポートが含まれてたら再保存
+  }
+  if (_deletedIds.length > 0) {
+    try { localStorage.setItem(DELETED_KEY, JSON.stringify(_deletedIds)); } catch(e) {}
   }
   drawGrid();
 
-  // _imported なら GitHub の <id>_A.png / <id>_B.png を非同期で削除
-  //   (ローカル UI はもう更新済みなので結果はトーストで通知)
-  if (willDeleteGithubFiles) {
-    var status = document.getElementById('save-status');
-    if (status) { status.textContent = '⏳ GitHub から ' + deletedId + '_A.png / _B.png を削除中...'; status.style.color = '#ffd700'; }
-    var paths = [
-      FURN_PATH + deletedId + '_A.png',
-      FURN_PATH + deletedId + '_B.png'
-    ];
-    var results = [];
-    for (var pi = 0; pi < paths.length; pi++) {
-      try {
-        var r = await ghDeleteFile(paths[pi], '🗑 ' + deletedId + ' を削除');
-        results.push({ path: paths[pi], ok: true, alreadyGone: !!r.alreadyGone });
-      } catch (err) {
-        results.push({ path: paths[pi], ok: false, error: (err && err.message) || String(err) });
+  // GitHub ファイル削除を非同期で実行
+  if (ghQueue.length > 0) {
+    var total = ghQueue.length * 2; // _A + _B
+    var done = 0;
+    var okCount = 0, gone = 0, failed = [];
+    for (var qi = 0; qi < ghQueue.length; qi++) {
+      var did = ghQueue[qi];
+      var paths = [FURN_PATH + did + '_A.png', FURN_PATH + did + '_B.png'];
+      for (var pi = 0; pi < paths.length; pi++) {
+        if (status) { status.textContent = '⏳ GitHub 削除 ' + (++done) + '/' + total + ': ' + paths[pi].split('/').pop(); status.style.color = '#ffd700'; }
+        try {
+          var r = await ghDeleteFile(paths[pi], '🗑 ' + did + ' を削除');
+          if (r.alreadyGone) gone++; else okCount++;
+        } catch (err) {
+          failed.push({ path: paths[pi], err: (err && err.message) || String(err) });
+        }
       }
     }
-    var ok = results.filter(function(r) { return r.ok && !r.alreadyGone; }).length;
-    var notFound = results.filter(function(r) { return r.ok && r.alreadyGone; }).length;
-    var failed = results.filter(function(r) { return !r.ok; });
     if (status) {
-      var summary = '✅ GitHub: ' + ok + ' 削除, ' + notFound + ' は既に存在せず';
-      if (failed.length) summary += ', ❌ ' + failed.length + ' 失敗 (' + failed[0].error + ')';
+      var summary = '✅ GitHub: ' + okCount + ' 削除, ' + gone + ' は既に存在せず';
+      if (failed.length) summary += ', ❌ ' + failed.length + ' 失敗 (' + failed[0].err + ')';
       status.textContent = summary;
       status.style.color = failed.length ? '#f44336' : '#4CAF50';
     }
+  } else if (status) {
+    status.textContent = '✅ ' + deleted.length + ' 件削除しました (items.js 由来は次回 Deploy で反映)';
+    status.style.color = '#4CAF50';
   }
 });
 
@@ -2587,13 +2657,13 @@ function ensureItemButton(imp) {
   var btn = document.createElement('div');
   btn.className = 'item-btn';
   btn.dataset.id = imp.id;
-  btn.title = imp.name + ' (' + imp.id + ')';
+  btn.title = imp.name + ' (' + imp.id + ')\n(Ctrl+クリック で複数選択)';
   btn.style.borderColor = '#4CAF50';
   var img = document.createElement('img');
   img.src = imp.roomImg || '';
   btn.appendChild(img);
-  // dataset.id から最新IDを取得
-  btn.onclick = function() { selectItem(this.dataset.id); };
+  // dataset.id から最新IDを取得 + Ctrl/Cmd+クリックで multi-select
+  btn.onclick = function(e) { _onItemBtnClick(e, this.dataset.id); };
   listEl.appendChild(btn);
 }
 
