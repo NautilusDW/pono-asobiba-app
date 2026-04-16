@@ -804,9 +804,21 @@ body {
         <div style="flex:1"></div>
         <label style="font-size:0.7rem;color:#9ca3af;">保存先:</label>
         <select id="deploy-destination" style="padding:4px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#d1d5db;font-size:0.75rem;font-family:inherit;">
-          <option value="aquarium">🐠 水族館 (GitHub)</option>
-          <option value="quiz-sound">🐾 音当てクイズ (GitHub)</option>
-          <option value="local">📁 ローカルフォルダ</option>
+          <optgroup label="GitHub (メタデータも更新)">
+            <option value="aquarium">🐠 水族館</option>
+            <option value="quiz-sound">🐾 音当てクイズ</option>
+          </optgroup>
+          <optgroup label="GitHub (画像だけアップ)">
+            <option value="bento">🍱 お弁当 (Bento_parts)</option>
+            <option value="quizland">🧩 クイズランド (staging)</option>
+            <option value="wordmatch">🔤 ことばあわせ (staging)</option>
+            <option value="walls">🧱 壁紙 (Rooms/walls)</option>
+            <option value="floor">🪵 床 (Rooms/floors)</option>
+            <option value="furniture">🪑 家具・ピボット前 (Rooms/furnitures)</option>
+          </optgroup>
+          <optgroup label="PC ローカル">
+            <option value="local">📁 ローカルフォルダ</option>
+          </optgroup>
         </select>
         <button class="tbtn tbtn-green" id="btn-deploy">🚀 書き出す</button>
       </div>
@@ -3929,6 +3941,59 @@ async function deployToLocal(selectedCards) {
   }
 }
 
+// ────────────────────────────────
+// 画像だけ GitHub にアップする汎用保存先
+//   dest = { dir: 'assets/images/...', label: '表示名' }
+//   ファイル名: {name}.png (選択が複数で同じ名前があれば _001, _002... で番号付け)
+//   メタデータ JSON は更新しない (手動で組み込み or admin 側で行う)
+// ────────────────────────────────
+async function deployImagesOnly(selectedCards, dest) {
+  // ファイル名衝突回避: 同じ名前が複数ある場合は連番
+  const nameCounts = {};
+  selectedCards.forEach(c => {
+    const n = (sprites[parseInt(c.dataset.idx)].name || 'sprite').trim();
+    nameCounts[n] = (nameCounts[n] || 0) + 1;
+  });
+  const nameSeen = {};
+  const filenames = selectedCards.map(c => {
+    const sp = sprites[parseInt(c.dataset.idx)];
+    const n = (sp.name || 'sprite').trim();
+    if (nameCounts[n] > 1) {
+      nameSeen[n] = (nameSeen[n] || 0) + 1;
+      return n + '_' + _pad3(nameSeen[n]) + '.png';
+    }
+    return n + '.png';
+  });
+
+  showLoading(dest.label + ' に保存中...');
+  const setStatus = msg => {
+    document.getElementById('deploy-status').textContent = msg;
+    document.getElementById('loading-msg').textContent = msg;
+  };
+
+  try {
+    let uploaded = 0;
+    for (let i = 0; i < selectedCards.length; i++) {
+      const sp = sprites[parseInt(selectedCards[i].dataset.idx)];
+      const filename = filenames[i];
+      const path = dest.dir + '/' + filename;
+      setStatus('🔄 ' + (++uploaded) + '/' + selectedCards.length + ' — ' + filename);
+      await ghUploadPromise(
+        path,
+        canvasToBase64(sp.canvas),
+        dest.label + ': ' + filename
+      );
+    }
+    hideLoading();
+    setStatus('✅ ' + selectedCards.length + '枚を ' + dest.dir + ' にアップロード');
+    showToast('📦 ' + selectedCards.length + '枚を ' + dest.label + ' に保存しました', true);
+  } catch (e) {
+    hideLoading();
+    setStatus('❌ エラー: ' + e.message);
+    showToast('保存失敗: ' + e.message, false);
+  }
+}
+
 async function deployToQuizSound(selectedCards) {
   const QS_DIR = 'assets/images/quiz-sound';
   const QS_JSON = 'assets/data/quiz-sound-animals.json';
@@ -4003,6 +4068,16 @@ async function deployToQuizSound(selectedCards) {
   }
 }
 
+// 画像だけをアップする汎用保存先の定義 (GitHub の指定パスに {name}.png を置くだけ)
+const SIMPLE_IMAGE_DESTS = {
+  'bento':     { dir: 'assets/images/Bento_parts',   label: 'お弁当' },
+  'quizland':  { dir: 'assets/images/staging',       label: 'クイズランド' },
+  'wordmatch': { dir: 'assets/images/staging',       label: 'ことばあわせ' },
+  'walls':     { dir: 'assets/images/Rooms/walls',   label: '壁紙' },
+  'floor':     { dir: 'assets/images/Rooms/floors',  label: '床' },
+  'furniture': { dir: 'assets/images/Rooms/furnitures', label: '家具 (ピボット前)' }
+};
+
 document.getElementById('btn-deploy').addEventListener('click', async () => {
   // Collect selected
   const selectedCards = [...document.querySelectorAll('.sprite-card.selected')];
@@ -4024,6 +4099,10 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
   if (destination === 'quiz-sound') {
     return await deployToQuizSound(selectedCards);
+  }
+  // 画像だけアップする「シンプル保存先」
+  if (SIMPLE_IMAGE_DESTS[destination]) {
+    return await deployImagesOnly(selectedCards, SIMPLE_IMAGE_DESTS[destination]);
   }
   // 既定: 水族館 (元の挙動)
 
