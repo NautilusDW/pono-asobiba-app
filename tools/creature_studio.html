@@ -141,14 +141,17 @@ body {
 }
 .split-divider:hover  { background: #f87171; }
 .split-divider.dragging { background: #ef4444; }
-/* マルチ合成中: composite を overlay */
+/* マルチ合成中: composite は overlay ではなく、compare と sprites の間に
+   inline で挟まる帯にする (中身の高さ ぶんだけ占める, 上下が広く見える) */
 .right-panel.split-mode #tab-composite.active {
   display: flex !important;
-  position: absolute; left: 0; right: 0;
-  top: 36px;       /* action-toolbar の下 */
-  bottom: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
   background: #111827;
-  z-index: 50;
+  border-top: 2px solid #374151;
+  border-bottom: 2px solid #374151;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 .action-toolbar {
@@ -432,12 +435,12 @@ body {
   padding: 8px 10px; border-top: 1px solid #374151; background: #111827; flex-shrink: 0;
 }
 .composite-preview-wrap {
-  max-height: 280px; overflow: auto; margin-bottom: 6px;
+  max-height: 140px; overflow: auto; margin-bottom: 6px;
   display: flex; align-items: center; justify-content: center;
   background: #0d1117; border-radius: 6px; border: 1px solid #374151;
   padding: 4px;
 }
-.composite-preview-wrap canvas { max-width: 100%; max-height: 270px; object-fit: contain; }
+.composite-preview-wrap canvas { max-width: 100%; max-height: 130px; object-fit: contain; }
 
 /* ── Zoom + BG Bar ── */
 .zoom-bar {
@@ -722,49 +725,50 @@ body {
       </div>
     </div>
 
-    <!-- Composite (multi-picker) tab -->
+    <!-- Composite (multi-picker) tab — コンパクト版
+         旧: picker-canvas-wrap が flex:1 で大きな空白を取っていた
+         新: canvas は折りたたみ (デフォルト非表示)、上下のツールバーを 1 行に統合 -->
     <div class="tab-content" id="tab-composite" style="display:flex;flex-direction:column;">
       <div class="picker-strip" id="picker-strip">
         <button class="picker-add-btn" id="picker-add-btn" title="画像を追加">+</button>
       </div>
-      <div class="picker-main">
-        <div class="picker-toolbar">
-          <button class="tbtn tbtn-ghost active" id="picker-mode-rect" style="padding:3px 8px;font-size:0.72rem" title="矩形選択: ドラッグで範囲を追加">⬜ 矩形+</button>
-          <button class="tbtn tbtn-ghost" id="picker-mode-rect-sub" style="padding:3px 8px;font-size:0.72rem" title="矩形除外: ドラッグで選択範囲からくり抜く">⬛ 矩形−</button>
-          <button class="tbtn tbtn-ghost" id="picker-mode-click" style="padding:3px 8px;font-size:0.72rem" title="クリック選択: キャラクターをクリック (Shift+クリックで追加)">🎯 クリック</button>
-          <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
-          <label style="font-size:0.68rem;color:#9ca3af;">許容値:</label>
-          <input type="range" id="picker-flood-tol" min="5" max="120" value="40" style="width:60px">
-          <span id="picker-flood-tol-val" style="font-size:0.68rem;color:#f87171;font-weight:700;width:24px">40</span>
-          <div style="flex:1"></div>
-          <button class="tbtn tbtn-ghost" id="picker-clear-sel" style="padding:3px 8px;font-size:0.72rem" title="この画像の選択をすべて消去">🗑 選択消去</button>
-        </div>
-        <div class="picker-canvas-wrap" id="picker-canvas-wrap">
-          <canvas id="picker-canvas"></canvas>
-        </div>
+      <!-- 統合ツールバー: 旧 picker-toolbar + 旧 composite-bottom 上段を 1 行に -->
+      <div class="picker-toolbar" style="flex-wrap:wrap;">
+        <button class="tbtn tbtn-ghost active" id="picker-mode-rect" style="padding:3px 8px;font-size:0.72rem" title="矩形選択: ドラッグで範囲を追加">⬜ 矩形+</button>
+        <button class="tbtn tbtn-ghost" id="picker-mode-rect-sub" style="padding:3px 8px;font-size:0.72rem" title="矩形除外: ドラッグで選択範囲からくり抜く">⬛ 矩形−</button>
+        <button class="tbtn tbtn-ghost" id="picker-mode-click" style="padding:3px 8px;font-size:0.72rem" title="クリック選択: キャラクターをクリック (Shift+クリックで追加)">🎯 クリック</button>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <label style="font-size:0.68rem;color:#9ca3af;">許容値:</label>
+        <input type="range" id="picker-flood-tol" min="5" max="120" value="40" style="width:60px">
+        <span id="picker-flood-tol-val" style="font-size:0.68rem;color:#f87171;font-weight:700;width:24px">40</span>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <label style="font-size:0.68rem;color:#9ca3af;">1行</label>
+        <input type="number" id="composite-cols" value="5" min="1" max="20" style="width:38px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
+        <span style="font-size:0.6rem;color:#6b7280">個</span>
+        <label style="font-size:0.68rem;color:#9ca3af;">余白</label>
+        <input type="number" id="composite-gap" value="30" min="0" max="200" style="width:46px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
+        <span style="font-size:0.6rem;color:#6b7280">px</span>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <label style="font-size:0.68rem;color:#9ca3af;display:flex;align-items:center;gap:3px;cursor:pointer;">
+          <input type="checkbox" id="composite-unify" style="accent-color:#22c55e">
+          サイズ統一
+        </label>
+        <input type="number" id="composite-unify-size" value="200" min="40" max="800" step="10"
+               disabled
+               title="長辺をこのサイズにフィット (アスペクト維持)"
+               style="width:50px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center;opacity:0.4;">
+        <span style="font-size:0.6rem;color:#6b7280">px</span>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <button class="tbtn tbtn-ghost" id="picker-toggle-canvas" style="padding:3px 8px;font-size:0.72rem" title="範囲選択キャンバスを表示/非表示">🎨 範囲選択</button>
+        <div style="flex:1"></div>
+        <span id="composite-count" style="font-size:0.65rem;color:#6b7280">選択: 0</span>
+        <button class="tbtn tbtn-ghost" id="picker-clear-sel" style="padding:3px 8px;font-size:0.72rem" title="この画像の選択をすべて消去">🗑 選択消去</button>
+      </div>
+      <!-- canvas: デフォルト非表示。上の 🎨 範囲選択 ボタンでトグル -->
+      <div class="picker-canvas-wrap" id="picker-canvas-wrap" style="display:none;flex:0 0 280px;">
+        <canvas id="picker-canvas"></canvas>
       </div>
       <div class="composite-bottom">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-          <label style="font-size:0.68rem;color:#9ca3af;">レイアウト:</label>
-          <label style="font-size:0.68rem;color:#9ca3af;">1行:</label>
-          <input type="number" id="composite-cols" value="5" min="1" max="20" style="width:38px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
-          <span style="font-size:0.6rem;color:#6b7280">個</span>
-          <label style="font-size:0.68rem;color:#9ca3af;">余白:</label>
-          <input type="number" id="composite-gap" value="30" min="0" max="200" style="width:46px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center">
-          <span style="font-size:0.6rem;color:#6b7280">px</span>
-          <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
-          <label style="font-size:0.68rem;color:#9ca3af;display:flex;align-items:center;gap:3px;cursor:pointer;">
-            <input type="checkbox" id="composite-unify" style="accent-color:#22c55e">
-            サイズ統一
-          </label>
-          <input type="number" id="composite-unify-size" value="200" min="40" max="800" step="10"
-                 disabled
-                 title="長辺をこのサイズにフィット (アスペクト維持)"
-                 style="width:50px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center;opacity:0.4;">
-          <span style="font-size:0.6rem;color:#6b7280">px</span>
-          <div style="flex:1"></div>
-          <span id="composite-count" style="font-size:0.65rem;color:#6b7280">選択: 0</span>
-        </div>
         <div class="composite-preview-wrap" id="composite-preview"></div>
         <button class="atbtn atbtn-primary" id="btn-compose" disabled style="width:100%;margin-top:6px">🔨 合成して読み込む</button>
       </div>
@@ -4617,6 +4621,16 @@ document.getElementById('picker-clear-sel').addEventListener('click', () => {
     pickerImages[activePickerIdx].selections = [];
     renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
   }
+});
+
+// 範囲選択キャンバスのトグル (デフォルト非表示にしたので、必要なときだけ展開)
+document.getElementById('picker-toggle-canvas').addEventListener('click', function() {
+  var wrap = document.getElementById('picker-canvas-wrap');
+  if (!wrap) return;
+  var hidden = wrap.style.display === 'none' || wrap.style.display === '';
+  wrap.style.display = hidden ? 'flex' : 'none';
+  this.classList.toggle('active', hidden);
+  if (hidden) renderPickerPreview(); // 表示時に再描画
 });
 
 // ── Rect drag selection ──
