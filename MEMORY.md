@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T11:26:15Z - pivot-CES contract refactor: ID immutable + Discovery-based handoff + path unification
+- **タスク**: pivot-CES contract refactor: ID immutable + Discovery-based handoff + path unification
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 134, "Edit": 135, "Bash": 155, "Write": 11, "ExitPlanMode": 3, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 46}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-16T11:06:37Z - missing _boy/_girl images on local: needed git pull to sync deploy commits
 - **タスク**: missing _boy/_girl images on local: needed git pull to sync deploy commits
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 116, "Edit": 209, "Read": 126, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 2, "Monitor": 2, "Agent": 6, "Grep": 25}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-16T04:22:31Z - admin rewards draft save (localStorage only, no commit) + red indicator
-- **タスク**: admin rewards draft save (localStorage only, no commit) + red indicator
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 23
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 122, "Edit": 222, "Bash": 114, "Write": 11, "ExitPlanMode": 2, "ToolSearch": 1, "Monitor": 1, "Agent": 6, "Grep": 21}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
