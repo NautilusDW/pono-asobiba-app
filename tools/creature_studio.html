@@ -3850,21 +3850,26 @@ function _downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
   }, 100);
 }
-// 連番ファイル名生成: 先頭の名前が空なら 'sprite', 単数なら "{name}.png"
+// 各カード固有の名前でファイル名生成
+//   旧バグ: 先頭カードの名前を全カードに流用 (全部「ポスター（うちゅう）_001/002...」になる)
+//   修正: deployImagesOnly と同じロジックで、各カードの sp.name を使う。
+//         同じ名前が複数あれば連番 (name_001, name_002, ...)、ユニークなら そのまま。
 function buildSequentialFilenames(selectedCards) {
-  const first = selectedCards[0];
-  let base = first ? (sprites[parseInt(first.dataset.idx)].name || '').trim() : '';
-  if (!base) base = 'sprite';
-  // 半角英数+アンダースコア以外の文字はそのまま残す (日本語ファイル名許可)
-  const names = [];
-  if (selectedCards.length === 1) {
-    names.push(base + '.png');
-  } else {
-    for (let i = 0; i < selectedCards.length; i++) {
-      names.push(base + '_' + _pad3(i + 1) + '.png');
+  const counts = {};
+  selectedCards.forEach(c => {
+    const n = (sprites[parseInt(c.dataset.idx)].name || '').trim() || 'sprite';
+    counts[n] = (counts[n] || 0) + 1;
+  });
+  const seen = {};
+  const names = selectedCards.map(c => {
+    const n = (sprites[parseInt(c.dataset.idx)].name || '').trim() || 'sprite';
+    if (counts[n] > 1) {
+      seen[n] = (seen[n] || 0) + 1;
+      return n + '_' + _pad3(seen[n]) + '.png';
     }
-  }
-  return { base, names };
+    return n + '.png';
+  });
+  return { base: names[0] || 'sprite', names };
 }
 
 async function deployToLocal(selectedCards) {

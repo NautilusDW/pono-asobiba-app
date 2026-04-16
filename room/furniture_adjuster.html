@@ -340,6 +340,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   <div style="margin-top:8px;border-top:2px solid #4CAF50;padding-top:8px">
     <button id="deploy-btn" style="width:100%;background:#4CAF50;color:#fff;border:none;padding:10px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:13px">🚀 items.js に反映＆デプロイ</button>
     <div id="deploy-status" style="font-size:12px;min-height:18px;margin-top:4px;text-align:center"></div>
+    <button id="local-export-btn" style="width:100%;margin-top:6px;background:#2563EB;color:#fff;border:none;padding:8px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:12px" title="選択中(または Ctrl+クリックで複数選択)アイテムの A/B 画像をローカルフォルダに保存">📁 選択アイテムをローカルに保存</button>
   </div>
 </div>
 
@@ -1861,6 +1862,82 @@ placeItem = function(id) { _origPlaceItem(id); saveToStorage(); };
     if (document.getElementById('room-panel').contains(e.target)) e.preventDefault();
   };
 })();
+
+// ─── ローカルフォルダエクスポート ───
+//   選択中アイテム (multi-select 優先, 無ければ単一 selectedId) の
+//   A/B 画像を <id>_A.png / <id>_B.png という名前でローカルフォルダに保存。
+//   File System Access API が使える Chrome/Edge ならフォルダ選択ダイアログ、
+//   それ以外は個別ダウンロード。
+async function _fetchAsBlob(url) {
+  // dataUrl の場合は fetch で blob 化
+  var resp = await fetch(url, { cache: 'no-store' });
+  if (!resp.ok) throw new Error('画像取得失敗 ' + resp.status);
+  return await resp.blob();
+}
+function _localDownloadBlob(blob, filename) {
+  var u = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = u; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(u); }, 120);
+}
+document.getElementById('local-export-btn').addEventListener('click', async function() {
+  var status = document.getElementById('deploy-status');
+  var targetIds;
+  if (typeof _multiSelected !== 'undefined' && _multiSelected.size > 0) {
+    targetIds = Array.from(_multiSelected);
+  } else if (selectedId) {
+    targetIds = [selectedId];
+  } else {
+    if (status) { status.textContent = '⚠ アイテムを選択してください (Ctrl+クリックで複数選択可)'; status.style.color = '#FFB74D'; }
+    return;
+  }
+  var targets = targetIds
+    .map(function(id) { return ITEMS.find(function(x) { return x.id === id; }); })
+    .filter(Boolean);
+  if (targets.length === 0) return;
+
+  // フォルダ選択 (FS Access 対応ブラウザ) or 個別ダウンロード fallback
+  var dirHandle = null;
+  if (typeof window.showDirectoryPicker === 'function') {
+    try { dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' }); }
+    catch (e) { return; /* user canceled */ }
+  }
+
+  if (status) { status.textContent = '⏳ ローカル保存中...'; status.style.color = '#ffd700'; }
+  var ok = 0, failed = [];
+  for (var ti = 0; ti < targets.length; ti++) {
+    var item = targets[ti];
+    var jobs = [];
+    if (item.roomImg)  jobs.push({ url: item.roomImg,  fname: item.id + '_A.png' });
+    if (item.roomImgB) jobs.push({ url: item.roomImgB, fname: item.id + '_B.png' });
+    for (var ji = 0; ji < jobs.length; ji++) {
+      var job = jobs[ji];
+      try {
+        var blob = await _fetchAsBlob(job.url);
+        if (dirHandle) {
+          var fh = await dirHandle.getFileHandle(job.fname, { create: true });
+          var w = await fh.createWritable();
+          await w.write(blob);
+          await w.close();
+        } else {
+          _localDownloadBlob(blob, job.fname);
+          await new Promise(function(r) { setTimeout(r, 200); });
+        }
+        ok++;
+      } catch (err) {
+        failed.push({ fname: job.fname, err: (err && err.message) || String(err) });
+      }
+    }
+  }
+  if (status) {
+    var summary = '✅ ローカル保存: ' + ok + ' ファイル';
+    if (failed.length) summary += ', ❌ ' + failed.length + ' 失敗 (' + failed[0].fname + ': ' + failed[0].err + ')';
+    if (!dirHandle) summary += ' (ブラウザの Downloads フォルダ)';
+    status.textContent = summary;
+    status.style.color = failed.length ? '#f44336' : '#4CAF50';
+  }
+});
 
 // ─── Grid vertex adjustment ───
 const GRID_DEFAULT = {
