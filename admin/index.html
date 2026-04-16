@@ -4647,21 +4647,30 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
       thumb.src = aDownloadUrl;
       thumb.style.display = '';
 
-      // 親カードのnameを常に上書き（visible input / hidden input 両対応）
+      // 親カードの name を更新（ユーザーがカスタム入力した名前は保護）
+      //   - 空欄 / 「ごほうびN」のような自動生成デフォルト → meta.name で上書き
+      //   - それ以外 (ユーザーが自分で入力した名前) → そのまま保持
       if (parentCard) {
         var nameKey = prefix ? prefix + '-name' : 'name';
         var nameInp = parentCard.querySelector('[data-key="' + nameKey + '"]');
         if (nameInp && meta.name) {
-          nameInp.value = meta.name;
+          var cur = (nameInp.value || '').trim();
+          var isDefault = !cur || /^ごほうび\d+$/.test(cur);
+          if (isDefault) nameInp.value = meta.name;
         }
         // gendered 時: boy/girl の入力をピッカーで行ったら、トップの総称 name も合成
+        // （ただしトップ name もカスタム入力されていれば保護）
         if (prefix === 'boy' || prefix === 'girl') {
           var topNameInp = parentCard.querySelector('[data-key="name"]');
           if (topNameInp) {
-            var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
-            var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
-            var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
-            if (combined) topNameInp.value = combined;
+            var topCur = (topNameInp.value || '').trim();
+            var topIsDefault = !topCur || /^ごほうび\d+$/.test(topCur);
+            if (topIsDefault) {
+              var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
+              var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
+              var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
+              if (combined) topNameInp.value = combined;
+            }
           }
         }
         // カードプレビュー画像を更新（gendered の時は boy 側変更時だけ）
