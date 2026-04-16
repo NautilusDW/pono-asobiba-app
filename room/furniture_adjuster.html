@@ -1920,77 +1920,47 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   var btn = this;
   btn.disabled = true;
 
-  // ── ステップ0: 既存アイテムの dataUrl 画像 (フリップ生成の B 等) をアップロード ──
-  //   非 _imported の既存アイテムで A/B フリップで生成した画像は dataUrl のまま
-  //   `item.roomImgB` に入っており、unsavedItems の `_imported` フィルタでは拾われない。
-  //   これを検出して <id>_A.png / <id>_B.png としてアップロードし、
+  // ── ステップ1: dataUrl 画像をすべてアップロード (統一処理) ──
+  //   _imported / 非_imported 問わず、roomImg / roomImgB が dataUrl になっている
+  //   アイテムを検出して <id>_A.png / <id>_B.png としてアップロードし、
   //   item.roomImg / roomImgB を GitHub パスに置換する。
-  var flipUploads = ITEMS.filter(function(it) {
-    if (it._imported) return false; // インポートアイテムはステップ1で処理される
+  //   旧コードで「_imported かどうか」で分岐していたせいで、
+  //   Clean Edge Studio 経由の _savedToGithub:true アイテムが
+  //   items.js 追記対象から永遠に外れる問題があったためここで一本化する。
+  var needsUpload = ITEMS.filter(function(it) {
     var hasDataA = it.roomImg  && String(it.roomImg ).indexOf('data:') === 0;
     var hasDataB = it.roomImgB && String(it.roomImgB).indexOf('data:') === 0;
     return hasDataA || hasDataB;
   });
-  if (flipUploads.length > 0) {
-    for (var fi = 0; fi < flipUploads.length; fi++) {
-      var fit = flipUploads[fi];
-      var fnm = fit.id;
-      status.textContent = '⏳ フリップ画像 ' + (fi+1) + '/' + flipUploads.length + ': ' + fit.name;
-      // A 側が dataUrl (B→A 反転などのケース)
-      if (fit.roomImg && String(fit.roomImg).indexOf('data:') === 0) {
-        var fB64A = await new Promise(function(r) { getImageBase64(fit.roomImg, r); });
-        if (fB64A) {
-          var fErrA = await new Promise(function(r) {
-            ghUploadFile(FURN_PATH + fnm + '_A.png', fB64A, '🪑 A 画像更新 (フリップ): ' + fnm + '_A.png', r);
-          });
-          if (fErrA) { status.textContent = '❌ A 画像失敗 (' + fit.name + '): ' + fErrA; status.style.color = '#f44336'; btn.disabled = false; return; }
-          fit.roomImg = '../' + FURN_PATH + fnm + '_A.png';
-        }
-      }
-      // B 側が dataUrl (A→反転→B で新規生成された B)
-      if (fit.roomImgB && String(fit.roomImgB).indexOf('data:') === 0) {
-        var fB64B = await new Promise(function(r) { getImageBase64(fit.roomImgB, r); });
-        if (fB64B) {
-          var fErrB = await new Promise(function(r) {
-            ghUploadFile(FURN_PATH + fnm + '_B.png', fB64B, '🪑 B 画像追加 (フリップ): ' + fnm + '_B.png', r);
-          });
-          if (fErrB) { status.textContent = '❌ B 画像失敗 (' + fit.name + '): ' + fErrB; status.style.color = '#f44336'; btn.disabled = false; return; }
-          fit.roomImgB = '../' + FURN_PATH + fnm + '_B.png';
-        }
-      }
-      fit._savedToGithub = true;
-    }
-  }
-
-  // ── ステップ1: 未保存画像をすべてアップロード ──
-  if (unsavedItems.length > 0) {
-    var uploadFailed = false;
-    for (var i = 0; i < unsavedItems.length; i++) {
-      var ui = unsavedItems[i];
+  if (needsUpload.length > 0) {
+    for (var ui_i = 0; ui_i < needsUpload.length; ui_i++) {
+      var ui = needsUpload[ui_i];
       var nm = ui.id;
-      status.textContent = '⏳ 画像 ' + (i+1) + '/' + unsavedItems.length + ': ' + ui.name;
+      status.textContent = '⏳ 画像 ' + (ui_i+1) + '/' + needsUpload.length + ': ' + ui.name;
 
-      // A画像
-      if (ui.roomImg) {
+      // A画像 (dataUrl のときだけ上げる)
+      if (ui.roomImg && String(ui.roomImg).indexOf('data:') === 0) {
         var b64A = await new Promise(function(r) { getImageBase64(ui.roomImg, r); });
         if (b64A) {
           var errA = await new Promise(function(r) {
-            ghUploadFile(FURN_PATH + nm + '_A.png', b64A, '🪑 家具画像追加: ' + nm + '_A.png', r);
+            ghUploadFile(FURN_PATH + nm + '_A.png', b64A, '🪑 A画像: ' + nm + '_A.png', r);
           });
           if (errA) { status.textContent = '❌ A画像失敗 (' + ui.name + '): ' + errA; status.style.color = '#f44336'; btn.disabled = false; return; }
+          ui.roomImg = '../' + FURN_PATH + nm + '_A.png';
         }
       }
-      // B画像
-      if (ui.roomImgB) {
+      // B画像 (dataUrl のときだけ上げる)
+      if (ui.roomImgB && String(ui.roomImgB).indexOf('data:') === 0) {
         var b64B = await new Promise(function(r) { getImageBase64(ui.roomImgB, r); });
         if (b64B) {
           var errB = await new Promise(function(r) {
-            ghUploadFile(FURN_PATH + nm + '_B.png', b64B, '🪑 家具画像追加: ' + nm + '_B.png', r);
+            ghUploadFile(FURN_PATH + nm + '_B.png', b64B, '🪑 B画像: ' + nm + '_B.png', r);
           });
           if (errB) { status.textContent = '❌ B画像失敗 (' + ui.name + '): ' + errB; status.style.color = '#f44336'; btn.disabled = false; return; }
+          ui.roomImgB = '../' + FURN_PATH + nm + '_B.png';
         }
       }
-      ui._savedToGithub = true;
+      ui._savedToGithub = true; // UI の「未保存」バナー制御用 (items.js 追記判定には使わない)
     }
     if (ITEMS.some(function(it) { return it._imported; })) saveImports();
     refreshAllUnsavedIndicators();
@@ -2006,14 +1976,16 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
     var text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
     status.textContent = '⏳ items.js をマージ中...';
 
-    // 各アイテムの値を更新（既存アイテムのみ）
+    // 各アイテムの値を更新（items.js に既に id がある既存アイテムのみ inline 更新）
+    //   items.js に id が無いアイテム (新規インポート) は下の追記ブロックで処理される。
+    //   判定は _savedToGithub ではなく "items.js テキストに id が居るか" で行う
+    //   — _savedToGithub は画像アップロード状態を表すフラグで、items.js 登録状態とは別物。
     ITEMS.forEach(function(item) {
-      if (item._imported && !item._savedToGithub) return; // 未保存インポートは後で追記
       var adjA = adjustments[adjKey(item.id, 'A')];
       var adjB = item.roomImgB ? adjustments[adjKey(item.id, 'B')] : null;
       if (!adjA) return;
 
-      // アイテムブロックを探す
+      // アイテムブロックを探す (items.js に居なければ inline 更新は skip → 追記に回る)
       var idPattern = new RegExp("id:\\s*'" + item.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "'");
       var idMatch = idPattern.exec(text);
       if (!idMatch) return;
@@ -2155,8 +2127,14 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
     });
 
-    // インポートアイテムを新規追記（未保存のみ。既保存インポートは上の inline update に流れる）
-    var importedItems = ITEMS.filter(function(it) { return it._imported && !it._savedToGithub; });
+    // インポートアイテムを新規追記 — 判定は「items.js テキストに id が居ないか」で行う
+    //   _savedToGithub は画像アップ用のフラグで items.js 登録とは別物。
+    //   CES 経由で _savedToGithub:true として入ってきても、items.js に居なければ追記する。
+    function _idEscape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    var importedItems = ITEMS.filter(function(it) {
+      if (!it._imported) return false;
+      return !(new RegExp("id:\\s*'" + _idEscape(it.id) + "'").test(text));
+    });
     if (importedItems.length > 0) {
       // ROOM_ITEMS配列の終端を正確に探す（POINT_GUIDE等の他の配列と区別）
       var roomItemsStart = text.indexOf('const ROOM_ITEMS');
