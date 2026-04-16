@@ -2263,10 +2263,16 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       if (putJson && putJson.commit && putJson.commit.html_url) commitUrl = putJson.commit.html_url;
     } catch(e) {}
 
+    // localhost (netlify dev) からアクセスしてる場合は git pull が必要なことを警告
+    var isLocalDev = /localhost|127\.0\.0\.1|netlify\.live/.test(location.hostname);
+    var localPullWarn = isLocalDev
+      ? '<br><span style="font-size:12px;color:#FFB74D;font-weight:700;">⚠ ローカル開発中: ターミナルで <code style="background:#222;padding:2px 4px;border-radius:3px;">git pull origin develop</code> を忘れずに (新しい画像ファイルがローカルに無いと netlify dev は 404 を返します)</span>'
+      : '';
     status.innerHTML =
       '<span style="color:#4CAF50;font-weight:900;">✅ GitHub へのコミット完了！</span><br>' +
       '<span style="font-size:12px;color:#ccc;">Netlify のビルド反映まで <b>約 30〜60 秒</b> かかります。<br>' +
       '少し待ってから下のボタンで再読み込みしてください。</span>' +
+      localPullWarn +
       (commitUrl ? '<br><a href="' + commitUrl + '" target="_blank" rel="noopener" style="color:#4FC3F7;font-size:12px;">GitHub コミットを確認</a>' : '') +
       '<br><button id="_fa-reload" style="margin-top:6px;padding:6px 14px;border:none;border-radius:6px;background:#4CAF50;color:#fff;font-weight:700;cursor:pointer;">🔄 いま再読み込み</button>';
     btn.disabled = false;
@@ -2359,6 +2365,83 @@ window.addEventListener('beforeunload', function(e) {
     return '';
   }
 });
+
+// ─── Discovery: GitHub の furnitures_final/ から未登録の <id>_A.png を発見 ───
+//   localStorage 経由のハンドオフに依存せず、GitHub フォルダを source of truth とする。
+//   items.js / loadImports の後に呼び出され、まだ登録されてない id を「未調整インポート」
+//   として ITEMS に追加する。これで Clean Edge Studio で画像をアップロードして
+//   git pull / Netlify ビルドが終わっていれば、ピボットツールに自動で出現する。
+async function discoverPendingImports() {
+  if (typeof ghToken !== 'function' || !ghToken()) return; // PAT 未設定なら諦める
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO +
+            '/contents/assets/images/Rooms/furnitures_final?ref=' + GH_BRANCH +
+            '&_=' + Date.now();
+  try {
+    var resp = await fetch(url, { headers: ghHeaders(), cache: 'no-store' });
+    if (!resp.ok) return;
+    var files = await resp.json();
+    if (!Array.isArray(files)) return;
+
+    // ファイル名を <id>_A.png / <id>_B.png でグループ化
+    var byId = {};
+    files.forEach(function(f) {
+      if (!f.name || !/\.png$/i.test(f.name)) return;
+      var m = f.name.match(/^(.+?)_([AB])\.png$/);
+      if (!m) return;
+      var id = m[1];
+      // 旧仕様 _boy / _girl サフィックス付きファイルは legacy とみなしてスキップ
+      // (Step 1 で ID immutable 化したので新規には作られない)
+      if (/_boy$|_girl$/.test(id)) return;
+      if (!byId[id]) byId[id] = { A: false, B: false };
+      byId[id][m[2]] = true;
+    });
+
+    // 既存 ITEMS (items.js + localStorage 由来) の ID セット
+    var existingIds = new Set(ITEMS.map(function(it) { return it.id; }));
+    var added = 0;
+    var rawBase = 'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO +
+                  '/' + GH_BRANCH + '/assets/images/Rooms/furnitures_final/';
+    Object.keys(byId).forEach(function(id) {
+      if (existingIds.has(id)) return;
+      if (!byId[id].A) return; // A 画像なしはスキップ
+      // ローカル netlify dev だとまだ pull されてない可能性があるので
+      // 表示は raw.githubusercontent.com 経由 (deploy 前提なので公開リポジトリでも問題なし)
+      var imp = {
+        id: id,
+        name: id,                 // デフォルト名 = ID (ユーザーが上書き想定)
+        cat: 'furn',
+        theme: 'all',
+        roomImg:  rawBase + id + '_A.png',
+        roomImgB: byId[id].B ? (rawBase + id + '_B.png') : null,
+        cellSize: 1.0, pivotX: 0, pivotY: 0, surfaceY: 0,
+        _imported: true,
+        _savedToGithub: true,     // 画像は既に GitHub にある
+        _discovered: true         // GitHub discovery 由来マーカー (デバッグ用)
+      };
+      ITEMS.push(imp);
+      var aKey = id + '_A';
+      if (!adjustments[aKey]) {
+        adjustments[aKey] = {
+          cellSize: 1.0, pivotX: 0, pivotY: 0,
+          minRow: 0, maxRow: 7, minCol: 0, maxCol: 7, row: 4, col: 4, surfaceY: 0
+        };
+      }
+      if (imp.roomImgB) {
+        var bKey = id + '_B';
+        if (!adjustments[bKey]) {
+          adjustments[bKey] = Object.assign({}, adjustments[aKey]);
+        }
+      }
+      ensureItemButton(imp);
+      added++;
+    });
+    if (added > 0) {
+      console.info('[discoverPendingImports] GitHub から未調整 ' + added + ' 件を発見');
+    }
+  } catch (e) {
+    console.warn('[discoverPendingImports] failed:', e);
+  }
+}
 
 function loadImports() {
   try {
@@ -2502,14 +2585,14 @@ importZone.addEventListener('drop', function(e) {
   handleImportFiles(e.dataTransfer.files);
 });
 
-// テーマに応じたIDのsuffix付与（_boy/_girl 自動管理）
+// ★ 旧仕様: theme に応じて ID に _boy/_girl サフィックスを付け替えていた
+//    が、ID を mutable にすると画像ファイル名と items.js 参照が乖離するバグの
+//    温床になっていたため、ID は採番後 immutable とする方針に変更。
+//    theme は items.js の `theme: 'boy'` フィールドだけで管理する。
+//    既存コードからの呼び出し互換のため関数は残すが、suffix を付けず baseId
+//    をそのまま返す。
 function resolveEffectiveId(baseId, theme) {
-  if (!baseId) return baseId;
-  // 既存の _boy / _girl suffixを剥がしてベース化
-  var stripped = baseId.replace(/_(boy|girl)$/i, '');
-  if (theme === 'boy') return stripped + '_boy';
-  if (theme === 'girl') return stripped + '_girl';
-  return stripped;
+  return baseId;
 }
 
 function handleImportFiles(files) {
@@ -3093,7 +3176,8 @@ document.getElementById('btn-save-github').addEventListener('click', async funct
 });
 
 // ─── Init ───
-loadImports(); // 前回インポートした画像を復元
+loadImports();              // 前回インポートした画像を localStorage から復元 (互換)
+discoverPendingImports();   // GitHub の furnitures_final/ から未登録 <id>_A.png を発見 (新方式)
 // 孤児救済: ITEMSにあるけどボタンが無いインポートアイテムにボタンを作る
 ITEMS.forEach(function(it) {
   if (it._imported) ensureItemButton(it);

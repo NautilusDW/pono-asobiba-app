@@ -4008,10 +4008,10 @@ async function deployImagesOnly(selectedCards, dest) {
     setStatus('✅ ' + selectedCards.length + '枚を ' + dest.dir + ' にアップロード');
     showToast('📦 ' + selectedCards.length + '枚を ' + dest.label + ' に保存しました', true);
 
-    // 家具 (pivot) のみ localStorage に予約してデータを渡す
-    if (dest.queueForPivot) {
-      _queueFurnitureForPivotTool(uploadedPaths);
-    }
+    // 旧仕様 (commit bd38f63 以前): pivot 用に localStorage キューに dataUrl を保存
+    // していたが、ピボット側が GitHub の furnitures_final/ フォルダから自動 discovery
+    // するように変更したので不要 (room/furniture_adjuster.html の discoverPendingImports)。
+    // ※ 互換性のために dest.queueForPivot フラグは残してあるが、何もしない。
     // 関連ツールへのディープリンクを表示
     if (dest.openLink) {
       _showOpenToolLink(dest.openLink.href, dest.openLink.label, uploadedPaths.length);
@@ -4031,55 +4031,12 @@ function _uniqueImportId(name) {
   return 'imp_' + safe + '_' + rand;
 }
 
-// 家具インポートを ピボット調整ツールの localStorage キューに追加
-// データが大きすぎて保存失敗したら、dataUrl を諦めて GitHub パスにフォールバック再試行
-function _queueFurnitureForPivotTool(uploaded) {
-  const KEY = 'furniture_adjuster_imports';
-  let list = [];
-  try { list = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { list = []; }
-  if (!Array.isArray(list)) list = [];
-
-  uploaded.forEach((u) => {
-    // preassigned ID (ファイル名と一致) があれば最優先で使う
-    // → items.js の '../<dir>/<id>_A.png' と GitHub 上のファイル名が一致する
-    const id = u.id || _uniqueImportId(u.name);
-    if (list.some(x => x && x.id === id)) return;
-    list.push({
-      id: id, name: u.name, cat: 'furn', theme: 'all',
-      roomImg: u.dataUrl || ('../' + u.path),
-      // deployImagesOnly で B画像 (左右反転) も自動アップロード済みなら渡す
-      roomImgB: u.dataUrlB || (u.pathB ? ('../' + u.pathB) : null),
-      cellSize: 1.0, pivotX: 0, pivotY: 0, surfaceY: 0,
-      _savedToGithub: true,
-      _originalPath: u.path,
-      _originalPathB: u.pathB || null
-    });
-  });
-
-  function tryWrite(arr) {
-    try { localStorage.setItem(KEY, JSON.stringify(arr)); return true; }
-    catch (e) { return false; }
-  }
-  if (tryWrite(list)) return;
-
-  // Quota 超過 → 今回追加分の dataUrl を剥がして GitHub パスだけにして再試行
-  // (ローカル dev では git pull するまで画像が見えないが、GitHub 参照だけは残る)
-  const slim = list.map(it => {
-    const patch = {};
-    if (it && it._originalPath && it.roomImg && it.roomImg.startsWith('data:')) {
-      patch.roomImg = '../' + it._originalPath;
-    }
-    if (it && it._originalPathB && it.roomImgB && it.roomImgB.startsWith('data:')) {
-      patch.roomImgB = '../' + it._originalPathB;
-    }
-    return Object.keys(patch).length ? Object.assign({}, it, patch) : it;
-  });
-  if (tryWrite(slim)) {
-    showToast('localStorage 容量超過: dataURL を剥がして GitHub パスで保存しました (git pull 必要)', false);
-    return;
-  }
-  showToast('localStorage 容量超過で保存失敗。ピボット調整ツールで古いインポートを削除してください', false);
-}
+// 旧仕様: 家具インポートを ピボット調整ツールの localStorage キューに追加していた。
+// dataUrl の quota 超過、ID と file パスの乖離、_savedToGithub フラグの二役化バグ等
+// で問題が多発したため廃止。代わりに、ピボット調整ツールが
+// `discoverPendingImports()` で GitHub の furnitures_final/ フォルダを自動 listing
+// して未登録の <id>_A.png を発見する仕組みに移行。
+// CES 側の責務は「画像を ID ベース名で GitHub にアップロード」のみ。
 
 // 保存直後に「関連ツールで開く」ボタンを deploy-status の横に表示 (汎用)
 let _openToolLinkTimer = null;

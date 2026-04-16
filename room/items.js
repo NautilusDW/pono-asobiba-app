@@ -439,12 +439,12 @@ const ROOM_ITEMS = [
   },
   {
     id: 'imp_furn_d82b5854', cat: 'furn', name: 'ポスター（うちゅう）', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/ポスター（うちゅう）.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_d82b5854_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
     id: 'imp_furn_9d4afb83', cat: 'furn', name: 'みずいろのベッド', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/みずいろのベッド.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_9d4afb83_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_9d4afb83_B.png',
     gridRow: 4, gridCol: 4, cellSize: 2.1, pivotX: 13.5, pivotY: 13.3, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
   
@@ -452,12 +452,12 @@ const ROOM_ITEMS = [
   },
   {
     id: 'imp_furn_e93071b3', cat: 'furn', name: 'みずいろのつくえ', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/みずいろのつくえ.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_e93071b3_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1.4, pivotX: -14.5, pivotY: 14.7, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
     id: 'imp_furn_d411b533', cat: 'furn', name: 'みずいろのチェスト', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/みずいろのチェスト.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_d411b533_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_d411b533_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.7, pivotX: 16, pivotY: 14.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7,
   
@@ -465,12 +465,12 @@ const ROOM_ITEMS = [
   },
   {
     id: 'imp_furn_e8e2c3f8', cat: 'furn', name: 'スペースデコ', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/スペースデコ.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_e8e2c3f8_A.png',
     gridRow: 4, gridCol: 4, cellSize: 0.5, pivotX: 0, pivotY: 23.1, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
     id: 'imp_2_8021549d', cat: 'furn', name: 'みずいろのチェスト2', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/みずいろのチェスト2.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_2_8021549d_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/imp_2_8021549d_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.7, pivotX: 17.5, pivotY: 14.7, minRow: 1, maxRow: 7, minCol: 0, maxCol: 7,
   
@@ -478,17 +478,17 @@ const ROOM_ITEMS = [
   },
   {
     id: 'imp_furn_76d69934', cat: 'furn', name: 'ボックス', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/ボックス.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_76d69934_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
     id: 'imp_furn_e035592b', cat: 'furn', name: 'フロアランプ', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/フロアランプ.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_e035592b_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1.6, pivotX: 0, pivotY: 7.7, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
     id: 'imp_furn_47a0a342', cat: 'furn', name: 'みずいろのシェルフ', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/みずいろのシェルフ.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_47a0a342_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_47a0a342_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.8, pivotX: -14.5, pivotY: 11.9, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
   
@@ -496,61 +496,61 @@ const ROOM_ITEMS = [
   },
   {
     id: 'imp_furn_6b47778a', cat: 'furn', name: 'みずいろのほん', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/みずいろのほん.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_6b47778a_A.png',
     gridRow: 4, gridCol: 4, cellSize: 0.8, pivotX: 0, pivotY: 25.9, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
     id: 'imp_furn_8ca9f03c', cat: 'furn', name: 'タブレット', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/タブレット.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_8ca9f03c_A.png',
     gridRow: 4, gridCol: 4, cellSize: 0.4, pivotX: 0, pivotY: 45.5, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
     id: 'imp_furn_75289c07', cat: 'furn', name: 'ミニカー2', price: 15, theme: 'all',
-    roomImg: '../assets/images/Rooms/furnitures/ミニカー１.png',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_75289c07_A.png',
     gridRow: 4, gridCol: 4, cellSize: 0.3, pivotX: 0, pivotY: 38.5, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
-    id: 'imp_furn_d936b511_boy', cat: 'furn', name: 'ベッド　みずいろ', price: 15, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_d936b511_boy_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_d936b511_boy_B.png',
+    id: 'imp_furn_d936b511', cat: 'furn', name: 'ベッド　みずいろ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_d936b511_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_d936b511_B.png',
     gridRow: 4, gridCol: 4, cellSize: 2, pivotX: 12, pivotY: 10.5, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
-    id: 'imp_furn_45b11a5f_boy', cat: 'furn', name: 'つくえといす　みずいろ', price: 15, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_45b11a5f_boy_A.png',
+    id: 'imp_furn_45b11a5f', cat: 'furn', name: 'つくえといす　みずいろ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_45b11a5f_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1.6, pivotX: 7.5, pivotY: 0.7, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
-    id: 'imp_furn_604eec98_boy', cat: 'furn', name: 'チェスト　みずいろ', price: 15, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_604eec98_boy_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_604eec98_boy_B.png',
+    id: 'imp_furn_604eec98', cat: 'furn', name: 'チェスト　みずいろ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_604eec98_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_604eec98_B.png',
     gridRow: 4, gridCol: 4, cellSize: 2, pivotX: -17.5, pivotY: 13.3, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
-    id: 'imp_furn_5eb65839_boy', cat: 'furn', name: 'ほんだな　みずいろ', price: 15, theme: 'boy',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_5eb65839_boy_A.png',
+    id: 'imp_furn_5eb65839', cat: 'furn', name: 'ほんだな　みずいろ', price: 15, theme: 'boy',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_5eb65839_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: 27.5, pivotY: 28.7, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
-    id: 'imp_furn_23d9a843_girl', cat: 'furn', name: 'ほんだな　ピンク', price: 15, theme: 'girl',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_23d9a843_girl_A.png',
+    id: 'imp_furn_23d9a843', cat: 'furn', name: 'ほんだな　ピンク', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_23d9a843_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -13.5, pivotY: 10.5, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   },
   {
-    id: 'imp_furn_c960374d_girl', cat: 'furn', name: 'ベッド　ピンク', price: 15, theme: 'girl',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_c960374d_girl_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_c960374d_girl_B.png',
+    id: 'imp_furn_c960374d', cat: 'furn', name: 'ベッド　ピンク', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_c960374d_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_c960374d_B.png',
     gridRow: 4, gridCol: 4, cellSize: 2, pivotX: 12, pivotY: 10.5, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
-    id: 'imp_furn_13713cc8_girl', cat: 'furn', name: 'つくえといす　ピンク', price: 15, theme: 'girl',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_13713cc8_girl_A.png',
+    id: 'imp_furn_13713cc8', cat: 'furn', name: 'つくえといす　ピンク', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_13713cc8_A.png',
     gridRow: 4, gridCol: 4, cellSize: 1.6, pivotX: 9, pivotY: 3.5, minRow: 1, maxRow: 7, minCol: 1, maxCol: 7,
   },
   {
-    id: 'imp_furn_e4d38c14_girl', cat: 'furn', name: 'チェスト　ピンク', price: 15, theme: 'girl',
-    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_e4d38c14_girl_A.png',
-    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_e4d38c14_girl_B.png',
+    id: 'imp_furn_e4d38c14', cat: 'furn', name: 'チェスト　ピンク', price: 15, theme: 'girl',
+    roomImg: '../assets/images/Rooms/furnitures_final/imp_furn_e4d38c14_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/imp_furn_e4d38c14_B.png',
     gridRow: 4, gridCol: 4, cellSize: 2, pivotX: -17.5, pivotY: 11.9, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
   },
 ];
