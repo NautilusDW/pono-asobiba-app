@@ -17,120 +17,60 @@
         "id": "deco_box",
         "img": "assets/images/Rooms/furnitures_final/box_A.png"
       },
-      "afterMsg": ["あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。", "スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！"]
+      "afterMsg": "あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。,スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！"
     },
-    "3": {
-      "name": "きょうりゅう / うさぎぬいぐるみ",
-      "icon": "🦕",
-      "gendered": true,
-      "boy": {
-        "name": "きょうりゅう",
-        "type": "deco",
-        "id": "deco_dinosaur",
-        "img": "assets/images/Rooms/furnitures_final/Dinasour01_A.png"
-      },
-      "girl": {
-        "name": "うさぎぬいぐるみ",
-        "type": "deco",
-        "id": "deco_bunny",
-        "img": "assets/images/Rooms/furnitures_final/bunny_A.png"
-      }
-    },
-    "5": {
+    "8": {
       "name": "あおいベッド / ピンクベッド",
       "icon": "🛏️",
       "gendered": true,
       "boy": {
         "name": "あおいベッド",
         "type": "furn",
-        "id": "furn_bed_blue_boy",
-        "img": "assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png"
+        "id": "imp_furn_d936b511",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_d936b511_A.png"
       },
       "girl": {
         "name": "ピンクベッド",
         "type": "furn",
-        "id": "furn_bed_pink",
-        "img": "assets/images/Rooms/furnitures_final/bed_pink_A.png"
+        "id": "imp_furn_c960374d",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_c960374d_A.png"
       },
       "unlockRoom": true,
       "afterMsg": "ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！"
     },
-    "7": {
-      "name": "ほんだな",
+    "15": {
+      "name": "きのほんだな / しろいほんだな",
       "icon": "📚",
       "gendered": true,
       "boy": {
         "name": "きのほんだな",
         "type": "furn",
-        "id": "furn_bookshelf2",
-        "img": "assets/images/Rooms/furnitures_final/BookShelf02_A.png"
+        "id": "imp_furn_5eb65839",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_5eb65839_A.png"
       },
       "girl": {
         "name": "しろいほんだな",
         "type": "furn",
-        "id": "furn_bookshelf_w",
-        "img": "assets/images/Rooms/furnitures_final/BookShelf01_A.png"
+        "id": "imp_furn_23d9a843",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_23d9a843_A.png"
       },
       "afterMsg": "ほんだなが もらえたよ！\nおへやに おいた ほんだなを\nタップすると ずかんが みられるよ！"
     },
-    "8": {
-      "name": "カクレクマノミ",
-      "icon": "🐠",
-      "gendered": false,
-      "type": "sea",
-      "id": "clownfish",
-      "img": "assets/images/ocean/Clownfish/Clownfish_normal_1.png",
-      "afterMsg": "カクレクマノミを みつけたよ！\nみずぞくかんに あそびに\nいってみよう！"
-    },
-    "10": {
-      "name": "スポーツカー / リボンくま",
-      "icon": "🏎️",
-      "gendered": true,
-      "boy": {
-        "name": "スポーツカー",
-        "type": "deco",
-        "id": "deco_sportscar",
-        "img": "assets/images/Rooms/furnitures_final/sportscar_A.png"
-      },
-      "girl": {
-        "name": "リボンくま",
-        "type": "deco",
-        "id": "deco_bear_ribbon",
-        "img": "assets/images/Rooms/furnitures_final/bear_ribbon_A.png"
-      }
-    },
-    "12": {
-      "name": "ロボット / おにんぎょう",
-      "icon": "🤖",
-      "gendered": true,
-      "boy": {
-        "name": "ロボット",
-        "type": "deco",
-        "id": "deco_robot",
-        "img": "assets/images/Rooms/furnitures_final/robot_A.png"
-      },
-      "girl": {
-        "name": "おにんぎょう",
-        "type": "deco",
-        "id": "deco_doll",
-        "img": "assets/images/Rooms/furnitures_final/doll_A.png"
-      }
-    },
-    "15": {
+    "20": {
       "name": "あおいPCデスク＆チェア / ピンクつくえ",
       "icon": "⭐",
       "gendered": true,
       "boy": {
         "name": "あおいPCデスク＆チェア",
         "type": "furn",
-        "id": "furn_pcdesk_blue_boy",
-        "img": "assets/images/Rooms/furnitures_final/furn_pcdesk_blue_boy_A.png"
+        "id": "imp_furn_45b11a5f",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_45b11a5f_A.png"
       },
       "girl": {
         "name": "ピンクつくえ",
         "type": "furn",
-        "id": "furn_desk_pink",
-        "img": "assets/images/Rooms/furnitures_final/desk_pink_A.png"
+        "id": "imp_furn_13713cc8",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_13713cc8_A.png"
       },
       "afterMsg": "カードを ぜんぶ うめたね！\nすごい！つぎは もっと\nすてきな ごほうびが まってるよ！"
     }
