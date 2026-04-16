@@ -1920,7 +1920,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
 
     // 各アイテムの値を更新（既存アイテムのみ）
     ITEMS.forEach(function(item) {
-      if (item._imported) return; // インポートアイテムは後で追記
+      if (item._imported && !item._savedToGithub) return; // 未保存インポートは後で追記
       var adjA = adjustments[adjKey(item.id, 'A')];
       var adjB = item.roomImgB ? adjustments[adjKey(item.id, 'B')] : null;
       if (!adjA) return;
@@ -2046,8 +2046,8 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       text = text.substring(0, blockStart) + newBlock + text.substring(blockEnd);
     });
 
-    // インポートアイテムを新規追記
-    var importedItems = ITEMS.filter(function(it) { return it._imported; });
+    // インポートアイテムを新規追記（未保存のみ。既保存インポートは上の inline update に流れる）
+    var importedItems = ITEMS.filter(function(it) { return it._imported && !it._savedToGithub; });
     if (importedItems.length > 0) {
       // ROOM_ITEMS配列の終端を正確に探す（POINT_GUIDE等の他の配列と区別）
       var roomItemsStart = text.indexOf('const ROOM_ITEMS');
@@ -2155,13 +2155,15 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       throw new Error(errBody.message || 'Push failed');
     }
 
-    // デプロイ成功 → imported フラグと削除履歴はクリア
-    // ★ _overrides は保持する。Netlify ビルド完了前にリロードされて古い items.js が
-    //   読み込まれると、overrides を消していた場合「変更が消えた」ように見える。
-    //   overrides は「items.js の値より優先」として残し、次回 overrides クリアは手動 or
-    //   新 items.js 読み込み後に初めて行う。
-    ITEMS.forEach(function(it) { if (it._imported) delete it._imported; });
-    localStorage.removeItem(IMPORT_SAVE_KEY);
+    // デプロイ成功 → _savedToGithub を立てるだけで _imported フラグと
+    // localStorage の imports は残す。理由:
+    //   Netlify のビルド反映まで 30〜60 秒かかる。その間にページを再読み込みすると
+    //   古い items.js が返ってきて新規アイテムが含まれない。localStorage を即消すと
+    //   「せっかく保存したのに全部消えた」現象になる。
+    //   → loadImports() は items.js に同 ID が居たら自動スキップ＋プルーンするので、
+    //     ビルド反映後の次のロードで自然にクリーンアップされる。
+    ITEMS.forEach(function(it) { if (it._imported) it._savedToGithub = true; });
+    saveImports();
     _deletedIds = []; _deletedSet.clear();
     localStorage.removeItem(DELETED_KEY);
     refreshAllUnsavedIndicators();
