@@ -4647,30 +4647,39 @@ function makeItemPickerField(currentType, currentId, currentImg, prefix, parentC
       thumb.src = aDownloadUrl;
       thumb.style.display = '';
 
-      // 親カードの name を更新（ユーザーがカスタム入力した名前は保護）
-      //   - 空欄 / 「ごほうびN」のような自動生成デフォルト → meta.name で上書き
-      //   - それ以外 (ユーザーが自分で入力した名前) → そのまま保持
+      // 親カードの name を更新
+      //   ・meta.name が items.js から来た "本物の名前" (name !== id) → 常に上書き
+      //     (画像を別のものに選び直したら、その画像の正しい名前に追従)
+      //   ・meta.name が推測フォールバック (name === id) → 意味のある現在値は保護、
+      //     それ以外 (空 / ごほうびN / 現在値が id) のときは空に戻す (ID を名前にしない)
+      var metaIsGuessed = meta.name && meta.name === meta.id;
       if (parentCard) {
         var nameKey = prefix ? prefix + '-name' : 'name';
         var nameInp = parentCard.querySelector('[data-key="' + nameKey + '"]');
         if (nameInp && meta.name) {
           var cur = (nameInp.value || '').trim();
-          var isDefault = !cur || /^ごほうび\d+$/.test(cur);
-          if (isDefault) nameInp.value = meta.name;
+          if (!metaIsGuessed) {
+            // 本物の名前 → 常に上書き
+            nameInp.value = meta.name;
+          } else {
+            // 推測フォールバック → 自動フィル跡なら空にする、カスタム入力は保護
+            var isAutoFill = !cur
+              || /^ごほうび\d+$/.test(cur)
+              || cur === meta.id
+              || cur === idInp.value;
+            if (isAutoFill) nameInp.value = '';
+          }
         }
         // gendered 時: boy/girl の入力をピッカーで行ったら、トップの総称 name も合成
-        // （ただしトップ name もカスタム入力されていれば保護）
+        //   boy/girl どちらかを更新したら、常に合成結果でトップを更新する
+        //   (選び直しで追従させるため。トップ名だけ手打ちした場合は残念ながら上書きされる)
         if (prefix === 'boy' || prefix === 'girl') {
           var topNameInp = parentCard.querySelector('[data-key="name"]');
           if (topNameInp) {
-            var topCur = (topNameInp.value || '').trim();
-            var topIsDefault = !topCur || /^ごほうび\d+$/.test(topCur);
-            if (topIsDefault) {
-              var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
-              var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
-              var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
-              if (combined) topNameInp.value = combined;
-            }
+            var bn = (parentCard.querySelector('[data-key="boy-name"]')  || {}).value || '';
+            var gn = (parentCard.querySelector('[data-key="girl-name"]') || {}).value || '';
+            var combined = (bn && gn && bn !== gn) ? (bn + ' / ' + gn) : (bn || gn || '');
+            if (combined) topNameInp.value = combined;
           }
         }
         // カードプレビュー画像を更新（gendered の時は boy 側変更時だけ）
