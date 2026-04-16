@@ -3963,20 +3963,45 @@ async function deployImagesOnly(selectedCards, dest) {
   try {
     let uploaded = 0;
     const uploadedPaths = [];
+    const totalUploads = selectedCards.length * (dest.queueForPivot ? 2 : 1);
     for (let i = 0; i < selectedCards.length; i++) {
       const sp = sprites[parseInt(selectedCards[i].dataset.idx)];
       const filename = filenames[i];
       const path = dest.dir + '/' + filename;
       const base64 = canvasToBase64(sp.canvas);
-      setStatus('🔄 ' + (++uploaded) + '/' + selectedCards.length + ' — ' + filename);
+      setStatus('🔄 ' + (++uploaded) + '/' + totalUploads + ' — ' + filename);
       await ghUploadPromise(path, base64, dest.label + ': ' + filename);
+
+      // pivot 用: B画像 (左右反転) も自動生成してアップロード
+      //   <id>_A.png  → ユーザーが Clean Edge Studio で整えた元画像
+      //   <id>_B.png  → A を水平反転したもの (部屋の壁角度 B 用)
+      // こうしないと items.js に roomImgB が入らず、部屋を反転したときに
+      // 家具が消える問題が起きる。
+      let pathB = null, dataUrlB = null;
+      if (dest.queueForPivot && preassignedIds) {
+        const bCanvas = document.createElement('canvas');
+        bCanvas.width = sp.canvas.width;
+        bCanvas.height = sp.canvas.height;
+        const bCtx = bCanvas.getContext('2d');
+        bCtx.translate(bCanvas.width, 0); bCtx.scale(-1, 1);
+        bCtx.drawImage(sp.canvas, 0, 0);
+        const base64B = canvasToBase64(bCanvas);
+        const filenameB = preassignedIds[i] + '_B.png';
+        pathB = dest.dir + '/' + filenameB;
+        dataUrlB = 'data:image/png;base64,' + base64B;
+        setStatus('🔄 ' + (++uploaded) + '/' + totalUploads + ' — ' + filenameB);
+        await ghUploadPromise(pathB, base64B, dest.label + ': ' + filenameB);
+      }
+
       uploadedPaths.push({
         // preassignedId があれば pivot キューでそのまま ID として使う
         id: preassignedIds ? preassignedIds[i] : null,
         name: (sp.name || filename.replace(/\.png$/, '')).trim(),
         filename: filename,
         path: path,
-        dataUrl: 'data:image/png;base64,' + base64   // ローカル dev で即表示用
+        dataUrl: 'data:image/png;base64,' + base64,   // ローカル dev で即表示用
+        pathB: pathB,
+        dataUrlB: dataUrlB
       });
     }
     hideLoading();
@@ -4022,10 +4047,12 @@ function _queueFurnitureForPivotTool(uploaded) {
     list.push({
       id: id, name: u.name, cat: 'furn', theme: 'all',
       roomImg: u.dataUrl || ('../' + u.path),
-      roomImgB: null,
+      // deployImagesOnly で B画像 (左右反転) も自動アップロード済みなら渡す
+      roomImgB: u.dataUrlB || (u.pathB ? ('../' + u.pathB) : null),
       cellSize: 1.0, pivotX: 0, pivotY: 0, surfaceY: 0,
       _savedToGithub: true,
-      _originalPath: u.path
+      _originalPath: u.path,
+      _originalPathB: u.pathB || null
     });
   });
 
@@ -4038,10 +4065,14 @@ function _queueFurnitureForPivotTool(uploaded) {
   // Quota 超過 → 今回追加分の dataUrl を剥がして GitHub パスだけにして再試行
   // (ローカル dev では git pull するまで画像が見えないが、GitHub 参照だけは残る)
   const slim = list.map(it => {
+    const patch = {};
     if (it && it._originalPath && it.roomImg && it.roomImg.startsWith('data:')) {
-      return Object.assign({}, it, { roomImg: '../' + it._originalPath });
+      patch.roomImg = '../' + it._originalPath;
     }
-    return it;
+    if (it && it._originalPathB && it.roomImgB && it.roomImgB.startsWith('data:')) {
+      patch.roomImgB = '../' + it._originalPathB;
+    }
+    return Object.keys(patch).length ? Object.assign({}, it, patch) : it;
   });
   if (tryWrite(slim)) {
     showToast('localStorage 容量超過: dataURL を剥がして GitHub パスで保存しました (git pull 必要)', false);
