@@ -3992,10 +3992,13 @@ async function deployImagesOnly(selectedCards, dest) {
     setStatus('✅ ' + selectedCards.length + '枚を ' + dest.dir + ' にアップロード');
     showToast('📦 ' + selectedCards.length + '枚を ' + dest.label + ' に保存しました', true);
 
-    // 家具 = ピボット調整ツールで開けるよう localStorage に予約 + リンク表示
-    if (dest.dir === 'assets/images/Rooms/furnitures') {
+    // 家具 (pivot) のみ localStorage に予約してデータを渡す
+    if (dest.queueForPivot) {
       _queueFurnitureForPivotTool(uploadedPaths);
-      _showOpenPivotLink(uploadedPaths.length);
+    }
+    // 関連ツールへのディープリンクを表示
+    if (dest.openLink) {
+      _showOpenToolLink(dest.openLink.href, dest.openLink.label, uploadedPaths.length);
     }
   } catch (e) {
     hideLoading();
@@ -4054,27 +4057,26 @@ function _queueFurnitureForPivotTool(uploaded) {
   showToast('localStorage 容量超過で保存失敗。ピボット調整ツールで古いインポートを削除してください', false);
 }
 
-// 保存直後に「ピボット調整ツールで開く」ボタンを deploy-status の横に表示
-let _openPivotLinkTimer = null;
-function _showOpenPivotLink(count) {
+// 保存直後に「関連ツールで開く」ボタンを deploy-status の横に表示 (汎用)
+let _openToolLinkTimer = null;
+function _showOpenToolLink(href, label, count) {
   const bar = document.getElementById('deploy-status');
   if (!bar) return;
-  let link = document.getElementById('_open-pivot-link');
+  let link = document.getElementById('_open-tool-link');
   if (!link) {
     link = document.createElement('a');
-    link.id = '_open-pivot-link';
+    link.id = '_open-tool-link';
     link.target = '_blank';
     link.rel = 'noopener';
     link.style.cssText = 'margin-left:12px;padding:4px 12px;border-radius:6px;background:#8B5CF6;color:#fff;font-size:0.72rem;font-weight:700;text-decoration:none;';
     bar.parentNode.insertBefore(link, bar.nextSibling);
   }
-  link.href = '../room/furniture_adjuster.html';
-  link.textContent = '🪑 ピボット調整ツールで開く (' + count + ')';
-  // 前回のタイマーを確実にキャンセル (二重登録防止)
-  if (_openPivotLinkTimer) clearTimeout(_openPivotLinkTimer);
-  _openPivotLinkTimer = setTimeout(() => {
+  link.href = href;
+  link.textContent = '→ ' + label + ' (' + count + ')';
+  if (_openToolLinkTimer) clearTimeout(_openToolLinkTimer);
+  _openToolLinkTimer = setTimeout(() => {
     if (link && link.parentNode) link.parentNode.removeChild(link);
-    _openPivotLinkTimer = null;
+    _openToolLinkTimer = null;
   }, 5 * 60 * 1000);
 }
 
@@ -4153,13 +4155,33 @@ async function deployToQuizSound(selectedCards) {
 }
 
 // 画像だけをアップする汎用保存先の定義 (GitHub の指定パスに {name}.png を置くだけ)
+// openLink = 保存成功後に「関連管理ツールで開く」リンクを表示するための情報
 const SIMPLE_IMAGE_DESTS = {
-  'bento':     { dir: 'assets/images/Bento_parts',   label: 'お弁当' },
-  'quizland':  { dir: 'assets/images/staging',       label: 'クイズランド' },
-  'wordmatch': { dir: 'assets/images/staging',       label: 'ことばあわせ' },
-  'walls':     { dir: 'assets/images/Rooms/walls',   label: '壁紙' },
-  'floor':     { dir: 'assets/images/Rooms/floors',  label: '床' },
-  'furniture': { dir: 'assets/images/Rooms/furnitures', label: '家具 (ピボット前)' }
+  'bento': {
+    dir: 'assets/images/Bento_parts', label: 'お弁当',
+    openLink: { href: '../admin/index.html#bento', label: 'おべんとう 管理で開く' }
+  },
+  'quizland': {
+    dir: 'assets/images/staging', label: 'クイズランド',
+    openLink: { href: '../admin/index.html#quizland', label: 'クイズランド 管理で開く' }
+  },
+  'wordmatch': {
+    dir: 'assets/images/staging', label: 'ことばあわせ',
+    openLink: { href: '../admin/index.html#wordmatch', label: 'ことばあわせ 管理で開く' }
+  },
+  'walls': {
+    dir: 'assets/images/Rooms/walls', label: '壁紙',
+    openLink: { href: '../admin/index.html#walls', label: '壁紙・床 管理で開く' }
+  },
+  'floor': {
+    dir: 'assets/images/Rooms/floors', label: '床',
+    openLink: { href: '../admin/index.html#walls', label: '壁紙・床 管理で開く' }
+  },
+  'furniture': {
+    dir: 'assets/images/Rooms/furnitures', label: '家具 (ピボット前)',
+    openLink: { href: '../room/furniture_adjuster.html', label: 'ピボット調整ツールで開く' },
+    queueForPivot: true
+  }
 };
 
 document.getElementById('btn-deploy').addEventListener('click', async () => {

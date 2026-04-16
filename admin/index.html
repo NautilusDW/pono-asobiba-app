@@ -1036,8 +1036,29 @@ function switchTab(panelId) {
 
 // メインタブ
 document.querySelectorAll('.tab').forEach(function(tab) {
-  tab.addEventListener('click', function() { switchTab(tab.dataset.panel); });
+  tab.addEventListener('click', function() {
+    switchTab(tab.dataset.panel);
+    // URL hash も同期 (ブックマーク可能にする)
+    try { history.replaceState(null, '', '#' + tab.dataset.panel); } catch(e) {}
+  });
 });
+
+// URL hash (#panel-id) で特定タブを直接開けるようにする
+// 例: admin/index.html#walls → 壁紙・床 タブを表示
+(function applyHashOnLoad() {
+  function go() {
+    var hash = (location.hash || '').replace(/^#/, '');
+    if (!hash) return;
+    var tab = document.querySelector('.tab[data-panel="' + hash + '"]');
+    if (tab) switchTab(hash);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', go);
+  } else {
+    go();
+  }
+  window.addEventListener('hashchange', go);
+})();
 
 // サブタブ切り替え
 document.querySelectorAll('.sub-tab').forEach(function(btn) {
