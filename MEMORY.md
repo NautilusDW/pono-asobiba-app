@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T22:36:57Z - first-clear rewards: conditional afterMsg based on room unlock state
+- **タスク**: first-clear rewards: conditional afterMsg based on room unlock state
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 29
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 118, "Bash": 162, "Edit": 137, "ToolSearch": 4, "Monitor": 3, "Agent": 10, "Grep": 59, "Write": 5, "ExitPlanMode": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-16T14:20:41Z - CES composite tab compact layout: inline band + collapsible canvas + unified toolbar
 - **タスク**: CES composite tab compact layout: inline band + collapsible canvas + unified toolbar
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 135, "Bash": 158, "Read": 131, "Write": 11, "ExitPlanMode": 3, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 46}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-16T11:26:15Z - pivot-CES contract refactor: ID immutable + Discovery-based handoff + path unification
-- **タスク**: pivot-CES contract refactor: ID immutable + Discovery-based handoff + path unification
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 27
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 134, "Edit": 135, "Bash": 155, "Write": 11, "ExitPlanMode": 3, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 46}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
