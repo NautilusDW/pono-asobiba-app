@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T12:16:39Z - pivot: multi-select delete with Ctrl/Cmd+click and batch GitHub file deletion
+- **タスク**: pivot: multi-select delete with Ctrl/Cmd+click and batch GitHub file deletion
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 121, "Bash": 158, "Edit": 142, "Write": 11, "ExitPlanMode": 3, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 49}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-16T12:13:00Z - pivot tool: delete button now removes GitHub files for _imported items
 - **タスク**: pivot tool: delete button now removes GitHub files for _imported items
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 128, "Edit": 195, "Bash": 121, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 31}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-16T08:45:31Z - items.js bulk reset 22+19 auto-margin burned-in restrictions
-- **タスク**: items.js bulk reset 22+19 auto-margin burned-in restrictions
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 24
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 199, "Bash": 122, "Read": 125, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 29}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
