@@ -84,6 +84,32 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-16T14:07:26Z - CES local save filename collision fix + pivot tool local export feature
+- **タスク**: CES local save filename collision fix + pivot tool local export feature
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 29
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 161, "Read": 120, "Write": 6, "ExitPlanMode": 3, "Edit": 142, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 52}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-04-16T14:05:09Z - rewards.json: gender all firstClearRewards + add writing/bento/quizland (9 games total)
+- **タスク**: rewards.json: gender all firstClearRewards + add writing/bento/quizland (9 games total)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 29
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 145, "Bash": 162, "Read": 118, "Write": 6, "ExitPlanMode": 3, "ToolSearch": 4, "Monitor": 2, "Agent": 10, "Grep": 50}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-16T12:37:23Z - rewards.json: replace broken first-clear rewards with real deco items, remove sea/breakout refs
 - **タスク**: rewards.json: replace broken first-clear rewards with real deco items, remove sea/breakout refs
 - **結果**: 成功
@@ -173,31 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 155, "Read": 135, "Edit": 145, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 40}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-16T09:42:45Z - pivot-tool: unify _savedToGithub semantic, items.js append now works for CES-queued items
-- **タスク**: pivot-tool: unify _savedToGithub semantic, items.js append now works for CES-queued items
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 29
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 137, "Read": 138, "Edit": 163, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 37}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-16T09:30:26Z - admin reward picker: restore name-protect condition (don't overwrite custom names)
-- **タスク**: admin reward picker: restore name-protect condition (don't overwrite custom names)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 28
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 178, "Bash": 125, "Read": 136, "Write": 12, "ExitPlanMode": 2, "ToolSearch": 3, "Monitor": 2, "Agent": 6, "Grep": 36}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
