@@ -151,57 +151,165 @@
   "firstClearRewards": {
     "maze": {
       "icon": "🐻",
-      "name": "くまぬいぐるみ",
-      "gendered": false,
-      "type": "deco",
-      "id": "furn_bear_1",
-      "img": "assets/images/Rooms/furnitures_final/bear_A.png",
-      "afterMsg": "はじめての めいろクリア！\nくまぬいぐるみが もらえたよ！\nおへやに かざってみてね！"
+      "name": "くまぬいぐるみ / リボンくま",
+      "gendered": true,
+      "boy": {
+        "name": "くまぬいぐるみ",
+        "type": "deco",
+        "id": "furn_bear_1",
+        "img": "assets/images/Rooms/furnitures_final/bear_A.png"
+      },
+      "girl": {
+        "name": "リボンくま",
+        "type": "deco",
+        "id": "deco_bear_ribbon",
+        "img": "assets/images/Rooms/furnitures_final/bear_ribbon_A.png"
+      },
+      "afterMsg": "はじめての めいろクリア！\nくまさんが もらえたよ！\nおへやに かざってみてね！"
     },
     "puzzle": {
       "icon": "🤖",
-      "name": "ロボット",
-      "gendered": false,
-      "type": "deco",
-      "id": "deco_robot",
-      "img": "assets/images/Rooms/furnitures_final/robot_A.png",
-      "afterMsg": "はじめての パズルクリア！\nロボットが もらえたよ！"
+      "name": "ロボット / おにんぎょう",
+      "gendered": true,
+      "boy": {
+        "name": "ロボット",
+        "type": "deco",
+        "id": "deco_robot",
+        "img": "assets/images/Rooms/furnitures_final/robot_A.png"
+      },
+      "girl": {
+        "name": "おにんぎょう",
+        "type": "deco",
+        "id": "deco_doll",
+        "img": "assets/images/Rooms/furnitures_final/doll_A.png"
+      },
+      "afterMsg": "はじめての パズルクリア！\nなかまが もらえたよ！"
     },
     "wordmatch": {
       "icon": "📚",
-      "name": "ほんのやま",
-      "gendered": false,
-      "type": "deco",
-      "id": "deco_books",
-      "img": "assets/images/Rooms/furnitures_final/books_A.png",
-      "afterMsg": "はじめての ことばあわせクリア！\nほんのやまが もらえたよ！"
+      "name": "ほんのやま / みずいろのほん",
+      "gendered": true,
+      "boy": {
+        "name": "ほんのやま",
+        "type": "deco",
+        "id": "deco_books",
+        "img": "assets/images/Rooms/furnitures_final/books_A.png"
+      },
+      "girl": {
+        "name": "みずいろのほん",
+        "type": "furn",
+        "id": "imp_furn_6b47778a",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_6b47778a_A.png"
+      },
+      "afterMsg": "はじめての ことばあわせクリア！\nほんが もらえたよ！"
     },
     "slide": {
       "icon": "🚗",
-      "name": "ミニカー",
-      "gendered": false,
-      "type": "deco",
-      "id": "deco_sportscar",
-      "img": "assets/images/Rooms/furnitures_final/sportscar_A.png",
-      "afterMsg": "はじめての みちつなぎクリア！\nミニカーが もらえたよ！"
+      "name": "ミニカー / ベビーカー",
+      "gendered": true,
+      "boy": {
+        "name": "ミニカー",
+        "type": "deco",
+        "id": "deco_sportscar",
+        "img": "assets/images/Rooms/furnitures_final/sportscar_A.png"
+      },
+      "girl": {
+        "name": "ベビーカー",
+        "type": "deco",
+        "id": "deco_babycar",
+        "img": "assets/images/Rooms/furnitures_final/babycar_A.png"
+      },
+      "afterMsg": "はじめての みちつなぎクリア！\nのりものが もらえたよ！"
     },
     "oto": {
       "icon": "✨",
-      "name": "プラズマボール",
-      "gendered": false,
-      "type": "deco",
-      "id": "deco_plasma_ball",
-      "img": "assets/images/Rooms/furnitures_final/plasma_ball.png",
-      "afterMsg": "おとタッチで いっぱい あそんだね！\nプラズマボールが もらえたよ！"
+      "name": "プラズマボール / メリーゴーランド",
+      "gendered": true,
+      "boy": {
+        "name": "プラズマボール",
+        "type": "deco",
+        "id": "deco_plasma_ball",
+        "img": "assets/images/Rooms/furnitures_final/plasma_ball.png"
+      },
+      "girl": {
+        "name": "メリーゴーランド",
+        "type": "deco",
+        "id": "deco_carousel",
+        "img": "assets/images/Rooms/furnitures_final/carousel.png"
+      },
+      "afterMsg": "おとタッチで いっぱい あそんだね！\nすてきなものが もらえたよ！"
     },
     "quiz_sound": {
-      "icon": "🐰",
-      "name": "うさぎぬいぐるみ",
-      "gendered": false,
-      "type": "deco",
-      "id": "deco_bunny",
-      "img": "assets/images/Rooms/furnitures_final/bunny_A.png",
-      "afterMsg": "はじめての おとあてクイズクリア！\nうさぎぬいぐるみが もらえたよ！"
+      "icon": "🐾",
+      "name": "きょうりゅう / うさぎぬいぐるみ",
+      "gendered": true,
+      "boy": {
+        "name": "きょうりゅう",
+        "type": "deco",
+        "id": "deco_dinosaur",
+        "img": "assets/images/Rooms/furnitures_final/Dinasour01_A.png"
+      },
+      "girl": {
+        "name": "うさぎぬいぐるみ",
+        "type": "deco",
+        "id": "deco_bunny",
+        "img": "assets/images/Rooms/furnitures_final/bunny_A.png"
+      },
+      "afterMsg": "はじめての おとあてクイズクリア！\nどうぶつが なかまに なったよ！"
+    },
+    "writing": {
+      "icon": "✏️",
+      "name": "タブレット / フロアランプ",
+      "gendered": true,
+      "boy": {
+        "name": "タブレット",
+        "type": "furn",
+        "id": "imp_furn_8ca9f03c",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_8ca9f03c_A.png"
+      },
+      "girl": {
+        "name": "フロアランプ",
+        "type": "deco",
+        "id": "deco_lamp_floor",
+        "img": "assets/images/Rooms/furnitures_final/lamp_floor.png"
+      },
+      "afterMsg": "はじめての もじかきクリア！\nおべんきょうの アイテムが もらえたよ！"
+    },
+    "bento": {
+      "icon": "🍱",
+      "name": "スペースデコ / ティーセット",
+      "gendered": true,
+      "boy": {
+        "name": "スペースデコ",
+        "type": "furn",
+        "id": "imp_furn_e8e2c3f8",
+        "img": "assets/images/Rooms/furnitures_final/imp_furn_e8e2c3f8_A.png"
+      },
+      "girl": {
+        "name": "ティーセット",
+        "type": "deco",
+        "id": "deco_tea",
+        "img": "assets/images/Rooms/furnitures_final/tea_A.png"
+      },
+      "afterMsg": "はじめての おべんとうクリア！\nおへやに かざる アイテムが もらえたよ！"
+    },
+    "quizland": {
+      "icon": "🧠",
+      "name": "あおいVRゴーグル / かべだな",
+      "gendered": true,
+      "boy": {
+        "name": "あおいVRゴーグル",
+        "type": "deco",
+        "id": "deco_vr_blue_boy",
+        "img": "assets/images/Rooms/furnitures_final/deco_vr_blue_boy_A.png"
+      },
+      "girl": {
+        "name": "かべだな",
+        "type": "deco",
+        "id": "deco_shelf_wall",
+        "img": "assets/images/Rooms/furnitures_final/shelf2_A.png"
+      },
+      "afterMsg": "はじめての クイズランドクリア！\nあたまの いいアイテムが もらえたよ！"
     }
   }
 }
