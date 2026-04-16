@@ -383,10 +383,14 @@ tr:hover { background: #FFFAF0; }
 <div class="panel" id="panel-stamp">
   <!-- Save Bar (sticky) -->
   <div class="save-bar">
-    <span class="save-bar-msg" id="save-bar-msg">rewards.json を編集中</span>
-    <div style="display:flex;gap:8px;align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <span class="save-bar-msg" id="save-bar-msg">rewards.json を編集中</span>
+      <span id="draft-indicator" style="color:#DC2626;font-weight:900;font-size:0.78rem;display:none;">⚠️ 未コミットの下書きあり（ブラウザのみ）</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <button class="btn btn-sm" id="btn-undo-rewards" title="取り消し (Ctrl+Z / Cmd+Z)" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;" disabled>↩ 取り消し</button>
       <button class="btn btn-gold" id="btn-reload-rewards">🔄 再読込</button>
+      <button class="btn" id="btn-save-local" title="ブラウザのみに保存（コミットしない）" style="background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;font-size:0.85rem;">📝 下書き保存</button>
       <button class="btn btn-green" id="btn-save-rewards" style="font-size:0.85rem;">💾 保存（GitHubにコミット）</button>
     </div>
   </div>
@@ -1424,9 +1428,47 @@ function ghUpload(filePath, base64Content, commitMsg, callback) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// Rewards JSON: Draft (localStorage 下書き) ヘルパー
+// ════════════════════════════════════════════════════════════════
+var REWARDS_DRAFT_KEY = 'admin_rewards_draft';
+
+function loadRewardsDraft() {
+  try {
+    var raw = localStorage.getItem(REWARDS_DRAFT_KEY);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    return obj && obj.data ? obj : null;
+  } catch(e) { return null; }
+}
+
+function clearRewardsDraft() {
+  try { localStorage.removeItem(REWARDS_DRAFT_KEY); } catch(e) {}
+  updateDraftIndicator(false);
+}
+
+function updateDraftIndicator(show, savedAtIso) {
+  var el = document.getElementById('draft-indicator');
+  if (!el) return;
+  if (show) {
+    var suffix = '';
+    if (savedAtIso) {
+      try {
+        var d = new Date(savedAtIso);
+        suffix = '（' + d.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit', month: '2-digit', day: '2-digit' }) + ')';
+      } catch(e) {}
+    }
+    el.textContent = '⚠️ 未コミットの下書きあり（ブラウザのみ）' + suffix;
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
 // Rewards JSON: Fetch from GitHub
 // ════════════════════════════════════════════════════════════════
-function fetchRewards() {
+function fetchRewards(opts) {
+  opts = opts || {};
   var msg = document.getElementById('save-bar-msg');
   msg.textContent = '🔄 rewards.json を読み込み中...';
   document.getElementById('slot-rewards-container').innerHTML = '';
@@ -1443,6 +1485,7 @@ function fetchRewards() {
       var json = base64ToUtf8(data.content.replace(/\n/g, ''));
       rewardsData = JSON.parse(json);
       msg.textContent = '✅ rewards.json 読み込み完了';
+      applyDraftIfAny(opts.skipDraft);
       renderSlotRewards();
       renderCardRewards();
       renderFirstClearRewards();
@@ -1456,12 +1499,24 @@ function fetchRewards() {
           rewardsData = d;
           rewardsFileSha = null;
           msg.textContent = '⚠️ ローカルから読み込み（SHAなし）';
+          applyDraftIfAny(opts.skipDraft);
           renderSlotRewards();
           renderCardRewards();
           renderFirstClearRewards();
         })
         .catch(function() { msg.textContent = '❌ rewards.json の読み込みに完全に失敗しました'; });
     });
+}
+
+// 読み込み後: localStorage に下書きがあれば上書き適用 + 赤字警告
+function applyDraftIfAny(skipDraft) {
+  if (skipDraft) { updateDraftIndicator(false); return; }
+  var draft = loadRewardsDraft();
+  if (!draft) { updateDraftIndicator(false); return; }
+  rewardsData = draft.data;
+  updateDraftIndicator(true, draft.savedAt);
+  var msg = document.getElementById('save-bar-msg');
+  if (msg) msg.textContent = '📝 下書きを復元しました（GitHub 未コミット）';
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -5623,6 +5678,7 @@ document.getElementById('btn-save-rewards').addEventListener('click', function()
       rewardsFileSha = res.content.sha;
       // 保存したデータでメモリ上のrewardsDataも更新
       rewardsData = data;
+      clearRewardsDraft();  // GitHub に反映できたので下書きは不要
       msg.textContent = '✅ 保存成功！（commit: ' + res.commit.sha.substring(0, 7) + '）';
       showToast('rewards.json を保存しました', true);
       btn.disabled = false;
@@ -5677,10 +5733,43 @@ document.getElementById('btn-add-card').addEventListener('click', function() {
 
 // Reload
 document.getElementById('btn-reload-rewards').addEventListener('click', function() {
-  if (confirm('未保存の変更は破棄されます。再読込しますか？')) {
+  var hasDraft = !!loadRewardsDraft();
+  var warn = hasDraft
+    ? '⚠️ 下書き（ブラウザ保存分）と未保存の変更は両方破棄されます。\nGitHub の最新版を読み直しますか？'
+    : '未保存の変更は破棄されます。再読込しますか？';
+  if (confirm(warn)) {
+    clearRewardsDraft();
     _rewardsUndoStack = [];
     _updateUndoBtn();
-    fetchRewards();
+    fetchRewards({ skipDraft: true });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// 📝 下書き保存 (ブラウザ localStorage のみ、コミットなし)
+// ════════════════════════════════════════════════════════════════
+document.getElementById('btn-save-local').addEventListener('click', function() {
+  if (!rewardsData) { showToast('先に rewards.json を読み込んでください', false); return; }
+  // visible な DOM 入力値を rewardsData へ flush
+  document.querySelectorAll('#slot-rewards-container .reward-card').forEach(function(card) {
+    var sn = parseInt(card.querySelector('[data-key="slot-num"]').value);
+    if (!isNaN(sn)) rewardsData.slotRewards[sn] = collectSlotData(card);
+  });
+  var data = collectAllRewards();
+  var errors = validateRewards(data);
+  if (errors.length > 0) {
+    if (!confirm('⚠️ バリデーション警告があります:\n' + errors.slice(0, 3).join('\n') + '\n\n無視して下書き保存しますか？')) return;
+  }
+  var savedAt = new Date().toISOString();
+  try {
+    localStorage.setItem(REWARDS_DRAFT_KEY, JSON.stringify({ data: data, savedAt: savedAt }));
+    rewardsData = data;  // 下書き保存したものをメモリ上も確定
+    updateDraftIndicator(true, savedAt);
+    var msg = document.getElementById('save-bar-msg');
+    if (msg) msg.textContent = '📝 下書き保存しました（ブラウザのみ、まだ GitHub には未反映）';
+    showToast('下書きをブラウザに保存しました', true);
+  } catch (e) {
+    showToast('下書き保存失敗: ' + (e && e.message || e), false);
   }
 });
 
