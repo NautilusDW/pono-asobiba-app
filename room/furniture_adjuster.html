@@ -996,11 +996,18 @@ document.getElementById('edit-item-theme').addEventListener('change', function()
 });
 
 // ─── Delete item ───
-document.getElementById('btn-delete-item').addEventListener('click', function() {
+document.getElementById('btn-delete-item').addEventListener('click', async function() {
   if (!selectedId) return;
   var item = ITEMS.find(function(x) { return x.id === selectedId; });
   if (!item) return;
-  if (!confirm('「' + item.name + '」(' + selectedId + ') を削除しますか？')) return;
+  // _imported (Clean Edge / Discovery 由来) は GitHub のファイルも消すか確認
+  var willDeleteGithubFiles = !!item._imported;
+  var confirmMsg = '「' + item.name + '」(' + selectedId + ') を削除しますか？';
+  if (willDeleteGithubFiles) {
+    confirmMsg += '\n\n⚠ GitHub の <id>_A.png / <id>_B.png も削除します (取り消すには git history から復元する必要があります)。';
+  }
+  if (!confirm(confirmMsg)) return;
+
   // ITEMS配列から除去
   var idx = ITEMS.indexOf(item);
   if (idx !== -1) ITEMS.splice(idx, 1);
@@ -1026,6 +1033,35 @@ document.getElementById('btn-delete-item').addEventListener('click', function() 
     localStorage.setItem(DELETED_KEY, JSON.stringify(_deletedIds));
   }
   drawGrid();
+
+  // _imported なら GitHub の <id>_A.png / <id>_B.png を非同期で削除
+  //   (ローカル UI はもう更新済みなので結果はトーストで通知)
+  if (willDeleteGithubFiles) {
+    var status = document.getElementById('save-status');
+    if (status) { status.textContent = '⏳ GitHub から ' + deletedId + '_A.png / _B.png を削除中...'; status.style.color = '#ffd700'; }
+    var paths = [
+      FURN_PATH + deletedId + '_A.png',
+      FURN_PATH + deletedId + '_B.png'
+    ];
+    var results = [];
+    for (var pi = 0; pi < paths.length; pi++) {
+      try {
+        var r = await ghDeleteFile(paths[pi], '🗑 ' + deletedId + ' を削除');
+        results.push({ path: paths[pi], ok: true, alreadyGone: !!r.alreadyGone });
+      } catch (err) {
+        results.push({ path: paths[pi], ok: false, error: (err && err.message) || String(err) });
+      }
+    }
+    var ok = results.filter(function(r) { return r.ok && !r.alreadyGone; }).length;
+    var notFound = results.filter(function(r) { return r.ok && r.alreadyGone; }).length;
+    var failed = results.filter(function(r) { return !r.ok; });
+    if (status) {
+      var summary = '✅ GitHub: ' + ok + ' 削除, ' + notFound + ' は既に存在せず';
+      if (failed.length) summary += ', ❌ ' + failed.length + ' 失敗 (' + failed[0].error + ')';
+      status.textContent = summary;
+      status.style.color = failed.length ? '#f44336' : '#4CAF50';
+    }
+  }
 });
 
 // ─── A/B thumbnail update ───
@@ -1870,6 +1906,33 @@ var FURN_PATH = 'assets/images/Rooms/furnitures_final/';
 
 function ghToken() { return localStorage.getItem('admin_gh_token') || ''; }
 function ghHeaders() { return { 'Authorization': 'Bearer ' + ghToken(), 'Accept': 'application/vnd.github+json' }; }
+
+// GitHub Contents API DELETE (path のファイルを削除)
+//   Promise を返す。404 の場合は「既に存在しない」とみなして resolve する。
+function ghDeleteFile(path, msg) {
+  return new Promise(function(resolve, reject) {
+    if (!ghToken()) { reject(new Error('PAT未設定')); return; }
+    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
+    fetch(url + '?ref=' + GH_BRANCH + '&_cb=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+      .then(function(r) {
+        if (r.status === 404) { resolve({ alreadyGone: true }); return null; }
+        if (!r.ok) { reject(new Error('SHA 取得失敗 ' + r.status)); return null; }
+        return r.json();
+      })
+      .then(function(existing) {
+        if (!existing) return; // already resolved
+        return fetch(url, {
+          method: 'DELETE',
+          headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ message: msg, sha: existing.sha, branch: GH_BRANCH })
+        }).then(function(r) {
+          if (r.ok) resolve({ deleted: true });
+          else r.json().then(function(j) { reject(new Error(j.message || 'DELETE failed ' + r.status)); });
+        });
+      })
+      .catch(function(e) { reject(e); });
+  });
+}
 
 function ghUploadFile(path, base64, msg, cb) {
   if (!ghToken()) { cb('PAT未設定（管理画面で設定してください）'); return; }
