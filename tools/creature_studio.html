@@ -405,22 +405,7 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 .picker-canvas-wrap canvas { cursor: crosshair; }
-.picker-empty {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 18px 28px;
-  border: 2px dashed #374151; border-radius: 12px;
-  background: rgba(0,0,0,0.3);
-  cursor: pointer; transition: border-color 0.2s;
-  max-width: 70%;
-  pointer-events: auto;
-}
-.picker-empty:hover { border-color: #6b7280; }
-.picker-canvas-wrap.has-images .picker-empty { display: none; }
 .picker-canvas-wrap.drag-over { background: rgba(248,113,113,0.08); }
-.picker-canvas-wrap.drag-over .picker-empty { border-color: #f87171; }
 .picker-sel-rect {
   position: absolute; border: 2px solid #22c55e; background: rgba(34,197,94,0.12);
   pointer-events: none; box-sizing: border-box;
@@ -756,11 +741,6 @@ body {
         </div>
         <div class="picker-canvas-wrap" id="picker-canvas-wrap">
           <canvas id="picker-canvas"></canvas>
-          <div class="picker-empty" id="picker-empty">
-            <div style="font-size:1.3rem;margin-bottom:4px;">📂</div>
-            <div style="font-size:0.78rem;font-weight:700;color:#9ca3af;">画像をドロップ</div>
-            <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">左の「1. 画像を開く」でもOK</div>
-          </div>
         </div>
       </div>
       <div class="composite-bottom">
@@ -4568,9 +4548,6 @@ function renderPickerPreview() {
   // 既存のオーバーレイを削除
   wrap.querySelectorAll('.picker-sel-rect,.picker-click-highlight').forEach(el => el.remove());
 
-  // 画像の有無でプレースホルダー表示を切替
-  wrap.classList.toggle('has-images', pickerImages.length > 0);
-
   if (activePickerIdx < 0 || !pickerImages[activePickerIdx]) {
     cv.width = 1; cv.height = 1;
     return;
@@ -4979,8 +4956,6 @@ compositeTab.addEventListener('drop', e => {
   if (e.dataTransfer.files.length) addPickerFiles(e.dataTransfer.files);
 });
 
-// プレースホルダーのクリック → ファイル選択
-document.getElementById('picker-empty').addEventListener('click', () => multiFileInput.click());
 
 // ════════════════════════════════════════════════════════════
 // 分割バー: 上 (比較) と 下 (分割スプライト) のサイズ調整
