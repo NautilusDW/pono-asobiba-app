@@ -170,6 +170,19 @@
         var rw = _resolveGendered(raw);
         if (!rw || !rw.id) return false;
 
+        // おうちアンロック状態に応じて afterMsg に案内文を追記
+        //   ・未アンロック: 「スタンプを あつめて ベッドを もらったら、おへやに かざれるように なるよ！」
+        //   ・アンロック済: 「おへやに かざってみてね！」
+        // こうすることで「もらったけど今は使えない」状態でも子どもが混乱しない。
+        try {
+          var roomUnlocked = localStorage.getItem('pono_room_card_open') === '1';
+          var hint = roomUnlocked
+            ? 'おへやに かざってみてね！'
+            : 'スタンプを あつめて ベッドを もらったら、おへやに かざれるように なるよ！';
+          var base = (rw.afterMsg || '').replace(/\s+$/, '');
+          rw.afterMsg = base ? (base + '\n\n' + hint) : hint;
+        } catch (e) { /* localStorage 不能環境でも致命的ではないのでそのまま */ }
+
         // 先に部屋コレクションに付与（grantReward は idempotent なので二重付与の心配なし）
         // 失敗してもキャッチしてマーキング自体はスキップさせない
         var grantOk = false;
