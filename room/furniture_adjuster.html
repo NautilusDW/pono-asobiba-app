@@ -2238,6 +2238,11 @@ function updateUnsavedIndicator(item) {
 function refreshAllUnsavedIndicators() {
   ITEMS.forEach(updateUnsavedIndicator);
 }
+function _escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 function refreshUnsavedBanner() {
   var unsaved = getUnsavedItems();
   var banner = document.getElementById('unsaved-banner');
@@ -2248,7 +2253,10 @@ function refreshUnsavedBanner() {
     return;
   }
   banner.classList.add('show');
-  var names = unsaved.slice(0, 5).map(function(it) { return it.name + ' (' + it.id + ')'; });
+  // localStorage に外部から入り得る name / id を HTML エスケープして XSS 防止
+  var names = unsaved.slice(0, 5).map(function(it) {
+    return _escHtml(it.name) + ' (' + _escHtml(it.id) + ')';
+  });
   var more = unsaved.length > 5 ? '... 他 ' + (unsaved.length - 5) + '件' : '';
   text.innerHTML = unsaved.length + '件のアイテムがGitHubに未保存です:<ul><li>' + names.join('</li><li>') + '</li></ul>' + more;
   refreshAllUnsavedIndicators();

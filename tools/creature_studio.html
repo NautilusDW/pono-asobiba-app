@@ -3973,25 +3973,109 @@ async function deployImagesOnly(selectedCards, dest) {
 
   try {
     let uploaded = 0;
+    const uploadedPaths = [];
     for (let i = 0; i < selectedCards.length; i++) {
       const sp = sprites[parseInt(selectedCards[i].dataset.idx)];
       const filename = filenames[i];
       const path = dest.dir + '/' + filename;
+      const base64 = canvasToBase64(sp.canvas);
       setStatus('🔄 ' + (++uploaded) + '/' + selectedCards.length + ' — ' + filename);
-      await ghUploadPromise(
-        path,
-        canvasToBase64(sp.canvas),
-        dest.label + ': ' + filename
-      );
+      await ghUploadPromise(path, base64, dest.label + ': ' + filename);
+      uploadedPaths.push({
+        name: (sp.name || filename.replace(/\.png$/, '')).trim(),
+        filename: filename,
+        path: path,
+        dataUrl: 'data:image/png;base64,' + base64   // ローカル dev で即表示用
+      });
     }
     hideLoading();
     setStatus('✅ ' + selectedCards.length + '枚を ' + dest.dir + ' にアップロード');
     showToast('📦 ' + selectedCards.length + '枚を ' + dest.label + ' に保存しました', true);
+
+    // 家具 = ピボット調整ツールで開けるよう localStorage に予約 + リンク表示
+    if (dest.dir === 'assets/images/Rooms/furnitures') {
+      _queueFurnitureForPivotTool(uploadedPaths);
+      _showOpenPivotLink(uploadedPaths.length);
+    }
   } catch (e) {
     hideLoading();
     setStatus('❌ エラー: ' + e.message);
     showToast('保存失敗: ' + e.message, false);
   }
+}
+
+// ユニーク ID 生成 (衝突回避)
+function _uniqueImportId(name) {
+  const safe = String(name).toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'furn';
+  let rand;
+  try { rand = crypto.randomUUID().split('-')[0]; } catch (e) { rand = Math.random().toString(36).slice(2, 10); }
+  return 'imp_' + safe + '_' + rand;
+}
+
+// 家具インポートを ピボット調整ツールの localStorage キューに追加
+// データが大きすぎて保存失敗したら、dataUrl を諦めて GitHub パスにフォールバック再試行
+function _queueFurnitureForPivotTool(uploaded) {
+  const KEY = 'furniture_adjuster_imports';
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { list = []; }
+  if (!Array.isArray(list)) list = [];
+
+  uploaded.forEach((u) => {
+    const id = _uniqueImportId(u.name);
+    if (list.some(x => x && x.id === id)) return;
+    list.push({
+      id: id, name: u.name, cat: 'furn', theme: 'all',
+      roomImg: u.dataUrl || ('../' + u.path),
+      roomImgB: null,
+      cellSize: 1.0, pivotX: 0, pivotY: 0, surfaceY: 0,
+      _savedToGithub: true,
+      _originalPath: u.path
+    });
+  });
+
+  function tryWrite(arr) {
+    try { localStorage.setItem(KEY, JSON.stringify(arr)); return true; }
+    catch (e) { return false; }
+  }
+  if (tryWrite(list)) return;
+
+  // Quota 超過 → 今回追加分の dataUrl を剥がして GitHub パスだけにして再試行
+  // (ローカル dev では git pull するまで画像が見えないが、GitHub 参照だけは残る)
+  const slim = list.map(it => {
+    if (it && it._originalPath && it.roomImg && it.roomImg.startsWith('data:')) {
+      return Object.assign({}, it, { roomImg: '../' + it._originalPath });
+    }
+    return it;
+  });
+  if (tryWrite(slim)) {
+    showToast('localStorage 容量超過: dataURL を剥がして GitHub パスで保存しました (git pull 必要)', false);
+    return;
+  }
+  showToast('localStorage 容量超過で保存失敗。ピボット調整ツールで古いインポートを削除してください', false);
+}
+
+// 保存直後に「ピボット調整ツールで開く」ボタンを deploy-status の横に表示
+let _openPivotLinkTimer = null;
+function _showOpenPivotLink(count) {
+  const bar = document.getElementById('deploy-status');
+  if (!bar) return;
+  let link = document.getElementById('_open-pivot-link');
+  if (!link) {
+    link = document.createElement('a');
+    link.id = '_open-pivot-link';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.style.cssText = 'margin-left:12px;padding:4px 12px;border-radius:6px;background:#8B5CF6;color:#fff;font-size:0.72rem;font-weight:700;text-decoration:none;';
+    bar.parentNode.insertBefore(link, bar.nextSibling);
+  }
+  link.href = '../room/furniture_adjuster.html';
+  link.textContent = '🪑 ピボット調整ツールで開く (' + count + ')';
+  // 前回のタイマーを確実にキャンセル (二重登録防止)
+  if (_openPivotLinkTimer) clearTimeout(_openPivotLinkTimer);
+  _openPivotLinkTimer = setTimeout(() => {
+    if (link && link.parentNode) link.parentNode.removeChild(link);
+    _openPivotLinkTimer = null;
+  }, 5 * 60 * 1000);
 }
 
 async function deployToQuizSound(selectedCards) {
