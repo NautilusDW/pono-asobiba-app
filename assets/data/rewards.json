@@ -122,15 +122,6 @@
       "afterMsg": "ボウリングの はいけいが\nふえたよ！ボウリングで\nえらんで あそんでみてね！"
     },
     {
-      "icon": "🧱",
-      "name": "どうくつのブロックくずしはいけい",
-      "gendered": false,
-      "type": "bg",
-      "id": "bg_breakout_cave_entrance",
-      "img": "assets/images/Block/stage3_cave_entrance.png",
-      "afterMsg": "ブロックくずしの はいけいが\nふえたよ！"
-    },
-    {
       "icon": "🖼️",
       "name": "きょうりゅうかべがみ / みずたまかべがみ",
       "gendered": true,
@@ -159,67 +150,58 @@
   ],
   "firstClearRewards": {
     "maze": {
-      "icon": "🦔",
-      "name": "ハリネズミぬいぐるみ",
+      "icon": "🐻",
+      "name": "くまぬいぐるみ",
       "gendered": false,
-      "type": "furn",
-      "id": "ach_hedgehog_plush",
-      "img": "assets/images/characters/headgehog/headgehog_face.png",
-      "afterMsg": "はじめての めいろクリア！\nハリネズミぬいぐるみが\nもらえたよ！"
-    },
-    "breakout": {
-      "icon": "🧱",
-      "name": "ふかいもりのはいけい",
-      "gendered": false,
-      "type": "bg",
-      "id": "bg_breakout_forest_deep",
-      "img": "assets/images/Block/stage2_forest_deep.png",
-      "afterMsg": "ふかいもりの はいけいが\nつかえるようになったよ！\nつぎのゲームから えらべるよ！"
+      "type": "deco",
+      "id": "furn_bear_1",
+      "img": "assets/images/Rooms/furnitures_final/bear_A.png",
+      "afterMsg": "はじめての めいろクリア！\nくまぬいぐるみが もらえたよ！\nおへやに かざってみてね！"
     },
     "puzzle": {
-      "icon": "🖼️",
-      "name": "ピクチャーフレーム",
+      "icon": "🤖",
+      "name": "ロボット",
       "gendered": false,
-      "type": "furn",
-      "id": "ach_picture_wall",
-      "img": "assets/images/icons/picture_wall.png",
-      "afterMsg": "はじめての パズルクリア！\nピクチャーフレームが\nもらえたよ！"
+      "type": "deco",
+      "id": "deco_robot",
+      "img": "assets/images/Rooms/furnitures_final/robot_A.png",
+      "afterMsg": "はじめての パズルクリア！\nロボットが もらえたよ！"
     },
     "wordmatch": {
-      "icon": "🌺",
-      "name": "サンゴのおきもの",
+      "icon": "📚",
+      "name": "ほんのやま",
       "gendered": false,
-      "type": "furn",
-      "id": "ach_coral_deco",
-      "img": "assets/images/icons/coral_deco.png",
-      "afterMsg": "はじめての ことばあわせ！\nサンゴのおきものが\nもらえたよ！"
+      "type": "deco",
+      "id": "deco_books",
+      "img": "assets/images/Rooms/furnitures_final/books_A.png",
+      "afterMsg": "はじめての ことばあわせクリア！\nほんのやまが もらえたよ！"
     },
     "slide": {
-      "icon": "🐴",
-      "name": "タツノオトシゴ",
+      "icon": "🚗",
+      "name": "ミニカー",
       "gendered": false,
-      "type": "sea",
-      "id": "seahorse",
-      "img": "assets/images/ocean/Seahorse/Seahorse_normal_1.png",
-      "afterMsg": "はじめての みちつなぎクリア！\nタツノオトシゴが なかまに\nなったよ！"
+      "type": "deco",
+      "id": "deco_sportscar",
+      "img": "assets/images/Rooms/furnitures_final/sportscar_A.png",
+      "afterMsg": "はじめての みちつなぎクリア！\nミニカーが もらえたよ！"
     },
     "oto": {
-      "icon": "🐻",
-      "name": "ポノクッション",
+      "icon": "✨",
+      "name": "プラズマボール",
       "gendered": false,
-      "type": "furn",
-      "id": "ach_pono_cushion",
-      "img": "assets/images/characters/pono/pono_face_circle.png",
-      "afterMsg": "おとタッチで いっぱい あそんだね！\nポノクッションが もらえたよ！"
+      "type": "deco",
+      "id": "deco_plasma_ball",
+      "img": "assets/images/Rooms/furnitures_final/plasma_ball.png",
+      "afterMsg": "おとタッチで いっぱい あそんだね！\nプラズマボールが もらえたよ！"
     },
     "quiz_sound": {
-      "icon": "✏️",
-      "name": "クイズえんぴつ",
+      "icon": "🐰",
+      "name": "うさぎぬいぐるみ",
       "gendered": false,
-      "type": "furn",
-      "id": "ach_quiz_pencil",
-      "img": "assets/images/icons/quiz_pencil.png",
-      "afterMsg": "おとあてクイズ クリア！\nクイズえんぴつが もらえたよ！"
+      "type": "deco",
+      "id": "deco_bunny",
+      "img": "assets/images/Rooms/furnitures_final/bunny_A.png",
+      "afterMsg": "はじめての おとあてクイズクリア！\nうさぎぬいぐるみが もらえたよ！"
     }
   }
 }
