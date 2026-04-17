@@ -4438,6 +4438,10 @@ function switchToTab(name) {
     t.classList.toggle('active', active);
     if (t.id === 'tab-composite') t.style.display = active ? 'flex' : '';
   });
+  // multi-mode クラスは「合成タブを表示中か」と同期させる。
+  // compose ボタンや合成→比較 切り替え後に比較タブが隠れたままになる事故を防ぐ。
+  const rightPanel = document.querySelector('.right-panel');
+  if (rightPanel) rightPanel.classList.toggle('multi-mode', name === 'composite');
 }
 
 // ── Toggle multi-picker mode ──
@@ -4447,25 +4451,20 @@ document.getElementById('btn-multi-picker').addEventListener('click', () => {
   const singleDz = document.getElementById('drop-zone');
   const multiDz  = document.getElementById('multi-drop-zone');
   const compTab  = document.getElementById('tab-composite-btn');
-  const rightPanel = document.querySelector('.right-panel');
 
   if (multiPickerMode) {
     btn.textContent = '📐 マルチ合成 ON';
     btn.style.background = '#dc2626'; btn.style.color = '#fff';
     singleDz.style.display = 'none';
     compTab.style.display = '';
-    // 比較タブは使わないので隠し、合成タブを上半分いっぱいに広げる。
-    // これで「合成して読み込む」の下に空白ができる問題を解消する。
-    if (rightPanel) rightPanel.classList.add('multi-mode');
     // マルチ合成中は選択範囲ベースの分割なので最初は無効、選択が出来たら有効化
     document.getElementById('btn-split').disabled = true;
-    switchToTab('composite');
+    switchToTab('composite');  // multi-mode クラスは switchToTab が管理
   } else {
     btn.textContent = '📐 マルチ合成モード';
     btn.style.background = ''; btn.style.color = '';
     singleDz.style.display = '';
     compTab.style.display = 'none';
-    if (rightPanel) rightPanel.classList.remove('multi-mode');
     // クリーンアップ
     pickerImages.forEach(img => { img.canvas.width = 0; img.canvas.height = 0; });
     pickerImages = [];
