@@ -151,7 +151,7 @@ const ROOM_ITEMS = [
     roomImg: '../assets/images/Rooms/walls/white_line.png',
   },
   {
-    id: 'wall_cat_cloud', cat: 'wall', name: 'ねことくも', theme: 'girl',
+    id: 'wall_cat_cloud', cat: 'wall', name: 'どうぶつ', theme: 'all',
     emoji: '🐱',
     roomImg: '../assets/images/Rooms/walls/cat_cloud.png',
   },
