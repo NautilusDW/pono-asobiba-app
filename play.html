@@ -1193,8 +1193,8 @@
     box-shadow: 0 4px 0 rgba(0,0,0,0.18);
     animation: ponoGreetHintPulse 1.2s ease-in-out infinite;
   }
-  @keyframes ponoGreetIn  { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
-  @keyframes ponoGreetOut { to   { opacity: 0; transform: scale(1.04); } }
+  @keyframes ponoGreetIn  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ponoGreetOut { to   { opacity: 0; } }
   @keyframes ponoGreetWave {
     0%, 100% { transform: rotate(-3deg) translateY(0); }
     50%      { transform: rotate(3deg)  translateY(-6px); }
@@ -1638,8 +1638,13 @@
       var gm = document.getElementById('pono-return-greet');
       if (!gm) return;
       if (gm.style.display === 'flex') return; // 既に表示中
-      gm.style.display = 'flex';
+      // 前回 dismiss で残った .fade 状態（forwards で opacity:0 が残る）を明示的にリセット
       gm.classList.remove('fade');
+      gm.style.animation = 'none';
+      // 強制 reflow でアニメーションをリセット → フレックスレイアウトも最新値で再計算
+      void gm.offsetHeight;
+      gm.style.animation = '';
+      gm.style.display = 'flex';
       var dismissed = false;
       function _dismiss(e) {
         if (e && e.preventDefault) e.preventDefault();
