@@ -278,13 +278,15 @@ body {
 @media (orientation: portrait) and (pointer: coarse) {
   /* ヘッダー・タブ・本体を丸ごと隠して警告だけ表示 */
   .tc-header, .tc-tabs, .tc-book-wrap { display: none; }
-  body { justify-content: center; }
+  body { justify-content: flex-start; padding-top: env(safe-area-inset-top, 0); }
   .tc-orient-warn {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    flex: 1; padding: 40px 24px; text-align: center;
-    color: #5D4E37; gap: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    width: 100%;
+    padding: 18px 24px 0;
+    text-align: center;
+    color: #5D4E37; gap: 10px;
   }
-  .tc-orient-warn .icon { font-size: 3.2rem; }
+  .tc-orient-warn .icon { font-size: 3rem; line-height: 1; }
   .tc-orient-warn .title { font-size: 1.05rem; font-weight: 900; }
   .tc-orient-warn .hint { font-size: 0.8rem; color: #A89880; line-height: 1.6; }
   /* ポートレイト時だけ右上にフロート✕（戻れなくなるのを防ぐ） */

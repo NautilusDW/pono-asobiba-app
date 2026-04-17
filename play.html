@@ -1733,27 +1733,27 @@
         }
       }
       var roomCard = document.getElementById('card-room');
+      var _debugOn  = localStorage.getItem('pono_debug')   === '1';
+      var _premium  = localStorage.getItem('pono_premium') === '1';
+      var _hasRoom  = _debugOn || _premium;
       if (roomCard) {
-        var _debugOn  = localStorage.getItem('pono_debug')   === '1';
-        var _premium  = localStorage.getItem('pono_premium') === '1';
-        var _hasRoom  = _debugOn || _premium; // 有料 or デバッグ なら「おうち」アクセス可
-        if (!_hasRoom) {
-          // 無料ユーザー: カードを「ポノのてちょう」に差し替え
-          roomCard.href = 'techo/index.html';
-          var titleEl = roomCard.querySelector('.card-title');
-          var descEl  = roomCard.querySelector('.card-desc');
-          var iconEl  = roomCard.querySelector('.card-icon');
-          if (titleEl) titleEl.textContent = 'ポノの てちょう';
-          if (descEl)  descEl.innerHTML    = 'あつめた ものを<br>みよう！';
-          if (iconEl)  iconEl.textContent  = '📓';
-          // ロック表示はしない（手帳は自由に見られる）
+        if (_hasRoom) {
           roomCard.classList.remove('locked');
-          // 下部ナビも「てちょう」に差し替え
-          var bnIcon  = document.getElementById('bn-room-icon');
-          var bnLabel = document.getElementById('bn-room-label');
-          if (bnIcon)  bnIcon.textContent  = '📓';
-          if (bnLabel) bnLabel.textContent = 'てちょう';
+        } else {
+          // 無料ユーザーにはカードを鎖で見せる（クリックはロック案内モーダル）
+          roomCard.classList.add('locked');
+          roomCard.addEventListener('click', function(e) {
+            e.preventDefault();
+            _showRoomLockedHint();
+          });
         }
+      }
+      // 下部ナビの「🏠 おうち」を、無料ユーザーには「📓 てちょう」として見せる
+      if (!_hasRoom) {
+        var bnIcon  = document.getElementById('bn-room-icon');
+        var bnLabel = document.getElementById('bn-room-label');
+        if (bnIcon)  bnIcon.textContent  = '📓';
+        if (bnLabel) bnLabel.textContent = 'てちょう';
       }
     })();
 
@@ -1768,8 +1768,8 @@
       box.style.cssText = 'background:#fff;border-radius:20px;padding:22px 24px;text-align:center;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
       box.innerHTML =
         '<div style="font-size:2.6rem;line-height:1;margin-bottom:6px;">🔒🏠</div>' +
-        '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">まだ あけられないよ！</div>' +
-        '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.7;margin-bottom:14px;">スタンプを もっと あつめて<br>ベッドを てに いれると<br>「わたしのおうち」が<br>つかえるように なるよ！</div>' +
+        '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">もうすぐ あえるよ！</div>' +
+        '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.7;margin-bottom:14px;">ここでは あつめた かぐを<br>じぶんの おうちに<br>かざれるように なるよ！<br><span style="font-size:0.78rem;color:#A89880;">（いまは「てちょう」で<br>あつめた ものを みよう！）</span></div>' +
         '<button id="_room-locked-ok" style="padding:10px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">わかった！</button>';
       ov.appendChild(box);
       document.body.appendChild(ov);
