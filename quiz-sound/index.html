@@ -166,12 +166,26 @@
     background: rgba(255,255,255,0.6);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     display: flex; align-items: center; justify-content: center;
+    position: relative;
   }
-  .thinking-pono video {
+  .thinking-pono video,
+  .thinking-pono img.pono-react {
     width: 100%; height: 100%;
     object-fit: cover;
     border-radius: 50%;
   }
+  .thinking-pono img.pono-react {
+    position: absolute; inset: 0;
+    object-fit: contain;       /* ダンス素材は全身が入るよう contain */
+    background: linear-gradient(180deg, #FFF3C4, #FFE199);
+    opacity: 0; transform: scale(0.8);
+    transition: opacity 0.25s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .thinking-pono img.pono-react.show {
+    opacity: 1; transform: scale(1);
+  }
+  .thinking-pono.correct { box-shadow: 0 0 0 4px rgba(110,211,110,0.55), 0 4px 12px rgba(0,0,0,0.15); }
+  .thinking-pono.wrong   { box-shadow: 0 0 0 4px rgba(255,107,107,0.55), 0 4px 12px rgba(0,0,0,0.15); }
 
   /* ── イントロ画面 (タップで AC アンロック) ── */
   .intro {
@@ -324,8 +338,9 @@
 
   <div class="choices" id="choices"></div>
 
-  <div class="thinking-pono">
+  <div class="thinking-pono" id="thinkingPono">
     <video src="../assets/videos/ThinkingPono.mp4" autoplay loop muted playsinline webkit-playsinline></video>
+    <img class="pono-react" id="ponoReact" alt="ポノ" />
   </div>
 </div>
 
@@ -523,6 +538,40 @@ function renderQuestion() {
 }
 
 // ────────────────────────────────
+// ポノのリアクション (正解/不正解時)
+// ────────────────────────────────
+var CORRECT_POSES = [
+  '../assets/images/characters/pono/dance/dance_cheer.png',
+  '../assets/images/characters/pono/dance/dance_hooray.png',
+  '../assets/images/characters/pono/dance/dance_hi.png',
+  '../assets/images/characters/pono/dance/dance_smile.png',
+  '../assets/images/characters/pono/dance/dance_wave.png'
+];
+var WRONG_POSES = [
+  '../assets/images/characters/pono/dance/dance_shy.png',
+  '../assets/images/characters/pono/dance/dance_tilt.png'
+];
+// プリロード (初回再生のチラつき防止)
+CORRECT_POSES.concat(WRONG_POSES).forEach(function(src){ var im = new Image(); im.src = src; });
+
+var _reactTimer = null;
+function showPonoReact(kind) {
+  var wrap = document.getElementById('thinkingPono');
+  var img  = document.getElementById('ponoReact');
+  if (!wrap || !img) return;
+  var pool = (kind === 'correct') ? CORRECT_POSES : WRONG_POSES;
+  img.src = pool[Math.floor(Math.random() * pool.length)];
+  wrap.classList.remove('correct', 'wrong');
+  wrap.classList.add(kind);
+  img.classList.add('show');
+  if (_reactTimer) clearTimeout(_reactTimer);
+  _reactTimer = setTimeout(function() {
+    img.classList.remove('show');
+    wrap.classList.remove('correct', 'wrong');
+  }, 1100);
+}
+
+// ────────────────────────────────
 // 判定
 // ────────────────────────────────
 function onChoose(card, choice) {
@@ -536,6 +585,7 @@ function onChoose(card, choice) {
     });
     showJudgeOnCard(card, '⭕');
     playCorrectChime();
+    showPonoReact('correct');
     if (window.incrementStat) window.incrementStat('quiz_sound_correct', 1);
     setTimeout(function() {
       qIndex++;
@@ -551,6 +601,7 @@ function onChoose(card, choice) {
     card.classList.add('wrong');
     showJudgeOnCard(card, '✕');
     playWrongBuzz();
+    showPonoReact('wrong');
     setTimeout(function(){ card.classList.remove('wrong'); }, 500);
   }
 }

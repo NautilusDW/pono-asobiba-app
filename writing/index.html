@@ -1142,6 +1142,44 @@ function alignOverlayToCanvas(el) {
   }
 }
 
+// ===== Pono pose variation (イベントに合わせて差し替え) =====
+const PONO_DEFAULT_SRC = '../assets/images/characters/pono_side_fullbody.webp';
+const PONO_CHEER_POSES = [
+  '../assets/images/characters/pono/dance/dance_cheer.png',
+  '../assets/images/characters/pono/dance/dance_hooray.png',
+  '../assets/images/characters/pono/dance/dance_hi.png',
+  '../assets/images/characters/pono/dance/dance_smile.png'
+];
+const PONO_HINT_POSES = [
+  '../assets/images/characters/pono/dance/dance_point.png',
+  '../assets/images/characters/pono/dance/dance_wave.png',
+  '../assets/images/characters/pono/dance/dance_tilt.png'
+];
+// プリロード
+PONO_CHEER_POSES.concat(PONO_HINT_POSES).forEach(src => { const im = new Image(); im.src = src; });
+let _ponoPoseTimer = null;
+function _setPonoPose(src, resetMs) {
+  const el = document.querySelector('.pono-deco');
+  if (!el) return;
+  el.src = src;
+  if (_ponoPoseTimer) clearTimeout(_ponoPoseTimer);
+  if (resetMs > 0) {
+    _ponoPoseTimer = setTimeout(() => {
+      const el2 = document.querySelector('.pono-deco');
+      if (el2) el2.src = PONO_DEFAULT_SRC;
+      _ponoPoseTimer = null;
+    }, resetMs);
+  }
+}
+function ponoCheer() {
+  const pick = PONO_CHEER_POSES[Math.floor(Math.random() * PONO_CHEER_POSES.length)];
+  _setPonoPose(pick, 3200);
+}
+function ponoHint() {
+  const pick = PONO_HINT_POSES[Math.floor(Math.random() * PONO_HINT_POSES.length)];
+  _setPonoPose(pick, 3000);
+}
+
 function showCompletion() {
   playSuccessSound();
   launchConfetti();
@@ -1154,6 +1192,7 @@ function showCompletion() {
   streak++;
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
+  ponoCheer();                     // ← 正解リアクション
   _preloadWordAudio();
   setTimeout(showWordCard, 800);
 
@@ -1289,6 +1328,7 @@ function createWriter(char) {
     });
     _hedgeBubble.textContent = 'このじゅんばんで かくよ！';
     _ponoBubble.textContent = 'このじゅんばんで かくよ！';
+    ponoHint();                    // ← ポノが「このじゅんばんで」と指さし
     document.getElementById('demoIndicator').style.display = 'block';
     writer.animateCharacter({
       onComplete: function() {
@@ -1766,6 +1806,7 @@ function _startWordContextPhase(char, data, onComplete) {
       speakWord(char, data.word);
       _hedgeBubble.textContent = 'すごーい！';
       _ponoBubble.textContent = 'すごーい！';
+      ponoCheer();                   // ← 行練習コンプ時も歓喜ポーズ
       // speakWord再生（約1.5秒）+ 2秒待ちで次へ
       setTimeout(function() {
         if (!_rowPracticeActive) return;
