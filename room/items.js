@@ -85,6 +85,76 @@ const ROOM_ITEMS = [
     emoji: '🤎',
     roomImg: '../assets/images/Rooms/walls/beige_plain.png',
   },
+  {
+    id: 'wall_green_oak', cat: 'wall', name: 'みどりのはっぱ', theme: 'all',
+    emoji: '🌿',
+    roomImg: '../assets/images/Rooms/walls/green_oak.png',
+  },
+  {
+    id: 'wall_green_monstera', cat: 'wall', name: 'モンステラ', theme: 'all',
+    emoji: '🌴',
+    roomImg: '../assets/images/Rooms/walls/green_monstera.png',
+  },
+  {
+    id: 'wall_green_small_leaf', cat: 'wall', name: 'みどりのリーフ', theme: 'all',
+    emoji: '🍃',
+    roomImg: '../assets/images/Rooms/walls/green_small_leaf.png',
+  },
+  {
+    id: 'wall_pastel_flower', cat: 'wall', name: 'パステルおはな', theme: 'girl',
+    emoji: '🌸',
+    roomImg: '../assets/images/Rooms/walls/pastel_flower.png',
+  },
+  {
+    id: 'wall_pink_flower', cat: 'wall', name: 'ピンクおはな', theme: 'girl',
+    emoji: '🌺',
+    roomImg: '../assets/images/Rooms/walls/pink_flower.png',
+  },
+  {
+    id: 'wall_rainbow', cat: 'wall', name: 'にじいろ', theme: 'all',
+    emoji: '🌈',
+    roomImg: '../assets/images/Rooms/walls/rainbow.png',
+  },
+  {
+    id: 'wall_blue_check', cat: 'wall', name: 'ブルーチェック', theme: 'boy',
+    emoji: '💠',
+    roomImg: '../assets/images/Rooms/walls/blue_check.png',
+  },
+  {
+    id: 'wall_cars', cat: 'wall', name: 'のりもの', theme: 'boy',
+    emoji: '🚗',
+    roomImg: '../assets/images/Rooms/walls/cars.png',
+  },
+  {
+    id: 'wall_pastel_stripe', cat: 'wall', name: 'パステルしま', theme: 'girl',
+    emoji: '🎀',
+    roomImg: '../assets/images/Rooms/walls/pastel_stripe.png',
+  },
+  {
+    id: 'wall_yellow_stripe', cat: 'wall', name: 'きいろしま', theme: 'all',
+    emoji: '🟡',
+    roomImg: '../assets/images/Rooms/walls/yellow_stripe.png',
+  },
+  {
+    id: 'wall_rainbow_stripe', cat: 'wall', name: 'にじしま', theme: 'all',
+    emoji: '🌈',
+    roomImg: '../assets/images/Rooms/walls/rainbow_stripe.png',
+  },
+  {
+    id: 'wall_dots_mono', cat: 'wall', name: 'モノクロみずたま', theme: 'all',
+    emoji: '⚫',
+    roomImg: '../assets/images/Rooms/walls/dots_mono.png',
+  },
+  {
+    id: 'wall_white_line', cat: 'wall', name: 'しろライン', theme: 'all',
+    emoji: '🤍',
+    roomImg: '../assets/images/Rooms/walls/white_line.png',
+  },
+  {
+    id: 'wall_cat_cloud', cat: 'wall', name: 'ねことくも', theme: 'girl',
+    emoji: '🐱',
+    roomImg: '../assets/images/Rooms/walls/cat_cloud.png',
+  },
 
   // ══ ゆか ═════════════════════════════════════════════
   {
@@ -151,6 +221,91 @@ const ROOM_ITEMS = [
     id: 'floor_green_mat', cat: 'floor', name: 'みどり', theme: 'all',
     emoji: '💚',
     roomImg: '../assets/images/Rooms/floors/green_mat.png',
+  },
+  {
+    id: 'floor_pastel_diamond', cat: 'floor', name: 'パステルゆか', theme: 'all',
+    emoji: '🔶',
+    roomImg: '../assets/images/Rooms/floors/pastel_diamond.png',
+  },
+  {
+    id: 'floor_pink_checker', cat: 'floor', name: 'ピンクチェッカー', theme: 'girl',
+    emoji: '🧡',
+    roomImg: '../assets/images/Rooms/floors/pink_checker.png',
+  },
+  {
+    id: 'floor_rainbow_pastel', cat: 'floor', name: 'にじいろゆか', theme: 'all',
+    emoji: '🌈',
+    roomImg: '../assets/images/Rooms/floors/rainbow_pastel.png',
+  },
+  {
+    id: 'floor_white_marble', cat: 'floor', name: 'しろだいりせき', theme: 'all',
+    emoji: '🤍',
+    roomImg: '../assets/images/Rooms/floors/white_marble.png',
+  },
+  {
+    id: 'floor_tan_tile', cat: 'floor', name: 'ベージュタイル', theme: 'all',
+    emoji: '🟫',
+    roomImg: '../assets/images/Rooms/floors/tan_tile.png',
+  },
+  {
+    id: 'floor_beige_marble', cat: 'floor', name: 'ベージュだいりせき', theme: 'all',
+    emoji: '🤎',
+    roomImg: '../assets/images/Rooms/floors/beige_marble.png',
+  },
+  {
+    id: 'floor_puzzle_mat', cat: 'floor', name: 'パズルマット', theme: 'all',
+    emoji: '🧩',
+    roomImg: '../assets/images/Rooms/floors/puzzle_mat.png',
+  },
+  {
+    id: 'floor_pastel_harlequin', cat: 'floor', name: 'パステルダイヤ', theme: 'girl',
+    emoji: '💗',
+    roomImg: '../assets/images/Rooms/floors/pastel_harlequin.png',
+  },
+  {
+    id: 'floor_pink_green_check', cat: 'floor', name: 'いちごチェック', theme: 'girl',
+    emoji: '🍓',
+    roomImg: '../assets/images/Rooms/floors/pink_green_check.png',
+  },
+  {
+    id: 'floor_rainbow_harlequin', cat: 'floor', name: 'にじひしがた', theme: 'all',
+    emoji: '💎',
+    roomImg: '../assets/images/Rooms/floors/rainbow_harlequin.png',
+  },
+  {
+    id: 'floor_bw_checker', cat: 'floor', name: 'モノクロチェック', theme: 'all',
+    emoji: '♟',
+    roomImg: '../assets/images/Rooms/floors/bw_checker.png',
+  },
+  {
+    id: 'floor_bw_marble', cat: 'floor', name: 'モノクロだいりせき', theme: 'all',
+    emoji: '◼',
+    roomImg: '../assets/images/Rooms/floors/bw_marble.png',
+  },
+  {
+    id: 'floor_gray_checker', cat: 'floor', name: 'グレーチェッカー', theme: 'all',
+    emoji: '◻',
+    roomImg: '../assets/images/Rooms/floors/gray_checker.png',
+  },
+  {
+    id: 'floor_pink_small', cat: 'floor', name: 'ピンクこもよう', theme: 'girl',
+    emoji: '💕',
+    roomImg: '../assets/images/Rooms/floors/pink_small.png',
+  },
+  {
+    id: 'floor_pink_diamond', cat: 'floor', name: 'ピンクダイヤ', theme: 'girl',
+    emoji: '💖',
+    roomImg: '../assets/images/Rooms/floors/pink_diamond.png',
+  },
+  {
+    id: 'floor_beige_diamond', cat: 'floor', name: 'ベージュダイヤ', theme: 'all',
+    emoji: '🟤',
+    roomImg: '../assets/images/Rooms/floors/beige_diamond.png',
+  },
+  {
+    id: 'floor_taupe_mat', cat: 'floor', name: 'グレージュ', theme: 'all',
+    emoji: '🧱',
+    roomImg: '../assets/images/Rooms/floors/taupe_mat.png',
   },
 
   // ══ かぐ ═══════════════════════════════════════════════
