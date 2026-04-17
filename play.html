@@ -1161,41 +1161,31 @@
 
 <!-- 🐻 おかえりモーダル: 戻ってきた時にポノが挨拶 → 1タップで BGM 再開 -->
 <style>
-  /* flex を使わずブロックレイアウトで上から流す。
-     flex 初回描画の挙動差 (image intrinsic height 確定前/後 など) を根本回避。 */
   #pono-return-greet {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 9998;
+    position: fixed; inset: 0; z-index: 9998;
     background: radial-gradient(circle at 50% 40%, rgba(255,236,196,0.96) 0%, rgba(255,206,160,0.94) 60%, rgba(255,183,129,0.92) 100%);
-    text-align: center;
-    padding: 8px 24px 24px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
     cursor: pointer;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    animation: ponoGreetIn 0.45s ease-out;
   }
-  #pono-return-greet.show { animation: ponoGreetIn 0.45s ease-out; }
   #pono-return-greet.fade { animation: ponoGreetOut 0.35s ease-out forwards; }
   #pono-return-greet img.greet-pono {
-    display: block;
-    width: 180px; height: 180px; object-fit: contain;
-    margin: 0 auto;
+    width: 180px; height: auto;
     filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.18));
     animation: ponoGreetWave 1.6s ease-in-out infinite;
   }
   #pono-return-greet .greet-title {
-    display: block;
     margin-top: 12px;
     font-size: 2rem; font-weight: 900; color: #F2742A;
     text-shadow: 2px 2px 0 #fff;
   }
   #pono-return-greet .greet-sub {
-    display: block;
     margin-top: 6px;
     font-size: 1.05rem; font-weight: 700; color: #5D4E37;
   }
   #pono-return-greet .greet-hint {
-    display: inline-block;
     margin-top: 22px;
     padding: 12px 40px; border-radius: 999px;
     background: #FFD84D; color: #fff;
@@ -1203,8 +1193,8 @@
     box-shadow: 0 4px 0 rgba(0,0,0,0.18);
     animation: ponoGreetHintPulse 1.2s ease-in-out infinite;
   }
-  @keyframes ponoGreetIn  { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes ponoGreetOut { to   { opacity: 0; } }
+  @keyframes ponoGreetIn  { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+  @keyframes ponoGreetOut { to   { opacity: 0; transform: scale(1.04); } }
   @keyframes ponoGreetWave {
     0%, 100% { transform: rotate(-3deg) translateY(0); }
     50%      { transform: rotate(3deg)  translateY(-6px); }
@@ -1647,15 +1637,9 @@
     function _showReturnGreeting() {
       var gm = document.getElementById('pono-return-greet');
       if (!gm) return;
-      if (gm.style.display === 'block') return; // 既に表示中
-      // .fade / .show どちらも一旦クリア（前回 dismiss の forwards 状態を消す）
-      gm.classList.remove('fade', 'show');
-      gm.style.display = 'block';
-      // スクロール位置も先頭に戻しておく（overflow-y:auto 対策）
-      gm.scrollTop = 0;
-      // reflow を挟んでから .show を付与 → アニメーション確実に再生
-      void gm.offsetHeight;
-      gm.classList.add('show');
+      if (gm.style.display === 'flex') return; // 既に表示中
+      gm.style.display = 'flex';
+      gm.classList.remove('fade');
       var dismissed = false;
       function _dismiss(e) {
         if (e && e.preventDefault) e.preventDefault();

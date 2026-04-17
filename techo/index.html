@@ -274,8 +274,11 @@ body {
 
 /* ───── ポートレイト警告（手帳は見開きなので横向き推奨） ───── */
 .tc-orient-warn { display: none; }
+.tc-back-btn-float { display: none; }
 @media (orientation: portrait) and (pointer: coarse) {
-  .tc-book-wrap, .tc-tabs { display: none; }
+  /* ヘッダー・タブ・本体を丸ごと隠して警告だけ表示 */
+  .tc-header, .tc-tabs, .tc-book-wrap { display: none; }
+  body { justify-content: center; }
   .tc-orient-warn {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     flex: 1; padding: 40px 24px; text-align: center;
@@ -284,6 +287,16 @@ body {
   .tc-orient-warn .icon { font-size: 3.2rem; }
   .tc-orient-warn .title { font-size: 1.05rem; font-weight: 900; }
   .tc-orient-warn .hint { font-size: 0.8rem; color: #A89880; line-height: 1.6; }
+  /* ポートレイト時だけ右上にフロート✕（戻れなくなるのを防ぐ） */
+  .tc-back-btn-float {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; top: 12px; right: 12px; z-index: 10;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    border: 2px solid rgba(93,78,55,0.15);
+    color: #5D4E37; font-size: 1.15rem; font-weight: 900;
+    cursor: pointer; line-height: 1;
+  }
 }
 
 /* 小さい画面では1ページのみ（左ページを隠して右ページを全幅表示） */
@@ -351,6 +364,7 @@ body {
 </div>
 
 <!-- ポートレイト警告 -->
+<button class="tc-back-btn-float" id="tcBackBtnFloat" aria-label="もどる">✕</button>
 <div class="tc-orient-warn">
   <div class="icon">📱↻</div>
   <div class="title">よこむきに してね！</div>
@@ -372,10 +386,13 @@ body {
 <script>
 'use strict';
 
-/* ───── 戻るボタン ───── */
-document.getElementById('tcBackBtn').addEventListener('click', function() {
+/* ───── 戻るボタン（通常＋ポートレイトフロート両方） ───── */
+function _goBack() {
   history.length > 1 ? history.back() : (location.href = '../play.html');
-});
+}
+document.getElementById('tcBackBtn').addEventListener('click', _goBack);
+var _backFloat = document.getElementById('tcBackBtnFloat');
+if (_backFloat) _backFloat.addEventListener('click', _goBack);
 
 /* ───── タイトルをユーザー名入り ───── */
 (function() {
