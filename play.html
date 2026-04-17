@@ -1162,19 +1162,24 @@
 <!-- 🐻 おかえりモーダル: 戻ってきた時にポノが挨拶 → 1タップで BGM 再開 -->
 <style>
   #pono-return-greet {
-    position: fixed; inset: 0; z-index: 9998;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9998;
     background: radial-gradient(circle at 50% 40%, rgba(255,236,196,0.96) 0%, rgba(255,206,160,0.94) 60%, rgba(255,183,129,0.92) 100%);
     display: flex; flex-direction: column;
     align-items: center; justify-content: flex-start;
     text-align: center; padding: 8px 24px 24px;
     cursor: pointer;
-    animation: ponoGreetIn 0.45s ease-out;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
+  #pono-return-greet.show { animation: ponoGreetIn 0.45s ease-out; }
   #pono-return-greet.fade { animation: ponoGreetOut 0.35s ease-out forwards; }
   #pono-return-greet img.greet-pono {
-    width: 180px; height: auto;
+    width: 180px; height: 180px; object-fit: contain;
     filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.18));
     animation: ponoGreetWave 1.6s ease-in-out infinite;
+    flex-shrink: 0;
   }
   #pono-return-greet .greet-title {
     margin-top: 12px;
@@ -1638,13 +1643,14 @@
       var gm = document.getElementById('pono-return-greet');
       if (!gm) return;
       if (gm.style.display === 'flex') return; // 既に表示中
-      // 前回 dismiss で残った .fade 状態（forwards で opacity:0 が残る）を明示的にリセット
-      gm.classList.remove('fade');
-      gm.style.animation = 'none';
-      // 強制 reflow でアニメーションをリセット → フレックスレイアウトも最新値で再計算
-      void gm.offsetHeight;
-      gm.style.animation = '';
+      // .fade / .show どちらも一旦クリア（前回 dismiss の forwards 状態を消す）
+      gm.classList.remove('fade', 'show');
       gm.style.display = 'flex';
+      // スクロール位置も先頭に戻しておく（overflow-y:auto 対策）
+      gm.scrollTop = 0;
+      // reflow を挟んでから .show を付与 → アニメーション確実に再生
+      void gm.offsetHeight;
+      gm.classList.add('show');
       var dismissed = false;
       function _dismiss(e) {
         if (e && e.preventDefault) e.preventDefault();
