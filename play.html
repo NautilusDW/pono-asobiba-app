@@ -1641,18 +1641,38 @@
       gm.style.display = 'flex';
       gm.classList.remove('fade');
       var dismissed = false;
-      function _dismiss() {
+      function _dismiss(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
         if (dismissed) return;
         dismissed = true;
+        // ゴーストクリック/透過タップ対策:
+        // dismiss 直後 ~500ms は document レベルで発火する全クリックを握りつぶす
+        var _shield = function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        };
+        document.addEventListener('click',      _shield, true);
+        document.addEventListener('touchend',   _shield, true);
+        document.addEventListener('mousedown',  _shield, true);
+        setTimeout(function() {
+          document.removeEventListener('click',     _shield, true);
+          document.removeEventListener('touchend',  _shield, true);
+          document.removeEventListener('mousedown', _shield, true);
+        }, 550);
         gm.classList.add('fade');
         // その時の user gesture で BGM を再開
         if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
-        setTimeout(function() { gm.style.display = 'none'; }, 350);
+        // フェード中もクリックを受け止める（display:flex 継続）
+        setTimeout(function() { gm.style.display = 'none'; }, 500);
         gm.removeEventListener('pointerdown', _dismiss);
         gm.removeEventListener('touchstart',  _dismiss);
+        gm.removeEventListener('click',       _dismiss);
       }
-      gm.addEventListener('pointerdown', _dismiss, { passive: true });
-      gm.addEventListener('touchstart',  _dismiss, { passive: true });
+      gm.addEventListener('pointerdown', _dismiss);
+      gm.addEventListener('touchstart',  _dismiss, { passive: false });
+      gm.addEventListener('click',       _dismiss);
     }
 
     // pageshow: ページが表示された時 (bfcache 復帰も含む)
