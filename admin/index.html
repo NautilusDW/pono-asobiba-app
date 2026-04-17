@@ -3061,9 +3061,11 @@ function openNewIllustUploadModal(illustId, illustName) {
     var filePath = 'assets/images/ocean/' + folder + '/' + fileName;
 
     // 下書きに追加（即プッシュしない）。まとめて反映ボタンで GitHub に一括反映される。
+    // illustId は制作リストカードとのひも付け用（プレビュー表示に使う）
     _addToIllustDraftQueue({
       id: id, displayName: name, icon: icon, folder: folder,
       fileName: fileName, filePath: filePath, base64: newBase64,
+      illustId: illustId,
       addedAt: Date.now()
     });
     showToast('📝 下書きに追加: ' + name + '（まとめて反映ボタンでプッシュ）', true);
@@ -6737,6 +6739,13 @@ function renderIllust() {
     creaturesData.creatures.forEach(function(c) { creatureLookup[c.id] = c; });
   }
 
+  // 下書きキューのルックアップ（illustId -> draft エントリ）
+  // まだ GitHub に反映していないがローカルに登録済みのものをカードにプレビュー表示するため
+  var draftLookup = {};
+  _getIllustDraftQueue().forEach(function(e) {
+    if (e.illustId) draftLookup[e.illustId] = e;
+  });
+
   mergedGroups.forEach(function(g) {
     var div = document.createElement('div');
     div.style.cssText = 'margin-bottom:20px;';
@@ -6811,6 +6820,22 @@ function renderIllust() {
           })(thumb, it.name);
           card.appendChild(thumb);
         }
+      } else if (draftLookup[it.id]) {
+        // creatures.json に未反映だが下書きキューにあるならローカル画像でプレビュー
+        var draft = draftLookup[it.id];
+        var dThumb = document.createElement('img');
+        dThumb.className = 'checker-bg';
+        dThumb.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;border:2px dashed #F59E0B;';
+        dThumb.title = '下書き（未反映） — クリックで拡大';
+        dThumb.src = 'data:image/png;base64,' + draft.base64;
+        (function(t, name) {
+          t.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(t.src, name + ' (下書き)'); });
+        })(dThumb, it.name);
+        card.appendChild(dThumb);
+        var dBadge = document.createElement('span');
+        dBadge.style.cssText = 'background:#F59E0B;color:#fff;padding:1px 6px;border-radius:5px;font-size:0.58rem;margin-top:-2px;';
+        dBadge.textContent = '📝 下書き';
+        card.appendChild(dBadge);
       }
 
       var nameSpan = document.createElement('span');
