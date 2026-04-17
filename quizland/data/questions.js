@@ -186,8 +186,8 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'dino', img:'Raptor/Raptor_normal_1.png',
       q:'このきょうりゅうに にている いきものは？', answer:2, choices:['いぬ','ねこ','トカゲや ワニ','さかな'] },
     { level:1, type:'trivia', category:'dino',
-      q:'きょうりゅうは なにから うまれる？', hint:'とりさんと おなじ！',
-      answer:0, choices:['たまご','くも','みず','き'] ,
+      q:'きょうりゅうは どうやって うまれる？', hint:'とりさんと おなじ！',
+      answer:0, choices:['たまごから','あかちゃんで','さなぎから','おとなのまま'] ,
       detail:'きょうりゅうも とりさんと おなじで たまごから うまれたよ！'},
     { level:1, type:'emoji_name', category:'dino', img:'Stegosaurus/Stegosaurus_normal_1.png', hint:'せなかを みてね！',
       q:'このきょうりゅうの せなかに あるのは？', answer:2, choices:['はね','ツノ','プレート（ほね）','うで'] },
@@ -198,7 +198,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'dino', img:'Plesiosaur/Plesiosaur_normal_1.png', hint:'ひれが ある！',
       q:'このいきものは どこに いた？', answer:1, choices:['そら','うみ','やま','まち'] },
     { level:1, type:'emoji_name', category:'dino', img:'Ankylosaurus/Ankylosaurus_normal_1.png', hint:'しっぽを みてね！',
-      q:'このきょうりゅうの しっぽの さきに あるのは？', answer:0, choices:['おおきな こんぼう','はね','ツノ','みず'] },
+      q:'このきょうりゅうの しっぽの さきに あるのは？', answer:0, choices:['おおきな かたまり','はね','ツノ','みず'] },
 
     // ── Level 2: 特徴・行動をいろんな角度で問う ──
     { level:2, type:'emoji_name', category:'dino', img:'Triceratops/Triceratops_normal_1.png', hint:'あたまに ツノが 3ぼん！',
@@ -208,7 +208,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'dino', img:'Stegosaurus/Stegosaurus_normal_1.png', hint:'しっぽの さきに トゲ！',
       q:'ステゴサウルスは どうやって たたかった？', answer:2, choices:['はねで とんで','みずを かけて','しっぽの トゲで','うでを ぶん回して'] },
     { level:2, type:'emoji_name', category:'dino', img:'Ankylosaurus/Ankylosaurus_normal_1.png', hint:'しっぽの さきが かたい！',
-      q:'このきょうりゅうは しっぽで なにを した？', answer:0, choices:['こんぼうで てきを たたいた','はねを はばたかせた','みずを はねとばした','きを たおした'] },
+      q:'このきょうりゅうは しっぽで なにを した？', answer:0, choices:['かたい さきで てきを たたいた','はねを はばたかせた','みずを はねとばした','きを たおした'] },
     { level:2, type:'emoji_name', category:'dino', img:'Tyrannosaurus/Tyrannosaurus_normal_1.png', hint:'くちの なかを みてね！',
       q:'ティラノサウルスの たたかいかたは？', answer:2, choices:['しっぽで たたく','ツノで つく','するどい きばで かみつく','はねで とぶ'] },
     { level:2, type:'emoji_name', category:'dino', img:'Brachiosaurus/Brachiosaurus_normal_1.png', hint:'くびを みてね！',
@@ -216,7 +216,7 @@ const QUIZLAND_QUESTIONS = {
     { level:2, type:'emoji_name', category:'dino', img:'Spinosaurus/Spinosaurus_normal_1.png', hint:'みずべに いたよ！',
       q:'スピノサウルスは なにを たべた？', answer:1, choices:['くさや はっぱ','さかな','きのみ','むし'] },
     { level:2, type:'emoji_name', category:'dino', img:'Pteranodon/Pteranodon_normal_1.png', hint:'おおきな はねが ある！',
-      q:'プテラノドンは どこで くらしていた？', answer:1, choices:['つちの なか','そら','うみの そこ','いえの なか'] },
+      q:'プテラノドンは どこを とんでいた？', answer:1, choices:['つちの なか','そら','うみの そこ','いえの なか'] },
     { level:2, type:'emoji_name', category:'dino', img:'Plesiosaur/Plesiosaur_normal_1.png', hint:'ひれで およぐ！',
       q:'プレシオサウルスは どこを およいでいた？', answer:2, choices:['そら','かわ','うみ','みずたまり'] },
     { level:2, type:'emoji_name', category:'dino', img:'Raptor/Raptor_normal_1.png', hint:'あしに きけんな つめ！',
@@ -251,7 +251,7 @@ const QUIZLAND_QUESTIONS = {
 
     // Level 3: 特徴を深堀り（新規イラストを使った応用問題）
     { level:3, type:'emoji_name', category:'dino', img:'Pachycephalosaurus/Pachycephalosaurus_normal_1.png', hint:'あたまが かたいよ！',
-      q:'パキケファロサウルスは なにで たたかった？', answer:1, choices:['ツノ','かたい あたま','しっぽの こんぼう','はね'] ,
+      q:'パキケファロサウルスは なにで たたかった？', answer:1, choices:['ツノ','かたい あたま','しっぽの さきっぽ','はね'] ,
       detail:'あつい ずがい骨を ぶつけて なかま同士で たたかったよ！'},
     { level:3, type:'emoji_name', category:'dino', img:'Parasaurolophus/Parasaurolophus_normal_1.png', hint:'トサカに ひみつ！',
       q:'パラサウロロフスの ながい トサカは なんの ため？', answer:2, choices:['みずを ためる','てきを たたく','こえを ひびかせて なかまを よぶ','くさを ほる'] ,

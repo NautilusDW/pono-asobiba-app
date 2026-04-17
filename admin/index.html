@@ -793,6 +793,7 @@ tr:hover { background: #FFFAF0; }
       <button onclick="ttsReloadManifest()" style="padding:5px 12px;background:#E0F2FE;border:1px solid #7DD3FC;color:#1E40AF;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再読み込み</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <button onclick="ttsGenerateChecked()" style="padding:6px 14px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">✅ チェック済を生成</button>
       <button onclick="ttsGenerateVisible()" style="padding:6px 14px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">⚡ 表示中の未生成を一括生成</button>
       <button onclick="ttsStopGeneration()" id="tts-stop-btn" style="padding:6px 14px;background:#FEE2E2;color:#B91C1C;border:1px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;display:none;">⏹ 停止</button>
       <span id="tts-summary" style="font-size:0.78rem;color:#8B7355;font-weight:700;"></span>
@@ -802,6 +803,7 @@ tr:hover { background: #FFFAF0; }
       <table id="tts-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
         <thead>
           <tr>
+            <th style="text-align:center;padding:7px 4px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;width:36px;"><input type="checkbox" id="tts-check-all" title="表示中すべて選択" style="cursor:pointer;"></th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;white-space:nowrap;">状態</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;white-space:nowrap;">カテゴリー</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;">読み上げテキスト</th>
@@ -1921,7 +1923,7 @@ function ttsRenderTable() {
   }
 
   if (!visible.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#8B7355;">該当なし</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:14px;text-align:center;color:#8B7355;">該当なし</td></tr>';
     return;
   }
 
