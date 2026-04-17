@@ -2355,7 +2355,8 @@ function ttsRenderDraftBar() {
       '<div style="flex:1;font-size:0.7rem;color:#5B21B6;">生成した音声はブラウザに自動保存されます。GitHub反映で全員に配信。</div>' +
       '<button onclick="ttsConfirmLocalSave()" title="ブラウザ内の下書きとして保持します（コミットしません）" style="padding:5px 12px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📝 管理画面のみに保存</button>' +
       '<button onclick="ttsFlushDraftQueue()" title="GitHubにコミット（本番反映）" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">💾 GitHubに反映</button>' +
-      '<button onclick="if(confirm(\'下書きを全部捨てる？\')){_clearTtsDraftQueue().then(function(){ttsRenderDraftBar();ttsRenderTable();});}" style="padding:5px 12px;background:#fff;color:#B91C1C;border:2px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 クリア</button>' +
+      '<button onclick="ttsClearSelectedDrafts()" title="テーブルでチェックされた行の下書きのみ削除" style="padding:5px 12px;background:#FEF3C7;color:#92400E;border:1px solid #F59E0B;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 選択のみクリア</button>' +
+      '<button onclick="if(confirm(\'下書きを全部捨てる？\')){_clearTtsDraftQueue().then(function(){ttsRenderDraftBar();ttsRenderTable();});}" style="padding:5px 12px;background:#fff;color:#B91C1C;border:2px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 全部クリア</button>' +
     '</div>';
 }
 
@@ -2363,6 +2364,35 @@ function ttsConfirmLocalSave() {
   var q = _getTtsDraftQueue();
   if (!q.length) { showToast('下書きはありません', false); return; }
   showToast('✅ ' + q.length + ' 件をブラウザに保存しました（GitHub未反映）', true);
+}
+
+// --- チェック済みの行に対応する下書きだけを削除 ---
+function ttsClearSelectedDrafts() {
+  var checkedHashes = {};
+  document.querySelectorAll('.tts-row-check:checked').forEach(function(c) {
+    if (c.dataset.hash) checkedHashes[c.dataset.hash] = true;
+  });
+  if (!Object.keys(checkedHashes).length) {
+    showToast('チェックされた行がありません', false);
+    return;
+  }
+  // 同一 hash を持つ下書きエントリを全て対象に（重複まとめ表示で 1 行にチェック → その全問の下書きを削除）
+  var toDelete = ttsDraftCache.filter(function(e) { return checkedHashes[e.hash]; });
+  if (!toDelete.length) {
+    showToast('選択した行に下書きはありません', false);
+    return;
+  }
+  if (!confirm(toDelete.length + ' 件の下書きを削除します。よろしいですか？')) return;
+
+  Promise.all(toDelete.map(function(e) { return _removeFromTtsDraftQueue(e.key); }))
+    .then(function() {
+      showToast('✅ ' + toDelete.length + ' 件の下書きを削除しました', true);
+      ttsRenderDraftBar();
+      ttsRenderTable();
+    })
+    .catch(function(err) {
+      showToast('削除失敗: ' + (err && err.message || err), false);
+    });
 }
 
 // --- 下書きキューを GitHub に反映（N個wav + 1個manifest.json = N+1 コミット） ---
