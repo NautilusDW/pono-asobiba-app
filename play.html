@@ -1159,6 +1159,58 @@
   })();
 </script>
 
+<!-- 🐻 おかえりモーダル: 戻ってきた時にポノが挨拶 → 1タップで BGM 再開 -->
+<style>
+  #pono-return-greet {
+    position: fixed; inset: 0; z-index: 9998;
+    background: radial-gradient(circle at 50% 40%, rgba(255,236,196,0.96) 0%, rgba(255,206,160,0.94) 60%, rgba(255,183,129,0.92) 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    cursor: pointer;
+    animation: ponoGreetIn 0.45s ease-out;
+  }
+  #pono-return-greet.fade { animation: ponoGreetOut 0.35s ease-out forwards; }
+  #pono-return-greet img.greet-pono {
+    width: 180px; height: auto;
+    filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.18));
+    animation: ponoGreetWave 1.6s ease-in-out infinite;
+  }
+  #pono-return-greet .greet-title {
+    margin-top: 12px;
+    font-size: 2rem; font-weight: 900; color: #F2742A;
+    text-shadow: 2px 2px 0 #fff;
+  }
+  #pono-return-greet .greet-sub {
+    margin-top: 6px;
+    font-size: 1.05rem; font-weight: 700; color: #5D4E37;
+  }
+  #pono-return-greet .greet-hint {
+    margin-top: 22px;
+    padding: 12px 40px; border-radius: 999px;
+    background: #FFD84D; color: #fff;
+    font-weight: 900; font-size: 1.15rem;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+    animation: ponoGreetHintPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes ponoGreetIn  { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+  @keyframes ponoGreetOut { to   { opacity: 0; transform: scale(1.04); } }
+  @keyframes ponoGreetWave {
+    0%, 100% { transform: rotate(-3deg) translateY(0); }
+    50%      { transform: rotate(3deg)  translateY(-6px); }
+  }
+  @keyframes ponoGreetHintPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+</style>
+<div id="pono-return-greet" style="display:none;">
+  <img class="greet-pono" src="assets/images/characters/pono/dance/dance_wave.png" alt="ポノ" onerror="this.style.display='none'">
+  <div class="greet-title">おかえり！</div>
+  <div class="greet-sub">こんどは なにして あそぶ？</div>
+  <div class="greet-hint">▶ タップ</div>
+</div>
+
 
   <!-- ===== First-Visit Profile Overlay ===== -->
   <script>
@@ -1576,6 +1628,45 @@
     document.addEventListener('visibilitychange', function() {
       if (document.hidden) stopBgm();
       else if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
+    });
+
+    // ===== 「おかえり」モーダル =====
+    // ゲームから戻ってきた時、ブラウザの autoplay policy で BGM が弾かれることがある。
+    // その時だけポノの挨拶モーダルを出し、1タップで BGM を自然に再開させる。
+    // 初回訪問 (pono-tap-intro) とは表示条件で分離。
+    function _showReturnGreeting() {
+      var gm = document.getElementById('pono-return-greet');
+      if (!gm) return;
+      if (gm.style.display === 'flex') return; // 既に表示中
+      gm.style.display = 'flex';
+      gm.classList.remove('fade');
+      var dismissed = false;
+      function _dismiss() {
+        if (dismissed) return;
+        dismissed = true;
+        gm.classList.add('fade');
+        // その時の user gesture で BGM を再開
+        if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
+        setTimeout(function() { gm.style.display = 'none'; }, 350);
+        gm.removeEventListener('pointerdown', _dismiss);
+        gm.removeEventListener('touchstart',  _dismiss);
+      }
+      gm.addEventListener('pointerdown', _dismiss, { passive: true });
+      gm.addEventListener('touchstart',  _dismiss, { passive: true });
+    }
+
+    // pageshow: ページが表示された時 (bfcache 復帰も含む)
+    // 初回 pono-tap-intro 未完了 (sessionStorage が未セット) の時は出さない。
+    window.addEventListener('pageshow', function() {
+      if (!bgm) return;
+      if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
+      if (sessionStorage.getItem('pono_audio_unlocked') !== '1') return; // 初回は既存 intro が担当
+      var p = bgm.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function(){}).catch(function() {
+          _showReturnGreeting();
+        });
+      }
     });
 
     // ===== Premium Unlock =====
