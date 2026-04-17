@@ -2668,6 +2668,28 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "parasaurolophus_dino",
+      "displayName": "パラサウロロフス",
+      "icon": "🦖",
+      "folder": "Parasaurolophus_dino",
+      "expressions": {
+        "normal": "Parasaurolophus_dino_normal_1.png",
+        "surprised": "Parasaurolophus_dino_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 200,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 1,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
