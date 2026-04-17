@@ -935,6 +935,49 @@ function oceanImgUrl(folder, file) {
 function stagingImgUrl(folder, file) {
   return '../assets/images/staging/' + folder + '/' + file + '?_=' + Date.now();
 }
+
+// Netlify ビルド完了前でも表示できるよう、Live URL 404 時に GitHub Contents API
+// から base64 を取得して data URI に差し替えるフォールバック。private repo でも
+// PAT 経由で読めるので raw.githubusercontent.com より確実。取得結果はキャッシュする。
+// kind: 'staging' | 'ocean'
+// 使い方:
+//   var img = document.createElement('img');
+//   img.src = stagingImgUrl(folder, file);
+//   attachGhImageFallback(img, 'staging', folder, file);
+// 既にキャッシュがあれば即時それを使う (Netlify ビルド前でも描画 0 フェッチで OK)。
+function attachGhImageFallback(imgEl, kind, folder, file, opts) {
+  opts = opts || {};
+  window._ghImageCache = window._ghImageCache || {};
+  var cacheKey = kind + '/' + folder + '/' + file;
+  // キャッシュがあれば即座に使う (Live URL 待たずに)
+  if (window._ghImageCache[cacheKey]) {
+    imgEl.src = window._ghImageCache[cacheKey];
+    return;
+  }
+  imgEl.addEventListener('error', function _gh_fallback() {
+    if (imgEl.dataset.ghFellBack) {
+      if (opts.onFinalError) opts.onFinalError.call(imgEl);
+      return;
+    }
+    imgEl.dataset.ghFellBack = '1';
+    var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO +
+      '/contents/assets/images/' + kind + '/' + folder + '/' + file +
+      '?ref=' + GH_BRANCH + '&_=' + Date.now();
+    fetch(apiUrl, { headers: ghHeaders(), cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) {
+        if (d && d.content) {
+          var dataUrl = 'data:image/png;base64,' + d.content.replace(/\n/g, '');
+          window._ghImageCache[cacheKey] = dataUrl;
+          imgEl.src = dataUrl;
+          if (opts.onLoaded) opts.onLoaded.call(imgEl, dataUrl);
+        } else if (opts.onFinalError) {
+          opts.onFinalError.call(imgEl);
+        }
+      })
+      .catch(function() { if (opts.onFinalError) opts.onFinalError.call(imgEl); });
+  });
+}
 var LS_TOKEN  = 'admin_gh_token';
 var REWARDS_PATH = 'assets/data/rewards.json';
 var CREATURES_PATH = 'assets/data/creatures.json';
@@ -2418,7 +2461,9 @@ function _buildCreatureRow(c) {
     // hardcode は従来通りローカルパス、dynamic は GitHub raw URL を使う
     if (c.source === 'hardcode') {
       img.src = oceanImgUrl(c.folder, thumbPath);
-      img.onerror = function() { this.style.display = 'none'; };
+      attachGhImageFallback(img, 'ocean', c.folder, thumbPath, {
+        onFinalError: function() { this.style.display = 'none'; }
+      });
     } else {
       img.style.display = 'none';
       _loadCreatureFolderFiles(c.folder).then(function(map) {
@@ -2819,21 +2864,31 @@ function openNewIllustUploadModal(illustId, illustName) {
           var nf = entry.expressions && entry.expressions.normal;
           if (Array.isArray(nf)) nf = nf[0];
           if (!nf) return;
-          var src = '../assets/images/staging/' + entry.folder + '/' + nf;
           var card = document.createElement('div');
           card.style.cssText = 'text-align:center;cursor:pointer;padding:3px;border:2px solid transparent;border-radius:6px;';
-          card.innerHTML = '<img src="' + src + '" style="width:50px;height:50px;object-fit:contain;border-radius:4px;background:#FFFBEB;" onerror="this.parentNode.style.display=\'none\'"><div style="font-size:0.55rem;color:#92400E;">' + (entry.displayName || entry.id) + '</div>';
+          // img を DOM 経由で作って、Netlifyビルド前でも Contents API フォールバックで表示
+          var thumb = document.createElement('img');
+          thumb.style.cssText = 'width:50px;height:50px;object-fit:contain;border-radius:4px;background:#FFFBEB;';
+          thumb.src = stagingImgUrl(entry.folder, nf);
+          attachGhImageFallback(thumb, 'staging', entry.folder, nf, {
+            onFinalError: function() { card.style.display = 'none'; }
+          });
+          var label = document.createElement('div');
+          label.style.cssText = 'font-size:0.55rem;color:#92400E;';
+          label.textContent = entry.displayName || entry.id;
+          card.appendChild(thumb);
+          card.appendChild(label);
           card.addEventListener('click', function() {
             card.style.borderColor = '#10B981';
             grid.querySelectorAll('div').forEach(function(c) { if (c !== card) c.style.borderColor = 'transparent'; });
-            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + nf + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
-              .then(function(r) { return r.json(); })
+            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + nf + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+              .then(function(r) { return r.ok ? r.json() : null; })
               .then(function(d) {
-                if (d.content) {
+                if (d && d.content) {
                   newBase64 = d.content.replace(/\n/g, '');
-                  preview.innerHTML = '<img src="' + src + '" style="width:100px;height:100px;object-fit:contain;border-radius:8px;border:2px solid #10B981;">';
+                  // プレビューは取得した base64 を直接 data URI で表示 (Netlifyビルド不要)
+                  preview.innerHTML = '<img src="data:image/png;base64,' + newBase64 + '" style="width:100px;height:100px;object-fit:contain;border-radius:8px;border:2px solid #10B981;">';
                   saveBtn.disabled = false;
-                  // 表示名・IDも候補から取得
                   if (entry.displayName) box.querySelector('#nu-name').value = entry.displayName;
                   if (entry.id) box.querySelector('#nu-id').value = entry.id;
                   if (entry.icon) box.querySelector('#nu-icon').value = entry.icon;
@@ -3106,25 +3161,34 @@ function openCreatureReplaceModal(creatureId) {
           var normF = entry.expressions && entry.expressions.normal;
           if (Array.isArray(normF)) normF = normF[0];
           if (!normF) return;
-          var imgSrc = '../assets/images/staging/' + entry.folder + '/' + normF;
           var card = document.createElement('div');
           card.style.cssText = 'text-align:center;cursor:pointer;padding:4px;border:2px solid transparent;border-radius:8px;transition:border-color 0.15s;';
-          card.innerHTML =
-            '<img src="' + imgSrc + '" style="width:60px;height:60px;object-fit:contain;border-radius:6px;background:#FFFBEB;" onerror="this.parentNode.style.display=\'none\'">' +
-            '<div style="font-size:0.6rem;color:#92400E;font-weight:700;margin-top:2px;">' + (entry.displayName || entry.id) + '</div>';
+          // img を DOM 経由で作って Contents API フォールバックを付ける (Netlifyビルド前対応)
+          var thumb = document.createElement('img');
+          thumb.style.cssText = 'width:60px;height:60px;object-fit:contain;border-radius:6px;background:#FFFBEB;';
+          thumb.src = stagingImgUrl(entry.folder, normF);
+          attachGhImageFallback(thumb, 'staging', entry.folder, normF, {
+            onFinalError: function() { card.style.display = 'none'; }
+          });
+          var label = document.createElement('div');
+          label.style.cssText = 'font-size:0.6rem;color:#92400E;font-weight:700;margin-top:2px;';
+          label.textContent = entry.displayName || entry.id;
+          card.appendChild(thumb);
+          card.appendChild(label);
           card.addEventListener('click', function() {
             // staging画像のbase64を取得
             card.style.borderColor = '#F59E0B';
             grid.querySelectorAll('div').forEach(function(c) { if (c !== card) c.style.borderColor = 'transparent'; });
-            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + normF + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
-              .then(function(r) { return r.json(); })
+            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + normF + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+              .then(function(r) { return r.ok ? r.json() : null; })
               .then(function(d) {
-                if (d.content) {
+                if (d && d.content) {
                   newBase64 = d.content.replace(/\n/g, '');
+                  // 右側プレビューも data URI で即表示 (Live URL 待たない)
                   preview.innerHTML =
                     '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">現在</div><img src="' + curSrc + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #E0D8CC"></div>' +
                     '<div style="font-size:1.5rem">→</div>' +
-                    '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">' + (entry.displayName || 'staging') + '</div><img src="' + imgSrc + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #F59E0B"></div>';
+                    '<div style="text-align:center"><div style="font-size:0.68rem;color:#888;margin-bottom:4px">' + (entry.displayName || 'staging') + '</div><img src="data:image/png;base64,' + newBase64 + '" style="width:100px;height:100px;object-fit:contain;background:#f5f5f5;border-radius:8px;border:2px solid #F59E0B"></div>';
                   saveBtn.disabled = false;
                 }
               });
@@ -3562,9 +3626,11 @@ function fetchAndRenderStaging() {
         if (Array.isArray(normFile)) normFile = normFile[0];
         if (normFile) {
           var img = document.createElement('img');
-          img.src = stagingImgUrl(entry.folder, normFile);
           img.style.cssText = 'width:60px;height:60px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid #E0D8CC;';
-          img.onerror = function() { this.style.display = 'none'; };
+          img.src = stagingImgUrl(entry.folder, normFile);
+          attachGhImageFallback(img, 'staging', entry.folder, normFile, {
+            onFinalError: function() { this.style.display = 'none'; }
+          });
           row.appendChild(img);
         }
 
@@ -3647,7 +3713,7 @@ function openBulkAdoptModal(entries) {
     // 新しい画像
     row.innerHTML =
       '<div style="text-align:center;flex-shrink:0;">' +
-        '<img class="checker-bg" src="' + stagSrc + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;border:2px solid #F59E0B;" onerror="this.style.display=\'none\'">' +
+        '<img class="checker-bg bulk-stage-img" style="width:56px;height:56px;object-fit:contain;border-radius:6px;border:2px solid #F59E0B;">' +
         '<div style="font-size:0.62rem;color:#92400E;font-weight:700;max-width:70px;overflow:hidden;text-overflow:ellipsis;">' + (entry.displayName || entry.id) + '</div>' +
       '</div>' +
       '<div style="font-size:1.2rem;flex-shrink:0;">→</div>' +
@@ -3657,6 +3723,12 @@ function openBulkAdoptModal(entries) {
       '<div class="bulk-preview" style="text-align:center;flex-shrink:0;width:56px;"></div>';
 
     listEl.appendChild(row);
+
+    var stageImg = row.querySelector('.bulk-stage-img');
+    stageImg.src = stagSrc;
+    attachGhImageFallback(stageImg, 'staging', entry.folder, normFile, {
+      onFinalError: function() { this.style.display = 'none'; }
+    });
 
     // セレクトボックス構築
     var sel = row.querySelector('.bulk-target');
@@ -3688,9 +3760,13 @@ function openBulkAdoptModal(entries) {
       if (!c) { prevEl.innerHTML = ''; return; }
       var en = c.expressions && c.expressions.normal;
       if (Array.isArray(en)) en = en[0];
-      prevEl.innerHTML = en
-        ? '<img class="checker-bg" src="' + oceanImgUrl(c.folder, en) + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;border:2px solid #E0D8CC;" onerror="this.style.display=\'none\'">'
-        : '';
+      if (!en) { prevEl.innerHTML = ''; return; }
+      prevEl.innerHTML = '<img class="checker-bg bulk-preview-img" style="width:56px;height:56px;object-fit:contain;border-radius:6px;border:2px solid #E0D8CC;">';
+      var prevImg = prevEl.querySelector('.bulk-preview-img');
+      prevImg.src = oceanImgUrl(c.folder, en);
+      attachGhImageFallback(prevImg, 'ocean', c.folder, en, {
+        onFinalError: function() { this.style.display = 'none'; }
+      });
     }
     sel.addEventListener('change', updateRowPreview);
     updateRowPreview();
@@ -3755,7 +3831,7 @@ function adoptStaging(idx, entry) {
     '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">✅ 差し替え採用</div>' +
     '<div style="text-align:center;margin-bottom:12px;">' +
       '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">新しい画像</div>' +
-      '<img class="checker-bg" src="' + stagingSrc + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid #F59E0B;" onerror="this.style.display=\'none\'">' +
+      '<img class="checker-bg adopt-stage-img" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid #F59E0B;">' +
       '<div style="font-size:0.85rem;font-weight:700;color:#5D4E37;margin-top:4px;">' + (entry.displayName || '') + '</div>' +
       '<div style="font-size:0.68rem;color:#888;font-family:monospace;">' + entry.id + '</div>' +
     '</div>' +
@@ -3769,6 +3845,12 @@ function adoptStaging(idx, entry) {
 
   ov.appendChild(box);
   document.body.appendChild(ov);
+
+  var stageImg = box.querySelector('.adopt-stage-img');
+  stageImg.src = stagingSrc;
+  attachGhImageFallback(stageImg, 'staging', entry.folder, normFile, {
+    onFinalError: function() { this.style.display = 'none'; }
+  });
 
   // 既存エントリのセレクト構築
   var sel = box.querySelector('#adopt-target');
@@ -6586,13 +6668,15 @@ function renderIllust() {
           thumb.className = 'checker-bg';
           thumb.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           thumb.title = 'クリックで拡大';
-          thumb.onerror = function() { this.style.display = 'none'; };
           // 差し替え済みの画像があればdata URIで即時表示
           var replKey = creature.folder + '/' + normFile;
           if (window._replacedImages && window._replacedImages[replKey]) {
             thumb.src = window._replacedImages[replKey];
           } else {
             thumb.src = oceanImgUrl(creature.folder, normFile);
+            attachGhImageFallback(thumb, 'ocean', creature.folder, normFile, {
+              onFinalError: function() { this.style.display = 'none'; }
+            });
           }
           (function(t, name) {
             t.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(t.src, name); });
@@ -6769,42 +6853,18 @@ function _renderStagingIllust(container, creatureLookup) {
 
         var normFile = entry.expressions && entry.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
-        // Netlify ビルド完了前でもプレビューできるように、アップロード時に保存した
-        // base64 キャッシュ (window._stagingImageCache) があれば優先して使う。
-        var cacheKey = entry.folder + '/' + normFile;
-        var cachedSrc = (window._stagingImageCache && window._stagingImageCache[cacheKey]) || null;
-        var imgSrc = cachedSrc || (normFile ? stagingImgUrl(entry.folder, normFile) : '');
 
         // サムネイル（クリックで拡大）
-        if (imgSrc) {
+        if (normFile) {
           var img = document.createElement('img');
-          img.src = imgSrc;
           img.className = 'checker-bg';
           img.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           img.title = 'クリックで拡大';
-          // Netlify ビルド中などで Live URL が 404 のときは、GitHub Contents API で
-          // base64 を取得して data URI にする (private repo でも PAT 経由で読める)。
-          img.onerror = (function(folder, file) {
-            return function() {
-              var self = this;
-              if (self.dataset.fellBack) { self.style.display = 'none'; return; }
-              self.dataset.fellBack = '1';
-              var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + folder + '/' + file + '?ref=' + GH_BRANCH;
-              fetch(apiUrl, { headers: ghHeaders(), cache: 'no-store' })
-                .then(function(r) { return r.ok ? r.json() : null; })
-                .then(function(d) {
-                  if (d && d.content) {
-                    var dataUrl = 'data:image/png;base64,' + d.content.replace(/\n/g, '');
-                    window._stagingImageCache = window._stagingImageCache || {};
-                    window._stagingImageCache[folder + '/' + file] = dataUrl;
-                    self.src = dataUrl;
-                  } else {
-                    self.style.display = 'none';
-                  }
-                })
-                .catch(function() { self.style.display = 'none'; });
-            };
-          })(entry.folder, normFile);
+          img.src = stagingImgUrl(entry.folder, normFile);
+          // Netlifyビルド中でも表示できるよう Contents API フォールバックを付与
+          attachGhImageFallback(img, 'staging', entry.folder, normFile, {
+            onFinalError: function() { this.style.display = 'none'; }
+          });
           img.addEventListener('click', function() { showImagePreview(img.src, entry.displayName || entry.id); });
           card.appendChild(img);
         }
@@ -6821,7 +6881,9 @@ function _renderStagingIllust(container, creatureLookup) {
             curImg.className = 'checker-bg';
             curImg.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;border:2px solid #86EFAC;position:absolute;top:4px;right:4px;cursor:zoom-in;';
             curImg.title = '現在の画像（クリックで拡大）';
-            curImg.onerror = function() { this.style.display = 'none'; };
+            attachGhImageFallback(curImg, 'ocean', existing.folder, existNorm, {
+              onFinalError: function() { this.style.display = 'none'; }
+            });
             curImg.addEventListener('click', function(e) { e.stopPropagation(); showImagePreview(curSrc, '現在: ' + (entry.displayName || entry.id)); });
             card.appendChild(curImg);
           }
@@ -7095,9 +7157,9 @@ function openLocalStagingImportModal() {
             return ghUploadPromise(filePath, e.base64, '📁 local staging: ' + e.id + ' / ' + fileName)
               .then(function() {
                 // Netlify ビルド完了前でも差し替え候補 UI でプレビューできるよう、
-                // アップロード時の base64 をセッションキャッシュに入れておく。
-                window._stagingImageCache = window._stagingImageCache || {};
-                window._stagingImageCache[folder + '/' + fileName] = 'data:image/png;base64,' + e.base64;
+                // アップロード時の base64 を統一キャッシュに入れておく。
+                window._ghImageCache = window._ghImageCache || {};
+                window._ghImageCache['staging/' + folder + '/' + fileName] = 'data:image/png;base64,' + e.base64;
                 var entry = {
                   id: e.id,
                   displayName: e.displayName,
