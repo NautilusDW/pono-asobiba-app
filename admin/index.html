@@ -2222,6 +2222,22 @@ function ttsRenderTable() {
     sLine.textContent = ttsStyleLabel(style);
     tdVoice.appendChild(vLine);
     tdVoice.appendChild(sLine);
+    // モデルバッジ（生成済みのときだけ）— メタ情報として話者セルに統合
+    var modelForBadge = null, isFallback = false;
+    if (draftEntry && draftEntry.modelUsed) {
+      modelForBadge = draftEntry.modelUsed;
+      isFallback = !!draftEntry.fallbackUsed;
+    } else if (existing && existing.modelUsed) {
+      modelForBadge = existing.modelUsed;
+    }
+    if (modelForBadge) {
+      var mBadge = document.createElement('div');
+      mBadge.style.cssText = 'display:inline-block;margin-top:3px;padding:1px 6px;border-radius:8px;font-size:0.6rem;font-weight:800;' +
+        (isFallback ? 'background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;' : 'background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;');
+      mBadge.textContent = ttsShortModel(modelForBadge);
+      mBadge.title = '生成モデル: ' + modelForBadge + (isFallback ? '（フォールバック）' : '');
+      tdVoice.appendChild(mBadge);
+    }
     if (isPreview) {
       var hintLine = document.createElement('div');
       hintLine.style.cssText = 'font-size:0.58rem;color:#C4B5D0;margin-top:1px;';
@@ -2234,58 +2250,49 @@ function ttsRenderTable() {
     var tdOps = document.createElement('td');
     tdOps.style.cssText = 'padding:6px 4px;text-align:center;';
     var opsWrap = document.createElement('div');
-    opsWrap.style.cssText = 'display:flex;gap:4px;justify-content:center;';
+    opsWrap.style.cssText = 'display:flex;gap:6px;justify-content:center;align-items:center;';
 
-    if ((r._state === 'done' || r._state === 'stale') && existing && _ttsValidFile(existing.file)) {
-      var pBtn = document.createElement('button');
-      pBtn.type = 'button';
-      pBtn.style.cssText = 'padding:4px 8px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
-      pBtn.textContent = '▶ 再生';
-      pBtn.dataset.url = '../assets/tts/' + existing.file;
-      pBtn.addEventListener('click', function(ev) { ttsPlay(ev.currentTarget.dataset.url); });
-      opsWrap.appendChild(pBtn);
-    } else if (r._state === 'draft') {
-      var dBtn = document.createElement('button');
-      dBtn.type = 'button';
-      dBtn.style.cssText = 'padding:4px 8px;background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
-      dBtn.textContent = '▶ 下書き';
-      dBtn.dataset.key = r.key;
-      dBtn.addEventListener('click', function(ev) { ttsPlayDraft(ev.currentTarget.dataset.key); });
-      opsWrap.appendChild(dBtn);
-      if (draftEntry && draftEntry.modelUsed) {
-        var mBadge = document.createElement('span');
-        var isFb = !!draftEntry.fallbackUsed;
-        mBadge.style.cssText = 'display:inline-block;padding:2px 6px;border-radius:8px;font-size:0.62rem;font-weight:800;' + (isFb ? 'background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;' : 'background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;');
-        mBadge.textContent = ttsShortModel(draftEntry.modelUsed);
-        mBadge.title = '生成モデル: ' + draftEntry.modelUsed + (isFb ? '（フォールバック）' : '');
-        opsWrap.appendChild(mBadge);
-      }
+    // ① 再生ボタン（常に先頭、draft/published どちらでも統一ラベル）
+    if (r._state === 'draft') {
+      var playBtn = document.createElement('button');
+      playBtn.type = 'button';
+      playBtn.style.cssText = 'padding:5px 10px;background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
+      playBtn.textContent = '▶ 再生';
+      playBtn.title = '現在採用中の下書きを再生';
+      playBtn.dataset.key = r.key;
+      playBtn.addEventListener('click', function(ev) { ttsPlayDraft(ev.currentTarget.dataset.key); });
+      opsWrap.appendChild(playBtn);
+    } else if ((r._state === 'done' || r._state === 'stale') && existing && _ttsValidFile(existing.file)) {
+      var playBtn2 = document.createElement('button');
+      playBtn2.type = 'button';
+      playBtn2.style.cssText = 'padding:5px 10px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
+      playBtn2.textContent = '▶ 再生';
+      playBtn2.title = 'GitHub 配信中の音声を再生';
+      playBtn2.dataset.url = '../assets/tts/' + existing.file;
+      playBtn2.addEventListener('click', function(ev) { ttsPlay(ev.currentTarget.dataset.url); });
+      opsWrap.appendChild(playBtn2);
     }
-    if (hasPrev) {
-      var prBtn = document.createElement('button');
-      prBtn.type = 'button';
-      prBtn.style.cssText = 'padding:4px 8px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
-      prBtn.textContent = '⏮ 前回';
-      prBtn.title = '1つ前のバージョンを再生（聞き比べ用）';
-      prBtn.dataset.key = r.key;
-      prBtn.addEventListener('click', function(ev) { ttsPlayPrevious(ev.currentTarget.dataset.key); });
-      opsWrap.appendChild(prBtn);
-    }
+
+    // ② 候補ピッカー（2 件以上あれば）— 「前回」ボタンは廃止、全部ここから選択可
     var histCount = (draftEntry && Array.isArray(draftEntry.history)) ? draftEntry.history.length : 0;
     if (histCount > 0) {
       var hBtn = document.createElement('button');
       hBtn.type = 'button';
-      hBtn.style.cssText = 'padding:4px 8px;background:#FEF9C3;color:#854D0E;border:1px solid #FDE047;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+      hBtn.style.cssText = 'padding:5px 10px;background:#FEF9C3;color:#854D0E;border:1px solid #FDE047;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
       hBtn.textContent = '🗂 候補 ' + (histCount + 1);
-      hBtn.title = histCount + ' 個の過去候補から採用するものを選べます';
+      hBtn.title = (histCount + 1) + ' つの候補から試聴して採用を選べます';
       hBtn.dataset.key = r.key;
       hBtn.addEventListener('click', function(ev) { ttsOpenVariantPicker(ev.currentTarget.dataset.key); });
       opsWrap.appendChild(hBtn);
     }
+
+    // ③ 生成 / 再生成ボタン（文脈で文言変化）
+    var hasAny = (r._state === 'done' || r._state === 'stale' || r._state === 'draft');
     var gBtn = document.createElement('button');
     gBtn.type = 'button';
-    gBtn.style.cssText = 'padding:4px 8px;background:#F3E8FF;color:#6D28D9;border:1px solid #D8B4FE;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
-    gBtn.textContent = '⚡ 生成';
+    gBtn.style.cssText = 'padding:5px 10px;background:#F3E8FF;color:#6D28D9;border:1px solid #D8B4FE;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
+    gBtn.textContent = hasAny ? '🔁 再生成' : '⚡ 生成';
+    gBtn.title = hasAny ? '現設定で新しい候補を作る（既存は候補に残る）' : '新規生成';
     gBtn.dataset.key = r.key;
     gBtn.addEventListener('click', function(ev) { ttsGenerateOne(ev.currentTarget.dataset.key); });
     opsWrap.appendChild(gBtn);
