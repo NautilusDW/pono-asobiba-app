@@ -50,6 +50,17 @@ exports.handler = async function(event) {
   try { body = JSON.parse(event.body || '{}'); }
   catch(e) { return jsonResp(400, { error: 'Invalid JSON' }); }
 
+  // Debug: list available Cloud TTS voices for a language
+  if (body.mode === 'list-voices') {
+    var lang = body.languageCode || 'ja-JP';
+    var listUrl = 'https://texttospeech.googleapis.com/v1/voices?languageCode=' + encodeURIComponent(lang) + '&key=' + encodeURIComponent(process.env.GOOGLE_TTS_API_KEY || apiKey);
+    try {
+      var lr = await fetch(listUrl);
+      var ld = await lr.json();
+      return jsonResp(lr.status, ld);
+    } catch (e) { return jsonResp(500, { error: e.message }); }
+  }
+
   var text = (body.text || '').toString().trim();
   if (!text) return jsonResp(400, { error: 'text が必要です' });
   if (text.length > 2000) return jsonResp(400, { error: 'text が長すぎます（2000字まで）' });
@@ -129,27 +140,46 @@ exports.handler = async function(event) {
     return { resp: resp, data: data, audioPart: audioPart, finishReason: finishReason, blockReason: blockReason };
   }
 
-  // Google Cloud TTS への最終フォールバック（Gemini TTS プレビュー不安定時）
-  // Gemini voice 名 → Cloud TTS ja-JP voice 名への逆マッピング
-  var GEMINI_TO_CLOUD_VOICE = {
-    'Leda': 'ja-JP-Neural2-B', 'Aoede': 'ja-JP-Wavenet-B', 'Callirrhoe': 'ja-JP-Standard-B',
-    'Despina': 'ja-JP-Standard-A', 'Autonoe': 'ja-JP-Neural2-B',
-    'Zephyr': 'ja-JP-Wavenet-A',
-    'Puck': 'ja-JP-Neural2-C', 'Orus': 'ja-JP-Wavenet-C',
-    'Kore': 'ja-JP-Neural2-D', 'Charon': 'ja-JP-Wavenet-D', 'Fenrir': 'ja-JP-Wavenet-C'
+  // Google Cloud TTS (Chirp 3: HD) への最終フォールバック
+  // Gemini/Chirp3 は同じ celestial 名を共有しているのでそのまま prefix を付けるだけ
+  var CHIRP3_AVAILABLE = {
+    'Leda':1,'Aoede':1,'Callirrhoe':1,'Despina':1,'Autonoe':1,'Zephyr':1,'Erinome':1,
+    'Puck':1,'Orus':1,'Kore':1,'Charon':1,'Fenrir':1,'Iapetus':1,'Umbriel':1,'Algieba':1,'Enceladus':1
   };
-  async function callCloudTts(geminiVoice) {
-    var cloudVoice = GEMINI_TO_CLOUD_VOICE[geminiVoice] || 'ja-JP-Neural2-B';
+  async function callChirp3(geminiVoice) {
+    var cloudVoice = CHIRP3_AVAILABLE[geminiVoice] ? ('ja-JP-Chirp3-HD-' + geminiVoice) : 'ja-JP-Chirp3-HD-Leda';
     var cloudKey = process.env.GOOGLE_TTS_API_KEY || apiKey;
     var url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey);
     var payload2 = {
-      input: { text: text },   // Cloud TTS は audio tag 未対応なので plain text
+      input: { text: text },   // Chirp 3: HD は audio tag / SSML を解釈しない（ただし speakingRate/pitch も非対応）
       voice: { languageCode: 'ja-JP', name: cloudVoice },
-      audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: 24000, speakingRate: 1.0, pitch: 1.0 }
+      audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: 24000 }
     };
     var resp = await fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload2)
+    });
+    var data = await resp.json();
+    return { resp: resp, data: data, cloudVoice: cloudVoice };
+  }
+  async function callCloudNeural2(geminiVoice) {
+    // Chirp 3: HD も失敗した時の最終保険（Neural2）
+    var NEURAL2_MAP = {
+      'Leda':'ja-JP-Neural2-B','Aoede':'ja-JP-Neural2-B','Callirrhoe':'ja-JP-Neural2-B',
+      'Despina':'ja-JP-Neural2-B','Autonoe':'ja-JP-Neural2-B','Zephyr':'ja-JP-Neural2-B',
+      'Puck':'ja-JP-Neural2-C','Orus':'ja-JP-Neural2-C',
+      'Kore':'ja-JP-Neural2-D','Charon':'ja-JP-Neural2-D','Fenrir':'ja-JP-Neural2-D'
+    };
+    var cloudVoice = NEURAL2_MAP[geminiVoice] || 'ja-JP-Neural2-B';
+    var cloudKey = process.env.GOOGLE_TTS_API_KEY || apiKey;
+    var url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey);
+    var resp = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: { text: text },
+        voice: { languageCode: 'ja-JP', name: cloudVoice },
+        audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: 24000, speakingRate: 1.0, pitch: 1.0 }
+      })
     });
     var data = await resp.json();
     return { resp: resp, data: data, cloudVoice: cloudVoice };
@@ -162,6 +192,26 @@ exports.handler = async function(event) {
 
   try {
     var attemptChain = [];
+
+    // engine='chirp3' の直行モード: Gemini をスキップして Chirp 3: HD のみを叩く
+    if (body.engine === 'chirp3') {
+      var chirpDirect = await callChirp3(voice);
+      attemptChain.push({ model: 'chirp3-hd', status: chirpDirect.resp.status, err: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || null });
+      if (chirpDirect.resp.ok && chirpDirect.data && chirpDirect.data.audioContent) {
+        return jsonResp(200, {
+          audio: chirpDirect.data.audioContent,
+          mime: 'audio/wav',
+          voice: chirpDirect.cloudVoice,
+          chars: text.length,
+          model: 'chirp3-hd',
+          fallbackUsed: false,
+          attemptChain: attemptChain,
+          sampleRate: 24000
+        });
+      }
+      return jsonResp(502, { error: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || 'Chirp 3: HD error', attemptChain: attemptChain });
+    }
+
     var result = await callModel(MODEL_PRIMARY);
     attemptChain.push({ model: MODEL_PRIMARY, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
     var modelUsed = MODEL_PRIMARY;
@@ -173,22 +223,38 @@ exports.handler = async function(event) {
       modelUsed = MODEL_FALLBACK;
     }
 
-    // 2段目フォールバック: Gemini 全滅 → Cloud TTS
+    // 2段目フォールバック: Gemini 全滅 → Chirp 3: HD（Cloud TTS 最新・最高品質）
     if (isBlockedOrEmpty(result)) {
-      var cloudResult = await callCloudTts(voice);
-      if (cloudResult.resp.ok && cloudResult.data && cloudResult.data.audioContent) {
+      var chirpResult = await callChirp3(voice);
+      if (chirpResult.resp.ok && chirpResult.data && chirpResult.data.audioContent) {
         return jsonResp(200, {
-          audio: cloudResult.data.audioContent,   // Cloud TTS は WAV ヘッダ付きで返る
+          audio: chirpResult.data.audioContent,   // Cloud TTS LINEAR16 は WAV ヘッダ付き
           mime: 'audio/wav',
-          voice: cloudResult.cloudVoice,
+          voice: chirpResult.cloudVoice,
           chars: text.length,
-          model: 'cloud-tts',
+          model: 'chirp3-hd',
           fallbackUsed: true,
           attemptChain: attemptChain,
           sampleRate: 24000
         });
       }
-      attemptChain.push({ model: 'cloud-tts', status: cloudResult.resp.status, err: (cloudResult.data && cloudResult.data.error && cloudResult.data.error.message) || null });
+      attemptChain.push({ model: 'chirp3-hd', status: chirpResult.resp.status, err: (chirpResult.data && chirpResult.data.error && chirpResult.data.error.message) || null });
+
+      // 3段目フォールバック: Chirp 3 も駄目なら Neural2（最終保険）
+      var neuralResult = await callCloudNeural2(voice);
+      if (neuralResult.resp.ok && neuralResult.data && neuralResult.data.audioContent) {
+        return jsonResp(200, {
+          audio: neuralResult.data.audioContent,
+          mime: 'audio/wav',
+          voice: neuralResult.cloudVoice,
+          chars: text.length,
+          model: 'cloud-tts-neural2',
+          fallbackUsed: true,
+          attemptChain: attemptChain,
+          sampleRate: 24000
+        });
+      }
+      attemptChain.push({ model: 'cloud-tts-neural2', status: neuralResult.resp.status, err: (neuralResult.data && neuralResult.data.error && neuralResult.data.error.message) || null });
     }
 
     if (!result.resp.ok) {

@@ -773,6 +773,12 @@ tr:hover { background: #FFFAF0; }
     <div class="section-title">🔊 クイズランド 音声ナレーション</div>
     <div id="tts-draft-bar" style="display:none;"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+      <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">エンジン</label>
+      <select id="tts-engine-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
+        <option value="gemini">Gemini 3.1 (失敗時自動 Chirp3 代替)</option>
+        <option value="chirp3">Chirp 3: HD (Cloud TTS・安定)</option>
+        <option value="voicevox">VOICEVOX (ローカル・無料)</option>
+      </select>
       <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">話者</label>
       <select id="tts-voice-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
         <option value="Leda">Leda（やさしい女声・おすすめ）</option>
@@ -784,6 +790,21 @@ tr:hover { background: #FFFAF0; }
         <option value="Orus">Orus（男声・爽やか）</option>
         <option value="Kore">Kore（男声・落ち着き）</option>
       </select>
+      <select id="tts-vv-speaker-sel" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
+        <option value="3">ずんだもん ノーマル（子供向けおすすめ）</option>
+        <option value="1">ずんだもん あまあま</option>
+        <option value="7">ずんだもん ツンツン</option>
+        <option value="2">四国めたん ノーマル</option>
+        <option value="0">四国めたん あまあま</option>
+        <option value="8">春日部つむぎ</option>
+        <option value="10">雨晴はう</option>
+        <option value="9">波音リツ</option>
+        <option value="11">玄野武宏</option>
+        <option value="12">白上虎太郎</option>
+        <option value="13">青山龍星</option>
+        <option value="14">冥鳴ひまり</option>
+      </select>
+      <button id="tts-vv-health-btn" type="button" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;background:#FFF;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 VOICEVOX 確認</button>
       <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">語り口</label>
       <select id="tts-style-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
         <option value="[gently]">やさしく（問題文向け）</option>
@@ -1691,6 +1712,9 @@ var TTS_DEFAULT_VOICE   = 'Leda';
 var TTS_DEFAULT_STYLE   = '[gently]';
 var TTS_ALLOWED_MODELS  = ['gemini-3.1-flash-tts-preview'];
 var TTS_MODEL           = TTS_ALLOWED_MODELS[0];
+var TTS_DEFAULT_ENGINE  = 'gemini'; // 'gemini' | 'chirp3' | 'voicevox'
+var TTS_VV_BASE         = 'http://localhost:50021';
+var TTS_VV_DEFAULT_SPK  = 3; // ずんだもん ノーマル
 // 旧 Cloud TTS voice 名 → Gemini voice へ自動マイグレーション（IndexedDB 互換）
 var TTS_LEGACY_VOICE_MAP = {
   'ja-JP-Neural2-B':  'Leda',
@@ -1905,6 +1929,90 @@ function ttsPopulateCatFilter() {
     // voice 変更だけでは状態は変わらない（既存は既存voiceのまま使い続ける）
     ttsRenderTable();
   });
+  var engSel = document.getElementById('tts-engine-sel');
+  if (engSel) {
+    engSel.addEventListener('change', ttsApplyEngineUI);
+    ttsApplyEngineUI();
+  }
+  var vvBtn = document.getElementById('tts-vv-health-btn');
+  if (vvBtn) vvBtn.addEventListener('click', ttsCheckVoicevox);
+}
+
+// engine = voicevox のときだけ speaker dropdown + 健康確認ボタンを表示し、
+// Gemini/Chirp3 用の voice dropdown / 語り口を隠す（VOICEVOX は独自 voice と感情切替）
+function ttsApplyEngineUI() {
+  var eng = (document.getElementById('tts-engine-sel') || {}).value || TTS_DEFAULT_ENGINE;
+  var voiceSel = document.getElementById('tts-voice-sel');
+  var styleSel = document.getElementById('tts-style-sel');
+  var vvSel = document.getElementById('tts-vv-speaker-sel');
+  var vvBtn = document.getElementById('tts-vv-health-btn');
+  var isVv = (eng === 'voicevox');
+  if (voiceSel) voiceSel.style.display = isVv ? 'none' : '';
+  if (styleSel) styleSel.style.display = isVv ? 'none' : '';
+  if (vvSel) vvSel.style.display = isVv ? '' : 'none';
+  if (vvBtn) vvBtn.style.display = isVv ? '' : 'none';
+}
+
+function ttsCurrentEngine() {
+  var el = document.getElementById('tts-engine-sel');
+  return (el && el.value) || TTS_DEFAULT_ENGINE;
+}
+
+// VOICEVOX エンジンの生存確認（GET /version）
+function ttsCheckVoicevox() {
+  ttsProgress('⏳ VOICEVOX 確認中...');
+  return fetch(TTS_VV_BASE + '/version', { method: 'GET' })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(ver) {
+      ttsProgress('');
+      showToast('✅ VOICEVOX 起動中 (v' + (ver || '').replace(/"/g, '').trim() + ')', true);
+    })
+    .catch(function(e) {
+      ttsProgress('');
+      showToast('⚠️ VOICEVOX 未起動または CORS 未許可: ' + (e && e.message || e) + ' — アプリを起動し http://localhost:50021/setting で CORS を許可してください', false);
+    });
+}
+
+// VOICEVOX 2段階合成: /audio_query → /synthesis、WAV を base64 で返す
+function ttsCallVoicevox(text, speakerId) {
+  var spk = parseInt(speakerId, 10) || TTS_VV_DEFAULT_SPK;
+  var qUrl = TTS_VV_BASE + '/audio_query?text=' + encodeURIComponent(text) + '&speaker=' + spk;
+  return fetch(qUrl, { method: 'POST' })
+    .then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('VOICEVOX audio_query ' + r.status + ': ' + t); });
+      return r.json();
+    })
+    .then(function(query) {
+      return fetch(TTS_VV_BASE + '/synthesis?speaker=' + spk, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'audio/wav' },
+        body: JSON.stringify(query)
+      });
+    })
+    .then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('VOICEVOX synthesis ' + r.status + ': ' + t); });
+      return r.arrayBuffer();
+    })
+    .then(function(buf) {
+      // ArrayBuffer → base64
+      var bytes = new Uint8Array(buf);
+      var CHUNK = 0x8000;
+      var b64 = '';
+      for (var i = 0; i < bytes.length; i += CHUNK) {
+        b64 += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+      }
+      return {
+        audio: btoa(b64),
+        mime: 'audio/wav',
+        voice: 'voicevox:' + spk,
+        chars: text.length,
+        model: 'voicevox:' + spk,
+        fallbackUsed: false
+      };
+    });
 }
 
 function ttsReloadManifest() {
@@ -2139,7 +2247,9 @@ function ttsShortModel(m) {
   if (!m) return '';
   if (m.indexOf('gemini-3.1') === 0) return 'Gemini3.1';
   if (m.indexOf('gemini-2.5') === 0) return 'Gemini2.5';
-  if (m === 'cloud-tts') return 'CloudTTS';
+  if (m === 'chirp3-hd') return 'Chirp3';
+  if (m === 'cloud-tts-neural2' || m === 'cloud-tts') return 'Neural2';
+  if (m.indexOf('voicevox') === 0) return 'VOICEVOX';
   return m;
 }
 
@@ -2221,15 +2331,26 @@ function ttsFlashRow(key) {
   }, 30);
 }
 
-// --- API 呼び出し（リトライ付き・指数バックオフ） ---
+// --- API 呼び出し（リトライ付き・指数バックオフ・エンジン分岐） ---
 function ttsCallApi(text, voice, attempt, stylePrompt) {
   attempt = attempt || 1;
   var maxAttempts = 3;
   var style = (typeof stylePrompt === 'string') ? stylePrompt : ttsCurrentStyle();
+  var engine = ttsCurrentEngine();
+
+  // VOICEVOX は localhost 直叩き（Netlify Function を経由しない）
+  if (engine === 'voicevox') {
+    var vvSel = document.getElementById('tts-vv-speaker-sel');
+    var spk = vvSel ? vvSel.value : TTS_VV_DEFAULT_SPK;
+    return ttsCallVoicevox(text, spk);
+  }
+
+  var body = { text: text, voice: ttsNormalizeVoice(voice), stylePrompt: style, model: TTS_MODEL };
+  if (engine === 'chirp3') body.engine = 'chirp3'; // サーバ側で Gemini をスキップ
   return fetch('/.netlify/functions/ai-tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: ttsNormalizeVoice(voice), stylePrompt: style, model: TTS_MODEL })
+    body: JSON.stringify(body)
   }).then(function(r) {
     return r.json().then(function(data) {
       if (!r.ok) {
