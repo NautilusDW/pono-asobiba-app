@@ -1090,7 +1090,7 @@ function drawInBox(boxId, srcCanvas, applyBg) {
 
 function redrawCompare() {
   drawInBox('box-orig', originalCanvas, false);
-  if (processedCanvas) drawInBox('box-proc', processedCanvas, true);
+  drawInBox('box-proc', processedCanvas, true);
   drawLinkOverlay();
   drawCutOverlay();
   const lbl = document.getElementById('zoom-level-display');
@@ -4481,14 +4481,61 @@ function addPickerFiles(files) {
         cv.width = w; cv.height = h;
         cv.getContext('2d').drawImage(img, 0, 0, w, h);
         pickerImages.push({ canvas: cv, name: file.name, selections: [] });
-        if (activePickerIdx < 0) activePickerIdx = 0;
-        renderPickerStrip();
-        renderPickerPreview();
+        // 最初の画像は自動的にアクティブ化 (元画像プレビューに表示)
+        if (activePickerIdx < 0) {
+          activatePickerImage(pickerImages.length - 1);
+        } else {
+          renderPickerStrip();
+          renderPickerPreview();
+        }
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
+}
+
+// ── Picker 状態切替: サムネクリック時に 元画像/処理後 プレビューも切替る ──
+// 現在の processedCanvas 等は activePickerIdx のピッカー画像に紐づくので、
+// 別のサムネイルをクリックするときは「今の状態を保存 → 切替先の状態を復元」する。
+function activatePickerImage(i) {
+  if (i < 0 || i >= pickerImages.length) {
+    activePickerIdx = -1;
+    originalCanvas = null;
+    processedCanvas = null;
+    processedRaw = null;
+    cutLines = [];
+    linkLines = [];
+    redrawCompare();
+    renderPickerStrip();
+    renderPickerPreview();
+    return;
+  }
+  // 現在アクティブな picker があれば、その作業状態を保存
+  if (activePickerIdx >= 0 && activePickerIdx < pickerImages.length && activePickerIdx !== i) {
+    const prev = pickerImages[activePickerIdx];
+    prev.processedCanvas = processedCanvas;
+    prev.processedRaw    = processedRaw;
+    prev.cutLines        = cutLines.slice();
+    prev.linkLines       = linkLines.slice();
+    prev.keepBackground  = keepBackground;
+  }
+  activePickerIdx = i;
+  const p = pickerImages[i];
+  originalCanvas  = p.canvas;
+  processedCanvas = p.processedCanvas || null;
+  processedRaw    = p.processedRaw    || null;
+  cutLines        = (p.cutLines  || []).slice();
+  linkLines       = (p.linkLines || []).slice();
+  keepBackground  = p.keepBackground || false;
+  // ツールボタンの有効化状態を更新
+  document.getElementById('btn-process').disabled  = false;
+  document.getElementById('btn-skip-bg').disabled  = false;
+  document.getElementById('btn-finish').disabled   = !processedRaw;
+  document.getElementById('btn-reset-erase').disabled = !processedCanvas;
+  redrawCompare();
+  renderPickerStrip();
+  renderPickerPreview();
 }
 
 // ── Picker strip (thumbnails) ──
@@ -4509,7 +4556,7 @@ function renderPickerStrip() {
       ? Math.min(56 / pImg.canvas.width, 56 / pImg.canvas.height) : 1;
     const tw = pImg.canvas.width * scale, th = pImg.canvas.height * scale;
     thumb.getContext('2d').drawImage(pImg.canvas, (56 - tw) / 2, (56 - th) / 2, tw, th);
-    thumb.addEventListener('click', () => { activePickerIdx = i; renderPickerStrip(); renderPickerPreview(); });
+    thumb.addEventListener('click', () => { activatePickerImage(i); });
 
     const label = document.createElement('div');
     label.className = 'picker-thumb-label';
@@ -4525,10 +4572,21 @@ function renderPickerStrip() {
     del.textContent = '×';
     del.addEventListener('click', e => {
       e.stopPropagation();
+      const wasActive = (activePickerIdx === i);
       pImg.canvas.width = 0; pImg.canvas.height = 0;
       pickerImages.splice(i, 1);
-      if (activePickerIdx >= pickerImages.length) activePickerIdx = pickerImages.length - 1;
-      renderPickerStrip(); renderPickerPreview(); updateCompositePreview();
+      // activePickerIdx の補正
+      let newIdx = activePickerIdx;
+      if (wasActive) {
+        // 削除したのがアクティブなので、近い位置を再選択
+        newIdx = Math.min(i, pickerImages.length - 1);
+        activePickerIdx = -1; // 保存をスキップさせる
+        activatePickerImage(newIdx);
+      } else {
+        if (activePickerIdx > i) activePickerIdx--;
+        renderPickerStrip(); renderPickerPreview();
+      }
+      updateCompositePreview();
     });
 
     wrap.appendChild(thumb);
