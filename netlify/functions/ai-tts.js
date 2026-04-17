@@ -1,7 +1,10 @@
 // Netlify Function: Google Cloud Text-to-Speech プロキシ
-// 環境変数: GEMINI_API_KEY を Netlify ダッシュボードで設定（ai-name.js と共用）
-//   ※ Gemini API Key ではなく Google Cloud API Key。同じプロジェクトなら同じキーでOK
+// 環境変数 (優先順):
+//   1. GOOGLE_TTS_API_KEY   — Cloud TTS 専用キー（推奨）
+//   2. GEMINI_API_KEY       — ai-name.js と共用キー（Gemini と TTS 両方叩けるキーの場合）
 //   ※ Cloud Console で「Cloud Text-to-Speech API」を有効化しておくこと
+//   ※ 組織ポリシーにより Gemini は service-account-bound キーが必須の場合があるため、
+//      TTS 用と Gemini 用を分離できる設計にしている
 //
 // リクエスト (POST application/json):
 //   { text: "読み上げるテキスト",
@@ -34,9 +37,9 @@ exports.handler = async function(event) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  var apiKey = process.env.GEMINI_API_KEY;
+  var apiKey = process.env.GOOGLE_TTS_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return jsonResp(500, { error: 'GEMINI_API_KEY not configured on server' });
+    return jsonResp(500, { error: 'GOOGLE_TTS_API_KEY (or GEMINI_API_KEY) not configured on server' });
   }
 
   // 任意: TTS_ADMIN_SECRET 環境変数が設定されていれば一致必須（quota abuse 防止）
