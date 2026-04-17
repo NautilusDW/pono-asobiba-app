@@ -99,6 +99,8 @@ exports.handler = async function(event) {
     { category: 'HARM_CATEGORY_CIVIC_INTEGRITY',   threshold: 'BLOCK_NONE' }
   ];
 
+  // Note: Gemini TTS モデルは systemInstruction 非対応（400: "Developer instruction is not enabled"）
+  // 代わりに Audio Tag と、必要なら短すぎる日本語にパディング prefix を付ける
   var payload = {
     contents: [{ parts: [{ text: styledText }] }],
     generationConfig: {
@@ -154,13 +156,8 @@ exports.handler = async function(event) {
   }
 
   function isBlockedOrEmpty(r) {
-    return !r.audioPart && (
-      r.blockReason === 'PROHIBITED_CONTENT' ||
-      r.blockReason === 'SAFETY' ||
-      r.finishReason === 'OTHER' ||
-      r.finishReason === 'SAFETY' ||
-      r.finishReason === 'STOP'   // 出力なしで STOP = プレビューの不具合
-    );
+    // audio が取れなかった全ケースで次モデルへ（400/500系含む）
+    return !r.audioPart;
   }
 
   try {
