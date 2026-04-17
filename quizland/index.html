@@ -6,6 +6,7 @@
 <title>クイズランド | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
+<script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/narration.js"></script>
 <script src="./data/questions.js"></script>
@@ -909,6 +910,7 @@ function onChoice(idx, btn) {
     launchConfetti();
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
+    if (window.addAcorns) window.addAcorns(1, { reason: 'quizland_correct' });
     // スタンプラリー: プレイ記録
     (function() {
       var k = 'pono_played_' + new Date().toDateString();
@@ -989,6 +991,7 @@ function showResult() {
   document.getElementById('result-overlay').classList.remove('hidden');
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
+    if (window.addAcorns) window.addAcorns(3, { reason: 'quizland_clear' });
     playFanfare();
     launchConfetti();
     setTimeout(launchConfetti, 400);

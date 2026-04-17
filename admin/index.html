@@ -308,6 +308,8 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="quizland">🧩 クイズランド</button>
   <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
+  <button class="tab" data-panel="writing">✏️ 文字書き</button>
+  <button class="tab" data-panel="monsters">👾 モンスター</button>
   <button class="tab" data-panel="walls">🧱 壁紙・床</button>
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
@@ -991,6 +993,43 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div>
 
+<!-- ===== ✏️ 文字書き ===== -->
+<div class="panel" id="panel-writing">
+  <div class="section">
+    <div class="section-title">✏️ 文字書き — キャラクター／マイルストーン イラスト</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 12px;line-height:1.5;">
+      writing ページ で使っているポノ/ハリネズミ/マイルストーン等のイラスト一覧。<br>
+      ステータスバッジをクリックで 未作成→作成中→完成 を切替。<strong>完成</strong>は実ファイルが<code>assets/images/</code>配下にあるもの、<strong>未作成</strong>は絵文字フォールバック中のもの。
+    </div>
+    <div id="writing-illust-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:0.8rem;font-weight:700;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button onclick="writingIllustAutoDetect()" style="padding:5px 12px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔍 画像ありを自動検出</button>
+      <button onclick="writingIllustSetAll('todo')" style="padding:5px 12px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 全部リセット</button>
+    </div>
+    <div id="writing-illust-grid"></div>
+  </div>
+</div><!-- /panel-writing -->
+
+<!-- ===== 👾 モンスター ===== -->
+<div class="panel" id="panel-monsters">
+  <div class="section">
+    <div class="section-title">👾 文字モンスター (6体) — 書くたびに登場</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 12px;line-height:1.5;">
+      文字書き画面で文字ごとに割り当てられるモンスター。キャンバス枠の左上に登場し、クリア時に「ポワン」と消えてどんぐりを落とします。<br>
+      現在は絵文字フォールバック、完成したイラストを <code>assets/images/monsters/</code> に配置すると自動で差し替わります（今後の実装で読み替え）。
+    </div>
+    <div id="monster-chars-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🌸 行ボス (10体) — 行クリア時に登場</div>
+    <div style="font-size:0.75rem;color:#888;margin:-6px 0 12px;line-height:1.5;">
+      ひらがな/カタカナの各行（あ行〜わ行）クリア時、完了モーダルに登場する大きめのボス。行ごとに固定割当。
+    </div>
+    <div id="monster-bosses-grid"></div>
+  </div>
+</div><!-- /panel-monsters -->
+
 <!-- ===== 🔑 GitHub設定 ===== -->
 <div class="panel" id="panel-github">
   <div class="section">
@@ -1186,6 +1225,8 @@ function switchTab(panelId) {
     if (wmIllSub && wmIllSub.classList.contains('active')) wmLoadIllust();
   }
   if (panelId === 'bento')    renderBentoIllust();
+  if (panelId === 'writing')  renderWritingIllust();
+  if (panelId === 'monsters') renderMonsterIllust();
   if (panelId === 'roadmap') renderRoadmap();
   if (panelId === 'home')    renderHome();
 }
@@ -10701,6 +10742,194 @@ document.addEventListener('click', function(e) {
       setQsStatus('❌ ' + e.message);
     });
 });
+
+// ===============================================
+// ✏️ 文字書き イラスト管理
+// ===============================================
+var WRITING_ILLUSTS = [
+  // Pono ポーズ
+  { id: 'pono_dance_smile',  label: 'ポノ: にっこり',        emoji: '😊', src: '../assets/images/characters/pono/dance/dance_smile.png',  usedIn: 'writing: 書いてる時のメイン応援' },
+  { id: 'pono_dance_cheer',  label: 'ポノ: チアー',          emoji: '📣', src: '../assets/images/characters/pono/dance/dance_cheer.png',  usedIn: 'writing: 今後のローテ候補' },
+  { id: 'pono_dance_hooray', label: 'ポノ: ばんざい',        emoji: '🙌', src: '../assets/images/characters/pono/dance/dance_hooray.png', usedIn: 'writing: クリア時の祝賀用（マイルストーン代替）' },
+  { id: 'pono_dance_hi',     label: 'ポノ: てふり',          emoji: '👋', src: '../assets/images/characters/pono/dance/dance_hi.png',     usedIn: 'writing: 挨拶/導入' },
+  { id: 'pono_dance_point',  label: 'ポノ: ゆびさし',        emoji: '👉', src: '../assets/images/characters/pono/dance/dance_point.png',  usedIn: 'writing: チュートリアル誘導' },
+  { id: 'pono_dance_wave',   label: 'ポノ: うでふり',        emoji: '🌊', src: '../assets/images/characters/pono/dance/dance_wave.png',   usedIn: 'writing: 応援' },
+  { id: 'pono_dance_cool',   label: 'ポノ: クール',          emoji: '😎', src: '../assets/images/characters/pono/dance/dance_cool.png',   usedIn: 'writing: 連続正解時のバリエーション' },
+  { id: 'pono_dance_shy',    label: 'ポノ: てれ',            emoji: '😳', src: '../assets/images/characters/pono/dance/dance_shy.png',    usedIn: 'writing: ミス時のなぐさめ候補' },
+  { id: 'pono_dance_tilt',   label: 'ポノ: かたむき',        emoji: '🤔', src: '../assets/images/characters/pono/dance/dance_tilt.png',   usedIn: 'writing: 考え中' },
+  // ハリネズミ
+  { id: 'hedgehog_wave',     label: 'ハリネズミ: てふり',    emoji: '🦔', src: '../assets/images/characters/headgehog_wavehand_front01.webp', usedIn: 'writing: サブ応援 (右上)' },
+  // マイルストーン (今は絵文字)
+  { id: 'milestone_20',      label: 'マイルストーン20字',    emoji: '🎉', src: null, usedIn: 'writing: 20字達成祝賀 (現在は絵文字)' },
+  { id: 'milestone_50',      label: 'マイルストーン50字',    emoji: '🏆', src: null, usedIn: 'writing: 50字達成祝賀 (現在は絵文字)' },
+  { id: 'milestone_100',     label: 'マイルストーン100字',   emoji: '👑', src: null, usedIn: 'writing: 100字達成祝賀 (現在は絵文字)' }
+];
+var WRITING_ILLUST_KEY = 'writing_illust_status';
+
+function writingIllustGetStatus() {
+  try { return JSON.parse(localStorage.getItem(WRITING_ILLUST_KEY) || '{}'); } catch(e) { return {}; }
+}
+function writingIllustSetStatus(id, status) {
+  var s = writingIllustGetStatus(); s[id] = status;
+  localStorage.setItem(WRITING_ILLUST_KEY, JSON.stringify(s));
+}
+function writingIllustSetAll(status) {
+  var s = {}; WRITING_ILLUSTS.forEach(function(it) { s[it.id] = status; });
+  localStorage.setItem(WRITING_ILLUST_KEY, JSON.stringify(s));
+  renderWritingIllust();
+}
+function writingIllustAutoDetect() {
+  var pending = 0, found = 0;
+  WRITING_ILLUSTS.forEach(function(it) {
+    if (!it.src) return;
+    pending++;
+    var img = new Image();
+    img.onload  = function() { found++; writingIllustSetStatus(it.id, 'done'); if (--pending <= 0) { showToast(found + '件の画像を検出しました', true); renderWritingIllust(); } };
+    img.onerror = function() { if (--pending <= 0) { showToast(found + '件の画像を検出しました', true); renderWritingIllust(); } };
+    img.src = it.src;
+  });
+  if (pending === 0) { showToast('src なし', false); renderWritingIllust(); }
+}
+
+function renderWritingIllust() {
+  var statuses = writingIllustGetStatus();
+  var labelMap = { todo: '未作成', wip: '作成中', done: '完成' };
+  var colorMap = { todo: '#9CA3AF', wip: '#FBBF24', done: '#10B981' };
+  var nextMap  = { todo: 'wip', wip: 'done', done: 'todo' };
+
+  var done = 0, wip = 0;
+  WRITING_ILLUSTS.forEach(function(it) {
+    var s = statuses[it.id] || 'todo';
+    if (s === 'done') done++; else if (s === 'wip') wip++;
+  });
+
+  var summary = document.getElementById('writing-illust-summary');
+  if (summary) {
+    summary.innerHTML =
+      '<span style="background:#10B981;color:#fff;padding:4px 10px;border-radius:8px;">✅ 完成 ' + done + '</span>' +
+      '<span style="background:#FBBF24;color:#5D4E37;padding:4px 10px;border-radius:8px;">🖌 作成中 ' + wip + '</span>' +
+      '<span style="background:#9CA3AF;color:#fff;padding:4px 10px;border-radius:8px;">📋 未作成 ' + (WRITING_ILLUSTS.length - done - wip) + '</span>' +
+      '<span style="background:#3B82F6;color:#fff;padding:4px 10px;border-radius:8px;">合計 ' + done + ' / ' + WRITING_ILLUSTS.length + '</span>';
+  }
+
+  var grid = document.getElementById('writing-illust-grid');
+  if (!grid) return;
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;';
+  grid.innerHTML = '';
+  WRITING_ILLUSTS.forEach(function(it) {
+    var s = statuses[it.id] || 'todo';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border:2px solid #E8E0D8;border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;';
+    var preview = document.createElement('div');
+    preview.style.cssText = 'width:72px;height:72px;border-radius:10px;background:#FAF7F2;display:flex;align-items:center;justify-content:center;overflow:hidden;';
+    if (it.src && s === 'done') {
+      var img = document.createElement('img');
+      img.src = it.src; img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
+      img.onerror = function() { preview.innerHTML = '<span style="font-size:2rem;">' + it.emoji + '</span>'; };
+      preview.appendChild(img);
+    } else {
+      preview.innerHTML = '<span style="font-size:2rem;">' + it.emoji + '</span>';
+    }
+    card.appendChild(preview);
+
+    var name = document.createElement('div');
+    name.textContent = it.label;
+    name.style.cssText = 'font-size:0.78rem;font-weight:900;color:#5D4E37;text-align:center;';
+    card.appendChild(name);
+
+    var use = document.createElement('div');
+    use.textContent = it.usedIn;
+    use.style.cssText = 'font-size:0.65rem;color:#8B7355;text-align:center;line-height:1.3;';
+    card.appendChild(use);
+
+    var badge = document.createElement('button');
+    badge.textContent = labelMap[s];
+    badge.style.cssText = 'background:' + colorMap[s] + ';color:' + (s === 'wip' ? '#5D4E37' : '#fff') + ';border:none;padding:5px 14px;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:700;cursor:pointer;';
+    badge.addEventListener('click', function() { writingIllustSetStatus(it.id, nextMap[s]); renderWritingIllust(); });
+    card.appendChild(badge);
+    grid.appendChild(card);
+  });
+}
+
+// ===============================================
+// 👾 モンスター イラスト管理
+// ===============================================
+var MONSTER_CHARS = [
+  { id: 'mush',  emoji: '🍄', name: 'きのこさん',    color: '#F472B6' },
+  { id: 'bub',   emoji: '🫧', name: 'しゃぼんちゃん', color: '#7DD3FC' },
+  { id: 'drg',   emoji: '🐲', name: 'どらちゃん',    color: '#86EFAC' },
+  { id: 'star',  emoji: '⭐', name: 'きらりん',      color: '#FBBF24' },
+  { id: 'bug',   emoji: '🐛', name: 'むしさん',      color: '#A78BFA' },
+  { id: 'ghost', emoji: '👻', name: 'ぽわりん',      color: '#E5E7EB' }
+];
+var MONSTER_BOSSES = [
+  { row: 'あ行', emoji: '🌸', name: 'さくらん',     color: '#FBCFE8' },
+  { row: 'か行', emoji: '🐰', name: 'うさぴょん',   color: '#FED7AA' },
+  { row: 'さ行', emoji: '⭐', name: 'ほしりん',     color: '#FDE68A' },
+  { row: 'た行', emoji: '🦋', name: 'ちょうちょん', color: '#DDD6FE' },
+  { row: 'な行', emoji: '🌙', name: 'つきちゃん',   color: '#E0E7FF' },
+  { row: 'は行', emoji: '🍀', name: 'よつばちゃん', color: '#A7F3D0' },
+  { row: 'ま行', emoji: '🌈', name: 'にじーな',     color: '#FBCFE8' },
+  { row: 'や行', emoji: '🐥', name: 'ぴよちゃん',   color: '#FEF3C7' },
+  { row: 'ら行', emoji: '🐟', name: 'おさかなさん', color: '#BAE6FD' },
+  { row: 'わ行', emoji: '🍎', name: 'りんごちゃん', color: '#FECACA' }
+];
+var MONSTER_ILLUST_KEY = 'monster_illust_status';
+
+function monsterIllustGetStatus() {
+  try { return JSON.parse(localStorage.getItem(MONSTER_ILLUST_KEY) || '{}'); } catch(e) { return {}; }
+}
+function monsterIllustSetStatus(id, status) {
+  var s = monsterIllustGetStatus(); s[id] = status;
+  localStorage.setItem(MONSTER_ILLUST_KEY, JSON.stringify(s));
+}
+
+function _renderMonsterCard(item, gridEl, prefix) {
+  var statuses = monsterIllustGetStatus();
+  var labelMap = { todo: '未作成', wip: '作成中', done: '完成' };
+  var colorMap = { todo: '#9CA3AF', wip: '#FBBF24', done: '#10B981' };
+  var nextMap  = { todo: 'wip', wip: 'done', done: 'todo' };
+  var key = prefix + ':' + item.id;
+  var s = statuses[key] || 'todo';
+
+  var card = document.createElement('div');
+  card.style.cssText = 'background:' + item.color + ';border:2px solid #E8E0D8;border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;';
+
+  var preview = document.createElement('div');
+  preview.style.cssText = 'width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;font-size:2.6rem;';
+  preview.textContent = item.emoji;
+  card.appendChild(preview);
+
+  var name = document.createElement('div');
+  name.textContent = (item.row ? (item.row + ': ') : '') + item.name;
+  name.style.cssText = 'font-size:0.8rem;font-weight:900;color:#5D4E37;text-align:center;';
+  card.appendChild(name);
+
+  var idLbl = document.createElement('div');
+  idLbl.textContent = 'id: ' + item.id;
+  idLbl.style.cssText = 'font-size:0.65rem;color:#5D4E37;opacity:0.7;';
+  card.appendChild(idLbl);
+
+  var badge = document.createElement('button');
+  badge.textContent = labelMap[s];
+  badge.style.cssText = 'background:' + colorMap[s] + ';color:' + (s === 'wip' ? '#5D4E37' : '#fff') + ';border:none;padding:5px 14px;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:700;cursor:pointer;';
+  badge.addEventListener('click', function() { monsterIllustSetStatus(key, nextMap[s]); renderMonsterIllust(); });
+  card.appendChild(badge);
+
+  gridEl.appendChild(card);
+}
+
+function renderMonsterIllust() {
+  var charsGrid = document.getElementById('monster-chars-grid');
+  var bossGrid  = document.getElementById('monster-bosses-grid');
+  if (!charsGrid || !bossGrid) return;
+  charsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;';
+  bossGrid.style.cssText  = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;';
+  charsGrid.innerHTML = '';
+  bossGrid.innerHTML = '';
+  MONSTER_CHARS.forEach(function(m) { _renderMonsterCard(m, charsGrid, 'char'); });
+  MONSTER_BOSSES.forEach(function(b) { _renderMonsterCard(b, bossGrid, 'boss'); });
+}
 
 </script>
 </body>

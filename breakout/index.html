@@ -6,6 +6,7 @@
 <title>ハリネズミちゃんをたすけにいこう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
+<script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 <script src="../common/treasure.js"></script>
@@ -910,6 +911,15 @@ function onStageClear() {
   const wasNewRecord = score > hiScore;
   if (isLast) { saveHiScore(); saveHighScore('breakout', score); }
   if (window.setStatMax) window.setStatMax('breakout_stages', stageIdx + 1);
+  // 日次初回ステージクリアボーナス: 1日1回だけ +3🌰
+  (function() {
+    if (!window.addAcorns) return;
+    var k = 'pono_acorns_daily_breakout';
+    var today = new Date().toDateString();
+    if (localStorage.getItem(k) === today) return;
+    localStorage.setItem(k, today);
+    window.addAcorns(3, { reason: 'breakout_daily' });
+  })();
   // ★ 全ステージクリア時は宝箱演出を先に表示してから最終オーバーレイ
   if (isLast && window.triggerFirstClearReward) {
     window.triggerFirstClearReward('breakout', {

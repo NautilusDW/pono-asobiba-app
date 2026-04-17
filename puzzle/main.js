@@ -139,6 +139,7 @@ function showSuccessModal() {
   playFanfare();
   spawnConfetti();
   if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
+  if (window.addAcorns) window.addAcorns(3, { reason: 'puzzle_clear' });
 
   // スタンプラリー: プレイ記録
   (function() {

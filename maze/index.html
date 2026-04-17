@@ -427,6 +427,7 @@ html, body {
 
 <script src="../common/menu.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/acorns.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
 
@@ -1281,6 +1282,7 @@ function onClear() {
   voice.style.display = 'none';
   updateCharmsUI();
   if (window.incrementStat) window.incrementStat('maze_clears', 1);
+  if (window.addAcorns) window.addAcorns(3, { reason: 'maze_clear' });
   playStageClearMz();
   setTimeout(function() {
     encounter.classList.add('show');

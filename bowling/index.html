@@ -102,6 +102,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 </style>
 <script src="../common/achievements.js"></script>
+<script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -1188,6 +1189,15 @@ function launchBall(dirX, dirY, power) {
   roundMerges = 0;
   combo = 0; mergePitch = 1.0;
   if (window.incrementStat) window.incrementStat('bowling_rounds', 1);
+  // 日次初回ボーナス: 1日1回だけ +3🌰
+  (function() {
+    if (!window.addAcorns) return;
+    var k = 'pono_acorns_daily_bowling';
+    var today = new Date().toDateString();
+    if (localStorage.getItem(k) === today) return;
+    localStorage.setItem(k, today);
+    window.addAcorns(3, { reason: 'bowling_daily' });
+  })();
   shotNumber++;
   // 背景はaimフェーズ移行時に更新（launch時は変えない）
   ballTrail = [];

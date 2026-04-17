@@ -705,6 +705,33 @@
     .profile-section { margin-bottom: 16px; }
 
     /* ===== Stamp Rally Section (Daily Challenge) ===== */
+    /* ===== Acorn badge (top-right fixed) ===== */
+    .acorn-badge-play {
+      position: fixed;
+      top: 12px; right: 12px;
+      z-index: 50;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px 6px 10px;
+      background: #fff;
+      border: 2.5px solid #A16207;
+      border-radius: 999px;
+      box-shadow: 0 3px 10px rgba(161,98,7,0.18);
+      color: #7C4A02;
+      font-weight: 900;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+    .acorn-badge-play .acorn-icon-play { font-size: 1.1rem; line-height: 1; }
+    .acorn-badge-play .acorn-count-play { min-width: 18px; text-align: center; }
+    .acorn-badge-play.pop { animation: acornPlayPop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes acornPlayPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.22); }
+      100% { transform: scale(1); }
+    }
+
     .stamp-rally-section {
       width: 100%;
       max-width: 400px;
@@ -1076,11 +1103,16 @@
     }
   </style>
   <script src="common/achievements.js"></script>
+  <script src="common/acorns.js"></script>
   <script src="room/items.js"></script>
   <script src="common/treasure.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
+
+<div class="acorn-badge-play" id="acornBadgePlay" aria-label="どんぐり">
+  <span class="acorn-icon-play">🌰</span><span class="acorn-count-play" id="acornCountPlay">0</span>
+</div>
 
 <!-- 🎵 タップ解禁オーバーレイ: 初回起動時のみ表示。タップで BGM 開始 + sessionStorage 記録 -->
 <style>
@@ -3384,6 +3416,23 @@
         } else if (action === 'top') {
           location.href = 'index.html';
         }
+      });
+    })();
+
+    // ===== Acorn badge display =====
+    (function(){
+      var countEl = document.getElementById('acornCountPlay');
+      var badge = document.getElementById('acornBadgePlay');
+      if (!countEl || !badge || typeof window.getAcorns !== 'function') return;
+      function update(n) {
+        countEl.textContent = String(n);
+        badge.classList.remove('pop');
+        void badge.offsetWidth;
+        badge.classList.add('pop');
+      }
+      countEl.textContent = String(window.getAcorns());
+      window.addEventListener('pono-acorns-changed', function(e) {
+        update((e.detail && e.detail.after) != null ? e.detail.after : window.getAcorns());
       });
     })();
   </script>

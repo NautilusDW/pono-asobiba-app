@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../common/achievements.js"></script>
+<script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
@@ -587,6 +588,7 @@ function onChoose(card, choice) {
     playCorrectChime();
     showPonoReact('correct');
     if (window.incrementStat) window.incrementStat('quiz_sound_correct', 1);
+    if (window.addAcorns) window.addAcorns(1, { reason: 'quiz_sound_correct' });
     setTimeout(function() {
       qIndex++;
       if (qIndex >= TOTAL_QUESTIONS) {
@@ -629,6 +631,7 @@ function showJudgeOnCard(card, mark) {
 function finish() {
   renderTopbar();
   if (window.incrementStat) window.incrementStat('quiz_sound_clears', 1);
+  if (window.addAcorns) window.addAcorns(3, { reason: 'quiz_sound_clear' });
   markPlayedToday();
   // 初回クリアごほうび (rewards.json の firstClearRewards.quiz_sound)
   if (!_clearGranted && window.triggerFirstClearReward) {

@@ -144,28 +144,67 @@
   .instr-btn.i8 { --c1:#F9A8D4; --c2:#BE185D; }  /* マゼンタ */
 
   /* 8ボタン: ポノを中心に コンパクトに円配置 (内側 1,2,5,6 はポノにぐっと寄せる) */
-  .instr-btn[data-idx="0"] { left: 18%; top: 40%; --sz: 108px; }
+  /* 🌸(0) と 🎈(4) は左端、🍀(3) と 🌈(7) は右端 — 被りを避けるため上下を 28%/72% まで広げる */
+  .instr-btn[data-idx="0"] { left: 18%; top: 28%; --sz: 108px; }
   .instr-btn[data-idx="1"] { left: 37%; top: 30%; --sz: 108px; }
   .instr-btn[data-idx="2"] { left: 63%; top: 30%; --sz: 108px; }
-  .instr-btn[data-idx="3"] { left: 82%; top: 40%; --sz: 108px; }
-  .instr-btn[data-idx="4"] { left: 18%; top: 60%; --sz: 108px; }
+  .instr-btn[data-idx="3"] { left: 82%; top: 28%; --sz: 108px; }
+  .instr-btn[data-idx="4"] { left: 18%; top: 72%; --sz: 108px; }
   .instr-btn[data-idx="5"] { left: 37%; top: 70%; --sz: 108px; }
   .instr-btn[data-idx="6"] { left: 63%; top: 70%; --sz: 108px; }
-  .instr-btn[data-idx="7"] { left: 82%; top: 60%; --sz: 108px; }
+  .instr-btn[data-idx="7"] { left: 82%; top: 72%; --sz: 108px; }
 
-  /* 横画面: 縦を圧縮しつつ円配置を維持 */
+  /* 横画面: 左1/3 にコントロール(音色・伴奏), 右2/3 が演奏エリア */
   @media (orientation: landscape) {
-    .instr-btn[data-idx="0"] { top: 38%; --sz: 92px; }
-    .instr-btn[data-idx="1"] { top: 22%; --sz: 96px; }
-    .instr-btn[data-idx="2"] { top: 22%; --sz: 96px; }
-    .instr-btn[data-idx="3"] { top: 38%; --sz: 92px; }
-    .instr-btn[data-idx="4"] { top: 58%; --sz: 92px; }
-    .instr-btn[data-idx="5"] { top: 73%; --sz: 96px; }
-    .instr-btn[data-idx="6"] { top: 73%; --sz: 96px; }
-    .instr-btn[data-idx="7"] { top: 58%; --sz: 92px; }
-    /* 横画面: ポノも少し小さく (高さ固定、幅 auto でアスペクト比保持) */
-    .pono-wrap { width: 220px; height: 170px; }
+    /* 8 ボタンを右 2/3 に寄せる (元: 18/37/63/82 → 48/60/76/92) */
+    .instr-btn[data-idx="0"] { left: 48%; top: 26%; --sz: 92px; }
+    .instr-btn[data-idx="1"] { left: 60%; top: 18%; --sz: 96px; }
+    .instr-btn[data-idx="2"] { left: 76%; top: 18%; --sz: 96px; }
+    .instr-btn[data-idx="3"] { left: 92%; top: 26%; --sz: 92px; }
+    .instr-btn[data-idx="4"] { left: 48%; top: 78%; --sz: 92px; }
+    .instr-btn[data-idx="5"] { left: 60%; top: 84%; --sz: 96px; }
+    .instr-btn[data-idx="6"] { left: 76%; top: 84%; --sz: 96px; }
+    .instr-btn[data-idx="7"] { left: 92%; top: 78%; --sz: 92px; }
+    /* ポノも右 2/3 の中央へ */
+    .pono-wrap {
+      left: 70%;
+      width: 220px; height: 170px;
+    }
     .pono-sprite { height: 160px; }
+    /* コード/単音ピル も右エリア上部に */
+    .chord-pill { left: 70%; }
+    /* 音色 ねいろ: 左パネル上部に縦並び */
+    .sound-sets-box {
+      top: 50%; left: 10px; transform: translateY(-50%);
+      padding: 8px 10px;
+    }
+    .sound-sets {
+      flex-direction: column; gap: 6px;
+    }
+    .sound-sets .set-btn {
+      width: 44px; height: 44px;
+    }
+    /* 伴奏 ばんそう: 左パネル下部 */
+    .band-group {
+      bottom: max(72px, calc(env(safe-area-inset-bottom) + 72px));
+      left: 10px; transform: none;
+      padding: 6px 10px 8px;
+    }
+    /* 録音バー: 左パネル直下(画面左下) */
+    .rec-bar {
+      bottom: max(10px, calc(env(safe-area-inset-bottom) + 10px));
+      left: 10px; transform: none;
+    }
+    /* 保存リスト: 右 2/3 の下部のみに広げる(左パネルと被らないように) */
+    .saved-list {
+      left: 34%; right: 0;
+      justify-content: flex-start;
+    }
+    /* ループ進行バー: 右 2/3 の下 */
+    .rec-progress {
+      left: 66%; transform: translateX(-50%);
+      width: min(60vw, 420px);
+    }
   }
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
