@@ -1837,6 +1837,24 @@ function _addToTtsDraftQueue(entry) {
     throw e;
   });
 }
+
+// --- 再生成時の「候補」蓄積ヘルパ ---
+// 既存 draft があれば、その current を history の先頭に push して返す。
+// (history は最大 TTS_MAX_VARIANTS 件、古いものから捨てる)
+var TTS_MAX_VARIANTS = 5;
+function _ttsBuildHistoryFromDraft(existingDraft) {
+  if (!existingDraft || !existingDraft.audioBase64) return [];
+  var prior = Array.isArray(existingDraft.history) ? existingDraft.history.slice() : [];
+  prior.unshift({
+    audioBase64: existingDraft.audioBase64,
+    voice:       existingDraft.voice || '',
+    stylePrompt: existingDraft.stylePrompt || '',
+    modelUsed:   existingDraft.modelUsed || null,
+    fallbackUsed: !!existingDraft.fallbackUsed,
+    createdAt:   existingDraft.updatedAt || new Date().toISOString()
+  });
+  return prior.slice(0, TTS_MAX_VARIANTS);
+}
 function _removeFromTtsDraftQueue(key) {
   ttsDraftCache = ttsDraftCache.filter(function(e) { return e.key !== key; });
   return _ttsDeleteDraft(key);
@@ -2253,6 +2271,17 @@ function ttsRenderTable() {
       prBtn.addEventListener('click', function(ev) { ttsPlayPrevious(ev.currentTarget.dataset.key); });
       opsWrap.appendChild(prBtn);
     }
+    var histCount = (draftEntry && Array.isArray(draftEntry.history)) ? draftEntry.history.length : 0;
+    if (histCount > 0) {
+      var hBtn = document.createElement('button');
+      hBtn.type = 'button';
+      hBtn.style.cssText = 'padding:4px 8px;background:#FEF9C3;color:#854D0E;border:1px solid #FDE047;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+      hBtn.textContent = '🗂 候補 ' + (histCount + 1);
+      hBtn.title = histCount + ' 個の過去候補から採用するものを選べます';
+      hBtn.dataset.key = r.key;
+      hBtn.addEventListener('click', function(ev) { ttsOpenVariantPicker(ev.currentTarget.dataset.key); });
+      opsWrap.appendChild(hBtn);
+    }
     var gBtn = document.createElement('button');
     gBtn.type = 'button';
     gBtn.style.cssText = 'padding:4px 8px;background:#F3E8FF;color:#6D28D9;border:1px solid #D8B4FE;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
@@ -2368,6 +2397,7 @@ function ttsGenerateOne(key) {
       if (!resp || !resp.audio) throw new Error('音声データなし');
       lastResp = resp;
       var file = 'quizland/' + row.hash + '.wav';
+      var history = _ttsBuildHistoryFromDraft(prevDraft);
       return _addToTtsDraftQueue({
         key: row.key,
         hash: row.hash,
@@ -2378,6 +2408,7 @@ function ttsGenerateOne(key) {
         modelUsed: resp.model || null,
         fallbackUsed: !!resp.fallbackUsed,
         audioBase64: resp.audio,
+        history: history,   // 過去の候補（最大5件）
         prevAudioBase64: prevAudio || null,
         prevAudioUrl: prevRemoteUrl || null,
         prevVoice: prevVoice || null,
@@ -2529,6 +2560,7 @@ function _ttsRunBatch(targets) {
             var existingEntry = ttsManifest && ttsManifest.entries && ttsManifest.entries[rr.key];
             var prevUrl = (!prevAudio && existingEntry && _ttsValidFile(existingEntry.file))
               ? ('../assets/tts/' + existingEntry.file) : null;
+            var history = _ttsBuildHistoryFromDraft(prev);
             return _addToTtsDraftQueue({
               key: rr.key,
               hash: rr.hash,
@@ -2539,6 +2571,7 @@ function _ttsRunBatch(targets) {
               modelUsed: resp.model || null,
               fallbackUsed: !!resp.fallbackUsed,
               audioBase64: resp.audio,
+              history: history,
               prevAudioBase64: prevAudio || null,
               prevAudioUrl: prevUrl || null,
               prevVoice: prev ? prev.voice : null,
@@ -2638,6 +2671,7 @@ function ttsGenerateVisible() {
             var existingEntry = ttsManifest && ttsManifest.entries && ttsManifest.entries[rr.key];
             var prevUrl = (!prevAudio && existingEntry && _ttsValidFile(existingEntry.file))
               ? ('../assets/tts/' + existingEntry.file) : null;
+            var history = _ttsBuildHistoryFromDraft(prev);
             return _addToTtsDraftQueue({
               key: rr.key,
               hash: rr.hash,
@@ -2648,6 +2682,7 @@ function ttsGenerateVisible() {
               modelUsed: resp.model || null,
               fallbackUsed: !!resp.fallbackUsed,
               audioBase64: resp.audio,
+              history: history,
               prevAudioBase64: prevAudio || null,
               prevAudioUrl: prevUrl || null,
               prevVoice: prev ? prev.voice : null,
@@ -2716,6 +2751,134 @@ function ttsPlayPrevious(key) {
   a.play().catch(function(err) { showToast('再生失敗: ' + err.message, false); });
 }
 
+// --- 候補（全過去生成）から採用するものを選ぶモーダル ---
+function ttsOpenVariantPicker(key) {
+  var e = ttsDraftCache.find(function(x) { return x.key === key; });
+  if (!e) { showToast('下書きが見つかりません', false); return; }
+  var variants = [];
+  variants.push({ idx: -1, label: '現在採用中', audioBase64: e.audioBase64, voice: e.voice, stylePrompt: e.stylePrompt, modelUsed: e.modelUsed, fallbackUsed: !!e.fallbackUsed, createdAt: e.updatedAt });
+  (Array.isArray(e.history) ? e.history : []).forEach(function(h, i) {
+    variants.push({ idx: i, label: '候補 #' + (i + 1) + '（古）', audioBase64: h.audioBase64, voice: h.voice, stylePrompt: h.stylePrompt, modelUsed: h.modelUsed, fallbackUsed: !!h.fallbackUsed, createdAt: h.createdAt });
+  });
+  // モーダル構築（DOM API で XSS 回避）
+  var overlay = document.createElement('div');
+  overlay.id = 'tts-variant-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:99999;';
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;max-width:700px;width:92%;max-height:80vh;overflow:auto;border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,0.3);';
+  var h = document.createElement('div');
+  h.style.cssText = 'font-weight:900;color:#5B21B6;font-size:1rem;margin-bottom:4px;';
+  h.textContent = '🗂 候補から採用するものを選ぶ';
+  var sub = document.createElement('div');
+  sub.style.cssText = 'font-size:0.75rem;color:#6B7280;margin-bottom:14px;';
+  sub.textContent = '「⭐ これを採用」を押すと、そのバージョンが最新候補として保存され、現在のものは履歴に戻ります。';
+  var txt = document.createElement('div');
+  txt.style.cssText = 'padding:8px 10px;background:#F3F4F6;border-radius:8px;font-size:0.78rem;color:#374151;margin-bottom:14px;';
+  txt.textContent = '📝 ' + e.text;
+  card.appendChild(h); card.appendChild(sub); card.appendChild(txt);
+
+  variants.forEach(function(v) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px;border:1px solid ' + (v.idx < 0 ? '#A7F3D0' : '#E5E7EB') + ';border-radius:10px;margin-bottom:8px;background:' + (v.idx < 0 ? '#ECFDF5' : '#FFF') + ';';
+    var meta = document.createElement('div');
+    meta.style.cssText = 'flex:1;font-size:0.72rem;line-height:1.4;';
+    var l1 = document.createElement('div');
+    l1.style.cssText = 'font-weight:800;color:' + (v.idx < 0 ? '#047857' : '#374151') + ';';
+    l1.textContent = v.label;
+    var l2 = document.createElement('div');
+    l2.style.cssText = 'color:#6B7280;';
+    l2.textContent = (v.voice || '—') + ' / ' + ttsStyleLabel(v.stylePrompt || '') + ' / ' + (ttsShortModel(v.modelUsed) || '?') + (v.fallbackUsed ? ' (代替)' : '');
+    var l3 = document.createElement('div');
+    l3.style.cssText = 'color:#9CA3AF;font-size:0.65rem;';
+    l3.textContent = v.createdAt ? new Date(v.createdAt).toLocaleString('ja-JP') : '';
+    meta.appendChild(l1); meta.appendChild(l2); meta.appendChild(l3);
+    row.appendChild(meta);
+
+    var playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.style.cssText = 'padding:6px 12px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
+    playBtn.textContent = '▶ 試聴';
+    playBtn.addEventListener('click', function() {
+      if (!v.audioBase64) { showToast('音声データなし', false); return; }
+      var a = new Audio('data:audio/wav;base64,' + v.audioBase64);
+      a.volume = 0.9;
+      a.play().catch(function(err) { showToast('再生失敗: ' + err.message, false); });
+    });
+    row.appendChild(playBtn);
+
+    if (v.idx >= 0) {
+      var adoptBtn = document.createElement('button');
+      adoptBtn.type = 'button';
+      adoptBtn.style.cssText = 'padding:6px 12px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
+      adoptBtn.textContent = '⭐ これを採用';
+      adoptBtn.dataset.hidx = String(v.idx);
+      adoptBtn.addEventListener('click', function(ev) {
+        var hIdx = parseInt(ev.currentTarget.dataset.hidx, 10);
+        ttsAdoptVariant(key, hIdx).then(function() {
+          document.body.removeChild(overlay);
+        });
+      });
+      row.appendChild(adoptBtn);
+    } else {
+      var curLabel = document.createElement('span');
+      curLabel.style.cssText = 'padding:6px 12px;color:#047857;font-size:0.72rem;font-weight:800;';
+      curLabel.textContent = '⭐ 採用中';
+      row.appendChild(curLabel);
+    }
+    card.appendChild(row);
+  });
+
+  var closeWrap = document.createElement('div');
+  closeWrap.style.cssText = 'display:flex;justify-content:flex-end;margin-top:12px;';
+  var closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.style.cssText = 'padding:8px 16px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;';
+  closeBtn.textContent = '閉じる';
+  closeBtn.addEventListener('click', function() { document.body.removeChild(overlay); });
+  closeWrap.appendChild(closeBtn);
+  card.appendChild(closeWrap);
+  overlay.appendChild(card);
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) document.body.removeChild(overlay); });
+  document.body.appendChild(overlay);
+}
+
+// 候補 history[hIdx] を current に昇格。今の current は history[0] に降格。
+function ttsAdoptVariant(key, hIdx) {
+  var e = ttsDraftCache.find(function(x) { return x.key === key; });
+  if (!e || !Array.isArray(e.history) || hIdx < 0 || hIdx >= e.history.length) {
+    showToast('候補が見つかりません', false);
+    return Promise.resolve();
+  }
+  var chosen = e.history[hIdx];
+  // 現 current を history 先頭に戻し、chosen を current に昇格。chosen の元位置は取り除く。
+  var newHistory = e.history.slice();
+  newHistory.splice(hIdx, 1);
+  newHistory.unshift({
+    audioBase64: e.audioBase64,
+    voice:       e.voice || '',
+    stylePrompt: e.stylePrompt || '',
+    modelUsed:   e.modelUsed || null,
+    fallbackUsed: !!e.fallbackUsed,
+    createdAt:   e.updatedAt || new Date().toISOString()
+  });
+  newHistory = newHistory.slice(0, TTS_MAX_VARIANTS);
+  var updated = Object.assign({}, e, {
+    audioBase64:  chosen.audioBase64,
+    voice:        chosen.voice || e.voice,
+    stylePrompt:  (typeof chosen.stylePrompt === 'string') ? chosen.stylePrompt : e.stylePrompt,
+    modelUsed:    chosen.modelUsed || e.modelUsed,
+    fallbackUsed: !!chosen.fallbackUsed,
+    history:      newHistory,
+    updatedAt:    new Date().toISOString()
+  });
+  return _addToTtsDraftQueue(updated).then(function() {
+    showToast('⭐ 候補を採用しました — 次回 GitHub 反映で配信されます', true);
+    ttsRenderTable();
+    ttsRenderDraftBar();
+    ttsFlashRow(key);
+  });
+}
+
 // --- 下書きバー ---
 function ttsRenderDraftBar() {
   var host = document.getElementById('tts-draft-bar');
@@ -2732,7 +2895,8 @@ function ttsRenderDraftBar() {
       '<div style="font-weight:900;color:#5B21B6;font-size:0.85rem;">🎙 TTS下書き ' + q.length + ' 件 (' + kb + ' KB)</div>' +
       '<div style="flex:1;font-size:0.7rem;color:#5B21B6;">生成した音声はブラウザに自動保存されます。GitHub反映で全員に配信。</div>' +
       '<button onclick="ttsConfirmLocalSave()" title="ブラウザ内の下書きとして保持します（コミットしません）" style="padding:5px 12px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📝 管理画面のみに保存</button>' +
-      '<button onclick="ttsFlushDraftQueue()" title="GitHubにコミット（本番反映）" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">💾 GitHubに反映</button>' +
+      '<button onclick="ttsFlushDraftQueue(true)" title="テーブルでチェックされた行の下書きだけコミット" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">✅ 選択のみ反映</button>' +
+      '<button onclick="ttsFlushDraftQueue(false)" title="下書き全件を GitHub にコミット" style="padding:5px 12px;background:#FFF;color:#047857;border:2px solid #10B981;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🌐 全部反映</button>' +
       '<button onclick="ttsClearSelectedDrafts()" title="テーブルでチェックされた行の下書きのみ削除" style="padding:5px 12px;background:#FEF3C7;color:#92400E;border:1px solid #F59E0B;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 選択のみクリア</button>' +
       '<button onclick="if(confirm(\'下書きを全部捨てる？\')){_clearTtsDraftQueue().then(function(){ttsRenderDraftBar();ttsRenderTable();});}" style="padding:5px 12px;background:#fff;color:#B91C1C;border:2px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 全部クリア</button>' +
     '</div>';
@@ -2774,10 +2938,24 @@ function ttsClearSelectedDrafts() {
 }
 
 // --- 下書きキューを GitHub に反映（N個wav + 1個manifest.json = N+1 コミット） ---
-function ttsFlushDraftQueue() {
-  var q = _getTtsDraftQueue();
-  if (!q.length) { showToast('下書きはありません', false); return; }
-  if (!confirm(q.length + ' 件の音声ファイルと manifest.json を GitHub に反映します。')) return;
+// checkedOnly: true なら表でチェックされた行の下書きのみ反映
+function ttsFlushDraftQueue(checkedOnly) {
+  var all = _getTtsDraftQueue();
+  if (!all.length) { showToast('下書きはありません', false); return; }
+  var q = all;
+  if (checkedOnly) {
+    var checkedKeys = {}, checkedHashes = {};
+    document.querySelectorAll('.tts-row-check:checked').forEach(function(c) {
+      if (c.dataset.key) checkedKeys[c.dataset.key] = true;
+      if (c.dataset.hash) checkedHashes[c.dataset.hash] = true;
+    });
+    if (!Object.keys(checkedKeys).length) { showToast('チェックされた行がありません', false); return; }
+    // チェックされた key 本人 + 同 hash を共有する下書きも対象（重複まとめ行のチェック対応）
+    q = all.filter(function(e) { return checkedKeys[e.key] || checkedHashes[e.hash]; });
+    if (!q.length) { showToast('選択した行に下書きはありません', false); return; }
+  }
+  var msg = (checkedOnly ? '選択 ' : '下書き全 ') + q.length + ' 件の音声と manifest.json を GitHub に反映します。';
+  if (!confirm(msg)) return;
 
   showToast('⏳ 反映中...', true);
 
@@ -2821,6 +2999,13 @@ function ttsFlushDraftQueue() {
         var json = JSON.stringify(latest, null, 2);
         return ghUploadPromise(TTS_MANIFEST_PATH, utf8ToBase64(json), '📤 tts manifest: +' + uploads.length + ' audio');
       }).then(function() {
+        // checked-only の場合は反映した下書きだけ削除（他は残す）
+        if (checkedOnly) {
+          var removeKeys = q.map(function(e) { return e.key; });
+          var chain2 = Promise.resolve();
+          removeKeys.forEach(function(k) { chain2 = chain2.then(function() { return _removeFromTtsDraftQueue(k); }); });
+          return chain2;
+        }
         return _clearTtsDraftQueue();
       }).then(function() {
         showToast('✅ ' + uploads.length + ' 音声 + manifest を反映しました', true);

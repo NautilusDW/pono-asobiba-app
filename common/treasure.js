@@ -93,7 +93,9 @@
       '  transform:scale(1);',
       '}',
       '.treasure-reward img {',
-      '  width:130px; height:130px;',
+      /* 縦長アイテム(家具/おもちゃ)は height:130px を基準にし、横長の壁紙・床でも */
+      /* 同じ「高さ 130px」で出てくるように width:auto + max-width で揃える。    */
+      '  height:130px; width:auto; max-width:220px;',
       '  object-fit:contain;',
       '  flex-shrink:0;',
       '  filter:drop-shadow(0 4px 12px rgba(255,215,0,0.5));',

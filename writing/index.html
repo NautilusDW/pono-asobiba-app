@@ -1049,20 +1049,33 @@ function speakWord(char, word) {
   const url = _getVoiceUrl(char);
   if (!url) { _speakFallback(char, word); return; }
   const myId = ++_voicePlayId;
-  // プリロード済みの同じsrcならそのまま再生
-  if (_sharedAudio.src.endsWith(url.replace('../', '/'))) {
-    _sharedAudio.currentTime = 0;
-    _sharedAudio.play().catch(() => _speakFallback(char, word));
+  const targetTail = url.replace('../', '/');
+  const curSrc = _sharedAudio.currentSrc || _sharedAudio.src || '';
+  const srcMatches = curSrc.endsWith(targetTail);
+
+  function doPlay() {
+    if (_voicePlayId !== myId) return;
+    try { _sharedAudio.currentTime = 0; } catch (e) {}
+    const p = _sharedAudio.play();
+    if (p && p.catch) p.catch(() => _speakFallback(char, word));
+  }
+
+  // 再生可能なら即再生
+  if (srcMatches && _sharedAudio.readyState >= 2) {
+    doPlay();
     return;
   }
-  // 違うsrcなら切り替えて再生
-  _sharedAudio.src = url;
-  _sharedAudio.oncanplaythrough = function() {
+  // まだ読み込み中 or src 差し替え: canplay を待ってから再生
+  _sharedAudio.oncanplay = function() {
+    _sharedAudio.oncanplay = null;
     _sharedAudio.oncanplaythrough = null;
-    if (_voicePlayId !== myId) return; // キャンセルされた
-    _sharedAudio.play().catch(() => _speakFallback(char, word));
+    doPlay();
   };
-  _sharedAudio.load();
+  _sharedAudio.oncanplaythrough = _sharedAudio.oncanplay;
+  if (!srcMatches) {
+    _sharedAudio.src = url;
+    _sharedAudio.load();
+  }
 }
 
 function _speakFallback(char, word) {
