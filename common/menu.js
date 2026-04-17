@@ -258,6 +258,26 @@
       window._ponoMenuBgmBtn = bgmItem;
     }
 
+    // 🔊 ナレーション（auto / tap / off を循環）
+    if (typeof window.Narration !== 'undefined') {
+      var narrLabel = { auto: 'よみあげ じどう', tap: 'よみあげ タップ', off: 'よみあげ OFF' };
+      var narrIcon  = { auto: '🔊', tap: '👆', off: '🔇' };
+      function refreshNarrItem(item) {
+        var m = window.Narration.getMode();
+        item.querySelector('.pono-dd-icon').textContent = narrIcon[m];
+        item.querySelector('.pono-dd-label').textContent = narrLabel[m];
+        item.classList.toggle('bgm-off', m === 'off');
+      }
+      var narrItem = createItem('🔊', 'よみあげ タップ', function(item) {
+        var cur = window.Narration.getMode();
+        var nextMode = cur === 'auto' ? 'tap' : (cur === 'tap' ? 'off' : 'auto');
+        window.Narration.setMode(nextMode);
+        refreshNarrItem(item);
+      });
+      refreshNarrItem(narrItem);
+      dropdown.appendChild(narrItem);
+    }
+
     // ❓ Tutorial
     if (options.tutorial) {
       dropdown.appendChild(createItem('❓', 'あそびかた', () => {

@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/narration.js"></script>
 <script src="./data/questions.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -498,7 +499,10 @@ body {
 </div>
 
 <div class="stage">
-  <div class="question" id="question-text">よういちゅう…</div>
+  <div class="question-wrap" style="position:relative;">
+    <div class="question" id="question-text">よういちゅう…</div>
+    <button id="question-speaker" aria-label="もんだいを よむ" style="position:absolute;top:50%;right:-4px;transform:translateY(-50%);background:#FBBF24;border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15);display:none;">🔊</button>
+  </div>
   <div id="stage-area"></div>
   <div class="choices" id="choices"></div>
 </div>
@@ -672,7 +676,9 @@ function buildPlaylist() {
   const perCat = Math.max(1, Math.ceil(TOTAL_Q / cats.length));
   const list = [];
   cats.forEach(cat => {
-    const pool = (QUIZLAND_QUESTIONS[cat] || []).filter(q => q.level >= minLv && q.level <= maxLv);
+    const pool = (QUIZLAND_QUESTIONS[cat] || [])
+      .map((q, idx) => Object.assign({ _cat: cat, _idx: idx }, q))
+      .filter(q => q.level >= minLv && q.level <= maxLv);
     if (pool.length > 0) list.push(...shuffle(pool).slice(0, perCat));
   });
   return shuffle(list).slice(0, TOTAL_Q);
@@ -838,6 +844,39 @@ function loadQuestion(q) {
   }
   renderChoices(q);
   updateHUD();
+  setupNarration(q);
+}
+
+// 音声ナレーション: 自動再生 or 🔊ボタンで問題文を読み上げ
+function narrationKey(q, field) {
+  if (!q || q._cat == null || q._idx == null) return null;
+  return 'quizland:' + q._cat + ':' + q._idx + ':' + (field || 'q');
+}
+function setupNarration(q) {
+  if (typeof Narration === 'undefined') return;
+  const btn = document.getElementById('question-speaker');
+  const key = narrationKey(q, 'q');
+  if (!btn || !key) return;
+  Narration.load().then(() => {
+    const has = Narration.hasEntry(key);
+    btn.style.display = (has && Narration.getMode() !== 'off') ? '' : 'none';
+    btn.onclick = function(e) {
+      e.preventDefault();
+      Narration.play(key);
+    };
+    // 自動再生モードでは問題表示と同時に鳴らす
+    if (has) Narration.playIfAuto(key);
+    // 次の2問を先読み
+    const prefetchKeys = [];
+    for (let i = 1; i <= 2; i++) {
+      const nq = playlist[questionIdx + i];
+      if (nq) {
+        const k = narrationKey(nq, 'q');
+        if (k) prefetchKeys.push(k);
+      }
+    }
+    if (prefetchKeys.length) Narration.prefetch(prefetchKeys);
+  });
 }
 
 function updateHUD() {
@@ -878,7 +917,13 @@ function onChoice(idx, btn) {
     })();
     var infoText = currentQ.detail || currentQ.hint || null;
     if (infoText) {
-      setTimeout(() => showDetail(infoText), 600);
+      setTimeout(() => {
+        showDetail(infoText);
+        if (typeof Narration !== 'undefined' && currentQ.detail) {
+          var dKey = narrationKey(currentQ, 'detail');
+          if (dKey && Narration.hasEntry(dKey)) Narration.play(dKey);
+        }
+      }, 600);
       setTimeout(nextQuestion, 2800);
     } else {
       setTimeout(nextQuestion, 1000);

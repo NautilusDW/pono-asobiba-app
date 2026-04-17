@@ -716,6 +716,7 @@ tr:hover { background: #FFFAF0; }
   <div class="sub-tabs">
     <button class="sub-tab active" data-sub="quiz-questions">📝 問題管理</button>
     <button class="sub-tab" data-sub="quiz-illust">🎨 イラスト管理</button>
+    <button class="sub-tab" data-sub="quiz-narration">🔊 音声ナレーション</button>
   </div>
   <div class="sub-panel active" id="sub-quiz-questions">
   <div class="section">
@@ -765,6 +766,54 @@ tr:hover { background: #FFFAF0; }
     <div id="illust-groups"></div>
   </div>
   </div><!-- /sub-quiz-illust -->
+
+  <!-- サブタブ3: 音声ナレーション (Gemini TTS) -->
+  <div class="sub-panel" id="sub-quiz-narration">
+  <div class="section">
+    <div class="section-title">🔊 クイズランド 音声ナレーション</div>
+    <div id="tts-draft-bar" style="display:none;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+      <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">話者</label>
+      <select id="tts-voice-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
+        <option value="Leda">Leda（やさしい女声）</option>
+        <option value="Kore">Kore（落ち着き女声）</option>
+        <option value="Aoede">Aoede（明るい女声）</option>
+        <option value="Puck">Puck（元気な男声）</option>
+        <option value="Charon">Charon（低い男声）</option>
+      </select>
+      <select id="tts-cat-filter" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
+        <option value="">すべてのカテゴリー</option>
+      </select>
+      <select id="tts-state-filter" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
+        <option value="">すべての状態</option>
+        <option value="missing">🔴 未生成</option>
+        <option value="stale">🟡 要更新</option>
+        <option value="done">🟢 生成済</option>
+      </select>
+      <button onclick="ttsReloadManifest()" style="padding:5px 12px;background:#E0F2FE;border:1px solid #7DD3FC;color:#1E40AF;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再読み込み</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <button onclick="ttsGenerateVisible()" style="padding:6px 14px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">⚡ 表示中の未生成を一括生成</button>
+      <button onclick="ttsStopGeneration()" id="tts-stop-btn" style="padding:6px 14px;background:#FEE2E2;color:#B91C1C;border:1px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;display:none;">⏹ 停止</button>
+      <span id="tts-summary" style="font-size:0.78rem;color:#8B7355;font-weight:700;"></span>
+      <span id="tts-progress" style="font-size:0.78rem;color:#6D28D9;font-weight:700;"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="tts-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;white-space:nowrap;">状態</th>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;white-space:nowrap;">カテゴリー</th>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;">読み上げテキスト</th>
+            <th style="text-align:center;padding:7px 4px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;width:80px;">話者</th>
+            <th style="padding:7px 4px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;width:150px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tts-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /sub-quiz-narration -->
 </div><!-- /panel-quizland -->
 
 <!-- ===== 🔤 ことばあわせ ===== -->
@@ -982,6 +1031,7 @@ function attachGhImageFallback(imgEl, kind, folder, file, opts) {
 var LS_TOKEN  = 'admin_gh_token';
 var REWARDS_PATH = 'assets/data/rewards.json';
 var CREATURES_PATH = 'assets/data/creatures.json';
+var TTS_MANIFEST_PATH = 'assets/tts/manifest.json';
 var REWARDS_API  = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH + '?ref=' + GH_BRANCH;
 
 // ════════════════════════════════════════════════════════════════
@@ -1140,6 +1190,7 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
     }
     if (subId === 'wm-questions') { wmRenderMatchTable(); wmRenderCwTable(); }
     if (subId === 'wm-illust')    wmLoadIllust();
+    if (subId === 'quiz-narration') ttsInit();
   });
 });
 
@@ -1616,6 +1667,601 @@ function showIllustDraftList() {
       if (rest.length) showIllustDraftList();
     });
   });
+}
+
+// ════════════════════════════════════════════════════════════════
+// 🔊 音声ナレーション (Gemini TTS) — 管理ツール統合
+// ════════════════════════════════════════════════════════════════
+var TTS_DEFAULT_VOICE   = 'Leda';
+var TTS_ALLOWED_MODELS  = ['gemini-2.5-flash-preview-tts', 'gemini-2.5-flash-tts'];
+var TTS_MODEL           = TTS_ALLOWED_MODELS[0];
+var TTS_IDB_NAME        = 'pono_tts';
+var TTS_IDB_STORE       = 'drafts';
+var ttsManifest = null;          // {version, voice, entries: {key: {text, hash, file, voice, updatedAt}}}
+var ttsRows = [];                // 生成対象行のキャッシュ
+var ttsDraftCache = [];          // メモリ上の下書きキャッシュ（IndexedDB のミラー）
+var ttsGenerating = false;
+var ttsStopRequested = false;
+
+// --- IndexedDB draft queue ---
+// 音声 WAV は 1 件あたり最大 ~400KB になり得るため localStorage (5MB) は不適。
+// IndexedDB に保存してメモリキャッシュと同期する。
+function _ttsOpenDB() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(TTS_IDB_NAME, 1);
+    req.onupgradeneeded = function() {
+      var db = req.result;
+      if (!db.objectStoreNames.contains(TTS_IDB_STORE)) {
+        db.createObjectStore(TTS_IDB_STORE, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+function _ttsLoadAllDrafts() {
+  return _ttsOpenDB().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction(TTS_IDB_STORE, 'readonly');
+      var store = tx.objectStore(TTS_IDB_STORE);
+      var req = store.getAll();
+      req.onsuccess = function() { resolve(req.result || []); };
+      req.onerror = function() { resolve([]); };
+    });
+  }).catch(function() { return []; });
+}
+function _ttsPutDraft(entry) {
+  return _ttsOpenDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(TTS_IDB_STORE, 'readwrite');
+      tx.objectStore(TTS_IDB_STORE).put(entry);
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function() { reject(tx.error); };
+      tx.onabort = function() { reject(tx.error || new Error('tx aborted')); };
+    });
+  });
+}
+function _ttsDeleteDraft(key) {
+  return _ttsOpenDB().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction(TTS_IDB_STORE, 'readwrite');
+      tx.objectStore(TTS_IDB_STORE).delete(key);
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+  });
+}
+function _ttsClearDrafts() {
+  return _ttsOpenDB().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction(TTS_IDB_STORE, 'readwrite');
+      tx.objectStore(TTS_IDB_STORE).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+  });
+}
+
+function _getTtsDraftQueue() {
+  return ttsDraftCache.slice();
+}
+function _addToTtsDraftQueue(entry) {
+  var idx = ttsDraftCache.findIndex(function(e) { return e.key === entry.key; });
+  if (idx >= 0) ttsDraftCache[idx] = entry; else ttsDraftCache.push(entry);
+  return _ttsPutDraft(entry).catch(function(e) {
+    showToast('TTS 下書き保存失敗: ' + (e && e.message || e), false);
+    // 失敗したらメモリも戻す（バッチの停止フラグも立てる）
+    ttsStopRequested = true;
+    if (idx >= 0) ttsDraftCache[idx] = entry; else ttsDraftCache.pop();
+    throw e;
+  });
+}
+function _removeFromTtsDraftQueue(key) {
+  ttsDraftCache = ttsDraftCache.filter(function(e) { return e.key !== key; });
+  return _ttsDeleteDraft(key);
+}
+function _clearTtsDraftQueue() {
+  ttsDraftCache = [];
+  return _ttsClearDrafts();
+}
+function _ttsReloadDraftCache() {
+  return _ttsLoadAllDrafts().then(function(arr) {
+    ttsDraftCache = arr || [];
+    return ttsDraftCache;
+  });
+}
+
+// --- sha1 (SubtleCrypto) ---
+function ttsSha1(text) {
+  var buf = new TextEncoder().encode(text);
+  return crypto.subtle.digest('SHA-1', buf).then(function(hash) {
+    var bytes = new Uint8Array(hash);
+    var hex = '';
+    for (var i = 0; i < bytes.length; i++) {
+      hex += bytes[i].toString(16).padStart(2, '0');
+    }
+    return hex.slice(0, 10);
+  });
+}
+
+// --- データ抽出: QUIZLAND_QUESTIONS 全体から読み上げ対象を列挙 ---
+function ttsExtractRows() {
+  var rows = [];
+  if (typeof QUIZLAND_QUESTIONS === 'undefined') return rows;
+  Object.keys(QUIZLAND_QUESTIONS).forEach(function(cat) {
+    (QUIZLAND_QUESTIONS[cat] || []).forEach(function(q, idx) {
+      if (q && q.q) {
+        rows.push({
+          key: 'quizland:' + cat + ':' + idx + ':q',
+          cat: cat,
+          idx: idx,
+          field: 'q',
+          text: String(q.q).trim()
+        });
+      }
+      // trivia の detail（正解時の豆知識）も読み上げ対象に含める
+      if (q && q.detail) {
+        rows.push({
+          key: 'quizland:' + cat + ':' + idx + ':detail',
+          cat: cat,
+          idx: idx,
+          field: 'detail',
+          text: String(q.detail).trim()
+        });
+      }
+    });
+  });
+  return rows;
+}
+
+// --- manifest ロード ---
+function ttsLoadManifest() {
+  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + TTS_MANIFEST_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  return fetch(url, { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) {
+      if (!r.ok) return { version: 1, voice: TTS_DEFAULT_VOICE, entries: {} };
+      return r.json().then(function(data) {
+        try {
+          var text = base64ToUtf8(data.content.replace(/\n/g, ''));
+          var m = JSON.parse(text);
+          if (!m.entries) m.entries = {};
+          return m;
+        } catch(e) {
+          return { version: 1, voice: TTS_DEFAULT_VOICE, entries: {} };
+        }
+      });
+    })
+    .catch(function() { return { version: 1, voice: TTS_DEFAULT_VOICE, entries: {} }; });
+}
+
+// --- 初期化（sub-panel 表示時に呼ばれる） ---
+function ttsInit() {
+  if (!getToken()) {
+    var tbody = document.getElementById('tts-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#B91C1C;font-weight:700;">⚠️ GitHub トークン未設定。🔑 GitHub設定タブで設定してください。</td></tr>';
+    return;
+  }
+  ttsPopulateCatFilter();
+  _ttsReloadDraftCache().then(function() { ttsReloadManifest(); });
+}
+
+function ttsPopulateCatFilter() {
+  var sel = document.getElementById('tts-cat-filter');
+  if (!sel || sel.options.length > 1) return;
+  if (typeof QUIZLAND_QUESTIONS === 'undefined') return;
+  Object.keys(QUIZLAND_QUESTIONS).forEach(function(cat) {
+    var opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', ttsRenderTable);
+  document.getElementById('tts-state-filter').addEventListener('change', ttsRenderTable);
+  document.getElementById('tts-voice-sel').addEventListener('change', function() {
+    // voice 変更だけでは状態は変わらない（既存は既存voiceのまま使い続ける）
+    ttsRenderTable();
+  });
+}
+
+function ttsReloadManifest() {
+  var tbody = document.getElementById('tts-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#6D28D9;">⏳ manifest 読み込み中...</td></tr>';
+  ttsLoadManifest().then(function(m) {
+    ttsManifest = m;
+    ttsRows = ttsExtractRows();
+    // 各行の hash を事前計算
+    return Promise.all(ttsRows.map(function(r) {
+      return ttsSha1(r.text).then(function(h) { r.hash = h; return r; });
+    }));
+  }).then(function() {
+    ttsRenderTable();
+    ttsRenderDraftBar();
+  });
+}
+
+// --- 状態判定 ---
+function ttsGetState(row) {
+  if (!ttsManifest || !ttsManifest.entries) {
+    var dq0 = ttsDraftCache.find(function(e) { return e.key === row.key; });
+    return dq0 ? 'draft' : 'missing';
+  }
+  var dq = ttsDraftCache.find(function(e) { return e.key === row.key; });
+  if (dq) return 'draft';
+  var e = ttsManifest.entries[row.key];
+  if (!e) return 'missing';
+  if (e.hash !== row.hash) return 'stale';
+  return 'done';
+}
+
+// --- テーブル描画 ---
+function ttsRenderTable() {
+  var tbody = document.getElementById('tts-tbody');
+  var sum = document.getElementById('tts-summary');
+  if (!tbody) return;
+  var catFilter = (document.getElementById('tts-cat-filter') || {}).value || '';
+  var stateFilter = (document.getElementById('tts-state-filter') || {}).value || '';
+
+  var counts = { missing: 0, stale: 0, done: 0, draft: 0, total: ttsRows.length };
+  var visible = [];
+  ttsRows.forEach(function(r) {
+    r._state = ttsGetState(r);
+    counts[r._state]++;
+    if (catFilter && r.cat !== catFilter) return;
+    if (stateFilter && r._state !== stateFilter) return;
+    visible.push(r);
+  });
+
+  if (sum) {
+    sum.innerHTML =
+      '合計 ' + counts.total + ' / ' +
+      '<span style="color:#B91C1C;">🔴未生成 ' + counts.missing + '</span> / ' +
+      '<span style="color:#D97706;">🟡要更新 ' + counts.stale + '</span> / ' +
+      '<span style="color:#059669;">🟢生成済 ' + counts.done + '</span> / ' +
+      '<span style="color:#6D28D9;">📝下書き ' + counts.draft + '</span>';
+  }
+
+  if (!visible.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#8B7355;">該当なし</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';   // 一旦クリア（全行を DOM API で構築して XSS を回避）
+  var stateLabelText = { missing:'🔴未生成', stale:'🟡要更新', done:'🟢生成済', draft:'📝下書き' };
+  var stateLabelColor = { missing:'#B91C1C', stale:'#D97706', done:'#059669', draft:'#6D28D9' };
+
+  var limit = Math.min(visible.length, 500);
+  for (var i = 0; i < limit; i++) {
+    var r = visible[i];
+    var existing = ttsManifest && ttsManifest.entries && ttsManifest.entries[r.key];
+    var voice = existing ? existing.voice : (document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE);
+    var tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #F3F4F6';
+
+    var tdState = document.createElement('td');
+    tdState.style.padding = '6px 8px';
+    var spState = document.createElement('span');
+    spState.style.color = stateLabelColor[r._state];
+    spState.style.fontWeight = '800';
+    spState.textContent = stateLabelText[r._state];
+    tdState.appendChild(spState);
+
+    var tdCat = document.createElement('td');
+    tdCat.style.cssText = 'padding:6px 8px;color:#6B7280;white-space:nowrap;';
+    tdCat.textContent = r.cat;
+    if (r.field === 'detail') {
+      var br = document.createElement('br');
+      var spD = document.createElement('span');
+      spD.style.cssText = 'font-size:0.65rem;color:#9CA3AF;';
+      spD.textContent = '💡detail';
+      tdCat.appendChild(br);
+      tdCat.appendChild(spD);
+    }
+
+    var tdText = document.createElement('td');
+    tdText.style.padding = '6px 8px';
+    tdText.textContent = r.text;
+
+    var tdVoice = document.createElement('td');
+    tdVoice.style.cssText = 'padding:6px 4px;text-align:center;color:#6B7280;font-size:0.72rem;';
+    tdVoice.textContent = voice;
+
+    var tdOps = document.createElement('td');
+    tdOps.style.cssText = 'padding:6px 4px;text-align:center;';
+    var opsWrap = document.createElement('div');
+    opsWrap.style.cssText = 'display:flex;gap:4px;justify-content:center;';
+
+    if ((r._state === 'done' || r._state === 'stale') && existing && _ttsValidFile(existing.file)) {
+      var pBtn = document.createElement('button');
+      pBtn.type = 'button';
+      pBtn.style.cssText = 'padding:4px 8px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+      pBtn.textContent = '▶ 再生';
+      pBtn.dataset.url = '../assets/tts/' + existing.file;
+      pBtn.addEventListener('click', function(ev) { ttsPlay(ev.currentTarget.dataset.url); });
+      opsWrap.appendChild(pBtn);
+    } else if (r._state === 'draft') {
+      var dBtn = document.createElement('button');
+      dBtn.type = 'button';
+      dBtn.style.cssText = 'padding:4px 8px;background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+      dBtn.textContent = '▶ 下書き';
+      dBtn.dataset.key = r.key;
+      dBtn.addEventListener('click', function(ev) { ttsPlayDraft(ev.currentTarget.dataset.key); });
+      opsWrap.appendChild(dBtn);
+    }
+    var gBtn = document.createElement('button');
+    gBtn.type = 'button';
+    gBtn.style.cssText = 'padding:4px 8px;background:#F3E8FF;color:#6D28D9;border:1px solid #D8B4FE;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+    gBtn.textContent = '⚡ 生成';
+    gBtn.dataset.key = r.key;
+    gBtn.addEventListener('click', function(ev) { ttsGenerateOne(ev.currentTarget.dataset.key); });
+    opsWrap.appendChild(gBtn);
+
+    tdOps.appendChild(opsWrap);
+    tr.appendChild(tdState);
+    tr.appendChild(tdCat);
+    tr.appendChild(tdText);
+    tr.appendChild(tdVoice);
+    tr.appendChild(tdOps);
+    tbody.appendChild(tr);
+  }
+  if (visible.length > 500) {
+    var more = document.createElement('tr');
+    var td = document.createElement('td');
+    td.colSpan = 5;
+    td.style.cssText = 'padding:10px;text-align:center;color:#8B7355;font-size:0.72rem;';
+    td.textContent = '…残り ' + (visible.length - 500) + ' 行はフィルタで絞ってください';
+    more.appendChild(td);
+    tbody.appendChild(more);
+  }
+}
+
+// manifest.file の妥当性検証（path traversal, 予期外拡張子の除外）
+function _ttsValidFile(file) {
+  return typeof file === 'string' && /^[a-zA-Z0-9_\-/]+\.wav$/.test(file) && !file.includes('..');
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// --- 1件生成 ---
+function ttsGenerateOne(key) {
+  var row = ttsRows.find(function(r) { return r.key === key; });
+  if (!row) { showToast('行が見つからない: ' + key, false); return; }
+  var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
+  ttsProgress('⏳ ' + row.text.slice(0, 20) + '...');
+  ttsCallApi(row.text, voice)
+    .then(function(resp) {
+      if (!resp || !resp.audio) throw new Error('音声データなし');
+      var file = 'quizland/' + row.hash + '.wav';
+      return _addToTtsDraftQueue({
+        key: row.key,
+        hash: row.hash,
+        file: file,
+        text: row.text,
+        voice: voice,
+        audioBase64: resp.audio,
+        updatedAt: new Date().toISOString()
+      });
+    })
+    .then(function() {
+      ttsProgress('✅ ' + row.text.slice(0, 20));
+      ttsRenderTable();
+      ttsRenderDraftBar();
+    })
+    .catch(function(e) {
+      ttsProgress('');
+      showToast('生成失敗: ' + (e && e.message || e), false);
+    });
+}
+
+// --- API 呼び出し（リトライ付き） ---
+function ttsCallApi(text, voice, attempt) {
+  attempt = attempt || 1;
+  var maxAttempts = 4;
+  return fetch('/.netlify/functions/ai-tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, voice: voice, model: TTS_MODEL })
+  }).then(function(r) {
+    return r.json().then(function(data) {
+      if (!r.ok) {
+        if ((r.status === 429 || r.status === 502 || r.status === 503) && attempt < maxAttempts) {
+          var wait = 1500 * attempt;
+          return new Promise(function(res) { setTimeout(res, wait); })
+            .then(function() { return ttsCallApi(text, voice, attempt + 1); });
+        }
+        throw new Error(data.error || ('HTTP ' + r.status));
+      }
+      return data;
+    });
+  });
+}
+
+// --- 一括生成（表示中の missing のみ、逐次処理・スロットル） ---
+function ttsGenerateVisible() {
+  if (ttsGenerating) { showToast('既に生成中です', false); return; }
+  var catFilter = (document.getElementById('tts-cat-filter') || {}).value || '';
+  var stateFilter = (document.getElementById('tts-state-filter') || {}).value || '';
+  var targets = ttsRows.filter(function(r) {
+    if (r._state === 'done' || r._state === 'draft') return false;
+    if (catFilter && r.cat !== catFilter) return false;
+    if (stateFilter && r._state !== stateFilter) return false;
+    return true;
+  });
+  // 重複テキストは1回だけ生成（同hash は1ファイル）
+  var uniq = {};
+  targets = targets.filter(function(r) {
+    if (uniq[r.hash]) return false;
+    uniq[r.hash] = true;
+    return true;
+  });
+  if (!targets.length) { showToast('生成対象なし', false); return; }
+  if (!confirm(targets.length + ' 件（重複除外後）を Gemini TTS で生成します。数分かかります。よろしいですか？')) return;
+
+  var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
+  ttsGenerating = true;
+  ttsStopRequested = false;
+  document.getElementById('tts-stop-btn').style.display = '';
+
+  var done = 0;
+  var failed = 0;
+  function next(i) {
+    if (ttsStopRequested || i >= targets.length) {
+      ttsGenerating = false;
+      document.getElementById('tts-stop-btn').style.display = 'none';
+      ttsProgress('');
+      showToast('生成完了: ' + done + ' 件 / 失敗 ' + failed + ' 件' + (ttsStopRequested ? ' (中断)' : ''), failed === 0);
+      ttsRenderTable();
+      ttsRenderDraftBar();
+      // 同hash を持つ他行も draft として扱えるよう再計算
+      return;
+    }
+    var r = targets[i];
+    ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20));
+    ttsCallApi(r.text, voice)
+      .then(function(resp) {
+        if (!resp || !resp.audio) throw new Error('音声データなし');
+        if (ttsStopRequested) return;
+        var file = 'quizland/' + r.hash + '.wav';
+        // hash 単位で重複検出済みだが、同一 text を持つ別 key にも適用するため全ヒット行に draft を積む
+        var adds = ttsRows.filter(function(rr) { return rr.hash === r.hash; })
+          .map(function(rr) {
+            return _addToTtsDraftQueue({
+              key: rr.key,
+              hash: rr.hash,
+              file: file,
+              text: rr.text,
+              voice: voice,
+              audioBase64: resp.audio,
+              updatedAt: new Date().toISOString()
+            });
+          });
+        return Promise.all(adds).then(function() { done++; });
+      })
+      .catch(function(e) {
+        failed++;
+        console.error('tts fail', r.key, e);
+      })
+      .then(function() {
+        if (ttsStopRequested) {
+          ttsGenerating = false;
+          document.getElementById('tts-stop-btn').style.display = 'none';
+          ttsProgress('');
+          showToast('中断: 成功 ' + done + ' / 失敗 ' + failed, failed === 0);
+          ttsRenderTable();
+          ttsRenderDraftBar();
+          return;
+        }
+        // スロットル: 800ms 間隔
+        setTimeout(function() { next(i + 1); }, 800);
+      });
+  }
+  next(0);
+}
+
+function ttsStopGeneration() {
+  ttsStopRequested = true;
+  ttsProgress('⏹ 中断中...');
+}
+
+function ttsProgress(msg) {
+  var el = document.getElementById('tts-progress');
+  if (el) el.textContent = msg || '';
+}
+
+// --- プレビュー再生 ---
+function ttsPlay(url) {
+  try {
+    var a = new Audio(url);
+    a.volume = 0.9;
+    a.play().catch(function(e) { showToast('再生失敗: ' + e.message, false); });
+  } catch(e) { showToast('再生失敗: ' + e.message, false); }
+}
+function ttsPlayDraft(key) {
+  var e = ttsDraftCache.find(function(x) { return x.key === key; });
+  if (!e || !e.audioBase64) return;
+  var a = new Audio('data:audio/wav;base64,' + e.audioBase64);
+  a.volume = 0.9;
+  a.play().catch(function(err) { showToast('再生失敗: ' + err.message, false); });
+}
+
+// --- 下書きバー ---
+function ttsRenderDraftBar() {
+  var host = document.getElementById('tts-draft-bar');
+  if (!host) return;
+  var q = _getTtsDraftQueue();
+  if (!q.length) { host.innerHTML = ''; host.style.display = 'none'; return; }
+  host.style.display = '';
+  var totalSize = q.reduce(function(s, e) {
+    return s + Math.ceil((e.audioBase64 || '').length * 0.75);
+  }, 0);
+  var kb = Math.round(totalSize / 1024);
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(135deg,#EDE9FE,#DDD6FE);border:2px solid #8B5CF6;border-radius:12px;margin-bottom:14px;">' +
+      '<div style="font-weight:900;color:#5B21B6;font-size:0.85rem;">🎙 TTS下書き ' + q.length + ' 件 (' + kb + ' KB)</div>' +
+      '<div style="flex:1;font-size:0.7rem;color:#5B21B6;">生成ボタンはローカル保存のみ。まとめて反映で GitHub に push。</div>' +
+      '<button onclick="ttsFlushDraftQueue()" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📤 まとめて反映</button>' +
+      '<button onclick="if(confirm(\'下書きを全部捨てる？\')){_clearTtsDraftQueue().then(function(){ttsRenderDraftBar();ttsRenderTable();});}" style="padding:5px 12px;background:#fff;color:#B91C1C;border:2px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 クリア</button>' +
+    '</div>';
+}
+
+// --- 下書きキューを GitHub に反映（N個wav + 1個manifest.json = N+1 コミット） ---
+function ttsFlushDraftQueue() {
+  var q = _getTtsDraftQueue();
+  if (!q.length) { showToast('下書きはありません', false); return; }
+  if (!confirm(q.length + ' 件の音声ファイルと manifest.json を GitHub に反映します。')) return;
+
+  showToast('⏳ 反映中...', true);
+
+  // 重複 file を1回だけアップロードするため集約
+  var byFile = {};
+  q.forEach(function(e) {
+    if (!byFile[e.file]) byFile[e.file] = e;
+  });
+  var uploads = Object.keys(byFile);
+
+  // 最新の manifest を再取得してからマージ
+  ttsLoadManifest()
+    .then(function(latest) {
+      if (!latest.entries) latest.entries = {};
+      var chain = Promise.resolve();
+      var uploadedCount = 0;
+      uploads.forEach(function(fpath) {
+        var e = byFile[fpath];
+        chain = chain.then(function() {
+          return ghUploadPromise('assets/tts/' + fpath, e.audioBase64, '🎙 tts: ' + fpath);
+        }).then(function() {
+          uploadedCount++;
+          ttsProgress('⏫ ' + uploadedCount + '/' + uploads.length);
+        });
+      });
+      return chain.then(function() {
+        // 全下書きエントリを manifest に反映
+        q.forEach(function(e) {
+          latest.entries[e.key] = {
+            text: e.text,
+            hash: e.hash,
+            file: e.file,
+            voice: e.voice,
+            updatedAt: e.updatedAt
+          };
+        });
+        latest.version = (typeof latest.version === 'number' ? latest.version : 0) + 1;
+        latest.voice = latest.voice || TTS_DEFAULT_VOICE;
+        var json = JSON.stringify(latest, null, 2);
+        return ghUploadPromise(TTS_MANIFEST_PATH, utf8ToBase64(json), '📤 tts manifest: +' + uploads.length + ' audio');
+      }).then(function() {
+        return _clearTtsDraftQueue();
+      }).then(function() {
+        showToast('✅ ' + uploads.length + ' 音声 + manifest を反映しました', true);
+        ttsProgress('');
+        ttsReloadManifest();
+      });
+    })
+    .catch(function(e) {
+      showToast('反映失敗: ' + (e && e.message || e), false);
+      ttsProgress('');
+    });
 }
 
 // ════════════════════════════════════════════════════════════════

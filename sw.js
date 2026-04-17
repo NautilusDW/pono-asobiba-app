@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 179;
+const CACHE_VERSION = 180;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -61,9 +61,10 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // items.js / rewards.json はデプロイ直後に即反映させたいので HTTP キャッシュも無効化
+  // items.js / rewards.json / tts manifest はデプロイ直後に即反映させたいので HTTP キャッシュも無効化
   if (event.request.url.includes('/room/items.js')
-      || event.request.url.includes('/assets/data/rewards.json')) {
+      || event.request.url.includes('/assets/data/rewards.json')
+      || event.request.url.includes('/assets/tts/manifest.json')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(response => {
