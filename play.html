@@ -1714,17 +1714,25 @@
       }
       var roomCard = document.getElementById('card-room');
       if (roomCard) {
-        var _debugOn = localStorage.getItem('pono_debug') === '1';
-        if (!localStorage.getItem('pono_room_card_open') && !_debugOn) {
-          roomCard.classList.add('locked');
-          // pointer-events を切らずにタップ時は「もっとスタンプを集めよう」案内を出す
-          roomCard.addEventListener('click', function(e) {
-            if (localStorage.getItem('pono_debug') === '1') return; // デバッグ時はそのまま遷移
-            if (localStorage.getItem('pono_room_card_open')) return; // 解放後はそのまま遷移
-            e.preventDefault();
-            e.stopPropagation();
-            _showRoomLockedHint();
-          });
+        var _debugOn  = localStorage.getItem('pono_debug')   === '1';
+        var _premium  = localStorage.getItem('pono_premium') === '1';
+        var _hasRoom  = _debugOn || _premium; // 有料 or デバッグ なら「おうち」アクセス可
+        if (!_hasRoom) {
+          // 無料ユーザー: カードを「ポノのてちょう」に差し替え
+          roomCard.href = 'techo/index.html';
+          var titleEl = roomCard.querySelector('.card-title');
+          var descEl  = roomCard.querySelector('.card-desc');
+          var iconEl  = roomCard.querySelector('.card-icon');
+          if (titleEl) titleEl.textContent = 'ポノの てちょう';
+          if (descEl)  descEl.innerHTML    = 'あつめた ものを<br>みよう！';
+          if (iconEl)  iconEl.textContent  = '📓';
+          // ロック表示はしない（手帳は自由に見られる）
+          roomCard.classList.remove('locked');
+          // 下部ナビも「てちょう」に差し替え
+          var bnIcon  = document.getElementById('bn-room-icon');
+          var bnLabel = document.getElementById('bn-room-label');
+          if (bnIcon)  bnIcon.textContent  = '📓';
+          if (bnLabel) bnLabel.textContent = 'てちょう';
         }
       }
     })();
@@ -3288,9 +3296,9 @@
       <span class="bn-icon">📋</span>
       <span class="bn-label">スタンプ</span>
     </button>
-    <button class="bn-item" data-action="room">
-      <span class="bn-icon">🏠</span>
-      <span class="bn-label">おうち</span>
+    <button class="bn-item" data-action="room" id="bn-room">
+      <span class="bn-icon" id="bn-room-icon">🏠</span>
+      <span class="bn-label" id="bn-room-label">おうち</span>
     </button>
     <button class="bn-item" data-action="play">
       <span class="bn-icon">🎮</span>
@@ -3322,19 +3330,12 @@
             alert('スタンプカードの表示に失敗しました');
           }
         } else if (action === 'room') {
-          var roomOpen = localStorage.getItem('pono_room_card_open') === '1';
-          var debugOn = localStorage.getItem('pono_debug') === '1';
-          if (!roomOpen && !debugOn) {
-            var ov = document.createElement('div');
-            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
-            ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
-              '<div style="font-size:2.5rem;margin-bottom:8px;">🔒</div>' +
-              '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;">スタンプを あつめて\nかぐを もらうと\n「わたしのおうち」が\nつかえるように なるよ！</div>' +
-              '<button style="margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;" onclick="this.parentNode.parentNode.remove()">わかった！</button>' +
-              '</div>';
-            document.body.appendChild(ov);
-          } else {
+          var debugOn = localStorage.getItem('pono_debug')   === '1';
+          var premium = localStorage.getItem('pono_premium') === '1';
+          if (debugOn || premium) {
             location.href = 'room/index.html';
+          } else {
+            location.href = 'techo/index.html';
           }
         } else if (action === 'play') {
           var menu = document.querySelector('.menu');
