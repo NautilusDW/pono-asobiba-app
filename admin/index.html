@@ -1736,6 +1736,26 @@ var TTS_MODEL           = TTS_ALLOWED_MODELS[0];
 var TTS_DEFAULT_ENGINE  = 'gemini'; // 'gemini' | 'chirp3' | 'voicevox'
 var TTS_VV_BASE         = 'http://localhost:50021';
 var TTS_VV_DEFAULT_SPK  = 3; // ずんだもん ノーマル
+
+// --- 行ごとのカスタムプロンプト override（未生成状態でも永続化） ---
+var TTS_ROW_PROMPTS_KEY = 'admin_tts_row_prompts';
+function _ttsLoadRowPrompts() {
+  try { return JSON.parse(localStorage.getItem(TTS_ROW_PROMPTS_KEY) || '{}') || {}; }
+  catch(_) { return {}; }
+}
+function _ttsSaveRowPrompts(map) {
+  try { localStorage.setItem(TTS_ROW_PROMPTS_KEY, JSON.stringify(map || {})); } catch(_) {}
+}
+function ttsGetRowPrompt(key) {
+  var m = _ttsLoadRowPrompts();
+  return (key && m.hasOwnProperty(key)) ? String(m[key]) : '';
+}
+function ttsSetRowPrompt(key, prompt) {
+  var m = _ttsLoadRowPrompts();
+  if (prompt && prompt.trim()) m[key] = prompt.trim();
+  else delete m[key];
+  _ttsSaveRowPrompts(m);
+}
 // 旧 Cloud TTS voice 名 → Gemini voice へ自動マイグレーション（IndexedDB 互換）
 var TTS_LEGACY_VOICE_MAP = {
   'ja-JP-Neural2-B':  'Leda',
@@ -2286,7 +2306,21 @@ function ttsRenderTable() {
       opsWrap.appendChild(hBtn);
     }
 
-    // ③ 生成 / 再生成ボタン（文脈で文言変化）
+    // ③ 行ごとのカスタムプロンプト編集ボタン（指定有りなら橙色で明示）
+    var rowPrompt = ttsGetRowPrompt(r.key);
+    var pBtn = document.createElement('button');
+    pBtn.type = 'button';
+    pBtn.style.cssText = 'padding:5px 10px;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;' +
+      (rowPrompt
+        ? 'background:#FED7AA;color:#9A3412;border:2px solid #F97316;'
+        : 'background:#F5F5F4;color:#78716C;border:1px dashed #A8A29E;');
+    pBtn.textContent = rowPrompt ? '✏️ 指定中' : '✏️ プロンプト';
+    pBtn.title = rowPrompt ? ('この行専用プロンプト: ' + rowPrompt + '\n（ドロップダウンの語り口より優先）') : 'この行だけ専用プロンプトを設定';
+    pBtn.dataset.key = r.key;
+    pBtn.addEventListener('click', function(ev) { ttsOpenRowPromptEditor(ev.currentTarget.dataset.key); });
+    opsWrap.appendChild(pBtn);
+
+    // ④ 生成 / 再生成ボタン（文脈で文言変化）
     var hasAny = (r._state === 'done' || r._state === 'stale' || r._state === 'draft');
     var gBtn = document.createElement('button');
     gBtn.type = 'button';
@@ -2386,6 +2420,9 @@ function ttsGenerateOne(key) {
   if (!row) { showToast('行が見つからない: ' + key, false); return; }
   var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
   var style = ttsCurrentStyle();
+  // 行ごとのカスタムプロンプト指定があれば、ドロップダウンの語り口より優先
+  var rowOverride = ttsGetRowPrompt(row.key);
+  if (rowOverride) style = rowOverride;
   // 再生成判定: 下書きキャッシュに同 key があれば「前回」として保存
   var prevDraft = ttsDraftCache.find(function(e) { return e.key === row.key; });
   var prevAudio = prevDraft ? prevDraft.audioBase64 : null;
@@ -2554,8 +2591,10 @@ function _ttsRunBatch(targets) {
       return;
     }
     var r = targets[i];
+    // 行ごとの override があれば優先
+    var effStyle = ttsGetRowPrompt(r.key) || style;
     ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20) + ' (成功' + done + '/失敗' + failed + ')');
-    ttsCallApi(r.text, voice, 1, style)
+    ttsCallApi(r.text, voice, 1, effStyle)
       .then(function(resp) {
         if (!resp || !resp.audio) throw new Error('音声データなし');
         if (ttsStopRequested) return;
@@ -2574,7 +2613,7 @@ function _ttsRunBatch(targets) {
               file: file,
               text: rr.text,
               voice: voice,
-              stylePrompt: style,
+              stylePrompt: effStyle,
               modelUsed: resp.model || null,
               fallbackUsed: !!resp.fallbackUsed,
               audioBase64: resp.audio,
@@ -2664,8 +2703,9 @@ function ttsGenerateVisible() {
       return;
     }
     var r = targets[i];
+    var effStyle2 = ttsGetRowPrompt(r.key) || style;
     ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20));
-    ttsCallApi(r.text, voice, 1, style)
+    ttsCallApi(r.text, voice, 1, effStyle2)
       .then(function(resp) {
         if (!resp || !resp.audio) throw new Error('音声データなし');
         if (ttsStopRequested) return;
@@ -2685,7 +2725,7 @@ function ttsGenerateVisible() {
               file: file,
               text: rr.text,
               voice: voice,
-              stylePrompt: style,
+              stylePrompt: effStyle2,
               modelUsed: resp.model || null,
               fallbackUsed: !!resp.fallbackUsed,
               audioBase64: resp.audio,
@@ -2756,6 +2796,117 @@ function ttsPlayPrevious(key) {
   var a = new Audio(src);
   a.volume = 0.9;
   a.play().catch(function(err) { showToast('再生失敗: ' + err.message, false); });
+}
+
+// --- 行ごとのカスタムプロンプト編集モーダル ---
+var TTS_PROMPT_EXAMPLES = [
+  { label: '🎨 関西アクセント', value: '[in a Kansai accent, gently]' },
+  { label: '🎨 東北アクセント', value: '[with a soft Tohoku accent]' },
+  { label: '📍 特定の語を強調（例）', value: '[slowly, emphasizing the word 赤い]' },
+  { label: '⏸ 単語間にポーズ', value: '[with a short pause between words]' },
+  { label: '🤫 ささやき', value: '[whispering softly]' },
+  { label: '📖 おばあちゃん調', value: '[like a gentle grandmother telling a bedtime story]' },
+  { label: '🎤 アナウンサー風', value: '[like a friendly news announcer, clearly pronounced]' },
+  { label: '🎭 驚き', value: '[with surprise, excited]' },
+  { label: '😊 笑顔交じり', value: '[with a warm smile in the voice, occasionally giggles]' },
+  { label: '🐻 キャラクター的', value: '[in a cute character voice, playfully]' }
+];
+
+function ttsOpenRowPromptEditor(key) {
+  var row = ttsRows.find(function(r) { return r.key === key; });
+  if (!row) { showToast('行が見つかりません', false); return; }
+  var current = ttsGetRowPrompt(key);
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:99999;';
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;max-width:640px;width:92%;max-height:85vh;overflow:auto;border-radius:14px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,0.3);';
+
+  var h = document.createElement('div');
+  h.style.cssText = 'font-weight:900;color:#9A3412;font-size:1rem;margin-bottom:4px;';
+  h.textContent = '✏️ この行だけのカスタムプロンプト';
+  var sub = document.createElement('div');
+  sub.style.cssText = 'font-size:0.72rem;color:#6B7280;margin-bottom:10px;line-height:1.5;';
+  sub.textContent = '指定するとこの行の生成時にドロップダウンの語り口より優先されます。アクセント、強調、速さ、キャラクター性などを自由に記述可。Audio Tag または英語・日本語の自然言語指示、両方使えます。';
+
+  var txt = document.createElement('div');
+  txt.style.cssText = 'padding:8px 10px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;font-size:0.78rem;color:#9A3412;margin-bottom:14px;';
+  txt.textContent = '📝 ' + row.text;
+  card.appendChild(h); card.appendChild(sub); card.appendChild(txt);
+
+  var label = document.createElement('div');
+  label.style.cssText = 'font-size:0.75rem;font-weight:800;color:#374151;margin-bottom:4px;';
+  label.textContent = 'プロンプト（本文の前に付加されます）';
+  card.appendChild(label);
+
+  var ta = document.createElement('textarea');
+  ta.style.cssText = 'width:100%;min-height:80px;padding:10px;border:2px solid #FED7AA;border-radius:8px;font-family:inherit;font-size:0.88rem;box-sizing:border-box;resize:vertical;';
+  ta.placeholder = '例: [in a Kansai accent, gently] / [slowly, emphasizing 赤い] / ゆっくり元気に読んで、「りんご」の部分を強めに:';
+  ta.value = current || '';
+  card.appendChild(ta);
+
+  var exLabel = document.createElement('div');
+  exLabel.style.cssText = 'font-size:0.72rem;font-weight:800;color:#6B7280;margin:14px 0 6px;';
+  exLabel.textContent = '💡 よく使う例（クリックで挿入）';
+  card.appendChild(exLabel);
+
+  var chipWrap = document.createElement('div');
+  chipWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;';
+  TTS_PROMPT_EXAMPLES.forEach(function(ex) {
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.style.cssText = 'padding:4px 10px;background:#F3F4F6;color:#374151;border:1px solid #D1D5DB;border-radius:16px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+    chip.textContent = ex.label;
+    chip.title = ex.value;
+    chip.addEventListener('click', function() { ta.value = ex.value; ta.focus(); });
+    chipWrap.appendChild(chip);
+  });
+  card.appendChild(chipWrap);
+
+  var note = document.createElement('div');
+  note.style.cssText = 'padding:8px 10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;font-size:0.68rem;color:#1E40AF;margin-bottom:14px;line-height:1.5;';
+  note.innerHTML = '📌 <b>Gemini エンジン</b>: Audio Tag + 自然言語指示が効く<br>📌 <b>Chirp 3: HD / VOICEVOX</b>: プロンプト指示は効かない（音声合成のみ、話者選択で対応）';
+  card.appendChild(note);
+
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
+
+  var clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.style.cssText = 'padding:8px 14px;background:#fff;color:#B91C1C;border:1px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;';
+  clearBtn.textContent = '🗑 クリア';
+  clearBtn.addEventListener('click', function() {
+    ttsSetRowPrompt(key, '');
+    showToast('🗑 この行のカスタムプロンプトを消去しました', true);
+    document.body.removeChild(overlay);
+    ttsRenderTable();
+  });
+  btnRow.appendChild(clearBtn);
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.style.cssText = 'padding:8px 14px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;';
+  cancelBtn.textContent = 'キャンセル';
+  cancelBtn.addEventListener('click', function() { document.body.removeChild(overlay); });
+  btnRow.appendChild(cancelBtn);
+
+  var saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.style.cssText = 'padding:8px 16px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;';
+  saveBtn.textContent = '💾 保存';
+  saveBtn.addEventListener('click', function() {
+    ttsSetRowPrompt(key, ta.value || '');
+    showToast(ta.value.trim() ? '✅ 保存しました — 次回生成時に反映' : '🗑 空なので消去しました', true);
+    document.body.removeChild(overlay);
+    ttsRenderTable();
+  });
+  btnRow.appendChild(saveBtn);
+
+  card.appendChild(btnRow);
+  overlay.appendChild(card);
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) document.body.removeChild(overlay); });
+  document.body.appendChild(overlay);
+  setTimeout(function() { ta.focus(); }, 30);
 }
 
 // --- 候補（全過去生成）から採用するものを選ぶモーダル ---
