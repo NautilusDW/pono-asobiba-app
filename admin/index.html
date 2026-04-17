@@ -1619,6 +1619,34 @@ function showIllustDraftList() {
 }
 
 // ════════════════════════════════════════════════════════════════
+// クイズ用イラスト: 非表示リスト（作らないと決めた未作成カードを隠す）
+// ════════════════════════════════════════════════════════════════
+var ILLUST_HIDDEN_KEY = 'admin_illust_hidden';
+
+function _getHiddenIllusts() {
+  try {
+    var raw = localStorage.getItem(ILLUST_HIDDEN_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch(e) { return []; }
+}
+
+function _addHiddenIllust(id) {
+  var a = _getHiddenIllusts();
+  if (a.indexOf(id) === -1) a.push(id);
+  try { localStorage.setItem(ILLUST_HIDDEN_KEY, JSON.stringify(a)); } catch(e) {}
+}
+
+function _removeHiddenIllust(id) {
+  var a = _getHiddenIllusts().filter(function(x) { return x !== id; });
+  try { localStorage.setItem(ILLUST_HIDDEN_KEY, JSON.stringify(a)); } catch(e) {}
+}
+
+function _restoreAllHiddenIllusts() {
+  try { localStorage.removeItem(ILLUST_HIDDEN_KEY); } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════════════
 // Rewards JSON: Draft (localStorage 下書き) ヘルパー
 // ════════════════════════════════════════════════════════════════
 var REWARDS_DRAFT_KEY = 'admin_rewards_draft';
@@ -2947,8 +2975,11 @@ function openNewIllustUploadModal(illustId, illustName) {
   var iStyle = 'width:100%;padding:6px 8px;border-radius:6px;border:1px solid #ccc;font-family:inherit;font-size:0.85rem;box-sizing:border-box;margin-bottom:8px;';
   var lStyle = 'display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:3px;margin-top:8px;';
 
-  // IDの推測（illust IDから）
-  var guessId = illustId.replace(/^(dino|animal|insect|weather|body|food|vehicle)_/, '');
+  // IDの推測: まず ILLUST_TO_CREATURE の正式マップを優先し、
+  // 無ければ制作リスト ID のプレフィクスを剥がす (drift 防止のため map 値を第一候補に)
+  var guessId = (typeof ILLUST_TO_CREATURE !== 'undefined' && ILLUST_TO_CREATURE[illustId])
+    ? ILLUST_TO_CREATURE[illustId]
+    : illustId.replace(/^(dino|animal|insect|weather|body|food|vehicle)_/, '');
 
   box.innerHTML =
     '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:12px;text-align:center;">📤 ' + illustName + ' を新規登録</div>' +
@@ -6716,11 +6747,15 @@ function renderIllust() {
 
   // Summary + sort buttons
   var summaryEl = document.getElementById('illust-summary');
+  var hiddenCount = _getHiddenIllusts().length;
   summaryEl.innerHTML =
     '<span style="background:#10B981;color:#fff;padding:4px 10px;border-radius:8px;cursor:pointer" data-sort="done">✅ 完成 ' + doneItems + '</span>' +
     '<span style="background:#FBBF24;color:#5D4E37;padding:4px 10px;border-radius:8px;cursor:pointer" data-sort="wip">🖌 作成中 ' + wipItems + '</span>' +
     '<span style="background:#9CA3AF;color:#fff;padding:4px 10px;border-radius:8px;cursor:pointer" data-sort="todo">📋 未作成 ' + (allItems - doneItems - wipItems) + '</span>' +
-    '<span style="background:#3B82F6;color:#fff;padding:4px 10px;border-radius:8px;">合計 ' + doneItems + ' / ' + allItems + '</span>';
+    '<span style="background:#3B82F6;color:#fff;padding:4px 10px;border-radius:8px;">合計 ' + doneItems + ' / ' + allItems + '</span>' +
+    (hiddenCount > 0
+      ? '<span id="illust-hidden-restore" style="background:#E5E7EB;color:#374151;padding:4px 10px;border-radius:8px;cursor:pointer;border:1px dashed #9CA3AF;">👁️ 非表示 ' + hiddenCount + ' 件</span>'
+      : '');
   summaryEl.querySelectorAll('[data-sort]').forEach(function(btn) {
     btn.title = 'クリックでこのステータスを先頭に表示';
     btn.addEventListener('click', function() {
@@ -6728,6 +6763,15 @@ function renderIllust() {
       renderIllust();
     });
   });
+  var restoreBtn = summaryEl.querySelector('#illust-hidden-restore');
+  if (restoreBtn) {
+    restoreBtn.title = 'クリックで非表示カードをすべて戻す';
+    restoreBtn.addEventListener('click', function() {
+      if (!confirm('非表示にしていた ' + hiddenCount + ' 件を全部戻す？')) return;
+      _restoreAllHiddenIllusts();
+      renderIllust();
+    });
+  }
 
   // Groups
   var container = document.getElementById('illust-groups');
@@ -6746,6 +6790,10 @@ function renderIllust() {
     if (e.illustId) draftLookup[e.illustId] = e;
   });
 
+  // 非表示リスト（作らないと決めた未作成カードを隠す）
+  var hiddenSet = {};
+  _getHiddenIllusts().forEach(function(id) { hiddenSet[id] = true; });
+
   mergedGroups.forEach(function(g) {
     var div = document.createElement('div');
     div.style.cssText = 'margin-bottom:20px;';
@@ -6761,8 +6809,16 @@ function renderIllust() {
     var grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;';
 
+    // 非表示フィルタ（creature が無く下書きも無くユーザーが隠したカードは除外）
+    var sortedItems = g.items.filter(function(it) {
+      if (!hiddenSet[it.id]) return true;
+      // creature か draft があれば非表示フラグは無視（誤って隠した場合のフェイルセーフ）
+      var hasCreature = !!(it._creatureId && creatureLookup[it._creatureId])
+        || !!(ILLUST_TO_CREATURE[it.id] && creatureLookup[ILLUST_TO_CREATURE[it.id]]);
+      var hasDraft = !!draftLookup[it.id];
+      return hasCreature || hasDraft;
+    });
     // ソート
-    var sortedItems = g.items.slice();
     if (_illustSortBy) {
       var ORDER = { todo: 0, wip: 1, done: 2 };
       sortedItems.sort(function(a, b) {
@@ -6908,6 +6964,22 @@ function renderIllust() {
           delBtn.addEventListener('click', function(e) { e.stopPropagation(); deleteCreature(cId); });
         })(creature.id);
         btnRow.appendChild(delBtn);
+      } else if (draftLookup[it.id]) {
+        // 下書きあり: 削除ボタン（下書きキューから取り除く）
+        var draftDelBtn = document.createElement('button');
+        draftDelBtn.textContent = '🗑️ 下書き取消';
+        draftDelBtn.title = '下書きをキューから削除';
+        draftDelBtn.style.cssText = 'background:#FEF3C7;border:1px solid #F59E0B;border-radius:4px;padding:2px 6px;font-size:0.65rem;font-weight:700;cursor:pointer;color:#78350F;';
+        (function(itemId) {
+          draftDelBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!confirm('この下書きを削除する？')) return;
+            var draft = draftLookup[itemId];
+            if (draft) _removeFromIllustDraftQueue(draft.id);
+            renderIllust();
+          });
+        })(it.id);
+        btnRow.appendChild(draftDelBtn);
       } else {
         // 未登録: 新規アップロードボタン（差し替えモーダルを流用して新規登録）
         var uploadBtn = document.createElement('button');
@@ -6921,6 +6993,23 @@ function renderIllust() {
           });
         })(it.id, it.name);
         btnRow.appendChild(uploadBtn);
+
+        // 「作らない」非表示ボタン: preset のみ（_autoAdded は creatures.json 実体なので出さない）
+        if (!it._autoAdded) {
+          var hideBtn = document.createElement('button');
+          hideBtn.textContent = '✕';
+          hideBtn.title = 'このカードを非表示（もう作らない）';
+          hideBtn.style.cssText = 'background:#F3F4F6;border:1px solid #D1D5DB;border-radius:4px;padding:2px 6px;font-size:0.7rem;cursor:pointer;color:#6B7280;';
+          (function(itemId) {
+            hideBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              if (!confirm('「' + it.name + '」を制作リストから隠す？（後で「非表示を表示」で戻せます）')) return;
+              _addHiddenIllust(itemId);
+              renderIllust();
+            });
+          })(it.id);
+          btnRow.appendChild(hideBtn);
+        }
       }
 
       card.appendChild(btnRow);

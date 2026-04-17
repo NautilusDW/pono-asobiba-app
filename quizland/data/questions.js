@@ -205,6 +205,18 @@ const QUIZLAND_QUESTIONS = {
       q:'この きょうりゅうは？', answer:3, choices:['ブラキオサウルス','トリケラトプス','スピノサウルス','ヴェロキラプトル'] },
     { level:2, type:'emoji_name', category:'dino', img:'Ankylosaurus/Ankylosaurus_normal_1.png', hint:'こうらの ような よろいで からだを まもる！',
       q:'この きょうりゅうは？', answer:2, choices:['トリケラトプス','ステゴサウルス','アンキロサウルス','ブラキオサウルス'] },
+    { level:2, type:'emoji_name', category:'dino', img:'Parasaurolophus/Parasaurolophus_normal_1.png', hint:'あたまに ながい トサカ！',
+      q:'この きょうりゅうは？', answer:1, choices:['トリケラトプス','パラサウロロフス','ステゴサウルス','ブラキオサウルス'] },
+    { level:2, type:'emoji_name', category:'dino', img:'Allosaurus/Allosaurus_normal_1.png', hint:'にくしょくの きょうりゅう！',
+      q:'この きょうりゅうは？', answer:2, choices:['ブラキオサウルス','ステゴサウルス','アロサウルス','プテラノドン'] },
+    { level:2, type:'emoji_name', category:'dino', img:'Iguanodon/Iguanodon_normal_1.png', hint:'おやゆびが とがっている！',
+      q:'この きょうりゅうは？', answer:3, choices:['ティラノサウルス','ステゴサウルス','トリケラトプス','イグアノドン'] },
+    { level:2, type:'emoji_name', category:'dino', img:'Pachycephalosaurus/Pachycephalosaurus_normal_1.png', hint:'あたまが かたい！',
+      q:'この きょうりゅうは？', answer:0, choices:['パキケファロサウルス','アンキロサウルス','ブラキオサウルス','ステゴサウルス'] },
+    { level:2, type:'emoji_name', category:'dino', img:'Mosasaurus/Mosasaurus_normal_1.png', hint:'うみで くらしていた！',
+      q:'この きょうりゅうは？', answer:2, choices:['プレシオサウルス','スピノサウルス','モササウルス','トリケラトプス'] },
+    { level:2, type:'emoji_name', category:'dino', img:'Dimetrodon/Dimetrodon_normal_1.png', hint:'せなかに おおきな ほ！',
+      q:'この きょうりゅうは？', answer:1, choices:['スピノサウルス','ディメトロドン','ステゴサウルス','ブラキオサウルス'] },
 
     // Level 3: 珍しい恐竜の画像問題
     { level:3, type:'emoji_name', category:'dino', img:'Parasaurolophus/Parasaurolophus_normal_1.png', hint:'あたまに ながい トサカがある！',
