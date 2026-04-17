@@ -650,7 +650,7 @@ html, body {
     <div class="trace-area">
       <div id="demoIndicator">おてほんちゅう</div>
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
-      <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.webp" alt="ポノ">
+      <img class="pono-deco" src="../assets/images/characters/pono/dance/dance_smile.png" alt="ポノ">
       <div class="canvas-wrap">
         <div class="hedgehog-wrap">
           <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
@@ -1143,7 +1143,7 @@ function alignOverlayToCanvas(el) {
 }
 
 // ===== Pono pose variation (イベントに合わせて差し替え) =====
-const PONO_DEFAULT_SRC = '../assets/images/characters/pono_side_fullbody.webp';
+const PONO_DEFAULT_SRC = '../assets/images/characters/pono/dance/dance_smile.png';
 const PONO_CHEER_POSES = [
   '../assets/images/characters/pono/dance/dance_cheer.png',
   '../assets/images/characters/pono/dance/dance_hooray.png',
@@ -1870,11 +1870,17 @@ fixViewportHeight();
 btnClear.addEventListener('click', () => {
   // Ignore during word context phase
   if (document.getElementById('wordContextWrap')) return;
-  if (writer) {
-    writerTarget.innerHTML = '';
-    const char = getCurrentChar();
-    createWriter(char);
+  if (!writer) return;
+  // 行練習モード: 同じ文字をやり直し（デモ→クイズを再実行）
+  // createWriter だけだと _rowPracticeActive=true のため quiz が始まらないバグがあった
+  if (_rowPracticeActive) {
+    _rowPracticeNextChar();
+    return;
   }
+  // 通常モード: お手本→クイズの流れを createWriter 内で再実行
+  writerTarget.innerHTML = '';
+  const char = getCurrentChar();
+  createWriter(char);
 });
 
 btnHint.addEventListener('click', () => {
