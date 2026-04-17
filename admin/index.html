@@ -1939,6 +1939,18 @@ function ttsRenderTable() {
     var tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid #F3F4F6';
 
+    var tdChk = document.createElement('td');
+    tdChk.style.cssText = 'padding:6px 4px;text-align:center;';
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'tts-row-check';
+    chk.dataset.key = r.key;
+    chk.dataset.hash = r.hash;
+    chk.style.cursor = 'pointer';
+    // デフォルト: 未生成/要更新 をチェック ON
+    if (r._state === 'missing' || r._state === 'stale') chk.checked = true;
+    tdChk.appendChild(chk);
+
     var tdState = document.createElement('td');
     tdState.style.padding = '6px 8px';
     var spState = document.createElement('span');
@@ -1998,6 +2010,7 @@ function ttsRenderTable() {
     opsWrap.appendChild(gBtn);
 
     tdOps.appendChild(opsWrap);
+    tr.appendChild(tdChk);
     tr.appendChild(tdState);
     tr.appendChild(tdCat);
     tr.appendChild(tdText);
@@ -2005,10 +2018,19 @@ function ttsRenderTable() {
     tr.appendChild(tdOps);
     tbody.appendChild(tr);
   }
+  // select-all 連動
+  var chkAll = document.getElementById('tts-check-all');
+  if (chkAll && !chkAll._ttsBound) {
+    chkAll._ttsBound = true;
+    chkAll.addEventListener('change', function() {
+      var on = chkAll.checked;
+      document.querySelectorAll('.tts-row-check').forEach(function(c) { c.checked = on; });
+    });
+  }
   if (visible.length > 500) {
     var more = document.createElement('tr');
     var td = document.createElement('td');
-    td.colSpan = 5;
+    td.colSpan = 6;
     td.style.cssText = 'padding:10px;text-align:center;color:#8B7355;font-size:0.72rem;';
     td.textContent = '…残り ' + (visible.length - 500) + ' 行はフィルタで絞ってください';
     more.appendChild(td);
@@ -2077,6 +2099,90 @@ function ttsCallApi(text, voice, attempt) {
       return data;
     });
   });
+}
+
+// --- チェック済みのみ生成 ---
+function ttsGenerateChecked() {
+  if (ttsGenerating) { showToast('既に生成中です', false); return; }
+  var checkedKeys = {};
+  document.querySelectorAll('.tts-row-check:checked').forEach(function(c) {
+    checkedKeys[c.dataset.key] = true;
+  });
+  var targets = ttsRows.filter(function(r) {
+    if (!checkedKeys[r.key]) return false;
+    if (r._state === 'draft') return false;   // 既に下書き済は除外
+    return true;
+  });
+  // 同一 hash は1回だけ生成（他行にも自動で同ファイルを適用）
+  var uniq = {};
+  targets = targets.filter(function(r) {
+    if (uniq[r.hash]) return false;
+    uniq[r.hash] = true;
+    return true;
+  });
+  if (!targets.length) { showToast('チェック済の生成対象がありません', false); return; }
+  if (!confirm('チェック済 ' + targets.length + ' 件（重複除外後）を Gemini TTS で生成します。よろしいですか？')) return;
+  _ttsRunBatch(targets);
+}
+
+// --- 逐次処理本体（ttsGenerateVisible / ttsGenerateChecked 共通） ---
+function _ttsRunBatch(targets) {
+  var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
+  ttsGenerating = true;
+  ttsStopRequested = false;
+  document.getElementById('tts-stop-btn').style.display = '';
+
+  var done = 0;
+  var failed = 0;
+  function next(i) {
+    if (ttsStopRequested || i >= targets.length) {
+      ttsGenerating = false;
+      document.getElementById('tts-stop-btn').style.display = 'none';
+      ttsProgress('');
+      showToast('生成完了: ' + done + ' 件 / 失敗 ' + failed + ' 件' + (ttsStopRequested ? ' (中断)' : ''), failed === 0);
+      ttsRenderTable();
+      ttsRenderDraftBar();
+      return;
+    }
+    var r = targets[i];
+    ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20));
+    ttsCallApi(r.text, voice)
+      .then(function(resp) {
+        if (!resp || !resp.audio) throw new Error('音声データなし');
+        if (ttsStopRequested) return;
+        var file = 'quizland/' + r.hash + '.wav';
+        var adds = ttsRows.filter(function(rr) { return rr.hash === r.hash; })
+          .map(function(rr) {
+            return _addToTtsDraftQueue({
+              key: rr.key,
+              hash: rr.hash,
+              file: file,
+              text: rr.text,
+              voice: voice,
+              audioBase64: resp.audio,
+              updatedAt: new Date().toISOString()
+            });
+          });
+        return Promise.all(adds).then(function() { done++; });
+      })
+      .catch(function(e) {
+        failed++;
+        console.error('tts fail', r.key, e);
+      })
+      .then(function() {
+        if (ttsStopRequested) {
+          ttsGenerating = false;
+          document.getElementById('tts-stop-btn').style.display = 'none';
+          ttsProgress('');
+          showToast('中断: 成功 ' + done + ' / 失敗 ' + failed, failed === 0);
+          ttsRenderTable();
+          ttsRenderDraftBar();
+          return;
+        }
+        setTimeout(function() { next(i + 1); }, 800);
+      });
+  }
+  next(0);
 }
 
 // --- 一括生成（表示中の missing のみ、逐次処理・スロットル） ---
@@ -2201,10 +2307,17 @@ function ttsRenderDraftBar() {
   host.innerHTML =
     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(135deg,#EDE9FE,#DDD6FE);border:2px solid #8B5CF6;border-radius:12px;margin-bottom:14px;">' +
       '<div style="font-weight:900;color:#5B21B6;font-size:0.85rem;">🎙 TTS下書き ' + q.length + ' 件 (' + kb + ' KB)</div>' +
-      '<div style="flex:1;font-size:0.7rem;color:#5B21B6;">生成ボタンはローカル保存のみ。まとめて反映で GitHub に push。</div>' +
-      '<button onclick="ttsFlushDraftQueue()" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📤 まとめて反映</button>' +
+      '<div style="flex:1;font-size:0.7rem;color:#5B21B6;">生成した音声はブラウザに自動保存されます。GitHub反映で全員に配信。</div>' +
+      '<button onclick="ttsConfirmLocalSave()" title="ブラウザ内の下書きとして保持します（コミットしません）" style="padding:5px 12px;background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📝 管理画面のみに保存</button>' +
+      '<button onclick="ttsFlushDraftQueue()" title="GitHubにコミット（本番反映）" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">💾 GitHubに反映</button>' +
       '<button onclick="if(confirm(\'下書きを全部捨てる？\')){_clearTtsDraftQueue().then(function(){ttsRenderDraftBar();ttsRenderTable();});}" style="padding:5px 12px;background:#fff;color:#B91C1C;border:2px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 クリア</button>' +
     '</div>';
+}
+
+function ttsConfirmLocalSave() {
+  var q = _getTtsDraftQueue();
+  if (!q.length) { showToast('下書きはありません', false); return; }
+  showToast('✅ ' + q.length + ' 件をブラウザに保存しました（GitHub未反映）', true);
 }
 
 // --- 下書きキューを GitHub に反映（N個wav + 1個manifest.json = N+1 コミット） ---
