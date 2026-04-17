@@ -790,6 +790,9 @@ tr:hover { background: #FFFAF0; }
         <option value="stale">🟡 要更新</option>
         <option value="done">🟢 生成済</option>
       </select>
+      <label style="font-size:0.78rem;font-weight:700;color:#8B7355;display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+        <input type="checkbox" id="tts-dedup-chk" checked style="cursor:pointer;"> 同じ文言をまとめる
+      </label>
       <button onclick="ttsReloadManifest()" style="padding:5px 12px;background:#E0F2FE;border:1px solid #7DD3FC;color:#1E40AF;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">🔄 再読み込み</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
@@ -1684,6 +1687,7 @@ var ttsRows = [];                // 生成対象行のキャッシュ
 var ttsDraftCache = [];          // メモリ上の下書きキャッシュ（IndexedDB のミラー）
 var ttsGenerating = false;
 var ttsStopRequested = false;
+var ttsLastError = '';           // 直近の失敗メッセージ（完了ダイアログ用）
 
 // --- IndexedDB draft queue ---
 // 音声 WAV は 1 件あたり最大 ~400KB になり得るため localStorage (5MB) は不適。
@@ -1865,6 +1869,8 @@ function ttsPopulateCatFilter() {
   });
   sel.addEventListener('change', ttsRenderTable);
   document.getElementById('tts-state-filter').addEventListener('change', ttsRenderTable);
+  var dedupChk = document.getElementById('tts-dedup-chk');
+  if (dedupChk) dedupChk.addEventListener('change', ttsRenderTable);
   document.getElementById('tts-voice-sel').addEventListener('change', function() {
     // voice 変更だけでは状態は変わらない（既存は既存voiceのまま使い続ける）
     ttsRenderTable();
@@ -1909,19 +1915,30 @@ function ttsRenderTable() {
   var catFilter = (document.getElementById('tts-cat-filter') || {}).value || '';
   var stateFilter = (document.getElementById('tts-state-filter') || {}).value || '';
 
+  var dedupOn = (document.getElementById('tts-dedup-chk') || {}).checked !== false;
   var counts = { missing: 0, stale: 0, done: 0, draft: 0, total: ttsRows.length };
   var visible = [];
+  var seenHash = {};
+  // ハッシュごとの使用回数を事前集計（重複まとめ表示用）
+  var hashUseCount = {};
+  ttsRows.forEach(function(r) { hashUseCount[r.hash] = (hashUseCount[r.hash] || 0) + 1; });
   ttsRows.forEach(function(r) {
     r._state = ttsGetState(r);
     counts[r._state]++;
     if (catFilter && r.cat !== catFilter) return;
     if (stateFilter && r._state !== stateFilter) return;
+    if (dedupOn) {
+      if (seenHash[r.hash]) return;
+      seenHash[r.hash] = true;
+    }
+    r._useCount = hashUseCount[r.hash] || 1;
     visible.push(r);
   });
+  var uniqueHash = Object.keys(hashUseCount).length;
 
   if (sum) {
     sum.innerHTML =
-      '合計 ' + counts.total + ' / ' +
+      '合計 ' + counts.total + '行 / ユニーク文言 ' + uniqueHash + ' / ' +
       '<span style="color:#B91C1C;">🔴未生成 ' + counts.missing + '</span> / ' +
       '<span style="color:#D97706;">🟡要更新 ' + counts.stale + '</span> / ' +
       '<span style="color:#059669;">🟢生成済 ' + counts.done + '</span> / ' +
@@ -1968,6 +1985,13 @@ function ttsRenderTable() {
     var tdCat = document.createElement('td');
     tdCat.style.cssText = 'padding:6px 8px;color:#6B7280;white-space:nowrap;';
     tdCat.textContent = ttsCategoryLabel(r.cat);
+    if (dedupOn && r._useCount > 1) {
+      var badge = document.createElement('span');
+      badge.style.cssText = 'display:inline-block;margin-left:4px;padding:1px 6px;background:#FEF3C7;color:#92400E;border-radius:10px;font-size:0.68rem;font-weight:800;';
+      badge.textContent = '×' + r._useCount + '問で使用';
+      badge.title = '同じ文言の問題が ' + r._useCount + ' 箇所あります';
+      tdCat.appendChild(badge);
+    }
     if (r.field === 'detail') {
       var br = document.createElement('br');
       var spD = document.createElement('span');
@@ -2084,10 +2108,10 @@ function ttsGenerateOne(key) {
     });
 }
 
-// --- API 呼び出し（リトライ付き） ---
+// --- API 呼び出し（リトライ付き・指数バックオフ） ---
 function ttsCallApi(text, voice, attempt) {
   attempt = attempt || 1;
-  var maxAttempts = 4;
+  var maxAttempts = 6;
   return fetch('/.netlify/functions/ai-tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2096,11 +2120,16 @@ function ttsCallApi(text, voice, attempt) {
     return r.json().then(function(data) {
       if (!r.ok) {
         if ((r.status === 429 || r.status === 502 || r.status === 503) && attempt < maxAttempts) {
-          var wait = 1500 * attempt;
+          // 指数バックオフ: 2s, 5s, 12s, 30s, 60s
+          var waits = [2000, 5000, 12000, 30000, 60000];
+          var wait = waits[Math.min(attempt - 1, waits.length - 1)];
+          ttsProgress('⏳ レート制限のため ' + Math.round(wait/1000) + '秒待機中...');
           return new Promise(function(res) { setTimeout(res, wait); })
             .then(function() { return ttsCallApi(text, voice, attempt + 1); });
         }
-        throw new Error(data.error || ('HTTP ' + r.status));
+        var msg = data.error || ('HTTP ' + r.status);
+        if (r.status === 429) msg = 'レート制限到達: ' + msg + '（数分待つかAPIクォータを確認）';
+        throw new Error(msg);
       }
       return data;
     });
@@ -2136,6 +2165,7 @@ function _ttsRunBatch(targets) {
   var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
   ttsGenerating = true;
   ttsStopRequested = false;
+  ttsLastError = '';
   document.getElementById('tts-stop-btn').style.display = '';
 
   var done = 0;
@@ -2145,13 +2175,14 @@ function _ttsRunBatch(targets) {
       ttsGenerating = false;
       document.getElementById('tts-stop-btn').style.display = 'none';
       ttsProgress('');
-      showToast('生成完了: ' + done + ' 件 / 失敗 ' + failed + ' 件' + (ttsStopRequested ? ' (中断)' : ''), failed === 0);
+      var suffix = (ttsStopRequested ? ' (中断)' : '') + (ttsLastError && failed > 0 ? '｜最後のエラー: ' + ttsLastError : '');
+      showToast('生成完了: ' + done + ' 件 / 失敗 ' + failed + ' 件' + suffix, failed === 0);
       ttsRenderTable();
       ttsRenderDraftBar();
       return;
     }
     var r = targets[i];
-    ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20));
+    ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20) + ' (成功' + done + '/失敗' + failed + ')');
     ttsCallApi(r.text, voice)
       .then(function(resp) {
         if (!resp || !resp.audio) throw new Error('音声データなし');
@@ -2169,23 +2200,31 @@ function _ttsRunBatch(targets) {
               updatedAt: new Date().toISOString()
             });
           });
-        return Promise.all(adds).then(function() { done++; });
+        return Promise.all(adds).then(function() {
+          done++;
+          // 成功ごとに UI を逐次更新 → 完了済みから ▶ 下書き再生できる
+          ttsRenderTable();
+          ttsRenderDraftBar();
+        });
       })
       .catch(function(e) {
         failed++;
         console.error('tts fail', r.key, e);
+        // 最後のエラーを記録（中断/完了ダイアログで表示）
+        ttsLastError = (e && e.message) || String(e);
       })
       .then(function() {
         if (ttsStopRequested) {
           ttsGenerating = false;
           document.getElementById('tts-stop-btn').style.display = 'none';
           ttsProgress('');
-          showToast('中断: 成功 ' + done + ' / 失敗 ' + failed, failed === 0);
+          showToast('中断: 成功 ' + done + ' / 失敗 ' + failed + (ttsLastError ? '（' + ttsLastError + '）' : ''), failed === 0);
           ttsRenderTable();
           ttsRenderDraftBar();
           return;
         }
-        setTimeout(function() { next(i + 1); }, 800);
+        // スロットル 1200ms（Gemini TTS 無料枠 RPM を意識）
+        setTimeout(function() { next(i + 1); }, 1200);
       });
   }
   next(0);

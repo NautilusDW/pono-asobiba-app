@@ -36,7 +36,7 @@
   var currentPlaying = null;        // 現在再生中の Audio（重複再生を止める）
   var mode = 'tap';                 // auto | tap | off
   var volume = 0.9;
-  var rate = 1.0;
+  var rate = 1.15;                  // 既定 1.15x（Gemini TTS がやや遅めのため）
 
   // localStorage 初期化
   try {

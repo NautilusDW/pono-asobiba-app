@@ -59,7 +59,7 @@ exports.handler = async function(event) {
   if (ALLOWED_VOICES.indexOf(voice) === -1) voice = 'Leda';
 
   var stylePrompt = typeof body.stylePrompt === 'string' ? body.stylePrompt.slice(0, 300) : '';
-  var defaultStyle = '5歳の子供向けに、ひらがな表記に忠実に、やさしくはっきりゆっくり読んでください: ';
+  var defaultStyle = '5歳の子供向けに、ひらがな表記に忠実に、やさしくはっきり自然な速さで読んでください: ';
   var finalText = (stylePrompt || defaultStyle) + text;
 
   // モデル allowlist（任意の文字列を受け付けない）
