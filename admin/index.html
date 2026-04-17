@@ -1847,6 +1847,12 @@ function ttsInit() {
   _ttsReloadDraftCache().then(function() { ttsReloadManifest(); });
 }
 
+// カテゴリ英語キー → 日本語ラベル（QUIZLAND_CATEGORIES の label を参照）
+function ttsCategoryLabel(catKey) {
+  var c = (typeof QUIZLAND_CATEGORIES !== 'undefined') && QUIZLAND_CATEGORIES[catKey];
+  return (c && c.label) ? c.label : catKey;
+}
+
 function ttsPopulateCatFilter() {
   var sel = document.getElementById('tts-cat-filter');
   if (!sel || sel.options.length > 1) return;
@@ -1854,7 +1860,7 @@ function ttsPopulateCatFilter() {
   Object.keys(QUIZLAND_QUESTIONS).forEach(function(cat) {
     var opt = document.createElement('option');
     opt.value = cat;
-    opt.textContent = cat;
+    opt.textContent = ttsCategoryLabel(cat);
     sel.appendChild(opt);
   });
   sel.addEventListener('change', ttsRenderTable);
@@ -1961,7 +1967,7 @@ function ttsRenderTable() {
 
     var tdCat = document.createElement('td');
     tdCat.style.cssText = 'padding:6px 8px;color:#6B7280;white-space:nowrap;';
-    tdCat.textContent = r.cat;
+    tdCat.textContent = ttsCategoryLabel(r.cat);
     if (r.field === 'detail') {
       var br = document.createElement('br');
       var spD = document.createElement('span');
