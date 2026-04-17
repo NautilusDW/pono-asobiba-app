@@ -755,6 +755,7 @@ tr:hover { background: #FFFAF0; }
   <div class="sub-panel" id="sub-quiz-illust">
   <div class="section">
     <div class="section-title">🎨 クイズ用イラスト 制作リスト</div>
+    <div id="illust-draft-bar" style="display:none;"></div>
     <div id="illust-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:0.8rem;font-weight:700;"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="illustSetAll('done')"    style="padding:5px 12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ 全部完成にする</button>
@@ -1469,6 +1470,152 @@ function ghUpload(filePath, base64Content, commitMsg, callback) {
       else { r.json().then(function(j) { callback(j.message || 'エラー'); }); }
     })
     .catch(function(e) { callback(e.message); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// クイズ用イラスト: 下書きキュー（Netlify ビルド節約のため N 枚を N+1 プッシュに圧縮）
+// ════════════════════════════════════════════════════════════════
+var ILLUST_DRAFT_QUEUE_KEY = 'admin_illust_draft_queue';
+
+function _getIllustDraftQueue() {
+  try {
+    var raw = localStorage.getItem(ILLUST_DRAFT_QUEUE_KEY);
+    if (!raw) return [];
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch(e) { return []; }
+}
+
+function _setIllustDraftQueue(arr) {
+  try { localStorage.setItem(ILLUST_DRAFT_QUEUE_KEY, JSON.stringify(arr || [])); } catch(e) {
+    showToast('下書き保存失敗: ' + e.message, false);
+  }
+}
+
+function _addToIllustDraftQueue(entry) {
+  var q = _getIllustDraftQueue();
+  // 同じ id がすでにあれば上書き（重複登録を避ける）
+  var idx = q.findIndex(function(e) { return e.id === entry.id; });
+  if (idx >= 0) q[idx] = entry; else q.push(entry);
+  _setIllustDraftQueue(q);
+}
+
+function _removeFromIllustDraftQueue(id) {
+  var q = _getIllustDraftQueue().filter(function(e) { return e.id !== id; });
+  _setIllustDraftQueue(q);
+}
+
+function _clearIllustDraftQueue() {
+  try { localStorage.removeItem(ILLUST_DRAFT_QUEUE_KEY); } catch(e) {}
+}
+
+// sub-quiz-illust パネル先頭の下書きバーを描画
+function _renderIllustDraftBar() {
+  var host = document.getElementById('illust-draft-bar');
+  if (!host) return;
+  var q = _getIllustDraftQueue();
+  if (!q.length) { host.innerHTML = ''; host.style.display = 'none'; return; }
+  host.style.display = '';
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(135deg,#FEF3C7,#FCD34D);border:2px solid #F59E0B;border-radius:12px;margin-bottom:14px;">' +
+      '<div style="font-weight:900;color:#78350F;font-size:0.85rem;">📝 下書き ' + q.length + ' 件</div>' +
+      '<div style="flex:1;font-size:0.7rem;color:#78350F;">登録ボタンはローカル保存のみ。まとめて反映でプッシュ。</div>' +
+      '<button onclick="showIllustDraftList()" style="padding:5px 12px;background:#fff;color:#78350F;border:2px solid #F59E0B;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📋 一覧</button>' +
+      '<button onclick="flushIllustDraftQueue()" style="padding:5px 12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">📤 まとめて反映</button>' +
+      '<button onclick="if(confirm(\'下書きを全部捨てる？\')){_clearIllustDraftQueue();_renderIllustDraftBar();}" style="padding:5px 12px;background:#fff;color:#B91C1C;border:2px solid #EF4444;border-radius:8px;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">🗑 クリア</button>' +
+    '</div>';
+}
+
+// 下書きキューを GitHub に一括反映（N 枚の画像 + 1 回の creatures.json = N+1 プッシュ）
+function flushIllustDraftQueue() {
+  var q = _getIllustDraftQueue();
+  if (!q.length) { showToast('下書きはありません', false); return; }
+  if (!confirm(q.length + ' 件の下書きを GitHub に反映します。よろしいですか？')) return;
+
+  showToast('⏳ ' + q.length + ' 件を反映中...', true);
+
+  // 最新の creatures.json を取得してから積み上げる
+  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (data && data.content) {
+        try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+      }
+      if (!creaturesData) creaturesData = { version: 1, creatures: [] };
+
+      // 画像を順次アップロード
+      var chain = Promise.resolve();
+      q.forEach(function(e) {
+        chain = chain.then(function() {
+          return ghUploadPromise(e.filePath, e.base64, '📤 draft illust: ' + e.id);
+        }).then(function() {
+          // creatures.json に追記（重複チェック）
+          var exists = creaturesData.creatures.some(function(c) { return c.id === e.id; });
+          if (!exists) {
+            creaturesData.creatures.push({
+              id: e.id, displayName: e.displayName, icon: e.icon, folder: e.folder,
+              expressions: { normal: e.fileName, surprised: e.fileName },
+              pattern: 'swim', reactionType: 'jump', facingDir: 'right',
+              baseSizePx: 70, baseSizeJitter: 30, imgWidthHint: 200,
+              speedMin: 0.04, speedMax: 0.07, spawnCount: 1,
+              reactionSpeed: 1.0, reactionDuration: 1.0, rewardType: 'sea'
+            });
+          }
+        });
+      });
+
+      return chain.then(function() {
+        // 最後に creatures.json をまとめて 1 回プッシュ
+        return ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '📤 register ' + q.length + ' illust(s)');
+      });
+    })
+    .then(function() {
+      _clearIllustDraftQueue();
+      showToast('✅ ' + q.length + ' 件を反映しました', true);
+      _renderIllustDraftBar();
+      renderIllust();
+    })
+    .catch(function(e) {
+      showToast('反映失敗: ' + (e && e.message || e), false);
+    });
+}
+
+// 下書き一覧モーダル
+function showIllustDraftList() {
+  var q = _getIllustDraftQueue();
+  if (!q.length) { showToast('下書きはありません', false); return; }
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;';
+  var html = '<div style="font-weight:900;font-size:1rem;margin-bottom:12px;">📋 下書き一覧 (' + q.length + ')</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+  q.forEach(function(e) {
+    html +=
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #E5E7EB;border-radius:8px;">' +
+        '<img src="data:image/png;base64,' + e.base64 + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#F3F4F6;">' +
+        '<div style="flex:1;font-size:0.8rem;">' +
+          '<div style="font-weight:700;">' + (e.icon || '🎨') + ' ' + (e.displayName || '') + '</div>' +
+          '<div style="color:#6B7280;font-size:0.7rem;">' + e.id + '</div>' +
+        '</div>' +
+        '<button data-remove="' + e.id + '" style="padding:4px 10px;background:#FEE2E2;color:#B91C1C;border:none;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;">🗑</button>' +
+      '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;"><button id="illust-draft-close" style="padding:6px 16px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">閉じる</button></div>';
+  box.innerHTML = html;
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  box.querySelector('#illust-draft-close').addEventListener('click', function() { ov.remove(); });
+  box.querySelectorAll('[data-remove]').forEach(function(b) {
+    b.addEventListener('click', function() {
+      _removeFromIllustDraftQueue(b.dataset.remove);
+      ov.remove();
+      _renderIllustDraftBar();
+      var rest = _getIllustDraftQueue();
+      if (rest.length) showIllustDraftList();
+    });
+  });
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2908,40 +3055,20 @@ function openNewIllustUploadModal(illustId, illustName) {
     var name = box.querySelector('#nu-name').value.trim();
     var icon = ([...(box.querySelector('#nu-icon').value.trim())][0] || '') || '🎨';
     if (!id || !name) { showToast('IDと表示名を入力してください', false); return; }
-    saveBtn.disabled = true; saveBtn.textContent = '⏳ 登録中...';
 
     var folder = id.charAt(0).toUpperCase() + id.slice(1);
     var fileName = folder + '_normal_1.png';
     var filePath = 'assets/images/ocean/' + folder + '/' + fileName;
 
-    ghUploadPromise(filePath, newBase64, '📤 new illust: ' + id)
-      .then(function() {
-        if (!creaturesData) creaturesData = { version: 1, creatures: [] };
-        creaturesData.creatures.push({
-          id: id, displayName: name, icon: icon, folder: folder,
-          expressions: { normal: fileName, surprised: fileName },
-          pattern: 'swim', reactionType: 'jump', facingDir: 'right',
-          baseSizePx: 70, baseSizeJitter: 30, imgWidthHint: 200,
-          speedMin: 0.04, speedMax: 0.07, spawnCount: 1,
-          reactionSpeed: 1.0, reactionDuration: 1.0, rewardType: 'sea'
-        });
-        return ghUploadPromise(CREATURES_PATH, utf8ToBase64(JSON.stringify(creaturesData, null, 2)), '📤 register illust: ' + id);
-      })
-      .then(function() {
-        showToast('✅ ' + name + ' を登録しました', true);
-        ov.remove();
-        // creatures.json を再取得してから描画（サムネイルが出るように）
-        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
-          .then(function(r) { return r.ok ? r.json() : null; })
-          .then(function(data) {
-            if (data && data.content) try { creaturesData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
-            renderIllust();
-          });
-      })
-      .catch(function(e) {
-        showToast('登録失敗: ' + e.message, false);
-        saveBtn.disabled = false; saveBtn.textContent = '📤 登録';
-      });
+    // 下書きに追加（即プッシュしない）。まとめて反映ボタンで GitHub に一括反映される。
+    _addToIllustDraftQueue({
+      id: id, displayName: name, icon: icon, folder: folder,
+      fileName: fileName, filePath: filePath, base64: newBase64,
+      addedAt: Date.now()
+    });
+    showToast('📝 下書きに追加: ' + name + '（まとめて反映ボタンでプッシュ）', true);
+    ov.remove();
+    _renderIllustDraftBar();
   });
 }
 
@@ -6570,6 +6697,7 @@ var STATUS_NEXT    = { 'todo': 'wip', 'wip': 'done', 'done': 'todo' };
 var _illustSortBy  = null; // null=デフォルト順, 'todo'/'wip'/'done'=そのステータスを先頭
 
 function renderIllust() {
+  _renderIllustDraftBar();
   var statuses = illustGetStatus();
   var usageMap = buildQuizUsageMap();
   invalidateMergedIllustGroups(); // creatures.json変更時にキャッシュ破棄
