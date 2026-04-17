@@ -806,12 +806,33 @@ tr:hover { background: #FFFAF0; }
       </select>
       <button id="tts-vv-health-btn" type="button" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;background:#FFF;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 VOICEVOX 確認</button>
       <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">語り口</label>
-      <select id="tts-style-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
-        <option value="[gently]">やさしく（問題文向け）</option>
-        <option value="[cheerfully]">明るく（褒め言葉向け）</option>
-        <option value="[excitedly]">わくわく（盛り上げ向け）</option>
-        <option value="">プレーン（タグなし）</option>
+      <select id="tts-style-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;max-width:260px;">
+        <optgroup label="── やさしく系 ──">
+          <option value="[gently]">🌸 やさしく（標準）</option>
+          <option value="[gently at a moderate pace]">🌸 やさしく・ふつうテンポ</option>
+          <option value="[slowly and warmly]">🌸 ゆっくり・あたたかく</option>
+          <option value="[softly and calmly]">🌸 しずかに・おちつき</option>
+        </optgroup>
+        <optgroup label="── 明るく系 ──">
+          <option value="[cheerfully]">☀️ 明るく（標準）</option>
+          <option value="[cheerfully but calmly]">☀️ 明るく・おちつき</option>
+          <option value="[cheerfully at a moderate pace]">☀️ 明るく・ふつうテンポ</option>
+        </optgroup>
+        <optgroup label="── わくわく系 ──">
+          <option value="[excitedly]">🎉 わくわく（標準）</option>
+          <option value="[excitedly but not too fast]">🎉 わくわく・はやすぎない</option>
+        </optgroup>
+        <optgroup label="── 読み聞かせ系 ──">
+          <option value="[in a friendly storytelling voice]">📖 おはなし調</option>
+          <option value="[like talking to a small child with a warm smile]">📖 子供に話しかけるように</option>
+          <option value="[curiously and engagingly]">📖 興味をそそる語り</option>
+        </optgroup>
+        <optgroup label="── カスタム ──">
+          <option value="">プレーン（タグなし）</option>
+          <option value="__custom__">✏️ カスタム入力...</option>
+        </optgroup>
       </select>
+      <input id="tts-style-custom" type="text" placeholder="[ゆっくり楽しく] など自由記述" maxlength="80" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;min-width:200px;">
       <select id="tts-cat-filter" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
         <option value="">すべてのカテゴリー</option>
       </select>
@@ -841,7 +862,7 @@ tr:hover { background: #FFFAF0; }
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;white-space:nowrap;">状態</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;white-space:nowrap;">カテゴリー</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;">読み上げテキスト</th>
-            <th style="text-align:center;padding:7px 4px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;width:80px;">話者</th>
+            <th style="text-align:center;padding:7px 4px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;width:130px;">話者 / 語り口</th>
             <th style="padding:7px 4px;color:#6D28D9;border-bottom:2px solid #EDE9FE;font-size:0.72rem;width:150px;">操作</th>
           </tr>
         </thead>
@@ -1929,6 +1950,16 @@ function ttsPopulateCatFilter() {
     // voice 変更だけでは状態は変わらない（既存は既存voiceのまま使い続ける）
     ttsRenderTable();
   });
+  var styleSel2 = document.getElementById('tts-style-sel');
+  if (styleSel2) {
+    styleSel2.addEventListener('change', function() {
+      var inp = document.getElementById('tts-style-custom');
+      if (inp) inp.style.display = (styleSel2.value === '__custom__') ? '' : 'none';
+      ttsRenderTable();
+    });
+  }
+  var styleCustom = document.getElementById('tts-style-custom');
+  if (styleCustom) styleCustom.addEventListener('input', ttsRenderTable);
   var engSel = document.getElementById('tts-engine-sel');
   if (engSel) {
     engSel.addEventListener('change', ttsApplyEngineUI);
@@ -2093,11 +2124,27 @@ function ttsRenderTable() {
   var stateLabelColor = { missing:'#B91C1C', stale:'#D97706', done:'#059669', draft:'#6D28D9' };
 
   var limit = Math.min(visible.length, 500);
+  var curDropdownVoice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
+  var curDropdownStyle = ttsCurrentStyle();
   for (var i = 0; i < limit; i++) {
     var r = visible[i];
     var existing = ttsManifest && ttsManifest.entries && ttsManifest.entries[r.key];
-    var voice = ttsNormalizeVoice(existing ? existing.voice : (document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE));
     var draftEntry = ttsDraftCache.find(function(d) { return d.key === r.key; });
+    // 表示優先順: draft（生成済み・未反映） > manifest（公開済み） > 現在のドロップダウン（プレビュー）
+    var voice, style, isPreview;
+    if (draftEntry) {
+      voice = ttsNormalizeVoice(draftEntry.voice || TTS_DEFAULT_VOICE);
+      style = (typeof draftEntry.stylePrompt === 'string') ? draftEntry.stylePrompt : TTS_DEFAULT_STYLE;
+      isPreview = false;
+    } else if (existing) {
+      voice = ttsNormalizeVoice(existing.voice || TTS_DEFAULT_VOICE);
+      style = (typeof existing.stylePrompt === 'string') ? existing.stylePrompt : '';
+      isPreview = false;
+    } else {
+      voice = ttsNormalizeVoice(curDropdownVoice);
+      style = curDropdownStyle;
+      isPreview = true;   // 未生成: 現ドロップダウンの「次に使う設定」をグレーで表示
+    }
     var hasPrev = !!(draftEntry && (draftEntry.prevAudioBase64 || draftEntry.prevAudioUrl));
     var tr = document.createElement('tr');
     tr.setAttribute('data-tts-key', r.key);
@@ -2147,8 +2194,24 @@ function ttsRenderTable() {
     tdText.textContent = r.text;
 
     var tdVoice = document.createElement('td');
-    tdVoice.style.cssText = 'padding:6px 4px;text-align:center;color:#6B7280;font-size:0.72rem;';
-    tdVoice.textContent = voice;
+    tdVoice.style.cssText = 'padding:6px 4px;text-align:center;font-size:0.7rem;line-height:1.25;' +
+      (isPreview ? 'color:#C4B5D0;font-style:italic;' : 'color:#374151;');
+    var vLine = document.createElement('div');
+    vLine.style.cssText = 'font-weight:' + (isPreview ? '500' : '800') + ';';
+    vLine.textContent = voice;
+    var sLine = document.createElement('div');
+    sLine.style.cssText = 'font-size:0.64rem;color:' + (isPreview ? '#C4B5D0' : '#8B7355') + ';margin-top:1px;';
+    sLine.textContent = ttsStyleLabel(style);
+    tdVoice.appendChild(vLine);
+    tdVoice.appendChild(sLine);
+    if (isPreview) {
+      var hintLine = document.createElement('div');
+      hintLine.style.cssText = 'font-size:0.58rem;color:#C4B5D0;margin-top:1px;';
+      hintLine.textContent = '(次回設定)';
+      tdVoice.appendChild(hintLine);
+    }
+    tdVoice.title = (isPreview ? '未生成 — 現ドロップダウンの設定で生成されます' : '生成時の設定') +
+      '\n話者: ' + voice + '\n語り口: ' + (style || '(なし)');
 
     var tdOps = document.createElement('td');
     tdOps.style.cssText = 'padding:6px 4px;text-align:center;';
@@ -2236,10 +2299,38 @@ function escapeHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// --- 語り口 → 日本語ラベル（per-row 表示用） ---
+var TTS_STYLE_LABELS = {
+  '[gently]':                                           'やさしく',
+  '[gently at a moderate pace]':                        'やさしく・普通',
+  '[slowly and warmly]':                                'ゆっくり温かく',
+  '[softly and calmly]':                                'しずかに・落ち着き',
+  '[cheerfully]':                                       '明るく',
+  '[cheerfully but calmly]':                            '明るく・落ち着き',
+  '[cheerfully at a moderate pace]':                    '明るく・普通',
+  '[excitedly]':                                        'わくわく',
+  '[excitedly but not too fast]':                       'わくわく・早すぎず',
+  '[in a friendly storytelling voice]':                 'おはなし調',
+  '[like talking to a small child with a warm smile]':  '子供向け',
+  '[curiously and engagingly]':                         '興味をそそる',
+  '':                                                   'プレーン'
+};
+function ttsStyleLabel(s) {
+  if (typeof s !== 'string') return '—';
+  if (TTS_STYLE_LABELS.hasOwnProperty(s)) return TTS_STYLE_LABELS[s];
+  // カスタム文字列は中身をそのまま短縮表示
+  return s.replace(/^\[|\]$/g, '').slice(0, 20);
+}
+
 // --- 現在選択されている語り口（Audio Tag） ---
 function ttsCurrentStyle() {
-  var el = document.getElementById('tts-style-sel');
-  return el ? (el.value || '') : TTS_DEFAULT_STYLE;
+  var sel = document.getElementById('tts-style-sel');
+  if (!sel) return TTS_DEFAULT_STYLE;
+  if (sel.value === '__custom__') {
+    var inp = document.getElementById('tts-style-custom');
+    return inp ? (inp.value || '') : '';
+  }
+  return sel.value || '';
 }
 
 // --- モデル名の短縮表示（ログ・トースト向け） ---
@@ -2720,6 +2811,8 @@ function ttsFlushDraftQueue() {
             hash: e.hash,
             file: e.file,
             voice: e.voice,
+            stylePrompt: (typeof e.stylePrompt === 'string') ? e.stylePrompt : '',
+            modelUsed: e.modelUsed || null,
             updatedAt: e.updatedAt
           };
         });
