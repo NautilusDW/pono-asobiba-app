@@ -4151,14 +4151,10 @@ const SIMPLE_IMAGE_DESTS = {
     dir: 'assets/images/Bento_parts', label: 'お弁当',
     openLink: { href: '../admin/index.html#bento', label: 'おべんとう 管理で開く' }
   },
-  'quizland': {
-    dir: 'assets/images/staging', label: 'クイズランド',
-    openLink: { href: '../admin/index.html#quizland', label: 'クイズランド 管理で開く' }
-  },
-  'wordmatch': {
-    dir: 'assets/images/staging', label: 'ことばあわせ',
-    openLink: { href: '../admin/index.html#wordmatch', label: 'ことばあわせ 管理で開く' }
-  },
+  // quizland / wordmatch は「生き物」と同じ creature-format でアップロードして
+  // staging.json に登録する必要がある (admin の 差し替え候補 が読むため)。
+  // そのため SIMPLE_IMAGE_DESTS ではなく、水族館フローに forceStaging=true で
+  // 合流させる。→ btn-deploy ハンドラで分岐。
   'walls': {
     dir: 'assets/images/Rooms/walls', label: '壁紙',
     openLink: { href: '../admin/index.html#walls', label: '壁紙・床 管理で開く' }
@@ -4202,7 +4198,12 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
   if (SIMPLE_IMAGE_DESTS[destination]) {
     return await deployImagesOnly(selectedCards, SIMPLE_IMAGE_DESTS[destination]);
   }
-  // 既定: 水族館 (元の挙動)
+  // クイズランド / ことばあわせ: 水族館フローに合流して、すべて staging.json へ。
+  //   admin の 差し替え候補 パネルは staging.json を読むので、flat file を
+  //   assets/images/staging/ に置くだけでは UI に出てこない。
+  //   → creature-format で folder/expressions を正しく作り、staging.json に登録する。
+  const forceStaging = (destination === 'quizland' || destination === 'wordmatch');
+  // 既定: 水族館 (元の挙動)  / forceStaging 時も下の処理をそのまま通す
 
   // Group by creature name
   const groups = new Map();
@@ -4248,9 +4249,12 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
   const existingNames = new Set(creaturesData.creatures.map(c => c.displayName));
 
   // 重複/新規を分類
+  // forceStaging (クイズランド/ことばあわせ) のときは、重複判定に関係なく全部 staging に入れる。
+  // 理由: クイズ用イラストは「既存の creature を差し替えるための候補」なので、
+  // 新規ID でも既存ID でも staging.json に積んで admin の 差し替え候補 で選ばせる。
   const newGroups = [], dupGroups = [];
   for (const [, g] of groups) {
-    if (existingIds.has(g.id) || existingNames.has(g.name)) {
+    if (forceStaging || existingIds.has(g.id) || existingNames.has(g.name)) {
       dupGroups.push(g);
     } else {
       newGroups.push(g);
@@ -4259,7 +4263,10 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
 
   if (dupGroups.length > 0) {
     const dupNames = dupGroups.map(g => `「${g.name}」(${g.id})`).join(', ');
-    showToast(`📦 ${dupGroups.length}体が重複 → staging に保存します: ${dupNames}`, true);
+    const label = forceStaging
+      ? `📦 ${dupGroups.length}体を staging (差し替え候補) に保存します: ${dupNames}`
+      : `📦 ${dupGroups.length}体が重複 → staging に保存します: ${dupNames}`;
+    showToast(label, true);
   }
 
   // 全グループの画像をアップロード（新規は ocean/、重複は staging/）
@@ -4348,7 +4355,12 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
       if (isDup) {
         entry._staging = true;
         entry._stagedAt = new Date().toISOString();
-        entry._duplicateOf = g.id;
+        // forceStaging 時は本当の「既存との重複」ではなく、クイズ差し替え候補として
+        // 積んでいるだけなので、既存IDと衝突している場合だけ _duplicateOf を付ける。
+        if (existingIds.has(g.id) || existingNames.has(g.name)) {
+          entry._duplicateOf = g.id;
+        }
+        if (forceStaging) entry._source = destination; // 'quizland' | 'wordmatch'
         stagingData.push(entry);
       } else {
         creaturesData.creatures.push(entry);
@@ -4380,7 +4392,12 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
     if (newGroups.length > 0) msg += `✅ ${newGroups.length}体を登録`;
     if (dupGroups.length > 0) msg += `${msg ? ' / ' : ''}📦 ${dupGroups.length}体をstaging保存`;
     setStatus(msg);
-    showToast(`🐠 ${groups.size}体の生き物を登録しました`, true);
+    if (forceStaging) {
+      showToast(`📦 ${groups.size}体を差し替え候補に登録しました`, true);
+      _showOpenToolLink('../admin/index.html#quiz-illust', '管理ページ クイズ用イラストで開く', groups.size);
+    } else {
+      showToast(`🐠 ${groups.size}体の生き物を登録しました`, true);
+    }
 
   } catch (e) {
     hideLoading();
