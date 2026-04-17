@@ -154,6 +154,17 @@ body {
   overflow-y: auto;
 }
 
+/* マルチ合成モード ON: 比較タブは使わないので隠し、合成タブを上半分に伸ばす。
+   これで「合成して読み込む の下」にできていたデッドスペースを解消する。 */
+.right-panel.split-mode.multi-mode #tab-compare {
+  display: none !important;
+}
+.right-panel.split-mode.multi-mode #tab-composite.active {
+  flex: var(--split-top, 1) 1 0 !important;
+  max-height: none !important;
+  overflow: hidden;
+}
+
 .action-toolbar {
   display: flex; align-items: center; gap: 4px;
   background: #111827; border-bottom: 1px solid #374151;
@@ -759,13 +770,13 @@ body {
                style="width:50px;padding:3px 4px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#d1d5db;font-size:0.68rem;text-align:center;opacity:0.4;">
         <span style="font-size:0.6rem;color:#6b7280">px</span>
         <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
-        <button class="tbtn tbtn-ghost" id="picker-toggle-canvas" style="padding:3px 8px;font-size:0.72rem" title="範囲選択キャンバスを表示/非表示">🎨 範囲選択</button>
+        <button class="tbtn tbtn-ghost active" id="picker-toggle-canvas" style="padding:3px 8px;font-size:0.72rem" title="範囲選択キャンバスを表示/非表示">🎨 範囲選択</button>
         <div style="flex:1"></div>
         <span id="composite-count" style="font-size:0.65rem;color:#6b7280">選択: 0</span>
         <button class="tbtn tbtn-ghost" id="picker-clear-sel" style="padding:3px 8px;font-size:0.72rem" title="この画像の選択をすべて消去">🗑 選択消去</button>
       </div>
-      <!-- canvas: デフォルト非表示。上の 🎨 範囲選択 ボタンでトグル -->
-      <div class="picker-canvas-wrap" id="picker-canvas-wrap" style="display:none;flex:0 0 280px;">
+      <!-- canvas: デフォルト表示 (残りの縦スペースを埋める)。上の 🎨 範囲選択 ボタンでトグル -->
+      <div class="picker-canvas-wrap" id="picker-canvas-wrap" style="flex:1 1 0;min-height:120px;">
         <canvas id="picker-canvas"></canvas>
       </div>
       <div class="composite-bottom">
@@ -4436,12 +4447,16 @@ document.getElementById('btn-multi-picker').addEventListener('click', () => {
   const singleDz = document.getElementById('drop-zone');
   const multiDz  = document.getElementById('multi-drop-zone');
   const compTab  = document.getElementById('tab-composite-btn');
+  const rightPanel = document.querySelector('.right-panel');
 
   if (multiPickerMode) {
     btn.textContent = '📐 マルチ合成 ON';
     btn.style.background = '#dc2626'; btn.style.color = '#fff';
     singleDz.style.display = 'none';
     compTab.style.display = '';
+    // 比較タブは使わないので隠し、合成タブを上半分いっぱいに広げる。
+    // これで「合成して読み込む」の下に空白ができる問題を解消する。
+    if (rightPanel) rightPanel.classList.add('multi-mode');
     // マルチ合成中は選択範囲ベースの分割なので最初は無効、選択が出来たら有効化
     document.getElementById('btn-split').disabled = true;
     switchToTab('composite');
@@ -4450,6 +4465,7 @@ document.getElementById('btn-multi-picker').addEventListener('click', () => {
     btn.style.background = ''; btn.style.color = '';
     singleDz.style.display = '';
     compTab.style.display = 'none';
+    if (rightPanel) rightPanel.classList.remove('multi-mode');
     // クリーンアップ
     pickerImages.forEach(img => { img.canvas.width = 0; img.canvas.height = 0; });
     pickerImages = [];
@@ -4698,14 +4714,14 @@ document.getElementById('picker-clear-sel').addEventListener('click', () => {
   }
 });
 
-// 範囲選択キャンバスのトグル (デフォルト非表示にしたので、必要なときだけ展開)
+// 範囲選択キャンバスのトグル (デフォルト表示にしたので、隠したい時だけ折りたたむ)
 document.getElementById('picker-toggle-canvas').addEventListener('click', function() {
   var wrap = document.getElementById('picker-canvas-wrap');
   if (!wrap) return;
-  var hidden = wrap.style.display === 'none' || wrap.style.display === '';
-  wrap.style.display = hidden ? 'flex' : 'none';
+  var hidden = wrap.style.display === 'none';
+  wrap.style.display = hidden ? '' : 'none';
   this.classList.toggle('active', hidden);
-  if (hidden) renderPickerPreview(); // 表示時に再描画
+  if (hidden) renderPickerPreview(); // 再表示時に再描画
 });
 
 // ── Rect drag selection ──
