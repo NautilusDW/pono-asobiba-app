@@ -117,20 +117,20 @@ html, body {
   transition: transform 0.7s cubic-bezier(0.34,1.0,0.64,1), opacity 0.7s ease;
 }
 
-/* ===== Monster Deco (もんすたーさん) ===== */
+/* ===== Monster Deco (もんすたーさん) — canvas-container 内の左上に固定 ===== */
 .monster-deco {
   position: absolute;
-  top: 8%; left: 4%;
-  width: 56px; height: 56px;
+  top: 6px; left: 6px;
+  width: 72px; height: 72px;
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
-  z-index: 5;
+  z-index: 3;
   animation: monsterFloat 1.8s ease-in-out infinite;
 }
 .monster-deco .monster-emoji {
-  font-size: 2.4rem;
+  font-size: 3rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
 }
 @keyframes monsterFloat {
   0%, 100% { transform: translateY(0) scale(1);    }
@@ -759,7 +759,6 @@ html, body {
       <div id="demoIndicator">おてほんちゅう</div>
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
       <img class="pono-deco" src="../assets/images/characters/pono/dance/dance_smile.png" alt="ポノ">
-      <div class="monster-deco" id="monsterDeco" aria-hidden="true"><span class="monster-emoji">🍄</span></div>
       <div class="canvas-wrap">
         <div class="hedgehog-wrap">
           <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
@@ -767,6 +766,7 @@ html, body {
           <div id="streak-badge" class="streak-badge hidden"></div>
         </div>
         <div class="canvas-container" id="canvasContainer">
+          <div class="monster-deco" id="monsterDeco" aria-hidden="true"><span class="monster-emoji">🍄</span></div>
           <div id="writerTarget"></div>
           <div class="stroke-number-overlay" id="strokeNumbers"></div>
         </div>
@@ -2020,8 +2020,9 @@ function _startWordContextPhase(char, data, onComplete) {
   var ponoBubbleEl = document.getElementById('ponoBubble');
   var wordLen = data.word ? data.word.length : 1;
   if (ponoDeco && wordLen >= 3) {
-    ponoDeco.style.left = wordLen >= 4 ? '-40px' : '-20px';
-    if (ponoBubbleEl) ponoBubbleEl.style.left = wordLen >= 4 ? '-30px' : '-10px';
+    // 画面左端に張り付かないよう 4〜10px の正の値にする（以前は見切れていた）
+    ponoDeco.style.left = wordLen >= 4 ? '4px' : '10px';
+    if (ponoBubbleEl) ponoBubbleEl.style.left = wordLen >= 4 ? '8px' : '14px';
   }
 
   // Create word context wrapper

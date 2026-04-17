@@ -708,14 +708,33 @@
     .stamp-rally-section {
       width: 100%;
       max-width: 400px;
-      margin: 0 auto 4px;
+      margin: 8px auto 10px;
+      padding: 14px 14px 12px;
+      background: linear-gradient(135deg, #FFF8E1, #FFE8C4);
+      border: 3px solid #FFB84D;
+      border-radius: 22px;
+      box-shadow: 0 6px 18px rgba(255,152,0,0.18);
+      position: relative;
+    }
+    .stamp-rally-section::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 22px;
+      pointer-events: none;
+      animation: stampRallyGlow 2.6s ease-in-out infinite;
+    }
+    @keyframes stampRallyGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,77,0); }
+      50%      { box-shadow: 0 0 0 6px rgba(255,184,77,0.28); }
     }
     .stamp-rally-title {
-      font-size: 1.05rem;
+      font-size: 1.15rem;
       font-weight: 900;
-      color: var(--primary);
+      color: #D97706;
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
     }
     .stamp-rally-games {
       display: flex;
