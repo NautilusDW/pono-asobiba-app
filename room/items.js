@@ -75,6 +75,16 @@ const ROOM_ITEMS = [
     emoji: '🌸',
     roomImg: '../assets/images/Rooms/walls/pink.png',
   },
+  {
+    id: 'wall_constellation', cat: 'wall', name: 'せいざ', theme: 'all',
+    emoji: '✨',
+    roomImg: '../assets/images/Rooms/walls/constellation.png',
+  },
+  {
+    id: 'wall_beige_plain', cat: 'wall', name: 'ベージュ', theme: 'all',
+    emoji: '🤎',
+    roomImg: '../assets/images/Rooms/walls/beige_plain.png',
+  },
 
   // ══ ゆか ═════════════════════════════════════════════
   {
@@ -131,6 +141,16 @@ const ROOM_ITEMS = [
     id: 'floor_wood_forest', cat: 'floor', name: 'もりのもくめ', theme: 'all',
     emoji: '🌿',
     roomImg: '../assets/images/Rooms/floors/mori_doubutsu.png',
+  },
+  {
+    id: 'floor_green_grass', cat: 'floor', name: 'しばふ', theme: 'all',
+    emoji: '🌱',
+    roomImg: '../assets/images/Rooms/floors/green_grass.png',
+  },
+  {
+    id: 'floor_green_mat', cat: 'floor', name: 'みどり', theme: 'all',
+    emoji: '💚',
+    roomImg: '../assets/images/Rooms/floors/green_mat.png',
   },
 
   // ══ かぐ ═══════════════════════════════════════════════
