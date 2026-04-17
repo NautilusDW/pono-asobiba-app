@@ -1688,6 +1688,7 @@ var ttsDraftCache = [];          // メモリ上の下書きキャッシュ（In
 var ttsGenerating = false;
 var ttsStopRequested = false;
 var ttsLastError = '';           // 直近の失敗メッセージ（完了ダイアログ用）
+var ttsRetryTimer = null;        // リトライ待機中の setTimeout ハンドル（停止ボタンでクリア可能）
 
 // --- IndexedDB draft queue ---
 // 音声 WAV は 1 件あたり最大 ~400KB になり得るため localStorage (5MB) は不適。
@@ -2111,7 +2112,7 @@ function ttsGenerateOne(key) {
 // --- API 呼び出し（リトライ付き・指数バックオフ） ---
 function ttsCallApi(text, voice, attempt) {
   attempt = attempt || 1;
-  var maxAttempts = 6;
+  var maxAttempts = 3;
   return fetch('/.netlify/functions/ai-tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2119,16 +2120,21 @@ function ttsCallApi(text, voice, attempt) {
   }).then(function(r) {
     return r.json().then(function(data) {
       if (!r.ok) {
-        if ((r.status === 429 || r.status === 502 || r.status === 503) && attempt < maxAttempts) {
-          // 指数バックオフ: 2s, 5s, 12s, 30s, 60s
-          var waits = [2000, 5000, 12000, 30000, 60000];
+        if ((r.status === 429 || r.status === 502 || r.status === 503) && attempt < maxAttempts && !ttsStopRequested) {
+          // 短縮バックオフ: 3s → 10s（合計最大13秒で切り上げ、長時間ロック回避）
+          var waits = [3000, 10000];
           var wait = waits[Math.min(attempt - 1, waits.length - 1)];
-          ttsProgress('⏳ レート制限のため ' + Math.round(wait/1000) + '秒待機中...');
-          return new Promise(function(res) { setTimeout(res, wait); })
-            .then(function() { return ttsCallApi(text, voice, attempt + 1); });
+          ttsProgress('⏳ レート制限のため ' + Math.round(wait/1000) + '秒待機中... (試行 ' + (attempt+1) + '/' + maxAttempts + ')');
+          return new Promise(function(res, rej) {
+            ttsRetryTimer = setTimeout(function() {
+              ttsRetryTimer = null;
+              if (ttsStopRequested) rej(new Error('中断されました'));
+              else res();
+            }, wait);
+          }).then(function() { return ttsCallApi(text, voice, attempt + 1); });
         }
         var msg = data.error || ('HTTP ' + r.status);
-        if (r.status === 429) msg = 'レート制限到達: ' + msg + '（数分待つかAPIクォータを確認）';
+        if (r.status === 429) msg = 'クォータ到達（' + msg + '）— 時間を置くかAPI設定を確認してください';
         throw new Error(msg);
       }
       return data;
@@ -2170,6 +2176,8 @@ function _ttsRunBatch(targets) {
 
   var done = 0;
   var failed = 0;
+  var consecFail = 0;
+  var CONSEC_FAIL_LIMIT = 3;
   function next(i) {
     if (ttsStopRequested || i >= targets.length) {
       ttsGenerating = false;
@@ -2202,6 +2210,7 @@ function _ttsRunBatch(targets) {
           });
         return Promise.all(adds).then(function() {
           done++;
+          consecFail = 0;
           // 成功ごとに UI を逐次更新 → 完了済みから ▶ 下書き再生できる
           ttsRenderTable();
           ttsRenderDraftBar();
@@ -2209,9 +2218,15 @@ function _ttsRunBatch(targets) {
       })
       .catch(function(e) {
         failed++;
+        consecFail++;
         console.error('tts fail', r.key, e);
         // 最後のエラーを記録（中断/完了ダイアログで表示）
         ttsLastError = (e && e.message) || String(e);
+        // 連続 N 件失敗したら自動中断（クォータ枯渇時の時間浪費を防ぐ）
+        if (consecFail >= CONSEC_FAIL_LIMIT) {
+          ttsStopRequested = true;
+          ttsLastError = '連続 ' + CONSEC_FAIL_LIMIT + ' 件失敗のため自動中断: ' + ttsLastError;
+        }
       })
       .then(function() {
         if (ttsStopRequested) {
@@ -2314,6 +2329,7 @@ function ttsGenerateVisible() {
 
 function ttsStopGeneration() {
   ttsStopRequested = true;
+  if (ttsRetryTimer) { clearTimeout(ttsRetryTimer); ttsRetryTimer = null; }
   ttsProgress('⏹ 中断中...');
 }
 
