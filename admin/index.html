@@ -775,11 +775,13 @@ tr:hover { background: #FFFAF0; }
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
       <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">話者</label>
       <select id="tts-voice-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
-        <option value="Leda">Leda（やさしい女声）</option>
-        <option value="Kore">Kore（落ち着き女声）</option>
-        <option value="Aoede">Aoede（明るい女声）</option>
-        <option value="Puck">Puck（元気な男声）</option>
-        <option value="Charon">Charon（低い男声）</option>
+        <option value="ja-JP-Neural2-B">Neural2-B（やさしい女声・おすすめ）</option>
+        <option value="ja-JP-Neural2-C">Neural2-C（明るい男声）</option>
+        <option value="ja-JP-Neural2-D">Neural2-D（落ち着き男声）</option>
+        <option value="ja-JP-Wavenet-A">Wavenet-A（女声バリエ）</option>
+        <option value="ja-JP-Wavenet-B">Wavenet-B（女声バリエ）</option>
+        <option value="ja-JP-Wavenet-C">Wavenet-C（男声バリエ）</option>
+        <option value="ja-JP-Standard-A">Standard-A（標準・安価）</option>
       </select>
       <select id="tts-cat-filter" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
         <option value="">すべてのカテゴリー</option>
@@ -1677,7 +1679,7 @@ function showIllustDraftList() {
 // ════════════════════════════════════════════════════════════════
 // 🔊 音声ナレーション (Gemini TTS) — 管理ツール統合
 // ════════════════════════════════════════════════════════════════
-var TTS_DEFAULT_VOICE   = 'Leda';
+var TTS_DEFAULT_VOICE   = 'ja-JP-Neural2-B';
 var TTS_ALLOWED_MODELS  = ['gemini-2.5-flash-preview-tts', 'gemini-2.5-flash-tts'];
 var TTS_MODEL           = TTS_ALLOWED_MODELS[0];
 var TTS_IDB_NAME        = 'pono_tts';

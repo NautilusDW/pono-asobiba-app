@@ -1,18 +1,21 @@
-// Netlify Function: Gemini 2.5 Flash TTS プロキシ
+// Netlify Function: Google Cloud Text-to-Speech プロキシ
 // 環境変数: GEMINI_API_KEY を Netlify ダッシュボードで設定（ai-name.js と共用）
+//   ※ Gemini API Key ではなく Google Cloud API Key。同じプロジェクトなら同じキーでOK
+//   ※ Cloud Console で「Cloud Text-to-Speech API」を有効化しておくこと
 //
 // リクエスト (POST application/json):
 //   { text: "読み上げるテキスト",
-//     voice?: "Leda" | "Kore" | "Puck" | "Charon" | "Aoede" | ...,
-//     stylePrompt?: "明るく元気な子供向けナレーターのように: ",
-//     model?: "gemini-2.5-flash-preview-tts" }
+//     voice?: "ja-JP-Neural2-B" | "Leda" | ... (後方互換で旧Gemini名も受理),
+//     stylePrompt?: (無視される、後方互換のみ),
+//     model?: (無視される、後方互換のみ) }
 //
 // レスポンス (200):
 //   { audio: "<base64 WAV>",
 //     mime:  "audio/wav",
-//     voice: "Leda",
+//     voice: "ja-JP-Neural2-B",
 //     chars: 12,
-//     model: "gemini-2.5-flash-preview-tts" }
+//     model: "cloud-tts",
+//     sampleRate: 24000 }
 
 exports.handler = async function(event) {
   // CORS preflight
@@ -53,31 +56,47 @@ exports.handler = async function(event) {
   if (!text) return jsonResp(400, { error: 'text が必要です' });
   if (text.length > 2000) return jsonResp(400, { error: 'text が長すぎます（2000字まで）' });
 
-  // voice allowlist（Gemini prebuilt voices）
-  var ALLOWED_VOICES = ['Leda','Kore','Puck','Charon','Aoede','Zephyr','Fenrir','Orus','Callirrhoe','Despina'];
-  var voice = body.voice || 'Leda';
-  if (ALLOWED_VOICES.indexOf(voice) === -1) voice = 'Leda';
+  // voice 解決: Cloud TTS ja-JP ボイス allowlist + 旧 Gemini 名の後方互換マップ
+  var ALLOWED_VOICES = [
+    'ja-JP-Neural2-B', 'ja-JP-Neural2-C', 'ja-JP-Neural2-D',
+    'ja-JP-Wavenet-A', 'ja-JP-Wavenet-B', 'ja-JP-Wavenet-C', 'ja-JP-Wavenet-D',
+    'ja-JP-Standard-A', 'ja-JP-Standard-B', 'ja-JP-Standard-C', 'ja-JP-Standard-D'
+  ];
+  var LEGACY_VOICE_MAP = {
+    // 旧 Gemini 名 → Cloud TTS ja-JP Neural2 への最良マッピング（子供向け優先）
+    'Leda':       'ja-JP-Neural2-B',   // female, default
+    'Aoede':      'ja-JP-Neural2-B',   // female
+    'Callirrhoe': 'ja-JP-Neural2-B',   // female
+    'Despina':    'ja-JP-Neural2-B',   // female
+    'Kore':       'ja-JP-Neural2-D',   // male
+    'Puck':       'ja-JP-Neural2-C',   // male
+    'Charon':     'ja-JP-Neural2-D',   // male
+    'Orus':       'ja-JP-Neural2-C',   // male
+    'Zephyr':     'ja-JP-Wavenet-A',   // female variant
+    'Fenrir':     'ja-JP-Wavenet-C'    // male variant
+  };
+  var DEFAULT_VOICE = 'ja-JP-Neural2-B';
+  var rawVoice = body.voice || DEFAULT_VOICE;
+  var voice = LEGACY_VOICE_MAP[rawVoice] || rawVoice;
+  if (ALLOWED_VOICES.indexOf(voice) === -1) voice = DEFAULT_VOICE;
 
-  var stylePrompt = typeof body.stylePrompt === 'string' ? body.stylePrompt.slice(0, 300) : '';
-  var defaultStyle = '5歳の子供向けに、ひらがな表記に忠実に、やさしくはっきり自然な速さで読んでください: ';
-  var finalText = (stylePrompt || defaultStyle) + text;
+  // 子供向けピッチ・速度（クライアント側で playbackRate=1.15 がかかるので抑えめ）
+  var speakingRate = 1.0;
+  var pitch = 1.0;   // やや高め（0 = 標準）
 
-  // モデル allowlist（任意の文字列を受け付けない）
-  var ALLOWED_MODELS = ['gemini-2.5-flash-preview-tts', 'gemini-2.5-flash-tts'];
-  var model = ALLOWED_MODELS.indexOf(body.model) !== -1 ? body.model : ALLOWED_MODELS[0];
-  var apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
-    + encodeURIComponent(model)
-    + ':generateContent?key=' + encodeURIComponent(apiKey);
+  var apiUrl = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(apiKey);
 
   var payload = {
-    contents: [{ parts: [{ text: finalText }] }],
-    generationConfig: {
-      responseModalities: ['AUDIO'],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: voice }
-        }
-      }
+    input: { text: text },
+    voice: {
+      languageCode: 'ja-JP',
+      name: voice
+    },
+    audioConfig: {
+      audioEncoding: 'LINEAR16',     // WAV ヘッダ付き PCM で返る
+      sampleRateHertz: 24000,
+      speakingRate: speakingRate,
+      pitch: pitch
     }
   };
 
@@ -91,47 +110,22 @@ exports.handler = async function(event) {
     var data = await resp.json();
 
     if (!resp.ok) {
-      var safeMsg = (data && data.error && data.error.message) || 'Gemini API error';
+      var safeMsg = (data && data.error && data.error.message) || 'Cloud TTS API error';
       return jsonResp(resp.status >= 500 ? 502 : resp.status, { error: safeMsg });
     }
 
-    var parts = data && data.candidates && data.candidates[0]
-              && data.candidates[0].content && data.candidates[0].content.parts;
-    if (!parts || !parts.length) {
-      return jsonResp(502, { error: 'Invalid Gemini response' });
+    if (!data || !data.audioContent) {
+      return jsonResp(502, { error: 'No audio in Cloud TTS response' });
     }
 
-    var audioPart = null;
-    for (var i = 0; i < parts.length; i++) {
-      if (parts[i].inlineData && parts[i].inlineData.data) {
-        audioPart = parts[i].inlineData;
-        break;
-      }
-      // 新形式: inline_data (snake) 互換
-      if (parts[i].inline_data && parts[i].inline_data.data) {
-        audioPart = parts[i].inline_data;
-        break;
-      }
-    }
-    if (!audioPart) {
-      return jsonResp(502, { error: 'No audio in Gemini response' });
-    }
-
-    // Gemini TTS は PCM 16-bit mono を返す。mimeType 例: "audio/L16;codec=pcm;rate=24000"
-    var mime = audioPart.mimeType || audioPart.mime_type || 'audio/L16;codec=pcm;rate=24000';
-    var sampleRate = parseSampleRate(mime, 24000);
-    var pcmBase64 = audioPart.data;
-
-    // PCM → WAV (ヘッダ付与)
-    var wavBase64 = pcmBase64ToWavBase64(pcmBase64, sampleRate, 1, 16);
-
+    // Cloud TTS の LINEAR16 は WAV コンテナ付きで返るのでそのまま
     return jsonResp(200, {
-      audio: wavBase64,
+      audio: data.audioContent,
       mime: 'audio/wav',
       voice: voice,
       chars: text.length,
-      model: model,
-      sampleRate: sampleRate
+      model: 'cloud-tts',
+      sampleRate: 24000
     });
   } catch (e) {
     return jsonResp(500, { error: e.message });
@@ -147,34 +141,4 @@ function jsonResp(status, obj) {
     },
     body: JSON.stringify(obj)
   };
-}
-
-function parseSampleRate(mime, fallback) {
-  var m = /rate=(\d+)/i.exec(mime || '');
-  return m ? parseInt(m[1], 10) : fallback;
-}
-
-// PCM (base64) を WAV (base64) に変換。16-bit, mono 前提。
-function pcmBase64ToWavBase64(pcmB64, sampleRate, numChannels, bitsPerSample) {
-  var pcm = Buffer.from(pcmB64, 'base64');
-  var byteRate = sampleRate * numChannels * bitsPerSample / 8;
-  var blockAlign = numChannels * bitsPerSample / 8;
-  var dataSize = pcm.length;
-  var header = Buffer.alloc(44);
-
-  header.write('RIFF', 0);                         // ChunkID
-  header.writeUInt32LE(36 + dataSize, 4);          // ChunkSize
-  header.write('WAVE', 8);                         // Format
-  header.write('fmt ', 12);                        // Subchunk1 ID
-  header.writeUInt32LE(16, 16);                    // Subchunk1 Size (PCM=16)
-  header.writeUInt16LE(1, 20);                     // AudioFormat PCM=1
-  header.writeUInt16LE(numChannels, 22);
-  header.writeUInt32LE(sampleRate, 24);
-  header.writeUInt32LE(byteRate, 28);
-  header.writeUInt16LE(blockAlign, 32);
-  header.writeUInt16LE(bitsPerSample, 34);
-  header.write('data', 36);                        // Subchunk2 ID
-  header.writeUInt32LE(dataSize, 40);              // Subchunk2 Size
-
-  return Buffer.concat([header, pcm]).toString('base64');
 }
