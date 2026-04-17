@@ -1714,10 +1714,12 @@
       }
       var roomCard = document.getElementById('card-room');
       if (roomCard) {
-        if (!localStorage.getItem('pono_room_card_open')) {
+        var _debugOn = localStorage.getItem('pono_debug') === '1';
+        if (!localStorage.getItem('pono_room_card_open') && !_debugOn) {
           roomCard.classList.add('locked');
           // pointer-events を切らずにタップ時は「もっとスタンプを集めよう」案内を出す
           roomCard.addEventListener('click', function(e) {
+            if (localStorage.getItem('pono_debug') === '1') return; // デバッグ時はそのまま遷移
             if (localStorage.getItem('pono_room_card_open')) return; // 解放後はそのまま遷移
             e.preventDefault();
             e.stopPropagation();
@@ -3272,7 +3274,9 @@
         var on = localStorage.getItem(KEY) === '1';
         localStorage.setItem(KEY, on ? '0' : '1');
         sync();
-        alert(on ? 'デバッグモード OFF' : 'デバッグモード ON\nおへやで全家具アンロック＆配置自由');
+        alert(on ? 'デバッグモード OFF' : 'デバッグモード ON\nおうちアンロック＆全家具配置自由');
+        // ロック状態を即反映するため再読み込み
+        location.reload();
       });
     })();
 
@@ -3319,7 +3323,8 @@
           }
         } else if (action === 'room') {
           var roomOpen = localStorage.getItem('pono_room_card_open') === '1';
-          if (!roomOpen) {
+          var debugOn = localStorage.getItem('pono_debug') === '1';
+          if (!roomOpen && !debugOn) {
             var ov = document.createElement('div');
             ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
             ov.innerHTML = '<div style="background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
