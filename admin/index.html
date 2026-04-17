@@ -759,6 +759,7 @@ tr:hover { background: #FFFAF0; }
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="illustSetAll('done')"    style="padding:5px 12px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ 全部完成にする</button>
       <button onclick="illustSetAll('todo')"    style="padding:5px 12px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 全部リセット</button>
+      <button onclick="openLocalStagingImportModal()" style="padding:5px 12px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">📁 ローカルから差し替え候補を追加</button>
     </div>
     <div id="illust-groups"></div>
   </div>
@@ -6892,6 +6893,226 @@ function _renderStagingIllust(container, creatureLookup) {
       container.appendChild(div);
     })
     .catch(function() {});
+}
+
+// ════════════════════════════════════════════════════════════════
+// 📁 ローカルから差し替え候補を追加 (staging.json へ直接登録)
+// ════════════════════════════════════════════════════════════════
+// CES を経由せず、管理ページから PC の PNG を複数選んで staging.json に
+// 一括登録する。CES → staging.json の経路が壊れていても、これがあれば
+// 差し替え候補 の UI をテスト可能。
+function openLocalStagingImportModal() {
+  if (!getToken()) { showToast('GitHubトークンを設定してください', false); return; }
+
+  // 既知の creature ID 候補を datalist で提供 (ILLUST_TO_CREATURE の値 + 既存 creatures)
+  var idOptions = new Set();
+  for (var k in ILLUST_TO_CREATURE) idOptions.add(ILLUST_TO_CREATURE[k]);
+  if (creaturesData && creaturesData.creatures) {
+    creaturesData.creatures.forEach(function(c) { idOptions.add(c.id); });
+  }
+  var optionsHtml = '';
+  Array.from(idOptions).sort().forEach(function(id) {
+    optionsHtml += '<option value="' + id + '">';
+  });
+
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:20px;max-width:720px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:92vh;display:flex;flex-direction:column;';
+
+  box.innerHTML =
+    '<div style="font-size:1rem;font-weight:900;color:#5D4E37;margin-bottom:8px;">📁 ローカルから差し替え候補を追加</div>' +
+    '<div style="font-size:0.72rem;color:#6B7280;margin-bottom:10px;line-height:1.5;">' +
+      'PNG を複数選べます。各画像に creature ID (例: <code>tyrannosaurus</code>) を指定してください。' +
+      '<br>既存 creature の ID と同じなら、それの差し替え候補として登録されます。' +
+    '</div>' +
+    '<datalist id="lsi-id-options">' + optionsHtml + '</datalist>' +
+    '<div id="lsi-drop" style="border:2px dashed #C4B5FD;border-radius:12px;padding:14px;text-align:center;cursor:pointer;margin-bottom:10px;background:#F5F3FF;">' +
+      '<div style="font-size:1.5rem">📁</div>' +
+      '<div style="font-size:0.75rem;color:#6D28D9;font-weight:700;">クリック または ドロップで PNG を選択</div>' +
+      '<input type="file" accept="image/png" multiple style="display:none" id="lsi-file">' +
+    '</div>' +
+    '<div id="lsi-list" style="overflow-y:auto;flex:1;min-height:120px;"></div>' +
+    '<div id="lsi-status" style="font-size:0.72rem;color:#6B7280;margin:8px 0;"></div>' +
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">' +
+      '<button id="lsi-cancel" style="padding:8px 18px;border:none;border-radius:8px;background:#eee;color:#666;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">キャンセル</button>' +
+      '<button id="lsi-save" disabled style="padding:8px 22px;border:none;border-radius:8px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer;">📦 staging に登録</button>' +
+    '</div>';
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+
+  var entries = []; // [{base64, name, id, icon, displayName, previewSrc}]
+  var listEl = box.querySelector('#lsi-list');
+  var statusEl = box.querySelector('#lsi-status');
+  var saveBtn = box.querySelector('#lsi-save');
+  var dropZone = box.querySelector('#lsi-drop');
+  var fileInput = box.querySelector('#lsi-file');
+
+  function _slug(s) {
+    return String(s).toLowerCase()
+      .replace(/\.[a-z0-9]+$/, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'item';
+  }
+
+  function renderList() {
+    listEl.innerHTML = '';
+    if (!entries.length) {
+      listEl.innerHTML = '<div style="text-align:center;color:#9CA3AF;font-size:0.75rem;padding:20px;">PNG を追加してください</div>';
+      saveBtn.disabled = true;
+      return;
+    }
+    entries.forEach(function(e, idx) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:6px;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:6px;background:#FAFAF9;';
+      row.innerHTML =
+        '<img src="' + e.previewSrc + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;background:#fff;border:1px solid #E0D8CC;flex-shrink:0;">' +
+        '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">' +
+          '<input class="lsi-name" data-idx="' + idx + '" placeholder="表示名" value="' + e.displayName + '" style="width:100%;padding:4px 6px;border-radius:5px;border:1px solid #D1D5DB;font-family:inherit;font-size:0.78rem;box-sizing:border-box;">' +
+          '<input class="lsi-id" data-idx="' + idx + '" list="lsi-id-options" placeholder="creature ID (例: tyrannosaurus)" value="' + e.id + '" style="width:100%;padding:4px 6px;border-radius:5px;border:1px solid #D1D5DB;font-family:inherit;font-size:0.78rem;box-sizing:border-box;">' +
+        '</div>' +
+        '<input class="lsi-icon" data-idx="' + idx + '" value="' + e.icon + '" maxlength="4" style="width:46px;padding:4px 6px;border-radius:5px;border:1px solid #D1D5DB;font-family:inherit;font-size:0.9rem;text-align:center;flex-shrink:0;">' +
+        '<button class="lsi-del" data-idx="' + idx + '" title="削除" style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:6px;padding:4px 8px;cursor:pointer;flex-shrink:0;">🗑️</button>';
+      listEl.appendChild(row);
+    });
+
+    listEl.querySelectorAll('.lsi-name').forEach(function(el) {
+      el.addEventListener('input', function() { entries[parseInt(el.dataset.idx)].displayName = el.value; });
+    });
+    listEl.querySelectorAll('.lsi-id').forEach(function(el) {
+      el.addEventListener('input', function() { entries[parseInt(el.dataset.idx)].id = el.value.trim(); });
+    });
+    listEl.querySelectorAll('.lsi-icon').forEach(function(el) {
+      el.addEventListener('input', function() {
+        entries[parseInt(el.dataset.idx)].icon = ([...(el.value.trim())][0] || '🎨');
+      });
+    });
+    listEl.querySelectorAll('.lsi-del').forEach(function(el) {
+      el.addEventListener('click', function() {
+        entries.splice(parseInt(el.dataset.idx), 1);
+        renderList();
+      });
+    });
+    saveBtn.disabled = false;
+  }
+
+  function handleFiles(fileList) {
+    var files = Array.from(fileList || []).filter(function(f) { return f.type.startsWith('image/'); });
+    if (!files.length) return;
+    var remaining = files.length;
+    files.forEach(function(f) {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var dataUrl = ev.target.result;
+        var guessId = _slug(f.name);
+        entries.push({
+          base64: dataUrl.split(',')[1],
+          fileName: f.name,
+          id: guessId,
+          icon: '🎨',
+          displayName: f.name.replace(/\.[a-z0-9]+$/i, ''),
+          previewSrc: dataUrl,
+        });
+        if (--remaining === 0) renderList();
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.style.background = '#EDE9FE'; });
+  dropZone.addEventListener('dragleave', function() { dropZone.style.background = '#F5F3FF'; });
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.style.background = '#F5F3FF';
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', function() { handleFiles(fileInput.files); fileInput.value = ''; });
+
+  box.querySelector('#lsi-cancel').addEventListener('click', function() { ov.remove(); });
+
+  saveBtn.addEventListener('click', function() {
+    var bad = entries.filter(function(e) { return !e.id || !e.displayName; });
+    if (bad.length) { showToast('ID と表示名は全て必須です', false); return; }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ アップロード中...';
+
+    var STAGING_PATH = 'assets/data/staging.json';
+
+    // 既存の staging.json を取得
+    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        var stagingData = [];
+        if (data && data.content) {
+          try { stagingData = JSON.parse(base64ToUtf8(data.content.replace(/\n/g, ''))); } catch(e) {}
+        }
+        if (!Array.isArray(stagingData)) stagingData = [];
+
+        // 既存 creature ID 集合 (_duplicateOf タグ用)
+        var existingIds = new Set();
+        if (creaturesData && creaturesData.creatures) {
+          creaturesData.creatures.forEach(function(c) { existingIds.add(c.id); });
+        }
+
+        var chain = Promise.resolve();
+        var uploaded = 0;
+        entries.forEach(function(e) {
+          chain = chain.then(function() {
+            statusEl.textContent = '🔄 アップロード ' + (++uploaded) + '/' + entries.length + ' — ' + e.displayName;
+            var folder = e.id.charAt(0).toUpperCase() + e.id.slice(1);
+            var fileName = folder + '_normal_1.png';
+            var filePath = 'assets/images/staging/' + folder + '/' + fileName;
+
+            return ghUploadPromise(filePath, e.base64, '📁 local staging: ' + e.id + ' / ' + fileName)
+              .then(function() {
+                var entry = {
+                  id: e.id,
+                  displayName: e.displayName,
+                  icon: e.icon || '🎨',
+                  folder: folder,
+                  expressions: { normal: fileName, surprised: fileName },
+                  pattern: 'swim',
+                  reactionType: 'jump',
+                  facingDir: 'right',
+                  baseSizePx: 70,
+                  baseSizeJitter: 30,
+                  imgWidthHint: 200,
+                  speedMin: 0.04,
+                  speedMax: 0.07,
+                  spawnCount: 1,
+                  reactionSpeed: 1.0,
+                  reactionDuration: 1.0,
+                  rewardType: 'sea',
+                  _staging: true,
+                  _stagedAt: new Date().toISOString(),
+                  _source: 'local-admin',
+                };
+                if (existingIds.has(e.id)) entry._duplicateOf = e.id;
+                stagingData.push(entry);
+              });
+          });
+        });
+
+        return chain.then(function() {
+          statusEl.textContent = '🔄 staging.json を更新中...';
+          return ghUploadPromise(STAGING_PATH, utf8ToBase64(JSON.stringify(stagingData, null, 2)), '📁 local staging: +' + entries.length);
+        });
+      })
+      .then(function() {
+        showToast('✅ ' + entries.length + ' 件を差し替え候補に登録しました', true);
+        ov.remove();
+        renderIllust();
+      })
+      .catch(function(e) {
+        showToast('登録失敗: ' + e.message, false);
+        saveBtn.disabled = false;
+        saveBtn.textContent = '📦 staging に登録';
+        statusEl.textContent = '';
+      });
+  });
 }
 
 // ════════════════════════════════════════════════════════════════
