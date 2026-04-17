@@ -6,6 +6,7 @@
 <title>ポノのもじかき | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
+<script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
@@ -78,6 +79,109 @@ html, body {
 @keyframes stampPop {
   from { transform: scale(0.6); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ===== Acorn Badge (どんぐりポイント) ===== */
+.acorn-badge {
+  position: fixed; top: 10px; right: 10px; z-index: 1200;
+  display: flex; align-items: center; gap: 4px;
+  background: #FFFFFF;
+  border: 2px solid #8B6F47;
+  color: #5D4E37;
+  font-size: 0.9rem; font-weight: 900;
+  padding: 4px 12px 4px 8px;
+  border-radius: 22px;
+  box-shadow: 0 3px 10px rgba(139,111,71,0.25);
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+.acorn-badge .acorn-icon { font-size: 1.1rem; line-height: 1; }
+.acorn-badge .acorn-count { min-width: 18px; text-align: center; }
+.acorn-badge.pop { animation: acornBadgePop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes acornBadgePop {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1);    }
+}
+
+/* 獲得時に画面上を飛ぶチップ */
+.acorn-chip {
+  position: fixed; z-index: 1199;
+  background: #FFF;
+  border: 2px solid #8B6F47;
+  color: #5D4E37;
+  font-size: 0.85rem; font-weight: 900;
+  padding: 4px 10px; border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(139,111,71,0.3);
+  pointer-events: none;
+  transition: transform 0.7s cubic-bezier(0.34,1.0,0.64,1), opacity 0.7s ease;
+}
+
+/* ===== Monster Deco (もんすたーさん) ===== */
+.monster-deco {
+  position: absolute;
+  top: 8%; left: 4%;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+  animation: monsterFloat 1.8s ease-in-out infinite;
+}
+.monster-deco .monster-emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+}
+@keyframes monsterFloat {
+  0%, 100% { transform: translateY(0) scale(1);    }
+  50%      { transform: translateY(-6px) scale(1.05); }
+}
+.monster-deco.pop .monster-emoji { animation: monsterPop 0.5s ease forwards; }
+@keyframes monsterPop {
+  0%   { transform: scale(1);   opacity: 1; }
+  40%  { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+.monster-deco.enter .monster-emoji { animation: monsterEnter 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes monsterEnter {
+  0%   { transform: scale(0)   translateY(8px); opacity: 0; }
+  100% { transform: scale(1)   translateY(0);   opacity: 1; }
+}
+
+/* ポワン時に周りに広がる星 */
+.monster-sparkle {
+  position: absolute;
+  font-size: 1rem;
+  pointer-events: none;
+  animation: sparkleOut 0.7s ease-out forwards;
+}
+@keyframes sparkleOut {
+  0%   { transform: translate(0,0) scale(0.6); opacity: 0.9; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.4); opacity: 0; }
+}
+
+/* ===== Row Boss (行クリア時のかわいい行ボス) ===== */
+.row-boss-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; margin: 6px 0 10px;
+}
+.row-boss-emoji {
+  font-size: 3.4rem; line-height: 1;
+  animation: rowBossPop 0.55s cubic-bezier(0.34,1.56,0.64,1),
+             rowBossFloat 1.6s ease-in-out 0.55s infinite;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+}
+.row-boss-speech {
+  font-size: 0.85rem; font-weight: 700; color: #5D4E37;
+  background: #FFF8E7; padding: 4px 10px; border-radius: 12px;
+}
+@keyframes rowBossPop {
+  0%   { transform: scale(0);   }
+  100% { transform: scale(1);   }
+}
+@keyframes rowBossFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
 }
 
 /* ===== Milestone Modal ===== */
@@ -249,7 +353,6 @@ html, body {
   cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
 }
 .ctrl-btn:active { transform: scale(0.95); }
-.btn-clear { background: #FEE2E2; color: #EF4444; }
 .btn-hint  { background: #E0F2FE; color: #0EA5E9; }
 .btn-next  { background: linear-gradient(135deg, var(--accent), #34D399); color: #FFF; }
 
@@ -616,6 +719,12 @@ html, body {
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 <audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
 
+<!-- どんぐりポイント バッジ（常時右上） -->
+<div id="acornBadge" class="acorn-badge">
+  <span class="acorn-icon">🌰</span>
+  <span class="acorn-count" id="acornCount">0</span>
+</div>
+
 <!-- ===== Row Selection Screen ===== -->
 <div id="rowSelectScreen">
   <div class="rs-header">
@@ -640,7 +749,6 @@ html, body {
 
   <div class="mid-col">
     <div class="controls">
-      <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
       <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
     </div>
   </div>
@@ -651,6 +759,7 @@ html, body {
       <div id="demoIndicator">おてほんちゅう</div>
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
       <img class="pono-deco" src="../assets/images/characters/pono/dance/dance_smile.png" alt="ポノ">
+      <div class="monster-deco" id="monsterDeco" aria-hidden="true"><span class="monster-emoji">🍄</span></div>
       <div class="canvas-wrap">
         <div class="hedgehog-wrap">
           <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
@@ -921,7 +1030,6 @@ function showMilestone(count) {
 // ===== DOM =====
 const writerTarget = document.getElementById('writerTarget');
 const canvasContainer = document.getElementById('canvasContainer');
-const btnClear = document.getElementById('btnClear');
 const btnHint = document.getElementById('btnHint');
 const btnNext = document.getElementById('btnNext');
 const strokeNumbers = document.getElementById('strokeNumbers');
@@ -1180,6 +1288,158 @@ function ponoHint() {
   _setPonoPose(pick, 3000);
 }
 
+// ===== もんすたーさん（かわいい討伐演出）=====
+const MONSTERS = [
+  { id: 'mush',  emoji: '🍄' },
+  { id: 'bub',   emoji: '🫧' },
+  { id: 'drg',   emoji: '🐲' },
+  { id: 'star',  emoji: '⭐' },
+  { id: 'bug',   emoji: '🐛' },
+  { id: 'ghost', emoji: '👻' }
+];
+function _monsterForChar(char) {
+  if (!char) return MONSTERS[0];
+  return MONSTERS[char.charCodeAt(0) % MONSTERS.length];
+}
+function _setMonsterForChar(char) {
+  var el = document.getElementById('monsterDeco');
+  if (!el) return;
+  var emojiEl = el.querySelector('.monster-emoji');
+  if (!emojiEl) return;
+  el.classList.remove('pop');
+  var m = _monsterForChar(char);
+  emojiEl.textContent = m.emoji;
+  el.style.visibility = 'visible';
+  // re-trigger enter animation
+  el.classList.remove('enter');
+  void el.offsetWidth;
+  el.classList.add('enter');
+}
+function _playMonsterPop() {
+  var el = document.getElementById('monsterDeco');
+  if (!el) return;
+  var emojiEl = el.querySelector('.monster-emoji');
+  if (!emojiEl) return;
+  // ポワン星パーティクル
+  var rect = el.getBoundingClientRect();
+  var cx = rect.left + rect.width / 2;
+  var cy = rect.top + rect.height / 2;
+  var sparkles = ['✨', '🌟', '✨', '⭐'];
+  for (var i = 0; i < 4; i++) {
+    var sp = document.createElement('div');
+    sp.className = 'monster-sparkle';
+    sp.textContent = sparkles[i];
+    sp.style.left = cx + 'px';
+    sp.style.top  = cy + 'px';
+    sp.style.position = 'fixed';
+    var angle = (i / 4) * Math.PI * 2;
+    sp.style.setProperty('--dx', (Math.cos(angle) * 40) + 'px');
+    sp.style.setProperty('--dy', (Math.sin(angle) * 40) + 'px');
+    document.body.appendChild(sp);
+    (function(node) { setTimeout(function() { node.remove(); }, 800); })(sp);
+  }
+  // 絵文字ポワン
+  el.classList.remove('enter');
+  el.classList.add('pop');
+  // 短い「ぽわん」音（softer than success）
+  try {
+    var ac = (window._audioCtx = window._audioCtx || new (window.AudioContext || window.webkitAudioContext)());
+    var now = ac.currentTime;
+    var osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+    g.gain.setValueAtTime(0.08, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(now); osc.stop(now + 0.22);
+  } catch (e) { /* audio not ready */ }
+  setTimeout(function() {
+    el.style.visibility = 'hidden';
+    el.classList.remove('pop');
+  }, 500);
+}
+
+// 行ボス（行クリア時のちょっと大きめのかわいい子）
+const ROW_BOSSES = {
+  'あ': '🌸', 'か': '🐰', 'さ': '⭐', 'た': '🦋', 'な': '🌙',
+  'は': '🍀', 'ま': '🌈', 'や': '🐥', 'ら': '🐟', 'わ': '🍎'
+};
+function _bossEmojiForRow(rowLabel) {
+  return ROW_BOSSES[rowLabel] || '🌸';
+}
+
+// ===== どんぐりポイント =====
+// 各文字でミス0を判定するためのフラグ（createWriter 時にリセット、onMistake で false）
+let _perfectCurrentChar = true;
+// acorn コンボ（3連/5連ボーナス用。streak とは別管理で行練習/通常両方で共有）
+let _acornCombo = 0;
+
+function _syncAcornBadge() {
+  var countEl = document.getElementById('acornCount');
+  if (!countEl) return;
+  var v = (typeof window.getAcorns === 'function') ? window.getAcorns() : 0;
+  countEl.textContent = String(v);
+}
+
+function _popAcornBadge() {
+  var b = document.getElementById('acornBadge');
+  if (!b) return;
+  b.classList.remove('pop');
+  void b.offsetWidth;
+  b.classList.add('pop');
+  setTimeout(function() { b.classList.remove('pop'); }, 400);
+}
+
+// 獲得時のチップが画面上を飛ぶ演出（キャンバス中央 → バッジ）
+function _showAcornBurst(amount) {
+  var badge = document.getElementById('acornBadge');
+  var canvas = document.getElementById('canvasContainer');
+  if (!badge || !canvas) return;
+  var cRect = canvas.getBoundingClientRect();
+  var bRect = badge.getBoundingClientRect();
+  var startX = cRect.left + cRect.width / 2;
+  var startY = cRect.top  + cRect.height / 2;
+  var endX   = bRect.left + bRect.width / 2;
+  var endY   = bRect.top  + bRect.height / 2;
+
+  var chip = document.createElement('div');
+  chip.className = 'acorn-chip';
+  chip.textContent = '🌰 +' + amount;
+  chip.style.left = (startX - 30) + 'px';
+  chip.style.top  = (startY - 14) + 'px';
+  document.body.appendChild(chip);
+
+  // 次フレームで目標位置へ transition
+  requestAnimationFrame(function() {
+    var dx = endX - startX;
+    var dy = endY - startY;
+    chip.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(0.6)';
+    chip.style.opacity = '0';
+  });
+  setTimeout(function() { chip.remove(); }, 800);
+}
+
+function _awardAcorns(isPerfect) {
+  if (typeof window.addAcorns !== 'function') return;
+  _acornCombo++;
+  var earned = 1;
+  if (isPerfect) earned += 1;
+  if (_acornCombo % 5 === 0) earned += 2;
+  else if (_acornCombo % 3 === 0) earned += 1;
+  window.addAcorns(earned, { reason: 'writing_char' });
+  _showAcornBurst(earned);
+}
+
+// 初期同期 + acorn 変更イベントで自動更新
+window.addEventListener('pono-acorns-changed', function() {
+  _syncAcornBadge();
+  _popAcornBadge();
+});
+document.addEventListener('DOMContentLoaded', _syncAcornBadge);
+// すでに DOMContentLoaded 済みでも一度走らせる
+setTimeout(_syncAcornBadge, 0);
+
 function showCompletion() {
   playSuccessSound();
   launchConfetti();
@@ -1193,6 +1453,8 @@ function showCompletion() {
   updateStreakBadge();
   if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 800);
   ponoCheer();                     // ← 正解リアクション
+  _playMonsterPop();               // ← もんすたーさんポワン
+  _awardAcorns(_perfectCurrentChar); // ← どんぐり獲得
   _preloadWordAudio();
   setTimeout(showWordCard, 800);
 
@@ -1262,6 +1524,10 @@ function createWriter(char) {
 
   currentCharData = null;
   strokeNumbers.innerHTML = '';
+
+  // 文字ごとのミス0フラグをリセット、もんすたーさんも差し替え
+  _perfectCurrentChar = true;
+  _setMonsterForChar(char);
 
   writer = HanziWriter.create(writerTarget, char, {
     width: size,
@@ -1411,7 +1677,7 @@ function startQuiz() {
       showCompletion();
     },
     onMistake: function(data) {
-      // Small vibrate feedback if available
+      _perfectCurrentChar = false;
     },
     showHintAfterMisses: 3,
     highlightOnComplete: true,
@@ -1599,12 +1865,15 @@ function _rowPracticeNextChar() {
           _ponoBubble.textContent = 'かいてみよう！';
           writer.quiz({
             onCorrectStroke: function() { playStrokeSound(); },
+            onMistake: function() { _perfectCurrentChar = false; },
             onComplete: function() {
             if (!_rowPracticeActive) return;
             playSuccessSound();
             launchConfetti();
             saveStamp(currentCategory, currentCharIndex);
             markCharDone(currentCharIndex);
+            _playMonsterPop();
+            _awardAcorns(_perfectCurrentChar);
             if (window.incrementStat) {
               window.incrementStat('writing_chars', 1);
               if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
@@ -1666,19 +1935,52 @@ function _showRowPracticeWord(char, data, onDone) {
 function _rowPracticeComplete() {
   _rowPracticeActive = false;
   _rowPracticePhase = 'done';
+  // 行クリアボーナス +5🌰
+  if (typeof window.addAcorns === 'function') {
+    window.addAcorns(5, { reason: 'writing_row_clear' });
+  }
+  var rowLabel = _rowPracticeRow.label;
+  var bossEmoji = _bossEmojiForRow(rowLabel);
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(93,78,55,0.5);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;';
   var card = document.createElement('div');
   card.style.cssText = 'background:#fff;border-radius:28px;padding:32px 28px;text-align:center;width:min(88vw,340px);box-shadow:0 12px 48px rgba(93,78,55,0.25);';
-  var rowLabel = _rowPracticeRow.label;
   card.innerHTML =
-    '<div style="font-size:4rem;margin-bottom:12px;">🌟</div>' +
-    '<div style="font-size:1.4rem;font-weight:900;color:#FF6B9D;margin-bottom:8px;">よく がんばったね！</div>' +
-    '<div style="font-size:1rem;font-weight:700;color:#5D4E37;margin-bottom:16px;">' + rowLabel + 'ぎょう クリア！</div>' +
+    '<div class="row-boss-wrap">' +
+      '<div class="row-boss-emoji">' + bossEmoji + '</div>' +
+      '<div class="row-boss-speech">ありがと〜！またね〜🌰</div>' +
+    '</div>' +
+    '<div style="font-size:3rem;margin:6px 0;">🌟</div>' +
+    '<div style="font-size:1.4rem;font-weight:900;color:#FF6B9D;margin-bottom:6px;">よく がんばったね！</div>' +
+    '<div style="font-size:1rem;font-weight:700;color:#5D4E37;margin-bottom:8px;">' + rowLabel + 'ぎょう クリア！</div>' +
+    '<div style="font-size:1.05rem;font-weight:900;color:#8B6F47;margin-bottom:16px;">🌰 +5 ゲット！</div>' +
     '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">やったー！</button>';
   ov.appendChild(card);
   document.body.appendChild(ov);
   launchConfetti();
+  // ボスの周りにどんぐりが舞うミニ演出
+  setTimeout(function() {
+    var bossEl = card.querySelector('.row-boss-emoji');
+    if (!bossEl) return;
+    var bRect = bossEl.getBoundingClientRect();
+    var cx = bRect.left + bRect.width / 2;
+    var cy = bRect.top + bRect.height / 2;
+    for (var i = 0; i < 5; i++) {
+      var sp = document.createElement('div');
+      sp.className = 'monster-sparkle';
+      sp.textContent = '🌰';
+      sp.style.position = 'fixed';
+      sp.style.left = cx + 'px';
+      sp.style.top  = cy + 'px';
+      sp.style.fontSize = '1.3rem';
+      sp.style.zIndex = '1201';
+      var angle = (i / 5) * Math.PI * 2;
+      sp.style.setProperty('--dx', (Math.cos(angle) * 60) + 'px');
+      sp.style.setProperty('--dy', (Math.sin(angle) * 60) + 'px');
+      document.body.appendChild(sp);
+      (function(node) { setTimeout(function() { node.remove(); }, 800); })(sp);
+    }
+  }, 400);
   card.querySelector('button').addEventListener('click', function() {
     ov.remove();
     returnToSelect();
@@ -1867,21 +2169,6 @@ if (window.visualViewport) {
 fixViewportHeight();
 
 // ===== Button handlers =====
-btnClear.addEventListener('click', () => {
-  // Ignore during word context phase
-  if (document.getElementById('wordContextWrap')) return;
-  if (!writer) return;
-  // 行練習モード: 同じ文字をやり直し（デモ→クイズを再実行）
-  // createWriter だけだと _rowPracticeActive=true のため quiz が始まらないバグがあった
-  if (_rowPracticeActive) {
-    _rowPracticeNextChar();
-    return;
-  }
-  // 通常モード: お手本→クイズの流れを createWriter 内で再実行
-  writerTarget.innerHTML = '';
-  const char = getCurrentChar();
-  createWriter(char);
-});
 
 btnHint.addEventListener('click', () => {
   // Ignore during word context phase or demo phase
@@ -1899,10 +2186,13 @@ btnHint.addEventListener('click', () => {
       if (_rowPracticeActive && _rowPracticePhase === 'quiz_guided') {
         writer.quiz({
           onCorrectStroke: function() { playStrokeSound(); },
+          onMistake: function() { _perfectCurrentChar = false; },
           onComplete: function() {
             if (!_rowPracticeActive) return;
             playSuccessSound();
             launchConfetti();
+            _playMonsterPop();
+            _awardAcorns(_perfectCurrentChar);
             saveStamp(currentCategory, currentCharIndex);
             markCharDone(currentCharIndex);
             if (window.incrementStat) {
@@ -2035,10 +2325,13 @@ function showTutorial() {
               _ponoBubble.textContent = 'かいてみよう！';
               writer.quiz({
                 onCorrectStroke: function() { playStrokeSound(); },
+                onMistake: function() { _perfectCurrentChar = false; },
                 onComplete: function() {
                   if (!_rowPracticeActive) return;
                   playSuccessSound();
                   launchConfetti();
+                  _playMonsterPop();
+                  _awardAcorns(_perfectCurrentChar);
                   saveStamp(currentCategory, currentCharIndex);
                   markCharDone(currentCharIndex);
                   if (window.incrementStat) {
