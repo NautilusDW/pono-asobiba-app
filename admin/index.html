@@ -6769,7 +6769,11 @@ function _renderStagingIllust(container, creatureLookup) {
 
         var normFile = entry.expressions && entry.expressions.normal;
         if (Array.isArray(normFile)) normFile = normFile[0];
-        var imgSrc = normFile ? stagingImgUrl(entry.folder, normFile) : '';
+        // Netlify ビルド完了前でもプレビューできるように、アップロード時に保存した
+        // base64 キャッシュ (window._stagingImageCache) があれば優先して使う。
+        var cacheKey = entry.folder + '/' + normFile;
+        var cachedSrc = (window._stagingImageCache && window._stagingImageCache[cacheKey]) || null;
+        var imgSrc = cachedSrc || (normFile ? stagingImgUrl(entry.folder, normFile) : '');
 
         // サムネイル（クリックで拡大）
         if (imgSrc) {
@@ -6778,8 +6782,30 @@ function _renderStagingIllust(container, creatureLookup) {
           img.className = 'checker-bg';
           img.style.cssText = 'width:64px;height:64px;object-fit:contain;border-radius:6px;cursor:zoom-in;';
           img.title = 'クリックで拡大';
-          img.onerror = function() { this.style.display = 'none'; };
-          img.addEventListener('click', function() { showImagePreview(imgSrc, entry.displayName || entry.id); });
+          // Netlify ビルド中などで Live URL が 404 のときは、GitHub Contents API で
+          // base64 を取得して data URI にする (private repo でも PAT 経由で読める)。
+          img.onerror = (function(folder, file) {
+            return function() {
+              var self = this;
+              if (self.dataset.fellBack) { self.style.display = 'none'; return; }
+              self.dataset.fellBack = '1';
+              var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + folder + '/' + file + '?ref=' + GH_BRANCH;
+              fetch(apiUrl, { headers: ghHeaders(), cache: 'no-store' })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(d) {
+                  if (d && d.content) {
+                    var dataUrl = 'data:image/png;base64,' + d.content.replace(/\n/g, '');
+                    window._stagingImageCache = window._stagingImageCache || {};
+                    window._stagingImageCache[folder + '/' + file] = dataUrl;
+                    self.src = dataUrl;
+                  } else {
+                    self.style.display = 'none';
+                  }
+                })
+                .catch(function() { self.style.display = 'none'; });
+            };
+          })(entry.folder, normFile);
+          img.addEventListener('click', function() { showImagePreview(img.src, entry.displayName || entry.id); });
           card.appendChild(img);
         }
 
@@ -7068,6 +7094,10 @@ function openLocalStagingImportModal() {
 
             return ghUploadPromise(filePath, e.base64, '📁 local staging: ' + e.id + ' / ' + fileName)
               .then(function() {
+                // Netlify ビルド完了前でも差し替え候補 UI でプレビューできるよう、
+                // アップロード時の base64 をセッションキャッシュに入れておく。
+                window._stagingImageCache = window._stagingImageCache || {};
+                window._stagingImageCache[folder + '/' + fileName] = 'data:image/png;base64,' + e.base64;
                 var entry = {
                   id: e.id,
                   displayName: e.displayName,
