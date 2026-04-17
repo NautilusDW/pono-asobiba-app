@@ -2712,6 +2712,94 @@
       "reactionSpeed": 1,
       "reactionDuration": 1,
       "rewardType": "sea"
+    },
+    {
+      "id": "iguanodon",
+      "displayName": "イグアノドン",
+      "icon": "🎨",
+      "folder": "Iguanodon",
+      "expressions": {
+        "normal": "Iguanodon_normal_1.png",
+        "surprised": "Iguanodon_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 200,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 1,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "dimetrodon_prehistoric_creature",
+      "displayName": "ディメトロドン",
+      "icon": "🦎",
+      "folder": "Dimetrodon_prehistoric_creature",
+      "expressions": {
+        "normal": "Dimetrodon_prehistoric_creature_normal_1.png",
+        "surprised": "Dimetrodon_prehistoric_creature_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 200,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 1,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "mosasaurus_marine_dino",
+      "displayName": "モササウルス",
+      "icon": "🌊",
+      "folder": "Mosasaurus_marine_dino",
+      "expressions": {
+        "normal": "Mosasaurus_marine_dino_normal_1.png",
+        "surprised": "Mosasaurus_marine_dino_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 200,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 1,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
+    },
+    {
+      "id": "allosaurus_dino",
+      "displayName": "アロサウルス",
+      "icon": "🦖",
+      "folder": "Allosaurus_dino",
+      "expressions": {
+        "normal": "Allosaurus_dino_normal_1.png",
+        "surprised": "Allosaurus_dino_normal_1.png"
+      },
+      "pattern": "swim",
+      "reactionType": "jump",
+      "facingDir": "right",
+      "baseSizePx": 70,
+      "baseSizeJitter": 30,
+      "imgWidthHint": 200,
+      "speedMin": 0.04,
+      "speedMax": 0.07,
+      "spawnCount": 1,
+      "reactionSpeed": 1,
+      "reactionDuration": 1,
+      "rewardType": "sea"
     }
   ]
 }
