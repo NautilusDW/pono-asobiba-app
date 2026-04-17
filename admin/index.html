@@ -775,13 +775,21 @@ tr:hover { background: #FFFAF0; }
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
       <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">話者</label>
       <select id="tts-voice-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
-        <option value="ja-JP-Neural2-B">Neural2-B（やさしい女声・おすすめ）</option>
-        <option value="ja-JP-Neural2-C">Neural2-C（明るい男声）</option>
-        <option value="ja-JP-Neural2-D">Neural2-D（落ち着き男声）</option>
-        <option value="ja-JP-Wavenet-A">Wavenet-A（女声バリエ）</option>
-        <option value="ja-JP-Wavenet-B">Wavenet-B（女声バリエ）</option>
-        <option value="ja-JP-Wavenet-C">Wavenet-C（男声バリエ）</option>
-        <option value="ja-JP-Standard-A">Standard-A（標準・安価）</option>
+        <option value="Leda">Leda（やさしい女声・おすすめ）</option>
+        <option value="Aoede">Aoede（女声・落ち着き）</option>
+        <option value="Callirrhoe">Callirrhoe（女声・明るめ）</option>
+        <option value="Despina">Despina（女声・軽やか）</option>
+        <option value="Zephyr">Zephyr（女声・風のように軽い）</option>
+        <option value="Puck">Puck（男声・明るめ）</option>
+        <option value="Orus">Orus（男声・爽やか）</option>
+        <option value="Kore">Kore（男声・落ち着き）</option>
+      </select>
+      <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">語り口</label>
+      <select id="tts-style-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
+        <option value="[gently]">やさしく（問題文向け）</option>
+        <option value="[cheerfully]">明るく（褒め言葉向け）</option>
+        <option value="[excitedly]">わくわく（盛り上げ向け）</option>
+        <option value="">プレーン（タグなし）</option>
       </select>
       <select id="tts-cat-filter" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;">
         <option value="">すべてのカテゴリー</option>
@@ -1677,11 +1685,30 @@ function showIllustDraftList() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// 🔊 音声ナレーション (Gemini TTS) — 管理ツール統合
+// 🔊 音声ナレーション (Gemini 3.1 Flash TTS) — 管理ツール統合
 // ════════════════════════════════════════════════════════════════
-var TTS_DEFAULT_VOICE   = 'ja-JP-Neural2-B';
-var TTS_ALLOWED_MODELS  = ['gemini-2.5-flash-preview-tts', 'gemini-2.5-flash-tts'];
+var TTS_DEFAULT_VOICE   = 'Leda';
+var TTS_DEFAULT_STYLE   = '[gently]';
+var TTS_ALLOWED_MODELS  = ['gemini-3.1-flash-tts-preview'];
 var TTS_MODEL           = TTS_ALLOWED_MODELS[0];
+// 旧 Cloud TTS voice 名 → Gemini voice へ自動マイグレーション（IndexedDB 互換）
+var TTS_LEGACY_VOICE_MAP = {
+  'ja-JP-Neural2-B':  'Leda',
+  'ja-JP-Neural2-C':  'Puck',
+  'ja-JP-Neural2-D':  'Kore',
+  'ja-JP-Wavenet-A':  'Zephyr',
+  'ja-JP-Wavenet-B':  'Aoede',
+  'ja-JP-Wavenet-C':  'Orus',
+  'ja-JP-Wavenet-D':  'Charon',
+  'ja-JP-Standard-A': 'Despina',
+  'ja-JP-Standard-B': 'Callirrhoe',
+  'ja-JP-Standard-C': 'Puck',
+  'ja-JP-Standard-D': 'Kore'
+};
+function ttsNormalizeVoice(v) {
+  if (!v) return TTS_DEFAULT_VOICE;
+  return TTS_LEGACY_VOICE_MAP[v] || v;
+}
 var TTS_IDB_NAME        = 'pono_tts';
 var TTS_IDB_STORE       = 'drafts';
 var ttsManifest = null;          // {version, voice, entries: {key: {text, hash, file, voice, updatedAt}}}
@@ -1961,8 +1988,11 @@ function ttsRenderTable() {
   for (var i = 0; i < limit; i++) {
     var r = visible[i];
     var existing = ttsManifest && ttsManifest.entries && ttsManifest.entries[r.key];
-    var voice = existing ? existing.voice : (document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE);
+    var voice = ttsNormalizeVoice(existing ? existing.voice : (document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE));
+    var draftEntry = ttsDraftCache.find(function(d) { return d.key === r.key; });
+    var hasPrev = !!(draftEntry && (draftEntry.prevAudioBase64 || draftEntry.prevAudioUrl));
     var tr = document.createElement('tr');
+    tr.setAttribute('data-tts-key', r.key);
     tr.style.borderBottom = '1px solid #F3F4F6';
 
     var tdChk = document.createElement('td');
@@ -2033,6 +2063,24 @@ function ttsRenderTable() {
       dBtn.dataset.key = r.key;
       dBtn.addEventListener('click', function(ev) { ttsPlayDraft(ev.currentTarget.dataset.key); });
       opsWrap.appendChild(dBtn);
+      if (draftEntry && draftEntry.modelUsed) {
+        var mBadge = document.createElement('span');
+        var isFb = !!draftEntry.fallbackUsed;
+        mBadge.style.cssText = 'display:inline-block;padding:2px 6px;border-radius:8px;font-size:0.62rem;font-weight:800;' + (isFb ? 'background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;' : 'background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;');
+        mBadge.textContent = ttsShortModel(draftEntry.modelUsed);
+        mBadge.title = '生成モデル: ' + draftEntry.modelUsed + (isFb ? '（フォールバック）' : '');
+        opsWrap.appendChild(mBadge);
+      }
+    }
+    if (hasPrev) {
+      var prBtn = document.createElement('button');
+      prBtn.type = 'button';
+      prBtn.style.cssText = 'padding:4px 8px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;border-radius:6px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;';
+      prBtn.textContent = '⏮ 前回';
+      prBtn.title = '1つ前のバージョンを再生（聞き比べ用）';
+      prBtn.dataset.key = r.key;
+      prBtn.addEventListener('click', function(ev) { ttsPlayPrevious(ev.currentTarget.dataset.key); });
+      opsWrap.appendChild(prBtn);
     }
     var gBtn = document.createElement('button');
     gBtn.type = 'button';
@@ -2080,15 +2128,44 @@ function escapeHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// --- 現在選択されている語り口（Audio Tag） ---
+function ttsCurrentStyle() {
+  var el = document.getElementById('tts-style-sel');
+  return el ? (el.value || '') : TTS_DEFAULT_STYLE;
+}
+
+// --- モデル名の短縮表示（ログ・トースト向け） ---
+function ttsShortModel(m) {
+  if (!m) return '';
+  if (m.indexOf('gemini-3.1') === 0) return 'Gemini3.1';
+  if (m.indexOf('gemini-2.5') === 0) return 'Gemini2.5';
+  if (m === 'cloud-tts') return 'CloudTTS';
+  return m;
+}
+
 // --- 1件生成 ---
 function ttsGenerateOne(key) {
   var row = ttsRows.find(function(r) { return r.key === key; });
   if (!row) { showToast('行が見つからない: ' + key, false); return; }
   var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
-  ttsProgress('⏳ ' + row.text.slice(0, 20) + '...');
-  ttsCallApi(row.text, voice)
+  var style = ttsCurrentStyle();
+  // 再生成判定: 下書きキャッシュに同 key があれば「前回」として保存
+  var prevDraft = ttsDraftCache.find(function(e) { return e.key === row.key; });
+  var prevAudio = prevDraft ? prevDraft.audioBase64 : null;
+  var prevVoice = prevDraft ? prevDraft.voice : null;
+  var prevStyle = prevDraft ? prevDraft.stylePrompt : null;
+  // 既存 manifest（GitHub 配信済み）も「前回」候補
+  var existing = ttsManifest && ttsManifest.entries && ttsManifest.entries[row.key];
+  var prevRemoteUrl = (!prevAudio && existing && _ttsValidFile(existing.file))
+    ? ('../assets/tts/' + existing.file) : null;
+  var isRegen = !!(prevAudio || prevRemoteUrl);
+  var startedAt = Date.now();
+  ttsProgress((isRegen ? '🔁 再生成中 ' : '⏳ 生成中 ') + row.text.slice(0, 20) + '...');
+  var lastResp = null;
+  ttsCallApi(row.text, voice, 1, style)
     .then(function(resp) {
       if (!resp || !resp.audio) throw new Error('音声データなし');
+      lastResp = resp;
       var file = 'quizland/' + row.hash + '.wav';
       return _addToTtsDraftQueue({
         key: row.key,
@@ -2096,14 +2173,30 @@ function ttsGenerateOne(key) {
         file: file,
         text: row.text,
         voice: voice,
+        stylePrompt: style,
+        modelUsed: resp.model || null,
+        fallbackUsed: !!resp.fallbackUsed,
         audioBase64: resp.audio,
+        prevAudioBase64: prevAudio || null,
+        prevAudioUrl: prevRemoteUrl || null,
+        prevVoice: prevVoice || null,
+        prevStyle: prevStyle || null,
         updatedAt: new Date().toISOString()
       });
     })
     .then(function() {
-      ttsProgress('✅ ' + row.text.slice(0, 20));
+      var sec = ((Date.now() - startedAt) / 1000).toFixed(1);
+      var tag = isRegen ? '🔁 再生成完了' : '✅ 生成完了';
+      var modelTag = lastResp && lastResp.model ? (' [' + ttsShortModel(lastResp.model) + (lastResp.fallbackUsed ? '・代替' : '') + ']') : '';
+      ttsProgress(tag + '（' + sec + '秒）' + modelTag + ': ' + row.text.slice(0, 20));
       ttsRenderTable();
       ttsRenderDraftBar();
+      ttsFlashRow(row.key);
+      if (isRegen) {
+        showToast('🔁 上書き完了' + modelTag + ' — 表のハイライト行で ▶ 下書き / ⏮ 前回 を聞き比べできます', true);
+      } else {
+        showToast('✅ 生成完了（' + sec + '秒）' + modelTag, true);
+      }
     })
     .catch(function(e) {
       ttsProgress('');
@@ -2111,14 +2204,32 @@ function ttsGenerateOne(key) {
     });
 }
 
+// --- 生成直後に行をハイライトして「どれが更新されたか」を明示 ---
+function ttsFlashRow(key) {
+  setTimeout(function() {
+    var rows = document.querySelectorAll('tr[data-tts-key]');
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute('data-tts-key') === key) {
+        var el = rows[i];
+        el.style.transition = 'background-color 1.2s ease-out';
+        el.style.backgroundColor = '#FEF3C7';
+        setTimeout(function() { el.style.backgroundColor = ''; }, 2500);
+        try { el.scrollIntoView({behavior:'smooth', block:'center'}); } catch(_) {}
+        break;
+      }
+    }
+  }, 30);
+}
+
 // --- API 呼び出し（リトライ付き・指数バックオフ） ---
-function ttsCallApi(text, voice, attempt) {
+function ttsCallApi(text, voice, attempt, stylePrompt) {
   attempt = attempt || 1;
   var maxAttempts = 3;
+  var style = (typeof stylePrompt === 'string') ? stylePrompt : ttsCurrentStyle();
   return fetch('/.netlify/functions/ai-tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, voice: voice, model: TTS_MODEL })
+    body: JSON.stringify({ text: text, voice: ttsNormalizeVoice(voice), stylePrompt: style, model: TTS_MODEL })
   }).then(function(r) {
     return r.json().then(function(data) {
       if (!r.ok) {
@@ -2133,7 +2244,7 @@ function ttsCallApi(text, voice, attempt) {
               if (ttsStopRequested) rej(new Error('中断されました'));
               else res();
             }, wait);
-          }).then(function() { return ttsCallApi(text, voice, attempt + 1); });
+          }).then(function() { return ttsCallApi(text, voice, attempt + 1, style); });
         }
         var msg = data.error || ('HTTP ' + r.status);
         if (r.status === 429) msg = 'クォータ到達（' + msg + '）— 時間を置くかAPI設定を確認してください';
@@ -2171,6 +2282,7 @@ function ttsGenerateChecked() {
 // --- 逐次処理本体（ttsGenerateVisible / ttsGenerateChecked 共通） ---
 function _ttsRunBatch(targets) {
   var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
+  var style = ttsCurrentStyle();
   ttsGenerating = true;
   ttsStopRequested = false;
   ttsLastError = '';
@@ -2193,20 +2305,32 @@ function _ttsRunBatch(targets) {
     }
     var r = targets[i];
     ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20) + ' (成功' + done + '/失敗' + failed + ')');
-    ttsCallApi(r.text, voice)
+    ttsCallApi(r.text, voice, 1, style)
       .then(function(resp) {
         if (!resp || !resp.audio) throw new Error('音声データなし');
         if (ttsStopRequested) return;
         var file = 'quizland/' + r.hash + '.wav';
         var adds = ttsRows.filter(function(rr) { return rr.hash === r.hash; })
           .map(function(rr) {
+            var prev = ttsDraftCache.find(function(d) { return d.key === rr.key; });
+            var prevAudio = prev ? prev.audioBase64 : null;
+            var existingEntry = ttsManifest && ttsManifest.entries && ttsManifest.entries[rr.key];
+            var prevUrl = (!prevAudio && existingEntry && _ttsValidFile(existingEntry.file))
+              ? ('../assets/tts/' + existingEntry.file) : null;
             return _addToTtsDraftQueue({
               key: rr.key,
               hash: rr.hash,
               file: file,
               text: rr.text,
               voice: voice,
+              stylePrompt: style,
+              modelUsed: resp.model || null,
+              fallbackUsed: !!resp.fallbackUsed,
               audioBase64: resp.audio,
+              prevAudioBase64: prevAudio || null,
+              prevAudioUrl: prevUrl || null,
+              prevVoice: prev ? prev.voice : null,
+              prevStyle: prev ? prev.stylePrompt : null,
               updatedAt: new Date().toISOString()
             });
           });
@@ -2269,6 +2393,7 @@ function ttsGenerateVisible() {
   if (!confirm(targets.length + ' 件（重複除外後）を Gemini TTS で生成します。数分かかります。よろしいですか？')) return;
 
   var voice = document.getElementById('tts-voice-sel').value || TTS_DEFAULT_VOICE;
+  var style = ttsCurrentStyle();
   ttsGenerating = true;
   ttsStopRequested = false;
   document.getElementById('tts-stop-btn').style.display = '';
@@ -2288,7 +2413,7 @@ function ttsGenerateVisible() {
     }
     var r = targets[i];
     ttsProgress('⏳ ' + (i + 1) + '/' + targets.length + ': ' + r.text.slice(0, 20));
-    ttsCallApi(r.text, voice)
+    ttsCallApi(r.text, voice, 1, style)
       .then(function(resp) {
         if (!resp || !resp.audio) throw new Error('音声データなし');
         if (ttsStopRequested) return;
@@ -2296,13 +2421,25 @@ function ttsGenerateVisible() {
         // hash 単位で重複検出済みだが、同一 text を持つ別 key にも適用するため全ヒット行に draft を積む
         var adds = ttsRows.filter(function(rr) { return rr.hash === r.hash; })
           .map(function(rr) {
+            var prev = ttsDraftCache.find(function(d) { return d.key === rr.key; });
+            var prevAudio = prev ? prev.audioBase64 : null;
+            var existingEntry = ttsManifest && ttsManifest.entries && ttsManifest.entries[rr.key];
+            var prevUrl = (!prevAudio && existingEntry && _ttsValidFile(existingEntry.file))
+              ? ('../assets/tts/' + existingEntry.file) : null;
             return _addToTtsDraftQueue({
               key: rr.key,
               hash: rr.hash,
               file: file,
               text: rr.text,
               voice: voice,
+              stylePrompt: style,
+              modelUsed: resp.model || null,
+              fallbackUsed: !!resp.fallbackUsed,
               audioBase64: resp.audio,
+              prevAudioBase64: prevAudio || null,
+              prevAudioUrl: prevUrl || null,
+              prevVoice: prev ? prev.voice : null,
+              prevStyle: prev ? prev.stylePrompt : null,
               updatedAt: new Date().toISOString()
             });
           });
@@ -2352,6 +2489,17 @@ function ttsPlayDraft(key) {
   var e = ttsDraftCache.find(function(x) { return x.key === key; });
   if (!e || !e.audioBase64) return;
   var a = new Audio('data:audio/wav;base64,' + e.audioBase64);
+  a.volume = 0.9;
+  a.play().catch(function(err) { showToast('再生失敗: ' + err.message, false); });
+}
+function ttsPlayPrevious(key) {
+  var e = ttsDraftCache.find(function(x) { return x.key === key; });
+  if (!e) { showToast('前回の音声が見つかりません', false); return; }
+  var src = null;
+  if (e.prevAudioBase64) src = 'data:audio/wav;base64,' + e.prevAudioBase64;
+  else if (e.prevAudioUrl) src = e.prevAudioUrl;
+  if (!src) { showToast('前回の音声が見つかりません', false); return; }
+  var a = new Audio(src);
   a.volume = 0.9;
   a.play().catch(function(err) { showToast('再生失敗: ' + err.message, false); });
 }
