@@ -18,7 +18,9 @@
       "WebFetch(domain:docs.cloud.google.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:pono-dev--pono-asobiba.netlify.live)",
-      "WebFetch(domain:pono-asobiba.netlify.app)"
+      "WebFetch(domain:pono-asobiba.netlify.app)",
+      "Bash(mkdir -p ~/.claude/sessions)",
+      "Read(//c/Users/surfe/.claude/sessions/**)"
     ]
   },
   "hooks": {
