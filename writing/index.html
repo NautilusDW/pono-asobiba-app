@@ -661,6 +661,64 @@ html, body {
   100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
 }
 
+/* ===== Magic Circle ===== */
+.magic-container {
+  position: fixed; inset: 0; pointer-events: none; z-index: 998; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.magic-circle {
+  position: absolute;
+  width: min(70vw, 70vh); aspect-ratio: 1;
+  opacity: 0;
+  filter: drop-shadow(0 0 18px rgba(255, 220, 120, 0.85))
+          drop-shadow(0 0 40px rgba(180, 120, 255, 0.55));
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+.magic-circle.l1 { animation: magic-rotate-cw  2600ms cubic-bezier(0.2,0.8,0.2,1) forwards; }
+.magic-circle.l2 { animation: magic-rotate-ccw 2600ms cubic-bezier(0.2,0.8,0.2,1) forwards; width: min(50vw, 50vh); }
+.magic-circle.l3 { animation: magic-rotate-cw  2600ms cubic-bezier(0.2,0.8,0.2,1) forwards; width: min(32vw, 32vh); }
+
+@keyframes magic-rotate-cw {
+  0%   { opacity: 0; transform: rotate(-60deg) scale(0.3); }
+  25%  { opacity: 0.95; transform: rotate(90deg) scale(1.05); }
+  75%  { opacity: 0.95; transform: rotate(300deg) scale(1); }
+  100% { opacity: 0; transform: rotate(420deg) scale(1.25); }
+}
+@keyframes magic-rotate-ccw {
+  0%   { opacity: 0; transform: rotate(60deg) scale(0.3); }
+  25%  { opacity: 0.9; transform: rotate(-90deg) scale(1.1); }
+  75%  { opacity: 0.9; transform: rotate(-300deg) scale(1); }
+  100% { opacity: 0; transform: rotate(-420deg) scale(1.3); }
+}
+
+.magic-particle {
+  position: absolute; top: 50%; left: 50%;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: radial-gradient(circle, #FFF 0%, #FFE27A 40%, rgba(255,180,80,0.0) 75%);
+  box-shadow: 0 0 10px #FFE27A, 0 0 20px #FFB84D;
+  will-change: transform, opacity;
+  animation: magic-particle-fly 1800ms cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+@keyframes magic-particle-fly {
+  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.1); opacity: 0; }
+}
+
+.magic-flash {
+  position: absolute; top: 50%; left: 50%;
+  width: 20vmin; height: 20vmin; border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,220,130,0.5) 40%, rgba(180,120,255,0) 75%);
+  animation: magic-flash-burst 900ms ease-out forwards;
+}
+@keyframes magic-flash-burst {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
+}
+
 /* ===== Completion Overlay ===== */
 .completion-overlay {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -1105,6 +1163,7 @@ html, body {
 </div>
 
 <div class="confetti-container" id="confettiContainer"></div>
+<div class="magic-container" id="magicContainer"></div>
 <div class="completion-overlay" id="completionOverlay">
   <div class="completion-msg">できた！🎉</div>
 </div>
@@ -1433,6 +1492,58 @@ function playStrokeSound() {
     osc.connect(gain); gain.connect(ac.destination);
     osc.start(now); osc.stop(now + 0.15);
   });
+}
+
+// ===== Magic Circle =====
+const MAGIC_SRCS = [
+  '../assets/images/magic/魔法陣_001.png',
+  '../assets/images/magic/魔法陣_002.png',
+  '../assets/images/magic/魔法陣_003.png',
+  '../assets/images/magic/魔法陣_004.png',
+  '../assets/images/magic/魔法陣_005.png'
+];
+function launchMagicCircle() {
+  const c = document.getElementById('magicContainer');
+  if (!c) return;
+  alignOverlayToCanvas(c);
+  c.innerHTML = '';
+
+  // 3 layered circles (different images, alternating rotation)
+  const pool = MAGIC_SRCS.slice().sort(() => Math.random() - 0.5);
+  const layers = ['l1', 'l2', 'l3'];
+  layers.forEach((cls, i) => {
+    const img = document.createElement('img');
+    img.src = pool[i % pool.length];
+    img.className = 'magic-circle ' + cls;
+    img.alt = '';
+    c.appendChild(img);
+  });
+
+  // Central flash
+  const flash = document.createElement('div');
+  flash.className = 'magic-flash';
+  c.appendChild(flash);
+
+  // Particles — radiate out from center
+  const N = 28;
+  for (let i = 0; i < N; i++) {
+    const p = document.createElement('div');
+    p.className = 'magic-particle';
+    const angle = (i / N) * Math.PI * 2 + Math.random() * 0.3;
+    const dist = 180 + Math.random() * 220;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    p.style.setProperty('--dx', dx + 'px');
+    p.style.setProperty('--dy', dy + 'px');
+    p.style.animationDelay = (Math.random() * 0.3) + 's';
+    const hue = Math.random() < 0.5
+      ? 'radial-gradient(circle, #FFF 0%, #FFE27A 40%, rgba(255,180,80,0) 75%)'
+      : 'radial-gradient(circle, #FFF 0%, #C4A1FF 40%, rgba(180,120,255,0) 75%)';
+    p.style.background = hue;
+    c.appendChild(p);
+  }
+
+  setTimeout(() => { c.innerHTML = ''; }, 2800);
 }
 
 // ===== Confetti =====
@@ -2053,6 +2164,7 @@ setTimeout(_syncAcornBadge, 0);
 
 function showCompletion() {
   playSuccessSound();
+  launchMagicCircle();
   launchConfetti();
   // 「できた！🎉」オーバーレイは救出演出(0-2300ms)を妨げないように遅延表示
   setTimeout(() => {
