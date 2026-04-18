@@ -1481,13 +1481,13 @@ function showWordCard() {
   }
   clearTimeout(_wordCardTimer);
   card.classList.remove('show', 'hide');
-  // 横向き: キャンバス中央に配置
+  // 横向き: キャンバス外（下寄り）に配置して妖精救出演出を隠さない
   if (landscapeMQ.matches) {
     const rect = canvasContainer.getBoundingClientRect();
     card.style.left = (rect.left + rect.width / 2) + 'px';
-    card.style.bottom = 'auto';
-    card.style.top = (rect.top + rect.height / 2) + 'px';
-    card.style.transform = 'translate(-50%, -50%)';
+    card.style.top = 'auto';
+    card.style.bottom = `calc(100vh - ${rect.bottom}px + 12px)`;
+    card.style.transform = 'translateX(-50%)';
   } else {
     card.style.left = '50%';
     card.style.bottom = '120px';

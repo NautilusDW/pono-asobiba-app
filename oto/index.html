@@ -153,108 +153,6 @@
   .instr-btn[data-idx="6"] { left: 66%; top: 78%; --sz: 108px; }
   .instr-btn[data-idx="7"] { left: 88%; top: 62%; --sz: 108px; }
 
-  /* 横画面: 左1/3 にコントロール(単音/コード・音色・伴奏・録音), 右2/3 が演奏エリア */
-  @media (orientation: landscape) {
-    /* 8 ボタンを右 2/3 に楕円配置 */
-    .instr-btn[data-idx="0"] { left: 44%; top: 32%; --sz: 88px; }
-    .instr-btn[data-idx="1"] { left: 58%; top: 16%; --sz: 92px; }
-    .instr-btn[data-idx="2"] { left: 78%; top: 16%; --sz: 92px; }
-    .instr-btn[data-idx="3"] { left: 92%; top: 32%; --sz: 88px; }
-    .instr-btn[data-idx="4"] { left: 44%; top: 74%; --sz: 88px; }
-    .instr-btn[data-idx="5"] { left: 58%; top: 90%; --sz: 92px; }
-    .instr-btn[data-idx="6"] { left: 78%; top: 90%; --sz: 92px; }
-    .instr-btn[data-idx="7"] { left: 92%; top: 74%; --sz: 88px; }
-    /* ポノも右 2/3 の中央へ */
-    .pono-wrap {
-      left: 68%;
-      width: 220px; height: 170px;
-    }
-    .pono-sprite { height: 160px; }
-
-    /* コード/単音ピル: 左上端に寄せる */
-    .chord-pill {
-      top: max(8px, env(safe-area-inset-top));
-      left: 8px;
-      transform: none;
-      padding: 3px;
-      gap: 3px;
-    }
-    .chord-pill-btn {
-      min-width: 60px;
-      padding: 6px 10px;
-      font-size: 0.8rem;
-    }
-
-    /* 音色 ねいろ: 左パネル上部、横並び折返し (3×2) */
-    .sound-sets-box {
-      top: 64px; left: 8px; transform: none;
-      padding: 4px 8px 6px;
-      max-width: 200px;
-    }
-    .sound-sets {
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 5px;
-      justify-content: center;
-      max-width: 182px;
-    }
-    .sound-sets .set-btn {
-      width: 38px; height: 38px;
-      font-size: 1.1rem;
-    }
-
-    /* 伴奏 ばんそう: 左パネル中央〜下、コンパクト化 */
-    .band-group {
-      bottom: max(68px, calc(env(safe-area-inset-bottom) + 68px));
-      left: 8px; transform: none;
-      padding: 5px 8px 7px;
-      gap: 5px;
-      max-width: 200px;
-    }
-    .band-group-label { font-size: 0.62rem; }
-    .band-group .song-btn {
-      min-width: 50px; height: 40px;
-      padding: 2px 6px;
-    }
-    .band-group .song-btn-cap { font-size: 0.5rem; }
-    .band-group .song-btn-val { font-size: 0.72rem; }
-    .band-group .speed-btn {
-      padding: 6px 8px;
-      font-size: 0.72rem;
-      border-width: 2px;
-    }
-    .band-row { gap: 5px; }
-    .speed-row { gap: 4px; }
-
-    /* 録音バー: 左パネル最下段 */
-    .rec-bar {
-      bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
-      left: 8px; transform: none;
-      gap: 8px;
-    }
-    .rec-bar .rec-main-btn {
-      min-width: 72px; height: 46px;
-      padding: 0 12px;
-      border-width: 3px;
-    }
-    .rec-bar .rec-main-label { font-size: 0.75rem; }
-    .rec-bar .rec-save-btn {
-      width: 46px; height: 46px;
-      font-size: 1.2rem;
-      border-width: 3px;
-    }
-
-    /* 保存リスト: 右 2/3 の下部のみ (左パネルと被らない) */
-    .saved-list {
-      left: 34%; right: 0;
-      justify-content: flex-start;
-    }
-    /* ループ進行バー: 右 2/3 の下 */
-    .rec-progress {
-      left: 66%; transform: translateX(-50%);
-      width: min(60vw, 420px);
-    }
-  }
   /* 画面が狭い時ボタン縮小 */
   @media (max-width: 420px) {
     .instr-btn { --sz: min(22vw, 110px) !important; }
@@ -789,6 +687,95 @@
     .instr-btn[data-idx="7"] { --sz: 216px; }
     .pono-wrap { width: 420px; height: 380px; }
     .pono-sprite { height: 360px; }
+  }
+
+  /* 横画面: 左1/3 にコントロール(単音/コード・音色・伴奏), 右2/3 が演奏エリア
+     注意: このブロックは base styles の後ろに置くことで landscape で確実に効くようにしている */
+  @media (orientation: landscape) {
+    /* 8 ボタンを右 2/3 に楕円配置 */
+    .instr-btn[data-idx="0"] { left: 44%; top: 32%; --sz: 88px; }
+    .instr-btn[data-idx="1"] { left: 58%; top: 16%; --sz: 92px; }
+    .instr-btn[data-idx="2"] { left: 78%; top: 16%; --sz: 92px; }
+    .instr-btn[data-idx="3"] { left: 92%; top: 32%; --sz: 88px; }
+    .instr-btn[data-idx="4"] { left: 44%; top: 74%; --sz: 88px; }
+    .instr-btn[data-idx="5"] { left: 58%; top: 90%; --sz: 92px; }
+    .instr-btn[data-idx="6"] { left: 78%; top: 90%; --sz: 92px; }
+    .instr-btn[data-idx="7"] { left: 92%; top: 74%; --sz: 88px; }
+    /* ポノも右 2/3 の中央へ */
+    .pono-wrap {
+      left: 68%;
+      width: 220px; height: 170px;
+    }
+    .pono-sprite { height: 160px; }
+
+    /* コード/単音ピル: 左上端に寄せる */
+    .chord-pill {
+      top: max(8px, env(safe-area-inset-top));
+      left: 8px;
+      transform: none;
+      padding: 3px;
+      gap: 3px;
+    }
+    .chord-pill-btn {
+      min-width: 60px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    /* 音色 ねいろ: 左パネル上部、横並び折返し (3×2) */
+    .sound-sets-box {
+      top: 60px;
+      left: 8px;
+      transform: none;
+      padding: 4px 8px 6px;
+      max-width: 200px;
+    }
+    .sound-sets {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      max-width: 182px;
+    }
+    .sound-sets .set-btn {
+      width: 38px; height: 38px;
+      font-size: 1.1rem;
+    }
+
+    /* 伴奏 ばんそう: 左パネル下寄せ、コンパクト化 */
+    .band-group {
+      bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
+      left: 8px;
+      transform: none;
+      padding: 5px 8px 7px;
+      gap: 5px;
+      max-width: 200px;
+    }
+    .band-group-label { font-size: 0.62rem; }
+    .band-group .song-btn {
+      min-width: 50px; height: 40px;
+      padding: 2px 6px;
+    }
+    .band-group .song-btn-cap { font-size: 0.5rem; }
+    .band-group .song-btn-val { font-size: 0.72rem; }
+    .band-group .speed-btn {
+      padding: 5px 8px;
+      font-size: 0.7rem;
+      border-width: 2px;
+    }
+    .band-row { gap: 5px; }
+    .speed-row { gap: 4px; }
+
+    /* 保存リスト: 右 2/3 の下部のみ (左パネルと被らない) */
+    .saved-list {
+      left: 34%; right: 0;
+      justify-content: flex-start;
+    }
+    /* ループ進行バー: 右 2/3 の下 */
+    .rec-progress {
+      left: 66%; transform: translateX(-50%);
+      width: min(60vw, 420px);
+    }
   }
 </style>
 </head>
