@@ -117,18 +117,25 @@ html, body {
   transition: transform 0.7s cubic-bezier(0.34,1.0,0.64,1), opacity 0.7s ease;
 }
 
-/* ===== Monster Deco (もんすたーさん) — canvas-container 内の左上に固定 ===== */
+/* ===== Monster Deco (もんすたーさん) — canvas-container 右下から文字の後ろに覗く ===== */
 .monster-deco {
   position: absolute;
-  top: 6px; left: 6px;
-  width: 72px; height: 72px;
+  right: 10px; bottom: 10px;
+  width: 90px; height: 90px;
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
-  z-index: 3;
-  animation: monsterFloat 1.8s ease-in-out infinite;
+  z-index: 1; /* 文字キャンバスより下（デフォルト） → 書いた線の後ろに隠れる */
+  clip-path: inset(0 0 34% 0);  /* 下 1/3 を隠して「顔だけ覗き」 */
+  animation: monsterFloat 1.8s ease-in-out infinite, monsterWiggle 1.6s ease-in-out infinite;
+  transition: clip-path 0.3s ease, z-index 0s;
+}
+.monster-deco.emerge {
+  clip-path: inset(0);
+  z-index: 5; /* 完了演出では前面へ */
+  animation: none;
 }
 .monster-deco .monster-emoji {
-  font-size: 3rem;
+  font-size: 3.6rem;
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
 }
@@ -140,7 +147,11 @@ html, body {
 }
 @keyframes monsterFloat {
   0%, 100% { transform: translateY(0) scale(1);    }
-  50%      { transform: translateY(-6px) scale(1.05); }
+  50%      { transform: translateY(-4px) scale(1.04); }
+}
+@keyframes monsterWiggle {
+  0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2)); }
+  50%      { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2)) brightness(1.05); }
 }
 .monster-deco.pop .monster-emoji,
 .monster-deco.pop .monster-img { animation: monsterPop 0.5s ease forwards; }
@@ -154,6 +165,89 @@ html, body {
 @keyframes monsterEnter {
   0%   { transform: scale(0)   translateY(8px); opacity: 0; }
   100% { transform: scale(1)   translateY(0);   opacity: 1; }
+}
+/* 完了時: 文字中央にピョコンと飛び出す */
+.monster-deco.emerge .monster-emoji,
+.monster-deco.emerge .monster-img { animation: monsterEmerge 0.5s cubic-bezier(0.34,1.7,0.64,1) forwards; }
+@keyframes monsterEmerge {
+  0%   { transform: translateY(30px) scale(0.6); opacity: 0.4; }
+  60%  { transform: translateY(-10px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(0) scale(1.05); opacity: 1; }
+}
+/* 退場: 右上にスワッと小さく消える */
+.monster-deco.leave .monster-emoji,
+.monster-deco.leave .monster-img { animation: monsterLeave 0.5s ease-in forwards; }
+@keyframes monsterLeave {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  70%  { transform: translate(10px, -14px) scale(0.75); opacity: 0.5; }
+  100% { transform: translate(30px, -40px) scale(0.2); opacity: 0; }
+}
+
+/* 吹き出し */
+.monster-bubble {
+  position: absolute;
+  right: 102px;  /* monsterDeco の左隣 */
+  bottom: 60px;
+  max-width: 170px;
+  background: #fff;
+  border: 2.5px solid #8B7355;
+  border-radius: 14px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #5D4E37;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.6);
+  transform-origin: bottom right;
+  z-index: 6;
+}
+.monster-bubble::after {
+  content: '';
+  position: absolute;
+  right: -10px; bottom: 10px;
+  width: 0; height: 0;
+  border: 8px solid transparent;
+  border-left-color: #8B7355;
+  border-right: 0;
+}
+.monster-bubble::before {
+  content: '';
+  position: absolute;
+  right: -6px; bottom: 12px;
+  width: 0; height: 0;
+  border: 6px solid transparent;
+  border-left-color: #fff;
+  border-right: 0;
+  z-index: 1;
+}
+.monster-bubble.show { animation: bubbleIn 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.monster-bubble.hide { animation: bubbleOut 0.2s ease-in forwards; }
+@keyframes bubbleIn {
+  0%   { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes bubbleOut {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.7); }
+}
+
+/* 完了時の🌰ドロップ（モンスター足元にちょこん） */
+.monster-acorn-drop {
+  position: absolute;
+  right: 32px; bottom: 2px;
+  font-size: 1.6rem;
+  opacity: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+.monster-acorn-drop.show { animation: acornDrop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+@keyframes acornDrop {
+  0%   { opacity: 0; transform: translateY(-28px) scale(0.6) rotate(-20deg); }
+  70%  { opacity: 1; transform: translateY(4px)   scale(1.1) rotate(8deg); }
+  100% { opacity: 1; transform: translateY(0)     scale(1)   rotate(0); }
 }
 
 /* ポワン時に周りに広がる星 */
@@ -775,6 +869,8 @@ html, body {
         </div>
         <div class="canvas-container" id="canvasContainer">
           <div class="monster-deco" id="monsterDeco" aria-hidden="true"><img class="monster-img" id="monsterImg" alt=""><span class="monster-emoji" id="monsterEmoji" style="display:none;">🍄</span></div>
+          <div class="monster-bubble" id="monsterBubble" aria-hidden="true"></div>
+          <div class="monster-acorn-drop" id="monsterAcornDrop" aria-hidden="true">🌰</div>
           <div id="writerTarget"></div>
           <div class="stroke-number-overlay" id="strokeNumbers"></div>
         </div>
@@ -1322,13 +1418,52 @@ function _monsterForChar(char) {
   if (!char) return MONSTERS[0];
   return MONSTERS[char.charCodeAt(0) % MONSTERS.length];
 }
+
+// セリフ（文字のおうちに住んでる物語）
+const MONSTER_LINES = {
+  greet:  ['だれか よんでる〜？', 'ここ、わたしの おうち〜', 'かいてくれる〜？', 'よんでくれた〜？'],
+  thanks: ['ありがとう〜！', 'これ どうぞ〜', 'たすかった〜！', 'うれしい〜！'],
+  bye:    ['またね〜', 'バイバ〜イ']
+};
+function _pickLine(kind) {
+  var arr = MONSTER_LINES[kind] || [];
+  if (!arr.length) return '';
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function _showMonsterBubble(text, durationMs) {
+  var bubble = document.getElementById('monsterBubble');
+  if (!bubble) return;
+  bubble.textContent = text;
+  bubble.classList.remove('hide');
+  void bubble.offsetWidth;
+  bubble.classList.add('show');
+  if (bubble._hideT) clearTimeout(bubble._hideT);
+  bubble._hideT = setTimeout(function() {
+    bubble.classList.remove('show');
+    bubble.classList.add('hide');
+  }, durationMs || 1600);
+}
+function _hideMonsterBubble() {
+  var bubble = document.getElementById('monsterBubble');
+  if (!bubble) return;
+  if (bubble._hideT) { clearTimeout(bubble._hideT); bubble._hideT = null; }
+  if (bubble.classList.contains('show')) {
+    bubble.classList.remove('show');
+    bubble.classList.add('hide');
+  }
+}
+
 function _setMonsterForChar(char) {
   var el = document.getElementById('monsterDeco');
   if (!el) return;
   var imgEl = el.querySelector('.monster-img');
   var emojiEl = el.querySelector('.monster-emoji');
   if (!imgEl || !emojiEl) return;
-  el.classList.remove('pop');
+  el.classList.remove('pop', 'emerge', 'leave');
+  // 足元の🌰 drop を隠す
+  var drop = document.getElementById('monsterAcornDrop');
+  if (drop) { drop.classList.remove('show'); drop.style.opacity = '0'; }
   var m = _monsterForChar(char);
   if (m.img) {
     imgEl.src = m.img;
@@ -1345,16 +1480,31 @@ function _setMonsterForChar(char) {
     emojiEl.textContent = m.emoji;
   }
   el.style.visibility = 'visible';
-  // re-trigger enter animation
+  // re-trigger enter animation（右下から覗く）
   el.classList.remove('enter');
   void el.offsetWidth;
   el.classList.add('enter');
+  // 少し間を置いて「だれか よんでる〜」吹き出し
+  if (el._greetT) clearTimeout(el._greetT);
+  el._greetT = setTimeout(function() {
+    _showMonsterBubble(_pickLine('greet'), 1600);
+  }, 500);
+  // 初回チュートリアル
+  _maybeShowMonsterIntro();
 }
+
 function _playMonsterPop() {
   var el = document.getElementById('monsterDeco');
   if (!el) return;
-  var emojiEl = el.querySelector('.monster-emoji');
-  if (!emojiEl) return;
+  // 子供が書き始めた吹き出しが残っていたら消す
+  _hideMonsterBubble();
+  // 既に進行中なら何もしない
+  if (el.classList.contains('emerge') || el.classList.contains('leave')) return;
+
+  // フェーズ1: 文字から飛び出す（emerge）
+  el.classList.remove('enter', 'pop');
+  el.classList.add('emerge');
+
   // ポワン星パーティクル
   var rect = el.getBoundingClientRect();
   var cx = rect.left + rect.width / 2;
@@ -1373,10 +1523,8 @@ function _playMonsterPop() {
     document.body.appendChild(sp);
     (function(node) { setTimeout(function() { node.remove(); }, 800); })(sp);
   }
-  // 絵文字ポワン
-  el.classList.remove('enter');
-  el.classList.add('pop');
-  // 短い「ぽわん」音（softer than success）
+
+  // 短い「ぽわん」音
   try {
     var ac = (window._audioCtx = window._audioCtx || new (window.AudioContext || window.webkitAudioContext)());
     var now = ac.currentTime;
@@ -1389,10 +1537,63 @@ function _playMonsterPop() {
     osc.connect(g); g.connect(ac.destination);
     osc.start(now); osc.stop(now + 0.22);
   } catch (e) { /* audio not ready */ }
+
+  // フェーズ2: 350ms 後に「ありがとう〜」吹き出し + 🌰ドロップ
+  setTimeout(function() {
+    _showMonsterBubble(_pickLine('thanks'), 900);
+    var drop = document.getElementById('monsterAcornDrop');
+    if (drop) {
+      drop.classList.remove('show');
+      void drop.offsetWidth;
+      drop.classList.add('show');
+    }
+  }, 350);
+
+  // フェーズ3: 1150ms 後に退場 (leave)
+  setTimeout(function() {
+    el.classList.remove('emerge');
+    el.classList.add('leave');
+    _hideMonsterBubble();
+  }, 1150);
+
+  // フェーズ4: 1700ms 後に完全に隠す（次の _setMonsterForChar を待つ）
   setTimeout(function() {
     el.style.visibility = 'hidden';
-    el.classList.remove('pop');
-  }, 500);
+    el.classList.remove('leave', 'emerge', 'pop');
+    var drop = document.getElementById('monsterAcornDrop');
+    if (drop) { drop.classList.remove('show'); drop.style.opacity = '0'; }
+  }, 1700);
+}
+
+// ===== 初回チュートリアル（もんすたーさん物語の紹介）=====
+const MONSTER_INTRO_KEY = 'writing_monster_intro_seen';
+function _maybeShowMonsterIntro() {
+  try {
+    if (localStorage.getItem(MONSTER_INTRO_KEY) === '1') return;
+  } catch (e) { return; }
+  // ちょっと間を空けてから表示（他のUIが落ち着いてから）
+  setTimeout(function() {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25);z-index:9500;opacity:0;transition:opacity 0.3s ease;cursor:pointer;';
+    ov.innerHTML = '<div style="background:#FFF8E7;border:4px solid #B97A3E;border-radius:24px;padding:22px 28px;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.25);">'
+      + '<div style="font-size:2.6rem;line-height:1;margin-bottom:8px;">🏠✨</div>'
+      + '<div style="font-size:1.05rem;font-weight:900;color:#5D2E08;line-height:1.6;">もじのなかに、<br>ちいさな なかまが すんでるよ〜</div>'
+      + '<div style="font-size:0.85rem;font-weight:700;color:#8B7355;margin-top:10px;line-height:1.5;">かいてあげると、でてきて<br>あそびに くるんだって ✨</div>'
+      + '<div style="font-size:0.7rem;color:#B97A3E;margin-top:12px;">(タップで とじる)</div>'
+      + '</div>';
+    document.body.appendChild(ov);
+    void ov.offsetWidth;
+    ov.style.opacity = '1';
+    var closed = false;
+    function close() {
+      if (closed) return; closed = true;
+      ov.style.opacity = '0';
+      setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 300);
+    }
+    ov.addEventListener('click', close);
+    setTimeout(close, 3500);
+    try { localStorage.setItem(MONSTER_INTRO_KEY, '1'); } catch (e) { /* ignore */ }
+  }, 700);
 }
 
 // 行ボス（行クリア時のちょっと大きめのかわいい子）
@@ -1707,12 +1908,14 @@ function startQuiz() {
   writer.quiz({
     onCorrectStroke: function(data) {
       playStrokeSound();
+      _hideMonsterBubble();
     },
     onComplete: function(data) {
       showCompletion();
     },
     onMistake: function(data) {
       _perfectCurrentChar = false;
+      _hideMonsterBubble();
     },
     showHintAfterMisses: 3,
     highlightOnComplete: true,
@@ -1899,8 +2102,8 @@ function _rowPracticeNextChar() {
           _hedgeBubble.textContent = 'かいてみよう！';
           _ponoBubble.textContent = 'かいてみよう！';
           writer.quiz({
-            onCorrectStroke: function() { playStrokeSound(); },
-            onMistake: function() { _perfectCurrentChar = false; },
+            onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+            onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
             onComplete: function() {
             if (!_rowPracticeActive) return;
             playSuccessSound();
@@ -2137,7 +2340,7 @@ function _startWordContextPhase(char, data, onComplete) {
   });
 
   wcWriter.quiz({
-    onCorrectStroke: function() { playStrokeSound(); },
+    onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
     onComplete: function() {
       if (!_rowPracticeActive) return;
       playSuccessSound();
@@ -2221,8 +2424,8 @@ btnHint.addEventListener('click', () => {
       // Row practice mode: restart the guided quiz with row practice handler
       if (_rowPracticeActive && _rowPracticePhase === 'quiz_guided') {
         writer.quiz({
-          onCorrectStroke: function() { playStrokeSound(); },
-          onMistake: function() { _perfectCurrentChar = false; },
+          onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+          onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
           onComplete: function() {
             if (!_rowPracticeActive) return;
             playSuccessSound();
@@ -2360,8 +2563,8 @@ function showTutorial() {
               _hedgeBubble.textContent = 'かいてみよう！';
               _ponoBubble.textContent = 'かいてみよう！';
               writer.quiz({
-                onCorrectStroke: function() { playStrokeSound(); },
-                onMistake: function() { _perfectCurrentChar = false; },
+                onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+                onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
                 onComplete: function() {
                   if (!_rowPracticeActive) return;
                   playSuccessSound();
