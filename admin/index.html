@@ -1106,7 +1106,7 @@ function attachGhImageFallback(imgEl, kind, folder, file, opts) {
       return;
     }
     imgEl.dataset.ghFellBack = '1';
-    var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO +
+    var apiUrl = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO +
       '/contents/assets/images/' + kind + '/' + folder + '/' + file +
       '?ref=' + GH_BRANCH + '&_=' + Date.now();
     fetch(apiUrl, { headers: ghHeaders(), cache: 'no-store' })
@@ -1128,7 +1128,7 @@ var LS_TOKEN  = 'admin_gh_token';
 var REWARDS_PATH = 'assets/data/rewards.json';
 var CREATURES_PATH = 'assets/data/creatures.json';
 var TTS_MANIFEST_PATH = 'assets/tts/manifest.json';
-var REWARDS_API  = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH + '?ref=' + GH_BRANCH;
+var REWARDS_API  = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH + '?ref=' + GH_BRANCH;
 
 // ════════════════════════════════════════════════════════════════
 // State
@@ -1146,7 +1146,7 @@ var SLOT_PAGE_SIZE = 10;
 // ════════════════════════════════════════════════════════════════
 // Utilities
 // ════════════════════════════════════════════════════════════════
-function getToken() { return localStorage.getItem(LS_TOKEN) || ''; }
+function getToken() { return 'cf-proxy-managed'; }
 
 function showToast(msg, ok) {
   var el = document.getElementById('toast');
@@ -1164,10 +1164,7 @@ function base64ToUtf8(b64) {
 }
 
 function ghHeaders() {
-  var h = { 'Accept': 'application/vnd.github+json' };
-  var t = getToken();
-  if (t) h['Authorization'] = 'Bearer ' + t;
-  return h;
+  return { 'Accept': 'application/vnd.github+json' };
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1203,7 +1200,7 @@ function switchTab(panelId) {
     var iSub = document.getElementById('sub-quiz-illust');
     if (iSub && iSub.classList.contains('active')) {
       if (!creaturesData) {
-        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+        fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(data) {
             if (data && data.content) {
@@ -1274,7 +1271,7 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
     if (subId === 'quiz-questions')    renderQuestions();
     if (subId === 'quiz-illust') {
       if (!creaturesData) {
-        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+        fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(data) {
             if (data && data.content) {
@@ -1553,12 +1550,11 @@ document.getElementById('gh-test-settings').addEventListener('click', function()
   var t = inputVal || getToken();
   if (!t) { result.innerHTML = '<span style="color:#EF4444;">トークンが設定されていません</span>'; return; }
   var testHeaders = {
-    'Accept': 'application/vnd.github.v3+json',
-    'Authorization': 'Bearer ' + t
+    'Accept': 'application/vnd.github.v3+json'
   };
   result.innerHTML = '<span class="spinner"></span> 接続テスト中...' +
     (inputVal && inputVal !== getToken() ? '<br><span style="font-size:0.7rem;color:#8B7355;">※ 入力欄の未保存トークンでテスト中</span>' : '');
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO, { headers: testHeaders })
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO, { headers: testHeaders })
     .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, data: j }; }); })
     .then(function(res) {
       if (res.ok) {
@@ -1594,7 +1590,7 @@ function ghUpload(filePath, base64Content, commitMsg, callback) {
   var token = getToken();
   if (!token) { callback('トークンが設定されていません'); return; }
 
-  var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath;
+  var apiUrl = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath;
 
   // Get existing SHA if file exists（HTTPキャッシュバイパスで最新SHA取得）
   var shaUrl = apiUrl + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
@@ -1684,7 +1680,7 @@ function flushIllustDraftQueue() {
   showToast('⏳ ' + q.length + ' 件を反映中...', true);
 
   // 最新の creatures.json を取得してから積み上げる
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       if (data && data.content) {
@@ -1976,7 +1972,7 @@ function ttsExtractRows() {
 
 // --- manifest ロード ---
 function ttsLoadManifest() {
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + TTS_MANIFEST_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + TTS_MANIFEST_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
   return fetch(url, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) {
       if (!r.ok) return { version: 1, voice: TTS_DEFAULT_VOICE, entries: {} };
@@ -4126,7 +4122,7 @@ function fetchSeaCreatures() {
   // フォルダキャッシュをリセット（最新のファイル一覧を取り直す）
   _creatureFolderCache = {};
   // GitHub から取得（cache バイパス）
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
   fetch(url, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
@@ -4198,7 +4194,7 @@ var HARDCODED_ZONES_ADMIN = {
 var _creatureFolderCache = {};
 function _loadCreatureFolderFiles(folder) {
   if (_creatureFolderCache[folder]) return Promise.resolve(_creatureFolderCache[folder]);
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/ocean/' + folder + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/ocean/' + folder + '?ref=' + GH_BRANCH + '&_=' + Date.now();
   return fetch(url, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : []; })
     .then(function(files) {
@@ -4629,7 +4625,7 @@ function openNewIllustUploadModal(illustId, illustName) {
   // staging候補を表示
   var stagingEl = box.querySelector('#nu-staging');
   (function() {
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/data/staging.json?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/data/staging.json?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
         var items = [];
@@ -4659,7 +4655,7 @@ function openNewIllustUploadModal(illustId, illustName) {
           card.addEventListener('click', function() {
             card.style.borderColor = '#10B981';
             grid.querySelectorAll('div').forEach(function(c) { if (c !== card) c.style.borderColor = 'transparent'; });
-            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + nf + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+            fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + nf + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
               .then(function(r) { return r.ok ? r.json() : null; })
               .then(function(d) {
                 if (d && d.content) {
@@ -4906,7 +4902,7 @@ function openCreatureReplaceModal(creatureId) {
   var stagingEl = box.querySelector('#replace-staging');
   (function loadStagingCandidates() {
     var STAGING_PATH = 'assets/data/staging.json';
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
         var items = [];
@@ -4939,7 +4935,7 @@ function openCreatureReplaceModal(creatureId) {
             // staging画像のbase64を取得
             card.style.borderColor = '#F59E0B';
             grid.querySelectorAll('div').forEach(function(c) { if (c !== card) c.style.borderColor = 'transparent'; });
-            fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + normF + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+            fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/staging/' + entry.folder + '/' + normF + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
               .then(function(r) { return r.ok ? r.json() : null; })
               .then(function(d) {
                 if (d && d.content) {
@@ -5006,7 +5002,7 @@ function deleteCreature(creatureId) {
 function fetchEncyclopedia() {
   // creaturesData が未ロードなら GitHub から取得してからレンダリング
   if (!creaturesData) {
-    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+    var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + CREATURES_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now();
     fetch(url, { headers: ghHeaders(), cache: 'no-store' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
@@ -5364,7 +5360,7 @@ function fetchAndRenderStaging() {
   var listEl = document.getElementById('staging-list');
   if (!section || !listEl) return;
 
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       var items = [];
@@ -5559,7 +5555,7 @@ function openBulkAdoptModal(entries) {
 
       btn.textContent = '⏳ ' + (done + failed + 1) + '/' + total;
 
-      fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+      fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!data.content) throw new Error('not found');
@@ -5648,7 +5644,7 @@ function adoptStaging(idx, entry) {
     // GitHub APIから直接画像を取得（CDNキャッシュを回避）
     preview.innerHTML = '<div style="font-size:0.65rem;color:#888;margin-bottom:4px;">現在の画像</div><div style="color:#aaa;font-size:0.7rem;">読み込み中...</div>';
     var apiPath = 'assets/images/ocean/' + c.folder + '/' + en;
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + apiPath + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders() })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + apiPath + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders() })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(d) {
         var infoHtml = '<div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-top:4px;">' + (c.displayName || '') + '</div><div style="font-size:0.68rem;color:#888;font-family:monospace;">' + c.id + '</div>';
@@ -5678,7 +5674,7 @@ function adoptStaging(idx, entry) {
     var dstPath = 'assets/images/ocean/' + target.folder + '/' + tgtNorm;
 
     var uploadedBase64 = null;
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + srcPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data.content) throw new Error('staging 画像が見つかりません');
@@ -5706,7 +5702,7 @@ function adoptStaging(idx, entry) {
 // staging.json から1件削除
 function removeStaging(idx) {
   var STAGING_PATH = 'assets/data/staging.json';
-  return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+  return fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       var items = [];
@@ -6641,7 +6637,7 @@ var _imgBrowserCache = null; // { folder: [files] }
 var _itemsLookupCache = null; // { 'assets/images/...' : { id, cat, name } }
 
 function _fetchImgFolder(folder, cb) {
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + folder + '?ref=' + GH_BRANCH;
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + folder + '?ref=' + GH_BRANCH;
   fetch(url, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : []; })
     .then(function(files) {
@@ -7073,7 +7069,7 @@ function openImageBrowser(onSelect) {
         // サブフォルダをリスト
         var subDirs = items.length === 0 ? [] : [];
         // GitHub APIはフォルダもファイルも返す
-        var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
+        var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
         fetch(url, { headers: ghHeaders(), cache: 'no-store' })
           .then(function(r) { return r.json(); })
           .then(function(all) {
@@ -7576,7 +7572,7 @@ document.getElementById('btn-save-rewards').addEventListener('click', function()
   btn.disabled = true;
   msg.textContent = '💾 保存中...';
 
-  var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH;
+  var apiUrl = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + REWARDS_PATH;
 
   // Get fresh SHA（ブラウザHTTPキャッシュをバイパスして最新SHAを取得）
   var shaUrl = apiUrl + '?ref=' + GH_BRANCH + '&_cb=' + Date.now();
@@ -8643,7 +8639,7 @@ function showImagePreview(src, title) {
 
 function _renderStagingIllust(container, creatureLookup) {
   var STAGING_PATH = 'assets/data/staging.json';
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       var items = [];
@@ -8802,7 +8798,7 @@ function _renderStagingIllust(container, creatureLookup) {
         // 大きいインデックスから削除（splice対策）
         selected.sort(function(a,b) { return b - a; });
         var STAGING_PATH = 'assets/data/staging.json';
-        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+        fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(data) {
             var sitems = [];
@@ -8972,7 +8968,7 @@ function openLocalStagingImportModal() {
     var STAGING_PATH = 'assets/data/staging.json';
 
     // 既存の staging.json を取得
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + STAGING_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
         var stagingData = [];
@@ -9517,7 +9513,7 @@ function _openBentoReplaceModal(itemId, itemName) {
     statusEl.textContent = 'アップロード中...';
     var filePath = 'assets/images/Bento_parts/' + itemId + '2.png';
     // First check if file exists (GET) to get SHA for update
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(existing) {
         var body = {
@@ -9526,7 +9522,7 @@ function _openBentoReplaceModal(itemId, itemName) {
           branch: GH_BRANCH
         };
         if (existing && existing.sha) body.sha = existing.sha;
-        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath, {
+        return fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + filePath, {
           method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body)
         });
       })
@@ -9687,7 +9683,7 @@ function wmLoadIllust() {
   var countEl = document.getElementById('wm-illust-count');
   if (!grid) return;
   grid.innerHTML = '<div style="text-align:center;padding:24px;color:#8B7355;font-weight:700;">🔄 読み込み中...</div>';
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/word?ref=' + GH_BRANCH + '&_=' + Date.now();
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/assets/images/word?ref=' + GH_BRANCH + '&_=' + Date.now();
   fetch(url, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { if (!r.ok) throw new Error('API Error: ' + r.status); return r.json(); })
     .then(function(files) {
@@ -9868,7 +9864,7 @@ function wmDeleteSelected() {
     var name = names[idx];
     var sha = wmSelectedFiles[name];
     var path = 'assets/images/word/' + name;
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
       method: 'DELETE',
       headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ message: 'Delete word image: ' + name, sha: sha, branch: GH_BRANCH })
@@ -9888,12 +9884,12 @@ function wmEditProps(oldName, sha) {
   var oldPath = 'assets/images/word/' + oldName;
   var newPath = 'assets/images/word/' + newName;
   // まず旧ファイルの内容を取得
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + oldPath + '?ref=' + GH_BRANCH + '&_=' + Date.now();
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + oldPath + '?ref=' + GH_BRANCH + '&_=' + Date.now();
   fetch(url, { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { if (!r.ok) throw new Error('取得失敗'); return r.json(); })
     .then(function(data) {
       // 新ファイル作成
-      return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + newPath, {
+      return fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + newPath, {
         method: 'PUT',
         headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ message: 'Rename ' + oldName + ' to ' + newName, content: data.content, branch: GH_BRANCH })
@@ -9901,7 +9897,7 @@ function wmEditProps(oldName, sha) {
     })
     .then(function(oldSha) {
       // 旧ファイル削除
-      return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + oldPath, {
+      return fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + oldPath, {
         method: 'DELETE',
         headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ message: 'Delete renamed file ' + oldName, sha: oldSha, branch: GH_BRANCH })
@@ -9923,7 +9919,7 @@ function wmReplaceImg(fileName, sha) {
     reader.onload = function() {
       var base64 = reader.result.split(',')[1];
       var path = 'assets/images/word/' + fileName;
-      fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+      fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
         method: 'PUT',
         headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ message: 'Replace word image: ' + fileName, content: base64, sha: sha, branch: GH_BRANCH })
@@ -9941,7 +9937,7 @@ function wmReplaceImg(fileName, sha) {
 function wmDeleteImg(fileName, sha) {
   if (!confirm(fileName + ' を削除しますか？\nこの操作は取り消せません。')) return;
   var path = 'assets/images/word/' + fileName;
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
     method: 'DELETE',
     headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ message: 'Delete word image: ' + fileName, sha: sha, branch: GH_BRANCH })
@@ -9967,7 +9963,7 @@ function wmUploadNew() {
       reader.onload = function() {
         var base64 = reader.result.split(',')[1];
         var path = 'assets/images/word/' + file.name;
-        fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+        fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
           method: 'PUT',
           headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
           body: JSON.stringify({ message: 'Add word image: ' + file.name, content: base64, branch: GH_BRANCH })
@@ -10220,12 +10216,12 @@ function wfOpenReplaceModal(item, displayName) {
     if (!b64) return;
     var st = document.getElementById('_wf_rep_status');
     st.textContent = 'アップロード中...';
-    fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(existing) {
         var body = { message: '🖼️ replace wall/floor: ' + item.id, content: b64, branch: GH_BRANCH };
         if (existing && existing.sha) body.sha = existing.sha;
-        return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath, {
+        return fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath, {
           method: 'PUT', headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
           body: JSON.stringify(body)
         });
@@ -10350,7 +10346,7 @@ async function wfDeploy() {
   status.textContent = '⏳ items.js を取得中...';
   status.style.color = '#FFD700';
   try {
-    var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
+    var apiUrl = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
     var fileResp = await fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
     var file = await fileResp.json();
     if (!file.content) throw new Error('items.js が取得できません');
@@ -10401,11 +10397,11 @@ async function wfDeploy() {
       var imgPath = item.cat === 'wall'
         ? 'assets/images/Rooms/walls/' + item.fileName
         : 'assets/images/Rooms/floors/' + item.fileName;
-      var existingResp = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
+      var existingResp = await fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
       var existing = existingResp.ok ? await existingResp.json() : null;
       var imgBody = { message: 'feat(walls/floors): 新規画像 ' + item.fileName, content: item.base64, branch: GH_BRANCH };
       if (existing && existing.sha) imgBody.sha = existing.sha;
-      var imgPut = await fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath, {
+      var imgPut = await fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + imgPath, {
         method: 'PUT', headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }),
         body: JSON.stringify(imgBody)
       });
@@ -10464,7 +10460,7 @@ async function wfDeploy() {
 
     // ── デフォルト壁・床を room/index.html に反映 ──
     status.textContent = '⏳ room/index.html を更新中...';
-    var roomUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/index.html';
+    var roomUrl = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/index.html';
     var roomResp = await fetch(roomUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
     var roomFile = await roomResp.json();
     if (!roomFile.content) throw new Error('room/index.html が取得できません');
@@ -10562,7 +10558,7 @@ function setQsStatus(msg) {
 
 function loadQuizSound() {
   setQsStatus('読み込み中...');
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + QS_JSON_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(),
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + QS_JSON_PATH + '?ref=' + GH_BRANCH + '&_=' + Date.now(),
         { headers: ghHeaders(), cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(j) {
@@ -10727,7 +10723,7 @@ document.addEventListener('click', function(e) {
     branch: GH_BRANCH,
     sha: qsSha || undefined
   });
-  fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + QS_JSON_PATH,
+  fetch('/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + QS_JSON_PATH,
         { method: 'PUT', headers: Object.assign({}, ghHeaders(), { 'Content-Type': 'application/json' }), body: body })
     .then(function(r) {
       if (!r.ok) return r.json().then(function(j) { throw new Error(j.message || 'save error'); });

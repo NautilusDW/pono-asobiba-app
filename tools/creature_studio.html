@@ -911,7 +911,7 @@ function ghHeaders() {
 
 function ghUploadPromise(filePath, base64Content, commitMsg) {
   return new Promise((resolve, reject) => {
-    const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${filePath}`;
+    const apiUrl = `/api/gh/repos/${GH_OWNER}/${GH_REPO}/contents/${filePath}`;
     fetch(apiUrl + `?ref=${GH_BRANCH}&_cb=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(existing => {
@@ -3615,7 +3615,7 @@ function autoTranslateId(name, idEl, idx) {
     const apiKey = getGeminiKey();
     if (!apiKey) return;
     try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      const r = await fetch(`/api/gemini/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3659,7 +3659,7 @@ async function aiNameSprite(idx) {
   if (!apiKey) throw new Error('Gemini APIキーが設定されていません');
 
   const model = 'gemini-2.5-flash';
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const apiUrl = `/api/gemini/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const r = await fetch(apiUrl, {
     method: 'POST',
@@ -3748,7 +3748,7 @@ async function aiGroupSprites(idxList) {
   if (!apiKey) throw new Error('Gemini APIキーが設定されていません。左パネルの「APIキー」に入力してください。');
 
   const model = 'gemini-2.5-flash';
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const apiUrl = `/api/gemini/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const parts = images.map(img => ({ inline_data: { mime_type: img.mimeType, data: img.data } }));
   parts.push({ text: prompt });
@@ -3826,7 +3826,7 @@ document.getElementById('btn-ai-group').addEventListener('click', async () => {
 // ════════════════════════════════════════════════════════════
 async function fetchCreaturesData() {
   try {
-    const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CREATURES_PATH}?ref=${GH_BRANCH}&_=${Date.now()}`;
+    const url = `/api/gh/repos/${GH_OWNER}/${GH_REPO}/contents/${CREATURES_PATH}?ref=${GH_BRANCH}&_=${Date.now()}`;
     const r = await fetch(url, { headers: ghHeaders(), cache: 'no-store' });
     if (r.ok) {
       const d = await r.json();
@@ -4090,7 +4090,7 @@ async function deployToQuizSound(selectedCards) {
   let qsData = { animals: [] };
   let qsSha = null;
   try {
-    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${QS_JSON}?ref=${GH_BRANCH}&_=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
+    const res = await fetch(`/api/gh/repos/${GH_OWNER}/${GH_REPO}/contents/${QS_JSON}?ref=${GH_BRANCH}&_=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
     if (res.ok) {
       const j = await res.json();
       qsSha = j.sha;
@@ -4293,7 +4293,7 @@ document.getElementById('btn-deploy').addEventListener('click', async () => {
   const STAGING_PATH = 'assets/data/staging.json';
   let stagingData = [];
   try {
-    const sr = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${STAGING_PATH}?ref=${GH_BRANCH}&_=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
+    const sr = await fetch(`/api/gh/repos/${GH_OWNER}/${GH_REPO}/contents/${STAGING_PATH}?ref=${GH_BRANCH}&_=${Date.now()}`, { headers: ghHeaders(), cache: 'no-store' });
     if (sr.ok) {
       const sd = await sr.json();
       if (sd.content) stagingData = JSON.parse(decodeURIComponent(escape(atob(sd.content.replace(/\n/g, '')))));

@@ -66,45 +66,110 @@ export async function playFairyBreak3D(opts) {
   dir.position.set(2, 3, 4);
   scene.add(dir);
 
-  // 3x3 の小箱 9 個で 1 つの箱を構成
-  const N = 3;
+  // 衝撃点から放射状の亀裂 + 同心リングで破片ポリゴンを生成 (ガラス割れ風)
   const totalSize = 3.2;
-  const cellSize = totalSize / N;
-  const depth = 0.4;
+  const halfSize = totalSize / 2;
+  const depth = 0.18;
   const palette = [0xFFB3D1, 0xC4A8F5, 0xFFE58F, 0xB4F0B4, 0xFFC2A0];
   const fragments = [];
   const boxGroup = new THREE.Group();
   scene.add(boxGroup);
 
-  for (let ix = 0; ix < N; ix++) {
-    for (let iy = 0; iy < N; iy++) {
-      const geo = new THREE.BoxGeometry(cellSize * 0.94, cellSize * 0.94, depth);
-      const color = palette[(ix * N + iy) % palette.length];
+  // 衝撃点 = 中心付近をわずかにずらす
+  const impactX = (Math.random() - 0.5) * totalSize * 0.25;
+  const impactY = (Math.random() - 0.5) * totalSize * 0.25;
+
+  // 放射線 (楔) を 9〜13 本、角度をジッター付きで配置
+  const numWedges = 9 + Math.floor(Math.random() * 5);
+  const angles = [];
+  for (let i = 0; i < numWedges; i++) {
+    const base = (i / numWedges) * Math.PI * 2;
+    const jitter = (Math.random() - 0.5) * (Math.PI * 2 / numWedges) * 0.7;
+    angles.push(base + jitter);
+  }
+  angles.sort((a, b) => a - b);
+
+  // 亀裂が箱の対角まで届くように十分な最大半径
+  const maxRadius = Math.hypot(halfSize, halfSize) * 1.1;
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function clipToBox(x, y) {
+    return { x: clamp(x, -halfSize, halfSize), y: clamp(y, -halfSize, halfSize) };
+  }
+
+  for (let w = 0; w < numWedges; w++) {
+    const a1 = angles[w];
+    const a2 = (w + 1 < numWedges) ? angles[w + 1] : angles[0] + Math.PI * 2;
+
+    // 同心リングを 2〜4 本、半径は非線形にばらつかせて「内側細かく・外側大きく」
+    const numRings = 2 + Math.floor(Math.random() * 3);
+    const radii = [0];
+    for (let r = 0; r < numRings; r++) {
+      const t = Math.pow((r + 1) / numRings, 1.4);
+      radii.push(maxRadius * t * (0.75 + Math.random() * 0.3));
+    }
+
+    for (let r = 0; r < numRings; r++) {
+      const r1 = radii[r];
+      const r2 = radii[r + 1];
+
+      // ポリゴン頂点 (中心は衝撃点)
+      const poly = [];
+      if (r1 < 0.01) {
+        // 最内ring = 三角形 (衝撃点 → 外周2点)
+        poly.push({ x: impactX, y: impactY });
+      } else {
+        poly.push(clipToBox(impactX + r1 * Math.cos(a1), impactY + r1 * Math.sin(a1)));
+      }
+      poly.push(clipToBox(impactX + r2 * Math.cos(a1), impactY + r2 * Math.sin(a1)));
+      poly.push(clipToBox(impactX + r2 * Math.cos(a2), impactY + r2 * Math.sin(a2)));
+      if (r1 >= 0.01) {
+        poly.push(clipToBox(impactX + r1 * Math.cos(a2), impactY + r1 * Math.sin(a2)));
+      }
+
+      // ポリゴン重心
+      let cx = 0, cy = 0;
+      for (const p of poly) { cx += p.x; cy += p.y; }
+      cx /= poly.length; cy /= poly.length;
+
+      // Shape は重心を原点に置く (mesh.position で 3D 空間に配置)
+      const shape = new THREE.Shape();
+      shape.moveTo(poly[0].x - cx, poly[0].y - cy);
+      for (let i = 1; i < poly.length; i++) shape.lineTo(poly[i].x - cx, poly[i].y - cy);
+      shape.closePath();
+
+      const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 1 });
+      geo.translate(0, 0, -depth / 2);
+
+      const color = palette[Math.floor(Math.random() * palette.length)];
       const mat = new THREE.MeshStandardMaterial({
         color,
-        roughness: 0.55,
-        metalness: 0.05,
+        roughness: 0.5,
+        metalness: 0.08,
         transparent: true,
         opacity: 1,
+        side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geo, mat);
-      const x = (ix - (N - 1) / 2) * cellSize;
-      const y = (iy - (N - 1) / 2) * cellSize;
-      mesh.position.set(x, y, 0);
+      mesh.position.set(cx, cy, 0);
       boxGroup.add(mesh);
 
-      const spreadX = x * 2.4 + (Math.random() - 0.5) * 1.2;
-      const spreadY = y * 2.4 + 1.5 + Math.random() * 1.5;
-      const spreadZ = (Math.random() - 0.2) * 2.8;
+      // 衝撃点から外向きに速度、距離に比例して加速
+      const dx = cx - impactX;
+      const dy = cy - impactY;
+      const dist = Math.hypot(dx, dy) || 0.001;
+      const spread = 2.6 + Math.random() * 1.4;
       fragments.push({
-        mesh,
-        mat,
-        geo,
-        velocity: new THREE.Vector3(spreadX, spreadY, spreadZ),
+        mesh, mat, geo,
+        velocity: new THREE.Vector3(
+          (dx / dist) * spread * (0.6 + dist * 0.6),
+          (dy / dist) * spread * (0.6 + dist * 0.6) + 1.1,
+          (Math.random() - 0.25) * 2.8
+        ),
         angular: new THREE.Vector3(
-          (Math.random() - 0.5) * 9,
-          (Math.random() - 0.5) * 9,
-          (Math.random() - 0.5) * 9
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10
         ),
       });
     }
