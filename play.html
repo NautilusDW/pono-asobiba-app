@@ -712,7 +712,7 @@
       z-index: 50;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       padding: 6px 12px 6px 10px;
       background: #fff;
       border: 2.5px solid #A16207;
@@ -721,7 +721,16 @@
       color: #7C4A02;
       font-weight: 900;
       font-size: 0.95rem;
-      pointer-events: none;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .acorn-badge-play:active { transform: scale(0.95); }
+    .acorn-badge-play .acorn-shop-hint {
+      font-size: 0.9rem;
+      margin-left: 2px;
+      padding-left: 6px;
+      border-left: 1.5px solid #E0C28A;
     }
     .acorn-badge-play .acorn-icon-play { font-size: 1.1rem; line-height: 1; }
     .acorn-badge-play .acorn-count-play { min-width: 18px; text-align: center; }
@@ -1110,9 +1119,10 @@
 </head>
 <body>
 
-<div class="acorn-badge-play" id="acornBadgePlay" aria-label="どんぐり">
+<a href="shop/index.html" class="acorn-badge-play" id="acornBadgePlay" aria-label="どんぐりショップへ">
   <span class="acorn-icon-play">🌰</span><span class="acorn-count-play" id="acornCountPlay">0</span>
-</div>
+  <span class="acorn-shop-hint">🛒</span>
+</a>
 
 <!-- 🎵 タップ解禁オーバーレイ: 初回起動時のみ表示。タップで BGM 開始 + sessionStorage 記録 -->
 <style>
