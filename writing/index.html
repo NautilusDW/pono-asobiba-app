@@ -931,22 +931,10 @@ html, body {
 }
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
-/* ===== Portrait Lock Overlay ===== */
-#portraitLock {
-  display:none; position:fixed; inset:0; z-index:99999;
-  background:var(--bg);
-  background-image: url('../assets/images/BG_03.webp');
-  background-size:cover; background-position:center;
-  flex-direction:column; align-items:center; justify-content:center;
-  text-align:center; padding:40px 20px;
-}
-#portraitLock .pl-icon { font-size:4rem; margin-bottom:16px; animation:plRotate 2s ease-in-out infinite; }
-#portraitLock .pl-text { font-size:1.2rem; font-weight:900; color:var(--text); line-height:1.8; }
-@keyframes plRotate { 0%,100% { transform:rotate(0deg); } 50% { transform:rotate(90deg); } }
-@media (orientation: portrait) {
-  #portraitLock { display:flex !important; }
-  #rowSelectScreen, #app { display:none !important; }
-}
+/* ===== Portrait Lock (無効化) =====
+   元々は landscape 推奨のために表示していたが、portrait レイアウトも整備済みなので常時非表示。
+   PC ブラウザの縦長ウィンドウで誤発火するのを防ぐ。 */
+#portraitLock { display:none !important; }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
