@@ -879,10 +879,10 @@ let cutLines = [];             // [{x1,y1,x2,y2}] processedCanvas座標 — 分�
 // ════════════════════════════════════════════════════════════
 // Utilities
 // ════════════════════════════════════════════════════════════
-const getToken = () => localStorage.getItem(LS_TOKEN) || '';
-const setToken = v  => localStorage.setItem(LS_TOKEN, v);
-const getGeminiKey = () => localStorage.getItem(LS_GEMINI) || '';
-const setGeminiKey = v => localStorage.setItem(LS_GEMINI, v);
+const getToken = () => 'cf-proxy-managed';
+const setToken = v  => {};
+const getGeminiKey = () => 'cf-proxy-managed';
+const setGeminiKey = v => {};
 
 function utf8ToBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
 function base64ToUtf8(b64) { return decodeURIComponent(escape(atob(b64))); }
@@ -903,10 +903,7 @@ function hideLoading() {
 }
 
 function ghHeaders() {
-  const h = { 'Accept': 'application/vnd.github+json' };
-  const t = getToken();
-  if (t) h['Authorization'] = 'Bearer ' + t;
-  return h;
+  return { 'Accept': 'application/vnd.github+json' };
 }
 
 function ghUploadPromise(filePath, base64Content, commitMsg) {

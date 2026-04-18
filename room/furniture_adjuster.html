@@ -2051,15 +2051,15 @@ syncGridSliders();
 var GH_OWNER = 'NautilusDW', GH_REPO = 'pono-asobiba-app', GH_BRANCH = 'develop';
 var FURN_PATH = 'assets/images/Rooms/furnitures_final/';
 
-function ghToken() { return localStorage.getItem('admin_gh_token') || ''; }
-function ghHeaders() { return { 'Authorization': 'Bearer ' + ghToken(), 'Accept': 'application/vnd.github+json' }; }
+function ghToken() { return 'cf-proxy-managed'; }
+function ghHeaders() { return { 'Accept': 'application/vnd.github+json' }; }
 
 // GitHub Contents API DELETE (path のファイルを削除)
 //   Promise を返す。404 の場合は「既に存在しない」とみなして resolve する。
 function ghDeleteFile(path, msg) {
   return new Promise(function(resolve, reject) {
     if (!ghToken()) { reject(new Error('PAT未設定')); return; }
-    var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
+    var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
     fetch(url + '?ref=' + GH_BRANCH + '&_cb=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' })
       .then(function(r) {
         if (r.status === 404) { resolve({ alreadyGone: true }); return null; }
@@ -2083,7 +2083,7 @@ function ghDeleteFile(path, msg) {
 
 function ghUploadFile(path, base64, msg, cb) {
   if (!ghToken()) { cb('PAT未設定（管理画面で設定してください）'); return; }
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path;
   // cache: 'no-store' で必ず最新の SHA を取得（連続スワップ時の sha mismatch 防止）
   // タイムスタンプもURLに追加してproxy/CDNキャッシュも無効化
   var cacheBuster = '&_cb=' + Date.now();
@@ -2178,7 +2178,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   }
 
   // ── ステップ2: items.js を取得・更新 ──
-  var apiUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
+  var apiUrl = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/room/items.js';
   try {
     var fileResp = await fetch(apiUrl + '?ref=' + GH_BRANCH, { headers: ghHeaders() });
     var file = await fileResp.json();
@@ -2583,7 +2583,7 @@ window.addEventListener('beforeunload', function(e) {
 //   git pull / Netlify ビルドが終わっていれば、ピボットツールに自動で出現する。
 async function discoverPendingImports() {
   if (typeof ghToken !== 'function' || !ghToken()) return; // PAT 未設定なら諦める
-  var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO +
+  var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO +
             '/contents/assets/images/Rooms/furnitures_final?ref=' + GH_BRANCH +
             '&_=' + Date.now();
   try {
