@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 212;
+const CACHE_VERSION = 213;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -23,9 +23,15 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // 管理ツール（tools/, admin/）は常にネットワークから取得、キャッシュしない
-  if (event.request.url.includes('/tools/') || event.request.url.includes('/admin/')) {
-    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+  // 管理ツール（tools/, admin/, room pivots, /api/ 系）は SW 介在なしでブラウザに直接通す。
+  // Basic Auth の 401 チャレンジ時にポップアップが正しく出るようにするため。
+  // respondWith を呼ばない = デフォルトのネットワーク取得 + ブラウザ側のダイアログ処理が有効。
+  if (event.request.url.includes('/admin/')
+      || event.request.url.includes('/tools/')
+      || event.request.url.includes('/room/furniture_adjuster')
+      || event.request.url.includes('/room/yard_adjuster')
+      || event.request.url.includes('/api/gh/')
+      || event.request.url.includes('/api/gemini/')) {
     return;
   }
 
