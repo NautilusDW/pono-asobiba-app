@@ -1,0 +1,24 @@
+name = "kids-writing-app"
+type = "javascript"
+main = "src/index.js"
+compatibility_date = "2024-09-19"
+
+# Cloudflare Pages Functions directory
+[env.production]
+routes = [
+  { pattern = "/.netlify/functions/*", zone_id = "" }
+]
+
+# Environment variables (set in Cloudflare dashboard)
+# GEMINI_API_KEY will be set via Cloudflare dashboard secrets
+
+# Build settings for Pages
+[build]
+command = ""
+cwd = "."
+watch_paths = []
+
+# Service bindings (if needed for D1 database, KV etc in future)
+# [[services]]
+# binding = "MY_SERVICE"
+# service = "my-service"
