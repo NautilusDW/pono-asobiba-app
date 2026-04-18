@@ -1779,15 +1779,17 @@ function _playCanvasBreak() {
     }
   }, 220);
 
-  // T=320: 破片8枚が放射状に飛散
-  _bt(function() {
-    var shards = document.getElementById('canvasShards');
-    if (shards) {
-      shards.classList.remove('burst');
-      void shards.offsetWidth;
-      shards.classList.add('burst');
-    }
-  }, 320);
+  // T=320: 破片8枚が放射状に飛散 (3D 演出が走っている時は重複を避けてスキップ)
+  if (!_use3D) {
+    _bt(function() {
+      var shards = document.getElementById('canvasShards');
+      if (shards) {
+        shards.classList.remove('burst');
+        void shards.offsetWidth;
+        shards.classList.add('burst');
+      }
+    }, 320);
+  }
 
   // バリンッ音
   try {
