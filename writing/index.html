@@ -117,137 +117,277 @@ html, body {
   transition: transform 0.7s cubic-bezier(0.34,1.0,0.64,1), opacity 0.7s ease;
 }
 
-/* ===== Monster Deco (もんすたーさん) — canvas-container 右下から文字の後ろに覗く ===== */
+/* ===== ようせい (閉じ込められた妖精) — キャンバス中央に封印、完了時に封印解除 ===== */
 .monster-deco {
   position: absolute;
-  right: 10px; bottom: 10px;
-  width: 90px; height: 90px;
+  inset: 0;
+  margin: auto;
+  width: 160px; height: 160px;
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
-  z-index: 1; /* 文字キャンバスより下（デフォルト） → 書いた線の後ろに隠れる */
-  clip-path: inset(0 0 34% 0);  /* 下 1/3 を隠して「顔だけ覗き」 */
-  animation: monsterFloat 1.8s ease-in-out infinite, monsterWiggle 1.6s ease-in-out infinite;
-  transition: clip-path 0.3s ease, z-index 0s;
+  z-index: 1; /* 文字キャンバス(z:2) の下 → 文字の後ろに封印されている感 */
+  opacity: 0.22;
+  filter: blur(1.2px) grayscale(0.55) brightness(0.9);
+  transition: opacity 0.3s ease, filter 0.3s ease, z-index 0s;
 }
 .monster-deco.emerge {
-  clip-path: inset(0);
-  z-index: 5; /* 完了演出では前面へ */
-  animation: none;
+  opacity: 1;
+  filter: none;
+  z-index: 6;
 }
 .monster-deco .monster-emoji {
-  font-size: 3.6rem;
+  font-size: 5rem;
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+  animation: monsterFloat 2s ease-in-out infinite;
 }
 .monster-deco .monster-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2));
+  animation: monsterFloat 2s ease-in-out infinite;
 }
 @keyframes monsterFloat {
   0%, 100% { transform: translateY(0) scale(1);    }
   50%      { transform: translateY(-4px) scale(1.04); }
 }
-@keyframes monsterWiggle {
-  0%, 100% { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2)); }
-  50%      { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2)) brightness(1.05); }
+/* 入場: 封印された状態でふわっと現れる */
+.monster-deco.enter .monster-img,
+.monster-deco.enter .monster-emoji {
+  animation: monsterSealedIn 0.4s ease-out, monsterFloat 2s ease-in-out 0.4s infinite;
 }
-.monster-deco.pop .monster-emoji,
-.monster-deco.pop .monster-img { animation: monsterPop 0.5s ease forwards; }
-@keyframes monsterPop {
-  0%   { transform: scale(1);   opacity: 1; }
-  40%  { transform: scale(1.4); opacity: 1; }
-  100% { transform: scale(0.6); opacity: 0; }
+@keyframes monsterSealedIn {
+  0%   { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
 }
-.monster-deco.enter .monster-emoji,
-.monster-deco.enter .monster-img { animation: monsterEnter 0.45s cubic-bezier(0.34,1.56,0.64,1); }
-@keyframes monsterEnter {
-  0%   { transform: scale(0)   translateY(8px); opacity: 0; }
-  100% { transform: scale(1)   translateY(0);   opacity: 1; }
+/* 封印解除: 中央からバウンドして登場 */
+.monster-deco.emerge .monster-img,
+.monster-deco.emerge .monster-emoji {
+  animation: monsterEmerge 0.55s cubic-bezier(0.34,1.7,0.64,1) forwards;
 }
-/* 完了時: 文字中央にピョコンと飛び出す */
-.monster-deco.emerge .monster-emoji,
-.monster-deco.emerge .monster-img { animation: monsterEmerge 0.5s cubic-bezier(0.34,1.7,0.64,1) forwards; }
 @keyframes monsterEmerge {
-  0%   { transform: translateY(30px) scale(0.6); opacity: 0.4; }
-  60%  { transform: translateY(-10px) scale(1.2); opacity: 1; }
-  100% { transform: translateY(0) scale(1.05); opacity: 1; }
+  0%   { transform: scale(0.3) rotate(-18deg); opacity: 0; }
+  55%  { transform: scale(1.3) rotate(10deg);  opacity: 1; }
+  78%  { transform: scale(0.95) rotate(-3deg); }
+  100% { transform: scale(1.05) rotate(0);     opacity: 1; }
 }
 /* 退場: 右上にスワッと小さく消える */
 .monster-deco.leave .monster-emoji,
-.monster-deco.leave .monster-img { animation: monsterLeave 0.5s ease-in forwards; }
+.monster-deco.leave .monster-img { animation: monsterLeave 0.55s ease-in forwards; }
 @keyframes monsterLeave {
-  0%   { transform: translate(0,0) scale(1); opacity: 1; }
-  70%  { transform: translate(10px, -14px) scale(0.75); opacity: 0.5; }
-  100% { transform: translate(30px, -40px) scale(0.2); opacity: 0; }
+  0%   { transform: translate(0,0) scale(1.05) rotate(0); opacity: 1; }
+  60%  { transform: translate(60px, -70px) scale(0.65) rotate(20deg); opacity: 0.6; }
+  100% { transform: translate(160px, -200px) scale(0.15) rotate(45deg); opacity: 0; }
 }
 
-/* 吹き出し */
+/* 妖精の吹き出し (封印解除後、中央の少し上に表示) */
 .monster-bubble {
   position: absolute;
-  right: 102px;  /* monsterDeco の左隣 */
-  bottom: 60px;
-  max-width: 170px;
+  left: 50%; top: 18%;
+  max-width: 200px;
   background: #fff;
   border: 2.5px solid #8B7355;
   border-radius: 14px;
-  padding: 6px 10px;
-  font-size: 0.82rem;
+  padding: 6px 12px;
+  font-size: 0.88rem;
   font-weight: 900;
   color: #5D4E37;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
   pointer-events: none;
   white-space: nowrap;
   opacity: 0;
-  transform: scale(0.6);
-  transform-origin: bottom right;
-  z-index: 6;
+  transform: translate(-50%, -50%) scale(0.6);
+  transform-origin: center bottom;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 11;
 }
 .monster-bubble::after {
   content: '';
   position: absolute;
-  right: -10px; bottom: 10px;
+  left: 50%; bottom: -10px;
+  transform: translateX(-50%);
   width: 0; height: 0;
   border: 8px solid transparent;
-  border-left-color: #8B7355;
-  border-right: 0;
+  border-top-color: #8B7355;
+  border-bottom: 0;
 }
 .monster-bubble::before {
   content: '';
   position: absolute;
-  right: -6px; bottom: 12px;
+  left: 50%; bottom: -6px;
+  transform: translateX(-50%);
   width: 0; height: 0;
   border: 6px solid transparent;
-  border-left-color: #fff;
-  border-right: 0;
+  border-top-color: #fff;
+  border-bottom: 0;
   z-index: 1;
 }
-.monster-bubble.show { animation: bubbleIn 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-.monster-bubble.hide { animation: bubbleOut 0.2s ease-in forwards; }
-@keyframes bubbleIn {
-  0%   { opacity: 0; transform: scale(0.6); }
-  100% { opacity: 1; transform: scale(1); }
+.monster-bubble.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
-@keyframes bubbleOut {
-  0%   { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.7); }
+.monster-bubble.hide {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.7);
 }
 
-/* 完了時の🌰ドロップ（モンスター足元にちょこん） */
+/* 完了時の🌰ドロップ（妖精の足元にちょこん） */
 .monster-acorn-drop {
   position: absolute;
-  right: 32px; bottom: 2px;
-  font-size: 1.6rem;
+  left: 50%; top: 72%;
+  font-size: 2rem;
   opacity: 0;
-  z-index: 6;
+  z-index: 7;
   pointer-events: none;
 }
 .monster-acorn-drop.show { animation: acornDrop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 @keyframes acornDrop {
-  0%   { opacity: 0; transform: translateY(-28px) scale(0.6) rotate(-20deg); }
-  70%  { opacity: 1; transform: translateY(4px)   scale(1.1) rotate(8deg); }
-  100% { opacity: 1; transform: translateY(0)     scale(1)   rotate(0); }
+  0%   { opacity: 0; transform: translate(-50%, -120%) scale(0.6) rotate(-20deg); }
+  70%  { opacity: 1; transform: translate(-50%, -40%)  scale(1.2) rotate(8deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%)  scale(1)   rotate(0); }
+}
+
+/* ===== 悪役モンスター (キャンバス上部に登場、閉じ込め/悔しがる) ===== */
+.villain-deco {
+  position: absolute;
+  top: -58px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  z-index: 12;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.villain-deco.show { opacity: 1; }
+.villain-deco .villain-emoji {
+  font-size: 3rem; line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(60,0,60,0.4))
+          drop-shadow(0 0 10px rgba(180,80,220,0.5));
+  animation: villainFloat 1.6s ease-in-out infinite;
+}
+.villain-deco.gloat .villain-emoji {
+  animation: villainShake 0.32s ease-in-out 4;
+}
+@keyframes villainFloat {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-5px) rotate(4deg); }
+}
+@keyframes villainShake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25%      { transform: translateX(-6px) rotate(-10deg); }
+  75%      { transform: translateX(6px) rotate(10deg); }
+}
+.villain-bubble {
+  position: relative;
+  max-width: 220px;
+  background: linear-gradient(135deg, #3B1E4A, #6B2B7A);
+  border: 2.5px solid #F0C8FF;
+  color: #FFF;
+  border-radius: 14px;
+  padding: 6px 12px;
+  font-size: 0.85rem; font-weight: 900;
+  box-shadow: 0 4px 12px rgba(40,0,60,0.35);
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.6);
+  transform-origin: bottom center;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.villain-deco.show .villain-bubble {
+  opacity: 1; transform: scale(1);
+}
+.villain-bubble::after {
+  content: ''; position: absolute;
+  bottom: -9px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border: 7px solid transparent;
+  border-top-color: #6B2B7A;
+  border-bottom: 0;
+}
+
+/* ===== キャンバス割れ演出 ===== */
+.canvas-container.shaking {
+  animation: canvasShake 0.28s ease-in-out 2;
+}
+@keyframes canvasShake {
+  0%, 100% { transform: translate(0,0) rotate(0); }
+  20%      { transform: translate(-6px, 2px) rotate(-1deg); }
+  40%      { transform: translate(5px, -3px) rotate(1.3deg); }
+  60%      { transform: translate(-4px, 4px) rotate(-0.8deg); }
+  80%      { transform: translate(5px, -2px) rotate(0.8deg); }
+}
+.canvas-container.breaking { overflow: visible; }
+
+.canvas-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, #fff 0%, #FFFAE0 55%, rgba(255,250,224,0) 100%);
+  opacity: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+.canvas-flash.active { animation: flashBurst 0.35s ease-out forwards; }
+@keyframes flashBurst {
+  0%   { opacity: 0; }
+  30%  { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+.canvas-cracks {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.3);
+}
+.canvas-cracks.active { animation: crackAppear 0.7s ease-out forwards; }
+@keyframes crackAppear {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+  25%  { opacity: 1; transform: scale(1)   rotate(0);      }
+  75%  { opacity: 1; transform: scale(1.1) rotate(4deg);   }
+  100% { opacity: 0; transform: scale(1.3) rotate(6deg);   }
+}
+
+.canvas-shards {
+  position: absolute; inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.canvas-shards .shard {
+  position: absolute;
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.93), rgba(240,232,220,0.88));
+  border: 1px solid rgba(255,255,255,0.85);
+  box-shadow: 0 0 12px rgba(255,255,255,0.75), inset 0 0 12px rgba(139,111,71,0.18);
+  opacity: 0;
+  transform: translate(0,0) rotate(0) scale(1);
+}
+.canvas-shards .shard-1 { clip-path: polygon(50% 50%, 0% 0%, 50% 0%); }
+.canvas-shards .shard-2 { clip-path: polygon(50% 50%, 50% 0%, 100% 0%); }
+.canvas-shards .shard-3 { clip-path: polygon(50% 50%, 100% 0%, 100% 50%); }
+.canvas-shards .shard-4 { clip-path: polygon(50% 50%, 100% 50%, 100% 100%); }
+.canvas-shards .shard-5 { clip-path: polygon(50% 50%, 100% 100%, 50% 100%); }
+.canvas-shards .shard-6 { clip-path: polygon(50% 50%, 50% 100%, 0% 100%); }
+.canvas-shards .shard-7 { clip-path: polygon(50% 50%, 0% 100%, 0% 50%); }
+.canvas-shards .shard-8 { clip-path: polygon(50% 50%, 0% 50%, 0% 0%); }
+.canvas-shards.burst .shard { animation: shardFly 0.9s cubic-bezier(0.33,1,0.68,1) forwards; }
+.canvas-shards.burst .shard-1 { --tx:-150px; --ty:-170px; --rot:-280deg; }
+.canvas-shards.burst .shard-2 { --tx: 90px;  --ty:-190px; --rot: 230deg; }
+.canvas-shards.burst .shard-3 { --tx: 200px; --ty:-90px;  --rot: 310deg; }
+.canvas-shards.burst .shard-4 { --tx: 210px; --ty: 100px; --rot:-270deg; }
+.canvas-shards.burst .shard-5 { --tx: 80px;  --ty: 210px; --rot: 220deg; }
+.canvas-shards.burst .shard-6 { --tx:-110px; --ty: 200px; --rot:-240deg; }
+.canvas-shards.burst .shard-7 { --tx:-210px; --ty: 70px;  --rot: 290deg; }
+.canvas-shards.burst .shard-8 { --tx:-190px; --ty:-90px;  --rot:-310deg; }
+@keyframes shardFly {
+  0%   { opacity: 0; transform: translate(0,0) rotate(0) scale(1); }
+  12%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.35); }
 }
 
 /* ポワン時に周りに広がる星 */
@@ -869,10 +1009,34 @@ html, body {
         </div>
         <div class="canvas-container" id="canvasContainer">
           <div class="monster-deco" id="monsterDeco" aria-hidden="true"><img class="monster-img" id="monsterImg" alt=""><span class="monster-emoji" id="monsterEmoji" style="display:none;">🍄</span></div>
-          <div class="monster-bubble" id="monsterBubble" aria-hidden="true"></div>
-          <div class="monster-acorn-drop" id="monsterAcornDrop" aria-hidden="true">🌰</div>
           <div id="writerTarget"></div>
           <div class="stroke-number-overlay" id="strokeNumbers"></div>
+          <div class="canvas-flash" id="canvasFlash" aria-hidden="true"></div>
+          <svg class="canvas-cracks" id="canvasCracks" viewBox="0 0 400 400" preserveAspectRatio="none" aria-hidden="true">
+            <g stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"
+               style="filter: drop-shadow(0 0 6px rgba(255,255,255,0.9));">
+              <path d="M200 200 L60 70 L90 90 L40 40"/>
+              <path d="M200 200 L340 70 L310 90 L360 40"/>
+              <path d="M200 200 L60 330 L90 310 L40 360"/>
+              <path d="M200 200 L340 330 L310 310 L360 360"/>
+              <path d="M200 200 L200 40 L190 60 L215 20"/>
+              <path d="M200 200 L200 360 L215 340 L190 380"/>
+              <path d="M200 200 L40 200 L60 210 L20 192"/>
+              <path d="M200 200 L360 200 L340 210 L380 192"/>
+            </g>
+          </svg>
+          <div class="canvas-shards" id="canvasShards" aria-hidden="true">
+            <div class="shard shard-1"></div><div class="shard shard-2"></div>
+            <div class="shard shard-3"></div><div class="shard shard-4"></div>
+            <div class="shard shard-5"></div><div class="shard shard-6"></div>
+            <div class="shard shard-7"></div><div class="shard shard-8"></div>
+          </div>
+          <div class="monster-bubble" id="monsterBubble" aria-hidden="true"></div>
+          <div class="monster-acorn-drop" id="monsterAcornDrop" aria-hidden="true">🌰</div>
+        </div>
+        <div class="villain-deco" id="villainDeco" aria-hidden="true">
+          <div class="villain-bubble" id="villainBubble"></div>
+          <div class="villain-emoji">👾</div>
         </div>
       </div>
     </div>
@@ -1419,14 +1583,35 @@ function _monsterForChar(char) {
   return MONSTERS[char.charCodeAt(0) % MONSTERS.length];
 }
 
-// セリフ（文字のおうちに住んでる物語）
-const MONSTER_LINES = {
-  greet:  ['だれか よんでる〜？', 'ここ、わたしの おうち〜', 'かいてくれる〜？', 'よんでくれた〜？'],
-  thanks: ['ありがとう〜！', 'これ どうぞ〜', 'たすかった〜！', 'うれしい〜！'],
-  bye:    ['またね〜', 'バイバ〜イ']
+// セリフ（妖精救出ナラティブ）
+const FAIRY_LINES = {
+  thanks: [
+    'たすけてくれて ありがとう〜！',
+    'やっと でられた〜！',
+    'すごいね〜！',
+    'これ どうぞ〜🌰',
+    'たすかった〜！',
+    'うれしい〜！'
+  ],
+  bye: ['またね〜', 'バイバ〜イ']
 };
-function _pickLine(kind) {
-  var arr = MONSTER_LINES[kind] || [];
+const VILLAIN_LINES = {
+  trap: [
+    'ふふふ… また とじこめたぞ！',
+    'かけるものなら かいてみろ〜',
+    'この もじ は むずかしいぞ〜',
+    'こんどは にがさないぞ！'
+  ],
+  defeat: [
+    'く〜、やられた〜！',
+    'まてよ〜！',
+    'つぎこそ にがさない！',
+    'なんでだ〜！'
+  ]
+};
+function _pickLine(pool, kind) {
+  var src = (pool === 'villain') ? VILLAIN_LINES : FAIRY_LINES;
+  var arr = src[kind] || [];
   if (!arr.length) return '';
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -1446,12 +1631,37 @@ function _showMonsterBubble(text, durationMs) {
 }
 function _hideMonsterBubble() {
   var bubble = document.getElementById('monsterBubble');
-  if (!bubble) return;
-  if (bubble._hideT) { clearTimeout(bubble._hideT); bubble._hideT = null; }
-  if (bubble.classList.contains('show')) {
-    bubble.classList.remove('show');
-    bubble.classList.add('hide');
+  if (bubble) {
+    if (bubble._hideT) { clearTimeout(bubble._hideT); bubble._hideT = null; }
+    if (bubble.classList.contains('show')) {
+      bubble.classList.remove('show');
+      bubble.classList.add('hide');
+    }
   }
+  // 書き始めたら悪役も即座に消す（邪魔しない）
+  _hideVillain();
+}
+
+// ===== 悪役 (villain) 表示ヘルパー =====
+function _showVillain(kind, duration) {
+  var el = document.getElementById('villainDeco');
+  var bubble = document.getElementById('villainBubble');
+  if (!el || !bubble) return;
+  bubble.textContent = _pickLine('villain', kind);
+  el.classList.remove('gloat');
+  void el.offsetWidth;
+  el.classList.add('show');
+  if (kind === 'defeat') el.classList.add('gloat');
+  if (el._hideT) clearTimeout(el._hideT);
+  el._hideT = setTimeout(function() {
+    el.classList.remove('show', 'gloat');
+  }, duration || 2000);
+}
+function _hideVillain() {
+  var el = document.getElementById('villainDeco');
+  if (!el) return;
+  if (el._hideT) { clearTimeout(el._hideT); el._hideT = null; }
+  el.classList.remove('show', 'gloat');
 }
 
 function _setMonsterForChar(char) {
@@ -1461,9 +1671,25 @@ function _setMonsterForChar(char) {
   var emojiEl = el.querySelector('.monster-emoji');
   if (!imgEl || !emojiEl) return;
   el.classList.remove('pop', 'emerge', 'leave');
+  // 進行中の割れ演出 setTimeout をキャンセル
+  if (window._breakTimers && window._breakTimers.length) {
+    window._breakTimers.forEach(function(t) { clearTimeout(t); });
+    window._breakTimers = [];
+  }
+  // 悪役の自動非表示タイマーもキャンセル
+  _hideVillain();
   // 足元の🌰 drop を隠す
   var drop = document.getElementById('monsterAcornDrop');
   if (drop) { drop.classList.remove('show'); drop.style.opacity = '0'; }
+  // 破片/クラック/フラッシュ をリセット
+  var cc = document.getElementById('canvasContainer');
+  if (cc) cc.classList.remove('shaking', 'breaking');
+  var flash = document.getElementById('canvasFlash');
+  if (flash) flash.classList.remove('active');
+  var cracks = document.getElementById('canvasCracks');
+  if (cracks) cracks.classList.remove('active');
+  var shards = document.getElementById('canvasShards');
+  if (shards) shards.classList.remove('burst');
   var m = _monsterForChar(char);
   if (m.img) {
     imgEl.src = m.img;
@@ -1480,106 +1706,153 @@ function _setMonsterForChar(char) {
     emojiEl.textContent = m.emoji;
   }
   el.style.visibility = 'visible';
-  // re-trigger enter animation（右下から覗く）
+  // 封印された状態でふわっと現れる
   el.classList.remove('enter');
   void el.offsetWidth;
   el.classList.add('enter');
-  // 少し間を置いて「だれか よんでる〜」吹き出し
-  if (el._greetT) clearTimeout(el._greetT);
-  el._greetT = setTimeout(function() {
-    _showMonsterBubble(_pickLine('greet'), 1600);
-  }, 500);
+  // 少し間を空けて悪役登場 → 閉じ込めセリフ
+  if (el._villainT) clearTimeout(el._villainT);
+  el._villainT = setTimeout(function() {
+    _showVillain('trap', 2200);
+  }, 350);
   // 初回チュートリアル
-  _maybeShowMonsterIntro();
+  _maybeShowFairyIntro();
 }
 
-function _playMonsterPop() {
+// ===== キャンバス割れ演出 (妖精救出シーケンス) =====
+function _playCanvasBreak() {
   var el = document.getElementById('monsterDeco');
-  if (!el) return;
-  // 子供が書き始めた吹き出しが残っていたら消す
+  var cc = document.getElementById('canvasContainer');
+  if (!el || !cc) return;
+  // 前回の残り timer を全部クリア
+  if (window._breakTimers && window._breakTimers.length) {
+    window._breakTimers.forEach(function(t) { clearTimeout(t); });
+  }
+  window._breakTimers = [];
+  function _bt(fn, ms) { window._breakTimers.push(setTimeout(fn, ms)); }
+  // 悪役が出ていたら即消す（邪魔しない）
+  _hideVillain();
   _hideMonsterBubble();
   // 既に進行中なら何もしない
   if (el.classList.contains('emerge') || el.classList.contains('leave')) return;
 
-  // フェーズ1: 文字から飛び出す（emerge）
-  el.classList.remove('enter', 'pop');
-  el.classList.add('emerge');
+  // T=0: キャンバスをシェイク + overflow 解放
+  cc.classList.add('shaking', 'breaking');
 
-  // ポワン星パーティクル
-  var rect = el.getBoundingClientRect();
-  var cx = rect.left + rect.width / 2;
-  var cy = rect.top + rect.height / 2;
-  var sparkles = ['✨', '🌟', '✨', '⭐'];
-  for (var i = 0; i < 4; i++) {
-    var sp = document.createElement('div');
-    sp.className = 'monster-sparkle';
-    sp.textContent = sparkles[i];
-    sp.style.left = cx + 'px';
-    sp.style.top  = cy + 'px';
-    sp.style.position = 'fixed';
-    var angle = (i / 4) * Math.PI * 2;
-    sp.style.setProperty('--dx', (Math.cos(angle) * 40) + 'px');
-    sp.style.setProperty('--dy', (Math.sin(angle) * 40) + 'px');
-    document.body.appendChild(sp);
-    (function(node) { setTimeout(function() { node.remove(); }, 800); })(sp);
-  }
+  // T=120: 白フラッシュ
+  _bt(function() {
+    var flash = document.getElementById('canvasFlash');
+    if (flash) {
+      flash.classList.remove('active');
+      void flash.offsetWidth;
+      flash.classList.add('active');
+    }
+  }, 120);
 
-  // 短い「ぽわん」音
+  // T=220: クラック線
+  _bt(function() {
+    var cracks = document.getElementById('canvasCracks');
+    if (cracks) {
+      cracks.classList.remove('active');
+      void cracks.offsetWidth;
+      cracks.classList.add('active');
+    }
+  }, 220);
+
+  // T=320: 破片8枚が放射状に飛散
+  _bt(function() {
+    var shards = document.getElementById('canvasShards');
+    if (shards) {
+      shards.classList.remove('burst');
+      void shards.offsetWidth;
+      shards.classList.add('burst');
+    }
+  }, 320);
+
+  // バリンッ音
   try {
     var ac = (window._audioCtx = window._audioCtx || new (window.AudioContext || window.webkitAudioContext)());
     var now = ac.currentTime;
+    // ノイズで割れた感
+    var buf = ac.createBuffer(1, ac.sampleRate * 0.25, ac.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2);
+    }
+    var noise = ac.createBufferSource();
+    noise.buffer = buf;
+    var ng = ac.createGain();
+    ng.gain.setValueAtTime(0.18, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    noise.connect(ng); ng.connect(ac.destination);
+    noise.start(now);
+    // キラン
     var osc = ac.createOscillator(), g = ac.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(660, now);
-    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
-    g.gain.setValueAtTime(0.08, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(880, now + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.32);
+    g.gain.setValueAtTime(0.08, now + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
     osc.connect(g); g.connect(ac.destination);
-    osc.start(now); osc.stop(now + 0.22);
+    osc.start(now + 0.12); osc.stop(now + 0.36);
   } catch (e) { /* audio not ready */ }
 
-  // フェーズ2: 350ms 後に「ありがとう〜」吹き出し + 🌰ドロップ
-  setTimeout(function() {
-    _showMonsterBubble(_pickLine('thanks'), 900);
+  // T=600: 妖精が封印解除されて中央に登場
+  _bt(function() {
+    el.classList.remove('enter');
+    el.classList.add('emerge');
+  }, 600);
+
+  // T=950: 妖精の「ありがとう」吹き出し + 🌰ドロップ
+  _bt(function() {
+    _showMonsterBubble(_pickLine('fairy', 'thanks'), 950);
     var drop = document.getElementById('monsterAcornDrop');
     if (drop) {
       drop.classList.remove('show');
       void drop.offsetWidth;
       drop.classList.add('show');
     }
-  }, 350);
+  }, 950);
 
-  // フェーズ3: 1150ms 後に退場 (leave)
-  setTimeout(function() {
+  // T=1900: 妖精退場 (leave)
+  _bt(function() {
     el.classList.remove('emerge');
     el.classList.add('leave');
     _hideMonsterBubble();
-  }, 1150);
+  }, 1900);
 
-  // フェーズ4: 1700ms 後に完全に隠す（次の _setMonsterForChar を待つ）
-  setTimeout(function() {
+  // T=2300: 妖精完全消し + 悪役再登場 (悔しがる)
+  _bt(function() {
     el.style.visibility = 'hidden';
     el.classList.remove('leave', 'emerge', 'pop');
     var drop = document.getElementById('monsterAcornDrop');
     if (drop) { drop.classList.remove('show'); drop.style.opacity = '0'; }
-  }, 1700);
-}
+    _showVillain('defeat', 1800);
+  }, 2300);
 
-// ===== 初回チュートリアル（もんすたーさん物語の紹介）=====
-const MONSTER_INTRO_KEY = 'writing_monster_intro_seen';
-function _maybeShowMonsterIntro() {
+  // T=2600: キャンバスの shaking/breaking クラスを解除（次文字ロードに備え）
+  _bt(function() {
+    cc.classList.remove('shaking', 'breaking');
+  }, 2600);
+}
+// 既存呼出し経路との互換
+function _playMonsterPop() { _playCanvasBreak(); }
+
+// ===== 初回チュートリアル（妖精救出物語の紹介）=====
+const FAIRY_INTRO_KEY = 'writing_fairy_intro_seen';
+function _maybeShowFairyIntro() {
   try {
-    if (localStorage.getItem(MONSTER_INTRO_KEY) === '1') return;
+    if (localStorage.getItem(FAIRY_INTRO_KEY) === '1') return;
   } catch (e) { return; }
-  // ちょっと間を空けてから表示（他のUIが落ち着いてから）
   setTimeout(function() {
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25);z-index:9500;opacity:0;transition:opacity 0.3s ease;cursor:pointer;';
-    ov.innerHTML = '<div style="background:#FFF8E7;border:4px solid #B97A3E;border-radius:24px;padding:22px 28px;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.25);">'
-      + '<div style="font-size:2.6rem;line-height:1;margin-bottom:8px;">🏠✨</div>'
-      + '<div style="font-size:1.05rem;font-weight:900;color:#5D2E08;line-height:1.6;">もじのなかに、<br>ちいさな なかまが すんでるよ〜</div>'
-      + '<div style="font-size:0.85rem;font-weight:700;color:#8B7355;margin-top:10px;line-height:1.5;">かいてあげると、でてきて<br>あそびに くるんだって ✨</div>'
-      + '<div style="font-size:0.7rem;color:#B97A3E;margin-top:12px;">(タップで とじる)</div>'
+    ov.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);z-index:9500;opacity:0;transition:opacity 0.3s ease;cursor:pointer;';
+    ov.innerHTML = '<div style="background:#FFF8E7;border:4px solid #6B2B7A;border-radius:24px;padding:22px 28px;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.3);">'
+      + '<div style="font-size:2.8rem;line-height:1;margin-bottom:6px;">👾✨</div>'
+      + '<div style="font-size:1.15rem;font-weight:900;color:#5B1565;margin-bottom:6px;">たいへん！</div>'
+      + '<div style="font-size:1rem;font-weight:900;color:#5D2E08;line-height:1.6;">もじのなかに ようせいが<br>とじこめられてる…</div>'
+      + '<div style="font-size:0.9rem;font-weight:700;color:#8B7355;margin-top:10px;line-height:1.5;">きみが もじを かいたら、<br>たすけだせるよ！ ✨</div>'
+      + '<div style="font-size:0.7rem;color:#6B2B7A;margin-top:12px;">(タップで とじる)</div>'
       + '</div>';
     document.body.appendChild(ov);
     void ov.offsetWidth;
@@ -1591,8 +1864,8 @@ function _maybeShowMonsterIntro() {
       setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 300);
     }
     ov.addEventListener('click', close);
-    setTimeout(close, 3500);
-    try { localStorage.setItem(MONSTER_INTRO_KEY, '1'); } catch (e) { /* ignore */ }
+    setTimeout(close, 3800);
+    try { localStorage.setItem(FAIRY_INTRO_KEY, '1'); } catch (e) { /* ignore */ }
   }, 700);
 }
 
