@@ -21,23 +21,40 @@ export async function playFairyBreak3D(opts) {
   }
 
   const rect = mountEl.getBoundingClientRect();
+  if (rect.width < 4 || rect.height < 4) {
+    if (onDone) setTimeout(onDone, 50);
+    return;
+  }
   const width = Math.max(1, Math.floor(rect.width));
   const height = Math.max(1, Math.floor(rect.height));
+
+  // 前回インスタンスがまだ生きていたら先に片付け、WebGL コンテキストの積み増しを防ぐ
+  if (mountEl._fairy3dCleanup) {
+    try { mountEl._fairy3dCleanup(); } catch (e) { /* ignore */ }
+  }
 
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;'
     + 'pointer-events:none;z-index:20;';
   canvas.setAttribute('aria-hidden', 'true');
 
+  // WebGLRenderer 構築は稀に失敗する (context 上限、ドライバクラッシュ等)。
+  // 先にレンダラを作ってから DOM に append することで、失敗時に孤立 canvas を残さない。
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  } catch (err) {
+    if (onDone) setTimeout(onDone, 50);
+    throw err;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(width, height, false);
+
   const prevPos = mountEl.style.position;
   if (getComputedStyle(mountEl).position === 'static') {
     mountEl.style.position = 'relative';
   }
   mountEl.appendChild(canvas);
-
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(width, height, false);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
@@ -59,8 +76,6 @@ export async function playFairyBreak3D(opts) {
   const boxGroup = new THREE.Group();
   scene.add(boxGroup);
 
-  const allMaterials = [];
-
   for (let ix = 0; ix < N; ix++) {
     for (let iy = 0; iy < N; iy++) {
       const geo = new THREE.BoxGeometry(cellSize * 0.94, cellSize * 0.94, depth);
@@ -72,7 +87,6 @@ export async function playFairyBreak3D(opts) {
         transparent: true,
         opacity: 1,
       });
-      allMaterials.push(mat);
       const mesh = new THREE.Mesh(geo, mat);
       const x = (ix - (N - 1) / 2) * cellSize;
       const y = (iy - (N - 1) / 2) * cellSize;
@@ -146,8 +160,10 @@ export async function playFairyBreak3D(opts) {
     } catch (e) { /* ignore */ }
     if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     if (prevPos !== undefined) mountEl.style.position = prevPos;
+    if (mountEl._fairy3dCleanup === cleanup) mountEl._fairy3dCleanup = null;
     if (onDone) { try { onDone(); } catch (e) { /* ignore */ } }
   }
+  mountEl._fairy3dCleanup = cleanup;
 
   function frame(ts) {
     if (disposed) return;
