@@ -6,6 +6,14 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = "./"
 binding = "ASSETS"
+run_worker_first = [
+  "/admin/*",
+  "/tools/*",
+  "/room/furniture_adjuster*",
+  "/room/yard_adjuster*",
+  "/.netlify/functions/*",
+  "/api/*"
+]
 
 [observability]
 enabled = true
