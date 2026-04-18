@@ -6,6 +6,42 @@
 
 import { Buffer } from 'node:buffer';
 
+const PROTECTED_PREFIXES = [
+  '/admin/',
+  '/admin',
+  '/tools/',
+  '/tools',
+  '/room/furniture_adjuster',
+  '/room/yard_adjuster'
+];
+
+function requiresAuth(path) {
+  return PROTECTED_PREFIXES.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p + '.'));
+}
+
+function checkBasicAuth(request, env) {
+  const expected = env.ADMIN_PASSWORD;
+  if (!expected) return false;
+  const auth = request.headers.get('Authorization') || '';
+  if (!auth.startsWith('Basic ')) return false;
+  try {
+    const decoded = atob(auth.slice(6));
+    const idx = decoded.indexOf(':');
+    if (idx < 0) return false;
+    const pass = decoded.slice(idx + 1);
+    return pass === expected;
+  } catch {
+    return false;
+  }
+}
+
+function authChallenge() {
+  return new Response('Authentication required', {
+    status: 401,
+    headers: { 'WWW-Authenticate': 'Basic realm="pono-asobiba admin", charset="UTF-8"' }
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -16,6 +52,10 @@ export default {
     }
     if (path === '/.netlify/functions/ai-tts' || path === '/api/ai-tts') {
       return handleAiTts(request, env);
+    }
+
+    if (requiresAuth(path)) {
+      if (!checkBasicAuth(request, env)) return authChallenge();
     }
 
     return env.ASSETS.fetch(request);

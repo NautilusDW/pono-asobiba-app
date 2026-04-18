@@ -10,3 +10,7 @@ node_modules/
 
 # Local Netlify folder
 .netlify
+
+# Cloudflare wrangler local env (secrets)
+.dev.vars
+.wrangler/
