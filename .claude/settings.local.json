@@ -20,7 +20,11 @@
       "WebFetch(domain:pono-dev--pono-asobiba.netlify.live)",
       "WebFetch(domain:pono-asobiba.netlify.app)",
       "Bash(mkdir -p ~/.claude/sessions)",
-      "Read(//c/Users/surfe/.claude/sessions/**)"
+      "Read(//c/Users/surfe/.claude/sessions/**)",
+      "Bash(grep -Eq \"Ready on|ready on|Starting local server|error|Error|ERROR\" \"C:\\\\\\\\Users\\\\\\\\surfe\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\d--AppDevelopment-kids-writing-app\\\\\\\\6ed78b96-8d01-45f6-be42-d5bd067a9438\\\\\\\\tasks\\\\\\\\bup5a39za.output\")",
+      "WebFetch(domain:docs.spline.design)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:cdn.jsdelivr.net)"
     ]
   },
   "hooks": {

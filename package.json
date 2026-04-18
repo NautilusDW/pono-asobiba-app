@@ -4,12 +4,8 @@
   "description": "強化学習の概念「RLAnything」を応用し、Claude Code が自己進化・自己最適化するための仕組みです。",
   "main": "index.js",
   "scripts": {
-    "dev": "netlify dev",
-    "dev:live": "netlify dev --live=pono-dev",
-    "deploy:preview": "netlify deploy --dir . --no-build",
-    "deploy:prod": "netlify deploy --dir . --no-build --prod",
-    "status": "netlify status",
-    "open": "netlify open",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
