@@ -54,6 +54,15 @@ export default {
       return handleAiTts(request, env);
     }
 
+    if (path.startsWith('/api/gh/')) {
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleGhProxy(request, env);
+    }
+    if (path.startsWith('/api/gemini/')) {
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleGeminiProxy(request, env);
+    }
+
     if (requiresAuth(path)) {
       if (!checkBasicAuth(request, env)) return authChallenge();
     }
@@ -355,6 +364,69 @@ async function handleAiTts(request, env) {
     });
   } catch (e) {
     return json(500, { error: e.message });
+  }
+}
+
+async function handleGhProxy(request, env) {
+  const url = new URL(request.url);
+  const ghPath = url.pathname.replace(/^\/api\/gh/, '');
+  if (!env.GITHUB_TOKEN) return json(500, { error: 'GITHUB_TOKEN not configured on server' });
+
+  const ghUrl = 'https://api.github.com' + ghPath + url.search;
+  const headers = {
+    'Authorization': 'Bearer ' + env.GITHUB_TOKEN,
+    'Accept': request.headers.get('Accept') || 'application/vnd.github+json',
+    'User-Agent': 'pono-asobiba-app',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+  const ct = request.headers.get('Content-Type');
+  if (ct) headers['Content-Type'] = ct;
+
+  const body = (request.method === 'GET' || request.method === 'HEAD')
+    ? null
+    : await request.arrayBuffer();
+
+  try {
+    const resp = await fetch(ghUrl, { method: request.method, headers, body });
+    const respBody = await resp.arrayBuffer();
+    const respHeaders = {
+      'Content-Type': resp.headers.get('Content-Type') || 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    };
+    return new Response(respBody, { status: resp.status, headers: respHeaders });
+  } catch (e) {
+    return json(502, { error: 'GitHub proxy error: ' + e.message });
+  }
+}
+
+async function handleGeminiProxy(request, env) {
+  const url = new URL(request.url);
+  const geminiPath = url.pathname.replace(/^\/api\/gemini/, '');
+  const apiKey = env.GEMINI_API_KEY;
+  if (!apiKey) return json(500, { error: 'GEMINI_API_KEY not configured on server' });
+
+  const searchParams = new URLSearchParams(url.search);
+  searchParams.delete('key');
+  searchParams.set('key', apiKey);
+  const geminiUrl = 'https://generativelanguage.googleapis.com' + geminiPath + '?' + searchParams.toString();
+
+  const headers = { 'Content-Type': request.headers.get('Content-Type') || 'application/json' };
+  const body = (request.method === 'GET' || request.method === 'HEAD')
+    ? null
+    : await request.arrayBuffer();
+
+  try {
+    const resp = await fetch(geminiUrl, { method: request.method, headers, body });
+    const respBody = await resp.arrayBuffer();
+    return new Response(respBody, {
+      status: resp.status,
+      headers: {
+        'Content-Type': resp.headers.get('Content-Type') || 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  } catch (e) {
+    return json(502, { error: 'Gemini proxy error: ' + e.message });
   }
 }
 
