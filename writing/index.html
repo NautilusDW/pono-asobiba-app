@@ -132,17 +132,25 @@ html, body {
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
 }
+.monster-deco .monster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2));
+}
 @keyframes monsterFloat {
   0%, 100% { transform: translateY(0) scale(1);    }
   50%      { transform: translateY(-6px) scale(1.05); }
 }
-.monster-deco.pop .monster-emoji { animation: monsterPop 0.5s ease forwards; }
+.monster-deco.pop .monster-emoji,
+.monster-deco.pop .monster-img { animation: monsterPop 0.5s ease forwards; }
 @keyframes monsterPop {
   0%   { transform: scale(1);   opacity: 1; }
   40%  { transform: scale(1.4); opacity: 1; }
   100% { transform: scale(0.6); opacity: 0; }
 }
-.monster-deco.enter .monster-emoji { animation: monsterEnter 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+.monster-deco.enter .monster-emoji,
+.monster-deco.enter .monster-img { animation: monsterEnter 0.45s cubic-bezier(0.34,1.56,0.64,1); }
 @keyframes monsterEnter {
   0%   { transform: scale(0)   translateY(8px); opacity: 0; }
   100% { transform: scale(1)   translateY(0);   opacity: 1; }
@@ -766,7 +774,7 @@ html, body {
           <div id="streak-badge" class="streak-badge hidden"></div>
         </div>
         <div class="canvas-container" id="canvasContainer">
-          <div class="monster-deco" id="monsterDeco" aria-hidden="true"><span class="monster-emoji">🍄</span></div>
+          <div class="monster-deco" id="monsterDeco" aria-hidden="true"><img class="monster-img" id="monsterImg" alt=""><span class="monster-emoji" id="monsterEmoji" style="display:none;">🍄</span></div>
           <div id="writerTarget"></div>
           <div class="stroke-number-overlay" id="strokeNumbers"></div>
         </div>
@@ -1290,12 +1298,25 @@ function ponoHint() {
 
 // ===== もんすたーさん（かわいい討伐演出）=====
 const MONSTERS = [
-  { id: 'mush',  emoji: '🍄' },
-  { id: 'bub',   emoji: '🫧' },
-  { id: 'drg',   emoji: '🐲' },
-  { id: 'star',  emoji: '⭐' },
-  { id: 'bug',   emoji: '🐛' },
-  { id: 'ghost', emoji: '👻' }
+  { id: 'pear',   emoji: '🍐', img: '../assets/images/monsters/chars/monster_001.png' },
+  { id: 'bdrop',  emoji: '💧', img: '../assets/images/monsters/chars/monster_002.png' },
+  { id: 'leafb',  emoji: '🌿', img: '../assets/images/monsters/chars/monster_003.png' },
+  { id: 'moon',   emoji: '🌕', img: '../assets/images/monsters/chars/monster_004.png' },
+  { id: 'mush1',  emoji: '🍄', img: '../assets/images/monsters/chars/monster_005.png' },
+  { id: 'mush2',  emoji: '🍄', img: '../assets/images/monsters/chars/monster_006.png' },
+  { id: 'mush3',  emoji: '🍄', img: '../assets/images/monsters/chars/monster_007.png' },
+  { id: 'bug1',   emoji: '🪲', img: '../assets/images/monsters/chars/monster_008.png' },
+  { id: 'bug2',   emoji: '🪲', img: '../assets/images/monsters/chars/monster_009.png' },
+  { id: 'bug3',   emoji: '🪲', img: '../assets/images/monsters/chars/monster_010.png' },
+  { id: 'ghost2', emoji: '👻', img: '../assets/images/monsters/chars/monster_011.png' },
+  { id: 'ghost1', emoji: '👻', img: '../assets/images/monsters/chars/monster_012.png' },
+  { id: 'drg',    emoji: '🐲', img: '../assets/images/monsters/chars/monster_013.png' },
+  { id: 'leaf',   emoji: '🍃', img: '../assets/images/monsters/chars/monster_014.png' },
+  { id: 'star',   emoji: '⭐', img: '../assets/images/monsters/chars/monster_015.png' },
+  { id: 'bub',    emoji: '🫧', img: '../assets/images/monsters/chars/monster_016.png' },
+  { id: 'fluff',  emoji: '🐹', img: '../assets/images/monsters/chars/monster_017.png' },
+  { id: 'drop',   emoji: '💧', img: '../assets/images/monsters/chars/monster_018.png' },
+  { id: 'worm',   emoji: '🐛', img: '../assets/images/monsters/chars/monster_019.png' }
 ];
 function _monsterForChar(char) {
   if (!char) return MONSTERS[0];
@@ -1304,11 +1325,25 @@ function _monsterForChar(char) {
 function _setMonsterForChar(char) {
   var el = document.getElementById('monsterDeco');
   if (!el) return;
+  var imgEl = el.querySelector('.monster-img');
   var emojiEl = el.querySelector('.monster-emoji');
-  if (!emojiEl) return;
+  if (!imgEl || !emojiEl) return;
   el.classList.remove('pop');
   var m = _monsterForChar(char);
-  emojiEl.textContent = m.emoji;
+  if (m.img) {
+    imgEl.src = m.img;
+    imgEl.style.display = '';
+    emojiEl.style.display = 'none';
+    imgEl.onerror = function() {
+      imgEl.style.display = 'none';
+      emojiEl.style.display = '';
+      emojiEl.textContent = m.emoji;
+    };
+  } else {
+    imgEl.style.display = 'none';
+    emojiEl.style.display = '';
+    emojiEl.textContent = m.emoji;
+  }
   el.style.visibility = 'visible';
   // re-trigger enter animation
   el.classList.remove('enter');

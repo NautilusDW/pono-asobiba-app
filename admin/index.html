@@ -10855,12 +10855,25 @@ function renderWritingIllust() {
 // 👾 モンスター イラスト管理
 // ===============================================
 var MONSTER_CHARS = [
-  { id: 'mush',  emoji: '🍄', name: 'きのこさん',    color: '#F472B6' },
-  { id: 'bub',   emoji: '🫧', name: 'しゃぼんちゃん', color: '#7DD3FC' },
-  { id: 'drg',   emoji: '🐲', name: 'どらちゃん',    color: '#86EFAC' },
-  { id: 'star',  emoji: '⭐', name: 'きらりん',      color: '#FBBF24' },
-  { id: 'bug',   emoji: '🐛', name: 'むしさん',      color: '#A78BFA' },
-  { id: 'ghost', emoji: '👻', name: 'ぽわりん',      color: '#E5E7EB' }
+  { id: 'pear',   emoji: '🍐', name: 'なしちゃん',    src: '../assets/images/monsters/chars/monster_001.png' },
+  { id: 'bdrop',  emoji: '💧', name: 'あおしずく',    src: '../assets/images/monsters/chars/monster_002.png' },
+  { id: 'leafb',  emoji: '🌿', name: 'はっぱん',      src: '../assets/images/monsters/chars/monster_003.png' },
+  { id: 'moon',   emoji: '🌕', name: 'つきのぞき',    src: '../assets/images/monsters/chars/monster_004.png' },
+  { id: 'mush1',  emoji: '🍄', name: 'きのこくん',    src: '../assets/images/monsters/chars/monster_005.png' },
+  { id: 'mush2',  emoji: '🍄', name: 'ねむきのこ',    src: '../assets/images/monsters/chars/monster_006.png' },
+  { id: 'mush3',  emoji: '🍄', name: 'こそこそのこ',  src: '../assets/images/monsters/chars/monster_007.png' },
+  { id: 'bug1',   emoji: '🪲', name: 'かぶとさん',    src: '../assets/images/monsters/chars/monster_008.png' },
+  { id: 'bug2',   emoji: '🪲', name: 'かぶたろう',    src: '../assets/images/monsters/chars/monster_009.png' },
+  { id: 'bug3',   emoji: '🪲', name: 'さかさむし',    src: '../assets/images/monsters/chars/monster_010.png' },
+  { id: 'ghost2', emoji: '👻', name: 'ふたごゴースト',src: '../assets/images/monsters/chars/monster_011.png' },
+  { id: 'ghost1', emoji: '👻', name: 'ちびおばけ',    src: '../assets/images/monsters/chars/monster_012.png' },
+  { id: 'drg',    emoji: '🐲', name: 'どらちゃん',    src: '../assets/images/monsters/chars/monster_013.png' },
+  { id: 'leaf',   emoji: '🍃', name: 'はっぱくん',    src: '../assets/images/monsters/chars/monster_014.png' },
+  { id: 'star',   emoji: '⭐', name: 'ほしちゃん',    src: '../assets/images/monsters/chars/monster_015.png' },
+  { id: 'bub',    emoji: '🫧', name: 'あわまるズ',    src: '../assets/images/monsters/chars/monster_016.png' },
+  { id: 'fluff',  emoji: '🐹', name: 'もふもふ',      src: '../assets/images/monsters/chars/monster_017.png' },
+  { id: 'drop',   emoji: '💧', name: 'しずく',        src: '../assets/images/monsters/chars/monster_018.png' },
+  { id: 'worm',   emoji: '🐛', name: 'みみずん',      src: '../assets/images/monsters/chars/monster_019.png' }
 ];
 var MONSTER_BOSSES = [
   { row: 'あ行', emoji: '🌸', name: 'さくらん',     color: '#FBCFE8' },
@@ -10893,11 +10906,24 @@ function _renderMonsterCard(item, gridEl, prefix) {
   var s = statuses[key] || 'todo';
 
   var card = document.createElement('div');
-  card.style.cssText = 'background:' + item.color + ';border:2px solid #E8E0D8;border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;';
+  card.style.cssText = 'background:' + (item.color || '#FFF8E7') + ';border:2px solid #E8E0D8;border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;';
 
   var preview = document.createElement('div');
-  preview.style.cssText = 'width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;font-size:2.6rem;';
-  preview.textContent = item.emoji;
+  preview.style.cssText = 'width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;font-size:2.6rem;overflow:hidden;';
+  if (item.src) {
+    var img = document.createElement('img');
+    img.src = item.src;
+    img.style.cssText = 'max-width:92%;max-height:92%;object-fit:contain;';
+    img.onerror = function() { preview.innerHTML = ''; preview.textContent = item.emoji; };
+    img.onload  = function() {
+      // 画像ありなら自動で「完成」に（初回のみ）
+      var cur = monsterIllustGetStatus();
+      if (!cur[key]) { cur[key] = 'done'; localStorage.setItem(MONSTER_ILLUST_KEY, JSON.stringify(cur)); badge.textContent = labelMap['done']; badge.style.background = colorMap['done']; badge.style.color = '#fff'; }
+    };
+    preview.appendChild(img);
+  } else {
+    preview.textContent = item.emoji;
+  }
   card.appendChild(preview);
 
   var name = document.createElement('div');
