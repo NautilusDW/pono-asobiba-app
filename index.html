@@ -382,11 +382,16 @@
   <!-- Service Worker 登録 -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('controllerchange', function() {
+      function _ponoSWReload() {
         if (!window._ponoSWRefreshing) {
           window._ponoSWRefreshing = true;
           window.location.reload();
         }
+      }
+      navigator.serviceWorker.addEventListener('controllerchange', _ponoSWReload);
+      // iOS ホーム画面 PWA では controllerchange が発火しにくいので postMessage も併用
+      navigator.serviceWorker.addEventListener('message', function(e) {
+        if (e && e.data && e.data.type === 'sw-updated') _ponoSWReload();
       });
       navigator.serviceWorker.register('/sw.js').then(function(reg) {
         reg.update();

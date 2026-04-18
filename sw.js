@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 213;
+const CACHE_VERSION = 214;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -10,11 +10,20 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  // 全キャッシュを削除して最新状態にする
+  // 全キャッシュを削除して最新状態にする + 既存クライアントに通知して強制リロード
+  // iOS ホーム画面 PWA では controllerchange が発火しにくいケースがあるため
+  // postMessage でも通知し、ページ側の message リスナーが reload() する
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
+    .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+    .then(clients => {
+      for (const client of clients) {
+        try { client.postMessage({ type: 'sw-updated', version: CACHE_VERSION }); }
+        catch (e) { /* ignore */ }
+      }
+    })
   );
 });
 
@@ -36,11 +45,13 @@ self.addEventListener('fetch', event => {
   }
 
   // HTML はキャッシュしない（常に最新を取得）
+  // iOS WebKit の HTTP キャッシュも迂回するため cache: 'no-store' を明示
   const isHTML = event.request.destination === 'document'
     || event.request.headers.get('accept')?.includes('text/html');
   if (isHTML) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(event.request))
     );
     return;
   }

@@ -13,12 +13,17 @@
 
   // ── PWA SW更新チェック（全ページ共通）──
   // SW更新時に自動リロードし、ユーザーが古いコードを使い続けないようにする
+  // iOS ホーム画面 PWA では controllerchange が発火しにくいので postMessage も併用
   if ('serviceWorker' in navigator) {
     var _swRefreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function() {
+    function _ponoSwReload() {
       if (_swRefreshing) return;
       _swRefreshing = true;
       window.location.reload();
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', _ponoSwReload);
+    navigator.serviceWorker.addEventListener('message', function(e) {
+      if (e && e.data && e.data.type === 'sw-updated') _ponoSwReload();
     });
     // ゲームページ起動時にSW更新チェック
     navigator.serviceWorker.ready.then(function(reg) {
