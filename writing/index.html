@@ -9,25 +9,6 @@
 <script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
-<script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}
-</script>
-<script type="module">
-  // 3D 破壊演出のモジュールを遅延プリロードして window._fairy3dMod に格納。
-  // 初回 writing 完了前にロード完了していれば 3D 演出、間に合わなければ既存 CSS 演出。
-  (function() {
-    function load() {
-      if (window._fairy3dMod || window._fairy3dLoading) return;
-      window._fairy3dLoading = true;
-      import('../common/fairy-3d.js')
-        .then(m => { window._fairy3dMod = m; })
-        .catch(err => { console.warn('[fairy-3d] load failed:', err); })
-        .finally(() => { window._fairy3dLoading = false; });
-    }
-    if (document.readyState === 'complete') setTimeout(load, 600);
-    else window.addEventListener('load', () => setTimeout(load, 600));
-  })();
-</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -407,6 +388,57 @@ html, body {
   0%   { opacity: 0; transform: translate(0,0) rotate(0) scale(1); }
   12%  { opacity: 1; }
   100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.35); }
+}
+
+/* ===== 封印解除演出 (魔法陣 + ヒビ + 光バースト + キラキラ粒子) ===== */
+#canvasSeal, #canvasBurst, #canvasSparkles { position: absolute; pointer-events: none; }
+#canvasSeal { inset: 0; z-index: 18; opacity: 0; }
+#canvasSeal.active { opacity: 1; }
+#canvasSeal svg { width: 100%; height: 100%; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)); }
+#canvasSeal .seal-ring { stroke: #C084FC; stroke-width: 2; fill: none; opacity: 0.7; transform-origin: 50% 50%; }
+#canvasSeal.active .seal-ring-group { animation: sealSpin 1.2s ease-out forwards; transform-origin: 50% 50%; }
+@keyframes sealSpin {
+  0%   { transform: scale(0.6) rotate(0);     opacity: 0;   }
+  30%  { transform: scale(1)   rotate(120deg); opacity: 0.9; }
+  100% { transform: scale(1.1) rotate(240deg); opacity: 0;   }
+}
+#canvasSeal .seal-crack {
+  stroke: #FFEC63; stroke-width: 2.5; stroke-linecap: round; fill: none;
+  stroke-dasharray: 70; stroke-dashoffset: 70;
+  filter: drop-shadow(0 0 4px #fff);
+}
+#canvasSeal.cracking .seal-crack { animation: crackOpen 0.55s ease-out forwards; }
+@keyframes crackOpen { to { stroke-dashoffset: 0; } }
+#canvasBurst {
+  top: 50%; left: 50%; width: 22%; height: 22%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0; z-index: 19; mix-blend-mode: screen;
+  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,238,150,0.9) 30%, rgba(192,132,252,0.5) 60%, transparent 80%);
+}
+#canvasBurst.active { animation: burstOut 0.85s ease-out forwards; }
+@keyframes burstOut {
+  0%   { transform: translate(-50%,-50%) scale(0);   opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(4.5); opacity: 0; }
+}
+#canvasSparkles { top: 50%; left: 50%; width: 1px; height: 1px; z-index: 20; }
+#canvasSparkles .spk {
+  position: absolute; left: 0; top: 0;
+  font-size: 22px;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  will-change: transform, opacity;
+  text-shadow: 0 0 4px #fff, 0 0 8px #FFEC63;
+}
+#canvasSparkles.active .spk { animation: spkFly 1.3s cubic-bezier(0.2,0.6,0.3,1) forwards; }
+@keyframes spkFly {
+  0%   { transform: translate(-50%,-50%) scale(0) rotate(0);   opacity: 0; }
+  15%  { transform: translate(-50%,-50%) scale(1) rotate(60deg); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx,0)), calc(-50% + var(--dy,0))) scale(0.3) rotate(var(--rot,360deg)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #canvasSeal, #canvasBurst, #canvasSparkles { display: none !important; }
 }
 
 /* ポワン時に周りに広がる星 */
@@ -1038,6 +1070,25 @@ html, body {
             <div class="shard shard-5"></div><div class="shard shard-6"></div>
             <div class="shard shard-7"></div><div class="shard shard-8"></div>
           </div>
+          <div id="canvasSeal" aria-hidden="true">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+              <g class="seal-ring-group">
+                <circle class="seal-ring" cx="50" cy="50" r="35"/>
+                <circle class="seal-ring" cx="50" cy="50" r="28" stroke-dasharray="4 3"/>
+                <polygon class="seal-ring" points="50,22 62,42 78,42 65,55 70,72 50,62 30,72 35,55 22,42 38,42"/>
+              </g>
+              <g class="crack-group">
+                <path class="seal-crack" d="M50,50 L85,25"/>
+                <path class="seal-crack" d="M50,50 L92,58"/>
+                <path class="seal-crack" d="M50,50 L63,92"/>
+                <path class="seal-crack" d="M50,50 L22,86"/>
+                <path class="seal-crack" d="M50,50 L8,48"/>
+                <path class="seal-crack" d="M50,50 L30,10"/>
+              </g>
+            </svg>
+          </div>
+          <div id="canvasBurst" aria-hidden="true"></div>
+          <div id="canvasSparkles" aria-hidden="true"></div>
           <div class="monster-bubble" id="monsterBubble" aria-hidden="true"></div>
           <div class="monster-acorn-drop" id="monsterAcornDrop" aria-hidden="true">🌰</div>
         </div>
@@ -1697,6 +1748,12 @@ function _setMonsterForChar(char) {
   if (cracks) cracks.classList.remove('active');
   var shards = document.getElementById('canvasShards');
   if (shards) shards.classList.remove('burst');
+  var seal = document.getElementById('canvasSeal');
+  if (seal) seal.classList.remove('active', 'cracking');
+  var burst = document.getElementById('canvasBurst');
+  if (burst) burst.classList.remove('active');
+  var sparkles = document.getElementById('canvasSparkles');
+  if (sparkles) { sparkles.classList.remove('active'); sparkles.innerHTML = ''; }
   var m = _monsterForChar(char);
   if (m.img) {
     imgEl.src = m.img;
@@ -1743,23 +1800,16 @@ function _playCanvasBreak() {
   // 既に進行中なら何もしない
   if (el.classList.contains('emerge') || el.classList.contains('leave')) return;
 
-  // T=0: キャンバスをシェイク + overflow 解放
+  // T=0: キャンバスをシェイク + overflow 解放 + 魔法陣を浮かび上がらせる
   cc.classList.add('shaking', 'breaking');
-
-  // 3D 破壊演出 (モジュールがロード済みの時のみ、同期的にディスパッチ)
-  // prefers-reduced-motion 時や WebGL 非対応時は内部で即 return する
-  var _use3D = false;
-  if (window._fairy3dMod && typeof window._fairy3dMod.playFairyBreak3D === 'function') {
-    try {
-      window._fairy3dMod.playFairyBreak3D({
-        mountEl: cc,
-        durationMs: 1400,
-      });
-      _use3D = true;
-    } catch (e) { console.warn('[fairy-3d] play failed:', e); _use3D = false; }
+  var seal = document.getElementById('canvasSeal');
+  if (seal) {
+    seal.classList.remove('active', 'cracking');
+    void seal.offsetWidth;
+    seal.classList.add('active');
   }
 
-  // T=120: 白フラッシュ
+  // T=120: 白フラッシュ (光の下地)
   _bt(function() {
     var flash = document.getElementById('canvasFlash');
     if (flash) {
@@ -1769,27 +1819,50 @@ function _playCanvasBreak() {
     }
   }, 120);
 
-  // T=220: クラック線
+  // T=260: 魔法陣に放射状のヒビが走る
   _bt(function() {
-    var cracks = document.getElementById('canvasCracks');
-    if (cracks) {
-      cracks.classList.remove('active');
-      void cracks.offsetWidth;
-      cracks.classList.add('active');
-    }
-  }, 220);
+    var seal = document.getElementById('canvasSeal');
+    if (seal) seal.classList.add('cracking');
+  }, 260);
 
-  // T=320: 破片8枚が放射状に飛散 (3D 演出が走っている時は重複を避けてスキップ)
-  if (!_use3D) {
-    _bt(function() {
-      var shards = document.getElementById('canvasShards');
-      if (shards) {
-        shards.classList.remove('burst');
-        void shards.offsetWidth;
-        shards.classList.add('burst');
-      }
-    }, 320);
-  }
+  // T=420: 中央から光バースト
+  _bt(function() {
+    var burst = document.getElementById('canvasBurst');
+    if (burst) {
+      burst.classList.remove('active');
+      void burst.offsetWidth;
+      burst.classList.add('active');
+    }
+  }, 420);
+
+  // T=460: キラキラ粒子を放射
+  _bt(function() {
+    var wrap = document.getElementById('canvasSparkles');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    var symbols = ['✨','⭐','💫','🌟','◆'];
+    var count = 26;
+    var baseDist = Math.min(cc.clientWidth, cc.clientHeight) * 0.55;
+    for (var i = 0; i < count; i++) {
+      var s = document.createElement('span');
+      s.className = 'spk';
+      s.textContent = symbols[i % symbols.length];
+      var angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      var dist = baseDist * (0.6 + Math.random() * 0.6);
+      s.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+      s.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+      s.style.setProperty('--rot', (Math.random() * 720 - 360).toFixed(0) + 'deg');
+      s.style.animationDelay = (Math.random() * 0.08).toFixed(2) + 's';
+      wrap.appendChild(s);
+    }
+    wrap.classList.remove('active');
+    void wrap.offsetWidth;
+    wrap.classList.add('active');
+    window._breakTimers.push(setTimeout(function() {
+      wrap.classList.remove('active');
+      wrap.innerHTML = '';
+    }, 1600));
+  }, 460);
 
   // バリンッ音
   try {
@@ -1855,6 +1928,12 @@ function _playCanvasBreak() {
   // T=2600: キャンバスの shaking/breaking クラスを解除（次文字ロードに備え）
   _bt(function() {
     cc.classList.remove('shaking', 'breaking');
+    var seal = document.getElementById('canvasSeal');
+    if (seal) seal.classList.remove('active', 'cracking');
+    var burst = document.getElementById('canvasBurst');
+    if (burst) burst.classList.remove('active');
+    var sparkles = document.getElementById('canvasSparkles');
+    if (sparkles) { sparkles.classList.remove('active'); sparkles.innerHTML = ''; }
   }, 2600);
 }
 // 既存呼出し経路との互換
