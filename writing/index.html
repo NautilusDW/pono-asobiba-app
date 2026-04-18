@@ -2417,23 +2417,26 @@ function _rowPracticeNextChar() {
 }
 
 function _showRowPracticeWord(char, data, onDone) {
-  var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(93,78,55,0.5);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;';
-  var card = document.createElement('div');
-  card.style.cssText = 'background:#fff;border-radius:24px;padding:28px 24px;text-align:center;width:min(80vw,280px);box-shadow:0 12px 48px rgba(93,78,55,0.25);';
-  card.innerHTML =
-    '<div style="font-size:4rem;margin-bottom:8px;">' + data.emoji + '</div>' +
-    '<div style="font-size:1.8rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">' +
-    '<span style="color:#FF6B9D;opacity:0.5;">' + char + '</span>' + data.word.slice(char.length) +
-    '</div>' +
-    '<div style="font-size:0.85rem;color:#A89880;margin-bottom:14px;">こんどは ことばの なかで<br>かいてみよう！</div>' +
-    '<button style="padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">かく！</button>';
-  ov.appendChild(card);
-  document.body.appendChild(ov);
-  card.querySelector('button').addEventListener('click', function() {
-    ov.remove();
-    if (onDone) onDone();
-  });
+  // 妖精救出演出 (_playCanvasBreak 0-2300ms) が見えるように少し待つ
+  setTimeout(function() {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(93,78,55,0.5);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:24px;padding:28px 24px;text-align:center;width:min(80vw,280px);box-shadow:0 12px 48px rgba(93,78,55,0.25);';
+    card.innerHTML =
+      '<div style="font-size:4rem;margin-bottom:8px;">' + data.emoji + '</div>' +
+      '<div style="font-size:1.8rem;font-weight:900;color:#5D4E37;margin-bottom:12px;">' +
+      '<span style="color:#FF6B9D;opacity:0.5;">' + char + '</span>' + data.word.slice(char.length) +
+      '</div>' +
+      '<div style="font-size:0.85rem;color:#A89880;margin-bottom:14px;">こんどは ことばの なかで<br>かいてみよう！</div>' +
+      '<button style="padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;">かく！</button>';
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    card.querySelector('button').addEventListener('click', function() {
+      ov.remove();
+      if (onDone) onDone();
+    });
+  }, 2600);
 }
 
 function _rowPracticeComplete() {
@@ -2719,7 +2722,7 @@ btnHint.addEventListener('click', () => {
                 });
               });
             } else {
-              setTimeout(function() { _rowPracticeStep++; _rowPracticeNextChar(); }, 1200);
+              setTimeout(function() { _rowPracticeStep++; _rowPracticeNextChar(); }, 2600);
             }
           },
           showHintAfterMisses: 3,
@@ -2858,7 +2861,7 @@ function showTutorial() {
                       });
                     });
                   } else {
-                    setTimeout(function() { _rowPracticeStep++; _rowPracticeNextChar(); }, 1200);
+                    setTimeout(function() { _rowPracticeStep++; _rowPracticeNextChar(); }, 2600);
                   }
                 },
                 showHintAfterMisses: 3,
