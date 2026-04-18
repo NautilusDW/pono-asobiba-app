@@ -1746,6 +1746,19 @@ function _playCanvasBreak() {
   // T=0: キャンバスをシェイク + overflow 解放
   cc.classList.add('shaking', 'breaking');
 
+  // 3D 破壊演出 (モジュールがロード済みの時のみ、同期的にディスパッチ)
+  // prefers-reduced-motion 時や WebGL 非対応時は内部で即 return する
+  var _use3D = false;
+  if (window._fairy3dMod && typeof window._fairy3dMod.playFairyBreak3D === 'function') {
+    try {
+      window._fairy3dMod.playFairyBreak3D({
+        mountEl: cc,
+        durationMs: 1400,
+      });
+      _use3D = true;
+    } catch (e) { console.warn('[fairy-3d] play failed:', e); _use3D = false; }
+  }
+
   // T=120: 白フラッシュ
   _bt(function() {
     var flash = document.getElementById('canvasFlash');
