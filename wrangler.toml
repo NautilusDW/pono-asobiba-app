@@ -6,14 +6,13 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = "./"
 binding = "ASSETS"
-run_worker_first = [
-  "/admin/*",
-  "/tools/*",
-  "/room/furniture_adjuster*",
-  "/room/yard_adjuster*",
-  "/.netlify/functions/*",
-  "/api/*"
-]
+# 全リクエストを Worker 経由にする。
+# 理由:
+# - /admin/ などの Basic Auth 保護
+# - HTML/sw.js 等への no-cache ヘッダー注入（applyCacheHeaders）
+# - 画像/JS/CSS は Worker 内でそのまま ASSETS.fetch() にパススルーするので
+#   エッジキャッシュは引き続き有効（レスポンスヘッダーに手を加えない）
+run_worker_first = ["/*"]
 
 [observability]
 enabled = true
