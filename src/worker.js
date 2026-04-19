@@ -80,11 +80,12 @@ function applyCacheHeaders(request, response) {
   const contentType = response.headers.get('content-type') || '';
   const isHTML = contentType.includes('text/html')
     || path.endsWith('/') || path.endsWith('.html');
-  // 常に再取得させたいデータ系
-  const isFreshData = path.endsWith('/items.js')
-    || path.endsWith('/rewards.json')
-    || path.endsWith('/manifest.json')
-    || path.endsWith('/sw.js');
+  // 常に再取得させたいデータ系（完全一致で意図を明確化）
+  const isFreshData = path === '/room/items.js'
+    || path === '/assets/data/rewards.json'
+    || path === '/assets/tts/manifest.json'
+    || path === '/manifest.json'
+    || path === '/sw.js';
 
   if (isHTML || isFreshData) {
     const headers = new Headers(response.headers);
