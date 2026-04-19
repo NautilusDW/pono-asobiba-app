@@ -67,9 +67,40 @@ export default {
       if (!checkBasicAuth(request, env)) return authChallenge();
     }
 
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    return applyCacheHeaders(request, response);
   }
 };
+
+// HTML は常に最新、それ以外（画像・動画・JS・CSS）は長期キャッシュ
+// CDN-Cache-Control / Cloudflare-CDN-Cache-Control は Cloudflare エッジに効く
+function applyCacheHeaders(request, response) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  const contentType = response.headers.get('content-type') || '';
+  const isHTML = contentType.includes('text/html')
+    || path.endsWith('/') || path.endsWith('.html');
+  // 常に再取得させたいデータ系
+  const isFreshData = path.endsWith('/items.js')
+    || path.endsWith('/rewards.json')
+    || path.endsWith('/manifest.json')
+    || path.endsWith('/sw.js');
+
+  if (isHTML || isFreshData) {
+    const headers = new Headers(response.headers);
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    headers.set('CDN-Cache-Control', 'no-store');
+    headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
+  }
+  return response;
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
