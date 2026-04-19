@@ -15,13 +15,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #FFF8E7;
-  --primary: #FF6B9D;
+  /* ドラクエ風ダークテーマ */
+  --bg: #05070f;
+  --bg-deep: #000000;
+  --primary: #FFD36E;
   --secondary: #C084FC;
-  --accent: #4ADE80;
-  --text: #5B4A3F;
-  --card-bg: #FFFFFF;
-  --shadow: 0 4px 20px rgba(91, 74, 63, 0.1);
+  --accent: #6EE7B7;
+  --text: #F4E9D0;
+  --text-dim: #8B96B8;
+  --card-bg: #0a0e1f;
+  --window-bg: #0a0e1f;
+  --window-border: #F4E9D0;
+  --canvas-bg: #05070f;
+  --grid-line: rgba(255,255,255,0.10);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   --radius: 20px;
 }
 
@@ -30,11 +37,16 @@ html, body {
   overflow: hidden;
   overscroll-behavior: none;
   font-family: 'Zen Maru Gothic', 'Rounded Mplus 1c', 'Hiragino Maru Gothic Pro', sans-serif;
-  background-color: var(--bg);
-  background-image: url('../assets/images/BG_03.webp');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(60, 40, 110, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 85%, rgba(30, 70, 140, 0.30) 0%, transparent 60%),
+    radial-gradient(circle at 15% 72%, rgba(255,255,255,0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 73% 22%, rgba(255,255,255,0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 42% 55%, rgba(255,255,255,0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 88% 48%, rgba(255,255,255,0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6) 0.5px, transparent 1px),
+    linear-gradient(180deg, #020308 0%, #05070f 50%, #0b0b1a 100%);
+  background-color: var(--bg-deep);
   color: var(--text);
   touch-action: none;
   -webkit-user-select: none;
@@ -63,7 +75,7 @@ html, body {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
+.header .subtitle { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
 .streak-badge {
   position: absolute; top: 4px; right: 4px; z-index: 200;
   display: inline-block;
@@ -85,13 +97,13 @@ html, body {
 .acorn-badge {
   position: fixed; top: 10px; right: 10px; z-index: 1200;
   display: flex; align-items: center; gap: 4px;
-  background: #FFFFFF;
-  border: 2px solid #8B6F47;
-  color: #5D4E37;
+  background: var(--window-bg);
+  border: 2px solid var(--window-border);
+  color: var(--text);
   font-size: 0.9rem; font-weight: 900;
   padding: 4px 12px 4px 8px;
-  border-radius: 22px;
-  box-shadow: 0 3px 10px rgba(139,111,71,0.25);
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,220,120,0.12);
   pointer-events: none;
   transition: transform 0.15s ease;
 }
@@ -107,12 +119,12 @@ html, body {
 /* 獲得時に画面上を飛ぶチップ */
 .acorn-chip {
   position: fixed; z-index: 1199;
-  background: #FFF;
-  border: 2px solid #8B6F47;
-  color: #5D4E37;
+  background: var(--window-bg);
+  border: 2px solid var(--window-border);
+  color: var(--text);
   font-size: 0.85rem; font-weight: 900;
-  padding: 4px 10px; border-radius: 18px;
-  box-shadow: 0 3px 10px rgba(139,111,71,0.3);
+  padding: 4px 10px; border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.55);
   pointer-events: none;
   transition: transform 0.7s cubic-bezier(0.34,1.0,0.64,1), opacity 0.7s ease;
 }
@@ -186,14 +198,14 @@ html, body {
   position: absolute;
   left: 50%; top: 18%;
   max-width: 200px;
-  background: #fff;
-  border: 2.5px solid #8B7355;
-  border-radius: 14px;
+  background: var(--window-bg);
+  border: 2.5px solid var(--window-border);
+  border-radius: 10px;
   padding: 6px 12px;
   font-size: 0.88rem;
   font-weight: 900;
-  color: #5D4E37;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  color: var(--text);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.55);
   pointer-events: none;
   white-space: nowrap;
   opacity: 0;
@@ -209,7 +221,7 @@ html, body {
   transform: translateX(-50%);
   width: 0; height: 0;
   border: 8px solid transparent;
-  border-top-color: #8B7355;
+  border-top-color: var(--window-border);
   border-bottom: 0;
 }
 .monster-bubble::before {
@@ -219,7 +231,7 @@ html, body {
   transform: translateX(-50%);
   width: 0; height: 0;
   border: 6px solid transparent;
-  border-top-color: #fff;
+  border-top-color: var(--window-bg);
   border-bottom: 0;
   z-index: 1;
 }
@@ -468,8 +480,10 @@ html, body {
   filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
 }
 .row-boss-speech {
-  font-size: 0.85rem; font-weight: 700; color: #5D4E37;
-  background: #FFF8E7; padding: 4px 10px; border-radius: 12px;
+  font-size: 0.85rem; font-weight: 700; color: var(--text);
+  background: var(--window-bg); border: 2px solid var(--window-border);
+  padding: 4px 10px; border-radius: 12px;
+  box-shadow: 0 0 12px rgba(255,220,130,0.35);
 }
 @keyframes rowBossPop {
   0%   { transform: scale(0);   }
@@ -491,12 +505,13 @@ html, body {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .milestone-card {
-  background: #fff;
+  background: var(--window-bg);
+  border: 2.5px solid var(--window-border);
   border-radius: 28px;
   padding: 32px 28px 28px;
   text-align: center;
   width: min(88vw, 340px);
-  box-shadow: 0 12px 48px rgba(93,78,55,0.25);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 24px rgba(255,220,130,0.35);
   animation: milestoneIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
@@ -515,7 +530,7 @@ html, body {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.milestone-msg { font-size: 0.95rem; font-weight: 700; color: #A89585; }
+.milestone-msg { font-size: 0.95rem; font-weight: 700; color: var(--text-dim); }
 
 /* ===== Category Tabs ===== */
 .category-tabs {
@@ -611,22 +626,33 @@ html, body {
   position: relative;
   width: min(90vw, 420px); height: min(90vw, 420px);
   max-width: 420px; max-height: 420px;
-  background: var(--card-bg); border-radius: var(--radius);
-  box-shadow: var(--shadow); overflow: hidden;
+  background: var(--canvas-bg);
+  border: 2px solid var(--window-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 0 24px rgba(140,120,255,0.08);
+  overflow: hidden;
   overscroll-behavior: none;
 }
-/* Grid lines */
+/* Grid lines (薄い白) */
 .canvas-container::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background:
-    linear-gradient(to right, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%),
-    linear-gradient(to bottom, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%);
+    linear-gradient(to right, transparent 49.5%, var(--grid-line) 49.5%, var(--grid-line) 50.5%, transparent 50.5%),
+    linear-gradient(to bottom, transparent 49.5%, var(--grid-line) 49.5%, var(--grid-line) 50.5%, transparent 50.5%);
 }
 .canvas-container::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background:
-    linear-gradient(45deg, transparent calc(50% - 0.5px), #F5EDE5 calc(50% - 0.5px), #F5EDE5 calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    linear-gradient(-45deg, transparent calc(50% - 0.5px), #F5EDE5 calc(50% - 0.5px), #F5EDE5 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+    linear-gradient(45deg, transparent calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+/* 書き取り線を白グロウで発光させる (ドラクエの光る文字感) */
+#writerTarget svg path,
+#writerTarget svg line {
+  filter: drop-shadow(0 0 3px rgba(255,255,255,0.9))
+          drop-shadow(0 0 6px rgba(255,220,130,0.7))
+          drop-shadow(0 0 14px rgba(180,140,255,0.5));
 }
 
 /* Hanzi Writer target */
@@ -644,13 +670,23 @@ html, body {
   display: flex; justify-content: center; padding: 6px 0; flex-shrink: 0;
 }
 .ctrl-btn {
-  padding: 10px 20px; border: none; border-radius: 30px;
+  padding: 10px 20px;
+  border: 2px solid var(--window-border);
+  border-radius: 8px;
   font-family: inherit; font-size: 0.95rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+  color: var(--text);
+  background: var(--window-bg);
 }
 .ctrl-btn:active { transform: scale(0.95); }
-.btn-hint  { background: #E0F2FE; color: #0EA5E9; }
-.btn-next  { background: linear-gradient(135deg, var(--accent), #34D399); color: #FFF; }
+.btn-hint  { background: var(--window-bg); color: #7DD3FC; }
+.btn-next  {
+  background: linear-gradient(135deg, #10B981, #047857);
+  color: #FFF;
+  border-color: #6EE7B7;
+  box-shadow: 0 3px 12px rgba(16,185,129,0.45);
+}
 
 /* ===== Confetti ===== */
 .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden;
@@ -724,11 +760,12 @@ html, body {
 .completion-overlay.show { opacity: 1; pointer-events: auto; }
 .completion-msg {
   font-size: 3rem; font-weight: 900;
-  color: var(--primary);
-  -webkit-text-stroke: 5px white;
+  color: #FFF;
+  -webkit-text-stroke: 4px #1a1a2e;
   paint-order: stroke fill;
   animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 0 12px rgba(255,220,120,0.85))
+          drop-shadow(0 0 24px rgba(192,132,252,0.7));
 }
 @keyframes bounce-in {
   0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); }
@@ -804,7 +841,8 @@ html, body {
   position: absolute;
   bottom: 100%;
   right: -5px;
-  background: #fff;
+  background: var(--window-bg);
+  border: 2px solid var(--window-border);
   border-radius: 16px;
   padding: 5px 12px;
   margin-bottom: 4px;
@@ -812,7 +850,7 @@ html, body {
   font-weight: 900;
   color: var(--text);
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45), 0 0 10px rgba(255,220,130,0.3);
   opacity: 0;
   animation: bubble-pop 18s ease-in-out infinite;
   animation-delay: 3s;
@@ -825,7 +863,7 @@ html, body {
   right: 28px;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-top: 8px solid #fff;
+  border-top: 8px solid var(--window-border);
 }
 @keyframes bubble-pop {
   0%, 68%  { opacity: 0; transform: scale(0.5); }
@@ -860,13 +898,14 @@ html, body {
   bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
-  background: #fff;
-  border-radius: 24px;
+  background: var(--window-bg);
+  border: 2.5px solid var(--window-border);
+  border-radius: 10px;
   padding: 12px 28px;
   display: none;
   align-items: center;
   gap: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.65);
   pointer-events: none;
   z-index: 1050;
   white-space: nowrap;
@@ -881,8 +920,8 @@ html, body {
 }
 .word-card-emoji { font-size: 2.4rem; line-height: 1; }
 .word-card-text  { font-size: 1.6rem; font-weight: 900; color: var(--text); }
-.word-card-first { color: var(--primary); }
-.word-card-note  { font-size: 1.1rem; font-weight: 700; color: var(--text-muted, #888); }
+.word-card-first { color: #FCD34D; text-shadow: 0 0 8px rgba(252,211,77,0.5); }
+.word-card-note  { font-size: 1.1rem; font-weight: 700; color: var(--text-dim); }
 
 /* ===== Portrait: wrapper divs are transparent ===== */
 .left-col, .mid-col, .right-col {
@@ -986,14 +1025,15 @@ html, body {
     display: block;
     position: absolute;
     bottom: 145px; left: 10px;
-    background: #fff;
+    background: var(--window-bg);
+    border: 2px solid var(--window-border);
     border-radius: 16px;
     padding: 5px 12px;
     font-size: 0.78rem;
     font-weight: 900;
     color: var(--text);
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.45), 0 0 10px rgba(255,220,130,0.3);
     z-index: 101;
     opacity: 0;
     animation: pono-bubble-pop 18s ease-in-out infinite;
@@ -1007,7 +1047,7 @@ html, body {
     left: 20px;
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
-    border-top: 8px solid #fff;
+    border-top: 8px solid var(--window-border);
   }
   @keyframes pono-bubble-pop {
     0%, 68%  { opacity: 0; transform: scale(0.5); }
@@ -1021,9 +1061,9 @@ html, body {
 }
 
 /* ===== Tutorial ===== */
-.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
+.tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,0.72);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
-.tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap; }
+.tut-bubble { position:fixed;z-index:9997;background:var(--window-bg);border:2px solid var(--window-border);border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(0,0,0,0.6),0 0 16px rgba(255,220,130,0.3);font-size:0.95rem;font-weight:700;color:var(--text);line-height:1.6;text-align:center;white-space:nowrap; }
 .tut-bubble.hidden { display:none; }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 #demoIndicator {
@@ -1184,14 +1224,15 @@ html, body {
 
 <script>
 // ===== Color Schemes =====
+// 黒背景で映えるネオン寄りの配色 (お手本 stroke を明るく、outline はうっすら光る程度)
 const COLOR_SCHEMES = [
-  { stroke: '#FF6B9D', drawing: '#FF6B9D', highlight: '#FFB3D1', outline: '#FFE0EC' }, // pink
-  { stroke: '#60A5FA', drawing: '#60A5FA', highlight: '#93C5FD', outline: '#DBEAFE' }, // blue
-  { stroke: '#C084FC', drawing: '#C084FC', highlight: '#D8B4FE', outline: '#EDE9FE' }, // purple
-  { stroke: '#4ADE80', drawing: '#4ADE80', highlight: '#86EFAC', outline: '#DCFCE7' }, // green
-  { stroke: '#FBBF24', drawing: '#F59E0B', highlight: '#FCD34D', outline: '#FEF3C7' }, // yellow
-  { stroke: '#F87171', drawing: '#F87171', highlight: '#FCA5A5', outline: '#FEE2E2' }, // red
-  { stroke: '#34D399', drawing: '#34D399', highlight: '#6EE7B7', outline: '#D1FAE5' }, // teal
+  { stroke: '#FFFFFF', drawing: '#FFFFFF', highlight: '#FFE27A', outline: 'rgba(255,255,255,0.22)' }, // white
+  { stroke: '#7DD3FC', drawing: '#7DD3FC', highlight: '#BAE6FD', outline: 'rgba(125,211,252,0.22)' }, // cyan
+  { stroke: '#D8B4FE', drawing: '#D8B4FE', highlight: '#E9D5FF', outline: 'rgba(216,180,254,0.22)' }, // purple
+  { stroke: '#6EE7B7', drawing: '#6EE7B7', highlight: '#A7F3D0', outline: 'rgba(110,231,183,0.22)' }, // green
+  { stroke: '#FCD34D', drawing: '#FCD34D', highlight: '#FDE68A', outline: 'rgba(252,211,77,0.22)' },  // yellow
+  { stroke: '#FCA5A5', drawing: '#FCA5A5', highlight: '#FECACA', outline: 'rgba(252,165,165,0.22)' }, // red
+  { stroke: '#F0ABFC', drawing: '#F0ABFC', highlight: '#F5D0FE', outline: 'rgba(240,171,252,0.22)' }, // pink
 ];
 let colorIdx = 0;
 function nextColorScheme() {
@@ -1492,7 +1533,35 @@ function playStrokeSound() {
 }
 
 // ===== Magic Circle =====
-function launchMagicCircle() {
+// 魔法動画レジストリ。将来、属性(light/fire/ice/thunder/...)ごとに差し替え可能。
+// 現在は AI 生成 4 本をランダムローテーションで再生し、
+// 将来の行別属性 (a='light', ka='fire', ...) に割り当てる下地を作る。
+const SPELL_VIDEOS = {
+  // 属性名 : ファイルパス (複数あればランダム選択)
+  light:   ['../assets/videos/spells/spell_01.mp4', '../assets/videos/spells/spell_02.mp4'],
+  arcane:  ['../assets/videos/spells/spell_03.mp4', '../assets/videos/spells/spell_04.mp4'],
+  // 後続フェーズで fire/ice/thunder/heal 等を追加
+};
+const SPELL_ALL = [
+  '../assets/videos/spells/spell_01.mp4',
+  '../assets/videos/spells/spell_02.mp4',
+  '../assets/videos/spells/spell_03.mp4',
+  '../assets/videos/spells/spell_04.mp4',
+];
+// 行(row key) -> 属性 のマッピング (後のフェーズで敵/シーンと連動)
+const ROW_ELEMENT = {
+  a: 'light', ka: 'fire', sa: 'ice', ta: 'thunder',
+  na: 'heal', ha: 'wind', ma: 'earth', ya: 'star',
+  ra: 'rainbow', wa: 'king'
+};
+
+function pickSpellVideo(kind) {
+  // kind 指定 → その属性のプール、未指定 or 未定義属性 → 全体からランダム
+  const pool = (kind && SPELL_VIDEOS[kind]) ? SPELL_VIDEOS[kind] : SPELL_ALL;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function launchMagicCircle(kind) {
   const c = document.getElementById('magicContainer');
   if (!c) return;
   alignOverlayToCanvas(c);
@@ -1501,7 +1570,7 @@ function launchMagicCircle() {
   // Animated magic circle video (black bg → mix-blend-mode: screen)
   const video = document.createElement('video');
   video.className = 'magic-video';
-  video.src = '../assets/videos/magic_anim.mp4';
+  video.src = pickSpellVideo(kind);
   video.autoplay = true;
   video.muted = true;
   video.playsInline = true;
