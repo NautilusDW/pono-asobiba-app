@@ -3234,6 +3234,8 @@ function startRowPractice(rowIndex) {
   _rowPracticeStep = 0;
   _rowPracticeActive = true;
   currentRow = rowIndex;
+  // バトル開始: 行ラベル (あ,か,さ...) を rowId として渡す。未定義行は _enemyForRow が fallback
+  try { _showBattleStage(_rowPracticeRow && _rowPracticeRow.label); } catch (e) {}
   _rowPracticeNextChar();
 }
 
@@ -3289,6 +3291,22 @@ function _rowPracticeNextChar() {
               if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
               if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
             }
+            // === バトル: 5文字目なら勝利シーケンス、それ以外は通常ダメージ ===
+            const isFinisher = _rowPracticeRow && (_rowPracticeStep === (_rowPracticeRow.count - 1));
+            if (isFinisher && _battle.active) {
+              // 5文字目: Phase 3-4 をスキップしてファンファーレ→次の行へ
+              try {
+                battleVictory('light', function() {
+                  _rowPracticeStep++;
+                  _rowPracticeNextChar();
+                });
+              } catch (e) {
+                _rowPracticeStep++;
+                _rowPracticeNextChar();
+              }
+              return;
+            }
+            try { if (_battle.active) battleHitEnemy({ finisher: false }); } catch (e) {}
             // Phase 3: Show word illustration
             _rowPracticePhase = 'show_word';
             const data = WORD_DATA[currentCategory][currentCharIndex];
@@ -3348,6 +3366,7 @@ function _showRowPracticeWord(char, data, onDone) {
 function _rowPracticeComplete() {
   _rowPracticeActive = false;
   _rowPracticePhase = 'done';
+  try { _hideBattleStage(); } catch (e) {}
   // 行クリアボーナス +5🌰
   if (typeof window.addAcorns === 'function') {
     window.addAcorns(5, { reason: 'writing_row_clear' });
@@ -3403,6 +3422,7 @@ function _rowPracticeComplete() {
 function exitRowPractice() {
   _rowPracticeActive = false;
   _rowPracticePhase = '';
+  try { _hideBattleStage(); } catch (e) {}
   document.getElementById('demoIndicator').style.display = 'none';
   // Clean up word context if active
   var wcw = document.getElementById('wordContextWrap');
@@ -3814,6 +3834,30 @@ initMenu({ bgmToggle: function() {
   localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
   if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
 }, tutorial: showTutorial });
+</script>
+
+<!-- Service Worker 登録: ホーム画面 PWA からこのページを直接開いた時も
+     新しい SW を検知してリロードする (iOS 対策) -->
+<script>
+  if ('serviceWorker' in navigator) {
+    function _ponoSWReload() {
+      if (!window._ponoSWRefreshing) {
+        window._ponoSWRefreshing = true;
+        window.location.reload();
+      }
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', _ponoSWReload);
+    navigator.serviceWorker.addEventListener('message', function(e) {
+      if (e && e.data && e.data.type === 'sw-updated') _ponoSWReload();
+    });
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      reg.update();
+      // 表示復帰 (ホーム画面 PWA からの再前面化) 時にも update を呼ぶ
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') { try { reg.update(); } catch (e) {} }
+      });
+    }).catch(function() {});
+  }
 </script>
 </body>
 </html>
