@@ -2269,10 +2269,10 @@ body.battle-intro-active .battle-log-window {
 .battle-intro-hero-wrap {
   /* 2026-04-20 「勇者が花と同じ大きさ」対応: 110 → 220px に拡大。
      森のスケールも 55% に縮めたので、勇者が相対的にドンと大きく見える。
-     2026-04-20 再調整: 森背景を画面ど真ん中 (50%) に揃え、勇者も画面の
-     ほぼ中央 (bottom: 42%) で歩くよう調整。バトルログとも十分被らない。 */
+     2026-04-20 再調整 v258: 「道から外れてる」指摘で更に 2 キャラ分 (~30%) 下げ、
+     bottom を 42% → 12% に。森の道ラインに勇者の足元が着地する。 */
   position: fixed;
-  bottom: 42%;
+  bottom: 12%;
   left: 0;
   width: min(44vw, 220px);
   height: min(44vw, 220px);
@@ -3107,6 +3107,34 @@ function _sfxVer(url) {
   if (!url) return url;
   return url + (url.indexOf('?') >= 0 ? '&' : '?') + _SFX_CACHE_BUST;
 }
+// Audio 1 要素を iOS 向けに「完全無音で解錠」する。
+// muted=true + volume=0 の両方を必ず設定してから play() → 即 pause → 復元。
+// (volume=0 だけでは .play() の瞬間に一瞬音が出るブラウザがあるため muted 併用)
+function _sfxSilentUnlockOne(a) {
+  if (!a || a._unlocked) return;
+  a._unlocked = true;
+  const prevVol = (typeof a.volume === 'number') ? a.volume : 0.9;
+  const prevMuted = !!a.muted;
+  try { a.muted = true; } catch (e) {}
+  try { a.volume = 0; } catch (e) {}
+  try {
+    const p = a.play();
+    const restore = () => {
+      try { a.pause(); } catch (e) {}
+      try { a.currentTime = 0; } catch (e) {}
+      try { a.muted = prevMuted; } catch (e) {}
+      try { a.volume = prevVol; } catch (e) {}
+    };
+    if (p && typeof p.then === 'function') {
+      p.then(restore).catch(restore);
+    } else {
+      restore();
+    }
+  } catch (e) {
+    try { a.muted = prevMuted; } catch (e2) {}
+    try { a.volume = prevVol; } catch (e2) {}
+  }
+}
 function _sfxEnsurePool(url) {
   let pool = _sfxPool[url];
   if (pool) return pool;
@@ -3122,43 +3150,23 @@ function _sfxEnsurePool(url) {
     } catch (e) { /* ignore */ }
   }
   _sfxPool[url] = pool;
-  // まだ解錠が走ったことがない場合: 次の user gesture で全プールを解錠する。
-  // 既に解錠済みの場合 (タップ後に新しい url が初登場した場合) は、このプールだけ
-  // その場で「silent pre-play」で解錠する (まだ user gesture context かもしれない)。
+  // 解錠済みなら新規プールも即解錠 (user gesture context 中の初回参照に備えて)
   if (_sfxUnlocked) {
-    pool.forEach(a => {
-      try {
-        const p = a.play();
-        if (p && typeof p.then === 'function') {
-          p.then(() => { try { a.pause(); a.currentTime = 0; } catch (e) {} })
-           .catch(() => {});
-        }
-      } catch (e) {}
-    });
+    pool.forEach(a => _sfxSilentUnlockOne(a));
   }
   return pool;
 }
-// iOS PWA で効果音を鳴らすには、user gesture 中にすべての Audio 要素を .play() する必要がある。
-// 初回 pointerdown で全プール + 想定される critical SFX (なぞり音, 文字完成音, ファンファーレ) を
-// 一括解錠する。play() → then で即 pause() することで無音扱いになる。
+// iOS PWA で効果音を鳴らすには、user gesture 中に各 Audio 要素を .play() する必要がある。
+// ただし .play() の瞬間に音が出てしまわないよう muted=true + volume=0 で完全無音化してから
+// play → pause → 復元する。初回 pointerdown で critical SFX を先行作成+解錠。
 function _unlockSfxAll() {
   if (_sfxUnlocked) return;
   _sfxUnlocked = true;
-  // 主要 SFX は先にプールを作っておく (まだ _sfxEnsurePool が呼ばれていない段階でも解錠される)
   try { _sfxEnsurePool('../assets/sounds/se/battle/nazori_01.mp3'); } catch (e) {}
   try { _sfxEnsurePool('../assets/sounds/se/battle/enemy_defeat_2.mp3'); } catch (e) {}
   try { _sfxEnsurePool('../assets/sounds/se/battle/victory_fanfare.mp3'); } catch (e) {}
-  // 全プールの全要素で「無音 play → pause」をして iOS の再生ロックを外す。
   Object.keys(_sfxPool).forEach(url => {
-    _sfxPool[url].forEach(a => {
-      try {
-        const p = a.play();
-        if (p && typeof p.then === 'function') {
-          p.then(() => { try { a.pause(); a.currentTime = 0; } catch (e) {} })
-           .catch(() => {});
-        }
-      } catch (e) {}
-    });
+    _sfxPool[url].forEach(a => _sfxSilentUnlockOne(a));
   });
 }
 document.addEventListener('touchstart', _unlockSfxAll, { capture: true, passive: true });
@@ -5997,41 +6005,82 @@ function _rowPracticeNextChar() {
   _rowPracticePhase = 'demo';
   setTimeout(function() {
     if (!writer || !_rowPracticeActive || _tutorialActive) return;
-    document.getElementById('demoIndicator').style.display = 'block';
     _hedgeBubble.textContent = 'みて みて！';
     _ponoBubble.textContent = 'みて みて！';
-    // バトル中はログウィンドウにもフェーズを反映
-    if (_battle.active) _setBattleLog(['おてほんちゅう…', 'じゅんばんを おぼえよう']);
-    writer.animateCharacter({
-      onComplete: function() {
-        document.getElementById('demoIndicator').style.display = 'none';
+
+    // 2026-04-20 ユーザー要望: バトル中のメッセージは全部タップで進む仕様。
+    // auto-advance で勝手にページが進まないよう、_showBattleDialog (タップ待ち) で
+    //   「おてほんちゅう」 → tap → お手本再生 → 終了後 「なぞりスタート」 → tap →
+    //   「かいてみよう」 → tap → quiz 開始
+    // の順に明示的に進める。非バトル (通常行練習) は従来フローのまま。
+    const runDemo = function(afterDemo) {
+      document.getElementById('demoIndicator').style.display = 'block';
+      writer.animateCharacter({
+        onComplete: function() {
+          document.getElementById('demoIndicator').style.display = 'none';
+          if (!_rowPracticeActive) return;
+          writer.hideCharacter();
+          afterDemo();
+        }
+      });
+    };
+
+    const showNazoriStartThenQuiz = function() {
+      // 非バトル: 従来のフロートオーバーレイ + 2200ms 自動進行
+      var startOv = document.createElement('div');
+      startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+      startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
+      document.body.appendChild(startOv);
+      setTimeout(function() {
+        if (startOv) startOv.remove();
         if (!_rowPracticeActive) return;
-        // 2026-04-20 ユーザー要望:
-        //   (a) お手本 (animateCharacter) が終わった後、すぐメッセージを出さず少し間をおく
-        //   (b) 「なぞり スタート！」→「かいてみよう！」 が速すぎて読めない → 十分な読みどき時間を確保
-        // animateCharacter 直後に 600ms の無言の間、その後 startOv 表示、2200ms 読みどき、quiz 開始
+        _rowPracticePhase = 'quiz_guided';
+        _hedgeBubble.textContent = 'かいてみよう！';
+        _ponoBubble.textContent = 'かいてみよう！';
+        setQuizActive(true);
+        _startQuizOpts();
+      }, 2200);
+    };
+
+    const startQuizBattle = function() {
+      if (!_rowPracticeActive) return;
+      _rowPracticePhase = 'quiz_guided';
+      _hedgeBubble.textContent = 'かいてみよう！';
+      _ponoBubble.textContent = 'かいてみよう！';
+      setQuizActive(true);
+      _startQuizOpts();
+    };
+
+    if (_battle.active) {
+      // バトル: タップ進行の 3 ステップ
+      _showBattleDialog([
+        { lines: ['おてほん ちゅう…', 'じゅんばんを おぼえよう'] }
+      ], function() {
+        runDemo(function() {
+          _showBattleDialog([
+            { lines: ['なぞり スタート！', 'ゆびで なぞってね'], opts: { line1Class: 'dmg-line' } },
+            { lines: ['かいてみよう！', 'もじを かんせいさせよう'] }
+          ], function() {
+            startQuizBattle();
+          });
+        });
+      });
+      return;
+    }
+
+    // 非バトル: 従来フロー (メッセージは auto)
+    runDemo(function() {
+      showNazoriStartThenQuiz();
+    });
+    return;
+
+    // --- 以下は unreachable (旧フロー残骸)、safe-parse のため残置 ---
+    if (false) {
+      setTimeout(function() {
+        if (!_rowPracticeActive) return;
         setTimeout(function() {
           if (!_rowPracticeActive) return;
-          // 「なぞり スタート！」— バトル中はログに、それ以外は従来のフロート表示
-          writer.hideCharacter();
-          var startOv = null;
-          if (_battle.active) {
-            _setBattleLog(['なぞり スタート！', 'ゆびで なぞってね'], { line1Class: 'dmg-line' });
-          } else {
-            startOv = document.createElement('div');
-            startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-            startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
-            document.body.appendChild(startOv);
-          }
-          setTimeout(function() {
-            if (startOv) startOv.remove();
-            if (!_rowPracticeActive) return;
-            // Phase 2: Quiz with guides
-            _rowPracticePhase = 'quiz_guided';
-            _hedgeBubble.textContent = 'かいてみよう！';
-            _ponoBubble.textContent = 'かいてみよう！';
-            if (_battle.active) _setBattleLog(['かいてみよう！', 'もじを かんせいさせよう']);
-            setQuizActive(true);
+          setQuizActive(true);
           var _qOpts = {
             onCorrectStroke: function() {
               _hideMonsterBubble();
