@@ -732,6 +732,9 @@ html, body {
 .magic-container {
   position: fixed; inset: 0; pointer-events: none; z-index: 998; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
+  /* mix-blend-mode: screen が fixed overlay で背景に届くように、
+     isolation を明示的に解除する */
+  isolation: auto;
 }
 .magic-video {
   position: absolute;
@@ -745,6 +748,41 @@ html, body {
   will-change: transform, opacity;
   transform: translate(-50%, -50%) scale(0.4);
   animation: magic-video-in 3200ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+/* ===== Battle-mode 魔法レイヤ (敵の上に screen 合成で炎を重ねる) ===== */
+/* .battle-stage 内に positioned 配置して敵の位置に正確に着弾させる。
+   mix-blend-mode が stage の BG と敵に対してのみ働くように isolation を stage 側で確立。 */
+.battle-stage { isolation: isolate; }
+.battle-magic-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  overflow: visible;
+}
+.battle-magic-video {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 140%;
+  height: 140%;
+  object-fit: contain;
+  /* 敵のほぼ全体を覆うサイズで中央に配置し、screen 合成で黒背景を透過。 */
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 22px rgba(255,170,60,0.8))
+          drop-shadow(0 0 44px rgba(255,100,20,0.55));
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.35);
+  will-change: transform, opacity;
+  animation: battle-magic-in 3100ms cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
+}
+@keyframes battle-magic-in {
+  0%   { opacity: 0;  transform: translate(-50%, -50%) scale(0.35); }
+  18%  { opacity: 1;  transform: translate(-50%, -50%) scale(1.08); }
+  75%  { opacity: 1;  transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0;  transform: translate(-50%, -50%) scale(1.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-magic-video { animation: none; opacity: 0.85; }
 }
 @keyframes magic-video-in {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
@@ -1920,6 +1958,10 @@ body.battle-mode #battleLog { display: block !important; }
 }
 .map-actor.map-hero {
   z-index: 3;
+  /* SPUM スプライトは 2048x2048 正方形で周囲に透明余白があるため、
+     旧 227x343 の勇者絵より相対的に小さく見える。サイズを 1.6 倍程度に拡張。 */
+  width: 16%;
+  max-width: 150px; min-width: 76px;
   animation: mapHeroBob 1.2s ease-in-out infinite;
 }
 .map-actor.map-monster {
@@ -2050,9 +2092,7 @@ body.battle-mode #battleLog { display: block !important; }
   </div>
 
   <div class="mid-col">
-    <div class="controls">
-      <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
-    </div>
+    <div class="controls"></div>
   </div>
 
   <div class="right-col">
@@ -2407,7 +2447,7 @@ function showMilestone(count) {
 // ===== DOM =====
 const writerTarget = document.getElementById('writerTarget');
 const canvasContainer = document.getElementById('canvasContainer');
-const btnHint = document.getElementById('btnHint');
+const btnHint = document.getElementById('btnHint'); // 削除済: 参照だけ残して null 安全
 
 // ===== なぞり時のキラキラ (金色パーティクル) =====
 let _quizActive = false;
@@ -2676,6 +2716,43 @@ function pickSpellVideo(kind) {
 }
 
 function launchMagicCircle(kind) {
+  const src = pickSpellVideo(kind);
+
+  // バトル中は .battle-stage 内に直接 video を差し込み、screen 合成で敵に炎を被せる。
+  // (fullscreen overlay の位置/合成問題を回避)
+  if (_battle && _battle.active) {
+    const stage = document.getElementById('battleStage');
+    const enemyWrap = stage ? stage.querySelector('.battle-enemy-wrap') : null;
+    if (stage && enemyWrap) {
+      // 既存の magic 層があれば除去
+      const prev = stage.querySelector('.battle-magic-layer');
+      if (prev) prev.remove();
+      const layer = document.createElement('div');
+      layer.className = 'battle-magic-layer';
+      const rect = enemyWrap.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const cx = (rect.left + rect.width / 2) - stageRect.left;
+      const cy = (rect.top + rect.height / 2) - stageRect.top;
+      const size = Math.max(rect.width, rect.height) * 1.6;
+      layer.style.left = (cx - size / 2) + 'px';
+      layer.style.top  = (cy - size / 2) + 'px';
+      layer.style.width  = size + 'px';
+      layer.style.height = size + 'px';
+      layer.style.inset = 'auto';
+      const v = document.createElement('video');
+      v.className = 'battle-magic-video';
+      v.src = src;
+      v.autoplay = true; v.muted = true; v.playsInline = true;
+      v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+      v.preload = 'auto';
+      layer.appendChild(v);
+      stage.appendChild(layer);
+      const pp = v.play(); if (pp && pp.catch) pp.catch(() => {});
+      setTimeout(() => { if (layer.parentNode) layer.remove(); }, 3300);
+      return;
+    }
+  }
+
   const c = document.getElementById('magicContainer');
   if (!c) return;
   alignOverlayToCanvas(c);
@@ -2684,7 +2761,7 @@ function launchMagicCircle(kind) {
   // Animated magic circle video (black bg → mix-blend-mode: screen)
   const video = document.createElement('video');
   video.className = 'magic-video';
-  video.src = pickSpellVideo(kind);
+  video.src = src;
   video.autoplay = true;
   video.muted = true;
   video.playsInline = true;
@@ -4592,13 +4669,13 @@ function _mapHeroGender() {
   } catch (e) { return 'm'; }
 }
 function _mapHeroFrame(kind) {
-  // kind: 'stand' | 'walk1' | 'walk2' (003/005/007 あたりが歩きフレーム、002=standing)
-  var g = _mapHeroGender();
-  // スプライトシート的に: 002=正面立ち, 003=右歩き1, 005=右歩き2 (正確な内訳はアセット任せ)
-  var frame = '002';
-  if (kind === 'walk1') frame = '003';
-  else if (kind === 'walk2') frame = '005';
-  return '../assets/images/hero/hero_' + g + '_' + frame + '.png';
+  // SPUM から書き出した勇者スプライトに差し替え (2026-04-20)。
+  // 現状 1 キャラのみ。kind: 'stand' (idle) / 'walk1' / 'walk2' (歩きは同じ move を流用)。
+  // 旧 hero_m/f_* ファイルは legacy 素材として残すが、実運用では参照しない。
+  if (kind === 'walk1' || kind === 'walk2') {
+    return '../assets/images/hero/spum/move.png';
+  }
+  return '../assets/images/hero/spum/idle.png';
 }
 function _mapMonsterSrc() {
   // 戦闘で使っているキノコ (monster_005) をそのまま縮小表示。
@@ -5156,7 +5233,7 @@ fixViewportHeight();
 
 // ===== Button handlers =====
 
-btnHint.addEventListener('click', () => {
+if (btnHint) btnHint.addEventListener('click', () => {
   // Ignore during word context phase or demo phase
   if (document.getElementById('wordContextWrap')) return;
   if (_rowPracticePhase === 'demo') return;
