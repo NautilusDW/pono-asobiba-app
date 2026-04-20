@@ -1219,6 +1219,26 @@ html, body {
 }
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
+/* 1 文字完成時の「シャキーン！」白フラッシュ。短く眩しすぎないように。 */
+.shakeen-flash {
+  position: fixed; inset: 0; z-index: 1400;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255,255,255,0.9) 0%,
+    rgba(255,240,180,0.55) 35%,
+    rgba(255,240,180,0) 70%);
+  animation: shakeenFlash 360ms ease-out forwards;
+  mix-blend-mode: screen;
+}
+@keyframes shakeenFlash {
+  0%   { opacity: 0;   transform: scale(0.9); }
+  18%  { opacity: 1;   transform: scale(1.0); }
+  100% { opacity: 0;   transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shakeen-flash { animation: none; opacity: 0; }
+}
+
 /* ===== Battle Stage (RPG バトル、行練習中のみ表示) ===== */
 /* 戦闘モードではポノとハリネズミを隠す (戦闘画面は敵と文字キャンバスだけに集中させる) */
 body.battle-mode .pono-deco,
@@ -1634,6 +1654,48 @@ body.battle-mode .hedgehog-bubble {
 @keyframes playerDmgIn {
   0%   { opacity: 0; transform: translate(-50%, 14px); }
   100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 「〇〇の こうげき！」告知 (敵の反撃直前) */
+.enemy-attack-announce {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1095;
+  pointer-events: none;
+  animation: enemyAttackAnnounceIn 0.28s ease-out;
+  transition: opacity 0.32s ease;
+}
+.enemy-attack-announce .enemy-attack-window {
+  background: #020208;
+  border: 3px solid #FFD86A;
+  border-radius: 10px;
+  padding: clamp(10px, 3vw, 18px) clamp(18px, 5vw, 32px);
+  box-shadow:
+    0 0 22px rgba(255,120,80,0.45),
+    inset 0 0 14px rgba(255,220,130,0.12);
+  color: #fff;
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  white-space: nowrap;
+}
+.enemy-attack-announce .dq-line {
+  font-size: clamp(1.0rem, 4vw, 1.35rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+}
+.enemy-attack-announce .dq-line-emphasis {
+  color: #FFB87A;
+  text-shadow: 0 0 10px rgba(255,160,80,0.9), 0 0 4px #fff;
+}
+@keyframes enemyAttackAnnounceIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enemy-attack-announce { animation: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2306,15 +2368,75 @@ function playStrokeSound() {
   });
 }
 
+// 1 文字完成時の「シャキーン！」演出: 短いハイ→ロー bell + 画面全体を一瞬白フラッシュ。
+// 差替フック: window.PONO_SHAKEEN_SFX に mp3 パスを入れれば最優先で使用。
+function playShakeenFlash() {
+  // SFX (外部 mp3 優先、無ければ Web Audio で合成)
+  const url = (typeof window !== 'undefined' && window.PONO_SHAKEEN_SFX) || null;
+  if (url) {
+    try {
+      const a = new Audio(url);
+      a.volume = 0.7;
+      a.play().catch(() => {});
+    } catch (e) { /* fall through */ }
+  } else {
+    withAudio(ac => {
+      const now = ac.currentTime;
+      // 三角波のキラキラ: 2093Hz → 3000Hz → 1568Hz (C7→G7→G6) の極短アルペジオ
+      const notes = [
+        { f: 2093.00, t: 0.00, d: 0.09, g: 0.28 },
+        { f: 3135.96, t: 0.04, d: 0.10, g: 0.30 },
+        { f: 1567.98, t: 0.14, d: 0.20, g: 0.26 },
+      ];
+      notes.forEach(n => {
+        const osc  = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(n.f, now + n.t);
+        gain.gain.setValueAtTime(0, now + n.t);
+        gain.gain.linearRampToValueAtTime(n.g, now + n.t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(now + n.t); osc.stop(now + n.t + n.d + 0.02);
+      });
+      // ノイズバースト (シャキーン の「シャ」成分)
+      try {
+        const bufSize = Math.floor(ac.sampleRate * 0.12);
+        const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const bp = ac.createBiquadFilter();
+        bp.type = 'bandpass'; bp.frequency.value = 5000; bp.Q.value = 2.5;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.15, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        src.connect(bp); bp.connect(g); g.connect(ac.destination);
+        src.start(now); src.stop(now + 0.13);
+      } catch (e) { /* ignore */ }
+    });
+  }
+  // 画面フラッシュ (短く、眩しすぎないように 180ms でフェード)
+  const f = document.createElement('div');
+  f.className = 'shakeen-flash';
+  document.body.appendChild(f);
+  setTimeout(() => { if (f.parentNode) f.remove(); }, 380);
+}
+
 // ===== Magic Circle =====
 // 魔法動画レジストリ。将来、属性(light/fire/ice/thunder/...)ごとに差し替え可能。
 // 現在は AI 生成 4 本をランダムローテーションで再生し、
 // 将来の行別属性 (a='light', ka='fire', ...) に割り当てる下地を作る。
 const SPELL_VIDEOS = {
-  // 属性名 : ファイルパス (複数あればランダム選択)
+  // 属性ごとに専用動画。現在のステージで使うのは fire のみ (2026-04-20)。
+  // ice/earth/rainbow の素材もローカルにはあるが、サイズが重い (~5MB) ので
+  // 該当ステージを実装する際に追加する方針。
+  fire:    ['../assets/videos/spells/fire.mp4'],
+  // 旧 AI 生成 4 本は「属性未設定」フォールバック扱いに
   light:   ['../assets/videos/spells/spell_01.mp4', '../assets/videos/spells/spell_02.mp4'],
   arcane:  ['../assets/videos/spells/spell_03.mp4', '../assets/videos/spells/spell_04.mp4'],
-  // 後続フェーズで fire/ice/thunder/heal 等を追加
+  // ice/thunder/heal/wind/earth/star/rainbow/king は専用動画を追加するまで arcane フォールバック
 };
 const SPELL_ALL = [
   '../assets/videos/spells/spell_01.mp4',
@@ -3228,6 +3350,8 @@ function _hideBattleStage() {
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
+  // 「たおした！」ウィンドウが残っていれば念のため消す
+  try { _hideDefeatedWindow(); } catch (e) {}
 }
 
 function _showEnemySpeech(text, ms) {
@@ -3448,9 +3572,35 @@ function _battleHeroName() {
 function enemyCounterAttack() {
   if (!_battle.active) return;
   const damage = 2 + Math.floor(Math.random() * 4); // 2〜5
-  _shakeScreen();
-  try { playEnemyAttackSound(); } catch (e) {}
-  _showPlayerDamageWindow(damage);
+  const enemyName = (_battle.enemy && _battle.enemy.name) || 'てき';
+  // 「〇〇の こうげき！」告知を出してから一拍置いて攻撃
+  _showEnemyAttackAnnounce(enemyName + 'の こうげき！', function() {
+    if (!_battle.active) return;
+    _shakeScreen();
+    try { playEnemyAttackSound(); } catch (e) {}
+    _showPlayerDamageWindow(damage);
+  });
+}
+
+// 敵の攻撃告知ウィンドウ (ドラクエ風)
+// 表示 ~0.85s → 閉じた後 onAttack() で実際の攻撃演出に入る
+function _showEnemyAttackAnnounce(text, onAttack) {
+  // 既に出ている告知は掃除
+  const old = document.querySelector('.enemy-attack-announce');
+  if (old) old.remove();
+  const w = document.createElement('div');
+  w.className = 'enemy-attack-announce';
+  w.innerHTML =
+    '<div class="dq-window enemy-attack-window">' +
+      '<div class="dq-line"><span class="dq-line-emphasis">' + text + '</span></div>' +
+    '</div>';
+  document.body.appendChild(w);
+  // 表示 → フェード → onAttack
+  setTimeout(() => { w.style.opacity = '0'; }, 850);
+  setTimeout(() => {
+    if (w.parentNode) w.remove();
+    if (onAttack) onAttack();
+  }, 1200);
 }
 
 function _shakeScreen() {
@@ -3543,12 +3693,17 @@ function battleVictory(spellKind, onDone) {
     try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
     try {
       const a = playVictoryFanfare();
+      let cleaned = false;
       const onEnd = () => {
+        if (cleaned) return;
+        cleaned = true;
         try { fadeBgm(0.28, 600); } catch (e) {}
         try { _hideDefeatedWindow(); } catch (e) {}
       };
       if (a && typeof a.addEventListener === 'function') {
         a.addEventListener('ended', onEnd);
+        // 保険: 'ended' が iOS 等で発火しなくても 4s 後には必ず消す
+        setTimeout(onEnd, 4000);
       } else {
         // 合成フォールバック (約 1.5s)
         setTimeout(onEnd, 1800);
@@ -3556,8 +3711,10 @@ function battleVictory(spellKind, onDone) {
     } catch (e) {}
   }, 2800);
 
-  // 行クリアダイアログへの遷移はファンファーレ中でも走らせる
+  // 行クリアダイアログへの遷移はファンファーレ中でも走らせる。
+  // ダイアログが出る時点で「たおした！」ウィンドウは確実に消しておく。
   setTimeout(() => {
+    try { _hideDefeatedWindow(); } catch (e) {}
     if (onDone) onDone();
   }, 4200);
 }
@@ -4431,6 +4588,8 @@ function _rowPracticeNextChar() {
             setQuizActive(false);
             if (!_rowPracticeActive) return;
             playSuccessSound();
+            // 1 文字成功のたびに「シャキーン！」と白フラッシュ
+            try { playShakeenFlash(); } catch (e) {}
             launchConfetti();
             saveStamp(currentCategory, currentCharIndex);
             markCharDone(currentCharIndex);
@@ -4486,13 +4645,13 @@ function _rowPracticeNextChar() {
               // すべてスキップし、1 回のなぞり = 1 回の攻撃で次の文字へ進める。
               try { battleHitEnemy({ finisher: false }); } catch (e) {}
               // 魔法動画は ~3.2s 出るので、敵の反撃はその後に十分な間を空けて出す。
-              // 反撃が早すぎて「攻撃されたのかどうか気づかない」問題の対策で 900ms → 2200ms に延長。
+              // 反撃は「〇〇の こうげき！」告知 (~1.2s) → ダメージ演出 (~2.75s) → なので
+              // t=2200 で告知、t=~3400 で攻撃、t=~6150 でダメージ消え、t=6800 で次の文字。
               setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 2200);
-              // ダメージ表示 (2.4s 表示 + 0.35s フェード) を見てから次の文字に進む。
               setTimeout(function() {
                 _rowPracticeStep++;
                 _rowPracticeNextChar();
-              }, 5200);
+              }, 6800);
             } else {
               startWordPhases();
             }
