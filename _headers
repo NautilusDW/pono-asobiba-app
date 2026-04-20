@@ -1,6 +1,7 @@
 # ──────────────────────────────────────────
-# Netlify キャッシュ戦略 (bandwidth 節約)
+# Cloudflare Workers Static Assets キャッシュ戦略 (bandwidth 節約)
 # 2026-04-15 更新: immutable 長期キャッシュで再ダウンロード抑制
+# (旧 Netlify _headers と同形式。Cloudflare も同形式をサポート)
 # ──────────────────────────────────────────
 
 # --- HTML はキャッシュしない (常に最新) ---

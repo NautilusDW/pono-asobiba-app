@@ -2,7 +2,6 @@
 .github/
 .claude/
 .vscode/
-.netlify/
 .wrangler/
 node_modules/
 logs/
@@ -10,8 +9,6 @@ memory/
 scripts/
 src/
 docs/
-netlify/
-functions/
 myfolder/
 others/
 test_treasure.html
@@ -22,7 +19,6 @@ MEMORY.md
 package.json
 package-lock.json
 wrangler.toml
-netlify.toml
 .assetsignore
 .gitignore
 .env
