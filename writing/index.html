@@ -2064,19 +2064,23 @@ body.battle-mode .battle-log-window {
   background-repeat: no-repeat;
   /* 現在行のステージだけアップで映す。横 350% に拡大し、JS で xPct に合わせて
      background-position-x を計算してそのステージをビューポート中央に置く。
-     (2026-04-20 ユーザー要望: マップが小さすぎるので街のステージだけが映るようにアップ) */
+     background-position-y: 62% を使うことで画像 y=62% (= 道のあたり) が
+     コンテナ y=62% に固定される (数学的にそうなる) → hero の bottom も 38% で
+     自動的に道の上に乗る。(2026-04-20 ユーザー要望) */
   background-size: 350% auto;
-  background-position: 50% center;
-  /* バイリニア補間 (ブラウザデフォルト) で素直に拡大。pixelated にするとドット絵風にボケる指摘あり */
+  background-position: 50% 62%;
+  /* バイリニア補間 (ブラウザデフォルト) で素直に拡大 */
   image-rendering: auto;
 }
-/* スマホ縦画面: さらにアップ (height 基準で 350%) */
+/* スマホ縦画面: さらにアップ (height 基準で 200%) */
 @media (max-aspect-ratio: 1/1) {
   .map-scene-bg { background-size: auto 200%; }
 }
 .map-scene-hero {
   position: absolute;
-  bottom: 42%;
+  /* 画像 y=62% が container y=62% に来るように bg-position-y を合わせているので、
+     hero の feet (bottom) を 38% に置くと「道の上」に自動的に乗る。 */
+  bottom: 38%;
   width: min(20vh, 108px);
   height: min(20vh, 108px);
   transform: translateX(-50%);
@@ -5580,6 +5584,16 @@ function startRowPractice(rowIndex) {
   _rowPracticeStep = 0;
   _rowPracticeActive = true;
   currentRow = rowIndex;
+  // 前の行の最後の文字が「お手本待ち」の間に見えないよう、ここでキャンバスを空にする。
+  // loadCharacter() は _showBattleIntro 完了後 (_rowPracticeNextChar) まで呼ばれないため、
+  // ここで clear しないとマップ/登場演出の裏で旧キャラが残って見える問題になる。
+  try {
+    if (writer) { try { writer.cancelQuiz(); } catch(e) {} }
+    if (writerTarget) writerTarget.innerHTML = '';
+    writer = null;
+    var _sn = document.getElementById('strokeNumbers');
+    if (_sn) _sn.innerHTML = '';
+  } catch (e) {}
   // バトル開始: 行ラベル (あ,か,さ...) を rowId として渡す。未定義行は _enemyForRow が fallback
   try { _showBattleStage(_rowPracticeRow && _rowPracticeRow.label); } catch (e) {}
   // バトル中は「暗転カーテン → 敵ドン演出 → 登場ログ → ルール説明 → お手本」の順。
@@ -5778,10 +5792,13 @@ function _rowPracticeNextChar() {
             setQuizActive(false);
             if (!_rowPracticeActive) return;
             playSuccessSound();
-            launchConfetti();
+            // バトル中は confetti / 妖精ポップ (🌰ドロップ) を抑制する。
+            // (2026-04-20 ユーザー要望: バトル中にどんぐりが出てくる → 勝利時にまとめて表示のみ)
+            const _inBattle = !!(_battle && _battle.active);
+            if (!_inBattle) launchConfetti();
             saveStamp(currentCategory, currentCharIndex);
             markCharDone(currentCharIndex);
-            _playMonsterPop();
+            if (!_inBattle) _playMonsterPop();
             _awardAcorns(_perfectCurrentChar);
             if (window.incrementStat) {
               window.incrementStat('writing_chars', 1);
