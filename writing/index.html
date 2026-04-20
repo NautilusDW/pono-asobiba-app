@@ -1379,6 +1379,42 @@ body.battle-mode .enemy-speech {
   pointer-events: none;
   z-index: 2;
 }
+
+/* ===== 勇者スプライト (SPUM idle 2048x2048, 8 frames 横 1 列) ===== */
+/* bg-size 800% 800% で 1 タイル (256x256) をコンテナに一致させ、
+   bg-position-x を 0% → 100% まで steps(8, jump-none) で 8 コマ等分割。 */
+.hero-sprite {
+  display: block;
+  background-repeat: no-repeat;
+  background-size: 800% 800%;
+  background-position: 0% 0%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+.hero-sprite.idle {
+  background-image: url('../assets/images/hero/spum/idle.png');
+  animation: heroIdleAnim 1.1s steps(8, jump-none) infinite;
+}
+@keyframes heroIdleAnim {
+  from { background-position-x: 0%; }
+  to   { background-position-x: 100%; }
+}
+/* 戦闘ステージ左下に勇者を配置 (敵は中央、勇者は左手前)。
+   スプライト中央が下寄りに見えるよう padding 調整はコンテナサイズで済ます。 */
+.battle-stage .battle-hero {
+  position: absolute;
+  left: 8%;
+  top: 54%;
+  width: min(24vh, 128px);
+  height: min(24vh, 128px);
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.55));
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-sprite.idle { animation: none; background-position-x: 0%; }
+}
 .battle-enemy {
   position: relative;
   width: min(28vh, 150px); height: min(28vh, 150px);
@@ -2100,6 +2136,7 @@ body.battle-mode #battleLog { display: block !important; }
     <!-- ===== Battle Stage (RPG戦闘モード、行練習中のみ表示) ===== -->
     <div id="battleStage" class="battle-stage" aria-hidden="true" style="display:none;">
       <div class="battle-bg"></div>
+      <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
       <div class="battle-enemy-wrap">
         <div class="battle-enemy" id="battleEnemy">
           <img class="enemy-img" id="battleEnemyImg" alt="てき" />
