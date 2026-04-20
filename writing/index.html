@@ -1121,7 +1121,7 @@ html, body {
 
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
-<audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
+<audio id="bgm" loop preload="auto"></audio>
 
 <!-- どんぐりポイント バッジ（常時右上） -->
 <div id="acornBadge" class="acorn-badge">
@@ -3116,16 +3116,38 @@ setInterval(() => {
 }, 18000);
 
 // ===== BGM =====
+// RPG 化に合わせて「書き取り画面 = 戦闘」→ battleA/B、
+// 将来の「ワールドマップ」→ mapA/B を切替で鳴らす。
+const BGM_TRACKS = {
+  battle: ['../assets/audio/bgm/battleA.mp3', '../assets/audio/bgm/battleB.mp3'],
+  map:    ['../assets/audio/bgm/mapA.mp3',    '../assets/audio/bgm/mapB.mp3'],
+};
 const bgm = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
-bgm.volume = 0.2;
+let _bgmKind = null;
+bgm.volume = 0.28;
+
+function setBgmFor(kind) {
+  const pool = BGM_TRACKS[kind];
+  if (!pool) return;
+  if (_bgmKind === kind && bgm.src) return; // 同系列なら継続
+  _bgmKind = kind;
+  const track = pool[Math.floor(Math.random() * pool.length)];
+  bgm.src = track;
+  bgmStarted = false;
+  if (bgmEnabled) bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+}
+// 初期トラック: 書き取り画面 = 戦闘扱い
+setBgmFor('battle');
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
+  if (!bgm.src) setBgmFor('battle');
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
 // BGM starts when entering practice (user tap satisfies autoplay policy)
+window.setBgmFor = setBgmFor;
 
 // ===== Back to selection (via menu) =====
 // 歯車メニューの「もどる」から呼ばれる
