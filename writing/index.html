@@ -1105,6 +1105,253 @@ html, body {
 }
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
+/* ===== Battle Stage (RPG バトル、行練習中のみ表示) ===== */
+.battle-stage {
+  position: relative;
+  width: 100%;
+  max-width: min(92vw, 420px);
+  margin: 0 auto 4px;
+  height: min(34vh, 220px);
+  min-height: 140px;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(120,70,200,0.18) 0%, transparent 70%),
+    linear-gradient(180deg, #0b0f23 0%, #070812 100%);
+  border: 2.5px solid var(--window-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6), inset 0 0 18px rgba(255,220,130,0.12);
+  overflow: hidden;
+  order: 3;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.battle-stage .battle-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255,255,255,0.65) 0.4px, transparent 1.2px),
+    radial-gradient(circle at 72% 18%, rgba(255,255,255,0.5) 0.4px, transparent 1.2px),
+    radial-gradient(circle at 40% 70%, rgba(255,255,255,0.4) 0.4px, transparent 1.2px),
+    radial-gradient(circle at 86% 62%, rgba(255,255,255,0.5) 0.4px, transparent 1.2px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.battle-stage .battle-enemy-wrap {
+  position: absolute;
+  left: 50%; top: 40%;
+  transform: translate(-50%, -50%);
+  width: 72%;
+  display: flex; justify-content: center; align-items: flex-end;
+  pointer-events: none;
+}
+.battle-enemy {
+  position: relative;
+  width: min(28vh, 150px); height: min(28vh, 150px);
+  max-width: 150px; max-height: 150px;
+  display: flex; justify-content: center; align-items: flex-end;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+  animation: battleEnemyFloat 2.4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+.battle-enemy .enemy-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+.battle-enemy .enemy-shadow {
+  position: absolute;
+  bottom: -6px; left: 10%;
+  width: 80%; height: 10px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 70%);
+  animation: battleEnemyShadow 2.4s ease-in-out infinite;
+}
+@keyframes battleEnemyFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-6px) scale(1.02); }
+}
+@keyframes battleEnemyShadow {
+  0%, 100% { transform: scaleX(1);   opacity: 0.75; }
+  50%      { transform: scaleX(0.85); opacity: 0.55; }
+}
+/* ダメージ: 短い横シェイク + 白フラッシュ */
+.battle-enemy.damaged {
+  animation: battleEnemyHit 0.32s ease-in-out, battleEnemyFloat 2.4s ease-in-out 0.32s infinite;
+}
+.battle-enemy.damaged .enemy-img {
+  animation: battleEnemyFlash 0.32s ease-out;
+}
+@keyframes battleEnemyHit {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px) rotate(-3deg); }
+  40%      { transform: translateX(7px)  rotate(3deg);  }
+  60%      { transform: translateX(-5px) rotate(-2deg); }
+  80%      { transform: translateX(4px)  rotate(1.5deg);}
+}
+@keyframes battleEnemyFlash {
+  0%   { filter: brightness(1)  drop-shadow(0 0 0 #fff); }
+  40%  { filter: brightness(2.4) drop-shadow(0 0 16px #fff) drop-shadow(0 0 28px #FFE27A); }
+  100% { filter: brightness(1)  drop-shadow(0 0 0 #fff); }
+}
+/* 撃破: フリップ + 縮小 + 暗転 */
+.battle-enemy.defeated {
+  animation: battleEnemyDefeat 1.1s cubic-bezier(0.6,-0.1,0.7,1) forwards !important;
+}
+@keyframes battleEnemyDefeat {
+  0%   { transform: translateY(0)     scale(1)   rotate(0);     opacity: 1; filter: brightness(1); }
+  25%  { transform: translateY(-30px) scale(1.1) rotate(-10deg);opacity: 1; filter: brightness(0.6); }
+  65%  { transform: translateY(40px)  scale(0.6) rotate(180deg);opacity: 0.7; filter: brightness(0.3) hue-rotate(-40deg); }
+  100% { transform: translateY(80px)  scale(0.1) rotate(360deg);opacity: 0;   filter: brightness(0); }
+}
+
+/* 敵情報 (名前 / HP / 五芒星) */
+.enemy-info {
+  position: absolute;
+  left: 8px; right: 8px; bottom: 6px;
+  display: flex; flex-direction: column; gap: 3px;
+  pointer-events: none;
+}
+.enemy-name {
+  font-size: 0.78rem; font-weight: 900;
+  color: var(--text);
+  text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 0 2px #000;
+  letter-spacing: 0.06em;
+}
+.hp-bar-wrap {
+  background: rgba(0,0,0,0.6);
+  border: 1.5px solid rgba(244,233,208,0.75);
+  border-radius: 4px;
+  padding: 2px;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.8);
+}
+.hp-bar {
+  display: flex; gap: 2px;
+  height: 9px;
+}
+.hp-bar .hp-block {
+  flex: 1;
+  background: linear-gradient(180deg, #6EE7B7 0%, #10B981 55%, #047857 100%);
+  border-radius: 1px;
+  box-shadow: inset 0 0 3px rgba(255,255,255,0.35);
+  transition: background 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+.hp-bar .hp-block.low {
+  background: linear-gradient(180deg, #FCD34D 0%, #F59E0B 55%, #B45309 100%);
+}
+.hp-bar .hp-block.critical {
+  background: linear-gradient(180deg, #FCA5A5 0%, #EF4444 55%, #991B1B 100%);
+}
+.hp-bar .hp-block.lost {
+  background: #1a1a1a;
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
+  opacity: 0.4;
+}
+.pentagram-charge {
+  display: flex; justify-content: center; gap: 3px;
+  font-size: 0.95rem;
+  line-height: 1;
+  margin-top: 1px;
+  filter: drop-shadow(0 0 2px #000);
+}
+.pentagram-charge .star {
+  color: rgba(170,170,180,0.4);
+  transition: color 0.3s ease, text-shadow 0.3s ease, transform 0.3s ease;
+}
+.pentagram-charge .star.lit {
+  color: #FFD86A;
+  text-shadow: 0 0 6px #FFE27A, 0 0 12px rgba(255,170,60,0.9), 0 0 20px rgba(255,170,60,0.5);
+  animation: starPop 0.35s cubic-bezier(0.34,1.7,0.64,1);
+}
+.pentagram-charge.charged .star.lit {
+  animation: starCharged 1.2s ease-in-out infinite;
+}
+@keyframes starPop {
+  0%   { transform: scale(0.5); }
+  55%  { transform: scale(1.5); }
+  100% { transform: scale(1);   }
+}
+@keyframes starCharged {
+  0%, 100% { transform: scale(1);    filter: brightness(1); }
+  50%      { transform: scale(1.15); filter: brightness(1.3); }
+}
+
+/* 敵のセリフ吹き出し */
+.enemy-speech {
+  position: absolute;
+  left: 50%; top: 6px;
+  transform: translateX(-50%) scale(0.6);
+  background: var(--window-bg);
+  border: 2px solid var(--window-border);
+  border-radius: 10px;
+  padding: 3px 10px;
+  font-size: 0.78rem; font-weight: 900;
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 10px rgba(255,220,130,0.25);
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.enemy-speech.show { opacity: 1; transform: translateX(-50%) scale(1); }
+.enemy-speech::after {
+  content: '';
+  position: absolute;
+  bottom: -7px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid var(--window-border);
+}
+
+/* ダメージ数字ポップアップ */
+.damage-pop-layer {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  overflow: visible;
+}
+.damage-pop {
+  position: absolute;
+  font-size: 1.6rem; font-weight: 900;
+  color: #FFE27A;
+  text-shadow: 0 0 6px #FFD86A, 0 0 12px rgba(255,170,60,0.85), 0 2px 3px #000;
+  animation: damagePopAnim 0.75s cubic-bezier(0.2,0.8,0.3,1) forwards;
+  transform: translate(-50%, -50%);
+  letter-spacing: 0.04em;
+  will-change: transform, opacity;
+}
+.damage-pop.finisher {
+  font-size: 2.6rem;
+  color: #FCA5A5;
+  text-shadow: 0 0 8px #F87171, 0 0 18px rgba(239,68,68,0.85), 0 2px 4px #000;
+}
+@keyframes damagePopAnim {
+  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  20%  { transform: translate(-50%, -70%) scale(1.25); opacity: 1; }
+  100% { transform: translate(-50%,-180%) scale(0.9); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-enemy, .battle-enemy.damaged, .battle-enemy.defeated,
+  .enemy-shadow, .pentagram-charge .star.lit, .damage-pop {
+    animation: none !important;
+  }
+}
+
+/* ランドスケープ: 戦闘ステージを上部に横長で、キャンバス幅と揃える */
+@media (orientation: landscape) {
+  .battle-stage {
+    width: min(60vh, 480px);
+    max-width: 60vh;
+    height: 120px;
+    min-height: 100px;
+    margin: 4px auto;
+  }
+  .battle-enemy {
+    width: 84px; height: 84px;
+  }
+  .enemy-name { font-size: 0.7rem; }
+  .pentagram-charge { font-size: 0.85rem; }
+}
+
 /* ===== Portrait Lock (無効化) =====
    元々は landscape 推奨のために表示していたが、portrait レイアウトも整備済みなので常時非表示。
    PC ブラウザの縦長ウィンドウで誤発火するのを防ぐ。 */
@@ -1159,6 +1406,25 @@ html, body {
 
   <div class="right-col">
     <div class="progress-hint" id="progressHint"></div>
+    <!-- ===== Battle Stage (RPG戦闘モード、行練習中のみ表示) ===== -->
+    <div id="battleStage" class="battle-stage" aria-hidden="true" style="display:none;">
+      <div class="battle-bg"></div>
+      <div class="battle-enemy-wrap">
+        <div class="battle-enemy" id="battleEnemy">
+          <img class="enemy-img" id="battleEnemyImg" alt="てき" />
+          <div class="enemy-shadow"></div>
+        </div>
+      </div>
+      <div class="enemy-info">
+        <div class="enemy-name" id="battleEnemyName">キノコのせんし</div>
+        <div class="hp-bar-wrap"><div class="hp-bar" id="battleHpBar"></div></div>
+        <div class="pentagram-charge" id="pentagramCharge">
+          <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+        </div>
+      </div>
+      <div class="enemy-speech" id="battleEnemySpeech"></div>
+      <div class="damage-pop-layer" id="damagePopLayer" aria-hidden="true"></div>
+    </div>
     <div class="trace-area">
       <div id="demoIndicator">おてほんちゅう</div>
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
@@ -2176,6 +2442,250 @@ function _playCanvasBreak() {
 }
 // 既存呼出し経路との互換
 function _playMonsterPop() { _playCanvasBreak(); }
+
+// ===== RPG バトルシステム =====
+// 行練習を「1体の敵を5文字で倒す」戦闘に見立てる。
+// 既存 .monster-deco (封印された妖精) とは完全に別レイヤ (#battleStage / #battleEnemy)。
+const BATTLE_ENEMIES = {
+  a: {
+    id: 'mush1', name: 'キノコのせんし',
+    img: '../assets/images/monsters/chars/monster_005.png',
+    taunts: ['くくく…', 'かかってこい！', 'まだまだ！', 'なんのこれしき！', 'やるな…'],
+    hp: 5, element: 'light'
+  },
+  // 他の行は順次追加。未定義なら a 行の敵を流用 (見た目だけランダムな mush2/3 にする)
+};
+const MUSHROOM_IMGS = [
+  '../assets/images/monsters/chars/monster_005.png',
+  '../assets/images/monsters/chars/monster_006.png',
+  '../assets/images/monsters/chars/monster_007.png',
+];
+function _enemyForRow(rowId) {
+  const base = BATTLE_ENEMIES[rowId] || BATTLE_ENEMIES.a;
+  // 未定義行は画像だけランダム化して飽きさせない
+  const img = BATTLE_ENEMIES[rowId]
+    ? base.img
+    : MUSHROOM_IMGS[Math.floor(Math.random() * MUSHROOM_IMGS.length)];
+  return Object.assign({}, base, { img });
+}
+
+const _battle = {
+  active: false,
+  enemy: null,
+  hp: 5,
+  maxHp: 5,
+  hitCount: 0,
+};
+
+function _battleEls() {
+  return {
+    stage:   document.getElementById('battleStage'),
+    enemy:   document.getElementById('battleEnemy'),
+    img:     document.getElementById('battleEnemyImg'),
+    name:    document.getElementById('battleEnemyName'),
+    hpBar:   document.getElementById('battleHpBar'),
+    stars:   document.querySelectorAll('#pentagramCharge .star'),
+    charge:  document.getElementById('pentagramCharge'),
+    speech:  document.getElementById('battleEnemySpeech'),
+    popLayer:document.getElementById('damagePopLayer'),
+  };
+}
+
+function _renderHpBar(hp, maxHp) {
+  const { hpBar } = _battleEls();
+  if (!hpBar) return;
+  hpBar.innerHTML = '';
+  for (let i = 0; i < maxHp; i++) {
+    const b = document.createElement('span');
+    b.className = 'hp-block';
+    if (i >= hp) b.classList.add('lost');
+    else if (hp <= 1) b.classList.add('critical');
+    else if (hp <= 2) b.classList.add('low');
+    hpBar.appendChild(b);
+  }
+}
+
+function _showBattleStage(rowId) {
+  const els = _battleEls();
+  if (!els.stage) return;
+  const enemy = _enemyForRow(rowId);
+  _battle.active = true;
+  _battle.enemy = enemy;
+  _battle.maxHp = enemy.hp || 5;
+  _battle.hp = _battle.maxHp;
+  _battle.hitCount = 0;
+
+  if (els.img) els.img.src = enemy.img;
+  if (els.name) els.name.textContent = enemy.name;
+  if (els.charge) els.charge.classList.remove('charged');
+  els.stars.forEach(s => s.classList.remove('lit'));
+  els.enemy.classList.remove('damaged', 'defeated');
+  _renderHpBar(_battle.hp, _battle.maxHp);
+
+  els.stage.style.display = '';
+  els.stage.setAttribute('aria-hidden', 'false');
+
+  // 封印された妖精は隠す (同一キャンバス内の干渉を避ける)
+  const md = document.getElementById('monsterDeco');
+  if (md) md.style.display = 'none';
+
+  // 登場セリフ
+  _showEnemySpeech(enemy.taunts[0]);
+}
+
+function _hideBattleStage() {
+  const els = _battleEls();
+  if (!els.stage) return;
+  _battle.active = false;
+  els.stage.style.display = 'none';
+  els.stage.setAttribute('aria-hidden', 'true');
+  const md = document.getElementById('monsterDeco');
+  if (md) md.style.display = '';
+}
+
+function _showEnemySpeech(text, ms) {
+  const { speech } = _battleEls();
+  if (!speech || !text) return;
+  speech.textContent = text;
+  speech.classList.add('show');
+  clearTimeout(_showEnemySpeech._t);
+  _showEnemySpeech._t = setTimeout(() => speech.classList.remove('show'), ms || 1800);
+}
+
+function _popDamage(amount, opts) {
+  const { popLayer } = _battleEls();
+  if (!popLayer) return;
+  const d = document.createElement('div');
+  d.className = 'damage-pop' + (opts && opts.finisher ? ' finisher' : '');
+  d.textContent = amount;
+  // 敵の中心少し上にばらけさせる
+  const jitterX = (Math.random() - 0.5) * 40;
+  d.style.left = (50 + jitterX / 2) + '%';
+  d.style.top  = (opts && opts.finisher ? '45%' : '40%');
+  popLayer.appendChild(d);
+  setTimeout(() => d.remove(), 900);
+}
+
+// 1 文字完成時に呼ばれる: HP 1 減らして星 1 点灯
+function battleHitEnemy(opts) {
+  if (!_battle.active) return;
+  const els = _battleEls();
+  _battle.hitCount++;
+  _battle.hp = Math.max(0, _battle.hp - 1);
+
+  // 星を 1 つ点灯
+  const star = els.stars[_battle.hitCount - 1];
+  if (star) star.classList.add('lit');
+
+  // HP バー更新
+  _renderHpBar(_battle.hp, _battle.maxHp);
+
+  // 敵にダメージ演出
+  els.enemy.classList.remove('damaged');
+  void els.enemy.offsetWidth;  // reflow でアニメ再始動
+  if (_battle.hp > 0) els.enemy.classList.add('damaged');
+
+  // ダメージ数字
+  const dmg = (opts && opts.finisher) ? 999 : (20 + Math.floor(Math.random() * 12));
+  _popDamage(dmg, { finisher: !!(opts && opts.finisher) });
+
+  // ランダムなセリフ (最終打は除く)
+  if (!(opts && opts.finisher) && _battle.enemy && _battle.enemy.taunts) {
+    const ts = _battle.enemy.taunts;
+    if (Math.random() < 0.5) _showEnemySpeech(ts[Math.floor(Math.random() * ts.length)], 1400);
+  }
+}
+
+// 5 文字目完成時に呼ばれる: フルチャージ→魔法発動→撃破演出→ファンファーレ
+function battleVictory(spellKind, onDone) {
+  if (!_battle.active) { if (onDone) onDone(); return; }
+  const els = _battleEls();
+  // 最終ダメージを入れる
+  battleHitEnemy({ finisher: true });
+  // 五芒星全点灯グロウ
+  els.stars.forEach(s => s.classList.add('lit'));
+  if (els.charge) els.charge.classList.add('charged');
+
+  // 既存の全画面魔法陣を再生 (0.4s 後)
+  setTimeout(() => {
+    try { if (typeof launchMagicCircle === 'function') launchMagicCircle(spellKind || 'light'); }
+    catch (e) { /* ignore */ }
+  }, 400);
+
+  // 魔法動画中盤で敵を撃破 (魔法動画は約 2.5s)
+  setTimeout(() => {
+    els.enemy.classList.remove('damaged');
+    els.enemy.classList.add('defeated');
+    _showEnemySpeech('うわぁぁ〜！', 1400);
+  }, 2400);
+
+  // ファンファーレ + BGM フェード
+  setTimeout(() => {
+    try { fadeBgm(0, 300); } catch (e) {}
+    try { playVictoryFanfare(); } catch (e) {}
+  }, 2800);
+
+  // 次の処理へ
+  setTimeout(() => {
+    try { fadeBgm(0.28, 500); } catch (e) {}
+    if (onDone) onDone();
+  }, 4800);
+}
+
+// ===== 勝利ファンファーレ (仮、Web Audio 合成) =====
+// 将来 mp3 差し替え用フック: window.PONO_VICTORY_SFX = 'xxx.mp3' が定義されていればそちらを優先
+function playVictoryFanfare() {
+  if (typeof window !== 'undefined' && window.PONO_VICTORY_SFX) {
+    try {
+      const a = new Audio(window.PONO_VICTORY_SFX);
+      a.volume = 0.7;
+      a.play().catch(() => {});
+      return;
+    } catch (e) { /* fall through to synth */ }
+  }
+  withAudio(ac => {
+    const now = ac.currentTime;
+    // C-E-G-C-G-C 勝利モチーフ
+    const notes = [
+      {f: 523.25, t: 0.00, d: 0.16, g: 0.32},  // C5
+      {f: 659.25, t: 0.15, d: 0.16, g: 0.32},  // E5
+      {f: 783.99, t: 0.30, d: 0.16, g: 0.32},  // G5
+      {f: 1046.5, t: 0.45, d: 0.32, g: 0.36},  // C6 long
+      {f: 783.99, t: 0.82, d: 0.16, g: 0.30},  // G5
+      {f: 1046.5, t: 0.98, d: 0.55, g: 0.40},  // C6 finale
+    ];
+    notes.forEach(n => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = n.f;
+      gain.gain.setValueAtTime(0, now + n.t);
+      gain.gain.linearRampToValueAtTime(n.g, now + n.t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now + n.t); osc.stop(now + n.t + n.d + 0.05);
+    });
+  });
+}
+
+// BGM ボリュームフェード (linearRamp 風)
+function fadeBgm(to, durMs) {
+  const el = document.getElementById('bgm');
+  if (!el) return;
+  const from = Number(el.volume) || 0;
+  const start = performance.now();
+  const dur = Math.max(50, durMs || 400);
+  cancelAnimationFrame(fadeBgm._raf || 0);
+  function step(now) {
+    const t = Math.min(1, (now - start) / dur);
+    el.volume = from + (to - from) * t;
+    if (t < 1) fadeBgm._raf = requestAnimationFrame(step);
+  }
+  fadeBgm._raf = requestAnimationFrame(step);
+}
+
+window.battleHitEnemy = battleHitEnemy;
+window.battleVictory = battleVictory;
 
 // ===== 初回チュートリアル（妖精救出物語の紹介）=====
 const FAIRY_INTRO_KEY = 'writing_fairy_intro_seen';
