@@ -2454,6 +2454,93 @@ body.battle-intro-active .battle-log-window {
   .pentagram-charge { font-size: 0.85rem; }
 }
 
+/* =====
+   ランドスケープ + バトル中 (2026-04-21 v259):
+   ユーザー要望「横画面のバトルシーンを作り直す」
+   - 左 50vw : バトルステージ (上) + バトルログ (下)
+   - 右 50vw : なぞりキャンバス
+   battle-mode でない通常練習 (非バトル) は既存のランドスケープレイアウトのまま。
+   ===== */
+@media (orientation: landscape) {
+  body.battle-mode .battle-stage {
+    position: fixed !important;
+    left: 0; top: 0;
+    width: 50vw;
+    height: 60vh;
+    max-width: none; max-height: none;
+    min-height: 0;
+    margin: 0;
+    border-radius: 0 0 12px 0;
+    border-width: 0 2.5px 2.5px 0;
+    z-index: 500;
+  }
+  /* 左半分が広いぶん、敵スプライトは元サイズに戻す */
+  body.battle-mode .battle-enemy {
+    width: min(22vh, 130px);
+    height: min(22vh, 130px);
+  }
+  body.battle-mode .enemy-name { font-size: 0.95rem; }
+  body.battle-mode .pentagram-charge { font-size: 1.1rem; }
+
+  /* バトルログは左下。bottom-align しやすいように固定配置 */
+  body.battle-mode:not(.battle-intro-active) .battle-log-window {
+    position: fixed !important;
+    left: 0;
+    top: 60vh;
+    bottom: 0;
+    width: 50vw;
+    height: 40vh;
+    max-width: none;
+    margin: 0;
+    z-index: 500;
+    padding: 10px 14px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-inner {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* right-col を右半分にロック。mid-col は右上に退避させるので flex row 的には右-col が拡がる */
+  body.battle-mode .right-col {
+    flex: 0 0 50vw;
+    max-width: 50vw;
+    min-width: 50vw;
+    margin-left: auto;
+  }
+  /* 右半分に収まるキャンバス */
+  body.battle-mode .canvas-container {
+    width: min(92vh, 46vw);
+    height: min(92vh, 46vw);
+  }
+
+  /* mid-col (コントロール列) はバトル中は右上に小さく退避。
+     左半分はステージ/ログが占有するため、通常位置にあると被る。 */
+  body.battle-mode .mid-col {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    width: auto;
+    padding: 2px;
+    z-index: 1200;
+    background: rgba(2, 2, 8, 0.55);
+    border-radius: 8px;
+  }
+  body.battle-mode .mid-col .ctrl-btn {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    min-width: 60px;
+  }
+
+  /* progress-hint は右半分の上部に */
+  body.battle-mode .progress-hint {
+    max-width: 46vw;
+  }
+}
+
 /* ===== World Map Scene (バトル開始前の探索画面) =====
    map.png は 1536x1024 の横長フィールド。5〜6 画面分スクロールさせるため
    `.map-world` を viewport の 500% 幅に伸ばし、camera (translateX) で追尾する。
