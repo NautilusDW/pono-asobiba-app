@@ -1540,6 +1540,122 @@ html, body {
   .pentagram-charge { font-size: 0.85rem; }
 }
 
+/* ===== World Map Scene (バトル開始前の探索画面) =====
+   map.png は 1536x1024 の横長フィールド。5〜6 画面分スクロールさせるため
+   `.map-world` を viewport の 500% 幅に伸ばし、camera (translateX) で追尾する。
+   pixelated レンダリングでピクセルアートのエッジを保つ。 */
+#mapScene {
+  position: fixed; inset: 0; z-index: 1400;
+  background: #0a0a0a;
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  font-family: inherit;
+}
+#mapScene.visible { display: flex; }
+.map-viewport {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: #000;
+}
+.map-world {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  /* 5 画面分スクロール相当: 500% 幅に引き伸ばし */
+  width: 500%;
+  background-image: url('../assets/images/battle/bg/map.png');
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.map-actor {
+  position: absolute;
+  bottom: 14%;
+  width: 10%;
+  max-width: 90px; min-width: 48px;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  pointer-events: none;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.55));
+}
+.map-actor.map-hero {
+  z-index: 3;
+  animation: mapHeroBob 1.2s ease-in-out infinite;
+}
+.map-actor.map-monster {
+  z-index: 2;
+  width: 7%;
+  max-width: 72px; min-width: 40px;
+  animation: mapMonsterBob 1.8s ease-in-out infinite;
+}
+@keyframes mapHeroBob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-3px); }
+}
+@keyframes mapMonsterBob {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  50%      { transform: translateX(-50%) translateY(-2px) scale(1.04); }
+}
+/* 移動ボタン */
+.map-controls {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 14px 20px 22px;
+  display: flex; justify-content: center; align-items: center;
+  gap: 14px;
+  background: linear-gradient(180deg, rgba(15,10,25,0.0) 0%, rgba(10,10,25,0.85) 40%, rgba(10,10,25,0.95) 100%);
+}
+.map-walk-btn {
+  padding: 16px 42px;
+  border: 3px solid #FFD86A;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #F2915A, #EC4899);
+  color: #fff;
+  font-family: inherit; font-weight: 900; font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  box-shadow: 0 6px 18px rgba(236,72,153,0.45), inset 0 0 10px rgba(255,216,106,0.35);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.map-walk-btn:active { transform: scale(0.94); }
+.map-walk-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
+.map-hud {
+  position: absolute; top: 10px; left: 10px; right: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  pointer-events: none; z-index: 5;
+  font-size: 0.85rem; font-weight: 900; color: #fff;
+  text-shadow: 0 0 4px #000, 0 0 8px rgba(0,0,0,0.9);
+  letter-spacing: 0.08em;
+}
+.map-collide-flash {
+  position: absolute; inset: 0; z-index: 10;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.95) 0%, rgba(255,216,106,0.7) 25%, rgba(0,0,0,0) 70%);
+  opacity: 0; pointer-events: none;
+  animation: mapCollideFlash 0.65s ease-out forwards;
+}
+@keyframes mapCollideFlash {
+  0%   { opacity: 0; transform: scale(0.4); }
+  40%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-actor.map-hero, .map-actor.map-monster { animation: none !important; }
+  .map-world { transition: none !important; }
+  .map-collide-flash { animation: none !important; }
+}
+
 /* ===== Portrait Lock (無効化) =====
    元々は landscape 推奨のために表示していたが、portrait レイアウトも整備済みなので常時非表示。
    PC ブラウザの縦長ウィンドウで誤発火するのを防ぐ。 */
@@ -1575,6 +1691,23 @@ html, body {
     <button class="category-tab" data-cat="katakana">カタカナ</button>
   </div>
   <div class="rs-grid" id="rsGrid"></div>
+</div>
+
+<!-- ===== World Map Scene (あ行など: バトル突入前の探索) ===== -->
+<div id="mapScene" aria-hidden="true">
+  <div class="map-viewport" id="mapViewport">
+    <div class="map-hud">
+      <div id="mapHudLabel">もりの いりぐち</div>
+      <div id="mapHudHint">→ すすめ！</div>
+    </div>
+    <div class="map-world" id="mapWorld">
+      <img class="map-actor map-hero"    id="mapHero"    alt="ゆうしゃ" />
+      <img class="map-actor map-monster" id="mapMonster" alt="てき" />
+    </div>
+  </div>
+  <div class="map-controls">
+    <button type="button" id="mapWalkBtn" class="map-walk-btn">すすむ ▶</button>
+  </div>
 </div>
 
 <!-- ===== Practice Screen (hidden initially) ===== -->
@@ -3639,10 +3772,27 @@ function enterPractice(rowIndex) {
   // Start BGM + unlock AudioContext on user interaction
   tryStartBgm();
   unlockAudio(); // 効果音AudioContextも確実にアンロック
-  // 毎回1文字目に遊び方を表示してから開始
-  _showHowToPlay(row, function() {
-    startRowPractice(rowIndex);
-  });
+  // あ行 (ひらがな rowIndex=0) は「森でモンスター発見 → 戦闘突入」の導入を挟む。
+  // それ以外の行と、カタカナは従来どおりチュートリアルだけ出して練習開始。
+  var showMapIntro = (currentCategory === 'hiragana' && rowIndex === 0);
+  var proceed = function() {
+    _showHowToPlay(row, function() { startRowPractice(rowIndex); });
+  };
+  if (showMapIntro) {
+    // app 画面はマップの後ろに残しておくので一旦非表示にして、
+    // マップ閉じるときに表示を戻す。戦闘シーンは startRowPractice 内で展開される。
+    document.getElementById('app').style.display = 'none';
+    openMapScene({
+      onCollision: function() {
+        document.getElementById('app').style.display = '';
+        // 戦闘に突入するので BGM を戦闘系に戻す
+        try { if (typeof setBgmFor === 'function') setBgmFor('battle'); } catch (e) {}
+        proceed();
+      }
+    });
+  } else {
+    proceed();
+  }
 }
 
 function returnToSelect() {
@@ -3682,6 +3832,139 @@ function _showHowToPlay(row, onDone) {
     if (onDone) onDone();
   });
 }
+
+// ===== World Map Scene =====
+// map.png の「一番左の森」だけを見せるため、.map-world を viewport 500% に拡大して
+// 初期カメラは左端 (0%) に固定。ヒーローは森の入口、モンスターはその少し右。
+// 「すすむ」ボタン連打で hero の world 内 X 座標を増やし、一定距離でモンスターと衝突 → 戦闘開始。
+//
+// 座標系:
+//   hero / monster の left は world 内 % (0〜100 の相対値。ただし world 幅は viewport の 500%)
+//   world の scroll(translateX) も viewport 幅に対する % で計算
+const MAP_STATE = {
+  active: false,
+  hero: 6.0,       // world 内 % (森の入口=一番左寄り)
+  monster: 12.0,   // 初期は勇者のすぐ右 (ぶつかるまで数歩)
+  step: 2.6,       // 1 タップで進む距離 (% of world)
+  collideMargin: 2.2,
+  walking: false,
+  walkFrame: 0,
+  onCollision: null,
+};
+const MAP_HERO_GENDER_KEY = 'pono_hero_gender';
+// 男女切替は将来 UI で追加想定。今はデフォルト男性、localStorage で上書き可能。
+function _mapHeroGender() {
+  try {
+    var g = localStorage.getItem(MAP_HERO_GENDER_KEY);
+    return (g === 'f') ? 'f' : 'm';
+  } catch (e) { return 'm'; }
+}
+function _mapHeroFrame(kind) {
+  // kind: 'stand' | 'walk1' | 'walk2' (003/005/007 あたりが歩きフレーム、002=standing)
+  var g = _mapHeroGender();
+  // スプライトシート的に: 002=正面立ち, 003=右歩き1, 005=右歩き2 (正確な内訳はアセット任せ)
+  var frame = '002';
+  if (kind === 'walk1') frame = '003';
+  else if (kind === 'walk2') frame = '005';
+  return '../assets/images/hero/hero_' + g + '_' + frame + '.png';
+}
+function _mapMonsterSrc() {
+  // 戦闘で使っているキノコ (monster_005) をそのまま縮小表示。
+  return '../assets/images/monsters/chars/monster_005.png';
+}
+function _mapApplyTransforms() {
+  var world = document.getElementById('mapWorld');
+  var viewport = document.getElementById('mapViewport');
+  var hero = document.getElementById('mapHero');
+  var mon  = document.getElementById('mapMonster');
+  if (!world || !viewport || !hero || !mon) return;
+  // world 幅は viewport の 500% → 1% (world) = 0.05 * viewport width
+  // カメラ: hero を viewport の 30% に置きたい
+  var heroW = MAP_STATE.hero;             // world 内 %
+  var monW  = MAP_STATE.monster;
+  // hero の world 内 X を viewport 内 X に写像: viewportX% = heroW% * 5 - cameraShift
+  // camera shift を「hero が viewport の 30% に来るように」決める
+  // worldX_in_viewport_percent = heroW * 5 (world が 500% 幅なので)
+  var heroViewPct = heroW * 5;
+  // ただし左端クランプ: camera は世界の開始時は 0 固定 (左端は壁)
+  var cameraShift = Math.max(0, heroViewPct - 30);
+  // 右端クランプ: cameraShift は world 幅(500%) - viewport幅(100%) を超えない
+  cameraShift = Math.min(cameraShift, 400);
+  world.style.transform = 'translateX(-' + cameraShift.toFixed(2) + '%)';
+  // hero / monster の world 内位置は world 要素基準 (world 内 % → 0〜100% で left)
+  // world 内 0〜100% ではなく、ここでは world 幅 (=500%viewport) の何% か。
+  // .map-world の width:500% 内で left:heroW% と書けば、viewport から見ると heroW*5%
+  hero.style.left = heroW.toFixed(2) + '%';
+  mon.style.left  = monW.toFixed(2)  + '%';
+}
+function openMapScene(opts) {
+  opts = opts || {};
+  MAP_STATE.active = true;
+  MAP_STATE.hero = (opts.heroStart != null) ? opts.heroStart : 6.0;
+  MAP_STATE.monster = (opts.monsterX != null) ? opts.monsterX : 12.0;
+  MAP_STATE.onCollision = opts.onCollision || null;
+  var hero = document.getElementById('mapHero');
+  var mon  = document.getElementById('mapMonster');
+  if (hero) hero.src = _mapHeroFrame('stand');
+  if (mon)  mon.src  = _mapMonsterSrc();
+  var scene = document.getElementById('mapScene');
+  if (scene) { scene.classList.add('visible'); scene.setAttribute('aria-hidden', 'false'); }
+  // マップ BGM に切替
+  try { if (typeof setBgmFor === 'function') setBgmFor('map'); } catch (e) {}
+  _mapApplyTransforms();
+  // ボタンのハンドラは 1 回だけ登録
+  var btn = document.getElementById('mapWalkBtn');
+  if (btn && !btn._ponoBound) {
+    btn._ponoBound = true;
+    btn.addEventListener('click', mapWalkStep);
+  }
+  if (btn) btn.disabled = false;
+}
+function closeMapScene() {
+  MAP_STATE.active = false;
+  var scene = document.getElementById('mapScene');
+  if (scene) { scene.classList.remove('visible'); scene.setAttribute('aria-hidden', 'true'); }
+}
+function mapWalkStep() {
+  if (!MAP_STATE.active || MAP_STATE.walking) return;
+  MAP_STATE.walking = true;
+  var hero = document.getElementById('mapHero');
+  MAP_STATE.walkFrame = (MAP_STATE.walkFrame + 1) % 2;
+  if (hero) hero.src = _mapHeroFrame(MAP_STATE.walkFrame ? 'walk1' : 'walk2');
+  MAP_STATE.hero += MAP_STATE.step;
+  // クランプ: world は 100%、モンスターを越えないように (衝突で止める)
+  if (MAP_STATE.hero >= MAP_STATE.monster - MAP_STATE.collideMargin) {
+    MAP_STATE.hero = MAP_STATE.monster - MAP_STATE.collideMargin;
+    _mapApplyTransforms();
+    setTimeout(_mapCollide, 320);
+    return;
+  }
+  _mapApplyTransforms();
+  setTimeout(function() {
+    if (hero) hero.src = _mapHeroFrame('stand');
+    MAP_STATE.walking = false;
+  }, 280);
+}
+function _mapCollide() {
+  // フラッシュを出してから戦闘開始
+  var viewport = document.getElementById('mapViewport');
+  if (viewport) {
+    var flash = document.createElement('div');
+    flash.className = 'map-collide-flash';
+    viewport.appendChild(flash);
+    setTimeout(function() { if (flash.parentNode) flash.remove(); }, 700);
+  }
+  var btn = document.getElementById('mapWalkBtn');
+  if (btn) btn.disabled = true;
+  setTimeout(function() {
+    closeMapScene();
+    var cb = MAP_STATE.onCollision;
+    MAP_STATE.onCollision = null;
+    MAP_STATE.walking = false;
+    if (typeof cb === 'function') { try { cb(); } catch (e) {} }
+  }, 600);
+}
+window.openMapScene = openMapScene;
 
 // ===== Row Practice Mode (5文字1セット) =====
 let _rowPracticeActive = false;
