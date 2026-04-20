@@ -1219,24 +1219,63 @@ html, body {
 }
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
-/* 1 文字完成時の「シャキーン！」白フラッシュ。短く眩しすぎないように。 */
-.shakeen-flash {
-  position: fixed; inset: 0; z-index: 1400;
-  pointer-events: none;
-  background: radial-gradient(circle at 50% 50%,
-    rgba(255,255,255,0.9) 0%,
-    rgba(255,240,180,0.55) 35%,
-    rgba(255,240,180,0) 70%);
-  animation: shakeenFlash 360ms ease-out forwards;
-  mix-blend-mode: screen;
+/* 1 画成功時の per-stroke グロウ。直前に描いた path だけを一瞬だけ強く光らせる。
+   screen ブレンド + drop-shadow 重ねで加算的な発光感を作る。
+   グロー単独はキツいので blur(0.3px) を挿入してエッジをソフトに。 */
+@keyframes strokeJustLitPulse {
+  0% {
+    filter: drop-shadow(0 0 2px rgba(255,235,180,0.85))
+            drop-shadow(0 0 6px rgba(255,200,90,0.55))
+            drop-shadow(0 0 14px rgba(255,170,60,0.35))
+            blur(0px);
+  }
+  18% {
+    filter: drop-shadow(0 0 6px rgba(255,255,235,1))
+            drop-shadow(0 0 14px rgba(255,240,180,0.95))
+            drop-shadow(0 0 28px rgba(255,210,120,0.9))
+            drop-shadow(0 0 54px rgba(255,170,60,0.7))
+            drop-shadow(0 0 80px rgba(255,140,40,0.4))
+            blur(0.3px);
+  }
+  100% {
+    filter: drop-shadow(0 0 2px rgba(255,235,180,0.85))
+            drop-shadow(0 0 6px rgba(255,200,90,0.55))
+            drop-shadow(0 0 14px rgba(255,170,60,0.35))
+            blur(0px);
+  }
 }
-@keyframes shakeenFlash {
-  0%   { opacity: 0;   transform: scale(0.9); }
-  18%  { opacity: 1;   transform: scale(1.0); }
-  100% { opacity: 0;   transform: scale(1.12); }
+#writerTarget svg path.stroke-just-lit,
+#writerTarget svg g.stroke-just-lit > path {
+  animation: strokeJustLitPulse 560ms cubic-bezier(0.2,0.8,0.3,1);
+}
+/* キャンバスに重ねる加算ライト層 (screen blend + blur でソフトな面発光)。
+   画面全体ではなく書き取りキャンバスに収め、視線分散を防ぐ。 */
+.stroke-soft-halo {
+  position: absolute;
+  pointer-events: none;
+  width: 60%; height: 60%;
+  left: 20%; top: 20%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255,250,220,0.9) 0%,
+    rgba(255,220,130,0.55) 28%,
+    rgba(255,180,60,0.22) 55%,
+    rgba(255,150,40,0) 80%);
+  mix-blend-mode: screen;
+  filter: blur(10px);
+  opacity: 0;
+  animation: strokeSoftHaloPulse 520ms cubic-bezier(0.2,0.7,0.3,1) forwards;
+  z-index: 5;
+}
+@keyframes strokeSoftHaloPulse {
+  0%   { opacity: 0; transform: scale(0.6); }
+  22%  { opacity: 1; transform: scale(1.0); }
+  100% { opacity: 0; transform: scale(1.25); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .shakeen-flash { animation: none; opacity: 0; }
+  #writerTarget svg path.stroke-just-lit,
+  #writerTarget svg g.stroke-just-lit > path { animation: none; }
+  .stroke-soft-halo { animation: none; opacity: 0; }
 }
 
 /* ===== Battle Stage (RPG バトル、行練習中のみ表示) ===== */
@@ -2482,10 +2521,9 @@ function playStrokeSound() {
   });
 }
 
-// 1 文字完成時の「シャキーン！」演出: 短いハイ→ロー bell + 画面全体を一瞬白フラッシュ。
+// 1 画成功時の「シャキーン！」音のみ (画面フラッシュは per-stroke glow に置き換え済み)。
 // 差替フック: window.PONO_SHAKEEN_SFX に mp3 パスを入れれば最優先で使用。
-function playShakeenFlash() {
-  // SFX (外部 mp3 優先、無ければ Web Audio で合成)
+function playShakeenSound() {
   const url = (typeof window !== 'undefined' && window.PONO_SHAKEEN_SFX) || null;
   if (url) {
     try {
@@ -2493,49 +2531,75 @@ function playShakeenFlash() {
       a.volume = 0.7;
       a.play().catch(() => {});
     } catch (e) { /* fall through */ }
-  } else {
-    withAudio(ac => {
-      const now = ac.currentTime;
-      // 三角波のキラキラ: 2093Hz → 3000Hz → 1568Hz (C7→G7→G6) の極短アルペジオ
-      const notes = [
-        { f: 2093.00, t: 0.00, d: 0.09, g: 0.28 },
-        { f: 3135.96, t: 0.04, d: 0.10, g: 0.30 },
-        { f: 1567.98, t: 0.14, d: 0.20, g: 0.26 },
-      ];
-      notes.forEach(n => {
-        const osc  = ac.createOscillator();
-        const gain = ac.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(n.f, now + n.t);
-        gain.gain.setValueAtTime(0, now + n.t);
-        gain.gain.linearRampToValueAtTime(n.g, now + n.t + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
-        osc.connect(gain); gain.connect(ac.destination);
-        osc.start(now + n.t); osc.stop(now + n.t + n.d + 0.02);
-      });
-      // ノイズバースト (シャキーン の「シャ」成分)
-      try {
-        const bufSize = Math.floor(ac.sampleRate * 0.12);
-        const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
-        const src = ac.createBufferSource();
-        src.buffer = buf;
-        const bp = ac.createBiquadFilter();
-        bp.type = 'bandpass'; bp.frequency.value = 5000; bp.Q.value = 2.5;
-        const g = ac.createGain();
-        g.gain.setValueAtTime(0.15, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-        src.connect(bp); bp.connect(g); g.connect(ac.destination);
-        src.start(now); src.stop(now + 0.13);
-      } catch (e) { /* ignore */ }
-    });
+    return;
   }
-  // 画面フラッシュ (短く、眩しすぎないように 180ms でフェード)
-  const f = document.createElement('div');
-  f.className = 'shakeen-flash';
-  document.body.appendChild(f);
-  setTimeout(() => { if (f.parentNode) f.remove(); }, 380);
+  withAudio(ac => {
+    const now = ac.currentTime;
+    // 三角波のキラキラ: 2093Hz → 3000Hz → 1568Hz (C7→G7→G6) の極短アルペジオ
+    const notes = [
+      { f: 2093.00, t: 0.00, d: 0.09, g: 0.28 },
+      { f: 3135.96, t: 0.04, d: 0.10, g: 0.30 },
+      { f: 1567.98, t: 0.14, d: 0.20, g: 0.26 },
+    ];
+    notes.forEach(n => {
+      const osc  = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(n.f, now + n.t);
+      gain.gain.setValueAtTime(0, now + n.t);
+      gain.gain.linearRampToValueAtTime(n.g, now + n.t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now + n.t); osc.stop(now + n.t + n.d + 0.02);
+    });
+    // ノイズバースト (シャキーン の「シャ」成分)
+    try {
+      const bufSize = Math.floor(ac.sampleRate * 0.12);
+      const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = 5000; bp.Q.value = 2.5;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      src.connect(bp); bp.connect(g); g.connect(ac.destination);
+      src.start(now); src.stop(now + 0.13);
+    } catch (e) { /* ignore */ }
+  });
+}
+
+// 直前に描いた 1 画だけを一瞬光らせる。画面全体フラッシュではなく書き取りキャンバス内に留める。
+// 1. 最新の <path> (= 直前に描かれたストローク) に .stroke-just-lit を付与 → CSS アニメで
+//    drop-shadow を段階強化 → blur(0.3px) で若干エッジをやわらげ加算的にふわっと光らせる。
+// 2. canvas-container に screen ブレンドのソフトハローを 1 枚重ねて加算光を演出。
+function flashLastStroke() {
+  try {
+    var target = document.getElementById('writerTarget');
+    if (!target) return;
+    var svg = target.querySelector('svg');
+    if (svg) {
+      var paths = svg.querySelectorAll('path');
+      if (paths && paths.length) {
+        var last = paths[paths.length - 1];
+        last.classList.remove('stroke-just-lit');
+        // reflow で animation を確実に再始動
+        void last.getBoundingClientRect();
+        last.classList.add('stroke-just-lit');
+        setTimeout(function() { last.classList.remove('stroke-just-lit'); }, 620);
+      }
+    }
+    // ソフトハローを 1 枚だけキャンバス上に乗せる (screen blend + blur)
+    var container = target.parentElement; // .canvas-container
+    if (container) {
+      var halo = document.createElement('div');
+      halo.className = 'stroke-soft-halo';
+      container.appendChild(halo);
+      setTimeout(function() { if (halo.parentNode) halo.remove(); }, 600);
+    }
+  } catch (e) { /* ignore */ }
 }
 
 // ===== Magic Circle =====
@@ -4720,14 +4784,18 @@ function _rowPracticeNextChar() {
           if (_battle.active) _setBattleLog(['かいてみよう！', 'もじを かんせいさせよう']);
           setQuizActive(true);
           writer.quiz({
-            onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+            onCorrectStroke: function() {
+              playStrokeSound();
+              _hideMonsterBubble();
+              // 1 画ごとに「シャキーン！」音 + 直前ストロークのみソフト加算発光。
+              try { playShakeenSound(); } catch (e) {}
+              try { flashLastStroke(); } catch (e) {}
+            },
             onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
             onComplete: function() {
             setQuizActive(false);
             if (!_rowPracticeActive) return;
             playSuccessSound();
-            // 1 文字成功のたびに「シャキーン！」と白フラッシュ
-            try { playShakeenFlash(); } catch (e) {}
             launchConfetti();
             saveStamp(currentCategory, currentCharIndex);
             markCharDone(currentCharIndex);
