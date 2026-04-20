@@ -2531,6 +2531,9 @@ function _showBattleStage(rowId) {
 
   // 登場セリフ
   _showEnemySpeech(enemy.taunts[0]);
+
+  // エンカウントジングル (BGM を一瞬下げて被らないように)
+  try { playEncounterJingle(); } catch (e) {}
 }
 
 function _hideBattleStage() {
@@ -2619,28 +2622,64 @@ function battleVictory(spellKind, onDone) {
     _showEnemySpeech('うわぁぁ〜！', 1400);
   }, 2400);
 
-  // ファンファーレ + BGM フェード
+  // ファンファーレ + BGM フェード (BGM は ファンファーレ終了時に復帰させる)
   setTimeout(() => {
     try { fadeBgm(0, 300); } catch (e) {}
-    try { playVictoryFanfare(); } catch (e) {}
+    try {
+      const a = playVictoryFanfare();
+      if (a && typeof a.addEventListener === 'function') {
+        a.addEventListener('ended', () => { try { fadeBgm(0.28, 600); } catch (e) {} });
+      } else {
+        // 合成フォールバック時 (約 1.5s で終わる) は時間指定で復帰
+        setTimeout(() => { try { fadeBgm(0.28, 600); } catch (e) {} }, 1800);
+      }
+    } catch (e) {}
   }, 2800);
 
-  // 次の処理へ
+  // 次のフロー (行クリアダイアログ等) はファンファーレを邪魔しないよう少し早めに進める
   setTimeout(() => {
-    try { fadeBgm(0.28, 500); } catch (e) {}
     if (onDone) onDone();
-  }, 4800);
+  }, 4200);
 }
 
-// ===== 勝利ファンファーレ (仮、Web Audio 合成) =====
-// 将来 mp3 差し替え用フック: window.PONO_VICTORY_SFX = 'xxx.mp3' が定義されていればそちらを優先
+// ===== バトル SFX アセット =====
+const BATTLE_SFX = {
+  encounter: ['../assets/audio/battle/encounter_A.mp3', '../assets/audio/battle/encounter_B.mp3'],
+  victory:   '../assets/audio/battle/victory_fanfare.mp3',
+};
+// 差替用フック: window.PONO_VICTORY_SFX を設定すれば最優先で使用
+// エンカウントジングル (登場時に短く鳴らす)
+function playEncounterJingle() {
+  try {
+    const pool = BATTLE_SFX.encounter;
+    const url = pool[Math.floor(Math.random() * pool.length)];
+    const a = new Audio(url);
+    a.volume = 0.55;
+    // BGM と被るので登場中だけ少し下げる
+    const bgmEl = document.getElementById('bgm');
+    const savedVol = bgmEl ? bgmEl.volume : null;
+    if (bgmEl) try { fadeBgm(0.08, 200); } catch (e) {}
+    a.addEventListener('ended', () => {
+      if (bgmEl && savedVol != null) try { fadeBgm(savedVol, 400); } catch (e) {}
+    });
+    a.play().catch(() => {
+      if (bgmEl && savedVol != null) try { fadeBgm(savedVol, 200); } catch (e) {}
+    });
+  } catch (e) { /* ignore */ }
+}
+
+// ===== 勝利ファンファーレ (mp3 優先、未ロード時は Web Audio 合成にフォールバック) =====
+// 返り値: HTMLAudioElement | undefined (mp3 の場合のみ — 呼び出し側で ended を購読できる)
 function playVictoryFanfare() {
-  if (typeof window !== 'undefined' && window.PONO_VICTORY_SFX) {
+  const url = (typeof window !== 'undefined' && window.PONO_VICTORY_SFX)
+    ? window.PONO_VICTORY_SFX
+    : BATTLE_SFX.victory;
+  if (url) {
     try {
-      const a = new Audio(window.PONO_VICTORY_SFX);
-      a.volume = 0.7;
+      const a = new Audio(url);
+      a.volume = 0.75;
       a.play().catch(() => {});
-      return;
+      return a;
     } catch (e) { /* fall through to synth */ }
   }
   withAudio(ac => {
