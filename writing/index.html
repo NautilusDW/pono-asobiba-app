@@ -2999,16 +2999,16 @@ function playNormalAttackSound() {
   });
 }
 
-// ===== プレイヤー攻撃 FX: 魔法攻撃 (炎、ミニ版) =====
+// ===== プレイヤー攻撃 FX: 魔法攻撃 =====
+// AI 生成の魔法動画 (spell_01..04.mp4) を screen blend で全画面に重ねる。
+// 小さい CSS グロウ (.magic-fire-fx) は動画が出るので不要になったので廃止。
 // 差替フック: window.PONO_FIRE_MAGIC_SFX
 function playMagicAttackFX(kind) {
-  const els = _battleEls();
-  if (els.stage) {
-    const glow = document.createElement('div');
-    glow.className = 'magic-fire-fx';
-    els.stage.appendChild(glow);
-    setTimeout(() => { if (glow.parentNode) glow.remove(); }, 720);
-  }
+  try {
+    if (typeof launchMagicCircle === 'function') {
+      launchMagicCircle(kind || 'fire');
+    }
+  } catch (e) { /* ignore — SFX だけでも鳴らす */ }
   _spawnEnemyImpactParticles('🔥', 6);
   playFireMagicSound();
 }
@@ -3115,10 +3115,11 @@ function _showPlayerDamageWindow(damage) {
       '<div class="dq-line">' + name + 'は <span class="dmg-num">' + damage + '</span> のダメージを うけた！</div>' +
     '</div>';
   document.body.appendChild(w);
+  // 表示 2.4s + フェード 0.35s に延長 (元 1.4s では見える前に消えていた)
   setTimeout(() => {
     w.style.opacity = '0';
     setTimeout(() => { if (w.parentNode) w.remove(); }, 350);
-  }, 1400);
+  }, 2400);
 }
 
 function playEnemyAttackSound() {
@@ -4076,11 +4077,17 @@ function _rowPracticeNextChar() {
             }
 
             if (_battle.active) {
-              // プレイヤー攻撃
+              // バトル中は「ことばモーダル (アリのア〜, カーテンのカ〜)」「音声読み上げ」「ことばで書く」phase を
+              // すべてスキップし、1 回のなぞり = 1 回の攻撃で次の文字へ進める。
               try { battleHitEnemy({ finisher: false }); } catch (e) {}
-              // 敵の反撃 → そのあと word phase へ (反撃表示と word illustration が被らないよう遅延)
-              setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 900);
-              setTimeout(startWordPhases, 2300);
+              // 魔法動画は ~3.2s 出るので、敵の反撃はその後に十分な間を空けて出す。
+              // 反撃が早すぎて「攻撃されたのかどうか気づかない」問題の対策で 900ms → 2200ms に延長。
+              setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 2200);
+              // ダメージ表示 (2.4s 表示 + 0.35s フェード) を見てから次の文字に進む。
+              setTimeout(function() {
+                _rowPracticeStep++;
+                _rowPracticeNextChar();
+              }, 5200);
             } else {
               startWordPhases();
             }
