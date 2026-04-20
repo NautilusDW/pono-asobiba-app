@@ -1126,21 +1126,33 @@ html, body {
 }
 .battle-stage .battle-bg {
   position: absolute; inset: 0;
+  /* 森のピクセルアート背景: 横幅はオーバーフローを cover で自動クロップし、地面を画面下辺に揃える */
+  background-image: url('../assets/images/battle/bg/forest_bg_01.png');
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  pointer-events: none;
+  z-index: 0;
+}
+/* 背景の上に薄暗いビネットを乗せて敵の視認性を上げる */
+.battle-stage .battle-bg::after {
+  content: '';
+  position: absolute; inset: 0;
   background:
-    radial-gradient(circle at 18% 28%, rgba(255,255,255,0.65) 0.4px, transparent 1.2px),
-    radial-gradient(circle at 72% 18%, rgba(255,255,255,0.5) 0.4px, transparent 1.2px),
-    radial-gradient(circle at 40% 70%, rgba(255,255,255,0.4) 0.4px, transparent 1.2px),
-    radial-gradient(circle at 86% 62%, rgba(255,255,255,0.5) 0.4px, transparent 1.2px);
-  opacity: 0.75;
+    radial-gradient(ellipse at center 80%, transparent 40%, rgba(0,0,0,0.25) 95%),
+    linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 35%);
   pointer-events: none;
 }
 .battle-stage .battle-enemy-wrap {
   position: absolute;
-  left: 50%; top: 40%;
+  left: 50%; top: 58%;  /* 森BGの地面ラインに敵の足元が合うよう下げる */
   transform: translate(-50%, -50%);
   width: 72%;
   display: flex; justify-content: center; align-items: flex-end;
   pointer-events: none;
+  z-index: 2;
 }
 .battle-enemy {
   position: relative;
