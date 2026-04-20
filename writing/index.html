@@ -2462,16 +2462,20 @@ body.battle-intro-active .battle-log-window {
    battle-mode でない通常練習 (非バトル) は既存のランドスケープレイアウトのまま。
    ===== */
 @media (orientation: landscape) {
+  /* 左半分に収める。ヘッダー「ポノのもじかき」(top:8px, left:64px) と
+     左端の overlay (setting/ponoアイコン等) と被らないように、上 56px / 左 72px
+     を空け、全体を「枠」として配置する。 */
   body.battle-mode .battle-stage {
     position: fixed !important;
-    left: 0; top: 0;
-    width: 50vw;
-    height: 60vh;
+    left: 72px;
+    top: 56px;
+    width: calc(50vw - 80px);
+    height: calc(58vh - 56px);
     max-width: none; max-height: none;
     min-height: 0;
     margin: 0;
-    border-radius: 0 0 12px 0;
-    border-width: 0 2.5px 2.5px 0;
+    border-radius: 12px;
+    border-width: 2.5px;
     z-index: 500;
   }
   /* 左半分が広いぶん、敵スプライトは元サイズに戻す */
@@ -2482,14 +2486,14 @@ body.battle-intro-active .battle-log-window {
   body.battle-mode .enemy-name { font-size: 0.95rem; }
   body.battle-mode .pentagram-charge { font-size: 1.1rem; }
 
-  /* バトルログは左下。bottom-align しやすいように固定配置 */
+  /* バトルログは左下。battle-stage と同じ左余白・幅に合わせて、下に積む。 */
   body.battle-mode:not(.battle-intro-active) .battle-log-window {
     position: fixed !important;
-    left: 0;
-    top: 60vh;
-    bottom: 0;
-    width: 50vw;
-    height: 40vh;
+    left: 72px;
+    top: calc(58vh + 8px);
+    bottom: 12px;
+    width: calc(50vw - 80px);
+    height: auto;
     max-width: none;
     margin: 0;
     z-index: 500;
