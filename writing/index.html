@@ -2065,23 +2065,33 @@ body.battle-mode .battle-log-window {
 }
 .map-scene-overlay.show { opacity: 1; }
 .map-scene-overlay.fade-out { opacity: 0; }
-.map-scene-viewport {
-  position: absolute; inset: 0;
-  overflow: hidden;
-  background: #000;
-}
 /* map_A.png は 2752x1536 (縦中央から 46〜54% の帯に「道」が走る)。
-   CSS 変数 --mx / --my に現在行の (xPct, yPct) を入れる。画像は
-   「高さ = 画面高 × --map-zoom (初期 1.6)」で拡大し、(mx, my) の画像内
-   ピクセルが画面の (50vw, 62vh) に重なるよう left/top を calc() で決める。
-   JS 側は CSS 変数をセットするだけで、レイアウト測定に依存しない。
-   (2026-04-20 ユーザー要望「勇者を道の上に」+「マップでなく勇者側を意識」に対応) */
-.map-scene-bg-img {
+   viewport に CSS 変数 (--mx, --my, --map-zoom) を持たせ、bg と hero の双方が
+   同じ変数を読んで位置を決める。画像は clamp で viewport を必ず覆うように
+   クランプされ、勇者は「無理に画面中央」ではなく「マップ上の (mx, my) の
+   実際の screen 座標」に立つ。これにより端の行 (xPct:6 や 94) でもマップが
+   画面端まで伸び、黒帯が出なくなる。
+   (2026-04-20 ユーザー要望「村のはずれで左側が切れる」対応) */
+.map-scene-viewport {
   --mx: 6;
   --my: 48;
   --map-zoom: 1.6;
   --map-img-h: calc(100vh * var(--map-zoom));
   --map-img-w: calc(var(--map-img-h) * 2752 / 1536);
+  --map-left-raw: calc(50vw - var(--map-img-w) * var(--mx) / 100);
+  --map-top-raw:  calc(62vh - var(--map-img-h) * var(--my) / 100);
+  --map-left: clamp(calc(100vw - var(--map-img-w)), var(--map-left-raw), 0px);
+  --map-top:  clamp(calc(100vh - var(--map-img-h)), var(--map-top-raw), 0px);
+  --road-x: calc(var(--map-left) + var(--map-img-w) * var(--mx) / 100);
+  --road-y: calc(var(--map-top)  + var(--map-img-h) * var(--my) / 100);
+  position: absolute; inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+@media (orientation: landscape) {
+  .map-scene-viewport { --map-zoom: 2.2; }
+}
+.map-scene-bg-img {
   position: absolute;
   height: var(--map-img-h);
   width: var(--map-img-w);
@@ -2089,23 +2099,18 @@ body.battle-mode .battle-log-window {
   pointer-events: none;
   image-rendering: auto;
   filter: brightness(0.95);
-  left: calc(50vw - var(--map-img-w) * var(--mx) / 100);
-  top:  calc(62vh - var(--map-img-h) * var(--my) / 100);
-}
-/* 縦長画面 (スマホ portrait) では画面幅が狭く、高さ 1.6 倍の画像でも横が
-   ステージ 1 枚ぴったりになる。横長画面ではもう少し拡大したほうがアップに
-   見えるので zoom を上げる。 */
-@media (orientation: landscape) {
-  .map-scene-bg-img { --map-zoom: 2.2; }
+  left: var(--map-left);
+  top:  var(--map-top);
 }
 .map-scene-hero {
+  --hero-size: min(22vh, 140px);
   position: absolute;
-  /* 足元 (bottom) が画面 y=38% (= top 62%) に来る。
-     _showMapScene() で画像側を translate し、この点に現在ステージの道が重なる。 */
-  bottom: 38%;
-  left: 50%;
-  width: min(20vh, 108px);
-  height: min(20vh, 108px);
+  width: var(--hero-size);
+  height: var(--hero-size);
+  /* 勇者の足元 (下辺) がマップ上の (mx, my) 点に来るよう top を逆算。
+     左右は translateX(-50%) で足元中心を road-x に揃える。*/
+  left: var(--road-x);
+  top:  calc(var(--road-y) - var(--hero-size));
   z-index: 3;
   filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6));
 }
@@ -2174,16 +2179,17 @@ body.battle-mode .battle-log-window {
 /* エンカウント前の森背景: forest_bg_01.png を 180% スケールでゆっくり右→左スクロール
    (2026-04-20 ユーザー要望: 勇者が走ってる間の背景を森にして、少し拡大+緩やかに動かす) */
 .battle-intro-forest {
-  /* バトルステージ (.battle-stage .battle-bg) の cover + center bottom と同じ
-     「地面を画面下辺に揃える」感じにしつつ、横スクロールさせるため auto 100% + repeat-x。 */
+  /* 地面を画面下辺に揃え、横に繰り返す。高さを小さくして木/花を小さく見せ、
+     相対的に勇者スプライトが大きく見えるようにする。スクロール速度も速めて
+     「歩いている感」を強める。 */
   position: absolute;
   inset: 0;
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-repeat: repeat-x;
-  background-size: auto 100%;
+  background-size: auto 55%;
   background-position: 0 bottom;
   opacity: 0.9;
-  animation: battleIntroForestScroll 28s linear infinite;
+  animation: battleIntroForestScroll 14s linear infinite;
   filter: brightness(0.75) saturate(0.95);
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
@@ -2230,14 +2236,16 @@ body.battle-mode .battle-log-window {
    .battle-intro-hero-wrap が translate で位置を運び、中の .hero-sprite.move が
    アニメシートを steps(5) で再生する (役割分担で animation 衝突を回避)。 */
 .battle-intro-hero-wrap {
+  /* 2026-04-20 「勇者が花と同じ大きさ」対応: 110 → 220px に拡大。
+     森のスケールも 55% に縮めたので、勇者が相対的にドンと大きく見える。*/
   position: fixed;
-  bottom: 22%;
+  bottom: 16%;
   left: 0;
-  width: 110px;
-  height: 110px;
+  width: min(44vw, 220px);
+  height: min(44vw, 220px);
   z-index: 1350;
   pointer-events: none;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.7));
   animation: battleIntroHeroWalkAcross 6.5s linear infinite;
 }
 .battle-intro-hero-wrap .hero-sprite.move {
@@ -5696,9 +5704,9 @@ function _showMapScene(rowId, onDone) {
   bgImg.className = 'map-scene-bg-img';
   bgImg.alt = '';
   bgImg.src = '../assets/images/maps/map_A.png';
-  // CSS 側が (mx, my) を受け取ってマップを translate する。
-  bgImg.style.setProperty('--mx', scene.xPct);
-  bgImg.style.setProperty('--my', scene.yPct != null ? scene.yPct : 50);
+  // viewport 側に (mx, my) を持たせる (bg と hero の両方が同じ変数を読む)
+  viewport.style.setProperty('--mx', scene.xPct);
+  viewport.style.setProperty('--my', scene.yPct != null ? scene.yPct : 50);
   const title = document.createElement('div');
   title.className = 'map-scene-title';
   title.textContent = scene.title;
