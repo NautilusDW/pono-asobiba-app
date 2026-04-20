@@ -1428,25 +1428,61 @@ body.battle-mode .villain-deco {
   background-image: url('../assets/images/hero/spum/idle.png');
   animation: heroIdleAnim 1.1s steps(8, jump-none) infinite;
 }
+/* move: 5 frames 横。background-position-x は 0 → (4/7)*100% = 57.14%。 */
+.hero-sprite.move {
+  background-image: url('../assets/images/hero/spum/move.png');
+  animation: heroMoveAnim 0.6s steps(5, jump-none) infinite;
+}
+/* attack_magic: 6 frames 横。one-shot で 0 → (5/7)*100% = 71.43%、forwards で最終フレーム保持。 */
+.hero-sprite.attack-magic {
+  background-image: url('../assets/images/hero/spum/attack_magic.png');
+  animation: heroAttackMagicAnim 0.9s steps(6, jump-none) 1 forwards;
+}
+.hero-sprite.attack-normal {
+  background-image: url('../assets/images/hero/spum/attack_normal.png');
+  animation: heroAttackMagicAnim 0.55s steps(6, jump-none) 1 forwards;
+}
+.hero-sprite.concentrate {
+  background-image: url('../assets/images/hero/spum/concentrate.png');
+  animation: heroAttackMagicAnim 1.2s steps(6, jump-none) 1 forwards;
+}
+.hero-sprite.damaged {
+  background-image: url('../assets/images/hero/spum/damaged.png');
+  animation: heroAttackMagicAnim 0.5s steps(6, jump-none) 1 forwards;
+}
 @keyframes heroIdleAnim {
   from { background-position-x: 0%; }
   to   { background-position-x: 100%; }
 }
+@keyframes heroMoveAnim {
+  from { background-position-x: 0%; }
+  to   { background-position-x: 57.14%; }
+}
+@keyframes heroAttackMagicAnim {
+  from { background-position-x: 0%; }
+  to   { background-position-x: 71.43%; }
+}
 /* 戦闘ステージ左下に勇者を配置 (敵は中央、勇者は左手前)。
-   スプライト中央が下寄りに見えるよう padding 調整はコンテナサイズで済ます。 */
+   scaleX(-1) で右を向かせる (元素材は左向き)。translateY(-50%) と併用。 */
 .battle-stage .battle-hero {
   position: absolute;
   left: 8%;
   top: 54%;
   width: min(24vh, 128px);
   height: min(24vh, 128px);
-  transform: translateY(-50%);
+  transform: scaleX(-1) translateY(-50%);
+  transform-origin: center;
   z-index: 2;
   pointer-events: none;
   filter: drop-shadow(0 3px 5px rgba(0,0,0,0.55));
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-sprite.idle { animation: none; background-position-x: 0%; }
+  .hero-sprite.idle,
+  .hero-sprite.move,
+  .hero-sprite.attack-magic,
+  .hero-sprite.attack-normal,
+  .hero-sprite.concentrate,
+  .hero-sprite.damaged { animation: none; background-position-x: 0%; }
 }
 .battle-enemy {
   position: relative;
@@ -1908,6 +1944,90 @@ body.battle-mode #battleLog { display: block !important; }
 body.battle-mode .battle-log-window {
   position: relative;
   z-index: 1400;
+}
+
+/* ===== マップシーン (バトル前に表示される行ごとのロケーション) ===== */
+.map-scene-overlay {
+  position: fixed; inset: 0;
+  z-index: 1500;  /* battle-log (1400) より上。マップ中は log を隠して全画面マップに集中させる */
+  background: #000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  overflow: hidden;
+}
+.map-scene-overlay.show { opacity: 1; }
+.map-scene-overlay.fade-out { opacity: 0; }
+.map-scene-bg {
+  position: absolute; inset: 0;
+  background-image: url('../assets/images/maps/map_A.png');
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  background-position: center center;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+/* スマホ縦画面でも見やすく、横に広い map は必要なら全体を見せる */
+@media (max-aspect-ratio: 1/1) {
+  .map-scene-bg { background-size: 100% auto; }
+}
+.map-scene-hero {
+  position: absolute;
+  bottom: 42%;
+  width: min(18vh, 96px);
+  height: min(18vh, 96px);
+  transform: translateX(-50%);
+  z-index: 2;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6));
+  transition: left 0.6s ease-in-out;
+}
+/* map-scene-hero は scaleX(-1) で右向き。translateX(-50%) を scaleX に影響させないよう
+   ラッパーで囲わず inline で両方同時に指定する。点滅 (pulse) は filter で drop-shadow を強めて実現。 */
+.map-scene-hero.pulse {
+  animation: mapHeroPulse 0.8s ease-in-out infinite;
+}
+@keyframes mapHeroPulse {
+  0%, 100% { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)) drop-shadow(0 0 6px rgba(255,220,130,0.4)); }
+  50%      { filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(255,220,130,1)) drop-shadow(0 0 28px rgba(255,180,60,0.8)); }
+}
+.map-scene-title {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-size: clamp(1.1rem, 4.8vw, 1.6rem);
+  font-weight: 900;
+  color: #FFD86A;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 20px rgba(255,200,80,0.55);
+  background: rgba(2, 2, 8, 0.82);
+  border: 2.5px solid #fff;
+  border-radius: 10px;
+  padding: 10px 22px;
+  white-space: nowrap;
+}
+.map-scene-hint {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: clamp(0.85rem, 3.6vw, 1.05rem);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0,0,0,1), 0 0 14px rgba(0,0,0,0.9);
+  opacity: 0.85;
+  animation: mapHintBlink 1.4s ease-in-out infinite;
+}
+@keyframes mapHintBlink {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-scene-hero.pulse { animation: none; }
+  .map-scene-hint { animation: none; }
 }
 
 /* バトルイントロの暗転カーテン + 敵ドン演出 */
@@ -3738,6 +3858,15 @@ function _showBattleStage(rowId) {
   // ログウィンドウをリセット (前回の「たおした！」残りを消す)
   _setBattleLog(['', '']);
 
+  // 勇者を idle スタートにリセット (前バトルが attack で終わっていても待機に戻す)
+  try {
+    const heroEl = document.getElementById('battleHero');
+    if (heroEl) {
+      heroEl.classList.remove('move', 'attack-magic', 'attack-normal', 'concentrate', 'damaged');
+      heroEl.classList.add('idle');
+    }
+  } catch (e) { /* ignore */ }
+
   // 登場セリフ / エンカウントジングルは _showBattleEncounterIntro 側で演出として扱う。
   // ここでは stage の配置のみを行う。
 }
@@ -3945,6 +4074,13 @@ function battleHitEnemy(opts) {
     try {
       if (attackType === 'magic') playMagicAttackFX(_battle.element || 'fire');
       else                         playNormalAttackFX();
+    } catch (e) { /* ignore */ }
+    // 勇者を攻撃モーションへ切替 → アニメ終了後に idle 復帰
+    try {
+      const kind = (attackType === 'magic') ? 'attack-magic' : 'attack-normal';
+      _setHeroAnim(kind);
+      const back = (attackType === 'magic') ? 900 : 550;
+      setTimeout(function() { if (_battle.active) _setHeroAnim('idle'); }, back);
     } catch (e) { /* ignore */ }
   }
 
@@ -4197,6 +4333,8 @@ function battleVictory(spellKind, onDone) {
   const els = _battleEls();
   // 最終ダメージを入れる
   battleHitEnemy({ finisher: true });
+  // 勇者: 魔法詠唱モーションで発動の「ため」を見せる
+  try { _setHeroAnim('attack-magic'); } catch (e) {}
   // 五芒星全点灯グロウ
   els.stars.forEach(s => s.classList.add('lit'));
   if (els.charge) els.charge.classList.add('charged');
@@ -5040,18 +5178,102 @@ function startRowPractice(rowIndex) {
   }
 }
 
-// バトル導入: 黒幕+敵ドン → ルール説明ログ 2 ステップ → onDone でお手本へ
-function _showBattleIntro(onDone) {
-  _showBattleEncounterIntro(function() {
-    // ルール説明 (1) なぞって倒そう
-    _setBattleLog(['もじを なぞって', 'てきを たおそう！'], { line2Class: 'dmg-line' });
+// ===== マップシーン: 行ごとに勇者の現在地を左→右で表示してからバトルへ =====
+// 10 行分の位置 (map_A.png は村→橋→洞窟→溶岩→城 の左右配置) とサブタイトル。
+// rowId は「あ」「か」... のラベル文字で来る。
+const MAP_ROW_SCENES = {
+  'あ': { xPct: 6,  title: 'むらのはずれ' },
+  'か': { xPct: 16, title: 'はしのまえ' },
+  'さ': { xPct: 28, title: 'どうくつの いりぐち' },
+  'た': { xPct: 39, title: 'どうくつの おく' },
+  'な': { xPct: 49, title: 'かざんの ふもと' },
+  'は': { xPct: 59, title: 'ひのやま' },
+  'ま': { xPct: 68, title: 'ひのたに' },
+  'や': { xPct: 77, title: 'ひのうみ' },
+  'ら': { xPct: 86, title: 'しろの まえ' },
+  'わ': { xPct: 94, title: 'まおうの しろ' },
+  // カタカナも同じマッピングで流用
+  'ア': { xPct: 6,  title: 'むらのはずれ' },
+  'カ': { xPct: 16, title: 'はしのまえ' },
+  'サ': { xPct: 28, title: 'どうくつの いりぐち' },
+  'タ': { xPct: 39, title: 'どうくつの おく' },
+  'ナ': { xPct: 49, title: 'かざんの ふもと' },
+  'ハ': { xPct: 59, title: 'ひのやま' },
+  'マ': { xPct: 68, title: 'ひのたに' },
+  'ヤ': { xPct: 77, title: 'ひのうみ' },
+  'ラ': { xPct: 86, title: 'しろの まえ' },
+  'ワ': { xPct: 94, title: 'まおうの しろ' },
+};
+
+// マップシーン表示 → タップで次へ → バトル登場 (onDone) へ。
+function _showMapScene(rowId, onDone) {
+  const scene = MAP_ROW_SCENES[rowId] || MAP_ROW_SCENES['あ'];
+  const overlay = document.createElement('div');
+  overlay.className = 'map-scene-overlay';
+  const bg = document.createElement('div');
+  bg.className = 'map-scene-bg';
+  const title = document.createElement('div');
+  title.className = 'map-scene-title';
+  title.textContent = scene.title;
+  const hero = document.createElement('div');
+  hero.className = 'map-scene-hero hero-sprite move pulse';
+  // scaleX(-1) は battle と同じく右向き。translateX(-50%) は中心合わせ。
+  hero.style.left = scene.xPct + '%';
+  hero.style.transform = 'scaleX(-1) translateX(50%)';
+  const hint = document.createElement('div');
+  hint.className = 'map-scene-hint';
+  hint.textContent = '▼ タップで すすむ';
+  overlay.appendChild(bg);
+  overlay.appendChild(title);
+  overlay.appendChild(hero);
+  overlay.appendChild(hint);
+  document.body.appendChild(overlay);
+  // フェードイン
+  requestAnimationFrame(function() { overlay.classList.add('show'); });
+
+  // タップで次へ (0.5s は誤爆防止で無視)
+  const minShowUntil = Date.now() + 500;
+  const handler = function(ev) {
+    if (Date.now() < minShowUntil) return;
+    ev.preventDefault(); ev.stopPropagation();
+    overlay.removeEventListener('pointerdown', handler);
+    overlay.classList.add('fade-out');
+    overlay.classList.remove('show');
     setTimeout(function() {
-      // ルール説明 (2) お手本を見て真似する
-      _setBattleLog(['まずは おてほんを みて', 'おなじように かいてみよう！']);
+      if (overlay.parentNode) overlay.remove();
+      if (onDone) onDone();
+    }, 420);
+  };
+  overlay.addEventListener('pointerdown', handler);
+}
+
+// 勇者の戦闘中アニメ class を差し替えるヘルパ。
+// kind: 'idle' | 'move' | 'attack-magic' | 'attack-normal' | 'concentrate' | 'damaged'
+function _setHeroAnim(kind) {
+  const el = document.getElementById('battleHero');
+  if (!el) return;
+  // 既存の hero-sprite class は残し、アニメ class のみ入れ替え
+  el.classList.remove('idle', 'move', 'attack-magic', 'attack-normal', 'concentrate', 'damaged');
+  el.classList.add(kind);
+  // CSS の keyframes を再生させるため、background-position を reset するトリック
+  void el.offsetWidth;
+}
+
+// バトル導入: マップシーン → 黒幕+敵ドン → ルール説明ログ 2 ステップ → onDone でお手本へ
+function _showBattleIntro(onDone) {
+  const rowId = (_rowPracticeRow && _rowPracticeRow.label) || 'あ';
+  _showMapScene(rowId, function() {
+    _showBattleEncounterIntro(function() {
+      // ルール説明 (1) なぞって倒そう
+      _setBattleLog(['もじを なぞって', 'てきを たおそう！'], { line2Class: 'dmg-line' });
       setTimeout(function() {
-        if (onDone) onDone();
+        // ルール説明 (2) お手本を見て真似する
+        _setBattleLog(['まずは おてほんを みて', 'おなじように かいてみよう！']);
+        setTimeout(function() {
+          if (onDone) onDone();
+        }, 1800);
       }, 1800);
-    }, 1800);
+    });
   });
 }
 
