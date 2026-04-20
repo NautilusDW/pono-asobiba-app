@@ -2521,54 +2521,67 @@ function playStrokeSound() {
   });
 }
 
-// 1 画成功時の「シャキーン！」音のみ (画面フラッシュは per-stroke glow に置き換え済み)。
-// 差替フック: window.PONO_SHAKEEN_SFX に mp3 パスを入れれば最優先で使用。
-function playShakeenSound() {
-  const url = (typeof window !== 'undefined' && window.PONO_SHAKEEN_SFX) || null;
-  if (url) {
-    try {
-      const a = new Audio(url);
-      a.volume = 0.7;
-      a.play().catch(() => {});
-    } catch (e) { /* fall through */ }
-    return;
+// 1 画成功 = 一太刀のイメージで剣のスラッシュ/スイング SE を鳴らす。
+// 4 本を順繰りに回してリズムの単調さを避ける。差替フック:
+//   window.PONO_SWORD_HIT_SFX: 単一 URL 文字列 or URL 配列 → 最優先
+//   window.PONO_SHAKEEN_SFX:   旧フック、残す (後方互換)
+const SWORD_HIT_SFX_URLS = [
+  '../assets/sounds/se/battle/sword_swing_1.mp3',
+  '../assets/sounds/se/battle/sword_swing_2.mp3',
+  '../assets/sounds/se/battle/sword_slash_1.mp3',
+  '../assets/sounds/se/battle/sword_slash_2.mp3'
+];
+let _swordHitIndex = 0;
+function playSwordHitSound() {
+  let urls = null;
+  if (typeof window !== 'undefined') {
+    if (Array.isArray(window.PONO_SWORD_HIT_SFX) && window.PONO_SWORD_HIT_SFX.length) {
+      urls = window.PONO_SWORD_HIT_SFX;
+    } else if (typeof window.PONO_SWORD_HIT_SFX === 'string') {
+      urls = [window.PONO_SWORD_HIT_SFX];
+    } else if (typeof window.PONO_SHAKEEN_SFX === 'string') {
+      urls = [window.PONO_SHAKEEN_SFX];
+    }
   }
-  withAudio(ac => {
-    const now = ac.currentTime;
-    // 三角波のキラキラ: 2093Hz → 3000Hz → 1568Hz (C7→G7→G6) の極短アルペジオ
-    const notes = [
-      { f: 2093.00, t: 0.00, d: 0.09, g: 0.28 },
-      { f: 3135.96, t: 0.04, d: 0.10, g: 0.30 },
-      { f: 1567.98, t: 0.14, d: 0.20, g: 0.26 },
-    ];
-    notes.forEach(n => {
-      const osc  = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(n.f, now + n.t);
-      gain.gain.setValueAtTime(0, now + n.t);
-      gain.gain.linearRampToValueAtTime(n.g, now + n.t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
-      osc.connect(gain); gain.connect(ac.destination);
-      osc.start(now + n.t); osc.stop(now + n.t + n.d + 0.02);
-    });
-    // ノイズバースト (シャキーン の「シャ」成分)
-    try {
-      const bufSize = Math.floor(ac.sampleRate * 0.12);
-      const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
-      const src = ac.createBufferSource();
-      src.buffer = buf;
-      const bp = ac.createBiquadFilter();
-      bp.type = 'bandpass'; bp.frequency.value = 5000; bp.Q.value = 2.5;
-      const g = ac.createGain();
-      g.gain.setValueAtTime(0.15, now);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-      src.connect(bp); bp.connect(g); g.connect(ac.destination);
-      src.start(now); src.stop(now + 0.13);
-    } catch (e) { /* ignore */ }
-  });
+  if (!urls) urls = SWORD_HIT_SFX_URLS;
+  const pick = urls[_swordHitIndex % urls.length];
+  _swordHitIndex = (_swordHitIndex + 1) % urls.length;
+  try {
+    const a = new Audio(pick);
+    a.volume = 0.85;
+    a.play().catch(() => {});
+    return a;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+// 後方互換 alias (呼び出し箇所が残っていても動くように)
+const playShakeenSound = playSwordHitSound;
+
+// 敵撃破 SE (魔法バースト + フェード)。2 本ある mp3 を交互再生。
+const ENEMY_DEFEAT_SFX_URLS = [
+  '../assets/sounds/se/battle/enemy_defeat_1.mp3',
+  '../assets/sounds/se/battle/enemy_defeat_2.mp3'
+];
+let _defeatSfxIndex = 0;
+function playEnemyDefeatSound() {
+  let urls = null;
+  if (typeof window !== 'undefined') {
+    if (Array.isArray(window.PONO_ENEMY_DEFEAT_SFX) && window.PONO_ENEMY_DEFEAT_SFX.length) {
+      urls = window.PONO_ENEMY_DEFEAT_SFX;
+    } else if (typeof window.PONO_ENEMY_DEFEAT_SFX === 'string') {
+      urls = [window.PONO_ENEMY_DEFEAT_SFX];
+    }
+  }
+  if (!urls) urls = ENEMY_DEFEAT_SFX_URLS;
+  const pick = urls[_defeatSfxIndex % urls.length];
+  _defeatSfxIndex = (_defeatSfxIndex + 1) % urls.length;
+  try {
+    const a = new Audio(pick);
+    a.volume = 0.9;
+    a.play().catch(() => {});
+    return a;
+  } catch (e) { /* ignore */ }
+  return null;
 }
 
 // 直前に描いた 1 画だけを一瞬光らせる。画面全体フラッシュではなく書き取りキャンバス内に留める。
@@ -3904,10 +3917,11 @@ function battleVictory(spellKind, onDone) {
     catch (e) { /* ignore */ }
   }, 400);
 
-  // 魔法動画中盤で敵を撃破 (魔法動画は約 2.5s)
+  // 魔法動画中盤で敵を撃破 (魔法動画は約 2.5s) + 敵撃破 SE
   setTimeout(() => {
     els.enemy.classList.remove('damaged');
     els.enemy.classList.add('defeated');
+    try { playEnemyDefeatSound(); } catch (e) {}
     _showEnemySpeech('うわぁぁ〜！', 1400);
   }, 2400);
 
@@ -4785,10 +4799,14 @@ function _rowPracticeNextChar() {
           setQuizActive(true);
           writer.quiz({
             onCorrectStroke: function() {
-              playStrokeSound();
               _hideMonsterBubble();
-              // 1 画ごとに「シャキーン！」音 + 直前ストロークのみソフト加算発光。
-              try { playShakeenSound(); } catch (e) {}
+              // バトル中は軽い playStrokeSound はスキップし、剣の一太刀 SE に置換。
+              // (軽すぎる sine ビープは戦闘向きではないため)
+              if (_battle.active) {
+                try { playSwordHitSound(); } catch (e) {}
+              } else {
+                playStrokeSound();
+              }
               try { flashLastStroke(); } catch (e) {}
             },
             onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
