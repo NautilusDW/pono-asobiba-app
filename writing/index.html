@@ -3833,17 +3833,19 @@ function _monsterForChar(char) {
   return MONSTERS[char.charCodeAt(0) % MONSTERS.length];
 }
 
-// セリフ（妖精救出ナラティブ）
+// セリフ（もじの せいれい の カケラ 救出ナラティブ）
+// 1文字書き切るたびに1つのカケラが封印から解かれる。
+// 10行×5文字=50個のカケラを集めていく伏線。
 const FAIRY_LINES = {
   thanks: [
-    'たすけてくれて ありがとう〜！',
-    'やっと でられた〜！',
-    'すごいね〜！',
-    'これ どうぞ〜🌰',
-    'たすかった〜！',
-    'うれしい〜！'
+    'カケラが もどったよ〜！',
+    'ぴかぴか〜！',
+    'ありがとう、ゆうしゃ！',
+    'これ もっててね🌰',
+    'もじの ちからが ふえたよ〜',
+    'きらきら〜！'
   ],
-  bye: ['またね〜', 'バイバ〜イ']
+  bye: ['またね〜', 'ひめに とどけて〜']
 };
 const VILLAIN_LINES = {
   trap: [
@@ -4137,24 +4139,65 @@ function _playMonsterPop() { _playCanvasBreak(); }
 // ===== RPG バトルシステム =====
 // 行練習を「1体の敵を5文字で倒す」戦闘に見立てる。
 // 既存 .monster-deco (封印された妖精) とは完全に別レイヤ (#battleStage / #battleEnemy)。
+// バトル行=6行 (あ/さ/た/は/ま/や)。か/な/ら は謎解き行、わ は大魔王 (別実装)。
+// カタカナ (ア/サ/タ/ハ/マ/ヤ) はひらがな側を流用する (_normalizeRowLabel で変換)。
 const BATTLE_ENEMIES = {
-  a: {
+  'あ': {
     id: 'mush1', name: 'キノコのせんし',
     img: '../assets/images/monsters/chars/monster_005.png',
     taunts: ['くくく…', 'かかってこい！', 'まだまだ！', 'なんのこれしき！', 'やるな…'],
     hp: 5, element: 'light'
   },
-  // 他の行は順次追加。未定義なら a 行の敵を流用 (見た目だけランダムな mush2/3 にする)
+  'さ': {
+    id: 'iceko', name: 'こおりキノコ',
+    img: '../assets/images/monsters/chars/monster_007.png',
+    taunts: ['つめた〜いぞ', 'こおらせて やるぞ', 'さむくないか〜？', 'ちべた〜！', 'ふぶきで まえが みえぬ！'],
+    hp: 5, element: 'ice'
+  },
+  'た': {
+    id: 'thmushi', name: 'かみなりむし',
+    img: '../assets/images/monsters/chars/monster_008.png',
+    taunts: ['びりびり〜！', 'でんげき だ！', 'ピカッと いくぞ〜', 'しびれるな〜', 'かみなり を くらえ！'],
+    hp: 6, element: 'thunder'
+  },
+  'は': {
+    id: 'windmushi', name: 'かぜむし',
+    img: '../assets/images/monsters/chars/monster_010.png',
+    taunts: ['ひゅ〜ひゅ〜', 'かぜで ふきとばす〜', 'たたかうぞ〜', 'とおくへ とべ！', 'つむじかぜ だ！'],
+    hp: 7, element: 'wind'
+  },
+  'ま': {
+    id: 'earthdragon', name: 'つちりゅう',
+    img: '../assets/images/monsters/chars/monster_013.png',
+    taunts: ['ぐおお〜', 'いわを ぶつけるぞ', 'だいちの ちから！', 'ずしーん…', 'にがさぬぞ〜'],
+    hp: 6, element: 'earth'
+  },
+  'や': {
+    id: 'starghost', name: 'やみれい',
+    img: '../assets/images/monsters/chars/monster_012.png',
+    taunts: ['うらめしや〜', 'ほしの よる…', 'きえるな よ…', 'くらやみへ おいで…', 'ゆらゆら〜'],
+    hp: 7, element: 'star'
+  },
 };
+// カタカナ行のラベル (ア/サ/…) が来ても同じ敵データを返すための正規化。
+const _ROW_KATAKANA_TO_HIRAGANA = {
+  'ア':'あ','カ':'か','サ':'さ','タ':'た','ナ':'な','ハ':'は',
+  'マ':'ま','ヤ':'や','ラ':'ら','ワ':'わ'
+};
+function _normalizeRowLabel(rowId) {
+  if (!rowId) return 'あ';
+  return _ROW_KATAKANA_TO_HIRAGANA[rowId] || rowId;
+}
 const MUSHROOM_IMGS = [
   '../assets/images/monsters/chars/monster_005.png',
   '../assets/images/monsters/chars/monster_006.png',
   '../assets/images/monsters/chars/monster_007.png',
 ];
 function _enemyForRow(rowId) {
-  const base = BATTLE_ENEMIES[rowId] || BATTLE_ENEMIES.a;
-  // 未定義行は画像だけランダム化して飽きさせない
-  const img = BATTLE_ENEMIES[rowId]
+  const key = _normalizeRowLabel(rowId);
+  const base = BATTLE_ENEMIES[key] || BATTLE_ENEMIES['あ'];
+  // 念のための未定義フォールバック (謎解き行が誤ってバトル経由に来た場合など)
+  const img = BATTLE_ENEMIES[key]
     ? base.img
     : MUSHROOM_IMGS[Math.floor(Math.random() * MUSHROOM_IMGS.length)];
   return Object.assign({}, base, { img });
