@@ -2561,16 +2561,35 @@ function playStrokeSound() {
   });
 }
 
-// 1 画成功 = 一太刀のイメージで剣のスラッシュ/スイング SE を鳴らす。
-// 4 本を順繰りに回してリズムの単調さを避ける。差替フック:
-//   window.PONO_SWORD_HIT_SFX: 単一 URL 文字列 or URL 配列 → 最優先
-//   window.PONO_SHAKEEN_SFX:   旧フック、残す (後方互換)
+// 1 画成功時の SE: ユーザー指定の nazori01.mp3 を鳴らす (2026-04-20 指示)。
+// 剣スラッシュ SE 群は「敵への大技ヒット」用途で残置 (後工程で使う想定)。
+// 差替フック:
+//   window.PONO_STROKE_SFX:   単一 URL 文字列 or URL 配列 → 最優先 (なぞり音)
+//   window.PONO_SWORD_HIT_SFX: 大技ヒット音の差替フック
+//   window.PONO_SHAKEEN_SFX:   旧フック (後方互換)
+const STROKE_SFX_URL = '../assets/sounds/se/battle/nazori_01.mp3';
 const SWORD_HIT_SFX_URLS = [
   '../assets/sounds/se/battle/sword_swing_1.mp3',
   '../assets/sounds/se/battle/sword_swing_2.mp3',
   '../assets/sounds/se/battle/sword_slash_1.mp3',
   '../assets/sounds/se/battle/sword_slash_2.mp3'
 ];
+// なぞり音: 毎回同じソースでシンプルに鳴らす。
+function playNazoriSound() {
+  let url = STROKE_SFX_URL;
+  if (typeof window !== 'undefined') {
+    if (typeof window.PONO_STROKE_SFX === 'string') url = window.PONO_STROKE_SFX;
+    else if (Array.isArray(window.PONO_STROKE_SFX) && window.PONO_STROKE_SFX.length) url = window.PONO_STROKE_SFX[0];
+  }
+  try {
+    const a = new Audio(url);
+    a.volume = 0.9;
+    a.play().catch(() => {});
+    return a;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+// 大技 (剣スラッシュ) を順繰り再生: 将来 finisher / クリティカル用。
 let _swordHitIndex = 0;
 function playSwordHitSound() {
   let urls = null;
@@ -2595,7 +2614,7 @@ function playSwordHitSound() {
   return null;
 }
 // 後方互換 alias (呼び出し箇所が残っていても動くように)
-const playShakeenSound = playSwordHitSound;
+const playShakeenSound = playNazoriSound;
 
 // 敵撃破 SE (魔法バースト + フェード)。2 本ある mp3 を交互再生。
 const ENEMY_DEFEAT_SFX_URLS = [
@@ -4877,10 +4896,9 @@ function _rowPracticeNextChar() {
           writer.quiz({
             onCorrectStroke: function() {
               _hideMonsterBubble();
-              // バトル中は軽い playStrokeSound はスキップし、剣の一太刀 SE に置換。
-              // (軽すぎる sine ビープは戦闘向きではないため)
+              // バトル中はユーザー指定の nazori01.mp3 を鳴らす。非バトルは従来の playStrokeSound。
               if (_battle.active) {
-                try { playSwordHitSound(); } catch (e) {}
+                try { playNazoriSound(); } catch (e) {}
               } else {
                 playStrokeSound();
               }
