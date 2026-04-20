@@ -3170,11 +3170,11 @@ function playSwordHitSound() {
 // 後方互換 alias (呼び出し箇所が残っていても動くように)
 const playShakeenSound = playNazoriSound;
 
-// 敵撃破の「着弾/消滅」 SE。ファンファーレは別関数 (playVictoryFanfare) が t=1800ms で
-// 専用に鳴らすので、ここは短い消滅音に分離する (2026-04-20): 同じ mp3 を二重に new Audio
-// すると iOS PWA 等で 2 回目が無音になり「ファンファーレが鳴らない」問題になっていた。
+// 敵撃破 SE (カンファーレ): 2026-04-20 ユーザー指定で Short Battle Victory Fanfare に変更。
+// この mp3 そのものがファンファーレなので、battleVictory 側の t=1800ms の playVictoryFanfare
+// 二重再生を廃止して、着弾瞬間に鳴るこちらを「勝利ファンファーレ」として扱う。
 const ENEMY_DEFEAT_SFX_URLS = [
-  '../assets/sounds/se/battle/enemy_defeat_2.mp3'
+  '../assets/sounds/se/battle/victory_fanfare.mp3'
 ];
 let _defeatSfxIndex = 0;
 function playEnemyDefeatSound() {
@@ -4928,7 +4928,8 @@ function battleVictory(spellKind, onDone) {
 
   const element = spellKind || 'fire';
   // 大魔法は mp4 の screen 合成が効かない問題があるため CSS + SE に置換 (2026-04-20)。
-  // 通常弾より一回り大きく飛ばす finisher フラグで発射 + 着弾時に剣閃 SE を重ねる。
+  // 通常弾より一回り大きく飛ばす finisher フラグで発射。
+  // 着弾時は視覚エフェクトだけ (SE はここでは鳴らさない — 剣閃 SE とぶつかるため)。
   setTimeout(() => {
     try { _playMagicFinisherSound(); } catch (e) {}
     try {
@@ -4936,39 +4937,31 @@ function battleVictory(spellKind, onDone) {
         launchMagicProjectile(element, {
           finisher: true,
           onImpact: function() {
-            // 着弾と同時に敵を撃破演出へ
+            // 着弾と同時に敵を撃破演出 (視覚のみ)
             els.enemy.classList.remove('damaged');
             els.enemy.classList.add('defeated');
-            try { playEnemyDefeatSound(); } catch (e) {}
           }
         });
       } else {
-        // フォールバック: 単純な敵撃破
         els.enemy.classList.add('defeated');
       }
     } catch (e) { /* ignore */ }
   }, 400);
 
-  // ファンファーレ + 撃破ウィンドウ + BGM フェード
+  // ファンファーレは剣閃 SE と重ならないよう t=1600ms で独立に鳴らす。
+  // BGM は同時に 0 へフェードして、ファンファーレがクリアに聞こえるようにする。
+  // (2026-04-20 ユーザー要望: 「ファンファーレが鳴らない」= 剣閃 SE とぶつかって埋もれていた)
   setTimeout(() => {
     try { fadeBgm(0, 300); } catch (e) {}
+    try { playEnemyDefeatSound(); } catch (e) {}  // victory_fanfare.mp3
+  }, 1600);
+
+  // 撃破ウィンドウ
+  setTimeout(() => {
     try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
-    try {
-      const a = playVictoryFanfare();
-      let cleaned = false;
-      const onEnd = () => {
-        if (cleaned) return;
-        cleaned = true;
-        try { fadeBgm(0.28, 600); } catch (e) {}
-      };
-      if (a && typeof a.addEventListener === 'function') {
-        a.addEventListener('ended', onEnd);
-        setTimeout(onEnd, 4000);
-      } else {
-        setTimeout(onEnd, 1800);
-      }
-    } catch (e) {}
-  }, 1800);
+    // ファンファーレ長さぶん (約 3.2s) 待って BGM を戻す
+    setTimeout(() => { try { fadeBgm(0.28, 600); } catch (e) {} }, 3200);
+  }, 1900);
 
   // 勝利後: バトル中に溜めたどんぐり + 行クリアボーナス(+5) をバトルログで一括表示。
   // ユーザー要望 (2026-04-20): モーダルではなく真ん中のバトルメッセージ欄で受け取る。
