@@ -1601,9 +1601,10 @@ body.battle-mode .villain-deco {
   .battle-stage .battle-hero.silhouette-flash { animation: none; filter: brightness(0.4); }
 }
 .battle-enemy {
+  /* 2026-04-20 ユーザー要望: 敵が大きすぎる → 半分に (120px → 60px) */
   position: relative;
-  width: min(22vh, 120px); height: min(22vh, 120px);
-  max-width: 120px; max-height: 120px;
+  width: min(11vh, 60px); height: min(11vh, 60px);
+  max-width: 60px; max-height: 60px;
   display: flex; justify-content: center; align-items: flex-end;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
   animation: battleEnemyFloat 2.4s ease-in-out infinite;
@@ -2209,15 +2210,14 @@ body.battle-intro-active .battle-log-window {
 /* エンカウント前の森背景: forest_bg_01.png を 180% スケールでゆっくり右→左スクロール
    (2026-04-20 ユーザー要望: 勇者が走ってる間の背景を森にして、少し拡大+緩やかに動かす) */
 .battle-intro-forest {
-  /* 2026-04-20: 森背景を画面中央付近に配置 (以前は bottom だったため画面下の
-     バトルログと被る問題があった)。地面が ~50% の位置に来るように
-     background-position-y を center に。 */
+  /* 2026-04-20: iPhone 縦向きで画面ど真ん中に森背景が来るよう center center に統一。
+     (以前は 55% で少し下寄りだった → バトルログ領域と視覚的に分離できていなかった) */
   position: absolute;
   inset: 0;
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-repeat: repeat-x;
   background-size: auto 55%;
-  background-position: 0 55%;
+  background-position: 0 50%;
   opacity: 0.9;
   animation: battleIntroForestScroll 14s linear infinite;
   filter: brightness(0.75) saturate(0.95);
@@ -2225,8 +2225,8 @@ body.battle-intro-active .battle-log-window {
   image-rendering: -moz-crisp-edges;
 }
 @keyframes battleIntroForestScroll {
-  0%   { background-position: 0 55%; }
-  100% { background-position: -800px 55%; }
+  0%   { background-position: 0 50%; }
+  100% { background-position: -800px 50%; }
 }
 /* 森 → 黒の頂上ビネット (敵が見やすくなるよう画面下部を暗く) */
 .battle-intro-forest::after {
@@ -2243,7 +2243,8 @@ body.battle-intro-active .battle-log-window {
   .battle-intro-forest { animation: none; }
 }
 .battle-intro-enemy {
-  width: min(60vw, 320px);
+  /* 2026-04-20 ユーザー要望: 敵を半分に (320px → 160px) */
+  width: min(30vw, 160px);
   max-height: 70vh;
   object-fit: contain;
   transform: scale(0.2);
@@ -2268,10 +2269,10 @@ body.battle-intro-active .battle-log-window {
 .battle-intro-hero-wrap {
   /* 2026-04-20 「勇者が花と同じ大きさ」対応: 110 → 220px に拡大。
      森のスケールも 55% に縮めたので、勇者が相対的にドンと大きく見える。
-     2026-04-20 再調整: 森背景を中央(55%)に上げたのに合わせ、勇者も
-     画面中央で歩くよう bottom を 16% → 36% に上げる (バトルログと被らず) */
+     2026-04-20 再調整: 森背景を画面ど真ん中 (50%) に揃え、勇者も画面の
+     ほぼ中央 (bottom: 42%) で歩くよう調整。バトルログとも十分被らない。 */
   position: fixed;
-  bottom: 36%;
+  bottom: 42%;
   left: 0;
   width: min(44vw, 220px);
   height: min(44vw, 220px);
@@ -2361,7 +2362,8 @@ body.battle-intro-active .battle-log-window {
     margin: 4px auto;
   }
   .battle-enemy {
-    width: 84px; height: 84px;
+    /* landscape も半分に (84px → 42px) */
+    width: 42px; height: 42px;
   }
   .enemy-name { font-size: 0.7rem; }
   .pentagram-charge { font-size: 0.85rem; }
@@ -3095,9 +3097,12 @@ const SWORD_HIT_SFX_URLS = [
 // 複数同時再生を throttle する。URL ごとに固定プールを持ち preload しておくと安定する。
 // さらにクエリ (?v=...) で HTTP キャッシュを強制的に新しい mp3 に向ける (同名ファイルの
 // 旧バイナリが SW/HTTP キャッシュから出てくるのを防ぐ)。
-const _SFX_CACHE_BUST = 'v253';
+const _SFX_CACHE_BUST = 'v257';
 const _SFX_POOL_SIZE = 3;
 const _sfxPool = Object.create(null);
+// iOS PWA: 各 new Audio() インスタンスは user gesture 中に .play() を 1 回呼ばないと
+// 後から (非 gesture context で) play しても無音になる。_unlockSfxAll で全プールを一括解錠する。
+let _sfxUnlocked = false;
 function _sfxVer(url) {
   if (!url) return url;
   return url + (url.indexOf('?') >= 0 ? '&' : '?') + _SFX_CACHE_BUST;
@@ -3117,8 +3122,47 @@ function _sfxEnsurePool(url) {
     } catch (e) { /* ignore */ }
   }
   _sfxPool[url] = pool;
+  // まだ解錠が走ったことがない場合: 次の user gesture で全プールを解錠する。
+  // 既に解錠済みの場合 (タップ後に新しい url が初登場した場合) は、このプールだけ
+  // その場で「silent pre-play」で解錠する (まだ user gesture context かもしれない)。
+  if (_sfxUnlocked) {
+    pool.forEach(a => {
+      try {
+        const p = a.play();
+        if (p && typeof p.then === 'function') {
+          p.then(() => { try { a.pause(); a.currentTime = 0; } catch (e) {} })
+           .catch(() => {});
+        }
+      } catch (e) {}
+    });
+  }
   return pool;
 }
+// iOS PWA で効果音を鳴らすには、user gesture 中にすべての Audio 要素を .play() する必要がある。
+// 初回 pointerdown で全プール + 想定される critical SFX (なぞり音, 文字完成音, ファンファーレ) を
+// 一括解錠する。play() → then で即 pause() することで無音扱いになる。
+function _unlockSfxAll() {
+  if (_sfxUnlocked) return;
+  _sfxUnlocked = true;
+  // 主要 SFX は先にプールを作っておく (まだ _sfxEnsurePool が呼ばれていない段階でも解錠される)
+  try { _sfxEnsurePool('../assets/sounds/se/battle/nazori_01.mp3'); } catch (e) {}
+  try { _sfxEnsurePool('../assets/sounds/se/battle/enemy_defeat_2.mp3'); } catch (e) {}
+  try { _sfxEnsurePool('../assets/sounds/se/battle/victory_fanfare.mp3'); } catch (e) {}
+  // 全プールの全要素で「無音 play → pause」をして iOS の再生ロックを外す。
+  Object.keys(_sfxPool).forEach(url => {
+    _sfxPool[url].forEach(a => {
+      try {
+        const p = a.play();
+        if (p && typeof p.then === 'function') {
+          p.then(() => { try { a.pause(); a.currentTime = 0; } catch (e) {} })
+           .catch(() => {});
+        }
+      } catch (e) {}
+    });
+  });
+}
+document.addEventListener('touchstart', _unlockSfxAll, { capture: true, passive: true });
+document.addEventListener('pointerdown', _unlockSfxAll, { capture: true });
 function playSfx(url, volume) {
   if (!url) return null;
   const pool = _sfxEnsurePool(url);
@@ -5962,26 +6006,32 @@ function _rowPracticeNextChar() {
       onComplete: function() {
         document.getElementById('demoIndicator').style.display = 'none';
         if (!_rowPracticeActive) return;
-        // 「なぞり スタート！」— バトル中はログに、それ以外は従来のフロート表示
-        writer.hideCharacter();
-        var startOv = null;
-        if (_battle.active) {
-          _setBattleLog(['なぞり スタート！', 'ゆびで なぞってね'], { line1Class: 'dmg-line' });
-        } else {
-          startOv = document.createElement('div');
-          startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-          startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
-          document.body.appendChild(startOv);
-        }
+        // 2026-04-20 ユーザー要望:
+        //   (a) お手本 (animateCharacter) が終わった後、すぐメッセージを出さず少し間をおく
+        //   (b) 「なぞり スタート！」→「かいてみよう！」 が速すぎて読めない → 十分な読みどき時間を確保
+        // animateCharacter 直後に 600ms の無言の間、その後 startOv 表示、2200ms 読みどき、quiz 開始
         setTimeout(function() {
-          if (startOv) startOv.remove();
           if (!_rowPracticeActive) return;
-          // Phase 2: Quiz with guides
-          _rowPracticePhase = 'quiz_guided';
-          _hedgeBubble.textContent = 'かいてみよう！';
-          _ponoBubble.textContent = 'かいてみよう！';
-          if (_battle.active) _setBattleLog(['かいてみよう！', 'もじを かんせいさせよう']);
-          setQuizActive(true);
+          // 「なぞり スタート！」— バトル中はログに、それ以外は従来のフロート表示
+          writer.hideCharacter();
+          var startOv = null;
+          if (_battle.active) {
+            _setBattleLog(['なぞり スタート！', 'ゆびで なぞってね'], { line1Class: 'dmg-line' });
+          } else {
+            startOv = document.createElement('div');
+            startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+            startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
+            document.body.appendChild(startOv);
+          }
+          setTimeout(function() {
+            if (startOv) startOv.remove();
+            if (!_rowPracticeActive) return;
+            // Phase 2: Quiz with guides
+            _rowPracticePhase = 'quiz_guided';
+            _hedgeBubble.textContent = 'かいてみよう！';
+            _ponoBubble.textContent = 'かいてみよう！';
+            if (_battle.active) _setBattleLog(['かいてみよう！', 'もじを かんせいさせよう']);
+            setQuizActive(true);
           var _qOpts = {
             onCorrectStroke: function() {
               _hideMonsterBubble();
@@ -6069,7 +6119,8 @@ function _rowPracticeNextChar() {
           };
           _lastQuizOpts = _qOpts;
           writer.quiz(_qOpts);
-        }, 1000); // なぞりスタート表示時間
+          }, 2200); // なぞりスタート表示時間 (2026-04-20 ユーザー要望で 1000→2200ms に延長)
+        }, 600); // お手本終了 → メッセージ開始の間 (2026-04-20 追加)
       }
     });
   }, 500);
