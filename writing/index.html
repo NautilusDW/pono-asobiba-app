@@ -1403,11 +1403,92 @@ body.battle-mode .villain-deco {
     linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 35%);
   pointer-events: none;
 }
+/* ===== 勇者 HP/MP ゲージ (バトルステージ左上) ===== */
+.hero-status {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 4;
+  background: rgba(2, 2, 8, 0.82);
+  border: 2px solid #fff;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  color: #fff;
+  font-size: clamp(0.62rem, 2.2vw, 0.78rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  display: flex; flex-direction: column;
+  gap: 3px;
+  min-width: clamp(115px, 32vw, 158px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.55);
+  pointer-events: none;
+}
+.hero-status-row {
+  display: flex; align-items: center; gap: 4px;
+}
+.hero-status-label {
+  font-size: 0.88em;
+  min-width: 1.6em;
+  text-align: left;
+}
+.hero-status-label:first-child { color: #8fff9f; }     /* HP = 緑 */
+.hero-status-row:nth-child(2) .hero-status-label { color: #7ec8ff; }  /* MP = 青 */
+.hero-status-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: #1a1a28;
+  border: 1px solid #555;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hero-status-bar {
+  height: 100%;
+  transition: width 0.35s ease;
+}
+.hero-status-bar.hp {
+  background: linear-gradient(180deg, #7af285 0%, #2db74a 100%);
+  box-shadow: inset 0 0 4px rgba(255,255,255,0.2);
+}
+.hero-status-bar.mp {
+  background: linear-gradient(180deg, #86b6ff 0%, #2d6cc0 100%);
+  box-shadow: inset 0 0 4px rgba(255,255,255,0.2);
+}
+.hero-status-num {
+  font-size: 0.82em;
+  min-width: 3em;
+  text-align: right;
+  color: #fff;
+  text-shadow: 0 0 4px rgba(0,0,0,1);
+}
+/* HP/MP を取られた瞬間の一瞬点滅 */
+.hero-status.flash-hp .hero-status-bar.hp {
+  animation: heroHpFlash 0.32s ease-out;
+}
+.hero-status.flash-mp .hero-status-bar.mp {
+  animation: heroMpFlash 0.32s ease-out;
+}
+@keyframes heroHpFlash {
+  0%   { filter: brightness(2.2) saturate(0.3); }
+  100% { filter: brightness(1) saturate(1); }
+}
+@keyframes heroMpFlash {
+  0%   { filter: brightness(1.9) saturate(0.3); }
+  100% { filter: brightness(1) saturate(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-status-bar { transition: none; }
+  .hero-status.flash-hp .hero-status-bar.hp,
+  .hero-status.flash-mp .hero-status-bar.mp { animation: none; }
+}
+/* バトル中でないときは非表示 (stage 自体が display:none なので保険) */
+.battle-stage[aria-hidden="true"] .hero-status { display: none; }
+
 .battle-stage .battle-enemy-wrap {
   position: absolute;
-  left: 50%; top: 58%;  /* 森BGの地面ラインに敵の足元が合うよう下げる */
-  transform: translate(-50%, -50%);
-  width: 72%;
+  right: 4%; left: auto; top: 58%;  /* 敵は右側に配置 (中央は勇者と重なりすぎるため) */
+  transform: translateY(-50%);
+  width: 42%;
   display: flex; justify-content: center; align-items: flex-end;
   pointer-events: none;
   z-index: 2;
@@ -1486,8 +1567,8 @@ body.battle-mode .villain-deco {
 }
 .battle-enemy {
   position: relative;
-  width: min(28vh, 150px); height: min(28vh, 150px);
-  max-width: 150px; max-height: 150px;
+  width: min(22vh, 120px); height: min(22vh, 120px);
+  max-width: 120px; max-height: 120px;
   display: flex; justify-content: center; align-items: flex-end;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
   animation: battleEnemyFloat 2.4s ease-in-out infinite;
@@ -2318,6 +2399,19 @@ body.battle-mode .battle-log-window {
     <!-- ===== Battle Stage (RPG戦闘モード、行練習中のみ表示) ===== -->
     <div id="battleStage" class="battle-stage" aria-hidden="true" style="display:none;">
       <div class="battle-bg"></div>
+      <!-- 勇者 HP/MP ゲージ (左上、ドラクエ風ウィンドウ) -->
+      <div class="hero-status" id="heroStatus" aria-hidden="true">
+        <div class="hero-status-row">
+          <span class="hero-status-label">HP</span>
+          <div class="hero-status-bar-wrap"><div class="hero-status-bar hp" id="heroHpBar"></div></div>
+          <span class="hero-status-num" id="heroHpNum">30/30</span>
+        </div>
+        <div class="hero-status-row">
+          <span class="hero-status-label">MP</span>
+          <div class="hero-status-bar-wrap"><div class="hero-status-bar mp" id="heroMpBar"></div></div>
+          <span class="hero-status-num" id="heroMpNum">20/20</span>
+        </div>
+      </div>
       <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
       <div class="battle-enemy-wrap">
         <div class="battle-enemy" id="battleEnemy">
@@ -3779,7 +3873,45 @@ const _battle = {
   element: 'fire',
   // バトル中のどんぐり報酬を溜めておき、勝利時にまとめて付与・表示する (2026-04-20 UX)
   acornsBuffered: 0,
+  // 勇者 HP/MP (減るが死なない floor でクランプする)。
+  heroHp: 30, heroMaxHp: 30, heroHpFloor: 5,
+  heroMp: 20, heroMaxMp: 20, heroMpFloor: 0,
 };
+
+// 勇者 HP/MP ゲージを現在値で描画 + 短い flash。
+function _renderHeroGauges(flash) {
+  const hpBar = document.getElementById('heroHpBar');
+  const mpBar = document.getElementById('heroMpBar');
+  const hpNum = document.getElementById('heroHpNum');
+  const mpNum = document.getElementById('heroMpNum');
+  const wrap = document.getElementById('heroStatus');
+  if (hpBar) hpBar.style.width = Math.max(0, Math.min(100, (_battle.heroHp / _battle.heroMaxHp) * 100)) + '%';
+  if (mpBar) mpBar.style.width = Math.max(0, Math.min(100, (_battle.heroMp / _battle.heroMaxMp) * 100)) + '%';
+  if (hpNum) hpNum.textContent = _battle.heroHp + '/' + _battle.heroMaxHp;
+  if (mpNum) mpNum.textContent = _battle.heroMp + '/' + _battle.heroMaxMp;
+  if (wrap && flash) {
+    const cls = (flash === 'mp') ? 'flash-mp' : 'flash-hp';
+    wrap.classList.remove(cls);
+    void wrap.offsetWidth;
+    wrap.classList.add(cls);
+    setTimeout(function() { wrap.classList.remove(cls); }, 360);
+  }
+}
+function _resetHeroGauges() {
+  _battle.heroHp = _battle.heroMaxHp;
+  _battle.heroMp = _battle.heroMaxMp;
+  _renderHeroGauges(null);
+}
+function _applyHeroHpDamage(amount) {
+  const next = Math.max(_battle.heroHpFloor, _battle.heroHp - (amount | 0));
+  _battle.heroHp = next;
+  _renderHeroGauges('hp');
+}
+function _applyHeroMpCost(cost) {
+  const next = Math.max(_battle.heroMpFloor, _battle.heroMp - (cost | 0));
+  _battle.heroMp = next;
+  _renderHeroGauges('mp');
+}
 
 // 攻撃プラン生成: count=5 のとき 通常3 + 魔法2 (末尾は必ず magic)
 function _pickAttackPlan(count) {
@@ -3866,6 +3998,9 @@ function _showBattleStage(rowId) {
       heroEl.classList.add('idle');
     }
   } catch (e) { /* ignore */ }
+
+  // 勇者 HP/MP を全回復で表示 (行ごとに元気に始まる)
+  try { _resetHeroGauges(); } catch (e) {}
 
   // 登場セリフ / エンカウントジングルは _showBattleEncounterIntro 側で演出として扱う。
   // ここでは stage の配置のみを行う。
@@ -3965,6 +4100,9 @@ function _showBattleDialog(messages, onDone) {
 function _showBattleEncounterIntro(onDone) {
   const enemy = _battle.enemy;
   if (!enemy) { if (onDone) onDone(); return; }
+
+  // エンカウントでバトル BGM へ切替 (マップ BGM からの遷移)
+  try { setBgmFor('battle'); } catch (e) {}
 
   // Phase A: カーテンだけ先に出す (まだ敵は登場しない)。
   // ユーザー要望 (2026-04-20): いきなりモンスターが出てくるのはダメ。
@@ -4082,6 +4220,11 @@ function battleHitEnemy(opts) {
       const back = (attackType === 'magic') ? 900 : 550;
       setTimeout(function() { if (_battle.active) _setHeroAnim('idle'); }, back);
     } catch (e) { /* ignore */ }
+    // MP 消費: 通常攻撃=1, 魔法攻撃=3 (floor:0 でクランプ、尽きても攻撃は続行する)
+    try { _applyHeroMpCost(attackType === 'magic' ? 3 : 1); } catch (e) {}
+  } else {
+    // finisher (最終魔法) は大きめに MP を消費
+    try { _applyHeroMpCost(5); } catch (e) {}
   }
 
   // 星を 1 つ点灯
@@ -4265,6 +4408,13 @@ function enemyCounterAttack() {
     if (!_battle.active) return;
     _shakeScreen();
     try { playEnemyAttackSound(); } catch (e) {}
+    // 勇者 HP を減らす (floor でクランプ、死なない)
+    try { _applyHeroHpDamage(damage); } catch (e) {}
+    // 勇者を一瞬ダメージモーションへ → idle 復帰
+    try {
+      _setHeroAnim('damaged');
+      setTimeout(function() { if (_battle.active) _setHeroAnim('idle'); }, 500);
+    } catch (e) {}
     _showPlayerDamageWindow(damage);
   });
 }
@@ -4991,6 +5141,8 @@ function returnToSelect() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('rowSelectScreen').classList.remove('hidden');
   buildRowSelectScreen();
+  // 行選択画面ではフィールド (map) BGM。バトル終了後の余韻もあるので短めフェードで切替。
+  try { setBgmFor('map'); } catch (e) {}
 }
 
 // ===== How To Play (毎回1文字目に表示) =====
@@ -5207,6 +5359,8 @@ const MAP_ROW_SCENES = {
 
 // マップシーン表示 → タップで次へ → バトル登場 (onDone) へ。
 function _showMapScene(rowId, onDone) {
+  // マップシーンではフィールド BGM (map) に切替。バトル登場時に battle へ戻す。
+  try { setBgmFor('map'); } catch (e) {}
   const scene = MAP_ROW_SCENES[rowId] || MAP_ROW_SCENES['あ'];
   const overlay = document.createElement('div');
   overlay.className = 'map-scene-overlay';
@@ -5806,12 +5960,13 @@ function setBgmFor(kind) {
   bgmStarted = false;
   if (bgmEnabled) bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
-// 初期トラック: 書き取り画面 = 戦闘扱い
-setBgmFor('battle');
+// 初期トラック: 起動時は行選択 = フィールド扱い (map BGM)。
+// バトル突入時に _showBattleEncounterIntro が 'battle' に切替える。
+setBgmFor('map');
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
-  if (!bgm.src) setBgmFor('battle');
+  if (!bgm.src) setBgmFor('map');
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
 // BGM starts when entering practice (user tap satisfies autoplay policy)
