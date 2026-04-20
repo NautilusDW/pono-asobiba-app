@@ -1571,6 +1571,29 @@ body.battle-mode .villain-deco {
   color: #fff;
   text-shadow: 0 0 4px rgba(0,0,0,1);
 }
+/* ===== 三種の神器 そうび表示 ===== */
+.hero-equip-row {
+  margin-top: 2px;
+  gap: 5px;
+}
+.hero-equip-row .equip-label {
+  color: #ffd84d;
+  font-size: 0.82em;
+  min-width: 2.8em;
+}
+.hero-equip-strip {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex: 1;
+}
+.hero-equip-icon {
+  width: clamp(16px, 4.4vw, 22px);
+  height: clamp(16px, 4.4vw, 22px);
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 2px rgba(255, 240, 180, 0.85));
+}
 /* HP/MP を取られた瞬間の一瞬点滅 */
 .hero-status.flash-hp .hero-status-bar.hp {
   animation: heroHpFlash 0.32s ease-out;
@@ -2759,6 +2782,14 @@ body.battle-intro-active .battle-log-window {
           <span class="hero-status-label">MP</span>
           <div class="hero-status-bar-wrap"><div class="hero-status-bar mp" id="heroMpBar"></div></div>
           <span class="hero-status-num" id="heroMpNum">20/20</span>
+        </div>
+        <div class="hero-status-row hero-equip-row">
+          <span class="hero-status-label equip-label">そうび</span>
+          <div class="hero-equip-strip" aria-label="三種の神器">
+            <img src="../assets/images/items/item_sword_sun.png" alt="たいようの つるぎ" class="hero-equip-icon equip-sword">
+            <img src="../assets/images/items/item_armor_sky.png" alt="そらの よろい" class="hero-equip-icon equip-armor">
+            <img src="../assets/images/items/item_shield_moon.png" alt="つきの たて" class="hero-equip-icon equip-shield">
+          </div>
         </div>
       </div>
       <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
