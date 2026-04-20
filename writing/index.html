@@ -1902,6 +1902,14 @@ body.battle-mode .villain-deco {
 /* 戦闘ログは battle-mode の間だけ見せる (display:none をオーバーライド) */
 body.battle-mode #battleLog { display: block !important; }
 
+/* バトル中は、黒カーテン (z-index:1300) より上にログウィンドウを出して
+   タップ (▼ で次へ) を必ず受け付けるようにする。position:relative で
+   stacking context を作り、z-index を上げる。*/
+body.battle-mode .battle-log-window {
+  position: relative;
+  z-index: 1400;
+}
+
 /* バトルイントロの暗転カーテン + 敵ドン演出 */
 .battle-intro-curtain {
   position: fixed; inset: 0;
@@ -3828,38 +3836,49 @@ function _showBattleDialog(messages, onDone) {
 function _showBattleEncounterIntro(onDone) {
   const enemy = _battle.enemy;
   if (!enemy) { if (onDone) onDone(); return; }
-  // カーテン + 中央に敵 (表示のみ。テキストはバトルログに集約)
+
+  // Phase A: カーテンだけ先に出す (まだ敵は登場しない)。
+  // ユーザー要望 (2026-04-20): いきなりモンスターが出てくるのはダメ。
+  // エンカウント前のナレーションを 2 ステップ見せてから敵を登場させる。
   const curtain = document.createElement('div');
   curtain.className = 'battle-intro-curtain';
-  const img = document.createElement('img');
-  img.className = 'battle-intro-enemy';
-  img.src = enemy.img;
-  img.alt = enemy.name;
-  curtain.appendChild(img);
   document.body.appendChild(curtain);
-  // エンカウントジングル (登場 SE)
-  try { playEncounterJingle(); } catch (e) {}
 
-  // メッセージキュー組み立て:
-  //  1. 「〇〇が あらわれた！」 (名前)
-  //  2. 「〇〇「taunts[0]」」 (挑発)
-  const messages = [
-    { lines: [enemy.name + 'が あらわれた！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+  // Phase 1: エンカウント前ナレーション (敵はまだいない黒画面でタップ送り)
+  const preMessages = [
+    { lines: ['ポノは あるいていた…', ''] },
+    { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
   ];
-  if (enemy.taunts && enemy.taunts[0]) {
-    messages.push({ lines: [enemy.name, '「' + enemy.taunts[0] + '」'] });
-  }
 
-  // カーテンは「挑発ダイアログを読み終わった後」にフェードアウトさせる。
-  // ダイアログ完了で finish → 0.3s 後にカーテン除去 → onDone で練習開始。
-  _showBattleDialog(messages, function() {
+  _showBattleDialog(preMessages, function() {
+    // Phase 2: 敵ドン登場 + エンカウントジングル
+    const img = document.createElement('img');
+    img.className = 'battle-intro-enemy';
+    img.src = enemy.img;
+    img.alt = enemy.name;
+    curtain.appendChild(img);
+    try { playEncounterJingle(); } catch (e) {}
+
+    // Phase 3: 名前告知 → 挑発 (各タップで送る)
+    const postMessages = [
+      { lines: [enemy.name + 'が あらわれた！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+    ];
+    if (enemy.taunts && enemy.taunts[0]) {
+      postMessages.push({ lines: [enemy.name, '「' + enemy.taunts[0] + '」'] });
+    }
+
+    // 敵登場アニメが落ち着くまで少し待ってから次のダイアログ
     setTimeout(function() {
-      curtain.classList.add('fade-out');
-    }, 150);
-    setTimeout(function() {
-      if (curtain.parentNode) curtain.remove();
-      if (onDone) onDone();
-    }, 750);
+      _showBattleDialog(postMessages, function() {
+        setTimeout(function() {
+          curtain.classList.add('fade-out');
+        }, 150);
+        setTimeout(function() {
+          if (curtain.parentNode) curtain.remove();
+          if (onDone) onDone();
+        }, 750);
+      });
+    }, 600);
   });
 }
 
