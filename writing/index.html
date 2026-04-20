@@ -2462,17 +2462,20 @@ body.battle-intro-active .battle-log-window {
    battle-mode でない通常練習 (非バトル) は既存のランドスケープレイアウトのまま。
    ===== */
 @media (orientation: landscape) {
-  /* 左半分に収める。ヘッダー「ポノのもじかき」(top:8px, left:64px) と
-     左端の overlay (setting/ponoアイコン等) と被らないように、上 56px / 左 64px
-     を空け、全体を「枠」として配置する。
-     v263: ユーザー要望「もうちょっとだけでっかく」「上のバトル画面と同じ幅」。
-     左余白を 72→64 に、右を midline ぴったりまで (50vw 基準に ちょい余白 4px) に。*/
+  /* v264: canvas と左側 (battle-stage + log) を縦位置で揃える。
+     canvas は min(92vh, 46vw) の正方形。これを var に入れて、stage/log の
+     top/bottom を canvas の上辺/下辺と一致させる。さらに「う」改行対策で
+     左余白を 48px に詰め、幅を広げる。 */
+  body.battle-mode {
+    --battle-vspan: min(92vh, 46vw);
+    --battle-vtop: calc((100vh - var(--battle-vspan)) / 2);
+  }
   body.battle-mode .battle-stage {
     position: fixed !important;
-    left: 64px;
-    top: 52px;
-    width: calc(50vw - 68px);
-    height: calc(62vh - 52px);
+    left: 48px;
+    top: var(--battle-vtop);
+    width: calc(50vw - 54px);
+    height: calc(var(--battle-vspan) * 0.58);
     max-width: none; max-height: none;
     min-height: 0;
     margin: 0;
@@ -2480,7 +2483,6 @@ body.battle-intro-active .battle-log-window {
     border-width: 2.5px;
     z-index: 500;
   }
-  /* 左半分が広いぶん、敵スプライトは元サイズに戻す */
   body.battle-mode .battle-enemy {
     width: min(26vh, 150px);
     height: min(26vh, 150px);
@@ -2488,15 +2490,13 @@ body.battle-intro-active .battle-log-window {
   body.battle-mode .enemy-name { font-size: 1rem; }
   body.battle-mode .pentagram-charge { font-size: 1.15rem; }
 
-  /* バトルログは左下。battle-stage とピッタリ同じ left/width になるように
-     log-window 自体の padding を 0 にして、黒い枠 (log-inner の border) が
-     stage の外枠と一致するようにする。v263: ユーザー指摘の幅ズレ修正。*/
+  /* バトルログは battle-stage の直下、canvas の下辺まで。 */
   body.battle-mode:not(.battle-intro-active) .battle-log-window {
     position: fixed !important;
-    left: 64px;
-    top: calc(62vh + 6px);
-    bottom: 10px;
-    width: calc(50vw - 68px);
+    left: 48px;
+    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.60);
+    bottom: var(--battle-vtop);
+    width: calc(50vw - 54px);
     height: auto;
     max-width: none;
     margin: 0;
@@ -2511,13 +2511,15 @@ body.battle-intro-active .battle-log-window {
     width: 100%;
     box-sizing: border-box;
     min-height: 100%;
-    /* 3 行分の高さを landscape では確実に確保 */
-    padding: 16px 22px;
+    padding: 14px 18px;
   }
-  /* 3 行対応で少しフォントも上げる (横に余裕あるので読みやすさ優先) */
+  /* 横画面は横幅に余裕があるので 1 行で収まるようフォント少し抑えめ +
+     letter-spacing ゼロで「う」が折り返さないようにする。 */
   body.battle-mode .battle-log-window .battle-log-line {
-    font-size: clamp(1.0rem, 2.2vh, 1.3rem);
+    font-size: clamp(0.95rem, 1.9vh, 1.15rem);
     line-height: 1.45;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   /* right-col を右半分にロック。mid-col は右上に退避させるので flex row 的には右-col が拡がる */
@@ -2527,10 +2529,11 @@ body.battle-intro-active .battle-log-window {
     min-width: 50vw;
     margin-left: auto;
   }
-  /* 右半分に収まるキャンバス */
+  /* 右半分のキャンバスは var(--battle-vspan) と同じサイズ =
+     左の battle-stage + log の縦スパンとぴったり揃う */
   body.battle-mode .canvas-container {
-    width: min(92vh, 46vw);
-    height: min(92vh, 46vw);
+    width: var(--battle-vspan);
+    height: var(--battle-vspan);
   }
 
   /* mid-col (コントロール列) はバトル中は右上に小さく退避。
