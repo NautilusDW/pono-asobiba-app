@@ -1605,12 +1605,14 @@ body.battle-mode .villain-deco {
   50%      { transform: scaleX(0.85); opacity: 0.55; }
 }
 /* ダメージ: 強めの左右ブルブル + 白フラッシュ
-   (2026-04-20 ユーザー要望で振動を強化: amplitude を ±14px まで引き上げ、コマ数を増やして高速ブレさせる) */
+   (2026-04-20 ユーザー要望で振動を強化。float アニメを連鎖していたのを廃止し、
+    JS 側で 0.55s 後に .damaged を剥がして base の float へ戻す方式に変更。
+    !important で base の animation シャットアウト → 確実にシェイクが走る) */
 .battle-enemy.damaged {
-  animation: battleEnemyHit 0.5s cubic-bezier(.36,.07,.19,.97), battleEnemyFloat 2.4s ease-in-out 0.5s infinite;
+  animation: battleEnemyHit 0.55s cubic-bezier(.36,.07,.19,.97) !important;
 }
 .battle-enemy.damaged .enemy-img {
-  animation: battleEnemyFlash 0.5s ease-out;
+  animation: battleEnemyFlash 0.55s ease-out;
 }
 @keyframes battleEnemyHit {
   0%, 100% { transform: translateX(0); }
@@ -2157,6 +2159,40 @@ body.battle-mode .battle-log-window {
 }
 @media (prefers-reduced-motion: reduce) {
   .battle-intro-enemy { animation: none; opacity: 1; transform: scale(1); }
+}
+
+/* エンカウント前ナレーション中の歩き演出: move.png スプライトシートを使って
+   左端から右端に向かって歩いてくる勇者を重ねる。
+   .battle-intro-hero-wrap が translate で位置を運び、中の .hero-sprite.move が
+   アニメシートを steps(5) で再生する (役割分担で animation 衝突を回避)。 */
+.battle-intro-hero-wrap {
+  position: fixed;
+  bottom: 22%;
+  left: 0;
+  width: 110px;
+  height: 110px;
+  z-index: 1350;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+  animation: battleIntroHeroWalkAcross 6.5s linear infinite;
+}
+.battle-intro-hero-wrap .hero-sprite.move {
+  width: 100%;
+  height: 100%;
+}
+@keyframes battleIntroHeroWalkAcross {
+  0%   { transform: translateX(-20vw) scaleX(-1); }
+  100% { transform: translateX(100vw) scaleX(-1); }
+}
+.battle-intro-hero-wrap.walk-off {
+  animation: none;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+  opacity: 0;
+  transform: translateX(100vw) scaleX(-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-intro-hero-wrap { animation: none; transform: translateX(50vw) scaleX(-1); }
+  .battle-intro-hero-wrap .hero-sprite.move { animation: none; }
 }
 
 /* 「〇〇の こうげき！」告知 (敵の反撃直前) */
@@ -4214,11 +4250,18 @@ function _showBattleEncounterIntro(onDone) {
   try { setBgmFor('battle'); } catch (e) {}
 
   // Phase A: カーテンだけ先に出す (まだ敵は登場しない)。
-  // ユーザー要望 (2026-04-20): いきなりモンスターが出てくるのはダメ。
+  // ユーザー要望 (2026-04-20): いきなりモンスターが出てこないから、
   // エンカウント前のナレーションを 2 ステップ見せてから敵を登場させる。
+  // さらに「ポノは あるいていた…」の間、move.png で歩く勇者を左から右へ流す。
   const curtain = document.createElement('div');
   curtain.className = 'battle-intro-curtain';
   document.body.appendChild(curtain);
+
+  // 歩行アニメ: カーテンの手前・ログの後ろに重ねる
+  const walkWrap = document.createElement('div');
+  walkWrap.className = 'battle-intro-hero-wrap';
+  walkWrap.innerHTML = '<div class="hero-sprite move"></div>';
+  document.body.appendChild(walkWrap);
 
   // Phase 1: エンカウント前ナレーション (敵はまだいない黒画面でタップ送り)
   const preMessages = [
@@ -4227,6 +4270,10 @@ function _showBattleEncounterIntro(onDone) {
   ];
 
   _showBattleDialog(preMessages, function() {
+    // 歩きを止めてフェードアウト → 敵登場へ
+    try { walkWrap.classList.add('walk-off'); } catch (e) {}
+    setTimeout(function() { if (walkWrap.parentNode) walkWrap.remove(); }, 520);
+
     // Phase 2: 敵ドン登場 + エンカウントジングル
     const img = document.createElement('img');
     img.className = 'battle-intro-enemy';
@@ -4343,10 +4390,19 @@ function battleHitEnemy(opts) {
   // HP バー更新
   _renderHpBar(_battle.hp, _battle.maxHp);
 
-  // 敵にダメージ演出
-  els.enemy.classList.remove('damaged');
-  void els.enemy.offsetWidth;  // reflow でアニメ再始動
-  if (_battle.hp > 0) els.enemy.classList.add('damaged');
+  // 敵にダメージ演出 (シェイク + 白フラッシュ)。finisher (hp=0) は defeated 側で扱う。
+  if (_battle.hp > 0) {
+    els.enemy.classList.remove('damaged');
+    void els.enemy.offsetWidth;  // reflow でアニメ再始動
+    els.enemy.classList.add('damaged');
+    // 0.6s 後に剥がして base の float に戻す (次のヒットで再付与 → 再シェイク)
+    clearTimeout(_battle._damagedTimer);
+    _battle._damagedTimer = setTimeout(function() {
+      if (els.enemy) els.enemy.classList.remove('damaged');
+    }, 600);
+    // 「ドカッ」という被弾効果音 (敵攻撃音とは別、プレイヤー側が「当たった！」と分かる音)
+    try { _playEnemyHitSound(); } catch (e) {}
+  }
 
   // ダメージ数字
   const dmg = isFinisher ? 999 : (20 + Math.floor(Math.random() * 12));
@@ -4404,6 +4460,43 @@ function playNormalAttackSound() {
     ng.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     src.connect(ng); ng.connect(ac.destination);
     src.start(now); src.stop(now + 0.12);
+  });
+}
+
+// ===== 敵被弾 SFX =====
+// 攻撃命中時の「ドガッ」「バシッ」。斬撃や魔法の発射音とは別に、敵が当たった瞬間に被せる。
+// (2026-04-20 ユーザー要望: 敵がダメージを受けてるのが音で分かるようにしたい)
+function _playEnemyHitSound() {
+  if (typeof window !== 'undefined' && window.PONO_ENEMY_HIT_SFX) {
+    try {
+      const a = new Audio(window.PONO_ENEMY_HIT_SFX);
+      a.volume = 0.6; a.play().catch(() => {});
+      return;
+    } catch (e) { /* fall through to synth */ }
+  }
+  withAudio(ac => {
+    const now = ac.currentTime;
+    // 低音 thud: 240Hz → 70Hz で急降下する矩形波 (腹に響く)
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(260, now);
+    o.frequency.exponentialRampToValueAtTime(70, now + 0.13);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.34, now + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    o.connect(g); g.connect(ac.destination);
+    o.start(now); o.stop(now + 0.24);
+    // 上に被せる短いノイズ衝撃 (バシッ成分)
+    const bufLen = Math.floor(ac.sampleRate * 0.09);
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+    const src = ac.createBufferSource(), ng = ac.createGain();
+    src.buffer = buf;
+    ng.gain.setValueAtTime(0.3, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    src.connect(ng); ng.connect(ac.destination);
+    src.start(now); src.stop(now + 0.1);
   });
 }
 
@@ -4907,27 +5000,33 @@ document.addEventListener('DOMContentLoaded', _syncAcornBadge);
 setTimeout(_syncAcornBadge, 0);
 
 function showCompletion() {
+  // バトル中は「できた！🎉」オーバーレイ / 妖精救出🌰 / コンフェッティ / ワードカードを全て抑制する。
+  // (2026-04-20 ユーザー要望: バトル中にクリアマークやどんぐりアイコンがいちいち出てこないでほしい。
+  //  どんぐりは勝利時にまとめて表示。)
+  const inBattle = !!(_battle && _battle.active);
   playSuccessSound();
-  launchMagicCircle();
-  launchConfetti();
-  // 「できた！🎉」オーバーレイは救出演出(0-2300ms)を妨げないように遅延表示
-  setTimeout(() => {
-    alignOverlayToCanvas(completionOverlay);
-    completionOverlay.classList.add('show');
-    setTimeout(() => completionOverlay.classList.remove('show'), 1200);
-  }, 2400);
+  if (!inBattle) {
+    launchMagicCircle();
+    launchConfetti();
+    // 「できた！🎉」オーバーレイは救出演出(0-2300ms)を妨げないように遅延表示
+    setTimeout(() => {
+      alignOverlayToCanvas(completionOverlay);
+      completionOverlay.classList.add('show');
+      setTimeout(() => completionOverlay.classList.remove('show'), 1200);
+    }, 2400);
+  }
 
   saveStamp(currentCategory, currentCharIndex);
   markCharDone(currentCharIndex);
   streak++;
   updateStreakBadge();
-  if (streak % 5 === 0) setTimeout(() => showMilestone(streak), 3200);
-  ponoCheer();                     // ← 正解リアクション
-  _playMonsterPop();               // ← キャンバス割れ + 妖精救出
-  _awardAcorns(_perfectCurrentChar); // ← どんぐり獲得
+  if (!inBattle && streak % 5 === 0) setTimeout(() => showMilestone(streak), 3200);
+  if (!inBattle) ponoCheer();                     // ← 正解リアクション
+  if (!inBattle) _playMonsterPop();               // ← キャンバス割れ + 妖精救出🌰
+  _awardAcorns(_perfectCurrentChar); // ← どんぐり獲得 (バトル中はバッファ済み)
   _preloadWordAudio();
   // ワードカードも救出演出の後で表示（妖精が右上に消えてから）
-  setTimeout(showWordCard, 2600);
+  if (!inBattle) setTimeout(showWordCard, 2600);
 
   updateProgressHint();
 
@@ -5531,20 +5630,18 @@ function _setHeroAnim(kind) {
   void el.offsetWidth;
 }
 
-// バトル導入: マップシーン → 黒幕+敵ドン → ルール説明ログ 2 ステップ → onDone でお手本へ
+// バトル導入: マップシーン → 黒幕+敵ドン → ルール説明ログ (タップ送り) → onDone でお手本へ
+// (2026-04-20 ユーザー要望: setTimeout で勝手に進むのをやめて、子供が読み終わるまで待つタップ式に変更)
 function _showBattleIntro(onDone) {
   const rowId = (_rowPracticeRow && _rowPracticeRow.label) || 'あ';
   _showMapScene(rowId, function() {
     _showBattleEncounterIntro(function() {
-      // ルール説明 (1) なぞって倒そう
-      _setBattleLog(['もじを なぞって', 'てきを たおそう！'], { line2Class: 'dmg-line' });
-      setTimeout(function() {
-        // ルール説明 (2) お手本を見て真似する
-        _setBattleLog(['まずは おてほんを みて', 'おなじように かいてみよう！']);
-        setTimeout(function() {
-          if (onDone) onDone();
-        }, 1800);
-      }, 1800);
+      _showBattleDialog([
+        { lines: ['もじを なぞって', 'てきを たおそう！'], opts: { line2Class: 'dmg-line' } },
+        { lines: ['まずは おてほんを みて', 'おなじように かいてみよう！'] },
+      ], function() {
+        if (onDone) onDone();
+      });
     });
   });
 }
