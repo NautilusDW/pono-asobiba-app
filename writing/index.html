@@ -1290,6 +1290,31 @@ html, body {
 }
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
+/* お手本リプレイボタン: デモが終わってから quiz フェーズ中に表示。タップでもう一度お手本。 */
+.demo-replay-btn {
+  position: absolute; top: 10px; right: 10px;
+  display: none;  /* JS で _rowPracticePhase を見て表示切替 */
+  align-items: center; gap: 6px;
+  padding: 8px 14px; border: 2px solid #FFD86A; border-radius: 24px;
+  background: linear-gradient(135deg, rgba(40,30,70,0.95), rgba(20,15,40,0.95));
+  color: #FFD86A; font-family: inherit; font-weight: 900; font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,220,130,0.15);
+  cursor: pointer;
+  z-index: 250;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+}
+.demo-replay-btn.visible { display: inline-flex; }
+.demo-replay-btn:active { transform: scale(0.94); box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+.demo-replay-btn .dr-icon {
+  display: inline-block; font-size: 0.85rem; transform: translateX(-1px);
+  text-shadow: 0 0 6px rgba(255,220,130,0.7);
+}
+.demo-replay-btn .dr-label { font-size: 0.95rem; }
+@media (prefers-reduced-motion: reduce) {
+  .demo-replay-btn { transition: none; }
+}
+
 /* 1 画成功時の per-stroke グロウ。直前に描いた path だけを一瞬だけ強く光らせる。
    screen ブレンド + drop-shadow 重ねで加算的な発光感を作る。
    グロー単独はキツいので blur(0.3px) を挿入してエッジをソフトに。 */
@@ -2184,15 +2209,15 @@ body.battle-intro-active .battle-log-window {
 /* エンカウント前の森背景: forest_bg_01.png を 180% スケールでゆっくり右→左スクロール
    (2026-04-20 ユーザー要望: 勇者が走ってる間の背景を森にして、少し拡大+緩やかに動かす) */
 .battle-intro-forest {
-  /* 地面を画面下辺に揃え、横に繰り返す。高さを小さくして木/花を小さく見せ、
-     相対的に勇者スプライトが大きく見えるようにする。スクロール速度も速めて
-     「歩いている感」を強める。 */
+  /* 2026-04-20: 森背景を画面中央付近に配置 (以前は bottom だったため画面下の
+     バトルログと被る問題があった)。地面が ~50% の位置に来るように
+     background-position-y を center に。 */
   position: absolute;
   inset: 0;
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-repeat: repeat-x;
   background-size: auto 55%;
-  background-position: 0 bottom;
+  background-position: 0 55%;
   opacity: 0.9;
   animation: battleIntroForestScroll 14s linear infinite;
   filter: brightness(0.75) saturate(0.95);
@@ -2200,8 +2225,8 @@ body.battle-intro-active .battle-log-window {
   image-rendering: -moz-crisp-edges;
 }
 @keyframes battleIntroForestScroll {
-  0%   { background-position: 0 bottom; }
-  100% { background-position: -800px bottom; }
+  0%   { background-position: 0 55%; }
+  100% { background-position: -800px 55%; }
 }
 /* 森 → 黒の頂上ビネット (敵が見やすくなるよう画面下部を暗く) */
 .battle-intro-forest::after {
@@ -2243,9 +2268,10 @@ body.battle-intro-active .battle-log-window {
 .battle-intro-hero-wrap {
   /* 2026-04-20 「勇者が花と同じ大きさ」対応: 110 → 220px に拡大。
      森のスケールも 55% に縮めたので、勇者が相対的にドンと大きく見える。
-     前景マスクはユーザー側で作成するため当面は単層のまま。*/
+     2026-04-20 再調整: 森背景を中央(55%)に上げたのに合わせ、勇者も
+     画面中央で歩くよう bottom を 16% → 36% に上げる (バトルログと被らず) */
   position: fixed;
-  bottom: 16%;
+  bottom: 36%;
   left: 0;
   width: min(44vw, 220px);
   height: min(44vw, 220px);
@@ -2569,6 +2595,9 @@ body.battle-intro-active .battle-log-window {
     </div>
     <div class="trace-area">
       <div id="demoIndicator">おてほんちゅう</div>
+      <button type="button" id="demoReplayBtn" class="demo-replay-btn" aria-label="おてほんを もういちど">
+        <span class="dr-icon">▶</span><span class="dr-label">おてほん</span>
+      </button>
       <div class="pono-bubble" id="ponoBubble">がんばれー！</div>
       <img class="pono-deco" src="../assets/images/characters/pono/dance/dance_smile.png" alt="ポノ">
       <div class="canvas-wrap">
@@ -2902,7 +2931,57 @@ const _traceSparkleLayer = (function() {
   document.body.appendChild(l);
   return l;
 })();
-function setQuizActive(v) { _quizActive = !!v; }
+function setQuizActive(v) {
+  _quizActive = !!v;
+  // お手本リプレイボタンは quiz がアクティブな時だけ出す。
+  // (デモ再生中/文字完了後は邪魔になるので非表示)
+  try {
+    const _drBtn = document.getElementById('demoReplayBtn');
+    if (_drBtn) _drBtn.classList.toggle('visible', _quizActive);
+  } catch (e) {}
+}
+
+// ===== お手本リプレイ: 最後に流した writer.quiz の opts を保持してデモ→quiz を再開する =====
+// createWriter で writer.quiz をラップして _lastQuizOpts に保存する。
+// デモリプレイボタンのクリックで: cancelQuiz → animateCharacter → quiz(_lastQuizOpts) を再実行。
+var _lastQuizOpts = null;
+function _replayDemo() {
+  if (!writer) return;
+  // アニメ中やデモ中の多重起動防止
+  if (_replayDemo._busy) return;
+  _replayDemo._busy = true;
+  try { writer.cancelQuiz(); } catch (e) {}
+  setQuizActive(false);
+  try {
+    const di = document.getElementById('demoIndicator');
+    if (di) di.style.display = 'block';
+  } catch (e) {}
+  const resume = function() {
+    try {
+      const di = document.getElementById('demoIndicator');
+      if (di) di.style.display = 'none';
+    } catch (e) {}
+    if (_lastQuizOpts && writer) {
+      try { writer.hideCharacter(); } catch (e) {}
+      setQuizActive(true);
+      try { writer.quiz(_lastQuizOpts); } catch (e) {}
+    }
+    _replayDemo._busy = false;
+  };
+  try {
+    writer.animateCharacter({ onComplete: resume });
+  } catch (e) {
+    _replayDemo._busy = false;
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('demoReplayBtn');
+  if (!btn) return;
+  btn.addEventListener('click', function(ev) {
+    ev.preventDefault(); ev.stopPropagation();
+    _replayDemo();
+  });
+});
 function _spawnTraceSparkle(clientX, clientY) {
   const s = document.createElement('div');
   s.className = 'trace-sparkle';
@@ -3091,9 +3170,11 @@ function playSwordHitSound() {
 // 後方互換 alias (呼び出し箇所が残っていても動くように)
 const playShakeenSound = playNazoriSound;
 
-// 敵撃破 SE (カンファーレ): 2026-04-20 ユーザー指定で Short Battle Victory Fanfare に変更。
+// 敵撃破の「着弾/消滅」 SE。ファンファーレは別関数 (playVictoryFanfare) が t=1800ms で
+// 専用に鳴らすので、ここは短い消滅音に分離する (2026-04-20): 同じ mp3 を二重に new Audio
+// すると iOS PWA 等で 2 回目が無音になり「ファンファーレが鳴らない」問題になっていた。
 const ENEMY_DEFEAT_SFX_URLS = [
-  '../assets/sounds/se/battle/victory_fanfare.mp3'
+  '../assets/sounds/se/battle/enemy_defeat_2.mp3'
 ];
 let _defeatSfxIndex = 0;
 function playEnemyDefeatSound() {
@@ -4300,17 +4381,17 @@ const _battleDialog = {
 
 function _battleDialogBind() {
   if (_battleDialog.handler) return;
-  const inner = document.getElementById('battleLogInner');
-  if (!inner) return;
   _battleDialog.handler = function(ev) {
     if (!_battleDialog.active) return;
-    // 誤爆防止: 0.35s は必ず待つ (連打対策 & アニメ終了まで)
+    // 誤爆防止: 0.22s は必ず待つ (連打対策 & アニメ終了まで)
     if (Date.now() < _battleDialog._minShowUntil) return;
     ev.preventDefault();
     ev.stopPropagation();
     _battleDialogAdvance();
   };
-  inner.addEventListener('pointerdown', _battleDialog.handler);
+  // 画面のどこをタップしても進められるように document レベルで capture-phase 拾い。
+  // active フラグが false の間は何もしないので、なぞり書き等の操作は干渉しない。
+  document.addEventListener('pointerdown', _battleDialog.handler, true);
 }
 
 function _battleDialogAdvance() {
@@ -4977,14 +5058,27 @@ function playVictoryFanfare() {
   if (url) {
     try {
       const a = new Audio(url);
-      a.volume = 0.75;
-      a.play().catch(() => {});
+      a.volume = 0.9;
+      a.preload = 'auto';
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(function(err) {
+          console.warn('[fanfare] play failed:', err && err.message);
+          // 再生失敗時は Web Audio 合成にフォールバック
+          _playVictoryFanfareSynth();
+        });
+      }
       return a;
     } catch (e) { /* fall through to synth */ }
   }
-  withAudio(ac => {
+  _playVictoryFanfareSynth();
+}
+
+// mp3 が鳴らせないときの Web Audio 合成フォールバック
+function _playVictoryFanfareSynth() {
+  withAudio(function(ac) {
     const now = ac.currentTime;
-    // C-E-G-C-G-C 勝利モチーフ
     const notes = [
       {f: 523.25, t: 0.00, d: 0.16, g: 0.32},  // C5
       {f: 659.25, t: 0.15, d: 0.16, g: 0.32},  // E5
@@ -4993,7 +5087,7 @@ function playVictoryFanfare() {
       {f: 783.99, t: 0.82, d: 0.16, g: 0.30},  // G5
       {f: 1046.5, t: 0.98, d: 0.55, g: 0.40},  // C6 finale
     ];
-    notes.forEach(n => {
+    notes.forEach(function(n) {
       const osc = ac.createOscillator();
       const gain = ac.createGain();
       osc.type = 'triangle';
@@ -5245,6 +5339,7 @@ function createWriter(char) {
   _perfectCurrentChar = true;
   _setMonsterForChar(char);
 
+  _lastQuizOpts = null;  // 新しい writer になったので保存済み opts をリセット
   writer = HanziWriter.create(writerTarget, char, {
     width: size,
     height: size,
@@ -5291,6 +5386,18 @@ function createWriter(char) {
         });
     }
   });
+
+  // writer.quiz(opts) の呼び出しを横取りして opts を保持する。
+  // リプレイボタン (_replayDemo) が _lastQuizOpts を使ってデモ→quiz を再開できるようにする。
+  try {
+    const _origQuiz = writer.quiz && writer.quiz.bind(writer);
+    if (_origQuiz) {
+      writer.quiz = function(opts) {
+        _lastQuizOpts = opts || {};
+        return _origQuiz(opts);
+      };
+    }
+  } catch (e) { /* ignore */ }
 
   // まずお手本を1回流してからquizモードへ
   // チュートリアル表示中はスキップ（チュートリアル終了後に実行される）
