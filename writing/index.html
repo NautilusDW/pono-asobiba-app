@@ -2064,18 +2064,32 @@ body.battle-mode .battle-log-window {
   background: #000;
 }
 /* map_A.png は 2752x1536 (縦中央から 46〜54% の帯に「道」が走る)。
-   JS が scene.xPct / scene.yPct を画像ピクセルに変換し、その点を
-   hero の足元 (画面 50%, 62%) に合わせるよう left/top を設定する。
-   マップを動かすのではなく、hero は常に画面の同じ位置に立ち、
-   その足元に「現在のステージの道の点」が来るように画像をズラす設計。
+   CSS 変数 --mx / --my に現在行の (xPct, yPct) を入れる。画像は
+   「高さ = 画面高 × --map-zoom (初期 1.6)」で拡大し、(mx, my) の画像内
+   ピクセルが画面の (50vw, 62vh) に重なるよう left/top を calc() で決める。
+   JS 側は CSS 変数をセットするだけで、レイアウト測定に依存しない。
    (2026-04-20 ユーザー要望「勇者を道の上に」+「マップでなく勇者側を意識」に対応) */
 .map-scene-bg-img {
+  --mx: 6;
+  --my: 48;
+  --map-zoom: 1.6;
+  --map-img-h: calc(100vh * var(--map-zoom));
+  --map-img-w: calc(var(--map-img-h) * 2752 / 1536);
   position: absolute;
-  top: 0; left: 0;
+  height: var(--map-img-h);
+  width: var(--map-img-w);
   max-width: none;
   pointer-events: none;
   image-rendering: auto;
   filter: brightness(0.95);
+  left: calc(50vw - var(--map-img-w) * var(--mx) / 100);
+  top:  calc(62vh - var(--map-img-h) * var(--my) / 100);
+}
+/* 縦長画面 (スマホ portrait) では画面幅が狭く、高さ 1.6 倍の画像でも横が
+   ステージ 1 枚ぴったりになる。横長画面ではもう少し拡大したほうがアップに
+   見えるので zoom を上げる。 */
+@media (orientation: landscape) {
+  .map-scene-bg-img { --map-zoom: 2.2; }
 }
 .map-scene-hero {
   position: absolute;
@@ -5652,6 +5666,9 @@ function _showMapScene(rowId, onDone) {
   bgImg.className = 'map-scene-bg-img';
   bgImg.alt = '';
   bgImg.src = '../assets/images/maps/map_A.png';
+  // CSS 側が (mx, my) を受け取ってマップを translate する。
+  bgImg.style.setProperty('--mx', scene.xPct);
+  bgImg.style.setProperty('--my', scene.yPct != null ? scene.yPct : 50);
   const title = document.createElement('div');
   title.className = 'map-scene-title';
   title.textContent = scene.title;
@@ -5670,27 +5687,7 @@ function _showMapScene(rowId, onDone) {
   overlay.appendChild(hint);
   document.body.appendChild(overlay);
 
-  const applyMapTransform = function() {
-    const cw = viewport.clientWidth;
-    const ch = viewport.clientHeight;
-    if (!cw || !ch) return;
-    // 画像高さを viewport の 2.0 倍にして、1 ステージだけが画面を占めるズーム量に。
-    // アスペクトは画像のネイティブ比率を維持 (2752:1536 ≒ 1.79:1)。
-    const imgH = ch * 2.0;
-    const imgW = imgH * MAP_IMG_NATURAL_W / MAP_IMG_NATURAL_H;
-    bgImg.style.width = imgW + 'px';
-    bgImg.style.height = imgH + 'px';
-    // hero 足元 (画面 50%, 62%) に scene の (xPct, yPct) を合わせる。
-    const targetX = cw * 0.5;
-    const targetY = ch * 0.62;
-    const sx = imgW * (scene.xPct / 100);
-    const sy = imgH * ((scene.yPct != null ? scene.yPct : 50) / 100);
-    bgImg.style.left = (targetX - sx) + 'px';
-    bgImg.style.top  = (targetY - sy) + 'px';
-  };
-  if (bgImg.complete) applyMapTransform();
-  else bgImg.addEventListener('load', applyMapTransform);
-
+  // 位置/サイズは全て CSS 側 (vh/vw + CSS 変数) で決まる。JS による測定は不要。
   requestAnimationFrame(function() { overlay.classList.add('show'); });
 
   const minShowUntil = Date.now() + 500;
