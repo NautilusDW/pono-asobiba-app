@@ -780,6 +780,120 @@ html, body {
   100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
 }
 
+/* ===== Magic Projectile (手前から奥へ飛ぶ魔法弾 + 着弾破裂) =====
+   JS 側で start/target 座標を transform で設定し、transition で飛ばす。
+   色は CSS カスタムプロパティ --core / --aura / --glow を属性別に差し替え。 */
+.magic-projectile-container {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 1500;
+  overflow: hidden;
+}
+.magic-projectile {
+  position: absolute;
+  width: 140px; height: 140px;
+  left: 0; top: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 34%,
+      rgba(255,255,255,0.98) 0%,
+      var(--aura, #FFE27A) 22%,
+      var(--core, #FF6B00) 58%,
+      rgba(0,0,0,0) 85%);
+  box-shadow:
+    0 0 24px 6px var(--glow, rgba(255,160,0,0.85)),
+    0 0 56px 18px var(--glow, rgba(255,160,0,0.55));
+  mix-blend-mode: screen;
+  opacity: 0;
+  will-change: transform, opacity;
+  /* transform は JS で直接書き換え、transition で補間。
+     最初のフレームだけ 0 に、次フレームで目的地+縮小へ */
+}
+.magic-projectile.animate {
+  opacity: 1;
+  transition:
+    transform 0.8s cubic-bezier(0.35, 0.15, 0.55, 1),
+    opacity 0.18s ease-out;
+}
+.magic-projectile .magic-projectile-trail {
+  position: absolute; inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--aura, #FFE27A) 0%,
+    var(--core, #FF6B00) 45%,
+    rgba(0,0,0,0) 75%);
+  filter: blur(6px);
+  opacity: 0.7;
+  animation: projectilePulse 0.35s ease-in-out infinite alternate;
+}
+@keyframes projectilePulse {
+  from { transform: scale(0.9); opacity: 0.5; }
+  to   { transform: scale(1.15); opacity: 0.9; }
+}
+.magic-burst-flash {
+  position: absolute;
+  width: 260px; height: 260px;
+  left: 0; top: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,255,255,1) 0%,
+    var(--aura, #FFE27A) 30%,
+    var(--core, #FF6B00) 58%,
+    rgba(0,0,0,0) 82%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: magicBurstFlash 0.65s ease-out forwards;
+}
+@keyframes magicBurstFlash {
+  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  25%  { transform: translate(-50%, -50%) scale(1.4); opacity: 0.98; }
+  100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+.magic-burst-particle {
+  position: absolute;
+  width: 16px; height: 16px;
+  left: 0; top: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,255,255,1) 0%,
+    var(--aura, #FFE27A) 45%,
+    var(--core, #FF6B00) 80%,
+    rgba(0,0,0,0) 100%);
+  box-shadow: 0 0 12px 4px var(--glow, rgba(255,160,0,0.7));
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: magicBurstParticle 0.7s cubic-bezier(0.2,0.7,0.3,1) forwards;
+}
+@keyframes magicBurstParticle {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--dx, 0), var(--dy, 0)) scale(0.15); opacity: 0; }
+}
+.magic-burst-shockring {
+  position: absolute;
+  width: 80px; height: 80px;
+  left: 0; top: 0;
+  border-radius: 50%;
+  border: 3px solid var(--aura, #FFE27A);
+  box-shadow: 0 0 14px 2px var(--glow, rgba(255,160,0,0.7));
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: magicBurstShockring 0.6s cubic-bezier(0.1,0.7,0.3,1) forwards;
+}
+@keyframes magicBurstShockring {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1;   border-width: 6px; }
+  100% { transform: translate(-50%, -50%) scale(3.6); opacity: 0;   border-width: 1px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .magic-projectile,
+  .magic-projectile .magic-projectile-trail,
+  .magic-burst-flash,
+  .magic-burst-particle,
+  .magic-burst-shockring {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* ===== Completion Overlay ===== */
 .completion-overlay {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -2206,6 +2320,33 @@ const ROW_ELEMENT = {
   na: 'heal', ha: 'wind', ma: 'earth', ya: 'star',
   ra: 'rainbow', wa: 'king'
 };
+// _rowPracticeRow.label (ひらがな/カタカナ) -> 属性
+// 「使う魔法と同じ色」で弾を飛ばすため、行ラベル直参照できるように
+const ROW_ELEMENT_BY_LABEL = {
+  'あ': 'light',   'ア': 'light',
+  'か': 'fire',    'カ': 'fire',
+  'さ': 'ice',     'サ': 'ice',
+  'た': 'thunder', 'タ': 'thunder',
+  'な': 'heal',    'ナ': 'heal',
+  'は': 'wind',    'ハ': 'wind',
+  'ま': 'earth',   'マ': 'earth',
+  'や': 'star',    'ヤ': 'star',
+  'ら': 'rainbow', 'ラ': 'rainbow',
+  'わ': 'king',    'ワ': 'king',
+};
+// 属性ごとのパレット (core=中心色, aura=外周, glow=box-shadow)
+const MAGIC_COLORS = {
+  fire:    { core: '#FF5722', aura: '#FFD86A', glow: 'rgba(255,120,20,0.85)' },
+  light:   { core: '#FFF0A0', aura: '#FFFFFF', glow: 'rgba(255,240,160,0.9)' },
+  ice:     { core: '#4FC3F7', aura: '#E0F7FA', glow: 'rgba(79,195,247,0.85)' },
+  thunder: { core: '#9C27B0', aura: '#FFF176', glow: 'rgba(255,241,118,0.9)' },
+  heal:    { core: '#66BB6A', aura: '#C8F5D0', glow: 'rgba(102,187,106,0.85)' },
+  wind:    { core: '#26C6DA', aura: '#B2EBF2', glow: 'rgba(38,198,218,0.85)' },
+  earth:   { core: '#D4A574', aura: '#F5DEB3', glow: 'rgba(212,165,116,0.85)' },
+  star:    { core: '#FFD700', aura: '#FFF9C4', glow: 'rgba(255,215,0,0.9)' },
+  rainbow: { core: '#FF4081', aura: '#FFD54F', glow: 'rgba(255,64,129,0.85)' },
+  king:    { core: '#7E57C2', aura: '#FFD700', glow: 'rgba(126,87,194,0.85)' },
+};
 
 function pickSpellVideo(kind) {
   // kind 指定 → その属性のプール、未指定 or 未定義属性 → 全体からランダム
@@ -2258,6 +2399,194 @@ function launchMagicCircle(kind) {
   }
 
   setTimeout(() => { c.innerHTML = ''; }, 3400);
+}
+
+// ===== Magic Projectile =====
+// 「手前から奥(敵)へ飛ぶ光球 → 着弾で破裂」する魔法演出。
+// mp4 を使わず純 CSS なので軽量 (1 回 ~50KB の DOM 作って捨てるだけ)。
+// element: 'fire' | 'ice' | 'thunder' | 'light' | 'heal' | 'wind' | ...
+// onImpact: 着弾時に呼ばれる (敵の被ダメ演出と同期したいとき用)
+function launchMagicProjectile(element, opts) {
+  opts = opts || {};
+  const colors = MAGIC_COLORS[element] || MAGIC_COLORS.fire;
+  const enemyEl = document.getElementById('battleEnemy');
+  if (!enemyEl) {
+    if (opts.onImpact) setTimeout(opts.onImpact, 0);
+    return;
+  }
+
+  // 既存コンテナがあれば再利用、なければ作る
+  let container = document.querySelector('.magic-projectile-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'magic-projectile-container';
+    document.body.appendChild(container);
+  }
+
+  // 敵位置 (viewport 座標)
+  const er = enemyEl.getBoundingClientRect();
+  const tx = er.left + er.width / 2;
+  const ty = er.top  + er.height * 0.55;
+
+  // 起点: 画面中央下 (プレイヤー側 = 手前)
+  const sx = window.innerWidth / 2;
+  const sy = window.innerHeight * 0.86;
+
+  // 弾本体
+  const ball = document.createElement('div');
+  ball.className = 'magic-projectile';
+  ball.style.setProperty('--core', colors.core);
+  ball.style.setProperty('--aura', colors.aura);
+  ball.style.setProperty('--glow', colors.glow);
+  // 初期: 起点に大きめ(=手前)
+  ball.style.transform = 'translate(' + sx + 'px, ' + sy + 'px) translate(-50%, -50%) scale(1.15)';
+
+  const trail = document.createElement('div');
+  trail.className = 'magic-projectile-trail';
+  ball.appendChild(trail);
+
+  container.appendChild(ball);
+
+  // 弾発射 SFX (短い whoosh)
+  try { _playProjectileLaunchSound(element); } catch (e) {}
+
+  // 2 フレーム後に目的地へ + 縮小(=奥へ)
+  // transition は .animate クラスで有効化
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      ball.classList.add('animate');
+      ball.style.transform =
+        'translate(' + tx + 'px, ' + ty + 'px) ' +
+        'translate(-50%, -50%) scale(0.28)';
+    });
+  });
+
+  // 着弾
+  const FLIGHT_MS = 780;
+  setTimeout(() => {
+    // 弾消去 + 破裂
+    if (ball.parentNode) ball.remove();
+    _spawnMagicBurst(tx, ty, colors, container);
+    try { _playMagicBurstSound(element); } catch (e) {}
+    if (opts.onImpact) {
+      try { opts.onImpact(); } catch (e) {}
+    }
+    // 900ms 後にコンテナ掃除 (他の弾と衝突しないよう空要素なら削除)
+    setTimeout(() => {
+      if (container && container.parentNode && container.children.length === 0) {
+        container.remove();
+      }
+    }, 900);
+  }, FLIGHT_MS);
+}
+
+function _spawnMagicBurst(x, y, colors, container) {
+  // 各 burst 要素は left/top で配置し、CSS keyframe の translate(-50%,-50%) で中心合わせ。
+  // 中央フラッシュ
+  const flash = document.createElement('div');
+  flash.className = 'magic-burst-flash';
+  flash.style.setProperty('--core', colors.core);
+  flash.style.setProperty('--aura', colors.aura);
+  flash.style.setProperty('--glow', colors.glow);
+  flash.style.left = x + 'px';
+  flash.style.top  = y + 'px';
+  container.appendChild(flash);
+  setTimeout(() => { if (flash.parentNode) flash.remove(); }, 700);
+
+  // 衝撃波リング
+  const ring = document.createElement('div');
+  ring.className = 'magic-burst-shockring';
+  ring.style.setProperty('--aura', colors.aura);
+  ring.style.setProperty('--glow', colors.glow);
+  ring.style.left = x + 'px';
+  ring.style.top  = y + 'px';
+  container.appendChild(ring);
+  setTimeout(() => { if (ring.parentNode) ring.remove(); }, 650);
+
+  // 放射パーティクル
+  const N = 16;
+  for (let i = 0; i < N; i++) {
+    const p = document.createElement('div');
+    p.className = 'magic-burst-particle';
+    p.style.setProperty('--core', colors.core);
+    p.style.setProperty('--aura', colors.aura);
+    p.style.setProperty('--glow', colors.glow);
+    const angle = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+    const dist = 90 + Math.random() * 90;
+    p.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+    p.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+    p.style.left = x + 'px';
+    p.style.top  = y + 'px';
+    p.style.animationDelay = (Math.random() * 0.08).toFixed(2) + 's';
+    container.appendChild(p);
+    setTimeout(() => { if (p.parentNode) p.remove(); }, 800);
+  }
+}
+
+// 発射音: 属性で音色を変える (軽い whoosh + ピッチ上昇)
+function _playProjectileLaunchSound(element) {
+  if (typeof withAudio !== 'function') return;
+  withAudio(ac => {
+    const now = ac.currentTime;
+    // ノイズベースの whoosh
+    const bufLen = Math.floor(ac.sampleRate * 0.4);
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      const t = i / bufLen;
+      ch[i] = (Math.random() * 2 - 1) * (1 - t) * 0.5;
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    // 属性でピッチ帯を切替
+    const startHz = element === 'ice' ? 1800 : element === 'thunder' ? 2400 : element === 'light' ? 2200 : 1400;
+    bp.frequency.setValueAtTime(startHz * 0.5, now);
+    bp.frequency.exponentialRampToValueAtTime(startHz * 1.6, now + 0.35);
+    bp.Q.value = 6;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.25, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    src.connect(bp); bp.connect(g); g.connect(ac.destination);
+    src.start(now); src.stop(now + 0.42);
+  });
+}
+// 着弾音: 短い破裂 (低域パンチ + 高域キラキラ)
+function _playMagicBurstSound(element) {
+  // 差替フック: window.PONO_FIRE_MAGIC_SFX (後方互換) または属性別 mp3 があればそちらを優先。
+  // 今は合成音のみ。mp3 を入れるときは new Audio(...).play() で差し替え可。
+  const customUrl = (typeof window !== 'undefined' && window.PONO_FIRE_MAGIC_SFX);
+  if (customUrl) {
+    try {
+      const a = new Audio(customUrl);
+      a.volume = 0.55; a.play().catch(() => {});
+      return;
+    } catch (e) { /* fall through */ }
+  }
+  if (typeof withAudio !== 'function') return;
+  withAudio(ac => {
+    const now = ac.currentTime;
+    // 低域パンチ
+    const o1 = ac.createOscillator(), g1 = ac.createGain();
+    o1.type = 'sine';
+    o1.frequency.setValueAtTime(220, now);
+    o1.frequency.exponentialRampToValueAtTime(60, now + 0.22);
+    g1.gain.setValueAtTime(0.55, now);
+    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    o1.connect(g1); g1.connect(ac.destination);
+    o1.start(now); o1.stop(now + 0.3);
+    // 高域キラキラ (属性で音色差)
+    const hz = element === 'ice' ? 2600 : element === 'fire' ? 1600 : element === 'thunder' ? 3200 : 2000;
+    const o2 = ac.createOscillator(), g2 = ac.createGain();
+    o2.type = 'triangle';
+    o2.frequency.setValueAtTime(hz, now + 0.02);
+    o2.frequency.exponentialRampToValueAtTime(hz * 0.5, now + 0.35);
+    g2.gain.setValueAtTime(0.18, now + 0.02);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    o2.connect(g2); g2.connect(ac.destination);
+    o2.start(now + 0.02); o2.stop(now + 0.42);
+  });
 }
 
 // ===== Confetti =====
@@ -2798,6 +3127,8 @@ const _battle = {
   hitCount: 0,
   // 5回の攻撃タイプを事前に決める ('normal' | 'magic')。finisher (末尾) は必ず magic
   attackPlan: [],
+  // 行(label: あ/か/さ…)ごとの属性。'fire' | 'ice' | 'thunder' | 'light' | 'heal' | 'wind' | ...
+  element: 'fire',
 };
 
 // 攻撃プラン生成: count 回中 2〜3 回を magic、末尾は必ず magic
@@ -2853,6 +3184,8 @@ function _showBattleStage(rowId) {
   _battle.hp = _battle.maxHp;
   _battle.hitCount = 0;
   _battle.attackPlan = _pickAttackPlan(_battle.maxHp); // 5回の通常/魔法プラン
+  // 行ラベル (あ,か,さ...) から魔法の属性を決める。未定義行は 'fire' fallback。
+  _battle.element = (ROW_ELEMENT_BY_LABEL && ROW_ELEMENT_BY_LABEL[rowId]) || 'fire';
 
   if (els.img) els.img.src = enemy.img;
   if (els.name) els.name.textContent = enemy.name;
@@ -2923,7 +3256,7 @@ function battleHitEnemy(opts) {
   // 攻撃 FX (finisher は battleVictory 側で全画面魔法陣を出すのでここではスキップ)
   if (!isFinisher) {
     try {
-      if (attackType === 'magic') playMagicAttackFX('fire');
+      if (attackType === 'magic') playMagicAttackFX(_battle.element || 'fire');
       else                         playNormalAttackFX();
     } catch (e) { /* ignore */ }
   }
@@ -3000,17 +3333,30 @@ function playNormalAttackSound() {
 }
 
 // ===== プレイヤー攻撃 FX: 魔法攻撃 =====
-// AI 生成の魔法動画 (spell_01..04.mp4) を screen blend で全画面に重ねる。
-// 小さい CSS グロウ (.magic-fire-fx) は動画が出るので不要になったので廃止。
-// 差替フック: window.PONO_FIRE_MAGIC_SFX
+// 「手前から奥(敵)へ魔法弾が飛ぶ → 着弾で破裂」する launchMagicProjectile に置換。
+// 色は _battle.element (fire/ice/thunder/light/...) に合わせて MAGIC_COLORS で切替。
+// 全画面の AI 動画 (launchMagicCircle) は finisher (5 文字目) 専用で取っておく。
 function playMagicAttackFX(kind) {
+  const element = kind || (_battle && _battle.element) || 'fire';
   try {
-    if (typeof launchMagicCircle === 'function') {
-      launchMagicCircle(kind || 'fire');
+    if (typeof launchMagicProjectile === 'function') {
+      launchMagicProjectile(element, {
+        onImpact: function() {
+          // 着弾時に火花粒子を敵位置から少し追加 (属性絵文字で)
+          const emoji = element === 'fire'    ? '🔥'
+                      : element === 'ice'     ? '❄'
+                      : element === 'thunder' ? '⚡'
+                      : element === 'light'   ? '✨'
+                      : element === 'heal'    ? '💚'
+                      : element === 'wind'    ? '💨'
+                      : '✨';
+          _spawnEnemyImpactParticles(emoji, 6);
+        }
+      });
     }
   } catch (e) { /* ignore — SFX だけでも鳴らす */ }
-  _spawnEnemyImpactParticles('🔥', 6);
-  playFireMagicSound();
+  // SFX は launchMagicProjectile 内の発射音+着弾音に任せる。
+  // 既存の playFireMagicSound (全属性 fire 音) は二重で重くなるので呼ばない。
 }
 
 function playFireMagicSound() {
