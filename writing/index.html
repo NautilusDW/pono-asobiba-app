@@ -2038,10 +2038,17 @@ body.battle-mode .villain-deco {
 body.battle-mode #battleLog { display: block !important; }
 
 /* バトル中は、黒カーテン (z-index:1300) より上にログウィンドウを出して
-   タップ (▼ で次へ) を必ず受け付けるようにする。position:relative で
-   stacking context を作り、z-index を上げる。*/
+   タップ (▼ で次へ) を必ず受け付けるようにする。
+   (2026-04-20) エンカウント演出中は敵スプライトが画面中央にドンと出るため、
+   ログが通常フローの位置 (画面中央付近) だと敵に被ってしまう。
+   position:fixed で画面下部に固定 → タップもしやすく視界を遮らない。*/
 body.battle-mode .battle-log-window {
-  position: relative;
+  position: fixed;
+  left: 50%;
+  bottom: max(env(safe-area-inset-bottom, 12px), 12px);
+  transform: translateX(-50%);
+  width: min(92vw, 420px);
+  margin: 0;
   z-index: 1400;
 }
 
@@ -2167,20 +2174,23 @@ body.battle-mode .battle-log-window {
 /* エンカウント前の森背景: forest_bg_01.png を 180% スケールでゆっくり右→左スクロール
    (2026-04-20 ユーザー要望: 勇者が走ってる間の背景を森にして、少し拡大+緩やかに動かす) */
 .battle-intro-forest {
+  /* バトルステージ (.battle-stage .battle-bg) の cover + center bottom と同じ
+     「地面を画面下辺に揃える」感じにしつつ、横スクロールさせるため auto 100% + repeat-x。 */
   position: absolute;
-  inset: -6% -6%;   /* スケール時の端切れを防ぐため少し余白を持たせる */
+  inset: 0;
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-repeat: repeat-x;
-  background-size: auto 65%;
+  background-size: auto 100%;
   background-position: 0 bottom;
   opacity: 0.9;
-  animation: battleIntroForestScroll 24s linear infinite;
+  animation: battleIntroForestScroll 28s linear infinite;
   filter: brightness(0.75) saturate(0.95);
-  image-rendering: auto;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
 }
 @keyframes battleIntroForestScroll {
   0%   { background-position: 0 bottom; }
-  100% { background-position: -500px bottom; }
+  100% { background-position: -800px bottom; }
 }
 /* 森 → 黒の頂上ビネット (敵が見やすくなるよう画面下部を暗く) */
 .battle-intro-forest::after {
