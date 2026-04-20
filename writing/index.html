@@ -1385,7 +1385,7 @@ body.battle-mode .villain-deco {
 .battle-stage .battle-bg {
   position: absolute; inset: 0;
   /* 森のピクセルアート背景: 横幅はオーバーフローを cover で自動クロップし、地面を画面下辺に揃える */
-  background-image: url('../assets/images/battle/bg/forest_bg_01.png');
+  background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-position: center bottom;
   background-size: cover;
   background-repeat: no-repeat;
@@ -2169,7 +2169,7 @@ body.battle-mode .battle-log-window {
 .battle-intro-forest {
   position: absolute;
   inset: -6% -6%;   /* スケール時の端切れを防ぐため少し余白を持たせる */
-  background-image: url('../assets/images/battle/bg/forest_bg_01.png');
+  background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-repeat: repeat-x;
   background-size: auto 115%;
   background-position: 0 center;
@@ -4084,7 +4084,12 @@ function _showBattleStage(rowId) {
   els.enemy.classList.remove('damaged', 'defeated');
   _renderHpBar(_battle.hp, _battle.maxHp);
 
-  els.stage.style.display = '';
+  // 2026-04-20: バトルステージは「マップシーン+エンカウント演出」が終わるまで
+  // DOM 上は非表示のままにする。以前はここで display:'' にしていたため、
+  // map-scene-overlay の opacity 0→1 フェードイン中や、map→curtain の切替
+  // 瞬間にバトル画面が一瞬透けて見える問題があった。実際の表示は
+  // _showBattleEncounterIntro のカーテンで覆った後に行う (_revealBattleStage)。
+  els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'false');
   // ポノ / ハリネズミ / 封印された妖精を戦闘中は隠す (戦闘画面の集中度を上げる)
   document.body.classList.add('battle-mode');
@@ -4303,10 +4308,17 @@ function _showBattleEncounterIntro(onDone) {
   // エンカウントでバトル BGM へ切替 (マップ BGM からの遷移)
   try { setBgmFor('battle'); } catch (e) {}
 
+  // バトルステージを「カーテンの裏」で表示可能な状態に戻す。
+  // カーテン (z-index 1300, opaque 黒) が覆っているので、ここで display を
+  // 戻してもユーザーには見えない。カーテンがフェードアウトした瞬間にバトル
+  // 画面が自然に現れる。
+  const _stageEls = _battleEls();
+  if (_stageEls.stage) _stageEls.stage.style.display = '';
+
   // Phase A: カーテンだけ先に出す (まだ敵は登場しない)。
   // ユーザー要望 (2026-04-20): いきなりモンスターが出てこないから、
   // エンカウント前のナレーションを 2 ステップ見せてから敵を登場させる。
-  // さらに「ポノは あるいていた…」の間、move.png で歩く勇者を左から右へ流す。
+  // さらに「〇〇は あるいていた…」の間、move.png で歩く勇者を左から右へ流す。
   const curtain = document.createElement('div');
   curtain.className = 'battle-intro-curtain';
   // 森の背景 (緩やかスクロール) を先に貼る。phase 2 (敵登場) でフェードアウトさせる。
@@ -4322,8 +4334,9 @@ function _showBattleEncounterIntro(onDone) {
   document.body.appendChild(walkWrap);
 
   // Phase 1: エンカウント前ナレーション (敵はまだいない黒画面でタップ送り)
+  const heroName = _battleHeroName();
   const preMessages = [
-    { lines: ['ポノは あるいていた…', ''] },
+    { lines: [heroName + 'は あるいていた…', ''] },
     { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
   ];
 
@@ -4658,8 +4671,15 @@ function _spawnEnemyImpactParticles(emoji, n) {
 
 // ===== 敵の反撃 (演出のみ、HPは減らさない) =====
 // 差替フック: window.PONO_ENEMY_ATTACK_SFX, window.PONO_HERO_NAME
-const BATTLE_HERO_NAME_DEFAULT = 'ポノ';
+// デフォルトは 'ゆうしゃ'。アプリ起動時に名前設定していれば
+// pono_hero_name (localStorage) から読み、それも無ければ window.PONO_HERO_NAME、
+// 全て未設定なら 'ゆうしゃ' を使う。
+const BATTLE_HERO_NAME_DEFAULT = 'ゆうしゃ';
 function _battleHeroName() {
+  try {
+    var saved = localStorage.getItem('pono_hero_name');
+    if (saved && saved.trim()) return saved.trim();
+  } catch (e) {}
   return (typeof window !== 'undefined' && window.PONO_HERO_NAME) || BATTLE_HERO_NAME_DEFAULT;
 }
 
