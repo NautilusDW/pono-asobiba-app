@@ -4385,13 +4385,15 @@ function _battleDialogBind() {
     if (!_battleDialog.active) return;
     // 誤爆防止: 0.22s は必ず待つ (連打対策 & アニメ終了まで)
     if (Date.now() < _battleDialog._minShowUntil) return;
-    ev.preventDefault();
-    ev.stopPropagation();
+    // preventDefault / stopPropagation はしない。
+    // (他の pointerdown 処理 — audio unlock, HanziWriter 筆跡, 他のタップリスナー — を
+    //  絶対に潰さないため。dialog が active の間だけ「進行」をトリガーする。
+    //  dialog active = バトル導入中で quiz 書き取りはまだ始まっていないので競合は起きない。)
     _battleDialogAdvance();
   };
-  // 画面のどこをタップしても進められるように document レベルで capture-phase 拾い。
-  // active フラグが false の間は何もしないので、なぞり書き等の操作は干渉しない。
-  document.addEventListener('pointerdown', _battleDialog.handler, true);
+  // 画面のどこをタップしても進められるよう document レベルで bubble phase 拾い。
+  // active フラグが false の間は即 return で何もしないので常時 listener は無害。
+  document.addEventListener('pointerdown', _battleDialog.handler, false);
 }
 
 function _battleDialogAdvance() {
@@ -4950,10 +4952,21 @@ function battleVictory(spellKind, onDone) {
 
   // ファンファーレは剣閃 SE と重ならないよう t=1600ms で独立に鳴らす。
   // BGM は同時に 0 へフェードして、ファンファーレがクリアに聞こえるようにする。
-  // (2026-04-20 ユーザー要望: 「ファンファーレが鳴らない」= 剣閃 SE とぶつかって埋もれていた)
+  // pool 経由だと他の SE と状態を共有しちゃうので、ここは fresh な new Audio を直接作る。
+  // (2026-04-20 ユーザー要望: 「ファンファーレが鳴らない」= pool の state/重複で無音化)
   setTimeout(() => {
     try { fadeBgm(0, 300); } catch (e) {}
-    try { playEnemyDefeatSound(); } catch (e) {}  // victory_fanfare.mp3
+    try {
+      const url = '../assets/sounds/se/battle/victory_fanfare.mp3';
+      const a = new Audio(url);
+      a.volume = 0.9;
+      a.play().catch(err => {
+        console.warn('[fanfare] play failed:', err && err.message);
+        try { _playVictoryFanfareSynth(); } catch (e2) {}
+      });
+    } catch (e) {
+      try { _playVictoryFanfareSynth(); } catch (e2) {}
+    }
   }, 1600);
 
   // 撃破ウィンドウ
@@ -5379,18 +5392,6 @@ function createWriter(char) {
         });
     }
   });
-
-  // writer.quiz(opts) の呼び出しを横取りして opts を保持する。
-  // リプレイボタン (_replayDemo) が _lastQuizOpts を使ってデモ→quiz を再開できるようにする。
-  try {
-    const _origQuiz = writer.quiz && writer.quiz.bind(writer);
-    if (_origQuiz) {
-      writer.quiz = function(opts) {
-        _lastQuizOpts = opts || {};
-        return _origQuiz(opts);
-      };
-    }
-  } catch (e) { /* ignore */ }
 
   // まずお手本を1回流してからquizモードへ
   // チュートリアル表示中はスキップ（チュートリアル終了後に実行される）
@@ -5981,7 +5982,7 @@ function _rowPracticeNextChar() {
           _ponoBubble.textContent = 'かいてみよう！';
           if (_battle.active) _setBattleLog(['かいてみよう！', 'もじを かんせいさせよう']);
           setQuizActive(true);
-          writer.quiz({
+          var _qOpts = {
             onCorrectStroke: function() {
               _hideMonsterBubble();
               // 1 画ごとに nazori01.mp3 (2026-04-20 ユーザー指示で全モード統一)
@@ -6065,7 +6066,9 @@ function _rowPracticeNextChar() {
           showHintAfterMisses: 3,
           highlightOnComplete: true,
           highlightCompleteColor: currentScheme.stroke
-        });
+          };
+          _lastQuizOpts = _qOpts;
+          writer.quiz(_qOpts);
         }, 1000); // なぞりスタート表示時間
       }
     });
