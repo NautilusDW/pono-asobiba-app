@@ -1959,7 +1959,8 @@ body.battle-mode .villain-deco {
   border: 3px solid #fff;
   border-radius: 8px;
   padding: clamp(8px, 2.4vw, 14px) clamp(12px, 3vw, 20px);
-  min-height: calc(1.4em * 2 + clamp(16px, 4.8vw, 28px));
+  /* 2026-04-20: 3行分の高さに拡大 (実表示は 2 行のみだが、ドラクエ風の余白感を出す) */
+  min-height: calc(1.4em * 3 + clamp(16px, 4.8vw, 28px));
   box-shadow:
     0 0 16px rgba(0,0,0,0.7),
     inset 0 0 12px rgba(255,255,255,0.05);
@@ -2037,12 +2038,16 @@ body.battle-mode .villain-deco {
 /* 戦闘ログは battle-mode の間だけ見せる (display:none をオーバーライド) */
 body.battle-mode #battleLog { display: block !important; }
 
-/* バトル中は、黒カーテン (z-index:1300) より上にログウィンドウを出して
-   タップ (▼ で次へ) を必ず受け付けるようにする。
-   (2026-04-20) エンカウント演出中は敵スプライトが画面中央にドンと出るため、
-   ログが通常フローの位置 (画面中央付近) だと敵に被ってしまう。
-   position:fixed で画面下部に固定 → タップもしやすく視界を遮らない。*/
+/* バトル中 (なぞり書き時) はログを DOM フロー位置 (なぞり書きの上) に戻す。
+   z-index だけ上げる。*/
 body.battle-mode .battle-log-window {
+  position: relative;
+  z-index: 1400;
+}
+/* intro 演出中 (マップ + カーテン + 敵ドン + 説明ダイアログ) だけは画面下部に固定。
+   敵スプライトが画面中央にドンと出るので、通常フロー位置だと被ってしまう。
+   なぞり書きが始まる瞬間に .battle-intro-active が外れ、上のルールで DOM 位置に戻る。*/
+body.battle-intro-active .battle-log-window {
   position: fixed;
   left: 50%;
   bottom: max(env(safe-area-inset-bottom, 12px), 12px);
@@ -2237,9 +2242,11 @@ body.battle-mode .battle-log-window {
    アニメシートを steps(5) で再生する (役割分担で animation 衝突を回避)。 */
 .battle-intro-hero-wrap {
   /* 2026-04-20 「勇者が花と同じ大きさ」対応: 110 → 220px に拡大。
-     森のスケールも 55% に縮めたので、勇者が相対的にドンと大きく見える。*/
+     森のスケールも 55% に縮めたので、勇者が相対的にドンと大きく見える。
+     bottom は dirt path (画面最下部 ~8%) に足元が乗るよう調整。
+     z-index は fg (1360) より下、bg より上で、勇者が foreground 木の後ろを歩く感じに。*/
   position: fixed;
-  bottom: 16%;
+  bottom: 3%;
   left: 0;
   width: min(44vw, 220px);
   height: min(44vw, 220px);
@@ -2247,6 +2254,30 @@ body.battle-mode .battle-log-window {
   pointer-events: none;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.7));
   animation: battleIntroHeroWalkAcross 6.5s linear infinite;
+}
+/* 前景 (パララックス): SVG の木シルエット。勇者より手前 (z-index 1360) に置き、
+   bg (14s) より速い 9s でスクロール → 奥行きが出る。勇者は木の影の後ろを歩いて見える。*/
+.battle-intro-forest-fg {
+  position: fixed;
+  inset: 0;
+  z-index: 1360;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 360' preserveAspectRatio='xMidYMax slice'><g fill='%23050308'><path d='M70 360 L70 210 Q45 185 75 150 Q55 115 90 100 Q130 75 140 125 Q175 110 165 165 Q200 180 165 205 L120 225 L120 360 Z'/><path d='M250 360 L250 260 Q225 235 255 215 Q240 180 275 175 Q310 165 320 215 Q345 210 335 250 L300 270 L300 360 Z'/><path d='M470 360 L470 195 Q438 160 478 128 Q452 95 495 80 Q540 65 548 130 Q585 120 560 175 Q595 195 560 225 L515 250 L505 360 Z'/></g></svg>");
+  background-repeat: repeat-x;
+  background-size: auto 45%;
+  background-position: 0 bottom;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+  animation: battleIntroFgScroll 9s linear infinite;
+}
+@keyframes battleIntroFgScroll {
+  0%   { background-position: 0 bottom; }
+  100% { background-position: -600px bottom; }
+}
+.battle-intro-curtain.forest-out ~ .battle-intro-forest-fg,
+.battle-intro-forest-fg.walk-off {
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 .battle-intro-hero-wrap .hero-sprite.move {
   width: 100%;
@@ -3054,10 +3085,9 @@ function playSwordHitSound() {
 // 後方互換 alias (呼び出し箇所が残っていても動くように)
 const playShakeenSound = playNazoriSound;
 
-// 敵撃破 SE (魔法バースト + フェード)。2 本ある mp3 を交互再生。
+// 敵撃破 SE (カンファーレ): 2026-04-20 ユーザー指定で Short Battle Victory Fanfare に変更。
 const ENEMY_DEFEAT_SFX_URLS = [
-  '../assets/sounds/se/battle/enemy_defeat_1.mp3',
-  '../assets/sounds/se/battle/enemy_defeat_2.mp3'
+  '../assets/sounds/se/battle/victory_fanfare.mp3'
 ];
 let _defeatSfxIndex = 0;
 function playEnemyDefeatSound() {
@@ -3074,6 +3104,24 @@ function playEnemyDefeatSound() {
   _defeatSfxIndex = (_defeatSfxIndex + 1) % urls.length;
   try {
     const a = new Audio(pick);
+    a.volume = 0.9;
+    a.play().catch(() => {});
+    return a;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+// 文字完成 SE: 1 文字書き終えた瞬間に鳴らす。
+// 2026-04-20 ユーザー指定: "Retro Enemy Defeat Sound, Short Magical Burst And Fade,
+// Light Monster Vanish ... (1).mp3" = プロジェクト内の enemy_defeat_2.mp3 と同一バイナリ。
+const CHAR_COMPLETE_SFX_URL = '../assets/sounds/se/battle/enemy_defeat_2.mp3';
+function playCharCompleteSound() {
+  let url = CHAR_COMPLETE_SFX_URL;
+  if (typeof window !== 'undefined' && typeof window.PONO_CHAR_COMPLETE_SFX === 'string') {
+    url = window.PONO_CHAR_COMPLETE_SFX;
+  }
+  try {
+    const a = new Audio(url);
     a.volume = 0.9;
     a.play().catch(() => {});
     return a;
@@ -4350,6 +4398,10 @@ function _showBattleEncounterIntro(onDone) {
   walkWrap.className = 'battle-intro-hero-wrap';
   walkWrap.innerHTML = '<div class="hero-sprite move"></div>';
   document.body.appendChild(walkWrap);
+  // パララックス前景 (木シルエット): 勇者より手前に重ねて「木の後ろを歩いてる」感を出す
+  const forestFg = document.createElement('div');
+  forestFg.className = 'battle-intro-forest-fg';
+  document.body.appendChild(forestFg);
 
   // Phase 1: エンカウント前ナレーション (敵はまだいない黒画面でタップ送り)
   const heroName = _battleHeroName();
@@ -4362,7 +4414,9 @@ function _showBattleEncounterIntro(onDone) {
     // 歩きを止めてフェードアウト + 森もフェードアウト → 敵登場へ
     try { walkWrap.classList.add('walk-off'); } catch (e) {}
     try { curtain.classList.add('forest-out'); } catch (e) {}
+    try { forestFg.classList.add('walk-off'); } catch (e) {}
     setTimeout(function() { if (walkWrap.parentNode) walkWrap.remove(); }, 620);
+    setTimeout(function() { if (forestFg.parentNode) forestFg.remove(); }, 620);
 
     // Phase 2: 敵ドン登場 + エンカウントジングル
     const img = document.createElement('img');
@@ -5343,11 +5397,12 @@ function startQuiz() {
   setQuizActive(true);
   writer.quiz({
     onCorrectStroke: function(data) {
-      playStrokeSound();
+      playNazoriSound();
       _hideMonsterBubble();
     },
     onComplete: function(data) {
       setQuizActive(false);
+      try { playCharCompleteSound(); } catch (e) {}
       showCompletion();
     },
     onMistake: function(data) {
@@ -5759,12 +5814,16 @@ function _setHeroAnim(kind) {
 // (2026-04-20 ユーザー要望: setTimeout で勝手に進むのをやめて、子供が読み終わるまで待つタップ式に変更)
 function _showBattleIntro(onDone) {
   const rowId = (_rowPracticeRow && _rowPracticeRow.label) || 'あ';
+  // intro 中 (マップ + カーテン + 説明ダイアログ) はログを画面下部に固定。
+  // なぞり書きが始まる瞬間に解除 → ログが DOM フロー位置 (なぞり書きの上) に戻る。
+  document.body.classList.add('battle-intro-active');
   _showMapScene(rowId, function() {
     _showBattleEncounterIntro(function() {
       _showBattleDialog([
         { lines: ['もじを なぞって', 'てきを たおそう！'], opts: { line2Class: 'dmg-line' } },
         { lines: ['まずは おてほんを みて', 'おなじように かいてみよう！'] },
       ], function() {
+        document.body.classList.remove('battle-intro-active');
         if (onDone) onDone();
       });
     });
@@ -5835,18 +5894,15 @@ function _rowPracticeNextChar() {
           writer.quiz({
             onCorrectStroke: function() {
               _hideMonsterBubble();
-              // バトル中はユーザー指定の nazori01.mp3 を鳴らす。非バトルは従来の playStrokeSound。
-              if (_battle.active) {
-                try { playNazoriSound(); } catch (e) {}
-              } else {
-                playStrokeSound();
-              }
+              // 1 画ごとに nazori01.mp3 (2026-04-20 ユーザー指示で全モード統一)
+              try { playNazoriSound(); } catch (e) {}
               try { flashLastStroke(); } catch (e) {}
             },
             onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
             onComplete: function() {
             setQuizActive(false);
             if (!_rowPracticeActive) return;
+            try { playCharCompleteSound(); } catch (e) {}
             playSuccessSound();
             // バトル中は confetti / 妖精ポップ (🌰ドロップ) を抑制する。
             // (2026-04-20 ユーザー要望: バトル中にどんぐりが出てくる → 勝利時にまとめて表示のみ)
@@ -6132,10 +6188,11 @@ function _startWordContextPhase(char, data, onComplete) {
 
   setQuizActive(true);
   wcWriter.quiz({
-    onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+    onCorrectStroke: function() { playNazoriSound(); _hideMonsterBubble(); },
     onComplete: function() {
       setQuizActive(false);
       if (!_rowPracticeActive) return;
+      try { playCharCompleteSound(); } catch (e) {}
       playSuccessSound();
       speakWord(char, data.word);
       _hedgeBubble.textContent = 'すごーい！';
@@ -6217,10 +6274,11 @@ if (btnHint) btnHint.addEventListener('click', () => {
       // Row practice mode: restart the guided quiz with row practice handler
       if (_rowPracticeActive && _rowPracticePhase === 'quiz_guided') {
         writer.quiz({
-          onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+          onCorrectStroke: function() { playNazoriSound(); _hideMonsterBubble(); },
           onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
           onComplete: function() {
             if (!_rowPracticeActive) return;
+            try { playCharCompleteSound(); } catch (e) {}
             playSuccessSound();
             var _inBattle = !!(_battle && _battle.active);
             if (!_inBattle) launchConfetti();
@@ -6380,10 +6438,11 @@ function showTutorial() {
               _hedgeBubble.textContent = 'かいてみよう！';
               _ponoBubble.textContent = 'かいてみよう！';
               writer.quiz({
-                onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },
+                onCorrectStroke: function() { playNazoriSound(); _hideMonsterBubble(); },
                 onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
                 onComplete: function() {
                   if (!_rowPracticeActive) return;
+                  try { playCharCompleteSound(); } catch (e) {}
                   playSuccessSound();
                   var _inBattle = !!(_battle && _battle.active);
                   if (!_inBattle) launchConfetti();
