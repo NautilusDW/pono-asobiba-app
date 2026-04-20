@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+<title>背景エディタ - 多重視差スクロール</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1c1f26; color: #e5e7eb; overflow: hidden; }
+
+  #app {
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    grid-template-rows: 44px 1fr 60px;
+    grid-template-areas:
+      "header header header"
+      "left   center right"
+      "left   bottom right";
+    height: 100vh;
+    width: 100vw;
+  }
+
+  header {
+    grid-area: header;
+    background: #14161c;
+    border-bottom: 1px solid #2a2e3a;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    z-index: 10;
+  }
+  header h1 { font-size: 14px; margin: 0; color: #f3f4f6; }
+  header .scene-name {
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    color: #e5e7eb;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 180px;
+  }
+  header button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  header button:hover { background: #1d4ed8; }
+  header button.ghost { background: transparent; border: 1px solid #3a4050; color: #cbd5e1; }
+  header button.ghost:hover { background: #20242e; }
+  header .spacer { flex: 1; }
+
+  .panel {
+    background: #181b22;
+    border-right: 1px solid #2a2e3a;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 12px;
+  }
+  #left  { grid-area: left; }
+  #right { grid-area: right; border-right: none; border-left: 1px solid #2a2e3a; }
+  .section { margin-bottom: 18px; }
+  .section h3 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Layer list */
+  .layer-list { display: flex; flex-direction: column; gap: 4px; }
+  .layer-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #20242e;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .layer-item.selected { border-color: #2563eb; background: #1e2738; }
+  .layer-item .toggle {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+    text-align: center;
+    line-height: 18px;
+    font-size: 12px;
+  }
+  .layer-item .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .layer-item .mode-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: #3a4050;
+    color: #cbd5e1;
+  }
+  .layer-item .mode-badge.sprites { background: #4c1d95; color: #c4b5fd; }
+  .layer-item .mode-badge.tile { background: #1e3a8a; color: #93c5fd; }
+  .layer-item .actions { display: flex; gap: 2px; }
+  .layer-item .actions button {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 3px;
+  }
+  .layer-item .actions button:hover { color: #f3f4f6; }
+
+  .btn-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .btn-row button {
+    flex: 1;
+    background: #2a2e3a;
+    color: #e5e7eb;
+    border: none;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .btn-row button:hover { background: #3a4050; }
+
+  /* Asset library */
+  .asset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .asset-thumb {
+    aspect-ratio: 1;
+    background: #0f1218;
+    border: 1px solid #2a2e3a;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .asset-thumb img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+  .asset-thumb:hover { border-color: #2563eb; }
+  .asset-thumb.selected { border-color: #10b981; box-shadow: 0 0 0 2px #10b98144; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #3a4050;
+    border-radius: 6px;
+    padding: 20px 12px;
+    text-align: center;
+    color: #94a3b8;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .drop-zone.over { border-color: #2563eb; background: #1e2738; color: #bfdbfe; }
+
+  /* Right panel — properties */
+  .prop-row { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
+  .prop-row label { width: 80px; font-size: 11px; color: #94a3b8; }
+  .prop-row input[type="range"] { flex: 1; }
+  .prop-row input[type="number"], .prop-row input[type="text"], .prop-row select {
+    flex: 1;
+    background: #20242e;
+    border: 1px solid #2a2e3a;
+    color: #e5e7eb;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    min-width: 0;
+  }
+  .prop-row .val { width: 36px; text-align: right; color: #cbd5e1; font-size: 11px; }
+
+  .preset-row { display: flex; gap: 4px; margin-bottom: 12px; }
+  .preset-row button {
+    flex: 1;
+    background: #1e3a8a;
+    color: #bfdbfe;
+    border: none;
+    padding: 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .preset-row button:hover { background: #2563eb; color: #fff; }
+
+  /* Preview */
+  #center {
+    grid-area: center;
+    background: #0a0c10;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #preview {
+    background: #000;
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    cursor: grab;
+    box-shadow: 0 0 0 1px #2a2e3a;
+  }
+  #preview.dragging { cursor: grabbing; }
+  #preview.placing { cursor: crosshair; }
+
+  #bottom {
+    grid-area: bottom;
+    background: #14161c;
+    border-top: 1px solid #2a2e3a;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #bottom label { font-size: 11px; color: #94a3b8; }
+  #scroll-slider { flex: 1; }
+  #cam-pos { color: #cbd5e1; font-size: 11px; min-width: 80px; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid #2a2e3a;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    font-size: 12px;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok { border-color: #10b981; }
+  #toast.err { border-color: #ef4444; }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 50;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #181b22;
+    border: 1px solid #2a2e3a;
+    border-radius: 8px;
+    padding: 20px;
+    min-width: 400px;
+    max-width: 90vw;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin: 0 0 12px 0; font-size: 14px; color: #f3f4f6; }
+  .modal .close-btn {
+    float: right;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 18px;
+  }
+  .scene-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .scene-item {
+    display: flex; align-items: center; gap: 8px;
+    background: #20242e; padding: 8px; border-radius: 4px;
+  }
+  .scene-item .name { flex: 1; font-size: 12px; }
+  .scene-item .meta { font-size: 10px; color: #94a3b8; }
+  .scene-item button {
+    background: #2563eb; color: #fff; border: none;
+    padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 11px;
+  }
+  .scene-item button.danger { background: #dc2626; }
+
+  /* Sprite handles */
+  .help-hint {
+    position: absolute;
+    bottom: 8px; right: 12px;
+    background: rgba(0,0,0,0.6);
+    color: #cbd5e1;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>🌄 背景エディタ</h1>
+    <input id="scene-name" class="scene-name" type="text" value="新しいシーン" placeholder="シーン名">
+    <button id="btn-new">新規</button>
+    <button id="btn-save">保存</button>
+    <button id="btn-load" class="ghost">読込</button>
+    <button id="btn-export" class="ghost">JSONエクスポート</button>
+    <button id="btn-import" class="ghost">JSONインポート</button>
+    <span class="spacer"></span>
+    <button id="btn-help" class="ghost">?</button>
+  </header>
+
+  <aside id="left" class="panel">
+    <div class="section">
+      <h3>レイヤー</h3>
+      <div class="btn-row">
+        <button id="btn-add-tile">＋ タイル</button>
+        <button id="btn-add-sprites">＋ スプライト</button>
+      </div>
+      <div id="layer-list" class="layer-list"></div>
+    </div>
+
+    <div class="section">
+      <h3>素材を取り込む</h3>
+      <div id="drop-zone" class="drop-zone">
+        画像をここにドロップ<br>
+        <small>(クリックでファイル選択)</small>
+      </div>
+      <input id="file-input" type="file" multiple accept="image/*" style="display:none">
+      <div class="btn-row">
+        <button id="btn-import-ces">クリーンエッジ素材</button>
+        <button id="btn-import-assets">/assets参照</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>素材ライブラリ</h3>
+      <div id="asset-grid" class="asset-grid"></div>
+      <div style="margin-top:6px; font-size:10px; color:#94a3b8;">
+        <span id="asset-count">0</span> 個 · クリックで選択 → スプライトレイヤー上でクリック配置
+      </div>
+    </div>
+  </aside>
+
+  <main id="center">
+    <canvas id="preview" width="1280" height="720"></canvas>
+    <div class="help-hint">マウスドラッグ or ←→ で横スクロール</div>
+  </main>
+
+  <aside id="right" class="panel">
+    <div id="props-empty" style="color:#94a3b8; font-size:11px; padding: 10px;">
+      レイヤーを選択するとここにプロパティが表示されます。
+    </div>
+    <div id="props" style="display:none;">
+      <div class="section">
+        <h3>視差プリセット</h3>
+        <div class="preset-row">
+          <button data-preset="0.1">遠景 0.1</button>
+          <button data-preset="0.3">中遠 0.3</button>
+          <button data-preset="0.5">中景 0.5</button>
+          <button data-preset="0.8">近景 0.8</button>
+          <button data-preset="1.0">同速 1.0</button>
+        </div>
+
+        <h3>共通プロパティ</h3>
+        <div class="prop-row">
+          <label>名前</label>
+          <input id="p-name" type="text">
+        </div>
+        <div class="prop-row">
+          <label>視差X</label>
+          <input id="p-parallax-x" type="range" min="0" max="2" step="0.05">
+          <span class="val" id="p-parallax-x-val">1.0</span>
+        </div>
+        <div class="prop-row">
+          <label>視差Y</label>
+          <input id="p-parallax-y" type="range" min="0" max="1" step="0.05">
+          <span class="val" id="p-parallax-y-val">0.0</span>
+        </div>
+        <div class="prop-row">
+          <label>不透明度</label>
+          <input id="p-opacity" type="range" min="0" max="1" step="0.05">
+          <span class="val" id="p-opacity-val">1.0</span>
+        </div>
+        <div class="prop-row">
+          <label>合成</label>
+          <select id="p-blend">
+            <option value="source-over">通常</option>
+            <option value="multiply">乗算</option>
+            <option value="screen">スクリーン</option>
+            <option value="overlay">オーバーレイ</option>
+            <option value="lighter">加算</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <label>自動横流れ</label>
+          <input id="p-autoscroll" type="range" min="-100" max="100" step="1">
+          <span class="val" id="p-autoscroll-val">0</span>
+        </div>
+        <div class="prop-row" id="p-color-row" style="display:none;">
+          <label>背景色</label>
+          <input id="p-bgcolor" type="color">
+          <button id="p-bgcolor-clear" style="background:#2a2e3a;color:#e5e7eb;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer;">なし</button>
+        </div>
+      </div>
+
+      <div class="section" id="props-tile" style="display:none;">
+        <h3>タイル設定</h3>
+        <div class="prop-row">
+          <label>素材</label>
+          <select id="p-tile-src"></select>
+        </div>
+        <div class="prop-row">
+          <label>横リピート</label>
+          <input id="p-repeat-x" type="checkbox" checked>
+        </div>
+        <div class="prop-row">
+          <label>縦リピート</label>
+          <input id="p-repeat-y" type="checkbox">
+        </div>
+        <div class="prop-row">
+          <label>アンカー</label>
+          <select id="p-anchor">
+            <option value="top">上</option>
+            <option value="center">中央</option>
+            <option value="bottom" selected>下</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <label>スケール</label>
+          <input id="p-scale" type="range" min="0.1" max="4" step="0.05">
+          <span class="val" id="p-scale-val">1.0</span>
+        </div>
+        <div class="prop-row">
+          <label>オフセットY</label>
+          <input id="p-offset-y" type="number" value="0" style="max-width:80px;">
+        </div>
+      </div>
+
+      <div class="section" id="props-sprites" style="display:none;">
+        <h3>スプライト配置</h3>
+        <div style="font-size:10px; color:#94a3b8; margin-bottom:8px;">
+          素材ライブラリで素材を選択してから、プレビュー上でクリック → 配置
+        </div>
+        <div id="sprite-list" style="max-height:200px; overflow-y:auto;"></div>
+        <div style="margin-top:6px; font-size:10px; color:#94a3b8;">
+          スプライトクリック=選択 / Shiftドラッグ=スケール / Delete=削除 / F=反転
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>シーン全体</h3>
+        <div class="prop-row">
+          <label>幅(px)</label>
+          <input id="p-viewport-w" type="number" value="1280" style="max-width:80px;">
+        </div>
+        <div class="prop-row">
+          <label>高さ(px)</label>
+          <input id="p-viewport-h" type="number" value="720" style="max-width:80px;">
+        </div>
+        <div class="prop-row">
+          <label>世界幅(px)</label>
+          <input id="p-world-w" type="number" value="5120" style="max-width:80px;">
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="bottom">
+    <label>カメラX:</label>
+    <input id="scroll-slider" type="range" min="0" max="5120" value="0" step="1">
+    <span id="cam-pos">0 / 5120</span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Load scenes modal -->
+<div id="modal-load" class="modal-bg">
+  <div class="modal">
+    <button class="close-btn" data-close>×</button>
+    <h2>保存済みシーンを読み込む</h2>
+    <div id="scene-list" class="scene-list"></div>
+  </div>
+</div>
+
+<!-- CES (Clean Edge Studio) sprites import modal -->
+<div id="modal-ces" class="modal-bg">
+  <div class="modal" style="min-width:600px;">
+    <button class="close-btn" data-close>×</button>
+    <h2>クリーンエッジスタジオから素材を取り込む</h2>
+    <div id="ces-list" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 8px;"></div>
+    <div id="ces-empty" style="display:none; color:#94a3b8; padding:20px; text-align:center;">
+      クリーンエッジスタジオの保存セッションが見つかりません。
+    </div>
+    <div style="margin-top:12px;">
+      <button id="ces-import-selected" style="background:#2563eb;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">選択した素材を取り込む</button>
+    </div>
+  </div>
+</div>
+
+<!-- Asset path import modal -->
+<div id="modal-assets" class="modal-bg">
+  <div class="modal">
+    <button class="close-btn" data-close>×</button>
+    <h2>/assets/images から取り込む</h2>
+    <div style="margin-bottom:12px;">
+      <p style="font-size:11px; color:#94a3b8; margin:0 0 6px;">
+        プロジェクト内の画像パスを入力してください (例: <code>battle/bg/forest_bg_01.png</code>)
+      </p>
+      <input id="assets-path" type="text" placeholder="battle/bg/forest_bg_01.png"
+        style="width:100%; background:#20242e; border:1px solid #2a2e3a; color:#e5e7eb; padding:6px; border-radius:3px;">
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <button class="preset-asset" data-path="battle/bg/forest_bg_01.png" style="background:#2a2e3a;color:#e5e7eb;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:10px;">battle/forest</button>
+      <button class="preset-asset" data-path="battle/bg/map.png" style="background:#2a2e3a;color:#e5e7eb;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:10px;">battle/map</button>
+      <button class="preset-asset" data-path="aquarium/bg.png" style="background:#2a2e3a;color:#e5e7eb;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:10px;">aquarium/bg</button>
+    </div>
+    <button id="assets-load" style="background:#2563eb;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">取り込む</button>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div id="modal-help" class="modal-bg">
+  <div class="modal" style="min-width:500px;">
+    <button class="close-btn" data-close>×</button>
+    <h2>使い方</h2>
+    <div style="font-size:12px; color:#cbd5e1; line-height:1.7;">
+      <p><strong>1. 素材を取り込む</strong> — 左の「素材を取り込む」エリアから、ローカル画像をドラッグ＆ドロップ、または「クリーンエッジ素材」「/assets参照」から取り込みます。</p>
+      <p><strong>2. レイヤーを作る</strong> — 「＋タイル」(背景全面) または「＋スプライト」(個別配置) でレイヤーを追加します。背景から手前へ順に積み重ねます。</p>
+      <p><strong>3. 視差プリセット</strong> — 右パネル上部のプリセットで、遠景=0.1, 中景=0.5, 近景=0.8 など視差量を設定。0=固定 / 1=カメラ同速。</p>
+      <p><strong>4. スプライト配置</strong> — スプライトレイヤーを選択 → 素材ライブラリでアセット選択 → プレビュー上でクリックして配置。配置済みスプライトは Delete で削除、F で左右反転。</p>
+      <p><strong>5. 横スクロール確認</strong> — マウスドラッグ・矢印キー・下部スライダーでカメラを動かして視差を確認。</p>
+      <p><strong>6. 保存・エクスポート</strong> — 「保存」でブラウザ内 (IndexedDB) に保存。「JSONエクスポート」でファイル出力 (素材は元パス参照 or Base64 inline)。エクスポートしたファイルは <code>/common/parallax.js</code> でゲームから読み込めます。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════════════════
+const state = {
+  scene: createEmptyScene(),
+  selectedLayerId: null,
+  selectedAssetId: null,    // for sprite placement
+  selectedSpriteIdx: null,  // for sprite manipulation
+  cameraX: 0,
+  cameraY: 0,
+  assetCache: new Map(),    // id -> { id, name, src, img, blob }
+  startTime: performance.now()
+};
+
+function createEmptyScene() {
+  return {
+    version: 1,
+    name: '新しいシーン',
+    viewport: { w: 1280, h: 720 },
+    worldWidth: 5120,
+    bgColor: '#000000',
+    layers: []
+  };
+}
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const MAX_BLOB_BYTES = 20 * 1024 * 1024; // 20MB cap per asset
+let _cesSessionRef = null; // module-scoped, replaces window._cesSession
+
+// ════════════════════════════════════════════════════════════
+// Toast
+// ════════════════════════════════════════════════════════════
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg, ok = true) {
+  toastEl.textContent = msg;
+  toastEl.className = 'show ' + (ok ? 'ok' : 'err');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.className = '', 2400);
+}
+
+// ════════════════════════════════════════════════════════════
+// IndexedDB
+// ════════════════════════════════════════════════════════════
+const IDB_NAME = 'pono_bg_editor';
+const IDB_VER = 1;
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VER);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('scenes')) db.createObjectStore('scenes', { keyPath: 'name' });
+      if (!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs');
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbPutScene(scene, assetBlobs) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['scenes', 'blobs'], 'readwrite');
+    tx.objectStore('scenes').put(scene);
+    const blobStore = tx.objectStore('blobs');
+    for (const [id, blob] of assetBlobs) blobStore.put(blob, id);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function idbGetScene(name) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('scenes', 'readonly');
+    const req = tx.objectStore('scenes').get(name);
+    let result = null;
+    req.onsuccess = () => { result = req.result; };
+    tx.oncomplete = () => { db.close(); resolve(result); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function idbListScenes() {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('scenes', 'readonly');
+    const req = tx.objectStore('scenes').getAll();
+    let result = [];
+    req.onsuccess = () => { result = req.result || []; };
+    tx.oncomplete = () => { db.close(); resolve(result); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function idbDeleteScene(name) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('scenes', 'readwrite');
+    tx.objectStore('scenes').delete(name);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function idbGetBlobs(ids) {
+  // Batch fetch with a single transaction
+  if (!ids.length) return new Map();
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('blobs', 'readonly');
+    const store = tx.objectStore('blobs');
+    const out = new Map();
+    for (const id of ids) {
+      const r = store.get(id);
+      r.onsuccess = () => { if (r.result) out.set(id, r.result); };
+    }
+    tx.oncomplete = () => { db.close(); resolve(out); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+// Read CES (Clean Edge Studio) saved sprites from its own IDB (read-only)
+async function readCESSession() {
+  return new Promise((resolve) => {
+    let db = null;
+    try {
+      const req = indexedDB.open('ces_studio', 1);
+      req.onsuccess = () => {
+        db = req.result;
+        try {
+          if (!db.objectStoreNames.contains('sessions')) { db.close(); resolve(null); return; }
+          const tx = db.transaction('sessions', 'readonly');
+          const r = tx.objectStore('sessions').get('current');
+          r.onsuccess = () => { db.close(); resolve(r.result || null); };
+          r.onerror = () => { db.close(); resolve(null); };
+        } catch (e) {
+          if (db) db.close();
+          resolve(null);
+        }
+      };
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// Asset management
+// ════════════════════════════════════════════════════════════
+async function blobToImage(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => { resolve({ img, url }); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src = url;
+  });
+}
+
+async function urlToBlob(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('fetch failed: ' + res.status);
+  return await res.blob();
+}
+
+async function addAssetFromBlob(blob, name) {
+  if (!blob || !blob.type || !blob.type.startsWith('image/')) {
+    toast('画像ファイルのみ対応: ' + (name || ''), false); return null;
+  }
+  if (blob.size > MAX_BLOB_BYTES) {
+    toast(`ファイルサイズが大きすぎます (最大 ${(MAX_BLOB_BYTES/1024/1024)|0} MB): ${name}`, false);
+    return null;
+  }
+  try {
+    const { img, url } = await blobToImage(blob);
+    const id = 'a_' + uid();
+    const asset = {
+      id,
+      name: name || `asset_${state.assetCache.size + 1}`,
+      // src is relative-path (when assets/) or 'idb:<id>' (when blob)
+      src: 'idb:' + id,
+      img,
+      blob,
+      objectURL: url,
+      width: img.naturalWidth,
+      height: img.naturalHeight
+    };
+    state.assetCache.set(id, asset);
+    renderAssetGrid();
+    refreshTileSrcSelect();
+    return asset;
+  } catch (e) {
+    toast('画像読込失敗: ' + e.message, false);
+    return null;
+  }
+}
+
+async function addAssetFromAssetsPath(relPath) {
+  // relPath like 'battle/bg/forest_bg_01.png' → resolve to /assets/images/<relPath>
+  if (typeof relPath !== 'string' || !relPath.length) { toast('パスが空です', false); return null; }
+  if (relPath.includes('..') || /^[\/\\]/.test(relPath) || /:/.test(relPath)) {
+    toast('無効なパスです (..や絶対パスは不可)', false); return null;
+  }
+  const fullURL = '/assets/images/' + relPath;
+  try {
+    const blob = await urlToBlob(fullURL);
+    const { img, url } = await blobToImage(blob);
+    const id = 'a_' + uid();
+    const asset = {
+      id,
+      name: relPath.split('/').pop(),
+      src: 'assets:' + relPath,
+      img,
+      blob,
+      objectURL: url,
+      width: img.naturalWidth,
+      height: img.naturalHeight
+    };
+    state.assetCache.set(id, asset);
+    renderAssetGrid();
+    refreshTileSrcSelect();
+    toast('読込: ' + relPath);
+    return asset;
+  } catch (e) {
+    toast('読込失敗: ' + relPath + ' (' + e.message + ')', false);
+    return null;
+  }
+}
+
+function renderAssetGrid() {
+  const grid = document.getElementById('asset-grid');
+  grid.innerHTML = '';
+  for (const asset of state.assetCache.values()) {
+    const div = document.createElement('div');
+    div.className = 'asset-thumb';
+    if (asset.id === state.selectedAssetId) div.classList.add('selected');
+    div.title = asset.name + ` (${asset.width}×${asset.height})`;
+    const img = document.createElement('img');
+    img.src = asset.objectURL;
+    div.appendChild(img);
+    div.addEventListener('click', () => {
+      state.selectedAssetId = (state.selectedAssetId === asset.id) ? null : asset.id;
+      renderAssetGrid();
+    });
+    grid.appendChild(div);
+  }
+  document.getElementById('asset-count').textContent = state.assetCache.size;
+}
+
+function refreshTileSrcSelect() {
+  const sel = document.getElementById('p-tile-src');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 選択 —</option>';
+  for (const asset of state.assetCache.values()) {
+    const opt = document.createElement('option');
+    opt.value = asset.id;
+    opt.textContent = asset.name;
+    sel.appendChild(opt);
+  }
+  if (cur && state.assetCache.has(cur)) sel.value = cur;
+}
+
+// ════════════════════════════════════════════════════════════
+// Layers
+// ════════════════════════════════════════════════════════════
+function addLayer(mode) {
+  const layer = {
+    id: 'l_' + uid(),
+    name: mode === 'tile' ? `タイル ${state.scene.layers.length + 1}` : `スプライト ${state.scene.layers.length + 1}`,
+    mode,
+    visible: true,
+    parallaxX: 0.5,
+    parallaxY: 0,
+    opacity: 1,
+    blendMode: 'source-over',
+    autoScrollX: 0
+  };
+  if (mode === 'tile') {
+    layer.srcAssetId = null;
+    layer.repeatX = true;
+    layer.repeatY = false;
+    layer.anchor = 'bottom';
+    layer.scale = 1;
+    layer.offsetY = 0;
+  } else {
+    layer.sprites = [];
+  }
+  state.scene.layers.push(layer);
+  state.selectedLayerId = layer.id;
+  renderLayerList();
+  renderProps();
+}
+
+function getSelectedLayer() {
+  return state.scene.layers.find(l => l.id === state.selectedLayerId) || null;
+}
+
+function renderLayerList() {
+  const ul = document.getElementById('layer-list');
+  ul.innerHTML = '';
+  // Render top-most first (last in array = front, but UI shows back-to-front from top)
+  const layers = state.scene.layers;
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const layer = layers[i];
+    const div = document.createElement('div');
+    div.className = 'layer-item' + (layer.id === state.selectedLayerId ? ' selected' : '');
+
+    const toggle = document.createElement('span');
+    toggle.className = 'toggle';
+    toggle.textContent = layer.visible ? '👁' : '⊘';
+    toggle.onclick = (e) => { e.stopPropagation(); layer.visible = !layer.visible; renderLayerList(); };
+    div.appendChild(toggle);
+
+    const badge = document.createElement('span');
+    badge.className = 'mode-badge ' + layer.mode;
+    badge.textContent = layer.mode === 'tile' ? 'TILE' : 'SPR';
+    div.appendChild(badge);
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = layer.name;
+    div.appendChild(name);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const btnUp = document.createElement('button'); btnUp.textContent = '↑'; btnUp.title = '前へ';
+    btnUp.onclick = (e) => { e.stopPropagation(); moveLayer(i, +1); };
+    const btnDn = document.createElement('button'); btnDn.textContent = '↓'; btnDn.title = '奥へ';
+    btnDn.onclick = (e) => { e.stopPropagation(); moveLayer(i, -1); };
+    const btnDup = document.createElement('button'); btnDup.textContent = '⎘'; btnDup.title = '複製';
+    btnDup.onclick = (e) => { e.stopPropagation(); duplicateLayer(i); };
+    const btnDel = document.createElement('button'); btnDel.textContent = '✕'; btnDel.title = '削除';
+    btnDel.onclick = (e) => { e.stopPropagation(); deleteLayer(i); };
+    actions.append(btnUp, btnDn, btnDup, btnDel);
+    div.appendChild(actions);
+
+    div.onclick = () => { state.selectedLayerId = layer.id; state.selectedSpriteIdx = null; renderLayerList(); renderProps(); };
+    ul.appendChild(div);
+  }
+}
+
+function moveLayer(idx, delta) {
+  const layers = state.scene.layers;
+  const j = idx + delta;
+  if (j < 0 || j >= layers.length) return;
+  [layers[idx], layers[j]] = [layers[j], layers[idx]];
+  renderLayerList();
+}
+function duplicateLayer(idx) {
+  const orig = state.scene.layers[idx];
+  const copy = JSON.parse(JSON.stringify(orig));
+  copy.id = 'l_' + uid();
+  copy.name = orig.name + ' copy';
+  state.scene.layers.splice(idx + 1, 0, copy);
+  renderLayerList();
+}
+function deleteLayer(idx) {
+  state.scene.layers.splice(idx, 1);
+  if (!state.scene.layers.find(l => l.id === state.selectedLayerId)) {
+    state.selectedLayerId = null;
+  }
+  renderLayerList();
+  renderProps();
+}
+
+// ════════════════════════════════════════════════════════════
+// Properties panel
+// ════════════════════════════════════════════════════════════
+function renderProps() {
+  const layer = getSelectedLayer();
+  document.getElementById('props-empty').style.display = layer ? 'none' : 'block';
+  document.getElementById('props').style.display = layer ? 'block' : 'none';
+  if (!layer) return;
+
+  document.getElementById('p-name').value = layer.name;
+  setRange('p-parallax-x', layer.parallaxX);
+  setRange('p-parallax-y', layer.parallaxY);
+  setRange('p-opacity', layer.opacity);
+  document.getElementById('p-blend').value = layer.blendMode;
+  setRange('p-autoscroll', layer.autoScrollX);
+
+  document.getElementById('props-tile').style.display = layer.mode === 'tile' ? 'block' : 'none';
+  document.getElementById('props-sprites').style.display = layer.mode === 'sprites' ? 'block' : 'none';
+
+  if (layer.mode === 'tile') {
+    refreshTileSrcSelect();
+    document.getElementById('p-tile-src').value = layer.srcAssetId || '';
+    document.getElementById('p-repeat-x').checked = layer.repeatX;
+    document.getElementById('p-repeat-y').checked = layer.repeatY;
+    document.getElementById('p-anchor').value = layer.anchor;
+    setRange('p-scale', layer.scale);
+    document.getElementById('p-offset-y').value = layer.offsetY;
+  } else {
+    renderSpriteList(layer);
+  }
+
+  document.getElementById('p-viewport-w').value = state.scene.viewport.w;
+  document.getElementById('p-viewport-h').value = state.scene.viewport.h;
+  document.getElementById('p-world-w').value = state.scene.worldWidth;
+}
+
+function setRange(id, val) {
+  const el = document.getElementById(id);
+  el.value = val;
+  const lab = document.getElementById(id + '-val');
+  if (lab) lab.textContent = (typeof val === 'number') ? (Math.abs(val) >= 10 ? val.toFixed(0) : val.toFixed(2)) : val;
+}
+
+function renderSpriteList(layer) {
+  const div = document.getElementById('sprite-list');
+  div.innerHTML = '';
+  if (!layer.sprites.length) {
+    div.innerHTML = '<div style="color:#94a3b8;font-size:11px;padding:6px;">配置されたスプライトなし</div>';
+    return;
+  }
+  layer.sprites.forEach((sp, i) => {
+    const asset = state.assetCache.get(sp.assetId);
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;gap:6px;padding:4px;background:#20242e;border-radius:3px;margin-bottom:3px;align-items:center;font-size:11px;cursor:pointer;'
+      + (i === state.selectedSpriteIdx ? 'border:1px solid #10b981;' : '');
+    const icon = document.createElement('span');
+    icon.style.cssText = 'width:14px;text-align:center;';
+    icon.textContent = asset ? '🖼' : '⚠';
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameEl.textContent = asset ? asset.name : ('?? ' + sp.assetId);
+    const scaleEl = document.createElement('span');
+    scaleEl.style.cssText = 'color:#94a3b8;font-size:10px;';
+    scaleEl.textContent = 'x' + sp.scale.toFixed(2);
+    item.append(icon, nameEl, scaleEl);
+    const del = document.createElement('button');
+    del.textContent = '✕';
+    del.style.cssText = 'background:transparent;border:none;color:#94a3b8;cursor:pointer;';
+    del.onclick = (e) => { e.stopPropagation(); layer.sprites.splice(i, 1); state.selectedSpriteIdx = null; renderSpriteList(layer); };
+    item.appendChild(del);
+    item.onclick = () => { state.selectedSpriteIdx = i; renderSpriteList(layer); };
+    div.appendChild(item);
+  });
+}
+
+// Property bindings
+function bindProps() {
+  document.getElementById('p-name').addEventListener('input', e => {
+    const l = getSelectedLayer(); if (!l) return; l.name = e.target.value; renderLayerList();
+  });
+  ['p-parallax-x', 'p-parallax-y', 'p-opacity', 'p-autoscroll', 'p-scale'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', e => {
+      const l = getSelectedLayer(); if (!l) return;
+      const v = parseFloat(e.target.value);
+      const key = id === 'p-parallax-x' ? 'parallaxX'
+        : id === 'p-parallax-y' ? 'parallaxY'
+        : id === 'p-opacity' ? 'opacity'
+        : id === 'p-autoscroll' ? 'autoScrollX'
+        : 'scale';
+      l[key] = v;
+      const lab = document.getElementById(id + '-val');
+      if (lab) lab.textContent = Math.abs(v) >= 10 ? v.toFixed(0) : v.toFixed(2);
+    });
+  });
+  document.getElementById('p-blend').addEventListener('change', e => {
+    const l = getSelectedLayer(); if (!l) return; l.blendMode = e.target.value;
+  });
+  document.getElementById('p-tile-src').addEventListener('change', e => {
+    const l = getSelectedLayer(); if (!l) return; l.srcAssetId = e.target.value || null;
+  });
+  document.getElementById('p-repeat-x').addEventListener('change', e => {
+    const l = getSelectedLayer(); if (!l) return; l.repeatX = e.target.checked;
+  });
+  document.getElementById('p-repeat-y').addEventListener('change', e => {
+    const l = getSelectedLayer(); if (!l) return; l.repeatY = e.target.checked;
+  });
+  document.getElementById('p-anchor').addEventListener('change', e => {
+    const l = getSelectedLayer(); if (!l) return; l.anchor = e.target.value;
+  });
+  document.getElementById('p-offset-y').addEventListener('input', e => {
+    const l = getSelectedLayer(); if (!l) return; l.offsetY = parseFloat(e.target.value) || 0;
+  });
+  document.getElementById('p-viewport-w').addEventListener('input', e => {
+    state.scene.viewport.w = parseInt(e.target.value, 10) || 1280;
+    resizePreview();
+  });
+  document.getElementById('p-viewport-h').addEventListener('input', e => {
+    state.scene.viewport.h = parseInt(e.target.value, 10) || 720;
+    resizePreview();
+  });
+  document.getElementById('p-world-w').addEventListener('input', e => {
+    state.scene.worldWidth = parseInt(e.target.value, 10) || 0;
+    document.getElementById('scroll-slider').max = state.scene.worldWidth || 5120;
+  });
+
+  document.querySelectorAll('.preset-row button[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const l = getSelectedLayer(); if (!l) return;
+      const v = parseFloat(btn.dataset.preset);
+      l.parallaxX = v;
+      setRange('p-parallax-x', v);
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// Render loop
+// ════════════════════════════════════════════════════════════
+const canvas = document.getElementById('preview');
+const ctx = canvas.getContext('2d');
+
+function resizePreview() {
+  canvas.width = state.scene.viewport.w;
+  canvas.height = state.scene.viewport.h;
+}
+
+function drawScene(timestampMs) {
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = state.scene.bgColor || '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const tSec = (timestampMs - state.startTime) / 1000;
+  state.lastTSec = tSec; // for hit-test to match visual
+
+  for (const layer of state.scene.layers) {
+    if (!layer.visible) continue;
+    ctx.save();
+    ctx.globalAlpha = layer.opacity;
+    ctx.globalCompositeOperation = layer.blendMode || 'source-over';
+    const camX = state.cameraX * (layer.parallaxX || 0) - (layer.autoScrollX || 0) * tSec;
+    const camY = state.cameraY * (layer.parallaxY || 0);
+
+    if (layer.mode === 'tile') {
+      drawTileLayer(layer, camX, camY, W, H);
+    } else {
+      drawSpriteLayer(layer, camX, camY, W, H);
+    }
+    ctx.restore();
+  }
+
+  // Selected sprite highlight
+  if (state.selectedSpriteIdx !== null) {
+    const layer = getSelectedLayer();
+    if (layer && layer.mode === 'sprites' && layer.sprites[state.selectedSpriteIdx]) {
+      const sp = layer.sprites[state.selectedSpriteIdx];
+      const asset = state.assetCache.get(sp.assetId);
+      if (asset) {
+        const camX = state.cameraX * (layer.parallaxX || 0) - (layer.autoScrollX || 0) * tSec;
+        const camY = state.cameraY * (layer.parallaxY || 0);
+        const w = asset.width * sp.scale;
+        const h = asset.height * sp.scale;
+        const x = sp.x - camX - w / 2;
+        const y = sp.y - camY - h / 2;
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(x, y, w, h);
+        ctx.setLineDash([]);
+      }
+    }
+  }
+}
+
+function drawTileLayer(layer, camX, camY, W, H) {
+  const asset = state.assetCache.get(layer.srcAssetId);
+  if (!asset) return;
+  const sw = asset.width * layer.scale;
+  const sh = asset.height * layer.scale;
+  if (sw <= 0 || sh <= 0) return;
+  let baseY = 0;
+  if (layer.anchor === 'bottom') baseY = H - sh;
+  else if (layer.anchor === 'center') baseY = (H - sh) / 2;
+  baseY += (layer.offsetY || 0) - camY;
+
+  if (layer.repeatX) {
+    // Wrap camX into [0, sw); startX in [-sw+1 .. 0]
+    const startX = -(((camX % sw) + sw) % sw);
+    if (layer.repeatY) {
+      const startY = baseY - Math.ceil(baseY / sh) * sh;
+      for (let y = startY; y < H; y += sh) {
+        for (let x = startX; x < W; x += sw) {
+          ctx.drawImage(asset.img, x, y, sw, sh);
+        }
+      }
+    } else {
+      for (let x = startX; x < W; x += sw) {
+        ctx.drawImage(asset.img, x, baseY, sw, sh);
+      }
+    }
+  } else {
+    if (layer.repeatY) {
+      const x = -camX;
+      for (let y = baseY - Math.ceil(baseY / sh) * sh; y < H; y += sh) {
+        ctx.drawImage(asset.img, x, y, sw, sh);
+      }
+    } else {
+      ctx.drawImage(asset.img, -camX, baseY, sw, sh);
+    }
+  }
+}
+
+function drawSpriteLayer(layer, camX, camY, W, H) {
+  for (const sp of layer.sprites) {
+    const asset = state.assetCache.get(sp.assetId);
+    if (!asset) continue;
+    const w = asset.width * sp.scale;
+    const h = asset.height * sp.scale;
+    const x = sp.x - camX - w / 2;
+    const y = sp.y - camY - h / 2;
+    // Cull off-screen
+    if (x + w < -200 || x > W + 200) continue;
+    ctx.save();
+    if (sp.opacity !== undefined) ctx.globalAlpha *= sp.opacity;
+    if (sp.flipX) {
+      ctx.translate(x + w / 2, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(asset.img, -w / 2, y, w, h);
+    } else {
+      ctx.drawImage(asset.img, x, y, w, h);
+    }
+    ctx.restore();
+  }
+}
+
+let rafId = null;
+function loop(t) {
+  drawScene(t);
+  rafId = requestAnimationFrame(loop);
+}
+
+// ════════════════════════════════════════════════════════════
+// Camera input (mouse drag, keyboard, slider)
+// ════════════════════════════════════════════════════════════
+let dragState = null; // { type: 'camera' | 'sprite', startX, startY, ... }
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const sy = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const layer = getSelectedLayer();
+
+  const tSec = state.lastTSec || 0;
+
+  // Sprite placement (sprite layer + asset selected → click places)
+  if (layer && layer.mode === 'sprites' && state.selectedAssetId && !e.shiftKey) {
+    const asset = state.assetCache.get(state.selectedAssetId);
+    if (asset) {
+      const camX = state.cameraX * (layer.parallaxX || 0) - (layer.autoScrollX || 0) * tSec;
+      const camY = state.cameraY * (layer.parallaxY || 0);
+      // Check if clicking existing sprite first (deselect/select rather than place)
+      const hit = hitTestSprite(layer, sx + camX, sy + camY);
+      if (hit !== -1) {
+        state.selectedSpriteIdx = hit;
+        renderSpriteList(layer);
+        startDragSprite(layer, hit, sx, sy);
+        return;
+      }
+      // Place new sprite
+      const sp = {
+        assetId: asset.id,
+        x: sx + camX,
+        y: sy + camY,
+        scale: 1,
+        flipX: false,
+        opacity: 1
+      };
+      layer.sprites.push(sp);
+      state.selectedSpriteIdx = layer.sprites.length - 1;
+      renderSpriteList(layer);
+      startDragSprite(layer, state.selectedSpriteIdx, sx, sy);
+      return;
+    }
+  }
+
+  // Sprite layer hit-test (without asset selected → just select existing)
+  if (layer && layer.mode === 'sprites' && !state.selectedAssetId) {
+    const camX = state.cameraX * (layer.parallaxX || 0) - (layer.autoScrollX || 0) * tSec;
+    const camY = state.cameraY * (layer.parallaxY || 0);
+    const hit = hitTestSprite(layer, sx + camX, sy + camY);
+    if (hit !== -1) {
+      state.selectedSpriteIdx = hit;
+      renderSpriteList(layer);
+      startDragSprite(layer, hit, sx, sy);
+      return;
+    }
+  }
+
+  // Otherwise: drag camera
+  dragState = { type: 'camera', startX: e.clientX, startCamX: state.cameraX };
+  canvas.classList.add('dragging');
+});
+
+function hitTestSprite(layer, worldX, worldY) {
+  // top-most first
+  for (let i = layer.sprites.length - 1; i >= 0; i--) {
+    const sp = layer.sprites[i];
+    const asset = state.assetCache.get(sp.assetId);
+    if (!asset) continue;
+    const w = asset.width * sp.scale;
+    const h = asset.height * sp.scale;
+    if (worldX >= sp.x - w/2 && worldX <= sp.x + w/2 && worldY >= sp.y - h/2 && worldY <= sp.y + h/2) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function startDragSprite(layer, idx, startScreenX, startScreenY) {
+  const sp = layer.sprites[idx];
+  dragState = {
+    type: 'sprite',
+    layer, idx,
+    startScreenX, startScreenY,
+    startX: sp.x, startY: sp.y,
+    startScale: sp.scale,
+    shift: false
+  };
+}
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragState) return;
+  if (dragState.type === 'camera') {
+    const rect = canvas.getBoundingClientRect();
+    const dx = (e.clientX - dragState.startX) * (canvas.width / rect.width);
+    state.cameraX = Math.max(0, Math.min(state.scene.worldWidth || 99999, dragState.startCamX - dx));
+    syncSliderFromCam();
+  } else if (dragState.type === 'sprite') {
+    const rect = canvas.getBoundingClientRect();
+    const dx = (e.clientX - dragState.startScreenX) * (canvas.width / rect.width);
+    const dy = (e.clientY - dragState.startScreenY) * (canvas.height / rect.height);
+    const sp = dragState.layer.sprites[dragState.idx];
+    if (e.shiftKey) {
+      // Scale based on Y movement
+      const newScale = Math.max(0.1, Math.min(8, dragState.startScale + dy * 0.005));
+      sp.scale = newScale;
+    } else {
+      sp.x = dragState.startX + dx;
+      sp.y = dragState.startY + dy;
+    }
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  dragState = null;
+  canvas.classList.remove('dragging');
+});
+
+window.addEventListener('keydown', (e) => {
+  // Don't intercept while typing in inputs
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return;
+  if (e.key === 'ArrowLeft') {
+    state.cameraX = Math.max(0, state.cameraX - (e.shiftKey ? 100 : 20));
+    syncSliderFromCam();
+    e.preventDefault();
+  } else if (e.key === 'ArrowRight') {
+    state.cameraX = Math.min(state.scene.worldWidth || 99999, state.cameraX + (e.shiftKey ? 100 : 20));
+    syncSliderFromCam();
+    e.preventDefault();
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    const layer = getSelectedLayer();
+    if (layer && layer.mode === 'sprites' && state.selectedSpriteIdx !== null) {
+      layer.sprites.splice(state.selectedSpriteIdx, 1);
+      state.selectedSpriteIdx = null;
+      renderSpriteList(layer);
+      e.preventDefault();
+    }
+  } else if (e.key === 'f' || e.key === 'F') {
+    const layer = getSelectedLayer();
+    if (layer && layer.mode === 'sprites' && state.selectedSpriteIdx !== null) {
+      const sp = layer.sprites[state.selectedSpriteIdx];
+      sp.flipX = !sp.flipX;
+      e.preventDefault();
+    }
+  } else if (e.key === 'Escape') {
+    state.selectedAssetId = null;
+    state.selectedSpriteIdx = null;
+    renderAssetGrid();
+    const l = getSelectedLayer(); if (l && l.mode === 'sprites') renderSpriteList(l);
+  }
+});
+
+function syncSliderFromCam() {
+  const slider = document.getElementById('scroll-slider');
+  slider.max = state.scene.worldWidth || 5120;
+  slider.value = state.cameraX;
+  document.getElementById('cam-pos').textContent = Math.round(state.cameraX) + ' / ' + (state.scene.worldWidth || 5120);
+}
+document.getElementById('scroll-slider').addEventListener('input', e => {
+  state.cameraX = parseFloat(e.target.value);
+  document.getElementById('cam-pos').textContent = Math.round(state.cameraX) + ' / ' + (state.scene.worldWidth || 5120);
+});
+
+// ════════════════════════════════════════════════════════════
+// Drag & drop image import
+// ════════════════════════════════════════════════════════════
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+async function handleFiles(filesLike) {
+  const files = Array.from(filesLike || []).filter(f => /^image\//.test(f.type));
+  if (!files.length) return;
+  for (const f of files) {
+    await addAssetFromBlob(f, f.name);
+  }
+  toast(`${files.length} 個の素材を取り込みました`);
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFiles(fileInput.files); fileInput.value = ''; });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('over');
+  handleFiles(e.dataTransfer.files);
+});
+// Also accept drops on the canvas
+canvas.addEventListener('dragover', e => { e.preventDefault(); });
+canvas.addEventListener('drop', e => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
+
+// ════════════════════════════════════════════════════════════
+// Modals
+// ════════════════════════════════════════════════════════════
+function closeAllModals() {
+  document.querySelectorAll('.modal-bg').forEach(m => m.classList.remove('show'));
+  revokeCESPreviewURLs();
+  _cesSessionRef = null;
+}
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.addEventListener('click', closeAllModals);
+});
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) closeAllModals(); });
+});
+
+// Help
+document.getElementById('btn-help').addEventListener('click', () => {
+  document.getElementById('modal-help').classList.add('show');
+});
+
+// Load scenes modal
+document.getElementById('btn-load').addEventListener('click', async () => {
+  const scenes = await idbListScenes();
+  const list = document.getElementById('scene-list');
+  list.innerHTML = '';
+  if (!scenes.length) {
+    list.innerHTML = '<div style="color:#94a3b8;padding:12px;">保存済みシーンがありません</div>';
+  }
+  scenes.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+  for (const sc of scenes) {
+    const item = document.createElement('div');
+    item.className = 'scene-item';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'name';
+    nameEl.textContent = sc.name;
+    const metaEl = document.createElement('span');
+    metaEl.className = 'meta';
+    metaEl.textContent = (Number(sc.layers?.length) || 0) + ' レイヤー · '
+      + (sc.savedAt ? new Date(sc.savedAt).toLocaleString('ja-JP') : '');
+    item.append(nameEl, metaEl);
+    const loadBtn = document.createElement('button'); loadBtn.textContent = '読込';
+    loadBtn.onclick = async () => { await loadSceneFromIDB(sc.name); document.getElementById('modal-load').classList.remove('show'); };
+    const delBtn = document.createElement('button'); delBtn.textContent = '削除'; delBtn.className = 'danger';
+    delBtn.onclick = async () => {
+      if (!confirm(`「${sc.name}」を削除しますか？`)) return;
+      await idbDeleteScene(sc.name);
+      document.getElementById('btn-load').click(); // refresh
+    };
+    item.append(loadBtn, delBtn);
+    list.appendChild(item);
+  }
+  document.getElementById('modal-load').classList.add('show');
+});
+
+function revokeCESPreviewURLs() {
+  document.querySelectorAll('#ces-list img[data-blob-url]').forEach(img => {
+    const u = img.dataset.blobUrl;
+    if (u) try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ }
+  });
+}
+
+// CES (Clean Edge Studio) sprite import modal
+document.getElementById('btn-import-ces').addEventListener('click', async () => {
+  revokeCESPreviewURLs();
+  const session = await readCESSession();
+  const list = document.getElementById('ces-list');
+  const empty = document.getElementById('ces-empty');
+  list.innerHTML = '';
+  if (!session || !session.sprites || !session.sprites.length) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    _cesSessionRef = null;
+  } else {
+    list.style.display = 'grid';
+    empty.style.display = 'none';
+    session.sprites.forEach((sp, i) => {
+      const div = document.createElement('div');
+      div.className = 'asset-thumb';
+      div.dataset.idx = i;
+      div.style.aspectRatio = '1';
+      div.style.cursor = 'pointer';
+      if (sp.blob && (sp.blob.type || '').startsWith('image/')) {
+        const url = URL.createObjectURL(sp.blob);
+        const img = document.createElement('img');
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#0a0c10;';
+        img.dataset.blobUrl = url;
+        img.src = url;
+        div.appendChild(img);
+      } else {
+        div.textContent = '⚠';
+      }
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:10px; color:#cbd5e1; text-align:center; margin-top:2px;';
+      label.textContent = sp.name || ('sprite_' + (i + 1));
+      const wrap = document.createElement('div');
+      wrap.appendChild(div);
+      wrap.appendChild(label);
+      div.addEventListener('click', () => div.classList.toggle('selected'));
+      list.appendChild(wrap);
+    });
+    _cesSessionRef = session;
+  }
+  document.getElementById('modal-ces').classList.add('show');
+});
+
+document.getElementById('ces-import-selected').addEventListener('click', async () => {
+  const session = _cesSessionRef;
+  if (!session) return;
+  const selected = document.querySelectorAll('#ces-list .asset-thumb.selected');
+  if (!selected.length) { toast('素材を選択してください', false); return; }
+  let cnt = 0;
+  for (const el of selected) {
+    const idx = parseInt(el.dataset.idx, 10);
+    const sp = session.sprites[idx];
+    if (sp && sp.blob) {
+      const r = await addAssetFromBlob(sp.blob, sp.name || ('ces_' + (idx + 1)));
+      if (r) cnt++;
+    }
+  }
+  toast(cnt + ' 個の素材を取り込みました');
+  document.getElementById('modal-ces').classList.remove('show');
+  revokeCESPreviewURLs();
+  _cesSessionRef = null;
+});
+
+// Assets path modal
+document.getElementById('btn-import-assets').addEventListener('click', () => {
+  document.getElementById('modal-assets').classList.add('show');
+});
+document.getElementById('assets-load').addEventListener('click', async () => {
+  const path = document.getElementById('assets-path').value.trim();
+  if (!path) { toast('パスを入力してください', false); return; }
+  await addAssetFromAssetsPath(path);
+});
+document.querySelectorAll('.preset-asset').forEach(b => {
+  b.addEventListener('click', () => { document.getElementById('assets-path').value = b.dataset.path; });
+});
+
+// New / Save
+document.getElementById('btn-new').addEventListener('click', () => {
+  if (state.scene.layers.length && !confirm('現在の作業を破棄して新規作成しますか？ (保存していない変更は失われます)')) return;
+  state.scene = createEmptyScene();
+  state.selectedLayerId = null;
+  state.selectedSpriteIdx = null;
+  state.cameraX = 0;
+  document.getElementById('scene-name').value = state.scene.name;
+  resizePreview();
+  renderLayerList();
+  renderProps();
+  syncSliderFromCam();
+});
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const name = document.getElementById('scene-name').value.trim();
+  if (!name) { toast('シーン名を入力してください', false); return; }
+  state.scene.name = name;
+  state.scene.savedAt = Date.now();
+
+  // Collect blobs that need persisting (assets with idb: src)
+  const blobsToSave = [];
+  const usedAssetIds = collectUsedAssetIds(state.scene);
+  for (const id of usedAssetIds) {
+    const a = state.assetCache.get(id);
+    if (a && a.src.startsWith('idb:') && a.blob) {
+      blobsToSave.push([id, a.blob]);
+    }
+  }
+  // Strip out runtime-only fields, keep src strings
+  const sceneSerialized = serializeScene(state.scene);
+  // Also embed assets metadata so we can restore (id → src/name/blob)
+  sceneSerialized._assets = [];
+  for (const id of usedAssetIds) {
+    const a = state.assetCache.get(id);
+    if (!a) continue;
+    sceneSerialized._assets.push({ id, name: a.name, src: a.src, width: a.width, height: a.height });
+  }
+  try {
+    await idbPutScene(sceneSerialized, blobsToSave);
+    toast('保存しました: ' + name);
+  } catch (e) {
+    toast('保存失敗: ' + e.message, false);
+  }
+});
+
+function collectUsedAssetIds(scene) {
+  const ids = new Set();
+  for (const l of scene.layers) {
+    if (l.mode === 'tile' && l.srcAssetId) ids.add(l.srcAssetId);
+    else if (l.mode === 'sprites') for (const s of l.sprites) ids.add(s.assetId);
+  }
+  return ids;
+}
+
+function serializeScene(scene) {
+  // Deep copy without references to runtime image/blob/objectURL
+  const layers = scene.layers.map(l => {
+    if (l.mode === 'tile') {
+      return { id: l.id, name: l.name, mode: 'tile', visible: l.visible,
+        parallaxX: l.parallaxX, parallaxY: l.parallaxY, opacity: l.opacity,
+        blendMode: l.blendMode, autoScrollX: l.autoScrollX,
+        srcAssetId: l.srcAssetId, repeatX: l.repeatX, repeatY: l.repeatY,
+        anchor: l.anchor, scale: l.scale, offsetY: l.offsetY };
+    } else {
+      return { id: l.id, name: l.name, mode: 'sprites', visible: l.visible,
+        parallaxX: l.parallaxX, parallaxY: l.parallaxY, opacity: l.opacity,
+        blendMode: l.blendMode, autoScrollX: l.autoScrollX,
+        sprites: l.sprites.map(s => ({ assetId: s.assetId, x: s.x, y: s.y, scale: s.scale, flipX: s.flipX, opacity: s.opacity })) };
+    }
+  });
+  return {
+    version: scene.version || 1,
+    name: scene.name,
+    viewport: { ...scene.viewport },
+    worldWidth: scene.worldWidth,
+    bgColor: scene.bgColor || '#000000',
+    savedAt: scene.savedAt,
+    layers
+  };
+}
+
+async function loadSceneFromIDB(name) {
+  const scene = await idbGetScene(name);
+  if (!scene) { toast('読込失敗: ' + name, false); return; }
+  // Clear current asset cache (revoke object URLs)
+  for (const a of state.assetCache.values()) {
+    if (a.objectURL) URL.revokeObjectURL(a.objectURL);
+  }
+  state.assetCache.clear();
+  // Restore assets: for idb: srcs, fetch blob; for assets: srcs, fetch URL
+  if (scene._assets) {
+    // Batch idb: blob fetches
+    const idbIds = scene._assets.filter(m => typeof m.src === 'string' && m.src.startsWith('idb:')).map(m => m.id);
+    let idbBlobs = new Map();
+    try { idbBlobs = await idbGetBlobs(idbIds); } catch (e) { /* fall through */ }
+    for (const meta of scene._assets) {
+      try {
+        if (typeof meta.src !== 'string') continue;
+        // Reject path traversal in stored assets: refs
+        if (meta.src.startsWith('assets:') && (meta.src.includes('..') || /[\/\\]\s*\//.test(meta.src.slice(7)))) continue;
+        let blob = null;
+        if (meta.src.startsWith('idb:')) blob = idbBlobs.get(meta.id);
+        else if (meta.src.startsWith('assets:')) {
+          const path = meta.src.slice('assets:'.length).replace(/^\/+/, '');
+          if (path.includes('..')) continue;
+          blob = await urlToBlob('/assets/images/' + path);
+        } else if (meta.src.startsWith('data:image/')) {
+          const r = await fetch(meta.src); blob = await r.blob();
+        } else {
+          continue; // unknown src type — skip
+        }
+        if (!blob || !blob.type || !blob.type.startsWith('image/')) continue;
+        const { img, url } = await blobToImage(blob);
+        state.assetCache.set(meta.id, {
+          id: meta.id, name: meta.name, src: meta.src, img, blob, objectURL: url,
+          width: img.naturalWidth, height: img.naturalHeight
+        });
+      } catch (e) { /* skip missing */ }
+    }
+  }
+  // Strip _assets before assigning to runtime
+  const { _assets, ...runtimeScene } = scene;
+  state.scene = runtimeScene;
+  state.selectedLayerId = null;
+  state.selectedSpriteIdx = null;
+  state.cameraX = 0;
+  document.getElementById('scene-name').value = state.scene.name;
+  resizePreview();
+  renderAssetGrid();
+  refreshTileSrcSelect();
+  renderLayerList();
+  renderProps();
+  syncSliderFromCam();
+  toast('読込: ' + name);
+}
+
+// Export / Import JSON
+document.getElementById('btn-export').addEventListener('click', async () => {
+  const inline = confirm('OK = 素材を Base64 で JSON に埋め込む (ポータブル / ファイル大)\nキャンセル = 素材は元パス参照のみ (ファイル小 / 元パス必須)');
+  const out = serializeScene(state.scene);
+  out._assets = [];
+  const usedIds = collectUsedAssetIds(state.scene);
+  for (const id of usedIds) {
+    const a = state.assetCache.get(id);
+    if (!a) continue;
+    let src = a.src;
+    if (inline && a.blob) {
+      src = await blobToDataURL(a.blob);
+    }
+    out._assets.push({ id, name: a.name, src, width: a.width, height: a.height });
+  }
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (state.scene.name || 'scene') + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('エクスポートしました');
+});
+
+document.getElementById('btn-import').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json,.json';
+  inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    try {
+      const txt = await f.text();
+      const sc = JSON.parse(txt);
+      // Save into IDB then load via standard path (handles asset restoration)
+      sc.savedAt = Date.now();
+      const blobsToSave = [];
+      if (sc._assets) {
+        for (const meta of sc._assets) {
+          if (meta.src.startsWith('data:')) {
+            const r = await fetch(meta.src); const b = await r.blob();
+            blobsToSave.push([meta.id, b]);
+            // Rewrite src so it persists in IDB-blob form
+            meta.src = 'idb:' + meta.id;
+          }
+        }
+      }
+      await idbPutScene(sc, blobsToSave);
+      await loadSceneFromIDB(sc.name);
+      toast('インポートしました');
+    } catch (e) { toast('インポート失敗: ' + e.message, false); }
+  };
+  inp.click();
+});
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+// Layer add buttons
+document.getElementById('btn-add-tile').addEventListener('click', () => addLayer('tile'));
+document.getElementById('btn-add-sprites').addEventListener('click', () => addLayer('sprites'));
+
+// ════════════════════════════════════════════════════════════
+// Init
+// ════════════════════════════════════════════════════════════
+function init() {
+  resizePreview();
+  bindProps();
+  renderLayerList();
+  renderProps();
+  renderAssetGrid();
+  syncSliderFromCam();
+  rafId = requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>

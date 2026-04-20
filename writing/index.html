@@ -1248,6 +1248,12 @@ body.battle-mode .hedgehog-deco,
 body.battle-mode .hedgehog-bubble {
   display: none !important;
 }
+/* バトル中は「おてほんちゅう」と敵吹き出しも非表示
+   (すべて戦闘ログに集約するため) */
+body.battle-mode #demoIndicator,
+body.battle-mode .enemy-speech {
+  display: none !important;
+}
 .battle-stage {
   position: relative;
   width: 100%;
@@ -1656,6 +1662,107 @@ body.battle-mode .hedgehog-bubble {
   100% { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* ドラクエ風 戦闘ログウィンドウ (バトル中のテキストを一箇所に集約)。
+   バトルステージ (上) と文字キャンバス (下) の間に配置する。 */
+.battle-log-window {
+  order: 4; /* battle-stage(3) と trace-area(5) の間に挿入。
+              (実配置は .right-col 内の HTML 順で制御しているが order で保険をかける) */
+  width: 100%;
+  max-width: min(92vw, 420px);
+  margin: 0 auto 4px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.battle-log-window .battle-log-inner {
+  background: #020208;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  padding: clamp(8px, 2.4vw, 14px) clamp(12px, 3vw, 20px);
+  min-height: calc(1.4em * 2 + clamp(16px, 4.8vw, 28px));
+  box-shadow:
+    0 0 16px rgba(0,0,0,0.7),
+    inset 0 0 12px rgba(255,255,255,0.05);
+  color: #fff;
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 2px;
+}
+.battle-log-window .battle-log-line {
+  font-size: clamp(0.9rem, 3.6vw, 1.15rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-shadow: 0 0 4px rgba(255,255,255,0.3);
+  min-height: 1.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.battle-log-window .battle-log-line.dmg-line {
+  color: #FFD86A;
+  text-shadow: 0 0 8px rgba(255,200,80,0.55);
+}
+.battle-log-window .battle-log-line.damage-taken {
+  color: #FF9A9A;
+  text-shadow: 0 0 8px rgba(255,80,80,0.55);
+}
+.battle-log-window .battle-log-line .dmg-num {
+  color: #FF7777;
+  font-size: 1.2em;
+  text-shadow: 0 0 8px rgba(255,80,80,0.85);
+  padding: 0 0.12em;
+}
+.battle-log-window .battle-log-line.enter {
+  animation: battleLogLineIn 0.28s ease-out;
+}
+.battle-log-window .dq-line-emphasis {
+  color: #FFD86A;
+  text-shadow: 0 0 10px #FFD86A, 0 0 18px rgba(255,170,60,0.85);
+  font-weight: 900;
+}
+@keyframes battleLogLineIn {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-log-window .battle-log-line.enter { animation: none; }
+}
+
+/* 戦闘ログは battle-mode の間だけ見せる (display:none をオーバーライド) */
+body.battle-mode #battleLog { display: block !important; }
+
+/* バトルイントロの暗転カーテン + 敵ドン演出 */
+.battle-intro-curtain {
+  position: fixed; inset: 0;
+  z-index: 1300;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+.battle-intro-curtain.fade-out {
+  opacity: 0;
+}
+.battle-intro-enemy {
+  width: min(60vw, 320px);
+  max-height: 70vh;
+  object-fit: contain;
+  transform: scale(0.2);
+  opacity: 0;
+  filter: drop-shadow(0 0 24px rgba(255,80,60,0.6)) drop-shadow(0 0 48px rgba(255,120,40,0.3));
+  animation: battleIntroEnemyDrop 0.55s cubic-bezier(0.25, 1.5, 0.4, 1) forwards;
+}
+@keyframes battleIntroEnemyDrop {
+  0%   { transform: scale(0.2) translateY(-40vh); opacity: 0; }
+  55%  { transform: scale(1.15) translateY(0);    opacity: 1; }
+  75%  { transform: scale(0.96) translateY(0);    opacity: 1; }
+  100% { transform: scale(1.02) translateY(0);    opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-intro-enemy { animation: none; opacity: 1; transform: scale(1); }
+}
+
 /* 「〇〇の こうげき！」告知 (敵の反撃直前) */
 .enemy-attack-announce {
   position: fixed;
@@ -1929,6 +2036,13 @@ body.battle-mode .hedgehog-bubble {
       </div>
       <div class="enemy-speech" id="battleEnemySpeech"></div>
       <div class="damage-pop-layer" id="damagePopLayer" aria-hidden="true"></div>
+    </div>
+    <!-- ドラクエ風 戦闘ログ (敵出現/攻撃/ダメージ/撃破 全てをここに集約) -->
+    <div id="battleLog" class="battle-log-window" aria-live="polite" style="display:none;">
+      <div class="battle-log-inner" id="battleLogInner">
+        <div class="battle-log-line" id="battleLogLine1"></div>
+        <div class="battle-log-line" id="battleLogLine2"></div>
+      </div>
     </div>
     <div class="trace-area">
       <div id="demoIndicator">おてほんちゅう</div>
@@ -3334,12 +3448,74 @@ function _showBattleStage(rowId) {
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = 'none';
 
-  // 登場セリフ
-  _showEnemySpeech(enemy.taunts[0]);
+  // ログウィンドウをリセット (前回の「たおした！」残りを消す)
+  _setBattleLog(['', '']);
 
-  // エンカウントジングル (BGM を一瞬下げて被らないように)
-  try { playEncounterJingle(); } catch (e) {}
+  // 登場セリフ / エンカウントジングルは _showBattleEncounterIntro 側で演出として扱う。
+  // ここでは stage の配置のみを行う。
 }
+
+// ===== 戦闘ログウィンドウ (2行固定) =====
+// lines: [line1, line2] または [line1]。opts: { line1Class, line2Class, animate }
+function _setBattleLog(lines, opts) {
+  if (!Array.isArray(lines)) lines = [lines || ''];
+  const l1 = document.getElementById('battleLogLine1');
+  const l2 = document.getElementById('battleLogLine2');
+  const o = opts || {};
+  const animate = (o.animate !== false);
+  const apply = (el, text, cls) => {
+    if (!el) return;
+    el.className = 'battle-log-line' + (cls ? ' ' + cls : '');
+    el.innerHTML = text || '';
+    if (animate && text) {
+      el.classList.remove('enter');
+      void el.offsetWidth;
+      el.classList.add('enter');
+    }
+  };
+  apply(l1, lines[0] || '', o.line1Class);
+  apply(l2, lines[1] || '', o.line2Class);
+}
+function _clearBattleLog() { _setBattleLog(['', ''], { animate: false }); }
+
+// ===== バトル登場演出: 真っ暗な画面 → 敵がドンと現れる → 「あらわれた！」→ フェード =====
+function _showBattleEncounterIntro(onDone) {
+  const enemy = _battle.enemy;
+  if (!enemy) { if (onDone) onDone(); return; }
+  // カーテン + 中央に敵
+  const curtain = document.createElement('div');
+  curtain.className = 'battle-intro-curtain';
+  const img = document.createElement('img');
+  img.className = 'battle-intro-enemy';
+  img.src = enemy.img;
+  img.alt = enemy.name;
+  curtain.appendChild(img);
+  document.body.appendChild(curtain);
+  // エンカウントジングル (登場 SE)
+  try { playEncounterJingle(); } catch (e) {}
+  // T=0: カーテン + 敵ドン  アニメ開始
+  // T=+500: ログに「〇〇が あらわれた！」
+  setTimeout(function() {
+    _setBattleLog([enemy.name + 'が あらわれた！', '']);
+  }, 500);
+  // T=+1800: 最初のセリフをログに (taunts[0])
+  setTimeout(function() {
+    if (enemy.taunts && enemy.taunts[0]) {
+      _setBattleLog([enemy.name + 'が あらわれた！', '「' + enemy.taunts[0] + '」']);
+    }
+  }, 1800);
+  // T=+2600: カーテンをフェードアウトして、敵をそれぞれのウィンドウに戻す
+  setTimeout(function() {
+    curtain.classList.add('fade-out');
+  }, 2600);
+  // T=+3300: カーテン除去
+  setTimeout(function() {
+    if (curtain.parentNode) curtain.remove();
+    if (onDone) onDone();
+  }, 3300);
+}
+
+// _showEnemySpeech: バトル中は上部吹き出しではなくログに集約する
 
 function _hideBattleStage() {
   const els = _battleEls();
@@ -3355,8 +3531,16 @@ function _hideBattleStage() {
 }
 
 function _showEnemySpeech(text, ms) {
+  if (!text) return;
+  // バトル中はログウィンドウに「〇〇「セリフ」」で表示
+  if (_battle.active) {
+    const enemyName = (_battle.enemy && _battle.enemy.name) || 'てき';
+    _setBattleLog([enemyName, '「' + text + '」']);
+    return;
+  }
+  // バトル外 (念のため互換残し): 旧吹き出し表示
   const { speech } = _battleEls();
-  if (!speech || !text) return;
+  if (!speech) return;
   speech.textContent = text;
   speech.classList.add('show');
   clearTimeout(_showEnemySpeech._t);
@@ -3582,25 +3766,11 @@ function enemyCounterAttack() {
   });
 }
 
-// 敵の攻撃告知ウィンドウ (ドラクエ風)
-// 表示 ~0.85s → 閉じた後 onAttack() で実際の攻撃演出に入る
+// 敵の攻撃告知 (ドラクエ風、ログウィンドウに集約)
+// 表示 ~1.1s → onAttack() で実際の攻撃演出に入る
 function _showEnemyAttackAnnounce(text, onAttack) {
-  // 既に出ている告知は掃除
-  const old = document.querySelector('.enemy-attack-announce');
-  if (old) old.remove();
-  const w = document.createElement('div');
-  w.className = 'enemy-attack-announce';
-  w.innerHTML =
-    '<div class="dq-window enemy-attack-window">' +
-      '<div class="dq-line"><span class="dq-line-emphasis">' + text + '</span></div>' +
-    '</div>';
-  document.body.appendChild(w);
-  // 表示 → フェード → onAttack
-  setTimeout(() => { w.style.opacity = '0'; }, 850);
-  setTimeout(() => {
-    if (w.parentNode) w.remove();
-    if (onAttack) onAttack();
-  }, 1200);
+  _setBattleLog([text, ''], { line1Class: 'dmg-line' });
+  setTimeout(() => { if (onAttack) onAttack(); }, 1100);
 }
 
 function _shakeScreen() {
@@ -3613,21 +3783,12 @@ function _shakeScreen() {
 }
 
 function _showPlayerDamageWindow(damage) {
-  const old = document.querySelector('.player-damage-window');
-  if (old) old.remove();
-  const w = document.createElement('div');
-  w.className = 'player-damage-window';
   const name = _battleHeroName();
-  w.innerHTML =
-    '<div class="dq-window">' +
-      '<div class="dq-line">' + name + 'は <span class="dmg-num">' + damage + '</span> のダメージを うけた！</div>' +
-    '</div>';
-  document.body.appendChild(w);
-  // 表示 2.4s + フェード 0.35s に延長 (元 1.4s では見える前に消えていた)
-  setTimeout(() => {
-    w.style.opacity = '0';
-    setTimeout(() => { if (w.parentNode) w.remove(); }, 350);
-  }, 2400);
+  // 戦闘ログに集約: 1行目に告知、2行目に数値
+  _setBattleLog([
+    name + 'は',
+    '<span class="dmg-num">' + damage + '</span> のダメージを うけた！'
+  ], { line2Class: 'damage-taken' });
 }
 
 function playEnemyAttackSound() {
@@ -3719,37 +3880,13 @@ function battleVictory(spellKind, onDone) {
   }, 4200);
 }
 
-// 「〇〇を たおした！」のドラクエ風ウィンドウ (キャンバス位置に重ねる)
+// 「〇〇を たおした！」を戦闘ログに表示
 function _showDefeatedWindow(enemyName) {
-  _hideDefeatedWindow();
-  const cw = document.querySelector('.canvas-wrap') || document.getElementById('canvasContainer');
-  const w = document.createElement('div');
-  w.className = 'battle-defeated-window';
-  w.id = 'battleDefeatedWindow';
   const name = enemyName || 'モンスター';
-  w.innerHTML =
-    '<div class="dq-window">' +
-      '<div class="dq-line">' + name + 'を</div>' +
-      '<div class="dq-line"><span class="dq-line-emphasis">たおした！</span></div>' +
-    '</div>';
-  document.body.appendChild(w);
-  // キャンバス領域に重ねる (取れない場合は画面中央)
-  if (cw) {
-    const r = cw.getBoundingClientRect();
-    w.style.left   = r.left   + 'px';
-    w.style.top    = r.top    + 'px';
-    w.style.width  = r.width  + 'px';
-    w.style.height = r.height + 'px';
-  } else {
-    w.style.inset = '0';
-  }
+  _setBattleLog([name + 'を', '<span class="dq-line-emphasis">たおした！</span>'], { line2Class: 'dmg-line' });
 }
-
 function _hideDefeatedWindow() {
-  const w = document.getElementById('battleDefeatedWindow');
-  if (!w) return;
-  w.style.opacity = '0';
-  setTimeout(() => { if (w.parentNode) w.remove(); }, 400);
+  // 互換のため残す。_rowPracticeComplete 側でログは自然に次のメッセージに置き換わる。
 }
 
 // ===== バトル SFX アセット =====
@@ -4497,7 +4634,7 @@ function startRowPractice(rowIndex) {
   currentRow = rowIndex;
   // バトル開始: 行ラベル (あ,か,さ...) を rowId として渡す。未定義行は _enemyForRow が fallback
   try { _showBattleStage(_rowPracticeRow && _rowPracticeRow.label); } catch (e) {}
-  // バトル中は「敵が一言 (_showBattleStage 内の taunts[0]) → 導入モーダル → お手本」の順に進める。
+  // バトル中は「暗転カーテン → 敵ドン演出 → 登場ログ → ルール説明 → お手本」の順。
   // バトルでない場合 (将来の単独練習など) は従来どおり即座にお手本へ。
   if (_battle.active) {
     _showBattleIntro(function() { _rowPracticeNextChar(); });
@@ -4506,26 +4643,19 @@ function startRowPractice(rowIndex) {
   }
 }
 
-// バトル導入モーダル: 敵のセリフが流れた後 (~1.2s) に 2 枚のモーダルを順に表示して、
-// 最後に onDone → お手本アニメーションへ進む。
+// バトル導入: 黒幕+敵ドン → ルール説明ログ 2 ステップ → onDone でお手本へ
 function _showBattleIntro(onDone) {
-  setTimeout(function() {
-    _presentBattleModal({
-      icon: '⚔️',
-      title: 'バトルだ！',
-      body: 'もじを なぞって<br>てきを たおそう！',
-      button: 'つぎへ',
-      next: function() {
-        _presentBattleModal({
-          icon: '✏️',
-          title: 'まずは おてほん',
-          body: 'おてほんを みて<br>おなじように かいてみよう！',
-          button: 'よーし！',
-          next: function() { if (onDone) onDone(); }
-        });
-      }
-    });
-  }, 1200);
+  _showBattleEncounterIntro(function() {
+    // ルール説明 (1) なぞって倒そう
+    _setBattleLog(['もじを なぞって', 'てきを たおそう！'], { line2Class: 'dmg-line' });
+    setTimeout(function() {
+      // ルール説明 (2) お手本を見て真似する
+      _setBattleLog(['まずは おてほんを みて', 'おなじように かいてみよう！']);
+      setTimeout(function() {
+        if (onDone) onDone();
+      }, 1800);
+    }, 1800);
+  });
 }
 
 function _presentBattleModal(opts) {
@@ -4563,23 +4693,31 @@ function _rowPracticeNextChar() {
     document.getElementById('demoIndicator').style.display = 'block';
     _hedgeBubble.textContent = 'みて みて！';
     _ponoBubble.textContent = 'みて みて！';
+    // バトル中はログウィンドウにもフェーズを反映
+    if (_battle.active) _setBattleLog(['おてほんちゅう…', 'じゅんばんを おぼえよう']);
     writer.animateCharacter({
       onComplete: function() {
         document.getElementById('demoIndicator').style.display = 'none';
         if (!_rowPracticeActive) return;
-        // 「なぞり スタート！」表示
+        // 「なぞり スタート！」— バトル中はログに、それ以外は従来のフロート表示
         writer.hideCharacter();
-        var startOv = document.createElement('div');
-        startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-        startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
-        document.body.appendChild(startOv);
+        var startOv = null;
+        if (_battle.active) {
+          _setBattleLog(['なぞり スタート！', 'ゆびで なぞってね'], { line1Class: 'dmg-line' });
+        } else {
+          startOv = document.createElement('div');
+          startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+          startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
+          document.body.appendChild(startOv);
+        }
         setTimeout(function() {
-          startOv.remove();
+          if (startOv) startOv.remove();
           if (!_rowPracticeActive) return;
           // Phase 2: Quiz with guides
           _rowPracticePhase = 'quiz_guided';
           _hedgeBubble.textContent = 'かいてみよう！';
           _ponoBubble.textContent = 'かいてみよう！';
+          if (_battle.active) _setBattleLog(['かいてみよう！', 'もじを かんせいさせよう']);
           setQuizActive(true);
           writer.quiz({
             onCorrectStroke: function() { playStrokeSound(); _hideMonsterBubble(); },

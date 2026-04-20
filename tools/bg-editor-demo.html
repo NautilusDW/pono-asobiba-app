@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+<title>背景エディタ - ランタイムデモ (parallax.js)</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0a0c10; color: #e5e7eb; font-family: sans-serif; min-height: 100vh; }
+  header { background: #14161c; padding: 12px 20px; border-bottom: 1px solid #2a2e3a; display:flex; align-items:center; gap:12px; }
+  header h1 { margin: 0; font-size: 14px; }
+  header a { color: #93c5fd; font-size: 12px; }
+  header .info { color: #94a3b8; font-size: 11px; margin-left: auto; }
+  main { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  canvas { background: #000; box-shadow: 0 0 0 1px #2a2e3a; max-width: 100%; image-rendering: pixelated; }
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; max-width: 1280px; width: 100%; }
+  .controls input[type="range"] { flex: 1; }
+  .controls label, .controls span { font-size: 12px; color: #cbd5e1; }
+  .controls button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .controls input[type="file"] { font-size: 11px; color:#cbd5e1; }
+  .desc { color: #94a3b8; font-size: 12px; max-width: 1000px; line-height: 1.6; }
+  .desc code { background: #20242e; padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌄 ランタイムデモ — parallax.js</h1>
+  <a href="bg-editor.html">← エディタへ戻る</a>
+  <span class="info">/common/parallax.js を使ってシーン JSON を再生</span>
+</header>
+
+<main>
+  <p class="desc">
+    背景エディタ (<code>tools/bg-editor.html</code>) で「JSONエクスポート」したシーンファイルを下のフォームから読み込むと、
+    <code>/common/parallax.js</code> ランタイムでこのキャンバス上に再生されます。
+    実ゲームから使う場合は <code>&lt;script src="/common/parallax.js"&gt;&lt;/script&gt;</code> を読み込んで
+    <code>ParallaxScene.load('/assets/scenes/foo.json')</code> を呼ぶだけ。
+  </p>
+
+  <div class="controls">
+    <label>シーンJSONを開く:</label>
+    <input id="json-file" type="file" accept="application/json,.json">
+    <button id="btn-load-url">URLから読込</button>
+    <button id="btn-builtin">組込デモ (星3層)</button>
+  </div>
+
+  <canvas id="stage" width="1280" height="720"></canvas>
+
+  <div class="controls">
+    <label>カメラX:</label>
+    <input id="cam-slider" type="range" min="0" max="5120" value="0" step="1">
+    <span id="cam-pos">0</span>
+    <button id="btn-auto">自動移動 ON/OFF</button>
+  </div>
+</main>
+
+<script src="/common/parallax.js"></script>
+<script>
+'use strict';
+
+const stage = document.getElementById('stage');
+let scene = null;
+let autoMove = false;
+let autoT = 0;
+
+document.getElementById('cam-slider').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  document.getElementById('cam-pos').textContent = Math.round(v);
+  if (scene) scene.setCameraX(v);
+});
+
+document.getElementById('btn-auto').addEventListener('click', () => {
+  autoMove = !autoMove;
+});
+
+// File picker
+document.getElementById('json-file').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (scene) scene.destroy();
+    scene = await ParallaxScene.loadFromObject(data, null);
+    scene.attach(stage);
+    setupSliderForScene();
+    scene.start();
+  } catch (err) { alert('読込失敗: ' + err.message); }
+});
+
+// URL prompt — restricted to same-origin /assets/ only
+document.getElementById('btn-load-url').addEventListener('click', async () => {
+  const url = prompt('シーンJSONのURL (/assets/ 配下のみ。例: /assets/scenes/forest.json)');
+  if (!url) return;
+  let parsed;
+  try { parsed = new URL(url, location.origin); }
+  catch { alert('無効なURL'); return; }
+  if (parsed.origin !== location.origin || !parsed.pathname.startsWith('/assets/') || parsed.pathname.includes('..')) {
+    alert('URLは同一オリジンの /assets/ 配下のみ許可されています');
+    return;
+  }
+  try {
+    if (scene) scene.destroy();
+    scene = await ParallaxScene.load(parsed.href);
+    scene.attach(stage);
+    setupSliderForScene();
+    scene.start();
+  } catch (err) { alert('読込失敗: ' + err.message); }
+});
+
+// Built-in starfield demo (3-layer parallax with synthetic images)
+document.getElementById('btn-builtin').addEventListener('click', async () => {
+  if (scene) scene.destroy();
+  // Generate 3 star tile images programmatically
+  function makeStarTile(w, h, count, sizeMin, sizeMax, color) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const cx = c.getContext('2d');
+    cx.fillStyle = '#000';
+    cx.fillRect(0, 0, w, h);
+    cx.fillStyle = color;
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const r = sizeMin + Math.random() * (sizeMax - sizeMin);
+      cx.beginPath(); cx.arc(x, y, r, 0, Math.PI * 2); cx.fill();
+    }
+    const img = new Image();
+    return new Promise(res => { img.onload = () => res(img); img.src = c.toDataURL(); });
+  }
+  const farImg  = await makeStarTile(1280, 720, 80, 0.5, 1.2, 'rgba(180,180,255,0.6)');
+  const midImg  = await makeStarTile(1280, 720, 30, 1.0, 2.0, 'rgba(255,255,255,0.85)');
+  const nearImg = await makeStarTile(1280, 720, 10, 2.0, 3.5, 'rgba(255,255,200,1)');
+
+  scene = ParallaxScene.fromImages([
+    { img: farImg,  parallaxX: 0.05, autoScrollX: 8,  anchor: 'top', scale: 1, name: 'far' },
+    { img: midImg,  parallaxX: 0.20, autoScrollX: 18, anchor: 'top', scale: 1, name: 'mid' },
+    { img: nearImg, parallaxX: 0.50, autoScrollX: 35, anchor: 'top', scale: 1, name: 'near' }
+  ]);
+  scene.attach(stage);
+  setupSliderForScene();
+  scene.start();
+});
+
+function setupSliderForScene() {
+  const slider = document.getElementById('cam-slider');
+  const w = scene.getWorldWidth() || 5120;
+  slider.max = w;
+  slider.value = 0;
+  document.getElementById('cam-pos').textContent = '0';
+}
+
+// Auto-camera: piggy-back on scene's RAF by polling autoMove state and adjusting cameraX before each render.
+// Lightweight wrapper using a single named hook on the scene tick.
+let lastAutoUpdate = performance.now();
+function autoLoop(t) {
+  if (autoMove && scene) {
+    const dt = (t - lastAutoUpdate) / 1000;
+    autoT += dt * 90; // 90 px/sec
+    const w = scene.getWorldWidth() || 5120;
+    const v = autoT % w;
+    scene.setCameraX(v);
+    document.getElementById('cam-slider').value = v;
+    document.getElementById('cam-pos').textContent = Math.round(v);
+  }
+  lastAutoUpdate = t;
+  requestAnimationFrame(autoLoop);
+}
+requestAnimationFrame(autoLoop);
+</script>
+</body>
+</html>
