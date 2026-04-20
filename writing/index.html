@@ -1220,6 +1220,14 @@ html, body {
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
 /* ===== Battle Stage (RPG バトル、行練習中のみ表示) ===== */
+/* 戦闘モードではポノとハリネズミを隠す (戦闘画面は敵と文字キャンバスだけに集中させる) */
+body.battle-mode .pono-deco,
+body.battle-mode .pono-bubble,
+body.battle-mode .hedgehog-wrap,
+body.battle-mode .hedgehog-deco,
+body.battle-mode .hedgehog-bubble {
+  display: none !important;
+}
 .battle-stage {
   position: relative;
   width: 100%;
@@ -3131,12 +3139,12 @@ const _battle = {
   element: 'fire',
 };
 
-// 攻撃プラン生成: count 回中 2〜3 回を magic、末尾は必ず magic
+// 攻撃プラン生成: count=5 のとき 通常3 + 魔法2 (末尾は必ず magic)
 function _pickAttackPlan(count) {
   const plan = new Array(count).fill('normal');
   if (count > 0) plan[count - 1] = 'magic';
-  // 残り (count-1 箇所) から 1 or 2 個を追加で magic に
-  const extras = (Math.random() < 0.5) ? 1 : 2;
+  // 残り (count-1 箇所) からちょうど 1 個だけ magic に → 合計 magic=2, normal=3
+  const extras = 1;
   const pool = [];
   for (let i = 0; i < count - 1; i++) pool.push(i);
   for (let k = 0; k < extras && pool.length > 0; k++) {
@@ -3184,8 +3192,9 @@ function _showBattleStage(rowId) {
   _battle.hp = _battle.maxHp;
   _battle.hitCount = 0;
   _battle.attackPlan = _pickAttackPlan(_battle.maxHp); // 5回の通常/魔法プラン
-  // 行ラベル (あ,か,さ...) から魔法の属性を決める。未定義行は 'fire' fallback。
-  _battle.element = (ROW_ELEMENT_BY_LABEL && ROW_ELEMENT_BY_LABEL[rowId]) || 'fire';
+  // 現在は最初のステージのみ実装中のため、属性は「炎」で固定。
+  // 将来、行ごとに属性を変える段階で ROW_ELEMENT_BY_LABEL に戻す。
+  _battle.element = 'fire';
 
   if (els.img) els.img.src = enemy.img;
   if (els.name) els.name.textContent = enemy.name;
@@ -3196,6 +3205,8 @@ function _showBattleStage(rowId) {
 
   els.stage.style.display = '';
   els.stage.setAttribute('aria-hidden', 'false');
+  // ポノ / ハリネズミ / 封印された妖精を戦闘中は隠す (戦闘画面の集中度を上げる)
+  document.body.classList.add('battle-mode');
 
   // 封印された妖精は隠す (同一キャンバス内の干渉を避ける)
   const md = document.getElementById('monsterDeco');
@@ -3214,6 +3225,7 @@ function _hideBattleStage() {
   _battle.active = false;
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
 }
@@ -4122,9 +4134,10 @@ function enterPractice(rowIndex) {
   // あ行 (ひらがな rowIndex=0) は「森でモンスター発見 → 戦闘突入」の導入を挟む。
   // それ以外の行と、カタカナは従来どおりチュートリアルだけ出して練習開始。
   var showMapIntro = (currentCategory === 'hiragana' && rowIndex === 0);
-  var proceed = function() {
-    _showHowToPlay(row, function() { startRowPractice(rowIndex); });
-  };
+  // 旧: ここで _showHowToPlay (「① おてほん ② なぞる ③ ことば」カード) を出していたが、
+  // バトル導入では「敵のセリフ → バトル説明モーダル → お手本」の順に差し替える。
+  // バトル突入後の導入モーダルは startRowPractice 側で _showBattleIntro が担当する。
+  var proceed = function() { startRowPractice(rowIndex); };
   if (showMapIntro) {
     // app 画面はマップの後ろに残しておくので一旦非表示にして、
     // マップ閉じるときに表示を戻す。戦闘シーンは startRowPractice 内で展開される。
@@ -4327,7 +4340,53 @@ function startRowPractice(rowIndex) {
   currentRow = rowIndex;
   // バトル開始: 行ラベル (あ,か,さ...) を rowId として渡す。未定義行は _enemyForRow が fallback
   try { _showBattleStage(_rowPracticeRow && _rowPracticeRow.label); } catch (e) {}
-  _rowPracticeNextChar();
+  // バトル中は「敵が一言 (_showBattleStage 内の taunts[0]) → 導入モーダル → お手本」の順に進める。
+  // バトルでない場合 (将来の単独練習など) は従来どおり即座にお手本へ。
+  if (_battle.active) {
+    _showBattleIntro(function() { _rowPracticeNextChar(); });
+  } else {
+    _rowPracticeNextChar();
+  }
+}
+
+// バトル導入モーダル: 敵のセリフが流れた後 (~1.2s) に 2 枚のモーダルを順に表示して、
+// 最後に onDone → お手本アニメーションへ進む。
+function _showBattleIntro(onDone) {
+  setTimeout(function() {
+    _presentBattleModal({
+      icon: '⚔️',
+      title: 'バトルだ！',
+      body: 'もじを なぞって<br>てきを たおそう！',
+      button: 'つぎへ',
+      next: function() {
+        _presentBattleModal({
+          icon: '✏️',
+          title: 'まずは おてほん',
+          body: 'おてほんを みて<br>おなじように かいてみよう！',
+          button: 'よーし！',
+          next: function() { if (onDone) onDone(); }
+        });
+      }
+    });
+  }, 1200);
+}
+
+function _presentBattleModal(opts) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(10,12,28,0.65);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;padding:20px;';
+  var card = document.createElement('div');
+  card.style.cssText = 'background:linear-gradient(180deg,#1a1d3a 0%,#0f1226 100%);border:2.5px solid var(--window-border);border-radius:22px;padding:26px 22px;text-align:center;width:min(86vw,320px);box-shadow:0 12px 40px rgba(0,0,0,0.6),inset 0 0 18px rgba(255,220,130,0.18);color:#fff;';
+  card.innerHTML =
+    '<div style="font-size:2.6rem;margin-bottom:8px;filter:drop-shadow(0 2px 8px rgba(255,200,80,0.5));">' + (opts.icon || '⚔️') + '</div>' +
+    '<div style="font-size:1.15rem;font-weight:900;color:#FFD86A;letter-spacing:0.08em;margin-bottom:10px;text-shadow:0 0 10px rgba(255,200,80,0.35);">' + (opts.title || '') + '</div>' +
+    '<div style="font-size:1.05rem;font-weight:700;color:#F4EEDC;line-height:1.7;margin-bottom:18px;">' + (opts.body || '') + '</div>' +
+    '<button style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD86A,#F5A800);color:#3a2200;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(255,200,80,0.4);">' + (opts.button || 'OK') + '</button>';
+  ov.appendChild(card);
+  document.body.appendChild(ov);
+  card.querySelector('button').addEventListener('click', function() {
+    ov.remove();
+    if (opts.next) opts.next();
+  });
 }
 
 function _rowPracticeNextChar() {
