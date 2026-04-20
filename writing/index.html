@@ -1329,9 +1329,185 @@ html, body {
   100% { transform: translate(-50%,-180%) scale(0.9); opacity: 0; }
 }
 
+/* ===== 通常攻撃: 斜めスラッシュ ===== */
+.battle-stage .slash-fx {
+  position: absolute;
+  top: 18%; left: 8%;
+  width: 84%; height: 64%;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg,
+      transparent 47%,
+      rgba(255,255,255,0.9) 49%,
+      rgba(255,245,200,1) 50%,
+      rgba(255,255,255,0.9) 51%,
+      transparent 53%);
+  filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px rgba(255,220,100,0.8));
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: slashSweep 0.42s ease-out forwards;
+  z-index: 5;
+}
+@keyframes slashSweep {
+  0%   { opacity: 0; transform: translateX(-22%) scaleX(0.5); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(22%) scaleX(1.1); }
+}
+
+/* ===== 魔法攻撃 (炎、ミニ): 敵の位置でラジアルグロウ ===== */
+.battle-stage .magic-fire-fx {
+  position: absolute;
+  top: 45%; left: 50%;
+  width: 65%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(255,240,160,0.95) 0%,
+    rgba(255,170,60,0.75) 22%,
+    rgba(230,90,30,0.5)  45%,
+    rgba(140,30,10,0.25) 68%,
+    transparent 78%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: magicFirePulse 0.7s ease-out forwards;
+  z-index: 5;
+}
+@keyframes magicFirePulse {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
+  30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+}
+
+/* ===== 衝撃パーティクル (敵中心から放射する emoji) ===== */
+.battle-stage .enemy-impact-particle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 1.4rem;
+  transform: translate(-50%, -50%);
+  animation: enemyImpactOut 0.65s ease-out forwards;
+  z-index: 6;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.7));
+  --dx: 0px; --dy: 0px;
+}
+@keyframes enemyImpactOut {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+  40%  { opacity: 1; transform: translate(calc(-50% + var(--dx) * 0.6), calc(-50% + var(--dy) * 0.6)) scale(1.25); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.75); }
+}
+
+/* ===== 敵撃破後の ドラクエ風ウィンドウ (キャンバス位置に重ねる) ===== */
+.battle-defeated-window {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1080;
+  transition: opacity 0.35s ease;
+}
+.battle-defeated-window .dq-window {
+  background: #020208;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  padding: clamp(16px, 4.5vw, 30px) clamp(20px, 5.5vw, 38px);
+  box-shadow:
+    0 0 26px rgba(255,220,100,0.45),
+    inset 0 0 18px rgba(255,255,255,0.08);
+  text-align: left;
+  color: #fff;
+  max-width: 92%;
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  animation: dqWindowIn 0.4s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+.battle-defeated-window .dq-line {
+  font-size: clamp(1rem, 4.2vw, 1.4rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.7;
+  text-shadow: 0 0 6px rgba(255,220,100,0.45);
+}
+.battle-defeated-window .dq-line-emphasis {
+  color: #FFD86A;
+  font-size: clamp(1.5rem, 6.5vw, 2.1rem);
+  text-shadow: 0 0 10px #FFD86A, 0 0 18px rgba(255,170,60,0.85);
+  animation: dqEmphasisBlink 1s ease-in-out infinite;
+  display: inline-block;
+  margin-top: 4px;
+}
+@keyframes dqWindowIn {
+  0%   { opacity: 0; transform: scale(0.82) translateY(6px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes dqEmphasisBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+
+/* ===== 敵の反撃: 画面シェイク ===== */
+.screen-shake {
+  animation: screenShake 0.55s cubic-bezier(0.36, 0, 0.66, 1);
+}
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-4px, 2px); }
+  20% { transform: translate(5px, -3px); }
+  30% { transform: translate(-6px, -2px); }
+  40% { transform: translate(5px, 3px); }
+  50% { transform: translate(-4px, 2px); }
+  60% { transform: translate(3px, -2px); }
+  70% { transform: translate(-3px, 2px); }
+  80% { transform: translate(2px, -1px); }
+  90% { transform: translate(-1px, 1px); }
+}
+
+/* ===== プレイヤー被ダメージ表示 (画面下部 DQ ウィンドウ) ===== */
+.player-damage-window {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1090;
+  pointer-events: none;
+  max-width: 92vw;
+  animation: playerDmgIn 0.3s ease-out;
+  transition: opacity 0.3s ease;
+}
+.player-damage-window .dq-window {
+  background: #020208;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  padding: clamp(12px, 3vw, 20px) clamp(16px, 4vw, 28px);
+  box-shadow:
+    0 0 20px rgba(255,80,80,0.4),
+    inset 0 0 14px rgba(255,255,255,0.06);
+  color: #fff;
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  white-space: nowrap;
+}
+.player-damage-window .dq-line {
+  font-size: clamp(0.95rem, 3.8vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  text-shadow: 0 0 4px rgba(255,255,255,0.3);
+}
+.player-damage-window .dmg-num {
+  color: #FF7777;
+  font-size: 1.35em;
+  text-shadow: 0 0 8px rgba(255,80,80,0.85);
+  padding: 0 0.12em;
+}
+@keyframes playerDmgIn {
+  0%   { opacity: 0; transform: translate(-50%, 14px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .battle-enemy, .battle-enemy.damaged, .battle-enemy.defeated,
-  .enemy-shadow, .pentagram-charge .star.lit, .damage-pop {
+  .enemy-shadow, .pentagram-charge .star.lit, .damage-pop,
+  .slash-fx, .magic-fire-fx, .enemy-impact-particle,
+  .battle-defeated-window .dq-window, .battle-defeated-window .dq-line-emphasis,
+  .screen-shake, .player-damage-window {
     animation: none !important;
   }
 }
@@ -2475,7 +2651,24 @@ const _battle = {
   hp: 5,
   maxHp: 5,
   hitCount: 0,
+  // 5回の攻撃タイプを事前に決める ('normal' | 'magic')。finisher (末尾) は必ず magic
+  attackPlan: [],
 };
+
+// 攻撃プラン生成: count 回中 2〜3 回を magic、末尾は必ず magic
+function _pickAttackPlan(count) {
+  const plan = new Array(count).fill('normal');
+  if (count > 0) plan[count - 1] = 'magic';
+  // 残り (count-1 箇所) から 1 or 2 個を追加で magic に
+  const extras = (Math.random() < 0.5) ? 1 : 2;
+  const pool = [];
+  for (let i = 0; i < count - 1; i++) pool.push(i);
+  for (let k = 0; k < extras && pool.length > 0; k++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    plan[pool.splice(idx, 1)[0]] = 'magic';
+  }
+  return plan;
+}
 
 function _battleEls() {
   return {
@@ -2514,6 +2707,7 @@ function _showBattleStage(rowId) {
   _battle.maxHp = enemy.hp || 5;
   _battle.hp = _battle.maxHp;
   _battle.hitCount = 0;
+  _battle.attackPlan = _pickAttackPlan(_battle.maxHp); // 5回の通常/魔法プラン
 
   if (els.img) els.img.src = enemy.img;
   if (els.name) els.name.textContent = enemy.name;
@@ -2575,6 +2769,19 @@ function battleHitEnemy(opts) {
   const els = _battleEls();
   _battle.hitCount++;
   _battle.hp = Math.max(0, _battle.hp - 1);
+  const isFinisher = !!(opts && opts.finisher);
+
+  // 攻撃タイプを決定 (finisher は必ず magic、それ以外は plan に従う)
+  const planIdx = Math.min(_battle.hitCount - 1, (_battle.attackPlan.length || 0) - 1);
+  const attackType = isFinisher ? 'magic' : ((_battle.attackPlan[planIdx]) || 'normal');
+
+  // 攻撃 FX (finisher は battleVictory 側で全画面魔法陣を出すのでここではスキップ)
+  if (!isFinisher) {
+    try {
+      if (attackType === 'magic') playMagicAttackFX('fire');
+      else                         playNormalAttackFX();
+    } catch (e) { /* ignore */ }
+  }
 
   // 星を 1 つ点灯
   const star = els.stars[_battle.hitCount - 1];
@@ -2589,14 +2796,217 @@ function battleHitEnemy(opts) {
   if (_battle.hp > 0) els.enemy.classList.add('damaged');
 
   // ダメージ数字
-  const dmg = (opts && opts.finisher) ? 999 : (20 + Math.floor(Math.random() * 12));
-  _popDamage(dmg, { finisher: !!(opts && opts.finisher) });
+  const dmg = isFinisher ? 999 : (20 + Math.floor(Math.random() * 12));
+  _popDamage(dmg, { finisher: isFinisher });
 
   // ランダムなセリフ (最終打は除く)
-  if (!(opts && opts.finisher) && _battle.enemy && _battle.enemy.taunts) {
+  if (!isFinisher && _battle.enemy && _battle.enemy.taunts) {
     const ts = _battle.enemy.taunts;
     if (Math.random() < 0.5) _showEnemySpeech(ts[Math.floor(Math.random() * ts.length)], 1400);
   }
+}
+
+// ===== プレイヤー攻撃 FX (仮): 通常攻撃 =====
+// 差替フック: window.PONO_NORMAL_ATTACK_SFX に mp3 パスを入れれば上書きできる
+function playNormalAttackFX() {
+  const els = _battleEls();
+  if (els.stage) {
+    const slash = document.createElement('div');
+    slash.className = 'slash-fx';
+    els.stage.appendChild(slash);
+    setTimeout(() => { if (slash.parentNode) slash.remove(); }, 460);
+  }
+  _spawnEnemyImpactParticles('✨', 5);
+  playNormalAttackSound();
+}
+
+function playNormalAttackSound() {
+  if (typeof window !== 'undefined' && window.PONO_NORMAL_ATTACK_SFX) {
+    try {
+      const a = new Audio(window.PONO_NORMAL_ATTACK_SFX);
+      a.volume = 0.55; a.play().catch(() => {});
+      return;
+    } catch (e) { /* fall through to synth */ }
+  }
+  // 合成: 斬撃 (三角波ピッチダウン + 短いノイズ衝撃)
+  withAudio(ac => {
+    const now = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(1800, now);
+    o.frequency.exponentialRampToValueAtTime(280, now + 0.14);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.32, now + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    o.connect(g); g.connect(ac.destination);
+    o.start(now); o.stop(now + 0.2);
+    // ノイズバースト (衝撃音)
+    const bufLen = Math.floor(ac.sampleRate * 0.1);
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+    const src = ac.createBufferSource(), ng = ac.createGain();
+    src.buffer = buf;
+    ng.gain.setValueAtTime(0.28, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    src.connect(ng); ng.connect(ac.destination);
+    src.start(now); src.stop(now + 0.12);
+  });
+}
+
+// ===== プレイヤー攻撃 FX: 魔法攻撃 (炎、ミニ版) =====
+// 差替フック: window.PONO_FIRE_MAGIC_SFX
+function playMagicAttackFX(kind) {
+  const els = _battleEls();
+  if (els.stage) {
+    const glow = document.createElement('div');
+    glow.className = 'magic-fire-fx';
+    els.stage.appendChild(glow);
+    setTimeout(() => { if (glow.parentNode) glow.remove(); }, 720);
+  }
+  _spawnEnemyImpactParticles('🔥', 6);
+  playFireMagicSound();
+}
+
+function playFireMagicSound() {
+  if (typeof window !== 'undefined' && window.PONO_FIRE_MAGIC_SFX) {
+    try {
+      const a = new Audio(window.PONO_FIRE_MAGIC_SFX);
+      a.volume = 0.6; a.play().catch(() => {});
+      return;
+    } catch (e) { /* fall through to synth */ }
+  }
+  // 合成: whoosh (フィルタースイープ + 低音の轟き)
+  withAudio(ac => {
+    const now = ac.currentTime;
+    const bufLen = Math.floor(ac.sampleRate * 0.55);
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      const t = i / bufLen;
+      ch[i] = (Math.random() * 2 - 1) * (1 - t) * (0.3 + 0.7 * Math.sin(t * Math.PI));
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const flt = ac.createBiquadFilter();
+    flt.type = 'bandpass';
+    flt.frequency.setValueAtTime(320, now);
+    flt.frequency.exponentialRampToValueAtTime(1400, now + 0.3);
+    flt.Q.value = 1.2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.36, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    src.connect(flt); flt.connect(g); g.connect(ac.destination);
+    src.start(now); src.stop(now + 0.58);
+    // 低音サブ
+    const o = ac.createOscillator(), og = ac.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(85, now);
+    o.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+    og.gain.setValueAtTime(0, now);
+    og.gain.linearRampToValueAtTime(0.1, now + 0.05);
+    og.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    o.connect(og); og.connect(ac.destination);
+    o.start(now); o.stop(now + 0.45);
+  });
+}
+
+// 敵の中心から emoji パーティクルを放射
+function _spawnEnemyImpactParticles(emoji, n) {
+  const els = _battleEls();
+  if (!els.enemy || !els.stage) return;
+  const enemyRect = els.enemy.getBoundingClientRect();
+  const stageRect = els.stage.getBoundingClientRect();
+  const cx = enemyRect.left + enemyRect.width / 2 - stageRect.left;
+  const cy = enemyRect.top + enemyRect.height / 2 - stageRect.top;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('div');
+    p.className = 'enemy-impact-particle';
+    p.textContent = emoji;
+    p.style.left = cx + 'px';
+    p.style.top  = cy + 'px';
+    const angle = (i / n) * Math.PI * 2 + Math.random() * 0.4;
+    const dist = 38 + Math.random() * 30;
+    p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    p.style.setProperty('--dy', (Math.sin(angle) * dist) + 'px');
+    els.stage.appendChild(p);
+    setTimeout(() => { if (p.parentNode) p.remove(); }, 700);
+  }
+}
+
+// ===== 敵の反撃 (演出のみ、HPは減らさない) =====
+// 差替フック: window.PONO_ENEMY_ATTACK_SFX, window.PONO_HERO_NAME
+const BATTLE_HERO_NAME_DEFAULT = 'ポノ';
+function _battleHeroName() {
+  return (typeof window !== 'undefined' && window.PONO_HERO_NAME) || BATTLE_HERO_NAME_DEFAULT;
+}
+
+function enemyCounterAttack() {
+  if (!_battle.active) return;
+  const damage = 2 + Math.floor(Math.random() * 4); // 2〜5
+  _shakeScreen();
+  try { playEnemyAttackSound(); } catch (e) {}
+  _showPlayerDamageWindow(damage);
+}
+
+function _shakeScreen() {
+  const app = document.getElementById('app') || document.body;
+  if (!app) return;
+  app.classList.remove('screen-shake');
+  void app.offsetWidth; // reflow でアニメ再始動
+  app.classList.add('screen-shake');
+  setTimeout(() => app.classList.remove('screen-shake'), 600);
+}
+
+function _showPlayerDamageWindow(damage) {
+  const old = document.querySelector('.player-damage-window');
+  if (old) old.remove();
+  const w = document.createElement('div');
+  w.className = 'player-damage-window';
+  const name = _battleHeroName();
+  w.innerHTML =
+    '<div class="dq-window">' +
+      '<div class="dq-line">' + name + 'は <span class="dmg-num">' + damage + '</span> のダメージを うけた！</div>' +
+    '</div>';
+  document.body.appendChild(w);
+  setTimeout(() => {
+    w.style.opacity = '0';
+    setTimeout(() => { if (w.parentNode) w.remove(); }, 350);
+  }, 1400);
+}
+
+function playEnemyAttackSound() {
+  if (typeof window !== 'undefined' && window.PONO_ENEMY_ATTACK_SFX) {
+    try {
+      const a = new Audio(window.PONO_ENEMY_ATTACK_SFX);
+      a.volume = 0.55; a.play().catch(() => {});
+      return;
+    } catch (e) { /* fall through to synth */ }
+  }
+  // 合成: 低めの "ドン" (サインのピッチダウン + ノイズ衝撃)
+  withAudio(ac => {
+    const now = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(220, now);
+    o.frequency.exponentialRampToValueAtTime(55, now + 0.18);
+    g.gain.setValueAtTime(0.46, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    o.connect(g); g.connect(ac.destination);
+    o.start(now); o.stop(now + 0.3);
+    // ノイズ衝撃
+    const bufLen = Math.floor(ac.sampleRate * 0.14);
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / bufLen) * 0.85;
+    const src = ac.createBufferSource(), ng = ac.createGain();
+    src.buffer = buf;
+    ng.gain.setValueAtTime(0.32, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    src.connect(ng); ng.connect(ac.destination);
+    src.start(now); src.stop(now + 0.15);
+  });
 }
 
 // 5 文字目完成時に呼ばれる: フルチャージ→魔法発動→撃破演出→ファンファーレ
@@ -2622,24 +3032,63 @@ function battleVictory(spellKind, onDone) {
     _showEnemySpeech('うわぁぁ〜！', 1400);
   }, 2400);
 
-  // ファンファーレ + BGM フェード (BGM は ファンファーレ終了時に復帰させる)
+  // ファンファーレ + 撃破ウィンドウ + BGM フェード
   setTimeout(() => {
     try { fadeBgm(0, 300); } catch (e) {}
+    // 「〇〇を たおした！」ウィンドウ (キャンバス位置に重ねる)
+    try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
     try {
       const a = playVictoryFanfare();
+      const onEnd = () => {
+        try { fadeBgm(0.28, 600); } catch (e) {}
+        try { _hideDefeatedWindow(); } catch (e) {}
+      };
       if (a && typeof a.addEventListener === 'function') {
-        a.addEventListener('ended', () => { try { fadeBgm(0.28, 600); } catch (e) {} });
+        a.addEventListener('ended', onEnd);
       } else {
-        // 合成フォールバック時 (約 1.5s で終わる) は時間指定で復帰
-        setTimeout(() => { try { fadeBgm(0.28, 600); } catch (e) {} }, 1800);
+        // 合成フォールバック (約 1.5s)
+        setTimeout(onEnd, 1800);
       }
     } catch (e) {}
   }, 2800);
 
-  // 次のフロー (行クリアダイアログ等) はファンファーレを邪魔しないよう少し早めに進める
+  // 行クリアダイアログへの遷移はファンファーレ中でも走らせる
   setTimeout(() => {
     if (onDone) onDone();
   }, 4200);
+}
+
+// 「〇〇を たおした！」のドラクエ風ウィンドウ (キャンバス位置に重ねる)
+function _showDefeatedWindow(enemyName) {
+  _hideDefeatedWindow();
+  const cw = document.querySelector('.canvas-wrap') || document.getElementById('canvasContainer');
+  const w = document.createElement('div');
+  w.className = 'battle-defeated-window';
+  w.id = 'battleDefeatedWindow';
+  const name = enemyName || 'モンスター';
+  w.innerHTML =
+    '<div class="dq-window">' +
+      '<div class="dq-line">' + name + 'を</div>' +
+      '<div class="dq-line"><span class="dq-line-emphasis">たおした！</span></div>' +
+    '</div>';
+  document.body.appendChild(w);
+  // キャンバス領域に重ねる (取れない場合は画面中央)
+  if (cw) {
+    const r = cw.getBoundingClientRect();
+    w.style.left   = r.left   + 'px';
+    w.style.top    = r.top    + 'px';
+    w.style.width  = r.width  + 'px';
+    w.style.height = r.height + 'px';
+  } else {
+    w.style.inset = '0';
+  }
+}
+
+function _hideDefeatedWindow() {
+  const w = document.getElementById('battleDefeatedWindow');
+  if (!w) return;
+  w.style.opacity = '0';
+  setTimeout(() => { if (w.parentNode) w.remove(); }, 400);
 }
 
 // ===== バトル SFX アセット =====
@@ -3291,12 +3740,36 @@ function _rowPracticeNextChar() {
               if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
               if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
             }
-            // === バトル: 5文字目なら勝利シーケンス、それ以外は通常ダメージ ===
+            // === バトル分岐 ===
             const isFinisher = _rowPracticeRow && (_rowPracticeStep === (_rowPracticeRow.count - 1));
+            // Phase 3-4 を後でまとめて呼び出せるように関数化
+            const startWordPhases = function() {
+              _rowPracticePhase = 'show_word';
+              const data = WORD_DATA[currentCategory][currentCharIndex];
+              const char = CATEGORIES[currentCategory].chars[currentCharIndex];
+              if (data && data.word) {
+                _showRowPracticeWord(char, data, function() {
+                  _rowPracticePhase = 'quiz_free';
+                  _hedgeBubble.textContent = 'ことばで かこう！';
+                  _ponoBubble.textContent = 'ことばで かこう！';
+                  _startWordContextPhase(char, data, function() {
+                    _rowPracticeStep++;
+                    _rowPracticeNextChar();
+                  });
+                });
+              } else {
+                // No word data (を, ん) — skip word phase
+                setTimeout(function() {
+                  _rowPracticeStep++;
+                  _rowPracticeNextChar();
+                }, 1200);
+              }
+            };
+
             if (isFinisher && _battle.active) {
-              // 5文字目: Phase 3-4 をスキップしてファンファーレ→次の行へ
+              // 5文字目: Phase 3-4 をスキップして勝利フローへ
               try {
-                battleVictory('light', function() {
+                battleVictory('fire', function() {
                   _rowPracticeStep++;
                   _rowPracticeNextChar();
                 });
@@ -3306,28 +3779,15 @@ function _rowPracticeNextChar() {
               }
               return;
             }
-            try { if (_battle.active) battleHitEnemy({ finisher: false }); } catch (e) {}
-            // Phase 3: Show word illustration
-            _rowPracticePhase = 'show_word';
-            const data = WORD_DATA[currentCategory][currentCharIndex];
-            const char = CATEGORIES[currentCategory].chars[currentCharIndex];
-            if (data && data.word) {
-              _showRowPracticeWord(char, data, function() {
-                // Phase 4: Word context writing
-                _rowPracticePhase = 'quiz_free';
-                _hedgeBubble.textContent = 'ことばで かこう！';
-                _ponoBubble.textContent = 'ことばで かこう！';
-                _startWordContextPhase(char, data, function() {
-                  _rowPracticeStep++;
-                  _rowPracticeNextChar();
-                });
-              });
+
+            if (_battle.active) {
+              // プレイヤー攻撃
+              try { battleHitEnemy({ finisher: false }); } catch (e) {}
+              // 敵の反撃 → そのあと word phase へ (反撃表示と word illustration が被らないよう遅延)
+              setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 900);
+              setTimeout(startWordPhases, 2300);
             } else {
-              // No word data (を, ん) — skip word phase
-              setTimeout(function() {
-                _rowPracticeStep++;
-                _rowPracticeNextChar();
-              }, 1200);
+              startWordPhases();
             }
           },
           showHintAfterMisses: 3,
