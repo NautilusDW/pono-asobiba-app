@@ -2171,16 +2171,16 @@ body.battle-mode .battle-log-window {
   inset: -6% -6%;   /* スケール時の端切れを防ぐため少し余白を持たせる */
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-repeat: repeat-x;
-  background-size: auto 115%;
-  background-position: 0 center;
+  background-size: auto 65%;
+  background-position: 0 bottom;
   opacity: 0.9;
   animation: battleIntroForestScroll 24s linear infinite;
   filter: brightness(0.75) saturate(0.95);
   image-rendering: auto;
 }
 @keyframes battleIntroForestScroll {
-  0%   { background-position: 0 center; }
-  100% { background-position: -800px center; }
+  0%   { background-position: 0 bottom; }
+  100% { background-position: -500px bottom; }
 }
 /* 森 → 黒の頂上ビネット (敵が見やすくなるよう画面下部を暗く) */
 .battle-intro-forest::after {
