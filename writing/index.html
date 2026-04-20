@@ -5002,10 +5002,14 @@ function battleVictory(spellKind, onDone) {
     } catch (e) { /* ignore */ }
   }, 400);
 
-  // ファンファーレは剣閃 SE と重ならないよう t=1600ms で独立に鳴らす。
-  // BGM は同時に 0 へフェードして、ファンファーレがクリアに聞こえるようにする。
-  // pool 経由だと他の SE と状態を共有しちゃうので、ここは fresh な new Audio を直接作る。
-  // (2026-04-20 ユーザー要望: 「ファンファーレが鳴らない」= pool の state/重複で無音化)
+  // 撃破ウィンドウ
+  setTimeout(() => {
+    try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
+  }, 1900);
+
+  // 2026-04-20 ユーザー要望: ファンファーレは「キノコの戦士を倒した後、撃破ウィンドウが
+  // 出た後」に鳴らす。以前は t=1600ms で撃破アニメ中に鳴っていた → t=2300ms
+  // (撃破ウィンドウ 1900ms + 400ms 余裕) に移動。BGM もこのタイミングで 0 へ。
   setTimeout(() => {
     try { fadeBgm(0, 300); } catch (e) {}
     try {
@@ -5019,14 +5023,9 @@ function battleVictory(spellKind, onDone) {
     } catch (e) {
       try { _playVictoryFanfareSynth(); } catch (e2) {}
     }
-  }, 1600);
-
-  // 撃破ウィンドウ
-  setTimeout(() => {
-    try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
     // ファンファーレ長さぶん (約 3.2s) 待って BGM を戻す
     setTimeout(() => { try { fadeBgm(0.28, 600); } catch (e) {} }, 3200);
-  }, 1900);
+  }, 2300);
 
   // 勝利後: バトル中に溜めたどんぐり + 行クリアボーナス(+5) をバトルログで一括表示。
   // ユーザー要望 (2026-04-20): モーダルではなく真ん中のバトルメッセージ欄で受け取る。
@@ -6072,106 +6071,84 @@ function _rowPracticeNextChar() {
     runDemo(function() {
       showNazoriStartThenQuiz();
     });
-    return;
 
-    // --- 以下は unreachable (旧フロー残骸)、safe-parse のため残置 ---
-    if (false) {
-      setTimeout(function() {
-        if (!_rowPracticeActive) return;
-        setTimeout(function() {
+    // _startQuizOpts: 実際に writer.quiz() を呼び出す。呼び元で _rowPracticePhase と
+    // setQuizActive(true) は設定済みの前提。
+    function _startQuizOpts() {
+      var _qOpts = {
+        onCorrectStroke: function() {
+          _hideMonsterBubble();
+          try { playNazoriSound(); } catch (e) {}
+          try { flashLastStroke(); } catch (e) {}
+        },
+        onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
+        onComplete: function() {
+          setQuizActive(false);
           if (!_rowPracticeActive) return;
-          setQuizActive(true);
-          var _qOpts = {
-            onCorrectStroke: function() {
-              _hideMonsterBubble();
-              // 1 画ごとに nazori01.mp3 (2026-04-20 ユーザー指示で全モード統一)
-              try { playNazoriSound(); } catch (e) {}
-              try { flashLastStroke(); } catch (e) {}
-            },
-            onMistake: function() { _perfectCurrentChar = false; _hideMonsterBubble(); },
-            onComplete: function() {
-            setQuizActive(false);
-            if (!_rowPracticeActive) return;
-            playSuccessSound();
-            // バトル中は confetti / 妖精ポップ (🌰ドロップ) を抑制する。
-            // (2026-04-20 ユーザー要望: バトル中にどんぐりが出てくる → 勝利時にまとめて表示のみ)
-            const _inBattle = !!(_battle && _battle.active);
-            if (!_inBattle) launchConfetti();
-            saveStamp(currentCategory, currentCharIndex);
-            markCharDone(currentCharIndex);
-            if (!_inBattle) _playMonsterPop();
-            _awardAcorns(_perfectCurrentChar);
-            if (window.incrementStat) {
-              window.incrementStat('writing_chars', 1);
-              if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
-              if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
-            }
-            // === バトル分岐 ===
-            const isFinisher = _rowPracticeRow && (_rowPracticeStep === (_rowPracticeRow.count - 1));
-            // Phase 3-4 を後でまとめて呼び出せるように関数化
-            const startWordPhases = function() {
-              _rowPracticePhase = 'show_word';
-              const data = WORD_DATA[currentCategory][currentCharIndex];
-              const char = CATEGORIES[currentCategory].chars[currentCharIndex];
-              if (data && data.word) {
-                _showRowPracticeWord(char, data, function() {
-                  _rowPracticePhase = 'quiz_free';
-                  _hedgeBubble.textContent = 'ことばで かこう！';
-                  _ponoBubble.textContent = 'ことばで かこう！';
-                  _startWordContextPhase(char, data, function() {
-                    _rowPracticeStep++;
-                    _rowPracticeNextChar();
-                  });
-                });
-              } else {
-                // No word data (を, ん) — skip word phase
-                setTimeout(function() {
-                  _rowPracticeStep++;
-                  _rowPracticeNextChar();
-                }, 1200);
-              }
-            };
-
-            if (isFinisher && _battle.active) {
-              // 5文字目: Phase 3-4 をスキップして勝利フローへ
-              try {
-                battleVictory('fire', function() {
+          playSuccessSound();
+          const _inBattle = !!(_battle && _battle.active);
+          if (!_inBattle) launchConfetti();
+          saveStamp(currentCategory, currentCharIndex);
+          markCharDone(currentCharIndex);
+          if (!_inBattle) _playMonsterPop();
+          _awardAcorns(_perfectCurrentChar);
+          if (window.incrementStat) {
+            window.incrementStat('writing_chars', 1);
+            if (currentCategory === 'hiragana') window.incrementStat('writing_hiragana', 1);
+            if (currentCategory === 'katakana') window.incrementStat('writing_katakana', 1);
+          }
+          const isFinisher = _rowPracticeRow && (_rowPracticeStep === (_rowPracticeRow.count - 1));
+          const startWordPhases = function() {
+            _rowPracticePhase = 'show_word';
+            const data = WORD_DATA[currentCategory][currentCharIndex];
+            const char = CATEGORIES[currentCategory].chars[currentCharIndex];
+            if (data && data.word) {
+              _showRowPracticeWord(char, data, function() {
+                _rowPracticePhase = 'quiz_free';
+                _hedgeBubble.textContent = 'ことばで かこう！';
+                _ponoBubble.textContent = 'ことばで かこう！';
+                _startWordContextPhase(char, data, function() {
                   _rowPracticeStep++;
                   _rowPracticeNextChar();
                 });
-              } catch (e) {
-                _rowPracticeStep++;
-                _rowPracticeNextChar();
-              }
-              return;
-            }
-
-            if (_battle.active) {
-              // バトル中は「ことばモーダル (アリのア〜, カーテンのカ〜)」「音声読み上げ」「ことばで書く」phase を
-              // すべてスキップし、1 回のなぞり = 1 回の攻撃で次の文字へ進める。
-              try { battleHitEnemy({ finisher: false }); } catch (e) {}
-              // 魔法動画は ~3.2s 出るので、敵の反撃はその後に十分な間を空けて出す。
-              // 反撃は「〇〇の こうげき！」告知 (~1.2s) → ダメージ演出 (~2.75s) → なので
-              // t=2200 で告知、t=~3400 で攻撃、t=~6150 でダメージ消え、t=6800 で次の文字。
-              setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 2200);
+              });
+            } else {
               setTimeout(function() {
                 _rowPracticeStep++;
                 _rowPracticeNextChar();
-              }, 6800);
-            } else {
-              startWordPhases();
+              }, 1200);
             }
-          },
-          showHintAfterMisses: 3,
-          highlightOnComplete: true,
-          highlightCompleteColor: currentScheme.stroke
           };
-          _lastQuizOpts = _qOpts;
-          writer.quiz(_qOpts);
-          }, 2200); // なぞりスタート表示時間 (2026-04-20 ユーザー要望で 1000→2200ms に延長)
-        }, 600); // お手本終了 → メッセージ開始の間 (2026-04-20 追加)
-      }
-    });
+          if (isFinisher && _battle.active) {
+            try {
+              battleVictory('fire', function() {
+                _rowPracticeStep++;
+                _rowPracticeNextChar();
+              });
+            } catch (e) {
+              _rowPracticeStep++;
+              _rowPracticeNextChar();
+            }
+            return;
+          }
+          if (_battle.active) {
+            try { battleHitEnemy({ finisher: false }); } catch (e) {}
+            setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 2200);
+            setTimeout(function() {
+              _rowPracticeStep++;
+              _rowPracticeNextChar();
+            }, 6800);
+          } else {
+            startWordPhases();
+          }
+        },
+        showHintAfterMisses: 3,
+        highlightOnComplete: true,
+        highlightCompleteColor: currentScheme.stroke
+      };
+      _lastQuizOpts = _qOpts;
+      writer.quiz(_qOpts);
+    }
   }, 500);
 }
 
