@@ -1527,9 +1527,19 @@ body.battle-mode .villain-deco {
   background-image: url('../assets/images/hero/spum/concentrate.png');
   animation: heroAttackMagicAnim 1.2s steps(6, jump-none) 1 forwards;
 }
-.hero-sprite.damaged {
-  background-image: url('../assets/images/hero/spum/damaged.png');
-  animation: heroAttackMagicAnim 0.5s steps(6, jump-none) 1 forwards;
+/* 被弾時の .damaged は「スプライト差し替え」ではなく「一時的な黒シルエット化」で表現する。
+   (damaged.png は 5 コマしか無いので steps(6) でズレて透明になる → 消えて見える事故があった)
+   idle のアニメはそのまま回しつつ、filter で真っ黒 + 赤いグロウを被せる。 */
+.battle-stage .battle-hero.silhouette-flash {
+  animation: battleHeroSilhouetteFlash 0.45s ease-out 1 forwards;
+}
+@keyframes battleHeroSilhouetteFlash {
+  0%   { filter: brightness(1) drop-shadow(0 3px 5px rgba(0,0,0,0.55)); }
+  15%  { filter: brightness(0) drop-shadow(0 0 10px #ff3b3b) drop-shadow(0 0 18px #ff6b6b); transform: scaleX(-1) translate(-4px, -50%); }
+  35%  { filter: brightness(0) drop-shadow(0 0 12px #ff5252) drop-shadow(0 0 20px #ff8080); transform: scaleX(-1) translate(5px, -50%); }
+  55%  { filter: brightness(0) drop-shadow(0 0 10px #ff3b3b) drop-shadow(0 0 18px #ff6b6b); transform: scaleX(-1) translate(-3px, -50%); }
+  75%  { filter: brightness(0.2) drop-shadow(0 0 6px rgba(255,60,60,0.6)); transform: scaleX(-1) translate(2px, -50%); }
+  100% { filter: brightness(1) drop-shadow(0 3px 5px rgba(0,0,0,0.55)); transform: scaleX(-1) translate(0, -50%); }
 }
 @keyframes heroIdleAnim {
   from { background-position-x: 0%; }
@@ -1562,8 +1572,8 @@ body.battle-mode .villain-deco {
   .hero-sprite.move,
   .hero-sprite.attack-magic,
   .hero-sprite.attack-normal,
-  .hero-sprite.concentrate,
-  .hero-sprite.damaged { animation: none; background-position-x: 0%; }
+  .hero-sprite.concentrate { animation: none; background-position-x: 0%; }
+  .battle-stage .battle-hero.silhouette-flash { animation: none; filter: brightness(0.4); }
 }
 .battle-enemy {
   position: relative;
@@ -1594,19 +1604,25 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: scaleX(1);   opacity: 0.75; }
   50%      { transform: scaleX(0.85); opacity: 0.55; }
 }
-/* ダメージ: 短い横シェイク + 白フラッシュ */
+/* ダメージ: 強めの左右ブルブル + 白フラッシュ
+   (2026-04-20 ユーザー要望で振動を強化: amplitude を ±14px まで引き上げ、コマ数を増やして高速ブレさせる) */
 .battle-enemy.damaged {
-  animation: battleEnemyHit 0.32s ease-in-out, battleEnemyFloat 2.4s ease-in-out 0.32s infinite;
+  animation: battleEnemyHit 0.5s cubic-bezier(.36,.07,.19,.97), battleEnemyFloat 2.4s ease-in-out 0.5s infinite;
 }
 .battle-enemy.damaged .enemy-img {
-  animation: battleEnemyFlash 0.32s ease-out;
+  animation: battleEnemyFlash 0.5s ease-out;
 }
 @keyframes battleEnemyHit {
   0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(-8px) rotate(-3deg); }
-  40%      { transform: translateX(7px)  rotate(3deg);  }
-  60%      { transform: translateX(-5px) rotate(-2deg); }
-  80%      { transform: translateX(4px)  rotate(1.5deg);}
+  8%       { transform: translateX(-14px) rotate(-4deg); }
+  18%      { transform: translateX( 12px) rotate( 4deg); }
+  28%      { transform: translateX(-12px) rotate(-3deg); }
+  38%      { transform: translateX( 11px) rotate( 3deg); }
+  48%      { transform: translateX( -9px) rotate(-2deg); }
+  58%      { transform: translateX(  8px) rotate( 2deg); }
+  68%      { transform: translateX( -6px) rotate(-1.5deg); }
+  78%      { transform: translateX(  4px) rotate( 1deg); }
+  88%      { transform: translateX( -2px) rotate(-0.5deg); }
 }
 @keyframes battleEnemyFlash {
   0%   { filter: brightness(1)  drop-shadow(0 0 0 #fff); }
@@ -4008,24 +4024,110 @@ function _showBattleStage(rowId) {
 
 // ===== 戦闘ログウィンドウ (2行固定) =====
 // lines: [line1, line2] または [line1]。opts: { line1Class, line2Class, animate }
+// ===== タイプライター状態 (1 文字ずつ進行) =====
+// 子供の目が文字にフォーカスするよう 45ms/文字で順次出す。
+// 進行中にタップしたら _completeBattleLogTypewriter で即完了 → 次タップで queue 送り。
+const _battleLogTW = {
+  timers: [],
+  typing: false,
+  l1El: null, l2El: null,
+  l1Full: '', l2Full: '',
+  l1UsesHtml: false, l2UsesHtml: false,
+};
+
+function _cancelBattleLogTypewriter() {
+  for (const t of _battleLogTW.timers) clearTimeout(t);
+  _battleLogTW.timers = [];
+}
+
+function _completeBattleLogTypewriter() {
+  if (!_battleLogTW.typing) return;
+  _cancelBattleLogTypewriter();
+  if (_battleLogTW.l1El) {
+    if (_battleLogTW.l1UsesHtml) _battleLogTW.l1El.innerHTML = _battleLogTW.l1Full;
+    else _battleLogTW.l1El.textContent = _battleLogTW.l1Full;
+  }
+  if (_battleLogTW.l2El) {
+    if (_battleLogTW.l2UsesHtml) _battleLogTW.l2El.innerHTML = _battleLogTW.l2Full;
+    else _battleLogTW.l2El.textContent = _battleLogTW.l2Full;
+  }
+  _battleLogTW.typing = false;
+}
+
 function _setBattleLog(lines, opts) {
+  _cancelBattleLogTypewriter();
+  _battleLogTW.typing = false;
   if (!Array.isArray(lines)) lines = [lines || ''];
   const l1 = document.getElementById('battleLogLine1');
   const l2 = document.getElementById('battleLogLine2');
   const o = opts || {};
   const animate = (o.animate !== false);
-  const apply = (el, text, cls) => {
+  const useTypewriter = (o.typewriter !== false) && animate;
+  const t1 = lines[0] || '';
+  const t2 = lines[1] || '';
+  const usesHtml1 = t1.indexOf('<') >= 0;
+  const usesHtml2 = t2.indexOf('<') >= 0;
+
+  // ラインのクラス付与 + フェードイン (enter) だけ先にやって中身は空にする
+  const prep = (el, cls) => {
     if (!el) return;
     el.className = 'battle-log-line' + (cls ? ' ' + cls : '');
-    el.innerHTML = text || '';
-    if (animate && text) {
+    el.textContent = '';
+    if (animate) {
       el.classList.remove('enter');
       void el.offsetWidth;
       el.classList.add('enter');
     }
   };
-  apply(l1, lines[0] || '', o.line1Class);
-  apply(l2, lines[1] || '', o.line2Class);
+  prep(l1, o.line1Class);
+  prep(l2, o.line2Class);
+
+  // 即時表示モード (animate:false や reduced-motion 想定)
+  if (!useTypewriter) {
+    if (l1) l1.innerHTML = t1;
+    if (l2) l2.innerHTML = t2;
+    return;
+  }
+
+  _battleLogTW.l1El = l1; _battleLogTW.l2El = l2;
+  _battleLogTW.l1Full = t1; _battleLogTW.l2Full = t2;
+  _battleLogTW.l1UsesHtml = usesHtml1; _battleLogTW.l2UsesHtml = usesHtml2;
+  _battleLogTW.typing = true;
+
+  const CHAR_MS = 45;
+  const LINE_GAP_MS = 180;
+
+  const typeLine = (el, text, usesHtml, startDelay, onDone) => {
+    if (!el || !text) {
+      _battleLogTW.timers.push(setTimeout(() => { if (onDone) onDone(); }, startDelay));
+      return;
+    }
+    if (usesHtml) {
+      // HTML タグ入りは 1 文字ずつ刻むと壊れるので一括表示
+      _battleLogTW.timers.push(setTimeout(() => {
+        el.innerHTML = text;
+        if (onDone) onDone();
+      }, startDelay));
+      return;
+    }
+    let i = 0;
+    const step = () => {
+      i++;
+      el.textContent = text.slice(0, i);
+      if (i < text.length) {
+        _battleLogTW.timers.push(setTimeout(step, CHAR_MS));
+      } else {
+        if (onDone) onDone();
+      }
+    };
+    _battleLogTW.timers.push(setTimeout(step, startDelay));
+  };
+
+  typeLine(l1, t1, usesHtml1, 40, () => {
+    typeLine(l2, t2, usesHtml2, LINE_GAP_MS, () => {
+      _battleLogTW.typing = false;
+    });
+  });
 }
 function _clearBattleLog() { _setBattleLog(['', ''], { animate: false }); }
 
@@ -4057,13 +4159,20 @@ function _battleDialogBind() {
 }
 
 function _battleDialogAdvance() {
+  // タイプライター進行中なら、まず全文即表示するだけ。次のタップで queue 送り。
+  if (_battleLogTW.typing) {
+    _completeBattleLogTypewriter();
+    _battleDialog._minShowUntil = Date.now() + 220;
+    return;
+  }
   if (_battleDialog.queue.length === 0) {
     _battleDialogFinish();
     return;
   }
   const next = _battleDialog.queue.shift();
   _setBattleLog(next.lines || ['', ''], next.opts || {});
-  _battleDialog._minShowUntil = Date.now() + 350;
+  // タイプライター分の時間 + 余裕を取って誤爆防止タイマーを設定
+  _battleDialog._minShowUntil = Date.now() + 220;
   _battleDialogSetAwait(true);
 }
 
@@ -4410,10 +4519,19 @@ function enemyCounterAttack() {
     try { playEnemyAttackSound(); } catch (e) {}
     // 勇者 HP を減らす (floor でクランプ、死なない)
     try { _applyHeroHpDamage(damage); } catch (e) {}
-    // 勇者を一瞬ダメージモーションへ → idle 復帰
+    // 勇者は idle のまま、一時的に真っ黒シルエット化して「被弾」表現にする
+    // (以前は damaged スプライト差し替えで一瞬キャラが消えて見える事故があったため廃止)
     try {
-      _setHeroAnim('damaged');
-      setTimeout(function() { if (_battle.active) _setHeroAnim('idle'); }, 500);
+      // #battleHero は .battle-hero と .hero-sprite 両方を持つ単一要素
+      const heroEl = document.getElementById('battleHero');
+      if (heroEl) {
+        heroEl.classList.remove('silhouette-flash');
+        void heroEl.offsetWidth;
+        heroEl.classList.add('silhouette-flash');
+        setTimeout(function() {
+          if (heroEl) heroEl.classList.remove('silhouette-flash');
+        }, 500);
+      }
     } catch (e) {}
     _showPlayerDamageWindow(damage);
   });
