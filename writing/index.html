@@ -2058,35 +2058,35 @@ body.battle-mode .battle-log-window {
 }
 .map-scene-overlay.show { opacity: 1; }
 .map-scene-overlay.fade-out { opacity: 0; }
-.map-scene-bg {
+.map-scene-viewport {
   position: absolute; inset: 0;
-  background-image: url('../assets/images/maps/map_A.png');
-  background-repeat: no-repeat;
-  /* 現在行のステージだけアップで映す。横 350% に拡大し、JS で xPct に合わせて
-     background-position-x を計算してそのステージをビューポート中央に置く。
-     background-position-y: 62% を使うことで画像 y=62% (= 道のあたり) が
-     コンテナ y=62% に固定される (数学的にそうなる) → hero の bottom も 38% で
-     自動的に道の上に乗る。(2026-04-20 ユーザー要望) */
-  background-size: 350% auto;
-  background-position: 50% 62%;
-  /* バイリニア補間 (ブラウザデフォルト) で素直に拡大 */
-  image-rendering: auto;
+  overflow: hidden;
+  background: #000;
 }
-/* スマホ縦画面: さらにアップ (height 基準で 200%) */
-@media (max-aspect-ratio: 1/1) {
-  .map-scene-bg { background-size: auto 200%; }
+/* map_A.png は 2752x1536 (縦中央から 46〜54% の帯に「道」が走る)。
+   JS が scene.xPct / scene.yPct を画像ピクセルに変換し、その点を
+   hero の足元 (画面 50%, 62%) に合わせるよう left/top を設定する。
+   マップを動かすのではなく、hero は常に画面の同じ位置に立ち、
+   その足元に「現在のステージの道の点」が来るように画像をズラす設計。
+   (2026-04-20 ユーザー要望「勇者を道の上に」+「マップでなく勇者側を意識」に対応) */
+.map-scene-bg-img {
+  position: absolute;
+  top: 0; left: 0;
+  max-width: none;
+  pointer-events: none;
+  image-rendering: auto;
+  filter: brightness(0.95);
 }
 .map-scene-hero {
   position: absolute;
-  /* 画像 y=62% が container y=62% に来るように bg-position-y を合わせているので、
-     hero の feet (bottom) を 38% に置くと「道の上」に自動的に乗る。 */
+  /* 足元 (bottom) が画面 y=38% (= top 62%) に来る。
+     _showMapScene() で画像側を translate し、この点に現在ステージの道が重なる。 */
   bottom: 38%;
+  left: 50%;
   width: min(20vh, 108px);
   height: min(20vh, 108px);
-  transform: translateX(-50%);
-  z-index: 2;
+  z-index: 3;
   filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6));
-  transition: left 0.6s ease-in-out;
 }
 /* map-scene-hero は scaleX(-1) で右向き。translateX(-50%) を scaleX に影響させないよう
    ラッパーで囲わず inline で両方同時に指定する。点滅 (pulse) は filter で drop-shadow を強めて実現。 */
@@ -5608,70 +5608,91 @@ function startRowPractice(rowIndex) {
 // ===== マップシーン: 行ごとに勇者の現在地を左→右で表示してからバトルへ =====
 // 10 行分の位置 (map_A.png は村→橋→洞窟→溶岩→城 の左右配置) とサブタイトル。
 // rowId は「あ」「か」... のラベル文字で来る。
+// xPct / yPct は map_A.png (2752x1536) 内の「道の立ち位置」を画像左上基準で
+// パーセンテージ指定。yPct は全体的に 46〜54% の帯 (道が走る帯) に収まる。
 const MAP_ROW_SCENES = {
-  'あ': { xPct: 6,  title: 'むらのはずれ' },
-  'か': { xPct: 16, title: 'はしのまえ' },
-  'さ': { xPct: 28, title: 'どうくつの いりぐち' },
-  'た': { xPct: 39, title: 'どうくつの おく' },
-  'な': { xPct: 49, title: 'かざんの ふもと' },
-  'は': { xPct: 59, title: 'ひのやま' },
-  'ま': { xPct: 68, title: 'ひのたに' },
-  'や': { xPct: 77, title: 'ひのうみ' },
-  'ら': { xPct: 86, title: 'しろの まえ' },
-  'わ': { xPct: 94, title: 'まおうの しろ' },
-  // カタカナも同じマッピングで流用
-  'ア': { xPct: 6,  title: 'むらのはずれ' },
-  'カ': { xPct: 16, title: 'はしのまえ' },
-  'サ': { xPct: 28, title: 'どうくつの いりぐち' },
-  'タ': { xPct: 39, title: 'どうくつの おく' },
-  'ナ': { xPct: 49, title: 'かざんの ふもと' },
-  'ハ': { xPct: 59, title: 'ひのやま' },
-  'マ': { xPct: 68, title: 'ひのたに' },
-  'ヤ': { xPct: 77, title: 'ひのうみ' },
-  'ラ': { xPct: 86, title: 'しろの まえ' },
-  'ワ': { xPct: 94, title: 'まおうの しろ' },
+  'あ': { xPct: 6,  yPct: 48, title: 'むらのはずれ' },
+  'か': { xPct: 16, yPct: 49, title: 'はしのまえ' },
+  'さ': { xPct: 28, yPct: 52, title: 'どうくつの いりぐち' },
+  'た': { xPct: 39, yPct: 52, title: 'どうくつの おく' },
+  'な': { xPct: 49, yPct: 54, title: 'かざんの ふもと' },
+  'は': { xPct: 59, yPct: 50, title: 'ひのやま' },
+  'ま': { xPct: 68, yPct: 52, title: 'ひのたに' },
+  'や': { xPct: 77, yPct: 52, title: 'ひのうみ' },
+  'ら': { xPct: 86, yPct: 51, title: 'しろの まえ' },
+  'わ': { xPct: 94, yPct: 52, title: 'まおうの しろ' },
+  'ア': { xPct: 6,  yPct: 48, title: 'むらのはずれ' },
+  'カ': { xPct: 16, yPct: 49, title: 'はしのまえ' },
+  'サ': { xPct: 28, yPct: 52, title: 'どうくつの いりぐち' },
+  'タ': { xPct: 39, yPct: 52, title: 'どうくつの おく' },
+  'ナ': { xPct: 49, yPct: 54, title: 'かざんの ふもと' },
+  'ハ': { xPct: 59, yPct: 50, title: 'ひのやま' },
+  'マ': { xPct: 68, yPct: 52, title: 'ひのたに' },
+  'ヤ': { xPct: 77, yPct: 52, title: 'ひのうみ' },
+  'ラ': { xPct: 86, yPct: 51, title: 'しろの まえ' },
+  'ワ': { xPct: 94, yPct: 52, title: 'まおうの しろ' },
 };
+const MAP_IMG_NATURAL_W = 2752;
+const MAP_IMG_NATURAL_H = 1536;
 
 // マップシーン表示 → タップで次へ → バトル登場 (onDone) へ。
+// 2026-04-20: background-image 方式では縦横のスケールがブラウザ依存で
+// ずれて「勇者がマップの下に外れる」現象が発生した。明示的な <img> +
+// 数値 translate に切り替え、hero 足元 (画面 50%, 62%) に scene の
+// (xPct, yPct) 点を合わせる。ビューポートがどんなアスペクト比でも
+// 勇者は常に道の上に立つ。
 function _showMapScene(rowId, onDone) {
-  // マップシーンではフィールド BGM (map) に切替。バトル登場時に battle へ戻す。
   try { setBgmFor('map'); } catch (e) {}
   const scene = MAP_ROW_SCENES[rowId] || MAP_ROW_SCENES['あ'];
   const overlay = document.createElement('div');
   overlay.className = 'map-scene-overlay';
-  const bg = document.createElement('div');
-  bg.className = 'map-scene-bg';
-  // 現在ステージをビューポート中央に置く background-position-x を計算。
-  // .map-scene-bg の background-size: 350% なので、画像幅 = コンテナ × 3.5。
-  // xPct% の点をコンテナ中央に置くには N% × (W - 3.5W) = xPct/100 × 3.5W - W/2
-  // → N = (3.5 × xPct - 50) / 2.5 (0〜100 にクランプ)
-  const scaleX = 3.5;
-  const rawN = (scaleX * scene.xPct - 50) / (scaleX - 1);
-  const bgX = Math.max(0, Math.min(100, rawN));
-  bg.style.backgroundPositionX = bgX + '%';
+  const viewport = document.createElement('div');
+  viewport.className = 'map-scene-viewport';
+  const bgImg = document.createElement('img');
+  bgImg.className = 'map-scene-bg-img';
+  bgImg.alt = '';
+  bgImg.src = '../assets/images/maps/map_A.png';
   const title = document.createElement('div');
   title.className = 'map-scene-title';
   title.textContent = scene.title;
   const hero = document.createElement('div');
   hero.className = 'map-scene-hero hero-sprite move pulse';
-  // アップになった画面の中央にヒーローを置く (端寄せの場合はそのステージが映る位置に)。
-  const heroLeftPct = (rawN < 0) ? Math.max(10, scene.xPct / scaleX)
-                     : (rawN > 100) ? Math.min(90, 100 - (100 - scene.xPct) / scaleX)
-                     : 50;
-  hero.style.left = heroLeftPct + '%';
-  hero.style.transform = 'scaleX(-1) translateX(50%)';
+  // hero は画面の (50%, 62%) に立つ (CSS で left:50%, bottom:38%)。
+  // translateX(-50%) で要素中心を left:50% に揃えつつ、scaleX(-1) で右向き反転。
+  hero.style.transform = 'translateX(-50%) scaleX(-1)';
   const hint = document.createElement('div');
   hint.className = 'map-scene-hint';
   hint.textContent = '▼ タップで すすむ';
-  overlay.appendChild(bg);
+  viewport.appendChild(bgImg);
+  viewport.appendChild(hero);
+  overlay.appendChild(viewport);
   overlay.appendChild(title);
-  overlay.appendChild(hero);
   overlay.appendChild(hint);
   document.body.appendChild(overlay);
-  // フェードイン
+
+  const applyMapTransform = function() {
+    const cw = viewport.clientWidth;
+    const ch = viewport.clientHeight;
+    if (!cw || !ch) return;
+    // 画像高さを viewport の 2.0 倍にして、1 ステージだけが画面を占めるズーム量に。
+    // アスペクトは画像のネイティブ比率を維持 (2752:1536 ≒ 1.79:1)。
+    const imgH = ch * 2.0;
+    const imgW = imgH * MAP_IMG_NATURAL_W / MAP_IMG_NATURAL_H;
+    bgImg.style.width = imgW + 'px';
+    bgImg.style.height = imgH + 'px';
+    // hero 足元 (画面 50%, 62%) に scene の (xPct, yPct) を合わせる。
+    const targetX = cw * 0.5;
+    const targetY = ch * 0.62;
+    const sx = imgW * (scene.xPct / 100);
+    const sy = imgH * ((scene.yPct != null ? scene.yPct : 50) / 100);
+    bgImg.style.left = (targetX - sx) + 'px';
+    bgImg.style.top  = (targetY - sy) + 'px';
+  };
+  if (bgImg.complete) applyMapTransform();
+  else bgImg.addEventListener('load', applyMapTransform);
+
   requestAnimationFrame(function() { overlay.classList.add('show'); });
 
-  // タップで次へ (0.5s は誤爆防止で無視)
   const minShowUntil = Date.now() + 500;
   const handler = function(ev) {
     if (Date.now() < minShowUntil) return;
@@ -6166,8 +6187,9 @@ if (btnHint) btnHint.addEventListener('click', () => {
           onComplete: function() {
             if (!_rowPracticeActive) return;
             playSuccessSound();
-            launchConfetti();
-            _playMonsterPop();
+            var _inBattle = !!(_battle && _battle.active);
+            if (!_inBattle) launchConfetti();
+            if (!_inBattle) _playMonsterPop();
             _awardAcorns(_perfectCurrentChar);
             saveStamp(currentCategory, currentCharIndex);
             markCharDone(currentCharIndex);
@@ -6328,8 +6350,9 @@ function showTutorial() {
                 onComplete: function() {
                   if (!_rowPracticeActive) return;
                   playSuccessSound();
-                  launchConfetti();
-                  _playMonsterPop();
+                  var _inBattle = !!(_battle && _battle.active);
+                  if (!_inBattle) launchConfetti();
+                  if (!_inBattle) _playMonsterPop();
                   _awardAcorns(_perfectCurrentChar);
                   saveStamp(currentCategory, currentCharIndex);
                   markCharDone(currentCharIndex);
