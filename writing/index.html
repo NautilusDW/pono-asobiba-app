@@ -921,6 +921,39 @@ html, body {
   0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1;   border-width: 6px; }
   100% { transform: translate(-50%, -50%) scale(3.6); opacity: 0;   border-width: 1px; }
 }
+/* 大魔法 (finisher): 光球/バーストを一回り大きく。mp4 の代わり。 */
+.magic-projectile.finisher {
+  width: 200px; height: 200px;
+  box-shadow:
+    0 0 36px 10px var(--glow, rgba(255,160,0,0.9)),
+    0 0 96px 28px var(--glow, rgba(255,160,0,0.7));
+}
+.magic-burst-flash.finisher {
+  width: 440px; height: 440px;
+  animation: magicBurstFlashFinisher 0.9s ease-out forwards;
+}
+@keyframes magicBurstFlashFinisher {
+  0%   { transform: translate(-50%, -50%) scale(0.3);  opacity: 1; }
+  25%  { transform: translate(-50%, -50%) scale(1.6);  opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3.2);  opacity: 0; }
+}
+.magic-burst-particle.finisher {
+  width: 24px; height: 24px;
+  box-shadow: 0 0 20px 7px var(--glow, rgba(255,160,0,0.85));
+  animation: magicBurstParticleFinisher 0.95s cubic-bezier(0.2,0.7,0.3,1) forwards;
+}
+@keyframes magicBurstParticleFinisher {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--dx, 0), var(--dy, 0)) scale(0.15); opacity: 0; }
+}
+.magic-burst-shockring.finisher {
+  border-width: 5px;
+  animation: magicBurstShockringFinisher 0.85s cubic-bezier(0.1,0.7,0.3,1) forwards;
+}
+@keyframes magicBurstShockringFinisher {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1;   border-width: 10px; }
+  100% { transform: translate(-50%, -50%) scale(6.0); opacity: 0;   border-width: 1px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .magic-projectile,
   .magic-projectile .magic-projectile-trail,
@@ -1325,10 +1358,10 @@ body.battle-mode .hedgehog-deco,
 body.battle-mode .hedgehog-bubble {
   display: none !important;
 }
-/* バトル中は「おてほんちゅう」と敵吹き出しも非表示
-   (すべて戦闘ログに集約するため) */
-body.battle-mode #demoIndicator,
-body.battle-mode .enemy-speech {
+/* バトル中は敵吹き出しと悪役(コウモリ風👾)ブロックを非表示 (戦闘ログに集約)。
+   「おてほんちゅう」ピンク表示はユーザー要望で残す (画面下で常時可視)。 */
+body.battle-mode .enemy-speech,
+body.battle-mode .villain-deco {
   display: none !important;
 }
 .battle-stage {
@@ -1833,12 +1866,37 @@ body.battle-mode .enemy-speech {
   text-shadow: 0 0 10px #FFD86A, 0 0 18px rgba(255,170,60,0.85);
   font-weight: 900;
 }
+/* タップ進行マーカー (ドラクエ風の右下 ▼)。await-tap class 時のみ点滅。 */
+.battle-log-window .battle-log-inner { position: relative; }
+.battle-log-window .battle-log-advance {
+  position: absolute;
+  right: 10px; bottom: 6px;
+  font-size: 0.95rem; color: #FFD86A;
+  text-shadow: 0 0 6px rgba(255,200,80,0.9);
+  opacity: 0; pointer-events: none;
+  animation: none;
+}
+.battle-log-window.await-tap .battle-log-advance {
+  opacity: 1;
+  animation: battleLogAdvanceBounce 0.9s ease-in-out infinite;
+}
+.battle-log-window.await-tap .battle-log-inner {
+  cursor: pointer;
+  box-shadow:
+    0 0 16px rgba(0,0,0,0.7),
+    inset 0 0 12px rgba(255,220,130,0.12);
+}
+@keyframes battleLogAdvanceBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.45; }
+  50%      { transform: translateY(3px); opacity: 1; }
+}
 @keyframes battleLogLineIn {
   0%   { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .battle-log-window .battle-log-line.enter { animation: none; }
+  .battle-log-window.await-tap .battle-log-advance { animation: none; }
 }
 
 /* 戦闘ログは battle-mode の間だけ見せる (display:none をオーバーライド) */
@@ -1948,16 +2006,12 @@ body.battle-mode #battleLog { display: block !important; }
    map.png は 1536x1024 の横長フィールド。5〜6 画面分スクロールさせるため
    `.map-world` を viewport の 500% 幅に伸ばし、camera (translateX) で追尾する。
    pixelated レンダリングでピクセルアートのエッジを保つ。 */
-#mapScene {
-  position: fixed; inset: 0; z-index: 1400;
-  background: #0a0a0a;
-  display: none;
-  flex-direction: column;
-  align-items: center; justify-content: center;
-  overflow: hidden;
-  font-family: inherit;
+/* マップ画面は 2026-04-20 に廃止。DOM/CSS/JS は残骸として残るが、
+   導線から切り離した。display: none を強制して万一呼ばれても出ないように。 */
+#mapScene,
+#mapScene.visible {
+  display: none !important;
 }
-#mapScene.visible { display: flex; }
 .map-viewport {
   position: relative;
   width: 100%;
@@ -2158,6 +2212,7 @@ body.battle-mode #battleLog { display: block !important; }
       <div class="battle-log-inner" id="battleLogInner">
         <div class="battle-log-line" id="battleLogLine1"></div>
         <div class="battle-log-line" id="battleLogLine2"></div>
+        <div class="battle-log-advance" id="battleLogAdvance" aria-hidden="true">▼</div>
       </div>
     </div>
     <div class="trace-area">
@@ -2886,14 +2941,19 @@ function launchMagicProjectile(element, opts) {
   const sx = window.innerWidth / 2;
   const sy = window.innerHeight * 0.86;
 
+  // finisher フラグ: 光球を約 2 倍に拡大 + 着弾もデカく。
+  const finisher = !!opts.finisher;
+  const startScale = finisher ? 2.1 : 1.15;
+  const endScale   = finisher ? 0.55 : 0.28;
+
   // 弾本体
   const ball = document.createElement('div');
-  ball.className = 'magic-projectile';
+  ball.className = 'magic-projectile' + (finisher ? ' finisher' : '');
   ball.style.setProperty('--core', colors.core);
   ball.style.setProperty('--aura', colors.aura);
   ball.style.setProperty('--glow', colors.glow);
   // 初期: 起点に大きめ(=手前)
-  ball.style.transform = 'translate(' + sx + 'px, ' + sy + 'px) translate(-50%, -50%) scale(1.15)';
+  ball.style.transform = 'translate(' + sx + 'px, ' + sy + 'px) translate(-50%, -50%) scale(' + startScale + ')';
 
   const trail = document.createElement('div');
   trail.className = 'magic-projectile-trail';
@@ -2911,16 +2971,16 @@ function launchMagicProjectile(element, opts) {
       ball.classList.add('animate');
       ball.style.transform =
         'translate(' + tx + 'px, ' + ty + 'px) ' +
-        'translate(-50%, -50%) scale(0.28)';
+        'translate(-50%, -50%) scale(' + endScale + ')';
     });
   });
 
   // 着弾
-  const FLIGHT_MS = 780;
+  const FLIGHT_MS = finisher ? 900 : 780;
   setTimeout(() => {
     // 弾消去 + 破裂
     if (ball.parentNode) ball.remove();
-    _spawnMagicBurst(tx, ty, colors, container);
+    _spawnMagicBurst(tx, ty, colors, container, { finisher: finisher });
     try { _playMagicBurstSound(element); } catch (e) {}
     if (opts.onImpact) {
       try { opts.onImpact(); } catch (e) {}
@@ -2934,46 +2994,49 @@ function launchMagicProjectile(element, opts) {
   }, FLIGHT_MS);
 }
 
-function _spawnMagicBurst(x, y, colors, container) {
+function _spawnMagicBurst(x, y, colors, container, opts) {
+  opts = opts || {};
+  const finisher = !!opts.finisher;
   // 各 burst 要素は left/top で配置し、CSS keyframe の translate(-50%,-50%) で中心合わせ。
   // 中央フラッシュ
   const flash = document.createElement('div');
-  flash.className = 'magic-burst-flash';
+  flash.className = 'magic-burst-flash' + (finisher ? ' finisher' : '');
   flash.style.setProperty('--core', colors.core);
   flash.style.setProperty('--aura', colors.aura);
   flash.style.setProperty('--glow', colors.glow);
   flash.style.left = x + 'px';
   flash.style.top  = y + 'px';
   container.appendChild(flash);
-  setTimeout(() => { if (flash.parentNode) flash.remove(); }, 700);
+  setTimeout(() => { if (flash.parentNode) flash.remove(); }, 900);
 
   // 衝撃波リング
   const ring = document.createElement('div');
-  ring.className = 'magic-burst-shockring';
+  ring.className = 'magic-burst-shockring' + (finisher ? ' finisher' : '');
   ring.style.setProperty('--aura', colors.aura);
   ring.style.setProperty('--glow', colors.glow);
   ring.style.left = x + 'px';
   ring.style.top  = y + 'px';
   container.appendChild(ring);
-  setTimeout(() => { if (ring.parentNode) ring.remove(); }, 650);
+  setTimeout(() => { if (ring.parentNode) ring.remove(); }, 900);
 
-  // 放射パーティクル
-  const N = 16;
+  // 放射パーティクル (finisher は数も距離も倍)
+  const N = finisher ? 28 : 16;
+  const baseDist = finisher ? 160 : 90;
   for (let i = 0; i < N; i++) {
     const p = document.createElement('div');
-    p.className = 'magic-burst-particle';
+    p.className = 'magic-burst-particle' + (finisher ? ' finisher' : '');
     p.style.setProperty('--core', colors.core);
     p.style.setProperty('--aura', colors.aura);
     p.style.setProperty('--glow', colors.glow);
     const angle = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
-    const dist = 90 + Math.random() * 90;
+    const dist = baseDist + Math.random() * baseDist;
     p.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
     p.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
     p.style.left = x + 'px';
     p.style.top  = y + 'px';
     p.style.animationDelay = (Math.random() * 0.08).toFixed(2) + 's';
     container.appendChild(p);
-    setTimeout(() => { if (p.parentNode) p.remove(); }, 800);
+    setTimeout(() => { if (p.parentNode) p.remove(); }, 1000);
   }
 }
 
@@ -3310,6 +3373,9 @@ function _hideMonsterBubble() {
 
 // ===== 悪役 (villain) 表示ヘルパー =====
 function _showVillain(kind, duration) {
+  // 戦闘中は悪役(コウモリ風👾)の登場/セリフを抑止する。
+  // 敵役は戦闘ステージのキノコに一本化するため。
+  try { if (_battle && _battle.active) return; } catch (e) { /* _battle未初期化時はスルー */ }
   var el = document.getElementById('villainDeco');
   var bubble = document.getElementById('villainBubble');
   if (!el || !bubble) return;
@@ -3583,6 +3649,8 @@ const _battle = {
   attackPlan: [],
   // 行(label: あ/か/さ…)ごとの属性。'fire' | 'ice' | 'thunder' | 'light' | 'heal' | 'wind' | ...
   element: 'fire',
+  // バトル中のどんぐり報酬を溜めておき、勝利時にまとめて付与・表示する (2026-04-20 UX)
+  acornsBuffered: 0,
 };
 
 // 攻撃プラン生成: count=5 のとき 通常3 + 魔法2 (末尾は必ず magic)
@@ -3641,6 +3709,7 @@ function _showBattleStage(rowId) {
   // 現在は最初のステージのみ実装中のため、属性は「炎」で固定。
   // 将来、行ごとに属性を変える段階で ROW_ELEMENT_BY_LABEL に戻す。
   _battle.element = 'fire';
+  _battle.acornsBuffered = 0; // バトル開始時にリセット
 
   if (els.img) els.img.src = enemy.img;
   if (els.name) els.name.textContent = enemy.name;
@@ -3688,11 +3757,78 @@ function _setBattleLog(lines, opts) {
 }
 function _clearBattleLog() { _setBattleLog(['', ''], { animate: false }); }
 
-// ===== バトル登場演出: 真っ暗な画面 → 敵がドンと現れる → 「あらわれた！」→ フェード =====
+// ===== タップ進行ダイアログ (ドラクエ風、子供でも読めるペース) =====
+// messages: [{ lines:[string,string], opts?:{line1Class,line2Class,animate} }, ...]
+// onDone: 全メッセージ消化後のコールバック。
+// 動作: 1 メッセージ目を即表示 + ▼ 点滅 + inner クリックで次へ。最後の消化後 onDone。
+const _battleDialog = {
+  queue: [],
+  onDone: null,
+  active: false,
+  handler: null,
+  _minShowUntil: 0,  // このタイムスタンプまではタップを無視 (誤爆防止)
+};
+
+function _battleDialogBind() {
+  if (_battleDialog.handler) return;
+  const inner = document.getElementById('battleLogInner');
+  if (!inner) return;
+  _battleDialog.handler = function(ev) {
+    if (!_battleDialog.active) return;
+    // 誤爆防止: 0.35s は必ず待つ (連打対策 & アニメ終了まで)
+    if (Date.now() < _battleDialog._minShowUntil) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    _battleDialogAdvance();
+  };
+  inner.addEventListener('pointerdown', _battleDialog.handler);
+}
+
+function _battleDialogAdvance() {
+  if (_battleDialog.queue.length === 0) {
+    _battleDialogFinish();
+    return;
+  }
+  const next = _battleDialog.queue.shift();
+  _setBattleLog(next.lines || ['', ''], next.opts || {});
+  _battleDialog._minShowUntil = Date.now() + 350;
+  _battleDialogSetAwait(true);
+}
+
+function _battleDialogFinish() {
+  _battleDialog.active = false;
+  _battleDialogSetAwait(false);
+  const cb = _battleDialog.onDone;
+  _battleDialog.onDone = null;
+  if (cb) cb();
+}
+
+function _battleDialogSetAwait(on) {
+  const win = document.getElementById('battleLog');
+  if (!win) return;
+  if (on) win.classList.add('await-tap');
+  else    win.classList.remove('await-tap');
+}
+
+function _showBattleDialog(messages, onDone) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    if (onDone) onDone();
+    return;
+  }
+  _battleDialogBind();
+  _battleDialog.queue = messages.slice();
+  _battleDialog.onDone = onDone || null;
+  _battleDialog.active = true;
+  _battleDialogAdvance(); // 1 通目を即表示 + await-tap on
+}
+
+// ===== バトル登場演出: カーテン + 敵ドン表示 → 名前告知 → タップで挑発 → タップで前進 =====
+// ユーザー要望 (2026-04-20): 子供が読めるペースで進められるように、
+// 一方的なタイマー進行をやめて各ダイアログをタップで手動送りにする。
 function _showBattleEncounterIntro(onDone) {
   const enemy = _battle.enemy;
   if (!enemy) { if (onDone) onDone(); return; }
-  // カーテン + 中央に敵
+  // カーテン + 中央に敵 (表示のみ。テキストはバトルログに集約)
   const curtain = document.createElement('div');
   curtain.className = 'battle-intro-curtain';
   const img = document.createElement('img');
@@ -3703,26 +3839,28 @@ function _showBattleEncounterIntro(onDone) {
   document.body.appendChild(curtain);
   // エンカウントジングル (登場 SE)
   try { playEncounterJingle(); } catch (e) {}
-  // T=0: カーテン + 敵ドン  アニメ開始
-  // T=+500: ログに「〇〇が あらわれた！」
-  setTimeout(function() {
-    _setBattleLog([enemy.name + 'が あらわれた！', '']);
-  }, 500);
-  // T=+1800: 最初のセリフをログに (taunts[0])
-  setTimeout(function() {
-    if (enemy.taunts && enemy.taunts[0]) {
-      _setBattleLog([enemy.name + 'が あらわれた！', '「' + enemy.taunts[0] + '」']);
-    }
-  }, 1800);
-  // T=+2600: カーテンをフェードアウトして、敵をそれぞれのウィンドウに戻す
-  setTimeout(function() {
-    curtain.classList.add('fade-out');
-  }, 2600);
-  // T=+3300: カーテン除去
-  setTimeout(function() {
-    if (curtain.parentNode) curtain.remove();
-    if (onDone) onDone();
-  }, 3300);
+
+  // メッセージキュー組み立て:
+  //  1. 「〇〇が あらわれた！」 (名前)
+  //  2. 「〇〇「taunts[0]」」 (挑発)
+  const messages = [
+    { lines: [enemy.name + 'が あらわれた！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+  ];
+  if (enemy.taunts && enemy.taunts[0]) {
+    messages.push({ lines: [enemy.name, '「' + enemy.taunts[0] + '」'] });
+  }
+
+  // カーテンは「挑発ダイアログを読み終わった後」にフェードアウトさせる。
+  // ダイアログ完了で finish → 0.3s 後にカーテン除去 → onDone で練習開始。
+  _showBattleDialog(messages, function() {
+    setTimeout(function() {
+      curtain.classList.add('fade-out');
+    }, 150);
+    setTimeout(function() {
+      if (curtain.parentNode) curtain.remove();
+      if (onDone) onDone();
+    }, 750);
+  });
 }
 
 // _showEnemySpeech: バトル中は上部吹き出しではなくログに集約する
@@ -4044,24 +4182,32 @@ function battleVictory(spellKind, onDone) {
   els.stars.forEach(s => s.classList.add('lit'));
   if (els.charge) els.charge.classList.add('charged');
 
-  // 既存の全画面魔法陣を再生 (0.4s 後)
+  const element = spellKind || 'fire';
+  // 大魔法は mp4 の screen 合成が効かない問題があるため CSS + SE に置換 (2026-04-20)。
+  // 通常弾より一回り大きく飛ばす finisher フラグで発射 + 着弾時に剣閃 SE を重ねる。
   setTimeout(() => {
-    try { if (typeof launchMagicCircle === 'function') launchMagicCircle(spellKind || 'light'); }
-    catch (e) { /* ignore */ }
+    try { _playMagicFinisherSound(); } catch (e) {}
+    try {
+      if (typeof launchMagicProjectile === 'function') {
+        launchMagicProjectile(element, {
+          finisher: true,
+          onImpact: function() {
+            // 着弾と同時に敵を撃破演出へ
+            els.enemy.classList.remove('damaged');
+            els.enemy.classList.add('defeated');
+            try { playEnemyDefeatSound(); } catch (e) {}
+          }
+        });
+      } else {
+        // フォールバック: 単純な敵撃破
+        els.enemy.classList.add('defeated');
+      }
+    } catch (e) { /* ignore */ }
   }, 400);
-
-  // 魔法動画中盤で敵を撃破 (魔法動画は約 2.5s) + 敵撃破 SE
-  setTimeout(() => {
-    els.enemy.classList.remove('damaged');
-    els.enemy.classList.add('defeated');
-    try { playEnemyDefeatSound(); } catch (e) {}
-    _showEnemySpeech('うわぁぁ〜！', 1400);
-  }, 2400);
 
   // ファンファーレ + 撃破ウィンドウ + BGM フェード
   setTimeout(() => {
     try { fadeBgm(0, 300); } catch (e) {}
-    // 「〇〇を たおした！」ウィンドウ (キャンバス位置に重ねる)
     try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
     try {
       const a = playVictoryFanfare();
@@ -4070,25 +4216,58 @@ function battleVictory(spellKind, onDone) {
         if (cleaned) return;
         cleaned = true;
         try { fadeBgm(0.28, 600); } catch (e) {}
-        try { _hideDefeatedWindow(); } catch (e) {}
       };
       if (a && typeof a.addEventListener === 'function') {
         a.addEventListener('ended', onEnd);
-        // 保険: 'ended' が iOS 等で発火しなくても 4s 後には必ず消す
         setTimeout(onEnd, 4000);
       } else {
-        // 合成フォールバック (約 1.5s)
         setTimeout(onEnd, 1800);
       }
     } catch (e) {}
-  }, 2800);
+  }, 1800);
 
-  // 行クリアダイアログへの遷移はファンファーレ中でも走らせる。
-  // ダイアログが出る時点で「たおした！」ウィンドウは確実に消しておく。
+  // 勝利後: バトル中に溜めたどんぐり + 行クリアボーナス(+5) をバトルログで一括表示。
+  // ユーザー要望 (2026-04-20): モーダルではなく真ん中のバトルメッセージ欄で受け取る。
+  // 各メッセージは ▼ タップで進められる (子供のペース)。
   setTimeout(() => {
-    try { _hideDefeatedWindow(); } catch (e) {}
-    if (onDone) onDone();
-  }, 4200);
+    const enemyName = (_battle.enemy && _battle.enemy.name) || 'モンスター';
+    const buffered = (_battle.acornsBuffered | 0);
+    const rowBonus = 5;
+    const total = buffered + rowBonus;
+    // 残高に加算 (この時点で初めてどんぐりバッジに反映される)
+    try {
+      if (typeof window.addAcorns === 'function') {
+        if (buffered > 0) window.addAcorns(buffered, { reason: 'writing_char_battle_bundle' });
+        window.addAcorns(rowBonus, { reason: 'writing_row_clear' });
+      }
+    } catch (e) { /* ignore */ }
+    _battle.acornsBuffered = 0;
+
+    const messages = [
+      { lines: [enemyName + 'を', '<span class="dq-line-emphasis">たおした！</span>'], opts: { line2Class: 'dmg-line' } },
+      { lines: ['ごほうび！', '<span class="dq-line-emphasis">🌰 +' + total + '</span> ゲット！'], opts: { line2Class: 'dmg-line' } },
+      { lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+    ];
+    _showBattleDialog(messages, function() {
+      try { _hideDefeatedWindow(); } catch (e) {}
+      if (onDone) onDone();
+    });
+  }, 3200);
+}
+
+// 大魔法 (finisher) の SE: 既存 battle フォルダの sword_slash をランダム再生。
+// 1 画ごとの nazori_01 と区別するため、やや大きめの音量 + 重複発射で迫力。
+function _playMagicFinisherSound() {
+  const urls = [
+    '../assets/sounds/se/battle/sword_slash_1.mp3',
+    '../assets/sounds/se/battle/sword_slash_2.mp3',
+  ];
+  try {
+    const u = urls[Math.floor(Math.random() * urls.length)];
+    const a = new Audio(u);
+    a.volume = 0.75;
+    a.play().catch(() => {});
+  } catch (e) { /* ignore */ }
 }
 
 // 「〇〇を たおした！」を戦闘ログに表示
@@ -4283,6 +4462,12 @@ function _awardAcorns(isPerfect) {
   if (isPerfect) earned += 1;
   if (_acornCombo % 5 === 0) earned += 2;
   else if (_acornCombo % 3 === 0) earned += 1;
+  // バトル中はどんぐり付与/バーストをバッファへ溜めて、勝利後にまとめて表示する (2026-04-20)
+  // 残高を直接いじらないので、勝利モーダル前に「加算済み表示」がチラ見えしない。
+  if (_battle && _battle.active) {
+    _battle.acornsBuffered += earned;
+    return;
+  }
   window.addAcorns(earned, { reason: 'writing_char' });
   _showAcornBurst(earned);
 }
@@ -4636,28 +4821,10 @@ function enterPractice(rowIndex) {
   // Start BGM + unlock AudioContext on user interaction
   tryStartBgm();
   unlockAudio(); // 効果音AudioContextも確実にアンロック
-  // あ行 (ひらがな rowIndex=0) は「森でモンスター発見 → 戦闘突入」の導入を挟む。
-  // それ以外の行と、カタカナは従来どおりチュートリアルだけ出して練習開始。
-  var showMapIntro = (currentCategory === 'hiragana' && rowIndex === 0);
-  // 旧: ここで _showHowToPlay (「① おてほん ② なぞる ③ ことば」カード) を出していたが、
-  // バトル導入では「敵のセリフ → バトル説明モーダル → お手本」の順に差し替える。
-  // バトル突入後の導入モーダルは startRowPractice 側で _showBattleIntro が担当する。
-  var proceed = function() { startRowPractice(rowIndex); };
-  if (showMapIntro) {
-    // app 画面はマップの後ろに残しておくので一旦非表示にして、
-    // マップ閉じるときに表示を戻す。戦闘シーンは startRowPractice 内で展開される。
-    document.getElementById('app').style.display = 'none';
-    openMapScene({
-      onCollision: function() {
-        document.getElementById('app').style.display = '';
-        // 戦闘に突入するので BGM を戦闘系に戻す
-        try { if (typeof setBgmFor === 'function') setBgmFor('battle'); } catch (e) {}
-        proceed();
-      }
-    });
-  } else {
-    proceed();
-  }
+  // マップ導入は中止 (2026-04-20 ユーザー指示)。全行で即戦闘突入に切替。
+  // 旧: あ行はマップ → 衝突 → バトル、だったが、ユーザーがマップ画面を廃止。
+  // mapScene の DOM/CSS は残骸として残るが導線から切り離す。
+  startRowPractice(rowIndex);
 }
 
 function returnToSelect() {
@@ -5048,8 +5215,17 @@ function _showRowPracticeWord(char, data, onDone) {
 function _rowPracticeComplete() {
   _rowPracticeActive = false;
   _rowPracticePhase = 'done';
+  // バトル経由で来たか? (まだ active なまま) ならボーナス/モーダルは battleVictory 側で済ませている。
+  // _hideBattleStage() が _battle.active=false にしてしまうので先にフラグを取る。
+  const cameFromBattle = !!(_battle && _battle.active);
   try { _hideBattleStage(); } catch (e) {}
-  // 行クリアボーナス +5🌰
+  if (cameFromBattle) {
+    // どんぐり加算と「たおした / +N / よくがんばった」はバトルログで表示済み。
+    // そのまま選択画面に戻る。
+    setTimeout(function() { returnToSelect(); }, 200);
+    return;
+  }
+  // 行クリアボーナス +5🌰 (バトル外からの到達パス: 仮に残しておく)
   if (typeof window.addAcorns === 'function') {
     window.addAcorns(5, { reason: 'writing_row_clear' });
   }
