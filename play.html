@@ -1474,14 +1474,6 @@
         </div>
       </a>
 
-      <a href="writing/index.html" class="card card-writing" onclick="try{sessionStorage.setItem('pono_audio_primed_ts',String(Date.now()));}catch(e){}">
-        <span class="card-icon">✏️</span>
-        <div class="card-body">
-          <div class="card-title">もじかきクエスト</div>
-          <div class="card-desc">ひらがな・カタカナ</div>
-        </div>
-      </a>
-
       <a href="bento/index.html" class="card card-bento">
         <span class="card-icon">🍱</span>
         <div class="card-body">
@@ -1564,6 +1556,20 @@
       </div>
 
       <!-- 購入者限定コンテンツ -->
+      <!-- もじかきクエスト: 購入者限定セクションの先頭。
+           onclick で play.html 側 <audio id="bgm"> に play() を発火することで、
+           同一 origin の audio session を user gesture で再確認 → 遷移先
+           writing/index.html の Theme.mp3 が iOS Safari でも autoplay できるようにする。
+           primedTs は従来どおり writing/index.html L7693 の consumer が利用。 -->
+      <a href="writing/index.html" class="card card-writing locked" id="card-writing"
+         onclick="try{var _b=document.getElementById('bgm');if(_b){var _p=_b.play();if(_p&&_p.catch){_p.catch(function(){});}}sessionStorage.setItem('pono_audio_primed_ts',String(Date.now()));}catch(e){}">
+        <span class="card-icon">✏️</span>
+        <div class="card-body">
+          <div class="card-title">もじかきクエスト</div>
+          <div class="card-desc">ひらがな・カタカナ</div>
+        </div>
+      </a>
+
       <a href="drawing/index.html" class="card card-drawing locked" id="card-drawing">
         <span class="card-icon">🎨</span>
         <div class="card-body">
@@ -1847,7 +1853,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
+    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';

@@ -1096,18 +1096,26 @@ html, body {
 .stroke-number-overlay {
   position: absolute; inset: 0; pointer-events: none; z-index: 5;
 }
+/* お手本の「あ」等の文字が白だと、従来の 白 outline の番号が溶け込んで読めなくなる。
+   (ユーザー報告 2026-04-21: 「あは白だから書き順の番号とかが全く読めない」)
+   対策: 白 outline は内側に残しつつ、外側に濃色リングを重ねて二重枠にする。
+   さらに drop-shadow で背景色を問わずバッジが浮き上がるように。 */
 .stroke-number {
   position: absolute;
-  width: 24px; height: 24px;
+  width: 26px; height: 26px;
   border-radius: 50%;
   background: #FF6B9D;
   color: #FFF;
-  font-size: 0.75rem; font-weight: 900;
+  font-size: 0.82rem; font-weight: 900;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  outline: 3px solid #FFF;
+  /* 内側 白 2px + 外側 濃紫 2px の二重リング。白背景でも濃色背景でも浮く */
+  box-shadow:
+    0 0 0 2px #FFF,
+    0 0 0 4px #2a1a3e,
+    0 3px 8px rgba(0,0,0,0.45);
   transform: translate(-50%, -50%);
   font-family: 'Zen Maru Gothic', sans-serif;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5);
 }
 
 /* ===== Star particles ===== */
@@ -4633,9 +4641,14 @@ function _playMonsterPop() { _playCanvasBreak(); }
 // バトル行=6行 (あ/さ/た/は/ま/や)。か/な/ら は謎解き行、わ は大魔王 (別実装)。
 // カタカナ (ア/サ/タ/ハ/マ/ヤ) はひらがな側を流用する (_normalizeRowLabel で変換)。
 const BATTLE_ENEMIES = {
-  // あ行: 森のザコ「おこりキノコ」。6枚の idle から代表1枚+攻撃フレーム3枚+スタッガー1枚を採用。
-  // 元画像は全て右向きなので flipped:true で水平反転。胞子体なので浮遊感はあるが、
-  // 新画像がしっかり接地しているため grounded:true で勇者と同じ高さに並べる。
+  // あ行: 森のザコ「おこりキノコ」。
+  // 2026-04-21 ユーザー要望で再マッピング:
+  //   idle (静止)    <- 怒れるキノコ002 (腰に手を当てた立ちポーズ)
+  //   stagger        <- 怒れるキノコ005 (目を閉じたよろめき)
+  //   atk windup     <- 怒れるキノコ004 (構え・1フレーム)
+  //   atk strike     <- 怒れるキノコ001 (パンチを打つ瞬間、元 idle に使っていた画像)
+  // 「004→001 の順にパンチさせる」= windup[0]=004 / strike=001
+  // 全画像右向きなので flipped:true、grounded:true + compact:true で勇者並みサイズ。
   'あ': {
     id: 'mushroom', name: 'おこりキノコ',
     img: '../assets/images/monsters/chars/Mushroom/mushroom_idle.png',
@@ -4643,7 +4656,6 @@ const BATTLE_ENEMIES = {
     imgStagger: '../assets/images/monsters/chars/Mushroom/mushroom_stagger.png',
     imgAttackWindup: [
       '../assets/images/monsters/chars/Mushroom/mushroom_atk_1.png',
-      '../assets/images/monsters/chars/Mushroom/mushroom_atk_2.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/Mushroom/mushroom_atk_strike.png',
     taunts: ['ぷんぷん！', 'ほうしを まくぞ！', 'ふみつぶすな〜', 'もりの いかり！', 'キノコパンチ！'],
@@ -7685,15 +7697,22 @@ function goToPracticeDirect(rowIndex) {
     titleEl.addEventListener('click',       startTitleBgm, { passive: true });
   }
 
-  // play.html のカードタップから遷移した直後 (sticky user activation が効く間) は
-  // 追加タップ不要で BGM を開始する。同期遷移直後なので Chrome/Safari desktop と
-  // 多くの PWA 環境で通る。iOS Safari 独立タブでは失敗するが、その場合は従来の
-  // タイトルタップで解錠されるので UX は後退しない。
+  // play.html の card タップから遷移した直後 (sticky user activation が効く間) は
+  // 追加タップ不要で BGM を開始する。play.html 側で card.onclick が <audio id="bgm">
+  // に対して play() を発火済みのため、origin 単位の audio session が warm に保たれ、
+  // iOS Safari でもこの段階での play() が拒否されない (2026-04-21 修正)。
+  //
+  // readyState が complete でない場合は load イベントを待つ。iOS Safari は
+  // DOM 構築中の play() を autoplay 拒否しやすく、ページ完全ロード直後が最も安定。
   try {
     var primedTs = parseInt(sessionStorage.getItem('pono_audio_primed_ts') || '0', 10);
     if (primedTs && (Date.now() - primedTs) < 15000) {
       sessionStorage.removeItem('pono_audio_primed_ts');
-      startTitleBgm();
+      if (document.readyState === 'complete') {
+        startTitleBgm();
+      } else {
+        window.addEventListener('load', startTitleBgm, { once: true });
+      }
     }
   } catch (e) {}
 
