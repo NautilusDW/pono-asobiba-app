@@ -1588,6 +1588,72 @@ body.battle-mode .villain-deco {
 .plank.finisher {
   animation: plankGlow 1.1s ease-in-out 0.1s 2;
 }
+/* な行: 古代の石板 (tablet)。暗い灰色+ルーン風の縁取り+青紫グロー */
+.puzzle-bg-tablet {
+  background: linear-gradient(180deg, #3a2a4a 0%, #2a2038 55%, #120c1c 100%);
+}
+.puzzle-bg-tablet::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(138,120,186,0.18) 0%, transparent 55%),
+    radial-gradient(circle at 70% 60%, rgba(186,140,220,0.14) 0%, transparent 60%);
+  pointer-events: none;
+}
+.plank.plank-tablet {
+  background:
+    linear-gradient(180deg, #8a7a9a 0%, #5a4c6a 55%, #3a2e48 100%);
+  border: 2px solid #1e1828;
+  color: #F4EEDC;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(220,200,255,0.25);
+}
+.plank.plank-tablet.placed {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 14px rgba(178,130,220,0.6), inset 0 2px 4px rgba(220,200,255,0.3);
+}
+.plank.plank-tablet.finisher {
+  animation: tabletGlow 1.1s ease-in-out 0.1s 2;
+}
+@keyframes tabletGlow {
+  0%   { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
+  50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 28px rgba(200,140,250,0.95); }
+  100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
+}
+/* ら行: 溶岩の飛び石 (lava_step)。黒岩+赤グロー+マグマの床 */
+.puzzle-bg-lava_step {
+  background: linear-gradient(180deg, #1a0e0a 0%, #3a1a10 50%, #8a3018 100%);
+}
+.puzzle-bg-lava_step::before {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 38%;
+  background:
+    linear-gradient(180deg, rgba(255,100,40,0.3) 0%, rgba(255,60,20,0.85) 100%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.25) 0 10px, transparent 10px 22px);
+  box-shadow: inset 0 6px 12px rgba(255,200,80,0.3);
+}
+.puzzle-bg-lava_step::after {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 40%; bottom: 0;
+  background: radial-gradient(circle at 50% 100%, rgba(255,180,60,0.4) 0%, transparent 70%);
+  pointer-events: none;
+}
+.plank.plank-lava_step {
+  background:
+    linear-gradient(180deg, #3a2820 0%, #1a100a 55%, #0e0806 100%);
+  border: 2px solid #0a0604;
+  color: #FFE6B0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,140,60,0.35);
+}
+.plank.plank-lava_step.placed {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 16px rgba(255,120,40,0.75), inset 0 2px 4px rgba(255,180,80,0.5);
+}
+.plank.plank-lava_step.finisher {
+  animation: lavaStepGlow 1.1s ease-in-out 0.1s 2;
+}
+@keyframes lavaStepGlow {
+  0%   { box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 0   rgba(255,120,40,0); }
+  50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 30px rgba(255,140,60,0.98); }
+  100% { box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 0   rgba(255,120,40,0); }
+}
 @keyframes plankGlow {
   0%   { box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 0 rgba(255,236,99,0); }
   50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 26px rgba(255,236,99,0.95); }
@@ -2932,7 +2998,7 @@ body.battle-intro-active .battle-log-window {
       <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
       <div class="battle-enemy-wrap">
         <div class="battle-enemy" id="battleEnemy">
-          <img class="enemy-img" id="battleEnemyImg" alt="てき" />
+          <img class="enemy-img" id="battleEnemyImg" alt="てき" onerror="this.onerror=null;this.src='../assets/images/monsters/chars/monster_005.png';" />
           <div class="enemy-shadow"></div>
         </div>
       </div>
@@ -4528,11 +4594,13 @@ const BATTLE_ENEMIES = {
     taunts: ['くくく…', 'かかってこい！', 'まだまだ！', 'なんのこれしき！', 'やるな…'],
     hp: 5, element: 'light'
   },
+  // さ行: 森の中ボス (森ステージのボス)。倒すと「盾」を入手。
   'さ': {
-    id: 'iceko', name: 'こおりキノコ',
-    img: '../assets/images/monsters/chars/monster_007.png',
-    taunts: ['つめた〜いぞ', 'こおらせて やるぞ', 'さむくないか〜？', 'ちべた〜！', 'ふぶきで まえが みえぬ！'],
-    hp: 5, element: 'ice'
+    id: 'golem_forest', name: 'もりのぬし ゴーレム',
+    img: '../assets/images/monsters/chars/monster_014_golem_forest.png',
+    taunts: ['ずしん…', 'いわの からだだ', 'くだけぬぞ', 'ごろ ごろ…', 'きえろ…！'],
+    hp: 8, element: 'earth',
+    boss: true, reward: 'shield'
   },
   'た': {
     id: 'thmushi', name: 'かみなりむし',
@@ -4540,11 +4608,13 @@ const BATTLE_ENEMIES = {
     taunts: ['びりびり〜！', 'でんげき だ！', 'ピカッと いくぞ〜', 'しびれるな〜', 'かみなり を くらえ！'],
     hp: 6, element: 'thunder'
   },
+  // は行: 洞窟の中ボス (洞窟ステージのボス)。倒すと「鎧」を入手。
   'は': {
-    id: 'windmushi', name: 'かぜむし',
-    img: '../assets/images/monsters/chars/monster_010.png',
-    taunts: ['ひゅ〜ひゅ〜', 'かぜで ふきとばす〜', 'たたかうぞ〜', 'とおくへ とべ！', 'つむじかぜ だ！'],
-    hp: 7, element: 'wind'
+    id: 'cave_lord', name: 'どうくつのぬし',
+    img: '../assets/images/monsters/chars/monster_015_cave_lord.png',
+    taunts: ['ひゅ〜…', 'くらやみに しずめ！', 'かぜで おしつぶす！', 'にがさぬ！', 'おのれ…！'],
+    hp: 10, element: 'wind',
+    boss: true, reward: 'armor'
   },
   'ま': {
     id: 'earthdragon', name: 'つちりゅう',
@@ -4557,6 +4627,15 @@ const BATTLE_ENEMIES = {
     img: '../assets/images/monsters/chars/monster_012.png',
     taunts: ['うらめしや〜', 'ほしの よる…', 'きえるな よ…', 'くらやみへ おいで…', 'ゆらゆら〜'],
     hp: 7, element: 'star'
+  },
+  // わ行: 火山の中ボス (火山ステージのボス)。倒すと「剣」を入手。
+  // 旧仕様では「大魔王」だったが、ラスボスはカタカナのワ行に移動したので降格。
+  'わ': {
+    id: 'volcano_lord', name: 'かざんのぬし',
+    img: '../assets/images/monsters/chars/monster_016_volcano_lord.png',
+    taunts: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'あちいぞ〜！', 'くらえ…！'],
+    hp: 12, element: 'fire',
+    boss: true, reward: 'sword'
   },
 };
 // カタカナ行のラベル (ア/サ/…) が来ても同じ敵データを返すための正規化。
@@ -4933,6 +5012,24 @@ function _showBattleEncounterIntro(onDone) {
   const enemy = _battle.enemy;
   if (!enemy) { if (onDone) onDone(); return; }
 
+  // 中ボス (boss:true) は「中ボス あらわる！」モーダルを先に挟んでから本編へ。
+  if (enemy.boss) {
+    _presentBattleModal({
+      icon: '⚠️',
+      title: '中ボス あらわる！',
+      body: '<strong>' + enemy.name + '</strong><br>が たちはだかる！',
+      button: 'たたかう！',
+      next: function() { _showBattleEncounterIntroCore(onDone); }
+    });
+    return;
+  }
+  _showBattleEncounterIntroCore(onDone);
+}
+
+function _showBattleEncounterIntroCore(onDone) {
+  const enemy = _battle.enemy;
+  if (!enemy) { if (onDone) onDone(); return; }
+
   // エンカウントでバトル BGM へ切替 (マップ BGM からの遷移)
   try { setBgmFor('battle'); } catch (e) {}
 
@@ -4977,6 +5074,7 @@ function _showBattleEncounterIntro(onDone) {
     // Phase 2: 敵ドン登場 + エンカウントジングル
     const img = document.createElement('img');
     img.className = 'battle-intro-enemy';
+    img.onerror = function() { this.onerror = null; this.src = '../assets/images/monsters/chars/monster_005.png'; };
     img.src = enemy.img;
     img.alt = enemy.name;
     curtain.appendChild(img);
@@ -5028,8 +5126,14 @@ function _hideBattleStage() {
 // 1文字書き切るごとに板1枚を出現 (.placed)、5枚目で全板 .finisher グロー。
 // バトルとは同じ canvas/writer 基盤を使い、完了後分岐だけ差し替える。
 const PUZZLE_ROWS = {
-  'か': { kind: 'bridge', title: 'こわれた はし', hint: 'もじを なぞって はしを なおそう！', chars: ['か','き','く','け','こ'] },
-  'カ': { kind: 'bridge', title: 'こわれた はし', hint: 'もじを なぞって はしを なおそう！', chars: ['カ','キ','ク','ケ','コ'] },
+  'か': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['か','き','く','け','こ'] },
+  'カ': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['カ','キ','ク','ケ','コ'] },
+  // な行: 洞窟の祠にある「ふういん の いしばん」5枚。1文字ずつ書いて封印を解く。
+  'な': { kind: 'tablet',    title: 'いしばんの ふういん',   hint: 'いしばんに もじを かいて ふういんを とこう！', chars: ['な','に','ぬ','ね','の'] },
+  'ナ': { kind: 'tablet',    title: 'いしばんの ふういん',   hint: 'いしばんに もじを かいて ふういんを とこう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  // ら行: 火山の溶岩の上にかかる「とびいし」5つ。1文字ずつ書いて道を作る。
+  'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ら','り','る','れ','ろ'] },
+  'ラ': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ラ','リ','ル','レ','ロ'] },
 };
 function _isPuzzleRow(label) { return !!PUZZLE_ROWS[label]; }
 
@@ -5057,12 +5161,19 @@ function _showPuzzleStage(rowLabel) {
   if (els.title) els.title.textContent = def.title;
   if (els.hint)  els.hint.textContent  = def.hint;
 
+  // 背景・板スタイルを kind に応じて切り替え (bridge / tablet / lava_step)。
+  // 既存の puzzle-bg-bridge に加え、puzzle-bg-tablet / puzzle-bg-lava_step を用意。
+  if (els.stage) {
+    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step');
+    els.stage.classList.add('puzzle-bg-' + def.kind);
+  }
+
   // 板5枚を生成 (初期は非表示 .plank = opacity:0)
   if (els.planks) {
     els.planks.innerHTML = '';
     def.chars.forEach(function(ch) {
       const p = document.createElement('span');
-      p.className = 'plank';
+      p.className = 'plank plank-' + def.kind;
       p.textContent = ch;
       els.planks.appendChild(p);
     });
@@ -6390,26 +6501,26 @@ function startRowPractice(rowIndex) {
 // xPct / yPct は map_A.png (2752x1536) 内の「道の立ち位置」を画像左上基準で
 // パーセンテージ指定。yPct は全体的に 46〜54% の帯 (道が走る帯) に収まる。
 const MAP_ROW_SCENES = {
-  'あ': { xPct: 6,  yPct: 48, title: 'むらのはずれ' },
-  'か': { xPct: 16, yPct: 49, title: 'はしのまえ' },
-  'さ': { xPct: 28, yPct: 52, title: 'どうくつの いりぐち' },
-  'た': { xPct: 39, yPct: 52, title: 'どうくつの おく' },
-  'な': { xPct: 49, yPct: 54, title: 'かざんの ふもと' },
-  'は': { xPct: 59, yPct: 50, title: 'ひのやま' },
-  'ま': { xPct: 68, yPct: 52, title: 'ひのたに' },
-  'や': { xPct: 77, yPct: 52, title: 'ひのうみ' },
-  'ら': { xPct: 86, yPct: 51, title: 'しろの まえ' },
-  'わ': { xPct: 94, yPct: 52, title: 'まおうの しろ' },
-  'ア': { xPct: 6,  yPct: 48, title: 'むらのはずれ' },
-  'カ': { xPct: 16, yPct: 49, title: 'はしのまえ' },
-  'サ': { xPct: 28, yPct: 52, title: 'どうくつの いりぐち' },
-  'タ': { xPct: 39, yPct: 52, title: 'どうくつの おく' },
-  'ナ': { xPct: 49, yPct: 54, title: 'かざんの ふもと' },
-  'ハ': { xPct: 59, yPct: 50, title: 'ひのやま' },
-  'マ': { xPct: 68, yPct: 52, title: 'ひのたに' },
-  'ヤ': { xPct: 77, yPct: 52, title: 'ひのうみ' },
-  'ラ': { xPct: 86, yPct: 51, title: 'しろの まえ' },
-  'ワ': { xPct: 94, yPct: 52, title: 'まおうの しろ' },
+  'あ': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
+  'か': { xPct: 16, yPct: 49, title: 'こわれた はし' },
+  'さ': { xPct: 28, yPct: 52, title: 'もりの でぐち' },
+  'た': { xPct: 39, yPct: 52, title: 'どうくつの いりぐち' },
+  'な': { xPct: 49, yPct: 54, title: 'どうくつの ほこら' },
+  'は': { xPct: 59, yPct: 50, title: 'どうくつの おく' },
+  'ま': { xPct: 68, yPct: 52, title: 'かざんの ふもと' },
+  'や': { xPct: 77, yPct: 52, title: 'かざんの なかふく' },
+  'ら': { xPct: 86, yPct: 51, title: 'ようがんの たにま' },
+  'わ': { xPct: 94, yPct: 52, title: 'かざんの ちょうじょう' },
+  'ア': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
+  'カ': { xPct: 16, yPct: 49, title: 'こわれた はし' },
+  'サ': { xPct: 28, yPct: 52, title: 'もりの でぐち' },
+  'タ': { xPct: 39, yPct: 52, title: 'どうくつの いりぐち' },
+  'ナ': { xPct: 49, yPct: 54, title: 'どうくつの ほこら' },
+  'ハ': { xPct: 59, yPct: 50, title: 'どうくつの おく' },
+  'マ': { xPct: 68, yPct: 52, title: 'かざんの ふもと' },
+  'ヤ': { xPct: 77, yPct: 52, title: 'かざんの なかふく' },
+  'ラ': { xPct: 86, yPct: 51, title: 'ようがんの たにま' },
+  'ワ': { xPct: 94, yPct: 52, title: 'かざんの ちょうじょう' },
 };
 const MAP_IMG_NATURAL_W = 2752;
 const MAP_IMG_NATURAL_H = 1536;
@@ -6498,6 +6609,65 @@ function _showBattleIntro(onDone) {
         if (onDone) onDone();
       });
     });
+  });
+}
+
+// ===== 三種の神器 (装備) システム =====
+// 中ボスを倒すと localStorage にフラグが立ち、入手演出が走る。
+// Phase 1 では「フラグ保存+入手モーダル」のみ。数値効果 (ダメージ軽減等) は将来。
+const GEAR_KEYS = {
+  shield: 'mojikaki_gear_shield',
+  armor:  'mojikaki_gear_armor',
+  sword:  'mojikaki_gear_sword',
+};
+const GEAR_META = {
+  shield: {
+    name: 'つきの たて',
+    img:      '../assets/images/items/item_shield_moon.png',
+    fallback: '../assets/images/items/shield.png',
+    emoji: '🛡️',
+  },
+  armor:  {
+    name: 'そらの よろい',
+    img:      '../assets/images/items/item_armor_sky.png',
+    fallback: '../assets/images/items/armor.png',
+    emoji: '🎽',
+  },
+  sword:  {
+    name: 'たいようの つるぎ',
+    img:      '../assets/images/items/item_sword_sun.png',
+    fallback: '../assets/images/items/sword.png',
+    emoji: '⚔️',
+  },
+};
+function hasGear(kind)  { try { return localStorage.getItem(GEAR_KEYS[kind]) === '1'; } catch (e) { return false; } }
+function grantGear(kind, onDone) {
+  try { localStorage.setItem(GEAR_KEYS[kind], '1'); } catch (e) {}
+  const m = GEAR_META[kind];
+  if (!m) { if (onDone) onDone(); return; }
+  // 画像が未着でも破綻しないよう onerror で既存画像へフォールバック。両方無ければ emoji。
+  const imgHtml =
+    '<img src="' + m.img + '"' +
+    ' onerror="this.onerror=function(){this.onerror=null;this.style.display=\'none\';var e=document.createElement(\'div\');e.style.fontSize=\'3.2rem\';e.textContent=\'' + m.emoji + '\';this.parentNode.insertBefore(e,this);};this.src=\'' + m.fallback + '\';"' +
+    ' class="gear-granted-img" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(255,220,130,0.7));margin-bottom:8px;">';
+  _presentBattleModal({
+    icon: '✨',
+    title: 'てに いれた！',
+    body: imgHtml + '<br><strong style="font-size:1.15rem;color:#FFD86A;">' + m.name + '</strong>',
+    button: 'つぎへ',
+    next: onDone
+  });
+}
+
+// ===== 幕クリアバナー =====
+// 各ステージの中ボスを倒したあと、神器入手モーダルに続けて表示。
+function _showActClearBanner(title, sub, onDone) {
+  _presentBattleModal({
+    icon: '🎉',
+    title: title,
+    body: sub,
+    button: 'つぎへ',
+    next: onDone
   });
 }
 
@@ -6668,14 +6838,28 @@ function _rowPracticeNextChar() {
             return;
           }
           if (isFinisher && _battle.active) {
-            try {
-              battleVictory('fire', function() {
-                _rowPracticeStep++;
-                _rowPracticeNextChar();
-              });
-            } catch (e) {
+            // 中ボス撃破時の報酬+幕クリアバナー連鎖。
+            // (reward ありの敵は _battle.enemy.boss=true、reward='shield'|'armor'|'sword')
+            const _bossReward = _battle.enemy && _battle.enemy.reward;
+            const _afterVictory = function() {
               _rowPracticeStep++;
               _rowPracticeNextChar();
+            };
+            const _chainReward = function() {
+              if (!_bossReward) { _afterVictory(); return; }
+              // 神器入手モーダル → 幕クリアバナー → 次の行へ
+              grantGear(_bossReward, function() {
+                let t1 = '', t2 = '';
+                if (_bossReward === 'shield') { t1 = 'もりを ぬけた！'; t2 = 'たてを てに いれた'; }
+                else if (_bossReward === 'armor')  { t1 = 'どうくつを ぬけた！'; t2 = 'よろいを てに いれた'; }
+                else if (_bossReward === 'sword')  { t1 = 'かざんを こえた！';   t2 = 'つるぎを てに いれた。<br>しろへ むかおう！'; }
+                _showActClearBanner(t1, t2, _afterVictory);
+              });
+            };
+            try {
+              battleVictory('fire', _chainReward);
+            } catch (e) {
+              _afterVictory();
             }
             return;
           }
