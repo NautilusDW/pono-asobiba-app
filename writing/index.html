@@ -1668,7 +1668,9 @@ body.battle-mode .villain-deco {
 }
 .battle-stage .battle-bg {
   position: absolute; inset: 0;
-  /* 森のピクセルアート背景: 横幅はオーバーフローを cover で自動クロップし、地面を画面下辺に揃える */
+  /* デフォルトは森のピクセルアート背景 (あ/か/さ 行)。
+     ステージに応じて .stage-cave / .stage-volcano / .stage-castle が付くと
+     背景画像が差し替わる (下の修飾ルール参照)。 */
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
   background-position: center bottom;
   background-size: cover;
@@ -1678,6 +1680,9 @@ body.battle-mode .villain-deco {
   pointer-events: none;
   z-index: 0;
 }
+.battle-stage.stage-cave    .battle-bg { background-image: url('../assets/images/battle/bg/cave_bg_01.png'); }
+.battle-stage.stage-volcano .battle-bg { background-image: url('../assets/images/battle/bg/volcano_bg_01.png'); }
+.battle-stage.stage-castle  .battle-bg { background-image: url('../assets/images/battle/bg/castle_bg_01.png'); }
 /* 背景の上に薄暗いビネットを乗せて敵の視認性を上げる */
 .battle-stage .battle-bg::after {
   content: '';
@@ -1891,6 +1896,19 @@ body.battle-mode .villain-deco {
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
   animation: battleEnemyFloat 2.4s ease-in-out infinite;
   transform-origin: center bottom;
+}
+/* 地に足がついたタイプの敵 (ゴーレム等): 浮遊アニメ+影を切り、2倍サイズにする。
+   (飛行しない岩系ボスをふわふわさせない・接地感を出す) */
+.battle-enemy.grounded {
+  animation: none !important;
+  filter: drop-shadow(0 10px 6px rgba(0,0,0,0.45));
+  width: min(22vh, 120px); height: min(22vh, 120px);
+  max-width: 120px; max-height: 120px;
+}
+.battle-enemy.grounded .enemy-shadow {
+  /* 地面に足が付いているタイプ (岩系ボス等) は不自然な浮遊シャドウを隠す。
+     画像自体の drop-shadow だけで接地感を表現する。 */
+  display: none !important;
 }
 .battle-enemy .enemy-img {
   width: 100%; height: 100%;
@@ -2503,7 +2521,9 @@ body.battle-intro-active .battle-log-window {
    (2026-04-20 ユーザー要望: 勇者が走ってる間の背景を森にして、少し拡大+緩やかに動かす) */
 .battle-intro-forest {
   /* 2026-04-20: iPhone 縦向きで画面ど真ん中に森背景が来るよう center center に統一。
-     (以前は 55% で少し下寄りだった → バトルログ領域と視覚的に分離できていなかった) */
+     (以前は 55% で少し下寄りだった → バトルログ領域と視覚的に分離できていなかった)
+     2026-04-21: ステージに応じて背景画像を差し替えるため、curtain 側に
+     .stage-cave / .stage-volcano / .stage-castle クラスを付ける。 */
   position: absolute;
   inset: 0;
   background-image: url('../assets/images/battle/bg/forest_bg_02.png');
@@ -2516,6 +2536,9 @@ body.battle-intro-active .battle-log-window {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
 }
+.battle-intro-curtain.stage-cave    .battle-intro-forest { background-image: url('../assets/images/battle/bg/cave_bg_02.png'); }
+.battle-intro-curtain.stage-volcano .battle-intro-forest { background-image: url('../assets/images/battle/bg/volcano_bg_01.png'); }
+.battle-intro-curtain.stage-castle  .battle-intro-forest { background-image: url('../assets/images/battle/bg/castle_bg_01.png'); }
 @keyframes battleIntroForestScroll {
   0%   { background-position: 0 50%; }
   100% { background-position: -800px 50%; }
@@ -2693,6 +2716,11 @@ body.battle-intro-active .battle-log-window {
   body.battle-mode .battle-enemy {
     width: min(26vh, 150px);
     height: min(26vh, 150px);
+  }
+  body.battle-mode .battle-enemy.grounded {
+    width: min(46vh, 280px);
+    height: min(46vh, 280px);
+    max-width: 280px; max-height: 280px;
   }
   body.battle-mode .enemy-name { font-size: 1rem; }
   body.battle-mode .pentagram-charge { font-size: 1.15rem; }
@@ -2986,13 +3014,9 @@ body.battle-intro-active .battle-log-window {
           <div class="hero-status-bar-wrap"><div class="hero-status-bar mp" id="heroMpBar"></div></div>
           <span class="hero-status-num" id="heroMpNum">20/20</span>
         </div>
-        <div class="hero-status-row hero-equip-row">
+        <div class="hero-status-row hero-equip-row" id="heroEquipRow" style="display:none;">
           <span class="hero-status-label equip-label">そうび</span>
-          <div class="hero-equip-strip" aria-label="三種の神器">
-            <img src="../assets/images/items/item_sword_sun.png" alt="たいようの つるぎ" class="hero-equip-icon equip-sword">
-            <img src="../assets/images/items/item_armor_sky.png" alt="そらの よろい" class="hero-equip-icon equip-armor">
-            <img src="../assets/images/items/item_shield_moon.png" alt="つきの たて" class="hero-equip-icon equip-shield">
-          </div>
+          <div class="hero-equip-strip" id="heroEquipStrip" aria-label="三種の神器"></div>
         </div>
       </div>
       <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
@@ -4600,12 +4624,6 @@ const BATTLE_ENEMIES = {
     id: 'golem_forest', name: 'もりのぬし ゴーレム',
     img: '../assets/images/monsters/chars/Golem/golem_idle.png',
     imgIdle: '../assets/images/monsters/chars/Golem/golem_idle.png',
-    imgHp: [
-      { hpAtMost: 7, src: '../assets/images/monsters/chars/Golem/golem_hp_07.png' },
-      { hpAtMost: 5, src: '../assets/images/monsters/chars/Golem/golem_hp_05.png' },
-      { hpAtMost: 3, src: '../assets/images/monsters/chars/Golem/golem_hp_03.png' },
-      { hpAtMost: 1, src: '../assets/images/monsters/chars/Golem/golem_hp_01.png' },
-    ],
     imgStagger: '../assets/images/monsters/chars/Golem/golem_stagger.png',
     imgAttackWindup: [
       '../assets/images/monsters/chars/Golem/golem_atk_up_1.png',
@@ -4615,7 +4633,7 @@ const BATTLE_ENEMIES = {
     imgAttackStrike: '../assets/images/monsters/chars/Golem/golem_atk_down.png',
     taunts: ['ずしん…', 'いわの からだだ', 'くだけぬぞ', 'ごろ ごろ…', 'きえろ…！'],
     hp: 8, element: 'earth',
-    boss: true, reward: 'shield'
+    boss: true, grounded: true, reward: 'shield'
   },
   'た': {
     id: 'thmushi', name: 'かみなりむし',
@@ -4629,7 +4647,7 @@ const BATTLE_ENEMIES = {
     img: '../assets/images/monsters/chars/monster_015_cave_lord.png',
     taunts: ['ひゅ〜…', 'くらやみに しずめ！', 'かぜで おしつぶす！', 'にがさぬ！', 'おのれ…！'],
     hp: 10, element: 'wind',
-    boss: true, reward: 'armor'
+    boss: true, grounded: true, reward: 'armor'
   },
   'ま': {
     id: 'earthdragon', name: 'つちりゅう',
@@ -4649,6 +4667,7 @@ const BATTLE_ENEMIES = {
     id: 'volcano_lord', name: 'かざんのぬし',
     img: '../assets/images/monsters/chars/monster_016_volcano_lord.png',
     taunts: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'あちいぞ〜！', 'くらえ…！'],
+    grounded: true,
     hp: 12, element: 'fire',
     boss: true, reward: 'sword'
   },
@@ -4772,6 +4791,44 @@ function _renderHpBar(hp, maxHp) {
   }
 }
 
+// 行ラベル (あ/カ...) → ステージ種別。森/洞窟/火山/城 に対応。
+// ひらがな: あか=forest, さ=forest(中ボス), た/な/は=cave, ま/や/ら/わ=volcano
+// カタカナ: 全て castle (Phase 2 で細分化する)
+function _stageForRow(label) {
+  const hira = { 'あ':'forest','か':'forest','さ':'forest',
+                 'た':'cave','な':'cave','は':'cave',
+                 'ま':'volcano','や':'volcano','ら':'volcano','わ':'volcano' };
+  const kata = { 'ア':'castle','カ':'castle','サ':'castle','タ':'castle','ナ':'castle',
+                 'ハ':'castle','マ':'castle','ヤ':'castle','ラ':'castle','ワ':'castle' };
+  return hira[label] || kata[label] || 'forest';
+}
+// ステージ別ナレーション (勇者の歩行シーン)。
+// 森のときだけ「あるいていた…」、洞窟/火山/城 は情景に合わせて差し替える。
+function _stageIntroNarration(stage, heroName) {
+  if (stage === 'cave') {
+    return [
+      { lines: [heroName + 'は どうくつに', 'ふみこんだ…'] },
+      { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+    ];
+  }
+  if (stage === 'volcano') {
+    return [
+      { lines: [heroName + 'は かざんを', 'のぼっていた…'] },
+      { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+    ];
+  }
+  if (stage === 'castle') {
+    return [
+      { lines: [heroName + 'は しろへ', 'たどりついた…'] },
+      { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+    ];
+  }
+  return [
+    { lines: [heroName + 'は あるいていた…', ''] },
+    { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+  ];
+}
+
 function _showBattleStage(rowId) {
   const els = _battleEls();
   if (!els.stage) return;
@@ -4792,6 +4849,13 @@ function _showBattleStage(rowId) {
   if (els.charge) els.charge.classList.remove('charged');
   els.stars.forEach(s => s.classList.remove('lit'));
   els.enemy.classList.remove('damaged', 'defeated');
+  // 地に足が付くタイプ (ゴーレム等、grounded:true): 浮遊アニメを切り 2倍拡大。
+  els.enemy.classList.toggle('grounded', !!enemy.grounded);
+  // ステージ別 BG: 行ラベルから stage を割り出して .stage-xxx を付け替え。
+  try {
+    els.stage.classList.remove('stage-forest', 'stage-cave', 'stage-volcano', 'stage-castle');
+    els.stage.classList.add('stage-' + _stageForRow(rowId));
+  } catch (e) {}
   _renderHpBar(_battle.hp, _battle.maxHp);
 
   // 2026-04-20: バトルステージは「マップシーン+エンカウント演出」が終わるまで
@@ -4822,6 +4886,9 @@ function _showBattleStage(rowId) {
 
   // 勇者 HP/MP を全回復で表示 (行ごとに元気に始まる)
   try { _resetHeroGauges(); } catch (e) {}
+
+  // 装備パネル描画 (持ってる神器だけ表示、0 個なら行ごと非表示)
+  try { renderEquipRow(); } catch (e) {}
 
   // 登場セリフ / エンカウントジングルは _showBattleEncounterIntro 側で演出として扱う。
   // ここでは stage の配置のみを行う。
@@ -5059,9 +5126,13 @@ function _showBattleEncounterIntroCore(onDone) {
   // ユーザー要望 (2026-04-20): いきなりモンスターが出てこないから、
   // エンカウント前のナレーションを 2 ステップ見せてから敵を登場させる。
   // さらに「〇〇は あるいていた…」の間、move.png で歩く勇者を左から右へ流す。
+  // 行ラベルからステージを取得 (森/洞窟/火山/城)
+  const _rowLbl = (_rowPracticeRow && _rowPracticeRow.label) || 'あ';
+  const _stage = _stageForRow(_rowLbl);
+
   const curtain = document.createElement('div');
-  curtain.className = 'battle-intro-curtain';
-  // 森の背景 (緩やかスクロール) を先に貼る。phase 2 (敵登場) でフェードアウトさせる。
+  curtain.className = 'battle-intro-curtain stage-' + _stage;
+  // ステージ別背景 (緩やかスクロール) を先に貼る。phase 2 (敵登場) でフェードアウトさせる。
   const forest = document.createElement('div');
   forest.className = 'battle-intro-forest';
   curtain.appendChild(forest);
@@ -5073,12 +5144,9 @@ function _showBattleEncounterIntroCore(onDone) {
   walkWrap.innerHTML = '<div class="hero-sprite move"></div>';
   document.body.appendChild(walkWrap);
 
-  // Phase 1: エンカウント前ナレーション (敵はまだいない黒画面でタップ送り)
+  // Phase 1: エンカウント前ナレーション (ステージに合わせた情景でタップ送り)
   const heroName = _battleHeroName();
-  const preMessages = [
-    { lines: [heroName + 'は あるいていた…', ''] },
-    { lines: ['と そのとき！', ''], opts: { line1Class: 'dq-line-emphasis' } },
-  ];
+  const preMessages = _stageIntroNarration(_stage, heroName);
 
   _showBattleDialog(preMessages, function() {
     // 歩きを止めてフェードアウト + 森もフェードアウト → 敵登場へ
@@ -5129,6 +5197,9 @@ function _hideBattleStage() {
   _battle.active = false;
   // 遅延中の立ち絵差し替えタイマーを全部止める (バトル終了後に画像が入れ替わる事故を防止)
   try { _clearEnemyFrameTimers(); } catch (e) {}
+  // バトルログの残留メッセージ (「よくがんばった」等) を空にする。
+  // 次の行がパズル行の場合は _showPuzzleStage 側で案内文に上書きされる。
+  try { _setBattleLog(['', '', ''], { animate: false }); } catch (e) {}
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('battle-mode');
@@ -5174,6 +5245,17 @@ function _showPuzzleStage(rowLabel) {
   _puzzle.step = 0;
   _puzzle.total = def.chars.length;
   _puzzle.chars = def.chars.slice();
+
+  // 前の行のバトルログ (「よくがんばった！」等) が残らないよう、パズル行の案内に差し替え。
+  const _puzzleIntro = {
+    bridge:    ['もじを なぞって', 'はしを なおそう！'],
+    tablet:    ['もじを なぞって', 'いしばんの ふういんを とこう！'],
+    lava_step: ['もじを なぞって', 'ようがんを わたろう！'],
+  };
+  try {
+    const lines = _puzzleIntro[def.kind] || ['もじを なぞって', 'パズルを とこう！'];
+    _setBattleLog(lines, { line2Class: 'dmg-line' });
+  } catch (e) {}
 
   if (els.title) els.title.textContent = def.title;
   if (els.hint)  els.hint.textContent  = def.hint;
@@ -5313,8 +5395,14 @@ function battleHitEnemy(opts) {
   if (!_battle.active) return;
   const els = _battleEls();
   _battle.hitCount++;
-  _battle.hp = Math.max(0, _battle.hp - 1);
   const isFinisher = !!(opts && opts.finisher);
+  // 通常攻撃は 1 ダメージ、最終魔法 (5 文字目) は残り HP 全てを持っていって必ず 0 にする。
+  // HP が高い中ボス (8/10/12) でも 5 文字で綺麗に倒せるようにするため。
+  if (isFinisher) {
+    _battle.hp = 0;
+  } else {
+    _battle.hp = Math.max(0, _battle.hp - 1);
+  }
 
   // 攻撃タイプを決定 (finisher は必ず magic、それ以外は plan に従う)
   const planIdx = Math.min(_battle.hitCount - 1, (_battle.attackPlan.length || 0) - 1);
@@ -6743,8 +6831,38 @@ const GEAR_META = {
   },
 };
 function hasGear(kind)  { try { return localStorage.getItem(GEAR_KEYS[kind]) === '1'; } catch (e) { return false; } }
+
+// 左上の装備パネル (そうび行) を所持状況に応じて描画する。
+// 1つも持っていない間は行ごと非表示。持っているものだけアイコンを並べる。
+function renderEquipRow() {
+  const row   = document.getElementById('heroEquipRow');
+  const strip = document.getElementById('heroEquipStrip');
+  if (!row || !strip) return;
+  const order = ['sword', 'armor', 'shield']; // 表示順 (つるぎ → よろい → たて)
+  const owned = order.filter(hasGear);
+  if (owned.length === 0) {
+    row.style.display = 'none';
+    strip.innerHTML = '';
+    return;
+  }
+  row.style.display = '';
+  strip.innerHTML = owned.map(function(k) {
+    const m = GEAR_META[k];
+    if (!m) return '';
+    // 画像未着時は fallback、どちらも無ければ emoji アイコンへ退避。
+    const fallbackJs =
+      'this.onerror=function(){this.onerror=null;this.style.display=\'none\';' +
+      'var e=document.createElement(\'span\');e.className=\'hero-equip-icon equip-\'+\'' + k + '\';' +
+      'e.style.fontSize=\'1.1rem\';e.textContent=\'' + m.emoji + '\';' +
+      'this.parentNode.insertBefore(e,this);};this.src=\'' + m.fallback + '\';';
+    return '<img src="' + m.img + '" alt="' + m.name + '"' +
+           ' class="hero-equip-icon equip-' + k + '"' +
+           ' onerror="' + fallbackJs + '">';
+  }).join('');
+}
 function grantGear(kind, onDone) {
   try { localStorage.setItem(GEAR_KEYS[kind], '1'); } catch (e) {}
+  try { renderEquipRow(); } catch (e) {}
   const m = GEAR_META[kind];
   if (!m) { if (onDone) onDone(); return; }
   // 画像が未着でも破綻しないよう onerror で既存画像へフォールバック。両方無ければ emoji。
@@ -6775,7 +6893,10 @@ function _showActClearBanner(title, sub, onDone) {
 
 function _presentBattleModal(opts) {
   var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(10,12,28,0.65);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;padding:20px;';
+  // 2026-04-21: z-index を 1100 → 1700 に昇格。バトルログ (1400) / マップシーン (1500) /
+  // なぞりスタートオーバーレイ (1550) よりも前に出して、神器入手や中ボス登場の
+  // モーダルが裏に隠れないようにする。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1700;background:rgba(10,12,28,0.65);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;padding:20px;';
   var card = document.createElement('div');
   card.style.cssText = 'background:linear-gradient(180deg,#1a1d3a 0%,#0f1226 100%);border:2.5px solid var(--window-border);border-radius:22px;padding:26px 22px;text-align:center;width:min(86vw,320px);box-shadow:0 12px 40px rgba(0,0,0,0.6),inset 0 0 18px rgba(255,220,130,0.18);color:#fff;';
   card.innerHTML =
@@ -6827,7 +6948,18 @@ function _rowPracticeNextChar() {
 
     const showStartOverlay = function(durationMs) {
       var startOv = document.createElement('div');
-      startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+      // キャンバス中央に重ねる (fixed で canvas-wrap の矩形に揃える)。
+      // 取得できなかった場合は従来通り画面中央にフォールバック。
+      var cw = document.querySelector('.canvas-wrap');
+      var boxStyle;
+      if (cw) {
+        var r = cw.getBoundingClientRect();
+        boxStyle = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;'
+                 + 'width:' + r.width + 'px;height:' + r.height + 'px;';
+      } else {
+        boxStyle = 'position:fixed;inset:0;';
+      }
+      startOv.style.cssText = boxStyle + 'z-index:1550;display:flex;align-items:center;justify-content:center;pointer-events:none;';
       startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.95);padding:14px 32px;border-radius:24px;box-shadow:0 4px 24px rgba(242,145,90,0.45);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
       document.body.appendChild(startOv);
       setTimeout(function() { if (startOv && startOv.parentNode) startOv.remove(); },
@@ -6860,7 +6992,7 @@ function _rowPracticeNextChar() {
     if (_battle.active) {
       // バトル: おてほん → demo → START overlay + なぞり案内 (1メッセージ) → quiz
       _showBattleDialog([
-        { lines: ['おてほん ちゅう…', 'じゅんばんを', 'おぼえよう'] }
+        { lines: ['これから', 'おてほんを', 'みせるよ。おぼえてね！'] }
       ], function() {
         runDemo(function() {
           showStartOverlay(1400);
@@ -7439,6 +7571,18 @@ function goToPracticeDirect(rowIndex) {
     titleEl.addEventListener('pointerdown', startTitleBgm, { passive: true });
     titleEl.addEventListener('touchstart',  startTitleBgm, { passive: true });
   }
+
+  // play.html のカードタップから遷移した直後 (sticky user activation が効く間) は
+  // 追加タップ不要で BGM を開始する。同期遷移直後なので Chrome/Safari desktop と
+  // 多くの PWA 環境で通る。iOS Safari 独立タブでは失敗するが、その場合は従来の
+  // タイトルタップで解錠されるので UX は後退しない。
+  try {
+    var primedTs = parseInt(sessionStorage.getItem('pono_audio_primed_ts') || '0', 10);
+    if (primedTs && (Date.now() - primedTs) < 15000) {
+      sessionStorage.removeItem('pono_audio_primed_ts');
+      startTitleBgm();
+    }
+  } catch (e) {}
 
   if (newBtn) newBtn.addEventListener('click', function() {
     startTitleBgm();
