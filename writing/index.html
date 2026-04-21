@@ -1863,13 +1863,14 @@ body.battle-mode .villain-deco {
   letter-spacing: 0;
   pointer-events: none;
 }
-/* ペデスタルの6つの凹みスロットのうち5つ (時計回り、中段左を休みにする)。
-   tablet-width=14% なので left/top は各スロット中心 - 7% で指定。 */
-.plank.plank-riddle.tablet-slot-0 { top: 5%;  left: 18%; } /* na: 左上 */
-.plank.plank-riddle.tablet-slot-1 { top: 5%;  left: 68%; } /* ni: 右上 */
-.plank.plank-riddle.tablet-slot-2 { top: 36%; left: 81%; } /* nu: 右中 */
-.plank.plank-riddle.tablet-slot-3 { top: 69%; left: 68%; } /* ne: 右下 */
-.plank.plank-riddle.tablet-slot-4 { top: 69%; left: 18%; } /* no: 左下 */
+/* ペデスタルは 5スロットの五角形配置 (ピクセル解析で確定 — 画像 1099x1110 の
+   実ボックスから算出)。tablet 幅 14% に合わせて各スロット左上座標 (%) を指定。
+   na=上中央, ni=右中, nu=右下, ne=左下, no=左中 (時計回り) */
+.plank.plank-riddle.tablet-slot-0 { top:  7.1%; left: 42.8%; } /* な: 上中央 */
+.plank.plank-riddle.tablet-slot-1 { top: 32.9%; left: 75.6%; } /* に: 右中 */
+.plank.plank-riddle.tablet-slot-2 { top: 70.1%; left: 62.6%; } /* ぬ: 右下 */
+.plank.plank-riddle.tablet-slot-3 { top: 70.1%; left: 22.9%; } /* ね: 左下 */
+.plank.plank-riddle.tablet-slot-4 { top: 32.9%; left:  9.9%; } /* の: 左中 */
 /* 完成時: 5枚の石板が順番に眩しく光る (150ms stagger × 0.9s anim) */
 .puzzle-bg-riddle.complete .plank.plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
