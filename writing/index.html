@@ -1646,7 +1646,14 @@ body.battle-mode .villain-deco {
   transform: translate(-50%, -50%) scaleX(-1);
   z-index: 5; pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
-  animation: bridgeWalk 2.2s linear forwards;
+}
+/* .hero-sprite.move の animation: heroMoveAnim infinite が後勝ちで bridgeWalk を
+   上書きしてしまうので、compound selector で特異度を上げて両方のアニメを並走させる。
+   第1: 左→右へ位置移動 (forwards) / 第2: 歩行コマ送り (infinite) (2026-04-21) */
+.bridge-walker.hero-sprite.move {
+  animation:
+    bridgeWalk 2.2s linear forwards,
+    heroMoveAnim 0.6s steps(5, jump-none) infinite;
 }
 @keyframes bridgeWalk {
   0%   { left: 10%; opacity: 0; }
@@ -1656,7 +1663,7 @@ body.battle-mode .villain-deco {
 }
 @media (prefers-reduced-motion: reduce) {
   .bridge-shine { animation: none; opacity: 0; }
-  .bridge-walker { animation: none; left: 92%; opacity: 0; }
+  .bridge-walker.hero-sprite.move { animation: none; left: 92%; opacity: 0; }
 }
 .puzzle-title {
   position: absolute; top: 8px; left: 0; right: 0;
@@ -8045,29 +8052,25 @@ function goToPracticeDirect(rowIndex) {
   // b.play() が必ず通り、title 画面で BGM が鳴り始める。
   var splashEl = document.getElementById('splashScreen');
   if (splashEl) {
-    if (sessionStorage.getItem('pono_splash_done') === '1') {
-      // 同セッション内での再訪 (リロード等) はスキップ
-      splashEl.classList.add('hidden');
-    } else {
-      // 初回表示: title を隠して splash を前面に出す
-      if (titleEl) titleEl.classList.add('hidden');
-      var _splashDismissed = false;
-      function dismissSplash() {
-        if (_splashDismissed) return;
-        _splashDismissed = true;
-        // user gesture 同一 tick で BGM 発火 → iOS でも確実に鳴る
-        startTitleBgm();
-        splashEl.classList.add('fade-out');
-        setTimeout(function() {
-          splashEl.classList.add('hidden');
-          try { sessionStorage.setItem('pono_splash_done', '1'); } catch (e) {}
-          if (titleEl) titleEl.classList.remove('hidden');
-        }, 550);
-      }
-      splashEl.addEventListener('click', dismissSplash);
-      splashEl.addEventListener('touchstart', dismissSplash, { passive: true });
-      splashEl.addEventListener('pointerdown', dismissSplash, { passive: true });
+    // ページ読み込みの度に必ず 2行のキャッチコピーを表示する。
+    // 「戻る」で play.html に戻って再度 writing を開いた時に splash が出ない
+    // 現象の対策 (ユーザー要望 2026-04-21)。sessionStorage のスキップは廃止。
+    if (titleEl) titleEl.classList.add('hidden');
+    var _splashDismissed = false;
+    function dismissSplash() {
+      if (_splashDismissed) return;
+      _splashDismissed = true;
+      // user gesture 同一 tick で BGM 発火 → iOS でも確実に鳴る
+      startTitleBgm();
+      splashEl.classList.add('fade-out');
+      setTimeout(function() {
+        splashEl.classList.add('hidden');
+        if (titleEl) titleEl.classList.remove('hidden');
+      }, 550);
     }
+    splashEl.addEventListener('click', dismissSplash);
+    splashEl.addEventListener('touchstart', dismissSplash, { passive: true });
+    splashEl.addEventListener('pointerdown', dismissSplash, { passive: true });
   }
 
   // play.html の card タップから遷移した直後 (sticky user activation が効く間) は
@@ -8079,8 +8082,10 @@ function goToPracticeDirect(rowIndex) {
   // DOM 構築中の play() を autoplay 拒否しやすく、ページ完全ロード直後が最も安定。
   try {
     var primedTs = parseInt(sessionStorage.getItem('pono_audio_primed_ts') || '0', 10);
-    var splashActive = sessionStorage.getItem('pono_splash_done') !== '1'
-      && !!document.getElementById('splashScreen');
+    // splash は常時表示方針になったので、splashEl が存在する限り splash アクティブ扱い。
+    // primed-TS 経由の BGM 自動発火は splash タップに委ねる。
+    var _splashEl = document.getElementById('splashScreen');
+    var splashActive = !!(_splashEl && !_splashEl.classList.contains('hidden'));
     if (primedTs && (Date.now() - primedTs) < 15000 && !splashActive) {
       sessionStorage.removeItem('pono_audio_primed_ts');
       if (document.readyState === 'complete') {
@@ -8097,8 +8102,11 @@ function goToPracticeDirect(rowIndex) {
     // 「はじめから」では三種の神器の取得状況もリセットする (要望 2026-04-21)
     try { if (typeof resetGears === 'function') resetGears(); } catch (e) {}
     localStorage.setItem('mojikaki_started', '1');
-    _titleRouteIsNew = true;
-    goToStory();
+    // 紙芝居 (storyScreen) を挟まず直接あ行へ突入。
+    // 紙芝居の 3行テキストが遷移直前に一瞬見えてしまう現象の対策 (2026-04-21)。
+    _titleRouteIsNew = false;
+    currentCategory = 'hiragana';
+    goToPracticeDirect(0);
   });
   if (contBtn) contBtn.addEventListener('click', function() {
     if (contBtn.classList.contains('disabled')) return;
