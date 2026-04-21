@@ -1417,6 +1417,9 @@ function loadStage(idx) {
     });
     stage.nodules = (sdef.nodules || []).map(function(n){
       var isFossil = n.content && n.content.kind === 'fossil';
+      // Gem/empty nodules intentionally reset to closed each session so kids can
+      // re-experience the satisfying crack animation on replays. Only fossil nodules
+      // persist their opened state (via `collection`), preventing double-collect.
       return {
         r:n.r, c:n.c,
         content: { kind: n.content.kind, fossilId: n.content.fossilId || null },
@@ -1489,6 +1492,10 @@ function finishWalk() {
     if (adj) {
       if (pi.kind === T.NODULE)  { openNodule(pi.r, pi.c); return; }
       if (pi.kind === T.OUTCROP) { openStrata(pi.r, pi.c); return; }
+    } else {
+      // Non-adjacent end (e.g. D-pad hijacked the walk). Give a small "too far" cue
+      // so kids don't silently lose their tap.
+      playBeep(330, 0.05);
     }
   }
   // If a continuous intent is active and we didn't land on a fossil, keep going
@@ -1854,6 +1861,7 @@ function showNodulePop(emoji, msg) {
 // Concept: "deeper = older" (no era names).
 // ═══════════════════════════════════════════════════════
 var strataState = null;
+var _strataInitTimer = null;
 
 function openStrata(r, c) {
   var oc = outcropAt(r, c);
@@ -1862,6 +1870,8 @@ function openStrata(r, c) {
     showNodulePop('✅', 'もう ほった！');
     return;
   }
+  // Guard against rapid double-entry: if STRATA is already opening, ignore.
+  if (gameState === 'STRATA') return;
   gameState = 'STRATA';
   hideArrows();
   moveIntent = null;
@@ -1870,7 +1880,14 @@ function openStrata(r, c) {
   ov.classList.add('show');
   document.getElementById('strataLayerLabel').textContent = '1ばん うえ';
 
-  setTimeout(function(){ initStrataCanvases(oc); }, 30);
+  // Defer canvas sizing so overlay flex layout settles. Track the handle so
+  // close-before-init cancels it (avoids dangling strataState pointing to a hidden overlay).
+  if (_strataInitTimer) { clearTimeout(_strataInitTimer); _strataInitTimer = null; }
+  _strataInitTimer = setTimeout(function(){
+    _strataInitTimer = null;
+    if (gameState !== 'STRATA') return; // user closed during the gap
+    initStrataCanvases(oc);
+  }, 30);
   // iOS speech warmup
   try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(_){}
 }
@@ -1995,6 +2012,11 @@ function strataBrushAt(ev) {
 
 function checkStrataProgress() {
   if (!strataState || strataState.revealed) return;
+  // Defensive bound: active must stay within layer count. A data error (fossilLayer out of range)
+  // would otherwise strand the player on an empty band. Clamp + treat as target to force reveal.
+  if (strataState.active >= strataState.layers) {
+    strataState.active = strataState.layers - 1;
+  }
   var now = performance.now();
   if (now - strataState.lastCheckMs < 150) return;
   strataState.lastCheckMs = now;
@@ -2091,6 +2113,7 @@ function triggerStrataReveal() {
 
 document.getElementById('strataClose').addEventListener('click', function(){
   document.getElementById('strataOverlay').classList.remove('show');
+  if (_strataInitTimer) { clearTimeout(_strataInitTimer); _strataInitTimer = null; }
   strataState = null;
   if (gameState === 'STRATA') {
     gameState = 'WORLDMAP';
