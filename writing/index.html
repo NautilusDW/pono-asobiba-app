@@ -588,7 +588,12 @@ html, body {
 }
 #splashScreen.fade-out {
   opacity: 0;
-  pointer-events: none;
+  /* pointer-events: none を撤去 (2026-04-21):
+     このフラグが付くと fade 中に splash がクリックスルーされ、
+     下の #titleScreen「はじめから / つづきから」ボタンが誤発火してしまい、
+     タイトルが一瞬しか映らない現象の元凶だった。
+     fade 完了後に .hidden (display:none) を付けて DOM から除外するので、
+     hit-test は splash に残したまま透明化させるのが正しい挙動。 */
 }
 #splashScreen.hidden { display: none; }
 .splash-copy {
@@ -3215,7 +3220,7 @@ body.battle-intro-active .battle-log-window {
       <div class="canvas-wrap">
         <div class="hedgehog-wrap">
           <div class="hedgehog-bubble" id="hedgehogBubble">がんばれー！</div>
-          <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.webp" alt="ハリネズミ">
+          <img class="hedgehog-deco" src="../assets/images/characters/headgehog_wavehand_front01.png" alt="ハリネズミ">
           <div id="streak-badge" class="streak-badge hidden"></div>
         </div>
         <div class="canvas-container" id="canvasContainer">
@@ -5656,45 +5661,54 @@ function _puzzleRevealPlank(opts) {
   if (opts && opts.finisher) {
     // 5枚目完成: 全板をふわっと光らせる演出 (橋完成のお祝い)
     try { playVictoryFanfare(); } catch (e) {}
-    planks.forEach(function(pl) { pl.classList.add('finisher'); });
     // 橋パズル演出シーケンス (2026-04-21 ユーザー要望):
-    //   ① 板の文字 (かきくけこ) を消す
-    //   ② 壊れた橋 ↔ 直った橋 を 4回交互点滅 (各 200ms, 合計 800ms)
+    //   ① 5枚の板 (四角ブロック) ごと消す (opacity フェード ~350ms)
+    //   ② 壊れた橋 ↔ 直った橋 を 200ms 間隔で交互点滅 (合計 800ms)
     //   ③ 直った状態でロック → 白い閃光
     //   ④ 勇者が左→右に歩いて渡る
     if (_puzzle.kind === 'bridge' && els.stage) {
-      // ① 板の文字を消す (opacity を残して板自体は見せつつ、中の文字だけ非表示)
-      planks.forEach(function(pl) { pl.textContent = ''; });
+      // ① 四角ブロックごとフェードアウト (glow は不要なので .finisher は付けない)
+      planks.forEach(function(pl) {
+        pl.style.transition = 'opacity 0.35s ease-out, transform 0.35s ease-out';
+        pl.style.opacity = '0';
+        pl.style.transform = 'translateY(10px) scale(0.85)';
+      });
 
-      // ② 交互点滅: 200ms 毎に .fixed を toggle。4 回分の切替で broken→fixed→broken→fixed を演出。
-      var _toggleCount = 0;
-      var _maxToggles = 5; // broken(初期) → fixed → broken → fixed → broken → fixed の 5 回切替 = 800ms
-      var _flashTimer = setInterval(function() {
-        _toggleCount++;
-        if (_toggleCount >= _maxToggles) {
-          clearInterval(_flashTimer);
-          // ③ 最終状態は必ず fixed (直った橋)
-          els.stage.classList.add('fixed');
-          // 白い閃光 (1.1s で自然消滅)
-          try {
-            const shine = document.createElement('div');
-            shine.className = 'bridge-shine';
-            els.stage.appendChild(shine);
-            setTimeout(function() { if (shine.parentNode) shine.remove(); }, 1300);
-          } catch (e) {}
-          // ④ 勇者の渡りアニメ: 閃光が落ち着いた後 (900ms 待機) に左→右へ 2.2s
-          try {
-            setTimeout(function() {
-              const walker = document.createElement('div');
-              walker.className = 'bridge-walker hero-sprite move';
-              els.stage.appendChild(walker);
-              setTimeout(function() { if (walker.parentNode) walker.remove(); }, 2400);
-            }, 900);
-          } catch (e) {}
-        } else {
-          els.stage.classList.toggle('fixed');
-        }
-      }, 200);
+      // ブロック消失を待ってから交互点滅開始 (400ms 後)
+      setTimeout(function() {
+        // ② 交互点滅: 200ms 毎に .fixed を toggle
+        var _toggleCount = 0;
+        var _maxToggles = 5; // broken→fixed→broken→fixed→broken→fixed (計 5 切替)
+        var _flashTimer = setInterval(function() {
+          _toggleCount++;
+          if (_toggleCount >= _maxToggles) {
+            clearInterval(_flashTimer);
+            // ③ 最終状態は必ず fixed
+            els.stage.classList.add('fixed');
+            // 白い閃光 (1.1s)
+            try {
+              const shine = document.createElement('div');
+              shine.className = 'bridge-shine';
+              els.stage.appendChild(shine);
+              setTimeout(function() { if (shine.parentNode) shine.remove(); }, 1300);
+            } catch (e) {}
+            // ④ 勇者の渡りアニメ: 閃光が落ち着いた後 (900ms 待機) に左→右へ 2.2s
+            try {
+              setTimeout(function() {
+                const walker = document.createElement('div');
+                walker.className = 'bridge-walker hero-sprite move';
+                els.stage.appendChild(walker);
+                setTimeout(function() { if (walker.parentNode) walker.remove(); }, 2400);
+              }, 900);
+            } catch (e) {}
+          } else {
+            els.stage.classList.toggle('fixed');
+          }
+        }, 200);
+      }, 400);
+    } else {
+      // 橋以外のパズル (tablet/lava_step): 従来どおり glow 演出
+      planks.forEach(function(pl) { pl.classList.add('finisher'); });
     }
   } else {
     try { playCharCompleteSound(); } catch (e) {}
@@ -7499,11 +7513,11 @@ function _rowPracticeNextChar() {
           if (_puzzle.active) {
             try { _puzzleRevealPlank({ finisher: isFinisher }); } catch (e) {}
             // 橋フィニッシャー演出シーケンス (2026-04-21):
-            //   文字消し(~200ms) + 交互点滅(800ms) + 閃光(1.1s) + 待機(0.9s) + 渡りアニメ(2.2s)
-            //   = 約 5.2s。マージンを足して 5400ms 待つ。
+            //   板消し(0.4s) + 交互点滅(0.8s) + 閃光(1.1s) + 待機(0.9s) + 渡りアニメ(2.2s)
+            //   = 約 5.4s。マージンを足して 5800ms 待つ。
             var _puzzleDelay;
             if (isFinisher) {
-              _puzzleDelay = (_puzzle.kind === 'bridge') ? 5400 : 3000;
+              _puzzleDelay = (_puzzle.kind === 'bridge') ? 5800 : 3000;
             } else {
               _puzzleDelay = 1500;
             }
