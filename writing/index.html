@@ -1788,36 +1788,109 @@ body.battle-mode .villain-deco {
   50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 28px rgba(200,140,250,0.95); }
   100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
 }
-/* な行: ひのとりの なぞなぞ (riddle)。夕焼け空+炎の揺らぎ */
+/* な行: ひのとりの なぞなぞ (riddle)。古代の祭壇 (石板ペデスタル) の上に5枚の石板が現れる。
+   pedestal_empty.png が背景、完成時に pedestal_glow.png に差し替え+石板が順番に光る。 */
 .puzzle-bg-riddle {
-  background: linear-gradient(180deg, #3a1628 0%, #7a2a18 55%, #c66020 100%);
-}
-.puzzle-bg-riddle::before {
-  content: '';
-  position: absolute; inset: 0;
   background:
-    radial-gradient(circle at 50% 20%, rgba(255,180,80,0.25) 0%, transparent 55%),
-    radial-gradient(circle at 30% 70%, rgba(255,120,40,0.2) 0%, transparent 50%);
-  pointer-events: none;
+    url('../assets/images/puzzle/tablet/pedestal_empty.png') center/contain no-repeat,
+    radial-gradient(ellipse at 50% 40%, #1a1834 0%, #0a0814 75%);
+  image-rendering: pixelated;
+}
+.puzzle-bg-riddle.complete {
+  background:
+    url('../assets/images/puzzle/tablet/pedestal_glow.png') center/contain no-repeat,
+    radial-gradient(ellipse at 50% 40%, #1a2844 0%, #0a1020 75%);
+  animation: pedestalActivate 1.4s ease-out;
+}
+@keyframes pedestalActivate {
+  0%   { filter: brightness(0.9) saturate(1); }
+  40%  { filter: brightness(1.6) saturate(1.4); }
+  100% { filter: brightness(1.15) saturate(1.15); }
+}
+/* 5スロット配置 — ペデスタル画像上の石板位置に合わせて絶対配置 (%指定で画像スケールに追従) */
+.puzzle-bg-riddle .puzzle-planks {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: min(72vh, 95%);
+  aspect-ratio: 1;
+  display: block;
+  padding: 0;
+  gap: 0;
 }
 .plank.plank-riddle {
-  background:
-    radial-gradient(circle at 50% 40%, #FFE068 0%, #F59E0B 55%, #B54800 100%);
-  border: 2px solid #5B1F00;
-  color: #FFFAE0;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,240,160,0.55);
-  border-radius: 50%;
+  position: absolute;
+  width: 18%;
+  aspect-ratio: 1;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(-18px) scale(0.5) rotate(-8deg);
+  transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: visible;
 }
 .plank.plank-riddle.placed {
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 20px rgba(255,170,60,0.9), inset 0 2px 4px rgba(255,240,160,0.6);
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0);
 }
-.plank.plank-riddle.finisher {
-  animation: riddleGlow 1.1s ease-in-out 0.1s 2;
+.plank.plank-riddle .tablet-bg {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
 }
-@keyframes riddleGlow {
-  0%   { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(255,170,60,0); }
-  50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 34px rgba(255,200,80,1); }
-  100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(255,170,60,0); }
+.plank.plank-riddle .tablet-char {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(18px, 4.2vmin, 32px);
+  font-weight: 900;
+  color: #1f1208;
+  text-shadow: 0 1px 0 rgba(255,235,180,0.55), 0 0 4px rgba(255,240,180,0.3);
+  letter-spacing: 0;
+  pointer-events: none;
+}
+/* 五芒星の5頂点位置 (pedestal_002 の石板スロット中心の%) */
+.plank.plank-riddle.tablet-slot-0 { top: 8%;  left: 41%; } /* 上 (12時) */
+.plank.plank-riddle.tablet-slot-1 { top: 30%; left: 73%; } /* 右上 */
+.plank.plank-riddle.tablet-slot-2 { top: 65%; left: 62%; } /* 右下 */
+.plank.plank-riddle.tablet-slot-3 { top: 65%; left: 20%; } /* 左下 */
+.plank.plank-riddle.tablet-slot-4 { top: 30%; left: 9%;  } /* 左上 */
+/* 完成時: 5枚の石板が順番に眩しく光る (150ms stagger × 0.9s anim) */
+.puzzle-bg-riddle.complete .plank.plank-riddle {
+  animation: tabletSeqGlow 1s ease-in-out forwards;
+}
+.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-0 { animation-delay: 0s; }
+.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-1 { animation-delay: 0.18s; }
+.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-2 { animation-delay: 0.36s; }
+.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-3 { animation-delay: 0.54s; }
+.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-4 { animation-delay: 0.72s; }
+@keyframes tabletSeqGlow {
+  0%   { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); transform: scale(1) rotate(0); }
+  40%  { filter: drop-shadow(0 0 28px rgba(120,210,255,1)) drop-shadow(0 0 14px rgba(255,255,255,0.95)) brightness(1.8); transform: scale(1.25) rotate(-3deg); }
+  70%  { filter: drop-shadow(0 0 18px rgba(140,220,255,0.85)) brightness(1.4); transform: scale(1.1) rotate(2deg); }
+  100% { filter: drop-shadow(0 0 10px rgba(140,220,255,0.7)) brightness(1.25); transform: scale(1.05) rotate(0); }
+}
+/* ペデスタル中央から放射状に広がる閃光 (complete 時に JS で一度だけ生成) */
+.pedestal-burst {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 40%; aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(180,230,255,0.95) 0%, rgba(120,200,255,0.5) 40%, rgba(80,140,220,0) 80%);
+  pointer-events: none;
+  animation: pedestalBurst 1.6s ease-out forwards;
+  z-index: 4;
+}
+@keyframes pedestalBurst {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
 }
 /* ひのとり (placeholder: 絵文字運用。将来 char_firebird_idle.png に差し替え) */
 @keyframes phoenixFloat {
@@ -5711,11 +5784,22 @@ function _showPuzzleStage(rowLabel) {
   // 板5枚を生成 (初期は非表示 .plank = opacity:0)
   if (els.planks) {
     els.planks.innerHTML = '';
-    def.chars.forEach(function(ch) {
-      const p = document.createElement('span');
-      p.className = 'plank plank-' + def.kind;
-      p.textContent = ch;
-      els.planks.appendChild(p);
+    def.chars.forEach(function(ch, idx) {
+      if (def.kind === 'riddle') {
+        // 石板ペデスタル: 5枚の石板を五芒星配置でスロットに配置。
+        // tablet_1..5.png を番号順に割り当て、文字はテキストオーバーレイ。
+        const p = document.createElement('div');
+        p.className = 'plank plank-riddle tablet-slot-' + idx;
+        p.innerHTML =
+          '<img class="tablet-bg" src="../assets/images/puzzle/tablet/tablet_' + (idx + 1) + '.png" alt="">' +
+          '<span class="tablet-char">' + ch + '</span>';
+        els.planks.appendChild(p);
+      } else {
+        const p = document.createElement('span');
+        p.className = 'plank plank-' + def.kind;
+        p.textContent = ch;
+        els.planks.appendChild(p);
+      }
     });
   }
 
@@ -5737,6 +5821,8 @@ function _hidePuzzleStage() {
   if (!els.stage) return;
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
+  els.stage.classList.remove('complete');
+  els.stage.querySelectorAll('.pedestal-burst').forEach(function(b) { b.remove(); });
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
@@ -7813,8 +7899,23 @@ function _rowPracticeNextChar() {
               };
               setTimeout(function() {
                 _showRiddle(_riddleChar, function() {
-                  if (isFinisher) setTimeout(_riddleAdvance, 700);
-                  else _riddleAdvance();
+                  if (isFinisher) {
+                    // 5問目正解: 石板ペデスタルが起動。
+                    // ① .complete クラスで pedestal_empty → pedestal_glow に bg 差し替え
+                    // ② 5枚の石板が 0.18s stagger で順番に眩しく光る (合計 ~1.7s)
+                    // ③ 中央から閃光バーストが広がる
+                    var stage = _puzzleEls().stage;
+                    if (stage) {
+                      stage.classList.add('complete');
+                      var burst = document.createElement('div');
+                      burst.className = 'pedestal-burst';
+                      stage.appendChild(burst);
+                    }
+                    try { playVictoryFanfare(); } catch (e) {}
+                    setTimeout(_riddleAdvance, 2000);
+                  } else {
+                    _riddleAdvance();
+                  }
                 });
               }, 850);
               return;
