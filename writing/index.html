@@ -588,7 +588,9 @@ html, body {
   width: clamp(240px, 70vw, 560px);
   max-height: 45vh;
   object-fit: contain;
-  filter: drop-shadow(0 6px 22px rgba(255,180,60,0.35));
+  /* ロゴ PNG は黒塗りの矩形なので screen 合成で黒部分を親の黒背景に溶かす。
+     drop-shadow は screen 合成と相性が悪いので使わない (光源はロゴ画像自体が持っている) */
+  mix-blend-mode: screen;
   animation: title-logo-in 0.9s ease-out both;
 }
 @keyframes title-logo-in {
@@ -7098,7 +7100,9 @@ window.setBgmFor = setBgmFor;
 // 歯車メニューの「もどる」から呼ばれる
 
 // ===== Title / Story screen flow =====
-// はじめから → 紙芝居 → 行選択  /  つづきから → 行選択 直行
+// はじめから → 紙芝居 → あ行 直接スタート (行選びスキップ)
+// つづきから → 行選び (どの もじを かく？)
+var _titleRouteIsNew = false;
 function showTitleScreen() {
   var hasProgress = !!localStorage.getItem('mojikaki_started');
   var titleEl = document.getElementById('titleScreen');
@@ -7122,20 +7126,38 @@ function goToStory() {
   document.getElementById('titleScreen').classList.add('hidden');
   document.getElementById('storyScreen').classList.remove('hidden');
 }
+function goToPracticeDirect(rowIndex) {
+  // はじめから専用: 行選びを飛ばして即練習
+  document.getElementById('titleScreen').classList.add('hidden');
+  document.getElementById('storyScreen').classList.add('hidden');
+  document.getElementById('rowSelectScreen').classList.add('hidden');
+  enterPractice(rowIndex);
+}
 (function wireTitleScreen() {
   var newBtn = document.getElementById('titleBtnNew');
   var contBtn = document.getElementById('titleBtnContinue');
   var storyEl = document.getElementById('storyScreen');
   if (newBtn) newBtn.addEventListener('click', function() {
     localStorage.setItem('mojikaki_started', '1');
+    _titleRouteIsNew = true;
     goToStory();
   });
   if (contBtn) contBtn.addEventListener('click', function() {
     if (contBtn.classList.contains('disabled')) return;
     localStorage.setItem('mojikaki_started', '1');
+    _titleRouteIsNew = false;
     goToRowSelect();
   });
-  if (storyEl) storyEl.addEventListener('click', function() { goToRowSelect(); });
+  if (storyEl) storyEl.addEventListener('click', function() {
+    if (_titleRouteIsNew) {
+      _titleRouteIsNew = false;
+      // あ行 (hiragana / index 0) を自動で開始
+      currentCategory = 'hiragana';
+      goToPracticeDirect(0);
+    } else {
+      goToRowSelect();
+    }
+  });
 })();
 showTitleScreen();
 
