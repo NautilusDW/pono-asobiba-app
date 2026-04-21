@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ポノのもじかき | ポノのあそびば</title>
+<title>文字書きクエスト | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
@@ -348,6 +348,29 @@ html, body {
   100% { opacity: 0; }
 }
 
+/* 画数ごとに水色が濃くなる: 1画目=薄 / 2画目=中 / 3画目以降=濃。
+   三種の神器を手に入れるまで色は水色で固定 (将来属性別に差し替え可能) */
+.canvas-flash.stroke-glow-lv1,
+.canvas-flash.stroke-glow-lv2,
+.canvas-flash.stroke-glow-lv3 {
+  mix-blend-mode: screen;
+  animation: strokeGlowFlash 0.55s ease-out forwards;
+}
+.canvas-flash.stroke-glow-lv1 {
+  background: radial-gradient(circle at center, rgba(200,240,255,0.9) 0%, rgba(170,220,255,0.55) 45%, rgba(170,220,255,0) 80%);
+}
+.canvas-flash.stroke-glow-lv2 {
+  background: radial-gradient(circle at center, rgba(150,220,255,0.95) 0%, rgba(100,190,255,0.7) 45%, rgba(100,190,255,0) 82%);
+}
+.canvas-flash.stroke-glow-lv3 {
+  background: radial-gradient(circle at center, rgba(110,200,255,1) 0%, rgba(50,150,240,0.85) 45%, rgba(50,150,240,0) 85%);
+}
+@keyframes strokeGlowFlash {
+  0%   { opacity: 0;    transform: scale(0.8); }
+  35%  { opacity: 1;    transform: scale(1.02); }
+  100% { opacity: 0;    transform: scale(1.12); }
+}
+
 .canvas-cracks {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -550,45 +573,128 @@ html, body {
 
 /* ===== Character Selector ===== */
 /* ===== Row Selection Screen ===== */
+/* ===== Title Screen ===== */
+#titleScreen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #000;
+  z-index: 9998;
+  padding: 24px 16px;
+  gap: 28px;
+}
+#titleScreen.hidden { display: none; }
+#titleScreen .title-logo {
+  width: clamp(240px, 70vw, 560px);
+  max-height: 45vh;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 22px rgba(255,180,60,0.35));
+  animation: title-logo-in 0.9s ease-out both;
+}
+@keyframes title-logo-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.title-btns { display: flex; flex-direction: column; gap: 14px; width: min(280px, 80vw); }
+.title-btn {
+  font-family: inherit; font-weight: 900;
+  font-size: 1.35rem; letter-spacing: 0.08em;
+  padding: 14px 18px; border-radius: 999px;
+  border: 3px solid #FFD84D;
+  background: linear-gradient(135deg, #F2742A, #E85C1E);
+  color: #FFFBEA;
+  cursor: pointer; box-shadow: 0 4px 18px rgba(242,116,42,0.45);
+  transition: transform 0.15s;
+}
+.title-btn:active { transform: scale(0.95); }
+.title-btn.secondary {
+  background: linear-gradient(135deg, #2B2B36, #1A1A22);
+  border-color: #8FA3C9; color: #D7E4FF;
+  box-shadow: 0 4px 18px rgba(143,163,201,0.25);
+}
+.title-btn.secondary.disabled { opacity: 0.45; pointer-events: none; }
+#titleScreen .title-hint {
+  color: #6E788A; font-size: 0.85rem; font-weight: 700;
+  letter-spacing: 0.15em;
+}
+@media (orientation: landscape) {
+  #titleScreen { flex-direction: row; gap: 48px; }
+  #titleScreen .title-logo { max-height: 70vh; width: clamp(240px, 45vw, 520px); }
+  .title-btns { width: min(260px, 40vw); }
+  .title-hint { display: none; }
+}
+
+/* ===== Story (紙芝居) Screen ===== */
+#storyScreen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #000;
+  z-index: 9997;
+  padding: 24px 20px;
+  cursor: pointer;
+}
+#storyScreen.hidden { display: none; }
+.story-text {
+  color: #FFFBEA; font-weight: 900;
+  font-size: clamp(1.1rem, 5vw, 1.8rem);
+  text-align: center; line-height: 1.9; letter-spacing: 0.08em;
+  max-width: 720px;
+  text-shadow: 0 2px 18px rgba(255,216,77,0.35);
+  animation: story-in 0.6s ease-out both;
+}
+@keyframes story-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.story-hint {
+  margin-top: 40px;
+  color: #FFD84D; font-weight: 900; font-size: 1rem;
+  letter-spacing: 0.2em;
+  animation: story-hint-blink 1.4s ease-in-out infinite;
+}
+@keyframes story-hint-blink {
+  0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
+}
+
 #rowSelectScreen {
   display: flex; flex-direction: column; align-items: center;
   min-height: 100dvh; padding: 24px 16px 40px;
-  background-color: var(--bg);
-  background-image: url('../assets/images/BG_03.webp');
-  background-size: cover; background-position: center;
+  background: #000;
 }
 #rowSelectScreen.hidden { display: none; }
-.rs-header { text-align: center; margin-bottom: 8px; }
+.rs-header { text-align: center; margin-bottom: 14px; }
 .rs-header h1 {
   font-size: 1.6rem; font-weight: 900;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: #FFD84D;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 14px rgba(255,216,77,0.4);
 }
-.rs-subtitle { font-size: 0.9rem; color: #A89585; margin-top: 2px; font-weight: 700; }
+.rs-subtitle { font-size: 0.9rem; color: #C7B8A8; margin-top: 4px; font-weight: 700; }
 .rs-cat-tabs { display: flex; gap: 6px; margin: 10px 0 16px; }
 .rs-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 12px; width: 100%; max-width: 380px;
 }
 .rs-row-btn {
-  padding: 14px 10px; border: 3px solid #E8E0D8; border-radius: 20px;
-  background: var(--card-bg); font-family: inherit;
-  cursor: pointer; box-shadow: 0 3px 12px rgba(91,74,63,0.08);
+  padding: 14px 10px; border: 3px solid #2E2E3C; border-radius: 20px;
+  background: #1A1A22; font-family: inherit;
+  cursor: pointer; box-shadow: 0 3px 14px rgba(0,0,0,0.6);
   transition: all 0.2s; text-align: center;
 }
 .rs-row-btn:active { transform: scale(0.95); }
-.rs-row-label { font-size: 1.2rem; font-weight: 900; color: var(--text); }
-.rs-row-chars { font-size: 0.75rem; color: #A89585; margin-top: 4px; font-weight: 700; letter-spacing: 0.15em; }
+.rs-row-label { font-size: 1.8rem; font-weight: 900; color: #FFFBEA; }
+.rs-row-chars { font-size: 0.75rem; color: #8E8070; margin-top: 4px; font-weight: 700; letter-spacing: 0.15em; }
 .rs-row-btn.all-done {
-  background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+  background: linear-gradient(135deg, #0F3D2E, #174F3D);
   border-color: #34D399;
 }
-.rs-row-done-mark { color: #059669; font-size: 0.7rem; font-weight: 900; margin-top: 2px; }
+.rs-row-done-mark { color: #6EE7B7; font-size: 0.7rem; font-weight: 900; margin-top: 2px; }
 @media (orientation: landscape) {
   #rowSelectScreen { min-height: 100dvh; padding: 12px 24px 24px; justify-content: center; }
   .rs-grid { grid-template-columns: repeat(5, 1fr); max-width: 600px; gap: 8px; }
   .rs-row-btn { padding: 10px 8px; }
-  .rs-row-label { font-size: 1rem; }
+  .rs-row-label { font-size: 1.4rem; }
 }
 
 /* (Back button removed - using gear menu instead) */
@@ -2136,29 +2242,39 @@ body.battle-mode .villain-deco {
   text-shadow: 0 0 10px #FFD86A, 0 0 18px rgba(255,170,60,0.85);
   font-weight: 900;
 }
-/* タップ進行マーカー (ドラクエ風の右下 ▼)。await-tap class 時のみ点滅。 */
+/* タップ進行マーカー: 子供向けに「👆 タップ」の大きいバッジ。await-tap class 時のみ表示+弾む。 */
 .battle-log-window .battle-log-inner { position: relative; }
 .battle-log-window .battle-log-advance {
   position: absolute;
   right: 10px; bottom: 6px;
-  font-size: 0.95rem; color: #FFD86A;
-  text-shadow: 0 0 6px rgba(255,200,80,0.9);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px 5px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFD86A, #F5A800);
+  color: #3a2200;
+  font-size: 0.8rem; font-weight: 900; letter-spacing: 0.15em;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 14px rgba(255,200,80,0.55);
   opacity: 0; pointer-events: none;
   animation: none;
+  white-space: nowrap;
+}
+.battle-log-window .battle-log-advance::before {
+  content: '👆'; font-size: 1.1rem; line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
 }
 .battle-log-window.await-tap .battle-log-advance {
   opacity: 1;
-  animation: battleLogAdvanceBounce 0.9s ease-in-out infinite;
+  animation: battleLogAdvanceBounce 0.8s ease-in-out infinite;
 }
 .battle-log-window.await-tap .battle-log-inner {
   cursor: pointer;
   box-shadow:
     0 0 16px rgba(0,0,0,0.7),
-    inset 0 0 12px rgba(255,220,130,0.12);
+    inset 0 0 12px rgba(255,220,130,0.18);
 }
 @keyframes battleLogAdvanceBounce {
-  0%, 100% { transform: translateY(0); opacity: 0.45; }
-  50%      { transform: translateY(3px); opacity: 1; }
+  0%, 100% { transform: translateY(0)   scale(1);    box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 12px rgba(255,200,80,0.45); }
+  50%      { transform: translateY(-4px) scale(1.06); box-shadow: 0 6px 16px rgba(0,0,0,0.55), 0 0 22px rgba(255,200,80,0.9); }
 }
 @keyframes battleLogLineIn {
   0%   { opacity: 0; transform: translateY(6px); }
@@ -2723,11 +2839,30 @@ body.battle-intro-active .battle-log-window {
   <span class="acorn-count" id="acornCount">0</span>
 </div>
 
+<!-- ===== Title Screen ===== -->
+<div id="titleScreen">
+  <img class="title-logo" src="../assets/images/ui/title_logo.png" alt="文字書きクエスト">
+  <div class="title-btns">
+    <button class="title-btn" id="titleBtnNew">はじめから</button>
+    <button class="title-btn secondary" id="titleBtnContinue">つづきから</button>
+  </div>
+  <div class="title-hint">▶ タップしてえらぶ</div>
+</div>
+
+<!-- ===== Story (紙芝居) Screen ===== -->
+<div id="storyScreen" class="hidden">
+  <div class="story-text">
+    もじを かいて、<br>
+    てきを たおして、<br>
+    せいれいを たすけよう。
+  </div>
+  <div class="story-hint">▶ タップ</div>
+</div>
+
 <!-- ===== Row Selection Screen ===== -->
-<div id="rowSelectScreen">
+<div id="rowSelectScreen" class="hidden">
   <div class="rs-header">
-    <h1>ポノのもじかき</h1>
-    <div class="rs-subtitle">れんしゅうする ぎょうを えらんでね！</div>
+    <h1>どの もじを かく？</h1>
   </div>
   <div class="rs-cat-tabs" id="rsCategoryTabs">
     <button class="category-tab active" data-cat="hiragana">ひらがな</button>
@@ -2821,7 +2956,7 @@ body.battle-intro-active .battle-log-window {
         <div class="battle-log-line" id="battleLogLine1"></div>
         <div class="battle-log-line" id="battleLogLine2"></div>
         <div class="battle-log-line" id="battleLogLine3"></div>
-        <div class="battle-log-advance" id="battleLogAdvance" aria-hidden="true">▼</div>
+        <div class="battle-log-advance" id="battleLogAdvance" aria-hidden="true">タップ</div>
       </div>
     </div>
     <div class="trace-area">
@@ -3493,10 +3628,12 @@ function flashLastStroke() {
   try {
     var target = document.getElementById('writerTarget');
     if (!target) return;
+    var strokeCount = 0;
     var svg = target.querySelector('svg');
     if (svg) {
       var paths = svg.querySelectorAll('path');
       if (paths && paths.length) {
+        strokeCount = paths.length;
         var last = paths[paths.length - 1];
         last.classList.remove('stroke-just-lit');
         // reflow で animation を確実に再始動
@@ -3512,6 +3649,18 @@ function flashLastStroke() {
       halo.className = 'stroke-soft-halo';
       container.appendChild(halo);
       setTimeout(function() { if (halo.parentNode) halo.remove(); }, 600);
+    }
+    // マス全体の水色グロウ: 画数が上がると濃くなる (Lv1 薄 → Lv2 中 → Lv3 濃)
+    // ※三種の神器を手に入れるまでずっと水色で固定。将来は属性で色差し替え。
+    var flashEl = document.getElementById('canvasFlash');
+    if (flashEl) {
+      var lv = Math.min(3, Math.max(1, strokeCount || 1));
+      flashEl.classList.remove('stroke-glow-lv1', 'stroke-glow-lv2', 'stroke-glow-lv3', 'active');
+      void flashEl.offsetWidth; // reflow
+      flashEl.classList.add('stroke-glow-lv' + lv);
+      setTimeout(function() {
+        flashEl.classList.remove('stroke-glow-lv1', 'stroke-glow-lv2', 'stroke-glow-lv3');
+      }, 560);
     }
   } catch (e) { /* ignore */ }
 }
@@ -5958,10 +6107,10 @@ function buildRowSelectScreen() {
     }
     if (allDone) btn.classList.add('all-done');
 
-    // Row label
+    // Row label (single-kana labels: あ/か/さ/た/な...)
     const labelEl = document.createElement('div');
     labelEl.className = 'rs-row-label';
-    labelEl.textContent = row.label + 'ぎょう';
+    labelEl.textContent = row.label;
     btn.appendChild(labelEl);
 
     // Characters preview
@@ -6005,7 +6154,7 @@ function enterPractice(rowIndex) {
   const rows = GOJUON_ROWS[currentCategory];
   const row = rows[rowIndex];
   var label = document.getElementById('practiceRowLabel');
-  if (label && row) label.textContent = row.label + 'ぎょう れんしゅう';
+  if (label && row) label.textContent = row.label + ' の もじ';
   // Start BGM + unlock AudioContext on user interaction
   tryStartBgm();
   unlockAudio(); // 効果音AudioContextも確実にアンロック
@@ -6343,7 +6492,6 @@ function _showBattleIntro(onDone) {
     _showBattleEncounterIntro(function() {
       _showBattleDialog([
         { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } },
-        { lines: ['まずは おてほんを みて', 'おなじように', 'かいてみよう！'] },
       ], function() {
         if (onDone) onDone();
       });
@@ -6403,14 +6551,20 @@ function _rowPracticeNextChar() {
       });
     };
 
-    const showNazoriStartThenQuiz = function() {
-      // 非バトル: 従来のフロートオーバーレイ + 2200ms 自動進行
+    const showStartOverlay = function(durationMs) {
       var startOv = document.createElement('div');
       startOv.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-      startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.9);padding:14px 32px;border-radius:24px;box-shadow:0 4px 20px rgba(242,145,90,0.3);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
+      startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.95);padding:14px 32px;border-radius:24px;box-shadow:0 4px 24px rgba(242,145,90,0.45);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
       document.body.appendChild(startOv);
+      setTimeout(function() { if (startOv && startOv.parentNode) startOv.remove(); },
+                 typeof durationMs === 'number' ? durationMs : 1400);
+      return startOv;
+    };
+
+    const showNazoriStartThenQuiz = function() {
+      // 非バトル: フロートオーバーレイ + 2200ms 自動進行
+      showStartOverlay(2200);
       setTimeout(function() {
-        if (startOv) startOv.remove();
         if (!_rowPracticeActive) return;
         _rowPracticePhase = 'quiz_guided';
         _hedgeBubble.textContent = 'かいてみよう！';
@@ -6430,14 +6584,14 @@ function _rowPracticeNextChar() {
     };
 
     if (_battle.active) {
-      // バトル: タップ進行の 3 ステップ
+      // バトル: おてほん → demo → START overlay + なぞり案内 (1メッセージ) → quiz
       _showBattleDialog([
         { lines: ['おてほん ちゅう…', 'じゅんばんを', 'おぼえよう'] }
       ], function() {
         runDemo(function() {
+          showStartOverlay(1400);
           _showBattleDialog([
-            { lines: ['なぞり スタート！', 'ゆびで', 'なぞってね'], opts: { line1Class: 'dmg-line' } },
-            { lines: ['かいてみよう！', 'もじを', 'かんせいさせよう'] }
+            { lines: ['なぞり スタート！', 'ゆびで なぞって', 'かんせいさせよう'], opts: { line1Class: 'dmg-line' } }
           ], function() {
             startQuizBattle();
           });
@@ -6943,9 +7097,47 @@ window.setBgmFor = setBgmFor;
 // ===== Back to selection (via menu) =====
 // 歯車メニューの「もどる」から呼ばれる
 
-// ===== Init =====
-// Show row selection screen (practice screen is hidden)
-buildRowSelectScreen();
+// ===== Title / Story screen flow =====
+// はじめから → 紙芝居 → 行選択  /  つづきから → 行選択 直行
+function showTitleScreen() {
+  var hasProgress = !!localStorage.getItem('mojikaki_started');
+  var titleEl = document.getElementById('titleScreen');
+  var storyEl = document.getElementById('storyScreen');
+  var rowEl   = document.getElementById('rowSelectScreen');
+  if (!titleEl) return;
+  titleEl.classList.remove('hidden');
+  storyEl.classList.add('hidden');
+  rowEl.classList.add('hidden');
+
+  var continueBtn = document.getElementById('titleBtnContinue');
+  if (continueBtn) continueBtn.classList.toggle('disabled', !hasProgress);
+}
+function goToRowSelect() {
+  document.getElementById('titleScreen').classList.add('hidden');
+  document.getElementById('storyScreen').classList.add('hidden');
+  document.getElementById('rowSelectScreen').classList.remove('hidden');
+  buildRowSelectScreen();
+}
+function goToStory() {
+  document.getElementById('titleScreen').classList.add('hidden');
+  document.getElementById('storyScreen').classList.remove('hidden');
+}
+(function wireTitleScreen() {
+  var newBtn = document.getElementById('titleBtnNew');
+  var contBtn = document.getElementById('titleBtnContinue');
+  var storyEl = document.getElementById('storyScreen');
+  if (newBtn) newBtn.addEventListener('click', function() {
+    localStorage.setItem('mojikaki_started', '1');
+    goToStory();
+  });
+  if (contBtn) contBtn.addEventListener('click', function() {
+    if (contBtn.classList.contains('disabled')) return;
+    localStorage.setItem('mojikaki_started', '1');
+    goToRowSelect();
+  });
+  if (storyEl) storyEl.addEventListener('click', function() { goToRowSelect(); });
+})();
+showTitleScreen();
 
 // ===== Public API =====
 window.KidsTraceApp = {
