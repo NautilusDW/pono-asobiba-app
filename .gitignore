@@ -14,3 +14,8 @@ node_modules/
 # Cloudflare wrangler local env (secrets)
 .dev.vars
 .wrangler/
+
+# Local backup of oversized original assets (kept out of the deploy tree).
+_backups/
+assets/**/*_orig_backup.png
+assets/**/*_backup.png

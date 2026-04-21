@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-21T02:06:29Z - ゴーレム多段フレーム統合 (idle/HP4段階/よろめき/攻撃windup3+strike) + title_logo縮小 (4.2MB→1MB) + sw.js v274
+- **タスク**: ゴーレム多段フレーム統合 (idle/HP4段階/よろめき/攻撃windup3+strike) + title_logo縮小 (4.2MB→1MB) + sw.js v274
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 255
+- **エラー数**: 18
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 11, "Grep": 35, "Glob": 7, "ToolSearch": 9, "Write": 10, "ExitPlanMode": 5, "Read": 67, "Edit": 66, "Bash": 45}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-21T01:41:11Z - 3ステージ構造+3中ボス+三種の神器システム (Phase 1): MAP_ROW_SCENES再配分(森/洞窟/火山)、BATTLE_ENEMIESにゴーレム/洞窟主/火山主を中ボスとして追加、GEAR_KEYS/GEAR_META+grantGear、_showActClearBanner、PUZZLE_ROWS な(tablet)/ら(lava_step)追加+CSS、_showBattleEncounterIntroにboss分岐、画像onerrorフォールバック、sw.js CACHE_VERSION 273
 - **タスク**: 3ステージ構造+3中ボス+三種の神器システム (Phase 1): MAP_ROW_SCENES再配分(森/洞窟/火山)、BATTLE_ENEMIESにゴーレム/洞窟主/火山主を中ボスとして追加、GEAR_KEYS/GEAR_META+grantGear、_showActClearBanner、PUZZLE_ROWS な(tablet)/ら(lava_step)追加+CSS、_showBattleEncounterIntroにboss分岐、画像onerrorフォールバック、sw.js CACHE_VERSION 273
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Agent": 1, "Grep": 4, "Glob": 2, "ToolSearch": 2, "Write": 2, "ExitPlanMode": 1, "Read": 8, "Edit": 12, "Bash": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-20T22:48:35Z - エントリーオーバーレイ横画面対応＋初回以降トリビア化 (play.html: #pono-tap-intro/#pono-return-greet にlandscape media query追加、PONO_INTRO_TRIVIA配列導入、初回のみ『はじめまして』で以降ランダムトリビア、sw.js v265)
-- **タスク**: エントリーオーバーレイ横画面対応＋初回以降トリビア化 (play.html: #pono-tap-intro/#pono-return-greet にlandscape media query追加、PONO_INTRO_TRIVIA配列導入、初回のみ『はじめまして』で以降ランダムトリビア、sw.js v265)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 23
-- **エラー数**: 7
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Agent": 1, "Grep": 2, "Glob": 2, "ToolSearch": 2, "Write": 2, "ExitPlanMode": 1, "Read": 5, "Edit": 7, "Bash": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

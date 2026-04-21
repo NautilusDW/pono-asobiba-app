@@ -4595,9 +4595,24 @@ const BATTLE_ENEMIES = {
     hp: 5, element: 'light'
   },
   // さ行: 森の中ボス (森ステージのボス)。倒すと「盾」を入手。
+  // 多段フレーム対応: HP に応じて画像を差し替え + 攻撃時は windup→strike アニメ。
   'さ': {
     id: 'golem_forest', name: 'もりのぬし ゴーレム',
-    img: '../assets/images/monsters/chars/monster_014_golem_forest.png',
+    img: '../assets/images/monsters/chars/Golem/golem_idle.png',
+    imgIdle: '../assets/images/monsters/chars/Golem/golem_idle.png',
+    imgHp: [
+      { hpAtMost: 7, src: '../assets/images/monsters/chars/Golem/golem_hp_07.png' },
+      { hpAtMost: 5, src: '../assets/images/monsters/chars/Golem/golem_hp_05.png' },
+      { hpAtMost: 3, src: '../assets/images/monsters/chars/Golem/golem_hp_03.png' },
+      { hpAtMost: 1, src: '../assets/images/monsters/chars/Golem/golem_hp_01.png' },
+    ],
+    imgStagger: '../assets/images/monsters/chars/Golem/golem_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/Golem/golem_atk_up_1.png',
+      '../assets/images/monsters/chars/Golem/golem_atk_up_2.png',
+      '../assets/images/monsters/chars/Golem/golem_atk_up_3.png',
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/Golem/golem_atk_down.png',
     taunts: ['ずしん…', 'いわの からだだ', 'くだけぬぞ', 'ごろ ごろ…', 'きえろ…！'],
     hp: 8, element: 'earth',
     boss: true, reward: 'shield'
@@ -5112,6 +5127,8 @@ function _hideBattleStage() {
   const els = _battleEls();
   if (!els.stage) return;
   _battle.active = false;
+  // 遅延中の立ち絵差し替えタイマーを全部止める (バトル終了後に画像が入れ替わる事故を防止)
+  try { _clearEnemyFrameTimers(); } catch (e) {}
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('battle-mode');
@@ -5250,6 +5267,45 @@ function _popDamage(amount, opts) {
   setTimeout(() => d.remove(), 900);
 }
 
+// 敵立ち絵差し替え (ゴーレムのような多段フレーム敵用)。
+// 現在表示中と同じ src の場合は何もしない (flicker 防止)。
+function _swapEnemyImg(src) {
+  if (!src) return;
+  const els = _battleEls();
+  if (!els.img) return;
+  // 部分一致で判定 (絶対パス化される環境でも差し替えスキップが効くように)
+  if (els.img.src && els.img.src.indexOf(src.replace(/^\.\.\//, '')) !== -1) return;
+  els.img.src = src;
+}
+
+// 現在 HP に応じた立ち絵 src を返す。
+// imgHp を hpAtMost の降順 (7→5→3→1) で評価し、_battle.hp <= row.hpAtMost を満たすものを順に上書き。
+// 結果として最後に書き込まれる値 = 最も小さい hpAtMost を満たすエントリ = 最重傷状態の画像が選ばれる。
+function _enemyImgForHp() {
+  const e = _battle.enemy;
+  if (!e) return null;
+  const defaultImg = e.imgIdle || e.img;
+  if (!e.imgHp || !e.imgHp.length) return defaultImg;
+  let chosen = defaultImg;
+  const sorted = e.imgHp.slice().sort(function(a, b) { return (b.hpAtMost || 0) - (a.hpAtMost || 0); });
+  for (const row of sorted) {
+    if (_battle.hp <= row.hpAtMost) chosen = row.src;
+  }
+  return chosen;
+}
+
+// 敵の攻撃アニメ用タイマー一括クリア。バトル終了や敵倒時に呼ぶ。
+function _clearEnemyFrameTimers() {
+  try { clearTimeout(_battle._frameSwapTimer); } catch (e) {}
+  try { clearTimeout(_battle._frameRevertTimer); } catch (e) {}
+  if (Array.isArray(_battle._windupTimers)) {
+    _battle._windupTimers.forEach(function(tid) {
+      try { clearTimeout(tid); } catch (e) {}
+    });
+  }
+  _battle._windupTimers = [];
+}
+
 // 1 文字完成時に呼ばれる: HP 1 減らして星 1 点灯
 // (2026-04-20 ユーザー要望: 剣を振り切る前に敵が揺れるのは早すぎ。攻撃モーションの「着弾」タイミングに
 //  合わせて敵シェイク・被弾 SFX・ダメージ数字・敵セリフを遅延発火する。)
@@ -5305,6 +5361,21 @@ function battleHitEnemy(opts) {
         if (els.enemy) els.enemy.classList.remove('damaged');
       }, 600);
       try { _playEnemyHitSound(); } catch (e) {}
+      // 多段フレーム敵 (ゴーレム等): 一瞬「よろめき」→ HP に応じたダメージ立ち絵に差し替え
+      try {
+        const e = _battle.enemy;
+        if (e && (e.imgStagger || (e.imgHp && e.imgHp.length))) {
+          // 既存のフレーム系タイマー (windup / revert) を止めてからよろめき表示
+          _clearEnemyFrameTimers();
+          if (e.imgStagger) _swapEnemyImg(e.imgStagger);
+          _battle._frameSwapTimer = setTimeout(function() {
+            if (!_battle.active) return;
+            if (_battle.hp <= 0) return; // 倒した場合は defeat 演出側に任せる
+            const next = _enemyImgForHp();
+            if (next) _swapEnemyImg(next);
+          }, 260);
+        }
+      } catch (err) { /* ignore */ }
     }
     const dmg = isFinisher ? 999 : (20 + Math.floor(Math.random() * 12));
     _popDamage(dmg, { finisher: isFinisher });
@@ -5514,11 +5585,42 @@ function enemyCounterAttack() {
   if (!_battle.active) return;
   const damage = 2 + Math.floor(Math.random() * 4); // 2〜5
   const enemyName = (_battle.enemy && _battle.enemy.name) || 'てき';
+
+  // 多段フレーム敵 (ゴーレム等): 告知中に windup 3枚を順送り、撃の瞬間に strike フレームへ
+  const e = _battle.enemy;
+  const windup = (e && Array.isArray(e.imgAttackWindup)) ? e.imgAttackWindup : null;
+  const strikeImg = (e && e.imgAttackStrike) || null;
+  if (windup && windup.length) {
+    const step = 300; // 告知 1100ms の間に 3枚流す
+    if (!Array.isArray(_battle._windupTimers)) _battle._windupTimers = [];
+    windup.forEach(function(src, i) {
+      const tid = setTimeout(function() {
+        if (!_battle.active) return;
+        if (_battle.hp <= 0) return;
+        _swapEnemyImg(src);
+      }, i * step);
+      _battle._windupTimers.push(tid);
+    });
+  }
+
   // 「〇〇の こうげき！」告知を出してから一拍置いて攻撃
   _showEnemyAttackAnnounce(enemyName + 'の こうげき！', function() {
     if (!_battle.active) return;
     _shakeScreen();
     try { playEnemyAttackSound(); } catch (e) {}
+    // 撃の瞬間: strike フレーム → 300ms 後に HP 応じた通常フレームへ戻す
+    try {
+      if (strikeImg && _battle.hp > 0) {
+        _swapEnemyImg(strikeImg);
+        clearTimeout(_battle._frameRevertTimer);
+        _battle._frameRevertTimer = setTimeout(function() {
+          if (!_battle.active) return;
+          if (_battle.hp <= 0) return;
+          const back = _enemyImgForHp();
+          if (back) _swapEnemyImg(back);
+        }, 340);
+      }
+    } catch (err) { /* ignore */ }
     // 勇者 HP を減らす (floor でクランプ、死なない)
     try { _applyHeroHpDamage(damage); } catch (e) {}
     // 勇者は idle のまま、一時的に真っ黒シルエット化して「被弾」表現にする
