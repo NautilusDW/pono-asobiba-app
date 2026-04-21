@@ -7174,7 +7174,7 @@ const MAP_ROW_SCENES = {
   'な': { xPct: 35, yPct: 60, title: 'どうくつの ほこら' },
   'は': { xPct: 45, yPct: 58, title: 'どうくつの おく' },
   'ま': { xPct: 56, yPct: 52, title: 'かざんの ふもと' },
-  'や': { xPct: 66, yPct: 52, title: 'かざんの なかふく' },
+  'や': { xPct: 66, yPct: 52, title: 'かざんの ちゅうふく' },
   'ら': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
   'わ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
   'ア': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
@@ -7184,7 +7184,7 @@ const MAP_ROW_SCENES = {
   'ナ': { xPct: 35, yPct: 60, title: 'どうくつの ほこら' },
   'ハ': { xPct: 45, yPct: 58, title: 'どうくつの おく' },
   'マ': { xPct: 56, yPct: 52, title: 'かざんの ふもと' },
-  'ヤ': { xPct: 66, yPct: 52, title: 'かざんの なかふく' },
+  'ヤ': { xPct: 66, yPct: 52, title: 'かざんの ちゅうふく' },
   'ラ': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
   'ワ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
 };
@@ -8067,12 +8067,28 @@ function goToPracticeDirect(rowIndex) {
   document.getElementById('rowSelectScreen').classList.add('hidden');
   enterPractice(rowIndex);
 }
-// 「行を選び直す」reload フラグ (2026-04-21): returnToSelect が状態復元に失敗した時の
-// 最終フォールバック。splash/title/story を全て飛ばしていきなり行選択へ。
+// 「行を選び直す」reload フラグ (2026-04-21): 「ぎょうを えらびなおす」はどの状態から押されても
+// 必ず戻れるように、無条件 reload → ここで splash/title/story を全て飛ばして行選択を表示。
 (function _handleGotoSelectFlag() {
   try {
     if (sessionStorage.getItem('pono_goto_select') !== '1') return;
     sessionStorage.removeItem('pono_goto_select');
+
+    // iOS click-through 対策: reload 直後に飛んでくる残留 click (前ページの pointerup 由来)
+    // を 600ms だけ全部吸収して、行選択ボタンに誤タップされるのを防ぐ。
+    if (sessionStorage.getItem('pono_absorb_next_click') === '1') {
+      sessionStorage.removeItem('pono_absorb_next_click');
+      var _absorber = function(e) { e.stopPropagation(); e.preventDefault(); };
+      ['click', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'].forEach(function(ev) {
+        document.addEventListener(ev, _absorber, true);
+      });
+      setTimeout(function() {
+        ['click', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'].forEach(function(ev) {
+          document.removeEventListener(ev, _absorber, true);
+        });
+      }, 600);
+    }
+
     function _apply() {
       ['splashScreen', 'titleScreen', 'storyScreen', 'app', 'mapScene'].forEach(function(id) {
         var el = document.getElementById(id);
@@ -8353,23 +8369,28 @@ initMenu({
     icon: '⬅️',
     label: 'ぎょうを えらびなおす',
     onClick: function() {
-      // returnToSelect が想定外の状態で失敗した場合でも確実に戻れるよう
-      // sessionStorage フラグ + reload を最終フォールバックに用意
+      // 方針 (2026-04-21): 状態遷移を完全に信頼できないので、どのタイミングで
+      // 押されても必ず行選択画面に戻れるように「reload + sessionStorage フラグ」を
+      // 唯一の戻り口とする。returnToSelect の個別ケア (battle intro / 橋フィニッシャ 等) は
+      // 諦め、nuclear option に一本化。音楽も reload で自動的にリセットされる。
+      //
+      // iOS click-through 対策: pointerdown でメニュー処理 → reload までの間に
+      // 透明オーバーレイで click/pointerdown を全て吸収し、reload 後の画面で
+      // 誤タップ (行ボタンに当たる) を防ぐ。シールド自身も reload で消える。
       try {
-        returnToSelect();
-        // 1フレーム待って実際に行選択画面が見えているか検証。見えていなければ reload。
-        setTimeout(function() {
-          var rs = document.getElementById('rowSelectScreen');
-          var visible = rs && !rs.classList.contains('hidden') && rs.offsetParent !== null;
-          if (!visible) {
-            try { sessionStorage.setItem('pono_goto_select', '1'); } catch (e) {}
-            location.reload();
-          }
-        }, 80);
-      } catch (e) {
-        try { sessionStorage.setItem('pono_goto_select', '1'); } catch (e2) {}
-        location.reload();
-      }
+        var shield = document.createElement('div');
+        shield.setAttribute('data-pono-shield', '1');
+        shield.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:transparent;pointer-events:auto;-webkit-tap-highlight-color:transparent;';
+        function _eat(e) { e.stopPropagation(); e.preventDefault(); }
+        ['click', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup'].forEach(function(ev) {
+          shield.addEventListener(ev, _eat, true);
+        });
+        document.body.appendChild(shield);
+      } catch (e) {}
+      try { sessionStorage.setItem('pono_goto_select', '1'); } catch (e) {}
+      try { sessionStorage.setItem('pono_absorb_next_click', '1'); } catch (e) {}
+      // reload を次フレームに遅らせて shield が確実にヒットテストに入るようにする
+      setTimeout(function() { try { location.reload(); } catch (e) {} }, 30);
     }
   }]
 });
