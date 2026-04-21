@@ -1793,16 +1793,29 @@ body.battle-mode .villain-deco {
    pedestal_glow.png に差し替え+石板が順番に光る。 */
 .puzzle-bg-riddle {
   background:
-    url('../assets/images/puzzle/tablet/pedestal_empty.png') center/contain no-repeat,
     url('../assets/images/puzzle/tablet/door_closed.png') center/cover no-repeat,
     radial-gradient(ellipse at 50% 40%, #1a1834 0%, #0a0814 75%);
   image-rendering: pixelated;
+  overflow: hidden;
 }
-.puzzle-bg-riddle.complete {
-  background:
-    url('../assets/images/puzzle/tablet/pedestal_glow.png') center/contain no-repeat,
-    url('../assets/images/puzzle/tablet/door_closed.png') center/cover no-repeat,
-    radial-gradient(ellipse at 50% 40%, #2a3050 0%, #0a1020 75%);
+/* ペデスタルは ::after で別レイヤー化。intro 終了後に .pedestal-focused で
+   フェードイン+スケールアップ (カメラが扉から石板土台にズームしていく感触) */
+.puzzle-bg-riddle::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: url('../assets/images/puzzle/tablet/pedestal_empty.png') center/contain no-repeat;
+  opacity: 0;
+  transform: scale(0.28);
+  transition: opacity 0.9s ease 0.15s, transform 1.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+.puzzle-bg-riddle.pedestal-focused::after {
+  opacity: 1;
+  transform: scale(1);
+}
+.puzzle-bg-riddle.complete::after {
+  background-image: url('../assets/images/puzzle/tablet/pedestal_glow.png');
   animation: pedestalActivate 1.4s ease-out;
 }
 @keyframes pedestalActivate {
@@ -1826,6 +1839,12 @@ body.battle-mode .villain-deco {
   padding: 0;
   gap: 0;
   overflow: visible;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: 2;
+}
+.puzzle-bg-riddle.pedestal-focused .puzzle-planks {
+  opacity: 1;
 }
 .plank.plank-riddle {
   position: absolute;
@@ -2064,21 +2083,43 @@ body.battle-mode .villain-deco {
 .puzzle-bg-lava_step.step-4 { background-image: url('../assets/images/puzzle/lava/lava_steps_4.png'); }
 .puzzle-bg-lava_step.step-5 { background-image: url('../assets/images/puzzle/lava/lava_steps_5.png'); }
 
-/* 石が増える瞬間のピカッ演出 (中央やや下で一瞬光る) */
-.lava-step-spark {
-  position: absolute; left: 50%; top: 56%;
-  width: 38%; aspect-ratio: 1;
-  transform: translate(-50%, -50%) scale(0);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,240,180,0.95) 0%, rgba(255,180,80,0.5) 40%, rgba(255,100,30,0) 80%);
-  pointer-events: none;
-  animation: lavaStepSparkPop 0.9s ease-out forwards;
+/* 飛び石が画面下から浮上するアニメ用オーバーレイ。
+   lava_steps_{N}.png にはこの石位置と同じ場所に baked-in の石があるので、
+   浮上して到着 → ピカッと光らせた瞬間に bg を .step-N に切り替え → このオーバーレイはフェード。 */
+.lava-rising-stone {
+  position: absolute;
+  width: clamp(36px, 9vw, 72px);
+  aspect-ratio: 1;
+  /* シルエットは単純なダーク岩 (楕円) + ハイライト */
+  background:
+    radial-gradient(ellipse at 48% 28%, rgba(160,120,90,0.85) 0%, rgba(90,60,40,0.95) 35%, rgba(45,26,14,1) 75%, rgba(20,10,5,1) 100%);
+  border-radius: 45% 55% 50% 50% / 60% 60% 40% 40%;
+  box-shadow:
+    inset -4px -4px 10px rgba(0,0,0,0.6),
+    inset 3px 3px 6px rgba(255,200,140,0.25),
+    0 6px 14px rgba(0,0,0,0.7);
+  opacity: 0;
   z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 0 0 transparent);
 }
-@keyframes lavaStepSparkPop {
-  0%   { transform: translate(-50%, -50%) scale(0);   opacity: 0; }
-  30%  { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+.lava-rising-stone.rising {
+  animation: lavaStoneRise 1.35s cubic-bezier(0.22, 0.8, 0.35, 1) forwards;
+}
+.lava-rising-stone.arrived {
+  animation: lavaStoneArriveFlash 0.55s ease-out forwards;
+}
+@keyframes lavaStoneRise {
+  0%   { transform: translate(-50%, 60vh) scale(0.7) rotate(-12deg); opacity: 0; }
+  8%   { opacity: 1; }
+  65%  { transform: translate(-50%, -10%) scale(1.08) rotate(4deg); opacity: 1; }
+  85%  { transform: translate(-50%, 8%)   scale(0.98) rotate(-2deg); opacity: 1; }
+  100% { transform: translate(-50%, 0%)   scale(1)    rotate(0);     opacity: 1; }
+}
+@keyframes lavaStoneArriveFlash {
+  0%   { filter: drop-shadow(0 0 0 transparent) brightness(1); }
+  35%  { filter: drop-shadow(0 0 22px rgba(255,230,140,1)) drop-shadow(0 0 10px rgba(255,180,60,0.9)) brightness(1.6); }
+  100% { filter: drop-shadow(0 0 0 transparent) brightness(1); opacity: 0; }
 }
 
 /* lava_step の puzzle-planks は何も置かないので非表示 (背景画像に任せる) */
@@ -2125,22 +2166,35 @@ body.battle-mode .villain-deco {
 }
 .lava-walker.hero-sprite.move {
   animation:
-    lavaWalkAcross 3.4s linear forwards,
-    heroMoveAnim 0.45s steps(5, jump-none) infinite;
+    lavaWalkAcross 4.6s linear forwards,
+    heroMoveAnim 0.4s steps(5, jump-none) infinite;
 }
+/* 左崖 → 石1 → 石2 → 石3 → 石4 → 石5 → 右崖 を跳ねながら駆け抜ける。
+   石の X 位置は lava_steps_5.png に合わせて約 23/36/50/64/77%。
+   各セグメントで放物線を描くため apex で Y を -88% に持ち上げる。 */
 @keyframes lavaWalkAcross {
-  0%   { left: 6%;  opacity: 0; transform: translate(-50%, -50%); }
-  8%   { opacity: 1; }
-  20%  { left: 24%; transform: translate(-50%, -60%); }
-  22%  { transform: translate(-50%, -50%); }
-  40%  { left: 38%; transform: translate(-50%, -60%); }
-  42%  { transform: translate(-50%, -50%); }
-  60%  { left: 52%; transform: translate(-50%, -60%); }
-  62%  { transform: translate(-50%, -50%); }
-  80%  { left: 66%; transform: translate(-50%, -60%); }
-  82%  { transform: translate(-50%, -50%); }
-  95%  { left: 92%; opacity: 1; transform: translate(-50%, -50%); }
-  100% { left: 94%; opacity: 0; transform: translate(-50%, -50%); }
+  0%   { left: 6%;  opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  5%   { opacity: 1; }
+  /* 石1 へ */
+   8%  { left: 14.5%; transform: translate(-50%, -88%) scale(1.04); }
+  14%  { left: 23%;   transform: translate(-50%, -50%) scale(1); }
+  /* 石2 へ */
+  19%  { left: 29.5%; transform: translate(-50%, -88%) scale(1.04); }
+  25%  { left: 36%;   transform: translate(-50%, -50%) scale(1); }
+  /* 石3 へ */
+  30%  { left: 43%;   transform: translate(-50%, -88%) scale(1.04); }
+  36%  { left: 50%;   transform: translate(-50%, -50%) scale(1); }
+  /* 石4 へ */
+  41%  { left: 57%;   transform: translate(-50%, -88%) scale(1.04); }
+  47%  { left: 64%;   transform: translate(-50%, -50%) scale(1); }
+  /* 石5 へ */
+  52%  { left: 70.5%; transform: translate(-50%, -88%) scale(1.04); }
+  58%  { left: 77%;   transform: translate(-50%, -50%) scale(1); }
+  /* 右崖へ最後のひと跳び */
+  65%  { left: 86%;   transform: translate(-50%, -90%) scale(1.05); }
+  75%  { left: 93%;   transform: translate(-50%, -50%) scale(1); }
+  95%  { left: 94%;   opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { left: 96%;   opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
 }
 
 .lava-burst {
@@ -5991,7 +6045,8 @@ function _showPuzzleStage(rowLabel) {
   // 背景・板スタイルを kind に応じて切り替え (bridge / tablet / lava_step)。
   // 既存の puzzle-bg-bridge に加え、puzzle-bg-tablet / puzzle-bg-lava_step を用意。
   if (els.stage) {
-    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step', 'puzzle-bg-riddle', 'fixed');
+    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step', 'puzzle-bg-riddle', 'fixed', 'pedestal-focused', 'complete');
+    for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
     els.stage.classList.add('puzzle-bg-' + def.kind);
   }
 
@@ -6054,7 +6109,7 @@ function _hidePuzzleStage() {
   if (!els.stage) return;
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
-  els.stage.classList.remove('complete');
+  els.stage.classList.remove('complete', 'pedestal-focused');
   // ら行の飛び石ステップクラスをリセット (次回 lava_step で再利用)
   for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
   els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-step-spark, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
@@ -7748,8 +7803,19 @@ function startRowPractice(rowIndex) {
       // riddle=ほこらのまもりがみ / lava_step=ようがんゴーレム
       var _pKind = (PUZZLE_ROWS[_rowLabel] && PUZZLE_ROWS[_rowLabel].kind) || null;
       if (_pKind === 'riddle' || _pKind === 'lava_step') {
-        try { _showPuzzleIntro(_pKind, function() { _rowPracticeNextChar(); }); }
-        catch (e) { _rowPracticeNextChar(); }
+        try {
+          _showPuzzleIntro(_pKind, function() {
+            // riddle のみ: intro 後にカメラが扉 → 石板土台へズームする演出。
+            // ペデスタルが ::after でフェード+スケールインし、その後タブレットも表示。
+            if (_pKind === 'riddle') {
+              var stage = _puzzleEls().stage;
+              if (stage) stage.classList.add('pedestal-focused');
+              setTimeout(function() { _rowPracticeNextChar(); }, 1350);
+            } else {
+              _rowPracticeNextChar();
+            }
+          });
+        } catch (e) { _rowPracticeNextChar(); }
       } else {
         _rowPracticeNextChar();
       }
@@ -8283,50 +8349,64 @@ function _rowPracticeNextChar() {
               }, 850);
               return;
             }
-            // ら行 (lava_step): 文字をなぞる=呪文発動で飛び石が 1 個浮上。
-            // 背景を lava_steps_{n}.png → lava_steps_{n+1}.png に切り替えて視覚化。
-            // 5 個目で全 5 石揃う → ゴーレム退散 → 勇者が飛び石を渡る → 次行へ。
+            // ら行 (lava_step): 文字をなぞる=呪文発動で飛び石が 1 個、画面下から浮上してくる。
+            // 定位置に着くと一瞬光って、そのタイミングで背景を lava_steps_{n} → {n+1} にスワップ
+            // (オーバーレイの石はフェードアウト)。5 石揃うとゴーレム退散 → 勇者が石を飛び跳ねて渡る。
             if (_puzzle.kind === 'lava_step') {
               var _lvStage = _puzzleEls().stage;
               var _nextStep = _puzzle.step + 1; // 1..5
+              // 石の X 位置 (lava_steps_5.png の baked-in 位置に合わせる)
+              var STONE_X = [23, 36, 50, 64, 77]; // %
+              var _stoneX = STONE_X[_nextStep - 1];
               setTimeout(function() {
                 if (_lvStage) {
-                  _lvStage.classList.add('step-' + _nextStep);
-                  // 中央でピカッ (石が浮上する呪文の瞬間)
-                  var spark = document.createElement('div');
-                  spark.className = 'lava-step-spark';
-                  _lvStage.appendChild(spark);
-                  setTimeout(function() { if (spark.parentNode) spark.remove(); }, 1000);
+                  // ① 画面下から石が浮上
+                  var rising = document.createElement('div');
+                  rising.className = 'lava-rising-stone rising';
+                  rising.style.left = _stoneX + '%';
+                  rising.style.top  = '50%';
+                  _lvStage.appendChild(rising);
+                  // ② 定位置到達でピカッ + bg swap
+                  setTimeout(function() {
+                    rising.classList.remove('rising');
+                    rising.classList.add('arrived');
+                    if (_lvStage) _lvStage.classList.add('step-' + _nextStep);
+                  }, 1350);
+                  setTimeout(function() { if (rising.parentNode) rising.remove(); }, 1950);
                 }
                 if (isFinisher) {
-                  // 5 石揃った: ゴーレム退散 + 中央閃光 + 勇者が飛び石を左→右に渡る
+                  // 5 石揃った: ゴーレム退散 + 中央閃光 + 勇者が飛び石を左→右に飛び跳ねて渡る
                   if (_lvStage) {
-                    _lvStage.classList.add('complete');
-                    var lvBurst = document.createElement('div');
-                    lvBurst.className = 'lava-burst';
-                    _lvStage.appendChild(lvBurst);
-                    var lvGolem = _lvStage.querySelector('.lava-golem-bg');
-                    if (lvGolem) lvGolem.classList.add('retreat');
+                    setTimeout(function() {
+                      _lvStage.classList.add('complete');
+                      var lvBurst = document.createElement('div');
+                      lvBurst.className = 'lava-burst';
+                      _lvStage.appendChild(lvBurst);
+                      var lvGolem = _lvStage.querySelector('.lava-golem-bg');
+                      if (lvGolem) lvGolem.classList.add('retreat');
+                    }, 1450);
                   }
-                  try { playVictoryFanfare(); } catch (e) {}
+                  try { setTimeout(function() { playVictoryFanfare(); }, 1450); } catch (e) {}
                   setTimeout(function() {
                     if (_lvStage) {
                       var walker = document.createElement('div');
                       walker.className = 'lava-walker hero-sprite move';
                       _lvStage.appendChild(walker);
                     }
-                  }, 1200);
+                  }, 2300);
+                  // 浮上(1.35s) + 閃光(1s) + 勇者歩行(4.6s) + マージン
                   setTimeout(function() {
                     _puzzle.step++;
                     _rowPracticeStep++;
                     _rowPracticeNextChar();
-                  }, 5200);
+                  }, 7400);
                 } else {
+                  // 石が完全に着地+フェードし終えてから次の文字へ
                   setTimeout(function() {
                     _puzzle.step++;
                     _rowPracticeStep++;
                     _rowPracticeNextChar();
-                  }, 1100);
+                  }, 2100);
                 }
               }, 400);
               return;
