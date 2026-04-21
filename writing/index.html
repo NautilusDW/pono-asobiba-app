@@ -2083,26 +2083,27 @@ body.battle-mode .villain-deco {
 .puzzle-bg-lava_step.step-4 { background-image: url('../assets/images/puzzle/lava/lava_steps_4.png'); }
 .puzzle-bg-lava_step.step-5 { background-image: url('../assets/images/puzzle/lava/lava_steps_5.png'); }
 
-/* 飛び石が画面下から浮上するアニメ用オーバーレイ。
+/* 飛び石が画面下から浮上するアニメ用オーバーレイ (stone_1..5.png をピクセルアート個別表示)。
    lava_steps_{N}.png にはこの石位置と同じ場所に baked-in の石があるので、
    浮上して到着 → ピカッと光らせた瞬間に bg を .step-N に切り替え → このオーバーレイはフェード。 */
 .lava-rising-stone {
   position: absolute;
-  width: clamp(36px, 9vw, 72px);
+  width: clamp(44px, 11vw, 92px);
   aspect-ratio: 1;
-  /* シルエットは単純なダーク岩 (楕円) + ハイライト */
-  background:
-    radial-gradient(ellipse at 48% 28%, rgba(160,120,90,0.85) 0%, rgba(90,60,40,0.95) 35%, rgba(45,26,14,1) 75%, rgba(20,10,5,1) 100%);
-  border-radius: 45% 55% 50% 50% / 60% 60% 40% 40%;
-  box-shadow:
-    inset -4px -4px 10px rgba(0,0,0,0.6),
-    inset 3px 3px 6px rgba(255,200,140,0.25),
-    0 6px 14px rgba(0,0,0,0.7);
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
   opacity: 0;
   z-index: 3;
   pointer-events: none;
-  filter: drop-shadow(0 0 0 transparent);
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.75));
 }
+.lava-rising-stone.stone-1 { background-image: url('../assets/images/puzzle/lava/stone_1.png'); }
+.lava-rising-stone.stone-2 { background-image: url('../assets/images/puzzle/lava/stone_2.png'); }
+.lava-rising-stone.stone-3 { background-image: url('../assets/images/puzzle/lava/stone_3.png'); }
+.lava-rising-stone.stone-4 { background-image: url('../assets/images/puzzle/lava/stone_4.png'); }
+.lava-rising-stone.stone-5 { background-image: url('../assets/images/puzzle/lava/stone_5.png'); }
 .lava-rising-stone.rising {
   animation: lavaStoneRise 1.35s cubic-bezier(0.22, 0.8, 0.35, 1) forwards;
 }
@@ -8360,9 +8361,9 @@ function _rowPracticeNextChar() {
               var _stoneX = STONE_X[_nextStep - 1];
               setTimeout(function() {
                 if (_lvStage) {
-                  // ① 画面下から石が浮上
+                  // ① 画面下から石が浮上 (stone_N.png ピクセルアート個別画像)
                   var rising = document.createElement('div');
-                  rising.className = 'lava-rising-stone rising';
+                  rising.className = 'lava-rising-stone rising stone-' + _nextStep;
                   rising.style.left = _stoneX + '%';
                   rising.style.top  = '50%';
                   _lvStage.appendChild(rising);
