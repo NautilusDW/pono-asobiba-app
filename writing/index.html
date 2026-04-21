@@ -1600,21 +1600,23 @@ body.battle-mode .villain-deco {
   flex-shrink: 0;
   box-sizing: border-box;
 }
+.puzzle-bg-bridge {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.25) 100%),
+    url('../assets/images/puzzle/bridge_broken.png') center center / cover no-repeat,
+    linear-gradient(180deg, #87CEEB 0%, #5DADE2 55%, #2C5F8C 100%);
+}
 .puzzle-bg-bridge::before {
   content: '';
-  position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
-  background:
-    linear-gradient(180deg, rgba(74,144,226,0.2) 0%, #1E3A5F 100%),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 6px, transparent 6px 18px);
-  box-shadow: inset 0 6px 10px rgba(0,0,0,0.3);
+  position: absolute; inset: 0;
+  background: url('../assets/images/puzzle/bridge_fixed.png') center center / cover no-repeat;
+  opacity: 0;
+  transition: opacity 0.85s ease-in-out;
+  pointer-events: none;
+  z-index: 1;
 }
-.puzzle-bg-bridge::after {
-  content: '';
-  position: absolute; left: 4%; right: 4%; top: 58%; height: 6px;
-  background: linear-gradient(90deg, #5C3A1E, #3A2818, #5C3A1E);
-  border-radius: 3px;
-  opacity: 0.5;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+.puzzle-bg-bridge.fixed::before {
+  opacity: 1;
 }
 .puzzle-title {
   position: absolute; top: 8px; left: 0; right: 0;
@@ -5537,7 +5539,7 @@ function _showPuzzleStage(rowLabel) {
   // 背景・板スタイルを kind に応じて切り替え (bridge / tablet / lava_step)。
   // 既存の puzzle-bg-bridge に加え、puzzle-bg-tablet / puzzle-bg-lava_step を用意。
   if (els.stage) {
-    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step');
+    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step', 'fixed');
     els.stage.classList.add('puzzle-bg-' + def.kind);
   }
 
@@ -5587,6 +5589,10 @@ function _puzzleRevealPlank(opts) {
     // 5枚目完成: 全板をふわっと光らせる演出 (橋完成のお祝い)
     try { playVictoryFanfare(); } catch (e) {}
     planks.forEach(function(pl) { pl.classList.add('finisher'); });
+    // 橋パズル: 壊れた橋 → 直った橋へクロスフェード
+    if (_puzzle.kind === 'bridge' && els.stage) {
+      els.stage.classList.add('fixed');
+    }
   } else {
     try { playCharCompleteSound(); } catch (e) {}
   }
