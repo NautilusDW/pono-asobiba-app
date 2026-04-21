@@ -1556,12 +1556,15 @@ html, body {
 }
 
 /* ===== Battle Stage (RPG バトル、行練習中のみ表示) ===== */
-/* 戦闘モードではポノとハリネズミを隠す (戦闘画面は敵と文字キャンバスだけに集中させる) */
-body.battle-mode .pono-deco,
-body.battle-mode .pono-bubble,
-body.battle-mode .hedgehog-wrap,
-body.battle-mode .hedgehog-deco,
-body.battle-mode .hedgehog-bubble {
+/* 2026-04-21 ユーザー要望: 文字書きクエスト画面ではポノとハリネズミを
+   完全非表示にする (battle / 練習 / タイトル 問わず DOM は残しつつ hide)。
+   JS からは _ponoBubble / _hedgeBubble を参照してメッセージ書き込みを続けるが、
+   見た目には一切登場しない。 */
+.pono-deco,
+.pono-bubble,
+.hedgehog-wrap,
+.hedgehog-deco,
+.hedgehog-bubble {
   display: none !important;
 }
 /* バトル中は敵吹き出しと悪役(コウモリ風👾)ブロックを非表示 (戦闘ログに集約)。
@@ -1647,7 +1650,9 @@ body.battle-mode .villain-deco {
    スプライト枠内のキャラ実体を考慮して 2倍程度に拡大 (clamp 64〜100px) */
 .bridge-walker {
   position: absolute;
-  top: 54%;
+  /* 2026-04-21: 54% だと橋板より下を歩いてしまうので、1キャラ分 (約15%) 上げて
+     橋面の中央〜やや上を通るように調整 */
+  top: 38%;
   left: 10%;
   width: clamp(68px, 17vw, 108px);
   height: clamp(68px, 17vw, 108px);
@@ -5667,14 +5672,17 @@ function _puzzleRevealPlank(opts) {
     //   ③ 直った状態でロック → 白い閃光
     //   ④ 勇者が左→右に歩いて渡る
     if (_puzzle.kind === 'bridge' && els.stage) {
-      // ① 四角ブロックごとフェードアウト (glow は不要なので .finisher は付けない)
-      planks.forEach(function(pl) {
-        pl.style.transition = 'opacity 0.35s ease-out, transform 0.35s ease-out';
-        pl.style.opacity = '0';
-        pl.style.transform = 'translateY(10px) scale(0.85)';
-      });
+      // ① まず 5枚目 (こ) をしっかり見せるためワンテンポ待機 (900ms)
+      //    → その後に四角ブロックごとフェードアウト
+      setTimeout(function() {
+        planks.forEach(function(pl) {
+          pl.style.transition = 'opacity 0.35s ease-out, transform 0.35s ease-out';
+          pl.style.opacity = '0';
+          pl.style.transform = 'translateY(10px) scale(0.85)';
+        });
+      }, 900);
 
-      // ブロック消失を待ってから交互点滅開始 (400ms 後)
+      // ブロック消失完了 (900 + 400ms = 1300ms) を待ってから交互点滅開始
       setTimeout(function() {
         // ② 交互点滅: 200ms 毎に .fixed を toggle
         var _toggleCount = 0;
@@ -5705,7 +5713,7 @@ function _puzzleRevealPlank(opts) {
             els.stage.classList.toggle('fixed');
           }
         }, 200);
-      }, 400);
+      }, 1300);
     } else {
       // 橋以外のパズル (tablet/lava_step): 従来どおり glow 演出
       planks.forEach(function(pl) { pl.classList.add('finisher'); });
@@ -7517,7 +7525,7 @@ function _rowPracticeNextChar() {
             //   = 約 5.4s。マージンを足して 5800ms 待つ。
             var _puzzleDelay;
             if (isFinisher) {
-              _puzzleDelay = (_puzzle.kind === 'bridge') ? 5800 : 3000;
+              _puzzleDelay = (_puzzle.kind === 'bridge') ? 6700 : 3000;
             } else {
               _puzzleDelay = 1500;
             }
@@ -8281,11 +8289,19 @@ function showTutorial() {
 }
 
 // ===== Menu =====
-initMenu({ bgmToggle: function() {
-  bgmEnabled = !bgmEnabled;
-  localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
-  if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
-}, tutorial: showTutorial });
+initMenu({
+  bgmToggle: function() {
+    bgmEnabled = !bgmEnabled;
+    localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
+    if (bgmEnabled) { bgmStarted = false; tryStartBgm(); } else { bgm.pause(); }
+  },
+  tutorial: showTutorial,
+  extraButtons: [{
+    icon: '⬅️',
+    label: 'ぎょうを えらびなおす',
+    onClick: function() { try { returnToSelect(); } catch (e) {} }
+  }]
+});
 </script>
 
 <!-- Service Worker 登録: ホーム画面 PWA からこのページを直接開いた時も

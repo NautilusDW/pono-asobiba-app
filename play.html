@@ -1506,14 +1506,6 @@
         </div>
       </a>
 
-      <a class="card card-egg locked" id="card-egg" style="pointer-events:none;">
-        <span class="card-icon">🥚</span>
-        <div class="card-body">
-          <div class="card-title">そだてよう</div>
-          <div class="card-desc">もうすぐ<br>あそべるよ！</div>
-        </div>
-      </a>
-
       <!-- 購入者限定バナー -->
       <div class="lock-banner" id="lockBanner">
         <div class="lock-banner-title">🔑 購入者限定コンテンツ</div>
@@ -1603,18 +1595,27 @@
         <div style="font-size: 1.05rem; color: #1E88E5; font-weight: 900;">🏠 ごほうびを かざろう！</div>
       </div>
 
-      <a href="room/index.html" class="card card-room locked" id="card-room">
+      <!-- ごほうびを かざろう 系は全部 MVP 外 → グレーアウト (2026-04-21) -->
+      <a class="card card-room" id="card-room" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
         <span class="card-icon">🏠</span>
         <div class="card-body">
           <div class="card-title">わたしのおうち</div>
-          <div class="card-desc">おへやを<br>かざろう！</div>
+          <div class="card-desc">つくってるよ！</div>
         </div>
       </a>
 
-      <a href="aquarium/index.html" class="card card-aquarium locked" id="card-aquarium">
+      <a class="card card-aquarium" id="card-aquarium" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
         <span class="card-icon">🐠</span>
         <div class="card-body">
           <div class="card-title">すいぞくかん</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <a class="card card-egg" id="card-egg" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🥚</span>
+        <div class="card-body">
+          <div class="card-title">そだてよう</div>
           <div class="card-desc">つくってるよ！</div>
         </div>
       </a>
@@ -1853,7 +1854,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide', 'card-room', 'card-aquarium'];
+    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';
@@ -1884,7 +1885,8 @@
 
     applyUnlockState();
 
-    // わたしのおうちロック/アンロック
+    // わたしのおうち: MVP 外 → カード自体は HTML inline style で永続グレーアウト (2026-04-21)
+    // ここでは下部ナビのラベル切替のみ残す（購入者には 🏠 おうち、無料には 📓 てちょう）
     (function() {
       // 旧キーからのマイグレーション
       if (!localStorage.getItem('pono_room_card_open') && localStorage.getItem('pono_room_unlocked')) {
@@ -1894,22 +1896,9 @@
           localStorage.removeItem('pono_room_unlocked');
         }
       }
-      var roomCard = document.getElementById('card-room');
       var _debugOn  = localStorage.getItem('pono_debug')   === '1';
       var _premium  = localStorage.getItem('pono_premium') === '1';
       var _hasRoom  = _debugOn || _premium;
-      if (roomCard) {
-        if (_hasRoom) {
-          roomCard.classList.remove('locked');
-        } else {
-          // 無料ユーザーにはカードを鎖で見せる（クリックはロック案内モーダル）
-          roomCard.classList.add('locked');
-          roomCard.addEventListener('click', function(e) {
-            e.preventDefault();
-            _showRoomLockedHint();
-          });
-        }
-      }
       // 下部ナビの「🏠 おうち」を、無料ユーザーには「📓 てちょう」として見せる
       if (!_hasRoom) {
         var bnIcon  = document.getElementById('bn-room-icon');
