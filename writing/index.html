@@ -6112,7 +6112,7 @@ function _hidePuzzleStage() {
   els.stage.classList.remove('complete', 'pedestal-focused');
   // ら行の飛び石ステップクラスをリセット (次回 lava_step で再利用)
   for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
-  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-step-spark, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
+  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-rising-stone, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
   if (els.planks) { els.planks.style.opacity = ''; els.planks.style.transition = ''; }
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
