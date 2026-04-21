@@ -1912,8 +1912,11 @@ body.battle-mode .villain-deco {
 }
 /* ゴーレム等は元画像が左向き (勇者と同じ方向を向いてしまう) なので水平反転して
    勇者と対峙させる。ヒーロー側は既に scaleX(-1) で右向きにしてあるため、敵も
-   同じ手法で左向きに反転 → 画面左の勇者を正面に見据える構図になる。 */
-.battle-enemy.grounded .enemy-img {
+   同じ手法で左向きに反転 → 画面左の勇者を正面に見据える構図になる。
+   grounded と flipped はどちらも同じ反転を掛けたいので selector をまとめる。
+   (非接地ザコで flipped:true を指定した場合もここでケアされる) */
+.battle-enemy.grounded .enemy-img,
+.battle-enemy.flipped  .enemy-img {
   transform: scaleX(-1);
 }
 /* 地に足付きタイプのラップを勇者と同じ高さ (top:54%) に持ち上げる。
@@ -4623,11 +4626,22 @@ function _playMonsterPop() { _playCanvasBreak(); }
 // バトル行=6行 (あ/さ/た/は/ま/や)。か/な/ら は謎解き行、わ は大魔王 (別実装)。
 // カタカナ (ア/サ/タ/ハ/マ/ヤ) はひらがな側を流用する (_normalizeRowLabel で変換)。
 const BATTLE_ENEMIES = {
+  // あ行: 森のザコ「おこりキノコ」。6枚の idle から代表1枚+攻撃フレーム3枚+スタッガー1枚を採用。
+  // 元画像は全て右向きなので flipped:true で水平反転。胞子体なので浮遊感はあるが、
+  // 新画像がしっかり接地しているため grounded:true で勇者と同じ高さに並べる。
   'あ': {
-    id: 'mush1', name: 'キノコのせんし',
-    img: '../assets/images/monsters/chars/monster_005.png',
-    taunts: ['くくく…', 'かかってこい！', 'まだまだ！', 'なんのこれしき！', 'やるな…'],
-    hp: 5, element: 'light'
+    id: 'mushroom', name: 'おこりキノコ',
+    img: '../assets/images/monsters/chars/Mushroom/mushroom_idle.png',
+    imgIdle: '../assets/images/monsters/chars/Mushroom/mushroom_idle.png',
+    imgStagger: '../assets/images/monsters/chars/Mushroom/mushroom_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/Mushroom/mushroom_atk_1.png',
+      '../assets/images/monsters/chars/Mushroom/mushroom_atk_2.png',
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/Mushroom/mushroom_atk_strike.png',
+    taunts: ['ぷんぷん！', 'ほうしを まくぞ！', 'ふみつぶすな〜', 'もりの いかり！', 'キノコパンチ！'],
+    hp: 5, element: 'earth',
+    flipped: true, grounded: true
   },
   // さ行: 森の中ボス (森ステージのボス)。倒すと「盾」を入手。
   // 多段フレーム対応: HP に応じて画像を差し替え + 攻撃時は windup→strike アニメ。
@@ -4660,17 +4674,37 @@ const BATTLE_ENEMIES = {
     hp: 10, element: 'wind',
     boss: true, grounded: true, reward: 'armor'
   },
+  // ま行: 火山のザコ「ようがんゴーレム」。idle + 攻撃 (岩振り上げ→炎まとい打ち下ろし) + スタッガー。
+  // 岩/溶岩の重量級なので grounded:true で床にどっしり接地、左右反転。
   'ま': {
-    id: 'earthdragon', name: 'つちりゅう',
-    img: '../assets/images/monsters/chars/monster_013.png',
-    taunts: ['ぐおお〜', 'いわを ぶつけるぞ', 'だいちの ちから！', 'ずしーん…', 'にがさぬぞ〜'],
-    hp: 6, element: 'earth'
+    id: 'lava_golem', name: 'ようがんゴーレム',
+    img: '../assets/images/monsters/chars/LavaGolem/lava_golem_idle.png',
+    imgIdle: '../assets/images/monsters/chars/LavaGolem/lava_golem_idle.png',
+    imgStagger: '../assets/images/monsters/chars/LavaGolem/lava_golem_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/LavaGolem/lava_golem_atk_1.png',
+      '../assets/images/monsters/chars/LavaGolem/lava_golem_atk_2.png',
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/LavaGolem/lava_golem_atk_strike.png',
+    taunts: ['ゴゴゴ…', 'もえる いわ！', 'ようがん パンチ！', 'あつい ぞ〜！', 'くだけろ…！'],
+    hp: 6, element: 'fire',
+    flipped: true, grounded: true
   },
+  // や行: 火山のザコ「こあくま」。idle + 攻撃 (牙剥き→拡大突進→突き刺し) + スタッガー。
+  // 羽で浮遊するタイプなので grounded 無し (既存の floatingアニメをそのまま使う)、反転のみ。
   'や': {
-    id: 'starghost', name: 'やみれい',
-    img: '../assets/images/monsters/chars/monster_012.png',
-    taunts: ['うらめしや〜', 'ほしの よる…', 'きえるな よ…', 'くらやみへ おいで…', 'ゆらゆら〜'],
-    hp: 7, element: 'star'
+    id: 'imp', name: 'こあくま',
+    img: '../assets/images/monsters/chars/Imp/imp_idle.png',
+    imgIdle: '../assets/images/monsters/chars/Imp/imp_idle.png',
+    imgStagger: '../assets/images/monsters/chars/Imp/imp_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/Imp/imp_atk_1.png',
+      '../assets/images/monsters/chars/Imp/imp_atk_2.png',
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/Imp/imp_atk_strike.png',
+    taunts: ['くふふ〜', 'やみの ちから！', 'にげられぬ ぞ', 'やいばを くらえ！', 'いたずら だ〜！'],
+    hp: 7, element: 'fire',
+    flipped: true
   },
   // わ行: 火山の中ボス (火山ステージのボス)。倒すと「剣」を入手。
   // 旧仕様では「大魔王」だったが、ラスボスはカタカナのワ行に移動したので降格。
@@ -4864,6 +4898,9 @@ function _showBattleStage(rowId) {
   // ラップも勇者と同じ高さに持ち上げる (stage.has-grounded クラスで制御)。
   els.enemy.classList.toggle('grounded', !!enemy.grounded);
   els.stage.classList.toggle('has-grounded', !!enemy.grounded);
+  // 元素材が右向きのザコ (flipped:true) は水平反転して勇者と対峙させる。
+  // grounded と独立に指定できる (接地しない空中ザコでも反転だけ掛けたい場合があるため)。
+  els.enemy.classList.toggle('flipped', !!enemy.flipped);
   // ステージ別 BG: 行ラベルから stage を割り出して .stage-xxx を付け替え。
   try {
     els.stage.classList.remove('stage-forest', 'stage-cave', 'stage-volcano', 'stage-castle');
