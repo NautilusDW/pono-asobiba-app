@@ -3342,27 +3342,26 @@ function _sfxVer(url) {
 function _sfxSilentUnlockOne(a) {
   if (!a || a._unlocked) return;
   a._unlocked = true;
-  const prevVol = (typeof a.volume === 'number') ? a.volume : 0.9;
-  const prevMuted = !!a.muted;
+  // iOS の user-gesture unlock は muted=true + volume=0 の状態で .play()→.pause()。
+  // 解錠後も muted=true を維持し、playSfx 側で unmute + 正式 volume を設定する。
+  // 以前は p.then で muted/volume を即座に復元していたが、pause 前のごく短い
+  // 瞬間にプールの各 Audio が可聴ブリップを漏らし、「SE が一斉に鳴る」症状に
+  // なっていたので、mute を維持する方式に変更。
   try { a.muted = true; } catch (e) {}
   try { a.volume = 0; } catch (e) {}
   try {
     const p = a.play();
-    const restore = () => {
+    const stop = () => {
       try { a.pause(); } catch (e) {}
       try { a.currentTime = 0; } catch (e) {}
-      try { a.muted = prevMuted; } catch (e) {}
-      try { a.volume = prevVol; } catch (e) {}
+      // muted=true / volume=0 は意図的に維持する (playSfx が戻す)。
     };
     if (p && typeof p.then === 'function') {
-      p.then(restore).catch(restore);
+      p.then(stop).catch(stop);
     } else {
-      restore();
+      stop();
     }
-  } catch (e) {
-    try { a.muted = prevMuted; } catch (e2) {}
-    try { a.volume = prevVol; } catch (e2) {}
-  }
+  } catch (e) { /* ignore */ }
 }
 function _sfxEnsurePool(url) {
   let pool = _sfxPool[url];
@@ -3408,7 +3407,8 @@ function playSfx(url, volume) {
   let pick = pool.find(a => a.ended || a.paused) || pool[0];
   try {
     pick.currentTime = 0;
-    if (typeof volume === 'number') pick.volume = volume;
+    try { pick.muted = false; } catch (e) {}
+    pick.volume = (typeof volume === 'number') ? volume : 1;
     const p = pick.play();
     if (p && typeof p.catch === 'function') p.catch(() => {});
   } catch (e) { /* ignore */ }
