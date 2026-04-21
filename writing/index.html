@@ -6144,10 +6144,60 @@ function _hidePuzzleStage() {
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
   els.stage.classList.remove('complete');
-  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg').forEach(function(b) { b.remove(); });
+  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
+  if (els.planks) { els.planks.style.opacity = ''; els.planks.style.transition = ''; }
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
+}
+
+// 祠の扉演出: 5枚目の石板がハマった後に呼ぶ。
+// 扉が奥から浮上 → ルーンが灯り → 左右に開く → 勇者が左から扉へ歩いて消える。
+// 所要時間 約5秒。done コールバックで次の行へ進める。
+function _buildShrineDoor(onDone) {
+  const stage = _puzzleEls().stage;
+  if (!stage) { if (onDone) onDone(); return; }
+  // バナー (「どうくつの おくへ!」) は扉が完全に開いた頃に出す
+  const banner = document.createElement('div');
+  banner.className = 'shrine-door-banner';
+  banner.textContent = 'どうくつの おくへ すすもう！';
+  // 扉本体
+  const door = document.createElement('div');
+  door.className = 'shrine-door';
+  const frame = document.createElement('div');
+  frame.className = 'shrine-door-frame';
+  const light = document.createElement('div');
+  light.className = 'shrine-door-light';
+  const halfL = document.createElement('div');
+  halfL.className = 'shrine-door-half left';
+  const halfR = document.createElement('div');
+  halfR.className = 'shrine-door-half right';
+  door.appendChild(frame);
+  door.appendChild(light);
+  door.appendChild(halfL);
+  door.appendChild(halfR);
+  stage.appendChild(door);
+  stage.appendChild(banner);
+  // ① 石板をフェードアウトして道を開ける
+  const planksBox = _puzzleEls().planks;
+  if (planksBox) {
+    planksBox.style.transition = 'opacity 0.7s ease';
+    planksBox.style.opacity = '0.15';
+  }
+  // ② 扉せり上がり
+  requestAnimationFrame(function() {
+    setTimeout(function() { door.classList.add('rising'); }, 40);
+    // ③ 扉が開く
+    setTimeout(function() { door.classList.add('open'); }, 1100);
+    // ④ 勇者が歩いてくる (扉が開き始めた頃にスポーン)
+    setTimeout(function() {
+      const walker = document.createElement('div');
+      walker.className = 'shrine-walker hero-sprite move';
+      stage.appendChild(walker);
+    }, 1600);
+    // ⑤ 歩き終わった頃に次へ
+    setTimeout(function() { if (onDone) onDone(); }, 4600);
+  });
 }
 
 // ===== な行: ほこらのまもりがみの 3択なぞなぞ =====
@@ -8374,10 +8424,8 @@ function _rowPracticeNextChar() {
               setTimeout(function() {
                 _showRiddle(_riddleChar, function() {
                   if (isFinisher) {
-                    // 5問目正解: 石板ペデスタルが起動。
-                    // ① .complete クラスで pedestal_empty → pedestal_glow に bg 差し替え
-                    // ② 5枚の石板が 0.18s stagger で順番に眩しく光る (合計 ~1.7s)
-                    // ③ 中央から閃光バーストが広がる
+                    // 5問目正解: 石板ペデスタルが起動 → 祠の奥から扉が現れて開く
+                    // → 勇者が歩いて扉へ吸い込まれる = 次の行へ進む象徴。
                     var stage = _puzzleEls().stage;
                     if (stage) {
                       stage.classList.add('complete');
@@ -8386,7 +8434,11 @@ function _rowPracticeNextChar() {
                       stage.appendChild(burst);
                     }
                     try { playVictoryFanfare(); } catch (e) {}
-                    setTimeout(_riddleAdvance, 2000);
+                    // 閃光が落ち着いてから扉シーケンス (約1.8s 後) を開始
+                    setTimeout(function() {
+                      try { _buildShrineDoor(_riddleAdvance); }
+                      catch (e) { _riddleAdvance(); }
+                    }, 1800);
                   } else {
                     _riddleAdvance();
                   }
