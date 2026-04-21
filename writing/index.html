@@ -7065,6 +7065,7 @@ setInterval(() => {
 // RPG 化に合わせて「書き取り画面 = 戦闘」→ battleA/B、
 // 将来の「ワールドマップ」→ mapA/B を切替で鳴らす。
 const BGM_TRACKS = {
+  title:  ['../assets/audio/bgm/Theme.mp3'],
   battle: ['../assets/audio/bgm/battleC.mp3'],
   map:    ['../assets/audio/bgm/mapA.mp3',    '../assets/audio/bgm/mapB.mp3'],
 };
@@ -7121,10 +7122,12 @@ function goToRowSelect() {
   document.getElementById('storyScreen').classList.add('hidden');
   document.getElementById('rowSelectScreen').classList.remove('hidden');
   buildRowSelectScreen();
+  try { setBgmFor('map'); } catch (e) {}
 }
 function goToStory() {
   document.getElementById('titleScreen').classList.add('hidden');
   document.getElementById('storyScreen').classList.remove('hidden');
+  // Theme BGM はそのまま継続 (紙芝居も同じ「タイトル世界」の雰囲気として)
 }
 function goToPracticeDirect(rowIndex) {
   // はじめから専用: 行選びを飛ばして即練習
@@ -7137,13 +7140,29 @@ function goToPracticeDirect(rowIndex) {
   var newBtn = document.getElementById('titleBtnNew');
   var contBtn = document.getElementById('titleBtnContinue');
   var storyEl = document.getElementById('storyScreen');
+  var titleEl = document.getElementById('titleScreen');
+
+  // iOS autoplay: ユーザー初回接触で Theme BGM を開始。
+  var _titleBgmTriggered = false;
+  function startTitleBgm() {
+    if (_titleBgmTriggered) return;
+    _titleBgmTriggered = true;
+    try { setBgmFor('title'); } catch (e) {}
+  }
+  if (titleEl) {
+    titleEl.addEventListener('pointerdown', startTitleBgm, { passive: true });
+    titleEl.addEventListener('touchstart',  startTitleBgm, { passive: true });
+  }
+
   if (newBtn) newBtn.addEventListener('click', function() {
+    startTitleBgm();
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = true;
     goToStory();
   });
   if (contBtn) contBtn.addEventListener('click', function() {
     if (contBtn.classList.contains('disabled')) return;
+    startTitleBgm();
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = false;
     goToRowSelect();
@@ -7151,7 +7170,6 @@ function goToPracticeDirect(rowIndex) {
   if (storyEl) storyEl.addEventListener('click', function() {
     if (_titleRouteIsNew) {
       _titleRouteIsNew = false;
-      // あ行 (hiragana / index 0) を自動で開始
       currentCategory = 'hiragana';
       goToPracticeDirect(0);
     } else {
