@@ -585,8 +585,8 @@ html, body {
 }
 #titleScreen.hidden { display: none; }
 #titleScreen .title-logo {
-  width: clamp(240px, 70vw, 560px);
-  max-height: 45vh;
+  width: clamp(320px, 92vw, 780px);
+  max-height: 58vh;
   object-fit: contain;
   /* ロゴ PNG は黒塗りの矩形なので screen 合成で黒部分を親の黒背景に溶かす。
      drop-shadow は screen 合成と相性が悪いので使わない (光源はロゴ画像自体が持っている) */
@@ -621,7 +621,7 @@ html, body {
 }
 @media (orientation: landscape) {
   #titleScreen { flex-direction: row; gap: 48px; }
-  #titleScreen .title-logo { max-height: 70vh; width: clamp(240px, 45vw, 520px); }
+  #titleScreen .title-logo { max-height: 88vh; width: clamp(340px, 62vw, 720px); }
   .title-btns { width: min(260px, 40vw); }
   .title-hint { display: none; }
 }
