@@ -1812,17 +1812,20 @@ body.battle-mode .villain-deco {
 }
 /* 5スロット配置 — ペデスタル画像 (1099x1110, 6つの凹みスロット) に合わせて絶対配置。
    puzzle-planks は pedestal 画像の `contain` 可視矩形と一致させるため、
-   aspect-ratio:1 + max-width/height:100% + margin:auto でステージの短辺に合わせる。 */
+   ステージ高さ (min(34vh,220px)) に合わせて square-ish に固定。
+   (inset:0+margin:auto+aspect-ratio は Safari 互換性が怪しいので明示 height+aspect) */
 .puzzle-bg-riddle .puzzle-planks {
   position: absolute;
-  inset: 0;
-  margin: auto;
-  aspect-ratio: 1;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1099 / 1110;
   max-width: 100%;
-  max-height: 100%;
   display: block;
   padding: 0;
   gap: 0;
+  overflow: visible;
 }
 .plank.plank-riddle {
   position: absolute;
@@ -6095,6 +6098,74 @@ function _showRiddle(char, onCorrect) {
   document.body.appendChild(ov);
 }
 
+// ===== パズル行の導入オーバーレイ =====
+// 行の最初に「これから何をするか」をキャラが説明する。タップで進む。
+// kind=riddle: ほこらのまもりがみ 🗿 が なぞなぞを出題すると告知
+// kind=lava_step: ようがんゴーレム 🗿💢 が道を塞ぐ。呪文で本物の石を見抜けと告知
+function _showPuzzleIntro(kind, onDone) {
+  var intros = {
+    riddle: {
+      emoji: '🗿',
+      name: 'ほこらの まもりがみ',
+      lines: [
+        'よう きた、ぼうけんしゃよ。',
+        'もじを かいたら',
+        'なぞなぞに こたえよ！',
+        'いつつの せきばんを',
+        'この ほこらに はめこむのだ。'
+      ]
+    },
+    lava_step: {
+      emoji: '🗿',
+      name: 'ようがんゴーレム',
+      lines: [
+        'ここは わたらせぬぞ…！',
+        'もじを なぞると',
+        'じゅもんが はつどうする。',
+        'ほんものの いしを みつけて',
+        'みちを つくれ！'
+      ]
+    }
+  };
+  var data = intros[kind];
+  if (!data) { if (onDone) onDone(); return; }
+
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1700;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,30,0.55) 0%,rgba(5,2,12,0.92) 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn 0.4s ease;padding:24px;cursor:pointer;';
+
+  var emoji = document.createElement('div');
+  emoji.textContent = data.emoji;
+  emoji.style.cssText = 'font-size:5rem;margin-bottom:10px;filter:drop-shadow(0 0 28px rgba(140,200,255,0.8));animation:guardianFloat 1.8s ease-in-out infinite;';
+  ov.appendChild(emoji);
+
+  var name = document.createElement('div');
+  name.textContent = data.name;
+  name.style.cssText = 'font-size:1rem;font-weight:900;color:#FFEB50;text-shadow:0 2px 6px rgba(0,0,0,0.8);margin-bottom:14px;letter-spacing:2px;';
+  ov.appendChild(name);
+
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'background:linear-gradient(180deg,rgba(255,245,210,0.98),rgba(255,220,160,0.96));color:#5a2f08;font-size:1.1rem;font-weight:900;padding:18px 24px;border-radius:22px;border:3px solid #8B4513;box-shadow:0 6px 22px rgba(0,0,0,0.65);max-width:90vw;text-align:center;line-height:1.7;';
+  bubble.innerHTML = data.lines.map(function(l) {
+    return '<div>' + l + '</div>';
+  }).join('');
+  ov.appendChild(bubble);
+
+  var hint = document.createElement('div');
+  hint.textContent = '▼ タップで はじめる';
+  hint.style.cssText = 'margin-top:20px;font-size:0.95rem;font-weight:900;color:#FFEB50;text-shadow:0 2px 4px rgba(0,0,0,0.8);animation:guardianFloat 1.1s ease-in-out infinite;';
+  ov.appendChild(hint);
+
+  var dismissed = false;
+  ov.addEventListener('click', function() {
+    if (dismissed) return;
+    dismissed = true;
+    ov.style.transition = 'opacity 0.35s ease';
+    ov.style.opacity = '0';
+    setTimeout(function() { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, 360);
+  });
+  document.body.appendChild(ov);
+}
+
 // ===== ら行: ようがんのとびいし (呪文で本物を見抜く) =====
 // _spawnLavaChoice(): 3つの石をランダム配置で生成。1つだけ data-correct=1。
 // _revealLavaStones(): 呪文発動。全石の真偽を見える化。
@@ -7656,7 +7727,15 @@ function startRowPractice(rowIndex) {
     _showMapScene(_rowLabel, function() {
       document.body.classList.remove('battle-intro-active');
       try { _showPuzzleStage(_rowLabel); } catch (e) {}
-      _rowPracticeNextChar();
+      // パズル盤面登場後、キャラが「これから何をするか」を説明 (タップで進む)。
+      // riddle=ほこらのまもりがみ / lava_step=ようがんゴーレム
+      var _pKind = (PUZZLE_ROWS[_rowLabel] && PUZZLE_ROWS[_rowLabel].kind) || null;
+      if (_pKind === 'riddle' || _pKind === 'lava_step') {
+        try { _showPuzzleIntro(_pKind, function() { _rowPracticeNextChar(); }); }
+        catch (e) { _rowPracticeNextChar(); }
+      } else {
+        _rowPracticeNextChar();
+      }
     });
     return;
   }
