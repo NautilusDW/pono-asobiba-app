@@ -1266,6 +1266,8 @@ function loadStage(idx) {
   };
   pono.r = sdef.spawn.r;
   pono.c = sdef.spawn.c;
+  prevRadarTier = -1; // force radar face/segs refresh on first frame of new stage
+  moveIntent = null;
   hudStage.textContent = 'ステージ ' + (idx+1) + ' / ' + STAGES.length;
   updateFoundHud();
   resizeCanvas();
@@ -1332,11 +1334,12 @@ function findPathBFS(sr, sc, tr, tc) {
   var start = sr*cols + sc;
   var goal = tr*cols + tc;
   var q = [start];
+  var qHead = 0;
   visited[start] = 1;
   var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   var found = false;
-  while (q.length) {
-    var cur = q.shift();
+  while (qHead < q.length) {
+    var cur = q[qHead++]; // O(1) dequeue via head index (avoids O(n) shift)
     if (cur === goal) { found = true; break; }
     var r = Math.floor(cur/cols), c = cur%cols;
     for (var k = 0; k < 4; k++) {
@@ -1412,7 +1415,9 @@ function initDpad() {
     };
     btn.addEventListener('pointerup', release);
     btn.addEventListener('pointercancel', release);
-    btn.addEventListener('pointerleave', release);
+    // NOTE: no pointerleave listener. It conflicts with setPointerCapture
+    // (capture suppresses leave) AND fires on multi-touch / finger-drift,
+    // killing continuous move mid-press on kids' chaotic touches.
   });
 }
 
@@ -1509,34 +1514,28 @@ function updateRadar(now) {
   var tier = radarTierOf(d);
   var info = RADAR_TIERS[tier];
 
-  // Segments: reset + light up
-  var segs = radarSegs.children;
-  for (var i = 0; i < 7; i++) {
-    segs[i].className = 'radar-seg';
-    if (i < info.count && info.cls) segs[i].classList.add(info.cls);
-  }
-  if (d === 0) segs[6].classList.add('on-max');
-
-  // Text / emoji
-  radarText.textContent = info.text;
-  radarEmoji.textContent = info.emoji;
-
-  // Pono face (only re-set when tier changes, to avoid reload flicker)
+  // Tier-derived UI updates happen only on tier change (per-frame DOM writes hurt on older tablets)
   if (tier !== prevRadarTier) {
+    var segs = radarSegs.children;
+    for (var i = 0; i < 7; i++) {
+      segs[i].className = 'radar-seg';
+      if (i < info.count && info.cls) segs[i].classList.add(info.cls);
+    }
+    if (tier === 0) segs[6].classList.add('on-max');
+    radarText.textContent = info.text;
+    radarEmoji.textContent = info.emoji;
     radarFace.src = '../assets/images/characters/pono/dance/' + info.face + '.png';
     radarFace.classList.remove('pulse');
     void radarFace.offsetWidth;
     radarFace.classList.add('pulse');
+    if (info.pulse) {
+      edgePulse.style.setProperty('--pulse-opacity', info.pulse.opacity);
+      edgePulse.style.setProperty('--pulse-dur', info.pulse.dur + 'ms');
+      edgePulse.classList.add('on');
+    } else {
+      edgePulse.classList.remove('on');
+    }
     prevRadarTier = tier;
-  }
-
-  // Edge pulse
-  if (info.pulse) {
-    edgePulse.style.setProperty('--pulse-opacity', info.pulse.opacity);
-    edgePulse.style.setProperty('--pulse-dur', info.pulse.dur + 'ms');
-    edgePulse.classList.add('on');
-  } else {
-    edgePulse.classList.remove('on');
   }
 
   // Beep interval (existing behavior)
@@ -1552,10 +1551,13 @@ function updateRadarDigBtn() {
   var f = fossilAt(pono.r, pono.c);
   var dpad = document.getElementById('dpad');
   if (f) {
+    var isNewArrival = btnDig.dataset.fossilId !== f.id || !btnDig.classList.contains('show');
     btnDig.classList.add('show');
     btnDig.dataset.fossilId = f.id;
-    flashOv.classList.add('on');
-    setTimeout(function(){ flashOv.classList.remove('on'); }, 300);
+    if (isNewArrival) {
+      flashOv.classList.add('on');
+      setTimeout(function(){ flashOv.classList.remove('on'); }, 300);
+    }
     if (dpad) dpad.classList.add('with-dig');
     moveIntent = null; // stop continuous move when fossil found
   } else {
@@ -1607,22 +1609,27 @@ function drawCell(r, c) {
 }
 
 function drawPono(now) {
-  var pr, pc, dr = 0, dc = 0;
+  // finishWalk may start a new walkAnim via moveIntent; re-check in a loop
+  // to avoid a 1-frame snap flicker at cell boundaries during continuous move.
   if (walkAnim) {
     var elapsed = now - walkAnim.t0;
-    var segIdx = Math.floor(elapsed / walkAnim.perCell);
-    if (segIdx >= walkAnim.path.length) {
+    if (Math.floor(elapsed / walkAnim.perCell) >= walkAnim.path.length) {
       finishWalk();
-      pr = pono.r; pc = pono.c;
-    } else {
-      var t = (elapsed - segIdx * walkAnim.perCell) / walkAnim.perCell;
-      var seg = walkAnim.path[segIdx];
-      var fromR = segIdx === 0 ? walkAnim.fromR : walkAnim.path[segIdx-1].r;
-      var fromC = segIdx === 0 ? walkAnim.fromC : walkAnim.path[segIdx-1].c;
-      pr = fromR + (seg.r - fromR) * t;
-      pc = fromC + (seg.c - fromC) * t;
-      dr = seg.dr; dc = seg.dc;
     }
+  }
+  var pr, pc, dr = 0, dc = 0;
+  if (walkAnim) {
+    var elapsed2 = now - walkAnim.t0;
+    var segIdx = Math.floor(elapsed2 / walkAnim.perCell);
+    if (segIdx >= walkAnim.path.length) segIdx = walkAnim.path.length - 1;
+    var t = (elapsed2 - segIdx * walkAnim.perCell) / walkAnim.perCell;
+    if (t < 0) t = 0; else if (t > 1) t = 1;
+    var seg = walkAnim.path[segIdx];
+    var fromR = segIdx === 0 ? walkAnim.fromR : walkAnim.path[segIdx-1].r;
+    var fromC = segIdx === 0 ? walkAnim.fromC : walkAnim.path[segIdx-1].c;
+    pr = fromR + (seg.r - fromR) * t;
+    pc = fromC + (seg.c - fromC) * t;
+    dr = seg.dr; dc = seg.dc;
   } else {
     pr = pono.r; pc = pono.c;
   }
