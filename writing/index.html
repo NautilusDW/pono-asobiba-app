@@ -597,15 +597,15 @@ html, body {
   from { opacity: 0; transform: translateY(16px) scale(0.96); }
   to   { opacity: 1; transform: none; }
 }
-.title-btns { display: flex; flex-direction: column; gap: 14px; width: min(280px, 80vw); }
+.title-btns { display: flex; flex-direction: column; gap: 10px; width: min(196px, 56vw); }
 .title-btn {
   font-family: inherit; font-weight: 900;
-  font-size: 1.35rem; letter-spacing: 0.08em;
-  padding: 14px 18px; border-radius: 999px;
-  border: 3px solid #FFD84D;
+  font-size: 0.95rem; letter-spacing: 0.08em;
+  padding: 10px 13px; border-radius: 999px;
+  border: 2px solid #FFD84D;
   background: linear-gradient(135deg, #F2742A, #E85C1E);
   color: #FFFBEA;
-  cursor: pointer; box-shadow: 0 4px 18px rgba(242,116,42,0.45);
+  cursor: pointer; box-shadow: 0 3px 13px rgba(242,116,42,0.45);
   transition: transform 0.15s;
 }
 .title-btn:active { transform: scale(0.95); }
@@ -622,7 +622,7 @@ html, body {
 @media (orientation: landscape) {
   #titleScreen { flex-direction: row; gap: 48px; }
   #titleScreen .title-logo { max-height: 88vh; width: clamp(340px, 62vw, 720px); }
-  .title-btns { width: min(260px, 40vw); }
+  .title-btns { width: min(182px, 28vw); }
   .title-hint { display: none; }
 }
 
