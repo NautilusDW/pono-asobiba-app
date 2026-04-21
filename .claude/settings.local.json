@@ -25,7 +25,10 @@
       "WebFetch(domain:docs.spline.design)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:cdn.jsdelivr.net)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "WebFetch(domain:www.amnh.org)",
+      "WebFetch(domain:pbskids.org)",
+      "WebFetch(domain:www.smithsonianmag.com)"
     ]
   },
   "hooks": {
