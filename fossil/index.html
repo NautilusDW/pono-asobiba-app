@@ -1635,6 +1635,7 @@ function clearCharBubbles() {
 
 function speakJa(text) {
   try {
+    speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP'; u.rate = 1.0; u.pitch = 1.15;
     speechSynthesis.speak(u);
@@ -1710,7 +1711,9 @@ function openRecord(fossilId) {
   document.getElementById('recTitle').textContent = dino.jp;
   document.getElementById('recImg').src = dino.img;
   document.getElementById('recEra').textContent = dino.era;
-  document.getElementById('recDate').textContent = 'はっけんび: ' + new Date(collection[fossilId].foundAt).toLocaleDateString('ja-JP');
+  var rec = collection[fossilId];
+  var foundAt = (rec && typeof rec === 'object' && rec.foundAt) ? rec.foundAt : Date.now();
+  document.getElementById('recDate').textContent = 'はっけんび: ' + new Date(foundAt).toLocaleDateString('ja-JP');
   document.getElementById('recordOverlay').classList.add('show');
 }
 
