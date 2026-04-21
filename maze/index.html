@@ -459,6 +459,7 @@ const imgPond  = new Image(); imgPond.src  = '../assets/images/maze/pond.png';
 const imgHole  = new Image(); imgHole.src  = '../assets/images/maze/hole.png';
 const imgStump = new Image(); imgStump.src = '../assets/images/maze/stump.png';
 const imgRock  = new Image(); imgRock.src  = '../assets/images/maze/rock.png';
+const imgApple = new Image(); imgApple.src = '../assets/images/word/ringo.png';
 // 障害物をセル位置から決定論的に選ぶ（同じ位置なら常に同じ絵）
 const OBSTACLE_IMGS = [imgPond, imgHole, imgStump, imgRock];
 function _pickObstacleImg(r, c) {
@@ -1444,26 +1445,28 @@ function drawCell(x, y, tile, r, c, now) {
     }
     return;
   }
-  // 障害物 (WATER/THORN/STONE): 4種類のイラストを位置で散らして描画
-  if (tile === T.WATER || tile === T.THORN || tile === T.STONE) {
+  // 障害物 (CAT/WATER/THORN/STONE): 4種類のイラストを位置で散らして描画
+  // CAT は「猫 = 悪役」の印象を避けるため、他の自然障害物と同じ絵でランダム表示
+  if (tile === T.CAT || tile === T.WATER || tile === T.THORN || tile === T.STONE) {
     const img = _pickObstacleImg(r, c);
     if (img.complete && img.naturalWidth > 0) {
       const sz = Math.floor(cellSize * 0.88);
       ctx.drawImage(img, x + (cellSize - sz) / 2, y + (cellSize - sz) / 2, sz, sz);
     } else {
-      // Fallback emoji
+      // Fallback emoji (猫絵文字は使わない)
       let emoji = (tile === T.WATER) ? '💧' : (tile === T.THORN) ? '🌵' : '🪨';
       ctx.fillText(emoji, x + cellSize / 2, y + cellSize / 2);
     }
     return;
   }
-  let emoji = '';
-  if (tile === T.CAT)   emoji = '😺';
-  if (tile === T.APPLE) emoji = '🍎';
-  if (emoji) {
-    const bob = (tile === T.CAT) ? Math.sin(now / 600 + r + c) * 1.5 :
-                (tile === T.APPLE) ? Math.sin(now / 400 + r + c) * 2 : 0;
-    ctx.fillText(emoji, x + cellSize / 2, y + cellSize / 2 + bob);
+  if (tile === T.APPLE) {
+    const bob = Math.sin(now / 400 + r + c) * 2;
+    if (imgApple.complete && imgApple.naturalWidth > 0) {
+      const sz = Math.floor(cellSize * 0.78);
+      ctx.drawImage(imgApple, x + (cellSize - sz) / 2, y + (cellSize - sz) / 2 + bob, sz, sz);
+    } else {
+      ctx.fillText('🍎', x + cellSize / 2, y + cellSize / 2 + bob);
+    }
   }
 }
 
