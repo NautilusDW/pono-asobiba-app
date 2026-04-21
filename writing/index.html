@@ -6010,7 +6010,7 @@ function _hidePuzzleStage() {
   if (md) md.style.display = '';
 }
 
-// ===== な行: ひのとりの 3択なぞなぞ =====
+// ===== な行: ほこらのまもりがみの 3択なぞなぞ =====
 // 各文字で 1問。正解で次の字へ、不正解はシェイク+再試行 (ゲームオーバー無し、子供のペース)。
 // 絵文字データは CHAR_WORDS (L3397-) と同じ語を流用。
 const RIDDLES = {
@@ -8146,7 +8146,7 @@ function _rowPracticeNextChar() {
           // 謎解き行 (か/カ 等): 板を1枚出して次へ。5枚目はフィニッシャーでお祝い。
           if (_puzzle.active) {
             try { _puzzleRevealPlank({ finisher: isFinisher }); } catch (e) {}
-            // な行 (riddle): 文字を書いた直後にひのとりの3択なぞなぞを出題。
+            // な行 (riddle): 文字を書いた直後にほこらのまもりがみの3択なぞなぞを出題。
             // 正解で次の字へ。不正解はシェイク+再試行 (_showRiddle 内部で処理)。
             if (_puzzle.kind === 'riddle') {
               var _riddleChar = _puzzle.chars[_puzzle.step];
