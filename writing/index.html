@@ -1910,6 +1910,17 @@ body.battle-mode .villain-deco {
      画像自体の drop-shadow だけで接地感を表現する。 */
   display: none !important;
 }
+/* ゴーレム等は元画像が左向き (勇者と同じ方向を向いてしまう) なので水平反転して
+   勇者と対峙させる。ヒーロー側は既に scaleX(-1) で右向きにしてあるため、敵も
+   同じ手法で左向きに反転 → 画面左の勇者を正面に見据える構図になる。 */
+.battle-enemy.grounded .enemy-img {
+  transform: scaleX(-1);
+}
+/* 地に足付きタイプのラップを勇者と同じ高さ (top:54%) に持ち上げる。
+   JS 側で battleStage に has-grounded クラスを付ける方式で :has() 非対応環境も保証。 */
+.battle-stage.has-grounded .battle-enemy-wrap {
+  top: 54%;
+}
 .battle-enemy .enemy-img {
   width: 100%; height: 100%;
   object-fit: contain;
@@ -4849,8 +4860,10 @@ function _showBattleStage(rowId) {
   if (els.charge) els.charge.classList.remove('charged');
   els.stars.forEach(s => s.classList.remove('lit'));
   els.enemy.classList.remove('damaged', 'defeated');
-  // 地に足が付くタイプ (ゴーレム等、grounded:true): 浮遊アニメを切り 2倍拡大。
+  // 地に足が付くタイプ (ゴーレム等、grounded:true): 浮遊アニメを切り 2倍拡大、
+  // ラップも勇者と同じ高さに持ち上げる (stage.has-grounded クラスで制御)。
   els.enemy.classList.toggle('grounded', !!enemy.grounded);
+  els.stage.classList.toggle('has-grounded', !!enemy.grounded);
   // ステージ別 BG: 行ラベルから stage を割り出して .stage-xxx を付け替え。
   try {
     els.stage.classList.remove('stage-forest', 'stage-cave', 'stage-volcano', 'stage-castle');
@@ -6949,15 +6962,15 @@ function _rowPracticeNextChar() {
     const showStartOverlay = function(durationMs) {
       var startOv = document.createElement('div');
       // キャンバス中央に重ねる (fixed で canvas-wrap の矩形に揃える)。
-      // 取得できなかった場合は従来通り画面中央にフォールバック。
+      // 取得できなかった場合 or 矩形がまだ 0 size の場合は画面中央にフォールバック。
       var cw = document.querySelector('.canvas-wrap');
-      var boxStyle;
+      var boxStyle = 'position:fixed;inset:0;';
       if (cw) {
         var r = cw.getBoundingClientRect();
-        boxStyle = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;'
-                 + 'width:' + r.width + 'px;height:' + r.height + 'px;';
-      } else {
-        boxStyle = 'position:fixed;inset:0;';
+        if (r && r.width > 40 && r.height > 40) {
+          boxStyle = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;'
+                   + 'width:' + r.width + 'px;height:' + r.height + 'px;';
+        }
       }
       startOv.style.cssText = boxStyle + 'z-index:1550;display:flex;align-items:center;justify-content:center;pointer-events:none;';
       startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.95);padding:14px 32px;border-radius:24px;box-shadow:0 4px 24px rgba(242,145,90,0.45);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
@@ -6990,15 +7003,18 @@ function _rowPracticeNextChar() {
     };
 
     if (_battle.active) {
-      // バトル: おてほん → demo → START overlay + なぞり案内 (1メッセージ) → quiz
+      // バトル: おてほん → demo → なぞり案内 (タップ送り) → ★ タップ後に START overlay → quiz
+      // (2026-04-21 ユーザー要望: overlay はタップする前ではなく、ダイアログを
+      //  タップで送った直後 = 実際になぞり始めるタイミングで出す)
       _showBattleDialog([
-        { lines: ['これから', 'おてほんを', 'みせるよ。おぼえてね！'] }
+        { lines: ['おてほんを', 'みせるよ。', 'おぼえてね！'] }
       ], function() {
         runDemo(function() {
-          showStartOverlay(1400);
           _showBattleDialog([
             { lines: ['なぞり スタート！', 'ゆびで なぞって', 'かんせいさせよう'], opts: { line1Class: 'dmg-line' } }
           ], function() {
+            // ダイアログをタップで閉じた直後 (quiz 開始の瞬間) にオーバーレイを出す
+            showStartOverlay(1400);
             startQuizBattle();
           });
         });
@@ -7561,11 +7577,23 @@ function goToPracticeDirect(rowIndex) {
   var titleEl = document.getElementById('titleScreen');
 
   // iOS autoplay: ユーザー初回接触で Theme BGM を開始。
-  var _titleBgmTriggered = false;
+  // (2026-04-21: play() が失敗 (autoplay 拒否) した場合はフラグを戻して再試行可能にする。
+  //  以前は primed 経路で失敗してもフラグが立ったままになり、以降の title タップで
+  //  再試行されず BGM が永遠に鳴らないバグがあった)
+  var _titleBgmPlaying = false;
   function startTitleBgm() {
-    if (_titleBgmTriggered) return;
-    _titleBgmTriggered = true;
-    try { setBgmFor('title'); } catch (e) {}
+    if (_titleBgmPlaying) return;
+    try {
+      setBgmFor('title');
+      // setBgmFor 内の bgm.play() は非同期。play() が通ったら bgmStarted=true になる。
+      // ここでは即時にフラグを立てず、少し後に bgm.paused を見て判定する。
+      setTimeout(function() {
+        try {
+          var b = document.getElementById('bgm');
+          if (b && !b.paused) _titleBgmPlaying = true;
+        } catch (e) {}
+      }, 300);
+    } catch (e) {}
   }
   if (titleEl) {
     titleEl.addEventListener('pointerdown', startTitleBgm, { passive: true });
@@ -7585,14 +7613,15 @@ function goToPracticeDirect(rowIndex) {
   } catch (e) {}
 
   if (newBtn) newBtn.addEventListener('click', function() {
-    startTitleBgm();
+    // ボタンタップ時も必ず BGM を発火 (primed 経路が失敗していても再試行)
+    _titleBgmPlaying = false; startTitleBgm();
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = true;
     goToStory();
   });
   if (contBtn) contBtn.addEventListener('click', function() {
     if (contBtn.classList.contains('disabled')) return;
-    startTitleBgm();
+    _titleBgmPlaying = false; startTitleBgm();
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = false;
     goToRowSelect();
