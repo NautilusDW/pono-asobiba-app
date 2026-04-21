@@ -1506,35 +1506,6 @@
         </div>
       </a>
 
-      <!-- ─── シミュレーション区切り ─── -->
-      <div style="
-        grid-column: 1 / -1;
-        margin: 14px auto 6px;
-        max-width: 360px;
-        width: 100%;
-        text-align: center;
-        padding: 12px 0 8px;
-        border-top: 2.5px dashed #A7D8F0;
-      ">
-        <div style="font-size: 1.05rem; color: #1E88E5; font-weight: 900;">🏠 ごほうびを かざろう！</div>
-      </div>
-
-      <a href="room/index.html" class="card card-room" id="card-room">
-        <span class="card-icon">🏠</span>
-        <div class="card-body">
-          <div class="card-title">わたしのおうち</div>
-          <div class="card-desc">おへやを<br>かざろう！</div>
-        </div>
-      </a>
-
-      <a class="card card-aquarium locked" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🐠</span>
-        <div class="card-body">
-          <div class="card-title">すいぞくかん</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
       <a class="card card-egg locked" id="card-egg" style="pointer-events:none;">
         <span class="card-icon">🥚</span>
         <div class="card-body">
@@ -1615,6 +1586,35 @@
         <span class="card-icon">🎲</span>
         <div class="card-body">
           <div class="card-title">すごろく</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <!-- ─── ごほうびを かざろう（購入者限定） ─── -->
+      <div style="
+        grid-column: 1 / -1;
+        margin: 14px auto 6px;
+        max-width: 360px;
+        width: 100%;
+        text-align: center;
+        padding: 12px 0 8px;
+        border-top: 2.5px dashed #A7D8F0;
+      ">
+        <div style="font-size: 1.05rem; color: #1E88E5; font-weight: 900;">🏠 ごほうびを かざろう！</div>
+      </div>
+
+      <a href="room/index.html" class="card card-room locked" id="card-room">
+        <span class="card-icon">🏠</span>
+        <div class="card-body">
+          <div class="card-title">わたしのおうち</div>
+          <div class="card-desc">おへやを<br>かざろう！</div>
+        </div>
+      </a>
+
+      <a href="aquarium/index.html" class="card card-aquarium locked" id="card-aquarium">
+        <span class="card-icon">🐠</span>
+        <div class="card-body">
+          <div class="card-title">すいぞくかん</div>
           <div class="card-desc">つくってるよ！</div>
         </div>
       </a>
@@ -1853,7 +1853,7 @@
 
     // ===== Premium Unlock =====
     const PREMIUM_PASSWORD = '1234';
-    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
+    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide', 'card-room', 'card-aquarium'];
 
     function applyUnlockState() {
       const unlocked = localStorage.getItem('pono_premium') === '1';

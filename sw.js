@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 286;
+const CACHE_VERSION = 288;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -78,10 +78,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // items.js / rewards.json / tts manifest はデプロイ直後に即反映させたいので HTTP キャッシュも無効化
+  // items.js / rewards.json / tts manifest / BGM はデプロイ直後に即反映させたいので HTTP キャッシュも無効化。
+  // BGM (assets/audio/bgm/*.mp3) はユーザーが差し替えても古いブラウザ HTTP キャッシュが
+  // 居座って「差し替えた曲がなぜか鳴らない」現象の原因になりがち。cache:'no-store' で毎回
+  // ネットワーク取得、SW キャッシュだけ更新してオフライン用に保持 (2026-04-21)。
   if (event.request.url.includes('/room/items.js')
       || event.request.url.includes('/assets/data/rewards.json')
-      || event.request.url.includes('/assets/tts/manifest.json')) {
+      || event.request.url.includes('/assets/tts/manifest.json')
+      || event.request.url.includes('/assets/audio/bgm/')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(response => {

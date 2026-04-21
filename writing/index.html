@@ -1618,6 +1618,46 @@ body.battle-mode .villain-deco {
 .puzzle-bg-bridge.fixed::before {
   opacity: 1;
 }
+/* 橋完成時の光る演出 (2026-04-21 ユーザー要望): 修復の瞬間、
+   白い閃光が橋全体を覆って「直った！」を視覚的に強調。 */
+.bridge-shine {
+  position: absolute; inset: 0;
+  z-index: 4; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 58%,
+    rgba(255,255,255,0.95) 0%,
+    rgba(255,236,150,0.75) 25%,
+    rgba(255,236,150,0) 70%);
+  opacity: 0;
+  animation: bridgeShine 1.1s ease-out forwards;
+}
+@keyframes bridgeShine {
+  0%   { opacity: 0;   transform: scale(0.6); }
+  25%  { opacity: 1;   transform: scale(1.0); }
+  55%  { opacity: 0.9; transform: scale(1.1); }
+  100% { opacity: 0;   transform: scale(1.25); }
+}
+/* 渡るアニメ用の勇者スプライト (puzzle stage に絶対配置して左→右へ移動) */
+.bridge-walker {
+  position: absolute;
+  top: 58%;
+  left: 10%;
+  width: clamp(36px, 8vw, 52px);
+  height: clamp(36px, 8vw, 52px);
+  transform: translate(-50%, -50%) scaleX(-1);
+  z-index: 5; pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+  animation: bridgeWalk 2.2s linear forwards;
+}
+@keyframes bridgeWalk {
+  0%   { left: 10%; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { left: 92%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bridge-shine { animation: none; opacity: 0; }
+  .bridge-walker { animation: none; left: 92%; opacity: 0; }
+}
 .puzzle-title {
   position: absolute; top: 8px; left: 0; right: 0;
   text-align: center; color: #FFD86A;
@@ -3046,7 +3086,7 @@ body.battle-intro-active .battle-log-window {
 </div>
 
 <!-- ===== Story (紙芝居) Screen ===== -->
-<div id="storyScreen" class="hidden">
+<div id="storyScreen" class="hidden" style="display:none;">
   <div class="story-text">
     もじを かいて、<br>
     てきを たおして、<br>
@@ -3056,7 +3096,11 @@ body.battle-intro-active .battle-log-window {
 </div>
 
 <!-- ===== Row Selection Screen ===== -->
-<div id="rowSelectScreen" class="hidden">
+<!-- インライン display:none を付けて、スプラッシュ→タイトル遷移中にスタイル
+     再計算が一瞬遅れて行選択画面がチラッと見える現象を完全に防ぐ (2026-04-21)。
+     goToRowSelect / returnToSelect / buildRowSelectScreen が呼ばれた時点で
+     hidden クラスを外すと同時に inline style も空にする。 -->
+<div id="rowSelectScreen" class="hidden" style="display:none;">
   <div class="rs-header">
     <h1>どの もじを かく？</h1>
   </div>
@@ -4881,7 +4925,7 @@ const BATTLE_ENEMIES = {
   },
   // は行: 洞窟の中ボス「こおりのまどうし」。倒すと「鎧」を入手。
   // 多段フレーム対応: idle + stagger + 攻撃 (結晶召喚→杖構え→氷ビーム放射) + 氷属性。
-  // 全画像右向きなので flipped:true。
+  // 全画像右向きなので flipped:true。grounded を外して宙に浮遊 (魔導士っぽい演出)。
   'は': {
     id: 'ice_wizard', name: 'こおりのまどうし',
     img: '../assets/images/monsters/chars/IceWizard/ice_wizard_idle.png',
@@ -4894,7 +4938,7 @@ const BATTLE_ENEMIES = {
     imgAttackStrike: '../assets/images/monsters/chars/IceWizard/ice_wizard_atk_strike.png',
     taunts: ['キィィン…', 'こおりづけに してやる！', 'つららの あめだ！', 'さむいぞ〜…', 'こおりの ちから！'],
     hp: 10, element: 'ice',
-    boss: true, flipped: true, grounded: true, reward: 'armor',
+    boss: true, flipped: true, reward: 'armor',
     // 魔導士タイプ: カウンター攻撃時に氷ビームを放ち、さらにつららの雨を降らせる。
     rangedMagic: true
   },
@@ -5363,6 +5407,20 @@ function _showBattleDialog(messages, onDone) {
   _battleDialogAdvance(); // 1 通目を即表示 + await-tap on
 }
 
+// 2026-04-21: 勇者の「ダメージをあたえた！」ログの後に
+// 子供がログを読み終わるまで止めて、タップで次 (敵のカウンター) に進ませる。
+// battleHitEnemy 側の typewriter が動いている途中から呼んでも、
+// _battleDialogAdvance が「まず typewriter を即完了 → 次タップで onTap 発火」
+// の二段階で動くので子供が読み急がされない。
+function _awaitTapOnLog(onTap, minDelayMs) {
+  _battleDialogBind();
+  _battleDialog.queue = [];
+  _battleDialog.onDone = onTap || null;
+  _battleDialog.active = true;
+  _battleDialog._minShowUntil = Date.now() + (minDelayMs != null ? minDelayMs : 300);
+  _battleDialogSetAwait(true);
+}
+
 // ===== バトル登場演出: カーテン + 敵ドン表示 → 名前告知 → タップで挑発 → タップで前進 =====
 // ユーザー要望 (2026-04-20): 子供が読めるペースで進められるように、
 // 一方的なタイマー進行をやめて各ダイアログをタップで手動送りにする。
@@ -5589,9 +5647,27 @@ function _puzzleRevealPlank(opts) {
     // 5枚目完成: 全板をふわっと光らせる演出 (橋完成のお祝い)
     try { playVictoryFanfare(); } catch (e) {}
     planks.forEach(function(pl) { pl.classList.add('finisher'); });
-    // 橋パズル: 壊れた橋 → 直った橋へクロスフェード
+    // 橋パズル: 壊れた橋 → 直った橋へクロスフェード + 閃光 + 勇者が渡るアニメ
+    // (2026-04-21 ユーザー要望: 完成の瞬間を派手に、さらに勇者が実際に渡る演出を挟む)
     if (_puzzle.kind === 'bridge' && els.stage) {
       els.stage.classList.add('fixed');
+      // 閃光: 橋の中央から白い光が放射して「直った！」を強調 (1.1s で自然消滅)
+      try {
+        const shine = document.createElement('div');
+        shine.className = 'bridge-shine';
+        els.stage.appendChild(shine);
+        setTimeout(function() { if (shine.parentNode) shine.remove(); }, 1300);
+      } catch (e) {}
+      // 勇者の渡りアニメ: クロスフェードが落ち着いた後 (0.9s) に左→右へ 2.2s で歩く
+      // 既存の .hero-sprite.move を再利用して歩行フレームを回す
+      try {
+        setTimeout(function() {
+          const walker = document.createElement('div');
+          walker.className = 'bridge-walker hero-sprite move';
+          els.stage.appendChild(walker);
+          setTimeout(function() { if (walker.parentNode) walker.remove(); }, 2400);
+        }, 900);
+      } catch (e) {}
     }
   } else {
     try { playCharCompleteSound(); } catch (e) {}
@@ -6784,7 +6860,8 @@ function returnToSelect() {
   if (writer) { writer.cancelQuiz(); }
   _currentScreen = 'select';
   document.getElementById('app').style.display = 'none';
-  document.getElementById('rowSelectScreen').classList.remove('hidden');
+  var rowEl = document.getElementById('rowSelectScreen');
+  rowEl.classList.remove('hidden'); rowEl.style.display = '';
   buildRowSelectScreen();
   // 行選択画面ではフィールド (map) BGM。バトル終了後の余韻もあるので短めフェードで切替。
   try { setBgmFor('map'); } catch (e) {}
@@ -7007,7 +7084,10 @@ function startRowPractice(rowIndex) {
 // 左に詰める。全体は「森 (0〜20%) → 洞窟 (〜50%) → 火山 (〜85%) → 城 (〜94%)」。
 const MAP_ROW_SCENES = {
   'あ': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
-  'か': { xPct: 13, yPct: 49, title: 'こわれた はし' },
+  // か行 (こわれた はし): 橋は map_A.png 上で約 12〜16% 付近にあるため、
+  // 勇者は橋を渡る手前 (左岸) = 9% に立たせる。以前 13% だと「もう橋を渡った」
+  // ように見えると指摘あり (2026-04-21)。
+  'か': { xPct: 9,  yPct: 49, title: 'こわれた はし' },
   'さ': { xPct: 19, yPct: 50, title: 'もりの でぐち' },
   'た': { xPct: 26, yPct: 55, title: 'どうくつの いりぐち' },
   'な': { xPct: 35, yPct: 60, title: 'どうくつの ほこら' },
@@ -7017,7 +7097,7 @@ const MAP_ROW_SCENES = {
   'ら': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
   'わ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
   'ア': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
-  'カ': { xPct: 13, yPct: 49, title: 'こわれた はし' },
+  'カ': { xPct: 9,  yPct: 49, title: 'こわれた はし' },
   'サ': { xPct: 19, yPct: 50, title: 'もりの でぐち' },
   'タ': { xPct: 26, yPct: 55, title: 'どうくつの いりぐち' },
   'ナ': { xPct: 35, yPct: 60, title: 'どうくつの ほこら' },
@@ -7391,7 +7471,14 @@ function _rowPracticeNextChar() {
           // 謎解き行 (か/カ 等): 板を1枚出して次へ。5枚目はフィニッシャーでお祝い。
           if (_puzzle.active) {
             try { _puzzleRevealPlank({ finisher: isFinisher }); } catch (e) {}
-            var _puzzleDelay = isFinisher ? 3000 : 1500;
+            // 橋フィニッシャーは 閃光(1.1s) + 0.9s待機 + 渡りアニメ(2.2s) で 4.2s 掛かるので
+            // 通常フィニッシャーより長めに待つ (2026-04-21)。
+            var _puzzleDelay;
+            if (isFinisher) {
+              _puzzleDelay = (_puzzle.kind === 'bridge') ? 4600 : 3000;
+            } else {
+              _puzzleDelay = 1500;
+            }
             setTimeout(function() {
               _puzzle.step++;
               _rowPracticeStep++;
@@ -7427,11 +7514,23 @@ function _rowPracticeNextChar() {
           }
           if (_battle.active) {
             try { battleHitEnemy({ finisher: false }); } catch (e) {}
-            setTimeout(function() { try { enemyCounterAttack(); } catch (e) {} }, 2200);
+            // 2026-04-21: 子供がログ (「〇〇に ダメージを あたえた！」) を読めるよう、
+            // 自動 2200ms → タップ必須に変更。damage log のタイプライタが回り終わる
+            // 頃 (~1400ms) に await-tap を有効化 → タップで敵カウンター → さらに
+            // そこから表示時間を確保してから次の文字へ進む。
             setTimeout(function() {
-              _rowPracticeStep++;
-              _rowPracticeNextChar();
-            }, 6800);
+              if (!_battle.active) return;
+              _awaitTapOnLog(function() {
+                if (!_battle.active) return;
+                try { enemyCounterAttack(); } catch (e) {}
+                // 敵のカウンター〜ダメージ表示を子供が見終えてから次へ。
+                // enemyCounterAttack は announce + 攻撃 + 着弾で最大 ~3600ms 使う。
+                setTimeout(function() {
+                  _rowPracticeStep++;
+                  _rowPracticeNextChar();
+                }, 3800);
+              }, 260);
+            }, 1400);
           } else {
             startWordPhases();
           }
@@ -7866,14 +7965,17 @@ function showTitleScreen() {
 }
 function goToRowSelect() {
   document.getElementById('titleScreen').classList.add('hidden');
-  document.getElementById('storyScreen').classList.add('hidden');
-  document.getElementById('rowSelectScreen').classList.remove('hidden');
+  var storyEl = document.getElementById('storyScreen');
+  storyEl.classList.add('hidden'); storyEl.style.display = 'none';
+  var rowEl = document.getElementById('rowSelectScreen');
+  rowEl.classList.remove('hidden'); rowEl.style.display = '';
   buildRowSelectScreen();
   try { setBgmFor('map'); } catch (e) {}
 }
 function goToStory() {
   document.getElementById('titleScreen').classList.add('hidden');
-  document.getElementById('storyScreen').classList.remove('hidden');
+  var storyEl = document.getElementById('storyScreen');
+  storyEl.classList.remove('hidden'); storyEl.style.display = '';
   // Theme BGM はそのまま継続 (紙芝居も同じ「タイトル世界」の雰囲気として)
 }
 function goToPracticeDirect(rowIndex) {
