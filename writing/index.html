@@ -1810,20 +1810,23 @@ body.battle-mode .villain-deco {
   40%  { filter: brightness(1.6) saturate(1.4); }
   100% { filter: brightness(1.15) saturate(1.15); }
 }
-/* 5スロット配置 — ペデスタル画像上の石板位置に合わせて絶対配置 (%指定で画像スケールに追従) */
+/* 5スロット配置 — ペデスタル画像 (1099x1110, 6つの凹みスロット) に合わせて絶対配置。
+   puzzle-planks は pedestal 画像の `contain` 可視矩形と一致させるため、
+   aspect-ratio:1 + max-width/height:100% + margin:auto でステージの短辺に合わせる。 */
 .puzzle-bg-riddle .puzzle-planks {
   position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: min(72vh, 95%);
+  inset: 0;
+  margin: auto;
   aspect-ratio: 1;
+  max-width: 100%;
+  max-height: 100%;
   display: block;
   padding: 0;
   gap: 0;
 }
 .plank.plank-riddle {
   position: absolute;
-  width: 18%;
+  width: 14%;
   aspect-ratio: 1;
   background: transparent;
   border: none;
@@ -1850,19 +1853,20 @@ body.battle-mode .villain-deco {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(18px, 4.2vmin, 32px);
+  font-size: clamp(16px, 3.6vmin, 28px);
   font-weight: 900;
   color: #1f1208;
   text-shadow: 0 1px 0 rgba(255,235,180,0.55), 0 0 4px rgba(255,240,180,0.3);
   letter-spacing: 0;
   pointer-events: none;
 }
-/* 五芒星の5頂点位置 (pedestal_002 の石板スロット中心の%) */
-.plank.plank-riddle.tablet-slot-0 { top: 8%;  left: 41%; } /* 上 (12時) */
-.plank.plank-riddle.tablet-slot-1 { top: 30%; left: 73%; } /* 右上 */
-.plank.plank-riddle.tablet-slot-2 { top: 65%; left: 62%; } /* 右下 */
-.plank.plank-riddle.tablet-slot-3 { top: 65%; left: 20%; } /* 左下 */
-.plank.plank-riddle.tablet-slot-4 { top: 30%; left: 9%;  } /* 左上 */
+/* ペデスタルの6つの凹みスロットのうち5つ (時計回り、中段左を休みにする)。
+   tablet-width=14% なので left/top は各スロット中心 - 7% で指定。 */
+.plank.plank-riddle.tablet-slot-0 { top: 5%;  left: 18%; } /* na: 左上 */
+.plank.plank-riddle.tablet-slot-1 { top: 5%;  left: 68%; } /* ni: 右上 */
+.plank.plank-riddle.tablet-slot-2 { top: 36%; left: 81%; } /* nu: 右中 */
+.plank.plank-riddle.tablet-slot-3 { top: 69%; left: 68%; } /* ne: 右下 */
+.plank.plank-riddle.tablet-slot-4 { top: 69%; left: 18%; } /* no: 左下 */
 /* 完成時: 5枚の石板が順番に眩しく光る (150ms stagger × 0.9s anim) */
 .puzzle-bg-riddle.complete .plank.plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
@@ -4229,14 +4233,15 @@ function flashLastStroke() {
 // 現在は AI 生成 4 本をランダムローテーションで再生し、
 // 将来の行別属性 (a='light', ka='fire', ...) に割り当てる下地を作る。
 const SPELL_VIDEOS = {
-  // 属性ごとに専用動画。現在のステージで使うのは fire のみ (2026-04-20)。
-  // ice/earth/rainbow の素材もローカルにはあるが、サイズが重い (~5MB) ので
-  // 該当ステージを実装する際に追加する方針。
+  // 属性ごとに専用動画 (ユーザー提供素材: D:\ポノのおへや\Mojikaki\magic\spell\movie)。
   fire:    ['../assets/videos/spells/fire.mp4'],
-  // 旧 AI 生成 4 本は「属性未設定」フォールバック扱いに
+  ice:     ['../assets/videos/spells/ice.mp4'],
+  earth:   ['../assets/videos/spells/earth.mp4'],
+  rainbow: ['../assets/videos/spells/rainbow.mp4'],
+  // 旧 AI 生成 4 本は「属性未設定」フォールバック扱い
   light:   ['../assets/videos/spells/spell_01.mp4', '../assets/videos/spells/spell_02.mp4'],
   arcane:  ['../assets/videos/spells/spell_03.mp4', '../assets/videos/spells/spell_04.mp4'],
-  // ice/thunder/heal/wind/earth/star/rainbow/king は専用動画を追加するまで arcane フォールバック
+  // thunder/heal/wind/star/king は専用動画が揃うまで arcane フォールバック
 };
 const SPELL_ALL = [
   '../assets/videos/spells/spell_01.mp4',
@@ -4247,8 +4252,9 @@ const SPELL_ALL = [
 // 行(row key) -> 属性 のマッピング (後のフェーズで敵/シーンと連動)
 const ROW_ELEMENT = {
   a: 'light', ka: 'fire', sa: 'ice', ta: 'thunder',
-  na: 'heal', ha: 'wind', ma: 'earth', ya: 'star',
-  ra: 'rainbow', wa: 'king'
+  na: 'heal', ha: 'wind',
+  // 火山ゾーン (ま/や/ら/わ) は氷系で統一 (溶岩を冷やすイメージ / 2026-04-21 ユーザー指示)
+  ma: 'ice', ya: 'ice', ra: 'ice', wa: 'ice'
 };
 // _rowPracticeRow.label (ひらがな/カタカナ) -> 属性
 // 「使う魔法と同じ色」で弾を飛ばすため、行ラベル直参照できるように
@@ -4259,10 +4265,11 @@ const ROW_ELEMENT_BY_LABEL = {
   'た': 'thunder', 'タ': 'thunder',
   'な': 'heal',    'ナ': 'heal',
   'は': 'wind',    'ハ': 'wind',
-  'ま': 'earth',   'マ': 'earth',
-  'や': 'star',    'ヤ': 'star',
-  'ら': 'rainbow', 'ラ': 'rainbow',
-  'わ': 'king',    'ワ': 'king',
+  // 火山ゾーンは全て氷系 (ま/や/ら/わ) — 溶岩を冷やす呪文 (2026-04-21 ユーザー指示)
+  'ま': 'ice',     'マ': 'ice',
+  'や': 'ice',     'ヤ': 'ice',
+  'ら': 'ice',     'ラ': 'ice',
+  'わ': 'ice',     'ワ': 'ice',
 };
 // 属性ごとのパレット (core=中心色, aura=外周, glow=box-shadow)
 const MAGIC_COLORS = {
