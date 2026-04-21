@@ -6905,15 +6905,47 @@ function enterPractice(rowIndex) {
 }
 
 function returnToSelect() {
-  exitRowPractice();
-  if (writer) { writer.cancelQuiz(); }
+  // ── 堅牢版 (2026-04-21): 戦闘/パズル/紙芝居/タイトル、どの画面から呼ばれても
+  //    確実に行選択画面に戻せるように全状態をアグレッシブにリセットする ──
+  // ① アクティブフラグを先に落として、タイマー/アニメのコールバックを早期 return させる
+  _rowPracticeActive = false;
+  _rowPracticePhase = '';
+  if (writer) { try { writer.cancelQuiz(); } catch (e) {} }
+  try { exitRowPractice(); } catch (e) {}
+  try { _hideBattleStage(); } catch (e) {}
+  try { _hidePuzzleStage(); } catch (e) {}
+
+  // ② 残留オーバーレイ (単語コンテキスト / 勝利バナー等) を物理的に除去
+  try {
+    document.querySelectorAll('#wordContextWrap, #_story-overlay, #_new-confirm-ov').forEach(function(el) {
+      el.remove();
+    });
+  } catch (e) {}
+
+  // ③ バトル専用クラスを確実に剥がす (landscape で battle-stage が position:fixed になる CSS の副作用を断つ)
+  document.body.classList.remove('battle-mode', 'battle-intro-active');
+
+  // ④ 全スクリーンを inline style + class 両面から非表示にする
   _currentScreen = 'select';
-  document.getElementById('app').style.display = 'none';
+  var _hideScreens = ['app', 'titleScreen', 'storyScreen', 'splashScreen', 'mapScene'];
+  _hideScreens.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'none';
+    el.classList.add('hidden');
+  });
+
+  // ⑤ 行選択画面を表示
   var rowEl = document.getElementById('rowSelectScreen');
-  rowEl.classList.remove('hidden'); rowEl.style.display = '';
-  buildRowSelectScreen();
-  // 行選択画面ではフィールド (map) BGM。バトル終了後の余韻もあるので短めフェードで切替。
-  try { setBgmFor('map'); } catch (e) {}
+  if (rowEl) { rowEl.classList.remove('hidden'); rowEl.style.display = ''; }
+  try { buildRowSelectScreen(); } catch (e) {}
+
+  // ⑥ BGM を確実にマップ系へ切替 (_bgmKind === 'map' 同一判定で早期 return されるのを防ぐため先に null)
+  try {
+    _bgmKind = null;
+    bgmStarted = false;
+    setBgmFor('map');
+  } catch (e) {}
 }
 
 // ===== How To Play (毎回1文字目に表示) =====
@@ -8035,6 +8067,27 @@ function goToPracticeDirect(rowIndex) {
   document.getElementById('rowSelectScreen').classList.add('hidden');
   enterPractice(rowIndex);
 }
+// 「行を選び直す」reload フラグ (2026-04-21): returnToSelect が状態復元に失敗した時の
+// 最終フォールバック。splash/title/story を全て飛ばしていきなり行選択へ。
+(function _handleGotoSelectFlag() {
+  try {
+    if (sessionStorage.getItem('pono_goto_select') !== '1') return;
+    sessionStorage.removeItem('pono_goto_select');
+    function _apply() {
+      ['splashScreen', 'titleScreen', 'storyScreen', 'app', 'mapScene'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.style.display = 'none'; el.classList.add('hidden'); }
+      });
+      try { goToRowSelect(); } catch (e) {}
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _apply, { once: true });
+    } else {
+      _apply();
+    }
+  } catch (e) {}
+})();
+
 (function wireTitleScreen() {
   var newBtn = document.getElementById('titleBtnNew');
   var contBtn = document.getElementById('titleBtnContinue');
@@ -8299,7 +8352,25 @@ initMenu({
   extraButtons: [{
     icon: '⬅️',
     label: 'ぎょうを えらびなおす',
-    onClick: function() { try { returnToSelect(); } catch (e) {} }
+    onClick: function() {
+      // returnToSelect が想定外の状態で失敗した場合でも確実に戻れるよう
+      // sessionStorage フラグ + reload を最終フォールバックに用意
+      try {
+        returnToSelect();
+        // 1フレーム待って実際に行選択画面が見えているか検証。見えていなければ reload。
+        setTimeout(function() {
+          var rs = document.getElementById('rowSelectScreen');
+          var visible = rs && !rs.classList.contains('hidden') && rs.offsetParent !== null;
+          if (!visible) {
+            try { sessionStorage.setItem('pono_goto_select', '1'); } catch (e) {}
+            location.reload();
+          }
+        }, 80);
+      } catch (e) {
+        try { sessionStorage.setItem('pono_goto_select', '1'); } catch (e2) {}
+        location.reload();
+      }
+    }
   }]
 });
 </script>
