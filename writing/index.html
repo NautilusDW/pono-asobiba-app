@@ -5554,6 +5554,14 @@ function battleHitEnemy(opts) {
   if (star) star.classList.add('lit');
   _renderHpBar(_battle.hp, _battle.maxHp);
 
+  // ドラクエ風ログ: 「ゆうしゃのこうげき！」告知 (finisher は battleVictory 側の「たおした！」に任せる)
+  const _enemyNameForLog = (_battle.enemy && _battle.enemy.name) || 'てき';
+  if (!isFinisher) {
+    try {
+      _setBattleLog(['ゆうしゃの こうげき！', ''], { line1Class: 'dmg-line' });
+    } catch (e) { /* ignore */ }
+  }
+
   // 着弾フェーズ: シェイク + 被弾音 + ダメージ数字 + 敵セリフ
   const doImpact = function() {
     if (!_battle.active) return;
@@ -5584,6 +5592,14 @@ function battleHitEnemy(opts) {
     }
     const dmg = isFinisher ? 999 : (20 + Math.floor(Math.random() * 12));
     _popDamage(dmg, { finisher: isFinisher });
+    if (!isFinisher) {
+      try {
+        _setBattleLog(
+          ['ゆうしゃの こうげき！', _enemyNameForLog + 'に ダメージを あたえた！'],
+          { line1Class: 'dmg-line', line2Class: 'dmg-line' }
+        );
+      } catch (e) { /* ignore */ }
+    }
     if (!isFinisher && _battle.enemy && _battle.enemy.taunts) {
       const ts = _battle.enemy.taunts;
       if (Math.random() < 0.5) _showEnemySpeech(ts[Math.floor(Math.random() * ts.length)], 1400);
