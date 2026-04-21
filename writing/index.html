@@ -527,6 +527,46 @@ html, body {
 .milestone-modal.hidden { display: none; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* 宝箱オープニング演出 */
+@keyframes treasureDropIn {
+  0%   { transform: translateY(-60vh) scale(0.8) rotate(-8deg); opacity: 0; }
+  60%  { transform: translateY(6%) scale(1.05) rotate(2deg); opacity: 1; }
+  80%  { transform: translateY(-3%) scale(0.98) rotate(-1deg); }
+  100% { transform: translateY(0) scale(1) rotate(0); opacity: 1; }
+}
+@keyframes treasureWobble {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-4px) rotate(1.5deg); }
+}
+@keyframes treasureOpenShake {
+  0%   { transform: translateY(0) rotate(0); }
+  25%  { transform: translateY(-6px) rotate(-3deg) scale(1.05); }
+  55%  { transform: translateY(2px) rotate(2deg) scale(0.98); }
+  100% { transform: translateY(0) rotate(0) scale(1); }
+}
+@keyframes burstGlow {
+  0%   { transform: scale(0.1); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes burstRaysSpin {
+  from { transform: rotate(0); opacity: 1; }
+  to   { transform: rotate(180deg); opacity: 0; }
+}
+@keyframes gearRise {
+  0%   { transform: translate(-50%, 20%) scale(0.3); opacity: 0; }
+  50%  { transform: translate(-50%, -90%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -75%) scale(1); opacity: 1; }
+}
+@keyframes gearFloat {
+  0%, 100% { transform: translate(-50%, -75%) scale(1); }
+  50%      { transform: translate(-50%, -80%) scale(1.03); }
+}
+@keyframes hintPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.85; }
+  50%      { transform: translateX(-50%) scale(1.12); opacity: 1; }
+}
+
 .milestone-card {
   background: var(--window-bg);
   border: 2.5px solid var(--window-border);
@@ -1747,6 +1787,52 @@ body.battle-mode .villain-deco {
   0%   { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
   50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 28px rgba(200,140,250,0.95); }
   100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
+}
+/* な行: ひのとりの なぞなぞ (riddle)。夕焼け空+炎の揺らぎ */
+.puzzle-bg-riddle {
+  background: linear-gradient(180deg, #3a1628 0%, #7a2a18 55%, #c66020 100%);
+}
+.puzzle-bg-riddle::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,180,80,0.25) 0%, transparent 55%),
+    radial-gradient(circle at 30% 70%, rgba(255,120,40,0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.plank.plank-riddle {
+  background:
+    radial-gradient(circle at 50% 40%, #FFE068 0%, #F59E0B 55%, #B54800 100%);
+  border: 2px solid #5B1F00;
+  color: #FFFAE0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,240,160,0.55);
+  border-radius: 50%;
+}
+.plank.plank-riddle.placed {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 20px rgba(255,170,60,0.9), inset 0 2px 4px rgba(255,240,160,0.6);
+}
+.plank.plank-riddle.finisher {
+  animation: riddleGlow 1.1s ease-in-out 0.1s 2;
+}
+@keyframes riddleGlow {
+  0%   { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(255,170,60,0); }
+  50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 34px rgba(255,200,80,1); }
+  100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(255,170,60,0); }
+}
+/* ひのとり (placeholder: 絵文字運用。将来 char_firebird_idle.png に差し替え) */
+@keyframes phoenixFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-10px) scale(1.06); }
+}
+@keyframes praisePop {
+  0%   { transform: translate(-50%, -20px) scale(0.3); opacity: 0; }
+  60%  { transform: translate(-50%, 0) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
 }
 /* ら行: 溶岩の飛び石 (lava_step)。黒岩+赤グロー+マグマの床 */
 .puzzle-bg-lava_step {
@@ -5570,9 +5656,9 @@ function _hideBattleStage() {
 const PUZZLE_ROWS = {
   'か': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['か','き','く','け','こ'] },
   'カ': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['カ','キ','ク','ケ','コ'] },
-  // な行: 洞窟の祠にある「ふういん の せきばん」5枚。1文字ずつ書いて封印を解く。
-  'な': { kind: 'tablet',    title: 'せきばんの ふういん',   hint: 'せきばんに もじを かいて ふういんを とこう！', chars: ['な','に','ぬ','ね','の'] },
-  'ナ': { kind: 'tablet',    title: 'せきばんの ふういん',   hint: 'せきばんに もじを かいて ふういんを とこう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  // な行: ひのとりが出す「3択なぞなぞ」。1文字書く → ひのとりが問題 → 3つから選ぶ。
+  'な': { kind: 'riddle',    title: 'ひのとりの なぞなぞ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['な','に','ぬ','ね','の'] },
+  'ナ': { kind: 'riddle',    title: 'ヒノトリの ナゾナゾ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
   // ら行: 火山の溶岩の上にかかる「とびいし」5つ。1文字ずつ書いて道を作る。
   'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ら','り','る','れ','ろ'] },
   'ラ': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ラ','リ','ル','レ','ロ'] },
@@ -5605,6 +5691,7 @@ function _showPuzzleStage(rowLabel) {
     bridge:    ['もじを なぞって', 'はしを なおそう！'],
     tablet:    ['もじを なぞって', 'せきばんの ふういんを とこう！'],
     lava_step: ['もじを なぞって', 'ようがんを わたろう！'],
+    riddle:    ['もじを かいて', 'なぞなぞに こたえよう！'],
   };
   try {
     const lines = _puzzleIntro[def.kind] || ['もじを なぞって', 'パズルを とこう！'];
@@ -5617,7 +5704,7 @@ function _showPuzzleStage(rowLabel) {
   // 背景・板スタイルを kind に応じて切り替え (bridge / tablet / lava_step)。
   // 既存の puzzle-bg-bridge に加え、puzzle-bg-tablet / puzzle-bg-lava_step を用意。
   if (els.stage) {
-    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step', 'fixed');
+    els.stage.classList.remove('puzzle-bg-bridge', 'puzzle-bg-tablet', 'puzzle-bg-lava_step', 'puzzle-bg-riddle', 'fixed');
     els.stage.classList.add('puzzle-bg-' + def.kind);
   }
 
@@ -5653,6 +5740,84 @@ function _hidePuzzleStage() {
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
+}
+
+// ===== な行: ひのとりの 3択なぞなぞ =====
+// 各文字で 1問。正解で次の字へ、不正解はシェイク+再試行 (ゲームオーバー無し、子供のペース)。
+// 絵文字データは CHAR_WORDS (L3397-) と同じ語を流用。
+const RIDDLES = {
+  'な': { question: '「な」で はじまるのは どれ？', correct: { emoji: '🍐', word: 'なし' },        wrong: [{ emoji: '🍎', word: 'りんご' }, { emoji: '🍌', word: 'ばなな' }] },
+  'に': { question: '「に」で はじまるのは どれ？', correct: { emoji: '🐓', word: 'にわとり' },    wrong: [{ emoji: '🐶', word: 'いぬ' },   { emoji: '🐱', word: 'ねこ' }] },
+  'ぬ': { question: '「ぬ」で はじまるのは どれ？', correct: { emoji: '🧸', word: 'ぬいぐるみ' },  wrong: [{ emoji: '⏰', word: 'とけい' }, { emoji: '📕', word: 'ほん' }] },
+  'ね': { question: '「ね」で はじまるのは どれ？', correct: { emoji: '🐱', word: 'ねこ' },        wrong: [{ emoji: '🐰', word: 'うさぎ' }, { emoji: '🐸', word: 'かえる' }] },
+  'の': { question: '「の」で はじまるのは どれ？', correct: { emoji: '🚗', word: 'のりもの' },    wrong: [{ emoji: '🍚', word: 'ごはん' }, { emoji: '🏠', word: 'いえ' }] },
+  'ナ': { question: '「ナ」で はじまるのは どれ？', correct: { emoji: '🍆', word: 'ナス' },        wrong: [{ emoji: '🍎', word: 'リンゴ' }, { emoji: '🍌', word: 'バナナ' }] },
+  'ニ': { question: '「ニ」で はじまるのは どれ？', correct: { emoji: '🥕', word: 'ニンジン' },    wrong: [{ emoji: '🍞', word: 'パン' },   { emoji: '🥛', word: 'ミルク' }] },
+  'ヌ': { question: '「ヌ」で はじまるのは どれ？', correct: { emoji: '🍜', word: 'ヌードル' },    wrong: [{ emoji: '🍣', word: 'スシ' },   { emoji: '🍩', word: 'ドーナツ' }] },
+  'ネ': { question: '「ネ」で はじまるのは どれ？', correct: { emoji: '👔', word: 'ネクタイ' },    wrong: [{ emoji: '🎩', word: 'ボウシ' }, { emoji: '👟', word: 'スニーカー' }] },
+  'ノ': { question: '「ノ」で はじまるのは どれ？', correct: { emoji: '📓', word: 'ノート' },      wrong: [{ emoji: '📕', word: 'ホン' },   { emoji: '✏️', word: 'エンピツ' }] },
+};
+
+function _showRiddle(char, onCorrect) {
+  const r = RIDDLES[char];
+  if (!r) { if (onCorrect) onCorrect(); return; }
+  const options = [r.correct].concat(r.wrong);
+  // シャッフル (Fisher-Yates)
+  for (let i = options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = options[i]; options[i] = options[j]; options[j] = tmp;
+  }
+  const correctWord = r.correct.word;
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1680;background:radial-gradient(ellipse at 50% 30%,rgba(255,140,60,0.28) 0%,rgba(10,5,18,0.88) 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn 0.4s ease;padding:20px;';
+
+  const phoenix = document.createElement('div');
+  phoenix.textContent = '🔥🐦';
+  phoenix.style.cssText = 'font-size:3.8rem;margin-bottom:12px;filter:drop-shadow(0 0 22px rgba(255,180,80,0.85));animation:phoenixFloat 1.8s ease-in-out infinite;';
+  ov.appendChild(phoenix);
+
+  const bubble = document.createElement('div');
+  bubble.textContent = r.question;
+  bubble.style.cssText = 'background:linear-gradient(180deg,rgba(255,245,210,0.98),rgba(255,220,160,0.96));color:#5a2f08;font-size:1.2rem;font-weight:900;padding:16px 24px;border-radius:22px;border:3px solid #8B4513;box-shadow:0 6px 22px rgba(0,0,0,0.6);margin-bottom:26px;max-width:90vw;text-align:center;line-height:1.5;';
+  ov.appendChild(bubble);
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:95vw;';
+  options.forEach(function(opt) {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'background:linear-gradient(180deg,#fffdf2,#ffe8b8);border:4px solid #C68E3A;border-radius:22px;padding:14px 10px 10px;cursor:pointer;font-family:inherit;width:26vw;max-width:120px;min-width:90px;box-shadow:0 6px 14px rgba(0,0,0,0.45),inset 0 2px 6px rgba(255,255,255,0.7);display:flex;flex-direction:column;align-items:center;transition:transform 0.15s ease;';
+    btn.innerHTML = '<div style="font-size:2.9rem;line-height:1;margin-bottom:6px;">' + opt.emoji + '</div>' +
+                    '<div style="font-size:0.88rem;font-weight:900;color:#5a2f08;">' + opt.word + '</div>';
+    btn.addEventListener('click', function() {
+      if (opt.word === correctWord) {
+        btn.style.background = 'linear-gradient(180deg,#fff9c4,#ffe066)';
+        btn.style.transform = 'scale(1.14)';
+        btn.style.boxShadow = '0 0 34px rgba(255,220,80,0.95),0 6px 14px rgba(0,0,0,0.45)';
+        row.querySelectorAll('button').forEach(function(b) { if (b !== btn) { b.style.opacity = '0.25'; b.disabled = true; } });
+        try { if (typeof window.playFanfare === 'function') window.playFanfare(); } catch (e) {}
+        const praise = document.createElement('div');
+        praise.textContent = 'せいかい！';
+        praise.style.cssText = 'position:absolute;top:14%;left:50%;transform:translateX(-50%);font-size:2.2rem;font-weight:900;color:#FFEB50;text-shadow:0 0 16px rgba(255,200,80,0.95),0 3px 6px rgba(0,0,0,0.75);animation:praisePop 0.65s cubic-bezier(0.3,1.6,0.5,1);';
+        ov.appendChild(praise);
+        setTimeout(function() {
+          ov.style.transition = 'opacity 0.4s ease';
+          ov.style.opacity = '0';
+          setTimeout(function() { ov.remove(); if (onCorrect) onCorrect(); }, 400);
+        }, 1150);
+      } else {
+        btn.style.animation = 'wrongShake 0.45s ease';
+        btn.style.background = 'linear-gradient(180deg,#ffd4d4,#f08080)';
+        setTimeout(function() {
+          btn.style.animation = '';
+          btn.style.background = 'linear-gradient(180deg,#fffdf2,#ffe8b8)';
+        }, 700);
+      }
+    });
+    row.appendChild(btn);
+  });
+  ov.appendChild(row);
+  document.body.appendChild(ov);
 }
 
 function _puzzleRevealPlank(opts) {
@@ -7351,18 +7516,103 @@ function grantGear(kind, onDone) {
   try { renderEquipRow(); } catch (e) {}
   const m = GEAR_META[kind];
   if (!m) { if (onDone) onDone(); return; }
-  // 画像が未着でも破綻しないよう onerror で既存画像へフォールバック。両方無ければ emoji。
-  const imgHtml =
-    '<img src="' + m.img + '"' +
-    ' onerror="this.onerror=function(){this.onerror=null;this.style.display=\'none\';var e=document.createElement(\'div\');e.style.fontSize=\'3.2rem\';e.textContent=\'' + m.emoji + '\';this.parentNode.insertBefore(e,this);};this.src=\'' + m.fallback + '\';"' +
-    ' class="gear-granted-img" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(255,220,130,0.7));margin-bottom:8px;">';
-  _presentBattleModal({
-    icon: '✨',
-    title: 'てに いれた！',
-    body: imgHtml + '<br><strong style="font-size:1.15rem;color:#FFD86A;">' + m.name + '</strong>',
-    button: 'つぎへ',
-    next: onDone
+  // 宝箱オープニング演出: 閉じた宝箱 → タップ → 開く + 金色バースト + 神器浮上
+  _showTreasureBoxReveal(m, function() {
+    const imgHtml =
+      '<img src="' + m.img + '"' +
+      ' onerror="this.onerror=function(){this.onerror=null;this.style.display=\'none\';var e=document.createElement(\'div\');e.style.fontSize=\'3.2rem\';e.textContent=\'' + m.emoji + '\';this.parentNode.insertBefore(e,this);};this.src=\'' + m.fallback + '\';"' +
+      ' class="gear-granted-img" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(255,220,130,0.7));margin-bottom:8px;">';
+    _presentBattleModal({
+      icon: '✨',
+      title: 'てに いれた！',
+      body: imgHtml + '<br><strong style="font-size:1.15rem;color:#FFD86A;">' + m.name + '</strong>',
+      button: 'つぎへ',
+      next: onDone
+    });
   });
+}
+
+// 宝箱が降ってきて → タップで開く → 金色の光と共に神器が浮き上がる演出。
+// m: GEAR_META のエントリ, onComplete: 演出終了時のコールバック
+function _showTreasureBoxReveal(m, onComplete) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1650;background:radial-gradient(ellipse at center,rgba(60,30,80,0.55) 0%,rgba(5,5,15,0.85) 75%);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.3s ease;';
+
+  const stage = document.createElement('div');
+  stage.style.cssText = 'position:relative;width:min(90vw,360px);height:min(90vw,360px);display:flex;align-items:center;justify-content:center;';
+
+  // 宝箱本体 (最初は閉じ状態、タップで開く)
+  const box = document.createElement('img');
+  box.src = '../assets/images/items/treasure_closed.png';
+  box.style.cssText = 'width:58%;object-fit:contain;image-rendering:pixelated;cursor:pointer;animation:treasureDropIn 0.6s cubic-bezier(0.3,1.6,0.5,1),treasureWobble 1.1s ease-in-out 0.7s infinite;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.7));position:relative;z-index:3;';
+  stage.appendChild(box);
+
+  // タップ誘導ヒント
+  const hint = document.createElement('div');
+  hint.textContent = 'タップして あけよう！';
+  hint.style.cssText = 'position:absolute;bottom:6%;left:50%;transform:translateX(-50%);color:#FFE68A;font-size:1.05rem;font-weight:900;text-shadow:0 0 12px rgba(255,200,80,0.7),0 2px 4px rgba(0,0,0,0.8);letter-spacing:0.05em;animation:hintPulse 1.2s ease-in-out 0.7s infinite;z-index:4;';
+  stage.appendChild(hint);
+
+  ov.appendChild(stage);
+  document.body.appendChild(ov);
+
+  let opened = false;
+  function openBox() {
+    if (opened) return;
+    opened = true;
+    try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+
+    hint.style.display = 'none';
+    box.src = '../assets/images/items/treasure_open.png';
+    box.style.animation = 'treasureOpenShake 0.35s ease-out';
+    box.style.cursor = 'default';
+
+    // 金色の放射バースト (SVG)
+    const burst = document.createElement('div');
+    burst.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;';
+    burst.innerHTML =
+      '<div style="position:absolute;width:70%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,240,150,0.95) 0%,rgba(255,200,60,0.5) 40%,rgba(255,160,40,0) 75%);animation:burstGlow 1.4s ease-out forwards;"></div>' +
+      '<svg viewBox="0 0 200 200" style="position:absolute;width:100%;height:100%;animation:burstRaysSpin 2.6s linear forwards;">' +
+        Array.from({length: 12}).map(function(_, i) {
+          const angle = i * 30;
+          return '<rect x="98" y="8" width="4" height="84" fill="rgba(255,235,140,0.85)" transform="rotate(' + angle + ' 100 100)">' +
+                 '<animate attributeName="opacity" values="0;1;0" dur="1.4s" begin="0s" fill="freeze"/></rect>';
+        }).join('') +
+      '</svg>';
+    stage.insertBefore(burst, box);
+
+    // 神器を宝箱から浮き上がらせる
+    const gear = document.createElement('img');
+    gear.src = m.img;
+    gear.onerror = function() {
+      gear.onerror = function() {
+        gear.onerror = null;
+        gear.style.display = 'none';
+        const fb = document.createElement('div');
+        fb.textContent = m.emoji;
+        fb.style.cssText = gear.style.cssText + ';font-size:5rem;display:flex;align-items:center;justify-content:center;';
+        stage.appendChild(fb);
+      };
+      gear.src = m.fallback;
+    };
+    gear.style.cssText = 'position:absolute;width:32%;max-width:150px;object-fit:contain;image-rendering:pixelated;z-index:4;top:50%;left:50%;transform:translate(-50%,20%) scale(0.3);opacity:0;filter:drop-shadow(0 0 24px rgba(255,230,130,1)) drop-shadow(0 0 8px rgba(255,255,200,0.9));animation:gearRise 1.2s cubic-bezier(0.2,1.4,0.4,1) 0.15s forwards,gearFloat 2s ease-in-out 1.35s infinite;';
+    stage.appendChild(gear);
+
+    // 2.3s 後に自動で次のモーダルへ
+    setTimeout(function() {
+      ov.style.transition = 'opacity 0.35s ease-out';
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        ov.remove();
+        if (onComplete) onComplete();
+      }, 350);
+    }, 2300);
+  }
+  box.addEventListener('click', openBox);
+  box.addEventListener('touchstart', function(e) { e.preventDefault(); openBox(); }, { passive: false });
+
+  // 8秒経っても開けない場合は自動オープン (子どもが迷った時の保険)
+  setTimeout(function() { if (!opened) openBox(); }, 8000);
 }
 
 // ===== 幕クリアバナー =====
@@ -7552,6 +7802,23 @@ function _rowPracticeNextChar() {
           // 謎解き行 (か/カ 等): 板を1枚出して次へ。5枚目はフィニッシャーでお祝い。
           if (_puzzle.active) {
             try { _puzzleRevealPlank({ finisher: isFinisher }); } catch (e) {}
+            // な行 (riddle): 文字を書いた直後にひのとりの3択なぞなぞを出題。
+            // 正解で次の字へ。不正解はシェイク+再試行 (_showRiddle 内部で処理)。
+            if (_puzzle.kind === 'riddle') {
+              var _riddleChar = _puzzle.chars[_puzzle.step];
+              var _riddleAdvance = function() {
+                _puzzle.step++;
+                _rowPracticeStep++;
+                _rowPracticeNextChar();
+              };
+              setTimeout(function() {
+                _showRiddle(_riddleChar, function() {
+                  if (isFinisher) setTimeout(_riddleAdvance, 700);
+                  else _riddleAdvance();
+                });
+              }, 850);
+              return;
+            }
             // 橋フィニッシャー演出シーケンス (2026-04-21):
             //   板消し(0.4s) + 交互点滅(0.8s) + 閃光(1.1s) + 待機(0.9s) + 渡りアニメ(2.2s)
             //   = 約 5.4s。マージンを足して 5800ms 待つ。
