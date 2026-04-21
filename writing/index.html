@@ -1935,6 +1935,16 @@ body.battle-mode .villain-deco {
   pointer-events: none;
 }
 
+/* lava_step は puzzle-planks をステージ全面に拡張 (3択ゾーンと道ゾーンを絶対配置するため) */
+.puzzle-bg-lava_step .puzzle-planks {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  transform: none;
+  display: block;
+  padding: 0;
+  gap: 0;
+}
+
 /* ようがんゴーレム背景演出 (絵文字運用、攻撃はせず威圧のみ) */
 .lava-golem-bg {
   position: absolute; top: 14%; right: 6%;
@@ -5917,26 +5927,55 @@ function _showPuzzleStage(rowLabel) {
     els.stage.classList.add('puzzle-bg-' + def.kind);
   }
 
+  // 前回ぶんの lava_step 用ゴーレム残骸を掃除
+  if (els.stage) {
+    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst').forEach(function(n) { n.remove(); });
+  }
+
   // 板5枚を生成 (初期は非表示 .plank = opacity:0)
   if (els.planks) {
     els.planks.innerHTML = '';
-    def.chars.forEach(function(ch, idx) {
-      if (def.kind === 'riddle') {
-        // 石板ペデスタル: 5枚の石板を五芒星配置でスロットに配置。
-        // tablet_1..5.png を番号順に割り当て、文字はテキストオーバーレイ。
-        const p = document.createElement('div');
-        p.className = 'plank plank-riddle tablet-slot-' + idx;
-        p.innerHTML =
-          '<img class="tablet-bg" src="../assets/images/puzzle/tablet/tablet_' + (idx + 1) + '.png" alt="">' +
-          '<span class="tablet-char">' + ch + '</span>';
-        els.planks.appendChild(p);
-      } else {
-        const p = document.createElement('span');
-        p.className = 'plank plank-' + def.kind;
-        p.textContent = ch;
-        els.planks.appendChild(p);
-      }
-    });
+    if (def.kind === 'lava_step') {
+      // ら行: 3択ゾーン (上部、毎ラウンド書き換え) + 固定道ゾーン (下部、正解が積み上がる)
+      const chooseZone = document.createElement('div');
+      chooseZone.className = 'lava-choose-zone';
+      els.planks.appendChild(chooseZone);
+      const pathZone = document.createElement('div');
+      pathZone.className = 'lava-path-zone';
+      def.chars.forEach(function(ch, idx) {
+        const slot = document.createElement('div');
+        slot.className = 'lava-path-slot lava-path-slot-' + idx;
+        slot.innerHTML = '<span class="stone-emoji" style="font-size:1em;line-height:1;">🪨</span>' +
+                         '<span class="lava-path-char">' + ch + '</span>';
+        pathZone.appendChild(slot);
+      });
+      els.planks.appendChild(pathZone);
+      // ゴーレム (背景、絵文字運用)
+      const golem = document.createElement('div');
+      golem.className = 'lava-golem-bg';
+      golem.textContent = '🗿';
+      if (els.stage) els.stage.appendChild(golem);
+      // 初回の3択石を出す
+      _spawnLavaChoice();
+    } else {
+      def.chars.forEach(function(ch, idx) {
+        if (def.kind === 'riddle') {
+          // 石板ペデスタル: 5枚の石板を五芒星配置でスロットに配置。
+          // tablet_1..5.png を番号順に割り当て、文字はテキストオーバーレイ。
+          const p = document.createElement('div');
+          p.className = 'plank plank-riddle tablet-slot-' + idx;
+          p.innerHTML =
+            '<img class="tablet-bg" src="../assets/images/puzzle/tablet/tablet_' + (idx + 1) + '.png" alt="">' +
+            '<span class="tablet-char">' + ch + '</span>';
+          els.planks.appendChild(p);
+        } else {
+          const p = document.createElement('span');
+          p.className = 'plank plank-' + def.kind;
+          p.textContent = ch;
+          els.planks.appendChild(p);
+        }
+      });
+    }
   }
 
   els.stage.style.display = '';
@@ -5954,11 +5993,18 @@ function _hidePuzzleStage() {
   _puzzle.kind = null;
   _puzzle.step = 0;
   _puzzle.chars = [];
+  // ら行の一時ラウンド状態もクリア
+  try {
+    _lavaRound.correctEl = null;
+    _lavaRound.revealed = false;
+    _lavaRound.advancing = false;
+    _lavaRound.onAdvance = null;
+  } catch (e) {}
   if (!els.stage) return;
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
   els.stage.classList.remove('complete');
-  els.stage.querySelectorAll('.pedestal-burst').forEach(function(b) { b.remove(); });
+  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg').forEach(function(b) { b.remove(); });
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
@@ -6040,6 +6086,82 @@ function _showRiddle(char, onCorrect) {
   });
   ov.appendChild(row);
   document.body.appendChild(ov);
+}
+
+// ===== ら行: ようがんのとびいし (呪文で本物を見抜く) =====
+// _spawnLavaChoice(): 3つの石をランダム配置で生成。1つだけ data-correct=1。
+// _revealLavaStones(): 呪文発動。全石の真偽を見える化。
+// _onLavaStoneTap(): 石がタップされた時の分岐。正解=solidify→道スロットに埋める→次ラウンド
+//   不正解=sink して残りの石から選び直し (呪文効果は残る、再トレース不要)。
+// _lavaRound: 当ラウンドの一時状態 (正解エレメント参照と finisher フラグ)。
+const _lavaRound = { correctEl: null, revealed: false, advancing: false, onAdvance: null };
+
+function _spawnLavaChoice() {
+  const stage = document.getElementById('puzzleStage');
+  if (!stage) return;
+  const zone = stage.querySelector('.lava-choose-zone');
+  if (!zone) return;
+  zone.innerHTML = '';
+  _lavaRound.correctEl = null;
+  _lavaRound.revealed = false;
+  const correctPos = Math.floor(Math.random() * 3);
+  for (let i = 0; i < 3; i++) {
+    const stone = document.createElement('div');
+    stone.className = 'lava-choose-stone';
+    stone.dataset.correct = (i === correctPos) ? '1' : '0';
+    stone.innerHTML = '🪨';
+    stone.addEventListener('click', function() { _onLavaStoneTap(stone); });
+    zone.appendChild(stone);
+    if (i === correctPos) _lavaRound.correctEl = stone;
+  }
+}
+
+function _revealLavaStones() {
+  const stage = document.getElementById('puzzleStage');
+  if (!stage) return;
+  const stones = stage.querySelectorAll('.lava-choose-stone');
+  stones.forEach(function(s) {
+    if (s.classList.contains('sink') || s.classList.contains('solidify')) return;
+    if (s.dataset.correct === '1') s.classList.add('revealed-real');
+    else                            s.classList.add('revealed-fake');
+  });
+  _lavaRound.revealed = true;
+}
+
+function _onLavaStoneTap(stone) {
+  // 呪文未発動 → タップ無効 (安全側で 1/3 ガチャを避ける)
+  if (!_lavaRound.revealed) return;
+  if (_lavaRound.advancing) return;
+  if (stone.classList.contains('sink') || stone.classList.contains('solidify')) return;
+  if (stone.dataset.correct === '1') {
+    // 正解: 石を固めて消し、道スロットを埋める → 次ラウンドへ
+    _lavaRound.advancing = true;
+    stone.classList.add('solidify');
+    const idx = _puzzle.step;
+    // 道スロットを埋める
+    const stage = document.getElementById('puzzleStage');
+    if (stage) {
+      const slot = stage.querySelector('.lava-path-slot-' + idx);
+      if (slot) setTimeout(function() { slot.classList.add('filled'); }, 220);
+    }
+    // 次のラウンドへ引き渡し
+    setTimeout(function() {
+      const cb = _lavaRound.onAdvance;
+      _lavaRound.onAdvance = null;
+      _lavaRound.advancing = false;
+      if (typeof cb === 'function') cb();
+    }, 650);
+  } else {
+    // 不正解: 石が沈む。残りの石はそのまま (呪文効果は持続)。
+    // 再トレースは要求せず、残りから選び直し可能。
+    stone.classList.add('sink');
+    // チャプン SFX があれば鳴らす (任意、失敗しても無視)
+    try {
+      if (typeof window !== 'undefined' && typeof window.PONO_STROKE_SFX === 'undefined') {
+        // no-op
+      }
+    } catch (e) {}
+  }
 }
 
 function _puzzleRevealPlank(opts) {
@@ -8054,6 +8176,39 @@ function _rowPracticeNextChar() {
                   }
                 });
               }, 850);
+              return;
+            }
+            // ら行 (lava_step): 文字をなぞる=呪文発動 → 3つの石の真偽が見える →
+            // 本物タップで固まって道に → 次へ。偽物タップは沈むだけで残石から選び直し可。
+            if (_puzzle.kind === 'lava_step') {
+              var _lavaIsFinisher = isFinisher;
+              _lavaRound.onAdvance = function() {
+                if (_lavaIsFinisher) {
+                  // 5個目正解: ゴーレム退散 + 道5石が順次赤橙グロー + 中央閃光。
+                  var lvStage = _puzzleEls().stage;
+                  if (lvStage) {
+                    lvStage.classList.add('complete');
+                    var lvBurst = document.createElement('div');
+                    lvBurst.className = 'lava-burst';
+                    lvStage.appendChild(lvBurst);
+                    var lvGolem = lvStage.querySelector('.lava-golem-bg');
+                    if (lvGolem) lvGolem.classList.add('retreat');
+                  }
+                  try { playVictoryFanfare(); } catch (e) {}
+                  setTimeout(function() {
+                    _puzzle.step++;
+                    _rowPracticeStep++;
+                    _rowPracticeNextChar();
+                  }, 2200);
+                } else {
+                  _puzzle.step++;
+                  _rowPracticeStep++;
+                  _spawnLavaChoice(); // 次ラウンドの3つの石を用意
+                  _rowPracticeNextChar();
+                }
+              };
+              // 呪文発動 (書き終えた瞬間から少し間を置いて真偽を明らかに)
+              setTimeout(function() { _revealLavaStones(); }, 350);
               return;
             }
             // 橋フィニッシャー演出シーケンス (2026-04-21):

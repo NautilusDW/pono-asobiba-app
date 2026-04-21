@@ -177,7 +177,7 @@ window.FOSSIL_STAGES = [
     fossils: ['Brachiosaurus','Triceratops','Stegosaurus','Pteranodon'] },
   { id: 1, name: 'いせきの さばく', bgStart:'#F5D7A0', bgEnd:'#C49A6C',
     fossils: ['Tyrannosaurus','Raptor','Ankylosaurus','Spinosaurus','Plesiosaur'] },
-  { id: 2, name: 'ゆうやけの さばく', bgStart:'#FFB088','bgEnd':'#E67845',
+  { id: 2, name: 'ゆうやけの さばく', bgStart:'#FFB088', bgEnd:'#E67845',
     fossils: ['Parasaurolophus','Pachycephalosaurus','Allosaurus','Mosasaurus','Dimetrodon','Iguanodon'] }
 ];
 

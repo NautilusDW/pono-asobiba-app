@@ -788,6 +788,56 @@ html, body {
   transition: opacity 0.2s;
 }
 .flash-overlay.on { opacity: 1; }
+
+/* Toast (alert replacement - iOS PWA friendly) */
+.fossil-toast {
+  position: fixed; left: 50%; top: 30%;
+  transform: translate(-50%, -20px);
+  background: rgba(45,30,20,0.95);
+  color: #FFE9B0;
+  padding: 18px 24px;
+  border-radius: 18px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  line-height: 1.5;
+  text-align: center;
+  white-space: pre-line;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 900;
+  max-width: 88%;
+}
+.fossil-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Stage picker (prompt replacement) */
+.stage-pick-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none; align-items: center; justify-content: center;
+  z-index: 880; padding: 20px;
+}
+.stage-pick-overlay.show { display: flex; }
+.stage-pick-card {
+  background: #FFF4D6; border-radius: 22px;
+  padding: 22px 18px; max-width: 360px; width: 94%;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  text-align: center;
+}
+.stage-pick-card h3 { margin: 0 0 12px; color: #6B3B12; }
+.stage-pick-card .sp-btn {
+  display: block; width: 100%;
+  margin: 8px 0; padding: 14px;
+  background: linear-gradient(135deg, #F5C97A, #E8A85C);
+  color: #4A2A0F; border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: bold; cursor: pointer;
+}
+.stage-pick-card .sp-close {
+  margin-top: 10px; padding: 10px 16px;
+  background: #999; color: white; border: none;
+  border-radius: 12px; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -909,6 +959,18 @@ html, body {
     <p>14たい コンプリート！ジオラマを たのしもう！</p>
   </div>
   <div class="museum-row" id="museumRow"></div>
+</div>
+
+<!-- Toast -->
+<div class="fossil-toast" id="fossilToast"></div>
+
+<!-- Stage picker -->
+<div class="stage-pick-overlay" id="stagePickOverlay">
+  <div class="stage-pick-card">
+    <h3>ステージを えらんでね</h3>
+    <div id="stagePickList"></div>
+    <button class="sp-close" id="stagePickClose">とじる</button>
+  </div>
 </div>
 
 <!-- Intro -->
@@ -1437,64 +1499,59 @@ function openDig(fossilId) {
     var w = digStage.clientWidth;
     var h = digStage.clientHeight;
     var dpr = window.devicePixelRatio || 1;
+    var pw = Math.floor(w * dpr), ph = Math.floor(h * dpr);
     [fossilCanvas, sandCanvas].forEach(function(cv){
-      cv.width = Math.floor(w * dpr);
-      cv.height = Math.floor(h * dpr);
+      cv.width = pw;
+      cv.height = ph;
       var c = cv.getContext('2d');
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
     });
 
-    // Draw fossil image onto fossilCanvas
     var fctx = fossilCanvas.getContext('2d');
+    var sctx = sandCanvas.getContext('2d');
     fctx.clearRect(0, 0, w, h);
+
+    // Create digState BEFORE drawing / mask-compute to avoid null-race on cached images
+    digState = {
+      fossilId: fossilId,
+      fctx: fctx, sctx: sctx,
+      w: w, h: h, pw: pw, ph: ph, dpr: dpr,
+      drawing: false,
+      lastX: 0, lastY: 0,
+      maskPoints: null,
+      revealed: 0,
+      maskTotal: 0,
+      lastCheckMs: 0
+    };
+
     var img = getDinoImg(fossilId);
     function drawFossil() {
-      if (!img.complete || !img.naturalWidth) return;
+      if (!digState || !img.complete || !img.naturalWidth) return;
       var iw = img.naturalWidth, ih = img.naturalHeight;
       var scale = Math.min(w*0.85 / iw, h*0.85 / ih);
       var dw = iw * scale, dh = ih * scale;
       fctx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
-      // Compute mask
-      digState.maskPoints = computeMask(fctx, w, h);
+      digState.maskPoints = computeMask(fctx, pw, ph);
     }
     if (img.complete && img.naturalWidth > 0) drawFossil();
     else img.onload = drawFossil;
 
-    // Draw sand onto sandCanvas
-    var sctx = sandCanvas.getContext('2d');
-    sctx.globalCompositeOperation = 'source-over';
     // Sand base gradient
+    sctx.globalCompositeOperation = 'source-over';
     var g = sctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, '#E4C48A');
     g.addColorStop(1, '#B8915A');
     sctx.fillStyle = g;
     sctx.fillRect(0, 0, w, h);
-    // Noise dots
     for (var i = 0; i < 800; i++) {
       var px = Math.random() * w;
       var py = Math.random() * h;
       sctx.fillStyle = 'rgba(120,80,40,' + (0.15 + Math.random()*0.25) + ')';
       sctx.fillRect(px, py, 2 + Math.random()*2, 2 + Math.random()*2);
     }
-    // Slight sparkle highlights
     for (var i = 0; i < 200; i++) {
       sctx.fillStyle = 'rgba(255,240,200,' + (0.08 + Math.random()*0.15) + ')';
       sctx.fillRect(Math.random()*w, Math.random()*h, 1.5, 1.5);
-    }
-
-    digState = {
-      fossilId: fossilId,
-      fctx: fctx, sctx: sctx,
-      w: w, h: h,
-      drawing: false,
-      lastX: 0, lastY: 0,
-      maskPoints: null,
-      revealed: 0,
-      maskTotal: 0
-    };
-
-    if (img.complete && img.naturalWidth > 0) {
-      digState.maskPoints = computeMask(fctx, w, h);
     }
   }, 30);
 
@@ -1502,25 +1559,23 @@ function openDig(fossilId) {
   try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(e) {}
 }
 
-function computeMask(fctx, w, h) {
-  // Sample 40x40 grid of fossil canvas, keep points where alpha > 30
+function computeMask(fctx, pw, ph) {
+  // Sample 40x40 grid on physical canvas. Store point indexes (y*pw+x) so
+  // checkRevealProgress can read them from a single batched getImageData.
   var pts = [];
   try {
-    var img = fctx.getImageData(0, 0, fctx.canvas.width, fctx.canvas.height);
+    var img = fctx.getImageData(0, 0, pw, ph);
     var data = img.data;
-    var iw = img.width, ih = img.height;
     var step = 40;
     for (var yi = 0; yi < step; yi++) {
       for (var xi = 0; xi < step; xi++) {
-        var px = Math.floor(iw * (xi+0.5) / step);
-        var py = Math.floor(ih * (yi+0.5) / step);
-        var idx = (py * iw + px) * 4;
-        if (data[idx+3] > 30) {
-          pts.push({ x: (xi+0.5)/step * w, y: (yi+0.5)/step * h, sampledX: px, sampledY: py });
-        }
+        var px = Math.floor(pw * (xi+0.5) / step);
+        var py = Math.floor(ph * (yi+0.5) / step);
+        var idx = (py * pw + px) * 4;
+        if (data[idx+3] > 30) pts.push(idx);
       }
     }
-  } catch (e) { /* cross-origin? (local should be fine) */ }
+  } catch (e) { /* ignore */ }
   if (digState) digState.maskTotal = pts.length;
   return pts;
 }
@@ -1557,23 +1612,24 @@ function brushAt(ev) {
 
 function checkRevealProgress() {
   if (!digState || !digState.maskPoints) return;
+  // Throttle to avoid full-canvas readbacks on every pointermove
+  var now = performance.now();
+  if (now - (digState.lastCheckMs || 0) < 150) return;
+  digState.lastCheckMs = now;
+
   var sctx = digState.sctx;
-  var total = digState.maskPoints.length;
+  var pts = digState.maskPoints;
+  var total = pts.length;
   if (total === 0) return;
   var cleared = 0;
-  // Sample each mask point's alpha on sandCanvas
-  // Use getImageData per-point with small batch
-  var sandCanvas = document.getElementById('sandCanvas');
-  var dpr = window.devicePixelRatio || 1;
-  for (var i = 0; i < total; i++) {
-    var p = digState.maskPoints[i];
-    var px = Math.floor(p.x * dpr);
-    var py = Math.floor(p.y * dpr);
-    try {
-      var d = sctx.getImageData(px, py, 1, 1).data;
-      if (d[3] < 30) cleared++;
-    } catch (e) { /* ignore */ }
-  }
+  try {
+    // ONE readback covering the whole sand canvas; index directly into the buffer.
+    var img = sctx.getImageData(0, 0, digState.pw, digState.ph);
+    var data = img.data;
+    for (var i = 0; i < total; i++) {
+      if (data[pts[i] + 3] < 30) cleared++;
+    }
+  } catch (e) { return; }
   var ratio = cleared / total;
   digState.revealed = ratio;
 
@@ -1724,19 +1780,17 @@ document.getElementById('recBtn').addEventListener('click', function(){
 
   // Check stage completion
   if (stage && stage.fossils.every(function(f){ return f.dug; })) {
-    // Advance to next stage if any
     var next = currentStageIdx + 1;
     if (next < STAGES.length) {
       setTimeout(function(){
-        alert('ステージ ' + (currentStageIdx+1) + ' クリア！\nつぎの さばくへ いこう！');
-        loadStage(next);
+        showToast('ステージ ' + (currentStageIdx+1) + ' クリア！\nつぎの さばくへ いこう！', 1800);
+        setTimeout(function(){ loadStage(next); }, 1900);
       }, 200);
     } else {
-      // All stages done - check museum unlock
       if (Object.keys(collection).length >= window.FOSSIL_DATA.length) {
         setTimeout(function(){
-          alert('🎉 14たい ぜんぶ コンプリート！\nきょうりゅうはくぶつかんが オープンしたよ！');
-          openMuseum();
+          showToast('🎉 14たい ぜんぶ コンプリート！\nきょうりゅうはくぶつかんが オープンしたよ！', 2200);
+          setTimeout(function(){ openMuseum(); }, 2300);
         }, 200);
       } else {
         showArrows();
@@ -1747,6 +1801,17 @@ document.getElementById('recBtn').addEventListener('click', function(){
     updateRadarDigBtn();
   }
 });
+
+// Toast helper (replaces alert for iOS PWA fullscreen safety)
+var _toastTimer = null;
+function showToast(msg, durationMs) {
+  var el = document.getElementById('fossilToast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, durationMs || 1500);
+}
 
 // ═══════════════════════════════════════════════════════
 // INDEX (図鑑)
@@ -1924,8 +1989,8 @@ function endQuiz() {
   }
   var msg = 'クイズ おわり！\n' + got + ' / ' + total + ' もん せいかい！';
   if (perfect) msg += '\n🎉 まんてんだよ！すごい！';
-  alert(msg);
-  closeQuiz();
+  showToast(msg, 2500);
+  setTimeout(closeQuiz, 2600);
 }
 
 function closeQuiz() {
@@ -1970,15 +2035,23 @@ function openMuseum() {
 // ═══════════════════════════════════════════════════════
 document.getElementById('btnStageSel').addEventListener('click', function(){
   if (gameState !== 'WORLDMAP') return;
-  var msg = 'ステージを えらんでね\n';
+  var list = document.getElementById('stagePickList');
+  list.innerHTML = '';
   STAGES.forEach(function(s, i){
     var name = (window.FOSSIL_STAGES[i] && window.FOSSIL_STAGES[i].name) || ('ステージ ' + (i+1));
-    msg += (i+1) + '. ' + name + '\n';
+    var btn = document.createElement('button');
+    btn.className = 'sp-btn';
+    btn.textContent = (i+1) + '. ' + name;
+    btn.addEventListener('click', function(){
+      document.getElementById('stagePickOverlay').classList.remove('show');
+      loadStage(i);
+    });
+    list.appendChild(btn);
   });
-  var sel = prompt(msg, String(currentStageIdx+1));
-  if (!sel) return;
-  var n = parseInt(sel, 10);
-  if (n >= 1 && n <= STAGES.length) loadStage(n-1);
+  document.getElementById('stagePickOverlay').classList.add('show');
+});
+document.getElementById('stagePickClose').addEventListener('click', function(){
+  document.getElementById('stagePickOverlay').classList.remove('show');
 });
 
 // ═══════════════════════════════════════════════════════
@@ -2023,7 +2096,7 @@ if (window.initMenu) {
   window.initMenu({
     bgmToggle: function() { /* BGM not implemented for fossil MVP */ },
     tutorial: function() {
-      alert('🦕 あそびかた\n\n1. やじるしで さばくを あるこう\n2. レーダーの おとが はやくなったら ちかい！\n3.「ほる！」ボタンで ブラシで すなを はらおう\n4. かせきを ずかんに きろくしたら クイズで まなぼう\n5. 14たい ぜんぶ あつめると はくぶつかんが ひらくよ！');
+      showToast('🦕 あそびかた\n\n1. やじるしで さばくを あるこう\n2. レーダーの おとが はやくなったら ちかい！\n3.「ほる！」ボタンで ブラシで すなを はらおう\n4. ずかんに きろくしたら クイズで まなぼう\n5. 14たい ぜんぶ あつめると はくぶつかんが ひらくよ！', 6500);
     }
   });
 }
