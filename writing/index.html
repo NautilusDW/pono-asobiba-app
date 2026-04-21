@@ -1905,6 +1905,13 @@ body.battle-mode .villain-deco {
   width: min(22vh, 120px); height: min(22vh, 120px);
   max-width: 120px; max-height: 120px;
 }
+/* compact: 雑魚クラスの grounded 敵 (キノコ等) はゴーレム級の 120px だと大きすぎるので
+   勇者 (128px) よりやや小さめに落とす。接地感・反転は grounded 側で継承。
+   ユーザー指定 2026-04-21: 「キノコは勇者と同じぐらいで OK」 */
+.battle-enemy.grounded.compact {
+  width: min(15vh, 86px); height: min(15vh, 86px);
+  max-width: 86px; max-height: 86px;
+}
 .battle-enemy.grounded .enemy-shadow {
   /* 地面に足が付いているタイプ (岩系ボス等) は不自然な浮遊シャドウを隠す。
      画像自体の drop-shadow だけで接地感を表現する。 */
@@ -4641,7 +4648,7 @@ const BATTLE_ENEMIES = {
     imgAttackStrike: '../assets/images/monsters/chars/Mushroom/mushroom_atk_strike.png',
     taunts: ['ぷんぷん！', 'ほうしを まくぞ！', 'ふみつぶすな〜', 'もりの いかり！', 'キノコパンチ！'],
     hp: 5, element: 'earth',
-    flipped: true, grounded: true
+    flipped: true, grounded: true, compact: true
   },
   // さ行: 森の中ボス (森ステージのボス)。倒すと「盾」を入手。
   // 多段フレーム対応: HP に応じて画像を差し替え + 攻撃時は windup→strike アニメ。
@@ -4898,6 +4905,9 @@ function _showBattleStage(rowId) {
   // ラップも勇者と同じ高さに持ち上げる (stage.has-grounded クラスで制御)。
   els.enemy.classList.toggle('grounded', !!enemy.grounded);
   els.stage.classList.toggle('has-grounded', !!enemy.grounded);
+  // compact: 雑魚 grounded 敵のサイズを勇者並みに小さくする (キノコ等)。
+  // grounded 無しの場合は .battle-enemy の通常サイズ (60px) が効くので意味を持たない。
+  els.enemy.classList.toggle('compact', !!enemy.compact);
   // 元素材が右向きのザコ (flipped:true) は水平反転して勇者と対峙させる。
   // grounded と独立に指定できる (接地しない空中ザコでも反転だけ掛けたい場合があるため)。
   els.enemy.classList.toggle('flipped', !!enemy.flipped);
@@ -5266,9 +5276,9 @@ function _hideBattleStage() {
 const PUZZLE_ROWS = {
   'か': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['か','き','く','け','こ'] },
   'カ': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['カ','キ','ク','ケ','コ'] },
-  // な行: 洞窟の祠にある「ふういん の いしばん」5枚。1文字ずつ書いて封印を解く。
-  'な': { kind: 'tablet',    title: 'いしばんの ふういん',   hint: 'いしばんに もじを かいて ふういんを とこう！', chars: ['な','に','ぬ','ね','の'] },
-  'ナ': { kind: 'tablet',    title: 'いしばんの ふういん',   hint: 'いしばんに もじを かいて ふういんを とこう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  // な行: 洞窟の祠にある「ふういん の せきばん」5枚。1文字ずつ書いて封印を解く。
+  'な': { kind: 'tablet',    title: 'せきばんの ふういん',   hint: 'せきばんに もじを かいて ふういんを とこう！', chars: ['な','に','ぬ','ね','の'] },
+  'ナ': { kind: 'tablet',    title: 'せきばんの ふういん',   hint: 'せきばんに もじを かいて ふういんを とこう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
   // ら行: 火山の溶岩の上にかかる「とびいし」5つ。1文字ずつ書いて道を作る。
   'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ら','り','る','れ','ろ'] },
   'ラ': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ラ','リ','ル','レ','ロ'] },
@@ -5299,7 +5309,7 @@ function _showPuzzleStage(rowLabel) {
   // 前の行のバトルログ (「よくがんばった！」等) が残らないよう、パズル行の案内に差し替え。
   const _puzzleIntro = {
     bridge:    ['もじを なぞって', 'はしを なおそう！'],
-    tablet:    ['もじを なぞって', 'いしばんの ふういんを とこう！'],
+    tablet:    ['もじを なぞって', 'せきばんの ふういんを とこう！'],
     lava_step: ['もじを なぞって', 'ようがんを わたろう！'],
   };
   try {
@@ -6740,27 +6750,30 @@ function startRowPractice(rowIndex) {
 // rowId は「あ」「か」... のラベル文字で来る。
 // xPct / yPct は map_A.png (2752x1536) 内の「道の立ち位置」を画像左上基準で
 // パーセンテージ指定。yPct は全体的に 46〜54% の帯 (道が走る帯) に収まる。
+// 2026-04-21: ユーザー要望に応じて再配置。以前はゴーレム (さ) が既に洞窟入口
+// に入り込んでいる位置だった → 左上の森が終わる地点まで戻し、それ以降も連動して
+// 左に詰める。全体は「森 (0〜20%) → 洞窟 (〜50%) → 火山 (〜85%) → 城 (〜94%)」。
 const MAP_ROW_SCENES = {
   'あ': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
-  'か': { xPct: 16, yPct: 49, title: 'こわれた はし' },
-  'さ': { xPct: 28, yPct: 52, title: 'もりの でぐち' },
-  'た': { xPct: 39, yPct: 52, title: 'どうくつの いりぐち' },
-  'な': { xPct: 49, yPct: 54, title: 'どうくつの ほこら' },
-  'は': { xPct: 59, yPct: 50, title: 'どうくつの おく' },
-  'ま': { xPct: 68, yPct: 52, title: 'かざんの ふもと' },
-  'や': { xPct: 77, yPct: 52, title: 'かざんの なかふく' },
-  'ら': { xPct: 86, yPct: 51, title: 'ようがんの たにま' },
-  'わ': { xPct: 94, yPct: 52, title: 'かざんの ちょうじょう' },
+  'か': { xPct: 13, yPct: 49, title: 'こわれた はし' },
+  'さ': { xPct: 19, yPct: 50, title: 'もりの でぐち' },
+  'た': { xPct: 26, yPct: 55, title: 'どうくつの いりぐち' },
+  'な': { xPct: 35, yPct: 60, title: 'どうくつの ほこら' },
+  'は': { xPct: 45, yPct: 58, title: 'どうくつの おく' },
+  'ま': { xPct: 56, yPct: 52, title: 'かざんの ふもと' },
+  'や': { xPct: 66, yPct: 52, title: 'かざんの なかふく' },
+  'ら': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
+  'わ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
   'ア': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
-  'カ': { xPct: 16, yPct: 49, title: 'こわれた はし' },
-  'サ': { xPct: 28, yPct: 52, title: 'もりの でぐち' },
-  'タ': { xPct: 39, yPct: 52, title: 'どうくつの いりぐち' },
-  'ナ': { xPct: 49, yPct: 54, title: 'どうくつの ほこら' },
-  'ハ': { xPct: 59, yPct: 50, title: 'どうくつの おく' },
-  'マ': { xPct: 68, yPct: 52, title: 'かざんの ふもと' },
-  'ヤ': { xPct: 77, yPct: 52, title: 'かざんの なかふく' },
-  'ラ': { xPct: 86, yPct: 51, title: 'ようがんの たにま' },
-  'ワ': { xPct: 94, yPct: 52, title: 'かざんの ちょうじょう' },
+  'カ': { xPct: 13, yPct: 49, title: 'こわれた はし' },
+  'サ': { xPct: 19, yPct: 50, title: 'もりの でぐち' },
+  'タ': { xPct: 26, yPct: 55, title: 'どうくつの いりぐち' },
+  'ナ': { xPct: 35, yPct: 60, title: 'どうくつの ほこら' },
+  'ハ': { xPct: 45, yPct: 58, title: 'どうくつの おく' },
+  'マ': { xPct: 56, yPct: 52, title: 'かざんの ふもと' },
+  'ヤ': { xPct: 66, yPct: 52, title: 'かざんの なかふく' },
+  'ラ': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
+  'ワ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
 };
 const MAP_IMG_NATURAL_W = 2752;
 const MAP_IMG_NATURAL_H = 1536;
@@ -6881,6 +6894,16 @@ const GEAR_META = {
   },
 };
 function hasGear(kind)  { try { return localStorage.getItem(GEAR_KEYS[kind]) === '1'; } catch (e) { return false; } }
+// 「はじめから」選択時に装備フラグを全消し。Phase 1 ではフラグのみ持っている。
+// ユーザー要望 2026-04-21: 「もし装備をゲットしてたとして、はじめからで始めたらリセット」
+function resetGears() {
+  try {
+    Object.keys(GEAR_KEYS).forEach(function(k) {
+      localStorage.removeItem(GEAR_KEYS[k]);
+    });
+  } catch (e) {}
+  try { renderEquipRow(); } catch (e) {}
+}
 
 // 左上の装備パネル (そうび行) を所持状況に応じて描画する。
 // 1つも持っていない間は行ごと非表示。持っているものだけアイコンを並べる。
@@ -7556,9 +7579,10 @@ function setBgmFor(kind) {
   bgmStarted = false;
   if (bgmEnabled) bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
-// 初期トラック: 起動時は行選択 = フィールド扱い (map BGM)。
-// バトル突入時に _showBattleEncounterIntro が 'battle' に切替える。
-setBgmFor('map');
+// NOTE: 初期 setBgmFor('map') はここでは呼ばない。
+// pageload 時点で play() を発火すると iOS/Safari が autoplay 拒否し、
+// 以降の src 変更 (title BGM への切替) で user activation が消費されない不具合が出る。
+// 実際のマップ BGM 起動は goToRowSelect / _showMapScene / practice 遷移時に行う。
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
@@ -7613,28 +7637,52 @@ function goToPracticeDirect(rowIndex) {
   var storyEl = document.getElementById('storyScreen');
   var titleEl = document.getElementById('titleScreen');
 
-  // iOS autoplay: ユーザー初回接触で Theme BGM を開始。
-  // (2026-04-21: play() が失敗 (autoplay 拒否) した場合はフラグを戻して再試行可能にする。
-  //  以前は primed 経路で失敗してもフラグが立ったままになり、以降の title タップで
-  //  再試行されず BGM が永遠に鳴らないバグがあった)
+  // iOS autoplay 対策 (2026-04-21 再):
+  // pageload 時の setBgmFor('map') を廃止したので、title 画面への初回
+  // user gesture で確実に bgm.src = Theme.mp3 → play() を「同じ tick 内で」
+  // 発火させる。setBgmFor 経由だとラッパ内 promise が reject されても
+  // フラグ管理が曖昧になるので、ここでは直接 bgm element を操作する。
   var _titleBgmPlaying = false;
   function startTitleBgm() {
     if (_titleBgmPlaying) return;
+    if (!bgmEnabled) return;
     try {
-      setBgmFor('title');
-      // setBgmFor 内の bgm.play() は非同期。play() が通ったら bgmStarted=true になる。
-      // ここでは即時にフラグを立てず、少し後に bgm.paused を見て判定する。
-      setTimeout(function() {
-        try {
-          var b = document.getElementById('bgm');
-          if (b && !b.paused) _titleBgmPlaying = true;
-        } catch (e) {}
-      }, 300);
+      var b = document.getElementById('bgm');
+      if (!b) return;
+      var themeSrc = (BGM_TRACKS.title && BGM_TRACKS.title[0]) || '';
+      if (!themeSrc) return;
+      // 既に Theme を鳴らそうとしている間に再タップされた場合の保護
+      if (b.currentSrc && b.currentSrc.indexOf('Theme.mp3') >= 0 && !b.paused) {
+        _titleBgmPlaying = true;
+        return;
+      }
+      // setBgmFor 経由で _bgmKind を更新しておく (以降の map 切替で正しく動くように)
+      if (typeof _bgmKind !== 'undefined') {
+        try { window._bgmKind = 'title'; } catch (e) {}
+      }
+      _bgmKind = 'title';
+      b.src = themeSrc;
+      b.loop = true;
+      var p = b.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function() {
+          _titleBgmPlaying = true;
+          bgmStarted = true;
+        }).catch(function() {
+          // 拒否された場合は次回タップで再試行
+          _titleBgmPlaying = false;
+        });
+      } else {
+        _titleBgmPlaying = true;
+      }
     } catch (e) {}
   }
   if (titleEl) {
+    // pointerdown / touchstart / click すべてで再試行させる。
+    // 最初の pointerdown で play() が rejected でも、続く click で再発火する。
     titleEl.addEventListener('pointerdown', startTitleBgm, { passive: true });
     titleEl.addEventListener('touchstart',  startTitleBgm, { passive: true });
+    titleEl.addEventListener('click',       startTitleBgm, { passive: true });
   }
 
   // play.html のカードタップから遷移した直後 (sticky user activation が効く間) は
@@ -7652,6 +7700,8 @@ function goToPracticeDirect(rowIndex) {
   if (newBtn) newBtn.addEventListener('click', function() {
     // ボタンタップ時も必ず BGM を発火 (primed 経路が失敗していても再試行)
     _titleBgmPlaying = false; startTitleBgm();
+    // 「はじめから」では三種の神器の取得状況もリセットする (要望 2026-04-21)
+    try { if (typeof resetGears === 'function') resetGears(); } catch (e) {}
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = true;
     goToStory();
