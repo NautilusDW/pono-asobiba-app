@@ -1066,6 +1066,29 @@ html, body {
   0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1;   border-width: 6px; }
   100% { transform: translate(-50%, -50%) scale(3.6); opacity: 0;   border-width: 1px; }
 }
+/* つらら (氷魔導士ボス用): 勇者の頭上から落ちて刺さる。 */
+.icicle-drop {
+  position: absolute;
+  width: 14px; height: 44px;
+  margin-left: -7px;
+  background: linear-gradient(180deg,
+    #E0F7FA 0%,
+    #81D4FA 30%,
+    #4FC3F7 70%,
+    rgba(79,195,247,0) 100%);
+  clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+  box-shadow: 0 0 8px 2px rgba(129,212,250,0.65);
+  opacity: 0;
+  pointer-events: none;
+  animation: icicleDrop 0.55s cubic-bezier(0.45,0.05,0.55,0.95) forwards;
+}
+@keyframes icicleDrop {
+  0%   { opacity: 0; transform: translateY(-40px) scale(0.9); }
+  15%  { opacity: 1; }
+  80%  { opacity: 1; transform: translateY(var(--fall, 260px)) scale(1); }
+  100% { opacity: 0; transform: translateY(var(--fall, 260px)) scale(1); }
+}
+
 /* 大魔法 (finisher): 光球/バーストを一回り大きく。mp4 の代わり。 */
 .magic-projectile.finisher {
   width: 200px; height: 200px;
@@ -4105,6 +4128,119 @@ function _spawnMagicBurst(x, y, colors, container, opts) {
   }
 }
 
+// ===== 敵 → 勇者への魔法弾 (魔導士タイプ敵用) =====
+// launchMagicProjectile を逆方向で再利用。敵中央から勇者中央へ飛ぶ。
+// onImpact: 着弾時 (シェイク+ダメージ表示と同期)。
+function _launchEnemyMagicProjectile(element, opts) {
+  opts = opts || {};
+  const colors = MAGIC_COLORS[element] || MAGIC_COLORS.ice;
+  const enemyEl = document.getElementById('battleEnemy');
+  const heroEl  = document.getElementById('battleHero');
+  if (!enemyEl || !heroEl) {
+    if (opts.onImpact) setTimeout(opts.onImpact, 0);
+    return;
+  }
+  let container = document.querySelector('.magic-projectile-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'magic-projectile-container';
+    document.body.appendChild(container);
+  }
+  const er = enemyEl.getBoundingClientRect();
+  const hr = heroEl.getBoundingClientRect();
+  const sx = er.left + er.width / 2;
+  const sy = er.top  + er.height * 0.45;
+  const tx = hr.left + hr.width / 2;
+  const ty = hr.top  + hr.height * 0.55;
+
+  const ball = document.createElement('div');
+  ball.className = 'magic-projectile enemy-cast';
+  ball.style.setProperty('--core', colors.core);
+  ball.style.setProperty('--aura', colors.aura);
+  ball.style.setProperty('--glow', colors.glow);
+  ball.style.transform = 'translate(' + sx + 'px, ' + sy + 'px) translate(-50%, -50%) scale(1.0)';
+
+  const trail = document.createElement('div');
+  trail.className = 'magic-projectile-trail';
+  ball.appendChild(trail);
+  container.appendChild(ball);
+
+  try { _playProjectileLaunchSound(element); } catch (e) {}
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      ball.classList.add('animate');
+      ball.style.transform =
+        'translate(' + tx + 'px, ' + ty + 'px) ' +
+        'translate(-50%, -50%) scale(0.9)';
+    });
+  });
+
+  const FLIGHT_MS = 620;
+  setTimeout(() => {
+    if (ball.parentNode) ball.remove();
+    _spawnMagicBurst(tx, ty, colors, container, { finisher: false });
+    try { _playMagicBurstSound(element); } catch (e) {}
+    if (opts.onImpact) { try { opts.onImpact(); } catch (e) {} }
+    setTimeout(() => {
+      if (container && container.parentNode && container.children.length === 0) {
+        container.remove();
+      }
+    }, 900);
+  }, FLIGHT_MS);
+}
+
+// ===== つらら降り (氷属性 魔導士用) =====
+// 勇者の上から 6〜8 本のつららを落とし、地面にヒットするタイミングでキラン音。
+// 視覚演出専用。実ダメージは呼出側 (_applyHeroHpDamage) で処理。
+function _spawnIcicleRain() {
+  const heroEl = document.getElementById('battleHero');
+  if (!heroEl) return;
+  let container = document.querySelector('.magic-projectile-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'magic-projectile-container';
+    document.body.appendChild(container);
+  }
+  const hr = heroEl.getBoundingClientRect();
+  const cx = hr.left + hr.width / 2;
+  const baseY = hr.top;
+  const N = 7;
+  for (let i = 0; i < N; i++) {
+    const ic = document.createElement('div');
+    ic.className = 'icicle-drop';
+    // 勇者の頭上 ±80px の範囲にバラつかせる
+    const dx = (Math.random() - 0.5) * 160;
+    const x = cx + dx;
+    const startY = baseY - 260 - Math.random() * 80;
+    const endY   = baseY + hr.height * 0.15;
+    ic.style.left = x + 'px';
+    ic.style.top  = startY + 'px';
+    ic.style.setProperty('--fall', (endY - startY).toFixed(1) + 'px');
+    ic.style.animationDelay = (i * 0.06 + Math.random() * 0.05).toFixed(3) + 's';
+    container.appendChild(ic);
+    setTimeout(() => { if (ic.parentNode) ic.remove(); }, 900);
+  }
+  // キラン効果音 (軽め)
+  try {
+    if (typeof withAudio === 'function') {
+      withAudio(function(ac) {
+        const now = ac.currentTime;
+        for (let k = 0; k < 3; k++) {
+          const o = ac.createOscillator(), g = ac.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(2400 + k * 400, now + k * 0.06);
+          o.frequency.exponentialRampToValueAtTime(900, now + k * 0.06 + 0.22);
+          g.gain.setValueAtTime(0.12, now + k * 0.06);
+          g.gain.exponentialRampToValueAtTime(0.001, now + k * 0.06 + 0.28);
+          o.connect(g); g.connect(ac.destination);
+          o.start(now + k * 0.06); o.stop(now + k * 0.06 + 0.3);
+        }
+      });
+    }
+  } catch (e) {}
+}
+
 // 発射音: 属性で音色を変える (軽い whoosh + ピッチ上昇)
 function _playProjectileLaunchSound(element) {
   if (typeof withAudio !== 'function') return;
@@ -4724,19 +4860,41 @@ const BATTLE_ENEMIES = {
     hp: 8, element: 'earth',
     boss: true, grounded: true, reward: 'shield'
   },
+  // た行: 洞窟のザコ「こおりコウモリ」。idle+stagger+攻撃(角に蒼球を溜めて氷ビームを放つ)。
+  // 浮遊する氷属性の魔法系ザコ。飛び系なので grounded 無し、左右反転のみ。
+  // rangedMagic で敵→勇者の氷ビームを launch する (つらら降りは boss 専用なので無し)。
   'た': {
-    id: 'thmushi', name: 'かみなりむし',
-    img: '../assets/images/monsters/chars/monster_008.png',
-    taunts: ['びりびり〜！', 'でんげき だ！', 'ピカッと いくぞ〜', 'しびれるな〜', 'かみなり を くらえ！'],
-    hp: 6, element: 'thunder'
+    id: 'ice_bat', name: 'こおりコウモリ',
+    img: '../assets/images/monsters/chars/IceBat/icebat_idle.png',
+    imgIdle: '../assets/images/monsters/chars/IceBat/icebat_idle.png',
+    imgStagger: '../assets/images/monsters/chars/IceBat/icebat_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/IceBat/icebat_atk_1.png',
+      '../assets/images/monsters/chars/IceBat/icebat_atk_2.png',
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/IceBat/icebat_atk_strike.png',
+    taunts: ['キィー！', 'こおりの ひかり！', 'キラッ…', 'つめたいぞ〜！', 'ビーム！'],
+    hp: 6, element: 'ice',
+    flipped: true, rangedMagic: true
   },
-  // は行: 洞窟の中ボス (洞窟ステージのボス)。倒すと「鎧」を入手。
+  // は行: 洞窟の中ボス「こおりのまどうし」。倒すと「鎧」を入手。
+  // 多段フレーム対応: idle + stagger + 攻撃 (結晶召喚→杖構え→氷ビーム放射) + 氷属性。
+  // 全画像右向きなので flipped:true。
   'は': {
-    id: 'cave_lord', name: 'どうくつのぬし',
-    img: '../assets/images/monsters/chars/monster_015_cave_lord.png',
-    taunts: ['ひゅ〜…', 'くらやみに しずめ！', 'かぜで おしつぶす！', 'にがさぬ！', 'おのれ…！'],
-    hp: 10, element: 'wind',
-    boss: true, grounded: true, reward: 'armor'
+    id: 'ice_wizard', name: 'こおりのまどうし',
+    img: '../assets/images/monsters/chars/IceWizard/ice_wizard_idle.png',
+    imgIdle: '../assets/images/monsters/chars/IceWizard/ice_wizard_idle.png',
+    imgStagger: '../assets/images/monsters/chars/IceWizard/ice_wizard_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/IceWizard/ice_wizard_atk_1.png',
+      '../assets/images/monsters/chars/IceWizard/ice_wizard_atk_2.png',
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/IceWizard/ice_wizard_atk_strike.png',
+    taunts: ['キィィン…', 'こおりづけに してやる！', 'つららの あめだ！', 'さむいぞ〜…', 'こおりの ちから！'],
+    hp: 10, element: 'ice',
+    boss: true, flipped: true, grounded: true, reward: 'armor',
+    // 魔導士タイプ: カウンター攻撃時に氷ビームを放ち、さらにつららの雨を降らせる。
+    rangedMagic: true
   },
   // ま行: 火山のザコ「ようがんゴーレム」。idle + 攻撃 (岩振り上げ→炎まとい打ち下ろし) + スタッガー。
   // 岩/溶岩の重量級なので grounded:true で床にどっしり接地、左右反転。
@@ -4948,9 +5106,8 @@ function _showBattleStage(rowId) {
   _battle.hp = _battle.maxHp;
   _battle.hitCount = 0;
   _battle.attackPlan = _pickAttackPlan(_battle.maxHp); // 5回の通常/魔法プラン
-  // 現在は最初のステージのみ実装中のため、属性は「炎」で固定。
-  // 将来、行ごとに属性を変える段階で ROW_ELEMENT_BY_LABEL に戻す。
-  _battle.element = 'fire';
+  // 敵の属性に合わせる (炎ボス=fire, 氷ボス=ice, …)。敵データに element が無ければ fire。
+  _battle.element = enemy.element || 'fire';
   _battle.acornsBuffered = 0; // バトル開始時にリセット
 
   if (els.img) els.img.src = enemy.img;
@@ -5827,9 +5984,10 @@ function enemyCounterAttack() {
   // 「〇〇の こうげき！」告知を出してから一拍置いて攻撃
   _showEnemyAttackAnnounce(enemyName + 'の こうげき！', function() {
     if (!_battle.active) return;
-    _shakeScreen();
-    try { playEnemyAttackSound(); } catch (e) {}
-    // 撃の瞬間: strike フレーム → 300ms 後に HP 応じた通常フレームへ戻す
+    const isRanged = !!(e && e.rangedMagic);
+    try { playEnemyAttackSound(); } catch (err) {}
+    // 撃の瞬間: strike フレーム → しばらく後に HP 応じた通常フレームへ戻す
+    // 遠距離魔法タイプは杖を掲げ続ける時間を長めにする
     try {
       if (strikeImg && _battle.hp > 0) {
         _swapEnemyImg(strikeImg);
@@ -5839,26 +5997,41 @@ function enemyCounterAttack() {
           if (_battle.hp <= 0) return;
           const back = _enemyImgForHp();
           if (back) _swapEnemyImg(back);
-        }, 340);
+        }, isRanged ? 700 : 340);
       }
     } catch (err) { /* ignore */ }
-    // 勇者 HP を減らす (floor でクランプ、死なない)
-    try { _applyHeroHpDamage(damage); } catch (e) {}
-    // 勇者は idle のまま、一時的に真っ黒シルエット化して「被弾」表現にする
-    // (以前は damaged スプライト差し替えで一瞬キャラが消えて見える事故があったため廃止)
-    try {
-      // #battleHero は .battle-hero と .hero-sprite 両方を持つ単一要素
-      const heroEl = document.getElementById('battleHero');
-      if (heroEl) {
-        heroEl.classList.remove('silhouette-flash');
-        void heroEl.offsetWidth;
-        heroEl.classList.add('silhouette-flash');
-        setTimeout(function() {
-          if (heroEl) heroEl.classList.remove('silhouette-flash');
-        }, 500);
+
+    // 着弾時に実行する: 画面シェイク + 勇者シルエット点滅 + HP 減算 + ダメージログ。
+    // 近接敵は即時発火、遠距離魔導士タイプは弾が届いた瞬間に発火する。
+    const applyImpact = function() {
+      if (!_battle.active) return;
+      _shakeScreen();
+      try { _applyHeroHpDamage(damage); } catch (err) {}
+      try {
+        const heroEl = document.getElementById('battleHero');
+        if (heroEl) {
+          heroEl.classList.remove('silhouette-flash');
+          void heroEl.offsetWidth;
+          heroEl.classList.add('silhouette-flash');
+          setTimeout(function() {
+            if (heroEl) heroEl.classList.remove('silhouette-flash');
+          }, 500);
+        }
+      } catch (err) {}
+      _showPlayerDamageWindow(damage);
+    };
+
+    if (isRanged && typeof _launchEnemyMagicProjectile === 'function') {
+      const elem = (e && e.element) || _battle.element || 'ice';
+      _launchEnemyMagicProjectile(elem, { onImpact: applyImpact });
+      // 氷属性ボス (こおりのまどうし) は氷ビームに加えて勇者の頭上につららの雨を降らせる。
+      // 雑魚 (こおりコウモリ等) はビームのみでプレッシャーを抑える。
+      if (elem === 'ice' && e && e.boss && typeof _spawnIcicleRain === 'function') {
+        setTimeout(_spawnIcicleRain, 160);
       }
-    } catch (e) {}
-    _showPlayerDamageWindow(damage);
+    } else {
+      applyImpact();
+    }
   });
 }
 
