@@ -23,6 +23,7 @@
     { id: 'first_quizland',  game: 'quizland',  name: 'はじめてのクイズ',      desc: '1もん せいかいしよう',            target: 1, stat: 'quizland_correct', tier: 1, reward: { type: 'furn', id: 'ach_quiz_pencil' } },
     { id: 'first_oto',         game: 'oto',        name: 'はじめてのおとタッチ', desc: 'ボタンを 1かい たたこう',         target: 1, stat: 'oto_taps',           tier: 1, reward: { type: 'furn', id: 'ach_pono_cushion' } },
     { id: 'first_quiz_sound',  game: 'quiz_sound', name: 'はじめてのおとあて',   desc: '1もん せいかいしよう',            target: 1, stat: 'quiz_sound_correct', tier: 1, reward: { type: 'furn', id: 'ach_quiz_pencil' } },
+    { id: 'fossil_first',      game: 'fossil',     name: 'はつ かせき',          desc: 'かせきを 1たい はっけんしよう',    target: 1, stat: 'fossil_found',       tier: 1, reward: { type: 'furn', id: 'ach_quiz_pencil' } },
     { id: 'all_games',       game: 'common',    name: 'ぜんぶ あそんだ！',     desc: 'ぜんぶの ゲームを あそぼう',     target: 1, stat: 'all_games_played',  tier: 2, reward: { type: 'furn', id: 'ach_rainbow_mobile' } },
 
     // ── 中間 ─────────────────────────────────────────────────────
@@ -47,6 +48,9 @@
     { id: 'oto_50',          game: 'oto',        name: 'おとあそびずき',     desc: 'ボタンを 50かい たたこう',        target: 50, stat: 'oto_taps',           tier: 2, reward: { type: 'furn', id: 'ach_quiz_badge' } },
     { id: 'quiz_sound_10',   game: 'quiz_sound', name: 'おとあてずき',       desc: '10もん せいかいしよう',           target: 10, stat: 'quiz_sound_correct', tier: 2, reward: { type: 'furn', id: 'ach_quiz_ribbon' } },
     { id: 'quiz_sound_clear_3', game:'quiz_sound', name: 'おとあてくりかえし', desc: '5もんセットを 3かい クリア',    target: 3,  stat: 'quiz_sound_clears',  tier: 2, reward: { type: 'furn', id: 'ach_coral_deco' } },
+    { id: 'fossil_hunter',   game: 'fossil',    name: 'かせきハンター',       desc: 'かせきを 5たい はっけんしよう',   target: 5,  stat: 'fossil_found',       tier: 2, reward: { type: 'furn', id: 'ach_quiz_badge' } },
+    { id: 'fossil_scholar',  game: 'fossil',    name: 'はかせ みならい',      desc: 'かせきを 10たい はっけんしよう',  target: 10, stat: 'fossil_found',       tier: 2, reward: { type: 'furn', id: 'ach_quiz_ribbon' } },
+    { id: 'fossil_quiz_perfect', game:'fossil',name: 'クイズ まんてん',     desc: 'かせきクイズで ぜんもん せいかい', target: 1, stat: 'fossil_quiz_perfect', tier: 2, reward: { type: 'furn', id: 'ach_quiz_medal' } },
 
     // ── マスター ─────────────────────────────────────────────────
     { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 6,  stat: 'puzzle_clears',     tier: 3, reward: { type: 'furn', id: 'ach_quiz_crown' } },
@@ -64,6 +68,7 @@
     { id: 'bento_10',      game: 'bento',     name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',     target: 10, stat: 'bento_complete',    tier: 3, reward: { type: 'furn', id: 'ach_book_deco' } },
     { id: 'oto_300',       game: 'oto',       name: 'おとマスター',         desc: 'ボタンを 300かい たたこう',        target: 300, stat: 'oto_taps',           tier: 3, reward: { type: 'furn', id: 'ach_block_deco' } },
     { id: 'quiz_sound_50', game: 'quiz_sound',name: 'おとあてマスター',     desc: '50もん せいかいしよう',            target: 50,  stat: 'quiz_sound_correct', tier: 3, reward: { type: 'furn', id: 'ach_bowling_toy' } },
+    { id: 'fossil_master', game: 'fossil',    name: 'きょうりゅう はかせ',   desc: 'かせきを 14たい ぜんぶ あつめよう', target: 14, stat: 'fossil_found',       tier: 3, reward: { type: 'furn', id: 'ach_quiz_crown' } },
   ];
 
   // ═══ プレミアム初期特典 ═════════════════════════════════════════════

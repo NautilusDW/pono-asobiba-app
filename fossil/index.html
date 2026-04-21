@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>かせきはっくつ | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sand-light: #FFE4A8;
+  --sand-mid: #E8A85C;
+  --sand-dark: #8B5A2B;
+  --accent: #F97316;
+  --text: #5D3A1A;
+  --radius: 20px;
+  --shadow: rgba(80,40,10,0.18);
+}
+
+html, body {
+  height: 100dvh; overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Zen Maru Gothic','Hiragino Maru Gothic Pro',sans-serif;
+  color: var(--text);
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, var(--sand-light) 0%, var(--sand-mid) 100%);
+}
+
+#app {
+  display: flex; flex-direction: column;
+  height: 100dvh;
+  max-width: 640px; margin: 0 auto;
+  padding: 4px 10px 10px;
+  position: relative;
+}
+
+.header {
+  flex-shrink: 0; text-align: center;
+  padding: 44px 0 4px;
+  position: relative;
+}
+.header h1 {
+  font-size: 1.15rem; font-weight: 900;
+  color: var(--sand-dark);
+  text-shadow: 1px 2px 0 rgba(255,255,255,0.4);
+}
+.subtitle {
+  font-size: 0.72rem;
+  color: #8B5A2B;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.hud {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 10px;
+  font-size: 0.85rem; font-weight: 700;
+  flex-shrink: 0;
+}
+#hud-stage { color: var(--sand-dark); }
+#hud-found { color: var(--accent); }
+
+.game-wrap {
+  flex: 1; min-height: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: relative;
+  touch-action: none;
+  background: linear-gradient(160deg, #FFD28C 0%, #E8A85C 100%);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+#gameCanvas { display: block; width: 100%; height: 100%; }
+
+/* ── Radar UI ── */
+.radar-ui {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.85);
+  border: 2px solid var(--sand-dark);
+  border-radius: 14px;
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; font-weight: 900;
+  box-shadow: 0 2px 6px var(--shadow);
+  z-index: 15;
+}
+.radar-ui .radar-icon {
+  width: 22px; height: 22px;
+  display: inline-block;
+  background: radial-gradient(circle, #34D399 30%, transparent 70%);
+  border-radius: 50%;
+  position: relative;
+  animation: radarPulse 1.2s ease-out infinite;
+}
+.radar-ui .radar-icon::after {
+  content: ''; position: absolute; inset: 0;
+  border: 2px solid #10B981; border-radius: 50%;
+  animation: radarPulse 1.2s ease-out infinite;
+}
+@keyframes radarPulse {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.radar-bar {
+  width: 60px; height: 7px; background: #D4B585; border-radius: 6px;
+  overflow: hidden; position: relative;
+}
+.radar-bar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, #FCD34D, #EF4444);
+  width: var(--radar-w, 0%);
+  transition: width 0.2s;
+}
+
+/* ── Arrow buttons ── */
+#arrowLayer { position: absolute; inset: 0; pointer-events: none; }
+.dig-arrow {
+  position: absolute;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(247,115,22,0.78), rgba(252,165,70,0.78));
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  color: white;
+  border: 3px solid rgba(255,255,255,0.9);
+  font-size: 1.5rem; font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(80,40,10,0.25);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: auto;
+  font-family: inherit;
+  animation: arrowPulse 1.2s ease-in-out infinite;
+  transform: translate(-50%, -50%);
+  padding: 0;
+}
+.dig-arrow:active { transform: translate(-50%, -50%) scale(0.9); }
+@keyframes arrowPulse {
+  0%,100% { transform: translate(-50%,-50%) scale(1); }
+  50%     { transform: translate(-50%,-50%) scale(1.12); }
+}
+
+/* ── Dig button (appears when on a fossil cell) ── */
+.dig-btn {
+  position: absolute; left: 50%; bottom: 20px;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: white; font-size: 1.15rem; font-weight: 900;
+  padding: 14px 34px; border: 4px solid white;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(80,40,10,0.4);
+  font-family: inherit;
+  z-index: 20;
+  animation: digPulse 0.7s ease-in-out infinite;
+  display: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.dig-btn.show { display: block; }
+.dig-btn:active { transform: translateX(-50%) scale(0.95); }
+@keyframes digPulse {
+  0%,100% { transform: translateX(-50%) scale(1); box-shadow: 0 6px 18px rgba(80,40,10,0.4); }
+  50%     { transform: translateX(-50%) scale(1.08); box-shadow: 0 6px 24px rgba(249,115,22,0.6); }
+}
+
+/* ── Tools panel (bottom left) ── */
+.tools {
+  position: absolute; bottom: 14px; left: 14px;
+  display: flex; gap: 8px;
+  z-index: 15;
+}
+.tool-btn {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 3px solid var(--sand-dark);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px var(--shadow);
+  padding: 0;
+  font-family: inherit;
+}
+.tool-btn:active { transform: scale(0.9); }
+
+/* ── Hint bubble ── */
+.hint-bubble {
+  position: absolute; left: 50%; top: 10px;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.95);
+  color: var(--text);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem; font-weight: 700;
+  box-shadow: 0 2px 8px var(--shadow);
+  pointer-events: none;
+  z-index: 12;
+  white-space: nowrap;
+}
+
+/* ── DIG Phase ── */
+.dig-overlay {
+  position: fixed; inset: 0;
+  background: linear-gradient(180deg, #4A3728 0%, #2B1E14 100%);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: env(safe-area-inset-top, 10px) 10px 10px;
+}
+.dig-overlay.show { display: flex; }
+.dig-title {
+  color: #FFF3CD; font-size: 1.0rem; font-weight: 900;
+  margin: 8px 0 6px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.dig-progress {
+  display: flex; gap: 10px; margin-bottom: 8px;
+  font-size: 1.8rem;
+}
+.dig-star {
+  opacity: 0.3; transition: opacity 0.3s, transform 0.3s;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+.dig-star.on { opacity: 1; transform: scale(1.2); }
+
+.dig-stage {
+  flex: 1; min-height: 0;
+  width: 100%; max-width: 480px;
+  position: relative;
+  background: #1C1410;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  touch-action: none;
+}
+#fossilCanvas, #sandCanvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+#sandCanvas { z-index: 2; }
+#fossilCanvas {
+  z-index: 1;
+  filter: sepia(0.8) brightness(0.6) contrast(1.15);
+  transition: filter 1s, transform 0.6s;
+}
+#fossilCanvas.revealed {
+  filter: none;
+}
+.dig-brush-hint {
+  color: #FFEAAA; font-size: 0.82rem; font-weight: 700;
+  text-align: center; margin-top: 6px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.dig-close {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  border: 2px solid #FFF;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem; font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+  z-index: 210;
+}
+
+/* ── REVEAL演出 ── */
+.reveal-overlay {
+  position: fixed; inset: 0;
+  background: radial-gradient(circle at center, #FFF3CD 0%, #FFD28C 60%, #E8A85C 100%);
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.reveal-overlay.show { display: flex; animation: revealIn 0.5s ease-out; }
+@keyframes revealIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.reveal-dino-img {
+  max-width: 80%; max-height: 50vh;
+  filter: drop-shadow(0 6px 16px rgba(80,40,10,0.4));
+  animation: dinoReveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes dinoReveal {
+  0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.reveal-name {
+  font-size: 1.6rem; font-weight: 900;
+  color: var(--sand-dark);
+  margin-top: 14px;
+  text-shadow: 1px 2px 0 rgba(255,255,255,0.6);
+  text-align: center;
+}
+.reveal-trivia {
+  font-size: 0.9rem; font-weight: 700;
+  color: var(--text);
+  margin: 10px 20px;
+  max-width: 420px;
+  text-align: center;
+  background: rgba(255,255,255,0.85);
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 3px dashed var(--sand-mid);
+  line-height: 1.5;
+}
+.reveal-continue {
+  margin-top: 14px;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: white;
+  padding: 12px 30px;
+  border: 3px solid white;
+  border-radius: 999px;
+  font-size: 1rem; font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(80,40,10,0.35);
+}
+.reveal-continue:active { transform: scale(0.95); }
+
+/* ── キャラの吹き出し (Pono / Hedgehog) ── */
+.char-bubble {
+  position: fixed; z-index: 310;
+  display: flex; flex-direction: column; align-items: center;
+  pointer-events: none;
+  animation: charIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes charIn {
+  0% { transform: translateY(60px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.char-pono { bottom: 20px; right: 14px; }
+.char-hedge { bottom: 20px; left: 14px; }
+.char-img { width: 90px; height: 90px; object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}
+.char-speech {
+  background: white;
+  border: 3px solid var(--sand-dark);
+  padding: 6px 14px;
+  border-radius: 18px;
+  font-size: 0.88rem; font-weight: 900;
+  color: var(--text);
+  margin-bottom: 6px;
+  position: relative;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(80,40,10,0.3);
+}
+.char-speech::after {
+  content: ''; position: absolute;
+  bottom: -10px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid var(--sand-dark);
+}
+
+/* ── RECORD (recording to tablet) ── */
+.record-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 320;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.record-overlay.show { display: flex; }
+.record-tablet {
+  background: linear-gradient(180deg, #2F3A47 0%, #1C252F 100%);
+  border: 6px solid #4A5564;
+  border-radius: 28px;
+  padding: 22px 18px;
+  max-width: 360px; width: 94%;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  position: relative;
+}
+.record-tablet::before {
+  content: ''; position: absolute; top: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 8px; height: 8px;
+  background: #6A7A8A; border-radius: 50%;
+}
+.record-screen {
+  background: linear-gradient(180deg, #E8F4FF 0%, #B8D8E8 100%);
+  border-radius: 14px;
+  padding: 16px 14px;
+  text-align: center;
+}
+.record-tag {
+  font-size: 0.7rem; font-weight: 900;
+  color: #1D4ED8;
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+.record-title {
+  font-size: 1.25rem; font-weight: 900;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.record-img {
+  max-width: 60%; max-height: 130px;
+  margin: 6px auto 8px;
+  display: block;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2));
+}
+.record-era {
+  font-size: 0.75rem; font-weight: 700;
+  color: #0369A1;
+  margin-bottom: 6px;
+}
+.record-date {
+  font-size: 0.7rem; color: #4B5563;
+  margin-top: 4px;
+}
+.record-btn {
+  margin-top: 14px;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: white;
+  padding: 10px 28px;
+  border: 3px solid white;
+  border-radius: 999px;
+  font-size: 0.95rem; font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+.record-btn:active { transform: scale(0.96); }
+
+/* ── INDEX (図鑑) ── */
+.index-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20,12,6,0.92);
+  z-index: 330;
+  display: none;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 10px) 10px 10px;
+  overflow: hidden;
+}
+.index-overlay.show { display: flex; }
+.index-header {
+  text-align: center;
+  color: #FFE4A8;
+  padding: 6px 0;
+}
+.index-header h2 {
+  font-size: 1.2rem; font-weight: 900;
+}
+.index-progress {
+  font-size: 0.85rem; margin-top: 4px;
+  color: #FFD28C;
+}
+.index-close {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  border: 2px solid white;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+  z-index: 1;
+}
+.index-grid {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  padding: 10px 6px 120px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.index-cell {
+  background: rgba(255,255,255,0.95);
+  border-radius: 14px;
+  padding: 8px 6px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  transition: transform 0.15s;
+  aspect-ratio: 1 / 1.12;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.index-cell:active { transform: scale(0.95); }
+.index-cell img {
+  width: 68%; height: 64%;
+  object-fit: contain;
+}
+.index-cell .index-name {
+  font-size: 0.68rem; font-weight: 900;
+  color: var(--text);
+  margin-top: 4px;
+  line-height: 1.15;
+}
+.index-cell.locked img { filter: brightness(0) opacity(0.22); }
+.index-cell.locked .index-name { color: #aaa; }
+
+/* Index actions (quiz start / museum) */
+.index-actions {
+  position: fixed; bottom: 10px; left: 10px; right: 10px;
+  display: flex; gap: 8px; justify-content: center;
+  z-index: 10;
+}
+.index-action-btn {
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: white;
+  padding: 12px 24px;
+  border: 3px solid white;
+  border-radius: 999px;
+  font-size: 0.95rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  flex: 1; max-width: 220px;
+}
+.index-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+}
+.index-action-btn.museum {
+  background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+}
+.index-action-btn:not(:disabled):active { transform: scale(0.95); }
+
+/* Index detail modal */
+.index-detail {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 340;
+  padding: 20px;
+}
+.index-detail.show { display: flex; }
+.index-detail-card {
+  background: white;
+  border-radius: 22px;
+  padding: 22px 18px;
+  max-width: 380px; width: 94%;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.index-detail-card img {
+  max-width: 70%; max-height: 180px;
+  margin: 4px auto;
+  display: block;
+}
+.index-detail-card .d-name {
+  font-size: 1.35rem; font-weight: 900;
+  color: var(--sand-dark);
+  margin-top: 6px;
+}
+.index-detail-card .d-era {
+  font-size: 0.82rem; color: #6B7280;
+  margin-top: 3px;
+}
+.index-detail-card .d-trivia {
+  font-size: 0.9rem;
+  margin: 10px 0;
+  background: #FFF4E0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 2px dashed var(--sand-mid);
+  line-height: 1.5;
+  font-weight: 700;
+}
+.index-detail-card .d-date {
+  font-size: 0.75rem; color: #6B7280; margin-top: 4px;
+}
+.index-detail-card .d-close {
+  margin-top: 10px;
+  background: var(--sand-mid);
+  color: white;
+  padding: 10px 24px;
+  border: 2px solid white;
+  border-radius: 999px;
+  font-size: 0.9rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+}
+
+/* ── QUIZ ── */
+.quiz-overlay {
+  position: fixed; inset: 0;
+  background: linear-gradient(180deg, #6D28D9 0%, #4C1D95 100%);
+  z-index: 400;
+  display: none;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 10px) 14px 14px;
+  align-items: center;
+}
+.quiz-overlay.show { display: flex; }
+.quiz-progress {
+  color: #FFE4A8; font-weight: 900;
+  font-size: 0.85rem;
+  margin: 6px 0;
+}
+.quiz-card {
+  background: white;
+  border-radius: 22px;
+  padding: 16px 14px;
+  width: 100%; max-width: 460px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  margin-bottom: 12px;
+  text-align: center;
+}
+.quiz-img {
+  max-width: 65%; max-height: 180px;
+  margin: 4px auto 8px;
+  display: block;
+}
+.quiz-q {
+  font-size: 1.05rem; font-weight: 900;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.quiz-choices {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.quiz-choice {
+  background: linear-gradient(135deg, #FDE68A, #F59E0B);
+  color: var(--text);
+  padding: 12px 16px;
+  border: 3px solid white;
+  border-radius: 16px;
+  font-size: 1rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  transition: transform 0.15s;
+}
+.quiz-choice:active { transform: scale(0.97); }
+.quiz-choice.correct { background: linear-gradient(135deg, #34D399, #10B981); color: white; }
+.quiz-choice.wrong { background: linear-gradient(135deg, #F87171, #DC2626); color: white; }
+.quiz-close {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  border: 2px solid white;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+}
+.quiz-feedback {
+  font-size: 1rem; font-weight: 900; color: white;
+  margin: 10px 0;
+  min-height: 30px;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+.quiz-detail {
+  background: rgba(255,255,255,0.95);
+  padding: 10px 14px; border-radius: 14px;
+  color: var(--text); font-size: 0.85rem;
+  font-weight: 700; line-height: 1.5;
+  max-width: 420px;
+}
+.quiz-next {
+  margin-top: 12px;
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: white;
+  padding: 10px 28px;
+  border: 3px solid white;
+  border-radius: 999px;
+  font-size: 0.95rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+}
+
+/* ── MUSEUM ── */
+.museum-overlay {
+  position: fixed; inset: 0;
+  background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  z-index: 410;
+  display: none;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 10px) 10px 10px;
+}
+.museum-overlay.show { display: flex; }
+.museum-header {
+  color: #FFE4A8;
+  text-align: center;
+  padding: 8px;
+}
+.museum-header h2 { font-size: 1.3rem; font-weight: 900; }
+.museum-header p { font-size: 0.82rem; margin-top: 4px; color: #FDBA74; }
+.museum-row {
+  flex: 1; min-height: 0;
+  overflow-x: auto; overflow-y: hidden;
+  display: flex; gap: 14px;
+  padding: 10px 14px;
+  align-items: center;
+  scroll-snap-type: x mandatory;
+}
+.museum-pedestal {
+  flex-shrink: 0;
+  width: 200px; height: 260px;
+  background: linear-gradient(180deg, #78350F 0%, #451A03 100%);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  padding: 12px;
+  scroll-snap-align: center;
+  position: relative;
+}
+.museum-pedestal img {
+  max-width: 90%; max-height: 170px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  margin-bottom: 8px;
+}
+.museum-pedestal .m-name {
+  background: #FEF3C7;
+  color: #78350F;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem; font-weight: 900;
+  text-align: center;
+  border: 2px solid #92400E;
+}
+.museum-close {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  border: 2px solid white; border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+}
+
+/* ── Title / Intro overlay ── */
+.intro-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20,12,6,0.88);
+  z-index: 500;
+  display: flex;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.intro-overlay.hidden { display: none; }
+.intro-card {
+  background: #FFF8F0;
+  border-radius: 24px;
+  padding: 24px 20px;
+  max-width: 380px; width: 94%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+.intro-card h2 {
+  font-size: 1.3rem; font-weight: 900;
+  color: var(--sand-dark);
+  margin-bottom: 10px;
+}
+.intro-card p {
+  font-size: 0.9rem; line-height: 1.6;
+  color: var(--text);
+  font-weight: 700;
+  margin-bottom: 12px;
+  white-space: pre-line;
+}
+.intro-card img {
+  max-width: 90px; max-height: 90px;
+  margin: 6px auto;
+}
+.intro-card button {
+  background: linear-gradient(135deg, #F97316, #EF4444);
+  color: white;
+  padding: 12px 32px;
+  border: 3px solid white;
+  border-radius: 999px;
+  font-size: 1rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(80,40,10,0.4);
+}
+
+/* ── Flash overlay ── */
+.flash-overlay {
+  position: absolute; inset: 0;
+  background: rgba(255,255,200,0.45);
+  pointer-events: none;
+  z-index: 25;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.flash-overlay.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <h1>🦕 かせきはっくつ</h1>
+    <div class="subtitle">ポノと ハリネズミで きょうりゅうを さがそう！</div>
+  </div>
+
+  <div class="hud">
+    <div id="hud-stage">ステージ 1</div>
+    <div id="hud-found">みつけた: 0 / 14</div>
+  </div>
+
+  <div class="game-wrap" id="gameWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div id="arrowLayer"></div>
+
+    <div class="radar-ui" id="radarUi">
+      <span class="radar-icon"></span>
+      <span id="radarText">...</span>
+      <div class="radar-bar" id="radarBar"></div>
+    </div>
+
+    <div class="tools">
+      <button class="tool-btn" id="btnIndex" title="ずかん">📒</button>
+      <button class="tool-btn" id="btnStageSel" title="ステージえらび">🗺️</button>
+    </div>
+
+    <div class="hint-bubble" id="hintBubble" style="display:none;"></div>
+    <button class="dig-btn" id="btnDig">⛏️ ほる！</button>
+    <div class="flash-overlay" id="flashOv"></div>
+  </div>
+</div>
+
+<!-- DIG Phase -->
+<div class="dig-overlay" id="digOverlay">
+  <button class="dig-close" id="digClose">やめる</button>
+  <div class="dig-title" id="digTitle">ブラシで すなを はらおう！</div>
+  <div class="dig-progress">
+    <span class="dig-star" id="digStar0">⭐</span>
+    <span class="dig-star" id="digStar1">⭐</span>
+    <span class="dig-star" id="digStar2">⭐</span>
+  </div>
+  <div class="dig-stage" id="digStage">
+    <canvas id="fossilCanvas"></canvas>
+    <canvas id="sandCanvas"></canvas>
+  </div>
+  <div class="dig-brush-hint">ゆびで なぞって すなを はらおう！</div>
+</div>
+
+<!-- REVEAL -->
+<div class="reveal-overlay" id="revealOverlay">
+  <img class="reveal-dino-img" id="revealImg" alt="">
+  <div class="reveal-name" id="revealName"></div>
+  <div class="reveal-trivia" id="revealTrivia"></div>
+  <button class="reveal-continue" id="revealContinue">つづける ▶</button>
+</div>
+
+<!-- RECORD to tablet -->
+<div class="record-overlay" id="recordOverlay">
+  <div class="record-tablet">
+    <div class="record-screen">
+      <div class="record-tag">📒 ずかんに きろく！</div>
+      <div class="record-title" id="recTitle"></div>
+      <img class="record-img" id="recImg" alt="">
+      <div class="record-era" id="recEra"></div>
+      <div class="record-date" id="recDate"></div>
+    </div>
+    <button class="record-btn" id="recBtn">OK ▶</button>
+  </div>
+</div>
+
+<!-- INDEX (Picture Book) -->
+<div class="index-overlay" id="indexOverlay">
+  <button class="index-close" id="indexClose">とじる</button>
+  <div class="index-header">
+    <h2>📒 きょうりゅうずかん</h2>
+    <div class="index-progress" id="indexProgress">0 / 14</div>
+  </div>
+  <div class="index-grid" id="indexGrid"></div>
+  <div class="index-actions">
+    <button class="index-action-btn" id="btnQuizStart">🧠 クイズ</button>
+    <button class="index-action-btn museum" id="btnMuseum" disabled>🏛️ はくぶつかん</button>
+  </div>
+</div>
+
+<!-- Index detail modal -->
+<div class="index-detail" id="indexDetail">
+  <div class="index-detail-card">
+    <img id="detImg" alt="">
+    <div class="d-name" id="detName"></div>
+    <div class="d-era" id="detEra"></div>
+    <div class="d-trivia" id="detTrivia"></div>
+    <div class="d-date" id="detDate"></div>
+    <button class="d-close" id="detClose">とじる</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="quiz-overlay" id="quizOverlay">
+  <button class="quiz-close" id="quizClose">やめる</button>
+  <div class="quiz-progress" id="quizProgress"></div>
+  <div class="quiz-card" id="quizCard">
+    <img class="quiz-img" id="quizImg" alt="">
+    <div class="quiz-q" id="quizQ"></div>
+    <div class="quiz-choices" id="quizChoices"></div>
+  </div>
+  <div class="quiz-feedback" id="quizFeedback"></div>
+  <div class="quiz-detail" id="quizDetail" style="display:none;"></div>
+  <button class="quiz-next" id="quizNext" style="display:none;">つぎへ ▶</button>
+</div>
+
+<!-- MUSEUM -->
+<div class="museum-overlay" id="museumOverlay">
+  <button class="museum-close" id="museumClose">とじる</button>
+  <div class="museum-header">
+    <h2>🏛️ きょうりゅうはくぶつかん</h2>
+    <p>14たい コンプリート！ジオラマを たのしもう！</p>
+  </div>
+  <div class="museum-row" id="museumRow"></div>
+</div>
+
+<!-- Intro -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-card">
+    <h2>🦕 かせきはっくつ</h2>
+    <img src="../assets/images/characters/pono/dance/dance_wave.png" alt="ポノ">
+    <p>ポノと ハリネズミは\nさばくで きょうりゅうの\nかせきを さがしているよ！\n\nレーダーの おとを きいて\nちかづいたら「ほる！」ボタンで\nブラシで はっくつしよう！</p>
+    <button id="introStart">はじめる ▶</button>
+  </div>
+</div>
+
+<!-- Common scripts -->
+<script src="../common/menu.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="data/fossils.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+var gameState = 'WORLDMAP';
+var currentStageIdx = 0;
+
+// Tile types
+var T = { SAND:0, ROCK:1, CACTUS:2, RUIN:3, TENT:4, BONE:5 };
+
+// Stages layout: each cell is T.*
+// Stage 0: 昼の砂漠 (10x7)
+// Stage 1: 遺跡砂漠 (10x7)
+// Stage 2: 夕焼け砂漠 (10x7)
+var STAGES = [
+  {
+    cols: 10, rows: 7,
+    fossils: [
+      { id:'Brachiosaurus', r:1, c:3 },
+      { id:'Triceratops',   r:4, c:7 },
+      { id:'Stegosaurus',   r:5, c:1 },
+      { id:'Pteranodon',    r:2, c:8 }
+    ],
+    spawn: { r:3, c:0 },
+    cells: [
+      [0,2,0,0,0,0,2,0,0,0],
+      [0,0,0,0,0,0,0,0,0,2],
+      [0,0,1,0,0,2,0,0,0,0],
+      [4,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,0,0,0,0,0],
+      [0,0,0,0,0,0,0,2,1,0],
+      [0,2,0,1,0,0,0,0,0,0]
+    ]
+  },
+  {
+    cols: 10, rows: 7,
+    fossils: [
+      { id:'Tyrannosaurus', r:2, c:5 },
+      { id:'Raptor',        r:5, c:2 },
+      { id:'Ankylosaurus',  r:1, c:8 },
+      { id:'Spinosaurus',   r:4, c:6 },
+      { id:'Plesiosaur',    r:6, c:8 }
+    ],
+    spawn: { r:0, c:0 },
+    cells: [
+      [0,0,3,0,0,0,0,0,3,0],
+      [0,0,0,0,3,0,0,0,0,0],
+      [0,3,0,0,0,0,0,0,3,0],
+      [4,0,0,0,0,1,0,0,0,0],
+      [0,0,3,0,0,0,0,0,0,0],
+      [0,0,0,0,3,0,0,1,0,0],
+      [0,1,0,0,0,0,3,0,0,0]
+    ]
+  },
+  {
+    cols: 10, rows: 7,
+    fossils: [
+      { id:'Parasaurolophus',    r:1, c:4 },
+      { id:'Pachycephalosaurus', r:3, c:8 },
+      { id:'Allosaurus',         r:5, c:3 },
+      { id:'Mosasaurus',         r:5, c:7 },
+      { id:'Dimetrodon',         r:2, c:1 },
+      { id:'Iguanodon',          r:6, c:5 }
+    ],
+    spawn: { r:3, c:0 },
+    cells: [
+      [0,0,1,0,0,0,1,0,0,0],
+      [0,1,0,0,0,0,0,0,0,1],
+      [0,0,0,0,1,0,0,0,0,0],
+      [4,0,1,0,0,0,1,0,0,0],
+      [0,0,0,0,1,0,0,0,1,0],
+      [0,1,0,0,0,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0,1,0]
+    ]
+  }
+];
+
+var stage = null;
+var pono = { r:0, c:0 };
+var walkAnim = null;
+var cellSize = 48, gridOX = 0, gridOY = 0;
+
+var collection = loadCollection();
+
+// ═══════════════════════════════════════════════════════
+// DOM refs
+// ═══════════════════════════════════════════════════════
+var gameWrap = document.getElementById('gameWrap');
+var canvas = document.getElementById('gameCanvas');
+var ctx = canvas.getContext('2d');
+var arrowLayer = document.getElementById('arrowLayer');
+var hudStage = document.getElementById('hud-stage');
+var hudFound = document.getElementById('hud-found');
+var btnDig = document.getElementById('btnDig');
+var radarBar = document.getElementById('radarBar');
+var radarText = document.getElementById('radarText');
+var hintBubble = document.getElementById('hintBubble');
+var flashOv = document.getElementById('flashOv');
+
+// ═══════════════════════════════════════════════════════
+// Images: preload pono sprites + dino images
+// ═══════════════════════════════════════════════════════
+var imgPono = new Image();
+imgPono.src = '../assets/images/characters/pono/pono_001.png';
+var imgPonoHooray = new Image();
+imgPonoHooray.src = '../assets/images/characters/pono/dance/dance_hooray.png';
+var imgPonoWave = new Image();
+imgPonoWave.src = '../assets/images/characters/pono/dance/dance_wave.png';
+var imgHedgeSurprised = new Image();
+imgHedgeSurprised.src = '../assets/images/characters/headgehog/headgehog_surprised.png';
+var imgHedgeSmile = new Image();
+imgHedgeSmile.src = '../assets/images/characters/headgehog/headgehog_smilewavinghands.png';
+var imgHedgeWorried = new Image();
+imgHedgeWorried.src = '../assets/images/characters/headgehog/headgehog_worried.png';
+
+// Dino image cache
+var dinoImgCache = {};
+function getDinoImg(id) {
+  if (dinoImgCache[id]) return dinoImgCache[id];
+  var d = window.getFossilById(id);
+  if (!d) return null;
+  var img = new Image();
+  img.src = d.img;
+  dinoImgCache[id] = img;
+  return img;
+}
+// Pre-warm
+window.FOSSIL_DATA.forEach(function(d){ getDinoImg(d.id); });
+
+// ═══════════════════════════════════════════════════════
+// localStorage
+// ═══════════════════════════════════════════════════════
+function loadCollection() {
+  try {
+    var s = localStorage.getItem('pono_fossil_collection');
+    return s ? JSON.parse(s) : {};
+  } catch (e) { return {}; }
+}
+function saveCollection() {
+  try { localStorage.setItem('pono_fossil_collection', JSON.stringify(collection)); }
+  catch (e) { /* ignore */ }
+}
+
+// ═══════════════════════════════════════════════════════
+// Canvas sizing
+// ═══════════════════════════════════════════════════════
+function resizeCanvas() {
+  var w = gameWrap.clientWidth, h = gameWrap.clientHeight;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (stage) {
+    layoutGrid(w, h);
+    showArrows();
+  }
+}
+function layoutGrid(w, h) {
+  var padX = 20, padY = 20;
+  cellSize = Math.floor(Math.min((w - padX*2) / stage.cols, (h - padY*2) / stage.rows));
+  var gridW = cellSize * stage.cols, gridH = cellSize * stage.rows;
+  gridOX = Math.floor((w - gridW) / 2);
+  gridOY = Math.floor((h - gridH) / 2);
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ═══════════════════════════════════════════════════════
+// Stage loading
+// ═══════════════════════════════════════════════════════
+function loadStage(idx) {
+  currentStageIdx = idx;
+  var sdef = STAGES[idx];
+  stage = {
+    cols: sdef.cols, rows: sdef.rows,
+    cells: sdef.cells.map(function(row){ return row.slice(); }),
+    fossils: sdef.fossils.map(function(f){ return { id:f.id, r:f.r, c:f.c, dug: !!collection[f.id] }; })
+  };
+  pono.r = sdef.spawn.r;
+  pono.c = sdef.spawn.c;
+  hudStage.textContent = 'ステージ ' + (idx+1) + ' / ' + STAGES.length;
+  updateFoundHud();
+  resizeCanvas();
+  showArrows();
+}
+
+function updateFoundHud() {
+  var total = window.FOSSIL_DATA.length;
+  var found = Object.keys(collection).length;
+  hudFound.textContent = 'みつけた: ' + found + ' / ' + total;
+}
+
+// ═══════════════════════════════════════════════════════
+// Walkability / movement
+// ═══════════════════════════════════════════════════════
+function isWalkable(r, c) {
+  if (!stage) return false;
+  if (r < 0 || r >= stage.rows || c < 0 || c >= stage.cols) return false;
+  var t = stage.cells[r][c];
+  return (t === T.SAND || t === T.TENT || t === T.BONE);
+}
+
+function computeAutoWalk(sr, sc, dr, dc) {
+  var path = [];
+  var r = sr, c = sc;
+  while (true) {
+    var nr = r + dr, nc = c + dc;
+    if (!isWalkable(nr, nc)) break;
+    r = nr; c = nc;
+    path.push({ r:r, c:c, dr:dr, dc:dc });
+    // Continue straight only; stop at fossil cell, junction, or non-straight
+    if (fossilAt(r, c)) break;
+    if (!isWalkable(r+dr, c+dc)) break;
+    var sides = 0;
+    if (dr === 0) {
+      if (isWalkable(r-1, c)) sides++;
+      if (isWalkable(r+1, c)) sides++;
+    } else {
+      if (isWalkable(r, c-1)) sides++;
+      if (isWalkable(r, c+1)) sides++;
+    }
+    if (sides > 0) break;
+  }
+  return path;
+}
+
+function startWalk(path) {
+  if (!path.length) return;
+  hideArrows();
+  walkAnim = { path:path, fromR:pono.r, fromC:pono.c, t0:performance.now(), perCell:180 };
+}
+function finishWalk() {
+  if (!walkAnim) return;
+  var last = walkAnim.path[walkAnim.path.length-1];
+  pono.r = last.r; pono.c = last.c;
+  walkAnim = null;
+  showArrows();
+  updateRadarDigBtn();
+}
+
+function fossilAt(r, c) {
+  if (!stage) return null;
+  for (var i = 0; i < stage.fossils.length; i++) {
+    var f = stage.fossils[i];
+    if (!f.dug && f.r === r && f.c === c) return f;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+// Arrow UI
+// ═══════════════════════════════════════════════════════
+function showArrows() {
+  hideArrows();
+  if (!stage || walkAnim || gameState !== 'WORLDMAP') return;
+  var fx = gridOX + pono.c * cellSize + cellSize/2;
+  var fy = gridOY + pono.r * cellSize + cellSize/2;
+  var offset = Math.max(54, cellSize * 0.9);
+  var dirs = [[-1,0,'↑'],[1,0,'↓'],[0,-1,'←'],[0,1,'→']];
+  for (var i = 0; i < dirs.length; i++) {
+    var dr = dirs[i][0], dc = dirs[i][1];
+    if (!isWalkable(pono.r+dr, pono.c+dc)) continue;
+    (function(ddr, ddc, label){
+      var btn = document.createElement('button');
+      btn.className = 'dig-arrow';
+      btn.textContent = label;
+      btn.style.left = (fx + ddc*offset) + 'px';
+      btn.style.top  = (fy + ddr*offset) + 'px';
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (walkAnim || gameState !== 'WORLDMAP') return;
+        playTap();
+        var p = computeAutoWalk(pono.r, pono.c, ddr, ddc);
+        if (p.length > 0) startWalk(p);
+      });
+      arrowLayer.appendChild(btn);
+    })(dr, dc, dirs[i][2]);
+  }
+}
+function hideArrows() {
+  while (arrowLayer.firstChild) arrowLayer.removeChild(arrowLayer.firstChild);
+}
+
+// ═══════════════════════════════════════════════════════
+// Radar
+// ═══════════════════════════════════════════════════════
+var lastBeepAt = 0;
+var radarCtx = null;
+function getAudioCtx() {
+  if (!radarCtx) {
+    try { radarCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { radarCtx = null; }
+  }
+  return radarCtx;
+}
+
+function playBeep(freq, dur) {
+  var ac = getAudioCtx();
+  if (!ac) return;
+  try {
+    var osc = ac.createOscillator();
+    var g = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq || 880;
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18, ac.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + (dur || 0.08));
+    osc.connect(g); g.connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + (dur || 0.08) + 0.01);
+  } catch (e) { /* ignore */ }
+}
+function playTap() { playBeep(660, 0.04); }
+function playFanfare() {
+  var notes = [523, 659, 784, 1047];
+  notes.forEach(function(n, i){
+    setTimeout(function(){ playBeep(n, 0.16); }, i * 120);
+  });
+}
+
+function nearestFossilDist() {
+  if (!stage) return 99;
+  var best = 99;
+  for (var i = 0; i < stage.fossils.length; i++) {
+    var f = stage.fossils[i];
+    if (f.dug) continue;
+    var d = Math.abs(f.r - pono.r) + Math.abs(f.c - pono.c);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+function updateRadar(now) {
+  if (gameState !== 'WORLDMAP') return;
+  var d = nearestFossilDist();
+  // Bar: 100% when d==0, 0% when d>=10
+  var pct = Math.max(0, Math.min(100, 100 - d * 10));
+  radarBar.style.setProperty('--radar-w', pct + '%');
+  radarText.textContent = d === 0 ? 'ここ！' : (d <= 3 ? 'ちかい！' : d <= 6 ? 'ちかづいてる' : 'さがそう');
+
+  // Beep interval
+  var interval = 80 + 120 * d;
+  if (d >= 12) return;
+  if (now - lastBeepAt > interval) {
+    lastBeepAt = now;
+    playBeep(d === 0 ? 1200 : 900, d === 0 ? 0.05 : 0.04);
+  }
+}
+
+function updateRadarDigBtn() {
+  var f = fossilAt(pono.r, pono.c);
+  if (f) {
+    btnDig.classList.add('show');
+    btnDig.dataset.fossilId = f.id;
+    flashOv.classList.add('on');
+    setTimeout(function(){ flashOv.classList.remove('on'); }, 300);
+  } else {
+    btnDig.classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Draw
+// ═══════════════════════════════════════════════════════
+function drawBg(w, h) {
+  var s = STAGES[currentStageIdx];
+  var fd = window.FOSSIL_STAGES[currentStageIdx];
+  // Gradient background
+  var grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, fd.bgStart);
+  grad.addColorStop(1, fd.bgEnd);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawCell(r, c) {
+  var x = gridOX + c * cellSize;
+  var y = gridOY + r * cellSize;
+  var t = stage.cells[r][c];
+  ctx.save();
+
+  // Base sand dots per cell for texture
+  ctx.fillStyle = 'rgba(180,130,80,0.10)';
+  for (var i = 0; i < 3; i++) {
+    var px = x + ((r*31 + c*17 + i*11) % cellSize);
+    var py = y + ((c*29 + r*13 + i*19) % cellSize);
+    ctx.fillRect(px, py, 2, 2);
+  }
+
+  ctx.font = Math.floor(cellSize * 0.62) + 'px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  var cx = x + cellSize/2, cy = y + cellSize/2;
+
+  if (t === T.ROCK)   ctx.fillText('🪨', cx, cy);
+  else if (t === T.CACTUS) ctx.fillText('🌵', cx, cy);
+  else if (t === T.RUIN)   ctx.fillText('🏛️', cx, cy);
+  else if (t === T.TENT)   ctx.fillText('⛺', cx, cy);
+  else if (t === T.BONE)   ctx.fillText('🦴', cx, cy);
+
+  // Draw fossil marker if present (undug fossil at this cell)
+  var f = fossilAt(r, c);
+  if (f) {
+    // Mound with ? on it (bigger than emoji)
+    var bob = Math.sin(performance.now() / 600 + r*0.5 + c*0.7) * 1.5;
+    ctx.font = Math.floor(cellSize * 0.55) + 'px serif';
+    ctx.fillText('🟫', cx, cy + bob + cellSize*0.05);
+    ctx.font = 'bold ' + Math.floor(cellSize * 0.32) + 'px "Zen Maru Gothic"';
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 3;
+    ctx.strokeText('?', cx, cy + bob - 2);
+    ctx.fillText('?', cx, cy + bob - 2);
+  }
+  ctx.restore();
+}
+
+function drawPono(now) {
+  var pr, pc, dr = 0, dc = 0;
+  if (walkAnim) {
+    var elapsed = now - walkAnim.t0;
+    var segIdx = Math.floor(elapsed / walkAnim.perCell);
+    if (segIdx >= walkAnim.path.length) {
+      finishWalk();
+      pr = pono.r; pc = pono.c;
+    } else {
+      var t = (elapsed - segIdx * walkAnim.perCell) / walkAnim.perCell;
+      var seg = walkAnim.path[segIdx];
+      var fromR = segIdx === 0 ? walkAnim.fromR : walkAnim.path[segIdx-1].r;
+      var fromC = segIdx === 0 ? walkAnim.fromC : walkAnim.path[segIdx-1].c;
+      pr = fromR + (seg.r - fromR) * t;
+      pc = fromC + (seg.c - fromC) * t;
+      dr = seg.dr; dc = seg.dc;
+    }
+  } else {
+    pr = pono.r; pc = pono.c;
+  }
+  var fx = gridOX + pc * cellSize + cellSize/2;
+  var fy = gridOY + pr * cellSize + cellSize/2;
+  var sz = Math.floor(cellSize * 0.78);
+  if (imgPono.complete && imgPono.naturalWidth > 0) {
+    ctx.drawImage(imgPono, fx - sz/2, fy - sz/2, sz, sz);
+  } else {
+    ctx.font = Math.floor(cellSize * 0.6) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🐻', fx, fy);
+  }
+}
+
+function draw() {
+  var w = gameWrap.clientWidth, h = gameWrap.clientHeight;
+  if (!stage) { requestAnimationFrame(draw); return; }
+  drawBg(w, h);
+  for (var r = 0; r < stage.rows; r++) {
+    for (var c = 0; c < stage.cols; c++) {
+      drawCell(r, c);
+    }
+  }
+  drawPono(performance.now());
+  updateRadar(performance.now());
+  requestAnimationFrame(draw);
+}
+
+// ═══════════════════════════════════════════════════════
+// Keyboard
+// ═══════════════════════════════════════════════════════
+window.addEventListener('keydown', function(e){
+  if (gameState !== 'WORLDMAP' || walkAnim) return;
+  var dr = 0, dc = 0;
+  if (e.key === 'ArrowUp') dr = -1;
+  else if (e.key === 'ArrowDown') dr = 1;
+  else if (e.key === 'ArrowLeft') dc = -1;
+  else if (e.key === 'ArrowRight') dc = 1;
+  else return;
+  e.preventDefault();
+  if (!isWalkable(pono.r+dr, pono.c+dc)) return;
+  var p = computeAutoWalk(pono.r, pono.c, dr, dc);
+  if (p.length > 0) startWalk(p);
+});
+
+// ═══════════════════════════════════════════════════════
+// DIG Phase
+// ═══════════════════════════════════════════════════════
+var digState = null;
+
+function openDig(fossilId) {
+  gameState = 'DIG';
+  hideArrows();
+  btnDig.classList.remove('show');
+  var dino = window.getFossilById(fossilId);
+  if (!dino) return;
+
+  var fossilCanvas = document.getElementById('fossilCanvas');
+  var sandCanvas = document.getElementById('sandCanvas');
+  var digStage = document.getElementById('digStage');
+  document.getElementById('digTitle').textContent = 'ブラシで すなを はらおう！';
+  document.getElementById('digOverlay').classList.add('show');
+  fossilCanvas.classList.remove('revealed');
+
+  // Reset stars
+  for (var s = 0; s < 3; s++) {
+    document.getElementById('digStar'+s).classList.remove('on');
+  }
+
+  // Size canvases
+  setTimeout(function(){
+    var w = digStage.clientWidth;
+    var h = digStage.clientHeight;
+    var dpr = window.devicePixelRatio || 1;
+    [fossilCanvas, sandCanvas].forEach(function(cv){
+      cv.width = Math.floor(w * dpr);
+      cv.height = Math.floor(h * dpr);
+      var c = cv.getContext('2d');
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+
+    // Draw fossil image onto fossilCanvas
+    var fctx = fossilCanvas.getContext('2d');
+    fctx.clearRect(0, 0, w, h);
+    var img = getDinoImg(fossilId);
+    function drawFossil() {
+      if (!img.complete || !img.naturalWidth) return;
+      var iw = img.naturalWidth, ih = img.naturalHeight;
+      var scale = Math.min(w*0.85 / iw, h*0.85 / ih);
+      var dw = iw * scale, dh = ih * scale;
+      fctx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
+      // Compute mask
+      digState.maskPoints = computeMask(fctx, w, h);
+    }
+    if (img.complete && img.naturalWidth > 0) drawFossil();
+    else img.onload = drawFossil;
+
+    // Draw sand onto sandCanvas
+    var sctx = sandCanvas.getContext('2d');
+    sctx.globalCompositeOperation = 'source-over';
+    // Sand base gradient
+    var g = sctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#E4C48A');
+    g.addColorStop(1, '#B8915A');
+    sctx.fillStyle = g;
+    sctx.fillRect(0, 0, w, h);
+    // Noise dots
+    for (var i = 0; i < 800; i++) {
+      var px = Math.random() * w;
+      var py = Math.random() * h;
+      sctx.fillStyle = 'rgba(120,80,40,' + (0.15 + Math.random()*0.25) + ')';
+      sctx.fillRect(px, py, 2 + Math.random()*2, 2 + Math.random()*2);
+    }
+    // Slight sparkle highlights
+    for (var i = 0; i < 200; i++) {
+      sctx.fillStyle = 'rgba(255,240,200,' + (0.08 + Math.random()*0.15) + ')';
+      sctx.fillRect(Math.random()*w, Math.random()*h, 1.5, 1.5);
+    }
+
+    digState = {
+      fossilId: fossilId,
+      fctx: fctx, sctx: sctx,
+      w: w, h: h,
+      drawing: false,
+      lastX: 0, lastY: 0,
+      maskPoints: null,
+      revealed: 0,
+      maskTotal: 0
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      digState.maskPoints = computeMask(fctx, w, h);
+    }
+  }, 30);
+
+  // Warm up TTS
+  try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch(e) {}
+}
+
+function computeMask(fctx, w, h) {
+  // Sample 40x40 grid of fossil canvas, keep points where alpha > 30
+  var pts = [];
+  try {
+    var img = fctx.getImageData(0, 0, fctx.canvas.width, fctx.canvas.height);
+    var data = img.data;
+    var iw = img.width, ih = img.height;
+    var step = 40;
+    for (var yi = 0; yi < step; yi++) {
+      for (var xi = 0; xi < step; xi++) {
+        var px = Math.floor(iw * (xi+0.5) / step);
+        var py = Math.floor(ih * (yi+0.5) / step);
+        var idx = (py * iw + px) * 4;
+        if (data[idx+3] > 30) {
+          pts.push({ x: (xi+0.5)/step * w, y: (yi+0.5)/step * h, sampledX: px, sampledY: py });
+        }
+      }
+    }
+  } catch (e) { /* cross-origin? (local should be fine) */ }
+  if (digState) digState.maskTotal = pts.length;
+  return pts;
+}
+
+function brushAt(ev) {
+  if (!digState) return;
+  var sandCanvas = document.getElementById('sandCanvas');
+  var rect = sandCanvas.getBoundingClientRect();
+  var cx = (ev.clientX || (ev.touches && ev.touches[0].clientX)) - rect.left;
+  var cy = (ev.clientY || (ev.touches && ev.touches[0].clientY)) - rect.top;
+  if (isNaN(cx) || isNaN(cy)) return;
+  var sctx = digState.sctx;
+  sctx.globalCompositeOperation = 'destination-out';
+  sctx.lineWidth = Math.max(36, digState.w * 0.09);
+  sctx.lineCap = 'round';
+  sctx.lineJoin = 'round';
+  sctx.strokeStyle = 'rgba(0,0,0,1)';
+  sctx.beginPath();
+  if (digState.drawing) {
+    sctx.moveTo(digState.lastX, digState.lastY);
+    sctx.lineTo(cx, cy);
+  } else {
+    sctx.moveTo(cx-0.5, cy);
+    sctx.lineTo(cx+0.5, cy);
+  }
+  sctx.stroke();
+  digState.lastX = cx;
+  digState.lastY = cy;
+  digState.drawing = true;
+  // Soft brush sfx
+  if (Math.random() < 0.25) playBeep(200 + Math.random()*80, 0.03);
+  checkRevealProgress();
+}
+
+function checkRevealProgress() {
+  if (!digState || !digState.maskPoints) return;
+  var sctx = digState.sctx;
+  var total = digState.maskPoints.length;
+  if (total === 0) return;
+  var cleared = 0;
+  // Sample each mask point's alpha on sandCanvas
+  // Use getImageData per-point with small batch
+  var sandCanvas = document.getElementById('sandCanvas');
+  var dpr = window.devicePixelRatio || 1;
+  for (var i = 0; i < total; i++) {
+    var p = digState.maskPoints[i];
+    var px = Math.floor(p.x * dpr);
+    var py = Math.floor(p.y * dpr);
+    try {
+      var d = sctx.getImageData(px, py, 1, 1).data;
+      if (d[3] < 30) cleared++;
+    } catch (e) { /* ignore */ }
+  }
+  var ratio = cleared / total;
+  digState.revealed = ratio;
+
+  // Update stars
+  document.getElementById('digStar0').classList.toggle('on', ratio >= 0.25);
+  document.getElementById('digStar1').classList.toggle('on', ratio >= 0.50);
+  document.getElementById('digStar2').classList.toggle('on', ratio >= 0.70);
+
+  if (ratio >= 0.70 && gameState === 'DIG') {
+    triggerReveal(digState.fossilId);
+  }
+}
+
+// Dig stage pointer handlers
+(function(){
+  var sandCanvas = document.getElementById('sandCanvas');
+  function onPd(e){ e.preventDefault(); digState && (digState.drawing = false); brushAt(e); }
+  function onPm(e){ if (!digState || !digState.drawing) return; e.preventDefault(); brushAt(e); }
+  function onPu(){ if (digState) digState.drawing = false; }
+  sandCanvas.addEventListener('pointerdown', onPd);
+  sandCanvas.addEventListener('pointermove', onPm);
+  sandCanvas.addEventListener('pointerup', onPu);
+  sandCanvas.addEventListener('pointercancel', onPu);
+  sandCanvas.addEventListener('pointerleave', onPu);
+  sandCanvas.addEventListener('touchstart', function(e){ e.preventDefault(); }, { passive:false });
+  sandCanvas.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive:false });
+})();
+
+document.getElementById('digClose').addEventListener('click', function(){
+  document.getElementById('digOverlay').classList.remove('show');
+  digState = null;
+  gameState = 'WORLDMAP';
+  showArrows();
+  updateRadarDigBtn();
+});
+
+// ═══════════════════════════════════════════════════════
+// REVEAL演出
+// ═══════════════════════════════════════════════════════
+var charBubbles = [];
+function showCharBubble(kind, imgSrc, speech) {
+  var wrap = document.createElement('div');
+  wrap.className = 'char-bubble ' + (kind === 'pono' ? 'char-pono' : 'char-hedge');
+  var sp = document.createElement('div');
+  sp.className = 'char-speech';
+  sp.textContent = speech;
+  var im = document.createElement('img');
+  im.className = 'char-img';
+  im.src = imgSrc;
+  wrap.appendChild(sp);
+  wrap.appendChild(im);
+  document.body.appendChild(wrap);
+  charBubbles.push(wrap);
+}
+function clearCharBubbles() {
+  charBubbles.forEach(function(el){ if (el.parentNode) el.parentNode.removeChild(el); });
+  charBubbles = [];
+}
+
+function speakJa(text) {
+  try {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 1.0; u.pitch = 1.15;
+    speechSynthesis.speak(u);
+  } catch (e) { /* ignore */ }
+}
+
+function triggerReveal(fossilId) {
+  gameState = 'REVEAL';
+  var dino = window.getFossilById(fossilId);
+  if (!dino) return;
+  // Fade sand away
+  var sandCanvas = document.getElementById('sandCanvas');
+  sandCanvas.style.transition = 'opacity 0.6s';
+  sandCanvas.style.opacity = '0';
+  document.getElementById('fossilCanvas').classList.add('revealed');
+
+  playFanfare();
+
+  setTimeout(function(){
+    // Close dig overlay, open reveal overlay
+    document.getElementById('digOverlay').classList.remove('show');
+    sandCanvas.style.opacity = '1';
+    var revealOv = document.getElementById('revealOverlay');
+    document.getElementById('revealImg').src = dino.img;
+    document.getElementById('revealName').textContent = dino.jp + ' の かせきだ！';
+    document.getElementById('revealTrivia').textContent = dino.trivia;
+    revealOv.classList.add('show');
+
+    // Show pono first
+    showCharBubble('pono', '../assets/images/characters/pono/dance/dance_hooray.png', 'みてみて！');
+    speakJa('みてみて！');
+
+    // Then hedgehog
+    setTimeout(function(){
+      showCharBubble('hedge', '../assets/images/characters/headgehog/headgehog_surprised.png', 'え？ なんですか？');
+      speakJa('え？なんですか？');
+    }, 800);
+
+    // Then reveal name
+    setTimeout(function(){
+      speakJa(dino.jp + 'の かせきだ！');
+    }, 1800);
+
+  }, 800);
+}
+
+document.getElementById('revealContinue').addEventListener('click', function(){
+  var ro = document.getElementById('revealOverlay');
+  ro.classList.remove('show');
+  clearCharBubbles();
+  openRecord(digState && digState.fossilId);
+});
+
+// ═══════════════════════════════════════════════════════
+// RECORD to tablet
+// ═══════════════════════════════════════════════════════
+function openRecord(fossilId) {
+  if (!fossilId) return;
+  gameState = 'RECORD';
+  var dino = window.getFossilById(fossilId);
+  var isNew = !collection[fossilId];
+  if (isNew) {
+    collection[fossilId] = { foundAt: Date.now(), stageId: currentStageIdx };
+    saveCollection();
+    // Mark in stage
+    if (stage) {
+      stage.fossils.forEach(function(f){ if (f.id === fossilId) f.dug = true; });
+    }
+    updateFoundHud();
+    grantAchievements();
+  }
+
+  document.getElementById('recTitle').textContent = dino.jp;
+  document.getElementById('recImg').src = dino.img;
+  document.getElementById('recEra').textContent = dino.era;
+  document.getElementById('recDate').textContent = 'はっけんび: ' + new Date(collection[fossilId].foundAt).toLocaleDateString('ja-JP');
+  document.getElementById('recordOverlay').classList.add('show');
+}
+
+document.getElementById('recBtn').addEventListener('click', function(){
+  document.getElementById('recordOverlay').classList.remove('show');
+  digState = null;
+  gameState = 'WORLDMAP';
+
+  // Check stage completion
+  if (stage && stage.fossils.every(function(f){ return f.dug; })) {
+    // Advance to next stage if any
+    var next = currentStageIdx + 1;
+    if (next < STAGES.length) {
+      setTimeout(function(){
+        alert('ステージ ' + (currentStageIdx+1) + ' クリア！\nつぎの さばくへ いこう！');
+        loadStage(next);
+      }, 200);
+    } else {
+      // All stages done - check museum unlock
+      if (Object.keys(collection).length >= window.FOSSIL_DATA.length) {
+        setTimeout(function(){
+          alert('🎉 14たい ぜんぶ コンプリート！\nきょうりゅうはくぶつかんが オープンしたよ！');
+          openMuseum();
+        }, 200);
+      } else {
+        showArrows();
+      }
+    }
+  } else {
+    showArrows();
+    updateRadarDigBtn();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// INDEX (図鑑)
+// ═══════════════════════════════════════════════════════
+var prevStateBeforeIndex = null;
+document.getElementById('btnIndex').addEventListener('click', openIndex);
+document.getElementById('indexClose').addEventListener('click', closeIndex);
+
+function openIndex() {
+  prevStateBeforeIndex = gameState;
+  gameState = 'INDEX';
+  buildIndexGrid();
+  document.getElementById('indexOverlay').classList.add('show');
+}
+function closeIndex() {
+  document.getElementById('indexOverlay').classList.remove('show');
+  gameState = prevStateBeforeIndex || 'WORLDMAP';
+  if (gameState === 'WORLDMAP') showArrows();
+}
+
+function buildIndexGrid() {
+  var grid = document.getElementById('indexGrid');
+  grid.innerHTML = '';
+  var found = 0;
+  window.FOSSIL_DATA.forEach(function(d){
+    var cell = document.createElement('div');
+    cell.className = 'index-cell' + (collection[d.id] ? '' : ' locked');
+    var img = document.createElement('img');
+    img.src = d.img;
+    img.alt = d.jp;
+    cell.appendChild(img);
+    var nm = document.createElement('div');
+    nm.className = 'index-name';
+    nm.textContent = collection[d.id] ? d.jp : '？？？';
+    cell.appendChild(nm);
+    if (collection[d.id]) {
+      found++;
+      cell.addEventListener('click', function(){ showDetail(d.id); });
+    }
+    grid.appendChild(cell);
+  });
+  document.getElementById('indexProgress').textContent = found + ' / ' + window.FOSSIL_DATA.length;
+  var btnQuiz = document.getElementById('btnQuizStart');
+  var btnMus = document.getElementById('btnMuseum');
+  if (found < 3) {
+    btnQuiz.disabled = true;
+    btnQuiz.textContent = '🧠 クイズ (あと ' + (3 - found) + ' たい)';
+  } else {
+    btnQuiz.disabled = false;
+    btnQuiz.textContent = '🧠 クイズ スタート';
+  }
+  btnMus.disabled = (found < window.FOSSIL_DATA.length);
+}
+
+function showDetail(id) {
+  var d = window.getFossilById(id);
+  var rec = collection[id];
+  if (!d || !rec) return;
+  document.getElementById('detImg').src = d.img;
+  document.getElementById('detName').textContent = d.jp;
+  document.getElementById('detEra').textContent = d.era;
+  document.getElementById('detTrivia').textContent = d.trivia;
+  document.getElementById('detDate').textContent = 'はっけんび: ' + new Date(rec.foundAt).toLocaleDateString('ja-JP');
+  document.getElementById('indexDetail').classList.add('show');
+}
+document.getElementById('detClose').addEventListener('click', function(){
+  document.getElementById('indexDetail').classList.remove('show');
+});
+
+// ═══════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════
+var quizState = null;
+
+document.getElementById('btnQuizStart').addEventListener('click', startQuiz);
+document.getElementById('quizClose').addEventListener('click', closeQuiz);
+document.getElementById('quizNext').addEventListener('click', nextQuizQuestion);
+
+function startQuiz() {
+  var foundIds = Object.keys(collection);
+  if (foundIds.length < 3) return;
+  // Build question list: 1 per found dino, max 8
+  var qs = [];
+  foundIds.forEach(function(id){
+    var d = window.getFossilById(id);
+    if (!d || !d.questions) return;
+    var pick = d.questions[Math.floor(Math.random() * d.questions.length)];
+    qs.push({ dino: d, q: pick });
+  });
+  // Shuffle & limit
+  for (var i = qs.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = qs[i]; qs[i] = qs[j]; qs[j] = tmp;
+  }
+  if (qs.length > 8) qs = qs.slice(0, 8);
+
+  quizState = { questions: qs, idx: 0, correct: 0 };
+  gameState = 'QUIZ';
+  document.getElementById('quizOverlay').classList.add('show');
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  if (!quizState) return;
+  var q = quizState.questions[quizState.idx];
+  document.getElementById('quizProgress').textContent = 'もんだい ' + (quizState.idx+1) + ' / ' + quizState.questions.length + '   せいかい: ' + quizState.correct;
+  document.getElementById('quizImg').src = q.dino.img;
+  document.getElementById('quizQ').textContent = q.q.q;
+  var choicesDiv = document.getElementById('quizChoices');
+  choicesDiv.innerHTML = '';
+  q.q.choices.forEach(function(label, i){
+    var b = document.createElement('button');
+    b.className = 'quiz-choice';
+    b.textContent = label;
+    b.addEventListener('click', function(){ onQuizAnswer(i, b); });
+    choicesDiv.appendChild(b);
+  });
+  document.getElementById('quizFeedback').textContent = '';
+  document.getElementById('quizDetail').style.display = 'none';
+  document.getElementById('quizNext').style.display = 'none';
+  // Read question
+  try {
+    setTimeout(function(){ speakJa(q.q.q); }, 150);
+  } catch (e) {}
+}
+
+function onQuizAnswer(idx, btn) {
+  if (!quizState) return;
+  var q = quizState.questions[quizState.idx];
+  var correct = (idx === q.q.answer);
+  // Disable all buttons
+  var btns = document.querySelectorAll('#quizChoices .quiz-choice');
+  btns.forEach(function(b){ b.disabled = true; });
+  // Mark correct/wrong
+  btns.forEach(function(b, i){
+    if (i === q.q.answer) b.classList.add('correct');
+    else if (i === idx && !correct) b.classList.add('wrong');
+  });
+  var fb = document.getElementById('quizFeedback');
+  if (correct) {
+    quizState.correct++;
+    fb.textContent = '🎉 せいかい！';
+    speakJa('せいかい！');
+    playFanfare();
+    try { window.incrementStat && window.incrementStat('fossil_quiz_correct', 1); } catch (e) {}
+  } else {
+    fb.textContent = '😊 ざんねん！ もういちど おぼえよう';
+    speakJa('ざんねん');
+    playBeep(300, 0.2);
+  }
+  if (q.q.detail) {
+    document.getElementById('quizDetail').textContent = q.q.detail;
+    document.getElementById('quizDetail').style.display = 'block';
+  }
+  document.getElementById('quizNext').style.display = 'block';
+  document.getElementById('quizNext').textContent = (quizState.idx === quizState.questions.length-1) ? 'けっかを みる ▶' : 'つぎへ ▶';
+}
+
+function nextQuizQuestion() {
+  if (!quizState) return;
+  quizState.idx++;
+  if (quizState.idx >= quizState.questions.length) {
+    endQuiz();
+  } else {
+    renderQuizQuestion();
+  }
+}
+
+function endQuiz() {
+  var total = quizState.questions.length;
+  var got = quizState.correct;
+  var perfect = (got === total);
+  if (perfect) {
+    try { window.incrementStat && window.incrementStat('fossil_quiz_perfect', 1); } catch (e) {}
+  }
+  var msg = 'クイズ おわり！\n' + got + ' / ' + total + ' もん せいかい！';
+  if (perfect) msg += '\n🎉 まんてんだよ！すごい！';
+  alert(msg);
+  closeQuiz();
+}
+
+function closeQuiz() {
+  document.getElementById('quizOverlay').classList.remove('show');
+  quizState = null;
+  gameState = 'INDEX';
+  buildIndexGrid();
+}
+
+// ═══════════════════════════════════════════════════════
+// MUSEUM
+// ═══════════════════════════════════════════════════════
+document.getElementById('btnMuseum').addEventListener('click', openMuseum);
+document.getElementById('museumClose').addEventListener('click', function(){
+  document.getElementById('museumOverlay').classList.remove('show');
+  gameState = 'INDEX';
+});
+
+function openMuseum() {
+  gameState = 'MUSEUM';
+  var row = document.getElementById('museumRow');
+  row.innerHTML = '';
+  window.FOSSIL_DATA.forEach(function(d){
+    var p = document.createElement('div');
+    p.className = 'museum-pedestal';
+    var im = document.createElement('img');
+    im.src = d.img;
+    im.alt = d.jp;
+    p.appendChild(im);
+    var nm = document.createElement('div');
+    nm.className = 'm-name';
+    nm.textContent = d.jp;
+    p.appendChild(nm);
+    row.appendChild(p);
+  });
+  document.getElementById('indexOverlay').classList.remove('show');
+  document.getElementById('museumOverlay').classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════
+// Stage Select (simple)
+// ═══════════════════════════════════════════════════════
+document.getElementById('btnStageSel').addEventListener('click', function(){
+  if (gameState !== 'WORLDMAP') return;
+  var msg = 'ステージを えらんでね\n';
+  STAGES.forEach(function(s, i){
+    var name = (window.FOSSIL_STAGES[i] && window.FOSSIL_STAGES[i].name) || ('ステージ ' + (i+1));
+    msg += (i+1) + '. ' + name + '\n';
+  });
+  var sel = prompt(msg, String(currentStageIdx+1));
+  if (!sel) return;
+  var n = parseInt(sel, 10);
+  if (n >= 1 && n <= STAGES.length) loadStage(n-1);
+});
+
+// ═══════════════════════════════════════════════════════
+// DIG button
+// ═══════════════════════════════════════════════════════
+btnDig.addEventListener('click', function(){
+  if (gameState !== 'WORLDMAP') return;
+  var fid = btnDig.dataset.fossilId;
+  if (!fid) return;
+  var f = fossilAt(pono.r, pono.c);
+  if (!f || f.id !== fid) return;
+  openDig(fid);
+});
+
+// ═══════════════════════════════════════════════════════
+// Achievements helper
+// ═══════════════════════════════════════════════════════
+function grantAchievements() {
+  try {
+    var count = Object.keys(collection).length;
+    if (window.incrementStat) {
+      window.incrementStat('fossil_found', 1);
+      // Also set max-style stats via direct read (achievements.js uses thresholds, so incrementing is enough
+      // for cumulative stats; for milestones it'll auto-check)
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// ═══════════════════════════════════════════════════════
+// Intro
+// ═══════════════════════════════════════════════════════
+document.getElementById('introStart').addEventListener('click', function(){
+  document.getElementById('introOverlay').classList.add('hidden');
+  // iOS warmup
+  try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) {}
+  try { getAudioCtx(); } catch (e) {}
+  loadStage(0);
+});
+
+// Menu integration
+if (window.initMenu) {
+  window.initMenu({
+    bgmToggle: function() { /* BGM not implemented for fossil MVP */ },
+    tutorial: function() {
+      alert('🦕 あそびかた\n\n1. やじるしで さばくを あるこう\n2. レーダーの おとが はやくなったら ちかい！\n3.「ほる！」ボタンで ブラシで すなを はらおう\n4. かせきを ずかんに きろくしたら クイズで まなぼう\n5. 14たい ぜんぶ あつめると はくぶつかんが ひらくよ！');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════════════════
+resizeCanvas();
+requestAnimationFrame(draw);
+
+</script>
+</body>
+</html>

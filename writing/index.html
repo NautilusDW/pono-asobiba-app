@@ -1788,18 +1788,21 @@ body.battle-mode .villain-deco {
   50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 28px rgba(200,140,250,0.95); }
   100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
 }
-/* な行: ひのとりの なぞなぞ (riddle)。古代の祭壇 (石板ペデスタル) の上に5枚の石板が現れる。
-   pedestal_empty.png が背景、完成時に pedestal_glow.png に差し替え+石板が順番に光る。 */
+/* な行: ほこらのまもりがみの なぞなぞ (riddle)。洞窟の祠 — 奥壁 (cave_bg) の手前に
+   石板ペデスタルが立ち、5枚の石板が現れる。pedestal_empty.png が背景、完成時に
+   pedestal_glow.png に差し替え+石板が順番に光る。 */
 .puzzle-bg-riddle {
   background:
     url('../assets/images/puzzle/tablet/pedestal_empty.png') center/contain no-repeat,
+    url('../assets/images/battle/bg/cave_bg_01.png') center/cover no-repeat,
     radial-gradient(ellipse at 50% 40%, #1a1834 0%, #0a0814 75%);
   image-rendering: pixelated;
 }
 .puzzle-bg-riddle.complete {
   background:
     url('../assets/images/puzzle/tablet/pedestal_glow.png') center/contain no-repeat,
-    radial-gradient(ellipse at 50% 40%, #1a2844 0%, #0a1020 75%);
+    url('../assets/images/battle/bg/cave_bg_01.png') center/cover no-repeat,
+    radial-gradient(ellipse at 50% 40%, #2a3050 0%, #0a1020 75%);
   animation: pedestalActivate 1.4s ease-out;
 }
 @keyframes pedestalActivate {
@@ -1892,8 +1895,8 @@ body.battle-mode .villain-deco {
   25%  { opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
 }
-/* ひのとり (placeholder: 絵文字運用。将来 char_firebird_idle.png に差し替え) */
-@keyframes phoenixFloat {
+/* ほこらのまもりがみ (石像 🗿)。霊力で浮く演出 */
+@keyframes guardianFloat {
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-10px) scale(1.06); }
 }
@@ -5729,12 +5732,13 @@ function _hideBattleStage() {
 const PUZZLE_ROWS = {
   'か': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['か','き','く','け','こ'] },
   'カ': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['カ','キ','ク','ケ','コ'] },
-  // な行: ひのとりが出す「3択なぞなぞ」。1文字書く → ひのとりが問題 → 3つから選ぶ。
-  'な': { kind: 'riddle',    title: 'ひのとりの なぞなぞ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['な','に','ぬ','ね','の'] },
-  'ナ': { kind: 'riddle',    title: 'ヒノトリの ナゾナゾ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
-  // ら行: 火山の溶岩の上にかかる「とびいし」5つ。1文字ずつ書いて道を作る。
-  'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ら','り','る','れ','ろ'] },
-  'ラ': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'とびいしに もじを かいて みちを つくろう！',   chars: ['ラ','リ','ル','レ','ロ'] },
+  // な行: 洞窟の祠の守り神 (石像) が出す「3択なぞなぞ」。1文字書く → 守り神が問題 → 3つから選ぶ。
+  'な': { kind: 'riddle',    title: 'ほこらの まもりがみ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['な','に','ぬ','ね','の'] },
+  'ナ': { kind: 'riddle',    title: 'ホコラの マモリガミ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  // ら行: 火山の溶岩にかかる「とびいし」。文字をなぞる=呪文発動で、3つの石のうち
+  // 本物 (うっすら光る) と偽物 (薄く霞む) が見分けられる。本物をタップで道になる。
+  'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'じゅもんを かいて ほんものの いしを みやぶろう！', chars: ['ら','り','る','れ','ろ'] },
+  'ラ': { kind: 'lava_step', title: 'ヨウガンの トビイシ',   hint: 'じゅもんを かいて ほんものの いしを みやぶろう！', chars: ['ラ','リ','ル','レ','ロ'] },
 };
 function _isPuzzleRow(label) { return !!PUZZLE_ROWS[label]; }
 
@@ -5858,10 +5862,10 @@ function _showRiddle(char, onCorrect) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:1680;background:radial-gradient(ellipse at 50% 30%,rgba(255,140,60,0.28) 0%,rgba(10,5,18,0.88) 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn 0.4s ease;padding:20px;';
 
-  const phoenix = document.createElement('div');
-  phoenix.textContent = '🔥🐦';
-  phoenix.style.cssText = 'font-size:3.8rem;margin-bottom:12px;filter:drop-shadow(0 0 22px rgba(255,180,80,0.85));animation:phoenixFloat 1.8s ease-in-out infinite;';
-  ov.appendChild(phoenix);
+  const guardian = document.createElement('div');
+  guardian.textContent = '🗿';
+  guardian.style.cssText = 'font-size:3.8rem;margin-bottom:12px;filter:drop-shadow(0 0 22px rgba(140,200,255,0.75));animation:guardianFloat 1.8s ease-in-out infinite;';
+  ov.appendChild(guardian);
 
   const bubble = document.createElement('div');
   bubble.textContent = r.question;
