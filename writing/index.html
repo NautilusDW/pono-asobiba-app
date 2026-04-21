@@ -1794,14 +1794,14 @@ body.battle-mode .villain-deco {
 .puzzle-bg-riddle {
   background:
     url('../assets/images/puzzle/tablet/pedestal_empty.png') center/contain no-repeat,
-    url('../assets/images/battle/bg/cave_bg_01.png') center/cover no-repeat,
+    url('../assets/images/puzzle/tablet/door_closed.png') center/cover no-repeat,
     radial-gradient(ellipse at 50% 40%, #1a1834 0%, #0a0814 75%);
   image-rendering: pixelated;
 }
 .puzzle-bg-riddle.complete {
   background:
     url('../assets/images/puzzle/tablet/pedestal_glow.png') center/contain no-repeat,
-    url('../assets/images/battle/bg/cave_bg_01.png') center/cover no-repeat,
+    url('../assets/images/puzzle/tablet/door_closed.png') center/cover no-repeat,
     radial-gradient(ellipse at 50% 40%, #2a3050 0%, #0a1020 75%);
   animation: pedestalActivate 1.4s ease-out;
 }
@@ -2047,39 +2047,43 @@ body.battle-mode .villain-deco {
   20%, 60% { transform: translateX(-8px); }
   40%, 80% { transform: translateX(8px); }
 }
-/* ら行: ようがんのとびいし (lava_step)。呪文トレースで本物の飛び石を見抜く。
-   3つの石が浮上 → 文字をなぞる (呪文) → 本物がうっすら光り、偽物が霞む →
-   本物をタップ → 固まって下の道ゾーンへ。5個揃うとゴーレム退散。*/
+/* ら行: ようがんのとびいし (lava_step)。文字をなぞる=呪文発動で飛び石が1つ浮上。
+   背景画像 lava_steps_0.png (0石) → lava_steps_5.png (5石揃う) を順次切替。
+   最後はゴーレム退散 + 勇者が左→右へ飛び石を渡る。 */
 .puzzle-bg-lava_step {
-  background:
-    url('../assets/images/battle/bg/volcano_bg_01.png') center/cover no-repeat,
-    linear-gradient(180deg, #1a0e0a 0%, #3a1a10 50%, #8a3018 100%);
+  background-image: url('../assets/images/puzzle/lava/lava_steps_0.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   image-rendering: pixelated;
+  transition: background-image 0.8s ease-in-out;
 }
-.puzzle-bg-lava_step::before {
-  content: '';
-  position: absolute; left: 0; right: 0; bottom: 0; height: 38%;
-  background:
-    linear-gradient(180deg, rgba(255,100,40,0.3) 0%, rgba(255,60,20,0.85) 100%),
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.25) 0 10px, transparent 10px 22px);
-  box-shadow: inset 0 6px 12px rgba(255,200,80,0.3);
+.puzzle-bg-lava_step.step-1 { background-image: url('../assets/images/puzzle/lava/lava_steps_1.png'); }
+.puzzle-bg-lava_step.step-2 { background-image: url('../assets/images/puzzle/lava/lava_steps_2.png'); }
+.puzzle-bg-lava_step.step-3 { background-image: url('../assets/images/puzzle/lava/lava_steps_3.png'); }
+.puzzle-bg-lava_step.step-4 { background-image: url('../assets/images/puzzle/lava/lava_steps_4.png'); }
+.puzzle-bg-lava_step.step-5 { background-image: url('../assets/images/puzzle/lava/lava_steps_5.png'); }
+
+/* 石が増える瞬間のピカッ演出 (中央やや下で一瞬光る) */
+.lava-step-spark {
+  position: absolute; left: 50%; top: 56%;
+  width: 38%; aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,240,180,0.95) 0%, rgba(255,180,80,0.5) 40%, rgba(255,100,30,0) 80%);
   pointer-events: none;
+  animation: lavaStepSparkPop 0.9s ease-out forwards;
+  z-index: 3;
 }
-.puzzle-bg-lava_step::after {
-  content: '';
-  position: absolute; left: 0; right: 0; top: 40%; bottom: 0;
-  background: radial-gradient(circle at 50% 100%, rgba(255,180,60,0.4) 0%, transparent 70%);
-  pointer-events: none;
+@keyframes lavaStepSparkPop {
+  0%   { transform: translate(-50%, -50%) scale(0);   opacity: 0; }
+  30%  { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
 }
 
-/* lava_step は puzzle-planks をステージ全面に拡張 (3択ゾーンと道ゾーンを絶対配置するため) */
+/* lava_step の puzzle-planks は何も置かないので非表示 (背景画像に任せる) */
 .puzzle-bg-lava_step .puzzle-planks {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  transform: none;
-  display: block;
-  padding: 0;
-  gap: 0;
+  display: none;
 }
 
 /* ようがんゴーレム背景演出 (絵文字運用、攻撃はせず威圧のみ) */
@@ -2089,7 +2093,7 @@ body.battle-mode .villain-deco {
   opacity: 0.7;
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7)) drop-shadow(0 0 14px rgba(255,120,40,0.55));
   animation: golemIdle 3s ease-in-out infinite;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   user-select: none;
 }
@@ -2106,115 +2110,39 @@ body.battle-mode .villain-deco {
   100% { opacity: 0;    transform: translateX(90%) scale(0.55); }
 }
 
-/* 3択ゾーン (画面上部): 毎ラウンド3つの石が浮上 */
-.lava-choose-zone {
-  position: absolute; top: 30%; left: 0; right: 0;
-  display: flex; justify-content: space-around; align-items: center;
-  padding: 0 6%;
-  height: 24%;
-  z-index: 3;
-}
-.lava-choose-stone {
-  width: 22%; aspect-ratio: 1;
-  display: flex; align-items: center; justify-content: center;
-  font-size: clamp(44px, 11vmin, 88px);
-  cursor: pointer;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
-  transition: filter 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
-  animation: lavaStoneEmerge 0.6s ease-out;
-  user-select: none;
-  -webkit-user-select: none;
-}
-@keyframes lavaStoneEmerge {
-  0%   { opacity: 0; transform: translateY(24px) scale(0.6); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-.lava-choose-stone.revealed-real {
-  filter: drop-shadow(0 0 16px rgba(140,210,255,0.95)) drop-shadow(0 0 8px rgba(255,255,255,0.75)) brightness(1.2);
-  animation: realStonePulse 1.8s ease-in-out infinite;
-}
-.lava-choose-stone.revealed-fake {
-  opacity: 0.38;
-  filter: blur(1px) drop-shadow(0 0 4px rgba(255,90,60,0.45));
-  animation: fakeStoneShimmer 2.2s ease-in-out infinite;
-}
-@keyframes realStonePulse {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50%      { transform: translateY(-5px) scale(1.06); }
-}
-@keyframes fakeStoneShimmer {
-  0%, 100% { opacity: 0.38; transform: translateX(0); }
-  25%      { transform: translateX(-3px); }
-  75%      { transform: translateX(3px); }
-  50%      { opacity: 0.22; }
-}
-.lava-choose-stone.solidify {
-  animation: stoneSolidify 0.55s cubic-bezier(0.3, 1.2, 0.5, 1) forwards;
+/* 勇者が左の崖から右の崖へ飛び石を渡るアニメ (5石完成後) */
+.lava-walker {
+  position: absolute;
+  top: 58%;
+  left: 6%;
+  width: clamp(48px, 11vw, 78px);
+  height: clamp(48px, 11vw, 78px);
+  transform: translate(-50%, -50%);
+  z-index: 5;
   pointer-events: none;
-}
-.lava-choose-stone.sink {
-  animation: stoneSink 0.75s ease-in forwards;
-  pointer-events: none;
-}
-@keyframes stoneSolidify {
-  0%   { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(140,210,255,0.95)) brightness(1.3); }
-  60%  { transform: scale(1.18); filter: drop-shadow(0 0 26px rgba(255,240,180,1)) brightness(1.6); }
-  100% { transform: scale(0) translateY(50vh); opacity: 0; }
-}
-@keyframes stoneSink {
-  0%   { transform: translateY(0) scale(1) rotate(0); opacity: 1; }
-  70%  { transform: translateY(18vh) scale(0.75) rotate(-6deg); opacity: 0.7; }
-  100% { transform: translateY(34vh) scale(0.3) rotate(-14deg); opacity: 0; }
-}
-
-/* 固定道ゾーン (画面下部): 正解した石がここに溜まる */
-.lava-path-zone {
-  position: absolute; bottom: 8%; left: 0; right: 0;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0 6%;
-  z-index: 2;
-}
-.lava-path-slot {
-  width: 15%; aspect-ratio: 1;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-  font-size: clamp(30px, 7.5vmin, 60px);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 10px rgba(255,200,100,0.5));
   opacity: 0;
-  transform: translateY(20px) scale(0.5);
-  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  user-select: none;
-  -webkit-user-select: none;
 }
-.lava-path-slot.filled {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(255,140,60,0.5));
+.lava-walker.hero-sprite.move {
+  animation:
+    lavaWalkAcross 3.4s linear forwards,
+    heroMoveAnim 0.45s steps(5, jump-none) infinite;
 }
-.lava-path-slot .lava-path-char {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.52em;
-  font-weight: 900;
-  color: #FFF5DC;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(255,180,60,0.55);
-  z-index: 2;
-  pointer-events: none;
+@keyframes lavaWalkAcross {
+  0%   { left: 6%;  opacity: 0; transform: translate(-50%, -50%); }
+  8%   { opacity: 1; }
+  20%  { left: 24%; transform: translate(-50%, -60%); }
+  22%  { transform: translate(-50%, -50%); }
+  40%  { left: 38%; transform: translate(-50%, -60%); }
+  42%  { transform: translate(-50%, -50%); }
+  60%  { left: 52%; transform: translate(-50%, -60%); }
+  62%  { transform: translate(-50%, -50%); }
+  80%  { left: 66%; transform: translate(-50%, -60%); }
+  82%  { transform: translate(-50%, -50%); }
+  95%  { left: 92%; opacity: 1; transform: translate(-50%, -50%); }
+  100% { left: 94%; opacity: 0; transform: translate(-50%, -50%); }
 }
 
-/* 完成時: 道の5石が順次赤橙グロー + 中央閃光 */
-.puzzle-bg-lava_step.complete .lava-path-slot {
-  animation: lavaStepSeqGlow 1s ease-in-out forwards;
-}
-.puzzle-bg-lava_step.complete .lava-path-slot-0 { animation-delay: 0s; }
-.puzzle-bg-lava_step.complete .lava-path-slot-1 { animation-delay: 0.18s; }
-.puzzle-bg-lava_step.complete .lava-path-slot-2 { animation-delay: 0.36s; }
-.puzzle-bg-lava_step.complete .lava-path-slot-3 { animation-delay: 0.54s; }
-.puzzle-bg-lava_step.complete .lava-path-slot-4 { animation-delay: 0.72s; }
-@keyframes lavaStepSeqGlow {
-  0%   { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)); transform: scale(1); }
-  40%  { filter: drop-shadow(0 0 28px rgba(255,160,60,1)) drop-shadow(0 0 14px rgba(255,240,140,0.95)) brightness(1.55); transform: scale(1.2); }
-  100% { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)) drop-shadow(0 0 10px rgba(255,140,60,0.65)); transform: scale(1.05); }
-}
 .lava-burst {
   position: absolute; top: 50%; left: 50%;
   width: 55%; aspect-ratio: 1;
@@ -6017,10 +5945,10 @@ const PUZZLE_ROWS = {
   // な行: 洞窟の祠の守り神 (石像) が出す「3択なぞなぞ」。1文字書く → 守り神が問題 → 3つから選ぶ。
   'な': { kind: 'riddle',    title: 'ほこらの まもりがみ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['な','に','ぬ','ね','の'] },
   'ナ': { kind: 'riddle',    title: 'ホコラの マモリガミ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
-  // ら行: 火山の溶岩にかかる「とびいし」。文字をなぞる=呪文発動で、3つの石のうち
-  // 本物 (うっすら光る) と偽物 (薄く霞む) が見分けられる。本物をタップで道になる。
-  'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'じゅもんを かいて ほんものの いしを みやぶろう！', chars: ['ら','り','る','れ','ろ'] },
-  'ラ': { kind: 'lava_step', title: 'ヨウガンの トビイシ',   hint: 'じゅもんを かいて ほんものの いしを みやぶろう！', chars: ['ラ','リ','ル','レ','ロ'] },
+  // ら行: 火山の溶岩にかかる「とびいし」。文字をなぞる=呪文発動で飛び石が 1 つ浮上。
+  // 5文字書くと 5石揃い道になる → 勇者が飛び石を渡る = ゴーレム退散。
+  'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'じゅもんを かいて とびいしを よびだそう！', chars: ['ら','り','る','れ','ろ'] },
+  'ラ': { kind: 'lava_step', title: 'ヨウガンの トビイシ',   hint: 'じゅもんを かいて とびいしを よびだそう！', chars: ['ラ','リ','ル','レ','ロ'] },
 };
 function _isPuzzleRow(label) { return !!PUZZLE_ROWS[label]; }
 
@@ -6076,27 +6004,17 @@ function _showPuzzleStage(rowLabel) {
   if (els.planks) {
     els.planks.innerHTML = '';
     if (def.kind === 'lava_step') {
-      // ら行: 3択ゾーン (上部、毎ラウンド書き換え) + 固定道ゾーン (下部、正解が積み上がる)
-      const chooseZone = document.createElement('div');
-      chooseZone.className = 'lava-choose-zone';
-      els.planks.appendChild(chooseZone);
-      const pathZone = document.createElement('div');
-      pathZone.className = 'lava-path-zone';
-      def.chars.forEach(function(ch, idx) {
-        const slot = document.createElement('div');
-        slot.className = 'lava-path-slot lava-path-slot-' + idx;
-        slot.innerHTML = '<span class="stone-emoji" style="font-size:1em;line-height:1;">🪨</span>' +
-                         '<span class="lava-path-char">' + ch + '</span>';
-        pathZone.appendChild(slot);
-      });
-      els.planks.appendChild(pathZone);
-      // ゴーレム (背景、絵文字運用)
-      const golem = document.createElement('div');
-      golem.className = 'lava-golem-bg';
-      golem.textContent = '🗿';
-      if (els.stage) els.stage.appendChild(golem);
-      // 初回の3択石を出す
-      _spawnLavaChoice();
+      // ら行: 背景画像 lava_steps_0.png (飛び石0個) からスタート。
+      // 文字をなぞる毎に .step-N クラスを付けて 01 → 05 へ bg を進化させる。
+      // 板 DOM は不要 (背景が全て)、ゴーレムだけ威圧のため配置。
+      if (els.stage) {
+        // step-* クラスを初期化
+        for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
+        const golem = document.createElement('div');
+        golem.className = 'lava-golem-bg';
+        golem.textContent = '🗿';
+        els.stage.appendChild(golem);
+      }
     } else {
       def.chars.forEach(function(ch, idx) {
         if (def.kind === 'riddle') {
@@ -6133,18 +6051,13 @@ function _hidePuzzleStage() {
   _puzzle.kind = null;
   _puzzle.step = 0;
   _puzzle.chars = [];
-  // ら行の一時ラウンド状態もクリア
-  try {
-    _lavaRound.correctEl = null;
-    _lavaRound.revealed = false;
-    _lavaRound.advancing = false;
-    _lavaRound.onAdvance = null;
-  } catch (e) {}
   if (!els.stage) return;
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
   els.stage.classList.remove('complete');
-  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
+  // ら行の飛び石ステップクラスをリセット (次回 lava_step で再利用)
+  for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
+  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-step-spark, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
   if (els.planks) { els.planks.style.opacity = ''; els.planks.style.transition = ''; }
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
@@ -6302,8 +6215,8 @@ function _showPuzzleIntro(kind, onDone) {
         'ここは わたらせぬぞ…！',
         'もじを なぞると',
         'じゅもんが はつどうする。',
-        'ほんものの いしを みつけて',
-        'みちを つくれ！'
+        'いつつの とびいしを よびだして',
+        'ようがんの たにを わたれ！'
       ]
     }
   };
@@ -6344,82 +6257,6 @@ function _showPuzzleIntro(kind, onDone) {
     setTimeout(function() { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, 360);
   });
   document.body.appendChild(ov);
-}
-
-// ===== ら行: ようがんのとびいし (呪文で本物を見抜く) =====
-// _spawnLavaChoice(): 3つの石をランダム配置で生成。1つだけ data-correct=1。
-// _revealLavaStones(): 呪文発動。全石の真偽を見える化。
-// _onLavaStoneTap(): 石がタップされた時の分岐。正解=solidify→道スロットに埋める→次ラウンド
-//   不正解=sink して残りの石から選び直し (呪文効果は残る、再トレース不要)。
-// _lavaRound: 当ラウンドの一時状態 (正解エレメント参照と finisher フラグ)。
-const _lavaRound = { correctEl: null, revealed: false, advancing: false, onAdvance: null };
-
-function _spawnLavaChoice() {
-  const stage = document.getElementById('puzzleStage');
-  if (!stage) return;
-  const zone = stage.querySelector('.lava-choose-zone');
-  if (!zone) return;
-  zone.innerHTML = '';
-  _lavaRound.correctEl = null;
-  _lavaRound.revealed = false;
-  const correctPos = Math.floor(Math.random() * 3);
-  for (let i = 0; i < 3; i++) {
-    const stone = document.createElement('div');
-    stone.className = 'lava-choose-stone';
-    stone.dataset.correct = (i === correctPos) ? '1' : '0';
-    stone.innerHTML = '🪨';
-    stone.addEventListener('click', function() { _onLavaStoneTap(stone); });
-    zone.appendChild(stone);
-    if (i === correctPos) _lavaRound.correctEl = stone;
-  }
-}
-
-function _revealLavaStones() {
-  const stage = document.getElementById('puzzleStage');
-  if (!stage) return;
-  const stones = stage.querySelectorAll('.lava-choose-stone');
-  stones.forEach(function(s) {
-    if (s.classList.contains('sink') || s.classList.contains('solidify')) return;
-    if (s.dataset.correct === '1') s.classList.add('revealed-real');
-    else                            s.classList.add('revealed-fake');
-  });
-  _lavaRound.revealed = true;
-}
-
-function _onLavaStoneTap(stone) {
-  // 呪文未発動 → タップ無効 (安全側で 1/3 ガチャを避ける)
-  if (!_lavaRound.revealed) return;
-  if (_lavaRound.advancing) return;
-  if (stone.classList.contains('sink') || stone.classList.contains('solidify')) return;
-  if (stone.dataset.correct === '1') {
-    // 正解: 石を固めて消し、道スロットを埋める → 次ラウンドへ
-    _lavaRound.advancing = true;
-    stone.classList.add('solidify');
-    const idx = _puzzle.step;
-    // 道スロットを埋める
-    const stage = document.getElementById('puzzleStage');
-    if (stage) {
-      const slot = stage.querySelector('.lava-path-slot-' + idx);
-      if (slot) setTimeout(function() { slot.classList.add('filled'); }, 220);
-    }
-    // 次のラウンドへ引き渡し
-    setTimeout(function() {
-      const cb = _lavaRound.onAdvance;
-      _lavaRound.onAdvance = null;
-      _lavaRound.advancing = false;
-      if (typeof cb === 'function') cb();
-    }, 650);
-  } else {
-    // 不正解: 石が沈む。残りの石はそのまま (呪文効果は持続)。
-    // 再トレースは要求せず、残りから選び直し可能。
-    stone.classList.add('sink');
-    // チャプン SFX があれば鳴らす (任意、失敗しても無視)
-    try {
-      if (typeof window !== 'undefined' && typeof window.PONO_STROKE_SFX === 'undefined') {
-        // no-op
-      }
-    } catch (e) {}
-  }
 }
 
 function _puzzleRevealPlank(opts) {
@@ -8446,37 +8283,52 @@ function _rowPracticeNextChar() {
               }, 850);
               return;
             }
-            // ら行 (lava_step): 文字をなぞる=呪文発動 → 3つの石の真偽が見える →
-            // 本物タップで固まって道に → 次へ。偽物タップは沈むだけで残石から選び直し可。
+            // ら行 (lava_step): 文字をなぞる=呪文発動で飛び石が 1 個浮上。
+            // 背景を lava_steps_{n}.png → lava_steps_{n+1}.png に切り替えて視覚化。
+            // 5 個目で全 5 石揃う → ゴーレム退散 → 勇者が飛び石を渡る → 次行へ。
             if (_puzzle.kind === 'lava_step') {
-              var _lavaIsFinisher = isFinisher;
-              _lavaRound.onAdvance = function() {
-                if (_lavaIsFinisher) {
-                  // 5個目正解: ゴーレム退散 + 道5石が順次赤橙グロー + 中央閃光。
-                  var lvStage = _puzzleEls().stage;
-                  if (lvStage) {
-                    lvStage.classList.add('complete');
+              var _lvStage = _puzzleEls().stage;
+              var _nextStep = _puzzle.step + 1; // 1..5
+              setTimeout(function() {
+                if (_lvStage) {
+                  _lvStage.classList.add('step-' + _nextStep);
+                  // 中央でピカッ (石が浮上する呪文の瞬間)
+                  var spark = document.createElement('div');
+                  spark.className = 'lava-step-spark';
+                  _lvStage.appendChild(spark);
+                  setTimeout(function() { if (spark.parentNode) spark.remove(); }, 1000);
+                }
+                if (isFinisher) {
+                  // 5 石揃った: ゴーレム退散 + 中央閃光 + 勇者が飛び石を左→右に渡る
+                  if (_lvStage) {
+                    _lvStage.classList.add('complete');
                     var lvBurst = document.createElement('div');
                     lvBurst.className = 'lava-burst';
-                    lvStage.appendChild(lvBurst);
-                    var lvGolem = lvStage.querySelector('.lava-golem-bg');
+                    _lvStage.appendChild(lvBurst);
+                    var lvGolem = _lvStage.querySelector('.lava-golem-bg');
                     if (lvGolem) lvGolem.classList.add('retreat');
                   }
                   try { playVictoryFanfare(); } catch (e) {}
                   setTimeout(function() {
+                    if (_lvStage) {
+                      var walker = document.createElement('div');
+                      walker.className = 'lava-walker hero-sprite move';
+                      _lvStage.appendChild(walker);
+                    }
+                  }, 1200);
+                  setTimeout(function() {
                     _puzzle.step++;
                     _rowPracticeStep++;
                     _rowPracticeNextChar();
-                  }, 2200);
+                  }, 5200);
                 } else {
-                  _puzzle.step++;
-                  _rowPracticeStep++;
-                  _spawnLavaChoice(); // 次ラウンドの3つの石を用意
-                  _rowPracticeNextChar();
+                  setTimeout(function() {
+                    _puzzle.step++;
+                    _rowPracticeStep++;
+                    _rowPracticeNextChar();
+                  }, 1100);
                 }
-              };
-              // 呪文発動 (書き終えた瞬間から少し間を置いて真偽を明らかに)
-              setTimeout(function() { _revealLavaStones(); }, 350);
+              }, 400);
               return;
             }
             // 橋フィニッシャー演出シーケンス (2026-04-21):

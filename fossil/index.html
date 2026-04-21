@@ -1293,7 +1293,9 @@ function isWalkable(r, c) {
 function startWalk(path) {
   if (!path.length) return;
   if (walkAnim) return;
-  hideArrows();
+  // Do NOT hide the D-pad here — it caused a blink every 180ms during keyboard /
+  // long-press continuous move. D-pad stays visible during WORLDMAP; we only
+  // refresh its disabled states when a step completes.
   walkAnim = { path:path, fromR:pono.r, fromC:pono.c, t0:performance.now(), perCell:180 };
 }
 function finishWalk() {
@@ -1612,15 +1614,19 @@ function drawPono(now) {
   // finishWalk may start a new walkAnim via moveIntent; re-check in a loop
   // to avoid a 1-frame snap flicker at cell boundaries during continuous move.
   if (walkAnim) {
-    var elapsed = now - walkAnim.t0;
-    if (Math.floor(elapsed / walkAnim.perCell) >= walkAnim.path.length) {
+    if (Math.floor((now - walkAnim.t0) / walkAnim.perCell) >= walkAnim.path.length) {
       finishWalk();
     }
   }
   var pr, pc, dr = 0, dc = 0;
   if (walkAnim) {
-    var elapsed2 = now - walkAnim.t0;
+    // Use max(now, walkAnim.t0) — if finishWalk just created a new walkAnim,
+    // its t0 may be slightly after the `now` captured at the start of drawPono,
+    // producing a negative elapsed / negative segIdx / walkAnim.path[-1] = undefined (crash).
+    var nowSafe = now > walkAnim.t0 ? now : walkAnim.t0;
+    var elapsed2 = nowSafe - walkAnim.t0;
     var segIdx = Math.floor(elapsed2 / walkAnim.perCell);
+    if (segIdx < 0) segIdx = 0;
     if (segIdx >= walkAnim.path.length) segIdx = walkAnim.path.length - 1;
     var t = (elapsed2 - segIdx * walkAnim.perCell) / walkAnim.perCell;
     if (t < 0) t = 0; else if (t > 1) t = 1;
@@ -1699,7 +1705,6 @@ canvas.addEventListener('pointerdown', function(e){
   if (!path || !path.length) return;
   path = truncateAtFossil(path);
   playTap();
-  hideArrows();
   startWalk(path);
 });
 
