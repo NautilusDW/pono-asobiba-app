@@ -1719,6 +1719,9 @@ body.battle-mode .villain-deco {
   .bridge-walker.hero-sprite.move { animation: none; left: 92%; opacity: 0; }
 }
 .puzzle-title {
+  /* 2026-04-22 v4: 画像ウィンドウ内に文字を入れない方針でグローバル非表示。
+     タイトル/ヒントはバトルメッセージ欄 (_setBattleLog) のみに集約する。 */
+  display: none;
   position: absolute; top: 8px; left: 0; right: 0;
   text-align: center; color: #FFD86A;
   font-size: clamp(16px, 3.4vw, 22px); font-weight: 900;
@@ -2569,6 +2572,8 @@ body.battle-mode .villain-deco {
   100% { box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 0 rgba(255,236,99,0); }
 }
 .puzzle-hint {
+  /* 2026-04-22 v4: 画像ウィンドウ内に文字を入れない方針でグローバル非表示。 */
+  display: none;
   position: absolute; bottom: 8px; left: 0; right: 0;
   text-align: center; color: #FFF8DC; opacity: 0.92;
   font-size: clamp(11px, 2.6vw, 15px); font-weight: 700;
