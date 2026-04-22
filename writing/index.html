@@ -1956,8 +1956,9 @@ body.battle-mode .villain-deco {
   100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.7); }
 }
 
-/* ===== ら行 lava: ほのおの妖精 が石を呼ぶ演出 (2026-04-22 v5 新設) =====
-   救出直後にステージ右端に常駐。1 文字ごとに該当スロットへ飛び、魔法で石を浮上させる。 */
+/* ===== ら行 lava: こおりの妖精 が石を呼ぶ演出 (2026-04-22 v5 新設, v8 氷に変更) =====
+   救出直後にステージ右端に常駐。1 文字ごとに該当スロットへ飛び、魔法で石を浮上させる。
+   色は氷の青白い冷気 (溶岩の橙と対比) で、「氷の力で熔岩を固めて足場を作る」絵作り。 */
 .lava-fairy {
   position: absolute;
   left: 88%;
@@ -1967,7 +1968,7 @@ body.battle-mode .villain-deco {
   font-size: clamp(32px, 7vw, 52px);
   line-height: 1;
   display: flex; align-items: center; justify-content: center;
-  filter: drop-shadow(0 0 10px #ff9a60) drop-shadow(0 0 22px #ff7030);
+  filter: drop-shadow(0 0 10px #7ad2ff) drop-shadow(0 0 22px #38bdf8);
   z-index: 6;
   pointer-events: none;
   opacity: 0;
@@ -1986,8 +1987,9 @@ body.battle-mode .villain-deco {
   width: clamp(60px, 14vw, 110px);
   height: clamp(60px, 14vw, 110px);
   transform: translate(-50%, -50%);
+  /* 氷の結晶を撒いて熔岩を固める冷気バースト (2026-04-22 v8) */
   background:
-    radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,200,120,0.8) 30%, rgba(255,120,40,0.5) 55%, transparent 75%);
+    radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(186,230,253,0.85) 30%, rgba(56,189,248,0.55) 55%, transparent 75%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 4;
@@ -6853,17 +6855,17 @@ function _showPuzzleIntro(kind, onDone) {
       voiceOf: 'shrine',
       lines: [
         { lines: ['ほらあなの おくに すすむと', 'ひろい ばしょに でた。', ''] },
-        { lines: ['おおきな いしの とびら。', '…ふういんが かかって いる！', ''] },
-        { lines: ['…だれか いるの？', 'たすけて… この ふういんを といて！', ''] },
-        { lines: ['ザガン の てさきに', 'つかまって しまったの。', ''] },
-        { lines: ['もじの ちからで', 'くさりを たちきって！', ''] }
+        { lines: ['おおきな いしの とびら。', '…こおりの ふういんが かかって いる！', ''] },
+        { lines: ['…だれか いるの？', 'さむい… たすけて…！', ''] },
+        { lines: ['ザガン が こおりの まほうで', 'わたしの ほのおを とじこめて いるの。', ''] },
+        { lines: ['もじの ちからで', 'こおりを とかして！', ''] }
       ]
     },
     lava_step: {
       voiceOf: 'fire',
       lines: [
-        { lines: ['あつい… たすけて…', 'わたしを ここから だして！', ''] },
-        { lines: ['ザガン の やみが', 'いわを しずめて いるの。', ''] },
+        { lines: ['あつい… とけて しまいそう…', 'たすけて…！', ''] },
+        { lines: ['ザガン の ほのおが', 'わたしの こおりを よわらせて いるの。', ''] },
         { lines: ['もじの ちからで', 'いしを よんで！', ''] }
       ]
     }
@@ -8732,15 +8734,22 @@ function resetGears() {
 // 橋が板も釘もなしに治る/扉が開く/溶岩に足場が出る等の「なぜ？」を、
 // 妖精の魔法として物語的に回収する。3人揃えば最終ダンジョンが開く (stub)。
 const FAIRY_KEY = 'pono_fairies';
+// 2026-04-22 v8: 炎↔氷 妖精入れ替え。
+//   「炎の妖精が溶岩で"あつい"と言う」矛盾を解消するため、
+//   溶岩 (ら行 / 'fire' キー) には 氷の妖精 を配置 → "あつい、とけそう" が成立。
+//   祠 (な行 / 'shrine' キー) には 炎の妖精 を配置 → "さむい、こおりで封印されてる" が成立。
+//   キー名 ('shrine'/'fire') は "場所ID" として残す (localStorage フラグ互換のため改名しない)。
 const FAIRY_META = {
   water:  { name: 'みずの ようせい',   emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'bridge',    msg: 'これで わたれるよ！',
             img: '../assets/images/characters/pixies/pixy_water.png',
             hint: 'ほこらに なかまが つかまって いるの。\nたすけて あげて！' },
-  shrine: { name: 'ほこらの ようせい', emoji: '🧚',    color: '#c8a8ff', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
-            img: '../assets/images/characters/pixies/pixy_shrine.png',
-            hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
-  fire:   { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'lava_step', msg: 'たすけて くれて ありがとう！',
+  // 'shrine' キー = 祠 (な行) ロケーション。ここに住むのは 炎の妖精 (氷で封印されている)。
+  shrine: { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
             img: '../assets/images/characters/pixies/pixy_fire.png',
+            hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
+  // 'fire' キー = 溶岩 (ら行) ロケーション。ここに住むのは 氷の妖精 (炎の熱で弱らされている)。
+  fire:   { name: 'こおりの ようせい', emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'lava_step', msg: 'たすけて くれて ありがとう！',
+            img: '../assets/images/characters/pixies/pixy_ice.png',
             hint: 'わたしも きょうりょく する わ。\nおひめさまを たすけて あげて！',
             hint2: 'もじを かいて ね。\nわたしが いしを もちあげて あげる！' },
 };
@@ -9083,7 +9092,7 @@ var ENDING_SCENES = [
     text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。' },
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2.png', emoji: '🔥',
-    text: 'もりの なか、 たきび の まわりに\nみず・ ほこら・ ほのお の\nようせい が よりそう。' },
+    text: 'もりの なか、 たきび の まわりに\nみず・ ほのお・ こおり の\n3にん の ようせい が よりそう。' },
   { bg: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0c1631 55%, #000 100%)',
     image: '../assets/images/story/ending_3.png', emoji: '✨',
     text: 'よぞら を みあげる と、\nほし が きらきら と ひかって いた。' },
@@ -9610,22 +9619,23 @@ function _rowPracticeNextChar() {
               // 石の X 位置 (lava_steps_5.png の baked-in 位置に合わせる)
               var STONE_X = [26, 38, 50, 62, 74]; // % (2026-04-22 v5: 両端が崖にくっつく指摘 → spacing 12%)
               var _stoneX = STONE_X[_nextStep - 1];
-              // 1文字目を書いた瞬間、封印を破って「ほのおのようせい」を登場させる。
-              // なぜ溶岩に石が浮くのか? → 妖精の創造魔法、という物語的動機付け。
+              // 1文字目を書いた瞬間、封印を破って「こおりのようせい」を登場させる。
+              // なぜ溶岩に石が浮くのか? → 妖精が氷魔法で熔岩を固めて足場にする、という物語的動機付け。
               // 2文字目以降は妖精演出をスキップして通常の浮上演出のみ。
+              // (2026-04-22 v8: 炎→氷に入れ替え。熔岩で"あつい"と言うのは炎妖精では違和感があるため。)
               var _lvRunRise = function() {
-              // (2026-04-22 v5) ほのおの妖精を常駐スプライトとして生成しておく。
+              // (2026-04-22 v5) こおりの妖精を常駐スプライトとして生成しておく。
                 // 救出済なら一度だけ生成し、右端 (88%,24%) にフェードイン。
                 var _lvFairy = _lvStage ? _lvStage.querySelector('.lava-fairy') : null;
                 if (_lvStage && !_lvFairy && _puzzle.fairyFreed) {
                   _lvFairy = document.createElement('div');
                   _lvFairy.className = 'lava-fairy';
                   var _lvFairyImg = document.createElement('img');
-                  _lvFairyImg.src = '../assets/images/characters/pixies/pixy_fire.png';
-                  _lvFairyImg.alt = 'ほのおの ようせい';
+                  _lvFairyImg.src = '../assets/images/characters/pixies/pixy_ice.png';
+                  _lvFairyImg.alt = 'こおりの ようせい';
                   _lvFairyImg.onerror = function() {
                     _lvFairy.innerHTML = '';
-                    _lvFairy.textContent = '🧚‍♂️';
+                    _lvFairy.textContent = '🧚‍♀️';
                   };
                   _lvFairy.appendChild(_lvFairyImg);
                   _lvStage.appendChild(_lvFairy);
@@ -9703,7 +9713,7 @@ function _rowPracticeNextChar() {
                       try {
                         if (typeof _showBattleDialog === 'function') {
                           _showBattleDialog([
-                            { lines: ['ほのおの ようせい「いしが そろった わ！', 'きを つけて わたって ね。', ''] }
+                            { lines: ['こおりの ようせい「いしが そろった わ！', 'きを つけて わたって ね。', ''] }
                           ], function() {
                             _lvFairy.style.transition = 'opacity 0.7s ease, transform 0.9s cubic-bezier(0.4,0,0.8,0.3)';
                             _lvFairy.style.opacity = '0';
