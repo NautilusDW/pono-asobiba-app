@@ -1355,7 +1355,6 @@ function handleCrossClick(e) {
     playCorrect();
     showPraise();
     if (window.incrementStat) window.incrementStat('wordmatch_correct', 1);
-    if (window.addAcorns) window.addAcorns(1, { reason: 'wordmatch_correct' });
     targetCell.textContent = targetCell.dataset.answer;
     targetCell.classList.add('solved');
     choiceBtn.classList.add('correct');
@@ -1422,7 +1421,6 @@ function tryMatch(card, label) {
     playCorrect();
     showPraise();
     if (window.incrementStat) window.incrementStat('wordmatch_correct', 1);
-    if (window.addAcorns) window.addAcorns(1, { reason: 'wordmatch_correct' });
     label.textContent = card.textContent;
     label.classList.add('matched');
     card.remove();
@@ -1454,7 +1452,7 @@ function onQuestionComplete() {
 function showStageComplete() {
   playFanfare();
   launchConfetti();
-  if (window.addAcorns) window.addAcorns(3, { reason: 'wordmatch_stage_clear' });
+  if (window.addAcornsDaily) window.addAcornsDaily('wordmatch', 5, 5, { reason: 'wordmatch_stage_clear' });
 
   // スタンプラリー: プレイ記録 (最初のステージクリア時に1回だけ)
   if (!playRecorded) {

@@ -1825,6 +1825,7 @@ body.battle-mode .villain-deco {
 .puzzle-bg-riddle .puzzle-planks {
   position: absolute;
   inset: 0;
+  transform: none; /* 基底 .puzzle-planks の translateY(-50%) を打ち消す (SVG レイヤーは viewBox で座標管理) */
   display: block;
   padding: 0;
   gap: 0;
@@ -7553,21 +7554,21 @@ function battleVictory(spellKind, onDone) {
   // 各メッセージは ▼ タップで進められる (子供のペース)。
   setTimeout(() => {
     const enemyName = (_battle.enemy && _battle.enemy.name) || 'モンスター';
-    const buffered = (_battle.acornsBuffered | 0);
-    const rowBonus = 5;
-    const total = buffered + rowBonus;
-    // 残高に加算 (この時点で初めてどんぐりバッジに反映される)
+    // 日次キャップ: 1 ゲーム = 1 日 5 🌰。2 回目以降は 0 (「きょうはおしまい」表示)
+    var granted = 0;
     try {
-      if (typeof window.addAcorns === 'function') {
-        if (buffered > 0) window.addAcorns(buffered, { reason: 'writing_char_battle_bundle' });
-        window.addAcorns(rowBonus, { reason: 'writing_row_clear' });
+      if (typeof window.addAcornsDaily === 'function') {
+        granted = window.addAcornsDaily('writing', 5, 5, { reason: 'writing_row_clear' });
       }
     } catch (e) { /* ignore */ }
     _battle.acornsBuffered = 0;
 
+    const rewardLine = granted > 0
+      ? { lines: ['ごほうび！', '<span class="dq-line-emphasis">🌰 +' + granted + '</span> ゲット！'], opts: { line2Class: 'dmg-line' } }
+      : { lines: ['きょうのどんぐりは', '<span class="dq-line-emphasis">おしまい！</span> また あした！'], opts: { line2Class: 'dmg-line' } };
     const messages = [
       { lines: [enemyName + 'を', '<span class="dq-line-emphasis">たおした！</span>'], opts: { line2Class: 'dmg-line' } },
-      { lines: ['ごほうび！', '<span class="dq-line-emphasis">🌰 +' + total + '</span> ゲット！'], opts: { line2Class: 'dmg-line' } },
+      rewardLine,
       { lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } },
     ];
     _showBattleDialog(messages, function() {
@@ -7791,20 +7792,9 @@ function _showAcornBurst(amount) {
 }
 
 function _awardAcorns(isPerfect) {
-  if (typeof window.addAcorns !== 'function') return;
+  // どんぐりは行クリア時に daily-cap 5 でまとめて付与する方針に変更 (2026-04-22)。
+  // 文字ごとの細かい付与は廃止。combo はフィードバック用にだけ維持。
   _acornCombo++;
-  var earned = 1;
-  if (isPerfect) earned += 1;
-  if (_acornCombo % 5 === 0) earned += 2;
-  else if (_acornCombo % 3 === 0) earned += 1;
-  // バトル中はどんぐり付与/バーストをバッファへ溜めて、勝利後にまとめて表示する (2026-04-20)
-  // 残高を直接いじらないので、勝利モーダル前に「加算済み表示」がチラ見えしない。
-  if (_battle && _battle.active) {
-    _battle.acornsBuffered += earned;
-    return;
-  }
-  window.addAcorns(earned, { reason: 'writing_char' });
-  _showAcornBurst(earned);
 }
 
 // 初期同期 + acorn 変更イベントで自動更新
@@ -9575,9 +9565,9 @@ function _rowPracticeComplete() {
     // 謎解きはバトル画面を出さないので「ぎょう クリア」モーダルは通常ルートを使う。
     // フィニッシャー時の板グロー+ファンファーレは鳴らし切ったあとに来るので、続けてモーダルへ進めてよい。
   }
-  // 行クリアボーナス +5🌰 (バトル外からの到達パス: 仮に残しておく)
-  if (typeof window.addAcorns === 'function') {
-    window.addAcorns(5, { reason: 'writing_row_clear' });
+  // 行クリアボーナス: daily cap 5 (バトル外からの到達パス)
+  if (typeof window.addAcornsDaily === 'function') {
+    window.addAcornsDaily('writing', 5, 5, { reason: 'writing_row_clear' });
   }
   var rowLabel = _rowPracticeRow.label;
   var bossEmoji = _bossEmojiForRow(rowLabel);

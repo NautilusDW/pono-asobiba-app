@@ -747,6 +747,20 @@ html, body {
   100% { transform: scale(1) rotate(0); }
 }
 .complete-acorn-icon { font-size: 1.3rem; line-height: 1; margin-right: 2px; }
+/* きょうの進捗 (N/5) */
+.daily-acorn-status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #7a5c2a;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+  transition: opacity 0.4s ease;
+}
+.daily-acorn-status.hidden-pre { opacity: 0; }
+.daily-acorn-status.full {
+  color: #C44A2A;
+}
 .complete-acorn-plus { font-size: 0.95rem; }
 .complete-acorn-num { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 .complete-pono-bubble,
@@ -1066,6 +1080,7 @@ html, body {
           <span class="complete-acorn-icon" aria-hidden="true">🌰</span>
           <span class="complete-acorn-plus">+</span><span class="complete-acorn-num" id="complete-acorn-num">0</span>
         </div>
+        <div class="daily-acorn-status hidden-pre" id="daily-acorn-status"></div>
         <div class="complete-trivia" id="complete-trivia"></div>
       </div>
     </div>
@@ -1355,20 +1370,13 @@ function formatFavDate(ts) {
 
 // ===== ポノ表情マッピング（バランス応じた演出） =====
 const PONO_BASE = '../assets/images/characters/pono/';
-// 評価段階と どんぐり報酬:
-//   good (三色揃い): ⭐⭐⭐ / 10どんぐり  (+3 チャレンジクリアで ボーナス)
-//   ok  (2色):       ⭐⭐   / 5 どんぐり
-//   poor(1色):       ⭐     / 2 どんぐり
+// 評価段階と どんぐり報酬 (日次 cap=5 統一に合わせた数値):
+//   good (三色揃い): ⭐⭐⭐ / 5 どんぐり
+//   ok  (2色):       ⭐⭐  / 3 どんぐり
+//   poor(1色):       ⭐    / 2 どんぐり
+// ※ challenge モードは未実装のため bonus は付けない (お題/注文システム実装時に復活予定)
 function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
   const colorsPresent = (rCount > 0 ? 1 : 0) + (yCount > 0 ? 1 : 0) + (gCount > 0 ? 1 : 0);
-  let base;
-  // チャレンジクリア (専用メッセージ + 判定は通常同様)
-  if (isChallenge) {
-    base = { img: PONO_BASE + 'dance/dance_hooray.png', msg: 'おだい クリア！すごい！', quality: 'good', stars: 3, acorns: 10 };
-    base.acorns += 3; // チャレンジボーナス
-    base.challenge = true;
-    return base;
-  }
   // 三色ぜんぶあり
   if (colorsPresent === 3) {
     const msgs = [
@@ -1376,13 +1384,13 @@ function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
       'さいこうの おべんとう！ありがとう！',
       'これで いちにち げんきに あそべるね！',
     ];
-    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good', stars: 3, acorns: 10 };
+    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good', stars: 3, acorns: 5 };
   }
   // 2色あり 1色不足 (ok)
   if (colorsPresent === 2) {
-    if (gCount === 0) return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！', quality: 'ok', stars: 2, acorns: 5 };
-    if (rCount === 0) return { img: PONO_BASE + 'dance/dance_shy.png',   msg: 'おにくや おさかなで つよく なろうね！',       quality: 'ok', stars: 2, acorns: 5 };
-    if (yCount === 0) return { img: PONO_BASE + 'dance/dance_tilt.png',  msg: 'きいろの たべものも あると ちからが でるよ！',  quality: 'ok', stars: 2, acorns: 5 };
+    if (gCount === 0) return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！', quality: 'ok', stars: 2, acorns: 3 };
+    if (rCount === 0) return { img: PONO_BASE + 'dance/dance_shy.png',   msg: 'おにくや おさかなで つよく なろうね！',       quality: 'ok', stars: 2, acorns: 3 };
+    if (yCount === 0) return { img: PONO_BASE + 'dance/dance_tilt.png',  msg: 'きいろの たべものも あると ちからが でるよ！',  quality: 'ok', stars: 2, acorns: 3 };
   }
   // 1色だけ (poor)
   return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'うーん… いろんな いろを いれてみよう！', quality: 'poor', stars: 1, acorns: 2 };
@@ -1430,6 +1438,12 @@ function revealReactionWithDrama(reaction) {
     acornsEl.classList.remove('bump');
   }
   if (acornNumEl) acornNumEl.textContent = '0';
+  var dailyStatusEl = document.getElementById('daily-acorn-status');
+  if (dailyStatusEl) {
+    dailyStatusEl.classList.add('hidden-pre');
+    dailyStatusEl.classList.remove('full');
+    dailyStatusEl.textContent = '';
+  }
 
   // T=350ms: bubble ふわっと出す（「うーん…」だけ先見せ）
   _revealTimers.push(setTimeout(() => {
@@ -1484,18 +1498,34 @@ function revealReactionWithDrama(reaction) {
       }
     }
 
-    // T=+1100ms: どんぐり付与 + 表示ポップイン
+    // T=+1100ms: どんぐり付与 (日次キャップ 5 + 差分加算) + 表示ポップイン
     _revealTimers.push(setTimeout(() => {
-      if (acorns > 0 && !reaction._awarded) {
+      var granted = 0;
+      if (!reaction._awarded) {
         reaction._awarded = true;
-        if (window.addAcorns) window.addAcorns(acorns, { reason: reaction.challenge ? 'bento_challenge' : 'bento_complete' });
+        // 評価ランク(acorns)までの差分だけ付与。同日中 poor→ok→good と上がれば +2,+1,+2 で合計 5。
+        if (window.addAcornsDaily && window.getDailyAcorns) {
+          var already = window.getDailyAcorns('bento');
+          var diff = (acorns | 0) - already;
+          if (diff > 0) granted = window.addAcornsDaily('bento', diff, 5, { reason: 'bento_complete' });
+        }
       }
-      if (acornNumEl) acornNumEl.textContent = String(acorns);
+      if (acornNumEl) acornNumEl.textContent = granted > 0 ? ('+' + granted) : '0';
       if (acornsEl) {
         acornsEl.classList.remove('hidden-pre');
         void acornsEl.offsetWidth;
         acornsEl.classList.add('bump');
-        playAcornGet();
+        if (granted > 0) playAcornGet();
+      }
+      // きょうの進捗表示
+      var statusEl = document.getElementById('daily-acorn-status');
+      if (statusEl && window.getDailyAcorns) {
+        var today = window.getDailyAcorns('bento');
+        statusEl.textContent = today >= 5
+          ? 'きょうの どんぐりは おしまい！また あした！'
+          : 'きょうの どんぐり: ' + today + '/5';
+        statusEl.classList.toggle('full', today >= 5);
+        statusEl.classList.remove('hidden-pre');
       }
     }, 420 + stars * 240 + 180));
   }, 2400));

@@ -911,15 +911,8 @@ function onStageClear() {
   const wasNewRecord = score > hiScore;
   if (isLast) { saveHiScore(); saveHighScore('breakout', score); }
   if (window.setStatMax) window.setStatMax('breakout_stages', stageIdx + 1);
-  // 日次初回ステージクリアボーナス: 1日1回だけ +3🌰
-  (function() {
-    if (!window.addAcorns) return;
-    var k = 'pono_acorns_daily_breakout';
-    var today = new Date().toDateString();
-    if (localStorage.getItem(k) === today) return;
-    localStorage.setItem(k, today);
-    window.addAcorns(3, { reason: 'breakout_daily' });
-  })();
+  // 日次キャップ: 1 ゲーム = 1 日 5 🌰 (初回クリアでまとめて付与)
+  if (window.addAcornsDaily) window.addAcornsDaily('breakout', 5, 5, { reason: 'breakout_daily' });
   // ★ 全ステージクリア時は宝箱演出を先に表示してから最終オーバーレイ
   if (isLast && window.triggerFirstClearReward) {
     window.triggerFirstClearReward('breakout', {

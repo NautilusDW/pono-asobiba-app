@@ -588,7 +588,6 @@ function onChoose(card, choice) {
     playCorrectChime();
     showPonoReact('correct');
     if (window.incrementStat) window.incrementStat('quiz_sound_correct', 1);
-    if (window.addAcorns) window.addAcorns(1, { reason: 'quiz_sound_correct' });
     setTimeout(function() {
       qIndex++;
       if (qIndex >= TOTAL_QUESTIONS) {
@@ -631,7 +630,7 @@ function showJudgeOnCard(card, mark) {
 function finish() {
   renderTopbar();
   if (window.incrementStat) window.incrementStat('quiz_sound_clears', 1);
-  if (window.addAcorns) window.addAcorns(3, { reason: 'quiz_sound_clear' });
+  if (window.addAcornsDaily) window.addAcornsDaily('quiz_sound', 5, 5, { reason: 'quiz_sound_clear' });
   markPlayedToday();
   // 初回クリアごほうび (rewards.json の firstClearRewards.quiz_sound)
   if (!_clearGranted && window.triggerFirstClearReward) {

@@ -1286,7 +1286,7 @@ function onClear() {
   voice.style.display = 'none';
   updateCharmsUI();
   if (window.incrementStat) window.incrementStat('maze_clears', 1);
-  if (window.addAcorns) window.addAcorns(3, { reason: 'maze_clear' });
+  if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
   playStageClearMz();
   setTimeout(function() {
     encounter.classList.add('show');
@@ -1315,7 +1315,7 @@ function showStageClearOverlay() {
     }
   } else {
     ovTitle.textContent = 'ステージ クリア！';
-    ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！';
+    ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
     ovBtn.textContent = 'つぎへ ▶';
     ovBtn.onclick = function() { hideOverlay(); loadStage(stageIdx + 1); };
     showOverlay();
@@ -1324,10 +1324,19 @@ function showStageClearOverlay() {
 
 function _showMazeFinalOverlay() {
   ovTitle.textContent = 'ぜんぶ クリア！';
-  ovMsg.textContent = 'ハリネズミくんを\nぜんぶ たすけたよ！\nすごいね ポノ！';
+  ovMsg.textContent = 'ハリネズミくんを\nぜんぶ たすけたよ！\nすごいね ポノ！' + _dailyAcornTail('maze');
   ovBtn.textContent = 'もういちど あそぶ';
   ovBtn.onclick = function() { hideOverlay(); loadStage(0); };
   showOverlay();
+}
+
+// きょうの どんぐり: N/5 / 上限到達時は「おしまい」メッセージ
+function _dailyAcornTail(gameId) {
+  if (!window.getDailyAcorns) return '';
+  var n = window.getDailyAcorns(gameId);
+  return n >= 5
+    ? '\n\n🌰 きょうの どんぐりは おしまい！\nまた あした！'
+    : '\n\n🌰 きょうの どんぐり: ' + n + '/5';
 }
 
 function showOverlay() { overlay.classList.add('show'); updateCharmsUI(); }
