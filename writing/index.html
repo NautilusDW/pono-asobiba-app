@@ -3929,6 +3929,78 @@ body.battle-intro-active .battle-log-window {
    元々は landscape 推奨のために表示していたが、portrait レイアウトも整備済みなので常時非表示。
    PC ブラウザの縦長ウィンドウで誤発火するのを防ぐ。 */
 #portraitLock { display:none !important; }
+
+/* ===== 紙芝居 (オープニング/エンディング) =====
+   _showStoryboard(scenes, onDone) で動的生成される全画面オーバーレイ。
+   背景は scene.bg (gradient or image path) で差し替え可能 → 後日 assets/images/story/*.png 等で上書き予定。
+*/
+.storyboard-overlay {
+  position: fixed; inset: 0;
+  z-index: 9990;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: clamp(16px, 4vw, 40px);
+  cursor: pointer;
+  opacity: 1;
+  background: #000;
+  transition: opacity 0.5s ease, background 0.6s ease;
+  overflow: hidden;
+}
+.storyboard-overlay.fade-out { opacity: 0; pointer-events: none; }
+.storyboard-art {
+  width: min(82vw, 620px);
+  height: min(44vh, 340px);
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(4rem, 20vmin, 10rem);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.12);
+  margin-bottom: clamp(18px, 3vh, 32px);
+  overflow: hidden;
+  position: relative;
+}
+.storyboard-art img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.storyboard-text {
+  color: #fffbea;
+  font-weight: 900;
+  font-size: clamp(1rem, 4.2vw, 1.5rem);
+  line-height: 1.85;
+  letter-spacing: 0.06em;
+  text-align: center;
+  max-width: 720px;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.85), 0 0 28px rgba(0,0,0,0.55);
+}
+.storyboard-hint {
+  margin-top: clamp(16px, 3vh, 32px);
+  color: #ffd84d;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
+  opacity: 0.9;
+  animation: sbHintPulse 1.4s ease-in-out infinite;
+}
+.storyboard-art.sb-in, .storyboard-text.sb-in {
+  animation: sbContentIn 0.5s ease-out both;
+}
+.storyboard-text.sb-in { animation-delay: 0.15s; }
+.storyboard-art.sb-out, .storyboard-text.sb-out {
+  animation: sbContentOut 0.28s ease-in both;
+}
+@keyframes sbContentIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes sbContentOut {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes sbHintPulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -8902,6 +8974,124 @@ function _waterFairyFarewell(onDone) {
   });
 }
 
+// ===== 紙芝居 (オープニング/エンディング) =====
+// scenes: [{ bg: 'gradient or #color', image: 'path' (optional), emoji: '...' (fallback), text: '...' }]
+// onDone: 最終シーンをタップした後に呼ばれる。
+// 画像はユーザーが後で assets/images/story/*.png 等で差し替える前提。
+// image パス指定時は <img> を表示、onerror で emoji に自動フォールバック。
+function _showStoryboard(scenes, onDone) {
+  if (!scenes || !scenes.length) { if (onDone) onDone(); return; }
+
+  var ov = document.createElement('div');
+  ov.className = 'storyboard-overlay';
+  document.body.appendChild(ov);
+
+  var art = document.createElement('div');
+  art.className = 'storyboard-art';
+  ov.appendChild(art);
+
+  var txt = document.createElement('div');
+  txt.className = 'storyboard-text';
+  ov.appendChild(txt);
+
+  var hint = document.createElement('div');
+  hint.className = 'storyboard-hint';
+  ov.appendChild(hint);
+
+  var idx = 0;
+  var transitioning = false;
+
+  function paintScene(i) {
+    var s = scenes[i];
+    if (s.bg) ov.style.background = s.bg;
+    art.innerHTML = '';
+    if (s.image) {
+      var img = document.createElement('img');
+      img.src = s.image;
+      img.alt = '';
+      img.onerror = function() {
+        art.innerHTML = '';
+        art.textContent = s.emoji || '';
+      };
+      art.appendChild(img);
+    } else {
+      art.textContent = s.emoji || '';
+    }
+    txt.innerHTML = (s.text || '').replace(/\n/g, '<br>');
+    hint.textContent = (i === scenes.length - 1) ? '▶ はじめる' : '▶ タップ';
+    art.classList.remove('sb-out'); txt.classList.remove('sb-out');
+    // reflow to re-trigger animation
+    void art.offsetWidth;
+    art.classList.add('sb-in'); txt.classList.add('sb-in');
+  }
+
+  function advance() {
+    if (transitioning) return;
+    transitioning = true;
+    idx++;
+    if (idx >= scenes.length) {
+      ov.classList.add('fade-out');
+      setTimeout(function() {
+        if (ov.parentNode) ov.remove();
+        if (onDone) onDone();
+      }, 550);
+      return;
+    }
+    art.classList.remove('sb-in'); txt.classList.remove('sb-in');
+    art.classList.add('sb-out'); txt.classList.add('sb-out');
+    setTimeout(function() {
+      paintScene(idx);
+      transitioning = false;
+    }, 300);
+  }
+
+  ov.addEventListener('click', advance);
+  paintScene(0);
+}
+
+// オープニング: ひらがな編冒頭の紙芝居 (初回のみ自動、以後は localStorage フラグでスキップ)。
+// 画像はユーザー側で後日生成し assets/images/story/opening_{1-7}.png として置き換える想定。
+var OPENING_SCENES = [
+  { bg: 'radial-gradient(ellipse at center, #fcd34d 0%, #f59e0b 45%, #b45309 100%)',
+    image: '../assets/images/story/opening_1.png', emoji: '🏰',
+    text: 'むかし むかし、\nしあわせな おうこく が ありました。\nまいにち みんなが わらいあう、\nやさしい くに でした。' },
+  { bg: 'radial-gradient(ellipse at center, #fce7f3 0%, #f9a8d4 50%, #be185d 100%)',
+    image: '../assets/images/story/opening_2.png', emoji: '👸',
+    text: 'おうじょさま は こころ やさしく、\nひとびと から あいされて いました。' },
+  { bg: 'radial-gradient(ellipse at center, #475569 0%, #1e293b 55%, #020617 100%)',
+    image: '../assets/images/story/opening_3.png', emoji: '🌩️',
+    text: 'あるひ、 そらが まっくろ に なり、\nつめたい かぜ が ふきました。' },
+  { bg: 'radial-gradient(ellipse at center, #7f1d1d 0%, #450a0a 55%, #18181b 100%)',
+    image: '../assets/images/story/opening_4.png', emoji: '👹',
+    text: '「ひめ を いただく ぞ！」\nまおう ザガン の てさき が あらわれ、\nおうじょさま を つれさって しまった。' },
+  { bg: 'radial-gradient(ellipse at center, #991b1b 0%, #450a0a 70%, #000 100%)',
+    image: '../assets/images/story/opening_5.png', emoji: '💀',
+    text: 'ザガン:\n「おうよ、 わしの てした に なれ。\nさもなくば ひめ の いのち は ないぞ。」' },
+  { bg: 'radial-gradient(ellipse at center, #fde68a 0%, #f59e0b 45%, #78350f 100%)',
+    image: '../assets/images/story/opening_6.png', emoji: '👑',
+    text: '「たすけて くれる もの は おらぬか！」\nおうさま は ゆうかん な せんし を あつめました。' },
+  { bg: 'radial-gradient(ellipse at center, #93c5fd 0%, #3b82f6 45%, #1e3a8a 100%)',
+    image: '../assets/images/story/opening_7.png', emoji: '⚔️',
+    text: 'そして、 あなた が えらばれた のです。\n「ゆうしゃ よ、\nおひめさま を たすけだして おくれ！」' }
+];
+
+// エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
+// 「ひらがな編はここまで、魔王城はすぐそこだ」という区切り。続きはカタカナ編。
+var ENDING_SCENES = [
+  { bg: 'radial-gradient(ellipse at center, #1e293b 0%, #0f172a 60%, #000 100%)',
+    image: '../assets/images/story/ending_1.png', emoji: '🧚✨',
+    text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。' },
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/ending_2.png', emoji: '🔥',
+    text: 'もりの なか、 たきび の まわりに\nみず・ ほこら・ ほのお の\nようせい が よりそう。' },
+  { bg: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0c1631 55%, #000 100%)',
+    image: '../assets/images/story/ending_3.png', emoji: '✨',
+    text: 'よぞら を みあげる と、\nほし が きらきら と ひかって いた。' },
+  { bg: 'radial-gradient(ellipse at center, #581c87 0%, #1e1b4b 60%, #000 100%)',
+    image: '../assets/images/story/ending_4.png', emoji: '🏯',
+    text: '「まおうじょう は、 すぐ そこ だ！」\n「かならず、 おひめさま を\nたすけだす ぞ！」' }
+];
+
 // 祠の扉が開く MP4 をフルスクリーン再生。終わったら onDone。
 // タップで即スキップ可能。iOS の自動再生制約に備えて muted + playsinline。
 function _playShrineDoorVideo(onDone) {
@@ -9735,7 +9925,19 @@ function _rowPracticeComplete() {
   }, 400);
   card.querySelector('button').addEventListener('click', function() {
     ov.remove();
-    returnToSelect();
+    // ら行クリア直後はひらがな編のエンディング紙芝居を流す (初回のみ)。
+    // 3 妖精全員救出完了を条件にしても OK だが、ら行 = 炎妖精救出 = 3体目なので同義。
+    var isLavaRow = (rowLabel === 'ら' || rowLabel === 'ラ');
+    var endingSeen = false;
+    try { endingSeen = (localStorage.getItem('pono_ending_seen') === '1'); } catch (e) {}
+    if (isLavaRow && !endingSeen && typeof _showStoryboard === 'function' && typeof ENDING_SCENES !== 'undefined') {
+      _showStoryboard(ENDING_SCENES, function() {
+        try { localStorage.setItem('pono_ending_seen', '1'); } catch (e) {}
+        returnToSelect();
+      });
+    } else {
+      returnToSelect();
+    }
   });
 }
 
@@ -10246,12 +10448,23 @@ function goToPracticeDirect(rowIndex) {
     // 「はじめから」では三種の神器と妖精の救出状況もリセットする (要望 2026-04-21)
     try { if (typeof resetGears === 'function') resetGears(); } catch (e) {}
     try { if (typeof resetFairies === 'function') resetFairies(); } catch (e) {}
+    // エンディング既読フラグも「はじめから」でリセット (新規冒険扱い)
+    try { localStorage.removeItem('pono_ending_seen'); } catch (e) {}
     localStorage.setItem('mojikaki_started', '1');
-    // 紙芝居 (storyScreen) を挟まず直接あ行へ突入。
-    // 紙芝居の 3行テキストが遷移直前に一瞬見えてしまう現象の対策 (2026-04-21)。
     _titleRouteIsNew = false;
     currentCategory = 'hiragana';
-    goToPracticeDirect(0);
+    // 紙芝居オープニング: 未視聴なら挟む。視聴済みは即突入。
+    // (2026-04-22) 旧 3行 storyScreen は廃止、7シーンの _showStoryboard に置換。
+    var introSeen = false;
+    try { introSeen = (localStorage.getItem('pono_intro_seen') === '1'); } catch (e) {}
+    if (!introSeen && typeof _showStoryboard === 'function') {
+      _showStoryboard(OPENING_SCENES, function() {
+        try { localStorage.setItem('pono_intro_seen', '1'); } catch (e) {}
+        goToPracticeDirect(0);
+      });
+    } else {
+      goToPracticeDirect(0);
+    }
   });
   if (contBtn) contBtn.addEventListener('click', function() {
     if (contBtn.classList.contains('disabled')) return;
