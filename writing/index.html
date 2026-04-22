@@ -8667,7 +8667,8 @@ const FAIRY_META = {
             hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
   fire:   { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'lava_step', msg: 'たすけて くれて ありがとう！',
             img: '../assets/images/characters/pixies/pixy_fire.png',
-            hint: 'もじを かいて ね。\nわたしが いしを よんで あげる！' },
+            hint: 'わたしも きょうりょく する わ。\nおひめさまを たすけて あげて！',
+            hint2: 'もじを かいて ね。\nわたしが いしを もちあげて あげる！' },
 };
 function _getFairies() {
   try { return JSON.parse(localStorage.getItem(FAIRY_KEY) || '{}') || {}; }
@@ -8811,6 +8812,10 @@ function _rescueFairy(fairyId, onDone) {
       if (meta.hint) {
         var hintParts = meta.hint.split('\n');
         dialogLines.push({ lines: [meta.name + '「' + (hintParts[0] || ''), hintParts[1] || '', ''] });
+      }
+      if (meta.hint2) {
+        var hint2Parts = meta.hint2.split('\n');
+        dialogLines.push({ lines: [meta.name + '「' + (hint2Parts[0] || ''), hint2Parts[1] || '', ''] });
       }
       // battleLog を overlay (z-index 1660) の上に引き上げる
       try {
@@ -9433,26 +9438,38 @@ function _rowPracticeNextChar() {
                   // 右端で一瞬止まって見せてから浮上に入るため、1フレーム後に不透明化。
                   requestAnimationFrame(function() { _lvFairy.style.opacity = '1'; });
                 }
-                // 妖精が該当スロットへ飛んで魔法で石を呼ぶ。飛ぶ時間 450ms → バースト → 石浮上開始。
+                // (2026-04-22 v6) 妖精が「岩場を持ち上げる」ビジュアル:
+                //   ① 該当スロットの下 (溶岩付近, top:82%) にダイブ
+                //   ② 魔法バースト → 石が溶岩から浮上開始
+                //   ③ 妖精も石と一緒に上昇 (top:82% → 24%) して「持ち上げる」絵を作る
+                //   ④ 石が定着したら妖精は右端の待機位置へ戻る
                 var _lvFlyMs = _lvFairy ? 500 : 0;
                 if (_lvFairy) {
+                  // ① 低い位置へダイブ
                   setTimeout(function() {
+                    _lvFairy.style.transition = 'left 0.5s cubic-bezier(0.4,0,0.25,1), top 0.5s cubic-bezier(0.4,0,0.25,1)';
                     _lvFairy.style.left = _stoneX + '%';
-                    _lvFairy.style.top  = '24%'; // 石 (40%) の真上
+                    _lvFairy.style.top  = '82%';
                   }, 40);
-                  // 魔法発動バースト
+                  // ② 到着したら魔法発動バースト (溶岩付近で光る)
                   setTimeout(function() {
                     if (_lvStage) {
                       var burst = document.createElement('div');
                       burst.className = 'lava-magic-burst';
                       burst.style.left = _stoneX + '%';
-                      burst.style.top  = '40%';
+                      burst.style.top  = '80%';
                       _lvStage.appendChild(burst);
                       setTimeout(function() { if (burst.parentNode) burst.remove(); }, 950);
                     }
                     try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
                   }, _lvFlyMs);
+                  // ③ 石浮上(2.4s)と同じタイミングで妖精も上昇。両者が一緒に上がって見える。
+                  setTimeout(function() {
+                    _lvFairy.style.transition = 'left 1.8s cubic-bezier(0.22,0.8,0.35,1), top 1.8s cubic-bezier(0.22,0.8,0.35,1)';
+                    _lvFairy.style.top  = '24%'; // 石の直上まで持ち上げ切る
+                  }, _lvFlyMs + 150);
                 }
+              // 妖精到着(500ms)+バースト後に石浮上開始。以前は 400ms だったため妖精より先に石が上がってしまっていた。
               setTimeout(function() {
                 if (_lvStage) {
                   // ① 画面下から石が浮上 (stone_N.png ピクセルアート個別画像)
@@ -9468,12 +9485,13 @@ function _rowPracticeNextChar() {
                     rising.classList.add('landed');
                   }, 2400);
                 }
-                // 妖精を右端の待機位置へ戻す (finisher 以外)。finisher は後で farewell 処理。
+                // 妖精を右端の待機位置へ戻す (finisher 以外)。石着地 (浮上開始 +2.4s) 後に移動。
                 if (_lvFairy && !isFinisher) {
                   setTimeout(function() {
+                    _lvFairy.style.transition = 'left 0.6s ease, top 0.6s ease';
                     _lvFairy.style.left = '88%';
                     _lvFairy.style.top  = '24%';
-                  }, 1500);
+                  }, 2500);
                 }
                 if (isFinisher) {
                   // 5 石揃った: 中央閃光 + 妖精お別れ + 勇者が飛び石を左→右に飛び跳ねて渡る
@@ -9524,7 +9542,8 @@ function _rowPracticeNextChar() {
                     _rowPracticeNextChar();
                   }, 3100);
                 }
-              }, 400);
+              }, 700);
+              // (2026-04-22 v6: 妖精到着(500ms)+バースト後に石を出すよう 400→700 に拡大)
               }; // _lvRunRise end
               // 1文字目 (step===0) かつ未救出なら、妖精登場 → 浮上。
               // 2文字目以降はそのまま浮上。
