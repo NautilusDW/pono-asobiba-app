@@ -280,36 +280,96 @@ body {
   to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* ===== Flower bed ===== */
-.flower-bed {
+/* ===== Garden overlay ===== */
+.garden-overlay {
+  position: fixed; inset: 0; z-index: 9200;
+  background: rgba(30, 18, 48, 0.88);
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.garden-overlay.visible { opacity: 1; pointer-events: all; }
+.garden-header {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  background: rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.garden-title { flex: 1; font-size: 1.15rem; font-weight: 900; color: #FFE88C; }
+.garden-close {
+  background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
+  width: 36px; height: 36px; color: #fff; font-size: 1.1rem;
+  font-family: inherit; cursor: pointer;
+}
+.garden-body {
+  flex: 1; overflow-y: auto; padding: 20px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  max-width: 540px; width: 100%; margin: 0 auto;
+}
+.garden-hint {
+  font-size: 0.88rem; font-weight: 700; color: rgba(255,255,255,0.85);
+  text-align: center; line-height: 1.5;
+}
+.garden-grid {
   width: 100%;
   background: linear-gradient(180deg, #A0826D 0%, #8B6F47 100%);
-  border-radius: 16px;
-  padding: 12px 10px;
+  border-radius: 20px;
+  padding: 18px;
   display: grid;
-  gap: 8px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 2px 6px var(--shadow);
-  margin-top: 4px;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.3);
 }
-.flower-cell {
+.garden-cell {
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.18);
+  border-radius: 18px;
+  background: rgba(0,0,0,0.22);
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(1.8rem, 8vw, 2.8rem); line-height: 1;
-  box-shadow: inset 0 2px 3px rgba(0,0,0,0.25);
+  font-size: clamp(2.2rem, 12vw, 4rem); line-height: 1;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  cursor: pointer;
   position: relative;
+  transition: transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
 }
-.flower-cell.bloomed {
-  background: radial-gradient(circle, var(--cell-bg, #FFE88C) 0%, rgba(255,255,255,0.35) 80%);
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 1px 3px rgba(0,0,0,0.15);
+.garden-cell:active { transform: scale(0.96); }
+.garden-cell.bloomed {
+  background: radial-gradient(circle, var(--cell-bg, #FFE88C) 0%, rgba(255,255,255,0.4) 80%);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.2);
   animation: bloomPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.garden-cell.watered {
+  animation: waterShake 0.4s;
 }
 @keyframes bloomPop {
   0%   { transform: scale(0);   }
   60%  { transform: scale(1.35); }
   100% { transform: scale(1);   }
 }
+@keyframes waterShake {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+  60% { transform: translateY(2px); }
+}
+.garden-seeds-row {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 10px 20px;
+  font-weight: 900; font-size: 1rem; color: #fff;
+}
+.garden-seeds-row .seed-emoji { font-size: 1.4rem; }
+.garden-toast {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(30, 18, 48, 0.92);
+  color: #FFE88C;
+  padding: 14px 24px; border-radius: 16px;
+  font-size: 1rem; font-weight: 900;
+  z-index: 9300; pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+.garden-toast.show { transform: translate(-50%, -50%) scale(1); }
 
 /* ===== Season themes ===== */
 body[data-season="spring"] { background: linear-gradient(170deg, #FFF0F5 0%, #FFE4E8 50%, #FFB6C1 100%); }
@@ -578,7 +638,8 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 
 <div class="hud">
   <button id="hud-back-btn" style="background:none;border:none;font-family:inherit;font-size:0.75rem;font-weight:900;color:var(--text-light);cursor:pointer;padding:2px 4px;">◀ タイトルへ</button>
-  <div id="hud-label">もんだい <span id="q-num">1</span> / <span id="q-total">6</span></div>
+  <div id="hud-label">もんだい <span id="q-num">1</span> / <span id="q-total">5</span></div>
+  <div id="hud-seeds" style="font-weight:900;color:#F59E0B;font-size:0.9rem;" aria-label="てもちのたね">🌱 <span id="hud-seeds-count">0</span></div>
   <div class="hud-progress" id="hud-progress"></div>
 </div>
 
@@ -591,9 +652,6 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   <div class="choices" id="choices"></div>
 </div>
 
-<!-- ===== Flower bed ===== -->
-<div id="flower-bed" class="flower-bed"></div>
-
 <!-- ===== Feedback bubble ===== -->
 <div class="feedback" id="feedback">やったー！</div>
 
@@ -603,12 +661,30 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
     <div class="modal-icon" id="result-icon">🎉</div>
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
+    <button class="modal-btn" id="result-garden-btn" style="background:linear-gradient(135deg,#10B981,#34D399);">🌼 おにわへ ▶</button>
     <button class="modal-btn" id="result-btn">もう一回 ▶</button>
     <button class="modal-btn modal-btn-enc" id="result-enc-btn">🌼 おはな ずかん</button>
     <button class="modal-btn modal-btn-cat" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🎯 カテゴリーをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
 </div>
+
+<!-- ===== Garden overlay ===== -->
+<div class="garden-overlay" id="garden-overlay">
+  <div class="garden-header">
+    <div class="garden-title">🌼 おにわ</div>
+    <button class="garden-close" id="garden-close" aria-label="とじる">✕</button>
+  </div>
+  <div class="garden-body">
+    <div class="garden-hint" id="garden-hint">そらのますに たねを うえよう！</div>
+    <div class="garden-grid" id="garden-grid"></div>
+    <div class="garden-seeds-row">
+      <span class="seed-emoji">🌱</span>
+      <span>もってる たね: <span id="garden-seed-count">0</span> / 10</span>
+    </div>
+  </div>
+</div>
+<div class="garden-toast" id="garden-toast"></div>
 
 <!-- ===== Flower encyclopedia overlay ===== -->
 <div class="flower-enc" id="flower-enc">
@@ -627,13 +703,12 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 // ═══════════════════════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════════════════════
-const TOTAL_Q = 6;
+const TOTAL_Q = 5;
 let playlist = [];
 let questionIdx = 0;
 let correctCount = 0;
 let currentQ = null;
 let locked = false;
-let bloomedCount = 0;
 
 // ═══════════════════════════════════════════════════════════
 // Flower garden
@@ -654,39 +729,214 @@ function recordDiscovery(flowerId) {
   }
 }
 
-function setupFlowerBed() {
-  const bed = document.getElementById('flower-bed');
-  if (!bed) return;
-  bed.innerHTML = '';
-  // 6問なら3x2、他の数でも近いグリッドに
-  const cols = (TOTAL_Q % 5 === 0) ? 5 : (TOTAL_Q % 3 === 0) ? 3 : Math.ceil(Math.sqrt(TOTAL_Q));
-  bed.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-  for (let i = 0; i < TOTAL_Q; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'flower-cell';
-    cell.dataset.idx = i;
-    bed.appendChild(cell);
-  }
-  bloomedCount = 0;
+// ═══════════════════════════════════════════════════════════
+// Seed stock + Garden (育てる系)
+// ═══════════════════════════════════════════════════════════
+const LS_SEEDS = 'pono_quizland_seeds';
+const LS_GARDEN = 'pono_quizland_garden';
+const LS_SESSION_NONCE = 'pono_quizland_session_nonce';
+const GARDEN_CELLS = 4;
+const SEED_MAX = 10;
+
+function getSeeds() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_SEEDS) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+function setSeeds(list) {
+  try { localStorage.setItem(LS_SEEDS, JSON.stringify(list.slice(0, SEED_MAX))); } catch (e) {}
+}
+function addSeed(flowerId) {
+  const list = getSeeds();
+  if (list.length >= SEED_MAX) return false; // 上限で打ち切り
+  list.push(flowerId);
+  setSeeds(list);
+  return true;
 }
 
-function bloomNextCell() {
-  const bed = document.getElementById('flower-bed');
-  if (!bed) return;
-  const cells = bed.querySelectorAll('.flower-cell');
-  if (bloomedCount >= cells.length) return;
-  const flower = (typeof window.pickFlower === 'function') ? window.pickFlower() : null;
-  if (!flower) return;
-  const cell = cells[bloomedCount];
-  cell.style.setProperty('--cell-bg', flower.bg || '#FFE88C');
-  cell.textContent = flower.emoji;
-  cell.dataset.flower = flower.id;
-  // 再発火のため一旦クラスを外して再付与
-  cell.classList.remove('bloomed');
-  void cell.offsetWidth;
-  cell.classList.add('bloomed');
-  bloomedCount++;
-  recordDiscovery(flower.id);
+function emptyGarden() {
+  const arr = [];
+  for (let i = 0; i < GARDEN_CELLS; i++) {
+    arr.push({ stage: null, flowerId: null, lastWaterNonce: 0 });
+  }
+  return arr;
+}
+function getGarden() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_GARDEN) || 'null');
+    if (Array.isArray(arr) && arr.length === GARDEN_CELLS) return arr;
+  } catch (e) {}
+  return emptyGarden();
+}
+function setGarden(arr) {
+  try { localStorage.setItem(LS_GARDEN, JSON.stringify(arr)); } catch (e) {}
+}
+
+function getSessionNonce() {
+  const n = parseInt(localStorage.getItem(LS_SESSION_NONCE) || '0', 10);
+  return isNaN(n) ? 0 : n;
+}
+function bumpSessionNonce() {
+  const n = getSessionNonce() + 1;
+  try { localStorage.setItem(LS_SESSION_NONCE, String(n)); } catch (e) {}
+  return n;
+}
+
+function plantSeed(cellIdx) {
+  const garden = getGarden();
+  const cell = garden[cellIdx];
+  if (!cell || cell.stage !== null) return false;
+  const seeds = getSeeds();
+  if (seeds.length === 0) return false;
+  const flowerId = seeds.shift();
+  setSeeds(seeds);
+  garden[cellIdx] = { stage: 0, flowerId: flowerId, lastWaterNonce: 0 };
+  setGarden(garden);
+  return true;
+}
+
+function waterCell(cellIdx) {
+  const garden = getGarden();
+  const cell = garden[cellIdx];
+  if (!cell || cell.stage === null || cell.stage >= 2) return false;
+  const nonce = getSessionNonce();
+  if (cell.lastWaterNonce === nonce) return false; // このセッション内既に水やり済
+  cell.stage = Math.min(2, cell.stage + 1);
+  cell.lastWaterNonce = nonce;
+  setGarden(garden);
+  return true;
+}
+
+function harvestCell(cellIdx) {
+  const garden = getGarden();
+  const cell = garden[cellIdx];
+  if (!cell || cell.stage !== 2) return false;
+  if (cell.flowerId) recordDiscovery(cell.flowerId);
+  garden[cellIdx] = { stage: null, flowerId: null, lastWaterNonce: 0 };
+  setGarden(garden);
+  return true;
+}
+
+function updateSeedHUD() {
+  const el = document.getElementById('hud-seeds-count');
+  if (el) el.textContent = String(getSeeds().length);
+}
+
+function renderSeedToast(flowerId) {
+  // 正解時に獲得種を小さく演出 (任意)。シンプルに HUD の数字更新のみでも伝わる。
+  updateSeedHUD();
+  const hud = document.getElementById('hud-seeds');
+  if (hud) {
+    hud.animate(
+      [{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }],
+      { duration: 450, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+    );
+  }
+}
+
+// ─── Garden overlay rendering ───
+const STAGE_EMOJI = { 0: '🟤', 1: '🌱' }; // stage 2 は花 emoji を動的に差し込む
+
+function renderGarden() {
+  const grid = document.getElementById('garden-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const garden = getGarden();
+  garden.forEach(function(cell, idx) {
+    const el = document.createElement('div');
+    el.className = 'garden-cell';
+    el.dataset.idx = idx;
+    if (cell.stage === null) {
+      el.textContent = '🕳️';
+      el.style.fontSize = 'clamp(1.8rem, 10vw, 3.2rem)';
+    } else if (cell.stage === 2) {
+      const f = (typeof window.findFlower === 'function') ? window.findFlower(cell.flowerId) : null;
+      el.textContent = f ? f.emoji : '🌸';
+      if (f) el.style.setProperty('--cell-bg', f.bg || '#FFE88C');
+      el.classList.add('bloomed');
+    } else {
+      el.textContent = STAGE_EMOJI[cell.stage] || '🟤';
+    }
+    el.addEventListener('click', function() { onGardenCellTap(idx); });
+    grid.appendChild(el);
+  });
+  const cnt = document.getElementById('garden-seed-count');
+  if (cnt) cnt.textContent = String(getSeeds().length);
+}
+
+function showGardenToast(text) {
+  const el = document.getElementById('garden-toast');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.classList.remove('show'); }, 1200);
+}
+
+function onGardenCellTap(idx) {
+  const garden = getGarden();
+  const cell = garden[idx];
+  if (!cell) return;
+  if (cell.stage === null) {
+    // 空マス: 種を植える
+    const seeds = getSeeds();
+    if (seeds.length === 0) {
+      showGardenToast('🌱 たねが ないよ');
+      return;
+    }
+    if (plantSeed(idx)) {
+      playCorrect();
+      renderGarden();
+      updateSeedHUD();
+      showGardenToast('🌱 たねを うえた！');
+    }
+    return;
+  }
+  if (cell.stage === 2) {
+    // 開花: おかたづけ
+    if (harvestCell(idx)) {
+      playFanfare();
+      renderGarden();
+      showGardenToast('🌼 ずかんに のせたよ！');
+    }
+    return;
+  }
+  // stage 0 or 1: 水やり
+  if (cell.lastWaterNonce === getSessionNonce()) {
+    showGardenToast('💧 もう みずあげたよ');
+    return;
+  }
+  if (waterCell(idx)) {
+    playCorrect();
+    renderGarden();
+    const grid = document.getElementById('garden-grid');
+    if (grid) {
+      const cells = grid.querySelectorAll('.garden-cell');
+      if (cells[idx]) {
+        cells[idx].classList.remove('watered');
+        void cells[idx].offsetWidth;
+        cells[idx].classList.add('watered');
+      }
+    }
+    const after = getGarden()[idx];
+    if (after && after.stage === 2) {
+      showGardenToast('🌸 さいた〜！');
+      launchConfetti();
+    } else {
+      showGardenToast('💧 みずやり おわり');
+    }
+  }
+}
+
+function openGarden() {
+  renderGarden();
+  const ov = document.getElementById('garden-overlay');
+  if (ov) ov.classList.add('visible');
+}
+function closeGarden() {
+  const ov = document.getElementById('garden-overlay');
+  if (ov) ov.classList.remove('visible');
 }
 
 function applySeasonTheme() {
@@ -1100,7 +1350,11 @@ function onChoice(idx, btn) {
     showFeedback('やったー！');
     ponoJump();
     launchConfetti();
-    bloomNextCell();
+    var flower = (typeof window.pickFlower === 'function') ? window.pickFlower() : null;
+    if (flower) {
+      if (addSeed(flower.id)) renderSeedToast(flower.id);
+      else updateSeedHUD(); // 上限到達時もカウント表示を同期
+    }
     correctCount++;
     if (window.incrementStat) window.incrementStat('quizland_correct', 1);
     // スタンプラリー: プレイ記録
@@ -1188,6 +1442,12 @@ function showResult() {
     launchConfetti();
     setTimeout(launchConfetti, 400);
   }
+  // 種が1個以上 or 花壇に育成中のマスがあれば にわ を自動で開く
+  var hasSeeds = getSeeds().length > 0;
+  var hasActiveCell = getGarden().some(function(c) { return c.stage !== null; });
+  if (hasSeeds || hasActiveCell) {
+    setTimeout(openGarden, 1000);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1198,7 +1458,8 @@ function initGame() {
   questionIdx = 0;
   correctCount = 0;
   applySeasonTheme();
-  setupFlowerBed();
+  bumpSessionNonce();
+  updateSeedHUD();
   document.getElementById('result-overlay').classList.add('hidden');
   loadQuestion(playlist[0]);
 }
@@ -1303,8 +1564,13 @@ document.getElementById('result-cat-btn').addEventListener('click', function() {
 document.getElementById('result-enc-btn').addEventListener('click', openFlowerEnc);
 document.getElementById('flower-enc-close').addEventListener('click', closeFlowerEnc);
 
+// Garden overlay open/close
+document.getElementById('result-garden-btn').addEventListener('click', openGarden);
+document.getElementById('garden-close').addEventListener('click', closeGarden);
+
 // Apply season theme on first load (before game starts)
 applySeasonTheme();
+updateSeedHUD();
 
 })();
 </script>
