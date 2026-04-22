@@ -1248,6 +1248,65 @@ function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
   return { img: PONO_BASE + 'dance/dance_smile.png', msg: 'おいしそう！あと すこしで かんぺき！' };
 }
 
+// ===== 結果発表の演出（ドラムロール→じゃーん→表情切替） =====
+let _revealTimers = [];
+function clearRevealTimers() {
+  _revealTimers.forEach(id => clearTimeout(id));
+  _revealTimers = [];
+}
+function revealReactionWithDrama(reaction) {
+  clearRevealTimers();
+  const ponoBig = document.getElementById('complete-pono-big');
+  const bubble = document.getElementById('complete-msg');
+  const trivia = document.getElementById('complete-trivia');
+  const saveBtn = document.getElementById('save-fav-btn');
+  if (!ponoBig || !bubble) return;
+
+  // Pre-reveal: ふつうの顔でそわそわ
+  ponoBig.classList.remove('reveal');
+  ponoBig.classList.add('thinking');
+  ponoBig.src = PONO_BASE + 'pono_001.png';
+  bubble.textContent = 'うーん…';
+  bubble.classList.add('hidden-pre');
+  if (trivia) trivia.classList.add('hidden-pre');
+  if (saveBtn) saveBtn.classList.add('hidden-pre');
+
+  // T=350ms: bubble ふわっと出す（「うーん…」だけ先見せ）
+  _revealTimers.push(setTimeout(() => {
+    bubble.classList.remove('hidden-pre');
+  }, 350));
+
+  // T=500ms: ドラムロール開始
+  _revealTimers.push(setTimeout(() => { playDrumroll(); }, 500));
+
+  // T=1650ms: じゃーん！表情切替 + セリフ + 豆知識
+  _revealTimers.push(setTimeout(() => {
+    ponoBig.classList.remove('thinking');
+    ponoBig.src = reaction.img;
+    void ponoBig.offsetWidth; // reflow to restart animation
+    ponoBig.classList.add('reveal');
+    // bubble は一度隠して 新セリフで再表示（ポップイン）
+    bubble.classList.add('hidden-pre');
+    if (trivia) trivia.classList.remove('hidden-pre');
+    playTada();
+    launchConfetti();
+    _revealTimers.push(setTimeout(() => {
+      bubble.textContent = reaction.msg;
+      bubble.classList.remove('hidden-pre');
+    }, 80));
+  }, 1650));
+
+  // T=2100ms: 保存ボタンをふわっと出す
+  _revealTimers.push(setTimeout(() => {
+    if (saveBtn) saveBtn.classList.remove('hidden-pre');
+  }, 2100));
+
+  // T=2350ms: reveal クラス外して ponoFloat に戻す
+  _revealTimers.push(setTimeout(() => {
+    ponoBig.classList.remove('reveal');
+  }, 2350));
+}
+
 // ===== Helpers =====
 function shuffle(a) {
   const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b;
@@ -1554,7 +1613,6 @@ function flyFood(from, to, src, cb) {
 function showToast(m) { const t = document.getElementById('wrong-toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); }
 
 function stageComplete() {
-  playFanfare(); launchConfetti();
   if (window.incrementStat) window.incrementStat('bento_complete', 1);
   if (window.addAcorns) window.addAcorns(5, { reason: 'bento_complete' });
   // スタンプラリー: プレイ記録
@@ -1629,13 +1687,10 @@ function stageComplete() {
     `<div class="balance-item">${dot('b-y', yCount)}${emptyDot(1 - Math.min(yCount, 1))} きいろ</div>` +
     `<div class="balance-item">${dot('b-g', gCount)}${emptyDot(1 - Math.min(gCount, 1))} みどり</div>`;
 
-  // ポノ表情＋セリフ（バランスに応じた演出）
+  // ポノ表情＋セリフ（バランスに応じた演出） ※ 演出は revealReactionWithDrama で実行
   const reaction = choosePonoReaction(rCount, yCount, gCount, inChallengeMode);
-  const ponoBig = document.getElementById('complete-pono-big');
-  if (ponoBig) ponoBig.src = reaction.img;
-  document.getElementById('complete-msg').textContent = reaction.msg;
 
-  // 豆知識
+  // 豆知識（テキストだけ先にセット、表示は reveal 時）
   const triviaEl = document.getElementById('complete-trivia');
   if (triviaEl) {
     const trivia = pickTrivia(bentoFoodNames, bentoSkColors);
@@ -1668,6 +1723,7 @@ function stageComplete() {
   }
 
   document.getElementById('complete-btn').onclick = () => {
+    clearRevealTimers();
     document.getElementById('complete-overlay').classList.add('hidden');
     if (inChallengeMode) {
       loadChallengeStage();
@@ -1680,6 +1736,8 @@ function stageComplete() {
     }
   };
   document.getElementById('complete-overlay').classList.remove('hidden');
+  // 結果発表の演出スタート（表情はふつう→ドラムロール→じゃーん）
+  revealReactionWithDrama(reaction);
 }
 
 function launchConfetti() {
