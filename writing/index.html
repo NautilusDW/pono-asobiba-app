@@ -1955,6 +1955,51 @@ body.battle-mode .villain-deco {
   60%  { opacity: 0.85;transform: translate(-50%, -50%) scale(1.4); }
   100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.7); }
 }
+
+/* ===== ら行 lava: ほのおの妖精 が石を呼ぶ演出 (2026-04-22 v5 新設) =====
+   救出直後にステージ右端に常駐。1 文字ごとに該当スロットへ飛び、魔法で石を浮上させる。 */
+.lava-fairy {
+  position: absolute;
+  left: 88%;
+  top: 24%;
+  width: clamp(56px, 12vw, 92px);
+  height: clamp(56px, 12vw, 92px);
+  font-size: clamp(32px, 7vw, 52px);
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 0 10px #ff9a60) drop-shadow(0 0 22px #ff7030);
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: fairyHover 2.4s ease-in-out infinite;
+  transition: left 0.45s cubic-bezier(0.4,0,0.25,1),
+              top  0.45s cubic-bezier(0.4,0,0.25,1),
+              opacity 0.5s ease;
+}
+.lava-fairy img {
+  width: 100%; height: 100%; object-fit: contain;
+  image-rendering: pixelated; pointer-events: none;
+}
+.lava-magic-burst {
+  position: absolute;
+  width: clamp(60px, 14vw, 110px);
+  height: clamp(60px, 14vw, 110px);
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,200,120,0.8) 30%, rgba(255,120,40,0.5) 55%, transparent 75%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 4;
+  animation: lavaMagicBurst 0.9s ease-out forwards;
+  mix-blend-mode: screen;
+}
+@keyframes lavaMagicBurst {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.3); }
+  25%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.15); }
+  60%  { opacity: 0.85;transform: translate(-50%, -50%) scale(1.4); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.7); }
+}
 /* 封印オーブ 🔒 の囁き pulse。とらわれた妖精の声に合わせて glow が揺らぐ */
 @keyframes sealPulse {
   0%, 100% { transform: scale(1);    opacity: 0.78; }
@@ -2557,28 +2602,28 @@ body.battle-mode .villain-deco {
     heroMoveAnim 0.4s steps(5, jump-none) infinite;
 }
 /* 左崖 → 石1 → 石2 → 石3 → 石4 → 石5 → 右崖 を跳ねながら駆け抜ける。
-   石の X 位置は 24/37/50/63/76% (2026-04-22 v4: 間隔狭+両端開き指摘 → spacing 13%)。
+   石の X 位置は 26/38/50/62/74% (2026-04-22 v5: spacing 12% に微調整)。
    各セグメントで放物線を描くため apex で Y を -88% に持ち上げる。 */
 @keyframes lavaWalkAcross {
   0%   { left: 6%;  opacity: 0; transform: translate(-50%, -50%) scale(1); }
   5%   { opacity: 1; }
   /* 石1 へ */
-   8%  { left: 15%; transform: translate(-50%, -88%) scale(1.04); }
-  14%  { left: 24%; transform: translate(-50%, -50%) scale(1); }
+   8%  { left: 16%; transform: translate(-50%, -88%) scale(1.04); }
+  14%  { left: 26%; transform: translate(-50%, -50%) scale(1); }
   /* 石2 へ */
-  19%  { left: 30.5%; transform: translate(-50%, -88%) scale(1.04); }
-  25%  { left: 37%;   transform: translate(-50%, -50%) scale(1); }
+  19%  { left: 32%; transform: translate(-50%, -88%) scale(1.04); }
+  25%  { left: 38%; transform: translate(-50%, -50%) scale(1); }
   /* 石3 へ */
-  30%  { left: 43.5%; transform: translate(-50%, -88%) scale(1.04); }
-  36%  { left: 50%;   transform: translate(-50%, -50%) scale(1); }
+  30%  { left: 44%; transform: translate(-50%, -88%) scale(1.04); }
+  36%  { left: 50%; transform: translate(-50%, -50%) scale(1); }
   /* 石4 へ */
-  41%  { left: 56.5%; transform: translate(-50%, -88%) scale(1.04); }
-  47%  { left: 63%;   transform: translate(-50%, -50%) scale(1); }
+  41%  { left: 56%; transform: translate(-50%, -88%) scale(1.04); }
+  47%  { left: 62%; transform: translate(-50%, -50%) scale(1); }
   /* 石5 へ */
-  52%  { left: 69.5%; transform: translate(-50%, -88%) scale(1.04); }
-  58%  { left: 76%;   transform: translate(-50%, -50%) scale(1); }
+  52%  { left: 68%; transform: translate(-50%, -88%) scale(1.04); }
+  58%  { left: 74%; transform: translate(-50%, -50%) scale(1); }
   /* 右崖へ最後のひと跳び */
-  65%  { left: 85%; transform: translate(-50%, -90%) scale(1.05); }
+  65%  { left: 84%; transform: translate(-50%, -90%) scale(1.05); }
   75%  { left: 93%; transform: translate(-50%, -50%) scale(1); }
   95%  { left: 94%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { left: 96%; opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
@@ -6454,7 +6499,7 @@ function _showPuzzleStage(rowLabel) {
 
   // 前回ぶんの lava_step 用残骸を掃除 (浮上済みの石・閃光・旧ゴーレム) + 前回 bridge の妖精
   if (els.stage) {
-    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst, .lava-rising-stone, .lava-walker, .bridge-fairy, .bridge-magic-burst').forEach(function(n) { n.remove(); });
+    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst, .lava-rising-stone, .lava-walker, .lava-fairy, .lava-magic-burst, .bridge-fairy, .bridge-magic-burst').forEach(function(n) { n.remove(); });
   }
 
   // か行 bridge: 出会いイントロで妖精登場済み。パズル中は妖精スプライトがステージ右上に常駐し、
@@ -6563,7 +6608,7 @@ function _hidePuzzleStage() {
   els.stage.classList.remove('complete', 'pedestal-focused');
   // ら行の飛び石ステップクラスをリセット (次回 lava_step で再利用)
   for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
-  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-rising-stone, .shrine-door, .shrine-walker, .shrine-door-banner, .bridge-fairy, .bridge-magic-burst').forEach(function(b) { b.remove(); });
+  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-rising-stone, .lava-fairy, .lava-magic-burst, .shrine-door, .shrine-walker, .shrine-door-banner, .bridge-fairy, .bridge-magic-burst').forEach(function(b) { b.remove(); });
   if (els.planks) { els.planks.style.opacity = ''; els.planks.style.transition = ''; }
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
@@ -8620,8 +8665,9 @@ const FAIRY_META = {
   shrine: { name: 'ほこらの ようせい', emoji: '🧚',    color: '#c8a8ff', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
             img: '../assets/images/characters/pixies/pixy_shrine.png',
             hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
-  fire:   { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'lava_step', msg: 'わたしが いしを よぶよ！',
-            img: '../assets/images/characters/pixies/pixy_fire.png' },
+  fire:   { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'lava_step', msg: 'たすけて くれて ありがとう！',
+            img: '../assets/images/characters/pixies/pixy_fire.png',
+            hint: 'もじを かいて ね。\nわたしが いしを よんで あげる！' },
 };
 function _getFairies() {
   try { return JSON.parse(localStorage.getItem(FAIRY_KEY) || '{}') || {}; }
@@ -9363,19 +9409,57 @@ function _rowPracticeNextChar() {
               var _lvStage = _puzzleEls().stage;
               var _nextStep = _puzzle.step + 1; // 1..5
               // 石の X 位置 (lava_steps_5.png の baked-in 位置に合わせる)
-              var STONE_X = [24, 37, 50, 63, 76]; // % (2026-04-22 v4: 間隔狭 + 両端開き指摘 → spacing 13%)
+              var STONE_X = [26, 38, 50, 62, 74]; // % (2026-04-22 v5: 両端が崖にくっつく指摘 → spacing 12%)
               var _stoneX = STONE_X[_nextStep - 1];
               // 1文字目を書いた瞬間、封印を破って「ほのおのようせい」を登場させる。
               // なぜ溶岩に石が浮くのか? → 妖精の創造魔法、という物語的動機付け。
               // 2文字目以降は妖精演出をスキップして通常の浮上演出のみ。
               var _lvRunRise = function() {
+              // (2026-04-22 v5) ほのおの妖精を常駐スプライトとして生成しておく。
+                // 救出済なら一度だけ生成し、右端 (88%,24%) にフェードイン。
+                var _lvFairy = _lvStage ? _lvStage.querySelector('.lava-fairy') : null;
+                if (_lvStage && !_lvFairy && _puzzle.fairyFreed) {
+                  _lvFairy = document.createElement('div');
+                  _lvFairy.className = 'lava-fairy';
+                  var _lvFairyImg = document.createElement('img');
+                  _lvFairyImg.src = '../assets/images/characters/pixies/pixy_fire.png';
+                  _lvFairyImg.alt = 'ほのおの ようせい';
+                  _lvFairyImg.onerror = function() {
+                    _lvFairy.innerHTML = '';
+                    _lvFairy.textContent = '🧚‍♂️';
+                  };
+                  _lvFairy.appendChild(_lvFairyImg);
+                  _lvStage.appendChild(_lvFairy);
+                  // 右端で一瞬止まって見せてから浮上に入るため、1フレーム後に不透明化。
+                  requestAnimationFrame(function() { _lvFairy.style.opacity = '1'; });
+                }
+                // 妖精が該当スロットへ飛んで魔法で石を呼ぶ。飛ぶ時間 450ms → バースト → 石浮上開始。
+                var _lvFlyMs = _lvFairy ? 500 : 0;
+                if (_lvFairy) {
+                  setTimeout(function() {
+                    _lvFairy.style.left = _stoneX + '%';
+                    _lvFairy.style.top  = '24%'; // 石 (40%) の真上
+                  }, 40);
+                  // 魔法発動バースト
+                  setTimeout(function() {
+                    if (_lvStage) {
+                      var burst = document.createElement('div');
+                      burst.className = 'lava-magic-burst';
+                      burst.style.left = _stoneX + '%';
+                      burst.style.top  = '40%';
+                      _lvStage.appendChild(burst);
+                      setTimeout(function() { if (burst.parentNode) burst.remove(); }, 950);
+                    }
+                    try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+                  }, _lvFlyMs);
+                }
               setTimeout(function() {
                 if (_lvStage) {
                   // ① 画面下から石が浮上 (stone_N.png ピクセルアート個別画像)
                   var rising = document.createElement('div');
                   rising.className = 'lava-rising-stone rising stone-' + _nextStep;
                   rising.style.left = _stoneX + '%';
-                  // top は CSS (.lava-rising-stone) 側で 33% に固定済。JS で上書きしない。
+                  // top は CSS (.lava-rising-stone) 側で 40% に固定済。JS で上書きしない。
                   _lvStage.appendChild(rising);
                   // ② 定位置到達でピカッ光らせる (石はそのまま定着、bg は swap しない)
                   // アニメ 2.4s の終端に合わせて切替。短いと途中で消えたように見える。
@@ -9384,8 +9468,15 @@ function _rowPracticeNextChar() {
                     rising.classList.add('landed');
                   }, 2400);
                 }
+                // 妖精を右端の待機位置へ戻す (finisher 以外)。finisher は後で farewell 処理。
+                if (_lvFairy && !isFinisher) {
+                  setTimeout(function() {
+                    _lvFairy.style.left = '88%';
+                    _lvFairy.style.top  = '24%';
+                  }, 1500);
+                }
                 if (isFinisher) {
-                  // 5 石揃った: 中央閃光 + 勇者が飛び石を左→右に飛び跳ねて渡る
+                  // 5 石揃った: 中央閃光 + 妖精お別れ + 勇者が飛び石を左→右に飛び跳ねて渡る
                   if (_lvStage) {
                     setTimeout(function() {
                       _lvStage.classList.add('complete');
@@ -9393,6 +9484,23 @@ function _rowPracticeNextChar() {
                       lvBurst.className = 'lava-burst';
                       _lvStage.appendChild(lvBurst);
                     }, 2500);
+                  }
+                  // 妖精のお別れセリフ + 飛び去り (2026-04-22 v5)
+                  if (_lvFairy) {
+                    setTimeout(function() {
+                      try {
+                        if (typeof _showBattleDialog === 'function') {
+                          _showBattleDialog([
+                            { lines: ['ほのおの ようせい「いしが そろった わ！', 'きを つけて わたって ね。', ''] }
+                          ], function() {
+                            _lvFairy.style.transition = 'opacity 0.7s ease, transform 0.9s cubic-bezier(0.4,0,0.8,0.3)';
+                            _lvFairy.style.opacity = '0';
+                            _lvFairy.style.transform = 'translate(-50%,-50%) translate(20vw,-40vh) scale(0.4) rotate(18deg)';
+                            setTimeout(function() { if (_lvFairy.parentNode) _lvFairy.remove(); }, 1000);
+                          });
+                        }
+                      } catch (e) {}
+                    }, 2600);
                   }
                   try { setTimeout(function() { playVictoryFanfare(); }, 2500); } catch (e) {}
                   setTimeout(function() {
