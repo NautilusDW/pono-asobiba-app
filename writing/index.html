@@ -4109,8 +4109,15 @@ body.battle-intro-active .battle-log-window {
     -2px  2px 0 #000,  2px  2px 0 #000,
     -2px  0   0 #000,  2px  0   0 #000,
      0  -2px 0 #000,   0   2px 0 #000;
-  animation: sbHintPulse 1.4s ease-in-out infinite;
+  /* 2026-04-23: タイプライターが完了するまで隠す (.visible が付いたら表示)。
+     pulse アニメは visible の時だけ。 */
+  opacity: 0;
+  transition: opacity 0.25s ease;
   z-index: 1;
+}
+.storyboard-hint.visible {
+  opacity: 0.9;
+  animation: sbHintPulse 1.4s ease-in-out infinite;
 }
 .storyboard-art.sb-in, .storyboard-text.sb-in {
   animation: sbContentIn 0.5s ease-out both;
@@ -9146,6 +9153,54 @@ function _showStoryboard(scenes, onDone) {
 
   var idx = 0;
   var transitioning = false;
+  var typeTimer = null;     // 進行中の typewriter setTimeout ID
+  var typingDone = true;    // 現シーンの text を全部出し切ったか
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // タイプライター: 文字を 1 つずつ出す。改行 \n は <br> に変換し、改行位置では
+  // やや長めに止めて「行送りの間」を作る。
+  function startTypewriter(fullText) {
+    if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
+    typingDone = false;
+    txt.innerHTML = '';
+    hint.classList.remove('visible');   // タイプ中は タップヒント を隠す
+    var pos = 0;
+    function step() {
+      typeTimer = null;
+      if (pos >= fullText.length) {
+        typingDone = true;
+        hint.classList.add('visible');
+        return;
+      }
+      pos++;
+      var shown = fullText.slice(0, pos);
+      txt.innerHTML = escapeHtml(shown).replace(/\n/g, '<br>');
+      var justTyped = fullText.charAt(pos - 1);
+      // 改行は 行送りの余韻、句読点は軽いタメ、通常字は高速。
+      var delay = 55;
+      if (justTyped === '\n') delay = 360;
+      else if (justTyped === '、' || justTyped === '。' || justTyped === '！' || justTyped === '？') delay = 180;
+      typeTimer = setTimeout(step, delay);
+    }
+    step();
+  }
+
+  // タイプ中のタップ = 残りを一気に表示 (skip)。タイプ完了後のタップ = 次シーンへ。
+  function skipOrAdvance() {
+    if (transitioning) return;
+    if (!typingDone) {
+      if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
+      var s = scenes[idx];
+      txt.innerHTML = escapeHtml(s.text || '').replace(/\n/g, '<br>');
+      typingDone = true;
+      hint.classList.add('visible');
+      return;
+    }
+    advance();
+  }
 
   function paintScene(i) {
     var s = scenes[i];
@@ -9163,17 +9218,20 @@ function _showStoryboard(scenes, onDone) {
     } else {
       art.textContent = s.emoji || '';
     }
-    txt.innerHTML = (s.text || '').replace(/\n/g, '<br>');
     hint.textContent = (i === scenes.length - 1) ? '▶ はじめる' : '▶ タップ';
     art.classList.remove('sb-out'); txt.classList.remove('sb-out');
     // reflow to re-trigger animation
     void art.offsetWidth;
     art.classList.add('sb-in'); txt.classList.add('sb-in');
+    // テキスト は タイプライター で流す。sb-in の fade-in と重なるのでコンテナ
+    // フェード後に type 開始 (155ms = sb-in の delay と同じ)。
+    setTimeout(function() { startTypewriter(s.text || ''); }, 155);
   }
 
   function advance() {
     if (transitioning) return;
     transitioning = true;
+    if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
     idx++;
     if (idx >= scenes.length) {
       ov.classList.add('fade-out');
@@ -9191,7 +9249,7 @@ function _showStoryboard(scenes, onDone) {
     }, 300);
   }
 
-  ov.addEventListener('click', advance);
+  ov.addEventListener('click', skipOrAdvance);
   paintScene(0);
 }
 
