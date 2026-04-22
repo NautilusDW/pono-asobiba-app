@@ -2460,7 +2460,7 @@ body.battle-mode .villain-deco {
    事故があったため、.landed に明示的に opacity:1 と最終 transform を設定して消失を防ぐ。) */
 .lava-rising-stone {
   position: absolute;
-  top: 48%; /* lava_steps_5.png: 石の縦中心 (2026-04-22 再調整: 33% は高すぎ指摘) */
+  top: 38%; /* lava_steps_5.png 実測: 石の縦中心は height の ~38% (2026-04-22 v3) */
   width: clamp(44px, 11vw, 92px);
   aspect-ratio: 1;
   background-size: contain;
@@ -2510,7 +2510,7 @@ body.battle-mode .villain-deco {
 /* 勇者が左の崖から右の崖へ飛び石を渡るアニメ (5石完成後) */
 .lava-walker {
   position: absolute;
-  top: 48%; /* 石と同じ高さ (lava_steps_5.png 再調整 2026-04-22) */
+  top: 38%; /* 石と同じ高さ (lava_steps_5.png 実測 2026-04-22 v3) */
   left: 6%;
   width: clamp(48px, 11vw, 78px);
   height: clamp(48px, 11vw, 78px);
@@ -2526,31 +2526,31 @@ body.battle-mode .villain-deco {
     heroMoveAnim 0.4s steps(5, jump-none) infinite;
 }
 /* 左崖 → 石1 → 石2 → 石3 → 石4 → 石5 → 右崖 を跳ねながら駆け抜ける。
-   石の X 位置は lava_steps_5.png に合わせて約 23/36/50/64/77%。
+   石の X 位置は lava_steps_5.png 実測に合わせて 30/40/50/60/70% (2026-04-22 v3)。
    各セグメントで放物線を描くため apex で Y を -88% に持ち上げる。 */
 @keyframes lavaWalkAcross {
   0%   { left: 6%;  opacity: 0; transform: translate(-50%, -50%) scale(1); }
   5%   { opacity: 1; }
   /* 石1 へ */
-   8%  { left: 14.5%; transform: translate(-50%, -88%) scale(1.04); }
-  14%  { left: 23%;   transform: translate(-50%, -50%) scale(1); }
+   8%  { left: 18%; transform: translate(-50%, -88%) scale(1.04); }
+  14%  { left: 30%; transform: translate(-50%, -50%) scale(1); }
   /* 石2 へ */
-  19%  { left: 29.5%; transform: translate(-50%, -88%) scale(1.04); }
-  25%  { left: 36%;   transform: translate(-50%, -50%) scale(1); }
+  19%  { left: 35%; transform: translate(-50%, -88%) scale(1.04); }
+  25%  { left: 40%; transform: translate(-50%, -50%) scale(1); }
   /* 石3 へ */
-  30%  { left: 43%;   transform: translate(-50%, -88%) scale(1.04); }
-  36%  { left: 50%;   transform: translate(-50%, -50%) scale(1); }
+  30%  { left: 45%; transform: translate(-50%, -88%) scale(1.04); }
+  36%  { left: 50%; transform: translate(-50%, -50%) scale(1); }
   /* 石4 へ */
-  41%  { left: 57%;   transform: translate(-50%, -88%) scale(1.04); }
-  47%  { left: 64%;   transform: translate(-50%, -50%) scale(1); }
+  41%  { left: 55%; transform: translate(-50%, -88%) scale(1.04); }
+  47%  { left: 60%; transform: translate(-50%, -50%) scale(1); }
   /* 石5 へ */
-  52%  { left: 70.5%; transform: translate(-50%, -88%) scale(1.04); }
-  58%  { left: 77%;   transform: translate(-50%, -50%) scale(1); }
+  52%  { left: 65%; transform: translate(-50%, -88%) scale(1.04); }
+  58%  { left: 70%; transform: translate(-50%, -50%) scale(1); }
   /* 右崖へ最後のひと跳び */
-  65%  { left: 86%;   transform: translate(-50%, -90%) scale(1.05); }
-  75%  { left: 93%;   transform: translate(-50%, -50%) scale(1); }
-  95%  { left: 94%;   opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { left: 96%;   opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  65%  { left: 82%; transform: translate(-50%, -90%) scale(1.05); }
+  75%  { left: 93%; transform: translate(-50%, -50%) scale(1); }
+  95%  { left: 94%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { left: 96%; opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
 }
 
 .lava-burst {
@@ -8673,31 +8673,8 @@ function _rescueFairy(fairyId, onDone) {
   }
   stage.appendChild(sprite);
 
-  // 吹き出し
-  var bubble = document.createElement('div');
-  bubble.className = 'fairy-rescue-bubble';
-  bubble.textContent = meta.msg;
-  stage.appendChild(bubble);
-
-  // 次の妖精へのヒント吹き出し (water→shrine, shrine→fire の匂わせ)
-  var hintBubble = null;
-  if (!brief && meta.hint) {
-    hintBubble = document.createElement('div');
-    hintBubble.className = 'fairy-rescue-bubble fairy-rescue-hint-bubble';
-    hintBubble.innerHTML = meta.hint.split('\n').map(function(line) {
-      return line.replace(/[<>&]/g, function(c) {
-        return c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;';
-      });
-    }).join('<br>');
-    stage.appendChild(hintBubble);
-  }
-
-  // スキップヒント
-  var hint = document.createElement('div');
-  hint.className = 'fairy-rescue-tap-hint';
-  hint.textContent = 'タップで つぎへ';
-  stage.appendChild(hint);
-
+  // 吹き出し/ヒント/タップ誘導はオーバーレイ内に入れない (2026-04-22 v3 指摘対応)。
+  // セリフは close() 後に _showBattleDialog でバトルメッセージ欄に流す。
   ov.appendChild(stage);
   document.body.appendChild(ov);
 
@@ -8708,7 +8685,20 @@ function _rescueFairy(fairyId, onDone) {
     ov.classList.add('closing');
     setTimeout(function() {
       try { if (ov.parentNode) ov.remove(); } catch (e) {}
-      if (onDone) onDone();
+      // オーバーレイを閉じた後にバトルメッセージ欄でセリフ再生
+      var dialogLines = [];
+      if (meta.msg) {
+        dialogLines.push({ lines: [meta.name + '「' + meta.msg, '', ''] });
+      }
+      if (!brief && meta.hint) {
+        var hintParts = meta.hint.split('\n');
+        dialogLines.push({ lines: [meta.name + '「' + (hintParts[0] || ''), hintParts[1] || '', ''] });
+      }
+      if (dialogLines.length && typeof _showBattleDialog === 'function') {
+        _showBattleDialog(dialogLines, function() { if (onDone) onDone(); });
+      } else {
+        if (onDone) onDone();
+      }
     }, 360);
   }
 
@@ -8730,8 +8720,8 @@ function _rescueFairy(fairyId, onDone) {
         stage.appendChild(p);
       }
     }, 450);
-    // 自動クローズ: ヒント吹き出しがある場合は長めに表示 (読む時間)
-    var autoCloseMs = hintBubble ? 6800 : 4200;
+    // 自動クローズ: 吹き出しを撤去したのでシンプルに短くする (2026-04-22 v3)
+    var autoCloseMs = 2400;
     var autoId = setTimeout(function() {
       sprite.classList.add('leaving');
       setTimeout(close, 500);
@@ -8892,27 +8882,21 @@ function _showFairyCageScene(fairyId, onDone) {
   cage.appendChild(caged);
   scene.appendChild(cage);
 
-  // キャプション
-  var cap = document.createElement('div');
-  cap.className = 'fairy-cage-caption';
-  cap.textContent = 'ようせいが とらわれている！';
-  scene.appendChild(cap);
-
-  // タップ誘導
-  var tap = document.createElement('div');
-  tap.className = 'fairy-cage-tap-hint';
-  tap.textContent = 'タップで たすける';
-  scene.appendChild(tap);
-
+  // キャプション/タップ誘導はオーバーレイ内に入れない (2026-04-22 v3)。
+  // シーンが出た瞬間にバトルメッセージ欄へ通知する。
   ov.appendChild(scene);
   document.body.appendChild(ov);
+  try {
+    if (typeof _showBattleDialog === 'function') {
+      _showBattleDialog([{ lines: ['ようせい が とらわれている！', 'タップで たすけよう。', ''] }], function() {});
+    }
+  } catch (e) {}
 
   var released = false;
   function release() {
     if (released) return;
     released = true;
     ov.classList.add('releasing');
-    cap.textContent = 'ふういんが とけた！';
     try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
     // 鉄格子が砕ける → 妖精が飛び出す → onDone
     setTimeout(function() {
@@ -9316,7 +9300,7 @@ function _rowPracticeNextChar() {
               var _lvStage = _puzzleEls().stage;
               var _nextStep = _puzzle.step + 1; // 1..5
               // 石の X 位置 (lava_steps_5.png の baked-in 位置に合わせる)
-              var STONE_X = [23, 36, 50, 64, 77]; // %
+              var STONE_X = [30, 40, 50, 60, 70]; // % (lava_steps_5.png 実測 2026-04-22 v3)
               var _stoneX = STONE_X[_nextStep - 1];
               // 1文字目を書いた瞬間、封印を破って「ほのおのようせい」を登場させる。
               // なぜ溶岩に石が浮くのか? → 妖精の創造魔法、という物語的動機付け。
