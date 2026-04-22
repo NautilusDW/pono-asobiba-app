@@ -1871,11 +1871,15 @@ body.battle-mode .villain-deco {
    画像 1920x1080 座標での各スロット中心 (%) から tile 幅 12.2%/2 を引いた top-left。
    tile_size: 226x221 / 1920x1080 = 11.77% x 20.46% → width 12.2%, aspect 226:221 で補正。
    スロット座標は PUZZLE_ROWS chars 順 [な,に,ぬ,ね,の] に対応。 */
-.plank.plank-riddle.tablet-slot-0 { top: 15.0%; left: 43.9%; } /* な: 上 */
-.plank.plank-riddle.tablet-slot-1 { top: 29.6%; left: 59.0%; } /* に: 右上 */
-.plank.plank-riddle.tablet-slot-2 { top: 50.3%; left: 56.0%; } /* ぬ: 右下 */
-.plank.plank-riddle.tablet-slot-3 { top: 50.3%; left: 31.9%; } /* ね: 左下 */
-.plank.plank-riddle.tablet-slot-4 { top: 29.6%; left: 28.9%; } /* の: 左上 */
+/* 五芒星スロット中心位置 (shrine_seal_vacant.png の暗部を画像解析して特定):
+   な (50.3%, 29.6%) / に (60.9%, 44.8%) / ぬ (56.7%, 66.3%) / ね (43.8%, 66.3%) / の (39.7%, 44.7%)
+   プランクは 12.2%w × (12.2% × 221/226 = 11.93%w) → 縦方向は容器高基準で 21.2%。
+   top/left は中心から (6.1%, 10.6%) 引いた位置 */
+.plank.plank-riddle.tablet-slot-0 { top: 19.0%; left: 44.2%; } /* な: 上 */
+.plank.plank-riddle.tablet-slot-1 { top: 34.2%; left: 54.8%; } /* に: 右上 */
+.plank.plank-riddle.tablet-slot-2 { top: 55.7%; left: 50.6%; } /* ぬ: 右下 */
+.plank.plank-riddle.tablet-slot-3 { top: 55.7%; left: 37.7%; } /* ね: 左下 */
+.plank.plank-riddle.tablet-slot-4 { top: 34.1%; left: 33.6%; } /* の: 左上 */
 /* 完成時: 5枚の石板が順番に眩しく光る (180ms stagger × 1s anim) */
 .puzzle-bg-riddle.complete .plank.plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
@@ -6327,9 +6331,10 @@ function _hideBattleStage() {
 const PUZZLE_ROWS = {
   'か': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['か','き','く','け','こ'] },
   'カ': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['カ','キ','ク','ケ','コ'] },
-  // な行: 洞窟の祠の守り神 (石像) が出す「3択なぞなぞ」。1文字書く → 守り神が問題 → 3つから選ぶ。
-  'な': { kind: 'riddle',    title: 'ほこらの まもりがみ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['な','に','ぬ','ね','の'] },
-  'ナ': { kind: 'riddle',    title: 'ホコラの マモリガミ',   hint: 'もじを かいて なぞなぞに こたえよう！', chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  // な行: ほこらの番人 (石像) が妖精を封印している。文字をなぞると石板が五芒星スロットにはまり、
+  // 5枚揃えると封印解除 → 扉が開く → 囚われた妖精を解放 → 妖精が仲間に。
+  'な': { kind: 'riddle',    title: 'ほこらの ばんにん',     hint: 'もじを なぞって ふういんを とこう！',  chars: ['な','に','ぬ','ね','の'] },
+  'ナ': { kind: 'riddle',    title: 'ホコラの バンニン',     hint: 'もじを なぞって ふういんを とこう！',  chars: ['ナ','ニ','ヌ','ネ','ノ'] },
   // ら行: 火山の溶岩にかかる「とびいし」。文字をなぞる=呪文発動で飛び石が 1 つ浮上。
   // 5文字書くと 5石揃い道になる → 勇者が飛び石を渡る = ゴーレム退散。
   'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'じゅもんを かいて とびいしを よびだそう！', chars: ['ら','り','る','れ','ろ'] },
@@ -6592,13 +6597,13 @@ function _showPuzzleIntro(kind, onDone) {
   var intros = {
     riddle: {
       emoji: '🗿',
-      name: 'ほこらの まもりがみ',
+      name: 'ほこらの ばんにん',
       lines: [
-        'よう きた、ぼうけんしゃよ。',
-        'もじを かいたら',
-        'なぞなぞに こたえよ！',
-        'いつつの せきばんを',
-        'この ほこらに はめこむのだ。'
+        'フフフ… よく ここまで きた。',
+        'だが この さきには いかせぬ。',
+        'ザルバス さまの じゃまを する ものは',
+        'この わしが とらえて やったのだ。',
+        'おくで ようせいが ないて いるぞ？'
       ]
     },
     lava_step: {
