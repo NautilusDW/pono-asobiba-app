@@ -5,6 +5,9 @@
 
   var LS_KEY = 'pono_acorns';
   var DAILY_PREFIX = 'pono_acorns_daily_';
+  var DAILY_TOTAL_PREFIX = 'pono_acorns_daily_total_';
+  var TOTAL_CAP_FREE = 25;
+  var TOTAL_CAP_PAID = 35;
 
   function get() {
     var n = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
@@ -66,27 +69,51 @@
     localStorage.setItem(dailyLSKey(gameId), String(Math.max(0, n | 0)));
   }
 
+  // ===== 1 日トータル上限 =====
+  // 子供が長時間張り付くのを防ぐため、ゲーム別 cap に加えて全体でも上限を設定。
+  // 無料ユーザー 25/日、有料 (pono_premium='1') 35/日。
+  function dailyTotalLSKey() {
+    return DAILY_TOTAL_PREFIX + todayKey();
+  }
+  function getDailyTotal() {
+    var v = parseInt(localStorage.getItem(dailyTotalLSKey()) || '0', 10);
+    return isNaN(v) ? 0 : v;
+  }
+  function setDailyTotal(n) {
+    localStorage.setItem(dailyTotalLSKey(), String(Math.max(0, n | 0)));
+  }
+  function currentTotalCap() {
+    try {
+      return localStorage.getItem('pono_premium') === '1' ? TOTAL_CAP_PAID : TOTAL_CAP_FREE;
+    } catch (e) { return TOTAL_CAP_FREE; }
+  }
+
   // addAcornsDaily(gameId, n, cap, opts)
-  //   今日の残り枠内でだけ付与。超過分は 0 個。
-  //   戻り値: 実際に付与した個数 (0 なら cap 到達)
+  //   ゲーム別 cap と 1 日トータル上限の両方を満たす分だけ付与。
+  //   戻り値: 実際に付与した個数 (0 なら どちらかの cap 到達)
   function addDaily(gameId, n, cap, opts) {
     var wanted = n | 0;
-    var limit = (cap | 0) > 0 ? (cap | 0) : 5;
+    var gameLimit = (cap | 0) > 0 ? (cap | 0) : 5;
     if (wanted <= 0) return 0;
     var already = getDaily(gameId);
-    var remaining = Math.max(0, limit - already);
-    var grant = Math.min(wanted, remaining);
+    var gameRemaining = Math.max(0, gameLimit - already);
+    var totalAlready = getDailyTotal();
+    var totalRemaining = Math.max(0, currentTotalCap() - totalAlready);
+    var grant = Math.min(wanted, gameRemaining, totalRemaining);
     if (grant <= 0) return 0;
     setDaily(gameId, already + grant);
+    setDailyTotal(totalAlready + grant);
     add(grant, {
       reason: (opts && opts.reason) || ('daily:' + gameId)
     });
     return grant;
   }
 
-  window.getAcorns       = get;
-  window.addAcorns       = add;
-  window.spendAcorns     = spend;
-  window.getDailyAcorns  = getDaily;
-  window.addAcornsDaily  = addDaily;
+  window.getAcorns           = get;
+  window.addAcorns           = add;
+  window.spendAcorns         = spend;
+  window.getDailyAcorns      = getDaily;
+  window.addAcornsDaily      = addDaily;
+  window.getDailyTotalAcorns = getDailyTotal;
+  window.getDailyTotalCap    = currentTotalCap;
 })(window);
