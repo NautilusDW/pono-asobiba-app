@@ -1926,6 +1926,11 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-10px) scale(1.06); }
 }
+/* みずの妖精 🧚‍♀️ が橋シーンで空中浮遊する動き (intro / farewell 用) */
+@keyframes fairyHover {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
 /* 封印オーブ 🔒 の囁き pulse。とらわれた妖精の声に合わせて glow が揺らぐ */
 @keyframes sealPulse {
   0%, 100% { transform: scale(1);    opacity: 0.78; }
@@ -6374,9 +6379,19 @@ function _showPuzzleStage(rowLabel) {
     els.stage.classList.add('puzzle-bg-' + def.kind);
   }
 
-  // 前回ぶんの lava_step 用残骸を掃除 (浮上済みの石・閃光・旧ゴーレム)
+  // 前回ぶんの lava_step 用残骸を掃除 (浮上済みの石・閃光・旧ゴーレム) + 前回 bridge の妖精
   if (els.stage) {
-    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst, .lava-rising-stone, .lava-walker').forEach(function(n) { n.remove(); });
+    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst, .lava-rising-stone, .lava-walker, .bridge-fairy, .bridge-magic-burst').forEach(function(n) { n.remove(); });
+  }
+
+  // か行 bridge: 出会いイントロで妖精登場済み。パズル中は妖精スプライトがステージ右上に常駐し、
+  // 各文字完成時に次の板へ飛んで魔法で変化させる (_puzzleRevealPlank 内で駆動)。
+  if (def.kind === 'bridge' && els.stage) {
+    var bf = document.createElement('div');
+    bf.className = 'bridge-fairy';
+    bf.textContent = '🧚‍♀️';
+    bf.dataset.placed = '0';
+    els.stage.appendChild(bf);
   }
 
   // 板5枚を生成 (初期は非表示 .plank = opacity:0)
@@ -6439,7 +6454,7 @@ function _hidePuzzleStage() {
   els.stage.classList.remove('complete', 'pedestal-focused');
   // ら行の飛び石ステップクラスをリセット (次回 lava_step で再利用)
   for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
-  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-rising-stone, .shrine-door, .shrine-walker, .shrine-door-banner').forEach(function(b) { b.remove(); });
+  els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-rising-stone, .shrine-door, .shrine-walker, .shrine-door-banner, .bridge-fairy, .bridge-magic-burst').forEach(function(b) { b.remove(); });
   if (els.planks) { els.planks.style.opacity = ''; els.planks.style.transition = ''; }
   document.body.classList.remove('battle-mode');
   const md = document.getElementById('monsterDeco');
@@ -6695,6 +6710,98 @@ function _showPuzzleIntro(kind, onDone) {
   document.body.appendChild(ov);
 }
 
+// か行 橋パズルの導入: 壊れた橋の前で勇者が立ち尽くすと、みずの妖精が登場して協力を申し出る。
+// 「ただの折れた木 + 妖精の魔法 = 橋板」という物語上の理由付けをここで確立する。
+// セリフは タップ or 自動送り (2.6s 間隔) で進む。最後のタップでパズル開始。
+// (2026-04-22: ユーザー要望「勇者が困ってる所に妖精が現れて事情説明→協力→魔法で板化」)
+function _showBridgeEncounterIntro(onDone) {
+  var fairyColor = '#7ad2ff';
+
+  var ov = document.createElement('div');
+  ov.id = 'bridgeEncounterIntro';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1700;background:radial-gradient(ellipse at 50% 60%,rgba(30,40,70,0.45) 0%,rgba(10,12,22,0.92) 80%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 24px 22vh;animation:fadeIn 0.5s ease;cursor:pointer;overflow:hidden;';
+
+  // 背景: 壊れた橋の画像を半透明でうっすら敷く
+  var bg = document.createElement('div');
+  bg.style.cssText = 'position:absolute;inset:0;background:url("../assets/images/puzzle/bridge_broken.png") center center / cover no-repeat;opacity:0.35;filter:blur(1px) brightness(0.7);';
+  ov.appendChild(bg);
+
+  // キャラクター台 (勇者 と 妖精 を並べる)
+  var charRow = document.createElement('div');
+  charRow.style.cssText = 'position:relative;display:flex;align-items:flex-end;justify-content:center;gap:min(18vw,160px);margin-bottom:24px;z-index:2;';
+
+  var hero = document.createElement('div');
+  hero.className = 'hero-sprite idle';
+  hero.style.cssText = 'width:clamp(72px,16vw,120px);height:clamp(72px,16vw,120px);filter:drop-shadow(0 6px 10px rgba(0,0,0,0.6));';
+  charRow.appendChild(hero);
+
+  var fairy = document.createElement('div');
+  fairy.textContent = '🧚‍♀️';
+  fairy.style.cssText = 'font-size:clamp(56px,13vw,92px);filter:drop-shadow(0 0 16px ' + fairyColor + ') drop-shadow(0 0 30px ' + fairyColor + ');opacity:0;transform:translateY(-8px) scale(0.6);transition:opacity 0.7s ease,transform 0.9s cubic-bezier(0.34,1.56,0.64,1);animation:fairyHover 2.8s ease-in-out infinite 0.8s;';
+  charRow.appendChild(fairy);
+
+  ov.appendChild(charRow);
+
+  // 吹き出し (1行ずつ差し替え表示)
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'background:linear-gradient(180deg,rgba(245,250,255,0.97),rgba(215,230,250,0.95));color:#102040;font-size:clamp(0.98rem,2.6vw,1.14rem);font-weight:900;padding:16px 22px;border-radius:20px;border:3px solid ' + fairyColor + ';box-shadow:0 0 26px ' + fairyColor + '99,0 6px 22px rgba(0,0,0,0.6);max-width:min(520px,90vw);text-align:center;line-height:1.6;min-height:3.6em;display:flex;align-items:center;justify-content:center;z-index:2;';
+  ov.appendChild(bubble);
+
+  var hint = document.createElement('div');
+  hint.textContent = '▼ タップで つぎへ';
+  hint.style.cssText = 'margin-top:16px;font-size:0.95rem;font-weight:900;color:#FFEB50;text-shadow:0 2px 4px rgba(0,0,0,0.8);animation:guardianFloat 1.1s ease-in-out infinite;z-index:2;';
+  ov.appendChild(hint);
+
+  // 会話ライン (speaker 情報付き: 勇者=灰系色、妖精=水色)
+  var lines = [
+    { speaker: 'hero',  text: 'あっ… はしが おれて いる…' },
+    { speaker: 'hero',  text: 'どうしよう… これじゃ わたれない…' },
+    { speaker: 'fairy', text: 'こまって いる の？\nわたしは みずの ようせい。' },
+    { speaker: 'fairy', text: 'ザガン に さらわれた\nおひめさまを さがして いる のね。' },
+    { speaker: 'fairy', text: 'わたしも ちからを かす わ！' },
+    { speaker: 'fairy', text: 'もじを なぞって。\nおれた きを まほうで\nはしの いたに かえて あげる！' }
+  ];
+
+  var idx = -1;
+  function showLine() {
+    idx++;
+    if (idx >= lines.length) { close(); return; }
+    var ln = lines[idx];
+    // 妖精はセリフ2行目 (index 2) 手前で登場
+    if (idx === 2) {
+      fairy.style.opacity = '1';
+      fairy.style.transform = 'translateY(0) scale(1)';
+      try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+    }
+    bubble.style.borderColor = (ln.speaker === 'fairy') ? fairyColor : '#d8c890';
+    bubble.style.boxShadow = (ln.speaker === 'fairy')
+      ? ('0 0 26px ' + fairyColor + '99,0 6px 22px rgba(0,0,0,0.6)')
+      : '0 0 20px rgba(216,200,144,0.6),0 6px 22px rgba(0,0,0,0.6)';
+    bubble.innerHTML = ln.text.split('\n').map(function(t) { return '<div>' + t + '</div>'; }).join('');
+    // bubble フェードイン
+    bubble.style.opacity = '0';
+    bubble.style.transform = 'translateY(10px)';
+    bubble.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    requestAnimationFrame(function() {
+      bubble.style.opacity = '1';
+      bubble.style.transform = 'translateY(0)';
+    });
+  }
+
+  var closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    ov.style.transition = 'opacity 0.4s ease';
+    ov.style.opacity = '0';
+    setTimeout(function() { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, 420);
+  }
+
+  ov.addEventListener('click', function() { showLine(); });
+  document.body.appendChild(ov);
+  showLine();
+}
+
 function _puzzleRevealPlank(opts) {
   const els = _puzzleEls();
   if (!els.planks) return;
@@ -6702,7 +6809,69 @@ function _puzzleRevealPlank(opts) {
   const idx = _puzzle.step;
   if (idx < 0 || idx >= planks.length) return;
   const plank = planks[idx];
+  const isFinisher = !!(opts && opts.finisher);
+  // か行 bridge: 各文字完成時に妖精が次の板まで飛んで魔法で変化させる演出。
+  // finisher (5枚目) でも同じフローで飛ぶ (最終板をキラキラで変化 → その後橋完成演出へ)。
+  if (_puzzle.kind === 'bridge' && els.stage) {
+    _bridgeFairyDeliverPlank(plank, els.stage, function() {
+      plank.classList.add('placed');
+      _puzzleRevealPlankAfter(opts, plank, planks, els);
+    });
+    return;
+  }
   plank.classList.add('placed');
+  _puzzleRevealPlankAfter(opts, plank, planks, els);
+}
+
+// 妖精が指定 plank の位置まで飛び、到着時にスパークル爆発 → plank が魔法で板に変化 (onArrive コールバック)。
+// (2026-04-22) 勇者の視界に妖精が「板を運んで修復する」流れを可視化するためのヘルパ。
+function _bridgeFairyDeliverPlank(plank, stage, onArrive) {
+  var fairy = stage.querySelector('.bridge-fairy');
+  if (!fairy) { if (onArrive) onArrive(); return; }
+  // 初回 (placed=0) は右上から飛び込んで来る → plank 位置へ
+  var firstVisit = fairy.dataset.placed === '0';
+  if (firstVisit) {
+    fairy.style.transition = 'none';
+    fairy.style.left = '82%';
+    fairy.style.top  = '18%';
+    fairy.style.opacity = '0';
+    // 1フレーム後にフェードイン + 位置計算
+    requestAnimationFrame(function() { fairy.style.opacity = '1'; });
+  }
+  fairy.dataset.placed = String(parseInt(fairy.dataset.placed, 10) + 1);
+
+  // plank の中心座標を stage 相対に変換
+  var sr = stage.getBoundingClientRect();
+  var pr = plank.getBoundingClientRect();
+  var cx = pr.left + pr.width / 2 - sr.left;
+  var cy = pr.top  + pr.height / 2 - sr.top;
+  // plank の少し上 (妖精が覆いかぶさる位置) = pr.height * 0.55 上
+  var hoverY = cy - pr.height * 0.55;
+  var leftPct = (cx / sr.width) * 100;
+  var topPct  = (hoverY / sr.height) * 100;
+
+  // 飛行開始 (初回はフェードイン遅延を加味して 50ms 遅らせる)
+  setTimeout(function() {
+    fairy.style.transition = 'left 0.7s cubic-bezier(0.4, 0, 0.2, 1), top 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease';
+    fairy.style.left = leftPct.toFixed(2) + '%';
+    fairy.style.top  = topPct.toFixed(2)  + '%';
+  }, firstVisit ? 80 : 20);
+
+  // 到着 (0.7s) → 魔法バースト + 板が出現
+  setTimeout(function() {
+    // スパークル爆発を plank の位置に重ねる
+    var burst = document.createElement('div');
+    burst.className = 'bridge-magic-burst';
+    burst.style.left = ((cx / sr.width) * 100).toFixed(2) + '%';
+    burst.style.top  = ((cy / sr.height) * 100).toFixed(2) + '%';
+    stage.appendChild(burst);
+    setTimeout(function() { if (burst.parentNode) burst.remove(); }, 900);
+    try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+    if (onArrive) onArrive();
+  }, firstVisit ? 780 : 720);
+}
+
+function _puzzleRevealPlankAfter(opts, plank, planks, els) {
   if (opts && opts.finisher) {
     // 5枚目完成: 全板をふわっと光らせる演出 (橋完成のお祝い)
     try { playVictoryFanfare(); } catch (e) {}
@@ -6713,13 +6882,19 @@ function _puzzleRevealPlank(opts) {
     //   ④ 勇者が左→右に歩いて渡る
     if (_puzzle.kind === 'bridge' && els.stage) {
       // ① まず 5枚目 (こ) をしっかり見せるためワンテンポ待機 (900ms)
-      //    → その後に四角ブロックごとフェードアウト
+      //    → その後に四角ブロックごとフェードアウト + 妖精を退避
       setTimeout(function() {
         planks.forEach(function(pl) {
           pl.style.transition = 'opacity 0.35s ease-out, transform 0.35s ease-out';
           pl.style.opacity = '0';
           pl.style.transform = 'translateY(10px) scale(0.85)';
         });
+        var bf = els.stage.querySelector('.bridge-fairy');
+        if (bf) {
+          bf.style.transition = 'opacity 0.4s ease, top 0.5s ease';
+          bf.style.opacity = '0';
+          bf.style.top = '-8%';
+        }
       }, 900);
 
       // ブロック消失完了 (900 + 400ms = 1300ms) を待ってから交互点滅開始
@@ -8222,6 +8397,10 @@ function startRowPractice(rowIndex) {
               }
             });
           } catch (e) { _rowPracticeNextChar(); }
+        } else if (_pKind === 'bridge') {
+          // か行: 橋の前で勇者 ↔ みずの妖精 の出会いシーンを挟む (2026-04-22)。
+          try { _showBridgeEncounterIntro(function() { _rowPracticeNextChar(); }); }
+          catch (e) { _rowPracticeNextChar(); }
         } else {
           _rowPracticeNextChar();
         }
@@ -8564,6 +8743,81 @@ function _rescueFairy(fairyId, onDone) {
   }
 
   try { if (typeof playVictoryFanfare === 'function') playVictoryFanfare(); } catch (e) {}
+}
+
+// か行 bridge フィニッシャー専用: みずの妖精との別れ会話。
+// intro で既に登場済みの妖精と再会 → 「困ったら呼んで」「洞窟に仲間が囚われてる」の依頼。
+// 封印破壊・emoji pop は出さない (妖精は元から自由)。状態だけ _freeFairy('water') で記録。
+// (2026-04-22 ユーザー要望: 別れ際のセリフで次の行 な=ほこら への動機付け)
+function _waterFairyFarewell(onDone) {
+  _freeFairy('water');
+  var fairyColor = '#7ad2ff';
+
+  var ov = document.createElement('div');
+  ov.id = 'waterFairyFarewell';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1710;background:radial-gradient(ellipse at 50% 55%,rgba(80,140,200,0.35) 0%,rgba(10,18,34,0.93) 80%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 24px 18vh;animation:fadeIn 0.5s ease;cursor:pointer;';
+
+  // 薄く修復済み橋を背景に敷く
+  var bg = document.createElement('div');
+  bg.style.cssText = 'position:absolute;inset:0;background:url("../assets/images/puzzle/bridge_fixed.png") center center / cover no-repeat;opacity:0.3;filter:blur(1px) brightness(0.8);';
+  ov.appendChild(bg);
+
+  // 妖精 (中央 やや上)
+  var fairy = document.createElement('div');
+  fairy.textContent = '🧚‍♀️';
+  fairy.style.cssText = 'font-size:clamp(64px,15vw,110px);filter:drop-shadow(0 0 18px ' + fairyColor + ') drop-shadow(0 0 34px ' + fairyColor + ');margin-bottom:18px;animation:fairyHover 2.8s ease-in-out infinite;z-index:2;';
+  ov.appendChild(fairy);
+
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'background:linear-gradient(180deg,rgba(245,250,255,0.97),rgba(215,230,250,0.95));color:#102040;font-size:clamp(0.98rem,2.6vw,1.14rem);font-weight:900;padding:16px 22px;border-radius:20px;border:3px solid ' + fairyColor + ';box-shadow:0 0 26px ' + fairyColor + '99,0 6px 22px rgba(0,0,0,0.6);max-width:min(520px,90vw);text-align:center;line-height:1.6;min-height:3.6em;display:flex;align-items:center;justify-content:center;z-index:2;';
+  ov.appendChild(bubble);
+
+  var hint = document.createElement('div');
+  hint.textContent = '▼ タップで つぎへ';
+  hint.style.cssText = 'margin-top:16px;font-size:0.95rem;font-weight:900;color:#FFEB50;text-shadow:0 2px 4px rgba(0,0,0,0.8);animation:guardianFloat 1.1s ease-in-out infinite;z-index:2;';
+  ov.appendChild(hint);
+
+  var lines = [
+    'はしが なおったわ！\nこれで わたれるわ ね。',
+    'こまった ことが あったら\nいつでも よんで ね。',
+    'そうそう… おねがいが あるの。',
+    'どうくつの おくの ほこらに\nわたしの なかまが つかまって いるの。',
+    'どうか たすけて あげて！'
+  ];
+
+  var idx = -1;
+  function showLine() {
+    idx++;
+    if (idx >= lines.length) { close(); return; }
+    bubble.innerHTML = lines[idx].split('\n').map(function(t) { return '<div>' + t + '</div>'; }).join('');
+    bubble.style.opacity = '0';
+    bubble.style.transform = 'translateY(10px)';
+    bubble.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    requestAnimationFrame(function() {
+      bubble.style.opacity = '1';
+      bubble.style.transform = 'translateY(0)';
+    });
+    if (idx === 0) { try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {} }
+  }
+
+  var closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    // 妖精が飛び去る
+    fairy.style.transition = 'opacity 0.55s ease, transform 0.7s cubic-bezier(0.4,0,0.8,0.3)';
+    fairy.style.transform = 'translate(30vw, -40vh) scale(0.4) rotate(20deg)';
+    fairy.style.opacity = '0';
+    setTimeout(function() {
+      ov.style.transition = 'opacity 0.4s ease';
+      ov.style.opacity = '0';
+    }, 400);
+    setTimeout(function() { if (ov.parentNode) ov.remove(); if (onDone) onDone(); }, 900);
+  }
+
+  ov.addEventListener('click', function() { showLine(); });
+  document.body.appendChild(ov);
+  showLine();
 }
 
 // 祠の扉が開く MP4 をフルスクリーン再生。終わったら onDone。
@@ -9153,10 +9407,11 @@ function _rowPracticeNextChar() {
               _puzzleDelay = 1500;
             }
             setTimeout(function() {
-              // か行 bridge フィニッシャー: 勇者が橋を渡り終えた直後に水の妖精を救出。
-              // 板も釘もなしに橋が治った「なぜ？」を、妖精の修復魔法として物語回収。
+              // か行 bridge フィニッシャー: 勇者が橋を渡り終えた直後に みずの妖精と別れの会話。
+              // intro で既に妖精は登場済みなので、ここは封印破りではなく「お別れ + 次の依頼」。
+              // (2026-04-22) 以前は _rescueFairy('water') で封印を壊していたが、妖精は最初から自由 → 整合性修正。
               if (isFinisher && _puzzle.kind === 'bridge') {
-                _rescueFairy('water', function() {
+                _waterFairyFarewell(function() {
                   _puzzle.step++;
                   _rowPracticeStep++;
                   _rowPracticeNextChar();

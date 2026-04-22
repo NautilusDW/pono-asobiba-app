@@ -699,10 +699,56 @@ html, body {
   50%      { transform: translateY(5px) rotate(3deg); }
 }
 .complete-pono-bubble.hidden-pre,
-.complete-trivia.hidden-pre {
+.complete-trivia.hidden-pre,
+.complete-stars.hidden-pre,
+.complete-acorns.hidden-pre {
   opacity: 0;
   transform: scale(0.7);
 }
+.complete-stars {
+  display: flex;
+  gap: 6px;
+  margin: 2px 0 0;
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.complete-stars .star {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #D4C7B5;
+  text-shadow: 0 2px 0 rgba(93,78,55,0.15);
+  transform: scale(0.3);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.34,1.9,0.64,1), color 0.3s ease, opacity 0.3s ease;
+}
+.complete-stars .star.lit {
+  color: #FFC93C;
+  text-shadow: 0 0 10px rgba(255,201,60,0.9), 0 2px 0 #B87200;
+  transform: scale(1);
+  opacity: 1;
+}
+.complete-acorns {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: linear-gradient(180deg, #FFF3CD, #FFE08A);
+  border-radius: 999px;
+  padding: 4px 12px 4px 8px;
+  box-shadow: 0 2px 0 #B87200, 0 3px 8px rgba(93,78,55,0.2);
+  font-weight: 900;
+  color: #5C3A00;
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.complete-acorns.bump {
+  animation: acornBump 0.55s cubic-bezier(0.34,1.9,0.64,1);
+}
+@keyframes acornBump {
+  0%   { transform: scale(0.5) rotate(-12deg); }
+  55%  { transform: scale(1.25) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.complete-acorn-icon { font-size: 1.3rem; line-height: 1; margin-right: 2px; }
+.complete-acorn-plus { font-size: 0.95rem; }
+.complete-acorn-num { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 .complete-pono-bubble,
 .complete-trivia {
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
@@ -1013,6 +1059,13 @@ html, body {
           <img id="complete-pono-big" class="complete-pono-big" src="../assets/images/characters/pono/dance/dance_hooray.png" alt="ポノ">
         </div>
         <div class="complete-pono-bubble" id="complete-msg">おいしそう！</div>
+        <div class="complete-stars hidden-pre" id="complete-stars" aria-label="ひょうか">
+          <span class="star s0">★</span><span class="star s1">★</span><span class="star s2">★</span>
+        </div>
+        <div class="complete-acorns hidden-pre" id="complete-acorns">
+          <span class="complete-acorn-icon" aria-hidden="true">🌰</span>
+          <span class="complete-acorn-plus">+</span><span class="complete-acorn-num" id="complete-acorn-num">0</span>
+        </div>
         <div class="complete-trivia" id="complete-trivia"></div>
       </div>
     </div>
@@ -1302,12 +1355,20 @@ function formatFavDate(ts) {
 
 // ===== ポノ表情マッピング（バランス応じた演出） =====
 const PONO_BASE = '../assets/images/characters/pono/';
+// 評価段階と どんぐり報酬:
+//   good (三色揃い): ⭐⭐⭐ / 10どんぐり  (+3 チャレンジクリアで ボーナス)
+//   ok  (2色):       ⭐⭐   / 5 どんぐり
+//   poor(1色):       ⭐     / 2 どんぐり
 function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
-  // チャレンジクリアは専用メッセージ
-  if (isChallenge) {
-    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: 'おだい クリア！すごい！', quality: 'good' };
-  }
   const colorsPresent = (rCount > 0 ? 1 : 0) + (yCount > 0 ? 1 : 0) + (gCount > 0 ? 1 : 0);
+  let base;
+  // チャレンジクリア (専用メッセージ + 判定は通常同様)
+  if (isChallenge) {
+    base = { img: PONO_BASE + 'dance/dance_hooray.png', msg: 'おだい クリア！すごい！', quality: 'good', stars: 3, acorns: 10 };
+    base.acorns += 3; // チャレンジボーナス
+    base.challenge = true;
+    return base;
+  }
   // 三色ぜんぶあり
   if (colorsPresent === 3) {
     const msgs = [
@@ -1315,16 +1376,16 @@ function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
       'さいこうの おべんとう！ありがとう！',
       'これで いちにち げんきに あそべるね！',
     ];
-    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good' };
+    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good', stars: 3, acorns: 10 };
   }
   // 2色あり 1色不足 (ok)
   if (colorsPresent === 2) {
-    if (gCount === 0) return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！', quality: 'ok' };
-    if (rCount === 0) return { img: PONO_BASE + 'dance/dance_shy.png',   msg: 'おにくや おさかなで つよく なろうね！',       quality: 'ok' };
-    if (yCount === 0) return { img: PONO_BASE + 'dance/dance_tilt.png',  msg: 'きいろの たべものも あると ちからが でるよ！',  quality: 'ok' };
+    if (gCount === 0) return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！', quality: 'ok', stars: 2, acorns: 5 };
+    if (rCount === 0) return { img: PONO_BASE + 'dance/dance_shy.png',   msg: 'おにくや おさかなで つよく なろうね！',       quality: 'ok', stars: 2, acorns: 5 };
+    if (yCount === 0) return { img: PONO_BASE + 'dance/dance_tilt.png',  msg: 'きいろの たべものも あると ちからが でるよ！',  quality: 'ok', stars: 2, acorns: 5 };
   }
   // 1色だけ (poor)
-  return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'うーん… いろんな いろを いれてみよう！', quality: 'poor' };
+  return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'うーん… いろんな いろを いれてみよう！', quality: 'poor', stars: 1, acorns: 2 };
 }
 
 // ===== 結果発表の演出（ドラムロール→じゃーん→表情切替） =====
@@ -1341,9 +1402,14 @@ function revealReactionWithDrama(reaction) {
   const trivia = document.getElementById('complete-trivia');
   const saveBtn = document.getElementById('save-fav-btn');
   const right = document.getElementById('complete-right');
+  const starsEl = document.getElementById('complete-stars');
+  const acornsEl = document.getElementById('complete-acorns');
+  const acornNumEl = document.getElementById('complete-acorn-num');
   if (!slot || !ponoBig || !bubble) return;
 
   const quality = reaction.quality || 'good';
+  const stars = reaction.stars || (quality === 'good' ? 3 : quality === 'ok' ? 2 : 1);
+  const acorns = reaction.acorns || 0;
 
   // Pre-reveal: ふつうの顔でそわそわ
   slot.classList.remove('reveal', 'droopy');
@@ -1354,6 +1420,16 @@ function revealReactionWithDrama(reaction) {
   bubble.classList.add('hidden-pre');
   if (trivia) trivia.classList.add('hidden-pre');
   if (saveBtn) saveBtn.classList.add('hidden-pre');
+  // 評価表示をリセット
+  if (starsEl) {
+    starsEl.classList.add('hidden-pre');
+    starsEl.querySelectorAll('.star').forEach(s => s.classList.remove('lit'));
+  }
+  if (acornsEl) {
+    acornsEl.classList.add('hidden-pre');
+    acornsEl.classList.remove('bump');
+  }
+  if (acornNumEl) acornNumEl.textContent = '0';
 
   // T=350ms: bubble ふわっと出す（「うーん…」だけ先見せ）
   _revealTimers.push(setTimeout(() => {
@@ -1393,12 +1469,41 @@ function revealReactionWithDrama(reaction) {
       bubble.textContent = reaction.msg;
       bubble.classList.remove('hidden-pre');
     }, 80));
+
+    // T=+350ms: 星を順番に灯す
+    if (starsEl) {
+      _revealTimers.push(setTimeout(() => {
+        starsEl.classList.remove('hidden-pre');
+      }, 300));
+      const starEls = starsEl.querySelectorAll('.star');
+      for (let i = 0; i < stars; i++) {
+        _revealTimers.push(setTimeout(() => {
+          if (starEls[i]) starEls[i].classList.add('lit');
+          playStarChime(i);
+        }, 420 + i * 240));
+      }
+    }
+
+    // T=+1100ms: どんぐり付与 + 表示ポップイン
+    _revealTimers.push(setTimeout(() => {
+      if (acorns > 0 && !reaction._awarded) {
+        reaction._awarded = true;
+        if (window.addAcorns) window.addAcorns(acorns, { reason: reaction.challenge ? 'bento_challenge' : 'bento_complete' });
+      }
+      if (acornNumEl) acornNumEl.textContent = String(acorns);
+      if (acornsEl) {
+        acornsEl.classList.remove('hidden-pre');
+        void acornsEl.offsetWidth;
+        acornsEl.classList.add('bump');
+        playAcornGet();
+      }
+    }, 420 + stars * 240 + 180));
   }, 2400));
 
-  // T=2850ms: 保存ボタンをふわっと出す
+  // T=2850ms → どんぐり演出後に保存ボタン
   _revealTimers.push(setTimeout(() => {
     if (saveBtn) saveBtn.classList.remove('hidden-pre');
-  }, 2850));
+  }, 2400 + 420 + stars * 240 + 500));
 
   // T=3100ms: reveal クラス外して 通常状態に戻す / poor なら droopy
   _revealTimers.push(setTimeout(() => {
@@ -1714,7 +1819,7 @@ function showToast(m) { const t = document.getElementById('wrong-toast'); t.text
 
 function stageComplete() {
   if (window.incrementStat) window.incrementStat('bento_complete', 1);
-  if (window.addAcorns) window.addAcorns(5, { reason: 'bento_complete' });
+  // ※ どんぐり付与は評価が確定してから revealReactionWithDrama 内で行う (quality依存)
   // スタンプラリー: プレイ記録
   (function() {
     var k = 'pono_played_' + new Date().toDateString();
@@ -1921,6 +2026,38 @@ function launchRaindrops() {
     host.appendChild(r);
     setTimeout(() => r.remove(), 1700);
   }
+}
+function playStarChime(i) {
+  const ac = getAC();
+  const t = ac.currentTime;
+  const freqs = [784, 988, 1319]; // G5, B5, E6 上昇音
+  const f = freqs[Math.min(i|0, freqs.length - 1)];
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.connect(g); g.connect(ac.destination);
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.18, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  o.start(t); o.stop(t + 0.38);
+}
+function playAcornGet() {
+  const ac = getAC();
+  const t = ac.currentTime;
+  // 軽やかな上昇「コイン」系
+  [880, 1175, 1568].forEach((f, i) => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sine';
+    o.frequency.value = f;
+    const s = t + i * 0.06;
+    g.gain.setValueAtTime(0, s);
+    g.gain.linearRampToValueAtTime(0.16, s + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, s + 0.3);
+    o.start(s); o.stop(s + 0.32);
+  });
 }
 function playDoyoon() {
   // 下降する短調コードで「どよ〜ん」
