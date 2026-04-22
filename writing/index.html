@@ -4017,7 +4017,10 @@ body.battle-intro-active .battle-log-window {
 */
 .storyboard-overlay {
   position: fixed; inset: 0;
-  z-index: 9990;
+  /* 2026-04-22: #titleScreen (9998) / #splashScreen (10000) より必ず上にくるよう
+     10010 に引き上げ。以前は 9990 で title の裏に回り「はじめから押下後 無反応」
+     の直接原因になっていた。 */
+  z-index: 10010;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: clamp(16px, 4vw, 40px);
