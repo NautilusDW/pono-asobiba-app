@@ -1847,8 +1847,9 @@ body.battle-mode .villain-deco {
 }
 /* SVG <image> の石板: 位置・サイズは SVG の x/y/width/height 属性で決まるので
    CSS 側では opacity / transform / filter だけを制御する。
+   .plank ベースクラスは付けない (width:clamp(...) が SVG geometry を壊すため)。
    transform-box: fill-box で各 <image> の中心を基準に scale/rotate できるようにする。 */
-.plank.plank-riddle {
+.plank-riddle {
   opacity: 0;
   transform-box: fill-box;
   transform-origin: center;
@@ -1857,7 +1858,7 @@ body.battle-mode .villain-deco {
   image-rendering: pixelated;
 }
 /* 石板がはまる演出 (placed が付いた瞬間に再生)。bounce + glow。 */
-.plank.plank-riddle.placed {
+.plank-riddle.placed {
   animation: shrineTilePop 0.85s cubic-bezier(0.45, 1.6, 0.5, 1) forwards;
 }
 @keyframes shrineTilePop {
@@ -1867,14 +1868,14 @@ body.battle-mode .villain-deco {
   100% { opacity: 1; transform: scale(1)    rotate(0);      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
 }
 /* 完成時: 5枚の石板が順番に眩しく光る (180ms stagger × 1s anim) */
-.puzzle-bg-riddle.complete .plank.plank-riddle {
+.puzzle-bg-riddle.complete .plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
 }
-.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-0 { animation-delay: 0s; }
-.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-1 { animation-delay: 0.18s; }
-.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-2 { animation-delay: 0.36s; }
-.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-3 { animation-delay: 0.54s; }
-.puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-4 { animation-delay: 0.72s; }
+.puzzle-bg-riddle.complete .plank-riddle.tablet-slot-0 { animation-delay: 0s; }
+.puzzle-bg-riddle.complete .plank-riddle.tablet-slot-1 { animation-delay: 0.18s; }
+.puzzle-bg-riddle.complete .plank-riddle.tablet-slot-2 { animation-delay: 0.36s; }
+.puzzle-bg-riddle.complete .plank-riddle.tablet-slot-3 { animation-delay: 0.54s; }
+.puzzle-bg-riddle.complete .plank-riddle.tablet-slot-4 { animation-delay: 0.72s; }
 @keyframes tabletSeqGlow {
   0%   { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); transform: scale(1) rotate(0); }
   40%  { filter: drop-shadow(0 0 28px rgba(255,220,120,1)) drop-shadow(0 0 14px rgba(255,255,220,0.95)) brightness(1.8); transform: scale(1.25) rotate(-3deg); }
@@ -6462,7 +6463,7 @@ function _showPuzzleStage(rowLabel) {
           var rom = _rmap[ch] || 'na';
           var slot = SHRINE_SLOTS[idx] || SHRINE_SLOTS[0];
           var img = document.createElementNS(SVG_NS, 'image');
-          img.setAttribute('class', 'plank plank-riddle tablet-slot-' + idx);
+          img.setAttribute('class', 'plank-riddle tablet-slot-' + idx);
           // href (モダン) と xlink:href (Safari 古いバージョン) の両方を設定
           var src = '../assets/images/puzzle/tablet/shrine_tile_' + rom + '.png';
           img.setAttribute('href', src);
@@ -6856,7 +6857,7 @@ function _showBridgeEncounterIntro(onDone) {
 function _puzzleRevealPlank(opts) {
   const els = _puzzleEls();
   if (!els.planks) return;
-  const planks = els.planks.querySelectorAll('.plank');
+  const planks = els.planks.querySelectorAll('.plank, .plank-riddle');
   const idx = _puzzle.step;
   if (idx < 0 || idx >= planks.length) return;
   const plank = planks[idx];
