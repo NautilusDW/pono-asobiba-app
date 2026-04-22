@@ -4041,20 +4041,36 @@ body.battle-intro-active .battle-log-window {
   font-size: clamp(4rem, 30vmin, 14rem);   /* 絵文字フォールバック時のサイズ */
   overflow: hidden;
 }
+/* 2026-04-23: 縦画面は contain で絵を切らずに全体表示 (上下に黒帯許容)。
+   横画面は viewport が広すぎて contain だと左右に黒帯+絵が小さくなるので
+   cover に切り替え、上下を少し切って画面いっぱいにする
+   (下部にテキストボックスが乗ることを考慮し、下がやや切れるのは許容)。 */
 .storyboard-art img {
   width: 100%; height: 100%;
   object-fit: contain;
+  object-position: center;
   display: block;
+}
+@media (orientation: landscape) {
+  .storyboard-art img {
+    object-fit: cover;
+    /* テキストは画面下部に乗るので、切る位置を少し上寄りにして
+       被写体 (絵の中心〜上半分) が隠れにくいように。 */
+    object-position: center 35%;
+  }
 }
 
 /* テキストは画像の上に帯状に乗せる。黒い縁取り (8方向 text-shadow) +
    半透明黒ボックスで、どんな絵の上でも子供が読める強コントラストに。
-   フォントは DotGothic16 (SFC 風ドットフォント) を優先。 */
+   フォントは DotGothic16 (SFC 風ドットフォント) を優先。
+   2026-04-23: 中央寄せは translateX を使わず left/right auto margin で実現する。
+   sbContentIn アニメーションが transform: translateY/... を上書きするため、
+   transform ベースの centering だと「テキストが右に流れて半分切れる」現象が起きる。 */
 .storyboard-text {
   position: absolute;
-  left: 50%;
+  left: 0; right: 0;
+  margin: 0 auto;
   bottom: clamp(14px, 6vh, 60px);
-  transform: translateX(-50%);
   width: min(92vw, 980px);
   box-sizing: border-box;
   padding: clamp(14px, 2.4vh, 22px) clamp(18px, 3.2vw, 32px);
