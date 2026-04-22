@@ -547,19 +547,6 @@ html, body {
 }
 .sk-intro-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B87200; }
 
-/* ===== 完成画面 三色凡例 ===== */
-.sk-legend {
-  display: flex; justify-content: center; gap: 12px;
-  margin-top: 6px; flex-wrap: wrap;
-}
-.sk-legend-item {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 0.6rem; font-weight: 700; color: var(--text-light);
-}
-.sk-legend-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-}
-
 /* ===== Tutorial ===== */
 .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
@@ -1107,9 +1094,10 @@ const TRIVIA_FALLBACK = {
 };
 function getTrivia(foodName) {
   if (!foodName) return null;
-  if (TRIVIA[foodName]) return TRIVIA[foodName];
-  for (const k in TRIVIA) {
-    if (foodName.indexOf(k) !== -1) return TRIVIA[k];
+  if (Object.prototype.hasOwnProperty.call(TRIVIA, foodName)) return TRIVIA[foodName];
+  const keys = Object.keys(TRIVIA);
+  for (let i = 0; i < keys.length; i++) {
+    if (foodName.indexOf(keys[i]) !== -1) return TRIVIA[keys[i]];
   }
   return null;
 }
