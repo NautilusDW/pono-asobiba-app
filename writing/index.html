@@ -2411,26 +2411,20 @@ body.battle-mode .villain-deco {
   20%, 60% { transform: translateX(-8px); }
   40%, 80% { transform: translateX(8px); }
 }
-/* ら行: ようがんのとびいし (lava_step)。文字をなぞる=呪文発動で飛び石が1つ浮上。
-   背景画像 lava_steps_0.png (0石) → lava_steps_5.png (5石揃う) を順次切替。
-   最後はゴーレム退散 + 勇者が左→右へ飛び石を渡る。 */
+/* ら行: ようがんのとびいし (lava_step)。文字をなぞる=呪文発動で stone_N が下から浮上。
+   背景は lava_steps_0 (空の溶岩) 固定。浮上した石は消さず最終位置に残り続ける = シームレス。
+   (2026-04-22: 以前は bg を step-N で差し替え + stone をフェード消去していたが、
+    途中で画面が黒く抜ける・位置がワープする指摘があったため、bg swap を廃止し
+    「完成絵の石位置」を目印に stone_N を個別配置 → そのまま定着させる方式に変更) */
 .puzzle-bg-lava_step {
   background-image: url('../assets/images/puzzle/lava/lava_steps_0.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   image-rendering: pixelated;
-  transition: background-image 0.8s ease-in-out;
 }
-.puzzle-bg-lava_step.step-1 { background-image: url('../assets/images/puzzle/lava/lava_steps_1.png'); }
-.puzzle-bg-lava_step.step-2 { background-image: url('../assets/images/puzzle/lava/lava_steps_2.png'); }
-.puzzle-bg-lava_step.step-3 { background-image: url('../assets/images/puzzle/lava/lava_steps_3.png'); }
-.puzzle-bg-lava_step.step-4 { background-image: url('../assets/images/puzzle/lava/lava_steps_4.png'); }
-.puzzle-bg-lava_step.step-5 { background-image: url('../assets/images/puzzle/lava/lava_steps_5.png'); }
 
-/* 飛び石が画面下から浮上するアニメ用オーバーレイ (stone_1..5.png をピクセルアート個別表示)。
-   lava_steps_{N}.png にはこの石位置と同じ場所に baked-in の石があるので、
-   浮上して到着 → ピカッと光らせた瞬間に bg を .step-N に切り替え → このオーバーレイはフェード。 */
+/* 飛び石が画面下から浮上して定着。lava_steps_5.png の baked-in 石位置に合わせる。 */
 .lava-rising-stone {
   position: absolute;
   width: clamp(44px, 11vw, 92px);
@@ -2449,11 +2443,14 @@ body.battle-mode .villain-deco {
 .lava-rising-stone.stone-3 { background-image: url('../assets/images/puzzle/lava/stone_3.png'); }
 .lava-rising-stone.stone-4 { background-image: url('../assets/images/puzzle/lava/stone_4.png'); }
 .lava-rising-stone.stone-5 { background-image: url('../assets/images/puzzle/lava/stone_5.png'); }
+/* 浮上 → 到着。最終位置 (translate -50%, 0%) で停止 → forwards で permanent。
+   以前は arriveFlash で opacity:0 に戻して bg と入れ替えていたが、現仕様では
+   石がそのまま残り続ける。到着時のピカッ光は .landed で短く光らせるだけ。 */
 .lava-rising-stone.rising {
   animation: lavaStoneRise 1.35s cubic-bezier(0.22, 0.8, 0.35, 1) forwards;
 }
-.lava-rising-stone.arrived {
-  animation: lavaStoneArriveFlash 0.55s ease-out forwards;
+.lava-rising-stone.landed {
+  animation: lavaStoneLandedFlash 0.55s ease-out;
 }
 @keyframes lavaStoneRise {
   0%   { transform: translate(-50%, 60vh) scale(0.7) rotate(-12deg); opacity: 0; }
@@ -2462,39 +2459,15 @@ body.battle-mode .villain-deco {
   85%  { transform: translate(-50%, 8%)   scale(0.98) rotate(-2deg); opacity: 1; }
   100% { transform: translate(-50%, 0%)   scale(1)    rotate(0);     opacity: 1; }
 }
-@keyframes lavaStoneArriveFlash {
-  0%   { filter: drop-shadow(0 0 0 transparent) brightness(1); }
-  35%  { filter: drop-shadow(0 0 22px rgba(255,230,140,1)) drop-shadow(0 0 10px rgba(255,180,60,0.9)) brightness(1.6); }
-  100% { filter: drop-shadow(0 0 0 transparent) brightness(1); opacity: 0; }
+@keyframes lavaStoneLandedFlash {
+  0%   { filter: drop-shadow(0 6px 8px rgba(0,0,0,0.75)) brightness(1); }
+  40%  { filter: drop-shadow(0 0 22px rgba(255,230,140,1)) drop-shadow(0 0 10px rgba(255,180,60,0.9)) brightness(1.55); }
+  100% { filter: drop-shadow(0 6px 8px rgba(0,0,0,0.75)) brightness(1); }
 }
 
 /* lava_step の puzzle-planks は何も置かないので非表示 (背景画像に任せる) */
 .puzzle-bg-lava_step .puzzle-planks {
   display: none;
-}
-
-/* ようがんゴーレム背景演出 (絵文字運用、攻撃はせず威圧のみ) */
-.lava-golem-bg {
-  position: absolute; top: 14%; right: 6%;
-  font-size: clamp(48px, 13vmin, 110px);
-  opacity: 0.7;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7)) drop-shadow(0 0 14px rgba(255,120,40,0.55));
-  animation: golemIdle 3s ease-in-out infinite;
-  z-index: 2;
-  pointer-events: none;
-  user-select: none;
-}
-@keyframes golemIdle {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
-}
-.lava-golem-bg.retreat {
-  animation: golemRetreat 1.8s ease-in forwards;
-}
-@keyframes golemRetreat {
-  0%   { opacity: 0.7; transform: translateX(0) scale(1); }
-  60%  { opacity: 0.35; transform: translateX(40%) scale(0.8); }
-  100% { opacity: 0;    transform: translateX(90%) scale(0.55); }
 }
 
 /* 勇者が左の崖から右の崖へ飛び石を渡るアニメ (5石完成後) */
@@ -6401,25 +6374,22 @@ function _showPuzzleStage(rowLabel) {
     els.stage.classList.add('puzzle-bg-' + def.kind);
   }
 
-  // 前回ぶんの lava_step 用ゴーレム残骸を掃除
+  // 前回ぶんの lava_step 用残骸を掃除 (浮上済みの石・閃光・旧ゴーレム)
   if (els.stage) {
-    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst').forEach(function(n) { n.remove(); });
+    els.stage.querySelectorAll('.lava-golem-bg, .lava-burst, .lava-rising-stone, .lava-walker').forEach(function(n) { n.remove(); });
   }
 
   // 板5枚を生成 (初期は非表示 .plank = opacity:0)
   if (els.planks) {
     els.planks.innerHTML = '';
     if (def.kind === 'lava_step') {
-      // ら行: 背景画像 lava_steps_0.png (飛び石0個) からスタート。
-      // 文字をなぞる毎に .step-N クラスを付けて 01 → 05 へ bg を進化させる。
-      // 板 DOM は不要 (背景が全て)、ゴーレムだけ威圧のため配置。
+      // ら行: 背景 lava_steps_0.png (空の溶岩) を下敷きに、stone_N.png を下から浮上させて定着。
+      // 石が浮上してもフェード消失させず、最終位置に残り続ける (シームレス化 2026-04-22)。
+      // 敵キャラ (🗿 ようがんゴーレム) は出さない (「番人と戦わない」方針を lava にも適用)。
       if (els.stage) {
-        // step-* クラスを初期化
         for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
-        const golem = document.createElement('div');
-        golem.className = 'lava-golem-bg';
-        golem.textContent = '🗿';
-        els.stage.appendChild(golem);
+        // 残骸 (前回ランのstone-placed) をクリア
+        els.stage.querySelectorAll('.lava-rising-stone').forEach(function(n) { n.remove(); });
       }
     } else {
       def.chars.forEach(function(ch, idx) {
@@ -9103,8 +9073,8 @@ function _rowPracticeNextChar() {
               return;
             }
             // ら行 (lava_step): 文字をなぞる=呪文発動で飛び石が 1 個、画面下から浮上してくる。
-            // 定位置に着くと一瞬光って、そのタイミングで背景を lava_steps_{n} → {n+1} にスワップ
-            // (オーバーレイの石はフェードアウト)。5 石揃うとゴーレム退散 → 勇者が石を飛び跳ねて渡る。
+            // (2026-04-22 リファクタ) 背景 swap は廃止し、浮上した石を最終位置にそのまま残す。
+            // 途中で画面が黒く抜けて最終位置にワープする問題をシームレス化。
             if (_puzzle.kind === 'lava_step') {
               var _lvStage = _puzzleEls().stage;
               var _nextStep = _puzzle.step + 1; // 1..5
@@ -9123,24 +9093,20 @@ function _rowPracticeNextChar() {
                   rising.style.left = _stoneX + '%';
                   rising.style.top  = '50%';
                   _lvStage.appendChild(rising);
-                  // ② 定位置到達でピカッ + bg swap
+                  // ② 定位置到達でピカッ光らせる (石はそのまま定着、bg は swap しない)
                   setTimeout(function() {
                     rising.classList.remove('rising');
-                    rising.classList.add('arrived');
-                    if (_lvStage) _lvStage.classList.add('step-' + _nextStep);
+                    rising.classList.add('landed');
                   }, 1350);
-                  setTimeout(function() { if (rising.parentNode) rising.remove(); }, 1950);
                 }
                 if (isFinisher) {
-                  // 5 石揃った: ゴーレム退散 + 中央閃光 + 勇者が飛び石を左→右に飛び跳ねて渡る
+                  // 5 石揃った: 中央閃光 + 勇者が飛び石を左→右に飛び跳ねて渡る
                   if (_lvStage) {
                     setTimeout(function() {
                       _lvStage.classList.add('complete');
                       var lvBurst = document.createElement('div');
                       lvBurst.className = 'lava-burst';
                       _lvStage.appendChild(lvBurst);
-                      var lvGolem = _lvStage.querySelector('.lava-golem-bg');
-                      if (lvGolem) lvGolem.classList.add('retreat');
                     }, 1450);
                   }
                   try { setTimeout(function() { playVictoryFanfare(); }, 1450); } catch (e) {}
