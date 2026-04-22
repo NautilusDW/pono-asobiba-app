@@ -1375,25 +1375,41 @@ const PONO_BASE = '../assets/images/characters/pono/';
 //   ok  (2色):       ⭐⭐  / 3 どんぐり
 //   poor(1色):       ⭐    / 2 どんぐり
 // ※ challenge モードは未実装のため bonus は付けない (お題/注文システム実装時に復活予定)
-function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
+// 評価ロジック (2026-04-22 厳格化):
+//   good  (⭐⭐⭐ / 5🌰): 3 色ぜんぶ + おかず 4 品すべて別の料理 (重複なし)
+//   ok    (⭐⭐   / 3🌰): 3 色ぜんぶ あるが おかずに重複 (例: フライドポテト×2) あり
+//   poor  (⭐     / 2🌰): 2 色 以下 (何色か不足) OR おかずが 2 種類以下に偏り (例: フライドポテト×3)
+// 旧ロジックは 3 色そろえば即 3★ で、単品連発でも通ってしまったため厳格化。
+function choosePonoReaction(rCount, yCount, gCount, okazuNames) {
   const colorsPresent = (rCount > 0 ? 1 : 0) + (yCount > 0 ? 1 : 0) + (gCount > 0 ? 1 : 0);
-  // 三色ぜんぶあり
-  if (colorsPresent === 3) {
-    const msgs = [
-      'バランス ばっちり！げんきモリモリ！',
-      'さいこうの おべんとう！ありがとう！',
-      'これで いちにち げんきに あそべるね！',
-    ];
-    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good', stars: 3, acorns: 5 };
+  const uniqueOkazu = new Set((okazuNames || []).filter(Boolean)).size;
+  const okazuTotal  = (okazuNames || []).length;
+
+  // poor: 2 色以下 / 単品連発 (unique ≤ 2 つまり同じ料理を 3 個以上 OR 2 種類だけ)
+  if (colorsPresent < 3 || uniqueOkazu <= 2) {
+    // 具体的な理由を子供に伝える: 何が足りなかったのか
+    if (colorsPresent < 3) {
+      if (gCount === 0) return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！', quality: 'poor', stars: 1, acorns: 2 };
+      if (rCount === 0) return { img: PONO_BASE + 'dance/dance_shy.png',   msg: 'おにくや おさかなで つよく なろうね！',       quality: 'poor', stars: 1, acorns: 2 };
+      if (yCount === 0) return { img: PONO_BASE + 'dance/dance_tilt.png',  msg: 'きいろの たべものも あると ちからが でるよ！',  quality: 'poor', stars: 1, acorns: 2 };
+      return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'うーん… いろんな いろを いれてみよう！', quality: 'poor', stars: 1, acorns: 2 };
+    }
+    // 3 色あるけど単品連発 → 「いろんな おかずも たのしいよ」系
+    return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'おなじ おかずばっかり だと あきちゃうかも…', quality: 'poor', stars: 1, acorns: 2 };
   }
-  // 2色あり 1色不足 (ok)
-  if (colorsPresent === 2) {
-    if (gCount === 0) return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！', quality: 'ok', stars: 2, acorns: 3 };
-    if (rCount === 0) return { img: PONO_BASE + 'dance/dance_shy.png',   msg: 'おにくや おさかなで つよく なろうね！',       quality: 'ok', stars: 2, acorns: 3 };
-    if (yCount === 0) return { img: PONO_BASE + 'dance/dance_tilt.png',  msg: 'きいろの たべものも あると ちからが でるよ！',  quality: 'ok', stars: 2, acorns: 3 };
+
+  // ok: 3 色 + 一部重複あり (unique=3 なので、4 品中 2 つ同じ料理が 1 ペア)
+  if (uniqueOkazu < okazuTotal) {
+    return { img: PONO_BASE + 'dance/dance_shy.png', msg: 'バランス いいね！\nいろんな おかずにも ちょうせんしてみよう！', quality: 'ok', stars: 2, acorns: 3 };
   }
-  // 1色だけ (poor)
-  return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'うーん… いろんな いろを いれてみよう！', quality: 'poor', stars: 1, acorns: 2 };
+
+  // good: 3 色 + おかず 4 品すべて別
+  const msgs = [
+    'バランス ばっちり！げんきモリモリ！',
+    'さいこうの おべんとう！ありがとう！',
+    'これで いちにち げんきに あそべるね！',
+  ];
+  return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good', stars: 3, acorns: 5 };
 }
 
 // ===== 結果発表の演出（ドラムロール→じゃーん→表情切替） =====
@@ -1721,9 +1737,11 @@ function loadFreeOkazu() {
   const remaining = 4 - okazuPicked; // 今回を含め あと何個選ぶか
   let guarantees;
   if (remaining >= 4) {
-    guarantees = [];
+    // 初回: 6 マス中 r/y/g 各 2 個ずつ保証 (ユーザー要望: 3 色そろった選択肢)
+    guarantees = ['r','r','y','y','g','g'];
   } else if (remaining === 3) {
-    guarantees = missingColors.slice(0, 1);
+    // あと 3 個: 足りない色＋各色最低 1 個保証
+    guarantees = ['r','y','g'].concat(missingColors);
   } else if (remaining === 2) {
     // 最後の2個: 足りない色 全て（最大2色）必ず含める
     guarantees = missingColors.slice(0, 2);
@@ -1734,8 +1752,9 @@ function loadFreeOkazu() {
 
   const picked = [];
   const usedSet = new Set();
-  // Step A: guarantees 色から必ず1個ずつ
+  // Step A: guarantees 色から順に 1 個ずつ (同じ色が複数回入っていればその分だけ追加)
   guarantees.forEach(c => {
+    if (picked.length >= 6) return;
     if (byColor[c] && byColor[c].length > 0) {
       const f = byColor[c].shift();
       picked.push(f); usedSet.add(fid(f));
@@ -1923,7 +1942,9 @@ function stageComplete() {
     `<div class="balance-item">${dot('b-g', gCount)}${emptyDot(1 - Math.min(gCount, 1))} みどり</div>`;
 
   // ポノ表情＋セリフ（バランスに応じた演出） ※ 演出は revealReactionWithDrama で実行
-  const reaction = choosePonoReaction(rCount, yCount, gCount, inChallengeMode);
+  // okazu 名は bentoSelected[0] = rice を除く 1..4 番目から抽出 (両パスで rice は常に先頭)
+  const okazuNames = bentoSelected.slice(1).map(s => s.name).filter(Boolean);
+  const reaction = choosePonoReaction(rCount, yCount, gCount, okazuNames);
 
   // 豆知識（テキストだけ先にセット、表示は reveal 時）
   const triviaEl = document.getElementById('complete-trivia');
@@ -2317,7 +2338,37 @@ function loadChallengeOkazu() {
   const allFoods = [...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS];
   const correct = shuffle(allFoods.filter(f => currentChallenge.filter(f) && !usedIds.has(fid(f))));
   const wrong = shuffle(allFoods.filter(f => !currentChallenge.filter(f) && !usedIds.has(fid(f))));
-  const display = shuffle([...correct.slice(0, 4), ...wrong.slice(0, 2)]).slice(0, 6);
+
+  // balanced チャレンジ (あか・きいろ・みどり ぜんぶ) は選択肢自体が三色そろう必要がある。
+  // 現在 bentoSkColors に無い色を優先して 1〜2 個ずつ correct 先頭に挿入する。
+  let correctPick;
+  if (currentChallenge.balanced) {
+    const have = { r: bentoSkColors.includes('r'), y: bentoSkColors.includes('y'), g: bentoSkColors.includes('g') };
+    const missing = ['r','y','g'].filter(c => !have[c]);
+    const byColorC = { r: [], y: [], g: [] };
+    correct.forEach(f => { if (f.sk && byColorC[f.sk]) byColorC[f.sk].push(f); });
+    const assembled = [];
+    const usedInAssemble = new Set();
+    // 欠け色は最低 1 個ずつ (残り枠に余裕があれば 2 個)
+    missing.forEach(c => {
+      const n = missing.length === 1 ? 2 : 1;
+      for (let i = 0; i < n && byColorC[c].length > 0; i++) {
+        const f = byColorC[c].shift();
+        assembled.push(f); usedInAssemble.add(fid(f));
+      }
+    });
+    // 残りは correct からランダムに充填して 4 個まで
+    for (let i = 0; i < correct.length && assembled.length < 4; i++) {
+      if (!usedInAssemble.has(fid(correct[i]))) {
+        assembled.push(correct[i]); usedInAssemble.add(fid(correct[i]));
+      }
+    }
+    correctPick = assembled;
+  } else {
+    correctPick = correct.slice(0, 4);
+  }
+
+  const display = shuffle([...correctPick, ...wrong.slice(0, 2)]).slice(0, 6);
 
   display.forEach(f => {
     const item = mkItem(f);
