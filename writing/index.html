@@ -1860,14 +1860,17 @@ body.battle-mode .villain-deco {
   transition: opacity 0.1s ease;
   image-rendering: pixelated;
 }
-/* 石板がはまる演出 (placed が付いた瞬間に再生)。bounce + glow。 */
+/* 石板がはまる演出 (placed が付いた瞬間に再生)。bounce + 青白い edge flash。
+   (2026-04-22 v5: 指摘「文字がはまった瞬間、縁のところを青白く光らせて」→ drop-shadow を金→青白に変更) */
 .plank-riddle.placed {
   animation: shrineTilePop 0.85s cubic-bezier(0.45, 1.6, 0.5, 1) forwards;
 }
 @keyframes shrineTilePop {
-  0%   { opacity: 0; transform: scale(0.35) rotate(-28deg); filter: drop-shadow(0 0 0 rgba(255,220,120,0)); }
-  45%  { opacity: 1; transform: scale(1.2)  rotate(10deg);  filter: drop-shadow(0 0 18px rgba(255,230,140,0.9)); }
-  70%  {             transform: scale(0.95) rotate(-4deg);  filter: drop-shadow(0 0 22px rgba(255,240,180,0.95)) brightness(1.3); }
+  0%   { opacity: 0; transform: scale(0.35) rotate(-28deg); filter: drop-shadow(0 0 0 rgba(180,235,255,0)); }
+  45%  { opacity: 1; transform: scale(1.2)  rotate(10deg);
+         filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 18px #b8e8ff) drop-shadow(0 0 32px #6fd0ff) brightness(1.35); }
+  70%  {             transform: scale(0.95) rotate(-4deg);
+         filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 22px #a8dcff) drop-shadow(0 0 12px #6fd0ff) brightness(1.2); }
   100% { opacity: 1; transform: scale(1)    rotate(0);      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
 }
 /* 完成時: 5枚の石板が順番に眩しく光る (180ms stagger × 1s anim) */
@@ -2554,28 +2557,28 @@ body.battle-mode .villain-deco {
     heroMoveAnim 0.4s steps(5, jump-none) infinite;
 }
 /* 左崖 → 石1 → 石2 → 石3 → 石4 → 石5 → 右崖 を跳ねながら駆け抜ける。
-   石の X 位置は lava_steps_5.png 実測に合わせて 30/40/50/60/70% (2026-04-22 v3)。
+   石の X 位置は 24/37/50/63/76% (2026-04-22 v4: 間隔狭+両端開き指摘 → spacing 13%)。
    各セグメントで放物線を描くため apex で Y を -88% に持ち上げる。 */
 @keyframes lavaWalkAcross {
   0%   { left: 6%;  opacity: 0; transform: translate(-50%, -50%) scale(1); }
   5%   { opacity: 1; }
   /* 石1 へ */
-   8%  { left: 18%; transform: translate(-50%, -88%) scale(1.04); }
-  14%  { left: 30%; transform: translate(-50%, -50%) scale(1); }
+   8%  { left: 15%; transform: translate(-50%, -88%) scale(1.04); }
+  14%  { left: 24%; transform: translate(-50%, -50%) scale(1); }
   /* 石2 へ */
-  19%  { left: 35%; transform: translate(-50%, -88%) scale(1.04); }
-  25%  { left: 40%; transform: translate(-50%, -50%) scale(1); }
+  19%  { left: 30.5%; transform: translate(-50%, -88%) scale(1.04); }
+  25%  { left: 37%;   transform: translate(-50%, -50%) scale(1); }
   /* 石3 へ */
-  30%  { left: 45%; transform: translate(-50%, -88%) scale(1.04); }
-  36%  { left: 50%; transform: translate(-50%, -50%) scale(1); }
+  30%  { left: 43.5%; transform: translate(-50%, -88%) scale(1.04); }
+  36%  { left: 50%;   transform: translate(-50%, -50%) scale(1); }
   /* 石4 へ */
-  41%  { left: 55%; transform: translate(-50%, -88%) scale(1.04); }
-  47%  { left: 60%; transform: translate(-50%, -50%) scale(1); }
+  41%  { left: 56.5%; transform: translate(-50%, -88%) scale(1.04); }
+  47%  { left: 63%;   transform: translate(-50%, -50%) scale(1); }
   /* 石5 へ */
-  52%  { left: 65%; transform: translate(-50%, -88%) scale(1.04); }
-  58%  { left: 70%; transform: translate(-50%, -50%) scale(1); }
+  52%  { left: 69.5%; transform: translate(-50%, -88%) scale(1.04); }
+  58%  { left: 76%;   transform: translate(-50%, -50%) scale(1); }
   /* 右崖へ最後のひと跳び */
-  65%  { left: 82%; transform: translate(-50%, -90%) scale(1.05); }
+  65%  { left: 85%; transform: translate(-50%, -90%) scale(1.05); }
   75%  { left: 93%; transform: translate(-50%, -50%) scale(1); }
   95%  { left: 94%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { left: 96%; opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
@@ -8719,32 +8722,25 @@ function _rescueFairy(fairyId, onDone) {
     if (closed) return;
     closed = true;
     ov.classList.add('closing');
+    // battleLog の一時的な z-index を戻す
+    try {
+      var bl = document.getElementById('battleLog');
+      if (bl) { bl.style.position = ''; bl.style.zIndex = ''; }
+    } catch (e) {}
     setTimeout(function() {
       try { if (ov.parentNode) ov.remove(); } catch (e) {}
-      // オーバーレイを閉じた後にバトルメッセージ欄でセリフ再生
-      var dialogLines = [];
-      if (meta.msg) {
-        dialogLines.push({ lines: [meta.name + '「' + meta.msg, '', ''] });
-      }
-      if (!brief && meta.hint) {
-        var hintParts = meta.hint.split('\n');
-        dialogLines.push({ lines: [meta.name + '「' + (hintParts[0] || ''), hintParts[1] || '', ''] });
-      }
-      if (dialogLines.length && typeof _showBattleDialog === 'function') {
-        _showBattleDialog(dialogLines, function() { if (onDone) onDone(); });
-      } else {
-        if (onDone) onDone();
-      }
+      if (onDone) onDone();
     }, 360);
   }
 
-  // 封印→破壊→妖精登場 のタイマー群 (brief の場合は seal/particle を飛ばす)
+  // 封印→破壊→妖精登場→セリフ(妖精を出したまま)→お別れ のタイマー群
+  // (2026-04-22 v5 指摘: 妖精が喋っている間も画面に出していて欲しい → オーバーレイを出したまま
+  //  _showBattleDialog を流す。battleLog の z-index を一時的に上げて overlay 上に重ねる。)
   if (!brief) {
     // 0.45s で封印が砕ける
     setTimeout(function() {
       seal.classList.add('shatter');
       try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
-      // 破片パーティクル
       for (var i = 0; i < 14; i++) {
         var p = document.createElement('div');
         p.className = 'seal-shatter-particle';
@@ -8756,13 +8752,44 @@ function _rescueFairy(fairyId, onDone) {
         stage.appendChild(p);
       }
     }, 450);
-    // 自動クローズ: アップで見せたい指摘 (2026-04-22 v4) を受け、名前を読む時間も考慮して少し延長
-    var autoCloseMs = 3800;
-    var autoId = setTimeout(function() {
-      sprite.classList.add('leaving');
-      setTimeout(close, 500);
-    }, autoCloseMs);
-    ov.addEventListener('click', function() { try { clearTimeout(autoId); } catch (e) {} close(); });
+
+    // 妖精アピア完了 (約 1.65s) 後にセリフ開始。妖精はそのまま中央に居続ける。
+    var dialogStarted = false;
+    function startDialog() {
+      if (dialogStarted) return;
+      dialogStarted = true;
+      var dialogLines = [];
+      if (meta.msg) {
+        dialogLines.push({ lines: [meta.name + '「' + meta.msg, '', ''] });
+      }
+      if (meta.hint) {
+        var hintParts = meta.hint.split('\n');
+        dialogLines.push({ lines: [meta.name + '「' + (hintParts[0] || ''), hintParts[1] || '', ''] });
+      }
+      // battleLog を overlay (z-index 1660) の上に引き上げる
+      try {
+        var bl = document.getElementById('battleLog');
+        if (bl) { bl.style.position = 'relative'; bl.style.zIndex = '1700'; }
+      } catch (e) {}
+      function farewell() {
+        // セリフ完了後、妖精を 1s 静止で見せてから飛び去らせる (余韻)
+        setTimeout(function() {
+          sprite.classList.add('leaving');
+          setTimeout(close, 650);
+        }, 1000);
+      }
+      if (dialogLines.length && typeof _showBattleDialog === 'function') {
+        _showBattleDialog(dialogLines, farewell);
+      } else {
+        setTimeout(farewell, 2000);
+      }
+    }
+    var dialogStartId = setTimeout(startDialog, 1650);
+    // タップで即セリフ開始 (早送り希望ユーザー向け)
+    ov.addEventListener('click', function() {
+      try { clearTimeout(dialogStartId); } catch (e) {}
+      startDialog();
+    });
   } else {
     // brief: 1.2s で自動クローズ
     var autoId2 = setTimeout(close, 1200);
@@ -9336,7 +9363,7 @@ function _rowPracticeNextChar() {
               var _lvStage = _puzzleEls().stage;
               var _nextStep = _puzzle.step + 1; // 1..5
               // 石の X 位置 (lava_steps_5.png の baked-in 位置に合わせる)
-              var STONE_X = [30, 40, 50, 60, 70]; // % (lava_steps_5.png 実測 2026-04-22 v3)
+              var STONE_X = [24, 37, 50, 63, 76]; // % (2026-04-22 v4: 間隔狭 + 両端開き指摘 → spacing 13%)
               var _stoneX = STONE_X[_nextStep - 1];
               // 1文字目を書いた瞬間、封印を破って「ほのおのようせい」を登場させる。
               // なぜ溶岩に石が浮くのか? → 妖精の創造魔法、という物語的動機付け。
