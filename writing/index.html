@@ -1910,7 +1910,7 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-10px) scale(1.06); }
 }
-/* みずの妖精 🧚‍♀️ が橋シーンで空中浮遊する動き (intro / farewell 用) */
+/* もりの妖精 🧚‍♀️ が橋シーンで空中浮遊する動き (intro / farewell 用) */
 @keyframes fairyHover {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50%      { transform: translateY(-8px) rotate(2deg); }
@@ -6581,10 +6581,10 @@ function _showPuzzleStage(rowLabel) {
   if (def.kind === 'bridge' && els.stage) {
     var bf = document.createElement('div');
     bf.className = 'bridge-fairy';
-    // 2026-04-22: emoji を pixies/pixy_water.png 立ち絵に差し替え
+    // 2026-04-22: emoji を pixies/pixy_forest.png 立ち絵に差し替え (森の妖精: 緑色)
     var bfImg = document.createElement('img');
-    bfImg.src = '../assets/images/characters/pixies/pixy_water.png';
-    bfImg.alt = 'みずの ようせい';
+    bfImg.src = '../assets/images/characters/pixies/pixy_forest.png';
+    bfImg.alt = 'もりの ようせい';
     bfImg.style.cssText = 'width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;';
     bf.appendChild(bfImg);
     bf.dataset.placed = '0';
@@ -6898,7 +6898,7 @@ function _showPuzzleIntro(kind, onDone) {
   });
 }
 
-// か行 橋パズルの導入: 壊れた橋の前で勇者が立ち尽くすと、みずの妖精が登場して協力を申し出る。
+// か行 橋パズルの導入: 壊れた橋の前で勇者が立ち尽くすと、もりの妖精が登場して協力を申し出る。
 // 「ただの折れた木 + 妖精の魔法 = 橋板」という物語上の理由付けをここで確立する。
 // (2026-04-22 v2: フルスクリーンオーバーレイ廃止。既存パズルステージ(壊れた橋背景)上で
 //   妖精スプライトを登場させ、セリフはバトルログウィンドウに流す。
@@ -6918,7 +6918,7 @@ function _showBridgeEncounterIntro(onDone) {
   var messages = [
     { lines: ['ゆうしゃ「あっ…', 'はしが おれて いる…」', ''] },
     { lines: ['ゆうしゃ「どうしよう…', 'これじゃ わたれない…」', ''] },
-    { lines: ['ようせい「こまって いる の？', 'わたしは みずの ようせい。」', ''] },
+    { lines: ['ようせい「こまって いる の？', 'わたしは もりの ようせい。」', ''] },
     { lines: ['ようせい「ザガン に さらわれた', 'おひめさまを さがして いる のね。」', ''] },
     { lines: ['ようせい「わたしも ちからを かす わ！」', '', ''] },
     { lines: ['ようせい「もじを なぞって。', 'おれた きを まほうで', 'はしの いたに かえて あげる！」'] }
@@ -8536,7 +8536,7 @@ function startRowPractice(rowIndex) {
             });
           } catch (e) { _rowPracticeNextChar(); }
         } else if (_pKind === 'bridge') {
-          // か行: 橋の前で勇者 ↔ みずの妖精 の出会いシーンを挟む (2026-04-22)。
+          // か行: 橋の前で勇者 ↔ もりの妖精 の出会いシーンを挟む (2026-04-22)。
           try { _showBridgeEncounterIntro(function() { _rowPracticeNextChar(); }); }
           catch (e) { _rowPracticeNextChar(); }
         } else {
@@ -8740,8 +8740,10 @@ const FAIRY_KEY = 'pono_fairies';
 //   祠 (な行 / 'shrine' キー) には 炎の妖精 を配置 → "さむい、こおりで封印されてる" が成立。
 //   キー名 ('shrine'/'fire') は "場所ID" として残す (localStorage フラグ互換のため改名しない)。
 const FAIRY_META = {
-  water:  { name: 'みずの ようせい',   emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'bridge',    msg: 'これで わたれるよ！',
-            img: '../assets/images/characters/pixies/pixy_water.png',
+  // 'water' キー = 壊れた橋 (か行) ロケーション。ここに住むのは 森の妖精 (緑色、木々を操る)。
+  // キー名は localStorage フラグ互換のため保持、セマンティクスは 森 に寄せている。
+  water:  { name: 'もりの ようせい',   emoji: '🧚‍♀️', color: '#4ade80', rowKind: 'bridge',    msg: 'これで わたれるよ！',
+            img: '../assets/images/characters/pixies/pixy_forest.png',
             hint: 'ほこらに なかまが つかまって いるの。\nたすけて あげて！' },
   // 'shrine' キー = 祠 (な行) ロケーション。ここに住むのは 炎の妖精 (氷で封印されている)。
   shrine: { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
@@ -8935,7 +8937,7 @@ function _rescueFairy(fairyId, onDone) {
   try { if (typeof playVictoryFanfare === 'function') playVictoryFanfare(); } catch (e) {}
 }
 
-// か行 bridge フィニッシャー専用: みずの妖精との別れ会話。
+// か行 bridge フィニッシャー専用: もりの妖精との別れ会話。
 // (2026-04-22 v3: 「画像ウィンドウに文字を入れない & 左右分割される不具合」対応で
 //   全画面オーバーレイ+吹き出しを撤去。既に橋ステージに居る bridge-fairy をそのまま見せて、
 //   セリフは全てバトルメッセージ欄 (_showBattleDialog) に流す。1 ブロック 2 行固定。)
@@ -9092,7 +9094,7 @@ var ENDING_SCENES = [
     text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。' },
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2.png', emoji: '🔥',
-    text: 'もりの なか、 たきび の まわりに\nみず・ ほのお・ こおり の\n3にん の ようせい が よりそう。' },
+    text: 'もりの なか、 たきび の まわりに\nもり・ ほのお・ こおり の\n3にん の ようせい が よりそう。' },
   { bg: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0c1631 55%, #000 100%)',
     image: '../assets/images/story/ending_3.png', emoji: '✨',
     text: 'よぞら を みあげる と、\nほし が きらきら と ひかって いた。' },
@@ -9769,7 +9771,7 @@ function _rowPracticeNextChar() {
               _puzzleDelay = 1500;
             }
             setTimeout(function() {
-              // か行 bridge フィニッシャー: 勇者が橋を渡り終えた直後に みずの妖精と別れの会話。
+              // か行 bridge フィニッシャー: 勇者が橋を渡り終えた直後に もりの妖精と別れの会話。
               // intro で既に妖精は登場済みなので、ここは封印破りではなく「お別れ + 次の依頼」。
               // (2026-04-22) 以前は _rescueFairy('water') で封印を壊していたが、妖精は最初から自由 → 整合性修正。
               if (isFinisher && _puzzle.kind === 'bridge') {
