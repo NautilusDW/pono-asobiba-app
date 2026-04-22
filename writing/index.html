@@ -11,6 +11,9 @@
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+/* レトロ SFC 風ドットフォント (紙芝居オープニング専用)。
+   DotGothic16 は Google Fonts が配布する 16px ビットマップ風 日本語フォント。*/
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -4021,9 +4024,7 @@ body.battle-intro-active .battle-log-window {
      10010 に引き上げ。以前は 9990 で title の裏に回り「はじめから押下後 無反応」
      の直接原因になっていた。 */
   z-index: 10010;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: clamp(16px, 4vw, 40px);
+  display: block;   /* フル画面 art の直子として扱うので flex 解除 */
   cursor: pointer;
   opacity: 1;
   background: #000;
@@ -4031,40 +4032,69 @@ body.battle-intro-active .battle-log-window {
   overflow: hidden;
 }
 .storyboard-overlay.fade-out { opacity: 0; pointer-events: none; }
+
+/* 2026-04-23: 画像は フルスクリーン・object-fit: contain で切り取らず
+   全体を見せる。黒帯は overlay の background:#000 がそのまま背景になる。 */
 .storyboard-art {
-  width: min(82vw, 620px);
-  height: min(44vh, 340px);
-  border-radius: 22px;
+  position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(4rem, 20vmin, 10rem);
-  box-shadow: 0 12px 48px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.12);
-  margin-bottom: clamp(18px, 3vh, 32px);
+  font-size: clamp(4rem, 30vmin, 14rem);   /* 絵文字フォールバック時のサイズ */
   overflow: hidden;
-  position: relative;
 }
 .storyboard-art img {
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
+
+/* テキストは画像の上に帯状に乗せる。黒い縁取り (8方向 text-shadow) +
+   半透明黒ボックスで、どんな絵の上でも子供が読める強コントラストに。
+   フォントは DotGothic16 (SFC 風ドットフォント) を優先。 */
 .storyboard-text {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(14px, 6vh, 60px);
+  transform: translateX(-50%);
+  width: min(92vw, 980px);
+  box-sizing: border-box;
+  padding: clamp(14px, 2.4vh, 22px) clamp(18px, 3.2vw, 32px);
+  background: rgba(0, 0, 0, 0.62);
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 6px;   /* ドット風 UI なので角丸は控えめ */
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.85), 0 8px 28px rgba(0,0,0,0.7);
   color: #fffbea;
-  font-weight: 900;
-  font-size: clamp(1rem, 4.2vw, 1.5rem);
-  line-height: 1.85;
-  letter-spacing: 0.06em;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-weight: 400;   /* DotGothic16 は weight 1つ */
+  font-size: clamp(1.15rem, 4.6vw, 1.8rem);
+  line-height: 1.7;
+  letter-spacing: 0.08em;
   text-align: center;
-  max-width: 720px;
-  text-shadow: 0 2px 14px rgba(0,0,0,0.85), 0 0 28px rgba(0,0,0,0.55);
+  /* 8方向 text-shadow = ドット風 縁取り (Stroke)。色は黒。 */
+  text-shadow:
+    -2px -2px 0 #000,  2px -2px 0 #000,
+    -2px  2px 0 #000,  2px  2px 0 #000,
+    -2px  0   0 #000,  2px  0   0 #000,
+     0  -2px 0 #000,   0   2px 0 #000,
+     0 4px 12px rgba(0,0,0,0.85);
+  image-rendering: pixelated;   /* フォントのジャギー感を残す */
+  -webkit-font-smoothing: none;
+  font-smoothing: none;
 }
 .storyboard-hint {
-  margin-top: clamp(16px, 3vh, 32px);
+  position: absolute;
+  right: clamp(14px, 3vw, 28px);
+  bottom: clamp(12px, 2.5vh, 22px);
   color: #ffd84d;
-  font-weight: 900;
-  font-size: 0.95rem;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(0.85rem, 2.4vw, 1.05rem);
   letter-spacing: 0.22em;
-  opacity: 0.9;
+  text-shadow:
+    -2px -2px 0 #000,  2px -2px 0 #000,
+    -2px  2px 0 #000,  2px  2px 0 #000,
+    -2px  0   0 #000,  2px  0   0 #000,
+     0  -2px 0 #000,   0   2px 0 #000;
   animation: sbHintPulse 1.4s ease-in-out infinite;
+  z-index: 1;
 }
 .storyboard-art.sb-in, .storyboard-text.sb-in {
   animation: sbContentIn 0.5s ease-out both;
@@ -9151,37 +9181,48 @@ function _showStoryboard(scenes, onDone) {
 
 // オープニング: ひらがな編冒頭の紙芝居 (初回のみ自動、以後は localStorage フラグでスキップ)。
 // 画像はユーザー側で後日生成し assets/images/story/opening_{1-7}.png として置き換える想定。
-// 画像ファイル命名 (2026-04-22 再マッピング):
-//   opening_1.png = OP_S01_01 (王国)
-//   opening_2.png = OP_S02_C01 (姫 寄り)        → S2 の前半
-//   opening_3.png = OP_S02_C02 (姫と人々)       → S2 の後半 (S2 を 2 ビートに分割)
-//   opening_4.png = OP_S03_S05 (ふしぎな ひかり) → S3 と S5 で再利用
-//   opening_7.png = OP_S06 (王の嘆き)           → S6
-//   S4 (まおう の てさき) / S7 (ゆうしゃ召集) は画像未供給 → emoji フォールバック。
+// 画像ファイル命名 (2026-04-23 再マッピング、全10ビート):
+//   opening_1.png  = OP_S01_C01  S1a 王国 前半
+//   opening_2.png  = OP_S01_C02  S1b 王国 後半
+//   opening_3.png  = OP_S02_C01  S2a 姫 前半
+//   opening_4.png  = OP_S02_C02  S2b 姫 後半
+//   opening_5.png  = OP_S03      S3 ふしぎな ひかり
+//   opening_6.png  = OP_S04      S4 まおう の てさき
+//   opening_7.png  = OP_S05_C01  S5a つれさられる 前半
+//   opening_8.png  = OP_S05_C02  S5b つれさられる 後半
+//   opening_9.png  = OP_S06      S6 おうさま の さけび
+//   opening_10.png = OP_S07      S7 ゆうしゃ しょうしゅう
+// 背景色は画像が contain でレターボックスになる余白用 (絵の基調色に合わせる)。
 var OPENING_SCENES = [
-  { bg: 'radial-gradient(ellipse at center, #fcd34d 0%, #f59e0b 45%, #b45309 100%)',
+  { bg: '#1a1008',
     image: '../assets/images/story/opening_1.png', emoji: '🏰',
-    text: 'むかし むかし、\nしあわせな おうこく が ありました。\nまいにち みんなが わらいあう、\nやさしい くに でした。' },
-  { bg: 'radial-gradient(ellipse at center, #fce7f3 0%, #f9a8d4 50%, #be185d 100%)',
-    image: '../assets/images/story/opening_2.png', emoji: '👸',
-    text: 'おうじょさま は こころ やさしく、' },
-  { bg: 'radial-gradient(ellipse at center, #fce7f3 0%, #f9a8d4 50%, #be185d 100%)',
-    image: '../assets/images/story/opening_3.png', emoji: '💖',
-    text: 'ひとびと から あいされて いました。' },
-  { bg: 'radial-gradient(ellipse at center, #fef9c3 0%, #c4b5fd 45%, #4c1d95 100%)',
-    image: '../assets/images/story/opening_4.png', emoji: '✨',
+    text: 'むかし むかし、\nしあわせな おうこく が ありました。' },
+  { bg: '#1a1008',
+    image: '../assets/images/story/opening_2.png', emoji: '🏰',
+    text: 'まいにち みんなが わらいあう、\nやさしい くに でした。' },
+  { bg: '#2a0e1a',
+    image: '../assets/images/story/opening_3.png', emoji: '👸',
+    text: 'おうじょさま は\nこころ やさしく、' },
+  { bg: '#2a0e1a',
+    image: '../assets/images/story/opening_4.png', emoji: '💖',
+    text: 'ひとびと から\nあいされて いました。' },
+  { bg: '#1a1533',
+    image: '../assets/images/story/opening_5.png', emoji: '✨',
     text: 'あるひ、 おしろ の へや で\nおうじょさま が すごして いると、\nへや の なか に\nふしぎな ひかり が あらわれました。' },
-  { bg: 'radial-gradient(ellipse at center, #6d28d9 0%, #3b0764 55%, #0b0416 100%)',
-    emoji: '👺',
+  { bg: '#0f0820',
+    image: '../assets/images/story/opening_6.png', emoji: '👺',
     text: 'ひかり の なか から、\nまおう ザガン の てさき が\nすがた を あらわしました。\nそれは、 かめん を つけた\nふしぎ で おそろしい まもの でした。' },
-  { bg: 'radial-gradient(ellipse at center, #fffbeb 0%, #fde68a 40%, #a855f7 100%)',
-    image: '../assets/images/story/opening_4.png', emoji: '💫',
-    text: 'まばゆい ひかり が\nへや いっぱい に ひろがる と、\nおうじょさま は\nつれさられて しまいました。' },
-  { bg: 'radial-gradient(ellipse at center, #fde68a 0%, #f59e0b 45%, #78350f 100%)',
-    image: '../assets/images/story/opening_7.png', emoji: '👑',
+  { bg: '#2a2040',
+    image: '../assets/images/story/opening_7.png', emoji: '💫',
+    text: 'まばゆい ひかり が\nへや いっぱい に ひろがる と、' },
+  { bg: '#2a2040',
+    image: '../assets/images/story/opening_8.png', emoji: '💫',
+    text: 'おうじょさま は\nつれさられて しまいました。' },
+  { bg: '#1a0c05',
+    image: '../assets/images/story/opening_9.png', emoji: '👑',
     text: '「たすけて くれる もの は おらぬか！」\nおうさま は かなしく さけび、\nゆうかん な せんし を あつめました。' },
-  { bg: 'radial-gradient(ellipse at center, #93c5fd 0%, #3b82f6 45%, #1e3a8a 100%)',
-    emoji: '⚔️',
+  { bg: '#0a1026',
+    image: '../assets/images/story/opening_10.png', emoji: '⚔️',
     text: 'そして、 あなた が えらばれた のです。\n「ゆうしゃ よ、\nおひめさま を たすけだして おくれ！」' }
 ];
 

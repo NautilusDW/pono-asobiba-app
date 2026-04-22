@@ -4,20 +4,22 @@
 
 ## 対応シーン
 
-### オープニング (opening_1.png 〜 opening_7.png)
+### オープニング (opening_1.png 〜 opening_10.png) — 全10ビート
 
-2026-04-22 再マッピング。S2 は 2 ビートに分割、S5 は S3 と同じ画像を再利用。
+2026-04-23 再マッピング。S1 / S2 / S5 を 2 ビートに分割、S3 / S4 / S6 / S7 は 1 ビート。
 
-| ファイル | 元ファイル | 使われるシーン | 想定絵柄 |
+| ファイル | 元ファイル | シーン | 内容 |
 |------|------|------|------|
-| opening_1.png | OP_S01_01 | S1 平和な王国 | 城と村、青空 |
-| opening_2.png | OP_S02_C01 | S2a 姫（前半） | 優しそうな姫 寄り |
-| opening_3.png | OP_S02_C02 | S2b 姫（後半） | 姫と人々 |
-| opening_4.png | OP_S03_S05 | **S3 と S5 で共用** | ふしぎな ひかり／まばゆい光 |
-| opening_5.png | *(未供給)* | S4 まおう の てさき | → 絵文字 👺 にフォールバック |
-| opening_6.png | *(未使用)* | — | — |
-| opening_7.png | OP_S06 | S6 おうさま の さけび | 王の嘆き |
-| *(未供給)* | *(未供給)* | S7 勇者召集 | → 絵文字 ⚔️ にフォールバック |
+| opening_1.png  | OP_S01_C01 | S1a | 王国 前半 |
+| opening_2.png  | OP_S01_C02 | S1b | 王国 後半 |
+| opening_3.png  | OP_S02_C01 | S2a | 姫 前半 |
+| opening_4.png  | OP_S02_C02 | S2b | 姫 後半 |
+| opening_5.png  | OP_S03     | S3  | ふしぎな ひかり |
+| opening_6.png  | OP_S04     | S4  | まおう の てさき |
+| opening_7.png  | OP_S05_C01 | S5a | つれさられる 前半 |
+| opening_8.png  | OP_S05_C02 | S5b | つれさられる 後半 |
+| opening_9.png  | OP_S06     | S6  | おうさま の さけび |
+| opening_10.png | OP_S07     | S7  | ゆうしゃ しょうしゅう |
 
 ### エンディング (ending_1.png 〜 ending_4.png)
 
