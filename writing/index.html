@@ -93,8 +93,11 @@ html, body {
   to   { transform: scale(1);   opacity: 1; }
 }
 
-/* ===== Acorn Badge (どんぐりポイント) ===== */
-.acorn-badge {
+/* ===== Acorn Badge (どんぐりポイント) =====
+   2026-04-22: お手本再生ボタンと被るのでバッジ自体を非表示に。
+   ポイント加算処理 (acorns.js) は裏で走り続けるので別画面での表示に影響なし。 */
+.acorn-badge { display: none !important; }
+.acorn-badge--legacy {
   position: fixed; top: 10px; right: 10px; z-index: 1200;
   display: flex; align-items: center; gap: 4px;
   background: var(--window-bg);
@@ -3404,6 +3407,11 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: translateY(0)   scale(1);    box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 12px rgba(255,200,80,0.45); }
   50%      { transform: translateY(-4px) scale(1.06); box-shadow: 0 6px 16px rgba(0,0,0,0.55), 0 0 22px rgba(255,200,80,0.9); }
 }
+/* 横画面用: translateX(-50%) で中央寄せされているので、bounce は translateX を維持したまま。 */
+@keyframes battleLogAdvanceBounceH {
+  0%, 100% { transform: translateX(-50%) translateY(0)   scale(1);    box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 12px rgba(255,200,80,0.45); }
+  50%      { transform: translateX(-50%) translateY(-4px) scale(1.06); box-shadow: 0 6px 16px rgba(0,0,0,0.55), 0 0 22px rgba(255,200,80,0.9); }
+}
 @keyframes battleLogLineIn {
   0%   { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -3783,14 +3791,15 @@ body.battle-intro-active .battle-log-window {
   body.battle-mode .hero-status-num { font-size: 0.78em; }
 
   /* バトルログは battle-stage / puzzle-stage の直下、canvas の下辺まで。
-     2026-04-22: 上げた stage 分だけ log top も下げる (60% → 76%)。 */
+     2026-04-22: タップボタンを log の外 (下) に出すため log を上げて、
+     下に button 用のスペース 0.10*vspan を確保。 */
   body.battle-mode:not(.battle-intro-active) .battle-log-window {
     position: fixed !important;
     left: 48px;
-    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.76);
-    bottom: var(--battle-vtop);
+    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.72);
+    bottom: auto;
     width: calc(50vw - 54px);
-    height: auto;
+    height: calc(var(--battle-vspan) * 0.18);
     max-width: none;
     margin: 0;
     z-index: 500;
@@ -3806,6 +3815,28 @@ body.battle-intro-active .battle-log-window {
     min-height: 100%;
     /* 2026-04-22: log を縦に縮めた分、padding も 14 → 8 に軽量化。 */
     padding: 8px 18px;
+  }
+
+  /* 2026-04-22: タップボタンは log の内側ではなく log の下の余白に独立配置。
+     横位置は左半分 (48px 〜 50vw-6px) の中央、縦位置は log 直下 0.92*vspan。
+     横長に伸ばし (padding 10px 40px)、fixed で z-index を log より上に。 */
+  body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-advance {
+    position: fixed !important;
+    left: calc(48px + (50vw - 54px) / 2);
+    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.92);
+    right: auto;
+    bottom: auto;
+    padding: 10px 40px 10px 34px;
+    font-size: 1rem;
+    letter-spacing: 0.22em;
+    z-index: 520;
+    transform: translateX(-50%);
+  }
+  body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-advance::before {
+    font-size: 1.25rem;
+  }
+  body.battle-mode:not(.battle-intro-active) .battle-log-window.await-tap .battle-log-advance {
+    animation: battleLogAdvanceBounceH 0.8s ease-in-out infinite;
   }
   /* 横画面は横幅に余裕があるので 1 行で収まるようフォント少し抑えめ +
      letter-spacing ゼロで「う」が折り返さないようにする。 */
