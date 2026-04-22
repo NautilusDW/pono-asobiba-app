@@ -10556,16 +10556,16 @@ function goToPracticeDirect(rowIndex) {
     // 「はじめから」では三種の神器と妖精の救出状況もリセットする (要望 2026-04-21)
     try { if (typeof resetGears === 'function') resetGears(); } catch (e) {}
     try { if (typeof resetFairies === 'function') resetFairies(); } catch (e) {}
-    // エンディング既読フラグも「はじめから」でリセット (新規冒険扱い)
+    // エンディング / オープニング 既読フラグも「はじめから」でリセット (新規冒険扱い)。
+    // → はじめから を押したら毎回オープニング紙芝居が流れる。
     try { localStorage.removeItem('pono_ending_seen'); } catch (e) {}
+    try { localStorage.removeItem('pono_intro_seen');  } catch (e) {}
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = false;
     currentCategory = 'hiragana';
-    // 紙芝居オープニング: 未視聴なら挟む。視聴済みは即突入。
-    // (2026-04-22) 旧 3行 storyScreen は廃止、7シーンの _showStoryboard に置換。
-    var introSeen = false;
-    try { introSeen = (localStorage.getItem('pono_intro_seen') === '1'); } catch (e) {}
-    if (!introSeen && typeof _showStoryboard === 'function') {
+    // 紙芝居オープニング: はじめから では必ず再生。
+    // (2026-04-22) 旧 3行 storyScreen は廃止、_showStoryboard に置換。
+    if (typeof _showStoryboard === 'function' && typeof OPENING_SCENES !== 'undefined') {
       _showStoryboard(OPENING_SCENES, function() {
         try { localStorage.setItem('pono_intro_seen', '1'); } catch (e) {}
         goToPracticeDirect(0);
