@@ -1184,12 +1184,28 @@
     font-size: 0.75rem;
     margin-bottom: 8px;
   }
+  #pono-tap-intro .preview-tag {
+    background: #FF9A5A;
+    color: #fff;
+  }
   #pono-tap-intro .trivia-title {
     font-size: 1.1rem;
     font-weight: 900;
     color: #F2742A;
     margin-bottom: 6px;
     line-height: 1.4;
+  }
+  #pono-tap-intro .preview-image {
+    display: block;
+    width: min(260px, 72vw);
+    height: auto;
+    max-height: 38vh;
+    margin: 8px auto 10px;
+    border-radius: 14px;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    background: #fff;
+    object-fit: cover;
   }
   #pono-tap-intro .trivia-body {
     font-size: 0.95rem;
@@ -1216,6 +1232,15 @@
     #pono-tap-intro .hint { margin-top: 10px; padding: 8px 26px; font-size: 1rem; }
     #pono-tap-intro .trivia-title { font-size: 0.98rem; }
     #pono-tap-intro .trivia-body  { font-size: 0.85rem; line-height: 1.5; }
+    #pono-tap-intro .preview-image {
+      width: clamp(140px, 26vh, 200px);
+      max-height: 28vh;
+      margin: 4px auto 6px;
+    }
+    #pono-tap-intro img.preview-image {
+      border-radius: 14px;
+      background: #fff;
+    }
   }
 </style>
 <div id="pono-tap-intro" style="display:none;">
@@ -1243,6 +1268,13 @@
     <div class="trivia-body"></div>
   </div>
 
+  <div class="welcome-body" id="intro-welcome-preview" style="display:none;">
+    <div class="trivia-tag preview-tag">えほんをかったひと だけ</div>
+    <div class="trivia-title preview-title"></div>
+    <img class="preview-image" alt="" onerror="this.style.display='none'">
+    <div class="trivia-body preview-body"></div>
+  </div>
+
   <div class="welcome-sign">— ネモ先生</div>
   <div class="hint">▶ タップ</div>
 </div>
@@ -1262,6 +1294,26 @@
       body: 'ぱん、ほん、ねこ… あれ？「ねこ」は ちがうね！' }
   ];
 
+  // 絵本を買った人だけが遊べる5つのプレミアムコンテンツ紹介
+  // スクショは assets/images/previews/*.png に差し替えてください
+  var PONO_GAME_PREVIEWS = [
+    { title: 'もじかきクエスト',
+      image: 'assets/images/previews/writing.png',
+      body: 'ひらがな・カタカナ を なぞって かけるよ。' },
+    { title: 'おえかき',
+      image: 'assets/images/previews/drawing.png',
+      body: 'じぶんで かいた え を、うみで およがせられるよ🐠' },
+    { title: 'みちつなぎ',
+      image: 'assets/images/previews/slide.png',
+      body: 'みちを つないで、ポノが おかあさんに あいに いくよ。' },
+    { title: 'ボウリング',
+      image: 'assets/images/previews/bowling.png',
+      body: 'フリックで ピンを たおそう！' },
+    { title: 'ブロックくずし',
+      image: 'assets/images/previews/breakout.png',
+      body: 'ボールで ブロックを ぜんぶ くずしてみよう。' }
+  ];
+
   // セッション内で既に音声解禁済みかチェック → 解禁済みなら overlay を出さずに即 BGM 試行
   (function() {
     var unlocked = sessionStorage.getItem('pono_audio_unlocked') === '1';
@@ -1273,14 +1325,27 @@
     var firstTime = !localStorage.getItem('pono_intro_seen');
     var firstEl   = document.getElementById('intro-welcome-first');
     var triviaEl  = document.getElementById('intro-welcome-trivia');
+    var previewEl = document.getElementById('intro-welcome-preview');
     if (firstTime) {
       if (firstEl) firstEl.style.display = '';
-    } else if (triviaEl) {
-      var t = PONO_INTRO_TRIVIA[Math.floor(Math.random() * PONO_INTRO_TRIVIA.length)];
-      triviaEl.querySelector('.trivia-tag').textContent   = t.tag;
-      triviaEl.querySelector('.trivia-title').textContent = t.title;
-      triviaEl.querySelector('.trivia-body').textContent  = t.body;
-      triviaEl.style.display = '';
+    } else {
+      // 2回目以降は 50/50 で 豆知識 / 絵本購入者限定コンテンツ紹介
+      var showPreview = Math.random() < 0.5;
+      if (showPreview && previewEl && PONO_GAME_PREVIEWS.length) {
+        var g = PONO_GAME_PREVIEWS[Math.floor(Math.random() * PONO_GAME_PREVIEWS.length)];
+        previewEl.querySelector('.preview-title').textContent = g.title;
+        previewEl.querySelector('.preview-body').textContent  = g.body;
+        var imgEl = previewEl.querySelector('.preview-image');
+        imgEl.style.display = '';
+        imgEl.src = g.image;
+        previewEl.style.display = '';
+      } else if (triviaEl) {
+        var t = PONO_INTRO_TRIVIA[Math.floor(Math.random() * PONO_INTRO_TRIVIA.length)];
+        triviaEl.querySelector('.trivia-tag').textContent   = t.tag;
+        triviaEl.querySelector('.trivia-title').textContent = t.title;
+        triviaEl.querySelector('.trivia-body').textContent  = t.body;
+        triviaEl.style.display = '';
+      }
     }
 
     el.style.display = 'flex';
@@ -1328,6 +1393,47 @@
     margin-top: 6px;
     font-size: 1.05rem; font-weight: 700; color: #5D4E37;
   }
+  #pono-return-greet .greet-card {
+    margin-top: 12px;
+    max-width: 340px;
+    padding: 0 12px;
+  }
+  #pono-return-greet .greet-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #FFD84D;
+    color: #7A4A00;
+    font-weight: 900;
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+  }
+  #pono-return-greet .greet-tag.preview-tag { background: #FF9A5A; color: #fff; }
+  #pono-return-greet .greet-card-title {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #F2742A;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  #pono-return-greet .greet-card-image {
+    display: block;
+    width: min(240px, 70vw);
+    max-height: 32vh;
+    height: auto;
+    margin: 6px auto 8px;
+    border-radius: 14px;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    background: #fff;
+    object-fit: cover;
+  }
+  #pono-return-greet .greet-card-body {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #5D4E37;
+    line-height: 1.55;
+  }
   #pono-return-greet .greet-hint {
     margin-top: 22px;
     padding: 12px 40px; border-radius: 999px;
@@ -1354,6 +1460,14 @@
     }
     #pono-return-greet .greet-title { margin-top: 6px; font-size: 1.5rem; }
     #pono-return-greet .greet-sub   { margin-top: 4px; font-size: 0.95rem; }
+    #pono-return-greet .greet-card  { margin-top: 6px; max-width: 520px; }
+    #pono-return-greet .greet-card-title { font-size: 0.95rem; }
+    #pono-return-greet .greet-card-body  { font-size: 0.82rem; line-height: 1.45; }
+    #pono-return-greet .greet-card-image {
+      width: clamp(140px, 24vh, 200px);
+      max-height: 24vh;
+      margin: 4px auto 6px;
+    }
     #pono-return-greet .greet-hint  {
       margin-top: 10px;
       padding: 8px 28px;
@@ -1364,7 +1478,21 @@
 <div id="pono-return-greet" style="display:none;">
   <img class="greet-pono" src="assets/images/characters/pono/dance/dance_wave.png" alt="ポノ" onerror="this.style.display='none'">
   <div class="greet-title">おかえり！</div>
-  <div class="greet-sub">こんどは なにして あそぶ？</div>
+  <div class="greet-sub" id="greet-sub-default">こんどは なにして あそぶ？</div>
+
+  <div class="greet-card" id="greet-card-trivia" style="display:none;">
+    <div class="greet-tag"></div>
+    <div class="greet-card-title"></div>
+    <div class="greet-card-body"></div>
+  </div>
+
+  <div class="greet-card" id="greet-card-preview" style="display:none;">
+    <div class="greet-tag preview-tag">えほんをかったひと だけ</div>
+    <div class="greet-card-title"></div>
+    <img class="greet-card-image" alt="" onerror="this.style.display='none'">
+    <div class="greet-card-body"></div>
+  </div>
+
   <div class="greet-hint">▶ タップ</div>
 </div>
 
@@ -1810,6 +1938,36 @@
       var gm = document.getElementById('pono-return-greet');
       if (!gm) return;
       if (gm.style.display === 'flex') return; // 既に表示中
+      // 50/50 で 豆知識 / 絵本購入者限定コンテンツ紹介 を差し込む
+      try {
+        var subEl     = document.getElementById('greet-sub-default');
+        var triviaCd  = document.getElementById('greet-card-trivia');
+        var previewCd = document.getElementById('greet-card-preview');
+        if (triviaCd)  triviaCd.style.display  = 'none';
+        if (previewCd) previewCd.style.display = 'none';
+        var TRIVIA   = (typeof PONO_INTRO_TRIVIA   !== 'undefined') ? PONO_INTRO_TRIVIA   : [];
+        var PREVIEWS = (typeof PONO_GAME_PREVIEWS  !== 'undefined') ? PONO_GAME_PREVIEWS  : [];
+        var showPrev = Math.random() < 0.5;
+        if (showPrev && PREVIEWS.length && previewCd) {
+          var g = PREVIEWS[Math.floor(Math.random() * PREVIEWS.length)];
+          previewCd.querySelector('.greet-card-title').textContent = g.title;
+          previewCd.querySelector('.greet-card-body').textContent  = g.body;
+          var pImg = previewCd.querySelector('.greet-card-image');
+          pImg.style.display = '';
+          pImg.src = g.image;
+          previewCd.style.display = '';
+          if (subEl) subEl.style.display = 'none';
+        } else if (TRIVIA.length && triviaCd) {
+          var t = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
+          triviaCd.querySelector('.greet-tag').textContent        = t.tag;
+          triviaCd.querySelector('.greet-card-title').textContent = t.title;
+          triviaCd.querySelector('.greet-card-body').textContent  = t.body;
+          triviaCd.style.display = '';
+          if (subEl) subEl.style.display = 'none';
+        } else {
+          if (subEl) subEl.style.display = '';
+        }
+      } catch (e) { /* フォールバック: 既定の greet-sub のまま */ }
       gm.style.display = 'flex';
       gm.classList.remove('fade');
       var dismissed = false;
