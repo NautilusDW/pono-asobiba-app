@@ -1931,6 +1931,46 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50%      { transform: translateY(-8px) rotate(2deg); }
 }
+
+/* ===== か行 bridge: 妖精が板を魔法で運ぶ演出 ===== */
+/* ステージ内に常駐する妖精スプライト (右上から登場し、文字完成ごとに次の板へ飛ぶ) */
+.bridge-fairy {
+  position: absolute;
+  left: 82%;
+  top: 18%;
+  width: clamp(36px, 7.5vw, 56px);
+  height: clamp(36px, 7.5vw, 56px);
+  font-size: clamp(32px, 7vw, 52px);
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 0 10px #7ad2ff) drop-shadow(0 0 22px #7ad2ff);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  animation: fairyHover 2.4s ease-in-out infinite;
+}
+
+/* 板が魔法で変化する瞬間のスパークル爆発 (plank 中心に重ねる) */
+.bridge-magic-burst {
+  position: absolute;
+  width: clamp(60px, 14vw, 110px);
+  height: clamp(60px, 14vw, 110px);
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(180,230,255,0.75) 35%, rgba(122,210,255,0.4) 55%, transparent 75%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 4;
+  animation: bridgeMagicBurst 0.9s ease-out forwards;
+  mix-blend-mode: screen;
+}
+@keyframes bridgeMagicBurst {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.3); }
+  25%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.15); }
+  60%  { opacity: 0.85;transform: translate(-50%, -50%) scale(1.4); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.7); }
+}
 /* 封印オーブ 🔒 の囁き pulse。とらわれた妖精の声に合わせて glow が揺らぐ */
 @keyframes sealPulse {
   0%, 100% { transform: scale(1);    opacity: 0.78; }
@@ -2788,6 +2828,12 @@ body.battle-mode .villain-deco {
 .battle-enemy.grounded.compact {
   width: min(15vh, 86px); height: min(15vh, 86px);
   max-width: 86px; max-height: 86px;
+}
+/* こおりのまどうし: 非 grounded (浮遊ボス) で既定 60px は小さすぎるので 1.8倍に拡大。
+   (2026-04-22 ユーザー指示「氷の魔導士が小さすぎる」) */
+.battle-enemy[data-enemy-id="ice_wizard"] {
+  width: min(19.8vh, 108px); height: min(19.8vh, 108px);
+  max-width: 108px; max-height: 108px;
 }
 .battle-enemy.grounded .enemy-shadow {
   /* 地面に足が付いているタイプ (岩系ボス等) は不自然な浮遊シャドウを隠す。
@@ -5941,6 +5987,8 @@ function _showBattleStage(rowId) {
   // compact: 雑魚 grounded 敵のサイズを勇者並みに小さくする (キノコ等)。
   // grounded 無しの場合は .battle-enemy の通常サイズ (60px) が効くので意味を持たない。
   els.enemy.classList.toggle('compact', !!enemy.compact);
+  // enemy id を data 属性に乗せて、敵固有のサイズ調整 (例: ice_wizard 1.8x) を CSS から掛けられるように。
+  if (enemy.id) { els.enemy.dataset.enemyId = enemy.id; } else { delete els.enemy.dataset.enemyId; }
   // 元素材が右向きのザコ (flipped:true) は水平反転して勇者と対峙させる。
   // grounded と独立に指定できる (接地しない空中ザコでも反転だけ掛けたい場合があるため)。
   els.enemy.classList.toggle('flipped', !!enemy.flipped);
