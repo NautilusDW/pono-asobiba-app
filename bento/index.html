@@ -656,7 +656,7 @@ html, body {
   box-shadow: 0 4px 18px rgba(93,78,55,0.12);
 }
 .complete-pono-slot {
-  width: 132px; height: 92px;
+  width: 200px; height: 140px;
   overflow: hidden;
   display: flex;
   align-items: flex-start;
@@ -665,7 +665,7 @@ html, body {
   position: relative;
 }
 .complete-pono-big {
-  width: 132px; height: 132px;
+  width: 200px; height: 200px;
   object-fit: contain;
   display: block;
   transform-origin: top center;
@@ -765,8 +765,8 @@ html, body {
 }
 @media (max-width: 520px) {
   .complete-main { flex-direction: column; }
-  .complete-pono-slot { width: 108px; height: 76px; }
-  .complete-pono-big { width: 108px; height: 108px; }
+  .complete-pono-slot { width: 168px; height: 118px; }
+  .complete-pono-big { width: 168px; height: 168px; }
 }
 
 /* ===== Favorites header button ===== */
@@ -1360,10 +1360,10 @@ function revealReactionWithDrama(reaction) {
     bubble.classList.remove('hidden-pre');
   }, 350));
 
-  // T=500ms: ドラムロール開始
+  // T=500ms: ドラムロール開始 (約1.9s)
   _revealTimers.push(setTimeout(() => { playDrumroll(); }, 500));
 
-  // T=1650ms: じゃーん！表情切替 + セリフ + 豆知識
+  // T=2400ms: じゃーん！表情切替 + セリフ + 豆知識 (「うーん…」を長めに見せてから)
   _revealTimers.push(setTimeout(() => {
     slot.classList.remove('thinking');
     ponoBig.src = reaction.img;
@@ -1393,18 +1393,18 @@ function revealReactionWithDrama(reaction) {
       bubble.textContent = reaction.msg;
       bubble.classList.remove('hidden-pre');
     }, 80));
-  }, 1650));
+  }, 2400));
 
-  // T=2100ms: 保存ボタンをふわっと出す
+  // T=2850ms: 保存ボタンをふわっと出す
   _revealTimers.push(setTimeout(() => {
     if (saveBtn) saveBtn.classList.remove('hidden-pre');
-  }, 2100));
+  }, 2850));
 
-  // T=2350ms: reveal クラス外して 通常状態に戻す / poor なら droopy
+  // T=3100ms: reveal クラス外して 通常状態に戻す / poor なら droopy
   _revealTimers.push(setTimeout(() => {
     slot.classList.remove('reveal');
     if (quality === 'poor') slot.classList.add('droopy');
-  }, 2350));
+  }, 3100));
 }
 
 // ===== Helpers =====
@@ -1452,7 +1452,7 @@ function playFanfare() { const ac=getAC(),t=ac.currentTime; [523,659,784,1047].f
 function playDrumroll() {
   const ac = getAC();
   const startT = ac.currentTime;
-  const duration = 1.15;
+  const duration = 1.9;
   const burstInterval = 0.035;
   const count = Math.floor(duration / burstInterval);
   const bufSize = 512;

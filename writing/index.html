@@ -1840,9 +1840,12 @@ body.battle-mode .villain-deco {
 .puzzle-bg-riddle.pedestal-focused .puzzle-planks {
   opacity: 1;
 }
+/* 石板サイズは背景の 88x88px (1920幅基準で 4.58%) の五芒星スロットに合わせる。
+   tile 画像は 226x221 だが baked-in 表示は 80px前後。CSS側で 4.5% にして縮小し、
+   空スロット (4.58%) にぴったり収まるようにする。 */
 .plank.plank-riddle {
   position: absolute;
-  width: 12.2%;
+  width: 4.5%;
   aspect-ratio: 226 / 221;
   background: transparent;
   border: none;
@@ -1877,15 +1880,15 @@ body.battle-mode .villain-deco {
    画像 1920x1080 座標での各スロット中心 (%) から tile 幅 12.2%/2 を引いた top-left。
    tile_size: 226x221 / 1920x1080 = 11.77% x 20.46% → width 12.2%, aspect 226:221 で補正。
    スロット座標は PUZZLE_ROWS chars 順 [な,に,ぬ,ね,の] に対応。 */
-/* 五芒星スロット中心位置 (shrine_seal_full.png vs shrine_seal_vacant.png の差分を画像解析):
-   な (50.04%, 29.07%) / に (60.78%, 44.29%) / ぬ (56.68%, 65.96%) / ね (43.82%, 65.95%) / の (39.44%, 44.30%)
-   プランクは 12.2%w × (12.2% × 221/226 = 11.93%w) → 縦方向は容器高基準で 21.21%。
-   top/left は中心から (6.1%, 10.6%) 引いた位置 */
-.plank.plank-riddle.tablet-slot-0 { top: 18.5%; left: 43.9%; } /* な: 上 */
-.plank.plank-riddle.tablet-slot-1 { top: 33.7%; left: 54.7%; } /* に: 右上 */
-.plank.plank-riddle.tablet-slot-2 { top: 55.4%; left: 50.6%; } /* ぬ: 右下 */
-.plank.plank-riddle.tablet-slot-3 { top: 55.4%; left: 37.7%; } /* ね: 左下 */
-.plank.plank-riddle.tablet-slot-4 { top: 33.7%; left: 33.3%; } /* の: 左上 */
+/* 五芒星スロット中心位置 (shrine_seal_vacant.png の空スロット (88x88px 暗部) を画像解析):
+   な (50.28%, 29.58%) / に (60.90%, 44.79%) / ぬ (56.72%, 66.30%) / ね (43.76%, 66.28%) / の (39.67%, 44.75%)
+   プランクは width=4.5% (容器幅) × height=4.4% (容器幅) → 容器高基準で height=7.82%。
+   top/left オフセット = 中心から (4.5%/2, 7.82%/2) = (2.25%, 3.91%) 引く */
+.plank.plank-riddle.tablet-slot-0 { top: 25.67%; left: 48.03%; } /* な: 上 */
+.plank.plank-riddle.tablet-slot-1 { top: 40.88%; left: 58.65%; } /* に: 右上 */
+.plank.plank-riddle.tablet-slot-2 { top: 62.39%; left: 54.47%; } /* ぬ: 右下 */
+.plank.plank-riddle.tablet-slot-3 { top: 62.37%; left: 41.51%; } /* ね: 左下 */
+.plank.plank-riddle.tablet-slot-4 { top: 40.84%; left: 37.42%; } /* の: 左上 */
 /* 完成時: 5枚の石板が順番に眩しく光る (180ms stagger × 1s anim) */
 .puzzle-bg-riddle.complete .plank.plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
@@ -6604,13 +6607,14 @@ function _showRiddle(char, onCorrect) {
 // riddle 行に入る直前に 1枚: 「洞窟の奥に大きな石の扉、封印されて動かない」の状況説明。
 // ここを通してから _showPuzzleIntro (妖精の声) → _showPuzzleStage (石板アップ) に繋げる。
 // (2026-04-22: 「いきなり石板アップだと状況が掴めない」指摘 → ワイドショットを挟む)
+// (2026-04-22 その2: door_closed (扉アップ) ではなく shrine_seal_1st (洞窟+奥に扉) を使う)
 function _showSealedDoorScene(onDone) {
   var ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:1710;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 24px 28px;animation:fadeIn 0.5s ease;cursor:pointer;overflow:hidden;';
 
-  // 背景: 閉じた扉のワイドショット (縦合わせ cover)
+  // 背景: 洞窟の奥に石の扉が見えるワイドショット (縦合わせ cover)
   var bg = document.createElement('img');
-  bg.src = '../assets/images/puzzle/tablet/door_closed.png';
+  bg.src = '../assets/images/puzzle/tablet/shrine_seal_1st.png';
   bg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;image-rendering:pixelated;z-index:0;opacity:0;transition:opacity 0.8s ease;';
   ov.appendChild(bg);
   setTimeout(function() { bg.style.opacity = '1'; }, 20);
