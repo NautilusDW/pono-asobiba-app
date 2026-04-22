@@ -1818,17 +1818,13 @@ body.battle-mode .villain-deco {
   40%  { filter: brightness(1.8) saturate(1.4); }
   100% { filter: brightness(1.1) saturate(1.1); }
 }
-/* 石板スロットコンテナ: 背景 (cover) と同じ縦合わせで 1920:1080 アスペクトを保持。
-   枠の幅が 16:9 より狭い場合はコンテナが横にはみ出すが、stage の overflow:hidden で切れる。
-   重要: ここに max-width:100% を付けると背景 (cover で縦合わせ) とスケールが合わなくなり
-   石板が五芒星と並ばなくなる。max-width は付けない。 */
+/* riddle 行の石板レイアウトは SVG viewBox 方式 (2026-04-22)。
+   背景 (puzzle-bg-riddle) の CSS cover と SVG の preserveAspectRatio="xMidYMid slice" が
+   同じクロップ挙動になるため、端末アスペクト比に依存せず土台と石板が一致する。
+   座標は画像 1920x1080 のピクセル値をそのまま使える。 */
 .puzzle-bg-riddle .puzzle-planks {
   position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  height: 100%;
-  width: auto;
-  aspect-ratio: 1920 / 1080;
+  inset: 0;
   display: block;
   padding: 0;
   gap: 0;
@@ -1840,55 +1836,35 @@ body.battle-mode .villain-deco {
 .puzzle-bg-riddle.pedestal-focused .puzzle-planks {
   opacity: 1;
 }
-/* 石板サイズは背景の 88x88px (1920幅基準で 4.58%) の五芒星スロットに合わせる。
-   tile 画像は 226x221 だが baked-in 表示は 80px前後。CSS側で 4.5% にして縮小し、
-   空スロット (4.58%) にぴったり収まるようにする。 */
-.plank.plank-riddle {
+.shrine-svg {
   position: absolute;
-  width: 4.5%;
-  aspect-ratio: 226 / 221;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  opacity: 0;
-  transform: translateY(-120%) scale(0.6) rotate(-20deg);
-  transition: opacity 0.1s ease;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
+  pointer-events: none;
 }
-/* 石板が降ってきてスロットにはまる演出 (placed が付いた瞬間に再生) */
-.plank.plank-riddle.placed {
-  animation: shrineTileDrop 0.85s cubic-bezier(0.45, 1.6, 0.5, 1) forwards;
-}
-@keyframes shrineTileDrop {
-  0%   { opacity: 0; transform: translateY(-260%) scale(0.9) rotate(-28deg); filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
-  35%  { opacity: 1; transform: translateY(0) scale(1.12) rotate(8deg); filter: drop-shadow(0 12px 18px rgba(0,0,0,0.7)); }
-  55%  { transform: translateY(-6%) scale(0.96) rotate(-4deg); filter: drop-shadow(0 0 18px rgba(255,220,120,0.85)) drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
-  75%  { transform: translateY(0) scale(1.04) rotate(0); filter: drop-shadow(0 0 24px rgba(255,240,180,0.95)) brightness(1.3); }
-  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
-}
-.plank.plank-riddle .tablet-bg {
-  width: 100%; height: 100%;
-  object-fit: contain;
+/* SVG <image> の石板: 位置・サイズは SVG の x/y/width/height 属性で決まるので
+   CSS 側では opacity / transform / filter だけを制御する。
+   transform-box: fill-box で各 <image> の中心を基準に scale/rotate できるようにする。 */
+.plank.plank-riddle {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.5) rotate(-15deg);
+  transition: opacity 0.1s ease;
   image-rendering: pixelated;
 }
-/* 石板画像に文字が焼き込まれているのでテキストは非表示 (残しておくとダブる) */
-.plank.plank-riddle .tablet-char {
-  display: none;
+/* 石板がはまる演出 (placed が付いた瞬間に再生)。bounce + glow。 */
+.plank.plank-riddle.placed {
+  animation: shrineTilePop 0.85s cubic-bezier(0.45, 1.6, 0.5, 1) forwards;
 }
-/* 五芒星配置 (shrine_seal_vacant.png / shrine_seal_full.png の baked-in スロット位置に合わせる)。
-   画像 1920x1080 座標での各スロット中心 (%) から tile 幅 12.2%/2 を引いた top-left。
-   tile_size: 226x221 / 1920x1080 = 11.77% x 20.46% → width 12.2%, aspect 226:221 で補正。
-   スロット座標は PUZZLE_ROWS chars 順 [な,に,ぬ,ね,の] に対応。 */
-/* 五芒星スロット中心位置 (shrine_seal_vacant.png の空スロット (88x88px 暗部) を画像解析):
-   な (50.28%, 29.58%) / に (60.90%, 44.79%) / ぬ (56.72%, 66.30%) / ね (43.76%, 66.28%) / の (39.67%, 44.75%)
-   プランクは width=4.5% (容器幅) × height=4.4% (容器幅) → 容器高基準で height=7.82%。
-   top/left オフセット = 中心から (4.5%/2, 7.82%/2) = (2.25%, 3.91%) 引く */
-.plank.plank-riddle.tablet-slot-0 { top: 25.67%; left: 48.03%; } /* な: 上 */
-.plank.plank-riddle.tablet-slot-1 { top: 40.88%; left: 58.65%; } /* に: 右上 */
-.plank.plank-riddle.tablet-slot-2 { top: 62.39%; left: 54.47%; } /* ぬ: 右下 */
-.plank.plank-riddle.tablet-slot-3 { top: 62.37%; left: 41.51%; } /* ね: 左下 */
-.plank.plank-riddle.tablet-slot-4 { top: 40.84%; left: 37.42%; } /* の: 左上 */
+@keyframes shrineTilePop {
+  0%   { opacity: 0; transform: scale(0.35) rotate(-28deg); filter: drop-shadow(0 0 0 rgba(255,220,120,0)); }
+  45%  { opacity: 1; transform: scale(1.2)  rotate(10deg);  filter: drop-shadow(0 0 18px rgba(255,230,140,0.9)); }
+  70%  {             transform: scale(0.95) rotate(-4deg);  filter: drop-shadow(0 0 22px rgba(255,240,180,0.95)) brightness(1.3); }
+  100% { opacity: 1; transform: scale(1)    rotate(0);      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
+}
 /* 完成時: 5枚の石板が順番に眩しく光る (180ms stagger × 1s anim) */
 .puzzle-bg-riddle.complete .plank.plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
@@ -6455,29 +6431,55 @@ function _showPuzzleStage(rowLabel) {
         els.stage.querySelectorAll('.lava-rising-stone').forEach(function(n) { n.remove(); });
       }
     } else {
-      def.chars.forEach(function(ch, idx) {
-        if (def.kind === 'riddle') {
-          // ほこらの封印解除: 5枚の石板を五芒星スロットに配置。
-          // 各文字をなぞると .placed が付いて drop-in 演出が走る。
-          // 石板画像ファイル名: shrine_tile_{romaji}.png (ひらがな/カタカナ両対応)
-          var _rmap = {
-            'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
-            'ナ':'na','ニ':'ni','ヌ':'nu','ネ':'ne','ノ':'no'
-          };
+      // riddle 行は SVG viewBox を使って画像ピクセル座標で石板を配置する。
+      // 背景 (shrine_seal_vacant.png) は CSS background:cover で敷かれているが、SVG も
+      // preserveAspectRatio="xMidYMid slice" で同じクロップ挙動になるため両者は必ず
+      // ピクセル単位で一致する (端末アスペクトに依存しない)。(2026-04-22 SVG化)
+      if (def.kind === 'riddle') {
+        var SVG_NS = 'http://www.w3.org/2000/svg';
+        // shrine_seal_vacant.png (1920x1080) 上の空スロット (88x88px 暗部) 中心をピクセル解析
+        // 順番は PUZZLE_ROWS chars の [な,に,ぬ,ね,の] 順に対応。
+        var SHRINE_SLOTS = [
+          { cx: 965, cy: 320 }, // な: 上
+          { cx: 1169, cy: 484 }, // に: 右上
+          { cx: 1089, cy: 716 }, // ぬ: 右下
+          { cx: 840,  cy: 716 }, // ね: 左下
+          { cx: 762,  cy: 483 }  // の: 左上
+        ];
+        var TILE_SZ = 88; // shrine_seal_vacant.png の空スロット実寸 (88x88)
+        var svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('class', 'shrine-svg');
+        svg.setAttribute('viewBox', '0 0 1920 1080');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+        els.planks.appendChild(svg);
+
+        var _rmap = {
+          'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+          'ナ':'na','ニ':'ni','ヌ':'nu','ネ':'ne','ノ':'no'
+        };
+        def.chars.forEach(function(ch, idx) {
           var rom = _rmap[ch] || 'na';
-          const p = document.createElement('div');
-          p.className = 'plank plank-riddle tablet-slot-' + idx;
-          p.innerHTML =
-            '<img class="tablet-bg" src="../assets/images/puzzle/tablet/shrine_tile_' + rom + '.png" alt="' + ch + '">' +
-            '<span class="tablet-char">' + ch + '</span>';
-          els.planks.appendChild(p);
-        } else {
+          var slot = SHRINE_SLOTS[idx] || SHRINE_SLOTS[0];
+          var img = document.createElementNS(SVG_NS, 'image');
+          img.setAttribute('class', 'plank plank-riddle tablet-slot-' + idx);
+          // href (モダン) と xlink:href (Safari 古いバージョン) の両方を設定
+          var src = '../assets/images/puzzle/tablet/shrine_tile_' + rom + '.png';
+          img.setAttribute('href', src);
+          img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', src);
+          img.setAttribute('x', String(slot.cx - TILE_SZ / 2));
+          img.setAttribute('y', String(slot.cy - TILE_SZ / 2));
+          img.setAttribute('width', String(TILE_SZ));
+          img.setAttribute('height', String(TILE_SZ));
+          svg.appendChild(img);
+        });
+      } else {
+        def.chars.forEach(function(ch, idx) {
           const p = document.createElement('span');
           p.className = 'plank plank-' + def.kind;
           p.textContent = ch;
           els.planks.appendChild(p);
-        }
-      });
+        });
+      }
     }
   }
 
