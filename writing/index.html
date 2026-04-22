@@ -8510,7 +8510,9 @@ const MAP_ROW_SCENES = {
   'は': { xPct: 45, yPct: 58, title: 'どうくつの おく' },
   'ま': { xPct: 56, yPct: 52, title: 'かざんの ふもと' },
   'や': { xPct: 66, yPct: 52, title: 'かざんの ちゅうふく' },
-  'ら': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
+  // ら: 以前 76% だと map_A.png の溶岩岩橋の先に立って「橋を渡った後」に見える指摘あり (2026-04-22)。
+  //     岩橋の手前 (溶岩谷の入り口) に下げる。
+  'ら': { xPct: 66, yPct: 52, title: 'ようがんの たにま' },
   'わ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
   'ア': { xPct: 6,  yPct: 48, title: 'もりの いりぐち' },
   'カ': { xPct: 9,  yPct: 49, title: 'こわれた はし' },
@@ -8520,7 +8522,7 @@ const MAP_ROW_SCENES = {
   'ハ': { xPct: 45, yPct: 58, title: 'どうくつの おく' },
   'マ': { xPct: 56, yPct: 52, title: 'かざんの ふもと' },
   'ヤ': { xPct: 66, yPct: 52, title: 'かざんの ちゅうふく' },
-  'ラ': { xPct: 76, yPct: 52, title: 'ようがんの たにま' },
+  'ラ': { xPct: 66, yPct: 52, title: 'ようがんの たにま' },
   'ワ': { xPct: 85, yPct: 52, title: 'かざんの ちょうじょう' },
 };
 const MAP_IMG_NATURAL_W = 2752;
@@ -8708,7 +8710,10 @@ function _rescueFairy(fairyId, onDone) {
   // シンプルに color をそのまま glow に使う (filter drop-shadow が hex で動く)。
   ov.style.setProperty('--fairy-glow', meta.color);
 
-  var brief = alreadyFreed; // 既に救出済なら短縮演出
+  // 2026-04-22 v7: 以前は brief (救出済) モードで封印演出もセリフも全スキップしていたが、
+  // 「何回テストしてもセリフが出ない」指摘あり (localStorage にフラグが残ると以後毎回 brief 扱い)。
+  // → brief は封印演出だけを簡略化し、セリフは必ず流す仕様に変更。
+  var brief = alreadyFreed;
   if (brief) ov.classList.add('brief');
 
   var stage = document.createElement('div');
@@ -8783,69 +8788,68 @@ function _rescueFairy(fairyId, onDone) {
   // 封印→破壊→妖精登場→セリフ(妖精を出したまま)→お別れ のタイマー群
   // (2026-04-22 v5 指摘: 妖精が喋っている間も画面に出していて欲しい → オーバーレイを出したまま
   //  _showBattleDialog を流す。battleLog の z-index を一時的に上げて overlay 上に重ねる。)
-  if (!brief) {
-    // 0.45s で封印が砕ける
-    setTimeout(function() {
-      seal.classList.add('shatter');
-      try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
-      for (var i = 0; i < 14; i++) {
-        var p = document.createElement('div');
-        p.className = 'seal-shatter-particle';
-        var ang = (i / 14) * Math.PI * 2;
-        var dist = 80 + Math.random() * 60;
-        p.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(0) + 'px');
-        p.style.setProperty('--dy', (Math.sin(ang) * dist).toFixed(0) + 'px');
-        p.style.animationDelay = (Math.random() * 0.15).toFixed(2) + 's';
-        stage.appendChild(p);
-      }
-    }, 450);
+  // (2026-04-22 v7 指摘: brief モード (救出済フラグが残った状態) でも毎回セリフを出す必要あり。
+  //  封印破りの演出時間だけを短縮し、セリフ自体は共通化。)
+  var sealDelay = brief ? 150 : 450;
+  var dialogDelay = brief ? 600 : 1650;
 
-    // 妖精アピア完了 (約 1.65s) 後にセリフ開始。妖精はそのまま中央に居続ける。
-    var dialogStarted = false;
-    function startDialog() {
-      if (dialogStarted) return;
-      dialogStarted = true;
-      var dialogLines = [];
-      if (meta.msg) {
-        dialogLines.push({ lines: [meta.name + '「' + meta.msg, '', ''] });
-      }
-      if (meta.hint) {
-        var hintParts = meta.hint.split('\n');
-        dialogLines.push({ lines: [meta.name + '「' + (hintParts[0] || ''), hintParts[1] || '', ''] });
-      }
-      if (meta.hint2) {
-        var hint2Parts = meta.hint2.split('\n');
-        dialogLines.push({ lines: [meta.name + '「' + (hint2Parts[0] || ''), hint2Parts[1] || '', ''] });
-      }
-      // battleLog を overlay (z-index 1660) の上に引き上げる
-      try {
-        var bl = document.getElementById('battleLog');
-        if (bl) { bl.style.position = 'relative'; bl.style.zIndex = '1700'; }
-      } catch (e) {}
-      function farewell() {
-        // セリフ完了後、妖精を 1s 静止で見せてから飛び去らせる (余韻)
-        setTimeout(function() {
-          sprite.classList.add('leaving');
-          setTimeout(close, 650);
-        }, 1000);
-      }
-      if (dialogLines.length && typeof _showBattleDialog === 'function') {
-        _showBattleDialog(dialogLines, farewell);
-      } else {
-        setTimeout(farewell, 2000);
-      }
+  // 封印が砕ける
+  setTimeout(function() {
+    seal.classList.add('shatter');
+    try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+    for (var i = 0; i < 14; i++) {
+      var p = document.createElement('div');
+      p.className = 'seal-shatter-particle';
+      var ang = (i / 14) * Math.PI * 2;
+      var dist = 80 + Math.random() * 60;
+      p.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(0) + 'px');
+      p.style.setProperty('--dy', (Math.sin(ang) * dist).toFixed(0) + 'px');
+      p.style.animationDelay = (Math.random() * 0.15).toFixed(2) + 's';
+      stage.appendChild(p);
     }
-    var dialogStartId = setTimeout(startDialog, 1650);
-    // タップで即セリフ開始 (早送り希望ユーザー向け)
-    ov.addEventListener('click', function() {
-      try { clearTimeout(dialogStartId); } catch (e) {}
-      startDialog();
-    });
-  } else {
-    // brief: 1.2s で自動クローズ
-    var autoId2 = setTimeout(close, 1200);
-    ov.addEventListener('click', function() { try { clearTimeout(autoId2); } catch (e) {} close(); });
+  }, sealDelay);
+
+  // 妖精アピア完了後にセリフ開始。妖精はそのまま中央に居続ける。
+  var dialogStarted = false;
+  function startDialog() {
+    if (dialogStarted) return;
+    dialogStarted = true;
+    var dialogLines = [];
+    if (meta.msg) {
+      dialogLines.push({ lines: [meta.name + '「' + meta.msg, '', ''] });
+    }
+    if (meta.hint) {
+      var hintParts = meta.hint.split('\n');
+      dialogLines.push({ lines: [meta.name + '「' + (hintParts[0] || ''), hintParts[1] || '', ''] });
+    }
+    if (meta.hint2) {
+      var hint2Parts = meta.hint2.split('\n');
+      dialogLines.push({ lines: [meta.name + '「' + (hint2Parts[0] || ''), hint2Parts[1] || '', ''] });
+    }
+    // battleLog を overlay (z-index 1660) の上に引き上げる
+    try {
+      var bl = document.getElementById('battleLog');
+      if (bl) { bl.style.position = 'relative'; bl.style.zIndex = '1700'; }
+    } catch (e) {}
+    function farewell() {
+      // セリフ完了後、妖精を 1s 静止で見せてから飛び去らせる (余韻)
+      setTimeout(function() {
+        sprite.classList.add('leaving');
+        setTimeout(close, 650);
+      }, 1000);
+    }
+    if (dialogLines.length && typeof _showBattleDialog === 'function') {
+      _showBattleDialog(dialogLines, farewell);
+    } else {
+      setTimeout(farewell, 2000);
+    }
   }
+  var dialogStartId = setTimeout(startDialog, dialogDelay);
+  // タップで即セリフ開始 (早送り希望ユーザー向け)
+  ov.addEventListener('click', function() {
+    try { clearTimeout(dialogStartId); } catch (e) {}
+    startDialog();
+  });
 
   try { if (typeof playVictoryFanfare === 'function') playVictoryFanfare(); } catch (e) {}
 }
