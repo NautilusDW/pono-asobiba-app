@@ -1540,31 +1540,49 @@ function stageComplete() {
   const yCount = bentoSkColors.filter(c => c === 'y').length;
   const gCount = bentoSkColors.filter(c => c === 'g').length;
   const balRow = document.getElementById('balance-row');
-  const balMsg = document.getElementById('balance-msg');
   const dot = (cls, n) => Array(Math.min(n, 3)).fill(`<span class="balance-dot ${cls}"></span>`).join('');
   const emptyDot = (n) => Array(Math.max(0, n)).fill('<span class="balance-dot empty"></span>').join('');
   balRow.innerHTML =
     `<div class="balance-item">${dot('b-r', rCount)}${emptyDot(1 - Math.min(rCount, 1))} あか</div>` +
     `<div class="balance-item">${dot('b-y', yCount)}${emptyDot(1 - Math.min(yCount, 1))} きいろ</div>` +
     `<div class="balance-item">${dot('b-g', gCount)}${emptyDot(1 - Math.min(gCount, 1))} みどり</div>`;
-  // 三色凡例（前回分を削除してから追加）
-  const oldLegend = document.getElementById('sk-legend');
-  if (oldLegend) oldLegend.remove();
-  balRow.insertAdjacentHTML('afterend',
-    '<div class="sk-legend" id="sk-legend">' +
-    '<div class="sk-legend-item"><span class="sk-legend-dot" style="background:#EF4444"></span>からだを つくる</div>' +
-    '<div class="sk-legend-item"><span class="sk-legend-dot" style="background:#EAB308"></span>ちからに なる</div>' +
-    '<div class="sk-legend-item"><span class="sk-legend-dot" style="background:#22C55E"></span>ちょうしを ととのえる</div>' +
-    '</div>');
 
-  if (rCount > 0 && yCount > 0 && gCount > 0) {
-    balMsg.textContent = '🌟 バランス ばっちり！';
-  } else {
-    const missing = [];
-    if (rCount === 0) missing.push('あか');
-    if (yCount === 0) missing.push('きいろ');
-    if (gCount === 0) missing.push('みどり');
-    balMsg.textContent = missing.join('と') + 'も いれると もっと いいね！';
+  // ポノ表情＋セリフ（バランスに応じた演出）
+  const reaction = choosePonoReaction(rCount, yCount, gCount, inChallengeMode);
+  const ponoBig = document.getElementById('complete-pono-big');
+  if (ponoBig) ponoBig.src = reaction.img;
+  document.getElementById('complete-msg').textContent = reaction.msg;
+
+  // 豆知識
+  const triviaEl = document.getElementById('complete-trivia');
+  if (triviaEl) {
+    const trivia = pickTrivia(bentoFoodNames, bentoSkColors);
+    triviaEl.textContent = '💡 ' + trivia;
+  }
+
+  // お気に入り保存ボタン
+  const saveBtn = document.getElementById('save-fav-btn');
+  if (saveBtn) {
+    saveBtn.textContent = '⭐ おきにいりに いれる';
+    saveBtn.classList.remove('saved');
+    saveBtn.disabled = false;
+    favSaved = false;
+    saveBtn.onclick = () => {
+      if (favSaved) return;
+      const snapshot = {
+        id: 'bf_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        savedAt: Date.now(),
+        foods: bentoSelected.slice(0, 5),
+        skColors: bentoSkColors.slice(),
+        balance: { r: rCount, y: yCount, g: gCount },
+        playerName: getPlayerName() || '',
+      };
+      saveFavorite(snapshot);
+      favSaved = true;
+      saveBtn.textContent = '✅ ほぞんしました！';
+      saveBtn.classList.add('saved');
+      playPop();
+    };
   }
 
   document.getElementById('complete-btn').onclick = () => {
@@ -1593,6 +1611,117 @@ function launchConfetti() {
       c.appendChild(p); setTimeout(() => p.remove(), 3600);
     }, i * 25);
   }
+}
+
+// ===== Favorites modal =====
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function openFavorites() {
+  renderFavoritesList();
+  const ov = document.getElementById('fav-overlay');
+  if (ov) ov.classList.remove('hidden');
+}
+function closeFavorites() {
+  const ov = document.getElementById('fav-overlay');
+  if (ov) ov.classList.add('hidden');
+}
+function renderFavoritesList() {
+  const list = loadFavorites();
+  const el = document.getElementById('fav-list');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!list.length) {
+    const empty = document.createElement('div');
+    empty.className = 'fav-empty';
+    empty.textContent = 'まだ おきにいりの おべんとうは ないよ。おべんとうを つくって ⭐を おしてね！';
+    el.appendChild(empty);
+    return;
+  }
+  list.forEach(fav => {
+    const item = document.createElement('div');
+    item.className = 'fav-item';
+
+    // ミニ弁当サムネ: [rice]+おかず4
+    const bento = document.createElement('div');
+    bento.className = 'fav-mini-bento';
+    const inner = document.createElement('div');
+    inner.className = 'cb-inner';
+    const foods = Array.isArray(fav.foods) ? fav.foods : [];
+    const rice = foods[0];
+    const okazu = foods.slice(1, 5);
+
+    const riceDiv = document.createElement('div');
+    riceDiv.className = 'cb-rice';
+    if (rice && rice.img) {
+      const img = document.createElement('img');
+      img.src = rice.img; img.alt = rice.name || '';
+      riceDiv.appendChild(img);
+    }
+    inner.appendChild(riceDiv);
+
+    const okazuGrid = document.createElement('div');
+    okazuGrid.className = 'cb-okazu';
+    const positions = [
+      { col: 1, row: 1 },
+      { col: 3, row: 1 },
+      { col: 1, row: 3 },
+      { col: 3, row: 3 },
+    ];
+    positions.forEach((pos, i) => {
+      const cell = document.createElement('div');
+      cell.style.gridColumn = pos.col;
+      cell.style.gridRow = pos.row;
+      const o = okazu[i];
+      if (o && o.img) {
+        const img = document.createElement('img');
+        img.src = o.img; img.alt = o.name || '';
+        cell.appendChild(img);
+      }
+      okazuGrid.appendChild(cell);
+    });
+    const dv = document.createElement('div');
+    dv.className = 'okazu-div-v';
+    okazuGrid.appendChild(dv);
+    const dh = document.createElement('div');
+    dh.className = 'okazu-div-h';
+    okazuGrid.appendChild(dh);
+    inner.appendChild(okazuGrid);
+    bento.appendChild(inner);
+    item.appendChild(bento);
+
+    // バランス
+    const bal = document.createElement('div');
+    bal.className = 'fav-item-balance';
+    const b = fav.balance || { r: 0, y: 0, g: 0 };
+    bal.innerHTML =
+      '<span><span class="balance-dot b-r"></span> ' + (b.r|0) + '</span>' +
+      '<span><span class="balance-dot b-y"></span> ' + (b.y|0) + '</span>' +
+      '<span><span class="balance-dot b-g"></span> ' + (b.g|0) + '</span>';
+    item.appendChild(bal);
+
+    // 日付
+    const date = document.createElement('div');
+    date.className = 'fav-item-date';
+    date.textContent = formatFavDate(fav.savedAt);
+    item.appendChild(date);
+
+    // 削除ボタン
+    const del = document.createElement('button');
+    del.className = 'fav-item-delete';
+    del.setAttribute('aria-label', 'さくじょ');
+    del.textContent = '×';
+    del.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      deleteFavorite(fav.id);
+      renderFavoritesList();
+    });
+    item.appendChild(del);
+
+    el.appendChild(item);
+  });
 }
 
 // ===== Profile & Bento Color =====
@@ -1760,6 +1889,18 @@ function showTutorial() {
 // ===== Init =====
 applyBentoColor();
 loadStage();
+
+// Favorites UI wiring
+(function() {
+  const headerBtn = document.getElementById('fav-header-btn');
+  if (headerBtn) headerBtn.addEventListener('click', function(e){ e.preventDefault(); openFavorites(); });
+  const closeBtn = document.getElementById('fav-close-btn');
+  if (closeBtn) closeBtn.addEventListener('click', function(e){ e.preventDefault(); closeFavorites(); });
+  const ov = document.getElementById('fav-overlay');
+  if (ov) ov.addEventListener('click', function(e){
+    if (e.target === ov) closeFavorites();
+  });
+})();
 
 initMenu({
   tutorial: showTutorial,
