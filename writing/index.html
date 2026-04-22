@@ -1917,6 +1917,11 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-10px) scale(1.06); }
 }
+/* 封印オーブ 🔒 の囁き pulse。とらわれた妖精の声に合わせて glow が揺らぐ */
+@keyframes sealPulse {
+  0%, 100% { transform: scale(1);    opacity: 0.78; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
 /* ===== 祠の扉 (5枚石板フィニッシャー後に奥に現れる) =====
    CSS だけで作る石のアーチ扉。2枚扉が左右に開いて中から光が溢れ、
    勇者が左から歩いてきて扉の中へ消えていく = 次の行へ進む象徴。 */
@@ -6333,8 +6338,8 @@ const PUZZLE_ROWS = {
   'カ': { kind: 'bridge',    title: 'こわれた はし',        hint: 'もじを なぞって はしを なおそう！',     chars: ['カ','キ','ク','ケ','コ'] },
   // な行: ほこらの番人 (石像) が妖精を封印している。文字をなぞると石板が五芒星スロットにはまり、
   // 5枚揃えると封印解除 → 扉が開く → 囚われた妖精を解放 → 妖精が仲間に。
-  'な': { kind: 'riddle',    title: 'ほこらの ばんにん',     hint: 'もじを なぞって ふういんを とこう！',  chars: ['な','に','ぬ','ね','の'] },
-  'ナ': { kind: 'riddle',    title: 'ホコラの バンニン',     hint: 'もじを なぞって ふういんを とこう！',  chars: ['ナ','ニ','ヌ','ネ','ノ'] },
+  'な': { kind: 'riddle',    title: 'ふういんの ほこら',     hint: 'もじを なぞって ふういんを とこう！',  chars: ['な','に','ぬ','ね','の'] },
+  'ナ': { kind: 'riddle',    title: 'フウインの ホコラ',     hint: 'もじを なぞって ふういんを とこう！',  chars: ['ナ','ニ','ヌ','ネ','ノ'] },
   // ら行: 火山の溶岩にかかる「とびいし」。文字をなぞる=呪文発動で飛び石が 1 つ浮上。
   // 5文字書くと 5石揃い道になる → 勇者が飛び石を渡る = ゴーレム退散。
   'ら': { kind: 'lava_step', title: 'ようがんの とびいし',   hint: 'じゅもんを かいて とびいしを よびだそう！', chars: ['ら','り','る','れ','ろ'] },
@@ -6590,59 +6595,65 @@ function _showRiddle(char, onCorrect) {
 }
 
 // ===== パズル行の導入オーバーレイ =====
-// 行の最初に「これから何をするか」をキャラが説明する。タップで進む。
-// kind=riddle: ほこらのまもりがみ 🗿 が なぞなぞを出題すると告知
-// kind=lava_step: ようがんゴーレム 🗿💢 が道を塞ぐ。呪文で本物の石を見抜けと告知
+// 敵キャラは出さず、封印の奥から とらわれた妖精の声 が助けを求める演出にする。
+// (2026-04-22: 「番人と戦わないのがおかしい」指摘 → 敵を出さず声だけに統一)
+// kind=riddle:    祠の扉越しに ほこらのようせい の声 (紫 glow)
+// kind=lava_step: 溶岩の下から ほのおのようせい の声 (橙 glow)
 function _showPuzzleIntro(kind, onDone) {
   var intros = {
     riddle: {
-      emoji: '🗿',
-      name: 'ほこらの ばんにん',
+      voiceOf: 'shrine',
+      title: 'ふういんの ほこら',
       lines: [
-        'フフフ… よく ここまで きた。',
-        'だが この さきには いかせぬ。',
-        'ザガン さまの じゃまを する ものは',
-        'この わしが とらえて やったのだ。',
-        'おくで ようせいが ないて いるぞ？'
+        '…だれか いるの？',
+        'たすけて… この ふういんを といて…！',
+        'ザガン の てさきに つかまって しまったの。',
+        'もじの ちからで くさりを たちきって！'
       ]
     },
     lava_step: {
-      emoji: '🗿',
-      name: 'ようがんゴーレム',
+      voiceOf: 'fire',
+      title: 'ようがんの たに',
       lines: [
-        'ここは わたらせぬぞ…！',
-        'もじを なぞると',
-        'じゅもんが はつどうする。',
-        'いつつの とびいしを よびだして',
-        'ようがんの たにを わたれ！'
+        'あつい… たすけて…',
+        'わたしを ここから だして！',
+        'ザガン の やみが いわを しずめて いるの。',
+        'もじの ちからで いしを よんで！'
       ]
     }
   };
   var data = intros[kind];
   if (!data) { if (onDone) onDone(); return; }
 
+  // 話者の色 (FAIRY_META から) — 紫 or 橙で封印オーブを染める
+  var meta = (typeof FAIRY_META !== 'undefined' && FAIRY_META[data.voiceOf]) || { color: '#c8a8ff' };
+  var accent = meta.color;
+
   var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1700;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,30,0.55) 0%,rgba(5,2,12,0.92) 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn 0.4s ease;padding:24px;cursor:pointer;';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1700;background:radial-gradient(ellipse at 50% 45%,rgba(20,10,30,0.55) 0%,rgba(5,2,12,0.94) 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeIn 0.5s ease;padding:24px;cursor:pointer;';
 
-  var emoji = document.createElement('div');
-  emoji.textContent = data.emoji;
-  emoji.style.cssText = 'font-size:5rem;margin-bottom:10px;filter:drop-shadow(0 0 28px rgba(140,200,255,0.8));animation:guardianFloat 1.8s ease-in-out infinite;';
-  ov.appendChild(emoji);
+  // 場所ラベル (控えめに上部)
+  var title = document.createElement('div');
+  title.textContent = data.title;
+  title.style.cssText = 'font-size:0.95rem;font-weight:800;color:rgba(255,255,255,0.6);letter-spacing:4px;margin-bottom:18px;text-shadow:0 2px 6px rgba(0,0,0,0.8);';
+  ov.appendChild(title);
 
-  var name = document.createElement('div');
-  name.textContent = data.name;
-  name.style.cssText = 'font-size:1rem;font-weight:900;color:#FFEB50;text-shadow:0 2px 6px rgba(0,0,0,0.8);margin-bottom:14px;letter-spacing:2px;';
-  ov.appendChild(name);
+  // 封印オーブ (🔒 を accent 色の glow で包む)
+  var orb = document.createElement('div');
+  orb.textContent = '🔒';
+  orb.style.cssText = 'font-size:3.2rem;margin-bottom:16px;filter:drop-shadow(0 0 18px ' + accent + ') drop-shadow(0 0 34px ' + accent + ');animation:sealPulse 2.2s ease-in-out infinite;opacity:0.9;';
+  ov.appendChild(orb);
 
+  // 吹き出し: 話者が見えないので半透明 + accent 色のボーダー (声の主の色が滲む感じ)
   var bubble = document.createElement('div');
-  bubble.style.cssText = 'background:linear-gradient(180deg,rgba(255,245,210,0.98),rgba(255,220,160,0.96));color:#5a2f08;font-size:1.1rem;font-weight:900;padding:18px 24px;border-radius:22px;border:3px solid #8B4513;box-shadow:0 6px 22px rgba(0,0,0,0.65);max-width:90vw;text-align:center;line-height:1.7;';
+  bubble.style.cssText = 'background:linear-gradient(180deg,rgba(245,240,255,0.96),rgba(225,215,245,0.94));color:#2d1a4a;font-size:1.08rem;font-weight:900;padding:18px 24px;border-radius:22px;border:3px solid ' + accent + ';box-shadow:0 0 30px ' + accent + '88, 0 6px 22px rgba(0,0,0,0.65);max-width:90vw;text-align:center;line-height:1.7;';
   bubble.innerHTML = data.lines.map(function(l) {
     return '<div>' + l + '</div>';
   }).join('');
   ov.appendChild(bubble);
 
   var hint = document.createElement('div');
-  hint.textContent = '▼ タップで はじめる';
+  hint.textContent = '▼ タップで ふういんを とこう';
   hint.style.cssText = 'margin-top:20px;font-size:0.95rem;font-weight:900;color:#FFEB50;text-shadow:0 2px 4px rgba(0,0,0,0.8);animation:guardianFloat 1.1s ease-in-out infinite;';
   ov.appendChild(hint);
 
@@ -8165,8 +8176,8 @@ function startRowPractice(rowIndex) {
     _showMapScene(_rowLabel, function() {
       document.body.classList.remove('battle-intro-active');
       try { _showPuzzleStage(_rowLabel); } catch (e) {}
-      // パズル盤面登場後、キャラが「これから何をするか」を説明 (タップで進む)。
-      // riddle=ほこらのまもりがみ / lava_step=ようがんゴーレム
+      // パズル盤面登場後、封印の奥から とらわれた妖精の声 が助けを求める (タップで進む)。
+      // riddle=ほこらのようせいの声 / lava_step=ほのおのようせいの声
       var _pKind = (PUZZLE_ROWS[_rowLabel] && PUZZLE_ROWS[_rowLabel].kind) || null;
       if (_pKind === 'riddle' || _pKind === 'lava_step') {
         try {
