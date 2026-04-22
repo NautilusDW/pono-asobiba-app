@@ -1788,59 +1788,47 @@ body.battle-mode .villain-deco {
   50%  { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 28px rgba(200,140,250,0.95); }
   100% { box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0   rgba(178,130,220,0); }
 }
-/* な行: ほこらのまもりがみの なぞなぞ (riddle)。洞窟の祠 — 奥壁 (cave_bg) の手前に
-   石板ペデスタルが立ち、5枚の石板が現れる。pedestal_empty.png が背景、完成時に
-   pedestal_glow.png に差し替え+石板が順番に光る。 */
+/* な行: ほこらの封印解除。扉の石板(五芒星)に5枚の石板をはめ込む。
+   shrine_seal_1st (intro 封印状態) → shrine_seal_vacant (空スロット) → shrine_seal_full (完成)
+   各文字をなぞると該当石板が空から降ってきて所定位置にはまる。 */
 .puzzle-bg-riddle {
   background:
-    url('../assets/images/puzzle/tablet/door_closed.png') center/cover no-repeat,
-    radial-gradient(ellipse at 50% 40%, #1a1834 0%, #0a0814 75%);
+    url('../assets/images/puzzle/tablet/shrine_seal_1st.png') center/contain no-repeat,
+    linear-gradient(180deg, #1a1420 0%, #0a0810 100%);
+  background-color: #0a0810;
   image-rendering: pixelated;
   overflow: hidden;
+  transition: background-image 0.6s ease;
 }
-/* ペデスタルは ::after で別レイヤー化。intro 終了後に .pedestal-focused で
-   フェードイン+スケールアップ (カメラが扉から石板土台にズームしていく感触) */
-.puzzle-bg-riddle::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: url('../assets/images/puzzle/tablet/pedestal_empty.png') center/contain no-repeat;
-  opacity: 0;
-  transform: scale(0.28);
-  transition: opacity 0.9s ease 0.15s, transform 1.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none;
-  z-index: 1;
+/* intro 終了後: 封印状態 → 空のスロットへ切替 */
+.puzzle-bg-riddle.pedestal-focused {
+  background-image: url('../assets/images/puzzle/tablet/shrine_seal_vacant.png');
 }
-.puzzle-bg-riddle.pedestal-focused::after {
-  opacity: 1;
-  transform: scale(1);
+.puzzle-bg-riddle.complete {
+  background-image: url('../assets/images/puzzle/tablet/shrine_seal_full.png');
+  animation: shrineSealFlash 1.4s ease-out;
 }
-.puzzle-bg-riddle.complete::after {
-  background-image: url('../assets/images/puzzle/tablet/pedestal_glow.png');
-  animation: pedestalActivate 1.4s ease-out;
+@keyframes shrineSealFlash {
+  0%   { filter: brightness(1) saturate(1); }
+  40%  { filter: brightness(1.8) saturate(1.4); }
+  100% { filter: brightness(1.1) saturate(1.1); }
 }
-@keyframes pedestalActivate {
-  0%   { filter: brightness(0.9) saturate(1); }
-  40%  { filter: brightness(1.6) saturate(1.4); }
-  100% { filter: brightness(1.15) saturate(1.15); }
-}
-/* 5スロット配置 — ペデスタル画像 (1099x1110, 6つの凹みスロット) に合わせて絶対配置。
-   puzzle-planks は pedestal 画像の `contain` 可視矩形と一致させるため、
-   ステージ高さ (min(34vh,220px)) に合わせて square-ish に固定。
-   (inset:0+margin:auto+aspect-ratio は Safari 互換性が怪しいので明示 height+aspect) */
+/* 石板スロットコンテナ: 背景画像 (1920x1080) と同じアスペクトで stage 中央に配置。
+   contain 配置なので stage より幅/高さが足りない分は dark letterbox で埋まる。 */
 .puzzle-bg-riddle .puzzle-planks {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   height: 100%;
   width: auto;
-  aspect-ratio: 1099 / 1110;
+  aspect-ratio: 1920 / 1080;
   max-width: 100%;
   display: block;
   padding: 0;
   gap: 0;
   overflow: visible;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.5s ease;
   z-index: 2;
 }
 .puzzle-bg-riddle.pedestal-focused .puzzle-planks {
@@ -1848,49 +1836,47 @@ body.battle-mode .villain-deco {
 }
 .plank.plank-riddle {
   position: absolute;
-  width: 14%;
-  aspect-ratio: 1;
+  width: 12.2%;
+  aspect-ratio: 226 / 221;
   background: transparent;
   border: none;
   border-radius: 0;
   box-shadow: none;
   opacity: 0;
-  transform: translateY(-18px) scale(0.5) rotate(-8deg);
-  transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(-120%) scale(0.6) rotate(-20deg);
+  transition: opacity 0.1s ease;
   overflow: visible;
 }
+/* 石板が降ってきてスロットにはまる演出 (placed が付いた瞬間に再生) */
 .plank.plank-riddle.placed {
-  opacity: 1;
-  transform: translateY(0) scale(1) rotate(0);
+  animation: shrineTileDrop 0.85s cubic-bezier(0.45, 1.6, 0.5, 1) forwards;
+}
+@keyframes shrineTileDrop {
+  0%   { opacity: 0; transform: translateY(-260%) scale(0.9) rotate(-28deg); filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+  35%  { opacity: 1; transform: translateY(0) scale(1.12) rotate(8deg); filter: drop-shadow(0 12px 18px rgba(0,0,0,0.7)); }
+  55%  { transform: translateY(-6%) scale(0.96) rotate(-4deg); filter: drop-shadow(0 0 18px rgba(255,220,120,0.85)) drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
+  75%  { transform: translateY(0) scale(1.04) rotate(0); filter: drop-shadow(0 0 24px rgba(255,240,180,0.95)) brightness(1.3); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
 }
 .plank.plank-riddle .tablet-bg {
   width: 100%; height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
 }
+/* 石板画像に文字が焼き込まれているのでテキストは非表示 (残しておくとダブる) */
 .plank.plank-riddle .tablet-char {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(16px, 3.6vmin, 28px);
-  font-weight: 900;
-  color: #1f1208;
-  text-shadow: 0 1px 0 rgba(255,235,180,0.55), 0 0 4px rgba(255,240,180,0.3);
-  letter-spacing: 0;
-  pointer-events: none;
+  display: none;
 }
-/* ペデスタルは 5スロットの五角形配置 (ピクセル解析で確定 — 画像 1099x1110 の
-   実ボックスから算出)。tablet 幅 14% に合わせて各スロット左上座標 (%) を指定。
-   na=上中央, ni=右中, nu=右下, ne=左下, no=左中 (時計回り) */
-.plank.plank-riddle.tablet-slot-0 { top:  8.8%; left: 42.8%; } /* な: 上中央 */
-.plank.plank-riddle.tablet-slot-1 { top: 34.6%; left: 75.6%; } /* に: 右中 */
-.plank.plank-riddle.tablet-slot-2 { top: 71.8%; left: 62.6%; } /* ぬ: 右下 */
-.plank.plank-riddle.tablet-slot-3 { top: 71.8%; left: 22.9%; } /* ね: 左下 */
-.plank.plank-riddle.tablet-slot-4 { top: 34.6%; left:  9.9%; } /* の: 左中 */
-/* 完成時: 5枚の石板が順番に眩しく光る (150ms stagger × 0.9s anim) */
+/* 五芒星配置 (shrine_seal_vacant.png / shrine_seal_full.png の baked-in スロット位置に合わせる)。
+   画像 1920x1080 座標での各スロット中心 (%) から tile 幅 12.2%/2 を引いた top-left。
+   tile_size: 226x221 / 1920x1080 = 11.77% x 20.46% → width 12.2%, aspect 226:221 で補正。
+   スロット座標は PUZZLE_ROWS chars 順 [な,に,ぬ,ね,の] に対応。 */
+.plank.plank-riddle.tablet-slot-0 { top: 15.0%; left: 43.9%; } /* な: 上 */
+.plank.plank-riddle.tablet-slot-1 { top: 29.6%; left: 59.0%; } /* に: 右上 */
+.plank.plank-riddle.tablet-slot-2 { top: 50.3%; left: 56.0%; } /* ぬ: 右下 */
+.plank.plank-riddle.tablet-slot-3 { top: 50.3%; left: 31.9%; } /* ね: 左下 */
+.plank.plank-riddle.tablet-slot-4 { top: 29.6%; left: 28.9%; } /* の: 左上 */
+/* 完成時: 5枚の石板が順番に眩しく光る (180ms stagger × 1s anim) */
 .puzzle-bg-riddle.complete .plank.plank-riddle {
   animation: tabletSeqGlow 1s ease-in-out forwards;
 }
@@ -1901,9 +1887,9 @@ body.battle-mode .villain-deco {
 .puzzle-bg-riddle.complete .plank.plank-riddle.tablet-slot-4 { animation-delay: 0.72s; }
 @keyframes tabletSeqGlow {
   0%   { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); transform: scale(1) rotate(0); }
-  40%  { filter: drop-shadow(0 0 28px rgba(120,210,255,1)) drop-shadow(0 0 14px rgba(255,255,255,0.95)) brightness(1.8); transform: scale(1.25) rotate(-3deg); }
-  70%  { filter: drop-shadow(0 0 18px rgba(140,220,255,0.85)) brightness(1.4); transform: scale(1.1) rotate(2deg); }
-  100% { filter: drop-shadow(0 0 10px rgba(140,220,255,0.7)) brightness(1.25); transform: scale(1.05) rotate(0); }
+  40%  { filter: drop-shadow(0 0 28px rgba(255,220,120,1)) drop-shadow(0 0 14px rgba(255,255,220,0.95)) brightness(1.8); transform: scale(1.25) rotate(-3deg); }
+  70%  { filter: drop-shadow(0 0 18px rgba(255,220,140,0.85)) brightness(1.4); transform: scale(1.1) rotate(2deg); }
+  100% { filter: drop-shadow(0 0 10px rgba(255,210,120,0.7)) brightness(1.25); transform: scale(1.05) rotate(0); }
 }
 /* ペデスタル中央から放射状に広がる閃光 (complete 時に JS で一度だけ生成) */
 .pedestal-burst {
@@ -2204,6 +2190,142 @@ body.battle-mode .villain-deco {
   animation: fairyAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0s forwards,
              fairyFloat 2.6s ease-in-out 0.5s infinite;
 }
+/* 次の妖精への匂わせ吹き出し。主吹き出しの後に下側から現れる */
+.fairy-rescue-hint-bubble {
+  top: auto; bottom: 4%;
+  left: 50%;
+  max-width: 86vw;
+  white-space: normal;
+  line-height: 1.45;
+  text-align: center;
+  font-size: clamp(0.85rem, 2.4vmin, 1.1rem);
+  opacity: 0;
+  animation: fairyBubblePop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 3.0s forwards;
+  background: linear-gradient(180deg, #F4EBFF, #E4D3FF);
+  border-color: rgba(180,140,240,0.9);
+  color: #3A1E5C;
+}
+.fairy-rescue-hint-bubble::after { display: none; }
+
+/* ===== 扉開く動画オーバーレイ ===== */
+#shrineDoorVideoOverlay {
+  position: fixed; inset: 0; z-index: 1680;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+  animation: fairyRescueFadeIn 0.3s ease forwards;
+  cursor: pointer;
+  overflow: hidden;
+}
+#shrineDoorVideoOverlay.closing {
+  animation: fairyRescueFadeOut 0.35s ease forwards;
+}
+.shrine-door-video {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.shrine-door-tap-hint {
+  position: absolute;
+  bottom: 5%; left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  animation: fairyHintPulse 1.8s ease-in-out 1.5s infinite;
+  pointer-events: none;
+}
+
+/* ===== 牢屋シーン (妖精救出) ===== */
+#fairyCageOverlay {
+  position: fixed; inset: 0; z-index: 1690;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(40,30,55,0.8) 0%, rgba(5,5,12,0.96) 80%);
+  animation: fairyRescueFadeIn 0.4s ease forwards;
+  cursor: pointer;
+  overflow: hidden;
+}
+#fairyCageOverlay.closing {
+  animation: fairyRescueFadeOut 0.4s ease forwards;
+}
+.fairy-cage-scene {
+  position: relative;
+  width: min(92vw, 480px);
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.fairy-cage {
+  position: relative;
+  width: 68%; height: 68%;
+  background: linear-gradient(180deg, #2a2036 0%, #14101c 100%);
+  border: 4px solid #3a2a20;
+  border-radius: 10px;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.85), 0 8px 30px rgba(0,0,0,0.7);
+  overflow: hidden;
+}
+.fairy-cage-bar {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 8px;
+  background: linear-gradient(90deg, #5a4838, #2a1f16, #5a4838);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.7);
+  transform-origin: top center;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+.fairy-cage-sprite {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(56px, 14vmin, 120px);
+  filter: drop-shadow(0 0 14px var(--fairy-glow, #c8a8ff)) brightness(0.85);
+  animation: fairyCagedShiver 1.6s ease-in-out infinite;
+}
+@keyframes fairyCagedShiver {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-2deg); }
+  50%      { transform: translate(-50%, -52%) rotate(2deg); }
+}
+.fairy-cage-caption {
+  position: absolute;
+  top: 6%; left: 50%;
+  transform: translateX(-50%);
+  color: #FFD84D;
+  font-size: clamp(1rem, 3vmin, 1.4rem);
+  font-weight: 900;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px rgba(255,216,77,0.4);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.fairy-cage-tap-hint {
+  position: absolute;
+  bottom: 6%; left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.75);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.85);
+  animation: fairyHintPulse 1.5s ease-in-out 0.6s infinite;
+  pointer-events: none;
+}
+/* 解放演出: 鉄格子が傾いて外れ、妖精が脱出 */
+#fairyCageOverlay.releasing .fairy-cage-bar {
+  transform: rotate(26deg) translateY(12%);
+  opacity: 0;
+}
+#fairyCageOverlay.releasing .fairy-cage-bar:nth-child(2) { transform: rotate(-22deg) translateY(16%); }
+#fairyCageOverlay.releasing .fairy-cage-bar:nth-child(4) { transform: rotate(-18deg) translateY(14%); }
+#fairyCageOverlay.releasing .fairy-cage-sprite {
+  animation: fairyCageEscape 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  filter: drop-shadow(0 0 22px var(--fairy-glow, #c8a8ff)) brightness(1.3);
+}
+@keyframes fairyCageEscape {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  40%  { transform: translate(-50%, -70%) scale(1.25) rotate(8deg); }
+  100% { transform: translate(-50%, -150%) scale(0.6) rotate(-12deg); opacity: 0; }
+}
+#fairyCageOverlay.releasing .fairy-cage-tap-hint { opacity: 0; }
 
 /* ===== 妖精バッジ列 (行選択画面下部) ===== */
 .rs-fairy-row {
@@ -6242,7 +6364,7 @@ function _showPuzzleStage(rowLabel) {
     bridge:    ['もじを なぞって', 'はしを なおそう！'],
     tablet:    ['もじを なぞって', 'せきばんの ふういんを とこう！'],
     lava_step: ['もじを なぞって', 'ようがんを わたろう！'],
-    riddle:    ['もじを かいて', 'なぞなぞに こたえよう！'],
+    riddle:    ['もじを なぞって', 'ほこらの ふういんを とこう！'],
   };
   try {
     const lines = _puzzleIntro[def.kind] || ['もじを なぞって', 'パズルを とこう！'];
@@ -6283,12 +6405,18 @@ function _showPuzzleStage(rowLabel) {
     } else {
       def.chars.forEach(function(ch, idx) {
         if (def.kind === 'riddle') {
-          // 石板ペデスタル: 5枚の石板を五芒星配置でスロットに配置。
-          // tablet_1..5.png を番号順に割り当て、文字はテキストオーバーレイ。
+          // ほこらの封印解除: 5枚の石板を五芒星スロットに配置。
+          // 各文字をなぞると .placed が付いて drop-in 演出が走る。
+          // 石板画像ファイル名: shrine_tile_{romaji}.png (ひらがな/カタカナ両対応)
+          var _rmap = {
+            'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+            'ナ':'na','ニ':'ni','ヌ':'nu','ネ':'ne','ノ':'no'
+          };
+          var rom = _rmap[ch] || 'na';
           const p = document.createElement('div');
           p.className = 'plank plank-riddle tablet-slot-' + idx;
           p.innerHTML =
-            '<img class="tablet-bg" src="../assets/images/puzzle/tablet/tablet_' + (idx + 1) + '.png" alt="">' +
+            '<img class="tablet-bg" src="../assets/images/puzzle/tablet/shrine_tile_' + rom + '.png" alt="' + ch + '">' +
             '<span class="tablet-char">' + ch + '</span>';
           els.planks.appendChild(p);
         } else {
@@ -8235,8 +8363,10 @@ function resetGears() {
 // 妖精の魔法として物語的に回収する。3人揃えば最終ダンジョンが開く (stub)。
 const FAIRY_KEY = 'pono_fairies';
 const FAIRY_META = {
-  water:  { name: 'みずの ようせい',   emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'bridge',    msg: 'これで わたれるよ！' },
-  shrine: { name: 'ほこらの ようせい', emoji: '🧚',    color: '#c8a8ff', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！' },
+  water:  { name: 'みずの ようせい',   emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'bridge',    msg: 'これで わたれるよ！',
+            hint: 'ほこらに なかまが つかまって いるの。\nたすけて あげて！' },
+  shrine: { name: 'ほこらの ようせい', emoji: '🧚',    color: '#c8a8ff', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
+            hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
   fire:   { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'lava_step', msg: 'わたしが いしを よぶよ！' },
 };
 function _getFairies() {
@@ -8316,6 +8446,19 @@ function _rescueFairy(fairyId, onDone) {
   bubble.textContent = meta.msg;
   stage.appendChild(bubble);
 
+  // 次の妖精へのヒント吹き出し (water→shrine, shrine→fire の匂わせ)
+  var hintBubble = null;
+  if (!brief && meta.hint) {
+    hintBubble = document.createElement('div');
+    hintBubble.className = 'fairy-rescue-bubble fairy-rescue-hint-bubble';
+    hintBubble.innerHTML = meta.hint.split('\n').map(function(line) {
+      return line.replace(/[<>&]/g, function(c) {
+        return c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;';
+      });
+    }).join('<br>');
+    stage.appendChild(hintBubble);
+  }
+
   // スキップヒント
   var hint = document.createElement('div');
   hint.className = 'fairy-rescue-tap-hint';
@@ -8354,11 +8497,12 @@ function _rescueFairy(fairyId, onDone) {
         stage.appendChild(p);
       }
     }, 450);
-    // 自動クローズ (タップしなくても 4.5s で次へ)
+    // 自動クローズ: ヒント吹き出しがある場合は長めに表示 (読む時間)
+    var autoCloseMs = hintBubble ? 6800 : 4200;
     var autoId = setTimeout(function() {
       sprite.classList.add('leaving');
       setTimeout(close, 500);
-    }, 4200);
+    }, autoCloseMs);
     ov.addEventListener('click', function() { try { clearTimeout(autoId); } catch (e) {} close(); });
   } else {
     // brief: 1.2s で自動クローズ
@@ -8367,6 +8511,132 @@ function _rescueFairy(fairyId, onDone) {
   }
 
   try { if (typeof playVictoryFanfare === 'function') playVictoryFanfare(); } catch (e) {}
+}
+
+// 祠の扉が開く MP4 をフルスクリーン再生。終わったら onDone。
+// タップで即スキップ可能。iOS の自動再生制約に備えて muted + playsinline。
+function _playShrineDoorVideo(onDone) {
+  var existing = document.getElementById('shrineDoorVideoOverlay');
+  if (existing) { try { existing.remove(); } catch (e) {} }
+
+  var ov = document.createElement('div');
+  ov.id = 'shrineDoorVideoOverlay';
+
+  var video = document.createElement('video');
+  video.src = '../assets/videos/shrine_door_open.mp4';
+  video.autoplay = true;
+  video.muted = true;           // iOS 自動再生のため
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  video.preload = 'auto';
+  video.className = 'shrine-door-video';
+  ov.appendChild(video);
+
+  var hint = document.createElement('div');
+  hint.className = 'shrine-door-tap-hint';
+  hint.textContent = 'タップで すすむ';
+  ov.appendChild(hint);
+
+  document.body.appendChild(ov);
+
+  var finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    ov.classList.add('closing');
+    setTimeout(function() {
+      try { if (ov.parentNode) ov.remove(); } catch (e) {}
+      if (onDone) onDone();
+    }, 360);
+  }
+
+  video.addEventListener('ended', finish);
+  video.addEventListener('error', finish);
+  ov.addEventListener('click', finish);
+  // 保険: 10s で強制的に次へ (動画読み込みに失敗したまま ended が来ない場合)
+  setTimeout(finish, 10000);
+
+  // play() の Promise 失敗 (iOS 1st tap 未経験など) を無視してフォールバック
+  try {
+    var p = video.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(function() { /* 自動再生失敗: タップで進んでもらう */ });
+    }
+  } catch (e) {}
+}
+
+// 扉の奥に広がる牢屋シーン。妖精が檻に囚われている → タップで解放する導線。
+// 最終的な背景画はユーザー差し替え前提のため、ここでは CSS で牢屋を表現する placeholder。
+// fairyId: 'shrine' 等 (FAIRY_META キー)、onDone: 解放完了コールバック。
+function _showFairyCageScene(fairyId, onDone) {
+  var meta = FAIRY_META[fairyId];
+  if (!meta) { if (onDone) onDone(); return; }
+
+  var existing = document.getElementById('fairyCageOverlay');
+  if (existing) { try { existing.remove(); } catch (e) {} }
+
+  var ov = document.createElement('div');
+  ov.id = 'fairyCageOverlay';
+  ov.style.setProperty('--fairy-color', meta.color);
+  ov.style.setProperty('--fairy-glow', meta.color);
+
+  var scene = document.createElement('div');
+  scene.className = 'fairy-cage-scene';
+
+  // 牢屋 (CSS placeholder。後日 background-image 差し替え)
+  var cage = document.createElement('div');
+  cage.className = 'fairy-cage';
+  // 鉄格子 5 本
+  for (var i = 0; i < 5; i++) {
+    var bar = document.createElement('div');
+    bar.className = 'fairy-cage-bar';
+    bar.style.left = (10 + i * 20) + '%';
+    bar.style.animationDelay = (i * 0.08) + 's';
+    cage.appendChild(bar);
+  }
+  // 檻の中の妖精
+  var caged = document.createElement('div');
+  caged.className = 'fairy-cage-sprite';
+  caged.textContent = meta.emoji;
+  cage.appendChild(caged);
+  scene.appendChild(cage);
+
+  // キャプション
+  var cap = document.createElement('div');
+  cap.className = 'fairy-cage-caption';
+  cap.textContent = 'ようせいが とらわれている！';
+  scene.appendChild(cap);
+
+  // タップ誘導
+  var tap = document.createElement('div');
+  tap.className = 'fairy-cage-tap-hint';
+  tap.textContent = 'タップで たすける';
+  scene.appendChild(tap);
+
+  ov.appendChild(scene);
+  document.body.appendChild(ov);
+
+  var released = false;
+  function release() {
+    if (released) return;
+    released = true;
+    ov.classList.add('releasing');
+    cap.textContent = 'ふういんが とけた！';
+    try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+    // 鉄格子が砕ける → 妖精が飛び出す → onDone
+    setTimeout(function() {
+      ov.classList.add('closing');
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 420);
+    }, 1100);
+  }
+
+  ov.addEventListener('click', release);
+  // 保険: 6s 無操作なら自動解放
+  setTimeout(release, 6000);
 }
 
 // 行選択画面の妖精バッジ列 + 3妖精揃い時の最終ダンジョン entry 表示。
@@ -8710,43 +8980,43 @@ function _rowPracticeNextChar() {
           // 謎解き行 (か/カ 等): 板を1枚出して次へ。5枚目はフィニッシャーでお祝い。
           if (_puzzle.active) {
             try { _puzzleRevealPlank({ finisher: isFinisher }); } catch (e) {}
-            // な行 (riddle): 文字を書いた直後にほこらのまもりがみの3択なぞなぞを出題。
-            // 正解で次の字へ。不正解はシェイク+再試行 (_showRiddle 内部で処理)。
+            // な行 (riddle): ほこらの封印解除。文字をなぞると石板1枚が空から降ってきて
+            // 五芒星スロットにはまる (.placed 時に shrineTileDrop アニメ)。5枚揃うと
+            // 背景が shrine_seal_full に切替 → 扉開く動画 → 牢屋の妖精解放シーン。
             if (_puzzle.kind === 'riddle') {
-              var _riddleChar = _puzzle.chars[_puzzle.step];
               var _riddleAdvance = function() {
                 _puzzle.step++;
                 _rowPracticeStep++;
                 _rowPracticeNextChar();
               };
-              setTimeout(function() {
-                _showRiddle(_riddleChar, function() {
-                  if (isFinisher) {
-                    // 5問目正解: 石板ペデスタルが起動 → 祠の奥から扉が現れて開く
-                    // → 勇者が歩いて扉へ吸い込まれる = 次の行へ進む象徴。
-                    var stage = _puzzleEls().stage;
-                    if (stage) {
-                      stage.classList.add('complete');
-                      var burst = document.createElement('div');
-                      burst.className = 'pedestal-burst';
-                      stage.appendChild(burst);
-                    }
-                    try { playVictoryFanfare(); } catch (e) {}
-                    // 閃光が落ち着いてから扉シーケンス (約1.8s 後) を開始
-                    // 扉が開いた先で、囚われていた「ほこらのようせい」を救出。
-                    setTimeout(function() {
-                      var _afterDoor = function() {
-                        try { _rescueFairy('shrine', _riddleAdvance); }
-                        catch (e) { _riddleAdvance(); }
-                      };
-                      try { _buildShrineDoor(_afterDoor); }
-                      catch (e) { _afterDoor(); }
-                    }, 1800);
-                  } else {
-                    _riddleAdvance();
+              if (isFinisher) {
+                // 5枚目がはまった: 順次グロー (1s 内に 0.72s stagger + 0.3s 余韻) →
+                // 中央閃光 → 扉開く動画 → 牢屋シーン → 妖精解放。
+                var rdStage = _puzzleEls().stage;
+                setTimeout(function() {
+                  if (rdStage) {
+                    rdStage.classList.add('complete');
+                    var burst = document.createElement('div');
+                    burst.className = 'pedestal-burst';
+                    rdStage.appendChild(burst);
                   }
-                });
-              }, 850);
+                  try { playVictoryFanfare(); } catch (e) {}
+                }, 600);
+                // 順次グロー (0.72s stagger + 1s anim ≈ 1.7s) 後に扉動画を開始
+                setTimeout(function() {
+                  try {
+                    _playShrineDoorVideo(function() {
+                      // 扉の向こう: 牢屋に囚われた妖精を解放するシーン
+                      _showFairyCageScene('shrine', function() {
+                        _rescueFairy('shrine', _riddleAdvance);
+                      });
+                    });
+                  } catch (e) { _rescueFairy('shrine', _riddleAdvance); }
+                }, 2400);
+              } else {
+                // 石板がはまり切るアニメ (0.85s) を待ってから次の文字へ
+                setTimeout(function() { _riddleAdvance(); }, 900);
+              }
               return;
             }
             // ら行 (lava_step): 文字をなぞる=呪文発動で飛び石が 1 個、画面下から浮上してくる。
