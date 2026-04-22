@@ -568,6 +568,251 @@ html, body {
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
+
+/* ===== Redesigned complete card (2-column) ===== */
+.complete-card-wide {
+  max-width: 620px;
+  width: 92%;
+  padding: 10px 14px 12px;
+  gap: 6px;
+}
+.complete-main {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  margin-top: 2px;
+}
+.complete-left {
+  flex: 1.05;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.complete-left .complete-bento {
+  width: 100%;
+  max-width: none;
+}
+.complete-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #FFF8F0;
+  border-radius: 14px;
+  padding: 8px 8px 10px;
+  min-width: 0;
+}
+.complete-pono-big {
+  width: 108px; height: 108px;
+  object-fit: contain;
+  animation: ponoFloat 2s ease-in-out infinite;
+}
+@keyframes ponoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.complete-pono-bubble {
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.35;
+  box-shadow: 0 1px 5px var(--shadow);
+  max-width: 100%;
+}
+.complete-trivia {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #8B5C2E;
+  background: #FFF3D9;
+  border-radius: 10px;
+  padding: 5px 8px;
+  line-height: 1.4;
+  border-left: 3px solid #F2915A;
+  text-align: left;
+  max-width: 100%;
+}
+.save-fav-btn {
+  margin-top: 4px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(180deg, #FFD84D, #F5A800);
+  color: #5C3A00;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #B87200;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.save-fav-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #B87200;
+}
+.save-fav-btn.saved {
+  background: linear-gradient(180deg, #A7F3D0, #34D399);
+  color: #064E3B;
+  box-shadow: 0 3px 0 #047857;
+  pointer-events: none;
+}
+@media (max-width: 520px) {
+  .complete-main { flex-direction: column; }
+  .complete-pono-big { width: 88px; height: 88px; }
+}
+
+/* ===== Favorites header button ===== */
+.fav-header-btn {
+  position: fixed;
+  top: 6px; right: 12px;
+  z-index: 8;
+  width: 36px; height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #FFD84D, #F5A800);
+  color: #5C3A00;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #B87200, 0 4px 10px rgba(93,78,55,0.2);
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.fav-header-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #B87200;
+}
+
+/* ===== Favorites overlay ===== */
+.fav-overlay {
+  position: fixed; inset: 0; z-index: 70;
+  background: rgba(93,78,55,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s;
+}
+.fav-overlay.hidden { display: none; }
+.fav-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 16px 16px 14px;
+  max-width: 640px; width: 92%;
+  max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(93,78,55,0.3);
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+.fav-card-title {
+  font-size: 1.05rem; font-weight: 900;
+  color: var(--primary);
+  text-align: center;
+  margin-bottom: 10px;
+}
+.fav-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+.fav-item {
+  background: #FFF8F0;
+  border-radius: 12px;
+  padding: 8px;
+  border: 2px solid #FDE68A;
+  display: flex; flex-direction: column; gap: 4px;
+  position: relative;
+}
+.fav-item .fav-mini-bento {
+  width: 100%; aspect-ratio: 2 / 1;
+  background: #8B4513;
+  border: 2px solid #6B3410;
+  border-radius: 8px;
+  padding: 3px;
+}
+.fav-item .fav-mini-bento .cb-inner {
+  background: repeating-conic-gradient(#FFF8E7 0% 25%, #FFF1D4 0% 50%) 0 0 / 8px 8px;
+  border-radius: 6px;
+  display: flex;
+  gap: 0;
+  padding: 3px;
+  height: 100%;
+}
+.fav-item .fav-mini-bento .cb-rice {
+  width: 33%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.fav-item .fav-mini-bento .cb-rice img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+}
+.fav-item .fav-mini-bento .cb-okazu {
+  display: grid;
+  grid-template-columns: 1fr 3px 1fr;
+  grid-template-rows: 1fr 3px 1fr;
+  flex: 1;
+}
+.fav-item .fav-mini-bento .cb-okazu > div {
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.fav-item .fav-mini-bento .cb-okazu img {
+  width: 90%; height: 90%; object-fit: contain;
+}
+.fav-item-balance {
+  display: flex; justify-content: center; gap: 6px;
+  font-size: 0.6rem; font-weight: 700;
+}
+.fav-item-balance .balance-dot {
+  width: 10px; height: 10px;
+  border-width: 1px;
+}
+.fav-item-date {
+  font-size: 0.62rem;
+  color: var(--text-light);
+  text-align: center;
+}
+.fav-item-delete {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 22px; height: 22px;
+  border: none; border-radius: 50%;
+  background: rgba(93,78,55,0.18);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.fav-item-delete:active { transform: scale(0.9); background: rgba(93,78,55,0.3); }
+.fav-empty {
+  text-align: center;
+  padding: 30px 10px;
+  color: var(--text-light);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.fav-close {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 32px; height: 32px;
+  border: none; border-radius: 50%;
+  background: rgba(93,78,55,0.12);
+  color: var(--text);
+  font-size: 1.2rem; font-weight: 900;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.fav-close:active { transform: scale(0.9); }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -628,6 +873,7 @@ html, body {
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 
 <div class="game-title">🍱 おべんとうづくり</div>
+<button class="fav-header-btn" id="fav-header-btn" aria-label="おきにいりを みる" title="おきにいりを みる">⭐</button>
 
 <div id="app">
   <!-- 左: お弁当箱 -->
@@ -652,16 +898,29 @@ html, body {
 </div>
 
 <div class="complete-overlay hidden" id="complete-overlay">
-  <div class="complete-card">
+  <div class="complete-card complete-card-wide">
     <button class="complete-close" id="complete-btn">&times;</button>
     <div class="complete-title" id="complete-title">🎉 おべんとう かんせい！</div>
-    <div class="complete-bento" id="complete-bento"></div>
-    <div class="balance-row" id="balance-row"></div>
-    <div class="balance-msg" id="balance-msg"></div>
-    <div class="complete-pono">
-      <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
-      <div class="complete-pono-msg" id="complete-msg">おいしそう！ありがとう！</div>
+    <div class="complete-main">
+      <div class="complete-left">
+        <div class="complete-bento" id="complete-bento"></div>
+        <div class="balance-row" id="balance-row"></div>
+      </div>
+      <div class="complete-right">
+        <img id="complete-pono-big" class="complete-pono-big" src="../assets/images/characters/pono/dance/dance_hooray.png" alt="ポノ">
+        <div class="complete-pono-bubble" id="complete-msg">おいしそう！</div>
+        <div class="complete-trivia" id="complete-trivia"></div>
+      </div>
     </div>
+    <button id="save-fav-btn" class="save-fav-btn">⭐ おきにいりに いれる</button>
+  </div>
+</div>
+
+<div class="fav-overlay hidden" id="fav-overlay">
+  <div class="fav-card">
+    <button class="fav-close" id="fav-close-btn">&times;</button>
+    <div class="fav-card-title">⭐ おきにいりの おべんとう</div>
+    <div class="fav-list" id="fav-list"></div>
   </div>
 </div>
 
@@ -797,6 +1056,76 @@ const FRUITS = [
   { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit', sk: 'y' },
 ];
 
+// ===== 豆知識（4-5さい向け食育トリビア） =====
+const TRIVIA = {
+  'ブロッコリー':       'ブロッコリーは みどりの ちからで かぜを はねかえすよ！',
+  'ミニトマト':         'あかい トマトは おはだを ぴかぴかに してくれるよ！',
+  'にんじん':           'にんじんは めが よく みえるように してくれるよ！',
+  'ほうれん':           'ほうれんそうは ぱわーが もりもり でるよ！',
+  'えだまめ':           'えだまめは ちいさいけど ぱわーが いっぱい！',
+  'コーン':             'コーンの きいろは げんきの もと！',
+  'きんぴら':           'ごぼうは おなかを きれいに してくれるよ！',
+  'ひじき':             'ひじきは ほねを つよく してくれるよ！',
+  'きのこ':             'きのこは びょうきに つよくなる ちからが あるよ！',
+  'なす':               'なすの むらさきは げんきの しるし！',
+  'サラダ':             'やさいを たべると おなかが ぴかぴかに なるよ！',
+  'ハンバーグ':         'おにくを たべると きんにくが つよく なるよ！',
+  'からあげ':           'とりにくは からだを おおきく してくれるよ！',
+  'エビフライ':         'エビは あたまが よく はたらく おさかなの なかまだよ！',
+  'たまご':             'たまごは えいようが ぜんぶ はいった すごい たべもの！',
+  'やきざけ':           'さかなを たべると あたまが ぴかぴかに なるよ！',
+  'ウインナー':         'ウインナーで ちからを たくさん つけよう！',
+  'ミートボール':       'おにくは ちから が でる げんきの もと！',
+  'ぎょうざ':           'ぎょうざは おにくと やさいの いいとこどり！',
+  'メンチ':             'おにくを たべると あそぶ ぱわーが でるよ！',
+  'ベーコン':           'おにくの えいようで びゅんびゅん はしれるよ！',
+  'かまぼこ':           'かまぼこは おさかなから できた たんぱくしつ！',
+  'チーズ':             'チーズは ほねや はを じょうぶに してくれるよ！',
+  'ごはん':             'ごはんは いちにち あそぶ ちからに なるよ！',
+  'コロッケ':           'じゃがいもは げんきに うごく ちからに なるよ！',
+  'ポテト':             'じゃがいもは あそぶ ぱわーに なるよ！',
+  'フライ':             'きいろの たべものは げんきの ガソリン！',
+  'ナポリタン':         'めんは はしる ちからに なるよ！',
+  'はるまき':           'かわも ぐも ぱわーに なるよ！',
+  'おこのみ':           'キャベツが たっぷり はいって えいようばっちり！',
+  'いちご':             'いちごは かぜを ひきにくく する ちからが あるよ！',
+  'みかん':             'みかんを たべると かぜに まけない からだに なるよ！',
+  'ぶどう':             'ぶどうは つかれを とってくれる あまい みかた！',
+  'りんご':             'りんごは いちにち いっこで げんきに なれるよ！',
+  'バナナ':             'バナナは すぐに ぱわーに なる ふぁすとフード！',
+  'メロン':             'メロンは みずぶんが たっぷりで からだを うるおすよ！',
+  'もも':               'ももは おはだを つるつるに してくれるよ！',
+  'パイナップル':       'パイナップルは おなかの なかを げんきに するよ！',
+  'ゼリー':             'ゼリーは あまくて たのしい おやつ！',
+  'プリン':             'プリンは たまごと ぎゅうにゅうで できた えいよう おかし！',
+  'クッキー':           'クッキーは ときどき ごほうびで たべようね！',
+};
+const TRIVIA_FALLBACK = {
+  r: 'あかの たべものは きんにくや ほねを つくるよ！',
+  y: 'きいろの たべものは あそぶ ちからに なるよ！',
+  g: 'みどりの たべものは からだの ちょうしを ととのえるよ！',
+};
+function getTrivia(foodName) {
+  if (!foodName) return null;
+  if (TRIVIA[foodName]) return TRIVIA[foodName];
+  for (const k in TRIVIA) {
+    if (foodName.indexOf(k) !== -1) return TRIVIA[k];
+  }
+  return null;
+}
+function pickTrivia(foodNames, skColors) {
+  const hits = [];
+  (foodNames || []).forEach(n => { const t = getTrivia(n); if (t) hits.push(t); });
+  if (hits.length > 0) return hits[Math.floor(Math.random() * hits.length)];
+  // フォールバック: 一番多い色の知識
+  const count = { r:0, y:0, g:0 };
+  (skColors || []).forEach(c => { if (count[c] != null) count[c]++; });
+  let top = 'y';
+  if (count.r >= count.y && count.r >= count.g) top = 'r';
+  else if (count.g >= count.y && count.g >= count.r) top = 'g';
+  return TRIVIA_FALLBACK[top];
+}
+
 // ===== Stages（全ステージ: ごはん→おかず4個自由選択→完成） =====
 const STAGES = [
   { speech: 'すきなもの いれてね！' },
@@ -824,6 +1153,79 @@ let challengeCorrect = 0;
 let stageIdx = 0, stepIdx = 0, okazuSlots = [], okazuFillCount = 0, pickedInStep = 0;
 let usedIds = new Set();
 let bentoSkColors = []; // 入れた食材の三色を記録
+let bentoFoodNames = []; // 入れた食材の名前（豆知識用）
+let bentoSelected = []; // 入れた食材の完全記録 [{img, name, sk}] rice + okazu4
+let favSaved = false;   // この完成画面で既に保存したか
+
+// ===== Favorites（お気に入り お弁当、最大5件） =====
+const FAV_LS_KEY = 'pono_bento_favorites';
+const FAV_MAX = 5;
+function loadFavorites() {
+  try {
+    const raw = localStorage.getItem(FAV_LS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function saveFavorites(list) {
+  try {
+    const trimmed = (list || []).slice(0, FAV_MAX);
+    localStorage.setItem(FAV_LS_KEY, JSON.stringify(trimmed));
+  } catch {}
+}
+function saveFavorite(data) {
+  const list = loadFavorites();
+  list.unshift(data);
+  saveFavorites(list);
+}
+function deleteFavorite(id) {
+  const list = loadFavorites().filter(f => f.id !== id);
+  saveFavorites(list);
+}
+function formatFavDate(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const day = 24 * 60 * 60 * 1000;
+  if (diff < day) return 'きょう';
+  if (diff < 2 * day) return 'きのう';
+  const d = Math.floor(diff / day);
+  if (d < 7) return d + 'にちまえ';
+  const date = new Date(ts);
+  return (date.getMonth() + 1) + '/' + date.getDate();
+}
+
+// ===== ポノ表情マッピング（バランス応じた演出） =====
+const PONO_BASE = '../assets/images/characters/pono/';
+function choosePonoReaction(rCount, yCount, gCount, isChallenge) {
+  // チャレンジクリアは専用メッセージ
+  if (isChallenge) {
+    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: 'おだい クリア！すごい！' };
+  }
+  // 三色ぜんぶあり
+  if (rCount > 0 && yCount > 0 && gCount > 0) {
+    const msgs = [
+      'バランス ばっちり！げんきモリモリ！',
+      'さいこうの おべんとう！ありがとう！',
+      'これで いちにち げんきに あそべるね！',
+    ];
+    return { img: PONO_BASE + 'dance/dance_hooray.png', msg: msgs[Math.floor(Math.random() * msgs.length)] };
+  }
+  // 緑ゼロ（野菜不足）
+  if (gCount === 0) {
+    return { img: PONO_BASE + 'dance/dance_point.png', msg: 'やさいも いれたら もっと げんきに なれるよ！' };
+  }
+  // 赤ゼロ（タンパク質不足）
+  if (rCount === 0) {
+    return { img: PONO_BASE + 'dance/dance_shy.png', msg: 'おにくや おさかなで つよく なろうね！' };
+  }
+  // 黄ゼロ（炭水化物不足: ごはん含め無い場合＝実質ゼロ）
+  if (yCount === 0) {
+    return { img: PONO_BASE + 'dance/dance_tilt.png', msg: 'きいろの たべものも あると ちからが でるよ！' };
+  }
+  // 2色あり 1色不足（上の単独判定で拾えなかったケース）
+  return { img: PONO_BASE + 'dance/dance_smile.png', msg: 'おいしそう！あと すこしで かんぺき！' };
+}
 
 // ===== Helpers =====
 function shuffle(a) {
@@ -875,6 +1277,7 @@ function setPono(h) { const i=document.getElementById('pono-img'); if(h){i.class
 // ===== Game =====
 function loadStage() {
   stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; okazuPicked = 0; usedIds.clear(); bentoSkColors = ['y'];
+  bentoFoodNames = []; bentoSelected = []; favSaved = false;
 
   // Rebuild bento-inner with vertical divider between rice and okazu
   const bentoInner = document.getElementById('bento-inner');
@@ -929,24 +1332,51 @@ function loadFreeOkazu() {
   tray.innerHTML = '';
   // 三色バランスを考慮して選択肢を作る
   const available = shuffle([...OKAZU_MEAT, ...OKAZU_VEG, ...FRUITS].filter(f => !usedIds.has(fid(f))));
+  const byColor = { r: [], y: [], g: [] };
+  available.forEach(f => { if (f.sk && byColor[f.sk]) byColor[f.sk].push(f); });
+
   const rCount = bentoSkColors.filter(c => c === 'r').length;
   const yCount = bentoSkColors.filter(c => c === 'y').length;
   const gCount = bentoSkColors.filter(c => c === 'g').length;
-  // 不足している色の食材を優先的に含める（各色最低1個）
-  const byColor = { r: [], y: [], g: [] };
-  available.forEach(f => { if (f.sk && byColor[f.sk]) byColor[f.sk].push(f); });
+  const hasColor = { r: rCount > 0, y: yCount > 0, g: gCount > 0 };
+  const missingColors = ['r','y','g'].filter(c => !hasColor[c]);
+
+  // 残り選択数に応じて、必ず含める色を決める（選択の後半ほど三色選びやすく）
+  const remaining = 4 - okazuPicked; // 今回を含め あと何個選ぶか
+  let guarantees;
+  if (remaining >= 4) {
+    guarantees = [];
+  } else if (remaining === 3) {
+    guarantees = missingColors.slice(0, 1);
+  } else if (remaining === 2) {
+    // 最後の2個: 足りない色 全て（最大2色）必ず含める
+    guarantees = missingColors.slice(0, 2);
+  } else {
+    // remaining === 1: 欠けがあれば1個は確保
+    guarantees = missingColors.slice(0, 1);
+  }
+
   const picked = [];
   const usedSet = new Set();
-  // 不足色を優先
-  ['r', 'y', 'g'].forEach(c => {
-    var count = c === 'r' ? rCount : c === 'y' ? yCount : gCount;
-    if (count === 0 && byColor[c].length > 0) {
-      var f = byColor[c].shift();
+  // Step A: guarantees 色から必ず1個ずつ
+  guarantees.forEach(c => {
+    if (byColor[c] && byColor[c].length > 0) {
+      const f = byColor[c].shift();
       picked.push(f); usedSet.add(fid(f));
     }
   });
-  // 残りをランダムで埋める
-  for (var i = 0; i < available.length && picked.length < 6; i++) {
+  // Step B: 現在の弁当に0個の色は（guaranteesに入っていなくても）なるべく1個は入れたい
+  ['r','y','g'].forEach(c => {
+    if (picked.length >= 6) return;
+    const count = c === 'r' ? rCount : c === 'y' ? yCount : gCount;
+    const alreadyIncluded = picked.some(f => f.sk === c);
+    if (count === 0 && !alreadyIncluded && byColor[c] && byColor[c].length > 0) {
+      const f = byColor[c].shift();
+      picked.push(f); usedSet.add(fid(f));
+    }
+  });
+  // Step C: 残り枠をランダム充填
+  for (let i = 0; i < available.length && picked.length < 6; i++) {
     if (!usedSet.has(fid(available[i]))) {
       picked.push(available[i]); usedSet.add(fid(available[i]));
     }
@@ -965,6 +1395,8 @@ function onFreeOkazuTap(el, food) {
   if (el.classList.contains('used')) return;
   playPop();
   el.classList.add('correct'); usedIds.add(fid(food)); if (food.sk) bentoSkColors.push(food.sk);
+  bentoFoodNames.push(food.name);
+  bentoSelected.push({ img: food.img, name: food.name, sk: food.sk || '' });
   okazuPicked++;
   const slotIdx = okazuPicked - 1;
   const slot = okazuSlots[slotIdx] || okazuSlots[okazuSlots.length - 1];
@@ -1005,6 +1437,8 @@ function mkItem(f) {
 function onRiceTap(el, rice) {
   if (el.classList.contains('used')) return;
   playPop(); el.classList.add('correct');
+  bentoFoodNames.push(rice.name);
+  bentoSelected.push({ img: rice.img, name: rice.name, sk: rice.sk || 'y' });
   flyFood(el, document.getElementById('bento-rice'), rice.img, () => {
     const r = document.getElementById('bento-rice');
     const img = document.createElement('img'); img.src = rice.img;
@@ -1050,9 +1484,6 @@ function stageComplete() {
   setSpeech('ありがとう！'); setPono(true);
   const last = stageIdx >= STAGES.length - 1;
   document.getElementById('complete-title').textContent = '🎉 おべんとう かんせい！';
-  document.getElementById('complete-msg').textContent = inChallengeMode
-    ? 'おだい クリア！すごい！'
-    : (last ? 'つぎは おだいモードだよ！' : 'おいしそう！ありがとう！');
   document.getElementById('complete-btn').innerHTML = '&times;';
 
   // お弁当箱の中身をクローンして完成表示
@@ -1198,6 +1629,7 @@ function loadChallengeStage() {
   challengeCorrect = 0;
   okazuFillCount = 0; okazuPicked = 0;
   usedIds.clear(); bentoSkColors = ['y'];
+  bentoFoodNames = []; bentoSelected = []; favSaved = false;
   stepIdx = 0;
 
   // Build bento
@@ -1237,6 +1669,8 @@ function loadChallengeRice() {
       e.preventDefault();
       if (item.classList.contains('used')) return;
       playPop(); item.classList.add('correct');
+      bentoFoodNames.push(r.name);
+      bentoSelected.push({ img: r.img, name: r.name, sk: r.sk || 'y' });
       flyFood(item, document.getElementById('bento-rice'), r.img, () => {
         const re = document.getElementById('bento-rice');
         const img = document.createElement('img'); img.src = r.img;
@@ -1269,6 +1703,8 @@ function loadChallengeOkazu() {
       playPop();
       if (currentChallenge.filter(f)) {
         item.classList.add('correct'); usedIds.add(fid(f)); if (f.sk) bentoSkColors.push(f.sk);
+        bentoFoodNames.push(f.name);
+        bentoSelected.push({ img: f.img, name: f.name, sk: f.sk || '' });
         const slot = okazuSlots[okazuFillCount] || okazuSlots[okazuSlots.length - 1];
         flyFood(item, slot, f.img || f.emoji, () => {
           if (okazuFillCount < okazuSlots.length) {
