@@ -98,11 +98,12 @@ html, body {
   position: fixed; top: 10px; right: 10px; z-index: 1200;
   display: flex; align-items: center; gap: 4px;
   background: var(--window-bg);
-  border: 2px solid var(--window-border);
+  /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
+  border: 2.5px solid var(--window-border);
   color: var(--text);
   font-size: 0.9rem; font-weight: 900;
   padding: 4px 12px 4px 8px;
-  border-radius: 8px;
+  border-radius: 14px;
   box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,220,120,0.12);
   pointer-events: none;
   transition: transform 0.15s ease;
@@ -826,8 +827,9 @@ html, body {
   width: min(90vw, 420px); height: min(90vw, 420px);
   max-width: 420px; max-height: 420px;
   background: var(--canvas-bg);
-  border: 2px solid var(--window-border);
-  border-radius: var(--radius);
+  /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
+  border: 2.5px solid var(--window-border);
+  border-radius: 14px;
   box-shadow: var(--shadow), inset 0 0 24px rgba(140,120,255,0.08);
   overflow: hidden;
   overscroll-behavior: none;
@@ -1632,8 +1634,9 @@ body.battle-mode .villain-deco {
   background:
     radial-gradient(ellipse at 50% 120%, rgba(120,70,200,0.18) 0%, transparent 70%),
     linear-gradient(180deg, #0b0f23 0%, #070812 100%);
+  /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
   border: 2.5px solid var(--window-border);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.6), inset 0 0 18px rgba(255,220,130,0.12);
   overflow: hidden;
   order: 3;
@@ -1649,8 +1652,9 @@ body.battle-mode .villain-deco {
   height: min(34vh, 220px);
   min-height: 140px;
   background: linear-gradient(180deg, #87CEEB 0%, #5DADE2 55%, #2C5F8C 100%);
+  /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
   border: 2.5px solid var(--window-border);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.6), inset 0 0 18px rgba(255,220,130,0.12);
   overflow: hidden;
   order: 3;
@@ -1919,18 +1923,21 @@ body.battle-mode .villain-deco {
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-10px) scale(1.06); }
 }
-/* もりの妖精 🧚‍♀️ が橋シーンで空中浮遊する動き (intro / farewell 用) */
+/* もりの妖精 🧚‍♀️ が橋シーンで空中浮遊する動き (intro / farewell 用)
+   2026-04-22: scaleX(-1) で左向きに。translate(-50%,-50%) も keyframes に含めて
+   position: 72% / 22% 上で中央基準に置く。 */
 @keyframes fairyHover {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50%      { transform: translateY(-8px) rotate(2deg); }
+  0%, 100% { transform: translate(-50%, -50%) scaleX(-1) translateY(0)    rotate(-2deg); }
+  50%      { transform: translate(-50%, -50%) scaleX(-1) translateY(-8px) rotate( 2deg); }
 }
 
 /* ===== か行 bridge: 妖精が板を魔法で運ぶ演出 ===== */
 /* ステージ内に常駐する妖精スプライト (右上から登場し、文字完成ごとに次の板へ飛ぶ) */
 .bridge-fairy {
   position: absolute;
-  left: 82%;
-  top: 18%;
+  /* 2026-04-22: 82% だと右端が切れる + 右向きだった。中央寄りに戻し、scaleX(-1) で左向きへ。 */
+  left: 72%;
+  top: 22%;
   width: clamp(56px, 12vw, 92px);
   height: clamp(56px, 12vw, 92px);
   font-size: clamp(32px, 7vw, 52px);
@@ -1940,7 +1947,7 @@ body.battle-mode .villain-deco {
   z-index: 5;
   pointer-events: none;
   opacity: 0;
-  transform: translate(-50%, -50%);
+  /* transform は fairyHover keyframes 側で scaleX(-1) を毎フレーム指定 (詳細は @keyframes 参照)。 */
   animation: fairyHover 2.4s ease-in-out infinite;
 }
 
@@ -2697,8 +2704,9 @@ body.battle-mode .villain-deco {
   left: 8px;
   z-index: 4;
   background: rgba(2, 2, 8, 0.82);
-  border: 2px solid #fff;
-  border-radius: 6px;
+  /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
+  border: 2.5px solid var(--window-border);
+  border-radius: 14px;
   padding: 5px 8px;
   font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   color: #fff;
@@ -3315,8 +3323,9 @@ body.battle-mode .villain-deco {
 }
 .battle-log-window .battle-log-inner {
   background: #020208;
-  border: 3px solid #fff;
-  border-radius: 8px;
+  /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
+  border: 2.5px solid var(--window-border);
+  border-radius: 14px;
   padding: clamp(8px, 2.4vw, 14px) clamp(12px, 3vw, 20px);
   /* 2026-04-20: 3行分の高さに拡大 (実表示は 2 行のみだが、ドラクエ風の余白感を出す) */
   min-height: calc(1.4em * 3 + clamp(16px, 4.8vw, 28px));
@@ -3737,16 +3746,16 @@ body.battle-intro-active .battle-log-window {
   body.battle-mode .puzzle-stage {
     position: fixed !important;
     left: 48px;
-    /* 2026-04-22 v2: ステージ比率を元 (0.58) に戻し、下方向にずらしてログの直上に置く。
-       ログは 0.76 top のまま据え置くので、stage bottom = log top となるよう
-       stage top を (0.76 − 0.58) = 0.18 * vspan に。 */
-    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.18);
+    /* 2026-04-22 v3: stage と log の間に余白を空ける。
+       stage top = 0.08, stage height = 0.58 → stage bottom = 0.66
+       log top は 0.76 のままなので、間に 0.10 * vspan のギャップ。 */
+    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.08);
     width: calc(50vw - 54px);
     height: calc(var(--battle-vspan) * 0.58);
     max-width: none; max-height: none;
     min-height: 0;
     margin: 0;
-    border-radius: 12px;
+    border-radius: 14px;
     border-width: 2.5px;
     z-index: 500;
   }
@@ -3814,16 +3823,16 @@ body.battle-intro-active .battle-log-window {
     min-width: 50vw;
     margin-left: auto;
   }
-  /* 2026-04-22 v2: 左 stack の縦範囲 = vtop + 0.18*vspan 〜 vtop + 1.0*vspan (= 0.82*vspan)。
-     canvas を正方形のまま左 stack と同サイズに縮め、かつ縦中心を合わせる。
-     right-col が flex で縦中央揃えなので、top margin で中心を下にオフセットする:
-       stack_center = vtop + 0.59*vspan
-       screen_center = vtop + 0.50*vspan
-       offset (canvas center を stack center に合わせる) = 0.09*vspan 下 */
+  /* 2026-04-22 v3: 左 stack の縦範囲 = vtop + 0.08*vspan 〜 vtop + 1.0*vspan (= 0.92*vspan)。
+     canvas を正方形のまま左 stack と同サイズに揃える。
+     flex の justify-content:center は (canvas + margin) を合成で中央寄せするので、
+     margin-top 0.08*vspan を指定すると実質 canvas center = stack center で揃う。 */
   body.battle-mode .canvas-container {
-    width: calc(var(--battle-vspan) * 0.82);
-    height: calc(var(--battle-vspan) * 0.82);
-    margin-top: calc(var(--battle-vspan) * 0.18);
+    width: calc(var(--battle-vspan) * 0.92);
+    height: calc(var(--battle-vspan) * 0.92);
+    margin-top: calc(var(--battle-vspan) * 0.08);
+    border-radius: 14px;
+    border-width: 2.5px;
   }
 
   /* mid-col (コントロール列) はバトル中は右上に小さく退避。
@@ -6951,7 +6960,8 @@ function _showBridgeEncounterIntro(onDone) {
     fairy.style.left = '50%';
     fairy.style.top  = '42%';
     fairy.style.opacity = '0';
-    fairy.style.transform = 'translate(-50%,-50%) scale(0.55)';
+    // 2026-04-22: scaleX(-1) で左向き (勇者/橋に視線を向ける)。
+    fairy.style.transform = 'translate(-50%,-50%) scaleX(-1) scale(0.55)';
   }
 
   var messages = [
@@ -6968,16 +6978,20 @@ function _showBridgeEncounterIntro(onDone) {
     if (i === fairyRevealAt && fairy) {
       fairy.style.transition = 'opacity 0.7s ease, transform 0.8s cubic-bezier(0.34,1.56,0.64,1)';
       fairy.style.opacity = '1';
-      fairy.style.transform = 'translate(-50%,-50%) scale(1)';
+      fairy.style.transform = 'translate(-50%,-50%) scaleX(-1) scale(1)';
       try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
     }
     if (i >= messages.length) {
       if (fairy) {
-        // イントロ終了 → 妖精が右上の待機位置へ (パズル中はここから各板へ飛ぶ)
+        // イントロ終了 → 妖精が待機位置へ。位置は 72%/22% に変更 (旧 82%/18% は右端切れ)。
         fairy.style.transition = 'left 0.6s ease, top 0.6s ease, transform 0.6s ease';
-        fairy.style.left = '82%';
-        fairy.style.top  = '18%';
+        fairy.style.left = '72%';
+        fairy.style.top  = '22%';
         fairy.dataset.placed = '0';
+        // 移動完了後、inline transform を除去 → CSS animation (scaleX(-1) 込み) に制御を返す
+        setTimeout(function() {
+          if (fairy) { fairy.style.transform = ''; fairy.style.transition = ''; }
+        }, 650);
       }
       setTimeout(function() { if (onDone) onDone(); }, 420);
       return;
@@ -7017,8 +7031,10 @@ function _bridgeFairyDeliverPlank(plank, stage, onArrive) {
   var firstVisit = fairy.dataset.placed === '0';
   if (firstVisit) {
     fairy.style.transition = 'none';
-    fairy.style.left = '82%';
-    fairy.style.top  = '18%';
+    // 2026-04-22: 位置を 72%/22% に変更 (右端切れ対策)。transform は CSS animation に委ねる。
+    fairy.style.left = '72%';
+    fairy.style.top  = '22%';
+    fairy.style.transform = '';
     fairy.style.opacity = '0';
     // 1フレーム後にフェードイン + 位置計算
     requestAnimationFrame(function() { fairy.style.opacity = '1'; });
