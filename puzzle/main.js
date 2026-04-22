@@ -61,6 +61,7 @@ const progressText    = document.getElementById('progress-text');
 const stageLabel      = document.getElementById('stage-label');
 const successModal    = document.getElementById('success-modal');
 const modalStageInfo  = document.getElementById('modal-stage-info');
+const modalDailyAcorn = document.getElementById('modal-daily-acorn');
 const btnNextStage    = document.getElementById('btn-next-stage');
 const btnPlayAgain    = document.getElementById('btn-play-again');
 const confettiContainer = document.getElementById('confetti-container');
@@ -155,6 +156,13 @@ function showSuccessModal() {
   } else {
     modalStageInfo.textContent = `ステージ ${currentStageIndex + 1} クリア！`;
     btnNextStage.classList.remove('hidden');
+  }
+  if (modalDailyAcorn && window.getDailyAcorns) {
+    const n = window.getDailyAcorns('puzzle');
+    modalDailyAcorn.textContent = n >= 5
+      ? '🌰 きょうの どんぐりは おしまい！また あした！'
+      : '🌰 きょうの どんぐり: ' + n + '/5';
+    modalDailyAcorn.classList.toggle('full', n >= 5);
   }
 
   // ★ 全ステージクリア時は宝箱演出を先に表示、閉じたら成功モーダル
