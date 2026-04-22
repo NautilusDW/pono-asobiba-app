@@ -2814,6 +2814,12 @@ body.battle-mode .villain-deco {
   background-position: 0% 0%;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
+  /* 2026-04-22: iPad (iOS Safari) で背景アニメが停止する対策。
+     background-position-x 単独アニメは iOS で合成レイヤが作られず、特に
+     transform: scaleX(-1) を持つ親配下で再描画がスキップされることがある。
+     will-change で合成レイヤを強制 + translateZ(0) で GPU レイヤに逃がす。 */
+  will-change: background-position;
+  transform: translateZ(0);
 }
 .hero-sprite.idle {
   background-image: url('../assets/images/hero/spum/idle.png');
@@ -2851,17 +2857,19 @@ body.battle-mode .villain-deco {
   75%  { filter: brightness(0.2) drop-shadow(0 0 6px rgba(255,60,60,0.6)); transform: scaleX(-1) translate(2px, -50%); }
   100% { filter: brightness(1) drop-shadow(0 3px 5px rgba(0,0,0,0.55)); transform: scaleX(-1) translate(0, -50%); }
 }
+/* 2026-04-22: iOS Safari 対策で background-position (x, y 両指定) の省略形に書き換え。
+   background-position-x 単独だと iPad で再描画が止まる事例あり。 */
 @keyframes heroIdleAnim {
-  from { background-position-x: 0%; }
-  to   { background-position-x: 100%; }
+  from { background-position: 0% 0%; }
+  to   { background-position: 100% 0%; }
 }
 @keyframes heroMoveAnim {
-  from { background-position-x: 0%; }
-  to   { background-position-x: 57.14%; }
+  from { background-position: 0% 0%; }
+  to   { background-position: 57.14% 0%; }
 }
 @keyframes heroAttackMagicAnim {
-  from { background-position-x: 0%; }
-  to   { background-position-x: 71.43%; }
+  from { background-position: 0% 0%; }
+  to   { background-position: 71.43% 0%; }
 }
 /* 戦闘ステージ左下に勇者を配置 (敵は中央、勇者は左手前)。
    scaleX(-1) で右を向かせる (元素材は左向き)。translateY(-50%) と併用。 */
@@ -3729,11 +3737,12 @@ body.battle-intro-active .battle-log-window {
   body.battle-mode .puzzle-stage {
     position: fixed !important;
     left: 48px;
-    top: var(--battle-vtop);
+    /* 2026-04-22 v2: ステージ比率を元 (0.58) に戻し、下方向にずらしてログの直上に置く。
+       ログは 0.76 top のまま据え置くので、stage bottom = log top となるよう
+       stage top を (0.76 − 0.58) = 0.18 * vspan に。 */
+    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.18);
     width: calc(50vw - 54px);
-    /* 2026-04-22: バトル画面を縦に広げ、ログを縮める (58% → 74%)。
-       あわせて か/な/ら 行 (puzzle-stage) も同じレイアウトに揃える。 */
-    height: calc(var(--battle-vspan) * 0.74);
+    height: calc(var(--battle-vspan) * 0.58);
     max-width: none; max-height: none;
     min-height: 0;
     margin: 0;
@@ -3805,11 +3814,16 @@ body.battle-intro-active .battle-log-window {
     min-width: 50vw;
     margin-left: auto;
   }
-  /* 右半分のキャンバスは var(--battle-vspan) と同じサイズ =
-     左の battle-stage + log の縦スパンとぴったり揃う */
+  /* 2026-04-22 v2: 左 stack の縦範囲 = vtop + 0.18*vspan 〜 vtop + 1.0*vspan (= 0.82*vspan)。
+     canvas を正方形のまま左 stack と同サイズに縮め、かつ縦中心を合わせる。
+     right-col が flex で縦中央揃えなので、top margin で中心を下にオフセットする:
+       stack_center = vtop + 0.59*vspan
+       screen_center = vtop + 0.50*vspan
+       offset (canvas center を stack center に合わせる) = 0.09*vspan 下 */
   body.battle-mode .canvas-container {
-    width: var(--battle-vspan);
-    height: var(--battle-vspan);
+    width: calc(var(--battle-vspan) * 0.82);
+    height: calc(var(--battle-vspan) * 0.82);
+    margin-top: calc(var(--battle-vspan) * 0.18);
   }
 
   /* mid-col (コントロール列) はバトル中は右上に小さく退避。
@@ -4117,7 +4131,7 @@ body.battle-intro-active .battle-log-window {
 <div id="app" style="display:none">
   <div class="left-col">
     <div class="header">
-      <h1>ポノのもじかき</h1>
+      <h1>もじかきクエスト</h1>
       <div class="subtitle" id="practiceRowLabel"></div>
     </div>
   </div>
