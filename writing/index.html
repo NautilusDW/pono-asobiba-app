@@ -138,6 +138,19 @@ html, body {
   transition: transform 0.7s cubic-bezier(0.34,1.0,0.64,1), opacity 0.7s ease;
 }
 
+/* 2026-04-23: 旧「文字に封印された妖精 + 紫の👾インベーダー」 mini-game を撤去。
+   バトルシステムに置き換えたので、妖精/悪役の視覚要素は全て非表示にする。 */
+.monster-deco,
+.villain-deco,
+.monster-bubble,
+.monster-acorn-drop,
+.canvas-cracks,
+.canvas-shards,
+#canvasSeal,
+#canvasBurst,
+#canvasSparkles {
+  display: none !important;
+}
 /* ===== ようせい (閉じ込められた妖精) — キャンバス中央に封印、完了時に封印解除 ===== */
 .monster-deco {
   position: absolute;
@@ -2905,11 +2918,17 @@ body.battle-mode .villain-deco {
   top: 54%;
   width: min(24vh, 128px);
   height: min(24vh, 128px);
-  transform: scaleX(-1) translateY(-50%);
+  /* 2026-04-23: iPad で 2D transform の親があると子 (hero-sprite) の
+     background-position アニメが止まる事例があるため、translateZ(0) を挟んで
+     確実に GPU 合成レイヤに落とす。 */
+  transform: scaleX(-1) translateY(-50%) translateZ(0);
   transform-origin: center;
   z-index: 2;
   pointer-events: none;
   filter: drop-shadow(0 3px 5px rgba(0,0,0,0.55));
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-sprite.idle,
@@ -2928,6 +2947,11 @@ body.battle-mode .villain-deco {
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
   animation: battleEnemyFloat 2.4s ease-in-out infinite;
   transform-origin: center bottom;
+  /* 2026-04-23: iPad (iOS Safari) で transform 系アニメが止まる対策。
+     will-change + backface-visibility で合成レイヤを強制。 */
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 /* 地に足がついたタイプの敵 (ゴーレム等): 浮遊アニメ+影を切り、2倍サイズにする。
    (飛行しない岩系ボスをふわふわさせない・接地感を出す) */
@@ -4093,7 +4117,8 @@ body.battle-intro-active .battle-log-window {
 .storyboard-art img.sb-pan-up {
   object-fit: cover;
   object-position: center 100%;
-  animation: sbPanUp 9s linear forwards;
+  /* 2026-04-23: S8 最終カットは余韻を残したいのでゆっくり (9s → 16s) 上にパン。 */
+  animation: sbPanUp 16s linear forwards;
 }
 @media (orientation: landscape) {
   .storyboard-art img.sb-pan-down,
@@ -4135,6 +4160,16 @@ body.battle-intro-active .battle-log-window {
 @keyframes sbZoomInSlow {
   from { transform: scale(1.00); }
   to   { transform: scale(1.15); }
+}
+/* 2026-04-23: S2b (人々と姫) 用のゆっくりドリーアウト。
+   S2a (zoom-in-slow) の真逆で、寄った状態からじわっと引いて全景を見せる。 */
+.storyboard-art img.sb-zoom-out-slow {
+  animation: sbZoomOutSlow 14s ease-out forwards;
+  transform-origin: center 45%;
+}
+@keyframes sbZoomOutSlow {
+  from { transform: scale(1.15); }
+  to   { transform: scale(1.00); }
 }
 
 /* 2026-04-23: ドラクエ風メッセージボックス。
@@ -5797,22 +5832,10 @@ function _hideMonsterBubble() {
 }
 
 // ===== 悪役 (villain) 表示ヘルパー =====
+// 2026-04-23: 旧「紫の👾インベーダー」演出は撤去済み。バトルシステムに一本化。
+// 互換のため関数は残すが、登場/セリフは一切表示しない。
 function _showVillain(kind, duration) {
-  // 戦闘中は悪役(コウモリ風👾)の登場/セリフを抑止する。
-  // 敵役は戦闘ステージのキノコに一本化するため。
-  try { if (_battle && _battle.active) return; } catch (e) { /* _battle未初期化時はスルー */ }
-  var el = document.getElementById('villainDeco');
-  var bubble = document.getElementById('villainBubble');
-  if (!el || !bubble) return;
-  bubble.textContent = _pickLine('villain', kind);
-  el.classList.remove('gloat');
-  void el.offsetWidth;
-  el.classList.add('show');
-  if (kind === 'defeat') el.classList.add('gloat');
-  if (el._hideT) clearTimeout(el._hideT);
-  el._hideT = setTimeout(function() {
-    el.classList.remove('show', 'gloat');
-  }, duration || 2000);
+  return;
 }
 function _hideVillain() {
   var el = document.getElementById('villainDeco');
@@ -8010,33 +8033,9 @@ window.battleVictory = battleVictory;
 // ===== 初回チュートリアル（妖精救出物語の紹介）=====
 const FAIRY_INTRO_KEY = 'writing_fairy_intro_seen';
 function _maybeShowFairyIntro() {
-  try {
-    if (localStorage.getItem(FAIRY_INTRO_KEY) === '1') return;
-  } catch (e) { return; }
-  setTimeout(function() {
-    // 画面上部に吹き出し風バナー（お手本/キャンバスを隠さない）
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:9500;opacity:0;transition:opacity 0.3s ease;cursor:pointer;pointer-events:auto;max-width:92vw;';
-    ov.innerHTML = '<div style="background:#FFF8E7;border:4px solid #6B2B7A;border-radius:20px;padding:12px 18px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;">'
-      + '<div style="font-size:2rem;line-height:1;flex-shrink:0;">👾✨</div>'
-      + '<div style="text-align:left;">'
-      +   '<div style="font-size:0.95rem;font-weight:900;color:#5B1565;line-height:1.3;">たいへん！ もじのなかに ようせいが…</div>'
-      +   '<div style="font-size:0.8rem;font-weight:700;color:#8B7355;line-height:1.4;margin-top:2px;">もじを かいたら たすけだせるよ！</div>'
-      + '</div>'
-      + '</div>';
-    document.body.appendChild(ov);
-    void ov.offsetWidth;
-    ov.style.opacity = '1';
-    var closed = false;
-    function close() {
-      if (closed) return; closed = true;
-      ov.style.opacity = '0';
-      setTimeout(function() { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 300);
-    }
-    ov.addEventListener('click', close);
-    setTimeout(close, 5000);
-    try { localStorage.setItem(FAIRY_INTRO_KEY, '1'); } catch (e) { /* ignore */ }
-  }, 700);
+  // 2026-04-23: 旧「紫の👾 + 文字に封印された妖精を なぞって助けよう」 mini-game は撤去済み。
+  // バトルシステムに置き換えたので、intro バナーも出さない。
+  try { localStorage.setItem(FAIRY_INTRO_KEY, '1'); } catch (e) { /* ignore */ }
 }
 
 // 行ボス（行クリア時のちょっと大きめのかわいい子）
@@ -9721,9 +9720,11 @@ var OPENING_SCENES = [
     zoom: 'in-slow',
     voice: '../assets/audio/storyboard/voice/S2a.mp3',
     text: 'おうじょさま は こころ やさしく、' },
-  // S2b: 別カット (人々と姫 / 愛されている描写)。画像はユーザー側で差し替え予定。
+  // S2b: 別カット (人々と姫 / 愛されている描写) → S2a の zoom-in-slow の真逆の
+  //      ゆっくりドリーアウトで引いて全景を見せる (2026-04-23)。
   { bg: '#2a0e1a',
     image: '../assets/images/story/opening_4.jpg', emoji: '💖',
+    zoom: 'out-slow',
     voice: '../assets/audio/storyboard/voice/S2b.mp3',
     text: 'ひとびと から あいされて いました。' },
   // --- S3: ふしぎな ひかり (2 分割) ---
