@@ -10259,18 +10259,19 @@ function _showStoryboard(scenes, onDone) {
 }
 
 // オープニング: ひらがな編冒頭の紙芝居 (初回のみ自動、以後は localStorage フラグでスキップ)。
-// 画像ファイル命名 (2026-04-23 再マッピング、全10ビート):
-//   opening_1.jpg  = OP_S01_C01  S1a 王国 前半
-//   opening_2.jpg  = OP_S01_C02  S1b 王国 後半 (上→下へゆっくりパン)
-//   opening_3.jpg  = OP_S02_C01  S2a 姫 前半
-//   opening_4.jpg  = OP_S02_C02  S2b 姫 後半
-//   opening_5.jpg  = OP_S03      S3 ふしぎな ひかり
-//   opening_6.jpg  = OP_S04      S4 まおう の てさき
-//   opening_7.jpg  = OP_S05_C01  S5a つれさられる 前半
-//   opening_8.jpg  = OP_S05_C02  S5b つれさられる 後半
-//   opening_9.jpg  = OP_S06      S6 おうさま の さけび
-//   opening_10.jpg = OP_S07      S7 ゆうしゃ しょうしゅう
-//   opening_11.jpg = OP_S08      S8 たびだち (下→上にゆっくりパン)
+// 画像ファイル命名 (2026-04-23 再マッピング + 2026-04-24 v265 で呪縛シーン追加):
+//   opening_1.jpg     = OP_S01_C01  S1a 王国 前半
+//   opening_2.jpg     = OP_S01_C02  S1b 王国 後半 (上→下へゆっくりパン)
+//   opening_3.jpg     = OP_S02_C01  S2a 姫 前半
+//   opening_4.jpg     = OP_S02_C02  S2b 姫 後半
+//   opening_5.jpg     = OP_S03      S3 ふしぎな ひかり
+//   opening_6.jpg     = OP_S04      S4 まおう の てさき
+//   opening_7.jpg     = OP_S05_C01  S5a つれさられる 前半
+//   opening_8.jpg     = OP_S05_C02  S5b つれさられる 後半
+//   opening_curse.jpg = S_CURSE     呪縛の手 (v265, 2 ビート共用、仮面の伏線)
+//   opening_9.jpg     = OP_S06      S6 おうさま の さけび
+//   opening_10.jpg    = OP_S07      S7 ゆうしゃ しょうしゅう
+//   opening_11.jpg    = OP_S08      S8 たびだち (下→上にゆっくりパン)
 // 背景色は画像が contain でレターボックスになる余白用 (絵の基調色に合わせる)。
 // 2026-04-23: PNG(2688x1520, ~10MB/枚) を JPG(1600w, ~300-500KB) に圧縮、
 // 合計 100MB → 約 3.6MB へ削減。オープニング読み込みの遅延を解消。
@@ -10331,6 +10332,17 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_8.jpg', emoji: '💫',
     voice: '../assets/audio/storyboard/voice/S5b.mp3',
     text: 'おうじょさま は つれさられて しまいました。' },
+  // --- S_CURSE: 呪縛の手 (2 ビート、v265 追加) ---
+  // ひめ 誘拐 → S6 の王様の叫び の間に挿入。バトルの「仮面を こわす」メカの
+  // 伏線を先に張り、戦闘開始時点で子供が「なぜ仮面を割るの?」と迷わないようにする。
+  // 画像は 1 枚 (opening_curse.jpg) を 2 ビートで共用。未設置時は絵文字 🎭 にフォールバック。
+  { bg: '#1a0a2a',
+    image: '../assets/images/story/opening_curse.jpg', emoji: '🎭',
+    bgm: '../assets/audio/storyboard/masked_princess_omen.mp3',
+    text: 'その ひから、 くに の あちこちで、\nしろい かめん を つけた まもの が あらわれ、\nひとびと を おそい はじめました。' },
+  { bg: '#1a0a2a',
+    image: '../assets/images/story/opening_curse.jpg', emoji: '🎭',
+    text: 'じつは その まもの は、\nやさしい せいれい が ザガン の のろい で\nあやつられて いた の です。\nかめん を こわさないと、 もと に もどれません。' },
   // --- S6: おうさま の さけび (3 分割、王様セリフ + ナレーター 2 ビート) ---
   { bg: '#1a0c05',
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
@@ -10366,11 +10378,12 @@ var OPENING_SCENES = [
 // 本来 play.html 側で card-writing のタップが遮断されるため、通常は到達しない。
 // OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
 // 見終わったら play.html に戻す。
-// 16 シーンに拡張したため index を再指定 (S1a / S4a 魔人登場 / S7a 勇者召集)。
+// 2026-04-24 v265: 呪縛シーンを 2 ビート追加したため index を再指定。
+// 旧: S7a = OPENING_SCENES[13] → 新: S7a = OPENING_SCENES[15] (呪縛 2 beat 分シフト)
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
-  OPENING_SCENES[13]   // S7a: そして、 あなた が えらばれた のです
+  OPENING_SCENES[15]   // S7a: そして、 あなた が えらばれた のです
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
