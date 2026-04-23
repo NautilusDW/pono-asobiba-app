@@ -9228,6 +9228,88 @@ function _waterFairyFarewell(onDone) {
   });
 }
 
+// ら行 lava フィニッシャー専用: 氷の妖精との別れ会話 + 魔王城の鍵の受け渡し。
+// 背景: 氷の妖精はかつて魔王城に忍び込み門番から鍵を奪ったが、帰途で魔王の手下たちに
+// 捕まり溶岩に封じられていた。鍵は身につけた氷の首飾りに封じ込めて隠していたため、
+// 敵には単なる氷の装飾にしか見えず発見されなかった。救出後に首飾りを砕いて鍵を託す。
+// → カタカナ編 (魔王城突入) への引き。4番目のセリフ中に 🔑 が妖精の上に現れる演出。
+function _iceFairyFarewell(onDone) {
+  _freeFairy('fire'); // 'fire' キー = 氷の妖精 (命名は localStorage 互換のため保持)
+  try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+
+  var stage = _puzzleEls().stage;
+  var fairy = stage ? stage.querySelector('.lava-fairy') : null;
+  // 溶岩ステージ上の氷の妖精を中央上部にふわっと移動
+  if (fairy) {
+    fairy.style.transition = 'left 0.6s ease, top 0.6s ease, opacity 0.4s ease, transform 0.6s ease';
+    fairy.style.left = '50%';
+    fairy.style.top  = '42%';
+    fairy.style.opacity = '1';
+    fairy.style.transform = 'translate(-50%,-50%) scale(1.15)';
+  }
+
+  // 2 行 + 1 空行 を 1 ブロックに揃える (既存 _waterFairyFarewell と同じ形式)。
+  var messages = [
+    { lines: ['こおりの ようせい「ゆうしゃさま、', 'たすけて くれて ありがとう！', ''] },
+    { lines: ['こおりの ようせい「じつは わたし、', 'まおうじょう に しのびこんだ の。', ''] },
+    { lines: ['こおりの ようせい「もんばん の すきを ついて', 'かぎ を ぬすんで きた わ。', ''] },
+    { lines: ['こおりの ようせい「でも かえりみち で', 'てした たち に つかまって しまって…', ''] },
+    { lines: ['こおりの ようせい「かぎ は くびかざり の', 'こおりに とじこめて いた から…', ''] },
+    { lines: ['こおりの ようせい「まおう の てした たち にも', 'みつからなかった わ。', ''] },
+    { lines: ['こおりの ようせい「この かぎ で、', 'おひめさま を たすけだして ね！', ''] }
+  ];
+
+  // 5番目のメッセージ (index 4, 「かぎはくびかざりのこおりに…」) 表示時に、
+  // 氷の首飾りが砕けて 🔑 が妖精の上にポップインする演出を挟む。
+  var keyRevealAt = 4;
+  var keyEl = null;
+
+  function showOne(i) {
+    if (i >= messages.length) { finish(); return; }
+    if (i === keyRevealAt) { keyEl = _iceFairyKeyReveal(fairy); }
+    _showBattleDialog([messages[i]], function() { showOne(i + 1); });
+  }
+
+  function finish() {
+    // 鍵はフェードアウト
+    if (keyEl && keyEl.parentNode) {
+      keyEl.style.transition = 'opacity 0.5s ease, transform 0.6s ease';
+      keyEl.style.opacity = '0';
+      keyEl.style.transform = 'translate(-50%,-50%) scale(0.3)';
+      setTimeout(function() { if (keyEl && keyEl.parentNode) keyEl.remove(); }, 650);
+    }
+    // 妖精が飛び去る
+    if (fairy) {
+      fairy.style.transition = 'opacity 0.55s ease, transform 0.7s cubic-bezier(0.4,0,0.8,0.3)';
+      fairy.style.opacity = '0';
+      fairy.style.transform = 'translate(-50%,-50%) translate(-30vw,-40vh) scale(0.4) rotate(-20deg)';
+    }
+    // フェードアウト完了まで待ってから次へ
+    setTimeout(function() { if (onDone) onDone(); }, 900);
+  }
+
+  showOne(0);
+}
+
+// _iceFairyFarewell で使用: 氷の首飾りが砕けて 🔑 がポップインする演出。
+// 戻り値: 鍵 DOM 要素 (親で finish 時にフェードアウトさせるため)。
+function _iceFairyKeyReveal(fairyEl) {
+  if (!fairyEl || !fairyEl.parentNode) return null;
+  var stage = fairyEl.parentNode;
+  try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
+
+  var key = document.createElement('div');
+  key.className = 'lava-fairy-key';
+  key.textContent = '🔑';
+  key.style.cssText = 'position:absolute;left:50%;top:28%;transform:translate(-50%,-50%) scale(0.3) rotate(-20deg);font-size:clamp(32px,6vw,56px);opacity:0;transition:opacity 0.5s ease, transform 0.7s cubic-bezier(0.3,0,0.2,1.3);z-index:12;pointer-events:none;filter:drop-shadow(0 0 14px #fde68a) drop-shadow(0 0 28px #fbbf24);';
+  stage.appendChild(key);
+  requestAnimationFrame(function() {
+    key.style.opacity = '1';
+    key.style.transform = 'translate(-50%,-50%) scale(1.2) rotate(-8deg)';
+  });
+  return key;
+}
+
 // ===== 紙芝居 (オープニング/エンディング) =====
 // scenes: [{ bg: 'gradient or #color', image: 'path' (optional), emoji: '...' (fallback), text: '...' }]
 // onDone: 最終シーンをタップした後に呼ばれる。
@@ -9799,17 +9881,17 @@ var SHORT_OPENING_SCENES = [
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
 // 「ひらがな編はここまで、魔王城はすぐそこだ」という区切り。続きはカタカナ編。
 var ENDING_SCENES = [
-  { bg: 'radial-gradient(ellipse at center, #1e293b 0%, #0f172a 60%, #000 100%)',
-    image: '../assets/images/story/ending_1.png', emoji: '🧚✨',
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/ending_1.png', emoji: '🔥🧚',
     text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。' },
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2.png', emoji: '🔥',
-    text: 'もりの なか、 たきび の まわりに\nもり・ ほのお・ こおり の\n3にん の ようせい が よりそう。' },
+    text: 'たきび の ひ が、 ちいさく ゆれている。\nながい たび の おもいで が、\nしずかに むねに よみがえる。' },
   { bg: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0c1631 55%, #000 100%)',
     image: '../assets/images/story/ending_3.png', emoji: '✨',
     text: 'よぞら を みあげる と、\nほし が きらきら と ひかって いた。' },
   { bg: 'radial-gradient(ellipse at center, #581c87 0%, #1e1b4b 60%, #000 100%)',
-    image: '../assets/images/story/ending_4.png', emoji: '🏯',
+    image: '../assets/images/story/ending_4.png', emoji: '🔑',
     text: '「まおうじょう は、 すぐ そこ だ！」\n「かならず、 おひめさま を\nたすけだす ぞ！」' }
 ];
 
@@ -10486,6 +10568,17 @@ function _rowPracticeNextChar() {
               // (2026-04-22) 以前は _rescueFairy('water') で封印を壊していたが、妖精は最初から自由 → 整合性修正。
               if (isFinisher && _puzzle.kind === 'bridge') {
                 _waterFairyFarewell(function() {
+                  _puzzle.step++;
+                  _rowPracticeStep++;
+                  _rowPracticeNextChar();
+                });
+                return;
+              }
+              // ら行 lava フィニッシャー: 氷の妖精との別れ会話 + 魔王城の鍵の受け渡し。
+              // 鍵は首飾りに封じて隠していた設定 (魔王の手下に捕まった後も発見されなかった)。
+              // → カタカナ編 (魔王城突入) への引き。この後エンディング紙芝居が発動。
+              if (isFinisher && _puzzle.kind === 'lava_step') {
+                _iceFairyFarewell(function() {
                   _puzzle.step++;
                   _rowPracticeStep++;
                   _rowPracticeNextChar();
