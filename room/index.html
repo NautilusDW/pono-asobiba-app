@@ -869,6 +869,8 @@
 <script src="../common/stickers.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
+<!-- Phase 3: tier 判定 (絵本層は家具・かざり 10種に制限、サブスクは全種) -->
+<script src="../common/tier.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -2348,9 +2350,17 @@ function renderShopGrid(cat) {
   grid.innerHTML = '';
   const cfg = state.config[currentAreaId] || {};
 
+  // Phase 3: 絵本層は家具/かざりを 10種に絞る。サブスクは全種。
+  // 壁/床 (wall/floor) は背景扱いで制限しない (tier.js 側で true を返す)。
+  const _tierFilter = (item) => {
+    if (!window.PonoTier || typeof window.PonoTier.isRoomItemUnlocked !== 'function') return true;
+    return window.PonoTier.isRoomItemUnlocked(item.id, item.cat);
+  };
+  const _isBookTier = !!(window.PonoTier && window.PonoTier.isBook && window.PonoTier.isBook());
+
   if (shopMode === 'buy') {
     // 買うモード: 未購入アイテムのみ表示（所持済みはグレーアウト、defaultは除外）
-    const items = ROOM_ITEMS.filter(item => item.cat === cat && !item.default && !item.hidden);
+    const items = ROOM_ITEMS.filter(item => item.cat === cat && !item.default && !item.hidden && _tierFilter(item));
     const unowned = items.filter(item => !isOwned(item.id));
     const owned   = items.filter(item =>  isOwned(item.id));
 
@@ -2385,9 +2395,14 @@ function renderShopGrid(cat) {
     // 壁・床: デフォルトに戻すカード（一番最後）
     _makeResetCard(cat, cfg, grid);
 
+    // Phase 3: 絵本層で家具/かざりカテゴリなら "まいつき ふえるよ" ヒントを追加
+    if (_isBookTier && (cat === 'furn' || cat === 'deco')) {
+      _appendTierPromoHint(grid);
+    }
+
   } else {
-    // てもちモード: 所持済みアイテムのみ表示
-    const owned = ROOM_ITEMS.filter(item => item.cat === cat && !item.hidden && isOwned(item.id));
+    // てもちモード: 所持済みアイテムのみ表示 (tier 制限も適用)
+    const owned = ROOM_ITEMS.filter(item => item.cat === cat && !item.hidden && isOwned(item.id) && _tierFilter(item));
 
     if (owned.length === 0) {
       const msg = document.createElement('div');
@@ -2413,6 +2428,28 @@ function _isItemPlaced(item, cfg) {
   if (item.cat === 'wall' || item.cat === 'floor') return cfg[item.cat] === item.id;
   const placedList = cfg.placed || getPlacedItems(cfg);
   return placedList.some(p => p.id === item.id);
+}
+
+// Phase 3: 絵本層の shop 末尾に "サブスクでもっと" ヒントカードを挿入
+function _appendTierPromoHint(grid) {
+  if (grid.querySelector('.tier-promo-hint')) return;
+  const hint = document.createElement('div');
+  hint.className = 'tier-promo-hint';
+  hint.style.cssText = 'grid-column:1/-1;margin-top:8px;padding:14px;border-radius:14px;'
+    + 'background:linear-gradient(135deg,#E0F2FE,#DBEAFE);'
+    + 'text-align:center;font-weight:700;color:#1E3A8A;cursor:pointer;'
+    + 'box-shadow:0 2px 8px rgba(0,0,0,0.08);';
+  hint.innerHTML = '<div style="font-size:1.4rem;margin-bottom:4px">✨</div>'
+    + '<div style="font-size:0.9rem">かぐ も かざり も、サブスクで まいつき ふえていくよ！</div>';
+  hint.addEventListener('click', function() {
+    if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+      window.PonoTier.showSubscribePromo({
+        title: 'もっと たくさん あるよ！',
+        body: 'サブスクで あたらしい かぐ や かざり が まいつき ふえていくよ！'
+      });
+    }
+  });
+  grid.appendChild(hint);
 }
 
 function _makeShopCard(item, mode, cfg) {

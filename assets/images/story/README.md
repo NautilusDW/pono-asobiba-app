@@ -4,14 +4,14 @@
 
 ## 対応シーン
 
-### オープニング (opening_1.jpg 〜 opening_10.jpg) — 全10ビート
+### オープニング (opening_1.jpg 〜 opening_11.jpg) — 全11ビート
 
-2026-04-23 再マッピング。S1 / S2 / S5 を 2 ビートに分割、S3 / S4 / S6 / S7 は 1 ビート。
+2026-04-23 再マッピング。S1 / S2 / S5 を 2 ビートに分割、S3 / S4 / S6 / S7 / S8 は 1 ビート。
 
 | ファイル | 元ファイル | シーン | 内容 |
 |------|------|------|------|
 | opening_1.jpg  | OP_S01_C01 | S1a | 王国 前半 |
-| opening_2.jpg  | OP_S01_C02 | S1b | 王国 後半 |
+| opening_2.jpg  | OP_S01_C02 | S1b | 王国 後半 (上→下パン) |
 | opening_3.jpg  | OP_S02_C01 | S2a | 姫 前半 |
 | opening_4.jpg  | OP_S02_C02 | S2b | 姫 後半 |
 | opening_5.jpg  | OP_S03     | S3  | ふしぎな ひかり |
@@ -20,6 +20,7 @@
 | opening_8.jpg  | OP_S05_C02 | S5b | つれさられる 後半 |
 | opening_9.jpg  | OP_S06     | S6  | おうさま の さけび |
 | opening_10.jpg | OP_S07     | S7  | ゆうしゃ しょうしゅう |
+| opening_11.jpg | OP_S08     | S8  | たびだち (下→上パン) |
 
 ### エンディング (ending_1.jpg 〜 ending_4.jpg)
 

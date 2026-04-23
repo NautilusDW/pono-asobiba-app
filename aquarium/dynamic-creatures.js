@@ -243,6 +243,14 @@
     return false;
   }
 
+  // Phase 3: tier 制限で解放されていないならスキップ
+  function _isTierUnlocked(id) {
+    if (window.PonoTier && typeof window.PonoTier.isAquariumCreatureUnlocked === 'function') {
+      return window.PonoTier.isAquariumCreatureUnlocked(id);
+    }
+    return true; // tier.js 未ロード時はフォールバックで全解放
+  }
+
   // 全部の生き物をスポーン（toggles で OFF のものはスキップ）
   // 水族館に表示してよい生き物のみスポーンする
   function addAllSelected(ctx) {
@@ -250,6 +258,8 @@
     _config.creatures.forEach(function (cfg) {
       // 水族館フィルター: 水棲生物以外はスキップ
       if (!_isAquatic(cfg)) return;
+      // tier 制限 (絵本層は 8種のみ)
+      if (!_isTierUnlocked(cfg.id)) return;
       // toggles[cfg.id] === false なら skip。未定義は出す
       if (ctx.toggles && ctx.toggles[cfg.id] === false) return;
       _addOneType(cfg, ctx);
@@ -276,6 +286,29 @@
       btn.appendChild(document.createTextNode(cfg.displayName || cfg.id));
       // 初期状態（toggles に未定義なら ON、明示的に false なら OFF）
       if (toggles && toggles[cfg.id] === false) btn.classList.add('off');
+      // Phase 3: tier で解放されていないならサブスク誘導マーク
+      if (!_isTierUnlocked(cfg.id)) {
+        btn.classList.add('tier-locked');
+        btn.setAttribute('aria-disabled', 'true');
+        btn.dataset.tierLocked = '1';
+        var star = document.createElement('span');
+        star.className = 'creature-toggle-lock';
+        star.textContent = '✨';
+        star.style.cssText = 'position:absolute;top:2px;right:4px;font-size:0.85em;opacity:0.9';
+        btn.style.position = 'relative';
+        btn.style.opacity = '0.55';
+        btn.appendChild(star);
+        btn.addEventListener('click', function(ev) {
+          ev.preventDefault();
+          ev.stopImmediatePropagation();
+          if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+            window.PonoTier.showSubscribePromo({
+              title: 'この なかまは サブスク で あえるよ！',
+              body: 'あたらしい おさかな が まいつき ふえていくよ！'
+            });
+          }
+        }, true);
+      }
       container.appendChild(btn);
     });
   }

@@ -618,6 +618,12 @@ html, body {
 .category-tab.active { color: #FFF; transform: scale(1.05); }
 .category-tab[data-cat="hiragana"].active { background: var(--primary); }
 .category-tab[data-cat="katakana"].active { background: var(--secondary); }
+/* Phase 3: サブスク未加入で katakana タブをロック状態に見せる (soft lock) */
+.category-tab.locked { opacity: 0.55; position: relative; }
+.category-tab.locked::after {
+  content: '✨'; position: absolute; top: 2px; right: 6px;
+  font-size: 0.75rem; opacity: 0.9;
+}
 
 
 /* ===== Character Selector ===== */
@@ -4067,22 +4073,32 @@ body.battle-intro-active .battle-log-window {
 }
 
 /* 2026-04-23: シーン個別のパン (縦横比が極端なパノラマ画像用)。
-   OP_S01_C02 のように縦長な絵を「上から下へ」ゆっくり見せる演出。
-   object-fit は cover 固定、object-position を 0%→100% でアニメ。 */
+   object-fit は cover 固定、object-position をアニメで移動させる。
+   - sb-pan-down: 上→下 (OP_S01_C02 の王国遠景など)
+   - sb-pan-up:   下→上 (OP_S08 の旅立ち見上げなど) */
 .storyboard-art img.sb-pan-down {
   object-fit: cover;
   object-position: center 0%;
   animation: sbPanDown 9s linear forwards;
 }
+.storyboard-art img.sb-pan-up {
+  object-fit: cover;
+  object-position: center 100%;
+  animation: sbPanUp 9s linear forwards;
+}
 @media (orientation: landscape) {
-  .storyboard-art img.sb-pan-down {
+  .storyboard-art img.sb-pan-down,
+  .storyboard-art img.sb-pan-up {
     object-fit: cover;
-    animation: sbPanDown 9s linear forwards;
   }
 }
 @keyframes sbPanDown {
   from { object-position: center 0%; }
   to   { object-position: center 100%; }
+}
+@keyframes sbPanUp {
+  from { object-position: center 100%; }
+  to   { object-position: center 0%; }
 }
 
 /* 2026-04-23: ドラクエ風メッセージボックス。
@@ -4164,6 +4180,8 @@ body.battle-intro-active .battle-log-window {
 }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+<!-- Phase 3: 3階層の tier 判定（カタカナ編などの深さ制限に利用） -->
+<script src="../common/tier.js"></script>
 </head>
 <body>
 <!-- Portrait Lock -->
@@ -8385,8 +8403,27 @@ function buildRowSelectScreen() {
   var catTabs = document.querySelectorAll('#rsCategoryTabs .category-tab');
   catTabs.forEach(function(tab) {
     tab.classList.toggle('active', tab.dataset.cat === currentCategory);
+    // Phase 3: サブスク以外 (free/book) はカタカナ編に入れない。
+    // タブは見せるが、タップでサブスク誘導モーダルを出す ("伸びしろ" の見せ方)。
+    var _isKatakanaTab = (tab.dataset.cat === 'katakana');
+    var _katakanaLocked = _isKatakanaTab
+      && window.PonoTier && typeof window.PonoTier.isKatakanaUnlocked === 'function'
+      && !window.PonoTier.isKatakanaUnlocked();
+    if (_katakanaLocked) {
+      tab.classList.add('locked');
+      tab.setAttribute('aria-disabled', 'true');
+    }
     tab.onclick = function() {
       if (tab.dataset.cat === currentCategory) return;
+      if (_katakanaLocked) {
+        try {
+          window.PonoTier.showSubscribePromo({
+            title: 'カタカナ編は サブスク で あそべるよ！',
+            body: 'ひらがな編を クリア したら、\nカタカナ編で まおうの じょう に のりこもう！\n\nサブスク に はいると あそべる ようになるよ。'
+          });
+        } catch (e) {}
+        return;
+      }
       currentCategory = tab.dataset.cat;
       catTabs.forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
@@ -9383,34 +9420,38 @@ function _showStoryboard(scenes, onDone) {
     if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
     idx++;
     if (idx >= scenes.length) {
-      // 余韻演出: 最終シーンの絵・文字をフェードアウト → 黒みで静止 → 黒みのまま次画面を背後にセット
-      // → オーバーレイを黒みからフェードアウトして map がゆっくり現れる。
-      // 時系列 (ms): 0 = 絵/文字 fade-out + BGM fade-out, 500 = 完全黒み, 1700 = 次画面セット, 2000 = overlay fade-out, 2900 = 撤去
+      // 余韻演出: 最終シーンの絵・文字を長めにフェードアウト → 純白へじっくり染める
+      // → 白み 2 秒ホールド → 次画面を背後にセット → overlay を透明化して map がゆっくり現れる。
+      // 時系列 (ms): 0 = 絵/文字 fade-out + BGM fade-out + bg→white (1.8s)
+      //              500 = 絵/文字を visibility:hidden,  1800 = 完全白
+      //              3800 = 次画面セット & overlay opacity 開始 (1.2s)
+      //              5100 = 撤去
       art.classList.remove('sb-in');
       txt.classList.remove('sb-in');
       art.classList.add('sb-out');
       txt.classList.add('sb-out');
-      // 背景を純黒へ遷移 (scene bg が色付きの場合に備えて)
-      ov.style.background = '#000';
-      // BGM も余韻に合わせてフェードアウト (2000ms で完全無音)。
+      // overlay の transition を「ゆっくり白へ、ゆっくり透明へ」に上書き。
+      ov.style.transition = 'opacity 1.2s ease, background 1.8s ease';
+      ov.style.background = '#fff';
+      // BGM も余韻に合わせてフェードアウト。
       setBgm(null);
       setTimeout(function() {
-        // 黒みの状態で子要素も完全に消す (透過 png の輪郭が残らないように)
+        // 白の状態で子要素も完全に消す。
         art.style.visibility = 'hidden';
         txt.style.visibility = 'hidden';
       }, 500);
       setTimeout(function() {
-        // 次画面 (map/practice) を黒み背後にセットアップ
+        // 次画面 (map/practice) を白背後にセットアップ。
         if (onDone) { try { onDone(); } catch (e) {} }
-      }, 1700);
+      }, 3800);
       setTimeout(function() {
-        // overlay を透明へフェード → 背後の map がゆっくり現れる
+        // overlay を透明へフェード → 背後の map が白みからゆっくり現れる。
         ov.classList.add('fade-out');
-      }, 2000);
+      }, 3900);
       setTimeout(function() {
         try { sbAudio.pause(); sbAudio.src = ''; } catch (e) {}
         if (ov.parentNode) ov.remove();
-      }, 2900);
+      }, 5200);
       return;
     }
     art.classList.remove('sb-in'); txt.classList.remove('sb-in');
@@ -9438,6 +9479,7 @@ function _showStoryboard(scenes, onDone) {
 //   opening_8.jpg  = OP_S05_C02  S5b つれさられる 後半
 //   opening_9.jpg  = OP_S06      S6 おうさま の さけび
 //   opening_10.jpg = OP_S07      S7 ゆうしゃ しょうしゅう
+//   opening_11.jpg = OP_S08      S8 たびだち (下→上にゆっくりパン)
 // 背景色は画像が contain でレターボックスになる余白用 (絵の基調色に合わせる)。
 // 2026-04-23: PNG(2688x1520, ~10MB/枚) を JPG(1600w, ~300-500KB) に圧縮、
 // 合計 100MB → 約 3.6MB へ削減。オープニング読み込みの遅延を解消。
@@ -9474,7 +9516,11 @@ var OPENING_SCENES = [
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
     bgm: '../assets/audio/storyboard/chosen_road.mp3',
-    text: 'そして、 あなた が えらばれた のです。\n\n「ゆうしゃ よ、\nわが ひめ を たすけだして くれ！」' }
+    text: 'そして、 あなた が えらばれた のです。\n\n「ゆうしゃ よ、\nわが ひめ を たすけだして くれ！」' },
+  { bg: '#0a1026',
+    image: '../assets/images/story/opening_11.jpg', emoji: '🌅',
+    pan: 'up',
+    text: 'あさひ を うけて、\nゆうしゃ は たびだった。\n\nおひめさま を たすけだす、\nながい たび の はじまりだ。' }
 ];
 
 // 無料ユーザー向けの短縮版オープニング（万一 URL で直接アクセスされた時の防御）。
