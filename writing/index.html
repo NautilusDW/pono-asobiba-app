@@ -9530,10 +9530,15 @@ function _showStoryboard(scenes, onDone) {
     if (idx >= scenes.length) {
       // 余韻演出: 最終シーンの絵・文字を長めにフェードアウト → 純白へじっくり染める
       // → 白み 2 秒ホールド → 次画面を背後にセット → overlay を透明化して map がゆっくり現れる。
-      // 時系列 (ms): 0 = 絵/文字 fade-out + BGM fade-out + bg→white (1.8s)
+      // 時系列 (ms): 0 = 絵/文字 fade-out + bg→white (1.8s, BGM は継続)
       //              500 = 絵/文字を visibility:hidden,  1800 = 完全白
       //              3800 = 次画面セット & overlay opacity 開始 (1.2s)
-      //              5100 = 撤去
+      //              3900 = BGM フェードアウト開始 (1200ms, 白→マップ遷移に同期)
+      //              5100 = overlay 透明 + BGM 終了
+      //              5200 = 撤去
+      // 2026-04-23: ユーザー要望「白になるまで音楽はそのまま、白→マップの遷移で
+      // ちょうど消えるように」→ BGM の fade-out を即時から t=3900 まで遅延して
+      // overlay の透明化と完全に同期させる。
       art.classList.remove('sb-in');
       txt.classList.remove('sb-in');
       art.classList.add('sb-out');
@@ -9541,8 +9546,6 @@ function _showStoryboard(scenes, onDone) {
       // overlay の transition を「ゆっくり白へ、ゆっくり透明へ」に上書き。
       ov.style.transition = 'opacity 1.2s ease, background 1.8s ease';
       ov.style.background = '#fff';
-      // BGM も余韻に合わせてフェードアウト。
-      setBgm(null);
       setTimeout(function() {
         // 白の状態で子要素も完全に消す。
         art.style.visibility = 'hidden';
@@ -9555,6 +9558,12 @@ function _showStoryboard(scenes, onDone) {
       setTimeout(function() {
         // overlay を透明へフェード → 背後の map が白みからゆっくり現れる。
         ov.classList.add('fade-out');
+        // BGM も同タイミングで 1200ms フェードアウト → 白→マップ切替と同期して無音へ。
+        try {
+          fadeAudio(sbAudio, sbAudio.volume, 0, 1200, function() {
+            try { sbAudio.pause(); } catch (e) {}
+          });
+        } catch (e) {}
       }, 3900);
       setTimeout(function() {
         _sbCleanup();
