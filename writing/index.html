@@ -3040,7 +3040,8 @@ body.battle-mode .villain-deco {
   40%  { filter: brightness(2.4) drop-shadow(0 0 16px #fff) drop-shadow(0 0 28px #FFE27A); }
   100% { filter: brightness(1)  drop-shadow(0 0 0 #fff); }
 }
-/* 撃破: フリップ + 縮小 + 暗転 */
+/* 撃破: フリップ + 縮小 + 暗転 (v265 以降は purify/ascend 経路が既定。
+   defeated クラスは非常用フォールバックとして残す。) */
 .battle-enemy.defeated {
   animation: battleEnemyDefeat 1.1s cubic-bezier(0.6,-0.1,0.7,1) forwards !important;
 }
@@ -3049,6 +3050,211 @@ body.battle-mode .villain-deco {
   25%  { transform: translateY(-30px) scale(1.1) rotate(-10deg);opacity: 1; filter: brightness(0.6); }
   65%  { transform: translateY(40px)  scale(0.6) rotate(180deg);opacity: 0.7; filter: brightness(0.3) hue-rotate(-40deg); }
   100% { transform: translateY(80px)  scale(0.1) rotate(360deg);opacity: 0;   filter: brightness(0); }
+}
+/* ===== 呪縛仮面・呪印・浄化演出 (v265: バトルピボット) =====
+   全敵共通の白い顔なし仮面 (縦 2 分割のハーフで構成) + おでこの呪印 (ギザギザ星型)。
+   HP 進行で data-sigil / data-cracks 属性を更新 → CSS で呪印の色・発光・ヒビが段階進化。
+   5 発目で .shattering を mask に付けて縦 2 つ割り、敵スプライトを .cursed → .purified に切替。
+   敵スプライトは変えず、filter saturate/brightness で呪縛/解放の色味だけ変える。 */
+.curse-mask {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58%;
+  height: 62%;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+/* 敵ごとに仮面の位置・サイズを微調整 (顔のある部分に合わせる) */
+.battle-enemy[data-enemy-id="mushroom"] .curse-mask     { top: 18%; width: 52%; height: 50%; }
+.battle-enemy[data-enemy-id="golem_forest"] .curse-mask { top: 10%; width: 44%; height: 46%; }
+.battle-enemy[data-enemy-id="ice_bat"] .curse-mask      { top: 14%; width: 52%; height: 52%; }
+.battle-enemy[data-enemy-id="ice_wizard"] .curse-mask   { top:  8%; width: 42%; height: 44%; }
+.battle-enemy[data-enemy-id="lava_golem"] .curse-mask   { top: 10%; width: 44%; height: 48%; }
+.battle-enemy[data-enemy-id="imp"] .curse-mask          { top: 10%; width: 52%; height: 52%; }
+.battle-enemy[data-enemy-id="volcano_lord"] .curse-mask { top: 10%; width: 48%; height: 50%; }
+.battle-enemy.cursed .enemy-img {
+  filter: saturate(0.6) brightness(0.85) drop-shadow(0 0 6px rgba(74, 27, 122, 0.5));
+  transition: filter 0.4s ease-out;
+}
+.battle-enemy.purified .enemy-img {
+  filter: saturate(1.25) brightness(1.14) drop-shadow(0 0 10px rgba(255, 240, 160, 0.75));
+  transition: filter 0.5s ease-out;
+}
+.curse-mask-half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 40%, #fdfdfd 55%, #d8d8d8 88%, #b8b8b8 100%);
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.18),
+    0 2px 5px rgba(0, 0, 0, 0.35);
+  transform-origin: center center;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+.curse-mask-half.curse-mask-left  { left: 0;  border-radius: 100% 0 0 100% / 50% 0 0 50%; }
+.curse-mask-half.curse-mask-right { right: 0; border-radius: 0 100% 100% 0 / 0 50% 50% 0; }
+.curse-cracks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.curse-cracks .curse-crack {
+  stroke: #1a1a1a;
+  stroke-width: 2.4;
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.6));
+}
+/* HP 段階で出現するヒビ数: 1→crack-1、2→crack-1+2、3→全部 */
+.battle-enemy[data-cracks="1"] .curse-crack.crack-1 { opacity: 0.85; }
+.battle-enemy[data-cracks="2"] .curse-crack.crack-1,
+.battle-enemy[data-cracks="2"] .curse-crack.crack-2 { opacity: 0.85; }
+.battle-enemy[data-cracks="3"] .curse-crack.crack-1,
+.battle-enemy[data-cracks="3"] .curse-crack.crack-2,
+.battle-enemy[data-cracks="3"] .curse-crack.crack-3 { opacity: 0.88; }
+.curse-sigil {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  width: 44%;
+  height: 34%;
+  transform: translateX(-50%);
+  overflow: visible;
+  --sigil-fill:   #3a1560;
+  --sigil-stroke: #d4af37;
+  --sigil-glow:   rgba(120, 40, 190, 0.85);
+  filter: drop-shadow(0 0 4px var(--sigil-glow));
+  transition: filter 0.3s ease-out;
+}
+.curse-sigil .sigil-star {
+  fill: var(--sigil-fill);
+  stroke: var(--sigil-stroke);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  transition: fill 0.35s ease-out, stroke 0.35s ease-out;
+}
+/* HP 段階別: 紫 → 金 (闇が光に押し返される方向) */
+.battle-enemy[data-sigil="5"] .curse-sigil { --sigil-fill: #3a1560; --sigil-stroke: #d4af37; --sigil-glow: rgba(120, 40, 190, 0.85); }
+.battle-enemy[data-sigil="4"] .curse-sigil { --sigil-fill: #552280; --sigil-stroke: #e4c447; --sigil-glow: rgba(150, 70, 210, 0.9); }
+.battle-enemy[data-sigil="3"] .curse-sigil { --sigil-fill: #7a3098; --sigil-stroke: #ffd75a; --sigil-glow: rgba(255, 200, 80, 0.88); }
+.battle-enemy[data-sigil="2"] .curse-sigil { --sigil-fill: #b8732c; --sigil-stroke: #ffe066; --sigil-glow: rgba(255, 220, 90, 0.9); }
+.battle-enemy[data-sigil="1"] .curse-sigil { --sigil-fill: #ecc030; --sigil-stroke: #fff4a0; --sigil-glow: rgba(255, 240, 160, 0.95); animation: sigilShakeStrong 0.55s linear 2; }
+.battle-enemy[data-sigil="0"] .curse-sigil { --sigil-fill: #fff0a0; --sigil-stroke: #ffffff; --sigil-glow: rgba(255, 255, 255, 1); animation: sigilBurst 0.5s ease-out 1 forwards; }
+@keyframes sigilShakeStrong {
+  0%, 100% { transform: translateX(-50%); }
+  15% { transform: translate(-58%, -1px) rotate(-4deg); }
+  30% { transform: translate(-42%,  1px) rotate( 4deg); }
+  45% { transform: translate(-55%, -1px) rotate(-3deg); }
+  60% { transform: translate(-45%,  1px) rotate( 3deg); }
+  85% { transform: translate(-52%,  0)   rotate(-1deg); }
+}
+@keyframes sigilBurst {
+  0%   { transform: translateX(-50%) scale(1);   filter: drop-shadow(0 0 8px var(--sigil-glow)) brightness(1.2); opacity: 1; }
+  40%  { transform: translateX(-50%) scale(2.4); filter: drop-shadow(0 0 32px #fff8c8) brightness(2.4); opacity: 1; }
+  100% { transform: translateX(-50%) scale(3.8); filter: drop-shadow(0 0 56px #ffffff) brightness(3.2); opacity: 0; }
+}
+/* 仮面が縦 2 つに割れて左右へ吹き飛ぶ */
+.curse-mask.shattering .curse-mask-half.curse-mask-left  { animation: maskHalfFlyLeft  0.55s ease-out 0.05s forwards; }
+.curse-mask.shattering .curse-mask-half.curse-mask-right { animation: maskHalfFlyRight 0.55s ease-out 0.05s forwards; }
+.curse-mask.shattering .curse-cracks,
+.curse-mask.shattering .curse-sigil { opacity: 0; transition: opacity 0.3s; }
+@keyframes maskHalfFlyLeft {
+  0%   { transform: translate(0, 0) rotate(0);            opacity: 1; }
+  100% { transform: translate(-54px, 38px) rotate(-38deg); opacity: 0; }
+}
+@keyframes maskHalfFlyRight {
+  0%   { transform: translate(0, 0) rotate(0);          opacity: 1; }
+  100% { transform: translate(54px, 38px) rotate(38deg); opacity: 0; }
+}
+/* 浄化後: 精霊のおじぎ */
+.battle-enemy.bowing .enemy-img {
+  animation: spiritBow 0.65s ease-out 1;
+}
+@keyframes spiritBow {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(5px) rotate(-3deg); }
+  65%  { transform: translateY(-2px) rotate(2deg); }
+  100% { transform: translateY(0); }
+}
+/* 浄化後: 精霊の上昇消失 */
+.battle-enemy.ascending {
+  animation: spiritAscend 0.9s ease-out 1 forwards !important;
+}
+@keyframes spiritAscend {
+  0%   { transform: translateY(0);     opacity: 1; }
+  100% { transform: translateY(-38px); opacity: 0; }
+}
+/* お礼の吹き出し「…ありがとう」 */
+.spirit-thanks-bubble {
+  position: absolute;
+  top: -28%;
+  left: 50%;
+  transform: translate(-50%, 8px);
+  background: rgba(255, 255, 255, 0.96);
+  color: #2a1245;
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 2px solid #d4af37;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  animation: thanksFadeIn 0.5s ease-out 0.3s 1 forwards;
+  letter-spacing: 0.02em;
+}
+.spirit-thanks-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #d4af37;
+}
+@keyframes thanksFadeIn {
+  0%   { opacity: 0; transform: translate(-50%, 8px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+/* 闇オーラ排出パーティクル (仮面割れ時に呪印周辺から下方へ流れる紫霧) */
+.curse-shadow-drain {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle, rgba(150, 70, 210, 0.95) 0%, rgba(58, 20, 96, 0.55) 50%, transparent 80%);
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(1.5px);
+  animation: shadowDrain 0.75s ease-in 1 forwards;
+  z-index: 2;
+}
+@keyframes shadowDrain {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.92; }
+  100% { transform: translate(var(--dx, -50%), var(--dy, 64px)) scale(0.35); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-enemy[data-sigil="1"] .curse-sigil,
+  .battle-enemy[data-sigil="0"] .curse-sigil { animation: none; }
+  .curse-mask.shattering .curse-mask-half { animation: none; opacity: 0; }
+  .battle-enemy.ascending,
+  .battle-enemy.bowing .enemy-img { animation: none; }
 }
 
 /* 敵情報 (名前 / HP / 五芒星) */
@@ -4375,6 +4581,22 @@ body.battle-intro-active .battle-log-window {
         <div class="battle-enemy" id="battleEnemy">
           <img class="enemy-img" id="battleEnemyImg" alt="てき" onerror="this.onerror=null;this.src='../assets/images/monsters/chars/monster_005.png';" />
           <div class="enemy-shadow"></div>
+          <!-- 呪縛仮面 (v265 バトルピボット: 「呪縛を解く」メカニクス)。
+               全敵共通・白い顔なし仮面 + おでこの呪印。HP 減少で data-sigil/data-cracks が進化、
+               5 発目で縦 2 つに割れて精霊が目覚める。敵スプライトは変えずに CSS filter だけで浄化表現。 -->
+          <div class="curse-mask" id="curseMask" aria-hidden="true">
+            <div class="curse-mask-half curse-mask-left"></div>
+            <div class="curse-mask-half curse-mask-right"></div>
+            <svg class="curse-cracks" viewBox="0 0 100 120" preserveAspectRatio="none" aria-hidden="true">
+              <path class="curse-crack crack-1" d="M 50,6 L 45,40 L 55,78 L 48,112"/>
+              <path class="curse-crack crack-2" d="M 22,22 L 40,54 L 30,92"/>
+              <path class="curse-crack crack-3" d="M 78,30 L 60,58 L 72,96"/>
+            </svg>
+            <svg class="curse-sigil" id="curseSigil" viewBox="-30 -30 60 60" aria-hidden="true">
+              <!-- ギザギザ 5 点星 (呪印、進行表示の主役) -->
+              <path class="sigil-star" d="M 0,-22 L 6,-8 L 22,-6 L 10,4 L 16,20 L 0,11 L -16,20 L -10,4 L -22,-6 L -6,-8 Z"/>
+            </svg>
+          </div>
         </div>
       </div>
       <div class="enemy-info">
@@ -5162,6 +5384,9 @@ const MAGIC_COLORS = {
   star:    { core: '#FFD700', aura: '#FFF9C4', glow: 'rgba(255,215,0,0.9)' },
   rainbow: { core: '#FF4081', aura: '#FFD54F', glow: 'rgba(255,64,129,0.85)' },
   king:    { core: '#7E57C2', aura: '#FFD700', glow: 'rgba(126,87,194,0.85)' },
+  // v265 バトルピボット: 呪縛 (紫) と浄化の光 (金)。排出粒子・闇/光合成用。
+  curse_shadow: { core: '#3a1560', aura: '#7a2bba', glow: 'rgba(120, 40, 190, 0.9)' },
+  curse_light:  { core: '#FFD700', aura: '#FFF0A0', glow: 'rgba(255, 215, 0, 0.95)' },
 };
 
 function pickSpellVideo(kind) {
@@ -6066,6 +6291,11 @@ function _playMonsterPop() { _playCanvasBreak(); }
 // バトル行=6行 (あ/さ/た/は/ま/や)。か/な/ら は謎解き行、わ は大魔王 (別実装)。
 // カタカナ (ア/サ/タ/ハ/マ/ヤ) はひらがな側を流用する (_normalizeRowLabel で変換)。
 const BATTLE_ENEMIES = {
+  // v265 バトルピボット (2026-04-24): 敵は全員「ザガンに呪縛された良心的な精霊」に設定変更。
+  //   - taunts: { p1(怒), p2(揺らぎ), p3(覚醒の気配), bow(お礼), leave(帰還) } の3相構造。
+  //     HP 帯で切替 → _pickPhasedTaunt で選ばれる。配列形式にもフォールバック互換あり。
+  //   - trueName: 仮面が割れた後に表示される精霊の本当の名前。お礼セリフの主語に使う。
+  //   - cleansedHome: 帰還先 (内部メモ、将来のストーリー拡張用)。
   // あ行: 森のザコ「おこりキノコ」。
   // 2026-04-21 ユーザー要望で再マッピング:
   //   idle (静止)    <- 怒れるキノコ002 (腰に手を当てた立ちポーズ)
@@ -6083,7 +6313,15 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/Mushroom/mushroom_atk_1.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/Mushroom/mushroom_atk_strike.png',
-    taunts: ['ぷんぷん！', 'ほうしを まくぞ！', 'ふみつぶすな〜', 'もりの いかり！', 'キノコパンチ！'],
+    taunts: {
+      p1: ['ぷんぷん！', 'ほうしを まくぞ！', 'もりに はいるな〜！', 'キノコパンチ！'],
+      p2: ['…あれ？', 'あたま が いたい…', 'だれ？ きみは…？'],
+      p3: ['あ… そうか。', 'わたし は…'],
+      bow:   'ごめんね。ありがとう。',
+      leave: 'もり に かえる ね。'
+    },
+    trueName: 'モリコ',
+    cleansedHome: 'もりの おく',
     hp: 5, element: 'earth',
     flipped: true, grounded: true, compact: true
   },
@@ -6100,7 +6338,15 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/Golem/golem_atk_up_3.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/Golem/golem_atk_down.png',
-    taunts: ['ずしん…', 'いわの からだだ', 'くだけぬぞ', 'ごろ ごろ…', 'きえろ…！'],
+    taunts: {
+      p1: ['ずしん…', 'いわの からだだ', 'くだけぬぞ', 'ごろ ごろ…'],
+      p2: ['なんだ… このおもさは…', 'からだが… おもい…', 'いたい… のか…？'],
+      p3: ['…もりを… まもる…', 'わたし は もりの…'],
+      bow:   'すまなかった。ありがとう。',
+      leave: 'もりを まもり に かえる。'
+    },
+    trueName: 'イワキチ',
+    cleansedHome: 'もりの いしがみ',
     hp: 8, element: 'earth',
     boss: true, grounded: true, reward: 'shield'
   },
@@ -6117,7 +6363,15 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/IceBat/icebat_atk_2.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/IceBat/icebat_atk_strike.png',
-    taunts: ['キィー！', 'こおりの ひかり！', 'キラッ…', 'つめたいぞ〜！', 'ビーム！'],
+    taunts: {
+      p1: ['キィー！', 'こおりの ひかり！', 'キラッ…', 'ビーム！'],
+      p2: ['キ… キィ…？', 'くらい… どこ？', 'だれか いるの…？'],
+      p3: ['…はね が… おもい…', 'おもいだした…'],
+      bow:   'ごめんなさい。ありがとう。',
+      leave: 'どうくつ に かえる ね。'
+    },
+    trueName: 'クリス',
+    cleansedHome: 'こおりの どうくつ',
     hp: 6, element: 'ice',
     flipped: true, rangedMagic: true
   },
@@ -6134,7 +6388,15 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/IceWizard/ice_wizard_atk_2.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/IceWizard/ice_wizard_atk_strike.png',
-    taunts: ['キィィン…', 'こおりづけに してやる！', 'つららの あめだ！', 'さむいぞ〜…', 'こおりの ちから！'],
+    taunts: {
+      p1: ['キィィン…', 'こおりづけに してやる！', 'つららの あめだ！', 'こおりの ちから！'],
+      p2: ['な… なに が…？', 'あたまが さえて いく…', 'わたし は… だれ…？'],
+      p3: ['…おもいだした…', 'どうくつ の まもりびと だった…'],
+      bow:   'すまなかった。たすけて くれて ありがとう。',
+      leave: 'どうくつ に もどる よ。'
+    },
+    trueName: 'ユキヒサ',
+    cleansedHome: 'こおりの どうくつ おく',
     hp: 10, element: 'ice',
     boss: true, flipped: true, reward: 'armor',
     // 魔導士タイプ: カウンター攻撃時に氷ビームを放ち、さらにつららの雨を降らせる。
@@ -6152,7 +6414,15 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/LavaGolem/lava_golem_atk_2.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/LavaGolem/lava_golem_atk_strike.png',
-    taunts: ['ゴゴゴ…', 'もえる いわ！', 'ようがん パンチ！', 'あつい ぞ〜！', 'くだけろ…！'],
+    taunts: {
+      p1: ['ゴゴゴ…', 'もえる いわ！', 'ようがん パンチ！', 'くだけろ…！'],
+      p2: ['ぐ…', 'あたまが… もえる…', 'だれ だ… おまえ は…'],
+      p3: ['…ようがん… しずめなきゃ…', 'まもる…'],
+      bow:   'ありがたい。たすかった よ。',
+      leave: 'ようがん に かえる ぞ。'
+    },
+    trueName: 'マグナ',
+    cleansedHome: 'ようがんの ふもと',
     hp: 6, element: 'fire',
     flipped: true, grounded: true
   },
@@ -6168,7 +6438,15 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/Imp/imp_atk_2.png',
     ],
     imgAttackStrike: '../assets/images/monsters/chars/Imp/imp_atk_strike.png',
-    taunts: ['くふふ〜', 'やみの ちから！', 'にげられぬ ぞ', 'やいばを くらえ！', 'いたずら だ〜！'],
+    taunts: {
+      p1: ['くふふ〜', 'やみの ちから！', 'にげられぬ ぞ', 'いたずら だ〜！'],
+      p2: ['あ… あれ…？', 'わたし… なにして たの…？', 'どうして ここに…？'],
+      p3: ['…おもいだして きた…', 'はねの いろ が…'],
+      bow:   'ごめんなさい。ありがとう。',
+      leave: 'かざん の うえ に かえる ね。'
+    },
+    trueName: 'アカネ',
+    cleansedHome: 'かざんの やね',
     hp: 7, element: 'fire',
     flipped: true
   },
@@ -6177,7 +6455,15 @@ const BATTLE_ENEMIES = {
   'わ': {
     id: 'volcano_lord', name: 'かざんのぬし',
     img: '../assets/images/monsters/chars/monster_016_volcano_lord.png',
-    taunts: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'あちいぞ〜！', 'くらえ…！'],
+    taunts: {
+      p1: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'くらえ…！'],
+      p2: ['なんだ この ちから は…', 'からだが… かるく…', 'だれ… なのだ…？'],
+      p3: ['…おもいだした…', 'わたし は かざん の ぬし…'],
+      bow:   'すまぬ。ありがとう、ゆうしゃ よ。',
+      leave: 'かざん を しずめ に もどる。'
+    },
+    trueName: 'カゲロウ',
+    cleansedHome: 'かざん の いただき',
     grounded: true,
     hp: 12, element: 'fire',
     boss: true, reward: 'sword'
@@ -6223,6 +6509,156 @@ const _battle = {
   heroHp: 30, heroMaxHp: 30, heroHpFloor: 5,
   heroMp: 20, heroMaxMp: 20, heroMpFloor: 0,
 };
+
+// ===== v265: 呪縛仮面・呪印・浄化 (「呪縛を解く」ピボット) =====
+// HP 進行に応じて battleEnemy の data-sigil / data-cracks 属性を更新する。
+// CSS 側でこれを見て呪印の色 (紫→金) とヒビの本数を段階的に描画。
+function _updateCurseSigil() {
+  try {
+    const enemyEl = document.getElementById('battleEnemy');
+    if (!enemyEl) return;
+    const maxHp = _battle.maxHp || 5;
+    const hp = Math.max(0, _battle.hp);
+    const ratio = (maxHp > 0) ? (hp / maxHp) : 0;
+    // HP 比で 0〜5 の段階に正規化 (ボス HP 8/10/12 でも同じカーブで進行)
+    let stage;
+    if (ratio >= 0.9)       stage = 5;
+    else if (ratio >= 0.65) stage = 4;
+    else if (ratio >= 0.4)  stage = 3;
+    else if (ratio >= 0.2)  stage = 2;
+    else if (ratio > 0)     stage = 1;
+    else                    stage = 0;
+    enemyEl.dataset.sigil = String(stage);
+    // ヒビは 3 本が上限。段階 5/4=0、3=1、2=2、1/0=3。
+    const cracks = (stage >= 4) ? 0 : (stage === 3) ? 1 : (stage === 2) ? 2 : 3;
+    enemyEl.dataset.cracks = String(cracks);
+  } catch (e) { /* ignore */ }
+}
+// 敵の呪縛仮面を初期状態に戻す (_showBattleStage 開始時)。
+function _resetCurseMask() {
+  try {
+    const enemyEl = document.getElementById('battleEnemy');
+    if (!enemyEl) return;
+    enemyEl.classList.remove('purified', 'bowing', 'ascending');
+    enemyEl.classList.add('cursed');
+    const maskEl = document.getElementById('curseMask');
+    if (maskEl) {
+      maskEl.classList.remove('shattering');
+      maskEl.style.opacity = '';
+      // ハーフの transform/animation を完全リセット (連戦対策)
+      maskEl.querySelectorAll('.curse-mask-half').forEach(function(h) {
+        h.style.animation = 'none';
+        h.style.transform = '';
+        h.style.opacity = '';
+        // 次フレームで none を外さないと再適用時にアニメが走らない
+        requestAnimationFrame(function() { h.style.animation = ''; });
+      });
+    }
+    // 残留 thanks bubble を除去
+    document.querySelectorAll('.spirit-thanks-bubble').forEach(function(el) { el.remove(); });
+    document.querySelectorAll('.curse-shadow-drain').forEach(function(el) { el.remove(); });
+    _updateCurseSigil();
+  } catch (e) { /* ignore */ }
+}
+
+// HP 帯で 3 相 (p1/p2/p3) から taunt を選ぶ。旧配列形式にもフォールバック互換。
+function _pickPhasedTaunt() {
+  const enemy = _battle.enemy;
+  if (!enemy || !enemy.taunts) return null;
+  const t = enemy.taunts;
+  if (Array.isArray(t)) {
+    if (!t.length) return null;
+    return t[Math.floor(Math.random() * t.length)];
+  }
+  const maxHp = _battle.maxHp || 5;
+  const ratio = (maxHp > 0) ? (_battle.hp / maxHp) : 0;
+  let pool;
+  if (ratio >= 0.67 && t.p1 && t.p1.length) pool = t.p1;
+  else if (ratio >= 0.34 && t.p2 && t.p2.length) pool = t.p2;
+  else if (t.p3 && t.p3.length) pool = t.p3;
+  else pool = (t.p1 || t.p2 || t.p3 || []);
+  if (!pool || !pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// 仮面割れの瞬間に呪印から下方へ紫の闇霧を排出する (12粒、0.75s で消失)。
+function _spawnCurseShadowDrainParticles() {
+  try {
+    const enemyEl = document.getElementById('battleEnemy');
+    if (!enemyEl) return;
+    const N = 10;
+    for (let i = 0; i < N; i++) {
+      const p = document.createElement('div');
+      p.className = 'curse-shadow-drain';
+      const angle = Math.PI * (0.5 + (Math.random() - 0.5) * 0.9); // ほぼ下向き ±40°
+      const dist = 44 + Math.random() * 30;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      p.style.setProperty('--dx', (dx - 5).toFixed(1) + 'px');
+      p.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      p.style.animationDelay = (Math.random() * 0.12).toFixed(2) + 's';
+      enemyEl.appendChild(p);
+      setTimeout(function() { if (p.parentNode) p.remove(); }, 900);
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// 「…ありがとう」吹き出しを敵の上にフェードイン (bow と同期)。
+function _showSpiritThanksBubble(text) {
+  try {
+    const enemyEl = document.getElementById('battleEnemy');
+    if (!enemyEl) return;
+    // 既存吹き出しがあれば置換
+    enemyEl.querySelectorAll('.spirit-thanks-bubble').forEach(function(el) { el.remove(); });
+    const b = document.createElement('div');
+    b.className = 'spirit-thanks-bubble';
+    b.textContent = text || '…ありがとう';
+    enemyEl.appendChild(b);
+    setTimeout(function() { if (b.parentNode) b.remove(); }, 2400);
+  } catch (e) { /* ignore */ }
+}
+
+// 仮面割れ + 敵色切替 + おじぎ + 上昇の 2.4 秒シーケンス。battleVictory の onImpact から呼ぶ。
+// 着弾タイミングと sigilBurst を同期させるため、ここで初めて data-sigil=0 に遷移する。
+// 完了後 onDone を呼ぶ (戦闘ログの次ビートに繋げる)。
+function _startPurificationSequence(onDone) {
+  const enemyEl = document.getElementById('battleEnemy');
+  const maskEl  = document.getElementById('curseMask');
+  if (!enemyEl) { if (onDone) onDone(); return; }
+  try { enemyEl.classList.remove('damaged'); } catch (e) {}
+
+  // t=0ms: 呪印を最終段階 (金爆発) へ遷移 → sigilBurst アニメ (0.5s) 発火
+  enemyEl.dataset.sigil = '0';
+  enemyEl.dataset.cracks = '3';
+
+  // t=320ms: 仮面の左右割れ + 闇霧排出 (sigilBurst のピーク直後)
+  setTimeout(function() {
+    if (maskEl) maskEl.classList.add('shattering');
+    _spawnCurseShadowDrainParticles();
+  }, 320);
+
+  // t=780ms: 仮面がほぼ飛び終わったら、敵を呪縛 → 浄化の色味へ切替
+  setTimeout(function() {
+    try {
+      enemyEl.classList.remove('cursed');
+      enemyEl.classList.add('purified');
+    } catch (e) {}
+  }, 780);
+
+  // t=1000ms: おじぎ + 「…ありがとう」吹き出し
+  setTimeout(function() {
+    try {
+      enemyEl.classList.add('bowing');
+      _showSpiritThanksBubble('…ありがとう');
+      // bow animation は 0.65s で自然復帰
+      setTimeout(function() { enemyEl.classList.remove('bowing'); }, 700);
+    } catch (e) {}
+  }, 1000);
+
+  // シーケンスは約 1700ms で落ち着く。上昇は bow/leave ログ送り完了後に別途発火させる。
+  setTimeout(function() { if (onDone) onDone(); }, 1700);
+}
+
 
 // 勇者 HP/MP ゲージを現在値で描画 + 短い flash。
 function _renderHeroGauges(flash) {
@@ -6358,7 +6794,9 @@ function _showBattleStage(rowId) {
   if (els.name) els.name.textContent = enemy.name;
   if (els.charge) els.charge.classList.remove('charged');
   els.stars.forEach(s => s.classList.remove('lit'));
-  els.enemy.classList.remove('damaged', 'defeated');
+  els.enemy.classList.remove('damaged', 'defeated', 'purified', 'bowing', 'ascending');
+  // v265: 呪縛仮面を初期状態に戻す (敵に cursed クラス + 呪印紫5段階 + 割れ状態クリア)
+  try { _resetCurseMask(); } catch (e) {}
   // 地に足が付くタイプ (ゴーレム等、grounded:true): 浮遊アニメを切り 2倍拡大、
   // ラップも勇者と同じ高さに持ち上げる (stage.has-grounded クラスで制御)。
   els.enemy.classList.toggle('grounded', !!enemy.grounded);
@@ -6575,6 +7013,10 @@ function _battleDialogAdvance() {
   }
   const next = _battleDialog.queue.shift();
   _setBattleLog(next.lines || ['', '', ''], next.opts || {});
+  // v265: メッセージ表示と同時に演出を走らせたい場合のフック (例: 精霊上昇を帰還セリフと同期)
+  if (typeof next.onEnter === 'function') {
+    try { next.onEnter(); } catch (e) { /* ignore */ }
+  }
   // タイプライター分の時間 + 余裕を取って誤爆防止タイマーを設定
   _battleDialog._minShowUntil = Date.now() + 220;
   _battleDialogSetAwait(true);
@@ -6701,8 +7143,14 @@ function _showBattleEncounterIntroCore(onDone) {
     const postMessages = [
       { lines: [enemy.name + 'が あらわれた！', ''], opts: { line1Class: 'dq-line-emphasis' } },
     ];
-    if (enemy.taunts && enemy.taunts[0]) {
-      postMessages.push({ lines: [enemy.name, '「' + enemy.taunts[0] + '」'] });
+    // v265: taunts が phased 構造 (p1/p2/p3/bow/leave) に変わったので、登場時は p1 の先頭を使う
+    let introTaunt = null;
+    if (enemy.taunts) {
+      if (Array.isArray(enemy.taunts) && enemy.taunts[0]) introTaunt = enemy.taunts[0];
+      else if (enemy.taunts.p1 && enemy.taunts.p1[0]) introTaunt = enemy.taunts.p1[0];
+    }
+    if (introTaunt) {
+      postMessages.push({ lines: [enemy.name, '「' + introTaunt + '」'] });
     }
 
     // 敵登場アニメが落ち着くまで少し待ってから次のダイアログ
@@ -7439,6 +7887,10 @@ function battleHitEnemy(opts) {
   const star = els.stars[_battle.hitCount - 1];
   if (star) star.classList.add('lit');
   _renderHpBar(_battle.hp, _battle.maxHp);
+  // v265: 呪印の色とヒビを HP 連動で進化 (紫→金、ヒビ 0→3 本)。
+  // finisher 時は _startPurificationSequence が着弾と同期して sigil=0 (金爆発) を
+  // トリガするため、ここでは呼ばない (projectile 飛行中に先走って burst しないように)。
+  try { if (!isFinisher) _updateCurseSigil(); } catch (e) {}
 
   // ドラクエ風ログ: 「ゆうしゃのこうげき！」告知 (finisher は battleVictory 側の「たおした！」に任せる)
   const _enemyNameForLog = (_battle.enemy && _battle.enemy.name) || 'てき';
@@ -7486,9 +7938,10 @@ function battleHitEnemy(opts) {
         );
       } catch (e) { /* ignore */ }
     }
-    if (!isFinisher && _battle.enemy && _battle.enemy.taunts) {
-      const ts = _battle.enemy.taunts;
-      if (Math.random() < 0.5) _showEnemySpeech(ts[Math.floor(Math.random() * ts.length)], 1400);
+    if (!isFinisher) {
+      // v265: HP 帯で 3 相 (怒り→揺らぎ→覚醒) から selection。旧配列形式にもフォールバック互換。
+      const line = _pickPhasedTaunt();
+      if (line && Math.random() < 0.5) _showEnemySpeech(line, 1400);
     }
   };
   if (impactDelay > 0) setTimeout(doImpact, impactDelay);
@@ -7838,6 +8291,8 @@ function battleVictory(spellKind, onDone) {
   // 大魔法は mp4 の screen 合成が効かない問題があるため CSS + SE に置換 (2026-04-20)。
   // 通常弾より一回り大きく飛ばす finisher フラグで発射。
   // 着弾時は視覚エフェクトだけ (SE はここでは鳴らさない — 剣閃 SE とぶつかるため)。
+  // v265: 着弾時は従来の .defeated (rotate/shrink/fade) ではなく _startPurificationSequence を発火
+  //       (仮面 2 つ割り + 敵スプライトの呪縛→浄化色味切替 + おじぎ + ありがとう吹き出し)。
   setTimeout(() => {
     try { _playMagicFinisherSound(); } catch (e) {}
     try {
@@ -7845,18 +8300,22 @@ function battleVictory(spellKind, onDone) {
         launchMagicProjectile(element, {
           finisher: true,
           onImpact: function() {
-            // 着弾と同時に敵を撃破演出 (視覚のみ)
             els.enemy.classList.remove('damaged');
-            els.enemy.classList.add('defeated');
+            try { _startPurificationSequence(); } catch (e) {
+              // フォールバック: 旧来の撃破演出に戻す
+              els.enemy.classList.add('defeated');
+            }
           }
         });
       } else {
-        els.enemy.classList.add('defeated');
+        try { _startPurificationSequence(); } catch (e) {
+          els.enemy.classList.add('defeated');
+        }
       }
     } catch (e) { /* ignore */ }
   }, 400);
 
-  // 撃破ウィンドウ
+  // 撃破ウィンドウ (v265: 文言は「めざめさせた！」に変更)
   setTimeout(() => {
     try { _showDefeatedWindow(_battle.enemy && _battle.enemy.name); } catch (e) {}
   }, 1900);
@@ -7886,6 +8345,8 @@ function battleVictory(spellKind, onDone) {
   // 各メッセージは ▼ タップで進められる (子供のペース)。
   setTimeout(() => {
     const enemyName = (_battle.enemy && _battle.enemy.name) || 'モンスター';
+    const enemyData = _battle.enemy || {};
+    const trueName = enemyData.trueName || '';
     // 日次キャップ: 1 ゲーム = 1 日 5 🌰。2 回目以降は 0 (「きょうはおしまい」表示)
     var granted = 0;
     try {
@@ -7895,14 +8356,41 @@ function battleVictory(spellKind, onDone) {
     } catch (e) { /* ignore */ }
     _battle.acornsBuffered = 0;
 
+    // v265: 仮面が割れた後の bow / leave セリフ。taunts が phased 構造を持つ場合のみ挿入。
+    const phasedTaunts = (enemyData.taunts && !Array.isArray(enemyData.taunts)) ? enemyData.taunts : null;
+    const bowLine = phasedTaunts && phasedTaunts.bow ? phasedTaunts.bow : '';
+    const leaveLine = phasedTaunts && phasedTaunts.leave ? phasedTaunts.leave : '';
+    const speakerLabel = trueName ? (trueName + '「') : '';
+    const speakerClose = trueName ? '」' : '';
+
     const rewardLine = granted > 0
       ? { lines: ['ごほうび！', '<span class="dq-line-emphasis">🌰 +' + granted + '</span> ゲット！'], opts: { line2Class: 'dmg-line' } }
       : { lines: ['きょうのどんぐりは', '<span class="dq-line-emphasis">おしまい！</span> また あした！'], opts: { line2Class: 'dmg-line' } };
     const messages = [
-      { lines: [enemyName + 'を', '<span class="dq-line-emphasis">たおした！</span>'], opts: { line2Class: 'dmg-line' } },
-      rewardLine,
-      { lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } },
+      { lines: [enemyName + 'を', '<span class="dq-line-emphasis">めざめさせた！</span>'], opts: { line2Class: 'dmg-line' } },
     ];
+    if (bowLine) {
+      messages.push({
+        lines: [speakerLabel + bowLine + speakerClose, ''],
+        opts: {}
+      });
+    }
+    if (leaveLine) {
+      messages.push({
+        lines: [speakerLabel + leaveLine + speakerClose, ''],
+        opts: {},
+        onEnter: function() {
+          // 帰還セリフに合わせて精霊がフワッと上昇して消える
+          try {
+            const enemyEl = document.getElementById('battleEnemy');
+            if (enemyEl) enemyEl.classList.add('ascending');
+          } catch (e) {}
+        }
+      });
+    }
+    messages.push(rewardLine);
+    messages.push({ lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } });
+
     _showBattleDialog(messages, function() {
       try { _hideDefeatedWindow(); } catch (e) {}
       if (onDone) onDone();
@@ -7925,10 +8413,10 @@ function _playMagicFinisherSound() {
   } catch (e) { /* ignore */ }
 }
 
-// 「〇〇を たおした！」を戦闘ログに表示
+// v265: 「〇〇を めざめさせた！」を戦闘ログに表示 (旧: たおした!)
 function _showDefeatedWindow(enemyName) {
   const name = enemyName || 'モンスター';
-  _setBattleLog([name + 'を', '<span class="dq-line-emphasis">たおした！</span>'], { line2Class: 'dmg-line' });
+  _setBattleLog([name + 'を', '<span class="dq-line-emphasis">めざめさせた！</span>'], { line2Class: 'dmg-line' });
 }
 function _hideDefeatedWindow() {
   // 互換のため残す。_rowPracticeComplete 側でログは自然に次のメッセージに置き換わる。
