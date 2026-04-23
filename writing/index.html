@@ -3792,6 +3792,14 @@ body.battle-intro-active .battle-log-window {
     height: min(34vh, 200px);
     max-width: 200px; max-height: 200px;
   }
+  /* 2026-04-23: キノコ (compact) が横画面だと grounded ルール (200px) を拾って
+     巨大化する現象を修正。縦画面の比率 (compact/grounded = 86/120 ≒ 0.72) を
+     踏襲し 144px (24vh) 相当に縮小。 */
+  body.battle-mode .battle-enemy.grounded.compact {
+    width: min(24vh, 144px);
+    height: min(24vh, 144px);
+    max-width: 144px; max-height: 144px;
+  }
   body.battle-mode .enemy-name { font-size: 1rem; }
   body.battle-mode .pentagram-charge { font-size: 1.15rem; }
 
@@ -9516,6 +9524,21 @@ function _showStoryboard(scenes, onDone) {
     }
     art.classList.remove('sb-in'); txt.classList.remove('sb-in');
     art.classList.add('sb-out'); txt.classList.add('sb-out');
+    // 2026-04-23: タップと同時に BGM フェードアウトを開始する。
+    // 次シーンが別 BGM を指定している場合は「シーン絵/文字の fade-out」と並行して
+    // 音量をゼロへ (500ms ease)。paintScene 内の setBgm は 520ms 後に走るため、
+    // その頃には volume ≒ 0 で fade-out 分岐をスキップし、新曲を fade-in で立ち上げる
+    // → ブツ切れ感を解消。尺がタップタイミングで変わる問題も吸収。
+    var _nextBgm = (scenes[idx] && scenes[idx].bgm !== undefined) ? scenes[idx].bgm : undefined;
+    if (_nextBgm !== undefined && _nextBgm !== currentBgmSrc) {
+      try {
+        if (!sbAudio.paused && sbAudio.volume > 0.02) {
+          fadeAudio(sbAudio, sbAudio.volume, 0, 500, function() {
+            try { sbAudio.pause(); } catch (e) {}
+          });
+        }
+      } catch (e) {}
+    }
     // sb-out (0.55s) の完了を待ってから次シーン描画。余韻を残しつつ流れるような切り替え。
     setTimeout(function() {
       paintScene(idx);
