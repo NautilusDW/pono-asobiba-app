@@ -4082,7 +4082,7 @@ body.battle-intro-active .battle-log-window {
 }
 
 /* 2026-04-23: ドラクエ風メッセージボックス。
-   - 固定 2 行分の高さ (text-align: left、上寄せ)
+   - 高さは内容に合わせて可変 (1 行の文は 1 行分、2 行の文は 2 行分)
    - 3 行以上のテキストはページネーションで 2 行ずつ切り替え (JS 側)
    - タップボタンは小さな ▼ 点滅マーカー (ボックス右下) に縮小。 */
 .storyboard-text {
@@ -4104,11 +4104,11 @@ body.battle-intro-active .battle-log-window {
   line-height: 1.55;
   letter-spacing: 0.06em;
   text-align: left;
-  /* 固定 2 行の高さを確保。font-size * line-height * 2 + 上下 padding */
-  min-height: calc(1.55em * 2 + 12px + 18px);
   image-rendering: pixelated;
   -webkit-font-smoothing: none;
   font-smoothing: none;
+  /* 高さが変わる時に急に伸び縮みしないよう滑らかに補間 */
+  transition: min-height 0.2s ease;
 }
 /* ▼ マーカー (次ページ / 次シーン待ち)。タイプ中は非表示。 */
 .storyboard-hint {
@@ -4131,12 +4131,20 @@ body.battle-intro-active .battle-log-window {
   0%, 49%  { opacity: 1; transform: translateY(0); }
   50%,100% { opacity: 0.3; transform: translateY(2px); }
 }
-.storyboard-art.sb-in, .storyboard-text.sb-in {
-  animation: sbContentIn 0.5s ease-out both;
+/* 2026-04-23: 物語演出のための長めの cross-fade。
+   絵は ゆっくり浮かび上がり (0.8s) / ゆっくり消えゆく (0.55s) で余韻を残す。
+   文字は絵より少し遅れて (0.25s) 入ってくる。 */
+.storyboard-art.sb-in { animation: sbArtIn 0.85s ease-out both; }
+.storyboard-text.sb-in { animation: sbContentIn 0.6s ease-out both; animation-delay: 0.25s; }
+.storyboard-art.sb-out { animation: sbArtOut 0.55s ease-in both; }
+.storyboard-text.sb-out { animation: sbContentOut 0.35s ease-in both; }
+@keyframes sbArtIn {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: scale(1); }
 }
-.storyboard-text.sb-in { animation-delay: 0.15s; }
-.storyboard-art.sb-out, .storyboard-text.sb-out {
-  animation: sbContentOut 0.28s ease-in both;
+@keyframes sbArtOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.02); }
 }
 @keyframes sbContentIn {
   from { opacity: 0; transform: translateY(14px); }
@@ -9207,6 +9215,10 @@ function _showStoryboard(scenes, onDone) {
     if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
     typingDone = false;
     hint.classList.remove('visible');
+    // 行数に合わせてメッセージボックスの min-height を事前予約 (1行の文は 1 行分だけ)。
+    // タイプ中に高さが伸びてガタつくのを防ぎつつ、短文では余分な空間を取らない。
+    var nLines = Math.max(1, pageLines.length);
+    txt.style.minHeight = 'calc(1.55em * ' + nLines + ' + 12px + 18px)';
     var fullText = pageLines.join('\n');
     var pos = 0;
     txtInner.innerHTML = '';
@@ -9278,10 +9290,11 @@ function _showStoryboard(scenes, onDone) {
     art.classList.remove('sb-out'); txt.classList.remove('sb-out');
     void art.offsetWidth;   // reflow
     art.classList.add('sb-in'); txt.classList.add('sb-in');
-    // sb-in の fade-in と重ならないよう 155ms 待って type 開始。
+    // 文字ボックスの fade-in (delay 0.25s + 0.6s) とリズムが合うよう、
+    // 400ms 待ってから type 開始 → ボックスが現れてから文字が書き始められる。
     setTimeout(function() {
       startTypewriter(pages[0] || ['']);
-    }, 155);
+    }, 400);
   }
 
   function advance() {
@@ -9290,21 +9303,40 @@ function _showStoryboard(scenes, onDone) {
     if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
     idx++;
     if (idx >= scenes.length) {
-      // 次画面 (map/practice) を fade-out 前にセットアップ → オーバーレイが透けるにつれ下の新画面が見える。
-      // fade-out 完了後に表示すると「一瞬 タイトル or 空白が見える」チラつきが起きるため。
-      if (onDone) { try { onDone(); } catch (e) {} }
-      ov.classList.add('fade-out');
+      // 余韻演出: 最終シーンの絵・文字をフェードアウト → 黒みで静止 → 黒みのまま次画面を背後にセット
+      // → オーバーレイを黒みからフェードアウトして map がゆっくり現れる。
+      // 時系列 (ms): 0 = 絵/文字 fade-out, 500 = 完全黒み, 1700 = 次画面セット, 2000 = overlay fade-out, 2900 = 撤去
+      art.classList.remove('sb-in');
+      txt.classList.remove('sb-in');
+      art.classList.add('sb-out');
+      txt.classList.add('sb-out');
+      // 背景を純黒へ遷移 (scene bg が色付きの場合に備えて)
+      ov.style.background = '#000';
+      setTimeout(function() {
+        // 黒みの状態で子要素も完全に消す (透過 png の輪郭が残らないように)
+        art.style.visibility = 'hidden';
+        txt.style.visibility = 'hidden';
+      }, 500);
+      setTimeout(function() {
+        // 次画面 (map/practice) を黒み背後にセットアップ
+        if (onDone) { try { onDone(); } catch (e) {} }
+      }, 1700);
+      setTimeout(function() {
+        // overlay を透明へフェード → 背後の map がゆっくり現れる
+        ov.classList.add('fade-out');
+      }, 2000);
       setTimeout(function() {
         if (ov.parentNode) ov.remove();
-      }, 550);
+      }, 2900);
       return;
     }
     art.classList.remove('sb-in'); txt.classList.remove('sb-in');
     art.classList.add('sb-out'); txt.classList.add('sb-out');
+    // sb-out (0.55s) の完了を待ってから次シーン描画。余韻を残しつつ流れるような切り替え。
     setTimeout(function() {
       paintScene(idx);
       transitioning = false;
-    }, 300);
+    }, 520);
   }
 
   ov.addEventListener('click', skipOrAdvance);
@@ -9312,51 +9344,52 @@ function _showStoryboard(scenes, onDone) {
 }
 
 // オープニング: ひらがな編冒頭の紙芝居 (初回のみ自動、以後は localStorage フラグでスキップ)。
-// 画像はユーザー側で後日生成し assets/images/story/opening_{1-7}.png として置き換える想定。
 // 画像ファイル命名 (2026-04-23 再マッピング、全10ビート):
-//   opening_1.png  = OP_S01_C01  S1a 王国 前半
-//   opening_2.png  = OP_S01_C02  S1b 王国 後半
-//   opening_3.png  = OP_S02_C01  S2a 姫 前半
-//   opening_4.png  = OP_S02_C02  S2b 姫 後半
-//   opening_5.png  = OP_S03      S3 ふしぎな ひかり
-//   opening_6.png  = OP_S04      S4 まおう の てさき
-//   opening_7.png  = OP_S05_C01  S5a つれさられる 前半
-//   opening_8.png  = OP_S05_C02  S5b つれさられる 後半
-//   opening_9.png  = OP_S06      S6 おうさま の さけび
-//   opening_10.png = OP_S07      S7 ゆうしゃ しょうしゅう
+//   opening_1.jpg  = OP_S01_C01  S1a 王国 前半
+//   opening_2.jpg  = OP_S01_C02  S1b 王国 後半 (上→下へゆっくりパン)
+//   opening_3.jpg  = OP_S02_C01  S2a 姫 前半
+//   opening_4.jpg  = OP_S02_C02  S2b 姫 後半
+//   opening_5.jpg  = OP_S03      S3 ふしぎな ひかり
+//   opening_6.jpg  = OP_S04      S4 まおう の てさき
+//   opening_7.jpg  = OP_S05_C01  S5a つれさられる 前半
+//   opening_8.jpg  = OP_S05_C02  S5b つれさられる 後半
+//   opening_9.jpg  = OP_S06      S6 おうさま の さけび
+//   opening_10.jpg = OP_S07      S7 ゆうしゃ しょうしゅう
 // 背景色は画像が contain でレターボックスになる余白用 (絵の基調色に合わせる)。
+// 2026-04-23: PNG(2688x1520, ~10MB/枚) を JPG(1600w, ~300-500KB) に圧縮、
+// 合計 100MB → 約 3.6MB へ削減。オープニング読み込みの遅延を解消。
 var OPENING_SCENES = [
   { bg: '#1a1008',
-    image: '../assets/images/story/opening_1.png', emoji: '🏰',
+    image: '../assets/images/story/opening_1.jpg', emoji: '🏰',
     text: 'むかし むかし、\nしあわせな おうこく が ありました。' },
   { bg: '#1a1008',
-    image: '../assets/images/story/opening_2.png', emoji: '🏰',
+    image: '../assets/images/story/opening_2.jpg', emoji: '🏰',
     pan: 'down',
     text: 'まいにち みんなが わらいあう、\nやさしい くに でした。' },
   { bg: '#2a0e1a',
-    image: '../assets/images/story/opening_3.png', emoji: '👸',
-    text: 'おうじょさま は\nこころ やさしく、' },
+    image: '../assets/images/story/opening_3.jpg', emoji: '👸',
+    text: 'おうじょさま は こころ やさしく、' },
   { bg: '#2a0e1a',
-    image: '../assets/images/story/opening_4.png', emoji: '💖',
-    text: 'ひとびと から\nあいされて いました。' },
+    image: '../assets/images/story/opening_4.jpg', emoji: '💖',
+    text: 'ひとびと から あいされて いました。' },
   { bg: '#1a1533',
-    image: '../assets/images/story/opening_5.png', emoji: '✨',
-    text: 'あるひ、 おしろ の へや で\nおうじょさま が すごして いると、\nへや の なか に\nふしぎな ひかり が あらわれました。' },
+    image: '../assets/images/story/opening_5.jpg', emoji: '✨',
+    text: 'あるひ、 おしろ の へや で\nおうじょさま が すごして いると、\n\nへや の なか に\nふしぎな ひかり が あらわれました。' },
   { bg: '#0f0820',
-    image: '../assets/images/story/opening_6.png', emoji: '👺',
-    text: 'ひかり の なか から、\nまおう ザガン の てさき が\nすがた を あらわしました。\nそれは、 かめん を つけた\nふしぎ で おそろしい まもの でした。' },
+    image: '../assets/images/story/opening_6.jpg', emoji: '👺',
+    text: 'ひかり の なか から、\nまおう ザガン の てさき が\n\nすがた を あらわしました。\n\nそれは、 かめん を つけた\nふしぎ で おそろしい まじん でした。' },
   { bg: '#2a2040',
-    image: '../assets/images/story/opening_7.png', emoji: '💫',
+    image: '../assets/images/story/opening_7.jpg', emoji: '💫',
     text: 'まばゆい ひかり が\nへや いっぱい に ひろがる と、' },
   { bg: '#2a2040',
-    image: '../assets/images/story/opening_8.png', emoji: '💫',
-    text: 'おうじょさま は\nつれさられて しまいました。' },
+    image: '../assets/images/story/opening_8.jpg', emoji: '💫',
+    text: 'おうじょさま は つれさられて しまいました。' },
   { bg: '#1a0c05',
-    image: '../assets/images/story/opening_9.png', emoji: '👑',
-    text: '「たすけて くれる もの は おらぬか！」\nおうさま は かなしく さけび、\nゆうかん な せんし を あつめました。' },
+    image: '../assets/images/story/opening_9.jpg', emoji: '👑',
+    text: '「たすけて くれる もの は おらぬか！」\n\nおうさま は かなしく さけび、\nゆうかん な せんし を あつめました。' },
   { bg: '#0a1026',
-    image: '../assets/images/story/opening_10.png', emoji: '⚔️',
-    text: 'そして、 あなた が えらばれた のです。\n「ゆうしゃ よ、\nおひめさま を たすけだして おくれ！」' }
+    image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
+    text: 'そして、 あなた が えらばれた のです。\n\n「ゆうしゃ よ、\nわが ひめ を たすけだして くれ！」' }
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
