@@ -9428,6 +9428,10 @@ function _showStoryboard(scenes, onDone) {
     if (s.bg) ov.style.background = s.bg;
     if (s.bgm !== undefined) setBgm(s.bgm);  // シーン指定時のみ切替、未指定は継続
     art.innerHTML = '';
+    // 前シーンのメッセージが fade-in の一瞬に透けて見える現象への対策:
+    // sb-in を再付与する前に古いテキストと hint を完全に消しておく (2026-04-23)。
+    txtInner.innerHTML = '';
+    hint.classList.remove('visible');
     var img = null;
     if (s.image) {
       img = document.createElement('img');
@@ -10963,8 +10967,18 @@ function goToPracticeDirect(rowIndex) {
   } catch (e) {}
 
   if (newBtn) newBtn.addEventListener('click', function() {
-    // ボタンタップ時も必ず BGM を発火 (primed 経路が失敗していても再試行)
-    _titleBgmPlaying = false; startTitleBgm();
+    // 2026-04-23: 「はじめから」はこの直後に紙芝居 (自前 BGM) に入るので、
+    // ここで title BGM を起こすと二重再生になる。先に storyboardActive を立てて
+    // title BGM ルートを封じ、併せて現在鳴っている title BGM を即停止する。
+    try {
+      window._storyboardActive = true;
+      var _preMainBgm = document.getElementById('bgm');
+      if (_preMainBgm) {
+        _preMainBgm.pause();
+        try { _preMainBgm.removeAttribute('src'); _preMainBgm.load(); } catch (e) {}
+      }
+      _titleBgmPlaying = false;
+    } catch (e) {}
     // 「はじめから」では三種の神器と妖精の救出状況もリセットする (要望 2026-04-21)
     try { if (typeof resetGears === 'function') resetGears(); } catch (e) {}
     try { if (typeof resetFairies === 'function') resetFairies(); } catch (e) {}
@@ -11002,6 +11016,8 @@ function goToPracticeDirect(rowIndex) {
         }
       });
     } else {
+      // 紙芝居に入れなかった保険ルート: storyboardActive を下ろして title BGM を再開可能に。
+      try { window._storyboardActive = false; } catch (e) {}
       goToPracticeDirect(0);
     }
   });
