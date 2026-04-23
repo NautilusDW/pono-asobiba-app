@@ -3794,11 +3794,11 @@ body.battle-intro-active .battle-log-window {
   }
   /* 2026-04-23: キノコ (compact) が横画面だと grounded ルール (200px) を拾って
      巨大化する現象を修正。縦画面の比率 (compact/grounded = 86/120 ≒ 0.72) を
-     踏襲し 144px (24vh) 相当に縮小。 */
+     踏襲し、144px → 108px (さらに 0.75x) に縮小 (ユーザー指摘 2回目)。 */
   body.battle-mode .battle-enemy.grounded.compact {
-    width: min(24vh, 144px);
-    height: min(24vh, 144px);
-    max-width: 144px; max-height: 144px;
+    width: min(18vh, 108px);
+    height: min(18vh, 108px);
+    max-width: 108px; max-height: 108px;
   }
   body.battle-mode .enemy-name { font-size: 1rem; }
   body.battle-mode .pentagram-charge { font-size: 1.15rem; }
@@ -4100,6 +4100,23 @@ body.battle-intro-active .battle-log-window {
     object-fit: cover;
   }
 }
+/* 2026-04-23 v2: 縦画面で pan 付きシーン (S1b / S8) だけ全画面表示になり
+   他のシーンのレターボックスと揃っていない、とのユーザー指摘。
+   → 縦画面では 16:9 のマスクに切って、その内側で縦パンするように統一。
+   pan のアニメは object-position を動かすだけなので、外枠が 16:9 でも
+   cover モードで画像の見せる範囲がスライドする挙動はそのまま保たれる。 */
+@media (orientation: portrait) {
+  .storyboard-art img.sb-pan-down,
+  .storyboard-art img.sb-pan-up {
+    width: 100vw;
+    height: 56.25vw;           /* 16:9 レターボックス */
+    max-height: 100%;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+  }
+}
 @keyframes sbPanDown {
   from { object-position: center 0%; }
   to   { object-position: center 100%; }
@@ -4107,6 +4124,16 @@ body.battle-intro-active .battle-log-window {
 @keyframes sbPanUp {
   from { object-position: center 100%; }
   to   { object-position: center 0%; }
+}
+/* 2026-04-23 v2: S2a (姫様 & ペット) のようなじっくり見せたいカット用の
+   ゆっくりズームイン。中心からじわっと被写体に近づく動き。 */
+.storyboard-art img.sb-zoom-in-slow {
+  animation: sbZoomInSlow 14s ease-out forwards;
+  transform-origin: center 45%;
+}
+@keyframes sbZoomInSlow {
+  from { transform: scale(1.00); }
+  to   { transform: scale(1.15); }
 }
 
 /* 2026-04-23: ドラクエ風メッセージボックス。
@@ -9469,34 +9496,41 @@ function _showStoryboard(scenes, onDone) {
     }
   }
 
-  function paintScene(i) {
+  function paintScene(i, keepImage) {
     var s = scenes[i];
     if (s.bg) ov.style.background = s.bg;
     if (s.bgm !== undefined) setBgm(s.bgm);  // シーン指定時のみ切替、未指定は継続
     // ナレーション: シーンに voice 指定があれば切替。未指定なら現行を停止しない (継続)。
     if (s.voice !== undefined) setVoice(s.voice);
-    art.innerHTML = '';
+    // keepImage=true: 同じ画像を維持、差し替えトランジションを走らせない (一枚絵モード)
+    if (!keepImage) {
+      art.innerHTML = '';
+    }
     // 前シーンのメッセージが fade-in の一瞬に透けて見える現象への対策:
     // sb-in を再付与する前に古いテキストと hint を完全に消しておく (2026-04-23)。
     txtInner.innerHTML = '';
     hint.classList.remove('visible');
     var img = null;
-    if (s.image) {
-      img = document.createElement('img');
-      img.src = s.image;
-      img.alt = '';
-      if (s.pan) img.classList.add('sb-pan-' + s.pan);
-      img.onerror = function() {
-        art.innerHTML = '';
+    if (!keepImage) {
+      if (s.image) {
+        img = document.createElement('img');
+        img.src = s.image;
+        img.alt = '';
+        if (s.pan) img.classList.add('sb-pan-' + s.pan);
+        if (s.zoom) img.classList.add('sb-zoom-' + s.zoom);
+        img.onerror = function() {
+          art.innerHTML = '';
+          art.textContent = s.emoji || '';
+        };
+        art.appendChild(img);
+      } else {
         art.textContent = s.emoji || '';
-      };
-      art.appendChild(img);
-    } else {
-      art.textContent = s.emoji || '';
+      }
     }
     pages = splitPages(s.text || '');
     pageIdx = 0;
-    art.classList.remove('sb-out'); txt.classList.remove('sb-out');
+    if (!keepImage) art.classList.remove('sb-out');
+    txt.classList.remove('sb-out');
     void art.offsetWidth;   // reflow
 
     // 画像がロードされるまで sb-in を遅延 (フェードインが「カットイン」に見える現象の対策)。
@@ -9506,14 +9540,18 @@ function _showStoryboard(scenes, onDone) {
     function triggerIn() {
       if (fired) return;
       fired = true;
-      art.classList.add('sb-in'); txt.classList.add('sb-in');
+      if (!keepImage) art.classList.add('sb-in');
+      txt.classList.add('sb-in');
       // 文字ボックスの fade-in (delay 0.25s + 0.6s) とリズムが合うよう、
       // 400ms 待ってから type 開始 → ボックスが現れてから文字が書き始められる。
       setTimeout(function() {
         startTypewriter(pages[0] || ['']);
       }, 400);
     }
-    if (img && !(img.complete && img.naturalWidth > 0)) {
+    if (keepImage) {
+      // 絵はそのまま。テキストだけ出し直す。
+      triggerIn();
+    } else if (img && !(img.complete && img.naturalWidth > 0)) {
       var fbTimer = setTimeout(triggerIn, 1500);
       img.addEventListener('load',  function() { clearTimeout(fbTimer); triggerIn(); }, { once: true });
       img.addEventListener('error', function() { clearTimeout(fbTimer); triggerIn(); }, { once: true });
@@ -9529,22 +9567,24 @@ function _showStoryboard(scenes, onDone) {
     idx++;
     if (idx >= scenes.length) {
       // 余韻演出: 最終シーンの絵・文字を長めにフェードアウト → 純白へじっくり染める
-      // → 白み 2 秒ホールド → 次画面を背後にセット → overlay を透明化して map がゆっくり現れる。
-      // 時系列 (ms): 0 = 絵/文字 fade-out + bg→white (1.8s, BGM は継続)
-      //              500 = 絵/文字を visibility:hidden,  1800 = 完全白
-      //              3800 = 次画面セット & overlay opacity 開始 (1.2s)
-      //              3900 = BGM フェードアウト開始 (1200ms, 白→マップ遷移に同期)
-      //              5100 = overlay 透明 + BGM 終了
-      //              5200 = 撤去
-      // 2026-04-23: ユーザー要望「白になるまで音楽はそのまま、白→マップの遷移で
-      // ちょうど消えるように」→ BGM の fade-out を即時から t=3900 まで遅延して
-      // overlay の透明化と完全に同期させる。
+      // → 白みホールド中も BGM 継続 → overlay を透明化して map がゆっくり現れる間、
+      //    BGM はさらに 4 秒かけてゆっくり消える。
+      // 時系列 (ms):
+      //   0     = 絵/文字 fade-out + bg→white (1.8s, BGM 継続)
+      //   500   = 絵/文字を visibility:hidden
+      //   1800  = 完全白 (BGM まだ鳴ってる)
+      //   4000  = 次画面セット (白バックのままホールド)
+      //   4100  = overlay opacity フェードアウト開始 (1.5s) + BGM 4s フェードアウト開始
+      //   5600  = overlay 透明 (map 完全表示, BGM まだかすかに鳴ってる)
+      //   8100  = BGM 完全無音
+      //   8200  = cleanup + overlay 撤去
+      // 2026-04-23 v2: ユーザー要望「白バック中も BGM 続かせて、フェードアウトは 4 秒で」
       art.classList.remove('sb-in');
       txt.classList.remove('sb-in');
       art.classList.add('sb-out');
       txt.classList.add('sb-out');
       // overlay の transition を「ゆっくり白へ、ゆっくり透明へ」に上書き。
-      ov.style.transition = 'opacity 1.2s ease, background 1.8s ease';
+      ov.style.transition = 'opacity 1.5s ease, background 1.8s ease';
       ov.style.background = '#fff';
       setTimeout(function() {
         // 白の状態で子要素も完全に消す。
@@ -9552,27 +9592,37 @@ function _showStoryboard(scenes, onDone) {
         txt.style.visibility = 'hidden';
       }, 500);
       setTimeout(function() {
-        // 次画面 (map/practice) を白背後にセットアップ。
+        // 次画面 (map/practice) を白背後にセットアップ。storyboardActive はまだ true。
         if (onDone) { try { onDone(); } catch (e) {} }
-      }, 3800);
+      }, 4000);
       setTimeout(function() {
         // overlay を透明へフェード → 背後の map が白みからゆっくり現れる。
         ov.classList.add('fade-out');
-        // BGM も同タイミングで 1200ms フェードアウト → 白→マップ切替と同期して無音へ。
+        // BGM を 4 秒かけてゆっくりフェードアウト。
+        // overlay 透明化 (1.5s) より長いので、map が出てからもしばらく余韻が残る。
         try {
-          fadeAudio(sbAudio, sbAudio.volume, 0, 1200, function() {
+          fadeAudio(sbAudio, sbAudio.volume, 0, 4000, function() {
             try { sbAudio.pause(); } catch (e) {}
           });
         } catch (e) {}
-      }, 3900);
+      }, 4100);
       setTimeout(function() {
         _sbCleanup();
         if (ov.parentNode) ov.remove();
-      }, 5200);
+      }, 8200);
       return;
     }
+    // 2026-04-23 v2: 連続したシーンで同じ画像ファイルを使う場合、
+    // ナレーションが分割されていても「結局同じ絵」なので差し替えトランジションは
+    // 挟まず一枚絵のまま、テキストだけ入れ替える。
+    var _prevScene = scenes[idx - 1];
+    var _nextScene = scenes[idx];
+    var _sameImage = !!(_prevScene && _nextScene
+                        && _prevScene.image && _nextScene.image
+                        && _prevScene.image === _nextScene.image);
     art.classList.remove('sb-in'); txt.classList.remove('sb-in');
-    art.classList.add('sb-out'); txt.classList.add('sb-out');
+    if (!_sameImage) art.classList.add('sb-out');
+    txt.classList.add('sb-out');
     // 2026-04-23: タップと同時に BGM フェードアウトを開始する。
     // 次シーンが別 BGM を指定している場合は「シーン絵/文字の fade-out」と並行して
     // 音量をゼロへ (500ms ease)。paintScene 内の setBgm は 520ms 後に走るため、
@@ -9589,10 +9639,11 @@ function _showStoryboard(scenes, onDone) {
       } catch (e) {}
     }
     // sb-out (0.55s) の完了を待ってから次シーン描画。余韻を残しつつ流れるような切り替え。
+    // 同じ絵を維持する場合は文字だけのトランジションなので短く (0.35s)。
     setTimeout(function() {
-      paintScene(idx);
+      paintScene(idx, _sameImage);
       transitioning = false;
-    }, 520);
+    }, _sameImage ? 360 : 520);
   }
 
   ov.addEventListener('click', skipOrAdvance);
@@ -9630,11 +9681,14 @@ var OPENING_SCENES = [
     pan: 'down',
     voice: '../assets/audio/storyboard/voice/S1b.mp3',
     text: 'まいにち みんなが わらいあう、\nやさしい くに でした。' },
-  // --- S2: お姫様 (2 ビート) ---
+  // --- S2: お姫様 (2 ビート、別画像) ---
+  // S2a: 姫がペットをかわいがるカット → ゆっくりズームイン
   { bg: '#2a0e1a',
     image: '../assets/images/story/opening_3.jpg', emoji: '👸',
+    zoom: 'in-slow',
     voice: '../assets/audio/storyboard/voice/S2a.mp3',
     text: 'おうじょさま は こころ やさしく、' },
+  // S2b: 別カット (人々と姫 / 愛されている描写)。画像はユーザー側で差し替え予定。
   { bg: '#2a0e1a',
     image: '../assets/images/story/opening_4.jpg', emoji: '💖',
     voice: '../assets/audio/storyboard/voice/S2b.mp3',
