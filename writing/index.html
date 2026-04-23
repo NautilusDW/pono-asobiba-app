@@ -4063,22 +4063,22 @@ body.battle-intro-active .battle-log-window {
 }
 
 /* 2026-04-23: シーン個別のパン (縦横比が極端なパノラマ画像用)。
-   OP_S01_C02 のように縦長な絵を「下から上へ」ゆっくり見せる演出。
-   object-fit は cover 固定、object-position を 100%→0% でアニメ。 */
-.storyboard-art img.sb-pan-up {
+   OP_S01_C02 のように縦長な絵を「上から下へ」ゆっくり見せる演出。
+   object-fit は cover 固定、object-position を 0%→100% でアニメ。 */
+.storyboard-art img.sb-pan-down {
   object-fit: cover;
-  object-position: center 100%;
-  animation: sbPanUp 9s linear forwards;
+  object-position: center 0%;
+  animation: sbPanDown 9s linear forwards;
 }
 @media (orientation: landscape) {
-  .storyboard-art img.sb-pan-up {
+  .storyboard-art img.sb-pan-down {
     object-fit: cover;
-    animation: sbPanUp 9s linear forwards;
+    animation: sbPanDown 9s linear forwards;
   }
 }
-@keyframes sbPanUp {
-  from { object-position: center 100%; }
-  to   { object-position: center 0%; }
+@keyframes sbPanDown {
+  from { object-position: center 0%; }
+  to   { object-position: center 100%; }
 }
 
 /* 2026-04-23: ドラクエ風メッセージボックス。
@@ -9290,10 +9290,12 @@ function _showStoryboard(scenes, onDone) {
     if (typeTimer) { clearTimeout(typeTimer); typeTimer = null; }
     idx++;
     if (idx >= scenes.length) {
+      // 次画面 (map/practice) を fade-out 前にセットアップ → オーバーレイが透けるにつれ下の新画面が見える。
+      // fade-out 完了後に表示すると「一瞬 タイトル or 空白が見える」チラつきが起きるため。
+      if (onDone) { try { onDone(); } catch (e) {} }
       ov.classList.add('fade-out');
       setTimeout(function() {
         if (ov.parentNode) ov.remove();
-        if (onDone) onDone();
       }, 550);
       return;
     }
@@ -9329,7 +9331,7 @@ var OPENING_SCENES = [
     text: 'むかし むかし、\nしあわせな おうこく が ありました。' },
   { bg: '#1a1008',
     image: '../assets/images/story/opening_2.png', emoji: '🏰',
-    pan: 'up',
+    pan: 'down',
     text: 'まいにち みんなが わらいあう、\nやさしい くに でした。' },
   { bg: '#2a0e1a',
     image: '../assets/images/story/opening_3.png', emoji: '👸',
@@ -10740,7 +10742,10 @@ function goToPracticeDirect(rowIndex) {
     currentCategory = 'hiragana';
     // 紙芝居オープニング: はじめから では必ず再生。
     // (2026-04-22) 旧 3行 storyScreen は廃止、_showStoryboard に置換。
+    // 2026-04-23: 紙芝居開始と同時に titleScreen を隠す (fade-out 中の一瞬チラ見え対策)。
     if (typeof _showStoryboard === 'function' && typeof OPENING_SCENES !== 'undefined') {
+      var _ts = document.getElementById('titleScreen');
+      if (_ts) _ts.classList.add('hidden');
       _showStoryboard(OPENING_SCENES, function() {
         try { localStorage.setItem('pono_intro_seen', '1'); } catch (e) {}
         goToPracticeDirect(0);
