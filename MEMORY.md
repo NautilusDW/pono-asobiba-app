@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-23T16:54:48Z - v265 戦闘ピボット: 倒す→呪縛を解く。白仮面+呪印(紫→金)段階進化・仮面2つ割り・cursed/purified filter・3相taunts(怒り→揺らぎ→覚醒)・bow/leave/trueName/cleansedHome追加・めざめさせた文言・onEnterフック・新規絵素材ゼロ
+- **タスク**: v265 戦闘ピボット: 倒す→呪縛を解く。白仮面+呪印(紫→金)段階進化・仮面2つ割り・cursed/purified filter・3相taunts(怒り→揺らぎ→覚醒)・bow/leave/trueName/cleansedHome追加・めざめさせた文言・onEnterフック・新規絵素材ゼロ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 63
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 19, "Agent": 2, "Write": 2, "ToolSearch": 2, "ExitPlanMode": 2, "Grep": 8, "Edit": 16, "Bash": 12}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-04-23T16:10:39Z - エンディング素材組み込み: E1-E4画像を圧縮配置 (E2は3枚組に分割)、BGM(Moonfire Oath)をE1で開始通し再生、E3/E4にpan-up(16s)縦パン、E5クレジット新設(title_logo + Sillas W. Nemo + カタカナ編へ)、docとREADME同期
 - **タスク**: エンディング素材組み込み: E1-E4画像を圧縮配置 (E2は3枚組に分割)、BGM(Moonfire Oath)をE1で開始通し再生、E3/E4にpan-up(16s)縦パン、E5クレジット新設(title_logo + Sillas W. Nemo + カタカナ編へ)、docとREADME同期
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Grep": 53, "Read": 96, "Edit": 139, "Bash": 189, "Agent": 10, "ToolSearch": 4, "Write": 7, "ExitPlanMode": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-23T11:44:03Z - staging/prod 環境分離 + 独自ドメイン kodama-no-mori.com 取得 + pono.kodama-no-mori.com 本番接続 + auto-commit→auto-push→auto-deploy の完全自動化 + pre-commit 機密ガード + post-commit flock ガード
-- **タスク**: staging/prod 環境分離 + 独自ドメイン kodama-no-mori.com 取得 + pono.kodama-no-mori.com 本番接続 + auto-commit→auto-push→auto-deploy の完全自動化 + pre-commit 機密ガード + post-commit flock ガード
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 27
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 98, "Edit": 143, "Grep": 53, "Bash": 183, "Agent": 10, "ToolSearch": 4, "Write": 7, "ExitPlanMode": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
