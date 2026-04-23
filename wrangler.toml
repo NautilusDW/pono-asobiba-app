@@ -3,6 +3,18 @@ main = "src/worker.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+# 本番 (production) = master branch からのデプロイ。
+# pono.kodama-no-mori.com を自動で DNS + ルーティング接続する。
+# custom_domain=true なので Cloudflare が該当 zone に DNS レコードを自動作成。
+# kodama-no-mori.com は同アカウントで Cloudflare Registrar 取得済み (2026-04-23) なので追加作業なし。
+# デフォルトの pono-asobiba-app.ndw.workers.dev も引き続き有効 (fallback)。
+#
+# ※ routes は top-level キー。[section] ヘッダー以降に書くとそのセクション配下と
+#    みなされてしまう (TOML 仕様) ので必ず section 開始より前にまとめて書く。
+routes = [
+  { pattern = "pono.kodama-no-mori.com/*", custom_domain = true }
+]
+
 [assets]
 directory = "./"
 binding = "ASSETS"
@@ -16,15 +28,6 @@ run_worker_first = ["/*"]
 
 [observability]
 enabled = true
-
-# 本番 (production) = master branch からのデプロイ。
-# pono.kodama-no-mori.com を自動で DNS + ルーティング接続する。
-# custom_domain=true なので Cloudflare が該当 zone に DNS レコードを自動作成。
-# kodama-no-mori.com は同アカウントで Cloudflare Registrar 取得済み (2026-04-23) なので追加作業なし。
-# デフォルトの pono-asobiba-app.ndw.workers.dev も引き続き有効 (fallback)。
-routes = [
-  { pattern = "pono.kodama-no-mori.com/*", custom_domain = true }
-]
 
 # Staging (確認用) = develop branch からのデプロイ。
 # 独自ドメインは付けない。workers.dev サブドメインだけで十分。
