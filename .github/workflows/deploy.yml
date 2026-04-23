@@ -1,0 +1,37 @@
+name: Deploy to Cloudflare Workers
+
+# develop / master への push で自動的に Cloudflare Workers に deploy する。
+# 手動実行 (workflow_dispatch) にも対応。
+on:
+  push:
+    branches: [develop, master]
+  workflow_dispatch:
+
+# 同一 branch で連続 push があった時は、進行中の deploy をキャンセルして
+# 最新のだけ走らせる (無駄な deploy を避けて Workers の build 回数節約)。
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # 二度目以降の同一 commit を deploy し直さないガード。
+    if: "!contains(github.event.head_commit.message, '[skip deploy]')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler.toml の [assets] で ./ 全体をバインドしているので
+          # 追加引数なしで deploy すれば静的ファイル含めて全部 upload される。
+          command: deploy
