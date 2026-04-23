@@ -48,10 +48,17 @@ MEMORY_FILE = PROJECT_ROOT / "MEMORY.md"
 CLAUDE_FILE = PROJECT_ROOT / "CLAUDE.md"
 
 # Auto-memory (Claude Code が自動で読み込む MEMORY.md)
-_AUTO_MEMORY_DIR = (
-    Path.home() / ".claude" / "projects"
-    / "d--AppDevelopment-storyboard-generator" / "memory"
+# PROJECT_ROOT からキーを動的に組み立てる (observe.py と同じ規則)。
+#   例: d:\AppDevelopment\pono-asobiba-app → d--AppDevelopment-pono-asobiba-app
+#       d:\AppDevelopment\storyboard generator → d--AppDevelopment-storyboard-generator
+# プロジェクトをリネーム/移設しても追従するよう、ハードコードは避ける。
+_project_path = str(PROJECT_ROOT).replace("\\", "/")
+_drive, _rest = _project_path.split(":/", 1) if ":/" in _project_path else ("", _project_path)
+_project_key = (
+    _drive.lower() + "--" + _rest.replace("/", "-").replace(" ", "-")
+    if _drive else _project_path.replace("/", "-").replace(" ", "-")
 )
+_AUTO_MEMORY_DIR = Path.home() / ".claude" / "projects" / _project_key / "memory"
 AUTO_MEMORY_FILE = _AUTO_MEMORY_DIR / "MEMORY.md"
 MAX_MEMORY_LINES = 190  # 200行上限に余裕を持たせる
 
