@@ -38,7 +38,7 @@ from PIL import Image
 
 
 NETLIFY_AI_NAME_URL = (
-    "https://pono-asobiba.netlify.app/.netlify/functions/ai-name"
+    "https://pono-asobiba-app.ndw.workers.dev/.netlify/functions/ai-name"
 )
 
 # Gemini model selection (probed live 2026-04-08):
