@@ -9607,8 +9607,8 @@ function _showStoryboard(scenes, onDone) {
 // 2026-04-23: PNG(2688x1520, ~10MB/枚) を JPG(1600w, ~300-500KB) に圧縮、
 // 合計 100MB → 約 3.6MB へ削減。オープニング読み込みの遅延を解消。
 // 2026-04-23: Gemini TTS でシーン毎に生成した音声を each scene の voice に紐付け。
-// Audio 分割仕様: S1a/b, S2a+b(結合), S3a/b, S4a/b, S5a/b, S6a/b/c, S7a/b, S8 → 計15ファイル
-// → scene 数も 11 → 15 に拡張 (S6 を 3 分割, S4/S7 を 2 分割, S2 を結合)。
+// Audio 分割仕様: S1a/b, S2a/b, S3a/b, S4a/b, S5a/b, S6a/b/c, S7a/b, S8 → 計16ファイル
+// → scene 数も 11 → 16 に拡張 (S6 を 3 分割、その他 S2/S4/S7 を 2 分割)。
 var OPENING_SCENES = [
   // --- S1: 平和な王国 (2 ビート) ---
   { bg: '#1a1008',
@@ -9621,11 +9621,15 @@ var OPENING_SCENES = [
     pan: 'down',
     voice: '../assets/audio/storyboard/voice/S1b.mp3',
     text: 'まいにち みんなが わらいあう、\nやさしい くに でした。' },
-  // --- S2: お姫様 (音声は 1 本に結合されているため、画像は opening_3 に統一) ---
+  // --- S2: お姫様 (2 ビート) ---
   { bg: '#2a0e1a',
     image: '../assets/images/story/opening_3.jpg', emoji: '👸',
-    voice: '../assets/audio/storyboard/voice/S2aS2b.mp3',
-    text: 'おうじょさま は こころ やさしく、\n\nひとびと から あいされて いました。' },
+    voice: '../assets/audio/storyboard/voice/S2a.mp3',
+    text: 'おうじょさま は こころ やさしく、' },
+  { bg: '#2a0e1a',
+    image: '../assets/images/story/opening_4.jpg', emoji: '💖',
+    voice: '../assets/audio/storyboard/voice/S2b.mp3',
+    text: 'ひとびと から あいされて いました。' },
   // --- S3: ふしぎな ひかり (2 分割) ---
   { bg: '#1a1533',
     image: '../assets/images/story/opening_5.jpg', emoji: '✨',
@@ -9689,11 +9693,11 @@ var OPENING_SCENES = [
 // 本来 play.html 側で card-writing のタップが遮断されるため、通常は到達しない。
 // OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
 // 見終わったら play.html に戻す。
-// 15 シーンに拡張したため index を再指定 (S1a / S4a 魔人登場 / S7a 勇者召集)。
+// 16 シーンに拡張したため index を再指定 (S1a / S4a 魔人登場 / S7a 勇者召集)。
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
-  OPENING_SCENES[12]   // S7a: そして、 あなた が えらばれた のです
+  OPENING_SCENES[13]   // S7a: そして、 あなた が えらばれた のです
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
