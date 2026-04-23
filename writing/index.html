@@ -9607,9 +9607,8 @@ function _showStoryboard(scenes, onDone) {
 // 2026-04-23: PNG(2688x1520, ~10MB/枚) を JPG(1600w, ~300-500KB) に圧縮、
 // 合計 100MB → 約 3.6MB へ削減。オープニング読み込みの遅延を解消。
 // 2026-04-23: Gemini TTS でシーン毎に生成した音声を each scene の voice に紐付け。
-// Audio 分割仕様: S1a/b, S2a+b(結合), S3a/b/c, S4a/b, S5a/b, S6a/b, S7a/b, S8 → 計15ファイル
-// → scene 数も 11 → 15 に拡張 (S3 を 3 分割, S4/S6/S7 を 2 分割, S2 を結合)。
-// S3c / S6b / S7a のテキストはユーザー確認待ち (暫定プレースホルダ)。
+// Audio 分割仕様: S1a/b, S2a+b(結合), S3a/b, S4a/b, S5a/b, S6a/b/c, S7a/b, S8 → 計15ファイル
+// → scene 数も 11 → 15 に拡張 (S6 を 3 分割, S4/S7 を 2 分割, S2 を結合)。
 var OPENING_SCENES = [
   // --- S1: 平和な王国 (2 ビート) ---
   { bg: '#1a1008',
@@ -9627,7 +9626,7 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_3.jpg', emoji: '👸',
     voice: '../assets/audio/storyboard/voice/S2aS2b.mp3',
     text: 'おうじょさま は こころ やさしく、\n\nひとびと から あいされて いました。' },
-  // --- S3: ふしぎな ひかり (3 分割、S3c は新規セグメント・テキスト要確認) ---
+  // --- S3: ふしぎな ひかり (2 分割) ---
   { bg: '#1a1533',
     image: '../assets/images/story/opening_5.jpg', emoji: '✨',
     voice: '../assets/audio/storyboard/voice/S3a.mp3',
@@ -9636,11 +9635,6 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_5.jpg', emoji: '✨',
     voice: '../assets/audio/storyboard/voice/S3b.mp3',
     text: 'へや の なか に\nふしぎな ひかり が あらわれました。' },
-  { bg: '#1a1533',
-    image: '../assets/images/story/opening_5.jpg', emoji: '✨',
-    voice: '../assets/audio/storyboard/voice/S3c.mp3',
-    // TODO: S3c の正確なテキストをユーザー確認。暫定で光が強まる描写を置く。
-    text: 'ひかり は どんどん つよく なって ゆきました。' },
   // --- S4: まおう の てさき (2 分割) ---
   { bg: '#0f0820',
     image: '../assets/images/story/opening_6.jpg', emoji: '👺',
@@ -9660,7 +9654,7 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_8.jpg', emoji: '💫',
     voice: '../assets/audio/storyboard/voice/S5b.mp3',
     text: 'おうじょさま は つれさられて しまいました。' },
-  // --- S6: おうさま の さけび (2 分割、王様セリフ + ナレーター) ---
+  // --- S6: おうさま の さけび (3 分割、王様セリフ + ナレーター 2 ビート) ---
   { bg: '#1a0c05',
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
     voice: '../assets/audio/storyboard/voice/S6a.mp3',
@@ -9668,7 +9662,11 @@ var OPENING_SCENES = [
   { bg: '#1a0c05',
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
     voice: '../assets/audio/storyboard/voice/S6b.mp3',
-    text: 'おうさま は かなしく さけび、\nゆうかん な せんし を あつめました。' },
+    text: 'おうさま は かなしく さけび、' },
+  { bg: '#1a0c05',
+    image: '../assets/images/story/opening_9.jpg', emoji: '👑',
+    voice: '../assets/audio/storyboard/voice/S6c.mp3',
+    text: 'ゆうかん な せんし を あつめました。' },
   // --- S7: 勇者召集 (2 分割) ---
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
