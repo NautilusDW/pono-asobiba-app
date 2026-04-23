@@ -12,7 +12,9 @@ compatibility_flags = ["nodejs_compat"]
 # ※ routes は top-level キー。[section] ヘッダー以降に書くとそのセクション配下と
 #    みなされてしまう (TOML 仕様) ので必ず section 開始より前にまとめて書く。
 routes = [
-  { pattern = "pono.kodama-no-mori.com/*", custom_domain = true }
+  # custom_domain=true のときは pattern にホスト名のみ指定 (ワイルドカードや /* path 不可)。
+  # Cloudflare が zone に DNS レコードを自動作成し、全リクエストを Worker に流す。
+  { pattern = "pono.kodama-no-mori.com", custom_domain = true }
 ]
 
 [assets]
