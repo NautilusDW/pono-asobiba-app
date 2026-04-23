@@ -1116,6 +1116,8 @@
   <script src="common/acorns.js"></script>
   <script src="room/items.js"></script>
   <script src="common/treasure.js"></script>
+  <link rel="stylesheet" href="common/promo.css">
+  <script src="common/promo.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -1294,24 +1296,37 @@
       body: 'ぱん、ほん、ねこ… あれ？「ねこ」は ちがうね！' }
   ];
 
-  // 絵本を買った人だけが遊べる5つのプレミアムコンテンツ紹介
-  // スクショは assets/images/previews/*.png に差し替えてください
+  // 絵本/サブスクで遊べるプレミアムコンテンツの紹介定義。
+  // id は play.html のカード要素 id と 1:1 対応（promo.js の showLockedPreview から参照）。
+  // スクショは assets/images/previews/*.png に差し替えてください（未配置時は canvas 生成のダミー画像にフォールバック）。
+  // L2024 付近の lockedCards 配列との対応:
+  //   lockedCards = ['card-writing','card-drawing','card-bowling','card-breakout','card-slide']
+  //   ↑ クリック遮断対象。coloring/room/aquarium は pointer-events:none なので遮断不要（タップが届かない）
   var PONO_GAME_PREVIEWS = [
-    { title: 'もじかきクエスト',
+    { id: 'card-writing',  title: 'もじかきクエスト',
       image: 'assets/images/previews/writing.png',
       body: 'ひらがな・カタカナ を なぞって かけるよ。' },
-    { title: 'おえかき',
+    { id: 'card-drawing',  title: 'おえかき',
       image: 'assets/images/previews/drawing.png',
       body: 'じぶんで かいた え を、うみで およがせられるよ🐠' },
-    { title: 'みちつなぎ',
+    { id: 'card-slide',    title: 'みちつなぎ',
       image: 'assets/images/previews/slide.png',
       body: 'みちを つないで、ポノが おかあさんに あいに いくよ。' },
-    { title: 'ボウリング',
+    { id: 'card-bowling',  title: 'ボウリング',
       image: 'assets/images/previews/bowling.png',
       body: 'フリックで ピンを たおそう！' },
-    { title: 'ブロックくずし',
+    { id: 'card-breakout', title: 'ブロックくずし',
       image: 'assets/images/previews/breakout.png',
-      body: 'ボールで ブロックを ぜんぶ くずしてみよう。' }
+      body: 'ボールで ブロックを ぜんぶ くずしてみよう。' },
+    { id: 'card-coloring', title: 'ぬりえ',
+      image: 'assets/images/previews/coloring.png',
+      body: 'すきな いろ で ぬって あそぼう。' },
+    { id: 'card-aquarium', title: 'アクアリウム',
+      image: 'assets/images/previews/aquarium.png',
+      body: 'じぶんの おさかな を およがせて かんさつ しよう。' },
+    { id: 'card-room',     title: 'わたしのおうち',
+      image: 'assets/images/previews/room.png',
+      body: 'かぐ を おいて、じぶんだけの おへや を つくろう。' }
   ];
 
   // セッション内で既に音声解禁済みかチェック → 解禁済みなら overlay を出さずに即 BGM 試行
@@ -1351,14 +1366,26 @@
     el.style.display = 'flex';
     function dismiss() {
       sessionStorage.setItem('pono_audio_unlocked', '1');
-      localStorage.setItem('pono_intro_seen', '1');
+      // 無料ユーザーの初回は短縮プロモを挟むため、pono_intro_seen は
+      // PonoPromo.showShortOpening 側で最終シーン後にセットする。
+      var _firstFree = firstTime && localStorage.getItem('pono_premium') !== '1';
+      if (!_firstFree) {
+        localStorage.setItem('pono_intro_seen', '1');
+      }
       el.classList.add('fade');
       // BGM を即座に開始
       var bgm = document.getElementById('play-bgm');
       if (bgm && localStorage.getItem('pono_bgm_enabled') !== 'off') {
         try { bgm.play().catch(function(){}); } catch (e) {}
       }
-      setTimeout(function() { el.style.display = 'none'; }, 600);
+      // フェードアウト完了後にオーバーレイ非表示化 → その直後にプロモ起動
+      setTimeout(function() {
+        el.style.display = 'none';
+        // 無料ユーザーかつ初回 → 短縮オープニングプロモを再生
+        if (_firstFree && window.PonoPromo && typeof window.PonoPromo.showShortOpening === 'function') {
+          try { window.PonoPromo.showShortOpening(); } catch (e) {}
+        }
+      }, 600);
       el.removeEventListener('pointerdown', dismiss);
       el.removeEventListener('touchstart', dismiss);
     }
@@ -3430,7 +3457,14 @@
 
       // ゲームカードをクリックした時に現在値を保存
       document.querySelectorAll('.card').forEach(function(card) {
-        card.addEventListener('click', function() {
+        card.addEventListener('click', function(ev) {
+          // 無料ユーザーがロックカードを踏んだらスクショプロモに差し替え
+          if (window.PonoPromo && window.PonoPromo.shouldBlockFree && window.PonoPromo.shouldBlockFree(this.id)) {
+            if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+            if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+            try { window.PonoPromo.showLockedPreview(this.id); } catch (e) {}
+            return;
+          }
           var t = getStampLog().total;
           _stampTotalAfterInit = t;
           localStorage.setItem('pono_stamp_before', String(t));

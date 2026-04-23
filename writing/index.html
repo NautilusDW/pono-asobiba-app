@@ -9392,6 +9392,16 @@ var OPENING_SCENES = [
     text: 'そして、 あなた が えらばれた のです。\n\n「ゆうしゃ よ、\nわが ひめ を たすけだして くれ！」' }
 ];
 
+// 無料ユーザー向けの短縮版オープニング（万一 URL で直接アクセスされた時の防御）。
+// 本来 play.html 側で card-writing のタップが遮断されるため、通常は到達しない。
+// OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
+// 見終わったら play.html に戻す。
+var SHORT_OPENING_SCENES = [
+  OPENING_SCENES[0],
+  OPENING_SCENES[5],
+  OPENING_SCENES[9]
+];
+
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
 // 「ひらがな編はここまで、魔王城はすぐそこだ」という区切り。続きはカタカナ編。
 var ENDING_SCENES = [
@@ -10779,9 +10789,19 @@ function goToPracticeDirect(rowIndex) {
     if (typeof _showStoryboard === 'function' && typeof OPENING_SCENES !== 'undefined') {
       var _ts = document.getElementById('titleScreen');
       if (_ts) _ts.classList.add('hidden');
-      _showStoryboard(OPENING_SCENES, function() {
-        try { localStorage.setItem('pono_intro_seen', '1'); } catch (e) {}
-        goToPracticeDirect(0);
+      // 無料ユーザーはここに来ないのが正しいが、URL 直叩きでの保険。
+      // 短縮版オープニングを見せたあと play.html に戻し、練習には入れない。
+      var _isFree = false;
+      try { _isFree = localStorage.getItem('pono_premium') !== '1'; } catch (e) {}
+      var _scenes = _isFree ? SHORT_OPENING_SCENES : OPENING_SCENES;
+      _showStoryboard(_scenes, function() {
+        if (_isFree) {
+          // 無料ユーザーはプロモ終了後に play.html へ戻す（pono_intro_seen は書かない）
+          try { location.replace('../play.html'); } catch (e) { location.href = '../play.html'; }
+        } else {
+          try { localStorage.setItem('pono_intro_seen', '1'); } catch (e) {}
+          goToPracticeDirect(0);
+        }
       });
     } else {
       goToPracticeDirect(0);
