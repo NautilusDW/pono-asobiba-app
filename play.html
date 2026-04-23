@@ -1117,6 +1117,7 @@
   <script src="room/items.js"></script>
   <script src="common/treasure.js"></script>
   <link rel="stylesheet" href="common/promo.css">
+  <script src="common/tier.js"></script>
   <script src="common/promo.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -1662,13 +1663,7 @@
         </div>
       </a>
 
-      <a href="fossil/index.html" class="card card-fossil" id="card-fossil">
-        <span class="card-icon">🦕</span>
-        <div class="card-body">
-          <div class="card-title">かせきはっくつ</div>
-          <div class="card-desc">きょうりゅうの<br>かせきを さがそう</div>
-        </div>
-      </a>
+      <!-- かせきはっくつ: MVP 外 → グレーアウト下部ゾーンに移動 (下記コメント参照) -->
 
       <!-- 購入者限定バナー -->
       <div class="lock-banner" id="lockBanner">
@@ -1729,7 +1724,16 @@
         </div>
       </a>
 
-      <!-- 準備中（グレーアウト） -->
+      <!-- 準備中（グレーアウト）-->
+      <!-- かせきはっくつ: MVP では追加コンテンツ整備中のため一時的にグレーアウト -->
+      <a class="card card-fossil locked" id="card-fossil" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🦕</span>
+        <div class="card-body">
+          <div class="card-title">かせきはっくつ</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
       <a class="card card-coloring locked" id="card-coloring" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
         <span class="card-icon">🖍️</span>
         <div class="card-body">
@@ -2047,7 +2051,8 @@
     });
 
     // ===== Premium Unlock =====
-    const PREMIUM_PASSWORD = '1234';
+    // パスワード検証は common/tier.js の PonoTier.verifyBookPassword() に集約。
+    // 絵本を増刷/新シリーズ追加する時は tier.js の BOOK_PASSWORDS だけ編集する。
     const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
@@ -2062,11 +2067,22 @@
     }
 
     document.getElementById('lockBtn').addEventListener('click', () => {
-      const val = document.getElementById('lockInput').value.trim();
-      if (val === PREMIUM_PASSWORD) {
+      const val = document.getElementById('lockInput').value;
+      const ok = !!(window.PonoTier
+        && typeof window.PonoTier.verifyBookPassword === 'function'
+        && window.PonoTier.verifyBookPassword(val));
+      if (ok) {
+        const firstTime = localStorage.getItem('pono_premium') !== '1';
         localStorage.setItem('pono_premium', '1');
         if (window.grantPremiumBonus) window.grantPremiumBonus();
         applyUnlockState();
+        // 初回解錠のみ: 歓迎モーダルで「これから あそべる ゲーム」を紹介
+        if (firstTime
+            && !localStorage.getItem('pono_welcome_book_seen')
+            && window.PonoPromo
+            && typeof window.PonoPromo.showBookWelcome === 'function') {
+          try { window.PonoPromo.showBookWelcome(); } catch (e) {}
+        }
       } else {
         document.getElementById('lockError').style.display = 'block';
         document.getElementById('lockInput').value = '';

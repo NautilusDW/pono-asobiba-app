@@ -9,6 +9,7 @@
      - isAquariumCreatureUnlocked(id)      海の生き物が解放されているか
      - isRoomItemUnlocked(id, cat)         家具/かざりが解放されているか
      - isKatakanaUnlocked()                カタカナ編が解放されているか
+     - verifyBookPassword(val)             絵本印字パスワードを検証
      - showSubscribePromo(opts)            サブスク誘導モーダル（伸びしろ表現）
      - BOOK_AQUARIUM_CREATURE_IDS          絵本層に見せる生き物 8種
      - BOOK_ROOM_ITEM_IDS                  絵本層に見せる家具・かざり 10種
@@ -87,6 +88,27 @@
 
   function isKatakanaUnlocked() {
     return getTier() === 'sub';
+  }
+
+  // ---- 絵本印字パスワード検証 ----
+  // 絵本の奥付に印字する解錠コードをここで集中管理。
+  // 絵本を増刷・新シリーズを出す時はこの配列に追記する想定。
+  // 大文字/小文字どちらでも通るよう両方試す (子供/保護者が手入力するため)。
+  // Closure に閉じるので window.PonoTier からは見えず、DevTools 経由で
+  // 覗き見されにくい (完全な秘匿ではないが casual friction を維持)。
+  var BOOK_PASSWORDS = [
+    '1234'  // 初期のテスト用。実絵本印刷時にシリアルコードへ置換 (例: 'PONO-BOOK1-2026')
+  ];
+  function verifyBookPassword(val) {
+    if (val == null) return false;
+    var raw = String(val).trim();
+    if (!raw) return false;
+    var upper = raw.toUpperCase();
+    for (var i = 0; i < BOOK_PASSWORDS.length; i++) {
+      var p = BOOK_PASSWORDS[i];
+      if (p === raw || p === upper || p.toUpperCase() === upper) return true;
+    }
+    return false;
   }
 
   // ---- サブスク誘導モーダル ("伸びしろ" の見せ方) ----
@@ -185,6 +207,7 @@
     isAquariumCreatureUnlocked: isAquariumCreatureUnlocked,
     isRoomItemUnlocked: isRoomItemUnlocked,
     isKatakanaUnlocked: isKatakanaUnlocked,
+    verifyBookPassword: verifyBookPassword,
     showSubscribePromo: showSubscribePromo,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
     BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS
