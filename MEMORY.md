@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-23T10:13:49Z - GitHub Actions での Cloudflare Workers 自動デプロイ設定 (deploy.yml 作成 + push)
+- **タスク**: GitHub Actions での Cloudflare Workers 自動デプロイ設定 (deploy.yml 作成 + push)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 19
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 161, "Read": 121, "ToolSearch": 3, "Grep": 72, "Bash": 132, "Agent": 8, "Write": 2, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-23T09:40:19Z - MVP\u30b9\u30b3\u30fc\u30d7\u78ba\u5b9a\u4ed6: \u30d1\u30b9\u30ef\u30fc\u30c9\u7ba1\u7406\u96c6\u7d04 (common/tier.js verifyBookPassword) / \u7d75\u672c\u5c64\u6b53\u8fce\u30e2\u30fc\u30c0\u30eb (PonoPromo.showBookWelcome) / \u8907\u6570\u679a\u30b9\u30af\u30b7\u30e7\u5bfe\u5fdc + docs/SCREENSHOT_GUIDE.md / \u304b\u305b\u304d\u306f\u3063\u304f\u3064\u3092\u30b0\u30ec\u30fc\u30a2\u30a6\u30c8\u964d\u683c
 - **タスク**: MVP\u30b9\u30b3\u30fc\u30d7\u78ba\u5b9a\u4ed6: \u30d1\u30b9\u30ef\u30fc\u30c9\u7ba1\u7406\u96c6\u7d04 (common/tier.js verifyBookPassword) / \u7d75\u672c\u5c64\u6b53\u8fce\u30e2\u30fc\u30c0\u30eb (PonoPromo.showBookWelcome) / \u8907\u6570\u679a\u30b9\u30af\u30b7\u30e7\u5bfe\u5fdc + docs/SCREENSHOT_GUIDE.md / \u304b\u305b\u304d\u306f\u3063\u304f\u3064\u3092\u30b0\u30ec\u30fc\u30a2\u30a6\u30c8\u964d\u683c
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 196, "Read": 138, "Grep": 89, "Bash": 70, "ToolSearch": 2, "Glob": 2, "Write": 3}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 3個の非効率パターンあり。
-
-
-### 2026-04-23T04:27:54Z - 紙芝居BGMの二重再生修正 (main bgm完全kill + storyboardActiveフラグ) および画面オフ時の sbAudio pause
-- **タスク**: 紙芝居BGMの二重再生修正 (main bgm完全kill + storyboardActiveフラグ) および画面オフ時の sbAudio pause
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 20
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Grep": 93, "Read": 142, "Edit": 192, "Bash": 66, "ToolSearch": 2, "Glob": 2, "Write": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
