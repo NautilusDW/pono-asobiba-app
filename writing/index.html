@@ -9536,6 +9536,7 @@ function _showStoryboard(scenes, onDone) {
 var OPENING_SCENES = [
   { bg: '#1a1008',
     image: '../assets/images/story/opening_1.jpg', emoji: '🏰',
+    bgm: '../assets/audio/bgm/Theme.mp3',
     text: 'むかし むかし、\nしあわせな おうこく が ありました。' },
   { bg: '#1a1008',
     image: '../assets/images/story/opening_2.jpg', emoji: '🏰',
@@ -10721,7 +10722,9 @@ setInterval(() => {
 // RPG 化に合わせて「書き取り画面 = 戦闘」→ battleA/B、
 // 将来の「ワールドマップ」→ mapA/B を切替で鳴らす。
 const BGM_TRACKS = {
-  title:  ['../assets/audio/bgm/Theme.mp3'],
+  // 2026-04-23: タイトル画面 BGM を Theme2 に変更。Theme (旧タイトル曲) は
+  // オープニング冒頭 (scene 1) で使用する。
+  title:  ['../assets/audio/bgm/Theme2.mp3'],
   battle: ['../assets/audio/bgm/battleC.mp3'],
   map:    ['../assets/audio/bgm/mapA.mp3',    '../assets/audio/bgm/mapB.mp3'],
 };
@@ -10853,8 +10856,8 @@ function goToPracticeDirect(rowIndex) {
       if (!b) return;
       var themeSrc = (BGM_TRACKS.title && BGM_TRACKS.title[0]) || '';
       if (!themeSrc) return;
-      // 既に Theme を鳴らそうとしている間に再タップされた場合の保護
-      if (b.currentSrc && b.currentSrc.indexOf('Theme.mp3') >= 0 && !b.paused) {
+      // 既に Title BGM を鳴らそうとしている間に再タップされた場合の保護 (2026-04-23: Theme2 へ変更)
+      if (b.currentSrc && b.currentSrc.indexOf('Theme2.mp3') >= 0 && !b.paused) {
         _titleBgmPlaying = true;
         return;
       }
