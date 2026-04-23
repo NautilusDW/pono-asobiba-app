@@ -1367,25 +1367,18 @@
     el.style.display = 'flex';
     function dismiss() {
       sessionStorage.setItem('pono_audio_unlocked', '1');
-      // 無料ユーザーの初回は短縮プロモを挟むため、pono_intro_seen は
-      // PonoPromo.showShortOpening 側で最終シーン後にセットする。
-      var _firstFree = firstTime && localStorage.getItem('pono_premium') !== '1';
-      if (!_firstFree) {
-        localStorage.setItem('pono_intro_seen', '1');
-      }
+      // 2026-04-23: 初回登録時の有料コンテンツプロモ動画は撤去。
+      // 初めましての瞬間に宣伝を流さない方針に変更。
+      localStorage.setItem('pono_intro_seen', '1');
       el.classList.add('fade');
       // BGM を即座に開始
       var bgm = document.getElementById('play-bgm');
       if (bgm && localStorage.getItem('pono_bgm_enabled') !== 'off') {
         try { bgm.play().catch(function(){}); } catch (e) {}
       }
-      // フェードアウト完了後にオーバーレイ非表示化 → その直後にプロモ起動
+      // フェードアウト完了後にオーバーレイ非表示化
       setTimeout(function() {
         el.style.display = 'none';
-        // 無料ユーザーかつ初回 → 短縮オープニングプロモを再生
-        if (_firstFree && window.PonoPromo && typeof window.PonoPromo.showShortOpening === 'function') {
-          try { window.PonoPromo.showShortOpening(); } catch (e) {}
-        }
       }, 600);
       el.removeEventListener('pointerdown', dismiss);
       el.removeEventListener('touchstart', dismiss);

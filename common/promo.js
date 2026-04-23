@@ -3,12 +3,14 @@
 
    public API (window.PonoPromo):
      - showStoryboard(scenes, onDone)  紙芝居エンジン (writing から移植)
-     - showShortOpening(onDone)        無料ユーザー向け短縮オープニング
      - showLockedPreview(cardId, onClose) カードタップ時プロモモーダル
      - shouldBlockFree(cardId)         無料ユーザーかつロック済みカードか
      - makePlaceholderImage(text, bg)  スクショ未貼付時のダミー画像
-     - SHORT_OPENING_SCENES            短縮版シーン定義
      - GAME_PREVIEWS                   プレビュー情報（cardId で参照）
+
+   2026-04-23: 初回登録時の有料コンテンツプロモ (showShortOpening /
+   buildShortOpeningScenes / SHORT_OPENING_SCENES) は「初めましてで宣伝を
+   流さない」方針で撤去した。復活させる場合はコミット履歴から戻す。
 
    Phase 2 で common/tier.js に分離する前提で、shouldBlockFree は単独関数。
    pono_premium !== '1' を「無料ユーザー」として扱う（暫定）。
@@ -311,57 +313,10 @@
     paintScene(0);
   }
 
-  // ---- 短縮オープニング（無料ユーザー用プロモ）----
-  // 代表3シーン（王国 / ザガン手先 / 勇者召集）+ プレミアムゲーム紹介4枚 = 計7枚。
-  // scene.placeholder は画像 404 時の Canvas フォールバック（素材貼付後は自動で実画像優先）。
-  var _shortScenesCache = null;
-  function buildShortOpeningScenes() {
-    if (_shortScenesCache) return _shortScenesCache;
-    _shortScenesCache = [
-      { bg: '#1a1008',
-        image: 'assets/images/story/opening_1.jpg',
-        emoji: '🏰',
-        text: 'むかし むかし、\nしあわせな おうこく が ありました。' },
-      { bg: '#0f0820',
-        image: 'assets/images/story/opening_6.jpg',
-        emoji: '👺',
-        text: 'ある ひ、\nまおう ザガン の てさき が\n\nおひめさま を さらって いった！' },
-      { bg: '#0a1026',
-        image: 'assets/images/story/opening_10.jpg',
-        emoji: '⚔️',
-        text: 'そして、 あなた が えらばれた のです。\n\n「ゆうしゃ よ、\nたすけだして くれ！」' },
-      // ゲーム紹介（スクショ）— 未貼付時は Canvas ダミー
-      { bg: '#2a1a40',
-        image: 'assets/images/previews/writing.png',
-        placeholder: makePlaceholderImage('もじかきクエスト', '#F2915A'),
-        emoji: '✏️',
-        text: 'ゆうしゃ の ぼうけん は\n「もじかきクエスト」 で\n\nはじまるよ！' },
-      { bg: '#1a2a40',
-        image: 'assets/images/previews/drawing.png',
-        placeholder: makePlaceholderImage('おえかき', '#60A5FA'),
-        emoji: '🎨',
-        text: 'じぶん で かいた え が\n「おえかき」 で\nうみを およぐ よ！' },
-      { bg: '#2a2a40',
-        image: 'assets/images/previews/bowling.png',
-        placeholder: makePlaceholderImage('ボウリング', '#F59E0B'),
-        emoji: '🎳',
-        text: 'ピン を たおして\nあそべる ゲーム も\nたくさん！' },
-      { bg: '#1a1a1a',
-        image: 'assets/images/pono/pono_face_circle.png',
-        placeholder: makePlaceholderImage('またね！', '#34D399'),
-        emoji: '🌰',
-        text: 'えほん を かった ひと は\nぜんぶ あそべる よ！\n\nまずは むりょう で\nあそんで みてね！' }
-    ];
-    return _shortScenesCache;
-  }
-
-  function showShortOpening(onDone) {
-    var scenes = buildShortOpeningScenes();
-    showStoryboard(scenes, function() {
-      try { localStorage.setItem('pono_intro_seen', '1'); } catch (e) {}
-      if (onDone) { try { onDone(); } catch (e) {} }
-    });
-  }
+  // 2026-04-23: 初回登録時の短縮オープニングプロモは撤去。
+  // 「初めましてでいきなり有料コンテンツ宣伝」を流さない方針に変更。
+  // カードタップ時プロモ (showLockedPreview) は当該カードへの興味を示した
+  // 明確なトリガーがあるので継続。
 
   // ---- カードタップ時のプロモモーダル（3-5秒 auto-close + タップで即閉じ） ----
   function showLockedPreview(cardId, onClose) {
@@ -571,13 +526,11 @@
   // ---- export ----
   window.PonoPromo = {
     showStoryboard: showStoryboard,
-    showShortOpening: showShortOpening,
     showLockedPreview: showLockedPreview,
     showBookWelcome: showBookWelcome,
     shouldBlockFree: shouldBlockFree,
     makePlaceholderImage: makePlaceholderImage,
     GAME_PREVIEWS: GAME_PREVIEWS,
-    LOCKED_CARD_IDS: LOCKED_CARD_IDS,
-    get SHORT_OPENING_SCENES() { return buildShortOpeningScenes(); }
+    LOCKED_CARD_IDS: LOCKED_CARD_IDS
   };
 })();

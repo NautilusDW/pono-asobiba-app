@@ -3865,23 +3865,22 @@ body.battle-intro-active .battle-log-window {
     padding: 8px 18px;
   }
 
-  /* 2026-04-22: タップボタンは log の内側ではなく log の下の余白に独立配置。
-     横位置は左半分 (48px 〜 50vw-6px) の中央、縦位置は log 直下 0.92*vspan。
-     横長に伸ばし (padding 10px 40px)、fixed で z-index を log より上に。 */
+  /* 2026-04-23: タップボタンを画面中央下端に配置し、サイズもコンパクトに。
+     (ユーザー指摘: もっと小さく & 画面中央の一番下に) */
   body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-advance {
     position: fixed !important;
-    left: calc(48px + (50vw - 54px) / 2);
-    top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.92);
+    left: 50vw;
+    top: auto;
     right: auto;
-    bottom: auto;
-    padding: 10px 40px 10px 34px;
-    font-size: 1rem;
-    letter-spacing: 0.22em;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    padding: 4px 14px 4px 10px;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
     z-index: 520;
     transform: translateX(-50%);
   }
   body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-advance::before {
-    font-size: 1.25rem;
+    font-size: 0.95rem;
   }
   body.battle-mode:not(.battle-intro-active) .battle-log-window.await-tap .battle-log-advance {
     animation: battleLogAdvanceBounceH 0.8s ease-in-out infinite;
