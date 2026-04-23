@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
+<script src="../common/thankyou.js"></script>
 <script src="../common/menu.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
@@ -8356,6 +8357,14 @@ function battleVictory(spellKind, onDone) {
     } catch (e) { /* ignore */ }
     _battle.acornsBuffered = 0;
 
+    // v266 ありがとうテーマ: 精霊から「ありがとう」を受け取る (+1、ボスは +2)
+    var thankYouAdd = enemyData.boss ? 2 : 1;
+    try {
+      if (typeof window.addThankYou === 'function') {
+        window.addThankYou(thankYouAdd, { reason: 'purify:' + (enemyData.id || 'enemy') });
+      }
+    } catch (e) { /* ignore */ }
+
     // v265: 仮面が割れた後の bow / leave セリフ。taunts が phased 構造を持つ場合のみ挿入。
     const phasedTaunts = (enemyData.taunts && !Array.isArray(enemyData.taunts)) ? enemyData.taunts : null;
     const bowLine = phasedTaunts && phasedTaunts.bow ? phasedTaunts.bow : '';
@@ -8366,6 +8375,8 @@ function battleVictory(spellKind, onDone) {
     const rewardLine = granted > 0
       ? { lines: ['ごほうび！', '<span class="dq-line-emphasis">🌰 +' + granted + '</span> ゲット！'], opts: { line2Class: 'dmg-line' } }
       : { lines: ['きょうのどんぐりは', '<span class="dq-line-emphasis">おしまい！</span> また あした！'], opts: { line2Class: 'dmg-line' } };
+    // v266: せいれいから もらった ありがとう の表示
+    const thankYouLine = { lines: ['せいれい から', '<span class="dq-line-emphasis">💝 ありがとう +' + thankYouAdd + '</span>'], opts: { line2Class: 'dmg-line' } };
     const messages = [
       { lines: [enemyName + 'を', '<span class="dq-line-emphasis">めざめさせた！</span>'], opts: { line2Class: 'dmg-line' } },
     ];
@@ -8388,6 +8399,7 @@ function battleVictory(spellKind, onDone) {
         }
       });
     }
+    messages.push(thankYouLine);
     messages.push(rewardLine);
     messages.push({ lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } });
 
@@ -9497,9 +9509,15 @@ function _getFairies() {
 }
 function _hasFairy(id) { return !!_getFairies()[id]; }
 function _freeFairy(id) {
-  var f = _getFairies(); f[id] = 1;
+  var f = _getFairies();
+  var wasAlreadyFreed = !!f[id];
+  f[id] = 1;
   try { localStorage.setItem(FAIRY_KEY, JSON.stringify(f)); } catch (e) {}
   try { renderFairyRow(); } catch (e) {}
+  // v266 ありがとうテーマ統合: 妖精救出で +3 加算 (冪等: 既に開放済みなら加算しない)
+  if (!wasAlreadyFreed && typeof window.addThankYou === 'function') {
+    try { window.addThankYou(3, { reason: 'fairy:' + id }); } catch (e) {}
+  }
 }
 function _hasAllFairies() {
   var f = _getFairies(); return !!(f.water && f.shrine && f.fire);
@@ -10265,12 +10283,12 @@ function _showStoryboard(scenes, onDone) {
 //   opening_3.jpg     = OP_S02_C01  S2a 姫 前半
 //   opening_4.jpg     = OP_S02_C02  S2b 姫 後半
 //   opening_5.jpg     = OP_S03      S3 ふしぎな ひかり
-//   opening_6.jpg     = OP_S04      S4 まおう の てさき
+//   opening_6.jpg     = OP_S04      S4a/b/c まおう の てさき (v266 で S4c 追加、ザガン動機)
 //   opening_7.jpg     = OP_S05_C01  S5a つれさられる 前半
 //   opening_8.jpg     = OP_S05_C02  S5b つれさられる 後半
 //   opening_curse.jpg = OP_S5c/S5d  呪縛の手 (v265, 2 ビート共用、仮面の伏線)
 //   opening_9.jpg     = OP_S06      S6 おうさま の さけび
-//   opening_10.jpg    = OP_S07      S7 ゆうしゃ しょうしゅう
+//   opening_10.jpg    = OP_S07      S7a/b/c ゆうしゃ しょうしゅう (v266 で S7c 追加、ありがとう勅命)
 //   opening_11.jpg    = OP_S08      S8 たびだち (下→上にゆっくりパン)
 // 背景色は画像が contain でレターボックスになる余白用 (絵の基調色に合わせる)。
 // 2026-04-23: PNG(2688x1520, ~10MB/枚) を JPG(1600w, ~300-500KB) に圧縮、
@@ -10313,7 +10331,7 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_5.jpg', emoji: '✨',
     voice: '../assets/audio/storyboard/voice/S3b.mp3',
     text: 'へや の なか に\nふしぎな ひかり が あらわれました。' },
-  // --- S4: まおう の てさき (2 分割) ---
+  // --- S4: まおう の てさき (3 分割、S4c は v266 ありがとうテーマの動機づけ) ---
   { bg: '#0f0820',
     image: '../assets/images/story/opening_6.jpg', emoji: '👺',
     bgm: '../assets/audio/storyboard/masked_princess_omen.mp3',
@@ -10323,6 +10341,11 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_6.jpg', emoji: '👺',
     voice: '../assets/audio/storyboard/voice/S4b.mp3',
     text: 'それは、 かめん を つけた\nふしぎ で おそろしい まじん でした。' },
+  // S4c: v266 追加。ザガンの動機を「ありがとうを奪う」に設定 → 絵本テーマと直結。
+  // 音声は未生成 (voice フィールド省略、テキストのみ表示)。将来 Iapetus で追加生成予定。
+  { bg: '#0f0820',
+    image: '../assets/images/story/opening_6.jpg', emoji: '👺',
+    text: 'まおう ザガン は、\nひとびと の 「ありがとう」 の こころ を うばい、\nくに を くらやみ に しずめよう と して いた の です。' },
   // --- S5: つれさられる (2 ビート) ---
   { bg: '#2a2040',
     image: '../assets/images/story/opening_7.jpg', emoji: '💫',
@@ -10359,7 +10382,7 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
     voice: '../assets/audio/storyboard/voice/S6c.mp3',
     text: 'ゆうかん な せんし を あつめました。' },
-  // --- S7: 勇者召集 (2 分割) ---
+  // --- S7: 勇者召集 (3 分割、S7c は v266 ありがとうテーマ勅命) ---
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
     bgm: '../assets/audio/storyboard/chosen_road.mp3',
@@ -10369,6 +10392,11 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
     voice: '../assets/audio/storyboard/voice/S7b.mp3',
     text: '「ゆうしゃ よ、\nわが ひめ を たすけだして くれ！」' },
+  // S7c: v266 追加。ありがとうテーマを勅命に組み込む。
+  // 音声は未生成 (voice フィールド省略)。将来 Iapetus で追加生成予定。
+  { bg: '#0a1026',
+    image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
+    text: '「まどわされた せいれい たち を めざめさせて、\n『ありがとう』 の ちから を あつめて、\nかならず ひめ を たすけだす のだ！」' },
   // --- S8: 旅立ち ---
   { bg: '#0a1026',
     image: '../assets/images/story/opening_11.jpg', emoji: '🌅',
@@ -10386,7 +10414,7 @@ var OPENING_SCENES = [
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
-  OPENING_SCENES[15]   // S7a: そして、 あなた が えらばれた のです
+  OPENING_SCENES[16]   // S7a: そして、 あなた が えらばれた のです (v266 で S4c 挿入により 15→16)
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
@@ -10396,10 +10424,11 @@ var SHORT_OPENING_SCENES = [
 var ENDING_BGM = '../assets/audio/storyboard/moonfire_oath.mp3';
 var ENDING_SCENES = [
   // E1 — 焚き火の仲間 + ナレーション (BGM 開始)
+  // v266: 「ありがとう」カウンターを動的挿入 ({{THANKYOU}} プレースホルダ)
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_1.jpg', emoji: '🔥🧚',
     bgm: ENDING_BGM,
-    text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。' },
+    text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。\n「ありがとう」 も {{THANKYOU}} こ あつまった。' },
   // E2a — 焚き火 (小さく揺れる火)
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2a.jpg', emoji: '🔥',
@@ -10422,6 +10451,11 @@ var ENDING_SCENES = [
     image: '../assets/images/story/ending_4.jpg', emoji: '🔑',
     pan: 'up',
     text: '「まおうじょう は、 すぐ そこ だ！」\n「かならず、 おひめさま を\nたすけだす ぞ！」' },
+  // E4b — v266 ありがとうテーマ: 集めたありがとうが封印を破る力になる
+  // 音声は未生成 (voice 省略)。将来 Iapetus で追加予定。
+  { bg: 'radial-gradient(ellipse at center, #581c87 0%, #1e1b4b 60%, #000 100%)',
+    image: '../assets/images/story/ending_4.jpg', emoji: '💝',
+    text: '「あつめた 『ありがとう』 の ちから で、\nまおうじょう の のろい を\nやぶって みせる ぞ！」' },
   // E5 — クレジット (タイトルロゴ + 作者 + カタカナ編に続く)
   //    最終シーンの後に既存の「白フェード + BGM 4s フェードアウト」余韻が動く。
   { bg: '#000',
@@ -11268,7 +11302,13 @@ function _rowPracticeComplete() {
     var endingSeen = false;
     try { endingSeen = (localStorage.getItem('pono_ending_seen') === '1'); } catch (e) {}
     if (isLavaRow && !endingSeen && typeof _showStoryboard === 'function' && typeof ENDING_SCENES !== 'undefined') {
-      _showStoryboard(ENDING_SCENES, function() {
+      // v266: {{THANKYOU}} プレースホルダを現在カウントで置換してから再生
+      var thankYouCount = (typeof window.getThankYou === 'function') ? window.getThankYou() : 0;
+      var endingScenes = ENDING_SCENES.map(function(s) {
+        if (!s || typeof s.text !== 'string' || s.text.indexOf('{{THANKYOU}}') < 0) return s;
+        return Object.assign({}, s, { text: s.text.replace(/\{\{THANKYOU\}\}/g, String(thankYouCount)) });
+      });
+      _showStoryboard(endingScenes, function() {
         try { localStorage.setItem('pono_ending_seen', '1'); } catch (e) {}
         returnToSelect();
       });

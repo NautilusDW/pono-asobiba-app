@@ -742,6 +742,34 @@
       100% { transform: scale(1); }
     }
 
+    /* ===== Thank-you (ありがとう) badge — v266 テーマ統合、どんぐりバッジの下に配置 ===== */
+    .thankyou-badge-play {
+      position: fixed;
+      top: 56px; right: 12px;
+      z-index: 50;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px 6px 10px;
+      background: #fff;
+      border: 2.5px solid #E91E63;
+      border-radius: 999px;
+      box-shadow: 0 3px 10px rgba(233,30,99,0.18);
+      color: #AD1457;
+      font-weight: 900;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+    .thankyou-badge-play .thankyou-icon-play { font-size: 1.05rem; line-height: 1; }
+    .thankyou-badge-play .thankyou-count-play { min-width: 18px; text-align: center; }
+    .thankyou-badge-play.pop { animation: thankyouPlayPop 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes thankyouPlayPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.28) rotate(-6deg); }
+      70%  { transform: scale(1.08) rotate(4deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
     .stamp-rally-section {
       width: 100%;
       max-width: 400px;
@@ -1114,6 +1142,7 @@
   </style>
   <script src="common/achievements.js"></script>
   <script src="common/acorns.js"></script>
+  <script src="common/thankyou.js"></script>
   <script src="room/items.js"></script>
   <script src="common/treasure.js"></script>
   <link rel="stylesheet" href="common/promo.css">
@@ -1127,6 +1156,11 @@
   <span class="acorn-icon-play">🌰</span><span class="acorn-count-play" id="acornCountPlay">0</span>
   <span class="acorn-shop-hint">🛒</span>
 </a>
+
+<!-- v266: せいれい から もらった ありがとう の累計 -->
+<div class="thankyou-badge-play" id="thankyouBadgePlay" aria-label="もらった ありがとう">
+  <span class="thankyou-icon-play">💝</span><span class="thankyou-count-play" id="thankyouCountPlay">0</span>
+</div>
 
 <!-- 🎵 タップ解禁オーバーレイ: 初回起動時のみ表示。タップで BGM 開始 + sessionStorage 記録 -->
 <style>
@@ -3748,6 +3782,23 @@
       countEl.textContent = String(window.getAcorns());
       window.addEventListener('pono-acorns-changed', function(e) {
         update((e.detail && e.detail.after) != null ? e.detail.after : window.getAcorns());
+      });
+    })();
+
+    // ===== Thank-you (ありがとう) badge display — v266 テーマ統合 =====
+    (function(){
+      var countEl = document.getElementById('thankyouCountPlay');
+      var badge = document.getElementById('thankyouBadgePlay');
+      if (!countEl || !badge || typeof window.getThankYou !== 'function') return;
+      function update(n) {
+        countEl.textContent = String(n);
+        badge.classList.remove('pop');
+        void badge.offsetWidth;
+        badge.classList.add('pop');
+      }
+      countEl.textContent = String(window.getThankYou());
+      window.addEventListener('pono-thankyou-changed', function(e) {
+        update((e.detail && e.detail.after) != null ? e.detail.after : window.getThankYou());
       });
     })();
   </script>
