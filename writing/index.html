@@ -648,13 +648,17 @@ html, body {
 }
 #splashScreen.hidden { display: none; }
 .splash-copy {
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-weight: 900;
+  /* 2026-04-23: 紙芝居 / バトル文字と統一するため DotGothic16 に変更 (ドット font)。 */
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-weight: 400;
   font-size: clamp(1.25rem, 4.6vw, 2.2rem);
   line-height: 1.75; letter-spacing: 0.08em;
   text-align: center; color: #fff;
   text-shadow: 0 0 24px rgba(255,255,255,0.22), 0 0 2px rgba(255,255,255,0.4);
   opacity: 0;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  font-smoothing: none;
   animation: splash-text-in 1.1s ease-out 0.15s forwards;
 }
 .splash-hint {
@@ -9188,6 +9192,64 @@ function _showStoryboard(scenes, onDone) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // 2026-04-23: 全画像を事前に並列プリロード → シーン遷移時に画像がロード待ちで
+  // ポップインするのを防ぐ (「フェードインがカットインになる」現象の根治)。
+  scenes.forEach(function(s) {
+    if (s && s.image) { var pre = new Image(); pre.src = s.image; }
+  });
+
+  // ===== 紙芝居 BGM =====
+  // シーン毎に s.bgm が指定されていれば、その mp3 にクロスフェードで切替。
+  // 指定がないシーンでは直前の BGM を継続。
+  var sbAudio = document.createElement('audio');
+  sbAudio.loop = true;
+  sbAudio.preload = 'auto';
+  sbAudio.volume = 0;
+  // 画面外に置いて iOS の表示バグを避ける。
+  sbAudio.style.display = 'none';
+  ov.appendChild(sbAudio);
+  var currentBgmSrc = null;
+  var fadeRaf = null;
+  function fadeAudio(el, from, to, durationMs, onDone) {
+    if (fadeRaf) cancelAnimationFrame(fadeRaf);
+    var startT = performance.now();
+    function step(now) {
+      var t = Math.min(1, (now - startT) / durationMs);
+      try { el.volume = Math.max(0, Math.min(1, from + (to - from) * t)); } catch (e) {}
+      if (t < 1) fadeRaf = requestAnimationFrame(step);
+      else { fadeRaf = null; if (onDone) onDone(); }
+    }
+    fadeRaf = requestAnimationFrame(step);
+  }
+  function setBgm(src) {
+    if (src === currentBgmSrc) return;
+    currentBgmSrc = src;
+    if (!src) {
+      fadeAudio(sbAudio, sbAudio.volume, 0, 700, function() {
+        try { sbAudio.pause(); } catch (e) {}
+      });
+      return;
+    }
+    function startNew() {
+      try {
+        sbAudio.src = src;
+        sbAudio.currentTime = 0;
+        sbAudio.volume = 0;
+        var p = sbAudio.play();
+        if (p && p.catch) p.catch(function() {});
+        fadeAudio(sbAudio, 0, 0.7, 900);
+      } catch (e) {}
+    }
+    if (!sbAudio.paused && sbAudio.volume > 0.02) {
+      fadeAudio(sbAudio, sbAudio.volume, 0, 500, function() {
+        try { sbAudio.pause(); } catch (e) {}
+        startNew();
+      });
+    } else {
+      startNew();
+    }
+  }
+
   // テキストを「最大 2 行のページ」に分割。
   //   \n\n = 明示的なページ区切り (データ側で指定)
   //   \n   = 行内改行
@@ -9271,9 +9333,11 @@ function _showStoryboard(scenes, onDone) {
   function paintScene(i) {
     var s = scenes[i];
     if (s.bg) ov.style.background = s.bg;
+    if (s.bgm !== undefined) setBgm(s.bgm);  // シーン指定時のみ切替、未指定は継続
     art.innerHTML = '';
+    var img = null;
     if (s.image) {
-      var img = document.createElement('img');
+      img = document.createElement('img');
       img.src = s.image;
       img.alt = '';
       if (s.pan) img.classList.add('sb-pan-' + s.pan);
@@ -9289,12 +9353,28 @@ function _showStoryboard(scenes, onDone) {
     pageIdx = 0;
     art.classList.remove('sb-out'); txt.classList.remove('sb-out');
     void art.offsetWidth;   // reflow
-    art.classList.add('sb-in'); txt.classList.add('sb-in');
-    // 文字ボックスの fade-in (delay 0.25s + 0.6s) とリズムが合うよう、
-    // 400ms 待ってから type 開始 → ボックスが現れてから文字が書き始められる。
-    setTimeout(function() {
-      startTypewriter(pages[0] || ['']);
-    }, 400);
+
+    // 画像がロードされるまで sb-in を遅延 (フェードインが「カットイン」に見える現象の対策)。
+    // プリロード済みなら img.complete=true で即発火、未ロードなら load を待つ。
+    // 万一 load が来ない/遅すぎる場合は 1500ms のフォールバックで強制発火。
+    var fired = false;
+    function triggerIn() {
+      if (fired) return;
+      fired = true;
+      art.classList.add('sb-in'); txt.classList.add('sb-in');
+      // 文字ボックスの fade-in (delay 0.25s + 0.6s) とリズムが合うよう、
+      // 400ms 待ってから type 開始 → ボックスが現れてから文字が書き始められる。
+      setTimeout(function() {
+        startTypewriter(pages[0] || ['']);
+      }, 400);
+    }
+    if (img && !(img.complete && img.naturalWidth > 0)) {
+      var fbTimer = setTimeout(triggerIn, 1500);
+      img.addEventListener('load',  function() { clearTimeout(fbTimer); triggerIn(); }, { once: true });
+      img.addEventListener('error', function() { clearTimeout(fbTimer); triggerIn(); }, { once: true });
+    } else {
+      triggerIn();
+    }
   }
 
   function advance() {
@@ -9305,13 +9385,15 @@ function _showStoryboard(scenes, onDone) {
     if (idx >= scenes.length) {
       // 余韻演出: 最終シーンの絵・文字をフェードアウト → 黒みで静止 → 黒みのまま次画面を背後にセット
       // → オーバーレイを黒みからフェードアウトして map がゆっくり現れる。
-      // 時系列 (ms): 0 = 絵/文字 fade-out, 500 = 完全黒み, 1700 = 次画面セット, 2000 = overlay fade-out, 2900 = 撤去
+      // 時系列 (ms): 0 = 絵/文字 fade-out + BGM fade-out, 500 = 完全黒み, 1700 = 次画面セット, 2000 = overlay fade-out, 2900 = 撤去
       art.classList.remove('sb-in');
       txt.classList.remove('sb-in');
       art.classList.add('sb-out');
       txt.classList.add('sb-out');
       // 背景を純黒へ遷移 (scene bg が色付きの場合に備えて)
       ov.style.background = '#000';
+      // BGM も余韻に合わせてフェードアウト (2000ms で完全無音)。
+      setBgm(null);
       setTimeout(function() {
         // 黒みの状態で子要素も完全に消す (透過 png の輪郭が残らないように)
         art.style.visibility = 'hidden';
@@ -9326,6 +9408,7 @@ function _showStoryboard(scenes, onDone) {
         ov.classList.add('fade-out');
       }, 2000);
       setTimeout(function() {
+        try { sbAudio.pause(); sbAudio.src = ''; } catch (e) {}
         if (ov.parentNode) ov.remove();
       }, 2900);
       return;
@@ -9377,6 +9460,7 @@ var OPENING_SCENES = [
     text: 'あるひ、 おしろ の へや で\nおうじょさま が すごして いると、\n\nへや の なか に\nふしぎな ひかり が あらわれました。' },
   { bg: '#0f0820',
     image: '../assets/images/story/opening_6.jpg', emoji: '👺',
+    bgm: '../assets/audio/storyboard/masked_princess_omen.mp3',
     text: 'ひかり の なか から、\nまおう ザガン の てさき が\n\nすがた を あらわしました。\n\nそれは、 かめん を つけた\nふしぎ で おそろしい まじん でした。' },
   { bg: '#2a2040',
     image: '../assets/images/story/opening_7.jpg', emoji: '💫',
@@ -9389,6 +9473,7 @@ var OPENING_SCENES = [
     text: '「たすけて くれる もの は おらぬか！」\n\nおうさま は かなしく さけび、\nゆうかん な せんし を あつめました。' },
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
+    bgm: '../assets/audio/storyboard/chosen_road.mp3',
     text: 'そして、 あなた が えらばれた のです。\n\n「ゆうしゃ よ、\nわが ひめ を たすけだして くれ！」' }
 ];
 
@@ -10789,6 +10874,12 @@ function goToPracticeDirect(rowIndex) {
     if (typeof _showStoryboard === 'function' && typeof OPENING_SCENES !== 'undefined') {
       var _ts = document.getElementById('titleScreen');
       if (_ts) _ts.classList.add('hidden');
+      // 紙芝居は自前の BGM を鳴らすので、タイトル BGM を停止して二重再生を防ぐ。
+      try {
+        var _mainBgm = document.getElementById('bgm');
+        if (_mainBgm) { _mainBgm.pause(); }
+        _titleBgmPlaying = false;
+      } catch (e) {}
       // 無料ユーザーはここに来ないのが正しいが、URL 直叩きでの保険。
       // 短縮版オープニングを見せたあと play.html に戻し、練習には入れない。
       var _isFree = false;
