@@ -9238,6 +9238,28 @@ function _showStoryboard(scenes, onDone) {
   // ===== 紙芝居 BGM =====
   // シーン毎に s.bgm が指定されていれば、その mp3 にクロスフェードで切替。
   // 指定がないシーンでは直前の BGM を継続。
+  //
+  // 紙芝居中のハモり対策:
+  //   (1) main bgm element (id="bgm") を pause + src クリアで完全停止
+  //       (setBgmFor/focus 復帰で勝手に play() 再発火しないように src を外す)
+  //   (2) window._storyboardActive フラグを立てて、visibilitychange/focus
+  //       ハンドラ側でも main bgm の自動復帰を抑制
+  //   (3) 紙芝居自身の sbAudio に visibilitychange/blur/focus を張り、
+  //       タブ裏/画面オフで pause → 戻ったら play() 再開
+  window._storyboardActive = true;
+  var _mainBgmKillSrc = '';
+  try {
+    var _mb = document.getElementById('bgm');
+    if (_mb) {
+      _mainBgmKillSrc = _mb.currentSrc || _mb.src || '';
+      _mb.pause();
+      // 次の play() が呼ばれても元ソースに戻らないよう空にする
+      try { _mb.removeAttribute('src'); _mb.load(); } catch (e) {}
+      try { _titleBgmPlaying = false; } catch (e) {}
+      try { _bgmKind = null; } catch (e) {}
+    }
+  } catch (e) {}
+
   var sbAudio = document.createElement('audio');
   sbAudio.loop = true;
   sbAudio.preload = 'auto';
@@ -9246,7 +9268,35 @@ function _showStoryboard(scenes, onDone) {
   sbAudio.style.display = 'none';
   ov.appendChild(sbAudio);
   var currentBgmSrc = null;
+  var sbWasPlayingBeforeHide = false;
   var fadeRaf = null;
+
+  // タブ非表示/フォーカス外れで sbAudio を pause → 戻ったら再開。
+  function _sbOnHide() {
+    try {
+      if (!sbAudio.paused) { sbWasPlayingBeforeHide = true; sbAudio.pause(); }
+    } catch (e) {}
+  }
+  function _sbOnShow() {
+    try {
+      if (sbWasPlayingBeforeHide && currentBgmSrc) {
+        sbWasPlayingBeforeHide = false;
+        var p = sbAudio.play();
+        if (p && p.catch) p.catch(function(){});
+      }
+    } catch (e) {}
+  }
+  function _sbVisHandler() { if (document.hidden) _sbOnHide(); else _sbOnShow(); }
+  document.addEventListener('visibilitychange', _sbVisHandler);
+  window.addEventListener('blur',  _sbOnHide);
+  window.addEventListener('focus', _sbOnShow);
+  function _sbCleanup() {
+    try { sbAudio.pause(); sbAudio.src = ''; } catch (e) {}
+    document.removeEventListener('visibilitychange', _sbVisHandler);
+    window.removeEventListener('blur',  _sbOnHide);
+    window.removeEventListener('focus', _sbOnShow);
+    try { window._storyboardActive = false; } catch (e) {}
+  }
   function fadeAudio(el, from, to, durationMs, onDone) {
     if (fadeRaf) cancelAnimationFrame(fadeRaf);
     var startT = performance.now();
@@ -9449,7 +9499,7 @@ function _showStoryboard(scenes, onDone) {
         ov.classList.add('fade-out');
       }, 3900);
       setTimeout(function() {
-        try { sbAudio.pause(); sbAudio.src = ''; } catch (e) {}
+        _sbCleanup();
         if (ov.parentNode) ov.remove();
       }, 5200);
       return;
@@ -10970,12 +11020,17 @@ window.KidsTraceApp = {
   showCompletion
 };
 
+// 紙芝居演出中は main bgm element を勝手に復帰させない (二重再生防止)。
+// _showStoryboard が自前の audio を管理するため、
+// focus 復帰や visibilitychange で main bgm が勝手に play() されるとハモる。
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+  else if (bgmEnabled && !window._storyboardActive) { bgm.play().catch(() => {}); }
 });
 window.addEventListener('blur',  () => bgm.pause());
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+window.addEventListener('focus', () => {
+  if (bgmEnabled && !window._storyboardActive) bgm.play().catch(() => {});
+});
 
 // ===== Tutorial =====
 function showTutorial() {
