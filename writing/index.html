@@ -7091,17 +7091,19 @@ function _showPuzzleIntro(kind, onDone) {
       lines: [
         { lines: ['ほらあなの おくに すすむと', 'ひろい ばしょに でた。', ''] },
         { lines: ['おおきな いしの とびら。', '…こおりの ふういんが かかって いる！', ''] },
-        { lines: ['…だれか いるの？', 'さむい… たすけて…！', ''] },
-        { lines: ['ザガン が こおりの まほうで', 'わたしの ほのおを とじこめて いるの。', ''] },
-        { lines: ['もじの ちからで', 'こおりを とかして！', ''] }
+        { lines: ['…だれか いるの？', 'うごけない… たすけて…！', ''] },
+        { lines: ['ザガンの ふういんで、', 'まほうが つかえないの。', ''] },
+        { lines: ['もじの ちからで', 'ふういんを といて！', ''] }
       ]
     },
+    // (2026-04-24) 炎の妖精が溶岩で捕まっている理由を「魔力の鎖」に変更。
+    //              旧「炎の熱で弱らされている」は炎の妖精には不自然なため。
     lava_step: {
       voiceOf: 'fire',
       lines: [
-        { lines: ['あつい… とけて しまいそう…', 'たすけて…！', ''] },
-        { lines: ['ザガン の ほのおが', 'わたしの こおりを よわらせて いるの。', ''] },
-        { lines: ['もじの ちからで', 'いしを よんで！', ''] }
+        { lines: ['うごけない… たすけて…！', '', ''] },
+        { lines: ['ザガンの まりょくの くさりが', 'わたしを しばって いるの。', ''] },
+        { lines: ['もじの ちからで', 'くさりを たちきって！', ''] }
       ]
     }
   };
@@ -8988,15 +8990,18 @@ const FAIRY_META = {
   water:  { name: 'もりの ようせい',   emoji: '🧚‍♀️', color: '#4ade80', rowKind: 'bridge',    msg: 'これで わたれるよ！',
             img: '../assets/images/characters/pixies/pixy_forest.png',
             hint: 'ほこらに なかまが つかまって いるの。\nたすけて あげて！' },
-  // 'shrine' キー = 祠 (な行) ロケーション。ここに住むのは 炎の妖精 (氷で封印されている)。
-  shrine: { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
-            img: '../assets/images/characters/pixies/pixy_fire.png',
-            hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
-  // 'fire' キー = 溶岩 (ら行) ロケーション。ここに住むのは 氷の妖精 (炎の熱で弱らされている)。
-  fire:   { name: 'こおりの ようせい', emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'lava_step', msg: 'たすけて くれて ありがとう！',
+  // 'shrine' キー = 祠 (な行) ロケーション。ここに住むのは 氷の妖精 (氷の封印に閉じ込められている)。
+  // (2026-04-24) 氷の封印 ⇔ 氷の妖精 の属性一致、および「氷で溶岩に足場を作る」物理矛盾の解消のため
+  //              旧スワップ (炎@祠 / 氷@溶岩) を廃止して元の配置に戻した。
+  shrine: { name: 'こおりの ようせい', emoji: '🧚‍♀️', color: '#7ad2ff', rowKind: 'riddle',    msg: 'たすけて くれて ありがとう！',
             img: '../assets/images/characters/pixies/pixy_ice.png',
+            hint: 'ようがんの おくに もう ひとり...\nたすけて あげて！' },
+  // 'fire' キー = 溶岩 (ら行) ロケーション。ここに住むのは 炎の妖精 (魔力の鎖で溶岩の底に縛られている)。
+  // 溶岩を操って飛び石を作る (炎の妖精が溶岩 = 溶けた岩を固める) 設定。救出後は魔王城の鍵を託す。
+  fire:   { name: 'ほのおの ようせい', emoji: '🧚‍♂️', color: '#ff9a60', rowKind: 'lava_step', msg: 'たすけて くれて ありがとう！',
+            img: '../assets/images/characters/pixies/pixy_fire.png',
             hint: 'わたしも きょうりょく する わ。\nおひめさまを たすけて あげて！',
-            hint2: 'もじを かいて ね。\nわたしが いしを もちあげて あげる！' },
+            hint2: 'もじを かいて ね。\nわたしが ようがんを かためて とびいしに するわ！' },
 };
 function _getFairies() {
   try { return JSON.parse(localStorage.getItem(FAIRY_KEY) || '{}') || {}; }
@@ -9228,18 +9233,19 @@ function _waterFairyFarewell(onDone) {
   });
 }
 
-// ら行 lava フィニッシャー専用: 氷の妖精との別れ会話 + 魔王城の鍵の受け渡し。
-// 背景: 氷の妖精はかつて魔王城に忍び込み門番から鍵を奪ったが、帰途で魔王の手下たちに
-// 捕まり溶岩に封じられていた。鍵は身につけた氷の首飾りに封じ込めて隠していたため、
-// 敵には単なる氷の装飾にしか見えず発見されなかった。救出後に首飾りを砕いて鍵を託す。
-// → カタカナ編 (魔王城突入) への引き。4番目のセリフ中に 🔑 が妖精の上に現れる演出。
-function _iceFairyFarewell(onDone) {
-  _freeFairy('fire'); // 'fire' キー = 氷の妖精 (命名は localStorage 互換のため保持)
+// ら行 lava フィニッシャー専用: 炎の妖精との別れ会話 + 魔王城の鍵の受け渡し。
+// 背景: 炎の妖精はかつて魔王城に忍び込み門番から鍵を奪ったが、帰途で魔王の手下たちに
+// 捕まり、ザガンの魔力の鎖で溶岩の底に縛り付けられていた。鍵は身につけた炎の首飾りに
+// 封じ込めて隠していたため、敵には単なる炎の装飾にしか見えず発見されなかった。
+// 救出後に首飾りを砕いて鍵を託す → カタカナ編 (魔王城突入) への引き。
+// 5番目のセリフ中に 🔑 が妖精の上に現れる演出。
+function _fireFairyFarewell(onDone) {
+  _freeFairy('fire'); // 'fire' キー = 炎の妖精 (命名は localStorage 互換のため保持)
   try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
 
   var stage = _puzzleEls().stage;
   var fairy = stage ? stage.querySelector('.lava-fairy') : null;
-  // 溶岩ステージ上の氷の妖精を中央上部にふわっと移動
+  // 溶岩ステージ上の炎の妖精を中央上部にふわっと移動
   if (fairy) {
     fairy.style.transition = 'left 0.6s ease, top 0.6s ease, opacity 0.4s ease, transform 0.6s ease';
     fairy.style.left = '50%';
@@ -9250,23 +9256,23 @@ function _iceFairyFarewell(onDone) {
 
   // 2 行 + 1 空行 を 1 ブロックに揃える (既存 _waterFairyFarewell と同じ形式)。
   var messages = [
-    { lines: ['こおりの ようせい「ゆうしゃさま、', 'たすけて くれて ありがとう！', ''] },
-    { lines: ['こおりの ようせい「じつは わたし、', 'まおうじょう に しのびこんだ の。', ''] },
-    { lines: ['こおりの ようせい「もんばん の すきを ついて', 'かぎ を ぬすんで きた わ。', ''] },
-    { lines: ['こおりの ようせい「でも かえりみち で', 'てした たち に つかまって しまって…', ''] },
-    { lines: ['こおりの ようせい「かぎ は くびかざり の', 'こおりに とじこめて いた から…', ''] },
-    { lines: ['こおりの ようせい「まおう の てした たち にも', 'みつからなかった わ。', ''] },
-    { lines: ['こおりの ようせい「この かぎ で、', 'おひめさま を たすけだして ね！', ''] }
+    { lines: ['ほのおの ようせい「ゆうしゃさま、', 'たすけて くれて ありがとう！', ''] },
+    { lines: ['ほのおの ようせい「じつは わたし、', 'まおうじょう に しのびこんだ の。', ''] },
+    { lines: ['ほのおの ようせい「もんばん の すきを ついて', 'かぎ を ぬすんで きた わ。', ''] },
+    { lines: ['ほのおの ようせい「でも かえりみち で', 'てした たち に つかまって しまって…', ''] },
+    { lines: ['ほのおの ようせい「かぎ は ほのおの くびかざり に', 'とじこめて いた から…', ''] },
+    { lines: ['ほのおの ようせい「まおう の てした たち にも', 'みつからなかった わ。', ''] },
+    { lines: ['ほのおの ようせい「この かぎ で、', 'おひめさま を たすけだして ね！', ''] }
   ];
 
-  // 5番目のメッセージ (index 4, 「かぎはくびかざりのこおりに…」) 表示時に、
-  // 氷の首飾りが砕けて 🔑 が妖精の上にポップインする演出を挟む。
+  // 5番目のメッセージ (index 4, 「かぎはほのおのくびかざりに…」) 表示時に、
+  // 炎の首飾りが砕けて 🔑 が妖精の上にポップインする演出を挟む。
   var keyRevealAt = 4;
   var keyEl = null;
 
   function showOne(i) {
     if (i >= messages.length) { finish(); return; }
-    if (i === keyRevealAt) { keyEl = _iceFairyKeyReveal(fairy); }
+    if (i === keyRevealAt) { keyEl = _fireFairyKeyReveal(fairy); }
     _showBattleDialog([messages[i]], function() { showOne(i + 1); });
   }
 
@@ -9291,9 +9297,9 @@ function _iceFairyFarewell(onDone) {
   showOne(0);
 }
 
-// _iceFairyFarewell で使用: 氷の首飾りが砕けて 🔑 がポップインする演出。
+// _fireFairyFarewell で使用: 炎の首飾りが砕けて 🔑 がポップインする演出。
 // 戻り値: 鍵 DOM 要素 (親で finish 時にフェードアウトさせるため)。
-function _iceFairyKeyReveal(fairyEl) {
+function _fireFairyKeyReveal(fairyEl) {
   if (!fairyEl || !fairyEl.parentNode) return null;
   var stage = fairyEl.parentNode;
   try { if (typeof playSE === 'function') playSE('sparkle'); } catch (e) {}
@@ -9301,7 +9307,8 @@ function _iceFairyKeyReveal(fairyEl) {
   var key = document.createElement('div');
   key.className = 'lava-fairy-key';
   key.textContent = '🔑';
-  key.style.cssText = 'position:absolute;left:50%;top:28%;transform:translate(-50%,-50%) scale(0.3) rotate(-20deg);font-size:clamp(32px,6vw,56px);opacity:0;transition:opacity 0.5s ease, transform 0.7s cubic-bezier(0.3,0,0.2,1.3);z-index:12;pointer-events:none;filter:drop-shadow(0 0 14px #fde68a) drop-shadow(0 0 28px #fbbf24);';
+  // 炎の首飾りから出てきたイメージで橙〜赤のグロー
+  key.style.cssText = 'position:absolute;left:50%;top:28%;transform:translate(-50%,-50%) scale(0.3) rotate(-20deg);font-size:clamp(32px,6vw,56px);opacity:0;transition:opacity 0.5s ease, transform 0.7s cubic-bezier(0.3,0,0.2,1.3);z-index:12;pointer-events:none;filter:drop-shadow(0 0 14px #fb923c) drop-shadow(0 0 28px #f97316);';
   stage.appendChild(key);
   requestAnimationFrame(function() {
     key.style.opacity = '1';
@@ -10418,18 +10425,19 @@ function _rowPracticeNextChar() {
               // 2文字目以降は妖精演出をスキップして通常の浮上演出のみ。
               // (2026-04-22 v8: 炎→氷に入れ替え。熔岩で"あつい"と言うのは炎妖精では違和感があるため。)
               var _lvRunRise = function() {
-              // (2026-04-22 v5) こおりの妖精を常駐スプライトとして生成しておく。
+              // (2026-04-22 v5 / 2026-04-24 炎妖精に戻す) 溶岩の救出妖精を常駐スプライトとして生成。
                 // 救出済なら一度だけ生成し、右端 (88%,24%) にフェードイン。
                 var _lvFairy = _lvStage ? _lvStage.querySelector('.lava-fairy') : null;
                 if (_lvStage && !_lvFairy && _puzzle.fairyFreed) {
                   _lvFairy = document.createElement('div');
                   _lvFairy.className = 'lava-fairy';
                   var _lvFairyImg = document.createElement('img');
-                  _lvFairyImg.src = '../assets/images/characters/pixies/pixy_ice.png';
-                  _lvFairyImg.alt = 'こおりの ようせい';
+                  var _lvFairyMeta = (typeof FAIRY_META !== 'undefined' && FAIRY_META.fire) ? FAIRY_META.fire : null;
+                  _lvFairyImg.src = (_lvFairyMeta && _lvFairyMeta.img) || '../assets/images/characters/pixies/pixy_fire.png';
+                  _lvFairyImg.alt = (_lvFairyMeta && _lvFairyMeta.name) || 'ほのおの ようせい';
                   _lvFairyImg.onerror = function() {
                     _lvFairy.innerHTML = '';
-                    _lvFairy.textContent = '🧚‍♀️';
+                    _lvFairy.textContent = (_lvFairyMeta && _lvFairyMeta.emoji) || '🧚‍♂️';
                   };
                   _lvFairy.appendChild(_lvFairyImg);
                   _lvStage.appendChild(_lvFairy);
@@ -10492,7 +10500,7 @@ function _rowPracticeNextChar() {
                   }, 2500);
                 }
                 if (isFinisher) {
-                  // 5 石揃った: 中央閃光 + 妖精お別れ + 勇者が飛び石を左→右に飛び跳ねて渡る
+                  // 5 石揃った: 中央閃光 + 妖精お別れ (鍵受け渡しイベント) + 勇者が飛び石を渡る
                   if (_lvStage) {
                     setTimeout(function() {
                       _lvStage.classList.add('complete');
@@ -10501,24 +10509,8 @@ function _rowPracticeNextChar() {
                       _lvStage.appendChild(lvBurst);
                     }, 2500);
                   }
-                  // 妖精のお別れセリフ + 飛び去り (2026-04-22 v5)
-                  if (_lvFairy) {
-                    setTimeout(function() {
-                      try {
-                        if (typeof _showBattleDialog === 'function') {
-                          _showBattleDialog([
-                            { lines: ['こおりの ようせい「いしが そろった わ！', 'きを つけて わたって ね。', ''] }
-                          ], function() {
-                            _lvFairy.style.transition = 'opacity 0.7s ease, transform 0.9s cubic-bezier(0.4,0,0.8,0.3)';
-                            _lvFairy.style.opacity = '0';
-                            _lvFairy.style.transform = 'translate(-50%,-50%) translate(20vw,-40vh) scale(0.4) rotate(18deg)';
-                            setTimeout(function() { if (_lvFairy.parentNode) _lvFairy.remove(); }, 1000);
-                          });
-                        }
-                      } catch (e) {}
-                    }, 2600);
-                  }
                   try { setTimeout(function() { playVictoryFanfare(); }, 2500); } catch (e) {}
+                  // 勇者の渡り演出は対話中の背景として 3300ms から開始
                   setTimeout(function() {
                     if (_lvStage) {
                       var walker = document.createElement('div');
@@ -10526,12 +10518,23 @@ function _rowPracticeNextChar() {
                       _lvStage.appendChild(walker);
                     }
                   }, 3300);
-                  // 浮上(2.4s) + 閃光(1s) + 勇者歩行(4.6s) + マージン
+                  // (2026-04-24) 炎の妖精お別れ + 魔王城の鍵受け渡し。
+                  //   従来の「いしがそろったわ」1 メッセージから 7 メッセージ + 鍵演出に拡張。
+                  //   対話完了まで _rowPracticeNextChar を待機させ (固定 8400ms タイマー廃止)、
+                  //   プレイヤーのタップ速度に応じてエンディング紙芝居へ遷移。
                   setTimeout(function() {
-                    _puzzle.step++;
-                    _rowPracticeStep++;
-                    _rowPracticeNextChar();
-                  }, 8400);
+                    var advance = function() {
+                      _puzzle.step++;
+                      _rowPracticeStep++;
+                      _rowPracticeNextChar();
+                    };
+                    if (typeof _fireFairyFarewell === 'function') {
+                      _fireFairyFarewell(advance);
+                    } else {
+                      // フォールバック: 関数未定義時は従来互換の固定タイマー
+                      setTimeout(advance, 5800);
+                    }
+                  }, 2600);
                 } else {
                   // 石が完全に着地+フラッシュ終了してから次の文字へ (2.4s + 0.55s + 余韻)
                   setTimeout(function() {
@@ -10574,17 +10577,9 @@ function _rowPracticeNextChar() {
                 });
                 return;
               }
-              // ら行 lava フィニッシャー: 氷の妖精との別れ会話 + 魔王城の鍵の受け渡し。
-              // 鍵は首飾りに封じて隠していた設定 (魔王の手下に捕まった後も発見されなかった)。
-              // → カタカナ編 (魔王城突入) への引き。この後エンディング紙芝居が発動。
-              if (isFinisher && _puzzle.kind === 'lava_step') {
-                _iceFairyFarewell(function() {
-                  _puzzle.step++;
-                  _rowPracticeStep++;
-                  _rowPracticeNextChar();
-                });
-                return;
-              }
+              // 注: ら行 lava フィニッシャーの妖精お別れ + 鍵受け渡しは、
+              //     _lvRunRise 内 (isFinisher 分岐) で _fireFairyFarewell を呼ぶ設計に統一済み。
+              //     この外側ブロックは lava_step では通らない (_rescueFairy→_lvRunRise→return で抜ける)。
               _puzzle.step++;
               _rowPracticeStep++;
               _rowPracticeNextChar();
