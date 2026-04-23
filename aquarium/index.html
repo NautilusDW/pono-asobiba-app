@@ -1845,6 +1845,9 @@
       const type = btn.dataset.creature;
       if (!creatureToggles[type]) btn.classList.add('off');
       btn.addEventListener('click', () => {
+        // Phase 3: tier-locked のボタンは creatureToggles を変更しない
+        // (dynamic-creatures.js 側の capture-phase リスナで promo は既に表示済み)
+        if (btn.dataset.tierLocked === '1') return;
         creatureToggles[type] = !creatureToggles[type];
         btn.classList.toggle('off', !creatureToggles[type]);
         saveCreatureToggles();

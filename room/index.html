@@ -2439,8 +2439,14 @@ function _appendTierPromoHint(grid) {
     + 'background:linear-gradient(135deg,#E0F2FE,#DBEAFE);'
     + 'text-align:center;font-weight:700;color:#1E3A8A;cursor:pointer;'
     + 'box-shadow:0 2px 8px rgba(0,0,0,0.08);';
-  hint.innerHTML = '<div style="font-size:1.4rem;margin-bottom:4px">✨</div>'
-    + '<div style="font-size:0.9rem">かぐ も かざり も、サブスクで まいつき ふえていくよ！</div>';
+  const icon = document.createElement('div');
+  icon.style.cssText = 'font-size:1.4rem;margin-bottom:4px';
+  icon.textContent = '✨';
+  const msg = document.createElement('div');
+  msg.style.cssText = 'font-size:0.9rem';
+  msg.textContent = 'かぐ も かざり も、サブスクで まいつき ふえていくよ！';
+  hint.appendChild(icon);
+  hint.appendChild(msg);
   hint.addEventListener('click', function() {
     if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
       window.PonoTier.showSubscribePromo({

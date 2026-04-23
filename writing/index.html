@@ -8400,22 +8400,28 @@ function buildRowSelectScreen() {
   });
 
   // Wire category tabs
+  // Phase 3: サブスク以外 (free/book) はカタカナ編に入れない。
+  // タブは見せるが、タップでサブスク誘導モーダルを出す ("伸びしろ" の見せ方)。
+  // Why live check: 同一セッションで pono_premium を投入されても再描画まで
+  // 反映されない stale closure を避けるため、クリック時点で都度評価する。
+  function _isKatakanaLockedNow() {
+    try {
+      return !!(window.PonoTier
+        && typeof window.PonoTier.isKatakanaUnlocked === 'function'
+        && !window.PonoTier.isKatakanaUnlocked());
+    } catch (e) { return false; }
+  }
   var catTabs = document.querySelectorAll('#rsCategoryTabs .category-tab');
   catTabs.forEach(function(tab) {
     tab.classList.toggle('active', tab.dataset.cat === currentCategory);
-    // Phase 3: サブスク以外 (free/book) はカタカナ編に入れない。
-    // タブは見せるが、タップでサブスク誘導モーダルを出す ("伸びしろ" の見せ方)。
     var _isKatakanaTab = (tab.dataset.cat === 'katakana');
-    var _katakanaLocked = _isKatakanaTab
-      && window.PonoTier && typeof window.PonoTier.isKatakanaUnlocked === 'function'
-      && !window.PonoTier.isKatakanaUnlocked();
-    if (_katakanaLocked) {
+    if (_isKatakanaTab && _isKatakanaLockedNow()) {
       tab.classList.add('locked');
       tab.setAttribute('aria-disabled', 'true');
     }
     tab.onclick = function() {
       if (tab.dataset.cat === currentCategory) return;
-      if (_katakanaLocked) {
+      if (_isKatakanaTab && _isKatakanaLockedNow()) {
         try {
           window.PonoTier.showSubscribePromo({
             title: 'カタカナ編は サブスク で あそべるよ！',
@@ -10849,6 +10855,8 @@ function goToPracticeDirect(rowIndex) {
   // フラグ管理が曖昧になるので、ここでは直接 bgm element を操作する。
   var _titleBgmPlaying = false;
   function startTitleBgm() {
+    // 2026-04-23: 紙芝居進行中は絶対に title BGM を起こさない (オープニング BGM との二重再生防止)。
+    if (window._storyboardActive) return;
     if (_titleBgmPlaying) return;
     if (!bgmEnabled) return;
     try {
