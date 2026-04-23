@@ -9887,19 +9887,42 @@ var SHORT_OPENING_SCENES = [
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
 // 「ひらがな編はここまで、魔王城はすぐそこだ」という区切り。続きはカタカナ編。
+// (2026-04-24 v2: 新素材を反映。E2 を 3 枚組 (E2_01/02/03) に分割、E3/E4 はゆっくり縦パン、
+//  BGM に Moonfire Oath を通しで流し、クレジット (ロゴ+作者+続く) で余韻締め)
+var ENDING_BGM = '../assets/audio/storyboard/moonfire_oath.mp3';
 var ENDING_SCENES = [
+  // E1 — 焚き火の仲間 + ナレーション (BGM 開始)
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/ending_1.png', emoji: '🔥🧚',
+    image: '../assets/images/story/ending_1.jpg', emoji: '🔥🧚',
+    bgm: ENDING_BGM,
     text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。' },
+  // E2a — 焚き火 (小さく揺れる火)
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/ending_2.png', emoji: '🔥',
-    text: 'たきび の ひ が、 ちいさく ゆれている。\nながい たび の おもいで が、\nしずかに むねに よみがえる。' },
+    image: '../assets/images/story/ending_2a.jpg', emoji: '🔥',
+    text: 'たきび の ひ が、\nちいさく ゆれて いる。' },
+  // E2b — 旅の思い出
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/ending_2b.jpg', emoji: '🔥',
+    text: 'ながい たび の おもいで が…' },
+  // E2c — 胸に甦る
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/ending_2c.jpg', emoji: '🔥',
+    text: 'しずかに むねに よみがえる。' },
+  // E3 — 星空 (ゆっくり下→上に縦パンで夜空を見上げる)
   { bg: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0c1631 55%, #000 100%)',
-    image: '../assets/images/story/ending_3.png', emoji: '✨',
+    image: '../assets/images/story/ending_3.jpg', emoji: '✨',
+    pan: 'up',
     text: 'よぞら を みあげる と、\nほし が きらきら と ひかって いた。' },
+  // E4 — 決意 (ゆっくり下→上に縦パンで奥の魔王城を見上げる)
   { bg: 'radial-gradient(ellipse at center, #581c87 0%, #1e1b4b 60%, #000 100%)',
-    image: '../assets/images/story/ending_4.png', emoji: '🔑',
-    text: '「まおうじょう は、 すぐ そこ だ！」\n「かならず、 おひめさま を\nたすけだす ぞ！」' }
+    image: '../assets/images/story/ending_4.jpg', emoji: '🔑',
+    pan: 'up',
+    text: '「まおうじょう は、 すぐ そこ だ！」\n「かならず、 おひめさま を\nたすけだす ぞ！」' },
+  // E5 — クレジット (タイトルロゴ + 作者 + カタカナ編に続く)
+  //    最終シーンの後に既存の「白フェード + BGM 4s フェードアウト」余韻が動く。
+  { bg: '#000',
+    image: '../assets/images/ui/title_logo.png', emoji: '🌟',
+    text: 'Sillas W. Nemo\n\nカタカナ へん に、 つづく…' }
 ];
 
 // 祠の扉が開く MP4 をフルスクリーン再生。終わったら onDone。
