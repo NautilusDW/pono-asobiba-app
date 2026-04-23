@@ -32,6 +32,9 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # branch 別に deploy 先を切替:
+          #   - master  → production (pono-asobiba-app + pono.kodama-no-mori.com)
+          #   - develop → staging    (pono-asobiba-staging.ndw.workers.dev)
           # wrangler.toml の [assets] で ./ 全体をバインドしているので
           # 追加引数なしで deploy すれば静的ファイル含めて全部 upload される。
-          command: deploy
+          command: ${{ github.ref == 'refs/heads/master' && 'deploy' || 'deploy --env staging' }}
