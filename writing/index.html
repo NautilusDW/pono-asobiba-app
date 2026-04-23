@@ -3792,15 +3792,16 @@ body.battle-intro-active .battle-log-window {
     height: min(34vh, 200px);
     max-width: 200px; max-height: 200px;
   }
-  /* 2026-04-23: キノコ (compact) が横画面だと grounded ルール (200px) を拾って
-     巨大化する現象を修正。縦画面の比率 (compact/grounded = 86/120 ≒ 0.72) を
-     踏襲し、144px → 108px (さらに 0.75x) に縮小 (ユーザー指摘 2回目)。 */
+  /* 2026-04-23 v3: キノコ (compact) は縦画面と同じピクセルサイズまで縮小。
+     縦画面 86px に対し横画面が明らかに大きく見える指摘を受けて、
+     max を 86px で固定 (ユーザー指摘 3回目)。 */
   body.battle-mode .battle-enemy.grounded.compact {
-    width: min(18vh, 108px);
-    height: min(18vh, 108px);
-    max-width: 108px; max-height: 108px;
+    width: min(14vh, 86px);
+    height: min(14vh, 86px);
+    max-width: 86px; max-height: 86px;
   }
-  body.battle-mode .enemy-name { font-size: 1rem; }
+  /* 2026-04-23 v3: 敵名ラベルも縦画面比率 (0.78rem) に揃える。1rem は大きすぎる。 */
+  body.battle-mode .enemy-name { font-size: 0.78rem; }
   body.battle-mode .pentagram-charge { font-size: 1.15rem; }
 
   /* 2026-04-22: 横画面の HP/MP ウィンドウが大きすぎる指摘 → 明示的に抑える。 */
@@ -4100,21 +4101,21 @@ body.battle-intro-active .battle-log-window {
     object-fit: cover;
   }
 }
-/* 2026-04-23 v2: 縦画面で pan 付きシーン (S1b / S8) だけ全画面表示になり
-   他のシーンのレターボックスと揃っていない、とのユーザー指摘。
-   → 縦画面では 16:9 のマスクに切って、その内側で縦パンするように統一。
-   pan のアニメは object-position を動かすだけなので、外枠が 16:9 でも
-   cover モードで画像の見せる範囲がスライドする挙動はそのまま保たれる。 */
+/* 2026-04-23 v3: 縦画面で pan 付きシーン (S1b / S8) を 16:9 レターボックス化。
+   以前の absolute + translate アプローチは効かなかったため、
+   親の flex centering を活かしてシンプルに幅/高さを 16:9 に固定する方式に変更。
+   親 .storyboard-art は flex + align/justify center なので、サイズさえ絞れば
+   自動で中央配置 + 上下に背景色 (#000) の黒帯が出る。!important で
+   他のルールとの敗北を防止。 */
 @media (orientation: portrait) {
   .storyboard-art img.sb-pan-down,
   .storyboard-art img.sb-pan-up {
-    width: 100vw;
-    height: 56.25vw;           /* 16:9 レターボックス */
-    max-height: 100%;
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    object-fit: cover;
+    width: 100vw !important;
+    height: 56.25vw !important;           /* 16:9 レターボックス */
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    object-fit: cover !important;
+    flex: 0 0 auto;
   }
 }
 @keyframes sbPanDown {
@@ -9310,7 +9311,24 @@ function _showStoryboard(scenes, onDone) {
   sbAudio.volume = 0;
   // 画面外に置いて iOS の表示バグを避ける。
   sbAudio.style.display = 'none';
-  ov.appendChild(sbAudio);
+  // 2026-04-23 v3: sbAudio を overlay の子ではなく document.body 直下に置く。
+  // overlay が opacity→0 で消える & ov.remove() で DOM から外れた瞬間に
+  // iOS で child audio が突然停止するケースを避ける。クリーンアップは
+  // _sbCleanup 側で明示的に remove する。
+  document.body.appendChild(sbAudio);
+  // 2026-04-23 v3: iOS Safari では HTMLAudioElement.volume の書換が効かない
+  // ため fadeAudio が無効化されていた (= 最終 BGM がフェードせず ぶつ切り)。
+  // Web Audio の GainNode を通して音量制御する。
+  var sbGain = null;
+  try {
+    var _sbSrcNode = audioCtx.createMediaElementSource(sbAudio);
+    sbGain = audioCtx.createGain();
+    sbGain.gain.value = 0;
+    _sbSrcNode.connect(sbGain);
+    sbGain.connect(audioCtx.destination);
+    // 紙芝居突入時点でユーザータップ済なので resume 成功する想定。
+    if (audioCtx.state !== 'running') { audioCtx.resume().catch(function(){}); }
+  } catch (e) { /* 失敗時は el.volume のみで動作 */ }
   var currentBgmSrc = null;
   var sbWasPlayingBeforeHide = false;
   var fadeRaf = null;
@@ -9353,13 +9371,28 @@ function _showStoryboard(scenes, onDone) {
   function _sbCleanup() {
     try { sbAudio.pause(); sbAudio.src = ''; } catch (e) {}
     try { voiceAudio.pause(); voiceAudio.src = ''; } catch (e) {}
+    // 2026-04-23 v3: Web Audio ノードの切断 + sbAudio 自体も body から除去。
+    try { if (sbGain) sbGain.disconnect(); } catch (e) {}
+    try { if (_sbSrcNode) _sbSrcNode.disconnect(); } catch (e) {}
+    try { if (sbAudio.parentNode) sbAudio.parentNode.removeChild(sbAudio); } catch (e) {}
     document.removeEventListener('visibilitychange', _sbVisHandler);
     window.removeEventListener('blur',  _sbOnHide);
     window.removeEventListener('focus', _sbOnShow);
     try { window._storyboardActive = false; } catch (e) {}
   }
+  // 2026-04-23 v3: sbAudio だけは Web Audio の gain で制御 (iOS 対策)。
+  // それ以外 (voiceAudio 等) は element.volume のまま。
   function fadeAudio(el, from, to, durationMs, onDone) {
     if (fadeRaf) cancelAnimationFrame(fadeRaf);
+    var useGain = (el === sbAudio && sbGain);
+    if (useGain) {
+      try {
+        var nowCt = audioCtx.currentTime;
+        sbGain.gain.cancelScheduledValues(nowCt);
+        sbGain.gain.setValueAtTime(from, nowCt);
+        sbGain.gain.linearRampToValueAtTime(to, nowCt + durationMs / 1000);
+      } catch (e) {}
+    }
     var startT = performance.now();
     function step(now) {
       var t = Math.min(1, (now - startT) / durationMs);
