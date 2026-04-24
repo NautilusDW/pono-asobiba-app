@@ -6529,7 +6529,7 @@ const BATTLE_ENEMIES = {
     //   front_idle/still (011/012) は浄化後の bow で勇者に向き直る際に swap。
     //   未使用だが保存: claw_r/l (004/005)。
     img:         '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
-    imgEntrance: '../assets/images/monsters/chars/Kagerou/kagerou_entrance.png',
+    imgEntrance: '../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg',
     imgIdle:     '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
     imgStagger:  '../assets/images/monsters/chars/Kagerou/kagerou_stagger.png',
     imgAttackWindup: [
@@ -9526,7 +9526,7 @@ function _showBattleIntro(onDone) {
       //        カゲロウ が突然襲ってきて戦闘開始。旧 VOLCANO_EPISODE_SCENES (pre-battle 紙芝居)
       //        は「知っている体」だったので v272 で撤去。
       if (isVolcanoRow && typeof _playHinokaRecognitionIntro === 'function') {
-        // v274: 最初にカゲロウと遭遇する瞬間を kagerou_entrance.png のフルスクリーンイベント絵で見せる。
+        // v274: 最初にカゲロウと遭遇する瞬間を kagerou_entrance.jpg のフルスクリーンイベント絵で見せる。
         //       その後 ヒノカ認識イントロ → なぞって倒そう告知 へ進む。
         var _startIntro = function() {
           _playHinokaRecognitionIntro(function() {
@@ -9536,7 +9536,7 @@ function _showBattleIntro(onDone) {
           });
         };
         if (typeof _showClimaxEventImage === 'function') {
-          _showClimaxEventImage('../assets/images/monsters/chars/Kagerou/kagerou_entrance.png', _startIntro);
+          _showClimaxEventImage('../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg', _startIntro);
         } else {
           _startIntro();
         }
@@ -10643,7 +10643,7 @@ var ENDING_SCENES = [
     text: 'ながい たび の おもいで が…' },
   // E2c — 胸に甦る
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/ending_2c.png', emoji: '🔥',
+    image: '../assets/images/story/ending_2c.jpg', emoji: '🔥',
     voice: '../assets/audio/storyboard/voice/E2c.mp3',
     text: 'しずかに むねに よみがえる。' },
   // E3 — 星空 (ゆっくり下→上に縦パンで夜空を見上げる)
@@ -11160,7 +11160,7 @@ function _playWaRowEpisode(onDone) {
     // メモリフラッシュバック (4 枚、タップで進行)
     _showMemoryFlashback(VOLCANO_MEMORY_IMAGES, function() {
       // v274: battle_last_01 (ヒノカが呪縛カゲロウに手を伸ばす) を 1 枚絵で挟んでから訴えのセリフへ
-      _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_01.png', function() {
+      _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_01.jpg', function() {
         _showBattleDialog([
           { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
           { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] }
@@ -11199,7 +11199,7 @@ function _playKagerouClimax(onDone) {
           _showStarMarkAwakening(function() {
             // v274: battle_last_02 (呪縛→炎へ遷移するカゲロウとひざまずくヒノカ) を 1 枚絵で挟む。
             //       星の印の力で部分浄化が始まった瞬間を象徴する静止画。
-            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.png', function() {
+            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
               // Beat 6: 最後の「ん」quiz へ
               if (onDone) onDone();
             });
@@ -11409,7 +11409,7 @@ function _showStarMarkAwakening(onDone) {
 function _showVolcanoCelebration(onDone) {
   // v274: 3 妖精集結 overlay の直前に battle_last_03 (完全浄化したカゲロウとヒノカの和解) を 1 枚絵で挟む。
   //       浄化シーケンス → bow → 1 枚絵 → 3 妖精祝祭、の流れで余韻を作る。
-  _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_03.png', function() {
+  _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_03.jpg', function() {
     _renderVolcanoCelebrationOverlay(onDone);
   });
 }
