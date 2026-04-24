@@ -3195,6 +3195,55 @@ body.battle-mode .villain-deco {
   0%   { transform: translateY(0);     opacity: 1; }
   100% { transform: translateY(-38px); opacity: 0; }
 }
+/* v271 クライマックス: カゲロウ一瞬覚醒 (仮面のヒビから金光) */
+.battle-enemy.kagerou-awaken-pulse {
+  animation: kagerouAwakenPulse 1.6s ease-in-out 1 !important;
+}
+@keyframes kagerouAwakenPulse {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(255,220,100,0)); }
+  40%      { filter: brightness(1.15) drop-shadow(0 0 24px rgba(255,220,100,0.85)); }
+  70%      { filter: brightness(1.1)  drop-shadow(0 0 16px rgba(255,200,80,0.6)); }
+}
+/* v271 クライマックス: カゲロウ再呪縛 → 激昂 (仮面の暗い脈動 + スプライト激しい揺れ) */
+.battle-enemy.kagerou-rage {
+  animation: kagerouRage 0.45s ease-in-out 3 !important;
+  filter: saturate(1.3) brightness(0.85) drop-shadow(0 0 18px rgba(170,40,210,0.85)) !important;
+}
+@keyframes kagerouRage {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  20%      { transform: translateX(-14px) rotate(-3deg); }
+  50%      { transform: translateX(12px)  rotate(3deg); }
+  80%      { transform: translateX(-8px)  rotate(-2deg); }
+}
+/* v271 クライマックス: スクリーン激震 (ヒノカ被弾時) */
+.battle-stage.screen-heavy-shake {
+  animation: screenHeavyShake 0.12s linear 7 !important;
+}
+@keyframes screenHeavyShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 3px); }
+  40% { transform: translate(5px, -4px); }
+  60% { transform: translate(-4px, -3px); }
+  80% { transform: translate(4px, 3px); }
+}
+/* v271 クライマックス: ヒノカ被弾フラッシュ */
+@keyframes hinokaHitFlash {
+  0%   { opacity: 0; }
+  25%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* v271 クライマックス: ヒノカ倒れる (出現 → 傾く → フェード) */
+@keyframes hinokaFall {
+  0%   { transform: translateY(-20px) rotate(0); opacity: 0; }
+  15%  { transform: translateY(0)     rotate(0); opacity: 1; }
+  60%  { transform: translateY(30px)  rotate(-35deg); opacity: 0.85; }
+  100% { transform: translateY(60px)  rotate(-60deg); opacity: 0; }
+}
+/* v271 クライマックス: 星の印フルスクリーン発動 (pulse) */
+@keyframes starMarkPulse {
+  0%, 100% { text-shadow: 0 0 40px #FFD84D, 0 0 80px #FFA800, 0 0 140px rgba(255,168,0,0.7); transform: scale(1); }
+  50%      { text-shadow: 0 0 60px #FFE88A, 0 0 120px #FFC040, 0 0 200px rgba(255,200,80,0.9); transform: scale(1.06); }
+}
 /* お礼の吹き出し「…ありがとう」 */
 .spirit-thanks-bubble {
   position: absolute;
@@ -11019,23 +11068,306 @@ function _showMemoryFlashback(images, onDone) {
 }
 
 // わ行専用 cameo: ヒノカが前に出て「カゲロウ！」と叫ぶ + 「かざんのうた」narrative
-// v270: 前半ダイアログ → メモリフラッシュバック (3 枚) → 後半ダイアログ の構造
+// v270: 前半ダイアログ → メモリフラッシュバック (4 枚) → 後半ダイアログ
+// v271: クライマックス追加 — 一瞬の覚醒 → 仮面の男 (ザガンの手下) が妨害 →
+//       カゲロウ再呪縛 → ヒノカ倒れる → 星の印発動 → 最後の文字 (ん) finisher
 function _playWaRowEpisode(onDone) {
   _showBattleDialog([
     { lines: ['ヒノカ「まって、 ゆうしゃさま！', '', ''] },
     { lines: ['ヒノカ「あの かめん の ぬし は、', 'わたし の たいせつな あいぼう、', 'カゲロウ な の…'] }
   ], function() {
-    // メモリフラッシュバック (3 枚、タップで進行)
+    // メモリフラッシュバック (4 枚、タップで進行)
     _showMemoryFlashback(VOLCANO_MEMORY_IMAGES, function() {
       _showBattleDialog([
         { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
-        { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] },
-        { lines: ['ヒノカ「ゆうしゃさま、', 'この さいご の もじ を、', 'カゲロウ に とどけて！'] }
+        { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] }
       ], function() {
-        if (onDone) onDone();
+        _playKagerouClimax(onDone);
       });
     });
   });
+}
+
+// v271: カゲロウ最終バトルのクライマックス interlude。
+// ヒノカの歌でカゲロウが一瞬覚醒 → 影から ザガンの手下 (S4a の 仮面の魔人) が現れて妨害 →
+// カゲロウ再呪縛 → ヒノカが攻撃を受けて倒れる → ヒノカの遺志「最後の文字を届けて」 →
+// 勇者の 星の印 発動 (預言の力) → 最後の「ん」 quiz へ。
+function _playKagerouClimax(onDone) {
+  // Beat 1: カゲロウが一瞬昔を思い出す (仮面のヒビに金光が漏れる演出)
+  try { _pulseKagerouAwaken(); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['カゲロウ「…ほのお…？', 'なつかしい、', 'ひびき…'] }
+  ], function() {
+    // Beat 2: 仮面の男 (ザガンの手下) がフルスクリーン出現して妨害
+    _showMaskedManInterference(function() {
+      // Beat 3: カゲロウ再呪縛 → ヒノカへ激しい攻撃 → ヒノカが倒れる
+      try { _triggerKagerouRageAttack(); } catch (e) {}
+      _showBattleDialog([
+        { lines: ['カゲロウ「グ……', 'グオォオオ……！', ''] },
+        { lines: ['ヒノカ「きゃっ……！', 'うっ……', ''], onEnter: function() { try { _hinokaFallEffect(); } catch (e) {} } }
+      ], function() {
+        // Beat 4: ヒノカの最後の言葉 (弱々しく、勇者に託す)
+        _showBattleDialog([
+          { lines: ['ヒノカ「ゆうしゃさま…', 'ごめん なさい…', ''] },
+          { lines: ['ヒノカ「この さいご の もじ を…', 'どうか、 カゲロウ に…', 'とどけて…'] }
+        ], function() {
+          // Beat 5: 勇者の 星の印 発動 (預言の力覚醒)
+          _showStarMarkAwakening(function() {
+            // Beat 6: 最後の「ん」quiz へ
+            if (onDone) onDone();
+          });
+        });
+      });
+    });
+  });
+}
+
+// カゲロウが一瞬昔を思い出す時の優しい発光演出 (仮面の隙間から金光)
+function _pulseKagerouAwaken() {
+  var enemyEl = document.getElementById('battleEnemy');
+  if (!enemyEl) return;
+  enemyEl.classList.add('kagerou-awaken-pulse');
+  setTimeout(function() { enemyEl.classList.remove('kagerou-awaken-pulse'); }, 1600);
+}
+
+// 仮面の男 (ザガンの手下) がフルスクリーン shadow で出現して妨害セリフを話す
+function _showMaskedManInterference(onDone) {
+  var ov = document.createElement('div');
+  ov.id = 'maskedManOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1850;background:radial-gradient(ellipse at 70% 50%,rgba(40,10,40,0.82) 0%,rgba(5,2,8,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 0.6s ease;pointer-events:none;';
+
+  var img = document.createElement('img');
+  img.src = '../assets/images/story/opening_6.jpg';
+  img.alt = 'ザガン の てした';
+  img.style.cssText = 'max-width:80vw;max-height:62vh;object-fit:contain;filter:brightness(0.55) saturate(0.7) drop-shadow(0 0 40px rgba(160,40,200,0.85));opacity:0;transition:opacity 0.5s ease;transform:scale(0.92);';
+  ov.appendChild(img);
+
+  var caption = document.createElement('div');
+  caption.style.cssText = 'position:absolute;top:12%;left:50%;transform:translateX(-50%);color:#E8C8FF;font-size:1.05rem;font-weight:900;letter-spacing:0.12em;text-shadow:0 0 10px rgba(160,40,200,0.9),0 0 4px #000;opacity:0;transition:opacity 0.5s ease;';
+  caption.textContent = 'ザガン の てした、 あらわる！';
+  ov.appendChild(caption);
+
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.opacity = '1';
+    setTimeout(function() {
+      img.style.opacity = '1';
+      img.style.transform = 'scale(1)';
+      caption.style.opacity = '1';
+    }, 80);
+  });
+
+  // しばらく待ってからダイアログを出す (出現の余韻)
+  setTimeout(function() {
+    _showBattleDialog([
+      { lines: ['かめんのおとこ「…ふふ。', 'させる もの か、', 'ようせい ども。'] },
+      { lines: ['かめんのおとこ「ザガン さま の', 'のろい は、 こんな うた で は', 'ほどけぬ！'] }
+    ], function() {
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 600);
+    });
+  }, 900);
+}
+
+// カゲロウが再び呪縛されて激しく暴れる演出 (スクリーン shake + 仮面の暗い脈動)
+function _triggerKagerouRageAttack() {
+  var enemyEl = document.getElementById('battleEnemy');
+  if (enemyEl) {
+    enemyEl.classList.add('kagerou-rage');
+    setTimeout(function() { enemyEl.classList.remove('kagerou-rage'); }, 1400);
+  }
+  var stage = document.querySelector('.battle-stage');
+  if (stage) {
+    stage.classList.add('screen-heavy-shake');
+    setTimeout(function() { stage.classList.remove('screen-heavy-shake'); }, 900);
+  }
+}
+
+// ヒノカが攻撃を受けて倒れる演出 (画面フラッシュ + バトルステージに倒れヒノカスプライトを一瞬表示)
+function _hinokaFallEffect() {
+  var stage = document.querySelector('.battle-stage');
+  if (!stage) return;
+  // フラッシュ
+  var flash = document.createElement('div');
+  flash.style.cssText = 'position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,220,80,0.7),rgba(200,40,40,0.5) 40%,transparent 75%);z-index:60;pointer-events:none;animation:hinokaHitFlash 0.6s ease-out forwards;';
+  stage.appendChild(flash);
+  setTimeout(function() { try { flash.remove(); } catch (e) {} }, 700);
+
+  // ヒノカスプライト (倒れて徐々にフェード)
+  var hinoka = document.createElement('img');
+  hinoka.src = '../assets/images/characters/pixies/pixy_fire.png';
+  hinoka.alt = 'ヒノカ';
+  hinoka.style.cssText = 'position:absolute;left:18%;bottom:14%;width:22%;max-width:140px;z-index:55;pointer-events:none;filter:brightness(0.7) drop-shadow(0 0 8px rgba(255,80,80,0.7));animation:hinokaFall 1.4s ease-in forwards;';
+  hinoka.dataset.role = 'hinoka-fallen';
+  stage.appendChild(hinoka);
+  // 5 秒後に自動削除 (後の celebration で再表示するので一旦消しておく)
+  setTimeout(function() { try { hinoka.remove(); } catch (e) {} }, 5000);
+}
+
+// 勇者の 星の印 が光り、預言の力で最後の一撃に備える演出
+function _showStarMarkAwakening(onDone) {
+  var ov = document.createElement('div');
+  ov.id = 'starMarkOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1860;background:radial-gradient(ellipse at center,rgba(255,230,120,0.35) 0%,rgba(80,60,20,0.72) 55%,rgba(20,15,5,0.92) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 0.7s ease;pointer-events:none;';
+
+  var star = document.createElement('div');
+  star.textContent = '✦';
+  star.style.cssText = 'font-size:clamp(10rem,28vw,22rem);color:#FFE27A;text-shadow:0 0 40px #FFD84D,0 0 80px #FFA800,0 0 140px rgba(255,168,0,0.7);transform:scale(0.4);opacity:0;transition:transform 0.9s cubic-bezier(.2,1.4,.4,1),opacity 0.7s ease;animation:starMarkPulse 2.0s ease-in-out infinite 0.9s;';
+  ov.appendChild(star);
+
+  var caption = document.createElement('div');
+  caption.style.cssText = 'position:absolute;bottom:18%;left:50%;transform:translateX(-50%);width:min(88vw,540px);text-align:center;color:#FFF5CC;font-size:1.05rem;font-weight:900;line-height:1.6;letter-spacing:0.06em;text-shadow:0 0 10px rgba(255,180,60,0.9),0 2px 6px #000;opacity:0;transition:opacity 0.6s ease;';
+  caption.innerHTML = 'ゆうしゃ の ひたい に、<br>ほし の しるし が かがやき はじめた——';
+  ov.appendChild(caption);
+
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.opacity = '1';
+    setTimeout(function() {
+      star.style.opacity = '1';
+      star.style.transform = 'scale(1)';
+    }, 120);
+    setTimeout(function() { caption.style.opacity = '1'; }, 900);
+  });
+
+  // 約 3.2 秒待って預言セリフ、さらにフェードアウト
+  setTimeout(function() {
+    caption.innerHTML = 'いにしえ の よげん——<br>『ほし の しるし を もつ もの、<br>まおう を うちやぶる』';
+    setTimeout(function() {
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 700);
+    }, 2400);
+  }, 3200);
+}
+
+// v271: カゲロウ撃破後のクライマックス後日談。
+// ヒノカが意識を取り戻し → カゲロウと再会 → もりの妖精 (リーファ) と こおりの妖精 (セリナ) も集結 →
+// 3 妖精そろい踏みで喜びあう → エンディング紙芝居へ。
+// battleVictory の bow/leave → grantGear(sword) → act-clear banner の後、
+// _afterVictory (元は _rowPracticeNextChar へ進むだけ) で呼び出される。
+function _showVolcanoCelebration(onDone) {
+  // フルスクリーンの柔らかな朝焼け overlay に妖精 3 人を並べる
+  var ov = document.createElement('div');
+  ov.id = 'volcanoCelebrationOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1870;background:radial-gradient(ellipse at center,rgba(255,220,160,0.45) 0%,rgba(255,170,120,0.55) 45%,rgba(120,70,40,0.88) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 0.8s ease;';
+
+  // 妖精を横に並べる帯 (森・氷・火の順、中央に火=ヒノカ)
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,4vw,28px);margin-top:6vh;';
+  ov.appendChild(row);
+
+  // 各妖精のスプライト (初期は opacity 0 → 順にフェードイン)
+  var FAIRIES_ORDER = [
+    { key: 'forest', name: 'リーファ', img: '../assets/images/characters/pixies/pixy_forest.png', color: '#7CD77C' },
+    { key: 'fire',   name: 'ヒノカ',   img: '../assets/images/characters/pixies/pixy_fire.png',   color: '#FF9A5A' },
+    { key: 'ice',    name: 'セリナ',   img: '../assets/images/characters/pixies/pixy_ice.png',    color: '#A0D8FF' }
+  ];
+  var fairyEls = FAIRIES_ORDER.map(function(meta) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;opacity:0;transform:translateY(20px);transition:opacity 0.7s ease,transform 0.7s cubic-bezier(.2,1.2,.4,1);';
+    var img = document.createElement('img');
+    img.src = meta.img;
+    img.alt = meta.name;
+    img.style.cssText = 'width:clamp(90px,22vw,150px);filter:drop-shadow(0 0 18px ' + meta.color + '88);';
+    wrap.appendChild(img);
+    var label = document.createElement('div');
+    label.textContent = meta.name;
+    label.style.cssText = 'margin-top:6px;color:#FFFFFF;font-weight:900;font-size:0.95rem;letter-spacing:0.08em;text-shadow:0 2px 6px rgba(0,0,0,0.7);';
+    wrap.appendChild(label);
+    row.appendChild(wrap);
+    return wrap;
+  });
+
+  var caption = document.createElement('div');
+  caption.style.cssText = 'position:absolute;bottom:14%;left:50%;transform:translateX(-50%);width:min(90vw,620px);text-align:center;color:#FFF5DA;font-size:1.0rem;font-weight:900;line-height:1.7;letter-spacing:0.06em;text-shadow:0 2px 8px rgba(40,20,10,0.95);opacity:0;transition:opacity 0.6s ease;';
+  ov.appendChild(caption);
+
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() { ov.style.opacity = '1'; });
+
+  // タップでダイアログを送る小さなバトル風ダイアログを ov 上に流し込む。
+  // (既存 _showBattleDialog はバトルログへ向く DOM に依存するので、ここでは overlay 内にシンプル表示)
+  var messages = [
+    { text: 'カゲロウ「ヒノカ……！ ぶじ か！？」' },
+    { text: 'ヒノカ「カゲロウ……。ちから の かぎり、 おもい を とどけて くれたのね……」', revealFairy: 0 },
+    { text: 'リーファ「もり から、 ずっと あなたたち を おうえん して いた わ」', revealFairy: 2 },
+    { text: 'セリナ「ほこら から かけつけた わ。 みんな ぶじ で よかった」' },
+    { text: 'ヒノカ「ゆうしゃさま、 ほし の しるし の ちから で、 カゲロウ を すくって くれて ありがとう」' },
+    { text: '3 にん の ようせい と ゆうしゃ は、 あさひ の なか で かたく てを とりあった。' }
+  ];
+
+  // 妖精の登場順: idx 1 (ヒノカ=中央) は最初から表示、0 (リーファ) と 2 (セリナ) はダイアログに合わせて現れる
+  setTimeout(function() {
+    fairyEls[1].style.opacity = '1';
+    fairyEls[1].style.transform = 'translateY(0)';
+  }, 450);
+
+  function showMsg(i) {
+    if (i >= messages.length) {
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 800);
+      return;
+    }
+    var m = messages[i];
+    if (typeof m.revealFairy === 'number' && fairyEls[m.revealFairy]) {
+      fairyEls[m.revealFairy].style.opacity = '1';
+      fairyEls[m.revealFairy].style.transform = 'translateY(0)';
+    }
+    caption.style.opacity = '0';
+    setTimeout(function() {
+      caption.textContent = m.text;
+      caption.style.opacity = '1';
+    }, 260);
+  }
+
+  var idx = 0;
+  var hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:5%;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.9rem;font-weight:700;opacity:0.8;letter-spacing:0.1em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.textContent = '▼ タップ';
+  ov.appendChild(hint);
+
+  var transitioning = false;
+  function advance() {
+    if (transitioning) return;
+    transitioning = true;
+    showMsg(idx);
+    idx++;
+    setTimeout(function() { transitioning = false; }, 350);
+  }
+  ov.addEventListener('click', advance);
+  ov.addEventListener('touchend', function(e) { e.preventDefault(); advance(); }, { passive: false });
+
+  // 1 通目を少し待ってから出す (ヒノカ登場の余韻)
+  setTimeout(advance, 1100);
+}
+
+// v271: ひらがな編エンディング紙芝居を (初回のみ) 再生してから onDone。
+// 既存の clearModal 側ロジック (line ~11561) と同一。battleVictory 後の celebration 後に呼ぶ。
+function _triggerHiraganaEndingIfNeeded(onDone) {
+  var endingSeen = false;
+  try { endingSeen = (localStorage.getItem('pono_ending_seen') === '1'); } catch (e) {}
+  if (!endingSeen && typeof _showStoryboard === 'function' && typeof ENDING_SCENES !== 'undefined') {
+    var thankYouCount = (typeof window.getThankYou === 'function') ? window.getThankYou() : 0;
+    var endingScenes = ENDING_SCENES.map(function(s) {
+      if (!s || typeof s.text !== 'string' || s.text.indexOf('{{THANKYOU}}') < 0) return s;
+      return Object.assign({}, s, { text: s.text.replace(/\{\{THANKYOU\}\}/g, String(thankYouCount)) });
+    });
+    _showStoryboard(endingScenes, function() {
+      try { localStorage.setItem('pono_ending_seen', '1'); } catch (e) {}
+      if (onDone) onDone();
+    });
+    return;
+  }
+  if (onDone) onDone();
 }
 
 // 本来の char 進行 (demo → nazori → quiz) ロジック。エピソード挿入を挟まない場合の path。
@@ -11406,7 +11738,19 @@ function _rowPracticeNextChar_continue() {
             // 中ボス撃破時の報酬+幕クリアバナー連鎖。
             // (reward ありの敵は _battle.enemy.boss=true、reward='shield'|'armor'|'sword')
             const _bossReward = _battle.enemy && _battle.enemy.reward;
+            const _isVolcanoBoss = _battle.enemy && _battle.enemy.id === 'volcano_lord';
             const _afterVictory = function() {
+              // v271: わ行 (カゲロウ) はクライマックス celebration → エンディング紙芝居の順に挟む。
+              //       その後に通常の _rowPracticeStep++ → _rowPracticeNextChar へ。
+              if (_isVolcanoBoss) {
+                _showVolcanoCelebration(function() {
+                  _triggerHiraganaEndingIfNeeded(function() {
+                    _rowPracticeStep++;
+                    _rowPracticeNextChar();
+                  });
+                });
+                return;
+              }
               _rowPracticeStep++;
               _rowPracticeNextChar();
             };
