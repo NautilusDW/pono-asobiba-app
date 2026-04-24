@@ -10482,12 +10482,25 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
     voice: '../assets/audio/storyboard/voice/S6c.mp3',
     text: 'くに じゅう から、\nゆうかん な せんし を あつめました。' },
-  // --- S7: 勇者召集 (3 分割、S7c は v266 ありがとうテーマ勅命) ---
+  // S6d (v269 追加): 王 + 預言者が一人の若者に目をとめる。物語の起伏を作る新規ビート。
+  // 音声 S6d.mp3 は未収録。
+  { bg: '#1a0c05',
+    image: '../assets/images/story/opening_9.jpg', emoji: '👑',
+    voice: '../assets/audio/storyboard/voice/S6d.mp3',
+    text: 'なか でも おうさま と よげんしゃ は、\nひとり の わかもの に めを とめ ました。' },
+  // --- S7: 勇者召集 (v269 で 4 分割: S7a_mid 預言開示 → S7a 一致 → S7b 王の命 → S7c ありがとう勅命) ---
+  // S7a_mid (v269 追加): 王族だけに伝わる古い預言を開示。音声 S7a_mid.mp3 は未収録。
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
     bgm: '../assets/audio/storyboard/chosen_road.mp3',
+    voice: '../assets/audio/storyboard/voice/S7a_mid.mp3',
+    text: 'おうぞく だけ の ひみつ の よげん 。\n『やみ の とき、 ほしのしるし を もつ もの が あらわれ、 まおう を うちやぶる』' },
+  // S7a (v269 修正): 「そして、 あなた が えらばれた のです」→ 預言の具体条件一致へ。
+  //   音声 S7a.mp3 は既存のものだが旧テキストなので再収録が必要 (暫定は旧音声が流れる)。
+  { bg: '#0a1026',
+    image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
     voice: '../assets/audio/storyboard/voice/S7a.mp3',
-    text: 'そして、 あなた が えらばれた のです。' },
+    text: 'その しるし も、 まんげつ の うまれ と いう じき も、\nあなた に ぴたり と あって いた の です。' },
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
     voice: '../assets/audio/storyboard/voice/S7b.mp3',
@@ -10510,11 +10523,12 @@ var OPENING_SCENES = [
 // OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
 // 見終わったら play.html に戻す。
 // 2026-04-24: v265 (呪縛 +2)、v266 (S5c を 2 分割 +1)、v266b (S4c 削除 -1 / S5c_c 追加 +1、差し引き 0)、
-// v268 (S5c_c2 + S5d2 追加 +2) で index シフト。現在 S7a = OPENING_SCENES[19]。
+// v268 (S5c_c2 + S5d2 追加 +2)、v269 (S6d + S7a_mid 追加 +2) で index シフト。
+// 現在 S7a = OPENING_SCENES[21]。
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
-  OPENING_SCENES[19]   // S7a: そして、 あなた が えらばれた のです
+  OPENING_SCENES[21]   // S7a: 預言条件一致 (v269 改訂テキスト)
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
