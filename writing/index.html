@@ -10953,16 +10953,84 @@ function _rowPracticeNextChar() {
 // エピソード挿入済みフラグ (バトルごとにリセット)
 var _waRowEpisodePlayed = false;
 
+// カゲロウ & ヒノカ のメモリフラッシュバック (v270 追加)。
+// ヒノカが昔を思い出して語る場面で、3 枚の想い出イメージを順にフェード表示。
+// _playWaRowEpisode から呼ばれる。タップで次の画像へ、3 枚目タップで閉じる。
+var VOLCANO_MEMORY_IMAGES = [
+  '../assets/images/characters/kagerou/memory_01.jpg',
+  '../assets/images/characters/kagerou/memory_02.jpg',
+  '../assets/images/characters/kagerou/memory_03.jpg'
+];
+function _showMemoryFlashback(images, onDone) {
+  var ov = document.createElement('div');
+  ov.id = 'memoryFlashbackOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1800;background:radial-gradient(ellipse at center,rgba(50,30,10,0.92) 0%,rgba(10,6,4,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 0.6s ease;cursor:pointer;';
+
+  var imgEl = document.createElement('img');
+  imgEl.style.cssText = 'max-width:90vw;max-height:80vh;object-fit:contain;filter:sepia(0.25) brightness(1.08) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transition:opacity 0.5s ease;border-radius:6px;';
+  ov.appendChild(imgEl);
+
+  var hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0.75;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.textContent = '▼ タップ';
+  ov.appendChild(hint);
+
+  // キーフレームを一度だけ注入
+  if (!document.getElementById('memoryFlashbackKF')) {
+    var st = document.createElement('style');
+    st.id = 'memoryFlashbackKF';
+    st.textContent = '@keyframes fbHintBlink{0%,100%{opacity:0.3}50%{opacity:0.95}}';
+    document.head.appendChild(st);
+  }
+
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() { ov.style.opacity = '1'; });
+
+  var idx = 0;
+  var transitioning = false;
+  function showNext() {
+    if (transitioning) return;
+    transitioning = true;
+    if (idx >= images.length) {
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 600);
+      return;
+    }
+    imgEl.style.opacity = '0';
+    setTimeout(function() {
+      imgEl.src = images[idx];
+      requestAnimationFrame(function() { imgEl.style.opacity = '1'; });
+      idx++;
+      transitioning = false;
+    }, 320);
+  }
+
+  ov.addEventListener('click', showNext);
+  ov.addEventListener('touchend', function(e) { e.preventDefault(); showNext(); }, { passive: false });
+
+  showNext(); // 1 枚目を即表示
+}
+
 // わ行専用 cameo: ヒノカが前に出て「カゲロウ！」と叫ぶ + 「かざんのうた」narrative
+// v270: 前半ダイアログ → メモリフラッシュバック (3 枚) → 後半ダイアログ の構造
 function _playWaRowEpisode(onDone) {
   _showBattleDialog([
     { lines: ['ヒノカ「まって、 ゆうしゃさま！', '', ''] },
-    { lines: ['ヒノカ「あの かめん の ぬし は、', 'わたし の たいせつな あいぼう、', 'カゲロウ な の…'] },
-    { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
-    { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] },
-    { lines: ['ヒノカ「ゆうしゃさま、', 'この さいご の もじ を、', 'カゲロウ に とどけて！'] }
+    { lines: ['ヒノカ「あの かめん の ぬし は、', 'わたし の たいせつな あいぼう、', 'カゲロウ な の…'] }
   ], function() {
-    if (onDone) onDone();
+    // メモリフラッシュバック (3 枚、タップで進行)
+    _showMemoryFlashback(VOLCANO_MEMORY_IMAGES, function() {
+      _showBattleDialog([
+        { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
+        { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] },
+        { lines: ['ヒノカ「ゆうしゃさま、', 'この さいご の もじ を、', 'カゲロウ に とどけて！'] }
+      ], function() {
+        if (onDone) onDone();
+      });
+    });
   });
 }
 
