@@ -6824,6 +6824,8 @@ function _showBattleStage(rowId) {
   els.enemy.classList.remove('damaged', 'defeated', 'purified', 'bowing', 'ascending');
   // v265: 呪縛仮面を初期状態に戻す (敵に cursed クラス + 呪印紫5段階 + 割れ状態クリア)
   try { _resetCurseMask(); } catch (e) {}
+  // v268: わ行 episode (ヒノカ cameo) 再生フラグをリセット
+  _waRowEpisodePlayed = false;
   // 地に足が付くタイプ (ゴーレム等、grounded:true): 浮遊アニメを切り 2倍拡大、
   // ラップも勇者と同じ高さに持ち上げる (stage.has-grounded クラスで制御)。
   els.enemy.classList.toggle('grounded', !!enemy.grounded);
@@ -10912,6 +10914,38 @@ function _rowPracticeNextChar() {
     _rowPracticeComplete();
     return;
   }
+  // v268: わ行 最終ボス戦の finisher (3 文字目「ん」) の直前に、
+  //        ヒノカ cameo + 「かざんのうた」narrative を挟む。物語のクライマックス。
+  //        ヒット 2 ("を") が終わった直後の状態 = _rowPracticeStep === 2 のタイミング。
+  if (!_waRowEpisodePlayed && _battle.active && _rowPracticeRow.label === 'わ' && _rowPracticeStep === 2) {
+    _waRowEpisodePlayed = true;
+    _playWaRowEpisode(function() {
+      // エピソード完了後、通常の「ん」なぞり quiz へ
+      _rowPracticeNextChar_continue();
+    });
+    return;
+  }
+  _rowPracticeNextChar_continue();
+}
+
+// エピソード挿入済みフラグ (バトルごとにリセット)
+var _waRowEpisodePlayed = false;
+
+// わ行専用 cameo: ヒノカが前に出て「カゲロウ！」と叫ぶ + 「かざんのうた」narrative
+function _playWaRowEpisode(onDone) {
+  _showBattleDialog([
+    { lines: ['ヒノカ「まって、 ゆうしゃさま！', '', ''] },
+    { lines: ['ヒノカ「あの かめん の ぬし は、', 'わたし の たいせつな あいぼう、', 'カゲロウ な の…'] },
+    { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
+    { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] },
+    { lines: ['ヒノカ「ゆうしゃさま、', 'この さいご の もじ を、', 'カゲロウ に とどけて！'] }
+  ], function() {
+    if (onDone) onDone();
+  });
+}
+
+// 本来の char 進行 (demo → nazori → quiz) ロジック。エピソード挿入を挟まない場合の path。
+function _rowPracticeNextChar_continue() {
   const globalIdx = _rowPracticeRow.start + _rowPracticeStep;
   currentCharIndex = globalIdx;
   loadCharacter();
