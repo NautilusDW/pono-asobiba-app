@@ -9449,15 +9449,25 @@ function _showBattleIntro(onDone) {
   // カーテン fade-out (= 画面がバトル画面に切り替わる瞬間) で解除 → そのあとの
   // 「もじを なぞって...」ダイアログは既に DOM フロー位置 (なぞり書きの上) で表示される。
   document.body.classList.add('battle-intro-active');
-  _showMapScene(rowId, function() {
-    _showBattleEncounterIntro(function() {
-      _showBattleDialog([
-        { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } },
-      ], function() {
-        if (onDone) onDone();
+  const proceedToMapAndEncounter = function() {
+    _showMapScene(rowId, function() {
+      _showBattleEncounterIntro(function() {
+        _showBattleDialog([
+          { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } },
+        ], function() {
+          if (onDone) onDone();
+        });
       });
     });
-  });
+  };
+  // v268: わ行 (最終ボス カゲロウ) はバトル前に VOLCANO_EPISODE_SCENES を挟んで
+  //        カゲロウ/ヒノカ の背景を物語る。その後にマップ→エンカウント→戦闘。
+  const isVolcanoRow = (rowId === 'わ' || rowId === 'ワ');
+  if (isVolcanoRow && typeof _showStoryboard === 'function' && typeof VOLCANO_EPISODE_SCENES !== 'undefined') {
+    _showStoryboard(VOLCANO_EPISODE_SCENES, proceedToMapAndEncounter);
+  } else {
+    proceedToMapAndEncounter();
+  }
 }
 
 // ===== 三種の神器 (装備) システム =====
@@ -10560,6 +10570,26 @@ var ENDING_SCENES = [
     text: 'Sillas W. Nemo\n\nカタカナ へん に、 つづく…' }
 ];
 
+// ===== わ行 pre-battle storyboard (v268 追加) =====
+// 最終ボス カゲロウ の背景を語る 4 ビートのカットシーン。
+// 「カゲロウ と ヒノカ は昔からの相棒だった」→「ザガンの呪縛で引き裂かれた」の物語を先に提示。
+// わ行バトル開始直前 (マップシーンの前) に _showStoryboard で再生。
+// 画像は未生成のため絵文字フォールバック。将来 assets/images/story/volcano_episode_*.jpg を追加予定。
+var VOLCANO_EPISODE_SCENES = [
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/volcano_episode_1.jpg', emoji: '⛰️',
+    text: 'かざん の ちょうじょう に、\nカゲロウ という ぬし が いた。' },
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/volcano_episode_2.jpg', emoji: '🔥🧚',
+    text: 'カゲロウ と ヒノカ は、\nむかし から の あいぼう。\nふたり で ずっと この かざん を まもって きた。' },
+  { bg: 'radial-gradient(ellipse at center, #3a0f52 0%, #18181b 55%, #000 100%)',
+    image: '../assets/images/story/volcano_episode_3.jpg', emoji: '😈',
+    text: 'でも ザガン の のろい で、\nふたり は ひきはなされた。\nカゲロウ は かめん を かぶせられ、\nこころ を うばわれて しまった。' },
+  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
+    image: '../assets/images/story/volcano_episode_4.jpg', emoji: '⚔️',
+    text: 'いま、 ゆうしゃ と ヒノカ が、\nカゲロウ の まえ に たつ。' }
+];
+
 // 祠の扉が開く MP4 をフルスクリーン再生。終わったら onDone。
 // タップで即スキップ可能。iOS の自動再生制約に備えて muted + playsinline。
 function _playShrineDoorVideo(onDone) {
@@ -11395,10 +11425,12 @@ function _rowPracticeComplete() {
     ov.remove();
     // ら行クリア直後はひらがな編のエンディング紙芝居を流す (初回のみ)。
     // 3 妖精全員救出完了を条件にしても OK だが、ら行 = 炎妖精救出 = 3体目なので同義。
-    var isLavaRow = (rowLabel === 'ら' || rowLabel === 'ラ');
+    // v268: ending trigger を ら行 → わ行 へ移動。わ行 (カゲロウ) を倒して初めて
+    //        物語が完結する構成にした。ら行 は鍵受け渡しの中継シーン、わ行 がクライマックス。
+    var isVolcanoRow = (rowLabel === 'わ' || rowLabel === 'ワ');
     var endingSeen = false;
     try { endingSeen = (localStorage.getItem('pono_ending_seen') === '1'); } catch (e) {}
-    if (isLavaRow && !endingSeen && typeof _showStoryboard === 'function' && typeof ENDING_SCENES !== 'undefined') {
+    if (isVolcanoRow && !endingSeen && typeof _showStoryboard === 'function' && typeof ENDING_SCENES !== 'undefined') {
       // v266: {{THANKYOU}} プレースホルダを現在カウントで置換してから再生
       var thankYouCount = (typeof window.getThankYou === 'function') ? window.getThankYou() : 0;
       var endingScenes = ENDING_SCENES.map(function(s) {
