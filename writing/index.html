@@ -6532,11 +6532,12 @@ const BATTLE_ENEMIES = {
     // v268: カゲロウとヒノカ (炎の妖精) は昔からの相棒で、一緒に火山を守っていた。ザガンの
     // 呪縛で引き裂かれた。かざんのうたを通して思い出し、真名を呼ばれて覚醒するバトル。
     taunts: {
+      // v272: 一人称を「俺」→「私」へ統一 (ユーザー指示)。呪縛下 p1 は無人格に近いので pronoun なし。
       p1: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'くらえ…！'],
       p2: ['…その こえ は…', 'どこ か で きいた きが する…', 'だれ だ… おまえ は…'],
-      p3: ['…ヒノカ…？', 'まさか、 おまえ、 なのか…', '…おれ は… かざん の…'],
+      p3: ['…ヒノカ…？', 'まさか、 おまえ、 なのか…', '…わたし は… かざん の…'],
       bow:   '…ヒノカ… ゆうしゃ よ、 ありがとう…。',
-      leave: 'おれ は、 ほんとう の すがた に もどれた。'
+      leave: 'わたし は、 ほんとう の すがた に もどれた。'
     },
     trueName: 'カゲロウ',
     cleansedHome: 'かざん の いただき',
@@ -9500,25 +9501,26 @@ function _showBattleIntro(onDone) {
   // カーテン fade-out (= 画面がバトル画面に切り替わる瞬間) で解除 → そのあとの
   // 「もじを なぞって...」ダイアログは既に DOM フロー位置 (なぞり書きの上) で表示される。
   document.body.classList.add('battle-intro-active');
-  const proceedToMapAndEncounter = function() {
-    _showMapScene(rowId, function() {
-      _showBattleEncounterIntro(function() {
-        _showBattleDialog([
-          { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } },
-        ], function() {
-          if (onDone) onDone();
-        });
-      });
-    });
-  };
-  // v268: わ行 (最終ボス カゲロウ) はバトル前に VOLCANO_EPISODE_SCENES を挟んで
-  //        カゲロウ/ヒノカ の背景を物語る。その後にマップ→エンカウント→戦闘。
   const isVolcanoRow = (rowId === 'わ' || rowId === 'ワ');
-  if (isVolcanoRow && typeof _showStoryboard === 'function' && typeof VOLCANO_EPISODE_SCENES !== 'undefined') {
-    _showStoryboard(VOLCANO_EPISODE_SCENES, proceedToMapAndEncounter);
-  } else {
-    proceedToMapAndEncounter();
-  }
+  _showMapScene(rowId, function() {
+    _showBattleEncounterIntro(function() {
+      // v272: わ行 (カゲロウ) は「ヒノカ が 数日間 捕らえられて いた → カゲロウ が のろわれた のを 知らない」
+      //        前提に変更。エンカウント直後にヒノカ が まず気づき、関係を説明しようとするが、
+      //        カゲロウ が突然襲ってきて戦闘開始。旧 VOLCANO_EPISODE_SCENES (pre-battle 紙芝居)
+      //        は「知っている体」だったので v272 で撤去。
+      if (isVolcanoRow && typeof _playHinokaRecognitionIntro === 'function') {
+        _playHinokaRecognitionIntro(function() {
+          _showBattleDialog([
+            { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
+          ], function() { if (onDone) onDone(); });
+        });
+        return;
+      }
+      _showBattleDialog([
+        { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
+      ], function() { if (onDone) onDone(); });
+    });
+  });
 }
 
 // ===== 三種の神器 (装備) システム =====
@@ -10643,25 +10645,31 @@ var ENDING_SCENES = [
     text: 'Sillas W. Nemo\n\nカタカナ へん に、 つづく…' }
 ];
 
-// ===== わ行 pre-battle storyboard (v268 追加) =====
-// 最終ボス カゲロウ の背景を語る 4 ビートのカットシーン。
-// 「カゲロウ と ヒノカ は昔からの相棒だった」→「ザガンの呪縛で引き裂かれた」の物語を先に提示。
-// わ行バトル開始直前 (マップシーンの前) に _showStoryboard で再生。
-// 画像は未生成のため絵文字フォールバック。将来 assets/images/story/volcano_episode_*.jpg を追加予定。
-var VOLCANO_EPISODE_SCENES = [
-  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/volcano_episode_1.jpg', emoji: '⛰️',
-    text: 'かざん の ちょうじょう に、\nカゲロウ という ぬし が いた。' },
-  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/volcano_episode_2.jpg', emoji: '🔥🧚',
-    text: 'カゲロウ と ヒノカ は、\nむかし から の あいぼう。\nふたり で ずっと この かざん を まもって きた。' },
-  { bg: 'radial-gradient(ellipse at center, #3a0f52 0%, #18181b 55%, #000 100%)',
-    image: '../assets/images/story/volcano_episode_3.jpg', emoji: '😈',
-    text: 'でも ザガン の のろい で、\nふたり は ひきはなされた。\nカゲロウ は かめん を かぶせられ、\nこころ を うばわれて しまった。' },
-  { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/volcano_episode_4.jpg', emoji: '⚔️',
-    text: 'いま、 ゆうしゃ と ヒノカ が、\nカゲロウ の まえ に たつ。' }
-];
+// ===== わ行 エンカウント後イントロ『ヒノカの認識』(v272 追加) =====
+// ヒノカは数日間ザガンに捕らえられていたため、その間にカゲロウが呪縛されたのを知らない。
+// 火山頂上で初めて呪縛されたカゲロウを見て、気配で「あれは…まさか…?」と気づく。
+// 勇者を止めて関係を説明しようとするが、カゲロウが突然襲ってきて戦闘開始。
+// 旧 VOLCANO_EPISODE_SCENES (pre-battle 紙芝居、v268) は「知っている体」だったので v272 で撤去。
+function _playHinokaRecognitionIntro(onDone) {
+  _showBattleDialog([
+    { lines: ['ヒノカ「…まって、', 'ゆうしゃさま！', ''] },
+    { lines: ['ヒノカ「この きはい…', 'どこ か で かんじた…', ''] },
+    { lines: ['ヒノカ「まさか、', 'カゲロウ、 なの…？', ''] },
+    { lines: ['ヒノカ「わたし が ちいさい ころ から', 'ずっと いっしょ だった、', 'たいせつな あいぼう なの…！'] },
+    { lines: ['ヒノカ「カゲロウ！', 'わたし だよ、 ヒノカ だよ！', 'わかる でしょう？'] }
+  ], function() {
+    // カゲロウが突然襲う演出 (screen shake + 暗い脈動 + 威嚇 taunt)
+    try { _triggerKagerouRageAttack(); } catch (e) {}
+    setTimeout(function() {
+      _showBattleDialog([
+        { lines: ['カゲロウ「ゴゴゴ……！', 'よそ もの め……！', ''] },
+        { lines: ['ヒノカ「…そんな！', 'あの やさしかった カゲロウ が…！', ''] }
+      ], function() {
+        if (onDone) onDone();
+      });
+    }, 600);
+  });
+}
 
 // 祠の扉が開く MP4 をフルスクリーン再生。終わったら onDone。
 // タップで即スキップ可能。iOS の自動再生制約に備えて muted + playsinline。
@@ -11067,14 +11075,15 @@ function _showMemoryFlashback(images, onDone) {
   showNext(); // 1 枚目を即表示
 }
 
-// わ行専用 cameo: ヒノカが前に出て「カゲロウ！」と叫ぶ + 「かざんのうた」narrative
+// わ行専用 cameo: ヒノカが前に出て「かざんのうた」を思い出させる narrative
 // v270: 前半ダイアログ → メモリフラッシュバック (4 枚) → 後半ダイアログ
 // v271: クライマックス追加 — 一瞬の覚醒 → 仮面の男 (ザガンの手下) が妨害 →
 //       カゲロウ再呪縛 → ヒノカ倒れる → 星の印発動 → 最後の文字 (ん) finisher
+// v272: エンカウント時にヒノカ認識が済んでいるので、Phase A (認識セリフ) を削除。
+//       歌で思い出させる試み = 戦いを止めるための第二の試み、という位置づけに整理。
 function _playWaRowEpisode(onDone) {
   _showBattleDialog([
-    { lines: ['ヒノカ「まって、 ゆうしゃさま！', '', ''] },
-    { lines: ['ヒノカ「あの かめん の ぬし は、', 'わたし の たいせつな あいぼう、', 'カゲロウ な の…'] }
+    { lines: ['ヒノカ「ゆうしゃさま、 もう いちど…！', 'カゲロウ を とりもどせる', 'はず なの…！'] }
   ], function() {
     // メモリフラッシュバック (4 枚、タップで進行)
     _showMemoryFlashback(VOLCANO_MEMORY_IMAGES, function() {
@@ -11293,13 +11302,19 @@ function _showVolcanoCelebration(onDone) {
 
   // タップでダイアログを送る小さなバトル風ダイアログを ov 上に流し込む。
   // (既存 _showBattleDialog はバトルログへ向く DOM に依存するので、ここでは overlay 内にシンプル表示)
+  // v272: カゲロウ自身が感謝と共に『たいようのつるぎ』を勇者に手渡す beat を追加。
+  //       grantSword:true のメッセージを進めると grantGear('sword') モーダルが挟まる。
   var messages = [
     { text: 'カゲロウ「ヒノカ……！ ぶじ か！？」' },
-    { text: 'ヒノカ「カゲロウ……。ちから の かぎり、 おもい を とどけて くれたのね……」', revealFairy: 0 },
-    { text: 'リーファ「もり から、 ずっと あなたたち を おうえん して いた わ」', revealFairy: 2 },
+    { text: 'ヒノカ「カゲロウ……。 ちから の かぎり、 おもい を とどけて くれた のね……」', revealFairy: 0 },
+    { text: 'リーファ「もり から、 ずっと あなた たち を おうえん して いた わ」', revealFairy: 2 },
     { text: 'セリナ「ほこら から かけつけた わ。 みんな ぶじ で よかった」' },
     { text: 'ヒノカ「ゆうしゃさま、 ほし の しるし の ちから で、 カゲロウ を すくって くれて ありがとう」' },
-    { text: '3 にん の ようせい と ゆうしゃ は、 あさひ の なか で かたく てを とりあった。' }
+    { text: 'カゲロウ「ゆうしゃ よ……」' },
+    { text: 'カゲロウ「きみ が いて くれた から、 わたし は めを さまし、 ヒノカ と また あえた。」' },
+    { text: 'カゲロウ「この 『たいよう の つるぎ』 を、 きみ に あずけたい。 この かざん の ほのお を うつした、 わたし の たからもの だ。」', grantSword: true },
+    { text: 'カゲロウ「まおうじょう で、 おひめさま を たすけだす ちから に なって くれ。」' },
+    { text: '3 にん の ようせい と ゆうしゃ、 そして カゲロウ は、 あさひ の なか で かたく てを とりあった。' }
   ];
 
   // 妖精の登場順: idx 1 (ヒノカ=中央) は最初から表示、0 (リーファ) と 2 (セリナ) はダイアログに合わせて現れる
@@ -11339,6 +11354,18 @@ function _showVolcanoCelebration(onDone) {
   function advance() {
     if (transitioning) return;
     transitioning = true;
+    // v272: 直前に表示したメッセージに grantSword フラグがあれば、
+    //       次メッセージを出す前に grantGear('sword') モーダルを挟む
+    //       (カゲロウ自身が「つるぎ を あずけたい」と言った直後に剣を渡す演出)。
+    var prev = messages[idx - 1];
+    if (prev && prev.grantSword && typeof grantGear === 'function') {
+      grantGear('sword', function() {
+        showMsg(idx);
+        idx++;
+        setTimeout(function() { transitioning = false; }, 350);
+      });
+      return;
+    }
     showMsg(idx);
     idx++;
     setTimeout(function() { transitioning = false; }, 350);
@@ -11740,8 +11767,9 @@ function _rowPracticeNextChar_continue() {
             const _bossReward = _battle.enemy && _battle.enemy.reward;
             const _isVolcanoBoss = _battle.enemy && _battle.enemy.id === 'volcano_lord';
             const _afterVictory = function() {
-              // v271: わ行 (カゲロウ) はクライマックス celebration → エンディング紙芝居の順に挟む。
-              //       その後に通常の _rowPracticeStep++ → _rowPracticeNextChar へ。
+              // v271/v272: わ行 (カゲロウ) は celebration 内で カゲロウ自身が剣を手渡す
+              //           → grantGear はセレブ内で呼ぶため、ここ & _chainReward では sword grant を skip。
+              //           celebration → ENDING 紙芝居 → 通常 _rowPracticeNextChar の順。
               if (_isVolcanoBoss) {
                 _showVolcanoCelebration(function() {
                   _triggerHiraganaEndingIfNeeded(function() {
@@ -11756,6 +11784,8 @@ function _rowPracticeNextChar_continue() {
             };
             const _chainReward = function() {
               if (!_bossReward) { _afterVictory(); return; }
+              // v272: volcano_lord (カゲロウ) は celebration 内で手渡すので、ここでは skip
+              if (_isVolcanoBoss) { _afterVictory(); return; }
               // 神器入手モーダル → 幕クリアバナー → 次の行へ
               grantGear(_bossReward, function() {
                 let t1 = '', t2 = '';
