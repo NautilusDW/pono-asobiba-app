@@ -6528,22 +6528,29 @@ const BATTLE_ENEMIES = {
   // 旧仕様では「大魔王」だったが、ラスボスはカタカナのワ行に移動したので降格。
   'わ': {
     id: 'volcano_lord', name: 'かざんのぬし',
-    // v273: 専用バトルスプライト 12 枚に差し替え (ユーザー 2026-04-24 支給)。
+    // v273: 専用バトルスプライト 13 枚に差し替え (ユーザー 2026-04-24 支給)。
+    //   entrance (登場): 初期表示。_playHinokaRecognitionIntro のダイアログ中に見せる。
     //   idle (001)、低く構える (003) + 炎ブレス溜め (006) → 炎ブレス発射 (007) の 3 段攻撃、
     //   stagger (008)、rage (009)、down (010) を既存エンジンにフック。
-    //   未使用だが保存: roar (002)、claw_r/l (004/005)、front_idle/still (011/012)。
-    img:       '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
-    imgIdle:   '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
-    imgStagger:'../assets/images/monsters/chars/Kagerou/kagerou_stagger.png',
+    //   roar (002) は _pulseKagerouAwaken で覚醒演出に swap。
+    //   front_idle/still (011/012) は浄化後の bow で勇者に向き直る際に swap。
+    //   未使用だが保存: claw_r/l (004/005)。
+    img:         '../assets/images/monsters/chars/Kagerou/kagerou_entrance.png',
+    imgEntrance: '../assets/images/monsters/chars/Kagerou/kagerou_entrance.png',
+    imgIdle:     '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
+    imgStagger:  '../assets/images/monsters/chars/Kagerou/kagerou_stagger.png',
     imgAttackWindup: [
       '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png',
       '../assets/images/monsters/chars/Kagerou/kagerou_atk_2.png'
     ],
     imgAttackStrike: '../assets/images/monsters/chars/Kagerou/kagerou_atk_strike.png',
-    // 追加ステート (非標準、_triggerKagerouRageAttack / _pulseKagerouAwaken / bow 時 に手動 swap)
-    imgRoar:  '../assets/images/monsters/chars/Kagerou/kagerou_roar.png',
-    imgRage:  '../assets/images/monsters/chars/Kagerou/kagerou_rage.png',
-    imgDown:  '../assets/images/monsters/chars/Kagerou/kagerou_down.png',
+    // 追加ステート (非標準、_triggerKagerouRageAttack / _pulseKagerouAwaken /
+    // _startPurificationSequence 内の bow 時に手動 swap)
+    imgRoar:      '../assets/images/monsters/chars/Kagerou/kagerou_roar.png',
+    imgRage:      '../assets/images/monsters/chars/Kagerou/kagerou_rage.png',
+    imgDown:      '../assets/images/monsters/chars/Kagerou/kagerou_down.png',
+    imgFrontIdle: '../assets/images/monsters/chars/Kagerou/kagerou_front_idle.png',
+    imgFrontStill:'../assets/images/monsters/chars/Kagerou/kagerou_front_still.png',
     // v268: カゲロウとヒノカ (炎の妖精) は昔からの相棒で、一緒に火山を守っていた。ザガンの
     // 呪縛で引き裂かれた。かざんのうたを通して思い出し、真名を呼ばれて覚醒するバトル。
     taunts: {
@@ -6719,9 +6726,18 @@ function _startPurificationSequence(onDone) {
   if (!enemyEl) { if (onDone) onDone(); return; }
   try { enemyEl.classList.remove('damaged'); } catch (e) {}
 
+  // v273: カゲロウ専用の追加 swap。imgDown (崩れ落ちる) → imgFrontStill (勇者に向き直る)
+  //       → imgFrontIdle (おじぎ中の呼吸) と 3 段で差し替える。他の敵は imgDown 等を
+  //       持たないので、プロパティがあるときだけ走る。
+  var kEnemy = (typeof _battle !== 'undefined' && _battle) ? _battle.enemy : null;
+
   // t=0ms: 呪印を最終段階 (金爆発) へ遷移 → sigilBurst アニメ (0.5s) 発火
   enemyEl.dataset.sigil = '0';
   enemyEl.dataset.cracks = '3';
+  // カゲロウ: 金爆発と同時に膝をつく (down)
+  try {
+    if (kEnemy && kEnemy.imgDown) _swapEnemyImg(kEnemy.imgDown);
+  } catch (e) {}
 
   // t=320ms: 仮面の左右割れ + 闇霧排出 (sigilBurst のピーク直後)
   setTimeout(function() {
@@ -6730,17 +6746,21 @@ function _startPurificationSequence(onDone) {
   }, 320);
 
   // t=780ms: 仮面がほぼ飛び終わったら、敵を呪縛 → 浄化の色味へ切替
+  //          カゲロウ: 前を向いた姿 (imgFrontStill) へ swap
   setTimeout(function() {
     try {
       enemyEl.classList.remove('cursed');
       enemyEl.classList.add('purified');
+      if (kEnemy && kEnemy.imgFrontStill) _swapEnemyImg(kEnemy.imgFrontStill);
     } catch (e) {}
   }, 780);
 
   // t=1000ms: おじぎ + 「…ありがとう」吹き出し
+  //           カゲロウ: 呼吸のある imgFrontIdle へ遷移 (bow アニメと馴染む)
   setTimeout(function() {
     try {
       enemyEl.classList.add('bowing');
+      if (kEnemy && kEnemy.imgFrontIdle) _swapEnemyImg(kEnemy.imgFrontIdle);
       _showSpiritThanksBubble('…ありがとう');
       // bow animation は 0.65s で自然復帰
       setTimeout(function() { enemyEl.classList.remove('bowing'); }, 700);
