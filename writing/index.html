@@ -4314,7 +4314,9 @@ body.battle-intro-active .battle-log-window {
 /* 2026-04-23: シーン個別のパン (縦横比が極端なパノラマ画像用)。
    object-fit は cover 固定、object-position をアニメで移動させる。
    - sb-pan-down: 上→下 (OP_S01_C02 の王国遠景など)
-   - sb-pan-up:   下→上 (OP_S08 の旅立ち見上げなど) */
+   - sb-pan-up:   下→上 (OP_S08 の旅立ち見上げなど)
+   - sb-pan-right: 左→右 (2026-04-24 追加、S5c のパノラマ画像用)
+   - sb-pan-left:  右→左 (2026-04-24 追加、S5c 2枚目でバリエーション) */
 .storyboard-art img.sb-pan-down {
   object-fit: cover;
   object-position: center 0%;
@@ -4326,9 +4328,21 @@ body.battle-intro-active .battle-log-window {
   /* 2026-04-23: S8 最終カットは余韻を残したいのでゆっくり (9s → 16s) 上にパン。 */
   animation: sbPanUp 16s linear forwards;
 }
+.storyboard-art img.sb-pan-right {
+  object-fit: cover;
+  object-position: 0% center;
+  animation: sbPanRight 10s linear forwards;
+}
+.storyboard-art img.sb-pan-left {
+  object-fit: cover;
+  object-position: 100% center;
+  animation: sbPanLeft 10s linear forwards;
+}
 @media (orientation: landscape) {
   .storyboard-art img.sb-pan-down,
-  .storyboard-art img.sb-pan-up {
+  .storyboard-art img.sb-pan-up,
+  .storyboard-art img.sb-pan-left,
+  .storyboard-art img.sb-pan-right {
     object-fit: cover;
   }
 }
@@ -4340,7 +4354,9 @@ body.battle-intro-active .battle-log-window {
    他のルールとの敗北を防止。 */
 @media (orientation: portrait) {
   .storyboard-art img.sb-pan-down,
-  .storyboard-art img.sb-pan-up {
+  .storyboard-art img.sb-pan-up,
+  .storyboard-art img.sb-pan-left,
+  .storyboard-art img.sb-pan-right {
     width: 100vw !important;
     height: 56.25vw !important;           /* 16:9 レターボックス */
     max-width: 100vw !important;
@@ -4356,6 +4372,14 @@ body.battle-intro-active .battle-log-window {
 @keyframes sbPanUp {
   from { object-position: center 100%; }
   to   { object-position: center 0%; }
+}
+@keyframes sbPanRight {
+  from { object-position: 0% center; }
+  to   { object-position: 100% center; }
+}
+@keyframes sbPanLeft {
+  from { object-position: 100% center; }
+  to   { object-position: 0% center; }
 }
 /* 2026-04-23 v2: S2a (姫様 & ペット) のようなじっくり見せたいカット用の
    ゆっくりズームイン。中心からじわっと被写体に近づく動き。 */
@@ -10286,7 +10310,9 @@ function _showStoryboard(scenes, onDone) {
 //   opening_6.jpg     = OP_S04      S4a/b/c まおう の てさき (v266 で S4c 追加、ザガン動機)
 //   opening_7.jpg     = OP_S05_C01  S5a つれさられる 前半
 //   opening_8.jpg     = OP_S05_C02  S5b つれさられる 後半
-//   opening_curse.jpg = OP_S5c/S5d  呪縛の手 (v265, 2 ビート共用、仮面の伏線)
+//   opening_s5c_a.jpg = S5c_a       呪縛の手 #1 (パノラマ、横→右パン)
+//   opening_s5c_b.jpg = S5c_b       呪縛の手 #2 (パノラマ、右→左パン、音声は S5c.mp3 継続)
+//   opening_s5d.jpg   = S5d         仮面の正体 (16:9)
 //   opening_9.jpg     = OP_S06      S6 おうさま の さけび
 //   opening_10.jpg    = OP_S07      S7a/b/c ゆうしゃ しょうしゅう (v266 で S7c 追加、ありがとう勅命)
 //   opening_11.jpg    = OP_S08      S8 たびだち (下→上にゆっくりパン)
@@ -10356,18 +10382,28 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_8.jpg', emoji: '💫',
     voice: '../assets/audio/storyboard/voice/S5b.mp3',
     text: 'おうじょさま は つれさられて しまいました。' },
-  // --- S5c / S5d: 呪縛の手 (2 ビート、v265 追加、S5 の続編扱いで命名) ---
+  // --- S5c / S5d: 呪縛の手 (v265 追加、v266 で S5c を 2 ビット化) ---
   // ひめ 誘拐 (S5b) → S6 の王様の叫び の間に挿入。バトルの「仮面を こわす」メカの
   // 伏線を先に張り、戦闘開始時点で子供が「なぜ仮面を割るの?」と迷わないようにする。
-  // 画像は 1 枚 (opening_curse.jpg) を 2 ビートで共用。未設置時は絵文字 🎭 にフォールバック。
-  // 音声は Iapetus (ナレーター) で AI Studio 生成 (2026-04-24)。
+  // S5c は長めのナレーションなので 2 枚のパノラマ画像を横パンで見せる (S5c_a 左→右、
+  // S5c_b 右→左 でバリエーション)。音声 S5c.mp3 は 2 ビットで連続再生 (setVoice の
+  // 同一 src スキップで継続、切替タップ時も途切れない)。
+  // S5c_a: パノラマ画像 #1 (左→右へ横パン)
   { bg: '#1a0a2a',
-    image: '../assets/images/story/opening_curse.jpg', emoji: '🎭',
+    image: '../assets/images/story/opening_s5c_a.jpg', emoji: '🎭',
     bgm: '../assets/audio/storyboard/masked_princess_omen.mp3',
     voice: '../assets/audio/storyboard/voice/S5c.mp3',
-    text: 'その ひから、 くに の あちこちで、\nしろい かめん を つけた まもの が あらわれ、\nひとびと を おそい はじめました。' },
+    pan: 'right',
+    text: 'その ひから、 くに の あちこちで、\nしろい かめん を つけた まもの が あらわれ、' },
+  // S5c_b: パノラマ画像 #2 (右→左へ横パンで視点を反転)、音声は S5c.mp3 継続
   { bg: '#1a0a2a',
-    image: '../assets/images/story/opening_curse.jpg', emoji: '🎭',
+    image: '../assets/images/story/opening_s5c_b.jpg', emoji: '🎭',
+    voice: '../assets/audio/storyboard/voice/S5c.mp3',
+    pan: 'left',
+    text: 'ひとびと を おそい はじめました。' },
+  // S5d: 16:9 画像 + S5d.mp3 音声
+  { bg: '#1a0a2a',
+    image: '../assets/images/story/opening_s5d.jpg', emoji: '🎭',
     voice: '../assets/audio/storyboard/voice/S5d.mp3',
     text: 'じつは その まもの は、\nやさしい せいれい が ザガン の のろい で\nあやつられて いた の です。\nかめん を こわさないと、 もと に もどれません。' },
   // --- S6: おうさま の さけび (3 分割、王様セリフ + ナレーター 2 ビート) ---
@@ -10410,12 +10446,12 @@ var OPENING_SCENES = [
 // 本来 play.html 側で card-writing のタップが遮断されるため、通常は到達しない。
 // OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
 // 見終わったら play.html に戻す。
-// 2026-04-24 v265: 呪縛シーンを 2 ビート追加したため index を再指定。
-// 旧: S7a = OPENING_SCENES[13] → 新: S7a = OPENING_SCENES[15] (呪縛 2 beat 分シフト)
+// 2026-04-24: v265 (呪縛 +2)、v266 (S4c +1)、v266b (S5c を 2 分割 +1) で index シフト。
+// 現在 S7a = OPENING_SCENES[17]。
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
-  OPENING_SCENES[16]   // S7a: そして、 あなた が えらばれた のです (v266 で S4c 挿入により 15→16)
+  OPENING_SCENES[17]   // S7a: そして、 あなた が えらばれた のです
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
