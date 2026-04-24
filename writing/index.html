@@ -10094,23 +10094,22 @@ function _showStoryboard(scenes, onDone) {
     } catch (e) {}
   }
 
-  // テキストを「最大 2 行のページ」に分割。
+  // テキストをページに分割。1 シーン = 1 音声ファイルなので、自動 2 行分割は廃止
+  // (音声はシーン単位で一気に流れるが、テキストだけ途中タップ待ちで止まってしまう
+  //  ズレを防ぐため)。ページ区切りは \n\n を明示した場合のみ (S8 のように意図的な
+  //  ページ割りが必要なシーン用)。
   //   \n\n = 明示的なページ区切り (データ側で指定)
-  //   \n   = 行内改行
-  // 明示区切りが無い場合は 2 行ずつ naive 分割する。
+  //   \n   = 行内改行 (1 ページ内で複数行)
   function splitPages(text) {
     text = text || '';
     var pagesArr;
     if (text.indexOf('\n\n') >= 0) {
       pagesArr = text.split('\n\n').map(function(p) {
-        return p.split('\n').slice(0, 2);  // 1 ページあたり最大 2 行
+        return p.split('\n');  // 明示的区切りのみ分割、1 ページの行数は制限なし
       });
     } else {
-      var lines = text.split('\n');
-      pagesArr = [];
-      for (var i = 0; i < lines.length; i += 2) {
-        pagesArr.push(lines.slice(i, i + 2));
-      }
+      // 明示的区切りが無ければシーン全体を 1 ページで表示 (音声 1 本 = 1 ページ原則)
+      pagesArr = [text.split('\n')];
     }
     // 空ページは除外
     return pagesArr.filter(function(p) { return p.length > 0 && p.some(function(l){ return l.length>0; }); });
