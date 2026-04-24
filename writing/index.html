@@ -11120,6 +11120,49 @@ function _showMemoryFlashback(images, onDone) {
   showNext(); // 1 枚目を即表示
 }
 
+// v274: クライマックス専用のイベント絵オーバーレイ (全画面 1 枚絵 + タップで進む)。
+// _showMemoryFlashback と似るが sepia を外し、現在進行中ビートの劇的な静止画として使う。
+// 01b=ヒノカが呪縛カゲロウに手を伸ばす / 02=半浄化遷移 / 03=完全浄化の和解。
+function _showClimaxEventImage(src, onDone) {
+  var ov = document.createElement('div');
+  ov.className = 'climax-event-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1805;background:radial-gradient(ellipse at center,rgba(20,8,24,0.92) 0%,rgba(4,2,6,0.97) 100%);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.55s ease;cursor:pointer;';
+  var img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = 'max-width:94vw;max-height:82vh;object-fit:contain;filter:drop-shadow(0 0 40px rgba(255,140,80,0.45));opacity:0;transform:scale(0.96);transition:opacity 0.55s ease,transform 0.7s cubic-bezier(.2,1.2,.4,1);border-radius:6px;';
+  ov.appendChild(img);
+  var hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0.8;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.textContent = '▼ タップ';
+  ov.appendChild(hint);
+  if (!document.getElementById('memoryFlashbackKF')) {
+    var st = document.createElement('style');
+    st.id = 'memoryFlashbackKF';
+    st.textContent = '@keyframes fbHintBlink{0%,100%{opacity:0.3}50%{opacity:0.95}}';
+    document.head.appendChild(st);
+  }
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.opacity = '1';
+    setTimeout(function() {
+      img.style.opacity = '1';
+      img.style.transform = 'scale(1)';
+    }, 120);
+  });
+  var closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    ov.style.opacity = '0';
+    setTimeout(function() {
+      try { if (ov.parentNode) ov.remove(); } catch (e) {}
+      if (onDone) onDone();
+    }, 550);
+  }
+  ov.addEventListener('click', close);
+  ov.addEventListener('touchend', function(e) { e.preventDefault(); close(); }, { passive: false });
+}
+
 // わ行専用 cameo: ヒノカが前に出て「かざんのうた」を思い出させる narrative
 // v270: 前半ダイアログ → メモリフラッシュバック (4 枚) → 後半ダイアログ
 // v271: クライマックス追加 — 一瞬の覚醒 → 仮面の男 (ザガンの手下) が妨害 →
@@ -11132,11 +11175,14 @@ function _playWaRowEpisode(onDone) {
   ], function() {
     // メモリフラッシュバック (4 枚、タップで進行)
     _showMemoryFlashback(VOLCANO_MEMORY_IMAGES, function() {
-      _showBattleDialog([
-        { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
-        { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] }
-      ], function() {
-        _playKagerouClimax(onDone);
+      // v274: battle_last_01 (ヒノカが呪縛カゲロウに手を伸ばす) を 1 枚絵で挟んでから訴えのセリフへ
+      _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_01.png', function() {
+        _showBattleDialog([
+          { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
+          { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] }
+        ], function() {
+          _playKagerouClimax(onDone);
+        });
       });
     });
   });
@@ -11167,8 +11213,12 @@ function _playKagerouClimax(onDone) {
         ], function() {
           // Beat 5: 勇者の 星の印 発動 (預言の力覚醒)
           _showStarMarkAwakening(function() {
-            // Beat 6: 最後の「ん」quiz へ
-            if (onDone) onDone();
+            // v274: battle_last_02 (呪縛→炎へ遷移するカゲロウとひざまずくヒノカ) を 1 枚絵で挟む。
+            //       星の印の力で部分浄化が始まった瞬間を象徴する静止画。
+            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.png', function() {
+              // Beat 6: 最後の「ん」quiz へ
+              if (onDone) onDone();
+            });
           });
         });
       });
@@ -11373,6 +11423,13 @@ function _showStarMarkAwakening(onDone) {
 // battleVictory の bow/leave → grantGear(sword) → act-clear banner の後、
 // _afterVictory (元は _rowPracticeNextChar へ進むだけ) で呼び出される。
 function _showVolcanoCelebration(onDone) {
+  // v274: 3 妖精集結 overlay の直前に battle_last_03 (完全浄化したカゲロウとヒノカの和解) を 1 枚絵で挟む。
+  //       浄化シーケンス → bow → 1 枚絵 → 3 妖精祝祭、の流れで余韻を作る。
+  _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_03.png', function() {
+    _renderVolcanoCelebrationOverlay(onDone);
+  });
+}
+function _renderVolcanoCelebrationOverlay(onDone) {
   // フルスクリーンの柔らかな朝焼け overlay に妖精 3 人を並べる
   var ov = document.createElement('div');
   ov.id = 'volcanoCelebrationOverlay';
