@@ -6528,7 +6528,22 @@ const BATTLE_ENEMIES = {
   // 旧仕様では「大魔王」だったが、ラスボスはカタカナのワ行に移動したので降格。
   'わ': {
     id: 'volcano_lord', name: 'かざんのぬし',
-    img: '../assets/images/monsters/chars/monster_016_volcano_lord.png',
+    // v273: 専用バトルスプライト 12 枚に差し替え (ユーザー 2026-04-24 支給)。
+    //   idle (001)、低く構える (003) + 炎ブレス溜め (006) → 炎ブレス発射 (007) の 3 段攻撃、
+    //   stagger (008)、rage (009)、down (010) を既存エンジンにフック。
+    //   未使用だが保存: roar (002)、claw_r/l (004/005)、front_idle/still (011/012)。
+    img:       '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
+    imgIdle:   '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
+    imgStagger:'../assets/images/monsters/chars/Kagerou/kagerou_stagger.png',
+    imgAttackWindup: [
+      '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png',
+      '../assets/images/monsters/chars/Kagerou/kagerou_atk_2.png'
+    ],
+    imgAttackStrike: '../assets/images/monsters/chars/Kagerou/kagerou_atk_strike.png',
+    // 追加ステート (非標準、_triggerKagerouRageAttack / _pulseKagerouAwaken / bow 時 に手動 swap)
+    imgRoar:  '../assets/images/monsters/chars/Kagerou/kagerou_roar.png',
+    imgRage:  '../assets/images/monsters/chars/Kagerou/kagerou_rage.png',
+    imgDown:  '../assets/images/monsters/chars/Kagerou/kagerou_down.png',
     // v268: カゲロウとヒノカ (炎の妖精) は昔からの相棒で、一緒に火山を守っていた。ザガンの
     // 呪縛で引き裂かれた。かざんのうたを通して思い出し、真名を呼ばれて覚醒するバトル。
     taunts: {
@@ -11131,11 +11146,22 @@ function _playKagerouClimax(onDone) {
   });
 }
 
-// カゲロウが一瞬昔を思い出す時の優しい発光演出 (仮面の隙間から金光)
+// カゲロウが一瞬昔を思い出す時の優しい発光演出 (仮面の隙間から金光)。
+// v273: この間 imgRoar (上を向いて吠える姿) に一時 swap、1.6s 後に idle へ戻す。
+//       「懐かしい響きを感じて 思わず天を仰ぐ」イメージ。
 function _pulseKagerouAwaken() {
   var enemyEl = document.getElementById('battleEnemy');
   if (!enemyEl) return;
   enemyEl.classList.add('kagerou-awaken-pulse');
+  try {
+    var e = _battle && _battle.enemy;
+    if (e && e.imgRoar) {
+      _swapEnemyImg(e.imgRoar);
+      setTimeout(function() {
+        if (e.imgIdle) _swapEnemyImg(e.imgIdle);
+      }, 1500);
+    }
+  } catch (e) { /* ignore */ }
   setTimeout(function() { enemyEl.classList.remove('kagerou-awaken-pulse'); }, 1600);
 }
 
@@ -11181,13 +11207,25 @@ function _showMaskedManInterference(onDone) {
   }, 900);
 }
 
-// カゲロウが再び呪縛されて激しく暴れる演出 (スクリーン shake + 仮面の暗い脈動)
+// カゲロウが再び呪縛されて激しく暴れる演出 (スクリーン shake + 仮面の暗い脈動)。
+// v273: imgRage (再咆哮/高揚) に一時 swap、1.4s 後に idle へ戻す。
+//       エンカウント直後の急襲 (_playHinokaRecognitionIntro) と climax 中の再呪縛 の
+//       両方で呼ばれるので、image swap は imgRage が設定済みの時だけ行う。
 function _triggerKagerouRageAttack() {
   var enemyEl = document.getElementById('battleEnemy');
   if (enemyEl) {
     enemyEl.classList.add('kagerou-rage');
     setTimeout(function() { enemyEl.classList.remove('kagerou-rage'); }, 1400);
   }
+  try {
+    var e = _battle && _battle.enemy;
+    if (e && e.imgRage) {
+      _swapEnemyImg(e.imgRage);
+      setTimeout(function() {
+        if (e.imgIdle) _swapEnemyImg(e.imgIdle);
+      }, 1300);
+    }
+  } catch (e) { /* ignore */ }
   var stage = document.querySelector('.battle-stage');
   if (stage) {
     stage.classList.add('screen-heavy-shake');
