@@ -3239,6 +3239,11 @@ body.battle-mode .villain-deco {
   60%  { transform: translateY(30px)  rotate(-35deg); opacity: 0.85; }
   100% { transform: translateY(60px)  rotate(-60deg); opacity: 0; }
 }
+/* v274 バトルステージ常駐ヒノカ: ふわふわ浮遊 */
+@keyframes hinokaFloat {
+  0%, 100% { transform: translateY(0)    rotate(0); }
+  50%      { transform: translateY(-6px) rotate(-1.5deg); }
+}
 /* v271 クライマックス: 星の印フルスクリーン発動 (pulse) */
 @keyframes starMarkPulse {
   0%, 100% { text-shadow: 0 0 40px #FFD84D, 0 0 80px #FFA800, 0 0 140px rgba(255,168,0,0.7); transform: scale(1); }
@@ -6907,6 +6912,8 @@ function _showBattleStage(rowId) {
   if (els.charge) els.charge.classList.remove('charged');
   els.stars.forEach(s => s.classList.remove('lit'));
   els.enemy.classList.remove('damaged', 'defeated', 'purified', 'bowing', 'ascending');
+  // v274: 前回のバトル残留ヒノカ/倒れヒノカを掃除 (リトライ時など)
+  try { els.stage.querySelectorAll('img[data-role="battle-hinoka"],img[data-role="hinoka-fallen"]').forEach(function(n){ n.remove(); }); } catch (e) {}
   // v265: 呪縛仮面を初期状態に戻す (敵に cursed クラス + 呪印紫5段階 + 割れ状態クリア)
   try { _resetCurseMask(); } catch (e) {}
   // v268: わ行 episode (ヒノカ cameo) 再生フラグをリセット
@@ -10652,7 +10659,7 @@ var ENDING_SCENES = [
     text: 'ながい たび の おもいで が…' },
   // E2c — 胸に甦る
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
-    image: '../assets/images/story/ending_2c.jpg', emoji: '🔥',
+    image: '../assets/images/story/ending_2c.png', emoji: '🔥',
     voice: '../assets/audio/storyboard/voice/E2c.mp3',
     text: 'しずかに むねに よみがえる。' },
   // E3 — 星空 (ゆっくり下→上に縦パンで夜空を見上げる)
@@ -10686,10 +10693,13 @@ var ENDING_SCENES = [
 // 勇者を止めて関係を説明しようとするが、カゲロウが突然襲ってきて戦闘開始。
 // 旧 VOLCANO_EPISODE_SCENES (pre-battle 紙芝居、v268) は「知っている体」だったので v272 で撤去。
 function _playHinokaRecognitionIntro(onDone) {
+  // v274: ヒノカがバトルステージに駆け込み (正面向き hinoka_001) 勇者に語りかける。
+  try { _showBattleHinoka('001'); } catch (e) {}
   _showBattleDialog([
     { lines: ['ヒノカ「…まって、', 'ゆうしゃさま！', ''] },
     { lines: ['ヒノカ「この きはい…', 'どこ か で かんじた…', ''] },
-    { lines: ['ヒノカ「まさか、', 'カゲロウ、 なの…？', ''] },
+    { lines: ['ヒノカ「まさか、', 'カゲロウ、 なの…？', ''],
+      onEnter: function() { try { _showBattleHinoka('002'); } catch (e) {} } },
     { lines: ['ヒノカ「わたし が ちいさい ころ から', 'ずっと いっしょ だった、', 'たいせつな あいぼう なの…！'] },
     { lines: ['ヒノカ「カゲロウ！', 'わたし だよ、 ヒノカ だよ！', 'わかる でしょう？'] }
   ], function() {
@@ -11253,7 +11263,43 @@ function _triggerKagerouRageAttack() {
   }
 }
 
-// ヒノカが攻撃を受けて倒れる演出 (画面フラッシュ + バトルステージに倒れヒノカスプライトを一瞬表示)
+// v274: バトルステージに常駐するヒノカスプライト (わ行ボス戦中の相棒)。
+// 3 ポーズを使い分ける: 001=正面(勇者に語りかける), 002=後ろ姿(カゲロウを見つめる),
+//   003=側面(倒れる/動きの中間)。_playHinokaRecognitionIntro 冒頭で出現、climax 被弾で退場。
+var HINOKA_SPRITES = {
+  '001': '../assets/images/characters/pixies/Hinoka/hinoka_001.png',
+  '002': '../assets/images/characters/pixies/Hinoka/hinoka_002.png',
+  '003': '../assets/images/characters/pixies/Hinoka/hinoka_003.png'
+};
+function _showBattleHinoka(variant) {
+  var stage = document.querySelector('.battle-stage');
+  if (!stage) return null;
+  var src = HINOKA_SPRITES[variant] || HINOKA_SPRITES['002'];
+  var el = stage.querySelector('img[data-role="battle-hinoka"]');
+  if (!el) {
+    el = document.createElement('img');
+    el.alt = 'ヒノカ';
+    el.dataset.role = 'battle-hinoka';
+    // 勇者視点で画面左下に寄り添う想定。ふわふわ浮遊アニメ付き。
+    el.style.cssText = 'position:absolute;left:8%;bottom:18%;width:18%;max-width:130px;z-index:55;pointer-events:none;filter:drop-shadow(0 0 10px rgba(255,170,80,0.65));animation:hinokaFloat 2.8s ease-in-out infinite;opacity:0;transition:opacity 0.5s ease;';
+    stage.appendChild(el);
+    requestAnimationFrame(function() { el.style.opacity = '1'; });
+  }
+  if (el.src.indexOf(src.replace(/^\.\.\//, '')) === -1) {
+    el.src = src;
+  }
+  return el;
+}
+function _hideBattleHinoka() {
+  var stage = document.querySelector('.battle-stage');
+  if (!stage) return;
+  var el = stage.querySelector('img[data-role="battle-hinoka"]');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(function() { try { el.remove(); } catch (e) {} }, 600);
+}
+
+// ヒノカが攻撃を受けて倒れる演出 (画面フラッシュ + バトルステージのヒノカスプライトを側面姿で落下)
 function _hinokaFallEffect() {
   var stage = document.querySelector('.battle-stage');
   if (!stage) return;
@@ -11263,13 +11309,21 @@ function _hinokaFallEffect() {
   stage.appendChild(flash);
   setTimeout(function() { try { flash.remove(); } catch (e) {} }, 700);
 
-  // ヒノカスプライト (倒れて徐々にフェード)
-  var hinoka = document.createElement('img');
-  hinoka.src = '../assets/images/characters/pixies/pixy_fire.png';
-  hinoka.alt = 'ヒノカ';
-  hinoka.style.cssText = 'position:absolute;left:18%;bottom:14%;width:22%;max-width:140px;z-index:55;pointer-events:none;filter:brightness(0.7) drop-shadow(0 0 8px rgba(255,80,80,0.7));animation:hinokaFall 1.4s ease-in forwards;';
-  hinoka.dataset.role = 'hinoka-fallen';
-  stage.appendChild(hinoka);
+  // 既存の常駐ヒノカを倒れ姿 (側面) に差し替えて落下アニメ発動。なければ新規生成。
+  var hinoka = stage.querySelector('img[data-role="battle-hinoka"]');
+  if (hinoka) {
+    hinoka.src = HINOKA_SPRITES['003'];
+    hinoka.style.filter = 'brightness(0.7) drop-shadow(0 0 8px rgba(255,80,80,0.7))';
+    hinoka.style.animation = 'hinokaFall 1.4s ease-in forwards';
+    hinoka.dataset.role = 'hinoka-fallen';
+  } else {
+    hinoka = document.createElement('img');
+    hinoka.src = HINOKA_SPRITES['003'];
+    hinoka.alt = 'ヒノカ';
+    hinoka.style.cssText = 'position:absolute;left:8%;bottom:18%;width:18%;max-width:130px;z-index:55;pointer-events:none;filter:brightness(0.7) drop-shadow(0 0 8px rgba(255,80,80,0.7));animation:hinokaFall 1.4s ease-in forwards;';
+    hinoka.dataset.role = 'hinoka-fallen';
+    stage.appendChild(hinoka);
+  }
   // 5 秒後に自動削除 (後の celebration で再表示するので一旦消しておく)
   setTimeout(function() { try { hinoka.remove(); } catch (e) {} }, 5000);
 }
