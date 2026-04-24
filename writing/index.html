@@ -10469,37 +10469,45 @@ var ENDING_BGM = '../assets/audio/storyboard/moonfire_oath.mp3';
 var ENDING_SCENES = [
   // E1 — 焚き火の仲間 + ナレーション (BGM 開始)
   // v266: 「ありがとう」カウンターを動的挿入 ({{THANKYOU}} プレースホルダ)
+  // 音声は汎用表現「たくさん あつまった」で録音 → 画面は {{THANKYOU}} で数字表示
+  // (画面文字と音声が軽くズレるが 5 歳児は数字を読まないので許容)
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_1.jpg', emoji: '🔥🧚',
     bgm: ENDING_BGM,
+    voice: '../assets/audio/storyboard/voice/E1.mp3',
     text: '3 にん の ようせい の ちから を かりて、\nここまで やって きた。\n「ありがとう」 も {{THANKYOU}} こ あつまった。' },
   // E2a — 焚き火 (小さく揺れる火)
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2a.jpg', emoji: '🔥',
+    voice: '../assets/audio/storyboard/voice/E2a.mp3',
     text: 'たきび の ひ が、\nちいさく ゆれて いる。' },
   // E2b — 旅の思い出
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2b.jpg', emoji: '🔥',
+    voice: '../assets/audio/storyboard/voice/E2b.mp3',
     text: 'ながい たび の おもいで が…' },
   // E2c — 胸に甦る
   { bg: 'radial-gradient(ellipse at center, #7c2d12 0%, #431407 55%, #18181b 100%)',
     image: '../assets/images/story/ending_2c.jpg', emoji: '🔥',
+    voice: '../assets/audio/storyboard/voice/E2c.mp3',
     text: 'しずかに むねに よみがえる。' },
   // E3 — 星空 (ゆっくり下→上に縦パンで夜空を見上げる)
   { bg: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0c1631 55%, #000 100%)',
     image: '../assets/images/story/ending_3.jpg', emoji: '✨',
     pan: 'up',
+    voice: '../assets/audio/storyboard/voice/E3.mp3',
     text: 'よぞら を みあげる と、\nほし が きらきら と ひかって いた。' },
   // E4 — 決意 (ゆっくり下→上に縦パンで奥の魔王城を見上げる)
   // v266 改訂: ナレーターが読む前提で「勇者の心の声 + 地の文」の体裁に統一
   { bg: 'radial-gradient(ellipse at center, #581c87 0%, #1e1b4b 60%, #000 100%)',
     image: '../assets/images/story/ending_4.jpg', emoji: '🔑',
     pan: 'up',
+    voice: '../assets/audio/storyboard/voice/E4.mp3',
     text: '「まおうじょう は、 すぐ そこ だ。\nかならず、 おひめさま を たすけだす ぞ」\nと、 ゆうしゃ は こころ の なか で つぶやいた。' },
   // E4b — v266 ありがとうテーマ: 集めたありがとうが封印を破る力になる
-  // 音声は未生成 (voice 省略)。将来 Iapetus で追加予定。
   { bg: 'radial-gradient(ellipse at center, #581c87 0%, #1e1b4b 60%, #000 100%)',
     image: '../assets/images/story/ending_4.jpg', emoji: '💝',
+    voice: '../assets/audio/storyboard/voice/E4b.mp3',
     text: '「あつめた 『ありがとう』 の ちから で、\nまおうじょう の のろい を やぶって みせる ぞ」\nと、 ゆうしゃ は あらためて つよく けつい する のであった。' },
   // E5 — クレジット (タイトルロゴ + 作者 + カタカナ編に続く)
   //    最終シーンの後に既存の「白フェード + BGM 4s フェードアウト」余韻が動く。
