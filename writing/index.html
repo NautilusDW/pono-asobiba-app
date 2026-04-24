@@ -10954,11 +10954,15 @@ function _rowPracticeNextChar() {
 var _waRowEpisodePlayed = false;
 
 // カゲロウ & ヒノカ のメモリフラッシュバック (v270 追加)。
-// ヒノカが昔を思い出して語る場面で、3 枚の想い出イメージを順にフェード表示。
-// _playWaRowEpisode から呼ばれる。タップで次の画像へ、3 枚目タップで閉じる。
+// ヒノカが昔を思い出して語る場面で、想い出イメージを順にフェード表示。
+// 01 仲良し → 02 絆 → 04 一緒に歌う → 03 呪いで引き離される の順で感情アークを作る。
+// 最後の「引き離される」画像の直後に、ヒノカ の「かざんの うた を おもいだして」
+// セリフへ繋がる構成 (歌→悲劇→歌を思い出して)。
+// _playWaRowEpisode から呼ばれる。タップで次の画像へ、最後の画像タップで閉じる。
 var VOLCANO_MEMORY_IMAGES = [
   '../assets/images/characters/kagerou/memory_01.jpg',
   '../assets/images/characters/kagerou/memory_02.jpg',
+  '../assets/images/characters/kagerou/memory_04.jpg',
   '../assets/images/characters/kagerou/memory_03.jpg'
 ];
 function _showMemoryFlashback(images, onDone) {
