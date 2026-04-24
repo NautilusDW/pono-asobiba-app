@@ -15,6 +15,16 @@
             "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/observe.py\" --hook"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/auto_optimize_image.py\" --hook",
+            "timeout": 60
+          }
+        ]
       }
     ]
   }

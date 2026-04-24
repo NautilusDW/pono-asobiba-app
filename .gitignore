@@ -19,3 +19,9 @@ node_modules/
 _backups/
 assets/**/*_orig_backup.png
 assets/**/*_backup.png
+assets/_orig_image_backup/
+
+# auto_optimize_image.py のキャッシュ/ログ (ローカル状態)
+scripts/.image_opt_cache.json
+scripts/.image_opt_cache.log
+assets/**/*.opt.tmp
