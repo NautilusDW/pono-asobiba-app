@@ -10312,6 +10312,7 @@ function _showStoryboard(scenes, onDone) {
 //   opening_8.jpg     = OP_S05_C02  S5b つれさられる 後半
 //   opening_s5c_a.jpg = S5c_a       呪縛の手 #1 (パノラマ、横→右パン)
 //   opening_s5c_b.jpg = S5c_b       呪縛の手 #2 (パノラマ、右→左パン、音声は S5c.mp3 継続)
+//   opening_s5c_c.jpg = S5c_c       襲撃後の惨状 + 心を奪う魔王の動機 (v266b 追加、画像未作成)
 //   opening_s5d.jpg   = S5d         仮面の正体 (16:9)
 //   opening_9.jpg     = OP_S06      S6 おうさま の さけび
 //   opening_10.jpg    = OP_S07      S7a/b/c ゆうしゃ しょうしゅう (v266 で S7c 追加、ありがとう勅命)
@@ -10357,7 +10358,10 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_5.jpg', emoji: '✨',
     voice: '../assets/audio/storyboard/voice/S3b.mp3',
     text: 'へや の なか に\nふしぎな ひかり が あらわれました。' },
-  // --- S4: まおう の てさき (3 分割、S4c は v266 ありがとうテーマの動機づけ) ---
+  // --- S4: まおう の てさき (2 分割) ---
+  // v266b 再構成 (2026-04-24): かつて S4c にあった「ザガンは心を奪う魔王」を
+  // S5c_c へ移動し、「襲撃後の惨状 → 心を奪う動機提示 → S5d「じつは」の転換」という
+  // 物語の起伏を強化。
   { bg: '#0f0820',
     image: '../assets/images/story/opening_6.jpg', emoji: '👺',
     bgm: '../assets/audio/storyboard/masked_princess_omen.mp3',
@@ -10367,12 +10371,6 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_6.jpg', emoji: '👺',
     voice: '../assets/audio/storyboard/voice/S4b.mp3',
     text: 'それは、 かめん を つけた\nふしぎ で おそろしい まじん でした。' },
-  // S4c: v266 追加。ザガンの動機を「ありがとうを奪う」に設定 → 絵本テーマと直結。
-  // 音声は Iapetus で 2026-04-24 生成・統合済み。
-  { bg: '#0f0820',
-    image: '../assets/images/story/opening_6.jpg', emoji: '👺',
-    voice: '../assets/audio/storyboard/voice/S4c.mp3',
-    text: 'まおう ザガン は、\nひとびと の 「ありがとう」 の こころ を うばい、\nくに を くらやみ に しずめよう と して いた の です。' },
   // --- S5: つれさられる (2 ビート) ---
   { bg: '#2a2040',
     image: '../assets/images/story/opening_7.jpg', emoji: '💫',
@@ -10401,6 +10399,13 @@ var OPENING_SCENES = [
     voice: '../assets/audio/storyboard/voice/S5c.mp3',
     pan: 'left',
     text: 'ひとびと を おそい はじめました。' },
+  // S5c_c: v266b 追加 (2026-04-24 再構成)。襲われた村のその後の惨状を見せてから、
+  //        「魔王が『ありがとう』の心を奪っていた」動機を提示。直後の S5d
+  //        「じつは その まもの は…」への転換を美しくする構成。
+  //        画像未作成 (絵文字 💔 フォールバック)。音声未生成 (voice フィールド省略)。
+  { bg: '#1a0a2a',
+    image: '../assets/images/story/opening_s5c_c.jpg', emoji: '💔',
+    text: 'おそわれた むら には、\nこわれた いえ と、 なきじゃくる ひとびと だけ が のこりました。\nまおう ザガン は、 みんな の 「ありがとう」 の こころ を うばって いた の です。' },
   // S5d: 16:9 画像 + S5d.mp3 音声
   { bg: '#1a0a2a',
     image: '../assets/images/story/opening_s5d.jpg', emoji: '🎭',
@@ -10446,8 +10451,8 @@ var OPENING_SCENES = [
 // 本来 play.html 側で card-writing のタップが遮断されるため、通常は到達しない。
 // OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
 // 見終わったら play.html に戻す。
-// 2026-04-24: v265 (呪縛 +2)、v266 (S4c +1)、v266b (S5c を 2 分割 +1) で index シフト。
-// 現在 S7a = OPENING_SCENES[17]。
+// 2026-04-24: v265 (呪縛 +2)、v266 (S5c を 2 分割 +1)、v266b (S4c 削除 -1 / S5c_c 追加 +1、差し引き 0)
+// で index シフト。現在 S7a = OPENING_SCENES[17] (変わらず)。
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
