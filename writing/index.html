@@ -10063,7 +10063,9 @@ function _showStoryboard(scenes, onDone) {
         sbAudio.volume = 0;
         var p = sbAudio.play();
         if (p && p.catch) p.catch(function() {});
-        fadeAudio(sbAudio, 0, 0.7, 900);
+        // v268: BGM 0.7 → 0.35 に下げ、ナレーション (voice 1.0) が聞き取りやすく。
+        //       特に王様 (Charon、低音) が BGM に埋もれて聞こえづらい問題対応。
+        fadeAudio(sbAudio, 0, 0.35, 900);
       } catch (e) {}
     }
     if (!sbAudio.paused && sbAudio.volume > 0.02) {
@@ -10426,20 +10428,28 @@ var OPENING_SCENES = [
     voice: '../assets/audio/storyboard/voice/S5c.mp3',
     pan: 'left',
     text: 'ひとびと を おそい はじめました。' },
-  // S5c_c: v266b 追加 (2026-04-24 再構成)。襲われた村の惨状を見せながら、
-  //        「魔王が『ありがとう』の心を奪っていた」動機を告げる。直後の S5d
-  //        「じつは その まもの は…」への転換を美しくする。
-  //        ナレーションは旧 S4c のものをそのまま流用 (位置と絵だけ変更)。
-  //        画像未作成 (絵文字 💔 フォールバック)。音声 S5c_c.mp3 (旧 S4c.mp3 を rename 配置)。
+  // S5c_c / S5c_c2: v268 でユーザー指示により 2 シーン分割。音声も同期するため
+  //   ユーザーが S5c_c.mp3 を短縮版 (「...うばい、」で終わる) に差し替え、S5c_c2.mp3 を
+  //   新規収録予定 (「くに を くらやみ に...」の続き)。現状は両方同じ S5c_c.mp3 を指し、
+  //   setVoice の同一 src スキップで継続再生 (音声分割ファイル提供まで暫定運用)。
   { bg: '#1a0a2a',
     image: '../assets/images/story/opening_s5c_c.jpg', emoji: '💔',
     voice: '../assets/audio/storyboard/voice/S5c_c.mp3',
-    text: 'まおう ザガン は、\nひとびと の 「ありがとう」 の こころ を うばい、\nくに を くらやみ に しずめよう と して いた の です。' },
-  // S5d: 16:9 画像 + S5d.mp3 音声
+    text: 'まおう ザガン は、\nひとびと の 「ありがとう」 の こころ を うばい、' },
+  { bg: '#1a0a2a',
+    image: '../assets/images/story/opening_s5c_c.jpg', emoji: '💔',
+    voice: '../assets/audio/storyboard/voice/S5c_c.mp3',
+    text: 'くに を くらやみ に しずめよう と して いた の です。' },
+  // S5d / S5d2: v268 でユーザー指示により 2 シーン分割 (「仮面〜」で区切り)。
+  //   音声は S5d.mp3 (暫定、同一 src 継続)。新分割音声 S5d.mp3 (再収録) + S5d2.mp3 待ち。
   { bg: '#1a0a2a',
     image: '../assets/images/story/opening_s5d.jpg', emoji: '🎭',
     voice: '../assets/audio/storyboard/voice/S5d.mp3',
-    text: 'じつは その まもの は、\nやさしい せいれい が ザガン の のろい で\nあやつられて いた の です。\nかめん を こわさないと、 もと に もどれません。' },
+    text: 'じつは その まもの は、\nやさしい せいれい が ザガン の のろい で\nあやつられて いた の です。' },
+  { bg: '#1a0a2a',
+    image: '../assets/images/story/opening_s5d.jpg', emoji: '🎭',
+    voice: '../assets/audio/storyboard/voice/S5d.mp3',
+    text: 'かめん を こわさないと、 もと に もどれません。' },
   // --- S6: おうさま の さけび (3 分割、王様セリフ + ナレーター 2 ビート) ---
   { bg: '#1a0c05',
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
@@ -10449,10 +10459,12 @@ var OPENING_SCENES = [
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
     voice: '../assets/audio/storyboard/voice/S6b.mp3',
     text: 'おうさま は かなしく さけび、' },
+  // v268: 「国中から」を追加して「悲しく叫び」からの展開をより具体的に。
+  //       絵としては大勢の戦士たちが王の前に並んでいる構図が望ましい (将来生成)。
   { bg: '#1a0c05',
     image: '../assets/images/story/opening_9.jpg', emoji: '👑',
     voice: '../assets/audio/storyboard/voice/S6c.mp3',
-    text: 'ゆうかん な せんし を あつめました。' },
+    text: 'くに じゅう から、\nゆうかん な せんし を あつめました。' },
   // --- S7: 勇者召集 (3 分割、S7c は v266 ありがとうテーマ勅命) ---
   { bg: '#0a1026',
     image: '../assets/images/story/opening_10.jpg', emoji: '⚔️',
@@ -10480,12 +10492,12 @@ var OPENING_SCENES = [
 // 本来 play.html 側で card-writing のタップが遮断されるため、通常は到達しない。
 // OPENING_SCENES 10 枚から 3 枚 (王国 / ザガン出現 / 勇者召集) を抜粋し、
 // 見終わったら play.html に戻す。
-// 2026-04-24: v265 (呪縛 +2)、v266 (S5c を 2 分割 +1)、v266b (S4c 削除 -1 / S5c_c 追加 +1、差し引き 0)
-// で index シフト。現在 S7a = OPENING_SCENES[17] (変わらず)。
+// 2026-04-24: v265 (呪縛 +2)、v266 (S5c を 2 分割 +1)、v266b (S4c 削除 -1 / S5c_c 追加 +1、差し引き 0)、
+// v268 (S5c_c2 + S5d2 追加 +2) で index シフト。現在 S7a = OPENING_SCENES[19]。
 var SHORT_OPENING_SCENES = [
   OPENING_SCENES[0],   // S1a: むかし むかし
   OPENING_SCENES[6],   // S4a: まおう ザガン の てさき
-  OPENING_SCENES[17]   // S7a: そして、 あなた が えらばれた のです
+  OPENING_SCENES[19]   // S7a: そして、 あなた が えらばれた のです
 ];
 
 // エンディング: ら行クリア (炎の妖精救出+別れ) 直後の紙芝居。
