@@ -4660,22 +4660,8 @@ body.battle-intro-active .battle-log-window {
         <div class="battle-enemy" id="battleEnemy">
           <img class="enemy-img" id="battleEnemyImg" alt="てき" onerror="this.onerror=null;this.src='../assets/images/monsters/chars/monster_005.png';" />
           <div class="enemy-shadow"></div>
-          <!-- 呪縛仮面 (v265 バトルピボット: 「呪縛を解く」メカニクス)。
-               全敵共通・白い顔なし仮面 + おでこの呪印。HP 減少で data-sigil/data-cracks が進化、
-               5 発目で縦 2 つに割れて精霊が目覚める。敵スプライトは変えずに CSS filter だけで浄化表現。 -->
-          <div class="curse-mask" id="curseMask" aria-hidden="true">
-            <div class="curse-mask-half curse-mask-left"></div>
-            <div class="curse-mask-half curse-mask-right"></div>
-            <svg class="curse-cracks" viewBox="0 0 100 120" preserveAspectRatio="none" aria-hidden="true">
-              <path class="curse-crack crack-1" d="M 50,6 L 45,40 L 55,78 L 48,112"/>
-              <path class="curse-crack crack-2" d="M 22,22 L 40,54 L 30,92"/>
-              <path class="curse-crack crack-3" d="M 78,30 L 60,58 L 72,96"/>
-            </svg>
-            <svg class="curse-sigil" id="curseSigil" viewBox="-30 -30 60 60" aria-hidden="true">
-              <!-- ギザギザ 5 点星 (呪印、進行表示の主役) -->
-              <path class="sigil-star" d="M 0,-22 L 6,-8 L 22,-6 L 10,4 L 16,20 L 0,11 L -16,20 L -10,4 L -22,-6 L -6,-8 Z"/>
-            </svg>
-          </div>
+          <!-- v274: 呪縛仮面 (白仮面 + 呪印 + ヒビ) を撤去。敵の呪縛状態は
+               .cursed/.purified のスプライト filter のみで表現する。 -->
         </div>
       </div>
       <div class="enemy-info">
@@ -6533,14 +6519,16 @@ const BATTLE_ENEMIES = {
   // 旧仕様では「大魔王」だったが、ラスボスはカタカナのワ行に移動したので降格。
   'わ': {
     id: 'volcano_lord', name: 'かざんのぬし',
-    // v273: 専用バトルスプライト 13 枚に差し替え (ユーザー 2026-04-24 支給)。
-    //   entrance (登場): 初期表示。_playHinokaRecognitionIntro のダイアログ中に見せる。
-    //   idle (001)、低く構える (003) + 炎ブレス溜め (006) → 炎ブレス発射 (007) の 3 段攻撃、
+    // v273-v274: 専用バトルスプライト 13 枚 (ユーザー 2026-04-24 支給)。
+    //   entrance (登場): v274 で battle-stage スプライトではなく、戦闘開始直前の
+    //     フルスクリーンイベント絵として表示する用途に変更。
+    //   idle (001): 初期表示 + 通常バトル中。
+    //   低く構える (003) + 炎ブレス溜め (006) → 炎ブレス発射 (007) の 3 段攻撃、
     //   stagger (008)、rage (009)、down (010) を既存エンジンにフック。
     //   roar (002) は _pulseKagerouAwaken で覚醒演出に swap。
     //   front_idle/still (011/012) は浄化後の bow で勇者に向き直る際に swap。
     //   未使用だが保存: claw_r/l (004/005)。
-    img:         '../assets/images/monsters/chars/Kagerou/kagerou_entrance.png',
+    img:         '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
     imgEntrance: '../assets/images/monsters/chars/Kagerou/kagerou_entrance.png',
     imgIdle:     '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
     imgStagger:  '../assets/images/monsters/chars/Kagerou/kagerou_stagger.png',
@@ -6638,27 +6626,16 @@ function _updateCurseSigil() {
     enemyEl.dataset.cracks = String(cracks);
   } catch (e) { /* ignore */ }
 }
-// 敵の呪縛仮面を初期状態に戻す (_showBattleStage 開始時)。
+// 敵の呪縛状態を初期化 (_showBattleStage 開始時)。
+// v274: 白仮面 DOM を撤去したため、残っているのはスプライト filter 用の
+//       .cursed/.purified クラス切替と残留 bubble/drain particle の掃除のみ。
 function _resetCurseMask() {
   try {
     const enemyEl = document.getElementById('battleEnemy');
     if (!enemyEl) return;
     enemyEl.classList.remove('purified', 'bowing', 'ascending');
     enemyEl.classList.add('cursed');
-    const maskEl = document.getElementById('curseMask');
-    if (maskEl) {
-      maskEl.classList.remove('shattering');
-      maskEl.style.opacity = '';
-      // ハーフの transform/animation を完全リセット (連戦対策)
-      maskEl.querySelectorAll('.curse-mask-half').forEach(function(h) {
-        h.style.animation = 'none';
-        h.style.transform = '';
-        h.style.opacity = '';
-        // 次フレームで none を外さないと再適用時にアニメが走らない
-        requestAnimationFrame(function() { h.style.animation = ''; });
-      });
-    }
-    // 残留 thanks bubble を除去
+    // 残留 thanks bubble / drain particle を除去
     document.querySelectorAll('.spirit-thanks-bubble').forEach(function(el) { el.remove(); });
     document.querySelectorAll('.curse-shadow-drain').forEach(function(el) { el.remove(); });
     _updateCurseSigil();
@@ -6727,7 +6704,6 @@ function _showSpiritThanksBubble(text) {
 // 完了後 onDone を呼ぶ (戦闘ログの次ビートに繋げる)。
 function _startPurificationSequence(onDone) {
   const enemyEl = document.getElementById('battleEnemy');
-  const maskEl  = document.getElementById('curseMask');
   if (!enemyEl) { if (onDone) onDone(); return; }
   try { enemyEl.classList.remove('damaged'); } catch (e) {}
 
@@ -6736,7 +6712,7 @@ function _startPurificationSequence(onDone) {
   //       持たないので、プロパティがあるときだけ走る。
   var kEnemy = (typeof _battle !== 'undefined' && _battle) ? _battle.enemy : null;
 
-  // t=0ms: 呪印を最終段階 (金爆発) へ遷移 → sigilBurst アニメ (0.5s) 発火
+  // t=0ms: 呪印 data attr 更新 (SVG 仮面は v274 で撤去済、属性だけ残す — 副作用なし)
   enemyEl.dataset.sigil = '0';
   enemyEl.dataset.cracks = '3';
   // カゲロウ: 金爆発と同時に膝をつく (down)
@@ -6744,13 +6720,12 @@ function _startPurificationSequence(onDone) {
     if (kEnemy && kEnemy.imgDown) _swapEnemyImg(kEnemy.imgDown);
   } catch (e) {}
 
-  // t=320ms: 仮面の左右割れ + 闇霧排出 (sigilBurst のピーク直後)
+  // t=320ms: 闇霧排出 (浄化のピーク演出として残す、仮面割れ本体は撤去済)
   setTimeout(function() {
-    if (maskEl) maskEl.classList.add('shattering');
     _spawnCurseShadowDrainParticles();
   }, 320);
 
-  // t=780ms: 仮面がほぼ飛び終わったら、敵を呪縛 → 浄化の色味へ切替
+  // t=780ms: 敵を呪縛 → 浄化の色味へ切替
   //          カゲロウ: 前を向いた姿 (imgFrontStill) へ swap
   setTimeout(function() {
     try {
@@ -9551,11 +9526,20 @@ function _showBattleIntro(onDone) {
       //        カゲロウ が突然襲ってきて戦闘開始。旧 VOLCANO_EPISODE_SCENES (pre-battle 紙芝居)
       //        は「知っている体」だったので v272 で撤去。
       if (isVolcanoRow && typeof _playHinokaRecognitionIntro === 'function') {
-        _playHinokaRecognitionIntro(function() {
-          _showBattleDialog([
-            { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
-          ], function() { if (onDone) onDone(); });
-        });
+        // v274: 最初にカゲロウと遭遇する瞬間を kagerou_entrance.png のフルスクリーンイベント絵で見せる。
+        //       その後 ヒノカ認識イントロ → なぞって倒そう告知 へ進む。
+        var _startIntro = function() {
+          _playHinokaRecognitionIntro(function() {
+            _showBattleDialog([
+              { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
+            ], function() { if (onDone) onDone(); });
+          });
+        };
+        if (typeof _showClimaxEventImage === 'function') {
+          _showClimaxEventImage('../assets/images/monsters/chars/Kagerou/kagerou_entrance.png', _startIntro);
+        } else {
+          _startIntro();
+        }
         return;
       }
       _showBattleDialog([
