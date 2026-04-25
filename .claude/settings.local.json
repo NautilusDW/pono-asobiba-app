@@ -27,7 +27,9 @@
       "Bash(netstat -ano)",
       "WebFetch(domain:www.amnh.org)",
       "WebFetch(domain:pbskids.org)",
-      "WebFetch(domain:www.smithsonianmag.com)"
+      "WebFetch(domain:www.smithsonianmag.com)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   },
   "hooks": {

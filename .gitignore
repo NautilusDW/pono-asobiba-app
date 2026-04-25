@@ -25,3 +25,6 @@ assets/_orig_image_backup/
 scripts/.image_opt_cache.json
 scripts/.image_opt_cache.log
 assets/**/*.opt.tmp
+
+# docs_review_hook.py の sentinel (Stop hook 用ローカル状態)
+.claude/.docs-review-pending

@@ -25,6 +25,28 @@
             "timeout": 60
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/docs_review_hook.py\" --mark",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/docs_review_hook.py\" --check",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }
