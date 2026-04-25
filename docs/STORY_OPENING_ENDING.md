@@ -413,6 +413,19 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278h 5 件追補 (2026-04-26):**
+- ユーザー指示「お手本の時に全画面にならなくて良いです。なぞりスタート時も」
+  → `_showBattleDialog(messages, onDone, opts)` に **`opts.noFullscreen` 追加**。なぞり turn 中の補助メッセージ (おてほんを みせるよ / なぞり スタート！) は `noFullscreen:true` で全画面化を skip。narrative とのレイアウト往復を抑える
+- ユーザー指示「フル画面にした時に妖精が画面左下に貼り付いてて、パーティーに見えない」「主役の勇者のすぐ左下あたりに」「実際のパーティーで戦っているように、斜めに左下に 1, 2, 3, 4 と並んで」
+  → `body.battle-fullscreen-active` 時のみ `.party-fairies` を `left: clamp(8px,3%,24px); bottom: clamp(8px,18%,24%); flex-direction: row-reverse;` に切り替え (勇者の左下に近づく)
+  → 2 番目以降の slot に negative margin-right + translateY で **斜め階段配置** (hinoka 右端、riefa/serina が左下に少しずつ降りる隊形)
+- ユーザー指示「氷の妖精が私の氷やってみるわって言った後に、一回カゲロウに水色の魔法を飛ばしてください、ダメージは通らない感じで」
+  → `_playMagicAffinityDemo` に **`launchMagicProjectile('ice', { onImpact: → ice-noeffect フラッシュ })`** を挿入。HP は変動せず青光フラッシュのみ。投射 + 着弾を 1500ms 待ってからセリナの「ど…どうして…！？」へ進む
+- ユーザー指摘「ヒノカが喋っているときに日の香が出てこなくて、ただのボケた背景しか映ってない」
+  → `_hideBustups` の 650ms 後の portrait 一括削除タイマーが、直後に `_showBustup` で差し替えた新しい portrait を巻き添えで消していた競合を修正。タイマーで削除する対象を **`.bustup-portrait:not(.visible)`** に限定し、`_showBustup` が再付与した新 portrait は生き残るように
+- ユーザー指示「連続技の文字を入力するときにボックスの中央合わせにして」
+  → `.chant-ritual-canvas-wrap > div` を `display: flex; align-items: center; justify-content: center;` に。HanziWriter が `size = min(rect.width, rect.height)` で正方形 SVG を作るため wrap が縦長 (60vw × 72vh) のとき左上寄りになっていた問題を解消
+
 **v278g 3 件追補 (2026-04-26):**
 - ユーザー指摘「フル画面から戻った時の文字をなぞるキャンバスが位置がずれております」
   → `battle-fullscreen-active` 時の `.canvas-container` を `display:none` → **`visibility:hidden + pointer-events:none`** に変更。flex slot を保持し、class が剥がれた瞬間に layout reflow なしで正位置に復帰。`combo-phase-active` 側は連続技後に戻らないので display:none を維持
