@@ -11462,8 +11462,10 @@ function _showMaskedManInterference(onDone) {
   // 出現の余韻 → ダイアログ (キャラの言葉は残す、見出しキャプションだけ削除)
   setTimeout(function() {
     _showBattleDialog([
-      { lines: ['ノクス「…ふふ。', 'させる もの か、', 'ようせい ども。'] },
-      { lines: ['ノクス「ザガンさま の', 'のろい は、 こんな うた で は', 'ほどけぬ！'] }
+      // v276b: 名前 (ノクス) はカタカナ編・魔王城で名乗り出るまで伏せる方針。
+      //         台詞は「かめんのおとこ」のまま残す。
+      { lines: ['かめんのおとこ「…ふふ。', 'させる もの か、', 'ようせい ども。'] },
+      { lines: ['かめんのおとこ「ザガンさま の', 'のろい は、 こんな うた で は', 'ほどけぬ！'] }
     ], function() {
       ov.style.opacity = '0';
       setTimeout(function() {
