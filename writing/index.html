@@ -2988,9 +2988,20 @@ body.battle-mode .villain-deco {
   max-width: 220px; max-height: 220px;
 }
 /* 大型ボス (volcano_lord) は HP ゲージと干渉しないよう wrap を上に持ち上げる。
-   2026-04-25: ユーザー指示「ちょっと下すぎてゲージに被ってる」→ 38% → 28% へ。 */
+   2026-04-25: ユーザー指示「ちょっと下すぎてゲージに被ってる」→ 38% → 28% へ。
+   v277e: 「上に行きすぎて頭切れる」→ 勇者 (top:54%) と同じ高さに揃え、足元アライン。
+   scale(1.38) + transform-origin: 30% 70% で実体高 ≈ 220×1.38=303px。
+   wrap の中心 54% で flex-end + translateY(-50%) なので、scale された body は wrap 中心
+   付近に留まる。50% 前後が頭切れ無し + ゲージ干渉なし のスイートスポット。 */
 .battle-stage.has-grounded .battle-enemy-wrap.volcano-lord-wrap {
-  top: 28%;
+  top: 50%;
+}
+/* v277e: ユーザー指示「ドロップシャドウみたいなのなくして」
+   .battle-enemy.grounded がボス全般に強い drop-shadow を当てているが、
+   カゲロウは画像自体に光彩・モヤがあるため二重光って見えてうるさい。
+   volcano_lord に限り drop-shadow を解除。 */
+.battle-enemy.grounded[data-enemy-id="volcano_lord"] {
+  filter: none;
 }
 /* カゲロウのスプライトは 12 枚中 11 枚が「左向き (head が画像左)」で描かれているため、
    .grounded の auto-flip (scaleX(-1)) を打ち消す。kagerou_idle.png (炎ブレス発射) のみ
@@ -11064,7 +11075,7 @@ function _playHinokaRecognitionIntro(onDone) {
   _showBattleDialog([
     { lines: ['ヒノカ「この けはい…！', 'どこか で', 'かんじた…？'] },
     { lines: ['ヒノカ「まさか、', 'カゲロウ、 なの…？', ''] },
-    { lines: ['ヒノカ「わたし が ちいさい ころ から', 'ずっと いっしょ だった、', 'たいせつな あいぼう なの…！'] },
+    { lines: ['ヒノカ「わたし が ちいさい ころ から', 'ずっと いっしょ だった、', 'たいせつ な ともだち なの…！'] },
     { lines: ['ヒノカ「カゲロウ！', 'わたし だよ、 ヒノカ だよ！', 'わかる でしょう？'] }
   ], function() {
     // カゲロウが突然襲う: バストアップを「左ヒノカ + 右カゲロウ」配置に切り替え
@@ -11852,7 +11863,9 @@ function _pulseKagerouAwaken() {
 //       台詞は意図 (ザガンの呪いはこのうたではほどけない) を伝えるため残す。
 // 2026-04-25: ユーザー支給「カゲロウ再呪印.png」を kagerou_recurse.jpg として使う。
 //             (opening_6.jpg は魔王城前の別シーン用なので使い回しを解消)
-var MASKED_MAN_IMG = '../assets/images/story/kagerou_recurse.jpg';
+// v277e: ノクス専用の登場絵 (nokus_reappear.jpg = 暗闇から現れるノクス) に差し替え。
+//        台詞も「手こずってるようだな。だが、そんなもので呪いは解けんぞ。」へ刷新。
+var MASKED_MAN_IMG = '../assets/images/story/nokus_reappear.jpg';
 function _showMaskedManInterference(onDone) {
   var ov = document.createElement('div');
   ov.id = 'maskedManOverlay';
@@ -11868,8 +11881,10 @@ function _showMaskedManInterference(onDone) {
   ov.appendChild(img);
 
   // 内蔵ダイアログバー (画像の上に重ねる)
+  // v277e: フォントを battle-log-line と同じメトリクスに揃える
+  //  (font-size 0.9-1.15rem, weight 900, letter-spacing 0.04em, line-height 1.4)
   var dialogBar = document.createElement('div');
-  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(94vw,720px);margin-bottom:6vh;padding:18px 24px;background:linear-gradient(180deg,rgba(0,0,0,0.68) 0%,rgba(0,0,0,0.88) 100%);border:2.5px solid rgba(180,80,160,0.65);border-radius:14px;color:#FFEFC6;font-family:"Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1rem,3.6vw,1.25rem);font-weight:900;line-height:1.7;letter-spacing:0.06em;text-align:left;text-shadow:0 0 8px rgba(0,0,0,0.85),0 2px 4px #000;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,0.7),inset 0 0 14px rgba(140,40,120,0.18);opacity:0;transition:opacity 0.6s ease;';
+  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(94vw,720px);margin-bottom:6vh;padding:clamp(10px,2.4vw,16px) clamp(14px,3vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 0 16px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.6s ease;';
   ov.appendChild(dialogBar);
 
   // タップヒント
@@ -11886,9 +11901,10 @@ function _showMaskedManInterference(onDone) {
 
   // v276b: 名前 (ノクス) はカタカナ編・魔王城で名乗り出るまで伏せる方針。
   //         台詞は「かめんのおとこ」のまま残す。
+  // v277e: 台詞を「手こずっているようだな…」「だが、そんなもので のろいは ほどけぬぞ」へ刷新。
   var msgs = [
-    'かめんのおとこ「…ふふ。\nさせる もの か、\nようせい ども。',
-    'かめんのおとこ「ザガンさま の\nのろい は、 こんな うた で は\nほどけぬ！'
+    'かめんのおとこ「…て こずって\nいる ようだな。',
+    'かめんのおとこ「だが、 そんな もの で\nのろい は、 ほどけぬ ぞ。'
   ];
   var idx = 0;
   var canAdvanceAt = 0;
@@ -11949,8 +11965,9 @@ function _showFairyMergeIntro(onDone) {
   ov.appendChild(riefa); ov.appendChild(serina);
 
   // ダイアログバー (画面下部)
+  // v277e: フォントを battle-log-line と同じメトリクスに揃える
   var dialogBar = document.createElement('div');
-  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(92vw,720px);padding:18px 24px;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,rgba(0,0,0,0.85) 100%);border:2.5px solid rgba(180,220,150,0.5);border-radius:14px;color:#FFEFC6;font-family:"Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1rem,3.6vw,1.25rem);font-weight:900;line-height:1.7;letter-spacing:0.06em;text-align:left;text-shadow:0 0 8px rgba(0,0,0,0.85),0 2px 4px #000;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,0.7);opacity:0;transition:opacity 0.5s ease;';
+  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(92vw,720px);padding:clamp(10px,2.4vw,16px) clamp(14px,3vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 0 16px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.5s ease;';
   ov.appendChild(dialogBar);
 
   // タップヒント
