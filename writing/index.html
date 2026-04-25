@@ -2861,13 +2861,17 @@ body.battle-mode .villain-deco {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  width: clamp(48px, 11vw, 72px);
+  /* v278g: 妖精 3 人分が勇者の左下に並ぶよう、スロット幅を半分弱に縮小。 */
+  width: clamp(28px, 6.5vw, 44px);
 }
 .battle-stage .party-fairy-sprite {
-  width: clamp(36px, 8.5vw, 56px);
+  /* v278g: ユーザー指示「妖精なので人 (勇者) より小さく」「3 人入る前提で半分くらいに」
+     → clamp(36px, 8.5vw, 56px) → clamp(20px, 4.8vw, 32px) (約 55% 縮小)。
+     image-rendering を pixelated → auto に。新素材は手描き調なので nearest-neighbor は不要。 */
+  width: clamp(20px, 4.8vw, 32px);
   height: auto;
   object-fit: contain;
-  image-rendering: pixelated;
+  image-rendering: auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
 }
 .battle-stage .party-fairy-name {
@@ -2938,7 +2942,6 @@ body.combo-phase-active .header,
 body.combo-phase-active .progress-hint,
 body.combo-phase-active .next-row,
 body.combo-phase-active .left-col,
-body.battle-fullscreen-active .canvas-container,
 body.battle-fullscreen-active .pono-deco,
 body.battle-fullscreen-active .pono-bubble,
 body.battle-fullscreen-active .hedgehog-wrap,
@@ -2953,6 +2956,16 @@ body.battle-fullscreen-active .progress-hint,
 body.battle-fullscreen-active .next-row,
 body.battle-fullscreen-active .left-col {
   display: none !important;
+}
+/* v278g (2026-04-26): ユーザー指示「フル画面から戻った時の文字をなぞるキャンバスが
+   位置がずれております」→ 全画面化中は canvas-container を display:none にせず、
+   visibility:hidden + pointer-events:none で flex slot を保持。battle-stage が
+   position:fixed inset:0 z:100 で覆うので視覚上は隠れる。class が外れた瞬間に
+   layout reflow なしで canvas が正位置に復帰する。
+   (combo-phase-active 側は引き続き display:none — 連続技は二度と戻らないので OK) */
+body.battle-fullscreen-active .canvas-container {
+  visibility: hidden;
+  pointer-events: none;
 }
 /* v278e: ユーザー指示「ほぼ全画面が全然全画面になってない、横に伸びてない、右半分は使われてない」
    → battle-stage を position:fixed inset:0 で完全に画面いっぱいに敷き詰める。
@@ -3983,14 +3996,17 @@ body.battle-fullscreen-active .battle-log-window {
 @keyframes bustupBgIn { to { opacity: 1; } }
 .battle-stage .bustup-portrait {
   position: absolute;
-  bottom: 0;
-  /* 縦 100% 相当でステージ内に収める。バストショット (頭〜胸) のみ見せる。 */
-  height: 96%;
+  /* v278g (2026-04-26): ユーザー指示「ギリギリ全身が入るぐらい」「メッセージボックスで隠れてしまう」
+     → bottom:0 + height:96% (= ほぼ全画面) を bottom:22% + height:72% に変更。
+        メッセージボックス上端 (bottom:16px + log 約 90px = 約 100-110px) より上に
+        足元が来るよう 22vh 持ち上げ。object-fit を cover → contain に変更し全身表示。 */
+  bottom: 22%;
+  height: 72%;
   width: 46%;
   z-index: 60;
   pointer-events: none;
-  object-fit: cover;
-  object-position: top center;     /* 上半身を切り取り */
+  object-fit: contain;
+  object-position: bottom center;  /* 足元を下に揃え、頭は自然に画像の上で見切れない */
   filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
   opacity: 0;
   transform: translateY(14px) scaleX(var(--flip, 1));
@@ -4003,31 +4019,9 @@ body.battle-fullscreen-active .battle-log-window {
 }
 .battle-stage .bustup-portrait.left  { left:  2%; }
 .battle-stage .bustup-portrait.right { right: 2%; }
-/* v277d (2026-04-25): カゲロウのバストショット (kagerou_atk_1.png) は landscape 構図で
-   顔が画像の左側に集中している。default の object-position:top center だと顔が切れるので、
-   alt 属性で識別して左寄せクロップに切替。 */
-.battle-stage .bustup-portrait[alt="カゲロウ"] {
-  object-position: top left;
-}
-/* v277m: scale 1.15 だったが「85%なの？これで」とユーザーから「変わってない=もっと大きく」指摘。
-   v278e (2026-04-25): scale を 1.5 へ大幅増。base width も拡大 (46→58% / 56→62%)。
-   bottom:-8% を -16% に下げて足元を画面外へさらに沈め、頭部が画面中央付近に来るよう調整。 */
-.battle-stage .bustup-portrait[alt="ヒノカ"],
-.battle-stage .bustup-portrait[alt="カゲロウ"] {
-  bottom: -16%;
-  width: 58%;
-  transform: translateY(14px) scale(1.5) scaleX(var(--flip, 1));
-  transform-origin: bottom center;
-}
-.battle-stage .bustup-portrait[alt="ヒノカ"].visible,
-.battle-stage .bustup-portrait[alt="カゲロウ"].visible {
-  transform: translateY(0) scale(1.5) scaleX(var(--flip, 1));
-}
-/* カゲロウ専用: 横長画像で右側が切れないよう幅をさらに広げ、左頭寄せから中央上寄せに。 */
-.battle-stage .bustup-portrait[alt="カゲロウ"] {
-  width: 62%;
-  object-position: top center;
-}
+/* v278g: object-fit:contain にしたので alt 別の object-position 調整は不要 (全身が必ず収まる)。
+   scale 1.5x は廃止 (頭が切れる原因だった) — 全身を contain で素直に表示。
+   2 人並列表示 (ヒノカ + カゲロウ) で重ならないよう、デフォルト 46% のまま統一。 */
 @media (prefers-reduced-motion: reduce) {
   .battle-stage .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
 }
@@ -5321,18 +5315,21 @@ body.battle-intro-active .battle-log-window {
               各スロット: img (pixy_*.png) + name + 細いゲージ
               joined フラグで display 切替 (hinoka 開幕表示、riefa+serina は合流タイミング) -->
       <div class="party-fairies" id="partyFairies" aria-hidden="true" style="display:none;">
+        <!-- v278g (2026-04-26): ユーザー指示「ヒノカの素材が相変わらず古い」「妖精なので人より小さく」
+             → pixy_fire.png 等の旧素材から、新規 Hinoka/Riefa/Serina_001.png に差し替え。
+                サイズも半分弱に縮小 (3 妖精合流時に勇者の左下に並ぶスペース確保)。 -->
         <div class="party-fairy-slot" data-fairy="hinoka" style="display:none;">
-          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/pixy_fire.png" alt="ヒノカ">
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Hinoka/hinoka_001.png" alt="ヒノカ">
           <div class="party-fairy-name">ヒノカ</div>
           <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="hinokaHpBarStage"></div></div>
         </div>
         <div class="party-fairy-slot" data-fairy="riefa" style="display:none;">
-          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/pixy_forest.png" alt="リーファ">
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Riefa/riefa_001.png" alt="リーファ">
           <div class="party-fairy-name">リーファ</div>
           <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="riefaHpBarStage"></div></div>
         </div>
         <div class="party-fairy-slot" data-fairy="serina" style="display:none;">
-          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/pixy_ice.png" alt="セリナ">
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Serina/serina_001.png" alt="セリナ">
           <div class="party-fairy-name">セリナ</div>
           <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="serinaHpBarStage"></div></div>
         </div>
