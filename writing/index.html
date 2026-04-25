@@ -3706,6 +3706,232 @@ body.battle-mode .villain-deco {
 @media (prefers-reduced-motion: reduce) {
   .battle-stage .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
 }
+
+/* ===== v277: Chant Ritual (儀式) — カゲロウ最終バトルの「真名/歌の呼びかけ」ステップ =====
+   2 ヶ所で起動: (1) Beat 1 直後「かざん」 (2) Beat 5 直後「かげろう」
+   テーマは awakening (温色 sepia) と starmark (黄金) の 2 種。 */
+.chant-ritual-overlay {
+  position: fixed; inset: 0;
+  z-index: 1900;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4vh 0 8vh;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+  /* タップは canvas に届かせるが overlay 自体ではキャプチャしない */
+  pointer-events: auto;
+  /* スキップ防止 — 物語ピーク演出のため誤タップで閉じない */
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.chant-ritual-overlay.theme-awakening {
+  background: radial-gradient(ellipse at center, rgba(60,30,15,0.94) 0%, rgba(15,8,4,0.97) 100%);
+}
+.chant-ritual-overlay.theme-starmark {
+  background:
+    radial-gradient(ellipse at center, rgba(255,200,80,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at center, rgba(40,20,80,0.85) 30%, rgba(10,6,20,0.97) 100%);
+}
+.chant-ritual-overlay.visible { opacity: 1; }
+
+.chant-ritual-heading {
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-size: clamp(1.3rem, 4.5vw, 1.9rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-align: center;
+  margin: 0 0 6px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.chant-ritual-overlay.visible .chant-ritual-heading { opacity: 1; }
+.theme-awakening .chant-ritual-heading {
+  color: #FFD8A8;
+  text-shadow: 0 0 14px rgba(255,180,90,0.7), 0 2px 6px #000;
+}
+.theme-starmark .chant-ritual-heading {
+  color: #FFE27A;
+  text-shadow: 0 0 16px rgba(255,210,90,0.85), 0 0 28px rgba(255,170,40,0.5), 0 2px 6px #000;
+}
+
+.chant-ritual-subtext {
+  font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: clamp(0.85rem, 3vw, 1.05rem);
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+  width: min(90vw, 520px);
+  margin: 0 0 18px;
+  opacity: 0;
+  transition: opacity 0.7s ease 0.2s;
+  white-space: pre-line;
+}
+.chant-ritual-overlay.visible .chant-ritual-subtext { opacity: 0.85; }
+.theme-awakening .chant-ritual-subtext { color: #F4E4C8; text-shadow: 0 1px 4px #000; }
+.theme-starmark  .chant-ritual-subtext { color: #FFEFC6; text-shadow: 0 1px 4px #000; }
+
+.chant-ritual-canvas-wrap {
+  position: relative;
+  width: min(60vw, 280px);
+  height: min(60vw, 280px);
+  border-radius: 18px;
+  border: 2.5px solid rgba(255,220,140,0.4);
+  background: rgba(0,0,0,0.35);
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.6),
+    inset 0 0 24px rgba(255,210,120,0.08);
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.6s ease 0.3s, transform 0.6s cubic-bezier(.2,1.2,.4,1) 0.3s;
+}
+.chant-ritual-overlay.visible .chant-ritual-canvas-wrap { opacity: 1; transform: scale(1); }
+.theme-starmark .chant-ritual-canvas-wrap {
+  border-color: rgba(255,225,120,0.6);
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.6),
+    inset 0 0 28px rgba(255,225,120,0.18),
+    0 0 24px rgba(255,200,80,0.25);
+}
+.chant-ritual-canvas-wrap.glow {
+  animation: chantCharGlow 0.55s ease-out;
+}
+@keyframes chantCharGlow {
+  0%   { box-shadow: 0 0 0 rgba(255,220,140,0); }
+  35%  { box-shadow: 0 0 36px 12px rgba(255,220,140,0.85), inset 0 0 28px rgba(255,210,120,0.4); }
+  100% { box-shadow: 0 8px 28px rgba(0,0,0,0.6), inset 0 0 24px rgba(255,210,120,0.08); }
+}
+.chant-ritual-canvas-wrap > div {
+  width: 100%; height: 100%;
+}
+
+.chant-ritual-progress {
+  display: flex; gap: 14px;
+  margin-top: 22px;
+  opacity: 0;
+  transition: opacity 0.6s ease 0.5s;
+}
+.chant-ritual-overlay.visible .chant-ritual-progress { opacity: 1; }
+.chant-ritual-progress-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-family: "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-size: clamp(1.1rem, 3.4vw, 1.4rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: rgba(255,235,200,0.35);
+  transition: color 0.4s ease, transform 0.4s cubic-bezier(.2,1.4,.4,1);
+}
+.chant-ritual-progress-item .dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,235,200,0.18);
+  border: 1.5px solid rgba(255,235,200,0.4);
+  transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+.chant-ritual-progress-item.current {
+  color: rgba(255,235,200,0.95);
+  transform: scale(1.1);
+}
+.chant-ritual-progress-item.done {
+  color: #FFD86A;
+}
+.theme-starmark .chant-ritual-progress-item.done { color: #FFE27A; }
+.chant-ritual-progress-item.done .dot {
+  background: #FFD86A;
+  box-shadow: 0 0 10px rgba(255,216,106,0.85), 0 0 18px rgba(255,170,40,0.5);
+}
+.theme-starmark .chant-ritual-progress-item.done .dot {
+  background: #FFE27A;
+  box-shadow: 0 0 12px rgba(255,225,120,0.95), 0 0 22px rgba(255,200,80,0.6);
+}
+
+.chant-ritual-tap-hint {
+  margin-top: 18px;
+  font-size: clamp(0.85rem, 2.8vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #FFE27A;
+  text-shadow: 0 0 8px rgba(0,0,0,0.85);
+  opacity: 0;
+  animation: chantHintBlink 1.6s ease-in-out 0.8s infinite;
+}
+.chant-ritual-overlay.visible .chant-ritual-tap-hint { opacity: 0.85; }
+@keyframes chantHintBlink {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.95; }
+}
+
+/* 全文字完了時の最終フラッシュ (黄金) */
+.chant-ritual-overlay.complete::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(255,225,120,0.85) 0%, rgba(255,200,80,0.4) 30%, transparent 70%);
+  pointer-events: none;
+  animation: chantCompleteFlash 0.85s ease-out forwards;
+}
+@keyframes chantCompleteFlash {
+  0%   { opacity: 0; transform: scale(0.6); }
+  35%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+/* Ritual 2 完了時の「カゲロウ！」ビッグテキスト */
+.chant-ritual-shoutout {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  font-family: "Zen Maru Gothic", sans-serif;
+  font-size: clamp(2.5rem, 11vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #FFE27A;
+  text-shadow:
+    0 0 18px rgba(255,225,120,0.95),
+    0 0 38px rgba(255,180,40,0.7),
+    0 0 60px rgba(255,140,20,0.5),
+    0 4px 12px #000;
+  opacity: 0;
+  z-index: 1910;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.chant-ritual-shoutout.show {
+  animation: chantShoutout 1.4s cubic-bezier(.2,1.3,.4,1) forwards;
+}
+@keyframes chantShoutout {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  18%  { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+  35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+  85%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.0); }
+}
+
+/* カゲロウ仮面ヒビ → 割れる演出 (battleEnemy に付与) */
+.battle-enemy.kagerou-mask-crack {
+  animation: kagerouMaskCrack 1.0s ease-out 1;
+}
+@keyframes kagerouMaskCrack {
+  0%   { filter: brightness(1) drop-shadow(0 0 0 rgba(255,255,255,0)); transform: translateX(0); }
+  18%  { filter: brightness(2.2) drop-shadow(0 0 24px rgba(255,255,255,1)); transform: translateX(-4px); }
+  28%  { filter: brightness(1.4) drop-shadow(0 0 18px rgba(255,225,120,0.9)); transform: translateX(4px); }
+  45%  { filter: brightness(1.8) drop-shadow(0 0 22px rgba(255,225,120,1)); transform: translateX(-3px); }
+  60%  { filter: brightness(1.3) drop-shadow(0 0 16px rgba(255,200,80,0.8)); transform: translateX(2px); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 rgba(0,0,0,0)); transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chant-ritual-overlay,
+  .chant-ritual-canvas-wrap,
+  .chant-ritual-heading,
+  .chant-ritual-subtext,
+  .chant-ritual-progress { transition: opacity 0.25s ease; transform: none; }
+  .chant-ritual-canvas-wrap.glow,
+  .chant-ritual-shoutout.show,
+  .battle-enemy.kagerou-mask-crack { animation: none; }
+}
+
 .battle-log-window .battle-log-inner {
   background: #020208;
   /* 2026-04-22: 全ボックスで border-width/radius を 2.5px / 14px に統一。 */
@@ -11366,6 +11592,10 @@ function _playWaRowEpisode(onDone) {
 // ヒノカの歌でカゲロウが一瞬覚醒 → 影から ザガンの手下 ノクス (S4a の 仮面の魔人) が現れて妨害 →
 // カゲロウ再呪縛 → ヒノカが攻撃を受けて倒れる → ヒノカの遺志「最後の文字を届けて」 →
 // 勇者の 星の印 発動 (預言の力) → 最後の「ん」 quiz へ。
+// v277 (2026-04-25): 2 ヶ所に Chant Ritual (儀式) を挿入 — ユーザー指示。
+//   - Ritual 1: Beat 1 直後「かざん」(火山) — ヒノカが歌を促し、勇者がなぞる
+//   - Ritual 2: Beat 5 直後「かげろう」(真名) — 星の印の力で真名を呼びかける
+//   どちらも特別 UI (_showChantRitual)。完了後に物語が次のビートへ進む。
 function _playKagerouClimax(onDone) {
   var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
   // 2026-04-25: ユーザー指示「真正面ではなく、斜めを向いている素材を使ってください」
@@ -11380,34 +11610,72 @@ function _playKagerouClimax(onDone) {
     { lines: ['カゲロウ「…ほのお…？', 'なつかしい、', 'ひびき…'] }
   ], function() {
     try { _hideBustups(); } catch (e) {}
-    // Beat 2: ノクス フルスクリーン (画像のみの insert、台詞は内部で表示)
-    _showMaskedManInterference(function() {
-      // Beat 3: 再呪縛 → ヒノカ被弾。カゲロウ + ヒノカ両者バストアップで激情を見せる。
-      try { _triggerKagerouRageAttack(); } catch (e) {}
-      try {
-        _showBustup('left',  HINOKA_R, { flip: false, alt: 'ヒノカ' });
-        _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' });
-      } catch (e) {}
-      _showBattleDialog([
-        { lines: ['カゲロウ「グ……', 'グオォオオ……！', ''] },
-        { lines: ['ヒノカ「きゃっ……！', 'うっ……', ''], onEnter: function() {
-            try { _hideBustups(); } catch (e) {}  // 被弾の瞬間バストアップは引いてステージ全景に
-            try { _hinokaFallEffect(); } catch (e) {}
-          }
-        }
-      ], function() {
-        // Beat 4: ヒノカの最後の言葉。ヒノカ単独右バストアップ (弱々しい)。
-        try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+    // ◆ Ritual 1 へ繋ぐ: ヒノカが歌を促す → 勇者が「かざん」をなぞる → 思い出しかけ
+    try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+    _showBattleDialog([
+      { lines: ['ヒノカ「ゆうしゃさま！', 'いっしょ に、', '『かざんの うた』を…！'] }
+    ], function() {
+      try { _hideBustups(); } catch (e) {}
+      _showChantRitual({
+        chars: ['か','ざ','ん'],
+        theme: 'awakening',
+        heading: 'おもいだして…',
+        subtext: 'カゲロウ と いっしょ に\nうたった、 あの うた…'
+      }, function() {
+        // 思い出しかけのカゲロウ
+        try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
         _showBattleDialog([
-          { lines: ['ヒノカ「ゆうしゃさま…', 'ごめん なさい…', ''] },
-          { lines: ['ヒノカ「この さいご の もじ を…', 'どうか、 カゲロウ に…', 'とどけて…'] }
+          { lines: ['カゲロウ「…か… ざん…？', 'わたし は… その ことば を、', 'しって いる…？'] }
         ], function() {
           try { _hideBustups(); } catch (e) {}
-          // Beat 5: 勇者の 星の印 発動 (預言の力覚醒)
-          _showStarMarkAwakening(function() {
-            // v274: battle_last_02 (呪縛→炎へ遷移するカゲロウとひざまずくヒノカ) を 1 枚絵で挟む。
-            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
-              if (onDone) onDone();
+          // Beat 2: ノクス フルスクリーン (画像のみの insert、台詞は内部で表示)
+          _showMaskedManInterference(function() {
+            // Beat 3: 再呪縛 → ヒノカ被弾。カゲロウ + ヒノカ両者バストアップで激情を見せる。
+            try { _triggerKagerouRageAttack(); } catch (e) {}
+            try {
+              _showBustup('left',  HINOKA_R, { flip: false, alt: 'ヒノカ' });
+              _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' });
+            } catch (e) {}
+            _showBattleDialog([
+              { lines: ['カゲロウ「グ……', 'グオォオオ……！', ''] },
+              { lines: ['ヒノカ「きゃっ……！', 'うっ……', ''], onEnter: function() {
+                  try { _hideBustups(); } catch (e) {}  // 被弾の瞬間バストアップは引いてステージ全景に
+                  try { _hinokaFallEffect(); } catch (e) {}
+                }
+              }
+            ], function() {
+              // Beat 4: ヒノカの最後の言葉。ヒノカ単独右バストアップ (弱々しい)。
+              try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+              _showBattleDialog([
+                { lines: ['ヒノカ「ゆうしゃさま…', 'ごめん なさい…', ''] },
+                { lines: ['ヒノカ「ほし の しるし の ちから で…', 'カゲロウ の', 'ほんとう の なまえ を、 よんで…'] }
+              ], function() {
+                try { _hideBustups(); } catch (e) {}
+                // Beat 5: 勇者の 星の印 発動 (預言の力覚醒)
+                _showStarMarkAwakening(function() {
+                  // ◆ Ritual 2 へ繋ぐ: 真名「かげろう」を呼びかけて呪縛を解く
+                  _showBattleDialog([
+                    { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
+                    { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
+                  ], function() {
+                    _showChantRitual({
+                      chars: ['か','げ','ろ','う'],
+                      theme: 'starmark',
+                      heading: 'なまえ を よびかけよう！',
+                      subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
+                      shoutout: 'カゲロウ！'
+                    }, function() {
+                      // 仮面が割れる演出 → 1 枚絵 → 最後の「ん」 quiz へ
+                      _crackKagerouMask(function() {
+                        // v274: battle_last_02 (呪縛→炎へ遷移するカゲロウとひざまずくヒノカ) を 1 枚絵で挟む。
+                        _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
+                          if (onDone) onDone();
+                        });
+                      });
+                    });
+                  });
+                });
+              });
             });
           });
         });
@@ -11500,6 +11768,259 @@ function _triggerKagerouRageAttack() {
     stage.classList.add('screen-heavy-shake');
     setTimeout(function() { stage.classList.remove('screen-heavy-shake'); }, 900);
   }
+}
+
+// ===== v277: Chant Ritual (儀式) — カゲロウ最終バトル専用 =====
+// 2026-04-25: ユーザー指示「わ・を・ん 以外の文字入力ステップを 2 ヶ所、特別 UI で」
+//   - Ritual 1: Beat 1 直後「かざん」(火山) — ヒノカに促されて勇者が歌の一節をなぞる
+//   - Ritual 2: Beat 5 直後「かげろう」(真名) — 星の印で得た力で真名を呼びかける
+// 通常のなぞり quiz とは別の overlay。物語のピーク演出として機能する。
+// AnimCJK / hanzi-writer-data CDN は既存ローダ (8924, 12429 行目付近) と同じ構造で取得。
+//
+// _showChantRitual(opts, onDone):
+//   opts = { chars: ['か','ざ','ん'], theme: 'awakening'|'starmark',
+//            heading: string, subtext: string, voicePrompt?: string,
+//            shoutout?: string  // Ritual 2 で「カゲロウ！」を画面中央にビッグ表示する文字列
+//          }
+function _showChantRitual(opts, onDone) {
+  opts = opts || {};
+  var chars = opts.chars || [];
+  var theme = opts.theme === 'starmark' ? 'starmark' : 'awakening';
+  if (!chars.length || typeof HanziWriter === 'undefined') {
+    if (onDone) onDone();
+    return;
+  }
+
+  // overlay 構築
+  var ov = document.createElement('div');
+  ov.className = 'chant-ritual-overlay theme-' + theme;
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-label', opts.heading || 'なぞって');
+
+  var heading = document.createElement('div');
+  heading.className = 'chant-ritual-heading';
+  heading.textContent = opts.heading || '';
+  ov.appendChild(heading);
+
+  if (opts.subtext) {
+    var sub = document.createElement('div');
+    sub.className = 'chant-ritual-subtext';
+    sub.textContent = opts.subtext;
+    ov.appendChild(sub);
+  }
+
+  var canvasWrap = document.createElement('div');
+  canvasWrap.className = 'chant-ritual-canvas-wrap';
+  var canvasInner = document.createElement('div'); // hanzi-writer ターゲット
+  canvasWrap.appendChild(canvasInner);
+  ov.appendChild(canvasWrap);
+
+  // 進捗ドット
+  var progress = document.createElement('div');
+  progress.className = 'chant-ritual-progress';
+  var progressItems = [];
+  chars.forEach(function(c, i) {
+    var item = document.createElement('div');
+    item.className = 'chant-ritual-progress-item' + (i === 0 ? ' current' : '');
+    var label = document.createElement('span');
+    label.textContent = c;
+    var dot = document.createElement('div');
+    dot.className = 'dot';
+    item.appendChild(label);
+    item.appendChild(dot);
+    progress.appendChild(item);
+    progressItems.push(item);
+  });
+  ov.appendChild(progress);
+
+  var hint = document.createElement('div');
+  hint.className = 'chant-ritual-tap-hint';
+  hint.textContent = '▼ ゆびで なぞって';
+  ov.appendChild(hint);
+
+  document.body.appendChild(ov);
+  // overlay 表示中はバトル背景音を 30% に下げる (BGM 操作 API 経由)
+  var prevVol = null;
+  try {
+    if (typeof _setBgmVolumeMultiplier === 'function') {
+      prevVol = _setBgmVolumeMultiplier(0.3);
+    }
+  } catch (e) {}
+
+  requestAnimationFrame(function() { ov.classList.add('visible'); });
+
+  // テーマカラー
+  var themeColors = (theme === 'starmark')
+    ? { stroke: '#FFE27A', outline: 'rgba(255,225,120,0.32)', drawing: '#FFEFB0', highlight: '#FFD86A' }
+    : { stroke: '#FFC36A', outline: 'rgba(255,180,90,0.32)',  drawing: '#FFE0B0', highlight: '#FFAA40' };
+
+  var idx = 0;
+  function showCharStep() {
+    if (idx >= chars.length) { allDone(); return; }
+    // 進捗ドット更新
+    progressItems.forEach(function(it, i) {
+      it.classList.remove('current');
+      if (i < idx) it.classList.add('done');
+      if (i === idx) it.classList.add('current');
+    });
+    // canvas を都度作り直す
+    canvasInner.innerHTML = '';
+    _runChantQuizForChar(chars[idx], canvasInner, canvasWrap, themeColors, function() {
+      // 完了グロウ
+      canvasWrap.classList.remove('glow');
+      void canvasWrap.offsetWidth;
+      canvasWrap.classList.add('glow');
+      // 進捗ドット点灯
+      progressItems[idx].classList.remove('current');
+      progressItems[idx].classList.add('done');
+      idx++;
+      // 0.7s 後に次の文字 (or 完了)
+      setTimeout(showCharStep, 700);
+    });
+  }
+
+  function allDone() {
+    ov.classList.add('complete');
+    // ritual 2 の場合 shoutout を中央に
+    if (opts.shoutout) {
+      var s = document.createElement('div');
+      s.className = 'chant-ritual-shoutout';
+      s.textContent = opts.shoutout;
+      ov.appendChild(s);
+      requestAnimationFrame(function() { s.classList.add('show'); });
+    }
+    // 完了 SE (Web Audio で即席チャイム)
+    try {
+      withAudio(function(ac) {
+        var now = ac.currentTime;
+        [523, 659, 784, 1047].forEach(function(f, i) {
+          var o = ac.createOscillator(), g = ac.createGain();
+          o.type = 'sine';
+          o.frequency.value = f;
+          g.gain.setValueAtTime(0.001, now + i * 0.08);
+          g.gain.exponentialRampToValueAtTime(0.18, now + i * 0.08 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.6);
+          o.connect(g); g.connect(ac.destination);
+          o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.65);
+        });
+      });
+    } catch (e) {}
+    var holdMs = opts.shoutout ? 1500 : 900;
+    setTimeout(function() {
+      ov.classList.remove('visible');
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        try {
+          if (prevVol != null && typeof _setBgmVolumeMultiplier === 'function') {
+            _setBgmVolumeMultiplier(prevVol);
+          }
+        } catch (e) {}
+        if (onDone) onDone();
+      }, 700);
+    }, holdMs);
+  }
+
+  // 起動 — 1 文字目を即表示
+  // (overlay フェードイン 0.7s と並行して writer 初期化が走るが、quiz は writer 内部で
+  //  charDataLoader 完了を待つので問題なし)
+  showCharStep();
+}
+
+// 1 文字分の hanzi-writer + writer.quiz を起動。完了時 onComplete()。
+// AnimCJK / kana-json / hanzi-writer-data CDN を順にフォールバック (既存ローダと同じ構造)。
+function _runChantQuizForChar(char, target, glowEl, themeColors, onComplete) {
+  if (typeof HanziWriter === 'undefined') {
+    if (onComplete) onComplete();
+    return;
+  }
+  var rect = target.getBoundingClientRect();
+  var size = Math.min(rect.width, rect.height) || 240;
+  var writer;
+  try {
+    writer = HanziWriter.create(target, char, {
+      width: size,
+      height: size,
+      padding: 8,
+      strokeColor: themeColors.stroke,
+      outlineColor: themeColors.outline,
+      drawingColor: themeColors.drawing,
+      highlightColor: themeColors.highlight,
+      drawingWidth: 18,
+      strokeAnimationSpeed: 0.6,
+      delayBetweenStrokes: 600,
+      showOutline: true,
+      showCharacter: false,
+      leniency: 1.6,
+      charDataLoader: function(c, onLoad) {
+        var url = 'https://cdn.jsdelivr.net/gh/ailectra/kana-json@v0.0.1/data/' + c + '.json';
+        fetch(url)
+          .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+          .then(function(d) { onLoad(d); })
+          .catch(function() {
+            var url2 = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/' + c + '.json';
+            fetch(url2)
+              .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+              .then(function(d) { onLoad(d); })
+              .catch(function() {
+                // データ取得失敗 → 1.5s 待って強制スキップ (5 歳児の体験を止めない)
+                console.warn('[chant] no data for char:', c);
+                setTimeout(function() { if (onComplete) onComplete(); }, 1500);
+              });
+          });
+      }
+    });
+  } catch (e) {
+    console.warn('[chant] writer create failed:', e);
+    setTimeout(function() { if (onComplete) onComplete(); }, 1500);
+    return;
+  }
+
+  writer.quiz({
+    onCorrectStroke: function() {
+      try { if (typeof playNazoriSound === 'function') playNazoriSound(); } catch (e) {}
+    },
+    onComplete: function() {
+      if (onComplete) onComplete();
+    },
+    onMistake: function() {
+      // 5 歳児向け緩和 — エラーフィードバックは出さない (既に showHintAfterMisses でフォロー)
+    },
+    showHintAfterMisses: 3,
+    highlightOnComplete: true,
+    highlightCompleteColor: themeColors.stroke
+  });
+}
+
+// v277: カゲロウの呪縛仮面が割れる演出 (Ritual 2 完了直後)。
+//   1.0s の白フラッシュ + 微振動 + (可能なら) imgFrontIdle (浄化前の覚醒姿) に swap。
+//   旧 curse-mask SVG は v274 で撤去済みなので、純粋に img filter + class アニメで表現。
+function _crackKagerouMask(onDone) {
+  var enemyEl = document.getElementById('battleEnemy');
+  if (enemyEl) {
+    enemyEl.classList.remove('kagerou-mask-crack');
+    void enemyEl.offsetWidth;
+    enemyEl.classList.add('kagerou-mask-crack');
+  }
+  // 仮面が割れる SE (Web Audio: 短いノイズバースト)
+  try {
+    withAudio(function(ac) {
+      var now = ac.currentTime;
+      var bufLen = ac.sampleRate * 0.3;
+      var buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+      var ch = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2);
+      var src = ac.createBufferSource();
+      src.buffer = buf;
+      var g = ac.createGain();
+      g.gain.value = 0.18;
+      src.connect(g); g.connect(ac.destination);
+      src.start(now);
+    });
+  } catch (e) {}
+  setTimeout(function() {
+    if (enemyEl) enemyEl.classList.remove('kagerou-mask-crack');
+    if (onDone) onDone();
+  }, 1100);
 }
 
 // v275: ADV ゲーム風バストアップ会話システム。
