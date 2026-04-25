@@ -6884,9 +6884,7 @@ const BATTLE_ENEMIES = {
       p1: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'くらえ…！'],
       p2: ['…その こえ は…', 'どこ か で きいた きが する…', 'だれ だ… おまえ は…'],
       p3: ['…ヒノカ…？', 'まさか、 おまえ、 なのか…', '…わたし は… かざん の…'],
-      // v277i: ユーザー指示「最後、バトル画面でカゲロウにありがとうって言わせるのはやめて」
-      //         → 「ありがとう」を削除。感謝は celebration overlay (画面外) で十分表現済み。
-      bow:   '…ヒノカ… ゆうしゃ よ……。',
+      bow:   '…ヒノカ… ゆうしゃ よ、 ありがとう…。',
       leave: 'わたし は、 ほんとう の すがた に もどれた。'
     },
     trueName: 'カゲロウ',
@@ -7077,7 +7075,12 @@ function _startPurificationSequence(onDone) {
     try {
       enemyEl.classList.add('bowing');
       if (kEnemy && kEnemy.imgFrontIdle) _swapEnemyImg(kEnemy.imgFrontIdle);
-      _showSpiritThanksBubble('…ありがとう');
+      // v277j: ユーザー指示「バトル画面内の『ありがとう』表示をなくして」
+      //         → カゲロウ (火山ボス) だけ thanks bubble を skip。
+      //         他の妖精は従来通り「…ありがとう」が浮かぶ。感謝は celebration で別途表現する。
+      if (!kEnemy || kEnemy.id !== 'volcano_lord') {
+        _showSpiritThanksBubble('…ありがとう');
+      }
       // bow animation は 0.65s で自然復帰
       setTimeout(function() { enemyEl.classList.remove('bowing'); }, 700);
     } catch (e) {}
@@ -11887,7 +11890,7 @@ function _playKagerouClimaxMain(onDone) {
                   // v277i (2026-04-25): ユーザー指示反映 — Ritual 2「かげろう」+ 仮面割れは
                   //   ここではなく **ん 完了後 (= ひらがな完成後の連続技フェーズ)** に移動。
                   //   Climax 本編は星の印 awakening で終わり、その後通常の「ん」なぞりへ進む。
-                  //   ん 完了 → 「ひらがなコンプリート！れんぞくぎ かいほう！」演出 → 「かげろう」chant
+                  //   ん 完了 → 「ひらがなコンプリート！れんぞくわざ かいほう！」演出 → 「かげろう」chant
                   //   → 仮面割れ → battleVictory の流れは _playKagerouFinalCombo() が担当。
                   if (onDone) onDone();
                 });
@@ -12389,14 +12392,14 @@ function _crackKagerouMask(onDone) {
 //   ユーザー指示: 「ひらがな完成 → 新しい技として単語が書けるようになる → 『かげろう』入力 →
 //                  とどめの攻撃演出 → 仮面が割れる演出」
 //   流れ:
-//     1. れんぞくぎ かいほう！ バナー (ひらがな完全制覇のお祝い)
+//     1. れんぞくわざ かいほう！ バナー (ひらがな完全制覇のお祝い)
 //     2. 「カゲロウ の ほんとう の なまえ を よびかけよう！」プロンプト
 //     3. _showChantRitual ['か','げ','ろ','う'] (連続技 = finisher 入力)
 //     4. _crackKagerouMask (仮面割れ)
 //     5. battle_last_02 1 枚絵 (浄化遷移シーン)
 //     6. onDone → 呼び出し元 (finisher 分岐) で battleVictory + celebration へ
 function _playKagerouFinalCombo(onDone) {
-  // Step 1: れんぞくぎ かいほう バナー (簡易フルスクリーン演出 1.6s)
+  // Step 1: れんぞくわざ かいほう バナー (簡易フルスクリーン演出 1.6s)
   var banner = document.createElement('div');
   banner.id = 'comboUnlockBanner';
   banner.style.cssText = 'position:fixed;inset:0;z-index:1875;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(255,235,140,0.25) 0%,rgba(40,20,60,0.78) 60%,rgba(8,4,20,0.92) 100%);opacity:0;transition:opacity 0.5s ease;pointer-events:none;';
@@ -12405,7 +12408,7 @@ function _playKagerouFinalCombo(onDone) {
   bannerTitle.style.cssText = 'font-family:"Zen Maru Gothic","Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1.4rem,5vw,2.2rem);font-weight:900;letter-spacing:0.12em;color:#FFE27A;text-shadow:0 0 18px rgba(255,225,120,0.95),0 0 36px rgba(255,170,40,0.7),0 4px 10px #000;margin-bottom:14px;opacity:0;transform:scale(0.85);transition:opacity 0.5s ease,transform 0.6s cubic-bezier(.2,1.3,.4,1);';
   banner.appendChild(bannerTitle);
   var bannerSub = document.createElement('div');
-  bannerSub.textContent = 'れんぞくぎ かいほう！';
+  bannerSub.textContent = 'れんぞくわざ かいほう！';
   bannerSub.style.cssText = 'font-family:"Zen Maru Gothic","Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1.6rem,6vw,2.6rem);font-weight:900;letter-spacing:0.14em;color:#FFD86A;text-shadow:0 0 22px rgba(255,210,80,1),0 0 44px rgba(255,140,30,0.85),0 4px 12px #000;opacity:0;transform:scale(0.85);transition:opacity 0.6s ease 0.25s,transform 0.7s cubic-bezier(.2,1.4,.4,1) 0.25s;';
   banner.appendChild(bannerSub);
   document.body.appendChild(banner);
