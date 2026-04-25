@@ -11694,43 +11694,17 @@ function _rowPracticeNextChar() {
     _rowPracticeComplete();
     return;
   }
-  // v268+v277h: わ行 最終ボス戦の「ん」(step === 2、を 完了直後) で 2 段演出。
-  //        Stage 1: ヒノカ軽傷 mini-cut (v277h 新設、ユーザー指示「『を』くらいでヒノカがやられるカット」)
-  //        Stage 2: 既存 _playWaRowEpisode (回想 → ほむら → ノクス → 重傷 → 星の印 → 真名)
-  //        2 段重ね で「軽傷 → 闘志維持 → 後に重傷」のテンション上げを作る。
-  //
-  //        v277h コードレビュー反映: 旧版は単一フラグ _waRowEpisodePlayed を mini-cut 開始時に
-  //        true にしていたが、ダイアログタップ中に何か壊れて Stage 2 に到達できないと、フラグだけ
-  //        立って Episode が永久 skip される危険があった。フラグを 2 段に分け、それぞれが「自分が
-  //        完了するまでは true にしない」方式に変更。retry 時は _showBattleIntro で両方リセット。
-  if (!_waMidHitCutPlayed && _battle.active && _rowPracticeRow.label === 'わ' && _rowPracticeStep === 2) {
-    _playWaMidHitCut(function() {
-      _waMidHitCutPlayed = true;
-      if (!_waRowEpisodePlayed) {
-        _playWaRowEpisode(function() {
-          _waRowEpisodePlayed = true;
-          // エピソード完了後、通常の「ん」なぞり quiz へ
-          _rowPracticeNextChar_continue();
-        });
-      } else {
-        _rowPracticeNextChar_continue();
-      }
-    });
-    return;
-  }
-  // mini-cut は完了済みだが Episode が未完了の場合 (理論上発生しにくいが防御的に)
-  if (!_waRowEpisodePlayed && _battle.active && _rowPracticeRow.label === 'わ' && _rowPracticeStep === 2) {
-    _playWaRowEpisode(function() {
-      _waRowEpisodePlayed = true;
-      _rowPracticeNextChar_continue();
-    });
-    return;
-  }
+  // v278b (2026-04-25): canonical フロー再構築 — 旧版は「を と ん の間」で
+  //   mini-cut + climax episode 全部を消化していたが、ユーザー指定の正しい順番では
+  //   わ→を→ん をまず素直に終わらせ、ひらがな完成後に initial banner →
+  //   合流 → 連続技 → 絶望 → 回想 → climax beats → finisher の順で進行する。
+  //   よって step==2 のフックは撤去し、ん 完了 (= finisher) 後に
+  //   `_playKagerouFinalCombo` 内で全部実行する。
   _rowPracticeNextChar_continue();
 }
 
 // エピソード挿入済みフラグ (バトルごとにリセット — _showBattleIntro 内で false にする)
-// v277h: 単一フラグ → 2 段フラグに分割 (mini-cut と episode を独立に gate)。
+// v278b: フラグはほぼ未使用化したが、retry 時の防御的リセットとして残す。
 var _waMidHitCutPlayed = false;
 var _waRowEpisodePlayed = false;
 
@@ -12028,7 +12002,9 @@ function _playWaRowEpisode(onDone) {
           { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「ほむらの うた」を、', 'おもいだして！'] }
         ], function() {
           try { _hideBustups(); } catch (e) {}
-          _playKagerouClimax(onDone);
+          // v278b: Beat 0 (魔法相性デモ) は _playKagerouFinalCombo 内で先に流すので、
+          //         ここでは _playKagerouClimaxMain を直接呼び (Beat 1〜5 のみ)。
+          _playKagerouClimaxMain(onDone);
         });
       });
     });
@@ -12670,8 +12646,110 @@ function _crackKagerouMask(onDone) {
 //     4. _crackKagerouMask (仮面割れ)
 //     5. battle_last_02 1 枚絵 (浄化遷移シーン)
 //     6. onDone → 呼び出し元 (finisher 分岐) で battleVictory + celebration へ
+// v278b (2026-04-25): 火山ボス finisher 連続技 — canonical full orchestrator。
+//   ユーザー指定スクショ通りの 6 ターン+演出シーケンス全体を担当。
+//   ん 完了 → ここに入って → 全部終わると battleVictory へ。
+//
+// フロー (Phase B → C → D → E):
+//   B1. ひらがな かんせい バナー
+//   B2. 妖精合流 (リーファ + セリナ joined → ゲージ出現)
+//   B3. Beat 0 魔法相性デモ (氷無効 → 正義の炎が通る、教育用)
+//   B4. 連続技「ほのお」(3字) → カゲロウ HP 半減
+//   B5. 連続技「ひのたま」(4字) → カゲロウ HP 残り 1
+//   C1. カゲロウ HP 全回復 (闇の力で逆転、絶望)
+//   C2. リーファ + セリナ 吹き飛ばされる (HP→0、倒れる演出)
+//   D.  既存 _playWaRowEpisode (= 訴え + 回想 + Beat 1〜5、ヒノカ重傷含む)
+//   E1. プロンプト「よげんの ちから が…」「真名を よびかけよう！」
+//   E2. 連続技「かげろう」(4字、finisher 入力)
+//   E3. 仮面割れ + battle_last_02 → onDone → battleVictory
 function _playKagerouFinalCombo(onDone) {
-  // Step 1: れんぞくわざ かいほう バナー (簡易フルスクリーン演出 1.6s)
+  // ====== Phase B1: ひらがな かんせい バナー ======
+  _showHiraganaCompleteBanner(function() {
+    // ====== Phase B2: 妖精合流 (Riefa + Serina joined) ======
+    _showFairyMergeIntro(function() {
+      // ====== Phase B3: Beat 0 魔法相性デモ ======
+      _playMagicAffinityDemo(function() {
+        // ====== Phase B4: 連続技「ほのお」====== (3字)
+        _showChantRitual({
+          chars: ['ほ','の','お'],
+          theme: 'starmark',
+          heading: 'れんぞくわざ「ほのお」！',
+          subtext: 'みんな の ちから を あわせて、\nやみ の のろい を やぶる！',
+          shoutout: 'ほのお！'
+        }, function() {
+          // カゲロウに大ダメージ (HP 半減). HP=12 → 6
+          try {
+            _battle.hp = Math.max(1, Math.floor(_battle.maxHp * 0.5));
+            _renderEnemyNameColor();
+            var en1 = document.getElementById('battleEnemy');
+            if (en1) { en1.classList.add('damaged'); setTimeout(function(){ en1.classList.remove('damaged'); }, 700); }
+            var st1 = document.querySelector('.battle-stage');
+            if (st1) { st1.classList.add('screen-heavy-shake'); setTimeout(function(){ st1.classList.remove('screen-heavy-shake'); }, 700); }
+          } catch (e) {}
+          _showBattleDialog([
+            { lines: ['ヒノカ「やった！', 'カゲロウ に', 'のろい が ゆらいで いる！'] }
+          ], function() {
+            // ====== Phase B5: 連続技「ひのたま」====== (4字)
+            _showChantRitual({
+              chars: ['ひ','の','た','ま'],
+              theme: 'starmark',
+              heading: 'れんぞくわざ「ひのたま」！',
+              subtext: 'もう ひと いき！\nみんな で、 つよく ねがって！',
+              shoutout: 'ひのたま！'
+            }, function() {
+              // カゲロウ HP 残り 1 寸前 → ピンチ表現
+              try {
+                _battle.hp = 1;
+                _renderEnemyNameColor();
+                var en2 = document.getElementById('battleEnemy');
+                if (en2) { en2.classList.add('damaged'); setTimeout(function(){ en2.classList.remove('damaged'); }, 700); }
+                var st2 = document.querySelector('.battle-stage');
+                if (st2) { st2.classList.add('screen-heavy-shake'); setTimeout(function(){ st2.classList.remove('screen-heavy-shake'); }, 700); }
+              } catch (e) {}
+              _showBattleDialog([
+                { lines: ['リーファ「もう すこし！', 'みんな で あと いっぽ で、', 'カゲロウ を すくえる！'], opts: { line3Class: 'dmg-line' } }
+              ], function() {
+                // ====== Phase C1: HP 全回復 (闇の力、絶望) ======
+                _playKagerouHpRecoveryDespair(function() {
+                  // ====== Phase C2: 妖精吹き飛ばし (Riefa+Serina HP→0) ======
+                  _playFairiesKnockedOut(function() {
+                    // ====== Phase D: 訴え + 回想 + Beat 1〜5 (= _playWaRowEpisode) ======
+                    _playWaRowEpisode(function() {
+                      // ====== Phase E1: プロンプト ======
+                      _showBattleDialog([
+                        { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
+                        { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
+                      ], function() {
+                        // ====== Phase E2: 連続技「かげろう」(finisher) ======
+                        _showChantRitual({
+                          chars: ['か','げ','ろ','う'],
+                          theme: 'starmark',
+                          heading: 'なまえ を よびかけよう！',
+                          subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
+                          shoutout: 'カゲロウ！'
+                        }, function() {
+                          // ====== Phase E3: 仮面割れ + battle_last_02 → onDone (= battleVictory) ======
+                          _crackKagerouMask(function() {
+                            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
+                              if (onDone) onDone();
+                            });
+                          });
+                        });
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
+// v278b: 「ひらがな かんせい！れんぞくわざ かいほう！」 バナー (1.9s)
+function _showHiraganaCompleteBanner(onDone) {
   var banner = document.createElement('div');
   banner.id = 'comboUnlockBanner';
   banner.style.cssText = 'position:fixed;inset:0;z-index:1875;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(255,235,140,0.25) 0%,rgba(40,20,60,0.78) 60%,rgba(8,4,20,0.92) 100%);opacity:0;transition:opacity 0.5s ease;pointer-events:none;';
@@ -12691,7 +12769,6 @@ function _playKagerouFinalCombo(onDone) {
       bannerSub.style.opacity = '1'; bannerSub.style.transform = 'scale(1)';
     }, 250);
   });
-  // Web Audio で達成チャイム
   try {
     if (typeof withAudio === 'function') {
       withAudio(function(ac) {
@@ -12708,37 +12785,86 @@ function _playKagerouFinalCombo(onDone) {
       });
     }
   } catch (e) {}
-
   setTimeout(function() {
     banner.style.opacity = '0';
-    setTimeout(function() { try { if (banner.parentNode) banner.remove(); } catch (e) {} }, 500);
-    // v277k: Step 1.5 — 妖精合流 (リーファ + セリナ がこの瞬間に駆けつける)
-    //   ユーザー指示通り「ひらがな完成 → れんぞくわざ解放 → 妖精合流 → 連続技」の順番。
-    _showFairyMergeIntro(function() {
-      // Step 2: プロンプト
+    setTimeout(function() {
+      try { if (banner.parentNode) banner.remove(); } catch (e) {}
+      if (onDone) onDone();
+    }, 500);
+  }, 1900);
+}
+
+// v278b: Beat 0 魔法相性デモ — セリナの氷が効かない → ヒノカの正義の炎が通る、を 5 歳児に教える
+function _playMagicAffinityDemo(onDone) {
+  var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
+  var SERINA_R = '../assets/images/characters/pixies/Serina/serina_001.png';
+  try { _showBustup('right', SERINA_R, { flip: true, alt: 'セリナ' }); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['セリナ「わたしの こおり、', 'やって みる わ…！', ''] }
+  ], function() {
+    try {
+      var ei = document.getElementById('battleEnemy');
+      if (ei) { ei.classList.add('ice-noeffect'); setTimeout(function(){ ei.classList.remove('ice-noeffect'); }, 700); }
+    } catch (e) {}
+    setTimeout(function() {
       _showBattleDialog([
-        { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
-        { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
+        { lines: ['セリナ「ど…どうして…！？', 'カゲロウ は ほのお タイプ なのに、', 'わたしの こおり が… とけ ちゃう！'] }
       ], function() {
-        // Step 3: 連続技 = chant ritual「かげろう」(finisher 入力)
-        _showChantRitual({
-          chars: ['か','げ','ろ','う'],
-          theme: 'starmark',
-          heading: 'なまえ を よびかけよう！',
-          subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
-          shoutout: 'カゲロウ！'
-        }, function() {
-          // Step 4: 仮面割れ
-          _crackKagerouMask(function() {
-            // Step 5: battle_last_02 (浄化遷移シーン)
-            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
-              if (onDone) onDone();
-            });
-          });
+        try { _hideBustups(); } catch (e) {}
+        try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+        _showBattleDialog([
+          { lines: ['ヒノカ「あの ほのお は、', 'ザガン が しこんだ', 'やみ の のろい なの…！'] },
+          { lines: ['ヒノカ「ふつう の まほう では、', 'のろい に とどか ない…', 'わたしの ほのお で やる わ！'], opts: { line3Class: 'dmg-line' } }
+        ], function() {
+          try { _hideBustups(); } catch (e) {}
+          if (onDone) onDone();
         });
       });
+    }, 700);
+  });
+}
+
+// v278b: HP 全回復絶望シーン — カゲロウが闇の力で逆転、HP が満タンに戻る
+function _playKagerouHpRecoveryDespair(onDone) {
+  // 紫闇フラッシュ
+  var flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;z-index:1880;background:radial-gradient(ellipse at center,rgba(120,40,180,0.6) 0%,rgba(40,10,60,0.85) 60%,rgba(8,4,20,0.95) 100%);opacity:0;transition:opacity 0.7s ease;pointer-events:none;';
+  document.body.appendChild(flash);
+  requestAnimationFrame(function() { flash.style.opacity = '1'; });
+  // カゲロウ rage attack で激しさ表現
+  try { _triggerKagerouRageAttack(); } catch (e) {}
+  setTimeout(function() {
+    // HP 全回復
+    try {
+      _battle.hp = _battle.maxHp;
+      _renderEnemyNameColor();
+    } catch (e) {}
+    flash.style.opacity = '0';
+    setTimeout(function() { try { if (flash.parentNode) flash.remove(); } catch (e) {} }, 700);
+    _showBattleDialog([
+      { lines: ['カゲロウ「グゥウオオォォ！！', 'やみ の ちから が、', 'よみがえる！'] },
+      { lines: ['ヒノカ「そんな…！？', 'カゲロウ の HP が、', 'ぜんぶ もどって しまった…！'], opts: { line3Class: 'dmg-line' } }
+    ], function() {
+      if (onDone) onDone();
     });
-  }, 1900);
+  }, 1100);
+}
+
+// v278b: Riefa + Serina が吹き飛ばされる演出 (HP→0, ゲージ消滅)
+function _playFairiesKnockedOut(onDone) {
+  // カゲロウの咆哮 + ステージシェイク
+  try { _triggerKagerouRageAttack(); } catch (e) {}
+  setTimeout(function() {
+    // 妖精 2 体ともに HP→0 (ゲージ消滅 + 取消線)
+    try { _damageFairy('riefa', 99);  } catch (e) {}
+    try { _damageFairy('serina', 99); } catch (e) {}
+    _showBattleDialog([
+      { lines: ['リーファ「きゃっ……！', 'い……いたい……', ''] },
+      { lines: ['セリナ「ふたり とも、', 'もう うごけない……', 'ごめん なさい……'] }
+    ], function() {
+      if (onDone) onDone();
+    });
+  }, 700);
 }
 
 // v275: ADV ゲーム風バストアップ会話システム。
