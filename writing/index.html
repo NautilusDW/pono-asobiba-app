@@ -2791,7 +2791,11 @@ body.battle-mode .villain-deco {
   text-shadow: 0 0 4px rgba(0,0,0,1);
 }
 /* ===== 三種の神器 そうび表示 ===== */
+/* v278c (2026-04-25): ユーザー指示「勇者の装備という部分はこれ以上表示しないで」→ 常時非表示。 */
 .hero-equip-row {
+  display: none !important;
+}
+.hero-equip-row-disabled-original {
   margin-top: 2px;
   gap: 5px;
 }
@@ -2836,47 +2840,78 @@ body.battle-mode .villain-deco {
 /* バトル中でないときは非表示 (stage 自体が display:none なので保険) */
 .battle-stage[aria-hidden="true"] .hero-status { display: none; }
 
-/* ===== v278a: 妖精パーティー HP ゲージ (勇者ステータス直下、勇者より小型) ===== */
+/* ===== v278c: 連続技フェーズ中はキャンバスを隠して battle-stage をほぼ全画面化 =====
+   ユーザー指示「連続技以降はもうほぼ全画面でバトル継続して。右のキャンバス使わないから」
+   body に combo-phase-active クラスが付いている間、なぞり書きキャンバスを撤去し
+   battle-stage を画面いっぱいに拡大する。combo フェーズが終わったら自動でクラスを外す。 */
+body.combo-phase-active .canvas-container,
+body.combo-phase-active .pono-deco,
+body.combo-phase-active .pono-bubble,
+body.combo-phase-active .hedgehog-wrap,
+body.combo-phase-active .hedgehog-deco,
+body.combo-phase-active .hedgehog-bubble,
+body.combo-phase-active #demoIndicator,
+body.combo-phase-active .demo-replay-btn {
+  display: none !important;
+}
+body.combo-phase-active .battle-stage {
+  max-width: 100vw !important;
+  width: 100vw;
+  height: min(78vh, 760px) !important;
+  margin: 0 !important;
+}
+body.combo-phase-active #app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== v278a/c: 妖精パーティー HP ゲージ ===== */
+/* v278c (2026-04-25): ユーザー指示
+   「妖精のバーは囲わなくていい、背景にそのまま乗せる」「勇者の右に横並びで追加」
+   → 枠・背景を撤去、勇者ステータスの右隣に横並び配置、サイズも大幅縮小。 */
 .fairy-status {
   position: absolute;
-  top: calc(8px + clamp(48px, 14vw, 72px));  /* hero-status の高さ分だけ下げる */
-  left: 8px;
+  top: 8px;
+  /* 勇者ステータスの右端から開始: hero-status.min-width clamp(115,32vw,158) + 余白 */
+  left: calc(8px + clamp(115px, 32vw, 158px) + 6px);
   z-index: 4;
-  background: rgba(2, 2, 8, 0.78);
-  border: 2px solid var(--window-border);
-  border-radius: 10px;
-  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
   font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   color: #fff;
-  font-size: clamp(0.55rem, 1.9vw, 0.68rem);
+  font-size: clamp(0.5rem, 1.7vw, 0.62rem);
   font-weight: 900;
-  letter-spacing: 0.02em;
-  display: flex; flex-direction: column;
-  gap: 2px;
-  min-width: clamp(85px, 24vw, 118px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.55);
+  letter-spacing: 0;
+  display: flex; flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
   pointer-events: none;
+  max-width: calc(100vw - clamp(125px, 35vw, 170px));
 }
 .fairy-status-row {
-  display: flex; align-items: center; gap: 4px;
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 2px;
+  width: clamp(46px, 13vw, 64px);
 }
 .fairy-status-label {
-  min-width: 1.2em;
-  text-align: center;
   font-weight: 900;
-  font-size: 0.95em;
-  text-shadow: 0 0 3px rgba(0,0,0,0.8);
+  font-size: clamp(0.66rem, 2.1vw, 0.78rem);
+  text-shadow: 0 0 4px rgba(0,0,0,0.95), 0 1px 2px #000, 0 0 2px #000;
+  text-align: left;
+  letter-spacing: 0.04em;
 }
-.fairy-status-row[data-fairy="hinoka"] .fairy-status-label { color: #FF9A5A; }
-.fairy-status-row[data-fairy="riefa"] .fairy-status-label  { color: #7CD77C; }
-.fairy-status-row[data-fairy="serina"] .fairy-status-label { color: #A0D8FF; }
+.fairy-status-row[data-fairy="hinoka"] .fairy-status-label { color: #FFB266; }
+.fairy-status-row[data-fairy="riefa"] .fairy-status-label  { color: #88E088; }
+.fairy-status-row[data-fairy="serina"] .fairy-status-label { color: #B0DFFF; }
 .fairy-status-bar-wrap {
-  flex: 1;
-  height: 5px;
-  background: #1a1a28;
-  border: 1px solid #444;
+  width: 100%;
+  height: 4px;
+  background: rgba(0,0,0,0.55);
+  border: none;
   border-radius: 2px;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.7);
 }
 .fairy-status-bar {
   height: 100%;
@@ -2919,6 +2954,25 @@ body.battle-mode .villain-deco {
 .battle-stage[data-enemy-id="volcano_lord"] .hp-bar-wrap,
 .battle-stage[data-enemy-id="volcano_lord"] .pentagram-charge {
   display: none !important;
+}
+/* v278c: ユーザー指示「敵の名前は敵のイラストの下に持ってきて」
+   → volcano_lord 限定で enemy-info を画面下端ではなく敵 wrap の下に再配置。
+   battle-enemy-wrap (right:4%, top:50% 中心、translateY(-50%) で上下中央) の
+   底辺直下にちょこんと置く。 */
+.battle-stage[data-enemy-id="volcano_lord"] .enemy-info {
+  position: absolute;
+  left: auto; right: 4%; bottom: auto;
+  /* battle-enemy-wrap top:50%、wrap の高さは container と scale 込みで実体 ~220px。
+     wrap 中心が 50% なので底辺は 50% + (220×1.38)/2 ≈ 50% + 152 ≈ 体感的に「画像の下」へ。
+     簡単のため top: 78% でアンカー、translateX(0) のままで wrap 右に揃える。 */
+  top: 78%;
+  width: 42%;
+  text-align: center;
+  pointer-events: none;
+}
+.battle-stage[data-enemy-id="volcano_lord"] .enemy-name {
+  text-align: center;
+  font-size: clamp(0.85rem, 3vw, 1.05rem);
 }
 .enemy-name[data-hp-state="ok"]       { color: var(--text); }
 .enemy-name[data-hp-state="hurt"]     { color: #FCD34D; text-shadow: 0 0 8px rgba(252,211,77,0.7), 0 0 2px #000; }
@@ -3919,8 +3973,10 @@ body.battle-mode .villain-deco {
 
 .chant-ritual-canvas-wrap {
   position: relative;
-  width: min(60vw, 280px);
-  height: min(60vw, 280px);
+  /* v278c (2026-04-25): ユーザー指示「キャンバスをできるだけ大きく」
+     min(60vw,280px) → min(82vw,420px) に拡大。スマホで字が小さい問題の解消。 */
+  width: min(82vw, 420px);
+  height: min(82vw, 420px);
   border-radius: 18px;
   border: 2.5px solid rgba(255,220,140,0.4);
   background: rgba(0,0,0,0.35);
@@ -5112,15 +5168,15 @@ body.battle-intro-active .battle-log-window {
            わ行ボス戦専用。開幕は ヒノカ のみ表示、合流タイミングで リーファ + セリナ も表示。 -->
       <div class="fairy-status" id="fairyStatus" aria-hidden="true" style="display:none;">
         <div class="fairy-status-row" data-fairy="hinoka" style="display:none;">
-          <span class="fairy-status-label">ヒ</span>
+          <span class="fairy-status-label">ヒノカ</span>
           <div class="fairy-status-bar-wrap"><div class="fairy-status-bar hp" id="hinokaHpBar"></div></div>
         </div>
         <div class="fairy-status-row" data-fairy="riefa" style="display:none;">
-          <span class="fairy-status-label">リ</span>
+          <span class="fairy-status-label">リーファ</span>
           <div class="fairy-status-bar-wrap"><div class="fairy-status-bar hp" id="riefaHpBar"></div></div>
         </div>
         <div class="fairy-status-row" data-fairy="serina" style="display:none;">
-          <span class="fairy-status-label">セ</span>
+          <span class="fairy-status-label">セリナ</span>
           <div class="fairy-status-bar-wrap"><div class="fairy-status-bar hp" id="serinaHpBar"></div></div>
         </div>
       </div>
@@ -11717,15 +11773,16 @@ var _waRowEpisodePlayed = false;
 // v275: 各メモリ画像にキャプションを添える形式へ変更。
 //       旧 VOLCANO_MEMORY_IMAGES (string[]) → VOLCANO_MEMORY_BEATS ({src,caption}[])
 //       caption は ヒノカ視点のモノローグ、ひらがな主体。
+// v278c (2026-04-25): ユーザー指示「『でもザガンの呪いがふたりを』はカット」
+//   → memory_03 (引き裂きシーン) を撤去。 memory_01/02/04 の 3 枚で「希望→絆→歌」の積み上げのみ残す。
+//   悲劇は battle 中の Beat 2 (ノクス再呪印) で十分描けているので冗長さ解消。
 var VOLCANO_MEMORY_BEATS = [
   { src: '../assets/images/characters/kagerou/memory_01.jpg',
     caption: 'カゲロウ と わたし は、\nいつも いっしょ に いた…' },
   { src: '../assets/images/characters/kagerou/memory_02.jpg',
     caption: 'あつい きずな で\nつながれて いた…' },
   { src: '../assets/images/characters/kagerou/memory_04.jpg',
-    caption: '『ほむらの うた』を\nいっしょ に うたった…' },
-  { src: '../assets/images/characters/kagerou/memory_03.jpg',
-    caption: 'でも、 ザガン の のろい が\nふたり を ひきさいた…' }
+    caption: '『ほむらの うた』を\nいっしょ に うたった…' }
 ];
 
 // v275: メモリフラッシュバック改良。
@@ -11859,16 +11916,14 @@ function _showClimaxEventImage(src, onDone, opts) {
   ov.appendChild(img);
   // v277c: ナレーションテロップ (opts.caption) — 画面下部に半透明バー + 白文字 1〜2 行
   //        山道 / カゲロウ登場のフル画面カットで物語の地の文を字幕表示する用途。
-  // v277k (2026-04-25): ユーザー指示「他とフォント合わせて」+「メッセージボックスを一番下まで下げて」
-  //   → battle-log-line と同じメトリクス (font-family Hiragino, weight 900, letter-spacing 0.04em,
-  //     line-height 1.4, font-size clamp(0.9-1.15rem)) に統一。
-  //   → 位置を bottom:0 に貼り付け (画面最下部の帯)、tap ヒントは右下に配置。
-  //   → 背景・枠も battle-log-window と同じ (#020208 + var(--window-border) 2.5px)。
+  // v277k: フォントは battle-log-line と同じメトリクスに統一。
+  // v278c (2026-04-25): ユーザー指示「下全部黒くなっちゃってる」→ 全幅帯 → 適度なボックス化。
+  //   width:min(94vw,720px)、margin で画面下端から浮かせる、4 辺に枠を持つ通常のボックスへ。
   var captionEl = null;
   if (opts.caption) {
     captionEl = document.createElement('div');
     captionEl.className = 'climax-caption';
-    captionEl.style.cssText = 'position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:100vw;max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,18px) clamp(16px,4vw,28px) clamp(28px,5vw,38px);background:#020208;border-top:2.5px solid var(--window-border);color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 -4px 16px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
+    captionEl.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(94vw,720px);max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
     captionEl.textContent = opts.caption;
     ov.appendChild(captionEl);
   }
@@ -12663,6 +12718,14 @@ function _crackKagerouMask(onDone) {
 //   E2. 連続技「かげろう」(4字、finisher 入力)
 //   E3. 仮面割れ + battle_last_02 → onDone → battleVictory
 function _playKagerouFinalCombo(onDone) {
+  // v278c: 連続技フェーズ突入 → body にクラス付与してキャンバスを隠し battle-stage を全画面化
+  try { document.body.classList.add('combo-phase-active'); } catch (e) {}
+  // 完了時にクラスを外す wrapper (途中エラーでも cleanup できるよう、各 phase 完了点で参照)
+  var _origOnDone = onDone;
+  onDone = function() {
+    try { document.body.classList.remove('combo-phase-active'); } catch (e) {}
+    if (_origOnDone) _origOnDone();
+  };
   // ====== Phase B1: ひらがな かんせい バナー ======
   _showHiraganaCompleteBanner(function() {
     // ====== Phase B2: 妖精合流 (Riefa + Serina joined) ======
@@ -13678,13 +13741,31 @@ function _rowPracticeNextChar_continue() {
               if (!_battle.active) return;
               _awaitTapOnLog(function() {
                 if (!_battle.active) return;
-                try { enemyCounterAttack(); } catch (e) {}
-                // 敵のカウンター〜ダメージ表示を子供が見終えてから次へ。
-                // enemyCounterAttack は announce + 攻撃 + 着弾で最大 ~3600ms 使う。
-                setTimeout(function() {
-                  _rowPracticeStep++;
-                  _rowPracticeNextChar();
-                }, 3800);
+                // v278c: 火山ボス戦の を/ん 攻撃直前に ヒノカ「カゲロウ やめて！」を挟む。
+                //         hitCount は battleHitEnemy 内で既にインクリメント済み。
+                //         を = hitCount 2、ん = hitCount 3。
+                var _isVolcano = _battle.enemy && _battle.enemy.id === 'volcano_lord';
+                var _hc = _battle.hitCount;
+                var _hinokaLine = null;
+                if (_isVolcano && _hc === 2) {
+                  _hinokaLine = ['ヒノカ「カゲロウ、 やめて！', 'おねがい、', 'おもいだして……！'];
+                } else if (_isVolcano && _hc === 3) {
+                  _hinokaLine = ['ヒノカ「カゲロウ……！', 'まだ、 つたえたい こと が', 'たくさん ある の……！'];
+                }
+                var _afterHinoka = function() {
+                  try { enemyCounterAttack(); } catch (e) {}
+                  setTimeout(function() {
+                    _rowPracticeStep++;
+                    _rowPracticeNextChar();
+                  }, 3800);
+                };
+                if (_hinokaLine) {
+                  try {
+                    _showBattleDialog([{ lines: _hinokaLine }], _afterHinoka);
+                  } catch (e) { _afterHinoka(); }
+                } else {
+                  _afterHinoka();
+                }
               }, 260);
             }, 1400);
           } else {
