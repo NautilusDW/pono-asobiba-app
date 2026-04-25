@@ -11906,9 +11906,11 @@ function _showMaskedManInterference(onDone) {
   // v276b: 名前 (ノクス) はカタカナ編・魔王城で名乗り出るまで伏せる方針。
   //         台詞は「かめんのおとこ」のまま残す。
   // v277e: 台詞を「手こずっているようだな…」「だが、そんなもので のろいは ほどけぬぞ」へ刷新。
+  // v277g: ノクスがラスボスではない (本当のラスボスはザガン) ことを子供にも分からせるため、
+  //         「ザガンさま の のろい」を明示。仮面の男はあくまで「下っ端」の位置づけを徹底。
   var msgs = [
     'かめんのおとこ「…て こずって\nいる ようだな。',
-    'かめんのおとこ「だが、 そんな もの で\nのろい は、 ほどけぬ ぞ。'
+    'かめんのおとこ「だが、 ザガン さま の のろい は、\nそんな もの で、 ほどけぬ ぞ。'
   ];
   var idx = 0;
   var canAdvanceAt = 0;
@@ -12557,6 +12559,68 @@ function _renderVolcanoCelebrationOverlay(onDone) {
   setTimeout(advance, 1100);
 }
 
+// v277g (2026-04-25): カゲロウ撃破 + 妖精達の歓喜 のあと、遠くから見つめるノクスの不敵な笑み。
+//   「なかなか面白い… 魔王城で待っているぞ」のセリフでカタカナ編 (魔王城) への布石を打つ。
+//   ノクス本人が自分で出てきて笑うので、ラスボスがザガン本人であることが暗示される。
+//   nokus_smirk.jpg を full-screen overlay で表示し、内蔵ダイアログバーで台詞を流す。
+function _showNokusVictoryTaunt(onDone) {
+  var ov = document.createElement('div');
+  ov.id = 'nokusTauntOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1860;background:#000;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity 0.9s ease;cursor:pointer;';
+  var img = document.createElement('img');
+  img.src = '../assets/images/story/nokus_smirk.jpg';
+  img.alt = '';
+  img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s ease;z-index:1;';
+  ov.appendChild(img);
+  // 内蔵ダイアログバー (battle-log と同じ書式)
+  var dialogBar = document.createElement('div');
+  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(94vw,720px);margin-bottom:6vh;padding:clamp(10px,2.4vw,16px) clamp(14px,3vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 0 16px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.6s ease;';
+  ov.appendChild(dialogBar);
+  var hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:3;color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.9);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.textContent = '▼ タップ';
+  ov.appendChild(hint);
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.opacity = '1';
+    setTimeout(function() { img.style.opacity = '1'; }, 100);
+  });
+  var msgs = [
+    'かめんのおとこ「…ふっ。\nなかなか おもしろい。',
+    'かめんのおとこ「だが、 おわり では ない。\nまおうじょう で、\nまって いる ぞ。'
+  ];
+  var idx = 0;
+  var canAdvanceAt = 0;
+  var MIN_HOLD_MS = 1100;
+  function showMsg() {
+    dialogBar.style.opacity = '0';
+    setTimeout(function() {
+      dialogBar.textContent = msgs[idx];
+      dialogBar.style.opacity = '1';
+      hint.style.opacity = '0';
+      setTimeout(function() { hint.style.opacity = '0.85'; }, MIN_HOLD_MS);
+      canAdvanceAt = Date.now() + MIN_HOLD_MS;
+      idx++;
+    }, 280);
+  }
+  function advance() {
+    if (Date.now() < canAdvanceAt) return;
+    if (idx >= msgs.length) {
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 850);
+      return;
+    }
+    showMsg();
+  }
+  ov.addEventListener('click', advance);
+  ov.addEventListener('touchend', function(e) { e.preventDefault(); advance(); }, { passive: false });
+  // 1 通目を画像が完全に出てから少し遅らせて (余韻)
+  setTimeout(showMsg, 1300);
+}
+
 // v271: ひらがな編エンディング紙芝居を (初回のみ) 再生してから onDone。
 // 既存の clearModal 側ロジック (line ~11561) と同一。battleVictory 後の celebration 後に呼ぶ。
 function _triggerHiraganaEndingIfNeeded(onDone) {
@@ -12954,9 +13018,13 @@ function _rowPracticeNextChar_continue() {
               //           celebration → ENDING 紙芝居 → 通常 _rowPracticeNextChar の順。
               if (_isVolcanoBoss) {
                 _showVolcanoCelebration(function() {
-                  _triggerHiraganaEndingIfNeeded(function() {
-                    _rowPracticeStep++;
-                    _rowPracticeNextChar();
+                  // v277g: 妖精達が歓喜する celebration の直後、遠くから見つめるノクスの不敵な笑み。
+                  //         「魔王城で待っているぞ」のセリフでカタカナ編 (魔王城) への布石を打つ。
+                  _showNokusVictoryTaunt(function() {
+                    _triggerHiraganaEndingIfNeeded(function() {
+                      _rowPracticeStep++;
+                      _rowPracticeNextChar();
+                    });
                   });
                 });
                 return;
