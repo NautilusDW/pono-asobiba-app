@@ -7222,11 +7222,14 @@ function _showBattleStage(rowId) {
   els.stars.forEach(s => s.classList.remove('lit'));
   els.enemy.classList.remove('damaged', 'defeated', 'purified', 'bowing', 'ascending');
   // v275: 前回のバトル残留ヒノカ/倒れヒノカを掃除 (リトライ時など) + 残留 bustup を撤去
-  try { els.stage.querySelectorAll('img[data-role="battle-hinoka"],img[data-role="hinoka-fallen"]').forEach(function(n){ n.remove(); }); } catch (e) {}
+  // v277h: hinoka-midhit (中盤の軽傷フォール) も対象に追加 (1.6s 自動消失だが、retry が早いと残る)
+  try { els.stage.querySelectorAll('img[data-role="battle-hinoka"],img[data-role="hinoka-fallen"],img[data-role="hinoka-midhit"]').forEach(function(n){ n.remove(); }); } catch (e) {}
   try { _hideBustups(); } catch (e) {}
   // v265: 呪縛仮面を初期状態に戻す (敵に cursed クラス + 呪印紫5段階 + 割れ状態クリア)
   try { _resetCurseMask(); } catch (e) {}
   // v268: わ行 episode (ヒノカ cameo) 再生フラグをリセット
+  // v277h: 2 段フラグになったので mini-cut フラグも一緒にリセット
+  _waMidHitCutPlayed = false;
   _waRowEpisodePlayed = false;
   // 地に足が付くタイプ (ゴーレム等、grounded:true): 浮遊アニメを切り 2倍拡大、
   // ラップも勇者と同じ高さに持ち上げる (stage.has-grounded クラスで制御)。
@@ -9880,6 +9883,14 @@ function _showBattleIntro(onDone) {
   //   山道:    cover:true + pan:'up'   (10s 縦パン、見上げていくイメージ)
   //   カゲロウ: cover:true + kenBurns:true (8s ゆっくりズーム)
   if (isVolcanoRow) {
+    // v277h (2026-04-25): ユーザー指示「合流シーンを攻撃された後に」
+    //   旧フロー: 山道 → 妖精合流 → カゲロウ登場 → 認識 (バトル開始前合流 → 「カゲロウ強い」が文脈外)
+    //   新フロー: 山道 → カゲロウ登場 → 認識 → カゲロウ初撃 → ヒノカ被弾 → **妖精合流** → 「もじを なぞって…」
+    //   = `_playHinokaRecognitionIntro` の onDone を `_showFairyMergeIntro` で wrap する形式に変更。
+    //   バトル単位フラグもここで初期化 (リトライ時に再生されるよう)。
+    //   v277h: 2 段フラグ (_waMidHitCutPlayed + _waRowEpisodePlayed) を両方リセット。
+    _waMidHitCutPlayed = false;
+    _waRowEpisodePlayed = false;
     var _afterRecog = function() {
       _showBattleDialog([
         { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
@@ -9898,7 +9909,10 @@ function _showBattleIntro(onDone) {
             if (_bs) { _bs.style.display = ''; _bs.setAttribute('aria-hidden', 'false'); }
             document.body.classList.remove('battle-intro-active');
           } catch (e) {}
-          _playHinokaRecognitionIntro(_afterRecog);
+          // v277h: 認識セリフ (カゲロウ初撃 + ヒノカ「そんな…！」) の完了後に妖精合流を挟む。
+          _playHinokaRecognitionIntro(function() {
+            _showFairyMergeIntro(_afterRecog);
+          });
         },
         { cover: true, kenBurns: true,
           caption: 'そこ に は——\nのろわれた かざん の ぬし、\nカゲロウ が、 たち はだかって いた。' }
@@ -9907,19 +9921,14 @@ function _showBattleIntro(onDone) {
     // v277c: 山道シーンから volcano_boss BGM (Ashen Guardian) に切替。
     //         以降カゲロウ最終戦終了まで同曲が流れ続ける。
     try { setBgmFor('volcano_boss'); } catch (e) {}
-    // v277d: 山道 → 妖精合流 → カゲロウ登場 の 3 段紙芝居。
-    //         合流シーンで「リーファ + セリナ も追いついて全員集合」のドラマを描く。
-    var _showMerge = function() {
-      _showFairyMergeIntro(_showKagerou);
-    };
     // 山道画像が存在するか先にプリロードでチェック → あれば挿入、なければスキップ
     var probe = new Image();
     probe.onload = function() {
-      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showMerge,
+      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou,
         { cover: true, pan: 'up',
           caption: 'ゆうしゃ は、 かざん の いただき を めざし、\nけわしい やまみち を のぼって いった——' });
     };
-    probe.onerror = function() { _showMerge(); };
+    probe.onerror = function() { _showKagerou(); };
     probe.src = VOLCANO_PATH_INTRO_IMG;
     return;
   }
@@ -11420,14 +11429,34 @@ function _rowPracticeNextChar() {
     _rowPracticeComplete();
     return;
   }
-  // v268: わ行 最終ボス戦の finisher (3 文字目「ん」) の直前に、
-  //        ヒノカ cameo + 「ほむらのうた」narrative を挟む。物語のクライマックス。
-  //        (v277f: 旧「かざんのうた」→「ほむらのうた」に改名、響きを古来表現に統一)
-  //        ヒット 2 ("を") が終わった直後の状態 = _rowPracticeStep === 2 のタイミング。
+  // v268+v277h: わ行 最終ボス戦の「ん」(step === 2、を 完了直後) で 2 段演出。
+  //        Stage 1: ヒノカ軽傷 mini-cut (v277h 新設、ユーザー指示「『を』くらいでヒノカがやられるカット」)
+  //        Stage 2: 既存 _playWaRowEpisode (回想 → ほむら → ノクス → 重傷 → 星の印 → 真名)
+  //        2 段重ね で「軽傷 → 闘志維持 → 後に重傷」のテンション上げを作る。
+  //
+  //        v277h コードレビュー反映: 旧版は単一フラグ _waRowEpisodePlayed を mini-cut 開始時に
+  //        true にしていたが、ダイアログタップ中に何か壊れて Stage 2 に到達できないと、フラグだけ
+  //        立って Episode が永久 skip される危険があった。フラグを 2 段に分け、それぞれが「自分が
+  //        完了するまでは true にしない」方式に変更。retry 時は _showBattleIntro で両方リセット。
+  if (!_waMidHitCutPlayed && _battle.active && _rowPracticeRow.label === 'わ' && _rowPracticeStep === 2) {
+    _playWaMidHitCut(function() {
+      _waMidHitCutPlayed = true;
+      if (!_waRowEpisodePlayed) {
+        _playWaRowEpisode(function() {
+          _waRowEpisodePlayed = true;
+          // エピソード完了後、通常の「ん」なぞり quiz へ
+          _rowPracticeNextChar_continue();
+        });
+      } else {
+        _rowPracticeNextChar_continue();
+      }
+    });
+    return;
+  }
+  // mini-cut は完了済みだが Episode が未完了の場合 (理論上発生しにくいが防御的に)
   if (!_waRowEpisodePlayed && _battle.active && _rowPracticeRow.label === 'わ' && _rowPracticeStep === 2) {
-    _waRowEpisodePlayed = true;
     _playWaRowEpisode(function() {
-      // エピソード完了後、通常の「ん」なぞり quiz へ
+      _waRowEpisodePlayed = true;
       _rowPracticeNextChar_continue();
     });
     return;
@@ -11435,7 +11464,9 @@ function _rowPracticeNextChar() {
   _rowPracticeNextChar_continue();
 }
 
-// エピソード挿入済みフラグ (バトルごとにリセット)
+// エピソード挿入済みフラグ (バトルごとにリセット — _showBattleIntro 内で false にする)
+// v277h: 単一フラグ → 2 段フラグに分割 (mini-cut と episode を独立に gate)。
+var _waMidHitCutPlayed = false;
 var _waRowEpisodePlayed = false;
 
 // カゲロウ & ヒノカ のメモリフラッシュバック (v270 追加)。
@@ -11659,6 +11690,46 @@ function _showClimaxEventImage(src, onDone, opts) {
   }
   ov.addEventListener('click', close);
   ov.addEventListener('touchend', function(e) { e.preventDefault(); close(); }, { passive: false });
+}
+
+// v277h (2026-04-25): 「を」完了直後 (step は 2 へ進んだ瞬間、つまり「ん」入力前) に挟む短い mini-cut。
+//   カゲロウの追撃 → ヒノカ軽傷 → ヒノカ「だいじょうぶ、まだ たたかえる」の 3 ビート構成。
+//   軽傷=瀕死ではなく闘志を失っていない状態。Climax (この後 _playWaRowEpisode) の重傷フォールへの伏線。
+//   注: わ行は count:3 (わ=step0, を=step1, ん=step2)。step 2 で発火 = を 完了直後。
+function _playWaMidHitCut(onDone) {
+  var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
+  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
+  // Beat A: カゲロウの追撃宣言
+  try { _triggerKagerouRageAttack(); } catch (e) {}
+  try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['カゲロウ「グ……', 'まだ おわらん……！', ''] }
+  ], function() {
+    // Beat B: ヒノカ被弾 (左ヒノカ + 右カゲロウの両者バストアップ → onEnter で fall + フラッシュ)
+    try { _hideBustups(); } catch (e) {}
+    setTimeout(function() {
+      try {
+        _showBustup('left',  HINOKA_R, { flip: false, alt: 'ヒノカ' });
+        _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' });
+      } catch (e) {}
+      _showBattleDialog([
+        { lines: ['ヒノカ「きゃっ……！', 'うっ……', ''], onEnter: function() {
+            try { _hideBustups(); } catch (e) {}
+            try { _hinokaMidHitEffect(); } catch (e) {}
+          }
+        }
+      ], function() {
+        // Beat C: ヒノカ闘志を見せる
+        try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+        _showBattleDialog([
+          { lines: ['ヒノカ「だいじょうぶ……！', 'まだ、 たたかえる……！', ''] }
+        ], function() {
+          try { _hideBustups(); } catch (e) {}
+          if (onDone) onDone();
+        });
+      });
+    }, 700);
+  });
 }
 
 // わ行専用 cameo: ヒノカが前に出て「ほむらのうた」(火山の歌の古称) を思い出させる narrative
@@ -11992,9 +12063,9 @@ function _showFairyMergeIntro(onDone) {
   });
 
   var msgs = [
-    'リーファ「ゆうしゃさま——\nやっと、 おいついた わ！',
-    'セリナ「もり と ほこら から、\nずっと あなた を おって きた の。',
-    'リーファ「カゲロウ は つよい。\nわたし たち も、 ちから を かす わ！'
+    'リーファ「ヒノカ……！\nだいじょうぶ……！？',
+    'セリナ「もり と ほこら の ふういん が とけて、\nあなた を おいかけて きた の。',
+    'リーファ「ゆうしゃさま——\nわたし たち も、\nちから を かす わ！'
   ];
   var idx = 0;
   var canAdvanceAt = 0;
@@ -12034,27 +12105,43 @@ function _showFairyMergeIntro(onDone) {
 
 // カゲロウが再び呪縛されて激しく暴れる演出 (スクリーン shake + 仮面の暗い脈動)。
 // v273: imgRage (再咆哮/高揚) に一時 swap、1.4s 後に idle へ戻す。
-//       エンカウント直後の急襲 (_playHinokaRecognitionIntro) と climax 中の再呪縛 の
-//       両方で呼ばれるので、image swap は imgRage が設定済みの時だけ行う。
+//       エンカウント直後の急襲 (_playHinokaRecognitionIntro) と climax 中の再呪縛 と
+//       v277h の中盤 mini-cut の 3 箇所で呼ばれるので、image swap は imgRage が設定済みの時だけ行う。
+// v277h コードレビュー反映: 連続呼び出し (mini-cut → climax Beat 3) の際、先行 setTimeout の
+//       restore が後続 rage の最中に発火して class が早く剥がれるレースを防ぐため、各 timer を
+//       cancellable な module-level handle で管理。
+var _kagerouRageClassTimer = null;
+var _kagerouRageImgTimer   = null;
+var _kagerouShakeTimer     = null;
 function _triggerKagerouRageAttack() {
   var enemyEl = document.getElementById('battleEnemy');
   if (enemyEl) {
+    if (_kagerouRageClassTimer) { clearTimeout(_kagerouRageClassTimer); _kagerouRageClassTimer = null; }
     enemyEl.classList.add('kagerou-rage');
-    setTimeout(function() { enemyEl.classList.remove('kagerou-rage'); }, 1400);
+    _kagerouRageClassTimer = setTimeout(function() {
+      _kagerouRageClassTimer = null;
+      if (enemyEl) enemyEl.classList.remove('kagerou-rage');
+    }, 1400);
   }
   try {
     var e = _battle && _battle.enemy;
     if (e && e.imgRage) {
+      if (_kagerouRageImgTimer) { clearTimeout(_kagerouRageImgTimer); _kagerouRageImgTimer = null; }
       _swapEnemyImg(e.imgRage);
-      setTimeout(function() {
+      _kagerouRageImgTimer = setTimeout(function() {
+        _kagerouRageImgTimer = null;
         if (e.imgIdle) _swapEnemyImg(e.imgIdle);
       }, 1300);
     }
   } catch (e) { /* ignore */ }
   var stage = document.querySelector('.battle-stage');
   if (stage) {
+    if (_kagerouShakeTimer) { clearTimeout(_kagerouShakeTimer); _kagerouShakeTimer = null; }
     stage.classList.add('screen-heavy-shake');
-    setTimeout(function() { stage.classList.remove('screen-heavy-shake'); }, 900);
+    _kagerouShakeTimer = setTimeout(function() {
+      _kagerouShakeTimer = null;
+      stage.classList.remove('screen-heavy-shake');
+    }, 900);
   }
 }
 
@@ -12389,6 +12476,29 @@ function _hinokaFallEffect() {
   hinoka.dataset.role = 'hinoka-fallen';
   stage.appendChild(hinoka);
   setTimeout(function() { try { hinoka.remove(); } catch (e) {} }, 5000);
+}
+
+// v277h (2026-04-25): 軽傷版 hinoka フォール演出。
+//   _hinokaFallEffect (重傷=Climax Beat 3 で使用、5s 残留 + 強フラッシュ) と差別化。
+//   軽傷=「を」完了直後の中盤被弾で 1.6s で消える + フラッシュ弱め + brightness 高め。
+//   「だいじょうぶ、 まだ たたかえる」のセリフへ繋ぐ用。
+function _hinokaMidHitEffect() {
+  var stage = document.querySelector('.battle-stage');
+  if (!stage) return;
+  // フラッシュ (弱め: 黄色のみ、duration 短く)
+  var flash = document.createElement('div');
+  flash.style.cssText = 'position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,220,80,0.4),transparent 60%);z-index:60;pointer-events:none;animation:hinokaHitFlash 0.35s ease-out forwards;';
+  stage.appendChild(flash);
+  setTimeout(function() { try { flash.remove(); } catch (e) {} }, 400);
+
+  // 倒れヒノカ (軽傷: brightness 0.85、寿命 1.6s、animation 短縮)
+  var hinoka = document.createElement('img');
+  hinoka.src = HINOKA_SPRITES['003'];
+  hinoka.alt = 'ヒノカ';
+  hinoka.style.cssText = 'position:absolute;left:34%;bottom:8%;width:9%;max-width:64px;z-index:55;pointer-events:none;filter:brightness(0.85) drop-shadow(0 0 6px rgba(255,160,80,0.6));animation:hinokaFall 0.9s ease-in forwards;';
+  hinoka.dataset.role = 'hinoka-midhit';
+  stage.appendChild(hinoka);
+  setTimeout(function() { try { hinoka.remove(); } catch (e) {} }, 1600);
 }
 
 // 勇者の 星の印 が光り、預言の力で最後の一撃に備える演出
