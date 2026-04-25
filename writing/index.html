@@ -2919,7 +2919,11 @@ body.battle-mode .villain-deco {
 /* ===== v278c: 連続技フェーズ中はキャンバスを隠して battle-stage をほぼ全画面化 =====
    ユーザー指示「連続技以降はもうほぼ全画面でバトル継続して。右のキャンバス使わないから」
    body に combo-phase-active クラスが付いている間、なぞり書きキャンバスを撤去し
-   battle-stage を画面いっぱいに拡大する。combo フェーズが終わったら自動でクラスを外す。 */
+   battle-stage を画面いっぱいに拡大する。combo フェーズが終わったら自動でクラスを外す。
+   v278f (2026-04-26): ユーザー指示「バトルシーン以外のところのバトル画面、ほぼフル画面に」
+   → 連続技だけでなく、_showBattleDialog による narrative 会話中も全画面化する。
+   `battle-fullscreen-active` を追加クラスとして用意し、_showBattleDialog 入口で付与、
+   _battleDialogFinish 出口で 200ms ディレイ付きで剥がす (連続呼びの flicker 抑制)。 */
 body.combo-phase-active .canvas-container,
 body.combo-phase-active .pono-deco,
 body.combo-phase-active .pono-bubble,
@@ -2933,7 +2937,21 @@ body.combo-phase-active .controls,
 body.combo-phase-active .header,
 body.combo-phase-active .progress-hint,
 body.combo-phase-active .next-row,
-body.combo-phase-active .left-col {
+body.combo-phase-active .left-col,
+body.battle-fullscreen-active .canvas-container,
+body.battle-fullscreen-active .pono-deco,
+body.battle-fullscreen-active .pono-bubble,
+body.battle-fullscreen-active .hedgehog-wrap,
+body.battle-fullscreen-active .hedgehog-deco,
+body.battle-fullscreen-active .hedgehog-bubble,
+body.battle-fullscreen-active #demoIndicator,
+body.battle-fullscreen-active .demo-replay-btn,
+body.battle-fullscreen-active .mid-col,
+body.battle-fullscreen-active .controls,
+body.battle-fullscreen-active .header,
+body.battle-fullscreen-active .progress-hint,
+body.battle-fullscreen-active .next-row,
+body.battle-fullscreen-active .left-col {
   display: none !important;
 }
 /* v278e: ユーザー指示「ほぼ全画面が全然全画面になってない、横に伸びてない、右半分は使われてない」
@@ -2941,7 +2959,8 @@ body.combo-phase-active .left-col {
       max-width / margin / border-radius / border を全部解除。
       内部の hero / enemy 配置はそのまま動くが、stage 自体が広いので全体の見え方が変わる。
    landscape 専用 (縦画面は今は考えない、ユーザー指示)。 */
-body.combo-phase-active .battle-stage {
+body.combo-phase-active .battle-stage,
+body.battle-fullscreen-active .battle-stage {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
@@ -2953,9 +2972,24 @@ body.combo-phase-active .battle-stage {
   border: none !important;
   z-index: 100;
 }
-body.combo-phase-active #app {
+body.combo-phase-active #app,
+body.battle-fullscreen-active #app {
   height: 100vh;
   overflow: hidden;
+}
+/* v278f: 全画面会話中、battle-log は画面下部にフロート表示する。
+   battle-mode の通常ルール (top: var(--battle-vtop)+0.72*vspan) は左半分用なので、
+   全画面化に合わせて画面中央下端へ配置し直す (intro 演出と同じ位置)。 */
+body.battle-fullscreen-active .battle-log-window {
+  position: fixed !important;
+  left: 50% !important;
+  top: auto !important;
+  bottom: max(env(safe-area-inset-bottom, 16px), 16px) !important;
+  transform: translateX(-50%);
+  width: min(92vw, 560px) !important;
+  height: auto !important;
+  margin: 0 !important;
+  z-index: 1400 !important;
 }
 
 /* ===== v278a/c: 妖精パーティー HP ゲージ ===== */
@@ -7862,6 +7896,20 @@ const _battleDialog = {
   _minShowUntil: 0,  // このタイムスタンプまではタップを無視 (誤爆防止)
 };
 
+// v278f (2026-04-26): バトル中の narrative 会話 (= _showBattleDialog) は
+// なぞり書きを止めて battle-stage を全画面化する。_awaitTapOnLog (ダメージ通知後の
+// タップ待ち) は対象外 (なぞり書きの直後で flicker するため)。
+// `_battleDialogIsNarrative` で _showBattleDialog 経由かどうかを区別する。
+// 連続して _showBattleDialog が呼ばれる場合 (showNext 再帰など) も、同期的に
+// remove → cb → add の順で進むので 1 フレーム内で完結し flicker は出ない。
+let _battleDialogIsNarrative = false;
+function _setBattleFullscreen(on) {
+  try {
+    if (on) document.body.classList.add('battle-fullscreen-active');
+    else    document.body.classList.remove('battle-fullscreen-active');
+  } catch (e) {}
+}
+
 function _battleDialogBind() {
   if (_battleDialog.handler) return;
   _battleDialog.handler = function(ev) {
@@ -7904,6 +7952,12 @@ function _battleDialogAdvance() {
 function _battleDialogFinish() {
   _battleDialog.active = false;
   _battleDialogSetAwait(false);
+  // v278f: narrative 会話 (= _showBattleDialog) で付与した全画面クラスを剥がす。
+  //   _awaitTapOnLog 経由の場合は _battleDialogIsNarrative=false なので何もしない。
+  if (_battleDialogIsNarrative) {
+    _battleDialogIsNarrative = false;
+    _setBattleFullscreen(false);
+  }
   const cb = _battleDialog.onDone;
   _battleDialog.onDone = null;
   if (cb) cb();
@@ -7925,6 +7979,10 @@ function _showBattleDialog(messages, onDone) {
   _battleDialog.queue = messages.slice();
   _battleDialog.onDone = onDone || null;
   _battleDialog.active = true;
+  // v278f: narrative 会話の入口 → 全画面化。バトル中でなければ何も起きない (CSS 側で
+  // body.battle-fullscreen-active が付くだけ。battle-mode と組み合わさってのみ効く)。
+  _battleDialogIsNarrative = true;
+  _setBattleFullscreen(true);
   _battleDialogAdvance(); // 1 通目を即表示 + await-tap on
 }
 
@@ -8063,7 +8121,8 @@ function _hideBattleStage() {
   try { _setBattleLog(['', '', ''], { animate: false }); } catch (e) {}
   els.stage.style.display = 'none';
   els.stage.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('battle-mode');
+  document.body.classList.remove('battle-mode', 'battle-fullscreen-active', 'combo-phase-active');
+  _battleDialogIsNarrative = false;
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
   // 「たおした！」ウィンドウが残っていれば念のため消す
@@ -8246,7 +8305,8 @@ function _hidePuzzleStage() {
   for (let i = 1; i <= 5; i++) els.stage.classList.remove('step-' + i);
   els.stage.querySelectorAll('.pedestal-burst, .lava-burst, .lava-golem-bg, .lava-walker, .lava-rising-stone, .lava-fairy, .lava-magic-burst, .shrine-door, .shrine-walker, .shrine-door-banner, .bridge-fairy, .bridge-magic-burst').forEach(function(b) { b.remove(); });
   if (els.planks) { els.planks.style.opacity = ''; els.planks.style.transition = ''; }
-  document.body.classList.remove('battle-mode');
+  document.body.classList.remove('battle-mode', 'battle-fullscreen-active', 'combo-phase-active');
+  _battleDialogIsNarrative = false;
   const md = document.getElementById('monsterDeco');
   if (md) md.style.display = '';
 }
@@ -9939,7 +9999,9 @@ function returnToSelect() {
   } catch (e) {}
 
   // ③ バトル専用クラスを確実に剥がす (landscape で battle-stage が position:fixed になる CSS の副作用を断つ)
-  document.body.classList.remove('battle-mode', 'battle-intro-active');
+  document.body.classList.remove('battle-mode', 'battle-intro-active', 'battle-fullscreen-active', 'combo-phase-active');
+  // v278f: orphan な narrative dialog state も同時にリセット
+  _battleDialogIsNarrative = false;
 
   // ④ 全スクリーンを inline style + class 両面から非表示にする
   _currentScreen = 'select';

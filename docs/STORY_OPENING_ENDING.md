@@ -405,6 +405,14 @@ UI / レイアウト:
 - 連続技 chant ritual の **キャンバスを 60vw,280px → 82vw,420px に拡大** (スマホで字小さい問題)
 - **連続技フェーズ突入時に `body.combo-phase-active` クラスを付与** → なぞり書きキャンバス + ポノ + ハリネズミ + おてほん UI を全て display:none、battle-stage を 100vw + 78vh で全画面化。フェーズ完了 (`_playKagerouFinalCombo` の onDone) で自動解除
 
+**v278f 全画面会話モード (2026-04-26):**
+- ユーザー指示「バトルシーン以外のところのバトル画面、ほぼフル画面にしてって言ったけどなってないよ」
+- `combo-phase-active` の効果 (キャンバス hide + battle-stage 全画面化) を **`battle-fullscreen-active` クラスでも発動するよう CSS 共有化**。両クラスで同じ display:none / position:fixed inset:0 が効く
+- `_showBattleDialog` 入口で `_setBattleFullscreen(true)` → narrative 会話中は自動で全画面化。`_battleDialogFinish` 出口で `_setBattleFullscreen(false)` (`_battleDialogIsNarrative` フラグで _awaitTapOnLog と区別)
+- `_awaitTapOnLog` (= ダメージ通知後のタップ待ち) は **対象外**: なぞり書き直後で flicker が出るため通常の split-screen を維持
+- battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
+- 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
+
 **v278b フロー再構築 (2026-04-25): canonical 6 ターン構造の完成形**
 
 実装範囲:
