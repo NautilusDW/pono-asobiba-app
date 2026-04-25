@@ -1545,12 +1545,14 @@ html, body {
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 #demoIndicator {
   position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
-  font-size:1.2rem; font-weight:900; color:#fff;
-  background:linear-gradient(135deg,#FF6B9D,#EC4899); padding:8px 20px; border-radius:24px;
+  /* 2026-04-25: ユーザー指示「大きすぎて改行されちゃってる」→ 1.2rem → 0.85rem。
+     padding も詰める。白い改行が出ないよう white-space:nowrap で 1 行固定。 */
+  font-size:0.85rem; font-weight:900; color:#fff;
+  background:linear-gradient(135deg,#FF6B9D,#EC4899); padding:5px 14px; border-radius:20px;
   animation:demoBlink 0.8s ease-in-out infinite;
   display:none; z-index:200;
   box-shadow:0 4px 16px rgba(255,107,157,0.4);
-  pointer-events:none; letter-spacing:0.1em;
+  pointer-events:none; letter-spacing:0.08em; white-space:nowrap;
 }
 @keyframes demoBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
@@ -2978,19 +2980,37 @@ body.battle-mode .villain-deco {
 /* かざんのぬし (カゲロウ): 火山の主にふさわしい大きさへ。
    2026-04-25: ユーザー指示「主人公よりちっちゃいじゃん」「火山の主なのに」
    既存ボス (ゴーレム 120px) より一回り大きくして威圧感を出す。
-   多くのスプライトは body bbox がタイト (atk_1 等) なので width 200px でも実体は 80% 程度。 */
+   2026-04-25 b: 全スプライトが紫の炎マネ+尻尾を持つので body bbox は画像の 70〜80% しか
+   占めない。container を 220px に広げた上で、enemy-img 側に scale(1.38) を掛けて
+   「本体部分だけ」が他キャラと同等以上に見えるようにする。 */
 .battle-enemy[data-enemy-id="volcano_lord"] {
-  width: min(36vh, 200px); height: min(36vh, 200px);
-  max-width: 200px; max-height: 200px;
+  width: min(38vh, 220px); height: min(38vh, 220px);
+  max-width: 220px; max-height: 220px;
+}
+/* 大型ボス (volcano_lord) は HP ゲージと干渉しないよう wrap を上に持ち上げる。
+   2026-04-25: ユーザー指示「ちょっと下すぎてゲージに被ってる」→ 38% → 28% へ。 */
+.battle-stage.has-grounded .battle-enemy-wrap.volcano-lord-wrap {
+  top: 28%;
 }
 /* カゲロウのスプライトは 12 枚中 11 枚が「左向き (head が画像左)」で描かれているため、
    .grounded の auto-flip (scaleX(-1)) を打ち消す。kagerou_idle.png (炎ブレス発射) のみ
-   逆向きで描かれているので、JS 側で .kagerou-firebreath クラスを付けてその時だけ flip。 */
+   逆向きで描かれているので、JS 側で .kagerou-firebreath クラスを付けてその時だけ flip。
+   2026-04-25 b: 炎のマネ+尻尾が container を食うので scale(1.38) を追加 (body 補正)。
+   ほとんどのスプライトは body が左寄り (head が画像左) なので transform-origin を
+   30% 70% (左寄り+足元寄り) に置き、head と足元の切れを最小化する。 */
 .battle-enemy.grounded[data-enemy-id="volcano_lord"] .enemy-img {
-  transform: none;
+  transform: scale(1.38);
+  transform-origin: 30% 70%;
 }
+/* 炎ブレスは画像が 1113x359 で body は左 31% に集中、残りはずっと右に伸びる炎。
+   そのまま object-fit:contain させると body が container の 31% (~60px) になってしまうので、
+   2.6倍スケールして body だけが他のスプライトと同等サイズに見えるようにする。
+   transform-origin: 100% 50% で右端を anchor → body が container 右側に残り、炎は左へ
+   ハミ出す (CSS scaleX(-1) と組み合わせて 結果として 体が右、炎が左へ向かって伸びる)。
+   (body 補正 scale(1.38) は !important で上書き — 炎ブレスだけは専用スケールを優先) */
 .battle-enemy[data-enemy-id="volcano_lord"].kagerou-firebreath .enemy-img {
-  transform: scaleX(-1);
+  transform: scaleX(-1) scale(2.6) !important;
+  transform-origin: 100% 50% !important;
 }
 .battle-enemy.grounded .enemy-shadow {
   /* 地面に足が付いているタイプ (岩系ボス等) は不自然な浮遊シャドウを隠す。
@@ -3640,46 +3660,51 @@ body.battle-mode .villain-deco {
   margin: 0 auto 4px;
   flex-shrink: 0;
   box-sizing: border-box;
-  /* v275: bustup overlay (z-index 1700) より上に出してダイアログ枠を保つ。 */
-  position: relative;
-  z-index: 1750;
 }
-/* v275: ADV (アドベンチャー) ゲーム風 バストアップ会話オーバーレイ。
-   背景を softblur で奥に押しやって、左右に話者ポートレートを大きく出す。
-   主人公は姿を見せない方針なので、片側だけ portrait のことが多い。
-   ヒノカ単独 = 右、カゲロウ + ヒノカ会話 = 左ヒノカ / 右カゲロウ。 */
-.bustup-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1700;
-  pointer-events: none;
-  background: rgba(8, 4, 16, 0.55);
-  backdrop-filter: blur(5px) saturate(0.85);
-  -webkit-backdrop-filter: blur(5px) saturate(0.85);
-  opacity: 0;
-  transition: opacity 0.55s ease;
-}
-.bustup-overlay.active { opacity: 1; }
-.bustup-portrait {
+/* v275: ADV (アドベンチャー) ゲーム風 バストアップ会話。
+   v275 b: 全画面 overlay → battle-stage 内 absolute 配置に変更
+   (full-screen blur がダイアログ文字までボカしてしまう問題の修正)。
+   背景ぼかしは battle-stage::before のみに掛かり、ダイアログ枠は影響を受けない。
+   ヒノカ単独 = 右、カゲロウ + ヒノカ会話 = 左ヒノカ / 右カゲロウ。
+   バストショット強制 = object-fit:cover + object-position:top で頭〜上半身だけクロップ。 */
+.battle-stage.bustup-active::before {
+  content: '';
   position: absolute;
-  bottom: 22vh;          /* 下のダイアログ枠 (z-index 1750) と重ならない位置 */
-  height: min(58vh, 540px);
-  width: auto;
-  filter: drop-shadow(0 10px 28px rgba(0,0,0,0.78));
+  inset: 0;
+  background: rgba(10, 6, 18, 0.5);
+  backdrop-filter: blur(4px) saturate(0.85);
+  -webkit-backdrop-filter: blur(4px) saturate(0.85);
+  z-index: 50;          /* battle-enemy(2) の上、portrait(60) の下 */
+  pointer-events: none;
   opacity: 0;
-  /* --flip は JS から 1 か -1 で設定。translateX/Y で出現アニメ。 */
-  transform: translateY(36px) scaleX(var(--flip, 1));
-  transition: opacity 0.55s ease, transform 0.7s cubic-bezier(.2,1.18,.4,1);
+  transition: opacity 0.5s ease;
+  animation: bustupBgIn 0.5s ease forwards;
+}
+@keyframes bustupBgIn { to { opacity: 1; } }
+.battle-stage .bustup-portrait {
+  position: absolute;
+  bottom: 0;
+  /* 縦 100% 相当でステージ内に収める。バストショット (頭〜胸) のみ見せる。 */
+  height: 96%;
+  width: 46%;
+  z-index: 60;
+  pointer-events: none;
+  object-fit: cover;
+  object-position: top center;     /* 上半身を切り取り */
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
+  opacity: 0;
+  transform: translateY(14px) scaleX(var(--flip, 1));
+  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(.2,1.18,.4,1);
   image-rendering: -webkit-optimize-contrast;
 }
-.bustup-portrait.visible {
+.battle-stage .bustup-portrait.visible {
   opacity: 1;
   transform: translateY(0) scaleX(var(--flip, 1));
 }
-.bustup-portrait.left  { left:  -2vw; }
-.bustup-portrait.right { right: -2vw; }
+.battle-stage .bustup-portrait.left  { left:  2%; }
+.battle-stage .bustup-portrait.right { right: 2%; }
 @media (prefers-reduced-motion: reduce) {
-  .bustup-overlay, .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
+  .battle-stage .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
 }
 .battle-log-window .battle-log-inner {
   background: #020208;
@@ -6961,6 +6986,12 @@ function _showBattleStage(rowId) {
   // 元素材が右向きのザコ (flipped:true) は水平反転して勇者と対峙させる。
   // grounded と独立に指定できる (接地しない空中ザコでも反転だけ掛けたい場合があるため)。
   els.enemy.classList.toggle('flipped', !!enemy.flipped);
+  // v275: ボス毎の wrap 高さ調整。volcano_lord は 200px サイズで grounded:true だと
+  // 下半身が HP ゲージに被るので wrap を上に引き上げる。
+  try {
+    var wrap = els.stage.querySelector('.battle-enemy-wrap');
+    if (wrap) wrap.classList.toggle('volcano-lord-wrap', enemy.id === 'volcano_lord');
+  } catch (e) {}
   // ステージ別 BG: 行ラベルから stage を割り出して .stage-xxx を付け替え。
   try {
     els.stage.classList.remove('stage-forest', 'stage-cave', 'stage-volcano', 'stage-castle');
@@ -9575,6 +9606,10 @@ function _setHeroAnim(kind) {
 
 // バトル導入: マップシーン → 黒幕+敵ドン → ルール説明ログ (タップ送り) → onDone でお手本へ
 // (2026-04-20 ユーザー要望: setTimeout で勝手に進むのをやめて、子供が読み終わるまで待つタップ式に変更)
+// v275: 火山ボス (わ行) 用 紙芝居スタイル イントロで使う山道イメージ。
+//   ユーザーが「山道を歩いている1枚絵」を支給予定。差し替え時はこの定数を更新するだけ。
+var VOLCANO_PATH_INTRO_IMG = '../assets/images/story/volcano_path_intro.jpg';
+
 function _showBattleIntro(onDone) {
   const rowId = (_rowPracticeRow && _rowPracticeRow.label) || 'あ';
   // intro 中 (マップ + カーテン + 敵登場ダイアログ) はログを画面下部に固定。
@@ -9582,29 +9617,36 @@ function _showBattleIntro(onDone) {
   // 「もじを なぞって...」ダイアログは既に DOM フロー位置 (なぞり書きの上) で表示される。
   document.body.classList.add('battle-intro-active');
   const isVolcanoRow = (rowId === 'わ' || rowId === 'ワ');
+
+  // v275: 火山ボス戦は最終決戦なので、マップ歩行+カーテン演出をスキップして紙芝居スタイルへ。
+  //   1. 山道を登る1枚絵 (placeholder OK、画像が無ければ skip)
+  //   2. カゲロウ登場アップ (kagerou_entrance.jpg) を ゆっくり Ken Burns ズームで挿入
+  //   3. ヒノカ認識イントロ → 「もじを なぞって たおそう」
+  if (isVolcanoRow) {
+    var _afterRecog = function() {
+      _showBattleDialog([
+        { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
+      ], function() { if (onDone) onDone(); });
+    };
+    var _showKagerou = function() {
+      _showClimaxEventImage(
+        '../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg',
+        function() { _playHinokaRecognitionIntro(_afterRecog); },
+        { kenBurns: true }
+      );
+    };
+    // 山道画像が存在するか先にプリロードでチェック → あれば挿入、なければスキップ
+    var probe = new Image();
+    probe.onload = function() {
+      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou, { kenBurns: true });
+    };
+    probe.onerror = function() { _showKagerou(); };
+    probe.src = VOLCANO_PATH_INTRO_IMG;
+    return;
+  }
+
   _showMapScene(rowId, function() {
     _showBattleEncounterIntro(function() {
-      // v272: わ行 (カゲロウ) は「ヒノカ が 数日間 捕らえられて いた → カゲロウ が のろわれた のを 知らない」
-      //        前提に変更。エンカウント直後にヒノカ が まず気づき、関係を説明しようとするが、
-      //        カゲロウ が突然襲ってきて戦闘開始。旧 VOLCANO_EPISODE_SCENES (pre-battle 紙芝居)
-      //        は「知っている体」だったので v272 で撤去。
-      if (isVolcanoRow && typeof _playHinokaRecognitionIntro === 'function') {
-        // v274: 最初にカゲロウと遭遇する瞬間を kagerou_entrance.jpg のフルスクリーンイベント絵で見せる。
-        //       その後 ヒノカ認識イントロ → なぞって倒そう告知 へ進む。
-        var _startIntro = function() {
-          _playHinokaRecognitionIntro(function() {
-            _showBattleDialog([
-              { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
-            ], function() { if (onDone) onDone(); });
-          });
-        };
-        if (typeof _showClimaxEventImage === 'function') {
-          _showClimaxEventImage('../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg', _startIntro);
-        } else {
-          _startIntro();
-        }
-        return;
-      }
       _showBattleDialog([
         { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
       ], function() { if (onDone) onDone(); });
@@ -10743,7 +10785,10 @@ function _playHinokaRecognitionIntro(onDone) {
   // v275: バトルステージ常駐ヒノカ (主人公位置と被るので) を撤去し、
   //       ADV 風バストアップで対話を演出する。ヒノカ単独 = 右側、左を向く。
   var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
-  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_front_still.png';
+  // 2026-04-25: ユーザー指示「真正面ではなく、斜めを向いている素材を使ってください」
+  //             → front_still (真正面) → atk_1 (3/4 斜め、咆哮) へ変更。
+  //             bustup 側は object-fit:cover + object-position:top で頭〜胸だけクロップされる。
+  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
   try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
   _showBattleDialog([
     { lines: ['ヒノカ「…まって、', 'ゆうしゃさま！', ''] },
@@ -11138,18 +11183,24 @@ var VOLCANO_MEMORY_BEATS = [
 function _showMemoryFlashback(beats, onDone) {
   var ov = document.createElement('div');
   ov.id = 'memoryFlashbackOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1800;background:radial-gradient(ellipse at center,rgba(50,30,10,0.92) 0%,rgba(10,6,4,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 1.0s ease;cursor:pointer;';
+  // 2026-04-25: ユーザー指示「下のテキストと『タップ』が重なる」→ 縦 3 段 (img / caption / hint)
+  //             を flex で明示的に分離。img は上寄せ (flex-start)、caption は中央帯、
+  //             hint は最下部の固定スロットに分離して重なりを物理的に防止。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1800;background:radial-gradient(ellipse at center,rgba(50,30,10,0.92) 0%,rgba(10,6,4,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4vh 0 10vh;box-sizing:border-box;opacity:0;transition:opacity 1.0s ease;cursor:pointer;';
 
   var imgEl = document.createElement('img');
-  imgEl.style.cssText = 'max-width:88vw;max-height:70vh;object-fit:contain;filter:sepia(0.28) brightness(1.06) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transform:scale(1.0);transition:opacity 1.0s ease;border-radius:6px;will-change:transform,opacity;';
+  // 画像は上寄せ。caption 2 行分 + hint 分を空けるため max-height を 58vh に抑える。
+  imgEl.style.cssText = 'max-width:86vw;max-height:58vh;object-fit:contain;filter:sepia(0.28) brightness(1.06) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transform:scale(1.0);transition:opacity 1.0s ease;border-radius:6px;will-change:transform,opacity;';
   ov.appendChild(imgEl);
 
   var captionEl = document.createElement('div');
-  captionEl.style.cssText = 'margin-top:24px;width:min(86vw,640px);text-align:center;color:#FFEFC6;font-size:1.1rem;font-weight:900;line-height:1.7;letter-spacing:0.08em;text-shadow:0 0 10px rgba(255,180,90,0.7),0 2px 6px #000;opacity:0;transition:opacity 0.7s ease;white-space:pre-line;';
+  // caption は flex の真ん中の塊。hint とは下余白 10vh + hint の bottom:3vh で十分離す。
+  captionEl.style.cssText = 'margin-top:22px;margin-bottom:0;width:min(86vw,640px);text-align:center;color:#FFEFC6;font-size:1.1rem;font-weight:900;line-height:1.7;letter-spacing:0.08em;text-shadow:0 0 10px rgba(255,180,90,0.7),0 2px 6px #000;opacity:0;transition:opacity 0.9s ease;white-space:pre-line;';
   ov.appendChild(captionEl);
 
   var hint = document.createElement('div');
-  hint.style.cssText = 'position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;transition:opacity 0.4s ease;';
+  // hint は overlay 最下部 (absolute) に固定スロット化。caption との重なりを物理的に防ぐ。
+  hint.style.cssText = 'position:absolute;bottom:3vh;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.9rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;transition:opacity 0.4s ease;';
   hint.textContent = '▼ タップ';
   ov.appendChild(hint);
 
@@ -11170,6 +11221,9 @@ function _showMemoryFlashback(beats, onDone) {
   var canAdvanceAt = 0;
   var MIN_HOLD_MS = 1800;
 
+  // 2026-04-25: ユーザー指示「前のテキストがフェードアウトした後に次のテキストが出るように」
+  //   caption transition を 0.9s に延長 + フェードアウト待機を 950ms に延長して、
+  //   前キャプション完全消失 → 新キャプション表示 の順序を物理的に保証。
   function showNext() {
     if (transitioning) return;
     if (Date.now() < canAdvanceAt) return; // 早すぎるタップを無視
@@ -11184,7 +11238,11 @@ function _showMemoryFlashback(beats, onDone) {
       return;
     }
 
-    // 現在の絵+キャプションをフェードアウト
+    var isFirst = (idx === 0);
+    // 初回は前のキャプション/画像が無いので待ち時間をスキップ。
+    var FADE_OUT_MS = isFirst ? 0 : 950;
+
+    // 現在の絵+キャプションをフェードアウト (caption transition 0.9s 完了を待つ)
     imgEl.style.opacity = '0';
     captionEl.style.opacity = '0';
     hint.style.opacity = '0';
@@ -11194,6 +11252,7 @@ function _showMemoryFlashback(beats, onDone) {
       var src = (typeof beat === 'string') ? beat : beat.src;
       var cap = (typeof beat === 'string') ? '' : (beat.caption || '');
       imgEl.src = src;
+      // 前キャプションが完全に消えてから textContent 更新 (残像テキストを防止)
       captionEl.textContent = cap;
       // Ken Burns ズームを再起動するために animation を一旦リセット
       imgEl.style.animation = 'none';
@@ -11203,14 +11262,14 @@ function _showMemoryFlashback(beats, onDone) {
       requestAnimationFrame(function() {
         imgEl.style.opacity = '1';
         // キャプションは画像表示の少し後に出す
-        setTimeout(function() { captionEl.style.opacity = '1'; }, 600);
+        setTimeout(function() { captionEl.style.opacity = '1'; }, 700);
         // ヒントは MIN_HOLD_MS 経過後に光らせる
         setTimeout(function() { hint.style.opacity = '0.85'; }, MIN_HOLD_MS);
       });
       idx++;
       canAdvanceAt = Date.now() + MIN_HOLD_MS;
       transitioning = false;
-    }, 800);
+    }, FADE_OUT_MS);
   }
 
   ov.addEventListener('click', showNext);
@@ -11222,7 +11281,9 @@ function _showMemoryFlashback(beats, onDone) {
 // v274: クライマックス専用のイベント絵オーバーレイ (全画面 1 枚絵 + タップで進む)。
 // _showMemoryFlashback と似るが sepia を外し、現在進行中ビートの劇的な静止画として使う。
 // 01b=ヒノカが呪縛カゲロウに手を伸ばす / 02=半浄化遷移 / 03=完全浄化の和解。
-function _showClimaxEventImage(src, onDone) {
+// v275: opts.kenBurns:true で表示中ゆっくりズームイン (ボス登場の余韻演出に使う)。
+function _showClimaxEventImage(src, onDone, opts) {
+  opts = opts || {};
   var ov = document.createElement('div');
   ov.className = 'climax-event-overlay';
   ov.style.cssText = 'position:fixed;inset:0;z-index:1805;background:radial-gradient(ellipse at center,rgba(20,8,24,0.92) 0%,rgba(4,2,6,0.97) 100%);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.55s ease;cursor:pointer;';
@@ -11246,6 +11307,13 @@ function _showClimaxEventImage(src, onDone) {
     setTimeout(function() {
       img.style.opacity = '1';
       img.style.transform = 'scale(1)';
+      if (opts.kenBurns) {
+        // 表示後さらにゆっくりズームイン (8秒で 1.0 → 1.12) — 登場の余韻
+        img.style.transition = 'opacity 0.55s ease, transform 8s ease-out';
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() { img.style.transform = 'scale(1.12)'; });
+        });
+      }
     }, 120);
   });
   var closed = false;
@@ -11300,7 +11368,10 @@ function _playWaRowEpisode(onDone) {
 // 勇者の 星の印 発動 (預言の力) → 最後の「ん」 quiz へ。
 function _playKagerouClimax(onDone) {
   var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
-  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_front_still.png';
+  // 2026-04-25: ユーザー指示「真正面ではなく、斜めを向いている素材を使ってください」
+  //             → front_still (真正面) → atk_1 (3/4 斜め、咆哮) へ変更。
+  //             bustup 側は object-fit:cover + object-position:top で頭〜胸だけクロップされる。
+  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
 
   // Beat 1: カゲロウが一瞬昔を思い出す。カゲロウ単独右バストアップ + idle 上 stage 効果。
   try { _pulseKagerouAwaken(); } catch (e) {}
@@ -11367,9 +11438,10 @@ function _pulseKagerouAwaken() {
 // v275: 仮面の男 (ザガンの手下) 登場演出を簡素化。
 //       「ザガン の てした、 あらわる！」の caption は撤去 (画像のみで語る方針)。
 //       画像はユーザー支給予定のものを差し替え可能なように MASKED_MAN_IMG 定数化。
-//       現状は opening_6.jpg をプレースホルダとして使う。
 //       台詞は意図 (ザガンの呪いはこのうたではほどけない) を伝えるため残す。
-var MASKED_MAN_IMG = '../assets/images/story/opening_6.jpg';
+// 2026-04-25: ユーザー支給「カゲロウ再呪印.png」を kagerou_recurse.jpg として使う。
+//             (opening_6.jpg は魔王城前の別シーン用なので使い回しを解消)
+var MASKED_MAN_IMG = '../assets/images/story/kagerou_recurse.jpg';
 function _showMaskedManInterference(onDone) {
   var ov = document.createElement('div');
   ov.id = 'maskedManOverlay';
@@ -11432,45 +11504,46 @@ function _triggerKagerouRageAttack() {
 //   _showBustup(side, src, opts)  — side='left'|'right', opts={flip:bool}
 //   _hideBustups()                — 全クリア + overlay フェードアウト
 //   ヒノカ単独 = right + flip:true (左を向く), カゲロウ + ヒノカ = 左ヒノカ no-flip, 右カゲロウ no-flip
+// 2026-04-25: ユーザー指示「ぼかすのはバトル画面内だけにして」→ portrait を battle-stage
+//   内に直接 append するよう修正 (旧: body 直下 → フルスクリーンに飛び出してしまい
+//   ダイアログ文字まで含めてぼかされる問題があった)。bustup-active class は battle-stage
+//   に付ける。battleStage が取得できない場合は body へ fallback (セーフティ)。
 function _showBustup(side, src, opts) {
   opts = opts || {};
-  var ov = document.getElementById('bustupOverlay');
-  if (!ov) {
-    ov = document.createElement('div');
-    ov.id = 'bustupOverlay';
-    ov.className = 'bustup-overlay';
-    document.body.appendChild(ov);
-  }
-  // 既存の反対側 portrait は維持。同じ side の portrait は src 差し替えのみ (再生スパムを避ける)。
+  var stage = document.getElementById('battleStage');
+  var host = stage || document.body;
+  if (stage) { stage.classList.add('bustup-active'); }
+  // portrait は battle-stage 内に直接 append (ラッパ overlay を作らない)。
+  // 同じ side の portrait は差し替えのみ (重複生成を避ける)。
   var sel = '.bustup-portrait.' + side;
-  var portrait = ov.querySelector(sel);
+  var portrait = host.querySelector(':scope > ' + sel);
   if (!portrait) {
     portrait = document.createElement('img');
     portrait.className = 'bustup-portrait ' + side;
     portrait.alt = opts.alt || '';
-    ov.appendChild(portrait);
+    host.appendChild(portrait);
   }
   portrait.style.setProperty('--flip', opts.flip ? '-1' : '1');
   if (!portrait.src || portrait.src.indexOf(src.replace(/^\.\.\//, '')) === -1) {
     portrait.src = src;
   }
-  // overlay と portrait のフェードイン
+  // portrait フェードイン
   requestAnimationFrame(function() {
-    ov.classList.add('active');
     requestAnimationFrame(function() { portrait.classList.add('visible'); });
   });
   return portrait;
 }
 function _hideBustups() {
-  var ov = document.getElementById('bustupOverlay');
-  if (!ov) return;
-  ov.querySelectorAll('.bustup-portrait').forEach(function(p) { p.classList.remove('visible'); });
-  ov.classList.remove('active');
+  var stage = document.getElementById('battleStage');
+  var host = stage || document.body;
+  var portraits = host.querySelectorAll(':scope > .bustup-portrait');
+  if (!portraits.length && stage) { stage.classList.remove('bustup-active'); return; }
+  portraits.forEach(function(p) { p.classList.remove('visible'); });
+  if (stage) { stage.classList.remove('bustup-active'); }
   setTimeout(function() {
-    if (!ov.parentNode) return;
-    // 全 portrait が消えていれば overlay ごと撤去 (DOM 軽量化)
-    ov.querySelectorAll('.bustup-portrait').forEach(function(p) { p.remove(); });
-    try { ov.remove(); } catch (e) {}
+    host.querySelectorAll(':scope > .bustup-portrait').forEach(function(p) {
+      try { p.remove(); } catch (e) {}
+    });
   }, 650);
 }
 
@@ -11739,7 +11812,9 @@ function _rowPracticeNextChar_continue() {
         }
       }
       startOv.style.cssText = boxStyle + 'z-index:1550;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-      startOv.innerHTML = '<div style="font-size:1.8rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.95);padding:14px 32px;border-radius:24px;box-shadow:0 4px 24px rgba(242,145,90,0.45);animation:fadeIn 0.3s ease;">✏️ なぞり スタート！</div>';
+      // 2026-04-25: ユーザー指示「大きすぎて改行されちゃってる」→ 1.8rem → 1.2rem、
+      //             padding 詰め + white-space:nowrap で 1 行固定。
+      startOv.innerHTML = '<div style="font-size:1.2rem;font-weight:900;color:#F2915A;background:rgba(255,255,255,0.95);padding:10px 22px;border-radius:20px;box-shadow:0 4px 24px rgba(242,145,90,0.45);animation:fadeIn 0.3s ease;white-space:nowrap;">✏️ なぞり スタート！</div>';
       document.body.appendChild(startOv);
       setTimeout(function() { if (startOv && startOv.parentNode) startOv.remove(); },
                  typeof durationMs === 'number' ? durationMs : 1400);
