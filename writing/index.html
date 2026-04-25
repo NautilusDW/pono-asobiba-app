@@ -9860,14 +9860,31 @@ function _showBattleIntro(onDone) {
     var _showKagerou = function() {
       _showClimaxEventImage(
         '../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg',
-        function() { _playHinokaRecognitionIntro(_afterRecog); },
-        { cover: true, kenBurns: true }
+        function() {
+          // v277c: カゲロウ登場の後に battleStage を reveal してから recognition intro へ。
+          //         通常フローはカーテン演出 (_showBattleEncounterIntro) で reveal するが、
+          //         火山ボス分岐ではカーテンを skip しているため、ここで手動で reveal する。
+          //         body.battle-intro-active も外して battle-log-window を通常位置に戻す。
+          try {
+            var _bs = document.getElementById('battleStage');
+            if (_bs) { _bs.style.display = ''; _bs.setAttribute('aria-hidden', 'false'); }
+            document.body.classList.remove('battle-intro-active');
+          } catch (e) {}
+          _playHinokaRecognitionIntro(_afterRecog);
+        },
+        { cover: true, kenBurns: true,
+          caption: 'そこ に は——\nのろわれた かざん の ぬし、\nカゲロウ が、 たち はだかって いた。' }
       );
     };
+    // v277c: 山道シーンから volcano_boss BGM (Ashen Guardian) に切替。
+    //         以降カゲロウ最終戦終了まで同曲が流れ続ける。
+    try { setBgmFor('volcano_boss'); } catch (e) {}
     // 山道画像が存在するか先にプリロードでチェック → あれば挿入、なければスキップ
     var probe = new Image();
     probe.onload = function() {
-      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou, { cover: true, pan: 'up' });
+      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou,
+        { cover: true, pan: 'up',
+          caption: 'ゆうしゃ は、 かざん の いただき を めざし、\nけわしい やまみち を のぼって いった——' });
     };
     probe.onerror = function() { _showKagerou(); };
     probe.src = VOLCANO_PATH_INTRO_IMG;
@@ -11524,15 +11541,28 @@ function _showClimaxEventImage(src, onDone, opts) {
   ov.style.cssText = 'position:fixed;inset:0;z-index:1805;background:radial-gradient(ellipse at center,rgba(20,8,24,0.92) 0%,rgba(4,2,6,0.97) 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:0;transition:opacity 0.55s ease;cursor:pointer;';
   var img = document.createElement('img');
   img.src = src;
-  if (opts.cover) {
-    // 画面いっぱいに敷き詰める。pan 用に translateY 余白を持たせるため
-    // height は 116% に膨らませて transform 余白 ±8% に対応。
-    var initialTranslate = (opts.pan === 'up') ? '8%' : '0';
-    img.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:116vh;object-fit:cover;object-position:center;filter:drop-shadow(0 0 40px rgba(255,140,80,0.35));opacity:0;transform:translate(-50%,calc(-50% + ' + initialTranslate + ')) scale(1);transition:opacity 0.7s ease;border-radius:0;';
+  if (opts.cover && opts.pan === 'up') {
+    // 縦パン用: 高さ 116vh + 初期 translateY -8% (画像を上にずらす = 画像の「下」が見える)
+    // 終了は +8% (画像を下にずらす = 画像の「上」が見える) → 結果としてカメラが上にチルト
+    img.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:116vh;object-fit:cover;object-position:center;filter:drop-shadow(0 0 40px rgba(255,140,80,0.35));opacity:0;transform:translate(-50%,calc(-50% + -8%)) scale(1);transition:opacity 0.7s ease;border-radius:0;';
+  } else if (opts.cover) {
+    // 純粋な cover (パンなし): height 100vh の標準的な full-screen 画像。
+    // kenBurns 時は scale だけアニメ、translate は固定で「斜めパン」感が出ないように。
+    img.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:100vh;object-fit:cover;object-position:center;filter:drop-shadow(0 0 40px rgba(255,140,80,0.35));opacity:0;transform:translate(-50%,-50%) scale(1);transition:opacity 0.7s ease;border-radius:0;';
   } else {
     img.style.cssText = 'max-width:94vw;max-height:82vh;object-fit:contain;filter:drop-shadow(0 0 40px rgba(255,140,80,0.45));opacity:0;transform:scale(0.96);transition:opacity 0.55s ease,transform 0.7s cubic-bezier(.2,1.2,.4,1);border-radius:6px;';
   }
   ov.appendChild(img);
+  // v277c: ナレーションテロップ (opts.caption) — 画面下部に半透明バー + 白文字 1〜2 行
+  //        山道 / カゲロウ登場のフル画面カットで物語の地の文を字幕表示する用途。
+  var captionEl = null;
+  if (opts.caption) {
+    captionEl = document.createElement('div');
+    captionEl.className = 'climax-caption';
+    captionEl.style.cssText = 'position:absolute;left:50%;bottom:78px;transform:translateX(-50%);width:min(90vw,700px);box-sizing:border-box;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.78) 100%);border:1.5px solid rgba(255,220,140,0.35);border-radius:10px;color:#FFEFC6;font-family:"Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(0.95rem,3.4vw,1.2rem);font-weight:900;line-height:1.7;letter-spacing:0.06em;text-align:center;text-shadow:0 0 8px rgba(0,0,0,0.85),0 2px 4px #000;white-space:pre-line;opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
+    captionEl.textContent = opts.caption;
+    ov.appendChild(captionEl);
+  }
   var hint = document.createElement('div');
   hint.style.cssText = 'position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0.8;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;z-index:2;';
   hint.textContent = '▼ タップ';
@@ -11546,19 +11576,23 @@ function _showClimaxEventImage(src, onDone, opts) {
   document.body.appendChild(ov);
   requestAnimationFrame(function() {
     ov.style.opacity = '1';
+    // ナレーションテロップは画像表示の少し後にフェードイン
+    if (captionEl) {
+      setTimeout(function() { captionEl.style.opacity = '1'; }, 600);
+    }
     setTimeout(function() {
       img.style.opacity = '1';
       if (opts.cover && opts.pan === 'up') {
-        // 縦パン: 下 (8%) → 上 (-8%) を 10s でゆっくり (山道を見上げていくイメージ)
+        // 縦パン: 初期 -8% (画像上ずらし=下半分見える=足元) → 終了 +8% (画像下ずらし=上半分見える=山頂)
+        // 結果: カメラが下から上にチルトする見上げパン (10s)
         img.style.transition = 'opacity 0.7s ease, transform 10s linear';
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
-            img.style.transform = 'translate(-50%, calc(-50% + -8%)) scale(1)';
+            img.style.transform = 'translate(-50%, calc(-50% + 8%)) scale(1)';
           });
         });
       } else if (opts.cover) {
-        // cover かつ pan 無し: kenBurns 風の控えめスケールアップ
-        img.style.transform = 'translate(-50%,-50%) scale(1)';
+        // cover かつ pan 無し: 純粋なセンターズーム (translate は -50%/-50% 固定)
         if (opts.kenBurns) {
           img.style.transition = 'opacity 0.7s ease, transform 8s ease-out';
           requestAnimationFrame(function() {
@@ -13158,6 +13192,8 @@ const BGM_TRACKS = {
   title:  ['../assets/audio/bgm/Theme2.mp3'],
   battle: ['../assets/audio/bgm/battleC.mp3'],
   map:    ['../assets/audio/bgm/mapA.mp3',    '../assets/audio/bgm/mapB.mp3'],
+  // v277c: わ行 (火山ボス) 専用 BGM。山道シーンから流れ始め、カゲロウ最終戦中もそのまま継続。
+  volcano_boss: ['../assets/audio/bgm/ashen_guardian.mp3'],
 };
 const bgm = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
