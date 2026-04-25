@@ -26,5 +26,7 @@ scripts/.image_opt_cache.json
 scripts/.image_opt_cache.log
 assets/**/*.opt.tmp
 
-# docs_review_hook.py の sentinel (Stop hook 用ローカル状態)
+# docs_review_hook.py の sentinel + state log (v2 で state-dir 化)
 .claude/.docs-review-pending
+.claude/.docs-skip-once
+.claude/.docs-hook-state/
