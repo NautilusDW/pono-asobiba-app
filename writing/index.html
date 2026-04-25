@@ -3732,21 +3732,25 @@ body.battle-mode .villain-deco {
 .battle-stage .bustup-portrait[alt="カゲロウ"] {
   object-position: top left;
 }
-/* v277l (2026-04-25): ユーザー指示「炎の妖精のバストショットを 70% にしてもう少し下げて、
-   カゲロウのバストショットも同様に 70% + 顔が縦軸中心に来るよう下げて」
-   → ヒノカ + カゲロウ の bustup を一律 scale(0.7) + bottom 方向に shift。
-   transform-origin: bottom center で「足元 anchor」、bottom: -8% で画面外へ少し沈み込ませる
-   ことで頭部 (face) が battle-stage の縦中央付近に来る。
-   visible 状態でも translate を維持できるよう、visible のルールも合わせて上書きする。 */
+/* v277m (2026-04-25): ユーザー指示「両方とも 115% ぐらいで」+「カゲロウの右側がバッツリ切れてる」
+   → scale を 0.7 → 1.15 に増大。bottom:-8% は維持して下方シフト。
+   カゲロウは landscape 画像 (591×478) で body が左寄り、cover + top left クロップだと右側
+   (体の途中) でぶった切られて違和感大。width 46% → 56% に拡張 + object-position center top で
+   横方向のクロップを軽減し、体の右側まで見えるようにする。 */
 .battle-stage .bustup-portrait[alt="ヒノカ"],
 .battle-stage .bustup-portrait[alt="カゲロウ"] {
   bottom: -8%;
-  transform: translateY(14px) scale(0.7) scaleX(var(--flip, 1));
+  transform: translateY(14px) scale(1.15) scaleX(var(--flip, 1));
   transform-origin: bottom center;
 }
 .battle-stage .bustup-portrait[alt="ヒノカ"].visible,
 .battle-stage .bustup-portrait[alt="カゲロウ"].visible {
-  transform: translateY(0) scale(0.7) scaleX(var(--flip, 1));
+  transform: translateY(0) scale(1.15) scaleX(var(--flip, 1));
+}
+/* カゲロウ専用: 横長画像で右側が切れないよう幅を広げ、左頭寄せから中央上寄せに変更。 */
+.battle-stage .bustup-portrait[alt="カゲロウ"] {
+  width: 56%;
+  object-position: top center;
 }
 @media (prefers-reduced-motion: reduce) {
   .battle-stage .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
