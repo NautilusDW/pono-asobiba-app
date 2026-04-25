@@ -6884,7 +6884,9 @@ const BATTLE_ENEMIES = {
       p1: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'くらえ…！'],
       p2: ['…その こえ は…', 'どこ か で きいた きが する…', 'だれ だ… おまえ は…'],
       p3: ['…ヒノカ…？', 'まさか、 おまえ、 なのか…', '…わたし は… かざん の…'],
-      bow:   '…ヒノカ… ゆうしゃ よ、 ありがとう…。',
+      // v277i: ユーザー指示「最後、バトル画面でカゲロウにありがとうって言わせるのはやめて」
+      //         → 「ありがとう」を削除。感謝は celebration overlay (画面外) で十分表現済み。
+      bow:   '…ヒノカ… ゆうしゃ よ……。',
       leave: 'わたし は、 ほんとう の すがた に もどれた。'
     },
     trueName: 'カゲロウ',
@@ -11882,27 +11884,12 @@ function _playKagerouClimaxMain(onDone) {
                 try { _hideBustups(); } catch (e) {}
                 // Beat 5: 勇者の 星の印 発動 (預言の力覚醒)
                 _showStarMarkAwakening(function() {
-                  // ◆ Ritual 2 へ繋ぐ: 真名「かげろう」を呼びかけて呪縛を解く
-                  _showBattleDialog([
-                    { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
-                    { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
-                  ], function() {
-                    _showChantRitual({
-                      chars: ['か','げ','ろ','う'],
-                      theme: 'starmark',
-                      heading: 'なまえ を よびかけよう！',
-                      subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
-                      shoutout: 'カゲロウ！'
-                    }, function() {
-                      // 仮面が割れる演出 → 1 枚絵 → 最後の「ん」 quiz へ
-                      _crackKagerouMask(function() {
-                        // v274: battle_last_02 (呪縛→炎へ遷移するカゲロウとひざまずくヒノカ) を 1 枚絵で挟む。
-                        _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
-                          if (onDone) onDone();
-                        });
-                      });
-                    });
-                  });
+                  // v277i (2026-04-25): ユーザー指示反映 — Ritual 2「かげろう」+ 仮面割れは
+                  //   ここではなく **ん 完了後 (= ひらがな完成後の連続技フェーズ)** に移動。
+                  //   Climax 本編は星の印 awakening で終わり、その後通常の「ん」なぞりへ進む。
+                  //   ん 完了 → 「ひらがなコンプリート！れんぞくぎ かいほう！」演出 → 「かげろう」chant
+                  //   → 仮面割れ → battleVictory の流れは _playKagerouFinalCombo() が担当。
+                  if (onDone) onDone();
                 });
               });
             });
@@ -12398,6 +12385,83 @@ function _crackKagerouMask(onDone) {
   }, 1100);
 }
 
+// v277i (2026-04-25): カゲロウ最終バトル — ん 完了 (= ひらがな完全制覇) 後に挟む連続技フィニッシュ。
+//   ユーザー指示: 「ひらがな完成 → 新しい技として単語が書けるようになる → 『かげろう』入力 →
+//                  とどめの攻撃演出 → 仮面が割れる演出」
+//   流れ:
+//     1. れんぞくぎ かいほう！ バナー (ひらがな完全制覇のお祝い)
+//     2. 「カゲロウ の ほんとう の なまえ を よびかけよう！」プロンプト
+//     3. _showChantRitual ['か','げ','ろ','う'] (連続技 = finisher 入力)
+//     4. _crackKagerouMask (仮面割れ)
+//     5. battle_last_02 1 枚絵 (浄化遷移シーン)
+//     6. onDone → 呼び出し元 (finisher 分岐) で battleVictory + celebration へ
+function _playKagerouFinalCombo(onDone) {
+  // Step 1: れんぞくぎ かいほう バナー (簡易フルスクリーン演出 1.6s)
+  var banner = document.createElement('div');
+  banner.id = 'comboUnlockBanner';
+  banner.style.cssText = 'position:fixed;inset:0;z-index:1875;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(255,235,140,0.25) 0%,rgba(40,20,60,0.78) 60%,rgba(8,4,20,0.92) 100%);opacity:0;transition:opacity 0.5s ease;pointer-events:none;';
+  var bannerTitle = document.createElement('div');
+  bannerTitle.textContent = 'ひらがな かんせい！';
+  bannerTitle.style.cssText = 'font-family:"Zen Maru Gothic","Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1.4rem,5vw,2.2rem);font-weight:900;letter-spacing:0.12em;color:#FFE27A;text-shadow:0 0 18px rgba(255,225,120,0.95),0 0 36px rgba(255,170,40,0.7),0 4px 10px #000;margin-bottom:14px;opacity:0;transform:scale(0.85);transition:opacity 0.5s ease,transform 0.6s cubic-bezier(.2,1.3,.4,1);';
+  banner.appendChild(bannerTitle);
+  var bannerSub = document.createElement('div');
+  bannerSub.textContent = 'れんぞくぎ かいほう！';
+  bannerSub.style.cssText = 'font-family:"Zen Maru Gothic","Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1.6rem,6vw,2.6rem);font-weight:900;letter-spacing:0.14em;color:#FFD86A;text-shadow:0 0 22px rgba(255,210,80,1),0 0 44px rgba(255,140,30,0.85),0 4px 12px #000;opacity:0;transform:scale(0.85);transition:opacity 0.6s ease 0.25s,transform 0.7s cubic-bezier(.2,1.4,.4,1) 0.25s;';
+  banner.appendChild(bannerSub);
+  document.body.appendChild(banner);
+  requestAnimationFrame(function() {
+    banner.style.opacity = '1';
+    bannerTitle.style.opacity = '1'; bannerTitle.style.transform = 'scale(1)';
+    setTimeout(function() {
+      bannerSub.style.opacity = '1'; bannerSub.style.transform = 'scale(1)';
+    }, 250);
+  });
+  // Web Audio で達成チャイム
+  try {
+    if (typeof withAudio === 'function') {
+      withAudio(function(ac) {
+        var now = ac.currentTime;
+        [659, 784, 988, 1319].forEach(function(f, i) {
+          var o = ac.createOscillator(), g = ac.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          g.gain.setValueAtTime(0.001, now + i * 0.09);
+          g.gain.exponentialRampToValueAtTime(0.20, now + i * 0.09 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.7);
+          o.connect(g); g.connect(ac.destination);
+          o.start(now + i * 0.09); o.stop(now + i * 0.09 + 0.75);
+        });
+      });
+    }
+  } catch (e) {}
+
+  setTimeout(function() {
+    banner.style.opacity = '0';
+    setTimeout(function() { try { if (banner.parentNode) banner.remove(); } catch (e) {} }, 500);
+    // Step 2: プロンプト
+    _showBattleDialog([
+      { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
+      { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
+    ], function() {
+      // Step 3: 連続技 = chant ritual「かげろう」(finisher 入力)
+      _showChantRitual({
+        chars: ['か','げ','ろ','う'],
+        theme: 'starmark',
+        heading: 'なまえ を よびかけよう！',
+        subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
+        shoutout: 'カゲロウ！'
+      }, function() {
+        // Step 4: 仮面割れ
+        _crackKagerouMask(function() {
+          // Step 5: battle_last_02 (浄化遷移シーン)
+          _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
+            if (onDone) onDone();
+          });
+        });
+      });
+    });
+  }, 1900);
+}
+
 // v275: ADV ゲーム風バストアップ会話システム。
 //   _showBustup(side, src, opts)  — side='left'|'right', opts={flip:bool}
 //   _hideBustups()                — 全クリア + overlay フェードアウト
@@ -12564,10 +12628,13 @@ function _renderVolcanoCelebrationOverlay(onDone) {
   ov.appendChild(row);
 
   // 各妖精のスプライト (初期は opacity 0 → 順にフェードイン)
+  // v277i: ユーザー指示「ヒノカの絵が古い」→ pixy_*.png (旧チビ pixel art) を撤去し、
+  //         高解像度版バストアップ (Hinoka_001/Riefa_001/Serina_001) に統一。
+  //         比率が縦長なので width 控えめ + height で揃える。
   var FAIRIES_ORDER = [
-    { key: 'forest', name: 'リーファ', img: '../assets/images/characters/pixies/pixy_forest.png', color: '#7CD77C' },
-    { key: 'fire',   name: 'ヒノカ',   img: '../assets/images/characters/pixies/pixy_fire.png',   color: '#FF9A5A' },
-    { key: 'ice',    name: 'セリナ',   img: '../assets/images/characters/pixies/pixy_ice.png',    color: '#A0D8FF' }
+    { key: 'forest', name: 'リーファ', img: '../assets/images/characters/pixies/Riefa/riefa_001.png',  color: '#7CD77C' },
+    { key: 'fire',   name: 'ヒノカ',   img: '../assets/images/characters/pixies/Hinoka/hinoka_001.png', color: '#FF9A5A' },
+    { key: 'ice',    name: 'セリナ',   img: '../assets/images/characters/pixies/Serina/serina_001.png', color: '#A0D8FF' }
   ];
   var fairyEls = FAIRIES_ORDER.map(function(meta) {
     var wrap = document.createElement('div');
@@ -12575,7 +12642,8 @@ function _renderVolcanoCelebrationOverlay(onDone) {
     var img = document.createElement('img');
     img.src = meta.img;
     img.alt = meta.name;
-    img.style.cssText = 'width:clamp(90px,22vw,150px);filter:drop-shadow(0 0 18px ' + meta.color + '88);';
+    // v277i: 高解像度版は縦長なので height ベースで揃える
+    img.style.cssText = 'height:clamp(160px,32vh,260px);width:auto;object-fit:contain;filter:drop-shadow(0 0 18px ' + meta.color + '88);';
     wrap.appendChild(img);
     var label = document.createElement('div');
     label.textContent = meta.name;
@@ -12651,7 +12719,20 @@ function _renderVolcanoCelebrationOverlay(onDone) {
     //       (カゲロウ自身が「つるぎ を あずけたい」と言った直後に剣を渡す演出)。
     var prev = messages[idx - 1];
     if (prev && prev.grantSword && typeof grantGear === 'function') {
+      // v277i: ユーザー指示「宝箱が出てきたときに、妖精は消えてください。
+      //         後ろに宝箱が隠れちゃって開けられません」
+      //         → grantGear モーダル表示中は妖精 + キャプションを一時非表示、モーダル閉じたら復元。
+      var _hiddenSnapshot = fairyEls.map(function(el) {
+        var prevDisplay = el.style.display;
+        el.style.display = 'none';
+        return prevDisplay;
+      });
+      var _captionPrevDisplay = caption.style.display;
+      caption.style.display = 'none';
       grantGear('sword', function() {
+        // モーダル閉じたら妖精とキャプションを復元
+        fairyEls.forEach(function(el, i) { el.style.display = _hiddenSnapshot[i] || ''; });
+        caption.style.display = _captionPrevDisplay || '';
         showMsg(idx);
         idx++;
         setTimeout(function() { transitioning = false; }, 350);
@@ -13155,6 +13236,20 @@ function _rowPracticeNextChar_continue() {
                 _showActClearBanner(t1, t2, _afterVictory);
               });
             };
+            // v277i: 火山ボス (カゲロウ) は ん 完了 → 連続技フィニッシュ → battleVictory の順。
+            //         他の中ボスはこれまで通り即 battleVictory。
+            //         _playKagerouFinalCombo (banner + Ritual 2「かげろう」+ 仮面割れ + battle_last_02)
+            //         が完了してから battleVictory が発火し、bow + leave + 浄化アニメ + celebration が走る。
+            if (_isVolcanoBoss) {
+              try {
+                _playKagerouFinalCombo(function() {
+                  try { battleVictory('fire', _chainReward); } catch (e) { _afterVictory(); }
+                });
+              } catch (e) {
+                try { battleVictory('fire', _chainReward); } catch (ee) { _afterVictory(); }
+              }
+              return;
+            }
             try {
               battleVictory('fire', _chainReward);
             } catch (e) {
