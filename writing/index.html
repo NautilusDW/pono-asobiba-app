@@ -2991,10 +2991,10 @@ body.battle-mode .villain-deco {
    2026-04-25: ユーザー指示「ちょっと下すぎてゲージに被ってる」→ 38% → 28% へ。
    v277e: 「上に行きすぎて頭切れる」→ 勇者 (top:54%) と同じ高さに揃え、足元アライン。
    scale(1.38) + transform-origin: 30% 70% で実体高 ≈ 220×1.38=303px。
-   wrap の中心 54% で flex-end + translateY(-50%) なので、scale された body は wrap 中心
-   付近に留まる。50% 前後が頭切れ無し + ゲージ干渉なし のスイートスポット。 */
+   v277k: ユーザー指示「カゲロウを下げて顔が縦軸の中心に」→ top: 50% → 65% で下方シフト。
+          画像の顔は上 25% 付近にあるので、wrap 中心 65% + scale でちょうど顔が画面中央 50% 付近に来る。 */
 .battle-stage.has-grounded .battle-enemy-wrap.volcano-lord-wrap {
-  top: 50%;
+  top: 65%;
 }
 /* v277e: ユーザー指示「ドロップシャドウみたいなのなくして」
    .battle-enemy.grounded がボス全般に強い drop-shadow を当てているが、
@@ -9914,13 +9914,15 @@ function _showBattleIntro(onDone) {
             if (_bs) { _bs.style.display = ''; _bs.setAttribute('aria-hidden', 'false'); }
             document.body.classList.remove('battle-intro-active');
           } catch (e) {}
-          // v277h: 認識セリフ (カゲロウ初撃 + ヒノカ「そんな…！」) の完了後に妖精合流を挟む。
-          _playHinokaRecognitionIntro(function() {
-            _showFairyMergeIntro(_afterRecog);
-          });
+          // v277k: ユーザー指示「妖精合流は ん 完了後 (ひらがな完成 + れんぞくわざ解放) のタイミング」
+          //         → イントロでは合流を呼ばない。_playKagerouFinalCombo 内で発火させる。
+          _playHinokaRecognitionIntro(_afterRecog);
         },
         { cover: true, kenBurns: true,
-          caption: 'そこ に は——\nのろわれた かざん の ぬし、\nカゲロウ が、 たち はだかって いた。' }
+          // v277k: ユーザー指示「まだカゲロウとはわかっていないので違う表現に」
+          //         → 名前を出さず「やみ に つつまれた おそろしい けもの」と匿名化。
+          //         ヒノカが直後に「まさか、 カゲロウ なの…？」で初めて名前が出る流れ。
+          caption: 'そこ に は——\nやみ に つつまれた、\nおそろしい けもの が たちはだかった。' }
       );
     };
     // v277c: 山道シーンから volcano_boss BGM (Ashen Guardian) に切替。
@@ -11625,16 +11627,22 @@ function _showClimaxEventImage(src, onDone, opts) {
   ov.appendChild(img);
   // v277c: ナレーションテロップ (opts.caption) — 画面下部に半透明バー + 白文字 1〜2 行
   //        山道 / カゲロウ登場のフル画面カットで物語の地の文を字幕表示する用途。
+  // v277k (2026-04-25): ユーザー指示「他とフォント合わせて」+「メッセージボックスを一番下まで下げて」
+  //   → battle-log-line と同じメトリクス (font-family Hiragino, weight 900, letter-spacing 0.04em,
+  //     line-height 1.4, font-size clamp(0.9-1.15rem)) に統一。
+  //   → 位置を bottom:0 に貼り付け (画面最下部の帯)、tap ヒントは右下に配置。
+  //   → 背景・枠も battle-log-window と同じ (#020208 + var(--window-border) 2.5px)。
   var captionEl = null;
   if (opts.caption) {
     captionEl = document.createElement('div');
     captionEl.className = 'climax-caption';
-    captionEl.style.cssText = 'position:absolute;left:50%;bottom:78px;transform:translateX(-50%);width:min(90vw,700px);box-sizing:border-box;padding:14px 22px;background:linear-gradient(180deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.78) 100%);border:1.5px solid rgba(255,220,140,0.35);border-radius:10px;color:#FFEFC6;font-family:"Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(0.95rem,3.4vw,1.2rem);font-weight:900;line-height:1.7;letter-spacing:0.06em;text-align:center;text-shadow:0 0 8px rgba(0,0,0,0.85),0 2px 4px #000;white-space:pre-line;opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
+    captionEl.style.cssText = 'position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:100vw;max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,18px) clamp(16px,4vw,28px) clamp(28px,5vw,38px);background:#020208;border-top:2.5px solid var(--window-border);color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 -4px 16px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
     captionEl.textContent = opts.caption;
     ov.appendChild(captionEl);
   }
+  // v277k: タップヒントは画面右下 (バトル画面と同じ位置パターン)
   var hint = document.createElement('div');
-  hint.style.cssText = 'position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0.8;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;z-index:2;';
+  hint.style.cssText = 'position:absolute;right:18px;bottom:8px;color:#FFE27A;font-size:0.85rem;font-weight:700;opacity:0.85;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.85),0 1px 3px #000;animation:fbHintBlink 1.4s ease-in-out infinite;z-index:3;';
   hint.textContent = '▼ タップ';
   ov.appendChild(hint);
   if (!document.getElementById('memoryFlashbackKF')) {
@@ -11759,7 +11767,7 @@ function _playWaRowEpisode(onDone) {
         try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
         _showBattleDialog([
           { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
-          { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「かざんの うた」を、', 'おもいだして！'] }
+          { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「ほむらの うた」を、', 'おもいだして！'] }
         ], function() {
           try { _hideBustups(); } catch (e) {}
           _playKagerouClimax(onDone);
@@ -12053,9 +12061,11 @@ function _showFairyMergeIntro(onDone) {
   });
 
   var msgs = [
-    'リーファ「ヒノカ……！\nだいじょうぶ……！？',
-    'セリナ「もり と ほこら の ふういん が とけて、\nあなた を おいかけて きた の。',
-    'リーファ「ゆうしゃさま——\nわたし たち も、\nちから を かす わ！'
+    // v277k: ユーザー指示「カゲロウは つよい！助けに 来た わ！」スタイル。
+    //         ひらがな完成 + れんぞくわざ解放 → 妖精が駆けつける流れに合うトーン。
+    'リーファ「ゆうしゃさま！\nやっと おいついた わ！',
+    'セリナ「ヒノカ も ぼろぼろ ね…\nわたし たち も、 ちから を あわせる わ！',
+    'リーファ「カゲロウ は とても つよい——\nでも、 みんな で たちむかえば！'
   ];
   var idx = 0;
   var canAdvanceAt = 0;
@@ -12440,24 +12450,28 @@ function _playKagerouFinalCombo(onDone) {
   setTimeout(function() {
     banner.style.opacity = '0';
     setTimeout(function() { try { if (banner.parentNode) banner.remove(); } catch (e) {} }, 500);
-    // Step 2: プロンプト
-    _showBattleDialog([
-      { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
-      { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
-    ], function() {
-      // Step 3: 連続技 = chant ritual「かげろう」(finisher 入力)
-      _showChantRitual({
-        chars: ['か','げ','ろ','う'],
-        theme: 'starmark',
-        heading: 'なまえ を よびかけよう！',
-        subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
-        shoutout: 'カゲロウ！'
-      }, function() {
-        // Step 4: 仮面割れ
-        _crackKagerouMask(function() {
-          // Step 5: battle_last_02 (浄化遷移シーン)
-          _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
-            if (onDone) onDone();
+    // v277k: Step 1.5 — 妖精合流 (リーファ + セリナ がこの瞬間に駆けつける)
+    //   ユーザー指示通り「ひらがな完成 → れんぞくわざ解放 → 妖精合流 → 連続技」の順番。
+    _showFairyMergeIntro(function() {
+      // Step 2: プロンプト
+      _showBattleDialog([
+        { lines: ['よげん の ちから が、', 'ゆうしゃ の ゆび に', 'やどる ——'] },
+        { lines: ['カゲロウ の', 'ほんとう の なまえ を、', 'よびかけよう！'], opts: { line3Class: 'dmg-line' } }
+      ], function() {
+        // Step 3: 連続技 = chant ritual「かげろう」(finisher 入力)
+        _showChantRitual({
+          chars: ['か','げ','ろ','う'],
+          theme: 'starmark',
+          heading: 'なまえ を よびかけよう！',
+          subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
+          shoutout: 'カゲロウ！'
+        }, function() {
+          // Step 4: 仮面割れ
+          _crackKagerouMask(function() {
+            // Step 5: battle_last_02 (浄化遷移シーン)
+            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
+              if (onDone) onDone();
+            });
           });
         });
       });
@@ -12626,8 +12640,9 @@ function _renderVolcanoCelebrationOverlay(onDone) {
   ov.style.cssText = 'position:fixed;inset:0;z-index:1870;background:radial-gradient(ellipse at center,rgba(255,220,160,0.45) 0%,rgba(255,170,120,0.55) 45%,rgba(120,70,40,0.88) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 0.8s ease;';
 
   // 妖精を横に並べる帯 (森・氷・火の順、中央に火=ヒノカ)
+  // v277k: ユーザー指示「妖精を 70% にしてもう少し下げて」→ margin-top 6vh → 18vh で下げる
   var row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,4vw,28px);margin-top:6vh;';
+  row.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,4vw,28px);margin-top:18vh;';
   ov.appendChild(row);
 
   // 各妖精のスプライト (初期は opacity 0 → 順にフェードイン)
@@ -12646,7 +12661,8 @@ function _renderVolcanoCelebrationOverlay(onDone) {
     img.src = meta.img;
     img.alt = meta.name;
     // v277i: 高解像度版は縦長なので height ベースで揃える
-    img.style.cssText = 'height:clamp(160px,32vh,260px);width:auto;object-fit:contain;filter:drop-shadow(0 0 18px ' + meta.color + '88);';
+    // v277k: ユーザー指示「70%に縮小」→ height clamp 値を ×0.7 に縮小 (160→112, 32vh→22vh, 260→182)
+    img.style.cssText = 'height:clamp(112px,22vh,182px);width:auto;object-fit:contain;filter:drop-shadow(0 0 18px ' + meta.color + '88);';
     wrap.appendChild(img);
     var label = document.createElement('div');
     label.textContent = meta.name;
