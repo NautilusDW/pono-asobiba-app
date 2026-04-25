@@ -6878,7 +6878,7 @@ const BATTLE_ENEMIES = {
     imgFrontIdle:    '../assets/images/monsters/chars/Kagerou/kagerou_front_idle.png',
     imgFrontStill:   '../assets/images/monsters/chars/Kagerou/kagerou_front_still.png',
     // v268: カゲロウとヒノカ (炎の妖精) は昔からの相棒で、一緒に火山を守っていた。ザガンの
-    // 呪縛で引き裂かれた。かざんのうたを通して思い出し、真名を呼ばれて覚醒するバトル。
+    // 呪縛で引き裂かれた。ほむらのうた (火山の歌の古称) を通して思い出し、真名を呼ばれて覚醒するバトル。
     taunts: {
       // v272: 一人称を「俺」→「私」へ統一 (ユーザー指示)。呪縛下 p1 は無人格に近いので pronoun なし。
       p1: ['ゴゴゴ…', 'もえつきろ！', 'ようがんの ちから！', 'くらえ…！'],
@@ -11421,7 +11421,8 @@ function _rowPracticeNextChar() {
     return;
   }
   // v268: わ行 最終ボス戦の finisher (3 文字目「ん」) の直前に、
-  //        ヒノカ cameo + 「かざんのうた」narrative を挟む。物語のクライマックス。
+  //        ヒノカ cameo + 「ほむらのうた」narrative を挟む。物語のクライマックス。
+  //        (v277f: 旧「かざんのうた」→「ほむらのうた」に改名、響きを古来表現に統一)
   //        ヒット 2 ("を") が終わった直後の状態 = _rowPracticeStep === 2 のタイミング。
   if (!_waRowEpisodePlayed && _battle.active && _rowPracticeRow.label === 'わ' && _rowPracticeStep === 2) {
     _waRowEpisodePlayed = true;
@@ -11452,7 +11453,7 @@ var VOLCANO_MEMORY_BEATS = [
   { src: '../assets/images/characters/kagerou/memory_02.jpg',
     caption: 'あつい きずな で\nつながれて いた…' },
   { src: '../assets/images/characters/kagerou/memory_04.jpg',
-    caption: '『かざんの うた』を\nいっしょ に うたった…' },
+    caption: '『ほむらの うた』を\nいっしょ に うたった…' },
   { src: '../assets/images/characters/kagerou/memory_03.jpg',
     caption: 'でも、 ザガン の のろい が\nふたり を ひきさいた…' }
 ];
@@ -11660,7 +11661,7 @@ function _showClimaxEventImage(src, onDone, opts) {
   ov.addEventListener('touchend', function(e) { e.preventDefault(); close(); }, { passive: false });
 }
 
-// わ行専用 cameo: ヒノカが前に出て「かざんのうた」を思い出させる narrative
+// わ行専用 cameo: ヒノカが前に出て「ほむらのうた」(火山の歌の古称) を思い出させる narrative
 // v270: 前半ダイアログ → メモリフラッシュバック (4 枚) → 後半ダイアログ
 // v271: クライマックス追加 — 一瞬の覚醒 → ノクス (ザガンの手下 / 仮面の魔人) が妨害 →
 //       カゲロウ再呪縛 → ヒノカ倒れる → 星の印発動 → 最後の文字 (ん) finisher
@@ -11758,28 +11759,31 @@ function _playKagerouClimaxMain(onDone) {
   var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
 
   // Beat 1: カゲロウが一瞬昔を思い出す。カゲロウ単独右バストアップ + idle 上 stage 効果。
+  // v277f: ユーザー指示「一番強烈に残ってる記憶は炎ではなく『火山の歌』」
+  //         → 思い出させる対象を「ほのお」(炎) ではなく「ほむら」(焔=炎の古語、歌の名前) に変更。
+  //         「ほむらのうた」= ヒノカ&カゲロウが昔ふたりで歌った焔の歌 (古今集の「ほむら」を採用)。
   try { _pulseKagerouAwaken(); } catch (e) {}
   try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
   _showBattleDialog([
-    { lines: ['カゲロウ「…ほのお…？', 'なつかしい、', 'ひびき…'] }
+    { lines: ['カゲロウ「…ほむら…？', 'きいた こと が ある…', 'むかし、 だれか と…'] }
   ], function() {
     try { _hideBustups(); } catch (e) {}
-    // ◆ Ritual 1 へ繋ぐ: ヒノカが歌を促す → 勇者が「かざん」をなぞる → 思い出しかけ
+    // ◆ Ritual 1 へ繋ぐ: ヒノカが歌を促す → 勇者が「ほむら」をなぞる → 思い出しかけ
     try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
     _showBattleDialog([
-      { lines: ['ヒノカ「ゆうしゃさま！', 'いっしょ に、', '『かざんの うた』を…！'] }
+      { lines: ['ヒノカ「ゆうしゃさま！', 'いっしょ に、', '『ほむらの うた』を…！'] }
     ], function() {
       try { _hideBustups(); } catch (e) {}
       _showChantRitual({
-        chars: ['か','ざ','ん'],
+        chars: ['ほ','む','ら'],
         theme: 'awakening',
         heading: 'おもいだして…',
-        subtext: 'カゲロウ と いっしょ に\nうたった、 あの うた…'
+        subtext: 'カゲロウ と いっしょ に\nうたった、 ほむら の うた…'
       }, function() {
         // 思い出しかけのカゲロウ
         try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
         _showBattleDialog([
-          { lines: ['カゲロウ「…か… ざん…？', 'わたし は… その ことば を、', 'しって いる…？'] }
+          { lines: ['カゲロウ「…ほ… むら…？', 'それ は… むかし', 'わたし が、 まもって いた…？'] }
         ], function() {
           try { _hideBustups(); } catch (e) {}
           // Beat 2: ノクス フルスクリーン (画像のみの insert、台詞は内部で表示)
