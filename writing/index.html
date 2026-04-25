@@ -2991,10 +2991,11 @@ body.battle-mode .villain-deco {
    2026-04-25: ユーザー指示「ちょっと下すぎてゲージに被ってる」→ 38% → 28% へ。
    v277e: 「上に行きすぎて頭切れる」→ 勇者 (top:54%) と同じ高さに揃え、足元アライン。
    scale(1.38) + transform-origin: 30% 70% で実体高 ≈ 220×1.38=303px。
-   v277k: ユーザー指示「カゲロウを下げて顔が縦軸の中心に」→ top: 50% → 65% で下方シフト。
-          画像の顔は上 25% 付近にあるので、wrap 中心 65% + scale でちょうど顔が画面中央 50% 付近に来る。 */
+   v277l revert: ユーザー指示「普通のバトル画面の戦ってる時の位置は前ので良かった」
+                 → v277k で 65% に下げたが、これは誤った修正だった。50% に戻す。
+                 正しい修正対象は「バストショット (会話シーン) の位置」だった。 */
 .battle-stage.has-grounded .battle-enemy-wrap.volcano-lord-wrap {
-  top: 65%;
+  top: 50%;
 }
 /* v277e: ユーザー指示「ドロップシャドウみたいなのなくして」
    .battle-enemy.grounded がボス全般に強い drop-shadow を当てているが、
@@ -3730,6 +3731,22 @@ body.battle-mode .villain-deco {
    alt 属性で識別して左寄せクロップに切替。 */
 .battle-stage .bustup-portrait[alt="カゲロウ"] {
   object-position: top left;
+}
+/* v277l (2026-04-25): ユーザー指示「炎の妖精のバストショットを 70% にしてもう少し下げて、
+   カゲロウのバストショットも同様に 70% + 顔が縦軸中心に来るよう下げて」
+   → ヒノカ + カゲロウ の bustup を一律 scale(0.7) + bottom 方向に shift。
+   transform-origin: bottom center で「足元 anchor」、bottom: -8% で画面外へ少し沈み込ませる
+   ことで頭部 (face) が battle-stage の縦中央付近に来る。
+   visible 状態でも translate を維持できるよう、visible のルールも合わせて上書きする。 */
+.battle-stage .bustup-portrait[alt="ヒノカ"],
+.battle-stage .bustup-portrait[alt="カゲロウ"] {
+  bottom: -8%;
+  transform: translateY(14px) scale(0.7) scaleX(var(--flip, 1));
+  transform-origin: bottom center;
+}
+.battle-stage .bustup-portrait[alt="ヒノカ"].visible,
+.battle-stage .bustup-portrait[alt="カゲロウ"].visible {
+  transform: translateY(0) scale(0.7) scaleX(var(--flip, 1));
 }
 @media (prefers-reduced-motion: reduce) {
   .battle-stage .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
@@ -12640,9 +12657,10 @@ function _renderVolcanoCelebrationOverlay(onDone) {
   ov.style.cssText = 'position:fixed;inset:0;z-index:1870;background:radial-gradient(ellipse at center,rgba(255,220,160,0.45) 0%,rgba(255,170,120,0.55) 45%,rgba(120,70,40,0.88) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 0.8s ease;';
 
   // 妖精を横に並べる帯 (森・氷・火の順、中央に火=ヒノカ)
-  // v277k: ユーザー指示「妖精を 70% にしてもう少し下げて」→ margin-top 6vh → 18vh で下げる
+  // v277l revert: v277k で celebration row を下げたが、ユーザー指示は実は bustup だった。
+  //               celebration の方は元の margin-top:6vh に戻す。
   var row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,4vw,28px);margin-top:18vh;';
+  row.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,4vw,28px);margin-top:6vh;';
   ov.appendChild(row);
 
   // 各妖精のスプライト (初期は opacity 0 → 順にフェードイン)
@@ -12661,8 +12679,8 @@ function _renderVolcanoCelebrationOverlay(onDone) {
     img.src = meta.img;
     img.alt = meta.name;
     // v277i: 高解像度版は縦長なので height ベースで揃える
-    // v277k: ユーザー指示「70%に縮小」→ height clamp 値を ×0.7 に縮小 (160→112, 32vh→22vh, 260→182)
-    img.style.cssText = 'height:clamp(112px,22vh,182px);width:auto;object-fit:contain;filter:drop-shadow(0 0 18px ' + meta.color + '88);';
+    // v277l revert: 70% 縮小は誤対応 (ユーザー指示は bustup だった)。元の clamp(160,32vh,260) に戻す。
+    img.style.cssText = 'height:clamp(160px,32vh,260px);width:auto;object-fit:contain;filter:drop-shadow(0 0 18px ' + meta.color + '88);';
     wrap.appendChild(img);
     var label = document.createElement('div');
     label.textContent = meta.name;
