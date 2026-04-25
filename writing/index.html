@@ -9142,8 +9142,12 @@ function battleVictory(spellKind, onDone) {
       : { lines: ['きょうのどんぐりは', '<span class="dq-line-emphasis">おしまい！</span> また あした！'], opts: { line2Class: 'dmg-line' } };
     // v266: せいれいから もらった ありがとう の表示
     const thankYouLine = { lines: ['せいれい から', '<span class="dq-line-emphasis">💝 ありがとう +' + thankYouAdd + '</span>'], opts: { line2Class: 'dmg-line' } };
+    // v278d: ユーザー指示「『めざめさせた』ではなく『われにかえった』に変更。
+    //         全体を通じて『われにかえった』の表現は共通 (マザーオマージュ)」
+    //         → 旧: 「〇〇を めざめさせた！」(他動詞、勇者主語)
+    //         → 新: 「〇〇は われにかえった！」(自動詞、敵主語、Mother 風) で全敵 共通化。
     const messages = [
-      { lines: [enemyName + 'を', '<span class="dq-line-emphasis">めざめさせた！</span>'], opts: { line2Class: 'dmg-line' } },
+      { lines: [enemyName + 'は', '<span class="dq-line-emphasis">われにかえった！</span>'], opts: { line2Class: 'dmg-line' } },
     ];
     if (bowLine) {
       messages.push({
@@ -9164,8 +9168,15 @@ function battleVictory(spellKind, onDone) {
         }
       });
     }
-    messages.push(thankYouLine);
-    messages.push(rewardLine);
+    // v278d: ユーザー指示「どんぐりゲットのくだりは興ざめするためカット。
+    //         入れるならカゲロウが戻った後にゲットした数だけさらっと表示」
+    //         → 火山ボス (volcano_lord) 戦のみ thankYou + reward を battle dialog から外す。
+    //         カゲロウ復帰後の celebration 末尾でゲット数だけ簡潔表示する (将来 task)。
+    var _isVolcanoVic = (_battle.enemy && _battle.enemy.id === 'volcano_lord');
+    if (!_isVolcanoVic) {
+      messages.push(thankYouLine);
+      messages.push(rewardLine);
+    }
     messages.push({ lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } });
 
     _showBattleDialog(messages, function() {
@@ -9191,9 +9202,10 @@ function _playMagicFinisherSound() {
 }
 
 // v265: 「〇〇を めざめさせた！」を戦闘ログに表示 (旧: たおした!)
+// v278d: 「〇〇は われにかえった！」(マザーオマージュ、全敵共通) に統一。
 function _showDefeatedWindow(enemyName) {
   const name = enemyName || 'モンスター';
-  _setBattleLog([name + 'を', '<span class="dq-line-emphasis">めざめさせた！</span>'], { line2Class: 'dmg-line' });
+  _setBattleLog([name + 'は', '<span class="dq-line-emphasis">われにかえった！</span>'], { line2Class: 'dmg-line' });
 }
 function _hideDefeatedWindow() {
   // 互換のため残す。_rowPracticeComplete 側でログは自然に次のメッセージに置き換わる。
@@ -11632,7 +11644,9 @@ function grantGear(kind, onDone) {
 // m: GEAR_META のエントリ, onComplete: 演出終了時のコールバック
 function _showTreasureBoxReveal(m, onComplete) {
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1650;background:radial-gradient(ellipse at center,rgba(60,30,80,0.55) 0%,rgba(5,5,15,0.85) 75%);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.3s ease;';
+  // v278d: ユーザー指示「宝箱が一番前に来てないからタップできない」
+  //         → 1650 → 1950 (celebration overlay 1870 / chant ritual 1900 より上) に昇格。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1950;background:radial-gradient(ellipse at center,rgba(60,30,80,0.55) 0%,rgba(5,5,15,0.85) 75%);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.3s ease;';
 
   const stage = document.createElement('div');
   stage.style.cssText = 'position:relative;width:min(90vw,360px);height:min(90vw,360px);display:flex;align-items:center;justify-content:center;';
@@ -11728,7 +11742,8 @@ function _presentBattleModal(opts) {
   // 2026-04-21: z-index を 1100 → 1700 に昇格。バトルログ (1400) / マップシーン (1500) /
   // なぞりスタートオーバーレイ (1550) よりも前に出して、神器入手や中ボス登場の
   // モーダルが裏に隠れないようにする。
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1700;background:rgba(10,12,28,0.65);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;padding:20px;';
+  // v278d: celebration overlay (1870) より上にするため 1700 → 1955 にさらに昇格。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1955;background:rgba(10,12,28,0.65);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.25s ease;padding:20px;';
   var card = document.createElement('div');
   card.style.cssText = 'background:linear-gradient(180deg,#1a1d3a 0%,#0f1226 100%);border:2.5px solid var(--window-border);border-radius:22px;padding:26px 22px;text-align:center;width:min(86vw,320px);box-shadow:0 12px 40px rgba(0,0,0,0.6),inset 0 0 18px rgba(255,220,130,0.18);color:#fff;';
   card.innerHTML =
@@ -12236,10 +12251,15 @@ function _showMaskedManInterference(onDone) {
   //         隠れて見えなくなる問題があった。pointer-events:auto に変更してタップで進める。
   ov.style.cssText = 'position:fixed;inset:0;z-index:1850;background:#000;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity 0.7s ease;cursor:pointer;';
 
+  // v278d (2026-04-25): ユーザー指示「ノクス登場シーンは縦パン」
+  //   山道シーンと同じ要領で、画像を 116vh に膨らませて translateY -8% → +8% を 10s linear で
+  //   下から上に縦パン (見上げるカメラワーク)。重厚なノクス登場演出になる。
+  //   overflow:hidden を overlay 側に指定して画像が画面外にハミ出さないように。
+  ov.style.overflow = 'hidden';
   var img = document.createElement('img');
   img.src = MASKED_MAN_IMG;
   img.alt = '';
-  img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.7s ease;z-index:1;';
+  img.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:116vh;object-fit:cover;object-position:center;opacity:0;transform:translate(-50%,calc(-50% + -8%)) scale(1);transition:opacity 0.7s ease;z-index:1;';
   ov.appendChild(img);
 
   // 内蔵ダイアログバー (画像の上に重ねる)
@@ -12258,7 +12278,16 @@ function _showMaskedManInterference(onDone) {
   document.body.appendChild(ov);
   requestAnimationFrame(function() {
     ov.style.opacity = '1';
-    setTimeout(function() { img.style.opacity = '1'; }, 80);
+    setTimeout(function() {
+      img.style.opacity = '1';
+      // v278d: 縦パン start (下→上)、10s linear。山道シーンと同パターン。
+      img.style.transition = 'opacity 0.7s ease, transform 10s linear';
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          img.style.transform = 'translate(-50%, calc(-50% + 8%)) scale(1)';
+        });
+      });
+    }, 80);
   });
 
   // v276b: 名前 (ノクス) はカタカナ編・魔王城で名乗り出るまで伏せる方針。
@@ -12791,12 +12820,31 @@ function _playKagerouFinalCombo(onDone) {
                           subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
                           shoutout: 'カゲロウ！'
                         }, function() {
-                          // ====== Phase E3: 仮面割れ + battle_last_02 → onDone (= battleVictory) ======
-                          _crackKagerouMask(function() {
-                            _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
-                              if (onDone) onDone();
+                          // ====== Phase E3: 攻撃ヒット → 仮面割れ → battle_last_02 → onDone ======
+                          // v278d (2026-04-25): ユーザー指示「『かげろう』入力後は最後の攻撃が
+                          //   先に当たった後に仮面が壊れるイメージ」
+                          //   → ① 大ダメージ着弾 (黄金フラッシュ + 強シェイク + ダメージ class)
+                          //   → ② _crackKagerouMask (仮面割れ)
+                          //   → ③ battle_last_02 (浄化遷移)
+                          try {
+                            var _enemyHit = document.getElementById('battleEnemy');
+                            if (_enemyHit) { _enemyHit.classList.add('damaged'); setTimeout(function(){ _enemyHit.classList.remove('damaged'); }, 700); }
+                            var _stHit = document.querySelector('.battle-stage');
+                            if (_stHit) { _stHit.classList.add('screen-heavy-shake'); setTimeout(function(){ _stHit.classList.remove('screen-heavy-shake'); }, 900); }
+                            // 黄金フラッシュ全画面 (短く 0.5s)
+                            var _flash = document.createElement('div');
+                            _flash.style.cssText = 'position:fixed;inset:0;z-index:1885;background:radial-gradient(ellipse at center,rgba(255,235,140,0.85) 0%,rgba(255,180,40,0.5) 35%,transparent 80%);pointer-events:none;animation:hinokaHitFlash 0.55s ease-out forwards;';
+                            document.body.appendChild(_flash);
+                            setTimeout(function() { try { if (_flash.parentNode) _flash.remove(); } catch (e) {} }, 600);
+                          } catch (e) {}
+                          // 0.85s 後に仮面割れ → battle_last_02
+                          setTimeout(function() {
+                            _crackKagerouMask(function() {
+                              _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
+                                if (onDone) onDone();
+                              });
                             });
-                          });
+                          }, 850);
                         });
                       });
                     });
@@ -13128,7 +13176,10 @@ function _renderVolcanoCelebrationOverlay(onDone) {
   });
 
   var caption = document.createElement('div');
-  caption.style.cssText = 'position:absolute;bottom:14%;left:50%;transform:translateX(-50%);width:min(90vw,620px);text-align:center;color:#FFF5DA;font-size:1.0rem;font-weight:900;line-height:1.7;letter-spacing:0.06em;text-shadow:0 2px 8px rgba(40,20,10,0.95);opacity:0;transition:opacity 0.6s ease;';
+  // v278d: ユーザー指示「妖精 3 人で話してるところ、背景が邪魔で読めない」
+  //         → 透明テキスト + text-shadow だけだと朝焼け bg と被って読み難い。
+  //         battle-log と同じ書式 (#020208 + 枠) のボックス化に変更。
+  caption.style.cssText = 'position:absolute;bottom:5%;left:50%;transform:translateX(-50%);width:min(94vw,720px);box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;text-align:left;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-shadow:0 0 4px rgba(255,255,255,0.3);box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.6s ease;';
   ov.appendChild(caption);
 
   document.body.appendChild(ov);
