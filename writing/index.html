@@ -2836,6 +2836,102 @@ body.battle-mode .villain-deco {
 /* バトル中でないときは非表示 (stage 自体が display:none なので保険) */
 .battle-stage[aria-hidden="true"] .hero-status { display: none; }
 
+/* ===== v278a: 妖精パーティー HP ゲージ (勇者ステータス直下、勇者より小型) ===== */
+.fairy-status {
+  position: absolute;
+  top: calc(8px + clamp(48px, 14vw, 72px));  /* hero-status の高さ分だけ下げる */
+  left: 8px;
+  z-index: 4;
+  background: rgba(2, 2, 8, 0.78);
+  border: 2px solid var(--window-border);
+  border-radius: 10px;
+  padding: 4px 6px;
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  color: #fff;
+  font-size: clamp(0.55rem, 1.9vw, 0.68rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  display: flex; flex-direction: column;
+  gap: 2px;
+  min-width: clamp(85px, 24vw, 118px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.55);
+  pointer-events: none;
+}
+.fairy-status-row {
+  display: flex; align-items: center; gap: 4px;
+}
+.fairy-status-label {
+  min-width: 1.2em;
+  text-align: center;
+  font-weight: 900;
+  font-size: 0.95em;
+  text-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+.fairy-status-row[data-fairy="hinoka"] .fairy-status-label { color: #FF9A5A; }
+.fairy-status-row[data-fairy="riefa"] .fairy-status-label  { color: #7CD77C; }
+.fairy-status-row[data-fairy="serina"] .fairy-status-label { color: #A0D8FF; }
+.fairy-status-bar-wrap {
+  flex: 1;
+  height: 5px;
+  background: #1a1a28;
+  border: 1px solid #444;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.fairy-status-bar {
+  height: 100%;
+  transition: width 0.35s ease, background 0.3s ease;
+}
+.fairy-status-bar.hp {
+  background: linear-gradient(180deg, #7af285 0%, #2db74a 100%);
+}
+/* HP 残量で色変化 (勇者と違って妖精は色だけで状態を表現) */
+.fairy-status-bar.hp.low {
+  background: linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%);
+}
+.fairy-status-bar.hp.critical {
+  background: linear-gradient(180deg, #FCA5A5 0%, #EF4444 100%);
+  animation: fairyHpCriticalBlink 0.6s ease-in-out infinite;
+}
+.fairy-status-bar.hp.dead {
+  background: #2a1a1a;
+  opacity: 0.4;
+  animation: none;
+}
+@keyframes fairyHpCriticalBlink {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50%      { filter: brightness(1.6) saturate(1.4); }
+}
+.fairy-status-row.fallen {
+  opacity: 0.5;
+}
+.fairy-status-row.fallen .fairy-status-label {
+  text-decoration: line-through;
+  color: #888 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fairy-status-bar { transition: none; }
+  .fairy-status-bar.hp.critical { animation: none; }
+}
+.battle-stage[aria-hidden="true"] .fairy-status { display: none; }
+
+/* ===== v278a: 敵の HP 状態を「名前の色」で表現 (DQ 風)。volcano_lord ではゲージ撤去 ===== */
+.battle-stage[data-enemy-id="volcano_lord"] .hp-bar-wrap,
+.battle-stage[data-enemy-id="volcano_lord"] .pentagram-charge {
+  display: none !important;
+}
+.enemy-name[data-hp-state="ok"]       { color: var(--text); }
+.enemy-name[data-hp-state="hurt"]     { color: #FCD34D; text-shadow: 0 0 8px rgba(252,211,77,0.7), 0 0 2px #000; }
+.enemy-name[data-hp-state="critical"] { color: #FCA5A5; text-shadow: 0 0 10px rgba(252,165,165,0.8), 0 0 2px #000; animation: enemyNameCriticalBlink 0.8s ease-in-out infinite; }
+.enemy-name[data-hp-state="dying"]    { color: #B91C1C; text-shadow: 0 0 6px rgba(127,29,29,0.6), 0 0 2px #000; opacity: 0.85; }
+@keyframes enemyNameCriticalBlink {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50%      { filter: brightness(1.4) saturate(1.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enemy-name[data-hp-state="critical"] { animation: none; }
+}
+
 .battle-stage .battle-enemy-wrap {
   position: absolute;
   right: 4%; left: auto; top: 58%;  /* 敵は右側に配置 (中央は勇者と重なりすぎるため) */
@@ -5012,6 +5108,22 @@ body.battle-intro-active .battle-log-window {
           <div class="hero-equip-strip" id="heroEquipStrip" aria-label="三種の神器"></div>
         </div>
       </div>
+      <!-- v278a (2026-04-25): 妖精パーティー HP ゲージ (勇者ステータスの直下、勇者より小型)
+           わ行ボス戦専用。開幕は ヒノカ のみ表示、合流タイミングで リーファ + セリナ も表示。 -->
+      <div class="fairy-status" id="fairyStatus" aria-hidden="true" style="display:none;">
+        <div class="fairy-status-row" data-fairy="hinoka" style="display:none;">
+          <span class="fairy-status-label">ヒ</span>
+          <div class="fairy-status-bar-wrap"><div class="fairy-status-bar hp" id="hinokaHpBar"></div></div>
+        </div>
+        <div class="fairy-status-row" data-fairy="riefa" style="display:none;">
+          <span class="fairy-status-label">リ</span>
+          <div class="fairy-status-bar-wrap"><div class="fairy-status-bar hp" id="riefaHpBar"></div></div>
+        </div>
+        <div class="fairy-status-row" data-fairy="serina" style="display:none;">
+          <span class="fairy-status-label">セ</span>
+          <div class="fairy-status-bar-wrap"><div class="fairy-status-bar hp" id="serinaHpBar"></div></div>
+        </div>
+      </div>
       <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
       <div class="battle-enemy-wrap">
         <div class="battle-enemy" id="battleEnemy">
@@ -6954,6 +7066,13 @@ const _battle = {
   // 勇者 HP/MP (減るが死なない floor でクランプする)。
   heroHp: 30, heroMaxHp: 30, heroHpFloor: 5,
   heroMp: 20, heroMaxMp: 20, heroMpFloor: 0,
+  // v278a: 妖精パーティー HP (volcano_lord 戦専用、それ以外は無効)。
+  // joined=true の妖精のみ HP ゲージを表示する。
+  fairies: {
+    hinoka: { hp: 8, maxHp: 8, joined: false, alive: true },
+    riefa:  { hp: 6, maxHp: 6, joined: false, alive: true },
+    serina: { hp: 6, maxHp: 6, joined: false, alive: true },
+  },
 };
 
 // ===== v265: 呪縛仮面・呪印・浄化 (「呪縛を解く」ピボット) =====
@@ -7190,6 +7309,104 @@ function _renderHpBar(hp, maxHp) {
   }
 }
 
+// ===== v278a (2026-04-25): 妖精パーティー HP ゲージシステム =====
+// 火山ボス (volcano_lord) 戦のみ有効。バトル開始時に ヒノカ のみ joined。
+// 合流タイミング (連続技フェーズ前) で リーファ + セリナ も joined になりゲージ出現。
+// 各妖精のゲージは勇者ゲージより小さく、HP 残量で色変化 (緑→黄→赤点滅→暗赤)。
+//
+// 公開 API:
+//   _initFairyHp(enemy)           — バトル開始時にリセット (volcano_lord ならヒノカのみ joined)
+//   _addFairyToParty(key)         — key='riefa'|'serina' を joined にしてゲージを表示
+//   _damageFairy(key, amount)     — key の HP を減らしてゲージ更新、0 なら fallen クラス付与
+//   _isFairyAlive(key)            — alive チェック
+//   _renderEnemyNameColor()       — _battle.hp/maxHp から enemy-name の data-hp-state を更新
+function _initFairyHp(enemy) {
+  var f = _battle.fairies;
+  // すべて初期化
+  f.hinoka.hp = f.hinoka.maxHp; f.hinoka.joined = false; f.hinoka.alive = true;
+  f.riefa.hp  = f.riefa.maxHp;  f.riefa.joined  = false; f.riefa.alive  = true;
+  f.serina.hp = f.serina.maxHp; f.serina.joined = false; f.serina.alive = true;
+  // 火山ボス戦のみヒノカ joined (開幕からゲージ表示)
+  var volcano = enemy && enemy.id === 'volcano_lord';
+  var status = document.getElementById('fairyStatus');
+  if (!status) return;
+  if (!volcano) { status.style.display = 'none'; return; }
+  status.style.display = '';
+  status.setAttribute('aria-hidden', 'false');
+  // 全行非表示 → ヒノカだけ表示
+  var rows = status.querySelectorAll('.fairy-status-row');
+  rows.forEach(function(r) { r.style.display = 'none'; r.classList.remove('fallen'); });
+  f.hinoka.joined = true;
+  _showFairyGauge('hinoka');
+}
+
+function _showFairyGauge(key) {
+  var status = document.getElementById('fairyStatus');
+  if (!status) return;
+  var row = status.querySelector('.fairy-status-row[data-fairy="' + key + '"]');
+  if (!row) return;
+  row.style.display = '';
+  _renderFairyHp(key);
+}
+
+function _addFairyToParty(key) {
+  var f = _battle.fairies && _battle.fairies[key];
+  if (!f) return;
+  f.joined = true;
+  _showFairyGauge(key);
+}
+
+function _damageFairy(key, amount) {
+  var f = _battle.fairies && _battle.fairies[key];
+  if (!f || !f.joined || !f.alive) return;
+  f.hp = Math.max(0, f.hp - (amount | 0));
+  if (f.hp <= 0) f.alive = false;
+  _renderFairyHp(key);
+}
+
+function _isFairyAlive(key) {
+  var f = _battle.fairies && _battle.fairies[key];
+  return !!(f && f.joined && f.alive);
+}
+
+function _renderFairyHp(key) {
+  var f = _battle.fairies && _battle.fairies[key];
+  if (!f) return;
+  var status = document.getElementById('fairyStatus');
+  if (!status) return;
+  var row = status.querySelector('.fairy-status-row[data-fairy="' + key + '"]');
+  if (!row) return;
+  var bar = row.querySelector('.fairy-status-bar');
+  if (!bar) return;
+  var pct = f.maxHp > 0 ? (f.hp / f.maxHp) * 100 : 0;
+  bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  bar.classList.remove('low', 'critical', 'dead');
+  row.classList.remove('fallen');
+  if (f.hp <= 0) {
+    bar.classList.add('dead');
+    row.classList.add('fallen');
+  } else if (pct <= 25) {
+    bar.classList.add('critical');
+  } else if (pct <= 50) {
+    bar.classList.add('low');
+  }
+}
+
+// 敵 HP の状態を name 色に反映 (volcano_lord は HP ゲージ非表示なので名前色だけが手がかり)。
+// 100-66%: ok (白) / 66-33%: hurt (黄) / 33-1%: critical (赤・点滅) / 0%: dying (暗赤)
+function _renderEnemyNameColor() {
+  var nameEl = document.getElementById('battleEnemyName');
+  if (!nameEl) return;
+  var hp = _battle.hp || 0;
+  var max = _battle.maxHp || 1;
+  var pct = (hp / max) * 100;
+  var state = 'ok';
+  if (hp <= 0) state = 'dying';
+  else if (pct <= 33) state = 'critical';
+  else if (pct <= 66) state = 'hurt';
+  nameEl.dataset.hpState = state;
+}
+
 // 行ラベル (あ/カ...) → ステージ種別。森/洞窟/火山/城 に対応。
 // ひらがな: あか=forest, さ=forest(中ボス), た/な/は=cave, ま/や/ら/わ=volcano
 // カタカナ: 全て castle (Phase 2 で細分化する)
@@ -7265,7 +7482,15 @@ function _showBattleStage(rowId) {
   // grounded 無しの場合は .battle-enemy の通常サイズ (60px) が効くので意味を持たない。
   els.enemy.classList.toggle('compact', !!enemy.compact);
   // enemy id を data 属性に乗せて、敵固有のサイズ調整 (例: ice_wizard 1.8x) を CSS から掛けられるように。
-  if (enemy.id) { els.enemy.dataset.enemyId = enemy.id; } else { delete els.enemy.dataset.enemyId; }
+  // v278a: enemy id を battleStage にも乗せる (CSS で .battle-stage[data-enemy-id="..."] から
+  //         子孫の HP ゲージや name 色を制御できるよう)。
+  if (enemy.id) {
+    els.enemy.dataset.enemyId = enemy.id;
+    if (els.stage) els.stage.dataset.enemyId = enemy.id;
+  } else {
+    delete els.enemy.dataset.enemyId;
+    if (els.stage) delete els.stage.dataset.enemyId;
+  }
   // 元素材が右向きのザコ (flipped:true) は水平反転して勇者と対峙させる。
   // grounded と独立に指定できる (接地しない空中ザコでも反転だけ掛けたい場合があるため)。
   els.enemy.classList.toggle('flipped', !!enemy.flipped);
@@ -7281,6 +7506,10 @@ function _showBattleStage(rowId) {
     els.stage.classList.add('stage-' + _stageForRow(rowId));
   } catch (e) {}
   _renderHpBar(_battle.hp, _battle.maxHp);
+  // v278a: 妖精パーティー HP ゲージを初期化 (volcano_lord 戦のみ起動)
+  try { _initFairyHp(enemy); } catch (e) {}
+  // v278a: 敵 HP の名前色を初期化 (volcano_lord は HP ゲージが非表示なので名前色だけが手がかり)
+  try { _renderEnemyNameColor(); } catch (e) {}
 
   // 2026-04-20: バトルステージは「マップシーン+エンカウント演出」が終わるまで
   // DOM 上は非表示のままにする。以前はここで display:'' にしていたため、
@@ -8320,6 +8549,14 @@ function battleHitEnemy(opts) {
   } else {
     _battle.hp = Math.max(0, _battle.hp - 1);
   }
+  // v278a: 敵 HP 状態を name の色に反映 (volcano_lord 用、他敵にも害なし)
+  try { _renderEnemyNameColor(); } catch (e) {}
+  // v278a: 火山ボス戦中はカゲロウの反撃でヒノカが累積ダメージ (1 hit/ターン)
+  try {
+    if (_battle.enemy && _battle.enemy.id === 'volcano_lord' && !isFinisher) {
+      if (_isFairyAlive('hinoka')) _damageFairy('hinoka', 1);
+    }
+  } catch (e) {}
 
   // 攻撃タイプを決定 (finisher は必ず magic、それ以外は plan に従う)
   const planIdx = Math.min(_battle.hitCount - 1, (_battle.attackPlan.length || 0) - 1);
@@ -12042,6 +12279,10 @@ function _showMaskedManInterference(onDone) {
 //   battleStage がまだ非表示なので _showBustup ではなく自前のフル画面 overlay を使う。
 //   背景: 山道の余韻を残す暖色グラデ + 風のキラキラ。中央 ↑ にナレーション、左右に妖精ポートレート、下部にダイアログ。
 function _showFairyMergeIntro(onDone) {
+  // v278a: 合流タイミングで リーファ + セリナ を party に追加 → ゲージ表示。
+  //         妖精全員のゲージが battle stage 左上に並ぶ (ヒノカは開幕から表示済)。
+  try { _addFairyToParty('riefa');  } catch (e) {}
+  try { _addFairyToParty('serina'); } catch (e) {}
   var ov = document.createElement('div');
   ov.id = 'fairyMergeOverlay';
   ov.style.cssText = 'position:fixed;inset:0;z-index:1808;background:radial-gradient(ellipse at center,rgba(40,30,15,0.9) 0%,rgba(8,6,4,0.97) 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 6vh;box-sizing:border-box;opacity:0;transition:opacity 0.7s ease;cursor:pointer;';
@@ -12562,6 +12803,9 @@ var HINOKA_SPRITES = {
 // ヒノカが攻撃を受けて倒れる演出 (画面フラッシュ + 中央寄りに小さめスプライトを一瞬出す)。
 // 主人公の位置 (左下) と被らないよう中央寄りに配置 + 妖精の小ささを反映して width 11% に縮小。
 function _hinokaFallEffect() {
+  // v278a: 重傷 = HP→0 を妖精ステータスにも反映 (ゲージ消滅 + label 取消線)
+  try { _damageFairy('hinoka', 99); } catch (e) {}
+
   var stage = document.querySelector('.battle-stage');
   if (!stage) return;
   // フラッシュ
