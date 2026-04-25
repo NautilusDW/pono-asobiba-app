@@ -3252,6 +3252,17 @@ body.battle-mode .villain-deco {
   50%      { transform: translateX(12px)  rotate(3deg); }
   80%      { transform: translateX(-8px)  rotate(-2deg); }
 }
+/* v277d: セリナの氷が効かない演出 — 青いハイライトが一瞬当たって すぐ消える (ノーダメージ感)
+   ライトな bounce + cyan filter を 0.7s で */
+.battle-enemy.ice-noeffect {
+  animation: iceNoEffect 0.7s ease-out 1 !important;
+}
+@keyframes iceNoEffect {
+  0%   { filter: brightness(1) drop-shadow(0 0 0 transparent); transform: scale(1); }
+  25%  { filter: brightness(1.3) drop-shadow(0 0 16px rgba(150,220,255,0.85)); transform: scale(0.98); }
+  60%  { filter: brightness(1.1) drop-shadow(0 0 8px rgba(150,220,255,0.4)); transform: scale(1); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 transparent); transform: scale(1); }
+}
 /* v271 クライマックス: スクリーン激震 (ヒノカ被弾時) */
 .battle-stage.screen-heavy-shake {
   animation: screenHeavyShake 0.12s linear 7 !important;
@@ -3703,6 +3714,12 @@ body.battle-mode .villain-deco {
 }
 .battle-stage .bustup-portrait.left  { left:  2%; }
 .battle-stage .bustup-portrait.right { right: 2%; }
+/* v277d (2026-04-25): カゲロウのバストショット (kagerou_atk_1.png) は landscape 構図で
+   顔が画像の左側に集中している。default の object-position:top center だと顔が切れるので、
+   alt 属性で識別して左寄せクロップに切替。 */
+.battle-stage .bustup-portrait[alt="カゲロウ"] {
+  object-position: top left;
+}
 @media (prefers-reduced-motion: reduce) {
   .battle-stage .bustup-portrait { transition: opacity 0.2s ease, transform 0s; }
 }
@@ -9879,14 +9896,19 @@ function _showBattleIntro(onDone) {
     // v277c: 山道シーンから volcano_boss BGM (Ashen Guardian) に切替。
     //         以降カゲロウ最終戦終了まで同曲が流れ続ける。
     try { setBgmFor('volcano_boss'); } catch (e) {}
+    // v277d: 山道 → 妖精合流 → カゲロウ登場 の 3 段紙芝居。
+    //         合流シーンで「リーファ + セリナ も追いついて全員集合」のドラマを描く。
+    var _showMerge = function() {
+      _showFairyMergeIntro(_showKagerou);
+    };
     // 山道画像が存在するか先にプリロードでチェック → あれば挿入、なければスキップ
     var probe = new Image();
     probe.onload = function() {
-      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou,
+      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showMerge,
         { cover: true, pan: 'up',
           caption: 'ゆうしゃ は、 かざん の いただき を めざし、\nけわしい やまみち を のぼって いった——' });
     };
-    probe.onerror = function() { _showKagerou(); };
+    probe.onerror = function() { _showMerge(); };
     probe.src = VOLCANO_PATH_INTRO_IMG;
     return;
   }
@@ -11669,9 +11691,59 @@ function _playWaRowEpisode(onDone) {
 //   どちらも特別 UI (_showChantRitual)。完了後に物語が次のビートへ進む。
 function _playKagerouClimax(onDone) {
   var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
+  var SERINA_R = '../assets/images/characters/pixies/Serina/serina_001.png';
   // 2026-04-25: ユーザー指示「真正面ではなく、斜めを向いている素材を使ってください」
   //             → front_still (真正面) → atk_1 (3/4 斜め、咆哮) へ変更。
   //             bustup 側は object-fit:cover + object-position:top で頭〜胸だけクロップされる。
+  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
+
+  // ◆ Beat 0 (v277d 新設): セリナの氷が効かない → ヒノカの「正義の炎」だけ通る、の演出。
+  //    「闇の炎には氷では効かない、ヒノカの炎だけが届く」を 5 歳児にもわかる形で説明する。
+  try { _showBustup('right', SERINA_R, { flip: true, alt: 'セリナ' }); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['セリナ「わたしの こおり、', 'やって みる わ…！', ''] }
+  ], function() {
+    // 氷攻撃 → 効かない演出: 敵に短い氷ヒット class を当てて青光フラッシュ → 何も起きずに消える
+    try {
+      var _enemyIce = document.getElementById('battleEnemy');
+      if (_enemyIce) { _enemyIce.classList.add('ice-noeffect'); setTimeout(function(){ _enemyIce.classList.remove('ice-noeffect'); }, 700); }
+    } catch (e) {}
+    setTimeout(function() {
+      _showBattleDialog([
+        { lines: ['セリナ「ど…どうして…！？', 'カゲロウ は ほのお タイプ なのに、', 'わたしの こおり が… とけ ちゃう！'] }
+      ], function() {
+        try { _hideBustups(); } catch (e) {}
+        try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+        _showBattleDialog([
+          { lines: ['ヒノカ「あの ほのお は、', 'ザガン が しこんだ', 'やみ の のろい なの…！'] },
+          { lines: ['ヒノカ「ふつう の まほう では、', 'のろい に とどか ない…', 'わたしの ほのお で やる わ！'], opts: { line3Class: 'dmg-line' } },
+          { lines: ['ヒノカ「ごめんね、', 'カゲロウ…！', ''] }
+        ], function() {
+          // 炎攻撃 → 通る演出: enemy にダメージ flash + ステージシェイク
+          try {
+            var _enemy = document.getElementById('battleEnemy');
+            if (_enemy) { _enemy.classList.add('damaged'); setTimeout(function(){ _enemy.classList.remove('damaged'); }, 700); }
+            var _st = document.querySelector('.battle-stage');
+            if (_st) { _st.classList.add('screen-heavy-shake'); setTimeout(function(){ _st.classList.remove('screen-heavy-shake'); }, 700); }
+          } catch (e) {}
+          setTimeout(function() {
+            _showBattleDialog([
+              { lines: ['セリナ「すごい…！', 'カゲロウ が ひるんだ わ！', ''] },
+              { lines: ['ヒノカ「みんな、', 'ちから を あわせよう！', ''], opts: { line3Class: 'dmg-line' } }
+            ], function() {
+              try { _hideBustups(); } catch (e) {}
+              _playKagerouClimaxMain(onDone);
+            });
+          }, 700);
+        });
+      });
+    }, 700);
+  });
+}
+
+// 既存のクライマックス本体 (Beat 1〜5)。Beat 0 (魔法相性デモ) と分離して可読性を保つ。
+function _playKagerouClimaxMain(onDone) {
+  var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
   var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
 
   // Beat 1: カゲロウが一瞬昔を思い出す。カゲロウ単独右バストアップ + idle 上 stage 効果。
@@ -11784,13 +11856,27 @@ var MASKED_MAN_IMG = '../assets/images/story/kagerou_recurse.jpg';
 function _showMaskedManInterference(onDone) {
   var ov = document.createElement('div');
   ov.id = 'maskedManOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1850;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.7s ease;pointer-events:none;';
+  // v277d: ダイアログを overlay 内部に持たせ、画像の上にレイヤー (z-index 1860) で配置。
+  //         旧実装は外部の battle-log-window に依存していたため、フル画面画像 (z-index 1850) で
+  //         隠れて見えなくなる問題があった。pointer-events:auto に変更してタップで進める。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1850;background:#000;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity 0.7s ease;cursor:pointer;';
 
   var img = document.createElement('img');
   img.src = MASKED_MAN_IMG;
   img.alt = '';
-  img.style.cssText = 'width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.7s ease;';
+  img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.7s ease;z-index:1;';
   ov.appendChild(img);
+
+  // 内蔵ダイアログバー (画像の上に重ねる)
+  var dialogBar = document.createElement('div');
+  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(94vw,720px);margin-bottom:6vh;padding:18px 24px;background:linear-gradient(180deg,rgba(0,0,0,0.68) 0%,rgba(0,0,0,0.88) 100%);border:2.5px solid rgba(180,80,160,0.65);border-radius:14px;color:#FFEFC6;font-family:"Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1rem,3.6vw,1.25rem);font-weight:900;line-height:1.7;letter-spacing:0.06em;text-align:left;text-shadow:0 0 8px rgba(0,0,0,0.85),0 2px 4px #000;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,0.7),inset 0 0 14px rgba(140,40,120,0.18);opacity:0;transition:opacity 0.6s ease;';
+  ov.appendChild(dialogBar);
+
+  // タップヒント
+  var hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:3;color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.9);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.textContent = '▼ タップ';
+  ov.appendChild(hint);
 
   document.body.appendChild(ov);
   requestAnimationFrame(function() {
@@ -11798,21 +11884,129 @@ function _showMaskedManInterference(onDone) {
     setTimeout(function() { img.style.opacity = '1'; }, 80);
   });
 
-  // 出現の余韻 → ダイアログ (キャラの言葉は残す、見出しキャプションだけ削除)
-  setTimeout(function() {
-    _showBattleDialog([
-      // v276b: 名前 (ノクス) はカタカナ編・魔王城で名乗り出るまで伏せる方針。
-      //         台詞は「かめんのおとこ」のまま残す。
-      { lines: ['かめんのおとこ「…ふふ。', 'させる もの か、', 'ようせい ども。'] },
-      { lines: ['かめんのおとこ「ザガンさま の', 'のろい は、 こんな うた で は', 'ほどけぬ！'] }
-    ], function() {
+  // v276b: 名前 (ノクス) はカタカナ編・魔王城で名乗り出るまで伏せる方針。
+  //         台詞は「かめんのおとこ」のまま残す。
+  var msgs = [
+    'かめんのおとこ「…ふふ。\nさせる もの か、\nようせい ども。',
+    'かめんのおとこ「ザガンさま の\nのろい は、 こんな うた で は\nほどけぬ！'
+  ];
+  var idx = 0;
+  var canAdvanceAt = 0;
+  var MIN_HOLD_MS = 1000;
+
+  function showMsg() {
+    dialogBar.style.opacity = '0';
+    setTimeout(function() {
+      dialogBar.textContent = msgs[idx];
+      dialogBar.style.opacity = '1';
+      hint.style.opacity = '0';
+      setTimeout(function() { hint.style.opacity = '0.85'; }, MIN_HOLD_MS);
+      canAdvanceAt = Date.now() + MIN_HOLD_MS;
+      idx++;
+    }, 250);
+  }
+
+  function advance() {
+    if (Date.now() < canAdvanceAt) return;
+    if (idx >= msgs.length) {
       ov.style.opacity = '0';
       setTimeout(function() {
         try { if (ov.parentNode) ov.remove(); } catch (e) {}
         if (onDone) onDone();
       }, 700);
+      return;
+    }
+    showMsg();
+  }
+
+  ov.addEventListener('click', advance);
+  ov.addEventListener('touchend', function(e) { e.preventDefault(); advance(); }, { passive: false });
+
+  // 出現の余韻 → 1 行目を自動表示
+  setTimeout(showMsg, 1000);
+}
+
+// v277d (2026-04-25): 山道の後に妖精 (リーファ + セリナ) が追いついてくる合流シーン。
+//   battleStage がまだ非表示なので _showBustup ではなく自前のフル画面 overlay を使う。
+//   背景: 山道の余韻を残す暖色グラデ + 風のキラキラ。中央 ↑ にナレーション、左右に妖精ポートレート、下部にダイアログ。
+function _showFairyMergeIntro(onDone) {
+  var ov = document.createElement('div');
+  ov.id = 'fairyMergeOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1808;background:radial-gradient(ellipse at center,rgba(40,30,15,0.9) 0%,rgba(8,6,4,0.97) 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 6vh;box-sizing:border-box;opacity:0;transition:opacity 0.7s ease;cursor:pointer;';
+
+  // ポートレート 2 体 (リーファ left / セリナ right)
+  function mkPortrait(side, src, alt) {
+    var p = document.createElement('img');
+    p.src = src;
+    p.alt = alt;
+    p.style.cssText = 'position:absolute;bottom:18vh;height:62vh;max-height:520px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.7));opacity:0;transform:translateY(20px);transition:opacity 0.65s ease 0.3s,transform 0.7s cubic-bezier(.2,1.18,.4,1) 0.3s;';
+    if (side === 'left') p.style.left = '4vw';
+    else p.style.right = '4vw';
+    return p;
+  }
+  var riefa  = mkPortrait('left',  '../assets/images/characters/pixies/Riefa/riefa_001.png',  'リーファ');
+  var serina = mkPortrait('right', '../assets/images/characters/pixies/Serina/serina_001.png', 'セリナ');
+  ov.appendChild(riefa); ov.appendChild(serina);
+
+  // ダイアログバー (画面下部)
+  var dialogBar = document.createElement('div');
+  dialogBar.style.cssText = 'position:relative;z-index:2;width:min(92vw,720px);padding:18px 24px;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,rgba(0,0,0,0.85) 100%);border:2.5px solid rgba(180,220,150,0.5);border-radius:14px;color:#FFEFC6;font-family:"Hiragino Kaku Gothic ProN",sans-serif;font-size:clamp(1rem,3.6vw,1.25rem);font-weight:900;line-height:1.7;letter-spacing:0.06em;text-align:left;text-shadow:0 0 8px rgba(0,0,0,0.85),0 2px 4px #000;white-space:pre-line;box-shadow:0 6px 24px rgba(0,0,0,0.7);opacity:0;transition:opacity 0.5s ease;';
+  ov.appendChild(dialogBar);
+
+  // タップヒント
+  var hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:3;color:#FFE27A;font-size:0.9rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.9);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.textContent = '▼ タップ';
+  ov.appendChild(hint);
+
+  document.body.appendChild(ov);
+  requestAnimationFrame(function() {
+    ov.style.opacity = '1';
+    requestAnimationFrame(function() {
+      riefa.style.opacity = '1'; riefa.style.transform = 'translateY(0)';
+      serina.style.opacity = '1'; serina.style.transform = 'translateY(0)';
     });
-  }, 1000);
+  });
+
+  var msgs = [
+    'リーファ「ゆうしゃさま——\nやっと、 おいついた わ！',
+    'セリナ「もり と ほこら から、\nずっと あなた を おって きた の。',
+    'リーファ「カゲロウ は つよい。\nわたし たち も、 ちから を かす わ！'
+  ];
+  var idx = 0;
+  var canAdvanceAt = 0;
+  var MIN_HOLD_MS = 900;
+
+  function showMsg() {
+    dialogBar.style.opacity = '0';
+    setTimeout(function() {
+      dialogBar.textContent = msgs[idx];
+      dialogBar.style.opacity = '1';
+      hint.style.opacity = '0';
+      setTimeout(function() { hint.style.opacity = '0.85'; }, MIN_HOLD_MS);
+      canAdvanceAt = Date.now() + MIN_HOLD_MS;
+      idx++;
+    }, 250);
+  }
+
+  function advance() {
+    if (Date.now() < canAdvanceAt) return;
+    if (idx >= msgs.length) {
+      ov.style.opacity = '0';
+      setTimeout(function() {
+        try { if (ov.parentNode) ov.remove(); } catch (e) {}
+        if (onDone) onDone();
+      }, 700);
+      return;
+    }
+    showMsg();
+  }
+
+  ov.addEventListener('click', advance);
+  ov.addEventListener('touchend', function(e) { e.preventDefault(); advance(); }, { passive: false });
+
+  // 1 行目を自動表示
+  setTimeout(showMsg, 900);
 }
 
 // カゲロウが再び呪縛されて激しく暴れる演出 (スクリーン shake + 仮面の暗い脈動)。
