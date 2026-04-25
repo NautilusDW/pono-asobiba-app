@@ -9848,6 +9848,9 @@ function _showBattleIntro(onDone) {
   //   1. 山道を登る1枚絵 (placeholder OK、画像が無ければ skip)
   //   2. カゲロウ登場アップ (kagerou_entrance.jpg) を ゆっくり Ken Burns ズームで挿入
   //   3. ヒノカ認識イントロ → 「もじを なぞって たおそう」
+  // v277b (2026-04-25): ユーザー指示「フル画面 + 山道は下から上に縦パン」
+  //   山道:    cover:true + pan:'up'   (10s 縦パン、見上げていくイメージ)
+  //   カゲロウ: cover:true + kenBurns:true (8s ゆっくりズーム)
   if (isVolcanoRow) {
     var _afterRecog = function() {
       _showBattleDialog([
@@ -9858,13 +9861,13 @@ function _showBattleIntro(onDone) {
       _showClimaxEventImage(
         '../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg',
         function() { _playHinokaRecognitionIntro(_afterRecog); },
-        { kenBurns: true }
+        { cover: true, kenBurns: true }
       );
     };
     // 山道画像が存在するか先にプリロードでチェック → あれば挿入、なければスキップ
     var probe = new Image();
     probe.onload = function() {
-      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou, { kenBurns: true });
+      _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou, { cover: true, pan: 'up' });
     };
     probe.onerror = function() { _showKagerou(); };
     probe.src = VOLCANO_PATH_INTRO_IMG;
@@ -11015,10 +11018,12 @@ function _playHinokaRecognitionIntro(onDone) {
   //             → front_still (真正面) → atk_1 (3/4 斜め、咆哮) へ変更。
   //             bustup 側は object-fit:cover + object-position:top で頭〜胸だけクロップされる。
   var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
+  // v277b (2026-04-25): ユーザー指示「バトルが始まったらヒノカが『この けはい… まさか…』」
+  //   旧: 「…まって、ゆうしゃさま！」(バトル直前の制止) を撤去 — 既にバトルが始まっている文脈なので不自然
+  //   旧: 「きはい」→ 正字「けはい」(気配) に修正
   try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
   _showBattleDialog([
-    { lines: ['ヒノカ「…まって、', 'ゆうしゃさま！', ''] },
-    { lines: ['ヒノカ「この きはい…', 'どこ か で かんじた…', ''] },
+    { lines: ['ヒノカ「この けはい…！', 'どこか で', 'かんじた…？'] },
     { lines: ['ヒノカ「まさか、', 'カゲロウ、 なの…？', ''] },
     { lines: ['ヒノカ「わたし が ちいさい ころ から', 'ずっと いっしょ だった、', 'たいせつな あいぼう なの…！'] },
     { lines: ['ヒノカ「カゲロウ！', 'わたし だよ、 ヒノカ だよ！', 'わかる でしょう？'] }
@@ -11508,17 +11513,28 @@ function _showMemoryFlashback(beats, onDone) {
 // _showMemoryFlashback と似るが sepia を外し、現在進行中ビートの劇的な静止画として使う。
 // 01b=ヒノカが呪縛カゲロウに手を伸ばす / 02=半浄化遷移 / 03=完全浄化の和解。
 // v275: opts.kenBurns:true で表示中ゆっくりズームイン (ボス登場の余韻演出に使う)。
+// v277b (2026-04-25): ユーザー指示「フル画面 + 山道は下から上に縦パン」対応:
+//   - opts.cover:true   → object-fit:cover で画面いっぱい (max-width/height 制約解除)
+//   - opts.pan:'up'     → 下から上へゆっくり縦パン (10秒、translateY 8% → -8%)
+//   pan 中は kenBurns scale を適用しない (transform 競合を避ける)。
 function _showClimaxEventImage(src, onDone, opts) {
   opts = opts || {};
   var ov = document.createElement('div');
   ov.className = 'climax-event-overlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1805;background:radial-gradient(ellipse at center,rgba(20,8,24,0.92) 0%,rgba(4,2,6,0.97) 100%);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.55s ease;cursor:pointer;';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1805;background:radial-gradient(ellipse at center,rgba(20,8,24,0.92) 0%,rgba(4,2,6,0.97) 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:0;transition:opacity 0.55s ease;cursor:pointer;';
   var img = document.createElement('img');
   img.src = src;
-  img.style.cssText = 'max-width:94vw;max-height:82vh;object-fit:contain;filter:drop-shadow(0 0 40px rgba(255,140,80,0.45));opacity:0;transform:scale(0.96);transition:opacity 0.55s ease,transform 0.7s cubic-bezier(.2,1.2,.4,1);border-radius:6px;';
+  if (opts.cover) {
+    // 画面いっぱいに敷き詰める。pan 用に translateY 余白を持たせるため
+    // height は 116% に膨らませて transform 余白 ±8% に対応。
+    var initialTranslate = (opts.pan === 'up') ? '8%' : '0';
+    img.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:116vh;object-fit:cover;object-position:center;filter:drop-shadow(0 0 40px rgba(255,140,80,0.35));opacity:0;transform:translate(-50%,calc(-50% + ' + initialTranslate + ')) scale(1);transition:opacity 0.7s ease;border-radius:0;';
+  } else {
+    img.style.cssText = 'max-width:94vw;max-height:82vh;object-fit:contain;filter:drop-shadow(0 0 40px rgba(255,140,80,0.45));opacity:0;transform:scale(0.96);transition:opacity 0.55s ease,transform 0.7s cubic-bezier(.2,1.2,.4,1);border-radius:6px;';
+  }
   ov.appendChild(img);
   var hint = document.createElement('div');
-  hint.style.cssText = 'position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0.8;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;';
+  hint.style.cssText = 'position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.95rem;font-weight:700;opacity:0.8;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;z-index:2;';
   hint.textContent = '▼ タップ';
   ov.appendChild(hint);
   if (!document.getElementById('memoryFlashbackKF')) {
@@ -11532,13 +11548,34 @@ function _showClimaxEventImage(src, onDone, opts) {
     ov.style.opacity = '1';
     setTimeout(function() {
       img.style.opacity = '1';
-      img.style.transform = 'scale(1)';
-      if (opts.kenBurns) {
-        // 表示後さらにゆっくりズームイン (8秒で 1.0 → 1.12) — 登場の余韻
-        img.style.transition = 'opacity 0.55s ease, transform 8s ease-out';
+      if (opts.cover && opts.pan === 'up') {
+        // 縦パン: 下 (8%) → 上 (-8%) を 10s でゆっくり (山道を見上げていくイメージ)
+        img.style.transition = 'opacity 0.7s ease, transform 10s linear';
         requestAnimationFrame(function() {
-          requestAnimationFrame(function() { img.style.transform = 'scale(1.12)'; });
+          requestAnimationFrame(function() {
+            img.style.transform = 'translate(-50%, calc(-50% + -8%)) scale(1)';
+          });
         });
+      } else if (opts.cover) {
+        // cover かつ pan 無し: kenBurns 風の控えめスケールアップ
+        img.style.transform = 'translate(-50%,-50%) scale(1)';
+        if (opts.kenBurns) {
+          img.style.transition = 'opacity 0.7s ease, transform 8s ease-out';
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+              img.style.transform = 'translate(-50%,-50%) scale(1.08)';
+            });
+          });
+        }
+      } else {
+        img.style.transform = 'scale(1)';
+        if (opts.kenBurns) {
+          // 表示後さらにゆっくりズームイン (8秒で 1.0 → 1.12) — 登場の余韻
+          img.style.transition = 'opacity 0.55s ease, transform 8s ease-out';
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() { img.style.transform = 'scale(1.12)'; });
+          });
+        }
       }
     }, 120);
   });
