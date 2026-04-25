@@ -2840,6 +2840,82 @@ body.battle-mode .villain-deco {
 /* バトル中でないときは非表示 (stage 自体が display:none なので保険) */
 .battle-stage[aria-hidden="true"] .hero-status { display: none; }
 
+/* ===== v278e: 妖精パーティーを battle-stage 内に表示 (スプライト+名前+ゲージ) =====
+   ユーザー指示「妖精パーティーは全員バトル画面に出します。勇者の左下あたりに妖精たちを順番に並べて、
+   それぞれの下に名前とゲージを置く」
+   → battle-stage 左下にスロットを横並び。各スロット = small img + name + thin hp bar。
+   旧 .fairy-status (左上の枠なし HP バー) は新 UI に役割を譲って隠す。 */
+.battle-stage .party-fairies {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  z-index: 4;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: clamp(6px, 1.6vw, 12px);
+  pointer-events: none;
+}
+.battle-stage .party-fairy-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: clamp(48px, 11vw, 72px);
+}
+.battle-stage .party-fairy-sprite {
+  width: clamp(36px, 8.5vw, 56px);
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+}
+.battle-stage .party-fairy-name {
+  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-size: clamp(0.55rem, 1.7vw, 0.68rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 4px rgba(0,0,0,0.95), 0 1px 2px #000;
+  line-height: 1.1;
+}
+.battle-stage .party-fairy-slot[data-fairy="hinoka"] .party-fairy-name { color: #FFB266; }
+.battle-stage .party-fairy-slot[data-fairy="riefa"]  .party-fairy-name { color: #88E088; }
+.battle-stage .party-fairy-slot[data-fairy="serina"] .party-fairy-name { color: #B0DFFF; }
+.battle-stage .party-fairy-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+.battle-stage .party-fairy-bar {
+  height: 100%;
+  background: linear-gradient(180deg, #7af285 0%, #2db74a 100%);
+  transition: width 0.35s ease, background 0.3s ease;
+}
+.battle-stage .party-fairy-bar.low {
+  background: linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%);
+}
+.battle-stage .party-fairy-bar.critical {
+  background: linear-gradient(180deg, #FCA5A5 0%, #EF4444 100%);
+  animation: fairyHpCriticalBlink 0.6s ease-in-out infinite;
+}
+.battle-stage .party-fairy-bar.dead {
+  background: #2a1a1a;
+  opacity: 0.4;
+  animation: none;
+}
+.battle-stage .party-fairy-slot.fallen {
+  opacity: 0.5;
+}
+.battle-stage .party-fairy-slot.fallen .party-fairy-name {
+  text-decoration: line-through;
+  color: #888 !important;
+}
+/* v278e: 旧 .fairy-status (上部の枠なしバー) は新 UI に役割を譲って完全に隠す */
+.fairy-status { display: none !important; }
+
 /* ===== v278c: 連続技フェーズ中はキャンバスを隠して battle-stage をほぼ全画面化 =====
    ユーザー指示「連続技以降はもうほぼ全画面でバトル継続して。右のキャンバス使わないから」
    body に combo-phase-active クラスが付いている間、なぞり書きキャンバスを撤去し
@@ -2851,14 +2927,31 @@ body.combo-phase-active .hedgehog-wrap,
 body.combo-phase-active .hedgehog-deco,
 body.combo-phase-active .hedgehog-bubble,
 body.combo-phase-active #demoIndicator,
-body.combo-phase-active .demo-replay-btn {
+body.combo-phase-active .demo-replay-btn,
+body.combo-phase-active .mid-col,
+body.combo-phase-active .controls,
+body.combo-phase-active .header,
+body.combo-phase-active .progress-hint,
+body.combo-phase-active .next-row,
+body.combo-phase-active .left-col {
   display: none !important;
 }
+/* v278e: ユーザー指示「ほぼ全画面が全然全画面になってない、横に伸びてない、右半分は使われてない」
+   → battle-stage を position:fixed inset:0 で完全に画面いっぱいに敷き詰める。
+      max-width / margin / border-radius / border を全部解除。
+      内部の hero / enemy 配置はそのまま動くが、stage 自体が広いので全体の見え方が変わる。
+   landscape 専用 (縦画面は今は考えない、ユーザー指示)。 */
 body.combo-phase-active .battle-stage {
-  max-width: 100vw !important;
-  width: 100vw;
-  height: min(78vh, 760px) !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  min-height: 0 !important;
   margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  z-index: 100;
 }
 body.combo-phase-active #app {
   height: 100vh;
@@ -3882,24 +3975,23 @@ body.combo-phase-active #app {
 .battle-stage .bustup-portrait[alt="カゲロウ"] {
   object-position: top left;
 }
-/* v277m (2026-04-25): ユーザー指示「両方とも 115% ぐらいで」+「カゲロウの右側がバッツリ切れてる」
-   → scale を 0.7 → 1.15 に増大。bottom:-8% は維持して下方シフト。
-   カゲロウは landscape 画像 (591×478) で body が左寄り、cover + top left クロップだと右側
-   (体の途中) でぶった切られて違和感大。width 46% → 56% に拡張 + object-position center top で
-   横方向のクロップを軽減し、体の右側まで見えるようにする。 */
+/* v277m: scale 1.15 だったが「85%なの？これで」とユーザーから「変わってない=もっと大きく」指摘。
+   v278e (2026-04-25): scale を 1.5 へ大幅増。base width も拡大 (46→58% / 56→62%)。
+   bottom:-8% を -16% に下げて足元を画面外へさらに沈め、頭部が画面中央付近に来るよう調整。 */
 .battle-stage .bustup-portrait[alt="ヒノカ"],
 .battle-stage .bustup-portrait[alt="カゲロウ"] {
-  bottom: -8%;
-  transform: translateY(14px) scale(1.15) scaleX(var(--flip, 1));
+  bottom: -16%;
+  width: 58%;
+  transform: translateY(14px) scale(1.5) scaleX(var(--flip, 1));
   transform-origin: bottom center;
 }
 .battle-stage .bustup-portrait[alt="ヒノカ"].visible,
 .battle-stage .bustup-portrait[alt="カゲロウ"].visible {
-  transform: translateY(0) scale(1.15) scaleX(var(--flip, 1));
+  transform: translateY(0) scale(1.5) scaleX(var(--flip, 1));
 }
-/* カゲロウ専用: 横長画像で右側が切れないよう幅を広げ、左頭寄せから中央上寄せに変更。 */
+/* カゲロウ専用: 横長画像で右側が切れないよう幅をさらに広げ、左頭寄せから中央上寄せに。 */
 .battle-stage .bustup-portrait[alt="カゲロウ"] {
-  width: 56%;
+  width: 62%;
   object-position: top center;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3973,10 +4065,12 @@ body.combo-phase-active #app {
 
 .chant-ritual-canvas-wrap {
   position: relative;
-  /* v278c (2026-04-25): ユーザー指示「キャンバスをできるだけ大きく」
-     min(60vw,280px) → min(82vw,420px) に拡大。スマホで字が小さい問題の解消。 */
-  width: min(82vw, 420px);
-  height: min(82vw, 420px);
+  /* v278c: min(60vw,280px) → min(82vw,420px) に拡大。
+     v278e (2026-04-25): ユーザー指示「縦に全然スペースなくて文字で潰されてる、
+     キャンバスの縦を長くして」→ 縦サイズを vh 基準に変更し、landscape で
+     縦スペースを最大限使う。横は画面幅の約半分に抑えて中央寄せ。 */
+  width: min(58vh, 60vw, 460px);
+  height: min(72vh, 460px);
   border-radius: 18px;
   border: 2.5px solid rgba(255,220,140,0.4);
   background: rgba(0,0,0,0.35);
@@ -4049,14 +4143,20 @@ body.combo-phase-active #app {
 }
 
 .chant-ritual-tap-hint {
-  margin-top: 18px;
-  font-size: clamp(0.85rem, 2.8vw, 1rem);
+  /* v278e: ユーザー指示「ゆびでなぞって も別の場所に置いて、その分縦を長く」
+     → flex 中央列ではなく overlay 右下の絶対配置に移動。キャンバスの縦が伸びる。 */
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  margin-top: 0;
+  font-size: clamp(0.75rem, 2.2vw, 0.9rem);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: #FFE27A;
-  text-shadow: 0 0 8px rgba(0,0,0,0.85);
+  text-shadow: 0 0 8px rgba(0,0,0,0.95), 0 1px 2px #000;
   opacity: 0;
   animation: chantHintBlink 1.6s ease-in-out 0.8s infinite;
+  z-index: 5;
 }
 .chant-ritual-overlay.visible .chant-ritual-tap-hint { opacity: 0.85; }
 @keyframes chantHintBlink {
@@ -5181,6 +5281,28 @@ body.battle-intro-active .battle-log-window {
         </div>
       </div>
       <div class="battle-hero hero-sprite idle" id="battleHero" aria-hidden="true"></div>
+      <!-- v278e (2026-04-25): ユーザー指示「妖精パーティーは全員バトル画面に出します。
+           勇者の左下あたりに妖精たちを順番に並べて、それぞれの下に名前とゲージを置く」
+           → battle-stage 内、勇者の左下に 3 妖精スプライトを横並び。
+              各スロット: img (pixy_*.png) + name + 細いゲージ
+              joined フラグで display 切替 (hinoka 開幕表示、riefa+serina は合流タイミング) -->
+      <div class="party-fairies" id="partyFairies" aria-hidden="true" style="display:none;">
+        <div class="party-fairy-slot" data-fairy="hinoka" style="display:none;">
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/pixy_fire.png" alt="ヒノカ">
+          <div class="party-fairy-name">ヒノカ</div>
+          <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="hinokaHpBarStage"></div></div>
+        </div>
+        <div class="party-fairy-slot" data-fairy="riefa" style="display:none;">
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/pixy_forest.png" alt="リーファ">
+          <div class="party-fairy-name">リーファ</div>
+          <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="riefaHpBarStage"></div></div>
+        </div>
+        <div class="party-fairy-slot" data-fairy="serina" style="display:none;">
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/pixy_ice.png" alt="セリナ">
+          <div class="party-fairy-name">セリナ</div>
+          <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="serinaHpBarStage"></div></div>
+        </div>
+      </div>
       <div class="battle-enemy-wrap">
         <div class="battle-enemy" id="battleEnemy">
           <img class="enemy-img" id="battleEnemyImg" alt="てき" onerror="this.onerror=null;this.src='../assets/images/monsters/chars/monster_005.png';" />
@@ -7382,26 +7504,31 @@ function _initFairyHp(enemy) {
   f.hinoka.hp = f.hinoka.maxHp; f.hinoka.joined = false; f.hinoka.alive = true;
   f.riefa.hp  = f.riefa.maxHp;  f.riefa.joined  = false; f.riefa.alive  = true;
   f.serina.hp = f.serina.maxHp; f.serina.joined = false; f.serina.alive = true;
-  // 火山ボス戦のみヒノカ joined (開幕からゲージ表示)
+  // 火山ボス戦のみヒノカ joined (開幕からスプライト+ゲージ表示)
   var volcano = enemy && enemy.id === 'volcano_lord';
-  var status = document.getElementById('fairyStatus');
-  if (!status) return;
-  if (!volcano) { status.style.display = 'none'; return; }
-  status.style.display = '';
-  status.setAttribute('aria-hidden', 'false');
-  // 全行非表示 → ヒノカだけ表示
-  var rows = status.querySelectorAll('.fairy-status-row');
-  rows.forEach(function(r) { r.style.display = 'none'; r.classList.remove('fallen'); });
+  // v278e: 新 UI = battle-stage 内の party-fairies スロット (旧 fairy-status は隠し済)
+  var party = document.getElementById('partyFairies');
+  if (party) {
+    if (!volcano) { party.style.display = 'none'; return; }
+    party.style.display = '';
+    party.setAttribute('aria-hidden', 'false');
+    // 全スロット非表示 → ヒノカだけ表示
+    party.querySelectorAll('.party-fairy-slot').forEach(function(r) {
+      r.style.display = 'none'; r.classList.remove('fallen');
+    });
+  }
+  if (!volcano) return;
   f.hinoka.joined = true;
   _showFairyGauge('hinoka');
 }
 
 function _showFairyGauge(key) {
-  var status = document.getElementById('fairyStatus');
-  if (!status) return;
-  var row = status.querySelector('.fairy-status-row[data-fairy="' + key + '"]');
-  if (!row) return;
-  row.style.display = '';
+  // v278e: party-fairies スロットを表示
+  var party = document.getElementById('partyFairies');
+  if (party) {
+    var slot = party.querySelector('.party-fairy-slot[data-fairy="' + key + '"]');
+    if (slot) slot.style.display = '';
+  }
   _renderFairyHp(key);
 }
 
@@ -7428,19 +7555,20 @@ function _isFairyAlive(key) {
 function _renderFairyHp(key) {
   var f = _battle.fairies && _battle.fairies[key];
   if (!f) return;
-  var status = document.getElementById('fairyStatus');
-  if (!status) return;
-  var row = status.querySelector('.fairy-status-row[data-fairy="' + key + '"]');
-  if (!row) return;
-  var bar = row.querySelector('.fairy-status-bar');
+  // v278e: 新 UI (party-fairies inside battle-stage) を更新。
+  var party = document.getElementById('partyFairies');
+  if (!party) return;
+  var slot = party.querySelector('.party-fairy-slot[data-fairy="' + key + '"]');
+  if (!slot) return;
+  var bar = slot.querySelector('.party-fairy-bar');
   if (!bar) return;
   var pct = f.maxHp > 0 ? (f.hp / f.maxHp) * 100 : 0;
   bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
   bar.classList.remove('low', 'critical', 'dead');
-  row.classList.remove('fallen');
+  slot.classList.remove('fallen');
   if (f.hp <= 0) {
     bar.classList.add('dead');
-    row.classList.add('fallen');
+    slot.classList.add('fallen');
   } else if (pct <= 25) {
     bar.classList.add('critical');
   } else if (pct <= 50) {
@@ -9177,7 +9305,7 @@ function battleVictory(spellKind, onDone) {
       messages.push(thankYouLine);
       messages.push(rewardLine);
     }
-    messages.push({ lines: ['よく がんばったね！', ''], opts: { line1Class: 'dq-line-emphasis' } });
+    // v278e: ユーザー指示「『よく頑張ったね』っていう言葉は入れなくていい」→ 削除。
 
     _showBattleDialog(messages, function() {
       try { _hideDefeatedWindow(); } catch (e) {}
@@ -12166,7 +12294,7 @@ function _playKagerouClimaxMain(onDone) {
         chars: ['ほ','む','ら'],
         theme: 'awakening',
         heading: 'おもいだして…',
-        subtext: 'カゲロウ と いっしょ に\nうたった、 ほむら の うた…'
+        subtext: 'カゲロウ と いっしょ に うたった、 ほむら の うた…'
       }, function() {
         // 思い出しかけのカゲロウ
         try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
@@ -12176,44 +12304,54 @@ function _playKagerouClimaxMain(onDone) {
           try { _hideBustups(); } catch (e) {}
           // Beat 2: ノクス フルスクリーン (画像のみの insert、台詞は内部で表示)
           _showMaskedManInterference(function() {
-            // Beat 3: 再呪縛 → ヒノカ被弾。カゲロウ + ヒノカ両者バストアップで激情を見せる。
-            try { _triggerKagerouRageAttack(); } catch (e) {}
-            try {
-              _showBustup('left',  HINOKA_R, { flip: false, alt: 'ヒノカ' });
-              _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' });
-            } catch (e) {}
-            _showBattleDialog([
-              { lines: ['カゲロウ「グ……', 'グオォオオ……！', ''] },
-              { lines: ['ヒノカ「きゃっ……！', 'うっ……', ''], onEnter: function() {
-                  try { _hideBustups(); } catch (e) {}  // 被弾の瞬間バストアップは引いてステージ全景に
-                  try { _hinokaFallEffect(); } catch (e) {}
-                }
-              }
-            ], function() {
-              // Beat 4: ヒノカの最後の言葉。ヒノカ単独右バストアップ (弱々しい)。
-              try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
-              _showBattleDialog([
-                { lines: ['ヒノカ「ゆうしゃさま…', 'ごめん なさい…', ''] },
-                { lines: ['ヒノカ「ほし の しるし の ちから で…', 'カゲロウ の', 'ほんとう の なまえ を、 よんで…'] }
-              ], function() {
-                try { _hideBustups(); } catch (e) {}
-                // Beat 5: 勇者の 星の印 発動 (預言の力覚醒)
-                _showStarMarkAwakening(function() {
-                  // v277i (2026-04-25): ユーザー指示反映 — Ritual 2「かげろう」+ 仮面割れは
-                  //   ここではなく **ん 完了後 (= ひらがな完成後の連続技フェーズ)** に移動。
-                  //   Climax 本編は星の印 awakening で終わり、その後通常の「ん」なぞりへ進む。
-                  //   ん 完了 → 「ひらがなコンプリート！れんぞくわざ かいほう！」演出 → 「かげろう」chant
-                  //   → 仮面割れ → battleVictory の流れは _playKagerouFinalCombo() が担当。
-                  if (onDone) onDone();
-                });
-              });
-            });
+            // v278e (2026-04-25): ユーザー指示「カゲロウ再呪印.png が使われてないので、
+            //   この画像と共に『魔人ノクスが現れ、カゲロウの呪いを強化した』みたいな文章を入れて」
+            //   → Beat 2.5 として kagerou_recurse.jpg + caption を 1 枚絵で挟む。
+            _showClimaxEventImage('../assets/images/story/kagerou_recurse.jpg', function() {
+              // Beat 3: 再呪縛 → ヒノカ被弾。カゲロウ + ヒノカ両者バストアップで激情を見せる。
+              try { _triggerKagerouRageAttack(); } catch (e) {}
+              _playKagerouClimaxBeat3to5(onDone);
+            }, { cover: true,
+                 caption: '魔人 ノクス は あらわれ、\nカゲロウ の のろい を、 さらに つよめた——' });
+            return; // 後続は _playKagerouClimaxBeat3to5 で実行
           });
         });
       });
     });
   });
 }
+
+// v278e: Beat 3-5 を別関数に切り出し (Beat 2.5 の挿入で onDone のネスト深さが増えすぎたため)
+function _playKagerouClimaxBeat3to5(onDone) {
+  var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
+  var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
+  try {
+    _showBustup('left',  HINOKA_R, { flip: false, alt: 'ヒノカ' });
+    _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' });
+  } catch (e) {}
+  _showBattleDialog([
+    { lines: ['カゲロウ「グ……', 'グオォオオ……！', ''] },
+    { lines: ['ヒノカ「きゃっ……！', 'うっ……', ''], onEnter: function() {
+        try { _hideBustups(); } catch (e) {}
+        try { _hinokaFallEffect(); } catch (e) {}
+      }
+    }
+  ], function() {
+    try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+    _showBattleDialog([
+      { lines: ['ヒノカ「ゆうしゃさま…', 'ごめん なさい…', ''] },
+      { lines: ['ヒノカ「ほし の しるし の ちから で…', 'カゲロウ の', 'ほんとう の なまえ を、 よんで…'] }
+    ], function() {
+      try { _hideBustups(); } catch (e) {}
+      _showStarMarkAwakening(function() {
+        if (onDone) onDone();
+      });
+    });
+  });
+}
+
+// (旧 Beat 3-5 のネスト鎖は v278e で _playKagerouClimaxBeat3to5 へリファクタ済。
+//  Beat 2.5 の挿入で onDone コールバックが深くなりすぎたため切り出した。)
 
 // カゲロウが一瞬昔を思い出す時の優しい発光演出 (仮面の隙間から金光)。
 // v273: この間 imgRoar (上を向いて吠える姿) に一時 swap、1.6s 後に idle へ戻す。
@@ -12766,7 +12904,7 @@ function _playKagerouFinalCombo(onDone) {
           chars: ['ほ','の','お'],
           theme: 'starmark',
           heading: 'れんぞくわざ「ほのお」！',
-          subtext: 'みんな の ちから を あわせて、\nやみ の のろい を やぶる！',
+          subtext: 'みんな の ちから を あわせて、 やみ の のろい を やぶる！',
           shoutout: 'ほのお！'
         }, function() {
           // カゲロウに大ダメージ (HP 半減). HP=12 → 6
@@ -12786,7 +12924,7 @@ function _playKagerouFinalCombo(onDone) {
               chars: ['ひ','の','た','ま'],
               theme: 'starmark',
               heading: 'れんぞくわざ「ひのたま」！',
-              subtext: 'もう ひと いき！\nみんな で、 つよく ねがって！',
+              subtext: 'もう ひと いき！ みんな で、 つよく ねがって！',
               shoutout: 'ひのたま！'
             }, function() {
               // カゲロウ HP 残り 1 寸前 → ピンチ表現
@@ -12817,33 +12955,55 @@ function _playKagerouFinalCombo(onDone) {
                           chars: ['か','げ','ろ','う'],
                           theme: 'starmark',
                           heading: 'なまえ を よびかけよう！',
-                          subtext: 'ほし の しるし の ちから で、\nのろい を やぶる…',
+                          subtext: 'ほし の しるし の ちから で、 のろい を やぶる…',
                           shoutout: 'カゲロウ！'
                         }, function() {
-                          // ====== Phase E3: 攻撃ヒット → 仮面割れ → battle_last_02 → onDone ======
-                          // v278d (2026-04-25): ユーザー指示「『かげろう』入力後は最後の攻撃が
-                          //   先に当たった後に仮面が壊れるイメージ」
-                          //   → ① 大ダメージ着弾 (黄金フラッシュ + 強シェイク + ダメージ class)
-                          //   → ② _crackKagerouMask (仮面割れ)
-                          //   → ③ battle_last_02 (浄化遷移)
+                          // ====== Phase E3: 火の玉飛翔 → 着弾 → われにかえった → カゲロウ「ヒノカ…」→ 仮面割れ画像 → onDone ======
+                          // v278e (2026-04-25): ユーザー指示「カゲロウを入れた後で火の玉が飛んでいき、
+                          //   火山の主に当たった後、火山の主は我に帰った。その後、仮面が壊れているイメージを挿入。
+                          //   そこで『ヒノカ…』って言葉入れて。」
+                          //   → ① 火の玉 emoji 🔥 を画面左から右 (カゲロウ位置) へ飛翔 0.9s
+                          //   → ② 着弾 (黄金フラッシュ + 強シェイク + damaged)
+                          //   → ③ われにかえった！ ログ
+                          //   → ④ カゲロウ「ヒノカ…」(意識が戻った驚き)
+                          //   → ⑤ battle_last_02 (仮面壊れた image)
+                          //   → onDone (= battleVictory)
                           try {
-                            var _enemyHit = document.getElementById('battleEnemy');
-                            if (_enemyHit) { _enemyHit.classList.add('damaged'); setTimeout(function(){ _enemyHit.classList.remove('damaged'); }, 700); }
-                            var _stHit = document.querySelector('.battle-stage');
-                            if (_stHit) { _stHit.classList.add('screen-heavy-shake'); setTimeout(function(){ _stHit.classList.remove('screen-heavy-shake'); }, 900); }
-                            // 黄金フラッシュ全画面 (短く 0.5s)
-                            var _flash = document.createElement('div');
-                            _flash.style.cssText = 'position:fixed;inset:0;z-index:1885;background:radial-gradient(ellipse at center,rgba(255,235,140,0.85) 0%,rgba(255,180,40,0.5) 35%,transparent 80%);pointer-events:none;animation:hinokaHitFlash 0.55s ease-out forwards;';
-                            document.body.appendChild(_flash);
-                            setTimeout(function() { try { if (_flash.parentNode) _flash.remove(); } catch (e) {} }, 600);
-                          } catch (e) {}
-                          // 0.85s 後に仮面割れ → battle_last_02
-                          setTimeout(function() {
-                            _crackKagerouMask(function() {
-                              _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
-                                if (onDone) onDone();
-                              });
+                            var _fb = document.createElement('div');
+                            _fb.style.cssText = 'position:fixed;left:14%;top:62%;font-size:clamp(3rem,9vw,5rem);z-index:1888;pointer-events:none;filter:drop-shadow(0 0 20px rgba(255,180,40,1)) drop-shadow(0 0 40px rgba(255,140,40,0.85));transform:translateY(-50%) scale(0.7) rotate(-8deg);transition:left 0.85s cubic-bezier(.3,.6,.7,.95),transform 0.85s cubic-bezier(.3,.6,.7,.95),opacity 0.25s ease 0.7s;';
+                            _fb.textContent = '🔥';
+                            document.body.appendChild(_fb);
+                            requestAnimationFrame(function() {
+                              _fb.style.left = '74%';
+                              _fb.style.transform = 'translateY(-50%) scale(1.4) rotate(15deg)';
+                              setTimeout(function() { _fb.style.opacity = '0'; }, 700);
                             });
+                            setTimeout(function() { try { if (_fb.parentNode) _fb.remove(); } catch (e) {} }, 1100);
+                          } catch (e) {}
+                          // 0.85s 後に着弾演出
+                          setTimeout(function() {
+                            try {
+                              var _enemyHit = document.getElementById('battleEnemy');
+                              if (_enemyHit) { _enemyHit.classList.add('damaged'); setTimeout(function(){ _enemyHit.classList.remove('damaged'); }, 700); }
+                              var _stHit = document.querySelector('.battle-stage');
+                              if (_stHit) { _stHit.classList.add('screen-heavy-shake'); setTimeout(function(){ _stHit.classList.remove('screen-heavy-shake'); }, 900); }
+                              var _flash = document.createElement('div');
+                              _flash.style.cssText = 'position:fixed;inset:0;z-index:1885;background:radial-gradient(ellipse at center,rgba(255,235,140,0.85) 0%,rgba(255,180,40,0.5) 35%,transparent 80%);pointer-events:none;animation:hinokaHitFlash 0.55s ease-out forwards;';
+                              document.body.appendChild(_flash);
+                              setTimeout(function() { try { if (_flash.parentNode) _flash.remove(); } catch (e) {} }, 600);
+                            } catch (e) {}
+                            // 0.9s 後に「われにかえった」+ カゲロウ「ヒノカ…」
+                            setTimeout(function() {
+                              _showBattleDialog([
+                                { lines: ['かざんのぬし は', '<span class="dq-line-emphasis">われにかえった！</span>', ''], opts: { line2Class: 'dmg-line' } },
+                                { lines: ['カゲロウ「…ヒノカ…？', '', ''] }
+                              ], function() {
+                                // ⑤ battle_last_02 (仮面割れ後の浄化遷移シーン)
+                                _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_02.jpg', function() {
+                                  if (onDone) onDone();
+                                });
+                              });
+                            }, 900);
                           }, 850);
                         });
                       });
@@ -13129,11 +13289,11 @@ function _showStarMarkAwakening(onDone) {
 // battleVictory の bow/leave → grantGear(sword) → act-clear banner の後、
 // _afterVictory (元は _rowPracticeNextChar へ進むだけ) で呼び出される。
 function _showVolcanoCelebration(onDone) {
-  // v274: 3 妖精集結 overlay の直前に battle_last_03 (完全浄化したカゲロウとヒノカの和解) を 1 枚絵で挟む。
-  //       浄化シーケンス → bow → 1 枚絵 → 3 妖精祝祭、の流れで余韻を作る。
-  _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_03.jpg', function() {
-    _renderVolcanoCelebrationOverlay(onDone);
-  });
+  // v278e (2026-04-25): ユーザー指示「battle_last_03 (カゲロウ+ヒノカが寄り添う絵) は
+  //   celebration の途中、カゲロウが勇者に『そなた が いて くれた から』と話しかけるシーンで
+  //   背景としてずっと使う」→ 旧仕様の prefix 1 枚絵を撤去、_renderVolcanoCelebrationOverlay
+  //   内のメッセージ別 bg 切替で扱う。
+  _renderVolcanoCelebrationOverlay(onDone);
 }
 function _renderVolcanoCelebrationOverlay(onDone) {
   // フルスクリーンの柔らかな朝焼け overlay に妖精 3 人を並べる
@@ -13195,11 +13355,14 @@ function _renderVolcanoCelebrationOverlay(onDone) {
     { text: 'リーファ「もり から、 ずっと あなた たち を おうえん して いた わ」', revealFairy: 2 },
     { text: 'セリナ「ほこら から かけつけた わ。 みんな ぶじ で よかった」' },
     { text: 'ヒノカ「ゆうしゃさま、 ほし の しるし の ちから で、 カゲロウ を すくって くれて ありがとう」' },
-    { text: 'カゲロウ「ゆうしゃ よ……」' },
-    { text: 'カゲロウ「そなた が いて くれた から、 わたし は めを さまし、 ヒノカ と また あえた。」' },
-    { text: 'カゲロウ「この 『たいよう の つるぎ』 を、 そなた に あずけたい。 この かざん の ほのお を うつした、 わたし の たからもの だ。」', grantSword: true },
-    { text: 'カゲロウ「まおうじょう で、 おひめさま を たすけだす ちから に なって くれ。」' },
-    { text: '3 にん の ようせい と ゆうしゃ、 そして カゲロウ は、 あさひ の なか で かたく てを とりあった。' }
+    // v278e: 以下「カゲロウが勇者に話しかける」3 メッセージ では bg を battle_last_03 に変えて
+    //   リーファ + セリナ を非表示 (主役 = カゲロウ + ヒノカ + 勇者 のシーンに集中)
+    { text: 'カゲロウ「ゆうしゃ よ……」', bg: 'battle_last_03', soloKagerou: true },
+    { text: 'カゲロウ「そなた が いて くれた から、 わたし は めを さまし、 ヒノカ と また あえた。」', bg: 'battle_last_03', soloKagerou: true },
+    { text: 'カゲロウ「この 『たいよう の つるぎ』 を、 そなた に あずけたい。 この かざん の ほのお を うつした、 わたし の たからもの だ。」', bg: 'battle_last_03', soloKagerou: true, grantSword: true },
+    { text: 'カゲロウ「まおうじょう で、 おひめさま を たすけだす ちから に なって くれ。」', bg: 'battle_last_03', soloKagerou: true },
+    // 締め: bg 解除して再び妖精全員出る朝焼けへ
+    { text: '3 にん の ようせい と ゆうしゃ、 そして カゲロウ は、 あさひ の なか で かたく てを とりあった。', restoreFairies: true }
   ];
 
   // 妖精の登場順: idx 1 (ヒノカ=中央) は最初から表示、0 (リーファ) と 2 (セリナ) はダイアログに合わせて現れる
@@ -13221,6 +13384,23 @@ function _renderVolcanoCelebrationOverlay(onDone) {
     if (typeof m.revealFairy === 'number' && fairyEls[m.revealFairy]) {
       fairyEls[m.revealFairy].style.opacity = '1';
       fairyEls[m.revealFairy].style.transform = 'translateY(0)';
+    }
+    // v278e: bg='battle_last_03' で背景画像を切替、soloKagerou で他妖精 (Riefa/Serina) を非表示。
+    //         restoreFairies:true で背景と妖精を元に戻す。
+    if (m.bg === 'battle_last_03') {
+      ov.style.background = 'url("../assets/images/characters/kagerou/battle_last_03.jpg") center center / cover no-repeat, #1a0a08';
+    } else if (m.restoreFairies) {
+      ov.style.background = 'radial-gradient(ellipse at center,rgba(255,220,160,0.45) 0%,rgba(255,170,120,0.55) 45%,rgba(120,70,40,0.88) 100%)';
+    }
+    if (m.soloKagerou) {
+      // 他妖精 (idx 0=リーファ, 2=セリナ) を非表示、ヒノカ (idx 1) も画像に既に居るので非表示
+      [0, 1, 2].forEach(function(k) {
+        if (fairyEls[k]) { fairyEls[k].style.opacity = '0'; fairyEls[k].style.transform = 'translateY(20px)'; }
+      });
+    } else if (m.restoreFairies) {
+      [0, 1, 2].forEach(function(k) {
+        if (fairyEls[k]) { fairyEls[k].style.opacity = '1'; fairyEls[k].style.transform = 'translateY(0)'; }
+      });
     }
     caption.style.opacity = '0';
     setTimeout(function() {
@@ -13282,11 +13462,13 @@ function _renderVolcanoCelebrationOverlay(onDone) {
 function _showNokusVictoryTaunt(onDone) {
   var ov = document.createElement('div');
   ov.id = 'nokusTauntOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1860;background:#000;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity 0.9s ease;cursor:pointer;';
+  // v278e: ユーザー指示「最後、ノクスの顔のアップはゆっくり縦パン」
+  //         山道 / ノクス再呪印 と同じ縦パン (translateY -8% → +8%、10s linear)。overflow:hidden で画面外排除。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1860;background:#000;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;opacity:0;transition:opacity 0.9s ease;cursor:pointer;';
   var img = document.createElement('img');
   img.src = '../assets/images/story/nokus_smirk.jpg';
   img.alt = '';
-  img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s ease;z-index:1;';
+  img.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:116vh;object-fit:cover;object-position:center;opacity:0;transform:translate(-50%,calc(-50% + -8%)) scale(1);transition:opacity 1.2s ease;z-index:1;';
   ov.appendChild(img);
   // 内蔵ダイアログバー (battle-log と同じ書式)
   var dialogBar = document.createElement('div');
@@ -13299,7 +13481,16 @@ function _showNokusVictoryTaunt(onDone) {
   document.body.appendChild(ov);
   requestAnimationFrame(function() {
     ov.style.opacity = '1';
-    setTimeout(function() { img.style.opacity = '1'; }, 100);
+    setTimeout(function() {
+      img.style.opacity = '1';
+      // v278e: 縦パン (下→上) 10s
+      img.style.transition = 'opacity 1.2s ease, transform 12s linear';
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          img.style.transform = 'translate(-50%, calc(-50% + 8%)) scale(1)';
+        });
+      });
+    }, 100);
   });
   var msgs = [
     'かめんのおとこ「…ふっ。\nなかなか おもしろい。',
