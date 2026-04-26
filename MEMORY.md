@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-26T01:26:38Z - v278n: 6 件追補 — 妖精 bottom 16% に下げ、フル画面 battle-stage を translateY(-8vh)、妖精サイズを Hinoka に統一、launchMagicProjectile に targetEl opt 追加で heal を Hinoka slot へ、懇願シーンを battle_last_01 + memory_04 の紙芝居に、ノクス caption ひらがな化。sw 445
+- **タスク**: v278n: 6 件追補 — 妖精 bottom 16% に下げ、フル画面 battle-stage を translateY(-8vh)、妖精サイズを Hinoka に統一、launchMagicProjectile に targetEl opt 追加で heal を Hinoka slot へ、懇願シーンを battle_last_01 + memory_04 の紙芝居に、ノクス caption ひらがな化。sw 445
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 285
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 76, "Grep": 60, "Bash": 68, "Edit": 70, "Glob": 5, "Agent": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-26T01:17:48Z - v278m: カゲロウ攻撃アニメ刷新 — imgAttackStrike を atk_2 に、kagerou-pose-atk2 で flip+scale 1.38 統一、idle を imgFireBreath として温存し C1 HP 全回復時に発火、火山 intro で 12 枚 prefetch。sw 444
 - **タスク**: v278m: カゲロウ攻撃アニメ刷新 — imgAttackStrike を atk_2 に、kagerou-pose-atk2 で flip+scale 1.38 統一、idle を imgFireBreath として温存し C1 HP 全回復時に発火、火山 intro で 12 枚 prefetch。sw 444
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 23, "Grep": 24, "Bash": 11, "Edit": 11}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-04-25T07:34:28Z - v278e: 大量微修正 — bustup 1.5x / 妖精スプライト stage 化 / combo 完全全画面 / chant 縦長 / Nokus 縦パン / 火の玉 finisher / われにかえった / battle_last_03 in-celebration / battle_last_02 仮面壊れ画像。sw 436
-- **タスク**: v278e: 大量微修正 — bustup 1.5x / 妖精スプライト stage 化 / combo 完全全画面 / chant 縦長 / Nokus 縦パン / 火の玉 finisher / われにかえった / battle_last_03 in-celebration / battle_last_02 仮面壊れ画像。sw 436
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 10
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Edit": 191, "Read": 112, "Write": 7, "Bash": 111, "Agent": 6, "ToolSearch": 2, "ExitPlanMode": 4, "Grep": 66, "Skill": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
