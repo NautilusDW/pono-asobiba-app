@@ -2845,39 +2845,27 @@ body.battle-mode .villain-deco {
    それぞれの下に名前とゲージを置く」
    → battle-stage 左下にスロットを横並び。各スロット = small img + name + thin hp bar。
    旧 .fairy-status (左上の枠なし HP バー) は新 UI に役割を譲って隠す。 */
+/* v278i (2026-04-26): ユーザー指示「主役の勇者のすぐ左下あたりに配置。勇者より前に出ないように」
+   「実際のパーティーで戦っているように、斜めに左下に少しずつずれながら 1, 2, 3, 4 と並んで」
+   → 通常 split-screen / フル画面 両方とも 勇者 (left:8% top:54% size~24vh, 足元 ~66vh,
+      = bottom 25-34%) の左下に row-reverse 斜め階段で並べる。Hinoka が右端 (勇者寄り)、
+      Riefa→Serina が左下に降りる。% 基準なので battle-stage の縮尺に追従する。 */
 .battle-stage .party-fairies {
   position: absolute;
-  left: 8px;
-  bottom: 6px;
+  left: clamp(4px, 2.5%, 18px);
+  bottom: clamp(8%, 20%, 26%);
   z-index: 4;
   display: flex;
-  flex-direction: row;
+  flex-direction: row-reverse;
   align-items: flex-end;
-  gap: clamp(6px, 1.6vw, 12px);
+  gap: clamp(2px, 0.5vw, 6px);
   pointer-events: none;
 }
-/* v278h (2026-04-26): ユーザー指示「フル画面にした時に妖精が画面左下に貼り付いてて
-   パーティーに入ってるように見えない。主役の勇者のすぐ左下あたりに配置」
-   「実際のパーティーで戦っているように、斜めに左下に少しずつずれながら 1, 2, 3, 4 と並んで」
-   → battle-fullscreen-active / combo-phase-active 時のみ位置を切り替え。
-     hero (left:8% top:54% size~24vh, 足元 ~66vh) のすぐ左下に flex-direction:row-reverse で
-     並べ、2 番目以降は negative margin + translateY で斜め階段配置。 */
-body.battle-fullscreen-active .battle-stage .party-fairies,
-body.combo-phase-active .battle-stage .party-fairies {
-  left: clamp(8px, 3%, 24px);
-  bottom: clamp(8px, 18%, 24%);
-  flex-direction: row-reverse;
-  gap: clamp(2px, 0.5vw, 6px);
-}
-/* hinoka が flex の最初の child = row-reverse で右端 (= 勇者に最も近い位置)。
-   2 番目 (riefa)、3 番目 (serina) は左に並びつつ、translateY で下方向にズレる。 */
-body.battle-fullscreen-active .battle-stage .party-fairy-slot:nth-child(2),
-body.combo-phase-active .battle-stage .party-fairy-slot:nth-child(2) {
+.battle-stage .party-fairy-slot:nth-child(2) {
   margin-right: clamp(-18px, -2.4vw, -10px);
   transform: translateY(clamp(8px, 1.8vw, 16px));
 }
-body.battle-fullscreen-active .battle-stage .party-fairy-slot:nth-child(3),
-body.combo-phase-active .battle-stage .party-fairy-slot:nth-child(3) {
+.battle-stage .party-fairy-slot:nth-child(3) {
   margin-right: clamp(-18px, -2.4vw, -10px);
   transform: translateY(clamp(16px, 3.6vw, 30px));
 }
@@ -2892,13 +2880,30 @@ body.combo-phase-active .battle-stage .party-fairy-slot:nth-child(3) {
 .battle-stage .party-fairy-sprite {
   /* v278g: ユーザー指示「妖精なので人 (勇者) より小さく」「3 人入る前提で半分くらいに」
      → clamp(36px, 8.5vw, 56px) → clamp(20px, 4.8vw, 32px) (約 55% 縮小)。
-     image-rendering を pixelated → auto に。新素材は手描き調なので nearest-neighbor は不要。 */
+     image-rendering は default の auto (高解像度 Riefa/Serina の小さな描画でぼやけ過ぎないよう)。
+     Hinoka だけ pixel-art なので individually pixelated に上書き。 */
   width: clamp(20px, 4.8vw, 32px);
   height: auto;
   object-fit: contain;
   image-rendering: auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+  /* v278i: ユーザー指示「少し浮いてる感出したいので上下にゆっくり動いて」
+     → ふわふわ float アニメ。slot 側の staircase translateY とは独立 (img 単体に animation)。 */
+  animation: partyFairyFloat 2.6s ease-in-out infinite;
 }
+/* v278i: Hinoka は pixel-art (hinoka_pixel_front.png) なので nearest-neighbor で描画。
+   かつ「スケール 60%」指示に従い、他妖精より小さく。 */
+.battle-stage .party-fairy-slot[data-fairy="hinoka"] .party-fairy-sprite {
+  width: clamp(12px, 2.9vw, 19px);
+  image-rendering: pixelated;
+}
+/* 妖精の上下ゆらぎ (RPG の使い魔っぽさ)。複数妖精で同期しないよう 2 番目以降は遅延。 */
+@keyframes partyFairyFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.battle-stage .party-fairy-slot:nth-child(2) .party-fairy-sprite { animation-delay: -0.6s; }
+.battle-stage .party-fairy-slot:nth-child(3) .party-fairy-sprite { animation-delay: -1.3s; }
 .battle-stage .party-fairy-name {
   font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   font-size: clamp(0.55rem, 1.7vw, 0.68rem);
@@ -5353,9 +5358,13 @@ body.battle-intro-active .battle-log-window {
       <div class="party-fairies" id="partyFairies" aria-hidden="true" style="display:none;">
         <!-- v278g (2026-04-26): ユーザー指示「ヒノカの素材が相変わらず古い」「妖精なので人より小さく」
              → pixy_fire.png 等の旧素材から、新規 Hinoka/Riefa/Serina_001.png に差し替え。
-                サイズも半分弱に縮小 (3 妖精合流時に勇者の左下に並ぶスペース確保)。 -->
+                サイズも半分弱に縮小 (3 妖精合流時に勇者の左下に並ぶスペース確保)。
+             v278i (2026-04-26): ユーザー指示「バトル中はこれらの低解像度バージョンを使って」
+             → in-battle スプライトは pixel-art の hinoka_pixel_front.png (バトル背景の pixel art と
+                統一感を出すため)。bustup や celebration 用の高解像度版 (hinoka_001.png) は別系統で継続。 -->
         <div class="party-fairy-slot" data-fairy="hinoka" style="display:none;">
-          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Hinoka/hinoka_001.png" alt="ヒノカ">
+          <!-- 素材未保存時は hinoka_001.png にフォールバック (pixel-rendering 解除) -->
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Hinoka/hinoka_pixel_front.png" alt="ヒノカ" onerror="this.onerror=null;this.src='../assets/images/characters/pixies/Hinoka/hinoka_001.png';this.style.imageRendering='auto';">
           <div class="party-fairy-name">ヒノカ</div>
           <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="hinokaHpBarStage"></div></div>
         </div>
@@ -11646,6 +11655,13 @@ function _playHinokaRecognitionIntro(onDone) {
     { lines: ['ヒノカ「わたし が ちいさい ころ から', 'ずっと いっしょ だった、', 'たいせつ な ともだち なの…！'] },
     { lines: ['ヒノカ「カゲロウ！', 'わたし だよ、 ヒノカ だよ！', 'わかる でしょう？'] }
   ], function() {
+    // v278i (2026-04-26): ユーザー指摘「『私、ヒノカだよ』と名乗ってからバトル画面に戻るので、
+    //   ここも非常に見づらい。その後すぐにカゲロウの『ゴゴゴ』でフルスクリーンに戻るため」
+    //   → ヒノカ認識セリフ → カゲロウ「ゴゴゴ」 まで全画面を継続維持。_battleDialogFinish が
+    //     既に剥がした class を ここで即時に再付与し、700ms の rage attack 演出中も
+    //     split-screen に戻らないようにする。次の _showBattleDialog で再度 add される。
+    _battleDialogIsNarrative = true;
+    _setBattleFullscreen(true);
     // カゲロウが突然襲う: バストアップを「左ヒノカ + 右カゲロウ」配置に切り替え
     try { _hideBustups(); } catch (e) {}
     setTimeout(function() {

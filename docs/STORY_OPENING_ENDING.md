@@ -413,6 +413,18 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278i 4 件追補 (2026-04-26):**
+- ユーザー指示「『私、ヒノカだよ』と名乗ってからバトル画面に戻るので非常に見づらい。その後カゲロウの『ゴゴゴ』でフルスクリーンに戻る」
+  → `_playHinokaRecognitionIntro` の Hinoka 認識セリフ完了 cb で `_battleDialogIsNarrative=true; _setBattleFullscreen(true)` を即時実行。700ms の rage attack 演出中も全画面を維持し、split-screen 戻り → フル画面 の往復を解消
+- ユーザー指示「ヒノカはスケール 60% にしてもっと右上に配置。勇者より前に出ないように」
+  → `.battle-stage .party-fairies` の左下定位 (left:8px bottom:6px) を **`left: clamp(4px,2.5%,18px); bottom: clamp(8%,20%,26%)`** に変更し、勇者 (left:8% top:54%, 足元 ~25-34% bottom) のすぐ左下に。fullscreen 専用 override は撤去 (% 基準で battle-stage 縮尺に追従)
+  → Hinoka 専用 width を `clamp(12px, 2.9vw, 19px)` (default の 60%) に縮小
+- ユーザー指示「少し浮いてる感出したいので上下にゆっくり動いて」
+  → `@keyframes partyFairyFloat` 追加。`.party-fairy-sprite` に `animation: partyFairyFloat 2.6s ease-in-out infinite` を付与。複数妖精合流時は nth-child で animation-delay -0.6s/-1.3s ずらし、同期しないようにする
+- ユーザー指示「ヒノカの画像はバトル中はこれらの低解像度バージョン。フル画面の時は今の画像をそのまま」
+  → in-battle スプライト (`.party-fairy-sprite`) のみ **`hinoka_pixel_front.png` (pixel art)** に差し替え + `image-rendering: pixelated` を Hinoka 限定で。bustup-portrait や celebration overlay 用の高解像度版 (`hinoka_001.png`) は別系統で継続
+  → 素材未保存時は `onerror` で `hinoka_001.png` にフォールバック (pixel-rendering 解除も同時)。素材保存後は自動的に pixel art へ
+
 **v278h 5 件追補 (2026-04-26):**
 - ユーザー指示「お手本の時に全画面にならなくて良いです。なぞりスタート時も」
   → `_showBattleDialog(messages, onDone, opts)` に **`opts.noFullscreen` 追加**。なぞり turn 中の補助メッセージ (おてほんを みせるよ / なぞり スタート！) は `noFullscreen:true` で全画面化を skip。narrative とのレイアウト往復を抑える
