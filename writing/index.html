@@ -3349,6 +3349,13 @@ body.battle-fullscreen-active .battle-log-window {
   transform: scaleX(-1) scale(2.6) !important;
   transform-origin: 100% 50% !important;
 }
+/* v278m (2026-04-26): atk_2 (飛びかかり両腕攻撃) は元画像が右向き (head が右、両腕は左に伸びる)。
+   勇者方向 (左) を向くよう scaleX(-1) で flip。scale(1.38) は body 補正 (atk_1 等と揃える)。
+   transform-origin: 70% 70% で flip 後の body を画面中央寄りに anchor (左半分にハミ出さない)。 */
+.battle-enemy[data-enemy-id="volcano_lord"].kagerou-pose-atk2 .enemy-img {
+  transform: scaleX(-1) scale(1.38) !important;
+  transform-origin: 70% 70% !important;
+}
 .battle-enemy.grounded .enemy-shadow {
   /* 地面に足が付いているタイプ (岩系ボス等) は不自然な浮遊シャドウを隠す。
      画像自体の drop-shadow だけで接地感を表現する。 */
@@ -7313,8 +7320,14 @@ const BATTLE_ENEMIES = {
     //   旧 idle (kagerou_idle.png) は実際は炎ブレス発射ポーズ + 体が右向き
     //   (画像内で head が右、flame が右) なので imgAttackStrike へ移動 + CSS scaleX(-1) で反転して使う。
     //   imgIdle = atk_1 (体が左向き、tight bbox) — boss らしい立ち姿。
-    //   imgAttackWindup = atk_strike (低く構える) → claw_r (溜めの crouch)。
-    //   atk_2 / claw_l は body 向きがズレる/構図が浮くので不採用。
+    // v278m (2026-04-26): ユーザー指示「攻撃の瞬間にちゃんと攻撃のコマを表示」
+    //   「飛びかかって両腕で攻撃」「右手だけを上げて振りかぶってる」
+    //   「ここぞという時には炎を吐いている絵」「左右反転して使って」
+    //   「炎の分まで入れて計算してたようで全体的に小さくなってた、体だけを比較して同じ大きさに」
+    //   → imgAttackStrike を kagerou_idle.png (炎ブレス、body が画像 31%) → kagerou_atk_2.png
+    //     (飛びかかり両腕、body bbox 大) に変更。CSS .kagerou-pose-atk2 で scaleX(-1) flip + scale 1.38
+    //     を当てて body サイズを atk_1 等と揃える (炎の幅を含めない計算)。
+    //   → kagerou_idle.png は imgFireBreath として温存し、ここぞ moment 用 (rage attack 等で別途使用予定)。
     img:             '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png',
     imgEntrance:     '../assets/images/monsters/chars/Kagerou/kagerou_entrance.jpg',
     imgIdle:         '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png',
@@ -7323,7 +7336,8 @@ const BATTLE_ENEMIES = {
       '../assets/images/monsters/chars/Kagerou/kagerou_atk_strike.png',
       '../assets/images/monsters/chars/Kagerou/kagerou_claw_r.png'
     ],
-    imgAttackStrike: '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
+    imgAttackStrike: '../assets/images/monsters/chars/Kagerou/kagerou_atk_2.png',
+    imgFireBreath:   '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
     // 追加ステート (非標準、_triggerKagerouRageAttack / _pulseKagerouAwaken /
     // _startPurificationSequence 内の bow 時に手動 swap)
     imgRoar:         '../assets/images/monsters/chars/Kagerou/kagerou_roar.png',
@@ -7428,7 +7442,7 @@ function _resetCurseMask() {
     const enemyEl = document.getElementById('battleEnemy');
     if (!enemyEl) return;
     enemyEl.classList.remove('purified', 'bowing', 'ascending', 'kagerou-firebreath',
-                             'kagerou-awaken-pulse', 'kagerou-rage');
+                             'kagerou-pose-atk2', 'kagerou-awaken-pulse', 'kagerou-rage');
     enemyEl.classList.add('cursed');
     // 残留 thanks bubble / drain particle を除去
     document.querySelectorAll('.spirit-thanks-bubble').forEach(function(el) { el.remove(); });
@@ -9241,17 +9255,18 @@ function enemyCounterAttack() {
     try {
       if (strikeImg && _battle.hp > 0) {
         _swapEnemyImg(strikeImg);
-        // v275: カゲロウの炎ブレスのみ画像が逆向きで描かれているので CSS で flip。
-        //       他のスプライトに戻す時に外す。
+        // v278m (2026-04-26): カゲロウの imgAttackStrike が atk_2.png (飛びかかり両腕攻撃) に
+        //   変更されたので、専用 class .kagerou-pose-atk2 を当てて scaleX(-1) flip + scale 補正。
+        //   旧 .kagerou-firebreath は idle.png (炎ブレス) 専用に温存し、ここぞ moment で使う。
         var enemyEl = document.getElementById('battleEnemy');
         if (enemyEl && e && e.id === 'volcano_lord') {
-          enemyEl.classList.add('kagerou-firebreath');
+          enemyEl.classList.add('kagerou-pose-atk2');
         }
         clearTimeout(_battle._frameRevertTimer);
         _battle._frameRevertTimer = setTimeout(function() {
           if (!_battle.active) return;
           if (_battle.hp <= 0) return;
-          if (enemyEl) enemyEl.classList.remove('kagerou-firebreath');
+          if (enemyEl) enemyEl.classList.remove('kagerou-pose-atk2');
           const back = _enemyImgForHp();
           if (back) _swapEnemyImg(back);
         }, isRanged ? 700 : 340);
@@ -10584,6 +10599,24 @@ function _showBattleIntro(onDone) {
     // v277c: 山道シーンから volcano_boss BGM (Ashen Guardian) に切替。
     //         以降カゲロウ最終戦終了まで同曲が流れ続ける。
     try { setBgmFor('volcano_boss'); } catch (e) {}
+    // v278m (2026-04-26): カゲロウのスプライトを全部 prefetch して攻撃時の
+    //   「一瞬カゲロウが消える」問題 (img.src 切替直後に画像が未ロードで blank になる現象) を防ぐ。
+    try {
+      [
+        '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_atk_2.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_atk_strike.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_claw_l.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_claw_r.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_idle.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_rage.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_roar.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_stagger.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_down.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_front_idle.png',
+        '../assets/images/monsters/chars/Kagerou/kagerou_front_still.png'
+      ].forEach(function(src) { var i = new Image(); i.src = src; });
+    } catch (e) {}
     // 山道画像が存在するか先にプリロードでチェック → あれば挿入、なければスキップ
     var probe = new Image();
     probe.onload = function() {
@@ -12814,6 +12847,26 @@ function _triggerKagerouRageAttack() {
   }
 }
 
+// v278m (2026-04-26): ユーザー指示「ここぞという時には炎を吐いている絵を使って」
+//   imgFireBreath (kagerou_idle.png 1113x359、body 31% + 炎 69%) を一時表示するヘルパー。
+//   .kagerou-firebreath クラスで scaleX(-1) scale(2.6) を当て、body を画面右に anchor して
+//   炎が左 (= 勇者方向) に伸びる構図にする。durationMs 後に HP 応じた立ち絵に戻す。
+var _kagerouFireBreathTimer = null;
+function _triggerKagerouFireBreath(durationMs) {
+  var enemyEl = document.getElementById('battleEnemy');
+  var e = _battle && _battle.enemy;
+  if (!e || e.id !== 'volcano_lord' || !e.imgFireBreath) return;
+  if (_kagerouFireBreathTimer) { clearTimeout(_kagerouFireBreathTimer); _kagerouFireBreathTimer = null; }
+  _swapEnemyImg(e.imgFireBreath);
+  if (enemyEl) enemyEl.classList.add('kagerou-firebreath');
+  _kagerouFireBreathTimer = setTimeout(function() {
+    _kagerouFireBreathTimer = null;
+    if (enemyEl) enemyEl.classList.remove('kagerou-firebreath');
+    var back = (typeof _enemyImgForHp === 'function' ? _enemyImgForHp() : null) || e.imgIdle || e.img;
+    if (back) _swapEnemyImg(back);
+  }, durationMs || 1100);
+}
+
 // ===== v277: Chant Ritual (儀式) — カゲロウ最終バトル専用 =====
 // 2026-04-25: ユーザー指示「わ・を・ん 以外の文字入力ステップを 2 ヶ所、特別 UI で」
 //   - Ritual 1: Beat 1 直後「かざん」(火山) — ヒノカに促されて勇者が歌の一節をなぞる
@@ -13552,6 +13605,12 @@ function _playKagerouHpRecoveryDespair(onDone) {
   requestAnimationFrame(function() { flash.style.opacity = '1'; });
   // カゲロウ rage attack で激しさ表現
   try { _triggerKagerouRageAttack(); } catch (e) {}
+  // v278m (2026-04-26): ユーザー指示「ここぞという時には炎を吐いている絵」
+  //   → HP 全回復 (闇の力で蘇った瞬間) は最大の「ここぞ」。rage 後 1.4s 経過で
+  //     炎ブレスに切替 (1.6s 維持) して闇の咆哮を視覚化。
+  setTimeout(function() {
+    try { _triggerKagerouFireBreath(1600); } catch (e) {}
+  }, 1500);
   // v278j: 闇の力で氷の足止めを引きちぎる演出 → frozen-feet クラス解除
   try {
     var enemyEl = document.getElementById('battleEnemy');

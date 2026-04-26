@@ -413,6 +413,18 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278m カゲロウ攻撃アニメ刷新 + ここぞ炎ブレス (2026-04-26):**
+- ユーザー指摘「攻撃する瞬間、一瞬かげろうが消えてる」「ちゃんと攻撃のコマを表示」「飛びかかって両腕で攻撃するやつ、右手だけを上げて振りかぶってるやつ」「ここぞという時には炎を吐いている絵」「左右反転して使って」「炎の分まで入れて計算してた、体だけを比較して同じ大きさに」
+- 原因: `imgAttackStrike` が `kagerou_idle.png` (炎ブレス、body は画像 31% + 炎 69%) になっていて、body 補正のために scale 2.6x の特殊 transform-origin を当てていた。攻撃のたびに大きくスケールジャンプするうえ、img 切替直後に画像が未ロードで blank になる現象も
+- 修正:
+  - `imgAttackStrike` を `kagerou_atk_2.png` (飛びかかり両腕攻撃、aspect 1.59) に変更
+  - 新 CSS class `.kagerou-pose-atk2`: `transform: scaleX(-1) scale(1.38); transform-origin: 70% 70%;` で flip + body 補正 (atk_1 等の 1.38 スケールと揃う)
+  - `kagerou_idle.png` は **`imgFireBreath` として温存**、ここぞ moment 用に
+  - 新ヘルパー `_triggerKagerouFireBreath(durationMs)` 追加 (rage attack と同形)
+  - **C1 (HP 全回復絶望シーン)** で rage の 1.5s 後に炎ブレス 1.6s — 闇の咆哮を視覚化
+  - 火山ボス intro 突入時に Kagerou スプライト 12 枚を一括 prefetch (img.src 切替時の blank 解消)
+  - `_resetCurseMask` で `kagerou-pose-atk2` も remove リストに追加 (cleanup)
+
 **v278l 山道→カゲロウ登場の overlay 切替時のフレーム露出修正 (2026-04-26):**
 - ユーザー指摘 (複数回): 「山道とカゲロウ登場時のイメージの乗り替わり時にバトル画面のフレームが一瞬出る」
 - 原因: `_showClimaxEventImage` の `close()` が overlay を 0.55s で fade out → 撤去 → 次の overlay が opacity:0 から fade in。合計 ~1.1s の間、半透明状態でバトル画面 (背景) が見えていた
