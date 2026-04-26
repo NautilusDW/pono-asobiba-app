@@ -2852,8 +2852,13 @@ body.battle-mode .villain-deco {
       Riefa→Serina が左下に降りる。% 基準なので battle-stage の縮尺に追従する。 */
 .battle-stage .party-fairies {
   position: absolute;
-  left: clamp(4px, 2.5%, 18px);
-  bottom: clamp(8%, 20%, 26%);
+  /* v278k (2026-04-26): ユーザー指示「フル画面の時の火の妖精の位置が左下すぎる、もっと右上に」
+     「バトル画面の時も 1 キャラ分右に」
+     → left: clamp(4px,2.5%,18px) → clamp(22px,6%,52px) (約 1 キャラ分 32px 右へ)
+     → bottom: clamp(8%,20%,26%) → clamp(20%,30%,38%) (勇者足元 ~34% bottom 付近に上昇)
+     他の妖精 (riefa/serina) は同じ flex 位置から row-reverse で並ぶので、自動的に同様にシフト。 */
+  left: clamp(22px, 6%, 52px);
+  bottom: clamp(20%, 30%, 38%);
   z-index: 4;
   display: flex;
   flex-direction: row-reverse;

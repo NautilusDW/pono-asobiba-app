@@ -413,6 +413,12 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278k 妖精位置の右上シフト (2026-04-26):**
+- ユーザー指示「フル画面の時の火の妖精の位置が左下すぎる、もっと右上に」「バトル画面の時も 1 キャラ分右に」
+  → `.battle-stage .party-fairies` を `left: clamp(4px,2.5%,18px); bottom: clamp(8%,20%,26%)` から **`left: clamp(22px,6%,52px); bottom: clamp(20%,30%,38%)`** に変更
+  → 約 1 キャラ分 (32px) 右シフト + 勇者足元 (~34% bottom) 付近に上昇
+  → 他妖精 (riefa/serina) は同じ flex 親から row-reverse で並ぶため、自動的に同様にシフト
+
 **v278j 妖精 3 人の見せ場 拡張 (2026-04-26):**
 
 ユーザー要望 3 件 — セリナ足止め演出 / リーファ風魔法合体攻撃 / リーファ回復魔法見せ場。
