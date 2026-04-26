@@ -10533,6 +10533,20 @@ function _showBattleIntro(onDone) {
     //   v277h: 2 段フラグ (_waMidHitCutPlayed + _waRowEpisodePlayed) を両方リセット。
     _waMidHitCutPlayed = false;
     _waRowEpisodePlayed = false;
+
+    // v278l (2026-04-26): ユーザー指摘「山道とカゲロウ登場時のイメージの乗り替わり時に
+    //   バトル画面のフレームが一瞬出る」(複数回指摘)
+    //   原因: _showClimaxEventImage の close() が overlay を 0.55s で fade out → 撤去 →
+    //         次の overlay が opacity:0 から fade in。この合計 ~1.1s の間、半透明状態で
+    //         バトル画面 (背景) が見えていた。
+    //   修正: 常駐の黒幕 (z:1800、climax overlay z:1805 の直下) を最初に貼り、
+    //         2 つの overlay が fade in/out する間ずっと背景を黒く保つ。
+    //         Kagerou overlay の onDone (= battle stage reveal) のタイミングで fade out → 撤去。
+    var _introBackdrop = document.createElement('div');
+    _introBackdrop.id = 'volcanoIntroBackdrop';
+    _introBackdrop.style.cssText = 'position:fixed;inset:0;z-index:1800;background:#000;pointer-events:none;opacity:1;transition:opacity 0.6s ease;';
+    document.body.appendChild(_introBackdrop);
+
     var _afterRecog = function() {
       _showBattleDialog([
         { lines: ['もじを なぞって', 'てきを', 'たおそう！'], opts: { line3Class: 'dmg-line' } }
@@ -10550,6 +10564,11 @@ function _showBattleIntro(onDone) {
             var _bs = document.getElementById('battleStage');
             if (_bs) { _bs.style.display = ''; _bs.setAttribute('aria-hidden', 'false'); }
             document.body.classList.remove('battle-intro-active');
+          } catch (e) {}
+          // v278l: 黒幕を fade out → 撤去 (battle stage が見えるよう)
+          try {
+            _introBackdrop.style.opacity = '0';
+            setTimeout(function() { try { if (_introBackdrop.parentNode) _introBackdrop.remove(); } catch (e) {} }, 650);
           } catch (e) {}
           // v277k: ユーザー指示「妖精合流は ん 完了後 (ひらがな完成 + れんぞくわざ解放) のタイミング」
           //         → イントロでは合流を呼ばない。_playKagerouFinalCombo 内で発火させる。

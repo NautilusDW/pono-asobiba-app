@@ -413,6 +413,12 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278l 山道→カゲロウ登場の overlay 切替時のフレーム露出修正 (2026-04-26):**
+- ユーザー指摘 (複数回): 「山道とカゲロウ登場時のイメージの乗り替わり時にバトル画面のフレームが一瞬出る」
+- 原因: `_showClimaxEventImage` の `close()` が overlay を 0.55s で fade out → 撤去 → 次の overlay が opacity:0 から fade in。合計 ~1.1s の間、半透明状態でバトル画面 (背景) が見えていた
+- 修正: 火山ボス intro 開始時に **常駐の黒幕** (z:1800、climax overlay z:1805 の直下) を貼り、2 つの overlay が fade in/out する間ずっと背景を黒く保つ。Kagerou overlay の onDone (= battle stage reveal タイミング) で fade out → 撤去
+- 影響範囲: `_showBattleIntro` の volcano boss 分岐のみ。通常マップシーンや他のクライマックスは現状維持
+
 **v278k 妖精位置の右上シフト (2026-04-26):**
 - ユーザー指示「フル画面の時の火の妖精の位置が左下すぎる、もっと右上に」「バトル画面の時も 1 キャラ分右に」
   → `.battle-stage .party-fairies` を `left: clamp(4px,2.5%,18px); bottom: clamp(8%,20%,26%)` から **`left: clamp(22px,6%,52px); bottom: clamp(20%,30%,38%)`** に変更
