@@ -3595,6 +3595,68 @@ body.battle-fullscreen-active .battle-log-window {
   60%  { filter: brightness(1.1) drop-shadow(0 0 8px rgba(150,220,255,0.4)); transform: scale(1); }
   100% { filter: brightness(1) drop-shadow(0 0 0 transparent); transform: scale(1); }
 }
+/* v278j (2026-04-26): セリナ「あしどめ」の永続状態 (B3.5 〜 C1 直前まで)。
+   ユーザー指示「カゲロウの足元が固まって動けなくなる」演出。
+   画像未支給時のフォールバック = ::after で水色氷晶グラデを敵足元に重ねる。
+   素材支給後は同 class に has-image を加えて image を出す運用 (background-image で上書き)。 */
+.battle-enemy.frozen-feet { position: relative; }
+.battle-enemy.frozen-feet::after {
+  content: '';
+  position: absolute;
+  left: 10%; right: 10%; bottom: -2%;
+  height: 22%;
+  background: linear-gradient(
+    180deg,
+    rgba(180, 230, 255, 0) 0%,
+    rgba(180, 230, 255, 0.55) 35%,
+    rgba(140, 210, 250, 0.85) 70%,
+    rgba(120, 190, 235, 0.95) 100%
+  );
+  border-radius: 50% 50% 12% 12% / 60% 60% 30% 30%;
+  filter: drop-shadow(0 0 8px rgba(140, 210, 250, 0.8));
+  pointer-events: none;
+  z-index: 3;
+  animation: frozenFeetShimmer 2.4s ease-in-out infinite;
+}
+@keyframes frozenFeetShimmer {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; filter: drop-shadow(0 0 14px rgba(180, 230, 255, 0.95)); }
+}
+/* v278j: Riefa の回復魔法着弾時、Hinoka 周囲に動的生成する緑キラキラ粒子。
+   _playRiefaHealHinoka 内で document.createElement('div').className = 'fairy-heal-sparkle'
+   を 6-8 個 append + --dx / --dy で散らす。 */
+.fairy-heal-sparkle {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #C8F5D0 0%, #66BB6A 60%, transparent 80%);
+  filter: drop-shadow(0 0 6px rgba(102, 187, 106, 0.9));
+  pointer-events: none;
+  animation: healSparkleFly 0.9s ease-out forwards;
+  z-index: 70;
+}
+@keyframes healSparkleFly {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, -40px)) scale(1.2); }
+}
+/* v278j: 風 + 炎 合体演出。chant 完了直後に Hinoka 周囲に出る cyan ブースト光。
+   wind projectile の代わりに CSS のみで安く実装。 */
+.fairy-wind-boost {
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(178,235,242,0.95) 0%, rgba(38,198,218,0.6) 50%, transparent 80%);
+  filter: drop-shadow(0 0 8px rgba(38,198,218,0.85));
+  pointer-events: none;
+  animation: windBoostFly 0.7s ease-out forwards;
+  z-index: 65;
+}
+@keyframes windBoostFly {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 30px), var(--dy, -22px)) scale(0.7); }
+}
 /* v271 クライマックス: スクリーン激震 (ヒノカ被弾時) */
 .battle-stage.screen-heavy-shake {
   animation: screenHeavyShake 0.12s linear 7 !important;
@@ -7620,6 +7682,15 @@ function _damageFairy(key, amount) {
   if (!f || !f.joined || !f.alive) return;
   f.hp = Math.max(0, f.hp - (amount | 0));
   if (f.hp <= 0) f.alive = false;
+  _renderFairyHp(key);
+}
+
+// v278j (2026-04-26): _damageFairy と対称な回復ヘルパー。Riefa の回復魔法演出で使う。
+// dead な妖精 (alive=false) は復活させない (HP→0 は C2 の演出として確定状態)。
+function _healFairy(key, amount) {
+  var f = _battle.fairies && _battle.fairies[key];
+  if (!f || !f.joined || !f.alive) return;
+  f.hp = Math.min(f.maxHp || f.hp, f.hp + (amount | 0));
   _renderFairyHp(key);
 }
 
@@ -12987,17 +13058,21 @@ function _crackKagerouMask(onDone) {
 //   ん 完了 → ここに入って → 全部終わると battleVictory へ。
 //
 // フロー (Phase B → C → D → E):
-//   B1. ひらがな かんせい バナー
-//   B2. 妖精合流 (リーファ + セリナ joined → ゲージ出現)
-//   B3. Beat 0 魔法相性デモ (氷無効 → 正義の炎が通る、教育用)
-//   B4. 連続技「ほのお」(3字) → カゲロウ HP 半減
-//   B5. 連続技「ひのたま」(4字) → カゲロウ HP 残り 1
-//   C1. カゲロウ HP 全回復 (闇の力で逆転、絶望)
-//   C2. リーファ + セリナ 吹き飛ばされる (HP→0、倒れる演出)
-//   D.  既存 _playWaRowEpisode (= 訴え + 回想 + Beat 1〜5、ヒノカ重傷含む)
-//   E1. プロンプト「よげんの ちから が…」「真名を よびかけよう！」
-//   E2. 連続技「かげろう」(4字、finisher 入力)
-//   E3. 仮面割れ + battle_last_02 → onDone → battleVictory
+//   B1.  ひらがな かんせい バナー
+//   B2.  妖精合流 (リーファ + セリナ joined → ゲージ出現)
+//   B3.  Beat 0 魔法相性デモ (氷無効 → 正義の炎が通る、教育用)
+//   B3.5 [v278j] セリナ「あしどめ くらい は できる わ」→ 氷魔法 2 発目 → カゲロウ足元凍結 (永続)
+//   B3.7 [v278j] リーファ「わたしの かぜ で、 ヒノカ の ほのお を そだてる ね」(風魔法宣言)
+//   B4.  連続技「ほのお」(3字) → リーファ風 + ヒノカ炎 合体 → カゲロウ HP 半減
+//   B4.3 [v278j] カゲロウ反撃 → ヒノカ軽傷 (HP 8→5)
+//   B4.6 [v278j] リーファ回復魔法 → ヒノカ HP 復活 (5→8)
+//   B5.  連続技「ひのたま」(4字) → カゲロウ HP 残り 1
+//   C1.  カゲロウ HP 全回復 (闇の力で逆転、絶望) — 凍結も砕かれる
+//   C2.  リーファ + セリナ 吹き飛ばされる (HP→0、倒れる演出)
+//   D.   既存 _playWaRowEpisode (= 訴え + 回想 + Beat 1〜5、ヒノカ重傷含む)
+//   E1.  プロンプト「よげんの ちから が…」「真名を よびかけよう！」
+//   E2.  連続技「かげろう」(4字、finisher 入力)
+//   E3.  仮面割れ + battle_last_02 → onDone → battleVictory
 function _playKagerouFinalCombo(onDone) {
   // v278c: 連続技フェーズ突入 → body にクラス付与してキャンバスを隠し battle-stage を全画面化
   try { document.body.classList.add('combo-phase-active'); } catch (e) {}
@@ -13005,6 +13080,11 @@ function _playKagerouFinalCombo(onDone) {
   var _origOnDone = onDone;
   onDone = function() {
     try { document.body.classList.remove('combo-phase-active'); } catch (e) {}
+    // v278j: phase 途中エラー時のセーフティとして、frozen-feet も確実に剥がす
+    try {
+      var _e = document.getElementById('battleEnemy');
+      if (_e) _e.classList.remove('frozen-feet');
+    } catch (e) {}
     if (_origOnDone) _origOnDone();
   };
   // ====== Phase B1: ひらがな かんせい バナー ======
@@ -13013,34 +13093,49 @@ function _playKagerouFinalCombo(onDone) {
     _showFairyMergeIntro(function() {
       // ====== Phase B3: Beat 0 魔法相性デモ ======
       _playMagicAffinityDemo(function() {
-        // ====== Phase B4: 連続技「ほのお」====== (3字)
-        _showChantRitual({
-          chars: ['ほ','の','お'],
-          theme: 'starmark',
-          heading: 'れんぞくわざ「ほのお」！',
-          subtext: 'みんな の ちから を あわせて、 やみ の のろい を やぶる！',
-          shoutout: 'ほのお！'
-        }, function() {
-          // カゲロウに大ダメージ (HP 半減). HP=12 → 6
-          try {
-            _battle.hp = Math.max(1, Math.floor(_battle.maxHp * 0.5));
-            _renderEnemyNameColor();
-            var en1 = document.getElementById('battleEnemy');
-            if (en1) { en1.classList.add('damaged'); setTimeout(function(){ en1.classList.remove('damaged'); }, 700); }
-            var st1 = document.querySelector('.battle-stage');
-            if (st1) { st1.classList.add('screen-heavy-shake'); setTimeout(function(){ st1.classList.remove('screen-heavy-shake'); }, 700); }
-          } catch (e) {}
-          _showBattleDialog([
-            { lines: ['ヒノカ「やった！', 'カゲロウ に', 'のろい が ゆらいで いる！'] }
-          ], function() {
-            // ====== Phase B5: 連続技「ひのたま」====== (4字)
+        // ====== Phase B3.5 (v278j): セリナ あしどめ ======
+        _playSerinaFreezeFollowup(function() {
+          // ====== Phase B3.7 (v278j): リーファ かぜで ほのおを そだてる宣言 ======
+          _playRiefaWindIntent(function() {
+            // ====== Phase B4: 連続技「ほのお」====== (3字)
             _showChantRitual({
-              chars: ['ひ','の','た','ま'],
+              chars: ['ほ','の','お'],
               theme: 'starmark',
-              heading: 'れんぞくわざ「ひのたま」！',
-              subtext: 'もう ひと いき！ みんな で、 つよく ねがって！',
-              shoutout: 'ひのたま！'
+              heading: 'れんぞくわざ「ほのお」！',
+              subtext: 'みんな の ちから を あわせて、 やみ の のろい を やぶる！',
+              shoutout: 'ほのお！'
             }, function() {
+              // v278j: chant 完了時、まずリーファ位置から cyan の風キラキラを撒いて
+              //   「風がヒノカに乗った」感を出してから (200ms) ヒノカの炎が拡大する。
+              //   damage 適用は風表示後に行う (見た目の合体演出を強調)。
+              try { _spawnWindBoost('riefa', 8); } catch (e) {}
+              setTimeout(function() {
+                // ヒノカ位置にも cyan キラキラを少し (= 風が炎に乗った瞬間)
+                try { _spawnWindBoost('hinoka', 6); } catch (e) {}
+                // カゲロウに大ダメージ (HP 半減). HP=12 → 6
+                try {
+                  _battle.hp = Math.max(1, Math.floor(_battle.maxHp * 0.5));
+                  _renderEnemyNameColor();
+                  var en1 = document.getElementById('battleEnemy');
+                  if (en1) { en1.classList.add('damaged'); setTimeout(function(){ en1.classList.remove('damaged'); }, 700); }
+                  var st1 = document.querySelector('.battle-stage');
+                  if (st1) { st1.classList.add('screen-heavy-shake'); setTimeout(function(){ st1.classList.remove('screen-heavy-shake'); }, 700); }
+                } catch (e) {}
+                _showBattleDialog([
+                  { lines: ['ヒノカ「やった！', 'カゲロウ に', 'のろい が ゆらいで いる！'] }
+                ], function() {
+                  // ====== Phase B4.3 (v278j): カゲロウ反撃 → ヒノカ軽傷 ======
+                  _playKagerouCounterAttack(function() {
+                    // ====== Phase B4.6 (v278j): リーファ回復魔法 ======
+                    _playRiefaHealHinoka(function() {
+                      // ====== Phase B5: 連続技「ひのたま」====== (4字)
+                      _showChantRitual({
+                        chars: ['ひ','の','た','ま'],
+                        theme: 'starmark',
+                        heading: 'れんぞくわざ「ひのたま」！',
+                        subtext: 'もう ひと いき！ みんな で、 つよく ねがって！',
+                        shoutout: 'ひのたま！'
+                      }, function() {
               // カゲロウ HP 残り 1 寸前 → ピンチ表現
               try {
                 _battle.hp = 1;
@@ -13129,8 +13224,13 @@ function _playKagerouFinalCombo(onDone) {
           });
         });
       });
-    });
-  });
+              }, 200);   // setTimeout (wind boost delay) close
+            });          // _showChantRitual ほのお close
+          });            // _playRiefaWindIntent close (Phase B3.7)
+        });              // _playSerinaFreezeFollowup close (Phase B3.5)
+      });                // _playMagicAffinityDemo close (Phase B3)
+    });                  // _showFairyMergeIntro close (Phase B2)
+  });                    // _showHiraganaCompleteBanner close (Phase B1)
 }
 
 // v278b: 「ひらがな かんせい！れんぞくわざ かいほう！」 バナー (1.9s)
@@ -13230,6 +13330,195 @@ function _playMagicAffinityDemo(onDone) {
   });
 }
 
+// ===== v278j (2026-04-26): 妖精 3 人の見せ場 拡張 =====
+// Phase B3.5: セリナの足止め (氷魔法 2 発目で カゲロウ足元凍結)
+// Phase B3.7: リーファの「風で炎を育てる」宣言 (実演は B4 chant 完了時)
+// Phase B4.3: カゲロウ反撃 → ヒノカ軽傷
+// Phase B4.6: リーファの回復魔法 (heal projectile + 緑キラキラ)
+
+// v278j Phase B3.5
+function _playSerinaFreezeFollowup(onDone) {
+  var SERINA_R = '../assets/images/characters/pixies/Serina/serina_001.png';
+  try { _showBustup('right', SERINA_R, { flip: true, alt: 'セリナ' }); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['セリナ「わかった、 あしどめ', 'くらい なら、', 'できる わ！'] }
+  ], function() {
+    try { _hideBustups(); } catch (e) {}
+    // narrative full-screen 維持 (v278i パターン): 投射中の split 戻り防止
+    _battleDialogIsNarrative = true;
+    _setBattleFullscreen(true);
+    setTimeout(function() {
+      try {
+        if (typeof launchMagicProjectile === 'function') {
+          launchMagicProjectile('ice', {
+            onImpact: function() {
+              try {
+                var ei = document.getElementById('battleEnemy');
+                if (ei) {
+                  ei.classList.add('ice-noeffect');
+                  setTimeout(function(){ ei.classList.remove('ice-noeffect'); }, 700);
+                  // ★ 永続: 足元凍結を C1 まで残す
+                  ei.classList.add('frozen-feet');
+                }
+              } catch (e) {}
+            }
+          });
+        }
+      } catch (e) {}
+      // 投射 (~780ms) + 着弾フラッシュ (~700ms) を待ってから締めセリフ
+      setTimeout(function() {
+        try { _showBustup('right', SERINA_R, { flip: true, alt: 'セリナ' }); } catch (e) {}
+        _showBattleDialog([
+          { lines: ['セリナ「これ で すこし、', 'うごき づらく', 'なった はず！'] }
+        ], function() {
+          try { _hideBustups(); } catch (e) {}
+          if (onDone) onDone();
+        });
+      }, 1500);
+    }, 350);
+  });
+}
+
+// v278j Phase B3.7
+function _playRiefaWindIntent(onDone) {
+  var RIEFA_R = '../assets/images/characters/pixies/Riefa/riefa_001.png';
+  try { _showBustup('right', RIEFA_R, { flip: true, alt: 'リーファ' }); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['リーファ「わたしの かぜ で、', 'ヒノカ の ほのお を', 'そだてる ね！'] }
+  ], function() {
+    try { _hideBustups(); } catch (e) {}
+    if (onDone) onDone();
+  });
+}
+
+// v278j Phase B4.3 — chant 完了の damage 後にカゲロウ反撃 → ヒノカ軽傷
+function _playKagerouCounterAttack(onDone) {
+  // 1. カゲロウ咆哮 + ステージシェイク
+  try { _triggerKagerouRageAttack(); } catch (e) {}
+  setTimeout(function() {
+    // 2. カゲロウ → ヒノカへ呪い魔法弾
+    try {
+      if (typeof _launchEnemyMagicProjectile === 'function') {
+        _launchEnemyMagicProjectile('curse_shadow', {
+          onImpact: function() {
+            try {
+              if (typeof _hinokaMidHitEffect === 'function') _hinokaMidHitEffect();
+              _damageFairy('hinoka', 3);  // hp 8 → 5 (`low` クラスで黄色に)
+              var st = document.querySelector('.battle-stage');
+              if (st) {
+                st.classList.add('screen-heavy-shake');
+                setTimeout(function(){ st.classList.remove('screen-heavy-shake'); }, 700);
+              }
+            } catch (e) {}
+          }
+        });
+      }
+    } catch (e) {}
+    // 着弾後にヒノカのうめきセリフ
+    setTimeout(function() {
+      var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
+      try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+      _showBattleDialog([
+        { lines: ['カゲロウ「グルゥウオォ……！', 'よそ もの め……！', ''] },
+        { lines: ['ヒノカ「うっ……！', 'ちから が、 ぬけて いく……', ''] }
+      ], function() {
+        try { _hideBustups(); } catch (e) {}
+        if (onDone) onDone();
+      });
+    }, 900);
+  }, 500);
+}
+
+// v278j Phase B4.6 — リーファ回復魔法でヒノカ HP 復活
+function _playRiefaHealHinoka(onDone) {
+  var RIEFA_R = '../assets/images/characters/pixies/Riefa/riefa_001.png';
+  var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
+  try { _showBustup('right', RIEFA_R, { flip: true, alt: 'リーファ' }); } catch (e) {}
+  _showBattleDialog([
+    { lines: ['リーファ「ヒノカ、 まって ね。', 'なおして あげる わ。', ''] }
+  ], function() {
+    try { _hideBustups(); } catch (e) {}
+    _battleDialogIsNarrative = true;
+    _setBattleFullscreen(true);
+    setTimeout(function() {
+      // heal projectile (緑) を Hinoka 位置に着弾させたいが、launchMagicProjectile は
+      // 敵 (#battleEnemy) を target にするので、代替: 緑 projectile を空中で消すように
+      // launch → 着弾 onImpact で Hinoka 位置にキラキラ粒子を出す + HP 回復。
+      try {
+        if (typeof launchMagicProjectile === 'function') {
+          launchMagicProjectile('heal', {
+            onImpact: function() {
+              try {
+                _healFairy('hinoka', 3);  // hp 5 → 8 (満タン)
+                _spawnHealSparkles('hinoka', 8);
+              } catch (e) {}
+            }
+          });
+        } else {
+          // launchMagicProjectile が無い場合のフォールバック
+          try { _healFairy('hinoka', 3); _spawnHealSparkles('hinoka', 8); } catch (e) {}
+        }
+      } catch (e) {}
+      // 着弾フラッシュ後にヒノカ感謝セリフ
+      setTimeout(function() {
+        try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+        _showBattleDialog([
+          { lines: ['ヒノカ「ありがとう、 リーファ。', 'もう だいじょうぶ。', ''] }
+        ], function() {
+          try { _hideBustups(); } catch (e) {}
+          if (onDone) onDone();
+        });
+      }, 1500);
+    }, 350);
+  });
+}
+
+// v278j: Hinoka スロット周囲に緑キラキラを散らす (Riefa heal 着弾演出)。
+// 既存 .party-fairy-slot[data-fairy="hinoka"] の screen 座標を取って body 直下に粒子を撒く。
+function _spawnHealSparkles(fairyKey, count) {
+  var slot = document.querySelector('.party-fairy-slot[data-fairy="' + (fairyKey || 'hinoka') + '"]');
+  if (!slot) return;
+  var rect = slot.getBoundingClientRect();
+  var cx = rect.left + rect.width / 2;
+  var cy = rect.top  + rect.height / 2;
+  for (var i = 0; i < (count || 8); i++) {
+    var dot = document.createElement('div');
+    dot.className = 'fairy-heal-sparkle';
+    dot.style.left = cx + 'px';
+    dot.style.top  = cy + 'px';
+    var ang = (Math.PI * 2) * (i / (count || 8)) + Math.random() * 0.4;
+    var dist = 30 + Math.random() * 24;
+    dot.style.setProperty('--dx', (Math.cos(ang) * dist) + 'px');
+    dot.style.setProperty('--dy', (Math.sin(ang) * dist - 10) + 'px');
+    dot.style.animationDelay = (Math.random() * 0.15) + 's';
+    document.body.appendChild(dot);
+    (function(el) { setTimeout(function(){ if (el.parentNode) el.remove(); }, 1200); })(dot);
+  }
+}
+
+// v278j: 風 + 炎 合体演出。chant 完了時に Hinoka 周囲に cyan キラキラを撒いて
+// 「Riefa の風がヒノカの炎に乗った」感を出す。実際の damage 処理は呼び元 (B4) が継続。
+function _spawnWindBoost(fairyKey, count) {
+  var slot = document.querySelector('.party-fairy-slot[data-fairy="' + (fairyKey || 'hinoka') + '"]');
+  if (!slot) return;
+  var rect = slot.getBoundingClientRect();
+  var cx = rect.left + rect.width / 2;
+  var cy = rect.top  + rect.height / 2;
+  for (var i = 0; i < (count || 6); i++) {
+    var dot = document.createElement('div');
+    dot.className = 'fairy-wind-boost';
+    dot.style.left = cx + 'px';
+    dot.style.top  = cy + 'px';
+    var ang = -Math.PI / 2 + (Math.random() - 0.5) * 0.8;  // 主に上方向
+    var dist = 26 + Math.random() * 20;
+    dot.style.setProperty('--dx', (Math.cos(ang) * dist) + 'px');
+    dot.style.setProperty('--dy', (Math.sin(ang) * dist - 6) + 'px');
+    dot.style.animationDelay = (Math.random() * 0.18) + 's';
+    document.body.appendChild(dot);
+    (function(el) { setTimeout(function(){ if (el.parentNode) el.remove(); }, 1000); })(dot);
+  }
+}
+
 // v278b: HP 全回復絶望シーン — カゲロウが闇の力で逆転、HP が満タンに戻る
 function _playKagerouHpRecoveryDespair(onDone) {
   // 紫闇フラッシュ
@@ -13239,6 +13528,11 @@ function _playKagerouHpRecoveryDespair(onDone) {
   requestAnimationFrame(function() { flash.style.opacity = '1'; });
   // カゲロウ rage attack で激しさ表現
   try { _triggerKagerouRageAttack(); } catch (e) {}
+  // v278j: 闇の力で氷の足止めを引きちぎる演出 → frozen-feet クラス解除
+  try {
+    var enemyEl = document.getElementById('battleEnemy');
+    if (enemyEl) enemyEl.classList.remove('frozen-feet');
+  } catch (e) {}
   setTimeout(function() {
     // HP 全回復
     try {

@@ -413,6 +413,35 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278j 妖精 3 人の見せ場 拡張 (2026-04-26):**
+
+ユーザー要望 3 件 — セリナ足止め演出 / リーファ風魔法合体攻撃 / リーファ回復魔法見せ場。
+
+新フロー (`_playKagerouFinalCombo`):
+- B3 _playMagicAffinityDemo (既存) — 氷無効デモ
+- **B3.5 [新] _playSerinaFreezeFollowup** — セリナ「わかった、 あしどめ くらい なら、 できる わ！」→ `launchMagicProjectile('ice')` 2 発目 → 着弾時に `#battleEnemy` に `frozen-feet` クラス付与 (永続)
+- **B3.7 [新] _playRiefaWindIntent** — リーファ「わたしの かぜ で、 ヒノカ の ほのお を そだてる ね！」(風宣言、実演は B4 内)
+- B4 _showChantRitual ['ほ','の','お'] (既存) → ★ chant onDone 内で `_spawnWindBoost('riefa', 8)` → 200ms 後 `_spawnWindBoost('hinoka', 6)` で「風が炎に乗った」合体演出 → 既存ダメージロジック (HP 12→6)
+- **B4.3 [新] _playKagerouCounterAttack** — `_triggerKagerouRageAttack` → `_launchEnemyMagicProjectile('curse_shadow')` → 着弾時 `_hinokaMidHitEffect` + `_damageFairy('hinoka', 3)` (HP 8→5、`low` クラスで黄色) → カゲロウ「グルゥウオ……！」/ ヒノカ「うっ……！」
+- **B4.6 [新] _playRiefaHealHinoka** — リーファ「ヒノカ、 まって ね。 なおして あげる わ。」→ `launchMagicProjectile('heal')` (緑) → 着弾時 `_healFairy('hinoka', 3)` (HP 5→8) + `_spawnHealSparkles('hinoka', 8)` で緑キラキラ → ヒノカ「ありがとう、 リーファ。」
+- B5 _showChantRitual ['ひ','の','た','ま'] (既存)
+- C1 _playKagerouHpRecoveryDespair (既存) — 冒頭で `enemyEl.classList.remove('frozen-feet')` 追加 (闇の力で氷を砕く演出)
+
+新規実装:
+- `_healFairy(key, amount)` — `_damageFairy` 対称ヘルパー (line 7626)
+- `_spawnHealSparkles(fairyKey, count)` / `_spawnWindBoost(fairyKey, count)` — slot 座標を取って粒子撒き
+- CSS: `.battle-enemy.frozen-feet::after` (水色氷晶グラデ + frozenFeetShimmer 2.4s ループ)、`.fairy-heal-sparkle` (緑、healSparkleFly 0.9s)、`.fairy-wind-boost` (cyan、windBoostFly 0.7s)
+- `_playKagerouFinalCombo` の onDone wrapper に `frozen-feet` の cleanup を追加 (途中エラー時のセーフティ)
+
+画像未支給時のフォールバック:
+- `frozen_feet.png` (後日支給予定) は CSS `::after` の水色グラデが代替
+- 風 / heal sparkle は完全 CSS 実装、画像不要
+
+HP 計算:
+- B4.3 `_damageFairy('hinoka', 3)` で 8→5 (62%、`low` クラス点灯)
+- B4.6 `_healFairy('hinoka', 3)` で 5→8 (満タン、`low` クラス解除)
+- C2 (_playFairiesKnockedOut) で Riefa+Serina HP→0 は変更なし
+
 **v278i 4 件追補 (2026-04-26):**
 - ユーザー指示「『私、ヒノカだよ』と名乗ってからバトル画面に戻るので非常に見づらい。その後カゲロウの『ゴゴゴ』でフルスクリーンに戻る」
   → `_playHinokaRecognitionIntro` の Hinoka 認識セリフ完了 cb で `_battleDialogIsNarrative=true; _setBattleFullscreen(true)` を即時実行。700ms の rage attack 演出中も全画面を維持し、split-screen 戻り → フル画面 の往復を解消
