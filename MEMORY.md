@@ -12,6 +12,7 @@
 - **git push自動化**: [memory/feedback_auto_push.md](memory/feedback_auto_push.md) — post-commitフックでNetlify自動デプロイ
 - **毎回デプロイ必須**: [memory/feedback_auto_deploy.md](memory/feedback_auto_deploy.md) — タスク完了時は確認せず自動でcommit+deploy
 - **Umamiアナリティクス**: [memory/reference_umami.md](memory/reference_umami.md) — Umami Cloud設定情報
+- **文字書きシンプルモード復活 Phase 1**: [memory/feature_writing_simple_mode.md](memory/feature_writing_simple_mode.md) — RPG化前の805行版を `writing/simple.html` として復活、妖精2体常駐応援、Phase 2 (行選択+単語フェーズ) は未実装
 
 ---
 
