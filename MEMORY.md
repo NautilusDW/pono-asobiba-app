@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-26T01:49:54Z - v278o: ん完了で battleHitEnemy 発火 → 1400ms 後に combo、battle-log-window を split/full 両モードで半分幅+中央、フル画面妖精 bottom を 30% 専用 override、volcano_lord enemy-info を top 78%→65%。sw 446
+- **タスク**: v278o: ん完了で battleHitEnemy 発火 → 1400ms 後に combo、battle-log-window を split/full 両モードで半分幅+中央、フル画面妖精 bottom を 30% 専用 override、volcano_lord enemy-info を top 78%→65%。sw 446
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 306
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 82, "Grep": 64, "Bash": 72, "Edit": 77, "Glob": 5, "Agent": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-26T01:26:38Z - v278n: 6 件追補 — 妖精 bottom 16% に下げ、フル画面 battle-stage を translateY(-8vh)、妖精サイズを Hinoka に統一、launchMagicProjectile に targetEl opt 追加で heal を Hinoka slot へ、懇願シーンを battle_last_01 + memory_04 の紙芝居に、ノクス caption ひらがな化。sw 445
 - **タスク**: v278n: 6 件追補 — 妖精 bottom 16% に下げ、フル画面 battle-stage を translateY(-8vh)、妖精サイズを Hinoka に統一、launchMagicProjectile に targetEl opt 追加で heal を Hinoka slot へ、懇願シーンを battle_last_01 + memory_04 の紙芝居に、ノクス caption ひらがな化。sw 445
 - **結果**: 成功
@@ -186,18 +199,5 @@ git checkout develop
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 32, "Grep": 37, "Bash": 28, "Edit": 17, "Glob": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-25T23:05:15Z - v278f: バトル中の narrative 会話 (_showBattleDialog) を battle-fullscreen-active クラスで全画面化、_awaitTapOnLog は対象外、battle-mode 解除時に確実クリーンアップ。sw 437
-- **タスク**: v278f: バトル中の narrative 会話 (_showBattleDialog) を battle-fullscreen-active クラスで全画面化、_awaitTapOnLog は対象外、battle-mode 解除時に確実クリーンアップ。sw 437
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 69
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 23, "Grep": 24, "Bash": 11, "Edit": 11}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
