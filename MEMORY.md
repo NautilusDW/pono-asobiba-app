@@ -85,6 +85,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-26T02:37:14Z - v278r: 6 件 — caption box +2 文字 (66vw/472px)、フル画面で勇者 left:18% 専用 override、_playKagerouCounterAttack と _playHinokaRecognitionIntro で per-line bustup 切替 (onEnter)、タップ hint を caption box 内右下に統一、回想 caption を boxed style に。sw 450
+- **タスク**: v278r: 6 件 — caption box +2 文字 (66vw/472px)、フル画面で勇者 left:18% 専用 override、_playKagerouCounterAttack と _playHinokaRecognitionIntro で per-line bustup 切替 (onEnter)、タップ hint を caption box 内右下に統一、回想 caption を boxed style に。sw 450
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 355
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 94, "Grep": 67, "Bash": 84, "Edit": 99, "Glob": 5, "Agent": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-26T02:24:21Z - RPG前のシンプル文字書きモード復活: writing/simple.html を 29a657c から復元 + 妖精常駐応援UI(リーファ/ヒノカ + 吹き出しセリフ) + タイトル第3ボタン追加 + sw.js CACHE_VERSION 449 (Phase 1 = 単語フェーズ抜き)
 - **タスク**: RPG前のシンプル文字書きモード復活: writing/simple.html を 29a657c から復元 + 妖精常駐応援UI(リーファ/ヒノカ + 吹き出しセリフ) + タイトル第3ボタン追加 + sw.js CACHE_VERSION 449 (Phase 1 = 単語フェーズ抜き)
 - **結果**: 成功
@@ -186,19 +199,6 @@ git checkout develop
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 60, "Grep": 47, "Bash": 54, "Edit": 49, "Glob": 5, "Agent": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-26T00:38:02Z - v278j: 妖精 3 人の見せ場拡張 — Serina 足止め (B3.5 frozen-feet 永続化)、Riefa 風魔法合体 (B3.7 宣言 + B4 chant 内 windBoost 視覚)、Riefa 回復魔法見せ場 (B4.3 カゲロウ反撃 + B4.6 heal projectile)、_healFairy ヘルパー、frozen-feet を C1 で「闇の力で破壊」演出として解除。CSS フォールバック付き、画像支給を待たずに動作。sw 441
-- **タスク**: v278j: 妖精 3 人の見せ場拡張 — Serina 足止め (B3.5 frozen-feet 永続化)、Riefa 風魔法合体 (B3.7 宣言 + B4 chant 内 windBoost 視覚)、Riefa 回復魔法見せ場 (B4.3 カゲロウ反撃 + B4.6 heal projectile)、_healFairy ヘルパー、frozen-feet を C1 で「闇の力で破壊」演出として解除。CSS フォールバック付き、画像支給を待たずに動作。sw 441
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 215
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 59, "Grep": 47, "Bash": 52, "Edit": 46, "Glob": 5, "Agent": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
