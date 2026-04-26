@@ -85,7 +85,7 @@ html, body {
     z-index: 100000;
     background: #000;
     color: #FFD36E;
-    font-family: 'Zen Maru Gothic', sans-serif;
+    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
     font-size: clamp(1.2rem, 5vw, 2rem);
     font-weight: 900;
     letter-spacing: 0.2em;
@@ -1286,7 +1286,7 @@ html, body {
     0 0 0 4px #2a1a3e,
     0 3px 8px rgba(0,0,0,0.45);
   transform: translate(-50%, -50%);
-  font-family: 'Zen Maru Gothic', sans-serif;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   text-shadow: 0 1px 0 rgba(0,0,0,0.5);
 }
 
@@ -2766,7 +2766,7 @@ body.battle-mode .villain-deco {
   border: 2.5px solid var(--window-border);
   border-radius: 14px;
   padding: 5px 8px;
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   color: #fff;
   font-size: clamp(0.62rem, 2.2vw, 0.78rem);
   font-weight: 900;
@@ -2907,11 +2907,30 @@ body.battle-mode .villain-deco {
   left: clamp(4px, 1.5%, 10px);
   bottom: clamp(4%, 8%, 12%);
 }
-/* フル画面時: Hinoka だけ勇者足元 (translateY(-8vh) シフトに合わせて上げる)。
-   Riefa/Serina は battle-stage の左端 (上下) のままで OK。 */
+/* フル画面時の妖精配置:
+   v278u (2026-04-27): ユーザー指摘「妖精の位置がめちゃくちゃ。リーファが画面から消えてる。
+   ヒノカとセリナはもっと右側に来ないと、フル画面での話になります」
+   → フル画面では battle-stage が translateY(-8vh) で 8vh 上にシフトするため、
+     旧 split-screen 用の左端配置 (left:1.5%, top:14%, bottom:8%) ではリーファが
+     画面外、セリナが画面下端ギリギリに行ってしまう。
+     フル画面では勇者 (left:18%) の左下〜左横にまとめて配置する 3 妖精クラスタに変更。
+     横位置を 8-12% に揃えて勇者のすぐ左、縦は 上 (Riefa) → 中 (Hinoka) → 下 (Serina) の階段。 */
 body.battle-fullscreen-active .battle-stage .party-fairy-slot[data-fairy="hinoka"],
 body.combo-phase-active .battle-stage .party-fairy-slot[data-fairy="hinoka"] {
-  bottom: clamp(22%, 30%, 36%);
+  left: clamp(60px, 11%, 110px);
+  bottom: clamp(22%, 28%, 34%);
+  top: auto;
+}
+body.battle-fullscreen-active .battle-stage .party-fairy-slot[data-fairy="riefa"],
+body.combo-phase-active .battle-stage .party-fairy-slot[data-fairy="riefa"] {
+  left: clamp(40px, 7%, 80px);
+  top: auto;
+  bottom: clamp(38%, 44%, 50%);
+}
+body.battle-fullscreen-active .battle-stage .party-fairy-slot[data-fairy="serina"],
+body.combo-phase-active .battle-stage .party-fairy-slot[data-fairy="serina"] {
+  left: clamp(60px, 11%, 110px);
+  bottom: clamp(14%, 20%, 26%);
 }
 .battle-stage .party-fairy-slot {
   display: flex;
@@ -2950,7 +2969,7 @@ body.combo-phase-active .battle-stage .party-fairy-slot[data-fairy="hinoka"] {
 .battle-stage .party-fairy-slot:nth-child(2) .party-fairy-sprite { animation-delay: -0.6s; }
 .battle-stage .party-fairy-slot:nth-child(3) .party-fairy-sprite { animation-delay: -1.3s; }
 .battle-stage .party-fairy-name {
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   font-size: clamp(0.55rem, 1.7vw, 0.68rem);
   font-weight: 900;
   letter-spacing: 0.03em;
@@ -3105,7 +3124,7 @@ body.battle-fullscreen-active .battle-log-window {
   background: transparent;
   border: none;
   padding: 0;
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   color: #fff;
   font-size: clamp(0.5rem, 1.7vw, 0.62rem);
   font-weight: 900;
@@ -4054,7 +4073,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
   text-align: left;
   color: #fff;
   max-width: 92%;
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   animation: dqWindowIn 0.4s cubic-bezier(0.3, 1.4, 0.6, 1);
 }
 .battle-defeated-window .dq-line {
@@ -4119,7 +4138,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
     0 0 20px rgba(255,80,80,0.4),
     inset 0 0 14px rgba(255,255,255,0.06);
   color: #fff;
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   white-space: nowrap;
 }
 .player-damage-window .dq-line {
@@ -4232,7 +4251,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
 .chant-ritual-overlay.visible { opacity: 1; }
 
 .chant-ritual-heading {
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   font-size: clamp(1.3rem, 4.5vw, 1.9rem);
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -4252,7 +4271,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
 }
 
 .chant-ritual-subtext {
-  font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", sans-serif;
   font-size: clamp(0.85rem, 3vw, 1.05rem);
   font-weight: 700;
   text-align: center;
@@ -4327,7 +4346,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
 .chant-ritual-overlay.visible .chant-ritual-progress { opacity: 1; }
 .chant-ritual-progress-item {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  font-family: "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: "DotGothic16", "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
   font-size: clamp(1.1rem, 3.4vw, 1.4rem);
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -4461,7 +4480,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
     0 0 16px rgba(0,0,0,0.7),
     inset 0 0 12px rgba(255,255,255,0.05);
   color: #fff;
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   display: flex; flex-direction: column; justify-content: center;
   gap: 2px;
 }
@@ -4644,7 +4663,7 @@ body.battle-intro-active .battle-log-window {
   top: 8%;
   left: 50%;
   transform: translateX(-50%);
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   font-size: clamp(1.1rem, 4.8vw, 1.6rem);
   font-weight: 900;
   color: #FFD86A;
@@ -4661,7 +4680,7 @@ body.battle-intro-active .battle-log-window {
   bottom: 8%;
   left: 50%;
   transform: translateX(-50%);
-  font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", sans-serif;
   font-size: clamp(0.85rem, 3.6vw, 1.05rem);
   font-weight: 700;
   color: #fff;
@@ -4810,7 +4829,7 @@ body.battle-intro-active .battle-log-window {
     0 0 22px rgba(255,120,80,0.45),
     inset 0 0 14px rgba(255,220,130,0.12);
   color: #fff;
-  font-family: "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
+  font-family: "DotGothic16", "Hiragino Kaku Gothic ProN", "ＭＳ Ｐゴシック", sans-serif;
   white-space: nowrap;
 }
 .enemy-attack-announce .dq-line {
@@ -10697,7 +10716,9 @@ function _showBattleIntro(onDone) {
     probe.onload = function() {
       _showClimaxEventImage(VOLCANO_PATH_INTRO_IMG, _showKagerou,
         { cover: true, pan: 'up',
-          caption: 'ゆうしゃ は、 かざん の いただき を めざし、\nけわしい やまみち を のぼって いった——' });
+          // v278u (2026-04-27): ユーザー指示「勇者は火山の頂きを目指す。ここまでを一行に」
+          //   → 旧 2 行を 1 行にまとめて短縮
+          caption: 'ゆうしゃ は、 かざん の いただき を めざした——' });
     };
     probe.onerror = function() { _showKagerou(); };
     probe.src = VOLCANO_PATH_INTRO_IMG;
@@ -11851,7 +11872,9 @@ function _playHinokaRecognitionIntro(onDone) {
   // v277b (2026-04-25): ユーザー指示「バトルが始まったらヒノカが『この けはい… まさか…』」
   //   旧: 「…まって、ゆうしゃさま！」(バトル直前の制止) を撤去 — 既にバトルが始まっている文脈なので不自然
   //   旧: 「きはい」→ 正字「けはい」(気配) に修正
-  try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+  // v278u (2026-04-27): ユーザー指示「ヒノカが最初にカゲロウに話しかけるときは画面の左側に」
+  //   → 旧 right(flip:true) → left(flip:false): 画面左から右側のカゲロウに視線を向ける構図
+  try { _showBustup('left', HINOKA_R, { flip: false, alt: 'ヒノカ' }); } catch (e) {}
   _showBattleDialog([
     { lines: ['ヒノカ「この けはい…！', 'どこか で', 'かんじた…？'] },
     { lines: ['ヒノカ「まさか、', 'カゲロウ、 なの…？', ''] },
@@ -12269,8 +12292,10 @@ function _showMemoryFlashback(beats, onDone) {
   ov.style.cssText = 'position:fixed;inset:0;z-index:1800;background:radial-gradient(ellipse at center,rgba(50,30,10,0.92) 0%,rgba(10,6,4,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4vh 0 10vh;box-sizing:border-box;opacity:0;transition:opacity 1.0s ease;cursor:pointer;overflow:hidden;';
 
   var imgEl = document.createElement('img');
-  // 画像は中央配置。下に caption box 分のスペースを空けるため max-height を 56vh に抑える。
-  imgEl.style.cssText = 'max-width:86vw;max-height:56vh;object-fit:contain;filter:sepia(0.28) brightness(1.06) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transform:scale(1.0);transition:opacity 1.0s ease;border-radius:6px;will-change:transform,opacity;';
+  // v278u (2026-04-27): ユーザー指示「回想シーンはフル画面でお願いします」
+  //   → max-width:86vw / max-height:56vh (contain) → width:100vw / height:100vh (cover) に変更。
+  //     climax event image と同じ「画面いっぱい」表現に統一。caption box は absolute なので重ならない。
+  imgEl.style.cssText = 'position:absolute;left:50%;top:50%;width:100vw;height:100vh;object-fit:cover;object-position:center;filter:sepia(0.28) brightness(1.06) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transform:translate(-50%,-50%) scale(1.0);transition:opacity 1.0s ease;will-change:transform,opacity;';
   ov.appendChild(imgEl);
 
   // v278r: caption を climax event image と同じ boxed style に統一。
@@ -13520,9 +13545,12 @@ function _playMagicAffinityDemo(onDone) {
           { lines: ['セリナ「ど…どうして…！？', 'カゲロウ は ほのお タイプ なのに、', 'わたしの こおり が… とけ ちゃう！'] }
         ], function() {
           try { _hideBustups(); } catch (e) {}
-          try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+          // v278u (2026-04-27): ユーザー指示「あの炎はザガンが仕込んだ闇の呪いのです、画面左側に」
+          //   「ザガンが仕込んだという表現がちょっとおかしいので違うものに変更」
+          //   → bustup right → left (画面左側)、「ザガンが しこんだ」→「ザガン に かけられた」(自然な受身表現)
+          try { _showBustup('left', HINOKA_R, { flip: false, alt: 'ヒノカ' }); } catch (e) {}
           _showBattleDialog([
-            { lines: ['ヒノカ「あの ほのお は、', 'ザガン が しこんだ', 'やみ の のろい なの…！'] },
+            { lines: ['ヒノカ「あの ほのお は、', 'ザガン に かけられた', 'やみ の のろい なの…！'] },
             { lines: ['ヒノカ「ふつう の まほう では、', 'のろい に とどか ない…', 'わたしの ほのお で やる わ！'], opts: { line3Class: 'dmg-line' } }
           ], function() {
             try { _hideBustups(); } catch (e) {}
@@ -13544,8 +13572,10 @@ function _playMagicAffinityDemo(onDone) {
 function _playSerinaFreezeFollowup(onDone) {
   var SERINA_R = '../assets/images/characters/pixies/Serina/serina_001.png';
   try { _showBustup('right', SERINA_R, { flip: true, alt: 'セリナ' }); } catch (e) {}
+  // v278u (2026-04-27): ユーザー指示「『足止めぐらいなら』で 1 行、その次も『動きづらくなったはず』までで 1 行」
+  //   → 旧 3 行構成 → 「あしどめ ぐらい なら」を 1 行目、「できる わ！」を 2 行目に。
   _showBattleDialog([
-    { lines: ['セリナ「わかった、 あしどめ', 'くらい なら、', 'できる わ！'] }
+    { lines: ['セリナ「わかった、 あしどめ ぐらい なら、', 'できる わ！', ''] }
   ], function() {
     try { _hideBustups(); } catch (e) {}
     // narrative full-screen 維持 (v278i パターン): 投射中の split 戻り防止
@@ -13573,7 +13603,7 @@ function _playSerinaFreezeFollowup(onDone) {
       setTimeout(function() {
         try { _showBustup('right', SERINA_R, { flip: true, alt: 'セリナ' }); } catch (e) {}
         _showBattleDialog([
-          { lines: ['セリナ「これ で すこし、', 'うごき づらく', 'なった はず！'] }
+          { lines: ['セリナ「これ で すこし、', 'うごき づらく なった はず！', ''] }
         ], function() {
           try { _hideBustups(); } catch (e) {}
           if (onDone) onDone();
@@ -13588,7 +13618,7 @@ function _playRiefaWindIntent(onDone) {
   var RIEFA_R = '../assets/images/characters/pixies/Riefa/riefa_001.png';
   try { _showBustup('right', RIEFA_R, { flip: true, alt: 'リーファ' }); } catch (e) {}
   _showBattleDialog([
-    { lines: ['リーファ「わたしの かぜ で、', 'ヒノカ の ほのお を', 'そだてる ね！'] }
+    { lines: ['リーファ「わたしの かぜ で、', 'ヒノカ の ほのお を そだてる ね！', ''] }
   ], function() {
     try { _hideBustups(); } catch (e) {}
     if (onDone) onDone();

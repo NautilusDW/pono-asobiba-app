@@ -413,6 +413,26 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278u 9 件追補 (2026-04-27):**
+- ユーザー指示「山道 caption の『勇者は火山の頂を目指す』を 1 行に」
+  → 旧 2 行 (めざし、\\nやまみち〜) → 1 行: 「ゆうしゃ は、 かざん の いただき を めざした——」
+- ユーザー指示「最初にヒノカが出てきてカゲロウに話しかけるときは画面の左側に」
+  → `_playHinokaRecognitionIntro` の bustup を **right(flip:true) → left(flip:false)** に
+- ユーザー指摘「妖精の位置がめちゃくちゃ、リーファが画面から消えてる、ヒノカ・セリナがもっと右に」
+  → フル画面専用 override で **3 妖精とも左 7-11% に集約** (Hinoka/Serina:11%、Riefa:7%)、縦階段 (Riefa 上 / Hinoka 中 / Serina 下) で勇者 (left:18%) のすぐ左にクラスタ化
+- ユーザー指示「メッセージボックスを含めすべてのフォントをドットフォントに」
+  → `"Hiragino Kaku Gothic ProN"` 系の font-family 全箇所 (20 箇所超) に **`"DotGothic16"` を先頭追加**。ドットフォントを優先、Hiragino はフォールバック
+- ユーザー指示「『あの炎はザガンが仕込んだ闇の呪いの』のとき画面左側に」「ザガンが仕込んだ表現がおかしい」
+  → `_playMagicAffinityDemo` Hinoka bustup を right(flip:true) → **left(flip:false)** に
+  → セリフ「ザガン が しこんだ」→ **「ザガン に かけられた」** (受身で自然な表現)
+- ユーザー指示「足止めぐらいなら 1 行、動きづらくなったはず 1 行」
+  → セリナ B3.5 のセリフを 3 行 → 2 行に。"あしどめ ぐらい なら、" 1 行、"できる わ！" 2 行目
+  → 着弾後セリフも "うごき づらく なった はず！" を 1 行に
+- ユーザー指示「ヒノカの炎を育てるねまで 1 行」
+  → リーファ B3.7 のセリフを 3 行 → 2 行に。"わたしの かぜ で、" 1 行、"ヒノカ の ほのお を そだてる ね！" 2 行目
+- ユーザー指示「回想シーンはフル画面でお願いします」
+  → `_showMemoryFlashback` の imgEl を `max-width:86vw max-height:56vh contain` → **`width:100vw height:100vh cover`** (climax event image と同じフル画面)
+
 **v278t セリナ pixel art (2026-04-26):**
 - ユーザー指示「水の妖精のバトル中の画像を `D:\ポノのおへや\Mojikaki\Character\pixies\セリナ\セリナ低解像度` に保存してあるので差替えて」
   → 3 枚を `assets/images/characters/pixies/Serina/` に **`serina_pixel_front.png` / `serina_pixel_back.png` / `serina_pixel_side.png`** としてコピー
