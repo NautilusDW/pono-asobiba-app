@@ -3,221 +3,375 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ポノのもじかき シンプルモード | ポノのあそびば</title>
+<title>もじかき シンプルモード | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #FFF8E7;
-  --primary: #FF6B9D;
+  /* ドラクエ風ダーク (RPG モードと統一) */
+  --bg: #05070f;
+  --bg-deep: #000000;
+  --primary: #FFD36E;
   --secondary: #C084FC;
-  --accent: #4ADE80;
-  --text: #5B4A3F;
-  --card-bg: #FFFFFF;
-  --shadow: 0 4px 20px rgba(91, 74, 63, 0.1);
-  --radius: 20px;
+  --accent: #6EE7B7;
+  --text: #F4E9D0;
+  --text-dim: #8B96B8;
+  --card-bg: #0a0e1f;
+  --window-bg: #0a0e1f;
+  --window-border: #F4E9D0;
+  --canvas-bg: #05070f;
+  --grid-line: rgba(255,255,255,0.10);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  --radius: 14px;
 }
 
 html, body {
   width: 100%; height: 100%;
   overflow: hidden;
-  font-family: 'Zen Maru Gothic', 'Rounded Mplus 1c', 'Hiragino Maru Gothic Pro', sans-serif;
-  background-color: var(--bg);
-  background-image: url('../assets/images/BG_03.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  overscroll-behavior: none;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', 'Rounded Mplus 1c', 'Hiragino Maru Gothic Pro', sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(60, 40, 110, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 85%, rgba(30, 70, 140, 0.30) 0%, transparent 60%),
+    radial-gradient(circle at 15% 72%, rgba(255,255,255,0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 73% 22%, rgba(255,255,255,0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 42% 55%, rgba(255,255,255,0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 88% 48%, rgba(255,255,255,0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6) 0.5px, transparent 1px),
+    linear-gradient(180deg, #020308 0%, #05070f 50%, #0b0b1a 100%);
+  background-color: var(--bg-deep);
   color: var(--text);
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  position: fixed;
+  width: 100%;
+  top: 0; left: 0;
 }
 
 #app {
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   height: 100dvh;
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 6px 10px 8px;
+  overflow: hidden;
 }
 
-/* ===== Header ===== */
-.header { text-align: center; padding: 8px 0; flex-shrink: 0; position: relative; }
+/* ===== Top bar (back / bgm / streak) ===== */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 0;
+  flex-shrink: 0;
+  position: relative;
+}
 .back-link {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
   color: var(--primary); font-weight: 700; font-size: 0.85rem;
-  text-decoration: none; padding: 6px 2px;
+  text-decoration: none; padding: 6px 12px;
+  border: 2px solid var(--window-border);
+  border-radius: 8px;
+  background: var(--window-bg);
+  letter-spacing: 0.05em;
+  font-family: 'DotGothic16', sans-serif;
 }
 .btn-bgm {
-  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--primary-light);
-  border: 2px solid var(--primary);
-  font-size: 1rem; line-height: 1; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--window-bg);
+  border: 2px solid var(--window-border);
+  color: var(--text);
+  font-size: 1rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(93,78,55,0.15);
-  transition: transform 0.15s;
 }
-.btn-bgm:active { transform: translateY(-50%) scale(0.9); }
-.header h1 {
-  font-size: 1.4rem; font-weight: 900;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.header .subtitle { font-size: 0.8rem; color: #A89585; margin-top: 2px; }
+.btn-bgm:active { transform: scale(0.92); }
 .streak-badge {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
   display: inline-block;
   background: linear-gradient(135deg, #FCD34D, #F97316);
   color: #fff;
   font-size: 0.78rem; font-weight: 900;
-  padding: 2px 12px; border-radius: 20px;
-  margin-top: 3px;
+  padding: 4px 12px; border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.4), 0 0 12px rgba(255,170,60,0.4);
+  pointer-events: none;
   animation: stampPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
 .streak-badge.hidden { display: none; }
 @keyframes stampPop {
-  from { transform: scale(0.6); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+  from { transform: translate(-50%,-50%) scale(0.6); opacity: 0; }
+  to   { transform: translate(-50%,-50%) scale(1);   opacity: 1; }
 }
 
-/* ===== Milestone Modal ===== */
-.milestone-modal {
-  position: fixed; inset: 0; z-index: 1100;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(93, 78, 55, 0.45);
-  animation: fadeIn 0.25s ease;
+/* ===== Main split (left: 文字選択 / right: キャンバス) ===== */
+.main-split {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  min-height: 0;
+  padding-top: 4px;
 }
-.milestone-modal.hidden { display: none; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.milestone-card {
-  background: #fff;
-  border-radius: 28px;
-  padding: 32px 28px 28px;
-  text-align: center;
-  width: min(88vw, 340px);
-  box-shadow: 0 12px 48px rgba(93,78,55,0.25);
-  animation: milestoneIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+/* 左サイドパネル */
+.side-panel {
+  width: clamp(108px, 24vw, 170px);
+  display: flex; flex-direction: column;
+  gap: 6px;
+  min-height: 0;
 }
-@keyframes milestoneIn {
-  from { transform: scale(0.5) translateY(40px); opacity: 0; }
-  to   { transform: scale(1)   translateY(0);    opacity: 1; }
-}
-.milestone-scene { font-size: 4.5rem; line-height: 1.1; }
-.milestone-count {
-  font-size: 1rem; font-weight: 900;
-  background: linear-gradient(135deg, #FCD34D, #F97316);
-  color: #fff; padding: 2px 14px; border-radius: 20px;
-}
-.milestone-title {
-  font-size: 1.8rem; font-weight: 900;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.milestone-msg { font-size: 0.95rem; font-weight: 700; color: #A89585; }
 
-/* ===== Category Tabs ===== */
 .category-tabs {
-  display: flex; gap: 6px; justify-content: center;
-  margin: 8px 0; flex-shrink: 0; flex-wrap: wrap;
+  display: flex; gap: 4px;
+  flex-shrink: 0;
 }
 .category-tab {
-  padding: 8px 16px; border: none; border-radius: 30px;
-  font-family: inherit; font-size: 0.9rem; font-weight: 700;
-  cursor: pointer; transition: all 0.3s;
-  background: var(--card-bg); color: var(--text); box-shadow: var(--shadow);
+  flex: 1;
+  padding: 7px 4px;
+  border: 2px solid var(--window-border);
+  border-radius: 6px;
+  font-family: 'DotGothic16', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--window-bg);
+  color: var(--text);
+  letter-spacing: 0.05em;
+  transition: transform 0.15s, box-shadow 0.2s, color 0.2s;
 }
-.category-tab.active { color: #FFF; transform: scale(1.05); }
-.category-tab[data-cat="hiragana"].active { background: var(--primary); }
-.category-tab[data-cat="katakana"].active { background: var(--secondary); }
-
-
-/* ===== Character Selector ===== */
-.char-selector {
-  display: flex; gap: 4px; overflow-x: auto; padding: 6px 6px; flex-shrink: 0;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
-}
-.char-selector::-webkit-scrollbar { display: none; }
-.char-btn {
-  min-width: 42px; height: 42px; border: 2px solid transparent; border-radius: 12px;
-  background: var(--card-bg); font-family: inherit; font-size: 1.1rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
-  position: relative;
-}
-.char-btn:hover { transform: scale(1.1); }
-.char-btn.active {
+.category-tab.active {
+  background: linear-gradient(135deg, #2B2052, #1B1A3D);
+  color: var(--primary);
   border-color: var(--primary);
-  background: linear-gradient(135deg, #FFF0F5, #FAF0FF);
-  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(255,211,110,0.35), inset 0 0 8px rgba(255,211,110,0.15);
+}
+.category-tab[data-cat="katakana"].active {
+  background: linear-gradient(135deg, #2A1F4A, #1F1A36);
+  color: var(--secondary);
+  border-color: var(--secondary);
+  box-shadow: 0 0 12px rgba(192,132,252,0.35), inset 0 0 8px rgba(192,132,252,0.15);
+}
+
+/* 文字選択 (グリッド表示・縦スクロール) */
+.char-selector {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  overflow-y: auto;
+  padding: 4px 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244,233,208,0.25) transparent;
+}
+.char-selector::-webkit-scrollbar { width: 4px; }
+.char-selector::-webkit-scrollbar-thumb { background: rgba(244,233,208,0.25); border-radius: 2px; }
+
+.char-btn {
+  height: 38px;
+  border: 2px solid var(--window-border);
+  border-radius: 6px;
+  background: var(--window-bg);
+  color: var(--text);
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s, color 0.2s;
+}
+.char-btn:active { transform: scale(0.94); }
+.char-btn.active {
+  background: linear-gradient(135deg, #382C5A, #1F1B3F);
+  color: var(--primary);
+  box-shadow: 0 0 14px rgba(255,211,110,0.5), inset 0 0 10px rgba(255,211,110,0.25);
+  border-color: var(--primary);
 }
 .char-btn.done {
-  background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
-  border-color: #34D399;
+  background: linear-gradient(135deg, #103A2A, #0B2A1F);
+  border-color: #6EE7B7;
+  color: #6EE7B7;
+}
+.char-btn.done.active {
+  box-shadow: 0 0 14px rgba(110,231,183,0.5), inset 0 0 10px rgba(110,231,183,0.25);
 }
 .char-btn.done::after {
   content: '✓';
   position: absolute;
-  top: 1px; right: 3px;
-  font-size: 0.52rem;
-  color: #059669;
+  top: 1px; right: 4px;
+  font-size: 0.55rem;
+  color: #6EE7B7;
   line-height: 1;
   font-weight: 900;
 }
 
-/* ===== Tracing Area ===== */
+/* ===== Trace area (右側) ===== */
 .trace-area {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; position: relative; min-height: 0;
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+  min-height: 0;
+  gap: 8px;
 }
 .canvas-container {
   position: relative;
-  width: min(90vw, 420px); height: min(90vw, 420px);
-  max-width: 420px; max-height: 420px;
-  background: var(--card-bg); border-radius: var(--radius);
-  box-shadow: var(--shadow); overflow: hidden;
+  width: min(100%, 70vh);
+  aspect-ratio: 1 / 1;
+  max-width: 540px;
+  background: var(--canvas-bg);
+  border: 2.5px solid var(--window-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow), inset 0 0 24px rgba(140,120,255,0.10);
+  overflow: hidden;
+  flex-shrink: 1;
 }
-/* Grid lines */
+/* 田の字グリッド (薄い白) */
 .canvas-container::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background:
-    linear-gradient(to right, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%),
-    linear-gradient(to bottom, transparent 49.5%, #F0E8E0 49.5%, #F0E8E0 50.5%, transparent 50.5%);
+    linear-gradient(to right, transparent 49.5%, var(--grid-line) 49.5%, var(--grid-line) 50.5%, transparent 50.5%),
+    linear-gradient(to bottom, transparent 49.5%, var(--grid-line) 49.5%, var(--grid-line) 50.5%, transparent 50.5%);
 }
 .canvas-container::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background:
-    linear-gradient(45deg, transparent calc(50% - 0.5px), #F5EDE5 calc(50% - 0.5px), #F5EDE5 calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    linear-gradient(-45deg, transparent calc(50% - 0.5px), #F5EDE5 calc(50% - 0.5px), #F5EDE5 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+    linear-gradient(45deg, transparent calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% - 0.5px), rgba(255,255,255,0.05) calc(50% + 0.5px), transparent calc(50% + 0.5px));
 }
 
-/* Hanzi Writer target */
+/* 書き取り線を金グロウで発光 (RPG モードと同じ) */
+#writerTarget svg path,
+#writerTarget svg line {
+  filter: drop-shadow(0 0 2px rgba(255,235,180,0.85))
+          drop-shadow(0 0 6px rgba(255,200,90,0.55))
+          drop-shadow(0 0 14px rgba(255,170,60,0.35));
+}
+
 #writerTarget {
   position: absolute; inset: 0; z-index: 2;
 }
 #writerTarget svg { display: block; }
 
-
-/* ===== Controls ===== */
+/* ===== Controls (下部のけす/おてほん/つぎ) ===== */
 .controls {
-  display: flex; gap: 8px; justify-content: center; padding: 10px 0; flex-shrink: 0;
+  display: flex; gap: 8px; justify-content: center;
+  padding: 2px 0 4px;
+  flex-shrink: 0;
 }
 .ctrl-btn {
-  padding: 10px 20px; border: none; border-radius: 30px;
-  font-family: inherit; font-size: 0.95rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+  padding: 8px 16px;
+  border: 2px solid var(--window-border);
+  border-radius: 8px;
+  font-family: 'DotGothic16', sans-serif;
+  font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  color: var(--text);
+  background: var(--window-bg);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  letter-spacing: 0.05em;
 }
 .ctrl-btn:active { transform: scale(0.95); }
-.btn-clear { background: #FEE2E2; color: #EF4444; }
-.btn-hint  { background: #E0F2FE; color: #0EA5E9; }
-.btn-next  { background: linear-gradient(135deg, var(--accent), #34D399); color: #FFF; }
+.btn-clear { color: #FCA5A5; border-color: #FCA5A5; }
+.btn-hint  { color: #7DD3FC; border-color: #7DD3FC; }
+.btn-next  {
+  background: linear-gradient(135deg, #10B981, #047857);
+  color: #FFF;
+  border-color: #6EE7B7;
+  box-shadow: 0 3px 12px rgba(16,185,129,0.45);
+}
 
-/* ===== Confetti ===== */
+/* ===== Stroke order numbers (筆順) ===== */
+.stroke-number-overlay {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+}
+.stroke-number {
+  position: absolute;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #1B1A3D;
+  font-size: 0.78rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 8px rgba(255,211,110,0.6);
+  outline: 2px solid #1B1A3D;
+  transform: translate(-50%, -50%);
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+
+/* ===== Cheer fairies (画面 fixed 左下/右下) ===== */
+.cheer-fairy {
+  position: fixed;
+  width: 78px; height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(255,220,150,0.4)) drop-shadow(2px 3px 4px rgba(0,0,0,0.55));
+  z-index: 50;
+  user-select: none;
+}
+.cheer-fairy.leefa {
+  left: 8px; bottom: 64px;
+  animation: cheerFloat 3.2s ease-in-out infinite;
+}
+.cheer-fairy.hinoka {
+  right: 8px; bottom: 64px;
+  animation: cheerFloat 3.6s ease-in-out 0.4s infinite;
+}
+@keyframes cheerFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+.fairy-bubble {
+  position: fixed;
+  background: var(--window-bg);
+  color: var(--text);
+  border: 2px solid var(--window-border);
+  font-family: 'DotGothic16', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.6), 0 0 12px rgba(255,211,110,0.25);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  transition: opacity 0.25s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 60;
+}
+.fairy-bubble.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.fairy-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  width: 12px; height: 12px;
+  background: var(--window-bg);
+  border-right: 2px solid var(--window-border);
+  border-bottom: 2px solid var(--window-border);
+  transform: rotate(45deg);
+}
+.fairy-bubble.leefa { left: 14px; bottom: 152px; }
+.fairy-bubble.leefa::after { left: 26px; }
+.fairy-bubble.hinoka { right: 14px; bottom: 152px; }
+.fairy-bubble.hinoka::after { right: 26px; }
+
+@media (max-width: 540px) {
+  .cheer-fairy { width: 56px; }
+  .cheer-fairy.leefa { left: 4px; bottom: 56px; }
+  .cheer-fairy.hinoka { right: 4px; bottom: 56px; }
+  .fairy-bubble { font-size: 0.78rem; padding: 6px 10px; }
+  .fairy-bubble.leefa { bottom: 124px; left: 6px; }
+  .fairy-bubble.hinoka { bottom: 124px; right: 6px; }
+  .side-panel { width: clamp(96px, 26vw, 130px); }
+  .char-btn { height: 34px; font-size: 1rem; }
+}
+
+/* ===== Confetti / Completion / Milestone (RPG dark) ===== */
 .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden; }
 .confetti-piece {
   position: absolute; width: 10px; height: 10px; border-radius: 2px;
@@ -227,41 +381,62 @@ html, body {
   0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
 }
-
-/* ===== Completion Overlay ===== */
 .completion-overlay {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
   z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.3s;
 }
 .completion-overlay.show { opacity: 1; pointer-events: auto; }
 .completion-msg {
+  font-family: 'Zen Maru Gothic', sans-serif;
   font-size: 3rem; font-weight: 900;
-  background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: var(--primary);
+  text-shadow:
+    0 0 16px rgba(255,211,110,0.8),
+    0 0 32px rgba(255,170,60,0.5),
+    0 4px 12px rgba(0,0,0,0.7);
   animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
 }
 @keyframes bounce-in {
   0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); }
 }
 
-/* ===== Stroke order numbers ===== */
-.stroke-number-overlay {
-  position: absolute; inset: 0; pointer-events: none; z-index: 5;
-}
-.stroke-number {
-  position: absolute;
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  background: #FF6B9D;
-  color: #FFF;
-  font-size: 0.75rem; font-weight: 900;
+.milestone-modal {
+  position: fixed; inset: 0; z-index: 1100;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  outline: 3px solid #FFF;
-  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.65);
+  animation: fadeIn 0.25s ease;
+}
+.milestone-modal.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.milestone-card {
+  background: var(--window-bg);
+  border: 2.5px solid var(--window-border);
+  border-radius: 16px;
+  padding: 32px 28px 28px;
+  text-align: center;
+  width: min(88vw, 340px);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 24px rgba(255,220,130,0.35);
+  animation: milestoneIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--text);
+}
+@keyframes milestoneIn {
+  from { transform: scale(0.5) translateY(40px); opacity: 0; }
+  to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+.milestone-scene { font-size: 4.5rem; line-height: 1.1; white-space: pre-line; }
+.milestone-count {
+  font-size: 1rem; font-weight: 900;
+  background: linear-gradient(135deg, #FCD34D, #F97316);
+  color: #fff; padding: 2px 14px; border-radius: 20px;
+}
+.milestone-title {
+  font-size: 1.8rem; font-weight: 900;
+  color: var(--primary);
+  text-shadow: 0 0 12px rgba(255,211,110,0.6);
   font-family: 'Zen Maru Gothic', sans-serif;
 }
+.milestone-msg { font-size: 0.95rem; font-weight: 700; color: var(--text-dim); }
 
 /* ===== Star particles ===== */
 .star-particle {
@@ -273,108 +448,14 @@ html, body {
   100% { transform: translateY(-40px) scale(0.3); opacity: 0; }
 }
 
-/* ===== Character Extension Point (future AI characters) ===== */
 .character-slot { position: fixed; bottom: 80px; right: 10px; width: 80px; height: 80px; z-index: 50; display: none; }
 
-/* ===== Pono decoration (aligned to canvas left edge, bottom of trace-area) ===== */
-.pono-deco {
-  position: absolute;
-  bottom: 0;
-  /* canvas half-width = min(45vw, 210px); align bear left edge with canvas left edge */
-  left: calc(50% - min(45vw, 210px));
-  width: 90px;
-  pointer-events: none;
-  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.15));
-  /* no explicit z-index → canvas-container (later in DOM) stacks on top automatically when narrow */
-}
-
-/* ===== Cheer fairies (常駐応援) =====
-   trace-area の左右下に2体常駐し、ふわふわ浮遊。
-   合格・開始・ミス時に吹き出しを出して応援する。 */
-.cheer-fairy {
-  position: absolute;
-  width: 72px;
-  height: auto;
-  pointer-events: none;
-  filter: drop-shadow(2px 3px 6px rgba(0,0,0,0.18));
-  z-index: 3;
-  user-select: none;
-}
-.cheer-fairy.leefa {
-  bottom: 110px;
-  /* canvas 左端 (= 50% - min(45vw,210px)) より少し外側に置く */
-  left: max(2px, calc(50% - min(45vw, 210px) - 70px));
-  animation: cheerFloat 3.2s ease-in-out infinite;
-}
-.cheer-fairy.hinoka {
-  bottom: 18px;
-  right: max(2px, calc(50% - min(45vw, 210px) - 70px));
-  animation: cheerFloat 3.6s ease-in-out 0.4s infinite;
-  transform-origin: center;
-}
-@keyframes cheerFloat {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
-}
-
-/* 吹き出し */
-.fairy-bubble {
-  position: absolute;
-  background: #fff;
-  color: var(--text);
-  font-size: 0.92rem;
-  font-weight: 800;
-  padding: 8px 14px;
-  border-radius: 18px;
-  box-shadow: 0 4px 14px rgba(91,74,63,0.18);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(8px) scale(0.9);
-  transition: opacity 0.25s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
-  z-index: 6;
-}
-.fairy-bubble.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-.fairy-bubble::after {
-  content: '';
-  position: absolute;
-  bottom: -7px;
-  width: 14px; height: 14px;
-  background: #fff;
-  transform: rotate(45deg);
-}
-.fairy-bubble.leefa {
-  bottom: 188px;
-  left: max(6px, calc(50% - min(45vw, 210px) - 64px));
-}
-.fairy-bubble.leefa::after { left: 22px; }
-.fairy-bubble.hinoka {
-  bottom: 96px;
-  right: max(6px, calc(50% - min(45vw, 210px) - 64px));
-}
-.fairy-bubble.hinoka::after { right: 22px; }
-
-/* 狭い縦画面（妖精が canvas にかぶる時）はもう少し小さく */
-@media (max-width: 500px) {
-  .cheer-fairy { width: 58px; }
-  .cheer-fairy.leefa { bottom: 96px; left: 2px; }
-  .cheer-fairy.hinoka { bottom: 14px; right: 2px; }
-  .fairy-bubble { font-size: 0.82rem; padding: 6px 11px; }
-  .fairy-bubble.leefa { bottom: 158px; left: 6px; }
-  .fairy-bubble.hinoka { bottom: 78px; right: 6px; }
-}
-
-/* ===== Responsive ===== */
+/* ===== 縦画面で高さが詰まる時の調整 ===== */
 @media (max-height: 600px) {
-  .header h1 { font-size: 1.1rem; }
-  .header .subtitle { display: none; }
-  .category-tabs { margin: 4px 0; }
-  .category-tab { padding: 6px 12px; font-size: 0.8rem; }
-  .char-btn { min-width: 36px; height: 36px; font-size: 0.95rem; }
-  .controls { padding: 6px 0; }
+  .controls { padding: 2px 0; }
+  .ctrl-btn { padding: 6px 12px; font-size: 0.85rem; }
+  .char-btn { height: 32px; font-size: 0.95rem; }
+  .category-tab { padding: 5px 4px; font-size: 0.72rem; }
 }
 </style>
 </head>
@@ -382,39 +463,40 @@ html, body {
 <audio id="bgm" loop src="../assets/audio/Sunny Little Steps.mp3" preload="auto"></audio>
 
 <div id="app">
-  <div class="header">
+  <div class="topbar">
     <a href="../index.html" class="back-link">← メニュー</a>
-    <h1>ポノのもじかき</h1>
-    <div class="subtitle">ゆびでなぞってみよう！</div>
     <div id="streak-badge" class="streak-badge hidden"></div>
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
 
-  <div class="category-tabs" id="categoryTabs">
-    <button class="category-tab active" data-cat="hiragana">ひらがな</button>
-    <button class="category-tab" data-cat="katakana">カタカナ</button>
-  </div>
+  <div class="main-split">
+    <div class="side-panel">
+      <div class="category-tabs" id="categoryTabs">
+        <button class="category-tab active" data-cat="hiragana">ひらがな</button>
+        <button class="category-tab" data-cat="katakana">カタカナ</button>
+      </div>
+      <div class="char-selector" id="charSelector"></div>
+    </div>
 
-  <div class="char-selector" id="charSelector"></div>
-
-  <div class="trace-area">
-    <img class="pono-deco" src="../assets/images/characters/pono_side_fullbody.png" alt="ポノ">
-    <img class="cheer-fairy leefa" src="../assets/images/characters/pixies/Riefa/riefa_001.png" alt="リーファ">
-    <img class="cheer-fairy hinoka" src="../assets/images/characters/pixies/Hinoka/hinoka_001.png" alt="ヒノカ">
-    <div class="fairy-bubble leefa" id="bubble-leefa"></div>
-    <div class="fairy-bubble hinoka" id="bubble-hinoka"></div>
-    <div class="canvas-container" id="canvasContainer">
-      <div id="writerTarget"></div>
-      <div class="stroke-number-overlay" id="strokeNumbers"></div>
+    <div class="trace-area">
+      <div class="canvas-container" id="canvasContainer">
+        <div id="writerTarget"></div>
+        <div class="stroke-number-overlay" id="strokeNumbers"></div>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
+        <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
+        <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
+      </div>
     </div>
   </div>
-
-  <div class="controls">
-    <button class="ctrl-btn btn-clear" id="btnClear">けす</button>
-    <button class="ctrl-btn btn-hint" id="btnHint">おてほん</button>
-    <button class="ctrl-btn btn-next" id="btnNext">つぎ →</button>
-  </div>
 </div>
+
+<!-- 妖精は body 直下 fixed (画面の左下/右下に常駐応援) -->
+<img class="cheer-fairy leefa" src="../assets/images/characters/pixies/Riefa/riefa_001.png" alt="リーファ">
+<img class="cheer-fairy hinoka" src="../assets/images/characters/pixies/Hinoka/hinoka_001.png" alt="ヒノカ">
+<div class="fairy-bubble leefa" id="bubble-leefa"></div>
+<div class="fairy-bubble hinoka" id="bubble-hinoka"></div>
 
 <div class="confetti-container" id="confettiContainer"></div>
 <div class="completion-overlay" id="completionOverlay">
@@ -435,13 +517,12 @@ html, body {
 <script>
 // ===== Color Schemes =====
 const COLOR_SCHEMES = [
-  { stroke: '#FF6B9D', drawing: '#FF6B9D', highlight: '#FFB3D1', outline: '#FFE0EC' }, // pink
-  { stroke: '#60A5FA', drawing: '#60A5FA', highlight: '#93C5FD', outline: '#DBEAFE' }, // blue
-  { stroke: '#C084FC', drawing: '#C084FC', highlight: '#D8B4FE', outline: '#EDE9FE' }, // purple
-  { stroke: '#4ADE80', drawing: '#4ADE80', highlight: '#86EFAC', outline: '#DCFCE7' }, // green
-  { stroke: '#FBBF24', drawing: '#F59E0B', highlight: '#FCD34D', outline: '#FEF3C7' }, // yellow
-  { stroke: '#F87171', drawing: '#F87171', highlight: '#FCA5A5', outline: '#FEE2E2' }, // red
-  { stroke: '#34D399', drawing: '#34D399', highlight: '#6EE7B7', outline: '#D1FAE5' }, // teal
+  { stroke: '#FFD36E', drawing: '#FFD36E', highlight: '#FFE9B0', outline: '#3A2E14' }, // gold
+  { stroke: '#7DD3FC', drawing: '#7DD3FC', highlight: '#BAE6FD', outline: '#0C2A3D' }, // sky
+  { stroke: '#C084FC', drawing: '#C084FC', highlight: '#D8B4FE', outline: '#2A1340' }, // purple
+  { stroke: '#6EE7B7', drawing: '#6EE7B7', highlight: '#A7F3D0', outline: '#0B2A1F' }, // green
+  { stroke: '#FCA5A5', drawing: '#FCA5A5', highlight: '#FECACA', outline: '#3A1313' }, // red
+  { stroke: '#FBBF24', drawing: '#F59E0B', highlight: '#FCD34D', outline: '#3A2C0A' }, // amber
 ];
 let colorIdx = 0;
 function nextColorScheme() {
@@ -467,7 +548,7 @@ let currentCategory = 'hiragana';
 let currentCharIndex = 0;
 let writer = null;
 let currentScheme = COLOR_SCHEMES[0];
-let currentCharData = null; // store loaded char data for stroke numbers
+let currentCharData = null;
 
 // ===== Game state =====
 const STAMP_KEY = 'pono_stamps';
@@ -498,7 +579,7 @@ function updateStreakBadge() {
 
 // ===== Milestone rewards (every 5 streaks) =====
 const MILESTONES = [
-  { scene: '🐻\n🎉',         title: 'すごいね！',     msg: 'ポノも よろこんでるよ！' },
+  { scene: '✨\n🌟',         title: 'すごいね！',     msg: 'ようせいたちも おどってる！' },
   { scene: '🌈\n✨',         title: 'さいこう！',     msg: 'にじが でたよ！' },
   { scene: '🏆\n🌟',         title: 'チャンピオン！', msg: 'トロフィー かがやく！' },
   { scene: '🚀\n🌙',         title: 'うちゅうまで！', msg: 'もう とまらない！' },
@@ -514,7 +595,6 @@ function showMilestone(count) {
   document.getElementById('milestone-msg').textContent = data.msg;
   modal.classList.remove('hidden');
 
-  // タップでも自動でも閉じる
   const close = () => {
     modal.classList.add('hidden');
     modal.removeEventListener('click', close);
@@ -547,7 +627,6 @@ function withAudio(fn) {
   if (ctx.state === 'running') { fn(ctx); return; }
   ctx.resume().then(() => fn(ctx)).catch(() => {});
 }
-// iOSは最初のタッチでAudioContextをunlockする必要がある
 document.addEventListener('touchstart', () => getAudioCtx().resume(), { once: true, passive: true });
 document.addEventListener('pointerdown', () => getAudioCtx().resume(), { once: true });
 
@@ -581,7 +660,7 @@ function playStrokeSound() {
 
 // ===== Confetti =====
 function launchConfetti() {
-  const colors = ['#FF6B9D', '#60A5FA', '#C084FC', '#4ADE80', '#FBBF24', '#F87171', '#34D399'];
+  const colors = ['#FFD36E', '#7DD3FC', '#C084FC', '#6EE7B7', '#FBBF24', '#FCA5A5', '#F4E9D0'];
   for (let i = 0; i < 50; i++) {
     const piece = document.createElement('div');
     piece.className = 'confetti-piece';
@@ -649,7 +728,6 @@ function spawnStar(x, y) {
 
 // ===== Hanzi Writer Mode =====
 function createWriter(char) {
-  // Destroy previous
   if (writer) {
     writerTarget.innerHTML = '';
     writer = null;
@@ -677,7 +755,6 @@ function createWriter(char) {
     showOutline: true,
     showCharacter: false,
     charDataLoader: function(char, onComplete) {
-      // Try kana-json first (for hiragana/katakana)
       const url = 'https://cdn.jsdelivr.net/gh/ailectra/kana-json@v0.0.1/data/' + char + '.json';
       fetch(url)
         .then(r => {
@@ -690,7 +767,6 @@ function createWriter(char) {
           onComplete(data);
         })
         .catch(() => {
-          // Fallback: try hanzi-writer-data
           const url2 = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/' + char + '.json';
           fetch(url2)
             .then(r => {
@@ -709,7 +785,6 @@ function createWriter(char) {
     }
   });
 
-  // Start quiz mode
   startQuiz();
 }
 
@@ -718,13 +793,11 @@ function showStrokeNumbers(charData, targetSize) {
   strokeNumbers.innerHTML = '';
   if (!charData || !charData.medians) return;
 
-  // Wait for HanziWriter to render SVG, then use its internal transform
   setTimeout(() => {
     const svg = writerTarget.querySelector('svg');
     if (!svg) return;
     const containerRect = canvasContainer.getBoundingClientRect();
 
-    // Find HanziWriter's top-level group (has the coordinate transform)
     const topGroup = svg.querySelector('g');
     if (!topGroup) return;
 
@@ -732,14 +805,12 @@ function showStrokeNumbers(charData, targetSize) {
       if (!median || median.length === 0) return;
       const [mx, my] = median[0];
 
-      // Use SVG's coordinate transform API for pixel-perfect positioning
       const pt = svg.createSVGPoint();
       pt.x = mx;
       pt.y = my;
       const ctm = topGroup.getScreenCTM();
       const screenPt = pt.matrixTransform(ctm);
 
-      // Convert screen coords to container-relative percentage
       const relX = screenPt.x - containerRect.left;
       const relY = screenPt.y - containerRect.top;
       const pctX = (relX / containerRect.width) * 100;
@@ -767,7 +838,6 @@ function startQuiz() {
       showCompletion();
     },
     onMistake: function(data) {
-      // 連発しないよう 4 秒に1回までに絞る + 35% 確率
       const now = Date.now();
       if (now - _lastRetryCheerAt > 4000 && Math.random() < 0.35) {
         fairyCheer('retry');
@@ -792,16 +862,13 @@ function loadCharacter() {
 
   createWriter(char);
 
-  // Update char selector
   document.querySelectorAll('.char-btn').forEach((btn, i) => {
     btn.classList.toggle('active', i === currentCharIndex);
   });
 
-  // Scroll active button into view
   const activeBtn = charSelector.querySelector('.char-btn.active');
-  if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  // 妖精の「がんばって」セリフ (起動直後は1回だけ、その後は文字切替時のみ)
   if (window._fairyStartReady) {
     setTimeout(() => fairyCheer('start'), 200);
   }
@@ -872,14 +939,12 @@ btnNext.addEventListener('click', () => {
 // ===== Init =====
 buildCharSelector();
 loadCharacter();
-// 起動直後の最初の loadCharacter では妖精セリフを抑制し、
-// 1秒後に「がんばって！」を1回だけ出してから次回以降を有効化する。
 setTimeout(() => {
   fairyCheer('start');
   window._fairyStartReady = true;
 }, 1000);
 
-// ===== Public API for future AI character integration =====
+// ===== Public API =====
 window.KidsTraceApp = {
   getCurrentChar,
   loadCharacter,
