@@ -2855,10 +2855,11 @@ body.battle-mode .villain-deco {
   /* v278k (2026-04-26): ユーザー指示「フル画面の時の火の妖精の位置が左下すぎる、もっと右上に」
      「バトル画面の時も 1 キャラ分右に」
      → left: clamp(4px,2.5%,18px) → clamp(22px,6%,52px) (約 1 キャラ分 32px 右へ)
-     → bottom: clamp(8%,20%,26%) → clamp(20%,30%,38%) (勇者足元 ~34% bottom 付近に上昇)
+     v278n (2026-04-26): ユーザー指示「バトル画面前半 二人の時は勇者と横並びになってる、もっと下に」
+     → bottom: clamp(20%,30%,38%) → clamp(8%,16%,22%) (勇者足元の更に下に降ろす)
      他の妖精 (riefa/serina) は同じ flex 位置から row-reverse で並ぶので、自動的に同様にシフト。 */
   left: clamp(22px, 6%, 52px);
-  bottom: clamp(20%, 30%, 38%);
+  bottom: clamp(8%, 16%, 22%);
   z-index: 4;
   display: flex;
   flex-direction: row-reverse;
@@ -2883,11 +2884,12 @@ body.battle-mode .villain-deco {
   width: clamp(28px, 6.5vw, 44px);
 }
 .battle-stage .party-fairy-sprite {
-  /* v278g: ユーザー指示「妖精なので人 (勇者) より小さく」「3 人入る前提で半分くらいに」
-     → clamp(36px, 8.5vw, 56px) → clamp(20px, 4.8vw, 32px) (約 55% 縮小)。
+  /* v278g/n: ユーザー指示「妖精なので人 (勇者) より小さく」「3 人入る前提で半分くらいに」
+     v278n (2026-04-26): ユーザー指示「ヒノカ以外の妖精が大きいのでヒノカに合わせて」
+     → 全妖精共通サイズを Hinoka の clamp(12,2.9vw,19) に統一。
      image-rendering は default の auto (高解像度 Riefa/Serina の小さな描画でぼやけ過ぎないよう)。
      Hinoka だけ pixel-art なので individually pixelated に上書き。 */
-  width: clamp(20px, 4.8vw, 32px);
+  width: clamp(12px, 2.9vw, 19px);
   height: auto;
   object-fit: contain;
   image-rendering: auto;
@@ -2896,10 +2898,8 @@ body.battle-mode .villain-deco {
      → ふわふわ float アニメ。slot 側の staircase translateY とは独立 (img 単体に animation)。 */
   animation: partyFairyFloat 2.6s ease-in-out infinite;
 }
-/* v278i: Hinoka は pixel-art (hinoka_pixel_front.png) なので nearest-neighbor で描画。
-   かつ「スケール 60%」指示に従い、他妖精より小さく。 */
+/* v278i: Hinoka は pixel-art (hinoka_pixel_front.png) なので nearest-neighbor で描画。 */
 .battle-stage .party-fairy-slot[data-fairy="hinoka"] .party-fairy-sprite {
-  width: clamp(12px, 2.9vw, 19px);
   image-rendering: pixelated;
 }
 /* 妖精の上下ゆらぎ (RPG の使い魔っぽさ)。複数妖精で同期しないよう 2 番目以降は遅延。 */
@@ -3019,6 +3019,14 @@ body.battle-fullscreen-active .battle-stage {
   border-radius: 0 !important;
   border: none !important;
   z-index: 100;
+}
+/* v278n (2026-04-26): ユーザー指示「フル画面の時に全員になるとスペースが厳しい、背景ごと少し上げて」
+   → battle-stage 全体 (背景 + 勇者 + 敵 + 妖精) を 8vh 上にシフトして画面下端に余白を作る。
+   これでメッセージ box (画面下) と妖精パーティーが重ならず、3 妖精合流時も窮屈にならない。
+   transform は backgrounds, characters, fairies すべてを巻き込むので「背景ごと」の要望を満たす。 */
+body.combo-phase-active .battle-stage,
+body.battle-fullscreen-active .battle-stage {
+  transform: translateY(-8vh);
 }
 body.combo-phase-active #app,
 body.battle-fullscreen-active #app {
@@ -6349,8 +6357,11 @@ function launchMagicCircle(kind) {
 function launchMagicProjectile(element, opts) {
   opts = opts || {};
   const colors = MAGIC_COLORS[element] || MAGIC_COLORS.fire;
-  const enemyEl = document.getElementById('battleEnemy');
-  if (!enemyEl) {
+  // v278n (2026-04-26): ユーザー指示「回復魔法がヒノカではなくカゲロウに飛んで行ってる」
+  //   → opts.targetEl に任意の要素 (例: ヒノカ slot) を渡せば、そこに着弾するように。
+  //     省略時は従来通り #battleEnemy を target にする。
+  const targetEl = opts.targetEl || document.getElementById('battleEnemy');
+  if (!targetEl) {
     if (opts.onImpact) setTimeout(opts.onImpact, 0);
     return;
   }
@@ -6363,8 +6374,8 @@ function launchMagicProjectile(element, opts) {
     document.body.appendChild(container);
   }
 
-  // 敵位置 (viewport 座標)
-  const er = enemyEl.getBoundingClientRect();
+  // 着弾位置 (viewport 座標)
+  const er = targetEl.getBoundingClientRect();
   const tx = er.left + er.width / 2;
   const ty = er.top  + er.height * 0.55;
 
@@ -12433,20 +12444,21 @@ function _playWaRowEpisode(onDone) {
     // メモリフラッシュバック中はバストアップを引っ込めて画面を回想に集中
     try { _hideBustups(); } catch (e) {}
     _showMemoryFlashback(VOLCANO_MEMORY_BEATS, function() {
-      // v274: battle_last_01 (ヒノカが呪縛カゲロウに手を伸ばす) を 1 枚絵で挟んでから訴えのセリフへ
+      // v278n (2026-04-26): ユーザー指示「『カゲロウ、私の声が聞こえるでしょう？』のところは、
+      //   前に表示してた ヒノカが倒れながらかげろうに懇願している絵をそのまま使って、下にメッセージを入れて」
+      //   「昔一緒に歌ったホムラの歌を思い出してください」「その後で、一緒に歌っていた昔のイメージを出して」
+      //   → 旧: battle_last_01 1 枚絵 → bustup + dialog 2 件 (ヒノカ立ち絵で語らせ)
+      //     新: battle_last_01 + caption (懇願) → memory_04 + caption (歌の追想)、bustup なしの紙芝居形式
       _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_01.jpg', function() {
-        // 訴えのセリフ。ヒノカ右バストアップに戻して語らせる。
-        try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
-        _showBattleDialog([
-          { lines: ['ヒノカ「カゲロウ！', 'わたし の こえ が、', 'きこえる でしょう？'] },
-          { lines: ['ヒノカ「むかし、 いっしょ に うたった', '「ほむらの うた」を、', 'おもいだして！'] }
-        ], function() {
-          try { _hideBustups(); } catch (e) {}
+        // memory_04 (ふたりで歌っていた昔のイメージ) を再表示してホムラの歌を回想
+        _showClimaxEventImage('../assets/images/characters/kagerou/memory_04.jpg', function() {
           // v278b: Beat 0 (魔法相性デモ) は _playKagerouFinalCombo 内で先に流すので、
           //         ここでは _playKagerouClimaxMain を直接呼び (Beat 1〜5 のみ)。
           _playKagerouClimaxMain(onDone);
-        });
-      });
+        }, { cover: true,
+             caption: 'むかし、 いっしょ に うたった\n『ほむら の うた』を、 おもいだして…！' });
+      }, { cover: true,
+           caption: 'カゲロウ！\nわたし の こえ が、 きこえる でしょう？' });
     });
   });
 }
@@ -12554,7 +12566,7 @@ function _playKagerouClimaxMain(onDone) {
               try { _triggerKagerouRageAttack(); } catch (e) {}
               _playKagerouClimaxBeat3to5(onDone);
             }, { cover: true,
-                 caption: '魔人 ノクス は あらわれ、\nカゲロウ の のろい を、 さらに つよめた——' });
+                 caption: 'まじん ノクス は あらわれ、\nカゲロウ の のろい を、 さらに つよめた——' });
             return; // 後続は _playKagerouClimaxBeat3to5 で実行
           });
         });
@@ -13523,7 +13535,10 @@ function _playRiefaHealHinoka(onDone) {
       // launch → 着弾 onImpact で Hinoka 位置にキラキラ粒子を出す + HP 回復。
       try {
         if (typeof launchMagicProjectile === 'function') {
+          // v278n: ヒノカ slot を target にして heal 弾がヒノカに着弾するように
+          var hinokaSlot = document.querySelector('.party-fairy-slot[data-fairy="hinoka"]');
           launchMagicProjectile('heal', {
+            targetEl: hinokaSlot,
             onImpact: function() {
               try {
                 _healFairy('hinoka', 3);  // hp 5 → 8 (満タン)

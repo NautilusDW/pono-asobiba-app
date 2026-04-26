@@ -413,6 +413,21 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278n 妖精位置/サイズ調整 + heal target 修正 + 懇願シーン刷新 + まじん ひらがな化 (2026-04-26):**
+- ユーザー指摘「バトル画面前半、火の妖精と二人の時は勇者と横並び、もっと下に」
+  → `.party-fairies` の `bottom` を `clamp(20%,30%,38%)` → **`clamp(8%,16%,22%)`** に下げ
+- ユーザー指摘「フル画面の時に全員になるとスペース厳しい、背景ごと少し上げて」
+  → `body.battle-fullscreen-active .battle-stage` に **`transform: translateY(-8vh)`** 追加。背景・勇者・敵・妖精をまとめて 8vh 上にシフトし、画面下端に余白を作って message box と妖精パーティーが重ならないように
+- ユーザー指摘「ヒノカ以外の妖精が大きい、ヒノカに合わせて」
+  → `.party-fairy-sprite` 共通幅を `clamp(20px,4.8vw,32px)` → **`clamp(12px,2.9vw,19px)`** に統一 (Hinoka と同サイズ)。Hinoka 個別 size override を撤去 (image-rendering:pixelated だけ残す)
+- ユーザー指摘「回復魔法がヒノカではなくカゲロウに飛んで行ってる」
+  → `launchMagicProjectile` に **`opts.targetEl`** オプション追加 (省略時 `#battleEnemy`)
+  → `_playRiefaHealHinoka` が `targetEl: hinokaSlot` を渡してヒノカ slot に着弾させる
+- ユーザー指摘「『カゲロウ、わたしの声が聞こえるでしょう？』のところは、ヒノカが倒れながら懇願している絵をそのまま使って下にメッセージを入れて。昔一緒に歌ったホムラの歌を思い出してください。その後で一緒に歌っていた昔のイメージを出して」
+  → `_playWaRowEpisode` の battle_last_01 1 枚絵 + bustup dialog 2 件 を、**battle_last_01 + caption (懇願)** → **memory_04 + caption (歌の追想)** の紙芝居 2 連発に変更。bustup を撤去
+- ユーザー指摘「ノクス登場時、まじんが漢字になってる」
+  → caption の `魔人 ノクス` を **`まじん ノクス`** に修正
+
 **v278m カゲロウ攻撃アニメ刷新 + ここぞ炎ブレス (2026-04-26):**
 - ユーザー指摘「攻撃する瞬間、一瞬かげろうが消えてる」「ちゃんと攻撃のコマを表示」「飛びかかって両腕で攻撃するやつ、右手だけを上げて振りかぶってるやつ」「ここぞという時には炎を吐いている絵」「左右反転して使って」「炎の分まで入れて計算してた、体だけを比較して同じ大きさに」
 - 原因: `imgAttackStrike` が `kagerou_idle.png` (炎ブレス、body は画像 31% + 炎 69%) になっていて、body 補正のために scale 2.6x の特殊 transform-origin を当てていた。攻撃のたびに大きくスケールジャンプするうえ、img 切替直後に画像が未ロードで blank になる現象も
