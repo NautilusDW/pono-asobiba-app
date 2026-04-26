@@ -84,6 +84,19 @@ git checkout develop
 
 ## Task Analysis History
 
+### 2026-04-26T02:07:13Z - v278q: 5 件 — climax caption 60vw/432px、fullscreen log を 60vw/400px (5 文字分広げ)、battle-mode log を v278o revert で left:48px、enemy-info top 通常 80% / 全画面 70%、volcano_lord size 通常 165px / 全画面 220px。sw 448
+- **タスク**: v278q: 5 件 — climax caption 60vw/432px、fullscreen log を 60vw/400px (5 文字分広げ)、battle-mode log を v278o revert で left:48px、enemy-info top 通常 80% / 全画面 70%、volcano_lord size 通常 165px / 全画面 220px。sw 448
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 329
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 84, "Grep": 66, "Bash": 80, "Edit": 88, "Glob": 5, "Agent": 2, "ToolSearch": 2, "Write": 1, "ExitPlanMode": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-04-26T01:55:06Z - v278p: 回想シーン全体 (memory flashback → battle_last_01 → memory_04) を z:1798 の常駐黒幕で覆い遷移時の背景透けを解消。VOLCANO_MEMORY_BEATS[2] を memory_04 → memory_03 に差替えてホムラ歌の重複表示を解消。sw 447
 - **タスク**: v278p: 回想シーン全体 (memory flashback → battle_last_01 → memory_04) を z:1798 の常駐黒幕で覆い遷移時の背景透けを解消。VOLCANO_MEMORY_BEATS[2] を memory_04 → memory_03 に差替えてホムラ歌の重複表示を解消。sw 447
 - **結果**: 成功
@@ -185,19 +198,6 @@ git checkout develop
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 49, "Grep": 47, "Bash": 42, "Edit": 38, "Glob": 5}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-04-25T23:44:17Z - v278h: 5件追補 — おてほん/なぞりスタートを noFullscreen で全画面 skip、妖精パーティーをフル画面時のみ勇者左下に斜め階段隊形、氷魔法投射 (launchMagicProjectile) でカゲロウ無効化演出、_hideBustups の race fix で Hinoka portrait 維持、chant ritual canvas を flex center に。sw 439
-- **タスク**: v278h: 5件追補 — おてほん/なぞりスタートを noFullscreen で全画面 skip、妖精パーティーをフル画面時のみ勇者左下に斜め階段隊形、氷魔法投射 (launchMagicProjectile) でカゲロウ無効化演出、_hideBustups の race fix で Hinoka portrait 維持、chant ritual canvas を flex center に。sw 439
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 163
-- **エラー数**: 6
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 48, "Grep": 46, "Bash": 34, "Edit": 30, "Glob": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
