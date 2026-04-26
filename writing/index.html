@@ -3286,6 +3286,14 @@ body.combo-phase-active .battle-stage[data-enemy-id="volcano_lord"] .enemy-info 
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
+/* v278r (2026-04-26): ユーザー指示「フル画面バトル時、火の妖精と森の妖精の間ぐらいの横位置に勇者が
+   なってる、勇者を一番右に出るようにもっと右に持ってきて」
+   → フル画面では妖精 cluster (left: 6% 付近) と勇者 (left: 8%) が重なる構図。
+     勇者を left: 18% に移動し、妖精を従える「先頭」配置に。 */
+body.battle-fullscreen-active .battle-stage .battle-hero,
+body.combo-phase-active .battle-stage .battle-hero {
+  left: 18%;
+}
 @media (prefers-reduced-motion: reduce) {
   .hero-sprite.idle,
   .hero-sprite.move,
@@ -4916,25 +4924,18 @@ body.battle-intro-active .battle-log-window {
     padding: 8px 18px;
   }
 
-  /* 2026-04-23: タップボタンを画面中央下端に配置し、サイズもコンパクトに。
-     (ユーザー指摘: もっと小さく & 画面中央の一番下に) */
+  /* v278r (2026-04-26): ユーザー指示「タップボタンは常にボックスの中の右下に配置」
+     → 旧: position:fixed left:50vw bottom: env safe-area で「画面中央下端」
+       新: default rule (.battle-log-window .battle-log-advance: position:absolute right:10px bottom:6px)
+       に任せて landscape 専用 override を削除。サイズだけ landscape 用に少し詰める。 */
   body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-advance {
-    position: fixed !important;
-    left: 50vw;
-    top: auto;
-    right: auto;
-    bottom: max(10px, env(safe-area-inset-bottom));
     padding: 4px 14px 4px 10px;
     font-size: 0.75rem;
     letter-spacing: 0.12em;
     z-index: 520;
-    transform: translateX(-50%);
   }
   body.battle-mode:not(.battle-intro-active) .battle-log-window .battle-log-advance::before {
     font-size: 0.95rem;
-  }
-  body.battle-mode:not(.battle-intro-active) .battle-log-window.await-tap .battle-log-advance {
-    animation: battleLogAdvanceBounceH 0.8s ease-in-out infinite;
   }
   /* 横画面は横幅に余裕があるので 1 行で収まるようフォント少し抑えめ +
      letter-spacing ゼロで「う」が折り返さないようにする。 */
@@ -11832,17 +11833,22 @@ function _playHinokaRecognitionIntro(onDone) {
     //     split-screen に戻らないようにする。次の _showBattleDialog で再度 add される。
     _battleDialogIsNarrative = true;
     _setBattleFullscreen(true);
-    // カゲロウが突然襲う: バストアップを「左ヒノカ + 右カゲロウ」配置に切り替え
+    // v278r (2026-04-26): ユーザー指示「『よそ者め』はカゲロウだけ右に、
+    //   『力が抜けて』はヒノカだけ左に」 → ここの初回登場シーンも同じ per-line 切替に統一。
     try { _hideBustups(); } catch (e) {}
     setTimeout(function() {
-      try {
-        _showBustup('left',  HINOKA_R, { flip: false, alt: 'ヒノカ' });
-        _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' });
-      } catch (e) {}
       try { _triggerKagerouRageAttack(); } catch (e) {}
       _showBattleDialog([
-        { lines: ['カゲロウ「ゴゴゴ……！', 'よそ もの め……！', ''] },
-        { lines: ['ヒノカ「…そんな！', 'あの やさしかった カゲロウ が…！', ''] }
+        { lines: ['カゲロウ「ゴゴゴ……！', 'よそ もの め……！', ''],
+          onEnter: function() {
+            try { _hideBustups(); } catch (e) {}
+            try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
+          } },
+        { lines: ['ヒノカ「…そんな！', 'あの やさしかった カゲロウ が…！', ''],
+          onEnter: function() {
+            try { _hideBustups(); } catch (e) {}
+            try { _showBustup('left', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+          } }
       ], function() {
         // バトル本編に入る前にバストアップを引っ込める (戦闘の邪魔にならないよう)
         try { _hideBustups(); } catch (e) {}
@@ -12224,26 +12230,31 @@ var VOLCANO_MEMORY_BEATS = [
 function _showMemoryFlashback(beats, onDone) {
   var ov = document.createElement('div');
   ov.id = 'memoryFlashbackOverlay';
-  // 2026-04-25: ユーザー指示「下のテキストと『タップ』が重なる」→ 縦 3 段 (img / caption / hint)
-  //             を flex で明示的に分離。img は上寄せ (flex-start)、caption は中央帯、
-  //             hint は最下部の固定スロットに分離して重なりを物理的に防止。
-  ov.style.cssText = 'position:fixed;inset:0;z-index:1800;background:radial-gradient(ellipse at center,rgba(50,30,10,0.92) 0%,rgba(10,6,4,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4vh 0 10vh;box-sizing:border-box;opacity:0;transition:opacity 1.0s ease;cursor:pointer;';
+  // v278r (2026-04-26): ユーザー指示「回想シーンもフル画面にして、メッセージボックスは他と同じように」
+  //   → 旧: flex column で img + テキスト caption (枠なし) + hint (画面中央下端) を縦並び
+  //     新: img を中央配置、caption は climax event image と同じ #020208 + 枠 + 角丸の boxed style
+  //         で画面下部に absolute、hint は caption box の右下に absolute (常にボックスの中の右下)。
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1800;background:radial-gradient(ellipse at center,rgba(50,30,10,0.92) 0%,rgba(10,6,4,0.96) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4vh 0 10vh;box-sizing:border-box;opacity:0;transition:opacity 1.0s ease;cursor:pointer;overflow:hidden;';
 
   var imgEl = document.createElement('img');
-  // 画像は上寄せ。caption 2 行分 + hint 分を空けるため max-height を 58vh に抑える。
-  imgEl.style.cssText = 'max-width:86vw;max-height:58vh;object-fit:contain;filter:sepia(0.28) brightness(1.06) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transform:scale(1.0);transition:opacity 1.0s ease;border-radius:6px;will-change:transform,opacity;';
+  // 画像は中央配置。下に caption box 分のスペースを空けるため max-height を 56vh に抑える。
+  imgEl.style.cssText = 'max-width:86vw;max-height:56vh;object-fit:contain;filter:sepia(0.28) brightness(1.06) drop-shadow(0 0 30px rgba(255,200,100,0.45));opacity:0;transform:scale(1.0);transition:opacity 1.0s ease;border-radius:6px;will-change:transform,opacity;';
   ov.appendChild(imgEl);
 
+  // v278r: caption を climax event image と同じ boxed style に統一。
+  // textContent の child override を防ぐため caption text 用の span を中に置く。
   var captionEl = document.createElement('div');
-  // caption は flex の真ん中の塊。hint とは下余白 10vh + hint の bottom:3vh で十分離す。
-  captionEl.style.cssText = 'margin-top:22px;margin-bottom:0;width:min(86vw,640px);text-align:center;color:#FFEFC6;font-size:1.1rem;font-weight:900;line-height:1.7;letter-spacing:0.08em;text-shadow:0 0 10px rgba(255,180,90,0.7),0 2px 6px #000;opacity:0;transition:opacity 0.9s ease;white-space:pre-line;';
+  captionEl.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(66vw,472px);max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(36px,6vw,52px) clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
+  var captionTextEl = document.createElement('span');
+  captionTextEl.style.cssText = 'display:block;';
+  captionEl.appendChild(captionTextEl);
   ov.appendChild(captionEl);
 
+  // v278r: hint をボックスの中の右下 (caption box 内 absolute) に変更。
   var hint = document.createElement('div');
-  // hint は overlay 最下部 (absolute) に固定スロット化。caption との重なりを物理的に防ぐ。
-  hint.style.cssText = 'position:absolute;bottom:3vh;left:50%;transform:translateX(-50%);color:#FFE27A;font-size:0.9rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.8);animation:fbHintBlink 1.4s ease-in-out infinite;transition:opacity 0.4s ease;';
+  hint.style.cssText = 'position:absolute;right:10px;bottom:6px;color:#FFE27A;font-size:0.85rem;font-weight:700;opacity:0;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.85),0 1px 3px #000;animation:fbHintBlink 1.4s ease-in-out infinite;transition:opacity 0.4s ease;pointer-events:none;';
   hint.textContent = '▼ タップ';
-  ov.appendChild(hint);
+  captionEl.appendChild(hint);
 
   // キーフレームを一度だけ注入 (Ken Burns 含む)
   if (!document.getElementById('memoryFlashbackKF')) {
@@ -12294,7 +12305,8 @@ function _showMemoryFlashback(beats, onDone) {
       var cap = (typeof beat === 'string') ? '' : (beat.caption || '');
       imgEl.src = src;
       // 前キャプションが完全に消えてから textContent 更新 (残像テキストを防止)
-      captionEl.textContent = cap;
+      // v278r: hint child を残すため captionTextEl (span) のテキストだけ書き換え。
+      captionTextEl.textContent = cap;
       // Ken Burns ズームを再起動するために animation を一旦リセット
       imgEl.style.animation = 'none';
       void imgEl.offsetWidth;
@@ -12357,15 +12369,27 @@ function _showClimaxEventImage(src, onDone, opts) {
     captionEl.className = 'climax-caption';
     // v278q (2026-04-26): ユーザー指示「イメージ画像のところもメッセージボックスを 60% くらいの横幅に」
     //   → width: min(94vw, 720px) → min(60vw, 432px)
-    captionEl.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(60vw,432px);max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
+    // v278r (2026-04-26): ユーザー指示「最初の山道とかげろう登場のイメージシーケンスのメッセージボックス
+    //   2 文字ぐらい横幅広げて」→ min(60vw, 432px) → min(66vw, 472px) (約 +40px = 全角 2 文字相当)
+    //   さらに padding-right を広げて hint badge ぶんのスペースを確保。
+    captionEl.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(66vw,472px);max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(36px,6vw,52px) clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
     captionEl.textContent = opts.caption;
     ov.appendChild(captionEl);
   }
   // v277k: タップヒントは画面右下 (バトル画面と同じ位置パターン)
+  // v278r: ユーザー指示「タップボタンは常にボックスの中の右下に」
+  //   → caption box があれば中の右下、無ければ overlay の右下に置く。
   var hint = document.createElement('div');
-  hint.style.cssText = 'position:absolute;right:18px;bottom:8px;color:#FFE27A;font-size:0.85rem;font-weight:700;opacity:0.85;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.85),0 1px 3px #000;animation:fbHintBlink 1.4s ease-in-out infinite;z-index:3;';
+  hint.style.cssText = 'position:absolute;right:10px;bottom:6px;color:#FFE27A;font-size:0.85rem;font-weight:700;opacity:0.85;letter-spacing:0.08em;text-shadow:0 0 6px rgba(0,0,0,0.85),0 1px 3px #000;animation:fbHintBlink 1.4s ease-in-out infinite;z-index:3;pointer-events:none;';
   hint.textContent = '▼ タップ';
-  ov.appendChild(hint);
+  if (captionEl) {
+    captionEl.appendChild(hint);
+  } else {
+    // caption が無いシーン (1 枚絵だけ) は overlay 右下に貼る (フォールバック)
+    hint.style.right = '18px';
+    hint.style.bottom = '8px';
+    ov.appendChild(hint);
+  }
   if (!document.getElementById('memoryFlashbackKF')) {
     var st = document.createElement('style');
     st.id = 'memoryFlashbackKF';
@@ -13562,13 +13586,24 @@ function _playKagerouCounterAttack(onDone) {
         });
       }
     } catch (e) {}
-    // 着弾後にヒノカのうめきセリフ
+    // 着弾後にバストアップ + うめきセリフ。
+    // v278r (2026-04-26): ユーザー指示「カゲロウが『よそ者め』言うところで火の妖精が出てる、
+    //   カゲロウが右側に出て言う」「その後ヒノカが『ちから抜けていく』時に左側にヒノカ」
+    //   → message ごとに onEnter で bustup を切替: 1 通目=カゲロウ右、2 通目=ヒノカ左。
     setTimeout(function() {
       var HINOKA_R = '../assets/images/characters/pixies/Hinoka/hinoka_001.png';
-      try { _showBustup('right', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+      var KAGEROU_BUST = '../assets/images/monsters/chars/Kagerou/kagerou_atk_1.png';
       _showBattleDialog([
-        { lines: ['カゲロウ「グルゥウオォ……！', 'よそ もの め……！', ''] },
-        { lines: ['ヒノカ「うっ……！', 'ちから が、 ぬけて いく……', ''] }
+        { lines: ['カゲロウ「グルゥウオォ……！', 'よそ もの め……！', ''],
+          onEnter: function() {
+            try { _hideBustups(); } catch (e) {}
+            try { _showBustup('right', KAGEROU_BUST, { flip: false, alt: 'カゲロウ' }); } catch (e) {}
+          } },
+        { lines: ['ヒノカ「うっ……！', 'ちから が、 ぬけて いく……', ''],
+          onEnter: function() {
+            try { _hideBustups(); } catch (e) {}
+            try { _showBustup('left', HINOKA_R, { flip: true, alt: 'ヒノカ' }); } catch (e) {}
+          } }
       ], function() {
         try { _hideBustups(); } catch (e) {}
         if (onDone) onDone();

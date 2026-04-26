@@ -413,6 +413,20 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278r 6 件追補 (2026-04-26):**
+- ユーザー指示「最初の山道とかげろう登場の caption box を 2 文字分広げて」
+  → `_showClimaxEventImage` caption width を `min(60vw, 432px)` → **`min(66vw, 472px)`** (約 +40px)
+- ユーザー指示「フル画面バトル時、勇者を一番右に出るようにもっと右に」
+  → `body.battle-fullscreen-active .battle-stage .battle-hero` 専用 override で **`left: 18%`** に (元 8%)。妖精 cluster (left ~6%) と勇者位置を分離し、パーティーの先頭らしい配置に
+- ユーザー指示「カゲロウ『よそ者め』はカゲロウ右、ヒノカ『力が抜けて』はヒノカ左」
+  → `_playKagerouCounterAttack` (B4.3) と `_playHinokaRecognitionIntro` の両方で、**message ごとに `onEnter` で bustup を切替**。1 通目: 右カゲロウ、2 通目: 左ヒノカ
+- ユーザー指示「タップボタンは常にボックスの中の右下に」
+  → battle-mode landscape の `position:fixed left:50vw bottom:env(safe-area)` 上書きを撤去。default rule (`.battle-log-window .battle-log-advance: position:absolute right:10px bottom:6px`) で box 内右下に統一
+  → `_showClimaxEventImage` の hint も captionEl 内の `right:10px bottom:6px` に移動
+- ユーザー指示「回想シーンもフル画面にして、メッセージボックスは他と同じように」
+  → `_showMemoryFlashback` の caption をテキスト → **boxed style** (climax event image と同じ `#020208` + 枠 + 角丸) に統一。hint も caption box 内の右下に移動
+  → `captionTextEl` (span) を caption box 内に作って textContent 更新時に hint child を保持
+
 **v278q メッセージ枠/敵名/カゲロウ サイズ調整 (2026-04-26):**
 - ユーザー指示「イメージ画像のところもメッセージボックスを 60% くらいの横幅に」
   → `_showClimaxEventImage` の caption width を `min(94vw, 720px)` → **`min(60vw, 432px)`**
