@@ -5360,6 +5360,7 @@ body.battle-intro-active .battle-log-window {
   <div class="title-btns">
     <button class="title-btn" id="titleBtnNew">はじめから</button>
     <button class="title-btn secondary" id="titleBtnContinue">つづきから</button>
+    <button class="title-btn secondary" id="titleBtnSimple">🌸 シンプルモード</button>
   </div>
   <div class="title-hint">▶ タップしてえらぶ</div>
 </div>
@@ -15308,6 +15309,16 @@ function goToPracticeDirect(rowIndex) {
     localStorage.setItem('mojikaki_started', '1');
     _titleRouteIsNew = false;
     goToRowSelect();
+  });
+  // 🌸 シンプルモード: RPG 化前の素直な文字書きゲーム (妖精の応援つき)。
+  // simple.html に遷移するだけ。BGM は遷移時に自動で止まる。
+  var simpleBtn = document.getElementById('titleBtnSimple');
+  if (simpleBtn) simpleBtn.addEventListener('click', function() {
+    try {
+      var _b = document.getElementById('bgm');
+      if (_b) { _b.pause(); }
+    } catch (e) {}
+    location.href = './simple.html';
   });
   if (storyEl) storyEl.addEventListener('click', function() {
     if (_titleRouteIsNew) {
