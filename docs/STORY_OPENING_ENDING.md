@@ -413,6 +413,13 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278p 回想シーン背景透け修正 + ホムラ重複削除 (2026-04-26):**
+- ユーザー指摘「回想シーンの乗り換わり時に下のバトル画面が出る」「フル画面でオーバーレイでフェードイン・フェードアウトしてほしい」
+  → v278l (山道→Kagerou) と同じ手法で、`_playWaRowEpisode` のシーケンス全体 (memory flashback → battle_last_01 → memory_04) を覆う **常駐黒幕** (z:1798、memory flashback z:1800 と climax z:1805 の両方より下) を flashback 開始前に貼り、最終 overlay (memory_04) close 時に fade-out → 撤去。各遷移瞬間も背景は黒一色に保たれる
+- ユーザー指摘「ホムラの歌は 2 回イメージが出てる、最初の方を削って別の画像素材に変更」
+  → `VOLCANO_MEMORY_BEATS[2]` を **`memory_04` (歌) → `memory_03` (引き裂きシーン、v278c で一度撤去したもの)** に差し替え。flashback の構成を「希望 → 絆 → 引き裂き」の 3 段に変更。歌の追想は懇願シーンの memory_04 だけで表現
+  → caption: 「でも、 やみ の のろい が、ふたり を ひきさいた…」
+
 **v278o 4 件追補 (2026-04-26):**
 - ユーザー指摘「『ん』のなぞり後に攻撃しないとなぞった意味がなくなる」
   → 火山ボス (volcano_lord) の finisher 分岐で `_playKagerouFinalCombo` 呼び出し前に **`battleHitEnemy({ finisher: false })`** を発火。1400ms 後に combo に突入し、ダメージログ + 攻撃 FX を見せる

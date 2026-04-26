@@ -12187,13 +12187,18 @@ var _waRowEpisodePlayed = false;
 // v278c (2026-04-25): ユーザー指示「『でもザガンの呪いがふたりを』はカット」
 //   → memory_03 (引き裂きシーン) を撤去。 memory_01/02/04 の 3 枚で「希望→絆→歌」の積み上げのみ残す。
 //   悲劇は battle 中の Beat 2 (ノクス再呪印) で十分描けているので冗長さ解消。
+// v278p (2026-04-26): ユーザー指示「ホムラの歌は 2 回イメージが出てきちゃってるので最初の方は削って、
+//   その代わりに別の画像素材を前に入れてくれたやつに変更」
+//   → memory_04 (歌) は懇願シーン (battle_last_01 → memory_04) でだけ使う。
+//     flashback の 3 枚目を v278c で外していた memory_03 (引き裂きシーン) に差し替え、
+//     「希望 → 絆 → 引き裂き」の 3 段構成に変更。歌の追想は懇願シーンの memory_04 で表現。
 var VOLCANO_MEMORY_BEATS = [
   { src: '../assets/images/characters/kagerou/memory_01.jpg',
     caption: 'カゲロウ と わたし は、\nいつも いっしょ に いた…' },
   { src: '../assets/images/characters/kagerou/memory_02.jpg',
     caption: 'あつい きずな で\nつながれて いた…' },
-  { src: '../assets/images/characters/kagerou/memory_04.jpg',
-    caption: '『ほむらの うた』を\nいっしょ に うたった…' }
+  { src: '../assets/images/characters/kagerou/memory_03.jpg',
+    caption: 'でも、 やみ の のろい が、\nふたり を ひきさいた…' }
 ];
 
 // v275: メモリフラッシュバック改良。
@@ -12458,6 +12463,20 @@ function _playWaRowEpisode(onDone) {
   ], function() {
     // メモリフラッシュバック中はバストアップを引っ込めて画面を回想に集中
     try { _hideBustups(); } catch (e) {}
+
+    // v278p (2026-04-26): ユーザー指摘「回想シーンの乗り換わり時に下のバトル画面が出る」
+    //   原因: 回想 (memory flashback z:1800) → battle_last_01 (climax z:1805) → memory_04 (climax z:1805)
+    //         の 3 段階の遷移で、各 overlay が個別に fade-out → fade-in するため、合間で背景の battle 画面が
+    //         透ける (各 1.0~1.6s 程度の窓)。
+    //   修正: 山道→カゲロウ登場 (v278l) と同じ手法で、シーケンス全体を覆う黒幕 (z:1798、memory flashback と
+    //         climax overlay の両方より下) を flashback 開始前に貼り、最終 overlay (memory_04) close 時に
+    //         fade-out → 撤去。これでどの遷移瞬間も背景は黒一色に保たれる。
+    var _flashbackBackdrop = document.createElement('div');
+    _flashbackBackdrop.id = 'flashbackBackdrop';
+    _flashbackBackdrop.style.cssText = 'position:fixed;inset:0;z-index:1798;background:#000;pointer-events:none;opacity:0;transition:opacity 0.5s ease;';
+    document.body.appendChild(_flashbackBackdrop);
+    requestAnimationFrame(function() { _flashbackBackdrop.style.opacity = '1'; });
+
     _showMemoryFlashback(VOLCANO_MEMORY_BEATS, function() {
       // v278n (2026-04-26): ユーザー指示「『カゲロウ、私の声が聞こえるでしょう？』のところは、
       //   前に表示してた ヒノカが倒れながらかげろうに懇願している絵をそのまま使って、下にメッセージを入れて」
@@ -12465,8 +12484,15 @@ function _playWaRowEpisode(onDone) {
       //   → 旧: battle_last_01 1 枚絵 → bustup + dialog 2 件 (ヒノカ立ち絵で語らせ)
       //     新: battle_last_01 + caption (懇願) → memory_04 + caption (歌の追想)、bustup なしの紙芝居形式
       _showClimaxEventImage('../assets/images/characters/kagerou/battle_last_01.jpg', function() {
-        // memory_04 (ふたりで歌っていた昔のイメージ) を再表示してホムラの歌を回想
+        // memory_04 (ふたりで歌っていた昔のイメージ) を表示してホムラの歌を回想
         _showClimaxEventImage('../assets/images/characters/kagerou/memory_04.jpg', function() {
+          // v278p: 黒幕を fade-out → 撤去 (battle 画面が見えるよう)
+          try {
+            _flashbackBackdrop.style.opacity = '0';
+            setTimeout(function() {
+              try { if (_flashbackBackdrop.parentNode) _flashbackBackdrop.remove(); } catch (e) {}
+            }, 600);
+          } catch (e) {}
           // v278b: Beat 0 (魔法相性デモ) は _playKagerouFinalCombo 内で先に流すので、
           //         ここでは _playKagerouClimaxMain を直接呼び (Beat 1〜5 のみ)。
           _playKagerouClimaxMain(onDone);
