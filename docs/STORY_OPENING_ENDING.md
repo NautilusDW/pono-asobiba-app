@@ -413,6 +413,17 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278o 4 件追補 (2026-04-26):**
+- ユーザー指摘「『ん』のなぞり後に攻撃しないとなぞった意味がなくなる」
+  → 火山ボス (volcano_lord) の finisher 分岐で `_playKagerouFinalCombo` 呼び出し前に **`battleHitEnemy({ finisher: false })`** を発火。1400ms 後に combo に突入し、ダメージログ + 攻撃 FX を見せる
+- ユーザー指摘「メッセージ枠の横幅を半分くらいにして中央ぞろえに」
+  → split-screen battle-mode landscape: `left:48px width:calc(50vw - 54px)` (左半分) → `left:50% transform:translateX(-50%) width:min(40vw, 280px)` (中央 + 半分強)
+  → fullscreen: `width: min(92vw, 560px)` → `min(50vw, 320px)` に半減 (中央配置は維持)
+- ユーザー指摘「フル画面の時に妖精たちが下すぎる、もっと上に」
+  → `body.battle-fullscreen-active .battle-stage .party-fairies` 専用 override で `bottom: clamp(22%, 30%, 36%)` に引き上げ (split-screen は v278n の `clamp(8%, 16%, 22%)` 維持)
+- ユーザー指摘「火山の主というテロップももっと上に上げて、今ボックスにかぶってる」
+  → `.battle-stage[data-enemy-id="volcano_lord"] .enemy-info` を `top: 78%` → **`top: 65%`** に上昇。message box (画面下中央) との被りを解消
+
 **v278n 妖精位置/サイズ調整 + heal target 修正 + 懇願シーン刷新 + まじん ひらがな化 (2026-04-26):**
 - ユーザー指摘「バトル画面前半、火の妖精と二人の時は勇者と横並び、もっと下に」
   → `.party-fairies` の `bottom` を `clamp(20%,30%,38%)` → **`clamp(8%,16%,22%)`** に下げ

@@ -2857,7 +2857,8 @@ body.battle-mode .villain-deco {
      → left: clamp(4px,2.5%,18px) → clamp(22px,6%,52px) (約 1 キャラ分 32px 右へ)
      v278n (2026-04-26): ユーザー指示「バトル画面前半 二人の時は勇者と横並びになってる、もっと下に」
      → bottom: clamp(20%,30%,38%) → clamp(8%,16%,22%) (勇者足元の更に下に降ろす)
-     他の妖精 (riefa/serina) は同じ flex 位置から row-reverse で並ぶので、自動的に同様にシフト。 */
+     他の妖精 (riefa/serina) は同じ flex 位置から row-reverse で並ぶので、自動的に同様にシフト。
+     v278o (2026-04-26): フル画面時はこれだと下すぎるので、別 rule で上げる (下記 fullscreen override 参照)。 */
   left: clamp(22px, 6%, 52px);
   bottom: clamp(8%, 16%, 22%);
   z-index: 4;
@@ -2866,6 +2867,15 @@ body.battle-mode .villain-deco {
   align-items: flex-end;
   gap: clamp(2px, 0.5vw, 6px);
   pointer-events: none;
+}
+/* v278o (2026-04-26): ユーザー指示「フル画面の時に妖精たちが下すぎるので、もっと上に上げて」
+   フル画面では battle-stage が 100vh に拡張されるため、battle-mode 用の bottom:16% (= ~36px on
+   small stage) が viewport 16vh = ~60-80px となり感覚的に下がりすぎる。fullscreen のときだけ
+   bottom を 28-36% (勇者足元 ~34% 付近) に引き上げる。translateY(-8vh) シフトと組み合わさり、
+   結果として viewport 内で勇者足元の少し下に妖精パーティーが収まる。 */
+body.battle-fullscreen-active .battle-stage .party-fairies,
+body.combo-phase-active .battle-stage .party-fairies {
+  bottom: clamp(22%, 30%, 36%);
 }
 .battle-stage .party-fairy-slot:nth-child(2) {
   margin-right: clamp(-18px, -2.4vw, -10px);
@@ -3035,14 +3045,16 @@ body.battle-fullscreen-active #app {
 }
 /* v278f: 全画面会話中、battle-log は画面下部にフロート表示する。
    battle-mode の通常ルール (top: var(--battle-vtop)+0.72*vspan) は左半分用なので、
-   全画面化に合わせて画面中央下端へ配置し直す (intro 演出と同じ位置)。 */
+   全画面化に合わせて画面中央下端へ配置し直す (intro 演出と同じ位置)。
+   v278o (2026-04-26): ユーザー指示「メッセージ枠の横幅を半分くらいにして中央ぞろえに」
+   → min(92vw, 560px) → min(50vw, 320px) に半減 (中央配置は維持)。 */
 body.battle-fullscreen-active .battle-log-window {
   position: fixed !important;
   left: 50% !important;
   top: auto !important;
   bottom: max(env(safe-area-inset-bottom, 16px), 16px) !important;
   transform: translateX(-50%);
-  width: min(92vw, 560px) !important;
+  width: min(50vw, 320px) !important;
   height: auto !important;
   margin: 0 !important;
   z-index: 1400 !important;
@@ -3141,14 +3153,13 @@ body.battle-fullscreen-active .battle-log-window {
 /* v278c: ユーザー指示「敵の名前は敵のイラストの下に持ってきて」
    → volcano_lord 限定で enemy-info を画面下端ではなく敵 wrap の下に再配置。
    battle-enemy-wrap (right:4%, top:50% 中心、translateY(-50%) で上下中央) の
-   底辺直下にちょこんと置く。 */
+   底辺直下にちょこんと置く。
+   v278o (2026-04-26): ユーザー指示「火山の主というテロップももっと上に上げて、ボックスにかぶってる」
+   → top:78% は message box (画面下中央) と被るので 65% へ引き上げ。 */
 .battle-stage[data-enemy-id="volcano_lord"] .enemy-info {
   position: absolute;
   left: auto; right: 4%; bottom: auto;
-  /* battle-enemy-wrap top:50%、wrap の高さは container と scale 込みで実体 ~220px。
-     wrap 中心が 50% なので底辺は 50% + (220×1.38)/2 ≈ 50% + 152 ≈ 体感的に「画像の下」へ。
-     簡単のため top: 78% でアンカー、translateX(0) のままで wrap 右に揃える。 */
-  top: 78%;
+  top: 65%;
   width: 42%;
   text-align: center;
   pointer-events: none;
@@ -4861,13 +4872,17 @@ body.battle-intro-active .battle-log-window {
 
   /* バトルログは battle-stage / puzzle-stage の直下、canvas の下辺まで。
      2026-04-22: タップボタンを log の外 (下) に出すため log を上げて、
-     下に button 用のスペース 0.10*vspan を確保。 */
+     下に button 用のスペース 0.10*vspan を確保。
+     v278o (2026-04-26): ユーザー指示「メッセージ枠の横幅を半分くらいにして中央ぞろえに」
+     → 旧 left:48px width:calc(50vw - 54px) (= 左半分) を、
+        left:50% transform:translateX(-50%) width:min(40vw, 280px) で 中央 + 半分強の幅に。 */
   body.battle-mode:not(.battle-intro-active) .battle-log-window {
     position: fixed !important;
-    left: 48px;
+    left: 50% !important;
     top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.72);
     bottom: auto;
-    width: calc(50vw - 54px);
+    width: min(40vw, 280px) !important;
+    transform: translateX(-50%);
     height: calc(var(--battle-vspan) * 0.18);
     max-width: none;
     margin: 0;
@@ -14493,11 +14508,18 @@ function _rowPracticeNextChar_continue() {
             //         他の中ボスはこれまで通り即 battleVictory。
             //         _playKagerouFinalCombo (banner + Ritual 2「かげろう」+ 仮面割れ + battle_last_02)
             //         が完了してから battleVictory が発火し、bow + leave + 浄化アニメ + celebration が走る。
+            // v278o (2026-04-26): ユーザー指摘「ん のなぞり後に攻撃しないとなぞった意味がなくなる」
+            //         → finisher:false の通常攻撃 (HP -1) を 'ん' なぞり完了直後に発火させ、
+            //           ダメージログ + 攻撃 FX を見せてから 1400ms 後に finalCombo へ突入。
             if (_isVolcanoBoss) {
               try {
-                _playKagerouFinalCombo(function() {
-                  try { battleVictory('fire', _chainReward); } catch (e) { _afterVictory(); }
-                });
+                try { battleHitEnemy({ finisher: false }); } catch (e) {}
+                setTimeout(function() {
+                  if (!_battle.active) { try { battleVictory('fire', _chainReward); } catch (e) { _afterVictory(); } return; }
+                  _playKagerouFinalCombo(function() {
+                    try { battleVictory('fire', _chainReward); } catch (e) { _afterVictory(); }
+                  });
+                }, 1400);
               } catch (e) {
                 try { battleVictory('fire', _chainReward); } catch (ee) { _afterVictory(); }
               }
