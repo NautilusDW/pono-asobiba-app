@@ -74,6 +74,30 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* v278s (2026-04-26): ユーザー指示「Quest 本編もこのシンプルモードも横画面型固定にしましょう」
+   → 縦画面では「よこむきにしてね」フルスクリーン警告で操作を遮断。
+     screen.orientation.lock('landscape') は PWA standalone 時の補助試行 (script 末尾)。 */
+@media (orientation: portrait) {
+  body::before {
+    content: '📱  よこむきに してね';
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: #000;
+    color: #FFD36E;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: clamp(1.2rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-shadow: 0 0 16px rgba(255,211,110,0.6);
+    pointer-events: all;
+  }
+}
+
 /* ===== Header ===== */
 .header { text-align: center; padding: 0; flex-shrink: 0; position: relative; }
 .header h1 {
@@ -2845,45 +2869,49 @@ body.battle-mode .villain-deco {
    それぞれの下に名前とゲージを置く」
    → battle-stage 左下にスロットを横並び。各スロット = small img + name + thin hp bar。
    旧 .fairy-status (左上の枠なし HP バー) は新 UI に役割を譲って隠す。 */
-/* v278i (2026-04-26): ユーザー指示「主役の勇者のすぐ左下あたりに配置。勇者より前に出ないように」
-   「実際のパーティーで戦っているように、斜めに左下に少しずつずれながら 1, 2, 3, 4 と並んで」
-   → 通常 split-screen / フル画面 両方とも 勇者 (left:8% top:54% size~24vh, 足元 ~66vh,
-      = bottom 25-34%) の左下に row-reverse 斜め階段で並べる。Hinoka が右端 (勇者寄り)、
-      Riefa→Serina が左下に降りる。% 基準なので battle-stage の縮尺に追従する。 */
+/* v278s (2026-04-26): ユーザー指示「森の妖精が左のメニューの中に含まれているので、
+   キャンバスのすぐ左上あたりに配置」「氷の妖精が出てきていないので、左下あたりに」
+   → 旧: row-reverse 斜め階段 (Hinoka 右端 → Riefa → Serina で左下に降りる)。これだと
+        Riefa/Serina が battle-stage 左下端に重なって見えにくかった。
+     新: 各妖精を data-fairy 属性で個別に絶対位置 — Hinoka は勇者足元 (右端)、
+        Riefa は battle-stage 左上、Serina は battle-stage 左下、で 3 人が三角形に分散。
+   .party-fairies コンテナは battle-stage 全域を占めるだけの透明なフレームに変更。 */
 .battle-stage .party-fairies {
   position: absolute;
-  /* v278k (2026-04-26): ユーザー指示「フル画面の時の火の妖精の位置が左下すぎる、もっと右上に」
-     「バトル画面の時も 1 キャラ分右に」
-     → left: clamp(4px,2.5%,18px) → clamp(22px,6%,52px) (約 1 キャラ分 32px 右へ)
-     v278n (2026-04-26): ユーザー指示「バトル画面前半 二人の時は勇者と横並びになってる、もっと下に」
-     → bottom: clamp(20%,30%,38%) → clamp(8%,16%,22%) (勇者足元の更に下に降ろす)
-     他の妖精 (riefa/serina) は同じ flex 位置から row-reverse で並ぶので、自動的に同様にシフト。
-     v278o (2026-04-26): フル画面時はこれだと下すぎるので、別 rule で上げる (下記 fullscreen override 参照)。 */
-  left: clamp(22px, 6%, 52px);
-  bottom: clamp(8%, 16%, 22%);
+  inset: 0;
   z-index: 4;
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-end;
-  gap: clamp(2px, 0.5vw, 6px);
   pointer-events: none;
 }
-/* v278o (2026-04-26): ユーザー指示「フル画面の時に妖精たちが下すぎるので、もっと上に上げて」
-   フル画面では battle-stage が 100vh に拡張されるため、battle-mode 用の bottom:16% (= ~36px on
-   small stage) が viewport 16vh = ~60-80px となり感覚的に下がりすぎる。fullscreen のときだけ
-   bottom を 28-36% (勇者足元 ~34% 付近) に引き上げる。translateY(-8vh) シフトと組み合わさり、
-   結果として viewport 内で勇者足元の少し下に妖精パーティーが収まる。 */
-body.battle-fullscreen-active .battle-stage .party-fairies,
-body.combo-phase-active .battle-stage .party-fairies {
+.battle-stage .party-fairy-slot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  /* v278g: 妖精 3 人分が battle-stage 内に収まるよう、スロット幅を縮小。 */
+  width: clamp(28px, 6.5vw, 44px);
+}
+/* Hinoka: 勇者の左下 (足元、隊長ポジション) — 通常 split-screen */
+.battle-stage .party-fairy-slot[data-fairy="hinoka"] {
+  left: clamp(22px, 6%, 52px);
+  bottom: clamp(8%, 16%, 22%);
+}
+/* Riefa: 戦場の左上 (キャンバスのすぐ左上 = battle-stage 左上、勇者の頭の上に位置) */
+.battle-stage .party-fairy-slot[data-fairy="riefa"] {
+  left: clamp(4px, 1.5%, 10px);
+  top: clamp(8%, 14%, 20%);
+  bottom: auto;
+}
+/* Serina: 戦場の左下 (battle-stage 左下、Hinoka と離して配置) */
+.battle-stage .party-fairy-slot[data-fairy="serina"] {
+  left: clamp(4px, 1.5%, 10px);
+  bottom: clamp(4%, 8%, 12%);
+}
+/* フル画面時: Hinoka だけ勇者足元 (translateY(-8vh) シフトに合わせて上げる)。
+   Riefa/Serina は battle-stage の左端 (上下) のままで OK。 */
+body.battle-fullscreen-active .battle-stage .party-fairy-slot[data-fairy="hinoka"],
+body.combo-phase-active .battle-stage .party-fairy-slot[data-fairy="hinoka"] {
   bottom: clamp(22%, 30%, 36%);
-}
-.battle-stage .party-fairy-slot:nth-child(2) {
-  margin-right: clamp(-18px, -2.4vw, -10px);
-  transform: translateY(clamp(8px, 1.8vw, 16px));
-}
-.battle-stage .party-fairy-slot:nth-child(3) {
-  margin-right: clamp(-18px, -2.4vw, -10px);
-  transform: translateY(clamp(16px, 3.6vw, 30px));
 }
 .battle-stage .party-fairy-slot {
   display: flex;
@@ -15385,6 +15413,18 @@ window.addEventListener('blur',  () => bgm.pause());
 window.addEventListener('focus', () => {
   if (bgmEnabled && !window._storyboardActive) bgm.play().catch(() => {});
 });
+// v278s: pageshow/pagehide にも対応 (iOS Safari の bfcache 復帰 / アプリ切替時の保険)
+window.addEventListener('pagehide', () => { try { bgm.pause(); } catch (e) {} });
+window.addEventListener('pageshow', () => {
+  if (bgmEnabled && !window._storyboardActive) { try { bgm.play().catch(() => {}); } catch (e) {} }
+});
+
+// v278s: PWA standalone 時の横画面ロック試行 (Chrome Android のみサポート、iOS は無視される)
+try {
+  if (screen.orientation && typeof screen.orientation.lock === 'function') {
+    screen.orientation.lock('landscape').catch(function() {});
+  }
+} catch (e) {}
 
 // ===== Tutorial =====
 function showTutorial() {

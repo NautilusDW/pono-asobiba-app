@@ -413,6 +413,22 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278s 5 件追補 (2026-04-26):**
+- ユーザー指摘「森の妖精が左のメニューに含まれている、キャンバス左上に。氷の妖精が出てない、左下に」(simple.html)
+  → `.cheer-fairy.leefa` を `left:8px bottom:64px` → `left: clamp(120px,26vw,200px); top: 60px` (キャンバス上部)
+  → 新規 `.cheer-fairy.serina` を 旧リーファ位置 (`left:8px bottom:64px`) に配置
+  → `FAIRY_IDS = ['leefa','hinoka']` → `['leefa','serina','hinoka']`、Serina 用 fairy-bubble + img を追加
+- ユーザー指摘「相変わらず非アクティブにしても音が流れ続ける」
+  → simple.html に `visibilitychange` / `blur` / `focus` / `pagehide` / `pageshow` で BGM pause/resume を追加 (writing/index.html は既に実装済みだったが pagehide/pageshow を追加で念入り)
+- ユーザー指示「Quest 本編もシンプルモードも横画面型固定」
+  → 両ファイルに `@media (orientation: portrait) { body::before { ... 'よこむきに してね' } }` フルスクリーン警告を追加
+  → `screen.orientation.lock('landscape')` を script 末尾に試行 (Chrome Android のみ、iOS は無視)
+- ユーザー指摘「メニューボタンを押しても何も反応しない、タイトルに戻るボタンに」
+  → simple.html の `.back-link href="../index.html" "← メニュー"` → **`href="./index.html" "← タイトル"`**
+  → writing/index.html はタイトル画面が初期表示なので、簡単に戻れる
+- (writing/index.html 側) 妖精位置の per-fairy 個別配置
+  → `.battle-stage .party-fairies` を flex row-reverse の階段構造から **per-fairy `data-fairy` 属性での絶対位置** に変更。Hinoka が勇者足元、Riefa が battle-stage 左上、Serina が battle-stage 左下、で 3 人が三角形に分散
+
 **v278r 6 件追補 (2026-04-26):**
 - ユーザー指示「最初の山道とかげろう登場の caption box を 2 文字分広げて」
   → `_showClimaxEventImage` caption width を `min(60vw, 432px)` → **`min(66vw, 472px)`** (約 +40px)

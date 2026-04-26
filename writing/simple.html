@@ -30,6 +30,30 @@
   --radius: 14px;
 }
 
+/* v278s (2026-04-26): ユーザー指示「Quest 本編もこのシンプルモードも横画面型固定にしましょう」
+   → 縦画面では「よこむきにしてね」フルスクリーン警告で操作を遮断 (CSS のみで完結)。
+     screen.orientation.lock('landscape') は PWA standalone 時の補助的試行 (script 末尾)。 */
+@media (orientation: portrait) {
+  body::before {
+    content: '📱  よこむきに してね';
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: #000;
+    color: #FFD36E;
+    font-family: 'DotGothic16', 'Hiragino Maru Gothic Pro', sans-serif;
+    font-size: clamp(1.2rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-shadow: 0 0 16px rgba(255,211,110,0.6);
+    pointer-events: all;
+  }
+}
+
 html, body {
   width: 100%; height: 100%;
   overflow: hidden;
@@ -310,9 +334,22 @@ html, body {
   z-index: 50;
   user-select: none;
 }
+/* v278s (2026-04-26): ユーザー指示「森の妖精が左のメニューの中に含まれているので、
+   キャンバスのすぐ左上あたりに配置」「氷の妖精が出てきていないので、左下あたりに」
+   → リーファ(森): 左下 → キャンバス左上 (側パネルの右側、画面上部)
+     セリナ(氷): 新規配置、左下 (旧 リーファの位置)
+     ヒノカ: 右下 (変更なし) */
 .cheer-fairy.leefa {
-  left: 8px; bottom: 64px;
+  /* キャンバスの左上あたり: side-panel (24vw) のすぐ右、画面上部から少し下 */
+  left: clamp(120px, 26vw, 200px);
+  top: 60px;
+  bottom: auto;
   animation: cheerFloat 3.2s ease-in-out infinite;
+}
+.cheer-fairy.serina {
+  /* 画面左下 (旧リーファ位置) */
+  left: 8px; bottom: 64px;
+  animation: cheerFloat 3.4s ease-in-out 0.6s infinite;
 }
 .cheer-fairy.hinoka {
   right: 8px; bottom: 64px;
@@ -355,17 +392,22 @@ html, body {
   border-bottom: 2px solid var(--window-border);
   transform: rotate(45deg);
 }
-.fairy-bubble.leefa { left: 14px; bottom: 152px; }
-.fairy-bubble.leefa::after { left: 26px; }
+/* v278s: bubble はそれぞれの妖精の頭上 (上方) に表示 */
+.fairy-bubble.leefa { left: clamp(120px, 26vw, 200px); top: 152px; bottom: auto; }
+.fairy-bubble.leefa::after { left: 26px; top: -8px; bottom: auto; transform: rotate(225deg); }
+.fairy-bubble.serina { left: 14px; bottom: 152px; }
+.fairy-bubble.serina::after { left: 26px; }
 .fairy-bubble.hinoka { right: 14px; bottom: 152px; }
 .fairy-bubble.hinoka::after { right: 26px; }
 
 @media (max-width: 540px) {
   .cheer-fairy { width: 56px; }
-  .cheer-fairy.leefa { left: 4px; bottom: 56px; }
+  .cheer-fairy.leefa { left: clamp(100px, 28vw, 160px); top: 50px; }
+  .cheer-fairy.serina { left: 4px; bottom: 56px; }
   .cheer-fairy.hinoka { right: 4px; bottom: 56px; }
   .fairy-bubble { font-size: 0.78rem; padding: 6px 10px; }
-  .fairy-bubble.leefa { bottom: 124px; left: 6px; }
+  .fairy-bubble.leefa { left: clamp(100px, 28vw, 160px); top: 124px; }
+  .fairy-bubble.serina { bottom: 124px; left: 6px; }
   .fairy-bubble.hinoka { bottom: 124px; right: 6px; }
   .side-panel { width: clamp(96px, 26vw, 130px); }
   .char-btn { height: 34px; font-size: 1rem; }
@@ -464,7 +506,10 @@ html, body {
 
 <div id="app">
   <div class="topbar">
-    <a href="../index.html" class="back-link">← メニュー</a>
+    <!-- v278s (2026-04-26): ユーザー指示「メニューボタンを押しても何も反応しません。タイトルに戻るボタンに」
+         → href を ../index.html (= ルートメニュー) から ./index.html (= writing/index.html のタイトル画面) に変更
+            ラベルも「← メニュー」→「← タイトル」に修正。タイトル画面 (showTitleScreen) が初期表示なので確実に戻れる。 -->
+    <a href="./index.html" class="back-link">← タイトル</a>
     <div id="streak-badge" class="streak-badge hidden"></div>
     <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🔊</button>
   </div>
@@ -492,10 +537,13 @@ html, body {
   </div>
 </div>
 
-<!-- 妖精は body 直下 fixed (画面の左下/右下に常駐応援) -->
+<!-- 妖精は body 直下 fixed (画面の左上/左下/右下に常駐応援) -->
+<!-- v278s: リーファをキャンバス左上、セリナを左下に配置 -->
 <img class="cheer-fairy leefa" src="../assets/images/characters/pixies/Riefa/riefa_001.png" alt="リーファ">
+<img class="cheer-fairy serina" src="../assets/images/characters/pixies/Serina/serina_001.png" alt="セリナ">
 <img class="cheer-fairy hinoka" src="../assets/images/characters/pixies/Hinoka/hinoka_001.png" alt="ヒノカ">
 <div class="fairy-bubble leefa" id="bubble-leefa"></div>
+<div class="fairy-bubble serina" id="bubble-serina"></div>
 <div class="fairy-bubble hinoka" id="bubble-hinoka"></div>
 
 <div class="confetti-container" id="confettiContainer"></div>
@@ -697,7 +745,7 @@ const FAIRY_LINES = {
   success: ['すごい！', 'やったね！', 'じょうず！', 'かんぺき！', 'きれい！', 'さいこう！'],
   retry:   ['だいじょうぶ', 'もういちど', 'おしい！', 'いけるよ！'],
 };
-const FAIRY_IDS = ['leefa', 'hinoka'];
+const FAIRY_IDS = ['leefa', 'serina', 'hinoka'];
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function showFairyBubble(fairyId, text, dur = 2200) {
   const el = document.getElementById('bubble-' + fairyId);
@@ -988,6 +1036,32 @@ if (bgmEnabled) {
     document.addEventListener('touchstart', tryStartBgm, { passive: true });
   });
 }
+
+// v278s (2026-04-26): ユーザー指示「相変わらず非アクティブにしても音が流れ続ける」
+//   → visibilitychange + blur で BGM を一時停止、戻ってきたら再開する。
+//     ユーザーが OFF にした場合 (bgmEnabled=false) は復帰時にも再開しない。
+function _pauseBgmForInactive() {
+  try { if (!bgm.paused) bgm.pause(); } catch (e) {}
+}
+function _resumeBgmIfEnabled() {
+  if (!bgmEnabled) return;
+  try { bgm.play().catch(function() {}); } catch (e) {}
+}
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) _pauseBgmForInactive();
+  else _resumeBgmIfEnabled();
+});
+window.addEventListener('blur',  _pauseBgmForInactive);
+window.addEventListener('focus', _resumeBgmIfEnabled);
+window.addEventListener('pagehide', _pauseBgmForInactive);
+window.addEventListener('pageshow', _resumeBgmIfEnabled);
+
+// v278s: PWA standalone 時の横画面ロック試行 (Chrome Android のみサポート、iOS は無視)
+try {
+  if (screen.orientation && typeof screen.orientation.lock === 'function') {
+    screen.orientation.lock('landscape').catch(function() {});
+  }
+} catch (e) {}
 updateBgmBtn();
 </script>
 </body>
