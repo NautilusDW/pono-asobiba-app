@@ -2936,8 +2936,10 @@ body.combo-phase-active .battle-stage .party-fairy-slot[data-fairy="hinoka"] {
      → ふわふわ float アニメ。slot 側の staircase translateY とは独立 (img 単体に animation)。 */
   animation: partyFairyFloat 2.6s ease-in-out infinite;
 }
-/* v278i: Hinoka は pixel-art (hinoka_pixel_front.png) なので nearest-neighbor で描画。 */
-.battle-stage .party-fairy-slot[data-fairy="hinoka"] .party-fairy-sprite {
+/* v278i: Hinoka は pixel-art (hinoka_pixel_front.png) なので nearest-neighbor で描画。
+   v278t (2026-04-26): Serina も低解像度ピクセルアート (serina_pixel_front.png) なので同様に pixelated。 */
+.battle-stage .party-fairy-slot[data-fairy="hinoka"] .party-fairy-sprite,
+.battle-stage .party-fairy-slot[data-fairy="serina"] .party-fairy-sprite {
   image-rendering: pixelated;
 }
 /* 妖精の上下ゆらぎ (RPG の使い魔っぽさ)。複数妖精で同期しないよう 2 番目以降は遅延。 */
@@ -5516,7 +5518,9 @@ body.battle-intro-active .battle-log-window {
           <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="riefaHpBarStage"></div></div>
         </div>
         <div class="party-fairy-slot" data-fairy="serina" style="display:none;">
-          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Serina/serina_001.png" alt="セリナ">
+          <!-- v278t (2026-04-26): ユーザー支給の低解像度版 (serina_pixel_front.png) を in-battle 用に。
+               素材未保存時は serina_001.png にフォールバック (pixel-rendering 解除)。 -->
+          <img class="party-fairy-sprite" src="../assets/images/characters/pixies/Serina/serina_pixel_front.png" alt="セリナ" onerror="this.onerror=null;this.src='../assets/images/characters/pixies/Serina/serina_001.png';this.style.imageRendering='auto';">
           <div class="party-fairy-name">セリナ</div>
           <div class="party-fairy-bar-wrap"><div class="party-fairy-bar hp" id="serinaHpBarStage"></div></div>
         </div>

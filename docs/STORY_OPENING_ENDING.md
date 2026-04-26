@@ -413,6 +413,14 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278t セリナ pixel art (2026-04-26):**
+- ユーザー指示「水の妖精のバトル中の画像を `D:\ポノのおへや\Mojikaki\Character\pixies\セリナ\セリナ低解像度` に保存してあるので差替えて」
+  → 3 枚を `assets/images/characters/pixies/Serina/` に **`serina_pixel_front.png` / `serina_pixel_back.png` / `serina_pixel_side.png`** としてコピー
+  → `writing/index.html` の party-fairy-slot[data-fairy="serina"] img src を `serina_001.png` → **`serina_pixel_front.png`** に変更
+  → `writing/simple.html` の `.cheer-fairy.serina` も同じく差替え
+  → `image-rendering: pixelated` を Hinoka と同じく Serina にも適用 (nearest-neighbor)
+  → `onerror` で `serina_001.png` フォールバック付き (素材未保存時の保険)
+
 **v278s 5 件追補 (2026-04-26):**
 - ユーザー指摘「森の妖精が左のメニューに含まれている、キャンバス左上に。氷の妖精が出てない、左下に」(simple.html)
   → `.cheer-fairy.leefa` を `left:8px bottom:64px` → `left: clamp(120px,26vw,200px); top: 60px` (キャンバス上部)

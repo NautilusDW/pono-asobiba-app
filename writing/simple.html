@@ -334,6 +334,8 @@ html, body {
   z-index: 50;
   user-select: none;
 }
+/* v278t (2026-04-26): Serina は pixel-art 素材なので nearest-neighbor で描画 */
+.cheer-fairy.serina { image-rendering: pixelated; }
 /* v278s (2026-04-26): ユーザー指示「森の妖精が左のメニューの中に含まれているので、
    キャンバスのすぐ左上あたりに配置」「氷の妖精が出てきていないので、左下あたりに」
    → リーファ(森): 左下 → キャンバス左上 (側パネルの右側、画面上部)
@@ -540,7 +542,9 @@ html, body {
 <!-- 妖精は body 直下 fixed (画面の左上/左下/右下に常駐応援) -->
 <!-- v278s: リーファをキャンバス左上、セリナを左下に配置 -->
 <img class="cheer-fairy leefa" src="../assets/images/characters/pixies/Riefa/riefa_001.png" alt="リーファ">
-<img class="cheer-fairy serina" src="../assets/images/characters/pixies/Serina/serina_001.png" alt="セリナ">
+<!-- v278t (2026-04-26): ユーザー支給の低解像度版 (serina_pixel_front.png) を使用。
+     素材未保存時は serina_001.png にフォールバック (pixel-rendering 解除)。 -->
+<img class="cheer-fairy serina" src="../assets/images/characters/pixies/Serina/serina_pixel_front.png" alt="セリナ" onerror="this.onerror=null;this.src='../assets/images/characters/pixies/Serina/serina_001.png';this.style.imageRendering='auto';">
 <img class="cheer-fairy hinoka" src="../assets/images/characters/pixies/Hinoka/hinoka_001.png" alt="ヒノカ">
 <div class="fairy-bubble leefa" id="bubble-leefa"></div>
 <div class="fairy-bubble serina" id="bubble-serina"></div>
