@@ -3047,14 +3047,16 @@ body.battle-fullscreen-active #app {
    battle-mode の通常ルール (top: var(--battle-vtop)+0.72*vspan) は左半分用なので、
    全画面化に合わせて画面中央下端へ配置し直す (intro 演出と同じ位置)。
    v278o (2026-04-26): ユーザー指示「メッセージ枠の横幅を半分くらいにして中央ぞろえに」
-   → min(92vw, 560px) → min(50vw, 320px) に半減 (中央配置は維持)。 */
+   → min(92vw, 560px) → min(50vw, 320px) に半減 (中央配置は維持)。
+   v278q (2026-04-26): ユーザー指示「もうちょっとだけ横に広げて、文字が入りきってない、5文字分くらい」
+   → min(50vw, 320px) → min(60vw, 400px) (約 80px 増 = 全角 5 文字相当)。 */
 body.battle-fullscreen-active .battle-log-window {
   position: fixed !important;
   left: 50% !important;
   top: auto !important;
   bottom: max(env(safe-area-inset-bottom, 16px), 16px) !important;
   transform: translateX(-50%);
-  width: min(50vw, 320px) !important;
+  width: min(60vw, 400px) !important;
   height: auto !important;
   margin: 0 !important;
   z-index: 1400 !important;
@@ -3155,14 +3157,21 @@ body.battle-fullscreen-active .battle-log-window {
    battle-enemy-wrap (right:4%, top:50% 中心、translateY(-50%) で上下中央) の
    底辺直下にちょこんと置く。
    v278o (2026-04-26): ユーザー指示「火山の主というテロップももっと上に上げて、ボックスにかぶってる」
-   → top:78% は message box (画面下中央) と被るので 65% へ引き上げ。 */
+   → top:78% は message box (画面下中央) と被るので 65% へ引き上げ。
+   v278q (2026-04-26): ユーザー指示「通常戦闘画面で『かざんのぬし』が上すぎでキャラと重なる、下に下げて」
+   「フル画面でも少しだけ下げて」
+   → 通常 (battle-mode) は 80% (元 78% よりやや下)、フル画面は 70% (元 65% より少し下)。 */
 .battle-stage[data-enemy-id="volcano_lord"] .enemy-info {
   position: absolute;
   left: auto; right: 4%; bottom: auto;
-  top: 65%;
+  top: 80%;
   width: 42%;
   text-align: center;
   pointer-events: none;
+}
+body.battle-fullscreen-active .battle-stage[data-enemy-id="volcano_lord"] .enemy-info,
+body.combo-phase-active .battle-stage[data-enemy-id="volcano_lord"] .enemy-info {
+  top: 70%;
 }
 .battle-stage[data-enemy-id="volcano_lord"] .enemy-name {
   text-align: center;
@@ -3326,8 +3335,15 @@ body.battle-fullscreen-active .battle-log-window {
    既存ボス (ゴーレム 120px) より一回り大きくして威圧感を出す。
    2026-04-25 b: 全スプライトが紫の炎マネ+尻尾を持つので body bbox は画像の 70〜80% しか
    占めない。container を 220px に広げた上で、enemy-img 側に scale(1.38) を掛けて
-   「本体部分だけ」が他キャラと同等以上に見えるようにする。 */
+   「本体部分だけ」が他キャラと同等以上に見えるようにする。
+   v278q (2026-04-26): ユーザー指示「通常戦闘画面のみ カゲロウ画像が大きすぎる、今の 7 割くらいに」
+   → 通常 (battle-mode) は min(28vh, 165px) (= 220 の 75%)、フル画面は元の min(38vh, 220px) を維持。 */
 .battle-enemy[data-enemy-id="volcano_lord"] {
+  width: min(28vh, 165px); height: min(28vh, 165px);
+  max-width: 165px; max-height: 165px;
+}
+body.battle-fullscreen-active .battle-enemy[data-enemy-id="volcano_lord"],
+body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
   width: min(38vh, 220px); height: min(38vh, 220px);
   max-width: 220px; max-height: 220px;
 }
@@ -4873,16 +4889,15 @@ body.battle-intro-active .battle-log-window {
   /* バトルログは battle-stage / puzzle-stage の直下、canvas の下辺まで。
      2026-04-22: タップボタンを log の外 (下) に出すため log を上げて、
      下に button 用のスペース 0.10*vspan を確保。
-     v278o (2026-04-26): ユーザー指示「メッセージ枠の横幅を半分くらいにして中央ぞろえに」
-     → 旧 left:48px width:calc(50vw - 54px) (= 左半分) を、
-        left:50% transform:translateX(-50%) width:min(40vw, 280px) で 中央 + 半分強の幅に。 */
+     v278q (2026-04-26): ユーザー指示「通常のバトル画面のメッセージボックスは前のデザインに戻して。
+     ここは小さくしたり中央に揃えなくていい」→ v278o の半分中央化を revert、left:48px width:calc(50vw-54px)
+     (= 左半分いっぱい) に戻す。 */
   body.battle-mode:not(.battle-intro-active) .battle-log-window {
     position: fixed !important;
-    left: 50% !important;
+    left: 48px;
     top: calc(var(--battle-vtop) + var(--battle-vspan) * 0.72);
     bottom: auto;
-    width: min(40vw, 280px) !important;
-    transform: translateX(-50%);
+    width: calc(50vw - 54px);
     height: calc(var(--battle-vspan) * 0.18);
     max-width: none;
     margin: 0;
@@ -12339,7 +12354,9 @@ function _showClimaxEventImage(src, onDone, opts) {
   if (opts.caption) {
     captionEl = document.createElement('div');
     captionEl.className = 'climax-caption';
-    captionEl.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(94vw,720px);max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
+    // v278q (2026-04-26): ユーザー指示「イメージ画像のところもメッセージボックスを 60% くらいの横幅に」
+    //   → width: min(94vw, 720px) → min(60vw, 432px)
+    captionEl.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(60vw,432px);max-width:none;box-sizing:border-box;padding:clamp(12px,2.6vw,16px) clamp(16px,3.4vw,22px);background:#020208;border:2.5px solid var(--window-border);border-radius:14px;color:#fff;font-family:"Hiragino Kaku Gothic ProN","ＭＳ Ｐゴシック",sans-serif;font-size:clamp(0.9rem,3.6vw,1.15rem);font-weight:900;line-height:1.4;letter-spacing:0.04em;text-align:left;text-shadow:0 0 4px rgba(255,255,255,0.3);white-space:pre-line;box-shadow:0 6px 18px rgba(0,0,0,0.7),inset 0 0 12px rgba(255,255,255,0.05);opacity:0;transition:opacity 0.8s ease 0.3s;z-index:2;';
     captionEl.textContent = opts.caption;
     ov.appendChild(captionEl);
   }

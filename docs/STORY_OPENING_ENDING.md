@@ -413,6 +413,18 @@ UI / レイアウト:
 - battle-log は全画面会話中、画面下部中央 (`bottom: 16px, width: min(92vw, 560px)`) にフロート — intro 中の battle-intro-active と同じ位置
 - 連続して narrative 会話が呼ばれる場合 (showNext 再帰など) も同期的に remove → cb → add の順で進むので 1 フレーム内で完結し flicker しない
 
+**v278q メッセージ枠/敵名/カゲロウ サイズ調整 (2026-04-26):**
+- ユーザー指示「イメージ画像のところもメッセージボックスを 60% くらいの横幅に」
+  → `_showClimaxEventImage` の caption width を `min(94vw, 720px)` → **`min(60vw, 432px)`**
+- ユーザー指示「フル画面メッセージ枠が 5 文字分くらい足りない、もうちょっと広げて」
+  → `body.battle-fullscreen-active .battle-log-window` width を `min(50vw, 320px)` → **`min(60vw, 400px)`** (約 80px 増 = 全角 5 文字相当)
+- ユーザー指示「通常のバトル画面のメッセージボックスは前のデザインに戻して、小さくしたり中央に揃えなくていい」
+  → v278o の split-screen 半分中央化を **revert**。`left: 48px; width: calc(50vw - 54px)` (左半分いっぱい) に戻す
+- ユーザー指示「通常戦闘画面で『かざんのぬし』が上すぎでキャラと重なる、下に下げて」「フル画面でも少しだけ下げて」
+  → `.battle-stage[data-enemy-id="volcano_lord"] .enemy-info` を 通常 (battle-mode): top:65% → **80%**、フル画面: → **70%** に
+- ユーザー指示「通常戦闘画面のみカゲロウ画像が大きすぎる、今の 7 割くらいに」
+  → `.battle-enemy[data-enemy-id="volcano_lord"]` を 通常 (battle-mode): `min(38vh, 220px)` → **`min(28vh, 165px)`** (= 75%)、フル画面は元のまま 220px 維持
+
 **v278p 回想シーン背景透け修正 + ホムラ重複削除 (2026-04-26):**
 - ユーザー指摘「回想シーンの乗り換わり時に下のバトル画面が出る」「フル画面でオーバーレイでフェードイン・フェードアウトしてほしい」
   → v278l (山道→Kagerou) と同じ手法で、`_playWaRowEpisode` のシーケンス全体 (memory flashback → battle_last_01 → memory_04) を覆う **常駐黒幕** (z:1798、memory flashback z:1800 と climax z:1805 の両方より下) を flashback 開始前に貼り、最終 overlay (memory_04) close 時に fade-out → 撤去。各遷移瞬間も背景は黒一色に保たれる
