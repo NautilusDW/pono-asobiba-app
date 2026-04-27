@@ -2213,17 +2213,41 @@ function _showPeekChoices() {
   const choices = _shuffleArray([ans].concat(others));
   _peekState = { ans: ans, wrongs: 0, holes: _peekRandomHoles(1) };
 
-  encStageEl.innerHTML =
-    '<div class="enc-result">ちらっと だけ みえてるよ〜<br>なんの どうぶつ かな？</div>' +
-    '<div class="peek-wrap"><canvas id="peekCanvas" width="280" height="280" style="border-radius:14px;background:#222;display:block;margin:0 auto;"></canvas></div>' +
-    '<div class="row">' +
-    choices.map(function(c) {
-      return '<button class="enc-btn choice peek-choice" data-id="' + c.id + '" style="padding:6px;min-width:84px;">' +
-        '<img src="' + c.src + '" alt="' + c.label + '" style="width:64px;height:64px;object-fit:contain;display:block;margin:0 auto;">' +
-        '<div style="font-size:0.85rem;margin-top:2px;">' + c.label + '</div>' +
-        '</button>';
-    }).join('') +
-    '</div>';
+  // DOM を直接構築 (textContent 経由で XSS パターンを回避)
+  encStageEl.textContent = '';
+  const titleEl = document.createElement('div');
+  titleEl.className = 'enc-result';
+  titleEl.appendChild(document.createTextNode('ちらっと だけ みえてるよ〜'));
+  titleEl.appendChild(document.createElement('br'));
+  titleEl.appendChild(document.createTextNode('なんの どうぶつ かな？'));
+  encStageEl.appendChild(titleEl);
+  const peekWrap = document.createElement('div');
+  peekWrap.className = 'peek-wrap';
+  const canvasEl = document.createElement('canvas');
+  canvasEl.id = 'peekCanvas';
+  canvasEl.width = 280; canvasEl.height = 280;
+  canvasEl.style.cssText = 'border-radius:14px;background:#222;display:block;margin:0 auto;';
+  peekWrap.appendChild(canvasEl);
+  encStageEl.appendChild(peekWrap);
+  const rowEl = document.createElement('div');
+  rowEl.className = 'row';
+  choices.forEach(function(c) {
+    const btn = document.createElement('button');
+    btn.className = 'enc-btn choice peek-choice';
+    btn.dataset.id = c.id;
+    btn.style.cssText = 'padding:6px;min-width:84px;';
+    const imgT = document.createElement('img');
+    imgT.src = c.src;
+    imgT.alt = c.label;
+    imgT.style.cssText = 'width:64px;height:64px;object-fit:contain;display:block;margin:0 auto;';
+    btn.appendChild(imgT);
+    const lab = document.createElement('div');
+    lab.style.cssText = 'font-size:0.85rem;margin-top:2px;';
+    lab.textContent = c.label; // textContent で XSS 防御
+    btn.appendChild(lab);
+    rowEl.appendChild(btn);
+  });
+  encStageEl.appendChild(rowEl);
 
   // 画像をロードしてから canvas を描画
   const canv = document.getElementById('peekCanvas');
@@ -2260,7 +2284,11 @@ function _showPeekChoices() {
       const buttons = encStageEl.querySelectorAll('.peek-choice');
       buttons.forEach(function(bb) { bb.disabled = true; bb.style.opacity = '0.5'; });
       setTimeout(function() {
-        buttons.forEach(function(bb) { bb.disabled = false; bb.style.opacity = '1'; });
+        // _peekState が null = 既に他経路で終了済 → DOM が変わっている可能性があるので no-op
+        if (!_peekState) return;
+        buttons.forEach(function(bb) {
+          if (bb && bb.style) { bb.disabled = false; bb.style.opacity = '1'; }
+        });
       }, 500);
     });
   });
