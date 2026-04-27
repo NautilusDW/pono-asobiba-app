@@ -378,8 +378,8 @@ body.image-stage-mode #hint {
   position: fixed;
   top: 10px; left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  color: #fff;
+  background: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.85);
   padding: 6px 16px;
   border-radius: 18px;
   font-size: 0.95rem;
@@ -389,7 +389,7 @@ body.image-stage-mode #hint {
   pointer-events: none;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   letter-spacing: 0.5px;
-  border: 1.5px solid rgba(164,199,109,0.7);
+  border: 1.5px solid rgba(164,199,109,0.4);
 }
 /* 旧 grid モードのみ非表示。image-stage-mode (デフォ) では出る */
 body:not(.image-stage-mode) #imgStageLabel { display: none; }
@@ -1196,11 +1196,10 @@ function imgLoadStage(def) {
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
   hudApples.textContent = ''; // PoC: no apples yet
-  // image-stage-mode 用の上部ラベル: 「ステージ N — name」
+  // image-stage-mode 用の上部ラベル: 「ステージ N」のみ表示
   const labelEl = document.getElementById('imgStageLabel');
   if (labelEl) {
-    const safeName = (stage.name && String(stage.name).trim()) ? String(stage.name) : '';
-    labelEl.textContent = 'ステージ ' + stageIdx + (safeName ? ' — ' + safeName : '');
+    labelEl.textContent = 'ステージ ' + stageIdx;
   }
   voice.style.display = '';
   encounter.classList.remove('show');
