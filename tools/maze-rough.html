@@ -196,6 +196,28 @@ function markerTile(p) {
   };
 }
 
+// Find the nearest 'path' tile to a pixel position (BFS-friendly start point).
+// Marker visuals can overlap walls — the user wants the connection check to be
+// forgiving, so we look up to `maxR` tiles outward from the marker center for path.
+function nearestPathTile(p, maxR) {
+  if (!p) return null;
+  const t = markerTile(p);
+  if (!t) return null;
+  if (state.tiles[t.y][t.x] === 'path') return t;
+  const limit = (maxR == null) ? 3 : maxR;
+  for (let r = 1; r <= limit; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue; // ring only
+        const nx = t.x + dx, ny = t.y + dy;
+        if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+        if (state.tiles[ny][nx] === 'path') return { x: nx, y: ny };
+      }
+    }
+  }
+  return null;
+}
+
 function makeEmptyGrid() {
   const g = new Array(GRID_H);
   for (let y = 0; y < GRID_H; y++) {
@@ -267,7 +289,7 @@ function draw() {
   }
   // Solution path (BFS shortest) — drawn as a yellow trail
   if (state.showSolution && state.start && state.goal) {
-    const path = bfsShortest(markerTile(state.start), markerTile(state.goal));
+    const path = bfsShortest(nearestPathTile(state.start, 3), nearestPathTile(state.goal, 3));
     if (path && path.length > 1) {
       ctx.strokeStyle = 'rgba(255, 220, 60, 0.65)';
       ctx.lineWidth = CELL * 0.55;
@@ -572,7 +594,7 @@ function recomputeStats() {
   statBranches.textContent = branches;
   statDeadEnds.textContent = deadEnds;
   if (state.start && state.goal) {
-    const sp = bfsShortest(markerTile(state.start), markerTile(state.goal));
+    const sp = bfsShortest(nearestPathTile(state.start, 3), nearestPathTile(state.goal, 3));
     if (sp) {
       statConn.textContent = '✓ つながってる';
       statConn.className = 'ok';
