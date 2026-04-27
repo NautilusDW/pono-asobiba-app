@@ -46,11 +46,56 @@ html, body { height: 100vh; overflow: hidden;
 .status .ng  { color: #e08066; font-weight: bold; }
 
 .canvas-wrap {
-  position: relative; overflow: hidden;
+  position: relative; overflow: auto;
   background: #2a2e22;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
+/* Floating zoom controls (bottom-right of canvas area) */
+.zoom-controls {
+  position: absolute; right: 18px; bottom: 18px;
+  display: flex; gap: 4px;
+  background: rgba(0,0,0,0.55); padding: 6px; border-radius: 8px;
+  z-index: 5;
+}
+.zoom-btn {
+  width: 36px; height: 36px;
+  border: 1px solid #555; border-radius: 6px;
+  background: #333; color: #ddd; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: 1rem;
+}
+.zoom-btn:hover { background: #444; }
+.zoom-readout {
+  min-width: 56px; padding: 0 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #cf8; font-size: 0.85rem; font-weight: 700;
+}
+
+/* Saved-stages list */
+.save-list {
+  list-style: none; padding: 0; margin: 4px 0;
+  max-height: 260px; overflow-y: auto;
+  border: 1px solid #2a2e22; border-radius: 4px;
+}
+.save-list li {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 6px;
+  font-size: 0.78rem;
+  border-bottom: 1px solid #20231a;
+}
+.save-list li:last-child { border-bottom: 0; }
+.save-list .name {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #ddd;
+}
+.save-list .ts { font-size: 0.65rem; color: #777; margin-left: 4px; }
+.save-list button {
+  font-size: 0.7rem; padding: 3px 6px; background: #2a3e1f; color: #cf8;
+  border: 1px solid #4a5e3f; border-radius: 3px; cursor: pointer;
+}
+.save-list button:hover { background: #3a5028; }
+.save-list button.del { background: #4a2020; color: #fcc; border-color: #6a3030; }
+.save-list button.del:hover { background: #5d2a2a; }
 #cv {
   display: block; max-width: 100%; max-height: 100%;
   cursor: crosshair;
@@ -122,10 +167,20 @@ input[type="file"]::file-selector-button {
       <button class="btn primary" id="exportPngBtn">🖼 PNG ダウンロード</button>
       <button class="btn" id="exportJsonBtn">💾 JSON 保存</button>
       <button class="btn" id="copyPromptBtn">📋 AIプロンプト雛形をコピー</button>
-      <h3 style="margin-top:8px;">📂 JSON 読み込み</h3>
+      <h3 style="margin-top:8px;">📂 JSON 読み込み (ファイル)</h3>
       <input type="file" id="jsonInput" accept=".json,application/json">
       <button class="btn danger" id="resetBtn">↺ ぜんぶリセット</button>
     </div>
+
+    <h3>📁 ステージ管理 (ブラウザ内)</h3>
+    <div style="display:flex; gap:4px; margin-bottom:6px;">
+      <input type="text" id="saveNameInput" placeholder="ステージ名 (例: 森の入り口)"
+             style="flex:1; padding:6px 8px; font-family:inherit; font-size:0.78rem;
+                    background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+      <button class="btn primary" id="saveAsBtn" style="flex:0 0 auto; padding:6px 10px; font-size:0.78rem;">💾 保存</button>
+    </div>
+    <ul class="save-list" id="saveList"></ul>
+    <button class="btn" id="compareBtn" style="margin-top:6px; font-size:0.8rem;">🪟 別タブで開く (比較用)</button>
 
     <div class="tip">
       <b>使い方</b><br>
@@ -147,6 +202,12 @@ input[type="file"]::file-selector-button {
   <main class="canvas-wrap" id="canvasWrap">
     <canvas id="cv" width="1920" height="1080"></canvas>
     <div class="banner" id="banner" style="display:none;"></div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoomOut" title="縮小">−</button>
+      <div class="zoom-readout" id="zoomReadout">100%</div>
+      <button class="zoom-btn" id="zoomIn" title="拡大">＋</button>
+      <button class="zoom-btn" id="zoomFit" title="全体表示" style="width:auto; padding:0 8px;">⤢</button>
+    </div>
   </main>
 </div>
 
@@ -241,20 +302,43 @@ const statBranches = document.getElementById('statBranches');
 const statDeadEnds = document.getElementById('statDeadEnds');
 
 // ────────────────────────────────────────────────────────
-// Canvas sizing for display
+// Canvas sizing + zoom (50% .. 200%)
 // ────────────────────────────────────────────────────────
 let displayScale = 1;
+let userZoom = 1;          // 1.0 = fit-to-viewport
+const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+
 function fitCanvas() {
   const wrap = document.getElementById('canvasWrap');
   const wrapW = wrap.clientWidth - 48;
   const wrapH = wrap.clientHeight - 48;
   const fitW = wrapW / CANVAS_W;
   const fitH = wrapH / CANVAS_H;
-  displayScale = Math.min(fitW, fitH);
+  const baseScale = Math.min(fitW, fitH);
+  displayScale = baseScale * userZoom;
   cv.style.width  = (CANVAS_W * displayScale) + 'px';
   cv.style.height = (CANVAS_H * displayScale) + 'px';
+  const zr = document.getElementById('zoomReadout');
+  if (zr) zr.textContent = Math.round(userZoom * 100) + '%';
 }
 window.addEventListener('resize', function() { fitCanvas(); });
+
+document.getElementById('zoomIn').addEventListener('click', function() {
+  // Step to next level above current
+  for (const z of ZOOM_LEVELS) {
+    if (z > userZoom + 0.001) { userZoom = z; fitCanvas(); return; }
+  }
+});
+document.getElementById('zoomOut').addEventListener('click', function() {
+  // Step to next level below current
+  for (let i = ZOOM_LEVELS.length - 1; i >= 0; i--) {
+    if (ZOOM_LEVELS[i] < userZoom - 0.001) { userZoom = ZOOM_LEVELS[i]; fitCanvas(); return; }
+  }
+});
+document.getElementById('zoomFit').addEventListener('click', function() {
+  userZoom = 1;
+  fitCanvas();
+});
 
 // ────────────────────────────────────────────────────────
 // Drawing
@@ -833,13 +917,150 @@ function restoreDraft() {
 }
 
 // ────────────────────────────────────────────────────────
+// Named saves library (multiple stages persisted in browser)
+// ────────────────────────────────────────────────────────
+const SAVES_KEY = 'pono_maze_rough_saves_v1';
+
+function getAllSaves() {
+  try {
+    const raw = localStorage.getItem(SAVES_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (e) { return {}; }
+}
+function setAllSaves(obj) {
+  try { localStorage.setItem(SAVES_KEY, JSON.stringify(obj)); } catch (e) {
+    alert('保存に失敗 (localStorage 容量超過の可能性): ' + e.message);
+  }
+}
+
+function saveAs(name) {
+  if (!name || !name.trim()) { alert('ステージ名を入力してね'); return; }
+  const saves = getAllSaves();
+  const isOverwrite = !!saves[name];
+  if (isOverwrite && !confirm('「' + name + '」を上書きしますか?')) return;
+  saves[name] = {
+    tiles: state.tiles,
+    start: state.start,
+    goal: state.goal,
+    savedAt: Date.now(),
+  };
+  setAllSaves(saves);
+  refreshSaveList();
+  showBanner((isOverwrite ? '🔁 上書き保存: ' : '💾 新規保存: ') + name);
+}
+
+function loadSaveByName(name) {
+  const saves = getAllSaves();
+  const s = saves[name];
+  if (!s) { showBanner('「' + name + '」が見つかりません'); return false; }
+  pushHistory();
+  state.tiles = s.tiles;
+  state.start = s.start;
+  state.goal  = s.goal;
+  document.getElementById('saveNameInput').value = name;
+  afterEdit();
+  showBanner('📂 読込: ' + name);
+  return true;
+}
+
+function deleteSaveByName(name) {
+  if (!confirm('「' + name + '」を削除しますか? (取り消せません)')) return;
+  const saves = getAllSaves();
+  delete saves[name];
+  setAllSaves(saves);
+  refreshSaveList();
+  showBanner('🗑 削除: ' + name);
+}
+
+function refreshSaveList() {
+  const ul = document.getElementById('saveList');
+  if (!ul) return;
+  ul.innerHTML = '';
+  const saves = getAllSaves();
+  const names = Object.keys(saves).sort(function(a, b) {
+    return (saves[b].savedAt || 0) - (saves[a].savedAt || 0); // newest first
+  });
+  if (names.length === 0) {
+    const li = document.createElement('li');
+    li.style.cssText = 'color:#888; font-size:0.7rem; padding:8px;';
+    li.textContent = '保存無し — 上の名前を入れて 💾 保存';
+    ul.appendChild(li);
+    return;
+  }
+  for (const name of names) {
+    const li = document.createElement('li');
+    const ts = new Date(saves[name].savedAt || 0);
+    const tsStr = (ts.getMonth()+1) + '/' + ts.getDate() + ' ' +
+                  String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0');
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'name';
+    nameSpan.textContent = name;
+    nameSpan.title = name;
+    const tsSpan = document.createElement('span');
+    tsSpan.className = 'ts';
+    tsSpan.textContent = tsStr;
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent = '読込';
+    loadBtn.addEventListener('click', function() { loadSaveByName(name); });
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del';
+    delBtn.textContent = '削除';
+    delBtn.addEventListener('click', function() { deleteSaveByName(name); });
+    li.appendChild(nameSpan); li.appendChild(tsSpan);
+    li.appendChild(loadBtn); li.appendChild(delBtn);
+    ul.appendChild(li);
+  }
+}
+
+document.getElementById('saveAsBtn').addEventListener('click', function() {
+  const name = document.getElementById('saveNameInput').value.trim();
+  saveAs(name);
+});
+document.getElementById('saveNameInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('saveAsBtn').click();
+  }
+});
+
+// 比較用: 現在の URL のまま新タブで開く (それぞれ独立した localStorage 読み込み状態に)
+// オプションで「現在のステージ名」を ?load=<name> で指定して auto-load
+document.getElementById('compareBtn').addEventListener('click', function() {
+  const name = document.getElementById('saveNameInput').value.trim();
+  let url = location.pathname;
+  if (name) {
+    url += '?load=' + encodeURIComponent(name);
+  }
+  window.open(url, '_blank');
+  showBanner('🪟 別タブで開きました — 並べて比較できるよ');
+});
+
+// ────────────────────────────────────────────────────────
 // Init
 // ────────────────────────────────────────────────────────
 fitCanvas();
-const restored = restoreDraft();
+// URL ?load=<name> があれば、そのセーブを読み込む (比較タブ用)
+const _autoLoadName = (function() {
+  try { return new URLSearchParams(location.search).get('load'); } catch (e) { return null; }
+})();
+let restored = false;
+if (_autoLoadName && getAllSaves()[_autoLoadName]) {
+  state.tiles = getAllSaves()[_autoLoadName].tiles;
+  state.start = getAllSaves()[_autoLoadName].start;
+  state.goal  = getAllSaves()[_autoLoadName].goal;
+  document.getElementById('saveNameInput').value = _autoLoadName;
+  restored = true;
+} else {
+  restored = restoreDraft();
+}
 draw();
 recomputeStats();
-if (restored) {
+refreshSaveList();
+if (_autoLoadName) {
+  showBanner('📂 「' + _autoLoadName + '」を読み込み (URL指定)');
+} else if (restored) {
   showBanner('💾 前回の作業を復元しました');
 }
 </script>
