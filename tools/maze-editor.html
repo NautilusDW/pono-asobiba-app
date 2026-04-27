@@ -78,6 +78,30 @@ html, body { height: 100vh; overflow: hidden;
   position: relative; overflow: hidden;
   background: #2a2a2a;
   display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+}
+/* 上下分割比較モード */
+.canvas-wrap.compare-on {
+  justify-content: stretch;
+  gap: 8px;
+  padding: 8px 0;
+}
+.canvas-wrap.compare-on > .pane {
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  width: 100%;
+}
+.canvas-wrap.compare-on .pane.compare {
+  border-top: 2px dashed #A4C76D;
+  background: rgba(108,142,63,0.08);
+}
+.pane-label {
+  position: absolute; top: 6px; left: 12px;
+  background: rgba(0,0,0,0.65); color: #cf8;
+  padding: 3px 10px; border-radius: 4px;
+  font-size: 0.78rem; font-weight: 700;
+  pointer-events: none; z-index: 5;
 }
 #cv {
   display: block; max-width: 100%; max-height: 100%;
@@ -91,6 +115,11 @@ html, body { height: 100vh; overflow: hidden;
   background-position: 0 0, 0 12px, 12px -12px, -12px 0;
 }
 #cv.dragover { outline: 3px dashed #A4C76D; outline-offset: -3px; }
+#cv2 {
+  display: block; max-width: 100%; max-height: 100%;
+  background: #1a1a1a;
+  opacity: 0.95;
+}
 
 .banner {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
@@ -196,7 +225,13 @@ html, body { height: 100vh; overflow: hidden;
     </div>
     <ul id="libList" style="list-style:none; padding:0; margin:4px 0; max-height:240px; overflow-y:auto;
                             border:1px solid #444; border-radius:4px;"></ul>
-    <button class="mode-btn" id="libCompareBtn" style="margin-top:6px; font-size:0.78rem; width:100%;">🪟 別タブで開く (比較用)</button>
+    <h3 style="margin-top:6px;">🔀 比較ペイン (上下分割)</h3>
+    <select id="compareSelect" style="width:100%; padding:6px 8px; font-family:inherit; font-size:0.78rem;
+                                       background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+      <option value="">— なし (シングルビュー) —</option>
+    </select>
+    <p style="font-size:0.7rem; color:#888; margin-top:4px;">選ぶと下半分に保存済みステージを参考表示</p>
+    <button class="mode-btn" id="libCompareBtn" style="margin-top:6px; font-size:0.78rem; width:100%;">🪟 別タブで開く (独立編集)</button>
     <p style="font-size:0.7rem; color:#888; margin-top:4px;">
       画像入りで保存 (1600px JPEG 圧縮)。複数バージョン保持してリスト切り替え可能。
     </p>
@@ -227,8 +262,15 @@ html, body { height: 100vh; overflow: hidden;
   </aside>
 
   <main class="canvas-wrap" id="canvasWrap">
-    <div class="empty" id="emptyMsg">📥<br>画像をここにドロップ<br>(または左で選択)</div>
-    <canvas id="cv"></canvas>
+    <div class="pane main" id="paneMain">
+      <span class="pane-label" id="paneMainLabel" style="display:none;">編集中</span>
+      <div class="empty" id="emptyMsg">📥<br>画像をここにドロップ<br>(または左で選択)</div>
+      <canvas id="cv"></canvas>
+    </div>
+    <div class="pane compare" id="paneCompare" style="display:none;">
+      <span class="pane-label" id="paneCompareLabel">比較</span>
+      <canvas id="cv2"></canvas>
+    </div>
     <div class="banner" id="banner" style="display: none;"></div>
   </main>
 </div>
@@ -502,8 +544,10 @@ let canvasScale = 1;
 
 function resizeCanvas() {
   if (!state.image) return;
-  const wrapW = canvasWrap.clientWidth - 24;
-  const wrapH = canvasWrap.clientHeight - 24;
+  // Fit to the main pane, not the whole wrap (pane shrinks when compare is on)
+  const paneMain = document.getElementById('paneMain');
+  const wrapW = paneMain.clientWidth - 24;
+  const wrapH = paneMain.clientHeight - 24;
   const fitW = wrapW / state.imgW;
   const fitH = wrapH / state.imgH;
   canvasScale = Math.min(fitW, fitH);
@@ -514,7 +558,7 @@ function resizeCanvas() {
   cv.height = state.imgH;
 }
 
-window.addEventListener('resize', function() { resizeCanvas(); draw(); });
+window.addEventListener('resize', function() { resizeCanvas(); draw(); resizeComparePane(); });
 
 // ────────────────────────────────────────────────────────
 // Mouse → image coords
@@ -1485,6 +1529,8 @@ function libDeleteByName(name) {
 }
 
 function libRefreshList() {
+  // Also refresh the compare-pane dropdown so saves stay in sync
+  if (typeof refreshCompareDropdown === 'function') refreshCompareDropdown();
   const ul = document.getElementById('libList');
   if (!ul) return;
   ul.innerHTML = '';
@@ -1531,6 +1577,145 @@ document.getElementById('libSaveBtn').addEventListener('click', function() {
 document.getElementById('libNameInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); document.getElementById('libSaveBtn').click(); }
 });
+// ── 比較ペイン (上下分割表示) ──
+const cv2 = document.getElementById('cv2');
+const ctx2 = cv2.getContext('2d');
+const paneCompare = document.getElementById('paneCompare');
+const paneMainLabel = document.getElementById('paneMainLabel');
+const paneCompareLabel = document.getElementById('paneCompareLabel');
+const compareSelect = document.getElementById('compareSelect');
+let _compareImage = null; // HTMLImageElement for the loaded compare snapshot
+
+function refreshCompareDropdown() {
+  const cur = compareSelect.value;
+  // Clear all but the "none" option
+  compareSelect.innerHTML = '<option value="">— なし (シングルビュー) —</option>';
+  const saves = libGetAll();
+  const names = Object.keys(saves).sort(function(a, b) { return (saves[b].savedAt || 0) - (saves[a].savedAt || 0); });
+  for (const name of names) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    compareSelect.appendChild(opt);
+  }
+  // Restore selection if still exists
+  if (cur && saves[cur]) compareSelect.value = cur;
+}
+
+function resizeComparePane() {
+  if (paneCompare.style.display === 'none') return;
+  if (!_compareImage || !_compareSnap) return;
+  const w = paneCompare.clientWidth - 24;
+  const h = paneCompare.clientHeight - 24;
+  const imgW = _compareSnap.imgW || _compareImage.naturalWidth;
+  const imgH = _compareSnap.imgH || _compareImage.naturalHeight;
+  const fit = Math.min(w / imgW, h / imgH);
+  cv2.style.width  = (imgW * fit) + 'px';
+  cv2.style.height = (imgH * fit) + 'px';
+  cv2.width  = imgW;
+  cv2.height = imgH;
+  drawCompare();
+}
+
+let _compareSnap = null;
+function drawCompare() {
+  if (!_compareSnap || !_compareImage) return;
+  ctx2.fillStyle = '#A4C76D';
+  ctx2.fillRect(0, 0, cv2.width, cv2.height);
+  ctx2.drawImage(_compareImage, 0, 0, cv2.width, cv2.height);
+  const snap = _compareSnap;
+  // Edges (densified polylines)
+  if (Array.isArray(snap.edges)) {
+    ctx2.strokeStyle = 'rgba(255, 136, 85, 0.7)';
+    ctx2.lineWidth = 8;
+    ctx2.lineCap = 'round'; ctx2.lineJoin = 'round';
+    for (const e of snap.edges) {
+      const poly = (e.controls && e.controls.length >= 2) ? densifyCatmullRom(e.controls)
+                  : (Array.isArray(e.polyline) ? e.polyline : null);
+      if (!poly || poly.length < 2) continue;
+      ctx2.beginPath();
+      ctx2.moveTo(poly[0].x, poly[0].y);
+      for (let i = 1; i < poly.length; i++) ctx2.lineTo(poly[i].x, poly[i].y);
+      ctx2.stroke();
+    }
+  }
+  // Start / Goal markers
+  if (Array.isArray(snap.nodes)) {
+    for (const n of snap.nodes) {
+      if (n.kind === 'start' && imgMarkerStart.complete && imgMarkerStart.naturalWidth > 0) {
+        const sz = (snap.imgH || cv2.height) / 6;
+        const ratio = imgMarkerStart.naturalWidth / imgMarkerStart.naturalHeight;
+        ctx2.drawImage(imgMarkerStart, n.x - (sz*ratio)/2, n.y - sz/2, sz * ratio, sz);
+      } else if (n.kind === 'goal' && imgMarkerGoal.complete && imgMarkerGoal.naturalWidth > 0) {
+        const sz = (snap.imgH || cv2.height) / 6;
+        const ratio = imgMarkerGoal.naturalWidth / imgMarkerGoal.naturalHeight;
+        ctx2.drawImage(imgMarkerGoal, n.x - (sz*ratio)/2, n.y - sz/2, sz * ratio, sz);
+      } else if (n.kind === 'stop') {
+        ctx2.fillStyle = '#fff'; ctx2.strokeStyle = '#5D4E37'; ctx2.lineWidth = 4;
+        ctx2.beginPath(); ctx2.arc(n.x, n.y, 28, 0, Math.PI * 2);
+        ctx2.fill(); ctx2.stroke();
+      }
+    }
+  }
+  // Obstacles + creatures (lightweight)
+  if (Array.isArray(snap.obstacles)) {
+    const sz = (snap.imgH || cv2.height) / 12;
+    for (const o of snap.obstacles) {
+      const emoji = ({ tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' })[o.kind] || '🌳';
+      ctx2.font = (sz * 0.85) + 'px serif';
+      ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+      ctx2.fillText(emoji, o.x, o.y);
+    }
+  }
+  if (Array.isArray(snap.creatures)) {
+    const sz = (snap.imgH || cv2.height) / 11;
+    for (const c of snap.creatures) {
+      const emoji = ({ mayoi:'🐛', odoke:'🐞', nemuri:'😴', pyon:'🦗' })[c.kind] || '🐛';
+      ctx2.fillStyle = ({ mayoi:'#7AB540', odoke:'#D7553A', nemuri:'#9B7EBC', pyon:'#5BB8A8' })[c.kind] || '#7AB540';
+      ctx2.beginPath(); ctx2.arc(c.x, c.y, sz/2, 0, Math.PI * 2); ctx2.fill();
+      ctx2.font = (sz * 0.65) + 'px serif';
+      ctx2.fillStyle = '#fff';
+      ctx2.fillText(emoji, c.x, c.y);
+    }
+  }
+}
+
+compareSelect.addEventListener('change', function() {
+  const name = compareSelect.value;
+  if (!name) {
+    paneCompare.style.display = 'none';
+    canvasWrap.classList.remove('compare-on');
+    paneMainLabel.style.display = 'none';
+    _compareSnap = null; _compareImage = null;
+    setTimeout(function() { resizeCanvas(); draw(); }, 50);
+    return;
+  }
+  const snap = libGetAll()[name];
+  if (!snap) return;
+  _compareSnap = snap;
+  paneCompareLabel.textContent = '比較: ' + name;
+  paneCompare.style.display = 'flex';
+  canvasWrap.classList.add('compare-on');
+  paneMainLabel.style.display = 'block';
+  // Load image (from snap.image dataURL, if present)
+  if (snap.image) {
+    const img = new Image();
+    img.onload = function() {
+      _compareImage = img;
+      setTimeout(function() {
+        resizeCanvas(); // main pane shrinks
+        draw();
+        resizeComparePane();
+      }, 50);
+    };
+    img.src = snap.image;
+  } else {
+    // No image saved — render a colored bg
+    _compareImage = { complete: true, naturalWidth: snap.imgW, naturalHeight: snap.imgH };
+    setTimeout(function() { resizeCanvas(); draw(); resizeComparePane(); }, 50);
+  }
+});
+
 document.getElementById('libCompareBtn').addEventListener('click', function() {
   const name = document.getElementById('libNameInput').value.trim();
   let url = location.pathname;
