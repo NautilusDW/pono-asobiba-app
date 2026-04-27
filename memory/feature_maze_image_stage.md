@@ -156,6 +156,39 @@ PONO_SKIP_IMG_OPT=1 python scripts/auto_optimize_image.py --hook  # 即時 exit
 
 ---
 
+## ステージ動物マッピング (Phase A, 2026-04-27)
+
+ユーザー指定:
+| Slot | 動物 | label | 既存アセット |
+|---|---|---|---|
+| 1 | 猫 (neko) | ねこちゃん | [assets/images/word/neko.png](../assets/images/word/neko.png) |
+| 2 | 犬 (inu) | わんちゃん | [assets/images/word/inu.png](../assets/images/word/inu.png) |
+| 3 | リス (risu) | りすちゃん | [assets/images/word/risu.png](../assets/images/word/risu.png) |
+| 4 | シカ (shika) | しかさん | [assets/images/word/shika.png](../assets/images/word/shika.png) |
+| 5 | フクロウ (fukurou) | ふくろうさん | [assets/images/word/fukuro.png](../assets/images/word/fukuro.png) |
+| 6 | アライグマ (raccoon) | あらいぐまさん | [assets/images/characters/racoon/](../assets/images/characters/racoon/) |
+| 7 | アヒル (ahiru) | あひるさん | (未作成 — `assets/images/word/ahiru.png` 候補。`fukuro.png` 等から派生 or AI 生成) |
+| 8 | ハリネズミ (hedgehog) | ハリネズミくん | [assets/images/characters/headgehog/headgehog_crying.png](../assets/images/characters/headgehog/) (泣) / `_smilewavinghands.png` (救) |
+
+**順序の意図**: 1=猫 (一番なじみある) → 8=ハリネズミ (HUD タイトルに既出 + 救出表情も完備) で大トリ。最後から 2 番目はユーザー指定でアヒル。
+
+### Slot 1 (森の入口) — Stage 1
+[maze/imageStages/森の入口.json](../maze/imageStages/森の入口.json) に `story` フィールド追加済 (animal=neko)
+
+### Slots 2-4 (現在 placeholder JSON 編集済み)
+Stage 2-4 は placeholder JSON ファイルが既存だったため story を追記:
+- ____2_____ (花の小道) → 犬
+- ____3_____ (しずく池) → リス
+- ____4_______ (キノコの小道) → シカ
+
+### Slots 5-8 (まだステージ JSON 未作成)
+ユーザーがエディタで作成する際に story フィールドを忘れずに入れる方針。エディタ側に `story.animal` 入力フィールドを将来追加すると便利。
+
+### 暫定の泣き顔 / 救出後絵
+ハリネズミ以外の動物は表情バリエが未作成のため、暫定で `assets/images/word/<id>.png` を crying / relief 両方に使用 (実物なので「泣いてる」感は弱いが、ストーリー文で補完)。本格作成は AI 生成 or イラスト後追い。ハリネズミ は専用フォルダに 8 表情あり。
+
+---
+
 ## 物語フレーム (Phase B, 2026-04-27)
 
 夜に迷子になった動物をポノが救出する物語を、ステージ単位の UX に組み込む。

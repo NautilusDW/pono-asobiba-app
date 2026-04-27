@@ -9,6 +9,13 @@
   "orientation": "landscape",
   "cameraFollow": true,
   "lantern": true,
+  "story": {
+    "animal": "neko",
+    "animalLabel": "ねこちゃん",
+    "intro": "もりに まよった ねこちゃんが\nさみしそうに ないている よ。\nたすけに いこう！",
+    "cryingIconUrl": "../assets/images/word/neko.png",
+    "reliefIconUrl": "../assets/images/word/neko.png"
+  },
   "obstacles": [
     {
       "kind": "tree",
