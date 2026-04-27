@@ -172,8 +172,8 @@ html, body { height: 100vh; overflow: hidden;
     <p style="font-size: 0.7rem; color: #888;">またはキャンバスにドラッグ&ドロップ</p>
 
     <h3>2. ステージ名</h3>
-    <input type="text" id="stageName" placeholder="例: forest_entrance" value="forest_entrance">
-    <p style="font-size: 0.7rem; color: #888;">英数字・アンダースコア・ハイフンのみ</p>
+    <input type="text" id="stageName" placeholder="例: forest_entrance" value="">
+    <p style="font-size: 0.7rem; color: #888;">英数字・アンダースコア・ハイフンのみ (日本語は自動で _ に置換)</p>
 
     <h3>2b. 既存 JSON を読み込み (任意)</h3>
     <input type="file" id="jsonInput" accept=".json,application/json">
@@ -548,11 +548,8 @@ function loadImageFile(file) {
       state.imgW = img.naturalWidth;
       state.imgH = img.naturalHeight;
       emptyMsg.style.display = 'none';
-      // Auto-fill stage name from file name (without extension, sanitized)
-      const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-      if (baseName && stageNameInput.value === 'forest_entrance') {
-        stageNameInput.value = baseName;
-      }
+      // ステージ名のデフォルト値は空 (ユーザーが意識的に名前を付ける運用)。
+      // ファイル名からの自動入力はしない (うっかり長い hf_xxx 等で保存されないように)
       resizeCanvas();
       draw();
       showBanner('画像を読み込みました: ' + state.imgW + ' × ' + state.imgH);
@@ -1257,7 +1254,11 @@ async function ghPut(path, contentB64, message, sha) {
 document.getElementById('commitBtn').addEventListener('click', async function() {
   if (!validateForExport()) return;
   const r = buildExportDef();
-  if (!r.safeName) { alert('ステージ名が無効です'); return; }
+  if (!r.safeName) { alert('ステージ名を入力してね'); return; }
+  // 日本語等が _ に置換された場合は警告
+  if (/_{3,}/.test(r.safeName) && !confirm('ステージ名「' + r.rawName + '」は日本語等を含むため、ファイル名は「' + r.safeName + '」(アンダースコア多数) になります。\n\nこのまま保存しますか? (英数字に変えるなら キャンセル → 名前を編集)')) {
+    return;
+  }
   const stageNum = parseInt(document.getElementById('stageOrderInput').value, 10);
   if (!Number.isInteger(stageNum) || stageNum < 0 || stageNum > 99) {
     alert('ステージ番号は 0〜99 の整数で指定してね'); return;
@@ -1268,6 +1269,23 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
   btn.textContent = '⏳ 保存中…';
 
   try {
+    // 0) スロットの上書き警告: 既存の _index.json を先に読んで重複チェック
+    const indexPath = 'maze/imageStages/_index.json';
+    const existingIdxBefore = await ghGet(indexPath);
+    if (existingIdxBefore && existingIdxBefore.content) {
+      try {
+        const decoded = atob(existingIdxBefore.content.replace(/\s+/g, ''));
+        const parsed = JSON.parse(decodeURIComponent(escape(decoded)));
+        const existingStageName = parsed && parsed.overrides && parsed.overrides[String(stageNum)];
+        if (existingStageName && existingStageName !== r.safeName) {
+          if (!confirm('⚠ スロット ' + stageNum + ' は既に「' + existingStageName + '」が登録されています。\n\n「' + r.safeName + '」で上書きしますか?\n(別のスロット番号にする場合はキャンセル)')) {
+            btn.disabled = false; btn.textContent = '💾 本番に保存 (commit)';
+            return;
+          }
+        }
+      } catch (e) { /* parse 失敗 → 続行 */ }
+    }
+
     // 1) JSON file
     const jsonPath = 'maze/imageStages/' + r.safeName + '.json';
     const jsonStr = JSON.stringify(r.def, null, 2);
@@ -1290,8 +1308,7 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
       }
     }
 
-    // 3) _index.json (overrides map)
-    const indexPath = 'maze/imageStages/_index.json';
+    // 3) _index.json (overrides map) — re-fetch for latest sha after image PUT
     const existingIndex = await ghGet(indexPath);
     let indexObj = { overrides: {} };
     if (existingIndex && existingIndex.content) {
@@ -1461,6 +1478,39 @@ loadImageFile = function(file) {
 };
 // Save when stage name / order / lantern change
 stageNameInput.addEventListener('input', scheduleAutoSave);
+
+// === ステージ名の placeholder を ステージ番号 から動的生成 ===
+function updateStageNamePlaceholder() {
+  const oi = document.getElementById('stageOrderInput');
+  const n = parseInt(oi && oi.value, 10);
+  if (Number.isInteger(n) && n >= 0) {
+    stageNameInput.placeholder = 'ステージ' + n + ' (例)';
+  } else {
+    stageNameInput.placeholder = '例: forest_entrance';
+  }
+}
+const _orderInput = document.getElementById('stageOrderInput');
+if (_orderInput) {
+  _orderInput.addEventListener('input', updateStageNamePlaceholder);
+  updateStageNamePlaceholder(); // initial
+}
+
+// === ステージ名 ⟷ ライブラリ保存名 の双方向同期 ===
+// 一方を入力すると もう一方も同じ値に。デフォルトは空にして
+// ユーザーが必ず名前を付ける運用にする (うっかり保存防止)。
+function _syncFromStageName() {
+  const lib = document.getElementById('libNameInput');
+  if (!lib) return;
+  if (lib.value !== stageNameInput.value) lib.value = stageNameInput.value;
+}
+function _syncFromLibName() {
+  const lib = document.getElementById('libNameInput');
+  if (!lib) return;
+  if (stageNameInput.value !== lib.value) stageNameInput.value = lib.value;
+}
+stageNameInput.addEventListener('input', _syncFromStageName);
+const _libInput = document.getElementById('libNameInput');
+if (_libInput) _libInput.addEventListener('input', _syncFromLibName);
 const _stageOrderInput = document.getElementById('stageOrderInput');
 if (_stageOrderInput) _stageOrderInput.addEventListener('input', scheduleAutoSave);
 const _lanternToggle = document.getElementById('lanternToggle');
