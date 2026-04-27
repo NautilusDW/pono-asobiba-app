@@ -624,21 +624,9 @@ function parseCell(ch) {
 //  - solvable, no dead-state, no stranded path, no spam-solve
 //  - obstacles are real blockers (removing any obstacle changes optimal solution)
 //  - tall layout (rows >= cols) so cells stay big enough for arrow buttons
-// 11 stages: tutorial + 1..10, progressive difficulty
+// 10 stages: 1..10, progressive difficulty (チュートリアル削除済み)
 // Note: `let` (was const) to allow `?image=<name>` URL param to override STAGES.
 let STAGES = [
-  {
-    name: 'チュートリアル — やじるしを おしてみよう',
-    grid: [
-      '#######',
-      '#S....#',
-      '#.#.###',
-      '#.#...#',
-      '#.###.#',
-      '#...WG#',
-      '#######',
-    ],
-  },
   {
     name: 'ステージ 1 — どっちに いく？',
     grid: [
