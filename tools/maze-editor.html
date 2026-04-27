@@ -77,20 +77,39 @@ html, body { height: 100vh; overflow: hidden;
 .canvas-wrap {
   position: relative; overflow: hidden;
   background: #2a2a2a;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: stretch; justify-content: center;
   flex-direction: column;
 }
-/* 上下分割比較モード */
-.canvas-wrap.compare-on {
-  justify-content: stretch;
-  gap: 8px;
-  padding: 8px 0;
-}
-.canvas-wrap.compare-on > .pane {
+.canvas-wrap > .pane {
   flex: 1; min-height: 0;
   display: flex; align-items: center; justify-content: center;
   position: relative;
   width: 100%;
+  overflow: auto; /* zoom 拡大時にスクロール可能 */
+}
+/* Zoom controls (右下浮動) */
+.zoom-controls {
+  position: absolute; right: 18px; bottom: 18px;
+  display: flex; gap: 4px;
+  background: rgba(0,0,0,0.55); padding: 6px; border-radius: 8px;
+  z-index: 10;
+}
+.zoom-btn {
+  width: 36px; height: 36px;
+  border: 1px solid #555; border-radius: 6px;
+  background: #333; color: #ddd; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: 1rem;
+}
+.zoom-btn:hover { background: #444; }
+.zoom-readout {
+  min-width: 56px; padding: 0 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #cf8; font-size: 0.85rem; font-weight: 700;
+}
+/* 上下分割比較モード — 比較ペインを表示する */
+.canvas-wrap.compare-on {
+  gap: 8px;
+  padding: 8px 0;
 }
 .canvas-wrap.compare-on .pane.compare {
   border-top: 2px dashed #A4C76D;
@@ -272,6 +291,12 @@ html, body { height: 100vh; overflow: hidden;
       <canvas id="cv2"></canvas>
     </div>
     <div class="banner" id="banner" style="display: none;"></div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoomOut" title="縮小">−</button>
+      <div class="zoom-readout" id="zoomReadout">100%</div>
+      <button class="zoom-btn" id="zoomIn" title="拡大">＋</button>
+      <button class="zoom-btn" id="zoomFit" title="全体表示" style="width:auto; padding:0 8px;">⤢</button>
+    </div>
   </main>
 </div>
 
@@ -542,21 +567,41 @@ function loadImageFile(file) {
 // ────────────────────────────────────────────────────────
 let canvasScale = 1;
 
+let userZoom = 1;
+const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0];
+
 function resizeCanvas() {
   if (!state.image) return;
-  // Fit to the main pane, not the whole wrap (pane shrinks when compare is on)
   const paneMain = document.getElementById('paneMain');
   const wrapW = paneMain.clientWidth - 24;
   const wrapH = paneMain.clientHeight - 24;
   const fitW = wrapW / state.imgW;
   const fitH = wrapH / state.imgH;
-  canvasScale = Math.min(fitW, fitH);
+  const baseScale = Math.min(fitW, fitH);
+  canvasScale = baseScale * userZoom;
   cv.style.width = (state.imgW * canvasScale) + 'px';
   cv.style.height = (state.imgH * canvasScale) + 'px';
-  // Internal canvas resolution: image native size for crisp rendering
   cv.width = state.imgW;
   cv.height = state.imgH;
+  const zr = document.getElementById('zoomReadout');
+  if (zr) zr.textContent = Math.round(userZoom * 100) + '%';
 }
+
+document.getElementById('zoomIn').addEventListener('click', function() {
+  for (const z of ZOOM_LEVELS) {
+    if (z > userZoom + 0.001) { userZoom = z; resizeCanvas(); draw(); return; }
+  }
+});
+document.getElementById('zoomOut').addEventListener('click', function() {
+  for (let i = ZOOM_LEVELS.length - 1; i >= 0; i--) {
+    if (ZOOM_LEVELS[i] < userZoom - 0.001) { userZoom = ZOOM_LEVELS[i]; resizeCanvas(); draw(); return; }
+  }
+});
+document.getElementById('zoomFit').addEventListener('click', function() {
+  userZoom = 1;
+  resizeCanvas();
+  draw();
+});
 
 window.addEventListener('resize', function() { resizeCanvas(); draw(); resizeComparePane(); });
 

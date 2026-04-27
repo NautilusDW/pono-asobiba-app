@@ -125,6 +125,68 @@ html, body { height: 100vh; overflow: hidden;
 .save-list button:hover { background: #3a5028; }
 .save-list button.del { background: #4a2020; color: #fcc; border-color: #6a3030; }
 .save-list button.del:hover { background: #5d2a2a; }
+
+/* === Library management modal === */
+.lib-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 9000;
+  padding: 24px;
+}
+.lib-modal.show { display: flex; }
+.lib-modal-card {
+  background: #1f2218;
+  border: 2px solid #4a5e3f;
+  border-radius: 14px;
+  width: 100%; max-width: 920px; max-height: 92vh;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.lib-modal-card h2 {
+  font-size: 1rem; color: #A4C76D; padding: 14px 18px;
+  border-bottom: 1px solid #2a2e22;
+  display: flex; align-items: center; gap: 8px;
+}
+.lib-modal-card h2 .count {
+  font-size: 0.78rem; color: #888; font-weight: 400;
+}
+.lib-modal-grid {
+  flex: 1; overflow-y: auto; padding: 14px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.lib-card {
+  background: #2a2e22; border: 1px solid #3a3e2e; border-radius: 8px;
+  padding: 10px; display: flex; flex-direction: column; gap: 6px;
+}
+.lib-card .thumb {
+  width: 100%; aspect-ratio: 16/9;
+  border-radius: 4px; background: #1a1a1a; display: block;
+}
+.lib-card .name-row { display: flex; gap: 4px; align-items: center; }
+.lib-card .name {
+  flex: 1; padding: 4px 6px; font-family: inherit; font-size: 0.84rem;
+  background: #1a1a1a; color: #eee; border: 1px solid #444; border-radius: 3px;
+}
+.lib-card .ts { font-size: 0.7rem; color: #888; padding: 0 2px; }
+.lib-card .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.lib-card .actions button {
+  flex: 1 1 calc(33% - 4px); padding: 5px 4px; font-family: inherit; font-size: 0.74rem;
+  border: 1px solid #555; border-radius: 3px; cursor: pointer; font-weight: 700;
+  background: #333; color: #ddd;
+}
+.lib-card .actions button:hover { background: #444; }
+.lib-card .actions button.load { background: #2a3e1f; color: #cf8; border-color: #4a5e3f; }
+.lib-card .actions button.over { background: #3a4e1f; color: #ff8; border-color: #5a6e2f; }
+.lib-card .actions button.del  { background: #4a2020; color: #fcc; border-color: #6a3030; }
+.lib-modal-footer {
+  border-top: 1px solid #2a2e22; padding: 10px 14px;
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.lib-modal-empty { color: #888; font-size: 0.85rem; text-align: center; padding: 60px 20px; }
 #cv {
   display: block; max-width: 100%; max-height: 100%;
   cursor: crosshair;
@@ -215,6 +277,7 @@ input[type="file"]::file-selector-button {
       <button class="btn primary" id="saveAsBtn" style="flex:0 0 auto; padding:6px 10px; font-size:0.78rem;">💾 保存</button>
     </div>
     <ul class="save-list" id="saveList"></ul>
+    <button class="btn" id="openLibModalBtn" style="margin-top:6px; font-size:0.78rem; width:100%;">📋 履歴・管理を開く</button>
     <div style="display:flex; gap:4px; margin-top:6px; align-items:center;">
       <label class="btn" style="flex:1; font-size:0.78rem; cursor:pointer; text-align:center; padding:8px;">
         📥 JSON 取り込み
@@ -265,6 +328,18 @@ input[type="file"]::file-selector-button {
   </main>
 </div>
 
+<!-- 📋 履歴・管理モーダル -->
+<div class="lib-modal" id="libModal" aria-hidden="true">
+  <div class="lib-modal-card">
+    <h2>📋 ステージ履歴・管理 <span class="count" id="libModalCount"></span></h2>
+    <div class="lib-modal-grid" id="libModalGrid"></div>
+    <div class="lib-modal-footer">
+      <button class="btn" id="libModalSaveCurrent" style="background:#3a6c1f; color:#fff;">💾 今の作業を新規保存</button>
+      <button class="btn" id="libModalClose">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -300,6 +375,7 @@ const state = {
   hoverTile: null,        // { x, y } currently hovered tile (for brush preview)
   draggingMarker: null,   // 'start' | 'goal' | null — marker is being dragged
   history: [],            // snapshots for undo
+  refImage: null,         // HTMLImageElement: 参考用に下絵として表示する画像 (drag-drop で読込)
 };
 
 // Convert pixel marker pos → tile coord (for BFS / tile painting)
@@ -483,18 +559,119 @@ document.getElementById('zoomFit').addEventListener('click', function() {
   fitCanvas();
 });
 
+// ── キャンバスへの drag & drop (参考画像 OR JSON ファイル両対応) ──
+const canvasWrap = document.getElementById('canvasWrap');
+['dragenter', 'dragover'].forEach(function(ev) {
+  canvasWrap.addEventListener(ev, function(e) {
+    e.preventDefault();
+    canvasWrap.style.outline = '3px dashed #A4C76D';
+    canvasWrap.style.outlineOffset = '-3px';
+  });
+});
+['dragleave', 'drop'].forEach(function(ev) {
+  canvasWrap.addEventListener(ev, function(e) {
+    e.preventDefault();
+    canvasWrap.style.outline = '';
+  });
+});
+canvasWrap.addEventListener('drop', function(e) {
+  e.preventDefault();
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  if (f.type && f.type.startsWith('image/')) {
+    // 参考画像として読み込む (下絵)
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.onload = function() {
+        state.refImage = img;
+        draw();
+        showBanner('🖼 参考画像を読み込みました (下絵として表示)');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  } else if (f.name && (f.name.endsWith('.json') || f.type === 'application/json')) {
+    // JSON 直接ロード (現在のキャンバスに反映)
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        const def = JSON.parse(ev.target.result);
+        if (!def || !Array.isArray(def.tiles)) throw new Error('tiles 配列が無いよ');
+        const g = makeEmptyGrid();
+        for (let y = 0; y < Math.min(GRID_H, def.tiles.length); y++) {
+          const row = def.tiles[y]; if (!Array.isArray(row)) continue;
+          for (let x = 0; x < Math.min(GRID_W, row.length); x++) {
+            g[y][x] = (row[x] === 'wall') ? 'wall' : 'path';
+          }
+        }
+        function _loadM(m) {
+          if (!m || !Number.isFinite(m.x) || !Number.isFinite(m.y)) return null;
+          const isTile = Number.isInteger(m.x) && Number.isInteger(m.y)
+            && m.x >= 0 && m.x < GRID_W && m.y >= 0 && m.y < GRID_H
+            && (m.x < CELL && m.y < CELL);
+          return isTile ? { x: m.x*CELL+CELL/2, y: m.y*CELL+CELL/2 } : { x: m.x, y: m.y };
+        }
+        pushHistory();
+        state.tiles = g;
+        state.start = _loadM(def.start);
+        state.goal  = _loadM(def.goal);
+        afterEdit();
+        showBanner('📂 JSON 読み込み完了 (drop)');
+      } catch (err) {
+        alert('JSON drop 読み込み失敗: ' + err.message);
+      }
+    };
+    reader.readAsText(f);
+  } else {
+    showBanner('対応してないファイル形式 (画像 or JSON のみ)');
+  }
+});
+
+// 参考画像をクリアするボタン (画像読込時のみ表示)
+const clearRefBtn = document.createElement('button');
+clearRefBtn.className = 'btn';
+clearRefBtn.id = 'clearRefBtn';
+clearRefBtn.textContent = '🗑 参考画像をクリア';
+clearRefBtn.style.cssText = 'margin-top:6px; font-size:0.78rem; width:100%; display:none;';
+clearRefBtn.addEventListener('click', function() {
+  state.refImage = null;
+  clearRefBtn.style.display = 'none';
+  draw();
+  showBanner('参考画像クリア');
+});
+// Insert it after the reset button
+const resetBtnEl = document.getElementById('resetBtn');
+if (resetBtnEl && resetBtnEl.parentNode) {
+  resetBtnEl.parentNode.insertBefore(clearRefBtn, resetBtnEl.nextSibling);
+}
+// Also wrap the original draw to toggle the button
+const _origDraw_ref = draw;
+draw = function() {
+  _origDraw_ref.apply(null, arguments);
+  if (clearRefBtn) {
+    clearRefBtn.style.display = state.refImage ? 'block' : 'none';
+  }
+};
+
 // ────────────────────────────────────────────────────────
 // Drawing
 // ────────────────────────────────────────────────────────
 function draw() {
-  // Background — alternating green for visual texture
+  // 参考画像 (drag-drop で読込んだ下絵) があれば最背面に描画
+  if (state.refImage && state.refImage.complete && state.refImage.naturalWidth > 0) {
+    ctx.drawImage(state.refImage, 0, 0, CANVAS_W, CANVAS_H);
+  }
+  // Background — alternating green (refImage がある時は半透明、無ければ不透明)
+  const wallA = state.refImage ? 'rgba(122, 181, 64, 0.42)' : COLOR_WALL;
+  const wallB = state.refImage ? 'rgba(106, 159, 54, 0.42)' : COLOR_WALL2;
   for (let y = 0; y < GRID_H; y++) {
     for (let x = 0; x < GRID_W; x++) {
       const t = state.tiles[y][x];
       if (t === 'path') {
         ctx.fillStyle = COLOR_PATH;
       } else {
-        ctx.fillStyle = ((x + y) & 1) ? COLOR_WALL : COLOR_WALL2;
+        ctx.fillStyle = ((x + y) & 1) ? wallA : wallB;
       }
       ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
     }
@@ -849,7 +1026,7 @@ function showBanner(msg) {
 // ────────────────────────────────────────────────────────
 // Export PNG
 // ────────────────────────────────────────────────────────
-document.getElementById('exportPngBtn').addEventListener('click', function() {
+document.getElementById('exportPngBtn').addEventListener('click', async function() {
   // Re-render WITHOUT grid lines / solution / brush preview for clean AI input
   const prevGrid = state.showGrid;
   const prevSol = state.showSolution;
@@ -858,19 +1035,43 @@ document.getElementById('exportPngBtn').addEventListener('click', function() {
   state.showSolution = false;
   state.hoverTile = null;
   draw();
-  cv.toBlob(function(blob) {
-    const a = document.createElement('a');
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    a.href = URL.createObjectURL(blob);
-    a.download = 'maze_rough_' + ts + '.png';
-    a.click();
-    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
-    // Restore display state
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = 'maze_rough_' + ts + '.png';
+  const restore = function() {
     state.showGrid = prevGrid;
     state.showSolution = prevSol;
     state.hoverTile = prevHover;
     draw();
-    showBanner('🖼 PNG をダウンロードしました');
+  };
+  // Modern File System Access API (Chromium) — let user pick save location
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }],
+      });
+      const blob = await new Promise(function(res) { cv.toBlob(res, 'image/png'); });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      showBanner('🖼 PNG を保存しました: ' + handle.name);
+      restore();
+      return;
+    } catch (err) {
+      // User canceled the picker — silently fall through to default download
+      if (err && err.name === 'AbortError') { restore(); return; }
+      console.warn('showSaveFilePicker failed, fallback to default download:', err);
+    }
+  }
+  // Fallback: classic download to default folder
+  cv.toBlob(function(blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+    restore();
+    showBanner('🖼 PNG をダウンロードしました (既定の保存先)');
   }, 'image/png');
 });
 
@@ -1075,11 +1276,20 @@ function setAllSaves(obj) {
   }
 }
 
-function saveAs(name) {
-  if (!name || !name.trim()) { alert('ステージ名を入力してね'); return; }
+// Find a unique name by appending " (2)", " (3)", … if base is already taken
+function _libUniqueName(base) {
   const saves = getAllSaves();
-  const isOverwrite = !!saves[name];
-  if (isOverwrite && !confirm('「' + name + '」を上書きしますか?')) return;
+  if (!saves[base]) return base;
+  let n = 2;
+  while (saves[base + ' (' + n + ')']) n++;
+  return base + ' (' + n + ')';
+}
+
+function saveAs(rawName) {
+  if (!rawName || !rawName.trim()) { alert('ステージ名を入力してね'); return; }
+  // 同名なら "(2)" "(3)" … と自動連番。上書きさせない (履歴を残す)。
+  const name = _libUniqueName(rawName.trim());
+  const saves = getAllSaves();
   saves[name] = {
     tiles: state.tiles,
     start: state.start,
@@ -1088,8 +1298,168 @@ function saveAs(name) {
   };
   setAllSaves(saves);
   refreshSaveList();
-  showBanner((isOverwrite ? '🔁 上書き保存: ' : '💾 新規保存: ') + name);
+  showBanner('💾 新規保存: ' + name);
 }
+
+// Overwrite a specific named save with the current state (用: 履歴モーダルから)
+function libOverwriteSlot(name) {
+  if (!confirm('「' + name + '」を今の状態で上書きしますか?')) return;
+  const saves = getAllSaves();
+  if (!saves[name]) return;
+  saves[name] = {
+    tiles: state.tiles,
+    start: state.start,
+    goal: state.goal,
+    savedAt: Date.now(),
+  };
+  setAllSaves(saves);
+  refreshSaveList();
+  renderLibModal();
+  showBanner('🔁 上書き: ' + name);
+}
+
+// Rename a save entry (key change)
+function libRenameSlot(oldName, newRawName) {
+  const newName = (newRawName || '').trim();
+  if (!newName || newName === oldName) return false;
+  const saves = getAllSaves();
+  if (!saves[oldName]) return false;
+  if (saves[newName]) {
+    alert('「' + newName + '」は既にあります');
+    return false;
+  }
+  saves[newName] = saves[oldName];
+  delete saves[oldName];
+  setAllSaves(saves);
+  refreshSaveList();
+  renderLibModal();
+  showBanner('リネーム: ' + oldName + ' → ' + newName);
+  return true;
+}
+
+// Generate a 192×108 thumbnail dataURL of a saved snapshot
+function _libThumbnail(snap) {
+  const W = 192, H = 108;
+  const oc = document.createElement('canvas');
+  oc.width = W; oc.height = H;
+  const octx = oc.getContext('2d');
+  const tw = W / GRID_W, th = H / GRID_H;
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      const t = (snap.tiles && snap.tiles[y]) ? snap.tiles[y][x] : 'wall';
+      if (t === 'path') octx.fillStyle = COLOR_PATH;
+      else octx.fillStyle = ((x + y) & 1) ? COLOR_WALL : COLOR_WALL2;
+      octx.fillRect(x * tw, y * th, tw + 0.5, th + 0.5);
+    }
+  }
+  const sc = W / CANVAS_W;
+  function dot(p, color) {
+    if (!p) return;
+    octx.fillStyle = color; octx.globalAlpha = 0.92;
+    octx.beginPath(); octx.arc(p.x * sc, p.y * sc, CELL * 1.4 * sc, 0, Math.PI * 2);
+    octx.fill();
+    octx.globalAlpha = 1;
+    octx.strokeStyle = '#fff'; octx.lineWidth = 1;
+    octx.stroke();
+  }
+  dot(snap.start, COLOR_START);
+  dot(snap.goal,  COLOR_GOAL);
+  return oc.toDataURL('image/png');
+}
+
+// === Modal ===
+const libModal = document.getElementById('libModal');
+const libModalGrid = document.getElementById('libModalGrid');
+const libModalCount = document.getElementById('libModalCount');
+
+function openLibModal() {
+  renderLibModal();
+  libModal.classList.add('show');
+  libModal.setAttribute('aria-hidden', 'false');
+}
+function closeLibModal() {
+  libModal.classList.remove('show');
+  libModal.setAttribute('aria-hidden', 'true');
+}
+
+function renderLibModal() {
+  libModalGrid.innerHTML = '';
+  const saves = getAllSaves();
+  const names = Object.keys(saves).sort(function(a, b) { return (saves[b].savedAt || 0) - (saves[a].savedAt || 0); });
+  libModalCount.textContent = '(' + names.length + ' 件)';
+  if (names.length === 0) {
+    const e = document.createElement('div');
+    e.className = 'lib-modal-empty';
+    e.textContent = '保存無し — モーダル下の「💾 今の作業を新規保存」で追加できるよ';
+    libModalGrid.appendChild(e);
+    return;
+  }
+  for (const name of names) {
+    const snap = saves[name];
+    const card = document.createElement('div');
+    card.className = 'lib-card';
+    // Thumbnail
+    const img = document.createElement('img');
+    img.className = 'thumb';
+    img.alt = name;
+    img.src = _libThumbnail(snap);
+    card.appendChild(img);
+    // Name row (editable)
+    const nameRow = document.createElement('div');
+    nameRow.className = 'name-row';
+    const nameInput = document.createElement('input');
+    nameInput.className = 'name';
+    nameInput.value = name;
+    nameInput.title = 'クリックして編集 → Enter or フォーカス外で確定';
+    nameInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') nameInput.blur(); });
+    nameInput.addEventListener('blur', function() {
+      if (nameInput.value.trim() && nameInput.value.trim() !== name) {
+        libRenameSlot(name, nameInput.value.trim());
+      }
+    });
+    nameRow.appendChild(nameInput);
+    card.appendChild(nameRow);
+    // Timestamp
+    const ts = new Date(snap.savedAt || 0);
+    const tsStr = ts.getFullYear() + '/' + (ts.getMonth()+1) + '/' + ts.getDate() + ' ' +
+                  String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0');
+    const tsEl = document.createElement('div');
+    tsEl.className = 'ts';
+    tsEl.textContent = '🕒 ' + tsStr;
+    card.appendChild(tsEl);
+    // Actions
+    const acts = document.createElement('div');
+    acts.className = 'actions';
+    const loadBtn = document.createElement('button');
+    loadBtn.className = 'load'; loadBtn.textContent = '📂 読込';
+    loadBtn.addEventListener('click', function() { loadSaveByName(name); closeLibModal(); });
+    const overBtn = document.createElement('button');
+    overBtn.className = 'over'; overBtn.textContent = '🔁 上書き';
+    overBtn.title = '今のキャンバスの状態をこの保存スロットに上書き';
+    overBtn.addEventListener('click', function() { libOverwriteSlot(name); });
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del'; delBtn.textContent = '🗑 削除';
+    delBtn.addEventListener('click', function() { deleteSaveByName(name); renderLibModal(); });
+    acts.appendChild(loadBtn); acts.appendChild(overBtn); acts.appendChild(delBtn);
+    card.appendChild(acts);
+    libModalGrid.appendChild(card);
+  }
+}
+
+document.getElementById('openLibModalBtn').addEventListener('click', openLibModal);
+document.getElementById('libModalClose').addEventListener('click', closeLibModal);
+libModal.addEventListener('click', function(e) {
+  // Click on backdrop (not card) closes
+  if (e.target === libModal) closeLibModal();
+});
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && libModal.classList.contains('show')) closeLibModal();
+});
+document.getElementById('libModalSaveCurrent').addEventListener('click', function() {
+  const baseName = document.getElementById('saveNameInput').value.trim() || 'untitled';
+  saveAs(baseName);
+  renderLibModal();
+});
 
 function loadSaveByName(name) {
   const saves = getAllSaves();
