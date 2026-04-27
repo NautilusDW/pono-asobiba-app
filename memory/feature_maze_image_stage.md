@@ -93,6 +93,16 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
   - **リズムまね (Simon Says)**: 4 色のセル (🔴🔵🟢🟡) が順番に光る → 同順タップで再現。Web Audio で 440/523/659/784 Hz の sine wave。`_simonCancelled` フラグで遅延 timer の DOM 汚染防止
   - 共通 `_resolveQuiz(correct)` で結果表示 → 「すすむ ▶」「もどる ▶」ボタン → `_closeEncounter(true|false)` 呼び出し
   - dialog 表示は `innerHTML` から `textContent + <br>` DOM 構築に変更 (XSS 緩和)
+- ✅ **ゴール方向インジケーター + 手動カメラパン (横長ステージ切れ対策, 2026-04-27)**: 縦の細い viewport で横長ステージのゴールが画面外になり「ゴールがどっちか分からない」+ 「自分でスクロールして見たい」ユーザー要望への対応
+  - `imgDrawGoalIndicator(goal, w, h, cam, scale)` を新設、`imgDraw()` 末尾の screen-space で描画。ゴール踏破後 (`cleared`) は非表示。画面内 (内側 60px マージン) なら描画スキップ、画面外なら viewport 中心からゴールへの直線と内側矩形の交点に **赤丸 (半径 28px, alpha 0.85, 白枠 3px)** + 中心へ向く白三角矢印 + 下に黒縁取り白文字 `GOAL` を描画
+  - `stage._manualCam` フラグで pono 追尾の lerp を切り替え。`true` の間は `MazeImage.updateCamera()` をスキップして `imgClampCameraToBounds(stage, w, h)` のみ実行 (ステージ外には出ない)
+  - canvas に `pointerdown/move/up/cancel` リスナーを追加。6px 以上動いたら manual モード入り、ドラッグ量だけ camera を逆向きに動かす。単純タップ (movement < 6px) で manual モード解除 → pono 追尾復帰
+  - `wheel` リスナーで PC のホイール / トラックパッド対応。デフォルトは横スクロール (`deltaX || deltaY` を `camera.x` に加算)、shift で縦
+  - `imgStartWalk()` 冒頭で `stage._manualCam = false` に強制 → 矢印タップで歩き始めると即座に追尾復帰
+  - 4 秒触らないと自動で manual モード解除 (imgDraw 内の timeout チェック)
+  - 遭遇モーダル中 (`_encounterActive`) / クリア後 (`cleared`) はパン不可
+  - `#gameCanvas { touch-action: none }` を追加して iOS Safari のページスクロールと競合しないように
+  - 修正: [maze/index.html](../maze/index.html) のみ (image-runtime.js は無改変、UI ロジックは index.html 側に隔離)
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker
