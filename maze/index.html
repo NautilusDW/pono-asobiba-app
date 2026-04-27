@@ -1737,21 +1737,21 @@ function _closeEncounter(playerWon) {
 
 // ── Lantern night overlay ──
 // Centered on (cx, cy) screen pixels. Inside `inner` is fully bright (no darkening),
-// between `inner` and `outer` fades to night, beyond `outer` is fully dark.
-// Optionally adds a warm yellow glow at the lantern center.
-// Pulses gently to suggest a flickering flame.
+// between `inner` and `outer` fades to night, beyond `outer` is the dimmed night zone.
+// 「夜の演出」であって真っ暗ではない: 迷路全体はうっすら青く透けて見える状態を保つ。
+// ランタン周辺だけ明るく、それ以外は青い夜のフィルター越しに見える。
 function imgDrawLantern(now, cx, cy, w, h, opts) {
   // Allow `lantern: true` (use defaults) or `lantern: { ... }` (custom).
   const cfg = (opts && typeof opts === 'object') ? opts : {};
   const minDim = Math.min(w, h);
   // Gentle 0.96..1.04 pulse over 2.5s
   const pulse = 1 + Math.sin(now / 400) * 0.04;
-  const inner = (cfg.innerRadius || minDim * 0.16) * pulse;
-  const outer = (cfg.outerRadius || minDim * 0.55) * pulse;
-  const tintR = cfg.tintR != null ? cfg.tintR : 2;
-  const tintG = cfg.tintG != null ? cfg.tintG : 8;
-  const tintB = cfg.tintB != null ? cfg.tintB : 28;
-  const tintA = cfg.tintA != null ? cfg.tintA : 0.94;
+  const inner = (cfg.innerRadius || minDim * 0.10) * pulse; // 狭めの明るいゾーン
+  const outer = (cfg.outerRadius || minDim * 0.30) * pulse; // 短い距離でフェード完了
+  const tintR = cfg.tintR != null ? cfg.tintR : 8;
+  const tintG = cfg.tintG != null ? cfg.tintG : 22;
+  const tintB = cfg.tintB != null ? cfg.tintB : 60;
+  const tintA = cfg.tintA != null ? cfg.tintA : 0.55; // 半透明 → 迷路はうっすら見える
   const warmth = cfg.warmth !== false; // default on
   // 1) Night overlay: transparent at center, opaque outside outer
   ctx.save();
