@@ -437,8 +437,9 @@ function drawBrushPreview() {
   ctx.restore();
 }
 
-function drawMarker(pos, color, label) {
-  // pos is in pixel coords
+function drawMarker(pos, color, _label) {
+  // pos is in pixel coords. Label arg kept for API compat but not rendered —
+  // 色 (青=スタート / 赤=ゴール) だけで識別する方針。
   const cx = pos.x;
   const cy = pos.y;
   const r = CELL * 1.4;
@@ -450,10 +451,6 @@ function drawMarker(pos, color, label) {
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 6;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold ' + (CELL * 1.2) + 'px sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(label, cx, cy);
   ctx.restore();
 }
 
