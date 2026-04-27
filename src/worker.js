@@ -85,7 +85,10 @@ function applyCacheHeaders(request, response) {
     || path === '/assets/data/rewards.json'
     || path === '/assets/tts/manifest.json'
     || path === '/manifest.json'
-    || path === '/sw.js';
+    || path === '/sw.js'
+    // 迷路 image ステージのインデックスと個別 JSON は本番保存後すぐ反映したい
+    || path === '/maze/imageStages/_index.json'
+    || (path.startsWith('/maze/imageStages/') && path.endsWith('.json'));
 
   if (isHTML || isFreshData) {
     const headers = new Headers(response.headers);

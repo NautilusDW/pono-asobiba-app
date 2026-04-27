@@ -851,7 +851,7 @@ function buildStage(stageDef) {
 // "💾 本番に保存" button publishes new image stages into the normal progression.
 // Stages from this path are flagged `_official: true` (eligible for clear rewards).
 function _loadImageStageIndex() {
-  return fetch('imageStages/_index.json', { credentials: 'omit' })
+  return fetch('imageStages/_index.json', { credentials: 'omit', cache: 'no-store' })
     .then(function(r) {
       if (!r.ok) return null;
       return r.json();
@@ -866,7 +866,7 @@ function _loadImageStageIndex() {
         const rawName = idx.overrides[String(pos)];
         const safe = String(rawName || '').replace(/[^a-zA-Z0-9_-]/g, '');
         if (!safe) return Promise.resolve();
-        return fetch('imageStages/' + safe + '.json', { credentials: 'omit' })
+        return fetch('imageStages/' + safe + '.json', { credentials: 'omit', cache: 'no-store' })
           .then(function(rr) {
             if (!rr.ok) throw new Error(safe + ' HTTP ' + rr.status);
             return rr.json();
@@ -929,7 +929,7 @@ function _loadImageStageFromURL() {
     // ── Normal: fetch from imageStages/<name>.json ──
     const safe = String(raw).replace(/[^a-zA-Z0-9_-]/g, '');
     if (!safe) return Promise.resolve(false);
-    return fetch('imageStages/' + safe + '.json', { credentials: 'omit' })
+    return fetch('imageStages/' + safe + '.json', { credentials: 'omit', cache: 'no-store' })
       .then(function(r) {
         if (!r.ok) throw new Error('image stage HTTP ' + r.status);
         return r.json();
