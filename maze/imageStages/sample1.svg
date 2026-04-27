@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 1080" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C8E5A8"/>
+      <stop offset="100%" stop-color="#A4C76D"/>
+    </linearGradient>
+    <radialGradient id="cloud" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="3840" height="1080" fill="url(#sky)"/>
+  <!-- clouds -->
+  <ellipse cx="500" cy="160" rx="180" ry="50" fill="url(#cloud)"/>
+  <ellipse cx="1700" cy="120" rx="220" ry="55" fill="url(#cloud)"/>
+  <ellipse cx="2900" cy="180" rx="200" ry="50" fill="url(#cloud)"/>
+  <!-- trees scattered (decorative, do not block the road) -->
+  <g fill="#3E5A24">
+    <circle cx="450"  cy="780" r="55"/>
+    <circle cx="800"  cy="260" r="60"/>
+    <circle cx="1180" cy="800" r="50"/>
+    <circle cx="1550" cy="240" r="55"/>
+    <circle cx="1850" cy="850" r="60"/>
+    <circle cx="2150" cy="280" r="50"/>
+    <circle cx="2550" cy="850" r="55"/>
+    <circle cx="2850" cy="220" r="60"/>
+    <circle cx="3150" cy="820" r="50"/>
+    <circle cx="3450" cy="240" r="55"/>
+  </g>
+  <!-- the winding road (matches polyline in sample1.json) -->
+  <polyline
+    points="200,540 380,540 550,420 780,420 940,560 1100,580 1300,540 1450,650 1700,720 2000,720 2200,620 2400,540 2600,440 2900,360 3200,360 3400,460 3640,540"
+    fill="none" stroke="#C8B280" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline
+    points="200,540 380,540 550,420 780,420 940,560 1100,580 1300,540 1450,650 1700,720 2000,720 2200,620 2400,540 2600,440 2900,360 3200,360 3400,460 3640,540"
+    fill="none" stroke="#E5D2A0" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- start marker -->
+  <circle cx="200" cy="540" r="48" fill="#F5A623" stroke="#fff" stroke-width="8"/>
+  <text x="200" y="558" font-family="sans-serif" font-size="48" fill="#fff" text-anchor="middle" font-weight="bold">S</text>
+  <!-- goal marker -->
+  <circle cx="3640" cy="540" r="48" fill="#6C8E3F" stroke="#fff" stroke-width="8"/>
+  <text x="3640" y="558" font-family="sans-serif" font-size="48" fill="#fff" text-anchor="middle" font-weight="bold">G</text>
+  <!-- stop nodes (mid) -->
+  <circle cx="1300" cy="540" r="32" fill="#fff" fill-opacity="0.6" stroke="#5D4E37" stroke-width="4"/>
+  <circle cx="2400" cy="540" r="32" fill="#fff" fill-opacity="0.6" stroke="#5D4E37" stroke-width="4"/>
+</svg>

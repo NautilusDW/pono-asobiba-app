@@ -354,6 +354,27 @@ html, body {
   0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity: 1; }
   100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
 }
+
+/* Landscape-required overlay (only shown for image-type stages on portrait) */
+.landscape-req {
+  position: fixed; inset: 0;
+  background: rgba(93,78,55,0.92);
+  color: #FFF8F0;
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9999;
+  text-align: center;
+  font-family: inherit;
+  padding: 24px;
+}
+.landscape-req.show { display: flex; }
+.landscape-req .icon { font-size: 4rem; margin-bottom: 16px; animation: rotateHint 1.6s ease-in-out infinite; }
+.landscape-req h2 { font-size: 1.4rem; font-weight: 900; margin-bottom: 12px; }
+.landscape-req p { font-size: 1rem; opacity: 0.85; line-height: 1.6; }
+@keyframes rotateHint {
+  0%,100% { transform: rotate(0deg); }
+  50%     { transform: rotate(90deg); }
+}
 </style>
 </head>
 <body>
@@ -415,6 +436,13 @@ html, body {
     </div>
   </div>
 
+  <!-- Landscape required overlay (image stages only) -->
+  <div class="landscape-req" id="landscapeReq" aria-hidden="true">
+    <div class="icon">📱</div>
+    <h2>よこむきに してね</h2>
+    <p>このステージは よこがめんで あそぶよ。<br>たんまつを よこに むけてね。</p>
+  </div>
+
   <!-- Charm tutorial overlay (first-time unlock) -->
   <div class="charm-tut" id="charmTut">
     <div class="charm-tut-card">
@@ -433,6 +461,7 @@ html, body {
 <script src="../common/acorns.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
+<script src="image-runtime.js"></script>
 
 <script>
 'use strict';
@@ -492,7 +521,8 @@ function parseCell(ch) {
 //  - obstacles are real blockers (removing any obstacle changes optimal solution)
 //  - tall layout (rows >= cols) so cells stay big enough for arrow buttons
 // 11 stages: tutorial + 1..10, progressive difficulty
-const STAGES = [
+// Note: `let` (was const) to allow `?image=<name>` URL param to override STAGES.
+let STAGES = [
   {
     name: 'チュートリアル — やじるしを おしてみよう',
     grid: [
@@ -719,7 +749,33 @@ function buildStage(stageDef) {
     }
     cells.push(row);
   }
-  return { rows, cols, cells, start, goal, name: stageDef.name, totalApples };
+  return { type: 'grid', rows, cols, cells, start, goal, name: stageDef.name, totalApples };
+}
+
+// ====== Image stage URL param loading ======
+// Visit ?image=<name> to load maze/imageStages/<name>.json instead of normal stages.
+// Filename sanitized to [A-Za-z0-9_-]+ to prevent path traversal.
+function _loadImageStageFromURL() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('image');
+    if (!raw) return Promise.resolve(false);
+    const safe = String(raw).replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!safe) return Promise.resolve(false);
+    return fetch('imageStages/' + safe + '.json', { credentials: 'omit' })
+      .then(function(r) {
+        if (!r.ok) throw new Error('image stage HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(def) {
+        if (!def || def.type !== 'image') throw new Error('invalid image stage');
+        STAGES = [def];
+        return true;
+      })
+      .catch(function(e) { console.warn('[maze] image stage load failed:', e); return false; });
+  } catch (e) {
+    return Promise.resolve(false);
+  }
 }
 
 // ====== Game state ======
@@ -913,6 +969,10 @@ function resizeCanvas() {
 }
 
 function computeLayout(w, h) {
+  if (stage && stage.type === 'image') {
+    imgComputeLayout(w, h);
+    return;
+  }
   const padX = 24, padY = 24;
   const availW = w - padX * 2;
   const availH = h - padY * 2;
@@ -1041,6 +1101,7 @@ function isObstacleCell(r, c) {
 }
 
 function showArrows() {
+  if (stage && stage.type === 'image') { imgShowArrows(); return; }
   hideArrows();
   if (cleared || walkAnim) return;
   const fx = gridOX + pono.c * cellSize + cellSize / 2;
@@ -1095,6 +1156,264 @@ function showArrows() {
 
 function hideArrows() {
   while (arrowLayer.firstChild) arrowLayer.removeChild(arrowLayer.firstChild);
+}
+
+// ════════════════════════════════════════════════════════════
+// ====== Image stage helpers (Phase 1) ========================
+// Polyline-based walking + camera follow. Activated only when
+// stage.type === 'image' (loaded via ?image=<name>).
+// All grid-mode code paths skip when stage is image type.
+// ════════════════════════════════════════════════════════════
+let _imgLastFrameTs = 0;
+const landscapeReqEl = document.getElementById('landscapeReq');
+
+function imgLoadStage(def) {
+  if (!window.MazeImage) {
+    console.error('[maze] MazeImage runtime not loaded');
+    return;
+  }
+  stage = window.MazeImage.buildStage(def);
+  pono = {
+    type: 'image',
+    x: stage.start.x, y: stage.start.y,
+    nodeId: stage.start.id,
+    faceTx: 1, faceTy: 0,
+    r: 0, c: 0, // grid-compat fillers
+  };
+  trail = [];
+  moves = 0;
+  applesCollected = 0;
+  cleared = false;
+  walkAnim = null;
+  breezeActive = false;
+  hintActiveUntil = 0;
+  hintCells.clear();
+  _imgLastFrameTs = 0;
+  hudStage.textContent = stage.name;
+  hudMoves.textContent = 'てかず: 0';
+  hudApples.textContent = ''; // PoC: no apples yet
+  voice.style.display = '';
+  encounter.classList.remove('show');
+  // Hide charm bar in image mode (Phase 1: charms not supported)
+  const charmsEl = document.getElementById('charms');
+  if (charmsEl) charmsEl.style.display = 'none';
+  resizeCanvas();
+  imgShowArrows();
+  imgUpdateLandscapeOverlay();
+  showHint('やじるしを タップしてね', 2500);
+}
+
+function imgComputeLayout(w, h) {
+  if (!stage || stage.type !== 'image') return;
+  stage._scale = window.MazeImage.computeScale(stage, w, h);
+  stage._viewW = w;
+  stage._viewH = h;
+}
+
+function imgShowArrows() {
+  hideArrows();
+  if (!stage || stage.type !== 'image') return;
+  if (cleared || walkAnim) return;
+  const dirs = [
+    { dx: 0,  dy: -1, char: '↑' },
+    { dx: 0,  dy: 1,  char: '↓' },
+    { dx: -1, dy: 0,  char: '←' },
+    { dx: 1,  dy: 0,  char: '→' },
+  ];
+  for (let i = 0; i < dirs.length; i++) {
+    const d = dirs[i];
+    const plan = window.MazeImage.computeAutoWalk(stage, pono.nodeId, d);
+    if (!plan) continue;
+    const btn = document.createElement('button');
+    btn.className = 'maze-arrow';
+    btn.textContent = d.char;
+    btn.dataset.dx = String(d.dx);
+    btn.dataset.dy = String(d.dy);
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (walkAnim || cleared || charmTutShowing) return;
+      playTap();
+      imgStartWalk(plan);
+    });
+    arrowLayer.appendChild(btn);
+  }
+  imgRepositionArrows();
+}
+
+function imgRepositionArrows() {
+  if (!stage || stage.type !== 'image' || !stage._scale) return;
+  const w = stage._viewW, h = stage._viewH;
+  const sp = window.MazeImage.worldToScreen(stage, pono.x, pono.y, w, h, stage._scale);
+  const offset = 56;
+  const kids = arrowLayer.children;
+  for (let i = 0; i < kids.length; i++) {
+    const btn = kids[i];
+    const dx = parseFloat(btn.dataset.dx || '0');
+    const dy = parseFloat(btn.dataset.dy || '0');
+    btn.style.left = (sp.x + dx * offset) + 'px';
+    btn.style.top  = (sp.y + dy * offset) + 'px';
+  }
+}
+
+function imgStartWalk(plan) {
+  hideArrows();
+  // Speed: ~600 world-px per second. Min 800ms so even short edges feel deliberate.
+  const duration = Math.max(800, plan.length * 1000 / 600);
+  walkAnim = {
+    type: 'image',
+    plan: plan,
+    fromX: pono.x, fromY: pono.y,
+    t0: performance.now(),
+    duration: duration,
+  };
+}
+
+function imgFinishWalk() {
+  if (!walkAnim || walkAnim.type !== 'image') return;
+  const poly = walkAnim.plan.polyline;
+  const last = poly[poly.length - 1];
+  pono.x = last.x; pono.y = last.y;
+  pono.nodeId = walkAnim.plan.otherId;
+  if (poly.length >= 2) {
+    const a = poly[poly.length - 2], b = poly[poly.length - 1];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    pono.faceTx = dx / len; pono.faceTy = dy / len;
+  }
+  moves++;
+  hudMoves.textContent = 'てかず: ' + moves;
+  walkAnim = null;
+  if (pono.nodeId === stage.goal.id) {
+    onClear();
+  } else {
+    imgShowArrows();
+  }
+}
+
+function imgDraw(now) {
+  if (!stage || stage.type !== 'image') return;
+  if (!_imgLastFrameTs) _imgLastFrameTs = now;
+  const dt = Math.min(0.1, (now - _imgLastFrameTs) / 1000);
+  _imgLastFrameTs = now;
+
+  // Determine current pono position (animated or static)
+  let px = pono.x, py = pono.y, ftx = pono.faceTx, fty = pono.faceTy;
+  let isWalking = false;
+  if (walkAnim && walkAnim.type === 'image') {
+    const elapsed = now - walkAnim.t0;
+    const t = elapsed / walkAnim.duration;
+    if (t >= 1) {
+      const last = walkAnim.plan.polyline[walkAnim.plan.polyline.length - 1];
+      px = last.x; py = last.y;
+      imgFinishWalk();
+    } else {
+      const r = window.MazeImage.interpolate(walkAnim.plan.polyline, walkAnim.plan.cumLengths, t);
+      px = r.x; py = r.y; ftx = r.tx; fty = r.ty;
+      isWalking = true;
+    }
+  }
+
+  // Update camera
+  const w = stage._viewW || canvas.clientWidth;
+  const h = stage._viewH || canvas.clientHeight;
+  if (!stage._scale) imgComputeLayout(w, h);
+  window.MazeImage.updateCamera(stage, px, py, w, h, dt, stage._scale);
+
+  // Background fill (in case image hasn't loaded or letterbox visible)
+  ctx.fillStyle = '#A4C76D';
+  ctx.fillRect(0, 0, w, h);
+
+  // Draw with camera transform
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(stage._scale, stage._scale);
+  ctx.translate(-stage.camera.x, -stage.camera.y);
+  if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
+    ctx.drawImage(stage.image, 0, 0, stage.viewBox.w, stage.viewBox.h);
+  }
+  imgDrawPono(now, px, py, ftx, fty, isWalking);
+  ctx.restore();
+
+  // Reposition arrows so they follow pono's screen position (camera lerp)
+  if (arrowLayer.children.length > 0) imgRepositionArrows();
+
+  // Safety: re-show arrows if missing while idle
+  if (!walkAnim && !cleared && !overlay.classList.contains('show')
+      && arrowLayer.children.length === 0) {
+    imgShowArrows();
+  }
+}
+
+function imgDrawPono(now, x, y, tx, ty, isWalking) {
+  // Sprite size in world pixels (so it scales with the rest of the image).
+  // Tuned so pono is roughly 1/9 of viewBox height.
+  const walkH = stage.viewBox.h / 9;
+  const baseSize = walkH * 0.92;
+
+  const face = window.MazeImage.tangentToFace(tx, ty);
+  const dr = face.dr, dc = face.dc;
+
+  const wantsWalkSide  = isWalking && dc !== 0 && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0;
+  const wantsWalkFront = isWalking && dr === 1 && imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0;
+
+  const elapsed = walkAnim ? (now - walkAnim.t0) : now;
+
+  if (wantsWalkSide) {
+    const sideH = walkH * SIDE_WALK_SCALE;
+    const sideW = sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H;
+    const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
+    const sx = frameIdx * SIDE_WALK_FRAME_W;
+    ctx.save();
+    if (dc < 0) {
+      ctx.translate(x, y); ctx.scale(-1, 1);
+      ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+                    -sideW / 2, -sideH / 2, sideW, sideH);
+    } else {
+      ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+                    x - sideW / 2, y - sideH / 2, sideW, sideH);
+    }
+    ctx.restore();
+  } else if (wantsWalkFront) {
+    const walkW = walkH * WALK_FRAME_W / WALK_FRAME_H;
+    const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
+    const sx = frameIdx * WALK_FRAME_W;
+    ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
+                  x - walkW / 2, y - walkH / 2, walkW, walkH);
+  } else if (imgPono.complete && imgPono.naturalWidth > 0) {
+    ctx.drawImage(imgPono, x - baseSize / 2, y - baseSize / 2, baseSize, baseSize);
+  } else {
+    ctx.font = Math.floor(baseSize * 0.8) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🐻', x, y);
+  }
+}
+
+function imgUpdateLandscapeOverlay() {
+  if (!stage || stage.type !== 'image') {
+    if (landscapeReqEl) landscapeReqEl.classList.remove('show');
+    return;
+  }
+  if (window.MazeImage.isPortrait()) {
+    landscapeReqEl.classList.add('show');
+  } else {
+    landscapeReqEl.classList.remove('show');
+  }
+}
+window.addEventListener('orientationchange', imgUpdateLandscapeOverlay);
+window.addEventListener('resize', imgUpdateLandscapeOverlay);
+
+function imgKeyboardHandler(e) {
+  if (overlay.classList.contains('show') || charmTutShowing) return;
+  if (cleared || walkAnim) return;
+  let dx = 0, dy = 0;
+  if (e.key === 'ArrowUp')         dy = -1;
+  else if (e.key === 'ArrowDown')  dy = 1;
+  else if (e.key === 'ArrowLeft')  dx = -1;
+  else if (e.key === 'ArrowRight') dx = 1;
+  else return;
+  e.preventDefault();
+  const plan = window.MazeImage.computeAutoWalk(stage, pono.nodeId, { dx: dx, dy: dy });
+  if (plan) imgStartWalk(plan);
 }
 
 // ====== Apple pickup popup ======
@@ -1185,6 +1504,7 @@ function solveCellPath() {
 
 // 🧚 ヒント: 解の道を 3秒間 光らせる
 function activateHint() {
+  if (stage && stage.type === 'image') return; // not supported in image mode (Phase 1)
   if (cleared || walkAnim) return;
   const c = getCharms();
   if (c.hint <= 0) return;
@@ -1200,6 +1520,7 @@ function activateHint() {
 
 // 🍃 そよかぜパス: 次の1回だけ障害物を通り抜けられる
 function activateBreeze() {
+  if (stage && stage.type === 'image') return; // not supported in image mode (Phase 1)
   if (cleared || walkAnim) return;
   const c = getCharms();
   if (c.breeze <= 0) return;
@@ -1215,6 +1536,7 @@ function activateBreeze() {
 
 // 🌟 ほしのワープ: 解の中間地点へ瞬間移動
 function activateWarp() {
+  if (stage && stage.type === 'image') return; // not supported in image mode (Phase 1)
   if (cleared || walkAnim) return;
   const c = getCharms();
   if (c.warp <= 0) return;
@@ -1258,7 +1580,16 @@ function showHint(msg, ms) {
 // ====== Stage loading ======
 function loadStage(idx) {
   stageIdx = idx;
-  stage = buildStage(STAGES[idx]);
+  const def = STAGES[idx];
+  if (def && def.type === 'image') {
+    imgLoadStage(def);
+    return;
+  }
+  // Grid stage: ensure charm bar visible (in case previously hidden by image mode)
+  const charmsEl = document.getElementById('charms');
+  if (charmsEl) charmsEl.style.display = '';
+  if (landscapeReqEl) landscapeReqEl.classList.remove('show');
+  stage = buildStage(def);
   pono = { r: stage.start.r, c: stage.start.c };
   trail = [{ r: pono.r, c: pono.c }];
   moves = 0;
@@ -1285,8 +1616,13 @@ function onClear() {
   hideArrows();
   voice.style.display = 'none';
   updateCharmsUI();
-  if (window.incrementStat) window.incrementStat('maze_clears', 1);
-  if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
+  // Phase 1 image stages do not contribute to progression rewards (acorns, first-clear,
+  // stat counters). Without this guard, a crafted ?image=... JSON could farm rewards.
+  const isImageStage = stage && stage.type === 'image';
+  if (!isImageStage) {
+    if (window.incrementStat) window.incrementStat('maze_clears', 1);
+    if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
+  }
   playStageClearMz();
   setTimeout(function() {
     encounter.classList.add('show');
@@ -1299,15 +1635,15 @@ function onClear() {
 }
 
 function showStageClearOverlay() {
+  const isImageStage = stage && stage.type === 'image';
   const isLast = stageIdx >= STAGES.length - 1;
   if (isLast) {
-    // 最終ステージ: 初回クリア報酬を試みる。宝箱が出たら、閉じた後に
-    // 通常の「ぜんぶクリア」オーバーレイを表示する（onClose でチェーン）。
-    if (window.triggerFirstClearReward) {
+    // 最終ステージ: 初回クリア報酬を試みる (グリッドステージのみ)。
+    // image ステージは Phase 1 PoC のため進行報酬対象外。
+    if (window.triggerFirstClearReward && !isImageStage) {
       window.triggerFirstClearReward('maze', {
         onClose: function() { _showMazeFinalOverlay(); }
       }).then(function(shown) {
-        // 既に付与済み・定義なし等で宝箱が出なかった場合は即オーバーレイ
         if (!shown) _showMazeFinalOverlay();
       }).catch(function() { _showMazeFinalOverlay(); });
     } else {
@@ -1365,6 +1701,11 @@ function draw(now) {
   // Otherwise the loop terminates and Pono "freezes/disappears".
   try {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (stage && stage.type === 'image') {
+      imgDraw(now);
+      requestAnimationFrame(draw);
+      return;
+    }
     if (stage) {
       // Cells
       for (let r = 0; r < stage.rows; r++) {
@@ -1562,6 +1903,7 @@ function drawPono(now) {
 
 // ====== Keyboard input (also supported) ======
 window.addEventListener('keydown', function(e) {
+  if (stage && stage.type === 'image') { imgKeyboardHandler(e); return; }
   if (overlay.classList.contains('show') || charmTutShowing) return;
   if (cleared || walkAnim) return;
   let dr = 0, dc = 0;
@@ -1607,7 +1949,9 @@ if (window.initMenu) {
 
 updateCharmsUI();
 showOverlay();
-loadStage(0);
+// If ?image=<name> is present, fetch the image stage JSON first then load.
+// Falls back to normal grid stage 0 if fetch fails or no param present.
+_loadImageStageFromURL().then(function() { loadStage(0); });
 requestAnimationFrame(draw);
 </script>
 </body>
