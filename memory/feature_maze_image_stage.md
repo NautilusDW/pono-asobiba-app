@@ -83,6 +83,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **お邪魔虫 (creatures) + じゃんけんミニゲーム**: stage def に `creatures: [{id, kind, x, y}]` を追加。`kind` は `mayoi`/`odoke`/`nemuri`/`pyon` の 4 種類 (Phase A は全部じゃんけん、Phase B でクイズ等に拡張予定)。歩行中にお邪魔虫の半径内に入ると `_checkCreatureCollision` が `_triggerEncounter` を発火 → モーダル表示 → じゃんけん (グー/チョキ/パー、CPU はランダム、あいこ で再戦)。勝ち=お邪魔虫消滅 (`_defeatedCreatures` Set に追加) + walk 再開、負け=スタートノードへワープ + 矢印再表示。Reward への影響は無し (image ステージは _official フラグでのみ報酬対象)
 - ✅ **ポノを `pono_lantan.png` に固定 (image ステージのみ)**: 歩行スプライトシートの差し替え (front/side, 25/35 frames) を image ステージでは使わず、ランタンを持つ円形ポノアイコン (`pono_lantan.png`, 1024x1024) を viewBox.h/9 サイズで描画。歩行中だけ軽い上下バウンス (`sin(now/130)`)。グリッドステージは従来通り歩行アニメ維持
 - ✅ **エディタの localStorage 自動保存**: `pono_maze_editor_draft_v1` キーで `state.nodes/edges/obstacles/creatures + stage 名/番号/lantern + 圧縮画像 dataURL (1600px Q70 JPEG, 4MB 上限)` を 800ms debounce で自動保存。ページ再読み込み時に自動復元 (バナーで「約 N 分前の状態を復元」表示)。`pushHistory` をラップして node/edge/obstacle/creature の各操作後に保存 + ステージ名/番号/lantern 入力にも `input/change` リスナで連動。「↺ ぜんぶリセット」で localStorage も削除。サイドバー status エリアに「💾 自動保存済み (XX KB)」表示で動作確認可能
+- ✅ **スタート/ゴール マーカー画像**: 物語設定の世界観に合った装飾アセット (`assets/images/maze/marker_start.png`「スタート」フレーム, `marker_goal.png`「ゴール」アーチ) を start/goal ノード位置に描画。ランタイム (image ステージ): obstacles/creatures より下のレイヤーに、`viewBox.h / 6` サイズで縦横比保持して描画。エディタ: 同じ画像を `state.imgH / 6` サイズで描画 (start=オレンジ環、goal=緑環の薄いアウトラインつき) してクリック中心が分かるようにする。stop ノードは従来通り白丸 + id ラベル
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker

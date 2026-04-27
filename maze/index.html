@@ -590,6 +590,9 @@ const imgHole  = new Image(); imgHole.src  = '../assets/images/maze/hole.png';
 const imgStump = new Image(); imgStump.src = '../assets/images/maze/stump.png';
 const imgRock  = new Image(); imgRock.src  = '../assets/images/maze/rock.png';
 const imgApple = new Image(); imgApple.src = '../assets/images/word/ringo.png';
+// Start / Goal markers for image stages
+const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
+const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/marker_goal.png';
 // 障害物をセル位置から決定論的に選ぶ（同じ位置なら常に同じ絵）
 const OBSTACLE_IMGS = [imgPond, imgHole, imgStump, imgRock];
 function _pickObstacleImg(r, c) {
@@ -1511,6 +1514,8 @@ function imgDraw(now) {
   if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
     ctx.drawImage(stage.image, 0, 0, stage.viewBox.w, stage.viewBox.h);
   }
+  // Start / Goal markers (decorative, drawn under obstacles & creatures)
+  imgDrawMarkers(stage);
   // Obstacles (decoration only — placed by editor on top of the maze image)
   if (stage.obstacles && stage.obstacles.length) imgDrawObstacles(stage);
   // Creatures (お邪魔虫 — block path until defeated via mini-game)
@@ -1571,6 +1576,23 @@ const OBSTACLE_KIND_IMG = {
   stump: imgStump,
   rock:  imgRock,
 };
+
+function imgDrawMarkers(stage) {
+  // Draw the start and goal asset markers at their node positions.
+  // Sized at viewBox.h / 6 so they read clearly at any zoom but don't dominate.
+  const sz = stage.viewBox.h / 6;
+  if (stage.start && imgMarkerStart.complete && imgMarkerStart.naturalWidth > 0) {
+    // Preserve aspect ratio
+    const ratio = imgMarkerStart.naturalWidth / imgMarkerStart.naturalHeight;
+    const sw = sz * ratio, sh = sz;
+    ctx.drawImage(imgMarkerStart, stage.start.x - sw/2, stage.start.y - sh/2, sw, sh);
+  }
+  if (stage.goal && imgMarkerGoal.complete && imgMarkerGoal.naturalWidth > 0) {
+    const ratio = imgMarkerGoal.naturalWidth / imgMarkerGoal.naturalHeight;
+    const sw = sz * ratio, sh = sz;
+    ctx.drawImage(imgMarkerGoal, stage.goal.x - sw/2, stage.goal.y - sh/2, sw, sh);
+  }
+}
 
 function imgDrawObstacles(stage) {
   // Default size relative to viewBox height

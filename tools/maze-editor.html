@@ -196,6 +196,15 @@ html, body { height: 100vh; overflow: hidden;
 'use strict';
 
 // ────────────────────────────────────────────────────────
+// Asset preload (start / goal markers — same as runtime uses)
+// ────────────────────────────────────────────────────────
+const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
+const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/marker_goal.png';
+// Re-render once each marker loads so first-paint isn't blank
+imgMarkerStart.onload = function() { try { draw(); } catch (e) {} };
+imgMarkerGoal.onload  = function() { try { draw(); } catch (e) {} };
+
+// ────────────────────────────────────────────────────────
 // State
 // ────────────────────────────────────────────────────────
 const state = {
@@ -810,23 +819,31 @@ function drawEdge(poly, color, alpha, dashed) {
 
 function drawNode(n) {
   ctx.save();
-  const r = 22 / canvasScale;
-  let fill = '#fff', label = '', stroke = '#5D4E37';
-  if (n.kind === 'start') { fill = '#F5A623'; label = 'S'; }
-  else if (n.kind === 'goal') { fill = '#6C8E3F'; label = 'G'; }
-  else { fill = '#fff'; label = ''; }
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 4 / canvasScale;
-  ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  if (label) {
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold ' + (r * 1.0) + 'px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(label, n.x, n.y);
+  if (n.kind === 'start' && imgMarkerStart.complete && imgMarkerStart.naturalWidth > 0) {
+    const sz = state.imgH / 6;
+    const ratio = imgMarkerStart.naturalWidth / imgMarkerStart.naturalHeight;
+    ctx.drawImage(imgMarkerStart, n.x - (sz*ratio)/2, n.y - sz/2, sz * ratio, sz);
+    // Subtle outline ring so it remains clickable when overlapping bg
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = '#F5A623';
+    ctx.lineWidth = 4 / canvasScale;
+    ctx.beginPath(); ctx.arc(n.x, n.y, sz/2, 0, Math.PI * 2); ctx.stroke();
+  } else if (n.kind === 'goal' && imgMarkerGoal.complete && imgMarkerGoal.naturalWidth > 0) {
+    const sz = state.imgH / 6;
+    const ratio = imgMarkerGoal.naturalWidth / imgMarkerGoal.naturalHeight;
+    ctx.drawImage(imgMarkerGoal, n.x - (sz*ratio)/2, n.y - sz/2, sz * ratio, sz);
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = '#6C8E3F';
+    ctx.lineWidth = 4 / canvasScale;
+    ctx.beginPath(); ctx.arc(n.x, n.y, sz/2, 0, Math.PI * 2); ctx.stroke();
   } else {
-    // Stop nodes: small id label below
+    // Stop nodes: small white circle with id label
+    const r = 22 / canvasScale;
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#5D4E37';
+    ctx.lineWidth = 4 / canvasScale;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#5D4E37';
     ctx.font = 'bold ' + (r * 0.55) + 'px sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
