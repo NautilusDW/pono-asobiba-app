@@ -1979,9 +1979,12 @@ document.getElementById('compareBtn').addEventListener('click', function() {
 // 3 ティア: d<50 は 2-tile 路幅 (子供向け、見やすい)、d>=50 は 1-tile 路幅
 // (大人向け、迷路らしい難しさ)、d>=75 は 2-panel (画面 2 つ分の超大型迷路)
 //
-// - d=1..49  : 1 panel, cellStride=4 (2-tile path), 7×3 cell grid (21 cells)
-// - d=50..74 : 1 panel, cellStride=2 (1-tile path), 14×7 cell grid (98 cells)
-// - d=75..100: 2 panel, cellStride=2 (1-tile path), 30×7 cell grid (210 cells)
+// - d=1..49  : 1 panel, cellStride=4 (2-tile path), 7×4 cell grid (28 cells)
+// - d=50..74 : 1 panel, cellStride=2 (1-tile path), 15×8 cell grid (120 cells)
+// - d=75..100: 2 panel, cellStride=2 (1-tile path), 31×8 cell grid (248 cells)
+//
+// 余白ポリシー: 外周は最低 1 タイル空けて、それ以外は full にスペースを使う。
+// d=1 などの低難易度でも面積が小さく不格好にならないように。
 //
 // 各ティア内の難易度は `straightBias` で調整: 高い値 = ヘビ状で簡単、
 // 0 = 完全ランダム DFS で枝分かれが多く難しい。
@@ -1994,20 +1997,26 @@ function _paramsForDifficulty(d) {
   const cellStride = wideMode ? 4 : 2;
   const panels = twoPanel ? 2 : 1;
   const gridW  = panels * 32;
-  // セル数: 2-tile 路幅は粗い格子になる (path が広い分セル数が少ない)
-  const cw = Math.floor((gridW - 4) / cellStride);  // wide: 7, narrow1panel: 14, narrow2panel: 30
-  const ch = Math.floor((GRID_H - 4) / cellStride); // wide: 3, narrow: 7
+  // 1 タイル外周ぶんだけ予約 (合計 2 タイル) し、残りは fill。Math.floor で
+  // 余りが出たら自動センタリングで両端に振り分けられる。
+  const cw = Math.floor((gridW - 2) / cellStride);  // wide: 7, narrow1panel: 15, narrow2panel: 31
+  const ch = Math.floor((GRID_H - 2) / cellStride); // wide: 4, narrow: 8
   let straightBias, creatureCount;
+  let loopFraction = 0;
   if (twoPanel) {
     const t = (v - 75) / 25;
     straightBias  = 0.50 * (1 - t);         // 0.50 → 0
     creatureCount = Math.round(5 + 5 * t);  // 5 → 10
   } else if (wideMode) {
-    // d=1..49: 2-tile 路幅。d=1 がユーザー指定の「枝分かれの多い 7×3 迷路」相当 (画像参照)
-    // → straightBias は最初から低めに設定 (0.3 → 0)。直線多めだとセル数 21 では
-    // 単純な S 字に縮退してしまうので、d=1 でもしっかり枝分かれを残す。
-    const t = (v - 1) / 48;
-    straightBias  = 0.30 * (1 - t);         // 0.30 → 0
+    // d=1..49: 2-tile 路幅。28 セル (7×4) は同じだが、bias と loops で
+    // 確実に「数字が上がるほど難しく」見えるようにする:
+    //   d=1  : bias=0.70 (大きく直線寄り = 単純な S 字 / 数 dead-end のみ)
+    //   d=49 : bias=0.00 (純ランダム = 多数の dead-end) + loopFraction=0.35
+    //          (余分な壁が抜けて多経路 = 子供にとって判断ポイント増加で難しい)
+    // RNG 分散で d=49 が時々簡単に見えるリスクは loops で吸収。
+    const t = (v - 1) / 48; // 0 → 1
+    straightBias  = 0.70 * (1 - t);         // 0.70 → 0
+    loopFraction  = 0.35 * t;               // 0 → 0.35
     creatureCount = Math.round(1 + 2 * t);  // 1 → 3
   } else {
     // d=50..74: 1-tile 路幅、難易度ティア
@@ -2023,7 +2032,7 @@ function _paramsForDifficulty(d) {
     cw: cw,
     ch: ch,
     straightBias: straightBias,
-    loopFraction: 0,            // no loops — pure spanning tree
+    loopFraction: loopFraction, // wide mode で d>0 のとき余分な壁を抜く (多経路 = 判断点増)
     deadEndPrune: 0,            // never prune — always full maze
     creatureCount: creatureCount,
   };
