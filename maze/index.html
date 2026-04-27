@@ -355,6 +355,32 @@ html, body {
   100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
 }
 
+/* ── Image-stage mode: full viewport landscape takeover ──
+   Default app is locked to 540px (portrait mobile) for the grid maze.
+   When body has .image-stage-mode we override for full landscape. */
+body.image-stage-mode #app {
+  max-width: none;
+  width: 100vw;
+  height: 100dvh;
+  padding: 0;
+  margin: 0;
+}
+body.image-stage-mode .header,
+body.image-stage-mode .hud,
+body.image-stage-mode .charms,
+body.image-stage-mode #voice,
+body.image-stage-mode #encounter,
+body.image-stage-mode #hint {
+  display: none !important;
+}
+body.image-stage-mode .game-wrap {
+  border-radius: 0;
+  box-shadow: none;
+  width: 100vw;
+  height: 100dvh;
+  background: #2a3a1f;
+}
+
 /* Landscape-required overlay (only shown for image-type stages on portrait) */
 .landscape-req {
   position: fixed; inset: 0;
@@ -458,6 +484,7 @@ html, body {
 
 <script src="../common/menu.js"></script>
 <script src="../common/achievements.js"></script>
+<script src="../common/mvp-flags.js"></script>
 <script src="../common/acorns.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
@@ -1200,6 +1227,8 @@ function imgLoadStage(def) {
     console.error('[maze] MazeImage runtime not loaded');
     return;
   }
+  // Switch body to image-stage layout (full viewport landscape, hide grid UI)
+  document.body.classList.add('image-stage-mode');
   stage = window.MazeImage.buildStage(def);
   pono = {
     type: 'image',
@@ -1613,7 +1642,8 @@ function loadStage(idx) {
     imgLoadStage(def);
     return;
   }
-  // Grid stage: ensure charm bar visible (in case previously hidden by image mode)
+  // Grid stage: revert from image-stage mode if previously set
+  document.body.classList.remove('image-stage-mode');
   const charmsEl = document.getElementById('charms');
   if (charmsEl) charmsEl.style.display = '';
   if (landscapeReqEl) landscapeReqEl.classList.remove('show');
@@ -1696,6 +1726,7 @@ function _showMazeFinalOverlay() {
 
 // きょうの どんぐり: N/5 / 上限到達時は「おしまい」メッセージ
 function _dailyAcornTail(gameId) {
+  if (window.PONO_MVP_NO_REWARDS) return '';
   if (!window.getDailyAcorns) return '';
   var n = window.getDailyAcorns(gameId);
   return n >= 5

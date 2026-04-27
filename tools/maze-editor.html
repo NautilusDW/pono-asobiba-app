@@ -745,31 +745,71 @@ document.getElementById('exportBtn').addEventListener('click', function() {
 // New tabs opened via window.open() inherit a copy of the opener's
 // sessionStorage at open time, so the maze tab reads it on init.
 // ────────────────────────────────────────────────────────
+// Compress an image to a JPEG dataURL for sessionStorage transport.
+// Original images are often >5MB (PNG with full color/transparency). sessionStorage
+// quota is typically 5MB per origin → original PNG dataURLs frequently overflow.
+// We scale down to maxDim and re-encode as JPEG to get to ~200-800 KB.
+// The viewBox in the def stays at the ORIGINAL dimensions (coordinates unchanged),
+// so the runtime's drawImage scales the compressed preview back to fill the maze.
+function compressImageToDataURL(img, maxDim, quality) {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const scale = Math.min(1, maxDim / Math.max(w, h));
+  const dw = Math.max(1, Math.floor(w * scale));
+  const dh = Math.max(1, Math.floor(h * scale));
+  const c = document.createElement('canvas');
+  c.width = dw; c.height = dh;
+  c.getContext('2d').drawImage(img, 0, 0, dw, dh);
+  return c.toDataURL('image/jpeg', quality);
+}
+
+// Try several compression levels until sessionStorage accepts it.
+// Returns: { ok: bool, label: string, bytes: number }
+function trySetSessionImage(img) {
+  sessionStorage.removeItem('pono_maze_draft_image');
+  const attempts = [
+    { src: img.src, label: 'original' },
+    { make: function() { return compressImageToDataURL(img, 2560, 0.88); }, label: 'JPEG 2560px Q88' },
+    { make: function() { return compressImageToDataURL(img, 1920, 0.82); }, label: 'JPEG 1920px Q82' },
+    { make: function() { return compressImageToDataURL(img, 1280, 0.75); }, label: 'JPEG 1280px Q75' },
+    { make: function() { return compressImageToDataURL(img,  960, 0.7);  }, label: 'JPEG  960px Q70' },
+  ];
+  for (let i = 0; i < attempts.length; i++) {
+    let dataUrl;
+    try { dataUrl = attempts[i].src || attempts[i].make(); } catch (e) { continue; }
+    if (!dataUrl) continue;
+    try {
+      sessionStorage.setItem('pono_maze_draft_image', dataUrl);
+      return { ok: true, label: attempts[i].label, bytes: dataUrl.length };
+    } catch (e) { /* QuotaExceededError → try smaller */ }
+  }
+  return { ok: false, label: 'all levels failed', bytes: 0 };
+}
+
 document.getElementById('testBtn').addEventListener('click', function() {
   if (!validateForExport()) return;
   const r = buildExportDef();
   try {
     sessionStorage.setItem('pono_maze_draft_stage', JSON.stringify(r.def));
-    sessionStorage.removeItem('pono_maze_draft_image');
-    if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
-      try {
-        sessionStorage.setItem('pono_maze_draft_image', state.image.src);
-      } catch (e) {
-        // QuotaExceededError — image too big for sessionStorage. Runtime will
-        // fall back to fetching the imageUrl from the server (if it's there).
-        console.warn('image too big for sessionStorage, runtime will use imageUrl from def:', e.message);
-        showBanner('⚠ 画像が大きすぎてセッションに保存できないよ。サーバーの ' + r.def.imageUrl + ' を使うよ');
-      }
-    }
   } catch (e) {
-    alert('プレビュー用のデータ保存に失敗: ' + e.message);
+    alert('プレビュー用の def 保存に失敗: ' + e.message);
     return;
+  }
+  // Try to also stash the image (with progressive compression fallback).
+  // If all levels fail, the runtime will fetch from r.def.imageUrl on the server.
+  let imgResult = { ok: false, label: 'no image' };
+  if (state.image && state.image.complete && state.image.naturalWidth > 0) {
+    imgResult = trySetSessionImage(state.image);
   }
   // Open in new tab. NOTE: do NOT use noopener — that breaks sessionStorage
   // inheritance in some browsers.
   const url = '../maze/?image=__draft__';
   window.open(url, '_blank');
-  showBanner('▶ 新タブでドラフトプレビューを開きました');
+  if (imgResult.ok) {
+    const kb = (imgResult.bytes / 1024).toFixed(0);
+    showBanner('▶ プレビューを開きました (画像: ' + imgResult.label + ', ' + kb + ' KB)');
+  } else {
+    showBanner('▶ プレビューを開きました (画像はサーバーの ' + r.def.imageUrl + ' を使うよ)');
+  }
 });
 
 // ────────────────────────────────────────────────────────

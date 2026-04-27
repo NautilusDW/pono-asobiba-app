@@ -6,6 +6,10 @@
 (function() {
   'use strict';
 
+  // MVP フラグ: 報酬制度を封印中は宝箱演出をスキップ (onClose だけ呼ぶ)。
+  // 切替は common/mvp-flags.js を参照。
+  function _isRewardsDisabled() { return !!window.PONO_MVP_NO_REWARDS; }
+
   var _overlay = null;
   var _container = null;   // .treasure-container (video はここに都度 append)
   var _video = null;       // 毎回 showTreasure で新規生成
@@ -388,6 +392,10 @@
   // ── メイン: showTreasure ─────────────────────────────────────────────────────
   window.showTreasure = function(options) {
     // options: { name, img, onClose, label }
+    if (_isRewardsDisabled()) {
+      try { if (options && typeof options.onClose === 'function') options.onClose(); } catch (e) {}
+      return;
+    }
     _createUI();
     _clearPendingTimers();
     _destroyVideo();

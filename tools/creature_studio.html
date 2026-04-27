@@ -214,6 +214,17 @@ body {
   flex: 1; min-height: 60px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.2s;
+  position: relative;
+}
+.sprite-highlight {
+  position: absolute; pointer-events: none; z-index: 50;
+  border: 3px solid #f87171; border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+  animation: spriteHighlightPulse 1.4s ease-in-out 3;
+}
+@keyframes spriteHighlightPulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.45; }
 }
 /* fit modeのときだけ中央寄せ; zoom時はcanvasが大きくなるのでflex解除 */
 .compare-canvas-box.zoomed { display: block; }
@@ -246,12 +257,112 @@ body {
 }
 .empty-msg { padding: 20px; font-size: 0.78rem; color: #4b5563; }
 
+/* ── Timeline Tab ── */
+#tab-timeline { flex-direction: column; overflow: hidden; }
+#tab-timeline.active { display: flex; }
+.timeline-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 8px 12px; background: #1f2937; border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+.timeline-controls .tl-group {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 6px; border-left: 1px solid #374151;
+}
+.timeline-controls .tl-group:first-child { border-left: none; padding-left: 0; }
+.timeline-controls label { font-size: 0.68rem; color: #9ca3af; }
+.timeline-controls input[type="number"] {
+  width: 50px; padding: 3px 4px; background: #111827; border: 1px solid #374151;
+  border-radius: 4px; color: #f87171; font-size: 0.78rem; font-weight: 700;
+  text-align: center; font-family: inherit;
+}
+.timeline-controls select {
+  padding: 4px 8px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 5px; color: #d1d5db; font-size: 0.72rem; font-family: inherit;
+}
+.tl-pbtn {
+  padding: 4px 9px; background: rgba(255,255,255,0.05); color: #d1d5db;
+  border: 1px solid #374151; border-radius: 5px; font-size: 0.78rem;
+  cursor: pointer; font-family: inherit; transition: all 0.12s;
+}
+.tl-pbtn:hover { background: rgba(255,255,255,0.12); }
+.tl-pbtn.primary { background: #f87171; color: #fff; border-color: #f87171; }
+.tl-pbtn.primary:hover { background: #ef4444; }
+.tl-pbtn.toggle.active { background: #22c55e; color: #fff; border-color: #22c55e; }
+
+.timeline-stage {
+  flex: 1; min-height: 180px; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.timeline-stage[data-bg="checker"] {
+  background: repeating-conic-gradient(#2d2d2d 0% 25%, #1a1a1a 0% 50%) 0 0 / 14px 14px;
+}
+.timeline-stage[data-bg="black"] { background: #000; }
+.timeline-stage[data-bg="white"] { background: #fff; }
+#timeline-canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+.tl-empty {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: #4b5563; font-size: 0.78rem; pointer-events: none;
+}
+
+.timeline-progress {
+  position: relative; height: 22px; background: #111827;
+  border-top: 1px solid #374151; border-bottom: 1px solid #374151;
+  cursor: pointer; flex-shrink: 0;
+}
+.timeline-progress-bar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: linear-gradient(90deg, #f87171, #fbbf24);
+  pointer-events: none; transition: width 0.05s linear;
+}
+.timeline-progress-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 0.66rem; color: #d1d5db; font-weight: 700; pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+
+.timeline-strip {
+  display: flex; gap: 6px; padding: 8px 10px; overflow-x: auto;
+  background: #111827; flex-shrink: 0; min-height: 130px;
+  scrollbar-width: thin;
+}
+.timeline-strip-cell {
+  flex-shrink: 0; width: 92px; background: #1f2937;
+  border: 2px solid #374151; border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column; transition: border-color 0.12s;
+}
+.timeline-strip-cell.active { border-color: #f87171; box-shadow: 0 0 0 1px #f87171; }
+.tl-cell-thumb {
+  background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 0 0 / 8px 8px;
+  height: 60px; display: flex; align-items: center; justify-content: center;
+}
+.tl-cell-thumb canvas { max-width: 100%; max-height: 60px; }
+.tl-cell-meta {
+  display: flex; align-items: center; gap: 3px;
+  padding: 3px 5px; background: #111827; border-top: 1px solid #374151;
+}
+.tl-cell-num { font-size: 0.62rem; font-weight: 700; color: #9ca3af; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-cell-meta input[type="number"] {
+  width: 30px; padding: 1px 2px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 3px; color: #f87171; font-size: 0.62rem; font-weight: 700;
+  text-align: center; font-family: inherit;
+}
+.tl-cell-jump {
+  background: none; border: none; cursor: pointer; padding: 1px 3px;
+  font-size: 0.7rem; color: #fbbf24;
+}
+.tl-cell-jump:hover { color: #fff; }
+
 /* ── Sprite Card ── */
 .sprite-card {
   background: #1f2937; border: 2px solid #374151; border-radius: 10px;
   width: 210px; overflow: hidden; transition: border-color 0.15s;
 }
 .sprite-card.selected { border-color: #22c55e; }
+.sprite-card.dragging { opacity: 0.4; }
+.sprite-card.drag-over { border-color: #f87171; box-shadow: 0 0 0 2px #f87171; }
 .card-hdr {
   display: flex; align-items: center; gap: 5px;
   padding: 5px 8px; background: #111827;
@@ -263,6 +374,12 @@ body {
   background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 0 0 / 10px 10px;
   height: 110px; display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  cursor: grab; position: relative;
+}
+.card-preview:active { cursor: grabbing; }
+.card-preview[draggable="true"]::after {
+  content: "⠿"; position: absolute; top: 4px; right: 6px;
+  color: rgba(255,255,255,0.45); font-size: 0.8rem; pointer-events: none;
 }
 .card-preview canvas { max-width: 100%; max-height: 110px; }
 .card-body { padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
@@ -681,6 +798,7 @@ body {
       <button class="tab-btn active" data-tab="compare">比較</button>
       <button class="tab-btn" data-tab="composite" id="tab-composite-btn" style="display:none">合成</button>
       <button class="tab-btn" data-tab="sprites" id="tab-sprites-btn">スプライト (0)</button>
+      <button class="tab-btn" data-tab="timeline" id="tab-timeline-btn">🎞 タイムライン (0)</button>
     </div>
 
     <!-- Compare tab -->
@@ -731,6 +849,7 @@ body {
           <div class="compare-label">処理後（背景除去済み）</div>
           <div class="compare-canvas-box" id="box-proc">
             <div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>
+            <div class="sprite-highlight" id="sprite-highlight" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -820,6 +939,45 @@ body {
       <div id="sprites-grid" class="sprites-grid">
         <div class="empty-msg">「スプライトを分割」を実行してください。</div>
       </div>
+    </div>
+
+    <!-- Timeline tab -->
+    <div class="tab-content" id="tab-timeline">
+      <div class="timeline-controls">
+        <div class="tl-group">
+          <button class="tl-pbtn primary" id="tl-play" title="再生">▶</button>
+          <button class="tl-pbtn" id="tl-pause" title="一時停止">⏸</button>
+          <button class="tl-pbtn" id="tl-stop" title="停止 (先頭へ)">⏹</button>
+        </div>
+        <div class="tl-group">
+          <button class="tl-pbtn toggle active" id="tl-loop" title="ループ">🔁 ループ</button>
+          <button class="tl-pbtn toggle" id="tl-pingpong" title="行って戻ってを繰り返す">🔂 ピンポン</button>
+        </div>
+        <div class="tl-group">
+          <label>FPS</label>
+          <input type="number" id="tl-fps" value="12" min="1" max="60" step="1">
+          <label>各コマ</label>
+          <input type="number" id="tl-frames" value="1" min="1" max="20" step="1">
+          <span style="font-size:0.6rem;color:#6b7280">fr</span>
+        </div>
+        <div class="tl-group">
+          <label>背景</label>
+          <select id="tl-bg">
+            <option value="checker">チェッカー</option>
+            <option value="black">黒</option>
+            <option value="white">白</option>
+          </select>
+        </div>
+      </div>
+      <div class="timeline-stage" id="timeline-stage" data-bg="checker">
+        <canvas id="timeline-canvas" width="640" height="400"></canvas>
+        <div class="tl-empty" id="tl-empty">「スプライトを分割」してから戻ってきてください。</div>
+      </div>
+      <div class="timeline-progress" id="tl-progress" title="クリックでシーク">
+        <div class="timeline-progress-bar" id="tl-progress-bar"></div>
+        <div class="timeline-progress-label" id="tl-progress-label">0 / 0</div>
+      </div>
+      <div class="timeline-strip" id="tl-strip"></div>
     </div>
 
     <!-- Deploy status bar -->
@@ -1045,6 +1203,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'timeline' && typeof Timeline !== 'undefined') {
+      Timeline.bindEvents();
+      Timeline.refresh();
+    }
   });
 });
 
@@ -3173,6 +3335,7 @@ function renderSpritesGrid() {
     grid.innerHTML = '<div class="empty-msg">「スプライトを分割」を実行してください。</div>';
     toolbar.style.display = 'none';
     document.getElementById('deploy-bar').classList.remove('show');
+    if (typeof Timeline !== 'undefined') Timeline.refresh();
     return;
   }
 
@@ -3182,6 +3345,8 @@ function renderSpritesGrid() {
 
   grid.innerHTML = '';
   sprites.forEach((sp, idx) => grid.appendChild(createSpriteCard(sp, idx)));
+
+  if (typeof Timeline !== 'undefined') Timeline.refresh();
 }
 
 function createSpriteCard(sp, idx) {
@@ -3348,6 +3513,39 @@ function createSpriteCard(sp, idx) {
       showToast('AI命名失敗: ' + e.message, false);
     }
     btn.textContent = '🤖'; btn.disabled = false;
+  });
+
+  // ── 並び替え (HTML5 DnD): プレビュー領域をハンドルにして card 全体を drop ターゲットに
+  const previewEl = card.querySelector('.card-preview');
+  previewEl.draggable = true;
+  previewEl.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', String(idx));
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
+  });
+  previewEl.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.sprite-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+  card.addEventListener('dragover', e => {
+    if (card.classList.contains('dragging')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave', e => {
+    if (e.target === card) card.classList.remove('drag-over');
+  });
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    const to = idx;
+    if (Number.isFinite(from) && from !== to && from >= 0 && from < sprites.length) {
+      const [moved] = sprites.splice(from, 1);
+      sprites.splice(to, 0, moved);
+      renderSpritesGrid();
+    }
   });
 
   return card;

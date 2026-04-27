@@ -157,7 +157,9 @@ function showSuccessModal() {
     modalStageInfo.textContent = `ステージ ${currentStageIndex + 1} クリア！`;
     btnNextStage.classList.remove('hidden');
   }
-  if (modalDailyAcorn && window.getDailyAcorns) {
+  if (window.PONO_MVP_NO_REWARDS) {
+    if (modalDailyAcorn) modalDailyAcorn.style.display = 'none';
+  } else if (modalDailyAcorn && window.getDailyAcorns) {
     const n = window.getDailyAcorns('puzzle');
     modalDailyAcorn.textContent = n >= 5
       ? '🌰 きょうの どんぐりは おしまい！また あした！'

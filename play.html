@@ -1140,6 +1140,7 @@
       .stamp-card-section { max-width: 580px; }
     }
   </style>
+  <script src="common/mvp-flags.js"></script>
   <script src="common/achievements.js"></script>
   <script src="common/acorns.js"></script>
   <script src="common/thankyou.js"></script>
@@ -2945,7 +2946,8 @@
           e.stopPropagation();
           showRewardHistory();
         });
-        btnRow.appendChild(histBtn);
+        // MVP: 報酬制度封印中は「もらった ごほうび」履歴ボタンを表示しない
+        if (!window.PONO_MVP_NO_REWARDS) btnRow.appendChild(histBtn);
 
         var achBtn = document.createElement('button');
         achBtn.style.cssText = iconBtnStyle + 'background:#FEF3C7;color:#D97706;';
@@ -3567,6 +3569,12 @@
       // common/first-clear.js が localStorage.pono_pending_first_clear に
       // 配列で積んだ情報を順番に処理する。
       function checkPendingFirstClear() {
+        // MVP: 報酬制度封印中は祝賀ポップアップをスキップ。
+        // pending キューはクリアして、再公開時に古い演出が突然出るのを防ぐ。
+        if (window.PONO_MVP_NO_REWARDS) {
+          try { localStorage.setItem('pono_pending_first_clear', '[]'); } catch (e) {}
+          return;
+        }
         var pending;
         try { pending = JSON.parse(localStorage.getItem('pono_pending_first_clear') || '[]'); }
         catch(e) { pending = []; }
