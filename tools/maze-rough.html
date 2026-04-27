@@ -234,6 +234,7 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="erase">🧹 けす</button>
       <button class="btn" data-mode="start" style="background:#1f4079; color:#cef;">🟦 スタート</button>
       <button class="btn" data-mode="goal" style="background:#7d2e2e; color:#fcc;">🟥 ゴール</button>
+      <button class="btn" data-mode="creature" style="background:#5a3a7a; color:#e6c8ff;">🐛 おじゃま虫</button>
     </div>
 
     <h3>ブラシサイズ</h3>
@@ -257,7 +258,19 @@ input[type="file"]::file-selector-button {
       <div class="stats-line"><span>最短手数</span><span id="statShortest">—</span></div>
       <div class="stats-line"><span>分岐数</span><span id="statBranches">0</span></div>
       <div class="stats-line"><span>行き止まり</span><span id="statDeadEnds">0</span></div>
+      <div class="stats-line"><span>おじゃま虫</span><span id="statCreatures">0</span></div>
     </div>
+
+    <h3>🎲 ランダム生成</h3>
+    <p style="font-size:0.7rem; color:#888;">ステージ番号で難易度を決めて自動で迷路を作るよ。お邪魔虫の位置も決まる。</p>
+    <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
+      <label style="font-size:0.78rem; color:#ddd;">ステージ</label>
+      <input type="number" id="genStageInput" min="1" max="20" value="1"
+             style="flex:1; padding:5px 8px; font-family:inherit; font-size:0.85rem;
+                    background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+    </div>
+    <div id="genStageHint" style="font-size:0.7rem; color:#A4C76D; margin-bottom:6px; min-height:1.2em;"></div>
+    <button class="btn primary" id="generateBtn" style="width:100%; padding:9px;">🎲 ランダム生成</button>
 
     <div class="actions">
       <button class="btn" id="undoBtn">⤺ 取り消し (1ステップ前に戻す)</button>
@@ -305,7 +318,8 @@ input[type="file"]::file-selector-button {
       🟩 緑 = 草・壁<br>
       ⬜ 白 = 歩ける道<br>
       🔵 青円 = スタート<br>
-      🔴 赤円 = ゴール
+      🔴 赤円 = ゴール<br>
+      🟣 紫小円 = お邪魔虫
     </div>
   </aside>
 
@@ -357,6 +371,7 @@ const COLOR_PATH  = '#FAF6E8';
 const COLOR_GRID  = 'rgba(0,0,0,0.12)';
 const COLOR_START = '#3B8DD9';
 const COLOR_GOAL  = '#D74E4E';
+const COLOR_CREATURE = '#A855E6'; // お邪魔虫マーカー (紫)
 
 const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 
@@ -367,13 +382,14 @@ const state = {
   tiles: makeEmptyGrid(), // 'wall' | 'path'
   start: null,            // { x, y } in PIXEL coords (free positioning, not grid-snapped)
   goal:  null,            // same — pixel coords
+  creatures: [],          // [{ x, y }] お邪魔虫マーカー (PIXEL coords)
   mode: 'path',
   brushSize: 2,
   showGrid: true,
   showSolution: false,
   isPainting: false,
   hoverTile: null,        // { x, y } currently hovered tile (for brush preview)
-  draggingMarker: null,   // 'start' | 'goal' | null — marker is being dragged
+  draggingMarker: null,   // 'start' | 'goal' | { type:'creature', index:N } | null
   history: [],            // snapshots for undo
   refImage: null,         // HTMLImageElement: 参考用に下絵として表示する画像 (drag-drop で読込)
 };
@@ -430,6 +446,7 @@ const statTiles = document.getElementById('statTiles');
 const statShortest = document.getElementById('statShortest');
 const statBranches = document.getElementById('statBranches');
 const statDeadEnds = document.getElementById('statDeadEnds');
+const statCreatures = document.getElementById('statCreatures');
 
 // ────────────────────────────────────────────────────────
 // Canvas sizing + zoom (50% .. 200%)
@@ -515,6 +532,19 @@ function drawCompare() {
   }
   drawMarkerOn(_compareSnap.start, COLOR_START);
   drawMarkerOn(_compareSnap.goal,  COLOR_GOAL);
+  // creatures (small purple)
+  const cres = Array.isArray(_compareSnap.creatures) ? _compareSnap.creatures : [];
+  for (let i = 0; i < cres.length; i++) {
+    const c = cres[i];
+    const r = CELL * 0.7;
+    ctx2.save();
+    ctx2.fillStyle = COLOR_CREATURE; ctx2.globalAlpha = 0.9;
+    ctx2.beginPath(); ctx2.arc(c.x, c.y, r, 0, Math.PI * 2); ctx2.fill();
+    ctx2.globalAlpha = 1;
+    ctx2.strokeStyle = '#fff'; ctx2.lineWidth = 4;
+    ctx2.beginPath(); ctx2.arc(c.x, c.y, r, 0, Math.PI * 2); ctx2.stroke();
+    ctx2.restore();
+  }
 }
 
 compareSelect.addEventListener('change', function() {
@@ -629,6 +659,8 @@ canvasWrap.addEventListener('drop', function(e) {
         state.tiles = g;
         state.start = _loadM(def.start);
         state.goal  = _loadM(def.goal);
+        state.creatures = (typeof _loadCreatures === 'function')
+          ? _loadCreatures(def.creatures) : [];
         afterEdit();
         showBanner('📂 JSON 読み込み完了 (drop)');
       } catch (err) {
@@ -722,8 +754,30 @@ function draw() {
   // Start / goal markers — large filled circles + ring
   if (state.start) drawMarker(state.start, COLOR_START, 'S');
   if (state.goal)  drawMarker(state.goal,  COLOR_GOAL,  'G');
+  // Creatures (お邪魔虫) — smaller purple circles with "🐛" texture
+  for (let i = 0; i < state.creatures.length; i++) {
+    drawCreatureMarker(state.creatures[i]);
+  }
   // Brush hover preview — show exactly which tiles will be affected
   if (state.hoverTile) drawBrushPreview();
+}
+
+function drawCreatureMarker(pos) {
+  const cx = pos.x, cy = pos.y;
+  const r = CELL * 0.7;
+  ctx.save();
+  ctx.fillStyle = COLOR_CREATURE;
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  // small inner accent dot for visual identity
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx - r*0.3, cy - r*0.25, r*0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + r*0.3, cy - r*0.25, r*0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 function drawBrushPreview() {
@@ -744,6 +798,7 @@ function drawBrushPreview() {
   else if (state.mode === 'erase') { stroke = '#7d2e2e'; fill = 'rgba(225, 100, 100, 0.30)'; }
   else if (state.mode === 'start') { stroke = '#1f4079'; fill = 'rgba(59, 141, 217, 0.35)'; }
   else if (state.mode === 'goal')  { stroke = '#7d2e2e'; fill = 'rgba(215, 78, 78, 0.35)'; }
+  else if (state.mode === 'creature') { stroke = '#5a3a7a'; fill = 'rgba(168, 85, 230, 0.30)'; }
   ctx.fillStyle = fill;
   ctx.fillRect(px, py, pw, ph);
   ctx.strokeStyle = stroke;
@@ -805,6 +860,12 @@ function paintAt(tx, ty, px, py) {
     // If erase brush overlaps a marker, clear it too (tile-radius check)
     if (state.start && _markerInEraseRect(state.start, x0, y0, x1, y1)) state.start = null;
     if (state.goal  && _markerInEraseRect(state.goal,  x0, y0, x1, y1)) state.goal  = null;
+    // Drop any creatures inside the erase rect (back-to-front so indices stay valid)
+    for (let i = state.creatures.length - 1; i >= 0; i--) {
+      if (_markerInEraseRect(state.creatures[i], x0, y0, x1, y1)) {
+        state.creatures.splice(i, 1);
+      }
+    }
   } else if (state.mode === 'start') {
     state.start = { x: px, y: py };
   } else if (state.mode === 'goal') {
@@ -818,8 +879,17 @@ function _markerInEraseRect(marker, x0, y0, x1, y1) {
   return tx >= x0 && tx < x1 && ty >= y0 && ty < y1;
 }
 
-// Check whether a click is on an existing start/goal marker. Returns 'start'|'goal'|null.
+// Check whether a click is on an existing start/goal/creature marker.
+// Returns 'start'|'goal'|{type:'creature', index}|null. Creatures checked
+// first because they are smaller and can sit inside the start/goal area.
 function _markerHitAt(px, py) {
+  const rCre = CELL * 0.7;
+  const rCre2 = rCre * rCre;
+  for (let i = 0; i < state.creatures.length; i++) {
+    const c = state.creatures[i];
+    const dx = px - c.x, dy = py - c.y;
+    if (dx*dx + dy*dy < rCre2) return { type: 'creature', index: i };
+  }
   const r = CELL * 1.4;
   const r2 = r * r;
   if (state.start) {
@@ -849,9 +919,16 @@ cv.addEventListener('pointerdown', function(e) {
   const t = eventToTile(e);
   const p = eventToPixel(e);
   // Marker drag has highest priority — works regardless of mode.
-  // Click on existing start/goal → grab and drag it freely.
+  // Click on existing start/goal/creature → grab and drag it freely.
+  // Exception: in erase mode, clicking a creature deletes it.
   const hit = _markerHitAt(p.x, p.y);
   if (hit) {
+    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'creature') {
+      pushHistory();
+      state.creatures.splice(hit.index, 1);
+      afterEdit();
+      return;
+    }
     pushHistory();
     state.draggingMarker = hit;
     cv.setPointerCapture(e.pointerId);
@@ -862,6 +939,12 @@ cv.addEventListener('pointerdown', function(e) {
   if (state.mode === 'start' || state.mode === 'goal') {
     // Free placement — store pixel coords
     paintAt(t.x, t.y, p.x, p.y);
+    afterEdit();
+    return;
+  }
+  if (state.mode === 'creature') {
+    // Free placement — add new creature at click position
+    state.creatures.push({ x: p.x, y: p.y });
     afterEdit();
     return;
   }
@@ -883,6 +966,12 @@ cv.addEventListener('pointermove', function(e) {
   if (state.draggingMarker) {
     if (state.draggingMarker === 'start') state.start = { x: p.x, y: p.y };
     else if (state.draggingMarker === 'goal')  state.goal  = { x: p.x, y: p.y };
+    else if (typeof state.draggingMarker === 'object' && state.draggingMarker.type === 'creature') {
+      const idx = state.draggingMarker.index;
+      if (idx >= 0 && idx < state.creatures.length) {
+        state.creatures[idx] = { x: p.x, y: p.y };
+      }
+    }
     draw();
     return;
   }
@@ -1023,6 +1112,7 @@ function recomputeStats() {
     statConn.className = 'ng';
     statShortest.textContent = '—';
   }
+  if (statCreatures) statCreatures.textContent = state.creatures.length;
 }
 
 // ────────────────────────────────────────────────────────
@@ -1102,6 +1192,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     tiles: state.tiles.map(function(row) { return row.slice(); }),
     start: state.start ? { x: state.start.x, y: state.start.y } : null,
     goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
+    creatures: state.creatures.map(function(c) { return { x: c.x, y: c.y }; }),
   };
   if (out.start && out.start.y >= 0 && out.start.y < GRID_H) {
     out.tiles[out.start.y][out.start.x] = 'start';
@@ -1160,6 +1251,7 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
       }
       state.start = _loadMarker(def.start);
       state.goal  = _loadMarker(def.goal);
+      state.creatures = _loadCreatures(def.creatures);
       afterEdit();
       showBanner('📂 JSON 読み込み完了');
     } catch (err) {
@@ -1169,6 +1261,21 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
   reader.readAsText(f);
   e.target.value = '';
 });
+
+// Shared helper used by file-input and drag-drop: validate creatures array
+function _loadCreatures(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const c = arr[i];
+    if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
+    // Clamp to canvas bounds; ignore tile-coord-style values (creatures are pixel-only)
+    const x = Math.max(0, Math.min(CANVAS_W, c.x));
+    const y = Math.max(0, Math.min(CANVAS_H, c.y));
+    out.push({ x: x, y: y });
+  }
+  return out;
+}
 
 // ────────────────────────────────────────────────────────
 // AI prompt template
@@ -1181,6 +1288,7 @@ document.getElementById('copyPromptBtn').addEventListener('click', function() {
 '- 緑の部分 = 草・茂み・低木の壁。道以外には木や草を生やしてもOK\n' +
 '- 青い丸 = スタート広場 (絵本風の看板や柵で装飾OK、形は維持)\n' +
 '- 赤い丸 = ゴール広場 (絵本風のアーチや看板で装飾OK、形は維持)\n' +
+'- 紫の小さい丸 = お邪魔虫の出現位置 (ここに小さなキャラを置く想定。装飾は控えめでOK、位置は維持)\n' +
 '- 比率は 16:9、サイズは 1920×1080\n\n' +
 '**スタイル:**\n' +
 '- 子ども向けのやわらかい絵本タッチ\n' +
@@ -1204,6 +1312,7 @@ function pushHistory() {
     tiles: state.tiles,
     start: state.start,
     goal: state.goal,
+    creatures: state.creatures,
   }));
   if (state.history.length > 50) state.history.shift();
 }
@@ -1217,6 +1326,8 @@ document.getElementById('undoBtn').addEventListener('click', function() {
   state.tiles = prev.tiles;
   state.start = prev.start;
   state.goal  = prev.goal;
+  state.creatures = (typeof _loadCreatures === 'function')
+    ? _loadCreatures(prev.creatures) : [];
   afterEdit();
   showBanner('⤺ 1ステップ取り消し (残り ' + state.history.length + ' 回分)');
 });
@@ -1238,6 +1349,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.tiles = makeEmptyGrid();
   state.start = null;
   state.goal  = null;
+  state.creatures = [];
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   afterEdit();
   showBanner('リセット完了');
@@ -1259,6 +1371,7 @@ function _doAutoSave() {
       tiles: state.tiles,
       start: state.start,
       goal: state.goal,
+      creatures: state.creatures,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* quota — ignore */ }
@@ -1272,6 +1385,8 @@ function restoreDraft() {
     state.tiles = data.tiles;
     state.start = data.start || null;
     state.goal  = data.goal  || null;
+    state.creatures = (typeof _loadCreatures === 'function')
+      ? _loadCreatures(data.creatures) : [];
     return true;
   } catch (e) { return false; }
 }
@@ -1306,13 +1421,19 @@ function _libUniqueName(base) {
 
 function saveAs(rawName) {
   if (!rawName || !rawName.trim()) { alert('ステージ名を入力してね'); return; }
+  const trimmed = rawName.trim();
+  // Reserved object keys would pollute Object.prototype if used as a saves[] key.
+  if (trimmed === '__proto__' || trimmed === 'constructor' || trimmed === 'prototype') {
+    alert('その名前は使えないよ'); return;
+  }
   // 同名なら "(2)" "(3)" … と自動連番。上書きさせない (履歴を残す)。
-  const name = _libUniqueName(rawName.trim());
+  const name = _libUniqueName(trimmed);
   const saves = getAllSaves();
   saves[name] = {
     tiles: state.tiles,
     start: state.start,
     goal: state.goal,
+    creatures: state.creatures.slice(),
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1329,6 +1450,7 @@ function libOverwriteSlot(name) {
     tiles: state.tiles,
     start: state.start,
     goal: state.goal,
+    creatures: state.creatures.slice(),
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1383,6 +1505,17 @@ function _libThumbnail(snap) {
   }
   dot(snap.start, COLOR_START);
   dot(snap.goal,  COLOR_GOAL);
+  // Creature dots (smaller) — null-guard each entry; raw localStorage data
+  // can contain malformed objects (e.g. manually edited DevTools).
+  const cres = Array.isArray(snap.creatures) ? snap.creatures : [];
+  for (let i = 0; i < cres.length; i++) {
+    const c = cres[i];
+    if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
+    octx.fillStyle = COLOR_CREATURE; octx.globalAlpha = 0.92;
+    octx.beginPath(); octx.arc(c.x * sc, c.y * sc, CELL * 0.7 * sc, 0, Math.PI * 2);
+    octx.fill();
+    octx.globalAlpha = 1;
+  }
   return oc.toDataURL('image/png');
 }
 
@@ -1488,6 +1621,7 @@ function loadSaveByName(name) {
   state.tiles = s.tiles;
   state.start = s.start;
   state.goal  = s.goal;
+  state.creatures = _loadCreatures(s.creatures);
   document.getElementById('saveNameInput').value = name;
   afterEdit();
   showBanner('📂 読込: ' + name);
@@ -1591,6 +1725,7 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
         tiles: g,
         start: _loadMarker(def.start),
         goal:  _loadMarker(def.goal),
+        creatures: _loadCreatures(def.creatures),
         savedAt: Date.now(),
       };
       setAllSaves(saves);
@@ -1623,6 +1758,314 @@ document.getElementById('compareBtn').addEventListener('click', function() {
 });
 
 // ────────────────────────────────────────────────────────
+// Random maze generator (recursive backtracker on coarse cell grid)
+// ────────────────────────────────────────────────────────
+// Cell layout: each cell occupies 4 tiles (2-tile inner path + 2-tile wall border).
+// cw cells × ch cells, centered in the 32×18 tile grid. Inner path tiles for
+// cell (ci,cj) at (offX+4*ci+1..+2, offY+4*cj+1..+2). Knocked-down east wall
+// adds tiles at (offX+4*ci+3..+4, offY+4*cj+1..+2). South wall is symmetric.
+const CELL_SIZE = 4;
+
+function _stageParams(stage) {
+  // Difficulty table: cw/ch = cell-grid size, deadEndPrune = how many leaf
+  // dead-end iterations to fill (smaller = more dead ends), creatureCount = じゃま虫数.
+  const tbl = [
+    { cw: 4, ch: 3, deadEndPrune: 99, creatureCount: 0 }, // stage 1: simple linear
+    { cw: 5, ch: 3, deadEndPrune: 6,  creatureCount: 1 }, // stage 2: easy
+    { cw: 6, ch: 3, deadEndPrune: 3,  creatureCount: 2 }, // stage 3
+    { cw: 7, ch: 4, deadEndPrune: 2,  creatureCount: 3 }, // stage 4
+    { cw: 8, ch: 4, deadEndPrune: 1,  creatureCount: 3 }, // stage 5
+    { cw: 8, ch: 4, deadEndPrune: 0,  creatureCount: 4 }, // stage 6
+    { cw: 8, ch: 4, deadEndPrune: 0,  creatureCount: 5 }, // stage 7+
+  ];
+  const i = Math.max(1, Math.floor(stage)) - 1;
+  return tbl[Math.min(i, tbl.length - 1)];
+}
+
+function _shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+function _carveCellInterior(g, ci, cj, offX, offY) {
+  const x0 = offX + CELL_SIZE * ci + 1;
+  const y0 = offY + CELL_SIZE * cj + 1;
+  for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+    const x = x0 + dx, y = y0 + dy;
+    if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
+  }
+}
+
+function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY) {
+  // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY).
+  // Paints a 2-tile-wide, 2-tile-long corridor in the wall band.
+  if (dirX === 1) { // east
+    const x0 = offX + CELL_SIZE * ci + 3;
+    const y0 = offY + CELL_SIZE * cj + 1;
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      const x = x0 + dx, y = y0 + dy;
+      if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
+    }
+  } else if (dirY === 1) { // south
+    const x0 = offX + CELL_SIZE * ci + 1;
+    const y0 = offY + CELL_SIZE * cj + 3;
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      const x = x0 + dx, y = y0 + dy;
+      if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
+    }
+  }
+}
+
+// Returns { tiles, edges, offX, offY, cw, ch }
+function _buildMazeCells(cw, ch, offX, offY) {
+  const visited = new Array(ch);
+  for (let j = 0; j < ch; j++) visited[j] = new Array(cw).fill(false);
+  // adjacency map: (ci,cj) -> Set of "ci2,cj2"
+  const adj = {};
+  function key(i, j) { return i + ',' + j; }
+  function addEdge(a, b) {
+    if (!adj[a]) adj[a] = {};
+    if (!adj[b]) adj[b] = {};
+    adj[a][b] = true; adj[b][a] = true;
+  }
+  const startI = Math.floor(Math.random() * cw);
+  const startJ = Math.floor(Math.random() * ch);
+  const stack = [[startI, startJ]];
+  visited[startJ][startI] = true;
+  while (stack.length) {
+    const [ci, cj] = stack[stack.length - 1];
+    const dirs = _shuffle([[1,0],[-1,0],[0,1],[0,-1]]);
+    let advanced = false;
+    for (const [dx, dy] of dirs) {
+      const ni = ci + dx, nj = cj + dy;
+      if (ni < 0 || ni >= cw || nj < 0 || nj >= ch) continue;
+      if (visited[nj][ni]) continue;
+      visited[nj][ni] = true;
+      addEdge(key(ci, cj), key(ni, nj));
+      stack.push([ni, nj]);
+      advanced = true;
+      break;
+    }
+    if (!advanced) stack.pop();
+  }
+  // Build tiles
+  const tiles = makeEmptyGrid();
+  for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+    _carveCellInterior(tiles, i, j, offX, offY);
+  }
+  // Carve corridors (only emit each edge once: east + south)
+  for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+    if (i + 1 < cw && adj[key(i,j)] && adj[key(i,j)][key(i+1,j)]) {
+      _carveCorridor(tiles, i, j, 1, 0, offX, offY);
+    }
+    if (j + 1 < ch && adj[key(i,j)] && adj[key(i,j)][key(i,j+1)]) {
+      _carveCorridor(tiles, i, j, 0, 1, offX, offY);
+    }
+  }
+  return { tiles: tiles, adj: adj };
+}
+
+function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys) {
+  // Repeatedly find dead-end cells (only 1 neighbor) NOT in `protectedKeys`
+  // and remove them along with the corridor to their sole neighbor.
+  // Lower iterations preserves more dead ends (harder stages).
+  // Higher iterations strips branches off, leaving the protected diameter
+  // path intact (used for easier stages).
+  const adj = maze.adj;
+  const tiles = maze.tiles;
+  const protect = protectedKeys || {};
+  function key(i, j) { return i + ',' + j; }
+  let removed = 0;
+  for (let iter = 0; iter < iterations; iter++) {
+    let foundOne = false;
+    const order = [];
+    for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) order.push([i, j]);
+    _shuffle(order);
+    for (const [i, j] of order) {
+      const k = key(i, j);
+      if (protect[k]) continue;
+      const nb = adj[k] ? Object.keys(adj[k]) : [];
+      if (nb.length !== 1) continue;
+      // Wipe this cell's interior
+      const x0 = offX + CELL_SIZE * i + 1;
+      const y0 = offY + CELL_SIZE * j + 1;
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+        const x = x0 + dx, y = y0 + dy;
+        if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) tiles[y][x] = 'wall';
+      }
+      // Wipe corridor between this cell and its neighbor
+      const otherKey = nb[0];
+      const parts = otherKey.split(','); const oi = +parts[0], oj = +parts[1];
+      let cx0, cy0;
+      if (oi === i + 1) { cx0 = offX + CELL_SIZE * i + 3; cy0 = offY + CELL_SIZE * j + 1; }
+      else if (oi === i - 1) { cx0 = offX + CELL_SIZE * i - 1; cy0 = offY + CELL_SIZE * j + 1; }
+      else if (oj === j + 1) { cx0 = offX + CELL_SIZE * i + 1; cy0 = offY + CELL_SIZE * j + 3; }
+      else if (oj === j - 1) { cx0 = offX + CELL_SIZE * i + 1; cy0 = offY + CELL_SIZE * j - 1; }
+      else continue;
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+        const x = cx0 + dx, y = cy0 + dy;
+        if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) tiles[y][x] = 'wall';
+      }
+      delete adj[k];
+      if (adj[otherKey]) delete adj[otherKey][k];
+      removed++;
+      foundOne = true;
+      break;
+    }
+    if (!foundOne) break;
+  }
+  return removed;
+}
+
+// BFS in the cell adjacency graph. Returns parent map for path reconstruction.
+function _bfsCellPath(adj, fromKey, toKey) {
+  const parent = {}; parent[fromKey] = null;
+  const queue = [fromKey];
+  while (queue.length) {
+    const k = queue.shift();
+    if (k === toKey) {
+      const path = [];
+      let cur = k;
+      while (cur != null) { path.push(cur); cur = parent[cur]; }
+      return path.reverse();
+    }
+    const nb = adj[k] ? Object.keys(adj[k]) : [];
+    for (const n of nb) {
+      if (n in parent) continue;
+      parent[n] = k;
+      queue.push(n);
+    }
+  }
+  return [];
+}
+
+function _farthestCellPair(adj, cw, ch) {
+  // BFS distances from a random alive cell, pick the farthest, then BFS again
+  // from that to find the diameter pair (standard 2-BFS trick).
+  const aliveKeys = Object.keys(adj).filter(function(k) {
+    return adj[k] && Object.keys(adj[k]).length > 0;
+  });
+  if (aliveKeys.length < 2) return null;
+  function bfs(startKey) {
+    const dist = {}; dist[startKey] = 0;
+    const queue = [startKey];
+    let farthest = startKey;
+    while (queue.length) {
+      const k = queue.shift();
+      const nb = adj[k] ? Object.keys(adj[k]) : [];
+      for (const n of nb) {
+        if (dist[n] != null) continue;
+        dist[n] = dist[k] + 1;
+        if (dist[n] > dist[farthest]) farthest = n;
+        queue.push(n);
+      }
+    }
+    return { dist: dist, farthest: farthest };
+  }
+  const a = bfs(aliveKeys[0]).farthest;
+  const b = bfs(a).farthest;
+  return [a, b];
+}
+
+function _placeCreaturesOnPath(stage, count, offX, offY, cw, ch) {
+  // Pick path tiles roughly along the BFS shortest tile path between
+  // start/goal markers. Avoid first/last 20% of the path so creatures
+  // don't sit right on top of start or goal markers.
+  if (count <= 0 || !state.start || !state.goal) return [];
+  const sp = bfsShortest(nearestPathTile(state.start, 3), nearestPathTile(state.goal, 3));
+  if (!sp || sp.length < 6) return [];
+  const usable = sp.slice(Math.floor(sp.length * 0.2), Math.floor(sp.length * 0.85));
+  if (usable.length === 0) return [];
+  const result = [];
+  const used = []; // list of {x, y} pixel coords already taken
+  const minDistPx = CELL * 2.5;
+  // Two-pass: first try with normal spacing, then relax if we couldn't
+  // place enough — better to under-space than to silently drop creatures.
+  function tryPlace(minDist) {
+    const tries = Math.min(80, usable.length * 4);
+    for (let attempt = 0; attempt < tries && result.length < count; attempt++) {
+      const t = usable[Math.floor(Math.random() * usable.length)];
+      const px = (t.x + 0.5) * CELL;
+      const py = (t.y + 0.5) * CELL;
+      let tooClose = false;
+      for (const u of used) {
+        const dx = u.x - px, dy = u.y - py;
+        if (dx*dx + dy*dy < minDist * minDist) { tooClose = true; break; }
+      }
+      if (tooClose) continue;
+      result.push({ x: px, y: py });
+      used.push({ x: px, y: py });
+    }
+  }
+  tryPlace(minDistPx);
+  if (result.length < count) tryPlace(CELL * 1.2); // relaxed spacing
+  return result;
+}
+
+function generateMazeForStage(stage) {
+  const params = _stageParams(stage);
+  const cw = params.cw, ch = params.ch;
+  // Center the cell grid in the tile grid
+  const offX = Math.floor((GRID_W - cw * CELL_SIZE) / 2);
+  const offY = Math.floor((GRID_H - ch * CELL_SIZE) / 2);
+  const maze = _buildMazeCells(cw, ch, offX, offY);
+  // Find the diameter pair before pruning so it's preserved
+  const pair = _farthestCellPair(maze.adj, cw, ch);
+  let protectedSet = {};
+  if (pair) {
+    const pathKeys = _bfsCellPath(maze.adj, pair[0], pair[1]);
+    for (const k of pathKeys) protectedSet[k] = true;
+  }
+  _pruneDeadEnds(maze, cw, ch, offX, offY, params.deadEndPrune, protectedSet);
+  pushHistory();
+  state.tiles = maze.tiles;
+  // Set start/goal from diameter pair (left-most → start)
+  if (pair) {
+    const a = pair[0].split(',').map(Number);
+    const b = pair[1].split(',').map(Number);
+    const aPx = ((offX + CELL_SIZE * a[0] + 2) * CELL);
+    const aPy = ((offY + CELL_SIZE * a[1] + 2) * CELL);
+    const bPx = ((offX + CELL_SIZE * b[0] + 2) * CELL);
+    const bPy = ((offY + CELL_SIZE * b[1] + 2) * CELL);
+    if (aPx <= bPx) { state.start = { x: aPx, y: aPy }; state.goal = { x: bPx, y: bPy }; }
+    else            { state.start = { x: bPx, y: bPy }; state.goal = { x: aPx, y: aPy }; }
+  } else {
+    state.start = null;
+    state.goal = null;
+  }
+  state.creatures = _placeCreaturesOnPath(stage, params.creatureCount, offX, offY, cw, ch);
+  afterEdit();
+  showBanner('🎲 ステージ ' + stage + ' を生成 (お邪魔虫 ' + state.creatures.length + ' 匹)');
+}
+
+// Wire up sidebar controls
+const _genStageInput = document.getElementById('genStageInput');
+const _genStageHint = document.getElementById('genStageHint');
+function _refreshStageHint() {
+  const s = parseInt(_genStageInput.value, 10) || 1;
+  const p = _stageParams(s);
+  _genStageHint.textContent =
+    'グリッド ' + p.cw + '×' + p.ch + ' / お邪魔虫 ' + p.creatureCount + ' 匹' +
+    (p.deadEndPrune > 10 ? ' / ほぼ一本道' :
+     p.deadEndPrune > 0  ? ' / 行き止まり少なめ' :
+                           ' / 行き止まり多め');
+}
+_genStageInput.addEventListener('input', _refreshStageHint);
+_refreshStageHint();
+document.getElementById('generateBtn').addEventListener('click', function() {
+  const s = parseInt(_genStageInput.value, 10) || 1;
+  if (s < 1 || s > 99) { alert('ステージ番号は 1〜99 にしてね'); return; }
+  // Confirm overwrite if there's existing content
+  const hasContent = state.creatures.length > 0 || state.start || state.goal ||
+    state.tiles.some(function(row) { return row.some(function(t) { return t === 'path'; }); });
+  if (hasContent && !confirm('今のキャンバスを上書きして「ステージ ' + s + '」を生成しますか?\n(取り消しは ⤺ ボタン or Ctrl+Z)')) return;
+  generateMazeForStage(s);
+});
+
+// ────────────────────────────────────────────────────────
 // Init
 // ────────────────────────────────────────────────────────
 fitCanvas();
@@ -1632,9 +2075,11 @@ const _autoLoadName = (function() {
 })();
 let restored = false;
 if (_autoLoadName && getAllSaves()[_autoLoadName]) {
-  state.tiles = getAllSaves()[_autoLoadName].tiles;
-  state.start = getAllSaves()[_autoLoadName].start;
-  state.goal  = getAllSaves()[_autoLoadName].goal;
+  const _snap = getAllSaves()[_autoLoadName];
+  state.tiles = _snap.tiles;
+  state.start = _snap.start;
+  state.goal  = _snap.goal;
+  state.creatures = _loadCreatures(_snap.creatures);
   document.getElementById('saveNameInput').value = _autoLoadName;
   restored = true;
 } else {
