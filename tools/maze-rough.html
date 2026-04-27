@@ -1976,57 +1976,34 @@ document.getElementById('compareBtn').addEventListener('click', function() {
 
 // Map continuous difficulty (1-100) to generator params.
 //
-// Three tiers, each with a smooth internal curve to avoid plateaus:
-// - d=1..49  : cellStride=4 (2-tile path), 1 panel, grid grows 4×3 → 8×4
-// - d=50..74 : cellStride=2 (1-tile path), 1 panel, grid grows 10×6 → 16×9
-// - d=75..100: cellStride=2 (1-tile path), 2 panels, grid grows 18×9 → 32×9
+// Always 1-tile-wide paths, always full canvas. Two tiers:
+// - d=1..74  : 1 panel  (1920×1080), full 16×9 cell grid (144 cells)
+// - d=75..100: 2 panels (3840×1080), full 32×9 cell grid (288 cells)
 //
-// Effective complexity is controlled by `targetCells` — pruning excess leaves
-// down to this count. Tier boundaries match (d=49 and d=50 produce similar
-// effective cell counts; same for d=74 and d=75) so transitions are about
-// path width / panel count, not raw difficulty jumps.
+// Difficulty within each tier is controlled by `loopFraction`:
+//   easier = more loops (extra walls knocked down → multiple solution paths)
+//   harder = pure spanning tree (one path between any two cells, lots of dead ends)
+// Maze always fills the full canvas regardless of difficulty.
+//
+// Creature cap: 1 panel ≤ 5, 2 panel ≤ 10 (per user request).
 function _paramsForDifficulty(d) {
   const v = Math.max(1, Math.min(100, Math.floor(Number(d) || 1)));
-  const oneTile  = v >= 50;
   const twoPanel = v >= 75;
-  const cellStride = oneTile ? 2 : 4;
+  const cellStride = 2;             // always 1-tile path width
   const panels = twoPanel ? 2 : 1;
   const gridW  = panels * 32;
-
-  let cw, ch, targetCells;
-  if (v < 50) {
-    // Tier 1: grid 4×3 → 8×4, target 6 → 32 effective cells
-    const t = (v - 1) / 49;                       // 0..~0.98
-    cw = Math.max(4, Math.min(8, Math.round(4 + 4 * t)));
-    ch = Math.max(3, Math.min(4, Math.round(3 + 1 * t)));
-    const total = cw * ch;
-    targetCells = Math.round(6 + (total - 6) * t);
-  } else if (v < 75) {
-    // Tier 2: grid 10×6 → 16×9, target 28 → totalCells (≈ matches end of tier 1)
-    const t = (v - 50) / 25;
-    cw = Math.max(10, Math.min(16, Math.round(10 + 6 * t)));
-    ch = Math.max(6,  Math.min(9,  Math.round(6  + 3 * t)));
-    const total = cw * ch;
-    targetCells = Math.round(28 + (total - 28) * t);
+  const cw = Math.floor(gridW / cellStride);    // 16 or 32
+  const ch = Math.floor(GRID_H / cellStride);   // 9
+  let loopFraction, creatureCount;
+  if (twoPanel) {
+    const t = (v - 75) / 25;        // 0..1 across d=75..100
+    loopFraction = 0.30 * (1 - t);  // 0.30 → 0  (d=75 has loops; d=100 pure tree)
+    creatureCount = Math.round(5 + 5 * t);  // 5 → 10
   } else {
-    // Tier 3: grid 18×9 → 32×9, target 140 → 288
-    const t = (v - 75) / 25;
-    cw = Math.max(18, Math.min(32, Math.round(18 + 14 * t)));
-    ch = 9;
-    const total = cw * ch;
-    targetCells = Math.round(140 + (total - 140) * t);
+    const t = (v - 1) / 73;         // 0..~0.99 across d=1..74
+    loopFraction = 0.50 * (1 - t);  // 0.50 → 0  (d=1 lots of loops; d=74 pure tree)
+    creatureCount = Math.round(1 + 4 * t);  // 1 → 5
   }
-
-  // Pruning budget: try to reduce surviving cells to targetCells.
-  // _pruneDeadEnds stops early if no more leaves to prune, and protects
-  // the diameter path, so this is an upper bound — actual result may
-  // remain higher when the maze is mostly diameter.
-  const totalCells = cw * ch;
-  const deadEndPrune = Math.max(0, totalCells - Math.min(targetCells, totalCells));
-
-  // Creature count grows roughly with target complexity, capped 4..20.
-  const tg = (v - 1) / 99;
-  const creatureCount = Math.round(4 + 16 * tg);
   return {
     difficulty: v,
     cellStride: cellStride,
@@ -2034,8 +2011,8 @@ function _paramsForDifficulty(d) {
     gridW: gridW,
     cw: cw,
     ch: ch,
-    targetCells: targetCells,
-    deadEndPrune: deadEndPrune,
+    loopFraction: loopFraction,
+    deadEndPrune: 0,                // always full maze, never prune
     creatureCount: creatureCount,
   };
 }
@@ -2211,6 +2188,41 @@ function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys, cel
   return removed;
 }
 
+// Knock down a fraction of remaining walls in the cell graph to add loops.
+// loopFraction 0 = pure spanning tree (DFS output). loopFraction 0.5 = half
+// of the unconnected cell-pair edges become connected, creating multiple
+// solution paths. Walls are sampled randomly for variety.
+function _addLoops(maze, cw, ch, offX, offY, cellStride, loopFraction) {
+  if (!loopFraction || loopFraction <= 0) return 0;
+  const adj = maze.adj;
+  const tiles = maze.tiles;
+  function key(i, j) { return i + ',' + j; }
+  const candidates = [];
+  for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+    // East neighbor not yet connected
+    if (i + 1 < cw) {
+      const a = key(i, j), b = key(i + 1, j);
+      if (!(adj[a] && adj[a][b])) candidates.push({ ci: i, cj: j, dx: 1, dy: 0, a: a, b: b });
+    }
+    // South neighbor
+    if (j + 1 < ch) {
+      const a = key(i, j), b = key(i, j + 1);
+      if (!(adj[a] && adj[a][b])) candidates.push({ ci: i, cj: j, dx: 0, dy: 1, a: a, b: b });
+    }
+  }
+  _shuffle(candidates);
+  const target = Math.floor(candidates.length * loopFraction);
+  for (let k = 0; k < target; k++) {
+    const c = candidates[k];
+    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, offX, offY, cellStride);
+    if (!adj[c.a]) adj[c.a] = {};
+    if (!adj[c.b]) adj[c.b] = {};
+    adj[c.a][c.b] = true;
+    adj[c.b][c.a] = true;
+  }
+  return target;
+}
+
 // BFS in the cell adjacency graph. Returns parent map for path reconstruction.
 function _bfsCellPath(adj, fromKey, toKey) {
   const parent = {}; parent[fromKey] = null;
@@ -2376,6 +2388,10 @@ function generateMazeForDifficulty(d) {
   const offX = Math.floor((GRID_W - cw * cellStride) / 2);
   const offY = Math.floor((GRID_H - ch * cellStride) / 2);
   const maze = _buildMazeCells(cw, ch, offX, offY, cellStride);
+  // Add loops first (extra walls knocked down → multiple solution paths)
+  if (params.loopFraction > 0) {
+    _addLoops(maze, cw, ch, offX, offY, cellStride, params.loopFraction);
+  }
   // Find the diameter pair before pruning so it's preserved
   const pair = _farthestCellPair(maze.adj, cw, ch);
   let protectedSet = {};
@@ -2429,12 +2445,14 @@ function _currentDifficulty() {
 function _refreshDiffHint() {
   const d = _currentDifficulty();
   const p = _paramsForDifficulty(d);
+  const loopPct = Math.round(p.loopFraction * 100);
+  const flavor = loopPct > 30 ? '抜け道だらけ' :
+                 loopPct > 10 ? '抜け道あり'   :
+                 loopPct > 0  ? '抜け道少し'   :
+                                '純粋な迷路';
   _diffHint.textContent =
-    'グリッド ' + p.cw + '×' + p.ch +
-    ' / 実効 ' + p.targetCells + 'セル' +
-    ' / 道幅 ' + (p.cellStride === 4 ? '2タイル' : '1タイル') +
-    ' / ' + p.panels + 'パネル' +
-    ' / お邪魔虫 ' + p.creatureCount;
+    p.cw + '×' + p.ch + ' / ' + p.panels + 'パネル / ' +
+    flavor + ' (ループ ' + loopPct + '%) / お邪魔虫 ' + p.creatureCount;
 }
 _diffSlider.addEventListener('input', function() {
   _diffInput.value = _diffSlider.value;
