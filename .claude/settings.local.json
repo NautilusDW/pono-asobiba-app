@@ -55,6 +55,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d/AppDevelopment/pono-asobiba-app && branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) && if [ \"$branch\" = \"develop\" ]; then ahead=$(git log origin/develop..develop --oneline 2>/dev/null | wc -l); if [ \"$ahead\" -gt 0 ]; then echo \"[auto-push] $ahead 個の未 push commit を origin/develop に push します\"; git push origin develop 2>&1 | tail -3; else true; fi; fi"
+          }
+        ]
+      }
     ]
   }
 }
