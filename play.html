@@ -2445,6 +2445,8 @@
       // rw: { name, img, afterMsg } のオブジェクト
       // onDone: 閉じた後のコールバック（省略可）
       window.showAfterMsgOverlay = function(rw, onDone) {
+        // MVP: 報酬制度封印中は説明モーダル (おもちゃばこ等) を一切出さない。
+        if (window.PONO_MVP_NO_REWARDS) { if (onDone) onDone(); return; }
         if (!rw || !rw.afterMsg) { if (onDone) onDone(); return; }
         // afterMsg が配列なら複数ページ、文字列なら1ページ
         var msgs = Array.isArray(rw.afterMsg) ? rw.afterMsg : [rw.afterMsg];
