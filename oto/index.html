@@ -692,26 +692,26 @@
   /* 横画面: 左1/3 にコントロール(単音/コード・音色・伴奏), 右2/3 が演奏エリア
      注意: このブロックは base styles の後ろに置くことで landscape で確実に効くようにしている */
   @media (orientation: landscape) {
-    /* 8 ボタンを右 2/3 に楕円配置 (ポノに近めに、上下は端から離して切れ防止) */
-    .instr-btn[data-idx="0"] { left: 42%; top: 38%; --sz: 84px; }
-    .instr-btn[data-idx="1"] { left: 53%; top: 22%; --sz: 86px; }
-    .instr-btn[data-idx="2"] { left: 73%; top: 22%; --sz: 86px; }
-    .instr-btn[data-idx="3"] { left: 86%; top: 38%; --sz: 84px; }
-    .instr-btn[data-idx="4"] { left: 42%; top: 70%; --sz: 84px; }
-    .instr-btn[data-idx="5"] { left: 53%; top: 84%; --sz: 86px; }
-    .instr-btn[data-idx="6"] { left: 73%; top: 84%; --sz: 86px; }
-    .instr-btn[data-idx="7"] { left: 86%; top: 70%; --sz: 84px; }
-    /* ポノは少し左寄りに */
+    /* 8 ボタンを右 2/3 に楕円配置 (ポノに近めに、左右対称、中央のすき間を縮める) */
+    .instr-btn[data-idx="0"] { left: 48%; top: 36%; --sz: 84px; }
+    .instr-btn[data-idx="1"] { left: 58%; top: 22%; --sz: 86px; }
+    .instr-btn[data-idx="2"] { left: 74%; top: 22%; --sz: 86px; }
+    .instr-btn[data-idx="3"] { left: 84%; top: 36%; --sz: 84px; }
+    .instr-btn[data-idx="4"] { left: 48%; top: 72%; --sz: 84px; }
+    .instr-btn[data-idx="5"] { left: 58%; top: 84%; --sz: 86px; }
+    .instr-btn[data-idx="6"] { left: 74%; top: 84%; --sz: 86px; }
+    .instr-btn[data-idx="7"] { left: 84%; top: 72%; --sz: 84px; }
+    /* ポノはやや右へ */
     .pono-wrap {
-      left: 63%;
+      left: 66%;
       width: 200px; height: 160px;
     }
     .pono-sprite { height: 150px; }
 
-    /* コード/単音ピル: 歯車の下に下げる */
+    /* コード/単音ピル: 歯車の下 + 右にインデント */
     .chord-pill {
       top: calc(max(12px, env(safe-area-inset-top)) + 54px);
-      left: 8px;
+      left: 60px;
       transform: none;
       padding: 3px;
       gap: 3px;
@@ -722,10 +722,10 @@
       font-size: 0.8rem;
     }
 
-    /* 音色 ねいろ: chord-pill の下に */
+    /* 音色 ねいろ: chord-pill の下、同じく右にインデント */
     .sound-sets-box {
       top: calc(max(12px, env(safe-area-inset-top)) + 108px);
-      left: 8px;
+      left: 60px;
       transform: none;
       padding: 4px 8px 6px;
       max-width: 220px;
@@ -742,10 +742,10 @@
       font-size: 1.1rem;
     }
 
-    /* 伴奏 ばんそう: 左パネル中央寄せ、横幅を確保 */
+    /* 伴奏 ばんそう: 左パネル右寄せ、横幅を確保 */
     .band-group {
       bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
-      left: 20%;
+      left: 24%;
       transform: translateX(-50%);
       padding: 6px 14px 10px;
       gap: 6px;
