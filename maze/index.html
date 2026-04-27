@@ -1188,6 +1188,7 @@ function imgLoadStage(def) {
   cleared = false;
   walkAnim = null;
   _imgBubble = null;
+  _imgPauseUntil = 0;
   breezeActive = false;
   hintActiveUntil = 0;
   hintCells.clear();
@@ -1494,9 +1495,10 @@ function imgDraw(now) {
   // Reposition arrows so they follow pono's screen position (camera lerp)
   if (arrowLayer.children.length > 0) imgRepositionArrows();
 
-  // Safety: re-show arrows if missing while idle
+  // Safety: re-show arrows if missing while idle (suppress during bounce-back pause)
   if (!walkAnim && !cleared && !overlay.classList.contains('show')
-      && arrowLayer.children.length === 0) {
+      && arrowLayer.children.length === 0
+      && performance.now() >= _imgPauseUntil) {
     imgShowArrows();
   }
 }
@@ -1748,6 +1750,7 @@ function _checkCreatureCollision(px, py) {
 
 // Detect obstacle collision during a walk. Obstacles are not negotiable —
 // pono just bounces back to the node it left from.
+let _imgPauseUntil = 0;
 function _checkObstacleCollision(px, py) {
   if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
   const TRIGGER_R2 = (stage.viewBox.h / 18) * (stage.viewBox.h / 18);
@@ -1756,13 +1759,24 @@ function _checkObstacleCollision(px, py) {
     if (dx*dx + dy*dy < TRIGGER_R2) {
       const backNodeId = walkAnim.startNodeId;
       walkAnim = null;
-      const backNode = stage.nodesById[backNodeId] || stage.start;
-      pono.x = backNode.x;
-      pono.y = backNode.y;
-      pono.nodeId = backNode.id;
-      imgShowBubble('いてっ！とおれない！', 'pono', 1600);
+      // ぶつかったところで一度静止 (戻りはしない) してから戻る
+      pono.x = px; pono.y = py;
+      pono.nodeId = backNodeId; // 論理的にはまだスタート側のノードに居る扱い
+      const PAUSE_MS = 1000;
+      _imgPauseUntil = performance.now() + PAUSE_MS;
+      hideArrows();
+      imgShowBubble('いてっ！とおれない！', 'pono', PAUSE_MS + 600);
       showHint('🚫 ' + _obstacleHintFor(o.kind) + ' とおれない！べつの みち を ためそう', 2300);
-      imgShowArrows();
+      const _stageRef = stage;
+      setTimeout(function() {
+        if (_stageRef !== stage) return; // stage switched during pause
+        if (_encounterActive || cleared) return;
+        const backNode = stage.nodesById[backNodeId] || stage.start;
+        pono.x = backNode.x;
+        pono.y = backNode.y;
+        pono.nodeId = backNode.id;
+        imgShowArrows();
+      }, PAUSE_MS);
       return true;
     }
   }
@@ -1809,11 +1823,10 @@ const _GAME_LABELS = {
 };
 
 function _gameForCreature(c) {
-  // c.minigame > kind の defaultGame > janken (フォールバック)
+  // c.minigame (作者指定) > 種類関係なくランダム
   if (c && c.minigame && _GAME_LABELS[c.minigame]) return c.minigame;
-  const data = _creatureData(c);
-  if (data.defaultGame && _GAME_LABELS[data.defaultGame]) return data.defaultGame;
-  return 'janken';
+  const games = Object.keys(_GAME_LABELS);
+  return games[Math.floor(Math.random() * games.length)];
 }
 
 function _showEncounterStart() {
