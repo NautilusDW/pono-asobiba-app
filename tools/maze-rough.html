@@ -1049,7 +1049,10 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
   state.hoverTile = null;
   draw();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const filename = 'maze_rough_' + ts + '.png';
+  // ステージ管理の名前があればそれをファイル名に使う、無ければタイムスタンプ
+  const stageName = (document.getElementById('saveNameInput').value || '').trim();
+  const safeStageName = stageName.replace(/[\\\/:*?"<>|]/g, '_').slice(0, 60);
+  const filename = safeStageName ? safeStageName + '.png' : 'maze_rough_' + ts + '.png';
   const restore = function() {
     state.showGrid = prevGrid;
     state.showSolution = prevSol;
@@ -1110,8 +1113,11 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
   const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  // ステージ名があれば優先、無ければタイムスタンプ
+  const stageName = (document.getElementById('saveNameInput').value || '').trim();
+  const safeStageName = stageName.replace(/[\\\/:*?"<>|]/g, '_').slice(0, 60);
   a.href = URL.createObjectURL(blob);
-  a.download = 'maze_rough_' + ts + '.json';
+  a.download = safeStageName ? (safeStageName + '.json') : ('maze_rough_' + ts + '.json');
   a.click();
   setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
   showBanner('💾 JSON をダウンロードしました');
