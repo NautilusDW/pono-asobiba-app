@@ -779,6 +779,53 @@ function buildStage(stageDef) {
   return { type: 'grid', rows, cols, cells, start, goal, name: stageDef.name, totalApples };
 }
 
+// ====== Image stage index (_index.json overrides) ======
+// At init, fetch maze/imageStages/_index.json. If present, it maps stage slot
+// numbers to image-stage names. Each named stage's JSON is fetched and STAGES[slot]
+// is replaced (or appended if slot === STAGES.length). This is how the maze-editor
+// "💾 本番に保存" button publishes new image stages into the normal progression.
+// Stages from this path are flagged `_official: true` (eligible for clear rewards).
+function _loadImageStageIndex() {
+  return fetch('imageStages/_index.json', { credentials: 'omit' })
+    .then(function(r) {
+      if (!r.ok) return null;
+      return r.json();
+    })
+    .then(function(idx) {
+      if (!idx || !idx.overrides || typeof idx.overrides !== 'object') return null;
+      const positions = Object.keys(idx.overrides)
+        .map(Number)
+        .filter(function(n) { return Number.isInteger(n) && n >= 0 && n < 100; })
+        .sort(function(a, b) { return a - b; });
+      const tasks = positions.map(function(pos) {
+        const rawName = idx.overrides[String(pos)];
+        const safe = String(rawName || '').replace(/[^a-zA-Z0-9_-]/g, '');
+        if (!safe) return Promise.resolve();
+        return fetch('imageStages/' + safe + '.json', { credentials: 'omit' })
+          .then(function(rr) {
+            if (!rr.ok) throw new Error(safe + ' HTTP ' + rr.status);
+            return rr.json();
+          })
+          .then(function(def) {
+            if (!def || def.type !== 'image') throw new Error(safe + ' invalid');
+            def._official = true; // eligible for rewards
+            if (pos < STAGES.length) {
+              STAGES[pos] = def;
+              console.log('[maze] index override:', pos, '→', safe);
+            } else if (pos === STAGES.length) {
+              STAGES.push(def);
+              console.log('[maze] index append:', pos, '→', safe);
+            } else {
+              console.warn('[maze] index slot', pos, 'is out of range (STAGES len=' + STAGES.length + '), skipped');
+            }
+          })
+          .catch(function(e) { console.warn('[maze] index entry failed:', e.message || e); });
+      });
+      return Promise.all(tasks);
+    })
+    .catch(function(e) { console.warn('[maze] index load failed:', e); return null; });
+}
+
 // ====== Image stage URL param loading ======
 // Visit ?image=<name> to load maze/imageStages/<name>.json instead of normal stages.
 // Special case: ?image=__draft__ reads the stage def from sessionStorage. This is
@@ -1674,10 +1721,12 @@ function onClear() {
   hideArrows();
   voice.style.display = 'none';
   updateCharmsUI();
-  // Phase 1 image stages do not contribute to progression rewards (acorns, first-clear,
-  // stat counters). Without this guard, a crafted ?image=... JSON could farm rewards.
+  // Image stages only contribute to progression rewards when they are *official*
+  // (loaded from _index.json overrides, NOT from one-off ?image=<name> previews).
+  // Without this guard, a crafted ?image=... JSON could farm rewards.
   const isImageStage = stage && stage.type === 'image';
-  if (!isImageStage) {
+  const isOfficial   = stage && stage._official === true;
+  if (!isImageStage || isOfficial) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
     if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
   }
@@ -1694,11 +1743,12 @@ function onClear() {
 
 function showStageClearOverlay() {
   const isImageStage = stage && stage.type === 'image';
+  const isOfficial   = stage && stage._official === true;
   const isLast = stageIdx >= STAGES.length - 1;
   if (isLast) {
-    // 最終ステージ: 初回クリア報酬を試みる (グリッドステージのみ)。
-    // image ステージは Phase 1 PoC のため進行報酬対象外。
-    if (window.triggerFirstClearReward && !isImageStage) {
+    // 最終ステージ: 初回クリア報酬を試みる (グリッドステージ + 公式 image ステージのみ)。
+    // ?image=<name> でアクセスした非公式 image ステージは報酬対象外。
+    if (window.triggerFirstClearReward && (!isImageStage || isOfficial)) {
       window.triggerFirstClearReward('maze', {
         onClose: function() { _showMazeFinalOverlay(); }
       }).then(function(shown) {
@@ -2008,9 +2058,12 @@ if (window.initMenu) {
 
 updateCharmsUI();
 showOverlay();
-// If ?image=<name> is present, fetch the image stage JSON first then load.
-// Falls back to normal grid stage 0 if fetch fails or no param present.
-_loadImageStageFromURL().then(function() { loadStage(0); });
+// 1) Load _index.json (overrides STAGES with image stages at specified slots)
+// 2) Then handle ?image=<name> (one-off preview, takes precedence)
+// 3) Then loadStage(0)
+_loadImageStageIndex()
+  .then(function() { return _loadImageStageFromURL(); })
+  .then(function() { loadStage(0); });
 requestAnimationFrame(draw);
 </script>
 </body>

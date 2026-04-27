@@ -103,8 +103,9 @@ html, body { height: 100vh; overflow: hidden;
       <button class="mode-btn active" data-mode="start">🟠 スタート</button>
       <button class="mode-btn" data-mode="goal">🟢 ゴール</button>
       <button class="mode-btn" data-mode="stop">⚪ 中継</button>
-      <button class="mode-btn" data-mode="edge" style="flex-basis: calc(50% - 2px);">📏 道を描く</button>
-      <button class="mode-btn" data-mode="delete" style="flex-basis: calc(50% - 2px); background: #5a3030; color: #fcc;">🗑 削除</button>
+      <button class="mode-btn" data-mode="edge">📏 道を描く</button>
+      <button class="mode-btn" data-mode="edit-points" style="background:#1f3a5a; color:#cef;">✏️ ポイント編集</button>
+      <button class="mode-btn" data-mode="delete" style="background: #5a3030; color: #fcc;">🗑 削除</button>
     </div>
 
     <div class="status">
@@ -113,9 +114,18 @@ html, body { height: 100vh; overflow: hidden;
       <div id="edgeProgress" style="color: #fcc; font-weight: bold;"></div>
     </div>
 
+    <h3>4. ステージ番号</h3>
+    <label style="font-size:0.78rem; color:#aaa; display:block;">
+      <input type="number" id="stageOrderInput" min="0" max="99" value="1" style="width:60px;">
+      <span style="font-size:0.7rem; color:#888; display:block; margin-top:4px;">
+        0=チュートリアル / 1〜10=既存ステージ差し替え / 11+=新規追加
+      </span>
+    </label>
+
     <div class="actions">
-      <button id="exportBtn">💾 JSON ダウンロード</button>
+      <button id="commitBtn" style="background:#3a6c1f;">💾 本番に保存 (commit)</button>
       <button id="testBtn">▶ 迷路で試す (新タブ)</button>
+      <button id="exportBtn" class="secondary">💾 JSON ダウンロード (ローカル用)</button>
       <button id="undoBtn" class="secondary">⤺ さいごの操作を取り消し</button>
       <button id="resetBtn" class="danger">↺ ぜんぶリセット</button>
     </div>
@@ -412,6 +422,8 @@ function snapToNode(p) {
 // ────────────────────────────────────────────────────────
 cv.addEventListener('click', function(e) {
   if (!state.image) return;
+  // In edit-points mode, click does nothing — drag is the action (pointer events)
+  if (state.mode === 'edit-points') return;
   const p = mouseToImage(e);
   pushHistory();
 
@@ -444,6 +456,65 @@ cv.addEventListener('contextmenu', function(e) {
 });
 window.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && state.edgeInProgress) cancelEdgeInProgress();
+});
+
+// ────────────────────────────────────────────────────────
+// Anchor point editing (drag handles in edit-points mode)
+// ────────────────────────────────────────────────────────
+const ANCHOR_HIT_RADIUS_IMG = 18; // image pixels (scaled by canvas)
+function findAnchorAt(p) {
+  // Returns { edgeIdx, controlIdx } or null. Only intermediate anchors (not endpoints).
+  const r = ANCHOR_HIT_RADIUS_IMG / canvasScale;
+  const r2 = r * r;
+  for (let i = 0; i < state.edges.length; i++) {
+    const ed = state.edges[i];
+    for (let j = 1; j < ed.controls.length - 1; j++) {
+      const a = ed.controls[j];
+      const dx = p.x - a.x, dy = p.y - a.y;
+      if (dx*dx + dy*dy < r2) return { edgeIdx: i, controlIdx: j };
+    }
+  }
+  return null;
+}
+
+cv.addEventListener('pointerdown', function(e) {
+  if (state.mode !== 'edit-points' || !state.image) return;
+  const p = mouseToImage(e);
+  const hit = findAnchorAt(p);
+  if (!hit) return;
+  pushHistory();
+  state.draggingAnchor = hit;
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  cv.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+cv.addEventListener('pointermove', function(e) {
+  if (state.mode !== 'edit-points' || !state.image) return;
+  const p = mouseToImage(e);
+  state.hover = p;
+  if (state.draggingAnchor) {
+    const ed = state.edges[state.draggingAnchor.edgeIdx];
+    if (!ed) return;
+    const cx = Math.max(0, Math.min(state.imgW, p.x));
+    const cy = Math.max(0, Math.min(state.imgH, p.y));
+    ed.controls[state.draggingAnchor.controlIdx] = { x: cx, y: cy };
+    draw();
+  } else {
+    // Cursor hint when hovering over a draggable anchor
+    cv.style.cursor = findAnchorAt(p) ? 'grab' : 'crosshair';
+  }
+});
+
+cv.addEventListener('pointerup', function(e) {
+  if (state.mode !== 'edit-points') return;
+  if (state.draggingAnchor) {
+    state.draggingAnchor = null;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = 'crosshair';
+    showBanner('アンカーを移動しました');
+    updateStatus();
+  }
 });
 
 function handleEdgeClick(p) {
@@ -536,12 +607,23 @@ function draw() {
   ctx.drawImage(state.image, 0, 0);
 
   // Edges (densify Catmull-Rom from controls before drawing)
+  const isEditMode = state.mode === 'edit-points';
   for (const ed of state.edges) {
     drawEdge(densifyCatmullRom(ed.controls), '#FF8855', 0.65);
-    // Show small anchor dots so user can see where they clicked
-    for (const a of ed.controls) {
-      ctx.fillStyle = 'rgba(255,136,85,0.55)';
-      ctx.beginPath(); ctx.arc(a.x, a.y, 5 / canvasScale, 0, Math.PI * 2); ctx.fill();
+    // Anchor dots — bigger + cyan ring in edit mode for grabbability
+    for (let j = 0; j < ed.controls.length; j++) {
+      const a = ed.controls[j];
+      const isEndpoint = j === 0 || j === ed.controls.length - 1;
+      if (isEditMode && !isEndpoint) {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#00cccc';
+        ctx.lineWidth = 3 / canvasScale;
+        ctx.beginPath(); ctx.arc(a.x, a.y, 12 / canvasScale, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(255,136,85,0.55)';
+        ctx.beginPath(); ctx.arc(a.x, a.y, 5 / canvasScale, 0, Math.PI * 2); ctx.fill();
+      }
     }
   }
 
@@ -809,6 +891,124 @@ document.getElementById('testBtn').addEventListener('click', function() {
     showBanner('▶ プレビューを開きました (画像: ' + imgResult.label + ', ' + kb + ' KB)');
   } else {
     showBanner('▶ プレビューを開きました (画像はサーバーの ' + r.def.imageUrl + ' を使うよ)');
+  }
+});
+
+// ────────────────────────────────────────────────────────
+// Commit to project (via /api/gh/ — Cloudflare Worker GitHub proxy)
+// ────────────────────────────────────────────────────────
+const REPO_OWNER = 'NautilusDW';
+const REPO_NAME = 'pono-asobiba-app';
+const REPO_BRANCH = 'develop';
+
+// btoa with UTF-8 safety: handles JSON containing non-ASCII (Japanese stage names)
+function utf8Btoa(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+async function ghGet(path) {
+  const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' +
+              encodeURI(path) + '?ref=' + REPO_BRANCH;
+  const resp = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+  });
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
+  return await resp.json();
+}
+
+async function ghPut(path, contentB64, message, sha) {
+  const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' + encodeURI(path);
+  const body = { message: message, content: contentB64, branch: REPO_BRANCH };
+  if (sha) body.sha = sha;
+  const resp = await fetch(url, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 300));
+  return await resp.json();
+}
+
+document.getElementById('commitBtn').addEventListener('click', async function() {
+  if (!validateForExport()) return;
+  const r = buildExportDef();
+  if (!r.safeName) { alert('ステージ名が無効です'); return; }
+  const stageNum = parseInt(document.getElementById('stageOrderInput').value, 10);
+  if (!Number.isInteger(stageNum) || stageNum < 0 || stageNum > 99) {
+    alert('ステージ番号は 0〜99 の整数で指定してね'); return;
+  }
+
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = '⏳ 保存中…';
+
+  try {
+    // 1) JSON file
+    const jsonPath = 'maze/imageStages/' + r.safeName + '.json';
+    const jsonStr = JSON.stringify(r.def, null, 2);
+    const existingJson = await ghGet(jsonPath);
+    showBanner('① JSON を保存中…');
+    await ghPut(jsonPath, utf8Btoa(jsonStr),
+      'maze: image stage ' + r.safeName + ' の JSON 更新 (slot ' + stageNum + ')',
+      existingJson ? existingJson.sha : null);
+
+    // 2) Image file (only if user has loaded one — image dataURL "data:image/png;base64,XXXX")
+    if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
+      const imgPath = 'maze/imageStages/' + r.safeName + '.' + r.ext;
+      const imgB64 = state.image.src.split(',', 2)[1]; // strip "data:image/png;base64,"
+      if (imgB64) {
+        const existingImg = await ghGet(imgPath);
+        showBanner('② 画像を保存中…');
+        await ghPut(imgPath, imgB64,
+          'maze: image stage ' + r.safeName + ' の画像更新',
+          existingImg ? existingImg.sha : null);
+      }
+    }
+
+    // 3) _index.json (overrides map)
+    const indexPath = 'maze/imageStages/_index.json';
+    const existingIndex = await ghGet(indexPath);
+    let indexObj = { overrides: {} };
+    if (existingIndex && existingIndex.content) {
+      try {
+        const decoded = atob(existingIndex.content.replace(/\s+/g, ''));
+        const parsed = JSON.parse(decodeURIComponent(escape(decoded)));
+        if (parsed && typeof parsed === 'object') {
+          indexObj = parsed;
+          if (!indexObj.overrides) indexObj.overrides = {};
+        }
+      } catch (e) {
+        console.warn('failed to parse existing _index.json, overwriting:', e);
+      }
+    }
+    indexObj.overrides[String(stageNum)] = r.safeName;
+    const indexStr = JSON.stringify(indexObj, null, 2);
+    showBanner('③ index を更新中…');
+    await ghPut(indexPath, utf8Btoa(indexStr),
+      'maze: _index.json で slot ' + stageNum + ' を ' + r.safeName + ' にオーバーライド',
+      existingIndex ? existingIndex.sha : null);
+
+    showBanner('✅ 保存完了。GH Actions が staging に反映 (1分くらい)');
+    alert(
+      '✅ 本番(staging) に保存しました!\n\n' +
+      '・slot ' + stageNum + ' → ' + r.safeName + '\n' +
+      '・1分ほどで https://pono-asobiba-staging.ndw.workers.dev/maze/ に反映\n' +
+      '・stage ' + stageNum + ' を選ぶか、最初から進めてみてね'
+    );
+  } catch (e) {
+    console.error(e);
+    if (String(e.message || e).indexOf('401') >= 0) {
+      alert('認証エラー — Basic Auth のパスワードを再入力する必要があるかも。\nブラウザを閉じて開き直すか、tools/ のいずれかのページを開いて再認証してから試してね。');
+    } else {
+      alert('保存失敗: ' + (e.message || e));
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 本番に保存 (commit)';
   }
 });
 

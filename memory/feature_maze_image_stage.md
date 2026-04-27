@@ -71,11 +71,18 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 5. **報酬の隔離**: `onClear()` は image ステージで `addAcornsDaily` / `triggerFirstClearReward` をスキップする (報酬ファーミング対策)。
 6. **charm 系 (hint/breeze/warp)**: image モードでは UI 非表示 + 関数冒頭で early return。
 
+## Phase 2 (実装済み — 2026-04-27 同日追加)
+- ✅ **アンカー点ドラッグ編集**: エディタの「✏️ ポイント編集」モードで既存の道のアンカー (中間点) を後からドラッグして微調整可能。pointer events で実装
+- ✅ **本番に保存ボタン**: エディタの「💾 本番に保存 (commit)」が `/api/gh/` 経由で GitHub Contents API で `maze/imageStages/<name>.json` + 画像 + `_index.json` の 3 ファイルを develop に直接 PUT。Basic Auth は `/tools/` の認証が再利用される
+- ✅ **`_index.json` overrides**: ランタイム起動時に `imageStages/_index.json` を fetch し、`{ "overrides": { "1": "forest_entrance" } }` 形式で STAGES の指定 slot を image ステージに差し替え or 末尾追加
+- ✅ **公式フラグ `_official`**: `_index.json` 経由で読み込まれた image ステージのみ acorn / first-clear 報酬対象。`?image=<name>` の一回限りプレビューや `?image=__draft__` は報酬対象外 (報酬ファーミング対策)
+
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker
 - エディタへの「自動エッジ追跡」ボタン追加 (現在は polyline をクリックで手描き)
-- エディタへの「既存 JSON を読み込んで編集再開」機能
 - ホタルの実 / まよいムシ ノード対応 (現在は start/goal/stop のみ)
+- ノードのドラッグ移動 (現在はノードは削除 → 配置し直しのみ)
+- スロット並び替え (現在は `_index.json` を手で書き換える必要あり)
 
 ## 既知の制限 (Phase 1)
 - りんご収集・charm システムは画像ステージ未対応
