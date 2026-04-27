@@ -186,7 +186,13 @@ input[type="file"]::file-selector-button {
       <button class="btn primary" id="saveAsBtn" style="flex:0 0 auto; padding:6px 10px; font-size:0.78rem;">💾 保存</button>
     </div>
     <ul class="save-list" id="saveList"></ul>
-    <button class="btn" id="compareBtn" style="margin-top:6px; font-size:0.8rem;">🪟 別タブで開く (比較用)</button>
+    <div style="display:flex; gap:4px; margin-top:6px; align-items:center;">
+      <label class="btn" style="flex:1; font-size:0.78rem; cursor:pointer; text-align:center; padding:8px;">
+        📥 JSON 取り込み
+        <input type="file" id="libImportInput" accept=".json,application/json" style="display:none;">
+      </label>
+      <button class="btn" id="compareBtn" style="flex:1; font-size:0.78rem;">🪟 別タブで開く</button>
+    </div>
 
     <div class="tip">
       <b>使い方</b><br>
@@ -1023,6 +1029,60 @@ function refreshSaveList() {
 document.getElementById('saveAsBtn').addEventListener('click', function() {
   const name = document.getElementById('saveNameInput').value.trim();
   saveAs(name);
+});
+
+// 📥 JSON ファイルをライブラリに直接取り込み (現在のキャンバスを上書きしない)
+document.getElementById('libImportInput').addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  // Default save name = filename without extension, sanitized lightly
+  const defaultName = f.name.replace(/\.[^.]+$/, '').slice(0, 60);
+  const inputName = prompt('ライブラリに取り込む名前を入力してね', defaultName);
+  if (!inputName || !inputName.trim()) { e.target.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const def = JSON.parse(ev.target.result);
+      if (!def || !Array.isArray(def.tiles)) throw new Error('tiles 配列が無い JSON は取り込めないよ');
+      // Convert tiles from def format to internal format
+      const g = makeEmptyGrid();
+      for (let y = 0; y < Math.min(GRID_H, def.tiles.length); y++) {
+        const row = def.tiles[y];
+        if (!Array.isArray(row)) continue;
+        for (let x = 0; x < Math.min(GRID_W, row.length); x++) {
+          const t = row[x];
+          g[y][x] = (t === 'wall') ? 'wall' : 'path';
+        }
+      }
+      // Marker loader (handles tile or pixel coords)
+      function _loadMarker(m) {
+        if (!m || !Number.isFinite(m.x) || !Number.isFinite(m.y)) return null;
+        const isTileCoord = Number.isInteger(m.x) && Number.isInteger(m.y)
+          && m.x >= 0 && m.x < GRID_W && m.y >= 0 && m.y < GRID_H
+          && (m.x < CELL && m.y < CELL);
+        if (isTileCoord) return { x: m.x * CELL + CELL/2, y: m.y * CELL + CELL/2 };
+        return { x: m.x, y: m.y };
+      }
+      const saves = getAllSaves();
+      const trimmedName = inputName.trim();
+      if (saves[trimmedName] && !confirm('「' + trimmedName + '」を上書きしますか?')) {
+        e.target.value = ''; return;
+      }
+      saves[trimmedName] = {
+        tiles: g,
+        start: _loadMarker(def.start),
+        goal:  _loadMarker(def.goal),
+        savedAt: Date.now(),
+      };
+      setAllSaves(saves);
+      refreshSaveList();
+      showBanner('📥 ライブラリに取り込みました: ' + trimmedName);
+    } catch (err) {
+      alert('JSON 取り込み失敗: ' + err.message);
+    }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
 });
 document.getElementById('saveNameInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
