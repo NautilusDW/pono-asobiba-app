@@ -235,6 +235,7 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="start" style="background:#1f4079; color:#cef;">🟦 スタート</button>
       <button class="btn" data-mode="goal" style="background:#7d2e2e; color:#fcc;">🟥 ゴール</button>
       <button class="btn" data-mode="creature" style="background:#5a3a7a; color:#e6c8ff;">🐛 おじゃま虫</button>
+      <button class="btn" data-mode="waypoint" style="background:#1e5a3e; color:#caf3d8;">📍 中継地点</button>
     </div>
 
     <h3>ブラシサイズ</h3>
@@ -259,6 +260,7 @@ input[type="file"]::file-selector-button {
       <div class="stats-line"><span>分岐数</span><span id="statBranches">0</span></div>
       <div class="stats-line"><span>行き止まり</span><span id="statDeadEnds">0</span></div>
       <div class="stats-line"><span>おじゃま虫</span><span id="statCreatures">0</span></div>
+      <div class="stats-line"><span>中継地点</span><span id="statWaypoints">0</span></div>
     </div>
 
     <h3>🎲 ランダム生成</h3>
@@ -319,7 +321,10 @@ input[type="file"]::file-selector-button {
       ⬜ 白 = 歩ける道<br>
       🔵 青円 = スタート<br>
       🔴 赤円 = ゴール<br>
-      🟣 紫小円 = お邪魔虫
+      🟣 紫小円 = お邪魔虫<br>
+      🟡 黄丸 = 中継ノード(分岐)<br>
+      🔷 水色丸 = 中継ノード(行き止まり)<br>
+      🟢 緑丸 = 中継ノード(手動)
     </div>
   </aside>
 
@@ -372,6 +377,9 @@ const COLOR_GRID  = 'rgba(0,0,0,0.12)';
 const COLOR_START = '#3B8DD9';
 const COLOR_GOAL  = '#D74E4E';
 const COLOR_CREATURE = '#A855E6'; // お邪魔虫マーカー (紫)
+const COLOR_WP_BRANCH  = '#F2C94C'; // 中継ノード: 分岐 (黄)
+const COLOR_WP_DEADEND = '#56CCF2'; // 中継ノード: 行き止まり (水色)
+const COLOR_WP_MANUAL  = '#27AE60'; // 中継ノード: 手動配置 (緑)
 
 const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 
@@ -383,6 +391,7 @@ const state = {
   start: null,            // { x, y } in PIXEL coords (free positioning, not grid-snapped)
   goal:  null,            // same — pixel coords
   creatures: [],          // [{ x, y }] お邪魔虫マーカー (PIXEL coords)
+  waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
   mode: 'path',
   brushSize: 2,
   showGrid: true,
@@ -447,6 +456,7 @@ const statShortest = document.getElementById('statShortest');
 const statBranches = document.getElementById('statBranches');
 const statDeadEnds = document.getElementById('statDeadEnds');
 const statCreatures = document.getElementById('statCreatures');
+const statWaypoints = document.getElementById('statWaypoints');
 
 // ────────────────────────────────────────────────────────
 // Canvas sizing + zoom (50% .. 200%)
@@ -532,10 +542,25 @@ function drawCompare() {
   }
   drawMarkerOn(_compareSnap.start, COLOR_START);
   drawMarkerOn(_compareSnap.goal,  COLOR_GOAL);
+  // waypoints (under creatures)
+  const wps = Array.isArray(_compareSnap.waypoints) ? _compareSnap.waypoints : [];
+  for (let i = 0; i < wps.length; i++) {
+    const w = wps[i];
+    if (!w || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
+    const r = CELL * 0.5;
+    ctx2.save();
+    ctx2.fillStyle = _waypointColor(w.kind); ctx2.globalAlpha = 0.9;
+    ctx2.beginPath(); ctx2.arc(w.x, w.y, r, 0, Math.PI * 2); ctx2.fill();
+    ctx2.globalAlpha = 1;
+    ctx2.strokeStyle = '#fff'; ctx2.lineWidth = 3;
+    ctx2.beginPath(); ctx2.arc(w.x, w.y, r, 0, Math.PI * 2); ctx2.stroke();
+    ctx2.restore();
+  }
   // creatures (small purple)
   const cres = Array.isArray(_compareSnap.creatures) ? _compareSnap.creatures : [];
   for (let i = 0; i < cres.length; i++) {
     const c = cres[i];
+    if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
     const r = CELL * 0.7;
     ctx2.save();
     ctx2.fillStyle = COLOR_CREATURE; ctx2.globalAlpha = 0.9;
@@ -661,6 +686,8 @@ canvasWrap.addEventListener('drop', function(e) {
         state.goal  = _loadM(def.goal);
         state.creatures = (typeof _loadCreatures === 'function')
           ? _loadCreatures(def.creatures) : [];
+        state.waypoints = (typeof _loadWaypoints === 'function')
+          ? _loadWaypoints(def.waypoints) : [];
         afterEdit();
         showBanner('📂 JSON 読み込み完了 (drop)');
       } catch (err) {
@@ -754,12 +781,39 @@ function draw() {
   // Start / goal markers — large filled circles + ring
   if (state.start) drawMarker(state.start, COLOR_START, 'S');
   if (state.goal)  drawMarker(state.goal,  COLOR_GOAL,  'G');
+  // Waypoints (中継ノード) — drawn under creatures so creatures sit on top
+  for (let i = 0; i < state.waypoints.length; i++) {
+    drawWaypointMarker(state.waypoints[i]);
+  }
   // Creatures (お邪魔虫) — smaller purple circles with "🐛" texture
   for (let i = 0; i < state.creatures.length; i++) {
     drawCreatureMarker(state.creatures[i]);
   }
   // Brush hover preview — show exactly which tiles will be affected
   if (state.hoverTile) drawBrushPreview();
+}
+
+function _waypointColor(kind) {
+  if (kind === 'branch')  return COLOR_WP_BRANCH;
+  if (kind === 'deadend') return COLOR_WP_DEADEND;
+  return COLOR_WP_MANUAL;
+}
+
+function drawWaypointMarker(pos) {
+  const cx = pos.x, cy = pos.y;
+  const r = CELL * 0.5;
+  ctx.save();
+  ctx.fillStyle = _waypointColor(pos.kind);
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  // Inner ring for kind discrimination
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  // Center dot
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 function drawCreatureMarker(pos) {
@@ -799,6 +853,7 @@ function drawBrushPreview() {
   else if (state.mode === 'start') { stroke = '#1f4079'; fill = 'rgba(59, 141, 217, 0.35)'; }
   else if (state.mode === 'goal')  { stroke = '#7d2e2e'; fill = 'rgba(215, 78, 78, 0.35)'; }
   else if (state.mode === 'creature') { stroke = '#5a3a7a'; fill = 'rgba(168, 85, 230, 0.30)'; }
+  else if (state.mode === 'waypoint') { stroke = '#1e5a3e'; fill = 'rgba(39, 174, 96, 0.30)'; }
   ctx.fillStyle = fill;
   ctx.fillRect(px, py, pw, ph);
   ctx.strokeStyle = stroke;
@@ -866,6 +921,12 @@ function paintAt(tx, ty, px, py) {
         state.creatures.splice(i, 1);
       }
     }
+    // Drop any waypoints inside the erase rect
+    for (let i = state.waypoints.length - 1; i >= 0; i--) {
+      if (_markerInEraseRect(state.waypoints[i], x0, y0, x1, y1)) {
+        state.waypoints.splice(i, 1);
+      }
+    }
   } else if (state.mode === 'start') {
     state.start = { x: px, y: py };
   } else if (state.mode === 'goal') {
@@ -883,12 +944,20 @@ function _markerInEraseRect(marker, x0, y0, x1, y1) {
 // Returns 'start'|'goal'|{type:'creature', index}|null. Creatures checked
 // first because they are smaller and can sit inside the start/goal area.
 function _markerHitAt(px, py) {
+  // Smallest markers first (creatures and waypoints can sit inside start/goal area).
   const rCre = CELL * 0.7;
   const rCre2 = rCre * rCre;
   for (let i = 0; i < state.creatures.length; i++) {
     const c = state.creatures[i];
     const dx = px - c.x, dy = py - c.y;
     if (dx*dx + dy*dy < rCre2) return { type: 'creature', index: i };
+  }
+  const rWp = CELL * 0.5;
+  const rWp2 = rWp * rWp;
+  for (let i = 0; i < state.waypoints.length; i++) {
+    const w = state.waypoints[i];
+    const dx = px - w.x, dy = py - w.y;
+    if (dx*dx + dy*dy < rWp2) return { type: 'waypoint', index: i };
   }
   const r = CELL * 1.4;
   const r2 = r * r;
@@ -929,6 +998,12 @@ cv.addEventListener('pointerdown', function(e) {
       afterEdit();
       return;
     }
+    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'waypoint') {
+      pushHistory();
+      state.waypoints.splice(hit.index, 1);
+      afterEdit();
+      return;
+    }
     pushHistory();
     state.draggingMarker = hit;
     cv.setPointerCapture(e.pointerId);
@@ -945,6 +1020,12 @@ cv.addEventListener('pointerdown', function(e) {
   if (state.mode === 'creature') {
     // Free placement — add new creature at click position
     state.creatures.push({ x: p.x, y: p.y });
+    afterEdit();
+    return;
+  }
+  if (state.mode === 'waypoint') {
+    // Free placement — add manual waypoint
+    state.waypoints.push({ x: p.x, y: p.y, kind: 'manual' });
     afterEdit();
     return;
   }
@@ -970,6 +1051,13 @@ cv.addEventListener('pointermove', function(e) {
       const idx = state.draggingMarker.index;
       if (idx >= 0 && idx < state.creatures.length) {
         state.creatures[idx] = { x: p.x, y: p.y };
+      }
+    }
+    else if (typeof state.draggingMarker === 'object' && state.draggingMarker.type === 'waypoint') {
+      const idx = state.draggingMarker.index;
+      if (idx >= 0 && idx < state.waypoints.length) {
+        const prev = state.waypoints[idx];
+        state.waypoints[idx] = { x: p.x, y: p.y, kind: prev.kind || 'manual' };
       }
     }
     draw();
@@ -1113,6 +1201,7 @@ function recomputeStats() {
     statShortest.textContent = '—';
   }
   if (statCreatures) statCreatures.textContent = state.creatures.length;
+  if (statWaypoints) statWaypoints.textContent = state.waypoints.length;
 }
 
 // ────────────────────────────────────────────────────────
@@ -1193,6 +1282,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     start: state.start ? { x: state.start.x, y: state.start.y } : null,
     goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
     creatures: state.creatures.map(function(c) { return { x: c.x, y: c.y }; }),
+    waypoints: state.waypoints.map(function(w) { return { x: w.x, y: w.y, kind: w.kind }; }),
   };
   if (out.start && out.start.y >= 0 && out.start.y < GRID_H) {
     out.tiles[out.start.y][out.start.x] = 'start';
@@ -1252,6 +1342,7 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
       state.start = _loadMarker(def.start);
       state.goal  = _loadMarker(def.goal);
       state.creatures = _loadCreatures(def.creatures);
+      state.waypoints = _loadWaypoints(def.waypoints);
       afterEdit();
       showBanner('📂 JSON 読み込み完了');
     } catch (err) {
@@ -1273,6 +1364,22 @@ function _loadCreatures(arr) {
     const x = Math.max(0, Math.min(CANVAS_W, c.x));
     const y = Math.max(0, Math.min(CANVAS_H, c.y));
     out.push({ x: x, y: y });
+  }
+  return out;
+}
+
+// Validate waypoints array (same shape + a `kind` discriminator)
+function _loadWaypoints(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const w = arr[i];
+    if (!w || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
+    const x = Math.max(0, Math.min(CANVAS_W, w.x));
+    const y = Math.max(0, Math.min(CANVAS_H, w.y));
+    const kind = (w.kind === 'branch' || w.kind === 'deadend' || w.kind === 'manual')
+      ? w.kind : 'manual';
+    out.push({ x: x, y: y, kind: kind });
   }
   return out;
 }
@@ -1313,6 +1420,7 @@ function pushHistory() {
     start: state.start,
     goal: state.goal,
     creatures: state.creatures,
+    waypoints: state.waypoints,
   }));
   if (state.history.length > 50) state.history.shift();
 }
@@ -1328,6 +1436,8 @@ document.getElementById('undoBtn').addEventListener('click', function() {
   state.goal  = prev.goal;
   state.creatures = (typeof _loadCreatures === 'function')
     ? _loadCreatures(prev.creatures) : [];
+  state.waypoints = (typeof _loadWaypoints === 'function')
+    ? _loadWaypoints(prev.waypoints) : [];
   afterEdit();
   showBanner('⤺ 1ステップ取り消し (残り ' + state.history.length + ' 回分)');
 });
@@ -1350,6 +1460,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.start = null;
   state.goal  = null;
   state.creatures = [];
+  state.waypoints = [];
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   afterEdit();
   showBanner('リセット完了');
@@ -1372,6 +1483,7 @@ function _doAutoSave() {
       start: state.start,
       goal: state.goal,
       creatures: state.creatures,
+      waypoints: state.waypoints,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* quota — ignore */ }
@@ -1387,6 +1499,8 @@ function restoreDraft() {
     state.goal  = data.goal  || null;
     state.creatures = (typeof _loadCreatures === 'function')
       ? _loadCreatures(data.creatures) : [];
+    state.waypoints = (typeof _loadWaypoints === 'function')
+      ? _loadWaypoints(data.waypoints) : [];
     return true;
   } catch (e) { return false; }
 }
@@ -1434,6 +1548,7 @@ function saveAs(rawName) {
     start: state.start,
     goal: state.goal,
     creatures: state.creatures.slice(),
+    waypoints: state.waypoints.slice(),
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1451,6 +1566,7 @@ function libOverwriteSlot(name) {
     start: state.start,
     goal: state.goal,
     creatures: state.creatures.slice(),
+    waypoints: state.waypoints.slice(),
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1513,6 +1629,16 @@ function _libThumbnail(snap) {
     if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
     octx.fillStyle = COLOR_CREATURE; octx.globalAlpha = 0.92;
     octx.beginPath(); octx.arc(c.x * sc, c.y * sc, CELL * 0.7 * sc, 0, Math.PI * 2);
+    octx.fill();
+    octx.globalAlpha = 1;
+  }
+  // Waypoint dots
+  const wps = Array.isArray(snap.waypoints) ? snap.waypoints : [];
+  for (let i = 0; i < wps.length; i++) {
+    const w = wps[i];
+    if (!w || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
+    octx.fillStyle = _waypointColor(w.kind); octx.globalAlpha = 0.92;
+    octx.beginPath(); octx.arc(w.x * sc, w.y * sc, CELL * 0.5 * sc, 0, Math.PI * 2);
     octx.fill();
     octx.globalAlpha = 1;
   }
@@ -1622,6 +1748,7 @@ function loadSaveByName(name) {
   state.start = s.start;
   state.goal  = s.goal;
   state.creatures = _loadCreatures(s.creatures);
+  state.waypoints = _loadWaypoints(s.waypoints);
   document.getElementById('saveNameInput').value = name;
   afterEdit();
   showBanner('📂 読込: ' + name);
@@ -1726,6 +1853,7 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
         start: _loadMarker(def.start),
         goal:  _loadMarker(def.goal),
         creatures: _loadCreatures(def.creatures),
+        waypoints: _loadWaypoints(def.waypoints),
         savedAt: Date.now(),
       };
       setAllSaves(saves);
@@ -2005,6 +2133,28 @@ function _placeCreaturesOnPath(stage, count, offX, offY, cw, ch) {
   return result;
 }
 
+// Walk the surviving cell graph after generation and emit waypoints at
+// branch (degree>=3) and dead-end (degree==1) cells. Start/goal cells are
+// excluded because they already have their own markers.
+function _autoWaypointsFromCellGraph(adj, offX, offY, startKey, goalKey) {
+  const out = [];
+  const skip = {};
+  if (startKey) skip[startKey] = true;
+  if (goalKey)  skip[goalKey]  = true;
+  for (const k of Object.keys(adj)) {
+    if (skip[k]) continue;
+    const nb = adj[k] ? Object.keys(adj[k]) : [];
+    if (nb.length === 0) continue;
+    const parts = k.split(','); const ci = +parts[0], cj = +parts[1];
+    if (!Number.isFinite(ci) || !Number.isFinite(cj)) continue;
+    const px = (offX + CELL_SIZE * ci + 2) * CELL;
+    const py = (offY + CELL_SIZE * cj + 2) * CELL;
+    if (nb.length === 1)      out.push({ x: px, y: py, kind: 'deadend' });
+    else if (nb.length >= 3)  out.push({ x: px, y: py, kind: 'branch' });
+  }
+  return out;
+}
+
 function generateMazeForStage(stage) {
   const params = _stageParams(stage);
   const cw = params.cw, ch = params.ch;
@@ -2023,6 +2173,7 @@ function generateMazeForStage(stage) {
   pushHistory();
   state.tiles = maze.tiles;
   // Set start/goal from diameter pair (left-most → start)
+  let startKey = null, goalKey = null;
   if (pair) {
     const a = pair[0].split(',').map(Number);
     const b = pair[1].split(',').map(Number);
@@ -2030,15 +2181,23 @@ function generateMazeForStage(stage) {
     const aPy = ((offY + CELL_SIZE * a[1] + 2) * CELL);
     const bPx = ((offX + CELL_SIZE * b[0] + 2) * CELL);
     const bPy = ((offY + CELL_SIZE * b[1] + 2) * CELL);
-    if (aPx <= bPx) { state.start = { x: aPx, y: aPy }; state.goal = { x: bPx, y: bPy }; }
-    else            { state.start = { x: bPx, y: bPy }; state.goal = { x: aPx, y: aPy }; }
+    if (aPx <= bPx) {
+      state.start = { x: aPx, y: aPy }; state.goal = { x: bPx, y: bPy };
+      startKey = pair[0]; goalKey = pair[1];
+    } else {
+      state.start = { x: bPx, y: bPy }; state.goal = { x: aPx, y: aPy };
+      startKey = pair[1]; goalKey = pair[0];
+    }
   } else {
     state.start = null;
     state.goal = null;
   }
+  // Auto-place waypoints at branch/dead-end cells (excluding start/goal)
+  state.waypoints = _autoWaypointsFromCellGraph(maze.adj, offX, offY, startKey, goalKey);
   state.creatures = _placeCreaturesOnPath(stage, params.creatureCount, offX, offY, cw, ch);
   afterEdit();
-  showBanner('🎲 ステージ ' + stage + ' を生成 (お邪魔虫 ' + state.creatures.length + ' 匹)');
+  showBanner('🎲 ステージ ' + stage + ' を生成 ' +
+    '(お邪魔虫 ' + state.creatures.length + ' / 中継 ' + state.waypoints.length + ')');
 }
 
 // Wire up sidebar controls
@@ -2080,6 +2239,7 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
   state.start = _snap.start;
   state.goal  = _snap.goal;
   state.creatures = _loadCreatures(_snap.creatures);
+  state.waypoints = _loadWaypoints(_snap.waypoints);
   document.getElementById('saveNameInput').value = _autoLoadName;
   restored = true;
 } else {
