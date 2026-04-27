@@ -78,6 +78,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **公式フラグ `_official`**: `_index.json` 経由で読み込まれた image ステージのみ acorn / first-clear 報酬対象。`?image=<name>` の一回限りプレビューや `?image=__draft__` は報酬対象外 (報酬ファーミング対策)
 - ✅ **🌙 ランタンの夜モード**: stage def に `lantern: true` (or 詳細オブジェクト) を入れると、ランタイムがポノを中心にラジアルグラデーションで「ランタンの灯」エフェクトを描画。ポノの周辺は明るく、外側は夜の暗さ (RGBA `2,8,28,0.94` ベース) にフェード、ポノ近傍に暖色グロウ (additive blend)。微弱な脈動で炎のゆらぎを表現。エディタに「🌙 夜モード」チェックボックス。設定例: `{innerRadius:120, outerRadius:400, tintR/G/B/A, warmth:false}` で細かく調整可能
 - ✅ **`?stage=N` URL パラメータ**: ランタイム起動時に `?stage=N` があれば、その slot から始める (チュートリアル経由なし)。エディタの「💾 本番に保存」成功後に `?stage=N` で直接開くか確認するダイアログを表示。テスト時にチュートリアルから毎回プレイし直さずに済む
+- ✅ **オーバーレイ「スタート ▶」ボタンの loadStage(0) 削除**: 以前は init で正しい slot を loadStage しても、オーバーレイの「スタート ▶」をクリックすると `loadStage(0)` を再呼び出しして slot 0 (チュートリアル) にリセットされてしまう不具合があった (「一瞬新しい画面が出るけど前の迷路に戻る」現象の原因)。クリック時は `hideOverlay()` のみ実行する形に修正
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker

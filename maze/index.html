@@ -2085,9 +2085,12 @@ window.addEventListener('keydown', function(e) {
 });
 
 // ====== Start ======
+// 既に init で正しい slot を loadStage 済みなので、ここでは hideOverlay のみ。
+// 以前は loadStage(0) を再呼び出ししていたため、?stage=N や _index.json の
+// override で初期化済みのステージが「スタート ▶」クリックで slot 0 (チュートリアル) に
+// リセットされてしまうバグがあった。
 ovBtn.onclick = function() {
   hideOverlay();
-  loadStage(0);
 };
 
 if (window.initMenu) {
