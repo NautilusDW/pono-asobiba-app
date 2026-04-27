@@ -165,6 +165,19 @@ body {
   overflow: hidden;
 }
 
+/* タイムラインモード ON: 比較タブを隠してタイムラインを上半分に伸ばす。
+   下半分は通常通りスプライトグリッド (並び替え・連番命名しながら再生確認できる)。 */
+.right-panel.split-mode.timeline-mode #tab-compare {
+  display: none !important;
+}
+.right-panel.split-mode.timeline-mode #tab-timeline {
+  display: flex !important;
+  flex: var(--split-top, 1) 1 0 !important;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 100px;
+}
+
 .action-toolbar {
   display: flex; align-items: center; gap: 4px;
   background: #111827; border-bottom: 1px solid #374151;
@@ -661,6 +674,7 @@ body {
       </div>
       <div class="file-info" id="file-info"></div>
       <button class="btn btn-secondary" id="btn-multi-picker" style="margin-top:6px;font-size:0.7rem">📐 マルチ合成モード</button>
+      <button class="btn btn-secondary" id="btn-timeline-mode" style="margin-top:6px;font-size:0.7rem">🎞 タイムラインモード</button>
       <div id="multi-drop-zone" class="drop-zone" style="display:none">
         <div class="drop-icon">📐</div>
         <div class="drop-text">複数画像をドラッグ<br>またはクリック</div>
@@ -5096,6 +5110,33 @@ document.getElementById('btn-multi-picker').addEventListener('click', () => {
     // マルチ合成 OFF 時: 通常モードに戻すので 分割ボタンは状態に応じて再判定
     document.getElementById('btn-split').disabled = !processedCanvas;
     switchToTab('compare');
+  }
+});
+
+// ── Toggle timeline mode (上半分にタイムライン、下半分にスプライトグリッド) ──
+document.getElementById('btn-timeline-mode').addEventListener('click', () => {
+  const rp  = document.querySelector('.right-panel');
+  const btn = document.getElementById('btn-timeline-mode');
+  if (!rp || !btn) return;
+  const turningOn = !rp.classList.contains('timeline-mode');
+
+  if (turningOn) {
+    // 他モードと排他: マルチ合成 ON 中なら先に OFF
+    if (rp.classList.contains('multi-mode')) {
+      document.getElementById('btn-multi-picker').click();
+    }
+    rp.classList.add('timeline-mode');
+    btn.textContent = '🎞 タイムライン ON';
+    btn.style.background = '#f87171';
+    btn.style.color = '#fff';
+    Timeline.bindEvents();
+    Timeline.refresh();
+  } else {
+    rp.classList.remove('timeline-mode');
+    btn.textContent = '🎞 タイムラインモード';
+    btn.style.background = '';
+    btn.style.color = '';
+    Timeline.pause();
   }
 });
 

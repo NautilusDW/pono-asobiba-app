@@ -26,8 +26,12 @@ type: project
 - ドラッグ後に `sprites.splice(from,1) + splice(to,0,moved)` → `renderSpritesGrid()` で再描画
 - 並び替え後に「📝 連番」ボタンを押せば現在の順で `_001, _002…` が振られる
 
-### 2. タイムラインタブ
-- タブバーに `data-tab="timeline"` ボタン追加
+### 2. タイムラインタブ + タイムラインモード
+- 右パネルは `.split-mode` で上下分割固定 (上=比較 / 下=スプライト) になっており **タブバーが `display:none`**。タブによる切替UIは無効。
+- そのため「マルチ合成モード」と同じパターンで **左パネルに 🎞 タイムラインモード ボタン** を追加
+- `.right-panel.split-mode.timeline-mode` クラスで CSS 切替: 上半分の比較タブを隠し、`#tab-timeline` を `display:flex !important` + `flex: var(--split-top, 1)` で大きく表示
+- 下半分はスプライトグリッドが残り続けるので、再生確認しながら並び替え・連番命名・🎯ジャンプができる
+- `multi-mode` と `timeline-mode` は排他 (片方ONなら片方を先にOFF)
 - 上部コントロール: ▶ ⏸ ⏹ / 🔁ループ / 🔂ピンポン / FPS / 各コマfr / 背景
 - 中央: `<canvas id="timeline-canvas">` (ステージサイズに自動合わせ)
 - 進捗バー: クリックでシーク
