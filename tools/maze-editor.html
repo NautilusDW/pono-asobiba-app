@@ -755,10 +755,10 @@ function draw() {
     const anchors = [{ x: fromNode.x, y: fromNode.y }]
       .concat(state.edgeInProgress.points)
       .concat([tip]);
-    drawEdge(densifyCatmullRom(anchors), '#FFD700', 0.85, true);
+    drawEdge(densifyCatmullRom(anchors), '#33CCFF', 0.9, true);
     // Anchor dots for the in-progress edge
     for (const ip of state.edgeInProgress.points) {
-      ctx.fillStyle = '#FFD700';
+      ctx.fillStyle = '#33CCFF';
       ctx.beginPath(); ctx.arc(ip.x, ip.y, 8, 0, Math.PI * 2); ctx.fill();
     }
   }
