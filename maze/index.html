@@ -1787,12 +1787,14 @@ function _obstacleHintFor(kind) {
 
 // 現在のエンカウンター対象 (どのミニゲームに分岐するかの判断に使う)
 let _currentCreature = null;
+let _currentGame = null;
 
 function _triggerEncounter(c) {
   if (_encounterActive) return;
   _encounterActive = true;
   _encounteringCreatureId = c.id || (c.x + ',' + c.y);
   _currentCreature = c;
+  _currentGame = _gameForCreature(c);
   // Pause the walk animation by stashing it
   if (walkAnim) walkAnim._pausedAt = performance.now();
   hideArrows();
@@ -1800,8 +1802,9 @@ function _triggerEncounter(c) {
   const data = _creatureData(c);
   encCreatureEl.textContent = data.emoji;
   encNameEl.textContent = data.name;
-  // dialog を textContent + <br> 要素で DOM 構築 (innerHTML 経由の XSS を回避)
-  const _dialogText = (c.dialog || data.dialog || '').replace(/<br\s*\/?\s*>/gi, '\n');
+  // dialog: ミニゲームごとに変える (お邪魔虫の種類ではなく今回出るゲームに合わせる)
+  // 作者が c.dialog を明示指定している場合のみそれを尊重
+  const _dialogText = (c.dialog || _GAME_DIALOGS[_currentGame] || '').replace(/<br\s*\/?\s*>/gi, '\n');
   encDialogEl.textContent = '';
   _dialogText.split('\n').forEach(function(line, i) {
     if (i > 0) encDialogEl.appendChild(document.createElement('br'));
@@ -1821,6 +1824,14 @@ const _GAME_LABELS = {
   simon:      'リズムまね',
 };
 
+const _GAME_DIALOGS = {
+  janken:     'じゃんけん してあげる〜<br>かったら とおしてあげるよ',
+  silhouette: 'シルエット クイズ だよ〜<br>これは なんの かげ かな？',
+  truefalse:  '○×クイズ で あそぼう！<br>こたえられる かな？',
+  oddone:     'なかまはずれ さがし！<br>どれが ちがうかな？',
+  simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
+};
+
 function _gameForCreature(c) {
   // c.minigame (作者指定) > 種類関係なくランダム
   if (c && c.minigame && _GAME_LABELS[c.minigame]) return c.minigame;
@@ -1830,7 +1841,7 @@ function _gameForCreature(c) {
 
 function _showEncounterStart() {
   const c = _currentCreature;
-  const game = _gameForCreature(c);
+  const game = _currentGame || _gameForCreature(c);
   encStageEl.innerHTML = '<button class="enc-btn primary" id="encStartBtn2">' +
     _GAME_LABELS[game] + ' で あそぶ ▶</button>';
   document.getElementById('encStartBtn2').addEventListener('click', function() {
