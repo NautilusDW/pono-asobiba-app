@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>迷路ラフ作成 — 生成AI入力用</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100vh; overflow: hidden;
+  font-family: 'Hiragino Maru Gothic Pro', 'Zen Maru Gothic', sans-serif;
+  background: #1f2218; color: #eee; }
+
+.app { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+.sidebar {
+  background: #15180f; border-right: 1px solid #2a2e22;
+  padding: 14px; overflow-y: auto;
+}
+.sidebar h1 { font-size: 1rem; margin-bottom: 8px; color: #A4C76D; }
+.sidebar h3 { font-size: 0.85rem; margin: 14px 0 6px; color: #ccc; }
+.sidebar p { font-size: 0.74rem; color: #aaa; margin-bottom: 6px; line-height: 1.4; }
+
+.mode-row, .brush-row { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.btn {
+  padding: 8px 10px; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+  background: #333; color: #ddd; border: 1px solid #555; border-radius: 4px;
+  cursor: pointer; flex: 1 1 calc(50% - 4px);
+}
+.btn:hover { background: #404040; }
+.btn.active { background: #6C8E3F; color: #fff; border-color: #A4C76D; }
+.btn.brush { flex: 1 1 calc(33% - 4px); font-size: 0.78rem; padding: 6px 4px; }
+.btn.danger { background: #5a2a2a; color: #fcc; border-color: #844; }
+.btn.danger:hover { background: #6f3535; }
+.btn.primary { background: linear-gradient(135deg, #6C8E3F, #A4C76D); color: #fff; border-color: #A4C76D; }
+
+.actions { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.actions .btn { flex: 1 1 100%; padding: 10px; font-size: 0.88rem; }
+
+.toggle-row { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #ddd; padding: 4px 0; }
+
+.status {
+  font-size: 0.78rem; color: #aaa; padding: 8px;
+  background: #20231a; border-radius: 4px; margin-top: 8px;
+}
+.status div { margin-bottom: 3px; }
+.status .ok  { color: #8fc863; font-weight: bold; }
+.status .ng  { color: #e08066; font-weight: bold; }
+
+.canvas-wrap {
+  position: relative; overflow: hidden;
+  background: #2a2e22;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+#cv {
+  display: block; max-width: 100%; max-height: 100%;
+  cursor: crosshair;
+  background: #000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.banner {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.75); color: #fff;
+  padding: 8px 16px; border-radius: 6px; font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 10;
+}
+input[type="file"] { width: 100%; font-size: 0.78rem; color: #aaa; }
+input[type="file"]::file-selector-button {
+  margin-right: 8px; font-family: inherit; font-size: 0.78rem;
+  padding: 4px 10px; background: #333; color: #ddd; border: 1px solid #555;
+  border-radius: 4px; cursor: pointer;
+}
+
+.stats-line { display: flex; justify-content: space-between; padding: 2px 0; }
+.tip {
+  background: #2a2e22; padding: 8px 10px; border-radius: 4px;
+  font-size: 0.72rem; color: #aaa; line-height: 1.5; margin-top: 8px;
+}
+.tip code { background: #3a3e32; padding: 1px 4px; border-radius: 2px; color: #cf8; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <h1>🌿 迷路ラフ作成</h1>
+    <p style="font-size:0.7rem; color:#888;">生成AIに渡す簡易レイアウト。32×18 タイル / 1920×1080</p>
+
+    <h3>モード</h3>
+    <div class="mode-row">
+      <button class="btn active" data-mode="path">🛤 道</button>
+      <button class="btn" data-mode="erase">🧹 けす</button>
+      <button class="btn" data-mode="start" style="background:#1f4079; color:#cef;">🟦 スタート</button>
+      <button class="btn" data-mode="goal" style="background:#7d2e2e; color:#fcc;">🟥 ゴール</button>
+    </div>
+
+    <h3>ブラシサイズ</h3>
+    <div class="brush-row">
+      <button class="btn brush" data-brush="1">1マス</button>
+      <button class="btn brush active" data-brush="2">2マス (推奨)</button>
+      <button class="btn brush" data-brush="3">3マス</button>
+    </div>
+
+    <h3>表示</h3>
+    <label class="toggle-row">
+      <input type="checkbox" id="gridToggle" checked> グリッド線
+    </label>
+    <label class="toggle-row">
+      <input type="checkbox" id="solutionToggle"> 解の道筋を表示
+    </label>
+
+    <div class="status" id="status">
+      <div class="stats-line"><span>接続</span><span id="statConn" class="ng">—</span></div>
+      <div class="stats-line"><span>道タイル数</span><span id="statTiles">0</span></div>
+      <div class="stats-line"><span>最短手数</span><span id="statShortest">—</span></div>
+      <div class="stats-line"><span>分岐数</span><span id="statBranches">0</span></div>
+      <div class="stats-line"><span>行き止まり</span><span id="statDeadEnds">0</span></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="exportPngBtn">🖼 PNG ダウンロード</button>
+      <button class="btn" id="exportJsonBtn">💾 JSON 保存</button>
+      <button class="btn" id="copyPromptBtn">📋 AIプロンプト雛形をコピー</button>
+      <h3 style="margin-top:8px;">📂 JSON 読み込み</h3>
+      <input type="file" id="jsonInput" accept=".json,application/json">
+      <button class="btn danger" id="resetBtn">↺ リセット</button>
+    </div>
+
+    <div class="tip">
+      <b>使い方</b><br>
+      ・<code>道</code> モードでドラッグ → 道を引く<br>
+      ・<code>けす</code> でドラッグ → 道を消す<br>
+      ・<code>スタート</code>/<code>ゴール</code> でクリック → 配置<br>
+      ・<code>PNG</code> 出力 → 生成 AI に「この道順を守って」プロンプトと一緒に渡す<br>
+      ・自動的に <code>localStorage</code> に保存。リロードしても続きから
+    </div>
+    <div class="tip" style="margin-top:6px;">
+      <b>色凡例 (最終 PNG)</b><br>
+      🟩 緑 = 草・壁<br>
+      ⬜ 白 = 歩ける道<br>
+      🔵 青円 = スタート<br>
+      🔴 赤円 = ゴール
+    </div>
+  </aside>
+
+  <main class="canvas-wrap" id="canvasWrap">
+    <canvas id="cv" width="1920" height="1080"></canvas>
+    <div class="banner" id="banner" style="display:none;"></div>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+// ────────────────────────────────────────────────────────
+// Constants
+// ────────────────────────────────────────────────────────
+const GRID_W = 32;
+const GRID_H = 18;
+const CELL = 60;          // 60 * 32 = 1920, 60 * 18 = 1080 → 16:9
+const CANVAS_W = GRID_W * CELL;
+const CANVAS_H = GRID_H * CELL;
+const COLOR_WALL  = '#7AB540';
+const COLOR_WALL2 = '#6A9F36'; // alternating shade for grass texture
+const COLOR_PATH  = '#FAF6E8';
+const COLOR_GRID  = 'rgba(0,0,0,0.12)';
+const COLOR_START = '#3B8DD9';
+const COLOR_GOAL  = '#D74E4E';
+
+const STORAGE_KEY = 'pono_maze_rough_draft_v1';
+
+// ────────────────────────────────────────────────────────
+// State
+// ────────────────────────────────────────────────────────
+const state = {
+  tiles: makeEmptyGrid(), // 'wall' | 'path'
+  start: null,            // { x, y } in tile coords
+  goal:  null,
+  mode: 'path',
+  brushSize: 2,
+  showGrid: true,
+  showSolution: false,
+  isPainting: false,
+};
+
+function makeEmptyGrid() {
+  const g = new Array(GRID_H);
+  for (let y = 0; y < GRID_H; y++) {
+    g[y] = new Array(GRID_W).fill('wall');
+  }
+  return g;
+}
+
+// ────────────────────────────────────────────────────────
+// DOM refs
+// ────────────────────────────────────────────────────────
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const banner = document.getElementById('banner');
+const gridToggle = document.getElementById('gridToggle');
+const solutionToggle = document.getElementById('solutionToggle');
+const statConn = document.getElementById('statConn');
+const statTiles = document.getElementById('statTiles');
+const statShortest = document.getElementById('statShortest');
+const statBranches = document.getElementById('statBranches');
+const statDeadEnds = document.getElementById('statDeadEnds');
+
+// ────────────────────────────────────────────────────────
+// Canvas sizing for display
+// ────────────────────────────────────────────────────────
+let displayScale = 1;
+function fitCanvas() {
+  const wrap = document.getElementById('canvasWrap');
+  const wrapW = wrap.clientWidth - 48;
+  const wrapH = wrap.clientHeight - 48;
+  const fitW = wrapW / CANVAS_W;
+  const fitH = wrapH / CANVAS_H;
+  displayScale = Math.min(fitW, fitH);
+  cv.style.width  = (CANVAS_W * displayScale) + 'px';
+  cv.style.height = (CANVAS_H * displayScale) + 'px';
+}
+window.addEventListener('resize', function() { fitCanvas(); });
+
+// ────────────────────────────────────────────────────────
+// Drawing
+// ────────────────────────────────────────────────────────
+function draw() {
+  // Background — alternating green for visual texture
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      const t = state.tiles[y][x];
+      if (t === 'path') {
+        ctx.fillStyle = COLOR_PATH;
+      } else {
+        ctx.fillStyle = ((x + y) & 1) ? COLOR_WALL : COLOR_WALL2;
+      }
+      ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+    }
+  }
+  // Grid lines (only when toggled on)
+  if (state.showGrid) {
+    ctx.strokeStyle = COLOR_GRID;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= GRID_W; x++) {
+      ctx.moveTo(x * CELL + 0.5, 0);
+      ctx.lineTo(x * CELL + 0.5, CANVAS_H);
+    }
+    for (let y = 0; y <= GRID_H; y++) {
+      ctx.moveTo(0, y * CELL + 0.5);
+      ctx.lineTo(CANVAS_W, y * CELL + 0.5);
+    }
+    ctx.stroke();
+  }
+  // Solution path (BFS shortest) — drawn as a yellow trail
+  if (state.showSolution && state.start && state.goal) {
+    const path = bfsShortest(state.start, state.goal);
+    if (path && path.length > 1) {
+      ctx.strokeStyle = 'rgba(255, 220, 60, 0.65)';
+      ctx.lineWidth = CELL * 0.55;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(path[0].x * CELL + CELL/2, path[0].y * CELL + CELL/2);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x * CELL + CELL/2, path[i].y * CELL + CELL/2);
+      }
+      ctx.stroke();
+    }
+  }
+  // Start / goal markers — large filled circles + ring
+  if (state.start) drawMarker(state.start, COLOR_START, 'S');
+  if (state.goal)  drawMarker(state.goal,  COLOR_GOAL,  'G');
+}
+
+function drawMarker(pos, color, label) {
+  const cx = pos.x * CELL + CELL / 2;
+  const cy = pos.y * CELL + CELL / 2;
+  const r = CELL * 1.4;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.92;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + (CELL * 1.2) + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, cx, cy);
+  ctx.restore();
+}
+
+// ────────────────────────────────────────────────────────
+// Mouse → tile coords
+// ────────────────────────────────────────────────────────
+function eventToTile(e) {
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width  * CANVAS_W;
+  const y = (e.clientY - rect.top)  / rect.height * CANVAS_H;
+  return { x: Math.floor(x / CELL), y: Math.floor(y / CELL) };
+}
+
+// ────────────────────────────────────────────────────────
+// Painting
+// ────────────────────────────────────────────────────────
+function paintAt(tx, ty) {
+  const half = Math.floor(state.brushSize / 2);
+  const sz = state.brushSize;
+  const x0 = Math.max(0, tx - half);
+  const y0 = Math.max(0, ty - half);
+  const x1 = Math.min(GRID_W, x0 + sz);
+  const y1 = Math.min(GRID_H, y0 + sz);
+  if (state.mode === 'path') {
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) state.tiles[y][x] = 'path';
+  } else if (state.mode === 'erase') {
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      // If we erase a tile that's the start or goal, clear that marker too
+      if (state.start && state.start.x === x && state.start.y === y) state.start = null;
+      if (state.goal  && state.goal.x  === x && state.goal.y  === y) state.goal  = null;
+      state.tiles[y][x] = 'wall';
+    }
+  } else if (state.mode === 'start') {
+    state.start = { x: tx, y: ty };
+    // Ensure start tile is path
+    if (tx >= 0 && tx < GRID_W && ty >= 0 && ty < GRID_H) {
+      state.tiles[ty][tx] = 'path';
+    }
+  } else if (state.mode === 'goal') {
+    state.goal = { x: tx, y: ty };
+    if (tx >= 0 && tx < GRID_W && ty >= 0 && ty < GRID_H) {
+      state.tiles[ty][tx] = 'path';
+    }
+  }
+}
+
+// pointer events for mouse + touch
+cv.addEventListener('pointerdown', function(e) {
+  const t = eventToTile(e);
+  if (state.mode === 'start' || state.mode === 'goal') {
+    paintAt(t.x, t.y);
+    afterEdit();
+    return;
+  }
+  state.isPainting = true;
+  cv.setPointerCapture(e.pointerId);
+  paintAt(t.x, t.y);
+  afterEdit();
+});
+cv.addEventListener('pointermove', function(e) {
+  if (!state.isPainting) return;
+  const t = eventToTile(e);
+  paintAt(t.x, t.y);
+  // Don't full-recompute stats on every move — debounce via afterEdit
+  draw();
+});
+cv.addEventListener('pointerup', function(e) {
+  if (state.isPainting) {
+    state.isPainting = false;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    afterEdit();
+  }
+});
+
+function afterEdit() {
+  draw();
+  recomputeStats();
+  scheduleAutoSave();
+}
+
+// ────────────────────────────────────────────────────────
+// Mode + brush switching
+// ────────────────────────────────────────────────────────
+document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
+  b.addEventListener('click', function() {
+    state.mode = b.dataset.mode;
+    document.querySelectorAll('.btn[data-mode]').forEach(function(x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    showBanner('モード: ' + b.textContent.trim());
+  });
+});
+document.querySelectorAll('.btn[data-brush]').forEach(function(b) {
+  b.addEventListener('click', function() {
+    state.brushSize = parseInt(b.dataset.brush, 10);
+    document.querySelectorAll('.btn[data-brush]').forEach(function(x) { x.classList.remove('active'); });
+    b.classList.add('active');
+  });
+});
+gridToggle.addEventListener('change', function() {
+  state.showGrid = gridToggle.checked;
+  draw();
+});
+solutionToggle.addEventListener('change', function() {
+  state.showSolution = solutionToggle.checked;
+  draw();
+});
+
+// ────────────────────────────────────────────────────────
+// Stats: connectivity (BFS), branches, dead-ends
+// ────────────────────────────────────────────────────────
+function bfsShortest(from, to) {
+  if (!from || !to) return null;
+  if (state.tiles[from.y][from.x] !== 'path') return null;
+  if (state.tiles[to.y][to.x]   !== 'path') return null;
+  const seen = new Array(GRID_H);
+  for (let y = 0; y < GRID_H; y++) seen[y] = new Array(GRID_W).fill(null);
+  const queue = [from];
+  seen[from.y][from.x] = { x: -1, y: -1 }; // sentinel
+  while (queue.length) {
+    const p = queue.shift();
+    if (p.x === to.x && p.y === to.y) {
+      // Reconstruct
+      const path = [];
+      let cur = p;
+      while (cur && (cur.x !== -1 || cur.y !== -1)) {
+        path.push(cur);
+        const prev = seen[cur.y][cur.x];
+        if (!prev || (prev.x === -1 && prev.y === -1)) break;
+        cur = prev;
+      }
+      return path.reverse();
+    }
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (const d of dirs) {
+      const nx = p.x + d[0], ny = p.y + d[1];
+      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+      if (state.tiles[ny][nx] !== 'path') continue;
+      if (seen[ny][nx]) continue;
+      seen[ny][nx] = p;
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  return null;
+}
+
+function countNeighbors(x, y) {
+  let n = 0;
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  for (const d of dirs) {
+    const nx = x + d[0], ny = y + d[1];
+    if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+    if (state.tiles[ny][nx] === 'path') n++;
+  }
+  return n;
+}
+
+function recomputeStats() {
+  let pathCount = 0, deadEnds = 0, branches = 0;
+  for (let y = 0; y < GRID_H; y++) for (let x = 0; x < GRID_W; x++) {
+    if (state.tiles[y][x] !== 'path') continue;
+    pathCount++;
+    const n = countNeighbors(x, y);
+    if (n === 1) deadEnds++;
+    if (n >= 3) branches++;
+  }
+  statTiles.textContent = pathCount;
+  statBranches.textContent = branches;
+  statDeadEnds.textContent = deadEnds;
+  if (state.start && state.goal) {
+    const sp = bfsShortest(state.start, state.goal);
+    if (sp) {
+      statConn.textContent = '✓ つながってる';
+      statConn.className = 'ok';
+      statShortest.textContent = (sp.length - 1) + ' マス';
+    } else {
+      statConn.textContent = '✗ 届かない';
+      statConn.className = 'ng';
+      statShortest.textContent = '—';
+    }
+  } else {
+    statConn.textContent = 'スタート/ゴール未配置';
+    statConn.className = 'ng';
+    statShortest.textContent = '—';
+  }
+}
+
+// ────────────────────────────────────────────────────────
+// Banner / toast
+// ────────────────────────────────────────────────────────
+let _bannerT = null;
+function showBanner(msg) {
+  banner.textContent = msg;
+  banner.style.display = 'block';
+  if (_bannerT) clearTimeout(_bannerT);
+  _bannerT = setTimeout(function() { banner.style.display = 'none'; }, 2200);
+}
+
+// ────────────────────────────────────────────────────────
+// Export PNG
+// ────────────────────────────────────────────────────────
+document.getElementById('exportPngBtn').addEventListener('click', function() {
+  // Re-render WITHOUT grid lines for the AI input
+  const prevGrid = state.showGrid;
+  const prevSol = state.showSolution;
+  state.showGrid = false;
+  state.showSolution = false;
+  draw();
+  cv.toBlob(function(blob) {
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = URL.createObjectURL(blob);
+    a.download = 'maze_rough_' + ts + '.png';
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+    // Restore display state
+    state.showGrid = prevGrid;
+    state.showSolution = prevSol;
+    draw();
+    showBanner('🖼 PNG をダウンロードしました');
+  }, 'image/png');
+});
+
+// ────────────────────────────────────────────────────────
+// JSON export — matches the spec format
+// ────────────────────────────────────────────────────────
+document.getElementById('exportJsonBtn').addEventListener('click', function() {
+  // Build tiles array per spec: "wall" or "path" (plus "start"/"goal" at marker positions)
+  const out = {
+    width: GRID_W,
+    height: GRID_H,
+    tiles: state.tiles.map(function(row) { return row.slice(); }),
+    start: state.start ? { x: state.start.x, y: state.start.y } : null,
+    goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
+  };
+  if (out.start && out.start.y >= 0 && out.start.y < GRID_H) {
+    out.tiles[out.start.y][out.start.x] = 'start';
+  }
+  if (out.goal && out.goal.y >= 0 && out.goal.y < GRID_H) {
+    out.tiles[out.goal.y][out.goal.x] = 'goal';
+  }
+  const json = JSON.stringify(out, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.href = URL.createObjectURL(blob);
+  a.download = 'maze_rough_' + ts + '.json';
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  showBanner('💾 JSON をダウンロードしました');
+});
+
+// ────────────────────────────────────────────────────────
+// JSON load
+// ────────────────────────────────────────────────────────
+document.getElementById('jsonInput').addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const def = JSON.parse(ev.target.result);
+      if (!def || !Array.isArray(def.tiles)) throw new Error('tiles 配列が無いよ');
+      // Resize-tolerant: fit into our 32x18 grid
+      const g = makeEmptyGrid();
+      for (let y = 0; y < Math.min(GRID_H, def.tiles.length); y++) {
+        const row = def.tiles[y];
+        if (!Array.isArray(row)) continue;
+        for (let x = 0; x < Math.min(GRID_W, row.length); x++) {
+          const t = row[x];
+          // 'start'/'goal' tiles are also walkable path
+          g[y][x] = (t === 'wall') ? 'wall' : 'path';
+        }
+      }
+      state.tiles = g;
+      state.start = (def.start && Number.isFinite(def.start.x) && Number.isFinite(def.start.y))
+        ? { x: def.start.x, y: def.start.y } : null;
+      state.goal = (def.goal && Number.isFinite(def.goal.x) && Number.isFinite(def.goal.y))
+        ? { x: def.goal.x, y: def.goal.y } : null;
+      afterEdit();
+      showBanner('📂 JSON 読み込み完了');
+    } catch (err) {
+      alert('JSON 読み込みに失敗: ' + err.message);
+    }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+});
+
+// ────────────────────────────────────────────────────────
+// AI prompt template
+// ────────────────────────────────────────────────────────
+document.getElementById('copyPromptBtn').addEventListener('click', function() {
+  const prompt =
+'添付の迷路ラフ画像を、絵本風のかわいい迷路マップに仕上げてください。\n\n' +
+'**厳守してほしいこと:**\n' +
+'- 白い部分 = 歩ける道。**絶対に道の形を変えない**\n' +
+'- 緑の部分 = 草・茂み・低木の壁。道以外には木や草を生やしてもOK\n' +
+'- 青い丸 = スタート広場 (絵本風の看板や柵で装飾OK、形は維持)\n' +
+'- 赤い丸 = ゴール広場 (絵本風のアーチや看板で装飾OK、形は維持)\n' +
+'- 比率は 16:9、サイズは 1920×1080\n\n' +
+'**スタイル:**\n' +
+'- 子ども向けのやわらかい絵本タッチ\n' +
+'- 自然光、明るい昼間 (夜の演出はゲーム側で適用するので不要)\n' +
+'- 道の上に切り株や石は置かないでください (歩ける道のままにする)\n' +
+'- 道の脇に小さな花や蝶を散らしても可\n' +
+'- ふちに余計な枠や文字を入れない';
+  navigator.clipboard.writeText(prompt).then(function() {
+    showBanner('📋 プロンプトをクリップボードにコピー');
+  }).catch(function() {
+    alert(prompt);
+  });
+});
+
+// ────────────────────────────────────────────────────────
+// Reset
+// ────────────────────────────────────────────────────────
+document.getElementById('resetBtn').addEventListener('click', function() {
+  if (!confirm('全てのタイル・スタート/ゴールを消します。よろしいですか?')) return;
+  state.tiles = makeEmptyGrid();
+  state.start = null;
+  state.goal  = null;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  afterEdit();
+  showBanner('リセット完了');
+});
+
+// ────────────────────────────────────────────────────────
+// Auto-save / restore
+// ────────────────────────────────────────────────────────
+let _saveT = null;
+function scheduleAutoSave() {
+  if (_saveT) clearTimeout(_saveT);
+  _saveT = setTimeout(_doAutoSave, 500);
+}
+function _doAutoSave() {
+  try {
+    const data = {
+      version: 1,
+      savedAt: Date.now(),
+      tiles: state.tiles,
+      start: state.start,
+      goal: state.goal,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) { /* quota — ignore */ }
+}
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data || data.version !== 1 || !Array.isArray(data.tiles)) return false;
+    state.tiles = data.tiles;
+    state.start = data.start || null;
+    state.goal  = data.goal  || null;
+    return true;
+  } catch (e) { return false; }
+}
+
+// ────────────────────────────────────────────────────────
+// Init
+// ────────────────────────────────────────────────────────
+fitCanvas();
+const restored = restoreDraft();
+draw();
+recomputeStats();
+if (restored) {
+  showBanner('💾 前回の作業を復元しました');
+}
+</script>
+</body>
+</html>
