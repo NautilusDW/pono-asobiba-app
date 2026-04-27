@@ -89,7 +89,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **お邪魔虫ミニゲーム拡充 Phase B (4 種追加)**: じゃんけんに加えて以下 4 種を実装。`_currentCreature` / `_currentGame` グローバルと `_GAME_STARTERS` ディスパッチ表で `_showEncounterStart()` から分岐。stage def の `creatures[].minigame` で個別オーバーライド可能 (ホワイトリスト検証)
   - **ミニゲーム選択は kind 関係なくランダム** (2026-04-27 変更): 以前は kind ごとに `defaultGame` (mayoi=janken / odoke=truefalse / nemuri=silhouette / pyon=simon) を割り当てていたが、再プレイ性向上のため `_gameForCreature(c)` を `_GAME_LABELS` の全 5 種類からランダム抽選に変更。`c.minigame` が明示指定されている場合のみそれを尊重
   - **遭遇セリフはミニゲーム連動**: kind の `dialog` (じゃんけん前提だった) ではなく、`_GAME_DIALOGS` マップから `_currentGame` に対応するセリフを引く。`_triggerEncounter` で `_currentGame` を先に確定してから dialog DOM を構築。`c.dialog` が明示指定されていればそれが最優先 (作者オーバーライド)
-  - **シルエットクイズ**: 黒シルエット 1 つ + 3 択 (絵文字)。お題プール 20 問
+  - **ちらっとクイズ (旧シルエット)**: assets/images/word/ の動物イラスト 16 種からランダム出題。canvas に画像 + 黒覆い (clip + evenodd) + 円形の穴 1 つを描画して「一部だけ見える」表現。3 択でクリアな画像 (サムネ + ひらがなラベル) から選ぶ。1 回不正解 → 別の場所に穴がもう 1 つ追加 (ヒント増加) + 0.5s 待ってから再選択可。2 回不正解で `_closeEncounter(false)`。`_GAME_STARTERS.silhouette` のキーは互換のため据え置き。`_showPeekChoices` 関数 + `PEEK_QUIZ_POOL` 定数 + `_peekState` グローバル + `_peekRender` / `_peekRandomHoles` ヘルパで実装
   - **○×クイズ**: 短文 + 絵文字 + ⭕❌ 2 択。お題プール 30 問
   - **なかまはずれ**: 4 つの絵から仲間外れ 1 つ選択 + ヒント表示。お題プール 20 セット
   - **リズムまね (Simon Says)**: 4 色のセル (🔴🔵🟢🟡) が順番に光る → 同順タップで再現。Web Audio で 440/523/659/784 Hz の sine wave。`_simonCancelled` フラグで遅延 timer の DOM 汚染防止

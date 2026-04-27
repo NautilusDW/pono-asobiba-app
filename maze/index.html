@@ -1818,7 +1818,7 @@ function _triggerEncounter(c) {
 // 各ミニゲームの開始関数を登録 (登場順)
 const _GAME_LABELS = {
   janken:     'じゃんけん',
-  silhouette: 'シルエットクイズ',
+  silhouette: 'ちらっとクイズ',
   truefalse:  '○×クイズ',
   oddone:     'なかまはずれ',
   simon:      'リズムまね',
@@ -1826,7 +1826,7 @@ const _GAME_LABELS = {
 
 const _GAME_DIALOGS = {
   janken:     'じゃんけん してあげる〜<br>かったら とおしてあげるよ',
-  silhouette: 'シルエット クイズ だよ〜<br>これは なんの かげ かな？',
+  silhouette: 'ちらっと だけ みえてるよ〜<br>なんの どうぶつ かな？',
   truefalse:  '○×クイズ で あそぼう！<br>こたえられる かな？',
   oddone:     'なかまはずれ さがし！<br>どれが ちがうかな？',
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
@@ -1905,17 +1905,26 @@ function _resolveJanken(playerHand) {
 // ════════════════════════════════════════════════════════════
 
 // シルエットクイズ: 答えと選択肢 3 つ (答え含む)。シャッフルして表示
-const QUIZ_SILHOUETTE = [
-  { ans: '🐰', choices: ['🐰','🐻','🐱'] }, { ans: '🦒', choices: ['🦒','🐴','🦌'] },
-  { ans: '🐘', choices: ['🐘','🦏','🐃'] }, { ans: '🐢', choices: ['🐢','🐊','🦎'] },
-  { ans: '🐧', choices: ['🐧','🦆','🐔'] }, { ans: '🐠', choices: ['🐠','🐡','🐟'] },
-  { ans: '🦋', choices: ['🦋','🐝','🐞'] }, { ans: '🐶', choices: ['🐶','🐺','🦊'] },
-  { ans: '🐱', choices: ['🐱','🐯','🦁'] }, { ans: '🐭', choices: ['🐭','🐹','🐰'] },
-  { ans: '🚗', choices: ['🚗','🚕','🚙'] }, { ans: '✈️', choices: ['✈️','🚀','🛸'] },
-  { ans: '🚲', choices: ['🚲','🛴','🛵'] }, { ans: '🚂', choices: ['🚂','🚌','🚋'] },
-  { ans: '⛵', choices: ['⛵','🚢','🛥️'] }, { ans: '🍎', choices: ['🍎','🍒','🍓'] },
-  { ans: '🍌', choices: ['🍌','🌽','🥕'] }, { ans: '🌻', choices: ['🌻','🌹','🌷'] },
-  { ans: '⚽', choices: ['⚽','🏀','🏐'] }, { ans: '🌙', choices: ['🌙','⭐','☀️'] },
+// ちらっとクイズ用プール (assets/images/word/ の自前イラスト)。
+// 同じカテゴリ (どうぶつ) で揃えて選択肢が紛らわしくなりすぎないように
+// 動物のみピックアップ。
+const PEEK_QUIZ_POOL = [
+  { id: 'inu',    label: 'いぬ',    src: '../assets/images/word/inu.png' },
+  { id: 'neko',   label: 'ねこ',    src: '../assets/images/word/neko.png' },
+  { id: 'usagi',  label: 'うさぎ',  src: '../assets/images/word/usagi.png' },
+  { id: 'risu',   label: 'りす',    src: '../assets/images/word/risu.png' },
+  { id: 'kuma',   label: 'くま',    src: '../assets/images/word/kuma.png' },
+  { id: 'panda',  label: 'ぱんだ',  src: '../assets/images/word/panda.png' },
+  { id: 'kirin',  label: 'きりん',  src: '../assets/images/word/kirin.png' },
+  { id: 'lion',   label: 'らいおん', src: '../assets/images/word/lion.png' },
+  { id: 'saru',   label: 'さる',    src: '../assets/images/word/saru.png' },
+  { id: 'shika',  label: 'しか',    src: '../assets/images/word/shika.png' },
+  { id: 'zou',    label: 'ぞう',    src: '../assets/images/word/zou.png' },
+  { id: 'fukuro', label: 'ふくろう', src: '../assets/images/word/fukuro.png' },
+  { id: 'kujira', label: 'くじら',  src: '../assets/images/word/kujira.png' },
+  { id: 'iruka',  label: 'いるか',  src: '../assets/images/word/iruka.png' },
+  { id: 'kani',   label: 'かに',    src: '../assets/images/word/kani.png' },
+  { id: 'ika',    label: 'いか',    src: '../assets/images/word/ika.png' },
 ];
 
 // ○×クイズ: q=問い, a=true|false, emoji=絵
@@ -1995,21 +2004,129 @@ function _shuffleArray(arr) {
 }
 function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-// ── シルエットクイズ ──
-function _showSilhouetteChoices() {
-  const q = _pick(QUIZ_SILHOUETTE);
-  const choices = _shuffleArray(q.choices);
+// ── ちらっとクイズ (peek quiz) ──
+// 答えのイラストの一部だけが穴から見える。3 択でクリアな絵から選ぶ。
+// 1 回間違えると別の場所に穴が増えてヒント追加。2 回間違えるとアウト。
+let _peekState = null;
+function _showPeekChoices() {
+  const ans = _pick(PEEK_QUIZ_POOL);
+  // 別カテゴリにならないよう、PEEK_QUIZ_POOL から ans 以外を 2 つランダム抽出
+  const others = _shuffleArray(PEEK_QUIZ_POOL.filter(function(p) { return p.id !== ans.id; })).slice(0, 2);
+  const choices = _shuffleArray([ans].concat(others));
+  _peekState = { ans: ans, wrongs: 0, holes: _peekRandomHoles(1) };
+
   encStageEl.innerHTML =
-    '<div class="enc-result">この シルエット は どれ？</div>' +
-    '<div class="enc-vs"><span class="enc-hand" style="filter:brightness(0);">' + q.ans + '</span></div>' +
+    '<div class="enc-result">ちらっと だけ みえてるよ〜<br>なんの どうぶつ かな？</div>' +
+    '<div class="peek-wrap"><canvas id="peekCanvas" width="280" height="280" style="border-radius:14px;background:#222;display:block;margin:0 auto;"></canvas></div>' +
     '<div class="row">' +
-    choices.map(function(em) {
-      return '<button class="enc-btn choice" data-em="' + em + '">' + em + '</button>';
+    choices.map(function(c) {
+      return '<button class="enc-btn choice peek-choice" data-id="' + c.id + '" style="padding:6px;min-width:84px;">' +
+        '<img src="' + c.src + '" alt="' + c.label + '" style="width:64px;height:64px;object-fit:contain;display:block;margin:0 auto;">' +
+        '<div style="font-size:0.85rem;margin-top:2px;">' + c.label + '</div>' +
+        '</button>';
     }).join('') +
     '</div>';
-  encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
-    b.addEventListener('click', function() { _resolveQuiz(b.dataset.em === q.ans); });
+
+  // 画像をロードしてから canvas を描画
+  const canv = document.getElementById('peekCanvas');
+  const img = new Image();
+  img.onload = function() {
+    _peekRender(canv, img, _peekState.holes);
+  };
+  img.onerror = function() {
+    // ロード失敗時は画像なしで穴位置だけ描画 (フォールバック)
+    _peekRender(canv, null, _peekState.holes);
+  };
+  img.src = ans.src;
+
+  encStageEl.querySelectorAll('.peek-choice').forEach(function(b) {
+    b.addEventListener('click', function() {
+      if (b.disabled) return;
+      const correct = b.dataset.id === ans.id;
+      if (correct) {
+        _peekState = null;
+        _resolveQuiz(true);
+        return;
+      }
+      // 不正解
+      _peekState.wrongs++;
+      if (_peekState.wrongs >= 2) {
+        _peekState = null;
+        _resolveQuiz(false);
+        return;
+      }
+      // ヒント追加 (穴をもう 1 つ別の場所に)
+      _peekState.holes = _peekState.holes.concat(_peekRandomHoles(1, _peekState.holes));
+      _peekRender(canv, img, _peekState.holes);
+      // 0.5s ちょっと止め
+      const buttons = encStageEl.querySelectorAll('.peek-choice');
+      buttons.forEach(function(bb) { bb.disabled = true; bb.style.opacity = '0.5'; });
+      setTimeout(function() {
+        buttons.forEach(function(bb) { bb.disabled = false; bb.style.opacity = '1'; });
+      }, 500);
+    });
   });
+}
+
+// 穴の位置をランダムで N 個生成。avoid と被らないようなるべく離す。
+function _peekRandomHoles(n, avoid) {
+  avoid = avoid || [];
+  // canvas 280x280 内、margin 50px、半径 38px
+  const positions = [];
+  let attempts = 0;
+  while (positions.length < n && attempts < 30) {
+    attempts++;
+    const x = 50 + Math.random() * 180;
+    const y = 50 + Math.random() * 180;
+    let ok = true;
+    for (const p of avoid.concat(positions)) {
+      const dx = p.x - x, dy = p.y - y;
+      if (dx * dx + dy * dy < 100 * 100) { ok = false; break; }
+    }
+    if (ok) positions.push({ x: x, y: y, r: 38 });
+  }
+  // 失敗時は固定位置を fallback
+  if (positions.length < n) positions.push({ x: 140, y: 140, r: 38 });
+  return positions;
+}
+
+// canvas に画像 + 黒覆い (穴の中だけ画像が見える) を描画。
+// clip + evenodd で「全面の rect から穴の arc を除いた領域」だけを黒で塗る。
+function _peekRender(canv, img, holes) {
+  if (!canv) return;
+  const ctx2 = canv.getContext('2d');
+  ctx2.clearRect(0, 0, canv.width, canv.height);
+  // まず canvas 全面に画像 (背景を一度埋める)
+  ctx2.fillStyle = '#222';
+  ctx2.fillRect(0, 0, canv.width, canv.height);
+  if (img && img.complete && img.naturalWidth > 0) {
+    const ratio = img.naturalWidth / img.naturalHeight;
+    let dw, dh;
+    if (ratio > 1) { dw = canv.width; dh = canv.width / ratio; }
+    else           { dh = canv.height; dw = canv.height * ratio; }
+    const dx = (canv.width - dw) / 2, dy = (canv.height - dh) / 2;
+    ctx2.drawImage(img, dx, dy, dw, dh);
+  }
+  // 上から黒で覆うが、穴 (arc) の内側だけ塗らないように evenodd clip を使う
+  ctx2.save();
+  ctx2.beginPath();
+  ctx2.rect(0, 0, canv.width, canv.height);
+  for (const h of holes) {
+    ctx2.moveTo(h.x + h.r, h.y);
+    ctx2.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+  }
+  ctx2.clip('evenodd');
+  ctx2.fillStyle = '#222';
+  ctx2.fillRect(0, 0, canv.width, canv.height);
+  ctx2.restore();
+  // 穴の周りに白い枠を 2px (見やすさのため)
+  ctx2.lineWidth = 2;
+  ctx2.strokeStyle = 'rgba(255,255,255,0.6)';
+  for (const h of holes) {
+    ctx2.beginPath();
+    ctx2.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+    ctx2.stroke();
+  }
 }
 
 // ── ○×クイズ ──
@@ -2152,7 +2269,7 @@ function _resolveQuiz(correct) {
 // ゲーム starter のディスパッチ表
 const _GAME_STARTERS = {
   janken:     _showJankenChoices,
-  silhouette: _showSilhouetteChoices,
+  silhouette: _showPeekChoices,
   truefalse:  _showTrueFalseChoices,
   oddone:     _showOddOneOutChoices,
   simon:      _showSimonGame,
