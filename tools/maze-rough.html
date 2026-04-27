@@ -50,6 +50,35 @@ html, body { height: 100vh; overflow: hidden;
   background: #2a2e22;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
+  flex-direction: column;
+}
+.canvas-wrap.compare-on {
+  justify-content: stretch;
+  gap: 8px;
+  padding: 12px 0;
+  overflow: hidden;
+}
+.canvas-wrap.compare-on > .pane {
+  flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  width: 100%;
+}
+.canvas-wrap.compare-on .pane.compare {
+  border-top: 2px dashed #A4C76D;
+  background: rgba(108,142,63,0.08);
+}
+.pane-label {
+  position: absolute; top: 6px; left: 12px;
+  background: rgba(0,0,0,0.65); color: #cf8;
+  padding: 3px 10px; border-radius: 4px;
+  font-size: 0.78rem; font-weight: 700;
+  pointer-events: none; z-index: 5;
+}
+#cv2 {
+  display: block; max-width: 100%; max-height: 100%;
+  background: #1a1a1a;
+  opacity: 0.95;
 }
 /* Floating zoom controls (bottom-right of canvas area) */
 .zoom-controls {
@@ -193,6 +222,12 @@ input[type="file"]::file-selector-button {
       </label>
       <button class="btn" id="compareBtn" style="flex:1; font-size:0.78rem;">🪟 別タブで開く</button>
     </div>
+    <h3 style="margin-top:8px;">🔀 比較ペイン (上下分割)</h3>
+    <select id="compareSelect" style="width:100%; padding:6px 8px; font-family:inherit; font-size:0.78rem;
+                                       background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+      <option value="">— なし (シングルビュー) —</option>
+    </select>
+    <p style="font-size:0.7rem; color:#888; margin-top:4px;">選ぶと下半分に保存済みステージを参考表示</p>
 
     <div class="tip">
       <b>使い方</b><br>
@@ -212,7 +247,14 @@ input[type="file"]::file-selector-button {
   </aside>
 
   <main class="canvas-wrap" id="canvasWrap">
-    <canvas id="cv" width="1920" height="1080"></canvas>
+    <div class="pane main" id="paneMain" style="flex:1; display:flex; align-items:center; justify-content:center; width:100%;">
+      <span class="pane-label" id="paneMainLabel" style="display:none;">編集中</span>
+      <canvas id="cv" width="1920" height="1080"></canvas>
+    </div>
+    <div class="pane compare" id="paneCompare" style="display:none;">
+      <span class="pane-label" id="paneCompareLabel">比較</span>
+      <canvas id="cv2" width="1920" height="1080"></canvas>
+    </div>
     <div class="banner" id="banner" style="display:none;"></div>
     <div class="zoom-controls">
       <button class="zoom-btn" id="zoomOut" title="縮小">−</button>
@@ -321,9 +363,9 @@ let userZoom = 1;          // 1.0 = fit-to-viewport
 const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
 function fitCanvas() {
-  const wrap = document.getElementById('canvasWrap');
-  const wrapW = wrap.clientWidth - 48;
-  const wrapH = wrap.clientHeight - 48;
+  const pane = document.getElementById('paneMain');
+  const wrapW = pane.clientWidth - 48;
+  const wrapH = pane.clientHeight - 48;
   const fitW = wrapW / CANVAS_W;
   const fitH = wrapH / CANVAS_H;
   const baseScale = Math.min(fitW, fitH);
@@ -332,7 +374,96 @@ function fitCanvas() {
   cv.style.height = (CANVAS_H * displayScale) + 'px';
   const zr = document.getElementById('zoomReadout');
   if (zr) zr.textContent = Math.round(userZoom * 100) + '%';
+  resizeComparePane();
 }
+
+// ── 比較ペイン (上下分割) ──
+const cv2 = document.getElementById('cv2');
+const ctx2 = cv2.getContext('2d');
+const paneCompare = document.getElementById('paneCompare');
+const paneMainLabel = document.getElementById('paneMainLabel');
+const paneCompareLabel = document.getElementById('paneCompareLabel');
+const compareSelect = document.getElementById('compareSelect');
+let _compareSnap = null;
+
+function refreshCompareDropdown() {
+  const cur = compareSelect.value;
+  compareSelect.innerHTML = '<option value="">— なし (シングルビュー) —</option>';
+  const saves = getAllSaves();
+  const names = Object.keys(saves).sort(function(a, b) { return (saves[b].savedAt || 0) - (saves[a].savedAt || 0); });
+  for (const name of names) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    compareSelect.appendChild(opt);
+  }
+  if (cur && saves[cur]) compareSelect.value = cur;
+}
+
+function resizeComparePane() {
+  if (paneCompare.style.display === 'none' || !_compareSnap) return;
+  const w = paneCompare.clientWidth - 24;
+  const h = paneCompare.clientHeight - 24;
+  const fit = Math.min(w / CANVAS_W, h / CANVAS_H);
+  cv2.style.width  = (CANVAS_W * fit) + 'px';
+  cv2.style.height = (CANVAS_H * fit) + 'px';
+  drawCompare();
+}
+
+function drawCompare() {
+  if (!_compareSnap) return;
+  // Draw tiles directly to cv2 — same logic as main draw() but on the saved snapshot
+  const tiles = _compareSnap.tiles;
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      const t = (tiles && tiles[y]) ? tiles[y][x] : 'wall';
+      if (t === 'path') {
+        ctx2.fillStyle = COLOR_PATH;
+      } else {
+        ctx2.fillStyle = ((x + y) & 1) ? COLOR_WALL : COLOR_WALL2;
+      }
+      ctx2.fillRect(x * CELL, y * CELL, CELL, CELL);
+    }
+  }
+  // Markers (no S/G text)
+  function drawMarkerOn(p, color) {
+    if (!p) return;
+    const r = CELL * 1.4;
+    ctx2.save();
+    ctx2.fillStyle = color; ctx2.globalAlpha = 0.92;
+    ctx2.beginPath(); ctx2.arc(p.x, p.y, r, 0, Math.PI * 2); ctx2.fill();
+    ctx2.globalAlpha = 1;
+    ctx2.strokeStyle = '#fff'; ctx2.lineWidth = 6;
+    ctx2.beginPath(); ctx2.arc(p.x, p.y, r, 0, Math.PI * 2); ctx2.stroke();
+    ctx2.restore();
+  }
+  drawMarkerOn(_compareSnap.start, COLOR_START);
+  drawMarkerOn(_compareSnap.goal,  COLOR_GOAL);
+}
+
+compareSelect.addEventListener('change', function() {
+  const name = compareSelect.value;
+  if (!name) {
+    paneCompare.style.display = 'none';
+    document.getElementById('canvasWrap').classList.remove('compare-on');
+    paneMainLabel.style.display = 'none';
+    _compareSnap = null;
+    setTimeout(function() { fitCanvas(); draw(); }, 50);
+    return;
+  }
+  const snap = getAllSaves()[name];
+  if (!snap) return;
+  _compareSnap = snap;
+  paneCompareLabel.textContent = '比較: ' + name;
+  paneCompare.style.display = 'flex';
+  document.getElementById('canvasWrap').classList.add('compare-on');
+  paneMainLabel.style.display = 'block';
+  setTimeout(function() {
+    fitCanvas(); // main pane shrinks
+    draw();
+    resizeComparePane();
+  }, 50);
+});
 window.addEventListener('resize', function() { fitCanvas(); });
 
 document.getElementById('zoomIn').addEventListener('click', function() {
@@ -984,6 +1115,8 @@ function deleteSaveByName(name) {
 }
 
 function refreshSaveList() {
+  // Keep compare-pane dropdown in sync
+  if (typeof refreshCompareDropdown === 'function') refreshCompareDropdown();
   const ul = document.getElementById('saveList');
   if (!ul) return;
   ul.innerHTML = '';
