@@ -264,14 +264,16 @@ input[type="file"]::file-selector-button {
     </div>
 
     <h3>🎲 ランダム生成</h3>
-    <p style="font-size:0.7rem; color:#888;">ステージ番号で難易度を決めて自動で迷路を作るよ。お邪魔虫の位置も決まる。</p>
-    <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
-      <label style="font-size:0.78rem; color:#ddd;">ステージ</label>
-      <input type="number" id="genStageInput" min="1" max="20" value="1"
-             style="flex:1; padding:5px 8px; font-family:inherit; font-size:0.85rem;
+    <p style="font-size:0.7rem; color:#888;">難易度 1-100 で迷路を自動生成。50超で道が細く、75超で2画面ステージに。</p>
+    <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+      <label style="font-size:0.78rem; color:#ddd; min-width:42px;">難易度</label>
+      <input type="range" id="diffSlider" min="1" max="100" value="50"
+             style="flex:1; min-width:0;">
+      <input type="number" id="diffInput" min="1" max="100" value="50"
+             style="width:54px; padding:4px 6px; font-family:inherit; font-size:0.82rem;
                     background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
     </div>
-    <div id="genStageHint" style="font-size:0.7rem; color:#A4C76D; margin-bottom:6px; min-height:1.2em;"></div>
+    <div id="diffHint" style="font-size:0.7rem; color:#A4C76D; margin-bottom:6px; min-height:1.4em;"></div>
     <button class="btn primary" id="generateBtn" style="width:100%; padding:9px;">🎲 ランダム生成</button>
 
     <div class="actions">
@@ -365,10 +367,13 @@ input[type="file"]::file-selector-button {
 // ────────────────────────────────────────────────────────
 // Constants
 // ────────────────────────────────────────────────────────
-const GRID_W = 32;
+// GRID_W is mutable: 32 (1 panel = 1920px) or 64 (2 panel = 3840px).
+// All BFS / drawing / coord math reads the current value, so changing it
+// at runtime via _resizeCanvas() expands/shrinks the editing surface.
+let GRID_W = 32;
 const GRID_H = 18;
 const CELL = 60;          // 60 * 32 = 1920, 60 * 18 = 1080 → 16:9
-const CANVAS_W = GRID_W * CELL;
+let CANVAS_W = GRID_W * CELL;
 const CANVAS_H = GRID_H * CELL;
 const COLOR_WALL  = '#7AB540';
 const COLOR_WALL2 = '#6A9F36'; // alternating shade for grass texture
@@ -392,6 +397,7 @@ const state = {
   goal:  null,            // same — pixel coords
   creatures: [],          // [{ x, y }] お邪魔虫マーカー (PIXEL coords)
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
+  panels: 1,              // 1 (1920×1080) or 2 (3840×1080, side-by-side stage)
   mode: 'path',
   brushSize: 2,
   showGrid: true,
@@ -681,7 +687,18 @@ canvasWrap.addEventListener('drop', function(e) {
           return isTile ? { x: m.x*CELL+CELL/2, y: m.y*CELL+CELL/2 } : { x: m.x, y: m.y };
         }
         pushHistory();
-        state.tiles = g;
+        // Detect 2-panel JSON and resize canvas first
+        const _dpPanels = (def.panels === 2 || def.width >= 64) ? 2 : 1;
+        _resizeCanvas(_dpPanels === 2 ? 64 : 32, _dpPanels);
+        // Re-fill tiles after resize (g was built against the old GRID_W)
+        const g2 = makeEmptyGrid();
+        for (let y = 0; y < Math.min(GRID_H, def.tiles.length); y++) {
+          const row = def.tiles[y]; if (!Array.isArray(row)) continue;
+          for (let x = 0; x < Math.min(GRID_W, row.length); x++) {
+            g2[y][x] = (row[x] === 'wall') ? 'wall' : 'path';
+          }
+        }
+        state.tiles = g2;
         state.start = _loadM(def.start);
         state.goal  = _loadM(def.goal);
         state.creatures = (typeof _loadCreatures === 'function')
@@ -1238,8 +1255,23 @@ function showBanner(msg) {
 }
 
 // ────────────────────────────────────────────────────────
-// Export PNG
+// Export PNG (1-panel: single 1920×1080 PNG;
+//             2-panel: two 1920×1080 PNGs split at the midline, _L / _R)
 // ────────────────────────────────────────────────────────
+function _cropMainCanvas(srcX) {
+  // Returns a Promise<Blob> of a 1920×1080 PNG cropped from the main canvas.
+  const off = document.createElement('canvas');
+  off.width = 1920; off.height = 1080;
+  off.getContext('2d').drawImage(cv, srcX, 0, 1920, 1080, 0, 0, 1920, 1080);
+  return new Promise(function(res) { off.toBlob(res, 'image/png'); });
+}
+function _saveBlobPlain(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+}
 document.getElementById('exportPngBtn').addEventListener('click', async function() {
   // Re-render WITHOUT grid lines / solution / brush preview for clean AI input
   const prevGrid = state.showGrid;
@@ -1250,17 +1282,27 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
   state.hoverTile = null;
   draw();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  // ステージ管理の名前があればそれをファイル名に使う、無ければタイムスタンプ
   const stageName = (document.getElementById('saveNameInput').value || '').trim();
   const safeStageName = stageName.replace(/[\\\/:*?"<>|]/g, '_').slice(0, 60);
-  const filename = safeStageName ? safeStageName + '.png' : 'maze_rough_' + ts + '.png';
+  const baseName = safeStageName || ('maze_rough_' + ts);
   const restore = function() {
     state.showGrid = prevGrid;
     state.showSolution = prevSol;
     state.hoverTile = prevHover;
     draw();
   };
-  // Modern File System Access API (Chromium) — let user pick save location
+  if (state.panels === 2) {
+    // Always two separate downloads (showSaveFilePicker would prompt twice).
+    const left  = await _cropMainCanvas(0);
+    const right = await _cropMainCanvas(1920);
+    _saveBlobPlain(left,  baseName + '_L.png');
+    _saveBlobPlain(right, baseName + '_R.png');
+    showBanner('🖼 2画面PNGをダウンロード (_L / _R)');
+    restore();
+    return;
+  }
+  // 1-panel — preserve the existing showSaveFilePicker UX
+  const filename = baseName + '.png';
   if (window.showSaveFilePicker) {
     try {
       const handle = await window.showSaveFilePicker({
@@ -1275,18 +1317,12 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
       restore();
       return;
     } catch (err) {
-      // User canceled the picker — silently fall through to default download
       if (err && err.name === 'AbortError') { restore(); return; }
       console.warn('showSaveFilePicker failed, fallback to default download:', err);
     }
   }
-  // Fallback: classic download to default folder
   cv.toBlob(function(blob) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+    _saveBlobPlain(blob, filename);
     restore();
     showBanner('🖼 PNG をダウンロードしました (既定の保存先)');
   }, 'image/png');
@@ -1300,6 +1336,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
   const out = {
     width: GRID_W,
     height: GRID_H,
+    panels: state.panels,
     tiles: state.tiles.map(function(row) { return row.slice(); }),
     start: state.start ? { x: state.start.x, y: state.start.y } : null,
     goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
@@ -1337,7 +1374,9 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
     try {
       const def = JSON.parse(ev.target.result);
       if (!def || !Array.isArray(def.tiles)) throw new Error('tiles 配列が無いよ');
-      // Resize-tolerant: fit into our 32x18 grid
+      // Detect target panel count from JSON (panels field, or width if old format)
+      const targetPanels = (def.panels === 2 || def.width >= 64) ? 2 : 1;
+      _resizeCanvas(targetPanels === 2 ? 64 : 32, targetPanels);
       const g = makeEmptyGrid();
       for (let y = 0; y < Math.min(GRID_H, def.tiles.length); y++) {
         const row = def.tiles[y];
@@ -1443,6 +1482,8 @@ function pushHistory() {
     goal: state.goal,
     creatures: state.creatures,
     waypoints: state.waypoints,
+    panels: state.panels,
+    gridW: GRID_W,
   }));
   if (state.history.length > 50) state.history.shift();
 }
@@ -1453,6 +1494,9 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     return;
   }
   const prev = JSON.parse(state.history.pop());
+  // Resize canvas first if undo target had a different panel count
+  const prevPanels = (prev.panels === 2 || prev.gridW === 64) ? 2 : 1;
+  _resizeCanvas(prevPanels === 2 ? 64 : 32, prevPanels);
   state.tiles = prev.tiles;
   state.start = prev.start;
   state.goal  = prev.goal;
@@ -1478,6 +1522,8 @@ window.addEventListener('keydown', function(e) {
 document.getElementById('resetBtn').addEventListener('click', function() {
   if (!confirm('全てのタイル・スタート/ゴールを消します。よろしいですか?')) return;
   pushHistory(); // allow undoing the reset
+  // Reset back to single panel as well
+  _resizeCanvas(32, 1);
   state.tiles = makeEmptyGrid();
   state.start = null;
   state.goal  = null;
@@ -1506,6 +1552,8 @@ function _doAutoSave() {
       goal: state.goal,
       creatures: state.creatures,
       waypoints: state.waypoints,
+      panels: state.panels,
+      gridW: GRID_W,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* quota — ignore */ }
@@ -1516,6 +1564,9 @@ function restoreDraft() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!data || data.version !== 1 || !Array.isArray(data.tiles)) return false;
+    // Resize canvas first if the saved draft was 2-panel
+    const restoredPanels = (data.panels === 2 || data.gridW === 64) ? 2 : 1;
+    _resizeCanvas(restoredPanels === 2 ? 64 : 32, restoredPanels);
     state.tiles = data.tiles;
     state.start = data.start || null;
     state.goal  = data.goal  || null;
@@ -1571,6 +1622,8 @@ function saveAs(rawName) {
     goal: state.goal,
     creatures: state.creatures.slice(),
     waypoints: state.waypoints.slice(),
+    panels: state.panels,
+    gridW: GRID_W,
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1589,6 +1642,8 @@ function libOverwriteSlot(name) {
     goal: state.goal,
     creatures: state.creatures.slice(),
     waypoints: state.waypoints.slice(),
+    panels: state.panels,
+    gridW: GRID_W,
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1766,6 +1821,9 @@ function loadSaveByName(name) {
   const s = saves[name];
   if (!s) { showBanner('「' + name + '」が見つかりません'); return false; }
   pushHistory();
+  // Resize canvas for 2-panel saves before assigning tiles
+  const sPanels = (s.panels === 2 || s.gridW === 64) ? 2 : 1;
+  _resizeCanvas(sPanels === 2 ? 64 : 32, sPanels);
   state.tiles = s.tiles;
   state.start = s.start;
   state.goal  = s.goal;
@@ -1876,6 +1934,8 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
         goal:  _loadMarker(def.goal),
         creatures: _loadCreatures(def.creatures),
         waypoints: _loadWaypoints(def.waypoints),
+        panels: (def.panels === 2 || def.width >= 64) ? 2 : 1,
+        gridW: (def.panels === 2 || def.width >= 64) ? 64 : 32,
         savedAt: Date.now(),
       };
       setAllSaves(saves);
@@ -1910,26 +1970,55 @@ document.getElementById('compareBtn').addEventListener('click', function() {
 // ────────────────────────────────────────────────────────
 // Random maze generator (recursive backtracker on coarse cell grid)
 // ────────────────────────────────────────────────────────
-// Cell layout: each cell occupies 4 tiles (2-tile inner path + 2-tile wall border).
-// cw cells × ch cells, centered in the 32×18 tile grid. Inner path tiles for
-// cell (ci,cj) at (offX+4*ci+1..+2, offY+4*cj+1..+2). Knocked-down east wall
-// adds tiles at (offX+4*ci+3..+4, offY+4*cj+1..+2). South wall is symmetric.
-const CELL_SIZE = 4;
+// Cell stride = pathWidth + wallWidth, with pathWidth = wallWidth = stride/2.
+// cellStride=4 → 2-tile path, 2-tile wall (default).
+// cellStride=2 → 1-tile path, 1-tile wall (high-difficulty mode, d≥50).
 
-function _stageParams(stage) {
-  // Difficulty table: cw/ch = cell-grid size, deadEndPrune = how many leaf
-  // dead-end iterations to fill (smaller = more dead ends), creatureCount = じゃま虫数.
-  const tbl = [
-    { cw: 4, ch: 3, deadEndPrune: 99, creatureCount: 0 }, // stage 1: simple linear
-    { cw: 5, ch: 3, deadEndPrune: 6,  creatureCount: 1 }, // stage 2: easy
-    { cw: 6, ch: 3, deadEndPrune: 3,  creatureCount: 2 }, // stage 3
-    { cw: 7, ch: 4, deadEndPrune: 2,  creatureCount: 3 }, // stage 4
-    { cw: 8, ch: 4, deadEndPrune: 1,  creatureCount: 3 }, // stage 5
-    { cw: 8, ch: 4, deadEndPrune: 0,  creatureCount: 4 }, // stage 6
-    { cw: 8, ch: 4, deadEndPrune: 0,  creatureCount: 5 }, // stage 7+
-  ];
-  const i = Math.max(1, Math.floor(stage)) - 1;
-  return tbl[Math.min(i, tbl.length - 1)];
+// Map continuous difficulty (1-100) to generator params.
+// d<50 : 2-tile-wide paths (cellStride=4), 1 panel (32 tiles wide)
+// d<75 : 1-tile-wide paths (cellStride=2), 1 panel
+// d≥75 : 1-tile-wide paths (cellStride=2), 2 panels (64 tiles wide, 3840×1080)
+function _paramsForDifficulty(d) {
+  const v = Math.max(1, Math.min(100, Math.floor(Number(d) || 1)));
+  const oneTile  = v >= 50;
+  const twoPanel = v >= 75;
+  const cellStride = oneTile ? 2 : 4;
+  const panels = twoPanel ? 2 : 1;
+  const gridW  = panels * 32;
+  // Cell-grid dims fill the available tile space (cells offset is centered).
+  const cw = Math.floor(gridW / cellStride);
+  const ch = Math.floor(GRID_H / cellStride);
+  // Pruning kept at 0 for all difficulties — the user wants d=1 to already
+  // be at "current hardest" level (no prune), and harder still at d=100.
+  const deadEndPrune = 0;
+  // Creature count: linear lerp 4 → 12 over d=1..100.
+  // 2-panel maps double the floor so the larger stage isn't sparser.
+  const baseCount = 4 + (12 - 4) * (v - 1) / 99;
+  const creatureCount = Math.round(baseCount * (twoPanel ? 1.5 : 1));
+  return {
+    difficulty: v,
+    cellStride: cellStride,
+    panels: panels,
+    gridW: gridW,
+    cw: cw,
+    ch: ch,
+    deadEndPrune: deadEndPrune,
+    creatureCount: creatureCount,
+  };
+}
+
+// Resize canvas + tiles to match a target gridW (32 or 64).
+// Called by generator before rebuilding tiles. Drops any existing tiles
+// state since the generator will overwrite anyway.
+function _resizeCanvas(targetGridW, targetPanels) {
+  if (targetGridW !== 32 && targetGridW !== 64) return;
+  if (GRID_W === targetGridW && state.panels === targetPanels) return;
+  GRID_W = targetGridW;
+  CANVAS_W = GRID_W * CELL;
+  cv.width = CANVAS_W;
+  state.panels = targetPanels;
+  state.tiles = makeEmptyGrid();
+  fitCanvas();
 }
 
 function _shuffle(arr) {
@@ -1940,29 +2029,46 @@ function _shuffle(arr) {
   return arr;
 }
 
-function _carveCellInterior(g, ci, cj, offX, offY) {
-  const x0 = offX + CELL_SIZE * ci + 1;
-  const y0 = offY + CELL_SIZE * cj + 1;
-  for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+// Parameterized helpers — cellStride determines path/wall widths.
+// pathWidth = wallWidth = cellStride/2.
+// Cell (ci, cj) interior path tiles start at (offX + cellStride*ci + 1) for
+// stride=4, but at (offX + cellStride*ci) for stride=2 — i.e. at the
+// top-left of the cell. We compute interior offset as max(1, stride-2)
+// only when stride==4 (legacy centering); for stride==2 offset is 0.
+function _innerOffset(cellStride) {
+  // 4 → 1 (centered: tiles 1..2 of 4); 2 → 0 (top-left: tile 0 of 2)
+  return cellStride === 4 ? 1 : 0;
+}
+
+function _carveCellInterior(g, ci, cj, offX, offY, cellStride) {
+  const pw = cellStride / 2; // pathWidth
+  const off = _innerOffset(cellStride);
+  const x0 = offX + cellStride * ci + off;
+  const y0 = offY + cellStride * cj + off;
+  for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
     const x = x0 + dx, y = y0 + dy;
     if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
   }
 }
 
-function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY) {
-  // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY).
-  // Paints a 2-tile-wide, 2-tile-long corridor in the wall band.
-  if (dirX === 1) { // east
-    const x0 = offX + CELL_SIZE * ci + 3;
-    const y0 = offY + CELL_SIZE * cj + 1;
-    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride) {
+  // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY). Paints a
+  // pw-wide, ww-long corridor in the wall band (pw = wallWidth = stride/2).
+  const pw = cellStride / 2;
+  const off = _innerOffset(cellStride);
+  if (dirX === 1) { // east — corridor spans the right wall band of cell ci
+    // Width-direction (x): wall band starts at off+pw, length = wallWidth = pw
+    // Height-direction (y): aligned with cell interior (off, length = pw)
+    const x0 = offX + cellStride * ci + off + pw;
+    const y0 = offY + cellStride * cj + off;
+    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
-  } else if (dirY === 1) { // south
-    const x0 = offX + CELL_SIZE * ci + 1;
-    const y0 = offY + CELL_SIZE * cj + 3;
-    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+  } else if (dirY === 1) { // south — symmetric
+    const x0 = offX + cellStride * ci + off;
+    const y0 = offY + cellStride * cj + off + pw;
+    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
@@ -1970,7 +2076,7 @@ function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY) {
 }
 
 // Returns { tiles, edges, offX, offY, cw, ch }
-function _buildMazeCells(cw, ch, offX, offY) {
+function _buildMazeCells(cw, ch, offX, offY, cellStride) {
   const visited = new Array(ch);
   for (let j = 0; j < ch; j++) visited[j] = new Array(cw).fill(false);
   // adjacency map: (ci,cj) -> Set of "ci2,cj2"
@@ -2004,21 +2110,21 @@ function _buildMazeCells(cw, ch, offX, offY) {
   // Build tiles
   const tiles = makeEmptyGrid();
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
-    _carveCellInterior(tiles, i, j, offX, offY);
+    _carveCellInterior(tiles, i, j, offX, offY, cellStride);
   }
   // Carve corridors (only emit each edge once: east + south)
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
     if (i + 1 < cw && adj[key(i,j)] && adj[key(i,j)][key(i+1,j)]) {
-      _carveCorridor(tiles, i, j, 1, 0, offX, offY);
+      _carveCorridor(tiles, i, j, 1, 0, offX, offY, cellStride);
     }
     if (j + 1 < ch && adj[key(i,j)] && adj[key(i,j)][key(i,j+1)]) {
-      _carveCorridor(tiles, i, j, 0, 1, offX, offY);
+      _carveCorridor(tiles, i, j, 0, 1, offX, offY, cellStride);
     }
   }
   return { tiles: tiles, adj: adj };
 }
 
-function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys) {
+function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys, cellStride) {
   // Repeatedly find dead-end cells (only 1 neighbor) NOT in `protectedKeys`
   // and remove them along with the corridor to their sole neighbor.
   // Lower iterations preserves more dead ends (harder stages).
@@ -2039,10 +2145,12 @@ function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys) {
       if (protect[k]) continue;
       const nb = adj[k] ? Object.keys(adj[k]) : [];
       if (nb.length !== 1) continue;
-      // Wipe this cell's interior
-      const x0 = offX + CELL_SIZE * i + 1;
-      const y0 = offY + CELL_SIZE * j + 1;
-      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      // Wipe this cell's interior + corridor in cellStride-aware layout.
+      const pw  = cellStride / 2;
+      const off = _innerOffset(cellStride);
+      const x0 = offX + cellStride * i + off;
+      const y0 = offY + cellStride * j + off;
+      for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
         const x = x0 + dx, y = y0 + dy;
         if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) tiles[y][x] = 'wall';
       }
@@ -2050,12 +2158,12 @@ function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys) {
       const otherKey = nb[0];
       const parts = otherKey.split(','); const oi = +parts[0], oj = +parts[1];
       let cx0, cy0;
-      if (oi === i + 1) { cx0 = offX + CELL_SIZE * i + 3; cy0 = offY + CELL_SIZE * j + 1; }
-      else if (oi === i - 1) { cx0 = offX + CELL_SIZE * i - 1; cy0 = offY + CELL_SIZE * j + 1; }
-      else if (oj === j + 1) { cx0 = offX + CELL_SIZE * i + 1; cy0 = offY + CELL_SIZE * j + 3; }
-      else if (oj === j - 1) { cx0 = offX + CELL_SIZE * i + 1; cy0 = offY + CELL_SIZE * j - 1; }
+      if (oi === i + 1)      { cx0 = offX + cellStride * i + off + pw; cy0 = offY + cellStride * j + off; }
+      else if (oi === i - 1) { cx0 = offX + cellStride * i + off - pw; cy0 = offY + cellStride * j + off; }
+      else if (oj === j + 1) { cx0 = offX + cellStride * i + off; cy0 = offY + cellStride * j + off + pw; }
+      else if (oj === j - 1) { cx0 = offX + cellStride * i + off; cy0 = offY + cellStride * j + off - pw; }
       else continue;
-      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
         const x = cx0 + dx, y = cy0 + dy;
         if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) tiles[y][x] = 'wall';
       }
@@ -2120,7 +2228,7 @@ function _farthestCellPair(adj, cw, ch) {
   return [a, b];
 }
 
-function _placeCreaturesOnPath(stage, count, offX, offY, cw, ch) {
+function _placeCreaturesOnPath(count, offX, offY, cw, ch) {
   // Pick path tiles roughly along the BFS shortest tile path between
   // start/goal markers. Avoid first/last 20% of the path so creatures
   // don't sit right on top of start or goal markers.
@@ -2171,19 +2279,27 @@ function _snapToBlockCenter(px, py) {
     // Click landed on wall — return click position unchanged (don't lie about location)
     return { x: px, y: py, snapped: false };
   }
-  // 4 candidate 2x2 blocks that include (tx, ty)
+  // 4 candidate 2x2 blocks that include (tx, ty). Pick the one whose center
+  // is *closest to the click position*, not just the first all-path block —
+  // when the click is near the boundary of two adjacent 2x2 path regions
+  // (common at branches), the wrong one would otherwise win.
   const candidates = [
     [tx,     ty    ],
     [tx - 1, ty    ],
     [tx,     ty - 1],
     [tx - 1, ty - 1],
   ];
+  let best = null, bestDist = Infinity;
   for (const c of candidates) {
     const bx = c[0], by = c[1];
     if (isPath(bx, by) && isPath(bx+1, by) && isPath(bx, by+1) && isPath(bx+1, by+1)) {
-      return { x: (bx + 1) * CELL, y: (by + 1) * CELL, snapped: true };
+      const cx = (bx + 1) * CELL, cy = (by + 1) * CELL;
+      const dx = cx - px, dy = cy - py;
+      const d2 = dx*dx + dy*dy;
+      if (d2 < bestDist) { bestDist = d2; best = { x: cx, y: cy, snapped: true }; }
     }
   }
+  if (best) return best;
   // 1-tile-wide corridor — snap to tile center
   return { x: (tx + 0.5) * CELL, y: (ty + 0.5) * CELL, snapped: true };
 }
@@ -2191,32 +2307,42 @@ function _snapToBlockCenter(px, py) {
 // Walk the surviving cell graph after generation and emit waypoints at
 // branch (degree>=3) and dead-end (degree==1) cells. Start/goal cells are
 // excluded because they already have their own markers.
-function _autoWaypointsFromCellGraph(adj, offX, offY, startKey, goalKey) {
+function _autoWaypointsFromCellGraph(adj, offX, offY, startKey, goalKey, cellStride) {
   const out = [];
   const skip = {};
   if (startKey) skip[startKey] = true;
   if (goalKey)  skip[goalKey]  = true;
+  // Cell-interior center pixel: (offX + stride*ci + off + pw/2) * CELL
+  // For stride=4, off=1, pw=2 → +2 (matches old hardcoded constant).
+  // For stride=2, off=0, pw=1 → +0.5.
+  const pw  = cellStride / 2;
+  const off = _innerOffset(cellStride);
+  const cellCenterOffset = off + pw / 2;
   for (const k of Object.keys(adj)) {
     if (skip[k]) continue;
     const nb = adj[k] ? Object.keys(adj[k]) : [];
     if (nb.length === 0) continue;
     const parts = k.split(','); const ci = +parts[0], cj = +parts[1];
     if (!Number.isFinite(ci) || !Number.isFinite(cj)) continue;
-    const px = (offX + CELL_SIZE * ci + 2) * CELL;
-    const py = (offY + CELL_SIZE * cj + 2) * CELL;
+    const px = (offX + cellStride * ci + cellCenterOffset) * CELL;
+    const py = (offY + cellStride * cj + cellCenterOffset) * CELL;
     if (nb.length === 1)      out.push({ x: px, y: py, kind: 'deadend' });
     else if (nb.length >= 3)  out.push({ x: px, y: py, kind: 'branch' });
   }
   return out;
 }
 
-function generateMazeForStage(stage) {
-  const params = _stageParams(stage);
+function generateMazeForDifficulty(d) {
+  const params = _paramsForDifficulty(d);
+  // Resize canvas + reset tiles for the target panel count
+  pushHistory();
+  _resizeCanvas(params.gridW, params.panels);
   const cw = params.cw, ch = params.ch;
+  const cellStride = params.cellStride;
   // Center the cell grid in the tile grid
-  const offX = Math.floor((GRID_W - cw * CELL_SIZE) / 2);
-  const offY = Math.floor((GRID_H - ch * CELL_SIZE) / 2);
-  const maze = _buildMazeCells(cw, ch, offX, offY);
+  const offX = Math.floor((GRID_W - cw * cellStride) / 2);
+  const offY = Math.floor((GRID_H - ch * cellStride) / 2);
+  const maze = _buildMazeCells(cw, ch, offX, offY, cellStride);
   // Find the diameter pair before pruning so it's preserved
   const pair = _farthestCellPair(maze.adj, cw, ch);
   let protectedSet = {};
@@ -2224,18 +2350,21 @@ function generateMazeForStage(stage) {
     const pathKeys = _bfsCellPath(maze.adj, pair[0], pair[1]);
     for (const k of pathKeys) protectedSet[k] = true;
   }
-  _pruneDeadEnds(maze, cw, ch, offX, offY, params.deadEndPrune, protectedSet);
-  pushHistory();
+  _pruneDeadEnds(maze, cw, ch, offX, offY, params.deadEndPrune, protectedSet, cellStride);
   state.tiles = maze.tiles;
+  // Cell-interior center pixel offset (stride-aware, see _autoWaypointsFromCellGraph)
+  const pw  = cellStride / 2;
+  const off = _innerOffset(cellStride);
+  const cellCenter = off + pw / 2;
   // Set start/goal from diameter pair (left-most → start)
   let startKey = null, goalKey = null;
   if (pair) {
     const a = pair[0].split(',').map(Number);
     const b = pair[1].split(',').map(Number);
-    const aPx = ((offX + CELL_SIZE * a[0] + 2) * CELL);
-    const aPy = ((offY + CELL_SIZE * a[1] + 2) * CELL);
-    const bPx = ((offX + CELL_SIZE * b[0] + 2) * CELL);
-    const bPy = ((offY + CELL_SIZE * b[1] + 2) * CELL);
+    const aPx = ((offX + cellStride * a[0] + cellCenter) * CELL);
+    const aPy = ((offY + cellStride * a[1] + cellCenter) * CELL);
+    const bPx = ((offX + cellStride * b[0] + cellCenter) * CELL);
+    const bPy = ((offY + cellStride * b[1] + cellCenter) * CELL);
     if (aPx <= bPx) {
       state.start = { x: aPx, y: aPy }; state.goal = { x: bPx, y: bPy };
       startKey = pair[0]; goalKey = pair[1];
@@ -2248,35 +2377,49 @@ function generateMazeForStage(stage) {
     state.goal = null;
   }
   // Auto-place waypoints at branch/dead-end cells (excluding start/goal)
-  state.waypoints = _autoWaypointsFromCellGraph(maze.adj, offX, offY, startKey, goalKey);
-  state.creatures = _placeCreaturesOnPath(stage, params.creatureCount, offX, offY, cw, ch);
+  state.waypoints = _autoWaypointsFromCellGraph(maze.adj, offX, offY, startKey, goalKey, cellStride);
+  state.creatures = _placeCreaturesOnPath(params.creatureCount, offX, offY, cw, ch);
   afterEdit();
-  showBanner('🎲 ステージ ' + stage + ' を生成 ' +
-    '(お邪魔虫 ' + state.creatures.length + ' / 中継 ' + state.waypoints.length + ')');
+  showBanner('🎲 難易度 ' + params.difficulty + ' / ' +
+    params.cw + '×' + params.ch + ' / ' + params.panels + 'パネル / ' +
+    'お邪魔虫 ' + state.creatures.length + ' / 中継 ' + state.waypoints.length);
 }
 
-// Wire up sidebar controls
-const _genStageInput = document.getElementById('genStageInput');
-const _genStageHint = document.getElementById('genStageHint');
-function _refreshStageHint() {
-  const s = parseInt(_genStageInput.value, 10) || 1;
-  const p = _stageParams(s);
-  _genStageHint.textContent =
-    'グリッド ' + p.cw + '×' + p.ch + ' / お邪魔虫 ' + p.creatureCount + ' 匹' +
-    (p.deadEndPrune > 10 ? ' / ほぼ一本道' :
-     p.deadEndPrune > 0  ? ' / 行き止まり少なめ' :
-                           ' / 行き止まり多め');
+// Wire up sidebar controls — slider ↔ number input two-way sync.
+const _diffSlider = document.getElementById('diffSlider');
+const _diffInput  = document.getElementById('diffInput');
+const _diffHint   = document.getElementById('diffHint');
+function _currentDifficulty() {
+  const v = parseInt(_diffInput.value, 10);
+  return Math.max(1, Math.min(100, Number.isFinite(v) ? v : 50));
 }
-_genStageInput.addEventListener('input', _refreshStageHint);
-_refreshStageHint();
+function _refreshDiffHint() {
+  const d = _currentDifficulty();
+  const p = _paramsForDifficulty(d);
+  _diffHint.textContent =
+    'グリッド ' + p.cw + '×' + p.ch +
+    ' / 道幅 ' + (p.cellStride === 4 ? '2タイル' : '1タイル') +
+    ' / ' + p.panels + 'パネル' +
+    ' / お邪魔虫 ' + p.creatureCount + ' 匹';
+}
+_diffSlider.addEventListener('input', function() {
+  _diffInput.value = _diffSlider.value;
+  _refreshDiffHint();
+});
+_diffInput.addEventListener('input', function() {
+  const v = _currentDifficulty();
+  _diffSlider.value = v;
+  _refreshDiffHint();
+});
+_refreshDiffHint();
 document.getElementById('generateBtn').addEventListener('click', function() {
-  const s = parseInt(_genStageInput.value, 10) || 1;
-  if (s < 1 || s > 99) { alert('ステージ番号は 1〜99 にしてね'); return; }
+  const d = _currentDifficulty();
   // Confirm overwrite if there's existing content
-  const hasContent = state.creatures.length > 0 || state.start || state.goal ||
+  const hasContent = state.creatures.length > 0 || state.waypoints.length > 0 ||
+    state.start || state.goal ||
     state.tiles.some(function(row) { return row.some(function(t) { return t === 'path'; }); });
-  if (hasContent && !confirm('今のキャンバスを上書きして「ステージ ' + s + '」を生成しますか?\n(取り消しは ⤺ ボタン or Ctrl+Z)')) return;
-  generateMazeForStage(s);
+  if (hasContent && !confirm('今のキャンバスを上書きして難易度 ' + d + ' で生成しますか?\n(取り消しは ⤺ ボタン or Ctrl+Z)')) return;
+  generateMazeForDifficulty(d);
 });
 
 // ────────────────────────────────────────────────────────
@@ -2290,6 +2433,8 @@ const _autoLoadName = (function() {
 let restored = false;
 if (_autoLoadName && getAllSaves()[_autoLoadName]) {
   const _snap = getAllSaves()[_autoLoadName];
+  const _pn = (_snap.panels === 2 || _snap.gridW === 64) ? 2 : 1;
+  _resizeCanvas(_pn === 2 ? 64 : 32, _pn);
   state.tiles = _snap.tiles;
   state.start = _snap.start;
   state.goal  = _snap.goal;
