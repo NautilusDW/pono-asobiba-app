@@ -1018,14 +1018,16 @@ cv.addEventListener('pointerdown', function(e) {
     return;
   }
   if (state.mode === 'creature') {
-    // Free placement — add new creature at click position
-    state.creatures.push({ x: p.x, y: p.y });
+    // Snap to 2x2 path-block center if click is on a path; otherwise raw.
+    const snap = _snapToBlockCenter(p.x, p.y);
+    state.creatures.push({ x: snap.x, y: snap.y });
     afterEdit();
     return;
   }
   if (state.mode === 'waypoint') {
-    // Free placement — add manual waypoint
-    state.waypoints.push({ x: p.x, y: p.y, kind: 'manual' });
+    // Same snap — manual waypoints sit nicely on the path centerline.
+    const snap = _snapToBlockCenter(p.x, p.y);
+    state.waypoints.push({ x: snap.x, y: snap.y, kind: 'manual' });
     afterEdit();
     return;
   }
@@ -1077,6 +1079,26 @@ cv.addEventListener('pointerleave', function() {
 });
 cv.addEventListener('pointerup', function(e) {
   if (state.draggingMarker) {
+    // Snap creature/waypoint drops to the path 2x2 block center so they
+    // sit cleanly on the path centerline. Start/goal are big circles and
+    // free-form placement looks fine, so don't snap them.
+    if (typeof state.draggingMarker === 'object') {
+      if (state.draggingMarker.type === 'creature') {
+        const idx = state.draggingMarker.index;
+        if (idx >= 0 && idx < state.creatures.length) {
+          const c = state.creatures[idx];
+          const snap = _snapToBlockCenter(c.x, c.y);
+          state.creatures[idx] = { x: snap.x, y: snap.y };
+        }
+      } else if (state.draggingMarker.type === 'waypoint') {
+        const idx = state.draggingMarker.index;
+        if (idx >= 0 && idx < state.waypoints.length) {
+          const w = state.waypoints[idx];
+          const snap = _snapToBlockCenter(w.x, w.y);
+          state.waypoints[idx] = { x: snap.x, y: snap.y, kind: w.kind || 'manual' };
+        }
+      }
+    }
     state.draggingMarker = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
     cv.style.cursor = 'crosshair';
@@ -2116,8 +2138,10 @@ function _placeCreaturesOnPath(stage, count, offX, offY, cw, ch) {
     const tries = Math.min(80, usable.length * 4);
     for (let attempt = 0; attempt < tries && result.length < count; attempt++) {
       const t = usable[Math.floor(Math.random() * usable.length)];
-      const px = (t.x + 0.5) * CELL;
-      const py = (t.y + 0.5) * CELL;
+      // Snap to 2x2 block center so creatures sit on the path centerline,
+      // not offset toward a path edge.
+      const snap = _snapToBlockCenter((t.x + 0.5) * CELL, (t.y + 0.5) * CELL);
+      const px = snap.x, py = snap.y;
       let tooClose = false;
       for (const u of used) {
         const dx = u.x - px, dy = u.y - py;
@@ -2131,6 +2155,37 @@ function _placeCreaturesOnPath(stage, count, offX, offY, cw, ch) {
   tryPlace(minDistPx);
   if (result.length < count) tryPlace(CELL * 1.2); // relaxed spacing
   return result;
+}
+
+// Snap a pixel position to the center of the nearest 2x2 path block.
+// Paths are always carved 2 tiles wide, so for any path tile (tx, ty)
+// at least one 2x2 block containing it should be all-path. Falls back to
+// the single-tile center if no full 2x2 block is found (e.g. 1-tile drag-paint).
+function _snapToBlockCenter(px, py) {
+  const tx = Math.max(0, Math.min(GRID_W - 1, Math.floor(px / CELL)));
+  const ty = Math.max(0, Math.min(GRID_H - 1, Math.floor(py / CELL)));
+  function isPath(x, y) {
+    return x >= 0 && x < GRID_W && y >= 0 && y < GRID_H && state.tiles[y][x] === 'path';
+  }
+  if (!isPath(tx, ty)) {
+    // Click landed on wall — return click position unchanged (don't lie about location)
+    return { x: px, y: py, snapped: false };
+  }
+  // 4 candidate 2x2 blocks that include (tx, ty)
+  const candidates = [
+    [tx,     ty    ],
+    [tx - 1, ty    ],
+    [tx,     ty - 1],
+    [tx - 1, ty - 1],
+  ];
+  for (const c of candidates) {
+    const bx = c[0], by = c[1];
+    if (isPath(bx, by) && isPath(bx+1, by) && isPath(bx, by+1) && isPath(bx+1, by+1)) {
+      return { x: (bx + 1) * CELL, y: (by + 1) * CELL, snapped: true };
+    }
+  }
+  // 1-tile-wide corridor — snap to tile center
+  return { x: (tx + 0.5) * CELL, y: (ty + 0.5) * CELL, snapped: true };
 }
 
 // Walk the surviving cell graph after generation and emit waypoints at
