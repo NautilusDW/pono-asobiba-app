@@ -1444,6 +1444,7 @@ function imgStartWalk(plan) {
     type: 'image',
     plan: plan,
     fromX: pono.x, fromY: pono.y,
+    startNodeId: pono.nodeId,    // remembered so we can bounce back on encounter loss / obstacle hit
     t0: performance.now(),
     duration: duration,
   };
@@ -1491,8 +1492,10 @@ function imgDraw(now) {
       const r = window.MazeImage.interpolate(walkAnim.plan.polyline, walkAnim.plan.cumLengths, t);
       px = r.x; py = r.y; ftx = r.tx; fty = r.ty;
       isWalking = true;
-      // Check creature collision — pauses walk and opens modal if hit
-      _checkCreatureCollision(px, py);
+      // Obstacle hit → bounce back (no minigame). Creatures take priority via encounter.
+      if (!_checkObstacleCollision(px, py)) {
+        _checkCreatureCollision(px, py);
+      }
     }
   }
 
@@ -1656,6 +1659,31 @@ function _checkCreatureCollision(px, py) {
   return false;
 }
 
+// Detect obstacle collision during a walk. Obstacles are not negotiable —
+// pono just bounces back to the node it left from.
+function _checkObstacleCollision(px, py) {
+  if (!stage || !stage.obstacles || !walkAnim || _encounterActive) return false;
+  const TRIGGER_R2 = (stage.viewBox.h / 18) * (stage.viewBox.h / 18);
+  for (const o of stage.obstacles) {
+    const dx = px - o.x, dy = py - o.y;
+    if (dx*dx + dy*dy < TRIGGER_R2) {
+      const backNodeId = walkAnim.startNodeId;
+      walkAnim = null;
+      const backNode = stage.nodesById[backNodeId] || stage.start;
+      pono.x = backNode.x;
+      pono.y = backNode.y;
+      pono.nodeId = backNode.id;
+      showHint('🚫 ' + _obstacleHintFor(o.kind) + ' とおれない！べつの みち を ためそう', 2300);
+      imgShowArrows();
+      return true;
+    }
+  }
+  return false;
+}
+function _obstacleHintFor(kind) {
+  return ({ tree:'木が', pond:'みずたまりが', hole:'あなが', stump:'きりかぶが', rock:'いわが' }[kind] || '');
+}
+
 function _triggerEncounter(c) {
   if (_encounterActive) return;
   _encounterActive = true;
@@ -1747,12 +1775,15 @@ function _closeEncounter(playerWon) {
       }
     }
   } else {
-    // Lose: cancel the walk and warp pono back to start node
+    // Lose: cancel the walk and bounce back to the node pono left from
+    // (NOT all the way back to start — that was too punishing)
+    const backNodeId = walkAnim ? walkAnim.startNodeId : (stage.start && stage.start.id);
     walkAnim = null;
-    pono.x = stage.start.x;
-    pono.y = stage.start.y;
-    pono.nodeId = stage.start.id;
-    showHint('スタートに もどったよ！もう一度 ためそう', 2500);
+    const backNode = stage.nodesById[backNodeId] || stage.start;
+    pono.x = backNode.x;
+    pono.y = backNode.y;
+    pono.nodeId = backNode.id;
+    showHint('まけちゃった… 1つまえに もどったよ。べつの みち を ためそう！', 2500);
     imgShowArrows();
   }
 }
@@ -1768,12 +1799,12 @@ function imgDrawLantern(now, cx, cy, w, h, opts) {
   const minDim = Math.min(w, h);
   // Gentle 0.96..1.04 pulse over 2.5s
   const pulse = 1 + Math.sin(now / 400) * 0.04;
-  const inner = (cfg.innerRadius || minDim * 0.10) * pulse; // 狭めの明るいゾーン
-  const outer = (cfg.outerRadius || minDim * 0.30) * pulse; // 短い距離でフェード完了
-  const tintR = cfg.tintR != null ? cfg.tintR : 8;
-  const tintG = cfg.tintG != null ? cfg.tintG : 22;
-  const tintB = cfg.tintB != null ? cfg.tintB : 60;
-  const tintA = cfg.tintA != null ? cfg.tintA : 0.55; // 半透明 → 迷路はうっすら見える
+  const inner = (cfg.innerRadius || minDim * 0.06) * pulse; // ぐっと小さい光円
+  const outer = (cfg.outerRadius || minDim * 0.18) * pulse; // 短いフェード
+  const tintR = cfg.tintR != null ? cfg.tintR : 10;
+  const tintG = cfg.tintG != null ? cfg.tintG : 28;
+  const tintB = cfg.tintB != null ? cfg.tintB : 70;
+  const tintA = cfg.tintA != null ? cfg.tintA : 0.35; // もっと透ける → 迷路全体ハッキリ見える
   const warmth = cfg.warmth !== false; // default on
   // 1) Night overlay: transparent at center, opaque outside outer
   ctx.save();
