@@ -9,8 +9,7 @@
 - **部屋アイソメ引き継ぎ**: [memory/room-isometric-handoff.md](memory/room-isometric-handoff.md) — CSS mask未動作・17MB画像問題・巾木JS上書き問題
 - **水族館エンハンス完了**: [memory/aquarium-enhancement-complete.md](memory/aquarium-enhancement-complete.md) — Phase1+2完了、Phase3見送り、卵育て構想
 - **水族館UXフィードバック**: [memory/feedback_aquarium_ux.md](memory/feedback_aquarium_ux.md) — 矢印シンプル・ブースト大胆・音柔らか・複雑さ排除
-- **git push自動化**: [memory/feedback_auto_push.md](memory/feedback_auto_push.md) — post-commitフックでNetlify自動デプロイ
-- **毎回デプロイ必須**: [memory/feedback_auto_deploy.md](memory/feedback_auto_deploy.md) — タスク完了時は確認せず自動でcommit+deploy
+- **デプロイ自動化 (Cloudflare Workers)**: [memory/feedback_auto_push.md](memory/feedback_auto_push.md) — post-commit で develop 自動 push → GitHub Actions が `wrangler deploy --env staging`
 - **Umamiアナリティクス**: [memory/reference_umami.md](memory/reference_umami.md) — Umami Cloud設定情報
 - **文字書きシンプルモード復活 Phase 1 + UIリデザイン**: [memory/feature_writing_simple_mode.md](memory/feature_writing_simple_mode.md) — RPG化前のロジックを `writing/simple.html` として復活、左右分割レイアウト・RPGダークテーマ統一・妖精2体fixed常駐応援、Phase 2 (行選択+単語フェーズ) は未実装
 - **迷路 画像ステージ Phase 1**: [memory/feature_maze_image_stage.md](memory/feature_maze_image_stage.md) — `?image=<name>` でAI生成画像背景+ポリライン歩行+カメラ追従。横画面前提。Phase 2 (エディタ・細線化) 未着手
@@ -19,33 +18,39 @@
 
 ## Key Learnings
 
-### 🚨🚨🚨 デプロイ手順 🚨🚨🚨
+### 🚨🚨🚨 デプロイ手順 (Cloudflare Workers) 🚨🚨🚨
 
-> **`.git/hooks/post-commit` で自動化済み** — developブランチでコミットすると自動でNetlifyデプロイが実行される。
-> 手動デプロイは不要。git pushも不要（ただしリモートバックアップのためpushは推奨）。
->
-> 万が一フックが動かなかった場合の手動コマンド:
-```
-netlify deploy --dir . --alias develop
-```
+> **このプロジェクトは Cloudflare Workers で配信されている。Netlify は完全廃止済み。**
+> Netlify という単語は二度と出さない (古いメモリ・ハンドオフドキュメントは過去のもの)。
 
-**`git push` だけでは絶対にダメ。`netlify deploy` がなければユーザーには何も届かない。**
+#### 自動化フロー (develop)
+1. `.git/hooks/post-commit` が develop ブランチで `git push origin develop` を実行 (バックグラウンド・flock ガード付き)
+2. GitHub Actions (`.github/workflows/deploy.yml`) が `wrangler deploy --env staging` を実行
+3. 数十秒で `https://pono-asobiba-staging.ndw.workers.dev/` に反映される
+
+→ `git commit` するだけで staging に反映。Claude 側で `wrangler deploy` を手動実行する必要なし。
 
 #### ブランチ運用ルール（厳守）
-- **develop ブランチ** = 開発・確認用。通常の作業はすべてここ。
-- **master ブランチ** = 本番。ユーザーが「**本番にデプロイして**」と明示した時だけ反映。
-- **絶対に勝手に master へマージ・本番デプロイしない。**
+- **develop** = 開発・確認用。常用ブランチ。staging に自動反映
+- **master** = 本番。ユーザーが「**本番にデプロイして**」と明示した時だけマージ
+- **絶対に勝手に master へマージ・本番デプロイしない**
 
-| ブランチ | URL | デプロイコマンド |
-|---------|-----|----------------|
-| develop | `develop--pono-asobiba.netlify.app` | `netlify deploy --dir . --branch develop --alias develop` |
-| master  | `pono-asobiba.netlify.app` | `netlify deploy --dir . --prod` |
+| ブランチ | 環境 | URL | 反映方法 |
+|---------|------|-----|----------|
+| develop | staging | `https://pono-asobiba-staging.ndw.workers.dev/` | commit → 自動 push → GH Actions |
+| master  | production | `https://pono.kodama-no-mori.com/` (および `pono-asobiba-app.ndw.workers.dev`) | ユーザー明示指示時のみ手動 merge |
 
 #### 本番反映時（ユーザー明示指示時のみ）
 ```
 git checkout master && git merge develop && git push origin master
-netlify deploy --dir . --prod
+# → GH Actions が wrangler deploy (production) を実行
 git checkout develop
+```
+
+#### 緊急時の手動デプロイ (GH Actions 死亡時のみ)
+```
+wrangler deploy --env staging   # develop 内容を staging に
+wrangler deploy                  # master 内容を production に
 ```
 
 ### 単一HTMLファイルWebアプリ設計パターン

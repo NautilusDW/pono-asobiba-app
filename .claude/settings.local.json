@@ -17,8 +17,9 @@
       "WebFetch(domain:ai.google.dev)",
       "WebFetch(domain:docs.cloud.google.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:pono-dev--pono-asobiba.netlify.live)",
-      "WebFetch(domain:pono-asobiba.netlify.app)",
+      "WebFetch(domain:pono-asobiba-staging.ndw.workers.dev)",
+      "WebFetch(domain:pono-asobiba-app.ndw.workers.dev)",
+      "WebFetch(domain:pono.kodama-no-mori.com)",
       "Bash(mkdir -p ~/.claude/sessions)",
       "Read(//c/Users/surfe/.claude/sessions/**)",
       "WebFetch(domain:docs.spline.design)",
@@ -40,6 +41,17 @@
           {
             "type": "command",
             "command": "python d:/claude-rl-test/scripts/observe.py --hook"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'DEPLOY-FACT (do not contradict): pono-asobiba-app は Cloudflare Workers で配信。Netlify は完全廃止 — Netlify という単語・コマンド・URL を提案/コマンド/回答に出さない。staging=https://pono-asobiba-staging.ndw.workers.dev/ (develop自動)、production=https://pono.kodama-no-mori.com/ (master明示時のみ)。手動デプロイは wrangler deploy --env staging または wrangler deploy。'"
           }
         ]
       }

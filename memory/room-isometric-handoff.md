@@ -58,7 +58,7 @@ type: project
 |---------|------|
 | room/index.html | メインのお部屋アプリ（ISO_GRID, 衝突判定, A/B回転, スタッキング, ショップUI） |
 | room/items.js | 全アイテム定義（wall/floor/furn/deco、angleB, surfaceY/surfaceYB含む） |
-| room/furniture_adjuster.html | ピボット＆グリッド＆surfaceY調整ツール（Netlifyデプロイ済み） |
+| room/furniture_adjuster.html | ピボット＆グリッド＆surfaceY調整ツール（Cloudflare Workers staging に反映済み） |
 | assets/images/Rooms/furnitures_final/ | 全家具PNG（_A/_B命名） |
 | assets/images/Rooms/Room_Base_grid.png | デフォルト背景（ブルーグリッド） |
 
@@ -69,7 +69,7 @@ type: project
 - **スタッキング**: SURFACE_IDS家具の上にcat='deco'アイテムを配置可能。surfaceYで垂直オフセット
 - **衝突スキップ優先順位**: PASSTHROUGH(ラグ) → デコ同士 → デコ on SURFACE → SURFACE上のデコ側
 - **アジャスターのグリッド値**: localStorageのfurniture_adjuster_gridキーに保存
-- **デプロイ**: developブランチpushでNetlify自動デプロイ → https://develop--pono-asobiba.netlify.app/room/
+- **デプロイ**: developブランチコミットで post-commit が自動 push → GitHub Actions が `wrangler deploy --env staging` → https://pono-asobiba-staging.ndw.workers.dev/room/
 
 ## isOverlapping衝突ルール（現在のコード）
 
