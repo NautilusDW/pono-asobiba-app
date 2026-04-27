@@ -864,9 +864,12 @@ function _loadImageStageIndex() {
         .sort(function(a, b) { return a - b; });
       const tasks = positions.map(function(pos) {
         const rawName = idx.overrides[String(pos)];
-        const safe = String(rawName || '').replace(/[^a-zA-Z0-9_-]/g, '');
+        // 日本語ファイル名対応: 危ない文字だけ除去、URL エンコードして fetch
+        const safe = String(rawName || '')
+          .replace(/[\/\\:*?"<>|%#&]/g, '')
+          .replace(/\.\./g, '');
         if (!safe) return Promise.resolve();
-        return fetch('imageStages/' + safe + '.json', { credentials: 'omit', cache: 'no-store' })
+        return fetch('imageStages/' + encodeURIComponent(safe) + '.json', { credentials: 'omit', cache: 'no-store' })
           .then(function(rr) {
             if (!rr.ok) throw new Error(safe + ' HTTP ' + rr.status);
             return rr.json();
@@ -927,9 +930,12 @@ function _loadImageStageFromURL() {
     }
 
     // ── Normal: fetch from imageStages/<name>.json ──
-    const safe = String(raw).replace(/[^a-zA-Z0-9_-]/g, '');
+    // 日本語ファイル名対応: 危ない文字だけ除去 + URL エンコード
+    const safe = String(raw)
+      .replace(/[\/\\:*?"<>|%#&]/g, '')
+      .replace(/\.\./g, '');
     if (!safe) return Promise.resolve(false);
-    return fetch('imageStages/' + safe + '.json', { credentials: 'omit', cache: 'no-store' })
+    return fetch('imageStages/' + encodeURIComponent(safe) + '.json', { credentials: 'omit', cache: 'no-store' })
       .then(function(r) {
         if (!r.ok) throw new Error('image stage HTTP ' + r.status);
         return r.json();

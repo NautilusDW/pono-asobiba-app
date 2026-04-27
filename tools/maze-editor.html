@@ -1202,7 +1202,14 @@ document.getElementById('resetBtn').addEventListener('click', function() {
 // Build the export def used by both download and draft preview.
 function buildExportDef() {
   const rawName = (stageNameInput.value || 'stage').trim();
-  const safeName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  // 日本語/英数字を残し、ファイル名で危ない文字 (パストラバーサル系) だけ除去
+  // → 「ステージ1」「森の入り口」のような名前がそのままユニークなファイル名になる
+  const safeName = rawName
+    .replace(/[\/\\:*?"<>|%#&]/g, '')   // disallowed chars
+    .replace(/\.\./g, '')                 // no parent dir
+    .replace(/[\s]+/g, '_')               // 空白は _
+    .replace(/^[\.\s]+|[\.\s]+$/g, '')    // 前後の dot/space を除去
+    .slice(0, 60) || 'stage';
   const ext = (state.imgFileName.match(/\.([^.]+)$/) || [, 'png'])[1].toLowerCase();
   const imageRef = 'imageStages/' + safeName + '.' + ext;
   const lanternEnabled = !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked);
@@ -1618,7 +1625,7 @@ function updateStageNamePlaceholder() {
   if (Number.isInteger(n) && n >= 0) {
     stageNameInput.placeholder = 'ステージ' + n + ' (例)';
   } else {
-    stageNameInput.placeholder = '例: forest_entrance';
+    stageNameInput.placeholder = '例: 森の入り口 / forest_entrance';
   }
 }
 const _orderInput = document.getElementById('stageOrderInput');
