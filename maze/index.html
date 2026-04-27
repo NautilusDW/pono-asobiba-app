@@ -1187,6 +1187,7 @@ function imgLoadStage(def) {
   applesCollected = 0;
   cleared = false;
   walkAnim = null;
+  _imgBubble = null;
   breezeActive = false;
   hintActiveUntil = 0;
   hintCells.clear();
@@ -1284,6 +1285,27 @@ canvas.addEventListener('pointerdown', function(e) {
   if (!stage || stage.type !== 'image') return;
   if (_encounterActive || cleared) return;
   if (e.target !== canvas) return;
+  // Hit-test the off-screen goal indicator: tap to auto-scroll to goal.
+  if (stage._goalIndicator && stage.goal) {
+    const rect = canvas.getBoundingClientRect();
+    const lx = e.clientX - rect.left;
+    const ly = e.clientY - rect.top;
+    const dx = lx - stage._goalIndicator.x;
+    const dy = ly - stage._goalIndicator.y;
+    if (dx * dx + dy * dy < 40 * 40) {
+      stage._camAnim = {
+        fromX: stage.camera.x, fromY: stage.camera.y,
+        toX: stage.goal.x, toY: stage.goal.y,
+        t0: performance.now(),
+        panDur: 700,
+        holdDur: 1800,
+      };
+      stage._manualCam = false;
+      _imgPanState = null;
+      e.stopPropagation();
+      return;
+    }
+  }
   _imgPanState = {
     startX: e.clientX, startY: e.clientY,
     camStartX: stage.camera.x, camStartY: stage.camera.y,
@@ -1298,6 +1320,7 @@ canvas.addEventListener('pointermove', function(e) {
   const dy = e.clientY - _imgPanState.startY;
   if (!_imgPanState.moved && Math.hypot(dx, dy) < 6) return;
   _imgPanState.moved = true;
+  stage._camAnim = null; // user took over → cancel auto-scroll
   stage._manualCam = true;
   stage._manualSince = performance.now();
   const scale = stage._scale || 1;
@@ -1318,6 +1341,7 @@ canvas.addEventListener('wheel', function(e) {
   if (!stage || stage.type !== 'image') return;
   if (_encounterActive || cleared) return;
   e.preventDefault();
+  stage._camAnim = null; // wheel-scroll overrides auto-scroll
   stage._manualCam = true;
   stage._manualSince = performance.now();
   const scale = stage._scale || 1;
@@ -1327,6 +1351,7 @@ canvas.addEventListener('wheel', function(e) {
 
 function imgFinishWalk() {
   if (!walkAnim || walkAnim.type !== 'image') return;
+  const fromNodeId = walkAnim.startNodeId;
   const poly = walkAnim.plan.polyline;
   const last = poly[poly.length - 1];
   pono.x = last.x; pono.y = last.y;
@@ -1344,6 +1369,13 @@ function imgFinishWalk() {
     onClear();
   } else {
     imgShowArrows();
+    // Dead-end: only one edge from this node and it leads back where we came from
+    if (pono.nodeId !== stage.start.id) {
+      const adj = stage.adjacency[pono.nodeId] || [];
+      if (adj.length === 1 && adj[0].otherId === fromNodeId) {
+        imgShowBubble('あれ？ いきどまり…', 'pono', 1800);
+      }
+    }
   }
 }
 
@@ -1378,15 +1410,35 @@ function imgDraw(now) {
   const w = stage._viewW || canvas.clientWidth;
   const h = stage._viewH || canvas.clientHeight;
   if (!stage._scale) imgComputeLayout(w, h);
-  // Manual pan mode: skip lerp, just clamp. Auto-revert after timeout.
+  // Camera animation (e.g. "scroll to goal" on indicator tap) takes priority
+  // over manual / auto-follow.
   const _nowMs = now;
-  if (stage._manualCam && _nowMs - (stage._manualSince || 0) > 4000) {
-    stage._manualCam = false;
-  }
-  if (!stage._manualCam) {
-    window.MazeImage.updateCamera(stage, px, py, w, h, dt, stage._scale);
-  } else {
+  if (stage._camAnim) {
+    const a = stage._camAnim;
+    const elapsed = _nowMs - a.t0;
+    if (elapsed < a.panDur) {
+      const tt = elapsed / a.panDur;
+      const eased = 1 - Math.pow(1 - tt, 3);
+      stage.camera.x = a.fromX + (a.toX - a.fromX) * eased;
+      stage.camera.y = a.fromY + (a.toY - a.fromY) * eased;
+    } else if (elapsed < a.panDur + a.holdDur) {
+      stage.camera.x = a.toX;
+      stage.camera.y = a.toY;
+    } else {
+      stage._camAnim = null;
+      stage._manualCam = false; // resume auto-follow after animation
+    }
     imgClampCameraToBounds(stage, w, h);
+  } else {
+    // Manual pan mode: skip lerp, just clamp. Auto-revert after timeout.
+    if (stage._manualCam && _nowMs - (stage._manualSince || 0) > 4000) {
+      stage._manualCam = false;
+    }
+    if (!stage._manualCam) {
+      window.MazeImage.updateCamera(stage, px, py, w, h, dt, stage._scale);
+    } else {
+      imgClampCameraToBounds(stage, w, h);
+    }
   }
 
   // Background fill (in case image hasn't loaded or letterbox visible)
@@ -1428,6 +1480,15 @@ function imgDraw(now) {
   // Off-screen goal direction indicator (HUD, screen-space)
   if (stage.goal && !cleared) {
     imgDrawGoalIndicator(stage.goal, w, h, stage.camera, stage._scale);
+  } else {
+    stage._goalIndicator = null;
+  }
+
+  // Speech bubble (one-liner) anchored to pono or a world point
+  if (_imgBubble) {
+    const _ponoSx = w / 2 + (px - stage.camera.x) * stage._scale;
+    const _ponoSy = h / 2 + (py - stage.camera.y) * stage._scale;
+    imgDrawBubble(now, _ponoSx, _ponoSy, w, h);
   }
 
   // Reposition arrows so they follow pono's screen position (camera lerp)
@@ -1444,7 +1505,10 @@ function imgDrawGoalIndicator(goal, w, h, cam, scale) {
   const sx = w / 2 + (goal.x - cam.x) * scale;
   const sy = h / 2 + (goal.y - cam.y) * scale;
   const margin = 60;
-  if (sx >= margin && sx <= w - margin && sy >= margin && sy <= h - margin) return;
+  if (sx >= margin && sx <= w - margin && sy >= margin && sy <= h - margin) {
+    stage._goalIndicator = null;
+    return;
+  }
   const cx = w / 2, cy = h / 2;
   const dx = sx - cx, dy = sy - cy;
   const ratio = Math.max(
@@ -1478,6 +1542,83 @@ function imgDrawGoalIndicator(goal, w, h, cam, scale) {
   ctx.fillStyle = '#FFFFFF';
   ctx.strokeText('GOAL', ix, iy + 42);
   ctx.fillText('GOAL', ix, iy + 42);
+  ctx.restore();
+  stage._goalIndicator = { x: ix, y: iy };
+}
+
+// One-liner speech bubble anchored to pono or a world coord. Auto-fades.
+let _imgBubble = null;
+function imgShowBubble(text, anchor, ms) {
+  const dur = ms || 1500;
+  if (anchor === 'pono' || !anchor) {
+    _imgBubble = { text: text, until: performance.now() + dur, anchorKind: 'pono' };
+  } else {
+    _imgBubble = { text: text, until: performance.now() + dur,
+                   anchorKind: 'world', anchorX: anchor.x, anchorY: anchor.y };
+  }
+}
+function imgDrawBubble(now, ponoSx, ponoSy, w, h) {
+  if (!_imgBubble) return;
+  if (now > _imgBubble.until) { _imgBubble = null; return; }
+  let sx, sy;
+  if (_imgBubble.anchorKind === 'pono') {
+    sx = ponoSx; sy = ponoSy;
+  } else {
+    sx = w / 2 + (_imgBubble.anchorX - stage.camera.x) * stage._scale;
+    sy = h / 2 + (_imgBubble.anchorY - stage.camera.y) * stage._scale;
+  }
+  ctx.save();
+  ctx.font = 'bold 22px sans-serif';
+  const padX = 18, height = 40, radius = 14, tail = 12;
+  const tw = ctx.measureText(_imgBubble.text).width;
+  const bw = tw + padX * 2;
+  // Above pono by ~80px; clamp to viewport
+  let by = sy - 90 - height / 2;
+  if (by < 8) by = 8;
+  let bx = sx - bw / 2;
+  if (bx < 8) bx = 8;
+  if (bx + bw > w - 8) bx = w - 8 - bw;
+  // Fade in/out (last 200ms)
+  const remaining = _imgBubble.until - now;
+  const alpha = remaining < 200 ? Math.max(0, remaining / 200) : 1;
+  ctx.globalAlpha = alpha;
+  // Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  // Rounded rect body
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#333333';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(bx + radius, by);
+  ctx.lineTo(bx + bw - radius, by);
+  ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + radius);
+  ctx.lineTo(bx + bw, by + height - radius);
+  ctx.quadraticCurveTo(bx + bw, by + height, bx + bw - radius, by + height);
+  ctx.lineTo(bx + radius, by + height);
+  ctx.quadraticCurveTo(bx, by + height, bx, by + height - radius);
+  ctx.lineTo(bx, by + radius);
+  ctx.quadraticCurveTo(bx, by, bx + radius, by);
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.stroke();
+  // Tail (triangle from bubble bottom toward anchor)
+  const tailX = Math.max(bx + radius + 4, Math.min(bx + bw - radius - 4, sx));
+  ctx.beginPath();
+  ctx.moveTo(tailX - 8, by + height);
+  ctx.lineTo(tailX + 8, by + height);
+  ctx.lineTo(tailX, by + height + tail);
+  ctx.closePath();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+  ctx.stroke();
+  // Text
+  ctx.fillStyle = '#222';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(_imgBubble.text, bx + bw / 2, by + height / 2);
   ctx.restore();
 }
 
@@ -1619,6 +1760,7 @@ function _checkObstacleCollision(px, py) {
       pono.x = backNode.x;
       pono.y = backNode.y;
       pono.nodeId = backNode.id;
+      imgShowBubble('いてっ！とおれない！', 'pono', 1600);
       showHint('🚫 ' + _obstacleHintFor(o.kind) + ' とおれない！べつの みち を ためそう', 2300);
       imgShowArrows();
       return true;
@@ -2020,6 +2162,7 @@ function _closeEncounter(playerWon) {
     pono.x = backNode.x;
     pono.y = backNode.y;
     pono.nodeId = backNode.id;
+    imgShowBubble('くやしい〜！', 'pono', 1600);
     showHint('まけちゃった… 1つまえに もどったよ。べつの みち を ためそう！', 2500);
     imgShowArrows();
   }

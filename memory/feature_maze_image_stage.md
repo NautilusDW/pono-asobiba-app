@@ -103,6 +103,14 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
   - 遭遇モーダル中 (`_encounterActive`) / クリア後 (`cleared`) はパン不可
   - `#gameCanvas { touch-action: none }` を追加して iOS Safari のページスクロールと競合しないように
   - 修正: [maze/index.html](../maze/index.html) のみ (image-runtime.js は無改変、UI ロジックは index.html 側に隔離)
+- ✅ **ゴールインジケータ タップで自動スクロール (2026-04-27)**: 画面端のゴール方向インジケータをタップすると、カメラがゴール位置へ約 0.7 秒で滑らかにパン → 1.8 秒ホールド → 自動的に pono 追尾モードに復帰。子供が「ゴールはどんなの？」と確認してから歩き始められる。`stage._camAnim = { fromX, fromY, toX, toY, t0, panDur, holdDur }` 状態を `imgDraw()` の最優先で処理 (manual / lerp より上位)。ease-out cubic で減速。pointerdown でインジケータの screen 中心から半径 40px 以内ヒットでアニメ開始。`imgDrawGoalIndicator()` は描画した時のみ `stage._goalIndicator = { x, y }` を保存、画面内なら `null` クリアでヒット対象から外す。ユーザーがドラッグ / ホイールしたら `_camAnim` を即座に null クリアして手動操作を優先
+- ✅ **行き止まり / 障害物で吹き出し (2026-04-27)**: ポノが障害物にぶつかった時 (`_checkObstacleCollision`)、遭遇ミニゲームに負けて戻された時 (`_closeEncounter(false)`)、行き止まり (現在ノードの隣接エッジが 1 本しかなく、その先がさっき通って来た方向) に到達した時 (`imgFinishWalk` 内) に、ポノの頭上に短い吹き出しを表示
+  - `_imgBubble = { text, until, anchorKind, anchorX?, anchorY? }` のグローバル状態。`imgShowBubble(text, anchor, ms)` で設定、`imgDrawBubble(now, ponoSx, ponoSy, w, h)` で screen-space に Canvas で描画 (角丸の白吹き出し + 黒枠 + 下向きしっぽ三角形 + 文字)
+  - メッセージ: 障害物 = `いてっ！とおれない！` / 遭遇敗北 = `くやしい〜！` / 行き止まり = `あれ？ いきどまり…`
+  - `until - now < 200ms` でアルファでフェードアウト
+  - 既存の上部 `showHint(...)` (詳しい指示文) はそのまま残し、吹き出しはキャラクターの一言として共存
+  - スタートノードに戻った場合は行き止まり扱いしない (誤検知回避)
+  - `imgLoadStage()` で `_imgBubble = null` リセット
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker
