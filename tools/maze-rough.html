@@ -1976,31 +1976,32 @@ document.getElementById('compareBtn').addEventListener('click', function() {
 
 // Map continuous difficulty (1-100) to generator params.
 //
-// 3 ティア: d<50 は 2-tile 路幅 (子供向け、見やすい)、d>=50 は 1-tile 路幅
-// (大人向け、迷路らしい難しさ)、d>=75 は 2-panel (画面 2 つ分の超大型迷路)
-//
-// - d=1..49  : 1 panel, cellStride=4 (2-tile path), 7×4 cell grid (28 cells)
+// 3 ティア:
+// - d=1..49  : 1 panel, cellStride=3 (2-tile path + 1-tile wall), 10×5 cell grid (50 cells)
+//              ※ 32×18 タイルキャンバスに対し外周 1 タイルだけ余白で残りを fill
+//                 30 / 3 = 10 ぴったり、矩形ブロック感が出にくい (細い壁 + 50 cell の細密構造)
 // - d=50..74 : 1 panel, cellStride=2 (1-tile path), 15×8 cell grid (120 cells)
 // - d=75..100: 2 panel, cellStride=2 (1-tile path), 31×8 cell grid (248 cells)
 //
-// 余白ポリシー: 外周は最低 1 タイル空けて、それ以外は full にスペースを使う。
-// d=1 などの低難易度でも面積が小さく不格好にならないように。
-//
 // 各ティア内の難易度は `straightBias` で調整: 高い値 = ヘビ状で簡単、
-// 0 = 完全ランダム DFS で枝分かれが多く難しい。
+// 0 = 完全ランダム DFS で枝分かれが多く難しい。`loopFraction` で多経路化も。
 //
 // Creature cap: 1 panel ≤ 5, 2 panel ≤ 10。
 function _paramsForDifficulty(d) {
   const v = Math.max(1, Math.min(100, Math.floor(Number(d) || 1)));
   const twoPanel = v >= 75;
   const wideMode = v < 50; // 2-tile 路幅
-  const cellStride = wideMode ? 4 : 2;
+  // wide: stride=3 (pathWidth=2, wallWidth=1, 非対称) → 矩形ブロック感を崩す + 1 タイル余白で fill
+  // narrow: stride=2 (pathWidth=1, wallWidth=1, シンメトリー)
+  const cellStride = wideMode ? 3 : 2;
   const panels = twoPanel ? 2 : 1;
   const gridW  = panels * 32;
-  // 1 タイル外周ぶんだけ予約 (合計 2 タイル) し、残りは fill。Math.floor で
-  // 余りが出たら自動センタリングで両端に振り分けられる。
-  const cw = Math.floor((gridW - 2) / cellStride);  // wide: 7, narrow1panel: 15, narrow2panel: 31
-  const ch = Math.floor((GRID_H - 2) / cellStride); // wide: 4, narrow: 8
+  // 外周 1 タイルだけ予約 (合計 2 タイル)。Math.floor で余りが出たら
+  // 自動センタリングで両端に振り分けられる。
+  // wide: floor(30/3)=10  / narrow1panel: floor(30/2)=15 / narrow2panel: floor(62/2)=31
+  // ch — wide: floor(16/3)=5 (15 タイル使用、底に 1 タイル余り) / narrow: floor(16/2)=8
+  const cw = Math.floor((gridW - 2) / cellStride);
+  const ch = Math.floor((GRID_H - 2) / cellStride);
   let straightBias, creatureCount;
   let loopFraction = 0;
   if (twoPanel) {
@@ -2061,18 +2062,20 @@ function _shuffle(arr) {
 }
 
 // Parameterized helpers — cellStride determines path/wall widths.
-// pathWidth = wallWidth = cellStride/2.
-// Cell (ci, cj) interior path tiles start at (offX + cellStride*ci + 1) for
-// stride=4, but at (offX + cellStride*ci) for stride=2 — i.e. at the
-// top-left of the cell. We compute interior offset as max(1, stride-2)
-// only when stride==4 (legacy centering); for stride==2 offset is 0.
+// 非対称サポート: stride=3 のときは pw=2 / ww=1 (細い壁・太い道) になり、
+// 矩形ブロック感を崩しつつ外周 1-tile 余白に綺麗に収まる (32-2=30 / 3 = 10 cells)。
+//   stride=2 → pw=1, ww=1 (1-tile path、シンメトリー)
+//   stride=3 → pw=2, ww=1 (2-tile path + 1-tile wall、非対称)
+//   stride=4 → pw=2, ww=2 (2-tile path + 2-tile wall、シンメトリー)
+function _pwForStride(s) { return s >= 3 ? 2 : 1; }
+function _wwForStride(s) { return s === 4 ? 2 : 1; }
 function _innerOffset(cellStride) {
-  // 4 → 1 (centered: tiles 1..2 of 4); 2 → 0 (top-left: tile 0 of 2)
+  // 4 → 1 (centered: tiles 1..2 of 4); 2,3 → 0 (top-left)
   return cellStride === 4 ? 1 : 0;
 }
 
 function _carveCellInterior(g, ci, cj, offX, offY, cellStride) {
-  const pw = cellStride / 2; // pathWidth
+  const pw = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const x0 = offX + cellStride * ci + off;
   const y0 = offY + cellStride * cj + off;
@@ -2083,23 +2086,23 @@ function _carveCellInterior(g, ci, cj, offX, offY, cellStride) {
 }
 
 function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride) {
-  // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY). Paints a
-  // pw-wide, ww-long corridor in the wall band (pw = wallWidth = stride/2).
-  const pw = cellStride / 2;
+  // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY)。
+  // East/South 方向の corridor は wall 方向に ww (壁長)、path 方向に pw (路幅) で
+  // pw × ww または ww × pw の矩形を carve する。
+  const pw = _pwForStride(cellStride);
+  const ww = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
-  if (dirX === 1) { // east — corridor spans the right wall band of cell ci
-    // Width-direction (x): wall band starts at off+pw, length = wallWidth = pw
-    // Height-direction (y): aligned with cell interior (off, length = pw)
+  if (dirX === 1) { // east
     const x0 = offX + cellStride * ci + off + pw;
     const y0 = offY + cellStride * cj + off;
-    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
+    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < ww; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
-  } else if (dirY === 1) { // south — symmetric
+  } else if (dirY === 1) { // south
     const x0 = offX + cellStride * ci + off;
     const y0 = offY + cellStride * cj + off + pw;
-    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
+    for (let dy = 0; dy < ww; dy++) for (let dx = 0; dx < pw; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
@@ -2191,8 +2194,9 @@ function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys, cel
       if (protect[k]) continue;
       const nb = adj[k] ? Object.keys(adj[k]) : [];
       if (nb.length !== 1) continue;
-      // Wipe this cell's interior + corridor in cellStride-aware layout.
-      const pw  = cellStride / 2;
+      // Wipe this cell's interior + corridor (cellStride-aware, pw/ww 非対称対応)。
+      const pw  = _pwForStride(cellStride);
+      const ww  = _wwForStride(cellStride);
       const off = _innerOffset(cellStride);
       const x0 = offX + cellStride * i + off;
       const y0 = offY + cellStride * j + off;
@@ -2203,13 +2207,13 @@ function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys, cel
       // Wipe corridor between this cell and its neighbor
       const otherKey = nb[0];
       const parts = otherKey.split(','); const oi = +parts[0], oj = +parts[1];
-      let cx0, cy0;
-      if (oi === i + 1)      { cx0 = offX + cellStride * i + off + pw; cy0 = offY + cellStride * j + off; }
-      else if (oi === i - 1) { cx0 = offX + cellStride * i + off - pw; cy0 = offY + cellStride * j + off; }
-      else if (oj === j + 1) { cx0 = offX + cellStride * i + off; cy0 = offY + cellStride * j + off + pw; }
-      else if (oj === j - 1) { cx0 = offX + cellStride * i + off; cy0 = offY + cellStride * j + off - pw; }
+      let cx0, cy0, cwide, ctall;
+      if (oi === i + 1)      { cx0 = offX + cellStride * i + off + pw; cy0 = offY + cellStride * j + off;       cwide = ww; ctall = pw; }
+      else if (oi === i - 1) { cx0 = offX + cellStride * i + off - ww; cy0 = offY + cellStride * j + off;       cwide = ww; ctall = pw; }
+      else if (oj === j + 1) { cx0 = offX + cellStride * i + off;       cy0 = offY + cellStride * j + off + pw; cwide = pw; ctall = ww; }
+      else if (oj === j - 1) { cx0 = offX + cellStride * i + off;       cy0 = offY + cellStride * j + off - ww; cwide = pw; ctall = ww; }
       else continue;
-      for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
+      for (let dy = 0; dy < ctall; dy++) for (let dx = 0; dx < cwide; dx++) {
         const x = cx0 + dx, y = cy0 + dy;
         if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) tiles[y][x] = 'wall';
       }
@@ -2395,8 +2399,8 @@ function _autoWaypointsFromCellGraph(adj, offX, offY, startKey, goalKey, cellStr
   if (goalKey)  skip[goalKey]  = true;
   // Cell-interior center pixel: (offX + stride*ci + off + pw/2) * CELL
   // For stride=4, off=1, pw=2 → +2 (matches old hardcoded constant).
-  // For stride=2, off=0, pw=1 → +0.5.
-  const pw  = cellStride / 2;
+  // For stride=3, off=0, pw=2 → +1. For stride=2, off=0, pw=1 → +0.5.
+  const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenterOffset = off + pw / 2;
   for (const k of Object.keys(adj)) {
@@ -2438,7 +2442,7 @@ function generateMazeForDifficulty(d) {
   _pruneDeadEnds(maze, cw, ch, offX, offY, params.deadEndPrune, protectedSet, cellStride);
   state.tiles = maze.tiles;
   // Cell-interior center pixel offset (stride-aware, see _autoWaypointsFromCellGraph)
-  const pw  = cellStride / 2;
+  const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenter = off + pw / 2;
   // Set start/goal from diameter pair (left-most → start)
