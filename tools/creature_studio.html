@@ -3372,9 +3372,9 @@ function createSpriteCard(sp, idx) {
     </div>
     <div class="card-preview" id="cpv-${idx}"></div>
     <div class="card-body">
-      <input type="text" class="card-name sp-name" placeholder="名前（同じ名前でグループ化）" value="${sp.name}">
+      <input type="text" class="card-name sp-name" placeholder="名前（同じ名前でグループ化）">
       <div style="position:relative">
-        <input type="text" class="card-id sp-id" placeholder="ID（英数）例: medaka" value="${sp.id}" autocomplete="off">
+        <input type="text" class="card-id sp-id" placeholder="ID（英数）例: medaka" autocomplete="off">
         <button class="sp-id-suggest-btn" title="既存IDから選ぶ" type="button">▼</button>
         <div class="sp-id-suggest-list"></div>
       </div>
@@ -3439,6 +3439,10 @@ function createSpriteCard(sp, idx) {
     </details>`;
 
   card.querySelector('.card-preview').appendChild(pv);
+
+  // 名前/ID は innerHTML に直接展開せず .value で代入 (XSS 対策)
+  card.querySelector('.sp-name').value = sp.name || '';
+  card.querySelector('.sp-id').value   = sp.id   || '';
 
   // チェックボックスのデフォルト動作を抑制（グリッドレベルで管理）
   card.querySelector('.sp-check').addEventListener('click', e => e.preventDefault());
@@ -4042,7 +4046,13 @@ function _buildSuggestList(card, filter) {
   items.forEach(c => {
     const item = document.createElement('div');
     item.className = 'sp-id-suggest-item';
-    item.innerHTML = `<span>${c.id}</span><span class="suggest-name">${c.name}</span>`;
+    // textContent ベースで構築 (XSS 対策)
+    const sId   = document.createElement('span');
+    const sName = document.createElement('span');
+    sName.className = 'suggest-name';
+    sId.textContent   = c.id;
+    sName.textContent = c.name;
+    item.append(sId, sName);
     item.addEventListener('click', () => {
       idInput.value = c.id;
       idInput.dataset.manual = '1';
