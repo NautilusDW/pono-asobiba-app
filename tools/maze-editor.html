@@ -125,13 +125,19 @@ html, body { height: 100vh; overflow: hidden;
       <ol>
         <li>画像をドロップ</li>
         <li>「スタート」「ゴール」モードで位置を 1 つずつ置く</li>
-        <li>「中継」モードで分岐や曲がる位置を置く</li>
-        <li>「道を描く」モードで、ノード A をクリック → 中継点を順にクリック → ノード B をクリックして道を完成</li>
-        <li>「JSON ダウンロード」で `<name>.json` を取得</li>
-        <li><b>maze/imageStages/</b> に <code style="color:#A4C76D">&lt;name&gt;.json</code> と <code style="color:#A4C76D">&lt;name&gt;.png</code> (画像のコピー) を保存</li>
-        <li>ブラウザで <code style="color:#A4C76D">maze/?image=&lt;name&gt;</code> を開く</li>
+        <li>「中継」モードで分岐や角に置く</li>
+        <li>「道を描く」モードで、<b>ノード A</b> をクリック → カーブの形を決めるアンカー点を順にクリック → <b>ノード B</b> をクリックして完成</li>
+        <li>「JSON ダウンロード」で `&lt;name&gt;.json` を取得</li>
+        <li><b>maze/imageStages/</b> に JSON と画像 (同名) を保存</li>
+        <li><code style="color:#A4C76D">maze/?image=&lt;name&gt;</code> を開く / または「▶ 迷路で試す」ボタン</li>
       </ol>
-      <p style="margin-top: 8px;"><b>ヒント:</b><br>道を描くモード中に <kbd>Esc</kbd> で取り消し。ノードに 25px 以内でクリックするとスナップ。</p>
+      <p style="margin-top: 8px;"><b>ヒント:</b><br>
+        ・道は<b>クリックしたアンカー点を通る滑らかなカーブ</b> (Catmull-Rom スプライン) で繋がる<br>
+        ・<b>直線</b>が欲しいときは中間点を打たず、ノード A → ノード B だけクリック<br>
+        ・カーブを強く曲げたいときは曲がる位置にアンカーを増やす<br>
+        ・<kbd>Esc</kbd> / 右クリックで作成中の道を取消<br>
+        ・ノードに 30px 以内でクリックするとスナップ
+      </p>
     </div>
   </aside>
 
@@ -216,12 +222,18 @@ jsonInput.addEventListener('change', function(e) {
       });
       state.edges = def.edges.filter(function(e2) {
         return e2 && typeof e2.from === 'string' && typeof e2.to === 'string'
-          && Array.isArray(e2.polyline) && e2.polyline.length >= 2;
+          && (Array.isArray(e2.polyline) || (e2._editor && Array.isArray(e2._editor.controls)));
       }).map(function(e2) {
-        return {
-          from: e2.from, to: e2.to,
-          polyline: e2.polyline.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; })
-        };
+        // Prefer _editor.controls (lossless) — fall back to polyline as anchors
+        // (loses curve accuracy for old JSONs without _editor metadata, but those
+        //  are usually sparse straight-segment paths so re-curving is harmless).
+        let controls;
+        if (e2._editor && Array.isArray(e2._editor.controls) && e2._editor.controls.length >= 2) {
+          controls = e2._editor.controls.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
+        } else {
+          controls = e2.polyline.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; });
+        }
+        return { from: e2.from, to: e2.to, controls: controls };
       });
       // Bump nextStopId past any existing stop ids
       const usedIds = state.nodes.filter(function(n) { return n.kind === 'stop'; })
@@ -249,6 +261,58 @@ jsonInput.addEventListener('change', function(e) {
   // Reset the input so the same file can be reloaded
   e.target.value = '';
 });
+
+// ────────────────────────────────────────────────────────
+// Centripetal Catmull-Rom densification
+// Anchors are clicked points (controls). With ≤2 anchors the curve degenerates
+// to a straight line; with 3+ it curves smoothly through every anchor.
+// Endpoints are mirrored (no overshoot beyond the anchors).
+// ────────────────────────────────────────────────────────
+const CR_SAMPLES_PER_SEG = 14;
+
+function densifyCatmullRom(anchors) {
+  if (!Array.isArray(anchors) || anchors.length === 0) return [];
+  if (anchors.length === 1) return [{ x: anchors[0].x, y: anchors[0].y }];
+  if (anchors.length === 2) {
+    return [{ x: anchors[0].x, y: anchors[0].y }, { x: anchors[1].x, y: anchors[1].y }];
+  }
+  const out = [];
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const p1 = anchors[i], p2 = anchors[i+1];
+    const p0 = i === 0 ? { x: 2*p1.x - p2.x, y: 2*p1.y - p2.y } : anchors[i-1];
+    const p3 = i === anchors.length - 2
+      ? { x: 2*p2.x - p1.x, y: 2*p2.y - p1.y }
+      : anchors[i+2];
+    for (let s = 0; s < CR_SAMPLES_PER_SEG; s++) {
+      out.push(crPoint(p0, p1, p2, p3, s / CR_SAMPLES_PER_SEG));
+    }
+  }
+  out.push({ x: anchors[anchors.length-1].x, y: anchors[anchors.length-1].y });
+  return out;
+}
+function _crDist(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+function _crLerp(p, q, ta, tb, t) {
+  if (tb === ta) return { x: p.x, y: p.y };
+  const r = (t - ta) / (tb - ta);
+  return { x: p.x + (q.x - p.x) * r, y: p.y + (q.y - p.y) * r };
+}
+function crPoint(p0, p1, p2, p3, t) {
+  const alpha = 0.5; // centripetal — minimal overshoot
+  const t0 = 0;
+  const t1 = t0 + Math.pow(_crDist(p0, p1), alpha);
+  const t2 = t1 + Math.pow(_crDist(p1, p2), alpha);
+  const t3 = t2 + Math.pow(_crDist(p2, p3), alpha);
+  const u = t1 + (t2 - t1) * t;
+  const a1 = _crLerp(p0, p1, t0, t1, u);
+  const a2 = _crLerp(p1, p2, t1, t2, u);
+  const a3 = _crLerp(p2, p3, t2, t3, u);
+  const b1 = _crLerp(a1, a2, t0, t2, u);
+  const b2 = _crLerp(a2, a3, t1, t3, u);
+  return _crLerp(b1, b2, t1, t2, u);
+}
 
 // ────────────────────────────────────────────────────────
 // Image loading (file input + drag/drop)
@@ -386,15 +450,16 @@ function handleEdgeClick(p) {
     edgeProgressEl.textContent = '描画中: ' + snapped.id + ' から (Esc / 右クリックで取消)';
   } else {
     if (snapped && snapped.id !== state.edgeInProgress.fromId) {
-      // Commit the edge
+      // Commit the edge — store CONTROLS (anchors). Densification happens at render/export.
       const fromNode = state.nodes.find(function(n) { return n.id === state.edgeInProgress.fromId; });
-      const polyline = [{ x: fromNode.x, y: fromNode.y }]
+      const controls = [{ x: fromNode.x, y: fromNode.y }]
         .concat(state.edgeInProgress.points)
         .concat([{ x: snapped.x, y: snapped.y }]);
-      state.edges.push({ from: fromNode.id, to: snapped.id, polyline: polyline });
+      state.edges.push({ from: fromNode.id, to: snapped.id, controls: controls });
       state.edgeInProgress = null;
       edgeProgressEl.textContent = '';
-      showBanner('道を作成: ' + fromNode.id + ' → ' + snapped.id);
+      const shape = controls.length === 2 ? '直線' : ('カーブ ' + (controls.length - 2) + ' 制御点');
+      showBanner('道を作成: ' + fromNode.id + ' → ' + snapped.id + ' (' + shape + ')');
     } else if (snapped && snapped.id === state.edgeInProgress.fromId) {
       showBanner('同じノードには戻れないよ');
     } else {
@@ -422,11 +487,12 @@ function handleDeleteClick(p) {
     showBanner('ノード削除: ' + snapped.id);
     return;
   }
-  // Try to find a nearby edge polyline segment
+  // Try to find a nearby edge — test against the densified curve
   const r = 12 / canvasScale;
   for (let i = state.edges.length - 1; i >= 0; i--) {
     const ed = state.edges[i];
-    if (pointNearPolyline(p, ed.polyline, r)) {
+    const dense = densifyCatmullRom(ed.controls);
+    if (pointNearPolyline(p, dense, r)) {
       state.edges.splice(i, 1);
       showBanner('道を削除: ' + ed.from + ' → ' + ed.to);
       return;
@@ -465,18 +531,25 @@ function draw() {
   }
   ctx.drawImage(state.image, 0, 0);
 
-  // Edges
-  for (const ed of state.edges) drawEdge(ed.polyline, '#FF8855', 0.65);
+  // Edges (densify Catmull-Rom from controls before drawing)
+  for (const ed of state.edges) {
+    drawEdge(densifyCatmullRom(ed.controls), '#FF8855', 0.65);
+    // Show small anchor dots so user can see where they clicked
+    for (const a of ed.controls) {
+      ctx.fillStyle = 'rgba(255,136,85,0.55)';
+      ctx.beginPath(); ctx.arc(a.x, a.y, 5 / canvasScale, 0, Math.PI * 2); ctx.fill();
+    }
+  }
 
-  // Edge in progress
+  // Edge in progress (also smoothed via Catmull-Rom)
   if (state.edgeInProgress) {
     const fromNode = state.nodes.find(function(n) { return n.id === state.edgeInProgress.fromId; });
     const tip = state.hover || { x: fromNode.x, y: fromNode.y };
-    const pts = [{ x: fromNode.x, y: fromNode.y }]
+    const anchors = [{ x: fromNode.x, y: fromNode.y }]
       .concat(state.edgeInProgress.points)
       .concat([tip]);
-    drawEdge(pts, '#FFD700', 0.85, true);
-    // Draw intermediate point dots
+    drawEdge(densifyCatmullRom(anchors), '#FFD700', 0.85, true);
+    // Anchor dots for the in-progress edge
     for (const ip of state.edgeInProgress.points) {
       ctx.fillStyle = '#FFD700';
       ctx.beginPath(); ctx.arc(ip.x, ip.y, 8, 0, Math.PI * 2); ctx.fill();
@@ -619,7 +692,16 @@ document.getElementById('exportBtn').addEventListener('click', function() {
       return { id: n.id, x: n.x, y: n.y, kind: n.kind };
     }),
     edges: state.edges.map(function(e) {
-      return { from: e.from, to: e.to, polyline: e.polyline.map(function(p) { return { x: p.x, y: p.y }; }) };
+      // Runtime uses `polyline` (densified curve). `_editor.controls` preserves
+      // anchor points so the editor can re-curve identically on reload.
+      const dense = densifyCatmullRom(e.controls);
+      return {
+        from: e.from, to: e.to,
+        polyline: dense.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
+        _editor: {
+          controls: e.controls.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
+        },
+      };
     }),
   };
 

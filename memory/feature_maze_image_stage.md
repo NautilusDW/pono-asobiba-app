@@ -31,7 +31,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - [maze/imageStages/sample1.svg](../maze/imageStages/sample1.svg) — PoC 画像
 - [maze/imageStages/sample1.json](../maze/imageStages/sample1.json) — PoC ステージ定義
 - [maze/index.html](../maze/index.html) — `stage.type === 'image'` ディスパッチを追加 (240行追加, 既存無改変)
-- [tools/maze-editor.html](../tools/maze-editor.html) — クリックでノード/道を定義する単独ページのエディタ (Phase 1.5)。SW キャッシュ対象外なので開発で常に fresh
+- [tools/maze-editor.html](../tools/maze-editor.html) — クリックでノード/道を定義する単独ページのエディタ (Phase 1.5)。SW キャッシュ対象外なので開発で常に fresh。**Catmull-Rom スプライン曲線対応** — クリックしたアンカー点を滑らかな曲線が通る。アンカー 2 個 = 直線、3 個以上 = 曲線。書き出し時に densify されて `polyline` フィールドに、`_editor.controls` にアンカー保持で再編集ロスレス
 
 ## ステージ JSON フォーマット
 ```json
