@@ -84,6 +84,14 @@
       imageEl.src = stageDef.imageUrl;
     }
 
+    // Obstacles and creatures: pass through, validate coords if present.
+    const obstacles = Array.isArray(stageDef.obstacles)
+      ? stageDef.obstacles.filter(function(o) { return o && _validPoint(o); })
+      : [];
+    const creatures = Array.isArray(stageDef.creatures)
+      ? stageDef.creatures.filter(function(c) { return c && _validPoint(c); })
+      : [];
+
     return {
       type: 'image',
       name: stageDef.name || '',
@@ -92,6 +100,8 @@
       cameraFollow: stageDef.cameraFollow !== false,
       orientation: stageDef.orientation || 'landscape',
       lantern: stageDef.lantern || false, // boolean or { innerRadius, outerRadius, ... }
+      obstacles: obstacles,
+      creatures: creatures,
       nodesById: nodesById,
       nodes: stageDef.nodes,
       edges: edges,

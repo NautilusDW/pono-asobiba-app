@@ -79,6 +79,9 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **🌙 ランタンの夜モード**: stage def に `lantern: true` (or 詳細オブジェクト) を入れると、ランタイムがポノを中心にラジアルグラデーションで「ランタンの灯」エフェクトを描画。ポノの周辺は明るく、外側は夜の暗さ (RGBA `2,8,28,0.94` ベース) にフェード、ポノ近傍に暖色グロウ (additive blend)。微弱な脈動で炎のゆらぎを表現。エディタに「🌙 夜モード」チェックボックス。設定例: `{innerRadius:120, outerRadius:400, tintR/G/B/A, warmth:false}` で細かく調整可能
 - ✅ **`?stage=N` URL パラメータ**: ランタイム起動時に `?stage=N` があれば、その slot から始める (チュートリアル経由なし)。エディタの「💾 本番に保存」成功後に `?stage=N` で直接開くか確認するダイアログを表示。テスト時にチュートリアルから毎回プレイし直さずに済む
 - ✅ **オーバーレイ「スタート ▶」ボタンの loadStage(0) 削除**: 以前は init で正しい slot を loadStage しても、オーバーレイの「スタート ▶」をクリックすると `loadStage(0)` を再呼び出しして slot 0 (チュートリアル) にリセットされてしまう不具合があった (「一瞬新しい画面が出るけど前の迷路に戻る」現象の原因)。クリック時は `hideOverlay()` のみ実行する形に修正
+- ✅ **障害物 (obstacles) 配置**: stage def に `obstacles: [{kind, x, y}]` を追加。`kind` は `tree`/`pond`/`hole`/`stump`/`rock` の 5 種類で、既存の `assets/images/maze/` の画像を使用。デコレーション専用 (歩行ロジックには影響しない)。エディタの「🌳 障害物」モード + 種類サブボタンで配置
+- ✅ **お邪魔虫 (creatures) + じゃんけんミニゲーム**: stage def に `creatures: [{id, kind, x, y}]` を追加。`kind` は `mayoi`/`odoke`/`nemuri`/`pyon` の 4 種類 (Phase A は全部じゃんけん、Phase B でクイズ等に拡張予定)。歩行中にお邪魔虫の半径内に入ると `_checkCreatureCollision` が `_triggerEncounter` を発火 → モーダル表示 → じゃんけん (グー/チョキ/パー、CPU はランダム、あいこ で再戦)。勝ち=お邪魔虫消滅 (`_defeatedCreatures` Set に追加) + walk 再開、負け=スタートノードへワープ + 矢印再表示。Reward への影響は無し (image ステージは _official フラグでのみ報酬対象)
+- ✅ **ポノを `pono_lantan.png` に固定 (image ステージのみ)**: 歩行スプライトシートの差し替え (front/side, 25/35 frames) を image ステージでは使わず、ランタンを持つ円形ポノアイコン (`pono_lantan.png`, 1024x1024) を viewBox.h/9 サイズで描画。歩行中だけ軽い上下バウンス (`sin(now/130)`)。グリッドステージは従来通り歩行アニメ維持
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker

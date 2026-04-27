@@ -401,6 +401,65 @@ body.image-stage-mode .game-wrap {
   0%,100% { transform: rotate(0deg); }
   50%     { transform: rotate(90deg); }
 }
+
+/* ── Encounter modal (creature mini-game) ── */
+.encounter-modal {
+  position: fixed; inset: 0;
+  background: rgba(20, 30, 15, 0.78);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 9000;
+  font-family: inherit;
+  padding: 20px;
+}
+.encounter-modal.show { display: flex; }
+.encounter-modal .enc-card {
+  background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDE 100%);
+  border: 4px solid #6C8E3F;
+  border-radius: 24px;
+  padding: 24px 28px;
+  max-width: 560px;
+  width: 92%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  text-align: center;
+  animation: encPop 0.35s ease-out;
+}
+@keyframes encPop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.enc-creature {
+  font-size: 4.5rem;
+  line-height: 1; margin-bottom: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  animation: encWiggle 1.2s ease-in-out infinite;
+}
+@keyframes encWiggle {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
+}
+.enc-name { font-size: 1.15rem; font-weight: 900; color: #6C8E3F; margin-bottom: 8px; }
+.enc-dialog { font-size: 1rem; color: #5D4E37; margin-bottom: 18px; line-height: 1.6; }
+.enc-stage { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.enc-stage .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.enc-btn {
+  padding: 12px 22px; font-family: inherit; font-size: 1.05rem; font-weight: 900;
+  border: 0; border-radius: 14px; cursor: pointer;
+  background: #ddd; color: #333;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+.enc-btn:active { transform: scale(0.95); }
+.enc-btn.primary { background: linear-gradient(135deg, #6C8E3F, #A4C76D); color: #fff; }
+.enc-btn.choice { font-size: 2.2rem; padding: 14px 22px; min-width: 80px; background: #FFF; border: 3px solid #A4C76D; }
+.enc-btn.win    { background: linear-gradient(135deg, #F5A623, #FFCB5C); color: #fff; }
+.enc-btn.lose   { background: linear-gradient(135deg, #B05050, #C66767); color: #fff; }
+
+.enc-result { font-size: 2rem; font-weight: 900; margin: 8px 0; }
+.enc-result.win  { color: #6C8E3F; }
+.enc-result.lose { color: #B05050; }
+.enc-vs { font-size: 1.5rem; color: #888; margin: 6px 0; }
+.enc-hand { font-size: 3rem; line-height: 1; }
 </style>
 </head>
 <body>
@@ -469,6 +528,18 @@ body.image-stage-mode .game-wrap {
     <p>このステージは よこがめんで あそぶよ。<br>たんまつを よこに むけてね。</p>
   </div>
 
+  <!-- Encounter modal (creature + minigame) — image-stage only -->
+  <div class="encounter-modal" id="encModal" aria-hidden="true">
+    <div class="enc-card">
+      <div class="enc-creature" id="encCreature">🐛</div>
+      <div class="enc-name" id="encName">まよいムシ</div>
+      <div class="enc-dialog" id="encDialog">ここは とおさないよ〜<br>かったら とおしてあげる！</div>
+      <div class="enc-stage" id="encStage">
+        <button class="enc-btn primary" id="encStartBtn">じゃんけんで あそぶ ▶</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Charm tutorial overlay (first-time unlock) -->
   <div class="charm-tut" id="charmTut">
     <div class="charm-tut-card">
@@ -499,6 +570,9 @@ const HEDGEHOG_HAPPY = '../assets/images/characters/headgehog/headgehog_smilewav
 
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
+// Image-stage 用の常時表示アイコン (歩きアニメ無し、ランタンを持っている版)
+const imgPonoLantern = new Image();
+imgPonoLantern.src = '../assets/images/characters/pono/pono_lantan.png';
 const imgWalkSheet = new Image();
 imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
 const WALK_FRAMES = 25, WALK_FRAME_W = 92, WALK_FRAME_H = 128, WALK_FPS = 12;
@@ -1403,7 +1477,7 @@ function imgDraw(now) {
   // Determine current pono position (animated or static)
   let px = pono.x, py = pono.y, ftx = pono.faceTx, fty = pono.faceTy;
   let isWalking = false;
-  if (walkAnim && walkAnim.type === 'image') {
+  if (walkAnim && walkAnim.type === 'image' && !_encounterActive) {
     const elapsed = now - walkAnim.t0;
     const t = elapsed / walkAnim.duration;
     if (t >= 1) {
@@ -1414,6 +1488,8 @@ function imgDraw(now) {
       const r = window.MazeImage.interpolate(walkAnim.plan.polyline, walkAnim.plan.cumLengths, t);
       px = r.x; py = r.y; ftx = r.tx; fty = r.ty;
       isWalking = true;
+      // Check creature collision — pauses walk and opens modal if hit
+      _checkCreatureCollision(px, py);
     }
   }
 
@@ -1435,6 +1511,10 @@ function imgDraw(now) {
   if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
     ctx.drawImage(stage.image, 0, 0, stage.viewBox.w, stage.viewBox.h);
   }
+  // Obstacles (decoration only — placed by editor on top of the maze image)
+  if (stage.obstacles && stage.obstacles.length) imgDrawObstacles(stage);
+  // Creatures (お邪魔虫 — block path until defeated via mini-game)
+  if (stage.creatures && stage.creatures.length) imgDrawCreatures(stage, now);
   ctx.restore();
 
   // Lantern overlay (in screen space — applied AFTER image, BEFORE pono so
@@ -1459,6 +1539,198 @@ function imgDraw(now) {
   // Safety: re-show arrows if missing while idle
   if (!walkAnim && !cleared && !overlay.classList.contains('show')
       && arrowLayer.children.length === 0) {
+    imgShowArrows();
+  }
+}
+
+// ── Obstacle / creature rendering + encounter handling ──
+const _defeatedCreatures = new Set(); // session-only memory of defeated creatures
+let _encounterActive = false;          // true while encounter modal is open
+let _encounteringCreatureId = null;   // current creature being fought
+const encModal = document.getElementById('encModal');
+const encCreatureEl = document.getElementById('encCreature');
+const encNameEl = document.getElementById('encName');
+const encDialogEl = document.getElementById('encDialog');
+const encStageEl = document.getElementById('encStage');
+const encStartBtn = document.getElementById('encStartBtn');
+
+const CREATURE_KIND_DATA = {
+  mayoi: { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'ここは とおさないよ〜<br>かったら とおしてあげる！' },
+  odoke: { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: 'クイズに こたえてみてよ〜' },
+  nemuri:{ emoji: '😴', color: '#9B7EBC', name: 'ねむりムシ', dialog: '…zzz… うるさいなあ' },
+  pyon:  { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'ぴょんっ！ぴょんっ！\n通れるかな〜？' },
+};
+function _creatureData(c) {
+  return CREATURE_KIND_DATA[c.kind] || CREATURE_KIND_DATA.mayoi;
+}
+
+const OBSTACLE_KIND_IMG = {
+  tree:  imgTree,
+  pond:  imgPond,
+  hole:  imgHole,
+  stump: imgStump,
+  rock:  imgRock,
+};
+
+function imgDrawObstacles(stage) {
+  // Default size relative to viewBox height
+  const defaultSize = stage.viewBox.h / 12;
+  for (const o of stage.obstacles) {
+    const img = OBSTACLE_KIND_IMG[o.kind];
+    const sz = (o.size && Number.isFinite(o.size)) ? o.size : defaultSize;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, o.x - sz/2, o.y - sz/2, sz, sz);
+    } else {
+      // Fallback emoji if image not yet loaded
+      const fallbackEmoji = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' }[o.kind] || '🌳';
+      ctx.font = (sz * 0.8) + 'px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(fallbackEmoji, o.x, o.y);
+    }
+  }
+}
+
+function imgDrawCreatures(stage, now) {
+  const size = stage.viewBox.h / 11;
+  for (const c of stage.creatures) {
+    if (_defeatedCreatures.has(c.id || (c.x + ',' + c.y))) continue;
+    const data = _creatureData(c);
+    const bob = Math.sin(now / 320 + (c.x + c.y) * 0.01) * (size * 0.06);
+    ctx.save();
+    // Body (color-coded circle)
+    ctx.fillStyle = data.color;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Outline
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    // Emoji face
+    ctx.font = (size * 0.65) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(data.emoji, c.x, c.y + bob);
+    ctx.restore();
+  }
+}
+
+// Detect creature collision during a walk and trigger encounter.
+// Returns true if walk should pause for an encounter.
+function _checkCreatureCollision(px, py) {
+  if (!stage || !stage.creatures || _encounterActive) return false;
+  const TRIGGER_R2 = (stage.viewBox.h / 16) * (stage.viewBox.h / 16); // tuned with creature size
+  for (const c of stage.creatures) {
+    const id = c.id || (c.x + ',' + c.y);
+    if (_defeatedCreatures.has(id)) continue;
+    const dx = px - c.x, dy = py - c.y;
+    if (dx*dx + dy*dy < TRIGGER_R2) {
+      _triggerEncounter(c);
+      return true;
+    }
+  }
+  return false;
+}
+
+function _triggerEncounter(c) {
+  if (_encounterActive) return;
+  _encounterActive = true;
+  _encounteringCreatureId = c.id || (c.x + ',' + c.y);
+  // Pause the walk animation by stashing it
+  if (walkAnim) walkAnim._pausedAt = performance.now();
+  hideArrows();
+  // Set up modal content
+  const data = _creatureData(c);
+  encCreatureEl.textContent = data.emoji;
+  encNameEl.textContent = data.name;
+  encDialogEl.innerHTML = (c.dialog || data.dialog).replace(/\n/g, '<br>');
+  // Initial stage: "じゃんけんで あそぶ ▶" button
+  _showEncounterStart();
+  encModal.classList.add('show');
+  encModal.setAttribute('aria-hidden', 'false');
+}
+
+function _showEncounterStart() {
+  encStageEl.innerHTML = '<button class="enc-btn primary" id="encStartBtn2">じゃんけん で あそぶ ▶</button>';
+  document.getElementById('encStartBtn2').addEventListener('click', _showJankenChoices);
+}
+
+function _showJankenChoices() {
+  encStageEl.innerHTML =
+    '<div class="enc-result">じゃんけん…</div>' +
+    '<div class="row">' +
+      '<button class="enc-btn choice" data-hand="rock">✊</button>' +
+      '<button class="enc-btn choice" data-hand="paper">✋</button>' +
+      '<button class="enc-btn choice" data-hand="scissors">✌️</button>' +
+    '</div>';
+  encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
+    b.addEventListener('click', function() { _resolveJanken(b.dataset.hand); });
+  });
+}
+
+function _resolveJanken(playerHand) {
+  const hands = ['rock', 'paper', 'scissors'];
+  const emojiOf = { rock: '✊', paper: '✋', scissors: '✌️' };
+  const cpuHand = hands[Math.floor(Math.random() * 3)];
+  // wins[a] beats b
+  const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+  let outcome;
+  if (playerHand === cpuHand) outcome = 'draw';
+  else if (beats[playerHand] === cpuHand) outcome = 'win';
+  else outcome = 'lose';
+
+  encStageEl.innerHTML =
+    '<div class="enc-vs">' +
+      '<span class="enc-hand">' + emojiOf[playerHand] + '</span>' +
+      ' vs ' +
+      '<span class="enc-hand">' + emojiOf[cpuHand] + '</span>' +
+    '</div>' +
+    '<div class="enc-result ' + (outcome === 'win' ? 'win' : (outcome === 'lose' ? 'lose' : '')) + '">' +
+      (outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！') +
+    '</div>' +
+    '<div class="row">' +
+      (outcome === 'draw'
+        ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
+        : '<button class="enc-btn ' + (outcome === 'win' ? 'win' : 'lose') + '" id="encNext">' +
+            (outcome === 'win' ? 'すすむ ▶' : 'もどる ▶') +
+          '</button>') +
+    '</div>';
+
+  if (outcome === 'draw') {
+    document.getElementById('encRetry').addEventListener('click', _showJankenChoices);
+  } else {
+    document.getElementById('encNext').addEventListener('click', function() {
+      _closeEncounter(outcome === 'win');
+    });
+  }
+}
+
+function _closeEncounter(playerWon) {
+  encModal.classList.remove('show');
+  encModal.setAttribute('aria-hidden', 'true');
+  const cid = _encounteringCreatureId;
+  _encounterActive = false;
+  _encounteringCreatureId = null;
+  if (playerWon) {
+    // Defeat creature, resume the walk forward
+    _defeatedCreatures.add(cid);
+    if (walkAnim && walkAnim.type === 'image') {
+      // Resume by adjusting t0 so elapsed time effectively continues from where we paused
+      if (walkAnim._pausedAt) {
+        const pausedDuration = performance.now() - walkAnim._pausedAt;
+        walkAnim.t0 += pausedDuration;
+        delete walkAnim._pausedAt;
+      }
+    }
+  } else {
+    // Lose: cancel the walk and warp pono back to start node
+    walkAnim = null;
+    pono.x = stage.start.x;
+    pono.y = stage.start.y;
+    pono.nodeId = stage.start.id;
+    showHint('スタートに もどったよ！もう一度 ためそう', 2500);
     imgShowArrows();
   }
 }
@@ -1506,46 +1778,21 @@ function imgDrawLantern(now, cx, cy, w, h, opts) {
 }
 
 function imgDrawPono(now, x, y, tx, ty, isWalking) {
-  // Sprite size in world pixels (so it scales with the rest of the image).
-  // Tuned so pono is roughly 1/9 of viewBox height.
-  const walkH = stage.viewBox.h / 9;
-  const baseSize = walkH * 0.92;
-
-  const face = window.MazeImage.tangentToFace(tx, ty);
-  const dr = face.dr, dc = face.dc;
-
-  const wantsWalkSide  = isWalking && dc !== 0 && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0;
-  const wantsWalkFront = isWalking && dr === 1 && imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0;
-
-  const elapsed = walkAnim ? (now - walkAnim.t0) : now;
-
-  if (wantsWalkSide) {
-    const sideH = walkH * SIDE_WALK_SCALE;
-    const sideW = sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H;
-    const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
-    const sx = frameIdx * SIDE_WALK_FRAME_W;
-    ctx.save();
-    if (dc < 0) {
-      ctx.translate(x, y); ctx.scale(-1, 1);
-      ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
-                    -sideW / 2, -sideH / 2, sideW, sideH);
-    } else {
-      ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
-                    x - sideW / 2, y - sideH / 2, sideW, sideH);
-    }
-    ctx.restore();
-  } else if (wantsWalkFront) {
-    const walkW = walkH * WALK_FRAME_W / WALK_FRAME_H;
-    const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
-    const sx = frameIdx * WALK_FRAME_W;
-    ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
-                  x - walkW / 2, y - walkH / 2, walkW, walkH);
+  // 画像ステージでは歩きアニメは使わず、ランタンを持つ円形アイコン (pono_lantan.png) のみ。
+  // 大きさ: viewBox 高さの 1/9 を直径に。
+  const size = stage.viewBox.h / 9;
+  // 軽い上下バウンス (歩いてる時だけ) — アニメは無いが少しだけ「動いてる感」を残す
+  const bounce = isWalking ? Math.sin(now / 130) * (size * 0.04) : 0;
+  const drawY = y + bounce;
+  if (imgPonoLantern.complete && imgPonoLantern.naturalWidth > 0) {
+    ctx.drawImage(imgPonoLantern, x - size/2, drawY - size/2, size, size);
   } else if (imgPono.complete && imgPono.naturalWidth > 0) {
-    ctx.drawImage(imgPono, x - baseSize / 2, y - baseSize / 2, baseSize, baseSize);
+    // フォールバック: 古い丸顔
+    ctx.drawImage(imgPono, x - size/2, drawY - size/2, size, size);
   } else {
-    ctx.font = Math.floor(baseSize * 0.8) + 'px serif';
+    ctx.font = Math.floor(size * 0.8) + 'px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🐻', x, y);
+    ctx.fillText('🐻', x, drawY);
   }
 }
 

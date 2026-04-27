@@ -31,6 +31,13 @@ html, body { height: 100vh; overflow: hidden;
 }
 .mode-btn:hover { background: #404040; }
 .mode-btn.active { background: #6C8E3F; color: #fff; border-color: #A4C76D; }
+.kind-btn {
+  padding: 6px 8px; font-family: inherit; font-size: 0.72rem;
+  background: #2a2a2a; color: #ccc; border: 1px solid #444; border-radius: 4px;
+  cursor: pointer; flex: 1 1 calc(20% - 4px);
+}
+.kind-btn:hover { background: #3a3a3a; }
+.kind-btn.active { background: #8a6a40; color: #fff; border-color: #d8a070; }
 .actions { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
 .actions button {
   padding: 10px; font-family: inherit; font-size: 0.85rem;
@@ -105,7 +112,23 @@ html, body { height: 100vh; overflow: hidden;
       <button class="mode-btn" data-mode="stop">⚪ 中継</button>
       <button class="mode-btn" data-mode="edge">📏 道を描く</button>
       <button class="mode-btn" data-mode="edit-points" style="background:#1f3a5a; color:#cef;">✏️ ポイント編集</button>
+      <button class="mode-btn" data-mode="obstacle" style="background:#3a2c1a; color:#fc8;">🌳 障害物</button>
+      <button class="mode-btn" data-mode="creature" style="background:#2c3a1a; color:#cf8;">🐛 お邪魔虫</button>
       <button class="mode-btn" data-mode="delete" style="background: #5a3030; color: #fcc;">🗑 削除</button>
+    </div>
+    <!-- Sub-selectors (shown only when respective mode is active) -->
+    <div id="obstacleKindRow" class="modes" style="display:none; margin-top:6px;">
+      <button class="kind-btn active" data-okind="tree">🌳 木</button>
+      <button class="kind-btn" data-okind="pond">💧 池</button>
+      <button class="kind-btn" data-okind="hole">🕳️ 穴</button>
+      <button class="kind-btn" data-okind="stump">🪵 切株</button>
+      <button class="kind-btn" data-okind="rock">🪨 石</button>
+    </div>
+    <div id="creatureKindRow" class="modes" style="display:none; margin-top:6px;">
+      <button class="kind-btn active" data-ckind="mayoi">🐛 まよい</button>
+      <button class="kind-btn" data-ckind="odoke">🐞 おどけ</button>
+      <button class="kind-btn" data-ckind="nemuri">😴 ねむり</button>
+      <button class="kind-btn" data-ckind="pyon">🦗 ぴょん</button>
     </div>
 
     <div class="status">
@@ -181,8 +204,13 @@ const state = {
   imgW: 0, imgH: 0,
   nodes: [],            // { id, x, y, kind: 'start'|'goal'|'stop' }
   edges: [],            // { from, to, polyline: [{x,y}] }
+  obstacles: [],        // { kind, x, y }
+  creatures: [],        // { id, kind, x, y }
   nextStopId: 1,
+  nextCreatureId: 1,
   mode: 'start',
+  obstacleKind: 'tree',
+  creatureKind: 'mayoi',
   edgeInProgress: null, // { fromId, points: [{x,y}] }
   history: [],          // shallow snapshots for undo
   hover: null,          // {x, y} mouse pos in image coords
@@ -214,8 +242,30 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
     cancelEdgeInProgress();
+    // Toggle sub-rows
+    document.getElementById('obstacleKindRow').style.display = state.mode === 'obstacle' ? 'flex' : 'none';
+    document.getElementById('creatureKindRow').style.display = state.mode === 'creature' ? 'flex' : 'none';
     showBanner('モード: ' + btn.textContent.trim());
     draw();
+  });
+});
+
+// Obstacle kind sub-buttons
+document.querySelectorAll('#obstacleKindRow .kind-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    state.obstacleKind = btn.dataset.okind;
+    document.querySelectorAll('#obstacleKindRow .kind-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    showBanner('障害物: ' + btn.textContent.trim());
+  });
+});
+// Creature kind sub-buttons
+document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    state.creatureKind = btn.dataset.ckind;
+    document.querySelectorAll('#creatureKindRow .kind-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    showBanner('お邪魔虫: ' + btn.textContent.trim());
   });
 });
 
@@ -269,6 +319,20 @@ jsonInput.addEventListener('change', function(e) {
       // Restore lantern toggle
       const lt = document.getElementById('lanternToggle');
       if (lt) lt.checked = !!def.lantern;
+      // Restore obstacles + creatures
+      state.obstacles = Array.isArray(def.obstacles)
+        ? def.obstacles
+            .filter(function(o) { return o && Number.isFinite(o.x) && Number.isFinite(o.y); })
+            .map(function(o) { return { kind: o.kind || 'tree', x: Number(o.x), y: Number(o.y) }; })
+        : [];
+      state.creatures = Array.isArray(def.creatures)
+        ? def.creatures
+            .filter(function(c) { return c && Number.isFinite(c.x) && Number.isFinite(c.y); })
+            .map(function(c) { return { id: c.id || ('c' + (state.nextCreatureId++)), kind: c.kind || 'mayoi', x: Number(c.x), y: Number(c.y) }; })
+        : [];
+      // Bump nextCreatureId past any existing
+      const usedCIds = state.creatures.map(function(c) { const m = c.id.match(/^c(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
+      state.nextCreatureId = (usedCIds.length > 0 ? Math.max.apply(null, usedCIds) : 0) + 1;
       state.edgeInProgress = null;
       edgeProgressEl.textContent = '';
       draw();
@@ -448,6 +512,14 @@ cv.addEventListener('click', function(e) {
     state.nextStopId++;
   } else if (state.mode === 'edge') {
     handleEdgeClick(p);
+  } else if (state.mode === 'obstacle') {
+    state.obstacles.push({ kind: state.obstacleKind, x: p.x, y: p.y });
+  } else if (state.mode === 'creature') {
+    state.creatures.push({
+      id: 'c' + state.nextCreatureId,
+      kind: state.creatureKind, x: p.x, y: p.y
+    });
+    state.nextCreatureId++;
   } else if (state.mode === 'delete') {
     handleDeleteClick(p);
   }
@@ -572,7 +644,28 @@ function handleDeleteClick(p) {
     showBanner('ノード削除: ' + snapped.id);
     return;
   }
-  // Try to find a nearby edge — test against the densified curve
+  // Try to find a creature first (smaller hit radius)
+  const cr = 36 / canvasScale;
+  for (let i = state.creatures.length - 1; i >= 0; i--) {
+    const c = state.creatures[i];
+    const dx = p.x - c.x, dy = p.y - c.y;
+    if (dx*dx + dy*dy < cr * cr) {
+      state.creatures.splice(i, 1);
+      showBanner('お邪魔虫を削除: ' + c.id);
+      return;
+    }
+  }
+  // Then obstacles
+  for (let i = state.obstacles.length - 1; i >= 0; i--) {
+    const o = state.obstacles[i];
+    const dx = p.x - o.x, dy = p.y - o.y;
+    if (dx*dx + dy*dy < cr * cr) {
+      state.obstacles.splice(i, 1);
+      showBanner('障害物を削除: ' + o.kind);
+      return;
+    }
+  }
+  // Then a nearby edge — test against the densified curve
   const r = 12 / canvasScale;
   for (let i = state.edges.length - 1; i >= 0; i--) {
     const ed = state.edges[i];
@@ -652,8 +745,50 @@ function draw() {
     }
   }
 
+  // Obstacles (rendered before nodes so nodes show on top)
+  for (const o of state.obstacles) drawObstacle(o);
+  // Creatures
+  for (const c of state.creatures) drawCreature(c);
   // Nodes
   for (const n of state.nodes) drawNode(n);
+}
+
+const OBSTACLE_EMOJI = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' };
+function drawObstacle(o) {
+  const sz = state.imgH / 12;
+  ctx.save();
+  // Background tint to show it's editable
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.arc(o.x, o.y, sz/2 + 4 / canvasScale, 0, Math.PI * 2); ctx.fill();
+  ctx.font = (sz * 0.85) + 'px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';
+  ctx.fillText(OBSTACLE_EMOJI[o.kind] || '🌳', o.x, o.y);
+  ctx.restore();
+}
+
+const CREATURE_VIS = {
+  mayoi: { emoji: '🐛', color: '#7AB540' },
+  odoke: { emoji: '🐞', color: '#D7553A' },
+  nemuri:{ emoji: '😴', color: '#9B7EBC' },
+  pyon:  { emoji: '🦗', color: '#5BB8A8' },
+};
+function drawCreature(c) {
+  const sz = state.imgH / 11;
+  const v = CREATURE_VIS[c.kind] || CREATURE_VIS.mayoi;
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = v.color;
+  ctx.beginPath(); ctx.arc(c.x, c.y, sz/2, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 4 / canvasScale;
+  ctx.stroke();
+  ctx.font = (sz * 0.65) + 'px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(v.emoji, c.x, c.y);
+  ctx.restore();
 }
 
 function drawEdge(poly, color, alpha, dashed) {
@@ -726,7 +861,10 @@ function pushHistory() {
   state.history.push(JSON.stringify({
     nodes: state.nodes,
     edges: state.edges,
+    obstacles: state.obstacles,
+    creatures: state.creatures,
     nextStopId: state.nextStopId,
+    nextCreatureId: state.nextCreatureId,
     edgeInProgress: state.edgeInProgress,
   }));
   if (state.history.length > 50) state.history.shift();
@@ -737,7 +875,10 @@ document.getElementById('undoBtn').addEventListener('click', function() {
   const prev = JSON.parse(state.history.pop());
   state.nodes = prev.nodes;
   state.edges = prev.edges;
+  state.obstacles = prev.obstacles || [];
+  state.creatures = prev.creatures || [];
   state.nextStopId = prev.nextStopId;
+  state.nextCreatureId = prev.nextCreatureId || 1;
   state.edgeInProgress = prev.edgeInProgress;
   edgeProgressEl.textContent = state.edgeInProgress ? ('描画中: ' + state.edgeInProgress.fromId + ' から') : '';
   draw();
@@ -753,7 +894,10 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   pushHistory();
   state.nodes = [];
   state.edges = [];
+  state.obstacles = [];
+  state.creatures = [];
   state.nextStopId = 1;
+  state.nextCreatureId = 1;
   state.edgeInProgress = null;
   edgeProgressEl.textContent = '';
   draw();
@@ -782,6 +926,8 @@ function buildExportDef() {
       orientation: 'landscape',
       cameraFollow: true,
       lantern: lanternEnabled,
+      obstacles: state.obstacles.map(function(o) { return { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y) }; }),
+      creatures: state.creatures.map(function(c) { return { id: c.id, kind: c.kind, x: Math.round(c.x), y: Math.round(c.y) }; }),
       nodes: state.nodes.map(function(n) {
         return { id: n.id, x: n.x, y: n.y, kind: n.kind };
       }),
