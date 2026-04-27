@@ -6,6 +6,17 @@
 ## 概要
 従来のグリッドタイル迷路 (直進+L字のみ) に加え、AI生成画像を背景にしたポリライン歩行ステージを並列導入。曲がり道・大カーブ・緩急のあるカーブを「画像のまま」表現でき、横画面 (landscape) 専用、キャラクター中央維持のカメラ追従スクロール対応。
 
+## ステージ追加ワークフロー (推奨)
+1. **AI で迷路画像を 16:9 で生成** (1画面=1920×1080 〜 2画面=3840×1080 等)
+2. **エディタを開く**: ブラウザで `tools/maze-editor.html` を開く
+3. **画像をドロップ** → ステージ名を入力 (英数字・_-)
+4. **ノード配置**: スタート/ゴール/中継ノードを画像上にクリックで置く
+5. **道を描く**: ノード A → 中継点を順にクリック → ノード B で確定 (Esc で取消)
+6. **JSON ダウンロード** → `maze/imageStages/<name>.json` に配置
+7. **画像コピー** → `maze/imageStages/<name>.<ext>` に配置 (元の拡張子)
+8. **テスト**: `maze/?image=<name>` を開く
+9. デプロイ無しで反復可能
+
 ## アクセス方法
 URL: `maze/?image=<name>` で `maze/imageStages/<name>.json` を読み込む。
 
@@ -20,6 +31,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - [maze/imageStages/sample1.svg](../maze/imageStages/sample1.svg) — PoC 画像
 - [maze/imageStages/sample1.json](../maze/imageStages/sample1.json) — PoC ステージ定義
 - [maze/index.html](../maze/index.html) — `stage.type === 'image'` ディスパッチを追加 (240行追加, 既存無改変)
+- [tools/maze-editor.html](../tools/maze-editor.html) — クリックでノード/道を定義する単独ページのエディタ (Phase 1.5)。SW キャッシュ対象外なので開発で常に fresh
 
 ## ステージ JSON フォーマット
 ```json
@@ -54,9 +66,10 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 6. **charm 系 (hint/breeze/warp)**: image モードでは UI 非表示 + 関数冒頭で early return。
 
 ## Phase 2 計画 (未着手)
-- `tools/maze-editor.html` — 画像ドロップ → ノード配置 → JSON 出力
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker
-- 自動的なエッジ生成 (現在は polyline 手書き)
+- エディタへの「自動エッジ追跡」ボタン追加 (現在は polyline をクリックで手描き)
+- エディタへの「既存 JSON を読み込んで編集再開」機能
+- ホタルの実 / まよいムシ ノード対応 (現在は start/goal/stop のみ)
 
 ## 既知の制限 (Phase 1)
 - りんご収集・charm システムは画像ステージ未対応
