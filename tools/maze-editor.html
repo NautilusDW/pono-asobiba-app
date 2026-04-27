@@ -38,6 +38,26 @@ html, body { height: 100vh; overflow: hidden;
 }
 .kind-btn:hover { background: #3a3a3a; }
 .kind-btn.active { background: #8a6a40; color: #fff; border-color: #d8a070; }
+
+/* Library list */
+#libList li {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 6px; font-size: 0.78rem;
+  border-bottom: 1px solid #2a2a2a;
+}
+#libList li:last-child { border-bottom: 0; }
+#libList .name {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ddd;
+}
+#libList .ts { font-size: 0.65rem; color: #777; margin-left: 4px; }
+#libList button {
+  font-size: 0.7rem; padding: 3px 6px; background: #2a3e1f; color: #cf8;
+  border: 1px solid #4a5e3f; border-radius: 3px; cursor: pointer; font-family: inherit;
+}
+#libList button:hover { background: #3a5028; }
+#libList button.del { background: #4a2020; color: #fcc; border-color: #6a3030; }
+#libList button.del:hover { background: #5d2a2a; }
+#libList .empty { color: #888; font-size: 0.7rem; padding: 8px; }
 .actions { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
 .actions button {
   padding: 10px; font-family: inherit; font-size: 0.85rem;
@@ -165,6 +185,21 @@ html, body { height: 100vh; overflow: hidden;
       <button id="undoBtn" class="secondary">⤺ さいごの操作を取り消し</button>
       <button id="resetBtn" class="danger">↺ ぜんぶリセット</button>
     </div>
+
+    <h3>📁 ステージ管理 (ブラウザ内)</h3>
+    <div style="display:flex; gap:4px; margin-bottom:6px;">
+      <input type="text" id="libNameInput" placeholder="ステージ名 (例: 森の入り口 v2)"
+             style="flex:1; padding:6px 8px; font-family:inherit; font-size:0.78rem;
+                    background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+      <button class="mode-btn" id="libSaveBtn"
+              style="flex:0 0 auto; padding:6px 10px; font-size:0.78rem; background:#3a6c1f; color:#fff; border-color:#a4c76d;">💾 保存</button>
+    </div>
+    <ul id="libList" style="list-style:none; padding:0; margin:4px 0; max-height:240px; overflow-y:auto;
+                            border:1px solid #444; border-radius:4px;"></ul>
+    <button class="mode-btn" id="libCompareBtn" style="margin-top:6px; font-size:0.78rem; width:100%;">🪟 別タブで開く (比較用)</button>
+    <p style="font-size:0.7rem; color:#888; margin-top:4px;">
+      画像入りで保存 (1600px JPEG 圧縮)。複数バージョン保持してリスト切り替え可能。
+    </p>
 
     <div class="instructions">
       <h3>使い方</h3>
@@ -1342,12 +1377,185 @@ document.getElementById('resetBtn').addEventListener('click', function() {
 });
 
 // ────────────────────────────────────────────────────────
+// Named saves library (multiple stages persisted in browser localStorage)
+// ────────────────────────────────────────────────────────
+const LIB_KEY = 'pono_maze_editor_saves_v1';
+
+function libGetAll() {
+  try {
+    const raw = localStorage.getItem(LIB_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (e) { return {}; }
+}
+function libSetAll(obj) {
+  try { localStorage.setItem(LIB_KEY, JSON.stringify(obj)); }
+  catch (e) { alert('保存失敗 (localStorage 容量超過の可能性): ' + e.message); }
+}
+
+function libBuildSnapshot() {
+  const orderInput = document.getElementById('stageOrderInput');
+  const ltEl = document.getElementById('lanternToggle');
+  const snap = {
+    savedAt: Date.now(),
+    stageName: stageNameInput.value || '',
+    stageOrder: orderInput ? (parseInt(orderInput.value, 10) || 1) : 1,
+    lantern: !!(ltEl && ltEl.checked),
+    imgFileName: state.imgFileName || '',
+    imgW: state.imgW || 0,
+    imgH: state.imgH || 0,
+    nodes: state.nodes,
+    edges: state.edges,
+    obstacles: state.obstacles,
+    creatures: state.creatures,
+    nextStopId: state.nextStopId,
+    nextCreatureId: state.nextCreatureId,
+  };
+  // Image (compressed for size)
+  if (state.image && state.image.complete && state.image.naturalWidth > 0) {
+    try {
+      const c = compressImageToDataURL(state.image, 1600, 0.7);
+      if (c.length < 4 * 1024 * 1024) snap.image = c;
+    } catch (e) { /* skip image if compress fails */ }
+  }
+  return snap;
+}
+
+function libSaveAs(name) {
+  if (!name || !name.trim()) { alert('ステージ名を入力してね'); return; }
+  const saves = libGetAll();
+  const isOverwrite = !!saves[name];
+  if (isOverwrite && !confirm('「' + name + '」を上書きしますか?')) return;
+  saves[name] = libBuildSnapshot();
+  libSetAll(saves);
+  libRefreshList();
+  showBanner((isOverwrite ? '🔁 上書き保存: ' : '💾 新規保存: ') + name);
+}
+
+function libLoadByName(name) {
+  const saves = libGetAll();
+  const snap = saves[name];
+  if (!snap) { showBanner('「' + name + '」が見つかりません'); return; }
+  pushHistory();
+  // Restore inputs
+  stageNameInput.value = snap.stageName || '';
+  const orderInput = document.getElementById('stageOrderInput');
+  if (orderInput && Number.isFinite(snap.stageOrder)) orderInput.value = snap.stageOrder;
+  const ltEl = document.getElementById('lanternToggle');
+  if (ltEl) ltEl.checked = !!snap.lantern;
+  // Restore state
+  state.nodes = Array.isArray(snap.nodes) ? snap.nodes : [];
+  state.edges = Array.isArray(snap.edges) ? snap.edges : [];
+  state.obstacles = Array.isArray(snap.obstacles) ? snap.obstacles : [];
+  state.creatures = Array.isArray(snap.creatures) ? snap.creatures : [];
+  state.nextStopId = snap.nextStopId || 1;
+  state.nextCreatureId = snap.nextCreatureId || 1;
+  state.imgFileName = snap.imgFileName || '';
+  state.imgW = snap.imgW || 0;
+  state.imgH = snap.imgH || 0;
+  // Restore image
+  if (snap.image) {
+    const img = new Image();
+    img.onload = function() {
+      state.image = img;
+      if (!state.imgW) state.imgW = img.naturalWidth;
+      if (!state.imgH) state.imgH = img.naturalHeight;
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      resizeCanvas();
+      draw();
+    };
+    img.src = snap.image;
+  } else {
+    state.image = null;
+    if (emptyMsg) emptyMsg.style.display = '';
+  }
+  draw();
+  updateStatus();
+  showBanner('📂 読込: ' + name);
+}
+
+function libDeleteByName(name) {
+  if (!confirm('「' + name + '」を削除しますか? (取り消せません)')) return;
+  const saves = libGetAll();
+  delete saves[name];
+  libSetAll(saves);
+  libRefreshList();
+  showBanner('🗑 削除: ' + name);
+}
+
+function libRefreshList() {
+  const ul = document.getElementById('libList');
+  if (!ul) return;
+  ul.innerHTML = '';
+  const saves = libGetAll();
+  const names = Object.keys(saves).sort(function(a, b) {
+    return (saves[b].savedAt || 0) - (saves[a].savedAt || 0);
+  });
+  if (names.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = '保存無し — 上の名前を入れて 💾 保存';
+    ul.appendChild(li);
+    return;
+  }
+  for (const name of names) {
+    const li = document.createElement('li');
+    const ts = new Date(saves[name].savedAt || 0);
+    const tsStr = (ts.getMonth()+1) + '/' + ts.getDate() + ' ' +
+                  String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0');
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'name';
+    nameSpan.textContent = name;
+    nameSpan.title = name;
+    const tsSpan = document.createElement('span');
+    tsSpan.className = 'ts';
+    tsSpan.textContent = tsStr;
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent = '読込';
+    loadBtn.addEventListener('click', function() { libLoadByName(name); });
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del';
+    delBtn.textContent = '削除';
+    delBtn.addEventListener('click', function() { libDeleteByName(name); });
+    li.appendChild(nameSpan); li.appendChild(tsSpan);
+    li.appendChild(loadBtn); li.appendChild(delBtn);
+    ul.appendChild(li);
+  }
+}
+
+document.getElementById('libSaveBtn').addEventListener('click', function() {
+  const name = document.getElementById('libNameInput').value.trim();
+  libSaveAs(name);
+});
+document.getElementById('libNameInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('libSaveBtn').click(); }
+});
+document.getElementById('libCompareBtn').addEventListener('click', function() {
+  const name = document.getElementById('libNameInput').value.trim();
+  let url = location.pathname;
+  if (name) url += '?load=' + encodeURIComponent(name);
+  window.open(url, '_blank');
+  showBanner('🪟 別タブで開きました');
+});
+
+// ────────────────────────────────────────────────────────
 // Init
 // ────────────────────────────────────────────────────────
 updateStatus();
 draw();
-// Try to restore a previous editing session
-_restoreDraft();
+
+// URL ?load=<name> があれば、ライブラリのそのセーブを優先して読み込む
+const _editorAutoLoad = (function() {
+  try { return new URLSearchParams(location.search).get('load'); } catch (e) { return null; }
+})();
+if (_editorAutoLoad && libGetAll()[_editorAutoLoad]) {
+  libLoadByName(_editorAutoLoad);
+} else {
+  // Try to restore the auto-saved draft (single-slot)
+  _restoreDraft();
+}
+libRefreshList();
 _setAutoSaveStatus('💾 自動保存 ON (操作するたびに保存)', '#888');
 </script>
 </body>
