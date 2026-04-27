@@ -181,6 +181,7 @@ const state = {
   showGrid: true,
   showSolution: false,
   isPainting: false,
+  hoverTile: null,        // { x, y } currently hovered tile (for brush preview)
 };
 
 function makeEmptyGrid() {
@@ -270,6 +271,40 @@ function draw() {
   // Start / goal markers — large filled circles + ring
   if (state.start) drawMarker(state.start, COLOR_START, 'S');
   if (state.goal)  drawMarker(state.goal,  COLOR_GOAL,  'G');
+  // Brush hover preview — show exactly which tiles will be affected
+  if (state.hoverTile) drawBrushPreview();
+}
+
+function drawBrushPreview() {
+  const tx = state.hoverTile.x, ty = state.hoverTile.y;
+  const half = Math.floor(state.brushSize / 2);
+  const sz = state.brushSize;
+  const x0 = Math.max(0, tx - half);
+  const y0 = Math.max(0, ty - half);
+  const x1 = Math.min(GRID_W, x0 + sz);
+  const y1 = Math.min(GRID_H, y0 + sz);
+  const px = x0 * CELL, py = y0 * CELL;
+  const pw = (x1 - x0) * CELL, ph = (y1 - y0) * CELL;
+  if (pw <= 0 || ph <= 0) return;
+  ctx.save();
+  // Color hint per mode
+  let stroke = '#000', fill = 'rgba(255,255,255,0)';
+  if (state.mode === 'path')       { stroke = '#3a3a3a'; fill = 'rgba(255, 250, 220, 0.35)'; }
+  else if (state.mode === 'erase') { stroke = '#7d2e2e'; fill = 'rgba(225, 100, 100, 0.30)'; }
+  else if (state.mode === 'start') { stroke = '#1f4079'; fill = 'rgba(59, 141, 217, 0.35)'; }
+  else if (state.mode === 'goal')  { stroke = '#7d2e2e'; fill = 'rgba(215, 78, 78, 0.35)'; }
+  ctx.fillStyle = fill;
+  ctx.fillRect(px, py, pw, ph);
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([12, 6]);
+  ctx.strokeRect(px + 2, py + 2, pw - 4, ph - 4);
+  // Solid outline for clarity
+  ctx.setLineDash([]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.strokeRect(px + 2, py + 2, pw - 4, ph - 4);
+  ctx.restore();
 }
 
 function drawMarker(pos, color, label) {
@@ -348,10 +383,21 @@ cv.addEventListener('pointerdown', function(e) {
   afterEdit();
 });
 cv.addEventListener('pointermove', function(e) {
-  if (!state.isPainting) return;
   const t = eventToTile(e);
-  paintAt(t.x, t.y);
-  // Don't full-recompute stats on every move — debounce via afterEdit
+  // Update hover position (used for brush preview rect) — clamp to grid
+  if (t.x >= 0 && t.x < GRID_W && t.y >= 0 && t.y < GRID_H) {
+    state.hoverTile = { x: t.x, y: t.y };
+  } else {
+    state.hoverTile = null;
+  }
+  if (state.isPainting) {
+    paintAt(t.x, t.y);
+  }
+  // Redraw to update preview (cheap — just canvas pixels, no stats)
+  draw();
+});
+cv.addEventListener('pointerleave', function() {
+  state.hoverTile = null;
   draw();
 });
 cv.addEventListener('pointerup', function(e) {
@@ -489,11 +535,13 @@ function showBanner(msg) {
 // Export PNG
 // ────────────────────────────────────────────────────────
 document.getElementById('exportPngBtn').addEventListener('click', function() {
-  // Re-render WITHOUT grid lines for the AI input
+  // Re-render WITHOUT grid lines / solution / brush preview for clean AI input
   const prevGrid = state.showGrid;
   const prevSol = state.showSolution;
+  const prevHover = state.hoverTile;
   state.showGrid = false;
   state.showSolution = false;
+  state.hoverTile = null;
   draw();
   cv.toBlob(function(blob) {
     const a = document.createElement('a');
@@ -505,6 +553,7 @@ document.getElementById('exportPngBtn').addEventListener('click', function() {
     // Restore display state
     state.showGrid = prevGrid;
     state.showSolution = prevSol;
+    state.hoverTile = prevHover;
     draw();
     showBanner('🖼 PNG をダウンロードしました');
   }, 'image/png');
