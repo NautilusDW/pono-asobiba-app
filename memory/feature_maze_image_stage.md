@@ -156,6 +156,48 @@ PONO_SKIP_IMG_OPT=1 python scripts/auto_optimize_image.py --hook  # 即時 exit
 
 ---
 
+## 物語フレーム (Phase B, 2026-04-27)
+
+夜に迷子になった動物をポノが救出する物語を、ステージ単位の UX に組み込む。
+
+### ステージ JSON スキーマ拡張
+```json
+{
+  "type": "image",
+  "name": "森の入口",
+  "story": {
+    "animal": "neko",
+    "animalLabel": "ねこちゃん",
+    "intro": "もりに まよった ねこちゃんが\nさみしそうに ないている よ。\nたすけに いこう！",
+    "cryingIconUrl": "/assets/images/word/neko.png",
+    "reliefIconUrl": "/assets/images/word/neko.png"
+  }
+}
+```
+
+`maze/image-runtime.js` の `buildStage()` で `stage.story = stageDef.story || null` で pass-through (単純 forward)。
+
+### UX フロー
+1. **ステージ開始**: `imgLoadStage()` → `imgPreloadStoryAssets(stage)` で `stage._cryingImg` / `stage._reliefImg` を Image オブジェクトとして preload
+2. **初回のみストーリー intro**: `imgMaybeShowStoryIntro(stage, idx)` が `localStorage('pono_maze_story_seen_<idx>')` をチェック → 初回ならモーダル `#storyIntro` 表示 (動物の絵 + intro テキスト + 「たすけに いく ▶」ボタン)。閉じたら矢印表示
+3. **ゴール位置の泣き顔**: [imgDrawMarkers](../maze/index.html#L1837) が `stage._cryingImg` があればそれをゴール位置に描画 (なければ既存 `marker_goal.png` フォールバック)
+4. **画面外インジケータの泣き顔**: [imgDrawGoalIndicator](../maze/index.html#L1661) が赤丸 (背景・タップ判定) + 内側に泣き顔 (clip 円形) + 外側に小さい白三角矢印 + 下に GOAL ラベル
+5. **ゴール踏破時の救出シーン**: `imgShowRescueScene(stage, onDone)` が全画面 fade-in で `stage._reliefImg` を中央に + キャプション「<animalLabel>を たすけたよ！」を表示。2.4s 後に `showStageClearOverlay()` へ
+6. **既存の各 onClear / clear overlay** は story が無いステージでは無風で従来通り動く
+
+### 新規 DOM
+- `#storyIntro` (`.story-intro`): モーダル + animal img + intro p + ボタン
+- `#rescueScene` (`.rescue-scene`): 全画面 fade overlay + relief img + caption
+
+### CSS
+- `.story-intro` `.story-card` `.story-intro #storyAnimalImg` `.story-intro #storyText`
+- `.rescue-scene` `.rescue-scene.show` (`@keyframes rescueFade`) `#rescueImg` (`@keyframes rescueBounce`) `#rescueText`
+
+### ロールバック
+- ステージ JSON から `story` フィールドを削除すれば全ての追加 UI が無効化 (intro は出ない、ゴールマーカーは元の `marker_goal.png` に戻る、救出シーンは出ない)
+
+---
+
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker
 - エディタへの「自動エッジ追跡」ボタン追加 (現在は polyline をクリックで手描き)

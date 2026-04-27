@@ -100,6 +100,7 @@
       cameraFollow: stageDef.cameraFollow !== false,
       orientation: stageDef.orientation || 'landscape',
       lantern: stageDef.lantern || false, // boolean or { innerRadius, outerRadius, ... }
+      story: stageDef.story || null, // { animal, intro, cryingIconUrl, reliefIconUrl }
       obstacles: obstacles,
       creatures: creatures,
       nodesById: nodesById,
