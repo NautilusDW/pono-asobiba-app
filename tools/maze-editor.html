@@ -1478,8 +1478,8 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
     return;
   }
   const stageNum = parseInt(document.getElementById('stageOrderInput').value, 10);
-  if (!Number.isInteger(stageNum) || stageNum < 0 || stageNum > 99) {
-    alert('ステージ番号は 0〜99 の整数で指定してね'); return;
+  if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 99) {
+    alert('ステージ番号は 1〜99 で指定してね (slot 0 は使わない方針)'); return;
   }
 
   const btn = this;
