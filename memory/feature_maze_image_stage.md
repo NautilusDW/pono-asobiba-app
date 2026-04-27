@@ -76,6 +76,7 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **本番に保存ボタン**: エディタの「💾 本番に保存 (commit)」が `/api/gh/` 経由で GitHub Contents API で `maze/imageStages/<name>.json` + 画像 + `_index.json` の 3 ファイルを develop に直接 PUT。Basic Auth は `/tools/` の認証が再利用される
 - ✅ **`_index.json` overrides**: ランタイム起動時に `imageStages/_index.json` を fetch し、`{ "overrides": { "1": "forest_entrance" } }` 形式で STAGES の指定 slot を image ステージに差し替え or 末尾追加
 - ✅ **公式フラグ `_official`**: `_index.json` 経由で読み込まれた image ステージのみ acorn / first-clear 報酬対象。`?image=<name>` の一回限りプレビューや `?image=__draft__` は報酬対象外 (報酬ファーミング対策)
+- ✅ **🌙 ランタンの夜モード**: stage def に `lantern: true` (or 詳細オブジェクト) を入れると、ランタイムがポノを中心にラジアルグラデーションで「ランタンの灯」エフェクトを描画。ポノの周辺は明るく、外側は夜の暗さ (RGBA `2,8,28,0.94` ベース) にフェード、ポノ近傍に暖色グロウ (additive blend)。微弱な脈動で炎のゆらぎを表現。エディタに「🌙 夜モード」チェックボックス。設定例: `{innerRadius:120, outerRadius:400, tintR/G/B/A, warmth:false}` で細かく調整可能
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker

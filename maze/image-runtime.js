@@ -91,6 +91,7 @@
       viewBox: vb,
       cameraFollow: stageDef.cameraFollow !== false,
       orientation: stageDef.orientation || 'landscape',
+      lantern: stageDef.lantern || false, // boolean or { innerRadius, outerRadius, ... }
       nodesById: nodesById,
       nodes: stageDef.nodes,
       edges: edges,

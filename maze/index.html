@@ -1435,6 +1435,21 @@ function imgDraw(now) {
   if (stage.image && stage.image.complete && stage.image.naturalWidth > 0) {
     ctx.drawImage(stage.image, 0, 0, stage.viewBox.w, stage.viewBox.h);
   }
+  ctx.restore();
+
+  // Lantern overlay (in screen space — applied AFTER image, BEFORE pono so
+  // pono is fully bright in the lantern's center)
+  if (stage.lantern) {
+    const ponoScreenX = w / 2 + (px - stage.camera.x) * stage._scale;
+    const ponoScreenY = h / 2 + (py - stage.camera.y) * stage._scale;
+    imgDrawLantern(now, ponoScreenX, ponoScreenY, w, h, stage.lantern);
+  }
+
+  // Pono on top of the lantern overlay
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(stage._scale, stage._scale);
+  ctx.translate(-stage.camera.x, -stage.camera.y);
   imgDrawPono(now, px, py, ftx, fty, isWalking);
   ctx.restore();
 
@@ -1445,6 +1460,48 @@ function imgDraw(now) {
   if (!walkAnim && !cleared && !overlay.classList.contains('show')
       && arrowLayer.children.length === 0) {
     imgShowArrows();
+  }
+}
+
+// ── Lantern night overlay ──
+// Centered on (cx, cy) screen pixels. Inside `inner` is fully bright (no darkening),
+// between `inner` and `outer` fades to night, beyond `outer` is fully dark.
+// Optionally adds a warm yellow glow at the lantern center.
+// Pulses gently to suggest a flickering flame.
+function imgDrawLantern(now, cx, cy, w, h, opts) {
+  // Allow `lantern: true` (use defaults) or `lantern: { ... }` (custom).
+  const cfg = (opts && typeof opts === 'object') ? opts : {};
+  const minDim = Math.min(w, h);
+  // Gentle 0.96..1.04 pulse over 2.5s
+  const pulse = 1 + Math.sin(now / 400) * 0.04;
+  const inner = (cfg.innerRadius || minDim * 0.16) * pulse;
+  const outer = (cfg.outerRadius || minDim * 0.55) * pulse;
+  const tintR = cfg.tintR != null ? cfg.tintR : 2;
+  const tintG = cfg.tintG != null ? cfg.tintG : 8;
+  const tintB = cfg.tintB != null ? cfg.tintB : 28;
+  const tintA = cfg.tintA != null ? cfg.tintA : 0.94;
+  const warmth = cfg.warmth !== false; // default on
+  // 1) Night overlay: transparent at center, opaque outside outer
+  ctx.save();
+  const dark = ctx.createRadialGradient(cx, cy, 0, cx, cy, outer);
+  const tintRGB = tintR + ',' + tintG + ',' + tintB;
+  dark.addColorStop(0, 'rgba(' + tintRGB + ',0)');
+  dark.addColorStop(Math.max(0.01, Math.min(0.95, inner / outer)), 'rgba(' + tintRGB + ',0)');
+  dark.addColorStop(1, 'rgba(' + tintRGB + ',' + tintA + ')');
+  ctx.fillStyle = dark;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+  // 2) Warm lantern glow (additive)
+  if (warmth) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const warm = ctx.createRadialGradient(cx, cy, 0, cx, cy, inner * 1.3);
+    warm.addColorStop(0, 'rgba(255, 220, 130, 0.32)');
+    warm.addColorStop(0.5, 'rgba(255, 200, 100, 0.14)');
+    warm.addColorStop(1, 'rgba(255, 200, 100, 0)');
+    ctx.fillStyle = warm;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
   }
 }
 

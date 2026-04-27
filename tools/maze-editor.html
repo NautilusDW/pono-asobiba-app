@@ -122,6 +122,13 @@ html, body { height: 100vh; overflow: hidden;
       </span>
     </label>
 
+    <h3>5. 演出</h3>
+    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#ddd; cursor:pointer;">
+      <input type="checkbox" id="lanternToggle" style="width:auto;">
+      🌙 夜モード (ランタンの灯)
+    </label>
+    <p style="font-size:0.7rem; color:#888; margin-top:4px;">ポノの周りだけ明るく、外は夜の暗さ</p>
+
     <div class="actions">
       <button id="commitBtn" style="background:#3a6c1f;">💾 本番に保存 (commit)</button>
       <button id="testBtn">▶ 迷路で試す (新タブ)</button>
@@ -259,6 +266,9 @@ jsonInput.addEventListener('change', function(e) {
         const m = String(def.imageUrl).match(/([^/]+?)\.[a-zA-Z]+$/);
         if (m) stageNameInput.value = m[1];
       }
+      // Restore lantern toggle
+      const lt = document.getElementById('lanternToggle');
+      if (lt) lt.checked = !!def.lantern;
       state.edgeInProgress = null;
       edgeProgressEl.textContent = '';
       draw();
@@ -759,6 +769,7 @@ function buildExportDef() {
   const safeName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
   const ext = (state.imgFileName.match(/\.([^.]+)$/) || [, 'png'])[1].toLowerCase();
   const imageRef = 'imageStages/' + safeName + '.' + ext;
+  const lanternEnabled = !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked);
   return {
     rawName: rawName,
     safeName: safeName,
@@ -770,6 +781,7 @@ function buildExportDef() {
       viewBox: { w: state.imgW, h: state.imgH },
       orientation: 'landscape',
       cameraFollow: true,
+      lantern: lanternEnabled,
       nodes: state.nodes.map(function(n) {
         return { id: n.id, x: n.x, y: n.y, kind: n.kind };
       }),
