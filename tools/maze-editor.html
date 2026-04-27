@@ -753,16 +753,94 @@ cv.addEventListener('pointerdown', function(e) {
     state.selectedNodeId = null;
     draw();
   }
-  // edit-points モード: 中間アンカーの drag
+  // edit-points モード: 中間アンカーの drag、または道の上クリックで新規アンカー挿入
   if (state.mode === 'edit-points') {
-    const hit = findAnchorAt(p);
-    if (!hit) return;
-    pushHistory();
-    state.draggingAnchor = hit;
-    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-    cv.style.cursor = 'grabbing';
-    e.preventDefault();
+    const anchorHit = findAnchorAt(p);
+    if (anchorHit) {
+      // 既存アンカーを掴む → drag で移動
+      pushHistory();
+      state.draggingAnchor = anchorHit;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      e.preventDefault();
+      return;
+    }
+    // 道の上 (densified curve 近傍) なら新規アンカーを挿入してそのまま drag
+    const insertHit = findEdgeForAnchorInsert(p);
+    if (insertHit) {
+      pushHistory();
+      const ed = state.edges[insertHit.edgeIdx];
+      ed.controls.splice(insertHit.insertAt, 0, { x: p.x, y: p.y });
+      state.draggingAnchor = { edgeIdx: insertHit.edgeIdx, controlIdx: insertHit.insertAt };
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      showBanner('アンカー追加 → ドラッグで形を調整、離すと確定');
+      draw();
+      e.preventDefault();
+    }
   }
+});
+
+// edit-points モード: 道の近くにいるかを判定して挿入位置を返す
+function findEdgeForAnchorInsert(p) {
+  const tol = Math.max(20, (state.imgH || 1080) / 50); // 太めの当たり判定
+  for (let i = 0; i < state.edges.length; i++) {
+    const ed = state.edges[i];
+    if (!ed.controls || ed.controls.length < 2) continue;
+    const dense = densifyCatmullRom(ed.controls);
+    let bestSeg = -1, bestD = Infinity;
+    for (let j = 1; j < dense.length; j++) {
+      const d = pointToSegment(p, dense[j-1], dense[j]);
+      if (d < bestD) { bestD = d; bestSeg = j - 1; }
+    }
+    if (bestD < tol) {
+      // densified の bestSeg が controls のどの区間に属するかを算出
+      // densifyCatmullRom は controls の連続するペアごとに CR_SAMPLES_PER_SEG 個のサンプル
+      // を出すので、controls 区間 K = floor(bestSeg / CR_SAMPLES_PER_SEG)
+      // 新アンカーは controls[K+1] の位置に挿入 (= K と K+1 の間)
+      const ctrlSeg = Math.floor(bestSeg / CR_SAMPLES_PER_SEG);
+      const insertAt = Math.max(1, Math.min(ed.controls.length - 1, ctrlSeg + 1));
+      return { edgeIdx: i, insertAt: insertAt };
+    }
+  }
+  return null;
+}
+
+// edit-points モード: 右クリックで中間アンカーを削除
+cv.addEventListener('contextmenu', function(e) {
+  if (state.mode !== 'edit-points' || !state.image) return;
+  const p = mouseToImage(e);
+  const hit = findAnchorAt(p);
+  if (!hit) return;
+  e.preventDefault();
+  const ed = state.edges[hit.edgeIdx];
+  if (hit.controlIdx <= 0 || hit.controlIdx >= ed.controls.length - 1) {
+    showBanner('端点 (ノード位置) は削除できないよ');
+    return;
+  }
+  pushHistory();
+  ed.controls.splice(hit.controlIdx, 1);
+  draw();
+  updateStatus();
+  showBanner('アンカーを削除');
+});
+
+// touch / Mac 向け: ダブルクリックでも削除
+cv.addEventListener('dblclick', function(e) {
+  if (state.mode !== 'edit-points' || !state.image) return;
+  const p = mouseToImage(e);
+  const hit = findAnchorAt(p);
+  if (!hit) return;
+  const ed = state.edges[hit.edgeIdx];
+  if (hit.controlIdx <= 0 || hit.controlIdx >= ed.controls.length - 1) {
+    showBanner('端点 (ノード位置) は削除できないよ');
+    return;
+  }
+  pushHistory();
+  ed.controls.splice(hit.controlIdx, 1);
+  draw();
+  updateStatus();
+  showBanner('アンカーを削除 (ダブルクリック)');
 });
 
 cv.addEventListener('pointermove', function(e) {
