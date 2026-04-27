@@ -85,6 +85,14 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **エディタの localStorage 自動保存**: `pono_maze_editor_draft_v1` キーで `state.nodes/edges/obstacles/creatures + stage 名/番号/lantern + 圧縮画像 dataURL (1600px Q70 JPEG, 4MB 上限)` を 800ms debounce で自動保存。ページ再読み込み時に自動復元 (バナーで「約 N 分前の状態を復元」表示)。`pushHistory` をラップして node/edge/obstacle/creature の各操作後に保存 + ステージ名/番号/lantern 入力にも `input/change` リスナで連動。「↺ ぜんぶリセット」で localStorage も削除。サイドバー status エリアに「💾 自動保存済み (XX KB)」表示で動作確認可能
 - ✅ **スタート/ゴール マーカー画像**: 物語設定の世界観に合った装飾アセット (`assets/images/maze/marker_start.png`「スタート」フレーム, `marker_goal.png`「ゴール」アーチ) を start/goal ノード位置に描画。ランタイム (image ステージ): obstacles/creatures より下のレイヤーに、`viewBox.h / 6` サイズで縦横比保持して描画。エディタ: 同じ画像を `state.imgH / 6` サイズで描画 (start=オレンジ環、goal=緑環の薄いアウトラインつき) してクリック中心が分かるようにする。stop ノードは従来通り白丸 + id ラベル
 - ✅ **チュートリアル (旧 STAGES[0]) 削除**: 「チュートリアル — やじるしを おしてみよう」のグリッドステージを `maze/index.html` の STAGES から完全削除 (11 → 10 ステージ)。物語が「ポノと まよいの森の ランタン」(画像ベース) に切り替わったため、旧 grid 用チュートリアルは不要。`maze/imageStages/_index.json` の overrides キーも slot 1 → slot 0 に繰り上げ。これにより `?stage=0` がデフォルトの最初のステージ = ユーザーの image ステージになり、チュートリアル経由なしで遊べる (2026-04-27)
+- ✅ **旧 grid ステージ完全削除**: 残ってた 10 個のグリッドステージ定義 (「ステージ 1 — どっちに いく？」～「ステージ 10 — さいごの もり」) も削除し `STAGES = []` で初期化。`_loadImageStageIndex()` が `_index.json` の overrides を auto-pad で push するように変更 (slot 0 が空でも slot 1 から始められる)。`loadStage()` に null ガード追加 — 該当 slot が null なら最初の有効な image ステージにフォールバック。`_getInitialStageIdx()` のデフォルトは 1、`?stage=0` も拒否 (方針一貫)。`#imgStageLabel` のロジックを反転: 常時表示が基本、grid モード時のみ非表示
+- ✅ **お邪魔虫ミニゲーム拡充 Phase B (4 種追加)**: じゃんけんに加えて以下 4 種を実装。`_currentCreature` グローバルと `_GAME_STARTERS` ディスパッチ表で `_showEncounterStart()` から分岐。各お邪魔虫の `kind` に `defaultGame` を割り当て (mayoi=janken / odoke=truefalse / nemuri=silhouette / pyon=simon)。stage def の `creatures[].minigame` で個別オーバーライド可能 (ホワイトリスト検証)
+  - **シルエットクイズ**: 黒シルエット 1 つ + 3 択 (絵文字)。お題プール 20 問
+  - **○×クイズ**: 短文 + 絵文字 + ⭕❌ 2 択。お題プール 30 問
+  - **なかまはずれ**: 4 つの絵から仲間外れ 1 つ選択 + ヒント表示。お題プール 20 セット
+  - **リズムまね (Simon Says)**: 4 色のセル (🔴🔵🟢🟡) が順番に光る → 同順タップで再現。Web Audio で 440/523/659/784 Hz の sine wave。`_simonCancelled` フラグで遅延 timer の DOM 汚染防止
+  - 共通 `_resolveQuiz(correct)` で結果表示 → 「すすむ ▶」「もどる ▶」ボタン → `_closeEncounter(true|false)` 呼び出し
+  - dialog 表示は `innerHTML` から `textContent + <br>` DOM 構築に変更 (XSS 緩和)
 
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker

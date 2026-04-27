@@ -373,13 +373,12 @@ body.image-stage-mode #encounter,
 body.image-stage-mode #hint {
   display: none !important;
 }
-/* image ステージ用の小さなステージ表示 (上部中央寄り) */
-body.image-stage-mode #imgStageLabel {
-  display: block !important;
+/* image ステージ用の小さなステージ表示 (上部中央寄り) — 常に表示、grid 時のみ非表示 */
+#imgStageLabel {
   position: fixed;
   top: 10px; left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.6);
   color: #fff;
   padding: 6px 16px;
   border-radius: 18px;
@@ -390,7 +389,10 @@ body.image-stage-mode #imgStageLabel {
   pointer-events: none;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   letter-spacing: 0.5px;
+  border: 1.5px solid rgba(164,199,109,0.7);
 }
+/* 旧 grid モードのみ非表示。image-stage-mode (デフォ) では出る */
+body:not(.image-stage-mode) #imgStageLabel { display: none; }
 body.image-stage-mode .game-wrap {
   border-radius: 0;
   box-shadow: none;
@@ -547,7 +549,7 @@ body.image-stage-mode .game-wrap {
   </div>
 
   <!-- ステージ番号/名前ラベル (image-stage-mode のみ表示、CSS で制御) -->
-  <div id="imgStageLabel" style="display:none;">ステージ ?</div>
+  <div id="imgStageLabel">ステージ ?</div>
 
   <!-- Encounter modal (creature + minigame) — image-stage only -->
   <div class="encounter-modal" id="encModal" aria-hidden="true">
@@ -647,202 +649,7 @@ function parseCell(ch) {
 //  - tall layout (rows >= cols) so cells stay big enough for arrow buttons
 // 10 stages: 1..10, progressive difficulty (チュートリアル削除済み)
 // Note: `let` (was const) to allow `?image=<name>` URL param to override STAGES.
-let STAGES = [
-  {
-    name: 'ステージ 1 — どっちに いく？',
-    grid: [
-      '#######',
-      '#S..#.#',
-      '###.#.#',
-      '#.#...#',
-      '#.#.#.#',
-      '#...#.#',
-      '#.###T#',
-      '#....G#',
-      '#######',
-    ],
-  },
-  {
-    name: 'ステージ 2 — わかれみち',
-    grid: [
-      '#######',
-      '#S#..A#',
-      '#.#.###',
-      '#.....#',
-      '#.###.#',
-      '#.....#',
-      '#.#.#.#',
-      '#.#...#',
-      '#.###.#',
-      '#...TG#',
-      '#######',
-    ],
-  },
-  {
-    name: 'ステージ 3 — ふかいもり',
-    grid: [
-      '#########',
-      '#S#.....#',
-      '#.#.#.###',
-      '#...#...#',
-      '#.#.#.#.#',
-      '#.W.#A#.#',
-      '###.###.#',
-      '#.#...#.#',
-      '#.###.#.#',
-      '#......G#',
-      '#########',
-    ],
-  },
-  {
-    name: 'ステージ 4 — みっつの わかれみち',
-    grid: [
-      '#########',
-      '#S#.....#',
-      '#.#.#.###',
-      '#.#A#...#',
-      '#.###.#.#',
-      '#...#.#.#',
-      '#.#.#.#.#',
-      '#.#...#.#',
-      '#.###.#.#',
-      '#...#C..#',
-      '#.#.###.#',
-      '#.#...WG#',
-      '#########',
-    ],
-  },
-  {
-    name: 'ステージ 5 — もりのおく',
-    grid: [
-      '###########',
-      '#S#A......#',
-      '#.#####.#.#',
-      '#.#.....#.#',
-      '#.#.#####.#',
-      '#...#A#...#',
-      '#.###.#.###',
-      '#.#.....#.#',
-      '#W#.#.###.#',
-      '#.#...C...#',
-      '#.###.###.#',
-      '#...#.....#',
-      '#.#.#.#.#.#',
-      '#........G#',
-      '###########',
-    ],
-  },
-  {
-    name: 'ステージ 6 — ちょうちょのもり',
-    grid: [
-      '###########',
-      '#S..#A....#',
-      '###.###.#.#',
-      '#A#.....#.#',
-      '#.#######.#',
-      '#.....#...#',
-      '#.#.#.#.#.#',
-      '#.#.#...#C#',
-      '#.#W#C###.#',
-      '#.........#',
-      '#####.#.###',
-      '#.....#...#',
-      '#.#.#####.#',
-      '#........G#',
-      '###########',
-    ],
-  },
-  {
-    name: 'ステージ 7 — つきよのもり',
-    grid: [
-      '###########',
-      '#S....#...#',
-      '###C#.###.#',
-      '#...#.....#',
-      '#.#######.#',
-      '#.#.......#',
-      '#.#.###.###',
-      '#...#.....#',
-      '#.###.#.#.#',
-      '#.#.#.#.#.#',
-      '#W#.#.#.#.#',
-      '#.....#.#A#',
-      '#.#####.###',
-      '#.....#...#',
-      '#####.###W#',
-      '#A.......G#',
-      '###########',
-    ],
-  },
-  {
-    name: 'ステージ 8 — まいごの もり',
-    grid: [
-      '#############',
-      '#S..........#',
-      '#.#.#######.#',
-      '#..C#....A#.#',
-      '#.#.#.#####T#',
-      '#.#.......#.#',
-      '#.#.###.#.#.#',
-      '#.#.#.....#.#',
-      '#.#.#.#####.#',
-      '#.#.#...#...#',
-      '#.#.###.#.#.#',
-      '#.#.#...#...#',
-      '#.#.#.###.#.#',
-      '#...#.#...#.#',
-      '#.###.#.###.#',
-      '#..A#.....TG#',
-      '#############',
-    ],
-  },
-  {
-    name: 'ステージ 9 — ふしぎの もり',
-    grid: [
-      '#############',
-      '#S#A......#.#',
-      '#.###.###.#.#',
-      '#...#.W.#...#',
-      '###.#.#.###.#',
-      '#A#.T...#...#',
-      '#.#.#.#.#.###',
-      '#....T..#...#',
-      '#.#.#.#.###.#',
-      '#.#.#...#...#',
-      '#.#.###.#.###',
-      '#.......#...#',
-      '#.#.#######.#',
-      '#.#.#.......#',
-      '#.#T#.#######',
-      '#.#........G#',
-      '#############',
-    ],
-  },
-  {
-    name: 'ステージ 10 — さいごの もり',
-    grid: [
-      '#############',
-      '#S..#A#.....#',
-      '###.#.#.#.#.#',
-      '#A#.#.#.#.#.#',
-      '#.#.#.#.#.###',
-      '#...#...#...#',
-      '#.###.#.###.#',
-      '#....T#..T..#',
-      '#.###.#.#.#.#',
-      '#...#.#.#...#',
-      '#.#.#.#.#.#.#',
-      '#.#.#...#A#.#',
-      '#.#.###.###.#',
-      '#.#...#.W...#',
-      '#.###.#.#W#.#',
-      '#...#.#...#.#',
-      '#.#.#.#.###.#',
-      '#...#.....TG#',
-      '#############',
-    ],
-  },
-];
+let STAGES = []; // grid ステージ完全削除済み (image ステージのみで構成)
 
 function buildStage(stageDef) {
   const rows = stageDef.grid.length;
@@ -898,15 +705,14 @@ function _loadImageStageIndex() {
           .then(function(def) {
             if (!def || def.type !== 'image') throw new Error(safe + ' invalid');
             def._official = true; // eligible for rewards
+            // Auto-pad: STAGES が空 or 短い時は null で穴を埋めて push
+            while (STAGES.length < pos) STAGES.push(null);
             if (pos < STAGES.length) {
               STAGES[pos] = def;
-              console.log('[maze] index override:', pos, '→', safe);
-            } else if (pos === STAGES.length) {
-              STAGES.push(def);
-              console.log('[maze] index append:', pos, '→', safe);
             } else {
-              console.warn('[maze] index slot', pos, 'is out of range (STAGES len=' + STAGES.length + '), skipped');
+              STAGES.push(def);
             }
+            console.log('[maze] index slot', pos, '→', safe);
           })
           .catch(function(e) { console.warn('[maze] index entry failed:', e.message || e); });
       });
@@ -1584,10 +1390,10 @@ const encStageEl = document.getElementById('encStage');
 const encStartBtn = document.getElementById('encStartBtn');
 
 const CREATURE_KIND_DATA = {
-  mayoi: { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'ここは とおさないよ〜<br>かったら とおしてあげる！' },
-  odoke: { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: 'クイズに こたえてみてよ〜' },
-  nemuri:{ emoji: '😴', color: '#9B7EBC', name: 'ねむりムシ', dialog: '…zzz… うるさいなあ' },
-  pyon:  { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'ぴょんっ！ぴょんっ！\n通れるかな〜？' },
+  mayoi: { emoji: '🐛', color: '#7AB540', name: 'まよいムシ', dialog: 'じゃんけん してあげる〜<br>かったら とおしてあげるよ', defaultGame: 'janken' },
+  odoke: { emoji: '🐞', color: '#D7553A', name: 'おどけムシ', dialog: '○×クイズだよ〜<br>こたえられる かな？', defaultGame: 'truefalse' },
+  nemuri:{ emoji: '😴', color: '#9B7EBC', name: 'ねむりムシ', dialog: 'シルエット クイズ で<br>あそぼう…zzz', defaultGame: 'silhouette' },
+  pyon:  { emoji: '🦗', color: '#5BB8A8', name: 'ぴょんぴょんムシ', dialog: 'リズム まね できる？<br>ぴょん ぴょん！', defaultGame: 'simon' },
 };
 function _creatureData(c) {
   return CREATURE_KIND_DATA[c.kind] || CREATURE_KIND_DATA.mayoi;
@@ -1705,10 +1511,14 @@ function _obstacleHintFor(kind) {
   return ({ tree:'木が', pond:'みずたまりが', hole:'あなが', stump:'きりかぶが', rock:'いわが' }[kind] || '');
 }
 
+// 現在のエンカウンター対象 (どのミニゲームに分岐するかの判断に使う)
+let _currentCreature = null;
+
 function _triggerEncounter(c) {
   if (_encounterActive) return;
   _encounterActive = true;
   _encounteringCreatureId = c.id || (c.x + ',' + c.y);
+  _currentCreature = c;
   // Pause the walk animation by stashing it
   if (walkAnim) walkAnim._pausedAt = performance.now();
   hideArrows();
@@ -1716,16 +1526,44 @@ function _triggerEncounter(c) {
   const data = _creatureData(c);
   encCreatureEl.textContent = data.emoji;
   encNameEl.textContent = data.name;
-  encDialogEl.innerHTML = (c.dialog || data.dialog).replace(/\n/g, '<br>');
-  // Initial stage: "じゃんけんで あそぶ ▶" button
+  // dialog を textContent + <br> 要素で DOM 構築 (innerHTML 経由の XSS を回避)
+  const _dialogText = (c.dialog || data.dialog || '').replace(/<br\s*\/?\s*>/gi, '\n');
+  encDialogEl.textContent = '';
+  _dialogText.split('\n').forEach(function(line, i) {
+    if (i > 0) encDialogEl.appendChild(document.createElement('br'));
+    encDialogEl.appendChild(document.createTextNode(line));
+  });
   _showEncounterStart();
   encModal.classList.add('show');
   encModal.setAttribute('aria-hidden', 'false');
 }
 
+// 各ミニゲームの開始関数を登録 (登場順)
+const _GAME_LABELS = {
+  janken:     'じゃんけん',
+  silhouette: 'シルエットクイズ',
+  truefalse:  '○×クイズ',
+  oddone:     'なかまはずれ',
+  simon:      'リズムまね',
+};
+
+function _gameForCreature(c) {
+  // c.minigame > kind の defaultGame > janken (フォールバック)
+  if (c && c.minigame && _GAME_LABELS[c.minigame]) return c.minigame;
+  const data = _creatureData(c);
+  if (data.defaultGame && _GAME_LABELS[data.defaultGame]) return data.defaultGame;
+  return 'janken';
+}
+
 function _showEncounterStart() {
-  encStageEl.innerHTML = '<button class="enc-btn primary" id="encStartBtn2">じゃんけん で あそぶ ▶</button>';
-  document.getElementById('encStartBtn2').addEventListener('click', _showJankenChoices);
+  const c = _currentCreature;
+  const game = _gameForCreature(c);
+  encStageEl.innerHTML = '<button class="enc-btn primary" id="encStartBtn2">' +
+    _GAME_LABELS[game] + ' で あそぶ ▶</button>';
+  document.getElementById('encStartBtn2').addEventListener('click', function() {
+    const starter = _GAME_STARTERS[game] || _showJankenChoices;
+    starter(c);
+  });
 }
 
 function _showJankenChoices() {
@@ -1778,7 +1616,266 @@ function _resolveJanken(playerHand) {
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// ミニゲーム データプール (ランダムに 1 問選んで出題)
+// ════════════════════════════════════════════════════════════
+
+// シルエットクイズ: 答えと選択肢 3 つ (答え含む)。シャッフルして表示
+const QUIZ_SILHOUETTE = [
+  { ans: '🐰', choices: ['🐰','🐻','🐱'] }, { ans: '🦒', choices: ['🦒','🐴','🦌'] },
+  { ans: '🐘', choices: ['🐘','🦏','🐃'] }, { ans: '🐢', choices: ['🐢','🐊','🦎'] },
+  { ans: '🐧', choices: ['🐧','🦆','🐔'] }, { ans: '🐠', choices: ['🐠','🐡','🐟'] },
+  { ans: '🦋', choices: ['🦋','🐝','🐞'] }, { ans: '🐶', choices: ['🐶','🐺','🦊'] },
+  { ans: '🐱', choices: ['🐱','🐯','🦁'] }, { ans: '🐭', choices: ['🐭','🐹','🐰'] },
+  { ans: '🚗', choices: ['🚗','🚕','🚙'] }, { ans: '✈️', choices: ['✈️','🚀','🛸'] },
+  { ans: '🚲', choices: ['🚲','🛴','🛵'] }, { ans: '🚂', choices: ['🚂','🚌','🚋'] },
+  { ans: '⛵', choices: ['⛵','🚢','🛥️'] }, { ans: '🍎', choices: ['🍎','🍒','🍓'] },
+  { ans: '🍌', choices: ['🍌','🌽','🥕'] }, { ans: '🌻', choices: ['🌻','🌹','🌷'] },
+  { ans: '⚽', choices: ['⚽','🏀','🏐'] }, { ans: '🌙', choices: ['🌙','⭐','☀️'] },
+];
+
+// ○×クイズ: q=問い, a=true|false, emoji=絵
+const QUIZ_TRUEFALSE = [
+  { q: 'うさぎは そらを とぶ？', a: false, emoji: '🐰' },
+  { q: 'ちょうちょには はねが ある？', a: true, emoji: '🦋' },
+  { q: 'ひまわりは あおい？', a: false, emoji: '🌻' },
+  { q: 'たいようは つきより おおきい？', a: true, emoji: '☀️' },
+  { q: 'いぬは ニャーと なく？', a: false, emoji: '🐶' },
+  { q: 'りんごは くだもの？', a: true, emoji: '🍎' },
+  { q: 'みずは つめたい ことが ある？', a: true, emoji: '💧' },
+  { q: 'ぞうは とても ちいさい？', a: false, emoji: '🐘' },
+  { q: 'さかなは みずの なかで くらす？', a: true, emoji: '🐟' },
+  { q: 'くるまは そらを とぶ？', a: false, emoji: '🚗' },
+  { q: 'ほしは よるに みえる？', a: true, emoji: '⭐' },
+  { q: 'にんじんは あかい？', a: false, emoji: '🥕' },
+  { q: 'ペンギンは こおりが すき？', a: true, emoji: '🐧' },
+  { q: 'たまごから ひよこが うまれる？', a: true, emoji: '🐣' },
+  { q: 'ねこは みずが だいすき？', a: false, emoji: '🐱' },
+  { q: 'ふゆは あつい？', a: false, emoji: '⛄' },
+  { q: 'はなは つちから うまれる？', a: true, emoji: '🌷' },
+  { q: 'はちは はちみつを つくる？', a: true, emoji: '🐝' },
+  { q: 'バナナは はじめは みどりいろ？', a: true, emoji: '🍌' },
+  { q: 'にじは あめの あとに でる？', a: true, emoji: '🌈' },
+  { q: 'きょうりゅうは いま いきている？', a: false, emoji: '🦖' },
+  { q: 'ピアノは ふいて ならす？', a: false, emoji: '🎹' },
+  { q: 'おひさまは よるも かがやく？', a: false, emoji: '☀️' },
+  { q: 'カメは ながいきする？', a: true, emoji: '🐢' },
+  { q: 'ふうせんは おもい？', a: false, emoji: '🎈' },
+  { q: 'はが ない あかちゃんが いる？', a: true, emoji: '👶' },
+  { q: 'こおりは あつくなると とける？', a: true, emoji: '🧊' },
+  { q: 'みかんは あおい？', a: false, emoji: '🍊' },
+  { q: 'ロケットは うちゅうへ いく？', a: true, emoji: '🚀' },
+  { q: 'コアラは オーストラリアに いる？', a: true, emoji: '🐨' },
+];
+
+// なかまはずれ: items 4つ、odd は items のうち仲間外れの index
+const QUIZ_ODDONE = [
+  { items: ['🍎','🍌','🍊','🐶'], odd: 3, hint: 'くだもの と どうぶつ' },
+  { items: ['🚗','🚕','🚌','🐄'], odd: 3, hint: 'のりもの' },
+  { items: ['🐱','🐶','🐰','🍓'], odd: 3, hint: 'どうぶつ' },
+  { items: ['⚽','🏀','🏐','🍰'], odd: 3, hint: 'スポーツ ボール' },
+  { items: ['🌳','🌴','🌵','🐠'], odd: 3, hint: 'しょくぶつ' },
+  { items: ['☀️','🌙','⭐','🍌'], odd: 3, hint: 'そら' },
+  { items: ['🥕','🍅','🥦','🐟'], odd: 3, hint: 'やさい' },
+  { items: ['🦁','🐯','🐘','🚀'], odd: 3, hint: 'どうぶつ' },
+  { items: ['🍎','🐶','🍊','🍌'], odd: 1, hint: 'くだもの' },
+  { items: ['🚗','🐱','🚕','🚌'], odd: 1, hint: 'のりもの' },
+  { items: ['⚽','🏀','🍌','🏐'], odd: 2, hint: 'スポーツ' },
+  { items: ['🌙','⭐','🌻','☀️'], odd: 2, hint: 'そらに あるもの' },
+  { items: ['🐠','🐟','🐡','🦒'], odd: 3, hint: 'さかな' },
+  { items: ['🍓','🍇','🍒','🥕'], odd: 3, hint: 'あかい くだもの' },
+  { items: ['🐝','🦋','🐞','🐢'], odd: 3, hint: 'むし' },
+  { items: ['🚲','🛴','🛵','🍎'], odd: 3, hint: 'のりもの' },
+  { items: ['🌷','🌹','🌻','🐱'], odd: 3, hint: 'はな' },
+  { items: ['🍰','🍪','🍩','🥕'], odd: 3, hint: 'あまい おかし' },
+  { items: ['👕','👖','👟','🍕'], odd: 3, hint: 'みにつけるもの' },
+  { items: ['📚','✏️','🎒','🍦'], odd: 3, hint: 'がっこうで つかうもの' },
+];
+
+// Simon-says: 4 色固定、レベル (=フラッシュ数)
+const SIMON_COLORS = [
+  { id: 'r', emoji: '🔴', color: '#ee5a5a', freq: 440 }, // A4
+  { id: 'b', emoji: '🔵', color: '#5a8aee', freq: 523 }, // C5
+  { id: 'g', emoji: '🟢', color: '#5aee7a', freq: 659 }, // E5
+  { id: 'y', emoji: '🟡', color: '#eece5a', freq: 784 }, // G5
+];
+const SIMON_LENGTH = 3;
+
+function _shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ── シルエットクイズ ──
+function _showSilhouetteChoices() {
+  const q = _pick(QUIZ_SILHOUETTE);
+  const choices = _shuffleArray(q.choices);
+  encStageEl.innerHTML =
+    '<div class="enc-result">この シルエット は どれ？</div>' +
+    '<div class="enc-vs"><span class="enc-hand" style="filter:brightness(0);">' + q.ans + '</span></div>' +
+    '<div class="row">' +
+    choices.map(function(em) {
+      return '<button class="enc-btn choice" data-em="' + em + '">' + em + '</button>';
+    }).join('') +
+    '</div>';
+  encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
+    b.addEventListener('click', function() { _resolveQuiz(b.dataset.em === q.ans); });
+  });
+}
+
+// ── ○×クイズ ──
+function _showTrueFalseChoices() {
+  const q = _pick(QUIZ_TRUEFALSE);
+  encStageEl.innerHTML =
+    '<div class="enc-vs"><span class="enc-hand">' + q.emoji + '</span></div>' +
+    '<div class="enc-result" style="font-size:1.1rem;">' + q.q + '</div>' +
+    '<div class="row">' +
+      '<button class="enc-btn choice" data-ans="t" style="font-size:2.5rem;">⭕</button>' +
+      '<button class="enc-btn choice" data-ans="f" style="font-size:2.5rem;">❌</button>' +
+    '</div>';
+  encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
+    b.addEventListener('click', function() {
+      const playerSaid = b.dataset.ans === 't';
+      _resolveQuiz(playerSaid === q.a);
+    });
+  });
+}
+
+// ── なかまはずれ ──
+function _showOddOneOutChoices() {
+  const q = _pick(QUIZ_ODDONE);
+  encStageEl.innerHTML =
+    '<div class="enc-result" style="font-size:1rem;">なかま はずれ は どれ？<br><small style="color:#888;">(' + q.hint + ')</small></div>' +
+    '<div class="row" style="flex-wrap:wrap; max-width:280px;">' +
+    q.items.map(function(em, i) {
+      return '<button class="enc-btn choice" data-i="' + i + '" style="flex:1 1 calc(50% - 4px); margin:2px;">' + em + '</button>';
+    }).join('') +
+    '</div>';
+  encStageEl.querySelectorAll('.enc-btn.choice').forEach(function(b) {
+    b.addEventListener('click', function() {
+      _resolveQuiz(parseInt(b.dataset.i, 10) === q.odd);
+    });
+  });
+}
+
+// ── リズムまね (Simon) ──
+let _simonSeq = [];
+let _simonIdx = 0;
+let _simonCancelled = false; // モーダル閉じ後の遅延 timer による DOM 汚染防止
+
+function _simonPlayTone(freq, ms) {
+  try {
+    const ac = _mzGetAC();
+    if (!ac) return;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'sine'; o.frequency.value = freq;
+    const t = ac.currentTime;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + ms / 1000);
+    o.start(t); o.stop(t + ms / 1000);
+  } catch (e) { /* ignore */ }
+}
+
+function _showSimonGame() {
+  // Generate a random sequence
+  _simonSeq = [];
+  for (let i = 0; i < SIMON_LENGTH; i++) _simonSeq.push(_pick(SIMON_COLORS));
+  _simonIdx = 0;
+  _simonCancelled = false;
+  encStageEl.innerHTML =
+    '<div class="enc-result">よく みててね…</div>' +
+    '<div class="row" id="simonGrid">' +
+    SIMON_COLORS.map(function(c) {
+      return '<button class="enc-btn choice simon-cell" data-id="' + c.id + '" ' +
+        'style="background:' + c.color + '; opacity:0.4; pointer-events:none; font-size:2.5rem;">' +
+        c.emoji + '</button>';
+    }).join('') +
+    '</div>';
+  // Play sequence
+  let step = 0;
+  function flashNext() {
+    if (_simonCancelled) return; // モーダル閉じ後 / 早期解決後は中断
+    if (step >= _simonSeq.length) {
+      // Now wait for player input
+      encStageEl.querySelectorAll('.simon-cell').forEach(function(cell) {
+        cell.style.opacity = '0.85';
+        cell.style.pointerEvents = 'auto';
+        cell.addEventListener('click', _onSimonTap);
+      });
+      const r = encStageEl.querySelector('.enc-result');
+      if (r) r.textContent = 'おなじ じゅんに タップしてね！';
+      return;
+    }
+    const c = _simonSeq[step];
+    const cell = encStageEl.querySelector('.simon-cell[data-id="' + c.id + '"]');
+    if (cell) {
+      cell.style.opacity = '1';
+      cell.style.transform = 'scale(1.1)';
+      _simonPlayTone(c.freq, 400);
+      setTimeout(function() {
+        if (cell) { cell.style.opacity = '0.4'; cell.style.transform = 'scale(1)'; }
+        step++;
+        setTimeout(flashNext, 200);
+      }, 500);
+    } else {
+      step++;
+      flashNext();
+    }
+  }
+  setTimeout(flashNext, 600);
+}
+
+function _onSimonTap(e) {
+  const id = e.currentTarget.dataset.id;
+  const expected = _simonSeq[_simonIdx];
+  if (id === expected.id) {
+    _simonPlayTone(expected.freq, 200);
+    _simonIdx++;
+    if (_simonIdx >= _simonSeq.length) {
+      _resolveQuiz(true);
+    }
+  } else {
+    // Wrong
+    _simonPlayTone(120, 300);
+    _resolveQuiz(false);
+  }
+}
+
+// ── 共通: クイズ系の正解判定後の結果表示 → 次へ進むボタン ──
+function _resolveQuiz(correct) {
+  _simonCancelled = true; // 進行中の simon タイマーがあれば停止
+  encStageEl.innerHTML =
+    '<div class="enc-result ' + (correct ? 'win' : 'lose') + '">' +
+      (correct ? 'せいかい！' : 'ざんねん…') +
+    '</div>' +
+    '<div class="row">' +
+      '<button class="enc-btn ' + (correct ? 'win' : 'lose') + '" id="encNextQ">' +
+        (correct ? 'すすむ ▶' : 'もどる ▶') +
+      '</button>' +
+    '</div>';
+  document.getElementById('encNextQ').addEventListener('click', function() {
+    _closeEncounter(correct);
+  });
+}
+
+// ゲーム starter のディスパッチ表
+const _GAME_STARTERS = {
+  janken:     _showJankenChoices,
+  silhouette: _showSilhouetteChoices,
+  truefalse:  _showTrueFalseChoices,
+  oddone:     _showOddOneOutChoices,
+  simon:      _showSimonGame,
+};
+
 function _closeEncounter(playerWon) {
+  _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
   encModal.classList.remove('show');
   encModal.setAttribute('aria-hidden', 'true');
   const cid = _encounteringCreatureId;
@@ -2063,7 +2160,29 @@ function showHint(msg, ms) {
 // ====== Stage loading ======
 function loadStage(idx) {
   stageIdx = idx;
-  const def = STAGES[idx];
+  let def = STAGES[idx];
+  // null/undefined slot fallback: 最初の有効なステージを探して移動
+  if (!def) {
+    let fallbackIdx = -1;
+    for (let i = 0; i < STAGES.length; i++) {
+      if (STAGES[i] && STAGES[i].type === 'image') { fallbackIdx = i; break; }
+    }
+    if (fallbackIdx === -1) {
+      console.warn('[maze] no playable stage found; STAGES is all null');
+      // 最後の手段: タイトルだけ表示
+      if (overlay && ovTitle && ovMsg && ovBtn) {
+        ovTitle.textContent = 'ステージが まだ ありません';
+        ovMsg.textContent = 'エディタでステージを作って\n本番に保存してね';
+        ovBtn.textContent = 'OK';
+        ovBtn.onclick = function() { hideOverlay(); };
+        showOverlay();
+      }
+      return;
+    }
+    console.log('[maze] slot', idx, 'is empty → fallback to slot', fallbackIdx);
+    stageIdx = fallbackIdx;
+    def = STAGES[fallbackIdx];
+  }
   if (def && def.type === 'image') {
     imgLoadStage(def);
     return;
@@ -2449,8 +2568,9 @@ function _getInitialStageIdx() {
     const raw = params.get('stage');
     if (raw == null) return 1; // ステージ 0 は使わない方針 → デフォルトは slot 1 から
     const n = parseInt(raw, 10);
-    if (Number.isInteger(n) && n >= 0 && n < STAGES.length) return n;
-    console.warn('[maze] ?stage=' + raw + ' out of range, defaulting to 1');
+    // n >= 1 に揃えて方針一致 (?stage=0 はそもそも slot 0 が null なので fallback されるが、一貫性のため拒否)
+    if (Number.isInteger(n) && n >= 1 && n < STAGES.length) return n;
+    console.warn('[maze] ?stage=' + raw + ' out of range or 0, defaulting to 1');
   } catch (e) { /* ignore */ }
   return 1;
 }
