@@ -851,7 +851,7 @@ function buildStage(stageDef) {
 // "💾 本番に保存" button publishes new image stages into the normal progression.
 // Stages from this path are flagged `_official: true` (eligible for clear rewards).
 function _loadImageStageIndex() {
-  return fetch('imageStages/_index.json', { credentials: 'omit', cache: 'no-store' })
+  return fetch('imageStages/_index.json?_=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
     .then(function(r) {
       if (!r.ok) return null;
       return r.json();
@@ -869,7 +869,7 @@ function _loadImageStageIndex() {
           .replace(/[\/\\:*?"<>|%#&]/g, '')
           .replace(/\.\./g, '');
         if (!safe) return Promise.resolve();
-        return fetch('imageStages/' + encodeURIComponent(safe) + '.json', { credentials: 'omit', cache: 'no-store' })
+        return fetch('imageStages/' + encodeURIComponent(safe) + '.json?_=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
           .then(function(rr) {
             if (!rr.ok) throw new Error(safe + ' HTTP ' + rr.status);
             return rr.json();
@@ -935,7 +935,7 @@ function _loadImageStageFromURL() {
       .replace(/[\/\\:*?"<>|%#&]/g, '')
       .replace(/\.\./g, '');
     if (!safe) return Promise.resolve(false);
-    return fetch('imageStages/' + encodeURIComponent(safe) + '.json', { credentials: 'omit', cache: 'no-store' })
+    return fetch('imageStages/' + encodeURIComponent(safe) + '.json?_=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
       .then(function(r) {
         if (!r.ok) throw new Error('image stage HTTP ' + r.status);
         return r.json();

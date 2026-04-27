@@ -731,33 +731,12 @@ state.hoveringNodeId = null;    // ホバー中のノード id
 cv.addEventListener('pointerdown', function(e) {
   if (!state.image) return;
   const p = mouseToImage(e);
-  // ノード drag: delete モード以外ならどのモードでも有効
-  if (state.mode !== 'delete') {
-    const nodeHit = findNodeAt(p);
-    if (nodeHit) {
-      pushHistory();
-      state.draggingNode = nodeHit;
-      state.selectedNodeId = nodeHit.id; // 選択状態 = バウンディングボックス表示
-      _wasNodeDragging = false;
-      _grabbedNodeOnDown = true;
-      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-      cv.style.cursor = 'grabbing';
-      draw(); // 選択ボックスを即座に描画
-      e.preventDefault();
-      return;
-    }
-  }
   _grabbedNodeOnDown = false;
-  // 何も無い場所で押下 → 選択解除 (delete モードは別ロジック)
-  if (state.mode !== 'delete' && state.selectedNodeId) {
-    state.selectedNodeId = null;
-    draw();
-  }
-  // edit-points モード: 中間アンカーの drag、または道の上クリックで新規アンカー挿入
+
+  // === edit-points モード === (node drag より優先、まずアンカー、次に挿入)
   if (state.mode === 'edit-points') {
     const anchorHit = findAnchorAt(p);
     if (anchorHit) {
-      // 既存アンカーを掴む → drag で移動
       pushHistory();
       state.draggingAnchor = anchorHit;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -765,7 +744,6 @@ cv.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       return;
     }
-    // 道の上 (densified curve 近傍) なら新規アンカーを挿入してそのまま drag
     const insertHit = findEdgeForAnchorInsert(p);
     if (insertHit) {
       pushHistory();
@@ -774,10 +752,33 @@ cv.addEventListener('pointerdown', function(e) {
       state.draggingAnchor = { edgeIdx: insertHit.edgeIdx, controlIdx: insertHit.insertAt };
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       cv.style.cursor = 'grabbing';
-      showBanner('アンカー追加 → ドラッグで形を調整、離すと確定');
+      showBanner('アンカー追加 → ドラッグで形を調整');
       draw();
       e.preventDefault();
     }
+    return;
+  }
+
+  // === ノード drag === (他モード)
+  if (state.mode !== 'delete') {
+    const nodeHit = findNodeAt(p);
+    if (nodeHit) {
+      pushHistory();
+      state.draggingNode = nodeHit;
+      state.selectedNodeId = nodeHit.id;
+      _wasNodeDragging = false;
+      _grabbedNodeOnDown = true;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      draw();
+      e.preventDefault();
+      return;
+    }
+  }
+  // 何も無い場所で押下 → 選択解除
+  if (state.mode !== 'delete' && state.selectedNodeId) {
+    state.selectedNodeId = null;
+    draw();
   }
 });
 
