@@ -647,8 +647,9 @@ cv.addEventListener('click', function(e) {
   if (!state.image) return;
   // In edit-points mode, click does nothing — drag is the action (pointer events)
   if (state.mode === 'edit-points') return;
-  // ノード drag 直後の click は無視 (drag 終了で位置移動済み、新規配置や削除しない)
-  if (_wasNodeDragging) { _wasNodeDragging = false; return; }
+  // pointerdown でノードを掴んだ場合は click を完全にスキップ (drag 移動の有無を問わず)
+  // → 中継ノードを掴んだだけで「新規配置」が発動するバグを防ぐ
+  if (_grabbedNodeOnDown) { _grabbedNodeOnDown = false; _wasNodeDragging = false; return; }
   const p = mouseToImage(e);
   pushHistory();
 
@@ -723,6 +724,10 @@ function findNodeAt(p) {
 
 // Pointerdown を全モードで効くように (ノード drag 優先 + edit-points のアンカー drag)
 let _wasNodeDragging = false;
+let _grabbedNodeOnDown = false; // pointerdown で ノードを掴んだ → click を skip するためのフラグ
+state.selectedNodeId = null;    // 選択されてるノードの id (バウンディングボックス表示用)
+state.hoveringNodeId = null;    // ホバー中のノード id
+
 cv.addEventListener('pointerdown', function(e) {
   if (!state.image) return;
   const p = mouseToImage(e);
@@ -732,12 +737,21 @@ cv.addEventListener('pointerdown', function(e) {
     if (nodeHit) {
       pushHistory();
       state.draggingNode = nodeHit;
+      state.selectedNodeId = nodeHit.id; // 選択状態 = バウンディングボックス表示
       _wasNodeDragging = false;
+      _grabbedNodeOnDown = true;
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       cv.style.cursor = 'grabbing';
+      draw(); // 選択ボックスを即座に描画
       e.preventDefault();
       return;
     }
+  }
+  _grabbedNodeOnDown = false;
+  // 何も無い場所で押下 → 選択解除 (delete モードは別ロジック)
+  if (state.mode !== 'delete' && state.selectedNodeId) {
+    state.selectedNodeId = null;
+    draw();
   }
   // edit-points モード: 中間アンカーの drag
   if (state.mode === 'edit-points') {
@@ -786,8 +800,14 @@ cv.addEventListener('pointermove', function(e) {
     cv.style.cursor = findAnchorAt(p) ? 'grab' : 'crosshair';
     return;
   }
-  // それ以外のモード: ノードホバー時に grab カーソル
-  cv.style.cursor = findNodeAt(p) ? 'grab' : 'crosshair';
+  // それ以外のモード: ノードホバー検出 (hovering 状態 + grab カーソル)
+  const hovered = findNodeAt(p);
+  const newHoverId = hovered ? hovered.id : null;
+  if (state.hoveringNodeId !== newHoverId) {
+    state.hoveringNodeId = newHoverId;
+    draw();
+  }
+  cv.style.cursor = hovered ? 'grab' : 'crosshair';
 });
 
 cv.addEventListener('pointerup', function(e) {
@@ -965,7 +985,14 @@ function draw() {
   // Creatures
   for (const c of state.creatures) drawCreature(c);
   // Nodes
-  for (const n of state.nodes) drawNode(n);
+  for (const n of state.nodes) {
+    drawNode(n);
+    // バウンディングボックス: 選択中 (アクティブ) or ホバー中
+    const isSelected = (state.selectedNodeId === n.id) || (state.draggingNode && state.draggingNode.id === n.id);
+    const isHovered = !isSelected && state.hoveringNodeId === n.id && state.mode !== 'delete';
+    if (isSelected) _drawNodeBoundingBox(n, true);
+    else if (isHovered) _drawNodeBoundingBox(n, false);
+  }
 }
 
 const OBSTACLE_EMOJI = { tree:'🌳', pond:'💧', hole:'🕳️', stump:'🪵', rock:'🪨' };
@@ -1017,6 +1044,48 @@ function drawEdge(poly, color, alpha, dashed) {
   ctx.moveTo(poly[0].x, poly[0].y);
   for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i].x, poly[i].y);
   ctx.stroke();
+  ctx.restore();
+}
+
+function _drawNodeBoundingBox(n, isSelected) {
+  // ノードの寸法をモード別に算出
+  let halfW, halfH;
+  if (n.kind === 'start' || n.kind === 'goal') {
+    const sz = (state.imgH || 1080) / 6;
+    const img = (n.kind === 'start') ? imgMarkerStart : imgMarkerGoal;
+    const ratio = (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : 1;
+    halfW = sz * ratio / 2;
+    halfH = sz / 2;
+  } else {
+    const r = (state.imgH || 1080) / 30;
+    halfW = halfH = r;
+  }
+  const padding = (state.imgH || 1080) / 80;
+  const x = n.x - halfW - padding;
+  const y = n.y - halfH - padding;
+  const w = (halfW + padding) * 2;
+  const h = (halfH + padding) * 2;
+  ctx.save();
+  if (isSelected) {
+    // アクティブ選択: 太い実線シアン + 角ティック
+    ctx.strokeStyle = '#33CCFF';
+    ctx.lineWidth = Math.max(3, padding * 0.5);
+    ctx.strokeRect(x, y, w, h);
+    const tick = padding * 1.6;
+    ctx.lineWidth = Math.max(4, padding * 0.7);
+    ctx.beginPath();
+    [[x, y, 1, 1], [x+w, y, -1, 1], [x, y+h, 1, -1], [x+w, y+h, -1, -1]].forEach(function(c) {
+      ctx.moveTo(c[0], c[1]); ctx.lineTo(c[0] + tick * c[2], c[1]);
+      ctx.moveTo(c[0], c[1]); ctx.lineTo(c[0], c[1] + tick * c[3]);
+    });
+    ctx.stroke();
+  } else {
+    // ホバー: 細い破線 + 半透明
+    ctx.strokeStyle = 'rgba(51, 204, 255, 0.55)';
+    ctx.lineWidth = Math.max(2, padding * 0.35);
+    ctx.setLineDash([padding * 1.5, padding * 0.8]);
+    ctx.strokeRect(x, y, w, h);
+  }
   ctx.restore();
 }
 
