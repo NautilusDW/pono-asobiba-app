@@ -692,26 +692,26 @@
   /* 横画面: 左1/3 にコントロール(単音/コード・音色・伴奏), 右2/3 が演奏エリア
      注意: このブロックは base styles の後ろに置くことで landscape で確実に効くようにしている */
   @media (orientation: landscape) {
-    /* 8 ボタンを右 2/3 に楕円配置 */
-    .instr-btn[data-idx="0"] { left: 44%; top: 32%; --sz: 88px; }
-    .instr-btn[data-idx="1"] { left: 58%; top: 16%; --sz: 92px; }
-    .instr-btn[data-idx="2"] { left: 78%; top: 16%; --sz: 92px; }
-    .instr-btn[data-idx="3"] { left: 92%; top: 32%; --sz: 88px; }
-    .instr-btn[data-idx="4"] { left: 44%; top: 74%; --sz: 88px; }
-    .instr-btn[data-idx="5"] { left: 58%; top: 90%; --sz: 92px; }
-    .instr-btn[data-idx="6"] { left: 78%; top: 90%; --sz: 92px; }
-    .instr-btn[data-idx="7"] { left: 92%; top: 74%; --sz: 88px; }
-    /* ポノも右 2/3 の中央へ */
+    /* 8 ボタンを右 2/3 に楕円配置 (ポノに近めに、上下は端から離して切れ防止) */
+    .instr-btn[data-idx="0"] { left: 42%; top: 38%; --sz: 84px; }
+    .instr-btn[data-idx="1"] { left: 53%; top: 22%; --sz: 86px; }
+    .instr-btn[data-idx="2"] { left: 73%; top: 22%; --sz: 86px; }
+    .instr-btn[data-idx="3"] { left: 86%; top: 38%; --sz: 84px; }
+    .instr-btn[data-idx="4"] { left: 42%; top: 70%; --sz: 84px; }
+    .instr-btn[data-idx="5"] { left: 53%; top: 84%; --sz: 86px; }
+    .instr-btn[data-idx="6"] { left: 73%; top: 84%; --sz: 86px; }
+    .instr-btn[data-idx="7"] { left: 86%; top: 70%; --sz: 84px; }
+    /* ポノは少し左寄りに */
     .pono-wrap {
-      left: 68%;
-      width: 220px; height: 170px;
+      left: 63%;
+      width: 200px; height: 160px;
     }
-    .pono-sprite { height: 160px; }
+    .pono-sprite { height: 150px; }
 
-    /* コード/単音ピル: 左上 (歯車⚙️ の右) に寄せる */
+    /* コード/単音ピル: 歯車の下に下げる */
     .chord-pill {
-      top: max(8px, env(safe-area-inset-top));
-      left: 64px;
+      top: calc(max(12px, env(safe-area-inset-top)) + 54px);
+      left: 8px;
       transform: none;
       padding: 3px;
       gap: 3px;
@@ -722,49 +722,49 @@
       font-size: 0.8rem;
     }
 
-    /* 音色 ねいろ: 左パネル上部、横並び折返し (3×2) */
+    /* 音色 ねいろ: chord-pill の下に */
     .sound-sets-box {
-      top: 60px;
+      top: calc(max(12px, env(safe-area-inset-top)) + 108px);
       left: 8px;
       transform: none;
       padding: 4px 8px 6px;
-      max-width: 200px;
+      max-width: 220px;
     }
     .sound-sets {
       flex-direction: row;
       flex-wrap: wrap;
       gap: 5px;
       justify-content: center;
-      max-width: 182px;
+      max-width: 200px;
     }
     .sound-sets .set-btn {
       width: 38px; height: 38px;
       font-size: 1.1rem;
     }
 
-    /* 伴奏 ばんそう: 左パネル下寄せ、コンパクト化 */
+    /* 伴奏 ばんそう: 左パネル中央寄せ、横幅を確保 */
     .band-group {
       bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
-      left: 8px;
-      transform: none;
-      padding: 5px 8px 7px;
-      gap: 5px;
-      max-width: 200px;
+      left: 20%;
+      transform: translateX(-50%);
+      padding: 6px 14px 10px;
+      gap: 6px;
+      max-width: none;
     }
-    .band-group-label { font-size: 0.62rem; }
+    .band-group-label { font-size: 0.7rem; }
     .band-group .song-btn {
-      min-width: 50px; height: 40px;
-      padding: 2px 6px;
+      min-width: 56px; height: 42px;
+      padding: 3px 8px;
     }
-    .band-group .song-btn-cap { font-size: 0.5rem; }
-    .band-group .song-btn-val { font-size: 0.72rem; }
+    .band-group .song-btn-cap { font-size: 0.55rem; }
+    .band-group .song-btn-val { font-size: 0.78rem; }
     .band-group .speed-btn {
-      padding: 5px 8px;
-      font-size: 0.7rem;
+      padding: 7px 14px;
+      font-size: 0.8rem;
       border-width: 2px;
     }
-    .band-row { gap: 5px; }
-    .speed-row { gap: 4px; }
+    .band-row { gap: 7px; }
+    .speed-row { gap: 7px; }
 
     /* 保存リスト: 右 2/3 の下部のみ (左パネルと被らない) */
     .saved-list {
