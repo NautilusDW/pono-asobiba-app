@@ -707,7 +707,10 @@ function draw() {
     ctx.clearRect(0, 0, cv.width, cv.height);
     return;
   }
-  ctx.drawImage(state.image, 0, 0);
+  // Stretch the (possibly compressed) image to the original viewBox size.
+  // After draft restore, state.image may be a smaller JPEG but state.imgW/imgH
+  // hold the original PNG dimensions — coords stay consistent.
+  ctx.drawImage(state.image, 0, 0, state.imgW, state.imgH);
 
   // Edges (densify Catmull-Rom from controls before drawing)
   const isEditMode = state.mode === 'edit-points';
@@ -1175,10 +1178,154 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
 });
 
 // ────────────────────────────────────────────────────────
+// Auto-save to localStorage (resume editing across reloads)
+// ────────────────────────────────────────────────────────
+const DRAFT_KEY = 'pono_maze_editor_draft_v1';
+let _autoSaveTimer = null;
+const autoSaveStatusEl = document.createElement('span');
+autoSaveStatusEl.id = 'autoSaveStatus';
+autoSaveStatusEl.style.cssText = 'font-size:0.7rem; color:#888; margin-left:8px;';
+// Append to status area so user knows auto-save is working
+const statusContainer = document.querySelector('.status');
+if (statusContainer) {
+  const lineDiv = document.createElement('div');
+  lineDiv.appendChild(autoSaveStatusEl);
+  statusContainer.appendChild(lineDiv);
+}
+
+function _setAutoSaveStatus(text, color) {
+  if (autoSaveStatusEl) {
+    autoSaveStatusEl.textContent = text;
+    autoSaveStatusEl.style.color = color || '#888';
+  }
+}
+
+function scheduleAutoSave() {
+  if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _setAutoSaveStatus('💾 保存待機中…', '#aa8');
+  _autoSaveTimer = setTimeout(_doAutoSave, 800);
+}
+
+function _doAutoSave() {
+  try {
+    const draft = {
+      version: 1,
+      savedAt: Date.now(),
+      stageName: stageNameInput.value || '',
+      stageOrder: parseInt((document.getElementById('stageOrderInput') || {}).value, 10) || 1,
+      lantern: !!(document.getElementById('lanternToggle') && document.getElementById('lanternToggle').checked),
+      imgFileName: state.imgFileName,
+      imgW: state.imgW,
+      imgH: state.imgH,
+      nodes: state.nodes,
+      edges: state.edges,
+      obstacles: state.obstacles,
+      creatures: state.creatures,
+      nextStopId: state.nextStopId,
+      nextCreatureId: state.nextCreatureId,
+    };
+    // Try to include the image (compressed) so reload restores fully.
+    // Skip if too large for localStorage (~5MB budget).
+    if (state.image && state.image.complete && state.image.naturalWidth > 0) {
+      try {
+        const c = compressImageToDataURL(state.image, 1600, 0.7);
+        if (c.length < 4 * 1024 * 1024) draft.image = c;
+      } catch (e) { /* skip image */ }
+    }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    const kb = (JSON.stringify(draft).length / 1024).toFixed(0);
+    _setAutoSaveStatus('💾 自動保存済み (' + kb + ' KB)', '#7a7');
+  } catch (e) {
+    console.warn('auto-save failed:', e);
+    _setAutoSaveStatus('⚠ 自動保存失敗 ' + (e.message || e), '#a77');
+  }
+}
+
+function _restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const draft = JSON.parse(raw);
+    if (!draft || draft.version !== 1) return false;
+    if (draft.stageName) stageNameInput.value = draft.stageName;
+    if (Number.isInteger(draft.stageOrder)) {
+      const orderInput = document.getElementById('stageOrderInput');
+      if (orderInput) orderInput.value = draft.stageOrder;
+    }
+    const lt = document.getElementById('lanternToggle');
+    if (lt) lt.checked = !!draft.lantern;
+    state.nodes = Array.isArray(draft.nodes) ? draft.nodes : [];
+    state.edges = Array.isArray(draft.edges) ? draft.edges : [];
+    state.obstacles = Array.isArray(draft.obstacles) ? draft.obstacles : [];
+    state.creatures = Array.isArray(draft.creatures) ? draft.creatures : [];
+    state.nextStopId = draft.nextStopId || 1;
+    state.nextCreatureId = draft.nextCreatureId || 1;
+    state.imgFileName = draft.imgFileName || '';
+    state.imgW = draft.imgW || 0;
+    state.imgH = draft.imgH || 0;
+    if (draft.image) {
+      const img = new Image();
+      img.onload = function() {
+        state.image = img;
+        if (!state.imgW) state.imgW = img.naturalWidth;
+        if (!state.imgH) state.imgH = img.naturalHeight;
+        if (emptyMsg) emptyMsg.style.display = 'none';
+        resizeCanvas();
+        draw();
+      };
+      img.src = draft.image;
+    }
+    updateStatus();
+    const ago = Math.max(1, Math.floor((Date.now() - (draft.savedAt || 0)) / 60000));
+    showBanner('💾 前回の編集状態を復元 (約 ' + ago + ' 分前)');
+    return true;
+  } catch (e) {
+    console.warn('draft restore failed:', e);
+    return false;
+  }
+}
+
+// Hook auto-save into state-changing events.
+// Wrap pushHistory so any time it's called, we also schedule a save.
+const _origPushHistory = pushHistory;
+pushHistory = function() {
+  _origPushHistory.apply(null, arguments);
+  scheduleAutoSave();
+};
+// Save when image is loaded too
+const _prevLoadImageFile = loadImageFile;
+loadImageFile = function(file) {
+  _prevLoadImageFile.apply(null, arguments);
+  // Schedule a delayed save (after image load completes)
+  setTimeout(scheduleAutoSave, 600);
+};
+// Save when stage name / order / lantern change
+stageNameInput.addEventListener('input', scheduleAutoSave);
+const _stageOrderInput = document.getElementById('stageOrderInput');
+if (_stageOrderInput) _stageOrderInput.addEventListener('input', scheduleAutoSave);
+const _lanternToggle = document.getElementById('lanternToggle');
+if (_lanternToggle) _lanternToggle.addEventListener('change', scheduleAutoSave);
+
+// Reset button should also clear the draft
+const _origReset = document.getElementById('resetBtn').onclick;
+document.getElementById('resetBtn').addEventListener('click', function() {
+  // Clear draft AFTER user confirms reset (fires AFTER the original handler that asks confirm)
+  setTimeout(function() {
+    if (state.nodes.length === 0 && state.edges.length === 0) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+      _setAutoSaveStatus('🗑 自動保存もクリア', '#a77');
+    }
+  }, 50);
+});
+
+// ────────────────────────────────────────────────────────
 // Init
 // ────────────────────────────────────────────────────────
 updateStatus();
 draw();
+// Try to restore a previous editing session
+_restoreDraft();
+_setAutoSaveStatus('💾 自動保存 ON (操作するたびに保存)', '#888');
 </script>
 </body>
 </html>
