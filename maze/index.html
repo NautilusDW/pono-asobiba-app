@@ -1799,12 +1799,13 @@ function imgDrawLantern(now, cx, cy, w, h, opts) {
   const minDim = Math.min(w, h);
   // Gentle 0.96..1.04 pulse over 2.5s
   const pulse = 1 + Math.sin(now / 400) * 0.04;
-  const inner = (cfg.innerRadius || minDim * 0.06) * pulse; // ぐっと小さい光円
-  const outer = (cfg.outerRadius || minDim * 0.18) * pulse; // 短いフェード
-  const tintR = cfg.tintR != null ? cfg.tintR : 10;
-  const tintG = cfg.tintG != null ? cfg.tintG : 28;
-  const tintB = cfg.tintB != null ? cfg.tintB : 70;
-  const tintA = cfg.tintA != null ? cfg.tintA : 0.35; // もっと透ける → 迷路全体ハッキリ見える
+  const inner = (cfg.innerRadius || minDim * 0.06) * pulse; // 光円は前回サイズキープ
+  const outer = (cfg.outerRadius || minDim * 0.18) * pulse;
+  // 「だいぶ暗く + 青みを強く乗せる」: tintA を一気に上げて青を支配的に
+  const tintR = cfg.tintR != null ? cfg.tintR : 4;
+  const tintG = cfg.tintG != null ? cfg.tintG : 14;
+  const tintB = cfg.tintB != null ? cfg.tintB : 80;
+  const tintA = cfg.tintA != null ? cfg.tintA : 0.70; // しっかり夜の青フィルター
   const warmth = cfg.warmth !== false; // default on
   // 1) Night overlay: transparent at center, opaque outside outer
   ctx.save();
