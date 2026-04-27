@@ -373,6 +373,24 @@ body.image-stage-mode #encounter,
 body.image-stage-mode #hint {
   display: none !important;
 }
+/* image ステージ用の小さなステージ表示 (上部中央寄り) */
+body.image-stage-mode #imgStageLabel {
+  display: block !important;
+  position: fixed;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  z-index: 100;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  letter-spacing: 0.5px;
+}
 body.image-stage-mode .game-wrap {
   border-radius: 0;
   box-shadow: none;
@@ -527,6 +545,9 @@ body.image-stage-mode .game-wrap {
     <h2>よこむきに してね</h2>
     <p>このステージは よこがめんで あそぶよ。<br>たんまつを よこに むけてね。</p>
   </div>
+
+  <!-- ステージ番号/名前ラベル (image-stage-mode のみ表示、CSS で制御) -->
+  <div id="imgStageLabel" style="display:none;">ステージ ?</div>
 
   <!-- Encounter modal (creature + minigame) — image-stage only -->
   <div class="encounter-modal" id="encModal" aria-hidden="true">
@@ -1367,6 +1388,12 @@ function imgLoadStage(def) {
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
   hudApples.textContent = ''; // PoC: no apples yet
+  // image-stage-mode 用の上部ラベル: 「ステージ N — name」
+  const labelEl = document.getElementById('imgStageLabel');
+  if (labelEl) {
+    const safeName = (stage.name && String(stage.name).trim()) ? String(stage.name) : '';
+    labelEl.textContent = 'ステージ ' + stageIdx + (safeName ? ' — ' + safeName : '');
+  }
   voice.style.display = '';
   encounter.classList.remove('show');
   // Hide charm bar in image mode (Phase 1: charms not supported)
@@ -2420,12 +2447,12 @@ function _getInitialStageIdx() {
   try {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('stage');
-    if (raw == null) return 0;
+    if (raw == null) return 1; // ステージ 0 は使わない方針 → デフォルトは slot 1 から
     const n = parseInt(raw, 10);
     if (Number.isInteger(n) && n >= 0 && n < STAGES.length) return n;
-    console.warn('[maze] ?stage=' + raw + ' out of range, defaulting to 0');
+    console.warn('[maze] ?stage=' + raw + ' out of range, defaulting to 1');
   } catch (e) { /* ignore */ }
-  return 0;
+  return 1;
 }
 _loadImageStageIndex()
   .then(function() { return _loadImageStageFromURL(); })
