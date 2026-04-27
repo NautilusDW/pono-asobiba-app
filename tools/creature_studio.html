@@ -141,9 +141,15 @@ body {
 }
 .split-divider:hover  { background: #f87171; }
 .split-divider.dragging { background: #ef4444; }
+/* multi-mode / timeline-mode 以外では composite タブを完全に非表示にする。
+   過去にマルチ合成 ON → OFF した残骸 (.active 残留) があってもデッドスペースを作らない。 */
+.right-panel.split-mode:not(.multi-mode):not(.timeline-mode) #tab-composite {
+  display: none !important;
+}
+
 /* マルチ合成中: composite は overlay ではなく、compare と sprites の間に
    inline で挟まる帯にする (中身の高さ ぶんだけ占める, 上下が広く見える) */
-.right-panel.split-mode #tab-composite.active {
+.right-panel.split-mode.multi-mode #tab-composite.active {
   display: flex !important;
   flex: 0 0 auto;
   flex-direction: column;
@@ -173,10 +179,33 @@ body {
 }
 .right-panel.split-mode.timeline-mode #tab-timeline {
   display: flex !important;
-  flex: var(--split-top, 1) 1 0 !important;
+  /* timeline-mode 専用比率: 上 75% / 下 25% (split-divider をドラッグすると上書き可) */
+  flex: var(--tl-split-top, 0.75) 1 0 !important;
   flex-direction: column;
   overflow: hidden;
-  min-height: 100px;
+  min-height: 120px;
+}
+.right-panel.split-mode.timeline-mode #tab-sprites {
+  flex: var(--tl-split-bot, 0.25) 1 0 !important;
+}
+/* timeline-mode 中のスプライトグリッドは横スクロール 1 段固定にしてコンパクト化。
+   並び替え + 連番付け + 🎯ジャンプの操作は維持しつつ、再生確認のメイン領域を圧迫しない。 */
+.right-panel.split-mode.timeline-mode .sprites-grid {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-content: stretch;
+  padding: 8px 10px;
+}
+.right-panel.split-mode.timeline-mode .sprite-card {
+  width: 150px;
+  flex-shrink: 0;
+}
+.right-panel.split-mode.timeline-mode .card-preview {
+  height: 70px;
+}
+.right-panel.split-mode.timeline-mode .card-details {
+  display: none;  /* 「⚙ 生き物の設定」は通常モードで開けば良い */
 }
 
 .action-toolbar {
@@ -919,6 +948,45 @@ body {
       </div>
     </div>
 
+    <!-- Timeline tab (split-top 領域に配置: timeline-mode 時に上半分を占める) -->
+    <div class="tab-content" id="tab-timeline">
+      <div class="timeline-controls">
+        <div class="tl-group">
+          <button class="tl-pbtn primary" id="tl-play" title="再生">▶</button>
+          <button class="tl-pbtn" id="tl-pause" title="一時停止">⏸</button>
+          <button class="tl-pbtn" id="tl-stop" title="停止 (先頭へ)">⏹</button>
+        </div>
+        <div class="tl-group">
+          <button class="tl-pbtn toggle active" id="tl-loop" title="ループ">🔁 ループ</button>
+          <button class="tl-pbtn toggle" id="tl-pingpong" title="行って戻ってを繰り返す">🔂 ピンポン</button>
+        </div>
+        <div class="tl-group">
+          <label>FPS</label>
+          <input type="number" id="tl-fps" value="12" min="1" max="60" step="1">
+          <label>各コマ</label>
+          <input type="number" id="tl-frames" value="1" min="1" max="20" step="1">
+          <span style="font-size:0.6rem;color:#6b7280">fr</span>
+        </div>
+        <div class="tl-group">
+          <label>背景</label>
+          <select id="tl-bg">
+            <option value="checker">チェッカー</option>
+            <option value="black">黒</option>
+            <option value="white">白</option>
+          </select>
+        </div>
+      </div>
+      <div class="timeline-stage" id="timeline-stage" data-bg="checker">
+        <canvas id="timeline-canvas" width="640" height="400"></canvas>
+        <div class="tl-empty" id="tl-empty">「スプライトを分割」してから戻ってきてください。</div>
+      </div>
+      <div class="timeline-progress" id="tl-progress" title="クリックでシーク">
+        <div class="timeline-progress-bar" id="tl-progress-bar"></div>
+        <div class="timeline-progress-label" id="tl-progress-label">0 / 0</div>
+      </div>
+      <div class="timeline-strip" id="tl-strip"></div>
+    </div>
+
     <!-- 上(比較)と下(分割)を分けるドラッグバー -->
     <div class="split-divider" id="split-divider" title="ドラッグで上下のサイズ変更"></div>
 
@@ -963,44 +1031,6 @@ body {
     </div>
 
     <!-- Timeline tab -->
-    <div class="tab-content" id="tab-timeline">
-      <div class="timeline-controls">
-        <div class="tl-group">
-          <button class="tl-pbtn primary" id="tl-play" title="再生">▶</button>
-          <button class="tl-pbtn" id="tl-pause" title="一時停止">⏸</button>
-          <button class="tl-pbtn" id="tl-stop" title="停止 (先頭へ)">⏹</button>
-        </div>
-        <div class="tl-group">
-          <button class="tl-pbtn toggle active" id="tl-loop" title="ループ">🔁 ループ</button>
-          <button class="tl-pbtn toggle" id="tl-pingpong" title="行って戻ってを繰り返す">🔂 ピンポン</button>
-        </div>
-        <div class="tl-group">
-          <label>FPS</label>
-          <input type="number" id="tl-fps" value="12" min="1" max="60" step="1">
-          <label>各コマ</label>
-          <input type="number" id="tl-frames" value="1" min="1" max="20" step="1">
-          <span style="font-size:0.6rem;color:#6b7280">fr</span>
-        </div>
-        <div class="tl-group">
-          <label>背景</label>
-          <select id="tl-bg">
-            <option value="checker">チェッカー</option>
-            <option value="black">黒</option>
-            <option value="white">白</option>
-          </select>
-        </div>
-      </div>
-      <div class="timeline-stage" id="timeline-stage" data-bg="checker">
-        <canvas id="timeline-canvas" width="640" height="400"></canvas>
-        <div class="tl-empty" id="tl-empty">「スプライトを分割」してから戻ってきてください。</div>
-      </div>
-      <div class="timeline-progress" id="tl-progress" title="クリックでシーク">
-        <div class="timeline-progress-bar" id="tl-progress-bar"></div>
-        <div class="timeline-progress-label" id="tl-progress-label">0 / 0</div>
-      </div>
-      <div class="timeline-strip" id="tl-strip"></div>
-    </div>
-
     <!-- Deploy status bar -->
     <div class="deploy-bar" id="deploy-bar">
       <span class="deploy-status" id="deploy-status"></span>
@@ -5252,6 +5282,12 @@ document.getElementById('btn-timeline-mode').addEventListener('click', () => {
     if (compEl) compEl.classList.remove('active');
     rp.classList.remove('multi-mode');
 
+    // 通常モードの split 比率を退避し、timeline-mode 用比率 (上 75% / 下 25%) を反映
+    rp.dataset.savedSplitTop = rp.style.getPropertyValue('--split-top') || '';
+    rp.dataset.savedSplitBot = rp.style.getPropertyValue('--split-bot') || '';
+    rp.style.setProperty('--tl-split-top', '0.75');
+    rp.style.setProperty('--tl-split-bot', '0.25');
+
     rp.classList.add('timeline-mode');
     btn.textContent = '🎞 タイムライン ON';
     btn.style.background = '#f87171';
@@ -5260,6 +5296,9 @@ document.getElementById('btn-timeline-mode').addEventListener('click', () => {
     Timeline.refresh();
   } else {
     rp.classList.remove('timeline-mode');
+    // timeline-mode 用 CSS 変数を撤去 (元の --split-top/--split-bot は inline style に残ってる)
+    rp.style.removeProperty('--tl-split-top');
+    rp.style.removeProperty('--tl-split-bot');
     btn.textContent = '🎞 タイムラインモード';
     btn.style.background = '';
     btn.style.color = '';
