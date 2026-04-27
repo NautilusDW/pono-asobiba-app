@@ -1976,39 +1976,44 @@ document.getElementById('compareBtn').addEventListener('click', function() {
 
 // Map continuous difficulty (1-100) to generator params.
 //
-// Always full maze (no pruning), 1-tile paths, 2-tile margin around the
-// canvas for visual breathing room. The maze always uses every cell — the
-// difficulty knob is `straightBias` in DFS, which controls how snake-like
-// vs. branchy the resulting spanning tree is.
+// 3 ティア: d<50 は 2-tile 路幅 (子供向け、見やすい)、d>=50 は 1-tile 路幅
+// (大人向け、迷路らしい難しさ)、d>=75 は 2-panel (画面 2 つ分の超大型迷路)
 //
-// - d=1..74  : 1 panel  (1920×1080), 14×7 cell grid (98 cells)
-// - d=75..100: 2 panels (3840×1080), 30×7 cell grid (210 cells)
+// - d=1..49  : 1 panel, cellStride=4 (2-tile path), 7×3 cell grid (21 cells)
+// - d=50..74 : 1 panel, cellStride=2 (1-tile path), 14×7 cell grid (98 cells)
+// - d=75..100: 2 panel, cellStride=2 (1-tile path), 30×7 cell grid (210 cells)
 //
-//   d=1  : straightBias=0.95 — DFS strongly prefers continuing in same
-//          direction → snake-like winding, very few branches. Easy.
-//   d=74 : straightBias=0.0  — pure random DFS, lots of branches. Hard.
-//   d=75 : straightBias=0.5  — moderate bias on bigger grid (matches d=74 feel)
-//   d=100: straightBias=0.0  — pure random DFS on 210-cell grid. Max hard.
+// 各ティア内の難易度は `straightBias` で調整: 高い値 = ヘビ状で簡単、
+// 0 = 完全ランダム DFS で枝分かれが多く難しい。
 //
-// Creature cap: 1 panel ≤ 5, 2 panel ≤ 10.
+// Creature cap: 1 panel ≤ 5, 2 panel ≤ 10。
 function _paramsForDifficulty(d) {
   const v = Math.max(1, Math.min(100, Math.floor(Number(d) || 1)));
   const twoPanel = v >= 75;
-  const cellStride = 2;
+  const wideMode = v < 50; // 2-tile 路幅
+  const cellStride = wideMode ? 4 : 2;
   const panels = twoPanel ? 2 : 1;
   const gridW  = panels * 32;
-  // 2-tile margin on every side (looks more "framed", markers don't crowd the edge)
-  const cw = (gridW - 4) / cellStride;          // 14 or 30
-  const ch = (GRID_H - 4) / cellStride;         // 7
+  // セル数: 2-tile 路幅は粗い格子になる (path が広い分セル数が少ない)
+  const cw = Math.floor((gridW - 4) / cellStride);  // wide: 7, narrow1panel: 14, narrow2panel: 30
+  const ch = Math.floor((GRID_H - 4) / cellStride); // wide: 3, narrow: 7
   let straightBias, creatureCount;
   if (twoPanel) {
     const t = (v - 75) / 25;
     straightBias  = 0.50 * (1 - t);         // 0.50 → 0
     creatureCount = Math.round(5 + 5 * t);  // 5 → 10
+  } else if (wideMode) {
+    // d=1..49: 2-tile 路幅。d=1 がユーザー指定の「枝分かれの多い 7×3 迷路」相当 (画像参照)
+    // → straightBias は最初から低めに設定 (0.3 → 0)。直線多めだとセル数 21 では
+    // 単純な S 字に縮退してしまうので、d=1 でもしっかり枝分かれを残す。
+    const t = (v - 1) / 48;
+    straightBias  = 0.30 * (1 - t);         // 0.30 → 0
+    creatureCount = Math.round(1 + 2 * t);  // 1 → 3
   } else {
-    const t = (v - 1) / 73;
+    // d=50..74: 1-tile 路幅、難易度ティア
+    const t = (v - 50) / 24;
     straightBias  = 0.95 * (1 - t);         // 0.95 → 0
-    creatureCount = Math.round(1 + 4 * t);  // 1 → 5
+    creatureCount = Math.round(2 + 3 * t);  // 2 → 5
   }
   return {
     difficulty: v,
