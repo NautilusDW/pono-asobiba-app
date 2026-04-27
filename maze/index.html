@@ -64,7 +64,7 @@ html, body {
   background: #F4EFE3;
   box-shadow: 0 4px 16px var(--shadow);
 }
-#gameCanvas { display: block; width: 100%; height: 100%; }
+#gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
 /* Arrow buttons (HTML overlay) */
 #arrowLayer { position: absolute; inset: 0; pointer-events: none; }
@@ -1265,6 +1265,7 @@ function imgRepositionArrows() {
 
 function imgStartWalk(plan) {
   hideArrows();
+  if (stage) stage._manualCam = false; // resume auto-follow on walk start
   // Speed: ~600 world-px per second. Min 800ms so even short edges feel deliberate.
   const duration = Math.max(800, plan.length * 1000 / 600);
   walkAnim = {
@@ -1276,6 +1277,53 @@ function imgStartWalk(plan) {
     duration: duration,
   };
 }
+
+// Manual camera pan (drag / wheel). Image stages only.
+let _imgPanState = null;
+canvas.addEventListener('pointerdown', function(e) {
+  if (!stage || stage.type !== 'image') return;
+  if (_encounterActive || cleared) return;
+  if (e.target !== canvas) return;
+  _imgPanState = {
+    startX: e.clientX, startY: e.clientY,
+    camStartX: stage.camera.x, camStartY: stage.camera.y,
+    pointerId: e.pointerId,
+    moved: false,
+  };
+});
+canvas.addEventListener('pointermove', function(e) {
+  if (!_imgPanState || e.pointerId !== _imgPanState.pointerId) return;
+  if (!stage || stage.type !== 'image') return;
+  const dx = e.clientX - _imgPanState.startX;
+  const dy = e.clientY - _imgPanState.startY;
+  if (!_imgPanState.moved && Math.hypot(dx, dy) < 6) return;
+  _imgPanState.moved = true;
+  stage._manualCam = true;
+  stage._manualSince = performance.now();
+  const scale = stage._scale || 1;
+  stage.camera.x = _imgPanState.camStartX - dx / scale;
+  stage.camera.y = _imgPanState.camStartY - dy / scale;
+});
+function _imgEndPan(e) {
+  if (!_imgPanState) return;
+  if (!_imgPanState.moved && stage && stage.type === 'image') {
+    // Plain tap → exit manual mode (auto-follow resumes)
+    stage._manualCam = false;
+  }
+  _imgPanState = null;
+}
+canvas.addEventListener('pointerup', _imgEndPan);
+canvas.addEventListener('pointercancel', _imgEndPan);
+canvas.addEventListener('wheel', function(e) {
+  if (!stage || stage.type !== 'image') return;
+  if (_encounterActive || cleared) return;
+  e.preventDefault();
+  stage._manualCam = true;
+  stage._manualSince = performance.now();
+  const scale = stage._scale || 1;
+  if (e.shiftKey) stage.camera.y += e.deltaY / scale;
+  else            stage.camera.x += (e.deltaX || e.deltaY) / scale;
+}, { passive: false });
 
 function imgFinishWalk() {
   if (!walkAnim || walkAnim.type !== 'image') return;
@@ -1330,7 +1378,16 @@ function imgDraw(now) {
   const w = stage._viewW || canvas.clientWidth;
   const h = stage._viewH || canvas.clientHeight;
   if (!stage._scale) imgComputeLayout(w, h);
-  window.MazeImage.updateCamera(stage, px, py, w, h, dt, stage._scale);
+  // Manual pan mode: skip lerp, just clamp. Auto-revert after timeout.
+  const _nowMs = now;
+  if (stage._manualCam && _nowMs - (stage._manualSince || 0) > 4000) {
+    stage._manualCam = false;
+  }
+  if (!stage._manualCam) {
+    window.MazeImage.updateCamera(stage, px, py, w, h, dt, stage._scale);
+  } else {
+    imgClampCameraToBounds(stage, w, h);
+  }
 
   // Background fill (in case image hasn't loaded or letterbox visible)
   ctx.fillStyle = '#A4C76D';
@@ -1368,6 +1425,11 @@ function imgDraw(now) {
   imgDrawPono(now, px, py, ftx, fty, isWalking);
   ctx.restore();
 
+  // Off-screen goal direction indicator (HUD, screen-space)
+  if (stage.goal && !cleared) {
+    imgDrawGoalIndicator(stage.goal, w, h, stage.camera, stage._scale);
+  }
+
   // Reposition arrows so they follow pono's screen position (camera lerp)
   if (arrowLayer.children.length > 0) imgRepositionArrows();
 
@@ -1375,6 +1437,63 @@ function imgDraw(now) {
   if (!walkAnim && !cleared && !overlay.classList.contains('show')
       && arrowLayer.children.length === 0) {
     imgShowArrows();
+  }
+}
+
+function imgDrawGoalIndicator(goal, w, h, cam, scale) {
+  const sx = w / 2 + (goal.x - cam.x) * scale;
+  const sy = h / 2 + (goal.y - cam.y) * scale;
+  const margin = 60;
+  if (sx >= margin && sx <= w - margin && sy >= margin && sy <= h - margin) return;
+  const cx = w / 2, cy = h / 2;
+  const dx = sx - cx, dy = sy - cy;
+  const ratio = Math.max(
+    Math.abs(dx) / Math.max(1, w / 2 - margin),
+    Math.abs(dy) / Math.max(1, h / 2 - margin),
+    0.0001
+  );
+  const ix = cx + dx / ratio;
+  const iy = cy + dy / ratio;
+  const angle = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.translate(ix, iy);
+  ctx.fillStyle = 'rgba(220, 60, 60, 0.85)';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.rotate(angle);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(-6, -10);
+  ctx.lineTo(-6, 10);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#000000';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeText('GOAL', ix, iy + 42);
+  ctx.fillText('GOAL', ix, iy + 42);
+  ctx.restore();
+}
+
+function imgClampCameraToBounds(stage, viewportW, viewportH) {
+  const scale = stage._scale || 1;
+  const halfW = (viewportW / scale) / 2;
+  const halfH = (viewportH / scale) / 2;
+  if (stage.viewBox.w * scale >= viewportW) {
+    stage.camera.x = Math.max(halfW, Math.min(stage.viewBox.w - halfW, stage.camera.x));
+  } else {
+    stage.camera.x = stage.viewBox.w / 2;
+  }
+  if (stage.viewBox.h * scale >= viewportH) {
+    stage.camera.y = Math.max(halfH, Math.min(stage.viewBox.h - halfH, stage.camera.y));
+  } else {
+    stage.camera.y = stage.viewBox.h / 2;
   }
 }
 
