@@ -754,12 +754,40 @@ function buildStage(stageDef) {
 
 // ====== Image stage URL param loading ======
 // Visit ?image=<name> to load maze/imageStages/<name>.json instead of normal stages.
+// Special case: ?image=__draft__ reads the stage def from sessionStorage. This is
+// used by tools/maze-editor.html for "test in maze" preview without commit/deploy.
 // Filename sanitized to [A-Za-z0-9_-]+ to prevent path traversal.
 function _loadImageStageFromURL() {
   try {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('image');
     if (!raw) return Promise.resolve(false);
+
+    // ── Draft preview from sessionStorage (editor handoff) ──
+    if (raw === '__draft__') {
+      try {
+        const draftJson = sessionStorage.getItem('pono_maze_draft_stage');
+        if (!draftJson) {
+          console.warn('[maze] no draft in sessionStorage; open from editor "▶ 迷路で試す" button');
+          return Promise.resolve(false);
+        }
+        const def = JSON.parse(draftJson);
+        if (!def || def.type !== 'image') {
+          console.warn('[maze] invalid draft type'); return Promise.resolve(false);
+        }
+        // If the editor stashed an image dataURL, prefer it over the imageUrl path
+        // (so previewing works even when the image isn't yet on the server)
+        const draftImg = sessionStorage.getItem('pono_maze_draft_image');
+        if (draftImg) def.imageUrl = draftImg;
+        STAGES = [def];
+        return Promise.resolve(true);
+      } catch (e) {
+        console.warn('[maze] draft load failed:', e);
+        return Promise.resolve(false);
+      }
+    }
+
+    // ── Normal: fetch from imageStages/<name>.json ──
     const safe = String(raw).replace(/[^a-zA-Z0-9_-]/g, '');
     if (!safe) return Promise.resolve(false);
     return fetch('imageStages/' + safe + '.json', { credentials: 'omit' })

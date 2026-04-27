@@ -127,16 +127,20 @@ html, body { height: 100vh; overflow: hidden;
         <li>「スタート」「ゴール」モードで位置を 1 つずつ置く</li>
         <li>「中継」モードで分岐や角に置く</li>
         <li>「道を描く」モードで、<b>ノード A</b> をクリック → カーブの形を決めるアンカー点を順にクリック → <b>ノード B</b> をクリックして完成</li>
-        <li>「JSON ダウンロード」で `&lt;name&gt;.json` を取得</li>
-        <li><b>maze/imageStages/</b> に JSON と画像 (同名) を保存</li>
-        <li><code style="color:#A4C76D">maze/?image=&lt;name&gt;</code> を開く / または「▶ 迷路で試す」ボタン</li>
+        <li><b>「▶ 迷路で試す」</b> ボタンで<b>すぐ試遊</b> (デプロイ不要、sessionStorage 経由)</li>
+        <li>OK なら「💾 JSON ダウンロード」→ <code style="color:#A4C76D">maze/imageStages/&lt;name&gt;.json</code> に配置 + 画像コピー → コミットで本番反映</li>
       </ol>
-      <p style="margin-top: 8px;"><b>ヒント:</b><br>
-        ・道は<b>クリックしたアンカー点を通る滑らかなカーブ</b> (Catmull-Rom スプライン) で繋がる<br>
-        ・<b>直線</b>が欲しいときは中間点を打たず、ノード A → ノード B だけクリック<br>
-        ・カーブを強く曲げたいときは曲がる位置にアンカーを増やす<br>
+      <p style="margin-top: 8px;"><b>カーブのコツ:</b><br>
+        ・道は<b>クリックしたアンカー点を通る滑らかなカーブ</b> (Catmull-Rom)<br>
+        ・<b>直線</b>: 中間点を打たず、ノード A → ノード B だけクリック<br>
+        ・<b>強く曲げる</b>: 曲がる位置にアンカーを増やす<br>
         ・<kbd>Esc</kbd> / 右クリックで作成中の道を取消<br>
         ・ノードに 30px 以内でクリックするとスナップ
+      </p>
+      <p style="margin-top: 8px;"><b>「迷路で試す」の仕組み:</b><br>
+        現在のノード/道/画像を sessionStorage にコピー → 新タブで <code>maze/?image=__draft__</code> を開く。<br>
+        画像が小さい場合 (~5MB 以下) は dataURL も渡すので、画像が未デプロイでも遊べる。<br>
+        画像が大きい場合は、サーバーの <code>maze/imageStages/&lt;name&gt;.&lt;ext&gt;</code> を fetch (画像だけ事前にコミットしておけば OK)。
       </p>
     </div>
   </aside>
@@ -667,73 +671,105 @@ document.getElementById('resetBtn').addEventListener('click', function() {
 
 // ────────────────────────────────────────────────────────
 // Export
-// ────────────────────────────────────────────────────────
-document.getElementById('exportBtn').addEventListener('click', function() {
-  if (!state.image) { alert('まず画像を読み込んでね'); return; }
-  if (!state.nodes.some(function(n) { return n.kind === 'start'; })) { alert('スタートノードを置いてね'); return; }
-  if (!state.nodes.some(function(n) { return n.kind === 'goal'; }))  { alert('ゴールノードを置いてね'); return; }
-  if (state.edges.length === 0) { alert('道を 1 つ以上描いてね'); return; }
-
+// Build the export def used by both download and draft preview.
+function buildExportDef() {
   const rawName = (stageNameInput.value || 'stage').trim();
   const safeName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  if (!safeName) { alert('ステージ名が無効です'); return; }
-
   const ext = (state.imgFileName.match(/\.([^.]+)$/) || [, 'png'])[1].toLowerCase();
   const imageRef = 'imageStages/' + safeName + '.' + ext;
-
-  const out = {
-    type: 'image',
-    name: rawName,
-    imageUrl: imageRef,
-    viewBox: { w: state.imgW, h: state.imgH },
-    orientation: 'landscape',
-    cameraFollow: true,
-    nodes: state.nodes.map(function(n) {
-      return { id: n.id, x: n.x, y: n.y, kind: n.kind };
-    }),
-    edges: state.edges.map(function(e) {
-      // Runtime uses `polyline` (densified curve). `_editor.controls` preserves
-      // anchor points so the editor can re-curve identically on reload.
-      const dense = densifyCatmullRom(e.controls);
-      return {
-        from: e.from, to: e.to,
-        polyline: dense.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
-        _editor: {
-          controls: e.controls.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
-        },
-      };
-    }),
+  return {
+    rawName: rawName,
+    safeName: safeName,
+    ext: ext,
+    def: {
+      type: 'image',
+      name: rawName,
+      imageUrl: imageRef,
+      viewBox: { w: state.imgW, h: state.imgH },
+      orientation: 'landscape',
+      cameraFollow: true,
+      nodes: state.nodes.map(function(n) {
+        return { id: n.id, x: n.x, y: n.y, kind: n.kind };
+      }),
+      edges: state.edges.map(function(e) {
+        // Runtime uses `polyline` (densified curve). `_editor.controls` preserves
+        // anchor points so the editor can re-curve identically on reload.
+        const dense = densifyCatmullRom(e.controls);
+        return {
+          from: e.from, to: e.to,
+          polyline: dense.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
+          _editor: {
+            controls: e.controls.map(function(p) { return { x: Math.round(p.x), y: Math.round(p.y) }; }),
+          },
+        };
+      }),
+    },
   };
+}
 
-  const json = JSON.stringify(out, null, 2);
+function validateForExport() {
+  if (!state.image) { alert('まず画像を読み込んでね'); return false; }
+  if (!state.nodes.some(function(n) { return n.kind === 'start'; })) { alert('スタートノードを置いてね'); return false; }
+  if (!state.nodes.some(function(n) { return n.kind === 'goal'; }))  { alert('ゴールノードを置いてね'); return false; }
+  if (state.edges.length === 0) { alert('道を 1 つ以上描いてね'); return false; }
+  return true;
+}
+
+document.getElementById('exportBtn').addEventListener('click', function() {
+  if (!validateForExport()) return;
+  const r = buildExportDef();
+  if (!r.safeName) { alert('ステージ名が無効です'); return; }
+
+  const json = JSON.stringify(r.def, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = safeName + '.json';
+  a.download = r.safeName + '.json';
   a.click();
   setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
 
-  showBanner('💾 ' + safeName + '.json をダウンロードしました');
+  showBanner('💾 ' + r.safeName + '.json をダウンロードしました');
   alert(
-    '✅ ' + safeName + '.json を保存しました!\n\n' +
-    '次のステップ:\n' +
-    '1. ダウンロードした JSON を maze/imageStages/ に配置\n' +
-    '2. 元の画像 (' + state.imgFileName + ') を maze/imageStages/' + safeName + '.' + ext + ' として配置\n' +
-    '3. ブラウザで maze/?image=' + safeName + ' を開く'
+    '✅ ' + r.safeName + '.json を保存しました!\n\n' +
+    '次のステップ (本番反映):\n' +
+    '1. JSON を maze/imageStages/ に配置\n' +
+    '2. 画像 (' + state.imgFileName + ') を maze/imageStages/' + r.safeName + '.' + r.ext + ' として配置\n' +
+    '3. ブラウザで maze/?image=' + r.safeName + ' を開く\n\n' +
+    '※ コミット/デプロイ前に動作確認したい場合は、下の「▶ 迷路で試す」ボタンを使ってね (sessionStorage 経由のドラフトプレビュー)'
   );
 });
 
 // ────────────────────────────────────────────────────────
-// Test in maze (open new tab pointing to maze/?image=<name>)
+// Test in maze — DRAFT PREVIEW (no commit/deploy needed)
+// Uses sessionStorage to hand the def + image dataURL to the new tab.
+// New tabs opened via window.open() inherit a copy of the opener's
+// sessionStorage at open time, so the maze tab reads it on init.
 // ────────────────────────────────────────────────────────
 document.getElementById('testBtn').addEventListener('click', function() {
-  const rawName = (stageNameInput.value || '').trim();
-  const safeName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  if (!safeName) { alert('ステージ名を入力してね'); return; }
-  // tools/ → maze/ への相対パス
-  const url = '../maze/?image=' + encodeURIComponent(safeName);
-  window.open(url, '_blank', 'noopener');
-  showBanner('新タブで ' + url + ' を開きました');
+  if (!validateForExport()) return;
+  const r = buildExportDef();
+  try {
+    sessionStorage.setItem('pono_maze_draft_stage', JSON.stringify(r.def));
+    sessionStorage.removeItem('pono_maze_draft_image');
+    if (state.image && state.image.src && state.image.src.indexOf('data:') === 0) {
+      try {
+        sessionStorage.setItem('pono_maze_draft_image', state.image.src);
+      } catch (e) {
+        // QuotaExceededError — image too big for sessionStorage. Runtime will
+        // fall back to fetching the imageUrl from the server (if it's there).
+        console.warn('image too big for sessionStorage, runtime will use imageUrl from def:', e.message);
+        showBanner('⚠ 画像が大きすぎてセッションに保存できないよ。サーバーの ' + r.def.imageUrl + ' を使うよ');
+      }
+    }
+  } catch (e) {
+    alert('プレビュー用のデータ保存に失敗: ' + e.message);
+    return;
+  }
+  // Open in new tab. NOTE: do NOT use noopener — that breaks sessionStorage
+  // inheritance in some browsers.
+  const url = '../maze/?image=__draft__';
+  window.open(url, '_blank');
+  showBanner('▶ 新タブでドラフトプレビューを開きました');
 });
 
 // ────────────────────────────────────────────────────────

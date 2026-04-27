@@ -8,14 +8,20 @@
 
 ## ステージ追加ワークフロー (推奨)
 1. **AI で迷路画像を 16:9 で生成** (1画面=1920×1080 〜 2画面=3840×1080 等)
-2. **エディタを開く**: ブラウザで `tools/maze-editor.html` を開く
+2. **エディタを開く**: ブラウザで `tools/maze-editor.html`
 3. **画像をドロップ** → ステージ名を入力 (英数字・_-)
 4. **ノード配置**: スタート/ゴール/中継ノードを画像上にクリックで置く
-5. **道を描く**: ノード A → 中継点を順にクリック → ノード B で確定 (Esc で取消)
-6. **JSON ダウンロード** → `maze/imageStages/<name>.json` に配置
-7. **画像コピー** → `maze/imageStages/<name>.<ext>` に配置 (元の拡張子)
-8. **テスト**: `maze/?image=<name>` を開く
-9. デプロイ無しで反復可能
+5. **道を描く**: ノード A → アンカー点を順にクリック → ノード B で確定 (Esc で取消)。アンカー点を通る Catmull-Rom 曲線で繋がる
+6. **「▶ 迷路で試す」でドラフトプレビュー**: sessionStorage 経由で新タブを開いて即試遊。コミット/デプロイ不要
+7. OK なら **「💾 JSON ダウンロード」** → `maze/imageStages/<name>.json` に配置
+8. **画像コピー** → `maze/imageStages/<name>.<ext>` に配置 (元の拡張子)
+9. コミット → auto push → GH Actions → staging に反映 → `maze/?image=<name>` で遊べる
+
+### ドラフトプレビュー (`?image=__draft__`)
+- エディタの「▶ 迷路で試す」が `sessionStorage` に def + image dataURL を入れて新タブを開く
+- 新タブは window.open() で開かれた同オリジン子タブなので、sessionStorage を継承
+- maze/index.html の `_loadImageStageFromURL` が `raw === '__draft__'` を特別扱いして storage から読み込む
+- 画像が大きい (>5MB) と quota error → JSON だけ渡し、画像はサーバーの `imageUrl` から fetch (forest_entrance.png は既にサーバーにある)
 
 ## アクセス方法
 URL: `maze/?image=<name>` で `maze/imageStages/<name>.json` を読み込む。
