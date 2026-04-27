@@ -2439,9 +2439,12 @@ function generateMazeForDifficulty(d) {
   _resizeCanvas(params.gridW, params.panels);
   const cw = params.cw, ch = params.ch;
   const cellStride = params.cellStride;
-  // Center the cell grid in the tile grid
-  const offX = Math.floor((GRID_W - cw * cellStride) / 2);
-  const offY = Math.floor((GRID_H - ch * cellStride) / 2);
+  // 「外周マージンは 1 タイル」厳守: 右下に 1 タイル余白を固定で確保し、
+  // 残り (≥0) は左上に寄せる。整数倍で完全フィットする narrow/2-panel は
+  // 1+1+1+1 (左上も 1)、wide (stride=3) のように Y が割り切れない場合は
+  // 下マージン=1 を保ったまま上だけ +1 タイル広めになる。
+  const offX = (GRID_W - cw * cellStride) - 1;
+  const offY = (GRID_H - ch * cellStride) - 1;
   const maze = _buildMazeCells(cw, ch, offX, offY, cellStride, params.straightBias);
   // Add loops first (extra walls knocked down → multiple solution paths)
   if (params.loopFraction > 0) {
