@@ -2117,10 +2117,21 @@ updateCharmsUI();
 showOverlay();
 // 1) Load _index.json (overrides STAGES with image stages at specified slots)
 // 2) Then handle ?image=<name> (one-off preview, takes precedence)
-// 3) Then loadStage(0)
+// 3) Then loadStage(<initial>)  — defaults to 0 (tutorial), or ?stage=N to jump
+function _getInitialStageIdx() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('stage');
+    if (raw == null) return 0;
+    const n = parseInt(raw, 10);
+    if (Number.isInteger(n) && n >= 0 && n < STAGES.length) return n;
+    console.warn('[maze] ?stage=' + raw + ' out of range, defaulting to 0');
+  } catch (e) { /* ignore */ }
+  return 0;
+}
 _loadImageStageIndex()
   .then(function() { return _loadImageStageFromURL(); })
-  .then(function() { loadStage(0); });
+  .then(function() { loadStage(_getInitialStageIdx()); });
 requestAnimationFrame(draw);
 </script>
 </body>

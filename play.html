@@ -2525,6 +2525,10 @@
 
       // ── Reward granting ──
       function checkSlotReward(total) {
+        // MVP: 報酬制度封印中は宝箱・afterMsg・おへやアンロック の連鎖を全部止める。
+        // grantReward も呼ばず given にも push しないので、再公開時に貯まったスタンプ
+        // ぶんの報酬がまとめて発火する (最初の1個だけ宝箱演出、残りはサイレント) 仕様。
+        if (window.PONO_MVP_NO_REWARDS) return;
         // rewards.json がまだロード中なら少し待ってから再試行
         if (!_rewardsReady) {
           setTimeout(function() { checkSlotReward(total); }, 200);

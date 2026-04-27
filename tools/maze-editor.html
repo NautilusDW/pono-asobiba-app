@@ -1005,12 +1005,16 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
       existingIndex ? existingIndex.sha : null);
 
     showBanner('✅ 保存完了。GH Actions が staging に反映 (1分くらい)');
-    alert(
+    const goNow = confirm(
       '✅ 本番(staging) に保存しました!\n\n' +
       '・slot ' + stageNum + ' → ' + r.safeName + '\n' +
-      '・1分ほどで https://pono-asobiba-staging.ndw.workers.dev/maze/ に反映\n' +
-      '・stage ' + stageNum + ' を選ぶか、最初から進めてみてね'
+      '・1分ほどで staging に反映\n\n' +
+      'OK を押すと新タブで slot ' + stageNum + ' を直接開く (?stage=' + stageNum + ')\n' +
+      'キャンセルでこの画面に残る'
     );
+    if (goNow) {
+      window.open('../maze/?stage=' + encodeURIComponent(stageNum), '_blank');
+    }
   } catch (e) {
     console.error(e);
     if (String(e.message || e).indexOf('401') >= 0) {

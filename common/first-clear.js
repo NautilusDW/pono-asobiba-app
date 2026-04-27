@@ -158,6 +158,13 @@
   window.triggerFirstClearReward = function (gameId, opts) {
     opts = opts || {};
     if (!gameId) return Promise.resolve(false);
+    // MVP: 報酬制度封印中は宝箱・afterMsg 連鎖を全部止める。
+    // grantReward / _markGranted / _queuePending も呼ばないので、再公開時に
+    // ゲームをもう一度クリアした時点でリワードが正規に発火する。
+    if (window.PONO_MVP_NO_REWARDS) {
+      try { if (typeof opts.onClose === 'function') opts.onClose(); } catch (e) {}
+      return Promise.resolve(false);
+    }
     if (_isAlreadyGranted(gameId)) return Promise.resolve(false);
 
     return fetch(_rewardsPath() + '?_=' + Date.now(), { cache: 'no-store' })
