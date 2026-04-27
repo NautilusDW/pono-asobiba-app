@@ -118,12 +118,13 @@ input[type="file"]::file-selector-button {
     </div>
 
     <div class="actions">
+      <button class="btn" id="undoBtn">⤺ 取り消し (1ステップ前に戻す)</button>
       <button class="btn primary" id="exportPngBtn">🖼 PNG ダウンロード</button>
       <button class="btn" id="exportJsonBtn">💾 JSON 保存</button>
       <button class="btn" id="copyPromptBtn">📋 AIプロンプト雛形をコピー</button>
       <h3 style="margin-top:8px;">📂 JSON 読み込み</h3>
       <input type="file" id="jsonInput" accept=".json,application/json">
-      <button class="btn danger" id="resetBtn">↺ リセット</button>
+      <button class="btn danger" id="resetBtn">↺ ぜんぶリセット</button>
     </div>
 
     <div class="tip">
@@ -174,15 +175,26 @@ const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 // ────────────────────────────────────────────────────────
 const state = {
   tiles: makeEmptyGrid(), // 'wall' | 'path'
-  start: null,            // { x, y } in tile coords
-  goal:  null,
+  start: null,            // { x, y } in PIXEL coords (free positioning, not grid-snapped)
+  goal:  null,            // same — pixel coords
   mode: 'path',
   brushSize: 2,
   showGrid: true,
   showSolution: false,
   isPainting: false,
   hoverTile: null,        // { x, y } currently hovered tile (for brush preview)
+  draggingMarker: null,   // 'start' | 'goal' | null — marker is being dragged
+  history: [],            // snapshots for undo
 };
+
+// Convert pixel marker pos → tile coord (for BFS / tile painting)
+function markerTile(p) {
+  if (!p) return null;
+  return {
+    x: Math.max(0, Math.min(GRID_W - 1, Math.floor(p.x / CELL))),
+    y: Math.max(0, Math.min(GRID_H - 1, Math.floor(p.y / CELL))),
+  };
+}
 
 function makeEmptyGrid() {
   const g = new Array(GRID_H);
@@ -255,7 +267,7 @@ function draw() {
   }
   // Solution path (BFS shortest) — drawn as a yellow trail
   if (state.showSolution && state.start && state.goal) {
-    const path = bfsShortest(state.start, state.goal);
+    const path = bfsShortest(markerTile(state.start), markerTile(state.goal));
     if (path && path.length > 1) {
       ctx.strokeStyle = 'rgba(255, 220, 60, 0.65)';
       ctx.lineWidth = CELL * 0.55;
@@ -308,8 +320,9 @@ function drawBrushPreview() {
 }
 
 function drawMarker(pos, color, label) {
-  const cx = pos.x * CELL + CELL / 2;
-  const cy = pos.y * CELL + CELL / 2;
+  // pos is in pixel coords
+  const cx = pos.x;
+  const cy = pos.y;
   const r = CELL * 1.4;
   ctx.save();
   ctx.fillStyle = color;
@@ -339,7 +352,8 @@ function eventToTile(e) {
 // ────────────────────────────────────────────────────────
 // Painting
 // ────────────────────────────────────────────────────────
-function paintAt(tx, ty) {
+function paintAt(tx, ty, px, py) {
+  // tx/ty: tile coords (used for path/erase brush). px/py: pixel coords (used for start/goal pin).
   const half = Math.floor(state.brushSize / 2);
   const sz = state.brushSize;
   const x0 = Math.max(0, tx - half);
@@ -350,50 +364,98 @@ function paintAt(tx, ty) {
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) state.tiles[y][x] = 'path';
   } else if (state.mode === 'erase') {
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
-      // If we erase a tile that's the start or goal, clear that marker too
-      if (state.start && state.start.x === x && state.start.y === y) state.start = null;
-      if (state.goal  && state.goal.x  === x && state.goal.y  === y) state.goal  = null;
       state.tiles[y][x] = 'wall';
     }
+    // If erase brush overlaps a marker, clear it too (tile-radius check)
+    if (state.start && _markerInEraseRect(state.start, x0, y0, x1, y1)) state.start = null;
+    if (state.goal  && _markerInEraseRect(state.goal,  x0, y0, x1, y1)) state.goal  = null;
   } else if (state.mode === 'start') {
-    state.start = { x: tx, y: ty };
-    // Ensure start tile is path
-    if (tx >= 0 && tx < GRID_W && ty >= 0 && ty < GRID_H) {
-      state.tiles[ty][tx] = 'path';
-    }
+    state.start = { x: px, y: py };
   } else if (state.mode === 'goal') {
-    state.goal = { x: tx, y: ty };
-    if (tx >= 0 && tx < GRID_W && ty >= 0 && ty < GRID_H) {
-      state.tiles[ty][tx] = 'path';
-    }
+    state.goal = { x: px, y: py };
   }
+}
+
+function _markerInEraseRect(marker, x0, y0, x1, y1) {
+  const tx = Math.floor(marker.x / CELL);
+  const ty = Math.floor(marker.y / CELL);
+  return tx >= x0 && tx < x1 && ty >= y0 && ty < y1;
+}
+
+// Check whether a click is on an existing start/goal marker. Returns 'start'|'goal'|null.
+function _markerHitAt(px, py) {
+  const r = CELL * 1.4;
+  const r2 = r * r;
+  if (state.start) {
+    const dx = px - state.start.x, dy = py - state.start.y;
+    if (dx*dx + dy*dy < r2) return 'start';
+  }
+  if (state.goal) {
+    const dx = px - state.goal.x, dy = py - state.goal.y;
+    if (dx*dx + dy*dy < r2) return 'goal';
+  }
+  return null;
+}
+
+// Pixel coords from a pointer event (clamped to canvas)
+function eventToPixel(e) {
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width  * CANVAS_W;
+  const y = (e.clientY - rect.top)  / rect.height * CANVAS_H;
+  return {
+    x: Math.max(0, Math.min(CANVAS_W, x)),
+    y: Math.max(0, Math.min(CANVAS_H, y)),
+  };
 }
 
 // pointer events for mouse + touch
 cv.addEventListener('pointerdown', function(e) {
   const t = eventToTile(e);
+  const p = eventToPixel(e);
+  // Marker drag has highest priority — works regardless of mode.
+  // Click on existing start/goal → grab and drag it freely.
+  const hit = _markerHitAt(p.x, p.y);
+  if (hit) {
+    pushHistory();
+    state.draggingMarker = hit;
+    cv.setPointerCapture(e.pointerId);
+    cv.style.cursor = 'grabbing';
+    return;
+  }
+  pushHistory(); // snapshot before any change
   if (state.mode === 'start' || state.mode === 'goal') {
-    paintAt(t.x, t.y);
+    // Free placement — store pixel coords
+    paintAt(t.x, t.y, p.x, p.y);
     afterEdit();
     return;
   }
   state.isPainting = true;
   cv.setPointerCapture(e.pointerId);
-  paintAt(t.x, t.y);
+  paintAt(t.x, t.y, p.x, p.y);
   afterEdit();
 });
 cv.addEventListener('pointermove', function(e) {
   const t = eventToTile(e);
-  // Update hover position (used for brush preview rect) — clamp to grid
+  const p = eventToPixel(e);
+  // Update hover position (used for brush preview rect)
   if (t.x >= 0 && t.x < GRID_W && t.y >= 0 && t.y < GRID_H) {
     state.hoverTile = { x: t.x, y: t.y };
   } else {
     state.hoverTile = null;
   }
-  if (state.isPainting) {
-    paintAt(t.x, t.y);
+  // Marker drag in progress?
+  if (state.draggingMarker) {
+    if (state.draggingMarker === 'start') state.start = { x: p.x, y: p.y };
+    else if (state.draggingMarker === 'goal')  state.goal  = { x: p.x, y: p.y };
+    draw();
+    return;
   }
-  // Redraw to update preview (cheap — just canvas pixels, no stats)
+  if (state.isPainting) {
+    paintAt(t.x, t.y, p.x, p.y);
+  } else {
+    // Cursor hint when hovering over a draggable marker
+    cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : 'crosshair';
+  }
   draw();
 });
 cv.addEventListener('pointerleave', function() {
@@ -401,6 +463,13 @@ cv.addEventListener('pointerleave', function() {
   draw();
 });
 cv.addEventListener('pointerup', function(e) {
+  if (state.draggingMarker) {
+    state.draggingMarker = null;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = 'crosshair';
+    afterEdit();
+    return;
+  }
   if (state.isPainting) {
     state.isPainting = false;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -503,7 +572,7 @@ function recomputeStats() {
   statBranches.textContent = branches;
   statDeadEnds.textContent = deadEnds;
   if (state.start && state.goal) {
-    const sp = bfsShortest(state.start, state.goal);
+    const sp = bfsShortest(markerTile(state.start), markerTile(state.goal));
     if (sp) {
       statConn.textContent = '✓ つながってる';
       statConn.className = 'ok';
@@ -611,10 +680,20 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
         }
       }
       state.tiles = g;
-      state.start = (def.start && Number.isFinite(def.start.x) && Number.isFinite(def.start.y))
-        ? { x: def.start.x, y: def.start.y } : null;
-      state.goal = (def.goal && Number.isFinite(def.goal.x) && Number.isFinite(def.goal.y))
-        ? { x: def.goal.x, y: def.goal.y } : null;
+      // Backward-compat marker loader: integer values inside grid range = tile coords (legacy),
+      // otherwise treated as pixel coords (free positioning).
+      function _loadMarker(m) {
+        if (!m || !Number.isFinite(m.x) || !Number.isFinite(m.y)) return null;
+        const isTileCoord = Number.isInteger(m.x) && Number.isInteger(m.y)
+          && m.x >= 0 && m.x < GRID_W && m.y >= 0 && m.y < GRID_H
+          && (m.x < CELL && m.y < CELL); // small values → tile coords
+        if (isTileCoord) {
+          return { x: m.x * CELL + CELL / 2, y: m.y * CELL + CELL / 2 };
+        }
+        return { x: m.x, y: m.y };
+      }
+      state.start = _loadMarker(def.start);
+      state.goal  = _loadMarker(def.goal);
       afterEdit();
       showBanner('📂 JSON 読み込み完了');
     } catch (err) {
@@ -651,10 +730,45 @@ document.getElementById('copyPromptBtn').addEventListener('click', function() {
 });
 
 // ────────────────────────────────────────────────────────
+// Undo / history
+// ────────────────────────────────────────────────────────
+function pushHistory() {
+  // Capture full state (deep clone via JSON)
+  state.history.push(JSON.stringify({
+    tiles: state.tiles,
+    start: state.start,
+    goal: state.goal,
+  }));
+  if (state.history.length > 50) state.history.shift();
+}
+
+document.getElementById('undoBtn').addEventListener('click', function() {
+  if (state.history.length === 0) {
+    showBanner('もう取り消せないよ');
+    return;
+  }
+  const prev = JSON.parse(state.history.pop());
+  state.tiles = prev.tiles;
+  state.start = prev.start;
+  state.goal  = prev.goal;
+  afterEdit();
+  showBanner('⤺ 1ステップ取り消し (残り ' + state.history.length + ' 回分)');
+});
+
+window.addEventListener('keydown', function(e) {
+  // Ctrl/Cmd+Z = undo
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('undoBtn').click();
+  }
+});
+
+// ────────────────────────────────────────────────────────
 // Reset
 // ────────────────────────────────────────────────────────
 document.getElementById('resetBtn').addEventListener('click', function() {
   if (!confirm('全てのタイル・スタート/ゴールを消します。よろしいですか?')) return;
+  pushHistory(); // allow undoing the reset
   state.tiles = makeEmptyGrid();
   state.start = null;
   state.goal  = null;
