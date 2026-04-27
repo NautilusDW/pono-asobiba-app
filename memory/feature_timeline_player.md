@@ -64,6 +64,14 @@ type: project
 - Timeline はそれを末尾の `(\d+)` で抽出してソート
 - 連番付けの前にカードをドラッグして並び順を整える ワークフローが推奨
 
+### 7. チェック済みカードだけ再生 + 選択セット保存
+- `Timeline.getOrder()` は `.sprite-card.selected` のついたカードに対応する idx だけを返す
+  → チェックを外せばタイムラインから即座に消える (`setCardChecked` 内で `Timeline.refresh()` を debounce 呼出)
+- `sprites-bar` に「📌 保存」「(チェックセット) ▼」「🗑」を追加
+- `localStorage` キー `creature_studio_selection_sets` に `{name, ids, savedAt}[]` 形式で保存
+- ID (なければ name) で照合して復元するので、同じスプライトシートを別ウィンドウで再分割しても同じ ID なら復元できる
+- 同じシート内で「前向き歩き」「後ろ向き歩き」など複数の selection set を切替可能 (元々の要件)
+
 ## 注意点
 - `card-preview` 自体に `position: relative` が必要 (drag ハンドルアイコン `::after` 用)
 - `.compare-canvas-box` には `position: relative` を追加 (sprite-highlight の親)

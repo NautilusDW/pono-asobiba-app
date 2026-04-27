@@ -165,9 +165,10 @@ body {
   overflow: hidden;
 }
 
-/* タイムラインモード ON: 比較タブを隠してタイムラインを上半分に伸ばす。
+/* タイムラインモード ON: 比較・合成タブを完全に隠してタイムラインを上半分に伸ばす。
    下半分は通常通りスプライトグリッド (並び替え・連番命名しながら再生確認できる)。 */
-.right-panel.split-mode.timeline-mode #tab-compare {
+.right-panel.split-mode.timeline-mode #tab-compare,
+.right-panel.split-mode.timeline-mode #tab-composite {
   display: none !important;
 }
 .right-panel.split-mode.timeline-mode #tab-timeline {
@@ -929,6 +930,12 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
         <button class="tbtn tbtn-blue" id="btn-ai-group">🤖 AI命名</button>
         <button class="tbtn tbtn-ghost" id="btn-seq-name" title="先頭のカードに入れた名前を元に、残りに _001, _002, ... と連番で名付け">📝 連番</button>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <select id="sel-set-select" title="保存済みのチェックセット" style="padding:4px 6px;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#d1d5db;font-size:0.7rem;font-family:inherit;max-width:120px;">
+          <option value="">(チェックセット)</option>
+        </select>
+        <button class="tbtn tbtn-ghost" id="btn-sel-save"   title="今のチェック状態を名前を付けて保存">📌 保存</button>
+        <button class="tbtn tbtn-ghost" id="btn-sel-delete" title="選択中のセットを削除">🗑</button>
         <div style="flex:1"></div>
         <label style="font-size:0.7rem;color:#9ca3af;">保存先:</label>
         <select id="deploy-destination" style="padding:4px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#d1d5db;font-size:0.75rem;font-family:inherit;">
@@ -3649,9 +3656,16 @@ const Timeline = {
     return m ? parseInt(m[1], 10) : Infinity;
   },
 
-  // 表示順の sprite idx 配列 (連番昇順、無ければ配列順)
+  // チェック (selected) されている sprite idx だけ。カードがまだ無い間 (DOM 未生成) は全部含める。
+  _isChecked(i) {
+    const card = document.querySelector(`.sprite-card[data-idx="${i}"]`);
+    return !card || card.classList.contains('selected');
+  },
+
+  // 表示順の sprite idx 配列 (チェック済み → 連番昇順、無ければ配列順)
   getOrder() {
     return sprites.map((_, i) => i)
+      .filter(i => this._isChecked(i))
       .sort((a, b) => {
         const na = this._seqNum(sprites[a]);
         const nb = this._seqNum(sprites[b]);
@@ -4147,13 +4161,121 @@ document.getElementById('btn-seq-name').addEventListener('click', () => {
 });
 
 // ════════════════════════════════════════════════════════════
+// Selection Sets (チェック状態の保存・呼出)
+// 同じシートで「前向き歩き」「後ろ向き歩き」など複数のチェックセットを切替できる
+// ════════════════════════════════════════════════════════════
+const SELECTION_SETS_KEY = 'creature_studio_selection_sets';
+
+function loadSelectionSets() {
+  try {
+    const raw = localStorage.getItem(SELECTION_SETS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function saveSelectionSets(sets) {
+  try { localStorage.setItem(SELECTION_SETS_KEY, JSON.stringify(sets)); } catch {}
+}
+function captureCurrentSelectionIds() {
+  const ids = [];
+  document.querySelectorAll('.sprite-card.selected').forEach(c => {
+    const idx = parseInt(c.dataset.idx, 10);
+    const sp = sprites[idx];
+    // ID が無い場合は name を fallback (連番命名前でも復元できるように)
+    const key = (sp && (sp.id || sp.name)) || '';
+    if (key) ids.push(key);
+  });
+  return ids;
+}
+function applySelectionSet(ids) {
+  const wanted = new Set(ids);
+  let matched = 0;
+  document.querySelectorAll('.sprite-card').forEach(c => {
+    const idx = parseInt(c.dataset.idx, 10);
+    const sp = sprites[idx];
+    const key = (sp && (sp.id || sp.name)) || '';
+    const on = wanted.has(key);
+    setCardChecked(c, on);
+    if (on) matched++;
+  });
+  return matched;
+}
+function refreshSelectionSetSelect() {
+  const sel = document.getElementById('sel-set-select');
+  if (!sel) return;
+  const cur = sel.value;
+  const sets = loadSelectionSets();
+  sel.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value = ''; ph.textContent = '(チェックセット)';
+  sel.appendChild(ph);
+  sets.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.name;
+    o.textContent = `${s.name} (${(s.ids || []).length})`;
+    sel.appendChild(o);
+  });
+  if (cur && sets.find(s => s.name === cur)) sel.value = cur;
+}
+
+document.getElementById('btn-sel-save').addEventListener('click', () => {
+  const ids = captureCurrentSelectionIds();
+  if (ids.length === 0) {
+    showToast('チェックされたカードがありません', false);
+    return;
+  }
+  const name = (prompt('セット名を入力 (例: walk_front, walk_back):', '') || '').trim();
+  if (!name) return;
+  const sets = loadSelectionSets();
+  const existing = sets.findIndex(s => s.name === name);
+  const entry = { name, ids, savedAt: new Date().toISOString() };
+  if (existing >= 0) sets[existing] = entry; else sets.push(entry);
+  saveSelectionSets(sets);
+  refreshSelectionSetSelect();
+  document.getElementById('sel-set-select').value = name;
+  showToast(`📌 セット「${name}」(${ids.length}件) を保存`, true);
+});
+
+document.getElementById('sel-set-select').addEventListener('change', e => {
+  const name = e.target.value;
+  if (!name) return;
+  const sets = loadSelectionSets();
+  const set = sets.find(s => s.name === name);
+  if (!set) return;
+  const matched = applySelectionSet(set.ids || []);
+  showToast(`📂 「${name}」を呼び出し: ${matched}/${set.ids.length} 件マッチ`, true);
+});
+
+document.getElementById('btn-sel-delete').addEventListener('click', () => {
+  const sel = document.getElementById('sel-set-select');
+  const name = sel.value;
+  if (!name) { showToast('削除するセットを選択してください', false); return; }
+  if (!confirm(`セット「${name}」を削除しますか?`)) return;
+  const sets = loadSelectionSets().filter(s => s.name !== name);
+  saveSelectionSets(sets);
+  refreshSelectionSetSelect();
+  showToast(`🗑 セット「${name}」を削除`, true);
+});
+
+// 起動時に保存済みセット一覧を読み込み
+refreshSelectionSetSelect();
+
+// ════════════════════════════════════════════════════════════
 // Sprite Grid Selection (drag / shift+click / ctrl+click)
 // ════════════════════════════════════════════════════════════
 let lastClickedCardIdx = -1;
 
+let _tlRefreshTimer = null;
+function _scheduleTimelineRefresh() {
+  if (typeof Timeline === 'undefined') return;
+  clearTimeout(_tlRefreshTimer);
+  _tlRefreshTimer = setTimeout(() => Timeline.refresh(), 80);
+}
+
 function setCardChecked(card, selected) {
   card.classList.toggle('selected', selected);
   card.querySelector('.sp-check').checked = selected;
+  _scheduleTimelineRefresh();
 }
 
 (function() {
@@ -5121,10 +5243,15 @@ document.getElementById('btn-timeline-mode').addEventListener('click', () => {
   const turningOn = !rp.classList.contains('timeline-mode');
 
   if (turningOn) {
-    // 他モードと排他: マルチ合成 ON 中なら先に OFF
-    if (rp.classList.contains('multi-mode')) {
+    // 他モードと完全排他: マルチ合成 ON 中なら先に OFF にして composite を閉じる
+    if (multiPickerMode) {
       document.getElementById('btn-multi-picker').click();
     }
+    // composite タブが active のまま残っていることがあるので強制で外す
+    const compEl = document.getElementById('tab-composite');
+    if (compEl) compEl.classList.remove('active');
+    rp.classList.remove('multi-mode');
+
     rp.classList.add('timeline-mode');
     btn.textContent = '🎞 タイムライン ON';
     btn.style.background = '#f87171';
