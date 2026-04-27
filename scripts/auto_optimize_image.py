@@ -47,6 +47,9 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS_IMAGES = (ROOT / "assets" / "images").resolve()
+MAZE_IMAGE_STAGES = (ROOT / "maze" / "imageStages").resolve()
+# 監視対象ルート (ここに新ディレクトリを足すだけで scan / hook が広がる)
+WATCH_ROOTS = [ASSETS_IMAGES, MAZE_IMAGE_STAGES]
 BACKUP_DIR = ROOT / "assets" / "_orig_image_backup"
 CACHE_PATH = Path(__file__).resolve().parent / ".image_opt_cache.json"
 CACHE_LOCK = Path(__file__).resolve().parent / ".image_opt_cache.lock"
@@ -140,11 +143,20 @@ def _cache_key(path: Path) -> str:
         return str(path.resolve()).replace("\\", "/")
 
 
-def _is_under_assets_images(path: Path) -> bool:
+def _is_under_watched_dir(path: Path) -> bool:
+    """assets/images/ または maze/imageStages/ の配下なら True。"""
     try:
-        return ASSETS_IMAGES in path.resolve().parents or path.resolve() == ASSETS_IMAGES
+        rp = path.resolve()
+        for root in WATCH_ROOTS:
+            if root in rp.parents or rp == root:
+                return True
+        return False
     except Exception:
         return False
+
+
+# 後方互換 (旧名で参照されている場合に備える)
+_is_under_assets_images = _is_under_watched_dir
 
 
 def _has_alpha(im: "Image.Image") -> bool:
@@ -195,7 +207,7 @@ def optimize_one(
     if path.suffix.lower() not in VALID_EXTS:
         result["reason"] = "non-image"
         return result
-    if not _is_under_assets_images(path):
+    if not _is_under_watched_dir(path):
         result["reason"] = "out-of-scope"
         return result
 
@@ -255,13 +267,13 @@ def optimize_one(
             result["after"] = size_after
             result["new_path"] = str(path)
         else:
-            # alpha なし: JPEG 化が望ましい。ただし hook モード (allow_rename=False) で
-            # 既存拡張子が .png の場合は、コード参照が壊れないよう PNG のまま保存しつつ
-            # リサイズと再圧縮だけ行う (削減効果は JPEG より弱いが安全)。
-            keep_png_extension = (not allow_rename) and path.suffix.lower() == ".png"
+            # alpha なし: JPEG 化が望ましい。ただし hook / scan モード
+            # (allow_rename=False) では、コード参照が壊れないよう拡張子は保持する。
+            # 既存 .png は PNG として再圧縮、.webp は webp として再圧縮、.jpg/.jpeg はそのまま。
+            keep_orig_extension = (not allow_rename) and path.suffix.lower() in {".png", ".webp", ".jpg", ".jpeg"}
 
-            if keep_png_extension:
-                # PNG リサイズ (alpha 無しなので RGB 化)。JPEG にはしない。
+            if keep_orig_extension:
+                # 拡張子保持で in-place リサイズ + 再圧縮 (alpha なしなので RGB 化)。
                 rgb = im.convert("RGB")
                 if rgb.size[0] > JPEG_MAX_WIDTH:
                     scale = JPEG_MAX_WIDTH / rgb.size[0]
@@ -270,7 +282,13 @@ def optimize_one(
                         Image.LANCZOS,
                     )
                 tmp = path.with_suffix(path.suffix + ".opt.tmp")
-                rgb.save(tmp, format="PNG", optimize=True, compress_level=9)
+                ext_lower = path.suffix.lower()
+                if ext_lower in (".jpg", ".jpeg"):
+                    rgb.save(tmp, format="JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True)
+                elif ext_lower == ".webp":
+                    rgb.save(tmp, format="WEBP", quality=JPEG_QUALITY, method=6)
+                else:
+                    rgb.save(tmp, format="PNG", optimize=True, compress_level=9)
                 size_after = tmp.stat().st_size
                 if size_after >= size_before * (1 - MIN_SAVING_RATIO):
                     tmp.unlink(missing_ok=True)
@@ -424,7 +442,7 @@ def run_hook_mode() -> int:
                     continue
                 if path.suffix.lower() not in VALID_EXTS:
                     continue
-                if not _is_under_assets_images(path):
+                if not _is_under_watched_dir(path):
                     continue
                 key = _cache_key(path)
                 st = path.stat()
@@ -447,40 +465,49 @@ def run_hook_mode() -> int:
 
 
 def run_scan_mode(dry_run: bool = False) -> int:
-    """assets/images/ 配下を全走査。"""
+    """WATCH_ROOTS 配下 (assets/images/ + maze/imageStages/) を全走査。"""
     cache = _load_cache()
     total_before = total_after = 0
     count = 0
-    for path in ASSETS_IMAGES.rglob("*"):
-        if not path.is_file():
+    seen: set[Path] = set()
+    for root in WATCH_ROOTS:
+        if not root.exists():
             continue
-        if path.suffix.lower() not in VALID_EXTS:
-            continue
-        try:
-            r = optimize_one(path, dry_run=dry_run, allow_rename=True, verbose=False)
-            action = r["action"]
-            if action.startswith("would-optimize") or action in ("png", "jpeg"):
-                total_before += r["before"]
-                if action in ("png", "jpeg"):
-                    total_after += r["after"]
-                    new = Path(r["new_path"]) if r["new_path"] else path
-                    if new.exists():
-                        st = new.stat()
-                        cache[_cache_key(new)] = f"{st.st_mtime_ns}:{st.st_size}"
-                else:
-                    # dry-run: 概算後サイズ不明なので before のままカウント (削減量は実走行時に確定)
-                    total_after += r["before"]
-                count += 1
-                rel = path.relative_to(ROOT)
-                if action.startswith("would-optimize"):
-                    sys.stdout.write(f"[dry  ] {r['before'] // 1024:>7}KB  {rel}  ({r['reason']})\n")
-                else:
-                    pct = (1 - r["after"] / max(1, r["before"])) * 100
-                    sys.stdout.write(
-                        f"[{action:5s}] {r['before'] // 1024:>7}KB -> {r['after'] // 1024:>6}KB ({pct:+5.1f}%)  {rel}\n"
-                    )
-        except Exception as e:
-            _log_error(f"{path}: scan failed — {e}")
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            if path.suffix.lower() not in VALID_EXTS:
+                continue
+            rp = path.resolve()
+            if rp in seen:
+                continue
+            seen.add(rp)
+            try:
+                # allow_rename=False で運用: 既存の .png 参照を壊さないよう拡張子は保持。
+                # (alpha なし PNG は in-place で resize + 再圧縮、JPEG 化はしない)
+                r = optimize_one(path, dry_run=dry_run, allow_rename=False, verbose=False)
+                action = r["action"]
+                if action.startswith("would-optimize") or action in ("png", "jpeg"):
+                    total_before += r["before"]
+                    if action in ("png", "jpeg"):
+                        total_after += r["after"]
+                        new = Path(r["new_path"]) if r["new_path"] else path
+                        if new.exists():
+                            st = new.stat()
+                            cache[_cache_key(new)] = f"{st.st_mtime_ns}:{st.st_size}"
+                    else:
+                        total_after += r["before"]
+                    count += 1
+                    rel = path.relative_to(ROOT)
+                    if action.startswith("would-optimize"):
+                        sys.stdout.write(f"[dry  ] {r['before'] // 1024:>7}KB  {rel}  ({r['reason']})\n")
+                    else:
+                        pct = (1 - r["after"] / max(1, r["before"])) * 100
+                        sys.stdout.write(
+                            f"[{action:5s}] {r['before'] // 1024:>7}KB -> {r['after'] // 1024:>6}KB ({pct:+5.1f}%)  {rel}\n"
+                        )
+            except Exception as e:
+                _log_error(f"{path}: scan failed -- {e}")
     if not dry_run and count:
         _save_cache(cache)
     saved = total_before - total_after
@@ -506,10 +533,27 @@ def run_manual_mode(paths: Iterable[str]) -> int:
     return 0
 
 
+def _ensure_utf8_stdio() -> None:
+    """Windows cp932 環境で日本語を含む __doc__ を出力するとクラッシュするので
+    stdout/stderr を UTF-8 に再構成する。再構成失敗時は無視 (フック阻害回避)。"""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is None:
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+
 def main() -> int:
+    _ensure_utf8_stdio()
     args = sys.argv[1:]
     if not args:
-        sys.stderr.write(__doc__ or "")
+        try:
+            sys.stderr.write(__doc__ or "")
+        except Exception:
+            pass
         return 1
     if args[0] == "--hook":
         return run_hook_mode()
@@ -517,7 +561,10 @@ def main() -> int:
         dry = "--dry-run" in args
         return run_scan_mode(dry_run=dry)
     if args[0] == "--help" or args[0] == "-h":
-        sys.stdout.write(__doc__ or "")
+        try:
+            sys.stdout.write(__doc__ or "")
+        except Exception:
+            pass
         return 0
     return run_manual_mode(args)
 

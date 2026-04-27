@@ -116,6 +116,46 @@ PoC サンプル: `maze/?image=sample1` (3840×1080, 4ノード, 3エッジ, 横
 - ✅ **障害物衝突で 1 秒静止してから戻る (2026-04-27)**: 以前は障害物に当たった瞬間に直前ノードへ瞬間移動していたが、子供が「何が起きたか」を理解できないため、まずぶつかった位置でポノを停止 → 1 秒間 (`_imgPauseUntil` フラグ) その場でホバリング + 吹き出し「いてっ！とおれない！」を表示 → 経過後に直前ノードに自動的に戻る、という流れに変更。`_imgPauseUntil` の間は `imgDraw()` の arrow safety net も抑制 (誤って中途半端な位置に矢印を出さない)。`setTimeout` のクロージャに `_stageRef` を保持し、ステージ切り替え中なら復帰処理をスキップ
 - ✅ **お邪魔虫: 種類関係なくランダムなミニゲーム (2026-04-27)**: 以前は虫の `kind` ごとに `defaultGame` が固定 (mayoi=janken, odoke=truefalse, ...) で予測可能だったが、再プレイ性向上のため `_gameForCreature(c)` を「ステージ作者が `c.minigame` を明示指定していない限り `_GAME_LABELS` の全 5 種類からランダム」に変更。ランダム抽選は遭遇開始時 (1 体ごと) なので、同じ虫でも別の試行で別ゲームになる
 
+## 画像最適化ポリシー (2026-04-27 確立)
+
+このプロジェクトでは画像は **必ず** リサイズ + 再圧縮してから commit する。理由は ステージ 4 の画像が 11.3 MB の生 PNG で push されてしまった事故 — fix で 250MB→38MB の repo 縮小、stage 1 の forest_entrance.png も 6.9MB→1.8MB に縮小済み。
+
+### 仕組み (3 段構え)
+
+1. **Claude Code PostToolUse フック**: `Write/Edit/Bash` が `assets/images/` または `maze/imageStages/` 配下の画像を更新するたびに [scripts/auto_optimize_image.py](../scripts/auto_optimize_image.py) `--hook` が呼ばれる。`.claude/settings.local.json` の PostToolUse に登録済み。**監視範囲**: `WATCH_ROOTS = [assets/images, maze/imageStages]`
+2. **maze-editor の commit-time 圧縮**: [tools/maze-editor.html](../tools/maze-editor.html) の「💾 本番に保存」が `compressImageToDataURL(state.image, 1600, 0.7)` で 1600px Q70 JPEG 化してから GitHub Contents API に PUT。原画像 PNG はもう push されない。`r.def.imageUrl` も `.jpg` に書き換えて JSON に保存
+3. **pre-commit hook ガード**: [.git/hooks/pre-commit](../.git/hooks/pre-commit) が staged ファイルのうち `.png/.jpg/.jpeg/.webp` で **3 MB 超** をブロック (理想は <1MB だが、alpha=False photo PNG は 2-3MB に留まる事情を踏まえ 3MB を soft cap として採用)。緊急時は `git commit --no-verify`
+
+### バックログ駆除コマンド
+```bash
+PONO_SKIP_IMG_OPT=0 python scripts/auto_optimize_image.py --scan
+```
+`assets/images/` + `maze/imageStages/` 全部スキャン。原本は `assets/_orig_image_backup/` に保存。`--scan` モードは `allow_rename=False` で動作 (拡張子保持、PNG → JPG 変換は manual 呼び出し時のみ)。
+
+### 個別ファイルの JPG 化
+```bash
+python scripts/auto_optimize_image.py path/to/large.png
+```
+manual モードは `allow_rename=True` で動作 → alpha=False PNG は JPG に変換 + 旧 PNG 削除。**JSON や HTML/JS の参照を手で更新する必要あり**。
+
+### 緊急停止
+```bash
+PONO_SKIP_IMG_OPT=1 python scripts/auto_optimize_image.py --hook  # 即時 exit
+```
+
+### スクリプトのポリシー
+- alpha 持ち PNG: PNG 維持、max 1200px LANCZOS、`optimize=True compress_level=9`
+- alpha 無し PNG (hook / scan モード = `allow_rename=False`): PNG 維持、max 1600px、RGB 化 + 再保存
+- alpha 無し PNG (manual モード = `allow_rename=True`): JPEG に変換、max 1600px Q88、progressive
+- 600KB 以下 かつ 幅 1600 以下 はスキップ
+- 5% 以上削れない場合は原本を戻す
+- cp932 で `__doc__` 出力がクラッシュする問題は `_ensure_utf8_stdio()` で吸収済
+
+### 既知の例外 (legacy >2MB PNG)
+`assets/images/{P02,nurie/nurie005,aquarium/AquariumMap,shop/{counter,exterior}}.png` 等は alpha=False 写真 PNG が 2-3MB に残っている。pre-commit の 3MB cap を通る。本格的な縮小は JPEG 化が必要だが、参照箇所が広いので別途対応 (今は技術的負債として保留)。
+
+---
+
 ## Phase 2 計画 (未着手)
 - `maze/maze-thinning.js` — 大津法二値化 + Zhang-Suen 細線化 + BFS パス追跡 + Douglas-Peucker
 - エディタへの「自動エッジ追跡」ボタン追加 (現在は polyline をクリックで手描き)
