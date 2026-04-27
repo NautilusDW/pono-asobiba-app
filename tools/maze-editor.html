@@ -1722,10 +1722,16 @@ function libLoadByName(name) {
   const snap = saves[name];
   if (!snap) { showBanner('「' + name + '」が見つかりません'); return; }
   pushHistory();
-  // Restore inputs
+  // Restore inputs (programmatic .value 設定では input event が発火しないので
+  // 関連同期も手動で再実行 — 旧スロット番号で誤って上書き保存を防ぐ)
   stageNameInput.value = snap.stageName || '';
+  const libN = document.getElementById('libNameInput');
+  if (libN) libN.value = snap.stageName || ''; // ステージ管理側の名前も同期
   const orderInput = document.getElementById('stageOrderInput');
-  if (orderInput && Number.isFinite(snap.stageOrder)) orderInput.value = snap.stageOrder;
+  if (orderInput && Number.isFinite(snap.stageOrder)) {
+    orderInput.value = snap.stageOrder;
+    if (typeof updateStageNamePlaceholder === 'function') updateStageNamePlaceholder();
+  }
   const ltEl = document.getElementById('lanternToggle');
   if (ltEl) ltEl.checked = !!snap.lantern;
   // Restore state
