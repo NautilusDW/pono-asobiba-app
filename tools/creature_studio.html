@@ -3534,14 +3534,16 @@ function createSpriteCard(sp, idx) {
     card.classList.add('drag-over');
   });
   card.addEventListener('dragleave', e => {
-    if (e.target === card) card.classList.remove('drag-over');
+    if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
   });
   card.addEventListener('drop', e => {
     e.preventDefault();
     card.classList.remove('drag-over');
     const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
     const to = idx;
-    if (Number.isFinite(from) && from !== to && from >= 0 && from < sprites.length) {
+    if (Number.isFinite(from) && from !== to
+        && from >= 0 && from < sprites.length
+        && to   >= 0 && to   < sprites.length) {
       const [moved] = sprites.splice(from, 1);
       sprites.splice(to, 0, moved);
       renderSpritesGrid();
@@ -3550,6 +3552,420 @@ function createSpriteCard(sp, idx) {
 
   return card;
 }
+
+// ════════════════════════════════════════════════════════════
+// Sprite Highlight (compare タブの該当矩形を一時的にパルス表示)
+// ════════════════════════════════════════════════════════════
+function highlightSpriteInCompare(idx) {
+  const sp = sprites[idx];
+  if (!sp || sp.srcX == null) {
+    showToast('元矩形の情報がありません', false);
+    return;
+  }
+  // 比較タブに切替
+  const compareBtn = document.querySelector('[data-tab="compare"]');
+  if (compareBtn) compareBtn.click();
+
+  const box = document.getElementById('box-proc');
+  const cv  = box && box.querySelector('canvas');
+  const hl  = document.getElementById('sprite-highlight');
+  if (!box || !cv || !hl) return;
+
+  // タブ切替直後で layout が安定していない可能性があるので RAF で待つ
+  requestAnimationFrame(() => {
+    if (cv.width === 0 || cv.height === 0) return;
+    // box の内側座標系に合わせて配置 (zoom/scroll 状態でも正しく重なる)
+    const cvR  = cv.getBoundingClientRect();
+    const boxR = box.getBoundingClientRect();
+    const scaleX = cv.clientWidth  / cv.width;
+    const scaleY = cv.clientHeight / cv.height;
+    const offX = cvR.left - boxR.left + box.scrollLeft;
+    const offY = cvR.top  - boxR.top  + box.scrollTop;
+    hl.style.left   = (offX + sp.srcX * scaleX) + 'px';
+    hl.style.top    = (offY + sp.srcY * scaleY) + 'px';
+    hl.style.width  = (sp.w * scaleX) + 'px';
+    hl.style.height = (sp.h * scaleY) + 'px';
+    hl.style.display = 'block';
+    hl.style.animation = 'none';
+    void hl.offsetWidth;
+    hl.style.animation = '';
+
+    try {
+      const cx = offX + (sp.srcX + sp.w / 2) * scaleX;
+      const cy = offY + (sp.srcY + sp.h / 2) * scaleY;
+      box.scrollTo({ left: Math.max(0, cx - box.clientWidth / 2),
+                     top:  Math.max(0, cy - box.clientHeight / 2),
+                     behavior: 'smooth' });
+    } catch {}
+  });
+
+  clearTimeout(highlightSpriteInCompare._t);
+  highlightSpriteInCompare._t = setTimeout(() => { hl.style.display = 'none'; }, 5000);
+}
+
+// ════════════════════════════════════════════════════════════
+// Timeline Player
+// 分割済み sprites を ID 末尾の連番昇順 (なければ配列順) で並べ、
+// FPS と各コマのフレーム数を指定して即時ループ再生する。
+// ════════════════════════════════════════════════════════════
+const Timeline = {
+  // 設定
+  fps: 12,
+  framesPerCell: 1,
+  loop: true,
+  pingPong: false,
+  bgMode: 'checker',
+  cellOverrides: {},      // sprite idx → frames
+
+  // 状態
+  playing: false,
+  rafId: null,
+  startTs: 0,
+  pausedFrame: 0,
+  bound: false,
+  wasPlayingBeforeHidden: false,
+
+  // ID / 名前末尾の数字を抽出。なければ Infinity → 配列順 fallback
+  _seqNum(sp) {
+    const m = (sp.id || sp.name || '').match(/(\d+)\s*$/);
+    return m ? parseInt(m[1], 10) : Infinity;
+  },
+
+  // 表示順の sprite idx 配列 (連番昇順、無ければ配列順)
+  getOrder() {
+    return sprites.map((_, i) => i)
+      .sort((a, b) => {
+        const na = this._seqNum(sprites[a]);
+        const nb = this._seqNum(sprites[b]);
+        if (na === nb) return a - b;
+        return na - nb;
+      });
+  },
+
+  framesFor(idx) {
+    const v = this.cellOverrides[idx];
+    return Number.isFinite(v) && v > 0 ? v : this.framesPerCell;
+  },
+
+  getTotalFrames() {
+    return this.getOrder().reduce((s, i) => s + this.framesFor(i), 0);
+  },
+
+  spriteAtFrame(f) {
+    let acc = 0;
+    for (const i of this.getOrder()) {
+      const len = this.framesFor(i);
+      if (f < acc + len) return i;
+      acc += len;
+    }
+    return null;
+  },
+
+  play() {
+    if (this.playing) return;
+    const total = this.getTotalFrames();
+    if (total === 0) {
+      showToast('再生するコマがありません', false);
+      return;
+    }
+    this.playing = true;
+    this.startTs = performance.now() - (this.pausedFrame / this.fps) * 1000;
+    const tick = (ts) => {
+      if (!this.playing) return;
+      const elapsed = (ts - this.startTs) / 1000;
+      const total = this.getTotalFrames();
+      if (total === 0) { this.pause(); return; }
+      let frame = Math.floor(elapsed * this.fps);
+      if (this.pingPong) {
+        const cyc = Math.max(1, (total - 1) * 2);
+        frame = frame % cyc;
+        if (frame >= total) frame = cyc - frame;
+      } else if (this.loop) {
+        frame = frame % total;
+      } else if (frame >= total) {
+        this.playing = false;
+        this.pausedFrame = total - 1;
+        this.drawFrame(this.pausedFrame);
+        this.updateProgress(this.pausedFrame);
+        return;
+      }
+      this.drawFrame(frame);
+      this.updateProgress(frame);
+      this.rafId = requestAnimationFrame(tick);
+    };
+    this.rafId = requestAnimationFrame(tick);
+  },
+
+  pause() {
+    if (!this.playing) return;
+    this.playing = false;
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    const total = Math.max(1, this.getTotalFrames());
+    const elapsed = (performance.now() - this.startTs) / 1000;
+    let frame = Math.floor(elapsed * this.fps);
+    if (this.pingPong) {
+      const cyc = Math.max(1, (total - 1) * 2);
+      frame = frame % cyc;
+      if (frame >= total) frame = cyc - frame;
+    } else {
+      frame = frame % total;
+    }
+    this.pausedFrame = Math.max(0, Math.min(total - 1, frame));
+  },
+
+  stop() {
+    this.pause();
+    this.pausedFrame = 0;
+    this.drawFrame(0);
+    this.updateProgress(0);
+  },
+
+  seek(frame) {
+    const total = this.getTotalFrames();
+    if (total === 0) return;
+    this.pausedFrame = Math.max(0, Math.min(total - 1, frame | 0));
+    this.drawFrame(this.pausedFrame);
+    this.updateProgress(this.pausedFrame);
+    if (this.playing) {
+      this.startTs = performance.now() - (this.pausedFrame / this.fps) * 1000;
+    }
+  },
+
+  drawFrame(frame) {
+    const cv  = document.getElementById('timeline-canvas');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    // ステージのCSSサイズに合わせて canvas 解像度を更新 (初回 / リサイズ対応)
+    const stage = document.getElementById('timeline-stage');
+    if (stage) {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      if (w > 0 && h > 0 && (cv.width !== w || cv.height !== h)) {
+        cv.width = w; cv.height = h;
+      }
+    }
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const idx = this.spriteAtFrame(frame);
+    if (idx == null) { this.highlightCell(null); return; }
+    const sp = sprites[idx];
+    if (!sp || !sp.canvas) return;
+    const scale = Math.min(cv.width / sp.w, cv.height / sp.h, 4);
+    const w = sp.w * scale, h = sp.h * scale;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sp.canvas, (cv.width - w) / 2, (cv.height - h) / 2, w, h);
+    this.highlightCell(idx);
+  },
+
+  refresh() {
+    const btn = document.getElementById('tab-timeline-btn');
+    if (!btn) return;
+    btn.textContent = `🎞 タイムライン (${sprites.length})`;
+    const empty = document.getElementById('tl-empty');
+    if (empty) empty.style.display = sprites.length === 0 ? 'flex' : 'none';
+    // 再生フレームが範囲外になったら 0 に戻す
+    const total = this.getTotalFrames();
+    if (this.pausedFrame >= total) this.pausedFrame = 0;
+    this.renderStrip();
+    this.updateProgress(this.pausedFrame);
+    if (sprites.length === 0) {
+      this.pause(); this.pausedFrame = 0;
+      const cv = document.getElementById('timeline-canvas');
+      if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    } else if (!this.playing) {
+      this.drawFrame(this.pausedFrame);
+    }
+  },
+
+  renderStrip() {
+    const strip = document.getElementById('tl-strip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    const order = this.getOrder();
+    order.forEach((idx, displayIdx) => {
+      const sp = sprites[idx];
+      if (!sp) return;
+      const cell = document.createElement('div');
+      cell.className = 'timeline-strip-cell';
+      cell.dataset.idx = idx;
+
+      // サムネ
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = 'tl-cell-thumb';
+      const tcv = document.createElement('canvas');
+      const tw = 84, th = 60;
+      const s = Math.min(tw / sp.w, th / sp.h, 1);
+      tcv.width  = Math.max(1, Math.round(sp.w * s));
+      tcv.height = Math.max(1, Math.round(sp.h * s));
+      const tctx = tcv.getContext('2d');
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(sp.canvas, 0, 0, tcv.width, tcv.height);
+      thumbWrap.appendChild(tcv);
+
+      // メタ行
+      const meta = document.createElement('div');
+      meta.className = 'tl-cell-meta';
+      const numEl = document.createElement('span');
+      numEl.className = 'tl-cell-num';
+      const seq = this._seqNum(sp);
+      numEl.textContent = seq === Infinity ? `#${displayIdx + 1}` : `#${seq}`;
+      numEl.title = (sp.id || sp.name || '') + ' (元 idx: ' + idx + ')';
+      const framesIn = document.createElement('input');
+      framesIn.type = 'number';
+      framesIn.min = 1; framesIn.max = 20; framesIn.step = 1;
+      framesIn.value = this.framesFor(idx);
+      framesIn.title = '各コマのフレーム数 (尺)';
+      framesIn.addEventListener('click', e => e.stopPropagation());
+      framesIn.addEventListener('input', () => {
+        const v = parseInt(framesIn.value, 10);
+        if (Number.isFinite(v) && v > 0) {
+          this.cellOverrides[idx] = v;
+        } else {
+          delete this.cellOverrides[idx];
+        }
+        this.updateProgress(this.pausedFrame);
+      });
+      const jump = document.createElement('button');
+      jump.className = 'tl-cell-jump';
+      jump.textContent = '🎯';
+      jump.title = '比較タブで元矩形をハイライト';
+      jump.addEventListener('click', e => {
+        e.stopPropagation();
+        highlightSpriteInCompare(idx);
+      });
+      meta.appendChild(numEl);
+      meta.appendChild(framesIn);
+      meta.appendChild(jump);
+
+      cell.appendChild(thumbWrap);
+      cell.appendChild(meta);
+
+      // セルクリック: そのコマの先頭フレームへシーク
+      cell.addEventListener('click', () => {
+        let acc = 0;
+        for (const i of this.getOrder()) {
+          if (i === idx) { this.seek(acc); break; }
+          acc += this.framesFor(i);
+        }
+      });
+
+      strip.appendChild(cell);
+    });
+  },
+
+  updateProgress(frame) {
+    const total = this.getTotalFrames();
+    const bar   = document.getElementById('tl-progress-bar');
+    const label = document.getElementById('tl-progress-label');
+    if (!bar || !label) return;
+    const pct = total > 0 ? (frame / total) * 100 : 0;
+    bar.style.width = pct + '%';
+    const seconds = total / Math.max(1, this.fps);
+    label.textContent = `${frame + (total > 0 ? 1 : 0)} / ${total}  (${seconds.toFixed(2)}s, ${this.fps} fps)`;
+  },
+
+  highlightCell(idx) {
+    const strip = document.getElementById('tl-strip');
+    if (!strip) return;
+    let activeCell = null;
+    strip.querySelectorAll('.timeline-strip-cell').forEach(c => {
+      const isActive = parseInt(c.dataset.idx, 10) === idx;
+      c.classList.toggle('active', isActive);
+      if (isActive) activeCell = c;
+    });
+    if (activeCell && this.playing) {
+      // 自動スクロールはやり過ぎないよう、画面外のときだけ
+      const r = activeCell.getBoundingClientRect();
+      const sr = strip.getBoundingClientRect();
+      if (r.left < sr.left || r.right > sr.right) {
+        activeCell.scrollIntoView({ inline: 'center', block: 'nearest' });
+      }
+    }
+  },
+
+  bindEvents() {
+    if (this.bound) return;
+    this.bound = true;
+
+    document.getElementById('tl-play').addEventListener('click', () => this.play());
+    document.getElementById('tl-pause').addEventListener('click', () => this.pause());
+    document.getElementById('tl-stop').addEventListener('click', () => this.stop());
+
+    const loopBtn = document.getElementById('tl-loop');
+    loopBtn.addEventListener('click', () => {
+      this.loop = !this.loop;
+      loopBtn.classList.toggle('active', this.loop);
+    });
+    const ppBtn = document.getElementById('tl-pingpong');
+    ppBtn.addEventListener('click', () => {
+      this.pingPong = !this.pingPong;
+      ppBtn.classList.toggle('active', this.pingPong);
+    });
+
+    const fpsIn = document.getElementById('tl-fps');
+    fpsIn.addEventListener('input', () => {
+      const v = parseInt(fpsIn.value, 10);
+      if (Number.isFinite(v) && v >= 1 && v <= 60) {
+        // 再生中なら、新FPS適用前に「現在フレーム」を旧FPSで計算してから乗り換える
+        const oldFps = this.fps;
+        const wasPlaying = this.playing;
+        let curFrame = this.pausedFrame;
+        if (wasPlaying) {
+          const total = Math.max(1, this.getTotalFrames());
+          const elapsed = (performance.now() - this.startTs) / 1000;
+          curFrame = Math.floor(elapsed * oldFps) % total;
+        }
+        this.fps = v;
+        if (wasPlaying) {
+          this.startTs = performance.now() - (curFrame / this.fps) * 1000;
+        }
+        this.updateProgress(curFrame);
+      }
+    });
+
+    const framesIn = document.getElementById('tl-frames');
+    framesIn.addEventListener('input', () => {
+      const v = parseInt(framesIn.value, 10);
+      if (Number.isFinite(v) && v >= 1 && v <= 20) {
+        this.framesPerCell = v;
+        this.updateProgress(this.pausedFrame);
+      }
+    });
+
+    const bgSel = document.getElementById('tl-bg');
+    bgSel.addEventListener('change', () => {
+      this.bgMode = bgSel.value;
+      const stage = document.getElementById('timeline-stage');
+      if (stage) stage.dataset.bg = this.bgMode;
+    });
+
+    // プログレスバークリック → シーク
+    const prog = document.getElementById('tl-progress');
+    const seekFromEvent = (clientX) => {
+      const r = prog.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      const total = this.getTotalFrames();
+      this.seek(Math.floor(ratio * total));
+    };
+    prog.addEventListener('click', e => seekFromEvent(e.clientX));
+
+    // タブ非表示で一時停止 → 戻ったら再開 (タイムラインタブ表示中のときだけ)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.wasPlayingBeforeHidden = this.playing;
+        if (this.playing) this.pause();
+      } else if (this.wasPlayingBeforeHidden) {
+        this.wasPlayingBeforeHidden = false;
+        const tl = document.getElementById('tab-timeline');
+        if (tl && tl.classList.contains('active')) this.play();
+      }
+    });
+
+    // 初期サイズ調整
+    requestAnimationFrame(() => {
+      this.drawFrame(this.pausedFrame);
+    });
+  },
+};
 
 // ── 既存IDサジェストリスト ──
 // 管理ダッシュボードの制作リストと同期したマスターリスト
