@@ -1317,11 +1317,12 @@
   <div class="hint">▶ タップ</div>
 </div>
 <script>
-  var PONO_INTRO_TRIVIA = [
+  // _rewardRelated:true のエントリは MVP で報酬制度封印中に除外される。
+  var PONO_INTRO_TRIVIA_ALL = [
     { tag: 'つかいかた', title: '「なぞり」で じょうずに かけるよ',
       body: 'ゆっくり ゆびを うごかすと、きれいに かけるよ。' },
     { tag: 'つかいかた', title: 'あそぶと ごほうびが もらえるよ',
-      body: 'あつめた かざりで、おへやを かざれるよ。' },
+      body: 'あつめた かざりで、おへやを かざれるよ。', _rewardRelated: true },
     { tag: 'つかいかた', title: '「おとあてクイズ」って しってる？',
       body: 'きこえた おとを えらぶ あそび だよ。' },
     { tag: 'ことばのまめちしき', title: '「あ」は あいうえお の 1ばんめ',
@@ -1331,6 +1332,10 @@
     { tag: 'ことばのまめちしき', title: '「ん」で おわる ことば を さがしてみよう',
       body: 'ぱん、ほん、ねこ… あれ？「ねこ」は ちがうね！' }
   ];
+  // MVP: 報酬制度封印中は ごほうび 系のトリビアを除外する。
+  var PONO_INTRO_TRIVIA = window.PONO_MVP_NO_REWARDS
+    ? PONO_INTRO_TRIVIA_ALL.filter(function(t) { return !t._rewardRelated; })
+    : PONO_INTRO_TRIVIA_ALL;
 
   // 絵本/サブスクで遊べるプレミアムコンテンツの紹介定義。
   // id は play.html のカード要素 id と 1:1 対応（promo.js の showLockedPreview から参照）。
@@ -2818,7 +2823,9 @@
             numSpan.textContent = String(slotNum).padStart(2, '0');
             slot.appendChild(numSpan);
             // Reward hint icon
-            if (slotRw) {
+            // MVP: 報酬制度封印中はスロットに 🎁🛏️🧸 等の報酬ヒントを出さない。
+            // タップしても「おもちゃばこ」等のプレビューが出ないようにイベントごとスキップ。
+            if (slotRw && !window.PONO_MVP_NO_REWARDS) {
               var hint = document.createElement('span');
               hint.className = 'slot-hint';
               hint.textContent = slotRw.icon;
@@ -2906,7 +2913,8 @@
               numSpan.className = 'slot-num';
               numSpan.textContent = String(slotNum).padStart(2, '0');
               slotDiv.appendChild(numSpan);
-              if (slotRw) {
+              // MVP: 報酬制度封印中は フルカードでも報酬ヒントとタップ詳細を出さない。
+              if (slotRw && !window.PONO_MVP_NO_REWARDS) {
                 var hint = document.createElement('span');
                 hint.className = 'slot-hint';
                 hint.textContent = slotRw.icon;
