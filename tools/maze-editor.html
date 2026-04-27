@@ -94,6 +94,10 @@ html, body { height: 100vh; overflow: hidden;
     <input type="text" id="stageName" placeholder="例: forest_entrance" value="forest_entrance">
     <p style="font-size: 0.7rem; color: #888;">英数字・アンダースコア・ハイフンのみ</p>
 
+    <h3>2b. 既存 JSON を読み込み (任意)</h3>
+    <input type="file" id="jsonInput" accept=".json,application/json">
+    <p style="font-size: 0.7rem; color: #888;">前に保存した JSON を編集再開する場合だけ</p>
+
     <h3>3. モード</h3>
     <div class="modes">
       <button class="mode-btn active" data-mode="start">🟠 スタート</button>
@@ -111,8 +115,9 @@ html, body { height: 100vh; overflow: hidden;
 
     <div class="actions">
       <button id="exportBtn">💾 JSON ダウンロード</button>
-      <button id="resetBtn" class="danger">↺ ぜんぶリセット</button>
+      <button id="testBtn">▶ 迷路で試す (新タブ)</button>
       <button id="undoBtn" class="secondary">⤺ さいごの操作を取り消し</button>
+      <button id="resetBtn" class="danger">↺ ぜんぶリセット</button>
     </div>
 
     <div class="instructions">
@@ -185,6 +190,64 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     showBanner('モード: ' + btn.textContent.trim());
     draw();
   });
+});
+
+// ────────────────────────────────────────────────────────
+// JSON loading (resume editing a previously-saved stage)
+// ────────────────────────────────────────────────────────
+const jsonInput = document.getElementById('jsonInput');
+jsonInput.addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const def = JSON.parse(ev.target.result);
+      if (!def || def.type !== 'image' || !Array.isArray(def.nodes) || !Array.isArray(def.edges)) {
+        alert('対応していない JSON 形式です。type:"image" の画像ステージ JSON を選んでください');
+        return;
+      }
+      pushHistory();
+      // Restore state (validate basic types)
+      state.nodes = def.nodes.filter(function(n) {
+        return n && typeof n.id === 'string'
+          && Number.isFinite(n.x) && Number.isFinite(n.y)
+          && (n.kind === 'start' || n.kind === 'goal' || n.kind === 'stop');
+      });
+      state.edges = def.edges.filter(function(e2) {
+        return e2 && typeof e2.from === 'string' && typeof e2.to === 'string'
+          && Array.isArray(e2.polyline) && e2.polyline.length >= 2;
+      }).map(function(e2) {
+        return {
+          from: e2.from, to: e2.to,
+          polyline: e2.polyline.map(function(p) { return { x: Number(p.x), y: Number(p.y) }; })
+        };
+      });
+      // Bump nextStopId past any existing stop ids
+      const usedIds = state.nodes.filter(function(n) { return n.kind === 'stop'; })
+        .map(function(n) { const m = n.id.match(/^stop(\d+)$/); return m ? parseInt(m[1], 10) : 0; });
+      state.nextStopId = (usedIds.length > 0 ? Math.max.apply(null, usedIds) : 0) + 1;
+      // Restore stage name
+      if (def.name) stageNameInput.value = String(def.name).replace(/[^a-zA-Z0-9_-]/g, '_');
+      else if (def.imageUrl) {
+        const m = String(def.imageUrl).match(/([^/]+?)\.[a-zA-Z]+$/);
+        if (m) stageNameInput.value = m[1];
+      }
+      state.edgeInProgress = null;
+      edgeProgressEl.textContent = '';
+      draw();
+      updateStatus();
+      showBanner('JSON 読み込み: ノード ' + state.nodes.length + '・道 ' + state.edges.length);
+      if (!state.image) {
+        showBanner('画像も読み込んでね (上の「画像を読み込む」)');
+      }
+    } catch (err) {
+      alert('JSON の読み込みに失敗: ' + err.message);
+    }
+  };
+  reader.readAsText(f);
+  // Reset the input so the same file can be reloaded
+  e.target.value = '';
 });
 
 // ────────────────────────────────────────────────────────
@@ -576,6 +639,19 @@ document.getElementById('exportBtn').addEventListener('click', function() {
     '2. 元の画像 (' + state.imgFileName + ') を maze/imageStages/' + safeName + '.' + ext + ' として配置\n' +
     '3. ブラウザで maze/?image=' + safeName + ' を開く'
   );
+});
+
+// ────────────────────────────────────────────────────────
+// Test in maze (open new tab pointing to maze/?image=<name>)
+// ────────────────────────────────────────────────────────
+document.getElementById('testBtn').addEventListener('click', function() {
+  const rawName = (stageNameInput.value || '').trim();
+  const safeName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  if (!safeName) { alert('ステージ名を入力してね'); return; }
+  // tools/ → maze/ への相対パス
+  const url = '../maze/?image=' + encodeURIComponent(safeName);
+  window.open(url, '_blank', 'noopener');
+  showBanner('新タブで ' + url + ' を開きました');
 });
 
 // ────────────────────────────────────────────────────────
