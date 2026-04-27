@@ -1349,22 +1349,32 @@ function imgMaybeShowStoryIntro(stage, idx) {
   });
 }
 
-// ゴール踏破時の救出シーン (動物が安心している絵 + キャプション)
+// ゴール踏破時の救出シーン (動物が安心している絵 + キャプション)。
+// _rescueTimer / _rescueDone でガードし、二重呼び出し時の onDone 重複実行を防ぐ。
+let _rescueTimer = null;
+let _rescueDone = false;
 function imgShowRescueScene(stage, onDone) {
-  if (!stage || !stage.story) { onDone && onDone(); return; }
+  if (!stage || !stage.story) { if (onDone) onDone(); return; }
   const sceneEl = document.getElementById('rescueScene');
   const imgEl = document.getElementById('rescueImg');
   const txtEl = document.getElementById('rescueText');
-  if (!sceneEl || !imgEl || !txtEl) { onDone && onDone(); return; }
+  if (!sceneEl || !imgEl || !txtEl) { if (onDone) onDone(); return; }
+  // 既存の rescue がまだ進行中なら、それをキャンセルしてから再スタート
+  if (_rescueTimer != null) { clearTimeout(_rescueTimer); _rescueTimer = null; }
+  _rescueDone = false;
   imgEl.src = stage.story.reliefIconUrl || stage.story.cryingIconUrl || '';
   const label = stage.story.animalLabel || '';
   txtEl.textContent = label ? (label + 'を たすけたよ！') : 'たすけたよ！';
   sceneEl.classList.add('show');
   sceneEl.setAttribute('aria-hidden', 'false');
-  setTimeout(function() {
+  _rescueTimer = setTimeout(function() {
+    _rescueTimer = null;
     sceneEl.classList.remove('show');
     sceneEl.setAttribute('aria-hidden', 'true');
-    if (onDone) onDone();
+    if (!_rescueDone && onDone) {
+      _rescueDone = true;
+      onDone();
+    }
   }, 2400);
 }
 
