@@ -647,6 +647,8 @@ cv.addEventListener('click', function(e) {
   if (!state.image) return;
   // In edit-points mode, click does nothing — drag is the action (pointer events)
   if (state.mode === 'edit-points') return;
+  // ノード drag 直後の click は無視 (drag 終了で位置移動済み、新規配置や削除しない)
+  if (_wasNodeDragging) { _wasNodeDragging = false; return; }
   const p = mouseToImage(e);
   pushHistory();
 
@@ -708,36 +710,97 @@ function findAnchorAt(p) {
   return null;
 }
 
-cv.addEventListener('pointerdown', function(e) {
-  if (state.mode !== 'edit-points' || !state.image) return;
-  const p = mouseToImage(e);
-  const hit = findAnchorAt(p);
-  if (!hit) return;
-  pushHistory();
-  state.draggingAnchor = hit;
-  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-  cv.style.cursor = 'grabbing';
-  e.preventDefault();
-});
+// Find a node hit for grab-and-drag (any mode except delete which has its own click logic)
+function findNodeAt(p) {
+  const r = Math.max(28, (state.imgH || 1080) / 28);
+  const r2 = r * r;
+  for (const n of state.nodes) {
+    const dx = p.x - n.x, dy = p.y - n.y;
+    if (dx*dx + dy*dy < r2) return n;
+  }
+  return null;
+}
 
-cv.addEventListener('pointermove', function(e) {
-  if (state.mode !== 'edit-points' || !state.image) return;
+// Pointerdown を全モードで効くように (ノード drag 優先 + edit-points のアンカー drag)
+let _wasNodeDragging = false;
+cv.addEventListener('pointerdown', function(e) {
+  if (!state.image) return;
   const p = mouseToImage(e);
-  state.hover = p;
-  if (state.draggingAnchor) {
-    const ed = state.edges[state.draggingAnchor.edgeIdx];
-    if (!ed) return;
-    const cx = Math.max(0, Math.min(state.imgW, p.x));
-    const cy = Math.max(0, Math.min(state.imgH, p.y));
-    ed.controls[state.draggingAnchor.controlIdx] = { x: cx, y: cy };
-    draw();
-  } else {
-    // Cursor hint when hovering over a draggable anchor
-    cv.style.cursor = findAnchorAt(p) ? 'grab' : 'crosshair';
+  // ノード drag: delete モード以外ならどのモードでも有効
+  if (state.mode !== 'delete') {
+    const nodeHit = findNodeAt(p);
+    if (nodeHit) {
+      pushHistory();
+      state.draggingNode = nodeHit;
+      _wasNodeDragging = false;
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cv.style.cursor = 'grabbing';
+      e.preventDefault();
+      return;
+    }
+  }
+  // edit-points モード: 中間アンカーの drag
+  if (state.mode === 'edit-points') {
+    const hit = findAnchorAt(p);
+    if (!hit) return;
+    pushHistory();
+    state.draggingAnchor = hit;
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = 'grabbing';
+    e.preventDefault();
   }
 });
 
+cv.addEventListener('pointermove', function(e) {
+  if (!state.image) return;
+  const p = mouseToImage(e);
+  state.hover = p;
+  // ノード drag リアルタイム移動 + 接続エッジの端点も追従
+  if (state.draggingNode) {
+    _wasNodeDragging = true;
+    const cx = Math.max(0, Math.min(state.imgW, p.x));
+    const cy = Math.max(0, Math.min(state.imgH, p.y));
+    state.draggingNode.x = cx;
+    state.draggingNode.y = cy;
+    // 接続エッジの端点を更新 (from なら controls[0]、to なら最後)
+    const id = state.draggingNode.id;
+    for (const ed of state.edges) {
+      if (!ed.controls || ed.controls.length === 0) continue;
+      if (ed.from === id) ed.controls[0] = { x: cx, y: cy };
+      if (ed.to === id)   ed.controls[ed.controls.length - 1] = { x: cx, y: cy };
+    }
+    draw();
+    return;
+  }
+  // edit-points のアンカー drag
+  if (state.mode === 'edit-points') {
+    if (state.draggingAnchor) {
+      const ed = state.edges[state.draggingAnchor.edgeIdx];
+      if (!ed) return;
+      const cx = Math.max(0, Math.min(state.imgW, p.x));
+      const cy = Math.max(0, Math.min(state.imgH, p.y));
+      ed.controls[state.draggingAnchor.controlIdx] = { x: cx, y: cy };
+      draw();
+      return;
+    }
+    cv.style.cursor = findAnchorAt(p) ? 'grab' : 'crosshair';
+    return;
+  }
+  // それ以外のモード: ノードホバー時に grab カーソル
+  cv.style.cursor = findNodeAt(p) ? 'grab' : 'crosshair';
+});
+
 cv.addEventListener('pointerup', function(e) {
+  if (state.draggingNode) {
+    const wasMoving = _wasNodeDragging;
+    state.draggingNode = null;
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    cv.style.cursor = 'crosshair';
+    if (wasMoving) showBanner('ノードを移動しました');
+    scheduleAutoSave();
+    updateStatus();
+    return;
+  }
   if (state.mode !== 'edit-points') return;
   if (state.draggingAnchor) {
     state.draggingAnchor = null;
