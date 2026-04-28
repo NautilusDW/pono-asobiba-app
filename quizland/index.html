@@ -14,6 +14,7 @@
 <script src="./data/flowers.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -453,11 +454,11 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   align-items: center;
   justify-content: center;
   padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .start-screen.hidden { display: none; }
-/* タイトル画像のラッパー: 画像のアスペクト比 (799:456) を保ちながら、
-   画面幅 or 画面高さに合わせて contain で表示する。
-   ロゴとモードボタンは画像内の左上の空きエリアに絶対配置。 */
+/* タイトル画像のラッパー: 画像のアスペクト比 (799:456) を保ちながら contain 表示。 */
 .start-bg-wrap {
   position: relative;
   width: 100%;
@@ -467,8 +468,6 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   align-items: center;
   justify-content: center;
 }
-/* 内側の overlay。aspect-ratio に合わせて画像と同じ領域を確保し、
-   その中で left/top をパーセンテージ指定すれば画像座標と一致する。 */
 .start-bg-overlay {
   position: relative;
   aspect-ratio: 799/456;
@@ -476,48 +475,84 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   max-height: 100%;
   pointer-events: none;
 }
+/* ロゴ: 左上、1.3x スケール (旧 width:44% → 57%) */
 .start-logo {
   position: absolute;
-  top: 5%;
-  left: 4%;
-  width: 44%;
-  max-height: 32%;
+  top: 4%;
+  left: 3%;
+  width: 57%;
+  max-height: 42%;
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
 }
-.start-modes {
+/* 「タップしてスタート」CTA: ドットフォントでロゴの下に配置 */
+.start-tap-cta {
   position: absolute;
-  top: 42%;
-  left: 4%;
-  width: 44%;
+  top: 50%;
+  left: 3%;
+  width: 57%;
+  text-align: center;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(0.95rem, 3.2vw, 1.5rem);
+  font-weight: 400;
+  color: #5D3A00;
+  text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.15);
+  letter-spacing: 0.06em;
+  animation: startTapPulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes startTapPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.06); }
+}
+
+/* ===== Mode select screen (after tap-to-start) ===== */
+.mode-screen {
+  position: fixed; inset: 0; z-index: 49;
+  background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
   display: flex;
   flex-direction: column;
-  gap: 6%;
-  pointer-events: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 18px;
 }
-.start-modes .mode-btn {
-  padding: clamp(8px, 2.4vw, 16px) clamp(10px, 3vw, 22px);
-  border: 3px solid #FBBF24;
-  border-radius: 16px;
-  background: rgba(255, 248, 231, 0.94);
+.mode-screen.hidden { display: none; }
+.mode-screen-title {
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  color: #5D3A00;
+  text-shadow: 2px 2px 0 #FFF8E0;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+.mode-screen-row {
+  display: flex; flex-direction: column; gap: 14px;
+  width: 100%; max-width: 360px;
+}
+.mode-screen .mode-btn {
+  padding: 18px 24px;
+  border: 4px solid #FBBF24;
+  border-radius: 22px;
+  background: #fff;
   font-family: inherit;
   font-weight: 900;
   color: #5D4E37;
-  font-size: clamp(0.82rem, 2.6vw, 1.1rem);
+  font-size: 1.15rem;
   cursor: pointer;
   text-align: left;
-  line-height: 1.3;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  line-height: 1.35;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
   transition: transform 0.1s;
 }
-.start-modes .mode-btn:active { transform: scale(0.96); }
-.start-modes .mode-btn .mode-sub {
+.mode-screen .mode-btn:active { transform: scale(0.96); }
+.mode-screen .mode-btn .mode-sub {
   display: block;
-  font-size: 0.7em;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #A89880;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 /* ===== Category screen ===== */
@@ -667,22 +702,28 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 </head>
 <body>
 
-<!-- ===== Start Screen ===== -->
-<div class="start-screen" id="start-screen">
+<!-- ===== Start Screen (タイトル画像 + タップしてスタート) ===== -->
+<div class="start-screen" id="start-screen" role="button" aria-label="タップしてスタート">
   <div class="start-bg-wrap">
     <div class="start-bg-overlay">
       <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウ博士のなぞなぞ">
-      <div class="start-modes">
-        <button class="mode-btn" data-mode="inspire">
-          😊 やさしい
-          <span class="mode-sub">いろ・かず・かたち</span>
-        </button>
-        <button class="mode-btn" data-mode="know">
-          💡 ものしり
-          <span class="mode-sub">てんき・からだ・なんでも</span>
-        </button>
-      </div>
+      <div class="start-tap-cta">▶ タップしてスタート</div>
     </div>
+  </div>
+</div>
+
+<!-- ===== Mode Select Screen (やさしい / ものしり) ===== -->
+<div class="mode-screen hidden" id="mode-screen">
+  <div class="mode-screen-title">どっちで あそぶ？</div>
+  <div class="mode-screen-row">
+    <button class="mode-btn" data-mode="inspire">
+      😊 やさしい
+      <span class="mode-sub">いろ・かず・かたち</span>
+    </button>
+    <button class="mode-btn" data-mode="know">
+      💡 ものしり
+      <span class="mode-sub">てんき・からだ・なんでも</span>
+    </button>
   </div>
 </div>
 
@@ -1589,18 +1630,22 @@ const MODE_TO_CATEGORIES = {
   know:    ['trivia', 'weather', 'body', 'opposite']
 };
 
-// モードボタンをタップ = そのまま即ゲーム開始
-// (はじめるボタンは廃止、カテゴリ選択画面もスキップ)
+// タイトル画面タップ → モード選択画面へ (BGM もここで起動)
+document.getElementById('start-screen').addEventListener('click', function() {
+  ensureAudio();
+  startBGM();
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('mode-screen').classList.remove('hidden');
+});
+
+// モードボタンタップ = 即ゲーム開始 (やさしい/ものしりに応じて出題カテゴリ切替)
 document.querySelectorAll('.mode-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     selectedMode = btn.dataset.mode;
-    ensureAudio();
-    startBGM();
-    // モードに該当するカテゴリだけ出題対象にする (ランダムシャッフル)
     ALL_CATS.forEach(function(c) {
       selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
     });
-    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('mode-screen').classList.add('hidden');
     initGame();
     if (typeof initMenu === 'function') {
       initMenu({
@@ -1635,11 +1680,11 @@ document.getElementById('cat-start-btn').addEventListener('click', function() {
   initGame();
 });
 
-// HUD back button → スタート画面（モード選択）へ
+// HUD back button → モード選択画面へ (タイトル画面まで戻らない)
 document.getElementById('hud-back-btn').addEventListener('click', function() {
   document.getElementById('result-overlay').classList.add('hidden');
   document.getElementById('category-screen').classList.add('hidden');
-  document.getElementById('start-screen').classList.remove('hidden');
+  document.getElementById('mode-screen').classList.remove('hidden');
 });
 
 // Result retry button (same categories)
@@ -1647,11 +1692,11 @@ document.getElementById('result-btn').addEventListener('click', function() {
   initGame();
 });
 
-// Result "change mode" button → back to start screen (モード選び直し)
+// Result "change mode" button → モード選択画面へ (タイトル画面まで戻らない)
 document.getElementById('result-cat-btn').addEventListener('click', function() {
   document.getElementById('result-overlay').classList.add('hidden');
   document.getElementById('category-screen').classList.add('hidden');
-  document.getElementById('start-screen').classList.remove('hidden');
+  document.getElementById('mode-screen').classList.remove('hidden');
 });
 
 // Flower encyclopedia open/close
