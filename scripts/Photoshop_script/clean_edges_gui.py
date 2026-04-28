@@ -649,6 +649,7 @@ class CleanEdgesGUI:
         ttk.Button(parent, text="Process", command=self.on_process, style="Accent.TButton").pack(side=tk.LEFT, padx=(8, 4))
         ttk.Button(parent, text="Split Sprites", command=self.on_split_sprites, style="Toolbar.TButton").pack(side=tk.LEFT, padx=4)
         ttk.Button(parent, text="Save Result As...", command=self.on_save_result, style="Toolbar.TButton").pack(side=tk.LEFT, padx=4)
+        ttk.Button(parent, text="Save Composite...", command=self.on_save_composite, style="Toolbar.TButton").pack(side=tk.LEFT, padx=4)
 
         # Zoom
         self.zoom_label = ttk.Label(parent, text="100%", width=6, anchor="e", style="Panel.TLabel")
@@ -1231,6 +1232,36 @@ class CleanEdgesGUI:
         try:
             self.result_img.save(path, "PNG")
             self.status_var.set(f"Saved: {path}")
+        except Exception as e:
+            messagebox.showerror("Save failed", str(e))
+
+    def on_save_composite(self):
+        """Save the result image flattened onto the current preview BG
+        (Checker / Black / White / Magenta / Green / Cyan / Red / Custom).
+        Useful for keeping a 'screenshot' of the multi-sprite layout
+        before splitting."""
+        if self.result_img is None:
+            messagebox.showwarning("No result", "Process an image first.")
+            return
+        bg_label = self.bg_mode_var.get().rstrip(".").lower().replace(" ", "_") or "bg"
+        default = (
+            f"{self.input_path.stem}_composite_{bg_label}.png"
+            if self.input_path else f"composite_{bg_label}.png"
+        )
+        initial_dir = str(self.input_path.parent) if self.input_path else "."
+        path = filedialog.asksaveasfilename(
+            title="Save composite screenshot",
+            defaultextension=".png",
+            initialdir=initial_dir,
+            initialfile=default,
+            filetypes=[("PNG", "*.png")],
+        )
+        if not path:
+            return
+        try:
+            composite = self._composite_on_bg(self.result_img)
+            composite.save(path, "PNG")
+            self.status_var.set(f"Saved composite [{self.bg_mode_var.get()}]: {path}")
         except Exception as e:
             messagebox.showerror("Save failed", str(e))
 
