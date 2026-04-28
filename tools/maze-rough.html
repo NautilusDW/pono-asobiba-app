@@ -188,8 +188,8 @@ html, body { height: 100vh; overflow: hidden;
 }
 .lib-modal-empty { color: #888; font-size: 0.85rem; text-align: center; padding: 60px 20px; }
 #cv {
+  cursor: default;  /* デフォルト = ↖ 選択モードの普通カーソル */
   display: block;
-  cursor: crosshair;
   background: #000;
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
@@ -230,8 +230,9 @@ input[type="file"]::file-selector-button {
 
     <h3>モード</h3>
     <div class="mode-row">
-      <button class="btn active" data-mode="path">🛤 道</button>
-      <button class="btn" data-mode="erase">🧹 けす</button>
+      <button class="btn active" data-mode="select" style="background:#3a3a3a; color:#fff;">↖ 選択</button>
+      <button class="btn" data-mode="path">🛤 道</button>
+      <button class="btn" data-mode="erase">🧹 けす (タイル)</button>
       <button class="btn" data-mode="start" style="background:#1f4079; color:#cef;">🟦 スタート</button>
       <button class="btn" data-mode="goal" style="background:#7d2e2e; color:#fcc;">🟥 ゴール</button>
       <button class="btn" data-mode="creature" style="background:#5a3a7a; color:#e6c8ff;">🐛 おじゃま虫</button>
@@ -239,6 +240,7 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="obstacle" style="background:#5a3e1f; color:#e6cca8;">🪨 障害物</button>
       <button class="btn" data-mode="lineedit" style="background:#3e3e5a; color:#cfcfff;">✏️ ライン編集</button>
     </div>
+    <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
 
     <h3>スナップ</h3>
     <div class="mode-row">
@@ -422,7 +424,9 @@ const state = {
                           // 手動修正後の "再計算" (waypoints + edges 再生成) で必要
   snapMode: 'cell',       // 'cell' (タイル中心) | 'cross' (グリッド交差点) | 'none' (フリー)
                           // 全マーカー (start/goal/中継地点/障害物/お邪魔虫/エッジ点) 共通
-  mode: 'path',
+  selection: null,        // 選択中のマーカー or 中間点 (Delete/Backspace で削除可)
+                          // shape: { type, index?, edgeIdx?, pointIdx? } — 一時状態 (永続化なし)
+  mode: 'select',
   brushSize: 2,
   showGrid: true,
   showSolution: false,
@@ -877,6 +881,36 @@ function draw() {
   }
   // Brush hover preview — show exactly which tiles will be affected
   if (state.hoverTile) drawBrushPreview();
+  drawSelectionHighlight();
+}
+
+// 選択中のマーカー/中間点に黄色破線リングを描画。クリックで選択した直後 + ドラッグ後も表示。
+function drawSelectionHighlight() {
+  if (!state.selection) return;
+  const pos = _selectionPos(state.selection);
+  if (!pos) return;
+  ctx.save();
+  ctx.strokeStyle = '#ffd54f';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, CELL * 0.55, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function _selectionPos(sel) {
+  if (!sel) return null;
+  if (sel.type === 'start') return state.start;
+  if (sel.type === 'goal')  return state.goal;
+  if (sel.type === 'creature' && sel.index >= 0) return state.creatures[sel.index];
+  if (sel.type === 'waypoint' && sel.index >= 0) return state.waypoints[sel.index];
+  if (sel.type === 'obstacle' && sel.index >= 0) return state.obstacles[sel.index];
+  if (sel.type === 'edgePoint') {
+    const e = state.edges[sel.edgeIdx];
+    return e ? e.polyline[sel.pointIdx] : null;
+  }
+  return null;
 }
 
 function drawEdge(e) {
@@ -1100,29 +1134,9 @@ function paintAt(tx, ty, px, py) {
   if (state.mode === 'path') {
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) state.tiles[y][x] = 'path';
   } else if (state.mode === 'erase') {
+    // タイルのみ消去 (= path → wall)。マーカー類は ↖ 選択 + Delete でのみ削除可能。
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
       state.tiles[y][x] = 'wall';
-    }
-    // If erase brush overlaps a marker, clear it too (tile-radius check)
-    if (state.start && _markerInEraseRect(state.start, x0, y0, x1, y1)) state.start = null;
-    if (state.goal  && _markerInEraseRect(state.goal,  x0, y0, x1, y1)) state.goal  = null;
-    // Drop any creatures inside the erase rect (back-to-front so indices stay valid)
-    for (let i = state.creatures.length - 1; i >= 0; i--) {
-      if (_markerInEraseRect(state.creatures[i], x0, y0, x1, y1)) {
-        state.creatures.splice(i, 1);
-      }
-    }
-    // Drop any waypoints inside the erase rect
-    for (let i = state.waypoints.length - 1; i >= 0; i--) {
-      if (_markerInEraseRect(state.waypoints[i], x0, y0, x1, y1)) {
-        state.waypoints.splice(i, 1);
-      }
-    }
-    // Drop any obstacles inside the erase rect
-    for (let i = state.obstacles.length - 1; i >= 0; i--) {
-      if (_markerInEraseRect(state.obstacles[i], x0, y0, x1, y1)) {
-        state.obstacles.splice(i, 1);
-      }
     }
   } else if (state.mode === 'start') {
     state.start = { x: px, y: py };
@@ -1195,38 +1209,14 @@ function eventToPixel(e) {
 cv.addEventListener('pointerdown', function(e) {
   const t = eventToTile(e);
   const p = eventToPixel(e);
-  // Marker drag has highest priority — works regardless of mode.
-  // Click on existing start/goal/creature → grab and drag it freely.
-  // Exception: in erase mode, clicking a creature deletes it.
+  // Marker / midpoint click → select + start drag (works regardless of mode).
+  // 削除は ↖ 選択モード + Delete/Backspace キー専用 (= 誤削除を防ぐ)。
   const hit = _markerHitAt(p.x, p.y);
   if (hit) {
-    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'creature') {
-      pushHistory();
-      state.creatures.splice(hit.index, 1);
-      afterEdit();
-      return;
-    }
-    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'waypoint') {
-      pushHistory();
-      state.waypoints.splice(hit.index, 1);
-      afterEdit();
-      return;
-    }
-    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'obstacle') {
-      pushHistory();
-      state.obstacles.splice(hit.index, 1);
-      afterEdit();
-      return;
-    }
-    // 🧹 でエッジ中間点をクリック → 削除 (端点はそもそも edgePoint hit から除外)
-    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'edgePoint') {
-      const eEdge = state.edges[hit.edgeIdx];
-      if (!eEdge) return;
-      pushHistory();
-      eEdge.polyline.splice(hit.pointIdx, 1);
-      afterEdit();
-      return;
-    }
+    // 選択を保存 (= 黄色ハイライト)。Delete/Backspace で削除可。
+    state.selection = (typeof hit === 'object')
+      ? Object.assign({}, hit)
+      : { type: hit };
     pushHistory();
     // ドラッグ開始時、このマーカー位置から 0.5 タイル以内にあるエッジ端点を
     // 「同伴」として捕捉。ドラッグ中はマーカーと一緒に動かす(= 「線がつながって
@@ -1259,6 +1249,14 @@ cv.addEventListener('pointerdown', function(e) {
       : { type: hit, attachedEdges: attached };
     cv.setPointerCapture(e.pointerId);
     cv.style.cursor = 'grabbing';
+    return;
+  }
+  // 選択モードで何もない場所クリック → 選択解除のみ (履歴に残さない)
+  if (state.mode === 'select') {
+    if (state.selection !== null) {
+      state.selection = null;
+      draw();
+    }
     return;
   }
   pushHistory(); // snapshot before any change
@@ -1378,7 +1376,8 @@ cv.addEventListener('pointermove', function(e) {
     paintAt(t.x, t.y, p.x, p.y);
   } else {
     // Cursor hint when hovering over a draggable marker
-    cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : 'crosshair';
+    const baseCursor = (state.mode === 'select') ? 'default' : 'crosshair';
+    cv.style.cursor = _markerHitAt(p.x, p.y) ? 'grab' : baseCursor;
   }
   draw();
 });
@@ -1438,7 +1437,7 @@ cv.addEventListener('pointerup', function(e) {
     }
     state.draggingMarker = null;
     try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
-    cv.style.cursor = 'crosshair';
+    cv.style.cursor = (state.mode === 'select') ? 'default' : 'crosshair';
     afterEdit();
     return;
   }
@@ -1463,8 +1462,53 @@ document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
     state.mode = b.dataset.mode;
     document.querySelectorAll('.btn[data-mode]').forEach(function(x) { x.classList.remove('active'); });
     b.classList.add('active');
+    // 選択モードのときは普通の矢印カーソル、それ以外は crosshair
+    cv.style.cursor = (state.mode === 'select') ? 'default' : 'crosshair';
+    // 選択モード以外に切り替えたら選択を解除
+    if (state.mode !== 'select' && state.selection !== null) {
+      state.selection = null;
+      draw();
+    }
     showBanner('モード: ' + b.textContent.trim());
   });
+});
+
+// Delete / Backspace で選択中のマーカー or 中間点を削除 (= ↖ 選択ツール専用)
+window.addEventListener('keydown', function(ev) {
+  if (ev.key !== 'Delete' && ev.key !== 'Backspace') return;
+  // フォーカスが入力欄にある場合 (= テキスト編集中) は無視
+  const tag = ev.target && ev.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (ev.target && ev.target.isContentEditable)) return;
+  if (!state.selection) return;
+  ev.preventDefault();
+  pushHistory();
+  const sel = state.selection;
+  if (sel.type === 'creature' && sel.index >= 0 && sel.index < state.creatures.length) {
+    state.creatures.splice(sel.index, 1);
+  } else if (sel.type === 'waypoint' && sel.index >= 0 && sel.index < state.waypoints.length) {
+    state.waypoints.splice(sel.index, 1);
+  } else if (sel.type === 'obstacle' && sel.index >= 0 && sel.index < state.obstacles.length) {
+    state.obstacles.splice(sel.index, 1);
+  } else if (sel.type === 'edgePoint') {
+    const ed = state.edges[sel.edgeIdx];
+    if (ed && Array.isArray(ed.polyline)) {
+      const last = ed.polyline.length - 1;
+      // 端点削除はノード接続が切れるので無反応 (= 通常 selection には端点は入らない)
+      if (sel.pointIdx > 0 && sel.pointIdx < last) {
+        ed.polyline.splice(sel.pointIdx, 1);
+      } else {
+        showBanner('端点 (= ノード位置) は削除できません');
+        state.history.pop();
+        return;
+      }
+    }
+  } else if (sel.type === 'start' || sel.type === 'goal') {
+    showBanner((sel.type === 'start' ? 'スタート' : 'ゴール') + 'は削除できません');
+    state.history.pop();
+    return;
+  }
+  state.selection = null;
+  afterEdit();
 });
 document.querySelectorAll('.btn[data-brush]').forEach(function(b) {
   b.addEventListener('click', function() {
