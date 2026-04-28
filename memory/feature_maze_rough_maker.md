@@ -115,7 +115,7 @@ type: project
 maze-editor.html とは現状別ツールだが、**ノード/エッジ/障害物/背景画像差し替えを rough 側に順次取り込む**方針で進めている (option A)。
 
 - **Phase 1 (DONE)**: 中継ノード手動配置 + ランダム生成時の自動検出
-- **Phase 2 (TODO)**: ノード間の **エッジ** (2点クリックで連結、ポリラインで保持)
+- **Phase 2 (DONE)**: ノード間の **エッジ** (`state.edges = [{polyline: [{x,y},{x,y}]}]`) — 自動生成 (cell adjacency → 隣接 cell 中心の polyline)、薄グレー破線で描画、PNG時は非表示、永続化全レイヤー対応。手動配置モードは Phase 2.5 で後回し
 - **Phase 3 (TODO)**: **障害物** (kind: tree/stump/hole 等) の配置モード
 - **Phase 4 (TODO)**: **背景画像差し替え** (AI 生成画像をロード) + **「💾 本番に保存」** で `maze/imageStages/*.json` 直書き出し
 
