@@ -2125,40 +2125,44 @@ function _innerOffset(cellStride) {
   return cellStride === 4 ? 1 : 0;
 }
 
-function _carveCellInterior(g, ci, cj, offX, offY, cellStride) {
-  // 全セル一様サイズ (拡張なし)。最終行/列セルの後ろに残る phantom corridor
-  // (= 1 列の壁帯) は受け入れる。stride=3 (wide) では 18 行に 5×3=15 行
-  // しか収まらず、+1 行の壁帯が出来るが、これは "3-4タイル幅のレイアウトhack"
-  // よりはるかに穏やか。
+function _carveCellInterior(g, ci, cj, offX, offY, cellStride, cw, ch) {
+  // 最終行/列セルを ww タイルだけ延長して phantom corridor を吸収する。
+  // narrow (stride=2) では完璧な 1+1+1+1 マージンを実現。
+  // wide (stride=3) では cellStride*ch=15 が GRID_H=18 に綺麗に収まらないため
+  // 1+2 vertical margin が残るが、3-4 タイル幅レイアウト hack よりはマシ。
+  // (拡張量は ww=1 のみで、cells のサイズは +1 タイルで済む)
   const pw = _pwForStride(cellStride);
+  const ww = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
+  const wExt = (cw != null && ci === cw - 1) ? ww : 0;
+  const hExt = (ch != null && cj === ch - 1) ? ww : 0;
   const x0 = offX + cellStride * ci + off;
   const y0 = offY + cellStride * cj + off;
-  for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
+  for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
     const x = x0 + dx, y = y0 + dy;
     if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
   }
 }
 
-function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride) {
-  // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY)。
-  // 注意: dirX/dirY は east(1,0) または south(0,1) のみ呼び出し可能。
-  // East/South 方向の corridor は wall 方向に ww (壁長)、path 方向に pw (路幅) で
-  // pw × ww または ww × pw の矩形を carve する。拡張はしない。
+function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride, cw, ch) {
+  // East/South 方向のみ。最終行/列 cell 間の corridor も pw 方向に ww だけ
+  // 延長して cell 拡張と整合 (= 連続的な path band で破断なし)。
   const pw = _pwForStride(cellStride);
   const ww = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
   if (dirX === 1) { // east corridor
     const x0 = offX + cellStride * ci + off + pw;
     const y0 = offY + cellStride * cj + off;
-    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < ww; dx++) {
+    const hExt = (ch != null && cj === ch - 1) ? ww : 0;
+    for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < ww; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
   } else if (dirY === 1) { // south corridor
     const x0 = offX + cellStride * ci + off;
     const y0 = offY + cellStride * cj + off + pw;
-    for (let dy = 0; dy < ww; dy++) for (let dx = 0; dx < pw; dx++) {
+    const wExt = (cw != null && ci === cw - 1) ? ww : 0;
+    for (let dy = 0; dy < ww; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
@@ -2215,15 +2219,15 @@ function _buildMazeCells(cw, ch, offX, offY, cellStride, straightBias) {
   // Build tiles
   const tiles = makeEmptyGrid();
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
-    _carveCellInterior(tiles, i, j, offX, offY, cellStride);
+    _carveCellInterior(tiles, i, j, offX, offY, cellStride, cw, ch);
   }
   // Carve corridors (only emit each edge once: east + south)
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
     if (i + 1 < cw && adj[key(i,j)] && adj[key(i,j)][key(i+1,j)]) {
-      _carveCorridor(tiles, i, j, 1, 0, offX, offY, cellStride);
+      _carveCorridor(tiles, i, j, 1, 0, offX, offY, cellStride, cw, ch);
     }
     if (j + 1 < ch && adj[key(i,j)] && adj[key(i,j)][key(i,j+1)]) {
-      _carveCorridor(tiles, i, j, 0, 1, offX, offY, cellStride);
+      _carveCorridor(tiles, i, j, 0, 1, offX, offY, cellStride, cw, ch);
     }
   }
   return { tiles: tiles, adj: adj };
@@ -2316,7 +2320,7 @@ function _addLoops(maze, cw, ch, offX, offY, cellStride, loopFraction) {
   const target = Math.floor(candidates.length * loopFraction);
   for (let k = 0; k < target; k++) {
     const c = candidates[k];
-    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, offX, offY, cellStride);
+    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, offX, offY, cellStride, cw, ch);
     if (!adj[c.a]) adj[c.a] = {};
     if (!adj[c.b]) adj[c.b] = {};
     adj[c.a][c.b] = true;
