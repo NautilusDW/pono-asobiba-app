@@ -448,25 +448,76 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 /* ===== Start screen ===== */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
-  background: #FBBF24 url('../assets/images/quizland/title_back.jpg') center / cover no-repeat;
+  background: #F2E8D6;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  padding: 20px 20px 32px;
-  gap: 16px;
+  justify-content: center;
+  padding: 0;
 }
 .start-screen.hidden { display: none; }
+/* タイトル画像のラッパー: 画像のアスペクト比 (799:456) を保ちながら、
+   画面幅 or 画面高さに合わせて contain で表示する。
+   ロゴとモードボタンは画像内の左上の空きエリアに絶対配置。 */
+.start-bg-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: url('../assets/images/quizland/title_back.jpg') center / contain no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 内側の overlay。aspect-ratio に合わせて画像と同じ領域を確保し、
+   その中で left/top をパーセンテージ指定すれば画像座標と一致する。 */
+.start-bg-overlay {
+  position: relative;
+  aspect-ratio: 799/456;
+  width: 100%;
+  max-height: 100%;
+  pointer-events: none;
+}
 .start-logo {
   position: absolute;
-  top: 6%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(86%, 420px);
-  max-height: 42vh;
+  top: 5%;
+  left: 4%;
+  width: 44%;
+  max-height: 32%;
   object-fit: contain;
   pointer-events: none;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
+}
+.start-modes {
+  position: absolute;
+  top: 42%;
+  left: 4%;
+  width: 44%;
+  display: flex;
+  flex-direction: column;
+  gap: 6%;
+  pointer-events: auto;
+}
+.start-modes .mode-btn {
+  padding: clamp(8px, 2.4vw, 16px) clamp(10px, 3vw, 22px);
+  border: 3px solid #FBBF24;
+  border-radius: 16px;
+  background: rgba(255, 248, 231, 0.94);
+  font-family: inherit;
+  font-weight: 900;
+  color: #5D4E37;
+  font-size: clamp(0.82rem, 2.6vw, 1.1rem);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  transition: transform 0.1s;
+}
+.start-modes .mode-btn:active { transform: scale(0.96); }
+.start-modes .mode-btn .mode-sub {
+  display: block;
+  font-size: 0.7em;
+  font-weight: 700;
+  color: #A89880;
+  margin-top: 2px;
 }
 
 /* ===== Category screen ===== */
@@ -618,16 +669,21 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 
 <!-- ===== Start Screen ===== -->
 <div class="start-screen" id="start-screen">
-  <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウ博士のなぞなぞ">
-  <div class="mode-row" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;margin:0 auto;background:rgba(255,255,255,0.78);padding:12px;border-radius:20px;backdrop-filter:blur(6px);">
-    <button class="mode-btn selected" data-mode="inspire" style="padding:14px 20px;border:3px solid #FBBF24;border-radius:18px;background:#FFF8E7;font-family:inherit;font-weight:900;color:#5D4E37;font-size:1rem;cursor:pointer;text-align:left;line-height:1.4;">
-      😊 やさしい<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">いろ・かず・かたち</span>
-    </button>
-    <button class="mode-btn" data-mode="know" style="padding:14px 20px;border:3px solid #C8C0B8;border-radius:18px;background:#fff;font-family:inherit;font-weight:900;color:#5D4E37;font-size:1rem;cursor:pointer;text-align:left;line-height:1.4;">
-      💡 ものしり<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">てんき・からだ・なんでも</span>
-    </button>
+  <div class="start-bg-wrap">
+    <div class="start-bg-overlay">
+      <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウ博士のなぞなぞ">
+      <div class="start-modes">
+        <button class="mode-btn" data-mode="inspire">
+          😊 やさしい
+          <span class="mode-sub">いろ・かず・かたち</span>
+        </button>
+        <button class="mode-btn" data-mode="know">
+          💡 ものしり
+          <span class="mode-sub">てんき・からだ・なんでも</span>
+        </button>
+      </div>
+    </div>
   </div>
-  <button class="start-btn" id="start-btn">はじめる ▶</button>
 </div>
 
 <!-- ===== Category Screen ===== -->
@@ -1533,37 +1589,26 @@ const MODE_TO_CATEGORIES = {
   know:    ['trivia', 'weather', 'body', 'opposite']
 };
 
+// モードボタンをタップ = そのまま即ゲーム開始
+// (はじめるボタンは廃止、カテゴリ選択画面もスキップ)
 document.querySelectorAll('.mode-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     selectedMode = btn.dataset.mode;
-    document.querySelectorAll('.mode-btn').forEach(b => {
-      b.classList.remove('selected');
-      b.style.background = '#fff';
-      b.style.borderColor = '#C8C0B8';
+    ensureAudio();
+    startBGM();
+    // モードに該当するカテゴリだけ出題対象にする (ランダムシャッフル)
+    ALL_CATS.forEach(function(c) {
+      selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
     });
-    btn.classList.add('selected');
-    btn.style.background = '#FFF8E7';
-    btn.style.borderColor = '#FBBF24';
+    document.getElementById('start-screen').classList.add('hidden');
+    initGame();
+    if (typeof initMenu === 'function') {
+      initMenu({
+        bgmToggle: function() { toggleBGM(); },
+        tutorial: function() { alert('フクロウ博士の なぞなぞに こたえよう！'); }
+      });
+    }
   });
-});
-
-// Start button → モードに応じてカテゴリを全選択し、即ゲーム開始 (カテゴリ選択画面はスキップ)
-document.getElementById('start-btn').addEventListener('click', function() {
-  ensureAudio();
-  startBGM();
-  // モードに該当するカテゴリだけ「選択中」にしておく (出題ランダムシャッフル)。
-  ALL_CATS.forEach(function(c) {
-    selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
-  });
-  document.getElementById('start-screen').classList.add('hidden');
-  initGame();
-  // メニュー初期化（menu.js）
-  if (typeof initMenu === 'function') {
-    initMenu({
-      bgmToggle: function() { toggleBGM(); },
-      tutorial: function() { alert('フクロウ博士の なぞなぞに こたえよう！'); }
-    });
-  }
 });
 
 // Difficulty buttons
