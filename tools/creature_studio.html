@@ -944,7 +944,10 @@ body {
       </div>
       <div class="composite-bottom">
         <div class="composite-preview-wrap" id="composite-preview"></div>
-        <button class="atbtn atbtn-primary" id="btn-compose" disabled style="width:100%;margin-top:6px">🔨 合成して読み込む</button>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="atbtn" id="btn-compose-save-png" disabled style="flex:0 0 auto" title="今のレイアウトのままPNGとして保存（分割前のスクリーンショット）">💾 PNG保存</button>
+          <button class="atbtn atbtn-primary" id="btn-compose" disabled style="flex:1">🔨 合成して読み込む</button>
+        </div>
       </div>
     </div>
 
@@ -2696,14 +2699,40 @@ function blobToCanvas(blob) {
 }
 
 document.getElementById('btn-save-session').addEventListener('click', async () => {
-  if (!processedRaw && !originalCanvas) { showToast('保存するデータがありません', false); return; }
+  // マルチ合成 ON 中は pickerImages があれば保存対象とみなす
+  const hasPickerImages = multiPickerMode && pickerImages.length > 0;
+  if (!processedRaw && !originalCanvas && !hasPickerImages) {
+    showToast('保存するデータがありません', false); return;
+  }
   showLoading('セッションを保存中...');
   try {
     const spriteBlobs = await Promise.all(sprites.map(sp => canvasToBlob(sp.canvas)));
+    // マルチ合成中の各 picker 画像 (キャンバス + 選択矩形 + 各々の作業状態) も保存
+    const pickerBlobs = hasPickerImages ? await Promise.all(pickerImages.map(async (p, i) => {
+      // 現在アクティブな picker は作業状態がトップレベル変数側に居るので最新を反映
+      const pc = (i === activePickerIdx) ? processedCanvas : (p.processedCanvas || null);
+      const pr = (i === activePickerIdx) ? processedRaw    : (p.processedRaw    || null);
+      const cl = (i === activePickerIdx) ? cutLines        : (p.cutLines  || []);
+      const ll = (i === activePickerIdx) ? linkLines       : (p.linkLines || []);
+      const kb = (i === activePickerIdx) ? keepBackground  : (p.keepBackground || false);
+      return {
+        name: p.name,
+        blob: await canvasToBlob(p.canvas),
+        selections: (p.selections || []).slice(),
+        processedCanvasBlob: pc ? await canvasToBlob(pc) : null,
+        processedRawBlob:    pr ? await canvasToBlob(pr) : null,
+        cutLines: cl.slice(),
+        linkLines: ll.slice(),
+        keepBackground: kb
+      };
+    })) : null;
     const session = {
       ts: Date.now(),
+      multiMode: multiPickerMode,
+      activePickerIdx: activePickerIdx,
+      pickerImages: pickerBlobs,
       original: originalCanvas ? await canvasToBlob(originalCanvas) : null,
-      raw: await canvasToBlob(processedRaw),
+      raw: processedRaw ? await canvasToBlob(processedRaw) : null,
       links: linkLines,
       cuts: cutLines,
       keepBackground: keepBackground,
@@ -5793,6 +5822,8 @@ function updateCompositePreview() {
   const totalSels = pickerImages.reduce((s, p) => s + p.selections.length, 0);
   document.getElementById('composite-count').textContent = '選択: ' + totalSels;
   document.getElementById('btn-compose').disabled = totalSels === 0;
+  const savePngBtn = document.getElementById('btn-compose-save-png');
+  if (savePngBtn) savePngBtn.disabled = totalSels === 0;
   // マルチ合成中: 選択があれば「✂️ 分割」を有効化 (各矩形を1スプライトとして取り出し)
   if (multiPickerMode) {
     document.getElementById('btn-split').disabled = totalSels === 0;
@@ -5822,6 +5853,27 @@ document.getElementById('composite-unify').addEventListener('change', () => {
   updateCompositePreview();
 });
 document.getElementById('composite-unify-size').addEventListener('input', updateCompositePreview);
+
+// ── 合成PNG保存 (分割前のスクリーンショット) ──
+document.getElementById('btn-compose-save-png').addEventListener('click', () => {
+  const cv = composeSelections();
+  if (!cv) { showToast('選択がありません', false); return; }
+  cv.toBlob(blob => {
+    if (!blob) { showToast('PNG生成に失敗しました', false); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date();
+    const stamp = `${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}_${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}${String(ts.getSeconds()).padStart(2,'0')}`;
+    a.href = url;
+    a.download = `composite_${stamp}_${cv.width}x${cv.height}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`合成PNG (${cv.width}×${cv.height}) を保存しました`, true);
+    cv.width = 0; cv.height = 0;
+  }, 'image/png');
+});
 
 // ── 合成して読み込む ──
 document.getElementById('btn-compose').addEventListener('click', () => {
