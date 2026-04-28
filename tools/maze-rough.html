@@ -892,19 +892,41 @@ function drawEdge(e) {
     ctx.lineTo(e.polyline[i].x, e.polyline[i].y);
   }
   ctx.stroke();
-  // Polyline ハンドル (= 端点 + 中間点)。ドラッグ可能であることを示す小円。
+  // Polyline ハンドル — ノード (start/goal/waypoint) と重なる頂点はスキップ。
+  // = 端点はノードに固結合扱いなので別ハンドルを出さない。中間角点だけ表示。
   ctx.setLineDash([]);
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#666';
   ctx.lineWidth = 1.5;
   const r = CELL * 0.18;
   for (const p of e.polyline) {
+    if (_polyPointOverlapsNode(p)) continue;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
   }
   ctx.restore();
+}
+
+// polyline 頂点がノード (start/goal/waypoint) と座標的に一致しているか。
+// 一致する頂点はハンドル描画も hit detection も行わない (= ノードが端点の役)。
+function _polyPointOverlapsNode(p) {
+  if (!p) return false;
+  const eps2 = 4; // 2px 以内なら一致とみなす (snap 誤差吸収)
+  if (state.start) {
+    const dx = p.x - state.start.x, dy = p.y - state.start.y;
+    if (dx * dx + dy * dy < eps2) return true;
+  }
+  if (state.goal) {
+    const dx = p.x - state.goal.x, dy = p.y - state.goal.y;
+    if (dx * dx + dy * dy < eps2) return true;
+  }
+  for (const w of state.waypoints) {
+    const dx = p.x - w.x, dy = p.y - w.y;
+    if (dx * dx + dy * dy < eps2) return true;
+  }
+  return false;
 }
 
 // 点 (px,py) と線分 (ax,ay)-(bx,by) の最短距離 + 投影パラメータ t (0..1)。
@@ -922,16 +944,20 @@ function _distPointToSegment(px, py, ax, ay, bx, by) {
   return { dist: Math.sqrt(ex * ex + ey * ey), t: t };
 }
 
-// エッジ polyline の各頂点 (端点 + 中間点) との hit detection。
-// ノード (creature/waypoint/etc) よりも優先度が低いので、_markerHitAt の末尾で呼ぶ。
+// エッジ polyline の **中間点のみ** hit detection (端点はノード hit 経由)。
+// ノード (waypoint/start/goal) よりも優先度が低いので、_markerHitAt の末尾で呼ぶ。
+// ノードと重なる中間点もスキップ (= ノード hit に任せる)。
 function _edgePointHitAt(px, py) {
   const R = CELL * 0.35; const R2 = R * R;
   for (let ei = 0; ei < state.edges.length; ei++) {
     const e = state.edges[ei];
     if (!e || !Array.isArray(e.polyline)) continue;
-    for (let pi = 0; pi < e.polyline.length; pi++) {
+    const last = e.polyline.length - 1;
+    // 端点 (0, last) は除外 — ノードに紐付くので edge point としては掴ませない
+    for (let pi = 1; pi < last; pi++) {
       const p = e.polyline[pi];
       if (!p) continue;
+      if (_polyPointOverlapsNode(p)) continue;
       const dx = p.x - px, dy = p.y - py;
       if (dx * dx + dy * dy < R2) {
         return { type: 'edgePoint', edgeIdx: ei, pointIdx: pi };
@@ -1192,15 +1218,10 @@ cv.addEventListener('pointerdown', function(e) {
       afterEdit();
       return;
     }
-    // 🧹 でエッジ中間点をクリック → 削除 (端点クリックは無反応)
+    // 🧹 でエッジ中間点をクリック → 削除 (端点はそもそも edgePoint hit から除外)
     if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'edgePoint') {
       const eEdge = state.edges[hit.edgeIdx];
       if (!eEdge) return;
-      const last = eEdge.polyline.length - 1;
-      if (hit.pointIdx === 0 || hit.pointIdx === last) {
-        showBanner('端点は削除できません (中間点のみ削除可)');
-        return;
-      }
       pushHistory();
       eEdge.polyline.splice(hit.pointIdx, 1);
       afterEdit();
@@ -2914,22 +2935,59 @@ function _snapToBlockCenter(px, py) {
 // (cell center → cell center). Adjacent cells are linked by a straight corridor
 // so the line is naturally on path tiles. Intermediate corner points are added
 // only by the user via the ✏️ ライン編集 mode.
-function _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter) {
+// マクロノード (= degree != 2 のセル + start/goal) 同士をつなぐエッジを構築。
+// 通過セル (degree==2) はエッジの中間点として、方向転換が起きるセルだけ polyline に残す。
+// 直線経路 → 2 点 polyline、L 字 → 3 点、コの字 → 4 点。
+function _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter, startKey, goalKey) {
   const edges = [];
-  const seen = {};
+  const macro = {};
   for (const k of Object.keys(adj)) {
     const nb = adj[k] ? Object.keys(adj[k]) : [];
-    const a = k.split(',').map(Number);
-    for (const n of nb) {
-      const pairKey = (k < n) ? (k + '|' + n) : (n + '|' + k);
-      if (seen[pairKey]) continue;
-      seen[pairKey] = true;
-      const b = n.split(',').map(Number);
-      const ax = (cellRowX[a[0]] + cellCenter) * CELL;
-      const ay = (cellRowY[a[1]] + cellCenter) * CELL;
-      const bx = (cellRowX[b[0]] + cellCenter) * CELL;
-      const by = (cellRowY[b[1]] + cellCenter) * CELL;
-      edges.push({ polyline: [{ x: ax, y: ay }, { x: bx, y: by }] });
+    if (nb.length !== 2) macro[k] = true;
+  }
+  if (startKey) macro[startKey] = true;
+  if (goalKey)  macro[goalKey]  = true;
+  function _toPx(k) {
+    const parts = k.split(',').map(Number);
+    return { x: (cellRowX[parts[0]] + cellCenter) * CELL, y: (cellRowY[parts[1]] + cellCenter) * CELL };
+  }
+  function _dir(a, b) {
+    const A = a.split(',').map(Number);
+    const B = b.split(',').map(Number);
+    return (B[0] - A[0]) + ',' + (B[1] - A[1]);
+  }
+  // 各マクロノードから各方向に沿って、次のマクロノードに到達するまでセルをたどる。
+  // (start, end, 中間 cells set) の組をキーに重複登録を防ぐ。
+  const seen = {};
+  for (const startK of Object.keys(macro)) {
+    const nbs = adj[startK] ? Object.keys(adj[startK]) : [];
+    for (const first of nbs) {
+      const path = [startK];
+      let prev = startK, cur = first;
+      while (cur !== startK && !macro[cur]) {
+        path.push(cur);
+        const cnbs = Object.keys(adj[cur]);
+        const nx = cnbs.find(function(n) { return n !== prev; });
+        if (!nx) break;
+        prev = cur; cur = nx;
+      }
+      path.push(cur);
+      // 双方向探索の重複を排除: パスの両端と中間 cells のソート順 key
+      const a = path[0], b = path[path.length - 1];
+      const endsKey = (a < b ? a + '|' + b : b + '|' + a);
+      const midKey = path.slice(1, -1).slice().sort().join(',');
+      const fullKey = endsKey + '#' + midKey;
+      if (seen[fullKey]) continue;
+      seen[fullKey] = true;
+      // 方向転換 (= 角) のセルだけ中間点として polyline に残す
+      const polyline = [_toPx(path[0])];
+      for (let i = 1; i < path.length - 1; i++) {
+        if (_dir(path[i - 1], path[i]) !== _dir(path[i], path[i + 1])) {
+          polyline.push(_toPx(path[i]));
+        }
+      }
+      polyline.push(_toPx(path[path.length - 1]));
+      edges.push({ polyline: polyline });
     }
   }
   return edges;
@@ -3056,7 +3114,7 @@ function generateMazeForDifficulty(d) {
   };
   state.waypoints = _autoWaypointsFromCellGraph(maze.adj, maze.cellRowX, maze.cellRowY, startKey, goalKey, cellStride);
   // Phase 2: cell adjacency map → polyline edges (= maze runtime に渡すグラフ情報)
-  state.edges = _edgesFromAdj(maze.adj, maze.cellRowX, maze.cellRowY, cellCenter);
+  state.edges = _edgesFromAdj(maze.adj, maze.cellRowX, maze.cellRowY, cellCenter, startKey, goalKey);
   state.creatures = _placeCreaturesOnPath(params.creatureCount, offX, offY, cw, ch);
   afterEdit();
   showBanner('🎲 難易度 ' + params.difficulty + ' / ' +
@@ -3163,7 +3221,7 @@ function _recomputeAutoNodesAndEdges() {
   const manualWps = state.waypoints.filter(function(w) { return w.kind === 'manual'; });
   const autoWps = _autoWaypointsFromCellGraph(adj, cellRowX, cellRowY, startKey, goalKey, cellStride);
   // (f) edges 再生成 (= 生成時と同じヘルパーを使い回す)
-  const edges = _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter);
+  const edges = _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter, startKey, goalKey);
   pushHistory();
   state.waypoints = manualWps.concat(autoWps);
   state.edges = edges;
