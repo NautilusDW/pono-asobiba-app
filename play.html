@@ -2,18 +2,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>あそびば｜ポノのあそびば（ゲームメニュー）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>あそびば｜ポノのあそびば</title>
   <meta name="description" content="ポノと一緒にひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
   <meta name="author" content="ネモ先生">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://pono-asobiba-app.ndw.workers.dev/play.html">
 
-  <!-- Open Graph (あそびメニュー) -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://pono-asobiba-app.ndw.workers.dev/play.html">
   <meta property="og:site_name" content="ポノのあそびば">
-  <meta property="og:title" content="ポノのあそびば（あそびメニュー）">
+  <meta property="og:title" content="ポノのあそびば">
   <meta property="og:description" content="ひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
   <meta property="og:image" content="https://pono-asobiba-app.ndw.workers.dev/assets/images/A+用ヘッダー.jpg">
   <meta property="og:locale" content="ja_JP">
@@ -27,6 +26,13 @@
   <meta name="theme-color" content="#F2915A">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <!-- Preload preview backgrounds (4 games) -->
+  <link rel="preload" as="image" href="assets/images/quizland/title_back.jpg">
+  <link rel="preload" as="image" href="assets/images/quiz-sound/title_back.jpg">
+  <link rel="preload" as="image" href="assets/images/wordmatch/title_back.jpg">
+  <link rel="preload" as="image" href="assets/images/maze/title_back.jpg">
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -34,37 +40,282 @@
       --bg: #FFF8F0;
       --primary: #F2915A;
       --primary-light: #FDDCBF;
+      --accent-green: #6C8E3F;
+      --accent-cream: #FFF8E1;
       --text: #5D4E37;
       --text-light: #A89880;
-      --shadow: rgba(93, 78, 55, 0.12);
-      --radius: 24px;
+      --shadow: rgba(93, 78, 55, 0.18);
+      --radius: 22px;
+      --nav-h: 64px;
     }
 
     html, body {
-      min-height: 100dvh;
+      height: 100%;
       font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-      background-color: var(--bg);
-      background-image: url('assets/images/BG_03.webp');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: local;
+      background: var(--bg);
       color: var(--text);
       -webkit-user-select: none;
       user-select: none;
+      overflow: hidden;
     }
 
-    .page {
+    body {
+      display: flex;
+      flex-direction: column;
       min-height: 100dvh;
+      background-image: url('assets/images/BG_03.webp');
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* ===== Header ===== */
+    .top-header {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      padding-top: max(8px, env(safe-area-inset-top));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: linear-gradient(to bottom, rgba(255,248,225,0.92), rgba(255,248,225,0.72));
+      box-shadow: 0 2px 10px var(--shadow);
+      position: relative;
+      z-index: 30;
+    }
+    .brand-title {
+      font-size: clamp(1.1rem, 3.4vw, 1.6rem);
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-shadow: 2px 2px 0 var(--primary-light);
+    }
+    .brand-subtitle {
+      font-size: clamp(0.78rem, 2.2vw, 0.95rem);
+      font-weight: 700;
+      color: var(--text);
+      background: rgba(255,255,255,0.8);
+      border: 2px solid var(--primary-light);
+      border-radius: 50px;
+      padding: 4px 14px;
+    }
+
+    /* ===== Main: preview + cards ===== */
+    .play-main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 12px calc(var(--nav-h) + 8px + env(safe-area-inset-bottom));
+    }
+
+    /* ===== Preview Pane ===== */
+    .preview-pane {
+      position: relative;
+      flex: 1 1 50%;
+      min-height: 200px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 8px 28px var(--shadow);
+      isolation: isolate;
+    }
+    .preview-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 0.45s ease;
+      z-index: 1;
+    }
+    .preview-bg.is-active { opacity: 1; }
+    .preview-pane::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.05) 0%,
+        rgba(0,0,0,0.0) 35%,
+        rgba(0,0,0,0.45) 100%
+      );
+      pointer-events: none;
+    }
+    .preview-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      padding: 0 16px calc(80px + env(safe-area-inset-bottom));
-      gap: 16px;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 16px 16px 18px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .preview-title {
+      font-size: clamp(1.05rem, 3.4vw, 1.6rem);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 0.04em;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 12px rgba(0,0,0,0.3);
+      line-height: 1.2;
+      transition: opacity 0.35s ease;
+    }
+    .preview-desc {
+      font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+      font-weight: 700;
+      color: #FFF8E1;
+      background: rgba(0,0,0,0.35);
+      border-radius: 50px;
+      padding: 4px 14px;
+      letter-spacing: 0.03em;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+      transition: opacity 0.35s ease;
+    }
+    .preview-title.is-fading,
+    .preview-desc.is-fading { opacity: 0; }
+
+    .start-btn {
+      pointer-events: auto;
+      margin-top: 8px;
+      padding: 14px 36px;
+      font-family: inherit;
+      font-size: clamp(1.1rem, 3.6vw, 1.4rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: #5C3A00;
+      background: linear-gradient(180deg, #FFE680, #F5A800);
+      border: 3px solid #fff;
+      border-radius: 50px;
+      box-shadow: 0 5px 0 #B87200, 0 8px 18px rgba(0,0,0,0.35);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .start-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #B87200, 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .start-icon { font-size: 0.9em; }
+    @keyframes startBtnPulse {
+      0%   { transform: scale(1);    box-shadow: 0 5px 0 #B87200, 0 8px 18px rgba(0,0,0,0.35); }
+      40%  { transform: scale(1.08); box-shadow: 0 5px 0 #B87200, 0 12px 28px rgba(255,168,0,0.6); }
+      100% { transform: scale(1);    box-shadow: 0 5px 0 #B87200, 0 8px 18px rgba(0,0,0,0.35); }
+    }
+    .start-btn.is-pulse { animation: startBtnPulse 0.45s ease; }
+
+    /* ===== Card List ===== */
+    .card-list {
+      flex: 1 1 50%;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 4px 4px 8px;
+      scrollbar-width: thin;
+    }
+    .game-card {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px 10px 10px;
+      background: rgba(255,248,225,0.94);
+      border: 3px solid transparent;
+      border-radius: 18px;
+      box-shadow: 0 3px 10px var(--shadow);
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.2s, background 0.2s;
+      font-family: inherit;
+      width: 100%;
+      color: var(--text);
+    }
+    .game-card:active { transform: scale(0.98); }
+    .game-card.is-selected {
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 6px 20px var(--shadow), 0 0 0 4px rgba(242,145,90,0.15);
+      transform: translateX(4px);
+    }
+    .game-card-icon {
+      flex-shrink: 0;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FFE0B2, #FDDCBF);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .game-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .game-card-title {
+      font-size: clamp(0.9rem, 2.6vw, 1.05rem);
+      font-weight: 900;
+      color: var(--primary);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .game-card.is-selected .game-card-title { color: #C2541A; }
+    .game-card-desc {
+      font-size: clamp(0.68rem, 1.9vw, 0.78rem);
+      font-weight: 700;
+      color: var(--text-light);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .game-card-arrow {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-weight: 900;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .game-card.is-selected .game-card-arrow {
+      transform: scale(1.15);
+      background: var(--primary);
+      color: #fff;
     }
 
-    /* ===== Bottom Navigation Bar ===== */
+    /* ===== Landscape (21:9 etc): side-by-side ===== */
+    @media (orientation: landscape) and (min-aspect-ratio: 16/10) {
+      .play-main {
+        flex-direction: row;
+        gap: 14px;
+        padding: 12px 14px calc(var(--nav-h) + 8px + env(safe-area-inset-bottom));
+      }
+      .preview-pane {
+        flex: 1 1 58%;
+      }
+      .card-list {
+        flex: 1 1 42%;
+      }
+    }
+
+    /* ===== Bottom Navigation ===== */
     .bottom-nav {
       position: fixed;
       bottom: 0; left: 0; right: 0;
@@ -72,12 +323,13 @@
       display: flex;
       justify-content: space-around;
       align-items: stretch;
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255,255,255,0.95);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       box-shadow: 0 -2px 12px rgba(93,78,55,0.15);
       border-top: 2px solid #FDE68A;
       padding-bottom: env(safe-area-inset-bottom);
+      height: calc(var(--nav-h) + env(safe-area-inset-bottom));
     }
     .bn-item {
       flex: 1;
@@ -94,11 +346,9 @@
       color: var(--text);
       transition: transform 0.1s;
     }
-    .bn-item:active {
-      transform: scale(0.9);
-    }
+    .bn-item:active { transform: scale(0.9); }
     .bn-icon {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       line-height: 1;
     }
     .bn-label {
@@ -108,214 +358,95 @@
       letter-spacing: 0.02em;
     }
 
-    /* ===== Header ===== */
-    .header {
-      width: 100%;
-      max-width: 540px;
-      text-align: center;
+    /* ===== Modal ===== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+      padding: 20px;
     }
-
-    .header-img {
+    .modal[hidden] { display: none; }
+    .modal-card {
+      background: var(--accent-cream);
+      border: 4px solid var(--primary-light);
+      border-radius: var(--radius);
+      padding: 22px 22px 18px;
+      max-width: 360px;
       width: 100%;
-      display: block;
-      border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
     }
-
-    .site-title {
-      font-size: 1.8rem;
+    .modal-card h3 {
+      font-size: 1.25rem;
       font-weight: 900;
       color: var(--primary);
-      text-shadow: 3px 3px 0 var(--primary-light);
-      letter-spacing: 0.05em;
-      margin-top: 10px;
+      text-align: center;
+      margin-bottom: 14px;
     }
-
-    .site-subtitle {
-      font-size: 0.9rem;
+    .modal-card p {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+      text-align: center;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 6px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .modal-divider {
+      border: none;
+      border-top: 2px dashed var(--primary-light);
+      margin: 10px 0;
+    }
+    .dev-link {
+      display: block;
+      text-align: center;
+      padding: 8px;
+      font-size: 0.85rem;
       font-weight: 700;
       color: var(--text-light);
-      margin-top: 3px;
-    }
-
-    /* ===== Menu ===== */
-    .menu {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 4px;
-      padding: 16px 8px 10px;
-      aspect-ratio: 1;
-      border-radius: var(--radius);
       text-decoration: none;
-      color: #fff;
-      box-shadow: 0 6px 24px var(--shadow);
-      transition: transform 0.15s, box-shadow 0.15s;
-      position: relative;
-      overflow: hidden;
+      border: 2px dashed var(--text-light);
+      border-radius: 10px;
+      margin: 8px 0;
     }
-
-    .card:active { transform: scale(0.95); box-shadow: 0 2px 8px var(--shadow); }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 45%;
-      background: rgba(255,255,255,0.18);
-      border-radius: var(--radius) var(--radius) 60% 60% / var(--radius) var(--radius) 30% 30%;
-      pointer-events: none;
-    }
-
-    .card-bento     { background: linear-gradient(135deg, #FB923C, #F59E0B); }
-    .card-puzzle    { background: linear-gradient(135deg, #F2915A, #F7C948); }
-    .card-writing   { background: linear-gradient(135deg, #C084FC, #60A5FA); }
-    .card-drawing   { background: linear-gradient(135deg, #34D399, #60A5FA); }
-    .card-breakout  { background: linear-gradient(135deg, #F97316, #EF4444); }
-    .card-coloring  { background: linear-gradient(135deg, #FBBF24, #FB923C); }
-    .card-stacking  { background: linear-gradient(135deg, #22C55E, #16A34A); }
-    .card-wordmatch { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
-    .card-quizland  { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
-    .card-maze      { background: linear-gradient(135deg, #6C8E3F, #A4C76D); }
-    .card-fossil    { background: linear-gradient(135deg, #F5C97A, #E8A85C); }
-    .card-message   { background: linear-gradient(135deg, #22D3EE, #3B82F6); }
-    .card-slide     { background: linear-gradient(135deg, #4CAF50, #81C784); }
-    .card-aquarium  { background: linear-gradient(135deg, #06B6D4, #1D4ED8); }
-    .card-room      { background: linear-gradient(135deg, #ff9a3c, #ff6347); }
-    .card-bubble    { background: linear-gradient(135deg, #7DD3FC, #A78BFA); }
-    .card-bowling   { background: linear-gradient(135deg, #34D399, #FBBF24); }
-    .card-egg       { background: linear-gradient(135deg, #A7F3D0, #FDE68A); }
-    .card-oto       { background: linear-gradient(135deg, #FFA5A5, #FFD84D); }
-    .card-quiz-sound{ background: linear-gradient(135deg, #FB923C, #F472B6); }
-
-    /* おとタッチ / おとあてクイズ: 文字（音符・足跡）を青系に着色して白カードでも視認できるように */
-    .card-oto .card-icon,
-    .card-quiz-sound .card-icon {
-      color: #1E5BC6;
-      text-shadow: 1px 2px 0 rgba(255,255,255,0.7);
-    }
-
-    /* ── Points badge (menu top) ── */
-    .pts-row {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      margin: 0 0 8px; padding: 6px 16px;
-      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
-      border-radius: 20px; font-weight: bold; font-size: 0.88rem; color: #e07800;
-      cursor: pointer; transition: transform 0.1s;
-    }
-    .pts-row:active { transform: scale(0.97); }
-
-    .card-icon  { font-size: 2.4rem; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.12)); display: flex; align-items: center; justify-content: center; height: 2.4rem; line-height: 1; flex-shrink: 0; }
-    .card-icon img { display: block; }
-    .card-body  { text-align: center; margin-top: 2px; }
-    .card-title { font-size: clamp(0.74rem, 2.6vw, 0.88rem); font-weight: 900; letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(0,0,0,0.12); }
-    .card-desc  { font-size: 0.6rem; font-weight: 700; opacity: 0.88; margin-top: 2px; line-height: 1.3; }
-
-    /* ===== Lock ===== */
-    .card.locked { filter: grayscale(1); opacity: 0.5; pointer-events: none; }
-    /* おうちカードはロック中でもタップ可能（案内モーダルを出すため） */
-    #card-room.locked { pointer-events: auto; cursor: pointer; }
-    .card.locked::after {
-      content: '🔒';
-      position: absolute; top: 6px; right: 8px;
-      font-size: 1rem; filter: none;
-    }
-    .card.coming-soon {
-      filter: grayscale(1); opacity: 0.5; pointer-events: none;
-      position: relative;
-    }
-    .card.coming-soon::after {
-      content: 'つくってるよ！';
-      position: absolute; top: 6px; right: 6px;
-      font-size: 0.55rem; font-weight: 900;
-      background: linear-gradient(135deg, #FBBF24, #F59E0B);
-      color: #5C3A00; padding: 2px 8px; border-radius: 20px;
-      filter: none; letter-spacing: 0.03em;
-    }
-    .lock-banner {
-      grid-column: 1 / -1;
-      background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
-      border: 2px dashed #F5C518;
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      text-align: center;
-      font-size: 0.78rem; font-weight: 900; color: #7A5C00;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .lock-banner-title { font-size: 0.88rem; }
-    .lock-input-row { display: flex; gap: 8px; justify-content: center; }
-    .lock-input {
-      padding: 7px 12px; border: 2px solid #F5C518; border-radius: 50px;
-      font-family: inherit; font-size: 0.9rem; font-weight: 700;
-      width: 120px; text-align: center; outline: none;
-      letter-spacing: 0.15em;
-    }
-    .lock-btn {
-      padding: 7px 16px; border: none; border-radius: 50px;
-      background: linear-gradient(180deg, #FFD84D, #F5A800);
-      color: #5C3A00; font-family: inherit; font-size: 0.85rem; font-weight: 900;
-      cursor: pointer; box-shadow: 0 3px 0 #B87200;
-    }
-    .lock-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
-    .lock-unlocked { font-size: 0.88rem; color: #2D7A2D; font-weight: 900; display: none; }
-    .lock-error { font-size: 0.75rem; color: #E53E3E; display: none; }
-
-    /* ===== Site Heading ===== */
-    .site-heading {
-      font-size: clamp(1.5rem, 5.5vw, 2rem);
-      font-weight: 900;
-      color: var(--primary);
-      letter-spacing: 0.08em;
-      text-align: center;
-      background: rgba(255,255,255,0.65);
-      border: 3px solid var(--primary-light);
-      border-radius: 50px;
-      padding: 10px 24px;
-      box-shadow: 0 4px 16px var(--shadow);
-      width: fit-content;
-    }
-    .site-heading::before { content: '🌳 '; }
-    .site-heading::after  { content: ' 🌳'; }
-
-    /* ===== Music Toggle ===== */
-    .music-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      justify-content: center;
+    .dev-link:active { background: rgba(0,0,0,0.05); }
+    .modal-close {
+      display: block;
       width: 100%;
-      max-width: 400px;
-    }
-
-    .music-label {
+      margin-top: 14px;
+      padding: 12px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: inherit;
       font-size: 1rem;
       font-weight: 900;
-      color: var(--text);
-      letter-spacing: 0.05em;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #B87200;
     }
+    .modal-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
 
+    /* ===== Toggle Switch ===== */
     .toggle {
       position: relative;
-      width: 58px;
+      width: 56px;
       height: 30px;
       flex-shrink: 0;
     }
-
-    .toggle input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-slider {
       position: absolute;
       inset: 0;
@@ -325,3510 +456,300 @@
       transition: background 0.3s;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
     }
-
     .toggle-slider::before {
       content: '';
       position: absolute;
-      width: 24px;
-      height: 24px;
-      left: 3px;
-      top: 3px;
+      width: 24px; height: 24px;
+      left: 3px; top: 3px;
       background: #fff;
       border-radius: 50%;
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(26px); }
 
-    .toggle input:checked + .toggle-slider {
-      background: var(--primary);
-    }
-
-    .toggle input:checked + .toggle-slider::before {
-      transform: translateX(28px);
-    }
-
-    /* ===== Video Section ===== */
-    .video-section {
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .video-label {
-      font-size: 0.85rem;
-      font-weight: 900;
-      color: var(--primary);
-      text-align: center;
-      margin-bottom: 8px;
-      letter-spacing: 0.05em;
-    }
-
-    .video-wrap {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: 0 6px 24px var(--shadow);
-    }
-
-    .video-wrap iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-    }
-
-    /* ===== PC Layout ===== */
-    @media (min-width: 640px) {
-      .video-section { max-width: 580px; }
-      .menu          { max-width: 580px; }
-      .music-row     { max-width: 580px; }
-      .card-icon     { font-size: 3rem; height: 3rem; }
-      .card-title    { font-size: 1rem; }
-      .card-desc     { font-size: 0.7rem; }
-    }
-
-    /* ===== Hero Amazon Image ===== */
-    .hero-amazon {
-      align-self: stretch;
-      margin-left: -16px;
-      margin-right: -16px;
-      margin-top: -16px;
-      display: block;
-    }
-    .hero-amazon img {
-      width: 100%;
-      display: block;
-      max-width: 100%;
-    }
-
-    /* ===== Book Banner ===== */
-    .book-banner {
-      width: 100%;
-      max-width: 540px;
-      text-decoration: none;
-      display: block;
-      background: linear-gradient(160deg, #FFF8EE, #FFE8C8);
-      border: 2px solid #E8A04A;
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      box-shadow: 0 6px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.8);
-      transition: transform 0.15s, box-shadow 0.15s;
-      text-align: center;
-    }
-    .book-banner:active { transform: translateY(2px); box-shadow: 0 2px 8px var(--shadow); }
-    .book-kids {
-      font-size: 1.15rem;
-      font-weight: 900;
-      color: var(--primary);
-      letter-spacing: 0.05em;
-      text-shadow: 1px 1px 0 var(--primary-light);
-    }
-    .book-divider {
-      width: 40px; height: 2px;
-      background: var(--primary-light);
-      margin: 8px auto; border-radius: 2px;
-    }
-    .book-parents {
-      font-size: 0.8rem; font-weight: 700;
-      color: var(--text-light); line-height: 1.5;
-    }
-    .book-cta {
-      display: inline-block;
-      margin-top: 12px;
-      background: linear-gradient(180deg, #FFD84D, #F5A800);
-      color: #5C3A00;
-      font-size: 0.95rem; font-weight: 900;
-      padding: 8px 28px; border-radius: 50px;
-      letter-spacing: 0.05em;
-      box-shadow: 0 4px 0 #B87200, 0 6px 12px rgba(200,120,0,0.3);
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .book-banner:active .book-cta {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #B87200, 0 2px 6px rgba(200,120,0,0.2);
-    }
-
-
-    /* ===== Author Block ===== */
-    .author-block {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 14px 20px;
-      background: linear-gradient(135deg, #E0F2FE, #DBEAFE);
-      border: 2px solid #93C5FD;
-      border-radius: var(--radius);
-      box-shadow: 0 4px 16px var(--shadow);
-      text-decoration: none;
-      color: var(--text);
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .author-block:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--shadow); }
-    .author-icon { font-size: 2rem; flex-shrink: 0; }
-    .author-title { font-size: 0.95rem; font-weight: 900; color: #3B82F6; }
-    .author-desc { font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-top: 2px; }
-
-    @media (min-width: 640px) {
-      .author-block { max-width: 580px; }
-    }
-
-    /* ===== PWA Banner ===== */
-    .pwa-banner {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, #FEF3C7, #FDE68A);
-      border: 2px solid #F59E0B;
-      border-radius: var(--radius);
-      box-shadow: 0 4px 16px var(--shadow);
-      position: relative;
-    }
-    .pwa-banner.hidden { display: none; }
-    .pwa-banner-icon { font-size: 2rem; flex-shrink: 0; }
-    .pwa-banner-title { font-size: 0.88rem; font-weight: 900; color: #92400E; }
-    .pwa-banner-desc { font-size: 0.7rem; font-weight: 700; color: #A16207; margin-top: 2px; }
-    .pwa-banner-how {
-      margin-top: 6px;
-      padding: 4px 14px; border: none; border-radius: 20px;
-      background: #F59E0B; color: #fff;
-      font-family: inherit; font-size: 0.75rem; font-weight: 900;
-      cursor: pointer;
-    }
-    .pwa-banner-how:active { transform: scale(0.95); }
-    .pwa-banner-close {
-      position: absolute; top: 6px; right: 8px;
-      background: none; border: none; font-size: 0.9rem; color: #A16207;
-      cursor: pointer; padding: 4px;
-    }
-
-    @media (min-width: 640px) {
-      .pwa-banner { max-width: 580px; }
-    }
-
-    /* ===== PWA Modal ===== */
-    .pwa-modal-overlay {
-      position: fixed; inset: 0; z-index: 99999;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.25s;
-    }
-    .pwa-modal-overlay.show {
-      opacity: 1; pointer-events: auto;
-    }
-    .pwa-modal {
-      background: #fff; border-radius: 24px;
-      padding: 24px 20px; max-width: 320px; width: 90%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-      text-align: center;
-    }
-    .pwa-modal-title {
-      font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 1.05rem; font-weight: 900;
-      color: var(--text); margin-bottom: 16px;
-    }
-    .pwa-modal-section {
-      text-align: left;
-      margin-bottom: 14px;
-      padding: 10px 12px;
-      background: #F9FAFB;
-      border-radius: 12px;
-    }
-    .pwa-modal-device {
-      font-size: 0.82rem; font-weight: 900;
-      color: var(--primary); margin-bottom: 6px;
-    }
-    .pwa-modal-steps {
-      font-size: 0.78rem; font-weight: 700;
-      color: var(--text); line-height: 1.8;
-      padding-left: 20px; margin: 0;
-    }
-    .pwa-modal-note {
-      font-size: 0.8rem; font-weight: 900;
-      color: #059669; margin: 10px 0 14px;
-    }
-    .pwa-modal-close {
-      padding: 10px 32px; border: none; border-radius: 30px;
-      background: linear-gradient(135deg, var(--accent), #34D399);
-      color: #fff; font-family: inherit;
-      font-size: 0.95rem; font-weight: 900;
-      cursor: pointer;
-    }
-    .pwa-modal-close:active { transform: scale(0.95); }
-
-    /* ===== Profile Overlay ===== */
-    .profile-overlay {
-      position: fixed; inset: 0; z-index: 9970;
-      background: rgba(0,0,0,0.55);
-      display: flex; align-items: center; justify-content: center;
-      padding: 16px;
-      opacity: 1; transition: opacity 0.4s;
-    }
-    .profile-overlay.hidden {
-      opacity: 0; pointer-events: none;
-    }
-    .profile-card {
-      background: #fff;
-      border-radius: 28px;
-      padding: 28px 24px 24px;
-      max-width: 340px; width: 100%;
-      box-shadow: 0 12px 48px rgba(0,0,0,0.3);
-      text-align: center;
-      position: relative;
-      animation: profileBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes profileBounceIn {
-      0% { transform: scale(0.7) translateY(30px); opacity: 0; }
-      100% { transform: scale(1) translateY(0); opacity: 1; }
-    }
-    .profile-pono {
-      width: 100px; height: 100px;
-      border-radius: 50%;
-      object-fit: contain;
-      margin: 0 auto 12px;
-      display: block;
-      filter: drop-shadow(0 4px 12px rgba(242,145,90,0.35));
-    }
-    .profile-title {
-      font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 1.4rem; font-weight: 900;
-      color: var(--primary);
-      letter-spacing: 0.08em;
-      margin-bottom: 18px;
-      text-shadow: 2px 2px 0 var(--primary-light);
-    }
-    .profile-section-label {
-      font-size: 0.82rem; font-weight: 900;
-      color: var(--text-light);
-      margin-bottom: 8px;
-      letter-spacing: 0.04em;
-    }
-    .profile-name-input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 3px solid var(--primary-light);
-      border-radius: 50px;
-      font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 1.1rem; font-weight: 700;
-      color: var(--text);
-      text-align: center;
-      outline: none;
-      transition: border-color 0.2s;
-      background: #FFF8F0;
-    }
-    .profile-name-input::placeholder {
-      color: #D0C0A8; font-weight: 400;
-    }
-    .profile-name-input:focus {
-      border-color: var(--primary);
-    }
-    .profile-age-row {
-      display: flex; gap: 10px; justify-content: center;
-      margin-top: 8px;
-    }
-    .profile-age-btn {
-      width: 56px; height: 56px;
-      border-radius: 50%;
-      border: 3px solid var(--primary-light);
-      background: #FFF8F0;
-      font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 1.3rem; font-weight: 900;
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .profile-age-btn:active { transform: scale(0.92); }
-    .profile-age-btn.selected {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(242,145,90,0.4);
-      transform: scale(1.08);
-    }
-    .profile-gender-row {
-      display: flex; gap: 10px; justify-content: center;
-      margin-top: 8px;
-    }
-    .profile-gender-btn {
-      flex: 1; max-width: 140px;
-      padding: 12px 8px;
-      border-radius: 16px;
-      border: 3px solid var(--primary-light);
-      background: #FFF8F0;
-      font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 0.95rem; font-weight: 900;
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .profile-gender-btn:active { transform: scale(0.95); }
-    .profile-gender-btn.selected {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(242,145,90,0.4);
-      transform: scale(1.05);
-    }
-    .profile-submit-btn {
-      margin-top: 20px;
-      width: 100%;
-      padding: 14px 0;
-      border: none;
-      border-radius: 50px;
-      background: linear-gradient(180deg, #FFD84D, #F5A800);
-      color: #5C3A00;
-      font-family: 'Zen Maru Gothic', sans-serif;
-      font-size: 1.2rem; font-weight: 900;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      box-shadow: 0 5px 0 #B87200, 0 8px 20px rgba(200,120,0,0.3);
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .profile-submit-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 2px 0 #B87200, 0 4px 10px rgba(200,120,0,0.2);
-    }
-    .profile-submit-btn:disabled {
-      opacity: 0.45; cursor: default;
-    }
-    .profile-error {
-      font-size: 0.78rem; font-weight: 700;
-      color: #E53E3E;
-      margin-top: 8px;
-      min-height: 1.2em;
-    }
-    .profile-section { margin-bottom: 16px; }
-
-    /* ===== Stamp Rally Section (Daily Challenge) ===== */
-    /* ===== Acorn badge (top-right fixed) ===== */
-    .acorn-badge-play {
-      position: fixed;
-      top: 12px; right: 12px;
-      z-index: 50;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 6px 12px 6px 10px;
-      background: #fff;
-      border: 2.5px solid #A16207;
-      border-radius: 999px;
-      box-shadow: 0 3px 10px rgba(161,98,7,0.18);
-      color: #7C4A02;
-      font-weight: 900;
-      font-size: 0.95rem;
-      text-decoration: none;
-      cursor: pointer;
-      transition: transform 0.15s;
-    }
-    .acorn-badge-play:active { transform: scale(0.95); }
-    .acorn-badge-play .acorn-shop-hint {
-      font-size: 0.9rem;
-      margin-left: 2px;
-      padding-left: 6px;
-      border-left: 1.5px solid #E0C28A;
-    }
-    .acorn-badge-play .acorn-icon-play { font-size: 1.1rem; line-height: 1; }
-    .acorn-badge-play .acorn-count-play { min-width: 18px; text-align: center; }
-    .acorn-badge-play.pop { animation: acornPlayPop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
-    @keyframes acornPlayPop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.22); }
-      100% { transform: scale(1); }
-    }
-
-    /* ===== Thank-you (ありがとう) badge — v266 テーマ統合、どんぐりバッジの下に配置 ===== */
-    .thankyou-badge-play {
-      position: fixed;
-      top: 56px; right: 12px;
-      z-index: 50;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 6px 12px 6px 10px;
-      background: #fff;
-      border: 2.5px solid #E91E63;
-      border-radius: 999px;
-      box-shadow: 0 3px 10px rgba(233,30,99,0.18);
-      color: #AD1457;
-      font-weight: 900;
-      font-size: 0.95rem;
-      pointer-events: none;
-    }
-    .thankyou-badge-play .thankyou-icon-play { font-size: 1.05rem; line-height: 1; }
-    .thankyou-badge-play .thankyou-count-play { min-width: 18px; text-align: center; }
-    .thankyou-badge-play.pop { animation: thankyouPlayPop 0.45s cubic-bezier(0.34,1.56,0.64,1); }
-    @keyframes thankyouPlayPop {
-      0%   { transform: scale(1); }
-      40%  { transform: scale(1.28) rotate(-6deg); }
-      70%  { transform: scale(1.08) rotate(4deg); }
-      100% { transform: scale(1) rotate(0); }
-    }
-
-    .stamp-rally-section {
-      width: 100%;
-      max-width: 400px;
-      margin: 8px auto 10px;
-      padding: 14px 14px 12px;
-      background: linear-gradient(135deg, #FFF8E1, #FFE8C4);
-      border: 3px solid #FFB84D;
-      border-radius: 22px;
-      box-shadow: 0 6px 18px rgba(255,152,0,0.18);
-      position: relative;
-    }
-    .stamp-rally-section::before {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: 22px;
-      pointer-events: none;
-      animation: stampRallyGlow 2.6s ease-in-out infinite;
-    }
-    @keyframes stampRallyGlow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,77,0); }
-      50%      { box-shadow: 0 0 0 6px rgba(255,184,77,0.28); }
-    }
-    .stamp-rally-title {
-      font-size: 1.15rem;
-      font-weight: 900;
-      color: #D97706;
-      text-align: center;
-      margin-bottom: 10px;
-      letter-spacing: 0.02em;
-    }
-    .stamp-rally-games {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
-    .stamp-rally-game {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      width: 96px;
-      padding: 12px 6px 10px;
-      background: #fff;
-      border: 2.5px solid var(--primary-light);
-      border-radius: 18px;
-      box-shadow: 0 3px 12px var(--shadow);
-      position: relative;
-      text-decoration: none;
-      color: var(--text);
-      transition: transform 0.12s;
-    }
-    .stamp-rally-game:active { transform: scale(0.95); }
-    .stamp-rally-game-icon { font-size: 2.2rem; line-height: 1; }
-    .stamp-rally-game-name {
-      font-size: 0.7rem;
-      font-weight: 900;
-      line-height: 1.2;
-      text-align: center;
-    }
-    .stamp-rally-game.completed {
-      background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
-      border: 2px solid #66BB6A;
-    }
-    .stamp-rally-game.completed::after {
-      content: '\2705';
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      font-size: 0.9rem;
-    }
-    .stamp-rally-bonus {
-      text-align: center;
-      margin-top: 8px;
-      font-size: 0.78rem;
-      font-weight: 900;
-      color: #66BB6A;
-    }
-    .stamp-rally-bonus.pending {
-      color: var(--text-light);
-    }
-
-    /* ===== Stamp Card (15-slot, 5×3 card) ===== */
-    .stamp-card-section {
-      width: 100%;
-      max-width: 400px;
-      margin: 6px auto 0;
-      background: linear-gradient(135deg, #FFFDF5, #FFF8E8);
-      border-radius: 18px;
-      padding: 10px 14px 12px;
-      box-shadow: 0 2px 10px var(--shadow);
-      border: 2px solid #FFE8B0;
-      cursor: pointer;
-    }
-    .stamp-card-header {
-      font-size: 0.82rem;
-      font-weight: 900;
-      color: var(--text);
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .stamp-card-header span {
-      color: var(--primary);
-    }
-    .stamp-card-row-label {
-      font-size: 0.6rem;
-      color: #C0B090;
-      text-align: center;
-      margin-bottom: 2px;
-      font-weight: 700;
-    }
-    .stamp-card {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-    }
-    .stamp-card-slot {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 2.5px dashed #E0D6C8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background: #FFF8F0;
-      flex-shrink: 0;
-      transition: transform 0.15s;
-    }
-    .stamp-card-slot .slot-num {
-      font-size: 0.6rem;
-      font-weight: 700;
-      color: #D5CFC5;
-      position: absolute;
-      pointer-events: none;
-    }
-    .stamp-card-slot .slot-hint {
-      font-size: 0.7rem;
-      opacity: 0.25;
-      position: absolute;
-      bottom: -1px;
-    }
-    .stamp-card-slot.stamped {
-      border: 2.5px solid #66BB6A;
-      background: #F0FFF0;
-    }
-    .stamp-card-slot.stamped img {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      object-fit: contain;
-    }
-    .stamp-card-slot.current-slot {
-      border: 2.5px solid #FFD700;
-      background: #FFFDE7;
-      animation: slotPulse 1.5s ease-in-out infinite;
-    }
-    .stamp-card-slot.reward-slot {
-      border-color: #F2915A;
-      background: #FFF5EE;
-    }
-    @keyframes slotPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
-      50% { box-shadow: 0 0 8px 4px rgba(255,215,0,0.5); }
-    }
-
-    /* ===== Stamp Bounce Animation ===== */
-    @keyframes stampBounce {
-      0%   { transform: scale(3) rotate(-20deg); opacity: 0; }
-      30%  { transform: scale(0.85) rotate(3deg); opacity: 1; }
-      50%  { transform: scale(1.2) rotate(-2deg); opacity: 1; }
-      70%  { transform: scale(0.95) rotate(1deg); opacity: 1; }
-      100% { transform: scale(1) rotate(0); opacity: 1; }
-    }
-    @keyframes stampSlotGlow {
-      0%   { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
-      40%  { box-shadow: 0 0 16px 8px rgba(255,215,0,0.7); }
-      100% { box-shadow: 0 0 4px 2px rgba(255,215,0,0.2); }
-    }
-    .stamp-bounce {
-      animation: stampBounce 0.6s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes stampBtnPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-    }
-
-    /* ===== 大きなスタンプ演出 ===== */
-    .big-stamp-wrap {
-      position: relative;
-      width: 200px; height: 200px;
-      display: flex; align-items: center; justify-content: center;
-      margin: 8px auto;
-    }
-    .big-stamp-icon {
-      width: 180px; height: 180px;
-      border-radius: 50%;
-      background: #FFF3CD;
-      border: 6px solid #FFD700;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 0 0 rgba(255,215,0,0);
-      transition: box-shadow 0.6s;
-    }
-    .big-stamp-icon.show {
-      animation: stampSlotGlow 1s ease-out forwards;
-    }
-    .big-stamp-icon img {
-      width: 150px; height: 150px;
-      border-radius: 50%;
-      opacity: 0;
-      transform: scale(3) rotate(-20deg);
-    }
-    .big-stamp-icon img.show {
-      opacity: 1;
-      transform: scale(1) rotate(0);
-      transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
-    }
-    .sparkle {
-      position: absolute;
-      font-size: 1.8rem;
-      pointer-events: none;
-      opacity: 0;
-      animation: sparkleFloat 1.2s ease-out forwards;
-    }
-    @keyframes sparkleFloat {
-      0%   { opacity: 0; transform: scale(0.3) translate(0,0); }
-      30%  { opacity: 1; transform: scale(1.2) translate(var(--dx,0), var(--dy,0)); }
-      100% { opacity: 0; transform: scale(0.8) translate(calc(var(--dx,0) * 1.5), calc(var(--dy,0) * 1.5)); }
-    }
-    .big-stamp-counter {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #A89880;
-      margin-top: 6px;
-    }
-    .stamp-full-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      margin: 12px auto;
-      max-width: 280px;
-    }
-    .stamp-full-cell {
-      aspect-ratio: 1;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.6rem; font-weight: 700;
-    }
-    .stamp-full-cell.filled {
-      background: #E8F5E9;
-      border: 2px solid #66BB6A;
-    }
-    .stamp-full-cell.filled img {
-      width: 78%; height: 78%; border-radius: 50%;
-    }
-    .stamp-full-cell.new {
-      background: #FFF3CD;
-      border: 2.5px solid #FFD700;
-      animation: stampSlotGlow 0.8s ease-out forwards;
-    }
-    .stamp-full-cell.new img {
-      width: 78%; height: 78%; border-radius: 50%;
-    }
-    .stamp-full-cell.empty {
-      background: rgba(0,0,0,0.08);
-      border: 2px solid rgba(0,0,0,0.1);
-      color: #bbb;
-    }
-
-    /* ===== Card Complete Sparkle ===== */
-    @keyframes cardSparkle {
-      0% { box-shadow: 0 0 0 0 rgba(255,215,0,0); border-color: #FFE8B0; }
-      30% { box-shadow: 0 0 20px 8px rgba(255,215,0,0.6); border-color: #FFD700; }
-      60% { box-shadow: 0 0 30px 12px rgba(255,215,0,0.3); border-color: #FFCC00; }
-      100% { box-shadow: 0 0 10px 4px rgba(255,215,0,0.15); border-color: #FFE8B0; }
-    }
-    .stamp-card-section.card-complete {
-      animation: cardSparkle 1s ease-out;
-    }
-
-    /* ===== Full Card Modal (tap to open 5×3 grid) ===== */
-    .stamp-full-modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 99997;
-      background: rgba(0,0,0,0.55);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.2s ease;
-    }
-    .stamp-full-modal {
-      background: linear-gradient(135deg, #FFFDF5, #FFF8E8);
-      border-radius: 20px;
-      padding: 18px 20px 16px;
-      max-width: 340px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-      border: 2px solid #FFE8B0;
-    }
-    .stamp-full-modal-title {
-      font-size: 0.9rem;
-      font-weight: 900;
-      color: #F2915A;
-      margin-bottom: 12px;
-    }
-    .stamp-full-modal-row {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .stamp-full-modal-slot {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      border: 2.5px dashed #E0D6C8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background: #FFF8F0;
-      flex-shrink: 0;
-    }
-    .stamp-full-modal-slot .slot-num {
-      font-size: 0.6rem;
-      font-weight: 700;
-      color: #D5CFC5;
-      position: absolute;
-    }
-    .stamp-full-modal-slot .slot-hint {
-      font-size: 0.7rem;
-      opacity: 0.25;
-      position: absolute;
-      bottom: -1px;
-    }
-    .stamp-full-modal-slot.stamped {
-      border: 2.5px solid #66BB6A;
-      background: #F0FFF0;
-    }
-    .stamp-full-modal-slot.stamped img {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-    }
-    .stamp-full-modal-slot.reward-slot {
-      border-color: #F2915A;
-      background: #FFF5EE;
-    }
-    .stamp-full-modal-close {
-      margin-top: 10px;
-      font-size: 0.85rem;
-      font-weight: 900;
-      color: #fff;
-      background: var(--primary);
-      border: none;
-      border-radius: 20px;
-      padding: 8px 28px;
-      cursor: pointer;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; } to { opacity: 1; }
-    }
-
-    @media (min-width: 640px) {
-      .stamp-rally-section { max-width: 580px; }
-      .stamp-card-section { max-width: 580px; }
-    }
+    /* MVP: hide acorn / thankyou / stamp UI if any module tries to show it */
+    .acorn-badge-play, .thankyou-badge-play { display: none !important; }
   </style>
   <script src="common/mvp-flags.js"></script>
-  <script src="common/achievements.js"></script>
-  <script src="common/acorns.js"></script>
-  <script src="common/thankyou.js"></script>
-  <script src="room/items.js"></script>
-  <script src="common/treasure.js"></script>
-  <link rel="stylesheet" href="common/promo.css">
-  <script src="common/tier.js"></script>
-  <script src="common/promo.js"></script>
-<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
 
-<a href="shop/index.html" class="acorn-badge-play" id="acornBadgePlay" aria-label="どんぐりショップへ">
-  <span class="acorn-icon-play">🌰</span><span class="acorn-count-play" id="acornCountPlay">0</span>
-  <span class="acorn-shop-hint">🛒</span>
-</a>
-
-<!-- v266: せいれい から もらった ありがとう の累計 -->
-<div class="thankyou-badge-play" id="thankyouBadgePlay" aria-label="もらった ありがとう">
-  <span class="thankyou-icon-play">💝</span><span class="thankyou-count-play" id="thankyouCountPlay">0</span>
-</div>
-
-<!-- 🎵 タップ解禁オーバーレイ: 初回起動時のみ表示。タップで BGM 開始 + sessionStorage 記録 -->
-<style>
-  #pono-tap-intro {
-    position: fixed; inset: 0; z-index: 9999;
-    background: linear-gradient(180deg, #FFE9C4 0%, #FFCEA0 60%, #FFB781 100%);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center; padding: 24px;
-    cursor: pointer;
-    animation: ponoTapIntroIn 0.5s ease-out;
-  }
-  #pono-tap-intro.fade { animation: ponoTapIntroOut 0.6s ease-out forwards; }
-  #pono-tap-intro h1 {
-    font-size: 1.8rem; font-weight: 900; color: #F2742A;
-    text-shadow: 2px 2px 0 #fff; margin: 0 0 8px;
-  }
-  #pono-tap-intro img {
-    width: 130px; height: 130px; border-radius: 50%;
-    object-fit: cover; background: #fff;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    margin: 4px 0 12px;
-  }
-  #pono-tap-intro .welcome-body {
-    font-size: 0.92rem; font-weight: 700; color: #5D4E37;
-    margin: 8px 0 0; max-width: 360px; line-height: 1.85;
-    padding: 0 8px;
-  }
-  #pono-tap-intro .welcome-body p { margin: 0 0 10px; }
-  #pono-tap-intro .welcome-body p:last-child { margin-bottom: 0; }
-  #pono-tap-intro .bookname     { white-space: nowrap; display: inline-block; font-weight: 900; color: #F2742A; }
-  #pono-tap-intro .bookname-sub { display: inline-block; font-size: 0.92em; color: #888; }
-  #pono-tap-intro .welcome-sign {
-    font-size: 0.78rem; font-weight: 700; color: #888;
-    margin-top: 8px;
-  }
-  #pono-tap-intro .hint {
-    margin-top: 22px;
-    padding: 12px 32px; border-radius: 999px;
-    background: #FFD84D; color: #fff;
-    font-weight: 900; font-size: 1.1rem;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.18);
-    animation: ponoTapHint 1.2s ease-in-out infinite;
-  }
-  @keyframes ponoTapIntroIn  { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes ponoTapIntroOut { to { opacity: 0; transform: scale(1.05); } }
-  @keyframes ponoTapHint {
-    0%, 100% { transform: scale(1); }
-    50%      { transform: scale(1.08); }
-  }
-  #pono-tap-intro .trivia-tag {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
-    background: #FFD84D;
-    color: #7A4A00;
-    font-weight: 900;
-    font-size: 0.75rem;
-    margin-bottom: 8px;
-  }
-  #pono-tap-intro .preview-tag {
-    background: #FF9A5A;
-    color: #fff;
-  }
-  #pono-tap-intro .trivia-title {
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: #F2742A;
-    margin-bottom: 6px;
-    line-height: 1.4;
-  }
-  #pono-tap-intro .preview-image {
-    display: block;
-    width: min(260px, 72vw);
-    height: auto;
-    max-height: 38vh;
-    margin: 8px auto 10px;
-    border-radius: 14px;
-    border: 3px solid #fff;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
-    background: #fff;
-    object-fit: cover;
-  }
-  #pono-tap-intro .trivia-body {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #5D4E37;
-    line-height: 1.65;
-  }
-  @media (orientation: landscape) {
-    #pono-tap-intro { padding: 10px 24px; justify-content: center; }
-    #pono-tap-intro h1 { font-size: 1.35rem; margin: 0 0 4px; }
-    #pono-tap-intro img {
-      width: clamp(70px, 16vh, 100px);
-      height: clamp(70px, 16vh, 100px);
-      margin: 2px 0 6px;
-    }
-    #pono-tap-intro .welcome-body {
-      font-size: 0.85rem;
-      line-height: 1.55;
-      max-width: 520px;
-      margin-top: 4px;
-    }
-    #pono-tap-intro .welcome-body p { margin: 0 0 6px; }
-    #pono-tap-intro .welcome-sign { font-size: 0.7rem; margin-top: 4px; }
-    #pono-tap-intro .hint { margin-top: 10px; padding: 8px 26px; font-size: 1rem; }
-    #pono-tap-intro .trivia-title { font-size: 0.98rem; }
-    #pono-tap-intro .trivia-body  { font-size: 0.85rem; line-height: 1.5; }
-    #pono-tap-intro .preview-image {
-      width: clamp(140px, 26vh, 200px);
-      max-height: 28vh;
-      margin: 4px auto 6px;
-    }
-    #pono-tap-intro img.preview-image {
-      border-radius: 14px;
-      background: #fff;
-    }
-  }
-</style>
-<div id="pono-tap-intro" style="display:none;">
-  <h1>🌱 ようこそ！</h1>
-  <img src="assets/images/characters/pono/pono_face_circle.png" alt="" onerror="this.style.display='none'">
-
-  <div class="welcome-body" id="intro-welcome-first" style="display:none;">
-    <p>はじめまして。<br>
-    「ポノのあそびば」は、絵本<br>
-    <span class="bookname">『ありがとうって、うれしいね』</span><br>
-    <span class="bookname-sub">〜 くまのこ ポノ の ちいさな ものがたり 〜</span><br>
-    の主人公ポノと一緒に、<br>
-    小さなお子さまが楽しく学べる<br>
-    無料の知育サイトです。</p>
-
-    <p>ひらがな・カタカナの「もじかきクエスト」、<br>
-    パズル、クイズなど、<br>
-    いろんな遊びを少しずつ増やしていきます。<br>
-    親子でゆっくり楽しんでもらえたら嬉しいです。</p>
-  </div>
-
-  <div class="welcome-body" id="intro-welcome-trivia" style="display:none;">
-    <div class="trivia-tag"></div>
-    <div class="trivia-title"></div>
-    <div class="trivia-body"></div>
-  </div>
-
-  <div class="welcome-body" id="intro-welcome-preview" style="display:none;">
-    <div class="trivia-tag preview-tag">えほんをかったひと だけ</div>
-    <div class="trivia-title preview-title"></div>
-    <img class="preview-image" alt="" onerror="this.style.display='none'">
-    <div class="trivia-body preview-body"></div>
-  </div>
-
-  <div class="welcome-sign">— ネモ先生</div>
-  <div class="hint">▶ タップ</div>
-</div>
-<script>
-  // _rewardRelated:true のエントリは MVP で報酬制度封印中に除外される。
-  var PONO_INTRO_TRIVIA_ALL = [
-    { tag: 'つかいかた', title: '「なぞり」で じょうずに かけるよ',
-      body: 'ゆっくり ゆびを うごかすと、きれいに かけるよ。' },
-    { tag: 'つかいかた', title: 'あそぶと ごほうびが もらえるよ',
-      body: 'あつめた かざりで、おへやを かざれるよ。', _rewardRelated: true },
-    { tag: 'つかいかた', title: '「こだまのもりの こえさがし」って しってる？',
-      body: 'きこえた おとから どうぶつを えらぶ あそび だよ。' },
-    { tag: 'ことばのまめちしき', title: '「あ」は あいうえお の 1ばんめ',
-      body: 'ひらがな は ぜんぶで 46じ あるよ。' },
-    { tag: 'ことばのまめちしき', title: 'カタカナは がいこくの ことばに つかうよ',
-      body: 'アイス、パンダ、テレビ… みんな カタカナ！' },
-    { tag: 'ことばのまめちしき', title: '「ん」で おわる ことば を さがしてみよう',
-      body: 'ぱん、ほん、ねこ… あれ？「ねこ」は ちがうね！' }
-  ];
-  // MVP: 報酬制度封印中は ごほうび 系のトリビアを除外する。
-  var PONO_INTRO_TRIVIA = window.PONO_MVP_NO_REWARDS
-    ? PONO_INTRO_TRIVIA_ALL.filter(function(t) { return !t._rewardRelated; })
-    : PONO_INTRO_TRIVIA_ALL;
-
-  // 絵本/サブスクで遊べるプレミアムコンテンツの紹介定義。
-  // id は play.html のカード要素 id と 1:1 対応（promo.js の showLockedPreview から参照）。
-  // スクショは assets/images/previews/*.png に差し替えてください（未配置時は canvas 生成のダミー画像にフォールバック）。
-  // L2024 付近の lockedCards 配列との対応:
-  //   lockedCards = ['card-writing','card-drawing','card-bowling','card-breakout','card-slide']
-  //   ↑ クリック遮断対象。coloring/room/aquarium は pointer-events:none なので遮断不要（タップが届かない）
-  var PONO_GAME_PREVIEWS = [
-    { id: 'card-writing',  title: 'もじかきクエスト',
-      image: 'assets/images/previews/writing.png',
-      body: 'ひらがな・カタカナ を なぞって かけるよ。' },
-    { id: 'card-drawing',  title: 'おえかき',
-      image: 'assets/images/previews/drawing.png',
-      body: 'じぶんで かいた え を、うみで およがせられるよ🐠' },
-    { id: 'card-slide',    title: 'みちつなぎ',
-      image: 'assets/images/previews/slide.png',
-      body: 'みちを つないで、ポノが おかあさんに あいに いくよ。' },
-    { id: 'card-bowling',  title: 'ボウリング',
-      image: 'assets/images/previews/bowling.png',
-      body: 'フリックで ピンを たおそう！' },
-    { id: 'card-breakout', title: 'ブロックくずし',
-      image: 'assets/images/previews/breakout.png',
-      body: 'ボールで ブロックを ぜんぶ くずしてみよう。' },
-    { id: 'card-coloring', title: 'ぬりえ',
-      image: 'assets/images/previews/coloring.png',
-      body: 'すきな いろ で ぬって あそぼう。' },
-    { id: 'card-aquarium', title: 'アクアリウム',
-      image: 'assets/images/previews/aquarium.png',
-      body: 'じぶんの おさかな を およがせて かんさつ しよう。' },
-    { id: 'card-room',     title: 'わたしのおうち',
-      image: 'assets/images/previews/room.png',
-      body: 'かぐ を おいて、じぶんだけの おへや を つくろう。' }
-  ];
-
-  // セッション内で既に音声解禁済みかチェック → 解禁済みなら overlay を出さずに即 BGM 試行
-  (function() {
-    var unlocked = sessionStorage.getItem('pono_audio_unlocked') === '1';
-    var bgmOff   = localStorage.getItem('pono_bgm_enabled') === 'off';
-    if (unlocked || bgmOff) return; // 表示しない (解禁済み or BGM オフ設定)
-    var el = document.getElementById('pono-tap-intro');
-    if (!el) return;
-
-    var firstTime = !localStorage.getItem('pono_intro_seen');
-    var firstEl   = document.getElementById('intro-welcome-first');
-    var triviaEl  = document.getElementById('intro-welcome-trivia');
-    var previewEl = document.getElementById('intro-welcome-preview');
-    if (firstTime) {
-      if (firstEl) firstEl.style.display = '';
-    } else {
-      // 2回目以降は 50/50 で 豆知識 / 絵本購入者限定コンテンツ紹介
-      var showPreview = Math.random() < 0.5;
-      if (showPreview && previewEl && PONO_GAME_PREVIEWS.length) {
-        var g = PONO_GAME_PREVIEWS[Math.floor(Math.random() * PONO_GAME_PREVIEWS.length)];
-        previewEl.querySelector('.preview-title').textContent = g.title;
-        previewEl.querySelector('.preview-body').textContent  = g.body;
-        var imgEl = previewEl.querySelector('.preview-image');
-        imgEl.style.display = '';
-        imgEl.src = g.image;
-        previewEl.style.display = '';
-      } else if (triviaEl) {
-        var t = PONO_INTRO_TRIVIA[Math.floor(Math.random() * PONO_INTRO_TRIVIA.length)];
-        triviaEl.querySelector('.trivia-tag').textContent   = t.tag;
-        triviaEl.querySelector('.trivia-title').textContent = t.title;
-        triviaEl.querySelector('.trivia-body').textContent  = t.body;
-        triviaEl.style.display = '';
-      }
-    }
-
-    el.style.display = 'flex';
-    function dismiss() {
-      sessionStorage.setItem('pono_audio_unlocked', '1');
-      // 2026-04-23: 初回登録時の有料コンテンツプロモ動画は撤去。
-      // 初めましての瞬間に宣伝を流さない方針に変更。
-      localStorage.setItem('pono_intro_seen', '1');
-      el.classList.add('fade');
-      // BGM を即座に開始
-      var bgm = document.getElementById('play-bgm');
-      if (bgm && localStorage.getItem('pono_bgm_enabled') !== 'off') {
-        try { bgm.play().catch(function(){}); } catch (e) {}
-      }
-      // フェードアウト完了後にオーバーレイ非表示化
-      setTimeout(function() {
-        el.style.display = 'none';
-      }, 600);
-      el.removeEventListener('pointerdown', dismiss);
-      el.removeEventListener('touchstart', dismiss);
-    }
-    el.addEventListener('pointerdown', dismiss, { passive: true });
-    el.addEventListener('touchstart',  dismiss, { passive: true });
-  })();
-</script>
-
-<!-- 🐻 おかえりモーダル: 戻ってきた時にポノが挨拶 → 1タップで BGM 再開 -->
-<style>
-  #pono-return-greet {
-    position: fixed; inset: 0; z-index: 9998;
-    background: radial-gradient(circle at 50% 40%, rgba(255,236,196,0.96) 0%, rgba(255,206,160,0.94) 60%, rgba(255,183,129,0.92) 100%);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center; padding: 24px;
-    cursor: pointer;
-    animation: ponoGreetIn 0.45s ease-out;
-  }
-  #pono-return-greet.fade { animation: ponoGreetOut 0.35s ease-out forwards; }
-  #pono-return-greet img.greet-pono {
-    width: 180px; height: auto;
-    filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.18));
-    animation: ponoGreetWave 1.6s ease-in-out infinite;
-  }
-  #pono-return-greet .greet-title {
-    margin-top: 12px;
-    font-size: 2rem; font-weight: 900; color: #F2742A;
-    text-shadow: 2px 2px 0 #fff;
-  }
-  #pono-return-greet .greet-sub {
-    margin-top: 6px;
-    font-size: 1.05rem; font-weight: 700; color: #5D4E37;
-  }
-  #pono-return-greet .greet-card {
-    margin-top: 12px;
-    max-width: 340px;
-    padding: 0 12px;
-  }
-  #pono-return-greet .greet-tag {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
-    background: #FFD84D;
-    color: #7A4A00;
-    font-weight: 900;
-    font-size: 0.75rem;
-    margin-bottom: 6px;
-  }
-  #pono-return-greet .greet-tag.preview-tag { background: #FF9A5A; color: #fff; }
-  #pono-return-greet .greet-card-title {
-    font-size: 1rem;
-    font-weight: 900;
-    color: #F2742A;
-    margin-bottom: 4px;
-    line-height: 1.4;
-  }
-  #pono-return-greet .greet-card-image {
-    display: block;
-    width: min(240px, 70vw);
-    max-height: 32vh;
-    height: auto;
-    margin: 6px auto 8px;
-    border-radius: 14px;
-    border: 3px solid #fff;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
-    background: #fff;
-    object-fit: cover;
-  }
-  #pono-return-greet .greet-card-body {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #5D4E37;
-    line-height: 1.55;
-  }
-  #pono-return-greet .greet-hint {
-    margin-top: 22px;
-    padding: 12px 40px; border-radius: 999px;
-    background: #FFD84D; color: #fff;
-    font-weight: 900; font-size: 1.15rem;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.18);
-    animation: ponoGreetHintPulse 1.2s ease-in-out infinite;
-  }
-  @keyframes ponoGreetIn  { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
-  @keyframes ponoGreetOut { to   { opacity: 0; transform: scale(1.04); } }
-  @keyframes ponoGreetWave {
-    0%, 100% { transform: rotate(-3deg) translateY(0); }
-    50%      { transform: rotate(3deg)  translateY(-6px); }
-  }
-  @keyframes ponoGreetHintPulse {
-    0%, 100% { transform: scale(1); }
-    50%      { transform: scale(1.08); }
-  }
-  @media (orientation: landscape) {
-    #pono-return-greet { padding: 12px 24px; justify-content: center; }
-    #pono-return-greet img.greet-pono {
-      width: clamp(80px, 18vh, 110px);
-      margin-bottom: 2px;
-    }
-    #pono-return-greet .greet-title { margin-top: 6px; font-size: 1.5rem; }
-    #pono-return-greet .greet-sub   { margin-top: 4px; font-size: 0.95rem; }
-    #pono-return-greet .greet-card  { margin-top: 6px; max-width: 520px; }
-    #pono-return-greet .greet-card-title { font-size: 0.95rem; }
-    #pono-return-greet .greet-card-body  { font-size: 0.82rem; line-height: 1.45; }
-    #pono-return-greet .greet-card-image {
-      width: clamp(140px, 24vh, 200px);
-      max-height: 24vh;
-      margin: 4px auto 6px;
-    }
-    #pono-return-greet .greet-hint  {
-      margin-top: 10px;
-      padding: 8px 28px;
-      font-size: 1rem;
-    }
-  }
-</style>
-<div id="pono-return-greet" style="display:none;">
-  <img class="greet-pono" src="assets/images/characters/pono/dance/dance_wave.png" alt="ポノ" onerror="this.style.display='none'">
-  <div class="greet-title">おかえり！</div>
-  <div class="greet-sub" id="greet-sub-default">こんどは なにして あそぶ？</div>
-
-  <div class="greet-card" id="greet-card-trivia" style="display:none;">
-    <div class="greet-tag"></div>
-    <div class="greet-card-title"></div>
-    <div class="greet-card-body"></div>
-  </div>
-
-  <div class="greet-card" id="greet-card-preview" style="display:none;">
-    <div class="greet-tag preview-tag">えほんをかったひと だけ</div>
-    <div class="greet-card-title"></div>
-    <img class="greet-card-image" alt="" onerror="this.style.display='none'">
-    <div class="greet-card-body"></div>
-  </div>
-
-  <div class="greet-hint">▶ タップ</div>
-</div>
-
-
-  <!-- ===== First-Visit Profile Overlay ===== -->
-  <script>
-    // プロフィール設定済みなら最初から非表示（フラッシュ防止）
-    if (localStorage.getItem('pono_profile')) {
-      document.write('<div class="profile-overlay hidden" id="profileOverlay">');
-    } else {
-      document.write('<div class="profile-overlay" id="profileOverlay">');
-    }
-  </script>
-    <div class="profile-card">
-      <img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノ" class="profile-pono">
-      <div class="profile-title">ポノと あそぼう！</div>
-
-      <div class="profile-section">
-        <div class="profile-section-label">なまえ（なくてもOK！）</div>
-        <input type="text" class="profile-name-input" id="profileName" placeholder="おなまえ" maxlength="12" autocomplete="off" autocorrect="off" spellcheck="false">
-      </div>
-
-      <div class="profile-section">
-        <div class="profile-section-label">なんさい？</div>
-        <div class="profile-age-row" id="profileAgeRow">
-          <button class="profile-age-btn" data-age="3">3</button>
-          <button class="profile-age-btn" data-age="4">4</button>
-          <button class="profile-age-btn" data-age="5">5</button>
-          <button class="profile-age-btn" data-age="6">6</button>
-        </div>
-      </div>
-
-      <div class="profile-section">
-        <div class="profile-section-label">どっち？</div>
-        <div class="profile-gender-row" id="profileGenderRow">
-          <button class="profile-gender-btn" data-gender="boy">おとこのこ👦</button>
-          <button class="profile-gender-btn" data-gender="girl">おんなのこ👧</button>
-        </div>
-      </div>
-
-      <div class="profile-error" id="profileError"></div>
-      <button class="profile-submit-btn" id="profileSubmit">あそぶ！</button>
+  <header class="top-header">
+    <div class="brand">
+      <span class="brand-title">ポノのあそびば</span>
     </div>
-  </div>
+    <div class="brand-subtitle">きょうは なにして あそぶ？</div>
+  </header>
 
-  <div class="page">
-
-    <h1 class="site-heading">ポノのあそびば</h1>
-
-
-    <!-- メイン BGM -->
-    <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
-
-    <div class="music-row">
-      <label class="toggle">
-        <input type="checkbox" id="music-toggle">
-        <span class="toggle-slider"></span>
-      </label>
-      <span class="music-label" id="music-label">おとがでるよ</span>
-    </div>
-
-    <!-- ===== Stamp Rally Section (Daily Challenge) ===== -->
-    <div class="stamp-rally-section" id="stampRallySection">
-      <div class="stamp-rally-title">🌟 きょうのスタンプラリー</div>
-      <div class="stamp-rally-games" id="stampRallyGames">
-        <!-- JS が2つのゲームカードを生成 -->
+  <main class="play-main">
+    <section class="preview-pane" aria-label="えらんでいるゲームのプレビュー">
+      <div class="preview-bg" id="previewBgA"></div>
+      <div class="preview-bg" id="previewBgB"></div>
+      <div class="preview-overlay" aria-live="polite">
+        <h2 class="preview-title" id="previewTitle">えらんでね</h2>
+        <p class="preview-desc" id="previewDesc">みぎから ゲームを えらぼう</p>
+        <button class="start-btn" id="startBtn" type="button">
+          <span class="start-icon">▶</span>
+          <span class="start-label">はじめる</span>
+        </button>
       </div>
-      <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
-    </div>
+    </section>
 
-    <!-- スタンプカードはボトムナビから表示 -->
+    <section class="card-list" id="cardList" aria-label="ゲーム一覧"></section>
+  </main>
 
-    <!-- ─── あそびば区切り ─── -->
-    <div style="
-      margin: 14px auto 6px;
-      max-width: 360px;
-      text-align: center;
-      padding: 12px 0 8px;
-      border-top: 2.5px dashed #FDE68A;
-    ">
-      <div style="font-size: 1.05rem; color: var(--primary); font-weight: 900;">🌟 むりょうで ゲームが あそべるよ！</div>
-    </div>
-
-    <nav class="menu">
-      <!-- 無料コンテンツ -->
-      <!-- おとタッチ (3歳〜) - 文字なしタップで音が鳴るシンプル遊び -->
-      <a href="oto/index.html" class="card card-oto">
-        <span class="card-icon">🎵</span>
-        <div class="card-body">
-          <div class="card-title">おとタッチ</div>
-          <div class="card-desc">タッチで おとが<br>なるよ！</div>
-        </div>
-      </a>
-
-      <a href="quiz-sound/index.html" class="card card-quiz-sound">
-        <span class="card-icon">🐾</span>
-        <div class="card-body">
-          <div class="card-title">こだまのもりの<br>こえさがし</div>
-          <div class="card-desc">なんの どうぶつ？<br>おとを あてよう</div>
-        </div>
-      </a>
-
-      <a href="puzzle/index.html" class="card card-puzzle">
-        <span class="card-icon">🧩</span>
-        <div class="card-body">
-          <div class="card-title">パズル</div>
-          <div class="card-desc">えを あわせよう</div>
-        </div>
-      </a>
-
-      <a href="bento/index.html" class="card card-bento">
-        <span class="card-icon">🍱</span>
-        <div class="card-body">
-          <div class="card-title">おべんとう</div>
-          <div class="card-desc">ポノに おべんとう<br>つくってあげよう</div>
-        </div>
-      </a>
-
-      <a href="wordmatch/index.html" class="card card-wordmatch">
-        <span class="card-icon">📖</span>
-        <div class="card-body">
-          <div class="card-title">あつめよう！<br>ポノのもりのずかん</div>
-          <div class="card-desc">えと ことばを<br>あわせよう</div>
-        </div>
-      </a>
-
-      <a href="quizland/index.html" class="card card-quizland" id="card-quizland">
-        <span class="card-icon">🦉</span>
-        <div class="card-body">
-          <div class="card-title">フクロウ博士のなぞなぞ</div>
-          <div class="card-desc">ひらめき と<br>ものしりクイズ</div>
-        </div>
-      </a>
-
-      <a href="maze/index.html" class="card card-maze" id="card-maze">
-        <span class="card-icon">🏮</span>
-        <div class="card-body">
-          <div class="card-title">ポノとランタンの<br>めいろ</div>
-          <div class="card-desc">ハリネズミくんを<br>たすけよう</div>
-        </div>
-      </a>
-
-      <!-- かせきはっくつ: MVP 外 → グレーアウト下部ゾーンに移動 (下記コメント参照) -->
-
-      <!-- 購入者限定バナー -->
-      <div class="lock-banner" id="lockBanner">
-        <div class="lock-banner-title">🔑 購入者限定コンテンツ</div>
-        <div style="font-size:0.72rem">ほんのなかのパスワードで もっとあそべるよ！</div>
-        <div class="lock-input-row" id="lockInputRow">
-          <input type="text" class="lock-input" id="lockInput" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false">
-          <button class="lock-btn" id="lockBtn">かいじょ！</button>
-        </div>
-        <div class="lock-error" id="lockError">ちがうよ！もういちど！</div>
-        <div class="lock-unlocked" id="lockUnlocked">✅ かいじょずみ！</div>
-      </div>
-
-      <!-- 購入者限定コンテンツ -->
-      <!-- もじかきクエスト: 購入者限定セクションの先頭。
-           onclick で play.html 側 <audio id="bgm"> に play() を発火することで、
-           同一 origin の audio session を user gesture で再確認 → 遷移先
-           writing/index.html の Theme.mp3 が iOS Safari でも autoplay できるようにする。
-           primedTs は従来どおり writing/index.html L7693 の consumer が利用。 -->
-      <a href="writing/index.html" class="card card-writing locked" id="card-writing"
-         onclick="try{var _b=document.getElementById('bgm');if(_b){var _p=_b.play();if(_p&&_p.catch){_p.catch(function(){});}}sessionStorage.setItem('pono_audio_primed_ts',String(Date.now()));}catch(e){}">
-        <span class="card-icon"><img src="assets/images/icons/writing_quest.svg" alt="" style="width:2.4rem;height:2.4rem;display:block;"></span>
-        <div class="card-body">
-          <div class="card-title">もじかきクエスト</div>
-          <div class="card-desc">ひらがな・カタカナ</div>
-        </div>
-      </a>
-
-      <a href="drawing/index.html" class="card card-drawing locked" id="card-drawing">
-        <span class="card-icon">🎨</span>
-        <div class="card-body">
-          <div class="card-title">おえかき</div>
-          <div class="card-desc">かいた えは うみで<br>およがせられるよ🐠</div>
-        </div>
-      </a>
-
-      <a href="slide/index.html" class="card card-slide locked" id="card-slide">
-        <span class="card-icon"><img src="assets/images/characters/pono/pono_face_circle.png" style="width:48px;height:48px;object-fit:contain;" alt="ポノ"></span>
-        <div class="card-body">
-          <div class="card-title">みちつなぎ</div>
-          <div class="card-desc">おかあさんに<br>あいにいこう</div>
-        </div>
-      </a>
-
-      <a href="bowling/index.html" class="card card-bowling locked" id="card-bowling">
-        <span class="card-icon">🎳</span>
-        <div class="card-body">
-          <div class="card-title">ボウリング</div>
-          <div class="card-desc">フリックで<br>たおそう！</div>
-        </div>
-      </a>
-
-      <a href="breakout/index.html" class="card card-breakout locked" id="card-breakout">
-        <span class="card-icon">🧱</span>
-        <div class="card-body">
-          <div class="card-title">ブロックくずし</div>
-          <div class="card-desc">くずしてみよう</div>
-        </div>
-      </a>
-
-      <!-- 準備中（グレーアウト）-->
-      <!-- かせきはっくつ: MVP では追加コンテンツ整備中のため一時的にグレーアウト -->
-      <a class="card card-fossil locked" id="card-fossil" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🦕</span>
-        <div class="card-body">
-          <div class="card-title">かせきはっくつ</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <a class="card card-coloring locked" id="card-coloring" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🖍️</span>
-        <div class="card-body">
-          <div class="card-title">ぬりえ</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <a class="card card-sugoroku locked" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);background:linear-gradient(135deg,#8B5CF6,#EC4899);">
-        <span class="card-icon">🎲</span>
-        <div class="card-body">
-          <div class="card-title">すごろく</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <!-- ─── ごほうびを かざろう（購入者限定） ─── -->
-      <div style="
-        grid-column: 1 / -1;
-        margin: 14px auto 6px;
-        max-width: 360px;
-        width: 100%;
-        text-align: center;
-        padding: 12px 0 8px;
-        border-top: 2.5px dashed #A7D8F0;
-      ">
-        <div style="font-size: 1.05rem; color: #1E88E5; font-weight: 900;">🏠 ごほうびを かざろう！</div>
-      </div>
-
-      <!-- ごほうびを かざろう 系は全部 MVP 外 → グレーアウト (2026-04-21) -->
-      <a class="card card-room" id="card-room" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🏠</span>
-        <div class="card-body">
-          <div class="card-title">わたしのおうち</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <a class="card card-aquarium" id="card-aquarium" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🐠</span>
-        <div class="card-body">
-          <div class="card-title">すいぞくかん</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <a class="card card-egg" id="card-egg" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🥚</span>
-        <div class="card-body">
-          <div class="card-title">そだてよう</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <!-- しゃぼんだま / つみき: 制作中のため一旦非表示
-      <a class="card card-bubble locked" id="card-bubble" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🫧</span>
-        <div class="card-body">
-          <div class="card-title">しゃぼんだま</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-
-      <a class="card card-stacking locked" id="card-stacking" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
-        <span class="card-icon">🏗️</span>
-        <div class="card-body">
-          <div class="card-title">つみき</div>
-          <div class="card-desc">つくってるよ！</div>
-        </div>
-      </a>
-      -->
-
-    </nav>
-
-    <!-- 作者より（独立ブロック） -->
-    <a href="message/index.html" class="author-block">
-      <span class="author-icon">📖</span>
-      <div class="author-text">
-        <div class="author-title">作者より</div>
-        <div class="author-desc">ネモ先生のひとりごと</div>
-      </div>
-    </a>
-
-    <!-- テスト用ボタン -->
-    <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <button id="resetAllBtn" style="
-        padding:10px 24px; border:2px solid #EF4444; border-radius:50px;
-        background:#FEE2E2; color:#EF4444; font-family:inherit;
-        font-size:0.85rem; font-weight:900; cursor:pointer;
-      ">🔄 ぜんぶリセット</button>
-      <button id="debugToggleBtn" style="
-        padding:10px 24px; border:2px solid #6366F1; border-radius:50px;
-        background:#EEF2FF; color:#6366F1; font-family:inherit;
-        font-size:0.85rem; font-weight:900; cursor:pointer;
-      ">🛠 デバッグ OFF</button>
-      <a href="room/furniture_adjuster.html" style="
-        padding:10px 24px; border:2px solid #F59E0B; border-radius:50px;
-        background:#FEF3C7; color:#D97706; font-family:inherit;
-        font-size:0.85rem; font-weight:900; cursor:pointer; text-decoration:none;
-      ">🔧 ピボットツール</a>
-    </div>
-
-  </div>
-
-  <script>
-    // ===== Profile Overlay (first-visit) =====
-    window.ponoProfile = JSON.parse(localStorage.getItem('pono_profile') || 'null');
-
-    // はじめてのログイン実績
-    if (window.incrementStat) {
-      window.incrementStat('login_first', 1);
-    }
-
-    (function() {
-      var overlay = document.getElementById('profileOverlay');
-      if (!overlay) return;
-
-      // Already has profile → hide immediately
-      if (window.ponoProfile) {
-        overlay.classList.add('hidden');
-        return;
-      }
-
-      var selectedAge = null;
-      var selectedGender = null;
-
-      // Age buttons
-      var ageBtns = document.querySelectorAll('#profileAgeRow .profile-age-btn');
-      ageBtns.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          ageBtns.forEach(function(b) { b.classList.remove('selected'); });
-          btn.classList.add('selected');
-          selectedAge = parseInt(btn.getAttribute('data-age'));
-          document.getElementById('profileError').textContent = '';
-        });
-      });
-
-      // Gender buttons
-      var genderBtns = document.querySelectorAll('#profileGenderRow .profile-gender-btn');
-      genderBtns.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          genderBtns.forEach(function(b) { b.classList.remove('selected'); });
-          btn.classList.add('selected');
-          selectedGender = btn.getAttribute('data-gender');
-          document.getElementById('profileError').textContent = '';
-        });
-      });
-
-      // Submit
-      document.getElementById('profileSubmit').addEventListener('click', function() {
-        if (!selectedAge) {
-          document.getElementById('profileError').textContent = 'なんさいか おしえてね！';
-          return;
-        }
-        if (!selectedGender) {
-          document.getElementById('profileError').textContent = 'どっちか おしえてね！';
-          return;
-        }
-
-        var profile = {
-          name: document.getElementById('profileName').value.trim() || '',
-          age: selectedAge,
-          gender: selectedGender
-        };
-
-        localStorage.setItem('pono_profile', JSON.stringify(profile));
-        window.ponoProfile = profile;
-
-        // なまえをきめた実績
-        if (window.incrementStat) window.incrementStat('profile_set', 1);
-
-        overlay.classList.add('hidden');
-
-        // プロフィール設定後にスタンプ付与
-        if (window._initStampRally) window._initStampRally();
-      });
-    })();
-
-    // PWA Guide: 常時表示（削除済み）
-
-    // ===== Music Toggle + BGM =====
-    const toggle = document.getElementById('music-toggle');
-    const label  = document.getElementById('music-label');
-    const bgm    = document.getElementById('play-bgm');
-    if (bgm) bgm.volume = 0.35;
-    const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
-    toggle.checked = enabled;
-    label.textContent = enabled ? 'おとがでるよ' : 'おとがでないよ';
-
-    function tryPlayBgm() {
-      if (!bgm) return;
-      var p = bgm.play();
-      if (p && typeof p.then === 'function') {
-        p.then(function() {
-          // 成功したら以降のセッションは自動再生可能フラグを立てる
-          try { sessionStorage.setItem('pono_audio_unlocked', '1'); } catch (e) {}
-        }).catch(function() {});
-      }
-    }
-    function stopBgm() { if (bgm) bgm.pause(); }
-
-    if (enabled) {
-      // iOS Safari は最初のユーザー操作までブロックされるので、両方試す
-      tryPlayBgm();
-      var _bgmUnlock = function() {
-        if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
-        document.removeEventListener('touchstart', _bgmUnlock);
-        document.removeEventListener('click', _bgmUnlock);
-      };
-      document.addEventListener('touchstart', _bgmUnlock, { passive: true });
-      document.addEventListener('click', _bgmUnlock);
-    }
-
-    toggle.addEventListener('change', () => {
-      const on = toggle.checked;
-      localStorage.setItem('pono_bgm_enabled', on ? 'on' : 'off');
-      label.textContent = on ? 'おとがでるよ' : 'おとがでないよ';
-      if (on) tryPlayBgm();
-      else stopBgm();
-    });
-
-    // タブが背景になったら一時停止、戻ったら再開
-    document.addEventListener('visibilitychange', function() {
-      if (document.hidden) stopBgm();
-      else if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
-    });
-
-    // ===== 「おかえり」モーダル =====
-    // ゲームから戻ってきた時、ブラウザの autoplay policy で BGM が弾かれることがある。
-    // その時だけポノの挨拶モーダルを出し、1タップで BGM を自然に再開させる。
-    // 初回訪問 (pono-tap-intro) とは表示条件で分離。
-    function _showReturnGreeting() {
-      var gm = document.getElementById('pono-return-greet');
-      if (!gm) return;
-      if (gm.style.display === 'flex') return; // 既に表示中
-      // 50/50 で 豆知識 / 絵本購入者限定コンテンツ紹介 を差し込む
-      try {
-        var subEl     = document.getElementById('greet-sub-default');
-        var triviaCd  = document.getElementById('greet-card-trivia');
-        var previewCd = document.getElementById('greet-card-preview');
-        if (triviaCd)  triviaCd.style.display  = 'none';
-        if (previewCd) previewCd.style.display = 'none';
-        var TRIVIA   = (typeof PONO_INTRO_TRIVIA   !== 'undefined') ? PONO_INTRO_TRIVIA   : [];
-        var PREVIEWS = (typeof PONO_GAME_PREVIEWS  !== 'undefined') ? PONO_GAME_PREVIEWS  : [];
-        var showPrev = Math.random() < 0.5;
-        if (showPrev && PREVIEWS.length && previewCd) {
-          var g = PREVIEWS[Math.floor(Math.random() * PREVIEWS.length)];
-          previewCd.querySelector('.greet-card-title').textContent = g.title;
-          previewCd.querySelector('.greet-card-body').textContent  = g.body;
-          var pImg = previewCd.querySelector('.greet-card-image');
-          pImg.style.display = '';
-          pImg.src = g.image;
-          previewCd.style.display = '';
-          if (subEl) subEl.style.display = 'none';
-        } else if (TRIVIA.length && triviaCd) {
-          var t = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
-          triviaCd.querySelector('.greet-tag').textContent        = t.tag;
-          triviaCd.querySelector('.greet-card-title').textContent = t.title;
-          triviaCd.querySelector('.greet-card-body').textContent  = t.body;
-          triviaCd.style.display = '';
-          if (subEl) subEl.style.display = 'none';
-        } else {
-          if (subEl) subEl.style.display = '';
-        }
-      } catch (e) { /* フォールバック: 既定の greet-sub のまま */ }
-      gm.style.display = 'flex';
-      gm.classList.remove('fade');
-      var dismissed = false;
-      function _dismiss(e) {
-        if (e && e.preventDefault) e.preventDefault();
-        if (e && e.stopPropagation) e.stopPropagation();
-        if (dismissed) return;
-        dismissed = true;
-        // ゴーストクリック/透過タップ対策:
-        // dismiss 直後 ~500ms は document レベルで発火する全クリックを握りつぶす
-        var _shield = function(ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-        };
-        document.addEventListener('click',      _shield, true);
-        document.addEventListener('touchend',   _shield, true);
-        document.addEventListener('mousedown',  _shield, true);
-        setTimeout(function() {
-          document.removeEventListener('click',     _shield, true);
-          document.removeEventListener('touchend',  _shield, true);
-          document.removeEventListener('mousedown', _shield, true);
-        }, 550);
-        gm.classList.add('fade');
-        // その時の user gesture で BGM を再開
-        if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
-        // フェード中もクリックを受け止める（display:flex 継続）
-        setTimeout(function() { gm.style.display = 'none'; }, 500);
-        gm.removeEventListener('pointerdown', _dismiss);
-        gm.removeEventListener('touchstart',  _dismiss);
-        gm.removeEventListener('click',       _dismiss);
-      }
-      gm.addEventListener('pointerdown', _dismiss);
-      gm.addEventListener('touchstart',  _dismiss, { passive: false });
-      gm.addEventListener('click',       _dismiss);
-    }
-
-    // pageshow: ページが表示された時 (bfcache 復帰も含む)
-    // 初回 pono-tap-intro 未完了 (sessionStorage が未セット) の時は出さない。
-    window.addEventListener('pageshow', function() {
-      if (!bgm) return;
-      if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
-      if (sessionStorage.getItem('pono_audio_unlocked') !== '1') return; // 初回は既存 intro が担当
-      var p = bgm.play();
-      if (p && typeof p.then === 'function') {
-        p.then(function(){}).catch(function() {
-          _showReturnGreeting();
-        });
-      }
-    });
-
-    // ===== Premium Unlock =====
-    // パスワード検証は common/tier.js の PonoTier.verifyBookPassword() に集約。
-    // 絵本を増刷/新シリーズ追加する時は tier.js の BOOK_PASSWORDS だけ編集する。
-    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
-
-    function applyUnlockState() {
-      const unlocked = localStorage.getItem('pono_premium') === '1';
-      lockedCards.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.toggle('locked', !unlocked);
-      });
-      document.getElementById('lockInputRow').style.display = unlocked ? 'none' : '';
-      document.getElementById('lockError').style.display = 'none';
-      document.getElementById('lockUnlocked').style.display = unlocked ? 'block' : 'none';
-    }
-
-    document.getElementById('lockBtn').addEventListener('click', () => {
-      const val = document.getElementById('lockInput').value;
-      const ok = !!(window.PonoTier
-        && typeof window.PonoTier.verifyBookPassword === 'function'
-        && window.PonoTier.verifyBookPassword(val));
-      if (ok) {
-        const firstTime = localStorage.getItem('pono_premium') !== '1';
-        localStorage.setItem('pono_premium', '1');
-        if (window.grantPremiumBonus) window.grantPremiumBonus();
-        applyUnlockState();
-        // 初回解錠のみ: 歓迎モーダルで「これから あそべる ゲーム」を紹介
-        if (firstTime
-            && !localStorage.getItem('pono_welcome_book_seen')
-            && window.PonoPromo
-            && typeof window.PonoPromo.showBookWelcome === 'function') {
-          try { window.PonoPromo.showBookWelcome(); } catch (e) {}
-        }
-      } else {
-        document.getElementById('lockError').style.display = 'block';
-        document.getElementById('lockInput').value = '';
-      }
-    });
-
-    document.getElementById('lockInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('lockBtn').click();
-    });
-
-    applyUnlockState();
-
-    // わたしのおうち: MVP 外 → カード自体は HTML inline style で永続グレーアウト (2026-04-21)
-    // ここでは下部ナビのラベル切替のみ残す（購入者には 🏠 おうち、無料には 📓 てちょう）
-    (function() {
-      // 旧キーからのマイグレーション
-      if (!localStorage.getItem('pono_room_card_open') && localStorage.getItem('pono_room_unlocked')) {
-        var v = localStorage.getItem('pono_room_unlocked');
-        if (v === '1' || v === 'true') {
-          localStorage.setItem('pono_room_card_open', '1');
-          localStorage.removeItem('pono_room_unlocked');
-        }
-      }
-      var _debugOn  = localStorage.getItem('pono_debug')   === '1';
-      var _premium  = localStorage.getItem('pono_premium') === '1';
-      var _hasRoom  = _debugOn || _premium;
-      // 下部ナビの「🏠 おうち」を、無料ユーザーには「📓 てちょう」として見せる
-      if (!_hasRoom) {
-        var bnIcon  = document.getElementById('bn-room-icon');
-        var bnLabel = document.getElementById('bn-room-label');
-        if (bnIcon)  bnIcon.textContent  = '📓';
-        if (bnLabel) bnLabel.textContent = 'てちょう';
-      }
-    })();
-
-    // ロック中の「わたしのおうち」をタップしたときの案内
-    function _showRoomLockedHint() {
-      // 多重表示防止
-      if (document.getElementById('_room-locked-hint')) return;
-      var ov = document.createElement('div');
-      ov.id = '_room-locked-hint';
-      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
-      var box = document.createElement('div');
-      box.style.cssText = 'background:#fff;border-radius:20px;padding:22px 24px;text-align:center;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
-      box.innerHTML =
-        '<div style="font-size:2.6rem;line-height:1;margin-bottom:6px;">🔒🏠</div>' +
-        '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">もうすぐ あえるよ！</div>' +
-        '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.7;margin-bottom:14px;">ここでは あつめた かぐを<br>じぶんの おうちに<br>かざれるように なるよ！<br><span style="font-size:0.78rem;color:#A89880;">（いまは「てちょう」で<br>あつめた ものを みよう！）</span></div>' +
-        '<button id="_room-locked-ok" style="padding:10px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">わかった！</button>';
-      ov.appendChild(box);
-      document.body.appendChild(ov);
-      requestAnimationFrame(function() { box.style.transform = 'scale(1)'; });
-      function close() {
-        box.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
-        box.style.transform = 'scale(0)';
-        setTimeout(function() { ov.remove(); }, 250);
-      }
-      document.getElementById('_room-locked-ok').addEventListener('click', close);
-      ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
-    }
-
-    // ===== Achievement Badge =====
-    if (window.getAchievements && window.getUnlockedAchievements) {
-      var total = window.getAchievements().length;
-      var done = Object.keys(window.getUnlockedAchievements()).length;
-      var badge = document.getElementById('ach-badge');
-      if (badge && done > 0) {
-        badge.textContent = '🏆 ' + done + '/' + total;
-      }
-    }
-
-    // ===== Login Bonus Trigger =====
-    if (window.checkDailyLogin) {
-      var loginResult = window.checkDailyLogin();
-      if (loginResult && window.showLoginBonusPopup) {
-        // Delay popup slightly so page renders first
-        setTimeout(function() { window.showLoginBonusPopup(loginResult); }, 800);
-      }
-    }
-
-    // ===== Premium bonus for already-unlocked users =====
-    if (localStorage.getItem('pono_premium') === '1' && window.grantPremiumBonus) {
-      window.grantPremiumBonus();
-    }
-
-    // ===== PWA Service Worker =====
-    if ('serviceWorker' in navigator) {
-      // SW更新時に自動リロード（ユーザーは何もしなくていい）
-      // iOS ホーム画面 PWA では controllerchange が発火しにくいので postMessage も併用
-      var _swRefreshing = false;
-      function _swReload() {
-        if (_swRefreshing) return;
-        _swRefreshing = true;
-        window.location.reload();
-      }
-      navigator.serviceWorker.addEventListener('controllerchange', _swReload);
-      navigator.serviceWorker.addEventListener('message', function(e) {
-        if (e && e.data && e.data.type === 'sw-updated') _swReload();
-      });
-      navigator.serviceWorker.register('/sw.js').then(function(reg) {
-        // 起動のたびにSW更新チェック
-        reg.update();
-        // 30分ごとにバックグラウンドで更新チェック
-        setInterval(function() { reg.update(); }, 30 * 60 * 1000);
-      }).catch(function() {});
-    }
-
-    // ===== Stamp Rally System (15-slot card, 5×3) =====
-    (function() {
-      'use strict';
-
-      // ── スタンプ音（グローバルAudioContext + AudioBuffer）──
-      // treasure.js と同じ window._ponoAudioCtx を共有
-      function _getGlobalAC() {
-        if (!window._ponoAudioCtx) {
-          try { window._ponoAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-        }
-        return window._ponoAudioCtx;
-      }
-      function _resumeAC() {
-        var ac = _getGlobalAC();
-        if (ac && ac.state === 'suspended') ac.resume().catch(function() {});
-      }
-
-      var _stampBuffer = null;
-      var _stampLoading = false;
-      function _loadStampBuffer() {
-        if (_stampBuffer || _stampLoading) return;
-        var ac = _getGlobalAC();
-        if (!ac) return;
-        _stampLoading = true;
-        fetch('assets/sounds/se/common/success.mp3').then(function(r) { return r.arrayBuffer(); })
-          .then(function(buf) { return ac.decodeAudioData(buf); })
-          .then(function(decoded) { _stampBuffer = decoded; _stampLoading = false; })
-          .catch(function() { _stampLoading = false; });
-      }
-
-      // ユーザージェスチャーでアンロック
-      function _unlockStampAudio() { _resumeAC(); _loadStampBuffer(); }
-      document.addEventListener('touchstart', _unlockStampAudio, { passive: true });
-      document.addEventListener('touchend', _unlockStampAudio, { passive: true });
-      document.addEventListener('click', _unlockStampAudio);
-      _loadStampBuffer(); // プリロード
-
-      function _playStampPop() {
-        try {
-          var ac = _getGlobalAC();
-          if (!ac) return;
-          _resumeAC();
-          if (!_stampBuffer) return;
-          var source = ac.createBufferSource();
-          source.buffer = _stampBuffer;
-          source.connect(ac.destination);
-          source.start(0);
-        } catch(e) {}
-      }
-
-      // ── Constants ──
-      var LS_STAMP_LOG = 'pono_stamp_log';
-      var LS_DAILY_RALLY = 'pono_daily_rally';
-      var LS_STAMP_REWARDS_GIVEN = 'pono_stamp_rewards_given';
-      var PONO_ICON = 'assets/images/characters/pono/pono_face_circle.png';
-      var SLOTS_PER_CARD = 15;
-      var SLOTS_PER_ROW = 5;
-
-      // ── Slot rewards (keyed by 1-based slot number within card) ──
-      var CARD_SLOT_REWARDS = {
-        1:  (function() {
-              var g = 'boy';
-              try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-              var afterMsg = ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！'];
-              return g === 'girl'
-                ? { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box',     img: 'assets/images/Rooms/furnitures_final/box_A.png',           afterMsg: afterMsg }
-                : { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box_boy', img: 'assets/images/Rooms/furnitures_final/deco_box_boy_A.png', afterMsg: afterMsg };
-            })(),
-        5:  (function() {
-              var g = 'boy';
-              try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-              var afterMsg = 'ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！';
-              return g === 'girl'
-                ? { icon: '🛏️', name: 'ピンクベッド', type: 'furn', id: 'furn_bed_pink', img: 'assets/images/Rooms/furnitures_final/bed_pink_A.png', unlockRoom: true, afterMsg: afterMsg }
-                : { icon: '🛏️', name: 'あおいベッド', type: 'furn', id: 'furn_bed_blue_boy', img: 'assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png', unlockRoom: true, afterMsg: afterMsg };
-            })(),
-        10: (function() {
-              var g = 'boy';
-              try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-              return g === 'girl'
-                ? { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'deco_bear_ribbon', img: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png' }
-                : { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'furn_bear_1',      img: 'assets/images/Rooms/furnitures_final/bear_A.png' };
-            })(),
-        15: { icon: '⭐', name: 'カードかんせい！', type: 'special' },
-      };
-
-      // ── Card complete rewards (one per completed card, rotates) ──
-      var CARD_COMPLETE_REWARDS = [
-        { icon: '🐠', name: 'さかな',      type: 'sea',  id: 'medaka',        img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
-        { icon: '🖼️', name: 'かべがみ',    type: 'wall', id: 'wall_mizutama', img: 'assets/images/Rooms/walls/mizutama.png' },
-        { icon: '🐢', name: 'ウミガメ',     type: 'sea',  id: 'turtle',        img: 'assets/images/ocean/Turtle/Turtle_001.png' },
-        { icon: '🪼', name: 'クラゲ',       type: 'sea',  id: 'jellyfish',     img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
-      ];
-
-      var ALL_FREE_GAMES = [
-        { key: 'oto',        emoji: '\uD83C\uDFB5', name: 'おとタッチ',    href: 'oto/index.html' },
-        { key: 'quiz_sound', emoji: '\uD83D\uDC3E', name: 'こだまのもりのこえさがし', href: 'quiz-sound/index.html' },
-        { key: 'puzzle',    emoji: '\uD83E\uDDE9', name: 'パズル',        href: 'puzzle/index.html' },
-        { key: 'writing',   emoji: '\u270F\uFE0F', name: 'もじかきクエスト', href: 'writing/index.html' },
-        { key: 'bento',     emoji: '\uD83C\uDF71', name: 'おべんとう',    href: 'bento/index.html' },
-        { key: 'wordmatch', emoji: '\uD83D\uDD24', name: 'あつめよう！ポノのもりのずかん',  href: 'wordmatch/index.html' },
-        { key: 'quizland',  emoji: '\uD83E\uDDE0', name: 'フクロウ博士のなぞなぞ',  href: 'quizland/index.html' },
-      ];
-
-      // ── Helpers ──
-      function getJSON(key, fallback) {
-        try { return JSON.parse(localStorage.getItem(key)) || fallback; }
-        catch (e) { return fallback; }
-      }
-      function setJSON(key, val) {
-        localStorage.setItem(key, JSON.stringify(val));
-      }
-      function getTodayStr() {
-        var d = new Date();
-        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-      }
-
-      // ── Card position helpers ──
-      function getCardNum(total) {
-        return Math.floor(total / SLOTS_PER_CARD) + 1;
-      }
-      function getCardPos(total) {
-        // 0-indexed position within current card (0..14)
-        return total % SLOTS_PER_CARD;
-      }
-      function getFilledInCard(total) {
-        // How many slots filled in the current card (0..15)
-        if (total <= 0) return 0;
-        var mod = total % SLOTS_PER_CARD;
-        return mod === 0 ? SLOTS_PER_CARD : mod;
-      }
-      function getCurrentRow(total) {
-        // Which row (0,1,2) the current position is in
-        var pos = getCardPos(total);
-        return Math.floor(pos / SLOTS_PER_ROW);
-      }
-
-      // ── 外部JSON読み込み（フォールバック: 上記ハードコード値） ──
-      var _rewardsReady = false;
-      function _loadRewardsJSON(cb) {
-        try {
-          var ctrl = new AbortController();
-          var tid = setTimeout(function() { ctrl.abort(); }, 3000);
-          fetch('assets/data/rewards.json?_=' + Date.now(), { signal: ctrl.signal })
-            .then(function(r) { clearTimeout(tid); return r.json(); })
-            .then(function(data) {
-              if (data.slotRewards) {
-                var sr = {};
-                for (var k in data.slotRewards) sr[parseInt(k)] = data.slotRewards[k];
-                CARD_SLOT_REWARDS = sr;
-              }
-              if (data.cardCompleteRewards) {
-                CARD_COMPLETE_REWARDS = data.cardCompleteRewards;
-              }
-            })
-            .catch(function() { /* フォールバック: ハードコード値をそのまま使用 */ })
-            .finally(function() { _rewardsReady = true; if (cb) cb(); });
-        } catch(e) { _rewardsReady = true; if (cb) cb(); }
-      }
-
-      // ── Slot reward lookup (gendered対応) ──
-      // furn/deco の場合は ROOM_ITEMS から画像を解決（A角度を必ず優先）
-      function _resolveRewardImg(type, id, fallbackImg) {
-        if ((type === 'furn' || type === 'deco') && id && typeof ROOM_ITEMS !== 'undefined') {
-          var found = ROOM_ITEMS.find(function(it) { return it.id === id; });
-          if (found) {
-            var a = found.roomImg || '';
-            var b = found.roomImgB || '';
-            // _A.pngを含む方を優先（items.jsで roomImg が _B を指している場合への対策）
-            var picked = /_A\.png$/i.test(a) ? a : (/_A\.png$/i.test(b) ? b : (a || b));
-            if (picked) return picked.replace(/^\.\.\//, '');
-          }
-        }
-        // フォールバック画像も _B.png なら _A.png に置換
-        if (fallbackImg && /_B\.png$/i.test(fallbackImg)) {
-          return fallbackImg.replace(/_B\.png$/i, '_A.png');
-        }
-        return fallbackImg || '';
-      }
-      function getSlotRewardInfo(slotNum1Based) {
-        var rw = CARD_SLOT_REWARDS[slotNum1Based] || null;
-        if (!rw) return null;
-        if (rw.gendered) {
-          var g = 'boy';
-          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-          var v = rw[g] || rw['boy'] || {};
-          // 男女別の名前があればそれを優先、無ければ総称名
-          return { icon: rw.icon, name: v.name || rw.name, type: v.type, id: v.id,
-                   img: _resolveRewardImg(v.type, v.id, v.img),
-                   unlockRoom: v.unlockRoom || rw.unlockRoom, afterMsg: v.afterMsg || rw.afterMsg };
-        }
-        return rw;
-      }
-      function getCompleteReward(cardNum) {
-        if (CARD_COMPLETE_REWARDS.length === 0) return null;
-        var idx = (cardNum - 1) % CARD_COMPLETE_REWARDS.length;
-        var rw = CARD_COMPLETE_REWARDS[idx];
-        if (!rw) return null;
-        if (rw.gendered) {
-          var g = 'boy';
-          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-          var v = rw[g] || rw['boy'] || {};
-          return {
-            icon: rw.icon,
-            name: v.name || rw.name,
-            type: v.type,
-            id:   v.id,
-            img:  _resolveRewardImg(v.type, v.id, v.img),
-            afterMsg: v.afterMsg || rw.afterMsg || ''
-          };
-        }
-        // 非破壊でコピーを返す（元配列を汚さない）
-        return {
-          icon: rw.icon,
-          name: rw.name,
-          type: rw.type,
-          id:   rw.id,
-          img:  _resolveRewardImg(rw.type, rw.id, rw.img),
-          afterMsg: rw.afterMsg || ''
-        };
-      }
-
-      // ── afterMsg オーバーレイ（共通） ──
-      // 宝箱演出を閉じた後や、祝賀モーダルを閉じた後に呼ぶ。
-      // rw: { name, img, afterMsg } のオブジェクト
-      // onDone: 閉じた後のコールバック（省略可）
-      window.showAfterMsgOverlay = function(rw, onDone) {
-        // MVP: 報酬制度封印中は説明モーダル (おもちゃばこ等) を一切出さない。
-        if (window.PONO_MVP_NO_REWARDS) { if (onDone) onDone(); return; }
-        if (!rw || !rw.afterMsg) { if (onDone) onDone(); return; }
-        // afterMsg が配列なら複数ページ、文字列なら1ページ
-        var msgs = Array.isArray(rw.afterMsg) ? rw.afterMsg : [rw.afterMsg];
-        var pageIdx = 0;
-
-        function showPage() {
-          if (pageIdx >= msgs.length) { if (onDone) onDone(); return; }
-          var msgOv = document.createElement('div');
-          msgOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
-
-          var box = document.createElement('div');
-          box.style.cssText = 'background:#fff;border-radius:20px;padding:20px;text-align:center;max-width:280px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
-
-          if (pageIdx === 0 && rw.img) {
-            var img = document.createElement('img');
-            img.src = rw.img;
-            img.style.cssText = 'width:80px;height:80px;object-fit:contain;margin-bottom:8px;';
-            img.onerror = function() { this.style.display = 'none'; };
-            box.appendChild(img);
-          }
-
-          if (pageIdx === 0 && rw.name) {
-            var nameEl = document.createElement('div');
-            nameEl.style.cssText = 'font-size:0.85rem;font-weight:900;color:#F2915A;margin-bottom:8px;';
-            nameEl.textContent = rw.name;
-            box.appendChild(nameEl);
-          }
-
-          var msgEl = document.createElement('div');
-          // \n\n で段落分割、最後の段落を強調表示
-          var paragraphs = msgs[pageIdx].split('\n\n');
-          paragraphs.forEach(function(p, pi) {
-            var pEl = document.createElement('div');
-            var isLast = (pi === paragraphs.length - 1) && paragraphs.length > 1;
-            if (isLast) {
-              pEl.style.cssText = 'font-size:1.05rem;font-weight:900;color:#F2915A;line-height:1.6;white-space:pre-line;margin-top:10px;';
-            } else {
-              pEl.style.cssText = 'font-size:0.9rem;font-weight:700;color:#5D4E37;line-height:1.7;white-space:pre-line;';
-            }
-            pEl.textContent = p;
-            msgEl.appendChild(pEl);
-          });
-          box.appendChild(msgEl);
-
-          var btn = document.createElement('button');
-          btn.textContent = pageIdx < msgs.length - 1 ? 'つぎへ →' : 'わかった！';
-          btn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
-          btn.addEventListener('click', function() {
-            box.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
-            box.style.transform = 'scale(0)';
-            setTimeout(function() { msgOv.remove(); pageIdx++; showPage(); }, 280);
-          });
-          box.appendChild(btn);
-
-          msgOv.appendChild(box);
-          document.body.appendChild(msgOv);
-          requestAnimationFrame(function() { box.style.transform = 'scale(1)'; });
-        }
-        showPage();
-      };
-
-      // ── 1. Login Stamp (daily auto-grant) ──
-      function getStampLog() {
-        return getJSON(LS_STAMP_LOG, { dates: [], total: 0 });
-      }
-      function saveStampLog(log) {
-        setJSON(LS_STAMP_LOG, log);
-      }
-      function addStampToday() {
-        var log = getStampLog();
-        var today = getTodayStr();
-        if (log.dates.indexOf(today) !== -1) return { added: false, log: log };
-        log.dates.push(today);
-        log.total = log.dates.length;
-        saveStampLog(log);
-        return { added: true, log: log };
-      }
-
-      // ── Reward granting ──
-      function checkSlotReward(total) {
-        // MVP: 報酬制度封印中は宝箱・afterMsg・おへやアンロック の連鎖を全部止める。
-        // grantReward も呼ばず given にも push しないので、再公開時に貯まったスタンプ
-        // ぶんの報酬がまとめて発火する (最初の1個だけ宝箱演出、残りはサイレント) 仕様。
-        if (window.PONO_MVP_NO_REWARDS) return;
-        // rewards.json がまだロード中なら少し待ってから再試行
-        if (!_rewardsReady) {
-          setTimeout(function() { checkSlotReward(total); }, 200);
-          return;
-        }
-        var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
-        var filled = getFilledInCard(total);
-        var cardNum = getCardNum(total);
-        var isCardComplete = (total > 0 && total % SLOTS_PER_CARD === 0);
-        var completedCardNum = isCardComplete ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : 0;
-
-        // Check ALL slot-level rewards up to current position (catch skipped ones)
-        var pendingRewards = [];
-        for (var s = 1; s <= filled; s++) {
-          var rw = getSlotRewardInfo(s);
-          if (!rw || rw.type === 'special' || !rw.id) continue;
-          // slotKeyはカード番号+スロット番号で一意に
-          var sk = 'card' + cardNum + '_slot' + s;
-          if (given.indexOf(sk) === -1) {
-            pendingRewards.push({ rw: rw, key: sk });
-          }
-        }
-
-        // 順番に報酬を付与（最初の1個だけ宝箱演出、残りはサイレント）
-        var firstReward = pendingRewards.length > 0 ? pendingRewards[0] : null;
-        for (var i = 0; i < pendingRewards.length; i++) {
-          var pr = pendingRewards[i];
-          if (window.grantReward) {
-            window.grantReward({ type: pr.rw.type, id: pr.rw.id });
-          }
-          given.push(pr.key);
-          if (pr.rw.unlockRoom) {
-            localStorage.setItem('pono_room_card_open', '1');
-            var rc = document.getElementById('card-room');
-            if (rc) { rc.classList.remove('locked'); rc.style.pointerEvents = ''; }
-          }
-        }
-        if (pendingRewards.length > 0) setJSON(LS_STAMP_REWARDS_GIVEN, given);
-
-        // 宝箱演出は最初の未取得報酬だけ表示
-        var slotRw = firstReward ? firstReward.rw : null;
-        var slotKey = firstReward ? firstReward.key : null;
-        if (slotRw) {
-          (function(rw) {
-            function _showRoomUnlock() {
-              if (!rw.unlockRoom) return;
-              var unlockOv = document.createElement('div');
-              unlockOv.id = '_room-unlock-ov';
-              unlockOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
-              unlockOv.innerHTML = '<div style="background:#fff;border-radius:24px;padding:24px;text-align:center;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
-                '<div style="font-size:3rem;margin-bottom:8px;">🏠✨</div>' +
-                '<div style="font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:6px;">おへやが つかえるよ！</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:#A89880;line-height:1.6;margin-bottom:14px;">いっしょに おへやを<br>アレンジしに いこう！</div>' +
-                '<button id="_room-unlock-go" style="padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff9a3c,#ff6347);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;">おへやに いく！</button>' +
-                '</div>';
-              document.body.appendChild(unlockOv);
-              // ベッド獲得時はチュートリアルフラグをセット（room側で使用）
-              localStorage.setItem('pono_bed_tutorial_pending', '1');
-              document.getElementById('_room-unlock-go').addEventListener('click', function() {
-                location.href = 'room/index.html';
-              });
-            }
-            setTimeout(function() {
-              if (window.showTreasure) {
-                window.showTreasure({
-                  name: rw.name,
-                  img: rw.img || '',
-                  label: 'スタンプボーナス',
-                  onClose: function() {
-                    window.showAfterMsgOverlay(rw, _showRoomUnlock);
-                  }
-                });
-              }
-            }, 200);
-          })(slotRw);
-        }
-
-        // Check card completion reward (slot 15 = card complete)
-        if (isCardComplete) {
-          var compKey = 'card_' + completedCardNum;
-          var compRw = getCompleteReward(completedCardNum);
-          if (compRw && given.indexOf(compKey) === -1) {
-            if (window.grantReward) {
-              window.grantReward({ type: compRw.type, id: compRw.id });
-            }
-            given.push(compKey);
-            setJSON(LS_STAMP_REWARDS_GIVEN, given);
-
-            // Card complete sparkle + treasure
-            var section = document.getElementById('stampCardSection');
-            if (section) {
-              section.classList.add('card-complete');
-              setTimeout(function() { section.classList.remove('card-complete'); }, 1200);
-            }
-            (function(rw) {
-              setTimeout(function() {
-                if (window.showTreasure) {
-                  window.showTreasure({
-                    name: rw.name,
-                    img: rw.img || '',
-                    label: 'カードかんせいボーナス',
-                    onClose: function() {
-                      // afterMsg があれば宝箱を閉じた後に表示
-                      window.showAfterMsgOverlay(rw);
-                    }
-                  });
-                }
-              }, 1200);
-            })(compRw);
-          }
-        }
-      }
-
-      // ── 2. Daily Challenge (pick 2 games per day) ──
-      function seededRandom(seed) {
-        var x = Math.sin(seed) * 10000;
-        return x - Math.floor(x);
-      }
-      function getDailySeed() {
-        var d = new Date();
-        return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
-      }
-
-      function getDailyRally() {
-        var today = getTodayStr();
-        var rally = getJSON(LS_DAILY_RALLY, null);
-        if (rally && rally.date === today) return rally;
-
-        var seed = getDailySeed();
-        var pool = ALL_FREE_GAMES.slice();
-        var picked = [];
-        for (var i = 0; i < 2; i++) {
-          var r = seededRandom(seed + i * 137);
-          var idx = Math.floor(r * pool.length);
-          picked.push(pool[idx].key);
-          pool.splice(idx, 1);
-        }
-
-        rally = {
-          date: today,
-          games: picked,
-          completed: [],
-          stampEarned: false,
-        };
-        setJSON(LS_DAILY_RALLY, rally);
-        return rally;
-      }
-
-      function checkDailyCompletion() {
-        // MVP: スタンプラリーの完了判定もスキップ。pono_daily_rally / pono_stamp_log /
-        // pono_stamp_pending にも書き込まない。section 自体も CSS で非表示。
-        if (window.PONO_MVP_NO_REWARDS) return null;
-        var rally = getDailyRally();
-        var today = new Date().toDateString();
-        var played = [];
-        try {
-          played = JSON.parse(localStorage.getItem('pono_played_' + today) || '[]');
-        } catch(e) { played = []; }
-
-        var changed = false;
-        for (var i = 0; i < rally.games.length; i++) {
-          var g = rally.games[i];
-          if (played.indexOf(g) !== -1 && rally.completed.indexOf(g) === -1) {
-            rally.completed.push(g);
-            changed = true;
-          }
-        }
-
-        // All 2 completed -> bonus stamp
-        if (rally.completed.length >= 2 && !rally.stampEarned) {
-          rally.stampEarned = true;
-          var log = getStampLog();
-          var bonusKey = getTodayStr() + '_bonus';
-          if (log.dates.indexOf(bonusKey) === -1) {
-            log.dates.push(bonusKey);
-            log.total = log.dates.length;
-            saveStampLog(log);
-            // 理由テキストを pono_stamp_pending に追加
-            try {
-              var _pend = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
-              _pend.push({ name: 'きょうのスタンプラリー', desc: '2つの ゲームを クリアしたよ！' });
-              localStorage.setItem('pono_stamp_pending', JSON.stringify(_pend));
-            } catch(e) {}
-          }
-          changed = true;
-        }
-
-        if (changed) setJSON(LS_DAILY_RALLY, rally);
-        return rally;
-      }
-
-      // ── 3. UI Rendering ──
-      function getGameInfo(key) {
-        for (var i = 0; i < ALL_FREE_GAMES.length; i++) {
-          if (ALL_FREE_GAMES[i].key === key) return ALL_FREE_GAMES[i];
-        }
-        return null;
-      }
-
-      function renderDailyRally() {
-        var rally = checkDailyCompletion();
-        var container = document.getElementById('stampRallyGames');
-        if (!container) return;
-        container.innerHTML = '';
-
-        for (var i = 0; i < rally.games.length; i++) {
-          var info = getGameInfo(rally.games[i]);
-          if (!info) continue;
-          var done = rally.completed.indexOf(rally.games[i]) !== -1;
-          var el = document.createElement('a');
-          el.href = info.href;
-          el.className = 'stamp-rally-game' + (done ? ' completed' : '');
-          el.innerHTML = '<span class="stamp-rally-game-icon">' + info.emoji + '</span>' +
-                         '<span class="stamp-rally-game-name">' + info.name + '</span>';
-          container.appendChild(el);
-        }
-
-        var bonusEl = document.getElementById('stampRallyBonus');
-        if (bonusEl) {
-          var remaining = 2 - rally.completed.length;
-          if (remaining <= 0) {
-            bonusEl.textContent = '\uD83C\uDF89 ぜんぶクリア！ ボーナススタンプ ゲット！';
-            bonusEl.classList.remove('pending');
-          } else {
-            bonusEl.textContent = 'あと' + remaining + 'つ あそんで ボーナススタンプ！';
-            bonusEl.classList.add('pending');
-          }
-        }
-      }
-
-      // ── Stamp Card (15-slot, show current row of 5) Rendering ──
-      function renderStampCard(animateSlotInRow) {
-        var log = getStampLog();
-        var total = log.total;
-        var cardNum = getCardNum(total);
-        var filled = getFilledInCard(total);
-        var showingCompletedCard = (total > 0 && total % SLOTS_PER_CARD === 0);
-
-        // Determine which row to show (0,1,2)
-        var currentRow;
-        if (showingCompletedCard) {
-          currentRow = 2; // last row
-        } else {
-          currentRow = getCurrentRow(total);
-        }
-        var rowStart = currentRow * SLOTS_PER_ROW; // 0-based index within card
-
-        // Update card number
-        var displayCardNum = showingCompletedCard ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : cardNum;
-        var numEl = document.getElementById('stampCardNum');
-        if (numEl) numEl.textContent = displayCardNum + 'まいめ';
-
-        // Update row label
-        var rowLabel = document.getElementById('stampCardRowLabel');
-        if (rowLabel) {
-          var rowNames = ['1だんめ（1〜5）', '2だんめ（6〜10）', '3だんめ（11〜15）'];
-          rowLabel.textContent = rowNames[currentRow];
-        }
-
-        var container = document.getElementById('stampCard');
-        if (!container) return;
-        container.innerHTML = '';
-
-        for (var i = 0; i < SLOTS_PER_ROW; i++) {
-          var globalIdx = rowStart + i; // 0-based within card (0..14)
-          var slotNum = globalIdx + 1;  // 1-based (1..15)
-          var slot = document.createElement('div');
-          slot.className = 'stamp-card-slot';
-          var isStamped = (globalIdx < filled);
-          var isCurrentSlot = (!showingCompletedCard && globalIdx === filled);
-
-          // Get reward hint for this slot
-          var slotRw = getSlotRewardInfo(slotNum);
-
-          if (isStamped) {
-            slot.classList.add('stamped');
-            var img = document.createElement('img');
-            img.src = PONO_ICON;
-            img.alt = 'stamp';
-            if (animateSlotInRow === i) {
-              img.classList.add('stamp-bounce');
-            }
-            slot.appendChild(img);
-          } else {
-            // Number label
-            var numSpan = document.createElement('span');
-            numSpan.className = 'slot-num';
-            numSpan.textContent = String(slotNum).padStart(2, '0');
-            slot.appendChild(numSpan);
-            // Reward hint icon
-            // MVP: 報酬制度封印中はスロットに 🎁🛏️🧸 等の報酬ヒントを出さない。
-            // タップしても「おもちゃばこ」等のプレビューが出ないようにイベントごとスキップ。
-            if (slotRw && !window.PONO_MVP_NO_REWARDS) {
-              var hint = document.createElement('span');
-              hint.className = 'slot-hint';
-              hint.textContent = slotRw.icon;
-              slot.appendChild(hint);
-              slot.classList.add('reward-slot');
-              (function(rw, el) {
-                el.style.cursor = 'pointer';
-                el.addEventListener('click', function(e) {
-                  e.stopPropagation();
-                  var existing = document.querySelector('.slot-detail-popup');
-                  if (existing) existing.remove();
-                  var popup = document.createElement('div');
-                  popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:#fff;border-radius:16px;padding:16px 20px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:180px;';
-                  popup.className = 'slot-detail-popup';
-                  popup.innerHTML = '<div style="font-size:2rem;margin-bottom:6px;">' + rw.icon + '</div><div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + rw.name + '</div>';
-                  document.body.appendChild(popup);
-                  setTimeout(function() { popup.remove(); }, 2000);
-                  popup.addEventListener('click', function() { popup.remove(); });
-                });
-              })(slotRw, slot);
-            }
-            if (isCurrentSlot) {
-              slot.classList.add('current-slot');
-            }
-          }
-
-          container.appendChild(slot);
-        }
-
-        // Add tap handler to open full card modal
-        var section = document.getElementById('stampCardSection');
-        if (section && !section._modalBound) {
-          section._modalBound = true;
-          section.addEventListener('click', function() {
-            showFullCardModal();
-          });
-        }
-      }
-
-      // ── Full Card Modal (5×3 grid) ──
-      window.showFullCardModal = function() { return showFullCardModal.apply(this, arguments); };
-      function showFullCardModal() {
-        // Remove existing
-        var old = document.querySelector('.stamp-full-modal-overlay');
-        if (old) old.remove();
-
-        var log = getStampLog();
-        var total = log.total;
-        var cardNum = getCardNum(total);
-        var filled = getFilledInCard(total);
-        var showingCompletedCard = (total > 0 && total % SLOTS_PER_CARD === 0);
-        var displayCardNum = showingCompletedCard ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : cardNum;
-
-        var overlay = document.createElement('div');
-        overlay.className = 'stamp-full-modal-overlay';
-
-        var modal = document.createElement('div');
-        modal.className = 'stamp-full-modal';
-
-        var title = document.createElement('div');
-        title.className = 'stamp-full-modal-title';
-        title.textContent = '\uD83D\uDCCB スタンプカード ' + displayCardNum + 'まいめ';
-        modal.appendChild(title);
-
-        // 3 rows of 5
-        for (var row = 0; row < 3; row++) {
-          var rowDiv = document.createElement('div');
-          rowDiv.className = 'stamp-full-modal-row';
-          for (var col = 0; col < SLOTS_PER_ROW; col++) {
-            var globalIdx = row * SLOTS_PER_ROW + col;
-            var slotNum = globalIdx + 1;
-            var slotDiv = document.createElement('div');
-            slotDiv.className = 'stamp-full-modal-slot';
-            var isStamped = (globalIdx < filled);
-            var slotRw = getSlotRewardInfo(slotNum);
-
-            if (isStamped) {
-              slotDiv.classList.add('stamped');
-              var img = document.createElement('img');
-              img.src = PONO_ICON;
-              img.alt = 'stamp';
-              slotDiv.appendChild(img);
-            } else {
-              var numSpan = document.createElement('span');
-              numSpan.className = 'slot-num';
-              numSpan.textContent = String(slotNum).padStart(2, '0');
-              slotDiv.appendChild(numSpan);
-              // MVP: 報酬制度封印中は フルカードでも報酬ヒントとタップ詳細を出さない。
-              if (slotRw && !window.PONO_MVP_NO_REWARDS) {
-                var hint = document.createElement('span');
-                hint.className = 'slot-hint';
-                hint.textContent = slotRw.icon;
-                slotDiv.appendChild(hint);
-                slotDiv.classList.add('reward-slot');
-                // タップで報酬詳細表示
-                (function(rw, el) {
-                  el.style.cursor = 'pointer';
-                  el.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var existing = document.querySelector('.slot-detail-popup');
-                    if (existing) existing.remove();
-                    var popup = document.createElement('div');
-                    popup.className = 'slot-detail-popup';
-                    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:#fff;border-radius:16px;padding:16px 20px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:180px;';
-                    popup.innerHTML = '<div style="font-size:2rem;margin-bottom:6px;">' + rw.icon + '</div>' +
-                      '<div style="font-size:0.95rem;font-weight:900;color:#5D4E37;">' + rw.name + '</div>' +
-                      (rw.type === 'special' ? '<div style="font-size:0.75rem;color:#999;margin-top:4px;">とくべつな ごほうび！</div>' : '');
-                    document.body.appendChild(popup);
-                    setTimeout(function() { popup.remove(); }, 2000);
-                    popup.addEventListener('click', function() { popup.remove(); });
-                  });
-                })(slotRw, slotDiv);
-              }
-            }
-            rowDiv.appendChild(slotDiv);
-          }
-          modal.appendChild(rowDiv);
-        }
-
-        // ボタン行: 📋 履歴 / 🏆 実績 / ✕ 閉じる（アイコンのみ）
-        var btnRow = document.createElement('div');
-        btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center;margin-top:4px;align-items:center;';
-
-        var iconBtnStyle = 'width:44px;height:44px;border-radius:50%;border:none;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);transition:transform 0.1s;padding:0;';
-
-        var histBtn = document.createElement('button');
-        histBtn.style.cssText = iconBtnStyle + 'background:#E0F2FE;color:#0EA5E9;';
-        histBtn.textContent = '📋';
-        histBtn.title = 'りれき';
-        histBtn.setAttribute('aria-label', 'りれき');
-        histBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          showRewardHistory();
-        });
-        // MVP: 報酬制度封印中は「もらった ごほうび」履歴ボタンを表示しない
-        if (!window.PONO_MVP_NO_REWARDS) btnRow.appendChild(histBtn);
-
-        var achBtn = document.createElement('button');
-        achBtn.style.cssText = iconBtnStyle + 'background:#FEF3C7;color:#D97706;';
-        achBtn.textContent = '🏆';
-        achBtn.title = 'じっせき';
-        achBtn.setAttribute('aria-label', 'じっせき');
-        achBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          showAchievementList();
-        });
-        btnRow.appendChild(achBtn);
-
-        var closeBtn = document.createElement('button');
-        closeBtn.style.cssText = iconBtnStyle + 'background:#E5E7EB;color:#5D4E37;font-weight:900;';
-        closeBtn.textContent = '✕';
-        closeBtn.title = 'とじる';
-        closeBtn.setAttribute('aria-label', 'とじる');
-        closeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          overlay.remove();
-        });
-        btnRow.appendChild(closeBtn);
-        modal.appendChild(btnRow);
-
-        // Prevent clicks on modal from closing
-        modal.addEventListener('click', function(e) { e.stopPropagation(); });
-
-        overlay.appendChild(modal);
-        overlay.addEventListener('click', function() { overlay.remove(); });
-        document.body.appendChild(overlay);
-      }
-
-      // ── Reward History Modal ──
-      function showRewardHistory() {
-        var old = document.querySelector('.reward-history-ov');
-        if (old) old.remove();
-
-        var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
-        // 全報酬定義からもらったものを収集
-        var items = [];
-        for (var slot in CARD_SLOT_REWARDS) {
-          var rw = CARD_SLOT_REWARDS[slot];
-          if (!rw || rw.type === 'special') continue;
-          // givenの中にこのスロットのキーがあるか
-          var found = false;
-          for (var g = 0; g < given.length; g++) {
-            if (given[g].indexOf('_slot' + slot) !== -1) { found = true; break; }
-          }
-          if (found) items.push(rw);
-        }
-        // カード完成報酬
-        for (var g = 0; g < given.length; g++) {
-          if (given[g].indexOf('card_') === 0) {
-            var cn = parseInt(given[g].replace('card_', ''));
-            var cr = getCompleteReward(cn);
-            if (cr) items.push(cr);
-          }
-        }
-
-        var ov = document.createElement('div');
-        ov.className = 'reward-history-ov';
-        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
-
-        var box = document.createElement('div');
-        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:20px;max-width:320px;width:90%;max-height:70vh;overflow-y:auto;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
-
-        var title = document.createElement('div');
-        title.style.cssText = 'font-size:1.05rem;font-weight:900;color:#5D4E37;margin-bottom:12px;';
-        title.textContent = '📋 もらった ごほうび';
-        box.appendChild(title);
-
-        if (items.length === 0) {
-          var empty = document.createElement('div');
-          empty.style.cssText = 'font-size:0.85rem;color:#999;padding:20px 0;';
-          empty.textContent = 'まだ ごほうびは ないよ\nスタンプを あつめよう！';
-          empty.style.whiteSpace = 'pre-line';
-          box.appendChild(empty);
-        } else {
-          for (var i = 0; i < items.length; i++) {
-            var it = items[i];
-            var row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(0,0,0,0.06);';
-            var imgHtml = '';
-            if (it.img) {
-              imgHtml = '<img src="' + it.img + '" style="width:40px;height:40px;object-fit:contain;">';
-            } else {
-              imgHtml = '<span style="font-size:1.5rem;">' + (it.icon || '🎁') + '</span>';
-            }
-            row.innerHTML = '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + imgHtml + '</div>' +
-              '<div style="text-align:left;font-size:0.85rem;font-weight:700;color:#5D4E37;">' + it.name + '</div>';
-            box.appendChild(row);
-          }
-        }
-
-        var closeBtn = document.createElement('button');
-        closeBtn.style.cssText = 'margin:12px auto 0;display:block;width:44px;height:44px;padding:0;border:none;border-radius:50%;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.1);';
-        closeBtn.textContent = '✕';
-        closeBtn.setAttribute('aria-label', 'とじる');
-        closeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          ov.remove();
-        });
-        box.appendChild(closeBtn);
-
-        ov.appendChild(box);
-        ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
-        document.body.appendChild(ov);
-      }
-
-      // ── Achievement List Modal ──
-      function showAchievementList() {
-        var old = document.querySelector('.ach-list-ov');
-        if (old) old.remove();
-
-        var allAch = window.getAchievements ? window.getAchievements() : [];
-        var unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
-        var stats = JSON.parse(localStorage.getItem('pono_stats') || '{}');
-
-        var ov = document.createElement('div');
-        ov.className = 'ach-list-ov';
-        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
-
-        var box = document.createElement('div');
-        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:16px;max-width:340px;width:92%;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
-
-        // タイトル + カウント
-        var doneCount = Object.keys(unlocked).length;
-        var titleDiv = document.createElement('div');
-        titleDiv.style.cssText = 'text-align:center;margin-bottom:12px;';
-        titleDiv.innerHTML = '<div style="font-size:1.05rem;font-weight:900;color:#5D4E37;">🏆 じっせき</div>' +
-          '<div style="font-size:0.8rem;font-weight:700;color:#D97706;margin-top:2px;">' + doneCount + ' / ' + allAch.length + ' かいほう</div>';
-        box.appendChild(titleDiv);
-
-        // tier別ラベル
-        var tierLabels = { 1: 'はじめて', 2: 'がんばった', 3: 'マスター' };
-        var tierColors = { 1: '#4CAF50', 2: '#2196F3', 3: '#FF9800' };
-        var currentTier = 0;
-
-        for (var i = 0; i < allAch.length; i++) {
-          var ach = allAch[i];
-          var done = !!unlocked[ach.id];
-          var statVal = stats[ach.stat] || 0;
-
-          // tierヘッダー
-          if (ach.tier !== currentTier) {
-            currentTier = ach.tier;
-            var header = document.createElement('div');
-            header.style.cssText = 'font-size:0.75rem;font-weight:900;color:' + tierColors[currentTier] + ';padding:8px 4px 4px;border-bottom:2px solid ' + tierColors[currentTier] + ';margin-bottom:4px;';
-            header.textContent = tierLabels[currentTier] || '';
-            box.appendChild(header);
-          }
-
-          var row = document.createElement('div');
-          row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid rgba(0,0,0,0.05);' + (done ? '' : 'opacity:0.5;');
-
-          // アイコン
-          var iconDiv = document.createElement('div');
-          iconDiv.style.cssText = 'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;' +
-            (done ? 'background:#E8F5E9;' : 'background:rgba(0,0,0,0.08);');
-          iconDiv.textContent = done ? '✅' : '🔒';
-          row.appendChild(iconDiv);
-
-          // テキスト
-          var textDiv = document.createElement('div');
-          textDiv.style.cssText = 'flex:1;min-width:0;';
-          textDiv.innerHTML = '<div style="font-size:0.8rem;font-weight:900;color:#5D4E37;">' + ach.name + '</div>' +
-            '<div style="font-size:0.65rem;color:#A89880;font-weight:700;">' + ach.desc + '</div>';
-          row.appendChild(textDiv);
-
-          // 進捗
-          var progDiv = document.createElement('div');
-          progDiv.style.cssText = 'flex-shrink:0;text-align:right;';
-          if (done) {
-            progDiv.innerHTML = '<span style="font-size:0.7rem;font-weight:900;color:#4CAF50;">かんせい！</span>';
-          } else {
-            var pct = Math.min(100, Math.floor((statVal / ach.target) * 100));
-            progDiv.innerHTML = '<div style="font-size:0.65rem;font-weight:700;color:#A89880;">' + statVal + '/' + ach.target + '</div>' +
-              '<div style="width:40px;height:5px;background:rgba(0,0,0,0.1);border-radius:3px;margin-top:2px;"><div style="width:' + pct + '%;height:100%;background:' + tierColors[currentTier] + ';border-radius:3px;"></div></div>';
-          }
-          row.appendChild(progDiv);
-          box.appendChild(row);
-        }
-
-        // 閉じるボタン（×アイコン）
-        var closeBtn = document.createElement('button');
-        closeBtn.style.cssText = 'display:block;margin:12px auto 0;width:44px;height:44px;padding:0;border:none;border-radius:50%;background:#E5E7EB;color:#5D4E37;font-family:inherit;font-size:1.2rem;font-weight:900;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.1);';
-        closeBtn.textContent = '✕';
-        closeBtn.setAttribute('aria-label', 'とじる');
-        closeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          ov.remove();
-        });
-        box.appendChild(closeBtn);
-
-        ov.appendChild(box);
-        ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
-        document.body.appendChild(ov);
-      }
-
-      // ── Stamp animation ──
-      function animateStamp(total) {
-        var filled = getFilledInCard(total);
-        // Which row is the newly stamped slot in?
-        var posInCard = filled - 1; // 0-based
-        var posInRow = posInCard % SLOTS_PER_ROW;
-        // 音は showStampModal 内で鳴らすのでここでは鳴らさない
-        renderStampCard(posInRow);
-      }
-
-      // ── Stamp reason text ──
-      function getStampReasonText() {
-        // ログイン日数は dates 配列内の日付エントリ（YYYY-MM-DD）のみカウント
-        var log = getStampLog();
-        var loginDays = log.dates.filter(function(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }).length;
-        return 'ログイン ' + loginDays + 'にちめ！';
-      }
-
-      // 実績スタンプの理由をlocalStorageから取り出してテキストに変換
-      // 取り出したら消去（1回限り）
-      function consumeAchReasonText() {
-        try {
-          var pending = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
-          localStorage.removeItem('pono_stamp_pending');
-          if (pending.length === 0) return 'じっせき かいほう！🏆';
-          if (pending.length === 1) {
-            return '🏆「' + pending[0].name + '」\n' + pending[0].desc;
-          }
-          // 複数まとめて解除
-          return '🏆 じっせき ' + pending.length + 'こ かいほう！\n' +
-            pending.map(function(p) { return '・' + p.name; }).join('\n');
-        } catch(e) {
-          return 'じっせき かいほう！🏆';
-        }
-      }
-
-      // スタンプ押し演出モーダル（3フェーズ構成）
-      // フェーズ1: うけとるボタン / フェーズ2: 大きなスタンプ1枚ずつ / フェーズ3: 15マスカード
-      // stampInfos: [{ total, text }, ...] — 1個でも配列で渡す
-      function showStampBatch(stampInfos, onAllDone) {
-        var count = stampInfos.length;
-        if (count === 0) { if (onAllDone) onAllDone(); return; }
-        // ★ first-clear celebration と被らないよう busy フラグを立てる
-        window._stampBatchBusy = true;
-        var _origOnAllDone = onAllDone;
-        onAllDone = function() {
-          window._stampBatchBusy = false;
-          if (_origOnAllDone) _origOnAllDone();
-          // スタンプが終わったら溜まっていた first-clear 祝賀を実行
-          if (typeof _scheduleFirstClearAfterStamps === 'function') {
-            setTimeout(_scheduleFirstClearAfterStamps, 400);
-          }
-        };
-
-        var firstInfo = stampInfos[0];
-        var lastInfo = stampInfos[count - 1];
-        var cardNum = getCardNum(lastInfo.total);
-
-        // 各スタンプのカード内位置
-        var stampPositions = stampInfos.map(function(info) {
-          return getFilledInCard(info.total) - 1; // 0-based
-        });
-        // バッチ開始前に埋まっていた数
-        var preFilled = firstInfo.total - 1;
-        var preFilledInCard = preFilled <= 0 ? 0 :
-          (preFilled % SLOTS_PER_CARD === 0 && Math.floor(preFilled / SLOTS_PER_CARD) === cardNum - 1
-            ? SLOTS_PER_CARD : preFilled % SLOTS_PER_CARD);
-
-        // 理由テキストのHTML生成
-        function formatReason(text) {
-          return text.split('\n').map(function(line, i) {
-            return '<span style="display:block;' + (i > 0 ? 'font-size:0.78rem;font-weight:700;color:#9C8070;margin-top:2px;' : '') + '">' + line + '</span>';
-          }).join('');
-        }
-
-        // オーバーレイ作成
-        var ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:background 0.3s;';
-
-        // カード（固定サイズで3フェーズ共通）
-        var cardEl = document.createElement('div');
-        cardEl.id = 'stamp-b-card';
-        cardEl.style.cssText = 'background:#FFF8E8;border-radius:16px;padding:20px;max-width:360px;width:90%;min-height:400px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:scale(0);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);';
-
-        // 内部コンテンツエリア（フェーズごとに差し替え）
-        var contentEl = document.createElement('div');
-        contentEl.id = 'stamp-b-content';
-        contentEl.style.cssText = 'width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;';
-        cardEl.appendChild(contentEl);
-
-        ov.appendChild(cardEl);
-        document.body.appendChild(ov);
-
-        // スケールイン
-        requestAnimationFrame(function() {
-          ov.style.background = 'rgba(0,0,0,0.6)';
-          cardEl.style.transform = 'scale(1)';
-        });
-
-        // 15マスグリッドHTML生成（stamp-full-modal-slot スタイルを流用）
-        // mode: 'before' = 新規スタンプは空表示, 'after' = 新規スタンプは押された状態
-        function buildFullGridHtml(mode) {
-          var log = getStampLog();
-          var currentTotal = log.total;
-          var thisCardStart = (cardNum - 1) * SLOTS_PER_CARD;
-          var html = '';
-          for (var row = 0; row < 3; row++) {
-            html += '<div class="stamp-full-modal-row">';
-            for (var col = 0; col < SLOTS_PER_ROW; col++) {
-              var globalIdx = row * SLOTS_PER_ROW + col;
-              var slotNum = globalIdx + 1;
-              var slotTotal = thisCardStart + slotNum;
-              var isNew = stampPositions.indexOf(globalIdx) >= 0;
-              var isPreFilled = slotTotal <= currentTotal && !isNew;
-              var slotRw = (typeof getSlotRewardInfo === 'function') ? getSlotRewardInfo(slotNum) : null;
-
-              var classes = 'stamp-full-modal-slot';
-              var inner = '';
-
-              if (isPreFilled) {
-                classes += ' stamped';
-                inner = '<img src="' + PONO_ICON + '" alt="">';
-              } else if (isNew && mode === 'after') {
-                classes += ' stamped';
-                inner = '<img src="' + PONO_ICON + '" alt="">';
-              } else {
-                inner = '<span class="slot-num">' + String(slotNum).padStart(2, '0') + '</span>';
-                if (slotRw) {
-                  inner += '<span class="slot-hint">' + slotRw.icon + '</span>';
-                  classes += ' reward-slot';
-                }
-              }
-              html += '<div class="' + classes + '">' + inner + '</div>';
-            }
-            html += '</div>';
-          }
-          return html;
-        }
-
-        // ── フェーズ1: スタンプカード（押される前）+ うけとるボタン ──
-        function phase1Receive() {
-          contentEl.innerHTML =
-            '<div style="font-size:1.1rem;font-weight:900;color:#F2915A;margin-bottom:4px;">\uD83C\uDF89 スタンプ ' + count + 'こ ゲット！</div>' +
-            '<div class="stamp-full-modal-title" style="margin-bottom:12px;">\uD83D\uDCCB スタンプカード ' + cardNum + 'まいめ</div>' +
-            '<div id="stamp-b-grid">' + buildFullGridHtml('before') + '</div>' +
-            '<button id="stamp-b-btn" style="margin-top:16px;padding:14px 40px;border:none;border-radius:50px;background:linear-gradient(135deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(245,168,0,0.5);animation:stampBtnPulse 1.2s ease-in-out infinite;">うけとる！</button>';
-
-          document.getElementById('stamp-b-btn').addEventListener('click', function() {
-            _resumeAC();
-            phase2BigStamps();
-          });
-        }
-
-        // ── フェーズ2: 大きなスタンプを1枚ずつ表示（タップでゲット） ──
-        function phase2BigStamps() {
-          contentEl.innerHTML =
-            '<div id="stamp-b-reason" style="font-size:1rem;font-weight:900;color:#5D4E37;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:4px;white-space:normal;"></div>' +
-            '<div class="big-stamp-wrap" id="stamp-b-wrap" style="cursor:pointer;">' +
-              '<div class="big-stamp-icon" id="stamp-b-big">' +
-                '<img src="' + PONO_ICON + '" id="stamp-b-bigimg" alt="">' +
-              '</div>' +
-            '</div>' +
-            '<div id="stamp-b-msg" style="font-size:1.2rem;font-weight:900;color:#F2915A;opacity:0;transition:opacity 0.3s;height:1.5em;">ゲット！\u2728</div>' +
-            '<div id="stamp-b-hint" style="font-size:0.95rem;font-weight:900;color:#F2915A;margin-top:4px;animation:stampBtnPulse 1.2s ease-in-out infinite;">\uD83D\uDC46 タッチして ゲット！</div>' +
-            '<div class="big-stamp-counter" id="stamp-b-counter"></div>';
-
-          showBigStamp(0);
-        }
-
-        function spawnSparkles() {
-          var wrap = document.getElementById('stamp-b-wrap');
-          if (!wrap) return;
-          var emojis = ['\u2728', '\u2b50', '\ud83d\udcab', '\u2728'];
-          for (var i = 0; i < 8; i++) {
-            var s = document.createElement('div');
-            s.className = 'sparkle';
-            s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            var angle = (i / 8) * Math.PI * 2 + Math.random() * 0.3;
-            var distance = 80 + Math.random() * 40;
-            var dx = Math.cos(angle) * distance;
-            var dy = Math.sin(angle) * distance;
-            s.style.left = '50%';
-            s.style.top = '50%';
-            s.style.setProperty('--dx', dx + 'px');
-            s.style.setProperty('--dy', dy + 'px');
-            s.style.animationDelay = (i * 0.04) + 's';
-            wrap.appendChild(s);
-            (function(el) {
-              setTimeout(function() { if (el.parentNode) el.remove(); }, 1500);
-            })(s);
-          }
-        }
-
-        function showBigStamp(idx) {
-          if (idx >= count) {
-            phase3FullCard();
-            return;
-          }
-
-          var info = stampInfos[idx];
-          document.getElementById('stamp-b-reason').innerHTML = formatReason(info.text);
-          document.getElementById('stamp-b-counter').textContent = (count > 1) ? (idx + 1) + ' / ' + count : '';
-
-          var bigEl = document.getElementById('stamp-b-big');
-          var imgEl = document.getElementById('stamp-b-bigimg');
-          var msg = document.getElementById('stamp-b-msg');
-          var hint = document.getElementById('stamp-b-hint');
-          var wrap = document.getElementById('stamp-b-wrap');
-
-          // リセット
-          imgEl.removeAttribute('style');
-          bigEl.classList.remove('show');
-          imgEl.classList.remove('show');
-          msg.style.opacity = '0';
-
-          // スタンプを実際に押すアニメーション
-          function pressStamp() {
-            if (hint) hint.style.opacity = '0';
-            bigEl.classList.add('show');
-            imgEl.classList.add('show');
-            spawnSparkles();
-            msg.style.opacity = '1';
-            _playStampPop();
-
-            // 少し見せてから次へ
-            setTimeout(function() {
-              if (idx < count - 1) {
-                imgEl.style.cssText = 'transition:opacity 0.3s, transform 0.3s; opacity:0; transform:scale(0.8) rotate(10deg);';
-                msg.style.opacity = '0';
-                setTimeout(function() { showBigStamp(idx + 1); }, 350);
-              } else {
-                setTimeout(function() { phase3FullCard(); }, 800);
-              }
-            }, 1500);
-          }
-
-          if (idx === 0) {
-            // 1枚目: 自動（「うけとる！」ボタンのタップ延長）
-            if (hint) hint.style.opacity = '0';
-            requestAnimationFrame(function() {
-              requestAnimationFrame(function() { pressStamp(); });
-            });
-          } else {
-            // 2枚目以降: 空の丸を表示してタップ待ち
-            if (hint) hint.style.opacity = '1';
-            var tapped = false;
-            function onTap() {
-              if (tapped) return;
-              tapped = true;
-              wrap.removeEventListener('click', onTap);
-              pressStamp();
-            }
-            wrap.addEventListener('click', onTap);
-          }
-        }
-
-        // ── フェーズ3: 15マスカード表示（スタンプ押された後） ──
-        function phase3FullCard() {
-          contentEl.innerHTML =
-            '<div class="stamp-full-modal-title" style="margin-bottom:12px;">\uD83D\uDCCB スタンプカード ' + cardNum + 'まいめ</div>' +
-            '<div>' + buildFullGridHtml('after') + '</div>' +
-            '<div style="font-size:1.3rem;font-weight:900;color:#F2915A;margin:10px 0 8px;">やったー！ \uD83C\uDF89</div>' +
-            '<button id="stamp-b-close" style="padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">やったー！</button>';
-
-          document.getElementById('stamp-b-close').addEventListener('click', closeModal);
-        }
-
-        // モーダル閉じる
-        function closeModal() {
-          cardEl.style.transition = 'transform 0.3s cubic-bezier(0.6,-0.28,0.74,0.05)';
-          cardEl.style.transform = 'scale(0)';
-          ov.style.background = 'rgba(0,0,0,0)';
-          setTimeout(function() {
-            ov.remove();
-            if (onAllDone) onAllDone();
-          }, 350);
-        }
-
-        // フェーズ1スタート
-        phase1Receive();
-      }
-
-      // ── 4. Init & Event Wiring ──
-
-      window._initStampRally = function() {
-        // MVP: スタンプ系処理を全部スキップ。addStampToday / renderDailyRally /
-        // renderStampCard / 演出も呼ばない。
-        if (window.PONO_MVP_NO_REWARDS) return;
-        // pono_stamp_before: 前回セッション終了時のtotal（未設定なら0＝初回）
-        var _beforeGame = parseInt(localStorage.getItem('pono_stamp_before') || '0');
-
-        var result = addStampToday();
-        renderDailyRally();
-        renderStampCard(-1);
-
-        var finalTotal = getStampLog().total;
-        // _beforeGame が基準。初回（0）なら全スタンプがアニメーション対象
-        var startFrom = _beforeGame;
-        var stampsToShow = finalTotal - startFrom;
-
-        // 実績スタンプの理由テキストを取得
-        var achReasons = [];
-        try {
-          var pending = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
-          localStorage.removeItem('pono_stamp_pending');
-          achReasons = pending;
-        } catch(e) {}
-
-        // 各スタンプの理由テキストを準備（ログイン→実績の順）
-        // ログインスタンプは dates 配列の末尾（最新のtotal）になるので、
-        // まず result.added なら最後のスタンプをログインとして扱い、
-        // それ以外は実績 or 汎用テキスト
-        var stampReasons = [];
-        var achIdx = 0;
-        var loginSlot = result.added ? (stampsToShow - 1) : -1; // ログインスタンプの位置
-        for (var si = 0; si < stampsToShow; si++) {
-          var stampTotal = startFrom + si + 1;
-          if (si === loginSlot) {
-            stampReasons.push({ total: stampTotal, text: getStampReasonText() });
-          } else if (achIdx < achReasons.length) {
-            var ach = achReasons[achIdx];
-            stampReasons.push({ total: stampTotal, text: '🏆「' + ach.name + '」\n' + ach.desc });
-            achIdx++;
-          } else {
-            // 理由テキスト不明なスタンプ（achReasons切れ、ログインでもない）
-            stampReasons.push({ total: stampTotal, text: '🎉 スタンプ ゲット！' });
-          }
-        }
-
-        _stampTotalAfterInit = finalTotal;
-        localStorage.setItem('pono_stamp_before', String(finalTotal));
-
-        if (stampReasons.length > 0) {
-          setTimeout(function() {
-            showStampBatch(stampReasons, function() {
-              stampReasons.forEach(function(info) { animateStamp(info.total); });
-              setTimeout(function() { checkSlotReward(finalTotal); }, 150);
-            });
-          }, 500);
-        } else {
-          setTimeout(function() { checkSlotReward(finalTotal); }, 150);
-        }
-      };
-
-      // スタンプラリー初期化。rewards.json の取得を待たずに即起動する。
-      // （スタンプ演出自体は rewards.json に依存しないため。ご褒美表示のみ
-      //   checkSlotReward 内で _rewardsReady を待つ）
-      _loadRewardsJSON(function() {}); // 裏でロード開始
-      if (window.ponoProfile) {
-        window._initStampRally();
-      }
-
-      // ── ゲームから戻った時にスタンプ増加を検出して演出 ──
-      // _initStampRally完了後のtotalを記録。visibilitychangeで差分検出
-      var _stampTotalAfterInit = -1;
-
-      // ゲームカードをクリックした時に現在値を保存
-      document.querySelectorAll('.card').forEach(function(card) {
-        card.addEventListener('click', function(ev) {
-          // 無料ユーザーがロックカードを踏んだらスクショプロモに差し替え
-          if (window.PonoPromo && window.PonoPromo.shouldBlockFree && window.PonoPromo.shouldBlockFree(this.id)) {
-            if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
-            if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
-            try { window.PonoPromo.showLockedPreview(this.id); } catch (e) {}
-            return;
-          }
-          var t = getStampLog().total;
-          _stampTotalAfterInit = t;
-          localStorage.setItem('pono_stamp_before', String(t));
-        });
-      });
-
-      // visibilitychange（ゲームから戻った時）
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-          var now = getStampLog().total;
-          var prev = _stampTotalAfterInit;
-          if (prev >= 0 && now > prev) {
-            _stampTotalAfterInit = now;
-            // 増えた分を1つずつ表示
-            var achReasons = [];
-            try {
-              var pend = JSON.parse(localStorage.getItem('pono_stamp_pending') || '[]');
-              localStorage.removeItem('pono_stamp_pending');
-              achReasons = pend;
-            } catch(e) {}
-
-            var stamps = [];
-            var ai = 0;
-            for (var vi = prev + 1; vi <= now; vi++) {
-              if (ai < achReasons.length) {
-                stamps.push({ total: vi, text: '🏆「' + achReasons[ai].name + '」\n' + achReasons[ai].desc });
-                ai++;
-              } else {
-                stamps.push({ total: vi, text: getStampReasonText(vi) });
-              }
-            }
-
-            setTimeout(function() {
-              showStampBatch(stamps, function() {
-                stamps.forEach(function(info) { animateStamp(info.total); });
-                setTimeout(function() { checkSlotReward(now); }, 150);
-              });
-            }, 500);
-          } else {
-            _stampTotalAfterInit = now;
-          }
-          checkDailyCompletion();
-          renderDailyRally();
-          renderStampCard(-1);
-          _scheduleFirstClearAfterStamps();
-        }
-      });
-
-      // スタンプ演出が走っている間は first-clear 祝賀を遅延実行。
-      // スタンプ完了時の onAllDone コールバックで呼び直される。
-      function _scheduleFirstClearAfterStamps() {
-        if (window._stampBatchBusy) return;
-        checkPendingFirstClear();
-      }
-
-      // ── ゲーム初回クリア報酬: ホーム帰還時の演出 ──
-      // common/first-clear.js が localStorage.pono_pending_first_clear に
-      // 配列で積んだ情報を順番に処理する。
-      function checkPendingFirstClear() {
-        // MVP: 報酬制度封印中は祝賀ポップアップをスキップ。
-        // pending キューはクリアして、再公開時に古い演出が突然出るのを防ぐ。
-        if (window.PONO_MVP_NO_REWARDS) {
-          try { localStorage.setItem('pono_pending_first_clear', '[]'); } catch (e) {}
-          return;
-        }
-        var pending;
-        try { pending = JSON.parse(localStorage.getItem('pono_pending_first_clear') || '[]'); }
-        catch(e) { pending = []; }
-        if (!Array.isArray(pending) || pending.length === 0) return;
-
-        // 先頭1件ずつ処理（複数あれば閉じた後に次を表示）
-        var item = pending.shift();
-        localStorage.setItem('pono_pending_first_clear', JSON.stringify(pending));
-        showFirstClearCelebration(item, function() {
-          // 祝賀モーダルを閉じた後、afterMsg があればそれを表示
-          var next = function() {
-            if (pending.length > 0) {
-              // 残りがあれば少し間を空けて次を表示
-              setTimeout(checkPendingFirstClear, 400);
-            }
-          };
-          if (item && item.afterMsg) {
-            window.showAfterMsgOverlay(item, next);
-          } else {
-            next();
-          }
-        });
-      }
-
-      // 祝賀モーダル（スタンプカード風の見た目だが、スタンプではなく達成バッジを見せる）
-      function showFirstClearCelebration(item, onDone) {
-        if (!item) { if (onDone) onDone(); return; }
-
-        var ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
-
-        var box = document.createElement('div');
-        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:24px 20px 18px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.35);';
-
-        var title = document.createElement('div');
-        title.style.cssText = 'font-size:1.05rem;font-weight:900;color:#F2915A;margin-bottom:8px;';
-        title.textContent = '🏆 はじめての クリア！';
-        box.appendChild(title);
-
-        var sub = document.createElement('div');
-        sub.style.cssText = 'font-size:0.8rem;font-weight:700;color:#5D4E37;margin-bottom:14px;';
-        sub.textContent = 'ごほうびを ゲットしたよ！';
-        box.appendChild(sub);
-
-        // スタンプ風の丸いバッジ
-        var badge = document.createElement('div');
-        badge.style.cssText = 'width:110px;height:110px;margin:0 auto 12px;border-radius:50%;background:#FFF3CD;border:4px solid #FFD700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(255,215,0,0.2);animation:stampSlotGlow 0.8s ease-out;';
-        if (item.img) {
-          var img = document.createElement('img');
-          img.src = item.img;
-          img.style.cssText = 'width:80px;height:80px;object-fit:contain;';
-          img.onerror = function() {
-            img.style.display = 'none';
-            var ic = document.createElement('div');
-            ic.style.cssText = 'font-size:3.5rem;';
-            ic.textContent = item.icon || '🎁';
-            badge.appendChild(ic);
-          };
-          badge.appendChild(img);
-        } else {
-          var ic = document.createElement('div');
-          ic.style.cssText = 'font-size:3.5rem;';
-          ic.textContent = item.icon || '🎁';
-          badge.appendChild(ic);
-        }
-        box.appendChild(badge);
-
-        // アイテム名
-        var nameEl = document.createElement('div');
-        nameEl.style.cssText = 'font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:4px;';
-        nameEl.textContent = item.name || '';
-        box.appendChild(nameEl);
-
-        var msgEl = document.createElement('div');
-        msgEl.style.cssText = 'font-size:0.75rem;color:#888;margin-bottom:16px;';
-        msgEl.textContent = 'あたらしい ともだちだよ！';
-        box.appendChild(msgEl);
-
-        var closeBtn = document.createElement('button');
-        closeBtn.textContent = 'やったー！';
-        closeBtn.style.cssText = 'padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#F2915A,#EC6A3C);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(242,145,90,0.4);';
-        closeBtn.addEventListener('click', function() {
-          ov.remove();
-          if (onDone) onDone();
-        });
-        box.appendChild(closeBtn);
-
-        ov.appendChild(box);
-        document.body.appendChild(ov);
-      }
-
-      // pageshow
-      window.addEventListener('pageshow', function() {
-        checkDailyCompletion();
-        renderDailyRally();
-        renderStampCard(-1);
-        // ★ first-clear は stamp modal を z-index で被覆してしまうので
-        //   スタンプ演出が走っていない（または終わっている）時だけ実行。
-        //   スタンプ中は showStampBatch 完了時に連鎖して呼ばれる。
-        _scheduleFirstClearAfterStamps();
-      });
-
-    })();
-
-    // テスト用リセット
-    document.getElementById('resetAllBtn').addEventListener('click', function() {
-      if (!confirm('ほんとうに ぜんぶ リセットしますか？\nすべてのデータが消えます。')) return;
-      localStorage.clear();
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          for (var i = 0; i < regs.length; i++) regs[i].unregister();
-        });
-        caches.keys().then(function(keys) {
-          for (var i = 0; i < keys.length; i++) caches.delete(keys[i]);
-        });
-      }
-      alert('リセットしました！ページを再読み込みします。');
-      location.reload();
-    });
-
-    // デバッグモード トグル
-    (function() {
-      var btn = document.getElementById('debugToggleBtn');
-      var KEY = 'pono_debug';
-      function sync() {
-        var on = localStorage.getItem(KEY) === '1';
-        btn.textContent = on ? '🛠 デバッグ ON' : '🛠 デバッグ OFF';
-        btn.style.background = on ? '#6366F1' : '#EEF2FF';
-        btn.style.color = on ? '#fff' : '#6366F1';
-      }
-      sync();
-      btn.addEventListener('click', function() {
-        var on = localStorage.getItem(KEY) === '1';
-        localStorage.setItem(KEY, on ? '0' : '1');
-        sync();
-        alert(on ? 'デバッグモード OFF' : 'デバッグモード ON\nおうちアンロック＆全家具配置自由');
-        // ロック状態を即反映するため再読み込み
-        location.reload();
-      });
-    })();
-
-  </script>
-
-  <!-- ===== Bottom Navigation Bar ===== -->
-  <nav class="bottom-nav" id="bottomNav">
-    <button class="bn-item" data-action="stamp">
-      <span class="bn-icon">📋</span>
-      <span class="bn-label">スタンプ</span>
-    </button>
-    <button class="bn-item" data-action="room" id="bn-room">
-      <span class="bn-icon" id="bn-room-icon">🏠</span>
-      <span class="bn-label" id="bn-room-label">おうち</span>
-    </button>
-    <button class="bn-item" data-action="play">
-      <span class="bn-icon">🎮</span>
-      <span class="bn-label">あそぶ</span>
-    </button>
-    <button class="bn-item" data-action="help">
+  <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
+    <button class="bn-item" data-action="help" type="button">
       <span class="bn-icon">❓</span>
       <span class="bn-label">ヘルプ</span>
     </button>
-    <button class="bn-item" data-action="top">
+    <button class="bn-item" data-action="top" type="button">
       <span class="bn-icon">🌳</span>
       <span class="bn-label">トップ</span>
     </button>
+    <button class="bn-item" data-action="news" type="button">
+      <span class="bn-icon">🔔</span>
+      <span class="bn-label">おしらせ</span>
+    </button>
+    <button class="bn-item" data-action="settings" type="button">
+      <span class="bn-icon">⚙️</span>
+      <span class="bn-label">せってい</span>
+    </button>
   </nav>
 
+  <!-- ===== Settings Modal ===== -->
+  <div class="modal" id="settingsModal" hidden role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card">
+      <h3 id="settingsTitle">せってい</h3>
+      <div class="setting-row">
+        <span>おとを ながす</span>
+        <label class="toggle">
+          <input type="checkbox" id="soundToggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <hr class="modal-divider">
+      <a href="play-all.html" class="dev-link">📋 ぜんぶみる（開発用）</a>
+      <button class="modal-close" type="button" data-close="settingsModal">とじる</button>
+    </div>
+  </div>
+
+  <!-- ===== News Modal ===== -->
+  <div class="modal" id="newsModal" hidden role="dialog" aria-modal="true" aria-labelledby="newsTitle">
+    <div class="modal-card">
+      <h3 id="newsTitle">おしらせ</h3>
+      <p>あたらしい おしらせは ありません。</p>
+      <button class="modal-close" type="button" data-close="newsModal">とじる</button>
+    </div>
+  </div>
+
   <script>
-    // ===== Bottom Navigation =====
-    (function() {
-      var nav = document.getElementById('bottomNav');
-      if (!nav) return;
-      nav.addEventListener('click', function(e) {
-        var btn = e.target.closest('.bn-item');
-        if (!btn) return;
-        var action = btn.dataset.action;
-        if (action === 'stamp') {
-          if (typeof window.showFullCardModal === 'function') {
-            window.showFullCardModal();
-          } else {
-            alert('スタンプカードの表示に失敗しました');
-          }
-        } else if (action === 'room') {
-          var debugOn = localStorage.getItem('pono_debug')   === '1';
-          var premium = localStorage.getItem('pono_premium') === '1';
-          if (debugOn || premium) {
-            location.href = 'room/index.html';
-          } else {
-            location.href = 'techo/index.html';
-          }
-        } else if (action === 'play') {
-          var menu = document.querySelector('.menu');
-          if (menu) menu.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (action === 'help') {
-          location.href = 'help.html';
-        } else if (action === 'top') {
-          location.href = 'index.html';
-        }
-      });
-    })();
+    'use strict';
 
-    // ===== Acorn badge display =====
-    (function(){
-      var countEl = document.getElementById('acornCountPlay');
-      var badge = document.getElementById('acornBadgePlay');
-      if (!countEl || !badge || typeof window.getAcorns !== 'function') return;
-      function update(n) {
-        countEl.textContent = String(n);
-        badge.classList.remove('pop');
-        void badge.offsetWidth;
-        badge.classList.add('pop');
+    // ===== Game catalog (free MVP set) =====
+    const GAMES = [
+      {
+        id: 'quizland',
+        title: 'フクロウばかせのなぞなぞ',
+        subtitle: 'ひらめき・ものしりクイズ',
+        icon: '🦉',
+        bg: 'assets/images/quizland/title_back.jpg',
+        href: 'quizland/index.html'
+      },
+      {
+        id: 'quiz-sound',
+        title: 'こだまのもりのこえさがし',
+        subtitle: 'どうぶつのこえを きいて さがそう',
+        icon: '🐦',
+        bg: 'assets/images/quiz-sound/title_back.jpg',
+        href: 'quiz-sound/index.html'
+      },
+      {
+        id: 'wordmatch',
+        title: 'あつめよう！ポノのもりのずかん',
+        subtitle: 'えと ことばを つなげよう',
+        icon: '📖',
+        bg: 'assets/images/wordmatch/title_back.jpg',
+        href: 'wordmatch/index.html'
+      },
+      {
+        id: 'maze',
+        title: 'ポノとランタンのめいろ',
+        subtitle: 'ランタンをもって まいごさがし',
+        icon: '🏮',
+        bg: 'assets/images/maze/title_back.jpg',
+        href: 'maze/index.html'
       }
-      countEl.textContent = String(window.getAcorns());
-      window.addEventListener('pono-acorns-changed', function(e) {
-        update((e.detail && e.detail.after) != null ? e.detail.after : window.getAcorns());
-      });
-    })();
+    ];
 
-    // ===== Thank-you (ありがとう) badge display — v266 テーマ統合 =====
-    (function(){
-      var countEl = document.getElementById('thankyouCountPlay');
-      var badge = document.getElementById('thankyouBadgePlay');
-      if (!countEl || !badge || typeof window.getThankYou !== 'function') return;
-      function update(n) {
-        countEl.textContent = String(n);
-        badge.classList.remove('pop');
-        void badge.offsetWidth;
-        badge.classList.add('pop');
+    let currentIdx = 0;
+    let activeBgEl = 'A';
+
+    const $ = (id) => document.getElementById(id);
+    const previewBgA = $('previewBgA');
+    const previewBgB = $('previewBgB');
+    const previewTitle = $('previewTitle');
+    const previewDesc = $('previewDesc');
+    const startBtn = $('startBtn');
+    const cardList = $('cardList');
+
+    // ===== HTML escape (defensive: GAMES may become external in future) =====
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // ===== Render cards =====
+    function renderCards() {
+      const html = GAMES.map((g, i) => `
+        <button type="button" class="game-card" data-idx="${i}" data-id="${esc(g.id)}" aria-pressed="false">
+          <span class="game-card-icon" aria-hidden="true">${esc(g.icon)}</span>
+          <span class="game-card-body">
+            <span class="game-card-title">${esc(g.title)}</span>
+            <span class="game-card-desc">${esc(g.subtitle)}</span>
+          </span>
+          <span class="game-card-arrow" aria-hidden="true">▶</span>
+        </button>
+      `).join('');
+      cardList.innerHTML = html;
+      cardList.addEventListener('click', onCardClick);
+    }
+
+    function pulseStartBtn() {
+      startBtn.classList.remove('is-pulse');
+      // Force reflow so the animation can re-trigger
+      void startBtn.offsetWidth;
+      startBtn.classList.add('is-pulse');
+    }
+
+    function onCardClick(e) {
+      const card = e.target.closest('.game-card');
+      if (!card) return;
+      const idx = Number(card.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      if (idx === currentIdx) {
+        // Same card re-tapped: nudge attention to はじめる button
+        pulseStartBtn();
+        return;
       }
-      countEl.textContent = String(window.getThankYou());
-      window.addEventListener('pono-thankyou-changed', function(e) {
-        update((e.detail && e.detail.after) != null ? e.detail.after : window.getThankYou());
+      selectGame(idx);
+    }
+
+    // ===== Select / preview crossfade =====
+    function selectGame(idx) {
+      const game = GAMES[idx];
+      if (!game) return;
+      currentIdx = idx;
+
+      // Update card highlight + aria-pressed
+      const cards = cardList.querySelectorAll('.game-card');
+      cards.forEach((c, i) => {
+        const sel = (i === idx);
+        c.classList.toggle('is-selected', sel);
+        c.setAttribute('aria-pressed', sel ? 'true' : 'false');
       });
-    })();
+
+      // Crossfade backgrounds — encode URI to keep CSS url() value safe
+      const incoming = activeBgEl === 'A' ? previewBgB : previewBgA;
+      const outgoing = activeBgEl === 'A' ? previewBgA : previewBgB;
+      const safeBg = encodeURI(game.bg).replace(/'/g, '%27');
+      incoming.style.backgroundImage = `url('${safeBg}')`;
+      // Double rAF: first frame commits the bg-image, second frame triggers opacity transition reliably
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          incoming.classList.add('is-active');
+          outgoing.classList.remove('is-active');
+        });
+      });
+      activeBgEl = activeBgEl === 'A' ? 'B' : 'A';
+
+      // Fade text labels
+      previewTitle.classList.add('is-fading');
+      previewDesc.classList.add('is-fading');
+      setTimeout(() => {
+        previewTitle.textContent = game.title;
+        previewDesc.textContent = game.subtitle;
+        previewTitle.classList.remove('is-fading');
+        previewDesc.classList.remove('is-fading');
+      }, 200);
+    }
+
+    // ===== Start button =====
+    startBtn.addEventListener('click', () => {
+      const game = GAMES[currentIdx];
+      if (!game) return;
+      // BGM priming (compatible with existing game audio gate)
+      try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
+      location.href = game.href;
+    });
+
+    // ===== Bottom nav =====
+    $('bottomNav').addEventListener('click', (e) => {
+      const btn = e.target.closest('.bn-item');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'help') {
+        location.href = 'help.html';
+      } else if (action === 'top') {
+        location.href = 'index.html';
+      } else if (action === 'news') {
+        openModal('newsModal');
+      } else if (action === 'settings') {
+        openModal('settingsModal');
+      }
+    });
+
+    // ===== Modal helpers =====
+    function openModal(id) {
+      const m = $(id);
+      if (m) m.hidden = false;
+    }
+    function closeModal(id) {
+      const m = $(id);
+      if (m) m.hidden = true;
+    }
+    document.addEventListener('click', (e) => {
+      const closeBtn = e.target.closest('[data-close]');
+      if (closeBtn) {
+        closeModal(closeBtn.dataset.close);
+        return;
+      }
+      // Click on backdrop closes
+      if (e.target.classList && e.target.classList.contains('modal')) {
+        e.target.hidden = true;
+      }
+    });
+
+    // ===== Sound toggle (persisted) =====
+    const SOUND_KEY = 'pono_sound_off';
+    const soundToggle = $('soundToggle');
+    function loadSoundPref() {
+      let off = false;
+      try { off = localStorage.getItem(SOUND_KEY) === '1'; } catch(_) {}
+      soundToggle.checked = !off;
+    }
+    soundToggle.addEventListener('change', () => {
+      const on = soundToggle.checked;
+      try { localStorage.setItem(SOUND_KEY, on ? '0' : '1'); } catch(_) {}
+    });
+    loadSoundPref();
+
+    // ===== Init =====
+    renderCards();
+    selectGame(0);
+
+    // ===== Service worker =====
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
