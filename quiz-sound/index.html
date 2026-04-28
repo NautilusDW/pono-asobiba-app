@@ -16,6 +16,7 @@
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: 100%; height: 100dvh; overflow: hidden;
@@ -189,6 +190,40 @@
   .thinking-pono.correct { box-shadow: 0 0 0 4px rgba(110,211,110,0.55), 0 4px 12px rgba(0,0,0,0.15); }
   .thinking-pono.wrong   { box-shadow: 0 0 0 4px rgba(255,107,107,0.55), 0 4px 12px rgba(0,0,0,0.15); }
 
+  /* ── タイトル画面 (タップで intro へ) ── */
+  /* 画像 (1600x686 = 21:9) は自身にロゴ「こだまの森の声探し」を含むので、
+     ここでは背景表示と「タップしてスタート」CTA だけ重ねる。
+     cover で表示し、左右が多少切れても 16:9 セーフエリアに主役 (ポノ+森) があるので破綻しない。 */
+  .title-screen {
+    position: fixed; inset: 0;
+    z-index: 250;
+    background: #E8DCC0 url('../assets/images/quiz-sound/title_back.jpg') center / cover no-repeat;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6%;
+  }
+  .title-screen.hidden { display: none; }
+  .title-tap-cta {
+    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+    font-size: clamp(1rem, 3.6vw, 1.6rem);
+    color: #5D3A00;
+    text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.2);
+    letter-spacing: 0.06em;
+    background: rgba(255, 248, 224, 0.78);
+    padding: 8px 22px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    animation: titleTapPulse 1.4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes titleTapPulse {
+    0%, 100% { opacity: 0.92; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.05); }
+  }
+
   /* ── イントロ画面 (タップで AC アンロック) ── */
   .intro {
     position: fixed; inset: 0;
@@ -312,8 +347,13 @@
 <!-- BGM (ループ再生) -->
 <audio id="quiz-bgm" src="../assets/audio/quiz_sound_bgm.mp3" loop preload="auto"></audio>
 
-<!-- ── イントロ: タップで AudioContext / BGM をアンロック ── -->
-<div class="intro" id="intro">
+<!-- ── タイトル画面: 21:9 イラスト (ロゴ込み) + タップしてスタート ── -->
+<div class="title-screen" id="title-screen" role="button" aria-label="タップしてスタート">
+  <div class="title-tap-cta">▶ タップしてスタート</div>
+</div>
+
+<!-- ── イントロ: 難易度選択 + AudioContext / BGM アンロック ── -->
+<div class="intro hidden" id="intro" style="display:none;">
   <h1>こだまのもりのこえさがし</h1>
   <div class="intro-pono">
     <video src="../assets/videos/ThinkingPono.mp4" autoplay loop muted playsinline webkit-playsinline></video>
@@ -785,6 +825,15 @@ function startGame() {
   }
 }
 document.getElementById('introBtn').addEventListener('click', startGame);
+
+// タイトル画面 → intro 画面へ遷移
+document.getElementById('title-screen').addEventListener('click', function() {
+  document.getElementById('title-screen').classList.add('hidden');
+  document.getElementById('title-screen').style.display = 'none';
+  var intro = document.getElementById('intro');
+  intro.classList.remove('hidden');
+  intro.style.display = '';
+});
 
 // 難易度トグル (やさしい / ふつう)
 document.querySelectorAll('.diff-btn').forEach(function(b) {
