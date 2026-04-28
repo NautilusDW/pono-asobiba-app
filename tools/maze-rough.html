@@ -544,9 +544,8 @@ function drawCompare() {
     const snapStride = (_compareSnap && _compareSnap.cellStride) || state.cellStride;
     const r = _markerRadius(snapStride);
     ctx2.save();
-    ctx2.fillStyle = color; ctx2.globalAlpha = 0.92;
+    ctx2.fillStyle = color;
     ctx2.beginPath(); ctx2.arc(p.x, p.y, r, 0, Math.PI * 2); ctx2.fill();
-    ctx2.globalAlpha = 1;
     ctx2.strokeStyle = '#fff'; ctx2.lineWidth = 6;
     ctx2.beginPath(); ctx2.arc(p.x, p.y, r, 0, Math.PI * 2); ctx2.stroke();
     ctx2.restore();
@@ -915,15 +914,14 @@ function drawBrushPreview() {
 
 function drawMarker(pos, color, _label) {
   // pos is in pixel coords. Label arg kept for API compat but not rendered —
-  // 色 (青=スタート / 赤=ゴール) だけで識別する方針。
+  // 色 (青=スタート / 赤=ゴール) だけで識別する方針。完全不透明 (下の道タイルが
+  // 透けないように) — PNG を AI に渡す時に色が混じらないため。
   const cx = pos.x;
   const cy = pos.y;
   const r = _markerRadius();
   ctx.save();
   ctx.fillStyle = color;
-  ctx.globalAlpha = 0.92;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 1;
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 6;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
@@ -1301,13 +1299,19 @@ function _saveBlobPlain(blob, filename) {
   setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
 }
 document.getElementById('exportPngBtn').addEventListener('click', async function() {
-  // Re-render WITHOUT grid lines / solution / brush preview for clean AI input
+  // Re-render WITHOUT grid lines / solution / brush preview / お邪魔虫 / 中継地点
+  // for clean AI input. PNG は AI に渡す画像なので、AI が描く必要のない内部設計
+  // 用マーカー (waypoint / creature) は除外 — start/goal だけ残す。
   const prevGrid = state.showGrid;
   const prevSol = state.showSolution;
   const prevHover = state.hoverTile;
+  const prevCreatures = state.creatures;
+  const prevWaypoints = state.waypoints;
   state.showGrid = false;
   state.showSolution = false;
   state.hoverTile = null;
+  state.creatures = [];
+  state.waypoints = [];
   draw();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const stageName = (document.getElementById('saveNameInput').value || '').trim();
@@ -1317,6 +1321,8 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
     state.showGrid = prevGrid;
     state.showSolution = prevSol;
     state.hoverTile = prevHover;
+    state.creatures = prevCreatures;
+    state.waypoints = prevWaypoints;
     draw();
   };
   if (state.panels === 2) {
