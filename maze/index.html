@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ハリネズミくんを たすけよう | ポノのあそびば</title>
+<title>まよいの森の ランタン | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -563,7 +563,7 @@ body.image-stage-mode .game-wrap {
 
 <div id="app">
   <div class="header">
-    <h1>ハリネズミくんを たすけよう</h1>
+    <h1>まよいの森の ランタン</h1>
     <p class="subtitle">やじるしを タップして すすもう</p>
   </div>
 
@@ -1671,7 +1671,7 @@ function imgDraw(now) {
 function imgDrawGoalIndicator(goal, w, h, cam, scale) {
   const sx = w / 2 + (goal.x - cam.x) * scale;
   const sy = h / 2 + (goal.y - cam.y) * scale;
-  const margin = 60;
+  const margin = 90;
   if (sx >= margin && sx <= w - margin && sy >= margin && sy <= h - margin) {
     stage._goalIndicator = null;
     return;
@@ -1690,21 +1690,21 @@ function imgDrawGoalIndicator(goal, w, h, cam, scale) {
   const useCry = cryImg && cryImg.complete && cryImg.naturalWidth > 0;
   ctx.save();
   ctx.translate(ix, iy);
-  // 赤い丸 (背景 + タップ判定の視認性)
+  // 赤い丸 (背景 + タップ判定の視認性) — サイズアップ
   ctx.fillStyle = 'rgba(220, 60, 60, 0.85)';
   ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, 44, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   // 動物の泣き顔があれば赤丸内に clip して描画
   if (useCry) {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(0, 0, 25, 0, Math.PI * 2);
+    ctx.arc(0, 0, 40, 0, Math.PI * 2);
     ctx.clip();
-    const ratio = cryImg.naturalWidth / cryImg.naturalHeight;
+    const r2 = cryImg.naturalWidth / cryImg.naturalHeight;
     let dw, dh;
-    if (ratio > 1) { dw = 50; dh = 50 / ratio; }
-    else           { dh = 50; dw = 50 * ratio; }
+    if (r2 > 1) { dw = 80; dh = 80 / r2; }
+    else        { dh = 80; dw = 80 * r2; }
     ctx.drawImage(cryImg, -dw/2, -dh/2, dw, dh);
     ctx.restore();
   }
@@ -1715,23 +1715,23 @@ function imgDrawGoalIndicator(goal, w, h, cam, scale) {
   ctx.rotate(angle);
   ctx.fillStyle = '#FFFFFF';
   ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(38, 0);
-  ctx.lineTo(22, -10);
-  ctx.lineTo(22, 10);
+  ctx.moveTo(58, 0);
+  ctx.lineTo(34, -15);
+  ctx.lineTo(34, 15);
   ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.restore();
   // GOAL ラベル
   ctx.save();
-  ctx.font = 'bold 18px sans-serif';
+  ctx.font = 'bold 22px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3.5;
   ctx.strokeStyle = '#000000';
   ctx.fillStyle = '#FFFFFF';
-  ctx.strokeText('GOAL', ix, iy + 50);
-  ctx.fillText('GOAL', ix, iy + 50);
+  ctx.strokeText('GOAL', ix, iy + 72);
+  ctx.fillText('GOAL', ix, iy + 72);
   ctx.restore();
   stage._goalIndicator = { x: ix, y: iy };
 }
@@ -1868,17 +1868,22 @@ function imgDrawMarkers(stage) {
     ctx.drawImage(imgMarkerStart, stage.start.x - sw/2, stage.start.y - sh/2, sw, sh);
   }
   if (stage.goal) {
-    // story.cryingIconUrl が読み込み済みならそちらを優先 (動物の泣き顔)
-    const cryImg = stage._cryingImg;
-    const useCry = cryImg && cryImg.complete && cryImg.naturalWidth > 0;
-    if (useCry) {
-      const ratio = cryImg.naturalWidth / cryImg.naturalHeight;
-      const sw = sz * ratio, sh = sz;
-      ctx.drawImage(cryImg, stage.goal.x - sw/2, stage.goal.y - sh/2, sw, sh);
-    } else if (imgMarkerGoal.complete && imgMarkerGoal.naturalWidth > 0) {
+    // 1) 旧アーチ marker_goal.png を従来通り描画 (= 「ゴール」のフレーム)
+    if (imgMarkerGoal.complete && imgMarkerGoal.naturalWidth > 0) {
       const ratio = imgMarkerGoal.naturalWidth / imgMarkerGoal.naturalHeight;
       const sw = sz * ratio, sh = sz;
       ctx.drawImage(imgMarkerGoal, stage.goal.x - sw/2, stage.goal.y - sh/2, sw, sh);
+    }
+    // 2) 動物の泣き顔があればアーチの **下半分** に重ねて小さく描画
+    const cryImg = stage._cryingImg;
+    const useCry = cryImg && cryImg.complete && cryImg.naturalWidth > 0;
+    if (useCry) {
+      const cratio = cryImg.naturalWidth / cryImg.naturalHeight;
+      // アーチ高さ sz の 0.55 倍 (= 小さめ)、アーチ下端寄りの位置に配置
+      const ch = sz * 0.55;
+      const cw = ch * cratio;
+      const cy = stage.goal.y + sz * 0.10; // アーチ中心より少し下
+      ctx.drawImage(cryImg, stage.goal.x - cw/2, cy - ch/2, cw, ch);
     }
   }
 }
@@ -2899,7 +2904,7 @@ function showStageClearOverlay() {
 
 function _showMazeFinalOverlay() {
   ovTitle.textContent = 'ぜんぶ クリア！';
-  ovMsg.textContent = 'ハリネズミくんを\nぜんぶ たすけたよ！\nすごいね ポノ！' + _dailyAcornTail('maze');
+  ovMsg.textContent = 'まいごの どうぶつたちを\nぜんぶ たすけたよ！\nすごいね ポノ！' + _dailyAcornTail('maze');
   ovBtn.textContent = 'もういちど あそぶ';
   ovBtn.onclick = function() { hideOverlay(); loadStage(0); };
   showOverlay();
@@ -3191,7 +3196,8 @@ if (window.initMenu) {
 }
 
 updateCharmsUI();
-showOverlay();
+// 起動時の旧「ハリネズミくんを たすけよう」モーダルは削除。
+// image ステージは storyIntro モーダルが個別に出るのでスタートゲート不要。
 // 1) Load _index.json (overrides STAGES with image stages at specified slots)
 // 2) Then handle ?image=<name> (one-off preview, takes precedence)
 // 3) Then loadStage(<initial>)  — defaults to 0 (tutorial), or ?stage=N to jump

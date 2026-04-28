@@ -128,45 +128,7 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'shape_name', shape:'rectangle', q:'ちょうほうけいと しかくの ちがいは？', answer:0, choices:['たてと よこの ながさが ちがう','かどの かずが ちがう','まるい','いろが ちがう'] }
   ],
 
-  // ── たべもの ──────────────────────────────────────
-  food: [
-    { level:1, type:'emoji_name', category:'food', img:'Apple/Apple_normal_1.png', q:'これは なに？', answer:0, choices:['りんご','バナナ','みかん','いちご'] },
-    { level:1, type:'emoji_name', category:'food', img:'Banana/Banana_normal_1.png', q:'これは なに？', answer:2, choices:['りんご','いちご','バナナ','ぶどう'] },
-    { level:1, type:'emoji_name', category:'food', img:'Strawberry/Strawberry_normal_1.png', q:'これは なに？', answer:1, choices:['バナナ','いちご','みかん','りんご'] },
-    { level:1, type:'emoji_name', category:'food', img:'Peach/Peach_normal_1.png', q:'これは なに？', answer:0, choices:['もも','りんご','バナナ','いちご'] },
-    { level:1, type:'emoji_name', category:'food', img:'Cherry/Cherry_normal_1.png', q:'これは なに？', answer:2, choices:['いちご','もも','さくらんぼ','ぶどう'] },
-    { level:2, type:'emoji_name', category:'food', img:'Orange/Orange_normal_1.png', q:'これは なに？', answer:2, choices:['いちご','ぶどう','みかん','りんご'] },
-    { level:2, type:'emoji_name', category:'food', img:'Grapes/Grapes_normal_1.png', q:'これは なに？', answer:0, choices:['ぶどう','バナナ','みかん','もも'] },
-    { level:2, type:'emoji_name', category:'food', img:'Watermelon/Watermelon_normal_1.png', q:'これは なに？', answer:1, choices:['メロン','すいか','もも','バナナ'] },
-    { level:2, type:'emoji_name', category:'food', img:'Carrot/Carrot_normal_1.png', q:'これは なに？', answer:0, choices:['にんじん','だいこん','トマト','かぼちゃ'] },
-    { level:2, type:'emoji_name', category:'food', img:'Mushroom/Mushroom_normal_1.png', q:'これは なに？', answer:2, choices:['キャベツ','ブロッコリー','きのこ','たまねぎ'] },
-    { level:2, type:'emoji_name', category:'food', img:'Lemon/Lemon_normal_1.png', q:'これは なに？', answer:1, choices:['みかん','レモン','バナナ','りんご'] },
-    { level:3, type:'emoji_name', category:'food', img:'Avocado/Avocado_normal_1.png', q:'これは なに？', answer:0, choices:['アボカド','メロン','キウイ','なし'] },
-    { level:3, type:'emoji_name', category:'food', img:'Blueberry/Blueberry_normal_1.png', q:'これは なに？', answer:1, choices:['ぶどう','ブルーベリー','さくらんぼ','くろまめ'] },
-    { level:3, type:'emoji_name', category:'food', img:'Kiwi/Kiwi_normal_1.png', q:'これは なに？', answer:2, choices:['なし','レモン','キウイ','メロン'] },
-    { level:3, type:'emoji_name', category:'food', img:'Corn/Corn_normal_1.png', q:'これは なに？', answer:0, choices:['とうもろこし','たけのこ','にんじん','だいこん'] },
-    { level:3, type:'emoji_name', category:'food', img:'Edamame/Edamame_normal_1.png', q:'これは なに？', answer:1, choices:['きゅうり','えだまめ','レタス','アスパラ'] }
-  ],
-
-  // ── のりもの ──────────────────────────────────────
-  vehicle: [
-    { level:1, type:'emoji_name', category:'vehicle', img:'Car/Car_normal_1.png', q:'これは なに？', answer:1, choices:['バス','くるま','じてんしゃ','でんしゃ'] },
-    { level:1, type:'emoji_name', category:'vehicle', img:'Train/Train_normal_1.png', q:'これは なに？', answer:0, choices:['でんしゃ','バス','くるま','ふね'] },
-    { level:1, type:'emoji_name', category:'vehicle', img:'Airplane/Airplane_normal_1.png', q:'これは なに？', answer:2, choices:['ロケット','ヘリコプター','ひこうき','バルーン'] },
-    { level:1, type:'emoji_name', category:'vehicle', img:'Bicycle/Bicycle_normal_1.png', q:'これは なに？', answer:1, choices:['オートバイ','じてんしゃ','キックボード','スクーター'] },
-    { level:1, type:'emoji_name', category:'vehicle', img:'Taxi/Taxi_normal_1.png', q:'これは なに？', answer:0, choices:['タクシー','パトカー','バス','でんしゃ'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Bus/Bus_normal_1.png', q:'これは なに？', answer:1, choices:['タクシー','バス','でんしゃ','トラクター'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Fire_engine/Fire_engine_normal_1.png', q:'これは なに？', answer:0, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','トラック'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Cruise_ship/Cruise_ship_normal_1.png', q:'これは なに？', answer:2, choices:['ボート','ヨット','きゃくせん','カヌー'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Rocket/Rocket_normal_1.png', q:'これは なに？', answer:0, choices:['ロケット','ひこうき','UFO','たこあげ'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Ambulance/Ambulance_normal_1.png', q:'これは なに？', answer:2, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','トラック'] },
-    { level:2, type:'emoji_name', category:'vehicle', img:'Police_car/Police_car_normal_1.png', q:'これは なに？', answer:1, choices:['しょうぼうしゃ','パトカー','きゅうきゅうしゃ','バス'] },
-    { level:3, type:'emoji_name', category:'vehicle', img:'Helicopter/Helicopter_normal_1.png', q:'これは なに？', answer:0, choices:['ヘリコプター','ひこうき','ロケット','グライダー'] },
-    { level:3, type:'emoji_name', category:'vehicle', img:'Tractor/Tractor_normal_1.png', q:'これは なに？', answer:1, choices:['くるま','トラクター','トラック','バス'] },
-    { level:3, type:'emoji_name', category:'vehicle', img:'Sailboat/Sailboat_normal_1.png', q:'これは なに？', answer:2, choices:['ふね','ボート','ヨット','カヌー'] },
-    { level:3, type:'emoji_name', category:'vehicle', img:'Ufo/Ufo_normal_1.png', q:'これは なに？', answer:0, choices:['UFO','ロケット','ひこうき','ヘリコプター'] },
-    { level:3, type:'emoji_name', category:'vehicle', img:'Excavator/Excavator_normal_1.png', q:'これは なに？', answer:0, choices:['ショベルカー','トラクター','ブルドーザー','クレーン'] }
-  ],
+  // ── たべもの / のりもの は「ことばあわせ」へ移管済み (2026-04-28) ──
 
   // ── てんき ────────────────────────────────────────
   weather: [
@@ -275,153 +237,8 @@ const QUIZLAND_QUESTIONS = {
     { level:3, type:'opposite', category:'opposite', word:'おしえる', q:'「おしえる」の はんたいは？', answer:2, choices:['はなす','きく','ならう','よむ'] }
   ],
 
-  // ── どうぶつ ──────────────────────────────────────
-  animal: [
-    // Level 1
-    { level:1, type:'emoji_name', category:'animal', img:'Dog/Dog_normal_1.png', q:'これは なに？', answer:0, choices:['いぬ','ねこ','うさぎ','くま'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Cat/Cat_normal_1.png', q:'これは なに？', answer:1, choices:['いぬ','ねこ','うさぎ','くま'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Elephant/Elephant_normal_1.png', q:'これは なに？', answer:2, choices:['きりん','ライオン','ぞう','パンダ'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Panda/Panda_normal_1.png', q:'これは なに？', answer:0, choices:['パンダ','くま','ねこ','たぬき'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Rabbit/Rabbit_normal_1.png', q:'これは なに？', answer:2, choices:['いぬ','ねこ','うさぎ','くま'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Hamster/Hamster_normal_1.png', q:'これは なに？', answer:2, choices:['ねこ','リス','ハムスター','うさぎ'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Bear/Bear_normal_1.png', q:'これは なに？', answer:1, choices:['パンダ','くま','たぬき','いのしし'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Cow/Cow_normal_1.png', q:'これは なに？', answer:1, choices:['うま','うし','ひつじ','ぶた'] },
-
-    // Level 2
-    { level:2, type:'emoji_name', category:'animal', img:'Lion/Lion_normal_1.png', q:'これは なに？', answer:1, choices:['とら','ライオン','ひょう','チーター'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Giraffe/Giraffe_normal_1.png', q:'これは なに？', answer:2, choices:['うま','シマウマ','きりん','らくだ'] },
-    { level:1, type:'emoji_name', category:'animal', img:'Frog/Frog_normal_1.png', q:'これは なに？', answer:0, choices:['かえる','トカゲ','かめ','ヘビ'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Tiger/Tiger_normal_1.png', q:'これは なに？', answer:3, choices:['ライオン','チーター','ひょう','とら'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Wolf/Wolf_normal_1.png', q:'これは なに？', answer:2, choices:['ライオン','キツネ','おおかみ','タヌキ'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Fox/Fox_normal_1.png', q:'これは なに？', answer:1, choices:['いぬ','キツネ','タヌキ','おおかみ'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Zebra/Zebra_normal_1.png', q:'これは なに？', answer:1, choices:['ロバ','シマウマ','らくだ','きりん'] },
-    { level:2, type:'emoji_name', category:'animal', img:'Rhino/Rhino_normal_1.png', q:'これは なに？', answer:2, choices:['ゾウ','カバ','サイ','スイギュウ'] },
-
-    // Level 3: 珍しい動物の画像問題
-    { level:3, type:'emoji_name', category:'animal', img:'Platypus/Platypus_normal_1.png', q:'これは なに？', answer:2, choices:['ビーバー','ラッコ','カモノハシ','アザラシ'] },
-    { level:3, type:'emoji_name', category:'animal', img:'Sloth/Sloth_normal_1.png', q:'これは なに？', answer:1, choices:['コアラ','ナマケモノ','サル','タヌキ'] },
-    { level:3, type:'emoji_name', category:'animal', img:'Gorilla/Gorilla_normal_1.png', q:'これは なに？', answer:0, choices:['ゴリラ','チンパンジー','オランウータン','くま'] },
-    { level:3, type:'emoji_name', category:'animal', img:'Kangaroo/Kangaroo_normal_1.png', q:'これは なに？', answer:3, choices:['ウサギ','シカ','キツネ','カンガルー'] },
-    { level:3, type:'emoji_name', category:'animal', img:'Raccoon/Raccoon_normal_1.png', q:'これは なに？', answer:1, choices:['タヌキ','アライグマ','キツネ','ハクビシン'] },
-    { level:3, type:'emoji_name', category:'animal', img:'Bat/Bat_normal_1.png', q:'これは なに？', answer:2, choices:['フクロウ','スズメ','コウモリ','カラス'] },
-    { level:3, type:'emoji_name', category:'animal', img:'Horse/Horse_normal_1.png', q:'これは なに？', answer:0, choices:['ウマ','ロバ','シマウマ','らくだ'] },
-
-    // Level 3: 豆知識型
-    { level:3, type:'trivia', category:'animal',
-      q:'たまごを うむ ほにゅうるいは？',
-      hint:'オーストラリアに すむ ふしぎな どうぶつ！',
-      answer:1, choices:['コウモリ','カモノハシ','アルマジロ','センザンコウ'] ,
-      detail:'カモノハシは オーストラリアだけに いる ふしぎな どうぶつだよ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'コウモリは くらい ばしょで どうやって とぶ？',
-      hint:'こえを だして かえってくる おとで しょうがいを さける！',
-      answer:2, choices:['においで わかる','めで みえる','こえを つかう','かぜで わかる'] ,
-      detail:'これを「ちょうおんぱ」と いうよ。こえの はんきょうで まわりが わかるんだ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'カンガルーの あかちゃんは どこで そだつ？',
-      answer:0, choices:['おかあさんの おなかの ふくろ','きの うろ','じめんの あな','おかあさんの せなか'] ,
-      detail:'うまれたばかりは 2センチくらい。ふくろで おおきく なるよ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'ナマケモノは 1日に なんじかん くらい ねる？',
-      hint:'とても よく ねる どうぶつ！',
-      answer:2, choices:['8じかん','12じかん','20じかんくらい','2じかん'] ,
-      detail:'1日 20じかん ねて、きの うえで のんびり くらすよ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'ゾウの はなは なんのため？',
-      answer:1, choices:['においを かぐだけ','みずを のんだり ものを つかんだり','なかまを よぶ','はしりやすくする'] ,
-      detail:'はなで みずを すったり、ものを つかんだりできる べんりな ぶぶんだよ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'ライオンで かりを するのは？',
-      answer:1, choices:['オスの ライオン','メスの ライオン','こどもの ライオン','りょうほう'] ,
-      detail:'オスは たてがみが あって かりには むいていないんだ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'ゴリラの いちばん ちかい なかまは？',
-      hint:'ゴリラの DNAは にんげんと 98% おなじ！',
-      answer:2, choices:['いぬ','ねこ','にんげん','くま'] ,
-      detail:'ゴリラの DNAは にんげんと やく 98% おなじだよ！'},
-    { level:3, type:'trivia', category:'animal',
-      q:'キリンの したは なにいろ？',
-      hint:'くろっぽい むらさき いろ！',
-      answer:2, choices:['あかい','ピンク','むらさき','みどり'] ,
-      detail:'むらさきいろの したで きの はを まきとって たべるよ！'}
-  ],
-
-  // ── むし ──────────────────────────────────────────
-  insect: [
-    // Level 1
-    { level:1, type:'emoji_name', category:'insect', img:'Butterfly/Butterfly_normal_1.png', q:'これは なに？', answer:0, choices:['ちょうちょ','トンボ','はち','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Ladybird/Ladybird_normal_1.png', q:'これは なに？', answer:2, choices:['はち','あり','てんとうむし','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Garden_snail/Garden_snail_normal_1.png', q:'これは なに？', answer:0, choices:['かたつむり','ナメクジ','ダンゴムシ','あり'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Caterpillar/Caterpillar_normal_1.png', q:'これは なに？', answer:1, choices:['てんとうむし','いもむし','はち','あり'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Ant/Ant_normal_1.png', q:'これは なに？', answer:1, choices:['はち','あり','ちょうちょ','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Mosquito/Mosquito_normal_1.png', q:'これは なに？', answer:2, choices:['はち','てんとうむし','か','あり'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Bee/Bee_normal_1.png', q:'これは なに？', answer:0, choices:['はち','あり','ちょうちょ','かぶとむし'] },
-    { level:1, type:'emoji_name', category:'insect', img:'Cricket/Cricket_normal_1.png', q:'これは なに？', answer:1, choices:['バッタ','コオロギ','セミ','カマキリ'] },
-
-    // Level 2
-    { level:2, type:'emoji_name', category:'insect', img:'Bee/Bee_normal_1.png', q:'これは なに？', answer:1, choices:['あり','はち','ちょうちょ','かぶとむし'] },
-    { level:2, type:'emoji_name', category:'insect', img:'Rhinoceros_beetle/Rhinoceros_beetle_normal_1.png', q:'これは なに？', answer:0, choices:['かぶとむし','クワガタ','ダンゴムシ','あり'] },
-    { level:2, type:'emoji_name', category:'insect', img:'Ant/Ant_normal_1.png', q:'これは なに？', answer:3, choices:['はち','ちょうちょ','セミ','あり'] },
-    { level:2, type:'emoji_name', category:'insect', img:'Cricket/Cricket_normal_1.png', q:'これは なに？', answer:0, choices:['コオロギ','バッタ','セミ','カマキリ'] },
-    { level:2, type:'emoji_name', category:'insect', img:'Arachnid/Arachnid_normal_1.png', q:'これは なに？', answer:1, choices:['あり','クモ','ハチ','てんとうむし'] },
-    { level:2, type:'trivia', category:'insect',
-      q:'セミが なくのは オス？ メス？',
-      answer:0, choices:['オス','メス','りょうほう','なかない'] ,
-      detail:'メスを よぶために おなかを ふるわせて おおきな こえを だすよ！'},
-    { level:2, type:'trivia', category:'insect',
-      q:'ちょうちょに なるまえの すがたは？',
-      answer:1, choices:['さなぎだけ','たまご → いもむし → さなぎ → ちょうちょ','いきなり ちょうちょ','うまれた ときから ちょうちょ'] ,
-      detail:'4つの すがたに かわることを「かんぜんへんたい」と いうよ！'},
-    { level:2, type:'trivia', category:'insect',
-      q:'カブトムシの ツノが あるのは？',
-      answer:0, choices:['オスだけ','メスだけ','りょうほう','どちらにも ない'] ,
-      detail:'オスは ツノで たたかって メスに アピールするよ！'},
-
-    // Level 3: 珍しい虫の画像問題
-    { level:3, type:'emoji_name', category:'insect', img:'Lightning_bug/Lightning_bug_normal_1.png', q:'これは なに？', answer:1, choices:['テントウムシ','ホタル','ハエ','カナブン'] },
-    { level:3, type:'emoji_name', category:'insect', img:'Praying_mantis/Praying_mantis_normal_1.png', q:'これは なに？', answer:0, choices:['カマキリ','バッタ','コオロギ','キリギリス'] },
-    { level:3, type:'emoji_name', category:'insect', img:'Dragonfly/Dragonfly_normal_1.png', q:'これは なに？', answer:2, choices:['チョウ','ハチ','トンボ','セミ'] },
-    { level:3, type:'emoji_name', category:'insect', img:'Cicada/Cicada_normal_1.png', q:'これは なに？', answer:3, choices:['カブトムシ','ハチ','カナブン','セミ'] },
-    { level:3, type:'emoji_name', category:'insect', img:'Cabbage_white/Cabbage_white_normal_1.png', q:'これは なに？', answer:1, choices:['アゲハチョウ','モンシロチョウ','ガ','トンボ'] },
-
-    // Level 3: 豆知識型
-    { level:3, type:'trivia', category:'insect',
-      q:'セミは じめんの なかで どのくらい すごす？',
-      hint:'おとなに なるまで とても ながい！',
-      answer:1, choices:['1ねん','すうねん（7ねんくらい）','1かげつ','3かげつ'] ,
-      detail:'じめんの なかで きの しるを すって ゆっくり おおきく なるよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'カマキリは なにを たべる？',
-      answer:0, choices:['ほかの むし','はっぱ','みつ','きのみ'] ,
-      detail:'じぶんより おおきな むしも つかまえて たべることがあるよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'トンボの めは どのくらい みえる？',
-      hint:'ほぼ まるごと まわりが みえちゃう！',
-      answer:2, choices:['まえだけ みえる','うしろだけ みえる','ぐるっと まわり ぜんぶ みえる','まえと うしろだけ'] ,
-      detail:'たくさんの ちいさな めが あつまった「ふくがん」なんだよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'ホタルは なぜ ひかる？',
-      hint:'からだの なかで かがくはんのうが おきる！',
-      answer:0, choices:['からだの なかの かがくはんのうで ひかる','でんちを もっている','おひさまの あかりを ためる','まほうで ひかる'] ,
-      detail:'おしりの「はっこうき」で なかまを さがすために ひかるよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'ちょうちょの くちは どんなかたち？',
-      answer:0, choices:['ストローのように まるまっている','きばが ある','とがっている','くちが ない'] ,
-      detail:'ストローのような くちで はなの みつを すうよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'アリの むれには なにが いる？',
-      answer:0, choices:['じょおうアリが いて たまごを うむ','みんな おなじ アリ','リーダーが いない','おとなの アリだけ'] ,
-      detail:'じょおうアリは いちにちに なんびゃくも たまごを うむよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'モンシロチョウの たまごは どこに うむ？',
-      answer:0, choices:['キャベツなどの はっぱの うら','じめんの なか','はなの なか','みずの なか'] ,
-      detail:'うまれた いもむしが すぐ はっぱを たべられるようにだよ！'},
-    { level:3, type:'trivia', category:'insect',
-      q:'クモは むしの なかま？',
-      hint:'あしの かずを かぞえてみよう！むしは 6ぽん、クモは…？',
-      answer:1, choices:['むしの なかま','ちがう！クモは クモのなかま（くもがた）','さかなの なかま','は虫類の なかま'] ,
-      detail:'むしは あしが 6ぽん、クモは 8ぽん。なかまが ちがうよ！'}
-  ],
+  // ── どうぶつ・むし は「ことばあわせ」へ移管済み (絵+名前マッチ) (2026-04-28) ──
+  // ※ トリビアは下記 trivia / weather / body カテゴリで継続提供。
 
   // ── トリビア（ふつう/むずかしい） ────────────────
   trivia: [
@@ -586,10 +403,6 @@ const QUIZLAND_CATEGORIES = {
   order_color: { label: 'いろのじゅんばん', emoji: '🎨' },
   count_total:  { label: 'かずをかぞえよう', emoji: '🔢' },
   shape_name:   { label: 'かたち',           emoji: '⬛' },
-  food:         { label: 'たべもの',         emoji: '🍎' },
-  vehicle:      { label: 'のりもの',         emoji: '🚗' },
-  animal:       { label: 'どうぶつ',         emoji: '🐘' },
-  insect:       { label: 'むし',             emoji: '🦋' },
   trivia:       { label: 'びっくり豆知識',   emoji: '💡' },
   weather:      { label: 'てんき',           emoji: '☀️' },
   opposite:     { label: 'はんたいことば',   emoji: '🔄' },

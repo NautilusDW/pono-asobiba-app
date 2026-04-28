@@ -817,7 +817,7 @@ body {
   <header class="header">
     <h1>ことばあわせ</h1>
   </header>
-  <div class="diff-title">あそびかたを えらんでね！</div>
+  <div class="diff-title">📖 もりの ずかんづくり<br><span style="font-size:0.8rem;font-weight:700;color:#A89880;">えと ことばを あわせて、ずかんを ふやそう！</span></div>
   <div class="diff-cards">
     <div class="diff-card" id="diff-easy">
       <div class="diff-card-header">
@@ -939,6 +939,31 @@ const STAGES = [
     { img: W+'jitensha.png', word: 'じてんしゃ' },
     { img: W+'helicopter.png', word: 'ヘリコプター' },
   ]},
+  // ── 2026-04-28 追加: クイズランドから移管したジャンル (画像は assets/images/ocean/ を流用) ──
+  { name: 'どうぶつ3', pairs: [
+    { img: '../assets/images/ocean/Zebra/Zebra_normal_1.png',       word: 'しまうま' },
+    { img: '../assets/images/ocean/Rhino/Rhino_normal_1.png',       word: 'さい' },
+    { img: '../assets/images/ocean/Gorilla/Gorilla_normal_1.png',   word: 'ゴリラ' },
+    { img: '../assets/images/ocean/Kangaroo/Kangaroo_normal_1.png', word: 'カンガルー' },
+  ]},
+  { name: 'はたらくくるま', pairs: [
+    { img: '../assets/images/ocean/Fire_engine/Fire_engine_normal_1.png', word: 'しょうぼうしゃ' },
+    { img: '../assets/images/ocean/Ambulance/Ambulance_normal_1.png',     word: 'きゅうきゅうしゃ' },
+    { img: '../assets/images/ocean/Police_car/Police_car_normal_1.png',   word: 'パトカー' },
+    { img: '../assets/images/ocean/Rocket/Rocket_normal_1.png',           word: 'ロケット' },
+  ]},
+  { name: 'くだもの2', pairs: [
+    { img: '../assets/images/ocean/Cherry/Cherry_normal_1.png',         word: 'さくらんぼ' },
+    { img: '../assets/images/ocean/Grapes/Grapes_normal_1.png',         word: 'ぶどう' },
+    { img: '../assets/images/ocean/Watermelon/Watermelon_normal_1.png', word: 'すいか' },
+    { img: '../assets/images/ocean/Lemon/Lemon_normal_1.png',           word: 'レモン' },
+  ]},
+  { name: 'むし', pairs: [
+    { img: '../assets/images/ocean/Butterfly/Butterfly_normal_1.png', word: 'ちょうちょ' },
+    { img: '../assets/images/ocean/Ladybird/Ladybird_normal_1.png',   word: 'てんとうむし' },
+    { img: '../assets/images/ocean/Ant/Ant_normal_1.png',             word: 'あり' },
+    { img: '../assets/images/ocean/Bee/Bee_normal_1.png',             word: 'はち' },
+  ]},
 ];
 
 // ===== Crossword puzzles =====
@@ -999,7 +1024,9 @@ function markCleared(diff, stageIdx) {
   if (!arr.includes(stageIdx)) { arr.push(stageIdx); localStorage.setItem(getProgressKey(diff), JSON.stringify(arr)); }
 }
 function getTotalStages(diff) {
-  return diff === 'easy' ? 7 : 8;
+  // STAGES 配列の長さに応じて: easy はマッチのみなので全ステージ使える、
+  // normal は CROSSWORDS が 3 問×8 ステージぶんしかないので 8 で上限。
+  return diff === 'easy' ? STAGES.length : 8;
 }
 function getFirstUncleared(diff) {
   const cleared = getCleared(diff);
@@ -1504,18 +1531,21 @@ function showStageComplete() {
   emojiEl.innerHTML = '';
   btn2El.classList.add('hidden');
 
+  // ジャンル名を取得 (ずかんページ名として使う)
+  const genreName = STAGES[currentStageIdx] ? STAGES[currentStageIdx].name : '';
+
   if (currentRoundInSet < ROUNDS_PER_SET) {
     // ラウンド 1 or 2 完了 → 軽め/中くらいの褒めて、次のジャンルへ自動遷移
     if (currentRoundInSet === 1) {
-      // 1 ラウンド目クリア (軽め)
-      emojiEl.textContent = '🎉';
+      // 1 ラウンド目クリア (軽め) — ずかんに 1 ページ目ができた
+      emojiEl.textContent = '📖';
       titleEl.textContent = 'やったね！';
-      msgEl.textContent = 'いっこめ できたよ！';
+      msgEl.textContent = 'ずかんに「' + genreName + '」の ページが できたよ！';
     } else {
-      // 2 ラウンド目クリア (もう少し強め)
-      emojiEl.textContent = '🌟';
+      // 2 ラウンド目クリア (もう少し強め) — もう 2 ページ
+      emojiEl.textContent = '📖';
       titleEl.textContent = 'すごい！';
-      msgEl.textContent = 'もう にこめ！あと ひとつ！';
+      msgEl.textContent = '「' + genreName + '」も できた！もう 2ぺーじ！';
     }
     btnEl.textContent = 'つぎへ →';
     btnEl.onclick = () => {
@@ -1526,7 +1556,7 @@ function showStageComplete() {
     // 3 ラウンド目クリア = 1 セット完了 → 大盛り上がり + もういちど/やめる
     emojiEl.textContent = '🌟';
     titleEl.textContent = 'さいこう！';
-    msgEl.textContent = '3つ ぜんぶ できたね！すごいすごい！';
+    msgEl.textContent = '3ぺーじ ぜんぶ できたね！もりの ずかんが ふえたよ！';
     btnEl.textContent = 'もういちど！';
     btnEl.onclick = () => {
       document.getElementById('success-modal').classList.add('hidden');
