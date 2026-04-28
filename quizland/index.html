@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>クイズランド | ポノのあそびば</title>
+<title>フクロウ博士のなぞなぞ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
@@ -607,14 +607,22 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 
 <!-- ===== Start Screen ===== -->
 <div class="start-screen" id="start-screen">
-  <div class="start-title">🧠 クイズランド 🧠</div>
-  <div class="start-subtitle">ポノと いっしょに<br>もんだいを といてみよう！</div>
+  <div class="start-title">🦉 フクロウ博士のなぞなぞ 🦉</div>
+  <div class="start-subtitle">フクロウ博士が だす<br>もんだいを といてみよう！</div>
+  <div class="mode-row" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;margin:8px auto 0;">
+    <button class="mode-btn selected" data-mode="inspire" style="padding:14px 20px;border:3px solid #FBBF24;border-radius:18px;background:#FFF8E7;font-family:inherit;font-weight:900;color:#5D4E37;font-size:1rem;cursor:pointer;text-align:left;line-height:1.4;">
+      🎯 ひらめき<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">かず・かたち・はんたいことば</span>
+    </button>
+    <button class="mode-btn" data-mode="know" style="padding:14px 20px;border:3px solid #C8C0B8;border-radius:18px;background:#fff;font-family:inherit;font-weight:900;color:#5D4E37;font-size:1rem;cursor:pointer;text-align:left;line-height:1.4;">
+      💡 ものしり<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">てんき・からだ・なんでも</span>
+    </button>
+  </div>
   <button class="start-btn" id="start-btn">はじめる ▶</button>
 </div>
 
 <!-- ===== Category Screen ===== -->
 <div class="category-screen hidden" id="category-screen">
-  <div class="cat-title">🎯 カテゴリーえらびます</div>
+  <div class="cat-title">🎯 しゅるいを えらんでね！</div>
   <div class="cat-subtitle">すきなものを えらんでね！</div>
   <button class="cat-all-btn" id="cat-all-btn">ぜんぶえらぶ / ぜんぶはずす</button>
   <div class="cat-grid" id="cat-grid"></div>
@@ -634,7 +642,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   <div class="pono-avatar" id="pono-avatar">
     <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
   </div>
-  <h1>クイズランド</h1>
+  <h1>フクロウ博士のなぞなぞ</h1>
 </div>
 
 <div class="hud">
@@ -1473,7 +1481,9 @@ function buildCategoryScreen() {
   grid.innerHTML = '';
   const minLv = DIFF_MIN_LEVEL[selectedDifficulty];
   const maxLv = DIFF_MAX_LEVEL[selectedDifficulty];
-  ALL_CATS.forEach(cat => {
+  // モードに該当するカテゴリだけ表示する。
+  const allowedCats = MODE_TO_CATEGORIES[selectedMode] || ALL_CATS;
+  allowedCats.forEach(cat => {
     const meta = QUIZLAND_CATEGORIES[cat];
     const pool = (QUIZLAND_QUESTIONS[cat] || []).filter(q => q.level >= minLv && q.level <= maxLv);
     const available = pool.length > 0;
@@ -1503,10 +1513,38 @@ function updateCatStartBtn() {
   document.getElementById('cat-start-btn').disabled = !anySelected;
 }
 
-// Start button → show category screen
+// ── ひらめき / ものしり モード選択 ─────────────────
+let selectedMode = 'inspire'; // 'inspire' | 'know'
+
+// inspire = 直感的にすぐわかる: 色順・数・形・反対語
+// know    = 知識・理由を考える: トリビア・天気の仕組み・体の機能
+const MODE_TO_CATEGORIES = {
+  inspire: ['order_color', 'count_total', 'shape_name', 'opposite'],
+  know:    ['trivia', 'weather', 'body']
+};
+
+document.querySelectorAll('.mode-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    selectedMode = btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.classList.remove('selected');
+      b.style.background = '#fff';
+      b.style.borderColor = '#C8C0B8';
+    });
+    btn.classList.add('selected');
+    btn.style.background = '#FFF8E7';
+    btn.style.borderColor = '#FBBF24';
+  });
+});
+
+// Start button → show category screen (filtered by selectedMode)
 document.getElementById('start-btn').addEventListener('click', function() {
   ensureAudio();
   startBGM();
+  // モードに応じて、出題対象カテゴリだけ「選択中」にしておく。
+  ALL_CATS.forEach(function(c) {
+    selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
+  });
   document.getElementById('start-screen').classList.add('hidden');
   buildCategoryScreen();
   document.getElementById('category-screen').classList.remove('hidden');
@@ -1514,7 +1552,7 @@ document.getElementById('start-btn').addEventListener('click', function() {
   if (typeof initMenu === 'function') {
     initMenu({
       bgmToggle: function() { toggleBGM(); },
-      tutorial: function() { alert('すきなカテゴリーをえらんで クイズにこたえよう！'); }
+      tutorial: function() { alert('すきなカテゴリーをえらんで なぞなぞに こたえよう！'); }
     });
   }
 });
@@ -1529,10 +1567,11 @@ document.querySelectorAll('.diff-btn').forEach(function(btn) {
   });
 });
 
-// All toggle button
+// All toggle button (現在のモードのカテゴリだけ対象)
 document.getElementById('cat-all-btn').addEventListener('click', function() {
-  const allOn = ALL_CATS.every(c => selectedCategories[c]);
-  ALL_CATS.forEach(c => { selectedCategories[c] = !allOn; });
+  const cats = MODE_TO_CATEGORIES[selectedMode] || ALL_CATS;
+  const allOn = cats.every(c => selectedCategories[c]);
+  cats.forEach(c => { selectedCategories[c] = !allOn; });
   buildCategoryScreen();
 });
 
@@ -1542,11 +1581,11 @@ document.getElementById('cat-start-btn').addEventListener('click', function() {
   initGame();
 });
 
-// HUD back button → タイトル（カテゴリー選択）へ
+// HUD back button → スタート画面（モード選択）へ
 document.getElementById('hud-back-btn').addEventListener('click', function() {
   document.getElementById('result-overlay').classList.add('hidden');
-  buildCategoryScreen();
-  document.getElementById('category-screen').classList.remove('hidden');
+  document.getElementById('category-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
 });
 
 // Result retry button (same categories)

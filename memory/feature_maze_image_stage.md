@@ -156,36 +156,37 @@ PONO_SKIP_IMG_OPT=1 python scripts/auto_optimize_image.py --hook  # 即時 exit
 
 ---
 
-## ステージ動物マッピング (Phase A, 2026-04-27)
+## ステージ背景 + 動物マッピング (確定版, 2026-04-28)
 
-ユーザー指定:
-| Slot | 動物 | label | 既存アセット |
+ユーザー確定の 8 ステージ構成:
+
+| Slot | 背景名 | 動物 (id / label) | 背景の特徴 |
 |---|---|---|---|
-| 1 | 猫 (neko) | ねこちゃん | [assets/images/word/neko.png](../assets/images/word/neko.png) |
-| 2 | 犬 (inu) | わんちゃん | [assets/images/word/inu.png](../assets/images/word/inu.png) |
-| 3 | リス (risu) | りすちゃん | [assets/images/word/risu.png](../assets/images/word/risu.png) |
-| 4 | シカ (shika) | しかさん | [assets/images/word/shika.png](../assets/images/word/shika.png) |
-| 5 | フクロウ (fukurou) | ふくろうさん | [assets/images/word/fukuro.png](../assets/images/word/fukuro.png) |
-| 6 | アライグマ (raccoon) | あらいぐまさん | [assets/images/characters/racoon/](../assets/images/characters/racoon/) |
-| 7 | アヒル (ahiru) | あひるさん | (未作成 — `assets/images/word/ahiru.png` 候補。`fukuro.png` 等から派生 or AI 生成) |
-| 8 | ハリネズミ (hedgehog) | ハリネズミくん | [assets/images/characters/headgehog/headgehog_crying.png](../assets/images/characters/headgehog/) (泣) / `_smilewavinghands.png` (救) |
+| 1 | 森の入り口 | リス (risu / りすちゃん) | やさしい森の入り口。明るく安心感のある森。木・低木・クローバー・小さな花が少し |
+| 2 | 花のこみち | ネコ (neko / ねこちゃん) | 森の中の花の小道。ピンク・黄色・白・ラベンダー系の小花が多い、やさしい花道 |
+| 3 | しずくの池 | 子ジカ (kojika / こじかちゃん) | 森の中の小さな池・水辺。しずく、浅い池、水草、葦、リリーパッド、青緑の水辺 |
+| 4 | きのこの小道 | ウサギ (usagi / うさぎちゃん) | きのこが生えたやさしい森の小道。丸いきのこ、シダ、苔っぽい草、少し不思議だけど怖くない |
+| 5 | こもれびの森 | レッサーパンダ (lesser_panda / レッサーパンダちゃん) | 少し深い森。木が多く、葉の間からやわらかい光が差すこもれびの森 |
+| 6 | つる草の小径 | イヌ (inu / わんちゃん) | つる草や葉っぱが多い森の小道。巻きつくつる、葉っぱ、緑の密度が少し増える |
+| 7 | ほたるの湿り道 | アヒル (ahiru / あひるさん) | 夜の湿った森の道。浅い水辺、ぬれた草、水草、葦、ほたるの小さな光。ランタンの光が映える |
+| 8 | ひかりの広場へ | ハリネズミ (hedgehog / ハリネズミくん) | 最終ステージ。夜の森の奥、ランタンの光があたたかく広がる広場。少し特別で感動的 |
 
-**順序の意図**: 1=猫 (一番なじみある) → 8=ハリネズミ (HUD タイトルに既出 + 救出表情も完備) で大トリ。最後から 2 番目はユーザー指定でアヒル。
+**変更点 (2026-04-28)**: 旧マッピング (1=猫, 2=犬, 3=リス, ...) からユーザー指定の上記順序に切り替え。
+- 物語の進行: 明るい森 (slot 1-4) → 少し深い森 (5-6) → 夜のランタン本領発揮 (7-8) と段階的に夜・ランタンの存在感を増していく
+- 動物選定: なじみのある動物から特殊な動物 → 最後はハリネズミ (HUD タイトルに既出 + 表情完備で大トリ)
 
-### Slot 1 (森の入口) — Stage 1
-[maze/imageStages/森の入口.json](../maze/imageStages/森の入口.json) に `story` フィールド追加済 (animal=neko)
+### Slot 1 (森の入口) — Stage 1 完了 (2026-04-28)
+[maze/imageStages/森の入口.json](../maze/imageStages/森の入口.json) の story を リス に更新:
+- `animal: "risu"`, `animalLabel: "りすちゃん"`
+- `cryingIconUrl: "imageStages/risu_crying.png"` (566×574 RGBA, 555KB) — ゴール位置に表示
+- `reliefIconUrl: "imageStages/risu_relief.png"` (1200×1078 RGBA, 2.6MB) — ゴール踏破時の救出シーン
+- 元素材: `D:\ポノのおへや\Maze\New\animals\night\迷子の動物素材\` の リス_001.png + リス・ゴール.png
+- 未使用ファイル: リス_002.png / _003.png (将来のアニメーション対応で使う可能性)
 
-### Slots 2-4 (現在 placeholder JSON 編集済み)
-Stage 2-4 は placeholder JSON ファイルが既存だったため story を追記:
-- ____2_____ (花の小道) → 犬
-- ____3_____ (しずく池) → リス
-- ____4_______ (キノコの小道) → シカ
-
-### Slots 5-8 (まだステージ JSON 未作成)
-ユーザーがエディタで作成する際に story フィールドを忘れずに入れる方針。エディタ側に `story.animal` 入力フィールドを将来追加すると便利。
-
-### 暫定の泣き顔 / 救出後絵
-ハリネズミ以外の動物は表情バリエが未作成のため、暫定で `assets/images/word/<id>.png` を crying / relief 両方に使用 (実物なので「泣いてる」感は弱いが、ストーリー文で補完)。本格作成は AI 生成 or イラスト後追い。ハリネズミ は専用フォルダに 8 表情あり。
+### Slots 2-8 (画像未着手)
+- placeholder JSON は slot 2-4 に存在するが、story 動物が古いマッピング (犬/リス/シカ) のまま残っている → 新マッピングに**書き換え必要** (画像と一緒に対応)
+- slot 5-8 は JSON 未作成、エディタで新規作成する際に story フィールドに上記マッピングを入れる
+- 動物画像は順次 `D:\ポノのおへや\Maze\New\animals\night\迷子の動物素材\` 系の素材として届く想定 → `maze/imageStages/<animal_id>_crying.png` + `_relief.png` で配置
 
 ---
 
