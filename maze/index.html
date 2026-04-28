@@ -489,11 +489,34 @@ body.image-stage-mode .game-wrap {
   50%      { transform: translateY(-12px); }
 }
 .rescue-scene #rescueText {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 900;
   color: #8a5a20;
-  margin-top: 16px;
+  margin-top: 12px;
   text-shadow: 0 2px 4px rgba(255,255,255,0.6);
+}
+.rescue-scene .rescue-speech {
+  display: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-top: 10px;
+  padding: 10px 18px;
+  border-radius: 18px;
+  max-width: min(80vw, 520px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+  white-space: pre-line;
+}
+.rescue-scene .rescue-speech.show { display: block; }
+.rescue-scene .rescue-speech-animal {
+  background: #FFF8F0;
+  color: #8a5a20;
+  border: 2px solid #d8b87a;
+}
+.rescue-scene .rescue-speech-pono {
+  background: #fff3d6;
+  color: #6b3a18;
+  border: 2px solid #f0a040;
 }
 
 /* ── Encounter modal (creature mini-game) ── */
@@ -604,14 +627,11 @@ body.image-stage-mode .game-wrap {
     <div class="ov-card">
       <div class="ov-icon">
         <img src="../assets/images/characters/pono/dance/dance_hooray.png" alt="ポノ">
-        <!-- 迷子で困っている場面なので worried 表情を使う (2026-04-21) -->
-        <img src="../assets/images/characters/headgehog/headgehog_worried.png" alt="ハリネズミ">
+        <img id="ov-animal-img" src="" alt="" style="display:none;">
       </div>
-      <div class="ov-title" id="ov-title">ハリネズミくんを たすけよう</div>
-      <div class="ov-msg" id="ov-msg">もりの おくで ハリネズミくんが
-まいごに なっちゃった！
-やじるしを タップして すすもう！</div>
-      <button class="ov-btn" id="ov-btn">スタート ▶</button>
+      <div class="ov-title" id="ov-title">ステージ クリア！</div>
+      <div class="ov-msg" id="ov-msg">やったね！</div>
+      <button class="ov-btn" id="ov-btn">つぎへ ▶</button>
     </div>
   </div>
 
@@ -638,6 +658,8 @@ body.image-stage-mode .game-wrap {
   <div class="rescue-scene" id="rescueScene" aria-hidden="true">
     <img id="rescueImg" alt="">
     <p id="rescueText"></p>
+    <p id="rescueAnimalSpeech" class="rescue-speech rescue-speech-animal"></p>
+    <p id="rescuePonoSpeech" class="rescue-speech rescue-speech-pono"></p>
   </div>
 
   <!-- Encounter modal (creature + minigame) — image-stage only -->
@@ -1358,15 +1380,44 @@ function imgShowRescueScene(stage, onDone) {
   const sceneEl = document.getElementById('rescueScene');
   const imgEl = document.getElementById('rescueImg');
   const txtEl = document.getElementById('rescueText');
+  const animalSpeechEl = document.getElementById('rescueAnimalSpeech');
+  const ponoSpeechEl   = document.getElementById('rescuePonoSpeech');
   if (!sceneEl || !imgEl || !txtEl) { if (onDone) onDone(); return; }
-  // 既存の rescue がまだ進行中なら、それをキャンセルしてから再スタート
   if (_rescueTimer != null) { clearTimeout(_rescueTimer); _rescueTimer = null; }
   _rescueDone = false;
   imgEl.src = stage.story.reliefIconUrl || stage.story.cryingIconUrl || '';
   const label = stage.story.animalLabel || '';
   txtEl.textContent = label ? (label + 'を たすけたよ！') : 'たすけたよ！';
+  // セリフ要素を一旦リセット (前ステージのテキスト残留対策)
+  if (animalSpeechEl) {
+    animalSpeechEl.textContent = '';
+    animalSpeechEl.classList.remove('show');
+  }
+  if (ponoSpeechEl) {
+    ponoSpeechEl.textContent = '';
+    ponoSpeechEl.classList.remove('show');
+  }
   sceneEl.classList.add('show');
   sceneEl.setAttribute('aria-hidden', 'false');
+  // 1) 動物の独白 (rescueStory) を 0.8s 後に表示
+  const rescueStory = stage.story.rescueStory;
+  const ponoComment = stage.story.ponoComment;
+  let totalMs = 2400; // セリフがない場合の基本時間
+  if (rescueStory && animalSpeechEl) {
+    setTimeout(function() {
+      animalSpeechEl.textContent = rescueStory;
+      animalSpeechEl.classList.add('show');
+    }, 800);
+    totalMs = 4500;
+  }
+  // 2) ポノの一言 (ponoComment) を 2.6s 後に追加表示
+  if (ponoComment && ponoSpeechEl) {
+    setTimeout(function() {
+      ponoSpeechEl.textContent = 'ポノ:「' + ponoComment + '」';
+      ponoSpeechEl.classList.add('show');
+    }, 2600);
+    totalMs = 5500;
+  }
   _rescueTimer = setTimeout(function() {
     _rescueTimer = null;
     sceneEl.classList.remove('show');
@@ -1375,7 +1426,7 @@ function imgShowRescueScene(stage, onDone) {
       _rescueDone = true;
       onDone();
     }
-  }, 2400);
+  }, totalMs);
 }
 
 function imgComputeLayout(w, h) {
@@ -2898,11 +2949,29 @@ function showStageClearOverlay() {
     ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
     ovBtn.textContent = 'つぎへ ▶';
     ovBtn.onclick = function() { hideOverlay(); loadStage(stageIdx + 1); };
+    _setOverlayAnimalIcon(stage && stage.story);
     showOverlay();
   }
 }
 
+// overlay の動物アイコンを stage.story に応じて切替 (古いハリネズミ固定を排除)。
+function _setOverlayAnimalIcon(story) {
+  const img = document.getElementById('ov-animal-img');
+  if (!img) return;
+  const url = story && (story.reliefIconUrl || story.cryingIconUrl);
+  if (url) {
+    img.src = url;
+    img.alt = (story && story.animalLabel) || '';
+    img.style.display = '';
+  } else {
+    img.removeAttribute('src');
+    img.alt = '';
+    img.style.display = 'none';
+  }
+}
+
 function _showMazeFinalOverlay() {
+  _setOverlayAnimalIcon(stage && stage.story);
   ovTitle.textContent = 'ぜんぶ クリア！';
   ovMsg.textContent = 'まいごの どうぶつたちを\nぜんぶ たすけたよ！\nすごいね ポノ！' + _dailyAcornTail('maze');
   ovBtn.textContent = 'もういちど あそぶ';
