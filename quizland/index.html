@@ -447,63 +447,57 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 }
 
 /* ===== Start screen ===== */
+/* ===== Title (Start) Screen =====
+   BG (1600×679 = 21:9) を <img object-fit:contain> で完全表示 (横切れ防止)。
+   端末アスペクト比が画像と違う時は背景緑色 (画像の葉色に近い) で帯を埋める。 */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
-  background: #F2E8D6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+  background: #C4D9A2; /* 画像エッジ (森の葉色) に合わせたグリーン */
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 .start-screen.hidden { display: none; }
-/* タイトル画像のラッパー: 画像のアスペクト比 (799:456) を保ちながら contain 表示。 */
-.start-bg-wrap {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: url('../assets/images/quizland/title_back.jpg') center / contain no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.start-bg-overlay {
-  position: relative;
-  aspect-ratio: 799/456;
-  width: 100%;
-  max-height: 100%;
-  pointer-events: none;
-}
-/* ロゴ: 左上、1.3x スケール (旧 width:44% → 57%) */
-.start-logo {
-  position: absolute;
-  top: 4%;
-  left: 3%;
-  width: 57%;
-  max-height: 42%;
+.start-screen .title-bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
   object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+}
+.start-screen .start-content {
+  position: absolute; inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5% 4%;
+}
+.start-logo {
+  width: min(95%, 1000px);
+  max-height: 50vh;
+  object-fit: contain;
+  margin-top: 1%;
   pointer-events: none;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
 }
-/* 「タップしてスタート」CTA: ドットフォントでロゴの下に配置 */
 .start-tap-cta {
-  position: absolute;
-  top: 50%;
-  left: 3%;
-  width: 57%;
-  text-align: center;
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(0.95rem, 3.2vw, 1.5rem);
-  font-weight: 400;
+  font-size: clamp(1rem, 3.6vw, 1.6rem);
   color: #5D3A00;
-  text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.15);
+  text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.2);
   letter-spacing: 0.06em;
+  background: rgba(255, 248, 224, 0.78);
+  padding: 8px 22px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
   animation: startTapPulse 1.4s ease-in-out infinite;
   pointer-events: none;
+  margin-bottom: 2%;
 }
 @keyframes startTapPulse {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
+  0%, 100% { opacity: 0.92; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.06); }
 }
 
@@ -704,11 +698,10 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 
 <!-- ===== Start Screen (タイトル画像 + タップしてスタート) ===== -->
 <div class="start-screen" id="start-screen" role="button" aria-label="タップしてスタート">
-  <div class="start-bg-wrap">
-    <div class="start-bg-overlay">
-      <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウ博士のなぞなぞ">
-      <div class="start-tap-cta">▶ タップしてスタート</div>
-    </div>
+  <img class="title-bg" src="../assets/images/quizland/title_back.jpg" alt="">
+  <div class="start-content">
+    <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウはかせのなぞなぞ">
+    <div class="start-tap-cta">▶ タップしてスタート</div>
   </div>
 </div>
 
