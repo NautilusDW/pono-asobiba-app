@@ -2768,8 +2768,8 @@ function _snapToBlockCenter(px, py) {
 // points are the centers of direction-change tiles along the BFS shortest path.
 // Returns null if no path exists between the two anchors' nearest path tiles.
 function _routeEdgePolyline(ax, ay, bx, by) {
-  const ta = nearestPathTile({ x: ax, y: ay }, 1);
-  const tb = nearestPathTile({ x: bx, y: by }, 1);
+  const ta = nearestPathTile({ x: ax, y: ay }, 3);
+  const tb = nearestPathTile({ x: bx, y: by }, 3);
   if (!ta || !tb) return null;
   if (ta.x === tb.x && ta.y === tb.y) return [{ x: ax, y: ay }, { x: bx, y: by }];
   const tilePath = bfsShortest(ta, tb);
@@ -2809,7 +2809,11 @@ function _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter) {
       const bx = (cellRowX[b[0]] + cellCenter) * CELL;
       const by = (cellRowY[b[1]] + cellCenter) * CELL;
       const routed = _routeEdgePolyline(ax, ay, bx, by);
-      edges.push({ polyline: routed || [{ x: ax, y: ay }, { x: bx, y: by }] });
+      if (routed) {
+        edges.push({ polyline: routed });
+      } else {
+        edges.push({ polyline: [{ x: ax, y: ay }, { x: bx, y: by }], broken: true });
+      }
     }
   }
   return edges;
