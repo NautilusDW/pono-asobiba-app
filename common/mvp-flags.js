@@ -3,19 +3,20 @@
 
    目的:
      2026-04-27 ユーザー指示。MVP は無料ゲームのみで先行リリース。
-     報酬制度を一旦封印し、スタンプ収集だけが見える状態にする。
+     報酬制度を封印し、進捗系も完全に no-op にしてフレッシュスタートを
+     担保する (2026-04-28 追加方針)。
 
    PONO_MVP_NO_REWARDS = true のとき:
-     - どんぐり (acorn) と ありがとう (thankyou) のバッジ・カウンタを全 UI から隠す
-     - 各無料ゲームの「クリア時 どんぐり表示」を非表示
-     - 宝箱 (treasure.js) の演出をスキップ
-     - ホーム画面の「はじめての クリア！」祝賀ポップアップをスキップ
-     - どんぐりショップへの導線を遮断 (バッジ非表示で達成)
+     - どんぐり (acorn) / ありがとう (thankyou) / 宝箱 / 祝賀モーダル を全部抑止
+     - スタンプ・実績・ログインシール・どんぐり加算を全部 no-op
+     - 進捗系 LS (pono_stats / pono_stamp_log / pono_acorns / pono_thankyou /
+       pono_stickers / pono_login_days 等) には書き込まない
+     - スタンプラリー / スタンプカード / ボトムナビの 📋 スタンプ・🏠 おうち
+       ボタンを CSS で非表示
 
-     ※スタンプ自体は引き続き収集 (achievements.js は無変更)。
-     ※どんぐり/ありがとうの内部加算は触らない (再公開時に値が引き継げる)。
-
-   再公開する時はこのファイルの true を false に切り替えるだけで戻る。
+   ※ ゲームクリア時の confetti / モーダル / ポノの褒めは累積じゃないので維持。
+   ※ 再公開する時は PONO_MVP_NO_REWARDS = false に戻すだけで全機能が復活。
+       LS は空のままなので、全ユーザーが「最初の 1 個目」をフレッシュに体験できる。
    ============================================================ */
 (function() {
   'use strict';
@@ -41,7 +42,15 @@
       '#modalDailyAcorn,',
       '.acorn-popup,',
       '.acorn-chip,',
-      '.acorn-shop-hint',
+      '.acorn-shop-hint,',
+      /* 進捗系セクションの非表示 */
+      '.stamp-rally-section,',
+      '.stamp-card-section,',
+      '#stampRallySection,',
+      '#stampCardSection,',
+      /* ボトムナビの 📋 スタンプ / 🏠 おうち ボタン */
+      '.bottom-nav .bn-item[data-action="stamp"],',
+      '.bottom-nav .bn-item[data-action="room"]',
       '{ display: none !important; }'
     ].join('\n');
     var s = document.createElement('style');

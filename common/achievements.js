@@ -98,6 +98,8 @@
 
   // ═══ 統計インクリメント（グローバル）══════════════════════════════
   window.incrementStat = function (key, amount) {
+    // MVP: 進捗系 LS への書き込みを完全停止 (フレッシュスタート方針)。
+    if (window.PONO_MVP_NO_REWARDS) return 0;
     var stats = _getJSON(LS_STATS, {});
     stats[key] = (stats[key] || 0) + (amount || 1);
     _setJSON(LS_STATS, stats);
@@ -108,6 +110,7 @@
 
   // 統計を直接セット（最大値の記録などに使用）
   window.setStatMax = function (key, value) {
+    if (window.PONO_MVP_NO_REWARDS) return 0;
     var stats = _getJSON(LS_STATS, {});
     if (value > (stats[key] || 0)) {
       stats[key] = value;
@@ -168,6 +171,7 @@
   }
 
   window.checkAchievements = function () {
+    if (window.PONO_MVP_NO_REWARDS) return;
     var stats = _getJSON(LS_STATS, {});
     _checkAchievements(stats);
   };
@@ -193,6 +197,8 @@
 
   // 外部からの報酬付与用（スタンプラリーなど）
   window.grantReward = function (reward) {
+    // MVP: 報酬付与も完全停止。LS の sea/furn/wall/floor リストにも書き込まない。
+    if (window.PONO_MVP_NO_REWARDS) return;
     _grantReward(reward);
   };
 

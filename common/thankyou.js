@@ -16,6 +16,8 @@
   }
 
   function add(n, opts) {
+    // MVP: ありがとうカウンタを LS に書き込まない。
+    if (window.PONO_MVP_NO_REWARDS) return 0;
     var delta = n | 0;
     if (delta === 0) return get();
     var before = get();

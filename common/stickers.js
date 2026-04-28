@@ -92,6 +92,9 @@
 
   // ═══ デイリーログインチェック ══════════════════════════════════════
   window.checkDailyLogin = function () {
+    // MVP: ログインボーナス・シール抽選・マイルストーン処理を全部スキップ。
+    // pono_login_days / pono_stickers / pono_login_streak 等の LS は触らない。
+    if (window.PONO_MVP_NO_REWARDS) return null;
     var today = new Date().toDateString();
     var lastLogin = localStorage.getItem(LS_LOGIN_LAST);
 

@@ -2685,6 +2685,9 @@
       }
 
       function checkDailyCompletion() {
+        // MVP: スタンプラリーの完了判定もスキップ。pono_daily_rally / pono_stamp_log /
+        // pono_stamp_pending にも書き込まない。section 自体も CSS で非表示。
+        if (window.PONO_MVP_NO_REWARDS) return null;
         var rally = getDailyRally();
         var today = new Date().toDateString();
         var played = [];
@@ -3446,6 +3449,9 @@
       // ── 4. Init & Event Wiring ──
 
       window._initStampRally = function() {
+        // MVP: スタンプ系処理を全部スキップ。addStampToday / renderDailyRally /
+        // renderStampCard / 演出も呼ばない。
+        if (window.PONO_MVP_NO_REWARDS) return;
         // pono_stamp_before: 前回セッション終了時のtotal（未設定なら0＝初回）
         var _beforeGame = parseInt(localStorage.getItem('pono_stamp_before') || '0');
 

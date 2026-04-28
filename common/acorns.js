@@ -19,6 +19,8 @@
   }
 
   function add(n, opts) {
+    // MVP: どんぐりを LS に書き込まない。get() は 0 のまま。
+    if (window.PONO_MVP_NO_REWARDS) return 0;
     var delta = n | 0;
     if (delta === 0) return get();
     var before = get();
@@ -92,6 +94,9 @@
   //   ゲーム別 cap と 1 日トータル上限の両方を満たす分だけ付与。
   //   戻り値: 実際に付与した個数 (0 なら どちらかの cap 到達)
   function addDaily(gameId, n, cap, opts) {
+    // MVP: 日次キャップ判定もスキップ、加算もしない。各ゲームの clear モーダルは
+    // 戻り値 0 を受けて「+0」表示になるが、その表示自体は CSS で隠してある。
+    if (window.PONO_MVP_NO_REWARDS) return 0;
     var wanted = n | 0;
     var gameLimit = (cap | 0) > 0 ? (cap | 0) : 5;
     if (wanted <= 0) return 0;
