@@ -236,6 +236,7 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="goal" style="background:#7d2e2e; color:#fcc;">🟥 ゴール</button>
       <button class="btn" data-mode="creature" style="background:#5a3a7a; color:#e6c8ff;">🐛 おじゃま虫</button>
       <button class="btn" data-mode="waypoint" style="background:#1e5a3e; color:#caf3d8;">📍 中継地点</button>
+      <button class="btn" data-mode="obstacle" style="background:#5a3e1f; color:#e6cca8;">🪨 障害物</button>
     </div>
 
     <h3>ブラシサイズ</h3>
@@ -261,6 +262,7 @@ input[type="file"]::file-selector-button {
       <div class="stats-line"><span>行き止まり</span><span id="statDeadEnds">0</span></div>
       <div class="stats-line"><span>おじゃま虫</span><span id="statCreatures">0</span></div>
       <div class="stats-line"><span>中継地点</span><span id="statWaypoints">0</span></div>
+      <div class="stats-line"><span>障害物</span><span id="statObstacles">0</span></div>
     </div>
 
     <h3>🎲 ランダム生成</h3>
@@ -388,6 +390,7 @@ const COLOR_WP_BRANCH  = '#F2C94C'; // 中継ノード: 分岐 (黄)
 const COLOR_WP_DEADEND = '#56CCF2'; // 中継ノード: 行き止まり (水色)
 const COLOR_WP_MANUAL  = '#27AE60'; // 中継ノード: 手動配置 (緑)
 const COLOR_EDGE       = 'rgba(80, 80, 80, 0.5)'; // ノード間のエッジ (薄グレー、画面上のみ)
+const COLOR_OBSTACLE   = '#8B5A2B';               // 障害物 (茶色、岩・木・切り株のメタ表示)
 
 const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 
@@ -402,6 +405,8 @@ const state = {
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
   edges: [],              // [{ polyline: [{x,y},{x,y},...] }] ノード間の道筋 (PIXEL coords)
                           // ラフ→エディタ統合 Phase 2: maze runtime に渡すグラフ情報の出口
+  obstacles: [],          // [{ x, y, kind:'rock'|'tree'|'stump'|'hole' }] 障害物 (PIXEL coords)
+                          // Phase 3: maze runtime の obstacles[] に対応
   panels: 1,              // 1 (1920×1080) or 2 (3840×1080, side-by-side stage)
   cellStride: 2,          // last-generated cellStride — 2 (1-tile path), 3 (2-tile path)
                           // determines marker radius (smaller for 1-tile paths so they
@@ -473,6 +478,7 @@ const statBranches = document.getElementById('statBranches');
 const statDeadEnds = document.getElementById('statDeadEnds');
 const statCreatures = document.getElementById('statCreatures');
 const statWaypoints = document.getElementById('statWaypoints');
+const statObstacles = document.getElementById('statObstacles');
 
 // ────────────────────────────────────────────────────────
 // Canvas sizing + zoom (50% .. 200%)
@@ -780,6 +786,10 @@ function _waypointRadius(stride) {
   const s = stride != null ? stride : state.cellStride;
   return CELL * (s >= 3 ? 0.5 : 0.3);
 }
+function _obstacleRadius(stride) {
+  const s = stride != null ? stride : state.cellStride;
+  return CELL * (s >= 3 ? 0.55 : 0.4);
+}
 
 // ────────────────────────────────────────────────────────
 // Drawing
@@ -840,6 +850,10 @@ function draw() {
   for (let i = 0; i < state.edges.length; i++) {
     drawEdge(state.edges[i]);
   }
+  // Obstacles (障害物) — waypoint より下、edges より上
+  for (let i = 0; i < state.obstacles.length; i++) {
+    drawObstacleMarker(state.obstacles[i]);
+  }
   // Waypoints (中継ノード) — drawn under creatures so creatures sit on top
   for (let i = 0; i < state.waypoints.length; i++) {
     drawWaypointMarker(state.waypoints[i]);
@@ -872,6 +886,23 @@ function _waypointColor(kind) {
   if (kind === 'branch')  return COLOR_WP_BRANCH;
   if (kind === 'deadend') return COLOR_WP_DEADEND;
   return COLOR_WP_MANUAL;
+}
+
+function drawObstacleMarker(pos) {
+  const cx = pos.x, cy = pos.y;
+  const r = _obstacleRadius();
+  const kind = pos.kind || 'rock';
+  ctx.save();
+  ctx.fillStyle = COLOR_OBSTACLE;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  // 簡易 icon — 全 kind 茶色丸 + kind 別の中身マーク
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = (r * 1.2) + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const sym = kind === 'tree' ? '🌳' : kind === 'stump' ? '🪵' : kind === 'hole' ? '⚫' : '🪨';
+  ctx.fillText(sym, cx, cy);
+  ctx.restore();
 }
 
 function drawWaypointMarker(pos) {
@@ -929,6 +960,7 @@ function drawBrushPreview() {
   else if (state.mode === 'goal')  { stroke = '#7d2e2e'; fill = 'rgba(215, 78, 78, 0.35)'; }
   else if (state.mode === 'creature') { stroke = '#5a3a7a'; fill = 'rgba(168, 85, 230, 0.30)'; }
   else if (state.mode === 'waypoint') { stroke = '#1e5a3e'; fill = 'rgba(39, 174, 96, 0.30)'; }
+  else if (state.mode === 'obstacle') { stroke = '#5a3e1f'; fill = 'rgba(139, 90, 43, 0.30)'; }
   ctx.fillStyle = fill;
   ctx.fillRect(px, py, pw, ph);
   ctx.strokeStyle = stroke;
@@ -1019,14 +1051,24 @@ function _markerInEraseRect(marker, x0, y0, x1, y1) {
 // first because they are smaller and can sit inside the start/goal area.
 function _markerHitAt(px, py) {
   // Smallest markers first (creatures and waypoints can sit inside start/goal area).
-  const rCre = _creatureRadius();
+  // Hit radius is at least 0.5 タイル so narrow-mode dots (visual radius 0.3-0.4)
+  // are still easy to click — visual size unchanged, click area enlarged.
+  const HIT_MIN = CELL * 0.5;
+  const rCre = Math.max(_creatureRadius(), HIT_MIN);
   const rCre2 = rCre * rCre;
   for (let i = 0; i < state.creatures.length; i++) {
     const c = state.creatures[i];
     const dx = px - c.x, dy = py - c.y;
     if (dx*dx + dy*dy < rCre2) return { type: 'creature', index: i };
   }
-  const rWp = _waypointRadius();
+  const rOb = Math.max(_obstacleRadius(), HIT_MIN);
+  const rOb2 = rOb * rOb;
+  for (let i = 0; i < state.obstacles.length; i++) {
+    const o = state.obstacles[i];
+    const dx = px - o.x, dy = py - o.y;
+    if (dx*dx + dy*dy < rOb2) return { type: 'obstacle', index: i };
+  }
+  const rWp = Math.max(_waypointRadius(), HIT_MIN);
   const rWp2 = rWp * rWp;
   for (let i = 0; i < state.waypoints.length; i++) {
     const w = state.waypoints[i];
@@ -1078,6 +1120,12 @@ cv.addEventListener('pointerdown', function(e) {
       afterEdit();
       return;
     }
+    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'obstacle') {
+      pushHistory();
+      state.obstacles.splice(hit.index, 1);
+      afterEdit();
+      return;
+    }
     pushHistory();
     state.draggingMarker = hit;
     cv.setPointerCapture(e.pointerId);
@@ -1102,6 +1150,13 @@ cv.addEventListener('pointerdown', function(e) {
     // Same snap — manual waypoints sit nicely on the path centerline.
     const snap = _snapToBlockCenter(p.x, p.y);
     state.waypoints.push({ x: snap.x, y: snap.y, kind: 'manual' });
+    afterEdit();
+    return;
+  }
+  if (state.mode === 'obstacle') {
+    // 障害物配置 — snap to path block center
+    const snap = _snapToBlockCenter(p.x, p.y);
+    state.obstacles.push({ x: snap.x, y: snap.y, kind: 'rock' });
     afterEdit();
     return;
   }
@@ -1134,6 +1189,13 @@ cv.addEventListener('pointermove', function(e) {
       if (idx >= 0 && idx < state.waypoints.length) {
         const prev = state.waypoints[idx];
         state.waypoints[idx] = { x: p.x, y: p.y, kind: prev.kind || 'manual' };
+      }
+    }
+    else if (typeof state.draggingMarker === 'object' && state.draggingMarker.type === 'obstacle') {
+      const idx = state.draggingMarker.index;
+      if (idx >= 0 && idx < state.obstacles.length) {
+        const prev = state.obstacles[idx];
+        state.obstacles[idx] = { x: p.x, y: p.y, kind: prev.kind || 'rock' };
       }
     }
     draw();
@@ -1170,6 +1232,13 @@ cv.addEventListener('pointerup', function(e) {
           const w = state.waypoints[idx];
           const snap = _snapToBlockCenter(w.x, w.y);
           state.waypoints[idx] = { x: snap.x, y: snap.y, kind: w.kind || 'manual' };
+        }
+      } else if (state.draggingMarker.type === 'obstacle') {
+        const idx = state.draggingMarker.index;
+        if (idx >= 0 && idx < state.obstacles.length) {
+          const o = state.obstacles[idx];
+          const snap = _snapToBlockCenter(o.x, o.y);
+          state.obstacles[idx] = { x: snap.x, y: snap.y, kind: o.kind || 'rock' };
         }
       }
     }
@@ -1539,6 +1608,22 @@ function _loadEdges(arr) {
       poly.push({ x: x, y: y });
     }
     if (poly.length >= 2) out.push({ polyline: poly });
+  }
+  return out;
+}
+
+// Validate obstacles array — same shape as waypoints with a kind discriminator.
+function _loadObstacles(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  const validKinds = { rock: 1, tree: 1, stump: 1, hole: 1 };
+  for (let i = 0; i < arr.length; i++) {
+    const o = arr[i];
+    if (!o || !Number.isFinite(o.x) || !Number.isFinite(o.y)) continue;
+    const x = Math.max(0, Math.min(CANVAS_W, o.x));
+    const y = Math.max(0, Math.min(CANVAS_H, o.y));
+    const kind = (o.kind && validKinds[o.kind]) ? o.kind : 'rock';
+    out.push({ x: x, y: y, kind: kind });
   }
   return out;
 }
