@@ -464,50 +464,71 @@ body.image-stage-mode .game-wrap {
 /* ── 救出シーン (ゴール踏破時、動物が安心している絵 + キャプション) ── */
 .rescue-scene {
   position: fixed; inset: 0;
-  background: linear-gradient(180deg, rgba(255,243,200,0.95) 0%, rgba(255,225,180,0.95) 100%);
+  background: rgba(0, 0, 0, 0.55);
   display: none;
-  flex-direction: column;
   align-items: center; justify-content: center;
   z-index: 9050;
   padding: 20px;
-  text-align: center;
 }
-.rescue-scene.show { display: flex; animation: rescueFade 0.5s ease-out; }
+.rescue-scene.show { display: flex; animation: rescueFade 0.4s ease-out; }
 @keyframes rescueFade {
-  0%   { opacity: 0; transform: scale(0.92); }
-  100% { opacity: 1; transform: scale(1); }
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+.rescue-scene .rescue-card {
+  background: linear-gradient(180deg, #FFF8E5 0%, #FFE9C3 100%);
+  border-radius: 28px;
+  padding: 28px 36px 24px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  max-width: min(92vw, 720px);
+  max-height: 92vh;
+  overflow-y: auto;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  animation: rescueCardPop 0.5s ease-out;
+}
+@keyframes rescueCardPop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.rescue-scene #rescueTitle {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #c95a1a;
+  margin: 0 0 12px;
+  text-shadow: 0 2px 4px rgba(255,255,255,0.6);
 }
 .rescue-scene #rescueImg {
-  width: min(60vw, 360px);
-  height: min(60vw, 360px);
+  width: min(48vw, 280px);
+  height: min(48vw, 280px);
   object-fit: contain;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.25));
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
   animation: rescueBounce 1.6s ease-in-out infinite;
 }
 @keyframes rescueBounce {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-12px); }
+  50%      { transform: translateY(-10px); }
 }
 .rescue-scene #rescueText {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: #8a5a20;
-  margin-top: 12px;
+  margin-top: 10px;
   text-shadow: 0 2px 4px rgba(255,255,255,0.6);
 }
 .rescue-scene .rescue-speech {
-  display: none;
-  font-size: 1.1rem;
+  display: block;
+  font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.5;
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 10px 18px;
   border-radius: 18px;
   max-width: min(80vw, 520px);
   box-shadow: 0 3px 10px rgba(0,0,0,0.12);
   white-space: pre-line;
 }
-.rescue-scene .rescue-speech.show { display: block; }
+.rescue-scene .rescue-speech:empty { display: none; }
 .rescue-scene .rescue-speech-animal {
   background: #FFF8F0;
   color: #8a5a20;
@@ -518,6 +539,28 @@ body.image-stage-mode .game-wrap {
   color: #6b3a18;
   border: 2px solid #f0a040;
 }
+.rescue-scene .rescue-acorn {
+  font-size: 1rem;
+  color: #6b3a18;
+  margin-top: 12px;
+  font-weight: 700;
+  white-space: pre-line;
+}
+.rescue-scene .rescue-acorn:empty { display: none; }
+.rescue-scene .rescue-btn {
+  margin-top: 18px;
+  padding: 14px 36px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(180deg, #f0a040, #c95a1a);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.rescue-scene .rescue-btn:active { transform: scale(0.96); }
 
 /* ── Encounter modal (creature mini-game) ── */
 .encounter-modal {
@@ -656,10 +699,15 @@ body.image-stage-mode .game-wrap {
 
   <!-- 救出シーン (ゴール踏破時、動物の救出後の絵を全画面で見せる) -->
   <div class="rescue-scene" id="rescueScene" aria-hidden="true">
-    <img id="rescueImg" alt="">
-    <p id="rescueText"></p>
-    <p id="rescueAnimalSpeech" class="rescue-speech rescue-speech-animal"></p>
-    <p id="rescuePonoSpeech" class="rescue-speech rescue-speech-pono"></p>
+    <div class="rescue-card">
+      <h2 id="rescueTitle">ステージ クリア！</h2>
+      <img id="rescueImg" alt="">
+      <p id="rescueText"></p>
+      <p id="rescueAnimalSpeech" class="rescue-speech rescue-speech-animal"></p>
+      <p id="rescuePonoSpeech" class="rescue-speech rescue-speech-pono"></p>
+      <p id="rescueAcornText" class="rescue-acorn"></p>
+      <button class="rescue-btn" id="rescueBtn">つぎへ ▶</button>
+    </div>
   </div>
 
   <!-- Encounter modal (creature + minigame) — image-stage only -->
@@ -916,6 +964,24 @@ function stopBgm() { if (bgmEl) bgmEl.pause(); }
     document.removeEventListener(ev, _bgmUnlock);
   }, { passive: true });
 });
+// アプリが非アクティブ (タブ切替 / iPhone スクリーン OFF / 別アプリへ) になったら音声を即停止
+function _mzPauseAllAudio() {
+  stopBgm();
+  // WebAudio 効果音用 AudioContext も suspend してバックグラウンドで鳴らない様に
+  try { if (_mzAC && _mzAC.state === 'running') _mzAC.suspend(); } catch (_) {}
+}
+function _mzResumeAudioIfActive() {
+  if (bgmEnabled) tryPlayBgm();
+  try { if (_mzAC && _mzAC.state === 'suspended') _mzAC.resume(); } catch (_) {}
+}
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) _mzPauseAllAudio();
+  else _mzResumeAudioIfActive();
+});
+window.addEventListener('blur',    _mzPauseAllAudio);
+window.addEventListener('focus',   _mzResumeAudioIfActive);
+window.addEventListener('pagehide', _mzPauseAllAudio);  // iOS Safari 対策 (アプリスイッチ)
+window.addEventListener('pageshow', _mzResumeAudioIfActive);
 
 let _mzAC = null;
 function _mzGetAC() {
@@ -1371,62 +1437,45 @@ function imgMaybeShowStoryIntro(stage, idx) {
   });
 }
 
-// ゴール踏破時の救出シーン (動物が安心している絵 + キャプション)。
-// _rescueTimer / _rescueDone でガードし、二重呼び出し時の onDone 重複実行を防ぐ。
-let _rescueTimer = null;
-let _rescueDone = false;
+// ステージクリア時のモーダル: 救出シーン + クリア表示 + 「つぎへ▶」ボタンを 1 画面に統合。
+// セリフは即時表示。ユーザーがボタンを押すまで開いたまま。
 function imgShowRescueScene(stage, onDone) {
   if (!stage || !stage.story) { if (onDone) onDone(); return; }
   const sceneEl = document.getElementById('rescueScene');
   const imgEl = document.getElementById('rescueImg');
   const txtEl = document.getElementById('rescueText');
+  const titleEl = document.getElementById('rescueTitle');
   const animalSpeechEl = document.getElementById('rescueAnimalSpeech');
   const ponoSpeechEl   = document.getElementById('rescuePonoSpeech');
-  if (!sceneEl || !imgEl || !txtEl) { if (onDone) onDone(); return; }
-  if (_rescueTimer != null) { clearTimeout(_rescueTimer); _rescueTimer = null; }
-  _rescueDone = false;
+  const acornEl = document.getElementById('rescueAcornText');
+  const btnEl = document.getElementById('rescueBtn');
+  if (!sceneEl || !imgEl || !txtEl || !btnEl) { if (onDone) onDone(); return; }
+
   imgEl.src = stage.story.reliefIconUrl || stage.story.cryingIconUrl || '';
   const label = stage.story.animalLabel || '';
   txtEl.textContent = label ? (label + 'を たすけたよ！') : 'たすけたよ！';
-  // セリフ要素を一旦リセット (前ステージのテキスト残留対策)
-  if (animalSpeechEl) {
-    animalSpeechEl.textContent = '';
-    animalSpeechEl.classList.remove('show');
-  }
+  if (titleEl) titleEl.textContent = 'ステージ クリア！';
+  // セリフは最初から張り付き表示 (delay なし)
+  if (animalSpeechEl) animalSpeechEl.textContent = stage.story.rescueStory || '';
   if (ponoSpeechEl) {
-    ponoSpeechEl.textContent = '';
-    ponoSpeechEl.classList.remove('show');
+    const pc = stage.story.ponoComment;
+    ponoSpeechEl.textContent = pc ? ('ポノ:「' + pc + '」') : '';
   }
-  sceneEl.classList.add('show');
-  sceneEl.setAttribute('aria-hidden', 'false');
-  // 1) 動物の独白 (rescueStory) を 0.8s 後に表示
-  const rescueStory = stage.story.rescueStory;
-  const ponoComment = stage.story.ponoComment;
-  let totalMs = 2400; // セリフがない場合の基本時間
-  if (rescueStory && animalSpeechEl) {
-    setTimeout(function() {
-      animalSpeechEl.textContent = rescueStory;
-      animalSpeechEl.classList.add('show');
-    }, 800);
-    totalMs = 4500;
+  // 最終ステージ判定 + どんぐり / ボタン文言を切替
+  const isLast = stageIdx >= STAGES.length - 1;
+  if (acornEl) {
+    acornEl.textContent = isLast
+      ? ('やったね！\nまいごの どうぶつたちを ぜんぶ たすけたよ！' + _dailyAcornTail('maze'))
+      : ('やったね！つぎの もりへ いこう！' + _dailyAcornTail('maze'));
   }
-  // 2) ポノの一言 (ponoComment) を 2.6s 後に追加表示
-  if (ponoComment && ponoSpeechEl) {
-    setTimeout(function() {
-      ponoSpeechEl.textContent = 'ポノ:「' + ponoComment + '」';
-      ponoSpeechEl.classList.add('show');
-    }, 2600);
-    totalMs = 5500;
-  }
-  _rescueTimer = setTimeout(function() {
-    _rescueTimer = null;
+  btnEl.textContent = isLast ? 'もういちど あそぶ' : 'つぎへ ▶';
+  btnEl.onclick = function() {
     sceneEl.classList.remove('show');
     sceneEl.setAttribute('aria-hidden', 'true');
-    if (!_rescueDone && onDone) {
-      _rescueDone = true;
-      onDone();
-    }
-  }, totalMs);
+    if (onDone) onDone();
+  };
+  sceneEl.classList.add('show');
+  sceneEl.setAttribute('aria-hidden', 'false');
 }
 
 function imgComputeLayout(w, h) {
@@ -1722,11 +1771,13 @@ function imgDraw(now) {
 function imgDrawGoalIndicator(goal, w, h, cam, scale) {
   const sx = w / 2 + (goal.x - cam.x) * scale;
   const sy = h / 2 + (goal.y - cam.y) * scale;
-  const margin = 90;
-  if (sx >= margin && sx <= w - margin && sy >= margin && sy <= h - margin) {
+  // ゴールが viewport 内にあれば indicator は出さない (ユーザー要望: 見えてるのに出るのは混乱)
+  if (sx >= 0 && sx <= w && sy >= 0 && sy <= h) {
     stage._goalIndicator = null;
     return;
   }
+  // 画面端から margin だけ内側に置いて見切れないようにする (= clamp 用、判定とは別)
+  const margin = 60;
   const cx = w / 2, cy = h / 2;
   const dx = sx - cx, dy = sy - cy;
   const ratio = Math.max(
@@ -2919,9 +2970,28 @@ function onClear() {
   }, 200);
   setTimeout(function() {
     encounter.classList.remove('show');
-    // 動物の救出シーン (story 定義あり時) を挟んでから clear overlay へ
+    // story 定義ありなら統合モーダル (救出シーン + クリア + 次へ) で完結。
+    // story がないステージは従来通り別 overlay へフォールバック。
     if (stage && stage.story) {
-      imgShowRescueScene(stage, function() { showStageClearOverlay(); });
+      imgShowRescueScene(stage, function() {
+        // ボタンクリック後の進行: 最終ステージなら reward → 全クリ overlay、通常は次ステージへ
+        const isLast = stageIdx >= STAGES.length - 1;
+        const isImageStage = stage && stage.type === 'image';
+        const isOfficial   = stage && stage._official === true;
+        if (isLast) {
+          if (window.triggerFirstClearReward && (!isImageStage || isOfficial)) {
+            window.triggerFirstClearReward('maze', {
+              onClose: function() { _showMazeFinalOverlay(); }
+            }).then(function(shown) {
+              if (!shown) _showMazeFinalOverlay();
+            }).catch(function() { _showMazeFinalOverlay(); });
+          } else {
+            _showMazeFinalOverlay();
+          }
+        } else {
+          loadStage(stageIdx + 1);
+        }
+      });
     } else {
       showStageClearOverlay();
     }
