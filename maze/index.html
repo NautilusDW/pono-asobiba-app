@@ -426,6 +426,7 @@ body.image-stage-mode .game-wrap {
 }
 
 /* ── Story intro modal (ステージ開始時、動物の紹介) ── */
+/* 横画面前提: 左に絵 / 右にセリフ・ボタンの2カラム。常に1画面に収まる。 */
 .story-intro {
   position: fixed; inset: 0;
   background: rgba(20, 30, 15, 0.85);
@@ -433,45 +434,78 @@ body.image-stage-mode .game-wrap {
   align-items: center; justify-content: center;
   z-index: 9100;
   font-family: inherit;
-  padding: 20px;
+  padding: max(10px, env(safe-area-inset-top))
+           max(10px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom))
+           max(10px, env(safe-area-inset-left));
 }
 .story-intro.show { display: flex; }
 .story-intro .story-card {
   background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDE 100%);
   border: 4px solid #6C8E3F;
   border-radius: 24px;
-  padding: 24px 28px;
-  max-width: 560px;
-  width: 92%;
+  padding: 18px 22px;
+  width: min(94vw, 880px);
+  max-height: 92dvh;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(180px, 36%) 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "img text"
+    "img btn";
+  align-items: center;
+  gap: 14px 22px;
   animation: encPop 0.35s ease-out;
 }
 .story-intro #storyAnimalImg {
-  width: 160px; height: 160px;
+  grid-area: img;
+  width: 100%;
+  max-height: min(72dvh, 360px);
   object-fit: contain;
-  margin: 0 auto 12px;
-  display: block;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
   animation: encWiggle 1.6s ease-in-out infinite;
 }
 .story-intro #storyText {
-  font-size: 1.4rem;
-  line-height: 1.6;
+  grid-area: text;
+  font-size: clamp(1rem, 2.6vw, 1.35rem);
+  line-height: 1.55;
   color: #4a3a20;
-  margin: 12px 0 16px;
+  margin: 0;
   white-space: pre-line;
   font-weight: 700;
+  text-align: left;
+  overflow-y: auto;
+  max-height: 60dvh;
+}
+.story-intro #storyBtn {
+  grid-area: btn;
+  justify-self: end;
+}
+/* Portrait fallback: 縦並びだが 1 画面に収める */
+@media (orientation: portrait) {
+  .story-intro .story-card {
+    grid-template-columns: 1fr;
+    grid-template-areas: "img" "text" "btn";
+    text-align: center;
+  }
+  .story-intro #storyAnimalImg { max-height: 32dvh; }
+  .story-intro #storyText { text-align: center; max-height: 40dvh; }
+  .story-intro #storyBtn { justify-self: center; }
 }
 
 /* ── 救出シーン (ゴール踏破時、動物が安心している絵 + キャプション) ── */
+/* 横画面: 左に絵 / 右にタイトル+セリフ+ボタンの2カラム。スクロール不要設計。 */
 .rescue-scene {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.55);
   display: none;
   align-items: center; justify-content: center;
   z-index: 9050;
-  padding: 20px;
+  padding: max(10px, env(safe-area-inset-top))
+           max(10px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom))
+           max(10px, env(safe-area-inset-left));
 }
 .rescue-scene.show { display: flex; animation: rescueFade 0.4s ease-out; }
 @keyframes rescueFade {
@@ -480,14 +514,21 @@ body.image-stage-mode .game-wrap {
 }
 .rescue-scene .rescue-card {
   background: linear-gradient(180deg, #FFF8E5 0%, #FFE9C3 100%);
-  border-radius: 28px;
-  padding: 28px 36px 24px;
+  border-radius: 24px;
+  padding: 18px 24px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-  max-width: min(92vw, 720px);
-  max-height: 92vh;
-  overflow-y: auto;
-  text-align: center;
-  display: flex; flex-direction: column; align-items: center;
+  width: min(96vw, 980px);
+  max-height: 94dvh;
+  display: grid;
+  grid-template-columns: minmax(200px, 40%) 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "img title"
+    "img speech"
+    "img btn";
+  column-gap: 22px;
+  row-gap: 8px;
+  align-items: center;
   animation: rescueCardPop 0.5s ease-out;
 }
 @keyframes rescueCardPop {
@@ -495,40 +536,57 @@ body.image-stage-mode .game-wrap {
   100% { transform: scale(1);    opacity: 1; }
 }
 .rescue-scene #rescueTitle {
-  font-size: 2rem;
+  grid-area: title;
+  font-size: clamp(1.3rem, 3.4vw, 1.9rem);
   font-weight: 900;
   color: #c95a1a;
-  margin: 0 0 12px;
+  margin: 0;
   text-shadow: 0 2px 4px rgba(255,255,255,0.6);
+  text-align: left;
+  align-self: start;
 }
 .rescue-scene #rescueImg {
-  width: min(48vw, 280px);
-  height: min(48vw, 280px);
+  grid-area: img;
+  width: 100%;
+  height: auto;
+  max-height: min(82dvh, 420px);
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
   animation: rescueBounce 1.6s ease-in-out infinite;
 }
 @keyframes rescueBounce {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
+  50%      { transform: translateY(-6px); }
+}
+.rescue-scene .rescue-speech-group {
+  grid-area: speech;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  overflow-y: auto;
+  max-height: 60dvh;
+  padding: 2px;
 }
 .rescue-scene #rescueText {
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 2.4vw, 1.25rem);
   font-weight: 900;
   color: #8a5a20;
-  margin-top: 10px;
+  margin: 0;
   text-shadow: 0 2px 4px rgba(255,255,255,0.6);
+  text-align: left;
 }
+.rescue-scene #rescueText:empty { display: none; }
 .rescue-scene .rescue-speech {
   display: block;
-  font-size: 1.05rem;
+  font-size: clamp(0.85rem, 2vw, 1rem);
   font-weight: 700;
-  line-height: 1.5;
-  margin-top: 12px;
-  padding: 10px 18px;
-  border-radius: 18px;
-  max-width: min(80vw, 520px);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+  line-height: 1.45;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   white-space: pre-line;
 }
 .rescue-scene .rescue-speech:empty { display: none; }
@@ -543,17 +601,20 @@ body.image-stage-mode .game-wrap {
   border: 2px solid #f0a040;
 }
 .rescue-scene .rescue-acorn {
-  font-size: 1rem;
+  font-size: clamp(0.78rem, 1.8vw, 0.95rem);
   color: #6b3a18;
-  margin-top: 12px;
+  margin: 0;
   font-weight: 700;
   white-space: pre-line;
+  text-align: left;
 }
 .rescue-scene .rescue-acorn:empty { display: none; }
 .rescue-scene .rescue-btn {
-  margin-top: 18px;
-  padding: 14px 36px;
-  font-size: 1.2rem;
+  grid-area: btn;
+  justify-self: end;
+  margin: 4px 0 0;
+  padding: 12px 30px;
+  font-size: clamp(1rem, 2.4vw, 1.15rem);
   font-weight: 900;
   color: #fff;
   background: linear-gradient(180deg, #f0a040, #c95a1a);
@@ -564,8 +625,25 @@ body.image-stage-mode .game-wrap {
   transition: transform 0.1s;
 }
 .rescue-scene .rescue-btn:active { transform: scale(0.96); }
+/* Portrait fallback: 縦並びでも 1 画面に収める */
+@media (orientation: portrait) {
+  .rescue-scene .rescue-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas: "title" "img" "speech" "btn";
+    row-gap: 8px;
+  }
+  .rescue-scene #rescueTitle { text-align: center; }
+  .rescue-scene #rescueImg { max-height: 32dvh; }
+  .rescue-scene .rescue-speech-group { max-height: 35dvh; }
+  .rescue-scene #rescueText,
+  .rescue-scene .rescue-speech,
+  .rescue-scene .rescue-acorn { text-align: center; }
+  .rescue-scene .rescue-btn { justify-self: center; }
+}
 
 /* ── Encounter modal (creature mini-game) ── */
+/* 横画面: 左に creature/絵、右に問題文 + 選択肢の2カラム。常に1画面に収める。 */
 .encounter-modal {
   position: fixed; inset: 0;
   background: rgba(20, 30, 15, 0.78);
@@ -573,27 +651,44 @@ body.image-stage-mode .game-wrap {
   align-items: center; justify-content: center;
   z-index: 9000;
   font-family: inherit;
-  padding: 20px;
+  padding: max(10px, env(safe-area-inset-top))
+           max(10px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom))
+           max(10px, env(safe-area-inset-left));
 }
 .encounter-modal.show { display: flex; }
 .encounter-modal .enc-card {
   background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDE 100%);
   border: 4px solid #6C8E3F;
-  border-radius: 24px;
-  padding: 24px 28px;
-  max-width: 560px;
-  width: 92%;
+  border-radius: 22px;
+  padding: 14px 20px;
+  width: min(96vw, 920px);
+  max-height: 94dvh;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(180px, 36%) 1fr;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    "art   name"
+    "art   dialog"
+    "art   stage";
+  column-gap: 18px;
+  row-gap: 6px;
+  align-items: center;
+  text-align: left;
   animation: encPop 0.35s ease-out;
+  overflow: hidden;
 }
 @keyframes encPop {
   0%   { transform: scale(0.6); opacity: 0; }
   100% { transform: scale(1);   opacity: 1; }
 }
 .enc-creature {
-  font-size: 4.5rem;
-  line-height: 1; margin-bottom: 8px;
+  grid-area: art;
+  font-size: clamp(3.2rem, 14vw, 6rem);
+  line-height: 1;
+  margin: 0;
+  text-align: center;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   animation: encWiggle 1.2s ease-in-out infinite;
 }
@@ -601,12 +696,41 @@ body.image-stage-mode .game-wrap {
   0%, 100% { transform: rotate(-6deg); }
   50%      { transform: rotate(6deg); }
 }
-.enc-name { font-size: 1.15rem; font-weight: 900; color: #6C8E3F; margin-bottom: 8px; }
-.enc-dialog { font-size: 1rem; color: #5D4E37; margin-bottom: 18px; line-height: 1.6; }
-.enc-stage { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-.enc-stage .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.enc-name {
+  grid-area: name;
+  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  font-weight: 900;
+  color: #6C8E3F;
+  margin: 0;
+}
+.enc-dialog {
+  grid-area: dialog;
+  font-size: clamp(0.85rem, 2vw, 1.05rem);
+  color: #5D4E37;
+  margin: 0;
+  line-height: 1.5;
+  max-height: 22dvh;
+  overflow-y: auto;
+}
+.enc-stage {
+  grid-area: stage;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  justify-content: center;
+  min-width: 0;
+  max-height: 60dvh;
+  overflow-y: auto;
+}
+.enc-stage .row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
 .enc-btn {
-  padding: 12px 22px; font-family: inherit; font-size: 1.05rem; font-weight: 900;
+  padding: 10px 18px; font-family: inherit; font-size: clamp(0.9rem, 2.2vw, 1.05rem); font-weight: 900;
   border: 0; border-radius: 14px; cursor: pointer;
   background: #ddd; color: #333;
   box-shadow: 0 3px 8px rgba(0,0,0,0.2);
@@ -614,15 +738,45 @@ body.image-stage-mode .game-wrap {
 }
 .enc-btn:active { transform: scale(0.95); }
 .enc-btn.primary { background: linear-gradient(135deg, #6C8E3F, #A4C76D); color: #fff; }
-.enc-btn.choice { font-size: 2.2rem; padding: 14px 22px; min-width: 80px; background: #FFF; border: 3px solid #A4C76D; }
+.enc-btn.choice { font-size: clamp(1.6rem, 5vw, 2.2rem); padding: 12px 18px; min-width: 72px; background: #FFF; border: 3px solid #A4C76D; }
 .enc-btn.win    { background: linear-gradient(135deg, #F5A623, #FFCB5C); color: #fff; }
 .enc-btn.lose   { background: linear-gradient(135deg, #B05050, #C66767); color: #fff; }
 
-.enc-result { font-size: 2rem; font-weight: 900; margin: 8px 0; }
+/* Canvas や画像を含むクイズ要素は横画面でも 1 画面に収まるよう抑える */
+.enc-stage canvas,
+.enc-stage img {
+  max-width: 100%;
+  max-height: min(40dvh, 280px);
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+.enc-stage .peek-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.enc-result { font-size: clamp(1.4rem, 3.6vw, 1.9rem); font-weight: 900; margin: 4px 0; }
 .enc-result.win  { color: #6C8E3F; }
 .enc-result.lose { color: #B05050; }
-.enc-vs { font-size: 1.5rem; color: #888; margin: 6px 0; }
-.enc-hand { font-size: 3rem; line-height: 1; }
+.enc-vs { font-size: clamp(1.1rem, 2.6vw, 1.4rem); color: #888; margin: 4px 0; }
+.enc-hand { font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1; }
+
+/* Portrait fallback: 縦積みでも 1 画面に収める */
+@media (orientation: portrait) {
+  .encounter-modal .enc-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: "art" "name" "dialog" "stage";
+    text-align: center;
+  }
+  .enc-creature { font-size: clamp(2.6rem, 12vw, 4rem); }
+  .enc-stage canvas,
+  .enc-stage img { max-height: 28dvh; }
+  .enc-dialog { max-height: 14dvh; }
+  .enc-stage { max-height: 45dvh; }
+}
 
 /* ===== Title Screen (タップしてスタート) =====
    BG (1600×686 = 21:9) を cover で全画面、ロゴ (透過 PNG) を上部中央に絶対配置。
@@ -800,10 +954,12 @@ body.image-stage-mode .game-wrap {
     <div class="rescue-card">
       <h2 id="rescueTitle">ステージ クリア！</h2>
       <img id="rescueImg" alt="">
-      <p id="rescueText"></p>
-      <p id="rescueAnimalSpeech" class="rescue-speech rescue-speech-animal"></p>
-      <p id="rescuePonoSpeech" class="rescue-speech rescue-speech-pono"></p>
-      <p id="rescueAcornText" class="rescue-acorn"></p>
+      <div class="rescue-speech-group">
+        <p id="rescueText"></p>
+        <p id="rescueAnimalSpeech" class="rescue-speech rescue-speech-animal"></p>
+        <p id="rescuePonoSpeech" class="rescue-speech rescue-speech-pono"></p>
+        <p id="rescueAcornText" class="rescue-acorn"></p>
+      </div>
       <button class="rescue-btn" id="rescueBtn">つぎへ ▶</button>
     </div>
   </div>
