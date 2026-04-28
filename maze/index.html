@@ -7,6 +7,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -620,12 +621,60 @@ body.image-stage-mode .game-wrap {
 .enc-result.lose { color: #B05050; }
 .enc-vs { font-size: 1.5rem; color: #888; margin: 6px 0; }
 .enc-hand { font-size: 3rem; line-height: 1; }
+
+/* ===== Title Screen (タップしてスタート) =====
+   BG (1600×686 = 21:9) を cover で全画面、ロゴ (透過 PNG, 1200×514 横長) を上部中央に配置。
+   タップで非表示にしてゲーム本体 (#app) を見せる (ゲームは裏で既に loadStage 済み)。 */
+#title-screen {
+  position: fixed; inset: 0; z-index: 250;
+  background: #2A1A1F url('../assets/images/maze/title_back.jpg') center / cover no-repeat;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5% 4%;
+}
+#title-screen.hidden { display: none; }
+.title-logo {
+  width: min(60%, 540px);
+  max-height: 28vh;
+  object-fit: contain;
+  margin-top: 2%;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+}
+.title-tap-cta {
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1rem, 3.6vw, 1.6rem);
+  color: #FFE8B0;
+  text-shadow: 2px 2px 0 #3A2A1A, 4px 4px 0 rgba(0,0,0,0.4);
+  letter-spacing: 0.06em;
+  background: rgba(60, 40, 24, 0.78);
+  padding: 8px 22px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 18px rgba(255, 200, 80, 0.25);
+  animation: titleTapPulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+  margin-bottom: 2%;
+}
+@keyframes titleTapPulse {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.05); }
+}
 </style>
 </head>
 <body>
 
 <!-- BGM (loop) -->
 <audio id="bgm" loop preload="auto" src="../assets/audio/maze_bgm.mp3"></audio>
+
+<!-- ===== タイトル画面: 21:9 BG + ロゴ (上部中央) + タップしてスタート ===== -->
+<div id="title-screen" role="button" aria-label="タップしてスタート">
+  <img class="title-logo" src="../assets/images/maze/title_logo.png" alt="ポノとランタンのめいろ">
+  <div class="title-tap-cta">▶ タップしてスタート</div>
+</div>
 
 <div id="app">
   <div class="header">
@@ -3356,6 +3405,16 @@ _loadImageStageIndex()
   .then(function() { return _loadImageStageFromURL(); })
   .then(function() { loadStage(_getInitialStageIdx()); });
 requestAnimationFrame(draw);
+
+// タイトル画面タップ → ゲーム本体を表示 (ゲーム本体は裏で既に loadStage 済み)
+(function() {
+  var ts = document.getElementById('title-screen');
+  if (ts) {
+    ts.addEventListener('click', function() {
+      ts.classList.add('hidden');
+    });
+  }
+})();
 </script>
 </body>
 </html>
