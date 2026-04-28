@@ -32,6 +32,14 @@
   <link rel="preload" as="image" href="assets/images/quiz-sound/title_back.jpg">
   <link rel="preload" as="image" href="assets/images/wordmatch/title_back.jpg">
   <link rel="preload" as="image" href="assets/images/maze/title_back.jpg">
+  <!-- Preload card UI assets (wood panel + play button states) -->
+  <link rel="preload" as="image" href="assets/ui/menu_card_base_01.png">
+  <link rel="preload" as="image" href="assets/ui/menu_card_base_02.png">
+  <link rel="preload" as="image" href="assets/ui/menu_card_base_03.png">
+  <link rel="preload" as="image" href="assets/ui/menu_card_base_04.png">
+  <link rel="preload" as="image" href="assets/ui/play_button_normal.png">
+  <link rel="preload" as="image" href="assets/ui/play_button_selected.png">
+  <link rel="preload" as="image" href="assets/ui/play_button_pressed.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -209,7 +217,7 @@
     }
     .start-btn.is-pulse { animation: startBtnPulse 0.45s ease; }
 
-    /* ===== Card List ===== */
+    /* ===== Card List (wood-card layout) ===== */
     .card-list {
       flex: 1 1 50%;
       min-height: 0;
@@ -217,87 +225,164 @@
       -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding: 4px 4px 8px;
-      scrollbar-width: thin;
-    }
-    .game-card {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
       gap: 12px;
-      padding: 10px 14px 10px 10px;
-      background: rgba(255,248,225,0.94);
-      border: 3px solid transparent;
-      border-radius: 18px;
-      box-shadow: 0 3px 10px var(--shadow);
-      cursor: pointer;
-      text-align: left;
-      transition: transform 0.15s, box-shadow 0.15s, border-color 0.2s, background 0.2s;
-      font-family: inherit;
+      padding: 6px 6px 10px;
+      scrollbar-width: thin;
+      /* CSS variables: 画像比率に合わせて微調整可能 */
+      --gc-aspect: 5.5 / 1;
+      --gc-radius: 22px;
+      --gc-thumb-pct: 64%;     /* サムネ枠の高さ % (cardの高さ基準) */
+      --gc-play-pct: 56%;      /* 再生ボタンの高さ % */
+      --gc-thumb-left-pct: 4%;
+      --gc-play-right-pct: 4%;
+      --gc-text-left-pct: 26%;
+      --gc-text-right-pct: 22%;
+    }
+    .card-list::-webkit-scrollbar { width: 6px; }
+    .card-list::-webkit-scrollbar-thumb {
+      background: rgba(120, 80, 40, 0.35);
+      border-radius: 999px;
+    }
+
+    .game-card {
+      position: relative;
+      flex-shrink: 0;
       width: 100%;
-      color: var(--text);
+      aspect-ratio: var(--gc-aspect);
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+      transform-origin: center;
+      transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
     }
-    .game-card:active { transform: scale(0.98); }
+    .game-card:active { transform: scale(0.985); }
     .game-card.is-selected {
-      border-color: var(--primary);
-      background: #fff;
-      box-shadow: 0 6px 20px var(--shadow), 0 0 0 4px rgba(242,145,90,0.15);
-      transform: translateX(4px);
+      transform: scale(1.025);
+      filter: brightness(1.04) saturate(1.04);
     }
-    .game-card-icon {
-      flex-shrink: 0;
-      width: 52px;
-      height: 52px;
+    .game-card.is-selected::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: var(--gc-radius);
+      pointer-events: none;
+      box-shadow:
+        0 0 0 3px rgba(255, 225, 140, 0.7),
+        0 0 22px rgba(255, 195, 80, 0.35);
+    }
+
+    /* 1. 木枠の背景画像 (絶対配置で全面) */
+    .game-card__bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* 2. 左の丸サムネイル (枠は CSS で作る) */
+    .game-card__thumbWrap {
+      position: absolute;
+      left: var(--gc-thumb-left-pct);
+      top: 50%;
+      width: var(--gc-thumb-pct);
+      aspect-ratio: 1 / 1;
+      transform: translateY(-50%);
       border-radius: 50%;
-      background: linear-gradient(135deg, #FFE0B2, #FDDCBF);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.1);
+      padding: 6%;
+      background: #f7edd0;
+      border: 2px solid rgba(120, 78, 34, 0.85);
+      box-shadow:
+        0 3px 6px rgba(80, 50, 20, 0.22),
+        inset 0 1px 2px rgba(255, 255, 255, 0.75);
+      box-sizing: border-box;
+      overflow: hidden;
+      pointer-events: none;
     }
-    .game-card-body {
-      flex: 1;
+    .game-card__thumb {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    /* 3-5. 中央のテキスト (タイトル + 説明) */
+    .game-card__text {
+      position: absolute;
+      left: var(--gc-text-left-pct);
+      right: var(--gc-text-right-pct);
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
       min-width: 0;
+      pointer-events: none;
+      text-align: left;
     }
-    .game-card-title {
-      font-size: clamp(0.9rem, 2.6vw, 1.05rem);
+    .game-card__title {
+      font-size: clamp(0.95rem, 3.4vw, 1.6rem);
+      line-height: 1.1;
       font-weight: 900;
-      color: var(--primary);
+      color: #3f6f2a;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow:
+        1px 0 rgba(255, 248, 220, 0.85),
+        -1px 0 rgba(255, 248, 220, 0.85),
+        0 1px rgba(255, 248, 220, 0.85),
+        0 -1px rgba(255, 248, 220, 0.85),
+        0 2px 3px rgba(90, 60, 30, 0.18);
+    }
+    .game-card__desc {
+      font-size: clamp(0.7rem, 2vw, 0.95rem);
       line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .game-card.is-selected .game-card-title { color: #C2541A; }
-    .game-card-desc {
-      font-size: clamp(0.68rem, 1.9vw, 0.78rem);
       font-weight: 700;
-      color: var(--text-light);
-      margin-top: 2px;
+      color: #6a4a2b;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      letter-spacing: 0.04em;
     }
-    .game-card-arrow {
-      flex-shrink: 0;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-weight: 900;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
+
+    /* 6. 右の丸再生ボタン */
+    .game-card__play {
+      position: absolute;
+      right: var(--gc-play-right-pct);
+      top: 50%;
+      width: var(--gc-play-pct);
+      aspect-ratio: 1 / 1;
+      transform: translateY(-50%);
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
-    .game-card.is-selected .game-card-arrow {
-      transform: scale(1.15);
-      background: var(--primary);
-      color: #fff;
+    .game-card__playImg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      pointer-events: none;
+      transition: transform 0.1s ease;
+    }
+    .game-card.is-selected .game-card__playImg {
+      content: url('assets/ui/play_button_selected.png');
+    }
+    .game-card__play:active .game-card__playImg {
+      content: url('assets/ui/play_button_pressed.png');
+      transform: scale(0.95);
     }
 
     /* ===== Landscape (21:9 etc): side-by-side ===== */
@@ -549,6 +634,8 @@
     'use strict';
 
     // ===== Game catalog (free MVP set) =====
+    // panel: カード木枠の背景 (各ゲームで違う木目バリエーション)
+    // thumb: カード左の丸サムネ (現状は仮素材を共通流用、後で個別差し替え予定)
     const GAMES = [
       {
         id: 'quizland',
@@ -556,7 +643,9 @@
         subtitle: 'ひらめき・ものしりクイズ',
         icon: '🦉',
         bg: 'assets/images/quizland/title_back.jpg',
-        href: 'quizland/index.html'
+        href: 'quizland/index.html',
+        panel: 'assets/ui/menu_card_base_01.png',
+        thumb: 'assets/ui/thumb_default.png'
       },
       {
         id: 'quiz-sound',
@@ -564,7 +653,9 @@
         subtitle: 'どうぶつのこえを きいて さがそう',
         icon: '🐦',
         bg: 'assets/images/quiz-sound/title_back.jpg',
-        href: 'quiz-sound/index.html'
+        href: 'quiz-sound/index.html',
+        panel: 'assets/ui/menu_card_base_02.png',
+        thumb: 'assets/ui/thumb_default_alt.png'
       },
       {
         id: 'wordmatch',
@@ -572,7 +663,9 @@
         subtitle: 'えと ことばを つなげよう',
         icon: '📖',
         bg: 'assets/images/wordmatch/title_back.jpg',
-        href: 'wordmatch/index.html'
+        href: 'wordmatch/index.html',
+        panel: 'assets/ui/menu_card_base_03.png',
+        thumb: 'assets/ui/thumb_default.png'
       },
       {
         id: 'maze',
@@ -580,7 +673,9 @@
         subtitle: 'ランタンをもって まいごさがし',
         icon: '🏮',
         bg: 'assets/images/maze/title_back.jpg',
-        href: 'maze/index.html'
+        href: 'maze/index.html',
+        panel: 'assets/ui/menu_card_base_04.png',
+        thumb: 'assets/ui/thumb_default_alt.png'
       }
     ];
 
@@ -608,14 +703,19 @@
     // ===== Render cards =====
     function renderCards() {
       const html = GAMES.map((g, i) => `
-        <button type="button" class="game-card" data-idx="${i}" data-id="${esc(g.id)}" aria-pressed="false">
-          <span class="game-card-icon" aria-hidden="true">${esc(g.icon)}</span>
-          <span class="game-card-body">
-            <span class="game-card-title">${esc(g.title)}</span>
-            <span class="game-card-desc">${esc(g.subtitle)}</span>
-          </span>
-          <span class="game-card-arrow" aria-hidden="true">▶</span>
-        </button>
+        <div class="game-card" data-idx="${i}" data-id="${esc(g.id)}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}">
+          <img class="game-card__bg" src="${esc(g.panel)}" alt="" draggable="false">
+          <div class="game-card__thumbWrap">
+            <img class="game-card__thumb" src="${esc(g.thumb)}" alt="" draggable="false">
+          </div>
+          <div class="game-card__text">
+            <div class="game-card__title">${esc(g.title)}</div>
+            <div class="game-card__desc">${esc(g.subtitle)}</div>
+          </div>
+          <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
+            <img class="game-card__playImg" src="assets/ui/play_button_normal.png" alt="" draggable="false">
+          </button>
+        </div>
       `).join('');
       cardList.innerHTML = html;
       cardList.addEventListener('click', onCardClick);
@@ -633,12 +733,26 @@
       if (!card) return;
       const idx = Number(card.dataset.idx);
       if (Number.isNaN(idx)) return;
+      const isPlayBtn = !!e.target.closest('[data-action="start"]');
+      if (isPlayBtn) {
+        // 右の再生ボタン: 未選択なら選択してから即開始、選択済みなら即開始
+        if (idx !== currentIdx) selectGame(idx);
+        startGame(idx);
+        return;
+      }
       if (idx === currentIdx) {
         // Same card re-tapped: nudge attention to はじめる button
         pulseStartBtn();
         return;
       }
       selectGame(idx);
+    }
+
+    function startGame(idx) {
+      const game = GAMES[idx];
+      if (!game) return;
+      try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
+      location.href = game.href;
     }
 
     // ===== Select / preview crossfade =====
@@ -680,14 +794,8 @@
       }, 200);
     }
 
-    // ===== Start button =====
-    startBtn.addEventListener('click', () => {
-      const game = GAMES[currentIdx];
-      if (!game) return;
-      // BGM priming (compatible with existing game audio gate)
-      try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
-      location.href = game.href;
-    });
+    // ===== Start button (left preview pane) =====
+    startBtn.addEventListener('click', () => { startGame(currentIdx); });
 
     // ===== Bottom nav =====
     $('bottomNav').addEventListener('click', (e) => {
