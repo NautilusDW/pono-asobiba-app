@@ -757,19 +757,18 @@ draw = function() {
 // Stride argument can be omitted (falls back to state.cellStride).
 // ────────────────────────────────────────────────────────
 function _markerRadius(stride) {
-  // wide (stride>=3, 2-tile cell): 0.9 タイル → 中心から 54px、2-tile セル(120px)に
-  // 収まりつつコーナーで壁マージンに食い込まない。
-  // narrow (stride=2, 1-tile cell): 0.7 タイル → 42px、コーナーで壁12px食い込みは許容ライン。
+  // wide (stride>=3, 2-tile path): ユーザー指定で従来サイズ維持 (1.4 タイル = 84px)。
+  // narrow (stride=2, 1-tile path): ユーザー指定で 0.7 タイル (42px) に縮小。
   const s = stride != null ? stride : state.cellStride;
-  return CELL * (s >= 3 ? 0.9 : 0.7);
+  return CELL * (s >= 3 ? 1.4 : 0.7);
 }
 function _creatureRadius(stride) {
   const s = stride != null ? stride : state.cellStride;
-  return CELL * (s >= 3 ? 0.55 : 0.4);
+  return CELL * (s >= 3 ? 0.7 : 0.4);
 }
 function _waypointRadius(stride) {
   const s = stride != null ? stride : state.cellStride;
-  return CELL * (s >= 3 ? 0.4 : 0.3);
+  return CELL * (s >= 3 ? 0.5 : 0.3);
 }
 
 // ────────────────────────────────────────────────────────
@@ -2057,12 +2056,11 @@ function _paramsForDifficulty(d) {
     straightBias  = 0.30 * (1 - t);         // 0.30 → 0
     creatureCount = Math.round(5 + 5 * t);  // 5 → 10
   } else if (wideMode) {
-    // d=1..49: 2-tile 路幅 (stride=3)。50 セル (10×5)。
-    //   d=1  : bias=0.70 (大きく直線寄り = 単純な S 字 / 数 dead-end のみ)
-    //   d=49 : bias=0.00 (純ランダム = 多数の dead-end) + loopFraction=0.35
+    // d=1..49: 2-tile 路幅 (stride=3)。50 セル (10×5)。pure spanning tree
+    // (= ループなし、start→goal 一意経路)。ループは戦略的意味がないので使わない。
     const t = (v - 1) / 48;
     straightBias  = 0.70 * (1 - t);         // 0.70 → 0
-    loopFraction  = 0.35 * t;               // 0 → 0.35
+    loopFraction  = 0;                      // ループは禁止 (一意経路を保証)
     creatureCount = Math.round(1 + 2 * t);  // 1 → 3
   } else {
     // d=50..74: 1-tile 路幅、120 セル。
@@ -2125,44 +2123,61 @@ function _innerOffset(cellStride) {
   return cellStride === 4 ? 1 : 0;
 }
 
-function _carveCellInterior(g, ci, cj, offX, offY, cellStride, cw, ch) {
+// 各 cell row/col の起点タイル位置を返す。通常は均等(`offY + stride*cj`)だが、
+// canvas に対して `stride * ch` が 1 行足りない (= wide stride=3, ch=5 で 15行 vs
+// 18-2=16行usable) 場合、中盤に "余分壁行" を 1 行入れて後ろのセルをシフトする。
+// これで全セル size 一様 + 外周 1+1 マージンの両立を実現。
+function _cellAxisOffsets(numCells, cellStride, baseOff, gridDim) {
+  const used = cellStride * numCells;
+  const target = gridDim - 2;            // 1+1 マージン後の usable area
+  const extra = Math.max(0, target - used);
+  const insertAfter = extra > 0 ? Math.floor((numCells - 1) / 2) : -1;
+  const out = new Array(numCells);
+  let r = baseOff;
+  for (let k = 0; k < numCells; k++) {
+    out[k] = r;
+    r += cellStride;
+    if (k === insertAfter) r += extra;  // 中盤を過ぎたら +extra (= 1 行) シフト
+  }
+  return out;
+}
+
+function _carveCellInterior(g, ci, cj, cellRowX, cellRowY, cellStride, cw, ch) {
   // 最終行/列セルを ww タイルだけ延長して phantom corridor を吸収する。
-  // narrow (stride=2) では完璧な 1+1+1+1 マージンを実現。
-  // wide (stride=3) では cellStride*ch=15 が GRID_H=18 に綺麗に収まらないため
-  // 1+2 vertical margin が残るが、3-4 タイル幅レイアウト hack よりはマシ。
-  // (拡張量は ww=1 のみで、cells のサイズは +1 タイルで済む)
+  // cellRowX/cellRowY: 各 cell 行/列の起点タイル位置 (非一様対応)。
   const pw = _pwForStride(cellStride);
   const ww = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const wExt = (cw != null && ci === cw - 1) ? ww : 0;
   const hExt = (ch != null && cj === ch - 1) ? ww : 0;
-  const x0 = offX + cellStride * ci + off;
-  const y0 = offY + cellStride * cj + off;
+  const x0 = cellRowX[ci] + off;
+  const y0 = cellRowY[cj] + off;
   for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
     const x = x0 + dx, y = y0 + dy;
     if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
   }
 }
 
-function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride, cw, ch) {
-  // East/South 方向のみ。最終行/列 cell 間の corridor も pw 方向に ww だけ
-  // 延長して cell 拡張と整合 (= 連続的な path band で破断なし)。
+function _carveCorridor(g, ci, cj, dirX, dirY, cellRowX, cellRowY, cellStride, cw, ch) {
+  // East/South 方向のみ。隣接 cell 間の実距離は cellRow*[k+1] - cellRow*[k]
+  // で計算 (非一様セル位置に対応)。corridor 全長を path として塗る。
   const pw = _pwForStride(cellStride);
-  const ww = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
-  if (dirX === 1) { // east corridor
-    const x0 = offX + cellStride * ci + off + pw;
-    const y0 = offY + cellStride * cj + off;
-    const hExt = (ch != null && cj === ch - 1) ? ww : 0;
-    for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < ww; dx++) {
+  if (dirX === 1) { // east corridor: ci → ci+1
+    const x0 = cellRowX[ci] + off + pw;
+    const y0 = cellRowY[cj] + off;
+    const corridorLen = cellRowX[ci + 1] - x0;  // 実距離
+    const hExt = (ch != null && cj === ch - 1) ? _wwForStride(cellStride) : 0;
+    for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < corridorLen; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
-  } else if (dirY === 1) { // south corridor
-    const x0 = offX + cellStride * ci + off;
-    const y0 = offY + cellStride * cj + off + pw;
-    const wExt = (cw != null && ci === cw - 1) ? ww : 0;
-    for (let dy = 0; dy < ww; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
+  } else if (dirY === 1) { // south corridor: cj → cj+1
+    const x0 = cellRowX[ci] + off;
+    const y0 = cellRowY[cj] + off + pw;
+    const corridorLen = cellRowY[cj + 1] - y0;
+    const wExt = (cw != null && ci === cw - 1) ? _wwForStride(cellStride) : 0;
+    for (let dy = 0; dy < corridorLen; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
@@ -2175,6 +2190,11 @@ function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride, cw, ch) {
 // straight (snake-like, few branches). Backtracking resets the bias since
 // "previous direction" is no longer meaningful at the new branch tip.
 function _buildMazeCells(cw, ch, offX, offY, cellStride, straightBias) {
+  // Compute (possibly non-uniform) cell axis offsets — wide mode (stride=3
+  // in 18-row canvas) has 1 leftover row that gets inserted as an extra
+  // wall band in the middle, so cells past midpoint shift by +1.
+  const cellRowX = _cellAxisOffsets(cw, cellStride, offX, GRID_W);
+  const cellRowY = _cellAxisOffsets(ch, cellStride, offY, GRID_H);
   const visited = new Array(ch);
   for (let j = 0; j < ch; j++) visited[j] = new Array(cw).fill(false);
   // adjacency map: (ci,cj) -> Set of "ci2,cj2"
@@ -2219,18 +2239,18 @@ function _buildMazeCells(cw, ch, offX, offY, cellStride, straightBias) {
   // Build tiles
   const tiles = makeEmptyGrid();
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
-    _carveCellInterior(tiles, i, j, offX, offY, cellStride, cw, ch);
+    _carveCellInterior(tiles, i, j, cellRowX, cellRowY, cellStride, cw, ch);
   }
   // Carve corridors (only emit each edge once: east + south)
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
     if (i + 1 < cw && adj[key(i,j)] && adj[key(i,j)][key(i+1,j)]) {
-      _carveCorridor(tiles, i, j, 1, 0, offX, offY, cellStride, cw, ch);
+      _carveCorridor(tiles, i, j, 1, 0, cellRowX, cellRowY, cellStride, cw, ch);
     }
     if (j + 1 < ch && adj[key(i,j)] && adj[key(i,j)][key(i,j+1)]) {
-      _carveCorridor(tiles, i, j, 0, 1, offX, offY, cellStride, cw, ch);
+      _carveCorridor(tiles, i, j, 0, 1, cellRowX, cellRowY, cellStride, cw, ch);
     }
   }
-  return { tiles: tiles, adj: adj };
+  return { tiles: tiles, adj: adj, cellRowX: cellRowX, cellRowY: cellRowY };
 }
 
 function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys, cellStride) {
@@ -2320,7 +2340,7 @@ function _addLoops(maze, cw, ch, offX, offY, cellStride, loopFraction) {
   const target = Math.floor(candidates.length * loopFraction);
   for (let k = 0; k < target; k++) {
     const c = candidates[k];
-    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, offX, offY, cellStride, cw, ch);
+    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, maze.cellRowX, maze.cellRowY, cellStride, cw, ch);
     if (!adj[c.a]) adj[c.a] = {};
     if (!adj[c.b]) adj[c.b] = {};
     adj[c.a][c.b] = true;
@@ -2458,14 +2478,12 @@ function _snapToBlockCenter(px, py) {
 // Walk the surviving cell graph after generation and emit waypoints at
 // branch (degree>=3) and dead-end (degree==1) cells. Start/goal cells are
 // excluded because they already have their own markers.
-function _autoWaypointsFromCellGraph(adj, offX, offY, startKey, goalKey, cellStride) {
+function _autoWaypointsFromCellGraph(adj, cellRowX, cellRowY, startKey, goalKey, cellStride) {
   const out = [];
   const skip = {};
   if (startKey) skip[startKey] = true;
   if (goalKey)  skip[goalKey]  = true;
-  // Cell-interior center pixel: (offX + stride*ci + off + pw/2) * CELL
-  // For stride=4, off=1, pw=2 → +2 (matches old hardcoded constant).
-  // For stride=3, off=0, pw=2 → +1. For stride=2, off=0, pw=1 → +0.5.
+  // Cell-interior center pixel: cellRow*[k] + off + pw/2 (in tile units)
   const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenterOffset = off + pw / 2;
@@ -2475,8 +2493,9 @@ function _autoWaypointsFromCellGraph(adj, offX, offY, startKey, goalKey, cellStr
     if (nb.length === 0) continue;
     const parts = k.split(','); const ci = +parts[0], cj = +parts[1];
     if (!Number.isFinite(ci) || !Number.isFinite(cj)) continue;
-    const px = (offX + cellStride * ci + cellCenterOffset) * CELL;
-    const py = (offY + cellStride * cj + cellCenterOffset) * CELL;
+    if (cellRowX[ci] == null || cellRowY[cj] == null) continue;
+    const px = (cellRowX[ci] + cellCenterOffset) * CELL;
+    const py = (cellRowY[cj] + cellCenterOffset) * CELL;
     if (nb.length === 1)      out.push({ x: px, y: py, kind: 'deadend' });
     else if (nb.length >= 3)  out.push({ x: px, y: py, kind: 'branch' });
   }
@@ -2513,19 +2532,17 @@ function generateMazeForDifficulty(d) {
   }
   _pruneDeadEnds(maze, cw, ch, offX, offY, params.deadEndPrune, protectedSet, cellStride);
   state.tiles = maze.tiles;
-  // Cell-interior center pixel offset (stride-aware, see _autoWaypointsFromCellGraph)
+  // Cell-interior center pixel — uses non-uniform cellRow*[] from the maze
+  // so wide-mode "extra wall row in middle" shifts the post-midpoint cells.
   const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenter = off + pw / 2;
-  // Set start/goal from diameter pair (left-most → start). Verify that the
-  // markers won't visually overlap — if they do for some reason (very small
-  // maze with adjacent diameter cells), fall back to picking 2 corner cells.
   let startKey = null, goalKey = null;
   function _cellPx(k) {
     const p = k.split(',').map(Number);
     return {
-      x: (offX + cellStride * p[0] + cellCenter) * CELL,
-      y: (offY + cellStride * p[1] + cellCenter) * CELL,
+      x: (maze.cellRowX[p[0]] + cellCenter) * CELL,
+      y: (maze.cellRowY[p[1]] + cellCenter) * CELL,
     };
   }
   function _assignFromPair(p0, p1) {
@@ -2568,7 +2585,7 @@ function generateMazeForDifficulty(d) {
     state.goal = null;
   }
   // Auto-place waypoints at branch/dead-end cells (excluding start/goal)
-  state.waypoints = _autoWaypointsFromCellGraph(maze.adj, offX, offY, startKey, goalKey, cellStride);
+  state.waypoints = _autoWaypointsFromCellGraph(maze.adj, maze.cellRowX, maze.cellRowY, startKey, goalKey, cellStride);
   state.creatures = _placeCreaturesOnPath(params.creatureCount, offX, offY, cw, ch);
   afterEdit();
   showBanner('🎲 難易度 ' + params.difficulty + ' / ' +
