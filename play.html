@@ -228,15 +228,15 @@
       gap: 12px;
       padding: 6px 6px 10px;
       scrollbar-width: thin;
-      /* CSS variables: 画像比率に合わせて微調整可能 */
+      /* CSS variables: 画像比率に合わせて微調整可能
+         サムネ・ボタンは card 高さ基準 (h-pct)、左右パディング・テキスト枠は card 幅基準 (w-pct) */
       --gc-aspect: 5.5 / 1;
       --gc-radius: 22px;
-      --gc-thumb-pct: 64%;     /* サムネ枠の高さ % (cardの高さ基準) */
-      --gc-play-pct: 56%;      /* 再生ボタンの高さ % */
-      --gc-thumb-left-pct: 4%;
-      --gc-play-right-pct: 4%;
-      --gc-text-left-pct: 26%;
-      --gc-text-right-pct: 22%;
+      --gc-thumb-h-pct: 78%;
+      --gc-play-h-pct: 72%;
+      --gc-side-w-pct: 2%;
+      --gc-text-left-w-pct: 17%;
+      --gc-text-right-w-pct: 16%;
     }
     .card-list::-webkit-scrollbar { width: 6px; }
     .card-list::-webkit-scrollbar-thumb {
@@ -289,13 +289,14 @@
     /* 2. 左の丸サムネイル (枠は CSS で作る) */
     .game-card__thumbWrap {
       position: absolute;
-      left: var(--gc-thumb-left-pct);
+      left: var(--gc-side-w-pct);
       top: 50%;
-      width: var(--gc-thumb-pct);
+      height: var(--gc-thumb-h-pct);
       aspect-ratio: 1 / 1;
+      width: auto;
       transform: translateY(-50%);
       border-radius: 50%;
-      padding: 6%;
+      padding: 4%;
       background: #f7edd0;
       border: 2px solid rgba(120, 78, 34, 0.85);
       box-shadow:
@@ -316,8 +317,8 @@
     /* 3-5. 中央のテキスト (タイトル + 説明) */
     .game-card__text {
       position: absolute;
-      left: var(--gc-text-left-pct);
-      right: var(--gc-text-right-pct);
+      left: var(--gc-text-left-w-pct);
+      right: var(--gc-text-right-w-pct);
       top: 50%;
       transform: translateY(-50%);
       display: flex;
@@ -358,10 +359,11 @@
     /* 6. 右の丸再生ボタン */
     .game-card__play {
       position: absolute;
-      right: var(--gc-play-right-pct);
+      right: var(--gc-side-w-pct);
       top: 50%;
-      width: var(--gc-play-pct);
+      height: var(--gc-play-h-pct);
       aspect-ratio: 1 / 1;
+      width: auto;
       transform: translateY(-50%);
       padding: 0;
       border: none;
