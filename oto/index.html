@@ -397,7 +397,7 @@
     position: absolute;
     bottom: max(40px, calc(env(safe-area-inset-bottom) + 40px));
     left: 50%; transform: translateX(-50%);
-    display: flex; gap: 12px; align-items: center;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
     z-index: 10;
   }
   .rec-main-btn {
@@ -462,9 +462,9 @@
     to   { opacity: 1; transform: scale(1); }
   }
 
-  /* ── 保存リスト (画面最下段、横スクロール) ── */
+  /* ── 保存リスト (portrait: viewport 最下段に fixed / landscape: rec-bar 内に flow) ── */
   .saved-list {
-    position: absolute;
+    position: fixed;
     bottom: max(8px, env(safe-area-inset-bottom));
     left: 0; right: 0;
     display: flex; gap: 8px;
@@ -478,6 +478,7 @@
   }
   .saved-list::-webkit-scrollbar { display: none; }
   .saved-item {
+    position: relative;
     flex: 0 0 auto;
     width: 44px; height: 44px;
     border-radius: 50%;
@@ -491,11 +492,104 @@
     transition: transform 0.08s, box-shadow 0.08s;
     display: flex; align-items: center; justify-content: center;
     font-family: inherit;
+    padding: 0;
   }
   .saved-item:active { transform: translateY(2px) scale(0.94); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
   .saved-item.playing {
     background: linear-gradient(135deg, #6EE7B7, #10B981);
     animation: recPlayPulse 1.2s ease-in-out infinite;
+  }
+  .saved-item.empty {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.32);
+    color: rgba(255,255,255,0.45);
+    box-shadow: none;
+    cursor: default;
+  }
+  .saved-item.empty:active { transform: none; box-shadow: none; }
+  .saved-item-num {
+    pointer-events: none;
+    line-height: 1;
+  }
+  .saved-item-delete {
+    position: absolute;
+    top: -5px; right: -5px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #EF4444;
+    color: #fff;
+    font-size: 0.95rem; font-weight: 900;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff;
+    z-index: 2;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .saved-item-delete:active { transform: scale(0.85); }
+
+  /* ── ほぞん 上書きモーダル ── */
+  .overwrite-modal {
+    position: fixed; inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: fadeInOverlay 0.18s ease-out;
+  }
+  .overwrite-modal.hidden { display: none; }
+  @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+  .overwrite-modal-box {
+    background: #fff;
+    border-radius: 22px;
+    padding: 24px 28px 20px;
+    max-width: 360px; width: 100%;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    font-family: inherit;
+  }
+  .overwrite-modal-title {
+    font-size: 1.15rem; font-weight: 900; color: #5C3A00;
+    line-height: 1.4;
+  }
+  .overwrite-modal-list {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .overwrite-modal-slot {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: linear-gradient(135deg, #C4B5FD, #8B5CF6);
+    color: #fff;
+    font-size: 1.1rem; font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+    font-family: inherit;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .overwrite-modal-slot:active { transform: translateY(2px) scale(0.94); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+  .overwrite-modal-cancel {
+    padding: 10px 28px;
+    border-radius: 50px;
+    border: 2px solid #ccc;
+    background: #f5f5f5;
+    color: #666;
+    font-family: inherit;
+    font-size: 0.95rem; font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .overwrite-modal-cancel:active { transform: scale(0.96); }
+  .rec-bar-label {
+    font-size: 0.7rem; font-weight: 900; color: rgba(255,255,255,0.9);
+    letter-spacing: 0.05em; line-height: 1;
+    display: none;
+  }
+  .rec-bar-row {
+    display: flex; gap: 12px; align-items: center;
   }
 
   /* ── 音色 折りたたみ (右上) ── */
@@ -708,29 +802,34 @@
     }
     .pono-sprite { height: 150px; }
 
-    /* コード/単音ピル: 伴奏と同じ中心 (24%) に揃える + ボーダー/影をねいろ・伴奏に統一 */
+    /* コード/単音ピル: 拡大 (ねいろと同じ 220px 幅、押しやすい高さ) */
     .chord-pill {
       top: calc(max(12px, env(safe-area-inset-top)) + 54px);
       left: 24%;
       transform: translateX(-50%);
+      width: 220px;
       padding: 4px;
-      gap: 3px;
+      gap: 4px;
       border: 2px solid rgba(255,255,255,0.5);
       box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      box-sizing: border-box;
     }
     .chord-pill-btn {
-      min-width: 60px;
-      padding: 6px 10px;
-      font-size: 0.8rem;
+      flex: 1;
+      min-width: 0;
+      padding: 10px 14px;
+      font-size: 0.95rem;
     }
 
     /* 音色 ねいろ: chord-pill の下、伴奏と同じ中心 (24%) に */
     .sound-sets-box {
-      top: calc(max(12px, env(safe-area-inset-top)) + 108px);
+      top: calc(max(12px, env(safe-area-inset-top)) + 116px);
       left: 24%;
       transform: translateX(-50%);
       padding: 4px 8px 6px;
+      width: 220px;
       max-width: 220px;
+      box-sizing: border-box;
     }
     .sound-sets {
       flex-direction: row;
@@ -742,6 +841,69 @@
     .sound-sets .set-btn {
       width: 38px; height: 38px;
       font-size: 1.1rem;
+    }
+
+    /* ろくおん rec-bar: 伴奏の上に固定 (bottom アンカーで band-group との衝突回避) */
+    .rec-bar {
+      top: auto;
+      bottom: calc(max(12px, env(safe-area-inset-bottom)) + 92px);
+      left: 24%;
+      transform: translateX(-50%);
+      width: 220px;
+      box-sizing: border-box;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px 10px;
+      background: rgba(0,0,0,0.42);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 22px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+    .rec-bar-label {
+      display: block;
+    }
+    .rec-bar-row {
+      gap: 8px;
+    }
+    .rec-main-btn {
+      min-width: 110px;
+      height: 44px;
+      padding: 0 12px;
+      border-width: 3px;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+    }
+    .rec-main-icon { font-size: 1.1rem; }
+    .rec-main-label { font-size: 0.78rem; }
+    .rec-save-btn {
+      width: 44px; height: 44px;
+      border-width: 3px;
+      font-size: 1.2rem;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+    }
+    /* saved-list を rec-bar 内に流し込む (5枠を横一列に) */
+    .saved-list {
+      position: static;
+      bottom: auto; left: auto; right: auto;
+      width: 100%;
+      padding: 4px 0 0;
+      margin: 0;
+      gap: 6px;
+      overflow: visible;
+      min-height: auto;
+      justify-content: center;
+    }
+    .saved-item {
+      width: 34px; height: 34px;
+      font-size: 0.85rem;
+      border-width: 2px;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.22);
+    }
+    .saved-item-delete {
+      width: 16px; height: 16px;
+      font-size: 0.8rem;
+      top: -4px; right: -4px;
+      border-width: 1.5px;
     }
 
     /* 伴奏 ばんそう: 左パネル中心 (24%) に揃える */
@@ -768,12 +930,7 @@
     .band-row { gap: 7px; }
     .speed-row { gap: 7px; }
 
-    /* 保存リスト: 右 2/3 の下部のみ (左パネルと被らない) */
-    .saved-list {
-      left: 34%; right: 0;
-      justify-content: flex-start;
-    }
-    /* ループ進行バー: 右 2/3 の下 */
+    /* ループ進行バー: 右 2/3 の下 (saved-list は rec-bar 内に流れるためオーバーライド削除) */
     .rec-progress {
       left: 66%; transform: translateX(-50%);
       width: min(60vw, 420px);
@@ -862,8 +1019,27 @@
     </div>
 
 
-    <!-- 保存リスト: 画面最下段、横スクロール -->
-    <div class="saved-list" id="saved-list"></div>
+    <!-- ろくおん バー (録音/再生/保存メインボタン + 5枠保存リスト) -->
+    <div class="rec-bar" id="rec-bar">
+      <div class="rec-bar-label">ろくおん</div>
+      <div class="rec-bar-row">
+        <button class="rec-main-btn" id="rec-main-btn" type="button" aria-label="ろくおん">
+          <span class="rec-main-icon" id="rec-main-icon">🎤</span>
+          <span class="rec-main-label" id="rec-main-label">ろくおん</span>
+        </button>
+        <button class="rec-save-btn" id="rec-save-btn" type="button" style="display:none;" aria-label="ほぞん">💾</button>
+      </div>
+      <div class="saved-list" id="saved-list"></div>
+    </div>
+
+    <!-- ほぞん 上書きモーダル: 5枠埋まりで💾を押したとき表示 -->
+    <div class="overwrite-modal hidden" id="overwrite-modal">
+      <div class="overwrite-modal-box">
+        <div class="overwrite-modal-title">どれを けして<br>あたらしく ほぞんする？</div>
+        <div class="overwrite-modal-list" id="overwrite-modal-list"></div>
+        <button class="overwrite-modal-cancel" id="overwrite-modal-cancel" type="button">やめる</button>
+      </div>
+    </div>
 
     <!-- 楽器ボタン (上層 / タップ対象) -->
     <div id="instruments">
@@ -2093,7 +2269,7 @@ var _curTimers = [];        // _curRec 再生中のタイマー
 var _saved = [];            // 保存済リスト (新しい順)
 var _activePlayingSavedIdx = -1; // 保存リストから再生中のもの (-1 なら _curRec が再生中 or 何も再生中ではない)
 var SAVED_KEY = 'pono_oto_saved_v1';
-var MAX_SAVED = 10;
+var MAX_SAVED = 5;
 
 function recordEvent(kind, args) {
   if (_recState !== 'recording') return;
@@ -2107,6 +2283,11 @@ function recordEvent(kind, args) {
 function _loadSaved() {
   try { _saved = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'); } catch(e) { _saved = []; }
   if (!Array.isArray(_saved)) _saved = [];
+  // MAX_SAVED 縮小に伴うマイグレーション (古い順に切り詰め、新しい順保存を維持)
+  if (_saved.length > MAX_SAVED) {
+    _saved.length = MAX_SAVED;
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(_saved)); } catch(e) {}
+  }
 }
 function _persistSaved() {
   try { localStorage.setItem(SAVED_KEY, JSON.stringify(_saved)); } catch(e) {}
@@ -2694,81 +2875,137 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
 
 // ════════════════════════════════════════════════════════════
 // 💾 ほぞん ボタン
+// 5枠未満: 通常の unshift / 5枠埋まり: 上書きモーダル表示
 // ════════════════════════════════════════════════════════════
+function _saveCurRecAsNew() {
+  if (!_curRec) return;
+  var entry = { events: _curRec.events, loopMs: _curRec.loopMs, ts: Date.now() };
+  _saved.unshift(entry);
+  if (_saved.length > MAX_SAVED) _saved.length = MAX_SAVED;
+  _persistSaved();
+  _renderSavedList();
+}
+function _overwriteSavedAt(idx) {
+  if (!_curRec || idx < 0 || idx >= _saved.length) return;
+  _saved[idx] = { events: _curRec.events, loopMs: _curRec.loopMs, ts: Date.now() };
+  // 上書き枠が再生中だったら停止
+  if (_activePlayingSavedIdx === idx) _stopAllPlayback();
+  _persistSaved();
+  _renderSavedList();
+}
+function _showOverwriteModal() {
+  var modal = document.getElementById('overwrite-modal');
+  var list  = document.getElementById('overwrite-modal-list');
+  if (!modal || !list) return;
+  list.innerHTML = '';
+  _saved.forEach(function(entry, i) {
+    var b = document.createElement('button');
+    b.className = 'overwrite-modal-slot';
+    b.type = 'button';
+    b.textContent = (i + 1);
+    b.addEventListener('click', function() {
+      _overwriteSavedAt(i);
+      _hideOverwriteModal();
+    });
+    list.appendChild(b);
+  });
+  modal.classList.remove('hidden');
+}
+function _hideOverwriteModal() {
+  var modal = document.getElementById('overwrite-modal');
+  if (modal) modal.classList.add('hidden');
+}
 (function() {
   var btn = document.getElementById('rec-save-btn');
   if (!btn) return;
   btn.addEventListener('click', function(e) {
     e.preventDefault();
     if (!_curRec) return;
-    var entry = { events: _curRec.events, loopMs: _curRec.loopMs, ts: Date.now() };
-    _saved.unshift(entry); // 新しい順
-    if (_saved.length > MAX_SAVED) _saved.length = MAX_SAVED;
-    _persistSaved();
-    _renderSavedList();
+    if (_saved.length >= MAX_SAVED) {
+      _showOverwriteModal();
+      return;
+    }
+    _saveCurRecAsNew();
     // 軽いフィードバック
     btn.style.transform = 'scale(0.7)';
     setTimeout(function() { btn.style.transform = ''; }, 180);
   });
+  // モーダル: キャンセルボタン / 背景タップで閉じる
+  var cancel = document.getElementById('overwrite-modal-cancel');
+  if (cancel) cancel.addEventListener('click', _hideOverwriteModal);
+  var modal = document.getElementById('overwrite-modal');
+  if (modal) modal.addEventListener('click', function(e) {
+    if (e.target === modal) _hideOverwriteModal();
+  });
 })();
 
 // ════════════════════════════════════════════════════════════
-// 保存リスト (画面最下段)
+// 保存リスト: 5枠固定 (空枠も描画)、保存済枠は番号 + ×削除ボタン
 // ════════════════════════════════════════════════════════════
 function _renderSavedList() {
   var list = document.getElementById('saved-list');
   if (!list) return;
   list.innerHTML = '';
-  _saved.forEach(function(entry, i) {
+  for (var i = 0; i < MAX_SAVED; i++) {
+    var entry = _saved[i];
     var b = document.createElement('button');
     b.className = 'saved-item';
-    b.textContent = (i + 1);
-    b.dataset.idx = i;
-    if (_activePlayingSavedIdx === i) b.classList.add('playing');
+    b.type = 'button';
+    b.dataset.idx = String(i);
+    if (entry) {
+      var num = document.createElement('span');
+      num.className = 'saved-item-num';
+      num.textContent = (i + 1);
+      b.appendChild(num);
+      var x = document.createElement('span');
+      x.className = 'saved-item-delete';
+      x.dataset.deleteIdx = String(i);
+      x.textContent = '×';
+      b.appendChild(x);
+      if (_activePlayingSavedIdx === i) b.classList.add('playing');
+    } else {
+      b.classList.add('empty');
+      b.disabled = true;
+      var dot = document.createElement('span');
+      dot.className = 'saved-item-num';
+      dot.textContent = '·';
+      b.appendChild(dot);
+    }
     list.appendChild(b);
-  });
+  }
 }
 (function() {
   var list = document.getElementById('saved-list');
   if (!list) return;
-  var pressTimer = null;
-  var longPressed = false;
-  var pressIdx = -1;
-  list.addEventListener('pointerdown', function(e) {
-    var t = e.target.closest('.saved-item');
-    if (!t) return;
-    pressIdx = parseInt(t.dataset.idx, 10);
-    longPressed = false;
-    pressTimer = setTimeout(function() {
-      pressTimer = null;
-      longPressed = true;
-      if (confirm('ほぞん ' + (pressIdx + 1) + ' を けすよ。いい?')) {
-        _saved.splice(pressIdx, 1);
+  list.addEventListener('click', function(e) {
+    // ×ボタン → 削除確認
+    var del = e.target.closest('.saved-item-delete');
+    if (del) {
+      e.preventDefault();
+      e.stopPropagation();
+      var didx = parseInt(del.dataset.deleteIdx, 10);
+      if (isNaN(didx)) return;
+      if (confirm('ほぞん ' + (didx + 1) + ' を けすよ。いい?')) {
+        _saved.splice(didx, 1);
         _persistSaved();
-        // 再生中だったら停止
-        if (_activePlayingSavedIdx === pressIdx) {
+        if (_activePlayingSavedIdx === didx) {
           _stopAllPlayback();
-        } else if (_activePlayingSavedIdx > pressIdx) {
+        } else if (_activePlayingSavedIdx > didx) {
           _activePlayingSavedIdx--;
         }
         _renderSavedList();
         _renderRecBar();
       }
-    }, 800);
-  });
-  function cancelPress() {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-  }
-  list.addEventListener('pointerup', function(e) {
-    cancelPress();
-    if (longPressed) return;
+      return;
+    }
+    // 通常タップ → 再生 (空枠 / 録音中は無視)
     var t = e.target.closest('.saved-item');
-    if (!t) return;
+    if (!t || t.classList.contains('empty')) return;
     var idx = parseInt(t.dataset.idx, 10);
+    if (isNaN(idx)) return;
     e.preventDefault();
     unlockAudio();
     if (_recState !== 'idle') return;
-    // タップ: 再生中ならその同じスロット → 停止、それ以外なら 該当を _curRec にロードして再生
     if (_activePlayingSavedIdx === idx) {
       _stopAllPlayback();
       _renderSavedList();
@@ -2783,8 +3020,6 @@ function _renderSavedList() {
     _activePlayingSavedIdx = idx;
     _renderSavedList();
   });
-  list.addEventListener('pointerleave', cancelPress);
-  list.addEventListener('pointercancel', cancelPress);
 })();
 
 // ════════════════════════════════════════════════════════════
