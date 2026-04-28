@@ -2750,25 +2750,33 @@ function _recomputeAutoNodesAndEdges() {
   }
   const { cellRowX, cellRowY, cw, ch } = state.cellLayout;
   const pw  = _pwForStride(cellStride);
+  const ww  = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
 
-  // (a) cell が "alive" = interior の少なくとも 1 タイルが path
+  // (a) cell が "alive" = interior の少なくとも 1 タイルが path。
+  // 最終行/列セルは _carveCellInterior が ww 分拡張しているので、生存判定も
+  // 拡張領域まで含める (= ユーザーが extension 側だけ残した場合も検出できる)。
   function isCellAlive(ci, cj) {
+    const wExt = (ci === cw - 1) ? ww : 0;
+    const hExt = (cj === ch - 1) ? ww : 0;
     const x0 = cellRowX[ci] + off, y0 = cellRowY[cj] + off;
-    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
+    for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (state.tiles[y] && state.tiles[y][x] === 'path') return true;
     }
     return false;
   }
-  // (b) corridor (ci,cj)→(ci+dirX,cj+dirY) が "alive" = 通路タイルに 1 つでも path
+  // (b) corridor (ci,cj)→(ci+dirX,cj+dirY) が "alive"。
+  // 最終行 cell 間の east corridor は pw 方向 (= 縦) に hExt=ww 分拡張、
+  // 最終列 cell 間の south corridor は pw 方向 (= 横) に wExt=ww 分拡張。
   function isCorridorAlive(ci, cj, dirX, dirY) {
     if (dirX === 1) {
       const x0 = cellRowX[ci] + off + pw;
       const y0 = cellRowY[cj] + off;
       const len = cellRowX[ci + 1] - x0;
-      if (len <= 0) return false;  // defensive: 異常な cellRowX で負長になった場合
-      for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < len; dx++) {
+      if (len <= 0) return false;
+      const hExt = (cj === ch - 1) ? ww : 0;
+      for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < len; dx++) {
         const x = x0 + dx, y = y0 + dy;
         if (state.tiles[y] && state.tiles[y][x] === 'path') return true;
       }
@@ -2777,7 +2785,8 @@ function _recomputeAutoNodesAndEdges() {
       const y0 = cellRowY[cj] + off + pw;
       const len = cellRowY[cj + 1] - y0;
       if (len <= 0) return false;
-      for (let dy = 0; dy < len; dy++) for (let dx = 0; dx < pw; dx++) {
+      const wExt = (ci === cw - 1) ? ww : 0;
+      for (let dy = 0; dy < len; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
         const x = x0 + dx, y = y0 + dy;
         if (state.tiles[y] && state.tiles[y][x] === 'path') return true;
       }
