@@ -277,8 +277,8 @@ input[type="file"]::file-selector-button {
     </div>
     <div id="diffHint" style="font-size:0.7rem; color:#A4C76D; margin-bottom:6px; min-height:1.4em;"></div>
     <button class="btn primary" id="generateBtn" style="width:100%; padding:9px;">🎲 ランダム生成</button>
-    <button class="btn" id="recomputeBtn" style="width:100%; padding:7px; margin-top:4px; font-size:0.78rem;"
-            title="手動で道を編集した後、現在のタイル状態からノード(中継地点)とエッジ(道筋)を自動再計算します。手動配置の中継地点は保持。">🔄 ノードと道を再計算</button>
+    <button class="btn" id="recomputeBtn" style="width:100%; padding:7px; margin-top:4px; font-size:0.74rem; background:#3a3a25; color:#cca;"
+            title="⚠️ 試験的: 手動で道を編集した後、cell adjacency から再計算しますが、エッジが直線で結ばれるため、複雑な手動編集後はずれることがあります。手動でドラッグして調整してください。">⚠️ ノードを再計算 (試験的)</button>
 
     <div class="actions">
       <button class="btn" id="undoBtn">⤺ 取り消し (1ステップ前に戻す)</button>
@@ -724,6 +724,8 @@ canvasWrap.addEventListener('drop', function(e) {
           ? _loadCreatures(def.creatures) : [];
         state.waypoints = (typeof _loadWaypoints === 'function')
           ? _loadWaypoints(def.waypoints) : [];
+        state.obstacles = (typeof _loadObstacles === 'function')
+          ? _loadObstacles(def.obstacles) : [];
         state.edges = (typeof _loadEdges === 'function')
           ? _loadEdges(def.edges) : [];
         state.cellLayout = (typeof _validateCellLayout === 'function')
@@ -1031,6 +1033,12 @@ function paintAt(tx, ty, px, py) {
     for (let i = state.waypoints.length - 1; i >= 0; i--) {
       if (_markerInEraseRect(state.waypoints[i], x0, y0, x1, y1)) {
         state.waypoints.splice(i, 1);
+      }
+    }
+    // Drop any obstacles inside the erase rect
+    for (let i = state.obstacles.length - 1; i >= 0; i--) {
+      if (_markerInEraseRect(state.obstacles[i], x0, y0, x1, y1)) {
+        state.obstacles.splice(i, 1);
       }
     }
   } else if (state.mode === 'start') {
@@ -1367,6 +1375,7 @@ function recomputeStats() {
   }
   if (statCreatures) statCreatures.textContent = state.creatures.length;
   if (statWaypoints) statWaypoints.textContent = state.waypoints.length;
+  if (statObstacles) statObstacles.textContent = state.obstacles.length;
 }
 
 // ────────────────────────────────────────────────────────
@@ -1407,12 +1416,14 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
   const prevHover = state.hoverTile;
   const prevCreatures = state.creatures;
   const prevWaypoints = state.waypoints;
+  const prevObstacles = state.obstacles;
   const prevEdges = state.edges;
   state.showGrid = false;
   state.showSolution = false;
   state.hoverTile = null;
   state.creatures = [];
   state.waypoints = [];
+  state.obstacles = [];
   state.edges = [];
   draw();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -1425,6 +1436,7 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
     state.hoverTile = prevHover;
     state.creatures = prevCreatures;
     state.waypoints = prevWaypoints;
+    state.obstacles = prevObstacles;
     state.edges = prevEdges;
     draw();
   };
@@ -1479,6 +1491,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
     creatures: state.creatures.map(function(c) { return { x: c.x, y: c.y }; }),
     waypoints: state.waypoints.map(function(w) { return { x: w.x, y: w.y, kind: w.kind }; }),
+    obstacles: state.obstacles.map(function(o) { return { x: o.x, y: o.y, kind: o.kind }; }),
     edges: state.edges.map(function(e) {
       return { polyline: e.polyline.map(function(p) { return { x: p.x, y: p.y }; }) };
     }),
@@ -1546,6 +1559,7 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
       state.goal  = _loadMarker(def.goal);
       state.creatures = _loadCreatures(def.creatures);
       state.waypoints = _loadWaypoints(def.waypoints);
+      state.obstacles = _loadObstacles(def.obstacles);
       state.edges = _loadEdges(def.edges);
       state.cellLayout = _validateCellLayout(def.cellLayout);
       afterEdit();
@@ -1681,6 +1695,7 @@ function pushHistory() {
     goal: state.goal,
     creatures: state.creatures,
     waypoints: state.waypoints,
+    obstacles: state.obstacles,
     edges: state.edges,
     panels: state.panels,
     gridW: GRID_W,
@@ -1705,6 +1720,8 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     ? _loadCreatures(prev.creatures) : [];
   state.waypoints = (typeof _loadWaypoints === 'function')
     ? _loadWaypoints(prev.waypoints) : [];
+  state.obstacles = (typeof _loadObstacles === 'function')
+    ? _loadObstacles(prev.obstacles) : [];
   state.edges = (typeof _loadEdges === 'function')
     ? _loadEdges(prev.edges) : [];
   state.cellLayout = (typeof _validateCellLayout === 'function')
@@ -1734,6 +1751,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.goal  = null;
   state.creatures = [];
   state.waypoints = [];
+  state.obstacles = [];
   state.edges = [];
   state.cellLayout = null;
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
@@ -1759,6 +1777,7 @@ function _doAutoSave() {
       goal: state.goal,
       creatures: state.creatures,
       waypoints: state.waypoints,
+      obstacles: state.obstacles,
       edges: state.edges,
       panels: state.panels,
       gridW: GRID_W,
@@ -1784,6 +1803,8 @@ function restoreDraft() {
       ? _loadCreatures(data.creatures) : [];
     state.waypoints = (typeof _loadWaypoints === 'function')
       ? _loadWaypoints(data.waypoints) : [];
+    state.obstacles = (typeof _loadObstacles === 'function')
+      ? _loadObstacles(data.obstacles) : [];
     state.edges = (typeof _loadEdges === 'function')
       ? _loadEdges(data.edges) : [];
     if (data.cellStride === 2 || data.cellStride === 3 || data.cellStride === 4) {
@@ -1838,6 +1859,7 @@ function saveAs(rawName) {
     goal: state.goal,
     creatures: state.creatures.slice(),
     waypoints: state.waypoints.slice(),
+    obstacles: state.obstacles.slice(),
     edges: state.edges.slice(),
     panels: state.panels,
     gridW: GRID_W,
@@ -1861,6 +1883,7 @@ function libOverwriteSlot(name) {
     goal: state.goal,
     creatures: state.creatures.slice(),
     waypoints: state.waypoints.slice(),
+    obstacles: state.obstacles.slice(),
     edges: state.edges.slice(),
     panels: state.panels,
     gridW: GRID_W,
@@ -2058,6 +2081,7 @@ function loadSaveByName(name) {
   state.goal  = s.goal;
   state.creatures = _loadCreatures(s.creatures);
   state.waypoints = _loadWaypoints(s.waypoints);
+  state.obstacles = _loadObstacles(s.obstacles);
   state.edges = _loadEdges(s.edges);
   if (s.cellStride === 2 || s.cellStride === 3 || s.cellStride === 4) {
     state.cellStride = s.cellStride;
@@ -2168,6 +2192,7 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
         goal:  _loadMarker(def.goal),
         creatures: _loadCreatures(def.creatures),
         waypoints: _loadWaypoints(def.waypoints),
+        obstacles: _loadObstacles(def.obstacles),
         edges: _loadEdges(def.edges),
         cellLayout: _validateCellLayout(def.cellLayout),
         panels: (def.panels === 2 || def.width >= 64) ? 2 : 1,
@@ -2987,6 +3012,7 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
   state.goal  = _snap.goal;
   state.creatures = _loadCreatures(_snap.creatures);
   state.waypoints = _loadWaypoints(_snap.waypoints);
+  state.obstacles = _loadObstacles(_snap.obstacles);
   state.edges = _loadEdges(_snap.edges);
   if (_snap.cellStride === 2 || _snap.cellStride === 3 || _snap.cellStride === 4) {
     state.cellStride = _snap.cellStride;
