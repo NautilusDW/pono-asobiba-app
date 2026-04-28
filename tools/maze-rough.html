@@ -1135,7 +1135,33 @@ cv.addEventListener('pointerdown', function(e) {
       return;
     }
     pushHistory();
-    state.draggingMarker = hit;
+    // ドラッグ開始時、このマーカー位置から 0.5 タイル以内にあるエッジ端点を
+    // 「同伴」として捕捉。ドラッグ中はマーカーと一緒に動かす(= 「線がつながって
+    // いて一緒に移動」する挙動を実現)。
+    let dragOriginPos = null;
+    if (hit === 'start' && state.start) dragOriginPos = state.start;
+    else if (hit === 'goal' && state.goal) dragOriginPos = state.goal;
+    else if (typeof hit === 'object' && hit.type === 'waypoint') dragOriginPos = state.waypoints[hit.index];
+    else if (typeof hit === 'object' && hit.type === 'obstacle') dragOriginPos = state.obstacles[hit.index];
+    const attached = [];
+    if (dragOriginPos && Array.isArray(state.edges)) {
+      const R = CELL * 0.5; const R2 = R * R;
+      for (let ei = 0; ei < state.edges.length; ei++) {
+        const e = state.edges[ei];
+        if (!e || !Array.isArray(e.polyline)) continue;
+        for (let pi = 0; pi < e.polyline.length; pi++) {
+          const pt = e.polyline[pi];
+          if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue;
+          const dx = pt.x - dragOriginPos.x, dy = pt.y - dragOriginPos.y;
+          if (dx*dx + dy*dy < R2) attached.push({ edgeIdx: ei, pointIdx: pi });
+        }
+      }
+    }
+    // ドラッグ状態を拡張オブジェクトとして保存 (start/goal の文字列ハンドルを
+    // 維持しつつ attachedEdges も持つ)
+    state.draggingMarker = (typeof hit === 'object')
+      ? Object.assign({}, hit, { attachedEdges: attached })
+      : { type: hit, attachedEdges: attached };
     cv.setPointerCapture(e.pointerId);
     cv.style.cursor = 'grabbing';
     return;
@@ -1184,26 +1210,36 @@ cv.addEventListener('pointermove', function(e) {
   }
   // Marker drag in progress?
   if (state.draggingMarker) {
-    if (state.draggingMarker === 'start') state.start = { x: p.x, y: p.y };
-    else if (state.draggingMarker === 'goal')  state.goal  = { x: p.x, y: p.y };
-    else if (typeof state.draggingMarker === 'object' && state.draggingMarker.type === 'creature') {
-      const idx = state.draggingMarker.index;
+    const dm = state.draggingMarker;
+    if (dm.type === 'start') state.start = { x: p.x, y: p.y };
+    else if (dm.type === 'goal')  state.goal  = { x: p.x, y: p.y };
+    else if (dm.type === 'creature') {
+      const idx = dm.index;
       if (idx >= 0 && idx < state.creatures.length) {
         state.creatures[idx] = { x: p.x, y: p.y };
       }
     }
-    else if (typeof state.draggingMarker === 'object' && state.draggingMarker.type === 'waypoint') {
-      const idx = state.draggingMarker.index;
+    else if (dm.type === 'waypoint') {
+      const idx = dm.index;
       if (idx >= 0 && idx < state.waypoints.length) {
         const prev = state.waypoints[idx];
         state.waypoints[idx] = { x: p.x, y: p.y, kind: prev.kind || 'manual' };
       }
     }
-    else if (typeof state.draggingMarker === 'object' && state.draggingMarker.type === 'obstacle') {
-      const idx = state.draggingMarker.index;
+    else if (dm.type === 'obstacle') {
+      const idx = dm.index;
       if (idx >= 0 && idx < state.obstacles.length) {
         const prev = state.obstacles[idx];
         state.obstacles[idx] = { x: p.x, y: p.y, kind: prev.kind || 'rock' };
+      }
+    }
+    // 同伴エッジ端点も更新 (= 線がノードと一緒に動く)
+    if (Array.isArray(dm.attachedEdges)) {
+      for (const att of dm.attachedEdges) {
+        const e = state.edges[att.edgeIdx];
+        if (e && e.polyline && e.polyline[att.pointIdx]) {
+          e.polyline[att.pointIdx] = { x: p.x, y: p.y };
+        }
       }
     }
     draw();
@@ -1223,30 +1259,39 @@ cv.addEventListener('pointerleave', function() {
 });
 cv.addEventListener('pointerup', function(e) {
   if (state.draggingMarker) {
-    // Snap creature/waypoint drops to the path 2x2 block center so they
-    // sit cleanly on the path centerline. Start/goal are big circles and
-    // free-form placement looks fine, so don't snap them.
-    if (typeof state.draggingMarker === 'object') {
-      if (state.draggingMarker.type === 'creature') {
-        const idx = state.draggingMarker.index;
-        if (idx >= 0 && idx < state.creatures.length) {
-          const c = state.creatures[idx];
-          const snap = _snapToBlockCenter(c.x, c.y);
-          state.creatures[idx] = { x: snap.x, y: snap.y };
-        }
-      } else if (state.draggingMarker.type === 'waypoint') {
-        const idx = state.draggingMarker.index;
-        if (idx >= 0 && idx < state.waypoints.length) {
-          const w = state.waypoints[idx];
-          const snap = _snapToBlockCenter(w.x, w.y);
-          state.waypoints[idx] = { x: snap.x, y: snap.y, kind: w.kind || 'manual' };
-        }
-      } else if (state.draggingMarker.type === 'obstacle') {
-        const idx = state.draggingMarker.index;
-        if (idx >= 0 && idx < state.obstacles.length) {
-          const o = state.obstacles[idx];
-          const snap = _snapToBlockCenter(o.x, o.y);
-          state.obstacles[idx] = { x: snap.x, y: snap.y, kind: o.kind || 'rock' };
+    const dm = state.draggingMarker;
+    let snappedPos = null;
+    // Snap creature/waypoint/obstacle drops to the path 2x2 block center so
+    // they sit cleanly on the path centerline. Start/goal are big circles
+    // and free-form placement looks fine, so don't snap them.
+    if (dm.type === 'creature') {
+      const idx = dm.index;
+      if (idx >= 0 && idx < state.creatures.length) {
+        const c = state.creatures[idx];
+        snappedPos = _snapToBlockCenter(c.x, c.y);
+        state.creatures[idx] = { x: snappedPos.x, y: snappedPos.y };
+      }
+    } else if (dm.type === 'waypoint') {
+      const idx = dm.index;
+      if (idx >= 0 && idx < state.waypoints.length) {
+        const w = state.waypoints[idx];
+        snappedPos = _snapToBlockCenter(w.x, w.y);
+        state.waypoints[idx] = { x: snappedPos.x, y: snappedPos.y, kind: w.kind || 'manual' };
+      }
+    } else if (dm.type === 'obstacle') {
+      const idx = dm.index;
+      if (idx >= 0 && idx < state.obstacles.length) {
+        const o = state.obstacles[idx];
+        snappedPos = _snapToBlockCenter(o.x, o.y);
+        state.obstacles[idx] = { x: snappedPos.x, y: snappedPos.y, kind: o.kind || 'rock' };
+      }
+    }
+    // 同伴エッジ端点もスナップ位置に揃える
+    if (snappedPos && Array.isArray(dm.attachedEdges)) {
+      for (const att of dm.attachedEdges) {
+        const e = state.edges[att.edgeIdx];
+        if (e && e.polyline && e.polyline[att.pointIdx]) {
+          e.polyline[att.pointIdx] = { x: snappedPos.x, y: snappedPos.y };
         }
       }
     }
