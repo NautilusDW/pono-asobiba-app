@@ -462,8 +462,10 @@ body.image-stage-mode .game-wrap {
   grid-area: img;
   width: 100%;
   max-height: min(72dvh, 360px);
-  object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
   animation: encWiggle 1.6s ease-in-out infinite;
 }
 .story-intro #storyText {
@@ -550,8 +552,10 @@ body.image-stage-mode .game-wrap {
   width: 100%;
   height: auto;
   max-height: min(82dvh, 420px);
-  object-fit: contain;
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
   animation: rescueBounce 1.6s ease-in-out infinite;
 }
 @keyframes rescueBounce {
@@ -661,21 +665,15 @@ body.image-stage-mode .game-wrap {
   background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDE 100%);
   border: 4px solid #6C8E3F;
   border-radius: 22px;
-  padding: 14px 20px;
-  width: min(96vw, 920px);
+  padding: 14px 18px;
+  width: min(92vw, 720px);
   max-height: 94dvh;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   display: grid;
-  grid-template-columns: minmax(180px, 36%) 1fr;
-  grid-template-rows: auto auto 1fr;
-  grid-template-areas:
-    "art   name"
-    "art   dialog"
-    "art   stage";
+  grid-template-columns: minmax(160px, 42%) 1fr;
   column-gap: 18px;
-  row-gap: 6px;
   align-items: center;
-  text-align: left;
+  text-align: center;
   animation: encPop 0.35s ease-out;
   overflow: hidden;
 }
@@ -683,12 +681,19 @@ body.image-stage-mode .game-wrap {
   0%   { transform: scale(0.6); opacity: 0; }
   100% { transform: scale(1);   opacity: 1; }
 }
+.enc-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  max-height: 88dvh;
+}
 .enc-creature {
-  grid-area: art;
-  font-size: clamp(3.2rem, 14vw, 6rem);
+  font-size: clamp(3.6rem, 16vw, 6.5rem);
   line-height: 1;
   margin: 0;
-  text-align: center;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   animation: encWiggle 1.2s ease-in-out infinite;
 }
@@ -697,37 +702,43 @@ body.image-stage-mode .game-wrap {
   50%      { transform: rotate(6deg); }
 }
 .enc-name {
-  grid-area: name;
   font-size: clamp(1rem, 2.4vw, 1.2rem);
   font-weight: 900;
   color: #6C8E3F;
   margin: 0;
 }
 .enc-dialog {
-  grid-area: dialog;
-  font-size: clamp(0.85rem, 2vw, 1.05rem);
+  font-size: clamp(0.82rem, 1.9vw, 1rem);
   color: #5D4E37;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.45;
   max-height: 22dvh;
   overflow-y: auto;
 }
 .enc-stage {
-  grid-area: stage;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   align-items: stretch;
   justify-content: center;
   min-width: 0;
-  max-height: 60dvh;
+  max-height: 84dvh;
   overflow-y: auto;
 }
+/* Strict 2-col grid for choice rows — overrides inline flex/max-width set by JS */
 .enc-stage .row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px !important;
+  max-width: none !important;
+  width: 100%;
+  flex-wrap: unset !important;
+}
+.enc-stage .row > .enc-btn {
+  flex: none !important;
+  margin: 0 !important;
+  width: 100%;
+  min-width: 0;
 }
 .enc-btn {
   padding: 10px 18px; font-family: inherit; font-size: clamp(0.9rem, 2.2vw, 1.05rem); font-weight: 900;
@@ -738,7 +749,7 @@ body.image-stage-mode .game-wrap {
 }
 .enc-btn:active { transform: scale(0.95); }
 .enc-btn.primary { background: linear-gradient(135deg, #6C8E3F, #A4C76D); color: #fff; }
-.enc-btn.choice { font-size: clamp(1.6rem, 5vw, 2.2rem); padding: 12px 18px; min-width: 72px; background: #FFF; border: 3px solid #A4C76D; }
+.enc-btn.choice { font-size: clamp(1.6rem, 5vw, 2.2rem); padding: 12px 18px; min-width: 0; background: #FFF; border: 3px solid #A4C76D; }
 .enc-btn.win    { background: linear-gradient(135deg, #F5A623, #FFCB5C); color: #fff; }
 .enc-btn.lose   { background: linear-gradient(135deg, #B05050, #C66767); color: #fff; }
 
@@ -746,7 +757,7 @@ body.image-stage-mode .game-wrap {
 .enc-stage canvas,
 .enc-stage img {
   max-width: 100%;
-  max-height: min(40dvh, 280px);
+  max-height: min(40dvh, 240px);
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -757,7 +768,7 @@ body.image-stage-mode .game-wrap {
   align-items: center;
 }
 
-.enc-result { font-size: clamp(1.4rem, 3.6vw, 1.9rem); font-weight: 900; margin: 4px 0; }
+.enc-result { font-size: clamp(1.1rem, 2.8vw, 1.5rem); font-weight: 900; margin: 4px 0; }
 .enc-result.win  { color: #6C8E3F; }
 .enc-result.lose { color: #B05050; }
 .enc-vs { font-size: clamp(1.1rem, 2.6vw, 1.4rem); color: #888; margin: 4px 0; }
@@ -767,9 +778,6 @@ body.image-stage-mode .game-wrap {
 @media (orientation: portrait) {
   .encounter-modal .enc-card {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto 1fr;
-    grid-template-areas: "art" "name" "dialog" "stage";
-    text-align: center;
   }
   .enc-creature { font-size: clamp(2.6rem, 12vw, 4rem); }
   .enc-stage canvas,
@@ -967,9 +975,11 @@ body.image-stage-mode .game-wrap {
   <!-- Encounter modal (creature + minigame) — image-stage only -->
   <div class="encounter-modal" id="encModal" aria-hidden="true">
     <div class="enc-card">
-      <div class="enc-creature" id="encCreature">🐛</div>
-      <div class="enc-name" id="encName">まよいムシ</div>
-      <div class="enc-dialog" id="encDialog">ここは とおさないよ〜<br>かったら とおしてあげる！</div>
+      <div class="enc-left">
+        <div class="enc-creature" id="encCreature">🐛</div>
+        <div class="enc-name" id="encName">まよいムシ</div>
+        <div class="enc-dialog" id="encDialog">ここは とおさないよ〜<br>かったら とおしてあげる！</div>
+      </div>
       <div class="enc-stage" id="encStage">
         <button class="enc-btn primary" id="encStartBtn">じゃんけんで あそぶ ▶</button>
       </div>
