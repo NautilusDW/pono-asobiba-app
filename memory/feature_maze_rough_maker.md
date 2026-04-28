@@ -115,7 +115,8 @@ type: project
 maze-editor.html とは現状別ツールだが、**ノード/エッジ/障害物/背景画像差し替えを rough 側に順次取り込む**方針で進めている (option A)。
 
 - **Phase 1 (DONE)**: 中継ノード手動配置 + ランダム生成時の自動検出
-- **Phase 2 (DONE)**: ノード間の **エッジ** (`state.edges = [{polyline: [{x,y},{x,y}]}]`) — 自動生成 (cell adjacency → 隣接 cell 中心の polyline)、薄グレー破線で描画、PNG時は非表示、永続化全レイヤー対応。手動配置モードは Phase 2.5 で後回し
+- **Phase 2 (DONE)**: ノード間の **エッジ** (`state.edges = [{polyline: [{x,y},...]}]`) — 自動生成 (cell adjacency → 隣接 cell 中心の polyline)、薄グレー破線で描画、PNG時は非表示、永続化全レイヤー対応。手動配置モードは Phase 2.5 で後回し
+- **Phase 2 補強 (DONE)**: **ノードドラッグでエッジ追従 + 自動経路化**。pointerdown でマーカー位置から半径 0.5 タイル以内の polyline 端点 (`indices = [0, lastIdx]`) を `state.draggingMarker.attachedEdges` にキャプチャ → pointermove で端点を一緒に動かす → pointerup で `_routeEdgePolyline()` が `bfsShortest` (タイル座標 BFS) を介して **path タイル沿いに polyline を再構築**。中間は方向転換タイル中心のみ間引いて格納。経路なしの場合は `e.broken=true` を立てて赤破線で描画。`_edgesFromAdj` も同ヘルパーを使うので、初期生成・recompute・JSON ロード時から多点 polyline で出るので非一様 wide layout でも壁を貫通しない。`_loadEdges`/JSON 出力は polyline 可変長 + `broken` フラグ保持に対応。
 - **Phase 2.5 (DONE)**: 「🔄 ノードと道を再計算」ボタン — 手動編集後、`state.cellLayout = {cellRowX, cellRowY, cw, ch}` を使って現在の tile 状態から adj を再構築 → waypoints/edges を再生成。手動配置 (kind: 'manual') は保持。`_validateCellLayout()` で永続化からの復元時に整数範囲を whitelist 検証 (cw/ch 1..100、row offset 0..4095)。`_edgesFromAdj()` ヘルパーで生成時と再計算時のエッジ生成ロジックを共通化
 - **Phase 3 (DONE)**: **障害物** (`state.obstacles = [{x, y, kind:'rock'|'tree'|'stump'|'hole'}]`) — 🪨 モードでクリック配置、ドラッグ移動、🧹で削除、永続化全レイヤー、PNG時は非表示。`_loadObstacles()` で kind whitelist 検証 + クランプ。マーカーは茶色丸+kind icon (🪨/🌳/🪵/⚫)
 - マーカーの hit area を最低 0.5 タイルに拡大 (narrow mode で waypoint が小さすぎてクリックしづらい問題への対応、視覚サイズは維持)

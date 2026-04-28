@@ -871,10 +871,16 @@ function draw() {
 function drawEdge(e) {
   if (!e || !Array.isArray(e.polyline) || e.polyline.length < 2) return;
   ctx.save();
-  ctx.strokeStyle = COLOR_EDGE;
-  ctx.lineWidth = 4;
+  if (e.broken) {
+    ctx.strokeStyle = 'rgba(220, 60, 60, 0.85)';
+    ctx.lineWidth = 5;
+    ctx.setLineDash([10, 6]);
+  } else {
+    ctx.strokeStyle = COLOR_EDGE;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([6, 4]);
+  }
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.setLineDash([6, 4]);
   ctx.beginPath();
   ctx.moveTo(e.polyline[0].x, e.polyline[0].y);
   for (let i = 1; i < e.polyline.length; i++) {
@@ -1148,8 +1154,10 @@ cv.addEventListener('pointerdown', function(e) {
       const R = CELL * 0.5; const R2 = R * R;
       for (let ei = 0; ei < state.edges.length; ei++) {
         const e = state.edges[ei];
-        if (!e || !Array.isArray(e.polyline)) continue;
-        for (let pi = 0; pi < e.polyline.length; pi++) {
+        if (!e || !Array.isArray(e.polyline) || e.polyline.length < 2) continue;
+        const lastIdx = e.polyline.length - 1;
+        const indices = lastIdx > 0 ? [0, lastIdx] : [0];
+        for (const pi of indices) {
           const pt = e.polyline[pi];
           if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue;
           const dx = pt.x - dragOriginPos.x, dy = pt.y - dragOriginPos.y;
@@ -1292,6 +1300,24 @@ cv.addEventListener('pointerup', function(e) {
         const e = state.edges[att.edgeIdx];
         if (e && e.polyline && e.polyline[att.pointIdx]) {
           e.polyline[att.pointIdx] = { x: snappedPos.x, y: snappedPos.y };
+        }
+      }
+    }
+    // 同伴エッジ全体を path tile 沿いに再経路化 (端点は移動・スナップ済み)
+    if (Array.isArray(dm.attachedEdges) && dm.attachedEdges.length) {
+      const touched = new Set(dm.attachedEdges.map(a => a.edgeIdx));
+      for (const ei of touched) {
+        const e = state.edges[ei];
+        if (!e || !Array.isArray(e.polyline) || e.polyline.length < 2) continue;
+        const a = e.polyline[0];
+        const b = e.polyline[e.polyline.length - 1];
+        const routed = _routeEdgePolyline(a.x, a.y, b.x, b.y);
+        if (routed) {
+          e.polyline = routed;
+          e.broken = false;
+        } else {
+          e.polyline = [{ x: a.x, y: a.y }, { x: b.x, y: b.y }];
+          e.broken = true;
         }
       }
     }
@@ -1538,7 +1564,8 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     waypoints: state.waypoints.map(function(w) { return { x: w.x, y: w.y, kind: w.kind }; }),
     obstacles: state.obstacles.map(function(o) { return { x: o.x, y: o.y, kind: o.kind }; }),
     edges: state.edges.map(function(e) {
-      return { polyline: e.polyline.map(function(p) { return { x: p.x, y: p.y }; }) };
+      const poly = e.polyline.map(function(p) { return { x: p.x, y: p.y }; });
+      return e.broken ? { polyline: poly, broken: true } : { polyline: poly };
     }),
     cellStride: state.cellStride,
     cellLayout: state.cellLayout,
@@ -1666,7 +1693,7 @@ function _loadEdges(arr) {
       const y = Math.max(0, Math.min(CANVAS_H, p.y));
       poly.push({ x: x, y: y });
     }
-    if (poly.length >= 2) out.push({ polyline: poly });
+    if (poly.length >= 2) out.push(e.broken ? { polyline: poly, broken: true } : { polyline: poly });
   }
   return out;
 }
@@ -2736,6 +2763,33 @@ function _snapToBlockCenter(px, py) {
   return { x: (tx + 0.5) * CELL, y: (ty + 0.5) * CELL, snapped: true };
 }
 
+// Route a single edge between two pixel anchors along path tiles.
+// Returns a polyline that starts at (ax,ay), ends at (bx,by), and intermediate
+// points are the centers of direction-change tiles along the BFS shortest path.
+// Returns null if no path exists between the two anchors' nearest path tiles.
+function _routeEdgePolyline(ax, ay, bx, by) {
+  const ta = nearestPathTile({ x: ax, y: ay }, 1);
+  const tb = nearestPathTile({ x: bx, y: by }, 1);
+  if (!ta || !tb) return null;
+  if (ta.x === tb.x && ta.y === tb.y) return [{ x: ax, y: ay }, { x: bx, y: by }];
+  const tilePath = bfsShortest(ta, tb);
+  if (!tilePath || tilePath.length < 2) return null;
+  const corners = [tilePath[0]];
+  for (let i = 1; i < tilePath.length - 1; i++) {
+    const prev = tilePath[i - 1], cur = tilePath[i], nxt = tilePath[i + 1];
+    const dx1 = cur.x - prev.x, dy1 = cur.y - prev.y;
+    const dx2 = nxt.x - cur.x, dy2 = nxt.y - cur.y;
+    if (dx1 !== dx2 || dy1 !== dy2) corners.push(cur);
+  }
+  corners.push(tilePath[tilePath.length - 1]);
+  const out = [{ x: ax, y: ay }];
+  for (let i = 1; i < corners.length - 1; i++) {
+    out.push({ x: (corners[i].x + 0.5) * CELL, y: (corners[i].y + 0.5) * CELL });
+  }
+  out.push({ x: bx, y: by });
+  return out;
+}
+
 // Build edges (= polylines between cell centers) from a cell adjacency map.
 // Each connected pair → one polyline edge between their centers.
 // Used both at generation time and at recompute time so logic stays in sync.
@@ -2754,7 +2808,8 @@ function _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter) {
       const ay = (cellRowY[a[1]] + cellCenter) * CELL;
       const bx = (cellRowX[b[0]] + cellCenter) * CELL;
       const by = (cellRowY[b[1]] + cellCenter) * CELL;
-      edges.push({ polyline: [{x: ax, y: ay}, {x: bx, y: by}] });
+      const routed = _routeEdgePolyline(ax, ay, bx, by);
+      edges.push({ polyline: routed || [{ x: ax, y: ay }, { x: bx, y: by }] });
     }
   }
   return edges;
