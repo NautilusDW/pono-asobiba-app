@@ -237,6 +237,13 @@ input[type="file"]::file-selector-button {
       <button class="btn" data-mode="creature" style="background:#5a3a7a; color:#e6c8ff;">🐛 おじゃま虫</button>
       <button class="btn" data-mode="waypoint" style="background:#1e5a3e; color:#caf3d8;">📍 中継地点</button>
       <button class="btn" data-mode="obstacle" style="background:#5a3e1f; color:#e6cca8;">🪨 障害物</button>
+      <button class="btn" data-mode="lineedit" style="background:#3e3e5a; color:#cfcfff;">✏️ ライン編集</button>
+    </div>
+
+    <h3>スナップ</h3>
+    <div class="mode-row">
+      <button class="btn active" data-snap="cell" id="snapCellBtn">⬛ マス中心</button>
+      <button class="btn" data-snap="cross" id="snapCrossBtn">✚ 交差点</button>
     </div>
 
     <h3>ブラシサイズ</h3>
@@ -413,6 +420,8 @@ const state = {
                           // fit a single cell without overflowing onto adjacent walls)
   cellLayout: null,       // { cellRowX, cellRowY, cw, ch } — last generation の格子位置
                           // 手動修正後の "再計算" (waypoints + edges 再生成) で必要
+  snapMode: 'cell',       // 'cell' (タイル中心) | 'cross' (グリッド交差点) | 'none' (フリー)
+                          // 全マーカー (start/goal/中継地点/障害物/お邪魔虫/エッジ点) 共通
   mode: 'path',
   brushSize: 2,
   showGrid: true,
@@ -730,6 +739,8 @@ canvasWrap.addEventListener('drop', function(e) {
           ? _loadEdges(def.edges) : [];
         state.cellLayout = (typeof _validateCellLayout === 'function')
           ? _validateCellLayout(def.cellLayout) : null;
+        state.snapMode = _loadSnapMode(def.snapMode);
+        _syncSnapButtons();
         afterEdit();
         showBanner('📂 JSON 読み込み完了 (drop)');
       } catch (err) {
@@ -871,15 +882,9 @@ function draw() {
 function drawEdge(e) {
   if (!e || !Array.isArray(e.polyline) || e.polyline.length < 2) return;
   ctx.save();
-  if (e.broken) {
-    ctx.strokeStyle = 'rgba(220, 60, 60, 0.85)';
-    ctx.lineWidth = 5;
-    ctx.setLineDash([10, 6]);
-  } else {
-    ctx.strokeStyle = COLOR_EDGE;
-    ctx.lineWidth = 4;
-    ctx.setLineDash([6, 4]);
-  }
+  ctx.strokeStyle = COLOR_EDGE;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([6, 4]);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath();
   ctx.moveTo(e.polyline[0].x, e.polyline[0].y);
@@ -887,7 +892,53 @@ function drawEdge(e) {
     ctx.lineTo(e.polyline[i].x, e.polyline[i].y);
   }
   ctx.stroke();
+  // Polyline ハンドル (= 端点 + 中間点)。ドラッグ可能であることを示す小円。
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1.5;
+  const r = CELL * 0.18;
+  for (const p of e.polyline) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.restore();
+}
+
+// 点 (px,py) と線分 (ax,ay)-(bx,by) の最短距離 + 投影パラメータ t (0..1)。
+function _distPointToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) {
+    const ex = px - ax, ey = py - ay;
+    return { dist: Math.sqrt(ex * ex + ey * ey), t: 0 };
+  }
+  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  const ex = px - cx, ey = py - cy;
+  return { dist: Math.sqrt(ex * ex + ey * ey), t: t };
+}
+
+// エッジ polyline の各頂点 (端点 + 中間点) との hit detection。
+// ノード (creature/waypoint/etc) よりも優先度が低いので、_markerHitAt の末尾で呼ぶ。
+function _edgePointHitAt(px, py) {
+  const R = CELL * 0.35; const R2 = R * R;
+  for (let ei = 0; ei < state.edges.length; ei++) {
+    const e = state.edges[ei];
+    if (!e || !Array.isArray(e.polyline)) continue;
+    for (let pi = 0; pi < e.polyline.length; pi++) {
+      const p = e.polyline[pi];
+      if (!p) continue;
+      const dx = p.x - px, dy = p.y - py;
+      if (dx * dx + dy * dy < R2) {
+        return { type: 'edgePoint', edgeIdx: ei, pointIdx: pi };
+      }
+    }
+  }
+  return null;
 }
 
 function _waypointColor(kind) {
@@ -1099,7 +1150,8 @@ function _markerHitAt(px, py) {
     const dx = px - state.goal.x, dy = py - state.goal.y;
     if (dx*dx + dy*dy < r2) return 'goal';
   }
-  return null;
+  // ノードがどこにも当たらなかったら、エッジ polyline の頂点 (端点 + 中間点) をヒット
+  return _edgePointHitAt(px, py);
 }
 
 // Pixel coords from a pointer event (clamped to canvas)
@@ -1140,6 +1192,20 @@ cv.addEventListener('pointerdown', function(e) {
       afterEdit();
       return;
     }
+    // 🧹 でエッジ中間点をクリック → 削除 (端点クリックは無反応)
+    if (state.mode === 'erase' && typeof hit === 'object' && hit.type === 'edgePoint') {
+      const eEdge = state.edges[hit.edgeIdx];
+      if (!eEdge) return;
+      const last = eEdge.polyline.length - 1;
+      if (hit.pointIdx === 0 || hit.pointIdx === last) {
+        showBanner('端点は削除できません (中間点のみ削除可)');
+        return;
+      }
+      pushHistory();
+      eEdge.polyline.splice(hit.pointIdx, 1);
+      afterEdit();
+      return;
+    }
     pushHistory();
     // ドラッグ開始時、このマーカー位置から 0.5 タイル以内にあるエッジ端点を
     // 「同伴」として捕捉。ドラッグ中はマーカーと一緒に動かす(= 「線がつながって
@@ -1176,30 +1242,58 @@ cv.addEventListener('pointerdown', function(e) {
   }
   pushHistory(); // snapshot before any change
   if (state.mode === 'start' || state.mode === 'goal') {
-    // Free placement — store pixel coords
-    paintAt(t.x, t.y, p.x, p.y);
+    const snap = _snapMarker(p.x, p.y);
+    paintAt(t.x, t.y, snap.x, snap.y);
     afterEdit();
     return;
   }
   if (state.mode === 'creature') {
-    // Snap to 2x2 path-block center if click is on a path; otherwise raw.
-    const snap = _snapToBlockCenter(p.x, p.y);
+    const snap = _snapMarker(p.x, p.y);
     state.creatures.push({ x: snap.x, y: snap.y });
     afterEdit();
     return;
   }
   if (state.mode === 'waypoint') {
-    // Same snap — manual waypoints sit nicely on the path centerline.
-    const snap = _snapToBlockCenter(p.x, p.y);
+    const snap = _snapMarker(p.x, p.y);
     state.waypoints.push({ x: snap.x, y: snap.y, kind: 'manual' });
     afterEdit();
     return;
   }
   if (state.mode === 'obstacle') {
-    // 障害物配置 — snap to path block center
-    const snap = _snapToBlockCenter(p.x, p.y);
+    const snap = _snapMarker(p.x, p.y);
     state.obstacles.push({ x: snap.x, y: snap.y, kind: 'rock' });
     afterEdit();
+    return;
+  }
+  if (state.mode === 'lineedit') {
+    // 線分上 (= 端点・中間点には当たらなかった hit==null のケース) クリック
+    // → 最寄り線分の投影点に新しい中間点を挿入。距離 0.5 タイル以内のみ。
+    // pushHistory はこの分岐に来る前に既に呼ばれているが、操作なしなら戻すため
+    // 履歴を 1 ステップ巻き戻す。
+    let best = { dist: Infinity, edgeIdx: -1, segIdx: -1, x: 0, y: 0 };
+    const limit = CELL * 0.5;
+    for (let ei = 0; ei < state.edges.length; ei++) {
+      const ed = state.edges[ei];
+      if (!ed || !Array.isArray(ed.polyline)) continue;
+      for (let i = 0; i < ed.polyline.length - 1; i++) {
+        const A = ed.polyline[i], B = ed.polyline[i + 1];
+        const r = _distPointToSegment(p.x, p.y, A.x, A.y, B.x, B.y);
+        if (r.dist < best.dist && r.dist < limit) {
+          best = {
+            dist: r.dist, edgeIdx: ei, segIdx: i,
+            x: A.x + r.t * (B.x - A.x),
+            y: A.y + r.t * (B.y - A.y),
+          };
+        }
+      }
+    }
+    if (best.edgeIdx >= 0) {
+      const sp = _snapMarker(best.x, best.y);
+      state.edges[best.edgeIdx].polyline.splice(best.segIdx + 1, 0, { x: sp.x, y: sp.y });
+      afterEdit();
+    } else {
+      state.history.pop();  // 操作なし → 履歴巻き戻し
+    }
     return;
   }
   state.isPainting = true;
@@ -1241,6 +1335,12 @@ cv.addEventListener('pointermove', function(e) {
         state.obstacles[idx] = { x: p.x, y: p.y, kind: prev.kind || 'rock' };
       }
     }
+    else if (dm.type === 'edgePoint') {
+      const e = state.edges[dm.edgeIdx];
+      if (e && e.polyline && e.polyline[dm.pointIdx]) {
+        e.polyline[dm.pointIdx] = { x: p.x, y: p.y };
+      }
+    }
     // 同伴エッジ端点も更新 (= 線がノードと一緒に動く)
     if (Array.isArray(dm.attachedEdges)) {
       for (const att of dm.attachedEdges) {
@@ -1269,29 +1369,41 @@ cv.addEventListener('pointerup', function(e) {
   if (state.draggingMarker) {
     const dm = state.draggingMarker;
     let snappedPos = null;
-    // Snap creature/waypoint/obstacle drops to the path 2x2 block center so
-    // they sit cleanly on the path centerline. Start/goal are big circles
-    // and free-form placement looks fine, so don't snap them.
+    // 全マーカー (start/goal/中継地点/障害物/お邪魔虫/エッジ点) を共通の
+    // _snapMarker で揃える (state.snapMode に従う)。
     if (dm.type === 'creature') {
       const idx = dm.index;
       if (idx >= 0 && idx < state.creatures.length) {
         const c = state.creatures[idx];
-        snappedPos = _snapToBlockCenter(c.x, c.y);
+        snappedPos = _snapMarker(c.x, c.y);
         state.creatures[idx] = { x: snappedPos.x, y: snappedPos.y };
       }
     } else if (dm.type === 'waypoint') {
       const idx = dm.index;
       if (idx >= 0 && idx < state.waypoints.length) {
         const w = state.waypoints[idx];
-        snappedPos = _snapToBlockCenter(w.x, w.y);
+        snappedPos = _snapMarker(w.x, w.y);
         state.waypoints[idx] = { x: snappedPos.x, y: snappedPos.y, kind: w.kind || 'manual' };
       }
     } else if (dm.type === 'obstacle') {
       const idx = dm.index;
       if (idx >= 0 && idx < state.obstacles.length) {
         const o = state.obstacles[idx];
-        snappedPos = _snapToBlockCenter(o.x, o.y);
+        snappedPos = _snapMarker(o.x, o.y);
         state.obstacles[idx] = { x: snappedPos.x, y: snappedPos.y, kind: o.kind || 'rock' };
+      }
+    } else if (dm.type === 'start' && state.start) {
+      snappedPos = _snapMarker(state.start.x, state.start.y);
+      state.start = { x: snappedPos.x, y: snappedPos.y };
+    } else if (dm.type === 'goal' && state.goal) {
+      snappedPos = _snapMarker(state.goal.x, state.goal.y);
+      state.goal = { x: snappedPos.x, y: snappedPos.y };
+    } else if (dm.type === 'edgePoint') {
+      const e = state.edges[dm.edgeIdx];
+      if (e && e.polyline && e.polyline[dm.pointIdx]) {
+        const p0 = e.polyline[dm.pointIdx];
+        snappedPos = _snapMarker(p0.x, p0.y);
+        e.polyline[dm.pointIdx] = { x: snappedPos.x, y: snappedPos.y };
       }
     }
     // 同伴エッジ端点もスナップ位置に揃える
@@ -1300,24 +1412,6 @@ cv.addEventListener('pointerup', function(e) {
         const e = state.edges[att.edgeIdx];
         if (e && e.polyline && e.polyline[att.pointIdx]) {
           e.polyline[att.pointIdx] = { x: snappedPos.x, y: snappedPos.y };
-        }
-      }
-    }
-    // 同伴エッジ全体を path tile 沿いに再経路化 (端点は移動・スナップ済み)
-    if (Array.isArray(dm.attachedEdges) && dm.attachedEdges.length) {
-      const touched = new Set(dm.attachedEdges.map(a => a.edgeIdx));
-      for (const ei of touched) {
-        const e = state.edges[ei];
-        if (!e || !Array.isArray(e.polyline) || e.polyline.length < 2) continue;
-        const a = e.polyline[0];
-        const b = e.polyline[e.polyline.length - 1];
-        const routed = _routeEdgePolyline(a.x, a.y, b.x, b.y);
-        if (routed) {
-          e.polyline = routed;
-          e.broken = false;
-        } else {
-          e.polyline = [{ x: a.x, y: a.y }, { x: b.x, y: b.y }];
-          e.broken = true;
         }
       }
     }
@@ -1358,6 +1452,29 @@ document.querySelectorAll('.btn[data-brush]').forEach(function(b) {
     b.classList.add('active');
   });
 });
+// スナップモードトグル: 同じボタンを再押下で OFF (= 'none')
+document.querySelectorAll('.btn[data-snap]').forEach(function(b) {
+  b.addEventListener('click', function() {
+    const tgt = b.dataset.snap;
+    if (state.snapMode === tgt) {
+      state.snapMode = 'none';
+      b.classList.remove('active');
+    } else {
+      state.snapMode = tgt;
+      document.querySelectorAll('.btn[data-snap]').forEach(function(x) { x.classList.remove('active'); });
+      b.classList.add('active');
+    }
+    showBanner('スナップ: ' + (state.snapMode === 'none' ? 'OFF (フリー)' : state.snapMode === 'cell' ? 'マス中心' : '交差点'));
+    scheduleAutoSave();
+  });
+});
+// 永続化からの復元時にボタン active 状態を state.snapMode に揃える
+function _syncSnapButtons() {
+  document.querySelectorAll('.btn[data-snap]').forEach(function(x) {
+    if (x.dataset.snap === state.snapMode) x.classList.add('active');
+    else x.classList.remove('active');
+  });
+}
 gridToggle.addEventListener('change', function() {
   state.showGrid = gridToggle.checked;
   draw();
@@ -1564,11 +1681,11 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     waypoints: state.waypoints.map(function(w) { return { x: w.x, y: w.y, kind: w.kind }; }),
     obstacles: state.obstacles.map(function(o) { return { x: o.x, y: o.y, kind: o.kind }; }),
     edges: state.edges.map(function(e) {
-      const poly = e.polyline.map(function(p) { return { x: p.x, y: p.y }; });
-      return e.broken ? { polyline: poly, broken: true } : { polyline: poly };
+      return { polyline: e.polyline.map(function(p) { return { x: p.x, y: p.y }; }) };
     }),
     cellStride: state.cellStride,
     cellLayout: state.cellLayout,
+    snapMode: state.snapMode,
   };
   if (out.start && out.start.y >= 0 && out.start.y < GRID_H) {
     out.tiles[out.start.y][out.start.x] = 'start';
@@ -1634,6 +1751,8 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
       state.obstacles = _loadObstacles(def.obstacles);
       state.edges = _loadEdges(def.edges);
       state.cellLayout = _validateCellLayout(def.cellLayout);
+      state.snapMode = _loadSnapMode(def.snapMode);
+      _syncSnapButtons();
       afterEdit();
       showBanner('📂 JSON 読み込み完了');
     } catch (err) {
@@ -1661,6 +1780,11 @@ function _loadCreatures(arr) {
 
 // Validate cellLayout from persistence: { cellRowX, cellRowY, cw, ch }.
 // 整数の有限 array でなければ null を返す → 再計算が無効化されるだけで他に影響なし。
+// 永続化された snapMode 値の whitelist 検証。未知/欠如は 'cell' (デフォルト)。
+function _loadSnapMode(v) {
+  return (v === 'cell' || v === 'cross' || v === 'none') ? v : 'cell';
+}
+
 function _validateCellLayout(o) {
   if (!o || typeof o !== 'object') return null;
   if (!Array.isArray(o.cellRowX) || !Array.isArray(o.cellRowY)) return null;
@@ -1693,7 +1817,7 @@ function _loadEdges(arr) {
       const y = Math.max(0, Math.min(CANVAS_H, p.y));
       poly.push({ x: x, y: y });
     }
-    if (poly.length >= 2) out.push(e.broken ? { polyline: poly, broken: true } : { polyline: poly });
+    if (poly.length >= 2) out.push({ polyline: poly });
   }
   return out;
 }
@@ -1772,6 +1896,7 @@ function pushHistory() {
     panels: state.panels,
     gridW: GRID_W,
     cellLayout: state.cellLayout,
+    snapMode: state.snapMode,
   }));
   if (state.history.length > 50) state.history.shift();
 }
@@ -1798,6 +1923,8 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     ? _loadEdges(prev.edges) : [];
   state.cellLayout = (typeof _validateCellLayout === 'function')
     ? _validateCellLayout(prev.cellLayout) : null;
+  state.snapMode = _loadSnapMode(prev.snapMode);
+  _syncSnapButtons();
   afterEdit();
   showBanner('⤺ 1ステップ取り消し (残り ' + state.history.length + ' 回分)');
 });
@@ -1855,6 +1982,7 @@ function _doAutoSave() {
       gridW: GRID_W,
       cellStride: state.cellStride,
       cellLayout: state.cellLayout,
+      snapMode: state.snapMode,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* quota — ignore */ }
@@ -1883,6 +2011,8 @@ function restoreDraft() {
       state.cellStride = data.cellStride;
     }
     state.cellLayout = _validateCellLayout(data.cellLayout);
+    state.snapMode = _loadSnapMode(data.snapMode);
+    _syncSnapButtons();
     return true;
   } catch (e) { return false; }
 }
@@ -1937,6 +2067,7 @@ function saveAs(rawName) {
     gridW: GRID_W,
     cellStride: state.cellStride,
     cellLayout: state.cellLayout,
+    snapMode: state.snapMode,
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1961,6 +2092,7 @@ function libOverwriteSlot(name) {
     gridW: GRID_W,
     cellStride: state.cellStride,
     cellLayout: state.cellLayout,
+    snapMode: state.snapMode,
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -2159,6 +2291,8 @@ function loadSaveByName(name) {
     state.cellStride = s.cellStride;
   }
   state.cellLayout = _validateCellLayout(s.cellLayout);
+  state.snapMode = _loadSnapMode(s.snapMode);
+  _syncSnapButtons();
   document.getElementById('saveNameInput').value = name;
   afterEdit();
   showBanner('📂 読込: ' + name);
@@ -2725,6 +2859,19 @@ function _placeCreaturesOnPath(count, offX, offY, cw, ch) {
 }
 
 // Snap a pixel position to the center of the nearest 2x2 path block.
+// 統一スナップヘルパー (state.snapMode = 'cell' | 'cross' | 'none')。
+// 全マーカー (start/goal/中継地点/障害物/お邪魔虫/エッジ点) が共通でこれを通る。
+function _snapMarker(px, py) {
+  if (state.snapMode === 'cross') {
+    return { x: Math.round(px / CELL) * CELL, y: Math.round(py / CELL) * CELL };
+  }
+  if (state.snapMode === 'cell') {
+    return { x: (Math.floor(px / CELL) + 0.5) * CELL, y: (Math.floor(py / CELL) + 0.5) * CELL };
+  }
+  return { x: px, y: py };
+}
+
+// 旧: 2x2 path block center snap。新仕様では使わないが後方互換のため残置。
 // Paths are always carved 2 tiles wide, so for any path tile (tx, ty)
 // at least one 2x2 block containing it should be all-path. Falls back to
 // the single-tile center if no full 2x2 block is found (e.g. 1-tile drag-paint).
@@ -2763,36 +2910,10 @@ function _snapToBlockCenter(px, py) {
   return { x: (tx + 0.5) * CELL, y: (ty + 0.5) * CELL, snapped: true };
 }
 
-// Route a single edge between two pixel anchors along path tiles.
-// Returns a polyline that starts at (ax,ay), ends at (bx,by), and intermediate
-// points are the centers of direction-change tiles along the BFS shortest path.
-// Returns null if no path exists between the two anchors' nearest path tiles.
-function _routeEdgePolyline(ax, ay, bx, by) {
-  const ta = nearestPathTile({ x: ax, y: ay }, 3);
-  const tb = nearestPathTile({ x: bx, y: by }, 3);
-  if (!ta || !tb) return null;
-  if (ta.x === tb.x && ta.y === tb.y) return [{ x: ax, y: ay }, { x: bx, y: by }];
-  const tilePath = bfsShortest(ta, tb);
-  if (!tilePath || tilePath.length < 2) return null;
-  const corners = [tilePath[0]];
-  for (let i = 1; i < tilePath.length - 1; i++) {
-    const prev = tilePath[i - 1], cur = tilePath[i], nxt = tilePath[i + 1];
-    const dx1 = cur.x - prev.x, dy1 = cur.y - prev.y;
-    const dx2 = nxt.x - cur.x, dy2 = nxt.y - cur.y;
-    if (dx1 !== dx2 || dy1 !== dy2) corners.push(cur);
-  }
-  corners.push(tilePath[tilePath.length - 1]);
-  const out = [{ x: ax, y: ay }];
-  for (let i = 1; i < corners.length - 1; i++) {
-    out.push({ x: (corners[i].x + 0.5) * CELL, y: (corners[i].y + 0.5) * CELL });
-  }
-  out.push({ x: bx, y: by });
-  return out;
-}
-
-// Build edges (= polylines between cell centers) from a cell adjacency map.
-// Each connected pair → one polyline edge between their centers.
-// Used both at generation time and at recompute time so logic stays in sync.
+// Build edges from a cell adjacency map. Each connected pair → 2-point polyline
+// (cell center → cell center). Adjacent cells are linked by a straight corridor
+// so the line is naturally on path tiles. Intermediate corner points are added
+// only by the user via the ✏️ ライン編集 mode.
 function _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter) {
   const edges = [];
   const seen = {};
@@ -2808,12 +2929,7 @@ function _edgesFromAdj(adj, cellRowX, cellRowY, cellCenter) {
       const ay = (cellRowY[a[1]] + cellCenter) * CELL;
       const bx = (cellRowX[b[0]] + cellCenter) * CELL;
       const by = (cellRowY[b[1]] + cellCenter) * CELL;
-      const routed = _routeEdgePolyline(ax, ay, bx, by);
-      if (routed) {
-        edges.push({ polyline: routed });
-      } else {
-        edges.push({ polyline: [{ x: ax, y: ay }, { x: bx, y: by }], broken: true });
-      }
+      edges.push({ polyline: [{ x: ax, y: ay }, { x: bx, y: by }] });
     }
   }
   return edges;
@@ -3122,6 +3238,8 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
     state.cellStride = _snap.cellStride;
   }
   state.cellLayout = _validateCellLayout(_snap.cellLayout);
+  state.snapMode = _loadSnapMode(_snap.snapMode);
+  _syncSnapButtons();
   document.getElementById('saveNameInput').value = _autoLoadName;
   restored = true;
 } else {
