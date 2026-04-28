@@ -29,7 +29,9 @@
 }
 
 html, body {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   background-color: var(--bg);
   background-image: url('../assets/images/BG_03.webp');
@@ -92,8 +94,9 @@ body {
   z-index: 2;
 }
 @keyframes titleTapPulse {
-  0%, 100% { opacity: 0.92; transform: scale(1); }
-  50%      { opacity: 1;    transform: scale(1.05); }
+  /* translateX(-50%) を保持しつつ scale も適用 (絶対配置の中央寄せが消えないように) */
+  0%, 100% { opacity: 0.92; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;    transform: translateX(-50%) scale(1.05); }
 }
 
 /* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
