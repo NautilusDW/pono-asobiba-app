@@ -385,6 +385,7 @@ const COLOR_CREATURE = '#A855E6'; // お邪魔虫マーカー (紫)
 const COLOR_WP_BRANCH  = '#F2C94C'; // 中継ノード: 分岐 (黄)
 const COLOR_WP_DEADEND = '#56CCF2'; // 中継ノード: 行き止まり (水色)
 const COLOR_WP_MANUAL  = '#27AE60'; // 中継ノード: 手動配置 (緑)
+const COLOR_EDGE       = 'rgba(80, 80, 80, 0.5)'; // ノード間のエッジ (薄グレー、画面上のみ)
 
 const STORAGE_KEY = 'pono_maze_rough_draft_v1';
 
@@ -397,6 +398,8 @@ const state = {
   goal:  null,            // same — pixel coords
   creatures: [],          // [{ x, y }] お邪魔虫マーカー (PIXEL coords)
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
+  edges: [],              // [{ polyline: [{x,y},{x,y},...] }] ノード間の道筋 (PIXEL coords)
+                          // ラフ→エディタ統合 Phase 2: maze runtime に渡すグラフ情報の出口
   panels: 1,              // 1 (1920×1080) or 2 (3840×1080, side-by-side stage)
   cellStride: 2,          // last-generated cellStride — 2 (1-tile path), 3 (2-tile path)
                           // determines marker radius (smaller for 1-tile paths so they
@@ -711,6 +714,8 @@ canvasWrap.addEventListener('drop', function(e) {
           ? _loadCreatures(def.creatures) : [];
         state.waypoints = (typeof _loadWaypoints === 'function')
           ? _loadWaypoints(def.waypoints) : [];
+        state.edges = (typeof _loadEdges === 'function')
+          ? _loadEdges(def.edges) : [];
         afterEdit();
         showBanner('📂 JSON 読み込み完了 (drop)');
       } catch (err) {
@@ -825,6 +830,10 @@ function draw() {
   // Start / goal markers — large filled circles + ring
   if (state.start) drawMarker(state.start, COLOR_START, 'S');
   if (state.goal)  drawMarker(state.goal,  COLOR_GOAL,  'G');
+  // Edges (ノード間の道筋) — マーカーより前(下のレイヤー)に描画
+  for (let i = 0; i < state.edges.length; i++) {
+    drawEdge(state.edges[i]);
+  }
   // Waypoints (中継ノード) — drawn under creatures so creatures sit on top
   for (let i = 0; i < state.waypoints.length; i++) {
     drawWaypointMarker(state.waypoints[i]);
@@ -835,6 +844,22 @@ function draw() {
   }
   // Brush hover preview — show exactly which tiles will be affected
   if (state.hoverTile) drawBrushPreview();
+}
+
+function drawEdge(e) {
+  if (!e || !Array.isArray(e.polyline) || e.polyline.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = COLOR_EDGE;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(e.polyline[0].x, e.polyline[0].y);
+  for (let i = 1; i < e.polyline.length; i++) {
+    ctx.lineTo(e.polyline[i].x, e.polyline[i].y);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function _waypointColor(kind) {
@@ -1307,11 +1332,13 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
   const prevHover = state.hoverTile;
   const prevCreatures = state.creatures;
   const prevWaypoints = state.waypoints;
+  const prevEdges = state.edges;
   state.showGrid = false;
   state.showSolution = false;
   state.hoverTile = null;
   state.creatures = [];
   state.waypoints = [];
+  state.edges = [];
   draw();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const stageName = (document.getElementById('saveNameInput').value || '').trim();
@@ -1323,6 +1350,7 @@ document.getElementById('exportPngBtn').addEventListener('click', async function
     state.hoverTile = prevHover;
     state.creatures = prevCreatures;
     state.waypoints = prevWaypoints;
+    state.edges = prevEdges;
     draw();
   };
   if (state.panels === 2) {
@@ -1376,6 +1404,9 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
     creatures: state.creatures.map(function(c) { return { x: c.x, y: c.y }; }),
     waypoints: state.waypoints.map(function(w) { return { x: w.x, y: w.y, kind: w.kind }; }),
+    edges: state.edges.map(function(e) {
+      return { polyline: e.polyline.map(function(p) { return { x: p.x, y: p.y }; }) };
+    }),
     cellStride: state.cellStride,
   };
   if (out.start && out.start.y >= 0 && out.start.y < GRID_H) {
@@ -1439,6 +1470,7 @@ document.getElementById('jsonInput').addEventListener('change', function(e) {
       state.goal  = _loadMarker(def.goal);
       state.creatures = _loadCreatures(def.creatures);
       state.waypoints = _loadWaypoints(def.waypoints);
+      state.edges = _loadEdges(def.edges);
       afterEdit();
       showBanner('📂 JSON 読み込み完了');
     } catch (err) {
@@ -1460,6 +1492,26 @@ function _loadCreatures(arr) {
     const x = Math.max(0, Math.min(CANVAS_W, c.x));
     const y = Math.max(0, Math.min(CANVAS_H, c.y));
     out.push({ x: x, y: y });
+  }
+  return out;
+}
+
+// Validate edges array — each edge is { polyline: [{x,y}, ...] } in PIXEL coords.
+// Used for runtime graph info (nodes connected via path lines).
+function _loadEdges(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const e = arr[i];
+    if (!e || !Array.isArray(e.polyline)) continue;
+    const poly = [];
+    for (const p of e.polyline) {
+      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+      const x = Math.max(0, Math.min(CANVAS_W, p.x));
+      const y = Math.max(0, Math.min(CANVAS_H, p.y));
+      poly.push({ x: x, y: y });
+    }
+    if (poly.length >= 2) out.push({ polyline: poly });
   }
   return out;
 }
@@ -1517,6 +1569,7 @@ function pushHistory() {
     goal: state.goal,
     creatures: state.creatures,
     waypoints: state.waypoints,
+    edges: state.edges,
     panels: state.panels,
     gridW: GRID_W,
   }));
@@ -1539,6 +1592,8 @@ document.getElementById('undoBtn').addEventListener('click', function() {
     ? _loadCreatures(prev.creatures) : [];
   state.waypoints = (typeof _loadWaypoints === 'function')
     ? _loadWaypoints(prev.waypoints) : [];
+  state.edges = (typeof _loadEdges === 'function')
+    ? _loadEdges(prev.edges) : [];
   afterEdit();
   showBanner('⤺ 1ステップ取り消し (残り ' + state.history.length + ' 回分)');
 });
@@ -1564,6 +1619,7 @@ document.getElementById('resetBtn').addEventListener('click', function() {
   state.goal  = null;
   state.creatures = [];
   state.waypoints = [];
+  state.edges = [];
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   afterEdit();
   showBanner('リセット完了');
@@ -1587,6 +1643,7 @@ function _doAutoSave() {
       goal: state.goal,
       creatures: state.creatures,
       waypoints: state.waypoints,
+      edges: state.edges,
       panels: state.panels,
       gridW: GRID_W,
       cellStride: state.cellStride,
@@ -1610,6 +1667,8 @@ function restoreDraft() {
       ? _loadCreatures(data.creatures) : [];
     state.waypoints = (typeof _loadWaypoints === 'function')
       ? _loadWaypoints(data.waypoints) : [];
+    state.edges = (typeof _loadEdges === 'function')
+      ? _loadEdges(data.edges) : [];
     if (data.cellStride === 2 || data.cellStride === 3 || data.cellStride === 4) {
       state.cellStride = data.cellStride;
     }
@@ -1661,6 +1720,7 @@ function saveAs(rawName) {
     goal: state.goal,
     creatures: state.creatures.slice(),
     waypoints: state.waypoints.slice(),
+    edges: state.edges.slice(),
     panels: state.panels,
     gridW: GRID_W,
     cellStride: state.cellStride,
@@ -1682,6 +1742,7 @@ function libOverwriteSlot(name) {
     goal: state.goal,
     creatures: state.creatures.slice(),
     waypoints: state.waypoints.slice(),
+    edges: state.edges.slice(),
     panels: state.panels,
     gridW: GRID_W,
     cellStride: state.cellStride,
@@ -1877,6 +1938,7 @@ function loadSaveByName(name) {
   state.goal  = s.goal;
   state.creatures = _loadCreatures(s.creatures);
   state.waypoints = _loadWaypoints(s.waypoints);
+  state.edges = _loadEdges(s.edges);
   if (s.cellStride === 2 || s.cellStride === 3 || s.cellStride === 4) {
     state.cellStride = s.cellStride;
   }
@@ -1985,6 +2047,7 @@ document.getElementById('libImportInput').addEventListener('change', function(e)
         goal:  _loadMarker(def.goal),
         creatures: _loadCreatures(def.creatures),
         waypoints: _loadWaypoints(def.waypoints),
+        edges: _loadEdges(def.edges),
         panels: (def.panels === 2 || def.width >= 64) ? 2 : 1,
         gridW: (def.panels === 2 || def.width >= 64) ? 64 : 32,
         savedAt: Date.now(),
@@ -2489,7 +2552,9 @@ function _autoWaypointsFromCellGraph(adj, cellRowX, cellRowY, startKey, goalKey,
   const skip = {};
   if (startKey) skip[startKey] = true;
   if (goalKey)  skip[goalKey]  = true;
-  // Cell-interior center pixel: cellRow*[k] + off + pw/2 (in tile units)
+  // 拡張があるセルでも un-extended な interior 中心を使う。これで拡張部分(=
+  // canvas 余白側) でなく maze 内部側に寄る(= 3-tile band の左 or 上の端)
+  // 見え方になる。ユーザー要望: 真ん中浮きを避けて band の片端に寄せる。
   const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenterOffset = off + pw / 2;
@@ -2538,8 +2603,8 @@ function generateMazeForDifficulty(d) {
   }
   _pruneDeadEnds(maze, cw, ch, offX, offY, params.deadEndPrune, protectedSet, cellStride);
   state.tiles = maze.tiles;
-  // Cell-interior center pixel — uses non-uniform cellRow*[] from the maze
-  // so wide-mode "extra wall row in middle" shifts the post-midpoint cells.
+  // Cell-interior center pixel — 拡張があるセルでも un-extended center を使い、
+  // 3-tile band の片端 (maze 内部側 = canvas 余白から離れた側) に寄せる。
   const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenter = off + pw / 2;
@@ -2592,6 +2657,29 @@ function generateMazeForDifficulty(d) {
   }
   // Auto-place waypoints at branch/dead-end cells (excluding start/goal)
   state.waypoints = _autoWaypointsFromCellGraph(maze.adj, maze.cellRowX, maze.cellRowY, startKey, goalKey, cellStride);
+  // Phase 2: cell adjacency map から各 connected pair を polyline edge に変換
+  // (= maze runtime に渡すノード間の道筋情報)。各 polyline は隣接 cell 中心の
+  // 2 点のみ — 隣接 cell 同士は path tile を介して直線で繋がる。
+  state.edges = (function() {
+    const eds = [];
+    const seen = {};
+    for (const k of Object.keys(maze.adj)) {
+      const nb = maze.adj[k] ? Object.keys(maze.adj[k]) : [];
+      const a = k.split(',').map(Number);
+      for (const n of nb) {
+        const pairKey = (k < n) ? (k + '|' + n) : (n + '|' + k);
+        if (seen[pairKey]) continue;
+        seen[pairKey] = true;
+        const b = n.split(',').map(Number);
+        const ax = (maze.cellRowX[a[0]] + cellCenter) * CELL;
+        const ay = (maze.cellRowY[a[1]] + cellCenter) * CELL;
+        const bx = (maze.cellRowX[b[0]] + cellCenter) * CELL;
+        const by = (maze.cellRowY[b[1]] + cellCenter) * CELL;
+        eds.push({ polyline: [{x: ax, y: ay}, {x: bx, y: by}] });
+      }
+    }
+    return eds;
+  })();
   state.creatures = _placeCreaturesOnPath(params.creatureCount, offX, offY, cw, ch);
   afterEdit();
   showBanner('🎲 難易度 ' + params.difficulty + ' / ' +
@@ -2657,6 +2745,7 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
   state.goal  = _snap.goal;
   state.creatures = _loadCreatures(_snap.creatures);
   state.waypoints = _loadWaypoints(_snap.waypoints);
+  state.edges = _loadEdges(_snap.edges);
   if (_snap.cellStride === 2 || _snap.cellStride === 3 || _snap.cellStride === 4) {
     state.cellStride = _snap.cellStride;
   }
