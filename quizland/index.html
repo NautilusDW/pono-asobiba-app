@@ -448,15 +448,26 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 /* ===== Start screen ===== */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
-  background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
+  background: #FBBF24 url('../assets/images/quizland/title_back.jpg') center / cover no-repeat;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 20px;
+  justify-content: flex-end;
+  padding: 20px 20px 32px;
+  gap: 16px;
 }
 .start-screen.hidden { display: none; }
+.start-logo {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(86%, 420px);
+  max-height: 42vh;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+}
 
 /* ===== Category screen ===== */
 .category-screen {
@@ -607,11 +618,10 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 
 <!-- ===== Start Screen ===== -->
 <div class="start-screen" id="start-screen">
-  <div class="start-title">🦉 フクロウ博士のなぞなぞ 🦉</div>
-  <div class="start-subtitle">フクロウ博士が だす<br>もんだいを といてみよう！</div>
-  <div class="mode-row" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;margin:8px auto 0;">
+  <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウ博士のなぞなぞ">
+  <div class="mode-row" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;margin:0 auto;background:rgba(255,255,255,0.78);padding:12px;border-radius:20px;backdrop-filter:blur(6px);">
     <button class="mode-btn selected" data-mode="inspire" style="padding:14px 20px;border:3px solid #FBBF24;border-radius:18px;background:#FFF8E7;font-family:inherit;font-weight:900;color:#5D4E37;font-size:1rem;cursor:pointer;text-align:left;line-height:1.4;">
-      🎯 ひらめき<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">かず・かたち・はんたいことば</span>
+      😊 やさしい<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">いろ・かず・かたち</span>
     </button>
     <button class="mode-btn" data-mode="know" style="padding:14px 20px;border:3px solid #C8C0B8;border-radius:18px;background:#fff;font-family:inherit;font-weight:900;color:#5D4E37;font-size:1rem;cursor:pointer;text-align:left;line-height:1.4;">
       💡 ものしり<br><span style="font-size:0.78rem;font-weight:700;color:#A89880;">てんき・からだ・なんでも</span>
@@ -673,7 +683,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
     <button class="modal-btn" id="result-garden-btn" style="background:linear-gradient(135deg,#10B981,#34D399);">🌼 おにわへ ▶</button>
     <button class="modal-btn" id="result-btn">もう一回 ▶</button>
     <button class="modal-btn modal-btn-enc" id="result-enc-btn">🌼 おはな ずかん</button>
-    <button class="modal-btn modal-btn-cat" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🎯 カテゴリーをかえる</button>
+    <button class="modal-btn modal-btn-cat" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
 </div>
@@ -1516,11 +1526,11 @@ function updateCatStartBtn() {
 // ── ひらめき / ものしり モード選択 ─────────────────
 let selectedMode = 'inspire'; // 'inspire' | 'know'
 
-// inspire = 直感的にすぐわかる: 色順・数・形・反対語
-// know    = 知識・理由を考える: トリビア・天気の仕組み・体の機能
+// やさしい(inspire) = 文字読めない3-4歳でも遊べる: 色・数・形 (絵中心)
+// ものしり(know)    = 5-6 歳〜: トリビア・天気・体・反対語 (文字読み必須)
 const MODE_TO_CATEGORIES = {
-  inspire: ['order_color', 'count_total', 'shape_name', 'opposite'],
-  know:    ['trivia', 'weather', 'body']
+  inspire: ['order_color', 'count_total', 'shape_name'],
+  know:    ['trivia', 'weather', 'body', 'opposite']
 };
 
 document.querySelectorAll('.mode-btn').forEach(function(btn) {
@@ -1537,22 +1547,21 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
   });
 });
 
-// Start button → show category screen (filtered by selectedMode)
+// Start button → モードに応じてカテゴリを全選択し、即ゲーム開始 (カテゴリ選択画面はスキップ)
 document.getElementById('start-btn').addEventListener('click', function() {
   ensureAudio();
   startBGM();
-  // モードに応じて、出題対象カテゴリだけ「選択中」にしておく。
+  // モードに該当するカテゴリだけ「選択中」にしておく (出題ランダムシャッフル)。
   ALL_CATS.forEach(function(c) {
     selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
   });
   document.getElementById('start-screen').classList.add('hidden');
-  buildCategoryScreen();
-  document.getElementById('category-screen').classList.remove('hidden');
+  initGame();
   // メニュー初期化（menu.js）
   if (typeof initMenu === 'function') {
     initMenu({
       bgmToggle: function() { toggleBGM(); },
-      tutorial: function() { alert('すきなカテゴリーをえらんで なぞなぞに こたえよう！'); }
+      tutorial: function() { alert('フクロウ博士の なぞなぞに こたえよう！'); }
     });
   }
 });
@@ -1593,11 +1602,11 @@ document.getElementById('result-btn').addEventListener('click', function() {
   initGame();
 });
 
-// Result "change category" button → back to category screen
+// Result "change mode" button → back to start screen (モード選び直し)
 document.getElementById('result-cat-btn').addEventListener('click', function() {
   document.getElementById('result-overlay').classList.add('hidden');
-  buildCategoryScreen();
-  document.getElementById('category-screen').classList.remove('hidden');
+  document.getElementById('category-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
 });
 
 // Flower encyclopedia open/close
