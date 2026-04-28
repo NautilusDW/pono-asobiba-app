@@ -52,41 +52,30 @@ body {
 .hidden { display: none !important; }
 
 /* ===== Title Screen (タップしてスタート) =====
-   BG (1600×686 = 21:9) を <img object-fit:contain> で完全表示 (横切れ防止)。
-   端末アスペクト比が 21:9 と違う時は背景緑色 (画像の草色) で帯を埋める。
-   ロゴは上部中央に大きめ配置。タップで難易度選択画面へ。 */
+   BG (1600×686 = 21:9) を cover で全画面、ロゴ左上に絶対配置。横画面前提。 */
 #title-screen {
   position: fixed; inset: 0; z-index: 250;
-  background: #BBD89E; /* 画像の草・葉色に近いグリーン: contain 時の上下バー埋め */
+  background: #BBD89E url('../assets/images/wordmatch/title_back.jpg') center / cover no-repeat;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
-#title-screen .title-bg {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  z-index: 1;
-}
-#title-screen .title-content {
-  position: absolute; inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5% 4%;
-}
 .title-logo {
-  width: min(95%, 1000px);
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  width: min(60%, 600px);
   max-height: 50vh;
   object-fit: contain;
-  margin-top: 1%;
   pointer-events: none;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
+  z-index: 2;
 }
 .title-tap-cta {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   font-size: clamp(1rem, 3.6vw, 1.6rem);
   color: #5D3A00;
@@ -98,11 +87,44 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.18);
   animation: titleTapPulse 1.4s ease-in-out infinite;
   pointer-events: none;
-  margin-bottom: 2%;
+  z-index: 2;
 }
 @keyframes titleTapPulse {
   0%, 100% { opacity: 0.92; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.05); }
+}
+
+/* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
+.landscape-notice-overlay {
+  display: none;
+}
+@media (orientation: portrait) {
+  .landscape-notice-overlay {
+    display: flex;
+    flex-direction: column;
+    position: fixed; inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.92);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #FFE8B0;
+    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+    gap: 18px;
+  }
+  .landscape-notice-overlay .rotate-icon {
+    font-size: 4rem;
+    animation: rotateHint 1.6s ease-in-out infinite;
+  }
+  .landscape-notice-overlay p {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+  }
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(90deg); }
+  }
 }
 
 /* ===== Difficulty Select Screen ===== */
@@ -867,13 +889,16 @@ body {
 
 <audio id="bgm" loop src="../assets/audio/wordmatch_bgm.mp3" preload="auto"></audio>
 
-<!-- ===== タイトル画面: 21:9 BG + ロゴ + タップしてスタート ===== -->
+<!-- ===== タイトル画面: 21:9 BG + ロゴ (左上) + タップしてスタート ===== -->
 <div id="title-screen" role="button" aria-label="タップしてスタート">
-  <img class="title-bg" src="../assets/images/wordmatch/title_back.jpg" alt="">
-  <div class="title-content">
-    <img class="title-logo" src="../assets/images/wordmatch/title_logo.png" alt="あつめよう！ポノのもりのずかん">
-    <div class="title-tap-cta">▶ タップしてスタート</div>
-  </div>
+  <img class="title-logo" src="../assets/images/wordmatch/title_logo.png" alt="あつめよう！ポノのもりのずかん">
+  <div class="title-tap-cta">▶ タップしてスタート</div>
+</div>
+
+<!-- 縦持ち時の警告オーバーレイ -->
+<div class="landscape-notice-overlay" aria-hidden="true">
+  <div class="rotate-icon">📱</div>
+  <p>よこむきに<br>してね</p>
 </div>
 
 <!-- ===== 難易度選択画面 ===== -->

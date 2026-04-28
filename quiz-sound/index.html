@@ -191,30 +191,34 @@
   .thinking-pono.wrong   { box-shadow: 0 0 0 4px rgba(255,107,107,0.55), 0 4px 12px rgba(0,0,0,0.15); }
 
   /* ── タイトル画面 (タップで intro へ) ──
-     BG (1600×686 = 21:9) を cover で全画面、ロゴ (透過 PNG, 1200×433 横長) を上部中央に配置。
-     タップで難易度選択画面 (.intro) へ。 */
+     BG (1600×686 = 21:9) を cover で全画面、ロゴ (透過 PNG) を上部中央に絶対配置。
+     ポノ (くま) の顔を覆わないよう max-height を抑え、上端ぎりぎりに配置。横画面前提。 */
   .title-screen {
     position: fixed; inset: 0;
     z-index: 250;
     background: #E8DCC0 url('../assets/images/quiz-sound/title_back.jpg') center / cover no-repeat;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 5% 4%;
+    overflow: hidden;
   }
   .title-screen.hidden { display: none; }
   .title-logo {
-    width: min(90%, 810px);
-    max-height: 42vh;
+    position: absolute;
+    top: 1%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(60%, 540px);
+    max-height: 36vh;
     object-fit: contain;
-    margin-top: 8%;
     pointer-events: none;
     filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
+    z-index: 2;
   }
   .title-tap-cta {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
     font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
     font-size: clamp(1rem, 3.6vw, 1.6rem);
     color: #5D3A00;
@@ -226,11 +230,43 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     animation: titleTapPulse 1.4s ease-in-out infinite;
     pointer-events: none;
-    margin-bottom: 2%;
+    z-index: 2;
   }
   @keyframes titleTapPulse {
     0%, 100% { opacity: 0.92; transform: scale(1); }
     50%      { opacity: 1;    transform: scale(1.05); }
+  }
+  /* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
+  .landscape-notice-overlay {
+    display: none;
+  }
+  @media (orientation: portrait) {
+    .landscape-notice-overlay {
+      display: flex;
+      flex-direction: column;
+      position: fixed; inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.92);
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #FFE8B0;
+      font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+      gap: 18px;
+    }
+    .landscape-notice-overlay .rotate-icon {
+      font-size: 4rem;
+      animation: rotateHint 1.6s ease-in-out infinite;
+    }
+    .landscape-notice-overlay p {
+      font-size: 1.5rem;
+      line-height: 1.4;
+      letter-spacing: 0.06em;
+    }
+    @keyframes rotateHint {
+      0%, 100% { transform: rotate(0deg); }
+      50%      { transform: rotate(90deg); }
+    }
   }
 
   /* ── イントロ画面 (タップで AC アンロック) ── */
@@ -360,6 +396,12 @@
 <div class="title-screen" id="title-screen" role="button" aria-label="タップしてスタート">
   <img class="title-logo" src="../assets/images/quiz-sound/title_logo.png" alt="こだまのもりのこえさがし">
   <div class="title-tap-cta">▶ タップしてスタート</div>
+</div>
+
+<!-- 縦持ち時の警告オーバーレイ -->
+<div class="landscape-notice-overlay" aria-hidden="true">
+  <div class="rotate-icon">📱</div>
+  <p>よこむきに<br>してね</p>
 </div>
 
 <!-- ── イントロ: 難易度選択 + AudioContext / BGM アンロック ── -->

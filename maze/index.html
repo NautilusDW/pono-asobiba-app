@@ -623,29 +623,33 @@ body.image-stage-mode .game-wrap {
 .enc-hand { font-size: 3rem; line-height: 1; }
 
 /* ===== Title Screen (タップしてスタート) =====
-   BG (1600×686 = 21:9) を cover で全画面、ロゴ (透過 PNG, 1200×514 横長) を上部中央に配置。
-   タップで非表示にしてゲーム本体 (#app) を見せる (ゲームは裏で既に loadStage 済み)。 */
+   BG (1600×686 = 21:9) を cover で全画面、ロゴ (透過 PNG) を上部中央に絶対配置。
+   ロゴを画面上端ぎりぎりに置く (ユーザー指示)。横画面前提。 */
 #title-screen {
   position: fixed; inset: 0; z-index: 250;
   background: #2A1A1F url('../assets/images/maze/title_back.jpg') center / cover no-repeat;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5% 4%;
+  overflow: hidden;
 }
 #title-screen.hidden { display: none; }
 .title-logo {
+  position: absolute;
+  top: 0%;
+  left: 50%;
+  transform: translateX(-50%);
   width: min(95%, 1000px);
   max-height: 50vh;
   object-fit: contain;
-  margin-top: 1%;
   pointer-events: none;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+  z-index: 2;
 }
 .title-tap-cta {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   font-size: clamp(1rem, 3.6vw, 1.6rem);
   color: #FFE8B0;
@@ -657,11 +661,45 @@ body.image-stage-mode .game-wrap {
   box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 18px rgba(255, 200, 80, 0.25);
   animation: titleTapPulse 1.4s ease-in-out infinite;
   pointer-events: none;
-  margin-bottom: 2%;
+  z-index: 2;
 }
 @keyframes titleTapPulse {
   0%, 100% { opacity: 0.92; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.05); }
+}
+
+/* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
+/* ※ maze は既に landscape-notice (id) を別途持っているのでクラス名を変えて競合回避 */
+.landscape-notice-overlay {
+  display: none;
+}
+@media (orientation: portrait) {
+  .landscape-notice-overlay {
+    display: flex;
+    flex-direction: column;
+    position: fixed; inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.92);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #FFE8B0;
+    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+    gap: 18px;
+  }
+  .landscape-notice-overlay .rotate-icon {
+    font-size: 4rem;
+    animation: rotateHint 1.6s ease-in-out infinite;
+  }
+  .landscape-notice-overlay p {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+  }
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(90deg); }
+  }
 }
 </style>
 </head>
@@ -674,6 +712,12 @@ body.image-stage-mode .game-wrap {
 <div id="title-screen" role="button" aria-label="タップしてスタート">
   <img class="title-logo" src="../assets/images/maze/title_logo.png" alt="ポノとランタンのめいろ">
   <div class="title-tap-cta">▶ タップしてスタート</div>
+</div>
+
+<!-- 縦持ち時の警告オーバーレイ -->
+<div class="landscape-notice-overlay" aria-hidden="true">
+  <div class="rotate-icon">📱</div>
+  <p>よこむきに<br>してね</p>
 </div>
 
 <div id="app">
