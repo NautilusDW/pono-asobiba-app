@@ -398,6 +398,9 @@ const state = {
   creatures: [],          // [{ x, y }] お邪魔虫マーカー (PIXEL coords)
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
   panels: 1,              // 1 (1920×1080) or 2 (3840×1080, side-by-side stage)
+  cellStride: 2,          // last-generated cellStride — 2 (1-tile path), 3 (2-tile path)
+                          // determines marker radius (smaller for 1-tile paths so they
+                          // fit a single cell without overflowing onto adjacent walls)
   mode: 'path',
   brushSize: 2,
   showGrid: true,
@@ -537,7 +540,9 @@ function drawCompare() {
   // Markers (no S/G text)
   function drawMarkerOn(p, color) {
     if (!p) return;
-    const r = CELL * 1.4;
+    // Compare-pane uses the snapshot's stride if persisted, otherwise current.
+    const snapStride = (_compareSnap && _compareSnap.cellStride) || state.cellStride;
+    const r = _markerRadius(snapStride);
     ctx2.save();
     ctx2.fillStyle = color; ctx2.globalAlpha = 0.92;
     ctx2.beginPath(); ctx2.arc(p.x, p.y, r, 0, Math.PI * 2); ctx2.fill();
@@ -553,7 +558,8 @@ function drawCompare() {
   for (let i = 0; i < wps.length; i++) {
     const w = wps[i];
     if (!w || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
-    const r = CELL * 0.5;
+    const snapStride = (_compareSnap && _compareSnap.cellStride) || state.cellStride;
+    const r = _waypointRadius(snapStride);
     ctx2.save();
     ctx2.fillStyle = _waypointColor(w.kind); ctx2.globalAlpha = 0.9;
     ctx2.beginPath(); ctx2.arc(w.x, w.y, r, 0, Math.PI * 2); ctx2.fill();
@@ -567,7 +573,8 @@ function drawCompare() {
   for (let i = 0; i < cres.length; i++) {
     const c = cres[i];
     if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
-    const r = CELL * 0.7;
+    const snapStride = (_compareSnap && _compareSnap.cellStride) || state.cellStride;
+    const r = _creatureRadius(snapStride);
     ctx2.save();
     ctx2.fillStyle = COLOR_CREATURE; ctx2.globalAlpha = 0.9;
     ctx2.beginPath(); ctx2.arc(c.x, c.y, r, 0, Math.PI * 2); ctx2.fill();
@@ -744,6 +751,25 @@ draw = function() {
 };
 
 // ────────────────────────────────────────────────────────
+// Marker radius helpers — narrow (1-tile path) modes use smaller markers so
+// they fit a single cell without overflowing onto adjacent wall tiles.
+// Wide mode (2-tile path) keeps the larger 1.4-tile radius from before.
+// Stride argument can be omitted (falls back to state.cellStride).
+// ────────────────────────────────────────────────────────
+function _markerRadius(stride) {
+  const s = stride != null ? stride : state.cellStride;
+  return CELL * (s >= 3 ? 1.4 : 0.75);
+}
+function _creatureRadius(stride) {
+  const s = stride != null ? stride : state.cellStride;
+  return CELL * (s >= 3 ? 0.7 : 0.45);
+}
+function _waypointRadius(stride) {
+  const s = stride != null ? stride : state.cellStride;
+  return CELL * (s >= 3 ? 0.5 : 0.35);
+}
+
+// ────────────────────────────────────────────────────────
 // Drawing
 // ────────────────────────────────────────────────────────
 function draw() {
@@ -818,7 +844,7 @@ function _waypointColor(kind) {
 
 function drawWaypointMarker(pos) {
   const cx = pos.x, cy = pos.y;
-  const r = CELL * 0.5;
+  const r = _waypointRadius();
   ctx.save();
   ctx.fillStyle = _waypointColor(pos.kind);
   ctx.globalAlpha = 0.9;
@@ -835,7 +861,7 @@ function drawWaypointMarker(pos) {
 
 function drawCreatureMarker(pos) {
   const cx = pos.x, cy = pos.y;
-  const r = CELL * 0.7;
+  const r = _creatureRadius();
   ctx.save();
   ctx.fillStyle = COLOR_CREATURE;
   ctx.globalAlpha = 0.9;
@@ -890,7 +916,7 @@ function drawMarker(pos, color, _label) {
   // 色 (青=スタート / 赤=ゴール) だけで識別する方針。
   const cx = pos.x;
   const cy = pos.y;
-  const r = CELL * 1.4;
+  const r = _markerRadius();
   ctx.save();
   ctx.fillStyle = color;
   ctx.globalAlpha = 0.92;
@@ -962,21 +988,21 @@ function _markerInEraseRect(marker, x0, y0, x1, y1) {
 // first because they are smaller and can sit inside the start/goal area.
 function _markerHitAt(px, py) {
   // Smallest markers first (creatures and waypoints can sit inside start/goal area).
-  const rCre = CELL * 0.7;
+  const rCre = _creatureRadius();
   const rCre2 = rCre * rCre;
   for (let i = 0; i < state.creatures.length; i++) {
     const c = state.creatures[i];
     const dx = px - c.x, dy = py - c.y;
     if (dx*dx + dy*dy < rCre2) return { type: 'creature', index: i };
   }
-  const rWp = CELL * 0.5;
+  const rWp = _waypointRadius();
   const rWp2 = rWp * rWp;
   for (let i = 0; i < state.waypoints.length; i++) {
     const w = state.waypoints[i];
     const dx = px - w.x, dy = py - w.y;
     if (dx*dx + dy*dy < rWp2) return { type: 'waypoint', index: i };
   }
-  const r = CELL * 1.4;
+  const r = _markerRadius();
   const r2 = r * r;
   if (state.start) {
     const dx = px - state.start.x, dy = py - state.start.y;
@@ -1342,6 +1368,7 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
     goal:  state.goal  ? { x: state.goal.x,  y: state.goal.y  } : null,
     creatures: state.creatures.map(function(c) { return { x: c.x, y: c.y }; }),
     waypoints: state.waypoints.map(function(w) { return { x: w.x, y: w.y, kind: w.kind }; }),
+    cellStride: state.cellStride,
   };
   if (out.start && out.start.y >= 0 && out.start.y < GRID_H) {
     out.tiles[out.start.y][out.start.x] = 'start';
@@ -1554,6 +1581,7 @@ function _doAutoSave() {
       waypoints: state.waypoints,
       panels: state.panels,
       gridW: GRID_W,
+      cellStride: state.cellStride,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* quota — ignore */ }
@@ -1574,6 +1602,9 @@ function restoreDraft() {
       ? _loadCreatures(data.creatures) : [];
     state.waypoints = (typeof _loadWaypoints === 'function')
       ? _loadWaypoints(data.waypoints) : [];
+    if (data.cellStride === 2 || data.cellStride === 3 || data.cellStride === 4) {
+      state.cellStride = data.cellStride;
+    }
     return true;
   } catch (e) { return false; }
 }
@@ -1624,6 +1655,7 @@ function saveAs(rawName) {
     waypoints: state.waypoints.slice(),
     panels: state.panels,
     gridW: GRID_W,
+    cellStride: state.cellStride,
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1644,6 +1676,7 @@ function libOverwriteSlot(name) {
     waypoints: state.waypoints.slice(),
     panels: state.panels,
     gridW: GRID_W,
+    cellStride: state.cellStride,
     savedAt: Date.now(),
   };
   setAllSaves(saves);
@@ -1671,9 +1704,16 @@ function libRenameSlot(oldName, newRawName) {
   return true;
 }
 
-// Generate a 192×108 thumbnail dataURL of a saved snapshot
+// Generate a 192×108 thumbnail dataURL of a saved snapshot.
+// Thumbnail render reads `snap.cellStride` raw from localStorage — normalize
+// here so attacker-tampered values can't propagate into radius math even if
+// future code adds direct multiplication (currently safe due to discrete
+// branches in _markerRadius / _creatureRadius / _waypointRadius).
 function _libThumbnail(snap) {
   const W = 192, H = 108;
+  const _safeStride = (snap.cellStride === 2 || snap.cellStride === 3 || snap.cellStride === 4)
+    ? snap.cellStride : (state.cellStride || 2);
+  snap = Object.assign({}, snap, { cellStride: _safeStride });
   const oc = document.createElement('canvas');
   oc.width = W; oc.height = H;
   const octx = oc.getContext('2d');
@@ -1690,7 +1730,7 @@ function _libThumbnail(snap) {
   function dot(p, color) {
     if (!p) return;
     octx.fillStyle = color; octx.globalAlpha = 0.92;
-    octx.beginPath(); octx.arc(p.x * sc, p.y * sc, CELL * 1.4 * sc, 0, Math.PI * 2);
+    octx.beginPath(); octx.arc(p.x * sc, p.y * sc, _markerRadius(snap.cellStride) * sc, 0, Math.PI * 2);
     octx.fill();
     octx.globalAlpha = 1;
     octx.strokeStyle = '#fff'; octx.lineWidth = 1;
@@ -1705,7 +1745,7 @@ function _libThumbnail(snap) {
     const c = cres[i];
     if (!c || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
     octx.fillStyle = COLOR_CREATURE; octx.globalAlpha = 0.92;
-    octx.beginPath(); octx.arc(c.x * sc, c.y * sc, CELL * 0.7 * sc, 0, Math.PI * 2);
+    octx.beginPath(); octx.arc(c.x * sc, c.y * sc, _creatureRadius(snap.cellStride) * sc, 0, Math.PI * 2);
     octx.fill();
     octx.globalAlpha = 1;
   }
@@ -1715,7 +1755,7 @@ function _libThumbnail(snap) {
     const w = wps[i];
     if (!w || !Number.isFinite(w.x) || !Number.isFinite(w.y)) continue;
     octx.fillStyle = _waypointColor(w.kind); octx.globalAlpha = 0.92;
-    octx.beginPath(); octx.arc(w.x * sc, w.y * sc, CELL * 0.5 * sc, 0, Math.PI * 2);
+    octx.beginPath(); octx.arc(w.x * sc, w.y * sc, _waypointRadius(snap.cellStride) * sc, 0, Math.PI * 2);
     octx.fill();
     octx.globalAlpha = 1;
   }
@@ -1829,6 +1869,9 @@ function loadSaveByName(name) {
   state.goal  = s.goal;
   state.creatures = _loadCreatures(s.creatures);
   state.waypoints = _loadWaypoints(s.waypoints);
+  if (s.cellStride === 2 || s.cellStride === 3 || s.cellStride === 4) {
+    state.cellStride = s.cellStride;
+  }
   document.getElementById('saveNameInput').value = name;
   afterEdit();
   showBanner('📂 読込: ' + name);
@@ -2079,35 +2122,66 @@ function _innerOffset(cellStride) {
   return cellStride === 4 ? 1 : 0;
 }
 
-function _carveCellInterior(g, ci, cj, offX, offY, cellStride) {
+// For last col/row cells, compute how much to extend the interior so that
+// the cell reaches the canvas's "1-tile margin" boundary. For strides that
+// divide the usable space cleanly (stride=2 in 16 rows) this equals ww,
+// but for stride=3 in 16 rows we need to extend by 2 (ww + 1) so the bottom
+// row touches the canvas margin instead of leaving an extra wall row.
+function _wExtendLast(offX, cw, cellStride) {
   const pw = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
+  const lastInteriorEnd = offX + cellStride * (cw - 1) + off + pw - 1;
+  const target = GRID_W - 2;  // last usable col before canvas margin
+  return Math.max(0, target - lastInteriorEnd);
+}
+function _hExtendLast(offY, ch, cellStride) {
+  const pw = _pwForStride(cellStride);
+  const off = _innerOffset(cellStride);
+  const lastInteriorEnd = offY + cellStride * (ch - 1) + off + pw - 1;
+  const target = GRID_H - 2;  // last usable row before canvas margin
+  return Math.max(0, target - lastInteriorEnd);
+}
+
+function _carveCellInterior(g, ci, cj, offX, offY, cellStride, cw, ch) {
+  // Last col/row cells absorb the phantom corridor band into the interior so
+  // the maze fits exactly into the (canvas - 1-tile margin) area on all
+  // sides — without this, the phantom is wall and shows as 2-tile margin.
+  const pw = _pwForStride(cellStride);
+  const off = _innerOffset(cellStride);
+  const wExt = (cw != null && ci === cw - 1) ? _wExtendLast(offX, cw, cellStride) : 0;
+  const hExt = (ch != null && cj === ch - 1) ? _hExtendLast(offY, ch, cellStride) : 0;
   const x0 = offX + cellStride * ci + off;
   const y0 = offY + cellStride * cj + off;
-  for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < pw; dx++) {
+  for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
     const x = x0 + dx, y = y0 + dy;
     if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
   }
 }
 
-function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride) {
+function _carveCorridor(g, ci, cj, dirX, dirY, offX, offY, cellStride, cw, ch) {
   // Knocks the wall between (ci,cj) and (ci+dirX, cj+dirY)。
+  // 注意: dirX/dirY は east(1,0) または south(0,1) のみ呼び出し可能。
+  // west/north は呼ばないでください — 末端拡張ロジックが追従していません。
+  // (再帰バックトラッカー / loop追加のいずれも east/south のみで edge を表現する設計)
   // East/South 方向の corridor は wall 方向に ww (壁長)、path 方向に pw (路幅) で
   // pw × ww または ww × pw の矩形を carve する。
+  // 末端行/列セル間の corridor も cell 拡張と同じ量だけ pw 方向に伸ばす。
   const pw = _pwForStride(cellStride);
   const ww = _wwForStride(cellStride);
   const off = _innerOffset(cellStride);
-  if (dirX === 1) { // east corridor: ww wide × pw tall
+  if (dirX === 1) { // east corridor
     const x0 = offX + cellStride * ci + off + pw;
     const y0 = offY + cellStride * cj + off;
-    for (let dy = 0; dy < pw; dy++) for (let dx = 0; dx < ww; dx++) {
+    const hExt = (ch != null && cj === ch - 1) ? _hExtendLast(offY, ch, cellStride) : 0;
+    for (let dy = 0; dy < pw + hExt; dy++) for (let dx = 0; dx < ww; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
-  } else if (dirY === 1) { // south corridor: pw wide × ww tall
+  } else if (dirY === 1) { // south corridor
     const x0 = offX + cellStride * ci + off;
     const y0 = offY + cellStride * cj + off + pw;
-    for (let dy = 0; dy < ww; dy++) for (let dx = 0; dx < pw; dx++) {
+    const wExt = (cw != null && ci === cw - 1) ? _wExtendLast(offX, cw, cellStride) : 0;
+    for (let dy = 0; dy < ww; dy++) for (let dx = 0; dx < pw + wExt; dx++) {
       const x = x0 + dx, y = y0 + dy;
       if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) g[y][x] = 'path';
     }
@@ -2164,21 +2238,27 @@ function _buildMazeCells(cw, ch, offX, offY, cellStride, straightBias) {
   // Build tiles
   const tiles = makeEmptyGrid();
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
-    _carveCellInterior(tiles, i, j, offX, offY, cellStride);
+    _carveCellInterior(tiles, i, j, offX, offY, cellStride, cw, ch);
   }
   // Carve corridors (only emit each edge once: east + south)
   for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
     if (i + 1 < cw && adj[key(i,j)] && adj[key(i,j)][key(i+1,j)]) {
-      _carveCorridor(tiles, i, j, 1, 0, offX, offY, cellStride);
+      _carveCorridor(tiles, i, j, 1, 0, offX, offY, cellStride, cw, ch);
     }
     if (j + 1 < ch && adj[key(i,j)] && adj[key(i,j)][key(i,j+1)]) {
-      _carveCorridor(tiles, i, j, 0, 1, offX, offY, cellStride);
+      _carveCorridor(tiles, i, j, 0, 1, offX, offY, cellStride, cw, ch);
     }
   }
   return { tiles: tiles, adj: adj };
 }
 
 function _pruneDeadEnds(maze, cw, ch, offX, offY, iterations, protectedKeys, cellStride) {
+  // Skip entirely when nothing to do — also avoids the latent issue that
+  // this function's wipe loops use a fixed pw×pw rect and would leave
+  // residual path tiles in the extended last-row/last-col cells if pruning
+  // ever ran on those (currently deadEndPrune is always 0, but explicit
+  // guard makes the intent obvious).
+  if (!iterations || iterations <= 0) return 0;
   // Repeatedly find dead-end cells (only 1 neighbor) NOT in `protectedKeys`
   // and remove them along with the corridor to their sole neighbor.
   // Lower iterations preserves more dead ends (harder stages).
@@ -2259,7 +2339,7 @@ function _addLoops(maze, cw, ch, offX, offY, cellStride, loopFraction) {
   const target = Math.floor(candidates.length * loopFraction);
   for (let k = 0; k < target; k++) {
     const c = candidates[k];
-    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, offX, offY, cellStride);
+    _carveCorridor(tiles, c.ci, c.cj, c.dx, c.dy, offX, offY, cellStride, cw, ch);
     if (!adj[c.a]) adj[c.a] = {};
     if (!adj[c.b]) adj[c.b] = {};
     adj[c.a][c.b] = true;
@@ -2429,13 +2509,15 @@ function generateMazeForDifficulty(d) {
   _resizeCanvas(params.gridW, params.panels);
   const cw = params.cw, ch = params.ch;
   const cellStride = params.cellStride;
-  // 「最終セルの拡張」は禁止 (= レイアウトのためだけに端を 2-tile 道にしない) なので、
-  // ファントム廊下 (= 最終セルの先の壁帯、常に wall) が必ず存在する。
-  // それを canvas 端と重ねれば右と下は 1 タイル境界として機能する。
-  // 余りタイルは上左に寄せる (画面上では「上に少し空き」が出る)。
-  // 例 narrow stride=2 ch=8: offY=2, cells rows 2..17, phantom 17 = canvas 下端。
-  const offX = GRID_W - cw * cellStride;
-  const offY = GRID_H - ch * cellStride;
+  // Persist on state so marker draw / hit detection / save uses the right
+  // radius (narrow strides → smaller markers).
+  state.cellStride = cellStride;
+  // 中央寄せ。最終セル/廊下の延長で phantom 帯を吸収するので、各セルが
+  // 期待通りに展開され、外周マージンは厳密に 1 タイル (narrow/2-panel 完璧)。
+  // wide stride=3 は割り切れない時に上下左右の余りタイルが ±1 タイル振れる
+  // (centering の Math.floor の影響) が、最終セル拡張で右と下は 1 タイル確定。
+  const offX = Math.floor((GRID_W - cw * cellStride) / 2);
+  const offY = Math.floor((GRID_H - ch * cellStride) / 2);
   const maze = _buildMazeCells(cw, ch, offX, offY, cellStride, params.straightBias);
   // Add loops first (extra walls knocked down → multiple solution paths)
   if (params.loopFraction > 0) {
@@ -2454,21 +2536,51 @@ function generateMazeForDifficulty(d) {
   const pw  = _pwForStride(cellStride);
   const off = _innerOffset(cellStride);
   const cellCenter = off + pw / 2;
-  // Set start/goal from diameter pair (left-most → start)
+  // Set start/goal from diameter pair (left-most → start). Verify that the
+  // markers won't visually overlap — if they do for some reason (very small
+  // maze with adjacent diameter cells), fall back to picking 2 corner cells.
   let startKey = null, goalKey = null;
+  function _cellPx(k) {
+    const p = k.split(',').map(Number);
+    return {
+      x: (offX + cellStride * p[0] + cellCenter) * CELL,
+      y: (offY + cellStride * p[1] + cellCenter) * CELL,
+    };
+  }
+  function _assignFromPair(p0, p1) {
+    const a = _cellPx(p0), b = _cellPx(p1);
+    if (a.x <= b.x) { state.start = a; state.goal = b; startKey = p0; goalKey = p1; }
+    else            { state.start = b; state.goal = a; startKey = p1; goalKey = p0; }
+  }
   if (pair) {
-    const a = pair[0].split(',').map(Number);
-    const b = pair[1].split(',').map(Number);
-    const aPx = ((offX + cellStride * a[0] + cellCenter) * CELL);
-    const aPy = ((offY + cellStride * a[1] + cellCenter) * CELL);
-    const bPx = ((offX + cellStride * b[0] + cellCenter) * CELL);
-    const bPy = ((offY + cellStride * b[1] + cellCenter) * CELL);
-    if (aPx <= bPx) {
-      state.start = { x: aPx, y: aPy }; state.goal = { x: bPx, y: bPy };
-      startKey = pair[0]; goalKey = pair[1];
-    } else {
-      state.start = { x: bPx, y: bPy }; state.goal = { x: aPx, y: aPy };
-      startKey = pair[1]; goalKey = pair[0];
+    _assignFromPair(pair[0], pair[1]);
+    // Overlap guard: distance must exceed 2 marker radii (+ small gap for visual breathing).
+    const minSep = 2 * _markerRadius(cellStride) + 6;
+    const dx = state.goal.x - state.start.x, dy = state.goal.y - state.start.y;
+    if (Math.sqrt(dx*dx + dy*dy) < minSep) {
+      // Pick the topmost-leftmost surviving cell as start, bottommost-rightmost as goal.
+      const aliveKeys = Object.keys(maze.adj).filter(function(k) {
+        return maze.adj[k] && Object.keys(maze.adj[k]).length > 0;
+      });
+      let topLeft = null, botRight = null;
+      let tlScore = Infinity, brScore = -Infinity;
+      for (const k of aliveKeys) {
+        const p = k.split(',').map(Number);
+        const score = p[0] + p[1] * 100;
+        if (score < tlScore) { tlScore = score; topLeft = k; }
+        if (score > brScore) { brScore = score; botRight = k; }
+      }
+      if (topLeft && botRight && topLeft !== botRight) {
+        _assignFromPair(topLeft, botRight);
+        // Re-check minSep on the fallback. If still too close (e.g. very
+        // small/degenerate maze), spread markers to the canvas corners
+        // directly so they never overlap regardless of cell topology.
+        const dx2 = state.goal.x - state.start.x, dy2 = state.goal.y - state.start.y;
+        if (Math.sqrt(dx2*dx2 + dy2*dy2) < minSep) {
+          state.start = { x: 1.5 * CELL, y: 1.5 * CELL };
+          state.goal  = { x: (GRID_W - 1.5) * CELL, y: (GRID_H - 1.5) * CELL };
+        }
+      }
     }
   } else {
     state.start = null;
@@ -2541,6 +2653,9 @@ if (_autoLoadName && getAllSaves()[_autoLoadName]) {
   state.goal  = _snap.goal;
   state.creatures = _loadCreatures(_snap.creatures);
   state.waypoints = _loadWaypoints(_snap.waypoints);
+  if (_snap.cellStride === 2 || _snap.cellStride === 3 || _snap.cellStride === 4) {
+    state.cellStride = _snap.cellStride;
+  }
   document.getElementById('saveNameInput').value = _autoLoadName;
   restored = true;
 } else {
