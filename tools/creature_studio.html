@@ -2799,6 +2799,32 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
       if (s.eraseTol) document.getElementById('erase-tol-slider').value = s.eraseTol;
     }
 
+    // マルチ合成モード復元 (single-image 復元より先に処理。
+    // multiPickerMode をトグルする際に pickerImages がクリアされるため)
+    const wantMultiMode = !!session.multiMode;
+    if (wantMultiMode !== multiPickerMode) {
+      // ボタンのクリックハンドラを再利用してUI状態を一括切り替え
+      document.getElementById('btn-multi-picker').click();
+    }
+    if (wantMultiMode && Array.isArray(session.pickerImages) && session.pickerImages.length) {
+      pickerImages = await Promise.all(session.pickerImages.map(async p => ({
+        canvas: await blobToCanvas(p.blob),
+        name: p.name || 'image',
+        selections: Array.isArray(p.selections) ? p.selections.slice() : [],
+        processedCanvas: p.processedCanvasBlob ? await blobToCanvas(p.processedCanvasBlob) : null,
+        processedRaw:    p.processedRawBlob    ? await blobToCanvas(p.processedRawBlob)    : null,
+        cutLines: Array.isArray(p.cutLines) ? p.cutLines.slice() : [],
+        linkLines: Array.isArray(p.linkLines) ? p.linkLines.slice() : [],
+        keepBackground: !!p.keepBackground
+      })));
+      activePickerIdx = -1; // activatePickerImage で正しい idx に設定し直す
+      const targetIdx = (typeof session.activePickerIdx === 'number'
+        && session.activePickerIdx >= 0
+        && session.activePickerIdx < pickerImages.length) ? session.activePickerIdx : 0;
+      activatePickerImage(targetIdx);
+      updateCompositePreview();
+    }
+
     // 画像復元
     if (session.original) originalCanvas = await blobToCanvas(session.original);
     if (session.raw) processedRaw = await blobToCanvas(session.raw);
