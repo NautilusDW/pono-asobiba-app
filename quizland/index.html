@@ -460,8 +460,8 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 .start-screen.hidden { display: none; }
 .start-logo {
   position: absolute;
-  top: 3%;
-  left: 3%;
+  top: 8%;
+  left: 8%;
   width: min(50%, 540px);
   max-height: 42vh;
   object-fit: contain;
@@ -471,8 +471,9 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 }
 .start-tap-cta {
   position: absolute;
-  bottom: 7%;
-  left: 50%;
+  /* ロゴのすぐ下、ロゴの中心(left 8% + 50%/2 = 33%)に揃える */
+  top: 56%;
+  left: 33%;
   transform: translateX(-50%);
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   font-size: clamp(1rem, 3.6vw, 1.6rem);
