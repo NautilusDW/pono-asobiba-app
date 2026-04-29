@@ -14,55 +14,21 @@
 
 ## Active (進行中 / 未着手)
 
-- [ ] **タイトル画面 3 ゲーム改修** (担当: Codex / 依頼日 2026-04-29、 ユーザー訂正反映済み)
-  
-  ### 1. パズル (`puzzle/index.html`) — 縦長レイアウト
-  - **重要**: パズルのタイトル画面は他ゲームと違って **9:16 縦長デザイン**。 ユーザーが新 BG を縦長サイズで作成済み。
-  - **新背景画像**: `assets/images/puzzle/title_back2.jpg` (1130×2000, 607KB) ← 既に Claude が配置済み
-  - **既存横長背景**: `assets/images/puzzle/title_back.jpg` (1600×685) ← 残してあるが、 今回の改修では使わない
-  - **ロゴ**: `assets/images/puzzle/title_logo.png` (透過 PNG、 既存)
-  - **配置指示**: 縦長 BG の **「上の森が映っている場所ぐらい」** にタイトルロゴを重ねる (BG2 の上 1/3 〜 半分くらいまでの範囲)
-  - **「タップしてスタート」ボタン**: ロゴの直下に配置
-  
-  ### 2. 音タッチ (`oto/index.html`) — 右寄せ
-  - **背景 / ロゴは現状のまま**: `assets/images/oto/title_back.jpg` + `assets/images/oto/title_logo.png`
-  - **ロゴ位置**: 画面**右側**に寄せる
-  - **「タップしてスタート」ボタン**: ロゴの直下に配置
-  
-  ### 3. お弁当 (`bento/index.html`) — 右寄せ ★訂正で追加
-  - **背景 / ロゴは現状のまま**: `assets/images/bento/title_back.jpg` + `assets/images/bento/title_logo.png`
-  - **ロゴ位置**: 画面**右側**に寄せる
-  - **「タップしてスタート」ボタン**: ロゴの直下に配置
-  - **⚠ 衝突注意**: `bento/index.html` の **`#title-screen` セクション (上部のロゴ表示部) のみ** を改修すること。 ゲーム本体 (食材ロジック / 評価 / 完成画面 / NPC 依頼者モード) は Claude が別途 NPC モード追加で改修予定なので **触らないでください**。 物理的にはファイル上部の `#title-screen` 関連 CSS / 該当 HTML / そのクリックハンドラ周辺だけ。
-  
-  ### 共通の注意
-  - 「フクロウばかせのなぞなぞ」 「こだまのもりのこえさがし」 「あつめよう！ポノのもりのずかん」 「ポノとランタンのめいろ」 は対象外
-  - 完成後は Claude に sw.js CACHE_VERSION バンプ依頼 (= ユーザーから「バンプして」 と来たら Claude が対応)
+なし。
 
 ---
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-04-29 — タイトル画面 3 ゲーム改修完了 (puzzle 縦長 BG2 + oto/bento ロゴ右寄せ + ボタン下配置) (by Codex, commit `13739bb`)
+- 2026-04-29 — Codex 上書き後の puzzle/title_back2.jpg を再最適化 (1520×2688/1036KB → 1130×2000/608KB)。 Codex は AGENTS.md §5 の `auto_optimize_image.py` を通していなかった (by Claude)
+- 2026-04-29 — auto_optimize_image.py の手動モードのデフォルトを「拡張子保持で安全」 に変更。 alpha なし PNG を JPG に rename したい場合のみ `--allow-jpeg-rename` を opt-in する形に変更 (Codex 指摘の透明 PNG 誤変換リスクを排除) (by Claude)
+- 2026-04-29 — sw.js CACHE_VERSION 535 → 536 バンプ (Codex タイトル画面改修反映 + 画像再最適化 + スクリプト更新) (by Claude)
 - 2026-04-29 — bento NPC 依頼者モード実装完了 (30%確率で動物 6 種から 1 体出現 → 訪問演出 → 完成画面前に NPC 反応 → ポノ反応) + 食材スロット着地時 sparkle 演出追加 + sw.js CACHE_VERSION 534 → 535 バンプ。 タイトル画面部分は触っていないので Codex 改修と非干渉。 (by Claude)
 
 - 2026-04-29 — HANDOFF.md / AGENTS.md §4.7 を整備して運用開始 (by Claude)
 - 2026-04-29 — oto / bento / puzzle のタイトル画面合成 (背景 × 透過ロゴ) 完了 (by Codex, commits `eafce16` / `bbb0504`)
 - 2026-04-29 — sw.js CACHE_VERSION 532 → 533 (oto ロゴ alpha 再取込のため) (by Claude, commit `d62d47a`)
-
----
-
-## 書き方ガイド (例)
-
-```md
-## Active
-
-- [ ] **〇〇 を実装** (担当: Codex)
-  - 背景 + ロゴを `assets/images/{game}/title_back.jpg` × `title_logo.png` で合成
-  - 完了したら sw.js CACHE_VERSION バンプを Claude に依頼
-- [ ] **〇〇 を直す** (担当: Claude)
-  - 〇〇のロジックを修正
-  - 終わったらここをチェック → Done に移動
-```
 
 ---
 
