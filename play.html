@@ -644,11 +644,12 @@
       }
     }
 
-    /* ===== Bottom Navigation — image-asset buttons in the bottom-right =====
-       Each button is just the asset PNG (no wood-grain background needed —
-       the asset already has its own wood/lantern face). The "for parents"
-       button (005) sits separately in the bottom-left. */
+    /* ===== Bottom Navigation =====
+       Shared wooden base sprite + four transparent hit areas so the actions
+       stay independent while the visuals read as one grouped control. */
     .bottom-nav {
+      --nav-sprite-w: 412px;
+      --nav-sprite-h: calc(var(--nav-sprite-w) * 380 / 1426);
       position: absolute;
       bottom: 18px;
       /* Offset by the canvas→safe-area gutter so the cluster sits inside
@@ -656,43 +657,69 @@
       right: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px);
       left: auto;
       transform: none;
-      width: auto;
-      height: auto;
+      width: var(--nav-sprite-w);
+      height: var(--nav-sprite-h);
       z-index: 90;
-      display: flex;
-      gap: 12px;
+      display: grid;
+      grid-template-columns:
+        calc(var(--nav-sprite-w) * 385 / 1426)
+        calc(var(--nav-sprite-w) * 342 / 1426)
+        calc(var(--nav-sprite-w) * 331 / 1426)
+        calc(var(--nav-sprite-w) * 368 / 1426);
       align-items: stretch;
-      background: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      box-shadow: none;
-      border-top: none;
-      border-radius: 0;
+      justify-content: stretch;
+      background-image: url('assets/ui/bottom_nav_group_normal.png');
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-position: center center;
+      filter: drop-shadow(0 6px 14px rgba(20, 10, 0, 0.45));
+      border-radius: 20px;
+      overflow: hidden;
       padding: 0;
     }
     .bn-item {
-      flex: 0 0 auto;
-      width: 96px;
-      height: 96px;
+      position: relative;
+      flex: 1 1 25%;
+      height: 100%;
       display: block;
       padding: 0;
       border: none;
       background: transparent;
       cursor: pointer;
       font-family: inherit;
-      transition: transform 0.1s ease, filter 0.1s ease;
-      filter: drop-shadow(0 4px 8px rgba(20, 10, 0, 0.5));
+      transition: transform 0.08s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      overflow: hidden;
     }
-    .bn-item:hover { filter: drop-shadow(0 5px 10px rgba(20, 10, 0, 0.6)) brightness(1.05); }
-    .bn-item:active { transform: translateY(2px); filter: drop-shadow(0 2px 4px rgba(20, 10, 0, 0.5)); }
-    .bn-item img {
-      width: 100%;
+    .bn-item::before {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--nav-sprite-w);
       height: 100%;
-      object-fit: contain;
-      display: block;
+      opacity: 0;
       pointer-events: none;
-      user-select: none;
-      -webkit-user-drag: none;
+      background-image: url('assets/ui/bottom_nav_group_pressed.png');
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-position: left center;
+      transition: opacity 0.08s ease;
+    }
+    .bn-item:nth-child(1)::before { left: 0; }
+    .bn-item:nth-child(2)::before { left: calc(var(--nav-sprite-w) * -385 / 1426); }
+    .bn-item:nth-child(3)::before { left: calc(var(--nav-sprite-w) * -727 / 1426); }
+    .bn-item:nth-child(4)::before { left: calc(var(--nav-sprite-w) * -1058 / 1426); }
+    .bn-item:active::before,
+    .bn-item.is-pressed::before {
+      opacity: 1;
+    }
+    .bn-item:active {
+      transform: translateY(1px);
+    }
+    .bn-item:focus-visible {
+      outline: 3px solid rgba(255, 235, 170, 0.95);
+      outline-offset: 4px;
     }
     /* Stand-alone "for parents" button in the bottom-left of the safe area.
        The 005 asset is a wide ribbon-shaped button — we overlay the text
@@ -986,21 +1013,10 @@
     </main>
 
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
-      <!-- Button images are固定 (画像順は変更しない); we shifted the
-           data-action / aria-label so each icon now triggers the right
-           feature: 設定 / ?(ヘルプ) / 家(トップ) / 鈴(おしらせ). -->
-      <button class="bn-item" data-action="settings" type="button" aria-label="せってい">
-        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_002.png" alt="" draggable="false">
-      </button>
-      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ">
-        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_003.png" alt="" draggable="false">
-      </button>
-      <button class="bn-item" data-action="top" type="button" aria-label="トップ">
-        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_004.png" alt="" draggable="false">
-      </button>
-      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ">
-        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_005.png" alt="" draggable="false">
-      </button>
+      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
+      <button class="bn-item" data-action="top" type="button" aria-label="トップ"></button>
+      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
     </nav>
     <button class="for-parents" id="forParentsBtn" type="button" aria-label="本をもっている人へ">
       <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
@@ -1413,7 +1429,20 @@
     // ===== Start button removed (each card has its own play button) =====
 
     // ===== Bottom nav =====
-    $('bottomNav').addEventListener('click', (e) => {
+    const bottomNav = $('bottomNav');
+    function clearBottomNavPressed() {
+      bottomNav.querySelectorAll('.bn-item.is-pressed').forEach((btn) => btn.classList.remove('is-pressed'));
+    }
+    bottomNav.addEventListener('pointerdown', (e) => {
+      const btn = e.target.closest('.bn-item');
+      if (!btn) return;
+      clearBottomNavPressed();
+      btn.classList.add('is-pressed');
+    });
+    bottomNav.addEventListener('pointerleave', clearBottomNavPressed);
+    document.addEventListener('pointerup', clearBottomNavPressed);
+    document.addEventListener('pointercancel', clearBottomNavPressed);
+    bottomNav.addEventListener('click', (e) => {
       const btn = e.target.closest('.bn-item');
       if (!btn) return;
       const action = btn.dataset.action;
