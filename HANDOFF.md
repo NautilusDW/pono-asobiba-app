@@ -43,6 +43,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-04-29 — bento NPC 依頼者モード実装完了 (30%確率で動物 6 種から 1 体出現 → 訪問演出 → 完成画面前に NPC 反応 → ポノ反応) + 食材スロット着地時 sparkle 演出追加 + sw.js CACHE_VERSION 534 → 535 バンプ。 タイトル画面部分は触っていないので Codex 改修と非干渉。 (by Claude)
+
 - 2026-04-29 — HANDOFF.md / AGENTS.md §4.7 を整備して運用開始 (by Claude)
 - 2026-04-29 — oto / bento / puzzle のタイトル画面合成 (背景 × 透過ロゴ) 完了 (by Codex, commits `eafce16` / `bbb0504`)
 - 2026-04-29 — sw.js CACHE_VERSION 532 → 533 (oto ロゴ alpha 再取込のため) (by Claude, commit `d62d47a`)

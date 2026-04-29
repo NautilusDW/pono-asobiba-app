@@ -57,19 +57,19 @@ html, body {
 .title-screen__content {
   position: absolute;
   top: 50%;
-  right: clamp(24px, 7vw, 96px);
+  right: clamp(8px, 3vw, 40px);
   transform: translateY(-50%);
   z-index: 1;
-  width: min(40vw, 520px);
+  width: min(36vw, 460px);
   max-width: calc(100vw - 48px);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
   pointer-events: none;
 }
 .title-screen__logo {
-  width: 100%;
+  width: 90%;
   max-width: 100%;
   height: auto;
   display: block;
@@ -98,6 +98,10 @@ html, body {
     right: auto;
     transform: translate(-50%, -50%);
     width: min(78vw, 520px);
+    align-items: center;
+  }
+  .title-screen__logo {
+    width: 100%;
   }
 }
 
@@ -430,6 +434,102 @@ html, body {
 }
 .complete-overlay.hidden { display: none; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ===== NPC requester intro / reaction overlays =====
+   z-index 65 で complete-overlay (60) より上、 紙吹雪 (548 行目で 70+ 設定) より下。
+   intro はゲーム開始前、 reaction は完成画面の前に挟む 2 段階目モーダル。 */
+.npc-overlay {
+  position: fixed; inset: 0; z-index: 65;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(40,28,12,0.45) 0%, rgba(20,14,8,0.65) 100%);
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.npc-overlay.hidden { display: none !important; }
+.npc-overlay.is-closing { animation: fadeOut 0.35s ease forwards; pointer-events: none; }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+.npc-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: linear-gradient(180deg, #FFF8E5 0%, #FFE9C3 100%);
+  border: 4px solid #C7894A;
+  border-radius: 24px;
+  padding: 18px 28px;
+  max-width: min(94vw, 640px);
+  box-shadow: 0 12px 32px rgba(40,20,8,0.4);
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.npc-portrait-wrap {
+  flex: 0 0 auto;
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  border: 3px solid #C7894A;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(40,20,8,0.25), inset 0 2px 6px rgba(255,255,255,0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+.npc-portrait-wrap img {
+  width: 100%; height: 100%; object-fit: cover;
+  animation: npcBob 2.4s ease-in-out infinite;
+}
+@keyframes npcBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.npc-text {
+  flex: 1 1 auto;
+  text-align: left;
+  min-width: 0;
+}
+.npc-name {
+  font-size: 1.05rem; font-weight: 900;
+  color: #6b4218;
+  margin-bottom: 6px;
+}
+.npc-line {
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  font-weight: 800;
+  color: #4a2a10;
+  line-height: 1.4;
+  margin: 0;
+  text-shadow: 1px 1px 0 rgba(255, 245, 215, 0.6);
+}
+.npc-cta {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 22px;
+  background: linear-gradient(180deg, #FFD84D, #F5A800);
+  color: #5C3A00;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 3px 0 #B87200;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.npc-cta:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+
+/* 反応モーダル: 喜び / 悲しみで色味を変える */
+.npc-overlay.is-happy .npc-card  { border-color: #2D9A4E; box-shadow: 0 12px 32px rgba(40,140,60,0.4); }
+.npc-overlay.is-sad   .npc-card  { border-color: #997555; filter: saturate(0.85); }
+.npc-overlay.is-sad   .npc-portrait-wrap img { filter: saturate(0.7) brightness(0.95); }
+
+@media (max-width: 720px) {
+  .npc-card { gap: 16px; padding: 14px 18px; }
+  .npc-portrait-wrap { width: 130px; height: 130px; }
+}
+@media (orientation: portrait) {
+  .npc-card { flex-direction: column; text-align: center; }
+  .npc-text { text-align: center; }
+}
 .complete-card {
   background: transparent;
   padding: 4px 4px 10px;
@@ -1134,6 +1234,30 @@ html, body {
   </div>
 </div>
 
+<!-- ===== NPC requester intro / reaction overlays =====
+     intro: ゲーム開始前の訪問演出 (依頼モードのみ、 sessionStorage 初回判定で 30%)。
+     reaction: 完成画面の前に挟む 2 段階目演出 (約 2.2 秒、 自動進行)。 -->
+<div class="npc-overlay hidden" id="npc-intro">
+  <div class="npc-card">
+    <div class="npc-portrait-wrap"><img id="npc-intro-img" alt=""></div>
+    <div class="npc-text">
+      <div class="npc-name" id="npc-intro-name"></div>
+      <p class="npc-line" id="npc-intro-line"></p>
+      <button type="button" class="npc-cta" id="npc-intro-cta">あそぶ ▶</button>
+    </div>
+  </div>
+</div>
+
+<div class="npc-overlay hidden" id="npc-reaction">
+  <div class="npc-card">
+    <div class="npc-portrait-wrap"><img id="npc-reaction-img" alt=""></div>
+    <div class="npc-text">
+      <div class="npc-name" id="npc-reaction-name"></div>
+      <p class="npc-line" id="npc-reaction-line"></p>
+    </div>
+  </div>
+</div>
+
 <div class="complete-overlay hidden" id="complete-overlay">
   <div class="complete-card complete-card-wide">
     <button class="complete-close" id="complete-btn">&times;</button>
@@ -1303,6 +1427,75 @@ const FRUITS = [
   { img: P+'cookie.png',     name: 'クッキー',     cat: 'fruit', sk: 'y' },
 ];
 
+// ===== NPC requesters (依頼者モード用) =====
+// セッション開始時 30% の確率で 1 体ランダム選定。 入れた食材の name が
+// wantedFoods 配列のいずれかに一致すれば「達成」、 NPC が _goal 表情で喜ぶ。
+// 不達なら _02 (ちょい寂しげ) で「こんど もってきてね」 程度の軽い演出。
+// 立ち絵は迷路ゲームのキャラ素材を再利用。
+const NPC_PORTRAIT_BASE = '../maze/imageStages/animals/';
+const NPC_REQUESTERS = [
+  {
+    id: 'risu', name: 'りすちゃん',
+    portraitNormal: NPC_PORTRAIT_BASE + 'risu_01.png',
+    portraitHappy:  NPC_PORTRAIT_BASE + 'risu_goal.png',
+    portraitSad:    NPC_PORTRAIT_BASE + 'risu_02.png',
+    wantedFoods: ['いちご', 'みかん', 'ぶどう', 'りんご', 'メロン', 'もも'],
+    intro:    'こんにちは！ あまい くだものが ほしいな',
+    happyMsg: 'やった！ ありがとう！',
+    sadMsg:   'こんど くだもの もってきてくれる？',
+  },
+  {
+    id: 'inu', name: 'わんちゃん',
+    portraitNormal: NPC_PORTRAIT_BASE + 'inu_01.png',
+    portraitHappy:  NPC_PORTRAIT_BASE + 'inu_goal.png',
+    portraitSad:    NPC_PORTRAIT_BASE + 'inu_02.png',
+    wantedFoods: ['ハンバーグ', 'からあげ', 'ミートボール', 'ぎょうざ', 'メンチカツ'],
+    intro:    'おなか すいた〜 おにくが たべたいな！',
+    happyMsg: 'わぁい おにく ありがとう！',
+    sadMsg:   'こんど おにく いれてね…',
+  },
+  {
+    id: 'ahiru', name: 'あひるさん',
+    portraitNormal: NPC_PORTRAIT_BASE + 'ahiru_01.png',
+    portraitHappy:  NPC_PORTRAIT_BASE + 'ahiru_goal.png',
+    portraitSad:    NPC_PORTRAIT_BASE + 'ahiru_02.png',
+    wantedFoods: ['コーンほうれんそう', 'コーンバター', 'ブロッコリーコーン'],
+    intro:    'コーンが はいって いると うれしいな！',
+    happyMsg: 'コーン だいすき！ ありがとう！',
+    sadMsg:   'コーン また もってきてね',
+  },
+  {
+    id: 'shika', name: 'しかさん',
+    portraitNormal: NPC_PORTRAIT_BASE + 'shika_01.png',
+    portraitHappy:  NPC_PORTRAIT_BASE + 'shika_goal.png',
+    portraitSad:    NPC_PORTRAIT_BASE + 'shika_02.png',
+    wantedFoods: ['ブロッコリー', 'えだまめ', 'ほうれんそう', 'コーンほうれんそう', 'おんやさい', 'ハムサラダ'],
+    intro:    'みどりの おやさいが すきなの',
+    happyMsg: 'みどり いっぱい！ ありがとう！',
+    sadMsg:   'みどりの おやさい たべたかったな',
+  },
+  {
+    id: 'lesser_panda', name: 'パンダちゃん',
+    portraitNormal: NPC_PORTRAIT_BASE + 'lesser_panda_01.png',
+    portraitHappy:  NPC_PORTRAIT_BASE + 'lesser_panda_goal.png',
+    portraitSad:    NPC_PORTRAIT_BASE + 'lesser_panda_02.png',
+    wantedFoods: ['ミニトマト', 'いちご', 'りんご', 'やきざけ', 'タコウインナー'],
+    intro:    'あかい たべものが たのしみ！',
+    happyMsg: 'あか はいってる！ うれしい！',
+    sadMsg:   'あか また こんど いれてね',
+  },
+  {
+    id: 'neko', name: 'ねこさん',
+    portraitNormal: NPC_PORTRAIT_BASE + 'neko_01.png',
+    portraitHappy:  NPC_PORTRAIT_BASE + 'neko_goal.png',
+    portraitSad:    NPC_PORTRAIT_BASE + 'neko_02.png',
+    wantedFoods: ['やきざけ', 'うめぼしごはん', 'ごまごはん', 'ふりかけごはん'],
+    intro:    'おさかなと ごはんが たべたいな〜',
+    happyMsg: 'おさかな！ にゃー ありがとう！',
+    sadMsg:   'こんど おさかな いれてくれる？',
+  },
+];
+
 // ===== 豆知識（4-5さい向け食育トリビア） =====
 const TRIVIA = {
   'ブロッコリー':       'ブロッコリーは みどりの ちからで かぜを はねかえすよ！',
@@ -1404,6 +1597,95 @@ let bentoSkColors = []; // 入れた食材の三色を記録
 let bentoFoodNames = []; // 入れた食材の名前（豆知識用）
 let bentoSelected = []; // 入れた食材の完全記録 [{img, name, sk}] rice + okazu4
 let favSaved = false;   // この完成画面で既に保存したか
+
+// ===== NPC 依頼者モード state =====
+// セッション開始時に 30% の確率でランダム選定された NPC が入る (null = 自由モード)。
+// 一度設定されたらタブ閉じるまで保持され、 完成画面 → 次ステージでも同じ依頼者が居続ける。
+// セッションキー: bento_npc_id (sessionStorage)
+let currentRequester = null;
+const NPC_SESSION_KEY = 'bento_npc_id';
+const NPC_DECIDED_KEY = 'bento_npc_decided';
+const NPC_REQUEST_RATE = 0.30;
+
+function decideNpcMode() {
+  // 1 セッション 1 回だけ判定。 結果を sessionStorage に保存。
+  try {
+    if (sessionStorage.getItem(NPC_DECIDED_KEY) === '1') {
+      const id = sessionStorage.getItem(NPC_SESSION_KEY);
+      currentRequester = id ? (NPC_REQUESTERS.find(r => r.id === id) || null) : null;
+      return;
+    }
+    sessionStorage.setItem(NPC_DECIDED_KEY, '1');
+  } catch (_) { /* private mode 等で sessionStorage 不可 → 一回限り判定 */ }
+
+  if (Math.random() < NPC_REQUEST_RATE) {
+    currentRequester = NPC_REQUESTERS[Math.floor(Math.random() * NPC_REQUESTERS.length)];
+    try { sessionStorage.setItem(NPC_SESSION_KEY, currentRequester.id); } catch (_) {}
+  } else {
+    currentRequester = null;
+    try { sessionStorage.removeItem(NPC_SESSION_KEY); } catch (_) {}
+  }
+}
+
+function evaluateRequest(requester, foodNames) {
+  if (!requester) return false;
+  const wanted = requester.wantedFoods || [];
+  return foodNames.some(n => wanted.includes(n));
+}
+
+function showRequesterIntro(req) {
+  if (!req) return;
+  const ov   = document.getElementById('npc-intro');
+  const img  = document.getElementById('npc-intro-img');
+  const nm   = document.getElementById('npc-intro-name');
+  const line = document.getElementById('npc-intro-line');
+  const cta  = document.getElementById('npc-intro-cta');
+  if (!ov || !img || !nm || !line || !cta) return;
+  img.src = req.portraitNormal;
+  img.alt = req.name;
+  nm.textContent  = req.name + ' が きたよ！';
+  line.textContent = req.intro;
+  ov.classList.remove('is-closing', 'is-happy', 'is-sad', 'hidden');
+  const dismiss = () => {
+    ov.classList.add('is-closing');
+    setTimeout(() => {
+      ov.classList.add('hidden');
+      ov.classList.remove('is-closing');
+    }, 380);
+  };
+  cta.onclick = (e) => { e.stopPropagation(); dismiss(); };
+  // 背景タップでも進める (子供が CTA を見落としても困らないよう)
+  ov.onclick = dismiss;
+}
+
+function showRequesterReaction(req, ok, onDone) {
+  if (!req) { if (onDone) onDone(); return; }
+  const ov   = document.getElementById('npc-reaction');
+  const img  = document.getElementById('npc-reaction-img');
+  const nm   = document.getElementById('npc-reaction-name');
+  const line = document.getElementById('npc-reaction-line');
+  if (!ov || !img || !nm || !line) { if (onDone) onDone(); return; }
+  img.src = ok ? req.portraitHappy : req.portraitSad;
+  img.alt = req.name;
+  nm.textContent  = req.name;
+  line.textContent = ok ? req.happyMsg : req.sadMsg;
+  ov.classList.remove('is-closing', 'is-happy', 'is-sad', 'hidden');
+  ov.classList.add(ok ? 'is-happy' : 'is-sad');
+  // 自動進行 (タップしても進める)
+  let advanced = false;
+  const advance = () => {
+    if (advanced) return;
+    advanced = true;
+    ov.classList.add('is-closing');
+    setTimeout(() => {
+      ov.classList.add('hidden');
+      ov.classList.remove('is-closing');
+      if (onDone) onDone();
+    }, 380);
+  };
+  ov.onclick = advance;
+  setTimeout(advance, 2200);
+}
 
 // ===== Favorites（お気に入り お弁当、最大5件） =====
 const FAV_LS_KEY = 'pono_bento_favorites';
@@ -1919,6 +2201,32 @@ function onRiceTap(el, rice) {
 
 // onOkazuTap removed — replaced by onFreeOkazuTap above
 
+// 食材が弁当スロットに着地した瞬間に軽い sparkle を散らす (パズル "ハマった！" の体感)。
+// 既存 .sparkle CSS を再利用。 host は #confetti (fixed/inset:0)。 失敗判定なし、 演出のみ。
+function spawnLandingSparkles(targetEl) {
+  const host = document.getElementById('confetti');
+  if (!host || !targetEl) return;
+  const r = targetEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const chars = ['✨','⭐','🌟','💫'];
+  const n = 6;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    s.textContent = chars[Math.floor(Math.random() * chars.length)];
+    s.style.left = (cx - 9) + 'px';
+    s.style.top  = (cy - 9) + 'px';
+    const angle = (Math.PI * 2 * i) / n + (Math.random() * 0.5 - 0.25);
+    const dist  = 28 + Math.random() * 22;
+    s.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    s.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    s.style.animationDuration = '0.7s';
+    host.appendChild(s);
+    setTimeout(() => s.remove(), 800);
+  }
+}
+
 function flyFood(from, to, src, cb) {
   const fr = from.getBoundingClientRect(), tr = to.getBoundingClientRect();
   let fly;
@@ -1936,7 +2244,11 @@ function flyFood(from, to, src, cb) {
     fly.style.top = (tr.top + tr.height/2 - 20) + 'px';
     fly.style.opacity = '0.5'; fly.style.transform = 'scale(0.4)';
   });
-  setTimeout(() => { fly.remove(); if (cb) cb(); }, 500);
+  setTimeout(() => {
+    fly.remove();
+    spawnLandingSparkles(to); // 軽量パズル風スナップ演出
+    if (cb) cb();
+  }, 500);
 }
 
 function showToast(m) { const t = document.getElementById('wrong-toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); }
@@ -2070,9 +2382,18 @@ function stageComplete() {
       loadStage();
     }
   };
-  document.getElementById('complete-overlay').classList.remove('hidden');
-  // 結果発表の演出スタート（表情はふつう→ドラムロール→じゃーん）
-  revealReactionWithDrama(reaction);
+  // NPC 依頼者モード時は、 完成画面の前に「NPC 反応 (~2.2 秒)」 を挟む。
+  // 自由モード (currentRequester == null) の時は従来通りすぐ完成画面。
+  const _showCompleteOverlay = () => {
+    document.getElementById('complete-overlay').classList.remove('hidden');
+    revealReactionWithDrama(reaction);
+  };
+  if (currentRequester) {
+    const ok = evaluateRequest(currentRequester, bentoFoodNames);
+    showRequesterReaction(currentRequester, ok, _showCompleteOverlay);
+  } else {
+    _showCompleteOverlay();
+  }
 }
 
 function launchConfetti() {
@@ -2518,6 +2839,9 @@ loadStage();
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}
     if (bgmEnabled) tryPlayBgm();
+    // NPC モード判定 + 訪問演出 (currentRequester があれば intro モーダルを出す)
+    decideNpcMode();
+    if (currentRequester) showRequesterIntro(currentRequester);
   });
 })();
 
