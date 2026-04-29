@@ -1990,6 +1990,18 @@ function stopBgm() { if (bgmEl) bgmEl.pause(); }
   }, { passive: true });
 });
 if (bgmEnabled) tryPlayBgm();
+
+// タブが背景に行く / 画面が消える時は BGM を一時停止し、 戻ってきたら再開する
+// (他ゲーム maze/oto/play-all 等と同じ挙動)。
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) {
+    stopBgm();
+  } else if (bgmEnabled) {
+    tryPlayBgm();
+  }
+});
+// pagehide: iOS Safari でホーム画面に戻る / アプリ切替 / 画面ロック時に発火。
+window.addEventListener('pagehide', stopBgm);
 function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(900,t+0.08); g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.12); }
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
