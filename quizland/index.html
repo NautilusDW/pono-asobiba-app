@@ -49,7 +49,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 8px;
   padding: 8px clamp(12px, 2vw, 24px) 8px;
   margin: 0;
@@ -80,14 +80,16 @@ body::after {
 .game-shell {
   /* 21:9 セーフエリア: viewport 高さに収め、 横幅は 16:9 ベースで上限を取る。
      行は header / hud / stage の 3 つで、 stage が 1fr で残り高さを吸収する。 */
-  width: 100%;
-  max-width: min(1600px, calc(100dvh * 16 / 9));
-  height: 100%;
-  max-height: 100dvh;
+  width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
+  max-width: 1600px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: calc(100dvh - 16px);
   display: grid;
   grid-template-rows: auto auto 1fr;
   gap: 8px;
   min-height: 0;
+  align-self: center;
 }
 .stage {
   min-height: 0;
@@ -115,13 +117,15 @@ body::after {
    占有してしまう問題への対応 (2026-04-29 v549 → v550)。 */
 .header {
   position: relative;
-  width: 100%;
+  width: min(54.5%, 780px);
+  justify-self: start;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  min-height: clamp(48px, 12vh, 124px);
-  padding: clamp(4px, 1vh, 16px) clamp(10px, 2vw, 24px);
-  background: url('../assets/images/quizland/ui_title_frame.png') left center / auto 100% no-repeat;
+  aspect-ratio: 780 / 291;
+  min-height: auto;
+  padding: clamp(4px, 0.8vh, 14px) clamp(10px, 1.2vw, 18px);
+  background: url('../assets/images/quizland/ui_title_frame.png') center / 100% 100% no-repeat;
   overflow: hidden;
 }
 .header::after {
@@ -130,9 +134,9 @@ body::after {
 .header-logo {
   position: relative;
   z-index: 1;
-  width: clamp(160px, 28vw, 540px);
-  max-height: 100%;
-  margin-left: clamp(8px, 1.4vw, 22px);
+  width: min(44%, 330px);
+  max-height: 72%;
+  margin-left: clamp(8px, 1vw, 16px);
   object-fit: contain;
   filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.12));
 }
@@ -140,13 +144,15 @@ body::after {
 /* ===== HUD ===== */
 .hud {
   position: relative;
-  width: 100%;
+  width: min(94%, 1360px);
+  justify-self: center;
   display: grid;
   grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.9fr) clamp(72px, 9vw, 118px) clamp(72px, 9vw, 118px);
   align-items: center;
   gap: clamp(6px, 1.2vw, 18px);
-  min-height: clamp(40px, 9vh, 108px);
-  padding: clamp(4px, 1vh, 18px) clamp(10px, 2vw, 28px);
+  aspect-ratio: 1879 / 291;
+  min-height: auto;
+  padding: clamp(4px, 0.75vh, 14px) clamp(10px, 1.6vw, 24px);
   /* 生成画像のフレームのみ。 box-shadow / border-radius は画像が持っているので CSS では足さない。 */
   background: url('../assets/images/quizland/ui_header_frame.png') center / 100% 100% no-repeat;
   font-size: clamp(0.68rem, 1.6vh, 0.92rem);
@@ -234,6 +240,7 @@ body::after {
   grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.95fr);
   gap: clamp(18px, 2vw, 30px);
   align-items: stretch;
+  min-height: 0;
 }
 .question-panel,
 .answer-panel {
@@ -696,7 +703,7 @@ body::after {
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 900px) {
   .stage {
     grid-template-columns: 1fr;
   }
@@ -710,10 +717,20 @@ body::after {
 
 @media (max-width: 760px) {
   body {
+    justify-content: flex-start;
     padding: 16px 12px 24px;
     gap: 14px;
   }
+  .game-shell {
+    width: 100%;
+    max-width: none;
+    aspect-ratio: auto;
+    height: auto;
+    max-height: none;
+  }
   .header {
+    width: 100%;
+    aspect-ratio: auto;
     min-height: 92px;
     padding: 10px 14px;
     background:
@@ -724,6 +741,8 @@ body::after {
     margin-left: 0;
   }
   .hud {
+    width: 100%;
+    aspect-ratio: auto;
     grid-template-columns: 1fr 1fr;
     min-height: 0;
     gap: 10px;
