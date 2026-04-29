@@ -65,6 +65,8 @@ const modalDailyAcorn = document.getElementById('modal-daily-acorn');
 const btnNextStage    = document.getElementById('btn-next-stage');
 const btnPlayAgain    = document.getElementById('btn-play-again');
 const confettiContainer = document.getElementById('confetti-container');
+const titleScreen     = document.getElementById('title-screen');
+const titleStartBtn   = document.getElementById('title-start-btn');
 
 // ===== Audio Context (shared, iOS-safe) =====
 let sfxCtx = null;
@@ -694,6 +696,21 @@ function showTutorial() {
   steps[0]();
 }
 
+let pendingTitleTutorial = false;
+
+function startFromTitleScreen() {
+  if (titleScreen) titleScreen.classList.add('hidden');
+  getSfxCtx().resume().catch(() => {});
+  if (bgmEnabled) {
+    bgmStarted = false;
+    tryStartBgm();
+  }
+  if (pendingTitleTutorial) {
+    pendingTitleTutorial = false;
+    setTimeout(showTutorial, 500);
+  }
+}
+
 // ===== Start =====
 window.addEventListener('DOMContentLoaded', () => {
   // Merge fixed stages with any saved drawings
@@ -705,7 +722,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Show tutorial on first visit
   localStorage.removeItem('puzzle_tut_seen'); // テスト用: 毎回表示
   if (!localStorage.getItem('puzzle_tut_seen')) {
-    setTimeout(showTutorial, 500);
+    pendingTitleTutorial = true;
+  }
+
+  if (titleStartBtn) {
+    titleStartBtn.addEventListener('click', startFromTitleScreen);
   }
 
   // Shared menu (gear icon) with BGM toggle

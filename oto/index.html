@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>おとタッチ｜ポノのあそびば</title>
+<title>ポノのおとタッチ｜ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
@@ -479,47 +479,61 @@
 
   /* ── イントロ画面 (タップで AudioContext アンロック) ── */
   .intro {
-    position: fixed; inset: 0;
-    background: linear-gradient(180deg, hsl(200,55%,55%) 0%, hsl(215,60%,25%) 100%);
+    position: fixed;
+    inset: 0;
     z-index: 1000;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 24px;
-    text-align: center;
-    color: #fff;
+    background: center / cover no-repeat url('../assets/images/oto/title_back.jpg');
   }
-  .intro h1 {
-    font-size: 1.8rem; font-weight: 900;
-    text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
-    margin-bottom: 16px;
+  .intro::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(26, 32, 54, 0.16) 0%, rgba(26, 32, 54, 0.42) 100%),
+      radial-gradient(circle at 50% 32%, rgba(255, 244, 209, 0.16) 0%, rgba(255, 244, 209, 0) 42%);
   }
-  .intro .intro-pono {
-    width: 160px; height: 160px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: rgba(255,255,255,0.85);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-    margin: 8px 0 16px;
+  .intro__content {
+    position: relative;
+    z-index: 1;
+    width: min(86vw, 720px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 28px;
   }
-  .intro .intro-pono img { width: 100%; height: 100%; object-fit: cover; }
-  .intro p {
-    font-size: 1rem; font-weight: 700;
-    line-height: 1.7; margin-bottom: 24px; max-width: 320px;
-    text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+  .intro-logo {
+    width: min(78vw, 620px);
+    max-width: 100%;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 10px 26px rgba(40, 22, 8, 0.34));
   }
   .intro-btn {
-    padding: 14px 40px;
-    border: none; border-radius: 999px;
-    background: linear-gradient(135deg, #FFD84D, #F2B800);
-    color: #fff; font-family: inherit;
-    font-size: 1.4rem; font-weight: 900;
-    box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+    min-width: min(78vw, 340px);
+    padding: 15px 34px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #FFD84D, #F5A800);
+    color: #5C3A00;
+    font-family: inherit;
+    font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    box-shadow:
+      0 6px 0 #B87200,
+      0 14px 28px rgba(40, 22, 8, 0.26);
     cursor: pointer;
-    transition: transform 0.08s, box-shadow 0.08s;
   }
   .intro-btn:active {
     transform: translateY(3px);
-    box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+    box-shadow:
+      0 3px 0 #B87200,
+      0 8px 18px rgba(40, 22, 8, 0.24);
   }
 
   /* ── チュートリアル (bento のスタイルを踏襲) ── */
@@ -688,12 +702,10 @@
 
 <!-- イントロ: タップで AudioContext をアンロック -->
 <div class="intro" id="intro">
-  <h1>おとタッチ</h1>
-  <div class="intro-pono">
-    <img src="../assets/images/characters/pono/pono_face_circle.png" alt="">
+  <div class="intro__content">
+    <img class="intro-logo" src="../assets/images/oto/title_logo.png" alt="ポノのおとタッチ">
+    <button class="intro-btn" id="introBtn" type="button">タップしてスタート</button>
   </div>
-  <p>まるい ボタンを タッチすると<br>たのしい おとが なるよ！</p>
-  <button class="intro-btn" id="introBtn">はじめる！</button>
 </div>
 
 <div id="app">
@@ -1855,7 +1867,7 @@ function showTutorial() {
   // 5ステップ定義
   var steps = [
     {
-      msg: '🎵 おとタッチへ ようこそ！<br>まるい ボタンを タッチすると<br>おとが なるよ',
+      msg: '🎵 ポノのおとタッチへ ようこそ！<br>まるい ボタンを タッチすると<br>おとが なるよ',
       anchor: null, side: null
     },
     {

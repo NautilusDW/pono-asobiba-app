@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>ポノの おべんとう | ポノのあそびば</title>
+<title>ポノとつくろう いろどりべんとう | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
@@ -34,6 +34,65 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
   overscroll-behavior: none;
+}
+
+#title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: center / cover no-repeat url('../assets/images/bento/title_back.jpg');
+}
+#title-screen.hidden { display: none; }
+#title-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(36, 22, 12, 0.14) 0%, rgba(36, 22, 12, 0.42) 100%),
+    radial-gradient(circle at 50% 34%, rgba(255, 243, 214, 0.16) 0%, rgba(255, 243, 214, 0) 42%);
+}
+.title-screen__content {
+  position: relative;
+  z-index: 1;
+  width: min(86vw, 720px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 28px;
+}
+.title-screen__logo {
+  width: min(78vw, 620px);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 10px 26px rgba(40, 22, 8, 0.34));
+}
+.title-screen__start {
+  min-width: min(78vw, 340px);
+  padding: 15px 34px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FFD84D, #F5A800);
+  color: #5C3A00;
+  font-family: inherit;
+  font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  box-shadow:
+    0 6px 0 #B87200,
+    0 14px 28px rgba(40, 22, 8, 0.26);
+  cursor: pointer;
+}
+.title-screen__start:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 3px 0 #B87200,
+    0 8px 18px rgba(40, 22, 8, 0.24);
 }
 
 /* ===== タイトル ===== */
@@ -986,6 +1045,13 @@ html, body {
 <!-- BGM (loop) -->
 <audio id="bgm" loop preload="auto" src="../assets/audio/bento_bgm.mp3"></audio>
 
+<div id="title-screen">
+  <div class="title-screen__content">
+    <img class="title-screen__logo" src="../assets/images/bento/title_logo.png" alt="ポノとつくろう いろどりべんとう">
+    <button class="title-screen__start" id="title-start-btn" type="button">タップしてスタート</button>
+  </div>
+</div>
+
 <div id="portrait-notice">
   <div class="rotate-icon">📱</div>
   <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
@@ -1037,7 +1103,7 @@ html, body {
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 
-<div class="game-title">🍱 おべんとうづくり</div>
+<div class="game-title">ポノとつくろう いろどりべんとう</div>
 <button class="fav-header-btn" id="fav-header-btn" aria-label="おきにいりを みる" title="おきにいりを みる">⭐</button>
 
 <div id="app">
@@ -2438,6 +2504,17 @@ function showTutorial() {
 // ===== Init =====
 applyBentoColor();
 loadStage();
+
+(function() {
+  const titleScreen = document.getElementById('title-screen');
+  const titleStartBtn = document.getElementById('title-start-btn');
+  if (!titleScreen || !titleStartBtn) return;
+  titleStartBtn.addEventListener('click', function() {
+    titleScreen.classList.add('hidden');
+    try { getAC(); } catch (_) {}
+    if (bgmEnabled) tryPlayBgm();
+  });
+})();
 
 // Favorites UI wiring
 (function() {

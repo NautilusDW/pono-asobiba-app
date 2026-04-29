@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>ポノのパズル | ポノのあそびば</title>
+  <title>ポノのなかよしパズル | ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
@@ -22,11 +22,18 @@
     <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
   </div>
   <audio id="bgm" loop src="../assets/audio/Cheery Strike Loop2.mp3" preload="auto"></audio>
+  <div id="title-screen" class="title-screen">
+    <div class="title-screen__veil"></div>
+    <div class="title-screen__content">
+      <img class="title-screen__logo" src="../assets/images/puzzle/title_logo.png" alt="ポノのなかよしパズル">
+      <button id="title-start-btn" class="title-screen__start" type="button">タップしてスタート</button>
+    </div>
+  </div>
   <div class="tut-dim hidden" id="tut-dim"></div>
   <div class="tut-bubble hidden" id="tut-bubble"></div>
   <div class="page-wrapper">
     <header class="header">
-      <h1 class="title">ポノのパズル</h1>
+      <h1 class="title">ポノのなかよしパズル</h1>
       <p class="subtitle">えを あわせて みよう!</p>
       <p id="stage-label" class="stage-label">ステージ 1 / 4</p>
     </header>
