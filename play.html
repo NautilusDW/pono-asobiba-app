@@ -1506,9 +1506,18 @@
           stage.style.transform = 'scale(1)';
           return;
         }
-        // Letterbox: pick the smaller scale so the whole canvas fits.
-        const scale = Math.min(vw / CANVAS_W, vh / CANVAS_H);
-        stage.style.transform = `scale(${scale})`;
+        // Cover-fit: pick the LARGER scale so one axis snaps to the viewport
+        // edge and the other (the 21:9 side decoration) overflows + clips.
+        // This kills letterbox black bars and gives ~1.1–1.3x more size on
+        // typical phone landscapes vs. the previous Math.min letterbox.
+        // Safe: all UI lives inside the 16:9 safe-area, only the side
+        // decoration art gets cropped on tall viewports.
+        const baseScale = Math.max(vw / CANVAS_W, vh / CANVAS_H);
+        // Optional extra zoom (>1.0 grows further; main UI may start to
+        // crop into the 16:9 safe-area if pushed too high). 1.0 keeps
+        // safe-area fully visible.
+        const SCALE_MULTIPLY = 1.0;
+        stage.style.transform = `scale(${baseScale * SCALE_MULTIPLY})`;
       }
 
       fit();
