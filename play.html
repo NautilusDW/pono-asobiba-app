@@ -414,6 +414,7 @@
       display: block;
       border-radius: 50%;
       object-fit: cover;
+      object-position: var(--gc-thumb-pos, center);
       transform: scale(var(--gc-thumb-zoom, 1.15));
       transform-origin: center;
       position: relative;
@@ -439,7 +440,7 @@
       inset: 0;
       background-image: var(--card-peek, none);
       background-size: cover;
-      background-position: center;
+      background-position: var(--card-peek-pos, center);
       background-repeat: no-repeat;
       /* Mask placement, tweakable per-card.
            --mask-w / --mask-h : size in % of card.   default 100% / 100%
@@ -571,6 +572,9 @@
     .game-card[data-id="quiz-sound"] .game-card__title { color: #2f6aa3; }   /* forest blue */
     .game-card[data-id="wordmatch"]  .game-card__title { color: #b56d12; }   /* warm orange */
     .game-card[data-id="maze"]       .game-card__title { color: #f5d76a; }   /* lantern yellow */
+    .game-card[data-id="oto"]        .game-card__title { color: #d38a2c; }   /* playful music amber */
+    .game-card[data-id="bento"]      .game-card__title { color: #d7712d; }   /* carrot orange */
+    .game-card[data-id="puzzle"]     .game-card__title { color: #5a89bf; }   /* gentle puzzle blue */
     /* Wordmatch's title is the longest ("あつめよう！ポノのもりのずかん").
        Tighten letter spacing + nudge font-size so it fits without ellipsis. */
     .game-card[data-id="wordmatch"] .game-card__title {
