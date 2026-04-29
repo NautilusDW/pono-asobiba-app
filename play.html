@@ -986,16 +986,19 @@
     </main>
 
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
-      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ">
+      <!-- Button images are固定 (画像順は変更しない); we shifted the
+           data-action / aria-label so each icon now triggers the right
+           feature: 設定 / ?(ヘルプ) / 家(トップ) / 鈴(おしらせ). -->
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい">
         <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_002.png" alt="" draggable="false">
       </button>
-      <button class="bn-item" data-action="top" type="button" aria-label="トップ">
+      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ">
         <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_003.png" alt="" draggable="false">
       </button>
-      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ">
+      <button class="bn-item" data-action="top" type="button" aria-label="トップ">
         <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_004.png" alt="" draggable="false">
       </button>
-      <button class="bn-item" data-action="settings" type="button" aria-label="せってい">
+      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ">
         <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_005.png" alt="" draggable="false">
       </button>
     </nav>
