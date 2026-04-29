@@ -14,13 +14,7 @@
 
 ## Active (進行中 / 未着手)
 
-- [ ] **quizland (フクロウのなぞなぞ) を 21:9 + 二重枠削除でリファイン** (担当: Codex / 依頼日 2026-04-29)
-  - **問題 1: 21:9 になっていない** — 直前の commit `c0896b2` で `game-shell` の高さ固定等を入れたが、 ユーザー視点ではまだ 21:9 にハマっていない (上下が伸びる / 横長感が足りない)。 play.html の stage 構造と同様に、 内側コンテンツを 16:9 セーフエリアに置きつつ背景画像を 21:9 で広げるイメージで揃えるのが目標
-  - **問題 2: 不要な装飾枠の二重がけ** — `assets/images/quizland/` に既に生成済みフレーム画像
-    `ui_title_frame.png` / `ui_header_frame.png` / `ui_question_frame.png` / `ui_answers_frame.png` が敷いてある。 にもかかわらず、 CSS の各種パネル (`question-panel` / `answer-panel` / `panel-chip` / `hud-*` 等) が `background: linear-gradient(...)` や白箱・帯を **追加で**重ねている箇所がある模様。 これを wordmatch/forestdex で実施したのと同じ方針 (= 「**文字と最小限の当たり判定だけ重ねる**」、 補助背景・帯・白箱は透明化) で削除して欲しい
-  - **対象ファイル**: `quizland/index.html` のみ (CSS / HTML 内の `<style>` 内編集)
-  - **触らない**: ロジック層 (問題データ / 採点 / 進行)、 `sw.js` (バンプは Claude 担当)、 frame PNG 自体
-  - **完了したら**: HANDOFF.md Recent に記録 + Claude にバンプ依頼 (= ユーザー経由で「バンプして」 と来たら Claude が `sw.js` を +1)
+なし。
 
 ---
 

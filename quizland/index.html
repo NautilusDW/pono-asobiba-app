@@ -33,7 +33,9 @@
 }
 
 html, body {
-  min-height: 100dvh;
+  /* 21:9 端末で全体が縦に伸びてスクロール状態になる問題への対応 (2026-04-29):
+     viewport の高さに固定して、 内側コンテンツを 100dvh に収める。 */
+  height: 100dvh;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   color: var(--text);
   user-select: none;
@@ -48,10 +50,10 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 18px;
-  padding: 28px clamp(16px, 2.4vw, 36px) 30px;
+  gap: 8px;
+  padding: 8px clamp(12px, 2vw, 24px) 8px;
   margin: 0;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 body::before {
   content: "";
@@ -76,10 +78,22 @@ body::after {
 }
 
 .game-shell {
-  width: min(100%, 1600px);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  /* 21:9 セーフエリア: viewport 高さに収め、 横幅は 16:9 ベースで上限を取る。
+     行は header / hud / stage の 3 つで、 stage が 1fr で残り高さを吸収する。 */
+  width: 100%;
+  max-width: min(1600px, calc(100dvh * 16 / 9));
+  height: 100%;
+  max-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 8px;
+  min-height: 0;
+}
+.stage {
+  min-height: 0;
+}
+.question-panel {
+  min-height: 0 !important;
 }
 
 .sr-only {
@@ -94,7 +108,9 @@ body::after {
   border: 0;
 }
 
-/* ===== Header ===== */
+/* ===== Header =====
+   生成画像 ui_title_frame.png に既に枠と質感が描かれているので、
+   CSS 側の linear-gradient overlay と box-shadow は外して二重重ねを解消。 */
 .header {
   position: relative;
   width: 100%;
@@ -103,11 +119,7 @@ body::after {
   justify-content: flex-start;
   min-height: 124px;
   padding: 16px 24px;
-  border-radius: 34px;
-  background:
-    linear-gradient(180deg, rgba(255, 250, 239, 0.72), rgba(249, 236, 207, 0.38)),
-    url('../assets/images/quizland/ui_title_frame.png') left center / auto 100% no-repeat;
-  box-shadow: 0 16px 30px rgba(120, 83, 20, 0.12);
+  background: url('../assets/images/quizland/ui_title_frame.png') left center / auto 100% no-repeat;
   overflow: hidden;
 }
 .header::after {
@@ -133,9 +145,8 @@ body::after {
   gap: 18px;
   min-height: 108px;
   padding: 18px 28px;
+  /* 生成画像のフレームのみ。 box-shadow / border-radius は画像が持っているので CSS では足さない。 */
   background: url('../assets/images/quizland/ui_header_frame.png') center / 100% 100% no-repeat;
-  border-radius: 28px;
-  box-shadow: 0 14px 28px rgba(120, 83, 20, 0.12);
   font-size: 0.92rem;
   font-weight: 700;
 }
@@ -272,19 +283,10 @@ body::after {
   min-height: 174px;
   margin: 2px 8px 0;
   padding: 18px 18px 16px 168px;
-  border-radius: 30px;
-  background: linear-gradient(180deg, rgba(255, 252, 243, 0.94), rgba(246, 233, 202, 0.88));
-  border: 2px solid rgba(228, 189, 113, 0.72);
-  box-shadow: 0 12px 24px rgba(120, 83, 20, 0.08), inset 0 1px 0 rgba(255,255,255,0.88);
-  overflow: hidden;
-}
-.answer-guide::before {
-  content: "";
-  position: absolute;
-  inset: 10px;
-  border-radius: 22px;
-  border: 1px solid rgba(236, 208, 151, 0.68);
-  pointer-events: none;
+  /* 旧来は linear-gradient + 二重 border + box-shadow で白い枠を作っていたが、
+     生成済みフレーム (ヘッダ / 問題板 / 回答板) があるので不要な装飾は撤去。
+     フクロウ博士のヒント文だけ重ねる。 */
+  background: transparent;
 }
 .answer-guide__owl {
   position: absolute;
@@ -317,25 +319,11 @@ body::after {
   justify-content: center;
   margin: 14px 0 18px;
   min-height: 132px;
-  padding: 26px 86px 26px 34px;
-  border-radius: 30px;
-  border: 7px solid rgba(134, 93, 36, 0.8);
-  background:
-    radial-gradient(circle at 20% 24%, rgba(255,255,255,0.08), transparent 18%),
-    radial-gradient(circle at 76% 64%, rgba(255,255,255,0.05), transparent 20%),
-    linear-gradient(180deg, #7d8d61 0%, #64724d 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(238, 218, 177, 0.32),
-    inset 0 18px 28px rgba(255,255,255,0.05),
-    0 12px 20px rgba(120, 83, 20, 0.14);
-}
-.question-wrap::before {
-  content: "";
-  position: absolute;
-  inset: 14px;
-  border-radius: 18px;
-  border: 2px solid rgba(233, 221, 184, 0.2);
-  pointer-events: none;
+  padding: 26px 34px;
+  /* 旧来は border 7px + linear-gradient + box-shadow + ::before の二重縁取りで
+     question-board の生成画像枠と二重に重ねていたが、 ユーザー指示で削除。
+     文字 (.question) と当たり判定だけ残す。 */
+  background: transparent;
 }
 .question-board {
   position: relative;
@@ -345,10 +333,9 @@ body::after {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  border-radius: 0;
   padding: clamp(26px, 2.4vw, 42px);
+  /* 画像にすでに枠 + 影が描かれているので box-shadow は外す。 */
   background: center / 100% 100% no-repeat url('../assets/images/quizland/ui_question_frame.png');
-  box-shadow: 0 14px 24px rgba(120, 83, 20, 0.1);
 }
 
 .question {
