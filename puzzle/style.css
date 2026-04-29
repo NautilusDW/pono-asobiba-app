@@ -41,11 +41,10 @@ body {
   position: fixed;
   inset: 0;
   z-index: 300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
   background: center / cover no-repeat url('../assets/images/puzzle/title_back.jpg');
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 
 .title-screen.hidden {
@@ -61,18 +60,22 @@ body {
 }
 
 .title-screen__content {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  right: clamp(24px, 7vw, 96px);
+  transform: translateY(-50%);
   z-index: 1;
-  width: min(86vw, 720px);
+  width: min(40vw, 520px);
+  max-width: calc(100vw - 48px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 28px;
+  gap: 10px;
+  pointer-events: none;
 }
 
 .title-screen__logo {
-  width: min(78vw, 620px);
+  width: 100%;
   max-width: 100%;
   height: auto;
   display: block;
@@ -80,27 +83,31 @@ body {
 }
 
 .title-screen__start {
-  min-width: min(78vw, 340px);
-  padding: 15px 34px;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #FFD84D, #F5A800);
-  color: #5C3A00;
-  font-family: inherit;
-  font-size: clamp(1.05rem, 2.8vw, 1.35rem);
-  font-weight: 900;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1rem, 3.6vw, 1.6rem);
+  color: #5D3A00;
+  text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.2);
   letter-spacing: 0.06em;
-  box-shadow:
-    0 6px 0 #B87200,
-    0 14px 28px rgba(40, 22, 8, 0.26);
-  cursor: pointer;
+  background: rgba(255, 248, 224, 0.78);
+  padding: 8px 22px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  animation: titleTapPulse 1.4s ease-in-out infinite;
 }
 
-.title-screen__start:active {
-  transform: translateY(3px);
-  box-shadow:
-    0 3px 0 #B87200,
-    0 8px 18px rgba(40, 22, 8, 0.24);
+@keyframes titleTapPulse {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.06); }
+}
+
+@media (max-width: 900px) {
+  .title-screen__content {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
+    width: min(78vw, 520px);
+  }
 }
 
 /* ===== Layout ===== */

@@ -66,7 +66,6 @@ const btnNextStage    = document.getElementById('btn-next-stage');
 const btnPlayAgain    = document.getElementById('btn-play-again');
 const confettiContainer = document.getElementById('confetti-container');
 const titleScreen     = document.getElementById('title-screen');
-const titleStartBtn   = document.getElementById('title-start-btn');
 
 // ===== Audio Context (shared, iOS-safe) =====
 let sfxCtx = null;
@@ -725,8 +724,8 @@ window.addEventListener('DOMContentLoaded', () => {
     pendingTitleTutorial = true;
   }
 
-  if (titleStartBtn) {
-    titleStartBtn.addEventListener('click', startFromTitleScreen);
+  if (titleScreen) {
+    titleScreen.addEventListener('click', startFromTitleScreen);
   }
 
   // Shared menu (gear icon) with BGM toggle

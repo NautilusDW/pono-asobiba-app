@@ -8,7 +8,7 @@
 <title>ポノのおとタッチ｜ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
@@ -482,11 +482,10 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
     background: center / cover no-repeat url('../assets/images/oto/title_back.jpg');
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
   }
   .intro::before {
     content: '';
@@ -497,43 +496,50 @@
       radial-gradient(circle at 50% 32%, rgba(255, 244, 209, 0.16) 0%, rgba(255, 244, 209, 0) 42%);
   }
   .intro__content {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    right: clamp(24px, 7vw, 96px);
+    transform: translateY(-50%);
     z-index: 1;
-    width: min(86vw, 720px);
+    width: min(40vw, 520px);
+    max-width: calc(100vw - 48px);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: 28px;
+    gap: 10px;
+    pointer-events: none;
   }
   .intro-logo {
-    width: min(78vw, 620px);
+    width: 100%;
     max-width: 100%;
     height: auto;
     display: block;
     filter: drop-shadow(0 10px 26px rgba(40, 22, 8, 0.34));
   }
   .intro-btn {
-    min-width: min(78vw, 340px);
-    padding: 15px 34px;
-    border: none;
-    border-radius: 999px;
-    background: linear-gradient(180deg, #FFD84D, #F5A800);
-    color: #5C3A00;
-    font-family: inherit;
-    font-size: clamp(1.05rem, 2.8vw, 1.35rem);
-    font-weight: 900;
+    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+    font-size: clamp(1rem, 3.6vw, 1.6rem);
+    color: #5D3A00;
+    text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.2);
     letter-spacing: 0.06em;
-    box-shadow:
-      0 6px 0 #B87200,
-      0 14px 28px rgba(40, 22, 8, 0.26);
-    cursor: pointer;
+    background: rgba(255, 248, 224, 0.78);
+    padding: 8px 22px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    animation: titleTapPulse 1.4s ease-in-out infinite;
   }
-  .intro-btn:active {
-    transform: translateY(3px);
-    box-shadow:
-      0 3px 0 #B87200,
-      0 8px 18px rgba(40, 22, 8, 0.24);
+  @keyframes titleTapPulse {
+    0%, 100% { opacity: 0.92; transform: scale(1); }
+    50%      { opacity: 1; transform: scale(1.06); }
+  }
+  @media (max-width: 900px) {
+    .intro__content {
+      top: 50%;
+      left: 50%;
+      right: auto;
+      transform: translate(-50%, -50%);
+      width: min(78vw, 520px);
+    }
   }
 
   /* ── チュートリアル (bento のスタイルを踏襲) ── */
@@ -701,10 +707,10 @@
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 
 <!-- イントロ: タップで AudioContext をアンロック -->
-<div class="intro" id="intro">
+<div class="intro" id="intro" role="button" aria-label="タップしてスタート">
   <div class="intro__content">
     <img class="intro-logo" src="../assets/images/oto/title_logo.png" alt="ポノのおとタッチ">
-    <button class="intro-btn" id="introBtn" type="button">タップしてスタート</button>
+    <div class="intro-btn" id="introBtn">▶ タップしてスタート</div>
   </div>
 </div>
 
@@ -1962,12 +1968,12 @@ if (window.initMenu) {
 // イントロ → タップで AudioContext アンロック → ステージ表示 → 初回のみチュートリアル
 // ────────────────────────────────
 (function() {
+  var intro = document.getElementById('intro');
   var introBtn = document.getElementById('introBtn');
-  if (!introBtn) return;
-  introBtn.addEventListener('click', function() {
+  if (!intro || !introBtn) return;
+  function startIntro() {
     unlockAudio();
     _ensureAnimalDecoded();
-    var intro = document.getElementById('intro');
     if (intro) intro.style.display = 'none';
     // 初回だけチュートリアルを自動表示
     try {
@@ -1975,7 +1981,8 @@ if (window.initMenu) {
         setTimeout(showTutorial, 500);
       }
     } catch (e) {}
-  });
+  }
+  intro.addEventListener('click', startIntro);
 })();
 
 // ════════════════════════════════════════════════════════════
