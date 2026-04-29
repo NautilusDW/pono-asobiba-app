@@ -36,6 +36,9 @@
   <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.png">
   <link rel="preload" as="image" href="assets/ui/thumb_wordmatch.png">
   <link rel="preload" as="image" href="assets/ui/thumb_maze.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_oto.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_bento.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_puzzle.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1198,50 +1201,36 @@
         panel: 'assets/ui/menu_card_base_04.png',
         thumb: 'assets/ui/thumb_quiz-sound.png'
       },
-      // ----- Coming-soon placeholders (panels & thumbs reused; flagged comingSoon) -----
+      // ----- Newly promoted from coming-soon → real games -----
       {
-        id: 'soon-paint',
-        title: 'もりのおえかきちょう',
-        subtitle: 'じゆうに いろを ぬろう',
-        icon: '🎨',
-        bg: 'assets/images/quizland/title_back.jpg',
-        href: '#',
-        panel: 'assets/ui/menu_card_base_01.png',
-        thumb: 'assets/ui/thumb_wordmatch.png',
-        comingSoon: true
-      },
-      {
-        id: 'soon-rhythm',
-        title: 'こもれびリズムあそび',
-        subtitle: 'おとに あわせて てを たたこう',
+        id: 'oto',
+        title: 'ポノのおとタッチ',
+        subtitle: 'タップして おとを ならそう',
         icon: '🎵',
-        bg: 'assets/images/quiz-sound/title_back.jpg',
-        href: '#',
+        bg: 'assets/images/oto/title_back.jpg',
+        href: 'oto/index.html',
+        panel: 'assets/ui/menu_card_base_01.png',
+        thumb: 'assets/ui/thumb_oto.png'
+      },
+      {
+        id: 'bento',
+        title: 'ポノとつくろう いろどりべんとう',
+        subtitle: 'すきな おかずを つめよう',
+        icon: '🍱',
+        bg: 'assets/images/bento/title_back.jpg',
+        href: 'bento/index.html',
         panel: 'assets/ui/menu_card_base_02.png',
-        thumb: 'assets/ui/thumb_quizland.png',
-        comingSoon: true
+        thumb: 'assets/ui/thumb_bento.png'
       },
       {
-        id: 'soon-story',
-        title: 'おやすみまえの おはなし',
-        subtitle: 'ねるまえに ひとつ よもう',
-        icon: '🌙',
-        bg: 'assets/images/wordmatch/title_back.jpg',
-        href: '#',
+        id: 'puzzle',
+        title: 'ポノのなかよしパズル',
+        subtitle: 'ピースを あわせて えを かんせい',
+        icon: '🧩',
+        bg: 'assets/images/puzzle/title_back.jpg',
+        href: 'puzzle/index.html',
         panel: 'assets/ui/menu_card_base_03.png',
-        thumb: 'assets/ui/thumb_maze.png',
-        comingSoon: true
-      },
-      {
-        id: 'soon-stars',
-        title: 'よぞらの ほしさがし',
-        subtitle: 'せいざを みつけよう',
-        icon: '⭐',
-        bg: 'assets/images/maze/title_back.jpg',
-        href: '#',
-        panel: 'assets/ui/menu_card_base_04.png',
-        thumb: 'assets/ui/thumb_quiz-sound.png',
-        comingSoon: true
+        thumb: 'assets/ui/thumb_puzzle.png'
       }
     ];
 
