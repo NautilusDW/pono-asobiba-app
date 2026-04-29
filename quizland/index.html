@@ -1575,6 +1575,19 @@ function toggleBGM() {
   if (bgmEnabled) startBGM();
   else stopBGM();
 }
+
+// タブ非アクティブ・iOS の画面ロック / アプリ切替で BGM を止める
+// (他ゲーム maze/oto/puzzle/bento と同じ挙動)。
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) {
+    if (bgmAudio) bgmAudio.pause();
+  } else if (bgmEnabled && bgmAudio) {
+    bgmAudio.play().catch(function () {});
+  }
+});
+window.addEventListener('pagehide', function () {
+  if (bgmAudio) bgmAudio.pause();
+});
 function playCorrect() {
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
