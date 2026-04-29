@@ -1615,7 +1615,30 @@ const NPC_DECIDED_KEY = 'bento_npc_decided';
 const NPC_REQUEST_RATE = 0.30;
 
 function decideNpcMode() {
-  // 1 セッション 1 回だけ判定。 結果を sessionStorage に保存。
+  // ----- テスト用 URL パラメータ (?npc=...) -----
+  // ?npc=0           → 強制 自由モード (動物来ない)
+  // ?npc=1           → 強制 依頼モード (ランダム動物)
+  // ?npc=<id>        → 特定の動物を指名 (risu / inu / ahiru / shika / lesser_panda / neko)
+  // どれも sessionStorage より優先 (= リロードしても URL に乗せ続ければ固定)
+  try {
+    const sp = new URLSearchParams(location.search);
+    const force = sp.get('npc');
+    if (force !== null) {
+      if (force === '0' || force === 'free' || force === 'off') {
+        currentRequester = null;
+        return;
+      }
+      if (force === '1' || force === 'random' || force === 'on') {
+        currentRequester = NPC_REQUESTERS[Math.floor(Math.random() * NPC_REQUESTERS.length)];
+        return;
+      }
+      const found = NPC_REQUESTERS.find(r => r.id === force);
+      if (found) { currentRequester = found; return; }
+      // 不明な id → フォールスルーして通常判定
+    }
+  } catch (_) {}
+
+  // ----- 通常: 1 セッション 1 回判定 (sessionStorage キャッシュ) -----
   try {
     if (sessionStorage.getItem(NPC_DECIDED_KEY) === '1') {
       const id = sessionStorage.getItem(NPC_SESSION_KEY);
