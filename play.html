@@ -27,19 +27,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 
-  <!-- Preload preview backgrounds (4 games) -->
-  <link rel="preload" as="image" href="assets/images/quizland/title_back.jpg">
-  <link rel="preload" as="image" href="assets/images/quiz-sound/title_back.jpg">
-  <link rel="preload" as="image" href="assets/images/wordmatch/title_back.jpg">
-  <link rel="preload" as="image" href="assets/images/maze/title_back.jpg">
-  <!-- Preload card UI assets (wood panel + play button states) -->
-  <link rel="preload" as="image" href="assets/ui/menu_card_base_01.png">
-  <link rel="preload" as="image" href="assets/ui/menu_card_base_02.png">
-  <link rel="preload" as="image" href="assets/ui/menu_card_base_03.png">
-  <link rel="preload" as="image" href="assets/ui/menu_card_base_04.png">
-  <link rel="preload" as="image" href="assets/ui/play_button_normal.png">
-  <link rel="preload" as="image" href="assets/ui/play_button_selected.png">
-  <link rel="preload" as="image" href="assets/ui/play_button_pressed.png">
+  <!-- Preload preview backgrounds & card UI removed: the preview sandbox's
+       service worker rejects <link rel=preload> requests. The plain <img>
+       tags below still load fine; preload was an optimization, not required. -->
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,7 +50,7 @@
     html, body {
       height: 100%;
       font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-      background: var(--bg);
+      background: #000;
       color: var(--text);
       -webkit-user-select: none;
       user-select: none;
@@ -68,65 +58,35 @@
     }
 
     body {
-      display: flex;
-      flex-direction: column;
+      position: relative;
       min-height: 100dvh;
-      background-image: url('assets/images/BG_03.webp');
-      background-size: cover;
-      background-position: center;
-    }
-
-    /* ===== Header ===== */
-    .top-header {
-      flex-shrink: 0;
-      padding: 8px 16px;
-      padding-top: max(8px, env(safe-area-inset-top));
+      overflow: hidden;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background: linear-gradient(to bottom, rgba(255,248,225,0.92), rgba(255,248,225,0.72));
-      box-shadow: 0 2px 10px var(--shadow);
-      position: relative;
-      z-index: 30;
-    }
-    .brand-title {
-      font-size: clamp(1.1rem, 3.4vw, 1.6rem);
-      font-weight: 900;
-      color: var(--primary);
-      letter-spacing: 0.05em;
-      text-shadow: 2px 2px 0 var(--primary-light);
-    }
-    .brand-subtitle {
-      font-size: clamp(0.78rem, 2.2vw, 0.95rem);
-      font-weight: 700;
-      color: var(--text);
-      background: rgba(255,255,255,0.8);
-      border: 2px solid var(--primary-light);
-      border-radius: 50px;
-      padding: 4px 14px;
+      justify-content: center;
     }
 
-    /* ===== Main: preview + cards ===== */
-    .play-main {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 10px 12px calc(var(--nav-h) + 8px + env(safe-area-inset-bottom));
+    /* ===== 21:9 fixed canvas =====
+       The whole title screen is laid out at 1920×823 (21:9).
+       JS scales the canvas to fit the viewport (letterbox on black).
+       Every size below is in *canvas pixels* — no clamp(), no vw/vh.
+       This way the look is identical on phone / tablet / PC.
+    */
+    :root {
+      --canvas-w: 1920px;
+      --canvas-h: 823px;        /* 21:9 outer canvas */
+      --safe-w: 1463px;          /* 16:9 inner safe area at canvas-h */
     }
-
-    /* ===== Preview Pane ===== */
-    .preview-pane {
+    .stage {
       position: relative;
-      flex: 1 1 50%;
-      min-height: 200px;
-      border-radius: var(--radius);
+      width: var(--canvas-w);
+      height: var(--canvas-h);
+      flex-shrink: 0;
+      transform-origin: center center;
       overflow: hidden;
-      box-shadow: 0 8px 28px var(--shadow);
-      isolation: isolate;
     }
+
+    /* ===== Full-bleed background (selected game) — fills the canvas ===== */
     .preview-bg {
       position: absolute;
       inset: 0;
@@ -134,100 +94,177 @@
       background-position: center;
       opacity: 0;
       transition: opacity 0.45s ease;
+      z-index: 0;
+    }
+    .preview-bg.is-active { opacity: 1 !important; }
+    .bg-veil {
+      position: absolute;
+      inset: 0;
       z-index: 1;
-    }
-    .preview-bg.is-active { opacity: 1; }
-    .preview-pane::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      background: linear-gradient(
-        180deg,
-        rgba(0,0,0,0.05) 0%,
-        rgba(0,0,0,0.0) 35%,
-        rgba(0,0,0,0.45) 100%
-      );
       pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.0) 30%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.35) 100%),
+        linear-gradient(180deg, rgba(0,0,0,0.0) 60%, rgba(0,0,0,0.35) 100%);
     }
-    .preview-overlay {
+
+    /* ===== Old header hidden (brand sign now lives over the bg) ===== */
+    .top-header,
+    .preview-overlay,
+    .preview-title,
+    .preview-desc,
+    .start-btn { display: none !important; }
+
+    /* ===== Main layout: brand column + cards column =====
+       Important UI lives inside the 16:9 safe area (var(--safe-w))
+       centered horizontally, so iPhone-landscape (≈21:9) shows the full
+       21:9 canvas while iPad/PC (16:9) only crops the side background art.
+    */
+    .play-main {
       position: absolute;
-      inset: 0;
-      z-index: 3;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: var(--safe-w);
+      z-index: 5;
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 30px;
+      padding: 30px 40px 100px;
+      align-items: start;
+    }
+
+    /* ===== Brand (left) — sign + ribbon stacked. */
+    .brand-col {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-end;
-      gap: 6px;
-      padding: 16px 16px 18px;
-      text-align: center;
+      gap: 0;                     /* spacing handled per-element */
+      padding-top: 30px;
+    }
+    /* The sign is the moving group: it animates, and the ribbon below
+       is its child so it sways together as one rigid object. */
+    .brand-sign {
+      position: relative;
+      width: 480px;
+      display: block;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,0.5));
+      animation: signSway 5s ease-in-out infinite;
+      transform-origin: top center;
+    }
+    .brand-sign > img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    /* Ribbon at 52% of its 800px natural width = 416px.
+       More specific selector wins over `.brand-sign > img { width: 100% }`. */
+    .brand-sign > img.brand-ribbon {
+      width: 437px;
+    }
+    @keyframes signSway {
+      0%, 100% { transform: rotate(-1.2deg); }
+      50%      { transform: rotate(1.2deg); }
+    }
+    .brand-ribbon {
+      width: 437px;
+      height: auto;
+      display: block;
+      margin: -50px auto 0 auto;
+      transform: translateX(18px);
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
+      /* No own animation — moves with the parent .brand-sign */
+    }
+
+    /* ===== Cards column (right) ===== */
+    .cards-col {
+      position: relative;          /* arrow hints anchor against this */
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      max-width: 1120px;
+      height: 100%;
+      /* Tightened up so 4 cards fit comfortably in the visible window. */
+      padding-top: 36px;
+      padding-bottom: 70px;
+      box-sizing: border-box;
+    }
+
+    /* ===== Scroll-hint chevrons (decorative) =====
+       Two stacked roof-shaped lines pointing up at the top and down at the
+       bottom of the card list, with a soft bob to suggest scrollability. */
+    .scroll-hint {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 64px;
+      height: 28px;
       pointer-events: none;
+      z-index: 12;
+      opacity: 0.85;
+      filter: drop-shadow(0 2px 4px rgba(40, 24, 8, 0.5));
     }
-    .preview-title {
-      font-size: clamp(1.05rem, 3.4vw, 1.6rem);
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: 0.04em;
-      text-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 12px rgba(0,0,0,0.3);
-      line-height: 1.2;
-      transition: opacity 0.35s ease;
+    .scroll-hint--up   { top: 0px;     animation: hintBobUp 2.4s ease-in-out infinite; }
+    .scroll-hint--down { bottom: 64px; animation: hintBobDown 2.4s ease-in-out infinite; }
+    .scroll-hint svg { width: 100%; height: 100%; display: block; }
+    .scroll-hint path {
+      fill: none;
+      stroke: #fff8e2;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
-    .preview-desc {
-      font-size: clamp(0.75rem, 2.2vw, 0.95rem);
-      font-weight: 700;
-      color: #FFF8E1;
-      background: rgba(0,0,0,0.35);
-      border-radius: 50px;
-      padding: 4px 14px;
-      letter-spacing: 0.03em;
-      text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
-      transition: opacity 0.35s ease;
+    @keyframes hintBobUp {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, -6px); }
     }
-    .preview-title.is-fading,
-    .preview-desc.is-fading { opacity: 0; }
+    @keyframes hintBobDown {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, 6px); }
+    }
 
-    .start-btn {
-      pointer-events: auto;
-      margin-top: 8px;
-      padding: 14px 36px;
-      font-family: inherit;
-      font-size: clamp(1.1rem, 3.6vw, 1.4rem);
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      color: #5C3A00;
-      background: linear-gradient(180deg, #FFE680, #F5A800);
-      border: 3px solid #fff;
-      border-radius: 50px;
-      box-shadow: 0 5px 0 #B87200, 0 8px 18px rgba(0,0,0,0.35);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .start-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 2px 0 #B87200, 0 4px 10px rgba(0,0,0,0.3);
-    }
-    .start-icon { font-size: 0.9em; }
-    @keyframes startBtnPulse {
-      0%   { transform: scale(1);    box-shadow: 0 5px 0 #B87200, 0 8px 18px rgba(0,0,0,0.35); }
-      40%  { transform: scale(1.08); box-shadow: 0 5px 0 #B87200, 0 12px 28px rgba(255,168,0,0.6); }
-      100% { transform: scale(1);    box-shadow: 0 5px 0 #B87200, 0 8px 18px rgba(0,0,0,0.35); }
-    }
-    .start-btn.is-pulse { animation: startBtnPulse 0.45s ease; }
-
-    /* ===== Card List (wood-card layout) ===== */
+    /* ===== Card List (wood-card layout) =====
+       Infinite-scroll: contents are tripled in JS so the user can scroll
+       up/down forever; we silently teleport scrollTop when they cross a
+       boundary. Top/bottom edges are masked to a soft fade (no harsh cut),
+       and the scrollbar is hidden on every engine. */
     .card-list {
-      flex: 1 1 50%;
+      flex: 0 0 auto;                    /* size set by JS to exactly 4 cards */
       min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      /* Custom snap (JS-driven) — see setupLoopScroll. CSS scroll-snap
+         fights with the loop teleport, so we don't use it here. */
+      scroll-behavior: auto;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      padding: 6px 6px 10px;
-      scrollbar-width: thin;
+      gap: 4px;
+      /* Horizontal padding still needed for shadow room; vertical padding
+         removed so the visible viewport equals exactly 4 cards + 3 gaps. */
+      padding: 0 32px 0 24px;
+      /* Soft 1-line fade at top + bottom so the snap edges feel less harsh.
+         The visible window is exactly 4 cards (set by JS) so no 5th card
+         peeks through; the fade only softens the cut. */
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        transparent 0%,
+        #000 2%,
+        #000 98%,
+        transparent 100%
+      );
+              mask-image: linear-gradient(
+        180deg,
+        transparent 0%,
+        #000 2%,
+        #000 98%,
+        transparent 100%
+      );
+      /* Hide scrollbar everywhere */
+      scrollbar-width: none;             /* Firefox */
+      -ms-overflow-style: none;          /* old Edge / IE */
       /* CSS variables: 画像比率に合わせて微調整可能
          サムネ・ボタンは card 高さ基準 (h-pct)、左右パディング・テキスト枠は card 幅基準 (w-pct) */
       --gc-aspect: 5.5 / 1;
@@ -238,40 +275,72 @@
       --gc-text-left-w-pct: 17%;
       --gc-text-right-w-pct: 16%;
     }
-    .card-list::-webkit-scrollbar { width: 6px; }
-    .card-list::-webkit-scrollbar-thumb {
-      background: rgba(120, 80, 40, 0.35);
+    .card-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    .card-list::-webkit-scrollbar-thumb { background: transparent; }
+
+    /* ===== Coming-soon badge ===== */
+    .game-card__soon {
+      position: absolute;
+      top: 8px;
+      right: 14%;
+      padding: 4px 12px;
       border-radius: 999px;
+      background: linear-gradient(180deg, #ffd97a, #d99320);
+      color: #4a2a08;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      border: 1.5px solid #6b4218;
+      box-shadow: 0 2px 4px rgba(40, 24, 8, 0.4);
+      pointer-events: none;
+      z-index: 4;
     }
+    .game-card.is-coming-soon { filter: saturate(0.85) brightness(0.97); }
+    .game-card.is-coming-soon .game-card__play { opacity: 0.55; }
 
     .game-card {
       position: relative;
       flex-shrink: 0;
       width: 100%;
       aspect-ratio: var(--gc-aspect);
+      /* Cap card height in canvas pixels (1920×823 canvas) */
+      max-height: 130px;
+      align-self: stretch;
       border: none;
       background: transparent;
-      padding: 0;
+      /* Horizontal padding adds a transparent buffer on the left/right of
+         the wood-plank PNG so its drop-shadow has room to render before
+         hitting the parent's overflow clip. The padded area sits on the
+         absolute children's containing block so the bg image + thumb +
+         text + play button all stay inside the padded area automatically. */
+      padding: 0 16px;
+      box-sizing: border-box;
       cursor: pointer;
       font-family: inherit;
       transform-origin: center;
       transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
       -webkit-tap-highlight-color: transparent;
+      /* Layered drop-shadow so it follows the PNG's rounded silhouette
+         instead of a square box. Two stacked shadows give a soft ambient
+         shadow + a tighter contact shadow for real lift off the scene.
+         Blur kept under the card's horizontal transparent buffer (~16px)
+         so the shadow renders fully before the list's overflow clip. */
+      filter:
+        drop-shadow(0 2px 2px rgba(20, 10, 0, 0.55))
+        drop-shadow(0 5px 8px rgba(20, 10, 0, 0.7));
+    }
+    .game-card:hover {
+      filter:
+        drop-shadow(0 3px 3px rgba(20, 10, 0, 0.6))
+        drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
     }
     .game-card:active { transform: scale(0.985); }
+    /* "Selected" used to add a yellow halo + swap the play button to a
+       different PNG, which made the top card look different from the rest.
+       The user wants all 4 cards to read identically — keep the class for
+       a11y/aria-pressed, but make it visually a no-op. */
     .game-card.is-selected {
-      transform: scale(1.025);
-      filter: brightness(1.04) saturate(1.04);
-    }
-    .game-card.is-selected::after {
-      content: '';
-      position: absolute;
-      inset: 2px;
-      border-radius: var(--gc-radius);
-      pointer-events: none;
-      box-shadow:
-        0 0 0 3px rgba(255, 225, 140, 0.7),
-        0 0 22px rgba(255, 195, 80, 0.35);
+      /* intentionally empty */
     }
 
     /* 1. 木枠の背景画像 (絶対配置で全面) */
@@ -296,15 +365,36 @@
       width: auto;
       transform: translateY(-50%);
       border-radius: 50%;
-      padding: 4%;
+      padding: 0;
       background: #f7edd0;
       border: 2px solid rgba(120, 78, 34, 0.85);
+      /* Layered shadows: a soft ambient drop, a tighter contact shadow,
+         plus an inner highlight rim to make the disc feel like a real
+         polished button sitting on the wood plank. */
       box-shadow:
-        0 3px 6px rgba(80, 50, 20, 0.22),
-        inset 0 1px 2px rgba(255, 255, 255, 0.75);
+        0 1px 0 rgba(255, 245, 215, 0.6),
+        0 6px 14px rgba(60, 35, 10, 0.32),
+        0 2px 4px rgba(60, 35, 10, 0.28),
+        inset 0 2px 3px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 6px rgba(120, 70, 25, 0.18);
       box-sizing: border-box;
       overflow: hidden;
       pointer-events: none;
+    }
+    /* Subtle top-light gloss on the disc */
+    .game-card__thumbWrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(
+        circle at 32% 22%,
+        rgba(255, 255, 255, 0.32) 0%,
+        rgba(255, 255, 255, 0.08) 28%,
+        rgba(255, 255, 255, 0) 55%
+      );
+      z-index: 2;
     }
     .game-card__thumb {
       width: 100%;
@@ -312,6 +402,106 @@
       display: block;
       border-radius: 50%;
       object-fit: cover;
+      transform: scale(var(--gc-thumb-zoom, 1.15));
+      transform-origin: center;
+      position: relative;
+      z-index: 1;
+      transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+    .game-card:hover .game-card__thumb,
+    .game-card:focus-visible .game-card__thumb {
+      transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12));
+    }
+    /* Coming-soon: don't zoom either */
+    .game-card.is-coming-soon:hover .game-card__thumb {
+      transform: scale(var(--gc-thumb-zoom, 1.15));
+    }
+
+    /* Hover-peek layer: a snapshot of the game's title background that
+       fades in over the cream paper area when the card is hovered.
+       Clipped to the wood-panel paper shape via mask-image (per-card).
+       Position/size are tweakable per-card via CSS custom props so the
+       paper shape can be aligned visually inside the wood-frame canvas. */
+    .game-card__peek {
+      position: absolute;
+      inset: 0;
+      background-image: var(--card-peek, none);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      /* Mask placement, tweakable per-card.
+           --mask-w / --mask-h : size in % of card.   default 100% / 100%
+           --mask-x / --mask-y : position in % of card. default 0% / 0% */
+      -webkit-mask-image: var(--card-mask, none);
+      -webkit-mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
+              mask-image: var(--card-mask, none);
+              mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
+              mask-repeat: no-repeat;
+              mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .game-card:hover .game-card__peek,
+    .game-card:focus-visible .game-card__peek {
+      opacity: 0.92;
+    }
+    /* Tweak mode: keep all peek layers visible so the user can adjust
+       mask alignment without having to hover each card. */
+    body.peek-always .game-card__peek {
+      opacity: 0.92;
+    }
+    .game-card.is-coming-soon:hover .game-card__peek {
+      opacity: 0;          /* don't tease previews for unreleased games */
+    }
+    /* Make sure title/desc still sit above the peek layer.
+       Round thumb (z 2) and play button (no explicit z; needs lifting)
+       must also sit ABOVE the peek so the peek doesn't bleed onto them. */
+    .game-card__text { z-index: 3; }
+    .game-card__thumbWrap { z-index: 3; }
+    .game-card__play { z-index: 3; }
+    .game-card__soon { z-index: 4; }
+
+    /* Hover text style: bright cream with a strong dark outline +
+       drop-shadow so titles stay legible on top of any photo bg. */
+    .game-card:hover .game-card__title,
+    .game-card:focus-visible .game-card__title {
+      color: #fff5d6;
+      /* Same 8-direction vector pattern as the default title outline,
+         so swapping cream→dark on hover doesn't shift any glyph edges. */
+      text-shadow:
+        1.4px 0 0 rgba(20, 10, 0, 0.95),
+        -1.4px 0 0 rgba(20, 10, 0, 0.95),
+        0 1.4px 0 rgba(20, 10, 0, 0.95),
+        0 -1.4px 0 rgba(20, 10, 0, 0.95),
+        1px 1px 0 rgba(20, 10, 0, 0.95),
+        -1px 1px 0 rgba(20, 10, 0, 0.95),
+        1px -1px 0 rgba(20, 10, 0, 0.95),
+        -1px -1px 0 rgba(20, 10, 0, 0.95),
+        0 4px 8px rgba(0, 0, 0, 0.6);
+    }
+    .game-card:hover .game-card__desc,
+    .game-card:focus-visible .game-card__desc {
+      color: #fff5d6;
+      text-shadow:
+        1px 0 0 rgba(20, 10, 0, 0.95),
+        -1px 0 0 rgba(20, 10, 0, 0.95),
+        0 1px 0 rgba(20, 10, 0, 0.95),
+        0 -1px 0 rgba(20, 10, 0, 0.95),
+        0.7px 0.7px 0 rgba(20, 10, 0, 0.95),
+        -0.7px 0.7px 0 rgba(20, 10, 0, 0.95),
+        0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
+        -0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
+        0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+    /* Coming-soon cards never trigger the hover transformation */
+    .game-card.is-coming-soon:hover .game-card__title,
+    .game-card.is-coming-soon:hover .game-card__desc {
+      color: inherit;       /* fall back to per-card defaults */
+      text-shadow: inherit;
     }
 
     /* 3-5. 中央のテキスト (タイトル + 説明) */
@@ -329,24 +519,68 @@
       pointer-events: none;
       text-align: left;
     }
+    /* Smooth 8-direction outline. Same vector pattern is reused for hover
+       (just with different colors) so the outline doesn't shift or jitter
+       against antialiasing when hover toggles. */
     .game-card__title {
-      font-size: clamp(0.95rem, 3.4vw, 1.6rem);
+      font-size: 32px;
       line-height: 1.1;
       font-weight: 900;
-      color: #3f6f2a;
+      color: #5a8a3a;
       letter-spacing: 0.02em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin: 0;
+      /* 8-way cream halo for readability, then warm shadow underneath. */
       text-shadow:
-        1px 0 rgba(255, 248, 220, 0.85),
-        -1px 0 rgba(255, 248, 220, 0.85),
-        0 1px rgba(255, 248, 220, 0.85),
-        0 -1px rgba(255, 248, 220, 0.85),
-        0 2px 3px rgba(90, 60, 30, 0.18);
+        1.4px 0 0 rgba(255, 250, 230, 0.95),
+        -1.4px 0 0 rgba(255, 250, 230, 0.95),
+        0 1.4px 0 rgba(255, 250, 230, 0.95),
+        0 -1.4px 0 rgba(255, 250, 230, 0.95),
+        1px 1px 0 rgba(255, 250, 230, 0.95),
+        -1px 1px 0 rgba(255, 250, 230, 0.95),
+        1px -1px 0 rgba(255, 250, 230, 0.95),
+        -1px -1px 0 rgba(255, 250, 230, 0.95),
+        0 3px 4px rgba(80, 50, 20, 0.35);
+    }
+    /* Hiragana (and kana iteration marks) sit a notch smaller than the
+       katakana / kanji around them — gives a children's-book rhythm where
+       the meaning-bearing glyphs visually lead, particles recede.
+       Vertical-align nudge keeps them on the same baseline as siblings. */
+    .game-card__title .hira,
+    .game-card__desc  .hira {
+      font-size: 0.78em;
+      letter-spacing: 0;
+      vertical-align: baseline;
+    }
+    /* Per-game title color (id is on the card root) */
+    .game-card[data-id="quizland"]   .game-card__title { color: #6b4a18; }   /* deep amber/owl */
+    .game-card[data-id="quiz-sound"] .game-card__title { color: #2f6aa3; }   /* forest blue */
+    .game-card[data-id="wordmatch"]  .game-card__title { color: #b56d12; }   /* warm orange */
+    .game-card[data-id="maze"]       .game-card__title { color: #f5d76a; }   /* lantern yellow */
+    /* Wordmatch's title is the longest ("あつめよう！ポノのもりのずかん").
+       Tighten letter spacing + nudge font-size so it fits without ellipsis. */
+    .game-card[data-id="wordmatch"] .game-card__title {
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    /* On the dark "maze" card the cream halo would clash — switch to a
+       warm dark halo so the yellow title still pops on the night panel. */
+    .game-card[data-id="maze"] .game-card__title {
+      text-shadow:
+        1.4px 0 0 rgba(40, 24, 8, 0.95),
+        -1.4px 0 0 rgba(40, 24, 8, 0.95),
+        0 1.4px 0 rgba(40, 24, 8, 0.95),
+        0 -1.4px 0 rgba(40, 24, 8, 0.95),
+        1px 1px 0 rgba(40, 24, 8, 0.95),
+        -1px 1px 0 rgba(40, 24, 8, 0.95),
+        1px -1px 0 rgba(40, 24, 8, 0.95),
+        -1px -1px 0 rgba(40, 24, 8, 0.95),
+        0 3px 6px rgba(0, 0, 0, 0.5);
     }
     .game-card__desc {
-      font-size: clamp(0.7rem, 2vw, 0.95rem);
+      font-size: 20px;
       line-height: 1.2;
       font-weight: 700;
       color: #6a4a2b;
@@ -370,6 +604,20 @@
       background: transparent;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      /* drop-shadow on the button so the PNG's circular silhouette gets
+         the shadow (not a square box-shadow around its bounding box). */
+      filter:
+        drop-shadow(0 5px 8px rgba(60, 35, 10, 0.38))
+        drop-shadow(0 1px 2px rgba(60, 35, 10, 0.28));
+      transition: filter 0.15s ease, transform 0.1s ease;
+    }
+    .game-card.is-selected .game-card__play {
+      /* visual no-op — keep all cards identical */
+    }
+    .game-card__play:active {
+      filter:
+        drop-shadow(0 2px 3px rgba(60, 35, 10, 0.4));
+      transform: translateY(calc(-50% + 2px)) scale(0.97);
     }
     .game-card__playImg {
       width: 100%;
@@ -380,69 +628,115 @@
       transition: transform 0.1s ease;
     }
     .game-card.is-selected .game-card__playImg {
-      content: url('assets/ui/play_button_selected.png');
+      /* visual no-op — keep all cards identical */
     }
     .game-card__play:active .game-card__playImg {
       content: url('assets/ui/play_button_pressed.png');
-      transform: scale(0.95);
     }
 
-    /* ===== Landscape (21:9 etc): side-by-side ===== */
+    /* ===== Landscape (21:9 etc): cards column gets a wider thumb if room ===== */
     @media (orientation: landscape) and (min-aspect-ratio: 16/10) {
       .play-main {
-        flex-direction: row;
-        gap: 14px;
-        padding: 12px 14px calc(var(--nav-h) + 8px + env(safe-area-inset-bottom));
-      }
-      .preview-pane {
-        flex: 1 1 58%;
-      }
-      .card-list {
-        flex: 1 1 42%;
+        grid-template-columns: minmax(240px, 28%) 1fr;
       }
     }
 
-    /* ===== Bottom Navigation ===== */
+    /* ===== Bottom Navigation — image-asset buttons in the bottom-right =====
+       Each button is just the asset PNG (no wood-grain background needed —
+       the asset already has its own wood/lantern face). The "for parents"
+       button (005) sits separately in the bottom-left. */
     .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
+      position: absolute;
+      bottom: 18px;
+      /* Offset by the canvas→safe-area gutter so the cluster sits inside
+         the 16:9 safe area (iPad/PC crops away the 21:9 side margins). */
+      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px);
+      left: auto;
+      transform: none;
+      width: auto;
+      height: auto;
       z-index: 90;
       display: flex;
-      justify-content: space-around;
+      gap: 12px;
       align-items: stretch;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 -2px 12px rgba(93,78,55,0.15);
-      border-top: 2px solid #FDE68A;
-      padding-bottom: env(safe-area-inset-bottom);
-      height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: none;
+      border-top: none;
+      border-radius: 0;
+      padding: 0;
     }
     .bn-item {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      padding: 8px 4px 10px;
+      flex: 0 0 auto;
+      width: 96px;
+      height: 96px;
+      display: block;
+      padding: 0;
       border: none;
       background: transparent;
       cursor: pointer;
       font-family: inherit;
-      color: var(--text);
-      transition: transform 0.1s;
+      transition: transform 0.1s ease, filter 0.1s ease;
+      filter: drop-shadow(0 4px 8px rgba(20, 10, 0, 0.5));
     }
-    .bn-item:active { transform: scale(0.9); }
-    .bn-icon {
-      font-size: 1.4rem;
-      line-height: 1;
+    .bn-item:hover { filter: drop-shadow(0 5px 10px rgba(20, 10, 0, 0.6)) brightness(1.05); }
+    .bn-item:active { transform: translateY(2px); filter: drop-shadow(0 2px 4px rgba(20, 10, 0, 0.5)); }
+    .bn-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
     }
-    .bn-label {
-      font-size: 0.68rem;
+    /* Stand-alone "for parents" button in the bottom-left of the safe area.
+       The 005 asset is a wide ribbon-shaped button — we overlay the text
+       "本をもっている人へ" on top of the image. */
+    .for-parents {
+      position: absolute;
+      bottom: 28px;
+      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
+      width: 280px;
+      height: 72px;
+      z-index: 90;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: transform 0.1s ease, filter 0.1s ease;
+      filter: drop-shadow(0 4px 8px rgba(20, 10, 0, 0.5));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .for-parents:hover { filter: drop-shadow(0 5px 10px rgba(20, 10, 0, 0.6)) brightness(1.05); }
+    .for-parents:active { transform: translateY(2px); }
+    .for-parents img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+    }
+    .for-parents__label {
+      position: relative;          /* sit above the absolute img */
+      z-index: 1;
+      margin-left: 80px;           /* clear the book icon on the left */
+      margin-right: 24px;          /* breathing room on the right */
+      transform: translateY(-1px); /* nudge up to optically center */
+      font-size: 17px;
       font-weight: 900;
-      color: var(--primary);
-      letter-spacing: 0.02em;
+      color: #4a2a10;              /* dark brown — readable on cream wood */
+      letter-spacing: 0.04em;
+      line-height: 1;
+      pointer-events: none;
+      text-shadow:
+        0 1px 0 rgba(255, 245, 215, 0.7),
+        0 2px 3px rgba(255, 245, 215, 0.4);
     }
 
     /* ===== Modal ===== */
@@ -558,53 +852,161 @@
 
     /* MVP: hide acorn / thankyou / stamp UI if any module tries to show it */
     .acorn-badge-play, .thankyou-badge-play { display: none !important; }
+
+    /* ===== Portrait warning overlay =====
+       Shown when the viewport is taller than wide. Tells user to rotate.
+    */
+    .portrait-warn {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #5a3a1c 0%, #2c1a08 100%);
+      color: #fff8e1;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      padding: 20px;
+    }
+    .portrait-warn[hidden] { display: none !important; }
+    .pw-card {
+      text-align: center;
+      max-width: 360px;
+    }
+    .pw-icon {
+      font-size: 96px;
+      line-height: 1;
+      margin-bottom: 24px;
+      animation: pwRotate 2.4s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes pwRotate {
+      0%, 100% { transform: rotate(0deg); }
+      40%, 60% { transform: rotate(-90deg); }
+    }
+    .pw-msg {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      color: #FFE680;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+    }
+    .pw-sub {
+      font-size: 16px;
+      font-weight: 700;
+      opacity: 0.85;
+    }
+
+    /* ===== Local-preview fallbacks (when image assets are missing) =====
+       These let the --gc-* layout tweaks be visible without the production
+       art. They are visual-only — production builds with assets render
+       normally and these rules effectively no-op (images cover them). */
+    .preview-pane {
+      background: transparent;
+    }
+    /* Fallback chrome — only paints when the wood-panel PNG failed to load.
+       Previously this was unconditional, so the rectangular gradient + shadow
+       leaked through the PNG's rounded transparent corners and looked like a
+       second card sitting under the real one. */
+    .game-card:has(.game-card__bg.is-broken) {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.18), rgba(0,0,0,0.05)),
+        repeating-linear-gradient(90deg,
+          #C68A4D 0px, #B47A3D 6px, #C68A4D 12px, #BE8244 18px);
+      border-radius: var(--gc-radius);
+      box-shadow:
+        0 6px 14px rgba(80,50,20,0.25),
+        inset 0 2px 0 rgba(255,255,255,0.35),
+        inset 0 -3px 0 rgba(0,0,0,0.18);
+    }
+    .game-card__bg[src=""],
+    .game-card__bg:not([src]) { display: none; }
+    .game-card__thumb[src=""],
+    .game-card__thumb:not([src]),
+    .game-card__thumb.is-broken {
+      background: radial-gradient(circle at 35% 30%, #FFE4A8, #E89D4A 70%);
+    }
+    .game-card__playImg.is-broken {
+      content: none;
+      background: radial-gradient(circle at 35% 30%, #FFE680, #F5A800 65%);
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 3px 0 #B87200, 0 6px 12px rgba(0,0,0,0.25);
+    }
   </style>
-  <script src="common/mvp-flags.js"></script>
+  <!-- common/mvp-flags.js is part of the production app shell, not the preview.
+       Skip it here so the preview sandbox doesn't 404 on every reload. -->
+
+  <!-- React + Babel for Tweaks panel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
 </head>
 <body>
 
-  <header class="top-header">
-    <div class="brand">
-      <span class="brand-title">ポノのあそびば</span>
+  <!-- 21:9 fixed canvas — JS scales to fit viewport -->
+  <div class="stage" id="stage">
+
+    <!-- Full-bleed selected-game background -->
+    <div class="preview-bg" id="previewBgA"></div>
+    <div class="preview-bg" id="previewBgB"></div>
+    <div class="bg-veil"></div>
+
+    <main class="play-main">
+      <aside class="brand-col" aria-label="タイトル">
+        <div class="brand-sign">
+          <img alt="ポノのあそびば" draggable="false" data-src="assets/ui/brand_sign_01.png">
+          <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" data-src="assets/ui/brand_sign_02.png">
+        </div>
+      </aside>
+
+      <section class="cards-col" aria-label="ゲーム一覧">
+        <!-- Scroll hint: roof-shaped chevrons (decorative, no clicks) -->
+        <div class="scroll-hint scroll-hint--up" aria-hidden="true">
+          <svg viewBox="0 0 64 28" preserveAspectRatio="none">
+            <path d="M6 22 L32 6 L58 22"></path>
+            <path d="M14 26 L32 14 L50 26"></path>
+          </svg>
+        </div>
+        <section class="card-list" id="cardList" aria-label="ゲーム一覧"></section>
+        <div class="scroll-hint scroll-hint--down" aria-hidden="true">
+          <svg viewBox="0 0 64 28" preserveAspectRatio="none">
+            <path d="M6 6 L32 22 L58 6"></path>
+            <path d="M14 2 L32 14 L50 2"></path>
+          </svg>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
+      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ">
+        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_002.png" alt="" draggable="false">
+      </button>
+      <button class="bn-item" data-action="top" type="button" aria-label="トップ">
+        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_003.png" alt="" draggable="false">
+      </button>
+      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ">
+        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_004.png" alt="" draggable="false">
+      </button>
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい">
+        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_005.png" alt="" draggable="false">
+      </button>
+    </nav>
+    <button class="for-parents" id="forParentsBtn" type="button" aria-label="本をもっている人へ">
+      <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
+      <span class="for-parents__label">本をもっている人へ</span>
+    </button>
+  </div><!-- /.stage -->
+
+  <!-- ===== Portrait warning overlay (shown when device is held vertically) ===== -->
+  <div class="portrait-warn" id="portraitWarn" hidden>
+    <div class="pw-card">
+      <div class="pw-icon">📱↻</div>
+      <div class="pw-msg">よこむきに してね</div>
+      <div class="pw-sub">きかいを よこに まわすと あそべるよ</div>
     </div>
-    <div class="brand-subtitle">きょうは なにして あそぶ？</div>
-  </header>
-
-  <main class="play-main">
-    <section class="preview-pane" aria-label="えらんでいるゲームのプレビュー">
-      <div class="preview-bg" id="previewBgA"></div>
-      <div class="preview-bg" id="previewBgB"></div>
-      <div class="preview-overlay" aria-live="polite">
-        <h2 class="preview-title" id="previewTitle">えらんでね</h2>
-        <p class="preview-desc" id="previewDesc">みぎから ゲームを えらぼう</p>
-        <button class="start-btn" id="startBtn" type="button">
-          <span class="start-icon">▶</span>
-          <span class="start-label">はじめる</span>
-        </button>
-      </div>
-    </section>
-
-    <section class="card-list" id="cardList" aria-label="ゲーム一覧"></section>
-  </main>
-
-  <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
-    <button class="bn-item" data-action="help" type="button">
-      <span class="bn-icon">❓</span>
-      <span class="bn-label">ヘルプ</span>
-    </button>
-    <button class="bn-item" data-action="top" type="button">
-      <span class="bn-icon">🌳</span>
-      <span class="bn-label">トップ</span>
-    </button>
-    <button class="bn-item" data-action="news" type="button">
-      <span class="bn-icon">🔔</span>
-      <span class="bn-label">おしらせ</span>
-    </button>
-    <button class="bn-item" data-action="settings" type="button">
-      <span class="bn-icon">⚙️</span>
-      <span class="bn-label">せってい</span>
-    </button>
-  </nav>
+  </div>
 
   <!-- ===== Settings Modal ===== -->
   <div class="modal" id="settingsModal" hidden role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
@@ -641,13 +1043,13 @@
     const GAMES = [
       {
         id: 'quizland',
-        title: 'フクロウばかせのなぞなぞ',
+        title: 'フクロウはかせのなぞなぞ',
         subtitle: 'ひらめき・ものしりクイズ',
         icon: '🦉',
         bg: 'assets/images/quizland/title_back.jpg',
         href: 'quizland/index.html',
         panel: 'assets/ui/menu_card_base_01.png',
-        thumb: 'assets/ui/thumb_quizland.png'
+        thumb: 'assets/ui/thumb_wordmatch.png'
       },
       {
         id: 'quiz-sound',
@@ -657,7 +1059,7 @@
         bg: 'assets/images/quiz-sound/title_back.jpg',
         href: 'quiz-sound/index.html',
         panel: 'assets/ui/menu_card_base_02.png',
-        thumb: 'assets/ui/thumb_quiz-sound.png'
+        thumb: 'assets/ui/thumb_quizland.png'
       },
       {
         id: 'wordmatch',
@@ -667,7 +1069,7 @@
         bg: 'assets/images/wordmatch/title_back.jpg',
         href: 'wordmatch/index.html',
         panel: 'assets/ui/menu_card_base_03.png',
-        thumb: 'assets/ui/thumb_wordmatch.png'
+        thumb: 'assets/ui/thumb_maze.png'
       },
       {
         id: 'maze',
@@ -677,7 +1079,52 @@
         bg: 'assets/images/maze/title_back.jpg',
         href: 'maze/index.html',
         panel: 'assets/ui/menu_card_base_04.png',
-        thumb: 'assets/ui/thumb_maze.png'
+        thumb: 'assets/ui/thumb_quiz-sound.png'
+      },
+      // ----- Coming-soon placeholders (panels & thumbs reused; flagged comingSoon) -----
+      {
+        id: 'soon-paint',
+        title: 'もりのおえかきちょう',
+        subtitle: 'じゆうに いろを ぬろう',
+        icon: '🎨',
+        bg: 'assets/images/quizland/title_back.jpg',
+        href: '#',
+        panel: 'assets/ui/menu_card_base_01.png',
+        thumb: 'assets/ui/thumb_wordmatch.png',
+        comingSoon: true
+      },
+      {
+        id: 'soon-rhythm',
+        title: 'こもれびリズムあそび',
+        subtitle: 'おとに あわせて てを たたこう',
+        icon: '🎵',
+        bg: 'assets/images/quiz-sound/title_back.jpg',
+        href: '#',
+        panel: 'assets/ui/menu_card_base_02.png',
+        thumb: 'assets/ui/thumb_quizland.png',
+        comingSoon: true
+      },
+      {
+        id: 'soon-story',
+        title: 'おやすみまえの おはなし',
+        subtitle: 'ねるまえに ひとつ よもう',
+        icon: '🌙',
+        bg: 'assets/images/wordmatch/title_back.jpg',
+        href: '#',
+        panel: 'assets/ui/menu_card_base_03.png',
+        thumb: 'assets/ui/thumb_maze.png',
+        comingSoon: true
+      },
+      {
+        id: 'soon-stars',
+        title: 'よぞらの ほしさがし',
+        subtitle: 'せいざを みつけよう',
+        icon: '⭐',
+        bg: 'assets/images/maze/title_back.jpg',
+        href: '#',
+        panel: 'assets/ui/menu_card_base_04.png',
+        thumb: 'assets/ui/thumb_quiz-sound.png',
+        comingSoon: true
       }
     ];
 
@@ -687,9 +1134,6 @@
     const $ = (id) => document.getElementById(id);
     const previewBgA = $('previewBgA');
     const previewBgB = $('previewBgB');
-    const previewTitle = $('previewTitle');
-    const previewDesc = $('previewDesc');
-    const startBtn = $('startBtn');
     const cardList = $('cardList');
 
     // ===== HTML escape (defensive: GAMES may become external in future) =====
@@ -702,33 +1146,199 @@
         .replace(/'/g, '&#39;');
     }
 
-    // ===== Render cards =====
-    function renderCards() {
-      const html = GAMES.map((g, i) => `
-        <div class="game-card" data-idx="${i}" data-id="${esc(g.id)}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}">
-          <img class="game-card__bg" src="${esc(g.panel)}" alt="" draggable="false">
-          <div class="game-card__thumbWrap">
-            <img class="game-card__thumb" src="${esc(g.thumb)}" alt="" draggable="false">
-          </div>
-          <div class="game-card__text">
-            <div class="game-card__title">${esc(g.title)}</div>
-            <div class="game-card__desc">${esc(g.subtitle)}</div>
-          </div>
-          <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
-            <img class="game-card__playImg" src="assets/ui/play_button_normal.png" alt="" draggable="false">
-          </button>
-        </div>
-      `).join('');
-      cardList.innerHTML = html;
-      cardList.addEventListener('click', onCardClick);
+    // Children's-book typography rhythm: shrink ONLY one-letter hiragana
+    // particles (の, と, は, を, に, へ, が, も, で, や, か) that sit
+    // *between* katakana / kanji words. Multi-character hiragana runs
+    // (verbs, names) stay full size — only the connector particles recede.
+    //
+    // We don't try to fully parse Japanese; we just look for a single
+    // hiragana letter sandwiched between non-hiragana glyphs.
+    const PARTICLE_HIRA = /[のとはをにへがもでやかよりからまで]/;
+    function decorateKana(rawTitle) {
+      const escaped = esc(rawTitle);
+      // Match a single hiragana char preceded & followed by a non-hiragana
+      // (katakana / kanji / latin / digit / punctuation). Use a lookbehind /
+      // lookahead so we only wrap the one character itself.
+      // The class "hira" is a leftover name; semantically these are particles.
+      return escaped.replace(
+        /(?<=[\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9F\u3005\w])([\u3041-\u3096])(?=[\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9F\u3005\w])/g,
+        (m, ch) => PARTICLE_HIRA.test(ch) ? `<span class="hira">${ch}</span>` : ch
+      );
     }
 
-    function pulseStartBtn() {
-      startBtn.classList.remove('is-pulse');
-      // Force reflow so the animation can re-trigger
-      void startBtn.offsetWidth;
-      startBtn.classList.add('is-pulse');
+    // ===== Render cards =====
+    // Cache-buster for Claude preview only (skirts a stale service worker
+    // that returns broken responses for <img> while fetch() works).
+    const __isPreview = /claudeusercontent\.com$/.test(location.hostname);
+    const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}` : url;
+
+    // Infinite-scroll loop: render the catalog 3× and silently teleport
+    // scrollTop when the user crosses a set boundary. data-idx stays the
+    // canonical 0..GAMES.length-1 index; data-rep is just the copy number.
+    const LOOP_COPIES = 3;
+
+    function cardMarkup(g, i, rep) {
+      const comingClass = g.comingSoon ? ' is-coming-soon' : '';
+      const comingBadge = g.comingSoon
+        ? '<div class="game-card__soon">じゅんびちゅう</div>'
+        : '';
+      // Pair each panel PNG with its matching alpha mask. The mask cuts
+      // the hover-peek layer to the cream paper region of the wood frame.
+      // The actual mask file + offsets are applied via applyTweaks() so
+      // they can be tuned at runtime; here we just stamp the panel number
+      // on the card and provide a sensible default --card-mask.
+      const panelMatch = String(g.panel || '').match(/menu_card_base_0?(\d+)\.png/i);
+      const panelN = panelMatch ? parseInt(panelMatch[1], 10) : ((i % 4) + 1);
+      const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
+      return `
+        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}');">
+          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false">
+          <div class="game-card__peek" aria-hidden="true"></div>
+          <div class="game-card__thumbWrap">
+            <img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false">
+          </div>
+          <div class="game-card__text">
+            <div class="game-card__title">${decorateKana(g.title)}</div>
+            <div class="game-card__desc">${decorateKana(g.subtitle)}</div>
+          </div>
+          ${comingBadge}
+          <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
+            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.png'))}" alt="" draggable="false">
+          </button>
+        </div>
+      `;
     }
+
+    function renderCards() {
+      let html = '';
+      for (let rep = 0; rep < LOOP_COPIES; rep++) {
+        for (let i = 0; i < GAMES.length; i++) {
+          html += cardMarkup(GAMES[i], i, rep);
+        }
+      }
+      cardList.innerHTML = html;
+      cardList.addEventListener('click', onCardClick);
+
+      // Mark broken images so CSS fallbacks kick in (local preview without assets)
+      cardList.querySelectorAll('img').forEach((img) => {
+        img.addEventListener('error', () => img.classList.add('is-broken'), { once: true });
+      });
+
+      // Wire the infinite-loop scroll teleport. Defer one frame so layout
+      // is committed and we can measure one set's height.
+      requestAnimationFrame(setupLoopScroll);
+    }
+
+    function setupLoopScroll() {
+      const cards = cardList.querySelectorAll('.game-card');
+      if (cards.length < GAMES.length * LOOP_COPIES) return;
+
+      // Lock the list's visible height to exactly 4 cards + 3 gaps so
+      // no 5th card peeks through the top/bottom edges. Recompute when
+      // images finish loading (their natural size pushes the card height
+      // up after layout) and on viewport resize.
+      const VISIBLE = 4;
+      // Reserve a few px of vertical padding inside the list so sub-pixel
+      // rounding doesn't let prev/next cards peek through at the top/bottom
+      // edges. The padding extends the clip box; cards still snap to the
+      // same step-based boundaries.
+      const CLIP_PAD = 6;
+      cardList.style.paddingTop = CLIP_PAD + 'px';
+      cardList.style.paddingBottom = CLIP_PAD + 'px';
+      const recomputeHeight = () => {
+        // Use offsetHeight (unscaled layout height), not getBoundingClientRect
+        // which returns the post-transform value when an ancestor is scaled.
+        const cardH = cards[0].offsetHeight;
+        if (!cardH) return;
+        const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+        const visibleH = cardH * VISIBLE + gap * (VISIBLE - 1) + CLIP_PAD * 2;
+        cardList.style.height = visibleH + 'px';
+      };
+      recomputeHeight();
+      // Re-measure after every image finishes loading (panel + thumb + play)
+      cardList.querySelectorAll('img').forEach((img) => {
+        if (!img.complete) {
+          img.addEventListener('load', recomputeHeight, { once: true });
+        }
+      });
+      window.addEventListener('resize', recomputeHeight);
+      // Final safety pass after layout settles
+      setTimeout(recomputeHeight, 300);
+      setTimeout(recomputeHeight, 1000);
+
+      // One set's height = N cards + N gaps (the gap *after* the last card
+      // of a set is what separates it from the next set's first card).
+      // Computing this from scrollHeight/LOOP_COPIES is wrong because the
+      // very last set has no trailing gap, so the division leaks ~gap/COPIES
+      // px per set and accumulates drift each loop teleport. Use the
+      // step-based formula so every teleport lands on an exact card boundary.
+      const oneSetH = () => {
+        const cardH = cards[0].offsetHeight;
+        const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+        return (cardH + gap) * GAMES.length;
+      };
+      // Start positioned at the middle copy so user can scroll either way.
+      cardList.scrollTop = oneSetH();
+
+      let teleporting = false;
+      let snapTimer = null;
+      let snapping = false;     // true while we're animating to a snap target
+
+      // Custom easing animation — feels softer than browser smooth-scroll.
+      const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+      const animateScrollTo = (targetTop, duration = 380) => {
+        const start = cardList.scrollTop;
+        const dist = targetTop - start;
+        if (Math.abs(dist) < 0.5) return;
+        snapping = true;
+        const t0 = performance.now();
+        const tick = (now) => {
+          const p = Math.min(1, (now - t0) / duration);
+          cardList.scrollTop = start + dist * easeOutCubic(p);
+          if (p < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            snapping = false;
+          }
+        };
+        requestAnimationFrame(tick);
+      };
+
+      // After scrolling stops, glide to the nearest card boundary.
+      const snapToNearest = () => {
+        if (teleporting || snapping) return;
+        const cardH = cards[0].offsetHeight;
+        const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+        const step = cardH + gap;
+        if (!step) return;
+        const t = cardList.scrollTop;
+        const target = Math.round(t / step) * step;
+        animateScrollTo(target);
+      };
+
+      cardList.addEventListener('scroll', () => {
+        if (teleporting) return;
+        const set = oneSetH();
+        const t = cardList.scrollTop;
+        if (t < set * 0.5) {
+          teleporting = true;
+          cardList.scrollTop = t + set;
+          requestAnimationFrame(() => { teleporting = false; });
+          return;
+        } else if (t > set * 1.5) {
+          teleporting = true;
+          cardList.scrollTop = t - set;
+          requestAnimationFrame(() => { teleporting = false; });
+          return;
+        }
+        // Debounced snap: wait for the user to stop scrolling.
+        if (snapping) return;
+        clearTimeout(snapTimer);
+        snapTimer = setTimeout(snapToNearest, 140);
+      }, { passive: true });
+    }
+
+    function pulseStartBtn() { /* removed: start button no longer exists */ }
 
     function onCardClick(e) {
       const card = e.target.closest('.game-card');
@@ -753,6 +1363,8 @@
     function startGame(idx) {
       const game = GAMES[idx];
       if (!game) return;
+      // Coming-soon entries have href '#' — do nothing yet.
+      if (game.comingSoon || !game.href || game.href === '#') return;
       try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
       location.href = game.href;
     }
@@ -774,7 +1386,7 @@
       // Crossfade backgrounds — encode URI to keep CSS url() value safe
       const incoming = activeBgEl === 'A' ? previewBgB : previewBgA;
       const outgoing = activeBgEl === 'A' ? previewBgA : previewBgB;
-      const safeBg = encodeURI(game.bg).replace(/'/g, '%27');
+      const safeBg = encodeURI(__bust(game.bg)).replace(/'/g, '%27');
       incoming.style.backgroundImage = `url('${safeBg}')`;
       // Double rAF: first frame commits the bg-image, second frame triggers opacity transition reliably
       requestAnimationFrame(() => {
@@ -785,19 +1397,11 @@
       });
       activeBgEl = activeBgEl === 'A' ? 'B' : 'A';
 
-      // Fade text labels
-      previewTitle.classList.add('is-fading');
-      previewDesc.classList.add('is-fading');
-      setTimeout(() => {
-        previewTitle.textContent = game.title;
-        previewDesc.textContent = game.subtitle;
-        previewTitle.classList.remove('is-fading');
-        previewDesc.classList.remove('is-fading');
-      }, 200);
+      // Fade text labels (preview overlay removed; no-op now)
+      // previewTitle / previewDesc no longer exist — title is on each card.
     }
 
-    // ===== Start button (left preview pane) =====
-    startBtn.addEventListener('click', () => { startGame(currentIdx); });
+    // ===== Start button removed (each card has its own play button) =====
 
     // ===== Bottom nav =====
     $('bottomNav').addEventListener('click', (e) => {
@@ -855,11 +1459,238 @@
     selectGame(0);
 
     // ===== Service worker =====
+    // In Claude preview (claudeusercontent.com), skip SW + purge any caches it
+    // already installed so stale 404s for assets don't persist.
+    const __isClaudePreview = /claudeusercontent\.com$/.test(location.hostname);
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      });
+      if (__isClaudePreview) {
+        navigator.serviceWorker.getRegistrations()
+          .then((rs) => rs.forEach((r) => r.unregister()))
+          .catch(() => {});
+        if (window.caches && caches.keys) {
+          caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+        }
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
     }
+  </script>
+
+  <!-- ===== Stage scale-to-fit + portrait detection ===== -->
+  <script>
+    (function () {
+      'use strict';
+      const stage = document.getElementById('stage');
+      const portraitWarn = document.getElementById('portraitWarn');
+      const CANVAS_W = 1920;
+      const CANVAS_H = 823;
+
+      function fit() {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        // Show portrait warning if the viewport is taller than wide
+        // (pure orientation detection — works on all devices/browsers).
+        const isPortrait = vh > vw;
+        portraitWarn.hidden = !isPortrait;
+
+        if (isPortrait) {
+          // No need to scale the stage while it's hidden.
+          stage.style.transform = 'scale(1)';
+          return;
+        }
+        // Letterbox: pick the smaller scale so the whole canvas fits.
+        const scale = Math.min(vw / CANVAS_W, vh / CANVAS_H);
+        stage.style.transform = `scale(${scale})`;
+      }
+
+      fit();
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', fit);
+    })();
+  </script>
+
+  <!-- ===== Tweaks panel mount ===== -->
+  <div id="tweaksRoot"></div>
+  <script type="text/babel">
+    'use strict';
+
+    // Defaults mirror the original CSS (.card-list custom properties).
+    // Aspect is stored as width:height numbers so we can drive a slider.
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "aspectW": 3.7,
+      "aspectH": 1.6,
+      "radius": 22,
+      "thumbHPct": 82,
+      "thumbZoom": 1.15,
+      "playHPct": 47,
+      "sideWPct": 4.6,
+      "textLeftWPct": 30.5,
+      "textRightWPct": 13,
+      "maskFile1": 1,
+      "maskX1": 50,
+      "maskY1": 50,
+      "maskW1": 94.5,
+      "maskH1": 77,
+      "maskFile2": 4,
+      "maskX2": 44.9,
+      "maskY2": 47.5,
+      "maskW2": 94.5,
+      "maskH2": 73.5,
+      "maskFile3": 2,
+      "maskX3": 46.6,
+      "maskY3": 53.4,
+      "maskW3": 94.5,
+      "maskH3": 75,
+      "maskFile4": 3,
+      "maskX4": 46.6,
+      "maskY4": 61,
+      "maskW4": 94.5,
+      "maskH4": 78.5,
+      "peekAlways": false
+    }/*EDITMODE-END*/;
+
+    function applyTweaks(t) {
+      const el = document.getElementById('cardList');
+      if (!el) return;
+      el.style.setProperty('--gc-aspect',         `${t.aspectW} / ${t.aspectH}`);
+      el.style.setProperty('--gc-radius',         `${t.radius}px`);
+      el.style.setProperty('--gc-thumb-h-pct',    `${t.thumbHPct}%`);
+      el.style.setProperty('--gc-thumb-zoom',     `${t.thumbZoom}`);
+      el.style.setProperty('--gc-play-h-pct',     `${t.playHPct}%`);
+      el.style.setProperty('--gc-side-w-pct',     `${t.sideWPct}%`);
+      el.style.setProperty('--gc-text-left-w-pct',  `${t.textLeftWPct}%`);
+      el.style.setProperty('--gc-text-right-w-pct', `${t.textRightWPct}%`);
+
+      // Toggle "always show peek" body class for live mask alignment.
+      document.body.classList.toggle('peek-always', !!t.peekAlways);
+
+      // Apply per-panel mask tweaks. Each card's panel number (1..4) is
+      // encoded in data-panel-n on the card root; we set the mask vars on
+      // every card matching that panel.
+      for (let n = 1; n <= 4; n++) {
+        const fileN = t[`maskFile${n}`] ?? n;
+        const x = t[`maskX${n}`] ?? 0;
+        const y = t[`maskY${n}`] ?? 0;
+        const w = t[`maskW${n}`] ?? 100;
+        const h = t[`maskH${n}`] ?? 100;
+        const url = `assets/ui/wood_panel_mask${fileN}.png`;
+        document.querySelectorAll(`.game-card[data-panel-n="${n}"]`).forEach((card) => {
+          card.style.setProperty('--card-mask', `url('${url}')`);
+          card.style.setProperty('--mask-x', `${x}%`);
+          card.style.setProperty('--mask-y', `${y}%`);
+          card.style.setProperty('--mask-w', `${w}%`);
+          card.style.setProperty('--mask-h', `${h}%`);
+        });
+      }
+    }
+
+    // Apply once on first paint so the initial render uses tweak values
+    // (covers the case where Tweaks panel hasn't been toggled open yet).
+    applyTweaks(TWEAK_DEFAULTS);
+
+    // Apply cache-busted src to brand images (preview SW workaround)
+    const __isPv = /claudeusercontent\.com$/.test(location.hostname);
+    const __bustUrl = (url) => __isPv ? `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}` : url;
+    document.querySelectorAll('img[data-src]').forEach((img) => {
+      const url = img.getAttribute('data-src');
+      img.src = __bustUrl(url);
+    });
+
+    function CardTweaks() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [maskCard, setMaskCard] = React.useState(1);   // which panel# we're tuning
+
+      React.useEffect(() => { applyTweaks(t); }, [t]);
+
+      const reset = () => setTweak({ ...TWEAK_DEFAULTS });
+
+      const cardLabels = {
+        1: 'カード1: なぞなぞ',
+        2: 'カード2: こだまの森',
+        3: 'カード3: ポノのもりずかん',
+        4: 'カード4: ランタンめいろ',
+      };
+      const n = maskCard;
+      const fileKey = `maskFile${n}`, xKey = `maskX${n}`, yKey = `maskY${n}`,
+            wKey = `maskW${n}`, hKey = `maskH${n}`;
+
+      return (
+        <TweaksPanel title="カードのレイアウト">
+          <TweakSection label="カードのかたち" />
+          <TweakSlider label="よこ:たて (横)" value={t.aspectW}
+                       min={2} max={10} step={0.1}
+                       onChange={(v) => setTweak('aspectW', v)} />
+          <TweakSlider label="よこ:たて (縦)" value={t.aspectH}
+                       min={0.5} max={3} step={0.1}
+                       onChange={(v) => setTweak('aspectH', v)} />
+          <TweakSlider label="角丸 (radius)" value={t.radius}
+                       min={0} max={60} step={1} unit="px"
+                       onChange={(v) => setTweak('radius', v)} />
+
+          <TweakSection label="サムネ・再生ボタン (高さ%)" />
+          <TweakSlider label="左サムネ" value={t.thumbHPct}
+                       min={30} max={100} step={1} unit="%"
+                       onChange={(v) => setTweak('thumbHPct', v)} />
+          <TweakSlider label="サムネ拡大" value={t.thumbZoom}
+                       min={1} max={2} step={0.01} unit="×"
+                       onChange={(v) => setTweak('thumbZoom', v)} />
+          <TweakSlider label="右ボタン" value={t.playHPct}
+                       min={30} max={100} step={1} unit="%"
+                       onChange={(v) => setTweak('playHPct', v)} />
+
+          <TweakSection label="左右の余白 (幅%)" />
+          <TweakSlider label="サイド余白" value={t.sideWPct}
+                       min={0} max={10} step={0.1} unit="%"
+                       onChange={(v) => setTweak('sideWPct', v)} />
+          <TweakSlider label="テキスト左" value={t.textLeftWPct}
+                       min={5} max={40} step={0.5} unit="%"
+                       onChange={(v) => setTweak('textLeftWPct', v)} />
+          <TweakSlider label="テキスト右" value={t.textRightWPct}
+                       min={5} max={40} step={0.5} unit="%"
+                       onChange={(v) => setTweak('textRightWPct', v)} />
+
+          <TweakSection label="紙マスクの調整" />
+          <TweakToggle label="ホバーなしで常時表示" value={!!t.peekAlways}
+                       onChange={(v) => setTweak('peekAlways', v)} />
+          <TweakSelect label="調整するカード" value={String(n)}
+                       options={[
+                         { value: '1', label: cardLabels[1] },
+                         { value: '2', label: cardLabels[2] },
+                         { value: '3', label: cardLabels[3] },
+                         { value: '4', label: cardLabels[4] },
+                       ]}
+                       onChange={(v) => setMaskCard(parseInt(v, 10))} />
+          <TweakSelect label="マスクファイル" value={String(t[fileKey])}
+                       options={[
+                         { value: '1', label: 'mask1.png' },
+                         { value: '2', label: 'mask2.png' },
+                         { value: '3', label: 'mask3.png' },
+                         { value: '4', label: 'mask4.png' },
+                       ]}
+                       onChange={(v) => setTweak(fileKey, parseInt(v, 10))} />
+          <TweakSlider label="左右位置 X" value={t[xKey]}
+                       min={-100} max={100} step={0.1} unit="%"
+                       onChange={(v) => setTweak(xKey, v)} />
+          <TweakSlider label="上下位置 Y" value={t[yKey]}
+                       min={-100} max={100} step={0.1} unit="%"
+                       onChange={(v) => setTweak(yKey, v)} />
+          <TweakSlider label="幅" value={t[wKey]}
+                       min={20} max={200} step={0.5} unit="%"
+                       onChange={(v) => setTweak(wKey, v)} />
+          <TweakSlider label="高さ" value={t[hKey]}
+                       min={10} max={200} step={0.5} unit="%"
+                       onChange={(v) => setTweak(hKey, v)} />
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+            <TweakButton label="リセット" onClick={reset} secondary />
+          </div>
+        </TweaksPanel>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('tweaksRoot')).render(<CardTweaks />);
   </script>
 </body>
 </html>
