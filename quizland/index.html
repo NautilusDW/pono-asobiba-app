@@ -35,7 +35,6 @@
 html, body {
   min-height: 100dvh;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
-  background: linear-gradient(170deg, #FFF8E7 0%, #FEF3C7 50%, #FDE68A 100%);
   color: var(--text);
   user-select: none;
   -webkit-user-select: none;
@@ -44,13 +43,43 @@ html, body {
 }
 
 body {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 48px 16px 32px;
-  max-width: 540px;
-  margin: 0 auto;
+  justify-content: flex-start;
+  gap: 18px;
+  padding: 28px clamp(16px, 2.4vw, 36px) 30px;
+  margin: 0;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 249, 236, 0.5), rgba(255, 245, 220, 0.72)),
+    url('../assets/images/quizland/title_back.jpg') center / cover no-repeat;
+  opacity: 0.94;
+  z-index: -2;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.82), transparent 28%),
+    radial-gradient(circle at 86% 14%, rgba(255, 224, 163, 0.55), transparent 24%),
+    linear-gradient(180deg, rgba(255, 247, 230, 0.2), rgba(245, 158, 11, 0.08));
+  pointer-events: none;
+  z-index: -1;
+}
+
+.game-shell {
+  width: min(100%, 1600px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 /* ===== Header ===== */
@@ -58,15 +87,21 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  justify-content: center;
+  gap: 16px;
+  justify-content: flex-start;
+  padding: 14px 18px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,249,236,0.88));
+  border: 1px solid rgba(214, 161, 74, 0.24);
+  box-shadow: 0 12px 28px rgba(120, 83, 20, 0.12);
+  backdrop-filter: blur(6px);
 }
 .pono-avatar {
-  width: 48px; height: 48px;
+  width: 72px; height: 72px;
   border-radius: 50%;
   background: #fff;
-  border: 3px solid var(--accent);
-  box-shadow: 0 2px 8px var(--shadow);
+  border: 4px solid #F6C66A;
+  box-shadow: 0 6px 14px rgba(120, 83, 20, 0.16);
   overflow: hidden;
   flex-shrink: 0;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -79,149 +114,323 @@ body {
 }
 
 .header h1 {
-  font-size: 1.5rem; font-weight: 900; color: var(--primary);
-  text-shadow: 2px 2px 0 var(--primary-light);
+  flex: 1;
+  font-size: clamp(1.7rem, 2.2vw, 2.8rem);
+  font-weight: 900;
+  color: #A65A13;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 rgba(255, 242, 207, 0.92);
 }
 
 /* ===== HUD ===== */
 .hud {
   width: 100%;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto auto auto minmax(140px, 1fr);
   align-items: center;
-  background: #fff;
-  border-radius: 16px;
-  padding: 8px 16px;
-  box-shadow: 0 2px 8px var(--shadow);
-  font-size: 0.85rem;
+  gap: 10px;
+  background: rgba(255, 253, 247, 0.88);
+  border-radius: 22px;
+  padding: 10px 14px;
+  border: 1px solid rgba(214, 161, 74, 0.18);
+  box-shadow: 0 8px 22px rgba(120, 83, 20, 0.1);
+  backdrop-filter: blur(6px);
+  font-size: 0.92rem;
   font-weight: 700;
 }
+.hud > * {
+  min-width: 0;
+}
+#hud-back-btn {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FFF9EC, #F5E2B5);
+  color: #8B5A19;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 10px 14px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 4px 10px rgba(120, 83, 20, 0.12);
+}
+#hud-label,
+#hud-seeds {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 247, 227, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+}
+#hud-label {
+  color: #7A4D19;
+}
+#hud-seeds {
+  color: #B87407;
+  font-size: 1rem;
+}
 .hud-progress {
-  display: flex; gap: 4px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
 .hud-dot {
-  width: 10px; height: 10px;
+  width: 12px; height: 12px;
   border-radius: 50%;
   background: #E5E7EB;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.3s;
 }
 .hud-dot.done    { background: var(--success); }
-.hud-dot.current { background: var(--primary); transform: scale(1.3); }
+.hud-dot.current { background: var(--primary); transform: scale(1.28); }
 
 /* ===== Stage area ===== */
 .stage {
   width: 100%;
-  background: #fff;
-  border-radius: var(--radius);
-  padding: 24px 20px;
-  box-shadow: 0 4px 16px var(--shadow);
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.95fr);
+  gap: clamp(18px, 2vw, 30px);
+  align-items: stretch;
+}
+.question-panel,
+.answer-panel {
+  position: relative;
+  border-radius: 34px;
+  padding: clamp(20px, 2vw, 28px);
+  border: 1px solid rgba(214, 161, 74, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,236,0.88)),
+    radial-gradient(circle at top, rgba(255,255,255,0.85), transparent 55%);
+  box-shadow: 0 18px 36px rgba(120, 83, 20, 0.14);
+  overflow: hidden;
+}
+.question-panel::before,
+.answer-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(248, 193, 83, 0.14), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(183, 111, 32, 0.08), transparent 32%);
+  pointer-events: none;
+}
+.question-panel {
+  min-height: clamp(420px, 58vh, 720px);
   display: flex;
   flex-direction: column;
+}
+.answer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.panel-chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #F8E6B7, #EABF6C);
+  color: #7A4D19;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 6px 14px rgba(120, 83, 20, 0.12);
+}
+.panel-chip--leaf {
+  background: linear-gradient(180deg, #DDEAA2, #BFD876);
+  color: #5B6525;
+}
+.answer-guide {
+  position: relative;
+  z-index: 1;
+  display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 260px;
+  padding: 14px 16px;
+  border-radius: 26px;
+  background: rgba(255, 252, 242, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.answer-guide__owl {
+  width: clamp(84px, 9vw, 132px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(120, 83, 20, 0.18));
+}
+.answer-guide__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.answer-guide__copy p {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.55;
+  color: #876233;
+}
+.question-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 18px 0 18px;
+  padding-right: 66px;
+}
+.question-board {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  border-radius: 30px;
+  padding: clamp(18px, 2vw, 30px);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(248, 236, 206, 0.94)),
+    radial-gradient(circle at top, rgba(255,255,255,0.82), transparent 50%);
+  border: 3px solid rgba(226, 196, 132, 0.9);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.86), inset 0 -8px 18px rgba(214, 161, 74, 0.12);
 }
 
 .question {
-  font-size: 1.15rem;
+  font-size: clamp(1.45rem, 1.65vw, 2.15rem);
   font-weight: 900;
-  color: var(--text);
+  color: #6A471D;
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: pre-line;
+  text-wrap: balance;
+}
+#question-speaker {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 54px;
+  height: 54px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #F7C453, #E99A21);
+  color: #fffaf0;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(196, 122, 14, 0.26);
+  display: none;
 }
 
 #stage-area {
   width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  min-height: 100px;
+  gap: clamp(12px, 1.1vw, 18px);
+  min-height: clamp(220px, 36vh, 360px);
 }
 
 /* ===== Item rows (for order/count) ===== */
 .item-row {
   display: flex;
-  gap: 8px;
+  gap: clamp(10px, 1vw, 18px);
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 }
 .color-chip {
-  width: 52px; height: 52px;
-  border-radius: 14px;
+  width: clamp(68px, 5vw, 96px);
+  height: clamp(68px, 5vw, 96px);
+  border-radius: 20px;
   border: 3px solid rgba(255,255,255,0.8);
-  box-shadow: 0 3px 8px var(--shadow);
+  box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16);
 }
 .count-item {
-  width: 52px; height: 52px;
+  width: clamp(70px, 5vw, 96px);
+  height: clamp(70px, 5vw, 96px);
   object-fit: contain;
 }
 
 /* ===== Shapes ===== */
 .shape-display {
-  width: 140px; height: 140px;
+  width: min(100%, 420px);
+  height: clamp(220px, 38vh, 360px);
   display: flex;
   justify-content: center;
   align-items: center;
 }
-.shape-circle { width: 120px; height: 120px; border-radius: 50%; background: #FBBF24; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.shape-square { width: 120px; height: 120px; border-radius: 0; background: #60A5FA; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-circle { width: clamp(160px, 18vw, 240px); height: clamp(160px, 18vw, 240px); border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-square { width: clamp(160px, 18vw, 240px); height: clamp(160px, 18vw, 240px); border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 .shape-triangle {
   width: 0; height: 0;
-  border-left: 65px solid transparent;
-  border-right: 65px solid transparent;
-  border-bottom: 115px solid #10B981;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  border-left: clamp(88px, 8vw, 132px) solid transparent;
+  border-right: clamp(88px, 8vw, 132px) solid transparent;
+  border-bottom: clamp(154px, 15vw, 220px) solid #10B981;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .shape-star {
-  font-size: 120px; line-height: 1;
+  font-size: clamp(150px, 18vw, 250px); line-height: 1;
   color: #F97316;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .shape-heart {
-  font-size: 120px; line-height: 1;
+  font-size: clamp(150px, 18vw, 250px); line-height: 1;
   color: #EC4899;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
-.shape-rectangle { width: 160px; height: 80px; border-radius: 0; background: #8B5CF6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-rectangle { width: clamp(210px, 24vw, 330px); height: clamp(110px, 11vw, 160px); border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 .shape-diamond {
-  width: 90px; height: 90px;
+  width: clamp(128px, 12vw, 200px); height: clamp(128px, 12vw, 200px);
   background: #EF4444;
   transform: rotate(45deg);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.15);
 }
-.shape-oval { width: 150px; height: 90px; border-radius: 50%; background: #10B981; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.shape-oval { width: clamp(210px, 22vw, 320px); height: clamp(120px, 12vw, 180px); border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 
 /* ===== Choices ===== */
 .choices {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 14px;
+  align-content: stretch;
 }
 .choice-btn {
-  padding: 16px 12px;
-  border: 3px solid var(--primary-light);
-  border-radius: 16px;
-  background: #fff;
-  color: var(--text);
+  position: relative;
+  padding: 18px 16px;
+  border: 3px solid #E7CB95;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #FFFDF6, #F8E7C6);
+  color: #714E24;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: clamp(1.15rem, 1.35vw, 1.6rem);
   font-weight: 900;
   cursor: pointer;
-  transition: transform 0.1s, background 0.15s, border-color 0.15s;
+  transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
+  gap: 10px;
+  min-height: clamp(96px, 16vh, 138px);
   -webkit-tap-highlight-color: transparent;
+  text-align: center;
+  line-height: 1.35;
+  box-shadow: 0 10px 20px rgba(120, 83, 20, 0.14), inset 0 1px 0 rgba(255,255,255,0.82);
 }
-@media (hover: hover) { .choice-btn:hover { background: var(--primary-light); } }
-.choice-btn:active { transform: scale(0.96); }
+@media (hover: hover) {
+  .choice-btn:hover {
+    background: linear-gradient(180deg, #FFF8E7, #F6E0B1);
+    box-shadow: 0 14px 24px rgba(120, 83, 20, 0.16), inset 0 1px 0 rgba(255,255,255,0.86);
+  }
+}
+.choice-btn:active { transform: scale(0.97); }
 .choice-btn.correct {
   background: #D1FAE5 !important;
   border-color: var(--success) !important;
@@ -233,10 +442,13 @@ body {
   border-color: var(--danger) !important;
   animation: shake 0.4s;
 }
+.choice-btn--count {
+  font-size: clamp(2rem, 3vw, 3rem);
+}
 .choice-color {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  margin-right: 8px;
+  width: clamp(42px, 3vw, 56px);
+  height: clamp(42px, 3vw, 56px);
+  border-radius: 14px;
   border: 2px solid rgba(255,255,255,0.8);
   flex-shrink: 0;
 }
@@ -249,6 +461,59 @@ body {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-8px); }
   75% { transform: translateX(8px); }
+}
+
+@media (max-width: 1180px) {
+  .stage {
+    grid-template-columns: 1fr;
+  }
+  .question-panel {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    padding: 16px 12px 24px;
+    gap: 14px;
+  }
+  .header {
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .pono-avatar {
+    width: 56px;
+    height: 56px;
+  }
+  .hud {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hud-progress {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+  .question-wrap {
+    padding-top: 58px;
+    padding-right: 0;
+  }
+  #question-speaker {
+    top: 0;
+    right: 50%;
+    transform: translateX(50%);
+  }
+  .answer-guide {
+    flex-direction: column;
+    text-align: center;
+  }
+  .answer-guide__copy {
+    align-items: center;
+  }
+  .choices {
+    grid-template-columns: 1fr;
+  }
+  .choice-btn {
+    min-height: 78px;
+  }
 }
 
 /* ===== Feedback bubble ===== */
@@ -428,24 +693,66 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 
 /* ===== Emoji / Opposite display ===== */
 .emoji-display {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  text-align: center;
 }
 .emoji-main {
-  font-size: 90px; line-height: 1;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  font-size: clamp(120px, 16vw, 220px);
+  line-height: 1;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .emoji-main-img {
-  max-width: 180px; max-height: 180px; object-fit: contain;
+  max-width: min(100%, 340px);
+  max-height: min(44vh, 340px);
+  object-fit: contain;
 }
 .emoji-hint {
-  font-size: 0.88rem; font-weight: 700; color: var(--text-light); text-align: center;
+  font-size: clamp(0.98rem, 1.05vw, 1.15rem);
+  font-weight: 700;
+  color: #8A6A42;
+  text-align: center;
+  background: rgba(255,255,255,0.72);
+  border-radius: 999px;
+  padding: 8px 14px;
 }
 .opposite-display {
-  font-size: 2.4rem; font-weight: 900; color: var(--primary);
-  text-shadow: 2px 2px 0 var(--primary-light);
-  padding: 14px 32px;
-  background: var(--primary-light);
-  border-radius: 16px;
+  font-size: clamp(2.7rem, 4.4vw, 5.4rem);
+  font-weight: 900;
+  color: #D36B12;
+  text-shadow: 0 4px 0 rgba(255, 246, 221, 0.95);
+  padding: 18px 36px;
+  background: linear-gradient(180deg, #FFF7E5, #F8DE9F);
+  border-radius: 26px;
+  border: 3px solid rgba(231, 203, 149, 0.92);
+  box-shadow: 0 10px 22px rgba(120, 83, 20, 0.12);
+}
+.trivia-display .trivia-pono {
+  width: clamp(190px, 19vw, 300px);
+  height: clamp(190px, 19vw, 300px);
+  object-fit: contain;
+  border-radius: 24px;
+  filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
+}
+.trivia-bubble {
+  position: absolute;
+  top: -8px;
+  right: -16px;
+  font-size: clamp(1.9rem, 2vw, 2.4rem);
+  font-weight: 900;
+  color: #FF6B9D;
+  background: #fff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 12px rgba(255,107,157,0.3);
+  animation: quizBubbleBlink 2.5s ease-in-out infinite;
 }
 
 /* ===== Start screen ===== */
@@ -772,6 +1079,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 </div>
 
 <!-- ===== Game UI ===== -->
+<div class="game-shell">
 <div class="header">
   <div class="pono-avatar" id="pono-avatar">
     <img src="../assets/images/characters/pono/pono_face_circle.png" alt="ポノ">
@@ -795,6 +1103,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   <div class="choices" id="choices"></div>
 </div>
 
+</div>
 <!-- ===== Feedback bubble ===== -->
 <div class="feedback" id="feedback">やったー！</div>
 
@@ -1350,7 +1659,7 @@ function renderOpposite(stage, q) {
 
 function renderTrivia(stage, q) {
   const wrap = document.createElement('div');
-  wrap.className = 'emoji-display';
+  wrap.className = 'emoji-display trivia-display';
   wrap.style.position = 'relative';
 
   // ThinkingPono動画
@@ -1362,13 +1671,13 @@ function renderTrivia(stage, q) {
   video.playsInline = true;
   video.setAttribute('playsinline', '');
   video.setAttribute('webkit-playsinline', '');
-  video.style.cssText = 'width:160px;height:160px;object-fit:contain;border-radius:16px;';
+  video.className = 'trivia-pono';
   video.play().catch(function() {});
   wrap.appendChild(video);
 
   // ?吹き出し（点滅）
   var bubble = document.createElement('div');
-  bubble.style.cssText = 'position:absolute;top:-8px;right:-16px;font-size:2rem;font-weight:900;color:#FF6B9D;background:#fff;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(255,107,157,0.3);animation:quizBubbleBlink 2.5s ease-in-out infinite;';
+  bubble.className = 'trivia-bubble';
   bubble.textContent = '❓';
   wrap.appendChild(bubble);
 
@@ -1401,7 +1710,7 @@ function renderChoices(q) {
       btn.appendChild(label);
     } else if (q.type === 'count_total') {
       btn.textContent = String(choice);
-      btn.style.fontSize = '1.6rem';
+      btn.classList.add('choice-btn--count');
     } else {
       btn.textContent = choice;
     }
@@ -1419,6 +1728,7 @@ function loadQuestion(q) {
   locked = false;
   document.getElementById('question-text').textContent = q.q;
   const stage = document.getElementById('stage-area');
+  stage.dataset.qtype = q.type;
   stage.innerHTML = '';
   switch (q.type) {
     case 'order_color': renderOrderColor(stage, q); break;
@@ -1596,7 +1906,98 @@ function showResult() {
 // ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
+function upgradeGameLayout() {
+  const shell = document.querySelector('.game-shell');
+  const header = document.querySelector('.header');
+  const stage = document.querySelector('.stage');
+  const questionWrap = stage && stage.querySelector('.question-wrap');
+  const stageArea = document.getElementById('stage-area');
+  const choices = document.getElementById('choices');
+  if (!shell || !header || !stage || !questionWrap || !stageArea || !choices) return;
+  if (stage.querySelector('.question-panel')) return;
+
+  const title = header.querySelector('h1');
+  if (title) title.textContent = 'フクロウ博士のなぞなぞ';
+
+  const avatarImg = header.querySelector('.pono-avatar img');
+  if (avatarImg) avatarImg.alt = 'ポノ';
+
+  const backBtn = document.getElementById('hud-back-btn');
+  if (backBtn) {
+    backBtn.removeAttribute('style');
+    backBtn.textContent = '◀ タイトルへ';
+  }
+
+  const seeds = document.getElementById('hud-seeds');
+  if (seeds) {
+    const count = document.getElementById('hud-seeds-count');
+    const current = count ? count.textContent : '0';
+    seeds.removeAttribute('style');
+    seeds.setAttribute('aria-label', 'てもちのたね');
+    seeds.innerHTML = '🌱 <span id="hud-seeds-count">' + current + '</span>';
+  }
+
+  questionWrap.removeAttribute('style');
+
+  const speaker = document.getElementById('question-speaker');
+  if (speaker) {
+    speaker.removeAttribute('style');
+    speaker.setAttribute('aria-label', 'もんだいを よむ');
+    speaker.textContent = '🔊';
+  }
+
+  const questionText = document.getElementById('question-text');
+  if (questionText) questionText.textContent = 'よういちゅう…';
+
+  const questionPanel = document.createElement('section');
+  questionPanel.className = 'question-panel';
+
+  const questionChip = document.createElement('div');
+  questionChip.className = 'panel-chip';
+  questionChip.textContent = 'フクロウはかせからの もんだい';
+
+  const questionBoard = document.createElement('div');
+  questionBoard.className = 'question-board';
+  questionBoard.appendChild(stageArea);
+
+  questionPanel.appendChild(questionChip);
+  questionPanel.appendChild(questionWrap);
+  questionPanel.appendChild(questionBoard);
+
+  const answerPanel = document.createElement('aside');
+  answerPanel.className = 'answer-panel';
+
+  const answerGuide = document.createElement('div');
+  answerGuide.className = 'answer-guide';
+
+  const owl = document.createElement('img');
+  owl.className = 'answer-guide__owl';
+  owl.src = '../assets/images/word/fukuro.png';
+  owl.alt = '';
+
+  const answerCopy = document.createElement('div');
+  answerCopy.className = 'answer-guide__copy';
+
+  const answerChip = document.createElement('div');
+  answerChip.className = 'panel-chip panel-chip--leaf';
+  answerChip.textContent = 'こたえを えらぼう';
+
+  const answerText = document.createElement('p');
+  answerText.innerHTML = '4つの なかから<br>ぴったりの こたえを えらんでね。';
+
+  answerCopy.appendChild(answerChip);
+  answerCopy.appendChild(answerText);
+  answerGuide.appendChild(owl);
+  answerGuide.appendChild(answerCopy);
+
+  answerPanel.appendChild(answerGuide);
+  answerPanel.appendChild(choices);
+
+  stage.replaceChildren(questionPanel, answerPanel);
+}
+
 function initGame() {
+  upgradeGameLayout();
   playlist = buildPlaylist();
   questionIdx = 0;
   correctCount = 0;
@@ -1658,6 +2059,8 @@ const MODE_TO_CATEGORIES = {
 };
 
 // タイトル画面タップ → モード選択画面へ (BGM もここで起動)
+upgradeGameLayout();
+
 document.getElementById('start-screen').addEventListener('click', function() {
   ensureAudio();
   startBGM();
