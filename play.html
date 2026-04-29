@@ -1214,7 +1214,9 @@
         bg: 'assets/images/oto/title_back.jpg',
         href: 'oto/index.html',
         panel: 'assets/ui/menu_card_base_01.png',
-        thumb: 'assets/ui/thumb_oto.png'
+        thumb: 'assets/ui/thumb_oto.png',
+        thumbPos: '34% 54%',
+        peekPos: '39% 48%'
       },
       {
         id: 'bento',
@@ -1224,7 +1226,9 @@
         bg: 'assets/images/bento/title_back.jpg',
         href: 'bento/index.html',
         panel: 'assets/ui/menu_card_base_02.png',
-        thumb: 'assets/ui/thumb_bento.png'
+        thumb: 'assets/ui/thumb_bento.png',
+        thumbPos: '31% 58%',
+        peekPos: '36% 52%'
       },
       {
         id: 'puzzle',
@@ -1234,7 +1238,9 @@
         bg: 'assets/images/puzzle/title_back.jpg',
         href: 'puzzle/index.html',
         panel: 'assets/ui/menu_card_base_03.png',
-        thumb: 'assets/ui/thumb_puzzle.png'
+        thumb: 'assets/ui/thumb_puzzle.png',
+        thumbPos: '36% 52%',
+        peekPos: '39% 49%'
       }
     ];
 
@@ -1305,7 +1311,7 @@
       const panelN = panelMatch ? parseInt(panelMatch[1], 10) : ((i % 4) + 1);
       const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
       return `
-        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}');">
+        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: url('${esc(__bust(g.bg))}'); --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
           <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
