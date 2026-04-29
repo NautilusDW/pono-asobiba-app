@@ -1315,8 +1315,9 @@ html, body {
 
 // 三色食品群 初回説明
 (function() {
-  localStorage.removeItem('bento_sk_intro_done'); // テスト用: 毎回表示
-  localStorage.removeItem('bento_tut_seen'); // テスト用: 毎回表示
+  // (旧: localStorage.removeItem('bento_sk_intro_done') / 'bento_tut_seen' は
+  //  テスト用に毎回チュートリアルを再表示する目的だったが、 タイトル画面の
+  //  上にチュートリアルが被って見える問題があるので削除。 初回のみ表示する。)
   const intro = document.getElementById('sk-intro');
   // sk-introボタンのハンドラを常に登録（showTutorialから表示される）
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
@@ -1348,16 +1349,22 @@ html, body {
       });
     }, 400);
   });
-  // チュートリアル未表示なら横画面になってから表示
+  // チュートリアル未表示なら、 タイトル画面と NPC 訪問モーダルが両方
+  // 閉じてから (= ユーザーがタップして遊び始める準備が整ってから) 表示する。
+  // 以前はタイトル画面の上にチュートリアルが被って見える問題があった。
   if (!localStorage.getItem('bento_tut_seen')) {
-    function waitLandscape() {
-      if (window.innerWidth > window.innerHeight) {
-        setTimeout(showTutorial, 500);
-      } else {
-        setTimeout(waitLandscape, 500);
+    function waitForReadyThenTutorial() {
+      const titleScreen = document.getElementById('title-screen');
+      const npcIntro = document.getElementById('npc-intro');
+      const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
+      const npcVisible   = npcIntro && !npcIntro.classList.contains('hidden') && !npcIntro.hidden;
+      if (titleVisible || npcVisible || window.innerWidth <= window.innerHeight) {
+        setTimeout(waitForReadyThenTutorial, 500);
+        return;
       }
+      setTimeout(showTutorial, 400);
     }
-    setTimeout(waitLandscape, 500);
+    setTimeout(waitForReadyThenTutorial, 600);
   }
 })();
 
