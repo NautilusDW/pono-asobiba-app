@@ -20,6 +20,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-04-29 — `quizland/index.html` の 21:9 崩れを Codex が修正。広いランドスケープ幅で `game-shell` を viewport 内高さに固定し、`question-panel` / `stage-area` / `choices` / 図形・絵文字サイズを圧縮して縦スクロール風レイアウトを解消。`sw.js` の CACHE_VERSION バンプは未対応なので Claude 側で要実施。 (by Codex)
 - 2026-04-29 — play.html の oto / bento / puzzle カード調整。丸サムネと紙オーバーレイの見せ位置を個別化し、タイトル色を3件ぶん変更。`ポノの` / `ポノと` の助詞だけ小さくする補正を追加。 (by Codex)
 - 2026-04-29 — タイトル画面 3 ゲーム改修完了 (puzzle 縦長 BG2 + oto/bento ロゴ右寄せ + ボタン下配置) (by Codex, commit `13739bb`)
 - 2026-04-29 — Codex 上書き後の puzzle/title_back2.jpg を再最適化 (1520×2688/1036KB → 1130×2000/608KB)。 Codex は AGENTS.md §5 の `auto_optimize_image.py` を通していなかった (by Claude)

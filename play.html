@@ -33,7 +33,6 @@
        (Cloudflare Workers serves these fine; local preview environments
        that 404 preload requests just ignore the hint — no functional cost.) -->
   <link rel="preload" as="image" href="assets/ui/thumb_quizland.png">
-  <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.png">
   <link rel="preload" as="image" href="assets/ui/thumb_wordmatch.png">
   <link rel="preload" as="image" href="assets/ui/thumb_maze.png">
   <link rel="preload" as="image" href="assets/ui/thumb_oto.png">
@@ -1293,6 +1292,7 @@
         peekPos: '39% 49%'
       }
     ];
+    const MENU_GAMES = GAMES.filter((game) => game.id !== 'quiz-sound');
 
     let currentIdx = 0;
     let activeBgEl = 'A';
@@ -1382,8 +1382,8 @@
     function renderCards() {
       let html = '';
       for (let rep = 0; rep < LOOP_COPIES; rep++) {
-        for (let i = 0; i < GAMES.length; i++) {
-          html += cardMarkup(GAMES[i], i, rep);
+        for (let i = 0; i < MENU_GAMES.length; i++) {
+          html += cardMarkup(MENU_GAMES[i], i, rep);
         }
       }
       cardList.innerHTML = html;
@@ -1401,7 +1401,7 @@
 
     function setupLoopScroll() {
       const cards = cardList.querySelectorAll('.game-card');
-      if (cards.length < GAMES.length * LOOP_COPIES) return;
+      if (cards.length < MENU_GAMES.length * LOOP_COPIES) return;
 
       // Lock the list's visible height to exactly 4 cards + 3 gaps so
       // no 5th card peeks through the top/bottom edges. Recompute when
@@ -1445,7 +1445,7 @@
       const oneSetH = () => {
         const cardH = cards[0].offsetHeight;
         const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
-        return (cardH + gap) * GAMES.length;
+        return (cardH + gap) * MENU_GAMES.length;
       };
       // Start positioned at the middle copy so user can scroll either way.
       cardList.scrollTop = oneSetH();
@@ -1531,7 +1531,7 @@
     }
 
     function startGame(idx) {
-      const game = GAMES[idx];
+      const game = MENU_GAMES[idx];
       if (!game) return;
       // Coming-soon entries have href '#' — do nothing yet.
       if (game.comingSoon || !game.href || game.href === '#') return;
@@ -1541,7 +1541,7 @@
 
     // ===== Select / preview crossfade =====
     function selectGame(idx) {
-      const game = GAMES[idx];
+      const game = MENU_GAMES[idx];
       if (!game) return;
       currentIdx = idx;
 
