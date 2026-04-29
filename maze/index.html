@@ -1672,13 +1672,12 @@ function imgPreloadStoryAssets(stage) {
   }
 }
 
-// 各ステージ初回のみ表示。localStorage で seen フラグ管理。
+// 各ステージ開始時に必ず表示する。 子ども向けに「誰を助けに行くのか」 を
+// 毎回はっきりさせるため、 旧来の「初回のみ (localStorage seen)」 抑制は撤廃。
+// (旧キー pono_maze_story_seen_* は無害な残骸として localStorage に残る場合があるが
+// もう参照しないので削除してもしなくても挙動は同じ)。
 function imgMaybeShowStoryIntro(stage, idx) {
   if (!stage || !stage.story || !stage.story.intro) return;
-  const key = 'pono_maze_story_seen_' + idx;
-  let seen = false;
-  try { seen = localStorage.getItem(key) === '1'; } catch (e) {}
-  if (seen) return;
   const modalEl = document.getElementById('storyIntro');
   const imgEl = document.getElementById('storyAnimalImg');
   const txtEl = document.getElementById('storyText');
@@ -1690,13 +1689,12 @@ function imgMaybeShowStoryIntro(stage, idx) {
   hideArrows(); // モーダル表示中は矢印を出さない
   modalEl.classList.add('show');
   modalEl.setAttribute('aria-hidden', 'false');
-  // ボタンを 1 回限りで再バインド
+  // ボタンを 1 回限りで再バインド (リスナーが重なるのを防ぐ)
   const newBtn = btnEl.cloneNode(true);
   btnEl.parentNode.replaceChild(newBtn, btnEl);
   newBtn.addEventListener('click', function() {
     modalEl.classList.remove('show');
     modalEl.setAttribute('aria-hidden', 'true');
-    try { localStorage.setItem(key, '1'); } catch (e) {}
     imgShowArrows();
   });
 }
