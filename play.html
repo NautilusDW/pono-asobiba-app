@@ -1508,6 +1508,15 @@
       fit();
       window.addEventListener('resize', fit);
       window.addEventListener('orientationchange', fit);
+
+      // bfcache 復元時の表示崩れ対策:
+      // ゲームページから戻るボタンで戻ってきた時、ブラウザが page-state
+      // memory snapshot をそのまま再表示することがある (event.persisted = true)。
+      // その状態だと scale 計算 / SW更新後の最新アセットがどちらも適用されず、
+      // 黒帯が出たり一部画像 (例: 図鑑サムネ) が抜けたりする。検出して 1回だけリロード。
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) location.reload();
+      });
     })();
   </script>
 
