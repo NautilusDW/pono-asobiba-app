@@ -1012,6 +1012,13 @@
     </button>
   </div><!-- /.stage -->
 
+  <!-- ===== Top BGM (initial-touch unlock; no modal needed) =====
+       The audio element lives outside .stage so it isn't affected by the
+       canvas transform. Playback is started inside the first user gesture
+       (see the IIFE near the bottom of the main <script>) to satisfy iOS
+       Safari's autoplay restriction without showing a tap-to-start screen. -->
+  <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
+
   <!-- ===== Portrait warning overlay (shown when device is held vertically) ===== -->
   <div class="portrait-warn" id="portraitWarn" hidden>
     <div class="pw-card">
@@ -1494,6 +1501,55 @@
       try { localStorage.setItem(SOUND_KEY, on ? '0' : '1'); } catch(_) {}
     });
     loadSoundPref();
+
+    // ===== BGM (initial-touch unlock; no modal) =====
+    // iOS Safari blocks audio.play() outside a user gesture. Instead of
+    // showing a full-screen "tap to start" overlay (the legacy approach),
+    // we silently attempt play() on the first pointerdown anywhere on the
+    // page. If the browser rejects (NotAllowedError), the listener stays
+    // active and the next tap will succeed. Returning from a sub-game
+    // re-uses the existing pono_audio_primed_ts session flag for a hint.
+    (function () {
+      const bgm = document.getElementById('play-bgm');
+      if (!bgm) return;
+      bgm.volume = 0.35;
+
+      function isMuted() {
+        try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }
+      }
+
+      function tryPlay() {
+        if (isMuted()) return;
+        if (!bgm.paused) return;
+        const p = bgm.play();
+        if (p && p.then) {
+          p.then(() => {
+            try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch (_) {}
+          }).catch(() => { /* wait for the next gesture */ });
+        }
+      }
+
+      // Returning from a child game: if we already primed audio in this
+      // session, attempt an immediate (unmuted) resume.
+      try { if (sessionStorage.getItem('pono_audio_primed_ts')) tryPlay(); } catch (_) {}
+
+      // Fallback: any tap / click anywhere on the page kicks off playback.
+      // Listener stays installed so a rejected first attempt is auto-retried
+      // on the next gesture without any UI prompt.
+      document.addEventListener('pointerdown', tryPlay, { passive: true });
+
+      // Settings modal toggle: pause immediately when muted, resume otherwise.
+      soundToggle.addEventListener('change', () => {
+        if (isMuted()) bgm.pause();
+        else tryPlay();
+      });
+
+      // Tab hidden → pause to save battery and avoid background noise.
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) bgm.pause();
+        else tryPlay();
+      });
+    })();
 
     // ===== Init =====
     renderCards();
