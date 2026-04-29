@@ -499,19 +499,19 @@
   .intro__content {
     position: absolute;
     top: 50%;
-    right: clamp(24px, 7vw, 96px);
+    right: clamp(8px, 3vw, 40px);
     transform: translateY(-50%);
     z-index: 1;
-    width: min(40vw, 520px);
+    width: min(34vw, 420px);
     max-width: calc(100vw - 48px);
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     gap: 10px;
     pointer-events: none;
   }
   .intro-logo {
-    width: 100%;
+    width: 70%;
     max-width: 100%;
     height: auto;
     display: block;
@@ -540,6 +540,10 @@
       right: auto;
       transform: translate(-50%, -50%);
       width: min(78vw, 520px);
+      align-items: center;
+    }
+    .intro-logo {
+      width: 100%;
     }
   }
 

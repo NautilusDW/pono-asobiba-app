@@ -41,7 +41,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: center / cover no-repeat url('../assets/images/puzzle/title_back.jpg');
+  background: center / cover no-repeat url('../assets/images/puzzle/title_back2.jpg');
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -61,21 +61,21 @@ body {
 
 .title-screen__content {
   position: absolute;
-  top: 50%;
-  right: clamp(24px, 7vw, 96px);
-  transform: translateY(-50%);
+  top: clamp(72px, 9vh, 132px);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1;
-  width: min(40vw, 520px);
-  max-width: calc(100vw - 48px);
+  width: min(72vw, 520px);
+  max-width: calc(100vw - 40px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   pointer-events: none;
 }
 
 .title-screen__logo {
-  width: 100%;
+  width: 92%;
   max-width: 100%;
   height: auto;
   display: block;
@@ -102,11 +102,8 @@ body {
 
 @media (max-width: 900px) {
   .title-screen__content {
-    top: 50%;
-    left: 50%;
-    right: auto;
-    transform: translate(-50%, -50%);
-    width: min(78vw, 520px);
+    top: clamp(56px, 8vh, 112px);
+    width: min(82vw, 500px);
   }
 }
 
