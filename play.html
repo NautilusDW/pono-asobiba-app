@@ -27,9 +27,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 
-  <!-- Preload preview backgrounds & card UI removed: the preview sandbox's
-       service worker rejects <link rel=preload> requests. The plain <img>
-       tags below still load fine; preload was an optimization, not required. -->
+  <!-- Preload thumbnails so they're decoded before renderCards() paints
+       the wood-card list. Without this, one of the 4 round thumbs shows
+       blank for a frame on slow networks / bfcache restore.
+       (Cloudflare Workers serves these fine; local preview environments
+       that 404 preload requests just ignore the hint — no functional cost.) -->
+  <link rel="preload" as="image" href="assets/ui/thumb_quizland.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_wordmatch.png">
+  <link rel="preload" as="image" href="assets/ui/thumb_maze.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -918,6 +924,85 @@
       opacity: 0.85;
     }
 
+    /* ===== Tap-to-start intro overlay =====
+       Shown only on the first session entry (sessionStorage gated) when the
+       device is held in landscape. Single tap unlocks BGM and dismisses.
+       Suppressed if portrait-warn is up, or if the user muted in Settings. */
+    .tap-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 9500;          /* below portrait-warn (9999), above modals (100) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(80, 50, 18, 0.88) 0%, rgba(20, 10, 0, 0.95) 75%);
+      color: #fff8e1;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      padding: 32px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      animation: tapIntroFadeIn 0.35s ease;
+    }
+    .tap-intro[hidden] { display: none !important; }
+    .tap-intro.is-closing {
+      animation: tapIntroFadeOut 0.4s ease forwards;
+      pointer-events: none;
+    }
+    .tap-intro-card {
+      text-align: center;
+      max-width: 720px;
+      padding: 24px 48px;
+    }
+    .tap-intro-pono {
+      font-size: clamp(80px, 14vw, 140px);
+      line-height: 1;
+      margin-bottom: 18px;
+      animation: tapIntroBounce 1.6s ease-in-out infinite;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
+    }
+    .tap-intro-title {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 900;
+      color: #FFE680;
+      letter-spacing: 0.05em;
+      margin: 12px 0 18px;
+      text-shadow:
+        3px 3px 0 #5a3a1c,
+        0 0 24px rgba(255, 200, 80, 0.4),
+        0 6px 12px rgba(0, 0, 0, 0.5);
+    }
+    .tap-intro-sub {
+      font-size: clamp(20px, 3.4vw, 32px);
+      font-weight: 700;
+      color: #fff8e1;
+      letter-spacing: 0.08em;
+      animation: tapIntroPulse 1.2s ease-in-out infinite;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+    }
+    @keyframes tapIntroBounce {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-14px); }
+    }
+    @keyframes tapIntroPulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.55; }
+    }
+    @keyframes tapIntroFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes tapIntroFadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+    /* Portrait fallback — keep the CTA readable on phones held vertically
+       (rare since portrait-warn covers this, but defensive). */
+    @media (orientation: portrait) {
+      .tap-intro-card { padding: 20px 24px; }
+      .tap-intro-title { letter-spacing: 0.02em; }
+    }
+
     /* ===== Local-preview fallbacks (when image assets are missing) =====
        These let the --gc-* layout tweaks be visible without the production
        art. They are visual-only — production builds with assets render
@@ -1018,6 +1103,18 @@
        (see the IIFE near the bottom of the main <script>) to satisfy iOS
        Safari's autoplay restriction without showing a tap-to-start screen. -->
   <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
+
+  <!-- ===== Tap-to-start intro overlay (first session only; landscape only) =====
+       Single tap dismisses, unlocks BGM autoplay, and reveals the title screen
+       behind. Suppressed automatically if Settings has muted audio or if the
+       user has already entered the title in this browser session. -->
+  <div class="tap-intro" id="tapIntro" hidden role="button" tabindex="0" aria-label="タップしてはじめる">
+    <div class="tap-intro-card">
+      <div class="tap-intro-pono" aria-hidden="true">🐻</div>
+      <div class="tap-intro-title">ポノのあそびば</div>
+      <div class="tap-intro-sub">タップして はじめよう</div>
+    </div>
+  </div>
 
   <!-- ===== Portrait warning overlay (shown when device is held vertically) ===== -->
   <div class="portrait-warn" id="portraitWarn" hidden>
@@ -1502,52 +1599,90 @@
     });
     loadSoundPref();
 
-    // ===== BGM (initial-touch unlock; no modal) =====
-    // iOS Safari blocks audio.play() outside a user gesture. Instead of
-    // showing a full-screen "tap to start" overlay (the legacy approach),
-    // we silently attempt play() on the first pointerdown anywhere on the
-    // page. If the browser rejects (NotAllowedError), the listener stays
-    // active and the next tap will succeed. Returning from a sub-game
-    // re-uses the existing pono_audio_primed_ts session flag for a hint.
+    // ===== BGM + tap-to-start intro =====
+    // iOS Safari requires a user gesture to start <audio>. We show the
+    // tap-intro overlay only on a fresh session (sessionStorage-gated) so
+    // that returning from a child game doesn't re-prompt. The single tap
+    // both starts BGM and dismisses the overlay → user lands on the title.
     (function () {
       const bgm = document.getElementById('play-bgm');
+      const intro = document.getElementById('tapIntro');
       if (!bgm) return;
       bgm.volume = 0.35;
 
       function isMuted() {
         try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }
       }
+      function isUnlocked() {
+        try { return sessionStorage.getItem('pono_audio_unlocked') === '1'; } catch (_) { return false; }
+      }
+      function markUnlocked() {
+        try {
+          sessionStorage.setItem('pono_audio_unlocked', '1');
+          sessionStorage.setItem('pono_audio_primed_ts', String(Date.now()));
+        } catch (_) {}
+      }
 
       function tryPlay() {
         if (isMuted()) return;
         if (!bgm.paused) return;
         const p = bgm.play();
-        if (p && p.then) {
-          p.then(() => {
-            try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch (_) {}
-          }).catch(() => { /* wait for the next gesture */ });
-        }
+        if (p && p.then) p.then(markUnlocked).catch(() => {});
       }
 
-      // Returning from a child game: if we already primed audio in this
-      // session, attempt an immediate (unmuted) resume.
-      try { if (sessionStorage.getItem('pono_audio_primed_ts')) tryPlay(); } catch (_) {}
+      // ----- Tap-intro overlay control -----
+      function showIntroIfNeeded() {
+        if (!intro) return false;
+        // Don't show if: muted in Settings, already unlocked this session,
+        // or device held in portrait (portrait-warn takes priority anyway).
+        if (isMuted() || isUnlocked()) return false;
+        if (window.innerHeight > window.innerWidth) return false;
+        intro.hidden = false;
+        return true;
+      }
 
-      // Fallback: any tap / click anywhere on the page kicks off playback.
-      // Listener stays installed so a rejected first attempt is auto-retried
-      // on the next gesture without any UI prompt.
-      document.addEventListener('pointerdown', tryPlay, { passive: true });
+      function dismissIntro() {
+        if (!intro || intro.hidden) return;
+        // We're inside a user gesture → playing is allowed by iOS.
+        if (!isMuted()) {
+          const p = bgm.play();
+          if (p && p.then) p.then(markUnlocked).catch(() => { markUnlocked(); });
+          else markUnlocked();
+        } else {
+          markUnlocked();
+        }
+        intro.classList.add('is-closing');
+        setTimeout(() => {
+          intro.hidden = true;
+          intro.classList.remove('is-closing');
+        }, 380);
+      }
 
-      // Settings modal toggle: pause immediately when muted, resume otherwise.
+      if (intro) {
+        intro.addEventListener('pointerdown', dismissIntro);
+        intro.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dismissIntro(); }
+        });
+      }
+
+      // ----- Wire-up at startup -----
+      const introShown = showIntroIfNeeded();
+      if (!introShown) {
+        // Returning from a child game (already unlocked) — try to resume
+        // immediately. iOS keeps the audio session warm in many cases.
+        tryPlay();
+      }
+
+      // Settings toggle: pause/resume on the spot.
       soundToggle.addEventListener('change', () => {
         if (isMuted()) bgm.pause();
         else tryPlay();
       });
 
-      // Tab hidden → pause to save battery and avoid background noise.
+      // Tab hidden → pause; returning → resume (only if already unlocked).
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) bgm.pause();
-        else tryPlay();
+        else if (isUnlocked()) tryPlay();
       });
     })();
 
