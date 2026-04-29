@@ -59,7 +59,7 @@ body::before {
   inset: 0;
   background:
     linear-gradient(180deg, rgba(255, 249, 236, 0.5), rgba(255, 245, 220, 0.72)),
-    url('../assets/images/quizland/title_back.jpg') center / cover no-repeat;
+    url('../assets/images/quizland/title_back.png') center / cover no-repeat;
   opacity: 0.94;
   z-index: -2;
 }
@@ -89,24 +89,44 @@ body::after {
   align-items: center;
   gap: 16px;
   justify-content: flex-start;
-  padding: 14px 18px;
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,249,236,0.88));
-  border: 1px solid rgba(214, 161, 74, 0.24);
-  box-shadow: 0 12px 28px rgba(120, 83, 20, 0.12);
+  padding: 18px 22px;
+  border-radius: 34px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.97), rgba(255,248,232,0.92)),
+    radial-gradient(circle at top left, rgba(255,255,255,0.82), transparent 40%);
+  border: 3px solid rgba(213, 171, 93, 0.32);
+  box-shadow:
+    0 16px 34px rgba(120, 83, 20, 0.14),
+    inset 0 1px 0 rgba(255,255,255,0.92);
   backdrop-filter: blur(6px);
 }
+.header::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 26px;
+  border: 1px solid rgba(236, 207, 146, 0.45);
+  pointer-events: none;
+}
 .pono-avatar {
-  width: 72px; height: 72px;
+  width: 84px; height: 84px;
   border-radius: 50%;
-  background: #fff;
-  border: 4px solid #F6C66A;
-  box-shadow: 0 6px 14px rgba(120, 83, 20, 0.16);
+  background:
+    radial-gradient(circle at top, #fffdf8 0%, #f7ebd0 74%, #e7cc8f 100%);
+  border: 5px solid #F0C46A;
+  box-shadow:
+    0 10px 22px rgba(120, 83, 20, 0.18),
+    inset 0 1px 0 rgba(255,255,255,0.92);
   overflow: hidden;
   flex-shrink: 0;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.pono-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.pono-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 26%;
+}
 .pono-avatar.jump { animation: ponojump 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes ponojump {
   0%, 100% { transform: translateY(0) scale(1); }
@@ -117,10 +137,12 @@ body::after {
   flex: 1;
   font-size: clamp(1.7rem, 2.2vw, 2.8rem);
   font-weight: 900;
-  color: #A65A13;
+  color: #A95C11;
   line-height: 1.15;
   letter-spacing: 0.02em;
-  text-shadow: 0 3px 0 rgba(255, 242, 207, 0.92);
+  text-shadow:
+    0 3px 0 rgba(255, 245, 220, 0.95),
+    0 8px 20px rgba(120, 83, 20, 0.08);
 }
 
 /* ===== HUD ===== */
@@ -130,11 +152,12 @@ body::after {
   grid-template-columns: auto auto auto minmax(140px, 1fr);
   align-items: center;
   gap: 10px;
-  background: rgba(255, 253, 247, 0.88);
-  border-radius: 22px;
-  padding: 10px 14px;
-  border: 1px solid rgba(214, 161, 74, 0.18);
-  box-shadow: 0 8px 22px rgba(120, 83, 20, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 240, 0.96), rgba(249, 235, 204, 0.92));
+  border-radius: 26px;
+  padding: 12px 16px;
+  border: 3px solid rgba(214, 161, 74, 0.22);
+  box-shadow: 0 12px 28px rgba(120, 83, 20, 0.12), inset 0 1px 0 rgba(255,255,255,0.86);
   backdrop-filter: blur(6px);
   font-size: 0.92rem;
   font-weight: 700;
@@ -145,7 +168,7 @@ body::after {
 #hud-back-btn {
   border: none;
   border-radius: 999px;
-  background: linear-gradient(180deg, #FFF9EC, #F5E2B5);
+  background: linear-gradient(180deg, #FFF9EC, #F0D9A3);
   color: #8B5A19;
   font-family: inherit;
   font-size: 0.85rem;
@@ -163,8 +186,8 @@ body::after {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 999px;
-  background: rgba(255, 247, 227, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+  background: linear-gradient(180deg, rgba(255,250,239,0.98), rgba(244,229,191,0.92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.88), 0 4px 10px rgba(120, 83, 20, 0.08);
 }
 #hud-label {
   color: #7A4D19;
@@ -199,19 +222,23 @@ body::after {
 .answer-panel {
   position: relative;
   border-radius: 34px;
-  padding: clamp(20px, 2vw, 28px);
-  border: 1px solid rgba(214, 161, 74, 0.24);
+  padding: clamp(22px, 2vw, 30px);
+  border: 4px solid rgba(176, 122, 45, 0.52);
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,236,0.88)),
-    radial-gradient(circle at top, rgba(255,255,255,0.85), transparent 55%);
-  box-shadow: 0 18px 36px rgba(120, 83, 20, 0.14);
+    linear-gradient(180deg, rgba(173, 120, 48, 0.18), rgba(173, 120, 48, 0.08)),
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,236,0.9));
+  box-shadow:
+    0 20px 38px rgba(120, 83, 20, 0.16),
+    inset 0 1px 0 rgba(255,255,255,0.76);
   overflow: hidden;
 }
 .question-panel::before,
 .answer-panel::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 8px;
+  border-radius: 26px;
+  border: 2px solid rgba(236, 206, 144, 0.72);
   background:
     radial-gradient(circle at top right, rgba(248, 193, 83, 0.14), transparent 28%),
     radial-gradient(circle at bottom left, rgba(183, 111, 32, 0.08), transparent 32%);
@@ -234,7 +261,7 @@ body::after {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #F8E6B7, #EABF6C);
+  background: linear-gradient(180deg, #F6E6B6, #DFAE55);
   color: #7A4D19;
   font-size: 0.95rem;
   font-weight: 900;
@@ -242,7 +269,7 @@ body::after {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 6px 14px rgba(120, 83, 20, 0.12);
 }
 .panel-chip--leaf {
-  background: linear-gradient(180deg, #DDEAA2, #BFD876);
+  background: linear-gradient(180deg, #D9EB95, #B2D05B);
   color: #5B6525;
 }
 .answer-guide {
@@ -253,14 +280,18 @@ body::after {
   gap: 16px;
   padding: 14px 16px;
   border-radius: 26px;
-  background: rgba(255, 252, 242, 0.92);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 242, 0.98), rgba(248, 236, 208, 0.92));
+  border: 2px solid rgba(233, 201, 135, 0.74);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.84),
+    0 8px 18px rgba(120, 83, 20, 0.08);
 }
 .answer-guide__owl {
-  width: clamp(84px, 9vw, 132px);
+  width: clamp(124px, 12vw, 188px);
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 6px 10px rgba(120, 83, 20, 0.18));
+  filter: drop-shadow(0 10px 16px rgba(120, 83, 20, 0.18));
 }
 .answer-guide__copy {
   display: flex;
@@ -280,7 +311,26 @@ body::after {
   align-items: center;
   justify-content: center;
   margin: 18px 0 18px;
-  padding-right: 66px;
+  min-height: 118px;
+  padding: 24px 78px 24px 28px;
+  border-radius: 28px;
+  border: 5px solid rgba(141, 96, 36, 0.72);
+  background:
+    radial-gradient(circle at 20% 24%, rgba(255,255,255,0.08), transparent 18%),
+    radial-gradient(circle at 76% 64%, rgba(255,255,255,0.05), transparent 20%),
+    linear-gradient(180deg, #78885e 0%, #65754f 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(238, 218, 177, 0.3),
+    inset 0 16px 24px rgba(255,255,255,0.04),
+    0 10px 18px rgba(120, 83, 20, 0.12);
+}
+.question-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 18px;
+  border: 2px solid rgba(233, 221, 184, 0.2);
+  pointer-events: none;
 }
 .question-board {
   position: relative;
@@ -290,38 +340,52 @@ body::after {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  border-radius: 30px;
-  padding: clamp(18px, 2vw, 30px);
+  border-radius: 32px;
+  padding: clamp(22px, 2vw, 34px);
   background:
-    linear-gradient(180deg, rgba(255, 253, 247, 0.98), rgba(248, 236, 206, 0.94)),
-    radial-gradient(circle at top, rgba(255,255,255,0.82), transparent 50%);
-  border: 3px solid rgba(226, 196, 132, 0.9);
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.86), inset 0 -8px 18px rgba(214, 161, 74, 0.12);
+    linear-gradient(180deg, rgba(255, 254, 248, 0.99), rgba(247, 234, 200, 0.95)),
+    radial-gradient(circle at top, rgba(255,255,255,0.88), transparent 52%);
+  border: 5px solid rgba(177, 124, 44, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 -12px 22px rgba(214, 161, 74, 0.12),
+    0 10px 22px rgba(120, 83, 20, 0.08);
+}
+.question-board::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 22px;
+  border: 2px solid rgba(228, 206, 158, 0.85);
+  pointer-events: none;
 }
 
 .question {
   font-size: clamp(1.45rem, 1.65vw, 2.15rem);
   font-weight: 900;
-  color: #6A471D;
+  color: #FFF8E5;
   text-align: center;
   line-height: 1.55;
   white-space: pre-line;
   text-wrap: balance;
+  text-shadow: 0 2px 0 rgba(54, 67, 40, 0.35);
 }
 #question-speaker {
   position: absolute;
   top: 50%;
-  right: 0;
+  right: 18px;
   transform: translateY(-50%);
-  width: 54px;
-  height: 54px;
-  border: none;
+  width: 58px;
+  height: 58px;
+  border: 3px solid rgba(132, 89, 34, 0.72);
   border-radius: 50%;
-  background: linear-gradient(180deg, #F7C453, #E99A21);
+  background: linear-gradient(180deg, #F6D27C, #CD8A2D);
   color: #fffaf0;
   font-size: 1.4rem;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(196, 122, 14, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    0 8px 18px rgba(196, 122, 14, 0.26);
   display: none;
 }
 
@@ -405,9 +469,10 @@ body::after {
 .choice-btn {
   position: relative;
   padding: 18px 16px;
-  border: 3px solid #E7CB95;
-  border-radius: 26px;
-  background: linear-gradient(180deg, #FFFDF6, #F8E7C6);
+  border: 4px solid rgba(207, 161, 83, 0.64);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, #FFFDF8, #F5E5BE);
   color: #714E24;
   font-family: inherit;
   font-size: clamp(1.15rem, 1.35vw, 1.6rem);
@@ -422,12 +487,14 @@ body::after {
   -webkit-tap-highlight-color: transparent;
   text-align: center;
   line-height: 1.35;
-  box-shadow: 0 10px 20px rgba(120, 83, 20, 0.14), inset 0 1px 0 rgba(255,255,255,0.82);
+  box-shadow:
+    0 12px 24px rgba(120, 83, 20, 0.14),
+    inset 0 1px 0 rgba(255,255,255,0.88);
 }
 @media (hover: hover) {
   .choice-btn:hover {
-    background: linear-gradient(180deg, #FFF8E7, #F6E0B1);
-    box-shadow: 0 14px 24px rgba(120, 83, 20, 0.16), inset 0 1px 0 rgba(255,255,255,0.86);
+    background: linear-gradient(180deg, #FFF8E8, #F0DBA8);
+    box-shadow: 0 16px 26px rgba(120, 83, 20, 0.16), inset 0 1px 0 rgba(255,255,255,0.9);
   }
 }
 .choice-btn:active { transform: scale(0.97); }
@@ -754,6 +821,24 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   box-shadow: 0 3px 12px rgba(255,107,157,0.3);
   animation: quizBubbleBlink 2.5s ease-in-out infinite;
 }
+.answer-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 2px solid rgba(233, 201, 135, 0.74);
+  background: linear-gradient(180deg, #FFFDF6, #F5E7BE);
+  color: #735125;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(120, 83, 20, 0.08);
+}
+.answer-note__icon {
+  font-size: 1.35rem;
+}
 
 /* ===== Start screen ===== */
 /* ===== Title (Start) Screen =====
@@ -761,7 +846,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
    端末アスペクト差は side cropping で吸収 (バー無し)。 */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
-  background: #C4D9A2 url('../assets/images/quizland/title_back.jpg') center / cover no-repeat;
+  background: #C4D9A2 url('../assets/images/quizland/title_back.png') center / cover no-repeat;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -1920,6 +2005,9 @@ function upgradeGameLayout() {
   if (title) title.textContent = 'フクロウ博士のなぞなぞ';
 
   const avatarImg = header.querySelector('.pono-avatar img');
+  if (avatarImg) {
+    avatarImg.src = '../assets/images/quizland/owl_professor_guide.png';
+  }
   if (avatarImg) avatarImg.alt = 'ポノ';
 
   const backBtn = document.getElementById('hud-back-btn');
@@ -1972,7 +2060,7 @@ function upgradeGameLayout() {
 
   const owl = document.createElement('img');
   owl.className = 'answer-guide__owl';
-  owl.src = '../assets/images/word/fukuro.png';
+  owl.src = '../assets/images/quizland/owl_professor_guide.png';
   owl.alt = '';
 
   const answerCopy = document.createElement('div');
@@ -1993,7 +2081,29 @@ function upgradeGameLayout() {
   answerPanel.appendChild(answerGuide);
   answerPanel.appendChild(choices);
 
+  const answerNote = document.createElement('div');
+  answerNote.className = 'answer-note';
+  answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>繧医￥隕九※ 縺九ｓ縺後∴縺ｦ縺ｿ繧医≧・・/span>';
+  answerPanel.appendChild(answerNote);
+
   stage.replaceChildren(questionPanel, answerPanel);
+
+  if (title) title.textContent = 'フクロウ博士のなぞなぞ';
+  if (avatarImg) avatarImg.alt = 'フクロウ博士';
+  if (backBtn) backBtn.textContent = '◀ タイトルへ';
+  if (seeds) {
+    seeds.setAttribute('aria-label', 'てもちのたね');
+    seeds.innerHTML = '🌱 <span id="hud-seeds-count">0</span>';
+  }
+  if (speaker) {
+    speaker.setAttribute('aria-label', 'もんだいを よむ');
+    speaker.textContent = '🔊';
+  }
+  if (questionText) questionText.textContent = 'よういちゅう…';
+  questionChip.textContent = 'フクロウはかせからの もんだい';
+  answerChip.textContent = 'こたえを えらぼう';
+  answerText.innerHTML = '4つの なかから<br>ぴったりの こたえを えらんでね。';
+  answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>よく見て考えてみよう！</span>';
 }
 
 function initGame() {
