@@ -2135,8 +2135,119 @@ function upgradeGameLayout() {
   answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>よく見て考えてみよう！</span>';
 }
 
+function upgradeGameLayoutV2() {
+  const shell = document.querySelector('.game-shell');
+  const header = document.querySelector('.header');
+  const hud = document.querySelector('.hud');
+  const stage = document.querySelector('.stage');
+  const questionWrap = stage && stage.querySelector('.question-wrap');
+  const stageArea = document.getElementById('stage-area');
+  const choices = document.getElementById('choices');
+  if (!shell || !header || !hud || !stage || !questionWrap || !stageArea || !choices) return;
+  if (stage.querySelector('.question-panel')) return;
+
+  const title = header.querySelector('h1');
+  if (title) {
+    title.textContent = 'フクロウ博士のなぞなぞ';
+    title.classList.add('sr-only');
+  }
+
+  const avatar = header.querySelector('.pono-avatar');
+  if (avatar) avatar.remove();
+
+  if (!header.querySelector('.header-logo')) {
+    const headerLogo = document.createElement('img');
+    headerLogo.className = 'header-logo';
+    headerLogo.src = '../assets/images/quizland/title_logo.png';
+    headerLogo.alt = 'フクロウ博士のなぞなぞ';
+    header.appendChild(headerLogo);
+  }
+
+  const backBtn = document.getElementById('hud-back-btn');
+  if (backBtn) {
+    backBtn.removeAttribute('style');
+    backBtn.setAttribute('aria-label', 'タイトルへ もどる');
+    backBtn.innerHTML = '<span class="hud-back-icon" aria-hidden="true">🏠</span><span class="hud-back-text">タイトル</span>';
+  }
+
+  const seeds = document.getElementById('hud-seeds');
+  if (seeds) {
+    const count = document.getElementById('hud-seeds-count');
+    const current = count ? count.textContent : '0';
+    seeds.removeAttribute('style');
+    seeds.setAttribute('aria-label', 'てもっている たね');
+    seeds.innerHTML = '<span aria-hidden="true">🌱</span><span id="hud-seeds-count">' + current + '</span>';
+  }
+
+  const label = document.getElementById('hud-label');
+  if (label) label.innerHTML = 'もんだい <span id="q-num">1</span> / <span id="q-total">5</span>';
+
+  questionWrap.removeAttribute('style');
+
+  const speaker = document.getElementById('question-speaker');
+  if (speaker) {
+    speaker.removeAttribute('style');
+    speaker.setAttribute('aria-label', 'もんだいを よむ');
+    speaker.textContent = '🔊';
+  }
+
+  const questionText = document.getElementById('question-text');
+  if (questionText) questionText.textContent = 'よういちゅう…';
+
+  const questionPanel = document.createElement('section');
+  questionPanel.className = 'question-panel';
+
+  const questionChip = document.createElement('div');
+  questionChip.className = 'panel-chip';
+  questionChip.textContent = 'フクロウ博士からの もんだい';
+
+  const questionBoard = document.createElement('div');
+  questionBoard.className = 'question-board';
+  questionBoard.appendChild(stageArea);
+
+  questionPanel.appendChild(questionChip);
+  questionPanel.appendChild(questionWrap);
+  questionPanel.appendChild(questionBoard);
+
+  const answerPanel = document.createElement('aside');
+  answerPanel.className = 'answer-panel';
+
+  const answerGuide = document.createElement('div');
+  answerGuide.className = 'answer-guide';
+
+  const owl = document.createElement('img');
+  owl.className = 'answer-guide__owl';
+  owl.src = '../assets/images/quizland/owl_professor_guide.png';
+  owl.alt = '';
+
+  const answerCopy = document.createElement('div');
+  answerCopy.className = 'answer-guide__copy';
+
+  const answerChip = document.createElement('div');
+  answerChip.className = 'panel-chip panel-chip--leaf';
+  answerChip.textContent = 'こたえを えらぼう';
+
+  const answerText = document.createElement('p');
+  answerText.innerHTML = '4つの なかから<br>ぴったりの こたえを えらんでね。';
+
+  answerCopy.appendChild(answerChip);
+  answerCopy.appendChild(answerText);
+  answerGuide.appendChild(owl);
+  answerGuide.appendChild(answerCopy);
+
+  answerPanel.appendChild(answerGuide);
+  answerPanel.appendChild(choices);
+
+  const answerNote = document.createElement('div');
+  answerNote.className = 'answer-note';
+  answerNote.innerHTML = '<span class="answer-note__icon">💡</span><span>よく見て かんがえてみよう！</span>';
+  answerPanel.appendChild(answerNote);
+
+  stage.replaceChildren(questionPanel, answerPanel);
+}
+
 function initGame() {
-  upgradeGameLayout();
+  upgradeGameLayoutV2();
   playlist = buildPlaylist();
   questionIdx = 0;
   correctCount = 0;
@@ -2198,7 +2309,7 @@ const MODE_TO_CATEGORIES = {
 };
 
 // タイトル画面タップ → モード選択画面へ (BGM もここで起動)
-upgradeGameLayout();
+upgradeGameLayoutV2();
 
 document.getElementById('start-screen').addEventListener('click', function() {
   ensureAudio();
