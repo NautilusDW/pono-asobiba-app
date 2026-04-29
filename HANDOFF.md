@@ -42,3 +42,5 @@
 - 2026-04-29 ・Codex が `wordmatch/forestdex.css` を再調整。生成済みフレームに対して CSS の白箱・帯・補助背景を極力削除し、HUD / 図鑑欄 / 4択 / リザルト欄を「文字と最小限の当たり判定だけ重ねる」方向へ変更。特に `memo-ribbon` は下部横長帯から右端の縦メモ枠へ移設し、`collection-card` / `detail-row` / `page-row` / `hud-chip` の背景を透明化して、生成画像の枠と二重にならないようにした。(by Codex)
 - 2026-04-30 ・Codex が `quizland/index.html` の 21:9 / 16:9 セーフエリアCSSを再調整。`game-shell` を `16:9` の実寸箱に固定し、`header` / `hud` も生成フレーム画像の比率 (`780x291`, `1879x291`) に合わせて幅と aspect-ratio を指定。さらに `max-width: 1180px` で stage を 1 カラムに落としていた条件を `900px` へ縮小し、iPad 横画面で問題パネルと回答パネルが上下に崩れないようにした。(by Codex)
 - 2026-04-30 ・Codex が `quizland/index.html` の iPad 横画面崩れを追加修正。前回の画像実寸比固定では `header` と `hud` が縦方向を取りすぎたため、`game-shell` の行配分を `14% / 12% / 残り` に固定し、横画面では `header` / `hud` をその高さへ強制的に収める override を追加。`answer-guide` と `choices` も高さ固定を外し、問題エリア内に収まるように圧縮。(by Codex)
+- 2026-04-30 ・Codex が `quizland/index.html` の iPad 横レイアウトをさらに再調整。上部2段の生成フレームがまだ高さを取りすぎていたため、`game-shell` の縦配分を `9% / 8% / 残り` に再圧縮し、タイトル札を `34%` 幅、HUDを `88%` 幅まで縮小。回答ガイド、問題帯、選択肢枠も横画面 override 内で薄くし、問題ボードと回答4択が 16:9 内に収まりやすい比率に変更。(by Codex)
+- 2026-04-30 — sw.js CACHE_VERSION 552 → 553 バンプ + Codex の上記 quizland 再調整を commit & push (by Claude)

@@ -86,8 +86,8 @@ body::after {
   height: auto;
   max-height: calc(100dvh - 16px);
   display: grid;
-  grid-template-rows: 14% 12% minmax(0, 1fr);
-  gap: 8px;
+  grid-template-rows: 9% 8% minmax(0, 1fr);
+  gap: clamp(4px, 0.7vh, 7px);
   min-height: 0;
   align-self: center;
 }
@@ -117,7 +117,7 @@ body::after {
    占有してしまう問題への対応 (2026-04-29 v549 → v550)。 */
 .header {
   position: relative;
-  width: min(50%, 780px);
+  width: min(34%, 540px);
   height: 100%;
   justify-self: start;
   display: flex;
@@ -125,7 +125,7 @@ body::after {
   justify-content: flex-start;
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(4px, 0.8vh, 14px) clamp(10px, 1.2vw, 18px);
+  padding: clamp(3px, 0.5vh, 8px) clamp(8px, 1vw, 14px);
   background: url('../assets/images/quizland/ui_title_frame.png') center / 100% 100% no-repeat;
   overflow: hidden;
 }
@@ -135,9 +135,9 @@ body::after {
 .header-logo {
   position: relative;
   z-index: 1;
-  width: min(44%, 330px);
-  max-height: 72%;
-  margin-left: clamp(8px, 1vw, 16px);
+  width: min(68%, 320px);
+  max-height: 84%;
+  margin-left: clamp(6px, 0.9vw, 14px);
   object-fit: contain;
   filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.12));
 }
@@ -145,7 +145,7 @@ body::after {
 /* ===== HUD ===== */
 .hud {
   position: relative;
-  width: min(94%, 1360px);
+  width: min(88%, 1260px);
   height: 100%;
   justify-self: center;
   display: grid;
@@ -154,7 +154,7 @@ body::after {
   gap: clamp(6px, 1.2vw, 18px);
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(4px, 0.75vh, 14px) clamp(10px, 1.6vw, 24px);
+  padding: clamp(3px, 0.45vh, 8px) clamp(9px, 1.3vw, 20px);
   /* 生成画像のフレームのみ。 box-shadow / border-radius は画像が持っているので CSS では足さない。 */
   background: url('../assets/images/quizland/ui_header_frame.png') center / 100% 100% no-repeat;
   font-size: clamp(0.68rem, 1.6vh, 0.92rem);
@@ -797,27 +797,27 @@ body::after {
     width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
     height: auto;
     max-height: calc(100dvh - 16px);
-    grid-template-rows: 14% 12% minmax(0, 1fr);
-    gap: clamp(4px, 1vh, 8px);
+    grid-template-rows: 9% 8% minmax(0, 1fr);
+    gap: clamp(4px, 0.7vh, 7px);
   }
   .header {
-    width: min(50%, 780px);
+    width: min(34%, 540px);
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    padding: clamp(4px, 0.8vh, 10px) clamp(10px, 1.2vw, 18px);
+    padding: clamp(3px, 0.5vh, 8px) clamp(8px, 1vw, 14px);
     background-size: 100% 100%;
   }
   .header-logo {
-    width: min(42%, 320px);
-    max-height: 72%;
+    width: min(68%, 320px);
+    max-height: 84%;
   }
   .hud {
-    width: min(94%, 1360px);
+    width: min(88%, 1260px);
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    padding: clamp(4px, 0.7vh, 10px) clamp(10px, 1.4vw, 22px);
+    padding: clamp(3px, 0.45vh, 8px) clamp(9px, 1.3vw, 20px);
   }
   #hud-back-btn,
   #hud-label,
@@ -827,8 +827,8 @@ body::after {
   .stage {
     min-height: 0;
     height: 100%;
-    grid-template-columns: minmax(0, 1.36fr) minmax(280px, 0.94fr);
-    gap: clamp(10px, 1.3vw, 20px);
+    grid-template-columns: minmax(0, 1.42fr) minmax(260px, 0.9fr);
+    gap: clamp(8px, 1.1vw, 18px);
   }
   .question-panel,
   .answer-panel {
@@ -837,37 +837,37 @@ body::after {
     padding: clamp(8px, 0.9vw, 14px);
   }
   .question-panel {
-    gap: clamp(6px, 1vh, 10px);
+    gap: clamp(5px, 0.8vh, 9px);
   }
   .answer-panel {
-    gap: clamp(6px, 1vh, 10px);
+    gap: clamp(5px, 0.8vh, 9px);
   }
   .panel-chip {
     min-height: clamp(28px, 5vh, 38px);
     font-size: clamp(0.72rem, 1.45vh, 0.88rem);
   }
   .question-wrap {
-    min-height: clamp(58px, 12vh, 92px);
-    margin: 4px 0 6px;
-    padding: clamp(12px, 1.8vh, 20px) clamp(56px, 4vw, 72px) clamp(12px, 1.8vh, 20px) clamp(18px, 1.8vw, 28px);
+    min-height: clamp(48px, 8vh, 76px);
+    margin: 2px 0 4px;
+    padding: clamp(8px, 1.2vh, 16px) clamp(46px, 3.4vw, 64px) clamp(8px, 1.2vh, 16px) clamp(16px, 1.6vw, 24px);
   }
   .question-board {
     flex: 1 1 auto;
     min-height: 0;
-    padding: clamp(14px, 1.4vw, 24px);
+    padding: clamp(12px, 1.2vw, 22px);
   }
   #stage-area {
     min-height: 0;
     height: 100%;
   }
   .answer-guide {
-    flex: 0 0 clamp(82px, 20%, 132px);
+    flex: 0 0 clamp(64px, 14%, 104px);
     min-height: 0;
     margin: 0 4px;
-    padding: clamp(10px, 1.1vw, 14px) clamp(10px, 1.2vw, 16px) clamp(10px, 1.1vw, 14px) clamp(96px, 9vw, 128px);
+    padding: clamp(8px, 0.9vw, 12px) clamp(10px, 1.2vw, 16px) clamp(8px, 0.9vw, 12px) clamp(74px, 7vw, 104px);
   }
   .answer-guide__owl {
-    width: clamp(78px, 8vw, 124px);
+    width: clamp(58px, 6.4vw, 92px);
   }
   .answer-guide__copy {
     gap: 6px;
@@ -880,7 +880,7 @@ body::after {
     flex: 1 1 auto;
     min-height: 0;
     height: auto;
-    padding: clamp(16px, 1.8vw, 24px) clamp(16px, 1.8vw, 24px) clamp(18px, 2vw, 28px);
+    padding: clamp(12px, 1.5vw, 20px) clamp(12px, 1.5vw, 20px) clamp(14px, 1.7vw, 22px);
     gap: clamp(8px, 1vw, 12px);
   }
   .choice-btn {
