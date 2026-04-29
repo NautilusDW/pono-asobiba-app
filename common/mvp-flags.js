@@ -50,7 +50,27 @@
       '#stampCardSection,',
       /* ボトムナビの 📋 スタンプ / 🏠 おうち ボタン */
       '.bottom-nav .bn-item[data-action="stamp"],',
-      '.bottom-nav .bn-item[data-action="room"]',
+      '.bottom-nav .bn-item[data-action="room"],',
+      /* 達成・到達目標・進捗系の煽り UI ('あと N で〇〇マスター' など) */
+      '#ach-next-hint,',
+      '.ach-next-hint,',
+      '.ach-popup,',
+      '.ach-progress,',
+      '.achievement-hint,',
+      '.achievement-progress,',
+      '.mastery-target,',
+      '.target-progress,',
+      '.next-reward,',
+      '.login-streak,',
+      '.streak-banner,',
+      '.milestone-banner,',
+      '.daily-progress,',
+      '.daily-progress-bar,',
+      /* ゲーム HUD の N/Total 風進捗 (ゲーム動作に必須でないバナー) */
+      '.flower-enc-progress,',
+      '.hud-mastery,',
+      '.hud-target,',
+      '.progress-banner',
       '{ display: none !important; }'
     ].join('\n');
     var s = document.createElement('style');
