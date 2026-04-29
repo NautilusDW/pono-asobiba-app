@@ -242,6 +242,32 @@ input[type="file"]::file-selector-button {
     </div>
     <div style="font-size:0.75rem; color:#9aa; margin-top:4px;">↖ 選択モードで Delete/Backspace キー → 選択中のマーカー/中間点を削除</div>
 
+    <!-- Phase 3.5: お邪魔虫の種類 (creature モード時のみ表示) -->
+    <div class="kind-panel" id="kindPanelCreature" style="display:none; margin-top:6px;">
+      <div style="font-size:0.78rem; color:#cfa; margin-bottom:3px;">おじゃま虫の しゅるい:</div>
+      <div class="mode-row">
+        <button class="btn kind-btn active" data-creature-kind="mayoi"  style="background:#5a3a7a; color:#e6c8ff;">🐛 まよい</button>
+        <button class="btn kind-btn"        data-creature-kind="odoke"  style="background:#5a3a7a; color:#e6c8ff;">🐞 おどけ</button>
+        <button class="btn kind-btn"        data-creature-kind="nemuri" style="background:#5a3a7a; color:#e6c8ff;">😴 ねむり</button>
+        <button class="btn kind-btn"        data-creature-kind="pyon"   style="background:#5a3a7a; color:#e6c8ff;">🦗 ぴょん</button>
+      </div>
+      <div style="font-size:0.7rem; color:#9aa; margin-top:2px;">
+        まよい=じゃんけん / おどけ=○×クイズ / ねむり=シルエット / ぴょん=リズム模倣
+      </div>
+    </div>
+
+    <!-- Phase 3.5: 障害物の種類 (obstacle モード時のみ表示) -->
+    <div class="kind-panel" id="kindPanelObstacle" style="display:none; margin-top:6px;">
+      <div style="font-size:0.78rem; color:#fca; margin-bottom:3px;">障害物の しゅるい:</div>
+      <div class="mode-row">
+        <button class="btn kind-btn active" data-obstacle-kind="rock"  style="background:#5a3e1f; color:#e6cca8;">🪨 いし</button>
+        <button class="btn kind-btn"        data-obstacle-kind="tree"  style="background:#5a3e1f; color:#e6cca8;">🌳 き</button>
+        <button class="btn kind-btn"        data-obstacle-kind="stump" style="background:#5a3e1f; color:#e6cca8;">🪵 きりかぶ</button>
+        <button class="btn kind-btn"        data-obstacle-kind="hole"  style="background:#5a3e1f; color:#e6cca8;">⚫ あな</button>
+        <button class="btn kind-btn"        data-obstacle-kind="pond"  style="background:#5a3e1f; color:#e6cca8;">💧 みずうみ</button>
+      </div>
+    </div>
+
     <h3>スナップ</h3>
     <div class="mode-row">
       <button class="btn active" data-snap="cell" id="snapCellBtn">⬛ マス中心</button>
@@ -410,12 +436,15 @@ const state = {
   tiles: makeEmptyGrid(), // 'wall' | 'path'
   start: null,            // { x, y } in PIXEL coords (free positioning, not grid-snapped)
   goal:  null,            // same — pixel coords
-  creatures: [],          // [{ x, y }] お邪魔虫マーカー (PIXEL coords)
+  creatures: [],          // [{ x, y, kind:'mayoi'|'odoke'|'nemuri'|'pyon' }] お邪魔虫マーカー (PIXEL coords)
+                          // Phase 3.5: kind を持って、配置時に selectedCreatureKind を採用
   waypoints: [],          // [{ x, y, kind:'branch'|'deadend'|'manual' }] 中継ノード (PIXEL coords)
   edges: [],              // [{ polyline: [{x,y},{x,y},...] }] ノード間の道筋 (PIXEL coords)
                           // ラフ→エディタ統合 Phase 2: maze runtime に渡すグラフ情報の出口
-  obstacles: [],          // [{ x, y, kind:'rock'|'tree'|'stump'|'hole' }] 障害物 (PIXEL coords)
+  obstacles: [],          // [{ x, y, kind:'rock'|'tree'|'stump'|'hole'|'pond' }] 障害物 (PIXEL coords)
                           // Phase 3: maze runtime の obstacles[] に対応
+  selectedCreatureKind: 'mayoi',  // Phase 3.5: お邪魔虫モードでの配置時の種類
+  selectedObstacleKind: 'rock',   // Phase 3.5: 障害物モードでの配置時の種類
   panels: 1,              // 1 (1920×1080) or 2 (3840×1080, side-by-side stage)
   cellStride: 2,          // last-generated cellStride — 2 (1-tile path), 3 (2-tile path)
                           // determines marker radius (smaller for 1-tile paths so they
@@ -1268,7 +1297,7 @@ cv.addEventListener('pointerdown', function(e) {
   }
   if (state.mode === 'creature') {
     const snap = _snapMarker(p.x, p.y);
-    state.creatures.push({ x: snap.x, y: snap.y });
+    state.creatures.push({ x: snap.x, y: snap.y, kind: state.selectedCreatureKind || 'mayoi' });
     afterEdit();
     return;
   }
@@ -1280,7 +1309,7 @@ cv.addEventListener('pointerdown', function(e) {
   }
   if (state.mode === 'obstacle') {
     const snap = _snapMarker(p.x, p.y);
-    state.obstacles.push({ x: snap.x, y: snap.y, kind: 'rock' });
+    state.obstacles.push({ x: snap.x, y: snap.y, kind: state.selectedObstacleKind || 'rock' });
     afterEdit();
     return;
   }
@@ -1457,6 +1486,14 @@ function afterEdit() {
 // ────────────────────────────────────────────────────────
 // Mode + brush switching
 // ────────────────────────────────────────────────────────
+// Phase 3.5: モード切替に応じて kind パネルの表示/非表示を切り替える
+function _updateKindPanelVisibility() {
+  const cp = document.getElementById('kindPanelCreature');
+  const op = document.getElementById('kindPanelObstacle');
+  if (cp) cp.style.display = (state.mode === 'creature') ? '' : 'none';
+  if (op) op.style.display = (state.mode === 'obstacle') ? '' : 'none';
+}
+
 document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
   b.addEventListener('click', function() {
     state.mode = b.dataset.mode;
@@ -1469,9 +1506,30 @@ document.querySelectorAll('.btn[data-mode]').forEach(function(b) {
       state.selection = null;
       draw();
     }
+    _updateKindPanelVisibility();
     showBanner('モード: ' + b.textContent.trim());
   });
 });
+
+// Phase 3.5: 種類サブボタンのクリックで selectedXxxKind を更新 + active クラス切替
+document.querySelectorAll('.kind-btn[data-creature-kind]').forEach(function(b) {
+  b.addEventListener('click', function() {
+    state.selectedCreatureKind = b.dataset.creatureKind;
+    document.querySelectorAll('.kind-btn[data-creature-kind]').forEach(function(x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    showBanner('お邪魔虫: ' + b.textContent.trim());
+  });
+});
+document.querySelectorAll('.kind-btn[data-obstacle-kind]').forEach(function(b) {
+  b.addEventListener('click', function() {
+    state.selectedObstacleKind = b.dataset.obstacleKind;
+    document.querySelectorAll('.kind-btn[data-obstacle-kind]').forEach(function(x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    showBanner('障害物: ' + b.textContent.trim());
+  });
+});
+// 初期状態のパネル可視を反映 (state.mode はデフォルト 'select' なので両方非表示)
+_updateKindPanelVisibility();
 
 // Delete / Backspace で選択中のマーカー or 中間点を削除 (= ↖ 選択ツール専用)
 window.addEventListener('keydown', function(ev) {
