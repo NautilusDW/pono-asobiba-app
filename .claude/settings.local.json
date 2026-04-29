@@ -32,7 +32,11 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Bash(mkdir -p .claude)",
-      "Bash(touch .claude/.docs-skip-once)"
+      "Bash(touch .claude/.docs-skip-once)",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:community.openai.com)",
+      "WebFetch(domain:memu.pro)",
+      "WebFetch(domain:rajiv.com)"
     ]
   },
   "hooks": {
