@@ -20,6 +20,7 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-04-29 — play.html の oto / bento / puzzle カード調整。丸サムネと紙オーバーレイの見せ位置を個別化し、タイトル色を3件ぶん変更。`ポノの` / `ポノと` の助詞だけ小さくする補正を追加。 (by Codex)
 - 2026-04-29 — タイトル画面 3 ゲーム改修完了 (puzzle 縦長 BG2 + oto/bento ロゴ右寄せ + ボタン下配置) (by Codex, commit `13739bb`)
 - 2026-04-29 — Codex 上書き後の puzzle/title_back2.jpg を再最適化 (1520×2688/1036KB → 1130×2000/608KB)。 Codex は AGENTS.md §5 の `auto_optimize_image.py` を通していなかった (by Claude)
 - 2026-04-29 — auto_optimize_image.py の手動モードのデフォルトを「拡張子保持で安全」 に変更。 alpha なし PNG を JPG に rename したい場合のみ `--allow-jpeg-rename` を opt-in する形に変更 (Codex 指摘の透明 PNG 誤変換リスクを排除) (by Claude)
