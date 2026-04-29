@@ -1,3 +1,9 @@
+# CLAUDE.md (Claude Code 専用ファイル)
+
+> **共通の AI 運用ルール（Cloudflare Workers 配信、Netlify 廃止、デプロイブランチ運用、画像最適化、sw.js CACHE_VERSION バンプ規約、機密ファイル取り扱い、担当領域マトリクス、など）の正本は [AGENTS.md](./AGENTS.md) です。** 本ファイルには Claude Code 固有の運用 (Self-Evolving Framework / orchestrator.py / MEMORY.md / 推奨 ECC スキル等) のみを記述します。
+>
+> 暗黙ルールについては必ず先に AGENTS.md を確認し、 矛盾を見つけたら AGENTS.md 側を正として CLAUDE.md を直すこと。
+
 # Self-Evolving Framework
 
 このプロジェクトには Self-Evolving Framework が統合されています。
