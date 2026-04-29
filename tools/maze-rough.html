@@ -325,6 +325,62 @@ input[type="file"]::file-selector-button {
       <button class="btn danger" id="resetBtn">↺ ぜんぶリセット</button>
     </div>
 
+    <!-- ===== Phase 4: 本番画像取り込み + 本番保存 ===== -->
+    <h3 style="margin-top:14px; padding-top:8px; border-top:2px dashed #555;">🎨 Phase 4: 本番化</h3>
+    <div style="font-size:0.74rem; color:#9aa; margin-bottom:6px; line-height:1.5;">
+      AI で生成した本番画像を取り込み、 ラフのマーカー位置を自動変換して
+      <code style="color:#a4c76d;">maze/imageStages/&lt;name&gt;.json</code>
+      に直接保存します。
+    </div>
+
+    <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
+      <label class="btn" style="flex:1; cursor:pointer; text-align:center; font-size:0.78rem;">
+        📷 本番画像を読込
+        <input type="file" id="prodImageInput" accept="image/*" style="display:none;">
+      </label>
+      <button class="btn" id="prodImageClearBtn" style="flex:0 0 auto; font-size:0.78rem; padding:6px 8px;" title="本番画像を外す">✕</button>
+    </div>
+    <div id="prodImageStatus" style="font-size:0.72rem; color:#9aa; margin-bottom:6px; min-height:1em;">未取込</div>
+    <div style="display:flex; gap:4px; align-items:center; font-size:0.78rem; margin-bottom:6px;">
+      <label style="flex:0 0 auto;">背景透過度:</label>
+      <input type="range" id="prodImageOpacity" min="0" max="100" value="60" style="flex:1;">
+      <span id="prodImageOpacityVal" style="flex:0 0 auto; color:#9aa;">60%</span>
+    </div>
+
+    <h4 style="font-size:0.78rem; margin:10px 0 4px; color:#cfa;">ステージ情報</h4>
+    <div style="display:flex; gap:4px; margin-bottom:4px;">
+      <input type="text" id="prodStageName" placeholder="ステージ名 (例: forest_entrance)"
+             style="flex:1; padding:5px 6px; font-size:0.76rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+      <input type="number" id="prodStageOrder" min="1" max="99" placeholder="No"
+             style="flex:0 0 56px; padding:5px 6px; font-size:0.76rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+    </div>
+
+    <h4 style="font-size:0.78rem; margin:10px 0 4px; color:#cfa;">物語 (story)</h4>
+    <div style="display:flex; gap:4px; margin-bottom:4px;">
+      <select id="prodStoryAnimal" style="flex:1; padding:5px 6px; font-size:0.76rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+        <option value="">— 動物を選択 —</option>
+        <option value="risu">risu (りすちゃん)</option>
+        <option value="inu">inu (わんちゃん)</option>
+        <option value="ahiru">ahiru (あひるさん)</option>
+        <option value="shika">shika (しかさん)</option>
+        <option value="lesser_panda">lesser_panda (パンダちゃん)</option>
+        <option value="neko">neko (ねこさん)</option>
+      </select>
+      <input type="text" id="prodStoryAnimalLabel" placeholder="表示名 (例: りすちゃん)"
+             style="flex:1; padding:5px 6px; font-size:0.76rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px;">
+    </div>
+    <textarea id="prodStoryIntro" placeholder="導入セリフ (例: もりで りすちゃんが ないて いるよ。たすけに いこう！)"
+              rows="2" style="width:100%; padding:5px 6px; font-size:0.74rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px; margin-bottom:4px; resize:vertical; font-family:inherit;"></textarea>
+    <textarea id="prodStoryRescue" placeholder="救出時の動物セリフ"
+              rows="2" style="width:100%; padding:5px 6px; font-size:0.74rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px; margin-bottom:4px; resize:vertical; font-family:inherit;"></textarea>
+    <textarea id="prodStoryPono" placeholder="ポノのひとこと"
+              rows="1" style="width:100%; padding:5px 6px; font-size:0.74rem; background:#333; color:#eee; border:1px solid #555; border-radius:4px; margin-bottom:6px; resize:vertical; font-family:inherit;"></textarea>
+
+    <button class="btn" id="commitProdBtn" disabled style="width:100%; padding:10px; font-size:0.85rem; background:#3a6c1f; color:#fff; opacity:0.5;">
+      💾 本番に保存 (準備中…)
+    </button>
+    <div id="commitProdStatus" style="font-size:0.72rem; color:#9aa; margin-top:4px; min-height:1em;"></div>
+
     <h3>📁 ステージ管理 (ブラウザ内)</h3>
     <div style="display:flex; gap:4px; margin-bottom:6px;">
       <input type="text" id="saveNameInput" placeholder="ステージ名 (例: 森の入り口)"
@@ -445,6 +501,11 @@ const state = {
                           // Phase 3: maze runtime の obstacles[] に対応
   selectedCreatureKind: 'mayoi',  // Phase 3.5: お邪魔虫モードでの配置時の種類
   selectedObstacleKind: 'rock',   // Phase 3.5: 障害物モードでの配置時の種類
+  // Phase 4: 本番画像。 AI 生成画像を <img> として持ち、 ラフキャンバスに重ねて表示。
+  // 本番保存時はこの画像を 1600w Q70 JPEG に圧縮して maze/imageStages/<name>.jpg に PUT、
+  // viewBox は naturalWidth × naturalHeight。 マーカー座標はラフ canvas px → image px に変換。
+  prodImage: null,                // HTMLImageElement (loaded) | null
+  prodImageOpacity: 0.6,          // 0..1 — ラフキャンバス上に重ねる時の透明度
   panels: 1,              // 1 (1920×1080) or 2 (3840×1080, side-by-side stage)
   cellStride: 2,          // last-generated cellStride — 2 (1-tile path), 3 (2-tile path)
                           // determines marker radius (smaller for 1-tile paths so they
@@ -844,6 +905,14 @@ function draw() {
   // 参考画像 (drag-drop で読込んだ下絵) があれば最背面に描画
   if (state.refImage && state.refImage.complete && state.refImage.naturalWidth > 0) {
     ctx.drawImage(state.refImage, 0, 0, CANVAS_W, CANVAS_H);
+  }
+  // Phase 4: 本番画像 (AI 生成) があれば ref の上に半透明で重ねる。
+  // 配置確認用 — 完全表示すると下のタイル/マーカーが見えなくなるので opacity を可変に。
+  if (state.prodImage && state.prodImage.complete && state.prodImage.naturalWidth > 0) {
+    ctx.save();
+    ctx.globalAlpha = state.prodImageOpacity != null ? state.prodImageOpacity : 0.6;
+    ctx.drawImage(state.prodImage, 0, 0, CANVAS_W, CANVAS_H);
+    ctx.restore();
   }
   // Background — alternating green (refImage がある時は半透明、無ければ不透明)
   const wallA = state.refImage ? 'rgba(122, 181, 64, 0.42)' : COLOR_WALL;
@@ -1833,6 +1902,340 @@ document.getElementById('exportJsonBtn').addEventListener('click', function() {
 // ────────────────────────────────────────────────────────
 // JSON load
 // ────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────
+// Phase 4: 本番画像取り込み (AI 生成画像をラフキャンバスに重ねる)
+// ────────────────────────────────────────────────────────
+(function () {
+  const input  = document.getElementById('prodImageInput');
+  const clear  = document.getElementById('prodImageClearBtn');
+  const opSld  = document.getElementById('prodImageOpacity');
+  const opVal  = document.getElementById('prodImageOpacityVal');
+  const status = document.getElementById('prodImageStatus');
+  const commit = document.getElementById('commitProdBtn');
+  if (!input) return;
+
+  function refreshCommitEnabled() {
+    if (!commit) return;
+    const ok = !!(state.prodImage && state.prodImage.complete && state.prodImage.naturalWidth > 0);
+    commit.disabled = !ok;
+    commit.style.opacity = ok ? '1' : '0.5';
+    commit.textContent = ok ? '💾 本番に保存' : '💾 本番に保存 (画像未取込)';
+  }
+
+  input.addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      const img = new Image();
+      img.onload = function () {
+        state.prodImage = img;
+        if (status) {
+          status.textContent = '✅ 取込済 ' + img.naturalWidth + '×' + img.naturalHeight +
+                               ' (' + Math.round(f.size / 1024) + ' KB)';
+          status.style.color = '#a4c76d';
+        }
+        refreshCommitEnabled();
+        draw();
+      };
+      img.onerror = function () {
+        if (status) {
+          status.textContent = '✗ 画像のデコードに失敗';
+          status.style.color = '#e88';
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+    // 同じファイルを再取込できるよう value をクリア
+    input.value = '';
+  });
+
+  if (clear) clear.addEventListener('click', function () {
+    state.prodImage = null;
+    if (status) { status.textContent = '未取込'; status.style.color = '#9aa'; }
+    refreshCommitEnabled();
+    draw();
+  });
+
+  if (opSld) {
+    opSld.addEventListener('input', function () {
+      const v = parseInt(opSld.value, 10) || 0;
+      state.prodImageOpacity = Math.max(0, Math.min(100, v)) / 100;
+      if (opVal) opVal.textContent = v + '%';
+      draw();
+    });
+  }
+
+  refreshCommitEnabled();
+})();
+
+// Phase 4: animal セレクトと表示名のオートフィル
+(function () {
+  const sel = document.getElementById('prodStoryAnimal');
+  const lab = document.getElementById('prodStoryAnimalLabel');
+  if (!sel || !lab) return;
+  const ANIMAL_LABELS = {
+    risu: 'りすちゃん', inu: 'わんちゃん', ahiru: 'あひるさん',
+    shika: 'しかさん', lesser_panda: 'パンダちゃん', neko: 'ねこさん',
+  };
+  sel.addEventListener('change', function () {
+    if (lab.value && lab.value !== '') return; // 既に手入力ある時は触らない
+    lab.value = ANIMAL_LABELS[sel.value] || '';
+  });
+})();
+
+// ────────────────────────────────────────────────────────
+// Phase 4: 本番保存 — ラフ → image-stage 形式変換 + GitHub commit
+// ────────────────────────────────────────────────────────
+(function () {
+  const REPO_OWNER = 'NautilusDW';
+  const REPO_NAME  = 'pono-asobiba-app';
+  const REPO_BRANCH = 'develop';
+
+  // UTF-8 セーフな btoa (日本語ステージ名対応)
+  function utf8Btoa(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  async function ghGet(path) {
+    const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' +
+                encodeURI(path) + '?ref=' + REPO_BRANCH;
+    const resp = await fetch(url, {
+      method: 'GET', credentials: 'include',
+      headers: { 'Accept': 'application/vnd.github+json' },
+    });
+    if (resp.status === 404) return null;
+    if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
+    return await resp.json();
+  }
+
+  async function ghPut(path, contentB64, message, sha) {
+    const url = '/api/gh/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' + encodeURI(path);
+    const body = { message: message, content: contentB64, branch: REPO_BRANCH };
+    if (sha) body.sha = sha;
+    const resp = await fetch(url, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 300));
+    return await resp.json();
+  }
+
+  // 本番画像を 1600w / Q70 JPEG に圧縮し data URL を返す
+  function compressImageToDataURL(img, maxW, quality) {
+    const w0 = img.naturalWidth, h0 = img.naturalHeight;
+    if (!w0 || !h0) return null;
+    const w = Math.min(w0, maxW || 1600);
+    const h = Math.round(h0 * (w / w0));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', quality || 0.7);
+  }
+
+  // ラフ座標 (rough canvas px) → 本番画像座標 (viewBox px) のスケール係数
+  function _coordTransform(img) {
+    return {
+      sx: img.naturalWidth  / CANVAS_W,
+      sy: img.naturalHeight / CANVAS_H,
+    };
+  }
+
+  // 最寄りノードを探す (端点 → from/to id 紐付け用)
+  function _findNearestNodeId(pt, nodes) {
+    let best = null, bestD = Infinity;
+    for (const n of nodes) {
+      const d = Math.hypot(pt.x - n.x, pt.y - n.y);
+      if (d < bestD) { bestD = d; best = n.id; }
+    }
+    return best;
+  }
+
+  // ラフ state → image-stage 形式の def を組み立てる
+  function buildImageStageDef(stageName, stageOrder) {
+    const img = state.prodImage;
+    if (!img) throw new Error('本番画像が未取込');
+    const { sx, sy } = _coordTransform(img);
+    const tx = function (p) { return { x: Math.round(p.x * sx), y: Math.round(p.y * sy) }; };
+
+    // ノード組み立て (start / goal / stop1..)
+    const nodes = [];
+    if (state.goal)  nodes.push(Object.assign({ id: 'goal',  kind: 'goal'  }, tx(state.goal)));
+    if (state.start) nodes.push(Object.assign({ id: 'start', kind: 'start' }, tx(state.start)));
+    state.waypoints.forEach(function (w, i) {
+      nodes.push(Object.assign({ id: 'stop' + (i + 1), kind: 'stop' }, tx(w)));
+    });
+
+    // エッジ組み立て (polyline 端点を最寄りノードに紐付け)
+    const edges = state.edges.map(function (e) {
+      if (!e.polyline || e.polyline.length < 2) return null;
+      const poly = e.polyline.map(tx);
+      const from = _findNearestNodeId(poly[0], nodes);
+      const to   = _findNearestNodeId(poly[poly.length - 1], nodes);
+      if (!from || !to || from === to) return null;
+      return { from: from, to: to, polyline: poly };
+    }).filter(Boolean);
+
+    // obstacles / creatures は kind 含めて座標変換のみ
+    const obstacles = state.obstacles.map(function (o) {
+      const t = tx(o);
+      return { kind: o.kind || 'rock', x: t.x, y: t.y };
+    });
+    const creatures = state.creatures.map(function (c) {
+      const t = tx(c);
+      return { kind: c.kind || 'mayoi', x: t.x, y: t.y };
+    });
+
+    // story は UI からの入力
+    const animal = (document.getElementById('prodStoryAnimal').value || '').trim();
+    const animalLabel = (document.getElementById('prodStoryAnimalLabel').value || '').trim();
+    const intro = (document.getElementById('prodStoryIntro').value || '').trim();
+    const rescue = (document.getElementById('prodStoryRescue').value || '').trim();
+    const pono = (document.getElementById('prodStoryPono').value || '').trim();
+    const story = {};
+    if (animal) story.animal = animal;
+    if (animalLabel) story.animalLabel = animalLabel;
+    if (intro) story.intro = intro;
+    if (animal) {
+      // Phase 3.5 で配置済の動物素材パスを既定値に
+      story.cryingIconUrl = 'imageStages/animals/' + animal + '_02.png';
+      story.reliefIconUrl = 'imageStages/animals/' + animal + '_goal.png';
+    }
+    if (rescue) story.rescueStory = rescue;
+    if (pono) story.ponoComment = pono;
+
+    return {
+      type: 'image',
+      name: stageName,
+      imageUrl: 'imageStages/' + stageName + '.jpg',
+      viewBox: { w: img.naturalWidth, h: img.naturalHeight },
+      orientation: 'landscape',
+      cameraFollow: true,
+      lantern: false,
+      story: Object.keys(story).length ? story : undefined,
+      obstacles: obstacles,
+      creatures: creatures,
+      nodes: nodes,
+      edges: edges,
+    };
+  }
+
+  function _setStatus(msg, color) {
+    const el = document.getElementById('commitProdStatus');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.color = color || '#9aa';
+  }
+
+  const commitBtn = document.getElementById('commitProdBtn');
+  if (!commitBtn) return;
+  commitBtn.addEventListener('click', async function () {
+    if (commitBtn.disabled) return;
+    const rawName = (document.getElementById('prodStageName').value || '').trim();
+    const stageNum = parseInt(document.getElementById('prodStageOrder').value, 10);
+    if (!rawName) { alert('ステージ名を入力してね'); return; }
+    if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 99) {
+      alert('ステージ番号は 1〜99 で指定してね'); return;
+    }
+    const safeName = rawName.replace(/[^a-zA-Z0-9_\-]/g, function (ch) {
+      // 日本語ファイル名 — そのまま許可 (既存 forest.json と同様、 GitHub OK)
+      return ch.match(/[぀-ヿ一-鿿々]/) ? ch : '_';
+    }).slice(0, 60);
+
+    let def;
+    try { def = buildImageStageDef(safeName, stageNum); }
+    catch (e) { alert('変換失敗: ' + (e.message || e)); return; }
+
+    if (!def.nodes.find(function (n) { return n.kind === 'start'; })) {
+      if (!confirm('スタートノードがありません。 このまま保存しますか?')) return;
+    }
+    if (!def.nodes.find(function (n) { return n.kind === 'goal'; })) {
+      if (!confirm('ゴールノードがありません。 このまま保存しますか?')) return;
+    }
+
+    commitBtn.disabled = true;
+    const origLabel = commitBtn.textContent;
+    commitBtn.textContent = '⏳ 保存中…';
+    _setStatus('① 重複チェック中…', '#9aa');
+
+    try {
+      const indexPath = 'maze/imageStages/_index.json';
+      const idxBefore = await ghGet(indexPath);
+      if (idxBefore && idxBefore.content) {
+        try {
+          const decoded = atob(idxBefore.content.replace(/\s+/g, ''));
+          const parsed = JSON.parse(decodeURIComponent(escape(decoded)));
+          const existing = parsed && parsed.overrides && parsed.overrides[String(stageNum)];
+          if (existing && existing !== safeName) {
+            if (!confirm('⚠ スロット ' + stageNum + ' は既に「' + existing + '」が登録されています。\n\n「' + safeName + '」で上書きしますか?')) {
+              commitBtn.disabled = false; commitBtn.textContent = origLabel; _setStatus('キャンセル', '#aa8'); return;
+            }
+          }
+        } catch (e) { /* ignore parse error */ }
+      }
+
+      // ① 画像を圧縮 → JPEG として PUT
+      _setStatus('② 画像を圧縮 + 保存中…', '#9aa');
+      const dataUrl = compressImageToDataURL(state.prodImage, 1600, 0.7);
+      if (!dataUrl || dataUrl.indexOf('data:image/jpeg') !== 0) {
+        throw new Error('画像の圧縮に失敗');
+      }
+      const imgB64 = dataUrl.split(',', 2)[1];
+      const imgPath = 'maze/imageStages/' + safeName + '.jpg';
+      const existingImg = await ghGet(imgPath);
+      await ghPut(imgPath, imgB64,
+        'maze: image stage ' + safeName + ' の画像更新 (1600px Q70 from rough)',
+        existingImg ? existingImg.sha : null);
+
+      // ② JSON を PUT
+      _setStatus('③ JSON を保存中…', '#9aa');
+      const jsonPath = 'maze/imageStages/' + safeName + '.json';
+      const jsonStr = JSON.stringify(def, null, 2);
+      const existingJson = await ghGet(jsonPath);
+      await ghPut(jsonPath, utf8Btoa(jsonStr),
+        'maze: image stage ' + safeName + ' を rough から保存 (slot ' + stageNum + ')',
+        existingJson ? existingJson.sha : null);
+
+      // ③ _index.json overrides を更新
+      _setStatus('④ index 更新中…', '#9aa');
+      const existingIdx = await ghGet(indexPath);
+      let indexObj = { overrides: {} };
+      if (existingIdx && existingIdx.content) {
+        try {
+          const decoded = atob(existingIdx.content.replace(/\s+/g, ''));
+          const parsed = JSON.parse(decodeURIComponent(escape(decoded)));
+          if (parsed && typeof parsed === 'object') {
+            indexObj = parsed;
+            if (!indexObj.overrides) indexObj.overrides = {};
+          }
+        } catch (e) { /* fall through */ }
+      }
+      indexObj.overrides[String(stageNum)] = safeName;
+      const indexStr = JSON.stringify(indexObj, null, 2);
+      await ghPut(indexPath, utf8Btoa(indexStr),
+        'maze: _index.json で slot ' + stageNum + ' を ' + safeName + ' に上書き',
+        existingIdx ? existingIdx.sha : null);
+
+      _setStatus('✅ 保存完了 — 1 分くらいで staging に反映', '#a4c76d');
+      const goNow = confirm('✅ 本番(staging) に保存しました!\n\n・slot ' + stageNum + ' → ' + safeName + '\n\nOK で staging の slot ' + stageNum + ' を新タブで開く');
+      if (goNow) window.open('../maze/?stage=' + encodeURIComponent(stageNum), '_blank');
+    } catch (e) {
+      console.error(e);
+      _setStatus('✗ ' + (e.message || e), '#e88');
+      if (String(e.message || e).indexOf('401') >= 0) {
+        alert('認証エラー — Basic Auth のパスワードを再入力する必要があるかも。');
+      } else {
+        alert('保存失敗: ' + (e.message || e));
+      }
+    } finally {
+      commitBtn.disabled = false;
+      commitBtn.textContent = origLabel;
+    }
+  });
+})();
+
 document.getElementById('jsonInput').addEventListener('change', function(e) {
   const f = e.target.files[0];
   if (!f) return;
