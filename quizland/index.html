@@ -126,7 +126,12 @@ body::after {
   aspect-ratio: auto;
   min-height: auto;
   padding: clamp(3px, 0.5vh, 8px) clamp(8px, 1vw, 14px);
-  background: url('../assets/images/quizland/ui_title_frame.png') center / 100% 100% no-repeat;
+  border: clamp(8px, 1.1vh, 13px) solid transparent;
+  border-image-source: url('../assets/images/quizland/ui_title_frame.png');
+  border-image-slice: 92 120;
+  border-image-width: 1;
+  border-image-repeat: repeat;
+  background: linear-gradient(180deg, rgba(255, 250, 236, 0.88), rgba(247, 224, 177, 0.82));
   overflow: hidden;
 }
 .header::after {
@@ -155,8 +160,12 @@ body::after {
   aspect-ratio: auto;
   min-height: auto;
   padding: clamp(3px, 0.45vh, 8px) clamp(9px, 1.3vw, 20px);
-  /* 生成画像のフレームのみ。 box-shadow / border-radius は画像が持っているので CSS では足さない。 */
-  background: url('../assets/images/quizland/ui_header_frame.png') center / 100% 100% no-repeat;
+  border: clamp(8px, 1vh, 13px) solid transparent;
+  border-image-source: url('../assets/images/quizland/ui_header_frame.png');
+  border-image-slice: 86 140;
+  border-image-width: 1;
+  border-image-repeat: repeat;
+  background: linear-gradient(180deg, rgba(255, 250, 236, 0.9), rgba(247, 224, 177, 0.82));
   font-size: clamp(0.68rem, 1.6vh, 0.92rem);
   font-weight: 700;
 }
@@ -346,8 +355,12 @@ body::after {
   justify-content: center;
   min-height: 0;
   padding: clamp(26px, 2.4vw, 42px);
-  /* 画像にすでに枠 + 影が描かれているので box-shadow は外す。 */
-  background: center / 100% 100% no-repeat url('../assets/images/quizland/ui_question_frame.png');
+  border: clamp(20px, 2.4vw, 42px) solid transparent;
+  border-image-source: url('../assets/images/quizland/ui_question_frame.png');
+  border-image-slice: 120 150;
+  border-image-width: 1;
+  border-image-repeat: repeat;
+  background: linear-gradient(180deg, rgba(255, 244, 211, 0.88), rgba(255, 236, 185, 0.78));
 }
 
 .question {
@@ -456,7 +469,12 @@ body::after {
   gap: 14px;
   align-content: stretch;
   padding: 34px 32px 38px;
-  background: center / 100% 100% no-repeat url('../assets/images/quizland/ui_answers_frame.png');
+  border: clamp(18px, 2vw, 34px) solid transparent;
+  border-image-source: url('../assets/images/quizland/ui_answers_frame.png');
+  border-image-slice: 96 96;
+  border-image-width: 1;
+  border-image-repeat: repeat;
+  background: linear-gradient(180deg, rgba(255, 247, 228, 0.84), rgba(251, 229, 188, 0.76));
   min-height: 585px;
 }
 .choice-btn {
@@ -806,7 +824,6 @@ body::after {
     min-height: 0;
     aspect-ratio: auto;
     padding: clamp(3px, 0.5vh, 8px) clamp(8px, 1vw, 14px);
-    background-size: 100% 100%;
   }
   .header-logo {
     width: min(68%, 320px);
@@ -827,7 +844,7 @@ body::after {
   .stage {
     min-height: 0;
     height: 100%;
-    grid-template-columns: minmax(0, 1.42fr) minmax(260px, 0.9fr);
+    grid-template-columns: minmax(0, 1.25fr) minmax(340px, 1fr);
     gap: clamp(8px, 1.1vw, 18px);
   }
   .question-panel,
@@ -837,6 +854,8 @@ body::after {
     padding: clamp(8px, 0.9vw, 14px);
   }
   .question-panel {
+    display: grid;
+    grid-template-rows: clamp(42px, 7vh, 58px) minmax(0, 1fr);
     gap: clamp(5px, 0.8vh, 9px);
   }
   .answer-panel {
@@ -847,14 +866,28 @@ body::after {
     font-size: clamp(0.72rem, 1.45vh, 0.88rem);
   }
   .question-wrap {
-    min-height: clamp(48px, 8vh, 76px);
-    margin: 2px 0 4px;
-    padding: clamp(8px, 1.2vh, 16px) clamp(46px, 3.4vw, 64px) clamp(8px, 1.2vh, 16px) clamp(16px, 1.6vw, 24px);
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: center;
+    align-self: center;
+    min-height: 0;
+    margin: 0;
+    padding: 0 clamp(44px, 3.2vw, 60px) 0 clamp(16px, 1.6vw, 24px);
+  }
+  .question {
+    color: #7a5322;
+    font-size: clamp(1.05rem, 2.15vh, 1.5rem);
+    line-height: 1.25;
+    text-shadow: 0 1px 0 rgba(255, 250, 232, 0.88);
   }
   .question-board {
-    flex: 1 1 auto;
+    grid-row: 2;
+    grid-column: 1;
+    flex: none;
+    height: 100%;
     min-height: 0;
-    padding: clamp(12px, 1.2vw, 22px);
+    padding: clamp(14px, 1.4vw, 24px);
+    border-width: clamp(18px, 2vw, 34px);
   }
   #stage-area {
     min-height: 0;
@@ -880,8 +913,9 @@ body::after {
     flex: 1 1 auto;
     min-height: 0;
     height: auto;
-    padding: clamp(12px, 1.5vw, 20px) clamp(12px, 1.5vw, 20px) clamp(14px, 1.7vw, 22px);
+    padding: clamp(14px, 1.7vw, 22px) clamp(14px, 1.7vw, 22px) clamp(16px, 1.9vw, 24px);
     gap: clamp(8px, 1vw, 12px);
+    border-width: clamp(18px, 2vw, 34px);
   }
   .choice-btn {
     min-height: 0;
