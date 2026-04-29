@@ -837,6 +837,39 @@
       margin: 8px 0;
     }
     .dev-link:active { background: rgba(0,0,0,0.05); }
+    .dev-section {
+      margin-top: 8px;
+      padding: 10px 8px 6px;
+      border: 2px dashed var(--primary-light);
+      border-radius: 12px;
+      background: rgba(255, 248, 225, 0.5);
+    }
+    .dev-section h4 {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--text-light);
+      letter-spacing: 0.04em;
+      margin: 0 0 6px;
+      text-align: center;
+    }
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .dev-grid a {
+      display: block;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      background: #fff;
+      border: 1.5px solid var(--primary-light);
+      border-radius: 8px;
+    }
+    .dev-grid a:active { background: var(--primary-light); }
     .modal-close {
       display: block;
       width: 100%;
@@ -1145,6 +1178,21 @@
       </div>
       <hr class="modal-divider">
       <a href="play-all.html" class="dev-link">📋 ぜんぶみる（開発用）</a>
+
+      <div class="dev-section">
+        <h4>🍱 弁当 NPC テスト（開発用）</h4>
+        <div class="dev-grid">
+          <a href="bento/?npc=risu">🐿 りすちゃん</a>
+          <a href="bento/?npc=inu">🐶 わんちゃん</a>
+          <a href="bento/?npc=ahiru">🦆 あひる</a>
+          <a href="bento/?npc=shika">🦌 しかさん</a>
+          <a href="bento/?npc=lesser_panda">🐼 パンダ</a>
+          <a href="bento/?npc=neko">🐱 ねこさん</a>
+          <a href="bento/?npc=1">🎲 ランダム</a>
+          <a href="bento/?npc=0">⏸ 自由モード</a>
+        </div>
+      </div>
+
       <button class="modal-close" type="button" data-close="settingsModal">とじる</button>
     </div>
   </div>
