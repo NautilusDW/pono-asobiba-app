@@ -1266,11 +1266,15 @@
     const PARTICLE_HIRA = /[のとはをにへがもでやかよりからまで]/;
     function decorateKana(rawTitle) {
       const escaped = esc(rawTitle);
+      const withPonoParticles = escaped.replace(
+        /(ポノ)([のと])/g,
+        (_, head, particle) => `${head}<span class="hira">${particle}</span>`
+      );
       // Match a single hiragana char preceded & followed by a non-hiragana
       // (katakana / kanji / latin / digit / punctuation). Use a lookbehind /
       // lookahead so we only wrap the one character itself.
       // The class "hira" is a leftover name; semantically these are particles.
-      return escaped.replace(
+      return withPonoParticles.replace(
         /(?<=[\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9F\u3005\w])([\u3041-\u3096])(?=[\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9F\u3005\w])/g,
         (m, ch) => PARTICLE_HIRA.test(ch) ? `<span class="hira">${ch}</span>` : ch
       );
