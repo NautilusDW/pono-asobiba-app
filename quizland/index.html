@@ -86,7 +86,7 @@ body::after {
   height: auto;
   max-height: calc(100dvh - 16px);
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: 14% 12% minmax(0, 1fr);
   gap: 8px;
   min-height: 0;
   align-self: center;
@@ -117,12 +117,13 @@ body::after {
    占有してしまう問題への対応 (2026-04-29 v549 → v550)。 */
 .header {
   position: relative;
-  width: min(54.5%, 780px);
+  width: min(50%, 780px);
+  height: 100%;
   justify-self: start;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  aspect-ratio: 780 / 291;
+  aspect-ratio: auto;
   min-height: auto;
   padding: clamp(4px, 0.8vh, 14px) clamp(10px, 1.2vw, 18px);
   background: url('../assets/images/quizland/ui_title_frame.png') center / 100% 100% no-repeat;
@@ -145,12 +146,13 @@ body::after {
 .hud {
   position: relative;
   width: min(94%, 1360px);
+  height: 100%;
   justify-self: center;
   display: grid;
   grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.9fr) clamp(72px, 9vw, 118px) clamp(72px, 9vw, 118px);
   align-items: center;
   gap: clamp(6px, 1.2vw, 18px);
-  aspect-ratio: 1879 / 291;
+  aspect-ratio: auto;
   min-height: auto;
   padding: clamp(4px, 0.75vh, 14px) clamp(10px, 1.6vw, 24px);
   /* 生成画像のフレームのみ。 box-shadow / border-radius は画像が持っているので CSS では足さない。 */
@@ -787,6 +789,116 @@ body::after {
   }
   .choice-btn {
     min-height: 78px;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 761px) {
+  .game-shell {
+    width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
+    height: auto;
+    max-height: calc(100dvh - 16px);
+    grid-template-rows: 14% 12% minmax(0, 1fr);
+    gap: clamp(4px, 1vh, 8px);
+  }
+  .header {
+    width: min(50%, 780px);
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+    padding: clamp(4px, 0.8vh, 10px) clamp(10px, 1.2vw, 18px);
+    background-size: 100% 100%;
+  }
+  .header-logo {
+    width: min(42%, 320px);
+    max-height: 72%;
+  }
+  .hud {
+    width: min(94%, 1360px);
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+    padding: clamp(4px, 0.7vh, 10px) clamp(10px, 1.4vw, 22px);
+  }
+  #hud-back-btn,
+  #hud-label,
+  #hud-seeds {
+    min-height: 0;
+  }
+  .stage {
+    min-height: 0;
+    height: 100%;
+    grid-template-columns: minmax(0, 1.36fr) minmax(280px, 0.94fr);
+    gap: clamp(10px, 1.3vw, 20px);
+  }
+  .question-panel,
+  .answer-panel {
+    height: 100%;
+    min-height: 0 !important;
+    padding: clamp(8px, 0.9vw, 14px);
+  }
+  .question-panel {
+    gap: clamp(6px, 1vh, 10px);
+  }
+  .answer-panel {
+    gap: clamp(6px, 1vh, 10px);
+  }
+  .panel-chip {
+    min-height: clamp(28px, 5vh, 38px);
+    font-size: clamp(0.72rem, 1.45vh, 0.88rem);
+  }
+  .question-wrap {
+    min-height: clamp(58px, 12vh, 92px);
+    margin: 4px 0 6px;
+    padding: clamp(12px, 1.8vh, 20px) clamp(56px, 4vw, 72px) clamp(12px, 1.8vh, 20px) clamp(18px, 1.8vw, 28px);
+  }
+  .question-board {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: clamp(14px, 1.4vw, 24px);
+  }
+  #stage-area {
+    min-height: 0;
+    height: 100%;
+  }
+  .answer-guide {
+    flex: 0 0 clamp(82px, 20%, 132px);
+    min-height: 0;
+    margin: 0 4px;
+    padding: clamp(10px, 1.1vw, 14px) clamp(10px, 1.2vw, 16px) clamp(10px, 1.1vw, 14px) clamp(96px, 9vw, 128px);
+  }
+  .answer-guide__owl {
+    width: clamp(78px, 8vw, 124px);
+  }
+  .answer-guide__copy {
+    gap: 6px;
+  }
+  .answer-guide__copy p {
+    font-size: clamp(0.72rem, 1.45vh, 0.9rem);
+    line-height: 1.42;
+  }
+  .choices {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    padding: clamp(16px, 1.8vw, 24px) clamp(16px, 1.8vw, 24px) clamp(18px, 2vw, 28px);
+    gap: clamp(8px, 1vw, 12px);
+  }
+  .choice-btn {
+    min-height: 0;
+    padding: clamp(8px, 1.1vw, 12px);
+    font-size: clamp(0.9rem, 1.8vh, 1.18rem);
+  }
+  .choice-btn--count {
+    font-size: clamp(1.45rem, 4.5vh, 2.3rem);
+  }
+  .shape-display {
+    height: 100%;
+    max-height: 100%;
+  }
+  .shape-circle,
+  .shape-square {
+    width: clamp(110px, 18vh, 180px);
+    height: clamp(110px, 18vh, 180px);
   }
 }
 
