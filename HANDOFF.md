@@ -49,3 +49,5 @@
 - 2026-04-30 — sw.js CACHE_VERSION 553 → 554 バンプ (Codex の frame stretching 防止改修 `f59a9cc` 反映) (by Claude)
 - 2026-04-30 ・Codex が `quizland/index.html` のフクロウ博士問題画面フレームを再調整。`border-image-repeat` で葉・どんぐり装飾がタイル状に繰り返され、装飾サイズと密度がばらついていたため、`ui_*_frame.png` の9-slice流用をやめ、ヘッダー/HUD/問題枠/回答枠を同じ木目風CSSフレームに統一。問題チップが左下へ落ちる副作用も修正し、横画面では問題チップを上段左、問題文を上段中央、問題ボードを下段全幅に固定。(by Codex)
 - 2026-04-30 — sw.js CACHE_VERSION 554 → 555 バンプ + Codex の上記木目風CSSフレーム統一改修を commit & push (by Claude)
+- 2026-04-30 ・Codex が `quizland/index.html` のフクロウ博士問題画面をCSS-firstテンプレート方式へ再設計。生成画像に合わせて文字を後乗せするのをやめ、16:9安全領域内でタイトル札/HUD/問題欄/回答欄/ヒント/4択/注意書きの位置をCSS Gridで先に固定。`question-panel` は `chip/question/board`、`answer-panel` は `guide/choices/note` のgrid-areaでテキスト位置を明示。1181px以上の旧レイアウトoverrideも削除し、後から同じ矩形サイズで生成画像を差し替えられる構造に変更。(by Codex)
+- 2026-04-30 — sw.js CACHE_VERSION 555 → 556 バンプ + Codex の上記 CSS-first テンプレート再設計を commit & push (by Claude)

@@ -36,6 +36,7 @@
   --quiz-paper-top: rgba(255, 249, 231, 0.94);
   --quiz-paper-bottom: rgba(247, 225, 181, 0.86);
   --quiz-frame-shadow: rgba(120, 83, 20, 0.18);
+  --quiz-safe-gap: clamp(8px, 1.1vw, 18px);
 }
 
 html, body {
@@ -84,16 +85,20 @@ body::after {
 }
 
 .game-shell {
-  /* 21:9 セーフエリア: viewport 高さに収め、 横幅は 16:9 ベースで上限を取る。
-     行は header / hud / stage の 3 つで、 stage が 1fr で残り高さを吸収する。 */
+  /* CSS-first template:
+     1600x900相当の16:9安全領域を先に確定し、この矩形を生成画像の基準にする。
+     後で画像化する場合も各パーツは同じアスペクト比の箱にだけ差し込む。
+     1600x900時の想定枠:
+     title 560x86 / hud 1500x63 / left panel 936x715 / right panel 646x715。
+     左の問題ボードは約908x618、右の選択肢ボードは約618x487を生成時の目安にする。 */
   width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
   max-width: 1600px;
   aspect-ratio: 16 / 9;
   height: auto;
   max-height: calc(100dvh - 16px);
   display: grid;
-  grid-template-rows: 9% 8% minmax(0, 1fr);
-  gap: clamp(4px, 0.7vh, 7px);
+  grid-template-rows: clamp(58px, 9.5%, 86px) clamp(44px, 7%, 64px) minmax(0, 1fr);
+  gap: var(--quiz-safe-gap);
   min-height: 0;
   align-self: center;
 }
@@ -116,24 +121,22 @@ body::after {
   border: 0;
 }
 
-/* ===== Header =====
-   生成画像 ui_title_frame.png に既に枠と質感が描かれているので、
-   CSS 側の linear-gradient overlay と box-shadow は外して二重重ねを解消。
-   高さは viewport に比例 (clamp) — 21:9 端末で固定 124px だと画面の 30% を
-   占有してしまう問題への対応 (2026-04-29 v549 → v550)。 */
+/* ===== Header template =====
+   位置: 16:9安全領域の左上。用途: タイトルロゴ用の札。
+   画像生成時はこの矩形と同じ比率で、文字を入れない木札背景だけを作る。 */
 .header {
   position: relative;
-  width: min(34%, 540px);
+  width: clamp(330px, 35%, 560px);
   height: 100%;
   justify-self: start;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(3px, 0.5vh, 8px) clamp(8px, 1vw, 14px);
-  border: clamp(3px, 0.55vh, 6px) solid transparent;
-  border-radius: clamp(12px, 1.3vw, 20px);
+  padding: clamp(4px, 0.7vh, 8px) clamp(12px, 1.4vw, 20px);
+  border: clamp(4px, 0.65vh, 7px) solid transparent;
+  border-radius: clamp(16px, 1.6vw, 26px);
   background:
     linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
     repeating-linear-gradient(
@@ -154,9 +157,9 @@ body::after {
 .header-logo {
   position: relative;
   z-index: 1;
-  width: min(68%, 320px);
-  max-height: 84%;
-  margin-left: clamp(6px, 0.9vw, 14px);
+  width: min(76%, 380px);
+  max-height: 86%;
+  margin-left: 0;
   object-fit: contain;
   filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.12));
 }
@@ -164,17 +167,17 @@ body::after {
 /* ===== HUD ===== */
 .hud {
   position: relative;
-  width: min(88%, 1260px);
+  width: min(94%, 1500px);
   height: 100%;
   justify-self: center;
   display: grid;
-  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.9fr) clamp(72px, 9vw, 118px) clamp(72px, 9vw, 118px);
+  grid-template-columns: clamp(148px, 15%, 210px) minmax(0, 1fr) clamp(70px, 7%, 96px) clamp(96px, 10%, 144px);
   align-items: center;
-  gap: clamp(6px, 1.2vw, 18px);
+  gap: clamp(8px, 1vw, 16px);
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(3px, 0.45vh, 8px) clamp(9px, 1.3vw, 20px);
-  border: clamp(3px, 0.55vh, 6px) solid transparent;
+  padding: clamp(4px, 0.65vh, 8px) clamp(14px, 1.5vw, 24px);
+  border: clamp(4px, 0.65vh, 7px) solid transparent;
   border-radius: clamp(12px, 1.4vw, 22px);
   background:
     linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
@@ -270,45 +273,55 @@ body::after {
 .stage {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.95fr);
-  gap: clamp(18px, 2vw, 30px);
+  grid-template-columns: minmax(0, 58fr) minmax(340px, 40fr);
+  gap: var(--quiz-safe-gap);
   align-items: stretch;
   min-height: 0;
 }
 .question-panel,
 .answer-panel {
   position: relative;
-  border-radius: 34px;
-  padding: clamp(12px, 1.2vw, 18px);
+  border-radius: clamp(18px, 1.8vw, 30px);
+  padding: clamp(8px, 0.9vw, 14px);
   border: none;
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .question-panel::before,
 .answer-panel::before {
   content: none;
 }
 .question-panel {
-  min-height: clamp(420px, 58vh, 720px);
-  display: flex;
-  flex-direction: column;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: clamp(190px, 24%, 280px) minmax(0, 1fr);
+  grid-template-rows: clamp(42px, 8%, 58px) minmax(0, 1fr);
+  grid-template-areas:
+    "chip question"
+    "board board";
+  gap: clamp(8px, 1vw, 14px);
 }
 .answer-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: grid;
+  grid-template-rows: clamp(90px, 17%, 132px) minmax(0, 1fr) clamp(42px, 8%, 60px);
+  grid-template-areas:
+    "guide"
+    "choices"
+    "note";
+  gap: clamp(8px, 1vw, 14px);
 }
 .panel-chip {
-  align-self: flex-start;
+  align-self: center;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: clamp(32px, 5.4vh, 44px);
+  padding: 0 clamp(14px, 1.4vw, 22px);
   border-radius: 999px;
   background: linear-gradient(180deg, #F6E6B6, #DFAE55);
   color: #7A4D19;
-  font-size: 0.95rem;
+  font-size: clamp(0.72rem, 1.45vh, 0.92rem);
   font-weight: 900;
   letter-spacing: 0.05em;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 6px 14px rgba(120, 83, 20, 0.12);
@@ -317,25 +330,26 @@ body::after {
   background: linear-gradient(180deg, #D9EB95, #B2D05B);
   color: #5B6525;
 }
+.question-panel > .panel-chip {
+  grid-area: chip;
+}
 .answer-guide {
+  grid-area: guide;
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 174px;
-  margin: 2px 8px 0;
-  padding: 18px 18px 16px 168px;
-  /* 旧来は linear-gradient + 二重 border + box-shadow で白い枠を作っていたが、
-     生成済みフレーム (ヘッダ / 問題板 / 回答板) があるので不要な装飾は撤去。
-     フクロウ博士のヒント文だけ重ねる。 */
+  gap: clamp(8px, 0.9vw, 14px);
+  min-height: 0;
+  margin: 0;
+  padding: clamp(8px, 1vw, 14px) clamp(12px, 1.3vw, 20px) clamp(8px, 1vw, 14px) clamp(74px, 8.2vw, 128px);
   background: transparent;
 }
 .answer-guide__owl {
   position: absolute;
-  left: 10px;
-  bottom: -6px;
-  width: clamp(150px, 13vw, 214px);
+  left: clamp(4px, 0.6vw, 10px);
+  bottom: clamp(-8px, -0.6vw, -3px);
+  width: clamp(64px, 7vw, 112px);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 12px 16px rgba(120, 83, 20, 0.18));
@@ -346,38 +360,36 @@ body::after {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: clamp(6px, 0.7vw, 10px);
 }
 .answer-guide__copy p {
-  font-size: 1.04rem;
+  font-size: clamp(0.72rem, 1.45vh, 0.95rem);
   font-weight: 700;
-  line-height: 1.55;
+  line-height: 1.42;
   color: #876233;
 }
 .question-wrap {
+  grid-area: question;
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 14px 0 18px;
-  min-height: 132px;
-  padding: 26px 34px;
-  /* 旧来は border 7px + linear-gradient + box-shadow + ::before の二重縁取りで
-     question-board の生成画像枠と二重に重ねていたが、 ユーザー指示で削除。
-     文字 (.question) と当たり判定だけ残す。 */
+  margin: 0;
+  min-height: 0;
+  padding: 0 clamp(16px, 1.6vw, 28px);
   background: transparent;
 }
 .question-board {
+  grid-area: board;
   position: relative;
   z-index: 1;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: clamp(26px, 2.4vw, 42px);
-  border: clamp(10px, 1.1vw, 18px) solid transparent;
+  padding: clamp(18px, 1.7vw, 30px);
+  border: clamp(8px, 0.9vw, 14px) solid transparent;
   border-radius: clamp(22px, 2.4vw, 38px);
   background:
     linear-gradient(180deg, rgba(255, 244, 211, 0.92), rgba(255, 236, 185, 0.82)) padding-box,
@@ -394,14 +406,14 @@ body::after {
 }
 
 .question {
-  font-size: clamp(1.45rem, 1.65vw, 2.15rem);
+  font-size: clamp(1.08rem, 2.05vh, 1.55rem);
   font-weight: 900;
-  color: #FFF8E5;
+  color: #6f4b1e;
   text-align: center;
-  line-height: 1.55;
+  line-height: 1.28;
   white-space: pre-line;
   text-wrap: balance;
-  text-shadow: 0 2px 0 rgba(54, 67, 40, 0.35);
+  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.9);
 }
 #question-speaker {
   position: absolute;
@@ -430,7 +442,7 @@ body::after {
   align-items: center;
   flex-wrap: wrap;
   gap: clamp(12px, 1.1vw, 18px);
-  min-height: clamp(220px, 36vh, 360px);
+  min-height: 0;
 }
 
 /* ===== Item rows (for order/count) ===== */
@@ -493,13 +505,14 @@ body::after {
 
 /* ===== Choices ===== */
 .choices {
+  grid-area: choices;
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: clamp(10px, 1.1vw, 18px);
   align-content: stretch;
-  padding: 34px 32px 38px;
-  border: clamp(10px, 1.1vw, 18px) solid transparent;
+  padding: clamp(18px, 1.7vw, 28px);
+  border: clamp(8px, 0.9vw, 14px) solid transparent;
   border-radius: clamp(22px, 2.4vw, 38px);
   background:
     linear-gradient(180deg, rgba(255, 247, 228, 0.88), rgba(251, 229, 188, 0.8)) padding-box,
@@ -513,18 +526,18 @@ body::after {
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.52),
     0 10px 20px rgba(120, 83, 20, 0.16);
-  min-height: 585px;
+  min-height: 0;
 }
 .choice-btn {
   position: relative;
-  padding: 18px 16px;
+  padding: clamp(10px, 1.1vw, 16px);
   border: 3px solid rgba(226, 188, 116, 0.52);
   border-radius: 28px;
   background:
     linear-gradient(180deg, rgba(255,253,247,0.92), rgba(247,233,200,0.82));
   color: #714E24;
   font-family: inherit;
-  font-size: clamp(1.15rem, 1.35vw, 1.6rem);
+  font-size: clamp(0.98rem, 1.7vh, 1.32rem);
   font-weight: 900;
   cursor: pointer;
   transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
@@ -532,7 +545,7 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: clamp(96px, 16vh, 138px);
+  min-height: 0;
   -webkit-tap-highlight-color: transparent;
   text-align: center;
   line-height: 1.35;
@@ -577,188 +590,6 @@ body::after {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-8px); }
   75% { transform: translateX(8px); }
-}
-
-@media (min-width: 1181px) and (orientation: landscape) {
-  body {
-    justify-content: center;
-    overflow: hidden;
-  }
-  .game-shell {
-    height: min(calc(100dvh - 64px), 820px);
-    min-height: 0;
-  }
-  .header {
-    min-height: clamp(92px, 10vh, 112px);
-    padding: 12px 20px;
-  }
-  .header-logo {
-    width: min(100%, 460px);
-    margin-left: 12px;
-  }
-  .hud {
-    grid-template-columns: minmax(160px, 0.9fr) minmax(0, 2fr) 104px 104px;
-    min-height: clamp(76px, 9vh, 96px);
-    gap: 14px;
-    padding: 14px 22px;
-  }
-  .stage {
-    flex: 1 1 auto;
-    min-height: 0;
-    grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.92fr);
-    gap: clamp(14px, 1.4vw, 24px);
-  }
-  .question-panel,
-  .answer-panel {
-    min-height: 0;
-    height: 100%;
-    padding: clamp(10px, 0.8vw, 14px);
-  }
-  .question-panel {
-    gap: 10px;
-  }
-  .answer-panel {
-    gap: 14px;
-  }
-  .panel-chip {
-    min-height: 36px;
-    padding: 0 14px;
-    font-size: 0.84rem;
-  }
-  .question-wrap {
-    margin: 8px 0 10px;
-    min-height: clamp(96px, 12vh, 124px);
-    padding: 20px 72px 20px 26px;
-  }
-  .question-board {
-    padding: clamp(18px, 1.5vw, 28px);
-  }
-  .question {
-    font-size: clamp(1.2rem, 1.2vw, 1.75rem);
-    line-height: 1.45;
-  }
-  #question-speaker {
-    width: 50px;
-    height: 50px;
-    right: 14px;
-    font-size: 1.2rem;
-  }
-  #stage-area {
-    gap: 12px;
-    min-height: clamp(160px, 24vh, 250px);
-  }
-  .item-row {
-    gap: 12px;
-  }
-  .color-chip {
-    width: clamp(58px, 4.4vw, 82px);
-    height: clamp(58px, 4.4vw, 82px);
-  }
-  .count-item {
-    width: clamp(60px, 4.5vw, 84px);
-    height: clamp(60px, 4.5vw, 84px);
-  }
-  .shape-display {
-    width: min(100%, 340px);
-    height: clamp(160px, 24vh, 240px);
-  }
-  .shape-circle,
-  .shape-square {
-    width: clamp(124px, 12vw, 184px);
-    height: clamp(124px, 12vw, 184px);
-  }
-  .shape-triangle {
-    border-left: clamp(68px, 5.8vw, 100px) solid transparent;
-    border-right: clamp(68px, 5.8vw, 100px) solid transparent;
-    border-bottom: clamp(118px, 10vw, 176px) solid #10B981;
-  }
-  .shape-star,
-  .shape-heart {
-    font-size: clamp(110px, 11vw, 176px);
-  }
-  .shape-rectangle {
-    width: clamp(170px, 18vw, 260px);
-    height: clamp(92px, 8vw, 130px);
-  }
-  .shape-diamond {
-    width: clamp(98px, 9vw, 152px);
-    height: clamp(98px, 9vw, 152px);
-  }
-  .shape-oval {
-    width: clamp(174px, 17vw, 252px);
-    height: clamp(98px, 9vw, 140px);
-  }
-  .choices {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: 100%;
-    gap: 10px;
-    padding: 26px 24px 28px;
-  }
-  .choice-btn {
-    min-height: clamp(76px, 10vh, 106px);
-    padding: 12px 12px;
-    font-size: clamp(1rem, 1.1vw, 1.35rem);
-  }
-  .choice-btn--count {
-    font-size: clamp(1.75rem, 2.2vw, 2.5rem);
-  }
-  .choice-color {
-    width: clamp(36px, 2.4vw, 48px);
-    height: clamp(36px, 2.4vw, 48px);
-  }
-  .emoji-main {
-    font-size: clamp(100px, 10vw, 168px);
-  }
-  .emoji-main-img {
-    max-width: min(100%, 260px);
-    max-height: min(30vh, 240px);
-  }
-  .emoji-hint {
-    font-size: clamp(0.88rem, 0.86vw, 1rem);
-  }
-  .opposite-display {
-    font-size: clamp(2.2rem, 3.1vw, 3.8rem);
-    padding: 14px 28px;
-  }
-  .trivia-display .trivia-pono {
-    width: clamp(150px, 12vw, 220px);
-    height: clamp(150px, 12vw, 220px);
-  }
-  .trivia-bubble {
-    width: 42px;
-    height: 42px;
-    top: -6px;
-    right: -10px;
-    font-size: clamp(1.45rem, 1.5vw, 1.9rem);
-  }
-  .answer-guide {
-    min-height: clamp(118px, 17vh, 150px);
-    margin: 0 4px;
-    padding: 14px 16px 14px 132px;
-    border-radius: 26px;
-  }
-  .answer-guide__owl {
-    left: 4px;
-    bottom: -4px;
-    width: clamp(112px, 9.6vw, 164px);
-  }
-  .answer-guide__copy {
-    gap: 10px;
-  }
-  .answer-guide__copy p {
-    font-size: clamp(0.9rem, 0.9vw, 1rem);
-    line-height: 1.45;
-  }
-  .answer-note {
-    margin-top: auto;
-    padding: 10px 18px;
-    gap: 8px;
-    font-size: 0.88rem;
-  }
-  .answer-note__icon {
-    font-size: 1.15rem;
-  }
 }
 
 @media (max-width: 900px) {
@@ -853,26 +684,28 @@ body::after {
     width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
     height: auto;
     max-height: calc(100dvh - 16px);
-    grid-template-rows: 9% 8% minmax(0, 1fr);
-    gap: clamp(4px, 0.7vh, 7px);
+    grid-template-rows: clamp(58px, 9.5%, 86px) clamp(44px, 7%, 64px) minmax(0, 1fr);
+    gap: var(--quiz-safe-gap);
   }
   .header {
-    width: min(34%, 540px);
+    width: clamp(330px, 35%, 560px);
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    padding: clamp(3px, 0.5vh, 8px) clamp(8px, 1vw, 14px);
+    padding: clamp(4px, 0.7vh, 8px) clamp(12px, 1.4vw, 20px);
   }
   .header-logo {
-    width: min(68%, 320px);
-    max-height: 84%;
+    width: min(76%, 380px);
+    max-height: 86%;
+    margin-left: 0;
   }
   .hud {
-    width: min(88%, 1260px);
+    width: min(94%, 1500px);
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    padding: clamp(3px, 0.45vh, 8px) clamp(9px, 1.3vw, 20px);
+    grid-template-columns: clamp(148px, 15%, 210px) minmax(0, 1fr) clamp(70px, 7%, 96px) clamp(96px, 10%, 144px);
+    padding: clamp(4px, 0.65vh, 8px) clamp(14px, 1.5vw, 24px);
   }
   #hud-back-btn,
   #hud-label,
@@ -882,8 +715,8 @@ body::after {
   .stage {
     min-height: 0;
     height: 100%;
-    grid-template-columns: minmax(0, 1.25fr) minmax(340px, 1fr);
-    gap: clamp(8px, 1.1vw, 18px);
+    grid-template-columns: minmax(0, 58fr) minmax(340px, 40fr);
+    gap: var(--quiz-safe-gap);
   }
   .question-panel,
   .answer-panel {
@@ -893,26 +726,33 @@ body::after {
   }
   .question-panel {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: clamp(42px, 7vh, 58px) minmax(0, 1fr);
-    gap: clamp(5px, 0.8vh, 9px);
+    grid-template-columns: clamp(190px, 24%, 280px) minmax(0, 1fr);
+    grid-template-rows: clamp(42px, 8%, 58px) minmax(0, 1fr);
+    grid-template-areas:
+      "chip question"
+      "board board";
+    gap: clamp(8px, 1vw, 14px);
   }
   .answer-panel {
-    gap: clamp(5px, 0.8vh, 9px);
+    display: grid;
+    grid-template-rows: clamp(90px, 17%, 132px) minmax(0, 1fr) clamp(42px, 8%, 60px);
+    grid-template-areas:
+      "guide"
+      "choices"
+      "note";
+    gap: clamp(8px, 1vw, 14px);
   }
   .panel-chip {
     min-height: clamp(28px, 5vh, 38px);
     font-size: clamp(0.72rem, 1.45vh, 0.88rem);
   }
   .question-panel > .panel-chip {
-    grid-row: 1;
-    grid-column: 1;
+    grid-area: chip;
     align-self: center;
     justify-self: start;
   }
   .question-wrap {
-    grid-row: 1;
-    grid-column: 1 / -1;
+    grid-area: question;
     justify-self: center;
     align-self: center;
     min-height: 0;
@@ -926,8 +766,7 @@ body::after {
     text-shadow: 0 1px 0 rgba(255, 250, 232, 0.88);
   }
   .question-board {
-    grid-row: 2;
-    grid-column: 1 / -1;
+    grid-area: board;
     flex: none;
     height: 100%;
     min-height: 0;
@@ -939,7 +778,8 @@ body::after {
     height: 100%;
   }
   .answer-guide {
-    flex: 0 0 clamp(64px, 14%, 104px);
+    grid-area: guide;
+    flex: none;
     min-height: 0;
     margin: 0 4px;
     padding: clamp(8px, 0.9vw, 12px) clamp(10px, 1.2vw, 16px) clamp(8px, 0.9vw, 12px) clamp(74px, 7vw, 104px);
@@ -955,7 +795,8 @@ body::after {
     line-height: 1.42;
   }
   .choices {
-    flex: 1 1 auto;
+    grid-area: choices;
+    flex: none;
     min-height: 0;
     height: auto;
     padding: clamp(14px, 1.7vw, 22px) clamp(14px, 1.7vw, 22px) clamp(16px, 1.9vw, 24px);
@@ -966,6 +807,10 @@ body::after {
     min-height: 0;
     padding: clamp(8px, 1.1vw, 12px);
     font-size: clamp(0.9rem, 1.8vh, 1.18rem);
+  }
+  .answer-note {
+    grid-area: note;
+    margin-top: 0;
   }
   .choice-btn--count {
     font-size: clamp(1.45rem, 4.5vh, 2.3rem);
@@ -1220,6 +1065,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   animation: quizBubbleBlink 2.5s ease-in-out infinite;
 }
 .answer-note {
+  grid-area: note;
   display: inline-flex;
   align-items: center;
   justify-content: center;
