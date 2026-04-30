@@ -57,4 +57,5 @@
 - 2026-05-01 — sw.js CACHE_VERSION 557 → 558 バンプ (Codex の `7e922a0` 横向き固定再調整反映) (by Claude)
 - 2026-05-01 ・Codex が `quizland/index.html` の上段バーを更にスリム化。 `top-left bar 1250x104 → 1300x78`、 `top-right controls 330x104 → 280x78`、 左 panel `936x760 → 1000x790`、 右 panel `646x760 → 560x790` に再配分し、 `header-owl` / ロゴ / `hud-label` / paddings / gap / border-radius を全て圧縮。 上 9.2% / 残り のグリッドで上段が縦を取りすぎないよう調整。 (by Codex)
 - 2026-05-01 — sw.js CACHE_VERSION 558 → 559 バンプ + Codex の上記上段バー再スリム化 commit & push (by Claude)
-- 2026-05-01 ・Codex が `quizland/index.html` のフクロウ博士問題画面を、枠より中身優先で再調整。左/右の配分を `64fr / 34fr` にして問題側を広げ、問題ラベルを横長化、問題ボードの内側余白と枠を圧縮。色チップ・数アイテム・図形を拡大し、4択は「図の下に文字」の縦積みへ変更、下部の冗長なヒント帯は非表示。右下フクロウも拡大しつつ、小さい横画面ではチップ切れ・文字割れ・フクロウ重なりを抑える max-height 500px 用補正を追加。Chrome headless で `1194x834` / `844x390` の一時プレビューを確認済み。sw.js CACHE_VERSION バンプは未対応なので Claude 側で要実施。 (by Codex)
+- 2026-05-01 ・Codex が `quizland/index.html` のフクロウ博士問題画面を、枠より中身優先で再調整。左/右の配分を `64fr / 34fr` にして問題側を広げ、問題ラベルを横長化、問題ボードの内側余白と枠を圧縮。色チップ・数アイテム・図形を拡大し、4択は「図の下に文字」の縦積みへ変更、下部の冗長なヒント帯は非表示。右下フクロウも拡大しつつ、小さい横画面ではチップ切れ・文字割れ・フクロウ重なりを抑える max-height 500px 用補正を追加。Chrome headless で `1194x834` / `844x390` の一時プレビューを確認済み。 (by Codex)
+- 2026-05-01 — sw.js CACHE_VERSION 559 → 560 バンプ (Codex の `40000f3` 中身優先再調整 64fr/34fr 反映) (by Claude)
