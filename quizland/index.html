@@ -89,8 +89,8 @@ body::after {
      1600x900相当の16:9安全領域を先に確定し、この矩形を生成画像の基準にする。
      後で画像化する場合も各パーツは同じアスペクト比の箱にだけ差し込む。
      1600x900時の想定枠:
-     title 560x86 / hud 1500x63 / left panel 936x715 / right panel 646x715。
-     左の問題ボードは約908x618、右の選択肢ボードは約618x487を生成時の目安にする。 */
+     top-left bar 1250x104 / top-right controls 330x104 / left panel 936x760 / right panel 646x760。
+     縦向き用レイアウトは作らず、縦持ちは横向き案内だけを表示する。 */
   width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
   max-width: 1600px;
   aspect-ratio: 16 / 9;
@@ -153,31 +153,41 @@ body::after {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.56),
     0 4px 10px var(--quiz-frame-shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 .header::after {
   content: none;
 }
 .header-owl {
-  width: min(100%, 78px);
-  height: min(100%, 78px);
+  width: clamp(64px, 10vh, 96px);
+  height: clamp(64px, 10vh, 96px);
   justify-self: center;
   align-self: center;
-  object-fit: contain;
+  position: relative;
+  overflow: hidden;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 38%, rgba(255, 250, 232, 0.96), rgba(239, 196, 111, 0.84));
-  border: 3px solid rgba(143, 88, 28, 0.66);
-  padding: 4px;
+  background: transparent;
   filter: drop-shadow(0 7px 10px rgba(88, 55, 20, 0.2));
+}
+.header-owl img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  transform: scale(1.65);
+  transform-origin: 50% 18%;
 }
 .header-logo {
   position: relative;
   z-index: 1;
-  width: min(100%, 260px);
-  max-height: 90%;
+  width: auto;
+  height: clamp(40px, 7.4vh, 70px);
+  max-width: min(100%, 250px);
+  max-height: 82%;
   margin-left: 0;
   object-fit: contain;
   justify-self: start;
+  align-self: center;
   filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.12));
 }
 .header #hud-label {
@@ -277,7 +287,7 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: clamp(36px, 7vh, 54px);
+  min-height: clamp(38px, 6.5vh, 58px);
   padding: 0 6px;
   border-radius: 18px;
   background: transparent;
@@ -324,7 +334,7 @@ body::after {
   grid-row: 2;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 58fr) minmax(340px, 40fr);
+  grid-template-columns: minmax(0, 58fr) minmax(220px, 40fr);
   gap: var(--quiz-safe-gap);
   align-items: stretch;
   min-height: 0;
@@ -347,7 +357,7 @@ body::after {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: clamp(66px, 14%, 100px) minmax(0, 1fr);
+  grid-template-rows: clamp(52px, 13%, 90px) minmax(0, 1fr);
   grid-template-areas:
     "question"
     "board";
@@ -472,6 +482,8 @@ body::after {
   line-height: 1.28;
   white-space: pre-line;
   text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: normal;
   text-shadow: 0 1px 0 rgba(255, 250, 232, 0.9);
 }
 #question-speaker {
@@ -513,54 +525,55 @@ body::after {
   flex-wrap: wrap;
 }
 .color-chip {
-  width: clamp(68px, 5vw, 96px);
-  height: clamp(68px, 5vw, 96px);
+  width: clamp(46px, 12vh, 96px);
+  height: clamp(46px, 12vh, 96px);
   border-radius: 20px;
   border: 3px solid rgba(255,255,255,0.8);
   box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16);
 }
 .count-item {
-  width: clamp(70px, 5vw, 96px);
-  height: clamp(70px, 5vw, 96px);
+  width: clamp(46px, 12vh, 96px);
+  height: clamp(46px, 12vh, 96px);
   object-fit: contain;
 }
 
 /* ===== Shapes ===== */
 .shape-display {
   width: min(100%, 420px);
-  height: clamp(220px, 38vh, 360px);
+  height: 100%;
+  max-height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
 }
-.shape-circle { width: clamp(160px, 18vw, 240px); height: clamp(160px, 18vw, 240px); border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-square { width: clamp(160px, 18vw, 240px); height: clamp(160px, 18vw, 240px); border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-circle { width: clamp(70px, 22vh, 220px); height: clamp(70px, 22vh, 220px); border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-square { width: clamp(70px, 22vh, 220px); height: clamp(70px, 22vh, 220px); border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 .shape-triangle {
   width: 0; height: 0;
-  border-left: clamp(88px, 8vw, 132px) solid transparent;
-  border-right: clamp(88px, 8vw, 132px) solid transparent;
-  border-bottom: clamp(154px, 15vw, 220px) solid #10B981;
+  border-left: clamp(44px, 10vh, 112px) solid transparent;
+  border-right: clamp(44px, 10vh, 112px) solid transparent;
+  border-bottom: clamp(76px, 19vh, 198px) solid #10B981;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .shape-star {
-  font-size: clamp(150px, 18vw, 250px); line-height: 1;
+  font-size: clamp(82px, 26vh, 230px); line-height: 1;
   color: #F97316;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .shape-heart {
-  font-size: clamp(150px, 18vw, 250px); line-height: 1;
+  font-size: clamp(82px, 26vh, 230px); line-height: 1;
   color: #EC4899;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
-.shape-rectangle { width: clamp(210px, 24vw, 330px); height: clamp(110px, 11vw, 160px); border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-rectangle { width: clamp(108px, 30vh, 300px); height: clamp(58px, 16vh, 150px); border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 .shape-diamond {
-  width: clamp(128px, 12vw, 200px); height: clamp(128px, 12vw, 200px);
+  width: clamp(72px, 21vh, 190px); height: clamp(72px, 21vh, 190px);
   background: #EF4444;
   transform: rotate(45deg);
   border-radius: 20px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.15);
 }
-.shape-oval { width: clamp(210px, 22vw, 320px); height: clamp(120px, 12vw, 180px); border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-oval { width: clamp(110px, 30vh, 300px); height: clamp(64px, 18vh, 170px); border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 
 /* ===== Choices ===== */
 .choices {
@@ -604,6 +617,7 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  flex-wrap: nowrap;
   min-height: 0;
   -webkit-tap-highlight-color: transparent;
   text-align: center;
@@ -611,6 +625,10 @@ body::after {
   box-shadow:
     0 8px 16px rgba(120, 83, 20, 0.08),
     inset 0 1px 0 rgba(255,255,255,0.78);
+}
+.choice-btn span {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 @media (hover: hover) {
   .choice-btn:hover {
@@ -634,8 +652,8 @@ body::after {
   font-size: clamp(2rem, 3vw, 3rem);
 }
 .choice-color {
-  width: clamp(42px, 3vw, 56px);
-  height: clamp(42px, 3vw, 56px);
+  width: clamp(28px, 8vh, 56px);
+  height: clamp(28px, 8vh, 56px);
   border-radius: 14px;
   border: 2px solid rgba(255,255,255,0.8);
   flex-shrink: 0;
@@ -649,93 +667,6 @@ body::after {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-8px); }
   75% { transform: translateX(8px); }
-}
-
-@media (max-width: 900px) {
-  .stage {
-    grid-template-columns: 1fr;
-  }
-  .question-panel {
-    min-height: 0;
-  }
-  .choices {
-    min-height: 520px;
-  }
-}
-
-@media (max-width: 760px) {
-  body {
-    justify-content: flex-start;
-    padding: 16px 12px 24px;
-    gap: 14px;
-  }
-  .game-shell {
-    width: 100%;
-    max-width: none;
-    aspect-ratio: auto;
-    height: auto;
-    max-height: none;
-  }
-  .header {
-    width: 100%;
-    aspect-ratio: auto;
-    min-height: 92px;
-    padding: 10px 14px;
-    background:
-      linear-gradient(180deg, rgba(255, 250, 239, 0.92), rgba(248, 234, 199, 0.86));
-  }
-  .header-logo {
-    width: min(100%, 320px);
-    margin-left: 0;
-  }
-  .hud {
-    width: 100%;
-    aspect-ratio: auto;
-    grid-template-columns: 1fr 1fr;
-    min-height: 0;
-    gap: 10px;
-    padding: 14px 16px;
-    background:
-      linear-gradient(180deg, rgba(255, 251, 240, 0.96), rgba(249, 235, 204, 0.92));
-  }
-  .hud-progress {
-    grid-column: 1 / -1;
-    justify-content: center;
-    order: 4;
-  }
-  .question-wrap {
-    padding-top: 58px;
-    padding-right: 0;
-  }
-  #question-speaker {
-    top: 0;
-    right: 50%;
-    transform: translateX(50%);
-  }
-  .answer-guide {
-    flex-direction: column;
-    min-height: 0;
-    padding: 120px 18px 16px;
-    text-align: center;
-  }
-  .answer-guide__owl {
-    left: 50%;
-    bottom: auto;
-    top: -8px;
-    transform: translateX(-50%);
-    width: min(170px, 58vw);
-  }
-  .answer-guide__copy {
-    align-items: center;
-  }
-  .choices {
-    grid-template-columns: 1fr;
-    min-height: 0;
-    padding: 28px 22px 30px;
-  }
-  .choice-btn {
-    min-height: 78px;
-  }
 }
 
 @media (orientation: landscape) and (min-width: 761px) {
@@ -758,8 +689,10 @@ body::after {
     padding: clamp(5px, 0.8vh, 9px) clamp(10px, 1.3vw, 18px);
   }
   .header-logo {
-    width: min(100%, 260px);
-    max-height: 90%;
+    width: auto;
+    height: clamp(40px, 7.4vh, 70px);
+    max-width: min(100%, 250px);
+    max-height: 82%;
     margin-left: 0;
   }
   .hud {
@@ -784,7 +717,7 @@ body::after {
     grid-row: 2;
     min-height: 0;
     height: 100%;
-    grid-template-columns: minmax(0, 58fr) minmax(340px, 40fr);
+    grid-template-columns: minmax(0, 58fr) minmax(220px, 40fr);
     gap: var(--quiz-safe-gap);
   }
   .question-panel,
@@ -796,7 +729,7 @@ body::after {
   .question-panel {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: clamp(66px, 14%, 100px) minmax(0, 1fr);
+    grid-template-rows: clamp(52px, 13%, 90px) minmax(0, 1fr);
     grid-template-areas:
       "question"
       "board";
@@ -2462,10 +2395,13 @@ function upgradeGameLayoutV2() {
   if (avatar) avatar.remove();
 
   if (!header.querySelector('.header-owl')) {
-    const headerOwl = document.createElement('img');
+    const headerOwl = document.createElement('div');
     headerOwl.className = 'header-owl';
-    headerOwl.src = '../assets/images/quizland/owl_professor_guide.png';
-    headerOwl.alt = '';
+    headerOwl.setAttribute('aria-hidden', 'true');
+    const headerOwlImg = document.createElement('img');
+    headerOwlImg.src = '../assets/images/quizland/owl_professor_guide.png';
+    headerOwlImg.alt = '';
+    headerOwl.appendChild(headerOwlImg);
     header.prepend(headerOwl);
   }
 
