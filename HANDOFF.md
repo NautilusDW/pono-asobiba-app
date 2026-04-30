@@ -51,3 +51,5 @@
 - 2026-04-30 — sw.js CACHE_VERSION 554 → 555 バンプ + Codex の上記木目風CSSフレーム統一改修を commit & push (by Claude)
 - 2026-04-30 ・Codex が `quizland/index.html` のフクロウ博士問題画面をCSS-firstテンプレート方式へ再設計。生成画像に合わせて文字を後乗せするのをやめ、16:9安全領域内でタイトル札/HUD/問題欄/回答欄/ヒント/4択/注意書きの位置をCSS Gridで先に固定。`question-panel` は `chip/question/board`、`answer-panel` は `guide/choices/note` のgrid-areaでテキスト位置を明示。1181px以上の旧レイアウトoverrideも削除し、後から同じ矩形サイズで生成画像を差し替えられる構造に変更。(by Codex)
 - 2026-04-30 — sw.js CACHE_VERSION 555 → 556 バンプ + Codex の上記 CSS-first テンプレート再設計を commit & push (by Claude)
+- 2026-04-30 ・Codex が `quizland/index.html` のフクロウ博士問題画面を参考イメージ寄せで再配置。上段をロゴだけの札から、フクロウ博士アイコン + タイトルロゴ + `1/5` + 進捗ドットを含む横長バーへ変更し、右上は「タイトル」「おしらせ」「せってい」の操作ボックスに整理。問題チップと冗長な「こたえをえらぼう」説明文は非表示にし、左は問題文カード + 問題ボード、右は4択ボード + 短いヒント + フクロウ博士の構成へ寄せた。(by Codex)
+- 2026-05-01 — sw.js CACHE_VERSION 556 → 557 バンプ + Codex の上記参考イメージ寄せ再配置を commit & push (by Claude)

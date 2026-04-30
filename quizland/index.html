@@ -97,7 +97,8 @@ body::after {
   height: auto;
   max-height: calc(100dvh - 16px);
   display: grid;
-  grid-template-rows: clamp(58px, 9.5%, 86px) clamp(44px, 7%, 64px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(190px, 23%, 330px);
+  grid-template-rows: clamp(70px, 12%, 104px) minmax(0, 1fr);
   gap: var(--quiz-safe-gap);
   min-height: 0;
   align-self: center;
@@ -126,15 +127,18 @@ body::after {
    画像生成時はこの矩形と同じ比率で、文字を入れない木札背景だけを作る。 */
 .header {
   position: relative;
-  width: clamp(330px, 35%, 560px);
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
   height: 100%;
   justify-self: start;
-  display: flex;
+  display: grid;
+  grid-template-columns: clamp(54px, 8vh, 84px) minmax(142px, 0.55fr) clamp(72px, 12%, 122px) minmax(126px, 0.65fr);
   align-items: center;
-  justify-content: center;
+  gap: clamp(8px, 1vw, 16px);
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(4px, 0.7vh, 8px) clamp(12px, 1.4vw, 20px);
+  padding: clamp(5px, 0.8vh, 9px) clamp(10px, 1.3vw, 18px);
   border: clamp(4px, 0.65vh, 7px) solid transparent;
   border-radius: clamp(16px, 1.6vw, 26px);
   background:
@@ -154,29 +158,64 @@ body::after {
 .header::after {
   content: none;
 }
+.header-owl {
+  width: min(100%, 78px);
+  height: min(100%, 78px);
+  justify-self: center;
+  align-self: center;
+  object-fit: contain;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, rgba(255, 250, 232, 0.96), rgba(239, 196, 111, 0.84));
+  border: 3px solid rgba(143, 88, 28, 0.66);
+  padding: 4px;
+  filter: drop-shadow(0 7px 10px rgba(88, 55, 20, 0.2));
+}
 .header-logo {
   position: relative;
   z-index: 1;
-  width: min(76%, 380px);
-  max-height: 86%;
+  width: min(100%, 260px);
+  max-height: 90%;
   margin-left: 0;
   object-fit: contain;
+  justify-self: start;
   filter: drop-shadow(0 8px 14px rgba(120, 83, 20, 0.12));
+}
+.header #hud-label {
+  order: initial;
+  min-height: clamp(38px, 6.5vh, 58px);
+  padding: 0 clamp(10px, 1.4vw, 18px);
+  border-radius: clamp(10px, 1.2vw, 18px);
+  background: linear-gradient(180deg, rgba(255, 249, 235, 0.94), rgba(246, 224, 179, 0.86));
+  border: 2px solid rgba(217, 171, 94, 0.62);
+  color: #6f461b;
+  font-size: clamp(1.05rem, 3.1vh, 1.85rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.62);
+}
+.header .hud-progress {
+  order: initial;
+  justify-content: start;
+  gap: clamp(7px, 1.2vw, 14px);
+  padding: 0;
 }
 
 /* ===== HUD ===== */
 .hud {
   position: relative;
-  width: min(94%, 1500px);
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
   height: 100%;
   justify-self: center;
   display: grid;
-  grid-template-columns: clamp(148px, 15%, 210px) minmax(0, 1fr) clamp(70px, 7%, 96px) clamp(96px, 10%, 144px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: clamp(8px, 1vw, 16px);
+  gap: clamp(5px, 0.65vw, 10px);
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(4px, 0.65vh, 8px) clamp(14px, 1.5vw, 24px);
+  padding: clamp(5px, 0.8vh, 9px) clamp(8px, 1vw, 14px);
   border: clamp(4px, 0.65vh, 7px) solid transparent;
   border-radius: clamp(12px, 1.4vw, 22px);
   background:
@@ -200,22 +239,37 @@ body::after {
   z-index: 1;
 }
 #hud-back-btn {
-  order: 4;
-  min-height: clamp(36px, 7vh, 54px);
+  order: initial;
+}
+#hud-back-btn,
+.hud-action-btn {
+  min-height: clamp(44px, 8vh, 68px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: none;
-  background: transparent;
-  color: #805325;
+  border: 2px solid rgba(211, 163, 84, 0.54);
+  border-radius: clamp(10px, 1.3vw, 18px);
+  background: linear-gradient(180deg, rgba(255, 249, 232, 0.96), rgba(245, 220, 171, 0.88));
+  color: #734917;
   font-family: inherit;
-  font-size: clamp(0.62rem, 1.4vh, 0.78rem);
+  font-size: clamp(0.58rem, 1.45vh, 0.76rem);
   font-weight: 900;
   cursor: pointer;
-  padding: 0 4px;
-  box-shadow: none;
+  padding: 0 3px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 5px 10px rgba(120,83,20,0.1);
+  -webkit-tap-highlight-color: transparent;
+}
+.hud-action-icon,
+.hud-back-icon {
+  font-size: clamp(1.05rem, 3vh, 1.55rem);
+  line-height: 1;
+}
+.hud-action-text,
+.hud-back-text {
+  line-height: 1.05;
+  white-space: nowrap;
 }
 #hud-label,
 #hud-seeds {
@@ -236,15 +290,10 @@ body::after {
   letter-spacing: 0.02em;
 }
 #hud-seeds {
-  order: 3;
-  color: #B87407;
-  font-size: clamp(0.7rem, 1.6vh, 0.95rem);
-  flex-direction: column;
-  gap: 0;
-  line-height: 1.1;
+  display: none !important;
 }
 .hud-progress {
-  order: 2;
+  order: initial;
   display: flex;
   justify-content: center;
   gap: clamp(4px, 1vw, 12px);
@@ -271,6 +320,8 @@ body::after {
 
 /* ===== Stage area ===== */
 .stage {
+  grid-column: 1 / -1;
+  grid-row: 2;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 58fr) minmax(340px, 40fr);
@@ -295,21 +346,21 @@ body::after {
 .question-panel {
   min-height: 0;
   display: grid;
-  grid-template-columns: clamp(190px, 24%, 280px) minmax(0, 1fr);
-  grid-template-rows: clamp(42px, 8%, 58px) minmax(0, 1fr);
+  grid-template-columns: 1fr;
+  grid-template-rows: clamp(66px, 14%, 100px) minmax(0, 1fr);
   grid-template-areas:
-    "chip question"
-    "board board";
+    "question"
+    "board";
   gap: clamp(8px, 1vw, 14px);
 }
 .answer-panel {
   display: grid;
-  grid-template-rows: clamp(90px, 17%, 132px) minmax(0, 1fr) clamp(42px, 8%, 60px);
+  grid-template-rows: minmax(0, 1fr) clamp(42px, 8%, 60px);
   grid-template-areas:
-    "guide"
     "choices"
     "note";
   gap: clamp(8px, 1vw, 14px);
+  overflow: visible;
 }
 .panel-chip {
   align-self: center;
@@ -331,36 +382,31 @@ body::after {
   color: #5B6525;
 }
 .question-panel > .panel-chip {
-  grid-area: chip;
+  display: none;
 }
 .answer-guide {
-  grid-area: guide;
-  position: relative;
+  position: absolute;
+  right: clamp(4px, 0.7vw, 12px);
+  bottom: clamp(34px, 7%, 58px);
   z-index: 1;
-  display: flex;
+  display: block;
   align-items: center;
-  gap: clamp(8px, 0.9vw, 14px);
-  min-height: 0;
+  width: clamp(74px, 8.5vw, 132px);
+  min-height: auto;
   margin: 0;
-  padding: clamp(8px, 1vw, 14px) clamp(12px, 1.3vw, 20px) clamp(8px, 1vw, 14px) clamp(74px, 8.2vw, 128px);
+  padding: 0;
   background: transparent;
+  pointer-events: none;
 }
 .answer-guide__owl {
-  position: absolute;
-  left: clamp(4px, 0.6vw, 10px);
-  bottom: clamp(-8px, -0.6vw, -3px);
-  width: clamp(64px, 7vw, 112px);
+  position: static;
+  width: 100%;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 12px 16px rgba(120, 83, 20, 0.18));
 }
 .answer-guide__copy {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: clamp(6px, 0.7vw, 10px);
+  display: none;
 }
 .answer-guide__copy p {
   font-size: clamp(0.72rem, 1.45vh, 0.95rem);
@@ -377,8 +423,21 @@ body::after {
   justify-content: center;
   margin: 0;
   min-height: 0;
-  padding: 0 clamp(16px, 1.6vw, 28px);
-  background: transparent;
+  padding: 0 clamp(50px, 5vw, 72px) 0 clamp(28px, 3vw, 44px);
+  border: clamp(6px, 0.8vw, 12px) solid transparent;
+  border-radius: clamp(18px, 2vw, 30px);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 228, 0.94), rgba(250, 230, 190, 0.88)) padding-box,
+    repeating-linear-gradient(
+      90deg,
+      var(--quiz-wood-dark) 0 22px,
+      var(--quiz-wood-mid) 22px 48px,
+      var(--quiz-wood-light) 48px 62px,
+      var(--quiz-wood-mid) 62px 88px
+    ) border-box;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.42),
+    0 8px 16px rgba(120, 83, 20, 0.14);
 }
 .question-board {
   grid-area: board;
@@ -684,35 +743,45 @@ body::after {
     width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
     height: auto;
     max-height: calc(100dvh - 16px);
-    grid-template-rows: clamp(58px, 9.5%, 86px) clamp(44px, 7%, 64px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(190px, 23%, 330px);
+    grid-template-rows: clamp(70px, 12%, 104px) minmax(0, 1fr);
     gap: var(--quiz-safe-gap);
   }
   .header {
-    width: clamp(330px, 35%, 560px);
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    padding: clamp(4px, 0.7vh, 8px) clamp(12px, 1.4vw, 20px);
+    grid-template-columns: clamp(54px, 8vh, 84px) minmax(142px, 0.55fr) clamp(72px, 12%, 122px) minmax(126px, 0.65fr);
+    padding: clamp(5px, 0.8vh, 9px) clamp(10px, 1.3vw, 18px);
   }
   .header-logo {
-    width: min(76%, 380px);
-    max-height: 86%;
+    width: min(100%, 260px);
+    max-height: 90%;
     margin-left: 0;
   }
   .hud {
-    width: min(94%, 1500px);
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    grid-template-columns: clamp(148px, 15%, 210px) minmax(0, 1fr) clamp(70px, 7%, 96px) clamp(96px, 10%, 144px);
-    padding: clamp(4px, 0.65vh, 8px) clamp(14px, 1.5vw, 24px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: clamp(5px, 0.8vh, 9px) clamp(8px, 1vw, 14px);
   }
   #hud-back-btn,
-  #hud-label,
-  #hud-seeds {
-    min-height: 0;
+  .hud-action-btn {
+    min-height: clamp(44px, 8vh, 68px);
+  }
+  .header #hud-label {
+    min-height: clamp(38px, 6.5vh, 58px);
   }
   .stage {
+    grid-column: 1 / -1;
+    grid-row: 2;
     min-height: 0;
     height: 100%;
     grid-template-columns: minmax(0, 58fr) minmax(340px, 40fr);
@@ -726,18 +795,17 @@ body::after {
   }
   .question-panel {
     display: grid;
-    grid-template-columns: clamp(190px, 24%, 280px) minmax(0, 1fr);
-    grid-template-rows: clamp(42px, 8%, 58px) minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    grid-template-rows: clamp(66px, 14%, 100px) minmax(0, 1fr);
     grid-template-areas:
-      "chip question"
-      "board board";
+      "question"
+      "board";
     gap: clamp(8px, 1vw, 14px);
   }
   .answer-panel {
     display: grid;
-    grid-template-rows: clamp(90px, 17%, 132px) minmax(0, 1fr) clamp(42px, 8%, 60px);
+    grid-template-rows: minmax(0, 1fr) clamp(42px, 8%, 60px);
     grid-template-areas:
-      "guide"
       "choices"
       "note";
     gap: clamp(8px, 1vw, 14px);
@@ -747,9 +815,7 @@ body::after {
     font-size: clamp(0.72rem, 1.45vh, 0.88rem);
   }
   .question-panel > .panel-chip {
-    grid-area: chip;
-    align-self: center;
-    justify-self: start;
+    display: none;
   }
   .question-wrap {
     grid-area: question;
@@ -757,7 +823,7 @@ body::after {
     align-self: center;
     min-height: 0;
     margin: 0;
-    padding: 0 clamp(44px, 3.2vw, 60px) 0 clamp(16px, 1.6vw, 24px);
+    padding: 0 clamp(50px, 5vw, 72px) 0 clamp(28px, 3vw, 44px);
   }
   .question {
     color: #7a5322;
@@ -778,21 +844,19 @@ body::after {
     height: 100%;
   }
   .answer-guide {
-    grid-area: guide;
-    flex: none;
-    min-height: 0;
-    margin: 0 4px;
-    padding: clamp(8px, 0.9vw, 12px) clamp(10px, 1.2vw, 16px) clamp(8px, 0.9vw, 12px) clamp(74px, 7vw, 104px);
+    position: absolute;
+    right: clamp(4px, 0.7vw, 12px);
+    bottom: clamp(34px, 7%, 58px);
+    width: clamp(74px, 8.5vw, 132px);
+    min-height: auto;
+    margin: 0;
+    padding: 0;
   }
   .answer-guide__owl {
-    width: clamp(58px, 6.4vw, 92px);
+    width: 100%;
   }
   .answer-guide__copy {
-    gap: 6px;
-  }
-  .answer-guide__copy p {
-    font-size: clamp(0.72rem, 1.45vh, 0.9rem);
-    line-height: 1.42;
+    display: none;
   }
   .choices {
     grid-area: choices;
@@ -1070,6 +1134,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
   align-items: center;
   justify-content: center;
   align-self: center;
+  justify-self: center;
   gap: 10px;
   padding: 12px 24px;
   border-radius: 999px;
@@ -1082,6 +1147,19 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 }
 .answer-note__icon {
   font-size: 1.35rem;
+}
+
+/* Common menu is opened from the in-HUD settings button on this screen. */
+.pono-menu-toggle {
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.pono-dropdown {
+  left: auto !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+  top: calc(max(12px, env(safe-area-inset-top)) + 50px) !important;
 }
 
 /* ===== Start screen ===== */
@@ -2383,6 +2461,14 @@ function upgradeGameLayoutV2() {
   const avatar = header.querySelector('.pono-avatar');
   if (avatar) avatar.remove();
 
+  if (!header.querySelector('.header-owl')) {
+    const headerOwl = document.createElement('img');
+    headerOwl.className = 'header-owl';
+    headerOwl.src = '../assets/images/quizland/owl_professor_guide.png';
+    headerOwl.alt = '';
+    header.prepend(headerOwl);
+  }
+
   if (!header.querySelector('.header-logo')) {
     const headerLogo = document.createElement('img');
     headerLogo.className = 'header-logo';
@@ -2391,11 +2477,21 @@ function upgradeGameLayoutV2() {
     header.appendChild(headerLogo);
   }
 
+  const label = document.getElementById('hud-label');
+  if (label) {
+    label.innerHTML = '<span id="q-num">1</span> / <span id="q-total">5</span>';
+    if (label.parentNode !== header) header.appendChild(label);
+  }
+
+  const progress = document.getElementById('hud-progress');
+  if (progress && progress.parentNode !== header) header.appendChild(progress);
+
   const backBtn = document.getElementById('hud-back-btn');
   if (backBtn) {
     backBtn.removeAttribute('style');
     backBtn.setAttribute('aria-label', 'タイトルへ もどる');
     backBtn.innerHTML = '<span class="hud-back-icon" aria-hidden="true">🏠</span><span class="hud-back-text">タイトル</span>';
+    hud.appendChild(backBtn);
   }
 
   const seeds = document.getElementById('hud-seeds');
@@ -2405,10 +2501,42 @@ function upgradeGameLayoutV2() {
     seeds.removeAttribute('style');
     seeds.setAttribute('aria-label', 'てもっている たね');
     seeds.innerHTML = '<span aria-hidden="true">🌱</span><span id="hud-seeds-count">' + current + '</span>';
+    hud.appendChild(seeds);
   }
 
-  const label = document.getElementById('hud-label');
-  if (label) label.innerHTML = 'もんだい <span id="q-num">1</span> / <span id="q-total">5</span>';
+  let noticeBtn = document.getElementById('hud-notice-btn');
+  if (!noticeBtn) {
+    noticeBtn = document.createElement('button');
+    noticeBtn.id = 'hud-notice-btn';
+    noticeBtn.type = 'button';
+    noticeBtn.className = 'hud-action-btn';
+    noticeBtn.innerHTML = '<span class="hud-action-icon" aria-hidden="true">🔔</span><span class="hud-action-text">おしらせ</span>';
+    noticeBtn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      alert('いまは おしらせは ありません。');
+    });
+  }
+  hud.appendChild(noticeBtn);
+
+  let settingsBtn = document.getElementById('hud-settings-btn');
+  if (!settingsBtn) {
+    settingsBtn = document.createElement('button');
+    settingsBtn.id = 'hud-settings-btn';
+    settingsBtn.type = 'button';
+    settingsBtn.className = 'hud-action-btn';
+    settingsBtn.innerHTML = '<span class="hud-action-icon" aria-hidden="true">⚙️</span><span class="hud-action-text">せってい</span>';
+    settingsBtn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      const menuToggle = document.querySelector('.pono-menu-toggle');
+      if (menuToggle) {
+        const evt = typeof PointerEvent === 'function'
+          ? new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' })
+          : new Event('pointerdown', { bubbles: true, cancelable: true });
+        menuToggle.dispatchEvent(evt);
+      }
+    });
+  }
+  hud.appendChild(settingsBtn);
 
   questionWrap.removeAttribute('style');
 
@@ -2453,10 +2581,10 @@ function upgradeGameLayoutV2() {
 
   const answerChip = document.createElement('div');
   answerChip.className = 'panel-chip panel-chip--leaf';
-  answerChip.textContent = 'こたえを えらぼう';
+  answerChip.textContent = '';
 
   const answerText = document.createElement('p');
-  answerText.innerHTML = '4つの なかから<br>ぴったりの こたえを えらんでね。';
+  answerText.innerHTML = '';
 
   answerCopy.appendChild(answerChip);
   answerCopy.appendChild(answerText);
