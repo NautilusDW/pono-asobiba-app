@@ -334,7 +334,7 @@ body::after {
   grid-row: 2;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 58fr) minmax(220px, 40fr);
+  grid-template-columns: minmax(0, 64fr) minmax(200px, 34fr);
   gap: var(--quiz-safe-gap);
   align-items: stretch;
   min-height: 0;
@@ -357,7 +357,7 @@ body::after {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: clamp(52px, 13%, 90px) minmax(0, 1fr);
+  grid-template-rows: clamp(48px, 11%, 72px) minmax(0, 1fr);
   grid-template-areas:
     "question"
     "board";
@@ -365,10 +365,9 @@ body::after {
 }
 .answer-panel {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) clamp(42px, 8%, 60px);
+  grid-template-rows: minmax(0, 1fr);
   grid-template-areas:
-    "choices"
-    "note";
+    "choices";
   gap: clamp(8px, 1vw, 14px);
   overflow: visible;
 }
@@ -396,12 +395,12 @@ body::after {
 }
 .answer-guide {
   position: absolute;
-  right: clamp(4px, 0.7vw, 12px);
-  bottom: clamp(34px, 7%, 58px);
+  right: clamp(-18px, -1.5vw, -6px);
+  bottom: clamp(-4px, 0.5%, 6px);
   z-index: 1;
   display: block;
   align-items: center;
-  width: clamp(74px, 8.5vw, 132px);
+  width: clamp(112px, 12.5vw, 200px);
   min-height: auto;
   margin: 0;
   padding: 0;
@@ -414,6 +413,8 @@ body::after {
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 12px 16px rgba(120, 83, 20, 0.18));
+  transform: scale(1.3);
+  transform-origin: 50% 100%;
 }
 .answer-guide__copy {
   display: none;
@@ -431,11 +432,13 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
+  justify-self: center;
+  width: min(86%, 680px);
   margin: 0;
   min-height: 0;
-  padding: 0 clamp(50px, 5vw, 72px) 0 clamp(28px, 3vw, 44px);
-  border: clamp(6px, 0.8vw, 12px) solid transparent;
-  border-radius: clamp(18px, 2vw, 30px);
+  padding: 0 clamp(42px, 4.2vw, 62px) 0 clamp(24px, 2.6vw, 38px);
+  border: clamp(5px, 0.65vw, 9px) solid transparent;
+  border-radius: clamp(16px, 1.7vw, 26px);
   background:
     linear-gradient(180deg, rgba(255, 247, 228, 0.94), rgba(250, 230, 190, 0.88)) padding-box,
     repeating-linear-gradient(
@@ -457,9 +460,9 @@ body::after {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: clamp(18px, 1.7vw, 30px);
-  border: clamp(8px, 0.9vw, 14px) solid transparent;
-  border-radius: clamp(22px, 2.4vw, 38px);
+  padding: clamp(12px, 1.2vw, 22px);
+  border: clamp(6px, 0.7vw, 11px) solid transparent;
+  border-radius: clamp(20px, 2vw, 32px);
   background:
     linear-gradient(180deg, rgba(255, 244, 211, 0.92), rgba(255, 236, 185, 0.82)) padding-box,
     repeating-linear-gradient(
@@ -475,7 +478,7 @@ body::after {
 }
 
 .question {
-  font-size: clamp(1.08rem, 2.05vh, 1.55rem);
+  font-size: clamp(1.14rem, 2.25vh, 1.7rem);
   font-weight: 900;
   color: #6f4b1e;
   text-align: center;
@@ -512,28 +515,28 @@ body::after {
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: clamp(12px, 1.1vw, 18px);
+  gap: clamp(14px, 1.4vw, 24px);
   min-height: 0;
 }
 
 /* ===== Item rows (for order/count) ===== */
 .item-row {
   display: flex;
-  gap: clamp(10px, 1vw, 18px);
+  gap: clamp(14px, 1.6vw, 28px);
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 }
 .color-chip {
-  width: clamp(46px, 12vh, 96px);
-  height: clamp(46px, 12vh, 96px);
-  border-radius: 20px;
+  width: clamp(64px, min(14vw, 32vh), 134px);
+  height: clamp(64px, min(14vw, 32vh), 134px);
+  border-radius: clamp(18px, 2vw, 28px);
   border: 3px solid rgba(255,255,255,0.8);
   box-shadow: 0 8px 18px rgba(120, 83, 20, 0.16);
 }
 .count-item {
-  width: clamp(46px, 12vh, 96px);
-  height: clamp(46px, 12vh, 96px);
+  width: clamp(82px, min(17vw, 37vh), 170px);
+  height: clamp(82px, min(17vw, 37vh), 170px);
   object-fit: contain;
 }
 
@@ -546,34 +549,34 @@ body::after {
   justify-content: center;
   align-items: center;
 }
-.shape-circle { width: clamp(70px, 22vh, 220px); height: clamp(70px, 22vh, 220px); border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
-.shape-square { width: clamp(70px, 22vh, 220px); height: clamp(70px, 22vh, 220px); border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-circle { width: clamp(104px, min(18vw, 38vh), 260px); height: clamp(104px, min(18vw, 38vh), 260px); border-radius: 50%; background: #FBBF24; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-square { width: clamp(104px, min(18vw, 38vh), 260px); height: clamp(104px, min(18vw, 38vh), 260px); border-radius: 24px; background: #60A5FA; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 .shape-triangle {
   width: 0; height: 0;
-  border-left: clamp(44px, 10vh, 112px) solid transparent;
-  border-right: clamp(44px, 10vh, 112px) solid transparent;
-  border-bottom: clamp(76px, 19vh, 198px) solid #10B981;
+  border-left: clamp(58px, min(9vw, 18vh), 132px) solid transparent;
+  border-right: clamp(58px, min(9vw, 18vh), 132px) solid transparent;
+  border-bottom: clamp(100px, min(16vw, 32vh), 230px) solid #10B981;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .shape-star {
-  font-size: clamp(82px, 26vh, 230px); line-height: 1;
+  font-size: clamp(116px, min(20vw, 42vh), 290px); line-height: 1;
   color: #F97316;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
 .shape-heart {
-  font-size: clamp(82px, 26vh, 230px); line-height: 1;
+  font-size: clamp(116px, min(20vw, 42vh), 290px); line-height: 1;
   color: #EC4899;
   filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
 }
-.shape-rectangle { width: clamp(108px, 30vh, 300px); height: clamp(58px, 16vh, 150px); border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-rectangle { width: clamp(148px, min(24vw, 44vh), 350px); height: clamp(76px, min(12vw, 24vh), 178px); border-radius: 24px; background: #8B5CF6; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 .shape-diamond {
-  width: clamp(72px, 21vh, 190px); height: clamp(72px, 21vh, 190px);
+  width: clamp(104px, min(17vw, 36vh), 230px); height: clamp(104px, min(17vw, 36vh), 230px);
   background: #EF4444;
   transform: rotate(45deg);
   border-radius: 20px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.15);
 }
-.shape-oval { width: clamp(110px, 30vh, 300px); height: clamp(64px, 18vh, 170px); border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+.shape-oval { width: clamp(150px, min(24vw, 44vh), 350px); height: clamp(82px, min(13vw, 26vh), 190px); border-radius: 50%; background: #10B981; box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
 
 /* ===== Choices ===== */
 .choices {
@@ -581,11 +584,11 @@ body::after {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(10px, 1.1vw, 18px);
+  gap: clamp(8px, 0.9vw, 14px);
   align-content: stretch;
-  padding: clamp(18px, 1.7vw, 28px);
-  border: clamp(8px, 0.9vw, 14px) solid transparent;
-  border-radius: clamp(22px, 2.4vw, 38px);
+  padding: clamp(10px, 1vw, 18px);
+  border: clamp(6px, 0.7vw, 11px) solid transparent;
+  border-radius: clamp(20px, 2vw, 32px);
   background:
     linear-gradient(180deg, rgba(255, 247, 228, 0.88), rgba(251, 229, 188, 0.8)) padding-box,
     repeating-linear-gradient(
@@ -602,26 +605,28 @@ body::after {
 }
 .choice-btn {
   position: relative;
-  padding: clamp(10px, 1.1vw, 16px);
+  padding: clamp(8px, 0.9vw, 14px);
   border: 3px solid rgba(226, 188, 116, 0.52);
-  border-radius: 28px;
+  border-radius: clamp(18px, 1.8vw, 28px);
   background:
     linear-gradient(180deg, rgba(255,253,247,0.92), rgba(247,233,200,0.82));
   color: #714E24;
   font-family: inherit;
-  font-size: clamp(0.98rem, 1.7vh, 1.32rem);
+  font-size: clamp(1.18rem, 2.8vh, 1.9rem);
   font-weight: 900;
   cursor: pointer;
   transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: clamp(8px, 1vh, 14px);
   flex-wrap: nowrap;
   min-height: 0;
   -webkit-tap-highlight-color: transparent;
   text-align: center;
   line-height: 1.35;
+  white-space: nowrap;
   box-shadow:
     0 8px 16px rgba(120, 83, 20, 0.08),
     inset 0 1px 0 rgba(255,255,255,0.78);
@@ -649,12 +654,12 @@ body::after {
   animation: shake 0.4s;
 }
 .choice-btn--count {
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: clamp(2.35rem, min(5.4vw, 8vh), 4.3rem);
 }
 .choice-color {
-  width: clamp(28px, 8vh, 56px);
-  height: clamp(28px, 8vh, 56px);
-  border-radius: 14px;
+  width: clamp(46px, min(7.6vw, 13vh), 88px);
+  height: clamp(46px, min(7.6vw, 13vh), 88px);
+  border-radius: clamp(12px, 1.5vw, 20px);
   border: 2px solid rgba(255,255,255,0.8);
   flex-shrink: 0;
 }
@@ -674,8 +679,8 @@ body::after {
     width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
     height: auto;
     max-height: calc(100dvh - 16px);
-    grid-template-columns: minmax(0, 1fr) clamp(190px, 23%, 330px);
-    grid-template-rows: clamp(70px, 12%, 104px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(170px, 20%, 280px);
+    grid-template-rows: clamp(56px, 9.2%, 78px) minmax(0, 1fr);
     gap: var(--quiz-safe-gap);
   }
   .header {
@@ -685,13 +690,13 @@ body::after {
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
-    grid-template-columns: clamp(54px, 8vh, 84px) minmax(142px, 0.55fr) clamp(72px, 12%, 122px) minmax(126px, 0.65fr);
-    padding: clamp(5px, 0.8vh, 9px) clamp(10px, 1.3vw, 18px);
+    grid-template-columns: clamp(48px, 7.3vh, 72px) minmax(132px, 0.48fr) clamp(70px, 10%, 110px) minmax(118px, 0.64fr);
+    padding: clamp(4px, 0.6vh, 7px) clamp(8px, 1vw, 14px);
   }
   .header-logo {
     width: auto;
-    height: clamp(40px, 7.4vh, 70px);
-    max-width: min(100%, 250px);
+    height: clamp(34px, 6.2vh, 56px);
+    max-width: min(100%, 220px);
     max-height: 82%;
     margin-left: 0;
   }
@@ -703,21 +708,21 @@ body::after {
     min-height: 0;
     aspect-ratio: auto;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: clamp(5px, 0.8vh, 9px) clamp(8px, 1vw, 14px);
+    padding: clamp(4px, 0.6vh, 7px) clamp(6px, 0.8vw, 11px);
   }
   #hud-back-btn,
   .hud-action-btn {
-    min-height: clamp(44px, 8vh, 68px);
+    min-height: clamp(36px, 6.4vh, 54px);
   }
   .header #hud-label {
-    min-height: clamp(38px, 6.5vh, 58px);
+    min-height: clamp(32px, 5.2vh, 46px);
   }
   .stage {
     grid-column: 1 / -1;
     grid-row: 2;
     min-height: 0;
     height: 100%;
-    grid-template-columns: minmax(0, 58fr) minmax(220px, 40fr);
+    grid-template-columns: minmax(0, 64fr) minmax(200px, 34fr);
     gap: var(--quiz-safe-gap);
   }
   .question-panel,
@@ -729,7 +734,7 @@ body::after {
   .question-panel {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: clamp(52px, 13%, 90px) minmax(0, 1fr);
+    grid-template-rows: clamp(48px, 11%, 72px) minmax(0, 1fr);
     grid-template-areas:
       "question"
       "board";
@@ -737,10 +742,9 @@ body::after {
   }
   .answer-panel {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) clamp(42px, 8%, 60px);
+    grid-template-rows: minmax(0, 1fr);
     grid-template-areas:
-      "choices"
-      "note";
+      "choices";
     gap: clamp(8px, 1vw, 14px);
   }
   .panel-chip {
@@ -754,13 +758,14 @@ body::after {
     grid-area: question;
     justify-self: center;
     align-self: center;
+    width: min(86%, 680px);
     min-height: 0;
     margin: 0;
-    padding: 0 clamp(50px, 5vw, 72px) 0 clamp(28px, 3vw, 44px);
+    padding: 0 clamp(42px, 4.2vw, 62px) 0 clamp(24px, 2.6vw, 38px);
   }
   .question {
     color: #7a5322;
-    font-size: clamp(1.05rem, 2.15vh, 1.5rem);
+    font-size: clamp(1.14rem, 2.25vh, 1.7rem);
     line-height: 1.25;
     text-shadow: 0 1px 0 rgba(255, 250, 232, 0.88);
   }
@@ -769,8 +774,8 @@ body::after {
     flex: none;
     height: 100%;
     min-height: 0;
-    padding: clamp(14px, 1.4vw, 24px);
-    border-width: clamp(8px, 0.9vw, 14px);
+    padding: clamp(12px, 1.2vw, 22px);
+    border-width: clamp(6px, 0.7vw, 11px);
   }
   #stage-area {
     min-height: 0;
@@ -778,9 +783,9 @@ body::after {
   }
   .answer-guide {
     position: absolute;
-    right: clamp(4px, 0.7vw, 12px);
-    bottom: clamp(34px, 7%, 58px);
-    width: clamp(74px, 8.5vw, 132px);
+    right: clamp(-18px, -1.5vw, -6px);
+    bottom: clamp(-4px, 0.5%, 6px);
+    width: clamp(112px, 12.5vw, 200px);
     min-height: auto;
     margin: 0;
     padding: 0;
@@ -796,21 +801,21 @@ body::after {
     flex: none;
     min-height: 0;
     height: auto;
-    padding: clamp(14px, 1.7vw, 22px) clamp(14px, 1.7vw, 22px) clamp(16px, 1.9vw, 24px);
-    gap: clamp(8px, 1vw, 12px);
-    border-width: clamp(8px, 0.9vw, 14px);
+    padding: clamp(10px, 1vw, 18px);
+    gap: clamp(8px, 0.9vw, 14px);
+    border-width: clamp(6px, 0.7vw, 11px);
   }
   .choice-btn {
     min-height: 0;
-    padding: clamp(8px, 1.1vw, 12px);
-    font-size: clamp(0.9rem, 1.8vh, 1.18rem);
+    padding: clamp(8px, 0.9vw, 14px);
+    font-size: clamp(1.12rem, 2.55vh, 1.78rem);
   }
   .answer-note {
     grid-area: note;
     margin-top: 0;
   }
   .choice-btn--count {
-    font-size: clamp(1.45rem, 4.5vh, 2.3rem);
+    font-size: clamp(2rem, min(5.2vw, 7.2vh), 3.8rem);
   }
   .shape-display {
     height: 100%;
@@ -818,8 +823,49 @@ body::after {
   }
   .shape-circle,
   .shape-square {
-    width: clamp(110px, 18vh, 180px);
-    height: clamp(110px, 18vh, 180px);
+    width: clamp(104px, min(18vw, 38vh), 260px);
+    height: clamp(104px, min(18vw, 38vh), 260px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .question-wrap {
+    width: min(90%, 520px);
+  }
+  .question {
+    font-size: clamp(0.95rem, 4vh, 1.22rem);
+  }
+  .choices {
+    padding: clamp(5px, 1.1vh, 8px);
+    gap: clamp(5px, 1.2vh, 8px);
+  }
+  .choice-btn {
+    gap: clamp(3px, 0.8vh, 6px);
+    padding: clamp(4px, 1vh, 7px);
+    font-size: clamp(0.82rem, 3.2vh, 1rem);
+  }
+  .choice-btn--count {
+    font-size: clamp(1.55rem, 7vh, 2.35rem);
+  }
+  .choice-color {
+    width: clamp(32px, 9.5vh, 48px);
+    height: clamp(32px, 9.5vh, 48px);
+  }
+  .answer-guide {
+    right: clamp(-8px, -1vw, -4px);
+    bottom: clamp(-4px, -0.8vh, 0px);
+    width: clamp(62px, 9vw, 82px);
+  }
+  .answer-guide__owl {
+    transform: scale(1.08);
+  }
+  .item-row {
+    gap: clamp(7px, 1.6vh, 10px);
+  }
+  .color-chip,
+  .count-item {
+    width: clamp(48px, 16vh, 66px);
+    height: clamp(48px, 16vh, 66px);
   }
 }
 
@@ -1063,7 +1109,7 @@ body[data-season="winter"] { background: linear-gradient(170deg, #E3F2FD 0%, #BB
 }
 .answer-note {
   grid-area: note;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   align-self: center;
