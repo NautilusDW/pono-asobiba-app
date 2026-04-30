@@ -36,7 +36,7 @@
   --quiz-paper-top: rgba(255, 249, 231, 0.94);
   --quiz-paper-bottom: rgba(247, 225, 181, 0.86);
   --quiz-frame-shadow: rgba(120, 83, 20, 0.18);
-  --quiz-safe-gap: clamp(8px, 1.1vw, 18px);
+  --quiz-safe-gap: clamp(6px, 0.85vw, 14px);
 }
 
 html, body {
@@ -89,7 +89,7 @@ body::after {
      1600x900相当の16:9安全領域を先に確定し、この矩形を生成画像の基準にする。
      後で画像化する場合も各パーツは同じアスペクト比の箱にだけ差し込む。
      1600x900時の想定枠:
-     top-left bar 1250x104 / top-right controls 330x104 / left panel 936x760 / right panel 646x760。
+     top-left bar 1300x78 / top-right controls 280x78 / left panel 1000x790 / right panel 560x790。
      縦向き用レイアウトは作らず、縦持ちは横向き案内だけを表示する。 */
   width: min(calc((100dvh - 16px) * 16 / 9), calc(100vw - 24px));
   max-width: 1600px;
@@ -97,8 +97,8 @@ body::after {
   height: auto;
   max-height: calc(100dvh - 16px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(190px, 23%, 330px);
-  grid-template-rows: clamp(70px, 12%, 104px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(170px, 20%, 280px);
+  grid-template-rows: clamp(56px, 9.2%, 78px) minmax(0, 1fr);
   gap: var(--quiz-safe-gap);
   min-height: 0;
   align-self: center;
@@ -133,14 +133,14 @@ body::after {
   height: 100%;
   justify-self: start;
   display: grid;
-  grid-template-columns: clamp(54px, 8vh, 84px) minmax(142px, 0.55fr) clamp(72px, 12%, 122px) minmax(126px, 0.65fr);
+  grid-template-columns: clamp(48px, 7.3vh, 72px) minmax(132px, 0.48fr) clamp(70px, 10%, 110px) minmax(118px, 0.64fr);
   align-items: center;
-  gap: clamp(8px, 1vw, 16px);
+  gap: clamp(6px, 0.8vw, 12px);
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(5px, 0.8vh, 9px) clamp(10px, 1.3vw, 18px);
-  border: clamp(4px, 0.65vh, 7px) solid transparent;
-  border-radius: clamp(16px, 1.6vw, 26px);
+  padding: clamp(4px, 0.6vh, 7px) clamp(8px, 1vw, 14px);
+  border: clamp(3px, 0.5vh, 5px) solid transparent;
+  border-radius: clamp(14px, 1.4vw, 22px);
   background:
     linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
     repeating-linear-gradient(
@@ -159,8 +159,8 @@ body::after {
   content: none;
 }
 .header-owl {
-  width: clamp(64px, 10vh, 96px);
-  height: clamp(64px, 10vh, 96px);
+  width: clamp(54px, 8.4vh, 78px);
+  height: clamp(54px, 8.4vh, 78px);
   justify-self: center;
   align-self: center;
   position: relative;
@@ -181,8 +181,8 @@ body::after {
   position: relative;
   z-index: 1;
   width: auto;
-  height: clamp(40px, 7.4vh, 70px);
-  max-width: min(100%, 250px);
+  height: clamp(34px, 6.2vh, 56px);
+  max-width: min(100%, 220px);
   max-height: 82%;
   margin-left: 0;
   object-fit: contain;
@@ -192,13 +192,13 @@ body::after {
 }
 .header #hud-label {
   order: initial;
-  min-height: clamp(38px, 6.5vh, 58px);
-  padding: 0 clamp(10px, 1.4vw, 18px);
+  min-height: clamp(32px, 5.2vh, 46px);
+  padding: 0 clamp(9px, 1.1vw, 15px);
   border-radius: clamp(10px, 1.2vw, 18px);
   background: linear-gradient(180deg, rgba(255, 249, 235, 0.94), rgba(246, 224, 179, 0.86));
   border: 2px solid rgba(217, 171, 94, 0.62);
   color: #6f461b;
-  font-size: clamp(1.05rem, 3.1vh, 1.85rem);
+  font-size: clamp(0.98rem, 2.65vh, 1.55rem);
   line-height: 1;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -222,12 +222,12 @@ body::after {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: clamp(5px, 0.65vw, 10px);
+  gap: clamp(4px, 0.55vw, 8px);
   aspect-ratio: auto;
   min-height: auto;
-  padding: clamp(5px, 0.8vh, 9px) clamp(8px, 1vw, 14px);
-  border: clamp(4px, 0.65vh, 7px) solid transparent;
-  border-radius: clamp(12px, 1.4vw, 22px);
+  padding: clamp(4px, 0.6vh, 7px) clamp(6px, 0.8vw, 11px);
+  border: clamp(3px, 0.5vh, 5px) solid transparent;
+  border-radius: clamp(12px, 1.2vw, 20px);
   background:
     linear-gradient(180deg, var(--quiz-paper-top), var(--quiz-paper-bottom)) padding-box,
     repeating-linear-gradient(
@@ -253,7 +253,7 @@ body::after {
 }
 #hud-back-btn,
 .hud-action-btn {
-  min-height: clamp(44px, 8vh, 68px);
+  min-height: clamp(36px, 6.4vh, 54px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -264,7 +264,7 @@ body::after {
   background: linear-gradient(180deg, rgba(255, 249, 232, 0.96), rgba(245, 220, 171, 0.88));
   color: #734917;
   font-family: inherit;
-  font-size: clamp(0.58rem, 1.45vh, 0.76rem);
+  font-size: clamp(0.54rem, 1.25vh, 0.7rem);
   font-weight: 900;
   cursor: pointer;
   padding: 0 3px;
@@ -273,7 +273,7 @@ body::after {
 }
 .hud-action-icon,
 .hud-back-icon {
-  font-size: clamp(1.05rem, 3vh, 1.55rem);
+  font-size: clamp(0.95rem, 2.45vh, 1.35rem);
   line-height: 1;
 }
 .hud-action-text,
@@ -287,7 +287,7 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: clamp(38px, 6.5vh, 58px);
+  min-height: clamp(32px, 5.2vh, 46px);
   padding: 0 6px;
   border-radius: 18px;
   background: transparent;

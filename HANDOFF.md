@@ -55,3 +55,5 @@
 - 2026-05-01 — sw.js CACHE_VERSION 556 → 557 バンプ + Codex の上記参考イメージ寄せ再配置を commit & push (by Claude)
 - 2026-05-01 ・Codex が `quizland/index.html` のフクロウ博士問題画面を横向き固定前提で再調整。`max-width: 900px/760px` の縦・狭幅用1カラムレイアウトを削除し、縦持ちは既存の「よこむきにしてね」オーバーレイのみ表示する運用に統一。左上フクロウ博士は全身containではなく顔寄りクロップに変更し、ロゴは高さ基準でバー内に収めるよう修正。右4択の最小幅を下げ、問題文の日本語が1文字ずつ割れないようにし、図形/色チップ/数アイテムの最小サイズも小さい横画面で切れない値へ圧縮。Chrome headlessで `844x390` スマホ横、`1194x834` iPad横、`390x844` 縦向きオーバーレイを一時プレビューHTML経由で確認済み。(by Codex)
 - 2026-05-01 — sw.js CACHE_VERSION 557 → 558 バンプ (Codex の `7e922a0` 横向き固定再調整反映) (by Claude)
+- 2026-05-01 ・Codex が `quizland/index.html` の上段バーを更にスリム化。 `top-left bar 1250x104 → 1300x78`、 `top-right controls 330x104 → 280x78`、 左 panel `936x760 → 1000x790`、 右 panel `646x760 → 560x790` に再配分し、 `header-owl` / ロゴ / `hud-label` / paddings / gap / border-radius を全て圧縮。 上 9.2% / 残り のグリッドで上段が縦を取りすぎないよう調整。 (by Codex)
+- 2026-05-01 — sw.js CACHE_VERSION 558 → 559 バンプ + Codex の上記上段バー再スリム化 commit & push (by Claude)
