@@ -14,7 +14,89 @@
 
 ## Active (進行中 / 未着手)
 
-なし。
+### 2026-05-01 (新規) — Quizland preview に placeholder 画像をはめてレイアウト検証
+**依頼者**: Claude (ユーザー指示) → Codex 実施希望
+
+`quizland/preview/full/` で寸法を詰めてきたバウンディングボックス群に対して、 **指定解像度のプレースホルダ画像 (色付きグリッド or チェッカー)** を生成して実際にはめ込み、 **レイアウトが崩れず正しい比率で表示されるか** を検証してほしい。
+
+#### 1. 生成する画像 (各バウンディングボックスに対応)
+
+現在のレイアウト寸法は `quizland/preview/full/saved-layout.json` を参照。 主要パーツ:
+
+| 要素 | 寸法 (px) | 推奨ファイル名 |
+|---|---|---|
+| ヘッダーピル全体 | 856×142 | `hdr-left.png` |
+| 博士アイコン | 127×127 | `owl-icon.png` |
+| タイトル札 | 296×128 | `title-card.png` |
+| 1/5 ボックス | 119×63 | `progress-num.png` |
+| ドット 5 個まとまり | 218×28 | `dots.png` |
+| 右ボタン (おしらせ) | 120×120 | `ctrl-btn-1.png` |
+| 右ボタン (せってい) | 120×120 | `ctrl-btn-2.png` |
+| 問題文カード | 1000×170 (※デフォルト、 saved-layout に override 無ければ q-col 1fr の幅を実寸計測) | `q-text-card.png` |
+| 音声ボタン | 80×80 | `audio.png` |
+| 問題ボード | 856×512 | `board.png` |
+| 答えトレイ | 704×512 | `answer-tray.png` |
+| 選択肢チップ ×4 (赤青黄緑) | 322×220 (※実寸計測、 4 色違い) | `chip-{red,blue,yellow,green}.png` |
+| 色マル ×4 | 110×110 | `circle-{red,blue,yellow,green}.png` |
+| ヒント帯 | 491×122 | `hint.png` |
+| キャラクター (フクロウ) | 199×122 | `character.png` |
+
+**画像内容**: 各画像に **色付きの市松模様 (チェッカー) または 16x16 グリッド** + 中央に **ファイル名 + 解像度のテキスト** を焼き込む (例: `board.png 856×512`)。 そうすれば歪み・拡縮・マスク切れが目視で即分かる。
+
+例: PIL で生成
+```python
+from PIL import Image, ImageDraw, ImageFont
+def gen(w, h, name, col1, col2):
+    img = Image.new('RGBA', (w, h))
+    d = ImageDraw.Draw(img)
+    cell = 32
+    for y in range(0, h, cell):
+        for x in range(0, w, cell):
+            c = col1 if (x // cell + y // cell) % 2 == 0 else col2
+            d.rectangle([x, y, x+cell-1, y+cell-1], fill=c)
+    d.text((w/2-50, h/2-8), f'{name} {w}×{h}', fill=(0,0,0,255))
+    img.save(f'assets/preview-placeholders/{name}.png')
+```
+
+色は要素ごとに変える (board=赤系、 tray=青系、 chip=色名そのもの、 etc.)。
+
+#### 2. 配置先
+
+`assets/preview-placeholders/` ディレクトリに保存。
+
+ファイルサイズが 2MB を超えないように注意 (AGENTS.md §5)。 必要なら `scripts/auto_optimize_image.py` を通す。
+
+#### 3. quizland/preview/full に組み込み
+
+`quizland/preview/full/index.html` の wireframe 上書き部分 (.bbox-bg 系) を **`background-image: url(...)` + `background-size: 100% 100%`** に切替。 例:
+
+```css
+.board {
+  background: url('/assets/preview-placeholders/board.png') center / 100% 100% no-repeat !important;
+  border: none !important;
+}
+```
+
+各要素に対応する画像を割り当てる。 `background-size: 100% 100%` で **意図的に伸び縮み** させて、 リサイズしたとき画像も追従するか確認。 もし `contain` の方が良い箇所があれば適宜変える (例: 縦横比固定したい部品)。
+
+#### 4. 検証項目
+
+PC + iPhone 横画面 + iPad 横画面 で `?preview=1` 付き URL を開き、 以下を確認:
+
+- [ ] 全画像が表示される (404 や読込失敗が無い)
+- [ ] 21:9 ステージ + 16:9 セーフエリア内に収まる
+- [ ] 画像が歪んでいない (細胞が正方形のまま、 文字が読める)
+- [ ] レイアウトのフレームが画像で潰されて消えていない (border が出てたら除去)
+- [ ] body-drag 移動 / 辺ハンドル伸縮 / Alt 対称 / Shift 比率固定 が引き続き効く
+- [ ] saved-layout.json の値が再ロード後に保持される
+
+#### 5. ロールバック
+
+問題があれば `git revert <commit>` で戻れる。 検証完了後、 placeholder のまま master へ merge しないこと (本物の生成画像が出来てから差替予定)。
+
+#### 6. 画像差替方針メモ (将来の参考)
+
+placeholder で OK と分かったら、 同じファイル名 / 同じ寸法のまま、 本物の生成画像 (Imagen / fal.ai など) で差し替えれば即本番反映。 デザイン側で寸法を決め切ってあるので、 生成プロンプトに「W×H、 透明背景、 縁取りなし」 と指定するだけで良い。
 
 ---
 
