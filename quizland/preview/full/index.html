@@ -311,7 +311,35 @@ html, body {
   stroke-width: 4;
   fill: none;
   marker-end: url(#anno-arrow-head);
+  cursor: pointer;
+  pointer-events: stroke;
 }
+.anno-rect {
+  fill: none;
+  stroke: #ff3b6b;
+  stroke-width: 3;
+  stroke-dasharray: 8 4;
+  cursor: pointer;
+  pointer-events: stroke;
+}
+.anno-mode .anno-marker:hover,
+.anno-mode .anno-text:hover {
+  outline: 2px solid #fff;
+}
+body.eraser-mode #anno-layer { cursor: crosshair; }
+body.eraser-mode .anno-marker,
+body.eraser-mode .anno-text,
+body.eraser-mode .anno-arrow-line,
+body.eraser-mode .anno-rect {
+  cursor: not-allowed;
+}
+body.eraser-mode .anno-marker:hover,
+body.eraser-mode .anno-text:hover {
+  background: #ff0033 !important;
+}
+.tool-btn { font-size: 12px; }
+#anno-tools { display: none; gap: 6px; }
+body.anno-mode #anno-tools { display: inline-flex !important; }
 .anno-tip {
   position: fixed;
   bottom: 16px; left: 50%;
@@ -384,7 +412,15 @@ html, body {
 
   <div>
     <button id="anno-toggle">📝 注釈モード OFF</button>
-    <button id="anno-clear">🗑 全消去</button>
+  </div>
+
+  <div id="anno-tools" style="display:none; gap:6px;">
+    <button class="tool-btn" data-tool="marker" title="クリックでマーカー (A,B,C…)">📍 マーカー</button>
+    <button class="tool-btn" data-tool="text" title="クリックでテキスト付箋">📝 テキスト</button>
+    <button class="tool-btn" data-tool="rect" title="ドラッグで矩形を囲う">▭ 矩形</button>
+    <button class="tool-btn" data-tool="arrow" title="ドラッグで自由な矢印">↗ 矢印</button>
+    <button class="tool-btn" data-tool="eraser" title="クリックで個別削除">🧹 消しゴム</button>
+    <button id="anno-clear" title="全部消す">🗑 全消去</button>
   </div>
 
   <div style="margin-left:auto;color:#666;">
@@ -393,7 +429,7 @@ html, body {
 </div>
 
 <div class="anno-tip" id="anno-tip" style="display:none;">
-  注釈モード: クリック=マーカー / Shift+クリック=テキスト / マーカー上をドラッグ→他のマーカーで矢印
+  <span id="anno-tip-text">注釈モード ON</span>
 </div>
 
 <!-- ───── Stage ───── -->
@@ -565,11 +601,20 @@ const annoSvg = document.getElementById('anno-svg');
 const annoToggle = document.getElementById('anno-toggle');
 const annoClear = document.getElementById('anno-clear');
 const annoTip = document.getElementById('anno-tip');
+const annoTipText = document.getElementById('anno-tip-text');
+
 let annoMode = false;
-let nextLabel = 'A';
+let currentTool = 'marker';
 const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 let labelIdx = 0;
-let dragFromMarker = null;
+
+const TIP_TEXTS = {
+  marker:  'マーカー: クリックで A,B,C… 配置 (右クリックでラベル編集 / 消しゴムで削除)',
+  text:    'テキスト: クリックで黄色付箋を配置 (右クリックで編集)',
+  rect:    '矩形: ドラッグで囲い枠を描く',
+  arrow:   '矢印: ドラッグで自由に矢印を描く',
+  eraser:  '消しゴム: 注釈をクリックして個別削除',
+};
 
 function nextLabelChar() {
   const c = labelChars[labelIdx % labelChars.length];
@@ -583,18 +628,48 @@ function setAnnoMode(on) {
   annoToggle.classList.toggle('active', on);
   annoToggle.textContent = on ? '📝 注釈モード ON' : '📝 注釈モード OFF';
   annoTip.style.display = on ? 'block' : 'none';
+  if (on) setTool(currentTool);
+}
+
+function setTool(tool) {
+  currentTool = tool;
+  document.body.classList.toggle('eraser-mode', tool === 'eraser');
+  document.querySelectorAll('.tool-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tool === tool);
+  });
+  annoTipText.textContent = TIP_TEXTS[tool] || '';
 }
 
 annoToggle.addEventListener('click', () => setAnnoMode(!annoMode));
+document.querySelectorAll('.tool-btn').forEach(b => {
+  b.addEventListener('click', () => setTool(b.dataset.tool));
+});
 annoClear.addEventListener('click', () => {
+  if (!confirm('全注釈を削除しますか？')) return;
   document.querySelectorAll('.anno-marker, .anno-text').forEach(el => el.remove());
-  annoSvg.querySelectorAll('line.anno-arrow-line, path.anno-arrow-line').forEach(el => el.remove());
+  annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect').forEach(el => el.remove());
   labelIdx = 0;
 });
 
 function getStageCoords(e) {
   const r = stage.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+// ── Element factory ──────────
+function attachDeleteHandlers(el, isSvg) {
+  // 右クリックで削除確認
+  el.addEventListener('contextmenu', ev => {
+    ev.preventDefault();
+    if (confirm('この注釈を削除しますか？')) el.remove();
+  });
+  // 消しゴムモードでクリック削除
+  el.addEventListener('click', ev => {
+    if (currentTool === 'eraser' && annoMode) {
+      ev.stopPropagation();
+      el.remove();
+    }
+  });
 }
 
 function addMarker(x, y, label) {
@@ -604,56 +679,28 @@ function addMarker(x, y, label) {
   m.style.top = y + 'px';
   m.textContent = label || nextLabelChar();
   annoLayer.appendChild(m);
-
-  // 編集 (shift+クリック でラベル変更)
-  m.addEventListener('contextmenu', ev => {
-    ev.preventDefault();
+  attachDeleteHandlers(m);
+  // 右ダブルクリック: ラベル編集
+  m.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
     const t = prompt('ラベル', m.textContent);
     if (t !== null) m.textContent = t;
-  });
-
-  // ドラッグで矢印開始 / 終端
-  m.addEventListener('mousedown', ev => {
-    ev.stopPropagation();
-    if (!annoMode) return;
-    if (ev.shiftKey) {
-      // 削除
-      m.remove();
-      return;
-    }
-    dragFromMarker = m;
-    const onMove = (e2) => {
-      drawTempArrow(m, getStageCoords(e2));
-    };
-    const onUp = (e2) => {
-      const target = document.elementFromPoint(e2.clientX, e2.clientY);
-      const tgtMarker = target && target.closest('.anno-marker');
-      if (tgtMarker && tgtMarker !== m) {
-        finalizeArrow(m, tgtMarker);
-      }
-      tempArrow && tempArrow.remove();
-      tempArrow = null;
-      dragFromMarker = null;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
   });
   return m;
 }
 
-function addText(x, y, content) {
-  const text = content || prompt('テキスト', 'ここを修正');
-  if (!text) return;
+function addText(x, y) {
+  const text = prompt('テキスト', 'ここを修正');
+  if (!text) return null;
   const t = document.createElement('div');
   t.className = 'anno-text';
   t.style.left = x + 'px';
   t.style.top = y + 'px';
   t.textContent = text;
   annoLayer.appendChild(t);
-  t.addEventListener('contextmenu', ev => {
-    ev.preventDefault();
+  attachDeleteHandlers(t);
+  t.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
     const v = prompt('編集 (空で削除)', t.textContent);
     if (v === null) return;
     if (v === '') t.remove();
@@ -662,42 +709,101 @@ function addText(x, y, content) {
   return t;
 }
 
-let tempArrow = null;
-function drawTempArrow(fromEl, toPt) {
-  if (!tempArrow) {
-    tempArrow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    tempArrow.setAttribute('class', 'anno-arrow-line');
-    annoSvg.appendChild(tempArrow);
-  }
-  const fr = elCenter(fromEl);
-  tempArrow.setAttribute('x1', fr.x);
-  tempArrow.setAttribute('y1', fr.y);
-  tempArrow.setAttribute('x2', toPt.x);
-  tempArrow.setAttribute('y2', toPt.y);
-}
-
-function finalizeArrow(fromEl, toEl) {
+function addArrowFree(p1, p2) {
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   line.setAttribute('class', 'anno-arrow-line');
-  const fr = elCenter(fromEl);
-  const to = elCenter(toEl);
-  line.setAttribute('x1', fr.x); line.setAttribute('y1', fr.y);
-  line.setAttribute('x2', to.x); line.setAttribute('y2', to.y);
+  line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+  line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
   annoSvg.appendChild(line);
+  attachDeleteHandlers(line, true);
+  return line;
 }
 
-function elCenter(el) {
-  const er = el.getBoundingClientRect();
-  const sr = stage.getBoundingClientRect();
-  return { x: (er.left + er.width/2) - sr.left, y: (er.top + er.height/2) - sr.top };
+function addRect(p1, p2) {
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('class', 'anno-rect');
+  const x = Math.min(p1.x, p2.x);
+  const y = Math.min(p1.y, p2.y);
+  const w = Math.abs(p2.x - p1.x);
+  const h = Math.abs(p2.y - p1.y);
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', 6);
+  annoSvg.appendChild(rect);
+  attachDeleteHandlers(rect, true);
+  return rect;
 }
+
+// ── Drag handler for rect / arrow tool ──────────
+let dragStart = null;
+let tempShape = null;
+
+annoLayer.addEventListener('mousedown', e => {
+  if (!annoMode) return;
+  // 既存注釈の上は無視 (個別操作はそっちのハンドラ)
+  if (e.target.closest('.anno-marker, .anno-text')) return;
+  if (e.target.tagName === 'rect' || e.target.tagName === 'line') return;
+
+  if (currentTool === 'rect' || currentTool === 'arrow') {
+    e.preventDefault();
+    dragStart = getStageCoords(e);
+    if (currentTool === 'rect') {
+      tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      tempShape.setAttribute('class', 'anno-rect');
+      tempShape.setAttribute('rx', 6);
+    } else {
+      tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      tempShape.setAttribute('class', 'anno-arrow-line');
+    }
+    annoSvg.appendChild(tempShape);
+
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      if (currentTool === 'rect') {
+        const x = Math.min(dragStart.x, p.x);
+        const y = Math.min(dragStart.y, p.y);
+        const w = Math.abs(p.x - dragStart.x);
+        const h = Math.abs(p.y - dragStart.y);
+        tempShape.setAttribute('x', x); tempShape.setAttribute('y', y);
+        tempShape.setAttribute('width', w); tempShape.setAttribute('height', h);
+      } else {
+        tempShape.setAttribute('x1', dragStart.x);
+        tempShape.setAttribute('y1', dragStart.y);
+        tempShape.setAttribute('x2', p.x);
+        tempShape.setAttribute('y2', p.y);
+      }
+    };
+    const onUp = (e2) => {
+      const p = getStageCoords(e2);
+      const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) {
+        // クリックだけで小さすぎたら破棄
+        tempShape && tempShape.remove();
+      } else {
+        // 永続化のためのハンドラを付ける
+        attachDeleteHandlers(tempShape, true);
+      }
+      tempShape = null;
+      dragStart = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+});
 
 annoLayer.addEventListener('click', e => {
   if (!annoMode) return;
-  if (e.target !== annoLayer && e.target !== annoSvg) return;
+  // 既存注釈の上のクリックは無視 (それぞれのハンドラに任せる)
+  if (e.target.closest('.anno-marker, .anno-text')) return;
+  if (e.target.tagName === 'rect' || e.target.tagName === 'line') return;
+  if (currentTool === 'eraser') return; // 消しゴムは要素上でしか機能しない
+
   const p = getStageCoords(e);
-  if (e.shiftKey) addText(p.x, p.y);
-  else addMarker(p.x, p.y);
+  if (currentTool === 'marker') addMarker(p.x, p.y);
+  else if (currentTool === 'text') addText(p.x, p.y);
+  // rect / arrow はドラッグ専用 (mousedown で処理済み)
 });
 
 // SVG resize に追従
