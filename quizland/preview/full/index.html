@@ -1237,13 +1237,41 @@ function applyOp(op) {
   if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
   else if (op.type === 'remove') op.el.remove();
   else if (op.type === 'transform') { setGeometry(op.el, op.after); if (op.el === selectedEl) updateHandles(); }
+  else if (op.type === 'resize') { setResize(op.el, op.after); }
+  else if (op.type === 'guide-move') { setGuidePos(op.el, op.after); }
   scheduleSave();
 }
 function applyInverse(op) {
   if (op.type === 'add') { op.el.remove(); if (op.el === selectedEl) selectEl(null); }
   else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
   else if (op.type === 'transform') { setGeometry(op.el, op.before); if (op.el === selectedEl) updateHandles(); }
+  else if (op.type === 'resize') { setResize(op.el, op.before); }
+  else if (op.type === 'guide-move') { setGuidePos(op.el, op.before); }
   scheduleSave();
+}
+// リサイズ要素の状態適用
+function setResize(el, st) {
+  el.style.width = st.w || '';
+  el.style.height = st.h || '';
+  el._tx = st.tx || 0;
+  el._ty = st.ty || 0;
+  if (el._tx || el._ty) {
+    el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+  } else {
+    el.style.transform = '';
+  }
+  if (el.matches('.hdr-left') && st.h) {
+    document.documentElement.style.setProperty('--header-h', st.h);
+  }
+  el._resizeUpdateLabel && el._resizeUpdateLabel();
+  saveResizeState();
+}
+function setGuidePos(el, pos) {
+  if (el.classList.contains('h')) el.style.top = pos + 'px';
+  else el.style.left = pos + 'px';
+  const lbl = el.querySelector('.guide-label');
+  if (lbl) lbl.textContent = (el.classList.contains('h') ? 'y: ' : 'x: ') + Math.round(pos) + 'px';
+  saveResizeState();
 }
 function undo() {
   if (!undoStack.length) return;
@@ -1593,6 +1621,7 @@ window.addEventListener('keydown', e => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && annoMode && selectedEl) {
     e.preventDefault(); removeElWithHistory(selectedEl); return;
   }
+  // Ctrl+Z / Cmd+Z: 注釈・リサイズ・移動・ガイド全部に効く
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); redo(); return; }
   if (e.key === 'Escape') selectEl(null);
@@ -1711,6 +1740,15 @@ function attachHandle(el, axes) {
   el._resizeUpdateLabel();
 }
 
+function getResizeState(el) {
+  return {
+    w: el.style.width || '',
+    h: el.style.height || '',
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+  };
+}
+
 function makeHandle(el, pos, axes) {
   const h = document.createElement('div');
   h.className = 'resize-handle ' + pos;
@@ -1718,6 +1756,7 @@ function makeHandle(el, pos, axes) {
   h.addEventListener('mousedown', e => {
     e.stopPropagation();
     e.preventDefault();
+    const beforeState = getResizeState(el);
     const startX = e.clientX, startY = e.clientY;
     const stageRect = stage.getBoundingClientRect();
     const stageW = parseFloat(getComputedStyle(stage).width);
@@ -1729,13 +1768,22 @@ function makeHandle(el, pos, axes) {
     const onMove = (e2) => {
       const dx = (e2.clientX - startX) / scale;
       const dy = (e2.clientY - startY) / scale;
+      const sym = e2.altKey;  // Alt を押しながら → 左右/上下対称にスケール
       let newW = startW, newH = startH;
       let newTx = startTx, newTy = startTy;
-      // 北/西を引っ張る場合は幅/高さが減って translate も変わる
-      if (pos.includes('e')) newW = Math.max(20, startW + dx);
-      if (pos.includes('w')) { newW = Math.max(20, startW - dx); newTx = startTx + dx; }
-      if (pos.includes('s')) newH = Math.max(20, startH + dy);
-      if (pos.includes('n')) { newH = Math.max(20, startH - dy); newTy = startTy + dy; }
+      if (sym) {
+        // 中心点を保ったまま 2 倍率でサイズ変更
+        if (pos.includes('e')) { newW = Math.max(20, startW + 2*dx); newTx = startTx - dx; }
+        if (pos.includes('w')) { newW = Math.max(20, startW - 2*dx); newTx = startTx + dx; }
+        if (pos.includes('s')) { newH = Math.max(20, startH + 2*dy); newTy = startTy - dy; }
+        if (pos.includes('n')) { newH = Math.max(20, startH - 2*dy); newTy = startTy + dy; }
+      } else {
+        // 北/西を引っ張る場合は幅/高さが減って translate も変わる (片側固定)
+        if (pos.includes('e')) newW = Math.max(20, startW + dx);
+        if (pos.includes('w')) { newW = Math.max(20, startW - dx); newTx = startTx + dx; }
+        if (pos.includes('s')) newH = Math.max(20, startH + dy);
+        if (pos.includes('n')) { newH = Math.max(20, startH - dy); newTy = startTy + dy; }
+      }
       // axes 制約: w が許可されてなければ幅は触らない
       if (axes.includes('w') && (pos.includes('e') || pos.includes('w'))) {
         el.style.width = newW + 'px';
@@ -1757,6 +1805,10 @@ function makeHandle(el, pos, axes) {
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      const after = getResizeState(el);
+      if (JSON.stringify(after) !== JSON.stringify(beforeState)) {
+        pushHistory({ type: 'resize', el, before: beforeState, after });
+      }
       saveResizeState();
     };
     window.addEventListener('mousemove', onMove);
@@ -1775,6 +1827,7 @@ function attachMoveDrag(el) {
         e.target.classList.contains('resize-size-label')) return;
     e.stopPropagation();
     e.preventDefault();
+    const beforeState = getResizeState(el);
     const startX = e.clientX, startY = e.clientY;
     const stageRect = stage.getBoundingClientRect();
     const stageW = parseFloat(getComputedStyle(stage).width);
@@ -1790,6 +1843,10 @@ function attachMoveDrag(el) {
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      const after = getResizeState(el);
+      if (JSON.stringify(after) !== JSON.stringify(beforeState)) {
+        pushHistory({ type: 'resize', el, before: beforeState, after });
+      }
       saveResizeState();
     };
     window.addEventListener('mousemove', onMove);
@@ -1827,11 +1884,13 @@ function createGuide(e, axis) {
   g.appendChild(lbl);
   document.body.appendChild(g);
   attachGuideDrag(g, lbl, axis);
+  pushHistory({ type: 'add', el: g, parent: document.body, next: null });
   // 即座にドラッグ開始
   const evt = new MouseEvent('mousedown', { clientX: e.clientX, clientY: e.clientY, bubbles: true });
   g.dispatchEvent(evt);
 }
 function attachGuideDrag(g, lbl, axis) {
+  const getCurPos = () => axis === 'h' ? parseFloat(g.style.top) || 0 : parseFloat(g.style.left) || 0;
   const updatePos = (clientX, clientY) => {
     if (axis === 'h') {
       g.style.top = clientY + 'px';
@@ -1844,13 +1903,22 @@ function attachGuideDrag(g, lbl, axis) {
   g.addEventListener('mousedown', e => {
     e.stopPropagation();
     e.preventDefault();
+    const before = getCurPos();
     const onMove = (e2) => updatePos(e2.clientX, e2.clientY);
     const onUp = (e2) => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       // ルーラーに戻したら削除
-      if (axis === 'h' && e2.clientY < 24) g.remove();
-      if (axis === 'v' && e2.clientX < 24) g.remove();
+      if (axis === 'h' && e2.clientY < 24) {
+        pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+        g.remove();
+      } else if (axis === 'v' && e2.clientX < 24) {
+        pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+        g.remove();
+      } else {
+        const after = getCurPos();
+        if (after !== before) pushHistory({ type: 'guide-move', el: g, before, after });
+      }
       saveResizeState();
     };
     window.addEventListener('mousemove', onMove);
@@ -1860,6 +1928,7 @@ function attachGuideDrag(g, lbl, axis) {
   // 右クリックで削除
   g.addEventListener('contextmenu', e => {
     e.preventDefault();
+    pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
     g.remove();
     saveResizeState();
   });
