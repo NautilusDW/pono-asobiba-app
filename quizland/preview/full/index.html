@@ -212,20 +212,22 @@ body.show-safe .safe-area::after {
 }
 .hdr-left .progress-num { margin-left: auto; }  /* B 位置に移動 */
 .hdr-left .dots {
-  display: inline-flex; gap: 10px; flex: 0 0 auto;
-  /* デフォルト高さ。 リサイズで変更可能 → 中の dot が自動追従 */
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  /* デフォルトサイズ。 リサイズすると中の dot も追従 */
   height: 14px;
   align-items: center;
+  justify-content: space-between;
 }
 .hdr-left .dot {
-  /* container 幅・高さの均等割り。 アスペクト比 1:1 で正方/円を維持 */
-  flex: 1 1 0;
+  /* dot は container の高さに合わせた円 (aspect-ratio で正方形 → border-radius 50% で円) */
   height: 100%;
   aspect-ratio: 1;
-  width: auto;
+  flex: 0 0 auto;
   border-radius: 50%;
-  background: #d6b56a; border: 2px solid var(--wood-mid);
-  min-width: 0;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
 }
 .hdr-left .dot.done { background: #f3a330; }
 
@@ -1669,12 +1671,22 @@ const RESIZABLE_SPEC = [
 const RESIZE_KEY = 'quizland_preview_sizes_v1';
 
 // 編集可能テキストの収集 / 復元
+// 動的に付加されるクラスはパス計算から除外 (再読込時の DOM と一致させる)
+const TRANSIENT_CLASSES = new Set([
+  'resizable', 'editable-text', 'anno-mode', 'preview-mode',
+  'show-bbox', 'show-safe', 'eraser-mode', 'dirty', 'active'
+]);
+function getCleanText(el) {
+  // resize ハンドルやサイズラベルは除外して純粋なテキストを取る
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.resize-handle, .resize-handle-hit, .resize-size-label').forEach(c => c.remove());
+  return clone.textContent;
+}
 function collectEditableTexts() {
   const data = {};
   document.querySelectorAll('.editable-text').forEach(el => {
-    // selector ベースの安定 ID を作る
     const path = getDomPath(el);
-    data[path] = el.textContent;
+    data[path] = getCleanText(el);
   });
   return data;
 }
@@ -1686,14 +1698,14 @@ function applyEditableTexts(data) {
   });
 }
 function getDomPath(el) {
-  // 親をたどって selector チェーンを作成 (重複時はインデックス付与)
   const parts = [];
   let cur = el;
   while (cur && cur.nodeType === 1 && cur !== document.body) {
     let s = cur.tagName.toLowerCase();
     if (cur.id) { s += '#' + cur.id; parts.unshift(s); break; }
     if (cur.className && typeof cur.className === 'string') {
-      s += '.' + cur.className.trim().split(/\s+/).join('.');
+      const cls = cur.className.trim().split(/\s+/).filter(c => c && !TRANSIENT_CLASSES.has(c));
+      if (cls.length) s += '.' + cls.join('.');
     }
     const parent = cur.parentElement;
     if (parent) {
