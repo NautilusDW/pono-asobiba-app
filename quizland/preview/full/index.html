@@ -230,7 +230,7 @@ body.show-safe .safe-area::after {
   background: #d6b56a;
   border: 2px solid var(--wood-mid);
 }
-.hdr-left .dot.done { background: #f3a330; }
+.hdr-left .dot.done { background-color: #f3a330; }
 
 .hdr-center {
   justify-self: center;
@@ -628,7 +628,9 @@ body.preview-mode .stage {
   background: var(--bbox-bg) !important;
   border: 1px dashed var(--bbox-border) !important;
 }
-.hdr-left .dot.done { background: #c89a4a !important; }
+/* shorthand `background:` を使うと `background-image: none` になって placeholder
+   画像が消えるので、 background-color のみで色付けする */
+.hdr-left .dot.done { background-color: #c89a4a !important; }
 /* キャラクター: 卵形をやめて単純な四角バウンディングボックス
    width/height は !important を付けず、 リサイズドラッグの inline style を上書き許可 */
 .character {
