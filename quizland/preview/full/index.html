@@ -551,6 +551,36 @@ body.eraser-mode #anno-layer { cursor: crosshair; }
 #anno-tools { display: none; gap: 6px; }
 body.anno-mode #anno-tools { display: inline-flex !important; }
 
+/* ───── Preview mode (端末サイズで見る) ───── */
+#preview-exit {
+  display: none;
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+body.preview-mode #preview-exit { display: block; }
+body.preview-mode .toolbar { display: none; }
+body.preview-mode .anno-tip { display: none !important; }
+body.preview-mode .stage-wrap {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Debug bbox */
 .show-bbox .slot::after {
   content: attr(data-bbox);
@@ -625,10 +655,15 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
     <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
   </div>
 
+  <div>
+    <button id="preview-mode" title="ツールバー非表示 + 画面に合わせてスケール">📱 端末サイズで見る</button>
+  </div>
+
   <div style="margin-left:auto;color:#666;">
     <a href="../" style="color:#aaa;">← パーツ一覧</a>
   </div>
 </div>
+<button id="preview-exit" title="編集モードに戻る (Esc でも戻れる)">✕ 編集に戻る</button>
 
 <div class="anno-tip" id="anno-tip" style="display:none;">
   <span id="anno-tip-text">注釈モード ON</span>
@@ -1117,7 +1152,15 @@ function addHandle(x, y, role) {
 
 function getStageCoords(e) {
   const r = stage.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+  // scale 対応 (preview mode で stage が transform: scale されている場合に正しい内部座標にする)
+  const internalW = parseFloat(getComputedStyle(stage).width) || r.width;
+  const internalH = parseFloat(getComputedStyle(stage).height) || r.height;
+  const sx = r.width / internalW;
+  const sy = r.height / internalH;
+  return {
+    x: (e.clientX - r.left) / (sx || 1),
+    y: (e.clientY - r.top) / (sy || 1)
+  };
 }
 
 function removeElWithHistory(el) {
@@ -1323,14 +1366,52 @@ window.addEventListener('keydown', e => {
 });
 
 function resizeSvg() {
-  const sr = stage.getBoundingClientRect();
-  annoSvg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
-  annoSvg.setAttribute('width', sr.width);
-  annoSvg.setAttribute('height', sr.height);
+  // 内部寸法 (transform 前) でビューボックスを設定 → 注釈は scale に追従する
+  const w = parseFloat(getComputedStyle(stage).width);
+  const h = parseFloat(getComputedStyle(stage).height);
+  annoSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  annoSvg.setAttribute('width', w);
+  annoSvg.setAttribute('height', h);
 }
 window.addEventListener('resize', resizeSvg);
 window.addEventListener('load', resizeSvg);
 window.addEventListener('resize', updateBboxLabels);
+
+// ───── Preview mode (端末サイズで見る) ─────
+const previewBtn = document.getElementById('preview-mode');
+const previewExit = document.getElementById('preview-exit');
+function fitStage() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const stageH = parseFloat(getComputedStyle(stage).height);
+  const scale = Math.min(w / stageW, h / stageH);
+  stage.style.transform = `scale(${scale})`;
+  stage.style.transformOrigin = 'center center';
+}
+function enterPreview() {
+  document.body.classList.add('preview-mode');
+  fitStage();
+  window.addEventListener('resize', fitStage);
+  // 縦横対応: 端末を回転したらリフィット
+  window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+}
+function exitPreview() {
+  document.body.classList.remove('preview-mode');
+  stage.style.transform = '';
+  window.removeEventListener('resize', fitStage);
+}
+previewBtn?.addEventListener('click', enterPreview);
+previewExit?.addEventListener('click', exitPreview);
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.body.classList.contains('preview-mode')) {
+    exitPreview();
+  }
+});
+
+// URL ?preview=1 で直接プレビューモード
+if (new URLSearchParams(location.search).get('preview') === '1') {
+  setTimeout(enterPreview, 50);
+}
 
 // ── Reset button ──
 if (annoReset) {
