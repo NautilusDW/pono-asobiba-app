@@ -461,12 +461,14 @@ body.show-board-frame .board::before { opacity: 1; }
 }
 .anno-arrow-line {
   stroke: #ff3b6b;
-  stroke-width: 8;
+  stroke-width: var(--arrow-stroke, 4);
   fill: none;
   marker-end: url(#anno-arrow-head);
   cursor: move;
   pointer-events: stroke;
 }
+/* 矢印の hit を確保するため、 stroke が細いときも 16px は当たるようにする */
+.anno-arrow-line { stroke-linecap: round; }
 .anno-rect {
   fill: rgba(255, 59, 107, 0.05);
   stroke: #ff3b6b;
@@ -558,6 +560,8 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
     <input type="number" id="slot-size" value="130" min="40" max="300" step="2">px
     <label>gap</label>
     <input type="number" id="gap" value="16" min="0" max="48" step="2">px
+    <label>矢印太さ</label>
+    <input type="number" id="arrow-stroke" value="4" min="2" max="16" step="1">px
   </div>
 
   <div>
@@ -748,6 +752,9 @@ document.getElementById('slot-size').addEventListener('input', e => {
 document.getElementById('gap').addEventListener('input', e => {
   document.documentElement.style.setProperty('--gap', e.target.value + 'px');
   updateBboxLabels();
+});
+document.getElementById('arrow-stroke').addEventListener('input', e => {
+  document.documentElement.style.setProperty('--arrow-stroke', e.target.value);
 });
 document.getElementById('show-bbox').addEventListener('change', e => {
   document.body.classList.toggle('show-bbox', e.target.checked);
@@ -949,7 +956,7 @@ function attachDeleteHandlers(el) {
   el.addEventListener('mousedown', ev => {
     if (!annoMode) return;
     if (currentTool === 'eraser') return;
-    if (currentTool === 'rect' || currentTool === 'arrow') return;
+    // 注: rect/arrow ツールでも既存の注釈は移動できるようにブロックを外した
     if (ev.target.classList && (ev.target.classList.contains('anno-handle') || ev.target.classList.contains('anno-handle-hit'))) return;
     ev.stopPropagation();
     selectEl(el);
