@@ -332,7 +332,11 @@ body.show-safe .safe-area::after {
   position: relative;
   box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
   height: 500px;
+  /* 中身がどれだけ大きくなっても外枠は伸びない */
+  overflow: hidden;
 }
+/* 列の伸び対策: q-col は親の grid 1fr 内に固定 */
+.q-col, .a-col { min-width: 0; }
 .board::before {
   content: "";
   position: absolute;
@@ -847,6 +851,42 @@ body:not(.resize-mode) .resize-size-label { display: none; }
 </div>
 
 <script>
+// ───── Per-variant slot sizes (個数ごとに最適なサイズを記憶) ─────
+const SLOT_SIZE_DEFAULTS = {
+  'row-3':  { slot: 220, gap: 16 },
+  'row-4':  { slot: 180, gap: 16 },
+  'row-5':  { slot: 140, gap: 16 },
+  'grid-1': { slot: 300, gap: 16 },
+  'grid-2': { slot: 240, gap: 16 },
+  'grid-3': { slot: 220, gap: 16 },
+  'grid-4': { slot: 200, gap: 16 },
+  'grid-5': { slot: 170, gap: 16 },
+  'grid-6': { slot: 160, gap: 16 },
+  'grid-7': { slot: 140, gap: 16 },
+  'grid-8': { slot: 130, gap: 16 },
+  'grid-9': { slot: 130, gap: 16 },
+};
+const PER_VARIANT_KEY = 'quizland_preview_per_variant_v1';
+function getPerVariantSizes() {
+  try { return JSON.parse(localStorage.getItem(PER_VARIANT_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function savePerVariantSize(variant, slot, gap) {
+  const data = getPerVariantSizes();
+  data[variant] = { slot, gap };
+  try { localStorage.setItem(PER_VARIANT_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function applyVariantSize(variant) {
+  const data = getPerVariantSizes();
+  const s = data[variant] || SLOT_SIZE_DEFAULTS[variant] || { slot: 130, gap: 16 };
+  document.documentElement.style.setProperty('--slot-size', s.slot + 'px');
+  document.documentElement.style.setProperty('--gap', s.gap + 'px');
+  const slotInput = document.getElementById('slot-size');
+  const gapInput = document.getElementById('gap');
+  if (slotInput) slotInput.value = s.slot;
+  if (gapInput) gapInput.value = s.gap;
+}
+
 // ───── Layout rendering ─────
 function buildLayout(value) {
   const [type, n] = value.split('-');
@@ -887,6 +927,8 @@ function buildLayout(value) {
     };
     board.appendChild(grid(layouts[count]));
   }
+  // 個数ごとに保存されたサイズ (またはデフォルト) を反映
+  applyVariantSize(value);
   updateBboxLabels();
 }
 
@@ -924,12 +966,21 @@ document.getElementById('img-clear').addEventListener('click', () => {
   document.getElementById('img-file').value = '';
 });
 document.getElementById('slot-size').addEventListener('input', e => {
-  document.documentElement.style.setProperty('--slot-size', e.target.value + 'px');
+  const v = parseInt(e.target.value);
+  document.documentElement.style.setProperty('--slot-size', v + 'px');
+  // 現在の variant に紐付けて保存
+  const variant = document.getElementById('layout-select').value;
+  const gap = parseInt(document.getElementById('gap').value);
+  savePerVariantSize(variant, v, gap);
   updateBboxLabels();
   scheduleSave();
 });
 document.getElementById('gap').addEventListener('input', e => {
-  document.documentElement.style.setProperty('--gap', e.target.value + 'px');
+  const v = parseInt(e.target.value);
+  document.documentElement.style.setProperty('--gap', v + 'px');
+  const variant = document.getElementById('layout-select').value;
+  const slot = parseInt(document.getElementById('slot-size').value);
+  savePerVariantSize(variant, slot, v);
   updateBboxLabels();
   scheduleSave();
 });
