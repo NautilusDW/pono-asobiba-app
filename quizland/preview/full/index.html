@@ -792,9 +792,9 @@ function updateHandles() {
   }
 }
 function addHandle(x, y, role) {
-  // 大きい透明 hit 円
+  // 大きい透明 hit 円 (両方のクラスを持たせて、 既存の早期 return チェックに引っかかるように)
   const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  hit.setAttribute('class', 'anno-handle-hit');
+  hit.setAttribute('class', 'anno-handle anno-handle-hit');
   hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', 18);
   hit.dataset.role = role;
   annoSvg.appendChild(hit);
@@ -846,6 +846,10 @@ function addHandle(x, y, role) {
   };
   hit.addEventListener('mousedown', handler);
   h.addEventListener('mousedown', handler);
+  // 念のためハンドル上の click / mouseup もキャンセル (上のレイヤーに伝播しないように)
+  const stop = (ev) => { ev.stopPropagation(); };
+  hit.addEventListener('click', stop);
+  h.addEventListener('click', stop);
 }
 
 function getStageCoords(e) {
