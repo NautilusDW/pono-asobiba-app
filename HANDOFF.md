@@ -19,27 +19,77 @@
 
 `quizland/preview/full/` で寸法を詰めてきたバウンディングボックス群に対して、 **指定解像度のプレースホルダ画像 (色付きグリッド or チェッカー)** を生成して実際にはめ込み、 **レイアウトが崩れず正しい比率で表示されるか** を検証してほしい。
 
-#### 1. 生成する画像 (各バウンディングボックスに対応)
+#### 1. 生成する画像 (全バウンディングボックスに対応、 全 28 種)
 
-現在のレイアウト寸法は `quizland/preview/full/saved-layout.json` を参照。 主要パーツ:
+現在のレイアウト寸法は `quizland/preview/full/saved-layout.json` を参照。 saved-layout に明示寸法が無いものは index.html で計算 → CSS デフォルト → 実寸 `getBoundingClientRect` を使う。
 
-| 要素 | 寸法 (px) | 推奨ファイル名 |
-|---|---|---|
-| ヘッダーピル全体 | 856×142 | `hdr-left.png` |
-| 博士アイコン | 127×127 | `owl-icon.png` |
-| タイトル札 | 296×128 | `title-card.png` |
-| 1/5 ボックス | 119×63 | `progress-num.png` |
-| ドット 5 個まとまり | 218×28 | `dots.png` |
-| 右ボタン (おしらせ) | 120×120 | `ctrl-btn-1.png` |
-| 右ボタン (せってい) | 120×120 | `ctrl-btn-2.png` |
-| 問題文カード | 1000×170 (※デフォルト、 saved-layout に override 無ければ q-col 1fr の幅を実寸計測) | `q-text-card.png` |
-| 音声ボタン | 80×80 | `audio.png` |
-| 問題ボード | 856×512 | `board.png` |
-| 答えトレイ | 704×512 | `answer-tray.png` |
-| 選択肢チップ ×4 (赤青黄緑) | 322×220 (※実寸計測、 4 色違い) | `chip-{red,blue,yellow,green}.png` |
-| 色マル ×4 | 110×110 | `circle-{red,blue,yellow,green}.png` |
-| ヒント帯 | 491×122 | `hint.png` |
-| キャラクター (フクロウ) | 199×122 | `character.png` |
+##### 背景
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 1 | 21:9 ステージ全体背景 (森) | 2100×900 | `stage-bg.png` |
+
+##### ヘッダー左ピル
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 2 | ピル背景フレーム | 856×142 | `hdr-pill.png` |
+| 3 | 博士アイコン | 127×127 | `owl-icon.png` |
+| 4 | タイトル札フレーム | 296×128 | `title-card.png` |
+| 5 | 「フクロウはかせの」 (小) | ~210×24 | `title-small.png` |
+| 6 | 「なぞなぞ」 (大) | ~210×40 | `title-main.png` |
+| 7 | 1/5 ボックス | 119×63 | `progress-num.png` |
+| 8 | 進捗ドット (active / 現在問題) | 28×28 | `dot-active.png` |
+| 9 | 進捗ドット (inactive / 未到達) | 28×28 | `dot-inactive.png` |
+
+##### ヘッダー右ボタン
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 10 | ctrl-btn おしらせ (鈴 + 文字、 一体) | 120×120 | `ctrl-btn-news.png` |
+| 11 | ctrl-btn せってい (歯車 + 文字、 一体) | 120×120 | `ctrl-btn-settings.png` |
+
+##### 左カラム (問題側)
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 12 | 問題文カードフレーム | ~1000×170 (実寸計測) | `q-text-card.png` |
+| 13 | 音声ボタン (スピーカー) | 80×80 | `audio.png` |
+| 14 | 問題ボード | 856×512 | `board.png` |
+
+##### 右カラム (回答側)
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 15 | 答えトレイ枠 | 704×512 | `answer-tray.png` |
+| 16 | 選択肢チップ — 赤 | 322×220 | `chip-red.png` |
+| 17 | 選択肢チップ — 青 | 322×220 | `chip-blue.png` |
+| 18 | 選択肢チップ — 黄 | 322×220 | `chip-yellow.png` |
+| 19 | 選択肢チップ — 緑 | 322×220 | `chip-green.png` |
+| 20 | 色マル — 赤 | 110×110 | `circle-red.png` |
+| 21 | 色マル — 青 | 110×110 | `circle-blue.png` |
+| 22 | 色マル — 黄 | 110×110 | `circle-yellow.png` |
+| 23 | 色マル — 緑 | 110×110 | `circle-green.png` |
+
+##### 下段
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 24 | ヒント帯 | 491×122 | `hint.png` |
+| 25 | キャラクター (フクロウ博士、 全身) | 199×122 | `character.png` |
+
+##### スロット (問題ボード内、 動的生成)
+| # | 要素 | 寸法 (px) | ファイル名 |
+|---|---|---|---|
+| 26 | ItemSlot (色チップ用テンプレ) | 240×240 (default) | `slot-color-placeholder.png` |
+| 27 | ItemSlot (オブジェクト用テンプレ) | 240×240 | `slot-object-placeholder.png` |
+| 28 | ItemSlot (図形用テンプレ) | 240×240 | `slot-shape-placeholder.png` |
+
+→ **計 28 種のプレースホルダー画像** を生成。 #5/#6 のテキスト系や #1 の背景は無くてもレイアウト崩れチェックは可能なので **優先度低** (生成は #2〜#25 をマスト)。 #26〜#28 は将来の問題用、 今回の検証では `index.html` 既存のスロット表示のままで OK。
+
+実寸計測コード例 (Codex が実装段階で要素を計測する場合):
+```js
+const r = document.querySelector('.q-text-card').getBoundingClientRect();
+const stageRect = stage.getBoundingClientRect();
+const stageW = parseFloat(getComputedStyle(stage).width);
+const scale = stageRect.width / stageW;
+const w = Math.round(r.width / scale);
+const h = Math.round(r.height / scale);
+```
 
 **画像内容**: 各画像に **色付きの市松模様 (チェッカー) または 16x16 グリッド** + 中央に **ファイル名 + 解像度のテキスト** を焼き込む (例: `board.png 856×512`)。 そうすれば歪み・拡縮・マスク切れが目視で即分かる。
 
