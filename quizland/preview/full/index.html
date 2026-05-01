@@ -635,6 +635,48 @@ body.preview-mode .stage {
   font-size: 56px;
 }
 
+/* ───── Resize mode (ドラッグで各バウンディングボックスを伸縮) ───── */
+body.resize-mode .resizable {
+  position: relative;
+  outline: 2px dashed rgba(0, 212, 255, 0.6);
+  outline-offset: 2px;
+}
+.resize-handle {
+  position: absolute;
+  width: 22px; height: 22px;
+  background: #00d4ff;
+  border: 2px solid #fff;
+  z-index: 60;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.resize-handle.br {
+  bottom: -12px; right: -12px;
+  cursor: nwse-resize;
+}
+.resize-handle.b {
+  bottom: -12px; left: 50%; transform: translateX(-50%);
+  cursor: ns-resize;
+}
+.resize-handle.r {
+  top: 50%; right: -12px; transform: translateY(-50%);
+  cursor: ew-resize;
+}
+.resize-size-label {
+  position: absolute;
+  bottom: 6px; right: 6px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  z-index: 59;
+  pointer-events: none;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body:not(.resize-mode) .resize-handle,
+body:not(.resize-mode) .resize-size-label { display: none; }
+
 /* Debug bbox */
 .show-bbox .slot::after {
   content: attr(data-bbox);
@@ -708,6 +750,11 @@ body.preview-mode .stage {
     <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
     <button id="anno-clear">🗑 全消去</button>
     <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
+  </div>
+
+  <div>
+    <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
+    <button id="resize-reset" title="リサイズ値をリセット">↺ サイズ初期化</button>
   </div>
 
   <div>
@@ -1434,6 +1481,149 @@ function resizeSvg() {
 window.addEventListener('resize', resizeSvg);
 window.addEventListener('load', resizeSvg);
 window.addEventListener('resize', updateBboxLabels);
+
+// ───── Resize mode (各バウンディングボックスをドラッグで伸縮) ─────
+const RESIZABLE_SPEC = [
+  // selector, axes, label
+  ['.q-text-card',  'h',  '問題文'],
+  ['.board',        'h',  '問題ボード'],
+  ['.answer-tray',  'h',  'トレイ'],
+  ['.chip',         'h',  '選択肢'],
+  ['.hint',         'h',  'ヒント'],
+  ['.character',    'wh', 'キャラ'],
+  ['.hdr-right .ctrl-btn', 'wh', 'ボタン'],
+];
+const RESIZE_KEY = 'quizland_preview_sizes_v1';
+
+function saveResizeState() {
+  const data = {};
+  RESIZABLE_SPEC.forEach(([sel, axes, label]) => {
+    document.querySelectorAll(sel).forEach((el, i) => {
+      const key = `${sel}|${i}`;
+      data[key] = {
+        w: el.style.width || '',
+        h: el.style.height || '',
+      };
+    });
+  });
+  try { localStorage.setItem(RESIZE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadResizeState() {
+  try {
+    const raw = localStorage.getItem(RESIZE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    RESIZABLE_SPEC.forEach(([sel]) => {
+      document.querySelectorAll(sel).forEach((el, i) => {
+        const key = `${sel}|${i}`;
+        const s = data[key];
+        if (s) {
+          if (s.w) el.style.width = s.w;
+          if (s.h) el.style.height = s.h;
+        }
+      });
+    });
+  } catch(e) {}
+}
+function resetResizeState() {
+  if (!confirm('リサイズ値をリセットしますか？')) return;
+  try { localStorage.removeItem(RESIZE_KEY); } catch(e) {}
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.width = '';
+      el.style.height = '';
+    });
+  });
+  // ハンドルを更新
+  if (document.body.classList.contains('resize-mode')) {
+    disableResize();
+    enableResize();
+  }
+}
+
+function attachHandle(el, axes) {
+  el.classList.add('resizable');
+  const handles = [];
+  if (axes.includes('w') && axes.includes('h')) {
+    handles.push(makeHandle(el, 'br'));
+  } else if (axes.includes('h')) {
+    handles.push(makeHandle(el, 'b'));
+  } else if (axes.includes('w')) {
+    handles.push(makeHandle(el, 'r'));
+  }
+  // サイズ表示
+  const lbl = document.createElement('div');
+  lbl.className = 'resize-size-label';
+  el.appendChild(lbl);
+  const updateLabel = () => {
+    const r = el.getBoundingClientRect();
+    const sr = stage.getBoundingClientRect();
+    const stageW = parseFloat(getComputedStyle(stage).width);
+    const scale = sr.width / stageW;
+    lbl.textContent = `${Math.round(r.width / scale)}×${Math.round(r.height / scale)}`;
+  };
+  updateLabel();
+  el._resizeUpdateLabel = updateLabel;
+}
+
+function makeHandle(el, pos) {
+  const h = document.createElement('div');
+  h.className = 'resize-handle ' + pos;
+  el.appendChild(h);
+  h.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX, startY = e.clientY;
+    const stageRect = stage.getBoundingClientRect();
+    const stageW = parseFloat(getComputedStyle(stage).width);
+    const scale = stageRect.width / stageW;  // 1 if no transform
+    const startW = el.offsetWidth;
+    const startH = el.offsetHeight;
+    const onMove = (e2) => {
+      const dx = (e2.clientX - startX) / (scale || 1);
+      const dy = (e2.clientY - startY) / (scale || 1);
+      if (pos === 'br' || pos === 'r') {
+        el.style.width = Math.max(20, startW + dx) + 'px';
+      }
+      if (pos === 'br' || pos === 'b') {
+        el.style.height = Math.max(20, startH + dy) + 'px';
+      }
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      saveResizeState();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+  return h;
+}
+
+function enableResize() {
+  document.body.classList.add('resize-mode');
+  document.getElementById('resize-toggle').textContent = '📐 サイズ調整 ON';
+  document.getElementById('resize-toggle').classList.add('active');
+  RESIZABLE_SPEC.forEach(([sel, axes]) => {
+    document.querySelectorAll(sel).forEach(el => attachHandle(el, axes));
+  });
+}
+function disableResize() {
+  document.body.classList.remove('resize-mode');
+  document.getElementById('resize-toggle').textContent = '📐 サイズ調整 OFF';
+  document.getElementById('resize-toggle').classList.remove('active');
+  document.querySelectorAll('.resize-handle, .resize-size-label').forEach(el => el.remove());
+  document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); delete el._resizeUpdateLabel; });
+}
+document.getElementById('resize-toggle').addEventListener('click', () => {
+  if (document.body.classList.contains('resize-mode')) disableResize();
+  else enableResize();
+});
+document.getElementById('resize-reset').addEventListener('click', resetResizeState);
+
+// 起動時に保存値を復元
+loadResizeState();
 
 // ───── Preview mode (端末サイズで見る) ─────
 const previewBtn = document.getElementById('preview-mode');
