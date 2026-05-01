@@ -1813,7 +1813,8 @@ const RESIZE_KEY = 'quizland_preview_sizes_v1';
 // 動的に付加されるクラスはパス計算から除外 (再読込時の DOM と一致させる)
 const TRANSIENT_CLASSES = new Set([
   'resizable', 'editable-text', 'anno-mode', 'preview-mode',
-  'show-bbox', 'show-safe', 'eraser-mode', 'dirty', 'active'
+  'show-bbox', 'show-safe', 'eraser-mode', 'dirty', 'active',
+  'selected', 'edge-linked', 'has-selection', 'grid-mode'
 ]);
 function getCleanText(el) {
   // resize ハンドルやサイズラベルは除外して純粋なテキストを取る
