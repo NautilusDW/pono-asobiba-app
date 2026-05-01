@@ -769,6 +769,54 @@ body.resize-mode .resizable {
 body:not(.resize-mode) .resize-handle,
 body:not(.resize-mode) .resize-size-label { display: none; }
 
+/* 複数選択中のリサイザブル */
+body.resize-mode .resizable.selected {
+  outline: 3px solid #ff8a3d !important;
+  outline-offset: 3px;
+}
+/* edge-link 中ハイライト (リサイズ中、 隣接して連動する辺) */
+body.resize-mode .resizable.edge-linked {
+  outline: 3px solid #ffe24a !important;
+  outline-offset: 3px;
+}
+
+/* 数値入力パネル */
+.numeric-panel {
+  position: fixed;
+  right: 8px;
+  top: calc(var(--toolbar-h, 0px) + 8px);
+  background: rgba(20,20,20,0.94);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 12px;
+  z-index: 80;
+  font: 11px/1.4 system-ui, -apple-system, sans-serif;
+  display: none;
+  width: 240px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+body.resize-mode.has-selection .numeric-panel { display: block; }
+.numeric-panel h4 { margin: 0 0 8px 0; font-size: 12px; color: #ffba6b; font-weight: 600; }
+.numeric-panel .np-targets {
+  color: #aaa;
+  margin-bottom: 8px;
+  max-height: 60px;
+  overflow-y: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+}
+.numeric-panel .np-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.numeric-panel label { display: inline-flex; align-items: center; gap: 4px; flex: 1; color: #ccc; }
+.numeric-panel input[type="number"] {
+  width: 70px; padding: 3px 5px;
+  background: #1a1a1a; color: #fff; border: 1px solid #555; border-radius: 3px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.numeric-panel input[type="number"]:focus { border-color: #ff8a3d; outline: none; }
+.numeric-panel input[type="number"]::placeholder { color: #555; font-style: italic; font-size: 10px; }
+.numeric-panel .np-hint { color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3; }
+
 /* ─── ルーラー + ガイドライン ─── */
 .ruler {
   position: absolute;
@@ -938,6 +986,23 @@ body.resize-mode .ruler { display: block; }
   </div>
 </div>
 <button id="preview-exit" title="編集モードに戻る (Esc でも戻れる)">✕ 編集に戻る</button>
+
+<!-- 複数選択時の数値入力パネル (resize-mode かつ has-selection の時のみ表示) -->
+<div class="numeric-panel" id="numeric-panel">
+  <h4>選択中: <span id="np-count">0</span> 個</h4>
+  <div class="np-targets" id="np-targets">(なし)</div>
+  <div class="np-row">
+    <label>W <input type="number" id="np-w" step="1"></label>
+    <label>H <input type="number" id="np-h" step="1"></label>
+  </div>
+  <div class="np-row">
+    <label>TX <input type="number" id="np-tx" step="1"></label>
+    <label>TY <input type="number" id="np-ty" step="1"></label>
+  </div>
+  <div class="np-hint">
+    Shift+クリックで複数選択 / 値変更で全選択へ反映 / 隣接フレームの辺は自動リンク
+  </div>
+</div>
 
 <div class="anno-tip" id="anno-tip" style="display:none;">
   <span id="anno-tip-text">注釈モード ON</span>
@@ -1961,6 +2026,213 @@ function resetResizeState() {
   }
 }
 
+// ───── Multi-selection state + UI ─────
+const selectedElements = new Set();
+
+function refreshSelectionUI() {
+  document.querySelectorAll('.resizable').forEach(e => e.classList.toggle('selected', selectedElements.has(e)));
+  document.body.classList.toggle('has-selection', selectedElements.size > 0);
+  updateNumericPanel();
+}
+function selectOnly(el) { selectedElements.clear(); if (el) selectedElements.add(el); refreshSelectionUI(); }
+function toggleSelect(el) { if (selectedElements.has(el)) selectedElements.delete(el); else selectedElements.add(el); refreshSelectionUI(); }
+function clearSelection() { selectedElements.clear(); refreshSelectionUI(); }
+
+function elementShortLabel(el) {
+  const cls = [...el.classList].filter(c => !['resizable','selected','edge-linked'].includes(c))[0] || el.tagName.toLowerCase();
+  // index among siblings with same first class
+  const sibs = el.parentElement ? [...el.parentElement.children].filter(c => c.classList.contains(cls)) : [el];
+  const idx = sibs.indexOf(el);
+  return '.' + cls + (sibs.length > 1 ? `[${idx}]` : '');
+}
+
+function updateNumericPanel() {
+  const panel = document.getElementById('numeric-panel');
+  if (!panel) return;
+  const sel = [...selectedElements];
+  document.getElementById('np-count').textContent = String(sel.length);
+  const tEl = document.getElementById('np-targets');
+  tEl.textContent = sel.length ? sel.map(elementShortLabel).join(', ') : '(なし)';
+  const getVal = (el, prop) => {
+    if (prop === 'w') return parseFloat(el.style.width) || el.offsetWidth;
+    if (prop === 'h') return parseFloat(el.style.height) || el.offsetHeight;
+    if (prop === 'tx') return Math.round(el._tx || 0);
+    if (prop === 'ty') return Math.round(el._ty || 0);
+  };
+  ['w','h','tx','ty'].forEach(prop => {
+    const input = document.getElementById('np-' + prop);
+    if (!input) return;
+    if (document.activeElement === input) return; // don't clobber while typing
+    if (sel.length === 0) { input.value = ''; input.placeholder = ''; return; }
+    const vals = sel.map(el => Math.round(getVal(el, prop)));
+    const allSame = vals.every(v => v === vals[0]);
+    if (allSame) { input.value = vals[0]; input.placeholder = ''; }
+    else { input.value = ''; input.placeholder = '異なる'; }
+  });
+}
+
+function applyNumericInput(prop, valueStr) {
+  const value = parseFloat(valueStr);
+  if (Number.isNaN(value)) return;
+  const sel = [...selectedElements];
+  if (sel.length === 0) return;
+  const beforeMap = new Map();
+  sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+  sel.forEach(el => {
+    if (prop === 'w') {
+      el.style.width = value + 'px';
+    } else if (prop === 'h') {
+      el.style.height = value + 'px';
+      if (el.matches('.hdr-left')) {
+        document.documentElement.style.setProperty('--header-h', value + 'px');
+      }
+    } else if (prop === 'tx') {
+      el._tx = value;
+      el.style.transform = `translate(${el._tx}px, ${el._ty || 0}px)`;
+    } else if (prop === 'ty') {
+      el._ty = value;
+      el.style.transform = `translate(${el._tx || 0}px, ${el._ty}px)`;
+    }
+    el._resizeUpdateLabel && el._resizeUpdateLabel();
+  });
+  sel.forEach(el => {
+    const after = getResizeState(el);
+    const before = beforeMap.get(el);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el, before, after });
+    }
+  });
+  saveResizeState();
+}
+
+// Numeric panel input wiring (one-time)
+['w','h','tx','ty'].forEach(prop => {
+  document.addEventListener('change', e => {
+    if (e.target && e.target.id === 'np-' + prop) {
+      applyNumericInput(prop, e.target.value);
+    }
+  });
+});
+
+// Click on stage background clears selection
+document.addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (e.target.closest('.resizable')) return;
+  if (e.target.closest('.numeric-panel')) return;
+  if (e.target.closest('.toolbar')) return;
+  if (e.target.closest('.resize-handle')) return;
+  if (e.target.closest('.guide')) return;
+  if (e.target.closest('.ruler')) return;
+  if (selectedElements.size > 0) clearSelection();
+});
+
+// ───── Edge linking (adjacent frames share an edge) ─────
+function sidesFromHandlePos(pos) {
+  // Returns clean side array, avoiding the substring trap
+  if (pos === 'edge-e') return ['e'];
+  if (pos === 'edge-w') return ['w'];
+  if (pos === 'edge-n') return ['n'];
+  if (pos === 'edge-s') return ['s'];
+  if (pos === 'corner-ne') return ['n','e'];
+  if (pos === 'corner-nw') return ['n','w'];
+  if (pos === 'corner-se') return ['s','e'];
+  if (pos === 'corner-sw') return ['s','w'];
+  return [];
+}
+function oppositeSide(s) { return ({n:'s',s:'n',e:'w',w:'e'})[s]; }
+
+function getStageRectInfo() {
+  const stageRect = stage.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const scale = stageRect.width / stageW || 1;
+  return { stageRect, scale };
+}
+function bcrInStage(el, stageRect, scale) {
+  const r = el.getBoundingClientRect();
+  return {
+    left: (r.left - stageRect.left) / scale,
+    top: (r.top - stageRect.top) / scale,
+    right: (r.right - stageRect.left) / scale,
+    bottom: (r.bottom - stageRect.top) / scale,
+  };
+}
+
+function findLinkedTargets(primaryEl, draggedSides) {
+  // Returns array of { el, sides: [...] } for each other resizable that has
+  // an edge touching one of the primary's dragged sides.
+  const EPS = 8;
+  const VERT_OVERLAP_MIN = 8;
+  const { stageRect, scale } = getStageRectInfo();
+  const primR = bcrInStage(primaryEl, stageRect, scale);
+  const all = [...document.querySelectorAll('.resizable')].filter(x => x !== primaryEl);
+  const linked = [];
+  for (const otherEl of all) {
+    const r = bcrInStage(otherEl, stageRect, scale);
+    const sides = [];
+    if (draggedSides.includes('e') && Math.abs(r.left - primR.right) < EPS &&
+        Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > VERT_OVERLAP_MIN) {
+      sides.push('w');
+    }
+    if (draggedSides.includes('w') && Math.abs(r.right - primR.left) < EPS &&
+        Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > VERT_OVERLAP_MIN) {
+      sides.push('e');
+    }
+    if (draggedSides.includes('s') && Math.abs(r.top - primR.bottom) < EPS &&
+        Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > VERT_OVERLAP_MIN) {
+      sides.push('n');
+    }
+    if (draggedSides.includes('n') && Math.abs(r.bottom - primR.top) < EPS &&
+        Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > VERT_OVERLAP_MIN) {
+      sides.push('s');
+    }
+    if (sides.length) linked.push({ el: otherEl, sides });
+  }
+  return linked;
+}
+
+// Apply a one-axis-per-side resize to a target, using BCR-fixup so the opposite
+// side stays anchored. Used for the primary AND each linked element.
+function performResize(target, sides, dx, dy, sym, axes, stageRect, scale) {
+  const { el, startRect, startW, startH, startTx, startTy } = target;
+  const factor = sym ? 2 : 1;
+  let newW = startW, newH = startH;
+  if (sides.includes('e')) newW = Math.max(20, startW + factor * dx);
+  if (sides.includes('w') && !sides.includes('e')) newW = Math.max(20, startW - factor * dx);
+  if (sides.includes('s')) newH = Math.max(20, startH + factor * dy);
+  if (sides.includes('n') && !sides.includes('s')) newH = Math.max(20, startH - factor * dy);
+  if (axes.includes('w') && (sides.includes('e') || sides.includes('w'))) {
+    el.style.width = newW + 'px';
+  }
+  if (axes.includes('h') && (sides.includes('s') || sides.includes('n'))) {
+    el.style.height = newH + 'px';
+    if (el.matches('.hdr-left')) {
+      document.documentElement.style.setProperty('--header-h', newH + 'px');
+    }
+  }
+  el._tx = startTx;
+  el._ty = startTy;
+  el.style.transform = `translate(${startTx}px, ${startTy}px)`;
+  const cur = bcrInStage(el, stageRect, scale);
+  let needTx = 0, needTy = 0;
+  if (sym) {
+    const cur_cx = (cur.left + cur.right) / 2;
+    const cur_cy = (cur.top + cur.bottom) / 2;
+    const start_cx = (startRect.left + startRect.right) / 2;
+    const start_cy = (startRect.top + startRect.bottom) / 2;
+    needTx = start_cx - cur_cx;
+    needTy = start_cy - cur_cy;
+  } else {
+    if (sides.includes('e') && !sides.includes('w')) needTx = startRect.left - cur.left;
+    if (sides.includes('w') && !sides.includes('e')) needTx = startRect.right - cur.right;
+    if (sides.includes('s') && !sides.includes('n')) needTy = startRect.top - cur.top;
+    if (sides.includes('n') && !sides.includes('s')) needTy = startRect.bottom - cur.bottom;
+  }
+  el._tx = startTx + needTx;
+  el._ty = startTy + needTy;
+  el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+  el._resizeUpdateLabel && el._resizeUpdateLabel();
+}
+
 function attachHandle(el, axes) {
   el.classList.add('resizable');
   // 辺ハンドル: axes に応じて
@@ -2003,99 +2275,53 @@ function makeHandle(el, pos, axes) {
   h.addEventListener('mousedown', e => {
     e.stopPropagation();
     e.preventDefault();
-    const beforeState = getResizeState(el);
+    const primarySides = sidesFromHandlePos(pos);
+    const { stageRect, scale } = getStageRectInfo();
     const startX = e.clientX, startY = e.clientY;
-    const stageRect = stage.getBoundingClientRect();
-    const stageW = parseFloat(getComputedStyle(stage).width);
-    const scale = stageRect.width / stageW || 1;
-    const startW = el.offsetWidth;
-    const startH = el.offsetHeight;
-    const startTx = el._tx || 0;
-    const startTy = el._ty || 0;
-    const aspect = startW / Math.max(1, startH);
-    // ドラッグ開始時の visual 位置 (stage 内座標)
-    const sR0 = el.getBoundingClientRect();
-    const startRect = {
-      left:   (sR0.left - stageRect.left) / scale,
-      top:    (sR0.top - stageRect.top) / scale,
-      right:  (sR0.right - stageRect.left) / scale,
-      bottom: (sR0.bottom - stageRect.top) / scale,
+    // Capture start state for primary
+    const captureTarget = (target) => {
+      target.startW = target.el.offsetWidth;
+      target.startH = target.el.offsetHeight;
+      target.startTx = target.el._tx || 0;
+      target.startTy = target.el._ty || 0;
+      target.aspect = target.startW / Math.max(1, target.startH);
+      target.startRect = bcrInStage(target.el, stageRect, scale);
+      target.before = getResizeState(target.el);
     };
+    const primaryTarget = { el, sides: primarySides };
+    captureTarget(primaryTarget);
+    // Hold Ctrl/Cmd to disable linking for this drag
+    const linkingDisabled = e.ctrlKey || e.metaKey;
+    const linkedTargets = linkingDisabled ? [] : findLinkedTargets(el, primarySides);
+    linkedTargets.forEach(t => captureTarget(t));
+    // Visual: highlight linked
+    linkedTargets.forEach(t => t.el.classList.add('edge-linked'));
+
     const onMove = (e2) => {
       const dx = (e2.clientX - startX) / scale;
       const dy = (e2.clientY - startY) / scale;
-      const sym = e2.altKey;  // Alt: 対称 (中心固定)
-      const factor = sym ? 2 : 1;
-      let newW = startW, newH = startH;
-      if (pos.includes('e')) newW = Math.max(20, startW + factor * dx);
-      if (pos.includes('w')) newW = Math.max(20, startW - factor * dx);
-      if (pos.includes('s')) newH = Math.max(20, startH + factor * dy);
-      if (pos.includes('n')) newH = Math.max(20, startH - factor * dy);
-      // Shift = アスペクト比固定
-      if (e2.shiftKey) {
-        const isCorner = pos.startsWith('corner');
-        if (isCorner) {
-          const dW = Math.abs(newW - startW), dH = Math.abs(newH - startH);
-          if (dW >= dH) newH = newW / aspect;
-          else newW = newH * aspect;
-        } else if (pos.includes('e') || pos.includes('w')) {
-          newH = newW / aspect;
-        } else {
-          newW = newH * aspect;
-        }
-      }
-      // 1) サイズを先にに適用 (translate は仮で startTx/Ty)
-      if (axes.includes('w') && (pos.includes('e') || pos.includes('w'))) {
-        el.style.width = newW + 'px';
-      }
-      if (axes.includes('h') && (pos.includes('s') || pos.includes('n'))) {
-        el.style.height = newH + 'px';
-        if (el.matches('.hdr-left')) {
-          document.documentElement.style.setProperty('--header-h', newH + 'px');
-        }
-      }
-      el._tx = startTx;
-      el._ty = startTy;
-      el.style.transform = `translate(${startTx}px, ${startTy}px)`;
-
-      // 2) DOM 反映後の実位置を読んで、 アンカー (反対の辺 or 中心) が
-      //    動いた分だけ translate で補正 (親 layout の影響を打ち消す)
-      const sR1 = el.getBoundingClientRect();
-      const cur = {
-        left:   (sR1.left - stageRect.left) / scale,
-        top:    (sR1.top - stageRect.top) / scale,
-        right:  (sR1.right - stageRect.left) / scale,
-        bottom: (sR1.bottom - stageRect.top) / scale,
-      };
-      let needTx = 0, needTy = 0;
-      if (sym) {
-        // 中心固定 (Alt): 中心を startRect の中心に戻す
-        const cur_cx = (cur.left + cur.right) / 2;
-        const cur_cy = (cur.top + cur.bottom) / 2;
-        const start_cx = (startRect.left + startRect.right) / 2;
-        const start_cy = (startRect.top + startRect.bottom) / 2;
-        needTx = start_cx - cur_cx;
-        needTy = start_cy - cur_cy;
-      } else {
-        // 非対称 (片側だけ動く): 反対の辺を startRect に固定
-        if (pos.includes('e')) needTx = startRect.left - cur.left;       // 左を固定
-        if (pos.includes('w')) needTx = startRect.right - cur.right;     // 右を固定
-        if (pos.includes('s')) needTy = startRect.top - cur.top;         // 上を固定
-        if (pos.includes('n')) needTy = startRect.bottom - cur.bottom;   // 下を固定
-      }
-      el._tx = startTx + needTx;
-      el._ty = startTy + needTy;
-      el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
-      el._resizeUpdateLabel && el._resizeUpdateLabel();
+      const sym = e2.altKey;  // Alt: 中心固定
+      // (Shift で aspect-lock は v1 では未対応 — 数値パネルで手入力推奨)
+      // Apply to primary
+      performResize(primaryTarget, primarySides, dx, dy, sym, axes, stageRect, scale);
+      // Apply to linked (no aspect, no sym for linked)
+      linkedTargets.forEach(t => {
+        performResize(t, t.sides, dx, dy, false, 'wh', stageRect, scale);
+      });
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      const after = getResizeState(el);
-      if (JSON.stringify(after) !== JSON.stringify(beforeState)) {
-        pushHistory({ type: 'resize', el, before: beforeState, after });
-      }
+      linkedTargets.forEach(t => t.el.classList.remove('edge-linked'));
+      // Push history for each changed target
+      [primaryTarget, ...linkedTargets].forEach(t => {
+        const after = getResizeState(t.el);
+        if (JSON.stringify(after) !== JSON.stringify(t.before)) {
+          pushHistory({ type: 'resize', el: t.el, before: t.before, after });
+        }
+      });
       saveResizeState();
+      updateNumericPanel();
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -2108,37 +2334,60 @@ function attachMoveDrag(el) {
     if (!document.body.classList.contains('resize-mode')) return;
     if (e.target.classList.contains('resize-handle')) return;
     if (e.target !== el && !el.contains(e.target)) return;
-    // body をクリックされた時のみ (ハンドル以外)
     if (e.target.classList.contains('resize-handle') ||
         e.target.classList.contains('resize-size-label')) return;
     e.stopPropagation();
     e.preventDefault();
-    const beforeState = getResizeState(el);
+
+    // Selection logic:
+    //   Shift+click → toggle membership (no drag this gesture)
+    //   plain click on un-selected element → select-only
+    //   click on already-selected element → keep selection, prepare group drag
+    if (e.shiftKey) {
+      toggleSelect(el);
+      return;
+    }
+    if (!selectedElements.has(el)) {
+      selectOnly(el);
+    }
+
+    // Drag targets = all selected (always includes el at this point)
+    const targets = [...selectedElements];
+    if (targets.length === 0) targets.push(el);
+
     const startX = e.clientX, startY = e.clientY;
-    const stageRect = stage.getBoundingClientRect();
-    const stageW = parseFloat(getComputedStyle(stage).width);
-    const scale = stageRect.width / stageW || 1;
-    const startTx = el._tx || 0, startTy = el._ty || 0;
+    const { scale } = getStageRectInfo();
+    const startStates = targets.map(t => ({
+      el: t,
+      tx: t._tx || 0,
+      ty: t._ty || 0,
+      before: getResizeState(t),
+    }));
+
     const onMove = (e2) => {
       let dx = (e2.clientX - startX) / scale;
       let dy = (e2.clientY - startY) / scale;
-      // Shift = 1 軸固定 (大きく動いた方の軸だけ動かす)
       if (e2.shiftKey) {
         if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
         else dx = 0;
       }
-      el._tx = startTx + dx;
-      el._ty = startTy + dy;
-      el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+      startStates.forEach(s => {
+        s.el._tx = s.tx + dx;
+        s.el._ty = s.ty + dy;
+        s.el.style.transform = `translate(${s.el._tx}px, ${s.el._ty}px)`;
+      });
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      const after = getResizeState(el);
-      if (JSON.stringify(after) !== JSON.stringify(beforeState)) {
-        pushHistory({ type: 'resize', el, before: beforeState, after });
-      }
+      startStates.forEach(s => {
+        const after = getResizeState(s.el);
+        if (JSON.stringify(after) !== JSON.stringify(s.before)) {
+          pushHistory({ type: 'resize', el: s.el, before: s.before, after });
+        }
+      });
       saveResizeState();
+      updateNumericPanel();
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -2260,7 +2509,8 @@ function disableResize() {
   document.getElementById('resize-toggle').textContent = '📐 サイズ調整 OFF';
   document.getElementById('resize-toggle').classList.remove('active');
   document.querySelectorAll('.resize-handle, .resize-size-label').forEach(el => el.remove());
-  document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); delete el._resizeUpdateLabel; });
+  document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); el.classList.remove('selected'); el.classList.remove('edge-linked'); delete el._resizeUpdateLabel; });
+  clearSelection();
 }
 document.getElementById('resize-toggle').addEventListener('click', () => {
   if (document.body.classList.contains('resize-mode')) disableResize();
