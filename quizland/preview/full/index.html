@@ -257,17 +257,20 @@ body.show-safe .safe-area::after {
   justify-self: end;
 }
 .hdr-right .ctrl-btn {
-  display: inline-flex; flex-direction: column; align-items: center;
+  /* 正方形ボタン (画像差替前提でアスペクト比 1:1) */
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
-  border: 3px solid var(--wood-dark);
-  border-radius: 12px;
-  padding: 4px 12px;
+  border: 4px solid var(--wood-dark);
+  border-radius: 14px;
+  padding: 6px;
   color: var(--text);
-  font-weight: 700;
-  font-size: 12px;
-  min-width: 60px;
+  font-weight: 800;
+  font-size: 14px;
+  width: 88px;
+  height: 88px;
+  gap: 4px;
 }
-.hdr-right .ctrl-btn .icon { font-size: 20px; }
+.hdr-right .ctrl-btn .icon { font-size: 32px; line-height: 1; }
 
 /* ───── Body ───── */
 .body {
@@ -386,16 +389,16 @@ body.show-board-frame .board::before { opacity: 1; }
   gap: 16px;
 }
 .bottom-right {
-  flex: 1 1 auto;
   display: flex;
-  align-items: end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 14px;
+  margin-top: 8px;  /* 答えトレイの直下に置く、 余分な空間を作らない */
 }
 .bottom-right .hint {
   flex: 1 1 auto;
-  align-self: end;
-  margin-bottom: 12px;
+  margin: 0;
+  align-self: center;
 }
 .bottom-right .character {
   flex: 0 0 auto;
@@ -437,14 +440,18 @@ body.show-board-frame .board::before { opacity: 1; }
 /* (旧 footer-row は a-col 内へ移動、 ここはレガシー残し) */
 .footer-row { display: none; }
 .hint {
+  /* 想定アスペクト比: ~600×120 (5:1) */
   background: linear-gradient(180deg, #fff8d4, var(--hint-bg));
   border: 4px solid #b89a3a;
   border-radius: 16px;
-  padding: 12px 22px;
+  padding: 28px 32px;
   color: var(--text);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   max-width: 700px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
   box-shadow: 0 4px 0 #b89a3a, 0 6px 12px var(--paper-shadow);
 }
 .character {
