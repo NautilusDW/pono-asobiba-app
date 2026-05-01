@@ -3,50 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Quizland 全体プレビュー (注釈つき)</title>
+<title>Quizland 全体プレビュー (21:9 + 16:9 セーフエリア)</title>
 <style>
 :root {
-  /* Global tunables — 1 か所変えれば全体反映 */
+  /* チューナブル */
   --slot-size: 130px;
   --slot-color: #E0E0E0;
   --slot-radius: 16px;
   --gap: 16px;
   --padding: 16px;
 
-  /* 21:9 ベースの仮想キャンバス (実機での 16:9 セーフエリアは内側) */
-  --canvas-w: 1600px;
-  --canvas-h: 900px;        /* 16:9 safe area */
+  /* キャンバス比率: 21:9 outer / 16:9 safe area inner */
+  --canvas-w: 2100px;
+  --canvas-h: 900px;
+  --safe-w: 1600px;
+  --safe-h: 900px;
+  /* side margins = (canvas-w - safe-w) / 2 = 250 */
 
-  --board-w: 810px;
-  --board-h: 450px;
+  --header-h: 100px;
 
-  --answer-w: 540px;
-  --answer-h: 488px;
-  --chip-w: 248px;
-  --chip-h: 216px;
-
-  --header-h: 80px;
-
-  --bg: #1E1E1E;
-  --paper: #FFF7E1;
-  --paper-2: #F4D88B;
-  --frame-border: rgba(138, 56, 245, 0.55);
-  --owl-bg: #C7A7F1;
-  --hint-bg: #FFEBA0;
-  --text: #4A2D0A;
-  --text-light: #F0F0F0;
+  --bg: #1a1a1a;
+  --paper: #f5e9c4;
+  --paper-2: #e8d293;
+  --paper-shadow: rgba(80, 50, 10, 0.3);
+  --wood-dark: #6e4520;
+  --wood-mid: #8a5a2a;
+  --wood-light: #b07a3a;
+  --frame-border: rgba(138, 56, 245, 0.6);
+  --safe-border: rgba(0, 212, 255, 0.4);
+  --owl-bg: #b08acf;
+  --hint-bg: #fff3c4;
+  --text: #4a2d0a;
+  --text-light: #f0f0f0;
 }
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: var(--bg);
+  background: #0c0c0c;
   color: var(--text-light);
   font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
   font-size: 14px;
   overflow-x: hidden;
 }
 
-/* ───── Top control bar ───── */
+/* ───── Toolbar ───── */
 .toolbar {
   position: sticky;
   top: 0;
@@ -75,7 +75,7 @@ html, body {
 .toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
 .toolbar input[type="file"] { color: #aaa; font-size: 11px; }
 
-/* ───── Stage ───── */
+/* ───── Stage (21:9 outer) ───── */
 .stage-wrap {
   padding: 20px;
   overflow: auto;
@@ -86,97 +86,238 @@ html, body {
   height: var(--canvas-h);
   margin: 0 auto;
   position: relative;
+  /* 森の背景 */
   background:
-    radial-gradient(ellipse 80% 60% at 50% 100%, #6e8a4a 0%, #4d623a 60%, #344528 100%);
+    radial-gradient(ellipse at 50% 25%, rgba(180, 145, 90, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 12% 80%, rgba(80, 50, 22, 0.4) 0%, transparent 45%),
+    radial-gradient(ellipse at 88% 80%, rgba(70, 100, 50, 0.35) 0%, transparent 45%),
+    linear-gradient(180deg, #5e7b3a 0%, #3e5a25 55%, #2c411a 100%);
   border: 1px dashed #555;
+  overflow: hidden;
+}
+
+/* Forest decoration on the 21:9 sides (outside safe area) */
+.forest-side {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 250px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(50, 90, 40, 0.6) 0%, transparent 35%),
+    radial-gradient(circle at 70% 60%, rgba(60, 100, 50, 0.7) 0%, transparent 35%),
+    radial-gradient(circle at 20% 80%, rgba(40, 70, 30, 0.5) 0%, transparent 35%);
+}
+.forest-side.left { left: 0; }
+.forest-side.right { right: 0; transform: scaleX(-1); }
+.forest-side::before {
+  content: "🌿"; font-size: 80px; opacity: 0.4;
+  position: absolute; top: 8%; left: 30px;
+}
+.forest-side::after {
+  content: "🌿"; font-size: 60px; opacity: 0.3;
+  position: absolute; bottom: 12%; left: 50px;
+}
+
+.lantern {
+  position: absolute;
+  left: 30px; top: 220px;
+  font-size: 60px; opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ───── Safe Area (16:9) ───── */
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: calc((var(--canvas-w) - var(--safe-w)) / 2);
+  width: var(--safe-w);
+  height: var(--safe-h);
   display: grid;
   grid-template-rows: var(--header-h) 1fr;
-  gap: 16px;
-  padding: 16px;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px;
 }
 
-/* Header */
-.hdr {
-  height: var(--header-h);
-  background: linear-gradient(180deg, var(--paper), var(--paper-2));
-  border: 4px solid #8a5a2a;
-  border-radius: 16px;
-  display: grid;
-  grid-template-columns: 80px 1fr auto;
-  align-items: center;
-  padding: 0 16px;
-  gap: 12px;
-  color: var(--text);
+/* セーフエリアの境界線 (オン/オフ可) */
+body.show-safe .safe-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--safe-border);
+  pointer-events: none;
+  z-index: 2;
 }
-.hdr .owl-mini {
-  width: 64px; height: 64px;
-  background: var(--owl-bg);
+body.show-safe .safe-area::after {
+  content: "16:9 safe area";
+  position: absolute;
+  top: 4px; left: 8px;
+  font-size: 11px;
+  color: var(--safe-border);
+  pointer-events: none;
+  z-index: 2;
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ───── Header (top) ───── */
+.hdr {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  height: var(--header-h);
+}
+.hdr-pill {
+  display: inline-flex; align-items: center; gap: 12px;
+  background:
+    linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 4px solid var(--wood-dark);
+  border-radius: 50px;
+  padding: 6px 18px;
+  height: calc(100% - 14px);
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+}
+.hdr-left .owl-icon {
+  width: 60px; height: 60px;
+  background: linear-gradient(180deg, #f4e4c4, #d8b78a);
+  border: 3px solid var(--wood-dark);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 32px;
+  font-size: 36px;
+  flex: 0 0 auto;
 }
-.hdr .title-block {
-  display: flex; align-items: center; gap: 16px;
-  font-weight: 700;
+.hdr-left .title-card {
+  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
+  border: 3px solid var(--wood-dark);
+  border-radius: 12px;
+  padding: 4px 14px;
+  color: #fff7d0;
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  text-align: center;
+  line-height: 1.1;
+}
+.hdr-left .title-card small { font-size: 11px; display: block; }
+
+.hdr-center {
+  justify-self: center;
+  display: inline-flex; align-items: center; gap: 16px;
+  color: var(--text);
+}
+.hdr-center .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
+  font-weight: 900;
+  font-size: 22px;
+}
+.hdr-center .dots {
+  display: inline-flex; gap: 10px;
+}
+.hdr-center .dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
+}
+.hdr-center .dot.done { background: #f3a330; }
+
+.hdr-right { display: inline-flex; align-items: center; gap: 10px; }
+.hdr-right .acorn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 3px solid var(--wood-dark);
+  border-radius: 24px;
+  padding: 4px 16px;
+  color: var(--text);
+  font-weight: 800;
   font-size: 18px;
 }
-.hdr .progress {
-  display: inline-flex; gap: 6px; align-items: center;
-  font-size: 14px;
-}
-.hdr .progress .dot {
-  width: 12px; height: 12px; border-radius: 50%;
-  background: #d6b56a;
-}
-.hdr .progress .dot.done { background: #8a5a2a; }
-.hdr .controls-mini {
-  display: flex; gap: 8px;
-}
-.hdr .controls-mini .ctrl {
+.hdr-right .ctrl-btn {
+  display: inline-flex; flex-direction: column; align-items: center;
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 3px solid var(--wood-dark);
+  border-radius: 12px;
   padding: 4px 12px;
-  background: #fff;
-  border: 2px solid #8a5a2a;
-  border-radius: 8px;
-  font-size: 12px;
-}
-
-/* Body grid: question_main(left) + answer_panel(right), with character + hint at bottom */
-.body {
-  display: grid;
-  grid-template-columns: var(--board-w) 1fr;
-  grid-template-rows: 1fr auto;
-  gap: 24px;
-  height: 100%;
-  align-items: center;
-  justify-items: center;
-}
-.q-col {
-  display: flex; flex-direction: column; gap: 16px;
-  align-items: center;
-  height: 100%;
-  justify-content: center;
-}
-.q-text {
-  background: var(--paper);
   color: var(--text);
   font-weight: 700;
-  font-size: 28px;
-  padding: 12px 32px;
-  border: 3px solid #8a5a2a;
-  border-radius: 12px;
+  font-size: 12px;
+  min-width: 60px;
+}
+.hdr-right .ctrl-btn .icon { font-size: 20px; }
+
+/* ───── Body ───── */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 700px;
+  grid-template-rows: 1fr auto;
+  gap: 16px;
+  height: 100%;
+  align-items: stretch;
 }
 
-/* ───── Problem board ───── */
+/* Question column (left) */
+.q-col {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  height: 100%;
+}
+.q-text-card {
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 28px;
+  position: relative;
+  box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
+}
+.q-text-card .feather {
+  position: absolute; top: -10px; left: 16px;
+  font-size: 28px;
+  transform: rotate(-12deg);
+}
+.q-text-card .audio {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+  border: 3px solid var(--wood-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  color: #fff;
+}
+
 .board {
-  width: var(--board-w);
-  height: var(--board-h);
-  border: 2px dashed var(--frame-border);
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.04);
   position: relative;
+  box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
+  height: 100%;
 }
+.board::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed var(--frame-border);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.0; /* デフォルト非表示、 デバッグ用 */
+}
+body.show-board-frame .board::before { opacity: 1; }
+
 .slot {
   width: var(--slot-size);
   height: var(--slot-size);
@@ -192,77 +333,89 @@ html, body {
   position: relative;
 }
 .slot.has-img { background-color: transparent; color: transparent; }
-.row {
-  display: flex; gap: var(--gap); align-items: center; justify-content: center;
-}
+.row { display: flex; gap: var(--gap); align-items: center; justify-content: center; }
 .grid {
-  display: flex; flex-direction: column; gap: var(--gap);
+  display: flex; flex-direction: column;
+  gap: var(--gap);
   align-items: center; justify-content: center;
 }
 .grid .row { gap: var(--gap); }
 
-/* ───── Answer panel ───── */
+/* Answer column (right) */
 .a-col {
-  display: flex; flex-direction: column;
-  gap: 16px;
+  display: flex; flex-direction: column; gap: 16px;
   height: 100%;
-  align-items: center; justify-content: center;
 }
 .answer-panel {
-  width: var(--answer-w);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-rows: 1fr 1fr;
+  gap: 18px;
+  height: 100%;
+  flex: 1;
 }
 .chip {
-  width: var(--chip-w);
-  height: var(--chip-h);
-  background: var(--paper);
-  border: 3px solid #8a5a2a;
-  border-radius: 16px;
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 8px;
+  gap: 12px;
   color: var(--text);
-  font-weight: 700;
-  font-size: 24px;
+  font-weight: 800;
+  font-size: 28px;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+  position: relative;
 }
 .chip .circle {
-  width: 80px; height: 80px;
+  width: 110px; height: 110px;
   border-radius: 50%;
-  background: var(--slot-color);
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,0.04) 0 4px,
+      rgba(0,0,0,0.06) 4px 8px),
+    var(--slot-color);
+  border: 3px solid rgba(0,0,0,0.1);
 }
-.chip[data-color="red"] .circle { background: #d23f3f; }
-.chip[data-color="blue"] .circle { background: #3f6dd2; }
-.chip[data-color="yellow"] .circle { background: #e8c43a; }
-.chip[data-color="green"] .circle { background: #4ea84e; }
+.chip[data-color="red"]    .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #d23f3f; }
+.chip[data-color="blue"]   .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #3d6dc7; }
+.chip[data-color="yellow"] .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #e8c43a; }
+.chip[data-color="green"]  .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #4ea84e; }
 
-/* ───── Footer row: character + hint ───── */
+/* Footer (hint + character) */
 .footer-row {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 24px;
-  width: 100%;
   align-items: end;
+  height: auto;
 }
 .hint {
-  background: var(--hint-bg);
-  border: 3px solid #b89a3a;
-  border-radius: 14px;
-  padding: 12px 20px;
+  background: linear-gradient(180deg, #fff8d4, var(--hint-bg));
+  border: 4px solid #b89a3a;
+  border-radius: 16px;
+  padding: 12px 22px;
   color: var(--text);
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 700;
   max-width: 700px;
-  font-weight: 600;
+  box-shadow: 0 4px 0 #b89a3a, 0 6px 12px var(--paper-shadow);
 }
 .character {
-  width: 200px; height: 200px;
-  background: var(--owl-bg);
-  border-radius: 50%;
+  width: 200px; height: 220px;
+  background:
+    radial-gradient(ellipse at 50% 30%, var(--owl-bg) 0%, #5a3a8a 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 72px;
+  font-size: 96px;
   border: 4px solid #5a3a8a;
+  position: relative;
+  margin-bottom: -8px;
 }
 
 /* ───── Annotation overlay ───── */
@@ -308,14 +461,13 @@ html, body {
 }
 .anno-arrow-line {
   stroke: #ff3b6b;
-  stroke-width: 8;  /* 太めにしてクリックしやすく */
+  stroke-width: 8;
   fill: none;
   marker-end: url(#anno-arrow-head);
   cursor: move;
   pointer-events: stroke;
 }
 .anno-rect {
-  /* 中身もクリック可能にする、 ほぼ透明の薄ピンク塗り */
   fill: rgba(255, 59, 107, 0.05);
   stroke: #ff3b6b;
   stroke-width: 4;
@@ -323,50 +475,22 @@ html, body {
   cursor: move;
   pointer-events: all;
 }
-.anno-marker, .anno-text {
-  cursor: move;
-}
-.anno-selected {
-  outline: 3px solid #00d4ff;
-  outline-offset: 2px;
-}
-line.anno-arrow-line.anno-selected,
-rect.anno-rect.anno-selected {
-  stroke: #00d4ff !important;
-  outline: none !important;
+.anno-marker, .anno-text { cursor: move; }
+.anno-selected { outline: 3px solid #00d4ff; outline-offset: 2px; }
+line.anno-arrow-line.anno-selected, rect.anno-rect.anno-selected {
+  stroke: #00d4ff !important; outline: none !important;
 }
 .anno-handle {
-  fill: #00d4ff;
-  stroke: #fff;
-  stroke-width: 2;
-  cursor: nwse-resize;
-  pointer-events: all;
+  fill: #00d4ff; stroke: #fff; stroke-width: 2;
+  cursor: nwse-resize; pointer-events: all;
 }
+.anno-handle.endpoint { cursor: grab; }
 .anno-handle-hit {
   fill: rgba(0, 212, 255, 0.001);
   stroke: none;
   pointer-events: all;
   cursor: grab;
 }
-.anno-handle.endpoint { cursor: grab; }
-.anno-mode .anno-marker:hover,
-.anno-mode .anno-text:hover {
-  outline: 2px solid #fff;
-}
-body.eraser-mode #anno-layer { cursor: crosshair; }
-body.eraser-mode .anno-marker,
-body.eraser-mode .anno-text,
-body.eraser-mode .anno-arrow-line,
-body.eraser-mode .anno-rect {
-  cursor: not-allowed;
-}
-body.eraser-mode .anno-marker:hover,
-body.eraser-mode .anno-text:hover {
-  background: #ff0033 !important;
-}
-.tool-btn { font-size: 12px; }
-#anno-tools { display: none; gap: 6px; }
-body.anno-mode #anno-tools { display: inline-flex !important; }
 .anno-tip {
   position: fixed;
   bottom: 16px; left: 50%;
@@ -379,8 +503,12 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
   z-index: 200;
   pointer-events: none;
 }
+body.eraser-mode #anno-layer { cursor: crosshair; }
+.tool-btn { font-size: 12px; }
+#anno-tools { display: none; gap: 6px; }
+body.anno-mode #anno-tools { display: inline-flex !important; }
 
-/* ───── Debug info on slot ───── */
+/* Debug bbox */
 .show-bbox .slot::after {
   content: attr(data-bbox);
   position: absolute;
@@ -394,15 +522,14 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
 }
 </style>
 </head>
-<body>
+<body class="show-safe">
 
-<!-- ───── Toolbar ───── -->
 <div class="toolbar">
   <div>
     <label>レイアウト</label>
     <select id="layout-select">
       <optgroup label="横並び (order_color)">
-        <option value="row-3">row count=3</option>
+        <option value="row-3" selected>row count=3</option>
         <option value="row-4">row count=4</option>
         <option value="row-5">row count=5</option>
       </optgroup>
@@ -415,7 +542,7 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
         <option value="grid-6">grid count=6 (3×2)</option>
         <option value="grid-7">grid count=7 (4+3)</option>
         <option value="grid-8">grid count=8 (4×2)</option>
-        <option value="grid-9" selected>grid count=9 (3×3)</option>
+        <option value="grid-9">grid count=9 (3×3)</option>
       </optgroup>
     </select>
   </div>
@@ -435,19 +562,20 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
 
   <div>
     <label><input type="checkbox" id="show-bbox"> サイズ表示</label>
+    <label><input type="checkbox" id="show-safe" checked> 16:9 セーフエリア表示</label>
   </div>
 
   <div>
     <button id="anno-toggle">📝 注釈モード OFF</button>
   </div>
 
-  <div id="anno-tools" style="display:none; gap:6px;">
-    <button class="tool-btn" data-tool="marker" title="クリックでマーカー (A,B,C…)">📍 マーカー</button>
-    <button class="tool-btn" data-tool="text" title="クリックでテキスト付箋">📝 テキスト</button>
-    <button class="tool-btn" data-tool="rect" title="ドラッグで矩形を囲う">▭ 矩形</button>
-    <button class="tool-btn" data-tool="arrow" title="ドラッグで自由な矢印">↗ 矢印</button>
-    <button class="tool-btn" data-tool="eraser" title="クリックで個別削除">🧹 消しゴム</button>
-    <button id="anno-clear" title="全部消す">🗑 全消去</button>
+  <div id="anno-tools">
+    <button class="tool-btn" data-tool="marker">📍 マーカー</button>
+    <button class="tool-btn" data-tool="text">📝 テキスト</button>
+    <button class="tool-btn" data-tool="rect">▭ 矩形</button>
+    <button class="tool-btn" data-tool="arrow">↗ 矢印</button>
+    <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
+    <button id="anno-clear">🗑 全消去</button>
   </div>
 
   <div style="margin-left:auto;color:#666;">
@@ -459,54 +587,67 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
   <span id="anno-tip-text">注釈モード ON</span>
 </div>
 
-<!-- ───── Stage ───── -->
 <div class="stage-wrap">
   <div class="stage" id="stage">
-    <!-- Header -->
-    <div class="hdr">
-      <div class="owl-mini">🦉</div>
-      <div class="title-block">
-        <span>フクロウ博士のなぞなぞ</span>
-        <span class="progress">
-          1/5
-          <span class="dot done"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </span>
-      </div>
-      <div class="controls-mini">
-        <span class="ctrl">タイトル</span>
-        <span class="ctrl">おしらせ</span>
-        <span class="ctrl">せってい</span>
-      </div>
-    </div>
+    <!-- 21:9 outer decoration -->
+    <div class="forest-side left"></div>
+    <div class="forest-side right"></div>
+    <div class="lantern">🏮</div>
 
-    <!-- Body -->
-    <div class="body">
-      <!-- Question column (left) -->
-      <div class="q-col">
-        <div class="q-text" id="q-text">ランドセルは いくつ？</div>
-        <div class="board" id="board">
-          <!-- 動的に挿入される -->
+    <!-- 16:9 safe area inner -->
+    <div class="safe-area" id="safe-area">
+      <!-- Header -->
+      <div class="hdr">
+        <div class="hdr-left hdr-pill">
+          <div class="owl-icon">🦉</div>
+          <div class="title-card">
+            <small>フクロウはかせの</small>
+            <span>なぞなぞ</span>
+          </div>
+        </div>
+
+        <div class="hdr-center hdr-pill" style="border-radius: 24px;">
+          <div class="progress-num">1 / 5</div>
+          <div class="dots">
+            <span class="dot done"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+
+        <div class="hdr-right">
+          <div class="acorn">🌰 12</div>
+          <div class="ctrl-btn"><span class="icon">🔔</span><span>おしらせ</span></div>
+          <div class="ctrl-btn"><span class="icon">⚙️</span><span>せってい</span></div>
         </div>
       </div>
 
-      <!-- Answer column (right) -->
-      <div class="a-col">
-        <div class="answer-panel">
-          <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
-          <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
-          <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
-          <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+      <!-- Body grid -->
+      <div class="body">
+        <div class="q-col">
+          <div class="q-text-card">
+            <span class="feather">🪶</span>
+            <span id="q-text">まんなかは なにいろ？</span>
+            <span class="audio">🔊</span>
+          </div>
+          <div class="board" id="board"></div>
         </div>
-      </div>
 
-      <!-- Footer (character + hint) -->
-      <div class="footer-row">
-        <div class="hint">💡 ヒント: あかい いろの ランドセルを かぞえてみよう！</div>
-        <div class="character">🦉</div>
+        <div class="a-col">
+          <div class="answer-panel">
+            <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
+            <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
+            <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
+            <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+          </div>
+        </div>
+
+        <div class="footer-row">
+          <div class="hint">💡 よく見て かんがえてみよう！</div>
+          <div class="character">🦉</div>
+        </div>
       </div>
     </div>
 
@@ -524,7 +665,7 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
 </div>
 
 <script>
-// ───────── Layout rendering ─────────
+// ───── Layout rendering ─────
 function buildLayout(value) {
   const [type, n] = value.split('-');
   const count = parseInt(n, 10);
@@ -559,12 +700,8 @@ function buildLayout(value) {
   } else if (type === 'grid') {
     const layouts = {
       1: [1], 2: [2], 3: [3],
-      4: [2, 2],
-      5: [3, 2],
-      6: [3, 3],
-      7: [4, 3],
-      8: [4, 4],
-      9: [3, 3, 3]
+      4: [2, 2], 5: [3, 2], 6: [3, 3],
+      7: [4, 3], 8: [4, 4], 9: [3, 3, 3]
     };
     board.appendChild(grid(layouts[count]));
   }
@@ -604,7 +741,6 @@ document.getElementById('img-clear').addEventListener('click', () => {
   setSlotImage(null);
   document.getElementById('img-file').value = '';
 });
-
 document.getElementById('slot-size').addEventListener('input', e => {
   document.documentElement.style.setProperty('--slot-size', e.target.value + 'px');
   updateBboxLabels();
@@ -617,11 +753,14 @@ document.getElementById('show-bbox').addEventListener('change', e => {
   document.body.classList.toggle('show-bbox', e.target.checked);
   if (e.target.checked) updateBboxLabels();
 });
+document.getElementById('show-safe').addEventListener('change', e => {
+  document.body.classList.toggle('show-safe', e.target.checked);
+});
 
 // 初期表示
-buildLayout('grid-9');
+buildLayout('row-3');
 
-// ───────── Annotation system ─────────
+// ───── Annotation system ─────
 const stage = document.getElementById('stage');
 const annoLayer = document.getElementById('anno-layer');
 const annoSvg = document.getElementById('anno-svg');
@@ -636,7 +775,6 @@ const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 let labelIdx = 0;
 let selectedEl = null;
 
-// ── History for undo/redo ──
 const undoStack = [];
 const redoStack = [];
 function pushHistory(op) {
@@ -645,40 +783,24 @@ function pushHistory(op) {
   redoStack.length = 0;
 }
 function applyOp(op) {
-  if (op.type === 'add') {
-    op.parent.insertBefore(op.el, op.next || null);
-  } else if (op.type === 'remove') {
-    op.el.remove();
-  } else if (op.type === 'transform') {
-    setGeometry(op.el, op.after);
-    if (op.el === selectedEl) updateHandles();
-  }
+  if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
+  else if (op.type === 'remove') op.el.remove();
+  else if (op.type === 'transform') { setGeometry(op.el, op.after); if (op.el === selectedEl) updateHandles(); }
 }
 function applyInverse(op) {
-  if (op.type === 'add') {
-    op.el.remove();
-    if (op.el === selectedEl) selectEl(null);
-  } else if (op.type === 'remove') {
-    op.parent.insertBefore(op.el, op.next || null);
-  } else if (op.type === 'transform') {
-    setGeometry(op.el, op.before);
-    if (op.el === selectedEl) updateHandles();
-  }
+  if (op.type === 'add') { op.el.remove(); if (op.el === selectedEl) selectEl(null); }
+  else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
+  else if (op.type === 'transform') { setGeometry(op.el, op.before); if (op.el === selectedEl) updateHandles(); }
 }
 function undo() {
   if (!undoStack.length) return;
-  const op = undoStack.pop();
-  applyInverse(op);
-  redoStack.push(op);
+  const op = undoStack.pop(); applyInverse(op); redoStack.push(op);
 }
 function redo() {
   if (!redoStack.length) return;
-  const op = redoStack.pop();
-  applyOp(op);
-  undoStack.push(op);
+  const op = redoStack.pop(); applyOp(op); undoStack.push(op);
 }
 
-// ── Geometry helpers ──
 function getGeometry(el) {
   if (el.classList.contains('anno-marker') || el.classList.contains('anno-text')) {
     return { kind: 'pos', left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
@@ -695,32 +817,20 @@ function getGeometry(el) {
   }
 }
 function setGeometry(el, g) {
-  if (g.kind === 'pos') {
-    el.style.left = g.left + 'px';
-    el.style.top = g.top + 'px';
-  } else if (g.kind === 'line') {
-    el.setAttribute('x1', g.x1); el.setAttribute('y1', g.y1);
-    el.setAttribute('x2', g.x2); el.setAttribute('y2', g.y2);
-  } else if (g.kind === 'rect') {
-    el.setAttribute('x', g.x); el.setAttribute('y', g.y);
-    el.setAttribute('width', g.w); el.setAttribute('height', g.h);
-  }
+  if (g.kind === 'pos') { el.style.left = g.left + 'px'; el.style.top = g.top + 'px'; }
+  else if (g.kind === 'line') { el.setAttribute('x1', g.x1); el.setAttribute('y1', g.y1); el.setAttribute('x2', g.x2); el.setAttribute('y2', g.y2); }
+  else if (g.kind === 'rect') { el.setAttribute('x', g.x); el.setAttribute('y', g.y); el.setAttribute('width', g.w); el.setAttribute('height', g.h); }
 }
 
 const TIP_TEXTS = {
-  marker:  'マーカー: クリックで A,B,C… 配置 / 注釈を選択して Delete で削除 / Ctrl+Z で元に戻す',
-  text:    'テキスト: クリックで黄色付箋を配置 (ダブルクリックで編集)',
-  rect:    '矩形: ドラッグで囲い枠を描く / 描いた矩形を選択するとハンドルで伸縮可',
-  arrow:   '矢印: ドラッグで自由に矢印を描く / 選択するとエンドポイントで伸ばせる',
+  marker:  'マーカー: クリックで A,B,C… 配置 / Delete で削除 / Ctrl+Z で元に戻す',
+  text:    'テキスト: クリックで黄色付箋 (ダブルクリックで編集)',
+  rect:    '矩形: ドラッグで囲い枠 / 角ハンドルで伸縮 / 内側ドラッグで移動',
+  arrow:   '矢印: ドラッグで自由な矢印 / エンドポイントで伸ばし直し / 線をドラッグで移動',
   eraser:  '消しゴム: 注釈をクリックして個別削除',
 };
 
-function nextLabelChar() {
-  const c = labelChars[labelIdx % labelChars.length];
-  labelIdx++;
-  return c;
-}
-
+function nextLabelChar() { const c = labelChars[labelIdx % labelChars.length]; labelIdx++; return c; }
 function setAnnoMode(on) {
   annoMode = on;
   document.body.classList.toggle('anno-mode', on);
@@ -730,83 +840,54 @@ function setAnnoMode(on) {
   if (on) setTool(currentTool);
   else selectEl(null);
 }
-
 function setTool(tool) {
   currentTool = tool;
   document.body.classList.toggle('eraser-mode', tool === 'eraser');
-  document.querySelectorAll('.tool-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.tool === tool);
-  });
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
   annoTipText.textContent = TIP_TEXTS[tool] || '';
 }
-
 annoToggle.addEventListener('click', () => setAnnoMode(!annoMode));
-document.querySelectorAll('.tool-btn').forEach(b => {
-  b.addEventListener('click', () => setTool(b.dataset.tool));
-});
+document.querySelectorAll('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 annoClear.addEventListener('click', () => {
   if (!confirm('全注釈を削除しますか？')) return;
-  // 履歴に記録: 全削除 = 各要素ごとの remove op
   const all = [...document.querySelectorAll('.anno-marker, .anno-text'),
                ...annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect')];
-  all.forEach(el => {
-    pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling });
-    el.remove();
-  });
+  all.forEach(el => { pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling }); el.remove(); });
   selectEl(null);
 });
 
-// ── Selection ──
 function selectEl(el) {
   if (selectedEl) selectedEl.classList.remove('anno-selected');
   clearHandles();
   selectedEl = el;
-  if (el) {
-    el.classList.add('anno-selected');
-    updateHandles();
-  }
+  if (el) { el.classList.add('anno-selected'); updateHandles(); }
 }
-function isAnnotation(el) {
-  return el && (el.classList.contains('anno-marker') ||
-                el.classList.contains('anno-text') ||
-                el.classList.contains('anno-arrow-line') ||
-                el.classList.contains('anno-rect'));
-}
-
-// ── Resize handles ──
 function clearHandles() {
-  annoSvg.querySelectorAll('.anno-handle').forEach(h => h.remove());
+  annoSvg.querySelectorAll('.anno-handle, .anno-handle-hit').forEach(h => h.remove());
 }
 function updateHandles() {
   clearHandles();
   if (!selectedEl) return;
   const g = getGeometry(selectedEl);
-  if (g.kind === 'line') {
-    addHandle(g.x1, g.y1, 'p1');
-    addHandle(g.x2, g.y2, 'p2');
-  } else if (g.kind === 'rect') {
-    addHandle(g.x, g.y, 'tl');
-    addHandle(g.x + g.w, g.y, 'tr');
-    addHandle(g.x, g.y + g.h, 'bl');
-    addHandle(g.x + g.w, g.y + g.h, 'br');
+  if (g.kind === 'line') { addHandle(g.x1, g.y1, 'p1'); addHandle(g.x2, g.y2, 'p2'); }
+  else if (g.kind === 'rect') {
+    addHandle(g.x, g.y, 'tl'); addHandle(g.x + g.w, g.y, 'tr');
+    addHandle(g.x, g.y + g.h, 'bl'); addHandle(g.x + g.w, g.y + g.h, 'br');
   }
 }
 function addHandle(x, y, role) {
-  // 大きい透明 hit 円 (両方のクラスを持たせて、 既存の早期 return チェックに引っかかるように)
   const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   hit.setAttribute('class', 'anno-handle anno-handle-hit');
   hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', 18);
   hit.dataset.role = role;
   annoSvg.appendChild(hit);
 
-  // 見える方の小さい円
   const h = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   h.setAttribute('class', 'anno-handle endpoint');
   h.setAttribute('cx', x); h.setAttribute('cy', y); h.setAttribute('r', 9);
   h.dataset.role = role;
   annoSvg.appendChild(h);
 
-  // hit と vis 両方で同じドラッグ動作
   const handler = (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
@@ -816,27 +897,22 @@ function addHandle(x, y, role) {
       const p = getStageCoords(e2);
       const g = getGeometry(target);
       if (g.kind === 'line') {
-        if (role === 'p1') { g.x1 = p.x; g.y1 = p.y; }
-        else { g.x2 = p.x; g.y2 = p.y; }
+        if (role === 'p1') { g.x1 = p.x; g.y1 = p.y; } else { g.x2 = p.x; g.y2 = p.y; }
       } else if (g.kind === 'rect') {
         let x1 = g.x, y1 = g.y, x2 = g.x + g.w, y2 = g.y + g.h;
         if (role === 'tl') { x1 = p.x; y1 = p.y; }
         else if (role === 'tr') { x2 = p.x; y1 = p.y; }
         else if (role === 'bl') { x1 = p.x; y2 = p.y; }
         else if (role === 'br') { x2 = p.x; y2 = p.y; }
-        g.x = Math.min(x1, x2);
-        g.y = Math.min(y1, y2);
-        g.w = Math.abs(x2 - x1);
-        g.h = Math.abs(y2 - y1);
+        g.x = Math.min(x1, x2); g.y = Math.min(y1, y2);
+        g.w = Math.abs(x2 - x1); g.h = Math.abs(y2 - y1);
       }
-      setGeometry(target, g);
-      updateHandles();
+      setGeometry(target, g); updateHandles();
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       const after = getGeometry(target);
-      // 変化があれば履歴に
       if (JSON.stringify(after) !== JSON.stringify(before)) {
         pushHistory({ type: 'transform', el: target, before, after });
       }
@@ -846,8 +922,7 @@ function addHandle(x, y, role) {
   };
   hit.addEventListener('mousedown', handler);
   h.addEventListener('mousedown', handler);
-  // 念のためハンドル上の click / mouseup もキャンセル (上のレイヤーに伝播しないように)
-  const stop = (ev) => { ev.stopPropagation(); };
+  const stop = (ev) => ev.stopPropagation();
   hit.addEventListener('click', stop);
   h.addEventListener('click', stop);
 }
@@ -857,55 +932,40 @@ function getStageCoords(e) {
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
-// ── Element factory ──────────
 function removeElWithHistory(el) {
   pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling });
   el.remove();
   if (el === selectedEl) selectEl(null);
 }
-function attachDeleteHandlers(el, isSvg) {
-  // 右クリックで削除確認
+function attachDeleteHandlers(el) {
   el.addEventListener('contextmenu', ev => {
     ev.preventDefault();
     if (confirm('この注釈を削除しますか？')) removeElWithHistory(el);
   });
-  // 消しゴムモードでクリック削除 / 通常クリックで選択
   el.addEventListener('click', ev => {
     if (!annoMode) return;
-    if (currentTool === 'eraser') {
-      ev.stopPropagation();
-      removeElWithHistory(el);
-    }
+    if (currentTool === 'eraser') { ev.stopPropagation(); removeElWithHistory(el); }
   });
-  // mousedown: 選択 + ドラッグで移動
   el.addEventListener('mousedown', ev => {
     if (!annoMode) return;
     if (currentTool === 'eraser') return;
-    if (currentTool === 'rect' || currentTool === 'arrow') return; // それらは新規描画モード
-    if (ev.target.classList && ev.target.classList.contains('anno-handle')) return;
+    if (currentTool === 'rect' || currentTool === 'arrow') return;
+    if (ev.target.classList && (ev.target.classList.contains('anno-handle') || ev.target.classList.contains('anno-handle-hit'))) return;
     ev.stopPropagation();
     selectEl(el);
-
     const startPt = getStageCoords(ev);
     const beforeGeo = getGeometry(el);
     let moved = false;
-
     const onMove = (e2) => {
       const p = getStageCoords(e2);
-      const dx = p.x - startPt.x;
-      const dy = p.y - startPt.y;
+      const dx = p.x - startPt.x, dy = p.y - startPt.y;
       if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
       if (!moved) return;
       const g = JSON.parse(JSON.stringify(beforeGeo));
-      if (g.kind === 'pos') {
-        g.left += dx; g.top += dy;
-      } else if (g.kind === 'line') {
-        g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy;
-      } else if (g.kind === 'rect') {
-        g.x += dx; g.y += dy;
-      }
-      setGeometry(el, g);
-      updateHandles();
+      if (g.kind === 'pos') { g.left += dx; g.top += dy; }
+      else if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+      else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+      setGeometry(el, g); updateHandles();
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
@@ -923,8 +983,7 @@ function attachDeleteHandlers(el, isSvg) {
 function addMarker(x, y, label) {
   const m = document.createElement('div');
   m.className = 'anno-marker';
-  m.style.left = x + 'px';
-  m.style.top = y + 'px';
+  m.style.left = x + 'px'; m.style.top = y + 'px';
   m.textContent = label || nextLabelChar();
   annoLayer.appendChild(m);
   attachDeleteHandlers(m);
@@ -936,14 +995,12 @@ function addMarker(x, y, label) {
   pushHistory({ type: 'add', el: m, parent: annoLayer, next: null });
   return m;
 }
-
 function addText(x, y) {
   const text = prompt('テキスト', 'ここを修正');
   if (!text) return null;
   const t = document.createElement('div');
   t.className = 'anno-text';
-  t.style.left = x + 'px';
-  t.style.top = y + 'px';
+  t.style.left = x + 'px'; t.style.top = y + 'px';
   t.textContent = text;
   annoLayer.appendChild(t);
   attachDeleteHandlers(t);
@@ -951,70 +1008,53 @@ function addText(x, y) {
     ev.stopPropagation();
     const v = prompt('編集 (空で削除)', t.textContent);
     if (v === null) return;
-    if (v === '') removeElWithHistory(t);
-    else t.textContent = v;
+    if (v === '') removeElWithHistory(t); else t.textContent = v;
   });
   pushHistory({ type: 'add', el: t, parent: annoLayer, next: null });
   return t;
 }
 
-// ── Drag handler for rect / arrow tool (新規描画) ──────────
 let dragStart = null;
 let tempShape = null;
-
 annoLayer.addEventListener('mousedown', e => {
   if (!annoMode) return;
-  // 既存注釈の上は無視 (個別操作はそっちのハンドラ)
   if (e.target.closest('.anno-marker, .anno-text')) return;
   if (e.target.classList && (e.target.classList.contains('anno-arrow-line') ||
                               e.target.classList.contains('anno-rect') ||
-                              e.target.classList.contains('anno-handle'))) return;
+                              e.target.classList.contains('anno-handle') ||
+                              e.target.classList.contains('anno-handle-hit'))) return;
 
-  // 背景クリック: 選択解除
-  if (currentTool !== 'rect' && currentTool !== 'arrow') {
-    selectEl(null);
-  }
+  if (currentTool !== 'rect' && currentTool !== 'arrow') selectEl(null);
 
   if (currentTool === 'rect' || currentTool === 'arrow') {
     e.preventDefault();
     dragStart = getStageCoords(e);
     if (currentTool === 'rect') {
       tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      tempShape.setAttribute('class', 'anno-rect');
-      tempShape.setAttribute('rx', 6);
+      tempShape.setAttribute('class', 'anno-rect'); tempShape.setAttribute('rx', 6);
     } else {
       tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       tempShape.setAttribute('class', 'anno-arrow-line');
     }
     annoSvg.appendChild(tempShape);
-
     const onMove = (e2) => {
       const p = getStageCoords(e2);
       if (currentTool === 'rect') {
-        const x = Math.min(dragStart.x, p.x);
-        const y = Math.min(dragStart.y, p.y);
-        const w = Math.abs(p.x - dragStart.x);
-        const h = Math.abs(p.y - dragStart.y);
+        const x = Math.min(dragStart.x, p.x), y = Math.min(dragStart.y, p.y);
+        const w = Math.abs(p.x - dragStart.x), h = Math.abs(p.y - dragStart.y);
         tempShape.setAttribute('x', x); tempShape.setAttribute('y', y);
         tempShape.setAttribute('width', w); tempShape.setAttribute('height', h);
       } else {
-        tempShape.setAttribute('x1', dragStart.x);
-        tempShape.setAttribute('y1', dragStart.y);
-        tempShape.setAttribute('x2', p.x);
-        tempShape.setAttribute('y2', p.y);
+        tempShape.setAttribute('x1', dragStart.x); tempShape.setAttribute('y1', dragStart.y);
+        tempShape.setAttribute('x2', p.x); tempShape.setAttribute('y2', p.y);
       }
     };
     const onUp = (e2) => {
       const p = getStageCoords(e2);
       const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
-      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) {
-        tempShape && tempShape.remove();
-      } else {
-        attachDeleteHandlers(tempShape, true);
-        pushHistory({ type: 'add', el: tempShape, parent: annoSvg, next: null });
-      }
-      tempShape = null;
-      dragStart = null;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) { tempShape && tempShape.remove(); }
+      else { attachDeleteHandlers(tempShape); pushHistory({ type: 'add', el: tempShape, parent: annoSvg, next: null }); }
+      tempShape = null; dragStart = null;
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
@@ -1022,65 +1062,47 @@ annoLayer.addEventListener('mousedown', e => {
     window.addEventListener('mouseup', onUp);
   }
 });
-
 annoLayer.addEventListener('click', e => {
   if (!annoMode) return;
   if (e.target.closest('.anno-marker, .anno-text')) return;
   if (e.target.classList && (e.target.classList.contains('anno-arrow-line') ||
                               e.target.classList.contains('anno-rect') ||
-                              e.target.classList.contains('anno-handle'))) return;
+                              e.target.classList.contains('anno-handle') ||
+                              e.target.classList.contains('anno-handle-hit'))) return;
   if (currentTool === 'eraser') return;
-
   const p = getStageCoords(e);
   if (currentTool === 'marker') addMarker(p.x, p.y);
   else if (currentTool === 'text') addText(p.x, p.y);
 });
-
-// SVG 要素 (line, rect) は元から click ハンドラが effective ではない場合があるので明示的に
 annoSvg.addEventListener('click', e => {
   if (!annoMode) return;
   const t = e.target;
   if (!t.classList) return;
   if (t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect')) {
-    if (currentTool === 'eraser') {
-      e.stopPropagation();
-      removeElWithHistory(t);
-    } else {
-      selectEl(t);
-    }
+    if (currentTool === 'eraser') { e.stopPropagation(); removeElWithHistory(t); }
+    else selectEl(t);
   }
 });
-
-// SVG mousedown (drag-to-move on lines and rects) — どのツールでも既存要素は移動できる
 annoSvg.addEventListener('mousedown', e => {
   if (!annoMode) return;
   const t = e.target;
   if (!t.classList) return;
   if (!(t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect'))) return;
   if (currentTool === 'eraser') return;
-
-  e.stopPropagation();
-  e.preventDefault();
+  e.stopPropagation(); e.preventDefault();
   selectEl(t);
-
   const startPt = getStageCoords(e);
   const beforeGeo = getGeometry(t);
   let moved = false;
-
   const onMove = (e2) => {
     const p = getStageCoords(e2);
-    const dx = p.x - startPt.x;
-    const dy = p.y - startPt.y;
+    const dx = p.x - startPt.x, dy = p.y - startPt.y;
     if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
     if (!moved) return;
     const g = JSON.parse(JSON.stringify(beforeGeo));
-    if (g.kind === 'line') {
-      g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy;
-    } else if (g.kind === 'rect') {
-      g.x += dx; g.y += dy;
-    }
-    setGeometry(t, g);
-    updateHandles();
+    if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+    else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+    setGeometry(t, g); updateHandles();
   };
   const onUp = () => {
     window.removeEventListener('mousemove', onMove);
@@ -1094,32 +1116,16 @@ annoSvg.addEventListener('mousedown', e => {
   window.addEventListener('mouseup', onUp);
 });
 
-// ── Keyboard shortcuts ──
 window.addEventListener('keydown', e => {
-  // テキスト入力中は無視
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-
   if ((e.key === 'Delete' || e.key === 'Backspace') && annoMode && selectedEl) {
-    e.preventDefault();
-    removeElWithHistory(selectedEl);
-    return;
+    e.preventDefault(); removeElWithHistory(selectedEl); return;
   }
-  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
-    e.preventDefault();
-    undo();
-    return;
-  }
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
-    e.preventDefault();
-    redo();
-    return;
-  }
-  if (e.key === 'Escape') {
-    selectEl(null);
-  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); redo(); return; }
+  if (e.key === 'Escape') selectEl(null);
 });
 
-// SVG resize に追従
 function resizeSvg() {
   const sr = stage.getBoundingClientRect();
   annoSvg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
@@ -1128,24 +1134,7 @@ function resizeSvg() {
 }
 window.addEventListener('resize', resizeSvg);
 window.addEventListener('load', resizeSvg);
-
 window.addEventListener('resize', updateBboxLabels);
-
-// ───────── Annotation: copy as text summary ─────────
-// (簡易版: マーカー + 矢印情報をテキストでコピー)
-window.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-    let summary = '【注釈サマリ】\n';
-    document.querySelectorAll('.anno-marker').forEach(m => {
-      summary += `マーカー ${m.textContent}: x=${parseInt(m.style.left)}, y=${parseInt(m.style.top)}\n`;
-    });
-    document.querySelectorAll('.anno-text').forEach(t => {
-      summary += `テキスト "${t.textContent}": x=${parseInt(t.style.left)}, y=${parseInt(t.style.top)}\n`;
-    });
-    navigator.clipboard.writeText(summary);
-    alert('注釈サマリをクリップボードにコピーしました');
-  }
-});
 </script>
 </body>
 </html>
