@@ -18,14 +18,14 @@
 
 **段取り**: ユーザー要望で **まず一番下の土台 4 枚だけ作って、 fit をチェックしてから残りに進む** 段階的アプローチへ変更。 1 枚ずつ承認して進めるのではなく、 この 4 枚をワンパスで生成してプレビューに置いて確認。 OK なら次の Codex 依頼で残り (chip / circle / owl-icon / progress-num / dots / hint / character / audio) を生成、 NG なら寸法/装飾感を調整してまた 4 枚再生成。
 
-**生成対象 (4 枚)**:
+**生成対象 (4 枚)**: 寸法は `quizland/preview/full/saved-layout.json` の現在値準拠。
 
-| ファイル | 寸法 | 内容 |
+| ファイル | 寸法 (px) | 内容 |
 |---|---|---|
-| `assets/preview-placeholders/title-card.png` | **266 × 115** | ヘッダー左ピル内の **タイトルロゴ札** ( 「フクロウはかせの」 「なぞなぞ」 という文字を **焼き込んでよい**)。 ロゴ外周の枠と装飾は OK |
-| `assets/preview-placeholders/q-text-card.png` | **780 × 174** | 問題文 (横長) を入れる **巻物 / 帯カードの空フレーム**。 文字は焼き込まない (CSS で別個に乗せる)。 audio ボタンの丸も焼き込まない (audio.png は別個) |
-| `assets/preview-placeholders/board.png` | **780 × 496** | 問題ボード (4 つのスロットを置く土台、 木枠 + 中身は紙/パッチメント風)。 中の 4 スロットの絵は焼き込まない (item-slot.png が別個) |
-| `assets/preview-placeholders/answer-tray.png` | **650 × 499** | 4 択チップを置く **回答トレイの土台**。 中のチップ枠 / 色丸は焼き込まない (chip.png / circle.png が別個) |
+| `assets/preview-placeholders/title-card.png` | **296 × 128** | ヘッダー左ピル内の **タイトルロゴ札** ( 「フクロウはかせの」 「なぞなぞ」 という文字を **焼き込んでよい**)。 ロゴ外周の枠と装飾は OK |
+| `assets/preview-placeholders/q-text-card.png` | **867 × 193** | 問題文 (横長) を入れる **巻物 / 帯カードの空フレーム**。 文字は焼き込まない (CSS で別個に乗せる)。 audio ボタンの丸も焼き込まない (audio.png は別個) |
+| `assets/preview-placeholders/board.png` | **867 × 551** | 問題ボード (4 つのスロットを置く土台、 木枠 + 中身は紙/パッチメント風)。 中の 4 スロットの絵は焼き込まない (item-slot.png が別個) |
+| `assets/preview-placeholders/answer-tray.png` | **722 × 554** | 4 択チップを置く **回答トレイの土台**。 中のチップ枠 / 色丸は焼き込まない (chip.png / circle.png が別個) |
 
 **生成ルール (前回までの学び込み)**:
 
