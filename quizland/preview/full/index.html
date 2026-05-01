@@ -293,13 +293,9 @@ body.show-safe .safe-area::after {
   position: relative;
   box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
 }
-.q-text-card .feather {
-  position: absolute; top: -10px; left: 16px;
-  font-size: 28px;
-  transform: rotate(-12deg);
-}
 .q-text-card .audio {
-  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  /* 通常のフレックス子要素として右端に配置 (position: absolute はリサイズ時に挙動が
+     ややこしくなるので避ける) */
   width: 48px; height: 48px;
   border-radius: 50%;
   background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
@@ -307,6 +303,7 @@ body.show-safe .safe-area::after {
   display: flex; align-items: center; justify-content: center;
   font-size: 22px;
   color: #fff;
+  flex: 0 0 auto;
 }
 
 .board {
@@ -748,6 +745,23 @@ body.resize-mode .ruler { display: block; }
 .guide.h .guide-label { left: 4px; top: 2px; }
 .guide.v .guide-label { top: 4px; left: 2px; }
 
+/* ───── Editable text ───── */
+.editable-text {
+  cursor: text;
+  outline: 1px dashed transparent;
+  border-radius: 2px;
+  transition: outline-color 0.15s, background 0.15s;
+}
+.editable-text:hover {
+  background: rgba(0, 212, 255, 0.08);
+  outline-color: rgba(0, 212, 255, 0.35);
+}
+.editable-text:focus {
+  background: rgba(0, 212, 255, 0.15);
+  outline: 2px solid #00d4ff;
+  outline-offset: 1px;
+}
+
 /* Debug bbox */
 .show-bbox .slot::after {
   content: attr(data-bbox);
@@ -853,10 +867,10 @@ body.resize-mode .ruler { display: block; }
         <div class="hdr-left hdr-pill">
           <div class="owl-icon">🦉</div>
           <div class="title-card">
-            <small>フクロウはかせの</small>
-            <span>なぞなぞ</span>
+            <small class="editable-text" contenteditable="true">フクロウはかせの</small>
+            <span class="editable-text" contenteditable="true">なぞなぞ</span>
           </div>
-          <div class="progress-num">1 / 5</div>
+          <div class="progress-num editable-text" contenteditable="true">1 / 5</div>
           <div class="dots">
             <span class="dot done"></span>
             <span class="dot"></span>
@@ -867,8 +881,8 @@ body.resize-mode .ruler { display: block; }
         </div>
 
         <div class="hdr-right">
-          <div class="ctrl-btn"><span class="icon">🔔</span><span>おしらせ</span></div>
-          <div class="ctrl-btn"><span class="icon">⚙️</span><span>せってい</span></div>
+          <div class="ctrl-btn"><span class="icon">🔔</span><span class="editable-text" contenteditable="true">おしらせ</span></div>
+          <div class="ctrl-btn"><span class="icon">⚙️</span><span class="editable-text" contenteditable="true">せってい</span></div>
         </div>
       </div>
 
@@ -876,8 +890,7 @@ body.resize-mode .ruler { display: block; }
       <div class="body">
         <div class="q-col">
           <div class="q-text-card">
-            <span class="feather">🪶</span>
-            <span id="q-text">まんなかは なにいろ？</span>
+            <span id="q-text" class="editable-text" contenteditable="true">まんなかは なにいろ？</span>
             <span class="audio">🔊</span>
           </div>
           <div class="board" id="board"></div>
@@ -887,14 +900,14 @@ body.resize-mode .ruler { display: block; }
           <!-- 答えチップの土台 = 4 つを囲う木のトレイ枠 -->
           <div class="answer-tray">
             <div class="answer-panel">
-              <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
-              <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
-              <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
-              <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+              <div class="chip" data-color="red"><div class="circle"></div><span class="editable-text" contenteditable="true">あか</span></div>
+              <div class="chip" data-color="blue"><div class="circle"></div><span class="editable-text" contenteditable="true">あお</span></div>
+              <div class="chip" data-color="yellow"><div class="circle"></div><span class="editable-text" contenteditable="true">きいろ</span></div>
+              <div class="chip" data-color="green"><div class="circle"></div><span class="editable-text" contenteditable="true">みどり</span></div>
             </div>
           </div>
           <div class="bottom-right">
-            <div class="hint">💡 よく見て かんがえてみよう！</div>
+            <div class="hint editable-text" contenteditable="true">💡 よく見て かんがえてみよう！</div>
             <div class="character">🦉</div>
           </div>
         </div>
@@ -1633,15 +1646,63 @@ const RESIZABLE_SPEC = [
   ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
   ['.hdr-left .title-card',    'wh', 'タイトル札'],
   ['.hdr-left .progress-num',  'wh', '1/5'],
+  ['.hdr-left .dot',           'wh', '進捗ドット'],
   ['.hdr-right .ctrl-btn',     'wh', '右ボタン'],
   ['.q-text-card',             'wh', '問題文'],
+  ['.q-text-card .audio',      'wh', '音声ボタン'],
   ['.board',                   'wh', '問題ボード'],
   ['.answer-tray',             'wh', 'トレイ'],
   ['.chip',                    'wh', '選択肢'],
+  ['.chip .circle',            'wh', '色マル'],
   ['.hint',                    'wh', 'ヒント'],
   ['.character',               'wh', 'キャラ'],
 ];
 const RESIZE_KEY = 'quizland_preview_sizes_v1';
+
+// 編集可能テキストの収集 / 復元
+function collectEditableTexts() {
+  const data = {};
+  document.querySelectorAll('.editable-text').forEach(el => {
+    // selector ベースの安定 ID を作る
+    const path = getDomPath(el);
+    data[path] = el.textContent;
+  });
+  return data;
+}
+function applyEditableTexts(data) {
+  if (!data) return;
+  document.querySelectorAll('.editable-text').forEach(el => {
+    const path = getDomPath(el);
+    if (data[path] !== undefined) el.textContent = data[path];
+  });
+}
+function getDomPath(el) {
+  // 親をたどって selector チェーンを作成 (重複時はインデックス付与)
+  const parts = [];
+  let cur = el;
+  while (cur && cur.nodeType === 1 && cur !== document.body) {
+    let s = cur.tagName.toLowerCase();
+    if (cur.id) { s += '#' + cur.id; parts.unshift(s); break; }
+    if (cur.className && typeof cur.className === 'string') {
+      s += '.' + cur.className.trim().split(/\s+/).join('.');
+    }
+    const parent = cur.parentElement;
+    if (parent) {
+      const sibs = [...parent.children].filter(c => c.tagName === cur.tagName);
+      if (sibs.length > 1) s += ':nth-of-type(' + (sibs.indexOf(cur) + 1) + ')';
+    }
+    parts.unshift(s);
+    cur = cur.parentElement;
+  }
+  return parts.join('>');
+}
+
+// 編集テキストが変更されたら dirty マーク
+document.addEventListener('blur', e => {
+  if (e.target.classList && e.target.classList.contains('editable-text')) {
+    markLayoutDirty();
+  }
+}, true);
 
 // レイアウトのスナップショット (現在の DOM 状態)
 function takeLayoutSnapshot() {
@@ -1658,6 +1719,7 @@ function takeLayoutSnapshot() {
   });
   data.__guides = collectGuides();
   data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
+  data.__texts = collectEditableTexts();
   return data;
 }
 
@@ -1669,12 +1731,58 @@ function saveResizeState() {
   // 後方互換: 既存呼び出しは「dirty マーク更新」のみに変更 (自動保存はしない)
   markLayoutDirty();
 }
-function explicitSaveLayout() {
-  const json = JSON.stringify(takeLayoutSnapshot());
+// ── GitHub 同期 (PC で保存 → スマホでも見れる) ──
+const GH_REPO_OWNER = 'NautilusDW';
+const GH_REPO_NAME  = 'pono-asobiba-app';
+const GH_REPO_BRANCH = 'develop';
+const GH_LAYOUT_PATH = 'quizland/preview/full/saved-layout.json';
+const GH_LAYOUT_URL  = '/' + GH_LAYOUT_PATH;
+function utf8Btoa(s) { return btoa(unescape(encodeURIComponent(s))); }
+async function ghGetContents(path) {
+  const url = '/api/gh/repos/' + GH_REPO_OWNER + '/' + GH_REPO_NAME + '/contents/' +
+              encodeURI(path) + '?ref=' + GH_REPO_BRANCH;
+  const resp = await fetch(url, { method: 'GET', credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' }});
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status);
+  return await resp.json();
+}
+async function ghPutContents(path, contentB64, message, sha) {
+  const url = '/api/gh/repos/' + GH_REPO_OWNER + '/' + GH_REPO_NAME + '/contents/' + encodeURI(path);
+  const body = { message: message, content: contentB64, branch: GH_REPO_BRANCH };
+  if (sha) body.sha = sha;
+  const resp = await fetch(url, {
+    method: 'PUT', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
+  return await resp.json();
+}
+async function loadSavedLayoutFromServer() {
+  // 静的ファイルとして直接 fetch (Basic Auth 不要)
+  try {
+    const resp = await fetch(GH_LAYOUT_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function explicitSaveLayout() {
+  const json = JSON.stringify(takeLayoutSnapshot(), null, 2);
   try { localStorage.setItem(RESIZE_KEY, json); } catch(e) {}
   lastSavedLayoutJson = json;
   updateDirtyUI();
-  showLayoutToast('レイアウトを保存しました');
+  showLayoutToast('保存中…');
+  try {
+    const existing = await ghGetContents(GH_LAYOUT_PATH);
+    const sha = existing ? existing.sha : null;
+    await ghPutContents(GH_LAYOUT_PATH, utf8Btoa(json), 'chore(preview): update saved layout', sha);
+    showLayoutToast('保存しました (端末間共有 OK)');
+  } catch (e) {
+    showLayoutToast('GitHub 保存失敗: ローカルにのみ保存しました');
+    console.warn('GH save failed:', e);
+  }
 }
 function markLayoutDirty() {
   updateDirtyUI();
@@ -1733,6 +1841,7 @@ function loadResizeState() {
     });
     if (data.__headerH) document.documentElement.style.setProperty('--header-h', data.__headerH);
     if (data.__guides) restoreGuides(data.__guides);
+    if (data.__texts) applyEditableTexts(data.__texts);
   } catch(e) {}
 }
 function resetResizeState() {
@@ -2071,9 +2180,18 @@ window.addEventListener('keydown', e => {
   }
 });
 
-// 起動時に保存値を復元 + dirty 基準を設定
-loadResizeState();
-lastSavedLayoutJson = JSON.stringify(takeLayoutSnapshot());
+// 起動時にサーバー (commit 済み) → ローカルストレージの順で復元
+(async () => {
+  const serverData = await loadSavedLayoutFromServer();
+  if (serverData && Object.keys(serverData).length > 0) {
+    // server snapshot を適用
+    try { localStorage.setItem(RESIZE_KEY, JSON.stringify(serverData)); } catch(e) {}
+    loadResizeState();
+  } else {
+    loadResizeState();
+  }
+  lastSavedLayoutJson = JSON.stringify(takeLayoutSnapshot());
+})();
 
 // ───── Preview mode (端末サイズで見る) ─────
 const previewBtn = document.getElementById('preview-mode');

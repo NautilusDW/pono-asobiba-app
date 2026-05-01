@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 590;
+const CACHE_VERSION = 591;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -87,7 +87,8 @@ self.addEventListener('fetch', event => {
       || event.request.url.includes('/assets/tts/manifest.json')
       || event.request.url.includes('/assets/audio/bgm/')
       || event.request.url.includes('/assets/audio/storyboard/')
-      || event.request.url.includes('/maze/imageStages/')) {
+      || event.request.url.includes('/maze/imageStages/')
+      || event.request.url.includes('/quizland/preview/full/saved-layout.json')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(response => {
