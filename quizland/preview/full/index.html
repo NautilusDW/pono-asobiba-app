@@ -653,11 +653,12 @@ body.preview-mode .stage {
   border: 1px dashed var(--bbox-border) !important;
 }
 .hdr-left .dot.done { background: #c89a4a !important; }
-/* キャラクター: 卵形をやめて単純な四角バウンディングボックス */
+/* キャラクター: 卵形をやめて単純な四角バウンディングボックス
+   width/height は !important を付けず、 リサイズドラッグの inline style を上書き許可 */
 .character {
   border-radius: 0 !important;
-  width: 200px !important;
-  height: 168px !important;  /* a-col 合計 = q-col 合計に揃える */
+  width: 200px;
+  height: 168px;
   font-size: 56px;
 }
 
