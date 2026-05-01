@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-01T23:52:52Z - saved-layout を user の最新 da0409a ベースに 0.9 スケール + 端数丸め + 微小ずれ整列 (q-text-card tx -11→-10、hint/character tx 0統一、character ty -601.5→-601 等)。 + editable-text 選択子に runtime クラスが混入する bug 修正 (.selected/.edge-linked/.has-selection/.grid-mode を TRANSIENT_CLASSES に追加)
+- **タスク**: saved-layout を user の最新 da0409a ベースに 0.9 スケール + 端数丸め + 微小ずれ整列 (q-text-card tx -11→-10、hint/character tx 0統一、character ty -601.5→-601 等)。 + editable-text 選択子に runtime クラスが混入する bug 修正 (.selected/.edge-linked/.has-selection/.grid-mode を TRANSIENT_CLASSES に追加)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 30
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"WebSearch": 8, "WebFetch": 4, "Bash": 209, "Write": 12, "Edit": 217, "Read": 42, "ToolSearch": 1, "Grep": 7}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-01T23:40:35Z - saved-layout 復元 + プレビューエディタに 3 機能追加 (複数選択 / 隣接フレームの辺リンク / 数値入力パネル)。 BCR fixup ロジックを performResize にリファクタして primary + linked で共有
 - **タスク**: saved-layout 復元 + プレビューエディタに 3 機能追加 (複数選択 / 隣接フレームの辺リンク / 数値入力パネル)。 BCR fixup ロジックを performResize にリファクタして primary + linked で共有
 - **結果**: 成功
@@ -194,19 +207,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 37, "Bash": 209, "Edit": 231, "Grep": 1, "ToolSearch": 1, "WebSearch": 10, "WebFetch": 4, "Write": 7}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-05-01T14:28:28Z - preview/full のドットを正方形固定 (aspect-ratio 1 + 角丸なし)、 sw.js 595→596 バンプ
-- **タスク**: preview/full のドットを正方形固定 (aspect-ratio 1 + 角丸なし)、 sw.js 595→596 バンプ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 34
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 42, "Bash": 205, "Edit": 232, "Grep": 1, "ToolSearch": 1, "WebSearch": 10, "WebFetch": 4, "Write": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
