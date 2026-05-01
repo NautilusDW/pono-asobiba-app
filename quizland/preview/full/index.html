@@ -221,6 +221,7 @@ body.show-safe .safe-area::after {
   color: var(--text);
   flex: 0 0 auto;
 }
+.hdr-left .progress-num { margin-left: auto; }  /* B 位置に移動 */
 .hdr-left .dots {
   display: inline-flex; gap: 10px; flex: 0 0 auto;
 }
@@ -277,15 +278,16 @@ body.show-safe .safe-area::after {
   grid-template-columns: 1fr 700px;
   gap: 16px;
   height: 100%;
-  align-items: start;
+  align-items: stretch;
 }
 
-/* Question column (left) — 上半分くらいで内包、 下に余白 */
+/* Question column (left) — 上下空間を均等に */
 .q-col {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-self: start;
+  height: 100%;
+  justify-content: center;
 }
 .q-text-card {
   /* 想定サイズ: 1000×170 (アスペクト比 ≈ 6:1) */
@@ -365,11 +367,13 @@ body.show-board-frame .board::before { opacity: 1; }
 }
 .grid .row { gap: var(--gap); }
 
-/* Answer column (right) — 4 chips + bottom-right (hint+owl) を縦に */
+/* Answer column (right) — 4 chips + bottom-right (hint+owl) を縦に。
+   q-col と同じ縦中央寄せ → bottom-right の下辺が board の下辺と揃う */
 .a-col {
   display: flex; flex-direction: column;
   gap: 18px;
   height: 100%;
+  justify-content: center;
 }
 /* 答えチップ 4 個を囲うトレイ (土台)
    想定アスペクト比: ~700×500 (約 7:5)、 画像差替時はそのまま 1 枚絵で置換 */
@@ -510,12 +514,11 @@ body.show-board-frame .board::before { opacity: 1; }
   stroke: #ff3b6b;
   stroke-width: var(--arrow-stroke, 4);
   fill: none;
-  marker-end: url(#anno-arrow-head);
   cursor: move;
   pointer-events: stroke;
+  stroke-linecap: round;
 }
-/* 矢印の hit を確保するため、 stroke が細いときも 16px は当たるようにする */
-.anno-arrow-line { stroke-linecap: round; }
+.anno-arrow-line.with-head { marker-end: url(#anno-arrow-head); }
 .anno-rect {
   fill: rgba(255, 59, 107, 0.05);
   stroke: #ff3b6b;
@@ -628,8 +631,8 @@ body.preview-mode .stage {
 .character {
   border-radius: 0 !important;
   width: 200px !important;
-  height: 240px !important;
-  font-size: 60px;
+  height: 168px !important;  /* a-col 合計 = q-col 合計に揃える */
+  font-size: 56px;
 }
 
 /* Debug bbox */
@@ -701,6 +704,7 @@ body.preview-mode .stage {
     <button class="tool-btn" data-tool="text">📝 テキスト</button>
     <button class="tool-btn" data-tool="rect">▭ 矩形</button>
     <button class="tool-btn" data-tool="arrow">↗ 矢印</button>
+    <button class="tool-btn" data-tool="line">─ 線</button>
     <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
     <button id="anno-clear">🗑 全消去</button>
     <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
@@ -933,7 +937,8 @@ function collectState() {
     })),
     arrows: [...annoSvg.querySelectorAll('line.anno-arrow-line')].map(l => ({
       x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'),
-      x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2')
+      x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2'),
+      head: l.classList.contains('with-head')
     })),
     labelIdx,
     settings: {
@@ -985,7 +990,7 @@ function loadState() {
     (data.markers || []).forEach(m => restoreMarker(m.x, m.y, m.label));
     (data.texts || []).forEach(t => restoreText(t.x, t.y, t.content));
     (data.rects || []).forEach(r => restoreRect(r.x, r.y, r.w, r.h));
-    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2));
+    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2, a.head !== false));
 
     if (typeof data.labelIdx === 'number') labelIdx = data.labelIdx;
     return true;
@@ -1027,9 +1032,9 @@ function restoreRect(x, y, w, h) {
   annoSvg.appendChild(r);
   attachDeleteHandlers(r);
 }
-function restoreArrow(x1, y1, x2, y2) {
+function restoreArrow(x1, y1, x2, y2, hasHead) {
   const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  l.setAttribute('class', 'anno-arrow-line');
+  l.setAttribute('class', hasHead ? 'anno-arrow-line with-head' : 'anno-arrow-line');
   l.setAttribute('x1', x1); l.setAttribute('y1', y1);
   l.setAttribute('x2', x2); l.setAttribute('y2', y2);
   annoSvg.appendChild(l);
@@ -1100,7 +1105,8 @@ const TIP_TEXTS = {
   marker:  'マーカー: クリックで A,B,C… 配置 (既存の上にも重ねられる) / 移動は選択ツールで',
   text:    'テキスト: クリックで黄色付箋 (既存の上にも重ねられる) / 移動は選択ツールで',
   rect:    '矩形: ドラッグで囲い枠 / 移動・伸縮は選択ツールで',
-  arrow:   '矢印: ドラッグで自由な矢印 / 移動・エンドポイント伸ばしは選択ツールで',
+  arrow:   '矢印: ドラッグで自由な矢印 (端に矢印先) / 移動・エンドポイント伸ばしは選択ツールで',
+  line:    '線: ドラッグで矢印先のないただの線 / 移動・エンドポイント伸ばしは選択ツールで',
   eraser:  '消しゴム: 注釈をクリックして個別削除',
 };
 
@@ -1314,7 +1320,7 @@ annoLayer.addEventListener('mousedown', e => {
     return;
   }
 
-  if (currentTool === 'rect' || currentTool === 'arrow') {
+  if (currentTool === 'rect' || currentTool === 'arrow' || currentTool === 'line') {
     e.preventDefault();
     dragStart = getStageCoords(e);
     if (currentTool === 'rect') {
@@ -1322,7 +1328,8 @@ annoLayer.addEventListener('mousedown', e => {
       tempShape.setAttribute('class', 'anno-rect'); tempShape.setAttribute('rx', 6);
     } else {
       tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      tempShape.setAttribute('class', 'anno-arrow-line');
+      // arrow ツールには .with-head クラスを付けて先端を出す。 line はクラス無しで素線
+      tempShape.setAttribute('class', currentTool === 'arrow' ? 'anno-arrow-line with-head' : 'anno-arrow-line');
     }
     annoSvg.appendChild(tempShape);
     const onMove = (e2) => {
