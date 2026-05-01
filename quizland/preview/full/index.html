@@ -286,16 +286,16 @@ body.show-safe .safe-area::after {
   align-self: start;
 }
 .q-text-card {
-  /* 想定サイズ: 1000×200 (画像差替時もこのアスペクト比 5:1 を維持して contain でフィット) */
+  /* 想定サイズ: 1000×170 (アスペクト比 ≈ 6:1) */
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
-  padding: 36px 80px 36px 32px;  /* 右側は audio ボタン分の余白 */
+  padding: 22px 80px 22px 32px;  /* 右は audio ボタン分の余白 */
   display: flex; align-items: center; justify-content: center; gap: 16px;
   color: var(--text);
   font-weight: 800;
-  font-size: 34px;
-  min-height: 200px;  /* 最長 29 文字 = 2 行ぶん + 余裕 */
+  font-size: 32px;
+  min-height: 170px;  /* 最長 29 文字 (2 行折返) + 余裕 */
   line-height: 1.4;
   position: relative;
   box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
@@ -317,7 +317,7 @@ body.show-safe .safe-area::after {
 }
 
 .board {
-  /* 想定アスペクト比: ~1000×600 (≈5:3)、 画像差替時もこの比を保つこと */
+  /* 想定アスペクト比: ~1000×500 (約 2:1)、 画像差替時もこの比を保つこと */
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
@@ -327,7 +327,7 @@ body.show-safe .safe-area::after {
   justify-content: center;
   position: relative;
   box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
-  height: 600px;
+  height: 500px;
 }
 .board::before {
   content: "";
