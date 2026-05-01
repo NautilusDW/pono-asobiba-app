@@ -213,10 +213,19 @@ body.show-safe .safe-area::after {
 .hdr-left .progress-num { margin-left: auto; }  /* B 位置に移動 */
 .hdr-left .dots {
   display: inline-flex; gap: 10px; flex: 0 0 auto;
+  /* デフォルト高さ。 リサイズで変更可能 → 中の dot が自動追従 */
+  height: 14px;
+  align-items: center;
 }
 .hdr-left .dot {
-  width: 14px; height: 14px; border-radius: 50%;
+  /* container 幅・高さの均等割り。 アスペクト比 1:1 で正方/円を維持 */
+  flex: 1 1 0;
+  height: 100%;
+  aspect-ratio: 1;
+  width: auto;
+  border-radius: 50%;
   background: #d6b56a; border: 2px solid var(--wood-mid);
+  min-width: 0;
 }
 .hdr-left .dot.done { background: #f3a330; }
 
