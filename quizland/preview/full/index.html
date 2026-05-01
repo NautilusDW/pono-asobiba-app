@@ -221,11 +221,12 @@ body.show-safe .safe-area::after {
   justify-content: space-between;
 }
 .hdr-left .dot {
-  /* dot は container の高さに合わせた円 (aspect-ratio で正方形 → border-radius 50% で円) */
+  /* dot は container を均等割で flex-fill (横/縦の伸縮に合わせて中身も伸縮)
+     画像差替前提なので円形維持はしない */
+  flex: 1 1 0;
   height: 100%;
-  aspect-ratio: 1;
-  flex: 0 0 auto;
-  border-radius: 50%;
+  width: auto;
+  min-width: 0;
   background: #d6b56a;
   border: 2px solid var(--wood-mid);
 }
@@ -1790,15 +1791,17 @@ async function loadSavedLayoutFromServer() {
 }
 
 async function explicitSaveLayout() {
-  const json = JSON.stringify(takeLayoutSnapshot(), null, 2);
-  try { localStorage.setItem(RESIZE_KEY, json); } catch(e) {}
-  lastSavedLayoutJson = json;
+  const snapshot = takeLayoutSnapshot();
+  const compactJson = JSON.stringify(snapshot);          // 比較用 (updateDirtyUI と同形式)
+  const prettyJson  = JSON.stringify(snapshot, null, 2); // 保存用 (人間可読)
+  try { localStorage.setItem(RESIZE_KEY, prettyJson); } catch(e) {}
+  lastSavedLayoutJson = compactJson;
   updateDirtyUI();
   showLayoutToast('保存中…');
   try {
     const existing = await ghGetContents(GH_LAYOUT_PATH);
     const sha = existing ? existing.sha : null;
-    await ghPutContents(GH_LAYOUT_PATH, utf8Btoa(json), 'chore(preview): update saved layout', sha);
+    await ghPutContents(GH_LAYOUT_PATH, utf8Btoa(prettyJson), 'chore(preview): update saved layout', sha);
     showLayoutToast('保存しました (端末間共有 OK)');
   } catch (e) {
     showLayoutToast('GitHub 保存失敗: ローカルにのみ保存しました');
