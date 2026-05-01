@@ -14,15 +14,43 @@
 
 ## Active (進行中 / 未着手)
 
-### ⏸ Codex への再依頼は保留 (ユーザーが bbox 再調整中)
+### 🔁 Codex 依頼: Quizland パーツ — 土台フレーム 4 枚だけ先に再生成 (3 巡目 step1) (2026-05-02)
 
-**経緯**: 1 巡目 (RGB → halo 問題) 解消、 2 巡目 (RGBA + 仕様寸法) 達成。 だが装飾 (葉/どんぐり/花/ツル/羽根) が画像内側を侵食し、 content area が窮屈。 bbox を外に広げる代替案は隣接要素衝突や端切れの懸念があるため却下。
+**段取り**: ユーザー要望で **まず一番下の土台 4 枚だけ作って、 fit をチェックしてから残りに進む** 段階的アプローチへ変更。 1 枚ずつ承認して進めるのではなく、 この 4 枚をワンパスで生成してプレビューに置いて確認。 OK なら次の Codex 依頼で残り (chip / circle / owl-icon / progress-num / dots / hint / character / audio) を生成、 NG なら寸法/装飾感を調整してまた 4 枚再生成。
 
-**現在のステータス**:
-- `assets/preview-placeholders/*.png` (16 枚) を **一旦削除**。 ユーザーが `quizland/preview/full/` で **bbox を装飾マージン込みで再調整中**。 `stage-bg.png` と `grid/` はそのまま残置。
-- ユーザーが新しい bbox サイズを確定して `saved-layout.json` を保存したら、 Claude が新寸法表で 3 巡目の Codex 依頼を書き直す。
+**生成対象 (4 枚)**:
 
-**Codex 側はこのセクションが新寸法表に置き換わるまで待機してください**。
+| ファイル | 寸法 | 内容 |
+|---|---|---|
+| `assets/preview-placeholders/title-card.png` | **266 × 115** | ヘッダー左ピル内の **タイトルロゴ札** ( 「フクロウはかせの」 「なぞなぞ」 という文字を **焼き込んでよい**)。 ロゴ外周の枠と装飾は OK |
+| `assets/preview-placeholders/q-text-card.png` | **780 × 174** | 問題文 (横長) を入れる **巻物 / 帯カードの空フレーム**。 文字は焼き込まない (CSS で別個に乗せる)。 audio ボタンの丸も焼き込まない (audio.png は別個) |
+| `assets/preview-placeholders/board.png` | **780 × 496** | 問題ボード (4 つのスロットを置く土台、 木枠 + 中身は紙/パッチメント風)。 中の 4 スロットの絵は焼き込まない (item-slot.png が別個) |
+| `assets/preview-placeholders/answer-tray.png` | **650 × 499** | 4 択チップを置く **回答トレイの土台**。 中のチップ枠 / 色丸は焼き込まない (chip.png / circle.png が別個) |
+
+**生成ルール (前回までの学び込み)**:
+
+1. **RGBA 透過 PNG** で背景は完全透明
+2. **指定寸法ぴったり** (1×, 2×, 3× 解像度のいずれかで縦横比厳守)
+3. **装飾 (葉/どんぐり/花/ツル/羽根) は画像の外周 10% マージン内に収める**。 中央 80% × 80% は文字や中身を乗せても被らないクリーンな content area
+4. **フレーム線は細めに**。 厚すぎる木枠で内側を侵食しない
+5. **「サブフレームの焼き込み」 禁止**。 親に子要素を焼き込まない (例: q-text-card に audio 丸を焼き込まない、 board に slot を焼き込まない、 answer-tray に chip を焼き込まない、 title-card は **タイトル文字のみ OK** で他要素は焼き込まない)
+6. 仕上がった PNG は `python scripts/auto_optimize_image.py <files...>` を必ず通す。 透過維持
+
+**bbox 確認方法 (Codex 側)**:
+
+- `quizland/preview/full/index.html` を開いて 4 つの bbox を確認: `.title-card` / `.q-text-card` / `.board` / `.answer-tray`
+- ヘッダー右側 **🔁 グリッド比較** トグル ON で旧グリッド placeholder と並べて寸法・配置感を比較できる
+- 完了後 Claude に伝えるか、 PR / commit に 「step1 完了」 と記載
+
+**ステップ 2 (この 4 枚 OK 後の予定)**:
+残り 13 枚を生成。 寸法は次の Active セクションで Claude が再掲する予定: `owl-icon` / `progress-num` / `dot` / `audio` / `item-slot` / `chip` / `circle` / `hint` / `character` / `hdr-pill` (= 空のピル枠だけ、 子要素は焼き込まない)
+
+> **触らないファイル (今回はそのまま)**:
+> - `assets/preview-placeholders/stage-bg.png` (背景はすでにあるので維持)
+> - `assets/preview-placeholders/grid/` (旧グリッド比較用、 維持)
+>
+> **今回 step1 では生成不要 (ユーザー指定で除外)**:
+> - `ctrl-btn-news.png` / `ctrl-btn-settings.png` (おしらせ/せってい のボタン、 後の step で生成予定)
 
 ---
 
