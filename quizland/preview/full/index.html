@@ -682,6 +682,24 @@ body.preview-mode .stage {
 .character { background-image: url('../../../assets/preview-placeholders/character.png') !important; }
 .slot { background-image: url('../../../assets/preview-placeholders/item-slot.png') !important; }
 
+/* グリッド比較モード: 同じ要素を旧 grid placeholder に差し替え。 body.grid-mode で具体性を高めて勝つ */
+body.grid-mode .hdr-pill { background-image: url('../../../assets/preview-placeholders/grid/hdr-pill.png') !important; }
+body.grid-mode .hdr-left .owl-icon { background-image: url('../../../assets/preview-placeholders/grid/owl-icon.png') !important; }
+body.grid-mode .hdr-left .title-card { background-image: url('../../../assets/preview-placeholders/grid/title-card.png') !important; }
+body.grid-mode .hdr-left .progress-num { background-image: url('../../../assets/preview-placeholders/grid/progress-num.png') !important; }
+body.grid-mode .hdr-left .dot { background-image: url('../../../assets/preview-placeholders/grid/dot.png') !important; }
+body.grid-mode .hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/preview-placeholders/grid/ctrl-btn-news.png') !important; }
+body.grid-mode .hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/preview-placeholders/grid/ctrl-btn-settings.png') !important; }
+body.grid-mode .q-text-card { background-image: url('../../../assets/preview-placeholders/grid/q-text-card.png') !important; }
+body.grid-mode .q-text-card .audio { background-image: url('../../../assets/preview-placeholders/grid/audio.png') !important; }
+body.grid-mode .board { background-image: url('../../../assets/preview-placeholders/grid/board.png') !important; }
+body.grid-mode .answer-tray { background-image: url('../../../assets/preview-placeholders/grid/answer-tray.png') !important; }
+body.grid-mode .chip { background-image: url('../../../assets/preview-placeholders/grid/chip.png') !important; }
+body.grid-mode .chip .circle { background-image: url('../../../assets/preview-placeholders/grid/circle.png') !important; }
+body.grid-mode .hint { background-image: url('../../../assets/preview-placeholders/grid/hint.png') !important; }
+body.grid-mode .character { background-image: url('../../../assets/preview-placeholders/grid/character.png') !important; }
+body.grid-mode .slot { background-image: url('../../../assets/preview-placeholders/grid/item-slot.png') !important; }
+
 .hdr-left .title-card small,
 .hdr-left .title-card span,
 .hdr-left .progress-num,
@@ -912,6 +930,7 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="preview-mode" title="ツールバー非表示 + 画面に合わせてスケール">📱 端末サイズで見る</button>
+    <button id="grid-mode-toggle" title="旧グリッド placeholder と本物画像を切り替え">🔁 グリッド比較 OFF</button>
   </div>
 
   <div style="margin-left:auto;color:#666;">
@@ -2250,6 +2269,17 @@ document.getElementById('resize-toggle').addEventListener('click', () => {
 document.getElementById('resize-reset').addEventListener('click', resetResizeState);
 document.getElementById('save-layout').addEventListener('click', explicitSaveLayout);
 document.getElementById('revert-layout').addEventListener('click', revertLayout);
+
+// グリッド比較トグル: 旧 grid placeholder (色付き正方形) と本物画像を切替
+const gridBtn = document.getElementById('grid-mode-toggle');
+function applyGridMode(on) {
+  document.body.classList.toggle('grid-mode', on);
+  gridBtn.textContent = on ? '🔁 グリッド比較 ON' : '🔁 グリッド比較 OFF';
+  gridBtn.classList.toggle('active', on);
+  try { localStorage.setItem('quizland_preview_grid_mode', on ? '1' : '0'); } catch(_) {}
+}
+gridBtn.addEventListener('click', () => applyGridMode(!document.body.classList.contains('grid-mode')));
+try { if (localStorage.getItem('quizland_preview_grid_mode') === '1') applyGridMode(true); } catch(_) {}
 // Ctrl/Cmd+S で保存
 window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
