@@ -111,43 +111,10 @@ html, body {
   height: var(--canvas-h);
   margin: 0 auto;
   position: relative;
-  /* 森の背景 */
-  background:
-    radial-gradient(ellipse at 50% 25%, rgba(180, 145, 90, 0.18) 0%, transparent 55%),
-    radial-gradient(ellipse at 12% 80%, rgba(80, 50, 22, 0.4) 0%, transparent 45%),
-    radial-gradient(ellipse at 88% 80%, rgba(70, 100, 50, 0.35) 0%, transparent 45%),
-    linear-gradient(180deg, #5e7b3a 0%, #3e5a25 55%, #2c411a 100%);
+  /* 単色背景 (装飾は生成画像差替前提) */
+  background: #4a6230;
   border: 1px dashed #555;
   overflow: hidden;
-}
-
-/* Forest decoration on the 21:9 sides (outside safe area) */
-.forest-side {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 250px;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(50, 90, 40, 0.6) 0%, transparent 35%),
-    radial-gradient(circle at 70% 60%, rgba(60, 100, 50, 0.7) 0%, transparent 35%),
-    radial-gradient(circle at 20% 80%, rgba(40, 70, 30, 0.5) 0%, transparent 35%);
-}
-.forest-side.left { left: 0; }
-.forest-side.right { right: 0; transform: scaleX(-1); }
-.forest-side::before {
-  content: "🌿"; font-size: 80px; opacity: 0.4;
-  position: absolute; top: 8%; left: 30px;
-}
-.forest-side::after {
-  content: "🌿"; font-size: 60px; opacity: 0.3;
-  position: absolute; bottom: 12%; left: 50px;
-}
-
-.lantern {
-  position: absolute;
-  left: 30px; top: 220px;
-  font-size: 60px; opacity: 0.85;
-  pointer-events: none;
 }
 
 /* ───── Safe Area (16:9) ───── */
@@ -879,11 +846,6 @@ body.resize-mode .ruler { display: block; }
 
 <div class="stage-wrap">
   <div class="stage" id="stage">
-    <!-- 21:9 outer decoration -->
-    <div class="forest-side left"></div>
-    <div class="forest-side right"></div>
-    <div class="lantern">🏮</div>
-
     <!-- 16:9 safe area inner -->
     <div class="safe-area" id="safe-area">
       <!-- Header: 左ピルが q-col と同じ幅 (1fr) -->
