@@ -576,9 +576,13 @@ body.preview-mode .stage-wrap {
   margin: 0;
   overflow: hidden;
   background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+}
+body.preview-mode .stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  /* transform set by JS で translate + scale */
 }
 
 /* Debug bbox */
@@ -1385,8 +1389,13 @@ function fitStage() {
   const stageW = parseFloat(getComputedStyle(stage).width);
   const stageH = parseFloat(getComputedStyle(stage).height);
   const scale = Math.min(w / stageW, h / stageH);
-  stage.style.transform = `scale(${scale})`;
-  stage.style.transformOrigin = 'center center';
+  const scaledW = stageW * scale;
+  const scaledH = stageH * scale;
+  const offsetX = (w - scaledW) / 2;
+  const offsetY = (h - scaledH) / 2;
+  // transform-origin 0 0 + 明示的な translate(px) で確実にレターボックス中央配置
+  stage.style.transformOrigin = '0 0';
+  stage.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
 }
 function enterPreview() {
   document.body.classList.add('preview-mode');
