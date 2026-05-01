@@ -638,6 +638,61 @@ body.preview-mode .stage {
   font-size: 56px;
 }
 
+/* ───── Placeholder image verification mode ─────
+   本番用ではなく、指定解像度の画像が各バウンディングボックスに
+   100% 100% で正しく入るかを確認するための検証素材。 */
+.hdr-pill,
+.hdr-left .owl-icon,
+.hdr-left .title-card,
+.hdr-left .progress-num,
+.hdr-left .dot,
+.hdr-right .ctrl-btn,
+.q-text-card,
+.q-text-card .audio,
+.board,
+.answer-tray,
+.chip,
+.chip .circle,
+.hint,
+.character,
+.slot {
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.hdr-pill { background-image: url('../../../assets/preview-placeholders/hdr-pill.png') !important; }
+.hdr-left .owl-icon { background-image: url('../../../assets/preview-placeholders/owl-icon.png') !important; }
+.hdr-left .title-card { background-image: url('../../../assets/preview-placeholders/title-card.png') !important; }
+.hdr-left .progress-num { background-image: url('../../../assets/preview-placeholders/progress-num.png') !important; }
+.hdr-left .dot { background-image: url('../../../assets/preview-placeholders/dot.png') !important; }
+.hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-news.png') !important; }
+.hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/preview-placeholders/ctrl-btn-settings.png') !important; }
+.q-text-card { background-image: url('../../../assets/preview-placeholders/q-text-card.png') !important; }
+.q-text-card .audio { background-image: url('../../../assets/preview-placeholders/audio.png') !important; }
+.board { background-image: url('../../../assets/preview-placeholders/board.png') !important; }
+.answer-tray { background-image: url('../../../assets/preview-placeholders/answer-tray.png') !important; }
+.chip { background-image: url('../../../assets/preview-placeholders/chip.png') !important; }
+.chip .circle { background-image: url('../../../assets/preview-placeholders/circle.png') !important; }
+.hint { background-image: url('../../../assets/preview-placeholders/hint.png') !important; }
+.character { background-image: url('../../../assets/preview-placeholders/character.png') !important; }
+.slot { background-image: url('../../../assets/preview-placeholders/item-slot.png') !important; }
+
+.hdr-left .title-card small,
+.hdr-left .title-card span,
+.hdr-left .progress-num,
+.hdr-right .ctrl-btn > *,
+.q-text-card #q-text,
+.q-text-card .audio,
+.chip > span,
+.hint,
+.character,
+.slot {
+  color: transparent !important;
+}
+
 /* ───── Resize mode (ドラッグで各バウンディングボックスを伸縮 + 移動 + ルーラー/ガイド) ───── */
 body.resize-mode .resizable {
   position: relative;
