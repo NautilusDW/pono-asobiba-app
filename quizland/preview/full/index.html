@@ -574,12 +574,14 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
   </div>
 
   <div id="anno-tools">
+    <button class="tool-btn" data-tool="select">👆 選択/移動</button>
     <button class="tool-btn" data-tool="marker">📍 マーカー</button>
     <button class="tool-btn" data-tool="text">📝 テキスト</button>
     <button class="tool-btn" data-tool="rect">▭ 矩形</button>
     <button class="tool-btn" data-tool="arrow">↗ 矢印</button>
     <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
     <button id="anno-clear">🗑 全消去</button>
+    <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
   </div>
 
   <div style="margin-left:auto;color:#666;">
@@ -733,7 +735,7 @@ function updateBboxLabels() {
   });
 }
 
-document.getElementById('layout-select').addEventListener('change', e => buildLayout(e.target.value));
+document.getElementById('layout-select').addEventListener('change', e => { buildLayout(e.target.value); scheduleSave(); });
 document.getElementById('img-file').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
@@ -748,24 +750,26 @@ document.getElementById('img-clear').addEventListener('click', () => {
 document.getElementById('slot-size').addEventListener('input', e => {
   document.documentElement.style.setProperty('--slot-size', e.target.value + 'px');
   updateBboxLabels();
+  scheduleSave();
 });
 document.getElementById('gap').addEventListener('input', e => {
   document.documentElement.style.setProperty('--gap', e.target.value + 'px');
   updateBboxLabels();
+  scheduleSave();
 });
 document.getElementById('arrow-stroke').addEventListener('input', e => {
   document.documentElement.style.setProperty('--arrow-stroke', e.target.value);
+  scheduleSave();
 });
 document.getElementById('show-bbox').addEventListener('change', e => {
   document.body.classList.toggle('show-bbox', e.target.checked);
   if (e.target.checked) updateBboxLabels();
+  scheduleSave();
 });
 document.getElementById('show-safe').addEventListener('change', e => {
   document.body.classList.toggle('show-safe', e.target.checked);
+  scheduleSave();
 });
-
-// 初期表示
-buildLayout('row-3');
 
 // ───── Annotation system ─────
 const stage = document.getElementById('stage');
@@ -773,14 +777,148 @@ const annoLayer = document.getElementById('anno-layer');
 const annoSvg = document.getElementById('anno-svg');
 const annoToggle = document.getElementById('anno-toggle');
 const annoClear = document.getElementById('anno-clear');
+const annoReset = document.getElementById('anno-reset');
 const annoTip = document.getElementById('anno-tip');
 const annoTipText = document.getElementById('anno-tip-text');
 
 let annoMode = false;
-let currentTool = 'marker';
+let currentTool = 'select';
 const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 let labelIdx = 0;
 let selectedEl = null;
+
+// ── localStorage 自動保存 ──
+const STORAGE_KEY = 'quizland_preview_state_v1';
+let saveTimer = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 300);
+}
+function collectState() {
+  return {
+    markers: [...annoLayer.querySelectorAll('.anno-marker')].map(m => ({
+      x: parseFloat(m.style.left), y: parseFloat(m.style.top), label: m.textContent
+    })),
+    texts: [...annoLayer.querySelectorAll('.anno-text')].map(t => ({
+      x: parseFloat(t.style.left), y: parseFloat(t.style.top), content: t.textContent
+    })),
+    rects: [...annoSvg.querySelectorAll('rect.anno-rect')].map(r => ({
+      x: +r.getAttribute('x'), y: +r.getAttribute('y'),
+      w: +r.getAttribute('width'), h: +r.getAttribute('height')
+    })),
+    arrows: [...annoSvg.querySelectorAll('line.anno-arrow-line')].map(l => ({
+      x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'),
+      x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2')
+    })),
+    labelIdx,
+    settings: {
+      layout: document.getElementById('layout-select').value,
+      slotSize: document.getElementById('slot-size').value,
+      gap: document.getElementById('gap').value,
+      arrowStroke: document.getElementById('arrow-stroke').value,
+      showBbox: document.getElementById('show-bbox').checked,
+      showSafe: document.getElementById('show-safe').checked,
+    }
+  };
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); } catch(e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+
+    // 設定を先に適用
+    const s = data.settings || {};
+    if (s.layout) {
+      document.getElementById('layout-select').value = s.layout;
+    }
+    if (s.slotSize) {
+      document.getElementById('slot-size').value = s.slotSize;
+      document.documentElement.style.setProperty('--slot-size', s.slotSize + 'px');
+    }
+    if (s.gap) {
+      document.getElementById('gap').value = s.gap;
+      document.documentElement.style.setProperty('--gap', s.gap + 'px');
+    }
+    if (s.arrowStroke) {
+      document.getElementById('arrow-stroke').value = s.arrowStroke;
+      document.documentElement.style.setProperty('--arrow-stroke', s.arrowStroke);
+    }
+    if (typeof s.showBbox === 'boolean') {
+      document.getElementById('show-bbox').checked = s.showBbox;
+      document.body.classList.toggle('show-bbox', s.showBbox);
+    }
+    if (typeof s.showSafe === 'boolean') {
+      document.getElementById('show-safe').checked = s.showSafe;
+      document.body.classList.toggle('show-safe', s.showSafe);
+    }
+
+    // 注釈を復元 (履歴には登録しない)
+    (data.markers || []).forEach(m => restoreMarker(m.x, m.y, m.label));
+    (data.texts || []).forEach(t => restoreText(t.x, t.y, t.content));
+    (data.rects || []).forEach(r => restoreRect(r.x, r.y, r.w, r.h));
+    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2));
+
+    if (typeof data.labelIdx === 'number') labelIdx = data.labelIdx;
+    return true;
+  } catch(e) { return false; }
+}
+function restoreMarker(x, y, label) {
+  const m = document.createElement('div');
+  m.className = 'anno-marker';
+  m.style.left = x + 'px'; m.style.top = y + 'px';
+  m.textContent = label;
+  annoLayer.appendChild(m);
+  attachDeleteHandlers(m);
+  m.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const t = prompt('ラベル', m.textContent);
+    if (t !== null) { m.textContent = t; scheduleSave(); }
+  });
+}
+function restoreText(x, y, content) {
+  const t = document.createElement('div');
+  t.className = 'anno-text';
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+  t.textContent = content;
+  annoLayer.appendChild(t);
+  attachDeleteHandlers(t);
+  t.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const v = prompt('編集 (空で削除)', t.textContent);
+    if (v === null) return;
+    if (v === '') removeElWithHistory(t);
+    else { t.textContent = v; scheduleSave(); }
+  });
+}
+function restoreRect(x, y, w, h) {
+  const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  r.setAttribute('class', 'anno-rect'); r.setAttribute('rx', 6);
+  r.setAttribute('x', x); r.setAttribute('y', y);
+  r.setAttribute('width', w); r.setAttribute('height', h);
+  annoSvg.appendChild(r);
+  attachDeleteHandlers(r);
+}
+function restoreArrow(x1, y1, x2, y2) {
+  const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  l.setAttribute('class', 'anno-arrow-line');
+  l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+  l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+  annoSvg.appendChild(l);
+  attachDeleteHandlers(l);
+}
+function clearAllSavedState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  document.querySelectorAll('.anno-marker, .anno-text').forEach(el => el.remove());
+  annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect, .anno-handle, .anno-handle-hit').forEach(el => el.remove());
+  selectedEl = null;
+  labelIdx = 0;
+  undoStack.length = 0;
+  redoStack.length = 0;
+}
 
 const undoStack = [];
 const redoStack = [];
@@ -788,16 +926,19 @@ function pushHistory(op) {
   undoStack.push(op);
   if (undoStack.length > 100) undoStack.shift();
   redoStack.length = 0;
+  scheduleSave();
 }
 function applyOp(op) {
   if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
   else if (op.type === 'remove') op.el.remove();
   else if (op.type === 'transform') { setGeometry(op.el, op.after); if (op.el === selectedEl) updateHandles(); }
+  scheduleSave();
 }
 function applyInverse(op) {
   if (op.type === 'add') { op.el.remove(); if (op.el === selectedEl) selectEl(null); }
   else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
   else if (op.type === 'transform') { setGeometry(op.el, op.before); if (op.el === selectedEl) updateHandles(); }
+  scheduleSave();
 }
 function undo() {
   if (!undoStack.length) return;
@@ -830,10 +971,11 @@ function setGeometry(el, g) {
 }
 
 const TIP_TEXTS = {
-  marker:  'マーカー: クリックで A,B,C… 配置 / Delete で削除 / Ctrl+Z で元に戻す',
-  text:    'テキスト: クリックで黄色付箋 (ダブルクリックで編集)',
-  rect:    '矩形: ドラッグで囲い枠 / 角ハンドルで伸縮 / 内側ドラッグで移動',
-  arrow:   '矢印: ドラッグで自由な矢印 / エンドポイントで伸ばし直し / 線をドラッグで移動',
+  select:  '選択/移動: 注釈をクリック→選択 / ドラッグ→移動 / ハンドルで伸縮 / Delete で削除',
+  marker:  'マーカー: クリックで A,B,C… 配置 (既存の上にも重ねられる) / 移動は選択ツールで',
+  text:    'テキスト: クリックで黄色付箋 (既存の上にも重ねられる) / 移動は選択ツールで',
+  rect:    '矩形: ドラッグで囲い枠 / 移動・伸縮は選択ツールで',
+  arrow:   '矢印: ドラッグで自由な矢印 / 移動・エンドポイント伸ばしは選択ツールで',
   eraser:  '消しゴム: 注釈をクリックして個別削除',
 };
 
@@ -952,11 +1094,12 @@ function attachDeleteHandlers(el) {
   el.addEventListener('click', ev => {
     if (!annoMode) return;
     if (currentTool === 'eraser') { ev.stopPropagation(); removeElWithHistory(el); }
+    // 他のツール (作成系) ではバブルさせる → annoLayer の click でマーカー/テキストが追加される
   });
   el.addEventListener('mousedown', ev => {
     if (!annoMode) return;
-    if (currentTool === 'eraser') return;
-    // 注: rect/arrow ツールでも既存の注釈は移動できるようにブロックを外した
+    // 選択ツールでのみ移動可能。 他のツール (マーカー/テキスト/矩形/矢印) はバブリングして新規作成
+    if (currentTool !== 'select') return;
     if (ev.target.classList && (ev.target.classList.contains('anno-handle') || ev.target.classList.contains('anno-handle-hit'))) return;
     ev.stopPropagation();
     selectEl(el);
@@ -1025,13 +1168,18 @@ let dragStart = null;
 let tempShape = null;
 annoLayer.addEventListener('mousedown', e => {
   if (!annoMode) return;
-  if (e.target.closest('.anno-marker, .anno-text')) return;
-  if (e.target.classList && (e.target.classList.contains('anno-arrow-line') ||
-                              e.target.classList.contains('anno-rect') ||
-                              e.target.classList.contains('anno-handle') ||
+  // ハンドルだけは早期 return (それ自身のドラッグハンドラに任せる)
+  if (e.target.classList && (e.target.classList.contains('anno-handle') ||
                               e.target.classList.contains('anno-handle-hit'))) return;
 
-  if (currentTool !== 'rect' && currentTool !== 'arrow') selectEl(null);
+  // 選択ツール: 背景を押したら選択解除
+  if (currentTool === 'select') {
+    if (!e.target.closest('.anno-marker, .anno-text') &&
+        !(e.target.classList && (e.target.classList.contains('anno-arrow-line') || e.target.classList.contains('anno-rect')))) {
+      selectEl(null);
+    }
+    return;
+  }
 
   if (currentTool === 'rect' || currentTool === 'arrow') {
     e.preventDefault();
@@ -1071,12 +1219,12 @@ annoLayer.addEventListener('mousedown', e => {
 });
 annoLayer.addEventListener('click', e => {
   if (!annoMode) return;
-  if (e.target.closest('.anno-marker, .anno-text')) return;
-  if (e.target.classList && (e.target.classList.contains('anno-arrow-line') ||
-                              e.target.classList.contains('anno-rect') ||
-                              e.target.classList.contains('anno-handle') ||
+  // ハンドルだけは無視
+  if (e.target.classList && (e.target.classList.contains('anno-handle') ||
                               e.target.classList.contains('anno-handle-hit'))) return;
   if (currentTool === 'eraser') return;
+  if (currentTool === 'select') return;
+  if (currentTool === 'rect' || currentTool === 'arrow') return; // ドラッグ専用
   const p = getStageCoords(e);
   if (currentTool === 'marker') addMarker(p.x, p.y);
   else if (currentTool === 'text') addText(p.x, p.y);
@@ -1087,7 +1235,8 @@ annoSvg.addEventListener('click', e => {
   if (!t.classList) return;
   if (t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect')) {
     if (currentTool === 'eraser') { e.stopPropagation(); removeElWithHistory(t); }
-    else selectEl(t);
+    else if (currentTool === 'select') { selectEl(t); }
+    // 作成系ツール: バブルさせる (annoLayer の click で新規作成される)
   }
 });
 annoSvg.addEventListener('mousedown', e => {
@@ -1096,6 +1245,7 @@ annoSvg.addEventListener('mousedown', e => {
   if (!t.classList) return;
   if (!(t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect'))) return;
   if (currentTool === 'eraser') return;
+  if (currentTool !== 'select') return;  // 移動は選択ツール限定
   e.stopPropagation(); e.preventDefault();
   selectEl(t);
   const startPt = getStageCoords(e);
@@ -1142,6 +1292,26 @@ function resizeSvg() {
 window.addEventListener('resize', resizeSvg);
 window.addEventListener('load', resizeSvg);
 window.addEventListener('resize', updateBboxLabels);
+
+// ── Reset button ──
+if (annoReset) {
+  annoReset.addEventListener('click', () => {
+    if (!confirm('保存された注釈と設定を全て削除します (元に戻せません)。よろしいですか？')) return;
+    clearAllSavedState();
+  });
+}
+
+// ── Init: load saved state, otherwise default layout ──
+const restored = loadState();
+if (!restored) {
+  buildLayout('row-3');
+} else {
+  buildLayout(document.getElementById('layout-select').value);
+}
+
+// ── Save before leaving ──
+window.addEventListener('beforeunload', saveState);
+window.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
 </script>
 </body>
 </html>
