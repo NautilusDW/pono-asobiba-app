@@ -1807,13 +1807,20 @@ function makeHandle(el, pos, axes) {
     const startTx = el._tx || 0;
     const startTy = el._ty || 0;
     const aspect = startW / Math.max(1, startH);
+    // ドラッグ開始時の visual 位置 (stage 内座標)
+    const sR0 = el.getBoundingClientRect();
+    const startRect = {
+      left:   (sR0.left - stageRect.left) / scale,
+      top:    (sR0.top - stageRect.top) / scale,
+      right:  (sR0.right - stageRect.left) / scale,
+      bottom: (sR0.bottom - stageRect.top) / scale,
+    };
     const onMove = (e2) => {
       const dx = (e2.clientX - startX) / scale;
       const dy = (e2.clientY - startY) / scale;
-      // Alt = 2 倍率 (両側にダブルで広がる)
-      const factor = e2.altKey ? 2 : 1;
+      const sym = e2.altKey;  // Alt: 対称 (中心固定)
+      const factor = sym ? 2 : 1;
       let newW = startW, newH = startH;
-      let newTx = startTx, newTy = startTy;
       if (pos.includes('e')) newW = Math.max(20, startW + factor * dx);
       if (pos.includes('w')) newW = Math.max(20, startW - factor * dx);
       if (pos.includes('s')) newH = Math.max(20, startH + factor * dy);
@@ -1822,34 +1829,57 @@ function makeHandle(el, pos, axes) {
       if (e2.shiftKey) {
         const isCorner = pos.startsWith('corner');
         if (isCorner) {
-          // 角ハンドル: 大きく動いた方を主軸にして、 もう一方を比率追従
           const dW = Math.abs(newW - startW), dH = Math.abs(newH - startH);
           if (dW >= dH) newH = newW / aspect;
           else newW = newH * aspect;
         } else if (pos.includes('e') || pos.includes('w')) {
-          // 横辺ハンドル: 幅を主軸、 高さを追従
           newH = newW / aspect;
         } else {
-          // 縦辺ハンドル: 高さを主軸、 幅を追従
           newW = newH * aspect;
         }
       }
-      // axes 制約: w が許可されてなければ幅は触らない
+      // 1) サイズを先にに適用 (translate は仮で startTx/Ty)
       if (axes.includes('w') && (pos.includes('e') || pos.includes('w'))) {
         el.style.width = newW + 'px';
-        el._tx = newTx;
       }
       if (axes.includes('h') && (pos.includes('s') || pos.includes('n'))) {
         el.style.height = newH + 'px';
-        el._ty = newTy;
-        // hdr-left の縦リサイズは --header-h にも連動 (グリッドの行が伸びる)
         if (el.matches('.hdr-left')) {
           document.documentElement.style.setProperty('--header-h', newH + 'px');
         }
       }
-      if (newTx !== startTx || newTy !== startTy) {
-        el.style.transform = `translate(${el._tx || 0}px, ${el._ty || 0}px)`;
+      el._tx = startTx;
+      el._ty = startTy;
+      el.style.transform = `translate(${startTx}px, ${startTy}px)`;
+
+      // 2) DOM 反映後の実位置を読んで、 アンカー (反対の辺 or 中心) が
+      //    動いた分だけ translate で補正 (親 layout の影響を打ち消す)
+      const sR1 = el.getBoundingClientRect();
+      const cur = {
+        left:   (sR1.left - stageRect.left) / scale,
+        top:    (sR1.top - stageRect.top) / scale,
+        right:  (sR1.right - stageRect.left) / scale,
+        bottom: (sR1.bottom - stageRect.top) / scale,
+      };
+      let needTx = 0, needTy = 0;
+      if (sym) {
+        // 中心固定 (Alt): 中心を startRect の中心に戻す
+        const cur_cx = (cur.left + cur.right) / 2;
+        const cur_cy = (cur.top + cur.bottom) / 2;
+        const start_cx = (startRect.left + startRect.right) / 2;
+        const start_cy = (startRect.top + startRect.bottom) / 2;
+        needTx = start_cx - cur_cx;
+        needTy = start_cy - cur_cy;
+      } else {
+        // 非対称 (片側だけ動く): 反対の辺を startRect に固定
+        if (pos.includes('e')) needTx = startRect.left - cur.left;       // 左を固定
+        if (pos.includes('w')) needTx = startRect.right - cur.right;     // 右を固定
+        if (pos.includes('s')) needTy = startRect.top - cur.top;         // 上を固定
+        if (pos.includes('n')) needTy = startRect.bottom - cur.bottom;   // 下を固定
       }
+      el._tx = startTx + needTx;
+      el._ty = startTy + needTy;
+      el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
       el._resizeUpdateLabel && el._resizeUpdateLabel();
     };
     const onUp = () => {
