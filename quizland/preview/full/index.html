@@ -657,7 +657,8 @@ body.preview-mode .stage {
 .character,
 .slot {
   background-position: center !important;
-  background-size: 100% 100% !important;
+  /* contain でアスペクト比保持。 box が image より大きければ余白で寸法ミスマッチが見える */
+  background-size: contain !important;
   background-repeat: no-repeat !important;
   border: none !important;
   box-shadow: none !important;
