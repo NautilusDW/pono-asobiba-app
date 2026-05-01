@@ -711,8 +711,11 @@ body:not(.resize-mode) .resize-size-label { display: none; }
   font-family: ui-monospace, Menlo, Consolas, monospace;
 }
 body.resize-mode .ruler { display: block; }
+.ruler {
+  position: fixed;  /* fixed なら toolbar 直下 */
+}
 .ruler.horizontal {
-  top: 0; left: 24px; right: 0;
+  top: var(--toolbar-h, 0); left: 24px; right: 0;
   height: 24px;
   background-image:
     repeating-linear-gradient(90deg,
@@ -723,7 +726,7 @@ body.resize-mode .ruler { display: block; }
   cursor: ns-resize;
 }
 .ruler.vertical {
-  top: 24px; left: 0; bottom: 0;
+  top: calc(var(--toolbar-h, 0) + 24px); left: 0; bottom: 0;
   width: 24px;
   background-image:
     repeating-linear-gradient(180deg,
@@ -734,13 +737,13 @@ body.resize-mode .ruler { display: block; }
   cursor: ew-resize;
 }
 .guide {
-  position: absolute;
+  position: fixed;
   background: rgba(0, 212, 255, 0.6);
   z-index: 65;
   pointer-events: auto;
 }
 .guide.h { left: 24px; right: 0; height: 1px; cursor: ns-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
-.guide.v { top: 24px; bottom: 0; width: 1px; cursor: ew-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+.guide.v { top: calc(var(--toolbar-h, 0) + 24px); bottom: 0; width: 1px; cursor: ew-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
 .guide:hover { background: #00d4ff; }
 .guide-label {
   position: absolute;
@@ -1609,17 +1612,17 @@ window.addEventListener('resize', updateBboxLabels);
 
 // ───── Resize mode (各バウンディングボックスを辺別ハンドルで伸縮 + 移動 + ルーラー/ガイド) ─────
 const RESIZABLE_SPEC = [
-  // selector, axes (w,h,wh), label
-  ['.hdr-left',                'h',  'ヘッダーピル'],
+  // selector, axes (w,h,wh), label - 全要素 wh で 4 辺 + 4 角ハンドル
+  ['.hdr-left',                'wh', 'ヘッダーピル'],
   ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
   ['.hdr-left .title-card',    'wh', 'タイトル札'],
   ['.hdr-left .progress-num',  'wh', '1/5'],
   ['.hdr-right .ctrl-btn',     'wh', '右ボタン'],
-  ['.q-text-card',             'h',  '問題文'],
-  ['.board',                   'h',  '問題ボード'],
-  ['.answer-tray',             'h',  'トレイ'],
-  ['.chip',                    'h',  '選択肢'],
-  ['.hint',                    'h',  'ヒント'],
+  ['.q-text-card',             'wh', '問題文'],
+  ['.board',                   'wh', '問題ボード'],
+  ['.answer-tray',             'wh', 'トレイ'],
+  ['.chip',                    'wh', '選択肢'],
+  ['.hint',                    'wh', 'ヒント'],
   ['.character',               'wh', 'キャラ'],
 ];
 const RESIZE_KEY = 'quizland_preview_sizes_v1';
@@ -1796,14 +1799,24 @@ function attachMoveDrag(el) {
 }
 
 // ─── ルーラー + ガイド ───
+function adjustRulerPos() {
+  const tb = document.querySelector('.toolbar');
+  const toolbarH = (tb && getComputedStyle(tb).display !== 'none') ? tb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--toolbar-h', toolbarH + 'px');
+}
 function setupRulers() {
-  if (document.querySelector('.ruler.horizontal')) return;
+  if (document.querySelector('.ruler.horizontal')) {
+    adjustRulerPos();
+    return;
+  }
   const rh = document.createElement('div'); rh.className = 'ruler horizontal';
   const rv = document.createElement('div'); rv.className = 'ruler vertical';
   document.body.appendChild(rh);
   document.body.appendChild(rv);
   rh.addEventListener('mousedown', e => createGuide(e, 'h'));
   rv.addEventListener('mousedown', e => createGuide(e, 'v'));
+  adjustRulerPos();
+  window.addEventListener('resize', adjustRulerPos);
 }
 function createGuide(e, axis) {
   e.preventDefault();
