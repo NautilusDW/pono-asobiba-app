@@ -161,11 +161,11 @@ body.show-safe .safe-area::after {
   border-radius: 3px;
 }
 
-/* ───── Header (top) ───── */
+/* ───── Header (top) — body と同じグリッド (1fr 700px) で左ピルを問題欄幅に揃える ───── */
 .hdr {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 14px;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
   align-items: center;
   height: var(--header-h);
 }
@@ -179,7 +179,12 @@ body.show-safe .safe-area::after {
   height: calc(100% - 14px);
   box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
 }
-.hdr-left { gap: 12px; padding: 6px 18px 6px 8px; }
+.hdr-left {
+  gap: 16px;
+  padding: 6px 18px 6px 8px;
+  width: 100%;
+  justify-content: flex-start;
+}
 .hdr-left .owl-icon {
   width: 64px; height: 64px;
   background: linear-gradient(180deg, #f4e4c4, #d8b78a);
@@ -245,16 +250,11 @@ body.show-safe .safe-area::after {
 }
 .hdr-center .dot.done { background: #f3a330; }
 
-.hdr-right { display: inline-flex; align-items: center; gap: 10px; }
-.hdr-right .acorn {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: linear-gradient(180deg, var(--paper), var(--paper-2));
-  border: 3px solid var(--wood-dark);
-  border-radius: 24px;
-  padding: 4px 16px;
-  color: var(--text);
-  font-weight: 800;
-  font-size: 18px;
+.hdr-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
 }
 .hdr-right .ctrl-btn {
   display: inline-flex; flex-direction: column; align-items: center;
@@ -289,11 +289,12 @@ body.show-safe .safe-area::after {
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
-  padding: 12px 24px;
+  padding: 26px 32px;
   display: flex; align-items: center; justify-content: center; gap: 16px;
   color: var(--text);
   font-weight: 800;
-  font-size: 28px;
+  font-size: 32px;
+  min-height: 110px;
   position: relative;
   box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
 }
@@ -323,7 +324,7 @@ body.show-safe .safe-area::after {
   justify-content: center;
   position: relative;
   box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
-  height: 460px;  /* 上半分くらい固定、 残りは下の余白 */
+  height: 600px;  /* 横並び/グリッドどちらにも余裕を持たせる */
 }
 .board::before {
   content: "";
@@ -365,12 +366,39 @@ body.show-board-frame .board::before { opacity: 1; }
   gap: 18px;
   height: 100%;
 }
+.answer-stack { position: relative; flex: 0 0 auto; }
 .answer-panel {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
   gap: 18px;
-  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+.answer-base {
+  position: absolute;
+  left: -8px; right: -8px;
+  bottom: -22px;
+  height: 36px;
+  background:
+    linear-gradient(180deg, var(--wood-light) 0%, var(--wood-mid) 50%, var(--wood-dark) 100%);
+  border: 3px solid var(--wood-dark);
+  border-top: 4px solid #c98948;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.35), inset 0 2px 0 rgba(255,255,255,0.15);
+  z-index: 0;
+}
+/* 木目の縞 */
+.answer-base::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(110, 70, 32, 0.0) 0 40px,
+      rgba(110, 70, 32, 0.25) 40px 42px,
+      rgba(110, 70, 32, 0.0) 42px 80px);
 }
 .bottom-right {
   flex: 1 1 auto;
@@ -629,7 +657,7 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
 
     <!-- 16:9 safe area inner -->
     <div class="safe-area" id="safe-area">
-      <!-- Header (左ピルにタイトルと進捗を統合、 どんぐり枠は削除) -->
+      <!-- Header: 左ピルが q-col と同じ幅 (1fr) -->
       <div class="hdr">
         <div class="hdr-left hdr-pill">
           <div class="owl-icon">🦉</div>
@@ -646,8 +674,6 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
             <span class="dot"></span>
           </div>
         </div>
-
-        <div></div>
 
         <div class="hdr-right">
           <div class="ctrl-btn"><span class="icon">🔔</span><span>おしらせ</span></div>
@@ -667,11 +693,14 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
         </div>
 
         <div class="a-col">
-          <div class="answer-panel">
-            <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
-            <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
-            <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
-            <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+          <div class="answer-stack">
+            <div class="answer-panel">
+              <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
+              <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
+              <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
+              <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+            </div>
+            <div class="answer-base"></div>
           </div>
           <div class="bottom-right">
             <div class="hint">💡 よく見て かんがえてみよう！</div>
