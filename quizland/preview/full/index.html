@@ -179,8 +179,9 @@ body.show-safe .safe-area::after {
   height: calc(100% - 14px);
   box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
 }
+.hdr-left { gap: 12px; padding: 6px 18px 6px 8px; }
 .hdr-left .owl-icon {
-  width: 60px; height: 60px;
+  width: 64px; height: 64px;
   background: linear-gradient(180deg, #f4e4c4, #d8b78a);
   border: 3px solid var(--wood-dark);
   border-radius: 50%;
@@ -199,8 +200,27 @@ body.show-safe .safe-area::after {
   text-shadow: 0 2px 0 rgba(0,0,0,0.4);
   text-align: center;
   line-height: 1.1;
+  flex: 0 0 auto;
 }
 .hdr-left .title-card small { font-size: 11px; display: block; }
+.hdr-left .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+.hdr-left .dots {
+  display: inline-flex; gap: 10px; flex: 0 0 auto;
+}
+.hdr-left .dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #d6b56a; border: 2px solid var(--wood-mid);
+}
+.hdr-left .dot.done { background: #f3a330; }
 
 .hdr-center {
   justify-self: center;
@@ -253,19 +273,17 @@ body.show-safe .safe-area::after {
 .body {
   display: grid;
   grid-template-columns: 1fr 700px;
-  grid-template-rows: 1fr auto;
   gap: 16px;
   height: 100%;
-  align-items: stretch;
+  align-items: start;
 }
 
-/* Question column (left) */
+/* Question column (left) — 上半分くらいで内包、 下に余白 */
 .q-col {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: center;
-  height: 100%;
+  align-self: start;
 }
 .q-text-card {
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
@@ -305,7 +323,7 @@ body.show-safe .safe-area::after {
   justify-content: center;
   position: relative;
   box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
-  height: 100%;
+  height: 460px;  /* 上半分くらい固定、 残りは下の余白 */
 }
 .board::before {
   content: "";
@@ -341,18 +359,33 @@ body.show-board-frame .board::before { opacity: 1; }
 }
 .grid .row { gap: var(--gap); }
 
-/* Answer column (right) */
+/* Answer column (right) — 4 chips + bottom-right (hint+owl) を縦に */
 .a-col {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column;
+  gap: 18px;
   height: 100%;
 }
 .answer-panel {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: auto auto;
   gap: 18px;
-  height: 100%;
-  flex: 1;
+  flex: 0 0 auto;
+}
+.bottom-right {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 14px;
+}
+.bottom-right .hint {
+  flex: 1 1 auto;
+  align-self: end;
+  margin-bottom: 12px;
+}
+.bottom-right .character {
+  flex: 0 0 auto;
 }
 .chip {
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
@@ -366,6 +399,7 @@ body.show-board-frame .board::before { opacity: 1; }
   font-size: 28px;
   box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
   position: relative;
+  height: 220px;
 }
 .chip .circle {
   width: 110px; height: 110px;
@@ -386,15 +420,8 @@ body.show-board-frame .board::before { opacity: 1; }
 .chip[data-color="green"]  .circle { background:
     repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #4ea84e; }
 
-/* Footer (hint + character) */
-.footer-row {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 24px;
-  align-items: end;
-  height: auto;
-}
+/* (旧 footer-row は a-col 内へ移動、 ここはレガシー残し) */
+.footer-row { display: none; }
 .hint {
   background: linear-gradient(180deg, #fff8d4, var(--hint-bg));
   border: 4px solid #b89a3a;
@@ -602,7 +629,7 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
 
     <!-- 16:9 safe area inner -->
     <div class="safe-area" id="safe-area">
-      <!-- Header -->
+      <!-- Header (左ピルにタイトルと進捗を統合、 どんぐり枠は削除) -->
       <div class="hdr">
         <div class="hdr-left hdr-pill">
           <div class="owl-icon">🦉</div>
@@ -610,9 +637,6 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
             <small>フクロウはかせの</small>
             <span>なぞなぞ</span>
           </div>
-        </div>
-
-        <div class="hdr-center hdr-pill" style="border-radius: 24px;">
           <div class="progress-num">1 / 5</div>
           <div class="dots">
             <span class="dot done"></span>
@@ -623,8 +647,9 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
           </div>
         </div>
 
+        <div></div>
+
         <div class="hdr-right">
-          <div class="acorn">🌰 12</div>
           <div class="ctrl-btn"><span class="icon">🔔</span><span>おしらせ</span></div>
           <div class="ctrl-btn"><span class="icon">⚙️</span><span>せってい</span></div>
         </div>
@@ -648,11 +673,10 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
             <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
             <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
           </div>
-        </div>
-
-        <div class="footer-row">
-          <div class="hint">💡 よく見て かんがえてみよう！</div>
-          <div class="character">🦉</div>
+          <div class="bottom-right">
+            <div class="hint">💡 よく見て かんがえてみよう！</div>
+            <div class="character">🦉</div>
+          </div>
         </div>
       </div>
     </div>
