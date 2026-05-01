@@ -286,15 +286,17 @@ body.show-safe .safe-area::after {
   align-self: start;
 }
 .q-text-card {
+  /* 想定サイズ: 1000×200 (画像差替時もこのアスペクト比 5:1 を維持して contain でフィット) */
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
-  padding: 26px 32px;
+  padding: 36px 80px 36px 32px;  /* 右側は audio ボタン分の余白 */
   display: flex; align-items: center; justify-content: center; gap: 16px;
   color: var(--text);
   font-weight: 800;
-  font-size: 32px;
-  min-height: 110px;
+  font-size: 34px;
+  min-height: 200px;  /* 最長 29 文字 = 2 行ぶん + 余裕 */
+  line-height: 1.4;
   position: relative;
   box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
 }
@@ -315,6 +317,7 @@ body.show-safe .safe-area::after {
 }
 
 .board {
+  /* 想定アスペクト比: ~1000×600 (≈5:3)、 画像差替時もこの比を保つこと */
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
@@ -324,7 +327,7 @@ body.show-safe .safe-area::after {
   justify-content: center;
   position: relative;
   box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
-  height: 600px;  /* 横並び/グリッドどちらにも余裕を持たせる */
+  height: 600px;
 }
 .board::before {
   content: "";
@@ -366,39 +369,44 @@ body.show-board-frame .board::before { opacity: 1; }
   gap: 18px;
   height: 100%;
 }
-.answer-stack { position: relative; flex: 0 0 auto; }
 .answer-panel {
+  /* 想定: 各 chip ~341×220 (1.55:1)、 panel 全体 700×460 (1.52:1) */
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
   gap: 18px;
-  position: relative;
-  z-index: 1;
+  flex: 0 0 auto;
 }
+/* 答えチップを乗せる木の棚 */
 .answer-base {
-  position: absolute;
-  left: -8px; right: -8px;
-  bottom: -22px;
-  height: 36px;
+  /* 想定アスペクト比: ~700×60 (≈12:1)、 画像差替時 contain でフィット */
+  position: relative;
+  width: calc(100% + 24px);
+  margin: -10px -12px 0;
+  height: 60px;
   background:
-    linear-gradient(180deg, var(--wood-light) 0%, var(--wood-mid) 50%, var(--wood-dark) 100%);
-  border: 3px solid var(--wood-dark);
-  border-top: 4px solid #c98948;
-  border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.35), inset 0 2px 0 rgba(255,255,255,0.15);
+    linear-gradient(180deg, #c2884d 0%, #9a6635 35%, #6e4520 70%, #503010 100%);
+  border: 4px solid #4a2d10;
+  border-radius: 14px 14px 8px 8px;
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.45),
+    inset 0 4px 0 rgba(255, 220, 170, 0.35),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.35);
+  flex: 0 0 auto;
   z-index: 0;
 }
-/* 木目の縞 */
-.answer-base::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 5px;
+/* 木目の縞模様 */
+.answer-base-grain {
+  position: absolute; inset: 4px;
+  border-radius: 8px;
   background:
     repeating-linear-gradient(90deg,
-      rgba(110, 70, 32, 0.0) 0 40px,
-      rgba(110, 70, 32, 0.25) 40px 42px,
-      rgba(110, 70, 32, 0.0) 42px 80px);
+      rgba(110, 70, 32, 0) 0 60px,
+      rgba(110, 70, 32, 0.35) 60px 62px,
+      rgba(110, 70, 32, 0) 62px 120px,
+      rgba(110, 70, 32, 0.2) 120px 122px,
+      rgba(110, 70, 32, 0) 122px 200px);
+  pointer-events: none;
 }
 .bottom-right {
   flex: 1 1 auto;
@@ -416,6 +424,7 @@ body.show-board-frame .board::before { opacity: 1; }
   flex: 0 0 auto;
 }
 .chip {
+  /* 想定アスペクト比: ~341×220 (≈1.55:1)、 画像差替時 background-size: contain で */
   background: linear-gradient(180deg, var(--paper), var(--paper-2));
   border: 5px solid var(--wood-dark);
   border-radius: 18px;
@@ -693,14 +702,15 @@ body.anno-mode #anno-tools { display: inline-flex !important; }
         </div>
 
         <div class="a-col">
-          <div class="answer-stack">
-            <div class="answer-panel">
-              <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
-              <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
-              <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
-              <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
-            </div>
-            <div class="answer-base"></div>
+          <div class="answer-panel">
+            <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
+            <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
+            <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
+            <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+          </div>
+          <!-- 木の土台: 答えチップの下に乗せる棚的な板 (生成画像差替前提でアスペクト比 12:1 想定) -->
+          <div class="answer-base">
+            <div class="answer-base-grain"></div>
           </div>
           <div class="bottom-right">
             <div class="hint">💡 よく見て かんがえてみよう！</div>
