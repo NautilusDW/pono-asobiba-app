@@ -20,7 +20,8 @@
 
 ## Recent (Done — 古い順に削除)
 
-- 2026-05-01 ・Codex が quizland/preview/full/ の検証用 placeholder はめ込みを実施。assets/preview-placeholders/ に 16 種の色付きグリッドPNGを生成し、quizland/preview/full/index.html の wireframe bbox 表示を各PNGの background-size: 100% 100% 表示へ切替。q-text-card.png は実表示幅に合わせ 856x170 で生成。Chrome headless で 2100x900 / 844x390 / 1194x834 の ?preview=1 表示を確認済み。placeholder は検証専用なので本物画像差替前に master へ入れないこと。sw.js CACHE_VERSION バンプは未対応なので Claude 側で要実施。 (by Codex)
+- 2026-05-01 ・Codex が quizland/preview/full/ の検証用 placeholder はめ込みを実施。assets/preview-placeholders/ に 16 種の色付きグリッドPNGを生成し、quizland/preview/full/index.html の wireframe bbox 表示を各PNGの background-size: 100% 100% 表示へ切替。q-text-card.png は実表示幅に合わせ 856x170 で生成。Chrome headless で 2100x900 / 844x390 / 1194x834 の ?preview=1 表示を確認済み。placeholder は検証専用なので本物画像差替前に master へ入れないこと。 (by Codex, commit `876b1a4`)
+- 2026-05-02 — sw.js CACHE_VERSION 596 → 597 バンプ (Codex の上記 placeholder 検証反映、 commit `876b1a4`) (by Claude)
 
 - 2026-04-29 — sw.js CACHE_VERSION 547 → 548 バンプ (Codex の wordmatch 大規模リファクタ + quiz-sound 整理 + 21:9 崩れ修正反映、 commit `c0896b2`) (by Claude)
 - 2026-04-29 — Codex が wordmatch / quiz-sound / quizland / play.html を一括改修 (commit `c0896b2`)。 wordmatch は内部ロジックを `forestdex.css` (789 行) + `forestdex.js` (745 行) に分離してインライン量を 1991 行削減、 関連フレーム画像 2 枚 (`forestdex_collection_frame.png` 2.7MB / `forestdex_gameplay_frame.png` 2.6MB) を `assets/images/wordmatch/` に追加 (※ 2MB 警告閾値超え、 後で auto_optimize_image での圧縮検討推奨)。 quiz-sound も同方向のスリム化 (985 行削除)。 quizland は +182 行で 21:9 崩れ修正 (game-shell 高さ固定、 question-panel / stage-area / choices / 図形・絵文字サイズ圧縮)。 play.html は +14 行の細部調整。 (by Codex / Recent への記録 by Claude)
