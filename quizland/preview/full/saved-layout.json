@@ -1,9 +1,9 @@
 {
   ".hdr-left|0": {
-    "w": "856px",
-    "h": "142px",
-    "tx": 0,
-    "ty": 0
+    "w": "866px",
+    "h": "145px",
+    "tx": -10,
+    "ty": -12
   },
   ".hdr-left .owl-icon|0": {
     "w": "127px",
@@ -42,10 +42,10 @@
     "ty": -10
   },
   ".q-text-card|0": {
-    "w": "",
-    "h": "",
-    "tx": 0,
-    "ty": -6
+    "w": "867px",
+    "h": "190px",
+    "tx": -11,
+    "ty": -21.5
   },
   ".q-text-card .audio|0": {
     "w": "80px",
@@ -54,44 +54,44 @@
     "ty": 0
   },
   ".board|0": {
-    "w": "857px",
-    "h": "521px",
-    "tx": 0,
-    "ty": 1.5
+    "w": "864px",
+    "h": "551px",
+    "tx": -7,
+    "ty": -37
   },
   ".answer-tray|0": {
-    "w": "704px",
-    "h": "512px",
-    "tx": 0,
-    "ty": 203
+    "w": "722px",
+    "h": "554px",
+    "tx": -18,
+    "ty": 170.5
   },
   ".chip|0": {
-    "w": "",
+    "w": "310px",
     "h": "",
-    "tx": 0,
-    "ty": 0
+    "tx": 24,
+    "ty": 29
   },
   ".chip|1": {
-    "w": "",
+    "w": "310px",
     "h": "",
-    "tx": 0,
-    "ty": 0
+    "tx": -1,
+    "ty": 29
   },
   ".chip|2": {
-    "w": "",
+    "w": "310px",
     "h": "",
-    "tx": 0,
-    "ty": 0
+    "tx": 24,
+    "ty": 29
   },
   ".chip|3": {
-    "w": "",
+    "w": "310px",
     "h": "",
-    "tx": 0,
-    "ty": 0
+    "tx": -1,
+    "ty": 29
   },
   ".chip .circle|0": {
     "w": "",
-    "h": "",
+    "h": "110px",
     "tx": 0,
     "ty": 0
   },
@@ -116,14 +116,14 @@
   ".hint|0": {
     "w": "491px",
     "h": "122px",
-    "tx": 0,
-    "ty": -525
+    "tx": -1,
+    "ty": -593
   },
   ".character|0": {
     "w": "200px",
-    "h": "191px",
+    "h": "199px",
     "tx": 1,
-    "ty": -525
+    "ty": -601.5
   },
   "__guides": [
     {
@@ -141,9 +141,13 @@
     {
       "axis": "h",
       "pos": 954
+    },
+    {
+      "axis": "v",
+      "pos": 271
     }
   ],
-  "__headerH": "142px",
+  "__headerH": "145px",
   "__texts": {
     "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.title-card:nth-of-type(2)>small": "フクロウはかせの",
     "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-left.hdr-pill:nth-of-type(1)>div.title-card:nth-of-type(2)>span": "なぞなぞ",
