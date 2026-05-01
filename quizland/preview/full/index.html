@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quizland 全体プレビュー (注釈つき)</title>
+<style>
+:root {
+  /* Global tunables — 1 か所変えれば全体反映 */
+  --slot-size: 130px;
+  --slot-color: #E0E0E0;
+  --slot-radius: 16px;
+  --gap: 16px;
+  --padding: 16px;
+
+  /* 21:9 ベースの仮想キャンバス (実機での 16:9 セーフエリアは内側) */
+  --canvas-w: 1600px;
+  --canvas-h: 900px;        /* 16:9 safe area */
+
+  --board-w: 810px;
+  --board-h: 450px;
+
+  --answer-w: 540px;
+  --answer-h: 488px;
+  --chip-w: 248px;
+  --chip-h: 216px;
+
+  --header-h: 80px;
+
+  --bg: #1E1E1E;
+  --paper: #FFF7E1;
+  --paper-2: #F4D88B;
+  --frame-border: rgba(138, 56, 245, 0.55);
+  --owl-bg: #C7A7F1;
+  --hint-bg: #FFEBA0;
+  --text: #4A2D0A;
+  --text-light: #F0F0F0;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text-light);
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ───── Top control bar ───── */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(20,20,20,0.95);
+  border-bottom: 1px solid #333;
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.toolbar > div { display: inline-flex; gap: 6px; align-items: center; }
+.toolbar label { color: #aaa; }
+.toolbar select, .toolbar input[type="text"], .toolbar input[type="number"], .toolbar button {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.toolbar button { cursor: pointer; }
+.toolbar button:hover { background: #3a3a3a; }
+.toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
+.toolbar input[type="file"] { color: #aaa; font-size: 11px; }
+
+/* ───── Stage ───── */
+.stage-wrap {
+  padding: 20px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stage {
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  margin: 0 auto;
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, #6e8a4a 0%, #4d623a 60%, #344528 100%);
+  border: 1px dashed #555;
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Header */
+.hdr {
+  height: var(--header-h);
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 4px solid #8a5a2a;
+  border-radius: 16px;
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  color: var(--text);
+}
+.hdr .owl-mini {
+  width: 64px; height: 64px;
+  background: var(--owl-bg);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+}
+.hdr .title-block {
+  display: flex; align-items: center; gap: 16px;
+  font-weight: 700;
+  font-size: 18px;
+}
+.hdr .progress {
+  display: inline-flex; gap: 6px; align-items: center;
+  font-size: 14px;
+}
+.hdr .progress .dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #d6b56a;
+}
+.hdr .progress .dot.done { background: #8a5a2a; }
+.hdr .controls-mini {
+  display: flex; gap: 8px;
+}
+.hdr .controls-mini .ctrl {
+  padding: 4px 12px;
+  background: #fff;
+  border: 2px solid #8a5a2a;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+/* Body grid: question_main(left) + answer_panel(right), with character + hint at bottom */
+.body {
+  display: grid;
+  grid-template-columns: var(--board-w) 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 24px;
+  height: 100%;
+  align-items: center;
+  justify-items: center;
+}
+.q-col {
+  display: flex; flex-direction: column; gap: 16px;
+  align-items: center;
+  height: 100%;
+  justify-content: center;
+}
+.q-text {
+  background: var(--paper);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 28px;
+  padding: 12px 32px;
+  border: 3px solid #8a5a2a;
+  border-radius: 12px;
+}
+
+/* ───── Problem board ───── */
+.board {
+  width: var(--board-w);
+  height: var(--board-h);
+  border: 2px dashed var(--frame-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.04);
+  position: relative;
+}
+.slot {
+  width: var(--slot-size);
+  height: var(--slot-size);
+  background: var(--slot-color);
+  border-radius: var(--slot-radius);
+  display: flex; align-items: center; justify-content: center;
+  color: #888;
+  font-size: 14px;
+  flex: 0 0 auto;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.slot.has-img { background-color: transparent; color: transparent; }
+.row {
+  display: flex; gap: var(--gap); align-items: center; justify-content: center;
+}
+.grid {
+  display: flex; flex-direction: column; gap: var(--gap);
+  align-items: center; justify-content: center;
+}
+.grid .row { gap: var(--gap); }
+
+/* ───── Answer panel ───── */
+.a-col {
+  display: flex; flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  align-items: center; justify-content: center;
+}
+.answer-panel {
+  width: var(--answer-w);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.chip {
+  width: var(--chip-w);
+  height: var(--chip-h);
+  background: var(--paper);
+  border: 3px solid #8a5a2a;
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 24px;
+}
+.chip .circle {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--slot-color);
+}
+.chip[data-color="red"] .circle { background: #d23f3f; }
+.chip[data-color="blue"] .circle { background: #3f6dd2; }
+.chip[data-color="yellow"] .circle { background: #e8c43a; }
+.chip[data-color="green"] .circle { background: #4ea84e; }
+
+/* ───── Footer row: character + hint ───── */
+.footer-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  width: 100%;
+  align-items: end;
+}
+.hint {
+  background: var(--hint-bg);
+  border: 3px solid #b89a3a;
+  border-radius: 14px;
+  padding: 12px 20px;
+  color: var(--text);
+  font-size: 18px;
+  max-width: 700px;
+  font-weight: 600;
+}
+.character {
+  width: 200px; height: 200px;
+  background: var(--owl-bg);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 72px;
+  border: 4px solid #5a3a8a;
+}
+
+/* ───── Annotation overlay ───── */
+#anno-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+#anno-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.anno-mode #anno-layer { pointer-events: auto; cursor: crosshair; }
+.anno-marker {
+  position: absolute;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #ff3b6b;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: move;
+  user-select: none;
+}
+.anno-text {
+  position: absolute;
+  background: rgba(255, 240, 100, 0.95);
+  color: #222;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translate(-50%, -50%);
+  cursor: move;
+  user-select: none;
+  border: 2px solid #b89a3a;
+  max-width: 240px;
+}
+.anno-arrow-line {
+  stroke: #ff3b6b;
+  stroke-width: 4;
+  fill: none;
+  marker-end: url(#anno-arrow-head);
+}
+.anno-tip {
+  position: fixed;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 200;
+  pointer-events: none;
+}
+
+/* ───── Debug info on slot ───── */
+.show-bbox .slot::after {
+  content: attr(data-bbox);
+  position: absolute;
+  bottom: 2px; right: 2px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- ───── Toolbar ───── -->
+<div class="toolbar">
+  <div>
+    <label>レイアウト</label>
+    <select id="layout-select">
+      <optgroup label="横並び (order_color)">
+        <option value="row-3">row count=3</option>
+        <option value="row-4">row count=4</option>
+        <option value="row-5">row count=5</option>
+      </optgroup>
+      <optgroup label="グリッド (count_total)">
+        <option value="grid-1">grid count=1</option>
+        <option value="grid-2">grid count=2</option>
+        <option value="grid-3">grid count=3</option>
+        <option value="grid-4">grid count=4 (2×2)</option>
+        <option value="grid-5">grid count=5 (3+2)</option>
+        <option value="grid-6">grid count=6 (3×2)</option>
+        <option value="grid-7">grid count=7 (4+3)</option>
+        <option value="grid-8">grid count=8 (4×2)</option>
+        <option value="grid-9" selected>grid count=9 (3×3)</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div>
+    <label>スロット差替画像</label>
+    <input type="file" id="img-file" accept="image/png,image/jpeg,image/webp">
+    <button id="img-clear">クリア</button>
+  </div>
+
+  <div>
+    <label>スロット</label>
+    <input type="number" id="slot-size" value="130" min="40" max="300" step="2">px
+    <label>gap</label>
+    <input type="number" id="gap" value="16" min="0" max="48" step="2">px
+  </div>
+
+  <div>
+    <label><input type="checkbox" id="show-bbox"> サイズ表示</label>
+  </div>
+
+  <div>
+    <button id="anno-toggle">📝 注釈モード OFF</button>
+    <button id="anno-clear">🗑 全消去</button>
+  </div>
+
+  <div style="margin-left:auto;color:#666;">
+    <a href="../" style="color:#aaa;">← パーツ一覧</a>
+  </div>
+</div>
+
+<div class="anno-tip" id="anno-tip" style="display:none;">
+  注釈モード: クリック=マーカー / Shift+クリック=テキスト / マーカー上をドラッグ→他のマーカーで矢印
+</div>
+
+<!-- ───── Stage ───── -->
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <!-- Header -->
+    <div class="hdr">
+      <div class="owl-mini">🦉</div>
+      <div class="title-block">
+        <span>フクロウ博士のなぞなぞ</span>
+        <span class="progress">
+          1/5
+          <span class="dot done"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </span>
+      </div>
+      <div class="controls-mini">
+        <span class="ctrl">タイトル</span>
+        <span class="ctrl">おしらせ</span>
+        <span class="ctrl">せってい</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+      <!-- Question column (left) -->
+      <div class="q-col">
+        <div class="q-text" id="q-text">ランドセルは いくつ？</div>
+        <div class="board" id="board">
+          <!-- 動的に挿入される -->
+        </div>
+      </div>
+
+      <!-- Answer column (right) -->
+      <div class="a-col">
+        <div class="answer-panel">
+          <div class="chip" data-color="red"><div class="circle"></div><span>あか</span></div>
+          <div class="chip" data-color="blue"><div class="circle"></div><span>あお</span></div>
+          <div class="chip" data-color="yellow"><div class="circle"></div><span>きいろ</span></div>
+          <div class="chip" data-color="green"><div class="circle"></div><span>みどり</span></div>
+        </div>
+      </div>
+
+      <!-- Footer (character + hint) -->
+      <div class="footer-row">
+        <div class="hint">💡 ヒント: あかい いろの ランドセルを かぞえてみよう！</div>
+        <div class="character">🦉</div>
+      </div>
+    </div>
+
+    <!-- Annotation overlay -->
+    <div id="anno-layer">
+      <svg id="anno-svg" preserveAspectRatio="none">
+        <defs>
+          <marker id="anno-arrow-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <polygon points="0,0 10,5 0,10" fill="#ff3b6b"></polygon>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────── Layout rendering ─────────
+function buildLayout(value) {
+  const [type, n] = value.split('-');
+  const count = parseInt(n, 10);
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+
+  function slot() {
+    const d = document.createElement('div');
+    d.className = 'slot';
+    d.textContent = 'slot';
+    if (currentImg) {
+      d.style.backgroundImage = `url(${currentImg})`;
+      d.classList.add('has-img');
+    }
+    return d;
+  }
+  function row(slotsCount) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    for (let i = 0; i < slotsCount; i++) r.appendChild(slot());
+    return r;
+  }
+  function grid(rows) {
+    const g = document.createElement('div');
+    g.className = 'grid';
+    for (const n of rows) g.appendChild(row(n));
+    return g;
+  }
+
+  if (type === 'row') {
+    board.appendChild(row(count));
+  } else if (type === 'grid') {
+    const layouts = {
+      1: [1], 2: [2], 3: [3],
+      4: [2, 2],
+      5: [3, 2],
+      6: [3, 3],
+      7: [4, 3],
+      8: [4, 4],
+      9: [3, 3, 3]
+    };
+    board.appendChild(grid(layouts[count]));
+  }
+  updateBboxLabels();
+}
+
+let currentImg = null;
+function setSlotImage(url) {
+  currentImg = url;
+  document.querySelectorAll('.slot').forEach(s => {
+    if (url) {
+      s.style.backgroundImage = `url(${url})`;
+      s.classList.add('has-img');
+    } else {
+      s.style.backgroundImage = '';
+      s.classList.remove('has-img');
+    }
+  });
+}
+
+function updateBboxLabels() {
+  document.querySelectorAll('.slot').forEach(s => {
+    const r = s.getBoundingClientRect();
+    s.dataset.bbox = `${Math.round(r.width)}×${Math.round(r.height)}`;
+  });
+}
+
+document.getElementById('layout-select').addEventListener('change', e => buildLayout(e.target.value));
+document.getElementById('img-file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => setSlotImage(reader.result);
+  reader.readAsDataURL(f);
+});
+document.getElementById('img-clear').addEventListener('click', () => {
+  setSlotImage(null);
+  document.getElementById('img-file').value = '';
+});
+
+document.getElementById('slot-size').addEventListener('input', e => {
+  document.documentElement.style.setProperty('--slot-size', e.target.value + 'px');
+  updateBboxLabels();
+});
+document.getElementById('gap').addEventListener('input', e => {
+  document.documentElement.style.setProperty('--gap', e.target.value + 'px');
+  updateBboxLabels();
+});
+document.getElementById('show-bbox').addEventListener('change', e => {
+  document.body.classList.toggle('show-bbox', e.target.checked);
+  if (e.target.checked) updateBboxLabels();
+});
+
+// 初期表示
+buildLayout('grid-9');
+
+// ───────── Annotation system ─────────
+const stage = document.getElementById('stage');
+const annoLayer = document.getElementById('anno-layer');
+const annoSvg = document.getElementById('anno-svg');
+const annoToggle = document.getElementById('anno-toggle');
+const annoClear = document.getElementById('anno-clear');
+const annoTip = document.getElementById('anno-tip');
+let annoMode = false;
+let nextLabel = 'A';
+const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let labelIdx = 0;
+let dragFromMarker = null;
+
+function nextLabelChar() {
+  const c = labelChars[labelIdx % labelChars.length];
+  labelIdx++;
+  return c;
+}
+
+function setAnnoMode(on) {
+  annoMode = on;
+  document.body.classList.toggle('anno-mode', on);
+  annoToggle.classList.toggle('active', on);
+  annoToggle.textContent = on ? '📝 注釈モード ON' : '📝 注釈モード OFF';
+  annoTip.style.display = on ? 'block' : 'none';
+}
+
+annoToggle.addEventListener('click', () => setAnnoMode(!annoMode));
+annoClear.addEventListener('click', () => {
+  document.querySelectorAll('.anno-marker, .anno-text').forEach(el => el.remove());
+  annoSvg.querySelectorAll('line.anno-arrow-line, path.anno-arrow-line').forEach(el => el.remove());
+  labelIdx = 0;
+});
+
+function getStageCoords(e) {
+  const r = stage.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function addMarker(x, y, label) {
+  const m = document.createElement('div');
+  m.className = 'anno-marker';
+  m.style.left = x + 'px';
+  m.style.top = y + 'px';
+  m.textContent = label || nextLabelChar();
+  annoLayer.appendChild(m);
+
+  // 編集 (shift+クリック でラベル変更)
+  m.addEventListener('contextmenu', ev => {
+    ev.preventDefault();
+    const t = prompt('ラベル', m.textContent);
+    if (t !== null) m.textContent = t;
+  });
+
+  // ドラッグで矢印開始 / 終端
+  m.addEventListener('mousedown', ev => {
+    ev.stopPropagation();
+    if (!annoMode) return;
+    if (ev.shiftKey) {
+      // 削除
+      m.remove();
+      return;
+    }
+    dragFromMarker = m;
+    const onMove = (e2) => {
+      drawTempArrow(m, getStageCoords(e2));
+    };
+    const onUp = (e2) => {
+      const target = document.elementFromPoint(e2.clientX, e2.clientY);
+      const tgtMarker = target && target.closest('.anno-marker');
+      if (tgtMarker && tgtMarker !== m) {
+        finalizeArrow(m, tgtMarker);
+      }
+      tempArrow && tempArrow.remove();
+      tempArrow = null;
+      dragFromMarker = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+  return m;
+}
+
+function addText(x, y, content) {
+  const text = content || prompt('テキスト', 'ここを修正');
+  if (!text) return;
+  const t = document.createElement('div');
+  t.className = 'anno-text';
+  t.style.left = x + 'px';
+  t.style.top = y + 'px';
+  t.textContent = text;
+  annoLayer.appendChild(t);
+  t.addEventListener('contextmenu', ev => {
+    ev.preventDefault();
+    const v = prompt('編集 (空で削除)', t.textContent);
+    if (v === null) return;
+    if (v === '') t.remove();
+    else t.textContent = v;
+  });
+  return t;
+}
+
+let tempArrow = null;
+function drawTempArrow(fromEl, toPt) {
+  if (!tempArrow) {
+    tempArrow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    tempArrow.setAttribute('class', 'anno-arrow-line');
+    annoSvg.appendChild(tempArrow);
+  }
+  const fr = elCenter(fromEl);
+  tempArrow.setAttribute('x1', fr.x);
+  tempArrow.setAttribute('y1', fr.y);
+  tempArrow.setAttribute('x2', toPt.x);
+  tempArrow.setAttribute('y2', toPt.y);
+}
+
+function finalizeArrow(fromEl, toEl) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('class', 'anno-arrow-line');
+  const fr = elCenter(fromEl);
+  const to = elCenter(toEl);
+  line.setAttribute('x1', fr.x); line.setAttribute('y1', fr.y);
+  line.setAttribute('x2', to.x); line.setAttribute('y2', to.y);
+  annoSvg.appendChild(line);
+}
+
+function elCenter(el) {
+  const er = el.getBoundingClientRect();
+  const sr = stage.getBoundingClientRect();
+  return { x: (er.left + er.width/2) - sr.left, y: (er.top + er.height/2) - sr.top };
+}
+
+annoLayer.addEventListener('click', e => {
+  if (!annoMode) return;
+  if (e.target !== annoLayer && e.target !== annoSvg) return;
+  const p = getStageCoords(e);
+  if (e.shiftKey) addText(p.x, p.y);
+  else addMarker(p.x, p.y);
+});
+
+// SVG resize に追従
+function resizeSvg() {
+  const sr = stage.getBoundingClientRect();
+  annoSvg.setAttribute('viewBox', `0 0 ${sr.width} ${sr.height}`);
+  annoSvg.setAttribute('width', sr.width);
+  annoSvg.setAttribute('height', sr.height);
+}
+window.addEventListener('resize', resizeSvg);
+window.addEventListener('load', resizeSvg);
+
+window.addEventListener('resize', updateBboxLabels);
+
+// ───────── Annotation: copy as text summary ─────────
+// (簡易版: マーカー + 矢印情報をテキストでコピー)
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+    let summary = '【注釈サマリ】\n';
+    document.querySelectorAll('.anno-marker').forEach(m => {
+      summary += `マーカー ${m.textContent}: x=${parseInt(m.style.left)}, y=${parseInt(m.style.top)}\n`;
+    });
+    document.querySelectorAll('.anno-text').forEach(t => {
+      summary += `テキスト "${t.textContent}": x=${parseInt(t.style.left)}, y=${parseInt(t.style.top)}\n`;
+    });
+    navigator.clipboard.writeText(summary);
+    alert('注釈サマリをクリップボードにコピーしました');
+  }
+});
+</script>
+</body>
+</html>
