@@ -311,7 +311,7 @@ html, body {
   stroke-width: 4;
   fill: none;
   marker-end: url(#anno-arrow-head);
-  cursor: pointer;
+  cursor: move;
   pointer-events: stroke;
 }
 .anno-rect {
@@ -319,9 +319,29 @@ html, body {
   stroke: #ff3b6b;
   stroke-width: 3;
   stroke-dasharray: 8 4;
-  cursor: pointer;
+  cursor: move;
   pointer-events: stroke;
 }
+.anno-marker, .anno-text {
+  cursor: move;
+}
+.anno-selected {
+  outline: 3px solid #00d4ff;
+  outline-offset: 2px;
+}
+line.anno-arrow-line.anno-selected,
+rect.anno-rect.anno-selected {
+  stroke: #00d4ff !important;
+  outline: none !important;
+}
+.anno-handle {
+  fill: #00d4ff;
+  stroke: #fff;
+  stroke-width: 2;
+  cursor: nwse-resize;
+  pointer-events: all;
+}
+.anno-handle.endpoint { cursor: grab; }
 .anno-mode .anno-marker:hover,
 .anno-mode .anno-text:hover {
   outline: 2px solid #fff;
@@ -607,12 +627,84 @@ let annoMode = false;
 let currentTool = 'marker';
 const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 let labelIdx = 0;
+let selectedEl = null;
+
+// ── History for undo/redo ──
+const undoStack = [];
+const redoStack = [];
+function pushHistory(op) {
+  undoStack.push(op);
+  if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0;
+}
+function applyOp(op) {
+  if (op.type === 'add') {
+    op.parent.insertBefore(op.el, op.next || null);
+  } else if (op.type === 'remove') {
+    op.el.remove();
+  } else if (op.type === 'transform') {
+    setGeometry(op.el, op.after);
+    if (op.el === selectedEl) updateHandles();
+  }
+}
+function applyInverse(op) {
+  if (op.type === 'add') {
+    op.el.remove();
+    if (op.el === selectedEl) selectEl(null);
+  } else if (op.type === 'remove') {
+    op.parent.insertBefore(op.el, op.next || null);
+  } else if (op.type === 'transform') {
+    setGeometry(op.el, op.before);
+    if (op.el === selectedEl) updateHandles();
+  }
+}
+function undo() {
+  if (!undoStack.length) return;
+  const op = undoStack.pop();
+  applyInverse(op);
+  redoStack.push(op);
+}
+function redo() {
+  if (!redoStack.length) return;
+  const op = redoStack.pop();
+  applyOp(op);
+  undoStack.push(op);
+}
+
+// ── Geometry helpers ──
+function getGeometry(el) {
+  if (el.classList.contains('anno-marker') || el.classList.contains('anno-text')) {
+    return { kind: 'pos', left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
+  }
+  if (el.tagName === 'line') {
+    return { kind: 'line',
+      x1: +el.getAttribute('x1'), y1: +el.getAttribute('y1'),
+      x2: +el.getAttribute('x2'), y2: +el.getAttribute('y2') };
+  }
+  if (el.tagName === 'rect') {
+    return { kind: 'rect',
+      x: +el.getAttribute('x'), y: +el.getAttribute('y'),
+      w: +el.getAttribute('width'), h: +el.getAttribute('height') };
+  }
+}
+function setGeometry(el, g) {
+  if (g.kind === 'pos') {
+    el.style.left = g.left + 'px';
+    el.style.top = g.top + 'px';
+  } else if (g.kind === 'line') {
+    el.setAttribute('x1', g.x1); el.setAttribute('y1', g.y1);
+    el.setAttribute('x2', g.x2); el.setAttribute('y2', g.y2);
+  } else if (g.kind === 'rect') {
+    el.setAttribute('x', g.x); el.setAttribute('y', g.y);
+    el.setAttribute('width', g.w); el.setAttribute('height', g.h);
+  }
+}
 
 const TIP_TEXTS = {
-  marker:  'マーカー: クリックで A,B,C… 配置 (右クリックでラベル編集 / 消しゴムで削除)',
-  text:    'テキスト: クリックで黄色付箋を配置 (右クリックで編集)',
-  rect:    '矩形: ドラッグで囲い枠を描く',
-  arrow:   '矢印: ドラッグで自由に矢印を描く',
+  marker:  'マーカー: クリックで A,B,C… 配置 / 注釈を選択して Delete で削除 / Ctrl+Z で元に戻す',
+  text:    'テキスト: クリックで黄色付箋を配置 (ダブルクリックで編集)',
+  rect:    '矩形: ドラッグで囲い枠を描く / 描いた矩形を選択するとハンドルで伸縮可',
+  arrow:   '矢印: ドラッグで自由に矢印を描く / 選択するとエンドポイントで伸ばせる',
   eraser:  '消しゴム: 注釈をクリックして個別削除',
 };
 
@@ -629,6 +721,7 @@ function setAnnoMode(on) {
   annoToggle.textContent = on ? '📝 注釈モード ON' : '📝 注釈モード OFF';
   annoTip.style.display = on ? 'block' : 'none';
   if (on) setTool(currentTool);
+  else selectEl(null);
 }
 
 function setTool(tool) {
@@ -646,10 +739,96 @@ document.querySelectorAll('.tool-btn').forEach(b => {
 });
 annoClear.addEventListener('click', () => {
   if (!confirm('全注釈を削除しますか？')) return;
-  document.querySelectorAll('.anno-marker, .anno-text').forEach(el => el.remove());
-  annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect').forEach(el => el.remove());
-  labelIdx = 0;
+  // 履歴に記録: 全削除 = 各要素ごとの remove op
+  const all = [...document.querySelectorAll('.anno-marker, .anno-text'),
+               ...annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect')];
+  all.forEach(el => {
+    pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling });
+    el.remove();
+  });
+  selectEl(null);
 });
+
+// ── Selection ──
+function selectEl(el) {
+  if (selectedEl) selectedEl.classList.remove('anno-selected');
+  clearHandles();
+  selectedEl = el;
+  if (el) {
+    el.classList.add('anno-selected');
+    updateHandles();
+  }
+}
+function isAnnotation(el) {
+  return el && (el.classList.contains('anno-marker') ||
+                el.classList.contains('anno-text') ||
+                el.classList.contains('anno-arrow-line') ||
+                el.classList.contains('anno-rect'));
+}
+
+// ── Resize handles ──
+function clearHandles() {
+  annoSvg.querySelectorAll('.anno-handle').forEach(h => h.remove());
+}
+function updateHandles() {
+  clearHandles();
+  if (!selectedEl) return;
+  const g = getGeometry(selectedEl);
+  if (g.kind === 'line') {
+    addHandle(g.x1, g.y1, 'p1');
+    addHandle(g.x2, g.y2, 'p2');
+  } else if (g.kind === 'rect') {
+    addHandle(g.x, g.y, 'tl');
+    addHandle(g.x + g.w, g.y, 'tr');
+    addHandle(g.x, g.y + g.h, 'bl');
+    addHandle(g.x + g.w, g.y + g.h, 'br');
+  }
+}
+function addHandle(x, y, role) {
+  const h = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  h.setAttribute('class', 'anno-handle endpoint');
+  h.setAttribute('cx', x); h.setAttribute('cy', y); h.setAttribute('r', 7);
+  h.dataset.role = role;
+  annoSvg.appendChild(h);
+
+  h.addEventListener('mousedown', ev => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    const before = getGeometry(selectedEl);
+    const target = selectedEl;
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      const g = getGeometry(target);
+      if (g.kind === 'line') {
+        if (role === 'p1') { g.x1 = p.x; g.y1 = p.y; }
+        else { g.x2 = p.x; g.y2 = p.y; }
+      } else if (g.kind === 'rect') {
+        let x1 = g.x, y1 = g.y, x2 = g.x + g.w, y2 = g.y + g.h;
+        if (role === 'tl') { x1 = p.x; y1 = p.y; }
+        else if (role === 'tr') { x2 = p.x; y1 = p.y; }
+        else if (role === 'bl') { x1 = p.x; y2 = p.y; }
+        else if (role === 'br') { x2 = p.x; y2 = p.y; }
+        g.x = Math.min(x1, x2);
+        g.y = Math.min(y1, y2);
+        g.w = Math.abs(x2 - x1);
+        g.h = Math.abs(y2 - y1);
+      }
+      setGeometry(target, g);
+      updateHandles();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      const after = getGeometry(target);
+      // 変化があれば履歴に
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        pushHistory({ type: 'transform', el: target, before, after });
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+}
 
 function getStageCoords(e) {
   const r = stage.getBoundingClientRect();
@@ -657,18 +836,65 @@ function getStageCoords(e) {
 }
 
 // ── Element factory ──────────
+function removeElWithHistory(el) {
+  pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling });
+  el.remove();
+  if (el === selectedEl) selectEl(null);
+}
 function attachDeleteHandlers(el, isSvg) {
   // 右クリックで削除確認
   el.addEventListener('contextmenu', ev => {
     ev.preventDefault();
-    if (confirm('この注釈を削除しますか？')) el.remove();
+    if (confirm('この注釈を削除しますか？')) removeElWithHistory(el);
   });
-  // 消しゴムモードでクリック削除
+  // 消しゴムモードでクリック削除 / 通常クリックで選択
   el.addEventListener('click', ev => {
-    if (currentTool === 'eraser' && annoMode) {
+    if (!annoMode) return;
+    if (currentTool === 'eraser') {
       ev.stopPropagation();
-      el.remove();
+      removeElWithHistory(el);
     }
+  });
+  // mousedown: 選択 + ドラッグで移動
+  el.addEventListener('mousedown', ev => {
+    if (!annoMode) return;
+    if (currentTool === 'eraser') return;
+    if (currentTool === 'rect' || currentTool === 'arrow') return; // それらは新規描画モード
+    if (ev.target.classList && ev.target.classList.contains('anno-handle')) return;
+    ev.stopPropagation();
+    selectEl(el);
+
+    const startPt = getStageCoords(ev);
+    const beforeGeo = getGeometry(el);
+    let moved = false;
+
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      const dx = p.x - startPt.x;
+      const dy = p.y - startPt.y;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      if (!moved) return;
+      const g = JSON.parse(JSON.stringify(beforeGeo));
+      if (g.kind === 'pos') {
+        g.left += dx; g.top += dy;
+      } else if (g.kind === 'line') {
+        g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy;
+      } else if (g.kind === 'rect') {
+        g.x += dx; g.y += dy;
+      }
+      setGeometry(el, g);
+      updateHandles();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (moved) {
+        const afterGeo = getGeometry(el);
+        pushHistory({ type: 'transform', el, before: beforeGeo, after: afterGeo });
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   });
 }
 
@@ -680,12 +906,12 @@ function addMarker(x, y, label) {
   m.textContent = label || nextLabelChar();
   annoLayer.appendChild(m);
   attachDeleteHandlers(m);
-  // 右ダブルクリック: ラベル編集
   m.addEventListener('dblclick', ev => {
     ev.stopPropagation();
     const t = prompt('ラベル', m.textContent);
     if (t !== null) m.textContent = t;
   });
+  pushHistory({ type: 'add', el: m, parent: annoLayer, next: null });
   return m;
 }
 
@@ -703,38 +929,14 @@ function addText(x, y) {
     ev.stopPropagation();
     const v = prompt('編集 (空で削除)', t.textContent);
     if (v === null) return;
-    if (v === '') t.remove();
+    if (v === '') removeElWithHistory(t);
     else t.textContent = v;
   });
+  pushHistory({ type: 'add', el: t, parent: annoLayer, next: null });
   return t;
 }
 
-function addArrowFree(p1, p2) {
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('class', 'anno-arrow-line');
-  line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
-  line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
-  annoSvg.appendChild(line);
-  attachDeleteHandlers(line, true);
-  return line;
-}
-
-function addRect(p1, p2) {
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('class', 'anno-rect');
-  const x = Math.min(p1.x, p2.x);
-  const y = Math.min(p1.y, p2.y);
-  const w = Math.abs(p2.x - p1.x);
-  const h = Math.abs(p2.y - p1.y);
-  rect.setAttribute('x', x); rect.setAttribute('y', y);
-  rect.setAttribute('width', w); rect.setAttribute('height', h);
-  rect.setAttribute('rx', 6);
-  annoSvg.appendChild(rect);
-  attachDeleteHandlers(rect, true);
-  return rect;
-}
-
-// ── Drag handler for rect / arrow tool ──────────
+// ── Drag handler for rect / arrow tool (新規描画) ──────────
 let dragStart = null;
 let tempShape = null;
 
@@ -742,7 +944,14 @@ annoLayer.addEventListener('mousedown', e => {
   if (!annoMode) return;
   // 既存注釈の上は無視 (個別操作はそっちのハンドラ)
   if (e.target.closest('.anno-marker, .anno-text')) return;
-  if (e.target.tagName === 'rect' || e.target.tagName === 'line') return;
+  if (e.target.classList && (e.target.classList.contains('anno-arrow-line') ||
+                              e.target.classList.contains('anno-rect') ||
+                              e.target.classList.contains('anno-handle'))) return;
+
+  // 背景クリック: 選択解除
+  if (currentTool !== 'rect' && currentTool !== 'arrow') {
+    selectEl(null);
+  }
 
   if (currentTool === 'rect' || currentTool === 'arrow') {
     e.preventDefault();
@@ -777,11 +986,10 @@ annoLayer.addEventListener('mousedown', e => {
       const p = getStageCoords(e2);
       const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
       if (Math.abs(dx) < 4 && Math.abs(dy) < 4) {
-        // クリックだけで小さすぎたら破棄
         tempShape && tempShape.remove();
       } else {
-        // 永続化のためのハンドラを付ける
         attachDeleteHandlers(tempShape, true);
+        pushHistory({ type: 'add', el: tempShape, parent: annoSvg, next: null });
       }
       tempShape = null;
       dragStart = null;
@@ -795,15 +1003,98 @@ annoLayer.addEventListener('mousedown', e => {
 
 annoLayer.addEventListener('click', e => {
   if (!annoMode) return;
-  // 既存注釈の上のクリックは無視 (それぞれのハンドラに任せる)
   if (e.target.closest('.anno-marker, .anno-text')) return;
-  if (e.target.tagName === 'rect' || e.target.tagName === 'line') return;
-  if (currentTool === 'eraser') return; // 消しゴムは要素上でしか機能しない
+  if (e.target.classList && (e.target.classList.contains('anno-arrow-line') ||
+                              e.target.classList.contains('anno-rect') ||
+                              e.target.classList.contains('anno-handle'))) return;
+  if (currentTool === 'eraser') return;
 
   const p = getStageCoords(e);
   if (currentTool === 'marker') addMarker(p.x, p.y);
   else if (currentTool === 'text') addText(p.x, p.y);
-  // rect / arrow はドラッグ専用 (mousedown で処理済み)
+});
+
+// SVG 要素 (line, rect) は元から click ハンドラが effective ではない場合があるので明示的に
+annoSvg.addEventListener('click', e => {
+  if (!annoMode) return;
+  const t = e.target;
+  if (!t.classList) return;
+  if (t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect')) {
+    if (currentTool === 'eraser') {
+      e.stopPropagation();
+      removeElWithHistory(t);
+    } else {
+      selectEl(t);
+    }
+  }
+});
+
+// SVG mousedown (drag-to-move on lines and rects)
+annoSvg.addEventListener('mousedown', e => {
+  if (!annoMode) return;
+  const t = e.target;
+  if (!t.classList) return;
+  if (!(t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect'))) return;
+  if (currentTool === 'eraser') return;
+  if (currentTool === 'rect' || currentTool === 'arrow') return;
+
+  e.stopPropagation();
+  selectEl(t);
+
+  const startPt = getStageCoords(e);
+  const beforeGeo = getGeometry(t);
+  let moved = false;
+
+  const onMove = (e2) => {
+    const p = getStageCoords(e2);
+    const dx = p.x - startPt.x;
+    const dy = p.y - startPt.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    if (!moved) return;
+    const g = JSON.parse(JSON.stringify(beforeGeo));
+    if (g.kind === 'line') {
+      g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy;
+    } else if (g.kind === 'rect') {
+      g.x += dx; g.y += dy;
+    }
+    setGeometry(t, g);
+    updateHandles();
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    if (moved) {
+      const afterGeo = getGeometry(t);
+      pushHistory({ type: 'transform', el: t, before: beforeGeo, after: afterGeo });
+    }
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+// ── Keyboard shortcuts ──
+window.addEventListener('keydown', e => {
+  // テキスト入力中は無視
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+  if ((e.key === 'Delete' || e.key === 'Backspace') && annoMode && selectedEl) {
+    e.preventDefault();
+    removeElWithHistory(selectedEl);
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    undo();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
+    e.preventDefault();
+    redo();
+    return;
+  }
+  if (e.key === 'Escape') {
+    selectEl(null);
+  }
 });
 
 // SVG resize に追従
