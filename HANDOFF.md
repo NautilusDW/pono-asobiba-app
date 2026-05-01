@@ -14,56 +14,17 @@
 
 ## Active (進行中 / 未着手)
 
-### 🔁 Codex 依頼: Quizland パーツの再生成 (透過 PNG + 寸法ぴったり) (2026-05-02)
-
-**現状の問題** (実機スクショで判明):
-1. Codex が GPT Image 2 で生成した `assets/preview-placeholders/*.png` の **大半が RGB モード** (アルファ無し)。 配置先のページ色 (ベージュ/緑/木目背景) の上に乗ると、 画像周囲の四角い ベタ背景が **「halo (縁取り)」** として見えてしまう。
-2. **寸法 (アスペクト比) が指定と違う**。 1254×1254 の正方形が大量にあり、 横長カードや小さなドットまで全部正方形で出力されている。 プレビュー側は `background-size: contain` なので潰れず、 代わりに大きな余白として見える。
-
-**やってほしいこと**:
-全 16 種を **RGBA 透過 PNG (背景完全透明)** で **下記の縦横比どおり** に再生成。 サイズは縦横比が合っていれば 2〜4 倍の解像度 (シャープ用) でも OK だが、 **必ず縦横比を厳守** すること。
-
-| ファイル名 | 縦横比 (基準寸法) | 何の絵 | 余白扱い |
-|---|---|---|---|
-| `hdr-pill.png` | **856 × 142 (≈ 6:1)** | ヘッダー左の横長ピル枠 (フクロウ博士アイコン + タイトル + 進捗 + ドット を内包する外枠) | 枠の外側 = 透明 |
-| `owl-icon.png` | **127 × 127 (1:1)** | フクロウ博士の **顔** アイコン (丸抜き or 円フレーム) | 円の外側 = 透明 |
-| `title-card.png` | **296 × 128 (≈ 2.3:1)** | 「フクロウはかせの なぞなぞ」 タイトル札 | 札の外側 = 透明 |
-| `progress-num.png` | **119 × 63 (≈ 1.9:1)** | 「1 / 5」 を入れる小さな札枠 (テキストは焼き込まない) | 枠の外側 = 透明 |
-| `dot.png` | **28 × 28 (1:1)** | 進捗ドット 1 個 (空 or 塗りどちらでも統一感重視) | 円の外側 = 透明 |
-| `ctrl-btn-news.png` | **120 × 120 (1:1)** | 「おしらせ」 のベル ボタン (枠 + アイコン) | 枠の外側 = 透明 |
-| `ctrl-btn-settings.png` | **120 × 120 (1:1)** | 「せってい」 の歯車 ボタン (枠 + アイコン) | 枠の外側 = 透明 |
-| `q-text-card.png` | **856 × 170 (≈ 5:1)** | 問題文 (横長) を入れる紙巻物カード枠 (テキストは焼き込まない) | 枠の外側 = 透明 |
-| `audio.png` | **80 × 80 (1:1)** | 音声再生のスピーカー丸ボタン | 円の外側 = 透明 |
-| `board.png` | **856 × 512 (≈ 1.67:1)** | 問題ボード (4 つのスロットを置くベース、 木枠 + 紙の中身) | 枠の外側 = 透明 |
-| `item-slot.png` | **240 × 240 (1:1)** | board の中に置く 1 個分の空きスロット (角丸グレー枠) | 枠の外側 = 透明 |
-| `answer-tray.png` | **704 × 512 (≈ 1.375:1)** | 4 択チップを並べる回答トレイの背景紙/枠 | 枠の外側 = 透明 |
-| `chip.png` | **322 × 220 (≈ 1.46:1)** | 4 択 1 個分のチップ枠 (中に circle と文字が乗る) | 枠の外側 = 透明 |
-| `circle.png` | **110 × 110 (1:1)** | チップ内に置く色付き丸 (赤/青/黄/緑) | 円の外側 = 透明 |
-| `hint.png` | **491 × 122 (≈ 4:1)** | 「💡 よく見て かんがえてみよう！」 を入れる吹き出し枠 (テキストは焼き込まない) | 枠の外側 = 透明 |
-| `character.png` | **199 × 122 (≈ 1.63:1)** | フクロウ博士 半身 / バストアップ (大きいキャンバスで作るなら同比率を厳守) | 体の外側 = 透明 |
-| `stage-bg.png` | **2100 × 900 (= 21:9)** | 21:9 アウター キャンバス全体の **下地背景 (森の風景等)** ※これだけは透過不要、 全面塗り OK | (透過不要) |
-
-**確認方法 (Codex 側):**
-- `quizland/preview/full/index.html` を開いてヘッダーの **🔁 グリッド比較** ボタンで OFF (本物) ↔ ON (旧グリッド) を切り替えて並べると、 寸法・透過の合致を直感確認できる。 旧グリッド側は仕様寸法ぴったりで描かれているので、 そこに並ぶよう新画像を作ること。
-
-**画像最適化:**
-- 仕上がった PNG は `python scripts/auto_optimize_image.py <files...>` を必ず通す (AGENTS.md §5)。 透過は維持されること。
-
-### Step A 完了状況 (Claude 側)
-
-- 旧グリッド placeholder 16 枚を `assets/preview-placeholders/grid/` 以下に復元済み
-- `quizland/preview/full/index.html` に 🔁 グリッド比較 トグル追加済み (localStorage で永続)
-- sw.js CACHE_VERSION 600 → 601 バンプ済み
-
-
+- 現在なし
 
 ---
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-05-02 — sw.js CACHE_VERSION 601 → 602 バンプ (Codex の Quizland パーツ再生成 = RGBA 透過 + 仕様寸法ぴったり 反映)。 全 17 枚を `Image.open().mode` で確認、 stage-bg 以外全部 RGBA で仕様寸法ぴったりだった。 Active セクションをクローズ。 (by Claude)
+- 2026-05-02 — Codex が Quizland パーツを **RGBA 透過 PNG + 指定寸法ぴったり** で再生成。 マゼンタ背景の元 GPT Image 2 出力を透過化 + 自動トリミング + 指定外寸へリサイズして `assets/preview-placeholders/*.png` を上書き。 全身フクロウ博士のみ新規生成し `character.png` / `assets/images/quizland/owl_professor_guide.png` に反映。 `title_back.png` / `title_logo.png` も更新 (`title_logo.png` のフクロウ込みかは保留判断)。 (by Codex)
 - 2026-05-02 — quizland/preview/full に 🔁 グリッド比較 トグル追加 + 旧グリッド placeholder 16 枚を `assets/preview-placeholders/grid/` に復元 + sw.js 600 → 601 バンプ。 Codex の本物画像と並べて寸法/透過の差を即比較できるようにした。 (by Claude)
 - 2026-05-02 — sw.js CACHE_VERSION 599 → 600 バンプ (Codex の GPT Image 2 パーツ差し替え反映) (by Claude)
-- 2026-05-02 — Codex が Quizland の GPT Image 2 パーツ差し替えを実施。`tmp/gpt-image2-quizland/` の生成済みパーツで `assets/preview-placeholders/*.png` を実画像に置換し、全身フクロウ博士だけは新規生成して `assets/preview-placeholders/character.png` と `assets/images/quizland/owl_professor_guide.png` に反映。あわせて `assets/images/quizland/title_back.png` / `title_logo.png` も差し替え、3枚は `auto_optimize_image.py` 済み。`title_logo.png` にはフクロウが含まれたままなので、ロゴ単体に戻すかは後で判断。 (by Codex)
+- 2026-05-02 — Codex が Quizland の GPT Image 2 パーツ差し替えを実施。`tmp/gpt-image2-quizland/` の生成済みパーツをマゼンタ背景つき元画像のままではなく、透過化 + トリミング + 指定外寸へ再書き出しして `assets/preview-placeholders/*.png` に反映。全身フクロウ博士だけは新規生成して `assets/preview-placeholders/character.png` と `assets/images/quizland/owl_professor_guide.png` に反映し、`assets/images/quizland/title_back.png` / `title_logo.png` も更新済み。`title_logo.png` にはフクロウが含まれたままなので、ロゴ単体に戻すかは後で判断。 (by Codex)
 
 - 2026-05-01 ・Codex が quizland/preview/full/ の検証用 placeholder はめ込みを実施。assets/preview-placeholders/ に 16 種の色付きグリッドPNGを生成し、quizland/preview/full/index.html の wireframe bbox 表示を各PNGの background-size: 100% 100% 表示へ切替。q-text-card.png は実表示幅に合わせ 856x170 で生成。Chrome headless で 2100x900 / 844x390 / 1194x834 の ?preview=1 表示を確認済み。placeholder は検証専用なので本物画像差替前に master へ入れないこと。 (by Codex, commit `876b1a4`)
 - 2026-05-02 — sw.js CACHE_VERSION 596 → 597 バンプ (Codex の上記 placeholder 検証反映、 commit `876b1a4`) (by Claude)
