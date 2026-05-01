@@ -1844,24 +1844,33 @@ function makeHandle(el, pos, axes) {
     const startH = el.offsetHeight;
     const startTx = el._tx || 0;
     const startTy = el._ty || 0;
+    const aspect = startW / Math.max(1, startH);
     const onMove = (e2) => {
       const dx = (e2.clientX - startX) / scale;
       const dy = (e2.clientY - startY) / scale;
-      const sym = e2.altKey;  // Alt を押しながら → 左右/上下対称にスケール
+      // Alt = 2 倍率 (両側にダブルで広がる)
+      const factor = e2.altKey ? 2 : 1;
       let newW = startW, newH = startH;
       let newTx = startTx, newTy = startTy;
-      if (sym) {
-        // 中心点を保ったまま 2 倍率でサイズ変更
-        if (pos.includes('e')) { newW = Math.max(20, startW + 2*dx); newTx = startTx - dx; }
-        if (pos.includes('w')) { newW = Math.max(20, startW - 2*dx); newTx = startTx + dx; }
-        if (pos.includes('s')) { newH = Math.max(20, startH + 2*dy); newTy = startTy - dy; }
-        if (pos.includes('n')) { newH = Math.max(20, startH - 2*dy); newTy = startTy + dy; }
-      } else {
-        // 北/西を引っ張る場合は幅/高さが減って translate も変わる (片側固定)
-        if (pos.includes('e')) newW = Math.max(20, startW + dx);
-        if (pos.includes('w')) { newW = Math.max(20, startW - dx); newTx = startTx + dx; }
-        if (pos.includes('s')) newH = Math.max(20, startH + dy);
-        if (pos.includes('n')) { newH = Math.max(20, startH - dy); newTy = startTy + dy; }
+      if (pos.includes('e')) newW = Math.max(20, startW + factor * dx);
+      if (pos.includes('w')) newW = Math.max(20, startW - factor * dx);
+      if (pos.includes('s')) newH = Math.max(20, startH + factor * dy);
+      if (pos.includes('n')) newH = Math.max(20, startH - factor * dy);
+      // Shift = アスペクト比固定
+      if (e2.shiftKey) {
+        const isCorner = pos.startsWith('corner');
+        if (isCorner) {
+          // 角ハンドル: 大きく動いた方を主軸にして、 もう一方を比率追従
+          const dW = Math.abs(newW - startW), dH = Math.abs(newH - startH);
+          if (dW >= dH) newH = newW / aspect;
+          else newW = newH * aspect;
+        } else if (pos.includes('e') || pos.includes('w')) {
+          // 横辺ハンドル: 幅を主軸、 高さを追従
+          newH = newW / aspect;
+        } else {
+          // 縦辺ハンドル: 高さを主軸、 幅を追従
+          newW = newH * aspect;
+        }
       }
       // axes 制約: w が許可されてなければ幅は触らない
       if (axes.includes('w') && (pos.includes('e') || pos.includes('w'))) {
@@ -1913,8 +1922,13 @@ function attachMoveDrag(el) {
     const scale = stageRect.width / stageW || 1;
     const startTx = el._tx || 0, startTy = el._ty || 0;
     const onMove = (e2) => {
-      const dx = (e2.clientX - startX) / scale;
-      const dy = (e2.clientY - startY) / scale;
+      let dx = (e2.clientX - startX) / scale;
+      let dy = (e2.clientY - startY) / scale;
+      // Shift = 1 軸固定 (大きく動いた方の軸だけ動かす)
+      if (e2.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
       el._tx = startTx + dx;
       el._ty = startTy + dy;
       el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
