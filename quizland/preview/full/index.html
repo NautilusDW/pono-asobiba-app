@@ -20,7 +20,10 @@
   --safe-h: 900px;
   /* side margins = (canvas-w - safe-w) / 2 = 250 */
 
-  --header-h: 100px;
+  --header-h: 150px;  /* 100 → 150 で 1.5x */
+  --bbox-bg: #d4be8a;
+  --bbox-border: rgba(110, 70, 32, 0.55);
+  --bbox-label: rgba(80, 50, 20, 0.65);
 
   --bg: #1a1a1a;
   --paper: #f5e9c4;
@@ -257,20 +260,16 @@ body.show-safe .safe-area::after {
   justify-self: end;
 }
 .hdr-right .ctrl-btn {
-  /* 正方形ボタン (画像差替前提でアスペクト比 1:1) */
+  /* ヘッダー 150px に合わせて 120×120 正方形 */
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
-  background: linear-gradient(180deg, var(--paper), var(--paper-2));
-  border: 4px solid var(--wood-dark);
-  border-radius: 14px;
-  padding: 6px;
-  color: var(--text);
+  width: 120px;
+  height: 120px;
+  padding: 8px;
   font-weight: 800;
-  font-size: 14px;
-  width: 88px;
-  height: 88px;
-  gap: 4px;
+  font-size: 16px;
+  gap: 6px;
 }
-.hdr-right .ctrl-btn .icon { font-size: 32px; line-height: 1; }
+.hdr-right .ctrl-btn .icon { font-size: 40px; line-height: 1; }
 
 /* ───── Body ───── */
 .body {
@@ -590,6 +589,47 @@ body.preview-mode .stage {
   left: 0;
   margin: 0;
   /* transform set by JS で translate + scale */
+}
+
+/* ───── Wireframe mode (全要素を単純なバウンディングボックスに) ───── */
+.hdr-pill,
+.hdr-left .title-card,
+.hdr-left .progress-num,
+.hdr-right .ctrl-btn,
+.q-text-card,
+.board,
+.chip,
+.answer-tray,
+.hint,
+.character {
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  color: var(--bbox-label) !important;
+}
+/* 内側パーツも矩形に — 丸を消して画像生成時に丸が焼き込まれないように */
+.hdr-left .owl-icon,
+.chip .circle,
+.q-text-card .audio {
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+  border-radius: 0 !important;
+}
+/* ドットも丸じゃなく小さい矩形に */
+.hdr-left .dot {
+  border-radius: 0 !important;
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+}
+.hdr-left .dot.done { background: #c89a4a !important; }
+/* キャラクター: 卵形をやめて単純な四角バウンディングボックス */
+.character {
+  border-radius: 0 !important;
+  width: 200px !important;
+  height: 240px !important;
+  font-size: 60px;
 }
 
 /* Debug bbox */
