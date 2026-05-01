@@ -76,6 +76,28 @@ html, body {
 .toolbar button { cursor: pointer; }
 .toolbar button:hover { background: #3a3a3a; }
 .toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
+.toolbar button.dirty { background: #d4824e; border-color: #f0ae5e; }
+.toolbar button.dirty::after { content: " *"; color: #fff8d4; }
+.layout-toast {
+  position: fixed;
+  top: 60px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 200, 80, 0.95);
+  color: #fff;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  pointer-events: none;
+  animation: layout-toast-fade 1.6s ease-out forwards;
+}
+@keyframes layout-toast-fade {
+  0%   { opacity: 0; transform: translate(-50%, -8px); }
+  15%  { opacity: 1; transform: translate(-50%, 0); }
+  85%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
 .toolbar input[type="file"] { color: #aaa; font-size: 11px; }
 
 /* ───── Stage (21:9 outer) ───── */
@@ -835,7 +857,9 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
-    <button id="resize-reset" title="リサイズ値をリセット">↺ サイズ初期化</button>
+    <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
+    <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
+    <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
   </div>
 
   <div>
@@ -1656,7 +1680,8 @@ const RESIZABLE_SPEC = [
 ];
 const RESIZE_KEY = 'quizland_preview_sizes_v1';
 
-function saveResizeState() {
+// レイアウトのスナップショット (現在の DOM 状態)
+function takeLayoutSnapshot() {
   const data = {};
   RESIZABLE_SPEC.forEach(([sel]) => {
     document.querySelectorAll(sel).forEach((el, i) => {
@@ -1670,7 +1695,60 @@ function saveResizeState() {
   });
   data.__guides = collectGuides();
   data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
-  try { localStorage.setItem(RESIZE_KEY, JSON.stringify(data)); } catch(e) {}
+  return data;
+}
+
+// 直近に保存した JSON (dirty 判定用)
+let lastSavedLayoutJson = null;
+
+// 「保存」ボタンが押された時だけ localStorage を更新
+function saveResizeState() {
+  // 後方互換: 既存呼び出しは「dirty マーク更新」のみに変更 (自動保存はしない)
+  markLayoutDirty();
+}
+function explicitSaveLayout() {
+  const json = JSON.stringify(takeLayoutSnapshot());
+  try { localStorage.setItem(RESIZE_KEY, json); } catch(e) {}
+  lastSavedLayoutJson = json;
+  updateDirtyUI();
+  showLayoutToast('レイアウトを保存しました');
+}
+function markLayoutDirty() {
+  updateDirtyUI();
+}
+function updateDirtyUI() {
+  const btn = document.getElementById('save-layout');
+  if (!btn) return;
+  const cur = JSON.stringify(takeLayoutSnapshot());
+  btn.classList.toggle('dirty', cur !== lastSavedLayoutJson);
+}
+function revertLayout() {
+  const cur = JSON.stringify(takeLayoutSnapshot());
+  if (cur !== lastSavedLayoutJson && !confirm('保存されている状態に戻しますか？ 未保存の変更は失われます。')) return;
+  // 全リセット
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.width = ''; el.style.height = ''; el.style.transform = '';
+      el._tx = 0; el._ty = 0;
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    });
+  });
+  document.documentElement.style.removeProperty('--header-h');
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  // 保存値から再適用
+  loadResizeState();
+  // 履歴クリア (revert 後はクリーンスタート)
+  undoStack.length = 0;
+  redoStack.length = 0;
+  updateDirtyUI();
+  showLayoutToast('保存状態に戻しました');
+}
+function showLayoutToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'layout-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1700);
 }
 function loadResizeState() {
   try {
@@ -1976,9 +2054,19 @@ document.getElementById('resize-toggle').addEventListener('click', () => {
   else enableResize();
 });
 document.getElementById('resize-reset').addEventListener('click', resetResizeState);
+document.getElementById('save-layout').addEventListener('click', explicitSaveLayout);
+document.getElementById('revert-layout').addEventListener('click', revertLayout);
+// Ctrl/Cmd+S で保存
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    explicitSaveLayout();
+  }
+});
 
-// 起動時に保存値を復元
+// 起動時に保存値を復元 + dirty 基準を設定
 loadResizeState();
+lastSavedLayoutJson = JSON.stringify(takeLayoutSnapshot());
 
 // ───── Preview mode (端末サイズで見る) ─────
 const previewBtn = document.getElementById('preview-mode');
