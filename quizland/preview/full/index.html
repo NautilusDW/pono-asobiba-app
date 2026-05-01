@@ -111,8 +111,7 @@ html, body {
   height: var(--canvas-h);
   margin: 0 auto;
   position: relative;
-  /* 単色背景 (装飾は生成画像差替前提) */
-  background: #4a6230;
+  background: url('../../../assets/preview-placeholders/stage-bg.png') center / cover no-repeat;
   border: 1px dashed #555;
   overflow: hidden;
 }
@@ -687,12 +686,9 @@ body.preview-mode .stage {
 .hdr-left .title-card span,
 .hdr-left .progress-num,
 .hdr-right .ctrl-btn > *,
-.q-text-card #q-text,
 .q-text-card .audio,
-.chip > span,
 .hint,
-.character,
-.slot {
+.character {
   color: transparent !important;
 }
 

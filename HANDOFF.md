@@ -14,79 +14,14 @@
 
 ## Active (進行中 / 未着手)
 
-### 2026-05-02 (新規) — Quizland preview 本番用画像生成 (16 種)
-
-**依頼者**: Claude (ユーザー指示) → Codex 実施希望
-
-`quizland/preview/full/` の placeholder 検証は完了 (`?preview=1` でスマホ確認済み)。
-本物の生成画像で `assets/preview-placeholders/*.png` を上書きしてほしい。
-
-**スタイル / アートディレクションについてはユーザーから別途リファレンス画像が提示される予定**。
-本 HANDOFF では「何を作るか (寸法 + 内容)」 だけ定義する。 スタイルが決まったらユーザーが直接プロンプト指定するか、 ここに追記する。
-
-#### 生成対象 (17 種、 全部マスト)
-
-寸法は `quizland/preview/full/saved-layout.json` の現在値ベース。 saved-layout に明示寸法が無い要素は preview/full を staging で開いて `getBoundingClientRect` で実機計測。
-
-| # | ファイル名 | 寸法 (px) | 中身 |
-|---|---|---|---|
-| 1 | `stage-bg.png` | **2100×900** (21:9) | ステージ全体の背景画像。 中央 1600×900 が 16:9 セーフエリア (UI が乗る部分) なので、 装飾は **左右 250px の帯** に配置する想定。 セーフエリア部分は UI が乗っても見える程度の落ち着いた背景に |
-| 2 | `hdr-pill.png` | 856×142 | ヘッダー横長フレーム (空枠、 中身は別画像を重ねる) |
-| 3 | `owl-icon.png` | 127×127 | フクロウ博士の顔 (ヘッダー左端のアイコン) |
-| 4 | `title-card.png` | 296×128 | タイトル札 (「フクロウはかせの なぞなぞ」 文字込み) |
-| 5 | `progress-num.png` | 119×63 | 「1 / 5」 表示の枠 (数字込み) |
-| 6 | `dot.png` | 28×28 | 進捗ドット (active 1 種、 4-5 個に流用) |
-| 7 | `ctrl-btn-news.png` | 120×120 | おしらせボタン (鈴 + 文字込み) |
-| 8 | `ctrl-btn-settings.png` | 120×120 | せっていボタン (歯車 + 文字込み) |
-| 9 | `q-text-card.png` | 856×170 | 問題文カード (空枠、 文字は HTML の contenteditable) |
-| 10 | `audio.png` | 80×80 | 音声ボタン (スピーカー) |
-| 11 | `board.png` | 856×512 | 問題ボード (空枠、 中身は ItemSlot で動的) |
-| 12 | `answer-tray.png` | 704×512 | 答えチップを囲うトレイ枠 |
-| 13 | `chip.png` | 322×220 | 選択肢チップ枠 (空枠、 4 個に流用、 中身は HTML テキスト) |
-| 14 | `circle.png` | 110×110 | 色マル (検証用は 1 色、 4 個に流用) |
-| 15 | `hint.png` | 491×122 | ヒント帯 (空枠 or 「💡 よく見て かんがえてみよう！」 込み、 どちらでも) |
-| 16 | `character.png` | 199×191 | フクロウ博士の全身 (右上に表示するメインキャラ) |
-| 17 | `item-slot.png` | 240×240 | 問題ボード内のアイテムスロット枠 |
-
-##### 補足
-- **空枠** = 中身は別レイヤー (HTML テキストや別画像) が重なるので、 文字を焼き込まない。 これに該当: `hdr-pill`, `q-text-card`, `board`, `chip`, `item-slot`
-- **文字込み** = 静的なラベルなので焼き込み OK。 これに該当: `title-card`, `progress-num`, `ctrl-btn-news`, `ctrl-btn-settings`, `hint` (オプショナル)
-- **全画像 透明 PNG** で出力 (はめ込み先の背景に馴染ませる)。 例外は `stage-bg.png` のみ (これはベタ画像でも透明背景でも OK、 ステージ最下層なので)
-- 各画像の四辺に **2〜4px の透明余白** を残す (はめ込み時の縁切れ防止)。 stage-bg は端まで描いて OK
-- `stage-bg.png` は CSS 側で `.stage { background: url(...) center / cover; }` 等で適用する必要があるため、 **Codex は index.html の `.stage { background: #4a6230; }` 部分も `background: url('../../../assets/preview-placeholders/stage-bg.png') center / cover;` に書き換えてください**
-
-#### 生成方法
-
-ツールはユーザー指定 or Codex の判断で。 候補:
-- `everything-claude-code:fal-ai-media` 経由 (flux-pro / flux-dev)
-- `/api/gemini/` プロキシ (Imagen)
-- 他の画像生成 API
-
-スタイル指定のプロンプトは **ユーザーがリファレンス画像を共有してから** 確定 (現状はスタイル未定)。
-
-#### 画像最適化
-
-`scripts/auto_optimize_image.py` を通して 2MB 警告を回避 (AGENTS.md §5)。 透明 PNG は WebP に変換せず PNG のまま。
-
-#### 配置 + 検証
-
-- 既存の `assets/preview-placeholders/*.png` を **同じファイル名で上書き** (CSS の URL 変更不要)
-- `quizland/preview/full/index.html` の CSS は変更不要 (`background-size: contain` でアスペクト比保持)
-- 検証: PC + iPhone 横 + iPad 横 で `?preview=1` を開いて、 各画像が指定寸法で表示・歪み/letterbox 余白が無いか確認
-
-#### sw.js バンプ + commit
-
-完了したら sw.js CACHE_VERSION バンプは Claude 側で実施 (HANDOFF を Recent に移して 1 行サマリ追記)。
-
-#### ロールバック
-
-検証用 placeholder に戻したい場合: `git checkout 876b1a4 -- assets/preview-placeholders/` で復元。
-
----
+- 現在なし
 
 ---
 
 ## Recent (Done — 古い順に削除)
+
+- 2026-05-02 — sw.js CACHE_VERSION 599 → 600 バンプ (Codex の GPT Image 2 パーツ差し替え反映) (by Claude)
+- 2026-05-02 — Codex が Quizland の GPT Image 2 パーツ差し替えを実施。`tmp/gpt-image2-quizland/` の生成済みパーツで `assets/preview-placeholders/*.png` を実画像に置換し、全身フクロウ博士だけは新規生成して `assets/preview-placeholders/character.png` と `assets/images/quizland/owl_professor_guide.png` に反映。あわせて `assets/images/quizland/title_back.png` / `title_logo.png` も差し替え、3枚は `auto_optimize_image.py` 済み。`title_logo.png` にはフクロウが含まれたままなので、ロゴ単体に戻すかは後で判断。 (by Codex)
 
 - 2026-05-01 ・Codex が quizland/preview/full/ の検証用 placeholder はめ込みを実施。assets/preview-placeholders/ に 16 種の色付きグリッドPNGを生成し、quizland/preview/full/index.html の wireframe bbox 表示を各PNGの background-size: 100% 100% 表示へ切替。q-text-card.png は実表示幅に合わせ 856x170 で生成。Chrome headless で 2100x900 / 844x390 / 1194x834 の ?preview=1 表示を確認済み。placeholder は検証専用なので本物画像差替前に master へ入れないこと。 (by Codex, commit `876b1a4`)
 - 2026-05-02 — sw.js CACHE_VERSION 596 → 597 バンプ (Codex の上記 placeholder 検証反映、 commit `876b1a4`) (by Claude)
