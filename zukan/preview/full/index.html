@@ -2682,13 +2682,14 @@ function attachMoveDrag(el) {
     if (targets.length === 0) targets.push(el);
 
     const startX = e.clientX, startY = e.clientY;
-    const { scale } = getStageRectInfo();
+    const { stageRect, scale } = getStageRectInfo();
     const startStates = targets.map(t => ({
       el: t,
       tx: t._tx || 0,
       ty: t._ty || 0,
       before: getResizeState(t),
     }));
+    const primaryStartRect = bcrInStage(el, stageRect, scale);
 
     const onMove = (e2) => {
       let dx = (e2.clientX - startX) / scale;
@@ -2696,6 +2697,11 @@ function attachMoveDrag(el) {
       if (e2.shiftKey) {
         if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
         else dx = 0;
+      }
+      // 吸着: Ctrl/Cmd 押下中はスキップ。 それ以外は近接する辺/中心/ガイドに吸着
+      if (!(e2.ctrlKey || e2.metaKey)) {
+        const adj = computeMoveSnap(el, primaryStartRect, dx, dy);
+        dx = adj.dx; dy = adj.dy;
       }
       startStates.forEach(s => {
         s.el._tx = s.tx + dx;
@@ -2861,6 +2867,111 @@ window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
     e.preventDefault();
     explicitSaveLayout();
+  }
+});
+
+// ───── 吸着 (snap) と コピペ ─────
+const SNAP_THRESHOLD = 8;  // stage 座標での吸着距離 (px)
+
+// drag 中、 元の bbox を (dx, dy) 動かした時の吸着補正を返す。
+// 他の resizable の left/right/top/bottom/center、 およびガイド線位置に最も近い辺へ揃える。
+function computeMoveSnap(primaryEl, startRect, dx, dy) {
+  const { stageRect, scale } = getStageRectInfo();
+  const newLeft = startRect.left + dx;
+  const newRight = startRect.right + dx;
+  const newTop = startRect.top + dy;
+  const newBottom = startRect.bottom + dy;
+  const newCx = (newLeft + newRight) / 2;
+  const newCy = (newTop + newBottom) / 2;
+  const xCandidates = [newLeft, newRight, newCx];  // primary 側の x 候補
+  const yCandidates = [newTop, newBottom, newCy];
+
+  const targetXs = [];
+  const targetYs = [];
+  // 他の resizable
+  document.querySelectorAll('.resizable').forEach(other => {
+    if (other === primaryEl) return;
+    if (selectedElements.has(other)) return;  // 一緒に動く要素は除外
+    const r = bcrInStage(other, stageRect, scale);
+    targetXs.push(r.left, r.right, (r.left + r.right) / 2);
+    targetYs.push(r.top, r.bottom, (r.top + r.bottom) / 2);
+  });
+  // ガイド線 (位置: fixed なので viewport 座標 → stage 座標へ変換)
+  document.querySelectorAll('.guide.h').forEach(g => {
+    const vy = parseFloat(g.style.top);
+    if (Number.isFinite(vy)) targetYs.push((vy - stageRect.top) / scale);
+  });
+  document.querySelectorAll('.guide.v').forEach(g => {
+    const vx = parseFloat(g.style.left);
+    if (Number.isFinite(vx)) targetXs.push((vx - stageRect.left) / scale);
+  });
+  // safe area の枠 + center も吸着対象に
+  const safe = document.getElementById('safe-area');
+  if (safe) {
+    const sr = bcrInStage(safe, stageRect, scale);
+    targetXs.push(sr.left, sr.right, (sr.left + sr.right) / 2);
+    targetYs.push(sr.top, sr.bottom, (sr.top + sr.bottom) / 2);
+  }
+
+  let bestDx = 0, bestDxAbs = Infinity;
+  for (const tx of targetXs) {
+    for (const cand of xCandidates) {
+      const diff = tx - cand;
+      const d = Math.abs(diff);
+      if (d < SNAP_THRESHOLD && d < bestDxAbs) { bestDx = diff; bestDxAbs = d; }
+    }
+  }
+  let bestDy = 0, bestDyAbs = Infinity;
+  for (const ty of targetYs) {
+    for (const cand of yCandidates) {
+      const diff = ty - cand;
+      const d = Math.abs(diff);
+      if (d < SNAP_THRESHOLD && d < bestDyAbs) { bestDy = diff; bestDyAbs = d; }
+    }
+  }
+  return { dx: dx + bestDx, dy: dy + bestDy };
+}
+
+// 内部クリップボード (OS の clipboard ではなく、 同セッションでの複製用)
+let userboxClipboard = [];
+window.addEventListener('keydown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (e.target.matches('input, textarea, [contenteditable]')) return;
+  const isCopy  = (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C');
+  const isPaste = (e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V');
+  if (isCopy) {
+    const sel = [...selectedElements].filter(el => el.classList.contains('userbox'));
+    if (sel.length === 0) return;
+    e.preventDefault();
+    userboxClipboard = sel.map(el => ({
+      label: el.dataset.userboxLabel,
+      left: el.style.left,
+      top: el.style.top,
+      w: el.style.width,
+      h: el.style.height,
+      tx: el._tx || 0,
+      ty: el._ty || 0,
+    }));
+    showLayoutToast(`${sel.length} 個コピー`);
+  } else if (isPaste) {
+    if (userboxClipboard.length === 0) return;
+    e.preventDefault();
+    selectedElements.clear();
+    userboxClipboard.forEach(box => {
+      const el = createUserbox({
+        label: box.label,
+        left: (parseFloat(box.left) + 20) + 'px',
+        top:  (parseFloat(box.top)  + 20) + 'px',
+        w: box.w,
+        h: box.h,
+        tx: box.tx,
+        ty: box.ty,
+      });
+      selectedElements.add(el);
+    });
+    refreshSelectionUI();
+    saveResizeState();
+    showLayoutToast(`${userboxClipboard.length} 個ペースト`);
   }
 });
 
