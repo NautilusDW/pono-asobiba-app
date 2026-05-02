@@ -829,6 +829,12 @@ body.wireframe-only .editable-text {
   background: transparent !important;
   outline: none !important;
 }
+/* 絵文字 (フクロウ博士のアイコン2つ) はワイヤー時に非表示 */
+body.wireframe-only .hdr-left .owl-icon,
+body.wireframe-only .character {
+  font-size: 0 !important;
+  color: transparent !important;
+}
 
 /* 数値入力パネル */
 .numeric-panel {
