@@ -3775,32 +3775,22 @@ function _glCompileShader(gl, type, src) {
 
 function _initWebGL() {
   if (_gl) return _gl;
-  _bezCanvas = document.getElementById('bezier-canvas');
-  if (!_bezCanvas) {
+  const oldCanvas = document.getElementById('bezier-canvas');
+  if (!oldCanvas) {
     window._lastBezierError = '#bezier-canvas element not found in DOM';
     console.error(window._lastBezierError);
     return null;
   }
-  _bezCanvas.width  = SAFE_W * 2;   // retina
-  _bezCanvas.height = SAFE_H * 2;
-  // 確実に in-flow に
-  _bezCanvas.style.visibility = 'visible';
-  _bezCanvas.style.display    = 'block';
-  // まず 「DOM 外の」 throwaway canvas で WebGL が本当に使えるかテスト
-  const probe = document.createElement('canvas');
-  probe.width = 64; probe.height = 64;
-  const probeGL = probe.getContext('webgl') || probe.getContext('experimental-webgl');
-  if (!probeGL) {
-    window._lastBezierError =
-      'WebGL が使えません (probe canvas でも null)。 \n' +
-      '・ハードウェアアクセラレーションが無効かも (ブラウザ設定で有効化)\n' +
-      '・chrome://gpu (Chrome) / about:support (Firefox) で WebGL2 enabled を確認\n' +
-      '・ブラウザ拡張で WebGL がブロックされている可能性も\n' +
-      '\nそれでも動かない場合は Cmd+Shift+R / Ctrl+Shift+R でハードリロードしてみてください';
-    console.error(window._lastBezierError);
-    return null;
-  }
-  // probe OK → 本番 canvas で複数オプションを試す
+  // **重要**: HTML に書かれた既存 canvas は DOM に挿入された状態で初期化が走る
+  // タイミングの関係で getContext が null を返すブラウザがある (Chrome の一部
+  // バージョン)。 確実に context を取るには 「DOM 外で createElement → getContext
+  // → DOM 挿入 (replaceChild)」 が定石。 これで既存 canvas のあらゆる初期化状態を
+  // バイパスできる。
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = 'bezier-canvas';
+  newCanvas.width  = SAFE_W * 2;   // retina
+  newCanvas.height = SAFE_H * 2;
+  // まず getContext を試す (この時点では DOM 外)
   const optsList = [
     { premultipliedAlpha: true,  alpha: true },
     { premultipliedAlpha: false, alpha: true },
@@ -3808,16 +3798,26 @@ function _initWebGL() {
     {},
   ];
   for (const opts of optsList) {
-    _gl = _bezCanvas.getContext('webgl', opts) || _bezCanvas.getContext('experimental-webgl', opts);
+    _gl = newCanvas.getContext('webgl', opts) || newCanvas.getContext('experimental-webgl', opts);
     if (_gl) break;
   }
   if (!_gl) {
     window._lastBezierError =
-      'probe canvas は OK だったのに #bezier-canvas で getContext null (再現条件不明)。\n' +
-      'Cmd+Shift+R / Ctrl+Shift+R でハードリロードしてみてください';
+      '新規作成した canvas でも WebGL context が取れません。 \n' +
+      '・ハードウェアアクセラレーションが無効化されている (ブラウザ設定を確認)\n' +
+      '・chrome://gpu (Chrome) で WebGL の状態を確認\n' +
+      '・WebGL ブロック系拡張を無効化\n' +
+      '・Cmd+Shift+R / Ctrl+Shift+R で完全リロード';
     console.error(window._lastBezierError);
     return null;
   }
+  // context 取得成功 → DOM 上の旧 canvas を新 canvas で置換
+  // 旧 canvas の position/style は CSS の id selector で同じ規則が当たるので
+  // インライン style はコピーしなくて良い
+  oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+  _bezCanvas = newCanvas;
+  _bezCanvas.style.visibility = 'visible';
+  _bezCanvas.style.display    = 'block';
   const gl = _gl;
   console.info('[bezier] WebGL ctx ok, MAX_VERTEX_UNIFORM_VECTORS=',
     gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS));

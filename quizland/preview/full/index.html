@@ -898,6 +898,12 @@ body.sheet-on .slot {
   border-color: transparent !important;
   box-shadow: none !important;
 }
+/* sheet-on でも slot は薄い破線で残す (シート画像にはスロットが描かれていないので
+   完全透明にすると編集できなくなる)。 違和感を出さないため非常に薄い色で */
+body.sheet-on .slot {
+  border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
+  border-radius: 12px;
+}
 /* テキスト・絵文字・チップ中身は前面に出す (sheet の z-index:5 より上) */
 body.sheet-on .safe-area > .hdr,
 body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
@@ -1448,11 +1454,15 @@ function buildLayout(value) {
   console.warn('[buildLayout]', value, '→', msg);
   // 既存 badge を消して新規追加
   document.querySelectorAll('.qz-debug-badge').forEach(e => e.remove());
-  if (slots.length === 0 || (r0 && r0.width < 20)) {
+  const inSheet = document.body.classList.contains('sheet-on');
+  if (slots.length === 0 || (r0 && r0.width < 20) || inSheet) {
     const badge = document.createElement('div');
     badge.className = 'qz-debug-badge';
-    badge.style.cssText = 'position:fixed;top:60px;left:8px;background:#c00;color:#fff;padding:8px 12px;border-radius:6px;font:600 12px monospace;z-index:99999;max-width:340px;line-height:1.4;cursor:pointer';
-    badge.textContent = '⚠ slot 異常: ' + msg + ' (clickで閉じる)';
+    badge.style.cssText = 'position:fixed;top:60px;left:8px;background:#c00;color:#fff;padding:8px 12px;border-radius:6px;font:600 12px monospace;z-index:99999;max-width:380px;line-height:1.4;cursor:pointer';
+    let warn = '';
+    if (inSheet) warn = '🪟 シート画像 ON が原因で slot がほぼ透明 (薄い破線だけ表示)。 ツールバーの 「シート画像 ON」 を OFF にすると placeholder 画像が戻ります。\n';
+    badge.textContent = warn + 'slot 状態: ' + msg + ' (clickで閉じる)';
+    badge.style.whiteSpace = 'pre-wrap';
     badge.onclick = () => badge.remove();
     document.body.appendChild(badge);
   }
