@@ -3887,6 +3887,10 @@ function reparentUserboxesIntoPages() {
   // 元の position は dataset に退避してトグル OFF 時に復元する
   _ensureCellContainers();
   document.querySelectorAll('.userbox').forEach(el => {
+    // 既にセルの中にある場合は二重 reparent しない
+    // (dataset.origLeft が残ってる状態で再度 reparent すると、 現在の page-local left を
+    //  もう一度 baseLeft 分シフトしてしまい、 left=20 → さらに -800 されて画面外に飛ぶ)
+    if (el.parentElement && el.parentElement.classList.contains('page-cell')) return;
     const left = parseFloat(el.style.left) || 0;
     const top  = parseFloat(el.style.top)  || 0;
     const tx = el._tx || 0;
@@ -3901,13 +3905,11 @@ function reparentUserboxesIntoPages() {
     const cellRow = cy < HALF_H ? 0 : 1;
     const cell = document.getElementById(`page-cell-${page}-${cellCol}-${cellRow}`);
     if (!cell) return;
-    if (!el.dataset.origLeft) {
-      el.dataset.origLeft = el.style.left || '';
-      el.dataset.origTop  = el.style.top  || '';
-      el.dataset.origPage = page;
-      el.dataset.origCellCol = String(cellCol);
-      el.dataset.origCellRow = String(cellRow);
-    }
+    el.dataset.origLeft = el.style.left || '';
+    el.dataset.origTop  = el.style.top  || '';
+    el.dataset.origPage = page;
+    el.dataset.origCellCol = String(cellCol);
+    el.dataset.origCellRow = String(cellRow);
     el.style.left = (left - baseLeft - cellCol * HALF_W) + 'px';
     el.style.top  = (top - cellRow * HALF_H) + 'px';
     cell.appendChild(el);
@@ -3931,6 +3933,9 @@ function unparentUserboxesFromPages() {
 
 const cornerPinBtn = document.getElementById('corner-pin-toggle');
 function setCornerPinMode(on) {
+  // 既に同じ状態なら何もしない (連続クリック / 二重起動で reparent が複数回走るのを防ぐ)
+  const cur = document.body.classList.contains('corner-pin-mode');
+  if (cur === on) return;
   if (on) {
     document.body.classList.add('corner-pin-mode');
     reparentUserboxesIntoPages();
@@ -3943,14 +3948,17 @@ function setCornerPinMode(on) {
     cornerPinBtn.classList.toggle('active', on);
   }
   applyMeshPin();
-  try { localStorage.setItem('zukan_corner_pin', on ? '1' : '0'); } catch(_) {}
+  // ON/OFF 状態は localStorage に永続化しない。
+  // 過去のセッションで auto-toggle されたことで「何もしてないのに崩れて見える」 問題を防ぐため、
+  // メッシュピンは毎回 OFF スタートでユーザーが明示的に ON にする運用にする。
 }
 cornerPinBtn && cornerPinBtn.addEventListener('click', () => setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
 _ensureCellContainers();
 _ensureMeshHandles();
 attachMeshHandles();
 applyMeshPin();
-try { if (localStorage.getItem('zukan_corner_pin') === '1') setCornerPinMode(true); } catch(_) {}
+// 旧バージョンで保存された ON フラグが残っていると毎回 auto-toggle されてしまうので削除
+try { localStorage.removeItem('zukan_corner_pin'); } catch(_) {}
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
 // 通常 (resize-mode ON): 空き領域 drag で新規作成。 既存枠の上は select/move/resize
