@@ -942,24 +942,26 @@ body.book-tilt .userbox { transform-style: preserve-3d; }
 
 /* === ベジェワープモード ===
    ページを html2canvas でテクスチャ化 → WebGL canvas に bicubic Bezier patch で warp。
-   16 制御点 / page (= 32 点合計) をドラッグして本のページの曲面を作る */
+   16 制御点 / page (= 32 点合計) をドラッグして本のページの曲面を作る。
+   注: display:none の canvas に getContext('webgl') すると null を返す
+   Chromium/Firefox のバグ回避のため visibility ベースで隠す */
 #bezier-canvas {
   position: absolute;
   left: 0; top: 0;
   width: 1600px; height: 900px;  /* SAFE_W × SAFE_H、 内部解像度は JS で 2x */
   pointer-events: none;
   z-index: 80;
-  display: none;
+  visibility: hidden;
 }
 #bezier-handle-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 100;
-  display: none;
+  visibility: hidden;
 }
 body.corner-pin-mode #bezier-canvas,
-body.corner-pin-mode #bezier-handle-layer { display: block; }
+body.corner-pin-mode #bezier-handle-layer { visibility: visible; }
 /* 制御点ハンドル */
 .bezier-handle {
   position: absolute;
@@ -3781,10 +3783,23 @@ function _initWebGL() {
   }
   _bezCanvas.width  = SAFE_W * 2;   // retina
   _bezCanvas.height = SAFE_H * 2;
-  _gl = _bezCanvas.getContext('webgl', { premultipliedAlpha: true, alpha: true })
-     || _bezCanvas.getContext('experimental-webgl', { premultipliedAlpha: true, alpha: true });
+  // 複数のオプション組合せを順番に試す。 display:none の canvas で null を返す
+  // バグ対策に、 まず確実に visible 状態にしてから getContext。
+  const prevVis = _bezCanvas.style.visibility;
+  _bezCanvas.style.visibility = 'visible';
+  const optsList = [
+    { premultipliedAlpha: true,  alpha: true },
+    { premultipliedAlpha: false, alpha: true },
+    { alpha: true },
+    {},
+  ];
+  for (const opts of optsList) {
+    _gl = _bezCanvas.getContext('webgl', opts) || _bezCanvas.getContext('experimental-webgl', opts);
+    if (_gl) break;
+  }
+  if (!_gl) _bezCanvas.style.visibility = prevVis;
   if (!_gl) {
-    window._lastBezierError = 'getContext("webgl") returned null (browser does not support WebGL)';
+    window._lastBezierError = 'getContext("webgl") returned null after trying all fallbacks. ブラウザの WebGL が無効になっている可能性 (chrome://gpu で確認)';
     console.error(window._lastBezierError);
     return null;
   }
@@ -3857,8 +3872,8 @@ async function _captureSnapshot() {
   // 撮影中はベジェ canvas / ハンドルを隠して、 元の userbox を見える状態にする
   const wasMode = document.body.classList.contains('corner-pin-mode');
   document.body.classList.remove('corner-pin-mode');
-  if (_bezCanvas) _bezCanvas.style.display = 'none';
-  document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = 'none');
+  if (_bezCanvas) _bezCanvas.style.visibility = 'hidden';
+  document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = 'hidden');
   await new Promise(r => requestAnimationFrame(r));   // CSS 反映待ち
   // safe-area だけだと .stage の BG (zukan-bg + main) は含まれない → stage を撮影
   const stageEl0 = document.getElementById('stage');
@@ -3868,8 +3883,8 @@ async function _captureSnapshot() {
     if (typeof html2canvas !== 'function') {
       console.warn('html2canvas not loaded');
       alert('html2canvas が読み込めていません。 リロードして再試行してください');
-      if (_bezCanvas) _bezCanvas.style.display = '';
-      document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = '');
+      if (_bezCanvas) _bezCanvas.style.visibility = '';
+      document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = '');
       return null;
     }
     snapshot = await html2canvas(stageEl0, {
@@ -3883,8 +3898,8 @@ async function _captureSnapshot() {
     console.error('[bezier] html2canvas failed:', e);
   }
   if (wasMode) document.body.classList.add('corner-pin-mode');
-  if (_bezCanvas) _bezCanvas.style.display = '';
-  document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = '');
+  if (_bezCanvas) _bezCanvas.style.visibility = '';
+  document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = '');
   console.info('[bezier] snapshot result:',
     snapshot ? { w: snapshot.width, h: snapshot.height } : null);
   if (!snapshot || snapshot.width === 0 || snapshot.height === 0) {
@@ -4041,14 +4056,17 @@ async function setCornerPinMode(on) {
       return;
     }
     _ensureBezierHandles();
+    // canvas を可視化してから getContext (display:none の canvas で null になる
+    // ブラウザバグ回避)。 失敗したら mode は付けたままにせず外す
+    document.body.classList.add('corner-pin-mode');
     const gl = _initWebGL();
     if (!gl) {
+      document.body.classList.remove('corner-pin-mode');
       console.error('[bezier] WebGL init failed → aborting mode toggle');
       alert('WebGL の初期化に失敗しました。\n詳細:\n' + (window._lastBezierError || '(unknown)'));
       if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ OFF';
       return;
     }
-    document.body.classList.add('corner-pin-mode');
     applyBezierWarp();
   } else {
     document.body.classList.remove('corner-pin-mode');

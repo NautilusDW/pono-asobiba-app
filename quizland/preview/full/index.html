@@ -401,13 +401,16 @@ body.show-board-frame .board::before { opacity: 1; }
 .bottom-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* flex-end + .hint に margin-right:auto で、 .hint を hide しても
+     char-hint と .character の位置がほぼ動かない (旧 space-between だと
+     .hint 削除時に右の 2 個が再配置されてレイアウトが大きく崩れていた) */
+  justify-content: flex-end;
   gap: 14px;
   margin-top: 8px;  /* 答えトレイの直下に置く、 余分な空間を作らない */
 }
 .bottom-right .hint {
   flex: 1 1 auto;
-  margin: 0;
+  margin: 0 auto 0 0;   /* 右の方の char-hint / character を右端に押しつける */
   align-self: center;
 }
 .bottom-right .character {
@@ -475,17 +478,18 @@ body.show-board-frame .board::before { opacity: 1; }
   position: relative;
   margin-bottom: -8px;
 }
-/* フクロウ博士の左にぶら下がる小さい吹き出し (hint-60.png placeholder)。
-   .character の子として絶対配置するので、 キャラを tx/ty で動かしても
-   常にキャラの左横に追従する。 中の文字は contenteditable で編集可。 */
+/* フクロウ博士の左にひとこと吹き出し (hint-60.png placeholder、 235×63)。
+   .character の兄弟として .bottom-right の flex 項目に並ぶ。
+   - position: relative + 普通のフロー → resize-mode の handle / tx・ty で
+     普通に動かせる
+   - flex: 0 0 auto → 他の flex 項目に押されて縮まない
+   - .bottom-right を justify-content: flex-end + .hint に margin-right:auto に
+     して、 .hint を消しても char-hint と .character の位置がほぼ動かない */
 .char-hint {
-  position: absolute;
+  flex: 0 0 auto;
+  position: relative;
   width: 235px;
   height: 63px;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-right: 12px;
   background-image: url('../../../assets/preview-placeholders/hint-60.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -496,7 +500,6 @@ body.show-board-frame .board::before { opacity: 1; }
   font-size: 18px;
   font-weight: 700;
   color: #4a3a1a;
-  /* 文字の影は背景の白パピルスから少し読みやすくする */
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   cursor: text;
   white-space: nowrap;
@@ -1285,13 +1288,12 @@ body.resize-mode .ruler { display: block; }
           </div>
           <div class="bottom-right">
             <div class="hint editable-text" contenteditable="true">💡 よく見て かんがえてみよう！</div>
-            <div class="character">
-              <!-- フクロウ博士のひとこと吹き出し (hint-60.png 235×63)。
-                   .character の position: relative の子として右下から左に出す。
-                   tx/ty で位置を微調整できる -->
-              <div class="char-hint editable-text" contenteditable="true">ヒント！</div>
-              🦉
-            </div>
+            <!-- フクロウの直前にひとこと吹き出し (hint-60.png 235×63)。
+                 .character の兄弟にすることで、 resize-mode のハンドル / tx/ty 移動が
+                 普通に効くようになる (子にすると親の position:relative + 自分の
+                 absolute right:100% が transform と衝突して動かせなくなる) -->
+            <div class="char-hint editable-text" contenteditable="true">ヒント！</div>
+            <div class="character">🦉</div>
           </div>
         </div>
       </div>
