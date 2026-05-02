@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T10:10:50Z - zukan に Corner Pin (4 角 x 2 page、 matrix3d で射影変換、 userbox を center X で page container に reparent、 saved-layout 永続化) + 両エディタにグループ corner-drag 拡縮 (factor 計算 → group center 基準で全選択拡縮) を実装。 sw.js 641→642
+- **タスク**: zukan に Corner Pin (4 角 x 2 page、 matrix3d で射影変換、 userbox を center X で page container に reparent、 saved-layout 永続化) + 両エディタにグループ corner-drag 拡縮 (factor 計算 → group center 基準で全選択拡縮) を実装。 sw.js 641→642
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 12
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 190, "Bash": 252, "Grep": 22, "Read": 32, "Write": 4}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-02T08:31:48Z - zukan に絵本見開きの草案レイアウト追加 (3x3 グリッド + うさぎ詳細イラスト + なまえ/こえ/すがた ラベル + ひとこと box の合計 15 userbox) + book-tilt 角度を 5°→10° に増加して可視化、 ユーザーの手動移動 (tx=97 ty=20) を rebase で尊重。 sw.js 639→640
 - **タスク**: zukan に絵本見開きの草案レイアウト追加 (3x3 グリッド + うさぎ詳細イラスト + なまえ/こえ/すがた ラベル + ひとこと box の合計 15 userbox) + book-tilt 角度を 5°→10° に増加して可視化、 ユーザーの手動移動 (tx=97 ty=20) を rebase で尊重。 sw.js 639→640
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 259, "Edit": 158, "Read": 47, "ToolSearch": 1, "Grep": 26, "Write": 9}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T06:51:44Z - シート画像 (quizland-sheet-v1.png) のフレーム実位置を PIL connected-component で解析し、 quizland saved-layout の hdr-left/q-text-card/board/answer-tray のサイズと tx/ty をシートに合わせ込み。 __headerH も 145→142 に。 sw.js 627→628
-- **タスク**: シート画像 (quizland-sheet-v1.png) のフレーム実位置を PIL connected-component で解析し、 quizland saved-layout の hdr-left/q-text-card/board/answer-tray のサイズと tx/ty をシートに合わせ込み。 __headerH も 145→142 に。 sw.js 627→628
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 8
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 257, "Read": 48, "Edit": 159, "ToolSearch": 1, "Grep": 26, "Write": 9}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
