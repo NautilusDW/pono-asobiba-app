@@ -3706,6 +3706,8 @@ const _glLoc = {};
 let _bezCanvas = null;
 let _glTextureCanvas = null;   // html2canvas の出力 (snapshot)
 
+// 動的配列 indexing は WebGL1 の一部実装で蹴られるので、 ループを完全展開して
+// 配列アクセスは constant index のみに揃える (= 16 個の項を手書きで足す)。
 const _VS_SRC = `
 attribute vec2 a_uv;
 uniform vec2 u_cp[16];
@@ -3713,24 +3715,26 @@ uniform vec2 u_pagePos;
 uniform vec2 u_safeSize;
 varying vec2 v_uv;
 
-vec2 bezierEval(float u, float v) {
-  float ui = 1.0 - u;
-  float vi = 1.0 - v;
-  vec4 bu = vec4(ui*ui*ui, 3.0*u*ui*ui, 3.0*u*u*ui, u*u*u);
-  vec4 bv = vec4(vi*vi*vi, 3.0*v*vi*vi, 3.0*v*v*vi, v*v*v);
-  vec2 p = vec2(0.0);
-  for (int r = 0; r < 4; r++) {
-    for (int c = 0; c < 4; c++) {
-      p += bu[c] * bv[r] * u_cp[r*4+c];
-    }
-  }
-  return p;
-}
-
 void main() {
   v_uv = a_uv;
-  vec2 pageLocal = bezierEval(a_uv.x, a_uv.y);
-  vec2 safePos = pageLocal + u_pagePos;
+  float u = a_uv.x;
+  float v = a_uv.y;
+  float ui = 1.0 - u;
+  float vi = 1.0 - v;
+  float bu0 = ui*ui*ui;
+  float bu1 = 3.0*u*ui*ui;
+  float bu2 = 3.0*u*u*ui;
+  float bu3 = u*u*u;
+  float bv0 = vi*vi*vi;
+  float bv1 = 3.0*v*vi*vi;
+  float bv2 = 3.0*v*v*vi;
+  float bv3 = v*v*v;
+  vec2 p =
+      bv0 * (bu0*u_cp[ 0] + bu1*u_cp[ 1] + bu2*u_cp[ 2] + bu3*u_cp[ 3])
+    + bv1 * (bu0*u_cp[ 4] + bu1*u_cp[ 5] + bu2*u_cp[ 6] + bu3*u_cp[ 7])
+    + bv2 * (bu0*u_cp[ 8] + bu1*u_cp[ 9] + bu2*u_cp[10] + bu3*u_cp[11])
+    + bv3 * (bu0*u_cp[12] + bu1*u_cp[13] + bu2*u_cp[14] + bu3*u_cp[15]);
+  vec2 safePos = p + u_pagePos;
   vec2 clip = (safePos / u_safeSize) * 2.0 - 1.0;
   clip.y = -clip.y;
   gl_Position = vec4(clip, 0.0, 1.0);
@@ -3749,12 +3753,19 @@ void main() {
 }
 `;
 
+// shader compile result + error message を window._lastBezierError に残して
+// alert からも参照できるようにする (本番環境で console を見れない時用)
+window._lastBezierError = null;
 function _glCompileShader(gl, type, src) {
   const sh = gl.createShader(type);
   gl.shaderSource(sh, src);
   gl.compileShader(sh);
   if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-    console.error('shader compile error:', gl.getShaderInfoLog(sh));
+    const log = gl.getShaderInfoLog(sh);
+    const kind = type === gl.VERTEX_SHADER ? 'vertex' : 'fragment';
+    const msg = `${kind} shader compile error:\n${log}`;
+    console.error(msg);
+    window._lastBezierError = msg;
     return null;
   }
   return sh;
@@ -3763,15 +3774,23 @@ function _glCompileShader(gl, type, src) {
 function _initWebGL() {
   if (_gl) return _gl;
   _bezCanvas = document.getElementById('bezier-canvas');
-  if (!_bezCanvas) return null;
+  if (!_bezCanvas) {
+    window._lastBezierError = '#bezier-canvas element not found in DOM';
+    console.error(window._lastBezierError);
+    return null;
+  }
   _bezCanvas.width  = SAFE_W * 2;   // retina
   _bezCanvas.height = SAFE_H * 2;
-  _gl = _bezCanvas.getContext('webgl', { premultipliedAlpha: true, alpha: true });
+  _gl = _bezCanvas.getContext('webgl', { premultipliedAlpha: true, alpha: true })
+     || _bezCanvas.getContext('experimental-webgl', { premultipliedAlpha: true, alpha: true });
   if (!_gl) {
-    console.error('WebGL not available');
+    window._lastBezierError = 'getContext("webgl") returned null (browser does not support WebGL)';
+    console.error(window._lastBezierError);
     return null;
   }
   const gl = _gl;
+  console.info('[bezier] WebGL ctx ok, MAX_VERTEX_UNIFORM_VECTORS=',
+    gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS));
   const vs = _glCompileShader(gl, gl.VERTEX_SHADER, _VS_SRC);
   const fs = _glCompileShader(gl, gl.FRAGMENT_SHADER, _FS_SRC);
   if (!vs || !fs) return null;
@@ -3780,7 +3799,9 @@ function _initWebGL() {
   gl.attachShader(_glProgram, fs);
   gl.linkProgram(_glProgram);
   if (!gl.getProgramParameter(_glProgram, gl.LINK_STATUS)) {
-    console.error('program link error:', gl.getProgramInfoLog(_glProgram));
+    const log = gl.getProgramInfoLog(_glProgram);
+    window._lastBezierError = 'program link error:\n' + log;
+    console.error(window._lastBezierError);
     return null;
   }
   _glLoc.a_uv       = gl.getAttribLocation(_glProgram, 'a_uv');
@@ -4023,7 +4044,7 @@ async function setCornerPinMode(on) {
     const gl = _initWebGL();
     if (!gl) {
       console.error('[bezier] WebGL init failed → aborting mode toggle');
-      alert('WebGL の初期化に失敗しました。 ブラウザが対応しているか確認してください。');
+      alert('WebGL の初期化に失敗しました。\n詳細:\n' + (window._lastBezierError || '(unknown)'));
       if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ OFF';
       return;
     }
