@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T02:45:13Z - プレビュー (quizland/zukan 両方) の注釈モードに色ピッカー追加。 矢印/矩形/テキスト/マーカーの色を変更可能、 選択中要素にも反映、 saved-state schema に color フィールド追加で round-trip。 SVG arrow-head は currentColor 経由で line stroke を継承。 sw.js 613→614
+- **タスク**: プレビュー (quizland/zukan 両方) の注釈モードに色ピッカー追加。 矢印/矩形/テキスト/マーカーの色を変更可能、 選択中要素にも反映、 saved-state schema に color フィールド追加で round-trip。 SVG arrow-head は currentColor 経由で line stroke を継承。 sw.js 613→614
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 22
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 174, "Bash": 238, "Read": 53, "WebSearch": 1, "WebFetch": 1, "Write": 11, "ToolSearch": 1, "Grep": 21}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-02T02:31:11Z - Codex の高解像度版 placeholder 反映 (board 73KB→737KB 等) のため sw.js 612→613 バンプ
 - **タスク**: Codex の高解像度版 placeholder 反映 (board 73KB→737KB 等) のため sw.js 612→613 バンプ
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 220, "Write": 12, "Edit": 207, "Read": 43, "WebSearch": 1, "WebFetch": 1, "ToolSearch": 1, "Grep": 15}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T00:24:55Z - zukan/preview/full/ 新設 (quizland 編集ツールをコピー → 森の図鑑用に safe area 内コンテンツを置換、 GH_LAYOUT_PATH と RESIZE_KEY を分離) + Codex の Quizland パーツ全 17 枚再生成 を取り込んで commit & push、 sw.js 604→605 バンプ
-- **タスク**: zukan/preview/full/ 新設 (quizland 編集ツールをコピー → 森の図鑑用に safe area 内コンテンツを置換、 GH_LAYOUT_PATH と RESIZE_KEY を分離) + Codex の Quizland パーツ全 17 枚再生成 を取り込んで commit & push、 sw.js 604→605 バンプ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 28
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 48, "Edit": 211, "Bash": 216, "Write": 11, "WebSearch": 1, "WebFetch": 1, "ToolSearch": 1, "Grep": 11}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
