@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T01:16:43Z - Codex の foundations-v2 4 枚 (title-card / q-text-card / board / answer-tray) が canvas を 99% fill で生成できたのを確認、 sw.js 606→607 バンプして反映
+- **タスク**: Codex の foundations-v2 4 枚 (title-card / q-text-card / board / answer-tray) が canvas を 99% fill で生成できたのを確認、 sw.js 606→607 バンプして反映
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 27
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 204, "Bash": 226, "Read": 42, "WebSearch": 1, "WebFetch": 1, "Write": 10, "ToolSearch": 1, "Grep": 15}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-02T00:49:14Z - zukan プレビュー: resize-mode 切替時のレイアウト崩壊バグを修正 (body.resize-mode .resizable の position:relative が zukan の absolute 配置を破壊していた)
 - **タスク**: zukan プレビュー: resize-mode 切替時のレイアウト崩壊バグを修正 (body.resize-mode .resizable の position:relative が zukan の absolute 配置を破壊していた)
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 218, "Edit": 223, "Read": 32, "Grep": 4, "ToolSearch": 2, "WebSearch": 10, "WebFetch": 4, "Write": 7}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-01T18:29:55Z - sw.js 601→602 バンプ + Codex の RGBA 透過 + 仕様寸法 placeholder 再生成 反映 + HANDOFF Active クローズ
-- **タスク**: sw.js 601→602 バンプ + Codex の RGBA 透過 + 仕様寸法 placeholder 再生成 反映 + HANDOFF Active クローズ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 34
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 218, "Edit": 223, "Read": 32, "Grep": 4, "ToolSearch": 2, "WebSearch": 10, "WebFetch": 4, "Write": 7}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
