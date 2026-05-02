@@ -780,6 +780,29 @@ body.resize-mode .resizable.edge-linked {
   outline-offset: 3px;
 }
 
+/* === ワイヤーフレーム表示モード === */
+/* 背景・装飾画像を消して bbox 線だけ残す。 Codex に渡す参照用 */
+body.wireframe-only .stage {
+  background: #ffffff !important;
+}
+body.wireframe-only .resizable {
+  background: transparent !important;
+  background-image: none !important;
+  border: 2px solid #1a1a1a !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #1a1a1a !important;
+}
+body.wireframe-only .resize-handle,
+body.wireframe-only .resize-size-label,
+body.wireframe-only .ruler {
+  display: none !important;
+}
+body.wireframe-only .editable-text {
+  background: transparent !important;
+  outline: none !important;
+}
+
 /* 数値入力パネル */
 .numeric-panel {
   position: fixed;
@@ -972,6 +995,8 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
+    <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
+    <button id="export-wireframe-png" title="現在の bbox 配置を 2100×900 の白背景 PNG で書き出し (Codex に渡す参照画像用)">🖼 ワイヤー PNG</button>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
