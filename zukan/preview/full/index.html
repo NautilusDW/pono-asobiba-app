@@ -940,38 +940,46 @@ body.book-tilt #safe-area {
 }
 body.book-tilt .userbox { transform-style: preserve-3d; }
 
-/* === Corner Pin / Mesh Pin モード ===
-   各ページに 4 つの cell container (2×2 mesh) を配置、 各 cell に matrix3d。
-   9 制御点 / page を独立に動かす */
-.page-pin-container {
+/* === ベジェワープモード ===
+   ページを html2canvas でテクスチャ化 → WebGL canvas に bicubic Bezier patch で warp。
+   16 制御点 / page (= 32 点合計) をドラッグして本のページの曲面を作る */
+#bezier-canvas {
   position: absolute;
+  left: 0; top: 0;
+  width: 1600px; height: 900px;  /* SAFE_W × SAFE_H、 内部解像度は JS で 2x */
   pointer-events: none;
-  transform-origin: 0 0;
+  z-index: 80;
+  display: none;
 }
-.page-cell {
+#bezier-handle-layer {
   position: absolute;
+  inset: 0;
   pointer-events: none;
-  transform-origin: 0 0;
-  overflow: visible;
+  z-index: 100;
+  display: none;
 }
-.page-cell > .userbox { pointer-events: auto; }
-.page-corner {
+body.corner-pin-mode #bezier-canvas,
+body.corner-pin-mode #bezier-handle-layer { display: block; }
+/* 制御点ハンドル */
+.bezier-handle {
   position: absolute;
-  width: 18px; height: 18px;
-  margin: -9px 0 0 -9px;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
   background: #ff50c8;
   border: 2px solid #fff;
   border-radius: 50%;
   cursor: move;
-  z-index: 100;
+  pointer-events: auto;
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
-.page-corner[data-page="right"] { background: #50c8ff; }
-/* 中央線 / 中央点ハンドルは少し小さく */
-.page-corner.mid { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
-body:not(.corner-pin-mode) .page-corner { display: none; }
-body:not(.corner-pin-mode) .page-cell { transform: none !important; }
-body.corner-pin-mode .userbox { background: rgba(255, 178, 86, 0.18); }
+.bezier-handle[data-page="right"] { background: #50c8ff; }
+/* 角の制御点だけ少し大きく (4 隅は形を決める基準なので強調) */
+.bezier-handle.corner { width: 18px; height: 18px; margin: -9px 0 0 -9px; }
+/* ベジェモード中は元の userbox を隠す (canvas 上で warp された表示を見せる) */
+body.corner-pin-mode .userbox,
+body.corner-pin-mode .resizable {
+  visibility: hidden !important;
+}
 
 /* PNG export 選択メニュー (split button のドロップダウン) */
 .png-export-menu {
@@ -1367,7 +1375,7 @@ body.resize-mode .ruler { display: block; }
     <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
-    <button id="corner-pin-toggle" title="ページを 2×2 cell に分割した 9 制御点 (3×3) を独立にドラッグ。 4 隅 + 中央 + 各辺中点で本のページの曲がりを近似 (= Subdivided Corner Pin / メッシュピン)">🎯 メッシュピン OFF</button>
+    <button id="corner-pin-toggle" title="bicubic Bezier patch (4×4 = 16 制御点 / page、 32 点合計) でページを真の曲面として warp。 ON にした瞬間にページを html2canvas でスナップショット撮影 → WebGL シェーダ内で曲面変形">🌀 ベジェワープ OFF</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
       <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
@@ -1445,12 +1453,11 @@ body.resize-mode .ruler { display: block; }
     <div class="safe-area zukan-safe" id="safe-area">
       <!-- センター位置の見える化 (show-safe で表示) -->
       <div class="center-dot" aria-hidden="true"></div>
-      <!-- メッシュピン (Subdivided Corner Pin)。 各ページを 2×2 cell に分割 (= 4 cell)、
-           各 cell に独立な matrix3d を計算。 ページの 3×3 の制御点 (= 9 点 / page, 18 点合計)
-           を独立にドラッグすることで本のページの曲がりを近似。 cell container と
-           ハンドルは JS で動的生成 -->
-      <div class="page-pin-container" id="page-pin-left" data-page="left"></div>
-      <div class="page-pin-container" id="page-pin-right" data-page="right"></div>
+      <!-- ベジェワープ (Bicubic Bezier Patch)。 各ページを 4×4 = 16 制御点で
+           bicubic Bezier 曲面として WebGL シェーダ内で warp。 制御点は 32 個合計、
+           動かすたびに canvas を再描画 (60fps)。 canvas + ハンドルは JS で動的生成 -->
+      <canvas id="bezier-canvas" data-page="all"></canvas>
+      <div id="bezier-handle-layer"></div>
       <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る -->
     </div>
 
@@ -2328,7 +2335,7 @@ function takeLayoutSnapshot() {
   data.__texts = collectEditableTexts();
   data.__userboxes = collectUserboxes();
   data.__hidden = collectHiddenKeys();
-  if (typeof meshPin === 'object' && meshPin) data.__meshPin = JSON.parse(JSON.stringify(meshPin));
+  if (typeof bezierMesh === 'object' && bezierMesh) data.__bezierMesh = JSON.parse(JSON.stringify(bezierMesh));
   return data;
 }
 function collectHiddenKeys() {
@@ -2460,39 +2467,26 @@ function loadResizeState() {
     if (data.__guides) restoreGuides(data.__guides);
     if (data.__texts) applyEditableTexts(data.__texts);
     if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
-    if (data.__meshPin && typeof meshPin === 'object') {
+    if (data.__bezierMesh && typeof bezierMesh === 'object') {
+      // 4×4 制御点 (= 16 / page) を読み込む
       ['left', 'right'].forEach(p => {
-        const mp = data.__meshPin[p];
-        if (!Array.isArray(mp) || mp.length !== 3) return;
-        for (let r = 0; r < 3; r++) {
-          if (!Array.isArray(mp[r]) || mp[r].length !== 3) continue;
-          for (let c = 0; c < 3; c++) {
+        const mp = data.__bezierMesh[p];
+        if (!Array.isArray(mp) || mp.length !== BEZ_N) return;
+        for (let r = 0; r < BEZ_N; r++) {
+          if (!Array.isArray(mp[r]) || mp[r].length !== BEZ_N) continue;
+          for (let c = 0; c < BEZ_N; c++) {
             const pt = mp[r][c];
             if (pt && typeof pt.x === 'number' && typeof pt.y === 'number') {
-              meshPin[p][r][c] = { x: pt.x, y: pt.y };
+              bezierMesh[p][r][c] = { x: pt.x, y: pt.y };
             }
           }
         }
       });
-      if (typeof applyMeshPin === 'function') applyMeshPin();
-    } else if (data.__cornerPin && typeof meshPin === 'object') {
-      // 旧 __cornerPin (4 角 / page) → 新 __meshPin (3×3 / page) を双線形補間で生成
-      ['left', 'right'].forEach(p => {
-        const cp = data.__cornerPin[p];
-        if (!Array.isArray(cp) || cp.length !== 4) return;
-        const baseLeft = p === 'left' ? 0 : PAGE_W;
-        const tl = cp[0], tr = cp[1], br = cp[2], bl = cp[3];
-        for (let r = 0; r < 3; r++) {
-          for (let c = 0; c < 3; c++) {
-            const u = c / 2, v = r / 2;
-            const x = (1-u)*(1-v)*tl.x + u*(1-v)*tr.x + (1-u)*v*bl.x + u*v*br.x;
-            const y = (1-u)*(1-v)*tl.y + u*(1-v)*tr.y + (1-u)*v*bl.y + u*v*br.y;
-            meshPin[p][r][c] = { x: x - baseLeft, y };  // safe-area → page-local
-          }
-        }
-      });
-      if (typeof applyMeshPin === 'function') applyMeshPin();
+      // 描画は corner-pin-mode が ON の時だけ意味がある (snapshot が必要)
+      // 制御点位置だけは next toggle-on の時に反映される
     }
+    // 旧データ (__meshPin 3×3 / __cornerPin 4 角) は新しい bezier 4×4 とは
+    // 制御点の意味が異なるので migration はせず、 デフォルトの平面状態にリセット。
   } catch(e) {}
 }
 function resetResizeState() {
@@ -3676,191 +3670,284 @@ function setElTransform(el) {
   el.style.transform = t;
 }
 
-// ───── Subdivided Corner Pin (Mesh Pin) ─────
-// 各ページを 2×2 cell に分割 (= 4 cell × 2 page = 8 cell)。
-// 制御点は 3×3 の格子 (= 9 点 / page, 18 点合計) を独立に動かせる。
-// 各 cell に matrix3d を割り当てて、 4 cell の境界が滑らかにつながる
-// (隣接 cell が同じ mesh point を共有するため C0 連続)。
-// 座標系: meshPin[page][row][col] は **page-local** (0..PAGE_W × 0..SAFE_H)。
-// ハンドルは safe-area 座標で表示するので baseLeft を足して位置決め。
+// ───── Bezier Warp (Bicubic Bezier Patch on WebGL) ─────
+// 各ページを 4×4 = 16 制御点 / page (合計 32 点) で曲面定義。
+// html2canvas でページ全体をテクスチャ化、 WebGL の頂点シェーダ内で
+// bicubic Bezier 公式に従って各頂点位置を warp。 制御点を動かすたびに
+// 再描画 (60fps)、 真のなめらかな曲面で本のページの曲がりを表現できる。
+// 座標系: bezierMesh[page][row][col].{x,y} は **page-local** (0..PAGE_W × 0..SAFE_H)
 const SAFE_W = 1600, SAFE_H = 900;
-const PAGE_W = SAFE_W / 2;   // 800
-const HALF_W = PAGE_W / 2;   // 400
-const HALF_H = SAFE_H / 2;   // 450
+const PAGE_W = SAFE_W / 2;     // 800
+const BEZ_N = 4;                // 4×4 control points / page
+const BEZ_TESS = 24;            // 24×24 tessellation / page (1152 三角形)
 
-function _initMeshGrid() {
+function _initBezierGrid() {
   const g = [];
-  for (let r = 0; r < 3; r++) {
+  for (let r = 0; r < BEZ_N; r++) {
     g[r] = [];
-    for (let c = 0; c < 3; c++) g[r][c] = { x: c * HALF_W, y: r * HALF_H };
+    for (let c = 0; c < BEZ_N; c++) {
+      g[r][c] = {
+        x: c * (PAGE_W / (BEZ_N - 1)),
+        y: r * (SAFE_H / (BEZ_N - 1)),
+      };
+    }
   }
   return g;
 }
-const meshPin = {
-  left:  _initMeshGrid(),
-  right: _initMeshGrid(),
+const bezierMesh = {
+  left:  _initBezierGrid(),
+  right: _initBezierGrid(),
 };
 
-function _adj(m) {
-  return [
-    m[4]*m[8]-m[5]*m[7], m[2]*m[7]-m[1]*m[8], m[1]*m[5]-m[2]*m[4],
-    m[5]*m[6]-m[3]*m[8], m[0]*m[8]-m[2]*m[6], m[2]*m[3]-m[0]*m[5],
-    m[3]*m[7]-m[4]*m[6], m[1]*m[6]-m[0]*m[7], m[0]*m[4]-m[1]*m[3]
-  ];
-}
-function _multmm(a, b) {
-  const c = new Array(9);
-  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
-    let s = 0; for (let k = 0; k < 3; k++) s += a[3*i+k] * b[3*k+j];
-    c[3*i+j] = s;
+// WebGL 内部状態
+let _gl = null, _glProgram = null, _glVbuf = null, _glTex = null;
+let _glVertexCount = 0;
+const _glLoc = {};
+let _bezCanvas = null;
+let _glTextureCanvas = null;   // html2canvas の出力 (snapshot)
+
+const _VS_SRC = `
+attribute vec2 a_uv;
+uniform vec2 u_cp[16];
+uniform vec2 u_pagePos;
+uniform vec2 u_safeSize;
+varying vec2 v_uv;
+
+vec2 bezierEval(float u, float v) {
+  float ui = 1.0 - u;
+  float vi = 1.0 - v;
+  vec4 bu = vec4(ui*ui*ui, 3.0*u*ui*ui, 3.0*u*u*ui, u*u*u);
+  vec4 bv = vec4(vi*vi*vi, 3.0*v*vi*vi, 3.0*v*v*vi, v*v*v);
+  vec2 p = vec2(0.0);
+  for (int r = 0; r < 4; r++) {
+    for (int c = 0; c < 4; c++) {
+      p += bu[c] * bv[r] * u_cp[r*4+c];
+    }
   }
-  return c;
-}
-function _multmv(m, v) {
-  return [
-    m[0]*v[0] + m[1]*v[1] + m[2]*v[2],
-    m[3]*v[0] + m[4]*v[1] + m[5]*v[2],
-    m[6]*v[0] + m[7]*v[1] + m[8]*v[2],
-  ];
-}
-function _basisToPoints(x1, y1, x2, y2, x3, y3, x4, y4) {
-  const m = [x1, x2, x3, y1, y2, y3, 1, 1, 1];
-  const v = _multmv(_adj(m), [x4, y4, 1]);
-  return _multmm(m, [v[0], 0, 0,  0, v[1], 0,  0, 0, v[2]]);
-}
-function _general2DProjection(x1s,y1s,x1d,y1d, x2s,y2s,x2d,y2d, x3s,y3s,x3d,y3d, x4s,y4s,x4d,y4d) {
-  const s = _basisToPoints(x1s,y1s, x2s,y2s, x3s,y3s, x4s,y4s);
-  const d = _basisToPoints(x1d,y1d, x2d,y2d, x3d,y3d, x4d,y4d);
-  return _multmm(d, _adj(s));
-}
-function getMatrix3d(w, h, p) {
-  // p[0..3] = TL, TR, BR, BL の dst 座標
-  let t = _general2DProjection(
-    0, 0, p[0].x, p[0].y,
-    w, 0, p[1].x, p[1].y,
-    0, h, p[3].x, p[3].y,
-    w, h, p[2].x, p[2].y
-  );
-  for (let i = 0; i < 9; i++) t[i] = t[i] / t[8];
-  // CSS matrix3d の column-major に並べる
-  return [
-    t[0], t[3], 0, t[6],
-    t[1], t[4], 0, t[7],
-    0,    0,    1, 0,
-    t[2], t[5], 0, t[8]
-  ];
+  return p;
 }
 
-// 各ページに 4 cell (2×2) の container を JS で動的生成
-function _ensureCellContainers() {
-  ['left', 'right'].forEach(page => {
-    const container = document.getElementById('page-pin-' + page);
-    if (!container || container._cellsInit) return;
-    container._cellsInit = true;
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 2; c++) {
-        const cell = document.createElement('div');
-        cell.className = 'page-cell';
-        cell.dataset.page = page;
-        cell.dataset.col = c;
-        cell.dataset.row = r;
-        cell.id = `page-cell-${page}-${c}-${r}`;
-        container.appendChild(cell);
-      }
+void main() {
+  v_uv = a_uv;
+  vec2 pageLocal = bezierEval(a_uv.x, a_uv.y);
+  vec2 safePos = pageLocal + u_pagePos;
+  vec2 clip = (safePos / u_safeSize) * 2.0 - 1.0;
+  clip.y = -clip.y;
+  gl_Position = vec4(clip, 0.0, 1.0);
+}
+`;
+
+const _FS_SRC = `
+precision mediump float;
+varying vec2 v_uv;
+uniform sampler2D u_tex;
+uniform vec2 u_uvOffset;
+uniform vec2 u_uvScale;
+void main() {
+  vec2 uv = u_uvOffset + v_uv * u_uvScale;
+  gl_FragColor = texture2D(u_tex, uv);
+}
+`;
+
+function _glCompileShader(gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    console.error('shader compile error:', gl.getShaderInfoLog(sh));
+    return null;
+  }
+  return sh;
+}
+
+function _initWebGL() {
+  if (_gl) return _gl;
+  _bezCanvas = document.getElementById('bezier-canvas');
+  if (!_bezCanvas) return null;
+  _bezCanvas.width  = SAFE_W * 2;   // retina
+  _bezCanvas.height = SAFE_H * 2;
+  _gl = _bezCanvas.getContext('webgl', { premultipliedAlpha: true, alpha: true });
+  if (!_gl) {
+    console.error('WebGL not available');
+    return null;
+  }
+  const gl = _gl;
+  const vs = _glCompileShader(gl, gl.VERTEX_SHADER, _VS_SRC);
+  const fs = _glCompileShader(gl, gl.FRAGMENT_SHADER, _FS_SRC);
+  if (!vs || !fs) return null;
+  _glProgram = gl.createProgram();
+  gl.attachShader(_glProgram, vs);
+  gl.attachShader(_glProgram, fs);
+  gl.linkProgram(_glProgram);
+  if (!gl.getProgramParameter(_glProgram, gl.LINK_STATUS)) {
+    console.error('program link error:', gl.getProgramInfoLog(_glProgram));
+    return null;
+  }
+  _glLoc.a_uv       = gl.getAttribLocation(_glProgram, 'a_uv');
+  _glLoc.u_cp       = gl.getUniformLocation(_glProgram, 'u_cp');
+  _glLoc.u_pagePos  = gl.getUniformLocation(_glProgram, 'u_pagePos');
+  _glLoc.u_safeSize = gl.getUniformLocation(_glProgram, 'u_safeSize');
+  _glLoc.u_tex      = gl.getUniformLocation(_glProgram, 'u_tex');
+  _glLoc.u_uvOffset = gl.getUniformLocation(_glProgram, 'u_uvOffset');
+  _glLoc.u_uvScale  = gl.getUniformLocation(_glProgram, 'u_uvScale');
+  // 頂点バッファ: BEZ_TESS×BEZ_TESS の uv 格子 (= 2 三角形 / quad)
+  const verts = [];
+  const N = BEZ_TESS;
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const u0 = c / N, u1 = (c + 1) / N;
+      const v0 = r / N, v1 = (r + 1) / N;
+      verts.push(u0, v0,  u1, v0,  u0, v1);
+      verts.push(u1, v0,  u1, v1,  u0, v1);
     }
-  });
+  }
+  _glVertexCount = verts.length / 2;
+  _glVbuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, _glVbuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+  return gl;
 }
 
-// 各ページに 9 個 (3×3) のハンドルを safe-area 直下に動的生成
-function _ensureMeshHandles() {
-  const safe = document.getElementById('safe-area');
-  if (!safe) return;
+function _uploadCP(gl, page) {
+  const arr = new Float32Array(16 * 2);
+  const grid = bezierMesh[page];
+  for (let r = 0; r < BEZ_N; r++) {
+    for (let c = 0; c < BEZ_N; c++) {
+      arr[(r*4+c)*2]     = grid[r][c].x;
+      arr[(r*4+c)*2 + 1] = grid[r][c].y;
+    }
+  }
+  gl.uniform2fv(_glLoc.u_cp, arr);
+}
+
+function _uploadTexture(gl, src) {
+  if (!src) return;
+  if (!_glTex) _glTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, _glTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+}
+
+async function _captureSnapshot() {
+  // 撮影中はベジェ canvas / ハンドルを隠して、 元の userbox を見える状態にする
+  const wasMode = document.body.classList.contains('corner-pin-mode');
+  document.body.classList.remove('corner-pin-mode');
+  if (_bezCanvas) _bezCanvas.style.display = 'none';
+  document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = 'none');
+  await new Promise(r => requestAnimationFrame(r));   // CSS 反映待ち
+  const safeArea = document.getElementById('safe-area');
+  let snapshot = null;
+  try {
+    if (typeof html2canvas !== 'function') {
+      console.warn('html2canvas not loaded');
+      return null;
+    }
+    snapshot = await html2canvas(safeArea, {
+      backgroundColor: null,
+      scale: 2,
+      logging: false,
+      width: SAFE_W,
+      height: SAFE_H,
+      useCORS: true,
+    });
+  } catch (e) {
+    console.error('html2canvas failed:', e);
+  }
+  if (wasMode) document.body.classList.add('corner-pin-mode');
+  if (_bezCanvas) _bezCanvas.style.display = '';
+  document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = '');
+  _glTextureCanvas = snapshot;
+  return snapshot;
+}
+
+function applyBezierWarp() {
+  if (!document.body.classList.contains('corner-pin-mode')) return;
+  const gl = _initWebGL();
+  if (!gl || !_glTextureCanvas) return;
+  _uploadTexture(gl, _glTextureCanvas);
+  gl.viewport(0, 0, _bezCanvas.width, _bezCanvas.height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(_glProgram);
+  gl.bindBuffer(gl.ARRAY_BUFFER, _glVbuf);
+  gl.enableVertexAttribArray(_glLoc.a_uv);
+  gl.vertexAttribPointer(_glLoc.a_uv, 2, gl.FLOAT, false, 0, 0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, _glTex);
+  gl.uniform1i(_glLoc.u_tex, 0);
+  gl.uniform2f(_glLoc.u_safeSize, SAFE_W, SAFE_H);
+  // 左ページ
+  _uploadCP(gl, 'left');
+  gl.uniform2f(_glLoc.u_pagePos, 0, 0);
+  gl.uniform2f(_glLoc.u_uvOffset, 0, 0);
+  gl.uniform2f(_glLoc.u_uvScale, 0.5, 1);
+  gl.drawArrays(gl.TRIANGLES, 0, _glVertexCount);
+  // 右ページ
+  _uploadCP(gl, 'right');
+  gl.uniform2f(_glLoc.u_pagePos, PAGE_W, 0);
+  gl.uniform2f(_glLoc.u_uvOffset, 0.5, 0);
+  gl.uniform2f(_glLoc.u_uvScale, 0.5, 1);
+  gl.drawArrays(gl.TRIANGLES, 0, _glVertexCount);
+  _updateBezierHandlePositions();
+}
+
+function _ensureBezierHandles() {
+  const layer = document.getElementById('bezier-handle-layer');
+  if (!layer || layer._init) return;
+  layer._init = true;
   ['left', 'right'].forEach(page => {
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        if (document.querySelector(`.page-corner[data-page="${page}"][data-col="${c}"][data-row="${r}"]`)) continue;
+    for (let r = 0; r < BEZ_N; r++) {
+      for (let c = 0; c < BEZ_N; c++) {
         const h = document.createElement('div');
-        h.className = 'page-corner';
-        if (c === 1 || r === 1) h.classList.add('mid');  // 角以外は少し小さく
+        h.className = 'bezier-handle';
+        if ((r === 0 || r === BEZ_N - 1) && (c === 0 || c === BEZ_N - 1)) {
+          h.classList.add('corner');
+        }
         h.dataset.page = page;
-        h.dataset.col = c;
         h.dataset.row = r;
-        safe.appendChild(h);
+        h.dataset.col = c;
+        layer.appendChild(h);
       }
     }
   });
+  _attachBezierHandlers();
 }
 
-function applyMeshPin() {
-  _ensureCellContainers();
+function _updateBezierHandlePositions() {
   ['left', 'right'].forEach(page => {
-    const grid = meshPin[page];
+    const grid = bezierMesh[page];
     const baseLeft = page === 'left' ? 0 : PAGE_W;
-    const container = document.getElementById('page-pin-' + page);
-    if (!container) return;
-    container.style.left = baseLeft + 'px';
-    container.style.top = '0';
-    container.style.width = PAGE_W + 'px';
-    container.style.height = SAFE_H + 'px';
-    container.style.transform = '';   // container 自体は変形しない (cell 単位で変形)
-
-    const inMode = document.body.classList.contains('corner-pin-mode');
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 2; c++) {
-        const cell = document.getElementById(`page-cell-${page}-${c}-${r}`);
-        if (!cell) continue;
-        const srcLeft = c * HALF_W;
-        const srcTop  = r * HALF_H;
-        cell.style.left   = srcLeft + 'px';
-        cell.style.top    = srcTop  + 'px';
-        cell.style.width  = HALF_W  + 'px';
-        cell.style.height = HALF_H  + 'px';
-        if (inMode) {
-          // この cell の 4 角 (page-local 座標、 順序 = TL, TR, BR, BL)
-          const dst = [
-            grid[r][c],
-            grid[r][c+1],
-            grid[r+1][c+1],
-            grid[r+1][c],
-          ];
-          // matrix3d は cell 内ローカル座標 (cell 左上を原点) で計算
-          const dstLocal = dst.map(p => ({ x: p.x - srcLeft, y: p.y - srcTop }));
-          const m = getMatrix3d(HALF_W, HALF_H, dstLocal);
-          cell.style.transform = `matrix3d(${m.join(',')})`;
-        } else {
-          cell.style.transform = '';
-        }
-      }
-    }
-  });
-  // ハンドル位置更新 (page-local → safe-area 座標)
-  ['left', 'right'].forEach(page => {
-    const grid = meshPin[page];
-    const baseLeft = page === 'left' ? 0 : PAGE_W;
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        const handle = document.querySelector(`.page-corner[data-page="${page}"][data-col="${c}"][data-row="${r}"]`);
-        if (handle) {
-          handle.style.left = (grid[r][c].x + baseLeft) + 'px';
-          handle.style.top  = grid[r][c].y + 'px';
+    for (let r = 0; r < BEZ_N; r++) {
+      for (let c = 0; c < BEZ_N; c++) {
+        const h = document.querySelector(
+          `.bezier-handle[data-page="${page}"][data-row="${r}"][data-col="${c}"]`);
+        if (h) {
+          h.style.left = (grid[r][c].x + baseLeft) + 'px';
+          h.style.top  = grid[r][c].y + 'px';
         }
       }
     }
   });
 }
 
-function attachMeshHandles() {
-  document.querySelectorAll('.page-corner').forEach(h => {
+function _attachBezierHandlers() {
+  document.querySelectorAll('.bezier-handle').forEach(h => {
     if (h._handlerAttached) return;
     h._handlerAttached = true;
     h.addEventListener('mousedown', e => {
       e.stopPropagation();
       e.preventDefault();
       const page = h.dataset.page;
-      const c = parseInt(h.dataset.col, 10);
       const r = parseInt(h.dataset.row, 10);
+      const c = parseInt(h.dataset.col, 10);
       const startX = e.clientX, startY = e.clientY;
-      const startPos = { ...meshPin[page][r][c] };
+      const startPos = { ...bezierMesh[page][r][c] };
       const stageEl0 = document.getElementById('stage');
       const sR = stageEl0.getBoundingClientRect();
       const sW = parseFloat(getComputedStyle(stageEl0).width);
@@ -3868,8 +3955,8 @@ function attachMeshHandles() {
       const onMove = (e2) => {
         const dx = (e2.clientX - startX) / scale;
         const dy = (e2.clientY - startY) / scale;
-        meshPin[page][r][c] = { x: startPos.x + dx, y: startPos.y + dy };
-        applyMeshPin();
+        bezierMesh[page][r][c] = { x: startPos.x + dx, y: startPos.y + dy };
+        applyBezierWarp();
       };
       const onUp = () => {
         window.removeEventListener('mousemove', onMove);
@@ -3882,82 +3969,31 @@ function attachMeshHandles() {
   });
 }
 
-function reparentUserboxesIntoPages() {
-  // Mesh Pin ON: userbox を center X/Y で 該当 cell に reparent
-  // 元の position は dataset に退避してトグル OFF 時に復元する
-  _ensureCellContainers();
-  document.querySelectorAll('.userbox').forEach(el => {
-    // 既にセルの中にある場合は二重 reparent しない
-    // (dataset.origLeft が残ってる状態で再度 reparent すると、 現在の page-local left を
-    //  もう一度 baseLeft 分シフトしてしまい、 left=20 → さらに -800 されて画面外に飛ぶ)
-    if (el.parentElement && el.parentElement.classList.contains('page-cell')) return;
-    const left = parseFloat(el.style.left) || 0;
-    const top  = parseFloat(el.style.top)  || 0;
-    const tx = el._tx || 0;
-    const ty = el._ty || 0;
-    const w = parseFloat(el.style.width)  || el.offsetWidth  || 0;
-    const h = parseFloat(el.style.height) || el.offsetHeight || 0;
-    const cx = left + tx + w / 2;
-    const cy = top  + ty + h / 2;
-    const page = cx < PAGE_W ? 'left' : 'right';
-    const baseLeft = page === 'left' ? 0 : PAGE_W;
-    const cellCol = (cx - baseLeft) < HALF_W ? 0 : 1;
-    const cellRow = cy < HALF_H ? 0 : 1;
-    const cell = document.getElementById(`page-cell-${page}-${cellCol}-${cellRow}`);
-    if (!cell) return;
-    el.dataset.origLeft = el.style.left || '';
-    el.dataset.origTop  = el.style.top  || '';
-    el.dataset.origPage = page;
-    el.dataset.origCellCol = String(cellCol);
-    el.dataset.origCellRow = String(cellRow);
-    el.style.left = (left - baseLeft - cellCol * HALF_W) + 'px';
-    el.style.top  = (top - cellRow * HALF_H) + 'px';
-    cell.appendChild(el);
-  });
-}
-function unparentUserboxesFromPages() {
-  const safe = document.getElementById('safe-area');
-  document.querySelectorAll('.userbox').forEach(el => {
-    if (el.dataset.origLeft !== undefined) {
-      if (el.dataset.origLeft) el.style.left = el.dataset.origLeft;
-      if (el.dataset.origTop)  el.style.top  = el.dataset.origTop;
-      delete el.dataset.origLeft;
-      delete el.dataset.origTop;
-      delete el.dataset.origPage;
-      delete el.dataset.origCellCol;
-      delete el.dataset.origCellRow;
-    }
-    safe.appendChild(el);
-  });
-}
-
 const cornerPinBtn = document.getElementById('corner-pin-toggle');
-function setCornerPinMode(on) {
-  // 既に同じ状態なら何もしない (連続クリック / 二重起動で reparent が複数回走るのを防ぐ)
+async function setCornerPinMode(on) {
   const cur = document.body.classList.contains('corner-pin-mode');
   if (cur === on) return;
   if (on) {
+    if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ 撮影中…';
+    await _captureSnapshot();
     document.body.classList.add('corner-pin-mode');
-    reparentUserboxesIntoPages();
+    _ensureBezierHandles();
+    _initWebGL();
+    applyBezierWarp();
   } else {
-    unparentUserboxesFromPages();
     document.body.classList.remove('corner-pin-mode');
+    _glTextureCanvas = null;
   }
   if (cornerPinBtn) {
-    cornerPinBtn.textContent = on ? '🎯 メッシュピン ON' : '🎯 メッシュピン OFF';
+    cornerPinBtn.textContent = on ? '🌀 ベジェワープ ON' : '🌀 ベジェワープ OFF';
     cornerPinBtn.classList.toggle('active', on);
   }
-  applyMeshPin();
-  // ON/OFF 状態は localStorage に永続化しない。
-  // 過去のセッションで auto-toggle されたことで「何もしてないのに崩れて見える」 問題を防ぐため、
-  // メッシュピンは毎回 OFF スタートでユーザーが明示的に ON にする運用にする。
 }
-cornerPinBtn && cornerPinBtn.addEventListener('click', () => setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
-_ensureCellContainers();
-_ensureMeshHandles();
-attachMeshHandles();
-applyMeshPin();
-// 旧バージョンで保存された ON フラグが残っていると毎回 auto-toggle されてしまうので削除
+cornerPinBtn && cornerPinBtn.addEventListener('click', () =>
+  setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
+// 初期化時はハンドルだけ準備 (実体は OFF 状態で非表示)。 WebGL は撮影時に init。
+_ensureBezierHandles();
+// 旧バージョンで保存された ON フラグが残っていると毎回 auto-toggle されるので削除
 try { localStorage.removeItem('zukan_corner_pin'); } catch(_) {}
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
