@@ -786,6 +786,62 @@ body.resize-mode .resizable.edge-linked {
   outline-offset: 3px;
 }
 
+/* 「隠す」 で付与: display:none で非表示、 saved-layout に永続化される */
+.user-hidden { display: none !important; }
+
+/* === userbox: ユーザーがドラッグで作る矩形フレーム (zukan からポート) === */
+.userbox {
+  position: absolute;
+  background: rgba(255, 178, 86, 0.55);
+  border: 3px solid rgba(140, 75, 30, 0.95);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.userbox-badge {
+  position: absolute;
+  top: -22px; left: 0;
+  background: rgba(40, 30, 20, 0.92);
+  color: #ffe7a3;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  cursor: text;
+  white-space: nowrap;
+  outline: none;
+  z-index: 30;
+  pointer-events: auto;
+}
+.userbox-badge:focus { background: #2c1c0c; outline: 2px solid #ff8a3d; }
+.userbox-del {
+  position: absolute;
+  top: -22px; right: 0;
+  width: 20px; height: 20px;
+  background: rgba(180, 60, 60, 0.95);
+  color: #fff;
+  border-radius: 4px;
+  font: 700 14px/18px ui-monospace, Menlo, Consolas, monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 31;
+  user-select: none;
+}
+.userbox-del:hover { background: #d04040; }
+body:not(.resize-mode):not(.draw-mode) .userbox-badge,
+body:not(.resize-mode):not(.draw-mode) .userbox-del { display: none; }
+body.resize-mode .stage { cursor: crosshair; }
+body.draw-mode .stage { cursor: crosshair; }
+body.draw-mode .resizable { pointer-events: none; }
+body.draw-mode .resize-handle, body.draw-mode .userbox-badge, body.draw-mode .userbox-del { pointer-events: none; }
+.userbox-preview {
+  position: absolute;
+  background: rgba(255, 138, 61, 0.20);
+  border: 2px dashed #ff8a3d;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 70;
+  box-sizing: border-box;
+}
+
 /* === シート画像オーバーレイモード ===
    ユーザー手描きの 1 枚画像 (assets/preview-placeholders/quizland-sheet-v1.png) を
    ステージに被せる。 個別の placeholder bg-image は非表示にして、 CSS-positioned な
@@ -1101,6 +1157,7 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
+    <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <button id="sheet-toggle" title="ユーザー手描きの 1 枚シート画像をステージ全体に重ねる (個別 placeholder は非表示)">🪟 シート画像 OFF</button>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
     <span class="png-export-wrap" style="position:relative;display:inline-block;">
@@ -1137,6 +1194,11 @@ body.resize-mode .ruler { display: block; }
   <div class="np-row">
     <label>TX <input type="number" id="np-tx" step="1"></label>
     <label>TY <input type="number" id="np-ty" step="1"></label>
+  </div>
+  <div class="np-section-title" style="margin-top:10px;font-size:11px;font-weight:700;color:#ffba6b;border-top:1px solid #444;padding-top:8px;">表示</div>
+  <div class="np-align-row" style="display:flex;gap:4px;margin-bottom:4px;">
+    <button class="np-align" id="np-hide" title="選択中の要素を非表示にする" style="flex:1;padding:4px 6px;background:#2a2a2a;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer;font:600 12px ui-monospace,monospace;">🗑 隠す</button>
+    <button class="np-align" id="np-show-all" title="非表示にした要素を全て元に戻す" style="flex:1;padding:4px 6px;background:#2a2a2a;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer;font:600 12px ui-monospace,monospace;">↺ 全て表示</button>
   </div>
   <div class="np-hint">
     Shift+クリックで複数選択 / 値変更で全選択へ反映 / 隣接フレームの辺は自動リンク
@@ -1993,6 +2055,7 @@ window.addEventListener('resize', updateBboxLabels);
 // ───── Resize mode (各バウンディングボックスを辺別ハンドルで伸縮 + 移動 + ルーラー/ガイド) ─────
 const RESIZABLE_SPEC = [
   // selector, axes (w,h,wh), label - 全要素 wh で 4 辺 + 4 角ハンドル
+  ['.userbox',                 'wh', 'カスタム枠'],  // ユーザー追加 (zukan からポート)
   ['.hdr-left',                'wh', 'ヘッダーピル'],
   ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
   ['.hdr-left .title-card',    'wh', 'タイトル札'],
@@ -2071,6 +2134,7 @@ document.addEventListener('blur', e => {
 function takeLayoutSnapshot() {
   const data = {};
   RESIZABLE_SPEC.forEach(([sel]) => {
+    if (sel === '.userbox') return;  // userbox は __userboxes に書く
     document.querySelectorAll(sel).forEach((el, i) => {
       data[`${sel}|${i}`] = {
         w: el.style.width || '',
@@ -2083,8 +2147,56 @@ function takeLayoutSnapshot() {
   data.__guides = collectGuides();
   data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
   data.__texts = collectEditableTexts();
+  data.__hidden = collectHiddenKeys();
+  data.__userboxes = collectUserboxes();
   return data;
 }
+function collectHiddenKeys() {
+  return [...document.querySelectorAll('.user-hidden')].map(el => getElHideKey(el)).filter(Boolean);
+}
+function getElHideKey(el) {
+  for (const [sel] of RESIZABLE_SPEC) {
+    if (el.matches(sel)) {
+      const all = [...document.querySelectorAll(sel)];
+      const idx = all.indexOf(el);
+      if (idx >= 0) return sel + '|' + idx;
+    }
+  }
+  return null;
+}
+function applyHidden(key) {
+  const m = key && key.match(/^(.+)\|(\d+)$/);
+  if (!m) return;
+  const all = document.querySelectorAll(m[1]);
+  const el = all[parseInt(m[2], 10)];
+  if (el) el.classList.add('user-hidden');
+}
+function hideSelectedElements() {
+  const sel = [...selectedElements];
+  if (sel.length === 0) {
+    if (typeof showLayoutToast === 'function') showLayoutToast('隠す対象を選択してください');
+    return;
+  }
+  sel.forEach(el => el.classList.add('user-hidden'));
+  selectedElements.clear();
+  refreshSelectionUI && refreshSelectionUI();
+  saveResizeState && saveResizeState();
+  if (typeof showLayoutToast === 'function') showLayoutToast(`${sel.length} 個を隠しました (↺ 全て表示 で戻す)`);
+}
+function showAllHiddenElements() {
+  const hidden = document.querySelectorAll('.user-hidden');
+  if (hidden.length === 0) {
+    if (typeof showLayoutToast === 'function') showLayoutToast('隠してる枠はありません');
+    return;
+  }
+  hidden.forEach(el => el.classList.remove('user-hidden'));
+  saveResizeState && saveResizeState();
+  if (typeof showLayoutToast === 'function') showLayoutToast(`${hidden.length} 個を再表示`);
+}
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'np-hide') hideSelectedElements();
+  if (e.target && e.target.id === 'np-show-all') showAllHiddenElements();
+});
 
 // 直近に保存した JSON (dirty 判定用)
 let lastSavedLayoutJson = null;
@@ -2191,7 +2303,10 @@ function loadResizeState() {
     const raw = localStorage.getItem(RESIZE_KEY);
     if (!raw) return;
     const data = JSON.parse(raw);
+    // userbox は __userboxes が真実 (pipe-key より先に作る)
+    if (typeof restoreUserboxes === 'function' && data.__userboxes) restoreUserboxes(data.__userboxes);
     RESIZABLE_SPEC.forEach(([sel]) => {
+      if (sel === '.userbox') return;  // 上で __userboxes から復元済み
       document.querySelectorAll(sel).forEach((el, i) => {
         const s = data[`${sel}|${i}`];
         if (!s) return;
@@ -2207,6 +2322,7 @@ function loadResizeState() {
     if (data.__headerH) document.documentElement.style.setProperty('--header-h', data.__headerH);
     if (data.__guides) restoreGuides(data.__guides);
     if (data.__texts) applyEditableTexts(data.__texts);
+    if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
   } catch(e) {}
 }
 function resetResizeState() {
@@ -2714,6 +2830,7 @@ function disableResize() {
   document.querySelectorAll('.resize-handle, .resize-size-label').forEach(el => el.remove());
   document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); el.classList.remove('selected'); el.classList.remove('edge-linked'); delete el._resizeUpdateLabel; });
   clearSelection();
+  if (typeof setDrawMode === 'function' && drawModeOn) setDrawMode(false);
 }
 document.getElementById('resize-toggle').addEventListener('click', () => {
   if (document.body.classList.contains('resize-mode')) disableResize();
@@ -2779,6 +2896,159 @@ pngExportMenu && pngExportMenu.addEventListener('click', e => {
   } else if (mode === 'snapshot') {
     snapshotCurrentView('quizland');
   }
+});
+
+// ───── userbox 機能 (zukan からポート) ─────
+const drawBtn = document.getElementById('userbox-add');
+let drawModeOn = false;
+function setDrawMode(on) {
+  drawModeOn = on;
+  document.body.classList.toggle('draw-mode', on);
+  if (drawBtn) {
+    drawBtn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
+    drawBtn.classList.toggle('active', on);
+  }
+}
+drawBtn && drawBtn.addEventListener('click', () => {
+  if (!document.body.classList.contains('resize-mode')) enableResize();
+  setDrawMode(!drawModeOn);
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
+});
+
+let userboxCounter = 0;
+function createUserbox(opts) {
+  // opts: { id?, label?, left, top, w, h, tx?, ty?, bgImage? }
+  userboxCounter += 1;
+  const id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
+  const label = opts.label || ('枠' + userboxCounter);
+  const div = document.createElement('div');
+  div.className = 'userbox';
+  div.dataset.userboxId = id;
+  div.dataset.userboxLabel = label;
+  if (opts.bgImage) {
+    div.dataset.bgImage = opts.bgImage;
+    div.style.backgroundImage = `url("${opts.bgImage}")`;
+    div.style.backgroundSize = 'contain';
+    div.style.backgroundRepeat = 'no-repeat';
+    div.style.backgroundPosition = 'center';
+    div.style.backgroundColor = 'transparent';
+  }
+  div.style.left = opts.left;
+  div.style.top = opts.top;
+  if (opts.w) div.style.width = opts.w;
+  if (opts.h) div.style.height = opts.h;
+  const badge = document.createElement('div');
+  badge.className = 'userbox-badge';
+  badge.contentEditable = 'true';
+  badge.textContent = label;
+  badge.spellcheck = false;
+  badge.addEventListener('mousedown', e => e.stopPropagation());
+  badge.addEventListener('blur', () => {
+    const newLabel = badge.textContent.trim() || ('枠' + userboxCounter);
+    badge.textContent = newLabel;
+    div.dataset.userboxLabel = newLabel;
+    saveResizeState();
+  });
+  badge.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); badge.blur(); }
+  });
+  div.appendChild(badge);
+  const del = document.createElement('div');
+  del.className = 'userbox-del';
+  del.textContent = '×';
+  del.title = '削除';
+  del.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm(`「${div.dataset.userboxLabel}」 を削除しますか？`)) {
+      selectedElements && selectedElements.delete(div);
+      div.remove();
+      saveResizeState();
+      refreshSelectionUI && refreshSelectionUI();
+    }
+  });
+  div.appendChild(del);
+  const target = document.getElementById('safe-area') || stage;
+  target.appendChild(div);
+  if (document.body.classList.contains('resize-mode')) {
+    attachHandle(div, 'wh');
+  }
+  if (opts.tx || opts.ty) {
+    div._tx = opts.tx || 0;
+    div._ty = opts.ty || 0;
+    div.style.transform = `translate(${div._tx}px, ${div._ty}px)`;
+  }
+  return div;
+}
+
+function collectUserboxes() {
+  return [...document.querySelectorAll('.userbox')].map(el => ({
+    id: el.dataset.userboxId,
+    label: el.dataset.userboxLabel,
+    left: el.style.left,
+    top: el.style.top,
+    w: el.style.width,
+    h: el.style.height,
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+    bgImage: el.dataset.bgImage || '',
+  }));
+}
+function restoreUserboxes(arr) {
+  document.querySelectorAll('.userbox').forEach(el => el.remove());
+  if (!Array.isArray(arr)) return;
+  arr.forEach(box => createUserbox(box));
+}
+
+// ステージ mousedown でドラッグ → 新規 userbox 作成
+const _stageEl = document.getElementById('stage');
+_stageEl && _stageEl.addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (e.target.closest('.toolbar, .ruler, .guide, .numeric-panel')) return;
+  if (!drawModeOn && e.target.closest('.resizable, .resize-handle, .userbox-badge, .userbox-del')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const stageRect = _stageEl.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(_stageEl).width);
+  const scale = stageRect.width / stageW || 1;
+  const safe = document.getElementById('safe-area') || _stageEl;
+  const safeRect = safe.getBoundingClientRect();
+  const sx = (e.clientX - safeRect.left) / scale;
+  const sy = (e.clientY - safeRect.top) / scale;
+  const preview = document.createElement('div');
+  preview.className = 'userbox-preview';
+  preview.style.left = sx + 'px';
+  preview.style.top = sy + 'px';
+  preview.style.width = '0px';
+  preview.style.height = '0px';
+  safe.appendChild(preview);
+  const onMove = (e2) => {
+    const x = (e2.clientX - safeRect.left) / scale;
+    const y = (e2.clientY - safeRect.top) / scale;
+    const x0 = Math.min(sx, x), y0 = Math.min(sy, y);
+    const w = Math.abs(x - sx), h = Math.abs(y - sy);
+    preview.style.left = x0 + 'px';
+    preview.style.top = y0 + 'px';
+    preview.style.width = w + 'px';
+    preview.style.height = h + 'px';
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    const w = parseFloat(preview.style.width);
+    const h = parseFloat(preview.style.height);
+    const left = preview.style.left;
+    const top = preview.style.top;
+    preview.remove();
+    if (w >= 20 && h >= 20) {
+      createUserbox({ left, top, w: w + 'px', h: h + 'px' });
+      saveResizeState();
+    }
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
 });
 
 async function snapshotCurrentView(prefix) {

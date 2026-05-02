@@ -919,6 +919,9 @@ body.resize-mode .zukan-safe .resizable {
   border-color: rgba(120, 75, 200, 0.95);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
+/* 「隠す」 で付与: display:none で非表示、 saved-layout に永続化される */
+.user-hidden { display: none !important; }
+
 /* 背景画像入りの userbox は半透明オレンジを消して画像をくっきり見せる */
 .userbox.userbox-with-bg {
   background-color: transparent !important;
@@ -1377,6 +1380,11 @@ body.resize-mode .ruler { display: block; }
   <div class="np-row">
     <label>SCALE% <input type="number" id="np-scale" step="1" placeholder="100"></label>
     <button class="np-apply" id="np-scale-apply" title="選択中の W/H を SCALE% で拡縮">適用</button>
+  </div>
+  <div class="np-section-title">表示</div>
+  <div class="np-align-row">
+    <button class="np-align" id="np-hide" title="選択中の要素を非表示にする (saved-layout に永続化)">🗑 隠す</button>
+    <button class="np-align" id="np-show-all" title="非表示にした要素を全て元に戻す">↺ 全て表示</button>
   </div>
   <div class="np-section-title">整列 (選択中の要素を)</div>
   <div class="np-align-row">
@@ -2283,7 +2291,11 @@ function takeLayoutSnapshot() {
   data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
   data.__texts = collectEditableTexts();
   data.__userboxes = collectUserboxes();
+  data.__hidden = collectHiddenKeys();
   return data;
+}
+function collectHiddenKeys() {
+  return [...document.querySelectorAll('.user-hidden')].map(el => getElHideKey(el)).filter(Boolean);
 }
 
 // 直近に保存した JSON (dirty 判定用)
@@ -2410,6 +2422,7 @@ function loadResizeState() {
     if (data.__headerH) document.documentElement.style.setProperty('--header-h', data.__headerH);
     if (data.__guides) restoreGuides(data.__guides);
     if (data.__texts) applyEditableTexts(data.__texts);
+    if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
   } catch(e) {}
 }
 function resetResizeState() {
@@ -2608,6 +2621,62 @@ document.addEventListener('click', e => {
     updateNumericPanel();
     input.value = '';
   }
+});
+
+// 隠す / 全て表示
+// CSS で `.user-hidden { display: none !important }` を当てて、 saved-layout の
+// `__hidden` 配列にセレクタ + index を永続化する。 「全て表示」 で全部リセット。
+function getElHideKey(el) {
+  // 安定キー: userbox なら id 直、 それ以外は selector|index
+  if (el.classList.contains('userbox') && el.dataset.userboxId) {
+    return 'userbox#' + el.dataset.userboxId;
+  }
+  // RESIZABLE_SPEC のセレクタを順番に試して所属を見つける
+  for (const [sel] of RESIZABLE_SPEC) {
+    if (el.matches(sel)) {
+      const all = [...document.querySelectorAll(sel)];
+      const idx = all.indexOf(el);
+      if (idx >= 0) return sel + '|' + idx;
+    }
+  }
+  return null;
+}
+function applyHidden(key) {
+  if (!key) return;
+  if (key.startsWith('userbox#')) {
+    const id = key.slice(8);
+    const el = document.querySelector(`.userbox[data-userbox-id="${id}"]`);
+    if (el) el.classList.add('user-hidden');
+  } else {
+    const m = key.match(/^(.+)\|(\d+)$/);
+    if (!m) return;
+    const all = document.querySelectorAll(m[1]);
+    const el = all[parseInt(m[2], 10)];
+    if (el) el.classList.add('user-hidden');
+  }
+}
+function hideSelected() {
+  const sel = [...selectedElements];
+  if (sel.length === 0) {
+    showLayoutToast('隠す対象を選択してください');
+    return;
+  }
+  sel.forEach(el => el.classList.add('user-hidden'));
+  selectedElements.clear();
+  refreshSelectionUI();
+  saveResizeState();
+  showLayoutToast(`${sel.length} 個を隠しました (↺ 全て表示 で戻す)`);
+}
+function showAllHidden() {
+  const hidden = document.querySelectorAll('.user-hidden');
+  if (hidden.length === 0) { showLayoutToast('隠してる枠はありません'); return; }
+  hidden.forEach(el => el.classList.remove('user-hidden'));
+  saveResizeState();
+  showLayoutToast(`${hidden.length} 個を再表示`);
+}
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'np-hide') hideSelected();
+  if (e.target && e.target.id === 'np-show-all') showAllHidden();
 });
 
 // 整列ボタン
