@@ -45,13 +45,13 @@
     "w": "971px",
     "h": "151px",
     "tx": 23,
-    "ty": 13
+    "ty": -16
   },
   ".q-text-card .audio|0": {
     "w": "80px",
     "h": "80px",
-    "tx": 169,
-    "ty": 0
+    "tx": 242,
+    "ty": -2
   },
   ".board|0": {
     "w": "999px",
@@ -62,32 +62,32 @@
   ".answer-tray|0": {
     "w": "540px",
     "h": "495px",
-    "tx": 145,
-    "ty": 177
+    "tx": 19,
+    "ty": 175
   },
   ".chip|0": {
     "w": "310px",
     "h": "",
-    "tx": 24,
-    "ty": 29
+    "tx": -30,
+    "ty": 3
   },
   ".chip|1": {
     "w": "310px",
     "h": "",
-    "tx": -1,
-    "ty": 29
+    "tx": -101,
+    "ty": 4
   },
   ".chip|2": {
     "w": "310px",
     "h": "",
-    "tx": 24,
-    "ty": 29
+    "tx": -30,
+    "ty": 10
   },
   ".chip|3": {
     "w": "310px",
     "h": "",
-    "tx": -1,
-    "ty": 29
+    "tx": -101,
+    "ty": 11
   },
   ".chip .circle|0": {
     "w": "",
@@ -116,8 +116,8 @@
   ".hint|0": {
     "w": "491px",
     "h": "122px",
-    "tx": -1,
-    "ty": -593
+    "tx": 30,
+    "ty": -577
   },
   ".character|0": {
     "w": "200px",
@@ -147,10 +147,10 @@
     "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-right:nth-of-type(2)>div.ctrl-btn:nth-of-type(1)>span:nth-of-type(2)": "おしらせ",
     "div#safe-area>div.hdr:nth-of-type(1)>div.hdr-right:nth-of-type(2)>div.ctrl-btn:nth-of-type(2)>span:nth-of-type(2)": "せってい",
     "span#q-text": "まんなかは なにいろ？",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(1)>span": "あか",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(2)>span": "あお",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(3)>span": "きいろ",
-    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel>div.chip:nth-of-type(4)>span": "みどり",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel:nth-of-type(1)>div.chip:nth-of-type(1)>span": "あか",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel:nth-of-type(1)>div.chip:nth-of-type(2)>span": "あお",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel:nth-of-type(1)>div.chip:nth-of-type(3)>span": "きいろ",
+    "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.answer-tray:nth-of-type(1)>div.answer-panel:nth-of-type(1)>div.chip:nth-of-type(4)>span": "みどり",
     "div#safe-area>div.body:nth-of-type(2)>div.a-col:nth-of-type(2)>div.bottom-right:nth-of-type(2)>div.hint:nth-of-type(1)": " よく見て かんがえてみよう！"
   }
 }
