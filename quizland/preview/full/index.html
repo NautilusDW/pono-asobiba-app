@@ -2679,22 +2679,8 @@ function quizlandExportWireframePng() {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, safeW, safeH);
 
-  // 中央クロスヘア (薄マゼンタ)
-  ctx.strokeStyle = 'rgba(255, 80, 200, 0.45)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([]);
-  const cxV = safeW / 2;
-  const cyV = safeH / 2;
-  ctx.beginPath();
-  ctx.moveTo(0, cyV); ctx.lineTo(safeW, cyV);
-  ctx.moveTo(cxV, 0); ctx.lineTo(cxV, safeH);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255, 80, 200, 0.7)';
-  ctx.beginPath();
-  ctx.arc(cxV, cyV, 7, 0, Math.PI * 2);
-  ctx.fill();
-
   // safe area の枠 (canvas 全体 = safe area なので 1px 内側に細く)
+  // 中央クロスヘア (マゼンタ) は書き出しでは描かない (ユーザー指示)
   ctx.strokeStyle = 'rgba(0, 184, 224, 0.5)';
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 4]);
