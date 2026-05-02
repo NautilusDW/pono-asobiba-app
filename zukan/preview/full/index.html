@@ -901,9 +901,8 @@ body.resize-mode .zukan-safe .resizable {
 /* === userbox: ユーザーがドラッグで作った矩形フレーム ─────────────── */
 .userbox {
   position: absolute;
-  /* 半透明のオレンジで塗りつぶす — 背景の森背景が透けないように、 かつ重なった時に
-     下の userbox が透けて見える程度の不透明度に。 hue は edit 時にカスタマイズ可能 */
-  background: rgba(255, 178, 86, 0.55);
+  /* 半透明のオレンジで塗りつぶす — 濃度はツールバーのスライダーで調整可能 */
+  background: rgba(255, 178, 86, var(--userbox-opacity, 0.55));
   border: 3px solid rgba(140, 75, 30, 0.95);
   border-radius: 8px;
   box-sizing: border-box;
@@ -1282,8 +1281,9 @@ body.resize-mode .ruler { display: block; }
   <div>
     <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
+    <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
-    <button id="export-wireframe-png" title="現在の bbox 配置を 2100×900 の白背景 PNG で書き出し (Codex に渡す参照画像用)">🖼 ワイヤー PNG</button>
+    <button id="export-wireframe-png" title="現在の bbox 配置を 1600×900 の白背景 PNG で書き出し (Codex に渡す参照画像用)">🖼 ワイヤー PNG</button>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
@@ -3124,6 +3124,24 @@ function isEditableTarget(t) {
   }
   return false;
 }
+// ───── userbox 塗り濃度スライダー ─────
+const opacityInput = document.getElementById('userbox-opacity');
+function applyUserboxOpacity(pct) {
+  document.documentElement.style.setProperty('--userbox-opacity', (pct / 100).toFixed(2));
+}
+opacityInput && opacityInput.addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  applyUserboxOpacity(v);
+  try { localStorage.setItem('zukan_userbox_opacity', String(v)); } catch(_) {}
+});
+try {
+  const saved = localStorage.getItem('zukan_userbox_opacity');
+  if (saved != null && opacityInput) {
+    opacityInput.value = saved;
+    applyUserboxOpacity(parseInt(saved, 10));
+  }
+} catch(_) {}
+
 // ───── ワイヤーフレーム表示 + PNG 書き出し ─────
 const wireframeBtn = document.getElementById('wireframe-toggle');
 function setWireframeMode(on) {
@@ -3139,52 +3157,44 @@ wireframeBtn && wireframeBtn.addEventListener('click', () => {
 
 const exportWireframeBtn = document.getElementById('export-wireframe-png');
 function exportWireframePng() {
-  // Canvas は --canvas-w x --canvas-h (2100x900) で出力
+  // 16:9 safe area サイズで出力 (1600×900)
   const cssRoot = getComputedStyle(document.documentElement);
-  const canvasW = parseFloat(cssRoot.getPropertyValue('--canvas-w')) || 2100;
-  const canvasH = parseFloat(cssRoot.getPropertyValue('--canvas-h')) || 900;
   const safeW = parseFloat(cssRoot.getPropertyValue('--safe-w')) || 1600;
   const safeH = parseFloat(cssRoot.getPropertyValue('--safe-h')) || 900;
-  const safeX = (canvasW - safeW) / 2;
-  const safeY = 0;
 
   const out = document.createElement('canvas');
-  out.width = canvasW;
-  out.height = canvasH;
+  out.width = safeW;
+  out.height = safeH;
   const ctx = out.getContext('2d');
 
   // 白背景 (Codex に渡す時の参照用に視認性を最大化)
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  // safe area 外は薄グレー (canvas のうち 21:9 の外側を別色で塗り分け)
-  ctx.fillStyle = '#eeeeee';
-  ctx.fillRect(0, 0, safeX, canvasH);
-  ctx.fillRect(safeX + safeW, 0, canvasW - safeX - safeW, canvasH);
-
-  // safe area outline (cyan dashed)
-  ctx.strokeStyle = '#00b8e0';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 4]);
-  ctx.strokeRect(safeX, safeY, safeW, safeH);
+  ctx.fillRect(0, 0, safeW, safeH);
 
   // 中央クロスヘア (マゼンタ薄め)
   ctx.strokeStyle = 'rgba(255, 80, 200, 0.55)';
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
-  const cxV = safeX + safeW / 2;
-  const cyV = safeY + safeH / 2;
+  const cxV = safeW / 2;
+  const cyV = safeH / 2;
   ctx.beginPath();
-  ctx.moveTo(safeX, cyV); ctx.lineTo(safeX + safeW, cyV);
-  ctx.moveTo(cxV, safeY); ctx.lineTo(cxV, safeY + safeH);
+  ctx.moveTo(0, cyV); ctx.lineTo(safeW, cyV);
+  ctx.moveTo(cxV, 0); ctx.lineTo(cxV, safeH);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255, 80, 200, 0.7)';
   ctx.beginPath();
   ctx.arc(cxV, cyV, 7, 0, Math.PI * 2);
   ctx.fill();
 
+  // safe area の枠 (canvas 全体 = safe area なので 1px 内側に細く)
+  ctx.strokeStyle = 'rgba(0, 184, 224, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.strokeRect(1, 1, safeW - 2, safeH - 2);
+
   // userbox 群を outline + label + size で描画
   // 位置: safe-area の中で left/top が決まり、 transform: translate(tx, ty) で動く
+  // canvas は safe-area サイズなので、 left + tx がそのまま canvas 座標になる
   ctx.setLineDash([]);
   document.querySelectorAll('.userbox').forEach(el => {
     const left = parseFloat(el.style.left) || 0;
@@ -3193,8 +3203,8 @@ function exportWireframePng() {
     const h = parseFloat(el.style.height) || el.offsetHeight;
     const tx = el._tx || 0;
     const ty = el._ty || 0;
-    const x = safeX + left + tx;
-    const y = safeY + top + ty;
+    const x = left + tx;
+    const y = top + ty;
 
     // group メンバーは紫、 ソロは黒
     const isGroup = !!el.dataset.groupId;
@@ -3234,7 +3244,7 @@ function exportWireframePng() {
   ctx.font = '500 12px ui-monospace, Menlo, Consolas, monospace';
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
   ctx.textAlign = 'right';
-  ctx.fillText(`canvas ${canvasW}×${canvasH}  safe ${safeW}×${safeH}  生成 ${new Date().toLocaleString('ja-JP')}`, canvasW - 12, canvasH - 12);
+  ctx.fillText(`safe area ${safeW}×${safeH} (16:9)  生成 ${new Date().toLocaleString('ja-JP')}`, safeW - 12, safeH - 12);
   ctx.textAlign = 'start';
 
   out.toBlob(blob => {

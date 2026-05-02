@@ -2659,50 +2659,46 @@ wireframeBtn && wireframeBtn.addEventListener('click', () => {
 
 const exportWireframeBtn = document.getElementById('export-wireframe-png');
 function quizlandExportWireframePng() {
+  // 16:9 safe area サイズで出力 (21:9 outer のレターボックス部分は不要)
   const cssRoot = getComputedStyle(document.documentElement);
-  const canvasW = parseFloat(cssRoot.getPropertyValue('--canvas-w')) || 2100;
-  const canvasH = parseFloat(cssRoot.getPropertyValue('--canvas-h')) || 900;
   const safeW = parseFloat(cssRoot.getPropertyValue('--safe-w')) || 1600;
   const safeH = parseFloat(cssRoot.getPropertyValue('--safe-h')) || 900;
-  const safeX = (canvasW - safeW) / 2;
-  const safeY = 0;
+  const canvasW = parseFloat(cssRoot.getPropertyValue('--canvas-w')) || 2100;
+  // safe-area の stage 座標オフセット (canvas 内座標から safe-area 内座標へ変換)
+  const safeOffsetX = (canvasW - safeW) / 2;
 
   // RESIZABLE_SPEC からセレクタ→ラベルマップを作る
   const labelMap = new Map();
   RESIZABLE_SPEC.forEach(([sel, , label]) => labelMap.set(sel, label || ''));
 
   const out = document.createElement('canvas');
-  out.width = canvasW;
-  out.height = canvasH;
+  out.width = safeW;
+  out.height = safeH;
   const ctx = out.getContext('2d');
 
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvasW, canvasH);
-  // safe area 外側を薄グレー
-  ctx.fillStyle = '#eeeeee';
-  ctx.fillRect(0, 0, safeX, canvasH);
-  ctx.fillRect(safeX + safeW, 0, canvasW - safeX - safeW, canvasH);
+  ctx.fillRect(0, 0, safeW, safeH);
 
-  // safe area outline
-  ctx.strokeStyle = '#00b8e0';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 4]);
-  ctx.strokeRect(safeX, safeY, safeW, safeH);
-
-  // 中央クロスヘア
-  ctx.strokeStyle = 'rgba(255, 80, 200, 0.55)';
+  // 中央クロスヘア (薄マゼンタ)
+  ctx.strokeStyle = 'rgba(255, 80, 200, 0.45)';
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
-  const cxV = safeX + safeW / 2;
-  const cyV = safeY + safeH / 2;
+  const cxV = safeW / 2;
+  const cyV = safeH / 2;
   ctx.beginPath();
-  ctx.moveTo(safeX, cyV); ctx.lineTo(safeX + safeW, cyV);
-  ctx.moveTo(cxV, safeY); ctx.lineTo(cxV, safeY + safeH);
+  ctx.moveTo(0, cyV); ctx.lineTo(safeW, cyV);
+  ctx.moveTo(cxV, 0); ctx.lineTo(cxV, safeH);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255, 80, 200, 0.7)';
   ctx.beginPath();
   ctx.arc(cxV, cyV, 7, 0, Math.PI * 2);
   ctx.fill();
+
+  // safe area の枠 (canvas 全体 = safe area なので 1px 内側に細く)
+  ctx.strokeStyle = 'rgba(0, 184, 224, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.strokeRect(1, 1, safeW - 2, safeH - 2);
 
   // quizland は CSS-flow + tx/ty で配置されているので getBoundingClientRect で実位置を取る
   const stageEl = document.getElementById('stage');
@@ -2711,12 +2707,15 @@ function quizlandExportWireframePng() {
   const scale = stageRect.width / stageW || 1;
 
   // 各 resizable を outline + label + size で描画
+  // BCR は stage 座標、 これを safe-area 座標に変換 (- safeOffsetX)
   ctx.setLineDash([]);
   RESIZABLE_SPEC.forEach(([sel]) => {
     document.querySelectorAll(sel).forEach((el, idx) => {
       const r = el.getBoundingClientRect();
-      const x = (r.left - stageRect.left) / scale;
-      const y = (r.top  - stageRect.top)  / scale;
+      const stageX = (r.left - stageRect.left) / scale;
+      const stageY = (r.top  - stageRect.top)  / scale;
+      const x = stageX - safeOffsetX;
+      const y = stageY;
       const w = r.width  / scale;
       const h = r.height / scale;
       ctx.strokeStyle = '#1a1a1a';
@@ -2753,7 +2752,7 @@ function quizlandExportWireframePng() {
   ctx.font = '500 12px ui-monospace, Menlo, Consolas, monospace';
   ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
   ctx.textAlign = 'right';
-  ctx.fillText(`canvas ${canvasW}×${canvasH}  safe ${safeW}×${safeH}  生成 ${new Date().toLocaleString('ja-JP')}`, canvasW - 12, canvasH - 12);
+  ctx.fillText(`safe area ${safeW}×${safeH} (16:9)  生成 ${new Date().toLocaleString('ja-JP')}`, safeW - 12, safeH - 12);
   ctx.textAlign = 'start';
 
   out.toBlob(blob => {
