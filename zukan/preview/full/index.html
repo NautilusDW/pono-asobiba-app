@@ -940,12 +940,12 @@ body.resize-mode .zukan-safe .resizable {
   user-select: none;
 }
 .userbox-del:hover { background: #d04040; }
-body:not(.resize-mode):not(.draw-mode) .userbox-badge,
-body:not(.resize-mode):not(.draw-mode) .userbox-del { display: none; }
+body:not(.resize-mode) .userbox-badge,
+body:not(.resize-mode) .userbox-del { display: none; }
 
-/* draw-mode: ステージ全体をドラッグして矩形を描く */
-body.draw-mode .stage { cursor: crosshair; }
-body.draw-mode .resizable { pointer-events: none; }   /* 既存枠を貫通してステージ上をクリックできるように */
+/* サイズ調整 ON 中: ステージの空き領域は crosshair (新規矩形を描ける合図)。
+   userbox 自体は move カーソル (既存ルールが上書き) */
+body.resize-mode .stage { cursor: crosshair; }
 .userbox-preview {
   position: absolute;
   background: rgba(255, 138, 61, 0.20);
@@ -1230,8 +1230,7 @@ body.resize-mode .ruler { display: block; }
   </div>
 
   <div>
-    <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
-    <button id="userbox-add" title="ステージ上をドラッグして新しい矩形フレームを作成">🆕 矩形追加 OFF</button>
+    <button id="resize-toggle" title="ドラッグでサイズ調整 / 既存枠の外をドラッグで新規矩形を追加">📐 サイズ調整 OFF</button>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
@@ -2866,20 +2865,8 @@ window.addEventListener('keydown', e => {
 });
 
 // ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
-// 矩形追加トグル
-const drawBtn = document.getElementById('userbox-add');
-let drawModeOn = false;
-function setDrawMode(on) {
-  drawModeOn = on;
-  document.body.classList.toggle('draw-mode', on);
-  drawBtn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
-  drawBtn.classList.toggle('active', on);
-}
-drawBtn && drawBtn.addEventListener('click', () => {
-  // resize-mode が OFF なら自動的に ON に (ハンドルが必要)
-  if (!document.body.classList.contains('resize-mode')) enableResize();
-  setDrawMode(!drawModeOn);
-});
+// サイズ調整 ON 中、 既存 userbox の外側をドラッグすると自動的に新規矩形が作られる。
+// 別途のモード切替は不要 (1 つの 📐 サイズ調整 ボタンに統合)。
 
 let userboxCounter = 0;
 function createUserbox(opts) {
@@ -2963,11 +2950,12 @@ function restoreUserboxes(arr) {
   arr.forEach(box => createUserbox(box));
 }
 
-// ステージ mousedown でドラッグ開始 (draw-mode のみ)
+// ステージ mousedown でドラッグ開始 (サイズ調整 ON + 既存枠の外、 のみ)
 const stageEl = document.getElementById('stage');
 stageEl.addEventListener('mousedown', e => {
-  if (!drawModeOn) return;
-  if (e.target.closest('.toolbar, .resize-handle, .userbox-badge, .userbox-del, .ruler, .guide')) return;
+  if (!document.body.classList.contains('resize-mode')) return;
+  // 既存の userbox / ハンドル / ツールバー類の上では何もしない
+  if (e.target.closest('.resizable, .toolbar, .resize-handle, .userbox-badge, .userbox-del, .ruler, .guide, .numeric-panel')) return;
   e.preventDefault();
   e.stopPropagation();
   const stageRect = stageEl.getBoundingClientRect();
@@ -3011,11 +2999,6 @@ stageEl.addEventListener('mousedown', e => {
   };
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onUp);
-});
-
-// Esc で draw-mode 抜け
-window.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
 });
 
 // 起動時にサーバー (commit 済み) → ローカルストレージの順で復元
