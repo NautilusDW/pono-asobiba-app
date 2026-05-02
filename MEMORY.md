@@ -93,6 +93,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-05-02T07:01:41Z - quizland プレビュー: シート ON 時に装飾系 PNG (owl-icon/title-card/character/ctrl-btn/dot/audio/circle/hint) を残してフレーム系のみ隠す。 q-text (まんなかは なにいろ?) を RESIZABLE_SPEC に追加 + inline-block 化で移動可能に。 sw.js 629→630
+- **タスク**: quizland プレビュー: シート ON 時に装飾系 PNG (owl-icon/title-card/character/ctrl-btn/dot/audio/circle/hint) を残してフレーム系のみ隠す。 q-text (まんなかは なにいろ?) を RESIZABLE_SPEC に追加 + inline-block 化で移動可能に。 sw.js 629→630
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 500
+- **エラー数**: 9
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: ファイルを読まずに編集しようとした, 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Edit": 158, "Bash": 259, "ToolSearch": 1, "Grep": 28, "Read": 45, "Write": 9}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-05-02T06:57:27Z - ユーザー指定の Zukan\main.png を 1600x900 JPG にリサイズして assets/preview-placeholders/zukan-bg.jpg に保存、 zukan プレビューの stage 背景に center/cover で適用 (#2a2a2a fallback)。 sw.js 628→629
 - **タスク**: ユーザー指定の Zukan\main.png を 1600x900 JPG にリサイズして assets/preview-placeholders/zukan-bg.jpg に保存、 zukan プレビューの stage 背景に center/cover で適用 (#2a2a2a fallback)。 sw.js 628→629
 - **結果**: 成功
@@ -195,18 +208,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Edit": 164, "Bash": 248, "Read": 51, "Write": 11, "ToolSearch": 1, "Grep": 25}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-05-02T05:38:02Z - zukan プレビュー: ワイヤー表示トグル + PNG 書き出し (Codex に渡せる 2100x900 の bbox 配置参照画像) を実装。 sw.js 619→620
-- **タスク**: zukan プレビュー: ワイヤー表示トグル + PNG 書き出し (Codex に渡せる 2100x900 の bbox 配置参照画像) を実装。 sw.js 619→620
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 500
-- **エラー数**: 18
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"WebSearch": 1, "WebFetch": 1, "Bash": 250, "Read": 52, "Write": 12, "Edit": 161, "ToolSearch": 1, "Grep": 22}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
