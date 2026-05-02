@@ -111,9 +111,10 @@ html, body {
   height: var(--canvas-h);
   margin: 0 auto;
   position: relative;
-  /* 森の図鑑用の背景画像 (D:\ポノのおへや\Zukan\main.png を 16:9 にリサイズ)。
-     21:9 stage の中で safe-area (16:9) 部分に cover で配置、 はみ出し部分は背景色で埋める */
+  /* 森の図鑑: BG.png を一番下、 main.png (絵本本体) をその上に重ねる。
+     CSS multi-bg は 先に書いたものほど手前 (top layer)。 #2a2a2a は最終 fallback */
   background:
+    url('../../../assets/preview-placeholders/zukan-main.png') center / cover no-repeat,
     url('../../../assets/preview-placeholders/zukan-bg.jpg') center / cover no-repeat,
     #2a2a2a;
   border: 1px dashed #555;
