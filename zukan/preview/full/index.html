@@ -873,6 +873,10 @@ body.resize-mode .resizable {
   outline-offset: 2px;
   cursor: move;  /* body ドラッグで移動 */
 }
+/* zukan: 各要素は absolute 配置なので、 resize-mode でも position を維持する */
+body.resize-mode .zukan-safe .resizable {
+  position: absolute;
+}
 .resize-handle {
   position: absolute;
   background: #00d4ff;
