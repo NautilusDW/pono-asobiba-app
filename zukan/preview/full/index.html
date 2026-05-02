@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>森の図鑑 プレビュー (21:9 + 16:9 セーフエリア)</title>
+<script src="../../../assets/lib/html2canvas.min.js" defer></script>
 <style>
 :root {
   /* チューナブル */
@@ -919,6 +920,31 @@ body.resize-mode .zukan-safe .resizable {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
+/* PNG export 選択メニュー (split button のドロップダウン) */
+.png-export-menu {
+  position: absolute;
+  top: calc(100% + 4px); left: 0;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 240px;
+}
+.png-export-menu button {
+  white-space: nowrap;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 4px;
+  padding: 8px 12px; cursor: pointer;
+  font: 600 12px system-ui, sans-serif;
+  text-align: left;
+}
+.png-export-menu button:hover {
+  background: #3a3a3a; border-color: #ff8a3d; color: #fff;
+}
+
 /* === ワイヤーフレーム表示モード === */
 /* 背景・塗りつぶしを消して bbox 線だけ残す。 Codex に渡す参照用 */
 body.wireframe-only .stage {
@@ -1289,7 +1315,13 @@ body.resize-mode .ruler { display: block; }
     <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
     <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
     <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
-    <button id="export-wireframe-png" title="現在の bbox 配置を 1600×900 の白背景 PNG で書き出し (Codex に渡す参照画像用)">🖼 ワイヤー PNG</button>
+    <span class="png-export-wrap" style="position:relative;display:inline-block;">
+      <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
+      <div class="png-export-menu" id="png-export-menu" style="display:none;">
+        <button data-mode="wireframe">🪟 ワイヤー (枠線のみ)</button>
+        <button data-mode="snapshot">📸 現状そのまま (見たまま)</button>
+      </div>
+    </span>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
@@ -3161,7 +3193,61 @@ wireframeBtn && wireframeBtn.addEventListener('click', () => {
   setWireframeMode(!document.body.classList.contains('wireframe-only'));
 });
 
-const exportWireframeBtn = document.getElementById('export-wireframe-png');
+const exportPngBtn = document.getElementById('export-png');
+const pngExportMenu = document.getElementById('png-export-menu');
+exportPngBtn && exportPngBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (pngExportMenu) pngExportMenu.style.display = (pngExportMenu.style.display === 'none' ? 'flex' : 'none');
+});
+document.addEventListener('click', e => {
+  if (pngExportMenu && !e.target.closest('.png-export-wrap')) pngExportMenu.style.display = 'none';
+});
+pngExportMenu && pngExportMenu.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn) return;
+  pngExportMenu.style.display = 'none';
+  const mode = btn.dataset.mode;
+  if (mode === 'wireframe') {
+    exportWireframePng();
+  } else if (mode === 'snapshot') {
+    snapshotCurrentView('zukan');
+  }
+});
+
+async function snapshotCurrentView(prefix) {
+  if (typeof html2canvas !== 'function') {
+    alert('html2canvas が読み込めていません。 リロードして再試行してください');
+    return;
+  }
+  const safe = document.getElementById('safe-area');
+  if (!safe) return;
+  showLayoutToast && showLayoutToast('スナップショット生成中...');
+  try {
+    const canvas = await html2canvas(safe, {
+      width: 1600,
+      height: 900,
+      scale: 1,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+    });
+    canvas.toBlob(blob => {
+      if (!blob) { showLayoutToast && showLayoutToast('PNG 生成失敗'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `${prefix}-snapshot-${ts}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showLayoutToast && showLayoutToast('現状 PNG を保存しました');
+    }, 'image/png');
+  } catch (err) {
+    console.error(err);
+    showLayoutToast && showLayoutToast('スナップショット失敗: ' + err.message);
+  }
+}
 function exportWireframePng() {
   // 16:9 safe area サイズで出力 (1600×900)
   const cssRoot = getComputedStyle(document.documentElement);
@@ -3251,7 +3337,7 @@ function exportWireframePng() {
     showLayoutToast('ワイヤー PNG を保存しました');
   }, 'image/png');
 }
-exportWireframeBtn && exportWireframeBtn.addEventListener('click', exportWireframePng);
+/* 旧 #export-wireframe-png 直リスナーは split-button に統合済み */
 
 // グループ化 ID 採番 + ヘルパ
 let userboxGroupCounter = 0;
