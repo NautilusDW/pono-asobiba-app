@@ -3839,41 +3839,74 @@ async function _captureSnapshot() {
   if (_bezCanvas) _bezCanvas.style.display = 'none';
   document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = 'none');
   await new Promise(r => requestAnimationFrame(r));   // CSS 反映待ち
-  const safeArea = document.getElementById('safe-area');
+  // safe-area だけだと .stage の BG (zukan-bg + main) は含まれない → stage を撮影
+  const stageEl0 = document.getElementById('stage');
+  console.info('[bezier] capture starting, stage rect:', stageEl0?.getBoundingClientRect());
   let snapshot = null;
   try {
     if (typeof html2canvas !== 'function') {
       console.warn('html2canvas not loaded');
+      alert('html2canvas が読み込めていません。 リロードして再試行してください');
+      if (_bezCanvas) _bezCanvas.style.display = '';
+      document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = '');
       return null;
     }
-    snapshot = await html2canvas(safeArea, {
+    snapshot = await html2canvas(stageEl0, {
       backgroundColor: null,
-      scale: 2,
+      scale: 1,
       logging: false,
-      width: SAFE_W,
-      height: SAFE_H,
       useCORS: true,
+      allowTaint: false,
     });
   } catch (e) {
-    console.error('html2canvas failed:', e);
+    console.error('[bezier] html2canvas failed:', e);
   }
   if (wasMode) document.body.classList.add('corner-pin-mode');
   if (_bezCanvas) _bezCanvas.style.display = '';
   document.querySelectorAll('.bezier-handle').forEach(h => h.style.display = '');
+  console.info('[bezier] snapshot result:',
+    snapshot ? { w: snapshot.width, h: snapshot.height } : null);
+  if (!snapshot || snapshot.width === 0 || snapshot.height === 0) {
+    return null;
+  }
+  // ?debug=1 で snapshot を画面右下に確認用 thumbnail として置く
+  if (new URLSearchParams(location.search).get('debug') === '1') {
+    document.querySelectorAll('.bezier-debug-thumb').forEach(e => e.remove());
+    const dbg = document.createElement('div');
+    dbg.className = 'bezier-debug-thumb';
+    dbg.style.cssText = 'position:fixed;right:8px;bottom:8px;width:240px;border:2px solid #f0f;background:#000;z-index:9999;';
+    snapshot.style.cssText = 'width:100%;display:block;';
+    dbg.appendChild(snapshot.cloneNode(true));
+    document.body.appendChild(dbg);
+  }
   _glTextureCanvas = snapshot;
   return snapshot;
 }
 
+// stage は 2100×900、 safe-area (1600×900) は中央配置 (左 250px オフセット)
+const STAGE_W = 2100;
+const _UV_OFF_X = (STAGE_W - SAFE_W) / 2 / STAGE_W;   // 0.1190
+const _UV_PAGE_W = PAGE_W / STAGE_W;                   // 0.3810
+
 function applyBezierWarp() {
   if (!document.body.classList.contains('corner-pin-mode')) return;
   const gl = _initWebGL();
-  if (!gl || !_glTextureCanvas) return;
+  if (!gl) {
+    console.error('[bezier] WebGL init failed in applyBezierWarp');
+    return;
+  }
+  if (!_glTextureCanvas) {
+    console.warn('[bezier] no snapshot, skipping warp render');
+    return;
+  }
   _uploadTexture(gl, _glTextureCanvas);
+  let err = gl.getError();
+  if (err !== gl.NO_ERROR) console.warn('[bezier] gl error after texImage2D:', err);
   gl.viewport(0, 0, _bezCanvas.width, _bezCanvas.height);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);   // pre-multiplied alpha 用
   gl.useProgram(_glProgram);
   gl.bindBuffer(gl.ARRAY_BUFFER, _glVbuf);
   gl.enableVertexAttribArray(_glLoc.a_uv);
@@ -3882,18 +3915,20 @@ function applyBezierWarp() {
   gl.bindTexture(gl.TEXTURE_2D, _glTex);
   gl.uniform1i(_glLoc.u_tex, 0);
   gl.uniform2f(_glLoc.u_safeSize, SAFE_W, SAFE_H);
-  // 左ページ
+  // 左ページ: stage texture の (UV_OFF_X, 0) - (UV_OFF_X + UV_PAGE_W, 1)
   _uploadCP(gl, 'left');
   gl.uniform2f(_glLoc.u_pagePos, 0, 0);
-  gl.uniform2f(_glLoc.u_uvOffset, 0, 0);
-  gl.uniform2f(_glLoc.u_uvScale, 0.5, 1);
+  gl.uniform2f(_glLoc.u_uvOffset, _UV_OFF_X, 0);
+  gl.uniform2f(_glLoc.u_uvScale, _UV_PAGE_W, 1);
   gl.drawArrays(gl.TRIANGLES, 0, _glVertexCount);
-  // 右ページ
+  // 右ページ: stage texture の (UV_OFF_X + UV_PAGE_W, 0) - (UV_OFF_X + 2*UV_PAGE_W, 1)
   _uploadCP(gl, 'right');
   gl.uniform2f(_glLoc.u_pagePos, PAGE_W, 0);
-  gl.uniform2f(_glLoc.u_uvOffset, 0.5, 0);
-  gl.uniform2f(_glLoc.u_uvScale, 0.5, 1);
+  gl.uniform2f(_glLoc.u_uvOffset, _UV_OFF_X + _UV_PAGE_W, 0);
+  gl.uniform2f(_glLoc.u_uvScale, _UV_PAGE_W, 1);
   gl.drawArrays(gl.TRIANGLES, 0, _glVertexCount);
+  err = gl.getError();
+  if (err !== gl.NO_ERROR) console.warn('[bezier] gl error after drawArrays:', err);
   _updateBezierHandlePositions();
 }
 
@@ -3975,14 +4010,29 @@ async function setCornerPinMode(on) {
   if (cur === on) return;
   if (on) {
     if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ 撮影中…';
-    await _captureSnapshot();
-    document.body.classList.add('corner-pin-mode');
+    const snap = await _captureSnapshot();
+    if (!snap) {
+      // snapshot 失敗時は mode に入らない (= userbox を隠さない)。 これで
+      // 「ベジェワープを ON にしたら全部消えた」 事故を防ぐ。
+      console.error('[bezier] snapshot failed → aborting mode toggle');
+      alert('ベジェワープの撮影に失敗しました。 console を見て URL に ?debug=1 を付けて再試行してください。');
+      if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ OFF';
+      return;
+    }
     _ensureBezierHandles();
-    _initWebGL();
+    const gl = _initWebGL();
+    if (!gl) {
+      console.error('[bezier] WebGL init failed → aborting mode toggle');
+      alert('WebGL の初期化に失敗しました。 ブラウザが対応しているか確認してください。');
+      if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ OFF';
+      return;
+    }
+    document.body.classList.add('corner-pin-mode');
     applyBezierWarp();
   } else {
     document.body.classList.remove('corner-pin-mode');
     _glTextureCanvas = null;
+    document.querySelectorAll('.bezier-debug-thumb').forEach(e => e.remove());
   }
   if (cornerPinBtn) {
     cornerPinBtn.textContent = on ? '🌀 ベジェワープ ON' : '🌀 ベジェワープ OFF';
