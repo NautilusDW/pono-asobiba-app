@@ -2599,6 +2599,132 @@ function applyGridMode(on) {
 }
 gridBtn.addEventListener('click', () => applyGridMode(!document.body.classList.contains('grid-mode')));
 try { if (localStorage.getItem('quizland_preview_grid_mode') === '1') applyGridMode(true); } catch(_) {}
+
+// ───── ワイヤーフレーム表示 + PNG 書き出し ─────
+const wireframeBtn = document.getElementById('wireframe-toggle');
+function setWireframeMode(on) {
+  document.body.classList.toggle('wireframe-only', on);
+  if (wireframeBtn) {
+    wireframeBtn.textContent = on ? '👁 ワイヤー表示 ON' : '👁 ワイヤー表示 OFF';
+    wireframeBtn.classList.toggle('active', on);
+  }
+}
+wireframeBtn && wireframeBtn.addEventListener('click', () => {
+  setWireframeMode(!document.body.classList.contains('wireframe-only'));
+});
+
+const exportWireframeBtn = document.getElementById('export-wireframe-png');
+function quizlandExportWireframePng() {
+  const cssRoot = getComputedStyle(document.documentElement);
+  const canvasW = parseFloat(cssRoot.getPropertyValue('--canvas-w')) || 2100;
+  const canvasH = parseFloat(cssRoot.getPropertyValue('--canvas-h')) || 900;
+  const safeW = parseFloat(cssRoot.getPropertyValue('--safe-w')) || 1600;
+  const safeH = parseFloat(cssRoot.getPropertyValue('--safe-h')) || 900;
+  const safeX = (canvasW - safeW) / 2;
+  const safeY = 0;
+
+  // RESIZABLE_SPEC からセレクタ→ラベルマップを作る
+  const labelMap = new Map();
+  RESIZABLE_SPEC.forEach(([sel, , label]) => labelMap.set(sel, label || ''));
+
+  const out = document.createElement('canvas');
+  out.width = canvasW;
+  out.height = canvasH;
+  const ctx = out.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvasW, canvasH);
+  // safe area 外側を薄グレー
+  ctx.fillStyle = '#eeeeee';
+  ctx.fillRect(0, 0, safeX, canvasH);
+  ctx.fillRect(safeX + safeW, 0, canvasW - safeX - safeW, canvasH);
+
+  // safe area outline
+  ctx.strokeStyle = '#00b8e0';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.strokeRect(safeX, safeY, safeW, safeH);
+
+  // 中央クロスヘア
+  ctx.strokeStyle = 'rgba(255, 80, 200, 0.55)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  const cxV = safeX + safeW / 2;
+  const cyV = safeY + safeH / 2;
+  ctx.beginPath();
+  ctx.moveTo(safeX, cyV); ctx.lineTo(safeX + safeW, cyV);
+  ctx.moveTo(cxV, safeY); ctx.lineTo(cxV, safeY + safeH);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255, 80, 200, 0.7)';
+  ctx.beginPath();
+  ctx.arc(cxV, cyV, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  // quizland は CSS-flow + tx/ty で配置されているので getBoundingClientRect で実位置を取る
+  const stageEl = document.getElementById('stage');
+  const stageRect = stageEl.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stageEl).width);
+  const scale = stageRect.width / stageW || 1;
+
+  // 各 resizable を outline + label + size で描画
+  ctx.setLineDash([]);
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach((el, idx) => {
+      const r = el.getBoundingClientRect();
+      const x = (r.left - stageRect.left) / scale;
+      const y = (r.top  - stageRect.top)  / scale;
+      const w = r.width  / scale;
+      const h = r.height / scale;
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
+
+      // ラベル
+      const label = (labelMap.get(sel) || sel) + (document.querySelectorAll(sel).length > 1 ? ` ${idx + 1}` : '');
+      ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+      const padX = 8;
+      const textW = ctx.measureText(label).width;
+      const badgeH = 24;
+      const badgeW = textW + padX * 2;
+      const badgeY = (y - badgeH - 4 >= 0) ? (y - badgeH - 4) : (y + 4);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+      ctx.fillRect(x, badgeY, badgeW, badgeH);
+      ctx.fillStyle = '#ffe8a8';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x + padX, badgeY + badgeH / 2);
+
+      // 中央に W × H
+      const sizeText = `${Math.round(w)} × ${Math.round(h)}`;
+      ctx.font = '500 16px ui-monospace, Menlo, Consolas, monospace';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(sizeText, x + w / 2, y + h / 2);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    });
+  });
+
+  // 凡例
+  ctx.font = '500 12px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`canvas ${canvasW}×${canvasH}  safe ${safeW}×${safeH}  生成 ${new Date().toLocaleString('ja-JP')}`, canvasW - 12, canvasH - 12);
+  ctx.textAlign = 'start';
+
+  out.toBlob(blob => {
+    if (!blob) { showLayoutToast && showLayoutToast('PNG 生成に失敗しました'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.download = `quizland-wireframe-${ts}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showLayoutToast && showLayoutToast('ワイヤー PNG を保存しました');
+  }, 'image/png');
+}
+exportWireframeBtn && exportWireframeBtn.addEventListener('click', quizlandExportWireframePng);
 // Ctrl/Cmd+S で保存
 window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {

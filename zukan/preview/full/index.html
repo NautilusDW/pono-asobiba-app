@@ -1519,7 +1519,30 @@ let labelIdx = 0;
 let selectedEl = null;
 
 // ── localStorage 自動保存 ──
-const STORAGE_KEY = 'quizland_preview_state_v1';
+// zukan は専用キーを使う (quizland と共有してた `quizland_preview_state_v1` で
+// 一方の reset がもう一方も消す事故が起きたため、 commit `[fix-shared-key]` で分離)。
+// 起動時に旧キーが zukan-only data らしい (= 何かしら anno が入ってる) なら
+// 一度だけ新キーに移行を試みる。
+const STORAGE_KEY = 'zukan_preview_state_v1';
+const STORAGE_KEY_LEGACY = 'quizland_preview_state_v1';
+(function migrateLegacyState() {
+  try {
+    if (localStorage.getItem(STORAGE_KEY)) return;  // 新キー既にあればスキップ
+    const raw = localStorage.getItem(STORAGE_KEY_LEGACY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    const hasAnno = parsed && (
+      (Array.isArray(parsed.markers) && parsed.markers.length) ||
+      (Array.isArray(parsed.texts)   && parsed.texts.length) ||
+      (Array.isArray(parsed.rects)   && parsed.rects.length) ||
+      (Array.isArray(parsed.arrows)  && parsed.arrows.length)
+    );
+    if (hasAnno) {
+      localStorage.setItem(STORAGE_KEY, raw);
+      console.log('[zukan] migrated anno state from legacy shared key');
+    }
+  } catch(_) {}
+})();
 let saveTimer = null;
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
