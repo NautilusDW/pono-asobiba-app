@@ -3538,7 +3538,7 @@ function setElTransform(el) {
     const safeW = 1600;
     const cx = baseLeft + tx + w / 2;  // userbox 中心 X (safe-area 座標)
     const isLeftPage = cx < safeW / 2;
-    const tiltY = isLeftPage ? 5 : -5;   // 左ページ右傾き、 右ページ左傾き
+    const tiltY = isLeftPage ? 10 : -10;  // 左ページ右傾き、 右ページ左傾き (5°だと見えづらいので 10° に)
     const originX = isLeftPage ? '100%' : '0%';  // 綴じ目側を支点に
     el.style.transformOrigin = `${originX} 50%`;
     t += ` rotateY(${tiltY}deg)`;

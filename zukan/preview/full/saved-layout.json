@@ -2,9 +2,19 @@
   "__guides": [],
   "__headerH": "150px",
   "__texts": {},
+  "__hidden": [],
   "__userboxes": [
     {
-      "id": "userbox-animal-001",
+      "id": "ub-page-title",
+      "label": "みつけた なかま",
+      "left": "300px",
+      "top": "200px",
+      "w": "240px",
+      "h": "40px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-grid-r1c1",
       "label": "りす",
       "left": "240px",
       "top": "260px",
@@ -16,7 +26,7 @@
       "bgImage": "../../../assets/preview-placeholders/zukan-animal-001.png"
     },
     {
-      "id": "userbox-animal-002",
+      "id": "ub-grid-r1c2",
       "label": "うさぎ",
       "left": "380px",
       "top": "260px",
@@ -28,7 +38,7 @@
       "bgImage": "../../../assets/preview-placeholders/zukan-animal-002.png"
     },
     {
-      "id": "userbox-animal-003",
+      "id": "ub-grid-r1c3",
       "label": "ふくろう",
       "left": "520px",
       "top": "260px",
@@ -38,6 +48,106 @@
       "ty": 20,
       "groupId": "",
       "bgImage": "../../../assets/preview-placeholders/zukan-animal-003.png"
+    },
+    {
+      "id": "ub-grid-r2c1",
+      "label": "?",
+      "left": "240px",
+      "top": "390px",
+      "w": "120px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-grid-r2c2",
+      "label": "?",
+      "left": "380px",
+      "top": "390px",
+      "w": "120px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-grid-r2c3",
+      "label": "?",
+      "left": "520px",
+      "top": "390px",
+      "w": "120px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-grid-r3c1",
+      "label": "?",
+      "left": "240px",
+      "top": "520px",
+      "w": "120px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-grid-r3c2",
+      "label": "?",
+      "left": "380px",
+      "top": "520px",
+      "w": "120px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-grid-r3c3",
+      "label": "?",
+      "left": "520px",
+      "top": "520px",
+      "w": "120px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-detail-art",
+      "label": "見つけた動物 (うさぎ)",
+      "left": "820px",
+      "top": "200px",
+      "w": "350px",
+      "h": "300px",
+      "tx": 0, "ty": 0, "groupId": "",
+      "bgImage": "../../../assets/preview-placeholders/zukan-animal-002.png"
+    },
+    {
+      "id": "ub-label-name",
+      "label": "なまえ",
+      "left": "1200px",
+      "top": "170px",
+      "w": "120px",
+      "h": "40px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-label-voice",
+      "label": "こえ",
+      "left": "1200px",
+      "top": "260px",
+      "w": "120px",
+      "h": "40px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-label-appearance",
+      "label": "すがた",
+      "left": "1200px",
+      "top": "350px",
+      "w": "120px",
+      "h": "40px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
+    },
+    {
+      "id": "ub-comment-box",
+      "label": "ひとこと",
+      "left": "820px",
+      "top": "540px",
+      "w": "540px",
+      "h": "120px",
+      "tx": 0, "ty": 0, "groupId": "", "bgImage": ""
     }
   ],
   "__hidden": []
