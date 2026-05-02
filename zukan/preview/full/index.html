@@ -877,6 +877,62 @@ body.resize-mode .resizable {
 body.resize-mode .zukan-safe .resizable {
   position: absolute;
 }
+
+/* === userbox: ユーザーがドラッグで作った矩形フレーム ─────────────── */
+.userbox {
+  position: absolute;
+  background: rgba(255, 200, 110, 0.18);
+  border: 2px solid rgba(110, 70, 32, 0.85);
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+.userbox-badge {
+  position: absolute;
+  top: -22px; left: 0;
+  background: rgba(40, 30, 20, 0.92);
+  color: #ffe7a3;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  cursor: text;
+  white-space: nowrap;
+  outline: none;
+  z-index: 30;
+  pointer-events: auto;
+}
+.userbox-badge:focus {
+  background: #2c1c0c;
+  outline: 2px solid #ff8a3d;
+}
+.userbox-del {
+  position: absolute;
+  top: -22px; right: 0;
+  width: 20px; height: 20px;
+  background: rgba(180, 60, 60, 0.95);
+  color: #fff;
+  border-radius: 4px;
+  font: 700 14px/18px ui-monospace, Menlo, Consolas, monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 31;
+  user-select: none;
+}
+.userbox-del:hover { background: #d04040; }
+body:not(.resize-mode):not(.draw-mode) .userbox-badge,
+body:not(.resize-mode):not(.draw-mode) .userbox-del { display: none; }
+
+/* draw-mode: ステージ全体をドラッグして矩形を描く */
+body.draw-mode .stage { cursor: crosshair; }
+body.draw-mode .resizable { pointer-events: none; }   /* 既存枠を貫通してステージ上をクリックできるように */
+.userbox-preview {
+  position: absolute;
+  background: rgba(255, 138, 61, 0.20);
+  border: 2px dashed #ff8a3d;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 70;
+  box-sizing: border-box;
+}
 .resize-handle {
   position: absolute;
   background: #00d4ff;
@@ -1131,6 +1187,7 @@ body.resize-mode .ruler { display: block; }
 
   <div>
     <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
+    <button id="userbox-add" title="ステージ上をドラッグして新しい矩形フレームを作成">🆕 矩形追加 OFF</button>
     <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
     <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
     <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
@@ -1172,84 +1229,8 @@ body.resize-mode .ruler { display: block; }
   <div class="stage" id="stage">
     <!-- 16:9 safe area inner -->
     <div class="safe-area zukan-safe" id="safe-area">
-      <!-- 上部: ホームボタン + タイトル看板 -->
-      <div class="z-top-left">
-        <span class="z-home-icon">🏠</span><span class="editable-text" contenteditable="true">トップへ</span>
-      </div>
-      <div class="z-count">
-        <span class="z-count-icon">🦉</span><span class="editable-text" contenteditable="true">4 / 12 あつめた！</span>
-      </div>
-      <div class="z-title-board">
-        <span class="editable-text" contenteditable="true">あつめよう！ ポノのもりのずかん</span>
-      </div>
-
-      <!-- 本体: 開いた本 (左ページ = グリッド、 右ページ = 詳細) -->
-      <!-- transform で本のページに合わせて遠近感をつける想定。 v1 は flat -->
-      <div class="z-book">
-        <div class="z-page z-page-left">
-          <div class="z-page-title">
-            <span class="editable-text" contenteditable="true">🍃 みつけた なかま 🍃</span>
-          </div>
-          <div class="z-grid">
-            <div class="z-grid-cell z-collected"><span class="editable-text" contenteditable="true">りす</span></div>
-            <div class="z-grid-cell z-collected"><span class="editable-text" contenteditable="true">うさぎ</span></div>
-            <div class="z-grid-cell z-collected"><span class="editable-text" contenteditable="true">ふくろう</span></div>
-            <div class="z-grid-cell z-collected"><span class="editable-text" contenteditable="true">たぬき</span></div>
-            <div class="z-grid-cell z-locked">???</div>
-            <div class="z-grid-cell z-locked">???</div>
-            <div class="z-grid-cell z-locked">???</div>
-            <div class="z-grid-cell z-locked">???</div>
-            <div class="z-grid-cell z-locked">???</div>
-          </div>
-        </div>
-
-        <div class="z-page z-page-right">
-          <div class="z-detail-art">🐰</div>
-          <div class="z-detail-stamp">
-            <span class="editable-text" contenteditable="true">ずかんとうろく！</span>
-          </div>
-          <div class="z-detail-fields">
-            <div class="z-field">
-              <span class="z-field-label"><span class="editable-text" contenteditable="true">なまえ</span></span>
-              <span class="z-field-val editable-text" contenteditable="true">うさぎ</span>
-            </div>
-            <div class="z-field">
-              <span class="z-field-label"><span class="editable-text" contenteditable="true">こえ</span></span>
-              <span class="z-field-val editable-text" contenteditable="true">ぴょん  ぴょん</span>
-            </div>
-            <div class="z-field">
-              <span class="z-field-label"><span class="editable-text" contenteditable="true">すがた</span></span>
-              <span class="z-field-val editable-text" contenteditable="true">ながい みみが チャームポイント。 ぴょんぴょん はねて いどうするよ。 にんじんが だいすき！</span>
-            </div>
-            <div class="z-field z-field-comment">
-              <span class="z-field-label z-field-label-green"><span class="editable-text" contenteditable="true">ひとこと</span></span>
-              <span class="z-field-val editable-text" contenteditable="true">こわいときは みみを たてて まわりの おとを きいているよ。</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右サイドのフィルタタブ -->
-      <div class="z-tab z-tab-1">
-        <span class="z-tab-icon">🍃</span><span class="editable-text" contenteditable="true">みつけた順</span>
-      </div>
-      <div class="z-tab z-tab-2">
-        <span class="z-tab-icon">🦉</span><span class="editable-text" contenteditable="true">もりのなかま</span>
-      </div>
-
-      <!-- 左下のクマ + 吹き出し -->
-      <div class="z-bear">🧸</div>
-      <div class="z-speech">
-        <span class="editable-text" contenteditable="true">もりの なかまたちを たくさん みつけて ずかんを うめよう！</span>
-      </div>
-
-      <!-- 下部のアクションボタン -->
-      <div class="z-btn z-btn-next">
-        <span class="z-btn-icon">🍃</span><span class="editable-text" contenteditable="true">つぎも あつめる</span>
-      </div>
-      <div class="z-btn z-btn-back">
-        <span class="z-btn-icon">←</span><span class="editable-text" contenteditable="true">もどる</span>
-      </div>
+      <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る。 作った枠 (.userbox)
+           は __userboxes として saved-layout に永続化。 各 userbox には × 削除ボタン。 -->
     </div>
 
     <!-- Annotation overlay -->
@@ -1979,24 +1960,8 @@ window.addEventListener('resize', updateBboxLabels);
 
 // ───── Resize mode (各バウンディングボックスを辺別ハンドルで伸縮 + 移動 + ルーラー/ガイド) ─────
 const RESIZABLE_SPEC = [
-  // selector, axes (w,h,wh), label - 全要素 wh で 4 辺 + 4 角ハンドル
-  ['.z-top-left',          'wh', 'トップへボタン'],
-  ['.z-count',             'wh', '取得カウンタ'],
-  ['.z-title-board',       'wh', 'タイトル看板'],
-  ['.z-book',              'wh', '本見開き (ベース)'],
-  ['.z-page-left',         'wh', '左ページ'],
-  ['.z-page-right',        'wh', '右ページ'],
-  ['.z-page-title',        'wh', 'ページタイトル'],
-  ['.z-grid',              'wh', 'コレクショングリッド'],
-  ['.z-grid-cell',         'wh', 'なかま枠'],
-  ['.z-detail-art',        'wh', '詳細イラスト'],
-  ['.z-detail-stamp',      'wh', '登録スタンプ'],
-  ['.z-detail-fields',     'wh', '詳細フィールド'],
-  ['.z-field',             'wh', 'フィールド行'],
-  ['.z-tab',               'wh', '右タブ'],
-  ['.z-bear',              'wh', 'クマキャラ'],
-  ['.z-speech',            'wh', '吹き出し'],
-  ['.z-btn',               'wh', '下部ボタン'],
+  // ユーザーがドラッグで作る .userbox のみ。 saved-layout 側に __userboxes として永続化。
+  ['.userbox', 'wh', 'カスタム枠'],
 ];
 const RESIZE_KEY = 'zukan_preview_sizes_v1';
 
@@ -2060,6 +2025,7 @@ document.addEventListener('blur', e => {
 function takeLayoutSnapshot() {
   const data = {};
   RESIZABLE_SPEC.forEach(([sel]) => {
+    if (sel === '.userbox') return;  // userbox は __userboxes に書く
     document.querySelectorAll(sel).forEach((el, i) => {
       data[`${sel}|${i}`] = {
         w: el.style.width || '',
@@ -2072,6 +2038,7 @@ function takeLayoutSnapshot() {
   data.__guides = collectGuides();
   data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
   data.__texts = collectEditableTexts();
+  data.__userboxes = collectUserboxes();
   return data;
 }
 
@@ -2180,7 +2147,10 @@ function loadResizeState() {
     const raw = localStorage.getItem(RESIZE_KEY);
     if (!raw) return;
     const data = JSON.parse(raw);
+    // userbox は __userboxes が真実なので、 標準 pipe-key 経路ではスキップ
+    if (data.__userboxes) restoreUserboxes(data.__userboxes);
     RESIZABLE_SPEC.forEach(([sel]) => {
+      if (sel === '.userbox') return;  // skip — 上で __userboxes から復元済み
       document.querySelectorAll(sel).forEach((el, i) => {
         const s = data[`${sel}|${i}`];
         if (!s) return;
@@ -2728,6 +2698,159 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     explicitSaveLayout();
   }
+});
+
+// ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
+// 矩形追加トグル
+const drawBtn = document.getElementById('userbox-add');
+let drawModeOn = false;
+function setDrawMode(on) {
+  drawModeOn = on;
+  document.body.classList.toggle('draw-mode', on);
+  drawBtn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
+  drawBtn.classList.toggle('active', on);
+}
+drawBtn && drawBtn.addEventListener('click', () => {
+  // resize-mode が OFF なら自動的に ON に (ハンドルが必要)
+  if (!document.body.classList.contains('resize-mode')) enableResize();
+  setDrawMode(!drawModeOn);
+});
+
+let userboxCounter = 0;
+function createUserbox(opts) {
+  // opts: { id?, label?, left, top, w, h, tx?, ty? }
+  userboxCounter += 1;
+  const id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
+  const label = opts.label || ('枠' + userboxCounter);
+  const div = document.createElement('div');
+  div.className = 'userbox';
+  div.dataset.userboxId = id;
+  div.dataset.userboxLabel = label;
+  div.style.left = opts.left;
+  div.style.top = opts.top;
+  if (opts.w) div.style.width = opts.w;
+  if (opts.h) div.style.height = opts.h;
+  // ラベルバッジ (contenteditable)
+  const badge = document.createElement('div');
+  badge.className = 'userbox-badge';
+  badge.contentEditable = 'true';
+  badge.textContent = label;
+  badge.spellcheck = false;
+  badge.addEventListener('mousedown', e => e.stopPropagation());
+  badge.addEventListener('blur', () => {
+    const newLabel = badge.textContent.trim() || ('枠' + userboxCounter);
+    badge.textContent = newLabel;
+    div.dataset.userboxLabel = newLabel;
+    saveResizeState();
+  });
+  badge.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); badge.blur(); }
+  });
+  div.appendChild(badge);
+  // × 削除ボタン
+  const del = document.createElement('div');
+  del.className = 'userbox-del';
+  del.textContent = '×';
+  del.title = '削除';
+  del.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm(`「${div.dataset.userboxLabel}」 を削除しますか？`)) {
+      selectedElements && selectedElements.delete(div);
+      div.remove();
+      saveResizeState();
+      refreshSelectionUI && refreshSelectionUI();
+    }
+  });
+  div.appendChild(del);
+  // safe-area に追加
+  const target = document.querySelector('.zukan-safe') || document.getElementById('safe-area');
+  target.appendChild(div);
+  // resize-mode が ON ならハンドル即装着
+  if (document.body.classList.contains('resize-mode')) {
+    attachHandle(div, 'wh');
+  }
+  // tx/ty を後から適用 (load 経路用)
+  if (opts.tx || opts.ty) {
+    div._tx = opts.tx || 0;
+    div._ty = opts.ty || 0;
+    div.style.transform = `translate(${div._tx}px, ${div._ty}px)`;
+  }
+  return div;
+}
+
+function collectUserboxes() {
+  return [...document.querySelectorAll('.userbox')].map(el => ({
+    id: el.dataset.userboxId,
+    label: el.dataset.userboxLabel,
+    left: el.style.left,
+    top: el.style.top,
+    w: el.style.width,
+    h: el.style.height,
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+  }));
+}
+function restoreUserboxes(arr) {
+  // 重複防止: 既存をクリアしてから再生成
+  document.querySelectorAll('.userbox').forEach(el => el.remove());
+  if (!Array.isArray(arr)) return;
+  arr.forEach(box => createUserbox(box));
+}
+
+// ステージ mousedown でドラッグ開始 (draw-mode のみ)
+const stageEl = document.getElementById('stage');
+stageEl.addEventListener('mousedown', e => {
+  if (!drawModeOn) return;
+  if (e.target.closest('.toolbar, .resize-handle, .userbox-badge, .userbox-del, .ruler, .guide')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const stageRect = stageEl.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stageEl).width);
+  const scale = stageRect.width / stageW || 1;
+  const safe = document.querySelector('.zukan-safe') || stageEl;
+  const safeRect = safe.getBoundingClientRect();
+  const sx = (e.clientX - safeRect.left) / scale;
+  const sy = (e.clientY - safeRect.top) / scale;
+  const preview = document.createElement('div');
+  preview.className = 'userbox-preview';
+  preview.style.left = sx + 'px';
+  preview.style.top = sy + 'px';
+  preview.style.width = '0px';
+  preview.style.height = '0px';
+  safe.appendChild(preview);
+
+  const onMove = (e2) => {
+    const x = (e2.clientX - safeRect.left) / scale;
+    const y = (e2.clientY - safeRect.top) / scale;
+    const x0 = Math.min(sx, x), y0 = Math.min(sy, y);
+    const w = Math.abs(x - sx), h = Math.abs(y - sy);
+    preview.style.left = x0 + 'px';
+    preview.style.top = y0 + 'px';
+    preview.style.width = w + 'px';
+    preview.style.height = h + 'px';
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    const w = parseFloat(preview.style.width);
+    const h = parseFloat(preview.style.height);
+    const left = preview.style.left;
+    const top = preview.style.top;
+    preview.remove();
+    if (w >= 20 && h >= 20) {
+      createUserbox({ left, top, w: w + 'px', h: h + 'px' });
+      saveResizeState();
+    }
+    // draw-mode は連続作成できるよう ON のまま
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+// Esc で draw-mode 抜け
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
 });
 
 // 起動時にサーバー (commit 済み) → ローカルストレージの順で復元
